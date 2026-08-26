@@ -598,7 +598,9 @@
       "link": {
         "kind": "practice",
         "label": "炭化水素の命名を練習する",
-        "open": "naming"
+        "open": "naming",
+        "scope": "named",
+        "field": "脂肪族"
       },
       "evidence": {
         "textbook": "見あたらない",
@@ -822,7 +824,10 @@
       "link": {
         "kind": "practice",
         "label": "アルカンの命名を練習する",
-        "open": "naming"
+        "open": "naming",
+        "scope": "named",
+        "field": "脂肪族",
+        "group": "alkane"
       },
       "evidence": {
         "textbook": "本文",
@@ -2922,7 +2927,8 @@
       ],
       "link": {
         "kind": "practice",
-        "label": "鏡像異性体をくさび図で見る",
+        "label": "乳酸のくさび図で鏡像異性体を見る",
+        "summon": "lactic-acid",
         "open": "stereo"
       },
       "evidence": {
@@ -3077,7 +3083,9 @@
       "link": {
         "kind": "practice",
         "label": "主鎖を選んで命名を練習する",
-        "open": "naming"
+        "open": "naming",
+        "scope": "named",
+        "field": "脂肪族"
       },
       "evidence": {
         "textbook": "本文",
@@ -3124,7 +3132,9 @@
       "link": {
         "kind": "practice",
         "label": "番号の振り方を命名で練習する",
-        "open": "naming"
+        "open": "naming",
+        "scope": "named",
+        "field": "脂肪族"
       },
       "evidence": {
         "textbook": "本文",
@@ -3213,7 +3223,9 @@
       "link": {
         "kind": "practice",
         "label": "アルケン・アルキンの命名を練習する",
-        "open": "naming"
+        "open": "naming",
+        "scope": "named",
+        "field": "脂肪族"
       },
       "evidence": {
         "textbook": "本文",
@@ -3603,7 +3615,9 @@
       "link": {
         "kind": "practice",
         "label": "アルコールの命名を練習する",
-        "open": "naming"
+        "open": "naming",
+        "scope": "named",
+        "field": "脂肪族"
       },
       "evidence": {
         "textbook": "本文",
@@ -6559,7 +6573,8 @@
       "link": {
         "kind": "practice",
         "label": "エステルの命名を練習する",
-        "open": "naming"
+        "open": "naming",
+        "group": "ester"
       },
       "evidence": {
         "textbook": "本文",
@@ -11088,7 +11103,8 @@
       ],
       "link": {
         "kind": "practice",
-        "label": "不斉炭素とくさび図を練習する",
+        "label": "アラニンのくさび図で不斉炭素を見る",
+        "summon": "alanine",
         "open": "stereo"
       },
       "evidence": {

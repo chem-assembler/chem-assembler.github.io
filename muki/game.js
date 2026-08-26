@@ -18,6 +18,16 @@ let PLAYER_POLARITY = 'CATION';
 let classicPolarity = 'CATION';
 let FIELD_PH = 'ACIDIC'; // 'ACIDIC' or 'BASIC'
 let phTimer = 0;
+/* Sulfide モードで液性が入れ替わる周期（DESIGN_separation.md §1）。
+   ⚠ **数を2か所に書かない** —— HUD の「(変化まで: N秒)」と盤面の秒読みが
+   1秒ずれると、切り替わる瞬間だけ数字が食い違って見える */
+const PH_PERIOD_MS = 7000;
+/* 盤面に大きな半透明の数字を出し始める残り秒数（ユーザー発注 2026-08-25
+   「sulfide mode のフィールド切り替えカウントダウンがわかりづらい／
+     透明文字で、残り3秒からカウントを表示するなど」）。
+   ⚠ **既存の伝え方は消していない**（HUD の残り秒・切り替え時の洪水エフェクト・
+     盤の背景色は全部そのまま）。足しただけ */
+const PH_COUNTDOWN_FROM = 3;
 
 document.getElementById('btn-mode-classic').addEventListener('click', (e) => {
     if(gameState === 'PLAYING') return;
@@ -243,6 +253,13 @@ function init() {
     scheduleUpdate();
 }
 
+/* 液性が入れ替わるまでの残り秒（HUD と盤面の秒読みが同じ数を使うための1本）。
+   phTimer が PH_PERIOD_MS を越えた瞬間に入れ替わるので、
+   「3」は残り3秒目、「1」は最後の1秒、0 になるのが切り替わりの瞬間 */
+function phRemainingSec() {
+    return Math.ceil((PH_PERIOD_MS - phTimer) / 1000);
+}
+
 function updatePHUI() {
     const phDisplay = document.getElementById('ph-display');
     const phValue = document.getElementById('ph-value');
@@ -260,8 +277,7 @@ function updatePHUI() {
         }
 
         if (phCountdown) {
-            let remainingSec = Math.ceil((7000 - phTimer) / 1000);
-            phCountdown.innerText = `(変化まで: ${remainingSec}秒)`;
+            phCountdown.innerText = `(変化まで: ${phRemainingSec()}秒)`;
         }
     } else {
         phDisplay.style.display = 'none';
@@ -455,7 +471,7 @@ function update(time = 0) {
         
         if (GAME_MODE === 'SULFIDE') {
             phTimer += dt;
-            if (phTimer > 7000) { // 7秒ごとに液性変化
+            if (phTimer > PH_PERIOD_MS) { // 7秒ごとに液性変化
                 phTimer = 0;
                 FIELD_PH = FIELD_PH === 'ACIDIC' ? 'BASIC' : 'ACIDIC';
                 showFloodEffect(FIELD_PH);
@@ -592,6 +608,145 @@ function die(reason, precipName, formula="", precipitateObj=null, diedFoodIon=nu
     
     let envStr = GAME_MODE === 'SULFIDE' ? `  |  Died in: ${FIELD_PH}` : '';
     document.getElementById('death-settings').innerText = `Mode: ${GAME_MODE}  |  Difficulty: ${DIFFICULTY}${envStr}`;
+    setupShareButton();
+}
+
+/* ===== 結果のシェア（ユーザー決定 2026-08-25「とりあえずスネークのみ／WebShareAPI」）=====
+ *
+ * ⚠ **ボタンは1つ**。Instagram と TikTok には Web から投稿を起こす公式の口が無いので、
+ *   X・LINE と並べて4つ置くと**2つだけ動かない**ボタンになる。OS の共有シートなら
+ *   インスタも TikTok も選択肢に出る。
+ *
+ * ⚠⚠ **共有シートは「どこへ共有されたか」を返さない** ＝ utm_source を x / instagram で
+ *   出し分けることは**原理的にできない**。出し分けられるふりをした値を入れないこと。
+ *   だから utm_source は share 固定・どの画面から出たかは utm_campaign が持つ。
+ * ⚠ ratio / ion-equation の横断リンク（?from=）とは別物なので混ぜない。
+ */
+const SHARE_UTM = 'utm_source=share&utm_medium=social&utm_campaign=muki_snake_result';
+
+/** 共有する URL。⚠ ページが名乗っている canonical を使う（localhost のアドレスを配らない） */
+function shareUrl() {
+    const link = document.querySelector('link[rel="canonical"]');
+    const base = (link && link.getAttribute('href')) || 'https://chem.schoollenz.com/muki/';
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + SHARE_UTM;
+}
+
+/** 共有する本文。⚠ アプリの内部の語（SULFIDE / CLASSIC / EASY）を出さない */
+function shareText() {
+    const mode = GAME_MODE === 'SULFIDE'
+        ? '酸性と塩基性が入れ替わるモード'
+        : (PLAYER_POLARITY === 'CATION' ? '陽イオンで遊ぶモード' : '陰イオンで遊ぶモード');
+    return `イオンスネークで ${score} 点（${mode}・${DIFFICULTY === 'EXPERT' ? 'むずかしい' : 'やさしい'}）。` +
+           '沈殿するイオンを避けて進む、無機化学のゲームです。';
+}
+
+/** 共有シートが使えるか（無い環境では「コピー」に落とす） */
+function canShare() { return typeof navigator !== 'undefined' && typeof navigator.share === 'function'; }
+function canCopy() {
+    return typeof navigator !== 'undefined' && navigator.clipboard &&
+           typeof navigator.clipboard.writeText === 'function';
+}
+
+/** 結果画面を出すたびに、ボタンの出し方を決め直す（押しても何も起きないボタンを出さない） */
+function setupShareButton() {
+    const btn = document.getElementById('btn-share');
+    const msg = document.getElementById('share-msg');
+    if (!btn) return;
+    if (msg) msg.innerText = '';
+    if (canShare()) {
+        btn.style.display = '';
+        btn.innerText = '結果をシェア';
+    } else if (canCopy()) {
+        // ⚠ PC の多くは共有シートを持たない。何も起きないボタンにせず「コピー」にする
+        btn.style.display = '';
+        btn.innerText = '結果をコピー';
+    } else {
+        btn.style.display = 'none';
+    }
+}
+
+/**
+ * シェアを実行する。⚠ **必ずクリックの中から呼ぶ**（そうでないとブラウザが断る）。
+ * ⚠ navigator.share は**共有シートを閉じただけでも例外（AbortError）を投げる**ので、
+ *   閉じただけのときにエラーを出さない。
+ */
+function doShare() {
+    const msg = document.getElementById('share-msg');
+    const say = (t) => { if (msg) msg.innerText = t; };
+    const payload = { title: 'イオンスネーク｜色でみる無機化学', text: shareText(), url: shareUrl() };
+    if (canShare()) {
+        let p;
+        try { p = navigator.share(payload); } catch (e) { p = Promise.reject(e); }
+        return Promise.resolve(p).then(function () {
+            say('シェアしました。');
+        }, function (e) {
+            // 閉じただけ（AbortError）は失敗ではないので黙る
+            if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError')) { say(''); return; }
+            say('シェアできませんでした。下のアドレスをコピーしてください: ' + payload.url);
+        });
+    }
+    if (canCopy()) {
+        const body = payload.text + '\n' + payload.url;
+        return navigator.clipboard.writeText(body).then(function () {
+            say('結果をコピーしました。貼り付けて投稿できます。');
+        }, function () {
+            // ⚠ クリップボードの許可が下りない環境がある（焦点が無いときなど）。
+            //   そこで諦めず、古い道（選択してコピー）を試し、それも駄目なら本文を画面に出す
+            say(copyBySelection(body)
+                ? '結果をコピーしました。貼り付けて投稿できます。'
+                : 'コピーできませんでした: ' + payload.url);
+        });
+    }
+    return Promise.resolve();
+}
+
+/** 古い道でのコピー（クリップボードの許可が下りないとき用）。成功したら true */
+function copyBySelection(text) {
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const done = document.execCommand && document.execCommand('copy');
+        document.body.removeChild(ta);
+        return !!done;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * 液性が入れ替わるまでの秒読みを、盤面に大きな半透明の数字で出す
+ * （ユーザー発注 2026-08-25「透明文字で、残り3秒からカウントを表示するなど」）。
+ *
+ * ⚠ **Sulfide モードだけ**。周期が無いモードで数字が出ると意味が分からない。
+ * ⚠ **遊んでいるあいだだけ**（READY / GAMEOVER では出さない ＝ phTimer が進まないので
+ *   止まった数字が残り続ける）。
+ * ⚠ **薄く・中央・駒より背面**。色は「これから来る液性」なので、数と色の2つで予告になる。
+ * 数字が変わった直後がいちばん濃く、1秒かけて薄くなる（秒の刻みが目で分かる）。
+ */
+function drawPhCountdown() {
+    if (GAME_MODE !== 'SULFIDE' || gameState !== 'PLAYING') return;
+    const sec = phRemainingSec();
+    if (sec > PH_COUNTDOWN_FROM || sec <= 0) return;
+
+    const msLeft = PH_PERIOD_MS - phTimer;
+    const frac = Math.max(0, Math.min(1, (msLeft % 1000) / 1000)); // その数字が出てからの残り（1→0）
+    const nextPH = FIELD_PH === 'ACIDIC' ? 'BASIC' : 'ACIDIC';
+    const rgb = nextPH === 'ACIDIC' ? '231, 76, 60' : '52, 152, 219';
+    const alpha = 0.10 + 0.14 * frac;
+    const size = Math.floor(canvas.height * (0.52 + 0.05 * (1 - frac)));
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${size}px 'Orbitron', 'Noto Sans JP', sans-serif`;
+    ctx.fillStyle = `rgba(${rgb}, ${alpha.toFixed(3)})`;
+    ctx.fillText(String(sec), canvas.width / 2, canvas.height / 2);
+    ctx.restore();
 }
 
 function drawBoard() {
@@ -609,6 +764,9 @@ function drawBoard() {
     ctx.strokeStyle = "rgba(255,255,255,0.05)";
     for(let x=0; x<=COLS; x++) { ctx.beginPath(); ctx.moveTo(x*BLOCK_SIZE, 0); ctx.lineTo(x*BLOCK_SIZE, ROWS*BLOCK_SIZE); ctx.stroke(); }
     for(let y=0; y<=ROWS; y++) { ctx.beginPath(); ctx.moveTo(0, y*BLOCK_SIZE); ctx.lineTo(COLS*BLOCK_SIZE, y*BLOCK_SIZE); ctx.stroke(); }
+
+    // ⚠ **ヘビとエサより先に描く ＝ 背面**。数字の上に駒が乗るので、盤面の視認を妨げない
+    drawPhCountdown();
 
     if (gameState === 'READY') {
         renderStaticSnake();
@@ -795,6 +953,8 @@ document.addEventListener('keydown', (e) => {
 }, {passive: false});
 
 document.getElementById('restart-btn').addEventListener('click', init);
+// ⚠ 共有シートは**人の操作の中から**しか開けない。クリックの中で navigator.share を呼ぶ
+document.getElementById('btn-share').addEventListener('click', doShare);
 
 // --- 盤面を画面サイズにフィット（座標はグリッド単位のままなので実行中でも安全） ---
 function fitBoard() {

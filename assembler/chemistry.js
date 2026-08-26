@@ -3343,18 +3343,27 @@ function _iupacPath(adj, a, b) {
 //   別関数で名前を割り直す実装にすると「名前を作る場所が2つ」になり、片方だけ伸びた日に
 //   説明と名前が黙って食い違う（§N-1 と同じ家族の罠）。
 //   `out.coreParts` = 幹側のかけら（呼び出し元＝ `_iupacOlCore` / `_iupacUnsatCore` が組む）。
+//
+// ★ **複合置換基（置換基そのものが置換されているもの）は括弧で囲む**
+//   （DESIGN_iupac_check.md §11。`2-(クロロメチル)プロパン`）。`subs[i].composite` が真のときだけ。
+//   囲まないと基の中の位置番号が主鎖の位置番号と地続きになり、`2-1-クロロメチルプロパン` のように
+//   **どちらの番号か読めない文字列**になる。囲むかどうかは名前を作るこの1か所だけが決める。
+//   ⚠ 同じ複合置換基が2つ以上あるときは **ビス／トリス** が要る（`ジ(クロロメチル)` は誤り）ので、
+//   **名前を返さない（null）**。壊れた名前を返さないのがこのリポジトリの流儀。
 function _iupacAssemble(stem, subs, omitLocants, out) {
     if (!stem) return null;
     const byName = new Map();
     subs.forEach(s => {
-        if (!byName.has(s.name)) byName.set(s.name, { key: s.key, locs: [] });
+        if (!byName.has(s.name)) byName.set(s.name, { key: s.key, locs: [], composite: !!s.composite });
         byName.get(s.name).locs.push(s.loc);
     });
-    const groups = [...byName.entries()].map(([name, g]) => ({ name, key: g.key, locs: g.locs.slice().sort((a, b) => a - b) }));
+    const groups = [...byName.entries()].map(([name, g]) => ({ name, key: g.key, locs: g.locs.slice().sort((a, b) => a - b), composite: g.composite }));
+    // 同じ複合置換基が複数 ＝ ビス／トリスが要る（範囲外。§11-2）
+    if (groups.some(g => g.composite && g.locs.length >= 2)) return null;
     // アルファベット順（倍数接頭辞は無視＝name基準のkeyで比較）
     groups.sort((a, b) => a.key.localeCompare(b.key) || a.name.localeCompare(b.name));
     const bodies = groups.map(g => {
-        const body = (IUPAC_MULT[g.locs.length] || '') + g.name;
+        const body = (IUPAC_MULT[g.locs.length] || '') + (g.composite ? `(${g.name})` : g.name);
         return omitLocants ? body : `${g.locs.join(',')}-${body}`;
     });
     const glue = omitLocants ? '' : '-';
@@ -3502,7 +3511,8 @@ function _iupacCollectSubs(adj, haloAdj, chain) {
             if (chainSet.has(nb)) continue;
             const g = iupacAlkylName(adj, haloAdj, nb, chainSet);
             if (!g) return null;
-            subs.push({ loc: idx + 1, name: g.name, key: g.key });
+            // composite = この基そのものが置換されている ＝ 名前に括弧が要る（§11）
+            subs.push({ loc: idx + 1, name: g.name, key: g.key, composite: g.composite });
         }
         (haloAdj.get(cid) || []).forEach(h => subs.push({ loc: idx + 1, name: h, key: IUPAC_SORTKEY[h] }));
     }
@@ -3515,9 +3525,15 @@ function _iupacCollectSubs(adj, haloAdj, chain) {
 //
 // `chain` = **この名前を作るのに実際に使った鎖**（root から始まる炭素ID列。番号 k の炭素 = chain[k-1]）。
 // `ids`   = この基に属する炭素の全ID（塗り分け用）。
+// `composite` = **この基そのものが置換されている**（＝ 親の名前で括弧が要る。§11）。
+//   慣用名（イソプロピル・sec-ブチル…）に置き換わったものは1語なので **false**。
 // ★ 鎖を返すのは、画面が主鎖を描くときに**同じ1回の計算の結果**を使えるようにするため
 //   （DESIGN_iupac_check.md §4）。呼ぶ側で最長鎖を計算し直すと名前と食い違う。
 //   `_iupacPath(subAdj, root, t)` が root 始まりなので **付け根は必ず C1**＝向きを選ぶ余地が無い
+//
+// ⚠ **入れ子（複合置換基の中の複合置換基）は扱わない**（§11-2）。角括弧 `[…]` が要るうえ、
+//   どちらの候補を IUPAC が採るかは両方に名前を付けてみないと決まらない。
+//   候補のどれか1本でも入れ子になるなら **null**（＝ 名前を出さない）。
 function iupacAlkylName(adj, haloAdj, root, blocked) {
     const carbons = new Set([root]);
     const st = [root];
@@ -3535,22 +3551,31 @@ function iupacAlkylName(adj, haloAdj, root, blocked) {
         if (!cands.length || p.length > cands[0].length) cands = [p];
         else if (p.length === cands[0].length) cands.push(p);
     });
-    let best = null;
+    let best = null, nested = false;
     cands.forEach(chain => {
         if (!IUPAC_YL_STEM[chain.length]) return;
         const subs = _iupacCollectSubs(subAdj, haloAdj, chain);
         if (subs === null) return;
-        const nm = _iupacAssemble(IUPAC_YL_STEM[chain.length], subs);
+        if (subs.some(s => s.composite)) { nested = true; return; }   // 入れ子は扱わない（§11-2）
+        // 炭素1個の基（メチル）は位置が1しかないので位置番号を書かない ＝ `クロロメチル`
+        const nm = _iupacAssemble(IUPAC_YL_STEM[chain.length], subs, chain.length === 1);
+        if (!nm) return;
         const locs = subs.map(s => s.loc).sort((a, b) => a - b);
         if (!best || _iupacCmpLocants(locs, best.locs) < 0 ||
-            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs, chain };
+            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs, chain, subs };
     });
-    if (!best) return null;
+    // 入れ子の候補が1本でもあれば、名前を付けられる候補が残っていても**どちらを IUPAC が採るか決められない**
+    if (nested || !best) return null;
     const name = IUPAC_RETAINED[best.nm] || best.nm;
-    const key = IUPAC_SORTKEY[name] || IUPAC_SORTKEY[best.nm] || name;
+    // 複合＝ 置換基つきで組み立てた体系名が、慣用名に置き換わらずそのまま出ているとき
+    const composite = (name === best.nm) && best.subs.length > 0;
+    // アルファベット順のキー。複合置換基は **完全な名前の頭文字**で並べるのが IUPAC の規則なので、
+    // 「基の中の置換基のキー（昇順）＋ yl 幹のキー」を繋いで作る（クロロメチル → chloro+methyl）
+    const key = IUPAC_SORTKEY[name] || IUPAC_SORTKEY[best.nm] ||
+        (composite ? best.subs.map(s => s.key || s.name).sort().join('') + (IUPAC_SORTKEY[IUPAC_YL_STEM[best.chain.length]] || '') : name);
     // 慣用名（sec-ブチル 等）に置き換わっても、**鎖と番号は体系名の側のもの**を返す
     // （「sec-ブチル」に番号は無い。§4・N-6 の「番号を生んだ名前を併記する」規則）
-    return { name, key, chain: best.chain, ids: [...carbons], systematic: best.nm };
+    return { name, key, chain: best.chain, ids: [...carbons], systematic: best.nm, composite };
 }
 
 // 炭素→その炭素に付いたハロゲン置換基名の配列 を分子から作る
@@ -3894,6 +3919,63 @@ function countStereoisomers(mol, limit = 12) {
     return Object.assign({ count: seen.size, folded: seen.size < base.naive, overflow: false }, base);
 }
 
+/**
+ * ★ 立体の単位を1つ指す**唯一のキーの作り方**（DESIGN_stereo_point.md §8-2）。
+ *
+ * `canonicalStereoCode` の `bondGeo` と同じ `'id1_id2'` の形にそろえる。
+ * ⚠ **原子IDに `_` が入る**（`atom_9f3k…`）ので、このキーは**分解できない**。
+ *   受け取る側は必ずこの関数で作ったキーどうしを突き合わせること
+ *   （`split('_')` で戻そうとすると黙って壊れる）。
+ */
+function stereoBondKey(a, b) {
+    return a < b ? `${a}_${b}` : `${b}_${a}`;
+}
+
+/**
+ * ★ 2ⁿ が崩れた（畳み込みが起きた）**理由**を見分ける（DESIGN_stereo_point.md §1-4）。
+ *
+ * `countStereoisomers` は `folded`（畳み込んだか）しか返さないが、
+ * 「なぜ少ないのか」を画面で言うには理由が要る。**新しい化学は1行も書かない** ——
+ * 判定は既存の `canonicalStereoCode` ＋ `mirrorStereo` の組み合わせだけ:
+ *
+ *   畳み込みがある かつ 不斉炭素が1個以上 かつ 鏡像が自分自身の種が1個以上 → 'meso'
+ *   畳み込みがある それ以外                                              → 'symmetry'
+ *   畳み込みが無い・数え切れない                                         → null
+ *
+ * ⚠ トリオレイン（C=C 3本・不斉炭素0個）は「鏡像が自分自身」の種を6つ持つが、
+ *   **不斉炭素が0個なのでメソ体とは呼ばない**。上の「不斉炭素が1個以上」がそれを弾く。
+ *
+ * 実測での期待値（DESIGN_stereo_point.md §1-4 の表）:
+ *   酒石酸 / 1,2-ジメチルシクロプロパン / 1,2-ジメチルシクロブタン … 'meso'
+ *   乳酸3分子の環状エステル … 'symmetry' ／ トリオレイン … 'symmetry'（meso ではない）
+ *   2-ブテン・乳酸（畳み込み無し） … null
+ */
+function stereoFoldReason(mol, limit = 12) {
+    const { centers, bonds } = stereoUnitsOf(mol);
+    const n = centers.length + bonds.length;
+    if (n === 0 || n > limit) return null;
+    const naive = Math.pow(2, n);
+    const codes = new Map(); // code -> その種を代表する記述子（鏡像を作るのに使う）
+    const total = 1 << n;
+    for (let mask = 0; mask < total; mask++) {
+        const atomParity = {};
+        const bondGeo = {};
+        centers.forEach((id, k) => { atomParity[id] = (mask >> k & 1) ? 1 : -1; });
+        bonds.forEach(([i, j], k) => {
+            bondGeo[`${i}_${j}`] = (mask >> (centers.length + k) & 1) ? 'syn' : 'anti';
+        });
+        const code = canonicalStereoCode(mol, { atomParity, bondGeo });
+        if (!codes.has(code)) codes.set(code, { atomParity, bondGeo });
+    }
+    if (codes.size >= naive) return null;          // 畳み込みが起きていない
+    if (centers.length === 0) return 'symmetry';   // 不斉炭素が無い＝メソ体とは呼ばない
+    let achiral = 0;
+    codes.forEach((stereo, code) => {
+        if (canonicalStereoCode(mol, mirrorStereo(stereo)) === code) achiral++;
+    });
+    return achiral > 0 ? 'meso' : 'symmetry';
+}
+
 // ===== 分子全体の3D配置（P12-8 M4a。DESIGN_3d_correspondence.md 6章）=====
 // 作図座標は使わない。このアプリの作図は直交格子（結合角90°）が仕様なので、
 // そのまま立体にすると「結合角90°の分子模型」＝化学的に誤った図になる。
@@ -4051,6 +4133,849 @@ function _ringSystems(mol, ringIds) {
         out.push(sys);
     });
     return out;
+}
+
+/* ==========================================================================
+ * ハース図を「見かけだけ」置き直す2つの操作（DESIGN_sugar.md §1-2・§4-6）
+ *
+ * 入試では「マルトースを上下反転した図」「教科書のフルクトース」のように、
+ * **見かけが変わっても同じ分子だと見抜けるか**が問われる。
+ * アプリは α/β を**描かれた縦位置**から読む（DESIGN_stereochemistry.md §12.1 の
+ * 明示の例外）ので、図を動かすと立体の読みが動く。動かしてよいのは**2つだけ**:
+ *
+ *   ① 上下反転（裏返す）  … y を反転し、面マーク（haworthFace）も一緒に反転する。
+ *      3D では (x,y,z) → (x,−y,−z) ＝ **面内の軸まわりの180°回転**（行列式 +1）。
+ *      「上下入替」と「たどる向き逆」が**同時に**起きるので立体は動かない。
+ *   ② 独楽回転（環の面内で回す）… 環原子を、置換基ごと**環の席をずらして**置き直す。
+ *      3D では環に垂直な軸まわりの回転。置換基の縦位置（＝面）はそのまま運ばれる。
+ *
+ * ⚠ **鏡映は入れない**（別の化合物になる）。⚠ **図をそのまま面内で180°回すのも入れない** ——
+ * それは「上下だけ入れ替える」であって、ハース投影の約束（上に描く＝手前）を通すと
+ * **鏡像**になる（実測: 環をもつ糖16件すべてで立体コードが変わる）。
+ * 紙の上で図をくるっと回すのが 3D の回転でも、**ハース図は向きの固定された表記**なのでそうなる。
+ *
+ * 実測（登録 1,059 件の全数。tests.js の SG1〜SG5 が同じことを見張る）:
+ *   ① 正しい反転 16/16 立体保存 ／ 上下だけ 0/16 ／ 向きだけ 0/16 ／ 面マーク直し忘れ 8/16
+ *   ② 独楽回転 16/16 立体保存（全ステップ数・環系 438 個で穴ゼロ）
+ * ========================================================================== */
+
+/** ids（省略時は全原子）の指す原子だけを返す */
+function _atomsOfIds(mol, ids) {
+    if (!ids) return mol.atoms.slice();
+    const set = ids instanceof Set ? ids : new Set(ids);
+    return mol.atoms.filter(a => set.has(a.id));
+}
+
+/**
+ * 上下反転（裏返す）を当ててよいか（DESIGN_sugar.md §4-6）。
+ *
+ * ⚠ **フィッシャー投影として読める中心が1つでもあれば断る。** フィッシャーは
+ * 「縦＝奥・横＝手前」なので、y を反転すると**奥の2本を入れ替えただけ**になり
+ * ＝ その中心は鏡像に化ける（ハース図と逆に、反転が読みの約束を壊す側）。
+ * 環（ハース）の中心はフィッシャーとは相互排他なので、糖の環はここを通る。
+ *
+ * 全登録 1,059 件で、この門番は**過不足なく一致した**
+ * （許して変わったもの 0 件／断ったのに安全だったもの 0 件）。
+ */
+function canFlipHaworth(mol, ids) {
+    const atoms = _atomsOfIds(mol, ids);
+    if (!atoms.length) return false;
+    const set = new Set(atoms.map(a => a.id));
+    return !Object.keys(readAtomParityFromFischer(mol)).some(id => set.has(id));
+}
+
+/**
+ * 上下反転（裏返す）を当てる。y を折り返し、**面マークも一緒に反転**する。
+ * ⚠ 面マークを直し忘れると、マークを持つ登録8件だけが鏡像に化ける（§1-3）。
+ * データ（compounds.json）は触らず、**コード側で座標とマークの両方を回す**のが約束。
+ *
+ * `axisY` を省くと**その集合の重原子の重心**で折り返す（分子まるごとを裏返す既定の使い方）。
+ *
+ * ⚠⚠ **`ids` で一部だけを裏返すときは `axisY` を省いてはいけない**（v1442 で実測）。
+ * 一部だけを動かすと、**動かさなかった側との境目の結合**（二糖ならグリコシド酸素 -O-）だけが
+ * 「片方だけ動いた」状態になり、その結合の**縦位置＝面の読み**が回転と合わなくなる。
+ * 正しい軸は**境目の原子（動かさない側に残す原子）の y** で、そこを軸にすると
+ *   境目の結合ベクトルが**ちょうど y 反転**する ＝ 面の符号が反転し、**縦からの角度は変わらない**
+ *   （＝ ±25° の読める/読めないも変わらない）
+ * ので、動いた側の環中心のパリティが**回転として**保たれる。
+ *
+ * 実測（二糖4件 × どちらの環を動かすかの2通り ＝ 8ケース。tests.js の SG9）:
+ *   軸＝橋の酸素の y … **8/8 で立体コード同一** ／ 軸＝集合の重心（既定） … **8/8 で立体コードが変わる**
+ * ⚠ 既定の軸は「分子まるごと」専用だと思うこと。
+ */
+function flipHaworth(mol, ids, axisY) {
+    const atoms = _atomsOfIds(mol, ids);
+    if (!atoms.length) return false;
+    let cy = axisY;
+    if (typeof cy !== 'number' || !isFinite(cy)) {
+        const base = atoms.filter(a => a.element !== 'H');
+        const list = base.length ? base : atoms;
+        cy = list.reduce((t, a) => t + a.y, 0) / list.length;
+    }
+    atoms.forEach(a => {
+        a.y = 2 * cy - a.y;
+        if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace;
+    });
+    return true;
+}
+
+/**
+ * 「この環（＋そのぶら下がり）だけ」を指す原子IDの集合を返す —— **部分反転の呼び方**（v1442）。
+ *
+ * 環から外へ出る枝を1本ずつ辿り、**その枝の中に別の環が入っていれば丸ごと捨てる**。
+ * ＝ 二糖なら、グリコシド酸素 -O- から先（相手の環）は入らず、**橋の酸素そのものも入らない**。
+ * 橋の酸素を動かさない側に残すのは、それが `flipHaworth` の軸（＝境目の原子の y）になるから。
+ *
+ * 使い方は必ずこの3行で組にする（軸を省くと立体が変わる。上の ⚠⚠ を参照）:
+ *   const ids = haworthRingSideIds(mol, cycleB);
+ *   const br  = haworthRingBridge(mol, cycleA, cycleB);
+ *   if (canFlipHaworth(mol, ids)) flipHaworth(mol, ids, br.atom.y);
+ */
+function haworthRingSideIds(mol, cycle) {
+    const ring = _ringAtomIds(mol);
+    const own = new Set(cycle);
+    const out = new Set(cycle);
+    cycle.forEach(rid => {
+        mol.getNeighbors(rid).forEach(n => {
+            if (own.has(n.atom.id) || out.has(n.atom.id)) return;
+            // 枝を丸ごと集める（自分の環は通らない）
+            const branch = [];
+            const seen = new Set([n.atom.id]);
+            const stack = [n.atom.id];
+            let hitsOtherRing = false;
+            while (stack.length) {
+                const cur = stack.pop();
+                branch.push(cur);
+                if (ring.has(cur) && !own.has(cur)) hitsOtherRing = true;
+                mol.getNeighbors(cur).forEach(m => {
+                    if (own.has(m.atom.id) || seen.has(m.atom.id)) return;
+                    seen.add(m.atom.id);
+                    stack.push(m.atom.id);
+                });
+            }
+            if (!hitsOtherRing) branch.forEach(x => out.add(x));
+        });
+    });
+    return out;
+}
+
+/**
+ * 2つの環をつないでいる「橋」の原子を返す（二糖のグリコシド酸素）。
+ * 見つからない（環どうしが直結している・橋が2原子以上ある）なら null。
+ * 戻り値: { atom, hostA, hostB }（hostA は cycleA 側の環原子）
+ */
+function haworthRingBridge(mol, cycleA, cycleB) {
+    const inA = new Set(cycleA), inB = new Set(cycleB);
+    let found = null;
+    mol.atoms.forEach(a => {
+        if (inA.has(a.id) || inB.has(a.id)) return;
+        const heavy = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
+        const hostA = heavy.filter(n => inA.has(n.atom.id));
+        const hostB = heavy.filter(n => inB.has(n.atom.id));
+        if (hostA.length === 1 && hostB.length === 1 && heavy.length === 2) {
+            if (found) { found = null; return; } // 橋が2本以上 ＝ この模型の想定外
+            found = { atom: a, hostA: hostA[0].atom, hostB: hostB[0].atom };
+        }
+    });
+    return found;
+}
+
+/** 描かれた環が凸多角形か（どの頂点でも曲がる向きが同じか）。独楽回転の前提 */
+function _ringDrawnConvex(mol, cycle) {
+    const p = cycle.map(id => mol.atoms.find(a => a.id === id));
+    if (p.some(a => !a)) return false;
+    let sign = 0;
+    for (let i = 0; i < p.length; i++) {
+        const a = p[(i + p.length - 1) % p.length], b = p[i], c = p[(i + 1) % p.length];
+        const cross = (a.x - b.x) * (c.y - b.y) - (a.y - b.y) * (c.x - b.x);
+        if (Math.abs(cross) < 1e-6) return false;
+        const s = cross > 0 ? 1 : -1;
+        if (sign === 0) sign = s;
+        else if (s !== sign) return false;
+    }
+    return true;
+}
+
+/**
+ * 独楽回転できる環を、一周の順に並べた原子IDの配列で返す（複数の環があれば複数返す）。
+ * 縮合環・スピロ・環どうしが直結したもの（ビフェニル）は `_ringCycleOrder` が断る。
+ * ⚠ 凸でない環も断る —— パリティの符号は「どの頂点でも曲がる向きが同じ」ことに拠っている。
+ */
+function haworthSpinCycles(mol) {
+    const ringIds = _ringAtomIds(mol);
+    if (!ringIds.size) return [];
+    return _ringSystems(mol, ringIds)
+        .map(sys => _ringCycleOrder(mol, sys, ringIds))
+        .filter(cycle => cycle && _ringDrawnConvex(mol, cycle));
+}
+
+/** 独楽回転を当ててよいか（cycle は haworthSpinCycles が返したもの） */
+function canSpinHaworthRing(mol, cycle) {
+    return Array.isArray(cycle) && cycle.length >= 3 && _ringDrawnConvex(mol, cycle);
+}
+
+/**
+ * 独楽回転を当てる。環の「席」を steps 個ずらし、各環原子を**ぶら下がりごと平行移動**する。
+ *
+ * 環の頂点の集合は変わらない（同じ多角形のまま）ので、環結合はそのまま隣どうしを結ぶ。
+ * 置換基は親の環原子と同じ量だけ動く ＝ **縦位置（面）が1つも動かない**。
+ * ＝ 環に垂直な軸まわりの回転そのもので、立体は保たれる。
+ * ⚠ 図をアフィン変換で回すのではない。それをすると置換基が斜めになって面が読めなくなる。
+ */
+function spinHaworthRing(mol, cycle, steps) {
+    if (!canSpinHaworthRing(mol, cycle)) return false;
+    const n = cycle.length;
+    const k = ((Math.round(steps) % n) + n) % n;
+    if (k === 0) return true;
+    const inRing = new Set(cycle);
+    const seat = cycle.map(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        return { x: a.x, y: a.y };
+    });
+    // 環原子ごとの「ぶら下がり」＝環を通らずに辿れる原子（二糖なら相手の環も丸ごと入る）
+    const groups = cycle.map(id => {
+        const members = [id];
+        const seen = new Set([id]);
+        const stack = [id];
+        while (stack.length) {
+            const cur = stack.pop();
+            mol.getNeighbors(cur).forEach(nb => {
+                if (inRing.has(nb.atom.id) || seen.has(nb.atom.id)) return;
+                seen.add(nb.atom.id);
+                members.push(nb.atom.id);
+                stack.push(nb.atom.id);
+            });
+        }
+        return members;
+    });
+    const before = new Map();
+    mol.atoms.forEach(a => before.set(a.id, { x: a.x, y: a.y }));
+    groups.forEach((members, i) => {
+        const dx = seat[(i + k) % n].x - seat[i].x;
+        const dy = seat[(i + k) % n].y - seat[i].y;
+        members.forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            const s = before.get(id);
+            if (a && s) { a.x = s.x + dx; a.y = s.y + dy; }
+        });
+    });
+    return true;
+}
+
+/* ==========================================================================
+ * キャンバスの図で環を裏返す（DESIGN_sugar.md 段4-b・v1445）
+ *
+ * 環ビュー（`stereo.js`）の裏返しは**模型の中だけ**の話で、キャンバスの座標は
+ * 1ピクセルも動かさない。ここは**キャンバスの図そのもの**を置き直す側で、
+ * ⚠ **同じ環が裏返る**ように環の並べ方（`orderHaworthRings`）を共有している。
+ *
+ * ⚠⚠ `DESIGN_3d_correspondence.md` §7.3 の「絵の軸（環の重心）と分子の軸（橋の y）は
+ * 縦の平行移動ぶんしか違わないので面と立体は同じ」は、**キャンバスには当てはまらない**。
+ * 環ビューは**面を先に読んでから絵を折る**ので平行移動が効かないが、キャンバスは
+ * **折った座標から面を読み直す**ので、橋の結合の向きが変わって読みが変わる
+ * （実測: 軸＝橋の y は 8/8 で立体保存・軸＝環の重心は 1/8・軸＝既定は 0/8）。
+ *
+ * 手順は3手（`haworthCanvasFlip`）:
+ *   ① `flipHaworth(mol, ids, 軸)`  … 軸は環が2つなら橋の y・1つなら重心
+ *   ② 相手から離れる向きへ縦にずらす（重なりを解く）
+ *   ③ ★ `canonicalStereoCode` が変わっていないか確かめ、変わっていたら**巻き戻す**
+ * ⚠ ③を省くと、条件を満たさない図で**黙って鏡像に化ける**（半分だけの操作は 0/16）。
+ * ========================================================================== */
+
+/**
+ * ハース投影の炭素番号の起点（環の O）と、そこから番号が進む向きを返す。
+ * ハース投影の約束では**環の酸素の隣のアノマー炭素**（環外に酸素を持つ側）が起点なので、
+ * 「環の O → アノマー炭素」がそのまま番号の向きになる。
+ * ⚠ **これが「この環はハース図として読む糖の環か」の門番**でもある ——
+ * シクロヘキサノンやベンゼンは環内に O が無い（または隣がアノマーでない）ので null。
+ * 戻り値 { oIndex, dir(+1/-1) } / null
+ */
+function haworthNumberingStart(mol, cycle) {
+    const n = cycle.length;
+    const oIndex = cycle.findIndex(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        return a && a.element === 'O';
+    });
+    if (oIndex < 0) return null;
+    const inRing = new Set(cycle);
+    const isAnomer = id => mol.getNeighbors(id)
+        .some(x => !inRing.has(x.atom.id) && x.atom.element === 'O');
+    const next = cycle[(oIndex + 1) % n], prev = cycle[(oIndex + n - 1) % n];
+    const dir = isAnomer(next) ? 1 : isAnomer(prev) ? -1 : 0;
+    return dir ? { oIndex, dir } : null;
+}
+
+/**
+ * 描かれた環の炭素番号をたどる向き（+1 = 見た目の時計回り／-1 = 反時計回り／0 = 決められない）。
+ * 画面座標は下が正なので、符号付き面積が正 ＝ 見た目の時計回り。
+ * ⚠ **教科書のスクロースはグルコース側が時計回り・フルクトース側が反時計回り**で、
+ *    ここが「フルクトース環が裏返して描かれている」ことの数での現れ（DESIGN_sugar.md §5-2）。
+ */
+function haworthRingSense(mol, cycle) {
+    const st = haworthNumberingStart(mol, cycle);
+    if (!st) return 0;
+    const n = cycle.length;
+    const p = cycle.map(id => mol.atoms.find(a => a.id === id));
+    if (p.some(a => !a)) return 0;
+    let area = 0;
+    for (let k = 0; k < n; k++) {
+        const a = p[((st.oIndex + st.dir * k) % n + n) % n];
+        const b = p[((st.oIndex + st.dir * (k + 1)) % n + n) % n];
+        area += a.x * b.y - b.x * a.y;
+    }
+    return area > 0 ? 1 : area < 0 ? -1 : 0;
+}
+
+/**
+ * 二糖の2つの環を [動かさない環A, 裏返すかもしれない環B] の順に並べる。
+ * **選んだ炭素に依らず決まる**ようにしてある（同じ分子はいつも同じ絵になる）:
+ *   ① 橋をアノマー炭素で持っている側（＝グリコシドを供与した側）を B にする
+ *   ② 両方／どちらもアノマーなら（スクロース・トレハロース型）、**大きい環を A** にする
+ *      ＝ スクロースではグルコース（六員）が A・フルクトース（五員）が B になり、
+ *        教科書どおり「フルクトース側だけが裏返る」（DESIGN_sugar.md §5-2）
+ * ⚠ **環ビュー（`StereoView.orderDisaccharideRings`）とキャンバスの裏返しはこの1本を共有する。**
+ *    別々に持つと「横から見たときと図とで裏返る環が違う」が起こりうる。
+ */
+function orderHaworthRings(mol, cycles, bridge) {
+    const anomeric = (cycle, hostId) => {
+        const o = cycle.find(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            return a && a.element === 'O';
+        });
+        return o !== undefined && mol.getNeighbors(o).some(n => n.atom.id === hostId);
+    };
+    const a0 = anomeric(cycles[0], bridge.hostA.id);
+    const a1 = anomeric(cycles[1], bridge.hostB.id);
+    if (a0 !== a1) return a0 ? [cycles[1], cycles[0]] : [cycles[0], cycles[1]];
+    if (cycles[0].length !== cycles[1].length) {
+        return cycles[0].length > cycles[1].length ? [cycles[0], cycles[1]] : [cycles[1], cycles[0]];
+    }
+    return cycles.slice();
+}
+
+/** 立体まで込みの正準コード（裏返しの前後で変わっていないことを確かめるのに使う） */
+function _haworthCodes(mol) {
+    return canonicalCode(mol) + '|' + canonicalStereoCode(mol, {
+        atomParity: { ...readAtomParityFromFischer(mol), ...readRingParityFromHaworth(mol) },
+        bondGeo: readBondGeoFromCoords(mol)
+    });
+}
+
+/**
+ * その環を「ハース図として読む糖の環」とみなしてよいか（キャンバスの ⇅ を出す門番）。
+ * ⚠ `haworthNumberingStart` だけでは**ラクトンと酸無水物も通る**（環の O の隣の C が
+ * カルボニル酸素を持つので「アノマーらしく」見える。実測: 登録 22件のうち 6件がこれ）。
+ * アノマー炭素は **sp3 の炭素**（二重結合を持たない）なので、そこで切り分ける ＝ 残るのは
+ * ピラノース10・フラノース2・二糖4 の16件。⚠ 裏返しても壊れないことは別の話（16件とも安全）で、
+ * ここは**裏返す意味がある図か**（α/β を担っている図か）の線引き。
+ */
+function _haworthSugarCycle(mol, cycle) {
+    const st = haworthNumberingStart(mol, cycle);
+    if (!st) return null;
+    const anomerId = cycle[((st.oIndex + st.dir) % cycle.length + cycle.length) % cycle.length];
+    const a = mol.atoms.find(x => x.id === anomerId);
+    if (!a || a.element !== 'C') return null;
+    if (mol.getNeighbors(anomerId).some(n => n.type > 1)) return null;
+    return st;
+}
+
+/**
+ * ★ その分子の中で「ハース図として読む糖の環」になっている閉路を並べて返す（無ければ空配列）。
+ *
+ * `_haworthSugarCycle` の門番そのものを外から使えるようにしただけのもの。
+ * ⚠ **`haworthFlipPlan` と分けてある理由**: フリップの下ごしらえは
+ * 「環は2つまで」「橋1原子でつながっている」「裏返しても鏡像にならない」という
+ * **裏返し固有の条件**を足している。**ハース図かどうかを聞きたいだけの側**
+ * （名前を言い切ってよいかの判定 ＝ `lookupCompoundName`）にそれらは関係ない。
+ * 登録16件では両者は一致するが、**一致は結果であって定義ではない**
+ * （環3つの糖を将来登録すれば、裏返せなくても名前は言い切れるべき）。
+ */
+function haworthSugarCycles(mol) {
+    return haworthSpinCycles(mol).filter(c => _haworthSugarCycle(mol, c));
+}
+
+/**
+ * キャンバスで裏返す環の下ごしらえ。**連結成分1つ**を渡すこと。
+ * 戻り値 { ok:true, rings, target, ids, axisY, senses } / { ok:false, reason }
+ *   reason: 'none'（ハース図として読む環が無い）／'many'（環が3つ以上）／
+ *           'link'（環2つだが橋1原子でつながっていない）／'gate'（裏返すと鏡像になる図）
+ */
+function haworthFlipPlan(mol) {
+    const cycles = haworthSugarCycles(mol);
+    if (!cycles.length) return { ok: false, reason: 'none' };
+    if (cycles.length > 2) return { ok: false, reason: 'many' };
+    let rings = cycles, ids, axisY;
+    if (cycles.length === 2) {
+        const br0 = haworthRingBridge(mol, cycles[0], cycles[1]);
+        if (!br0) return { ok: false, reason: 'link' };
+        rings = orderHaworthRings(mol, cycles, br0);
+        const bridge = haworthRingBridge(mol, rings[0], rings[1]); // A/B を入れ替えたので取り直す
+        ids = [...haworthRingSideIds(mol, rings[1])];
+        axisY = bridge.atom.y; // ⚠ 軸は橋の原子の y（重心にすると 8/8 で鏡像になる）
+    } else {
+        // 環が1つ ＝ 分子まるごとを裏返す。軸は重原子の重心（`flipHaworth` の既定と同じ式）
+        ids = mol.atoms.map(a => a.id);
+        const heavy = mol.atoms.filter(a => a.element !== 'H');
+        const list = heavy.length ? heavy : mol.atoms;
+        axisY = list.reduce((t, a) => t + a.y, 0) / list.length;
+    }
+    if (!canFlipHaworth(mol, ids)) return { ok: false, reason: 'gate' };
+    return {
+        ok: true, rings, target: rings[rings.length - 1], ids, axisY,
+        senses: rings.map(c => haworthRingSense(mol, c))
+    };
+}
+
+/* ==========================================================================
+ * ⇄ 左右に裏返す・⟳ 180°回す（DESIGN_sugar.md §1-2c の追補）
+ *
+ * ★ §1-2b 帰結3（「出してよい操作は②の上下フリップだけ」）は**剛体の座標変換に限った話**で、
+ *   狭すぎた。**「環は動かし、置換基は付け根の環炭素について上下を付け替える」描き直し**まで
+ *   許すと、意味を保つ図はちょうど4枚になる（クラインの四元群）:
+ *
+ *     元 ／ ② 上下フリップ（y 鏡映）／ ⇄ 左右フリップ（x 鏡映＋付け替え）／ ⟳ 180°回転＋付け替え
+ *
+ *   証拠は教科書自身が両方を印刷していること —— セロビオースの裏返った環は②、
+ *   **スクロース中のフルクトース環は⇄**（v1448 の登録がまさにこれ。実測でも、単独の
+ *   β-D-フルクトフラノースに `haworthTurn(..., 'leftright')` を当てた図と、スクロースの
+ *   フルクトース側は**平行移動を除いて1px も違わない**）。
+ *
+ * ⚠ **罠（v1451 の「どれが同じ分子？」）とは別の絵。** あちらは**付け替えをしない**素朴な
+ *   x 鏡映・面内180°回転 ＝ 鏡像の図（実測 0/16）。付け替えを入れると 16/16 で立体が保たれる。
+ *   ＝ 付け替えを外すのが、この2操作の否定対照そのもの。
+ *
+ * ⚠ **軸は「ハース糖の環原子の重心」**（`flipHaworth` の既定＝重原子の重心ではない）。
+ *   環原子は剛体変換だけを受け、付け替えでは動かない ＝ **この軸は操作で不変**なので
+ *   ① 図が押すたびに横へ流れない（環はその場に留まる）
+ *   ② 2回押せば**軸を覚えていなくても**1ピクセルの誤差もなく元に戻る（実測 16/16）
+ *   ＝ ⇅（`flipHaworth` の重心軸）が `_haworthFlipMemo` を要るのとは事情が違う。
+ * ========================================================================== */
+
+/**
+ * 環に属さない原子それぞれについて、ぶら下がっている環原子（＝付け根）の一覧を返す。
+ * Map(atomId → [rootId, ...])。
+ *
+ * ⚠ **二糖の橋の酸素は付け根が2つになる**（両側の環から辿り着ける）。呼ぶ側は
+ * その2つの y の平均で折り返す —— 登録4件では hostA/hostB の y は 300/300（マルトース等）と
+ * 300/290（スクロース）で、平均で折り返しても面の符号は両側とも反転し、
+ * 縦からの角度も ±25° の内側に収まる（実測。門番が最後に検算する）。
+ */
+function haworthBranchRoots(mol, ids) {
+    const inSet = ids ? (ids instanceof Set ? ids : new Set(ids)) : null;
+    const ring = _ringAtomIds(mol);
+    const roots = new Map();
+    ring.forEach(rid => {
+        if (inSet && !inSet.has(rid)) return;
+        // 付け根 rid から「環を通らずに」辿れる原子は、すべて rid にぶら下がっている
+        const seen = new Set([rid]);
+        const stack = [rid];
+        while (stack.length) {
+            const cur = stack.pop();
+            mol.getNeighbors(cur).forEach(n => {
+                const id = n.atom.id;
+                if (seen.has(id) || ring.has(id)) return;
+                if (inSet && !inSet.has(id)) return;
+                seen.add(id);
+                if (!roots.has(id)) roots.set(id, []);
+                roots.get(id).push(rid);
+                stack.push(id);
+            });
+        }
+    });
+    return roots;
+}
+
+/**
+ * ⇄ / ⟳ の下ごしらえ。**連結成分1つ**を渡すこと。
+ * 戻り値 { ok:true, ids, cycles, axis:{x,y}, roots } / { ok:false, reason }
+ *   reason は `haworthFlipPlan` のもの（'none'/'many'/'link'/'gate'）＋
+ *            'ring'（糖の環でない環が混じっている ＝ 付け替えの付け根が決まらない）
+ *
+ * ★ **門番は `haworthFlipPlan` に相乗りする** ＝ 3つの札（⇅・⇄・⟳）は必ず一緒に出入りする。
+ *   別々の門番を書くと「⇅ は出るのに ⇄ は出ない糖」が黙って生まれる。
+ */
+function haworthTurnPlan(mol) {
+    const base = haworthFlipPlan(mol);
+    if (!base.ok) return base;
+    const cycles = haworthSugarCycles(mol);
+    const ringIds = _ringAtomIds(mol);
+    const sugarRing = new Set();
+    cycles.forEach(c => c.forEach(id => sugarRing.add(id)));
+    // 糖の環でない環（ベンゼン環など）が混じると、その環は付け替えの barrier に当たって
+    // 取り残され、枝の途中で図が裂ける。**登録16件では起きない**が、起きたら断る
+    if ([...ringIds].some(id => !sugarRing.has(id))) return { ok: false, reason: 'ring' };
+    const pts = mol.atoms.filter(a => sugarRing.has(a.id));
+    if (!pts.length) return { ok: false, reason: 'none' };
+    const ids = mol.atoms.map(a => a.id);
+    return {
+        ok: true, ids, cycles,
+        axis: { x: pts.reduce((t, a) => t + a.x, 0) / pts.length,
+                y: pts.reduce((t, a) => t + a.y, 0) / pts.length },
+        roots: haworthBranchRoots(mol, ids)
+    };
+}
+
+/**
+ * ★ 環のテンプレートの**広い辺と狭い辺を入れ替える**（`haworthTurn` の③。DESIGN_sugar.md §4-10d）。
+ *
+ * ★ **なぜ要るか（ユーザーの言葉）**:
+ * > 5番の炭素の ↑ にはスペースがあるので、もともと多くの原子を付けられる。
+ * > 環を左右反転すると ↑ だった原子団が ↓ になるため、もともと原子を追加できなかった位置に潜り込む。
+ *
+ * ★ **実測: ハース環のテンプレートは上下に非対称**（環の頂点の集合が y 鏡映で自分に重なる登録は
+ *   **0/16**。x 鏡映では 13/16 で自分に重なる）。ピラノースの型は
+ *   **奥の辺（上段）が幅 110px・手前の辺（下段）が幅 60px** で、そのため頂点ごとの
+ *   「置換基を置ける余地」（真上・真下へ伸ばして環の辺に当たるまで）が食い違う:
+ *
+ *     上段 C5 / 環O … 上=∞ ／ **下=79px**   ← 76px の CH₂OH を折り返すと残り 2.4px
+ *     下段 C3 / C2  … **上=96px** ／ 下=∞    （96 ＝ 環の高さいっぱい）
+ *     中段 C4 / C1  … 上=∞ ／ 下=∞          （★ フラノースの C5 はここ ＝ だから無事だった）
+ *
+ * ⚠ **①の x 鏡映はこの非対称を動かさない**ので、②で下を向いた C5 の枝が「余地 79px」の側に入る。
+ *   ＝ **「置換基が向く側」と「余白のある側」が食い違う**。⇅（剛体の y 鏡映）が無事なのは、
+ *   広い辺も狭い辺も原子と一緒に動く ＝ 外側が外側のままだから（実測: ⇅ は 0/16 で食い込まない）。
+ *
+ * ★ **③はその食い違いを畳む** —— 段（同じ y の環原子のかたまり）を上下で対にして、
+ *   **x の並びだけを入れ替える**。原子の y も、どの段にいるかも、環のたどる順も変えないので
+ *   立体の読みに触らない（実測 16/16 で保存）。結果として
+ *   **⇄ の多角形は ⇅ の多角形と一致し・⟳ の多角形は元の多角形と一致する**（実測）
+ *   ＝ **この app がすでに印刷している2つの形しか出ない**。
+ *
+ * ⚠ **五員環では何も起きない**（段が 1/2/2 で対にならない）＝ 無事だったものを触らない。
+ * ⚠ **手描きの図では、入れ替えて多角形が凸でなくなるならその環は触らない**
+ *   （凸のまま向きが変わらなければ、環の結合ベクトルの行列式の符号は全頂点で保たれる）。
+ */
+function _haworthSwapRingRows(mol, plan) {
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    // 多角形が「凸で、たどる向きがそろっている」か（＝ 各頂点の外積の符号が全部同じ）
+    const convexSign = (cycle) => {
+        const p = cycle.map(id => byId.get(id));
+        if (p.some(a => !a)) return 0;
+        let sign = 0;
+        for (let i = 0; i < p.length; i++) {
+            const a = p[i], b = p[(i + 1) % p.length], c = p[(i + 2) % p.length];
+            const cr = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+            if (Math.abs(cr) < 1e-9) return 0;
+            const s = cr > 0 ? 1 : -1;
+            if (sign === 0) sign = s; else if (sign !== s) return 0;
+        }
+        return sign;
+    };
+    const dxOf = new Map();
+    (plan.cycles || []).forEach(cycle => {
+        const before = convexSign(cycle);
+        if (!before) return;                       // 凸でない環は触らない（手描きの図）
+        // 段（同じ y の環原子）を上から順に
+        const rows = new Map();
+        cycle.forEach(id => {
+            const a = byId.get(id);
+            const k = a.y.toFixed(6);
+            if (!rows.has(k)) rows.set(k, []);
+            rows.get(k).push(a);
+        });
+        const list = [...rows.entries()]
+            .sort((p, q) => parseFloat(p[0]) - parseFloat(q[0])).map(e => e[1]);
+        const undo = [];
+        for (let i = 0, k = list.length; i < Math.floor(k / 2); i++) {
+            const A = list[i].slice().sort((p, q) => p.x - q.x);
+            const B = list[k - 1 - i].slice().sort((p, q) => p.x - q.x);
+            if (A.length !== B.length) continue;   // 対にならない段（五員環の頂点）は触らない
+            const ax = A.map(a => a.x), bx = B.map(a => a.x);
+            A.forEach((a, j) => { undo.push([a, a.x]); a.x = bx[j]; });
+            B.forEach((a, j) => { undo.push([a, a.x]); a.x = ax[j]; });
+        }
+        if (convexSign(cycle) !== before) {        // 入れ替えて形が壊れるなら戻す
+            undo.forEach(([a, x]) => { a.x = x; });
+            return;
+        }
+        undo.forEach(([a, x]) => { dxOf.set(a.id, (dxOf.get(a.id) || 0) + a.x - x); });
+    });
+    if (!dxOf.size) return;
+    // 枝は付け根と同じだけ横へ動く（付け根が2つ ＝ 二糖の橋の O は平均）
+    const jobs = [];
+    plan.roots.forEach((rootIds, id) => {
+        const a = byId.get(id);
+        const ds = rootIds.map(r => dxOf.get(r) || 0);
+        if (a && ds.length) jobs.push({ a, dx: ds.reduce((t, v) => t + v, 0) / ds.length });
+    });
+    jobs.forEach(j => { j.a.x += j.dx; });
+}
+
+/**
+ * ★ ⇄（左右に裏返す）／⟳（180°回す）を図に当てる。
+ *
+ * `plan` は **その連結成分について作った** `haworthTurnPlan` の戻り値、
+ * `mol` は実体（キャンバスの分子。`plan.ids` の原子だけを動かす）。
+ * `kind` は `'leftright'`（x 鏡映＋付け替え）か `'halfturn'`（180°回転＋付け替え）。
+ *
+ * 面マーク（`haworthFace`）の扱いは**操作ごとに手で決めない**。動かした手ごとに素直に:
+ *   - 剛体の手で y が反転したら反転する（'halfturn' だけ）
+ *   - 付け替えで枝が上下に移ったら反転する（両方）
+ * ＝ ⇄ は正味1回反転・⟳ は正味そのまま。これが §1-2c の表の「f 反転／f 保存」と一致する。
+ *
+ * ★ **手は3つある**（③は v1461 で足した。§4-10d）:
+ *   ① 剛体（x 鏡映 or 180°回転）／② 付け替え（枝を付け根の y で縦に折り返す）／
+ *   ③ **環のテンプレートの広い辺・狭い辺を入れ替える**（`_haworthSwapRingRows`）。
+ *   ③が無いと、②で下を向いた C5 の CH₂OH が環の内側 **2.4px** まで入る（14/16 件）。
+ *   ⚠ ③は**原子の y も、どの段にいるかも、たどる順も変えない** ＝ 立体の読みには触らない。
+ *
+ * ⚠ 呼ぶ側は**当てたあとに図から立体コードを読み直し、変わっていたら巻き戻す**こと
+ *   （黙って鏡像の図を作らないための最後の関所。`game.reframeWholeHaworth`）。
+ */
+function haworthTurn(mol, plan, kind) {
+    if (!plan || !plan.ok) return false;
+    if (kind !== 'leftright' && kind !== 'halfturn') return false;
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    const moving = plan.ids.map(id => byId.get(id));
+    if (moving.some(a => !a)) return false;
+    const flipMark = (a) => { if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace; };
+    // ① 剛体の手（環もろとも）
+    moving.forEach(a => {
+        a.x = 2 * plan.axis.x - a.x;
+        if (kind === 'halfturn') { a.y = 2 * plan.axis.y - a.y; flipMark(a); }
+    });
+    // ② 付け替え（**①のあとの付け根の y** について、枝を縦に折り返す）
+    const jobs = [];
+    plan.roots.forEach((rootIds, id) => {
+        const a = byId.get(id);
+        const ys = rootIds.map(r => byId.get(r)).filter(Boolean).map(r => r.y);
+        if (a && ys.length) jobs.push({ a, ry: ys.reduce((t, v) => t + v, 0) / ys.length });
+    });
+    jobs.forEach(j => { j.a.y = 2 * j.ry - j.a.y; flipMark(j.a); });
+    // ③ ★ 環のテンプレートの広い辺・狭い辺を入れ替える（＝ 余白のある側も一緒に移す）。
+    //    ①②だけだと C5 の CH₂OH が環の内側 2.4px まで入る。詳しくは `_haworthSwapRingRows`
+    _haworthSwapRingRows(mol, plan);
+    return true;
+}
+
+/* ==========================================================================
+ * 糖の炭素番号（🔢 主鎖と番号を見る に相乗りする・ユーザー発注 2026-08-25）
+ *
+ * ★ **表は持たない。** アノマー炭素は**グラフから**決める ——
+ *   「環内の O と環外の O の両方が付く環炭素」で、それはすでに
+ *   `haworthNumberingStart` が門番として読んでいるものそのもの。
+ *   ＝ 名前（α-D-グルコース…）を引かずに番号が振れる ＝ ライブラリに無い糖でも動く。
+ *
+ * ★ **たどる向きの総当たりは要らない。** 環内 O を挟んでアノマー炭素の反対側が
+ *   いちばん大きい番号の環炭素（ピラノースなら C5・フルクトフラノースなら C5）＝
+ *   `haworthNumberingStart` の `dir` がそのまま番号の進む向き。
+ *
+ * ⚠ **アルドースかケトースかも表を引かない**: アノマー炭素に**環外の炭素**が付いていれば
+ *   ケトース（その炭素が C1・アノマーは C2）、付いていなければアルドース（アノマーが C1）。
+ * ========================================================================== */
+
+/** 環1つぶんの炭素番号（環内の O には番号を振らない）。読めなければ null */
+function _haworthRingCarbonNumbers(mol, cycle) {
+    const st = haworthNumberingStart(mol, cycle);
+    if (!st) return null;
+    const n = cycle.length;
+    const at = (i) => mol.atoms.find(a => a.id === cycle[((i % n) + n) % n]);
+    const anomer = at(st.oIndex + st.dir);
+    if (!anomer || anomer.element !== 'C') return null;
+    const inRing = new Set(cycle);
+    const exoC = (id) => mol.getNeighbors(id)
+        .filter(x => !inRing.has(x.atom.id) && x.atom.element === 'C').map(x => x.atom);
+    // ケトース（フルクトフラノース型）＝ アノマー炭素に環外の炭素が付いている
+    const branch = exoC(anomer.id);
+    const ketose = branch.length > 0;
+    if (ketose && branch.length !== 1) return null;   // アノマーに枝が2本 ＝ 想定外
+    const numbers = new Map();
+    let k = ketose ? 2 : 1;
+    let last = null;
+    for (let i = 1; i < n; i++) {                     // 環内の O（i=0）は飛ばす
+        const a = at(st.oIndex + st.dir * i);
+        if (!a || a.element !== 'C') return null;     // 環内に O が2つ ＝ 糖として読まない
+        numbers.set(a.id, k++);
+        last = a;
+    }
+    if (ketose) numbers.set(branch[0].id, 1);         // アノマーの上の -CH₂OH が C1
+    // 最後の環炭素から外へ伸びる炭素の鎖を続ける（ピラノースなら C6）
+    let cur = last, guard = 0;
+    while (cur && guard++ < 12) {
+        const next = exoC(cur.id).filter(a => !numbers.has(a.id));
+        if (next.length !== 1) break;                 // 枝分かれ・行き止まり
+        numbers.set(next[0].id, k++);
+        cur = next[0];
+    }
+    return { anomerId: anomer.id, anomerNumber: ketose ? 2 : 1, ketose, numbers };
+}
+
+/**
+ * ★ その分子のハース図の糖について、炭素番号の札を返す。
+ * 戻り値 { ok:true, labels: Map(atomId → '1' / "1′"), rings:[…], primed:bool }
+ *        / { ok:false, reason }（'none' / 'many' / 'link' / 'read'）
+ *
+ * **二糖は環ごとに番号を振り、片方に ′ を付ける**（マルトース C1–C4′ の型）。
+ * ⚠ **′ が付くのは「グリコシドを受け取った側」**（供与した側は番号そのまま）:
+ *   ① 橋を**アノマー炭素**で持っている環が1つだけなら、それが供与側 ＝ ′ 無し
+ *      （マルトース・セロビオース・ラクトース。C1 – C4′ になる）
+ *   ② 両方がアノマーなら（スクロース型）**大きい環を供与側**にする
+ *      ＝ グルコースが 1〜6・フルクトースが 1′〜6′（教科書のスクロースの図）
+ * ⚠ 環の並べ方そのものは `orderHaworthRings`（環ビューと共有）に任せる ＝
+ *   **選んだ炭素に依らず、同じ分子はいつも同じ番号になる**。
+ *   ただし A/B と ′ の有無は**同じものではない**（①では B が ′ 無し・②では A が ′ 無し）。
+ */
+function haworthCarbonNumbers(mol) {
+    const cycles = haworthSugarCycles(mol);
+    if (!cycles.length) return { ok: false, reason: 'none' };
+    if (cycles.length > 2) return { ok: false, reason: 'many' };
+    let ordered = cycles, donorIndex = 0;
+    if (cycles.length === 2) {
+        const br0 = haworthRingBridge(mol, cycles[0], cycles[1]);
+        if (!br0) return { ok: false, reason: 'link' };
+        ordered = orderHaworthRings(mol, cycles, br0);
+        const bridge = haworthRingBridge(mol, ordered[0], ordered[1]);
+        if (!bridge) return { ok: false, reason: 'link' };
+        const anomericHost = (cycle, hostId) => {
+            const o = cycle.find(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                return a && a.element === 'O';
+            });
+            return o !== undefined && mol.getNeighbors(o).some(n => n.atom.id === hostId);
+        };
+        const a0 = anomericHost(ordered[0], bridge.hostA.id);
+        const a1 = anomericHost(ordered[1], bridge.hostB.id);
+        // ① 片方だけがアノマーで橋を持つ ＝ そちらが供与側（′ 無し）
+        if (a0 !== a1) donorIndex = a0 ? 0 : 1;
+        // ② 両方（スクロース型）＝ 大きい環を供与側にする（＝ 教科書のグルコース側）
+        else donorIndex = ordered[0].length >= ordered[1].length ? 0 : 1;
+    }
+    const rings = [];
+    const labels = new Map();
+    for (let i = 0; i < ordered.length; i++) {
+        const r = _haworthRingCarbonNumbers(mol, ordered[i]);
+        if (!r) return { ok: false, reason: 'read' };
+        const prime = ordered.length === 2 && i !== donorIndex;
+        r.numbers.forEach((v, id) => labels.set(id, prime ? `${v}′` : String(v)));
+        rings.push({ cycle: ordered[i], anomerId: r.anomerId, anomerNumber: r.anomerNumber,
+                     ketose: r.ketose, prime, size: r.numbers.size });
+    }
+    return { ok: true, labels, rings, primed: ordered.length === 2 };
+}
+
+/** 動かす側と動かさない側の、結合していない重原子どうしの最短距離 */
+function _haworthClearance(mol, idSet) {
+    const inn = mol.atoms.filter(a => a.element !== 'H' && idSet.has(a.id));
+    const out = mol.atoms.filter(a => a.element !== 'H' && !idSet.has(a.id));
+    if (!inn.length || !out.length) return Infinity;
+    let best = Infinity;
+    inn.forEach(a => out.forEach(b => {
+        if (mol.getBond(a.id, b.id)) return; // つながっている相手は近くて当たり前
+        best = Math.min(best, Math.hypot(a.x - b.x, a.y - b.y));
+    }));
+    return best;
+}
+
+/** 動かす側と動かさない側をまたぐ結合（＝グリコシド結合）のいちばん長いもの */
+function _haworthBridgeSpan(mol, idSet) {
+    let best = 0;
+    mol.bonds.forEach(b => {
+        const a = mol.atoms.find(x => x.id === b.atomId1);
+        const c = mol.atoms.find(x => x.id === b.atomId2);
+        if (!a || !c || idSet.has(a.id) === idSet.has(c.id)) return;
+        best = Math.max(best, Math.hypot(a.x - c.x, a.y - c.y));
+    });
+    return best;
+}
+
+/**
+ * ★ キャンバスの図で環を裏返す（段4-b の本体）。**連結成分1つ**を渡すこと。
+ *
+ * `opt.undo`（前回の戻り値の `{dx, dy}`）を渡すと**厳密な逆操作**になる
+ * （まず (−dx, −dy) 戻してから、同じ軸 `axisY` で反射する。
+ *  橋の原子は動かないので軸はいつも同じ ＝ 1ピクセルの誤差もなく元の図に戻る。実測 16/16）。
+ * ⚠ 逆操作を探索でやり直しても**元には戻らない** —— 探索は「相手から離れる側」しか見ないので、
+ *   2回目に打ち消す向きを選べない（実測: 二糖8件中6件で図がずれたまま）。
+ *
+ * 置き直しの選び方（**動かさずに済むなら動かさない**）:
+ *   ① ずらさずに済む（重ならない）ならそれを採る ＝ 図が飛ばない
+ *   ② 駄目なら (dx, dy) を総当たりし、**橋の結合がいちばん短くなる**置き方を採る
+ *      （変位の小ささではなく橋の長さで選ぶ ＝ グリコシド結合が伸びきった絵にならない）
+ *   ③ ★ どの候補も `_haworthCodes` が変わらないことを確かめてから採る（変わるものは1つも採らない）
+ *
+ * 戻り値 { ok:true, ids, axisY, dx, dy, clearance, span, senses } / { ok:false, reason }
+ */
+function haworthCanvasFlip(mol, opt) {
+    opt = opt || {};
+    const plan = haworthFlipPlan(mol);
+    if (!plan.ok) return plan;
+    const { ids, axisY, rings } = plan;
+    const idSet = new Set(ids);
+    const before = _haworthCodes(mol);
+    const snap = mol.atoms.map(a => ({ a, x: a.x, y: a.y, f: a.haworthFace }));
+    const rollback = () => snap.forEach(s => { s.a.x = s.x; s.a.y = s.y; s.a.haworthFace = s.f; });
+    const done = (dx, dy) => ({
+        ok: true, ids, axisY, dx, dy,
+        clearance: _haworthClearance(mol, idSet),
+        span: _haworthBridgeSpan(mol, idSet),
+        senses: rings.map(c => haworthRingSense(mol, c))
+    });
+    const moving = mol.atoms.filter(a => idSet.has(a.id));
+    // ⚠ **裏返す前**の最短距離を控える（離れているとみなす目安に使う）。
+    //   裏返したあとに測ると「もう重なっている値」を目安にしてしまい、①が必ず通る
+    const clearance0 = _haworthClearance(mol, idSet);
+
+    // --- 逆操作: 前回のずらしを戻してから、同じ軸で反射する ---
+    if (opt.undo) {
+        moving.forEach(a => { a.x -= opt.undo.dx || 0; a.y -= opt.undo.dy || 0; });
+        flipHaworth(mol, ids, axisY);
+        if (_haworthCodes(mol) !== before) { rollback(); return { ok: false, reason: 'stereo' }; }
+        return done(-(opt.undo.dx || 0), -(opt.undo.dy || 0));
+    }
+
+    flipHaworth(mol, ids, axisY);
+    if (rings.length === 1) {
+        // 分子まるごと ＝ 相手がいないので、ずらす必要も重なりも無い
+        if (_haworthCodes(mol) !== before) { rollback(); return { ok: false, reason: 'stereo' }; }
+        return done(0, 0);
+    }
+
+    // 刻みは環結合の半分（＝ この作図の置換基の結合長・図の升目）
+    let len = 0, cnt = 0;
+    rings.forEach(cyc => {
+        for (let i = 0; i < cyc.length; i++) {
+            const a = mol.atoms.find(x => x.id === cyc[i]);
+            const b = mol.atoms.find(x => x.id === cyc[(i + 1) % cyc.length]);
+            len += Math.hypot(a.x - b.x, a.y - b.y); cnt++;
+        }
+    });
+    const ringLen = cnt ? len / cnt : 76;
+    const unit = ringLen / 2;   // ＝ この作図の置換基の結合長（図の升目）
+    // 「離れている」とみなす距離 ＝ **結合1本ぶん**。⚠ 元の作図より厳しくしない
+    //   （元が詰まった図なら同じくらい詰まっていれば十分。固定値にすると解の無い図が出る）
+    const gap = Math.min(0.9 * unit, clearance0);
+
+    // ① ずらさずに済むならそれを採る。⚠ **図が飛ばないのがいちばん読みやすい**し、
+    //    橋の結合の長さも元のまま（軸が橋なので反転しても長さは変わらない）
+    if (_haworthClearance(mol, idSet) >= gap && _haworthCodes(mol) === before) return done(0, 0);
+
+    // ② 総当たり。⚠ 立体の検査は高い（1回 40ms 前後）ので、**先に安い条件で絞って
+    //    並べ替えてから**当て、当てる回数も打ち切る。橋の長さの小さい順に見るのは、
+    //    グリコシド結合が伸びきった絵（実測 335px ＝ 平常の4倍）を避けるため
+    const cands = [];
+    for (let ky = -6; ky <= 6; ky++) {
+        for (let kx = -6; kx <= 6; kx++) {
+            if (!kx && !ky) continue;
+            const dx = kx * unit, dy = ky * unit;
+            moving.forEach(a => { a.x += dx; a.y += dy; });
+            const cl = _haworthClearance(mol, idSet);
+            const span = _haworthBridgeSpan(mol, idSet);
+            moving.forEach(a => { a.x -= dx; a.y -= dy; });
+            if (cl >= gap) cands.push({ dx, dy, span, d: Math.hypot(dx, dy) });
+        }
+    }
+    cands.sort((a, b) => (a.span - b.span) || (a.d - b.d));
+    for (const c of cands.slice(0, 10)) {
+        moving.forEach(a => { a.x += c.dx; a.y += c.dy; });
+        // ★ ここが3手目。立体が変わる置き方は1つも採らない ＝ 黙って鏡像に化けない
+        if (_haworthCodes(mol) === before) return done(c.dx, c.dy);
+        moving.forEach(a => { a.x -= c.dx; a.y -= c.dy; });
+    }
+    // ③ 重なりが解けなければ**ずらさない**ところへ戻す。⚠ ずらさない置き方（軸＝橋の y）は
+    //    二糖4件×2環＝8/8 で立体が保たれることが実測済みなので、ここは安全な逃げ場になる
+    if (_haworthCodes(mol) === before) return done(0, 0);
+    rollback();
+    return { ok: false, reason: 'stereo' };
 }
 
 /**
@@ -4409,6 +5334,29 @@ if (typeof window !== 'undefined') {
     window.cipRank = cipRank;
     window.assignRSDescriptor = assignRSDescriptor;
     window.readRingParityFromHaworth = readRingParityFromHaworth;
+    // ハース図を「見かけだけ」置き直す2つの操作（上下反転・独楽回転）。鏡映は入れない
+    window.canFlipHaworth = canFlipHaworth;
+    window.flipHaworth = flipHaworth;
+    // 部分反転（片方の環だけを裏返す）の呼び方。⚠ 軸は haworthRingBridge の橋の原子の y
+    window.haworthRingSideIds = haworthRingSideIds;
+    window.haworthRingBridge = haworthRingBridge;
+    window.haworthSpinCycles = haworthSpinCycles;
+    window.canSpinHaworthRing = canSpinHaworthRing;
+    window.spinHaworthRing = spinHaworthRing;
+    // キャンバスの図で環を裏返す（段4-b）。⚠ 環の並べ方は環ビューと共有する
+    window.haworthNumberingStart = haworthNumberingStart;
+    window.haworthRingSense = haworthRingSense;
+    window.orderHaworthRings = orderHaworthRings;
+    // ハース図として読む糖の環（名前を言い切ってよいかの門番。`lookupCompoundName` が使う）
+    window.haworthSugarCycles = haworthSugarCycles;
+    window.haworthFlipPlan = haworthFlipPlan;
+    window.haworthCanvasFlip = haworthCanvasFlip;
+    // ⇄ 左右に裏返す・⟳ 180°回す（§1-2c の追補。**置換基の付け替え**を伴う描き直し）
+    window.haworthBranchRoots = haworthBranchRoots;
+    window.haworthTurnPlan = haworthTurnPlan;
+    window.haworthTurn = haworthTurn;
+    // 糖の炭素番号（🔢 に相乗り）。⚠ 表は持たず、アノマー炭素はグラフから決める
+    window.haworthCarbonNumbers = haworthCarbonNumbers;
     window.tetrahedralDirs = tetrahedralDirs;
     window.buildMolecule3D = buildMolecule3D;
     // C=C の基準置換基（テスト・検証ツールが幾何を照合するのに使う）
@@ -4416,6 +5364,8 @@ if (typeof window !== 'undefined') {
     window.ringAtomIds = _ringAtomIds;
     window.stereoUnitsOf = stereoUnitsOf;
     window.countStereoisomers = countStereoisomers;
+    window.stereoFoldReason = stereoFoldReason;
+    window.stereoBondKey = stereoBondKey;
     window.parityFromDirs = parityFromDirs;
     window.rootedFragmentCode = rootedFragmentCode;
     window.branchShells = branchShells;

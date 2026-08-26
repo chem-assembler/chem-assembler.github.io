@@ -28,6 +28,7 @@ const msgEl        = document.getElementById("msg");
 const stepHalvesEl = document.getElementById("stepHalves");
 const halfSheetEl  = document.getElementById("halfSheet");
 const eTallyEl     = document.getElementById("eTally");
+const sumBarEl     = document.getElementById("sumBar");
 const stepSumEl    = document.getElementById("stepSum");
 const calcSheetEl  = document.getElementById("calcSheet");
 const clearEl      = document.getElementById("clearBanner");
@@ -69,7 +70,11 @@ let stageIdx = 0;
 let guess = null;          // 予想（溶けると宣言した金属）。null なら未宣言
 let guessTries = 0;        // 予想した回数（クリア条件は「的中、または2回目で修正」）
 let guessOk = false;       // 予想が当たっているか
-let mult = [1, 1];         // [負極の酸化 ×a, 正極の還元 ×b]
+/* [負極の酸化 ×a, 正極の還元 ×b]。**null は「まだ置いていない」**（L・2026-08-19）。
+   1,1 から始めるとダニエル電池は**最初から正解の状態で始まってしまい**、
+   何もしていないのに「そろった」と言われる。自分で 1・1 と置いてはじめて
+   「そろえる必要がなかった」が答えになる。 */
+let mult = [null, null];
 let picked = [null, null]; // b2（電極を選ぶ課題）で選んだ2枚。b1 では使わない
 /* 「どの金属が、誰と組んだときにどちらの役をやったか」の記録（b2 の当たり）。
    ここから「同じ Cu でも相手で役が変わる」が**遊んだ結果として**出てくる。
@@ -80,10 +85,18 @@ let roleLog = {};
    選んだ2枚を metals として差し込んだ形にして model.js に渡す
    （model 側は「metals を持つステージ」しか知らなくてよい）。 */
 function rawStage() { return CELL_STAGES[stageIdx]; }
+/* 板を左右どちらに立てるか（M）。1回ぶんごとに resetRound がふり直す。
+   ⚠ **b1 のように板が決まっているステージだけ**。b2 は生徒が「左の板／右の板」を
+   自分で選ぶので、選んだ側を勝手に入れ替えたら操作が嘘になる */
+let flipped = false;
 function stage() {
   const st = rawStage();
-  return st.choose ? Object.assign({}, st, { metals: [picked[0], picked[1]] }) : st;
+  if (st.choose) return Object.assign({}, st, { metals: [picked[0], picked[1]] });
+  if (st.metals) return Object.assign({}, st, { metals: arrangeElectrodes(st.metals, flipped) });
+  return st;
 }
+/* いま左右をふり直してよいステージか（板が固定の電池だけ） */
+function shufflesPlates() { return rawStage().kind === "battery" && !rawStage().choose; }
 /* いまのモード。"battery"（電池）か "electrolysis"（電気分解）。
    **この2つの違いはデータの kind だけ**で、半反応式の扱いは同じ（§3-3）。 */
 function modeKind() { return rawStage().kind; }
@@ -132,6 +145,41 @@ function txt(s, attrs, parent) {
    （役の札・e⁻ の矢印・電流の矢印・イオンの動き）。全部そろって答えなので。 */
 
 let particleLayer = null;   // 粒（e⁻・イオン）を載せる層。第3歩のアニメで使う
+
+/* 役の札を置く高さ（容器の下）。電池・電気分解で同じ位置にそろえる ＝
+   「起きていることは同じで、名前だけが違う」を、札の場所でも言う */
+const ROLE_Y = 318;
+
+/* ================================================================================
+   役の札（J・2026-08-19 の実機指摘「正極・負極を表示」）
+
+   **いつ出すかは変えていない。** 電池では予想を宣言するまで出さない（§2-2 の
+   「当てさせる」設計・すぐ上のコメントのとおり）。電気分解でははじめから出す
+   （当てる要素が無いので伏せる意味がない）。直したのは**出したときの見え方**。
+
+   v181 の実測（375px 幅・iframe）:
+     ・図の役の札は font-size 16 の素の文字。viewBox 480 が 296px に縮むので
+       実効 **9.9px**。図のいちばん下にあって、まず読めない
+     ・段2 の 負極(−)・酸化 の札は筆算の右端（.cNote）にあり、
+       枠の右端が 328px なのに札の右端が **440px** ＝ 112px はみ出していて、
+       横に送らないと見えない。**どちらの式が負極かが画面から消えていた**
+   前者はこの roleBadge（帯つき・20px）で、後者は buildHalfSheet の
+   見出し行（.halfCap）で直す。 */
+function roleBadge(cx, y, label, color, sub) {
+  const g = mk("g", { class: "roleBadge" });
+  const t = txt(label, { x: cx, y: y + 7, "text-anchor": "middle", "font-size": 24,
+    "font-weight": "bold", fill: "#fff" }, g);
+  let w = 0;
+  try { w = t.getComputedTextLength(); } catch (e) { w = 0; }
+  if (!w) w = label.length * 15;     // まだ描かれていない環境での控えの見積もり
+  // 帯は字より**あとに**作ると字を隠すので、作ってから字を末尾へ移して重ね順を直す
+  mk("rect", { x: cx - w / 2 - 13, y: y - 18, width: w + 26, height: 33, rx: 16,
+    fill: color, class: "roleBadgeBg" }, g);
+  g.appendChild(t);
+  if (sub) txt(sub, { x: cx, y: y + 31, "text-anchor": "middle", "font-size": 14,
+    fill: "#6d7a86" }, g);
+  return g;
+}
 
 /* モードで図が変わる。電池は2槽＋豆電球、電気分解は1槽＋電源。
    共通なのは「導線・矢印2本・粒の層」だけで、そこは同じ部品を呼ぶ。 */
@@ -214,17 +262,18 @@ function drawBatteryCell() {
     });
   });
 
-  // 役の札。**予想するまで出さない**（これが答え）
+  // 役の札。**予想するまで出さない**（これが答え）。出したあとは大きく出す（J）
   [0, 1].forEach((i) => {
     const m = ms[i];
-    const y = CELL.glass.y + CELL.glass.h + 22;
+    const y = ROLE_Y;
     if (!revealed || !p.neg) {
       txt("？", { x: plateCX(i), y, "text-anchor": "middle", "font-size": 18, fill: "#9aa4ae" });
       return;
     }
     const isNeg = m === p.neg;
-    txt(isNeg ? "(−) 負極" : "(+) 正極", { x: plateCX(i), y, "text-anchor": "middle",
-      "font-size": 16, "font-weight": "bold", fill: isNeg ? "#3c7ac0" : "#c0603c" });
+    roleBadge(plateCX(i), y, isNeg ? "(−) 負極" : "(+) 正極",
+      isNeg ? "#3c7ac0" : "#c0603c",
+      isNeg ? "酸化（e⁻ を出す）" : "還元（e⁻ を受け取る）");
   });
 
   /* 導線の上の矢印。**e⁻ の向きと電流の向きは逆**で、ここが電池でいちばん誤解されるので
@@ -294,16 +343,10 @@ function drawElectrolysisCell() {
      (+) 側が陽極（左）につながる ＝ 陽極から e⁻ が電源へ吸い出される。 */
   drawPowerSupply(CELL.lamp.x, CELL.wireY);
 
-  // 役の札（電気分解ははじめから出す。予想する要素が無いので隠す意味がない）
-  const y = CELL.glass.y + CELL.glass.h + 22;
-  txt("陽極 (+側)", { x: plateCX(0), y, "text-anchor": "middle",
-    "font-size": 16, "font-weight": "bold", fill: "#c0603c" });
-  txt("陰極 (−側)", { x: plateCX(1), y, "text-anchor": "middle",
-    "font-size": 16, "font-weight": "bold", fill: "#3c7ac0" });
-  txt("酸化（e⁻ を出す）", { x: plateCX(0), y: y + 17, "text-anchor": "middle",
-    "font-size": 12, fill: "#8a7f6a" });
-  txt("還元（e⁻ を受け取る）", { x: plateCX(1), y: y + 17, "text-anchor": "middle",
-    "font-size": 12, fill: "#8a7f6a" });
+  /* 役の札（電気分解ははじめから出す。予想する要素が無いので隠す意味がない）。
+     電池とまったく同じ帯・同じ高さで出す ＝ 名前だけが違うことを見た目で言う（J） */
+  roleBadge(plateCX(0), ROLE_Y, "陽極 (+側)", "#c0603c", "酸化（e⁻ を出す）");
+  roleBadge(plateCX(1), ROLE_Y, "陰極 (−側)", "#3c7ac0", "還元（e⁻ を受け取る）");
 
   // 矢じり（defs）— 電池側と同じ id を使う
   const defs = mk("defs", {});
@@ -461,6 +504,9 @@ function flash(x, y, color) {
 function play() {
   const p = pair();
   if (guess === null) return;
+  // 倍率が「？」のままなら盤面を並べようがない（L）。釦は押せない見た目にしてあるが、
+  // フック（BatteryEq.play）から呼ばれる道もあるのでここでも止める
+  if (ready() && !multSet()) return;
   /* 同じ金属を2枚選んだとき。**電池にならない**ことを、ごまかさずそのまま言う。
      e⁻ を1個も出さないので、粒も動かないし豆電球も点かない（§2-1「流れないことも発見のうち」）。
      ここで「イオン化傾向が同じだから」と言わないのは、**同じ金属なら傾向を比べる相手が
@@ -486,6 +532,7 @@ function play() {
 /* 電気分解の再生。予想の段が無いので、押せばすぐ動く。
    **e⁻ が動く理由は電源**（イオン化傾向ではない）ことを、最初の1行で言い切る。 */
 function playElyz() {
+  if (!multSet()) return;   // L: 倍率を置くまでは動かさない（電池と同じ約束）
   layoutRun();
   phase = "running";
   setMsg("電源を入れた。電源が e⁻ を押し出すので、陽極で酸化・陰極で還元が起きる。" +
@@ -503,12 +550,17 @@ function layoutRun() {
   cleared = false;
   clearEl.hidden = true;
   gasUp = 0;
-  revealStep(stepSumEl, false);
+  /* 自分で足し合わせた段3は、盤面を並べ直しても閉じない（K）。
+     「足す → つないで確かめる」の行き来で消えると、作った式を見ながら見比べられない。
+     倍率を変えたときだけは onMultChange が sumOpened を倒すので、ちゃんと閉じる */
+  revealStep(stepSumEl, sumOpened);
   if (!ready()) return;
   /* 電池では**予想を宣言するまで粒を置かない**。溶ける原子は負極の板にしか並ばないので、
      並べた時点で「どちらが溶けるか」を先に答えてしまう。
      電気分解には予想が無い（どちらの極で何が起きるかは電源が決める）ので、はじめから並べる。 */
   if (!isElyz() && guess === null) { refreshHUD(); return; }
+  // 倍率を置いていなければ、何単位ならべるか決まらない（L）
+  if (!multSet()) { refreshHUD(); return; }
   const n = oxIdx(), q = redIdx();
   const a = mult[0], b = mult[1];
   /* 酸化側に、1単位ぶんの出発種を a 単位ならべる。
@@ -667,8 +719,11 @@ function finish() {
     setMsg(`ぴったり。負極の ${SPECIES[pair().neg].disp} が溶けて e⁻ を出し、` +
       `その e⁻ が導線を通って正極で ${SPECIES[pair().pos].disp} になった。余りも待ちも無い。`, "ok");
   }
+  // 自分で足していなければ、クリアの勢いで足し合わせも開いて見せる（K の釦と同じ中身）
+  sumOpened = true;
   buildSumSheet();
   revealStep(stepSumEl, true);
+  updateSumBar();
   showClear();
 }
 
@@ -858,6 +913,7 @@ function predict(metal) {
   if (p.neg) recordRoles(p.neg, p.pos);
   drawCell();
   layoutRun();       // 宣言できたので、盤面に原子と待ちイオンを並べる
+  buildSumBar();     // 段2が現れるので、足し合わせの釦もここで作り直す
   refreshSteps();
   renderDiscovery();
   updateToolbar();   // 宣言したので「▶ つないでみる」が押せるようになる
@@ -1020,13 +1076,22 @@ function buildHalfRow(o, hr, idx, tag, cls) {
   down.textContent = "−";
   down.setAttribute("aria-label", tag + "の倍率を減らす");
   const num = document.createElement("span");
-  num.className = "coeff";
-  num.textContent = String(mult[idx]);
+  /* まだ置いていない倍率は「？」。数字を出さないのが肝で、1 を出しておくと
+     「1 と置いた」ことになってしまう（L） */
+  num.className = "coeff" + (mult[idx] === null ? " unset" : "");
+  num.textContent = mult[idx] === null ? "？" : String(mult[idx]);
   const up = document.createElement("button");
   up.textContent = "＋";
   up.setAttribute("aria-label", tag + "の倍率を増やす");
-  down.onclick = () => { if (mult[idx] > 1) { mult[idx]--; onMultChange(); } };
-  up.onclick = () => { if (mult[idx] < 9) { mult[idx]++; onMultChange(); } };
+  // 「？」からはどちらの釦を押しても 1 が置かれる（増やすも減らすも、まず 1 から）
+  down.onclick = () => {
+    if (mult[idx] === null) { mult[idx] = 1; onMultChange(); }
+    else if (mult[idx] > 1) { mult[idx]--; onMultChange(); }
+  };
+  up.onclick = () => {
+    if (mult[idx] === null) { mult[idx] = 1; onMultChange(); }
+    else if (mult[idx] < 9) { mult[idx]++; onMultChange(); }
+  };
   const stepper = document.createElement("span");
   stepper.className = "stepper";
   stepper.append(down, num, up);
@@ -1039,46 +1104,165 @@ function buildHalfRow(o, hr, idx, tag, cls) {
   o.left.textContent = termsText(hr.left);
   o.right.textContent = termsText(hr.right);
   o.arrow.textContent = "→";
+  // 役の札は行の右端ではなく、行の**上の見出し**（halfCaption）へ移した（J）。
+  // 右端に置くと 375px では横に送らないと見えなかった（実測 112px はみ出し）
   o.note.innerHTML = "";
-  const kind = document.createElement("span");
-  kind.className = "kindTag " + cls;
-  kind.textContent = tag;
-  o.note.append(kind);
+}
+
+/* 半反応式の行の上に敷く見出し。**筆算の幅ではなく画面の幅**に収まるよう
+   .cSpan（grid-column 1/-1・width 0＋min-width 100%）で行いっぱいに広げる。
+   これで筆算が横に伸びても、どちらが負極(−)／正極(+) かは常に左端で読める。 */
+function halfCaption(id, tag, cls, why) {
+  const cap = document.createElement("div");
+  cap.className = "cSpan halfCap";
+  cap.id = id;
+  const k = document.createElement("span");
+  k.className = "kindTag " + cls;
+  k.textContent = tag;
+  const w = document.createElement("span");
+  w.className = "halfWhy";
+  w.textContent = why;
+  cap.append(k, w);
+  halfSheetEl.appendChild(cap);
 }
 
 const SHEET = {};
 function buildHalfSheet() {
   halfSheetEl.innerHTML = "";
-  SHEET.neg = sheetRow(halfSheetEl, "halfNeg", "halfRow");
-  SHEET.pos = sheetRow(halfSheetEl, "halfPos", "halfRow");
-  if (!ready()) return;
+  if (!ready()) {
+    SHEET.neg = sheetRow(halfSheetEl, "halfNeg", "halfRow");
+    SHEET.pos = sheetRow(halfSheetEl, "halfPos", "halfRow");
+    return;
+  }
   /* 酸化（e⁻ を出す）／還元（e⁻ を受け取る）。**呼び名だけ**モードで差し替える:
      電池は 負極(−)/正極(+)、電気分解は 陽極/陰極（設計 §3-3）。
      中身が同じで名前が違うことを、同じ行の同じ位置で見せるのが狙い。 */
   const T = terms();
+  halfCaption("halfNegCap", T.oxTag, "ox", "この極で e⁻ を出す");
+  SHEET.neg = sheetRow(halfSheetEl, "halfNeg", "halfRow");
   buildHalfRow(SHEET.neg, oxHR(), 0, T.oxTag, "ox");
+  halfCaption("halfPosCap", T.redTag, "red", "この極が e⁻ を受け取る");
+  SHEET.pos = sheetRow(halfSheetEl, "halfPos", "halfRow");
   buildHalfRow(SHEET.pos, redHR(), 1, T.redTag, "red");
+}
+
+/* いま両極の e⁻ の数がそろっているか（＝縦に足して e⁻ が消せるか）。
+   **判定は個数だけ**。model.js の electronsOf を使い、化学はここに持たない。 */
+function eBalance() {
+  if (!ready() || !multSet()) return null;
+  const give = electronsOf(oxHR()) * mult[0];
+  const take = electronsOf(redHR()) * mult[1];
+  return { give, take, ok: give === take };
+}
+
+/* 両極の倍率を自分で置いたか（L）。片方でも「？」なら、まだ何も決めていない */
+function multSet() { return mult[0] !== null && mult[1] !== null; }
+
+/* 1単位あたりの e⁻ が両極で同じ回か（＝倍率をそろえる必要がない回）。
+   ダニエル電池がこれ（Zn は 2e⁻ を出し、Cu²⁺ は 2e⁻ を受け取る）。
+   ⚠ **黙って正解にせず、「そろえる必要がない」と言葉にする。**
+   倍率が要る回（Zn×Ag は 1:2、水の電気分解は 1:2）と並べてはじめて、
+   「合わせる必要がない」も答えの1つだと分かる。 */
+function evenFromStart() {
+  return ready() && electronsOf(oxHR()) === electronsOf(redHR());
 }
 
 function updateETally() {
   if (!ready()) { eTallyEl.textContent = ""; return; }
-  const a = mult[0], b = mult[1];
   const T = terms();
   const givePer = electronsOf(oxHR()), takePer = electronsOf(redHR());
-  const give = givePer * a, take = takePer * b;
-  const ok = give === take;
+  /* 倍率をまだ置いていないあいだは、数を勝手に出さない（L）。
+     ここで「1×2＝2個」と書いてしまうと、置いていない 1 を置いたことにしてしまう */
+  if (!multSet()) {
+    eTallyEl.innerHTML =
+      `${T.ox}が1単位で出す e⁻: <strong>${givePer}個</strong>　／　` +
+      `${T.red}が1単位で受け取る e⁻: <strong>${takePer}個</strong>　` +
+      `<span class="ngcell">倍率（×の数字）がまだ「？」</span>` +
+      `<span class="tallyNote" id="tallyNote">両方の ×（＋ か −）を押して、自分で数を決めよう。` +
+      `そろえる必要がない回もある。</span>`;
+    return;
+  }
+  const a = mult[0], b = mult[1];
+  const bal = eBalance();
+  const even = bal.ok && a === 1 && b === 1 && evenFromStart();
   eTallyEl.innerHTML =
-    `${T.ox}が出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
-    `${T.red}が受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
-    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>`;
+    `${T.ox}が出す e⁻: ${givePer}×${a} ＝ <strong>${bal.give}個</strong>　／　` +
+    `${T.red}が受け取る e⁻: ${takePer}×${b} ＝ <strong>${bal.take}個</strong> ` +
+    `<span class="${bal.ok ? "okcell" : "ngcell"}">${bal.ok ? "そろった（足せる）" : "そろっていない"}</span>` +
+    (even
+      ? `<span class="tallyNote" id="tallyNote">この回は<strong>そろっている</strong>` +
+        `——両極とも1単位で e⁻ が ${givePer}個ずつなので、<strong>倍率をそろえる必要がない</strong>。` +
+        `×1・×1 のままが答え。（倍率が要る回もある）</span>`
+      : "");
+}
+
+/* ================================================================================
+   K（2026-08-18 実機指摘）「両極の反応式を足し合わせて全体のイオン反応式をつくる」
+
+   v181 まで、足し合わせ（段3）は**アニメを最後まで走らせてクリアしたときだけ**
+   ひとりでに現れていた。つまり「足し合わせる」は生徒の操作ではなく、ごほうびの表示
+   だった。ここで釦にして、**自分で足す**操作に変える。
+
+   ⚠ **化学は増やさない。** 足し合わせは model.js の combineHalves、
+   数の突き合わせは electronsOf / checkRedoxMultipliers に任せる
+   （酸化還元モードと同じ関数。電池用の計算をこのファイルに持たない）。
+   ⚠ **押しても何も起きない釦を作らない**（I と同じ約束）。e⁻ がそろうまでは
+   押せない見た目にし、「なぜ押せないか・どうすれば押せるか」を隣に書く。 */
+let sumOpened = false;
+
+function buildSumBar() {
+  sumBarEl.innerHTML = "";
+  /* 段2（半反応式）が出ていないうちは釦も作らない。refreshSteps と同じ条件にそろえる
+     ——「隠れた段の中に押せる釦がある」状態を DOM にも残さないため */
+  if (!ready() || !(isElyz() || guess !== null)) return;
+  const btn = document.createElement("button");
+  btn.id = "sumBtn";
+  btn.className = "react";
+  btn.textContent = "＝ 足し合わせる";
+  btn.onclick = () => {
+    if (!eBalance().ok) return;
+    sumOpened = true;
+    buildSumSheet();
+    revealStep(stepSumEl, true);
+    updateSumBar();
+    stepSumEl.scrollIntoView({ block: "nearest" });
+  };
+  const why = document.createElement("span");
+  why.className = "sumWhy";
+  why.id = "sumWhy";
+  sumBarEl.append(btn, why);
+  updateSumBar();
+}
+
+function updateSumBar() {
+  const btn = document.getElementById("sumBtn");
+  if (!btn) return;
+  const bal = eBalance();
+  btn.disabled = !bal || !bal.ok;
+  const why = document.getElementById("sumWhy");
+  if (!bal) {
+    btn.title = "";
+    if (why) why.textContent = multSet() ? "" : "先に段2で両極の倍率（×の数字）を決めよう。";
+    return;
+  }
+  const msg = bal.ok
+    ? (sumOpened ? "両極の式を縦に足して e⁻ を消した。下の段3を見よう。"
+      : "e⁻ の数がそろった。縦に足すと e⁻ が消えて、全体のイオン反応式になる。")
+    : `e⁻ が ${bal.give}個 と ${bal.take}個 でそろっていない。` +
+      "そろっていない式は足せない（e⁻ が残ってしまう）。×の数字を直そう。";
+  btn.title = bal.ok ? "" : msg;
+  if (why) why.textContent = msg;
 }
 
 function onMultChange() {
   buildHalfSheet();
   updateETally();
   // 倍率が変われば盤面の並びも足し合わせも変わるので、白紙に戻す
+  sumOpened = false;
   layoutRun();
+  buildSumBar();
   refreshSteps();
+  updateToolbar();   // L: 倍率を置いた／消したで「つないでみる」の可否が変わる
   setMsg("倍率を変えた。「" + (isElyz() ? "▶ 電源を入れる" : "▶ つないでみる") +
     "」で e⁻ の数が合うか確かめよう。");
 }
@@ -1114,19 +1298,45 @@ function buildToolbar() {
   reset.textContent = "↺ やり直す";
   // 板の組み合わせは残す（相手を変えて比べる遊びを切らないため）。板を外すのはスロットのタップ
   reset.onclick = () => resetRound();
-  toolbarEl.append(playBtn, reset);
+  /* 「押せない理由」を画面に出す1行。**title 属性だけでは足りない**
+     （タッチ端末には hover が無いので一生読まれない）。押せない釦を置くなら、
+     押せないと分かる見た目（style.css の #toolbar button:disabled）と、
+     次に何をすればよいかの文の2つを必ず添える。 */
+  const hint = document.createElement("div");
+  hint.className = "toolbarHint";
+  hint.id = "toolbarHint";
+  hint.hidden = true;
+  toolbarEl.append(playBtn, reset, hint);
   updateToolbar();
+}
+
+/* 再生できない理由（順序どおりに1つだけ返す）。null なら押せる。
+   **画面と title と検査の3つがここ1か所から出る**ので、食い違いようがない。 */
+function playBlockReason() {
+  if (!isElyz()) {                   // 電気分解には予想の段が無い（板も選ばせない）
+    const ms = metalsOf();
+    if (!ms[0] && !ms[1]) return "まず板を2枚選ぼう。上の金属を押すと板が入る。";
+    if (!chosenBoth()) return "あと1枚。" + SPECIES[ms[0] || ms[1]].disp + " と組ませる相手を選ぼう。";
+    if (guess === null) return "溶けると思う板をタップして予想しよう。予想してから「▶ つないでみる」。";
+  }
+  /* 倍率が「？」のままでは、盤面に何単位ならべるかが決まらない（L）。
+     ここで止めるのは意地悪ではなく、**自分で数を決めてから確かめる**順にするため。
+     ready() でないとき（同じ金属2枚など）は式が無いので、この条件は課さない */
+  if (ready() && !multSet()) return "段2で両極の倍率（×の数字）を決めよう。＋ か − を押すと「？」に 1 が入る。";
+  return null;
 }
 
 function updateToolbar() {
   const btn = document.getElementById("playBtn");
   if (!btn) return;
-  // 電気分解には予想の段が無いので、はじめから押せる
-  if (isElyz()) { btn.disabled = false; btn.title = ""; return; }
-  // 板がそろうまで、そして宣言するまで再生できない（§2-1・§2-2）
-  btn.disabled = !chosenBoth() || guess === null;
-  btn.title = !chosenBoth() ? "先に板を2枚選ぼう"
-    : guess === null ? "先に、溶けると思う板をタップして予想しよう" : "";
+  const why = playBlockReason();
+  btn.disabled = !!why;
+  btn.title = why || "";
+  const hint = document.getElementById("toolbarHint");
+  if (hint) {
+    hint.hidden = !why;
+    hint.textContent = why || "";
+  }
 }
 
 /* ---- ステージ ---- */
@@ -1148,10 +1358,15 @@ function buildStageNav() {
 /* 1回ぶんの盤面をまっさらに戻す。**選んだ板（picked）と役の記録（roleLog）は残す**
    ——「やり直す」で組み合わせまで消えると、相手を変えて比べる遊びが続かない。 */
 function resetRound() {
+  /* M: 1回ぶんごとに板の左右をふり直す。**位置ではなく板の中身で答えさせる**ため
+     （左が固定だと「イオン化傾向の大きいほう」でなく「左」と覚えて当てられる）。
+     予想（guess）も役の記録（roleLog）も金属名で持っているので、入れ替えても壊れない */
+  if (shufflesPlates()) flipped = rollElectrodeFlip();
   guess = null;
   guessTries = 0;
   guessOk = false;
-  mult = [1, 1];
+  mult = [null, null];   // 倍率は「？」から（L）。自分で置いてもらう
+  sumOpened = false;
   buildStageNav();
   buildToolbar();
   buildPalette();
@@ -1164,6 +1379,7 @@ function resetRound() {
   drawCell();
   buildHalfSheet();
   updateETally();
+  buildSumBar();
   layoutRun();          // 粒を片づける（drawCell が particleLayer を作り直した直後に呼ぶ）
   ionCountsEl.innerHTML = "";
   clearEl.hidden = true;
@@ -1204,6 +1420,9 @@ window.BatteryEq = {
     stageIdx = i; initStage(); return true;
   },
   pick(m) { pickMetal(m); return [...picked]; },
+  /* M: 板の左右をふる乱数に種を差す（テスト・監査だけが使う）。
+     null を渡すと本番と同じ「毎回ちがう」に戻る */
+  setSeed(seed) { setCellRandomSeed(seed); initStage(); return [...metalsOf()]; },
   clearSlot(i) { clearSlot(i); return [...picked]; },
   state: () => ({
     stageId: rawStage().id,
@@ -1223,8 +1442,8 @@ window.BatteryEq = {
     halves: [halves().ox || null, halves().red || null],
     // いま画面に出ている呼び名（電池なら負極/正極、電気分解なら陽極/陰極）
     terms: { ox: terms().ox, red: terms().red, oxTag: terms().oxTag, redTag: terms().redTag },
-    // 半反応式の行の札。用語の出し分けが実際に効いているかを DOM から見る
-    halfTags: ["halfNeg", "halfPos"].map((id) => {
+    // 半反応式の行の札（見出し行に移した）。用語の出し分けが効いているかを DOM から見る
+    halfTags: ["halfNegCap", "halfPosCap"].map((id) => {
       const r = document.getElementById(id);
       const k = r && r.querySelector(".kindTag");
       return k ? k.textContent : "";
@@ -1246,7 +1465,17 @@ window.BatteryEq = {
       .map((x) => ({ id: x.id, x: Math.round(x.x * 10) / 10, y: Math.round(x.y * 10) / 10, seg: x.seg })),
     halvesShown: !stepHalvesEl.hidden,
     sumShown: !stepSumEl.hidden,
+    // K: 足し合わせの釦。押せるか／押せない理由が画面に出ているか
+    sumBtn: (() => {
+      const b = document.getElementById("sumBtn");
+      const w = document.getElementById("sumWhy");
+      return b ? { there: true, disabled: !!b.disabled, why: w ? w.textContent : "" }
+        : { there: false, disabled: null, why: "" };
+    })(),
     playDisabled: !!(document.getElementById("playBtn") || {}).disabled,
+    // 押せないときに画面へ出している「次の一手」。空なら押せる（I）
+    playHint: ((document.getElementById("toolbarHint") || {}).hidden === false)
+      ? document.getElementById("toolbarHint").textContent : "",
     predictMsg: predictMsgEl.textContent,
     msg: msgEl.textContent,
     ionic: (() => {
@@ -1255,6 +1484,18 @@ window.BatteryEq = {
     })(),
     cellShown: (document.getElementById("cellNotation") || {}).textContent || "",
     clearShown: !clearEl.hidden,
+    /* M: 板と役の札が図のどちら側に描かれたか。
+       **位置ではなく板の中身で役が決まっている**ことを、座標から確かめるための口。
+       x はビューボックスの座標（左の板が 139・右の板が 341） */
+    flipped,
+    plateSides: [...cellSvg.querySelectorAll(".plateGroup")].map((g) => ({
+      metal: g.dataset.metal,
+      x: Number((g.querySelector(".plateBody") || {}).getAttribute
+        ? g.querySelector(".plateBody").getAttribute("x") : 0),
+    })),
+    roleSides: [...cellSvg.querySelectorAll(".roleBadge text")]
+      .filter((t) => /負極|正極|陽極|陰極/.test(t.textContent))
+      .map((t) => ({ x: Number(t.getAttribute("x")), label: t.textContent })),
     // 役の札は予想するまで画面に出ていないこと（答えの先出しを見張る）
     roleLabels: [...cellSvg.querySelectorAll("text")].map((t) => t.textContent)
       .filter((s) => s.includes("負極") || s.includes("正極") ||

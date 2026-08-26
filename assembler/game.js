@@ -18,6 +18,9 @@ function slTrack(name, params) {
 
 let STAGES = [];
 let COMPOUNDS = []; // 名称判定用の追加ライブラリ（compounds.json。ステージ未収録の有名化合物）
+// クイズの出題範囲の追加名簿（quiz-scope.json。{ note, textbook: [名前, …] }）。
+// **構造から導出できない「高校で扱うか」だけを人が名前で印を付ける場所**（quiz.js が読む）
+let QUIZ_SCOPE = { textbook: [] };
 const GRID_SIZE = 42;
 // 別々の分子（連結成分）の重原子どうしが、これより近づいてはいけない距離（px）。
 // 新規配置（getSnappedCoords）・分子ごとの移動（canMoveComponentBy）・答案の並べ直し
@@ -74,6 +77,31 @@ const HIT_AREAS = {
 };
 
 /**
+ * ★ 結合を作り直すときに、**追加のプロパティだけ**を引き継ぐ（v1435）。
+ *
+ * ⚠ **`Object.assign(bond, src)` にしてはいけない。** `Bond` のコンストラクタは
+ *   「IDの小さい方を必ず `atomId1` にする」と正規化しており、`getBond()` も
+ *   `removeBond()` もその不変条件の上に立っている。丸ごと上書きすると、
+ *   **正規化されていない元データがそのまま入って不変条件が壊れる**。
+ *
+ * **実際にそうなった（実測・v1435）**: `demos-stereo.json` の V12（グルコースの変旋光）は
+ *   `{"atomId1":"v12o5","atomId2":"v12c1"}` のように**逆順で書いてある**行があり、
+ *   `Object.assign` にしたら `restoreState` のあと「環化 → β-D-グルコース」の反応が
+ *   候補から消えた（`N2` が赤くなった）。⚠ **原子側（`Object.assign(atom, a)`）は
+ *   正規化を持たないので同じ書き方で安全**、という非対称がここにある。
+ *
+ * 引き継ぐのは `isStereoMarked`（段1 の結合の印）のような**後から足した1ビット**だけ。
+ */
+function copyBondExtras(bond, src) {
+    if (!src) return bond;
+    Object.keys(src).forEach(k => {
+        if (k === 'atomId1' || k === 'atomId2' || k === 'type') return;
+        bond[k] = src[k];
+    });
+    return bond;
+}
+
+/**
  * 論理座標を絶対グリッド（GRID_SIZE 刻み）に丸める。**素の Math.round を使わないこと**。
  *
  * **なぜ**（要望G・2026-08-12・v1150）。
@@ -116,6 +144,15 @@ function moleculeMark(i) {
 // **34 なのは 32 ちょうどだと境界で揺れるから**（#summon-input で実発生。しきい値と実寸が
 // 一致すると、サブピクセルの丸めで判定が反転して落ちたり通ったりする）
 const LABEL_CHIP_HEIGHT = 34;
+
+// ★ 書き出し練習中だけ、見出しが自分の図から離れてよい上限（マス）と、その手前で掛ける値段（v1440）。
+// **上限のほうが本体**（値段だけでは足りない ＝ 重なりの値段は**重なった図形の数だけ積み上がる**ので、
+// 自動水素まで数えると 1か所で 5万・6万になり、どんな値段でも遠くのほうが安くなる。実測済み）。
+// 値段は上限の内側での好み ——「1つの重なりを避けるためなら 2マスまで動く」（10000 ÷ 4000）。
+// 理由と、なぜ練習の外では効かないのかは `Game#labelDriftPenalty()` に書いてある。
+// ⚠ **横並びの段送り（1マス下）は 4000 < 10000 なので生きたまま。**
+const LABEL_DRIFT_MAX_ROWS = 2;
+const LABEL_DRIFT_PENALTY = 4000;
 
 /* 見出しの重なり判定に使う小さな幾何（DESIGN_molecule_modal.md §12）。
    矩形は {x,y,w,h}、円は {x,y,r}、線分は {x1,y1,x2,y2,half}（half ＝ 線の太さの半分）。
@@ -360,6 +397,13 @@ class Game {
         this.reshapeMode = false;      // シス/トランス整形モード（左パレットのボタン。P12-7 先行）
         this._reshapeLastBond = null;  // 直近に整形した C=C のキー（再タップで cis⇄trans 反転するため）
         this.haworthMode = false;      // α/β 面マークモード（環外置換基の上下面を編集。P12-7 M2b）
+        // ★ 「立体が分かれる場所」の印モード（DESIGN_stereo_point.md 段1・v1435）。
+        //   炭素をタップ → 原子の印（`isAsymmetricMarked`。自由モードの不斉マークと同じ1ビット）／
+        //   結合をタップ → 結合の印（`isStereoMarked`）。
+        //   ⚠ **`tapHasOtherMeaning()` に必ず載せること**（§4-3）。載せ忘れると結合の判定線が
+        //     タップを食い、離したときの click が次数トグルへ落ちて **C=C が C≡C に化ける**
+        //     （BUGNOTE_touch_ipad.md S6 と同じ型）
+        this.stereoPointMode = false;
         this.condensedMode = false;    // 官能基の縮約表示（P9-2）が ON かどうか（表示のみ）
         // 命名の確認（主鎖の帯と炭素番号）の表示中かどうか（DESIGN_iupac_check.md N2）。
         // **状態は残さない**（同書 §3）ので、図が1手でも変われば `sig` が食い違って自分で消える。
@@ -884,6 +928,8 @@ class Game {
                     // 「🎯 反応させる分子を選ぶ」も同じ（v1409）。ここは `setTool()` を
                     // 通らない経路なので、列から漏れると**モジュールだけ置けない**が残る
                     this.deactivateReactionSelectMode();
+                    // 「☆ 立体の場所」の印モードも同じ列（v1435）
+                    if (this.deactivateStereoPointMode()) this.updateDrawing();
                 } else {
                     this.selectedModule = null;
                 }
@@ -1279,7 +1325,14 @@ class Game {
             this.userMolecule.atoms.push(atom);
         });
         state.bonds.forEach(b => {
-            this.userMolecule.bonds.push(new Bond(b.atomId1, b.atomId2, b.type));
+            const bond = new Bond(b.atomId1, b.atomId2, b.type);
+            // 原子と同じく**シリアライズ済みの追加プロパティも復元する**（開発方針 3.5章）。
+            // ⚠ ここが `new Bond(...)` だけだったので、結合に持たせた1ビット
+            //   （`isStereoMarked`・v1435 の段1の印）が ↩ を1回押しただけで消えていた。
+            //   原子側（`isAsymmetricMarked`）は Object.assign で守られていたので、
+            //   **同じ答案の中で原子の印だけ残って結合の印が消える**という読めない壊れ方になる
+            copyBondExtras(bond, b);
+            this.userMolecule.bonds.push(bond);
         });
         // 状態を巻き戻したら整形の「同じ結合の再タップ」判定はリセットする
         this._reshapeLastBond = null;
@@ -2004,6 +2057,15 @@ class Game {
             const hit = this.reshapeBondUnderPoint(coords.rawX, coords.rawY);
             if (hit.bond && hit.eligible) this.drawReshapePreview(hit.bond);
         }
+        // 1.35 印モード中（段1）: カーソル下の炭素／結合をハイライトする。
+        //      ⚠ ここに分岐が無いと、下の「原子配置モード」の分岐に落ちて
+        //      **置けもしない原子のゴースト**が出る（印を付ける画面で作図の予告が出る）
+        else if (this.stereoPointMode) {
+            this.clearUIOverlay();
+            const hit = this.stereoPointUnderPoint(coords.rawX, coords.rawY);
+            if (hit.atom) this.drawAsymmetricPreview(hit.atom);
+            else if (hit.bond) this.drawStereoBondPreview(hit.bond);
+        }
         // 1.4 α/β 面マークモード中: カーソル下の環外置換基（面マーク対象）をハイライト（P12-7 M2b）
         else if (this.haworthMode) {
             this.clearUIOverlay();
@@ -2136,6 +2198,24 @@ class Game {
                 this.updateDrawing();
             }
             return; // 不斉マークモード時は他の配置/編集動作を完全にブロック
+        }
+
+        // --- 「立体が分かれる場所」の印モード (ON) 時の特別処理（v1435・段1） ---
+        // ⚠ **指し方は2種類あるが、モードは1つ**（DESIGN_stereo_point.md §4-1）。
+        //   炭素なら原子の印、結合なら結合の印。炭素以外の原子・何も無い所は**黙って何もしない**
+        //   （「そこは違う」と言うと、指してよい場所を消去法で教えることになる）
+        if (this.stereoPointMode) {
+            const hit = this.stereoPointUnderPoint(coords.rawX, coords.rawY);
+            if (hit.atom) {
+                this.saveState();
+                hit.atom.isAsymmetricMarked = !hit.atom.isAsymmetricMarked;
+                this.updateDrawing();
+            } else if (hit.bond) {
+                this.saveState();
+                hit.bond.isStereoMarked = !hit.bond.isStereoMarked;
+                this.updateDrawing();
+            }
+            return; // 印モード時は他の配置/編集動作を完全にブロック
         }
 
         // --- α/β 面マークモード (ON) 時の特別処理（P12-7 M2b） ---
@@ -2662,8 +2742,8 @@ class Game {
      *
      * 落下先の決め方は分子ごとの移動（ZD の帯）と**同じ規則**を借りる ＝
      * 別の成分の重原子と `MIN_COMPONENT_CLEARANCE` より近づけない。
-     * スロットの隙間（`GAP = GRID_SIZE * 2 = 84px`）は、移動量を格子倍に丸めたときの
-     * ずれ（最大 ±21px が両隣で逆向き ＝ 42px）を引いても 42px 残るので、
+     * スロットの隙間（横 `GAP = GRID_SIZE * 2 = 84px` ／ **縦 `GAP_Y = GRID_SIZE * 3 = 126px`**）は、
+     * 移動量を格子倍に丸めたときのずれ（最大 ±21px が両隣で逆向き ＝ 42px）を引いても 42px 残るので、
      * 構成だけで 27.3px を上回る。**それでも最後に実測で確かめ**、破っていたら
      * 1つも動かさずに戻す（判定が空振りしていないことは IW7 が別に押さえる）。
      *
@@ -2687,9 +2767,27 @@ class Game {
         // スロットの大きさ ＝ いちばん大きい答案 ＋ 隙間。**全スロットを同じ大きさ**にする
         // （§12-5 の「格子のスロットへ配る」）。大小を詰めると、描き足したときに
         // 並びが総入れ替えになって ①②③ の場所が毎回変わる
-        const GAP = GRID_SIZE * 2;   // 84px。縦は見出しチップ（下へ約 80px）もここに収まる
+        const GAP = GRID_SIZE * 2;   // 84px（横。見出しは番号1文字ぶん＝36px しか無いので横は足りる）
+        // ★ **縦は横より1マス広い**（v1432・ユーザー報告「番号①がまとめて下側に表示される」）。
+        //   ここの隙間を**3人で取り合っている**からで、84px では1人ぶん足りていなかった:
+        //     ① 見出しを置かない帯 …… 分子の下端＋1.1マス          46.2px
+        //     ② 見出しチップ       …… `LABEL_CHIP_HEIGHT`           34.0px
+        //     ③ **下の行の自動水素** … 重原子から 16px 伸ばして半径9 25.0px（上へ張り出す）
+        //   合計 105.2px。**旧 84px だと ③ が ② に必ず食い込む**ので、並べ直した直後に
+        //   どの見出しも「重なり 10000」を抱え、`placeMoleculeLabels` の段送りへ回る。
+        //   段送りは距離を数えない（`labelPlacementCost`）ため遠くの空き行のほうが安く、
+        //   逃げた見出しが次の見出しの既定位置に居座って**数珠つなぎに下へ流れる**
+        //   ＝ 「番号が下に固まる」の正体（実測・実物の異性体20個で 7/20・最大8マス）。
+        //   3マス（126px）にすると 105.2px を 21px の余裕つきで満たす。
+        //
+        // ⚠ **この数を定数で書けるのは、同じ v1432 で `labelScale()` が練習中 1 を返すから。**
+        //   それ以前はチップが画面px 固定＝引いて見るほどモデル座標で太ったので、
+        //   必要な隙間が「並べ直したあとの縮尺」で決まる鶏と卵になっていた
+        //   （発注書 ORDER_isomer_2026-08-20.md §A-3 が案①を退けた理由がこれ）。
+        //   ⚠ **`labelScale()` の練習中の分岐を外すなら、ここも一緒に見直すこと。**
+        const GAP_Y = GRID_SIZE * 3; // 126px
         const cellW = Math.ceil((Math.max(...boxes.map(b => b.maxX - b.minX)) + GAP) / GRID_SIZE) * GRID_SIZE;
-        const cellH = Math.ceil((Math.max(...boxes.map(b => b.maxY - b.minY)) + GAP) / GRID_SIZE) * GRID_SIZE;
+        const cellH = Math.ceil((Math.max(...boxes.map(b => b.maxY - b.minY)) + GAP_Y) / GRID_SIZE) * GRID_SIZE;
 
         // 列数は**全体が 4:3 に近くなる**ように選ぶ。キャンバスも「全体表示」も 4:3 なので、
         // ここを外すと細長い帯になって、合わせた視野の中で図が無駄に小さくなる
@@ -2985,6 +3083,7 @@ class Game {
         if (brs) brs.classList.remove('active');
         this.deactivateHaworthMode();
         this.deactivateReactionSelectMode();
+        this.deactivateStereoPointMode();
     }
 
     // α/β 面マークモードを解除する（他モードへ切替える既存フックから呼ぶ。P12-7 M2b）
@@ -2992,6 +3091,41 @@ class Game {
         this.haworthMode = false;
         const bhm = document.getElementById('btn-haworth-mark');
         if (bhm) bhm.classList.remove('active');
+    }
+
+    /**
+     * 「立体が分かれる場所」の印モードを解除する（v1435・段1）。
+     * ⚠ **印は消さない**（§4-2「印を消さずに何度でも直せる」）。降ろすのはモードだけ。
+     * 入口は作業帯のボタンなので、`setTool` などの既存フックからも降ろせるようにここに置く
+     * （降ろしたことは `renderStrip()` の描き直しでボタンの見た目に伝わる）。
+     */
+    deactivateStereoPointMode() {
+        if (!this.stereoPointMode) return false;
+        this.stereoPointMode = false;
+        this.clearUIOverlay();
+        if (window.isomerPractice && window.isomerPractice.active) window.isomerPractice.renderStrip();
+        return true;
+    }
+
+    /** 印モードのホバープレビュー（結合側）。原子側は `drawAsymmetricPreview` と共用 */
+    drawStereoBondPreview(bond) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const mol = this.userMolecule;
+        const a = mol.atoms.find(x => x.id === bond.atomId1);
+        const b = mol.atoms.find(x => x.id === bond.atomId2);
+        if (!a || !b) return;
+        const willUnmark = !!bond.isStereoMarked;
+        const color = willUnmark ? 'rgba(200,200,200,0.9)' : 'var(--neon-orange, #ff9f43)';
+        const ring = document.createElementNS(NS, 'circle');
+        ring.setAttribute('cx', (a.x + b.x) / 2);
+        ring.setAttribute('cy', (a.y + b.y) / 2);
+        ring.setAttribute('r', '12');
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', color);
+        ring.setAttribute('stroke-width', '2');
+        ring.setAttribute('stroke-dasharray', '4,3');
+        ring.setAttribute('pointer-events', 'none');
+        this.uiGroup.appendChild(ring);
     }
 
     /**
@@ -3029,12 +3163,21 @@ class Game {
         return this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length;
     }
 
-    deactivateReactionSelectMode() {
-        if (!this.reactionSelectMode) return false;
+    /**
+     * ★ 状態だけ下ろす（**描き直さない**）。`updateDrawing()` の中から呼ぶための版（v1454）。
+     * ⚠ `deactivateReactionSelectMode()` をそのまま呼ぶと中で `updateDrawing()` が走り、
+     *   作図のたびに二重描画になる。下ろす中身は**この1か所**に置いて共有する。
+     */
+    _dropReactionSelectState() {
         this.reactionSelectMode = false;
         this.selectedMolecules = [];
         const btn = document.getElementById('btn-reaction-select');
         if (btn) btn.classList.remove('active');
+    }
+
+    deactivateReactionSelectMode() {
+        if (!this.reactionSelectMode) return false;
+        this._dropReactionSelectState();
         this.updateDrawing(); // 選択枠（青の破線＋①②）を消す
         return true;
     }
@@ -3055,14 +3198,39 @@ class Game {
      * → `updateDrawing()` を通るので**バッジだけ残る**が起きない。
      *
      * **将来ほかのモードにも足せる形**にしてある（整形・不斉マーク・ハース面も同じ
-     * `tapHasOtherMeaning()` の仲間）。⚠ ただし**今回は作らない**（範囲外）。
-     * 足すときは、この関数に分岐を1つ増やすだけで器も CSS も使い回せる。
+     * `tapHasOtherMeaning()` の仲間）。足すときは、この関数に分岐を1つ増やすだけで
+     * 器も CSS も使い回せる —— ★ **v1454 で2つめ（2段階モーフィングの①で止まっている）を足した。**
      *
      * ⚠ 文言に「**編集できません**」と書かない。いま止まっているのは
      *   `handleMouseDown` の**タップの意味だけ**で、↩ 戻す・分子ごとのドラッグ・🗑 全消去は
      *   生きている（2分子を並べて見るのに要る操作なので、そのままでよい＝ユーザー判断）。
      */
     canvasModeBadgeSpec() {
+        /* ★ 2段階モーフィングの①で止まっている（v1454・ユーザー申し立て
+           「グルコースの環化で環になっていない」）。
+           **実測でこうなっていた**: 環化を押すと分子データは即座に確定する（環1つ・
+           β-D-グルコピラノース）が、**画面は①の静止画のまま**で、①は
+           「まだ環が閉じていない図」＝ 名前だけ「β-D-グルコピラノース」と出た
+           **開いた絵**になる。止まっている断りは**9秒で消えるトースト1つだけ**なので、
+           消えたあとの画面には理由がどこにも書いていない。
+           ⚠ 止め方そのものは正しい（P12-7 M2f のユーザー要望「じっくり観察できる」）。
+             足りないのは**止まっていることが画面に残ること**と**続きへの押しどころ**。
+           ⚠ **選ぶモードより先に見る。** 止まっているあいだのタップは `skipMorph()` が
+             先に食う（`handleMouseDown`）ので、画面に出す説明もそちらを先に言う。 */
+        const mp = window.reactor && window.reactor.morphPauseInfo && window.reactor.morphPauseInfo();
+        if (mp) {
+            return {
+                mode: 'morph-pause',
+                title: '⏸ 反応の途中で止めています',
+                count: '① / ②',
+                countTitle: '2段階で見せる反応の、第1段階で止まっています',
+                // ⚠ ここでも「編集できません」とは書かない。止まっているのはタップの意味だけ
+                note: `いまは①${mp.now}状態です（水素の数と位置もここで確認できます）。`
+                    + `続きを見ると②${mp.next}。画面をタップしても続きが見られます。`,
+                stop: '続きを見る',
+                stopTitle: `②${mp.next}（画面のどこかをタップしても同じです）`
+            };
+        }
         if (this.reactionSelectMode) {
             // 数は `selectedMolecules` の生の長さではなく `selectedMoleculeSets()` で数える
             // ＝ 反応で1つに繋がった2件をまとめる規則（図の枠と同じ数）を共有する
@@ -3075,7 +3243,10 @@ class Game {
                 // ⚠ 「編集できません」とは書かない。止まっているのはタップの意味だけで、
                 //   動かす・戻す・消すは生きている（できることを必ず並べて書く）
                 note: '作図（原子を置く・結合をつなぐ）はできません。'
-                    + '分子を動かす・↩ 戻す・🗑 全消去はできます。',
+                    + '分子を動かす・↩ 戻す はできます。'
+                    // ⚠ v1454: 🗑 全消去 で分子が0個になると**選ぶモードも終わる**ようにした
+                    //   （選ぶ相手が無いのに選ぶモードだけ残るのは行き止まり）。ここもそう書く
+                    + '🗑 全消去 で分子が無くなると、選ぶのも終わります。',
                 stop: 'やめる',
                 stopTitle: '選ぶのをやめて作図に戻ります（左の道具や環・官能基のボタンを選んでも戻ります）'
             };
@@ -3083,7 +3254,12 @@ class Game {
         return null;
     }
 
-    /** バッジをいまの状態にそろえる。**呼ぶのは `updateDrawing()` の先頭1か所だけ** */
+    /**
+     * バッジをいまの状態にそろえる。**呼ぶのは `updateDrawing()` の先頭**が主で、
+     * ⚠ **モーフィングを止めた／進めたときだけ例外**（v1454）——
+     * 止まっているあいだの画面は `renderStaticSnapshotWithHydrogens` が直に描いていて
+     * `updateDrawing()` を通らないので、そこからも1回呼ぶ。
+     */
     syncCanvasModeBadge() {
         const box = document.getElementById('canvas-mode-badge');
         if (!box) return;
@@ -3141,6 +3317,12 @@ class Game {
      * ボタンが取り除かれていた場合の保険として、直接下ろす道だけ残す。
      */
     stopCanvasModeBadgeMode() {
+        // ★ ①で止まっている ＝「やめる」ではなく**続きへ進む**（v1454）。
+        //   キャンバスをタップしたときと同じ道（`advanceMorph`）を通す ＝ 進み方を2つにしない
+        if (window.reactor && window.reactor.morphPauseInfo && window.reactor.morphPauseInfo()) {
+            window.reactor.advanceMorph();
+            return;
+        }
         if (this.reactionSelectMode) {
             const btn = document.getElementById('btn-reaction-select');
             if (btn) { btn.click(); return; }
@@ -3609,31 +3791,115 @@ class Game {
             });
             this.userMolecule.bonds
                 .filter(b => ids.has(b.atomId1) && ids.has(b.atomId2))
-                .forEach(b => part.bonds.push(new Bond(b.atomId1, b.atomId2, b.type)));
+                .forEach(b => {
+                    const nb = new Bond(b.atomId1, b.atomId2, b.type);
+                    // 原子と同じく追加のプロパティを引き継ぐ（`isStereoMarked` ＝ 段1の結合の印）。
+                    // ⚠ 落とすと、採点は**成分ごと**に見る（`markedMolecules`）ので
+                    //   「画面には印が出ているのに、採点表では付いていないことになる」
+                    copyBondExtras(nb, b);
+                    part.bonds.push(nb);
+                });
             parts.push(part);
         }
         return parts;
+    }
+
+    /**
+     * ★ 「ハース環として描かれていて、環の面から立体が読める図」なら、その立体コードを返す。
+     *   読めない図・ハース環でない図は null（＝ 呼び出し側は従来どおりの道を通る）。
+     *
+     * ⚠ **範囲はハース環に限る。フィッシャー投影には広げない。**
+     *   ユーザーの発注が「**ハース環を使用したときに限った話**」（2026-08-21）だから。
+     *   広げると、乳酸をフィッシャーで描いただけでトグル OFF でも「D-乳酸」を名乗り出す
+     *   （実測: 門番を外して変わるのはライブラリ中この1件・v933）。
+     *
+     * ⚠ **`atomParity` は `readRingParityFromHaworth` だけで組む**（フィッシャーを混ぜない）。
+     *   混ぜないことで**取り違えは起きない** —— `canonicalStereoCode` は
+     *   「記述子のあった中心だけ」をトークンにするので、こちらが足りなければ
+     *   登録側のコードと**長さが合わずに外れる**（＝ 黙って別の糖に化けることはない）。
+     *   外れたときは従来どおり総称／「どれか」へ落ちる。
+     */
+    haworthNameStereoCode(mol) {
+        if (typeof haworthSugarCycles !== 'function') return null;
+        let cycles;
+        try { cycles = haworthSugarCycles(mol); } catch (e) { return null; }
+        if (!cycles.length) return null;
+        const ringParity = readRingParityFromHaworth(mol);
+        // 環の中に1つも面が読めない図（環を置いただけ・置換基が斜め）は「読めた」と言わない
+        const inRing = new Set([].concat(...cycles));
+        if (!Object.keys(ringParity).some(id => inRing.has(id))) return null;
+        return canonicalStereoCode(mol, {
+            atomParity: ringParity,
+            bondGeo: readBondGeoFromCoords(mol)
+        });
     }
 
     // 1分子の名称をライブラリから引く。見つからなければ null
     // 正準コードでO(1)照合（P8-2）。ヒット候補には念のためverifyMoleculeで最終確認を行い、
     // 立体指定（stereo）付きエントリは描かれた分子の立体コードも一致した場合のみ採用（P12-7 M1）。
     // 立体指定の無いエントリはユーザーの描き幾何を見ない（従来どおり幾何不問）。
-    lookupCompoundName(mol) {
+    //
+    // `opt.noStereo` … **立体は一切要らない**と呼び出し側が言い切る口（既定 false）。
+    //   トグルの値に関わらず、下のハース環の例外も含めて立体を1つも見ない。
+    //   ⚠ **`readStereo = false` を代わりに使ってはいけない** ——
+    //   OFF は「D/L・α/β を名前に出さない」だけで、ハース環は下の例外で言い切る。
+    //   「立体を混ぜない名前が欲しい」（`learn.js` の `constitutionalName`）はこちらを使うこと。
+    lookupCompoundName(mol, opt) {
         this.getCompoundLibrary(); // コードMapの構築を保証
         const candidates = this._compoundCodeMap.get(canonicalCode(mol)) || [];
-        // **立体を出すかどうかはトグルだけで決める**（2026-08-08・ユーザーによる仕様の確認）。
-        // 「フィッシャー投影による立体異性体の判定は常に行う。
-        //   ユーザーの操作によって、立体異性体まで区別して表示するかどうかを切り替える」
+        const noStereo = !!(opt && opt.noStereo);
+        //
+        // ===== 立体を名前に出すかどうかは、**二段**で決める =====
+        //
+        // ⚠ **この二段は 2026-08-22 に書き直した。**それまでは
+        // 「**立体を出すかどうかはトグルだけで決める**」という**一本の線**だった
+        // （2026-08-08・ユーザーによる仕様の確認。「フィッシャー投影による立体異性体の判定は
+        //  常に行う。ユーザーの操作によって、立体異性体まで区別して表示するかどうかを切り替える」）。
+        // ⚠ **その決定を覆したのではない。適用範囲を「図から立体が決まらないもの」に限った。**
+        // **トグルは撤去していない**（下の (2) がその管轄で、そこは1つも変えていない）。
+        //
+        //  **(1) 図から立体が決まっているか** …… ⚠ **トグルの管轄外**。決まっているなら言い切る。
+        //      ハース図で置換基を環炭素の上に描くか下に描くかは**面（α/β）そのもの**なので、
+        //      面が読めた時点で**どの立体異性体かは決まっている**。
+        //
+        //      ★ 引き直した理由（ユーザーの指摘・2026-08-22。**これが根拠**）:
+        //      > **ハース環使用時に複数の異性体を提示しながら、立体視で１つの異性体を
+        //      >   描画しているのは矛盾ですよね**
+        //      ＝ アプリは**同じ図から**、環ビュー（🧊 環を横から）では**1つの立体異性体の模型**を
+        //      組んで見せながら、名前では「どれか分からない」と言っていた。実測:
+        //
+        //        | 分子 | ハース図から読めた面 | 環ビューで面が読めない置換基 | 直す前の OFF の名前 |
+        //        | α-D-グルコピラノース | 5 | 0本 | ⚠ 「アロース／ガラクトース ほか3種 のどれか」 |
+        //        | β-D-グルコピラノース | 5 | 0本 | ⚠ 同上 |
+        //        | マルトース           | 10 | 0本 | ⚠ 「セロビオース／マルトース ほか1種 のどれか」 |
+        //
+        //      **上下が全部確定した模型を描けている ＝ どの立体異性体かが決まっている。**
+        //      決まっているものを「どれか」と言うのは、知っていることを隠しているだけ。
+        //      ユーザーの言葉（同日）: 「**ハース環を使う場合は、いつでも、立体構造を
+        //      特定できるはずです**」——「いつでも」なので**トグルの値を見ない**。
+        //
+        //      ⚠ **範囲はハース環に限る。フィッシャー投影には広げない。**
+        //      ユーザーが「**ハース環を使用したときに限った話**」と明示している。
+        //      フィッシャーは「縦＝奥」の約束を知らずにただ縦横に描いただけの図が大量にあり、
+        //      ＝ **図が立体を主張しているとは限らない**ので (1) には入らない。
+        //      （実測 v933: 広げると乳酸が OFF でも「D-乳酸」を名乗り出す）
+        //
+        //  **(2) 図から決まっていないものを、どう扱うか** …… ★ **ここがトグルの本来の役目**。
+        //      鎖状の糖（フィッシャー投影）や、置換基を斜めに描いて面が読めなかった図が該当する。
+        //      OFF なら D/L・α/β を落として総称に丸め、割れるなら
+        //      「〜ほか N 種 のどれか（立体で決まります）」と断る（この振る舞いは従来どおり）。
+        //      ⚠ シス/トランス（結合の幾何）は OFF でも落とさない（2026-08-02。トグルの見出しどおり）。
         //
         // **かつてここには「図が縦置きのときだけ立体を出す」門番があった**
         // （DESIGN_stereo_orientation.md 案C）。**撤回した**——向きは
         // *読める図かどうか* の話であって、*ユーザーが立体まで見たいかどうか* とは別の軸。
         // 2つを掛け合わせると、トグルを ON にしたのに図の向きしだいで出たり出なかったりする。
-        // 実測（v933）: 門番を外して変わる名前は**ライブラリ 956件中 1件**（乳酸 → D-乳酸）だけで、
-        // 案Cが心配していた「セリン・バリンが D- を名乗り出す」は起きない
-        // （対になる D-/L- のエントリが登録されていないため基底名に落ちる）。
-        const useStereo = this.readStereo;
+        // ⚠ **今回の (1) は案Cの復活ではない**: 案Cは「向きが悪ければ **ON でも出さない**」＝
+        // トグルを弱める向きだったが、(1) は「図が立体を主張しているなら **OFF でも出す**」＝
+        // **描かれたものを読む**向き。掛け算ではなく、先に (1) を見て、残りを (2) に渡す。
+        const useStereo = this.readStereo && !noStereo;
+        // (1) の判定。`opt.noStereo`（立体は一切要らない）と ON のときは計算しない
+        const haworthStereo = (useStereo || noStereo) ? null : this.haworthNameStereoCode(mol);
         // ユーザー分子の立体コードは座標から読んだ結合幾何（E/Z）＋フィッシャー投影の
         // sp3 パリティ（P12-7 M2a）で構成する。立体指定エントリが候補にあるときだけ計算する。
         let userStereoCode = null;
@@ -3644,6 +3910,10 @@ class Game {
                 // シス/トランス（結合の幾何）は残す**（2026-08-02。トグルの見出しどおり）。
                 // 幾何だけのコードを持つエントリは、幾何だけで照合する
                 if (!useStereo) {
+                    // ★ ハース環の例外: 図から面が読めているなら、OFF でもその立体で照合する
+                    if (haworthStereo !== null) {
+                        return haworthStereo === e.stereoCode && verifyMolecule(mol, e.mol);
+                    }
                     if (!e.geoCode) return false; // D/L・α/β の指定 → 総称名に落とす
                     if (userGeoCode === null) {
                         userGeoCode = canonicalStereoCode(mol, {
@@ -3677,9 +3947,14 @@ class Game {
                 bases.add(e.name.replace(/[αβ]-|[DL]-/g, ''));
             });
             if (bases.size === 1) return [...bases][0];
-            // 総称が割れる ＝ **立体を見ないと区別がつかない**分子（アルドヘキソースなど）。
-            // 黙って名無しにすると「描いたのに名前が出ない」になるので、候補を並べて
-            // なぜ決まらないのかを見せる（トグルを ON にする動機にもなる）
+            // 総称が割れる ＝ **立体を見ないと区別がつかない**分子。黙って名無しにすると
+            // 「描いたのに名前が出ない」になるので、候補を並べてなぜ決まらないのかを見せる
+            // （トグルを ON にする動機にもなる）。
+            // ⚠ **ここへ来るのは「立体が図から読めない」分子だけになった**（2026-08-22）——
+            //   ハース環として描いてあって面が読める図は、上の例外で言い切ってしまう。
+            //   ここに残るのは**フィッシャー投影で描いた鎖状の糖**（D-グルコースなど）や、
+            //   ハース環の置換基を斜めに描いて面が読めなかった図。
+            //   ＝ **「立体で決まります」は本当に決まっていないときだけ出る。**
             if (bases.size > 1) {
                 const list = [...bases].sort();
                 const head = list.slice(0, 2).join('／');
@@ -3767,6 +4042,40 @@ class Game {
             if (d <= bestD) { bestD = d; best = atom; }
         });
         return best;
+    }
+
+    /**
+     * ★ 印モード（段1）で、タップ点が「原子を指した」のか「結合を指した」のかを決める
+     *   （DESIGN_stereo_point.md §4-1「原子と結合を1つのモードで指す」）。
+     *
+     * ⚠ **半径で分けてはいけない。** 原子の当たり半径は 18px（`ATOM_TAP_RADIUS`）で、
+     *   結合1本は 42px（`GRID_SIZE`）しかない ＝ 両端が 18px ずつ取ると
+     *   **結合に残るのは真ん中の 6px だけ**になり、事実上結合を指せない。
+     *   `reshapeBondUnderPoint` が「C=C の中点は原子半径に潜る」と書いているのと同じ事情。
+     *
+     * → **近いほうを採る**。原子の中心までの距離と、結合の中点までの距離を比べる。
+     *   42px の結合なら「両端から 10.5px までが原子・真ん中の 21px が結合」に落ちる
+     *   （t≤0.25 で 42t ≤ 21−42t）。長さが変わっても比で決まるので、
+     *   短い結合でも両方が指せる。
+     *
+     * 戻り値 `{ atom, bond }` … どちらか一方だけが非 null（何も無ければ両方 null）。
+     * ⚠ 炭素以外の原子は返さない（印を付けられるのは炭素だけ・§4-1）。
+     *   ただし**そこで結合に振り替えない** —— O をタップした人に結合の印が付くと、
+     *   何が起きたのか読めない
+     */
+    stereoPointUnderPoint(rawX, rawY) {
+        const atom = this.findNearestAtomAt(rawX, rawY, ATOM_TAP_RADIUS * 2);
+        const bond = this.findBondAt(rawX, rawY, 14);
+        const dAtom = atom ? Math.hypot(atom.x - rawX, atom.y - rawY) : Infinity;
+        let dBond = Infinity;
+        if (bond) {
+            const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
+            const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
+            if (a1 && a2) dBond = Math.hypot((a1.x + a2.x) / 2 - rawX, (a1.y + a2.y) / 2 - rawY);
+        }
+        if (atom && dAtom <= dBond) return { atom: atom.element === 'C' ? atom : null, bond: null };
+        if (bond && dBond < Infinity) return { atom: null, bond };
+        return { atom: null, bond: null };
     }
 
     // 座標近くにある結合線を取得
@@ -4514,6 +4823,8 @@ class Game {
     // 現在の側（外積の符号）を保存。2置換（各端1本）で側が不定なら trans 既定で展開。
     reshapeDoubleBond(bond, subsA, subsB) {
         const mol = this.userMolecule;
+        // 枝が環を含むかの判定に使う（下の place の「回すか・ずらすか」）
+        const ringIds = (typeof ringAtomIds === 'function') ? ringAtomIds(mol) : new Set();
         let cA = mol.atoms.find(x => x.id === bond.atomId1);
         let cB = mol.atoms.find(x => x.id === bond.atomId2);
         // **軸の向きは座標で決める**（DEVELOPMENT.md「順序が要る所は必ず座標で決める」）。
@@ -4572,7 +4883,24 @@ class Game {
                 else { dir = dM; usedM = true; }
                 const nx = carbon.x + dir.x * len;
                 const ny = carbon.y + dir.y * len;
-                this._moveSubtree(sub, [cA.id, cB.id], nx - sub.x, ny - sub.y);
+                /* ★ **環を含む枝は「ずらす」のではなく「回す」**（2026-08-26・実測）。
+                 * 平行移動は結合の長さこそ保つが、**枝の内部の向きをそのまま置き去りにする**。
+                 * 環がぶら下がっていると、環の外向き結合が環の中心を向かなくなる ＝
+                 * スチレンで実測すると、ipso 炭素まわりの3本の角度が
+                 * **-60° / 120° / -120°（＝ ビニルとの結合が環結合と 60°）**になっていた。
+                 * 六角形の隣の炭素が頭の炭素から 41px・177.6° の位置まで回り込むので、
+                 * **主鎖が伸びる向き（頭の反対側）が自分の環で塞がれ**、
+                 * スチレン3個以上の付加重合が「配置する空間がありません」で必ず落ちていた。
+                 * 回して置くと ipso まわりは 120°/120°/120° になり（実測）、環は放射状に戻る。
+                 * ⚠ 環を含まない枝は**今までどおり平行移動**する ―― 回すと直鎖が 30° 傾いて
+                 *   直交作図（CLAUDE.md）が崩れるため。環は 60° 対称なので回しても形が変わらない */
+                if (this._subtreeIds(sub, [cA.id, cB.id]).some(id => ringIds.has(id))) {
+                    const a0 = Math.atan2(sub.y - carbon.y, sub.x - carbon.x);
+                    const a1 = Math.atan2(ny - carbon.y, nx - carbon.x);
+                    this._rotateSubtree(sub, [cA.id, cB.id], carbon, a1 - a0);
+                } else {
+                    this._moveSubtree(sub, [cA.id, cB.id], nx - sub.x, ny - sub.y);
+                }
             });
         };
         place(cA, subsA, ux, uy);
@@ -4613,8 +4941,8 @@ class Game {
         });
     }
 
-    // root から到達できる原子（blockedIds を越えない）を dx,dy だけ剛体移動する
-    _moveSubtree(root, blockedIds, dx, dy) {
+    // root から到達できる原子（blockedIds を越えない）の ID 一覧
+    _subtreeIds(root, blockedIds) {
         const mol = this.userMolecule;
         const visited = new Set(blockedIds);
         visited.add(root.id);
@@ -4627,9 +4955,32 @@ class Game {
                 if (!visited.has(n.atom.id)) { visited.add(n.atom.id); stack.push(n.atom.id); }
             });
         }
-        ids.forEach(id => {
+        return ids;
+    }
+
+    // root から到達できる原子（blockedIds を越えない）を dx,dy だけ剛体移動する
+    _moveSubtree(root, blockedIds, dx, dy) {
+        const mol = this.userMolecule;
+        this._subtreeIds(root, blockedIds).forEach(id => {
             const a = mol.atoms.find(x => x.id === id);
             if (a) { a.x += dx; a.y += dy; }
+        });
+    }
+
+    /**
+     * root から到達できる原子（blockedIds を越えない）を pivot まわりに ang ラジアン回す。
+     * **剛体回転なので鏡映にはならず**、枝の内部の結合長も角度も変わらない
+     * （＝ 環の外向き結合が環の中心を向いたまま保たれる。`reshapeDoubleBond` の注記を参照）。
+     */
+    _rotateSubtree(root, blockedIds, pivot, ang) {
+        const mol = this.userMolecule;
+        const c = Math.cos(ang), s = Math.sin(ang);
+        this._subtreeIds(root, blockedIds).forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (!a) return;
+            const dx = a.x - pivot.x, dy = a.y - pivot.y;
+            a.x = pivot.x + dx * c - dy * s;
+            a.y = pivot.y + dx * s + dy * c;
         });
     }
 
@@ -5242,6 +5593,20 @@ class Game {
 
     // SVG描画の更新
     updateDrawing() {
+        /* ★ **選ぶ相手が1つも無くなったら、選ぶモードは終わり**（v1454・ユーザー申し立て
+           「反応分子を選ぶ → 全消去などしてもモードが維持される」）。
+
+           実測（どの操作でモードが残るか）:
+             🗑 全消去 ／ 🗑 全消去×2 ／ ↩ 戻す（空に戻る）／ 消しゴムで全部消す … **残る**
+             名称から呼び出す … 残る（★ これは正しい。先に1つ選んでから相手を呼ぶのは正しい使い方）
+             道具を選ぶ ／ モードタブ ／ 機構ビューア … 下りる（v1409 の4経路）
+           ＝ 残る4つの共通点は「**分子が0個になった**」。経路ごとに手当てを足すのではなく、
+           v1416 のバッジと同じ約束で**状態から導く** ＝ ここ1行で全部が閉じる。
+           ⚠ 空のキャンバスで選ぶモードに居ると、タップは選択に振り替えられたまま何も選べない
+             ＝ 作図に戻れない行き止まりになる（v1409 で塞いだ穴と同じ形）。
+           ⚠ `canvasMoleculeCount()` を呼ぶのは**モードが ON のときだけ**（OFF のときは
+             作図のたびの `splitMolecules()` を1回も増やさない）。 */
+        if (this.reactionSelectMode && this.canvasMoleculeCount() === 0) this._dropReactionSelectState();
         // ★ 常設バッジは**いちばん先**にそろえる（v1416）。この下には反応機構ビューアが
         //   持ち主のときの早い return があり、そこで折り返すと
         //   「モードは下りたのにバッジが残る」型の食い違いが生まれる
@@ -5578,6 +5943,8 @@ class Game {
      * - **上下に並んだ分子**は、下へ送ると下の分子を追い越してしまう（「①の名前が②より下」
      *   という読めない並びになる）。そこで**分子の上**へ回す
      *   ＝ ユーザー指摘の「見出しが下の分子の絵に乗る」はここで解消される
+     *
+     * ★ **書き出し練習中だけ、段送りの距離そのものに値段が付く**（`labelDriftPenalty`・v1440）。
      */
     placeMoleculeLabels(items, h, hidden, hydrogens) {
         const ink = this.labelInk(items, hidden, hydrogens);
@@ -5603,10 +5970,18 @@ class Game {
                 // 横に長いので**縦の帯を分子の数だけ**用意しないと収まらない。6段では足りなかった
                 const steps = [0];
                 for (let k = 1; k <= 12; k++) { steps.push(k * need); steps.push(up - (k - 1) * need); }
+                // ★ 練習中だけ「図から離れる」に上限と値段を付ける（v1440・`labelDriftPenalty`）。
+                //   ⚠ 測るのは**段の数ではなく図との隙間**（`labelDriftRows`）——
+                //   「分子の上へ回す」候補は段数こそ大きいが図には隣接しているので、
+                //   段の数で測ると**いちばん近い候補を真っ先に捨てる**
+                const limit = this.labelDriftLimit();
+                const drift = this.labelDriftPenalty();
                 let best = 0, bestCost = Infinity;
                 for (const n of steps) {
                     const rect = { x: it.x, y: it.home + n * GRID_SIZE, w: it.w, h };
-                    const cost = this.labelPlacementCost(rect, it, ink, placed);
+                    const away = this.labelDriftRows(rect, it);
+                    if (away > limit) continue;         // n=0（既定）は必ず away=0 なので候補は尽きない
+                    const cost = this.labelPlacementCost(rect, it, ink, placed) + drift * away;
                     if (cost === 0) { best = n; bestCost = 0; break; }
                     if (cost < bestCost) { bestCost = cost; best = n; }
                 }
@@ -5691,8 +6066,12 @@ class Game {
                 }
                 ny = clamp(it.top); bestCost = Infinity;
                 let bestHard = Infinity;
+                // ★ 練習中は「図から離れてよい上限」を引き戻しにも掛ける（v1440）。
+                //   ここを素通しにすると、段送りで抑えた番号が**引き戻しのほうで**figure から離れる
+                const limit = this.labelDriftLimit();
                 for (const y of cands) {
                     const rect = rectOf(it, y, nx);
+                    if (this.labelDriftRows(rect, it) > limit) continue;
                     const hard = this.labelPlacementCost(rect, it, ink, placed);
                     // 格子行を跨ぐのは「そこへ原子を置けなくなる」ので嫌う（§13-3）。
                     // 重なり（10000）より軽く、跨ぎ（300）より重い
@@ -5823,6 +6202,75 @@ class Game {
     }
 
     /**
+     * ★ 段送りの「1マス動くごとの値段」（v1440・ユーザー実機報告 2026-08-21
+     * 「異性体の書き出し、図が上下に隣接すると丸数字がまとめてしたに行く」）。
+     *
+     * **v1432 が消しそこねた経路**: あのときの直しは2つとも**隙間を作る側**だった ——
+     * ② `labelScale()` を練習中 1 にしてチップが太らないようにし、
+     * ①' `tidyAnswerSlots()` の縦の隙間を 126px にして「1マス＋チップ＋下の行の自動水素」を
+     * 収めた。どちらも **`🧹 並べ直す` が作る配置**の話で、
+     * ⚠ **人が自分で描いた配置には1つも効かない**。
+     * 格子は 42px なので「2マスあけて次の答案を描く」＝ **縦の隙間 84px** はごく自然に起きるが、
+     * 必要なのは 46.2（見出しを置かない帯）＋ 34（チップ）＋ 25（下の行の自動水素）＝ **105.2px**。
+     * 実測（1280×800・v1439・4炭素の直鎖を縦に 84px 間隔で6個）: **6/6 が動き、最大 10マス（420px）**。
+     * 126px 間隔なら 0/6。⚠ **IW17 はこの条件を見ていなかった** ——
+     * (3) の「並べ直しなし」も `ipTidySheet(…, 3)` ＝ **3マスの隙間で整然と描いた答案**で、
+     * 2マスの配置は「v1431 までの並べ直しの再現」＝ **ずれて当然の否定対照**として置いてあった。
+     *
+     * **直すのは段送りの値段のほう**（発注書 ORDER_isomer_2026-08-20.md §A-3 の案③にあたるが、
+     * ⚠ **全モードには広げない**）。`labelPlacementCost` は距離をまったく数えないので、
+     * 近くが埋まっていると**遠くの空き行のほうが安い** ＝ 行き場を失った番号が下へ下へと
+     * 送られて最下段に固まる。ここに 1マスあたりの値段を足すと、
+     * **「1つ重なるのを避けるために動いてよいのは2マスまで」**（10000 ÷ 4000）になる。
+     *
+     * **練習中に限る理由**（＝ 案③の害を避ける形）:
+     * - 練習中の見出しは**押せない番号**（`canvasEntryEnabled()` が false。§12-3）で、
+     *   仕事は「この図は何番か」だけ。**遠くへ行った時点で仕事をしていない**ので、
+     *   自動水素にわずかに乗るほうがましだと言い切れる
+     * - 練習の外の見出しは**名前つきの押せる的**。読めない・押しにくいほうが害が大きいので、
+     *   重なりを避けるためならいくらでも動いてよい（ML 帯・夜間監査ファズの実測値を1つも動かさない）
+     *
+     * ⚠ **横並びの段送りは殺していない**。左右に並んだ分子の見出しどうしの食い合いは
+     * **1マス下**（4000 < 10000）で解けるので、「段違いに並ぶ」既定の振る舞いはそのまま残る。
+     */
+    labelDriftPenalty() {
+        if (this.labelDriftGuard === false) return 0;
+        return this.worksheetActive() ? LABEL_DRIFT_PENALTY : 0;
+    }
+
+    /**
+     * 見出しが自分の図から離れてよい上限（マス）。練習の外は `Infinity` ＝ **1px も振る舞いを変えない**。
+     * ⚠ **上限のほうが値段より本体**。`labelPlacementCost` の重なりは
+     * **重なった図形の数だけ 10000 が積み上がる**（自動水素も1つずつ数える）ので、
+     * 実測では 1か所で 5万〜6万になり、**どんな1マスあたりの値段でも遠くの空き行のほうが安くなる**。
+     *
+     * ⚠ **否定対照の口（`labelDriftGuard = false`）を開けてある**（`labelCollisionAvoid` と同じ流儀）。
+     * v1440 の上限は v1431 の症状（チップが画面px 固定で太る）にも**ついでに効いてしまう**ので、
+     * これを閉じないと **IW17 の否定対照A・B が空振りの緑になる**（実測: 12件中 4件 → 1件に落ちた）。
+     * 口を開けると v1431 の素の状態に戻り、②（`labelScale`）が何を直したのかを名指しできる。
+     */
+    labelDriftLimit() {
+        if (this.labelDriftGuard === false) return Infinity;
+        return this.worksheetActive() ? LABEL_DRIFT_MAX_ROWS : Infinity;
+    }
+
+    /**
+     * その置き場所が、**自分の分子の絵から何マス離れているか**（既定の隔たり ＝ 1.1マスを 0 とする）。
+     *
+     * ⚠ **段の数（`n`）で測ってはいけない。** 候補には「分子の上へ回す」があり、
+     * これは段の数こそ大きい（実測 −4段）が**図には隣接している**（枠の下端が分子の上端の 1.1マス上）。
+     * 段の数で足切りすると、**いちばん近い候補を真っ先に捨てて**下へ流す方向へ押し戻してしまう。
+     *
+     * 図に重なっている置き方（またぐ形）は 0 を返す ＝ 「離れていない」。
+     * 離れているかどうかだけを見る道具で、重なりの良し悪しは `labelPlacementCost` の担当。
+     */
+    labelDriftRows(rect, item) {
+        const below = rect.y - item.maxY;              // 図の下端から枠の上端まで
+        const above = item.minY - (rect.y + rect.h);   // 枠の下端から図の上端まで
+        return Math.max(0, (Math.max(below, above) - GRID_SIZE * 1.1) / GRID_SIZE);
+    }
+
+    /**
      * 実際に置いた見出しの矩形（琥珀の枠・選択枠がこれを囲む）。段送りが入ると
      * 「下へ `labelExtent()` px」では足りない（上へ回ることもある）ので、描いた実物を引く。
      */
@@ -5853,8 +6301,36 @@ class Game {
      * 段送り（§12）の送り幅は `ceil(チップの高さ / 1マス)` マスなので、倍率と一緒に伸び縮みする
      * ＝ **画面上の送り幅もほぼ一定**に保たれ、上限を外しても重なり回避の効きは変わらない。
      * 縮尺は **`getScreenCTM()` から読む**（viewBox 比の手計算はレターボックスを見落とす。開発方針 3.3章）
+     *
+     * ★ **書き出し練習中だけは 1 を返す**（＝ 図と同じ縮尺。v1432・ユーザー報告
+     * 「番号①がまとめて下側に表示される」／発注書 ORDER_isomer_2026-08-20.md §A-3 の案②）。
+     *
+     * **理由の食い違いが症状の根っこだった**:
+     * - 34px の床は **押せる的だから**あるもの（TAP1 と同じ物差し）。
+     *   ⚠ **練習中の見出しは押せない** —— `canvasEntryEnabled()` が `worksheetActive()` で
+     *   false を返し、枠は `pointer-events:none`・塗りも線も `none` の**ただの番号**になる（§12-3）。
+     *   押せないものに的の下限を使う理由は1つも無い。
+     * - いっぽう置き場所（分子の下端＋1.1マス）と `tidyAnswerSlots()` の隙間
+     *   （`GAP = GRID_SIZE * 2 = 84px`）は**モデル座標**。画面px 固定のチップは
+     *   **引いて見るほどモデル座標で太る**ので、答案が増えるほど必ず 84px を食い破る
+     *   （実測・1280×800: 答案20個で 1マス＋チップ ＝ 101.8px ＞ 84px。
+     *   スマホ 375px では 184.7px）。ぶつかった見出しは `placeMoleculeLabels` の段送りで
+     *   逃げるが、`labelPlacementCost` は距離を数えないので**遠くの空き行のほうが安い** ＝
+     *   行き場を失った番号が下へ下へと送られて最下段に固まる（実測 最大 16マス＝672px）。
+     *
+     * 1 を返すと 1マス＋チップ ＝ 46.2 + 34 ＝ **80.2px** で、`GAP` の 84px の内側に必ず収まる
+     * ＝ **並べ直しの有無にも、スマホにも同時に効く**（案①は隙間を広げるだけなので
+     * 並べ直さない経路に届かず、案③は全モードの重なり回避の実測値を動かす）。
+     *
+     * ⚠ **床は置かない。** 置いた瞬間にチップがまたモデル座標で太り、同じ症状に戻る
+     * （画面 12px の床でも 20個・PC で 89px ＝ 84px 超）。読みやすさは
+     * **図と同じ比率で縮む**ことで担保する ＝ 番号が読めないほど引いた絵は、
+     * 分子そのものも読めない（結合1本が 10px 前後）。
      */
     labelScale() {
+        // ★ 書き出し練習中は「図に紐づいた画面上の道具」ではなく**図の一部（欄外番号）**。
+        //   押せないので的の下限は要らない ＝ 図と同じ縮尺に戻す
+        if (this.worksheetActive()) return 1;
         const m = this.svg && this.svg.getScreenCTM ? this.svg.getScreenCTM() : null;
         const k = m && m.a > 0 ? m.a : 1; // 画面px / SVG単位
         // 桁あふれよけの数値ガードだけ置く（縮尺が取れない・0 に近い異常時の保険）。
@@ -5969,6 +6445,9 @@ class Game {
      */
     tapHasOtherMeaning() {
         if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return true;
+        // ★ 「立体が分かれる場所」の印モード（v1435・段1）。**結合をタップして印を付ける**ので、
+        //    ここに載っていないと判定線に食われて C=C が C≡C に化ける（§4-3・`IW26`）
+        if (this.stereoPointMode) return true;
         if (window.stereoView && window.stereoView.picking) return true;
         if (window.reactor && (window.reactor.picking || window.reactor._morphing)) return true;
         if (window.reactionPlayer && window.reactionPlayer.blocksEditing()) return true;
@@ -6319,12 +6798,37 @@ class Game {
         live.innerHTML = spec.live || '';
         prog.textContent = spec.progress || '';
         acts.innerHTML = '';
+        // ★ 帯に**書かせる**欄を置けるようにした（v1435・段2「立体異性体も含めた総数」）。
+        //   ⚠ 押しもの（`actions`）とは別の配列にする —— 帯の中身は「いま何をする所か」で
+        //     並びが決まるので、入力欄をボタンの列に混ぜると押しどきが読めなくなる。
+        //   欄は**押しものより前**に出す（数を書いてから答え合わせを押す順そのもの）
+        (spec.fields || []).forEach(f => {
+            const wrap = document.createElement('label');
+            wrap.className = 'ws-field';
+            wrap.style.cssText = 'display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--text-secondary); white-space:nowrap;';
+            if (f.title) wrap.title = f.title;
+            if (f.label) wrap.appendChild(document.createTextNode(f.label));
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.inputMode = 'numeric';
+            input.className = 'ws-field-input';
+            if (f.id) input.id = f.id;
+            input.value = f.value == null ? '' : String(f.value);
+            if (f.placeholder) input.placeholder = f.placeholder;
+            input.style.cssText = 'width:56px; padding:4px 6px; background:rgba(0,0,0,0.35); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px; font-size:13px; text-align:right;';
+            if (f.onInput) input.addEventListener('input', () => f.onInput(input.value));
+            wrap.appendChild(input);
+            if (f.suffix) wrap.appendChild(document.createTextNode(f.suffix));
+            acts.appendChild(wrap);
+        });
         (spec.actions || []).forEach(a => {
             const b = document.createElement('button');
             b.className = (a.primary ? 'primary-btn' : 'view-btn') + ' ws-action';
             b.textContent = a.label;
             if (a.title) b.title = a.title;
+            if (a.id) b.id = a.id;
             b.disabled = !!a.disabled;
+            if (a.active) b.classList.add('active');
             b.addEventListener('click', a.onClick);
             acts.appendChild(b);
         });
@@ -6354,20 +6858,56 @@ class Game {
      * ボタン自身の handler が先に走り終えてからここへ bubble してくる。
      * 非同期にすると、テストと台本が「押した直後」を見たときにまだ閉じていない。
      * ⚠ `change` も同じ理由で拾う（`#check-reaction-mode` の toggle と `#select-reaction`）。
+     *
+     * ★ **見るのは「出ているか」ではなく「この一押しで動いたか」**（v1439・ユーザー実機報告
+     *   「反応の種類が選べない」）。以前は**いま作業帯が出ていれば無条件に閉じて**いたので、
+     *   **すでに帯が出ているあいだは、メニューを開き直して中を触った瞬間に閉じた** ——
+     *   実測（:8240・Playwright）:
+     *   ```
+     *   ① 一覧から1件目を選ぶ   帯=出る / メニュー=引っ込む          （ここまでは正しい）
+     *   ② 📚 を押し直す         メニュー=開く / 帯=出たまま
+     *   ③ ⚗️ の見出しを押す     メニュー=閉じる ❌ アコーディオンも畳まれる ❌
+     *   ```
+     *   ＝ **1件目を見たあと、2件目を選びに戻る道が無い**（触るたびに閉じるので永久に届かない）。
+     *   バトンは①で渡し終えているのに、②③でもう一度渡したことにしていたのが誤り。
+     *
+     * ⚠ **列挙しない方針は変えない。** 見るものを「いま出ているか」から
+     *   「押す前と押した後で、キャンバスの側（作業帯の面と中身・別のモーダル）が変わったか」
+     *   に替えるだけ。**中身**まで見るのは、同じ面のまま別のお題に差し替わる経路
+     *  （練習中に別のお題を押す）を落とさないため。
      */
     setupStudyModal() {
         const modal = document.getElementById('study-modal');
         if (!modal) return;
         const close = document.getElementById('btn-study-close');
         if (close) close.addEventListener('click', () => this.setStudyOpen(false));
-        const handoff = () => {
-            if (modal.classList.contains('hidden')) return;
-            const otherModal = [...document.querySelectorAll('.modal-overlay')]
-                .some(m => m !== modal && !m.classList.contains('hidden'));
-            const strip = document.getElementById('work-strip');
-            const stripOpen = !!strip && !strip.classList.contains('hidden');
-            if (otherModal || stripOpen) this.setStudyOpen(false);
+        // キャンバスの側の様子（出ている面とその中身・別モーダルの数）
+        const canvasSide = () => {
+            const panes = new Map();
+            document.querySelectorAll('#work-strip .ws-pane').forEach(p => {
+                if (!p.classList.contains('hidden')) panes.set(p.id, p.textContent);
+            });
+            const others = [...document.querySelectorAll('.modal-overlay')]
+                .filter(m => m !== modal && !m.classList.contains('hidden')).length;
+            return { panes, others };
         };
+        /**
+         * 「バトンを渡した」＝ **何かが新しく出た**（面が出た・面の中身が別の作業に差し替わった・
+         * 別のモーダルが開いた）。⚠ **消えたのは渡したことにしない** —— 「練習をやめる」は
+         * 面を1つ引っ込めるだけで、行き先はこのメニュー自身（お題選びに戻る道・LX6）。
+         */
+        let before = null;
+        const snap = () => { before = canvasSide(); };
+        const handoff = () => {
+            if (modal.classList.contains('hidden') || before === null) return;
+            const now = canvasSide();
+            const grew = now.others > before.others ||
+                [...now.panes].some(([id, text]) => !before.panes.has(id) || before.panes.get(id) !== text);
+            if (grew) this.setStudyOpen(false);
+        };
+        // ⚠ capture で先に控える（モーダルは祖先なので、中のボタンの handler より前に走る）
+        modal.addEventListener('click', snap, true);
+        modal.addEventListener('change', snap, true);
         modal.addEventListener('click', handoff);
         modal.addEventListener('change', handoff);
     }
@@ -6651,10 +7191,19 @@ class Game {
         if (mode !== 'learn' && window.stereoPractice && window.stereoPractice.active) {
             window.stereoPractice.stop();
         }
-        // 自由モードを離れるときは反応の前後比較を破棄し、モーフィング再生を止める（P12-5）
+        // 自由モードを離れるときは前後比較の**画面を閉じ**、モーフィング再生を止める（P12-5）。
+        // ⚠ **記録（`lastReaction`）は捨てない**（v1423・DESIGN_reaction_execution.md §12）。
+        //   かつてここが `exitCompare()`（＝記録ごと破棄）を呼んでいたため、
+        //   「⚗ この反応の機構を見る」は `setMode('learn')` を通る ＝ **機構を見にいっただけで
+        //   直近の反応の記録が消え、戻ってきても「↩ 反応前に戻す」が出せなかった**。
+        //   分子は `reaction.js` の `borrowCanvas()` / `returnCanvas()` が退避・復帰しているので、
+        //   捨てられていたのは記録だけ ＝ 全消去用の掃除が機構ジャンプにも効いていただけだった。
+        //   捨てる側（`discardLastReaction()`）は全消去と「↩ 反応前に戻す」が呼ぶ。
+        //   帰ってきた図が本当に反応後のままかは `reactor.syncUndoButton()` の門番が見る
+        //   ＝ 描き足していれば札は出ない（RX31 ①・RX42）
         if (mode !== 'free' && window.reactor) {
             window.reactor.finalizeMorph();
-            window.reactor.exitCompare();
+            window.reactor.closeCompare();
         }
         // パズル以外へ移ると判定結果表示は消す（トーストの残りが紛らわしいため）
         if (mode !== 'puzzle') {
@@ -6676,6 +7225,8 @@ class Game {
         if (window.reactor) window.reactor.refresh();
         // 右パネルに残すのは**件数だけ**（同書 §4-1）。reactor.refresh() が数え終わった直後に書き換える
         this.syncInspectButton();
+        // ⇅ 上下に裏返す の札も同じところでそろえる（糖のハース図のときだけ出る）
+        this.syncHaworthFlipButton();
         const el = document.getElementById('molecule-props');
         if (!el) return;
         const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
@@ -7327,6 +7878,22 @@ class Game {
             });
         }
 
+        // 1.5 「立体が分かれる場所」の結合の印（v1435・段1）。
+        //     原子側の印（`*`）と対になるもので、**見た目も同じオレンジ**にそろえる。
+        //     中点にリングを1つ置くだけ ＝ 二重結合の2本線の上でも読める
+        if (!isHConnection && bondObj && bondObj.isStereoMarked) {
+            const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            ring.setAttribute('cx', (sx + ex) / 2);
+            ring.setAttribute('cy', (sy + ey) / 2);
+            ring.setAttribute('r', '9');
+            ring.setAttribute('fill', 'none');
+            ring.setAttribute('stroke', 'var(--neon-orange, #ff9f43)');
+            ring.setAttribute('stroke-width', '2');
+            ring.setAttribute('class', 'svg-stereo-bond-mark');
+            ring.setAttribute('pointer-events', 'none'); // 飾りに入力を受けさせない（v1373 の教訓）
+            this.bondsGroup.appendChild(ring);
+        }
+
         // 2. 判定用の透明な太い線を重ねて描画し、クリック・ダブルクリックイベントをアタッチする
         if (!isHConnection && bondObj) {
             const hitLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -7630,15 +8197,31 @@ class Game {
      * 分析対象（`focusedMolecule`）と同じ考え方でそろえる ＝ 図の琥珀の枠・右パネルの分類・
      * この画面がいつも同じ分子を指す。**選択（`selectedMolecules`）とは混ぜない**。
      */
-    moleculeModalPart() {
-        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
-        if (!parts.length) return null;
+    moleculeModalPart(parts) {
+        const list = parts || this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (!list.length) return null;
         if (this.focusedMolecule) {
-            const hit = parts.find(p => p.atoms.some(a => a.id === this.focusedMolecule));
+            const hit = list.find(p => p.atoms.some(a => a.id === this.focusedMolecule));
             if (hit) return hit;
         }
         const { marks } = this.markedMolecules(null);
-        return parts.find(p => marks.has(p)) || parts[0];
+        return list.find(p => marks.has(p)) || list[0];
+    }
+
+    /**
+     * モーダルが対象にしている1分子の原子ID集合（v1429）。
+     * **キャンバスに分子が2つ以上あるときだけ返す**（1つなら絞る相手がいないので `null` ＝ 素通し）。
+     *
+     * ⚠ これは `reactor.siteFilter()` が「何も選んでいないときの既定」に使う
+     *   ＝ ユーザーの実機報告「ブタン酸を見ているのにヨードホルム反応が出て、
+     *   押すとケトンが反応する」の直し。**どの分子を見ているかの判定は
+     *   `moleculeModalPart()` 1つだけ**にして、見出しの名前・タブ・反応の一覧が必ず同じ分子を指す。
+     */
+    moleculeModalAtomIds() {
+        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (parts.length < 2) return null;
+        const part = this.moleculeModalPart(parts);
+        return part ? new Set(part.atoms.map(a => a.id)) : null;
     }
 
     openMoleculeModal(atomId) {
@@ -7693,6 +8276,147 @@ class Game {
         btn.textContent = `⚗ 反応させる・調べる（反応 ${n > 0 ? n + '件' : '—'}）`;
     }
 
+    /* ===== ⇅ 上下に裏返す（分子まるごと・DESIGN_sugar.md §1-2b 帰結3・v1450） =====
+
+       ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
+       > **「上下を入れ替えるように裏返す（カレンダーをめくる）」**
+
+       ⚠ **これは §1-2 の②（y 反転 ＋ たどる向き逆 ＋ 面マークも反転）ただ1つ。**
+         平面のハース図で意味を保つ座標操作は②しかない ——
+         **左右の鏡映も、面内180°回転（メリーゴーランド）も、鏡像の図になる**ので
+         「同じ分子の置き直し」としては出さない（§1-2b の表。出題としてはクイズ側が扱う）。
+       ⚠ **動かすのはいつも分子1つぶん全部。**「片方の環だけ」の反転は
+         グリコシド結合を切らないと起こせない ＝ 起きえないので復活させない（v1449）。
+         ★ したがって `haworthCanvasFlip` は**使わない** —— あれは環が2つある分子には
+         **片方の環だけ**を当てる（`haworthFlipPlan` の `ids` がそうなっている）。
+         ここで借りるのは `haworthFlipPlan(part).ok` ＝ **門番だけ**（登録 16件に一致・実測）。 */
+
+    /** この分子（連結成分1つ）を分子まるごと裏返せるか（＝ 帯に札を出すか） */
+    canFlipWholeHaworth(part) {
+        if (!part) return false;
+        if (!haworthFlipPlan(part).ok) return false;   // ハース図として読む糖の環があるか
+        return canFlipHaworth(part, part.atoms.map(a => a.id));
+    }
+
+    /**
+     * ★ 分子まるごとの上下フリップ。戻り値 `{ ok, reason }`。
+     *
+     * ⚠ **軸は覚える。** 折り返した図から重心を計算しなおすと、浮動小数の丸めで
+     *   **16/16 とも1回目の座標に戻らない**（実測）。同じ軸をもう一度使えば **16/16 で完全一致**。
+     *   覚えた軸を使ってよいのは「前回裏返した直後の図がそのまま残っているとき」だけなので、
+     *   **裏返したあとの図の指紋**を一緒に覚えて、食い違ったら軸を取り直す。
+     * ⚠ **立体が変わる置き直しは採らない**（`haworthCanvasFlip` の3手目と同じ約束を自分で守る）。
+     */
+    flipWholeHaworth() {
+        const part = this.moleculeModalPart();
+        if (!this.canFlipWholeHaworth(part)) return { ok: false, reason: 'gate' };
+        const mol = this.userMolecule;
+        const ids = part.atoms.map(a => a.id);
+        const atoms = ids.map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+        if (atoms.length !== ids.length) return { ok: false, reason: 'gate' };
+        const sig = this._haworthFlipSignature(atoms);
+        const memo = this._haworthFlipMemo;
+        let axisY;
+        if (memo && memo.sig === sig) {
+            axisY = memo.axisY;                      // ＝ もう一度押した ＝ 厳密な逆操作
+        } else {
+            const heavy = atoms.filter(a => a.element !== 'H');
+            const list = heavy.length ? heavy : atoms;
+            axisY = list.reduce((t, a) => t + a.y, 0) / list.length;
+        }
+        const print0 = this.haworthStereoFingerprint(part);
+        const snap = atoms.map(a => ({ a, y: a.y, f: a.haworthFace }));
+        this.saveState();
+        flipHaworth(mol, ids, axisY);
+        // ★ 立体が変わっていないことを確かめてから採る（変わるなら1ピクセルも残さない）
+        const after = this.splitMolecules().find(p => p.atoms.some(x => x.id === ids[0]));
+        if (!after || this.haworthStereoFingerprint(after) !== print0) {
+            snap.forEach(s => { s.a.y = s.y; s.a.haworthFace = s.f; });
+            this.history.pop();
+            return { ok: false, reason: 'stereo' };
+        }
+        this._haworthFlipMemo = { sig: this._haworthFlipSignature(atoms), axisY };
+        this.updateDrawing();
+        return { ok: true, axisY };
+    }
+
+    /** 図の指紋（「前回裏返した直後のまま残っているか」を見るためだけのもの） */
+    _haworthFlipSignature(atoms) {
+        return atoms.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+            .map(a => `${a.id}:${a.x},${a.y},${a.haworthFace || 0}`).join(';');
+    }
+
+    /* ===== ⇄ 左右に裏返す・⟳ 180°回す（DESIGN_sugar.md §1-2c・ユーザー発注） =====
+     *
+     * ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
+     * > **「左右に裏返す（本のページをめくる）」／「180度メリーゴーラウンド回転」**
+     *
+     * ⚠ **⇅ とどこが違うか**: ⇅ は剛体（分子まるごとを1本の軸で折り返すだけ）。
+     *   この2つは **x 鏡映／180°回転のあとに、置換基を付け根の環炭素について上下に付け替える**。
+     *   付け替えを外すと**16件すべてが鏡像の図**になる（＝ v1451 の罠そのもの。KV3 が見張る）。
+     * ⚠ **札の門番は ⇅ と共有**（`haworthTurnPlan` が `haworthFlipPlan` に相乗り）＝
+     *   3つの札は必ず一緒に出入りする。
+     * ⚠ **軸を覚えない**のは手抜きではない。軸（ハース糖の環原子の重心）は
+     *   この2操作で**不変**なので、取り直しても同じ値になる ＝ 2回押せば1ピクセルの誤差もなく戻る
+     *   （実測 16/16。⇅ が `_haworthFlipMemo` を要るのは重原子の重心を軸にしているから）。
+     */
+
+    /** この分子（連結成分1つ）を ⇄ / ⟳ で置き直せるか（＝ 帯に札を出すか） */
+    canReframeWholeHaworth(part) {
+        if (!part) return false;
+        if (typeof haworthTurnPlan !== 'function') return false;
+        return haworthTurnPlan(part).ok;
+    }
+
+    /**
+     * ★ 分子まるごとの ⇄（`'leftright'`）／⟳（`'halfturn'`）。戻り値 `{ ok, reason }`。
+     * ⚠ **門番は ⇅ と同じ最後の関所**: 当てたあとに図から立体コードを読み直し、
+     *   元と食い違ったら**1ピクセルも残さず巻き戻す**（黙って鏡像の図を作らない）。
+     */
+    reframeWholeHaworth(kind) {
+        const part = this.moleculeModalPart();
+        if (!this.canReframeWholeHaworth(part)) return { ok: false, reason: 'gate' };
+        const plan = haworthTurnPlan(part);
+        const mol = this.userMolecule;
+        const atoms = plan.ids.map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+        if (atoms.length !== plan.ids.length) return { ok: false, reason: 'gate' };
+        const print0 = this.haworthStereoFingerprint(part);
+        const snap = atoms.map(a => ({ a, x: a.x, y: a.y, f: a.haworthFace }));
+        this.saveState();
+        if (!haworthTurn(mol, plan, kind)) { this.history.pop(); return { ok: false, reason: 'gate' }; }
+        const after = this.splitMolecules().find(p => p.atoms.some(x => x.id === plan.ids[0]));
+        if (!after || this.haworthStereoFingerprint(after) !== print0) {
+            snap.forEach(s => { s.a.x = s.x; s.a.y = s.y; s.a.haworthFace = s.f; });
+            this.history.pop();
+            return { ok: false, reason: 'stereo' };
+        }
+        // ⇅ の覚えは無効になる（図が変わったので、次の ⇅ は軸を取り直すのが正しい）
+        this._haworthFlipMemo = null;
+        this.updateDrawing();
+        return { ok: true, axis: plan.axis };
+    }
+
+    /**
+     * 帯の札の出し入れ（`reactor.syncUndoButton` と同じ流儀・作図のたびに呼ばれる）。
+     * ⚠ **自由モードだけ**。パズル中は図を書き換えられるとお題の判定が意味を失う。
+     * ⚠ **3つの札（⇅・⇄・⟳）は一緒に出入りする**（門番を共有しているのだから、
+     *   片方だけ出ると「この糖は裏返せるのに回せない」という嘘になる）。
+     */
+    syncHaworthFlipButton() {
+        const btn = document.getElementById('btn-flip-updown');
+        if (!btn) return false;
+        const part = this.moleculeModalPart();
+        const free = this.currentMode === 'free';
+        const on = free && this.canFlipWholeHaworth(part);
+        btn.classList.toggle('hidden', !on);
+        const turn = free && this.canReframeWholeHaworth(part);
+        ['btn-flip-leftright', 'btn-turn-half'].forEach(id => {
+            const b = document.getElementById(id);
+            if (b) b.classList.toggle('hidden', !turn);
+        });
+        return on;
+    }
+
     // 見出し（名前・分子式）と、分子が2つ以上あるときの①②③タブを描く
     renderMoleculeModal() {
         const part = this.moleculeModalPart();
@@ -7730,6 +8454,262 @@ class Game {
         });
     }
 
+    /* ===== ハース環の置き直し（DESIGN_sugar.md 段4-b・§1-2b。v1450 で作り直した） =====
+
+       ⚠ **「片方の環だけを裏返す」ボタンは置かない。** v1445〜v1446 には分子モーダルに
+       「⇅ 五員環を裏返す」という節があったが、v1447 で節ごと外した。理由は 2 行:
+
+       - **分子まるごとの裏返しには意味がある。**「同じ分子を違う向きで描いた図」を見抜くのは
+         それ自体が力で、入試の応用問題の型でもある（例: マルトースを上下反転した図を並べて
+         正しい図を選ばせる）。⚠ **その土台は残してある** ——
+         `haworthCanvasFlip` は環が1つの分子には**分子まるごと**の反転として当たる。
+       - ⚠ **二糖の「片方の環だけ」の反転は、グリコシド結合を切らないと起こせない。**
+         そして切る操作こそが加水分解である。＝ つながったままの二糖に対して
+         片方だけ裏返すボタンは、**起きえないことを押させていた**。
+
+       したがってキャンバスで図が置き直されるのは**加水分解の瞬間だけ**（下の
+       `redrawProductsAsStandalone`）で、そこで動くのは**切り離されて1分子になった単糖**
+       ＝ やはり「分子まるごと」である。
+
+       ⚠ **v1447 は「たどる向き」だけを直していた（`restoreHaworthOrientation`）。足りなかった。**
+       向きをそろえても**環の O の位置まではそろわない**ので、ユーザーから
+       「上下逆に見える」と報告が出た。v1450 で**図そのものを写す**形（乙案）に替えた。 */
+
+    /** 立体まで込みの指紋（置き直しの前後で「同じ分子のまま」かを確かめるのに使う） */
+    haworthStereoFingerprint(mol) {
+        return canonicalCode(mol) + '|' + canonicalStereoCode(mol, {
+            atomParity: { ...readAtomParityFromFischer(mol), ...readRingParityFromHaworth(mol) },
+            bondGeo: readBondGeoFromCoords(mol)
+        });
+    }
+
+    /**
+     * ★ この断片（連結成分1つ）を**その分子を単独で描くときの図**へ写す対応を返す。
+     *   引けなければ `null`（＝ 触らない）。
+     *
+     * 「単独で描くときの図」はライブラリの作図から取ってくる（`getCompoundLibrary`）。
+     * ⚠ **これは目的ではなく手段。** 目的は下の `redrawProductsAsStandalone` にある
+     *   「加水分解の前後で分子の形を対応させる」で、**その対応先を "単独で描いたときの図" に
+     *   取っている**、という関係。ここを目的だと読むと「図の整形機能」に化けて、
+     *   加水分解と切り離して呼ばれるようになる。
+     * ⚠ **名前の文字列では引かない。** `lookupCompoundName` は「〜ほか N 種 のどれか」を
+     *   返すことがあり、そこから作図は取れない。**言い切れる（候補が1件に絞れる）ときだけ**
+     *   採るので、ここでは構造と立体コードで直に引く。
+     * ⚠ **「立体を名前に反映する」トグルには依らない。** 図の描き方は名前の出し方とは別の軸。
+     * ⚠ **原子IDに順序を頼らない**（IDは乱数・DEVELOPMENT.md の既知の地雷）。対応づけは
+     *   **立体込みの同型写像**（`stereoIsomorphismCompare`）で取り、
+     *   読めた立体中心が**全部一致する写像**でなければ採らない。
+     *
+     * 戻り値 `{ name, spots }` … `spots` は 断片のatomId → 単独の図の原子。
+     */
+    standaloneDrawingOf(part) {
+        // 明示の H は同型写像（重原子だけ）に乗らないので写せない ＝ 触らない
+        if (part.atoms.some(a => a.element === 'H')) return null;
+        this.getCompoundLibrary(); // コードMapの構築を保証
+        const stereoOf = m => ({
+            atomParity: { ...readAtomParityFromFischer(m), ...readRingParityFromHaworth(m) },
+            bondGeo: readBondGeoFromCoords(m)
+        });
+        const st = stereoOf(part);
+        const code = canonicalStereoCode(part, st);
+        const hits = (this._compoundCodeMap.get(canonicalCode(part)) || [])
+            .filter(e => e.stereoCode && e.stereoCode === code && verifyMolecule(part, e.mol));
+        if (hits.length !== 1) return null;  // 言い切れないなら触らない
+        const entry = hits[0];
+        if (entry.mol.atoms.some(a => a.element === 'H')) return null;
+        const cmp = stereoIsomorphismCompare(part, st, entry.mol, stereoOf(entry.mol));
+        if (!cmp || !cmp.total || cmp.matched !== cmp.total) return null;
+        const spots = new Map();
+        for (const a of part.atoms) {
+            const t = entry.mol.atoms.find(x => x.id === cmp.map[a.id]);
+            if (!t) return null;             // 写せない原子が1つでもあれば採らない
+            spots.set(a.id, t);
+        }
+        // ⚠ 結合次数まで対応していることを確かめる。同型写像はベンゼン環の結合を
+        //   芳香族に正規化して比べるので、**ケクレの位相が入れ替わった写像**もありうる
+        //   （糖では起きないが、ここは「図をまるごと写す」ので位相が変わると別の絵になる）
+        for (const b of part.bonds) {
+            const t = entry.mol.getBond(spots.get(b.atomId1).id, spots.get(b.atomId2).id);
+            if (!t || t.type !== b.type) return null;
+        }
+        return { name: entry.name, spots };
+    }
+
+    /**
+     * ★ **何のためにあるか**（ユーザーの言葉・2026-08-22／2026-08-24 の検収条件）:
+     *   **「フリップするのは加水分解前後の分子の形に対応するためです」**
+     *   **「スクロースの加水分解は、反応前後の分子の表示が、どちらも教科書の図になるように」**
+     *
+     * 二糖の中では、片方の環は相手とつながる都合で**単独で描くときと違う形**に描かれている
+     * （教科書のスクロースのフルクトース環がその代表）。切って1分子になった瞬間その理由は
+     * 消えるので、**切り離された単糖を「その分子を単独で描くときの図」で描き直す**
+     * ＝ 切る前の図と切ったあとの図が、同じものを指していると読める。
+     *
+     * ⚠ **向き（たどる向き）だけを直すのでは足りない**（v1447 の `restoreHaworthOrientation`
+     *   がそれで、ユーザーから「上下逆に見える」と報告が出た。`DESIGN_sugar.md` §1-2b 帰結2）。
+     *   向きをそろえても**環の O の位置まではそろわない**ので、図はまだ教科書と違う。
+     *   **図そのものを写す**（乙案）と、検収条件を構成的に満たせる。
+     * ⚠ **位置は保つ** —— 写すのは形だけで、置き場所は断片の重心のまま
+     *   （＝ 単独の図と**平行移動を除いて完全一致**する）。重なったら呼び出し側の
+     *   逃がし方（`opt.escape`）で平行移動だけ足す。
+     *
+     * ⚠ **加水分解のときだけ呼ぶこと。** 作図のたびに呼ぶと、
+     *   ユーザーが自分で置いた図をアプリが勝手に描き直す（前後の対応とは無関係な書き換え）。
+     * ⚠ **分子の名前で分岐しない**（スクロース名指しのハードコードを置かない）。
+     * ⚠ **名前が引けない断片は触らない**（`standaloneDrawingOf` が `null` を返す）。
+     * ⚠ **立体が変わる描き直しは1つも採らない**（写しの上で指紋を突き合わせてから本物へ移す）。
+     *
+     * `opt.escape(mol, ids)` … 逃がし方（`{dx,dy}` か `null` を返す）。省くと逃がさない。
+     * `opt.overlaps(mol, ids)` … 重なっているか（省くと横方向の押し広げをしない）。
+     *   ⚠ **`escape` と同じ物差しのものを渡すこと**（別々に持つと、並べた図を逃がす側が飛ばす）。
+     * `opt.alignRow` … 生成物2つを**横一列にそろえる**（`alignRedrawnProductsInRow`）。
+     *   ⚠ **既定は「そろえない」。** そろえるのは加水分解の生成物だけで、
+     *   一般の反応配置（`planAttachment` などの置き場所）には手を出さない。
+     *
+     * 戻り値は**あとで前後の対応をアニメーションにする人のための材料**（描き直さなければ空配列）:
+     *   `[{ ids, name, reshaped, before: [{id,x,y}...], after: [{id,x,y}...] }]`
+     *   —— `before` と `after` は**同じ順序・同じ長さ**なので、そのまま補間できる。
+     *   `reshaped` は「平行移動だけでは重ならなかった」＝ 形が変わったかどうか。
+     */
+    redrawProductsAsStandalone(opt) {
+        opt = opt || {};
+        const plans = [];
+        this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).forEach(part => {
+            const drawing = this.standaloneDrawingOf(part);
+            if (!drawing) return;
+            const print0 = this.haworthStereoFingerprint(part);
+            const before = part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
+            // 位置は保つ ＝ 単独の図に**重心を合わせる平行移動**だけを足す
+            const n = part.atoms.length;
+            const cx = before.reduce((t, p) => t + p.x, 0) / n;
+            const cy = before.reduce((t, p) => t + p.y, 0) / n;
+            let tx = 0, ty = 0;
+            part.atoms.forEach(a => { const t = drawing.spots.get(a.id); tx += t.x; ty += t.y; });
+            tx = cx - tx / n; ty = cy - ty / n;
+            let moved = 0;
+            part.atoms.forEach(a => {
+                const t = drawing.spots.get(a.id);
+                const nx = t.x + tx, ny = t.y + ty;
+                const b = before.find(p => p.id === a.id);
+                moved = Math.max(moved, Math.hypot(nx - b.x, ny - b.y));
+                a.x = nx; a.y = ny;
+                // ⚠ 面マークも図の一部（座標より優先されるので、置いてきぼりにすると
+                //   その1中心だけ鏡像になる。`DESIGN_sugar.md` §1-3 の地雷）
+                if (t.haworthFace === 1 || t.haworthFace === -1) a.haworthFace = t.haworthFace;
+                else delete a.haworthFace;
+            });
+            // ★ 判断は写し（part）の上で終わらせる。採らないときは本物に1ピクセルも触れていない
+            if (this.haworthStereoFingerprint(part) !== print0) return;
+            plans.push({ part, name: drawing.name, before, reshaped: moved > 0.001 });
+        });
+        if (!plans.length) return [];
+        // --- ここから本物へ写す ---
+        plans.forEach(({ part }) => part.atoms.forEach(p => {
+            const a = this.userMolecule.atoms.find(x => x.id === p.id);
+            if (!a) return;
+            a.x = p.x; a.y = p.y;
+            if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+            else delete a.haworthFace;
+        }));
+        // ★ 生成物を横一列にそろえる（平行移動だけ。頼まれたときだけ ＝ 加水分解の経路だけ）。
+        // ⚠ 重なりの物差しは**このあと逃がす側と同じもの**を渡す（`opt.overlaps`）
+        if (opt.alignRow) this.alignRedrawnProductsInRow(plans, opt.overlaps &&
+            (ids => opt.overlaps(this.userMolecule, ids)));
+        // 重なったら逃がす（平行移動だけなので、図は単独の図と一致したまま）
+        if (opt.escape) plans.forEach(({ part }) => {
+            const ids = part.atoms.map(a => a.id);
+            const sep = opt.escape(this.userMolecule, ids);
+            if (!sep) return;
+            ids.forEach(id => {
+                const a = this.userMolecule.atoms.find(x => x.id === id);
+                if (a) { a.x += sep.dx; a.y += sep.dy; }
+            });
+        });
+        return plans.map(({ part, name, before, reshaped }) => ({
+            ids: part.atoms.map(a => a.id),
+            name, reshaped, before,
+            after: part.atoms.map(a => {
+                const real = this.userMolecule.atoms.find(x => x.id === a.id);
+                return { id: a.id, x: real ? real.x : a.x, y: real ? real.y : a.y };
+            })
+        }));
+    }
+
+    /**
+     * ★ 描き直した生成物2つを**横一列にそろえる**（`DESIGN_sugar.md` §4-9d）。
+     *
+     * **ユーザーの言葉**（2026-08-25・v1452 の実機確認後）:
+     * > **「加水分解後に、フルクトース分子がグルコース分子の横に並ぶ方がよいです」**
+     *
+     * v1452 の描き直しは**各断片の重心を保つ**ので、生成物の置き場所は
+     * 「切る前にその断片があった場所」のまま。ところが切るときの引き離し
+     * （`separateComponent`）は**真下へ 2 マス**動かすので、実測で**環中心の y が
+     * 245〜272px ずれる**（＝ 斜め下に落ちて見える）。横には並んでいなかった。
+     *
+     * ⚠ **やるのは平行移動だけ。** 描き直した図の中身（形・向き・面マーク）には
+     *   1ピクセルも触らない ＝ 教科書の図のまま。だから SG18 の
+     *   「単独の図と平行移動を除いて完全一致」はそのまま緑で両立する。
+     * ⚠ **左右の順は切る前のまま**（左にあった断片が左）。並べ替えると
+     *   「グリコシド結合のどちら側だったか」が読めなくなる。
+     * ⚠ **高さの基準は2断片の中間**（片方だけを動かさない）＝ **全体の重心が動かない**。
+     * ⚠ **横は「重ならない最小の平行移動」だけ**。足りていれば 0。
+     *   図が飛ぶのがいちばん読みにくいので、間隔をそろえに行かない。
+     * ⚠ **重なりの物差しは自分で持たない** —— `overlaps(ids)` を呼び出し側からもらう
+     *   （加水分解なら `componentOverlaps` ＝ **このあと逃がす側と同じ物差し**）。
+     *   ここで別の物差しを持つと「並べたのに、逃がす側は重なっていると言って
+     *   真下へ 2 マス飛ばす」が起きる（v1453 の実装中に実際に起きた:
+     *   矩形の隙間 68.8px を「空いている」と見たが、逃がす側の閾値は 71.5px だった）。
+     * ⚠ **キャンバスに他の分子がいるときは触らない。** そろえた先で三者目と
+     *   衝突しうるが、その解決は「並べる」の仕事ではない（加水分解の生成物2つだけの話）。
+     * ⚠ **押し広げても重なりが解けないなら、動かす前に戻す**（並べ損なうより、
+     *   図が飛ばないほうがよい ＝ そのときは従来どおり逃がす側に任せる）。
+     *
+     * 戻り値は実際に当てた平行移動（当てなければ `null`）。
+     */
+    alignRedrawnProductsInRow(plans, overlaps) {
+        if (!plans || plans.length !== 2) return null;
+        if (typeof haworthSugarCycles !== 'function') return null;
+        const mol = this.userMolecule;
+        // キャンバスに他の分子がいるなら触らない
+        if (this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length !== 2) return null;
+        const info = plans.map(({ part }) => {
+            let cycles;
+            try { cycles = haworthSugarCycles(part); } catch (e) { return null; }
+            if (cycles.length !== 1) return null;        // ハース図の環がちょうど1つの断片だけ
+            const ring = cycles[0].map(id => mol.atoms.find(a => a.id === id));
+            if (ring.some(a => !a)) return null;
+            return {
+                ids: part.atoms.map(a => a.id).filter(id => mol.atoms.some(a => a.id === id)),
+                cx: ring.reduce((t, a) => t + a.x, 0) / ring.length,
+                cy: ring.reduce((t, a) => t + a.y, 0) / ring.length
+            };
+        });
+        if (info.some(x => !x || !x.ids.length)) return null;
+        const [L, R] = info.slice().sort((a, b) => a.cx - b.cx);   // 左右の順はそのまま
+        const undo = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
+        const shift = (part, dx, dy) => part.ids.forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (a) { a.x += dx; a.y += dy; }
+        });
+        // 高さ: 環中心の y を2つの中間へ（移動量は打ち消し合う ＝ 全体の重心は動かない）
+        const midY = (L.cy + R.cy) / 2;
+        let dyL = midY - L.cy, dyR = midY - R.cy, push = 0;
+        shift(L, 0, dyL); shift(R, 0, dyR);
+        // 横: 重なっているあいだだけ、少しずつ半分ずつ外へ（＝ 重ならない最小の平行移動）
+        if (typeof overlaps === 'function') {
+            const STEP = GRID_SIZE / 4, LIMIT = GRID_SIZE * 3;
+            while (overlaps(L.ids) || overlaps(R.ids)) {
+                if (push >= LIMIT) {                     // 解けない ＝ 動かす前に戻す
+                    undo.forEach(s => { s.a.x = s.x; s.a.y = s.y; });
+                    return null;
+                }
+                shift(L, -STEP / 2, 0); shift(R, STEP / 2, 0);
+                push += STEP;
+            }
+        }
+        return { dyL, dyR, push, ringGapX: (R.cx - L.cx) + push };
+    }
+
     // モーダルの配線（起動時に一度だけ）
     setupMoleculeModal() {
         const modal = document.getElementById('molecule-modal');
@@ -7745,6 +8725,22 @@ class Game {
         ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
             const b = document.getElementById(id);
             if (b) b.addEventListener('click', () => this.toggleIupacNumbering());
+        });
+        // ⇅ 上下に裏返す（帯の札。DESIGN_sugar.md §1-2b 帰結3）。
+        // ⚠ 入口は帯の1つだけ ＝ モーダルには置かない（§6-2a の実測で下は画面の外）
+        const flipBtn = document.getElementById('btn-flip-updown');
+        if (flipBtn) flipBtn.addEventListener('click', () => {
+            const r = this.flipWholeHaworth();
+            if (!r.ok) this.showToast('この分子は上下に裏返せません（ハース図の糖の環がある分子だけです）');
+        });
+        // ⇄ 左右に裏返す・⟳ 180°回す（DESIGN_sugar.md §1-2c）。⇅ と同じ帯・同じ門番
+        [['btn-flip-leftright', 'leftright', '左右に裏返せません'],
+         ['btn-turn-half', 'halfturn', '180°回せません']].forEach(([id, kind, ng]) => {
+            const b = document.getElementById(id);
+            if (b) b.addEventListener('click', () => {
+                const r = this.reframeWholeHaworth(kind);
+                if (!r.ok) this.showToast(`この分子は${ng}（ハース図の糖の環がある分子だけです）`);
+            });
         });
         // **子を開くときは自分を閉じる**（DESIGN_molecule_modal.md §5-5）。
         // 14枚のモーダルはすべて z-index:1000 で、重ねると ✕ が2つ並ぶ絵になる。
@@ -8029,7 +9025,9 @@ class Game {
         }
         if (typeof iupacNameDetail !== 'function') return null;
         const d = iupacNameDetail(mol);
-        if (!d) return null;
+        // ★ 糖（ハース図）は `iupacNameDetail` が null を返すところ ＝ **いままで何も出なかった面**
+        //   にだけ相乗りする（§N-7）。糖でない分子の 🔢 はここから先で1ピクセルも変わらない
+        if (!d) return this.sugarNumberingDetail(mol);
         // エーテルは**主鎖に番号をつけない**（未対応ではなく規則そのもの。§N-5）
         if (d.kind === 'ether') return d.groups && d.groups.length === 2
             ? { kind: 'ether', groups: d.groups, name: d.name, parts: d.nameParts } : null;
@@ -8038,6 +9036,38 @@ class Game {
         // ⚠ **ここでも新しい計算はしない。**門番が持ち出すのは `iupacNameDetail` が返したものだけ
         return { kind: 'chain', chain: d.mainChain, name: d.name,
             parts: d.nameParts, locants: d.locants, dirReason: d.dirReason };
+    }
+
+    /**
+     * ★ 糖（ハース図）の炭素番号（`DESIGN_iupac_check.md` §N-7・ユーザー発注 2026-08-25）。
+     *
+     * ⚠ **新しい面は作らない。** 🔢 の帯・添え字・字幕をそのまま使い、
+     *   `iupacNameDetail` が null を返す分子（＝ いままで「環が基本骨格です」と断っていた面）に
+     *   **糖のときだけ**乗る。糖でない分子の 🔢 の見た目は1ピクセルも変わらない。
+     *
+     * ★ **帯（鎖に沿う色）は出さない**（ユーザー決定 2026-08-25「帯は不要です」）。
+     *   帯の語彙は「この道が主鎖 ＝ 名前の骨格」で、糖の番号は主鎖の選び方から出ていない
+     *   （環の酸素の隣を C1 と決める別の規則）。引くと「この鎖から名前が出た」という嘘になる。
+     *   ⚠ 環に沿わせる案も採らない —— 環内の O には番号が無いので、帯と番号が食い違う。
+     *
+     * ⚠ **分子が2つ以上なら出さない**（既存の 'multi' の言い分けをそのまま通す）。
+     *
+     * @returns null | { kind:'sugar', labels:Map(atomId→'1'/'1′'), name, note, rings }
+     */
+    sugarNumberingDetail(mol) {
+        if (typeof haworthCarbonNumbers !== 'function') return null;
+        if (this.countMolecules() !== 1) return null;
+        const r = haworthCarbonNumbers(mol);
+        if (!r.ok || !r.labels.size) return null;
+        const 二糖 = r.rings.length === 2;
+        const ketose = r.rings.some(g => g.ketose);
+        const note = 二糖
+            ? '糖の番号は環ごとに振り、片方に ′ を付けます（つないだ相手の側）。起点は環の酸素の隣＝アノマー炭素です。'
+            : `環の酸素の隣（アノマー炭素）が C${r.rings[0].anomerNumber} です` +
+              (ketose ? '（ケトースなので、その上の -CH₂OH が C1）。' : '。') +
+              '環の酸素には番号を振りません。';
+        return { kind: 'sugar', labels: r.labels, rings: r.rings,
+                 name: this.lookupCompoundName(mol) || this.computeMolecularFormula(mol), note };
     }
 
     /** 表示中か（帯・番号を出しているあいだは作図を止める。§3-1） */
@@ -8091,6 +9121,12 @@ class Game {
             const gs = det.groups.map(g => g.name).join(' と ');
             return { code: 'ether', ok: true, det,
                 message: `エーテルは主鎖に番号をつけません。両側のアルキル基（${gs}）の名前で呼びます。` };
+        }
+        if (det && det.kind === 'sugar') {
+            // ★ 未対応の言い訳ではなく**別の規則**。「環はまだ扱いません」と言ってはいけない
+            //   （糖の番号は主鎖の選び方ではなく、環の酸素の隣を起点にする決まりで振る）
+            return { code: 'sugar', ok: true, det,
+                message: `ハース投影の炭素番号を出しました（${det.name}）。${det.note}表示中は作図できません（もう一度押すと消えます）。` };
         }
         if (det && det.kind === 'alkyl') {
             // 付け根 R が必ず C1（§4）。向きを選ぶ余地が無いことを言い切る
@@ -8167,8 +9203,10 @@ class Game {
         // 名称の説明（設計回 E）。**番号と同じ帯・同じ出入り**で、押されたかけらは図の上で光る
         this.renderIupacNameParts(det);
         this._iupacGlow(det, hidden);
-        // 帯と光の上でも二重結合の2本線が読めるように、結合線を濃くする（C-2）
-        this._iupacLiftBondInk(this.bondsGroup);
+        // 帯と光の上でも二重結合の2本線が読めるように、結合線を濃くする（C-2）。
+        // ⚠ 糖は帯も光も敷かない（下の 'sugar' の枝）ので、濃くする理由も無い ＝
+        //   図は**番号が増えるだけ**で、線の見え方は 🔢 を押す前と1ピクセルも変わらない
+        if (det.kind !== 'sugar') this._iupacLiftBondInk(this.bondsGroup);
 
         const visible = (id) => !(hidden && hidden.has(id));
         const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
@@ -8197,6 +9235,17 @@ class Game {
             });
             lines.push(`🔢 ${det.name}`);
             lines.push('エーテルは主鎖に番号をつけません。両側のアルキル基の名前で呼びます。');
+        } else if (det.kind === 'sugar') {
+            // ★ **帯は引かない**（ユーザー決定 2026-08-25）。ハース環に「主鎖」は無い ＝
+            //   鎖に沿う色を出すと「この鎖から名前が出た」という嘘になる。出すのは番号だけ。
+            //   ⚠ `_iupacLiftBondInk` も呼ばない（帯・光の下敷きが無いのだから濃くする理由が無い）
+            det.labels.forEach((label, id) => {
+                const a = byId.get(id);
+                if (!a || !visible(id)) return;
+                this._iupacSubscript(this._iupacAtomText(this.atomsGroup, a), label);
+            });
+            lines.push(`🔢 ${det.name}`);
+            lines.push(det.note);
         } else {
             const chain = det.chain.map(id => byId.get(id)).filter(Boolean);
             // 帯（この道）。**番号順の隣どうし**だけを結ぶ ＝ 並べ替えない・逆にしない
@@ -9336,6 +10385,8 @@ function setupQuizShortcuts() {
  * - `reagent=<瓶id または反応ルールid>` … summon した分子に対し試薬を選んだ状態にする。
  *   **`open` が無くても効く**
  * - `id=<機構id>` … `open=mechanism` と組で、登録済み14件のうち1つを開く
+ * - `scope=<basic|named|all>` / `field=<脂肪族 など>` … クイズの**出題範囲を絞る**
+ *   （`open=quiz` `open=naming` と組。→ applyQuizScopeParams）
  *
  * ⚠ **知らない引数・知らない値は無視して普通に開く**（前方互換）。qa 側が新しい語彙を
  * 先に配っても、こちらが追いつくまでの間エラーで止まらないため。
@@ -9348,8 +10399,11 @@ const OPEN_TARGETS = {
     puzzle: { mode: 'puzzle' },
     learn: { mode: 'learn' },
     // 📚 学習 → 🎓 クイズに挑戦（① 見比べる）
-    quiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-quiz' },
-    naming: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-naming' },
+    // `scopeSel` / `fieldSel` … 出題範囲のつまみを持つクイズだけが名乗る（→ applyQuizScopeParams）
+    quiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-quiz',
+            scopeSel: 'quiz-scope', fieldSel: 'quiz-field' },
+    naming: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-naming',
+              scopeSel: 'naming-scope', fieldSel: 'naming-field' },
     stereoquiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-stereo-quiz' },
     choicequiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-choice-quiz' },
     // 📚 学習 → 🎓 クイズに挑戦（② 並べ替える・③ 数える）
@@ -9513,7 +10567,59 @@ function applyOpenParam(search) {
         const mid = (params.get('id') || '').trim();
         if (mid && window.reactionPlayer) window.reactionPlayer.openById(mid);
     }
+
+    // 受け口⑥ `?scope=` / `?field=` … クイズの出題範囲を絞る。**ボタンを押した後**でなければ
+    // つまみがまだ作られていない（`populateScopeSelect` は各クイズの `open()` の中で走る）
+    window.__openFilters = applyQuizScopeParams(target, params);
     return name;
+}
+
+/* ===== 受け口⑥ クイズの出題範囲（2026-08-22・ユーザー申し立て） =====
+ *
+ * ユーザー原文:「**qa アルカンの命名を練習する → 命名クイズ分野を問わない に飛ばされる**」
+ *
+ * **実測（v1448）**: `?open=naming` で着地すると 出題範囲は「教科書（お題と定番）・306件」／
+ * 分野は「**分野を問わない・1059件**」で、1問目に 1-ナフトール（芳香族）が出た。
+ * 原因は **qa が渡していない**のではなく、**こちらに受け口が無かった**こと
+ * （`applyOpenParam` が受けるのは series / summon / formula / reagent / id の5つだけで、
+ * v1430 で人が触るつまみにした「出題範囲（レベル＋分野）」を外から指す口が無い）。
+ * ＝ qa 側でいくら語彙を足しても届かない。だからこちらに口を開ける。
+ *
+ * ⚠ **押すのは既存のつまみ**（`#naming-scope` / `#naming-field` など）。
+ * 新しい絞り込みの規則をここに書かない —— 書くと同じ規則が2箇所に散り、
+ * `entryInQuizScope` を直したときに黙ってずれる。
+ *
+ * ⚠ **知らない値は無視する**（前方互換。`<option>` に無い値は入れない）。
+ * qa が新しい分野名を先に配っても、ここが追いつくまでの間つまみが空になったりしない。
+ *
+ * ⚠ **値を2つとも入れてから change を1回だけ投げる。** `computePool()` は
+ * scope と field を両方読むので、片方ずつ投げると**中間状態で1問出題してしまう**
+ * （＝押した人には「絞る前の問題が一瞬出る」ように見える）。
+ *
+ * @returns 実際に効かせたもの（テスト QF1〜QF3 の物差し）。何も効かなければ null
+ */
+function applyQuizScopeParams(target, params) {
+    if (!target) return null;
+    const want = [
+        { sel: target.scopeSel, key: 'scope' },
+        { sel: target.fieldSel, key: 'field' }
+    ];
+    let last = null;
+    const done = {};
+    want.forEach(w => {
+        const value = (params.get(w.key) || '').trim();
+        if (!w.sel || !value) return;
+        const el = document.getElementById(w.sel);
+        if (!el) return;
+        // 知らない値は捨てる（前方互換）。`<option>` の value と完全一致だけを採る
+        if (![...el.options].some(o => o.value === value)) return;
+        el.value = value;
+        done[w.key] = value;
+        last = el;
+    });
+    if (!last) return null;
+    last.dispatchEvent(new Event('change', { bubbles: true }));
+    return done;
 }
 
 
@@ -9538,11 +10644,26 @@ window.addEventListener('DOMContentLoaded', async () => {
             console.warn('compounds.json のロードに失敗（名称判定はステージのみで動作）:', e);
         }
         window.COMPOUNDS = COMPOUNDS;
+
+        // クイズの出題範囲「教科書レベル」の追加名簿（2026-08-20）。
+        // **compounds.json に列を足さずに済ませるための別ファイル**（1行1件・追記のみ）。
+        // 「高校で扱うか」は構造からは決まらない（実測: 導出で判定できたのは 1059 件中 275 件だけ）
+        // ので、導出で拾えない定番だけをここに名前で置く。無くてもアプリは動作する
+        try {
+            const scopeUrl = new URL('quiz-scope.json', window.location.href).href;
+            const scopeRes = await fetch(scopeUrl, { cache: 'no-cache' });
+            if (scopeRes.ok) QUIZ_SCOPE = await scopeRes.json();
+        } catch (e) {
+            console.warn('quiz-scope.json のロードに失敗（出題範囲はお題のみで動作）:', e);
+        }
+        window.QUIZ_SCOPE = QUIZ_SCOPE;
         // 定数・純関数の公開（テストが同じ定義を参照できるようにする。const は window に載らない）
         window.GRID_SIZE = GRID_SIZE;
         window.MIN_COMPONENT_CLEARANCE = MIN_COMPONENT_CLEARANCE;
         window.CANVAS_LIMIT = CANVAS_LIMIT;
         window.SUMMON_ROW_WIDTH = SUMMON_ROW_WIDTH;
+        // 反応で選べる分子の上限（PM5 が「重合で並べる数がここを超えていない」ことを見る）
+        window.MAX_REACTION_SELECTION = MAX_REACTION_SELECTION;
         // 名称呼び出しの「見えた」の床（L9 がアプリと**同じ定義**で測るために出す）
         window.SUMMON_MIN_BOND_PX = SUMMON_MIN_BOND_PX;
         window.ATOM_TAP_RADIUS = ATOM_TAP_RADIUS;
@@ -9559,6 +10680,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.RANDOM_TOO_FEW_MSG = RANDOM_TOO_FEW_MSG;
         window.RANDOM_WRAPPED_MSG = RANDOM_WRAPPED_MSG;
         window.LABEL_CHIP_HEIGHT = LABEL_CHIP_HEIGHT;
+        window.LABEL_DRIFT_PENALTY = LABEL_DRIFT_PENALTY;
+        window.LABEL_DRIFT_MAX_ROWS = LABEL_DRIFT_MAX_ROWS;
         // 見出しの重なり判定（テストと監査が**同じ定義**で数えられるように出す。
         // 別の式で数えると「アプリは避けたつもり・テストは別の物差し」で緑が空振りする）
         window.rectsOverlap = rectsOverlap;

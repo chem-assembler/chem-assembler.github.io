@@ -370,8 +370,16 @@ function runDataTests(DATA) {
       reaction: ["reagent"], practice: ["open"], none: []
     };
     var POINTS_AT_MOLECULE = { summon: 1, reaction: 1 };
+    // `practice` は行き先しだい。`?open=stereo` はキャンバスの分子を見る画面なので、
+    // 分子を添えないと押しても**トーストだけ**で終わる（2026-08-21 実測。棚卸し側にも同じ検査）
+    var OPEN_NEEDS_MOLECULE = { stereo: 1, isomer: 1 };
     patterns.forEach(function (p) {
       if (!p.link) return;
+      if (p.link.kind === "practice" && OPEN_NEEDS_MOLECULE[p.link.open]) {
+        assert(p.link.summon || p.link.name,
+          p.code + ": open=" + p.link.open + " に分子の指し方（summon の ID か name）が無い" +
+          "（キャンバスが空のまま立体ビューを開くことになる）");
+      }
       assert(!p.link.build, p.code + ": 旧形式の build が残っている（assembler は build を受けない）");
       assert(p.link.kind, p.code + ": link に kind が無い");
       var need = NEED[p.link.kind];
@@ -588,7 +596,35 @@ function reactorInventory(src) {
   return val;
 }
 
-function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS) {
+/**
+ * assembler のクイズの語彙（出題範囲のレベルと分野）を **quiz.js を評価して**読む。
+ *
+ * ⚠ **テキスト走査でも書き写しでもやらない。** reactorInventory と同じ理由 ——
+ * 書き写すと相手が名前を変えたときに「合っているつもり」で緑のまま通り、
+ * assembler 側は知らない値を**黙って無視する**（＝分野を問わないに戻るだけ）ので、
+ * 誰も気づかないまま入口が効かなくなる。
+ * quiz.js のトップレベルは const と function だけなので new Function で通る。
+ */
+var _quizVocabCache = { src: null, val: null };
+function quizVocabulary(src) {
+  if (!src) return null;
+  if (_quizVocabCache.src === src) return _quizVocabCache.val;
+  var val;
+  try {
+    val = new Function(src + "\n;return {" +
+      "levels: typeof QUIZ_SCOPE_LEVELS !== 'undefined' ? QUIZ_SCOPE_LEVELS : null," +
+      "fields: typeof QUIZ_FIELDS !== 'undefined' ? QUIZ_FIELDS : null };")();
+    if (!val.levels || !val.fields) {
+      val = { error: "QUIZ_SCOPE_LEVELS / QUIZ_FIELDS が見つからない（assembler が変数名を変えた？）" };
+    }
+  } catch (e) {
+    val = { error: "assembler/quiz.js を評価できない: " + String(e && e.message || e) };
+  }
+  _quizVocabCache = { src: src, val: val };
+  return val;
+}
+
+function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS) {
   var results = [];
   var t = function (name, fn) {
     try { fn(); results.push({ name: name, ok: true }); }
@@ -601,6 +637,12 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     "ethanol_ether", "ethanol_oxidation", "propanol2_oxidation", "aniline_diazotization",
     "diazo_coupling"];
   var OPEN = ["naming", "countquiz", "stereo", "fischer", "practice"];
+  // `open` の行き先のうち、**キャンバスに載っている分子**を見る画面。
+  // ここへ飛ばすときは代表分子を添えないと空振りする（下の検査で鳴らす）。
+  // `naming` / `countquiz` / `fischer` / `practice` は assembler が自前で題材を出すので不要
+  // （実測済み: naming → naming-modal、countquiz → count-quiz-modal、
+  //   fischer → fischer-practice-modal、practice → study-modal。2026-08-21）
+  var OPEN_NEEDS_MOLECULE = { stereo: 1, isomer: 1 };
   var NEED = {
     summon: ["label", "name"], isomer: ["label", "formula"], mechanism: ["label", "id"],
     reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"]
@@ -650,8 +692,67 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
           o.code + ": 試薬 id「" + o.reagent + "」が reactor.js に無い（瓶にもルールにも見つからない）");
       }
       if (o.kind === "practice") assert(OPEN.indexOf(o.open) >= 0, o.code + ": 未登録の open 値「" + o.open + "」");
+      // ⚠ **キャンバスの分子を見る行き先には代表分子が要る**（2026-08-21・ユーザー報告 → 実測）。
+      //   `?open=stereo` だけで飛ばすと assembler は `btn-stereo` を押し、キャンバスが空なので
+      //   `openAuto(null)` が「立体を見られる sp3炭素がありません」の**トーストを数秒出して終わる**。
+      //   モーダルは開かず、来た道の帯も `miss` にならない（`miss` の条件は `?summon=` が
+      //   付いていること ＝ 分子を頼んでいない以上「出せなかった」とすら言えない）。
+      //   つまり **assembler 側の見張りが原理的に届かない空振り**で、
+      //   気づけるのはリンクを組み立てている**こちら側だけ**。だからここで鳴らす
+      if (o.kind === "practice" && OPEN_NEEDS_MOLECULE[o.open]) {
+        assert(o.name && String(o.name).trim(),
+          o.code + ": open=" + o.open + " はキャンバスの分子を見る画面なのに代表分子（name）が無い" +
+          "（分子を添えないとトーストだけで終わり、画面には何も残らない）");
+      }
       if (o.kind === "isomer") assert(!/[₀-₉]/.test(o.formula), o.code + ": formula に下付き文字（URL に載るので ASCII 数字で書く）");
       assert(!/\*\*/.test(JSON.stringify(o)), o.code + ": Markdown の ** が混入している");
+    });
+  });
+
+  // ⚠ **出題範囲（scope / field）は assembler の語彙**（2026-08-22・ユーザー申し立て
+  //   「qa アルカンの命名を練習する → 命名クイズ分野を問わない に飛ばされる」への手当て）。
+  //   assembler は**知らない値を黙って無視する**（前方互換の約束）ので、綴りを間違えても
+  //   エラーにならず「分野を問わない」に戻るだけ ＝ **画面では気づけない壊れ方**。
+  //   だから実データ（quiz.js の QUIZ_SCOPE_LEVELS / QUIZ_FIELDS）と突き合わせる。
+  t("棚卸し: 出題範囲（scope / field）が assembler の語彙と一致している", function () {
+    var voc = quizVocabulary(QUIZ_JS);
+    if (voc && voc.error) throw new Error(voc.error);
+    if (!voc) return;   // quiz.js を読めない環境（file:// 直開き等）ではスキップ
+    var okScope = {}, okField = {};
+    voc.levels.forEach(function (s) { okScope[s.value] = true; });
+    voc.fields.forEach(function (f) { okField[f] = true; });
+    // つまみを持つのは命名クイズと「同じ化合物はどれ？」だけ（assembler の OPEN_TARGETS）
+    var HAS_KNOBS = { naming: 1, quiz: 1 };
+    rows.forEach(function (o) {
+      if (!o.scope && !o.field) return;
+      assert(o.kind === "practice",
+        o.code + ": scope / field は kind=practice でしか渡せない（kind=" + o.kind + "）");
+      assert(HAS_KNOBS[o.open],
+        o.code + ": open=" + o.open + " には出題範囲のつまみが無い（渡しても無視される）");
+      if (o.scope) assert(okScope[o.scope], o.code + ": 知らない scope「" + o.scope +
+        "」（assembler の値は " + Object.keys(okScope).join(" / ") + "）");
+      if (o.field) assert(okField[o.field], o.code + ": 知らない field「" + o.field +
+        "」（assembler の値は " + Object.keys(okField).join(" / ") + "）");
+    });
+  });
+
+  // ★「ラベルが約束したより広い所へ着く」を止める見張り。
+  // ユーザー申し立ての本体はここ ——「アルカンの命名」を押して 1-ナフトール が出た。
+  t("棚卸し: 分野を名指しする命名リンクが、分野を渡している", function () {
+    // ⚠ エステルは**脂肪族と芳香族にまたがる**（酢酸エチル／安息香酸メチル）ので、
+    //    分野では絞れない。除外を名指しで持ち、黙って増えないようにする
+    var EXEMPT = { "org.carbonyl.ester-naming": "エステルは脂肪族と芳香族にまたがる" };
+    var bad = rows.filter(function (o) {
+      return o.kind === "practice" && o.open === "naming" && !o.field && !EXEMPT[o.code];
+    }).map(function (o) { return o.code; });
+    assert(!bad.length, "命名クイズへ飛ばすのに分野を渡していない: " + bad.join(" / ") +
+      "（分野を問わない・1059件 に着地して、アルカンを頼んだのに芳香族が出る）");
+    // 除外の側も見張る（消えたら EXEMPT から外す）
+    Object.keys(EXEMPT).forEach(function (code) {
+      var o = byCode[code];
+      assert(o && o.kind === "practice" && o.open === "naming",
+        "★ " + code + " が命名リンクでなくなった → EXEMPT から外す");
+      assert(!o.field, "★ " + code + " に分野が入った（" + EXEMPT[code] + " のはずだった）→ EXEMPT から外す");
     });
   });
 
@@ -772,7 +873,13 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     var bottles = inv.bottles.length;
     var uniq = inv.rules.map(function (r) { return r.id; })
       .filter(function (v, i, a) { return a.indexOf(v) === i; });
-    var KNOWN_BOTTLES = 21, KNOWN_RULES = 40, KNOWN_MECHANISMS = 14;   // 瓶は transform 16 ＋ detect 5
+    // ⚠ 2026-08-22 に 21→22 本へ。assembler v1428 が**酸化剤の瓶を KMnO₄ と K₂Cr₂O₇ に分けた**
+    //   （`DESIGN_reagent_palette.md` §12）。★見直し候補7件を実際に見直した結果、
+    //   **拾い直せるものは1件も無い** —— 7件が待っているのは
+    //   異性体列挙の上限（1件）・CO₂ の瓶（1件）・イオンを扱えること（4件）・
+    //   分子内エステル化（1件）で、**どれも酸化とは無関係**。
+    //   ルールも 40→41（`oxidize_primary_vigorous` ＝ 1級アルコールを一気にカルボン酸まで）。
+    var KNOWN_BOTTLES = 22, KNOWN_RULES = 41, KNOWN_MECHANISMS = 14;   // 瓶は transform 16 ＋ detect 5
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
@@ -1104,12 +1211,113 @@ function runUiTests(doc, DATA) {
       assert(stOf(null) === "new", "記録なしが未着手にならない");
     });
 
+    // ---- 「あと何回で緑になるか」（2026-08-23） ----
+    // ⚠ **きっかけは「正解しても緑が点かない」という報告。** 実測すると仕様どおりで、
+    // 測定モードで4回正解して初めて緑になった。不具合は判定ではなく**画面の説明**にあった。
+    // ここが守るのは「残りの数え方が状態判定と食い違わないこと」＝ 条件を2か所に書かない
+    var needs = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.needsOf;
+    var needsLabel = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.needsLabel;
+
+    t("残り: 未着手には「あと " + MB + " 回（うち1回は測定モード）」と答える", function () {
+      assert(needsLabel, "app.js が QaEngine.needsLabel を露出していない");
+      var s = needsLabel({ seen: 0, box: 0, cRight: 0 });
+      assert(s.indexOf("あと " + MB + " 回") >= 0, "回数が出ていない: " + s);
+      assert(s.indexOf("測定モード") >= 0, "測定モードの条件が出ていない: " + s);
+    });
+
+    t("残り: 測定で3回正解した記録に残るのは「あと 1 回」だけ", function () {
+      var s = needsLabel({ seen: 3, box: 3, right: 3, cRight: 3 });
+      assert(s.indexOf("あと 1 回") >= 0, "残り1回と出ない: " + s);
+      assert(s.indexOf("測定モード") < 0, "測定モードは済んでいるのに条件が残っている: " + s);
+    });
+
+    t("残り: めくりだけで box を満たした記録に残るのは「測定モードで1回」だけ", function () {
+      var s = needsLabel({ seen: 4, box: MB, right: 4, cRight: 0 });
+      assert(s.indexOf("測定モードで1回") >= 0, "測定モードの残りが出ない: " + s);
+      assert(s.indexOf("あと") < 0, "回数は足りているのに残っている: " + s);
+    });
+
+    t("残り: 定着した記録には残りが無い", function () {
+      assert(needsLabel({ seen: 4, box: MB, right: 4, cRight: 1 }) === "",
+        "定着しているのに残りが出ている");
+    });
+
+    t("残り: 残りが空になるのは stateOfRecord が「定着」と言うときだけ（条件を2か所に書かない）", function () {
+      var bad = [];
+      [0, 1, 3, 4].forEach(function (seen) {
+        [0, 1, 3, 4, 5].forEach(function (box) {
+          [0, 2].forEach(function (cRight) {
+            var r = { seen: seen, box: box, right: seen, wrong: 0, cRight: cRight, last: 1 };
+            var 空 = needsLabel(r) === "";
+            var 定着 = stOf(r) === "done";
+            if (空 !== 定着) {
+              bad.push("seen=" + seen + " box=" + box + " cRight=" + cRight +
+                " → 状態 " + stOf(r) + " / 残り「" + needsLabel(r) + "」");
+            }
+          });
+        });
+      });
+      assert(!bad.length, bad.slice(0, 3).join(" / ") +
+        "。残りの数え方と状態判定がずれると、画面が「あと0回」と言いながら緑にならない");
+    });
+
+    t("残り: needsOf は回数と測定モードを別々に返す（画面がどちらか一方だけ書けるように）", function () {
+      assert(needs, "QaEngine.needsOf がない");
+      var n = needs({ seen: 1, box: 1, cRight: 0 });
+      assert(n.rounds === MB - 1, "rounds が " + n.rounds + "（期待 " + (MB - 1) + "）");
+      assert(n.needChoice === true, "needChoice が立っていない");
+      var m = needs({ seen: 9, box: 9, cRight: 2 });
+      assert(m.rounds === 0 && m.needChoice === false, "定着済みなのに残りがある");
+    });
+
     t("定着: 記録の器が変わったので保存キーを上げている（古い記録を読まない）", function () {
       // v1 の記録は mode を持たないので、読むと根拠のない「定着」が残る。
       // **消してはいない**（読まなくなるだけ。学習履歴は取り戻せる）
       var key = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.STORE_KEY;
       assert(key && key !== "slz-qa-v1",
         "保存キーが " + key + " のまま（mode を持たない古い記録を読み込んでしまう）");
+    });
+
+    // ---- 習得マップが条件を全部言っているか（2026-08-23） ----
+    // ⚠ **判定は正しいのに画面が半分しか説明していない**、という型の不具合を見張る。
+    // 注記は「測定モードでの正解で認定」とだけ書いてあり、**回数が要ることを書いていなかった**
+    t("マップ: 緑が点く条件を注記が全部書いている（回数と測定モード）", function () {
+      d.getElementById("btn-map").click();
+      var note = d.querySelector(".map-note");
+      assert(note, "習得マップに注記が無い");
+      var text = note.innerText;
+      assert(text.indexOf("測定モード") >= 0, "測定モードの条件が注記に無い");
+      assert(new RegExp("正解を\\s*" + MB + "\\s*回").test(text),
+        "「正解を " + MB + " 回積む」が注記に無い（回数の条件が画面に出ていない）: " +
+        text.slice(0, 90));
+      d.getElementById("btn-map-back").click();
+    });
+
+    t("マップ: 定着していない項目に「あと何回で緑になるか」が出る", function () {
+      d.getElementById("btn-map").click();
+      var first = d.querySelector(".gc[data-unit][data-lv]");
+      assert(first, "習得マップにマスが無い");
+      var uid = first.getAttribute("data-unit"), lv = first.getAttribute("data-lv");
+      first.click();
+      var rows = Array.prototype.slice.call(d.querySelectorAll("#map-detail .mi"));
+      assert(rows.length, "マスを開いても項目が出ない");
+      // 定着した行にだけ残りが無い ＝ 出し分けが状態と一致している
+      var bad = rows.filter(function (li) {
+        var 定着 = li.classList.contains("done");
+        var 残りあり = !!li.querySelector(".mi-next");
+        return 定着 ? 残りあり : !残りあり;
+      });
+      assert(!bad.length, bad.length + " 行で「定着まで…」の出し方が状態と食い違う（" +
+        (bad.length ? bad[0].innerText.replace(/\s+/g, " ").slice(0, 50) : "") + "）");
+      var 未着手 = rows.filter(function (li) { return li.classList.contains("new"); })[0];
+      if (未着手) {
+        var s = 未着手.querySelector(".mi-next").textContent;
+        assert(s.indexOf("あと " + MB + " 回") >= 0,
+          "未着手の行が「あと " + MB + " 回」と言っていない: " + s);
+      }
+      // 開いたマスを閉じて画面をもとに戻す（後続のテストが見る画面を汚さない）
+      d.querySelector('.gc[data-unit="' + uid + '"][data-lv="' + lv + '"]').click();
+      d.getElementById("btn-map-back").click();
     });
 
     // ---- 画面幅（2026-08-06 新設） ----
@@ -1283,6 +1491,35 @@ function runUiTests(doc, DATA) {
             // 他の単元には出ない
             var other = DATA.patterns.filter(function (p) { return !p.certainty; })[0];
             assert(other, "確度の無い項目が1つも無い（テストの前提が崩れている）");
+          } finally { a.kill(); }
+        });
+      });
+    }).then(function () {
+      // ⚠ **分子を見る行き先には、URL に分子が載っていないと意味がない**（2026-08-21）。
+      //
+      // データ側（runDataTests）は `link.summon` があるかまでしか見ない。
+      // URL を組み立てているのは **app.js の `linkQuery()`** なので、そこで
+      // `case 'practice'` から summon を落とすと**データは正しいまま入口だけが死ぬ**。
+      // 実測した症状: `?open=stereo` だけで着くと assembler はキャンバスが空のまま
+      // 立体ビューを開こうとし、「sp3炭素がありません」のトーストが数秒出て終わる。
+      // モーダルは開かず、相手側の miss 帯も（分子を頼んでいないので）出ない
+      // ＝ **向こうの見張りが届かない**。だから壊す手が動くこちらで鳴らす。
+      var molOpen = DATA.patterns.filter(function (p) {
+        return p.link && p.link.kind === "practice" && (p.link.open === "stereo" || p.link.open === "isomer");
+      });
+      return ta("飛び道具: 分子を見る練習（open=stereo）のリンクに ?summon= が載っている", function () {
+        assert(molOpen.length, "open=stereo の項目が1つも無い（テストの前提が崩れている）");
+        return openWith("&code=" + encodeURIComponent(molOpen[0].code)).then(function (a) {
+          try {
+            a.D.getElementById("btn-reveal").click();
+            var link = a.D.querySelector(".a-link");
+            assert(link, molOpen[0].code + ": 飛び道具のリンクが出ていない");
+            var href = link.getAttribute("href");
+            assert(href.indexOf("open=stereo") > 0 || href.indexOf("open=isomer") > 0,
+              "行き先が URL に載っていない（" + href + "）");
+            assert(/[?&]summon=[^&]+/.test(href),
+              molOpen[0].code + ": URL に ?summon= が無い（" + href + "）。" +
+              "キャンバスが空のまま立体ビューを開くことになり、トーストだけで終わる");
           } finally { a.kill(); }
         });
       });

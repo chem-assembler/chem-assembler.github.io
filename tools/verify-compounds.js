@@ -242,6 +242,49 @@ function checkLayout() {
             `＝ JSON.stringify で書き戻された疑い。1件が機構の全ステップなので、` +
             `膨らむと巻矢印を1手ずつ読むレビューが成立しない`);
     }
+
+    /* --- narrowing-problems.json: 1問1行（2026-08-26 にここへ入れた）---
+     *
+     * ⚠ **compounds.json とは逆側の失敗をしていた**。あちらは1件が92行に膨らんで
+     * 84,890 行の差分になったが、こちらは **`JSON.stringify` そのままの改行ゼロ1行**で、
+     * **何を直しても `git diff --numstat` が必ず `1 1`** だった。
+     * 東大の札を1枚差し替えたのか、全問を作り直したのかが**差分から読めない** ——
+     * 膨らむのと潰れるのは、どちらも**人のレビューが効かない**という同じ害。
+     *
+     * ⚠ このファイルは `narrowing.js` が `fetch(..., {cache:'no-cache'})` で読むので
+     * `?v=` が付かず、**`verify-release.js` の対象外**（＝機械の見張りが1つも無かった）。
+     * ここが唯一の見張りになる。
+     *
+     * 形: 1行目が `{"_readme":…,"problems":[` / 2行目以降が1問1行 / 最終行が `]}`
+     *     ＝ **19問なら 21 行**（件数 + 2）。書き出しは
+     *     `_解析/tools/build-narrowing-data.js`（**あちらを直したらここも直す**） */
+    const nRaw = fs.readFileSync(path.join(ROOT, 'narrowing-problems.json'), 'utf8');
+    const nArr = JSON.parse(nRaw).problems;
+    const nWhere = 'narrowing-problems.json';
+    const nHOW = '（規約: 1行目が {"_readme":…,"problems":[ ／ 1問＝1行 ／ 最終行が ]}）';
+    if (nRaw.charCodeAt(0) === 0xFEFF) problems.push(`${nWhere}: BOM が付いています（UTF-8 BOM なしが規約）`);
+    const nCrlf = (nRaw.match(/\r\n/g) || []).length, nLf = (nRaw.match(/\n/g) || []).length;
+    if (nCrlf !== nLf) problems.push(`${nWhere}: 改行が CRLF で揃っていません（CRLF ${nCrlf} / LF ${nLf}）`);
+    const nLines = nRaw.replace(/\r\n$/, '').split('\r\n');
+    if (nLines.length !== nArr.length + 2) {
+        problems.push(`${nWhere}: 1問1行になっていません` +
+            `（${nArr.length} 問なのに ${nLines.length} 行。期待は ${nArr.length + 2} 行）` +
+            `${nLines.length === 1 ? '＝ JSON.stringify そのままで書き出された疑い。' +
+                'この形だと差分がいつも 1 1 になり、何を直したのか読めない' : ''}${nHOW}`);
+    } else {
+        if (!nLines[0].startsWith('{"_readme":') || !nLines[0].endsWith('"problems":[')) {
+            problems.push(`${nWhere}: 1行目が {"_readme":… で始まり "problems":[ で終わっていません${nHOW}`);
+        }
+        if (nLines[nLines.length - 1] !== ']}') problems.push(`${nWhere}: 最終行が "]}" 単独ではありません${nHOW}`);
+        for (let i = 0; i < nArr.length; i++) {
+            const L = nLines[i + 1], tail = i === nArr.length - 1 ? '}' : '},';
+            if (!L.startsWith('{') || !L.endsWith(tail)) {
+                problems.push(`${nWhere}: ${i + 2} 行目（${nArr[i].id}）が ` +
+                    `"{" で始まり "${tail}" で終わる1問になっていません${nHOW}`);
+                break;
+            }
+        }
+    }
 }
 checkLayout();
 

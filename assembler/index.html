@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1421">
+    <link rel="stylesheet" href="style.css?v=1464">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1421</div>
+            <div class="version">v1464</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -388,6 +388,36 @@
                                         作図が黙って消えない -->
                                 <button id="btn-rx-undo" class="view-btn ws-action hidden"
                                         title="直前に実行した反応を取り消して、反応前の分子に戻します（この操作自体も ↩ 戻す で取り消せます）">↩ 反応前に戻す</button>
+                                <!-- ⇅ 上下に裏返す（DESIGN_sugar.md §1-2b 帰結3・v1450）。
+                                     ★ **分子まるごと**のハース環フリップ。門番は `haworthFlipPlan`（登録 16件に一致）で、
+                                        ハース図として読む糖の環を持たない分子（エタノール・酢酸など）では**この札は出ない**。
+                                     ⚠ **「片方の環だけ」の反転は復活させない**（v1449 で禁止。結合を切らないと起こせない
+                                        ＝ 起きえないことを押させる）。ここが動かすのはいつも分子1つぶん全部。
+                                     ⚠ **素朴な左右鏡映・面内180°回転の札は作らない** —— あれは鏡像の図になる操作で、
+                                        「同じ分子の置き直し」ではない（§1-2b の表）。出題としてはクイズ側が扱う。
+                                        ⚠ 下の ⇄ / ⟳ は**それとは別物**で、鏡映・回転のあとに
+                                        **置換基を付け根の環炭素について上下に付け替える**（§1-2c）＝ 同じ分子の図。
+                                     ⚠ **置き場所がここである理由**: 分子モーダルの「🔬 調べる」は `#mm-reaction` の
+                                        後ろにあり、§6-2a の実測で**どの画面寸法でも折り返しの外**（底まで 536px
+                                        スクロールが要る）＝ 押してほしいものは置けない。帯なら常に見えている。
+                                     ⚠ **行は増やさない**（`↩ 反応前に戻す` と同じ扱いで、同じ `.ws-row` に相乗り） -->
+                                <button id="btn-flip-updown" class="view-btn ws-action hidden"
+                                        title="この分子まるごとを、上下を入れ替えるように裏返します（カレンダーをめくるように）。置換基の上下と炭素番号をたどる向きが同時に入れ替わるので、分子も名前も変わりません。もう一度押すと元の図に戻ります">⇅ 上下に裏返す</button>
+                                <!-- ⇄ 左右に裏返す・⟳ 180°回す（DESIGN_sugar.md §1-2c の追補・ユーザー発注）。
+                                     ★ **⇅ と3枚で「同じ分子の図」ぜんぶ**（クラインの四元群）。⇅ を押してから ⇄ を押すと
+                                        ⟳ と同じ絵になる（実測 16/16・平行移動を除く）。
+                                     ⚠ **門番も置き場所も ⇅ と同じ**（`haworthTurnPlan` は `haworthFlipPlan` に相乗り）＝
+                                        3枚は必ず一緒に出入りする。糖でない分子（エタノール・酢酸）では1枚も出ない。
+                                     ⚠ この2つは**剛体の鏡映・回転ではない** —— 置換基を付け根の環炭素について
+                                        上下に付け替える。付け替えを外すと 16件すべてが鏡像の図になる（KV3 の否定対照）。
+                                     ⚠ **札が3枚になると 375px 以下では段が1つ増える**（実測: 帯 128→168px。
+                                        390px 以上は2段のまま）。増えるのは**ハース図の糖を画面に置いているあいだだけ**で、
+                                        帯・キャンバス・3枚の札はどの寸法でも可視域に収まる（実測 320/375/390/812px）。
+                                        ＝ 糖でない分子（エタノール・酢酸。L3 の台本）の帯は1pxも変わらない -->
+                                <button id="btn-flip-leftright" class="view-btn ws-action hidden"
+                                        title="この分子まるごとを、左右を入れ替えるように裏返します（本のページをめくるように）。置換基の上下と炭素番号をたどる向きが同時に入れ替わるので、分子も名前も変わりません。もう一度押すと元の図に戻ります">⇄ 左右に裏返す</button>
+                                <button id="btn-turn-half" class="view-btn ws-action hidden"
+                                        title="裏返さずに、中心を軸に180°回します（メリーゴーランドのように）。置換基の上下も炭素番号をたどる向きもそのままなので、分子も名前も変わりません。もう一度押すと元の図に戻ります">⟳ 180°回す</button>
                             </div>
                             <!-- 名称の説明（DESIGN_iupac_check.md §3 の場所1に相乗り・設計回 E1）。
                                  ★ **新しいトグルもモーダルも作らない。**番号を出しているとき、その番号を
@@ -696,7 +726,7 @@
                     <div class="learn-acc-body">
                         <div class="quiz-group">
                             <div class="quiz-group-head">① 見比べる<span>2つの図が同じものかを見分ける</span></div>
-                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物？クイズ</button>
+                            <button id="btn-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🎓 同じ化合物はどれ？</button>
                             <button id="btn-naming" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">📝 命名クイズ</button>
                             <!-- 立体異性体クイズ（P12-8 M2.5）。CIP（R/S）は使わず、描いた立体の比較だけで判定する -->
                             <button id="btn-stereo-quiz" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🪞 立体異性体クイズ</button>
@@ -707,6 +737,8 @@
                                  select を切り替えてから同じモーダルを開く（配線は game.js の setupQuizShortcuts） -->
                             <button id="btn-choice-quiz-dl" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="dl" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🅳 D体・L体はどれ？（4択）</button>
                             <button id="btn-choice-quiz-pair" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="pair" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">⚖ 同じ？違う？（連続・タイムを計る）</button>
+                            <!-- ハース環版（DESIGN_sugar.md §1-2b 帰結3）。同じ器（choice-quiz）の出題を1つ増やしただけ -->
+                            <button id="btn-choice-quiz-haworth" class="secondary-btn quiz-sub" data-quiz-open="choice-quiz" data-quiz-select="pk-kind" data-quiz-value="haworth" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🍬 同じ糖の図はどれ？（ハース環）</button>
                         </div>
                         <div class="quiz-group">
                             <div class="quiz-group-head">② 並べ替える<span>十字の模型を回して、お題の立体に合わせる</span></div>
@@ -788,16 +820,29 @@
                                 <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
                             </label>
                         </div>
-                        <select id="select-reaction" style="width:100%;"></select>
+                        <!-- ⚠ **一覧は「押して確定するもの」にする**（v1439・ユーザー実機報告
+                             「反応の種類が選べない、すぐ選択される」）。
+                             `<select>` は**候補を1つ動かした瞬間に `change` が飛ぶ** ―― 閉じた select の
+                             上下キー（実測: ↓ を1回で `enter()` まで走り、メニューが閉じて焦点も失う
+                             ＝ 2件目より先へ1件も進めない）や、iOS のホイールピッカー（回している途中で
+                             値が変わる）がそれ。v1379 で「選んだら始まる」を繋いだ結果、
+                             **たどるだけで始まる**ようになっていた。押しものなら「動かす」と「決める」が別。
+                             ⚠ **選択の実体（状態）は `#select-reaction` 1本のまま**にして面から下げるだけ。
+                                `?open=mechanism&id=` も回帰テスト（RX24/RX25）もここへ合流する
+                                ＝ 入口が増えても状態が2つに割れない -->
+                        <select id="select-reaction" style="display:none;" tabindex="-1" aria-hidden="true"></select>
                         <!-- ⚠ ステップ送り（🔄⏮▶⏭）・ステップ表示・キャプション・生成物予測の3ボタンは
                              **キャンバス上の作業帯へ移した**（DESIGN_ribbon_consolidation.md 第3段・§2-3）。
                              巻矢印は本体 SVG の #arrows-group に出るので、操作をここに置いておくと
                              モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
                              ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
                         <!-- ⚠ ここの文は**実態と合わせて書く**（発注書B・v1416）。以前は「選ぶと出ます」と
-                             書いてあるのに、上のスイッチを入れるまで選択が捨てられていた ＝ 入口で詰まる -->
+                             書いてあるのに、上のスイッチを入れるまで選択が捨てられていた ＝ 入口で詰まる。
+                             ⚠ **一覧より上に置く**（v1439）。押した先で何が起きるかの説明なので、
+                                14件の押しものの下にあると**選び終えるまで目に入らない** -->
                         <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
                             反応を選ぶと始まります。ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もそこに出ます（見るだけではありません）。<b>終わるときは、その帯の「やめる」か、上のスイッチです。</b></p>
+                        <div id="reaction-list"></div>
                     </div>
                 </details>
             </div>
@@ -984,7 +1029,9 @@
                 <button id="btn-sq-diastereomer" class="primary-btn sq-btn-diastereomer">別の立体異性体</button>
             </div>
             <div id="sq-result" style="min-height:4.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
-            <button id="btn-sq-overlay" class="view-btn hidden" style="padding:9px;">🫟 重ねて確かめる（図Bを図Aへ平行移動）</button>
+            <!-- ⚠ 文言は「平行移動」ではなく「回して重ねる」（2026-08-25）。図Bを許された角度へ
+                 回してから重ねるようになったため。何をしたか（何度回したか）は #sq-overlay-note が書く -->
+            <button id="btn-sq-overlay" class="view-btn hidden" style="padding:9px;">🫟 回して重ねる（図Bを回して図Aに重ねてみる）</button>
             <div id="sq-overlay-note" style="font-size:12.5px; line-height:1.6; text-align:left; white-space:pre-line; color:var(--text-secondary);"></div>
             <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-sq-next" class="view-btn" style="flex:1; padding:10px;">▶ 次の問題</button>
@@ -1200,6 +1247,10 @@
                     <option value="symbol" selected>同じ立体はどれ？（記号・化学ぬき）</option>
                     <option value="molecule">同じ立体はどれ？（分子）</option>
                     <option value="dl">D体・L体はどれ？（分子）</option>
+                    <!-- ハース環版（DESIGN_sugar.md §1-2b 帰結3）。入試の型「上下反転した図から
+                         正しいものを選ばせる」。⚠ 最上位モードは増やさず、この器に1つ足すだけにする。
+                         選択肢は座標変換で作り、正誤は並べた図から読み直して決める（表に持たない） -->
+                    <option value="haworth">同じ糖の図はどれ？（ハース環・上下反転）</option>
                     <!-- 発注書 第3段の残り。判定は4択と同じ（relationOf）で、答え方だけ2択にして連続で出す -->
                     <option value="pair">同じ？違う？（分子・連続でタイムを計る）</option>
                 </select></label>
@@ -1350,30 +1401,89 @@
     </div>
 
     <div id="quiz-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 780px;">
-            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物？</h2>
-            <p style="font-size:13px; color:var(--text-secondary);">2つの図は同じ化合物ですか？（水素は自動補完で描かれています）</p>
+        <div class="modal-content" style="max-width: 820px;">
+            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物はどれ？</h2>
+            <p style="font-size:13px; color:var(--text-secondary);">左の見本と同じ化合物を①〜④から1つ選んでください（水素は自動補完で描かれています）。</p>
+            <!-- ⚠ **人が触るつまみは2つだけ**（2026-08-20・ユーザー決定
+                 「出題範囲、難易度が選べるとわかりやすい」）。
+                   出題範囲 … レベル（高校で扱うか）＋分野（大きなくくり）＝ v1425 のまま
+                   難易度   … 崩し方（図の崩し具合）＋誤答の紛らわしさ を1つに畳んだもの
+                 **シリーズと崩し方の select は消さずに隠す**——動画の台本が
+                 `#quiz-series` / `#quiz-strength` を id で選ぶ（demos-quiz.json の V64・V92、
+                 demos-isomer.json の V24、demos-longform.json の L1）。
+                 `tutorial.js` の select アクションは rect=0 でも値を入れて change を投げるので、
+                 隠したままでも台本は動く。→ quiz.js の QUIZ_DIFFICULTY の説明 -->
             <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
-                <label>出題範囲: <select id="quiz-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>崩し方: <select id="quiz-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                <label>出題範囲:
+                    <select id="quiz-scope" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                    <select id="quiz-field" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                </label>
+                <label>難易度: <select id="quiz-difficulty" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
+                <span class="quiz-hidden-knob"><label>シリーズ: <select id="quiz-series"></select></label></span>
+                <span class="quiz-hidden-knob"><label>崩し方: <select id="quiz-strength">
                     <option value="0">弱（回転・反転のみ）</option>
                     <option value="1" selected>標準</option>
                     <option value="2">強</option>
-                </select></label>
+                </select></label></span>
+            </div>
+            <!-- 絞り込みが効いたことを数で見せる（「減ったつもりで減っていない」を画面で防ぐ） -->
+            <div id="quiz-pool-count" style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
+            <!-- タイムアタック（2026-08-20・ユーザー案「一定時間で何問解けるか」）。
+                 ⚠ 種類は1つだけ。正解ごとに加算（加算は必ず画面に出す）
+                 ⚠⚠ **秒数をここに書かないこと**（2026-08-26）。文言は quiz.js の
+                     QUIZ_TA_LABEL / QUIZ_TA_RULE が定数から組み立てて入れる。
+                     以前はここに「（60秒）」と直書きされていて、**実際は 145秒 走る**のに
+                     誰も気づけなかった（同じ数字が定数と HTML の2か所にあったため） -->
+            <div style="display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap; font-size:12px;">
+                <button id="btn-quiz-timeattack" class="view-btn" style="padding:6px 12px; font-size:12px;"></button>
+                <span id="quiz-ta-best" style="color:var(--text-muted); font-family:var(--font-code);"></span>
+            </div>
+            <!-- 遊び方（初期時間・加算・逓減・上限）。中身は quiz.js が定数から入れる -->
+            <div id="quiz-ta-rule" style="font-size:11.5px; color:var(--text-muted); max-width:640px; margin:0 auto; line-height:1.5;"></div>
+            <div id="quiz-ta" class="hidden" style="font-size:14px; font-weight:bold; color:var(--neon-orange); font-family:var(--font-code);">
+                <span id="quiz-ta-timer"></span>
             </div>
             <!-- P12-8: この問題が何を問うているかを明示する（ユーザー指摘: フィッシャー投影の
                  問題と単なる平面図の問題が混在し、どの前提で解くのか分からない）。
                  判定はつながり方だけなので、立体を読む必要が無いことをはっきり書く -->
             <p id="quiz-premise" style="font-size:12.5px; color:var(--color-cyan, #00f2fe); margin:0;"></p>
-            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-                <svg id="quiz-svg-a" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
-                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
-                </svg>
-                <svg id="quiz-svg-b" width="320" height="250" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
-                    <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
-                </svg>
+            <!-- ⚠ **見本と選択肢は横に並べる**（縦に積むとモーダルが画面からはみ出す。
+                 MO1〜MO4 が効いている場所）。寸法は立体の4択（#pk-goal / #pk-opt-*）と同じ
+                 240×160 ／ 200×133 に合わせてある: 240 + 16 + (200×2 + 8) = 664 で
+                 max-width 820 の中に収まる -->
+            <div style="display:flex; gap:16px; justify-content:center; align-items:flex-start; flex-wrap:wrap;">
+                <div style="text-align:center;">
+                    <div id="quiz-goal-label" style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">見本</div>
+                    <svg id="quiz-svg-a" width="240" height="160" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                        <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
+                    </svg>
+                </div>
+                <!-- 2択（収録用・保険）のときだけ出るもう1枚。`setForced` が効いているあいだ -->
+                <div id="quiz-pair-figure" class="hidden" style="text-align:center;">
+                    <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">くらべる図</div>
+                    <svg id="quiz-svg-b" width="240" height="160" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px;">
+                        <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
+                    </svg>
+                </div>
+                <!-- 4択の器。**立体の4択と同じ CSS**（.pk-options / .pk-cell / .pk-badge /
+                     .pk-cell-right / .pk-cell-wrong）を借りている＝器は作り直していない -->
+                <div id="quiz-options" class="pk-options">
+                    <div id="quiz-cell-0" class="pk-cell"><span class="pk-badge">①</span>
+                        <svg id="quiz-opt-0" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                    <div id="quiz-cell-1" class="pk-cell"><span class="pk-badge">②</span>
+                        <svg id="quiz-opt-1" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                    <div id="quiz-cell-2" class="pk-cell"><span class="pk-badge">③</span>
+                        <svg id="quiz-opt-2" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                    <div id="quiz-cell-3" class="pk-cell"><span class="pk-badge">④</span>
+                        <svg id="quiz-opt-3" width="200" height="133"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
+                    </div>
+                </div>
             </div>
-            <div style="display:flex; gap:10px;">
+            <!-- 2択の答え方（収録用・保険）。台本が id で押すので消さない -->
+            <div id="quiz-pair-answer" class="hidden" style="display:flex; gap:10px;">
                 <button id="btn-quiz-same" class="primary-btn">同じ</button>
                 <button id="btn-quiz-diff" class="primary-btn" style="background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);">違う</button>
             </div>
@@ -1547,21 +1657,24 @@
             <!-- P12-8: 環の「横から見る」ビュー（環を平面とみなした模式図）。中身は stereo.js が描く -->
             <div id="stereo-pane-ring" class="hidden">
                 <svg id="stereo-ring-svg" width="400" height="280" viewBox="-200 -140 400 280" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%; touch-action:none; cursor:grab;"></svg>
-                <!-- カメラの倒し角: 0°=描いたハース図そのもの ⇄ 90°=真横（環が線に潰れる） -->
+                <!-- カメラの倒し角: 0°=描いたハース図そのもの ⇄ 90°=真横 ⇄ 180°=裏返したハース図。
+                     180° は (x,y,z)→(x,−y,−z) の回転＝「上下入替」と「たどる向き逆」が同時に起きるので
+                     分子は変わらない（DESIGN_sugar.md §3-4 R-1）。上下だけ入れ替えると鏡像になる -->
                 <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:12.5px; color:var(--text-secondary);">
                     <span>カメラ:</span>
-                    <button id="btn-stereo-ring-haworth" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="あなたが描いたハース図とまったく同じ見え方（倒し角 0°）に戻します">⬔ ハース図の向き</button>
-                    <input type="range" id="stereo-ring-tilt" min="0" max="90" step="1" value="90" aria-label="カメラの倒し角" title="0°=ハース図のまま／90°=真横（環が線に潰れます）" style="width:110px;">
+                    <button id="btn-stereo-ring-haworth" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="あなたが描いたハース図と同じ見え方（倒し角 0°）に戻します。置換基は環の面に垂直に立てているので、この角度から見ると描いた縦位置に重なります">⬔ ハース図の向き</button>
+                    <input type="range" id="stereo-ring-tilt" min="0" max="180" step="1" value="90" aria-label="カメラの倒し角" title="0°=ハース図のまま／90°=真横（環が線に潰れます）／180°=裏返したハース図（同じ分子です）" style="width:110px;">
                     <button id="btn-stereo-ring-side" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を真横から見ます（環が線に潰れ、置換基が上下に突き出します）">⬡ 真横</button>
+                    <button id="btn-stereo-ring-flip" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を裏返して見ます（倒し角 180°）。上下と、炭素番号をたどる向きが同時に入れ替わるので、分子は同じままです">⟳ 裏返す</button>
                     <span id="stereo-ring-tilt-value">90°</span>
                 </div>
                 <!-- P12-8: 縦軸まわりの回転。図の上でのドラッグでも回せるが、操作が見えないので
                      ボタンでも回せるようにする（ユーザー要望「環も回せるとよい」） -->
                 <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
-                    <span>回す:</span>
-                    <button id="btn-stereo-ring-yaw-ccw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を縦軸まわりに左へ30°回します。奥にあった原子が手前に出てきます（図の上を左右にドラッグしても回せます）">⟲ 左へ</button>
+                    <span>独楽回転:</span>
+                    <button id="btn-stereo-ring-yaw-ccw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環をその面のまま独楽のように左へ30°回します。奥にあった原子が手前に出てきますが、分子は同じままです（図の上を左右にドラッグしても回せます）">⟲ 左へ</button>
                     <span id="stereo-ring-yaw-value">0°</span>
-                    <button id="btn-stereo-ring-yaw-cw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環を縦軸まわりに右へ30°回します（図の上を左右にドラッグしても回せます）">⟳ 右へ</button>
+                    <button id="btn-stereo-ring-yaw-cw" class="view-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="環をその面のまま独楽のように右へ30°回します。分子は同じままです（図の上を左右にドラッグしても回せます）">⟳ 右へ</button>
                 </div>
                 <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
                     <button id="btn-stereo-ring-h" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="環の炭素についている水素（置換基と反対の面）も描きます">H も表示</button>
@@ -1779,14 +1892,25 @@
         <div class="modal-content" style="max-width: 560px;">
             <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">📝 この化合物の名前は？</h2>
             <p style="font-size:13px; color:var(--text-secondary);">わざと崩した描き方をしています。つながり方を読み取って名前を選んでください（水素は自動補完で描かれています）。</p>
+            <!-- ⚠ **人が触るつまみは2つだけ**（2026-08-20・ユーザー決定）。
+                 出題範囲＝レベル＋分野／難易度＝崩し方＋誤答の紛らわしさ。
+                 シリーズと崩し方は**消さずに隠す**（demos-quiz.json の V67 が
+                 `#naming-series` / `#naming-strength` を id で選ぶ）。
+                 → quiz.js の QUIZ_SCOPE_LEVELS ／ QUIZ_DIFFICULTY の説明 -->
             <div style="display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--text-secondary);">
-                <label>出題範囲: <select id="naming-series" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
-                <label>崩し方: <select id="naming-strength" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;">
+                <label>出題範囲:
+                    <select id="naming-scope" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                    <select id="naming-field" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select>
+                </label>
+                <label>難易度: <select id="naming-difficulty" style="padding:4px; background:rgba(0,0,0,0.3); color:var(--text-primary); border:1px solid var(--border-color); border-radius:4px;"></select></label>
+                <span class="quiz-hidden-knob"><label>シリーズ: <select id="naming-series"></select></label></span>
+                <span class="quiz-hidden-knob"><label>崩し方: <select id="naming-strength">
                     <option value="0">弱（回転・反転のみ）</option>
                     <option value="1" selected>標準</option>
                     <option value="2">強</option>
-                </select></label>
+                </select></label></span>
             </div>
+            <div id="naming-pool-count" style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
             <svg id="naming-svg" width="420" height="270" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;">
                 <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
             </svg>
@@ -1801,19 +1925,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1421"></script>
+    <script src="chemistry.js?v=1464"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1421"></script>
-    <script src="game.js?v=1421"></script>
-    <script src="reaction.js?v=1421"></script>
-    <script src="quiz.js?v=1421"></script>
-    <script src="stereo.js?v=1421"></script>
-    <script src="reactor.js?v=1421"></script>
-    <script src="narrowing.js?v=1421"></script>
-    <script src="learn.js?v=1421"></script>
-    <script src="tutorial.js?v=1421"></script>
-    <script src="rec.js?v=1421"></script>
+    <script src="deadend.js?v=1464"></script>
+    <script src="game.js?v=1464"></script>
+    <script src="reaction.js?v=1464"></script>
+    <script src="quiz.js?v=1464"></script>
+    <script src="stereo.js?v=1464"></script>
+    <script src="reactor.js?v=1464"></script>
+    <script src="narrowing.js?v=1464"></script>
+    <script src="learn.js?v=1464"></script>
+    <script src="tutorial.js?v=1464"></script>
+    <script src="rec.js?v=1464"></script>
 </body>
 </html>

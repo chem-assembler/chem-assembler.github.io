@@ -50,10 +50,35 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜10  | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ）。**I8〜I10 は結合の判定線がキャンバス側のモード分岐を食う型**（BUGNOTE_touch_ipad.md S6。I8 が否定対照＝ C=C の中点） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
- * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤） |
+ * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
- * | IW  | 1〜16 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア（5・6・8 は W2。**7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。**9 はヒントへの到達手段**＝帯 → 確認モード → 💡。**10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。**12・13 は3列化＋見出しに畳んだサマリー**＝12 が「サマリー＝結果列を数えた値」と「重複を誤りにしない」・13 はサマリーを別計算に戻す否定対照。DESIGN_isomer_practice.md §15-2。**14 は表の中の `🔢`**＝ DESIGN_practice_revision.md §8。押した行だけ左右の両方に主鎖と炭素番号が出る／エーテルは2色／数えなかった図でも出る／小中大で丸に収まる。⚠ 設計書は `IW12` と書いているが既に使用済みだったので 14 にした。**15 は3つの書き出し練習で答案を指す語が1つ**＝ 発注書 ORDER_features_2026-08-15.md §C。帯・パネル・答え合わせのどれでも「いま N個 描いてあります」／「あなたが描いた図 N個」で、「N枠」を画面に出さない）。**16 は左上に寄せて描いた答案でも並べ直せること**＝ 起点の格子丸めで負に出たぶんを全体で押し戻す。実発生（アルカンの書き出し）。「答案が多すぎて」と案内していたが枚数とは無関係で、消しても直らなかった。半マスの内（15px・赤かった）と外（30px・もともと緑）を両方見る） |
+ * | IW  | 1〜32 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
+ *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
+ *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
+ *                  **10・11 は答え合わせの対応表**＝正解｜自分の答え・11 は行がずれる否定対照。
+ *                  **12・13 は3列化＋見出しに畳んだサマリー**（13 が否定対照）。
+ *                  **17・18 は見出しの縮尺と縦の隙間**（v1432。17 が症状・18 が「練習の外へ漏れていない」陰性対照）。
+ *                  **30 は図が上下に隣接したときの番号**（v1440。⚠ 17 が見ていなかった経路 ＝
+ *                  人が格子どおり 2マスあけて描いた配置。物差しも別で「**図との隙間**」を測る）。
+ *                  **31 はエーテルの正解図**（v1440。主鎖が横一直線・番号は出さない・表の縮尺は1つ）。
+ *                  **32 は鎖式のシス・トランスを別の答案として数える**（v1440。⚠ 環と不斉炭素は据え置き）。
+ *                  **19〜22 は骨格の型で分けたお題**＝ 発注書 ORDER_isomer_2026-08-20 の A-5。
+ *                  ⚠ **22 が「お題の線」**（どのお題も 2〜20種／鎖式＋環式＝生の列挙／型を分けるのは
+ *                  環をもつ正解がある式だけ／既存7問の正解数が1つも変わらない陰性対照）。
+ *                  ⚠ **統合時に付け替えた** —— 起草時は 18 だったが、v1432 のレーンが先に 18 を取っていた。
+ *                  19 が「宣言した出題」・20 がふるい撤去の否定対照・21 が立体トグルの否定対照。
+ *                  **23〜29 は「立体が分かれる場所」と総数**＝ DESIGN_stereo_point.md（v1435）。
+ *                  23 が段1（原子と結合を1つのモードで指す・過不足の言い分け）・
+ *                  **24 は否定対照**＝ `tapHasOtherMeaning()` から印モードを外すと
+ *                  中点タップの click が次数トグルへ落ちて C=C が C≡C に化ける（BUGNOTE S6 型）・
+ *                  25 が段2（総数13・満点 N＋1・メソ体の文面）・
+ *                  **26 は陰性対照**＝ 既存19問＋芳香族の `（N種）` が1文字も変わらず、
+ *                  隠すのは立体の回の4か所（ボタン・見出し・作業帯・確認モード）だけ・
+ *                  **27 も否定対照**＝ 判定を1本すげ替えると段1 の全行が従う（2か所に散っていない）・
+ *                  28 が関門と印の持ち越し（↩ と成分切り出しで結合の印が落ちないこと）・
+ *                  29 がハースの糖の α/β（軸を宣言して2種・32種にならない・軸の外は責めない）。
+ *                  DESIGN_isomer_practice.md / DESIGN_stereo_point.md
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
  * | L   | 1〜9   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る。**9 は呼んだ分子が「見えるところ」に来ること**＝ ユーザー申し立て「最初呼び出されないが、スクロールすると急に現れる」。⚠ 画面外に着地していたのではなく（`fitCanvasToMolecule` が全体に合わせるので座標は常に視野の中）、**全体に合わせるほど呼んだ本人が縮む**のが正体（実測 結合1本 13.7px）。位置と**大きさ**（`SUMMON_MIN_BOND_PX`）の2本立てで測り、⑦ が「いつでも寄せる」に倒す否定対照 |
@@ -77,13 +102,30 @@
  * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
- * | PM  | 1〜2   | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応） |
+ * | PM  | 1〜12  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
  * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
+ * | QL  | 1〜6   | クイズの出題プールの「図の長さの上限」（環の外の最長鎖 ≦10・v1434・
+ *                  ユーザー検品「ステアリン酸などは題材としてあまり適していない」）。
+ *                  1 が本体（上限で実際に減る・名指しの3件が出題されない）・
+ *                  **2 は否定対照**（上限を外すとステアリン酸が実際に出る＝1の緑が空振りでない）・
+ *                  **3 は陰性対照**（芳香族が1件も落ちていない。アントラセン・TNT・ピクリン酸）・
+ *                  **4 は陰性対照**（名称呼び出し・名称ライブラリ・お題・書き出し練習には
+ *                  効いていない＝上限がクイズの外へ漏れていない）・
+ *                  **5 は陰性対照**（v1425 の出題範囲と v1430 のつまみ2つが回帰していない）・
+ *                  6 が「黙って減らさない」（外した件数と代表名が画面に出る） |
+ * | QS  | 1〜5   | クイズの塗り分けの後始末と出題プールの絞り込み（2026-08-20 ユーザー検品）。
+ *                  1 が本体（3つの「居座る選択肢」で答え合わせの色が次の問題に残らない）・
+ *                  **2 は否定対照**（共通ヘルパー `clearQuizChoiceMarks` を空関数に差し替えると
+ *                  3つとも赤くなる＝ 1 が本体を見ている証明）。
+ *                  3 が分野・範囲の分類（件数の内訳・**どこにも入らなかった件数を画面に出す**）・
+ *                  4 が絞り込みで出題プールが実際に減ること／既定で高校範囲外が出ないこと・
+ *                  **5 は否定対照**（絞り込みを外すと件数が戻る／既定を「すべて」にすると
+ *                  範囲外が出る＝ 4 の緑が「もともと出ない」ではないことの証明） |
  * | QX  | 1      | 抜けるときの手当て |
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
  * | RB  | 1〜17  | リボン統合 |
@@ -111,7 +153,29 @@
  *                  同じ物差しが赤くなる（＋残り数の表示が実際の残りと一致していること）・
  *                  4 は画面（入口は `#puzzle-modal` の中・押しものの床 32px・
  *                  **作業帯の段も高さも 1920/375/320px で1pxも増えない**） |
- * | RX  | 1〜39  | 反応実行・前後比較・機構との連携（**39 は選ぶモードの案内が指す出口**＝ 統合レーンの実測
+ * | RX  | 1〜48  | 反応実行・前後比較・機構との連携（**46〜48 は「一覧はたどると決めるが別」**＝ v1439・
+ *                  ユーザーの実機報告（2026-08-21）「反応機構ビューアー　反応の種類が選べない、
+ *                  すぐ選択される」。一覧が `<select>` だったので**候補を動かした瞬間に `change` が飛び**、
+ *                  v1379 で繋いだ `enter()` まで走っていた（実測: ↓ 1回で始まってメニューが閉じ、
+ *                  焦点も失うので**2件目より先へ1件も進めない**）。押しものに替えて両立させた。
+ *                  46 が本題（button である・`<select>` は面に出さない・たどっても始まらない・
+ *                  **14件すべてに1手で届く**）・**47 は否定対照**＝ 1件目のあとメニューへ戻れる
+ *                 （帯が出ているだけで閉じない）／同じ反応でも渡す／**引っ込む働き自体は生きている**・
+ *                  **48 は否定対照**＝ 新しい入口でも v1374 の退避と v1423 の文脈が残る。
+ *                  **43〜45 は「いま見ている分子」の反応だけ**＝ v1429。
+ *                  **40〜42 は「直近の反応という1つの文脈」**＝ v1423・
+ *                  ユーザーの実機レビュー（2026-08-20）2件。「試薬を作用させた後、**反応の前後を見る**／
+ *                  **この反応の機構を見る** が、生成物に対するボタンの下に区別なく並んでいるのが
+ *                  わかりづらい」「**この反応の機構を見る、に進むと、反応前に戻す、ができなくなる**」。
+ *                  ⚠ 割る軸はユーザー本人の言い直しが正 ——「分子を変えるか変えないか」ではなく
+ *                  **1つ前の物質を変化させたという文脈の続きかどうか**（前者だと「↩ 反応前に戻す」だけが
+ *                  振り返りの側から出ていく）。40 が節の見出し（反応の前は節①だけ／反応の後は2節に割れ、
+ *                  **前後を見る が反応カードと同じ節に入っていない**／節②は「↩ 反応前に戻す」の在り処を
+ *                  **指すだけ**でボタンを二重に置かない）・41 が本体（機構を見にいって戻ると札がまた出て、
+ *                  押せば本当に反応前へ戻る。ビューア中は引っ込んだまま）・**42 は否定対照**＝
+ *                  文脈が切れているときは出さない（全消去 → 学習 → 自由／反応のあと1原子描き足してから
+ *                  機構へ行って戻る。後者は `syncUndoButton()` の門番を外すと赤く、
+ *                  「描き足しを戻せば札も戻る」で空振りでないことを見る）。**39 は選ぶモードの案内が指す出口**＝ 統合レーンの実測
  *                  （2026-08-18）。「やめるときは**左のパレット**で道具を選ぶ」と案内していたが、
  *                  **899px 以下に左の道具パレットは無い**（`btn-tool-select` が 0×0）。
  *                  320px では「押しても何も起きないボタンが6個並ぶ」状態を案内していた。
@@ -1982,23 +2046,38 @@
             });
         });
 
-        // 出題20回: 判定はverifyMolecule由来で、名前の同一性と常に整合。両図が描画される
+        // 出題20回（4択・2026-08-20 から既定の形）: 見本と選択肢4枚が描かれ、
+        // **正解はちょうど1つ**（判定は verifyMolecule 由来）
         quiz.open();
         for (let k = 0; k < 20; k++) {
             quiz.nextQuestion();
-            assert(quiz.current.isSame === (quiz.current.nameA === quiz.current.nameB),
-                `出題${k}: 判定と名前の不整合 (${quiz.current.nameA} / ${quiz.current.nameB})`);
-            assert(c.D.querySelector('#quiz-svg-a .quiz-atoms').children.length > 0, '左の図が空');
-            assert(c.D.querySelector('#quiz-svg-b .quiz-atoms').children.length > 0, '右の図が空');
+            assert(quiz.current && quiz.current.form === 'choice', `出題${k}: 4択で出ていない`);
+            assert(c.D.querySelector('#quiz-svg-a .quiz-atoms').children.length > 0, '見本の図が空');
+            for (let i = 0; i < 4; i++) {
+                assert(c.D.querySelector(`#quiz-opt-${i} .quiz-atoms`).children.length > 0,
+                    `出題${k}: 選択肢${i}の図が空`);
+            }
+            assert(quiz.current.answer >= 0 && quiz.current.answer < 4,
+                `出題${k}: 正解の番号が範囲外（${quiz.current.answer}）`);
         }
 
-        // 回答フロー: 正答で成績加算・結果表示・ボタン無効化
+        // 回答フロー（4択）: 正答で成績加算・結果表示・正解の枠が緑
         quiz.nextQuestion();
         const before = quiz.score.correct;
-        quiz.answer(quiz.current.isSame);
+        quiz.answerChoice(quiz.current.answer);
         assert(quiz.score.correct === before + 1, '正答が加算されない');
         assert(c.D.getElementById('quiz-result').textContent.includes('正解'), '結果の解説が表示されない');
+        assert(c.D.getElementById(`quiz-cell-${quiz.current.answer}`).classList.contains('pk-cell-right'),
+            '正解のマスが緑にならない');
+
+        // 2択（収録用の形）も生きている: setForced で切り替わり、ボタンが無効化される
+        quiz.setForced('same');
+        quiz.nextQuestion();
+        assert(quiz.current.form === 'pair', 'setForced しても2択に切り替わらない');
+        assert(c.D.querySelector('#quiz-svg-b .quiz-atoms').children.length > 0, '2択の右の図が空');
+        quiz.answer(quiz.current.isSame);
         assert(c.D.getElementById('btn-quiz-same').disabled, '回答後に回答ボタンが無効化されない');
+        quiz.setForced(null);
 
         c.D.getElementById('btn-quiz-close').click();
         assert(c.D.getElementById('quiz-modal').classList.contains('hidden'), 'モーダルが閉じない');
@@ -2173,8 +2252,9 @@
         assert(cBtns.every(b => b.disabled), '回答後に選択肢が無効化されない');
         D.getElementById('btn-cq-close').click();
 
-        // --- 同じ？違う？: 2択でも同じ規則が効く ---
+        // --- 同じ？違う？: 2択でも同じ規則が効く（収録用に残した形。setForced で出す） ---
         const sq = W.quiz;
+        sq.setForced('same');
         sq.open();
         const same = D.getElementById('btn-quiz-same'), diff = D.getElementById('btn-quiz-diff');
         const rightBtn = sq.current.isSame ? same : diff;
@@ -2182,6 +2262,7 @@
         wrongBtn.click();
         assert(wrongBtn.classList.contains('quiz-choice-wrong'), `押した誤答が赤くならない（${cls(wrongBtn)}）`);
         assert(rightBtn.classList.contains('quiz-choice-right'), `正解が緑にならない（${cls(rightBtn)}）`);
+        sq.setForced(null);
         D.getElementById('btn-quiz-close').click();
     });
 
@@ -2438,15 +2519,19 @@
         quiz.computePools();
         for (let k = 0; k < 15; k++) {
             quiz.nextQuestion();
-            assert(namesIn.has(quiz.current.nameA) && namesIn.has(quiz.current.nameB),
-                `絞り込み外の出題（${pickSeries}）: ${quiz.current.nameA} / ${quiz.current.nameB}`);
+            // 4択でも2択（保険の形）でも、画面に出た化合物はすべて絞り込みの中にいること
+            const shown = quiz.current.form === 'choice'
+                ? quiz.current.names : [quiz.current.nameA, quiz.current.nameB];
+            shown.forEach(n => assert(namesIn.has(n),
+                `絞り込み外の出題（${pickSeries}）: ${shown.join(' / ')}`));
         }
         // 強度0/2でも出題が動作し、回答解説に構造ポイントが含まれる
         quiz.strengthEl.value = '0';
         quiz.nextQuestion();
         quiz.strengthEl.value = '2';
         quiz.nextQuestion();
-        quiz.answer(quiz.current.isSame);
+        if (quiz.current.form === 'choice') quiz.answerChoice(quiz.current.answer);
+        else quiz.answer(quiz.current.isSame);
         const qText = c.D.getElementById('quiz-result').textContent;
         assert(qText.includes('構造のポイント') || qText.includes('左:'), '同じ化合物？クイズの解説に構造ポイントがない');
 
@@ -2480,6 +2565,1291 @@
         c.D.getElementById('btn-naming-close').click();
         assert(c.D.getElementById('quiz-modal').classList.contains('hidden') &&
                c.D.getElementById('naming-modal').classList.contains('hidden'), 'モーダルが閉じない');
+    });
+
+    // ===== クイズの塗り分けの後始末と、出題プールの絞り込み（2026-08-20 ユーザー検品） =====
+    //
+    // QS1・QS2 は「前の問題で選んだ選択肢のマーカーが次の問題に残る」（ユーザー申し立て）。
+    // **答え合わせのボタンが作り直されるクイズと、居座るクイズがある**のが事故の芯で、
+    // 居座る3か所（同じ化合物？の2択・立体異性体クイズの3択・同じ？違う？の2択）だけが
+    // 自分で消す必要があった。1か所（同じ化合物？）が書き忘れられていた。
+    // QS3〜QS5 は出題プールの分野・範囲（レベル）の絞り込み。
+
+    const QUIZ_MARK_CLASSES = ['quiz-choice-right', 'quiz-choice-wrong',
+                               'quiz-choice-muted', 'quiz-choice-picked'];
+    const countMarked = (els) => [...els].filter(
+        b => QUIZ_MARK_CLASSES.some(m => b.classList.contains(m))).length;
+
+    // 3つのクイズを「答える → 次の問題」まで進める手順（QS1 と否定対照 QS2 で共有する）。
+    // 返り値は [{ label, buttons }]（答え合わせのあと・次の問題のあとで数えるための材料）
+    const runChoiceCarryOver = (c, whenAnswered) => {
+        const out = [];
+        // ① 同じ化合物？の2択（収録用に残した形。ボタンは HTML 直書きで作り直されない）。
+        //    ⚠ **`setForced` を通すのは「2択がまだ生きている」ことの陰性対照も兼ねる**——
+        //    2択が死んでいれば `quiz.answer` が空振りして QS1 の (1) が落ちる
+        const quiz = c.W.quiz;
+        quiz.setForced('same');
+        quiz.open();
+        quiz.nextQuestion();
+        assert(quiz.current && quiz.current.form === 'pair',
+            '同じ化合物？の2択（収録用の形）が出せない');
+        const sameBtns = [quiz.btnSame, quiz.btnDiff];
+        quiz.answer(true);
+        whenAnswered('同じ化合物？', sameBtns);
+        quiz.nextQuestion();
+        out.push({ label: '同じ化合物？', buttons: sameBtns, quiz });
+        quiz.setForced(null);
+        c.D.getElementById('btn-quiz-close').click();
+
+        // ② 立体異性体クイズ（3択。こちらは前から自分で消していた）
+        const sq = c.W.stereoQuiz;
+        sq.open();
+        const sqBtns = ['same', 'enantiomer', 'diastereomer'].map(k => sq.buttons[k]);
+        if (sq.current) {
+            sq.answer('same');
+            whenAnswered('立体異性体クイズ', sqBtns);
+            sq.nextQuestion();
+            out.push({ label: '立体異性体クイズ', buttons: sqBtns, quiz: sq });
+        }
+        c.D.getElementById('btn-sq-close').click();
+
+        // ③ 同じ？違う？（2択。正解すると 1.2 秒で自動送りされるので**わざと間違える**）
+        const pk = c.W.choiceQuiz;
+        pk.kindEl.value = 'pair';
+        pk.open();
+        if (pk.current && pk.current.kind === 'pair') {
+            pk.answerPair(!pk.current.isSame);
+            whenAnswered('同じ？違う？', pk.pairBtns);
+            pk.newQuestion();
+            out.push({ label: '同じ？違う？', buttons: pk.pairBtns, quiz: pk });
+        }
+        pk.kindEl.value = 'symbol';
+        c.D.getElementById('btn-pk-close').click();
+        return out;
+    };
+
+    test('QS1: 答え合わせの塗り分けは次の問題に持ち越さない（ユーザー申し立て・2026-08-20）', async (c) => {
+        c.reset();
+        // 答え合わせの直後には必ず塗り分けが付いていること（付いていなければ、
+        // 「次で 0 個」を見ても意味がない＝物差しの空回りを先に潰す）
+        const seen = [];
+        const rows = runChoiceCarryOver(c, (label, btns) => {
+            seen.push(label);
+            assert(countMarked(btns) === btns.length,
+                `${label}: 答え合わせで塗り分けが付いていない（${countMarked(btns)}/${btns.length}）`);
+        });
+        assert(seen.length === 3, `3つのクイズを通っていない（${seen.join('・')}）`);
+        rows.forEach(({ label, buttons }) => {
+            assert(countMarked(buttons) === 0,
+                `${label}: 次の問題に前回の塗り分けが残っている（${[...buttons].map(b => b.className).join(' ｜ ')}）`);
+            assert([...buttons].every(b => !b.disabled),
+                `${label}: 次の問題で選択肢が押せないままになっている`);
+        });
+    });
+
+    test('QS2: 否定対照 — 掃除（clearQuizChoiceMarks）を外すと塗り分けが残る', async (c) => {
+        c.reset();
+        // 掃除は共通ヘルパー1つに寄せてある（書き写すと、また1か所だけ忘れる）。
+        // それを空関数に差し替えると、QS1 が見ている3か所すべてが赤くなること＝
+        // QS1 が本体を見ていて、たまたま緑になっているのではないことの証明
+        const orig = c.W.clearQuizChoiceMarks;
+        assert(typeof orig === 'function', 'clearQuizChoiceMarks が公開されていない');
+        let rows;
+        try {
+            c.W.clearQuizChoiceMarks = () => {};
+            rows = runChoiceCarryOver(c, () => {});
+        } finally {
+            c.W.clearQuizChoiceMarks = orig;
+        }
+        const leaked = rows.filter(({ buttons }) => countMarked(buttons) > 0).map(r => r.label);
+        assert(leaked.length === rows.length,
+            `掃除を外しても塗り分けが消えたクイズがある＝そこは QS1 の検査が空振り（残ったのは ${leaked.join('・') || 'なし'}）`);
+        // 後始末: 掃除を戻したら本当に消えること（差し替えが残っていないことの確認）
+        const back = runChoiceCarryOver(c, () => {});
+        assert(back.every(({ buttons }) => countMarked(buttons) === 0), '掃除を戻しても塗り分けが残る');
+    });
+
+    // 出題プールの絞り込み用の道具（QS3〜QS5 で共有）
+    const quizPoolCtx = (c) => {
+        const quiz = c.W.quiz, nq = c.W.namingQuiz;
+        quiz.buildLibrary();
+        nq.build();
+        return { quiz, nq };
+    };
+    const setQuizFilters = (q, scope, field, series) => {
+        if (q.scopeEl) q.scopeEl.value = scope;
+        if (q.fieldEl) q.fieldEl.value = field;
+        if (q.seriesEl) q.seriesEl.value = series;
+        if (q.computePools) q.computePools();
+        if (q.computePool) q.computePool();
+    };
+
+    test('QS3: 出題プールの分野と範囲 — 分類の件数と、分類できなかった件数が画面に出る', async (c) => {
+        c.reset();
+        const { quiz } = quizPoolCtx(c);
+        const lib = quiz.library;
+        assert(lib.length > 900, `出題プールが小さすぎる（${lib.length}件）`);
+
+        // ① 全件に分野と範囲が付いている（付け忘れたエントリがあると絞り込みが素通りする）
+        const fields = c.W.QUIZ_FIELDS;
+        const badField = lib.filter(e => !fields.includes(e.field));
+        assert(badField.length === 0,
+            `分野が付いていないエントリ ${badField.length} 件（例: ${badField.slice(0, 3).map(e => e.name).join('・')}）`);
+        const badLevel = lib.filter(e => ![1, 2, 3].includes(e.scopeLevel));
+        assert(badLevel.length === 0, `範囲（レベル）が付いていないエントリ ${badLevel.length} 件`);
+
+        // ② 88% が1つの箱だった状態（compounds.json の series が全部同じ）を分野が解消している。
+        //    **どの分野も全体の8割を超えない**＝ 分けたことになっている
+        const count = {};
+        lib.forEach(e => { count[e.field] = (count[e.field] || 0) + 1; });
+        const biggest = Math.max(...fields.map(f => count[f] || 0));
+        assert(biggest / lib.length < 0.8,
+            `分野の最大の箱が ${biggest}/${lib.length} 件（1つの箱に寄りすぎ＝絞れていない）`);
+
+        // ③ **どこにも入らなかった件数を隠さない**。分野の選択肢のラベルに件数が出ている
+        const other = count['その他'] || 0;
+        quiz.open();
+        const opts = [...quiz.fieldEl.options];
+        const otherOpt = opts.find(o => o.value === 'その他');
+        assert(otherOpt, '分野の選択肢に「その他」が無い（分類できなかったものが選べない）');
+        assert(otherOpt.textContent.includes('分類できなかった'),
+            `「その他」が何であるか書かれていない（${otherOpt.textContent}）`);
+        assert(otherOpt.textContent.includes(String(other)),
+            `分類できなかった件数が画面に出ていない（実数 ${other} / 表示 ${otherOpt.textContent}）`);
+        // 全部の分野で「ラベルの件数 ＝ 実数」（数字を手で書いていないこと）
+        fields.forEach(f => {
+            const o = opts.find(x => x.value === f);
+            assert(o && o.textContent.includes(`${count[f] || 0}件`),
+                `分野「${f}」のラベルの件数が実数と違う（実数 ${count[f] || 0} / 表示 ${o && o.textContent}）`);
+        });
+        c.D.getElementById('btn-quiz-close').click();
+
+        // ④ quiz-scope.json の名簿が、ライブラリの名前と実際に一致している（打ち間違いの検出）。
+        //    一致しない名前は**黙って無視される**ので、機械で見ないと気づけない
+        const listed = (c.W.QUIZ_SCOPE && c.W.QUIZ_SCOPE.textbook) || [];
+        assert(listed.length > 50, `quiz-scope.json の名簿が読めていない（${listed.length}件）`);
+        const names = new Set(lib.map(e => e.name));
+        const missing = listed.filter(n => !names.has(n));
+        assert(missing.length === 0,
+            `quiz-scope.json にライブラリに無い名前がある: ${missing.join(' / ')}`);
+        // 名簿のものは必ずレベル1に居る（名簿が効いていることの確認）
+        const notBasic = listed.filter(n => {
+            const e = lib.find(x => x.name === n);
+            return e && e.scopeLevel !== 1;
+        });
+        assert(notBasic.length === 0, `名簿にあるのにレベル1でない: ${notBasic.join(' / ')}`);
+    });
+
+    test('QS4: 絞り込みで出題プールが実際に減る／既定で高校範囲外が出ない（2026-08-20）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const lib = quiz.library;
+        quiz.open();
+        nq.open();
+
+        // ① 既定は「教科書」（今までの既定「すべて」が高校範囲外を出していた原因）
+        assert(quiz.scopeEl.value === c.W.QUIZ_SCOPE_DEFAULT && quiz.scopeEl.value === 'basic',
+            `同じ化合物？の既定の範囲が basic でない（${quiz.scopeEl.value}）`);
+        assert(nq.scopeEl.value === 'basic', `命名クイズの既定の範囲が basic でない（${nq.scopeEl.value}）`);
+
+        // ② 件数が段階的に増える（basic < named < all ＝ 全件）。絞り込みが本当に効いている
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        const nBasic = quiz.poolIndices.length, pBasic = quiz.pairs.length;
+        setQuizFilters(quiz, 'named', 'all', 'all');
+        const nNamed = quiz.poolIndices.length;
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        const nAll = quiz.poolIndices.length;
+        assert(nBasic < nNamed && nNamed < nAll,
+            `範囲で件数が増えない（basic ${nBasic} / named ${nNamed} / all ${nAll}）`);
+        // v1434 で「環の外の最長鎖 ≦10」の上限が入ったので、「すべて」＝ 全件 − 上限で外れたもの。
+        // ここは**上限以外の理由で減っていない**ことの確認（上限そのものは QL1〜QL6 が見張る）
+        const overRaw = lib.filter(e => e.chainOutsideRing > c.W.QUIZ_CHAIN_MAX).length;
+        assert(overRaw > 0, '上限で外れるものが1件も無い＝この差し引きが空回りしている');
+        assert(nAll === lib.length - overRaw,
+            `「すべて」が（全件 − 図が長すぎるもの）でない（${nAll} ≠ ${lib.length}−${overRaw}）`);
+        assert(nBasic / nAll < 0.5, `「教科書」が全体の半分以上ある（${nBasic}/${nAll}）＝絞れていない`);
+        assert(pBasic >= 20, `「教科書」で「違う」に使える組が少なすぎる（${pBasic}組）＝出題が成り立たない`);
+
+        // ③ 件数が画面に出ている（数で確かめられること自体が要件）
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        assert(c.D.getElementById('quiz-pool-count').textContent.includes(String(nBasic)),
+            `同じ化合物？の件数が画面に出ていない（${c.D.getElementById('quiz-pool-count').textContent}）`);
+
+        // ④ 既定（教科書）では、出題される化合物が全部レベル1（＝高校範囲外が出ない）
+        const levelOf = (name) => {
+            const hits = lib.filter(e => e.name === name);
+            return hits.length ? Math.min(...hits.map(e => e.scopeLevel)) : 9;
+        };
+        for (let k = 0; k < 40; k++) {
+            quiz.nextQuestion();
+            assert(quiz.current, '既定の範囲で出題できない');
+            // 4択（既定の形）は見本＋選択肢4枚、2択（収録用の形）は左右の2枚
+            const shown = quiz.current.form === 'choice'
+                ? quiz.current.names : [quiz.current.nameA, quiz.current.nameB];
+            shown.forEach(n =>
+                assert(levelOf(n) === 1, `既定（教科書）なのに範囲外が出た: ${n}`));
+        }
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        for (let k = 0; k < 40; k++) {
+            nq.nextQuestion();
+            assert(nq.current, '命名クイズが既定の範囲で出題できない');
+            assert(levelOf(nq.current.entry.name) === 1,
+                `命名クイズ: 既定（教科書）なのに範囲外が出た: ${nq.current.entry.name}`);
+            // **誤答の選択肢も範囲の中から作る**（ここを絞らないと申し立ては半分しか直らない）
+            nq.current.choices.forEach(n =>
+                assert(levelOf(n) === 1, `命名クイズ: 選択肢に範囲外の名前が混ざった: ${n}`));
+        }
+
+        // ⑤ 分野でも減り、出題がその分野に収まる
+        setQuizFilters(nq, 'all', '芳香族', 'all');
+        const nArom = nq.pool.length;
+        assert(nArom > 0 && nArom < lib.length,
+            `分野の絞り込みで件数が変わらない（芳香族 ${nArom} / 全件 ${lib.length}）`);
+        for (let k = 0; k < 20; k++) {
+            nq.nextQuestion();
+            assert(nq.current.entry.field === '芳香族',
+                `分野「芳香族」なのに ${nq.current.entry.field} が出た: ${nq.current.entry.name}`);
+        }
+
+        // 後片付け
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    test('QS5: 否定対照 — 絞り込みを外すと件数が戻り、範囲外が実際に出る', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const lib = quiz.library;
+        quiz.open();
+        nq.open();
+        const levelOf = (name) => {
+            const hits = lib.filter(e => e.name === name);
+            return hits.length ? Math.min(...hits.map(e => e.scopeLevel)) : 9;
+        };
+
+        // ① 「教科書で範囲外が出ない」（QS4 ④）が、**もともと出ないだけ**ではないことの証明。
+        //    範囲を「すべて」に戻すと、レベル3（大学初級を含む）が実際に出題される
+        setQuizFilters(nq, 'all', 'all', 'all');
+        assert(nq.pool.length > 0, '「すべて」で出題できない');
+        let sawOutOfScope = false;
+        const seen = [];
+        for (let k = 0; k < 200 && !sawOutOfScope; k++) {
+            nq.nextQuestion();
+            const lv = levelOf(nq.current.entry.name);
+            seen.push(`${nq.current.entry.name}(L${lv})`);
+            if (lv === 3) sawOutOfScope = true;
+        }
+        assert(sawOutOfScope,
+            `「すべて」に戻してもレベル3が1度も出ない＝ QS4 の緑が空振り（見たもの: ${seen.slice(0, 10).join(' ')}）`);
+
+        // ② 分野を外すと件数が戻る
+        setQuizFilters(nq, 'all', '芳香族', 'all');
+        const nArom = nq.pool.length;
+        setQuizFilters(nq, 'all', 'all', 'all');
+        assert(nq.pool.length > nArom, `分野を外しても件数が戻らない（${nArom} → ${nq.pool.length}）`);
+
+        // ③ 絞りすぎて空になったとき、**黙って全体に戻さない**（戻すと「絞ったのに範囲外が出る」
+        //    ＝ 今回の申し立てそのものに化ける）。断り文を出して出題しないこと
+        setQuizFilters(quiz, 'basic', '高分子', 'all');
+        assert(quiz.poolIndices.length === 0,
+            `「教科書 × 高分子」が空でない（${quiz.poolIndices.length}件）＝この対照が成り立たない`);
+        quiz.nextQuestion();
+        const msg = c.D.getElementById('quiz-result').textContent;
+        assert(/出題できる化合物がありません/.test(msg), `空のときに断り文が出ない（${msg}）`);
+        assert(/出題できる化合物がありません/.test(c.D.getElementById('quiz-pool-count').textContent),
+            '空のときに件数の欄が警告になっていない');
+
+        // 後片付け
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    /* ===== QN: 名簿の検分（C2・2026-08-25・ユーザー決定「115件を全部見直す」） =====
+     *
+     * `quiz-scope.json` の `textbook`（115件）に **`survey`**（どの教科書で見たか・○×）を
+     * 足した。⚠⚠ **判定するのはユーザー**で、こちらは書かれた ○× を読んで効かせるだけ。
+     *
+     * ⚠ ここで見るのは3つ:
+     *   ・名簿と survey の名前が**機械で照合できている**（打ち間違いが黙って効かなくなるのを防ぐ）
+     *   ・**`×` が実際に効く**（QN2）——効かないなら「仕組みがあるだけ」で検分の意味が無い
+     *   ・**空欄は今までどおり残る**（QN3）——未検分を × 扱いにすると導入した瞬間に115件消える */
+
+    test('QN1: 名簿と検分欄が機械で照合できる（名前の打ち間違いを黙って通さない）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const listed = W.QUIZ_SCOPE.textbook;
+        assert(Array.isArray(listed) && listed.length > 100, `名簿が読めない（${listed && listed.length}）`);
+        const rows = W.quizScopeSurveyRows();
+        assert(Array.isArray(rows), 'survey が配列でない');
+
+        // ① survey の名前は全部 textbook に居る（居ないと ○× が黙って空振りする）
+        const set = new Set(listed);
+        const stray = rows.filter(r => !set.has(r.name)).map(r => r.name);
+        assert(stray.length === 0, `survey にあるのに名簿に無い名前 ${stray.length} 件（${stray.join('・')}）`);
+        // ② 名簿の名前は全部ライブラリに実在する（QS3 と同じ照合。ここが崩れると検分が無意味）
+        const libNames = new Set(W.buildCompoundLibrary(c.game).map(e => e.name));
+        const missing = listed.filter(n => !libNames.has(n));
+        assert(missing.length === 0, `名簿にあるのにライブラリに無い名前 ${missing.length} 件（${missing.join('・')}）`);
+        // ③ 前レーンが「教科書から外れて見える」とした8件に**目印が付いている**
+        //    （⚠ 目印は判定ではない。勝手に外していないことも一緒に見る）
+        const FLAGGED = ['p-トルイジン', 'ベンズアミド', 'ジエチルアミン', 'プロピルアミン',
+            'エチレンジアミン', '2-アミノエタノール（エタノールアミン）',
+            'N,N-ジメチルホルムアミド（DMF）', 'アクリルアミド'];
+        const flagged = new Set(rows.filter(r => String(r.flag || '').trim()).map(r => r.name));
+        FLAGGED.forEach(n => {
+            assert(set.has(n), `目印を付けるはずの「${n}」が名簿から消えている（勝手に外している）`);
+            assert(flagged.has(n), `「${n}」に目印が付いていない`);
+        });
+        // ④ **勝手に外していない** —— 目印だけでプールから落ちてはいけない
+        const lib = W.buildCompoundLibrary(c.game);
+        FLAGGED.forEach(n => {
+            const e = lib.find(x => x.name === n);
+            assert(e && e.scopeLevel === 1,
+                `目印を付けただけの「${n}」が範囲「教科書」から落ちている（判定はユーザーの仕事）`);
+        });
+    });
+
+    test('QN2: 検分で × を書くと、その化合物が範囲「教科書」から実際に落ちる', async (c) => {
+        c.reset();
+        const W = c.W;
+        const target = 'アクリルアミド';   // 目印の付いた8件のうちの1つ
+        const before = W.buildCompoundLibrary(c.game).find(e => e.name === target);
+        assert(before && before.scopeLevel === 1, `前提が崩れている（${target} が最初からレベル1でない）`);
+
+        const survey = W.QUIZ_SCOPE.survey;
+        const row = survey.find(r => r.name === target);
+        assert(row, `${target} の検分の行が無い`);
+        try {
+            row.verdict = '×';
+            assert(W.quizScopeRejectedNames().has(target), '× を書いても外す対象に入らない');
+            assert(!W.quizScopeTextbookNames().has(target), '× を書いても名簿から外れない');
+            // **プールで見る**（名簿の集合だけ見ても、効いているかは分からない）。
+            // ⚠ 使い回し（_quizTraitCache）が検分の × をキーに入れていないと、ここが緑にならない
+            const after = W.buildCompoundLibrary(c.game).find(e => e.name === target);
+            assert(after && after.scopeLevel !== 1,
+                `× を書いたのに ${target} がレベル1のまま（レベル ${after && after.scopeLevel}）` +
+                '＝ 検分の欄は「仕組みがあるだけ」で効いていない');
+        } finally {
+            row.verdict = '';
+        }
+        // 戻したら本当に戻る（書き換えが残っていないことの確認）
+        const back = W.buildCompoundLibrary(c.game).find(e => e.name === target);
+        assert(back && back.scopeLevel === 1, `× を消しても ${target} が戻らない`);
+    });
+
+    test('QN3: 否定対照 — 空欄・○ は今までどおり残る（導入だけで名簿が消えない）', async (c) => {
+        c.reset();
+        const W = c.W;
+        // ① いまは1件も × が無い ＝ 名簿はまるごと効いている
+        assert(W.quizScopeRejectedNames().size === 0,
+            `検分で × が付いているものがある（${[...W.quizScopeRejectedNames()].join('・')}）` +
+            '＝ 誰かが判定を書き込んだか、空欄が × 扱いになっている');
+        assert(W.quizScopeTextbookNames().size === W.QUIZ_SCOPE.textbook.length,
+            `名簿 ${W.QUIZ_SCOPE.textbook.length} 件のうち効いているのが ` +
+            `${W.quizScopeTextbookNames().size} 件しかない（空欄が × 扱いになっている）`);
+        // ② ○ を書いても落ちない（○ と × を取り違えていないこと）
+        const row = W.QUIZ_SCOPE.survey.find(r => r.name === 'アクリルアミド');
+        try {
+            row.verdict = '○';
+            assert(W.quizScopeTextbookNames().has('アクリルアミド'),
+                '○ を書いたのに名簿から外れた（○ と × を取り違えている）');
+        } finally { row.verdict = ''; }
+    });
+
+    /* ===== QL: クイズの出題プールの「図の長さの上限」（v1434・2026-08-21） =====
+     *
+     * ユーザー検品（2026-08-20）の原文:
+     *   「**ステアリン酸などは題材としてあまり適していない**（長い直鎖が曲がっているかどうか、
+     *     原子の数が変わっていてもカウントしづらい）」
+     *   「**鎖10で油脂以外は問題ないかと思います。引っかかるとすれば、入試の2価以上のエステルです。
+     *     同じ分子を探す問題なら10で切って問題ないと思います**」「**クイズでは区切ってよい**」
+     *
+     * ⚠ 見張るところは4つ:
+     *   ・上限が**効いている**（QL1）と、その緑が空振りでない（QL2 の否定対照）
+     *   ・上限が**芳香族を巻き込んでいない**（QL3。重原子数で切ると芳香族から先に落ちる）
+     *   ・上限が**クイズの外へ漏れていない**（QL4。名称呼び出し・ライブラリ・お題・書き出し練習）
+     *   ・**つまみが増えていない／範囲が回帰していない**（QL5）と、**黙って減らしていない**（QL6）
+     */
+
+    // 上限まわりで名指しする化合物（実測値つき。ずれたら数え方が変わったということ）
+    const QL_CHAIN_FIXTURES = [
+        ['ステアリン酸', 18],                         // ユーザーが名指しした本人
+        ['パルミチン酸', 16],
+        ['トリステアリン（油脂・ステアリン酸のグリセリド）', 18],
+        ['ラウリン酸', 12],
+        ['アントラセン', 0],                          // 重原子14。ラウリン酸と同じ大きさで鎖0
+        ['2,4,6-トリニトロトルエン（TNT）', 1],
+        ['ピクリン酸', 0],
+        ['カプサイシン', 9],                          // 芳香族なのに鎖9（環の有無は代理変数）
+        ['コレステロール', 7],                        // 環4なのに鎖7
+        ['スクロース（ショ糖）', 1]                   // 重原子23・環2なのに鎖1
+    ];
+    // 上限で外れる（＝クイズに出てはいけない）名前
+    const QL_DROPPED = ['ステアリン酸', 'パルミチン酸',
+        'トリステアリン（油脂・ステアリン酸のグリセリド）'];
+    // 上限で外れてはいけない芳香族（陰性対照）
+    const QL_KEPT_AROMATIC = ['アントラセン', '2,4,6-トリニトロトルエン（TNT）', 'ピクリン酸'];
+
+    /** その問題で画面に出た化合物の名前（4択なら5つ・2択なら2つ） */
+    const quizShownNames = (q) =>
+        q.current.form === 'choice' ? q.current.names : [q.current.nameA, q.current.nameB];
+
+    test('QL1: 図の長さの上限（環の外の最長鎖 ≦10）が出題プールに効いている（ユーザー検品・2026-08-20）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library;
+        const CAP = W.QUIZ_CHAIN_MAX;
+        assert(CAP === 10, `上限が 10 でない（${CAP}）＝ユーザーの決定「鎖10で切ってよい」と食い違う`);
+
+        // ① 物差しが全件に付いている（付け忘れると上限が黙って素通りする）
+        const noChain = lib.filter(e => typeof e.chainOutsideRing !== 'number');
+        assert(noChain.length === 0,
+            `鎖の長さが付いていないエントリ ${noChain.length} 件（例: ${noChain.slice(0, 3).map(e => e.name).join('・')}）`);
+        // ② 物差しの当たり。**重原子数でも環の有無でもない**ことがここで見える——
+        //    同じ重原子14個の ラウリン酸[12] と アントラセン[0]、芳香族なのに鎖9のカプサイシン
+        const chainOf = (nm) => {
+            const e = lib.find(x => x.name === nm);
+            return e ? e.chainOutsideRing : -1;
+        };
+        QL_CHAIN_FIXTURES.forEach(([nm, n]) => {
+            assert(chainOf(nm) === n, `${nm} の「環の外の最長鎖」が ${chainOf(nm)}（${n} を期待）`);
+        });
+
+        // ③ プールが実際に減る（数で）。上限を無視した数と引き算が合うこと
+        quiz.open(); nq.open();
+        ['basic', 'all'].forEach(scope => {
+            setQuizFilters(quiz, scope, 'all', 'all');
+            const over = W.quizOversizedNames(lib, scope, 'all', 'all');
+            assert(over.length > 0, `範囲「${scope}」で外れるものが1件も無い＝この検査が空回りしている`);
+            assert(quiz.poolIndices.every(i => lib[i].chainOutsideRing <= CAP),
+                `範囲「${scope}」の出題プールに鎖 ${CAP} 超えが残っている`);
+            assert(JSON.stringify(quiz.oversized) === JSON.stringify(over),
+                `外した件数の記録が計算と合わない（${quiz.oversized.length} / ${over.length}）`);
+        });
+        // 実測（2026-08-21）: 教科書 246→236（10件）・すべて 999→981（18件・名前で畳んだ数）
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        assert(quiz.oversized.length === 10,
+            `教科書レベルで外れるのが ${quiz.oversized.length} 件（10件を期待。発注書 §3-3 の実測）`);
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        assert(quiz.oversized.length === 18,
+            `すべてで外れるのが ${quiz.oversized.length} 件（18件を期待）`);
+
+        // ④ ユーザーが名指しした3件が、**プールに居ないし、実際に出題もされない**
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        setQuizFilters(nq, 'all', 'all', 'all');
+        QL_DROPPED.forEach(nm => {
+            assert(lib.some(e => e.name === nm), `${nm} がライブラリに無い＝この検査が空回りしている`);
+            assert(!quiz.poolIndices.some(i => lib[i].name === nm),
+                `「同じ化合物？」の出題プールに ${nm} が残っている`);
+            assert(!nq.pool.some(i => lib[i].name === nm),
+                `命名クイズの出題プールに ${nm} が残っている`);
+            // 収録用の名指し（setForced）でも呼び出せない＝プールの外にある
+            nq.setForced(nm);
+            nq.nextQuestion();
+            assert(nq.current.entry.name !== nm, `命名クイズが名指しで ${nm} を出した`);
+        });
+        nq.setForced(null);
+        // 実際に引いても出ない（100問ずつ）
+        const sawLong = [];
+        for (let k = 0; k < 100; k++) {
+            quiz.nextQuestion();
+            quizShownNames(quiz).forEach(n => {
+                const e = lib.find(x => x.name === n);
+                if (e && e.chainOutsideRing > CAP) sawLong.push(n);
+            });
+            nq.nextQuestion();
+            nq.current.choices.forEach(n => {
+                const e = lib.find(x => x.name === n);
+                if (e && e.chainOutsideRing > CAP) sawLong.push(n);
+            });
+        }
+        assert(sawLong.length === 0,
+            `鎖が長すぎるものが出題された: ${[...new Set(sawLong)].join('・')}`);
+
+        // 後片付け
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    test('QL2: 否定対照 — 上限を外すとステアリン酸が実際に出る（QL1 の緑が空振りでないこと）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library;
+        quiz.open(); nq.open();
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        setQuizFilters(nq, 'all', 'all', 'all');
+        const nCapped = quiz.poolIndices.length, nNaming = nq.pool.length;
+        const overRaw = lib.filter(e => e.chainOutsideRing > W.QUIZ_CHAIN_MAX).length;
+
+        const orig = W.QUIZ_CHAIN_MAX;
+        try {
+            // 上限だけを外す（範囲・分野・シリーズは触らない）
+            W.QUIZ_CHAIN_MAX = 9999;
+            setQuizFilters(quiz, 'all', 'all', 'all');
+            setQuizFilters(nq, 'all', 'all', 'all');
+            assert(quiz.poolIndices.length === nCapped + overRaw,
+                `上限を外しても件数が戻らない（${nCapped} → ${quiz.poolIndices.length}／+${overRaw} を期待）` +
+                '＝ QL1 が見ているのは上限ではない');
+            assert(nq.pool.length > nNaming,
+                `命名クイズの件数が戻らない（${nNaming} → ${nq.pool.length}）`);
+            assert((quiz.oversized || []).length === 0,
+                '上限を外したのに「外した件数」が残っている');
+            // ステアリン酸が**実際に出題される**（居るだけでなく引ける）
+            QL_DROPPED.forEach(nm => {
+                nq.setForced(nm);
+                nq.nextQuestion();
+                assert(nq.current.entry.name === nm,
+                    `上限を外しても ${nm} が出ない（出たのは ${nq.current.entry.name}）＝ QL1 ④ が空振り`);
+            });
+            nq.setForced(null);
+        } finally {
+            W.QUIZ_CHAIN_MAX = orig;
+            setQuizFilters(quiz, 'all', 'all', 'all');
+            setQuizFilters(nq, 'all', 'all', 'all');
+        }
+        // 戻したら本当に効くこと（差し替えが残っていないことの確認）
+        assert(quiz.poolIndices.length === nCapped,
+            `上限を戻しても件数が戻らない（${quiz.poolIndices.length} / ${nCapped}）`);
+        assert(!quiz.poolIndices.some(i => lib[i].name === 'ステアリン酸'),
+            '上限を戻してもステアリン酸がプールに残っている');
+
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    test('QL3: 陰性対照 — 上限で芳香族が1件も落ちない（重原子数で切ると先に落ちるところ）', async (c) => {
+        c.reset();
+        const { quiz } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library, CAP = W.QUIZ_CHAIN_MAX;
+        quiz.open();
+        setQuizFilters(quiz, 'all', 'all', 'all');
+
+        // ① 外れたもののうち、芳香環をもつものは0件
+        const droppedArom = W.quizOversizedNames(lib, 'all', 'all', 'all').filter(nm => {
+            const e = lib.find(x => x.name === nm);
+            return e && c.W.findAromaticBondKeys(e.mol).size > 0;
+        });
+        assert(droppedArom.length === 0,
+            `上限で芳香族が落ちている: ${droppedArom.join('・')}（ユーザーは「芳香族ならそこまで複雑ではない」と言っている）`);
+
+        // ② 名指しの3件は残っていて、実際に出題プールに居る
+        QL_KEPT_AROMATIC.forEach(nm => {
+            const e = lib.find(x => x.name === nm);
+            assert(e, `${nm} がライブラリに無い＝この陰性対照が空回りしている`);
+            assert(e.chainOutsideRing <= CAP, `${nm} の鎖が ${e.chainOutsideRing}（上限 ${CAP} を超えている）`);
+            assert(quiz.poolIndices.some(i => lib[i].name === nm),
+                `${nm} が出題プールから落ちている`);
+        });
+
+        // ③ **重原子数で切っていたら落ちていた**ことの裏取り（物差しを取り違えていない証明）。
+        //    重原子 ≦14 で切ると芳香族が落ちる（発注書 §3-3 の実測: TNT・ピクリン酸ほか）
+        const heavyOf = (e) => e.mol.atoms.filter(a => a.element !== 'H').length;
+        const wouldDrop = QL_KEPT_AROMATIC.filter(nm => {
+            const e = lib.find(x => x.name === nm);
+            return e && heavyOf(e) > 14;
+        });
+        assert(wouldDrop.length > 0,
+            '重原子 ≦14 で切っても芳香族が1件も落ちない＝物差しの取り違えを検出できない（実測と食い違う）');
+
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QL4: 陰性対照 — 上限はクイズの外へ漏れていない（名称呼び出し・ライブラリ・お題・書き出し練習）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+
+        // ① 名称ライブラリからは外れていない（クイズが見る `library` にも残っている）
+        const lib = W.buildCompoundLibrary(g);
+        QL_DROPPED.forEach(nm => assert(lib.some(e => e.name === nm),
+            `${nm} が名称ライブラリから消えている＝上限がクイズの外に漏れている`));
+        assert(W.COMPOUNDS.some(e => e.name === 'ステアリン酸') ||
+               W.STAGES.some(s => s.name === 'ステアリン酸'),
+            'ステアリン酸が素のデータから消えている');
+
+        // ② お題（stages.json）に残っている——教科書の「油脂と脂肪酸」のお題そのもの
+        const stageNames = W.STAGES.map(s => s.name);
+        ['パルミチン酸', 'ステアリン酸'].forEach(nm => assert(stageNames.includes(nm),
+            `お題から ${nm} が消えている（上限を入れてよいのはクイズだけ）`));
+
+        // ③ 名称呼び出しで実際に呼び出せて、名前が出る
+        QL_DROPPED.forEach(nm => {
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule(nm);
+            g.updateDrawing();
+            assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない`);
+            assert(g.lookupCompoundName(g.userMolecule) === nm,
+                `呼び出した図が ${nm} を名乗らない（${g.lookupCompoundName(g.userMolecule)}）`);
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+
+        // ④ **上限の名前がクイズの外のソースに出てこない**（書き出し練習・パズル・立体へ漏れていない）。
+        //    振る舞いだけで見ると「たまたま今は呼ばれていない」を見逃すので、字面でも見る
+        const others = ['game.js', 'chemistry.js', 'stereo.js', 'reactor.js', 'reaction.js', 'learn.js'];
+        for (const f of others) {
+            const src = await (await fetch(`${f}?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+            assert(!/QUIZ_CHAIN_MAX|chainOutsideRing|quizOversized/.test(src),
+                `${f} が上限を見ている＝クイズだけという約束が破れている`);
+        }
+        // 逆に quiz.js には居ること（この字面の検査が空回りしていないこと）
+        const qsrc = await (await fetch(`quiz.js?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        assert(/QUIZ_CHAIN_MAX/.test(qsrc), 'quiz.js に上限が無い＝④ の検査が空回りしている');
+    });
+
+    test('QL5: 陰性対照 — v1425 の出題範囲と v1430 のつまみ2つが回帰していない', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, D = c.D;
+        quiz.open(); nq.open();
+
+        // ① 人が意識するつまみは今も「出題範囲」と「難易度」の2つだけ
+        //    （上限は**つまみにしていない**＝ v1430 で畳んだ形を壊していない）。
+        //    QT1 と同じ物差しで数える: 見える select は3つ（範囲の2軸＋難易度）・見出しは2つ
+        [['quiz-modal', 'quiz'], ['naming-modal', 'naming']].forEach(([modalId, pre]) => {
+            const ids = visibleKnobs(D, modalId).map(s => s.id).sort();
+            assert(ids.join(' ') === [`${pre}-difficulty`, `${pre}-field`, `${pre}-scope`].join(' '),
+                `${modalId}: 見える select の顔ぶれが v1430 から変わっている（${ids.join(' ')}）`);
+            const labels = [...D.querySelectorAll(`#${modalId} label`)]
+                .filter(l => !l.closest('.quiz-hidden-knob'))
+                .map(l => (l.textContent || '').replace(/\s+/g, '').split(':')[0]);
+            assert(labels.length === 2 && labels.includes('出題範囲') && labels.includes('難易度'),
+                `${modalId}: つまみの見出しが2つ（出題範囲・難易度）でない（${labels.join('・')}）`);
+        });
+        // 上限のつまみを足していないこと（ありそうな id を名指しで塞ぐ）
+        ['quiz-chain', 'naming-chain', 'quiz-size', 'naming-size', 'quiz-chain-max']
+            .forEach(id => assert(!D.getElementById(id), `上限のつまみ #${id} が生えている`));
+
+        // ② v1425 の範囲は今も段階的に効く（既定は教科書・basic < named < all）。
+        //    ⚠ ここは既定値の**定義**を見る（生きている select の値は直前のテストの後始末に
+        //    左右されるので、この陰性対照の当て所としては弱い。既定の実挙動は QS4 ① が見る）
+        assert(W.QUIZ_SCOPE_DEFAULT === 'basic',
+            `既定の範囲が「教科書」でない（${W.QUIZ_SCOPE_DEFAULT}）`);
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        const nB = quiz.poolIndices.length;
+        setQuizFilters(quiz, 'named', 'all', 'all');
+        const nN = quiz.poolIndices.length;
+        setQuizFilters(quiz, 'all', 'all', 'all');
+        const nA = quiz.poolIndices.length;
+        assert(nB < nN && nN < nA, `範囲で件数が増えない（${nB} / ${nN} / ${nA}）`);
+        // ③ 分野も今までどおり効く
+        setQuizFilters(nq, 'all', '芳香族', 'all');
+        assert(nq.pool.length > 0 && nq.pool.length < nA,
+            `分野の絞り込みが効かない（芳香族 ${nq.pool.length} / 全体 ${nA}）`);
+        for (let k = 0; k < 20; k++) {
+            nq.nextQuestion();
+            assert(nq.current.entry.field === '芳香族',
+                `分野「芳香族」なのに ${nq.current.entry.field} が出た: ${nq.current.entry.name}`);
+        }
+        // ④ v1430 の難易度の3段が生きている
+        assert(W.QUIZ_DIFFICULTY.length === 3, `難易度の段が ${W.QUIZ_DIFFICULTY.length} 個（3を期待）`);
+        assert(quiz.diffEl.value === W.QUIZ_DIFFICULTY_DEFAULT, '難易度の既定がずれている');
+
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
+    });
+
+    test('QL6: 黙って減らさない — 外した件数と代表の名前が画面に出る（否定対照つき）', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, D = c.D;
+        quiz.open(); nq.open();
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+
+        const lib = quiz.library;
+        const qText = () => D.getElementById('quiz-pool-count').textContent;
+        const nText = () => D.getElementById('naming-pool-count').textContent;
+        const poolNames = (q) => (q.poolIndices || q.pool).map(i => lib[i].name);
+        [[qText, quiz, '同じ化合物？'], [nText, nq, '命名クイズ']].forEach(([txt, q, label]) => {
+            assert(q.oversized.length > 0, `${label}: 教科書レベルで外れるものが無い＝空回り`);
+            assert(txt().includes(String(q.oversized.length)),
+                `${label}: 外した件数が画面に出ていない（${txt()}）`);
+            assert(/鎖が長すぎる/.test(txt()), `${label}: 外した理由が画面に出ていない（${txt()}）`);
+            // 代表の名前が出る＝「何が出なくなったのか」が読める
+            assert(/ステアリン酸|パルミチン酸|オレイン酸|リノー|トリ/.test(txt()),
+                `${label}: 外したものの名前が画面に出ていない（${txt()}）`);
+            // ⚠ **数字だけ合っていて実は出題される**を防ぐ。但し書きに載せた名前は
+            //    本当にプールから消えていること（画面の文と実際の門を突き合わせる）
+            const names = poolNames(q);
+            const liar = q.oversized.filter(nm => names.includes(nm));
+            assert(liar.length === 0,
+                `${label}: 「外した」と書いた ${liar.join('・')} が出題プールに残っている`);
+        });
+
+        // 否定対照: 上限を外すと但し書きが消える（＝この文が上限に連動している証明。
+        // 「いつでも出ている飾り」を見て緑になっているのではない）
+        const orig = W.QUIZ_CHAIN_MAX;
+        try {
+            W.QUIZ_CHAIN_MAX = 9999;
+            setQuizFilters(quiz, 'basic', 'all', 'all');
+            setQuizFilters(nq, 'basic', 'all', 'all');
+            assert(!/鎖が長すぎる/.test(qText()), `上限を外しても但し書きが残る（${qText()}）`);
+            assert(!/鎖が長すぎる/.test(nText()), `上限を外しても但し書きが残る（${nText()}）`);
+        } finally {
+            W.QUIZ_CHAIN_MAX = orig;
+            setQuizFilters(quiz, 'basic', 'all', 'all');
+            setQuizFilters(nq, 'basic', 'all', 'all');
+        }
+        assert(/鎖が長すぎる/.test(qText()), '上限を戻しても但し書きが出ない');
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
+    });
+
+    /* ===== QT: つまみを2つに畳む・4択・誤答の紛らわしさ・タイムアタック（2026-08-20） =====
+     *
+     * ユーザー決定:「人間側で、崩し方・紛らわしさのパラメータは無くてよいかもしれません。
+     * 出題範囲、難易度が選べるとわかりやすい」「既存の同じ化合物はどれ を置き換えてよい」
+     * 「タイムアタックモード：一定時間で何問解けるか」「（自己ベストは）分ける」
+     */
+
+    // モーダルの中で「人が触れるつまみ」を数える。
+    // ⚠ **隠したつまみ（.quiz-hidden-knob）は数えない**——台本のために DOM には
+    // 残してあるが、人の目には無い。`offsetParent` ではなく親のクラスで見るのは、
+    // モーダル自体が hidden のときも数えられるようにするため
+    const visibleKnobs = (D, modalId) =>
+        [...D.querySelectorAll(`#${modalId} select`)].filter(s => !s.closest('.quiz-hidden-knob'));
+
+    test('QT1: 人が触るつまみは「出題範囲」と「難易度」の2つだけ（否定対照つき）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        W.quiz.open();
+        W.namingQuiz.open();
+
+        [['quiz-modal', 'quiz'], ['naming-modal', 'naming']].forEach(([modalId, pre]) => {
+            const shown = visibleKnobs(D, modalId);
+            const ids = shown.map(s => s.id).sort();
+            assert(ids.length === 3,
+                `${modalId}: 人に見える select が ${ids.length} 個（出題範囲の2つ＋難易度の1つ＝3を期待）: ${ids.join(' ')}`);
+            assert(ids.join(' ') === [`${pre}-difficulty`, `${pre}-field`, `${pre}-scope`].join(' '),
+                `${modalId}: 人に見える select の顔ぶれが違う（${ids.join(' ')}）`);
+            // ラベルは「出題範囲」と「難易度」の2つ（＝人が意識するつまみは2つ）
+            const labels = [...D.querySelectorAll(`#${modalId} label`)]
+                .filter(l => !l.closest('.quiz-hidden-knob'))
+                .map(l => (l.textContent || '').replace(/\s+/g, '').split(':')[0]);
+            assert(labels.length === 2 && labels.includes('出題範囲') && labels.includes('難易度'),
+                `${modalId}: つまみの見出しが「出題範囲・難易度」の2つでない（${labels.join('・')}）`);
+
+            // ⚠ 崩し方（内部パラメータ）は**画面に無い**が、**DOM には生きている**
+            const st = D.getElementById(`${pre}-strength`), se = D.getElementById(`${pre}-series`);
+            assert(st && se, `${pre}: 崩し方／シリーズの select が消えている（台本が id で選ぶ）`);
+            assert(st.closest('.quiz-hidden-knob') && se.closest('.quiz-hidden-knob'),
+                `${pre}: 崩し方／シリーズが人の目に残っている`);
+
+            // 段の名前に内部語（「強度2」など）を出さない
+            const opts = [...D.getElementById(`${pre}-difficulty`).options].map(o => o.textContent);
+            assert(opts.join('／') === 'やさしい／ふつう／むずかしい',
+                `${pre}: 難易度の段の名前が違う（${opts.join('／')}）`);
+            assert(!opts.some(t => /強度|strength|[0-9]/.test(t)),
+                `${pre}: 難易度の選択肢に内部語が出ている（${opts.join('／')}）`);
+        });
+
+        // 難易度 → 内部の崩し方への写し（人が触るのは1つ、内部は別のまま）
+        const q = W.quiz;
+        [['easy', 0], ['normal', 1], ['hard', 2]].forEach(([v, want]) => {
+            q.diffEl.value = v;
+            q.diffEl.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+            assert(Number(q.strengthEl.value) === want,
+                `難易度 ${v} が崩し方 ${want} に写らない（${q.strengthEl.value}）`);
+        });
+        q.diffEl.value = W.QUIZ_DIFFICULTY_DEFAULT;
+        q.diffEl.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+
+        // 否定対照 — 隠しを外すと「見えるつまみ」が増える＝上の検査が本物を見ている
+        const knob = D.querySelector('#quiz-modal .quiz-hidden-knob');
+        knob.classList.remove('quiz-hidden-knob');
+        const leaked = visibleKnobs(D, 'quiz-modal').length;
+        knob.classList.add('quiz-hidden-knob');
+        assert(leaked === 4,
+            `隠しを外しても見えるつまみが増えない（${leaked}個）＝ QT1 の緑が空振り`);
+        assert(visibleKnobs(D, 'quiz-modal').length === 3, '否定対照の後始末で戻らない');
+
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
+    });
+
+    test('QT2: 難易度を上げると誤答が紛らわしくなる（数で見る・否定対照つき）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const nq = W.namingQuiz;
+        nq.open();
+        // 材料の多い「すべて」で測る（教科書だけだと o-/m-/p- の3つ揃いが少なく、
+        // むずかしいと ふつう の差が乱数に埋もれる）
+        setQuizFilters(nq, 'all', 'all', 'all');
+
+        // 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
+        // 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
+        const measure = (level, n) => {
+            nq.diffEl.value = level;
+            let sum = 0, cnt = 0, hard = 0, near = 0;
+            for (let k = 0; k < n; k++) {
+                nq.nextQuestion();
+                (nq.current.tiers || []).forEach(t => {
+                    sum += t; cnt++;
+                    if (t >= 2) near++;
+                    if (t >= 3) hard++;
+                });
+            }
+            return { avg: sum / cnt, near: near / cnt, veryNear: hard / cnt, cnt };
+        };
+        const N = 60;
+        const easy = measure('easy', N), normal = measure('normal', N), hard = measure('hard', N);
+        assert(easy.cnt >= N * 3 - 3, `誤答が3つ作れていない（${easy.cnt}/${N * 3}）`);
+        assert(easy.avg < normal.avg,
+            `やさしい(${easy.avg.toFixed(2)}) が ふつう(${normal.avg.toFixed(2)}) より紛らわしい`);
+        assert(normal.avg < hard.avg,
+            `ふつう(${normal.avg.toFixed(2)}) が むずかしい(${hard.avg.toFixed(2)}) より紛らわしい`);
+        // 「紛らわしい誤答（段2以上）」の割合で見ても順番が保たれる。
+        // ⚠ 上限は 100% にはならない —— 見本によっては同分子式の相手が3つ無い
+        // （発注書 §1-2 の実測: レベル3でも半分の見本は同分子式が3つそろわない）。
+        // これがまさに「同分子式だけを誤答の規則にはできない」根拠でもある
+        assert(easy.near < 0.2, `やさしいで紛らわしい誤答が多すぎる（${(easy.near * 100).toFixed(0)}%）`);
+        assert(hard.near > 0.5, `むずかしいで紛らわしい誤答が少なすぎる（${(hard.near * 100).toFixed(0)}%）`);
+        assert(hard.near > easy.near + 0.4,
+            `やさしい(${(easy.near * 100).toFixed(0)}%) と むずかしい(${(hard.near * 100).toFixed(0)}%) で` +
+            '紛らわしい誤答の量が変わらない');
+        // ⚠ 平均や割合だけでは「そっくりさん（段3・4）」の差が乱数に埋もれる
+        // （実測: 全体で 15.6% 対 18.9% しか違わなかった）。**見本を指定して測る**
+        // ——発注書 §2-3 の当て所そのもの:「o/m/p の見本を出したとき、選択肢に
+        // 同じ母体の別の接頭辞が少なくとも1つ入ること」。
+        const stems = {};
+        nq.library.forEach(e => {
+            if (!/^[omp]-/.test(e.name)) return;
+            const s = e.name.replace(/^[omp]-/, '');
+            (stems[s] = stems[s] || new Set()).add(e.name);
+        });
+        const poolNames = new Set(nq.pool.map(i => nq.library[i].name));
+        const stem = Object.keys(stems).find(s => stems[s].size >= 3 &&
+            [...stems[s]].every(n => poolNames.has(n)));
+        assert(stem, 'o-/m-/p- が3つそろう母体が出題プールに無い＝この測り方が成り立たない');
+        const family = stems[stem];
+        const target = [...family][0];
+        const siblingRate = (level, n) => {
+            nq.diffEl.value = level;
+            nq.setForced(target);
+            let hit = 0;
+            for (let k = 0; k < n; k++) {
+                nq.nextQuestion();
+                assert(nq.current.entry.name === target, `見本の指定が効かない（${nq.current.entry.name}）`);
+                if (nq.current.choices.some(x => x !== target && family.has(x))) hit++;
+            }
+            nq.setForced(null);
+            return hit / n;
+        };
+        const M = 20;
+        const hardSib = siblingRate('hard', M);
+        const normalSib = siblingRate('normal', M);
+        const easySib = siblingRate('easy', M);
+        assert(hardSib === 1,
+            `むずかしいで「${stem}」の別の接頭辞が選択肢に入らない回がある（${(hardSib * 100).toFixed(0)}%）`);
+        assert(easySib === 0,
+            `やさしいなのに「${stem}」のそっくりさんが混ざる（${(easySib * 100).toFixed(0)}%）`);
+        assert(normalSib < 0.5,
+            `ふつうでそっくりさんを狙いすぎ（${(normalSib * 100).toFixed(0)}%）＝ むずかしいとの差が無い`);
+
+        // 否定対照 — 難易度を無視して常に「ふつう」で誤答を作ると、上の差が消える
+        const orig = nq.difficulty;
+        let flat;
+        try {
+            nq.difficulty = () => W.quizDifficultyOf('normal');
+            flat = { easy: measure('easy', N), hard: measure('hard', N) };
+        } finally {
+            nq.difficulty = orig;
+        }
+        assert(!(flat.easy.avg < flat.hard.avg - 0.3),
+            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(2)} / ` +
+            `むずかしい ${flat.hard.avg.toFixed(2)}）＝ QT2 の緑が空振り`);
+
+        // 段の定義そのもの（人が読んで納得できる例で固定する）
+        const tier = W.quizDistractorTier;
+        const e = (name, formula) => ({ name, formula, _fgKey: '' });
+        assert(tier(e('o-クレゾール', 'C7H8O'), e('p-クレゾール', 'C7H8O')) === 4, 'o/m/p が段4でない');
+        assert(tier(e('2-メチルペンタン', 'C6H14'), e('3-メチルペンタン', 'C6H14')) === 3,
+            '位置番号違いが段3でない');
+        assert(tier(e('1-プロパノール', 'C3H8O'), e('2-プロパノール', 'C3H8O')) === 3,
+            '1-/2- の違いが段3でない');
+        assert(tier(e('エタノール', 'C2H6O'), e('ジメチルエーテル', 'C2H6O')) === 2, '同分子式が段2でない');
+        assert(tier(e('メタン', 'CH4'), e('ベンゼン', 'C6H6')) === 0, '無関係が段0でない');
+
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        nq.diffEl.value = W.QUIZ_DIFFICULTY_DEFAULT;
+        D.getElementById('btn-naming-close').click();
+    });
+
+    test('QT3: 4択の正解はちょうど1つ（描かれた図を verifyMolecule で見る・否定対照つき）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const q = W.quiz;
+        q.open();
+        assert(q.current && q.current.form === 'choice', '既定が4択でない');
+
+        // ① 30問ぶん、**画面の図をもう一度読み直して**正解が1つだけであることを確かめる。
+        //    出題側の言い分（current.answer）ではなく、描かれた図から数え直す
+        const molOf = (svgId) => {
+            const svg = D.getElementById(svgId);
+            // 図から読み直すのではなく、出題が使った素材で照合する（描画は SVG なので
+            // 逆読みできない）。素材＝ current.items の target を崩したもの
+            return svg;
+        };
+        for (let k = 0; k < 30; k++) {
+            q.nextQuestion();
+            const cur = q.current;
+            assert(cur.form === 'choice', `出題${k}: 4択で出ていない`);
+            const goal = g.createTargetFromData({ target: cur.items[cur.answer].entry.target });
+            let hits = 0;
+            cur.items.forEach(it => {
+                const m = g.createTargetFromData({ target: it.entry.target });
+                if (W.verifyMolecule(goal, m)) hits++;
+            });
+            assert(hits === 1,
+                `出題${k}: 見本と同じ構造の選択肢が ${hits} 個ある（${cur.names.join(' / ')}）`);
+            // 選択肢の名前も重複しない
+            assert(new Set(cur.names).size === 4, `出題${k}: 選択肢の名前が重複（${cur.names.join(' / ')}）`);
+            assert(molOf(`quiz-opt-${cur.answer}`), '正解の図が無い');
+        }
+
+        // ② 押した結果が画面に残る（正解は緑・押した誤答は赤）
+        q.nextQuestion();
+        const wrongIdx = (q.current.answer + 1) % 4;
+        q.answerChoice(wrongIdx);
+        assert(D.getElementById(`quiz-cell-${q.current.answer}`).classList.contains('pk-cell-right'),
+            '正解のマスが緑にならない');
+        assert(D.getElementById(`quiz-cell-${wrongIdx}`).classList.contains('pk-cell-wrong'),
+            '押した誤答のマスが赤にならない');
+        q.nextQuestion();
+        assert(!D.getElementById(`quiz-cell-${wrongIdx}`).classList.contains('pk-cell-wrong'),
+            '次の問題に前回の塗り分けが残っている');
+
+        // ③ 否定対照 — 誤答に「見本と同じ構造」を混ぜた問題は**捨てられる**。
+        //    素材づくりを差し替えて、4枚とも同じ化合物にした問題を返させる
+        const origBuild = q.buildChoiceQuestion;
+        let rejected = false;
+        try {
+            q.buildChoiceQuestion = function (strength) {
+                const e = this.library[this.poolIndices[0]];
+                const items = [0, 1, 2, 3].map(() => ({ entry: e, meant: true }));
+                return { entry: e, items, goalTarget: e.target,
+                         targets: items.map(() => W.transformCompoundDepiction(e.target, strength)) };
+            };
+            rejected = (q.nextChoiceQuestion() === false);
+        } finally {
+            q.buildChoiceQuestion = origBuild;
+        }
+        assert(rejected,
+            '正解が4つある問題を作っても出題が通ってしまう＝「正解はちょうど1つ」の門番が効いていない');
+        q.nextQuestion();
+        assert(q.current.form === 'choice', '否定対照の後始末で4択に戻らない');
+        D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QT4: タイムアタックは制限時間で終わり、自己ベストは立体と別のキーに入る', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.quiz;
+        // ⚠ **キーが分かれていること**が要件（ユーザー決定「分ける」）。
+        // 立体タイムアタックの記録を置いて、こちらが触らないことを見る
+        const STEREO = 'chemAssemblerTimeAttack';
+        try { W.localStorage.removeItem(W.QUIZ_TA_KEY); } catch (e) {}
+        W.localStorage.setItem(STEREO, JSON.stringify({ 'D-乳酸': { ms: 1234, moves: 5 } }));
+        assert(W.QUIZ_TA_KEY !== STEREO, `自己ベストのキーが立体と同じ（${W.QUIZ_TA_KEY}）`);
+
+        q.open();
+        assert(q.ta === null, '開いた時点でタイムアタックが走っている');
+        D.getElementById('btn-quiz-timeattack').click();
+        assert(q.ta, 'タイムアタックが始まらない');
+        assert(!D.getElementById('quiz-ta').classList.contains('hidden'), '残り時間の欄が出ない');
+        const started = q.ta.endsAt;
+        assert(Math.abs(q.ta.limitMs - W.QUIZ_TA_LIMIT_MS) < 1, '制限時間が定義と違う');
+
+        // 正解すると秒が加算され、**加算があったことが画面に出る**（黙って伸ばさない）
+        q.answerChoice(q.current.answer);
+        assert(q.ta.endsAt > started, '正解しても秒が加算されない');
+        assert(Math.abs((q.ta.endsAt - started) - W.QUIZ_TA_BONUS_MS) < 5,
+            `加算が定義と違う（${q.ta.endsAt - started}ms）`);
+        const timerText = D.getElementById('quiz-ta-timer').textContent;
+        assert(/＋3秒/.test(timerText), `加算が画面に出ていない（${timerText}）`);
+        assert(/問正解/.test(timerText), `解いた問題数が出ていない（${timerText}）`);
+        assert(q.ta.correct === 1 && q.ta.asked === 1, '解いた数が数えられていない');
+
+        // 制限時間が来たら終わる（時計を進めるかわりに終わりを手前に引く）
+        q.ta.endsAt = Date.now() - 1;
+        q.tickTimeAttack();
+        assert(q.ta === null, '制限時間が来ても終わらない');
+        const res = D.getElementById('quiz-result').textContent;
+        assert(/1 問正解/.test(res) && /出題 1 問/.test(res), `終わりの表示に問題数が出ない（${res}）`);
+        assert(D.getElementById('btn-quiz-timeattack').textContent.includes('タイムアタック'),
+            'ボタンの文言が戻らない');
+
+        // 自己ベストは**別のキー**に入り、立体側は1バイトも変わっていない
+        const rec = JSON.parse(W.localStorage.getItem(W.QUIZ_TA_KEY) || '{}');
+        assert(rec[W.QUIZ_TA_MODE] && rec[W.QUIZ_TA_MODE].correct === 1,
+            `自己ベストが ${W.QUIZ_TA_KEY} に入らない（${W.localStorage.getItem(W.QUIZ_TA_KEY)}）`);
+        const stereo = JSON.parse(W.localStorage.getItem(STEREO) || '{}');
+        assert(stereo['D-乳酸'] && stereo['D-乳酸'].ms === 1234,
+            '立体タイムアタックの記録を壊している（キーが混ざっている）');
+        assert(!rec['D-乳酸'], '立体側の記録がこちらのキーに混ざっている');
+        assert(/自己ベスト/.test(D.getElementById('quiz-ta-best').textContent), '自己ベストが画面に出ない');
+
+        try { W.localStorage.removeItem(W.QUIZ_TA_KEY); } catch (e) {}
+        try { W.localStorage.removeItem(STEREO); } catch (e) {}
+        D.getElementById('btn-quiz-close').click();
+        assert(q.taTimerId === null, 'モーダルを閉じてもタイマーが止まらない');
+    });
+
+    /* ===== QD: タイムアタックの初期時間と、逓減する加算（2026-08-26） =====
+     *
+     * ユーザー決定:「**初期時間20秒**」「**加算の総量ではなく、正解数に応じて加算時間を
+     * 減らしていく**」。
+     *
+     * 直す前の実測（tools/quiz-time-census.mjs）:
+     *   ・1問の収支 ＝ ＋3.0秒（固定の加算）−（考えた時間 ＋ 送りの 0.9/1.8秒）
+     *   ・**考えが 2.1秒 を切ると毎問プラス**になり、残り時間が増え続けた
+     *     （1.2秒/問・全問正解で 25問 答えても終わらず、残りが 60→80.8秒 に増えた）
+     *   ・ボタンは「60秒」と書いてあるのに、終わる場合でも **145秒 走った**
+     *
+     * ここで見張るのは3つ:
+     *   QD1 加算が正解数に応じて減り、**0秒で床になる**（実機で1問ずつ測る）
+     *   QD2 **どんな速さ・正答率でも終わる**（＋ 否定対照: 逓減を外す／床を正にすると戻る）
+     *   QD3 **表示が実際と一致する**（文言は定数から組み立て、HTML に秒を直書きしない）
+     */
+
+    // 1問の消費（秒）。実装の送り（正解 900ms / 誤答 1800ms）を含む
+    const taCostSec = (think, ok) => think + (ok ? 0.9 : 1.8);
+
+    /**
+     * 加算の払い方 `bonus(n)` を与えて、遊びが何問・何秒で終わるかを回す。
+     * ⚠ 返す `clockSec` は**時計が走る秒数**（初期時間＋実際に払われた加算）。
+     * 問題の消費の合計ではない（最後の1問は時間切れで途中までしか使われないため）
+     */
+    const taSimulate = (bonus, limitSec, think, acc, giveUpSec) => {
+        let left = limitSec, asked = 0, correct = 0, paid = 0, credit = 0;
+        while (left > 0 && limitSec + paid < giveUpSec) {
+            credit += acc;
+            const ok = credit >= 1;
+            if (ok) credit -= 1;
+            left -= taCostSec(think, ok); asked++;
+            if (left <= 0) break;
+            if (ok) { correct++; const b = bonus(correct); paid += b; left += b; }
+        }
+        return { asked, correct, paid, clockSec: limitSec + paid,
+                 ended: limitSec + paid < giveUpSec };
+    };
+
+    test('QD1: 加算は正解数に応じて減り、0秒で床になる（実機で1問ずつ測る）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.quiz;
+        const STEP = W.QUIZ_TA_BONUS_STEP_MS, FIRST = W.QUIZ_TA_BONUS_MS;
+        assert(STEP > 0, `加算が減らない（step=${STEP}）＝ ユーザー決定「正解数に応じて減らす」が入っていない`);
+        // ⚠ ここだけは**わざと数字を書いている**。これは実装から導ける値ではなく
+        // **ユーザーが決めた値**（2026-08-26「では30秒でやってみましょう」）なので、
+        // 定数から導くと `A === A` になって黙って変えられる。下の上限（54秒）のほうは
+        // 導出値なので QD3 で定数から組み立てて見る ＝ 直書きはこの1行だけ
+        assert(W.QUIZ_TA_LIMIT_MS === 30000, `初期時間が 30秒 でない（${W.QUIZ_TA_LIMIT_MS}ms）`);
+
+        // ① 式そのもの: n 回目の加算 ＝ max(0, 3000 − 200(n−1))
+        const zero = W.quizTimeAttackZeroAt();
+        assert(W.quizTimeAttackBonusMs(1) === FIRST, '1回目の加算が定義と違う');
+        assert(W.quizTimeAttackBonusMs(2) === FIRST - STEP, '2回目で減っていない');
+        assert(W.quizTimeAttackBonusMs(zero) === 0, `${zero}回目で 0秒 になっていない`);
+        assert(W.quizTimeAttackBonusMs(zero + 50) === 0, '床が 0秒 になっていない（負や再上昇がある）');
+        // 合計が**有限**であること。これが「必ず終わる」の根拠
+        const total = W.quizTimeAttackTotalBonusMs();
+        assert(isFinite(total) && total > 0, `加算の合計が有限でない（${total}）`);
+        let byHand = 0;
+        for (let n = 1; n <= zero + 200; n++) byHand += W.quizTimeAttackBonusMs(n);
+        assert(byHand === total, `合計の計算が合わない（手で足すと ${byHand} / 関数は ${total}）`);
+
+        // ② 実機で1問ずつ: 正解のたびに endsAt が**ちょうど階段どおり**伸びる
+        q.open();
+        D.getElementById('btn-quiz-timeattack').click();
+        assert(q.ta, 'タイムアタックが始まらない');
+        q.ta.endsAt += 3600000;          // 検査中に時間切れにならないよう先へ（伸びは差分で見る）
+        const gains = [];
+        for (let i = 0; i < zero + 8 && gains.length < zero + 1; i++) {
+            if (!q.current || q.current.form !== 'choice') { q.nextQuestion(); continue; }
+            const before = q.ta.endsAt;
+            q.answerChoice(q.current.answer);
+            gains.push(q.ta.endsAt - before);
+            if (q._advance) { W.clearTimeout(q._advance); q._advance = null; }
+            q.nextQuestion();
+        }
+        gains.forEach((g, i) => {
+            const want = W.quizTimeAttackBonusMs(i + 1);
+            assert(g === want, `${i + 1}問目の正解の加算が ${g}ms（式は ${want}ms）`);
+        });
+        assert(gains.length >= zero + 1, `${zero + 1}問ぶん測れていない（${gains.length}問）`);
+        assert(gains[gains.length - 1] === 0, '床まで行っても加算が 0秒 になっていない');
+        assert(gains.reduce((a, b) => a + b, 0) === total,
+            '実機で払われた合計が、関数の言う合計と違う');
+
+        // ③ **減っていることが画面に出ている**（黙って減らさない）
+        const timerText = D.getElementById('quiz-ta-timer').textContent;
+        assert(/加算はここまで/.test(timerText),
+            `床に着いたのに画面がそう言わない（${timerText}）`);
+        q.ta.correct = 0;
+        q.renderTimeAttack();
+        assert(/次の正解 ＋3秒/.test(D.getElementById('quiz-ta-timer').textContent),
+            `次の加算が画面に出ていない（${D.getElementById('quiz-ta-timer').textContent}）`);
+
+        q.stopTimeAttack(false);
+        try { W.localStorage.removeItem(W.QUIZ_TA_KEY); } catch (e) {}
+        D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QD2: どんな速さ・正答率でも終わる（否定対照: 逓減を外す／床を正にすると暴走が戻る）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const limitSec = W.QUIZ_TA_LIMIT_MS / 1000;
+        const capSec = W.QUIZ_TA_LIMIT_MS / 1000 + W.quizTimeAttackTotalBonusMs() / 1000;
+        const now = (n) => W.quizTimeAttackBonusMs(n) / 1000;
+
+        // ① 実装の払い方なら、**0秒で答える相手**まで含めて必ず上限内で終わる
+        const players = [[0, 1], [0.6, 1], [1.2, 1], [1.2, 0.8], [3, 0.8], [3, 0.5], [6, 0.5], [2, 0.25]];
+        players.forEach(([think, acc]) => {
+            const r = taSimulate(now, limitSec, think, acc, 3600);
+            assert(r.ended, `考え ${think}秒・正答率 ${acc * 100}% で1時間走っても終わらない`);
+            assert(r.clockSec <= capSec + 0.01,
+                `上限 ${capSec}秒 を超えた（${r.clockSec.toFixed(1)}秒・考え ${think}秒/正答率 ${acc * 100}%）`);
+        });
+
+        // ② 否定対照 その1 — **逓減を外す**（3秒固定）と、速い人には暴走が戻る
+        const flat = () => W.QUIZ_TA_BONUS_MS / 1000;
+        const bad = taSimulate(flat, limitSec, 1.2, 1, 3600);
+        assert(!bad.ended,
+            `逓減を外しても終わってしまう＝この検査が空回りしている（${bad.clockSec.toFixed(1)}秒で終了）`);
+        // 直す前に実測した通り、収支は毎問プラス（3.0 −(1.2＋0.9) ＝ ＋0.9秒）
+        assert(W.QUIZ_TA_BONUS_MS / 1000 - taCostSec(1.2, true) > 0,
+            '固定 3秒 でも収支が黒字にならない＝前提（実測）が変わっている');
+
+        // ③ 否定対照 その2 — **床を正の値にする**と、0秒で答える相手には暴走が戻る。
+        //    ＝ 効いているのは「減らすこと」ではなく **「0まで減らすこと」**
+        const floored = (n) => Math.max(1.0, W.quizTimeAttackBonusMs(n) / 1000);
+        const bad2 = taSimulate(floored, limitSec, 0, 1, 3600);
+        assert(!bad2.ended, '床 1.0秒 でも 0秒で答える相手が終わる＝床の意味を見誤っている');
+        // その床でも「ふつうの人」は終わる ＝ 差が出るのは速い人だけ、という実測どおり
+        assert(taSimulate(floored, limitSec, 3, 0.8, 3600).ended, '床 1.0秒 でふつうの人まで終わらない');
+
+        // ④ 否定対照 その3 — **調和（3/n）**は合計が発散するので「上限」が付かない。
+        //    終わりはするが、速いほど長引く（等比・一次床0 との言い分け）
+        //    「有限」と「発散」は**足し続けても増えなくなるか**で見分ける。
+        //    実装の払い方は 1000項 と 100万項 で**1ミリ秒も変わらない**（＝ 上限がある）。
+        //    調和は同じ区間で 20秒 以上ふえる（＝ いくらでも伸びる）
+        const sumUpTo = (f, N) => { let s = 0; for (let n = 1; n <= N; n++) s += f(n); return s; };
+        const oursShort = sumUpTo(now, 1000), oursLong = sumUpTo(now, 1000000);
+        assert(Math.abs(oursLong - oursShort) < 1e-6,
+            `実装の加算が足し続けると増える（${oursShort} → ${oursLong}）＝ 上限が無い`);
+        const harmShort = sumUpTo((n) => 3 / n, 1000), harmLong = sumUpTo((n) => 3 / n, 1000000);
+        assert(harmLong - harmShort > 20,
+            `調和が発散して見えない（${harmShort.toFixed(1)} → ${harmLong.toFixed(1)}）＝ 言い分けの確認が空回り`);
+        const h = (n) => 3 / n;
+        const slow = taSimulate(h, limitSec, 1.2, 1, 3600).clockSec;
+        const fast = taSimulate(h, limitSec, 0, 1, 3600).clockSec;
+        assert(fast > slow, '調和で「速いほど長引く」が出ない＝言い分けの根拠が崩れている');
+    });
+
+    test('QD3: 表示が実際と一致する（文言は定数から組み立て・HTML に秒を直書きしない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        W.quiz.open();
+
+        // ① ボタンと説明は**定数から入っている**
+        const btn = D.getElementById('btn-quiz-timeattack');
+        assert(btn.textContent === W.QUIZ_TA_LABEL,
+            `ボタンの文言が定数と違う（画面「${btn.textContent}」／定数「${W.QUIZ_TA_LABEL}」）`);
+        const rule = D.getElementById('quiz-ta-rule');
+        assert(rule && rule.textContent === W.QUIZ_TA_RULE, '遊び方の説明が定数から入っていない');
+
+        // ② 書いてある数字が**実際の数字**であること（これが 60秒 対 145秒 のずれを塞ぐ）
+        const limitSec = W.QUIZ_TA_LIMIT_MS / 1000;
+        const capSec = limitSec + W.quizTimeAttackTotalBonusMs() / 1000;
+        assert(W.QUIZ_TA_LABEL.includes(`${limitSec}秒`), `ボタンに初期時間 ${limitSec}秒 が出ていない`);
+        assert(W.QUIZ_TA_LABEL.includes(`${capSec}秒`), `ボタンに上限 ${capSec}秒 が出ていない`);
+        // 実際に走る秒が、書いてある上限を超えないこと（QD2 と同じ物差しで突き合わせる）
+        const worst = taSimulate((n) => W.quizTimeAttackBonusMs(n) / 1000, limitSec, 0, 1, 3600);
+        assert(worst.clockSec <= capSec + 0.01,
+            `表示は最長 ${capSec}秒 なのに ${worst.clockSec.toFixed(1)}秒 走る`);
+
+        // ③ **逓減することが表示に出ている**（黙って減らさない）
+        assert(W.QUIZ_TA_RULE.includes(`${W.QUIZ_TA_BONUS_STEP_MS / 1000}秒ずつ減り`),
+            `説明に「いくつずつ減るか」が無い（${W.QUIZ_TA_RULE}）`);
+        assert(W.QUIZ_TA_RULE.includes(`${W.quizTimeAttackZeroAt()}問目`),
+            '説明に「どこで 0秒 になるか」が無い');
+
+        // ④ 陰性対照 — **HTML 側に秒が直書きされていない**（同じ数字が2か所にある状態に戻さない）
+        const html = await (await fetch(`index.html?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        const m = html.match(/<button id="btn-quiz-timeattack"[^>]*>([\s\S]*?)<\/button>/);
+        assert(m, 'index.html にタイムアタックのボタンが見当たらない');
+        assert(m[1].trim() === '',
+            `index.html のボタンに文言が直書きされている（「${m[1].trim()}」）`);
+        assert(!/タイムアタック（[\d.]+秒/.test(html),
+            'index.html に「タイムアタック（N秒」が直書きされている');
+        assert(!/正解ごとに\s*[＋+][\d.]+秒/.test(html),
+            'index.html に加算の秒数が直書きされている（説明は quiz.js の QUIZ_TA_RULE 1か所）');
+        // 検査が空回りしていないこと: quiz.js には文言の組み立てが居る
+        const qsrc = await (await fetch(`quiz.js?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        assert(/QUIZ_TA_LABEL\s*=/.test(qsrc) && /QUIZ_TA_RULE\s*=/.test(qsrc),
+            'quiz.js に文言の組み立てが無い＝④ の検査が空回りしている');
+
+        D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QT5: 陰性対照 — 動画の台本が名指しする id が全部生きている（隠しても機械からは触れる）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        // つまみを畳んだり2択を4択にしたりすると、**台本だけが黙って壊れる**
+        // （収録して初めて分かる）。台本の selector をすべて DOM で引き当てる
+        const demos = await W.loadAllDemos();
+        const missing = [];
+        let checked = 0;
+        // ⚠ **素の id を指す selector だけ**を見る（`#nw-palette button` のように
+        // その場で作られる中身を指すものは、モードに入っていないと当たらないので数えない）
+        demos.forEach(d => (d.steps || []).forEach(st => (st.actions || []).forEach(a => {
+            if ((a.type !== 'select' && a.type !== 'button' && a.type !== 'toggle') || !a.selector) return;
+            if (!/^#[A-Za-z][\w-]*$/.test(a.selector)) return;
+            checked++;
+            if (!D.querySelector(a.selector)) missing.push(`${d.id}: ${a.selector}`);
+        })));
+        assert(checked > 100, `台本の selector が少なすぎる（${checked}件）＝一覧を読めていない`);
+        assert(missing.length === 0, `台本の selector が引けない: ${missing.join(' ｜ ')}`);
+
+        // 隠したつまみが**機械からは今までどおり触れる**こと（台本は el.value + change で動かす）
+        [['quiz-strength', W.quiz], ['naming-strength', W.namingQuiz]].forEach(([id, owner]) => {
+            const el = D.getElementById(id);
+            assert(el.closest('.quiz-hidden-knob'), `${id} が隠されていない`);
+            owner.open();
+            el.value = '0';
+            el.dispatchEvent(new W.Event('change', { bubbles: true }));
+            assert(owner.strength() === 0, `${id}: 隠すと台本から効かなくなっている`);
+            el.value = '2';
+            el.dispatchEvent(new W.Event('change', { bubbles: true }));
+            assert(owner.strength() === 2, `${id}: 強度2が入らない`);
+            el.value = '1';
+        });
+        // 2択のボタンも生きている（V64・V92・V24 が押す）
+        W.quiz.setForced('diff');
+        W.quiz.nextQuestion();
+        assert(W.quiz.current.form === 'pair', '台本の quizForce で2択が出ない');
+        assert(!D.getElementById('quiz-pair-answer').classList.contains('hidden'),
+            '2択のときに「同じ／違う」が画面に出ない');
+        D.getElementById('btn-quiz-diff').click();
+        assert(D.getElementById('btn-quiz-same').disabled, '2択のボタンが効かない');
+        W.quiz.setForced(null);
+        W.quiz.nextQuestion();
+        assert(D.getElementById('quiz-pair-answer').classList.contains('hidden'),
+            '4択に戻っても2択のボタンが出たまま');
+        D.getElementById('btn-quiz-close').click();
+        D.getElementById('btn-naming-close').click();
     });
 
     test('F7: 正準コード — 同値⇔コード一致の性質と不斉判定の厳密化（P8-2）', async (c) => {
@@ -2664,10 +4034,12 @@
             assert(g.lookupCompoundName(flipped) !== TRIOLEIN, '1本トランスの図がトリオレインを名乗る');
             // (3) 二糖はグリコシド結合の向きで区別される。橋のOを還元末端側で切ると、
             //     残った側が「何をつないだか」＝結合の α/β を単糖の名前で言う
+            // ⚠ 座標は v1446 で二糖4件を**真横**に並べ直したときのもの（DS1〜。橋の O が
+            //   マルトースは下・セロビオース／ラクトースは上・スクロースは下に来る）
             [[ 'マルトース（麦芽糖）', 500, 414, 542, 300, 'α-D-グルコース（α-D-グルコピラノース）'],
-                ['セロビオース', 500, 262, 500, 186, 'β-D-グルコース（β-D-グルコピラノース）'],
-                ['ラクトース（乳糖）', 500, 262, 500, 186, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
-                ['スクロース（ショ糖）', 600, 276, 540, 382, 'α-D-グルコース（α-D-グルコピラノース）']
+                ['セロビオース', 500, 186, 542, 300, 'β-D-グルコース（β-D-グルコピラノース）'],
+                ['ラクトース（乳糖）', 500, 186, 542, 300, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+                ['スクロース（ショ糖）', 530, 414, 572, 290, 'α-D-グルコース（α-D-グルコピラノース）']
             ].forEach(([nm, ox, oy, cx, cy, expect]) => {
                 const mol = targetOf(nm);
                 const o = at(mol, ox, oy), cc = at(mol, cx, cy);
@@ -3028,7 +4400,8 @@
                 assert(a, `(${x},${y}) に原子が無い（図を変えたらこのテストも直す）`);
                 return a;
             };
-            const o = at(suc, 600, 276), glcC1 = at(suc, 600, 200);
+            // ⚠ 座標は v1446 で真横に並べ直したときのもの（橋の O は (530,414)・グルコースの C1 は (488,300)）
+            const o = at(suc, 530, 414), glcC1 = at(suc, 488, 300);
             suc.bonds = suc.bonds.filter(b => !((b.atomId1 === o.id && b.atomId2 === glcC1.id) ||
                 (b.atomId2 === o.id && b.atomId1 === glcC1.id)));
             g.userMolecule = suc;
@@ -5290,6 +6663,177 @@
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
         }
+    });
+
+    // ===== IN14・IN15: 複合置換基は括弧で囲む（DESIGN_iupac_check.md §11。v1426）=====
+    // ユーザー要望「**2-(クロロメチル)プロパン** は対応できるようにしたい」。
+    // 直す前の実装は基の中の位置番号を主鎖の位置番号と地続きに並べていた（`2-1-クロロメチルプロパン`）。
+    //
+    // 分子は座標つきで直接組む（列挙エンジンを回すより速く、**どの構造を見ているかが読める**）。
+    const IN14_G = 42;
+    const inBuild = (W, spec) => {
+        const m = new W.Molecule(), ids = {};
+        spec.atoms.forEach(([k, el, x, y]) => { ids[k] = m.addAtom(el, x * IN14_G, y * IN14_G).id; });
+        spec.bonds.forEach(([a, b, t]) => m.addBond(ids[a], ids[b], t || 1));
+        return m;
+    };
+    // (CH₃)₂CH–CH₂Cl ＝ 1-クロロ-2-メチルプロパン。**負けた主鎖候補**が 2-(クロロメチル)プロパン
+    const IN14_ISOBUTYL_CL = {
+        atoms: [['c1', 'C', 0, 0], ['c2', 'C', 1, 0], ['c3', 'C', 1, -1], ['c4', 'C', 2, 0], ['cl', 'Cl', 0, -1]],
+        bonds: [['c1', 'c2'], ['c2', 'c3'], ['c2', 'c4'], ['c1', 'cl']]
+    };
+    // (CH₃CH₂)₂CH–CH₂Cl ＝ **採用される名前そのものが括弧を要する** 3-(クロロメチル)ペンタン
+    const IN14_CHLOROMETHYLPENTANE = {
+        atoms: [['a', 'C', 0, 0], ['b', 'C', 1, 0], ['c', 'C', 2, 0], ['d', 'C', 3, 0], ['e', 'C', 4, 0],
+        ['f', 'C', 2, -1], ['cl', 'Cl', 2, -2]],
+        bonds: [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'e'], ['c', 'f'], ['f', 'cl']]
+    };
+    // (CH₃CH₂)₂C(CH₂Cl)₂ ＝ 同じ複合置換基が2つ ＝ **ビス**が要る（範囲外・§11-2）
+    const IN14_BIS = {
+        atoms: [['a', 'C', 0, 0], ['b', 'C', 1, 0], ['c', 'C', 2, 0], ['d', 'C', 3, 0], ['e', 'C', 4, 0],
+        ['f', 'C', 2, -1], ['cl1', 'Cl', 2, -2], ['g', 'C', 2, 1], ['cl2', 'Cl', 2, 2]],
+        bonds: [['a', 'b'], ['b', 'c'], ['c', 'd'], ['d', 'e'], ['c', 'f'], ['f', 'cl1'], ['c', 'g'], ['g', 'cl2']]
+    };
+    // ノナンの C5 に –CH₂–CH(CH₂Cl)–CH₃ ＝ **複合置換基の中の複合置換基**（角括弧が要る。範囲外・§11-2）
+    const IN14_NESTED = {
+        atoms: [['n1', 'C', 0, 0], ['n2', 'C', 1, 0], ['n3', 'C', 2, 0], ['n4', 'C', 3, 0], ['n5', 'C', 4, 0],
+        ['n6', 'C', 5, 0], ['n7', 'C', 6, 0], ['n8', 'C', 7, 0], ['n9', 'C', 8, 0],
+        ['b1', 'C', 4, -1], ['b2', 'C', 5, -1], ['b3', 'C', 6, -1], ['b4', 'C', 5, -2], ['cl', 'Cl', 6, -2]],
+        bonds: [['n1', 'n2'], ['n2', 'n3'], ['n3', 'n4'], ['n4', 'n5'], ['n5', 'n6'], ['n6', 'n7'], ['n7', 'n8'], ['n8', 'n9'],
+        ['n5', 'b1'], ['b1', 'b2'], ['b2', 'b3'], ['b2', 'b4'], ['b4', 'cl']]
+    };
+    // 4-イソプロピルヘプタン ＝ 複合だが**慣用名に置き換わる**ので括弧は付かない
+    const IN14_ISOPROPYLHEPTANE = {
+        atoms: [['h1', 'C', 0, 0], ['h2', 'C', 1, 0], ['h3', 'C', 2, 0], ['h4', 'C', 3, 0],
+        ['h5', 'C', 4, 0], ['h6', 'C', 5, 0], ['h7', 'C', 6, 0],
+        ['i1', 'C', 3, -1], ['i2', 'C', 2, -1], ['i3', 'C', 4, -1]],
+        bonds: [['h1', 'h2'], ['h2', 'h3'], ['h3', 'h4'], ['h4', 'h5'], ['h5', 'h6'], ['h6', 'h7'],
+        ['h4', 'i1'], ['i1', 'i2'], ['i1', 'i3']]
+    };
+    // 「基の中の位置番号が主鎖の位置番号と地続きになった」印。`2-1-クロロメチル…` が引っかかる
+    const IN14_BROKEN = /\d-\d/;
+
+    // 主鎖候補の名前を**実装から**取る（再実装しない。`tools/count-mainchain-ties.js` と同じ手口）。
+    // ⚠ グローバルを差し替えるので必ず finally で戻す
+    const inCandidateNames = (W, mol) => {
+        const orig = W._iupacNameForMainChain;
+        assert(typeof orig === 'function', '_iupacNameForMainChain が窓から見えない（検査が素通りする）');
+        const got = [];
+        W._iupacNameForMainChain = function () {
+            const r = orig.apply(this, arguments);
+            got.push(r && r.name);
+            return r;
+        };
+        try { W.iupacNameDetail(mol); } finally { W._iupacNameForMainChain = orig; }
+        return got;
+    };
+
+    test('IN14: 複合置換基は括弧で囲む（2-(クロロメチル)プロパン。基の中の位置番号が漏れない）', async (c) => {
+        const g = c.game, W = c.W;
+        // (a) ★ ユーザーが名指しした文字列そのもの。**負けた主鎖候補**として出る
+        const iso = inBuild(W, IN14_ISOBUTYL_CL);
+        assert(W.iupacName(iso) === '1-クロロ-2-メチルプロパン',
+            `(CH₃)₂CHCH₂Cl の名前が「${W.iupacName(iso)}」（1-クロロ-2-メチルプロパン のはず）`);
+        const cands = inCandidateNames(W, iso);
+        assert(cands.indexOf('2-(クロロメチル)プロパン') >= 0,
+            `主鎖候補に「2-(クロロメチル)プロパン」が無い（出たのは ${cands.join(' / ')}）`);
+        cands.forEach(n => assert(!n || !IN14_BROKEN.test(n),
+            `主鎖候補の名前が壊れている（位置番号が続けて2つ）: ${n}`));
+
+        // (b) ★ 採用される名前そのものが括弧を要する例（画面に出る名前）
+        const pen = inBuild(W, IN14_CHLOROMETHYLPENTANE);
+        const d = W.iupacNameDetail(pen);
+        assert(d && d.name === '3-(クロロメチル)ペンタン',
+            `(CH₃CH₂)₂CHCH₂Cl の名前が「${d && d.name}」（3-(クロロメチル)ペンタン のはず）`);
+        // IN10 と同じ約束＝ かけらを繋ぐと名前に戻る（**名前を作る場所は1つのまま**）。
+        // 括弧を「説明のときだけ足す」実装にすると、ここで連結が名前に戻らなくなる
+        assert(d.nameParts.map(p => p.text).join('') === d.name,
+            `かけらを繋いでも名前に戻らない: 「${d.nameParts.map(p => p.text).join('')}」≠「${d.name}」`);
+        const sub = d.nameParts.filter(p => p.role === 'sub')[0];
+        assert(sub && sub.text === '3-(クロロメチル)', `置換基のかけらが「${sub && sub.text}」`);
+        // 説明の文（SC3 (c)）が引く語は括弧を含まない基の名前 ＝ 画面の名前の中に必ずある
+        assert(sub.label === 'クロロメチル' && d.name.indexOf(sub.label) >= 0,
+            `かけらの label が「${sub.label}」（クロロメチルのはず・説明文が画面と食い違う）`);
+
+        // (c) 炭素1個の基は位置番号を書かない（位置が1しかないので曖昧さが無い）。
+        //     付け根 R を付けた –CH₂Cl そのものを基として命名する
+        const grp = inBuild(W, { atoms: [['r', 'R', 0, 0], ['c', 'C', 1, 0], ['cl', 'Cl', 1, -1]], bonds: [['r', 'c'], ['c', 'cl']] });
+        assert(W.iupacAlkylNameFromR(grp) === 'クロロメチル',
+            `–CH₂Cl の基名が「${W.iupacAlkylNameFromR(grp)}」（クロロメチル のはず。1- を書いていないか）`);
+        //     炭素2個なら位置番号は残る（1-クロロエチル と 2-クロロエチル は別物）
+        const grp2 = inBuild(W, {
+            atoms: [['r', 'R', 0, 0], ['c1', 'C', 1, 0], ['c2', 'C', 2, 0], ['cl', 'Cl', 1, -1]],
+            bonds: [['r', 'c1'], ['c1', 'c2'], ['c1', 'cl']]
+        });
+        assert(W.iupacAlkylNameFromR(grp2) === '1-クロロエチル',
+            `–CHCl–CH₃ の基名が「${W.iupacAlkylNameFromR(grp2)}」（1-クロロエチル のはず。位置番号まで落としていないか）`);
+
+        // (d) 慣用名に置き換わる基には括弧を付けない（1語なので囲む理由が無い）
+        const ipr = inBuild(W, IN14_ISOPROPYLHEPTANE);
+        assert(W.iupacName(ipr) === '4-イソプロピルヘプタン',
+            `4-イソプロピルヘプタンが「${W.iupacName(ipr)}」になった（慣用名に括弧を付けていないか）`);
+    });
+
+    test('IN15: ★否定対照 — 壊れた名前が1つも残らない／範囲外は名前を返さない／ライブラリは不変', async (c) => {
+        const g = c.game, W = c.W;
+        // (a) ★ 範囲外は **null**（壊れた名前を返さない）。§11-2 の2つ
+        assert(W.iupacName(inBuild(W, IN14_BIS)) === null,
+            `同じ複合置換基が2つ（ビスが要る）の分子に名前が付いた: ${W.iupacName(inBuild(W, IN14_BIS))}`);
+        assert(W.iupacNameDetail(inBuild(W, IN14_NESTED)) === null,
+            `複合置換基の入れ子（角括弧が要る）に名前が付いた: ${W.iupacName(inBuild(W, IN14_NESTED))}`);
+
+        // (b) ★ 本命の否定対照 —— **括弧を付けるのをやめると赤くなる**。
+        //     ハロゲン化アルキルを掃いて、採用名と**主鎖候補（負けたもの）**の両方で
+        //     「位置番号が続けて2つ」が 0 件であること。あわせて括弧つきの名前が
+        //     十分な数**実際に出ている**ことを見る（0件なら物差しが空回りしている）
+        const SWEEP = [
+            ['C4H9Cl', ['C', 'C', 'C', 'C', 'Cl'], 9],
+            ['C5H11Cl', ['C', 'C', 'C', 'C', 'C', 'Cl'], 11],
+            ['C6H13Cl', ['C', 'C', 'C', 'C', 'C', 'C', 'Cl'], 13]
+        ];
+        const fails = [];
+        let swept = 0, adoptedParen = 0, candParen = 0;
+        SWEEP.forEach(([label, els, h]) => {
+            W.enumerateConstitutionalIsomers(els, h, 600000).isomers.forEach((m, i) => {
+                swept++;
+                const names = inCandidateNames(W, m);
+                const adopted = W.iupacName(m);
+                if (adopted) names.push(adopted);
+                names.forEach(n => {
+                    if (!n) return;
+                    if (IN14_BROKEN.test(n)) fails.push(`${label}#${i}: ${n}`);
+                });
+                if (adopted && adopted.indexOf('(') >= 0) adoptedParen++;
+                names.forEach(n => { if (n && n.indexOf('(') >= 0) candParen++; });
+            });
+        });
+        assert(fails.length === 0,
+            `基の中の位置番号が漏れた名前がある（括弧を外した直し）: ${fails.slice(0, 6).join(' / ')}（計${fails.length}件）`);
+        assert(swept >= 25, `掃いた異性体が ${swept} 件しかない（列挙が痩せている）`);
+        assert(adoptedParen >= 1, `採用された名前に括弧つきが1件も無い（物差しが空回りしている）`);
+        assert(candParen >= 6, `主鎖候補の括弧つきが ${candParen} 件しかない（実測 8件以上。空回りしている）`);
+
+        // (c) ★ 陰性対照 —— **ライブラリの名前は1つも変わっていない**。
+        //     ここで見張るのは「この直しがライブラリに手が届いていない」こと:
+        //     ライブラリの分子は複合置換基を1つも持たないので、括弧も壊れの印も出ない。
+        //     名前が出る件数も減っていない（範囲外の null 化が巻き添えにしていない）。
+        //     ⚠ 直す前後の全件突き合わせ（1059件 × 5種 = 5295回で差分0）はコミット時に別途実施した。
+        //     ここはその状態を**以後ずれたら赤くする**ための凍結
+        let libNamed = 0, libParen = 0, libBroken = 0, libEntries = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            libEntries++;
+            const n = W.iupacName(g.createTargetFromData({ target: e.target }));
+            if (!n) return;
+            libNamed++;
+            if (n.indexOf('(') >= 0) { libParen++; fails.push(`ライブラリに括弧つき: ${e.name}＝${n}`); }
+            if (IN14_BROKEN.test(n)) { libBroken++; fails.push(`ライブラリに壊れた名前: ${e.name}＝${n}`); }
+        });
+        assert(libEntries >= 1000, `ライブラリを ${libEntries} 件しか見ていない（1059件のはず）`);
+        assert(libParen === 0 && libBroken === 0,
+            `ライブラリの名前が変わった: ${fails.slice(0, 6).join(' / ')}`);
+        // 実測 150件（compounds 99 ＋ stages 51）。減っていたら範囲外の null 化が巻き添えにしている
+        assert(libNamed >= 150, `ライブラリで名前が出たのが ${libNamed} 件（実測 150件以上のはず・名前が消えている）`);
     });
 
     /* ===== SC. 幹の中の2色（発注書 C-1・v1413・ユーザー申し立て 2026-08-17）=====
@@ -9445,11 +10989,16 @@
         drawn[0].closest('div').click();
         assert(ov.classList.contains('hidden'), '図クリックで閉じない');
 
-        // モード離脱で記録が破棄される
+        // ★ モード離脱では記録を**捨てない**（v1423。捨てるのは全消去と「↩ 反応前に戻す」だけ）。
+        //   閉じるのは画面のほうだけ ＝ 直近の反応という文脈はモードをまたいでも続く
         g.setMode('puzzle');
-        assert(!W.reactor.lastReaction, 'モード離脱で lastReaction が破棄されない');
+        assert(W.reactor.lastReaction, 'モード離脱で lastReaction が捨てられている（文脈の続きが切れる）');
+        assert(ov.classList.contains('hidden'), 'モード離脱で前後比較のオーバーレイが閉じない');
+        // 全消去したら捨てる（こちらは従来どおり）
+        g.setMode('free');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+        assert(!W.reactor.lastReaction, '全消去しても lastReaction が残っている');
     });
 
     test('RX2: 機構ジャンプ — mechanismId のある反応から learn モードで対応機構をロード（P12-5）', async (c) => {
@@ -9477,8 +11026,10 @@
         assert(W.reactionPlayer.active, '反応機構ビューアが起動しない');
         assert(W.reactionPlayer.currentReaction && W.reactionPlayer.currentReaction.id === 'benzene_nitration',
             `ビューアの機構が「${W.reactionPlayer.currentReaction && W.reactionPlayer.currentReaction.id}」（benzene_nitration期待）`);
-        // ジャンプ後は前後比較の記録が破棄されている（モード離脱）
-        assert(!W.reactor.lastReaction, '機構ジャンプ後に lastReaction が残っている');
+        // ★ ジャンプ後も記録は**生きている**（v1423）。機構を見にいくのは
+        //   「直近の反応」という文脈の続きなので、戻ってくれば前後比較も戻すも使える
+        assert(W.reactor.lastReaction && W.reactor.lastReaction.mechanismId === 'benzene_nitration',
+            '機構ジャンプで lastReaction が捨てられている（戻っても反応前に戻せなくなる）');
 
         W.reactionPlayer.exit();
         g.setMode('puzzle');
@@ -9712,11 +11263,14 @@
         // 酒石酸は basePool（158件）に入っているのに、pool が13件に絞られていて、
         // その系列に畳み込みの起きる分子が1つも無かった、というだけの話だった。
         // 台本が増えるたびに同じ穴が空くので、**3つのクイズをまとめて戻す**。
+        // **範囲（レベル）と分野も戻す**（2026-08-20 に足した軸。既定は範囲＝basic・分野＝all）
         [['cq-series', c.W.countQuiz], ['quiz-series', c.W.quiz], ['naming-series', c.W.namingQuiz]]
             .forEach(([id, q]) => {
                 const sel = c.D.getElementById(id);
                 if (!sel || !q) return;
                 sel.value = 'all';
+                if (q.scopeEl) q.scopeEl.value = c.W.QUIZ_SCOPE_DEFAULT;
+                if (q.fieldEl) q.fieldEl.value = 'all';
                 if (q.computePool) q.computePool();     // 総数当て・命名
                 if (q.computePools) q.computePools();   // 同じ化合物？（複数プールを持つ）
             });
@@ -9729,20 +11283,30 @@
         // 台本側で `readStereo: true` を宣言する（rec.js が演技の前に入れる）。
         // **宣言の取りこぼしは動画を撮ってからでないと分からない**ので、ここで固定する
         const demos = await c.W.loadAllDemos();
+        // ⚠ **`offToo` は「開始状態が OFF でもその名前で出る」の意**（2026-08-22 に追加）。
+        //   `stereo-mutarotation` の開始状態は**ハース環の α-D-グルコピラノース**なので、
+        //   図がもう立体を決めている ＝ トグルの値によらず言い切る（HW1・`lookupCompoundName` の (1)）。
+        //   ⚠ **それでも `readStereo: true` の宣言は要る** —— この台本は途中で**鎖状**（フィッシャー投影）
+        //   を経由し、そこは OFF だと「ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか」に
+        //   なるため。宣言を落とすと**回の真ん中が読めない絵になる**。
+        //   ⚠ `stereo-lactic-dl`（フィッシャーの D-乳酸）は **OFF で出てはいけない** ——
+        //   ここが `offToo: true` に変わったら、例外がハース環の外へ漏れた合図（HW2 と同じ線）。
         const need = [
-            { id: 'stereo-mutarotation', on: 'α-D-グルコース' },
-            { id: 'stereo-lactic-dl', on: 'D-乳酸' },
+            { id: 'stereo-mutarotation', on: 'α-D-グルコース', offToo: true },
+            { id: 'stereo-lactic-dl', on: 'D-乳酸', offToo: false },
         ];
         const before = c.game.readStereo;
         try {
-            for (const { id, on } of need) {
+            for (const { id, on, offToo } of need) {
                 const d = demos.find(x => x.id === id);
                 assert(d, `台本が見つからない: ${id}`);
                 assert(d.readStereo === true, `${id} が readStereo を宣言していない`);
                 c.game.setReadStereo(false);
                 c.game.restoreState(d.state);
                 const off = c.D.getElementById('compound-name').textContent;
-                assert(!off.includes(on), `${id}: 立体OFFでも「${on}」が出る（前提が変わった）`);
+                assert(off.includes(on) === offToo, offToo
+                    ? `${id}: ハース環なのに立体OFFで「${on}」が出ない（実際「${off}」）`
+                    : `${id}: 立体OFFでも「${on}」が出る（前提が変わった）`);
                 c.game.setReadStereo(true);
                 const nm = c.D.getElementById('compound-name').textContent;
                 assert(nm.includes(on), `${id}: 立体ONでも名称が「${nm}」（「${on}」を期待）`);
@@ -10839,7 +12403,9 @@
         // offsetParent ベースの rendered() では判定できない。checkVisibility() で見えないことを確認する
         assert(!D.getElementById('btn-quiz').checkVisibility(), '折りたたみ中なのにクイズボタンが見えている');
         accQuiz.open = true; accRx.open = true;
-        assert(rendered('#btn-quiz') && rendered('#select-reaction'), 'アコーディオンを開いてもクイズ/機構が出ない');
+        // ⚠ 機構の一覧は `#select-reaction` から**押しものの一覧 `#reaction-list` へ移した**（v1439）。
+        //   select は選択の実体として残っているが面には出ない（RX46 ①がその決まりを見ている）
+        assert(rendered('#btn-quiz') && rendered('#reaction-list'), 'アコーディオンを開いてもクイズ/機構が出ない');
         accQuiz.open = false; accRx.open = false;
         g.setStudyOpen(false);
         assert(wrapperHidden('puzzle free'), '学習で名前・分子式の器が隠れていない（出し分けが効いていない）');
@@ -12072,24 +13638,32 @@
         return at.map(a => `${a.id}:${(a.x - cx).toFixed(6)},${(a.y - cy).toFixed(6)}`).sort().join('|');
     };
 
+    /**
+     * 答案用紙の骨格（IW7・IW16・**IW17** が共有する。直鎖・枝分かれ・環・折れ線）。
+     * **回転させると指紋が変わる形**を混ぜてある。
+     *
+     * ★ **縦長を1つ必ず混ぜる**。横長ばかりだと「縦長のときだけ 90°回して詰める」という
+     *   もっともらしい最適化が**発火せずに**素通りする（実験で実際にそうなった）。
+     *   縦置きの図は立体の読み（`isFischerOriented`・v446）が見ている向きそのもの。
+     *   ⚠ IW17（見出しの縦の隙間）でも、**いちばん背の高い答案**がスロットの隙間を
+     *   いちばん厳しく使うので、この縦長が効く
+     */
+    const IP_SHEET_SHAPES = [
+        { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
+          xy: [[0, 0], [42, 0], [84, 0], [126, 0]] },
+        { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [0, 2], [0, 3]],
+          xy: [[42, 0], [0, 0], [84, 0], [42, 42]] },
+        { atoms: ['C', 'C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]],
+          xy: [[0, 0], [42, 0], [63, 36], [42, 72], [0, 72], [-21, 36]] },
+        { atoms: ['C', 'O', 'C'], bonds: [[0, 1], [1, 2]], xy: [[0, 0], [0, 42], [42, 42]] },
+        { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
+          xy: [[0, 0], [0, 42], [0, 84], [0, 126]] }
+    ];
+
     /** 散らかった答案を n 成分ぶん置く。**わざと 8px ずつしかずらさない** ＝ 重なった状態 */
     const ipMessySheet = (c, n) => {
         const m = new c.W.Molecule();
-        // 直鎖・枝分かれ・環・折れ線。**回転させると指紋が変わる形**を混ぜておく
-        const shapes = [
-            { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
-              xy: [[0, 0], [42, 0], [84, 0], [126, 0]] },
-            { atoms: ['C', 'C', 'C', 'O'], bonds: [[0, 1], [0, 2], [0, 3]],
-              xy: [[42, 0], [0, 0], [84, 0], [42, 42]] },
-            { atoms: ['C', 'C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0]],
-              xy: [[0, 0], [42, 0], [63, 36], [42, 72], [0, 72], [-21, 36]] },
-            { atoms: ['C', 'O', 'C'], bonds: [[0, 1], [1, 2]], xy: [[0, 0], [0, 42], [42, 42]] },
-            // ★ **縦長**を1つ必ず混ぜる。横長ばかりだと「縦長のときだけ 90°回して詰める」という
-            //   もっともらしい最適化が**発火せずに**素通りする（実験で実際にそうなった）。
-            //   縦置きの図は立体の読み（`isFischerOriented`・v446）が見ている向きそのもの
-            { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3]],
-              xy: [[0, 0], [0, 42], [0, 84], [0, 126]] }
-        ];
+        const shapes = IP_SHEET_SHAPES;
         const comps = [];
         for (let k = 0; k < n; k++) {
             const s = shapes[k % shapes.length];
@@ -12269,6 +13843,667 @@
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    /* ===== IW17 の道具（書き出し練習の見出しの縮尺と、並べ直しの縦の隙間・v1432） =====
+     *
+     * ユーザー報告「書き出し中、化合物の番号①がまとめて下側に表示されることがある」。
+     * 発注書 ORDER_isomer_2026-08-20.md §A-3 の案② ＋ 実測で見つかったもう半分。
+     *
+     * ⚠ **測るのは「見出しが既定の置き場所から動いたか」1本**。「重なっていないか」で測ると、
+     *   遠くへ飛んだ見出しほど**周りに何も無くて緑になる**（症状そのものが緑を出す形）。
+     */
+
+    /**
+     * いま描かれている見出しが、既定の置き場所（**自分の分子の下端＋1.1マス**）から
+     * 何マス動いたか。0 でないものが「番号が図から離れた」実体。
+     * ⚠ 物差しはアプリと同じ（`renderMoleculeLabels` の `home` と同じ式）。
+     */
+    const ipLabelDrift = (c) => {
+        const g = c.game, GRID = c.W.GRID_SIZE;
+        const parts = g.splitMolecules();
+        return (g._labelRects || []).map(lr => {
+            const p = parts.find(pp => pp.atoms.some(a => lr.ids.has(a.id)));
+            if (!p) return 0;
+            const ys = p.atoms.filter(a => a.element !== 'H').map(a => a.y);
+            return (lr.y - (Math.max(...ys) + GRID * 1.1)) / GRID;
+        });
+    };
+    const ipDriftReport = (d) =>
+        `${d.filter(x => Math.abs(x) > 1e-9).length}/${d.length}個・最大 ${Math.max(0, ...d.map(Math.abs)).toFixed(1)}マス`;
+
+    /**
+     * 答案を**格子のスロットへ手で並べた**答案用紙（`tidyAnswerSlots` は呼ばない）。
+     * 縦の隙間を `gapRows` マスで外から指定できる ＝ **並べ直しの隙間を差し替えた否定対照**が作れる
+     * （`GAP_Y = 3マス` が新・`2マス` が v1431 まで）。
+     * スマホで「並べ直さなくても飛ぶ」を測る土台でもある ＝ **人が整然と描いた答案**の形。
+     */
+    const ipTidySheet = (c, n, cols, gapRows) => {
+        const W = c.W, GRID = W.GRID_SIZE, m = new W.Molecule();
+        const shapes = IP_SHEET_SHAPES;
+        const hOf = (s) => Math.max(...s.xy.map(p => p[1])) - Math.min(...s.xy.map(p => p[1]));
+        const wOf = (s) => Math.max(...s.xy.map(p => p[0])) - Math.min(...s.xy.map(p => p[0]));
+        const maxH = Math.max(...shapes.map(hOf)), maxW = Math.max(...shapes.map(wOf));
+        // アプリの `tidyAnswerSlots` と同じ作り方（横は 2マス固定・縦だけ引数で振る）
+        const cellW = Math.ceil((maxW + GRID * 2) / GRID) * GRID;
+        const cellH = Math.ceil((maxH + GRID * gapRows) / GRID) * GRID;
+        const comps = [];
+        for (let k = 0; k < n; k++) {
+            const s = shapes[k % shapes.length];
+            const ox = GRID * 2 + (k % cols) * cellW, oy = GRID * 2 + Math.floor(k / cols) * cellH;
+            const dx = ox - Math.min(...s.xy.map(p => p[0])), dy = oy - Math.min(...s.xy.map(p => p[1]));
+            const ids = s.atoms.map((e, i) => m.addAtom(e, dx + s.xy[i][0], dy + s.xy[i][1]).id);
+            s.bonds.forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+            comps.push(ids);
+        }
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        return comps;
+    };
+
+    /**
+     * iframe の大きさを変えて測る（`getScreenCTM()` が変わる ＝ 実機の幅を再現する唯一の手段）。
+     * ⚠ テストページの iframe は `max-width:100%` なので、**ブラウザの窓より広くはできない**
+     *   （既定 1280px の窓では 1248px 止まり）。効くのはキャンバスの実寸なので数十px の差は
+     *   物理を変えないが、**狙いから遠すぎたら赤くする**（幅の検査が走らなかったのを緑にしない）。
+     */
+    const ipWithFrame = async (c, w, h, fn) => {
+        const frame = c.W.frameElement;
+        const sw = frame.style.width, sh = frame.style.height;
+        frame.style.width = w + 'px';
+        frame.style.height = h + 'px';
+        await c.tick(250);
+        try {
+            const got = c.W.innerWidth;
+            assert(Math.abs(got - w) <= Math.max(64, w * 0.06),
+                `iframe が ${w}px 近くにならず、この幅の検査が走らなかった（${got}px）`);
+            return await fn();
+        } finally {
+            frame.style.width = sw;
+            frame.style.height = sh;
+            await c.tick(250);
+        }
+    };
+
+    /** キャンバスを中心そのままで引く（答案が増えたときに実機で起きること） */
+    const ipZoomOut = (c, factor) => {
+        const vb = c.svg.viewBox.baseVal;
+        const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
+        const w = vb.width * factor, h = vb.height * factor;
+        c.svg.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`);
+        c.game.updateDrawing();
+    };
+
+    /** v1431 までの `labelScale()`（画面px 固定）。否定対照でこれに戻す */
+    const ipOldLabelScale = function () {
+        const m = this.svg && this.svg.getScreenCTM ? this.svg.getScreenCTM() : null;
+        const k = m && m.a > 0 ? m.a : 1;
+        return Math.min(200, Math.max(0.005, 1 / k));
+    };
+
+    test('IW17: 書き出し練習の番号が図から離れない（PC 1280×800 で20個・スマホ 375px で12個・★否定対照つき）', async (c) => {
+        /**
+         * ★ ユーザー報告（2026-08-20）「書き出し中、化合物の番号①がまとめて下側に表示される」。
+         *
+         * **原因は2つの数が別の単位で書かれていたこと**で、直しも2か所ある:
+         *   ② `labelScale()` … 練習中は 1（＝図と同じ縮尺）。34px の床は**押せる的だから**
+         *      あるもので、⚠ **練習中の見出しは押せない**（この検査の (1) がそこを押さえる）
+         *   ①' `tidyAnswerSlots()` の縦の隙間 … 2マス → **3マス**。84px を
+         *      「帯 46.2 ＋ チップ 34 ＋ **下の行の自動水素 25**」の3人で取り合っていた
+         *
+         * ⚠ **②だけでは並べ直しの経路が直らない**（実測。発注書の読みはここが外れていた）。
+         *    この検査は (3) が②を、(4) が①' を、別々の否定対照で見張る。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        const GRID = W.GRID_SIZE;
+        assert(W.LABEL_CHIP_HEIGHT === 34, `チップの高さの前提が違う（${W.LABEL_CHIP_HEIGHT}）`);
+        g.setMode('learn');
+        ip.start(5); // C₄H₁₀O（7種）。番号は成分の数だけ振られるので何個でも置ける
+        assert(ip.active && g.worksheetActive(), '書き出し練習が始まっていない');
+
+        try {
+            // ===== (1) 追認 —— 練習中の見出しは**押せない**（②が成り立つ前提そのもの） =====
+            //     ここが false になったら②の理由が崩れる ＝ 34px の床を戻す判断が要る
+            ipTidySheet(c, 4, 2, 3);
+            assert(g.canvasEntryEnabled() === false, '練習中に見出しのタップが生きている');
+            const chipRects = [...D.querySelectorAll('#atoms-group g')]
+                .filter(el => el.querySelector('text') && /[①-⑳㉑-㉟]/.test(el.textContent))
+                .map(el => el.querySelector('rect')).filter(Boolean);
+            assert(chipRects.length === 4, `見出しの枠が ${chipRects.length}個（4個であるべき）`);
+            chipRects.forEach((r, i) => {
+                const cs = W.getComputedStyle(r);
+                assert(cs.pointerEvents === 'none',
+                    `練習中の見出し ${i + 1} が pointer-events:${cs.pointerEvents}（none であるべき）`);
+                assert(r.getAttribute('fill') === 'none' && r.getAttribute('stroke') === 'none',
+                    `練習中の見出し ${i + 1} が押せる見た目のまま（fill=${r.getAttribute('fill')}）`);
+            });
+            // 実際に押しても窓は開かない
+            g.openMoleculeModal(g.userMolecule.atoms[0].id);
+            assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+                '練習中に分子モーダルが開く ＝ 見出しは「押せる的」のまま（②の前提が崩れる）');
+            assert(g.labelScale() === 1,
+                `練習中の見出しの倍率が ${g.labelScale()}（図と同じ縮尺＝1 であるべき）`);
+
+            // ===== (2) 本題 —— PC 1280×800・20成分・並べ直したあと =====
+            await ipWithFrame(c, 1280, 800, async () => {
+                ipMessySheet(c, 20);
+                assert(g.countMolecules() === 20, `テスト前提（20成分）が満たされない（${g.countMolecules()}）`);
+                const r = g.tidyAnswerSlots();
+                assert(r.total === 20 && r.moved >= 19, `並べ直しが働かない（moved=${r.moved} / ${r.reason}）`);
+                g.updateDrawing();
+                const d = ipLabelDrift(c);
+                assert(d.length === 20, `見出しが ${d.length}個（20個であるべき）`);
+                assert(d.every(x => Math.abs(x) < 1e-9),
+                    `PC 1280×800・20成分: 並べ直した後に番号が図から離れた（${ipDriftReport(d)}）`);
+
+                // さらに引いて見ても動かない（置き場所はモデル座標なので縮尺に依らない）
+                ipZoomOut(c, 2.5);
+                const far = ipLabelDrift(c);
+                assert(far.every(x => Math.abs(x) < 1e-9),
+                    `PC・引いて見ると番号が図から離れた（${ipDriftReport(far)}）`);
+
+                // ★ 否定対照A（②の見張り）—— 同じ引き具合で見出しを画面px 固定へ戻すと**確かに離れる**。
+                //   引くほどチップがモデル座標で太るのが症状の本体なので、そこを名指しで再現する。
+                //   ⚠ **v1440 の「図から離れてよい上限」も一緒に外す**（`labelDriftGuard`）。
+                //     あれは v1431 の症状にも**ついでに効く**ので、閉じないとこの否定対照が
+                //     空振りの緑になる（実測 4件 → 1件）。ここで見たいのは②が何を直したか1本
+                g.labelScale = ipOldLabelScale;
+                g.labelDriftGuard = false;
+                g.updateDrawing();
+                const old = ipLabelDrift(c);
+                delete g.labelScale;
+                delete g.labelDriftGuard;
+                g.updateDrawing();
+                assert(old.some(x => Math.abs(x) >= 1),
+                    `否定対照A が空振り: 引いた状態で画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）` +
+                    ' ＝ この検査は「縮尺を図に合わせた」ことを何も見張っていない');
+                assert(ipLabelDrift(c).every(x => Math.abs(x) < 1e-9), '否定対照A の後始末で元に戻らない');
+            });
+
+            // ===== (3) ⚠ スマホ 375px・12個・**並べ直さない**（人が整然と描いた答案） =====
+            //     ここを入れないと片手落ちになる ——「並べ直しの隙間を広げただけ」の直しは
+            //     この経路に届かない（引いて見た瞬間チップがモデル座標で太るのが本体）
+            await ipWithFrame(c, 375, 812, async () => {
+                ipTidySheet(c, 12, 3, 3);
+                assert(g.countMolecules() === 12, `テスト前提（12成分）が満たされない（${g.countMolecules()}）`);
+                g.fitCanvasToMolecule(g.userMolecule); // 12個を見るには引くしかない（実機の操作）
+                g.updateDrawing();
+                const d = ipLabelDrift(c);
+                assert(d.length === 12, `見出しが ${d.length}個（12個であるべき）`);
+                assert(d.every(x => Math.abs(x) < 1e-9),
+                    `スマホ 375px・12個（並べ直しなし）: 番号が図から離れた（${ipDriftReport(d)}）`);
+
+                // ★ 否定対照B —— 画面px 固定へ戻すと、**並べ直さなくても**離れる
+                //   （A と同じ理由で v1440 の上限も外す）
+                g.labelScale = ipOldLabelScale;
+                g.labelDriftGuard = false;
+                g.updateDrawing();
+                const old = ipLabelDrift(c);
+                delete g.labelScale;
+                delete g.labelDriftGuard;
+                g.updateDrawing();
+                assert(old.filter(x => Math.abs(x) >= 1).length >= 4,
+                    `否定対照B が空振り: スマホで画面px 固定に戻しても番号が動かない（${ipDriftReport(old)}）`);
+
+                // スマホでも並べ直したあとが 0 であること（20個 ＝ 完了条件の数）
+                ipMessySheet(c, 20);
+                const r = g.tidyAnswerSlots();
+                assert(r.total === 20 && r.moved >= 19, `スマホで並べ直しが働かない（${r.reason}）`);
+                g.updateDrawing();
+                const d20 = ipLabelDrift(c);
+                assert(d20.every(x => Math.abs(x) < 1e-9),
+                    `スマホ 375px・20成分・並べ直しあり: 番号が図から離れた（${ipDriftReport(d20)}）`);
+            });
+
+            // ===== (4) ★ 否定対照C（①' の見張り）—— 縦の隙間を 2マスへ戻すと離れる =====
+            //     ②（縮尺）は入ったままで測る ＝ **隙間のほうが足りていない**ことを名指しする。
+            //     ⚠ ここが空振りすると「②だけで足りた」と読み違える（実際は足りなかった）
+            await ipWithFrame(c, 1280, 800, async () => {
+                ipTidySheet(c, 12, 3, 2);   // v1431 までの縦の隙間（GRID_SIZE * 2）
+                g.labelDriftGuard = false;  // ⚠ A・B と同じ理由（v1440 の上限を外して v1432 の姿で測る）
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                const narrow = ipLabelDrift(c);
+                delete g.labelDriftGuard;
+                g.updateDrawing();
+                assert(narrow.some(x => Math.abs(x) >= 1),
+                    `否定対照C が空振り: 縦の隙間 2マスでも番号が動かない（${ipDriftReport(narrow)}）` +
+                    ' ＝ 3マスへ広げた意味を何も見張っていない');
+                // 同じ配置を 3マスにすると 0 に戻る（差は隙間の1マスだけ）
+                ipTidySheet(c, 12, 3, 3);
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                const wide = ipLabelDrift(c);
+                assert(wide.every(x => Math.abs(x) < 1e-9),
+                    `縦の隙間を 3マスにしても番号が離れる（${ipDriftReport(wide)}）`);
+            });
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    test('IW18: ★否定対照 — 練習でなければ見出しは押せる的（34px）のまま／並べ直しは回帰していない', async (c) => {
+        /**
+         * IW17 の直しが**練習の外へ漏れていない**ことと、
+         * 縦の隙間を1マス広げたことで**並べ直しそのものが壊れていない**ことを見る。
+         *
+         * ⚠ 「押せる的の下限」は練習中以外では 1px も緩めない（TAP1・ZM1・ZM2 と同じ物差し）。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+
+        // ===== ① 自由モード（練習ではない）—— 引いて見ても的は 34px のまま =====
+        g.setMode('free');
+        const summon = (name) => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            const input = D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+            g.updateDrawing();
+        };
+        summon('シクロヘキサン');
+        assert(!g.worksheetActive(), 'テスト前提（練習していない）が満たされない');
+        // わざと大きく引く（練習中なら番号が小さくなる縮尺）
+        const vb = c.svg.viewBox.baseVal;
+        c.svg.setAttribute('viewBox', `${vb.x - 900} ${vb.y - 675} ${vb.width + 1800} ${vb.height + 1350}`);
+        g.updateDrawing();
+        const chipOf = () => {
+            const el = [...D.querySelectorAll('#atoms-group g')]
+                .find(e => e.querySelector('text') && /🔍/.test(e.textContent));
+            return el ? el.querySelector('rect').getBoundingClientRect() : null;
+        };
+        const free = chipOf();
+        assert(free, '自由モードで見出しの枠が描かれていない');
+        assert(g.labelScale() > 1.5,
+            `引いた自由モードで倍率が ${g.labelScale().toFixed(2)}（1 に張り付いている ＝ 練習の分岐が漏れている）`);
+        assert(free.height >= 32,
+            `練習でないのに見出しの的が ${free.height.toFixed(1)}px（32px の床を割った）`);
+
+        // ★ 同じ縮尺で練習に入ると、こんどは図と一緒に縮む（＝ 分けたことの証明）
+        const vb2 = c.svg.viewBox.baseVal;
+        const saved = `${vb2.x} ${vb2.y} ${vb2.width} ${vb2.height}`;
+        g.setMode('learn');
+        W.isomerPractice.start(5);
+        try {
+            ipTidySheet(c, 2, 2, 3);
+            c.svg.setAttribute('viewBox', saved);  // 縮尺をそろえてから測る
+            g.updateDrawing();
+            assert(g.labelScale() === 1, `練習中の倍率が ${g.labelScale()}（1 であるべき）`);
+            const sheet = [...D.querySelectorAll('#atoms-group g')]
+                .find(e => e.querySelector('text') && /[①-⑳]/.test(e.textContent));
+            assert(sheet, '練習中に番号の枠が描かれていない');
+            const h = sheet.querySelector('rect').getBoundingClientRect().height;
+            assert(h < free.height,
+                `練習中の番号が自由モードと同じ大きさ（${h.toFixed(1)}px / ${free.height.toFixed(1)}px）` +
+                ' ＝ 図と同じ縮尺になっていない');
+        } finally {
+            W.isomerPractice.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+
+        // ===== ② 並べ直しが回帰していない（縦を1マス広げたのはここ） =====
+        c.reset();
+        const GRID = W.GRID_SIZE, CLEAR = W.MIN_COMPONENT_CLEARANCE;
+        const comps = ipMessySheet(c, 7);
+        const before = comps.map(ids => ipRelShape(c.game, ids));
+        const beforeXY = new Map(c.game.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const r = c.game.tidyAnswerSlots();
+        assert(r.total === 7 && r.moved > 0, `7成分の並べ直しが働かない（${r.reason}）`);
+        // 剛体移動のまま（IW7 と同じ物差し）
+        comps.forEach((ids, k) => {
+            assert(ipRelShape(c.game, ids) === before[k],
+                `成分 ${k + 1} の内部座標が変わった（隙間を広げたら整形が混ざった）`);
+            const ds = ids.map(id => {
+                const a = c.game.userMolecule.atoms.find(z => z.id === id), b = beforeXY.get(id);
+                return { dx: a.x - b.x, dy: a.y - b.y };
+            });
+            assert(ds.every(d => d.dx === ds[0].dx && d.dy === ds[0].dy),
+                `成分 ${k + 1} の中で原子ごとに移動量が違う（剛体移動ではない）`);
+            assert(Math.abs(ds[0].dx % GRID) < 1e-9 && Math.abs(ds[0].dy % GRID) < 1e-9,
+                `成分 ${k + 1} の移動量が格子の整数倍でない（${ds[0].dx}, ${ds[0].dy}）`);
+        });
+        // ★ 縦を広げても **C₄H₁₀O（7種）が既定の視野に収まる**（ここが IW7 と同じ歯止め）
+        const xs = c.game.userMolecule.atoms.map(a => a.x), ys = c.game.userMolecule.atoms.map(a => a.y);
+        const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
+        assert(bw <= 800 && bh <= 600,
+            `縦の隙間を広げたら 7成分が 800×600 に入らなくなった（実測 ${Math.round(bw)}×${Math.round(bh)}）`);
+        // 別の成分の重原子と近づきすぎない（ZD の帯と同じ規則）
+        const own = new Map();
+        comps.forEach((ids, k) => ids.forEach(id => own.set(id, k)));
+        const heavy = c.game.userMolecule.atoms.filter(a => a.element !== 'H');
+        let worst = Infinity;
+        for (let i = 0; i < heavy.length; i++) {
+            for (let j = i + 1; j < heavy.length; j++) {
+                if (own.get(heavy[i].id) === own.get(heavy[j].id)) continue;
+                worst = Math.min(worst, Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y));
+            }
+        }
+        assert(worst >= CLEAR - 1e-9,
+            `別の成分の重原子が ${worst.toFixed(2)}px まで寄った（${CLEAR.toFixed(1)}px 以上を期待）`);
+
+        c.game.userMolecule = new W.Molecule();
+        c.game.updateDrawing();
+        c.game.setMode('puzzle');
+    });
+
+    /* ===== IW30 の道具（v1440・ユーザー実機報告 2026-08-21）=====
+     *
+     * 「異性体の書き出し、図が上下に隣接すると丸数字がまとめてしたに行く」。
+     *
+     * ⚠ **v1432（IW17）はこの条件を1つも見ていなかった。** あちらが測ったのは
+     *   ①`🧹 並べ直す` が作る配置（縦の隙間 126px）と ②`ipTidySheet(…, 3)` ＝
+     *   **3マスあけて整然と描いた答案**の2つだけ。**2マス（84px）の配置**は
+     *   「v1431 までの並べ直しの再現」＝ **ずれて当然の否定対照C** として置いてあり、
+     *   ⚠ **人が格子に沿って描くといちばん自然に出る間隔**だという見方が抜けていた。
+     *
+     * ★ **測るのは「見出しが自分の図から何マス離れているか」**（IW17 の「既定から動いたマス数」ではない）。
+     *   理由: 直しの候補には**分子の上へ回す**があり、これは既定から −7マス動くが
+     *   **図には隣接している**（＝ 症状ではない）。IW17 の物差しで測ると
+     *   「上へ回す」を症状として赤くしてしまい、直しを歪める。
+     */
+    /** 見出しの枠と、自分の分子の絵との**隙間**（マス）。既定の置き場所はちょうど 1.1 マス */
+    const ipLabelAway = (c) => {
+        const g = c.game, GRID = c.W.GRID_SIZE;
+        const parts = g.splitMolecules();
+        return (g._labelRects || []).map(lr => {
+            const p = parts.find(pp => pp.atoms.some(a => lr.ids.has(a.id)));
+            if (!p) return 0;
+            const at = p.atoms.filter(a => a.element !== 'H');
+            const minY = Math.min(...at.map(a => a.y)), maxY = Math.max(...at.map(a => a.y));
+            return Math.max(lr.y - maxY, minY - (lr.y + lr.h)) / GRID;
+        });
+    };
+    const ipAwayReport = (a) =>
+        `最遠 ${Math.max(...a).toFixed(2)}マス・離れた数 ${a.filter(x => x > 1.11).length}/${a.length}`;
+
+    /**
+     * ★ 「図が上下に隣接する」答案用紙 —— 同じ形を**縦に `gapPx` ずつ**並べる。
+     * 格子は 42px なので `gapPx = 84`（2マス）は**人が手で描くときのいちばん自然な間隔**。
+     * 見出しに要る縦幅は 46.2（置かない帯）＋34（チップ）＋25（下の行の自動水素）＝ **105.2px** なので、
+     * 84px では必ず足りない ＝ ここが v1432 の直しが届かない経路そのもの。
+     */
+    const ipColumnSheet = (c, n, gapPx) => {
+        const W = c.W, m = new W.Molecule();
+        for (let k = 0; k < n; k++) {
+            const y = 100 + k * gapPx;
+            const ids = ['C', 'C', 'C', 'C'].map((e, i) => m.addAtom(e, 100 + i * 42, y).id);
+            [[0, 1], [1, 2], [2, 3]].forEach(([i, j]) => m.addBond(ids[i], ids[j], 1));
+        }
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        c.game.fitCanvasToMolecule(c.game.userMolecule);
+        c.game.updateDrawing();
+    };
+
+    test('IW30: 図が上下に隣接しても番号が図から離れない（★v1432 が見ていなかった経路・否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, GRID = W.GRID_SIZE;
+        assert(W.LABEL_DRIFT_MAX_ROWS === 2 && W.LABEL_DRIFT_PENALTY === 4000,
+            `上限・値段の前提が違う（${W.LABEL_DRIFT_MAX_ROWS} / ${W.LABEL_DRIFT_PENALTY}）`);
+        const LIMIT = 1.1 + W.LABEL_DRIFT_MAX_ROWS;  // 既定の隔たり＋動いてよい上限
+        g.setMode('learn');
+        W.isomerPractice.start(5); // C₄H₁₀O（番号は成分の数だけ振られる）
+        assert(g.worksheetActive(), '書き出し練習が始まっていない');
+
+        try {
+            // ===== ① 本題 —— 縦に 84px（2マス）ずつ並べた6枚 =====
+            await ipWithFrame(c, 1280, 800, async () => {
+                ipColumnSheet(c, 6, 84);
+                const away = ipLabelAway(c);
+                assert(away.length === 6, `見出しが ${away.length}個（6個であるべき）`);
+                assert(away.every(x => x <= LIMIT + 1e-9),
+                    `PC・縦 84px で隣接: 番号が図から離れた（${ipAwayReport(away)}／上限 ${LIMIT}マス）`);
+
+                // ★★ 否定対照 —— **上限を外すと確かに飛ぶ**（この検査が空振りでない証明であり、
+                //    同時に「v1432 のあとも残っていた」ことの再現でもある）
+                g.labelDriftGuard = false;
+                g.updateDrawing();
+                const loose = ipLabelAway(c);
+                delete g.labelDriftGuard;
+                g.updateDrawing();
+                assert(loose.some(x => x > LIMIT + 1),
+                    `否定対照が空振り: 上限を外しても番号が図から離れない（${ipAwayReport(loose)}）` +
+                    ' ＝ この検査は何も見張っていない');
+                assert(ipLabelAway(c).every(x => x <= LIMIT + 1e-9), '否定対照の後始末で元に戻らない');
+            });
+
+            // ===== ② もっと詰めた（63px ＝ 1.5マス）配置でも離れない =====
+            await ipWithFrame(c, 375, 812, async () => {
+                ipColumnSheet(c, 6, 63);
+                const away = ipLabelAway(c);
+                assert(away.every(x => x <= LIMIT + 1e-9),
+                    `スマホ・縦 63px で隣接: 番号が図から離れた（${ipAwayReport(away)}）`);
+                // 126px（＝ `🧹 並べ直す` が作る隙間）なら**そもそも動かない**（既定のまま）
+                ipColumnSheet(c, 6, 126);
+                const wide = ipLabelAway(c);
+                assert(wide.every(x => Math.abs(x - 1.1) < 1e-9),
+                    `隙間 126px では既定の置き場所のままであるべき（${ipAwayReport(wide)}）`);
+            });
+
+            // ===== ③ ★陰性対照 —— 上限は**練習の外へ 1px も漏れていない** =====
+            //     漏らすと ML 帯（見出しの重なり回避）と夜間監査ファズの実測値が全部動く
+            W.isomerPractice.stop();
+            g.setMode('free');
+            assert(!g.worksheetActive(), 'テスト前提（練習を抜けた）が満たされない');
+            assert(g.labelDriftLimit() === Infinity && g.labelDriftPenalty() === 0,
+                `練習の外に上限が漏れている（limit=${g.labelDriftLimit()} / penalty=${g.labelDriftPenalty()}）`);
+            g.setMode('learn');
+            W.isomerPractice.start(5);
+            assert(g.labelDriftLimit() === W.LABEL_DRIFT_MAX_ROWS,
+                '練習中なのに上限が効いていない');
+
+            // ===== ④ ★陰性対照 —— 横並びの段送りは殺していない =====
+            //     左右に並んだ分子の見出しどうしは食い合うので、1マス下へ逃げる道は残す
+            {
+                const m = new W.Molecule();
+                for (let k = 0; k < 4; k++) {
+                    // ⚠ 練習中の見出しは**番号1文字**なので枠は約 33px しかない。
+                    //   枠どうしを食い合わせるには、原子の丸（半径13）が重ならない範囲で
+                    //   それより狭く並べるしかない ＝ 30px（この幅でないと段送りが起きず、検査が空振りする）
+                    const x = 100 + k * 30;
+                    const ids = ['C', 'C'].map((e, i) => m.addAtom(e, x, 200 + i * 42).id);
+                    m.addBond(ids[0], ids[1], 1);
+                }
+                g.userMolecule = m; g.history = []; g.redoStack = [];
+                g.updateDrawing();
+                g.fitCanvasToMolecule(g.userMolecule);
+                g.updateDrawing();
+                const rects = g._labelRects || [];
+                assert(rects.length === 4, `見出しが ${rects.length}個（4個であるべき）`);
+                const tops = new Set(rects.map(r => Math.round(r.y)));
+                assert(tops.size > 1,
+                    '横並びの見出しが全部同じ段のまま ＝ 段送りを殺してしまった（重なったまま読めない）');
+                assert(ipLabelAway(c).every(x => x <= LIMIT + 1e-9),
+                    `横並びでも図から離れてはいけない（${ipAwayReport(ipLabelAway(c))}）`);
+            }
+        } finally {
+            W.isomerPractice.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    /* ===== IW31 の道具（v1440・発注書 ORDER_isomer_2026-08-20 §A-4）=====
+     *
+     * > **書き出しの正解／エーテルのアルキル基の主鎖を横一直線に**（ユーザー）
+     *
+     * エーテルは `iupacNameDetail(mol).kind` が `'chain'` にならない（主鎖に番号をつけないのが規則）ので
+     * `ipNumberedLayout` に乗れず、`layoutMolecule`（42px の直交BFS・向きは成り行き）へ落ちていた。
+     * ⚠ **触るのは答え合わせの左列＝アプリが描く「標準の書き方」だけ**で、
+     *   ユーザーの作図（`layoutMolecule` そのもの）には1px も触らない ＝ CLAUDE.md の作図規約に触れない。
+     */
+    /** お題に出るエーテル10件（C₃H₈O・C₄H₁₀O・C₅H₁₂O の非環式で、O が重原子2つに挟まれているもの） */
+    const ipEtherIsomers = (W) => {
+        const out = [];
+        [[['C', 'C', 'C', 'O'], 8], [['C', 'C', 'C', 'C', 'O'], 10], [['C', 'C', 'C', 'C', 'C', 'O'], 12]]
+            .forEach(([heavy, h]) => {
+                W.enumerateConstitutionalIsomers(heavy, h).isomers.forEach(iso => {
+                    const mol = iso.mol || iso;
+                    if (W.findAnyCycle(mol)) return;
+                    const o = mol.atoms.find(a => a.element === 'O');
+                    if (!o) return;
+                    if (mol.getNeighbors(o.id).filter(n => n.atom.element !== 'H').length !== 2) return;
+                    out.push(mol);
+                });
+            });
+        return out;
+    };
+    /** 鎖の「折れ」の最大角（度）。0 なら横一直線 */
+    const ipChainBend = (pos, chain) => {
+        let worst = 0;
+        for (let i = 1; i + 1 < chain.length; i++) {
+            const p0 = pos.get(chain[i - 1]), p1 = pos.get(chain[i]), p2 = pos.get(chain[i + 1]);
+            const a = Math.atan2(p1.y - p0.y, p1.x - p0.x), b = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            let d = Math.abs((b - a) * 180 / Math.PI);
+            if (d > 180) d = 360 - d;
+            worst = Math.max(worst, d);
+        }
+        return worst;
+    };
+    /** 使い捨ての図の器（`renderStandardFigure` はここへ描く。viewBox は内容に合わせるのでモデル座標がそのまま読める） */
+    const ipFigureSvg = (c, id) => {
+        const NS = 'http://www.w3.org/2000/svg';
+        const old = c.D.getElementById(id);
+        if (old) old.remove();
+        const svg = document.createElementNS(NS, 'svg');
+        svg.id = id;
+        ['quiz-bonds', 'quiz-atoms'].forEach(cls => {
+            const g2 = document.createElementNS(NS, 'g');
+            g2.setAttribute('class', cls);
+            svg.appendChild(g2);
+        });
+        c.D.body.appendChild(svg);
+        return svg;
+    };
+    /** 描かれた図の重原子（r=10 の丸）どうしの**いちばん短い隔たり** ＝ 結合1本の長さ */
+    const ipDrawnBond = (svg) => {
+        const pts = [...svg.querySelectorAll('.quiz-atoms circle')]
+            .filter(el => el.getAttribute('r') === '10')
+            .map(el => ({ x: +el.getAttribute('cx'), y: +el.getAttribute('cy') }));
+        let min = Infinity;
+        for (let i = 0; i < pts.length; i++) {
+            for (let j = i + 1; j < pts.length; j++) {
+                min = Math.min(min, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+            }
+        }
+        return min;
+    };
+
+    test('IW31: エーテルの正解図は主鎖が横一直線・番号は出さない（10件・表の縮尺は1つ・★否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        const HSTEP = 46;   // `IP_HSTEP`（learn.js）。アルコール・アルカンの正解図が使っている刻み
+        const ethers = ipEtherIsomers(W);
+        assert(ethers.length === 10, `テスト前提（エーテル10件）が満たされない（${ethers.length}件）`);
+
+        // ===== ① 10件すべて —— 主鎖が横一直線（角度を数で）・結合長は 46px・番号は出さない =====
+        const bent = [];
+        ethers.forEach((mol, k) => {
+            // 前提: 番号の道には乗れない（＝ 落ちる側にいることを名指しする）
+            assert(W.ipNumberedLayout(mol) === null,
+                `エーテル ${k + 1} が番号レイアウトに乗ってしまった（この検査の前提が崩れている）`);
+            const layout = W.ipStraightLayout(mol);
+            assert(layout, `エーテル ${k + 1} に横一直線の道が用意されていない`);
+            assert(layout.order === null,
+                `エーテル ${k + 1} が番号を返している ＝ IUPAC で番号を振らない鎖に番号を付けようとしている`);
+            const chain = W.ipLongestHeavyPath(mol);
+            const bendDeg = ipChainBend(layout.pos, chain);
+            if (bendDeg > 1e-9) bent.push(`${k + 1}:${bendDeg}°`);
+            const ys = chain.map(id => layout.pos.get(id).y);
+            assert(Math.max(...ys) - Math.min(...ys) < 1e-9,
+                `エーテル ${k + 1} の主鎖が水平でない（折れ ${bendDeg}°）`);
+            for (let i = 1; i < chain.length; i++) {
+                const dx = layout.pos.get(chain[i]).x - layout.pos.get(chain[i - 1]).x;
+                assert(Math.abs(dx - HSTEP) < 1e-9,
+                    `エーテル ${k + 1} の主鎖の刻みが ${dx}px（${HSTEP}px であるべき）`);
+            }
+        });
+        assert(bent.length === 0, `主鎖が折れているエーテルが残っている（${bent.join(' / ')}）`);
+
+        // ===== ② ★ 同じ表に2つの縮尺を並べない（アルコール・エーテル・環が同じ結合長で描かれる） =====
+        g.setMode('learn');
+        ip.start(5); // C₄H₁₀O（アルコール4＋エーテル3）
+        try {
+            const drawnLens = [];
+            const numberTexts = [];
+            const samples = [
+                ...ethers.slice(0, 3),
+                ...W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'O'], 10).isomers
+                    .map(i => i.mol || i).filter(m => !W.findAnyCycle(m) &&
+                        m.atoms.some(a => a.element === 'O' &&
+                            m.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1)),
+                // 環（`layoutMolecule` へ落ちる側）も同じ表に並ぶ ＝ 縮尺をそろえる相手
+                ...W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 8).isomers
+                    .map(i => i.mol || i).filter(m => !!W.findAnyCycle(m))
+            ];
+            assert(samples.length >= 8, `縮尺を比べる相手が足りない（${samples.length}件）`);
+            samples.forEach((mol, k) => {
+                const svg = ipFigureSvg(c, 'ip-test-fig-' + k);
+                ip.renderStandardFigure(svg.id, mol, false);
+                drawnLens.push(+ipDrawnBond(svg).toFixed(3));
+                const isEther = mol.atoms.some(a => a.element === 'O' &&
+                    mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 2);
+                if (isEther) {
+                    numberTexts.push([...svg.querySelectorAll('.quiz-atoms text')]
+                        .filter(t => /^[0-9]+$/.test(t.textContent)).length);
+                }
+                svg.remove();
+            });
+            const uniq = [...new Set(drawnLens)];
+            assert(uniq.length === 1 && Math.abs(uniq[0] - HSTEP) < 1e-6,
+                `同じ表に複数の縮尺が並んでいる（実測 ${uniq.join(' / ')}px・${HSTEP}px 1本であるべき）`);
+            assert(numberTexts.every(n => n === 0),
+                `エーテルの図に素の番号が出ている（${numberTexts.join(',')}）` +
+                ' ＝ 並べるための鎖に、番号のための鎖を重ねてしまっている');
+
+            // ===== ③ ★★ 否定対照 —— 横一直線の道を塞ぐと、実際に主鎖が折れる =====
+            //     ⚠ **結合長のほうは、道を塞いでも 46px のまま**（縮尺そろえは落ちた側にも
+            //       掛かっている）。縮尺の見張りは ② と ④ の組（描いた図は 46・素の
+            //       `layoutMolecule` は 42）が担当する
+            const real = W.ipStraightLayout;
+            W.ipStraightLayout = () => null;
+            let looseBend = 0, bentNames = 0;
+            try {
+                ethers.forEach(mol => {
+                    W.layoutMolecule(mol);
+                    const by = new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+                    const d = ipChainBend(by, W.ipLongestHeavyPath(mol));
+                    if (d > 1e-9) bentNames++;
+                    looseBend = Math.max(looseBend, d);
+                });
+            } finally {
+                W.ipStraightLayout = real;
+            }
+            assert(looseBend >= 89.9 && bentNames >= 2,
+                `否定対照が空振り: 道を塞いでも主鎖が折れない（最大 ${looseBend}°・${bentNames}件）` +
+                ' ＝ この検査は「横一直線にした」ことを何も見張っていない');
+
+            // ===== ④ ★陰性対照 —— ユーザーの作図（`layoutMolecule`）には1px も触っていない =====
+            //     ここが 46 になったら、正解図の都合が作図そのものへ漏れている
+            {
+                const mol = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C'], 10).isomers
+                    .map(i => i.mol || i)[0];
+                W.layoutMolecule(mol);
+                const b = mol.bonds[0];
+                const a1 = mol.atoms.find(a => a.id === b.atomId1), a2 = mol.atoms.find(a => a.id === b.atomId2);
+                assert(Math.abs(Math.hypot(a1.x - a2.x, a1.y - a2.y) - W.GRID_SIZE) < 1e-6,
+                    'layoutMolecule の刻みが 42px（GRID_SIZE）から動いた ＝ 正解図の都合が作図へ漏れている');
+            }
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.setMode('puzzle');
+        }
     });
 
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
@@ -13088,22 +15323,1060 @@
         g.setMode('puzzle');
     });
 
-    test('IP4: 異性体練習 — 6問すべての異性体（計25種）に名称が付き列挙数が既知値と一致', async (c) => {
-        const g = c.game, W = c.W, ip = W.isomerPractice;
-        const expected = [2, 3, 3, 5, 5, 7];
-        let total = 0;
-        const unnamed = [];
+    // ===== v1433: 骨格の型で分けたお題（発注書 ORDER_isomer_2026-08-20 の A-5）=====
+    // ⚠ ここで見張っているのは「**お題として成立する線**」そのもの。
+    //   上限20（画面に入る行数）・下限2（書き出して見比べられる最小）・
+    //   「鎖式＋環式＝全体」（ふるいが漏れていない）・「型を分けるのは環がある式だけ」
+    //   （同じ問題を2つ並べない）の4つで、どれか1つでも緩むとお題の一覧が壊れる。
+
+    test('IW22: お題の線 — どのお題も 2〜20種の内側で、鎖式＋環式＝全体になる', async (c) => {
+        const W = c.W, ip = W.isomerPractice;
+        const MIN = 2, MAX = 20;
+
+        // ① どのお題も上限・下限の内側（下限に当たるのは C₃H₆ を型で絞ったとき ＝ 1種。
+        //    だから C₃H₆ は「全体（2種）」のお題としてだけ置いてある）
         ip.problems.forEach((p, i) => {
-            const data = ip.enumerate(i);
-            assert(!data.overflow, `${data.formula} が列挙打ち切り（overflow）になる`);
-            assert(data.isomers.length === expected[i],
-                `${data.formula} の異性体数が ${data.isomers.length}（期待 ${expected[i]}）`);
-            total += data.isomers.length;
-            data.isomers.forEach(m => {
-                if (!g.lookupCompoundName(m)) unnamed.push(data.formula + ':' + W.canonicalCode(m));
+            const d = ip.enumerate(i);
+            const tag = `${d.formula}${p.skeleton ? '（' + p.skeleton + '）' : ''}`;
+            assert(d.isomers.length >= MIN, `${tag} が ${d.isomers.length}種 ＝ 下限 ${MIN} を下回る（書き出して見比べる練習にならない）`);
+            assert(d.isomers.length <= MAX, `${tag} が ${d.isomers.length}種 ＝ 上限 ${MAX} を超える`);
+        });
+        // 芳香族のプリセットも同じ線の内側にいる（入口が3つに増えても線は1本）
+        ip.aromaticPresets.forEach(s => {
+            const a = ip.prepareAromatic(s);
+            assert(!a.disabled && a.count >= MIN && a.count <= MAX,
+                `芳香族プリセット ${s} が ${a.count}種（${MIN}〜${MAX} を期待）`);
+        });
+
+        // ② ★ 骨格の型で分けたお題は「鎖式 ＋ 環式 ＝ 全体」。
+        //    ⚠ 突き合わせる相手は**その場で数え直した生の列挙**（`ip.enumerate` のキャッシュに
+        //    頼ると、ふるいが漏れていても自分の値どうしで辻褄が合ってしまう）
+        const byFormula = new Map();
+        ip.problems.forEach((p, i) => {
+            if (!p.skeleton) return;
+            const key = p.elements.join(',') + '/' + p.hCount;
+            if (!byFormula.has(key)) byFormula.set(key, { p, chain: null, ring: null });
+            byFormula.get(key)[p.skeleton] = ip.enumerate(i).isomers.length;
+        });
+        assert(byFormula.size === 6,
+            `型を分けたお題の分子式が ${byFormula.size} 種類（C₄H₈・C₅H₁₀・C₆H₁₂・C₃H₄・C₄H₆・C₅H₈ の6つを期待）`);
+        byFormula.forEach(({ p, chain, ring }, key) => {
+            const raw = W.enumerateConstitutionalIsomers(p.elements, p.hCount, 4000000);
+            assert(!raw.overflow, `${key} の生の列挙が打ち切りになる`);
+            let rings = 0;
+            raw.isomers.forEach(m => { if (W.findAnyCycle(m)) rings++; });
+            const chains = raw.isomers.length - rings;
+            if (chain !== null) assert(chain === chains,
+                `${key} の鎖式が ${chain}種（生の列挙から数えると ${chains}種）＝ ふるいが漏れている`);
+            if (ring !== null) assert(ring === rings,
+                `${key} の環式が ${ring}種（生の列挙から数えると ${rings}種）`);
+            // ③ ★ 型を分けたお題を置いてよいのは、**環をもつ正解が1件以上ある式だけ**。
+            //    環が0件の式（C₄H₁₀ など）で「鎖式」の回を作ると、全体の回と同じ集合が2つ並ぶ
+            assert(rings >= 1 && chains >= 1,
+                `${key} は 鎖式${chains}／環式${rings} ＝ 型で分ける意味が無い（同じ問題が2つ並ぶ）`);
+        });
+
+        // ④ ★ 陰性対照 —— 既存7問（固定6＋芳香族1）の正解数が1つも変わっていない
+        [[0, 2], [1, 3], [2, 3], [3, 5], [4, 5], [5, 7]].forEach(([i, n]) => {
+            assert(ip.enumerate(i).isomers.length === n,
+                `既存のお題 problems[${i}] の正解数が ${ip.enumerate(i).isomers.length}（期待 ${n}）`);
+        });
+        assert(ip.prepareAromatic('C8H10').count === 4, '既存の芳香族回（C₈H₁₀）の正解数が4でない');
+
+        // ⑤ ★★ C₅H₈（鎖式）の9種は**構造異性体として**正しい（アレン3件を含む）。
+        //    ⚠ 別レーンから「アプリの**立体**の数え方は軸不斉を取り違える」という報告がある
+        //      （実測 2,3-ペンタジエン `countStereoisomers`=3・正しくは2／
+        //        1,2-ペンタジエン=2・正しくは1。末端が H,H なので軸不斉にならない）。
+        //    ★ **書き出し練習はその計算を1度も通らない** ——
+        //      正解集合は `canonicalCode`（構造だけ）で作る。ここを機械で押さえておく。
+        //      「立体の数え方を直したから、お題の数も直そう」を止めるのがこの検査の役目
+        const c5h8 = ip.problems.findIndex(p => p.skeleton === 'chain' && p.hCount === 8 && p.elements.length === 5);
+        const d58 = ip.enumerate(c5h8);
+        assert(d58.formula === 'C₅H₈' && d58.isomers.length === 9, `C₅H₈（鎖式）が ${d58.isomers.length}種`);
+        assert(new Set(d58.isomers.map(m => W.canonicalCode(m))).size === 9,
+            'C₅H₈（鎖式）の9件に、正準コードが同じもの（＝ 同じ構造を2回数えたもの）がある');
+        const alleneCount = d58.isomers.filter(m => m.atoms.some(a => a.element === 'C' &&
+            m.bonds.filter(b => (b.atomId1 === a.id || b.atomId2 === a.id) && b.type === 2).length >= 2)).length;
+        assert(alleneCount === 3,
+            `アレン（同じ炭素に二重結合2本）が ${alleneCount}件（3件を期待 ＝ 教科書の「鎖式9種 ＝ アルキン3＋ジエン6」と一致）`);
+        // ★ 立体を数えると合計13。お題の総数が 9 のままであること ＝ 立体が正解集合に混ざっていない
+        const stereoSum = d58.isomers.reduce((s, m) => s + W.countStereoisomers(m).count, 0);
+        assert(stereoSum === 13, `C₅H₈（鎖式）の立体込みの合計が ${stereoSum}（13 を期待。物差しが空振りしていないかの確認）`);
+        assert(d58.isomers.length === 9 && d58.isomers.length !== stereoSum,
+            '書き出し練習の正解数が立体込みの数と一致している ＝ 立体が構造異性体の列挙に混ざっている（§4.2 の線が破れている）');
+
+        // ⑥ ★ 環を含むお題を消さない。**鎖式に絞ると立体の見どころ（メソ体）が落ちる**ので、
+        //    「鎖式に分ける」は環式を捨てることではない（§16-4）。
+        //    実測: C₅H₁₀ の立体が分かれる場所は 鎖1（2-ペンテン）・環1（1,2-ジメチルシクロプロパン ＝
+        //    2²=4 → 3 のメソ体）。環式のお題を消すとメソ体が1つも残らない
+        const c5ring = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 10 && p.elements.length === 5);
+        assert(c5ring >= 0, 'C₅H₁₀（環式）のお題が無い（メソ体の見どころが消える）');
+        const mesoHere = ip.enumerate(c5ring).isomers.filter(m => {
+            const su = W.stereoUnitsOf(m);
+            const naive = Math.pow(2, su.centers.length + su.bonds.length);
+            const n = W.countStereoisomers(m).count;
+            return n > 1 && n < naive;
+        });
+        assert(mesoHere.length === 1,
+            `C₅H₁₀（環式）で 2ⁿ が崩れる種が ${mesoHere.length}件（1件＝1,2-ジメチルシクロプロパンを期待）`);
+    });
+
+    test('IW19: 鎖式の回は最後まで「宣言した出題」として名乗る（C₆H₁₂・13種）', async (c) => {
+        // §11-4「宣言した以上、画面のどこでも隠さない」を鎖式・環式へ広げたことの検査。
+        // 見出し・注記・作業帯・答え合わせの表題・断り文・クリア記録の鍵の**6か所**を見る。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ['chemIsomerPractice.C₆H₁₂', 'chemIsomerPractice.C₆H₁₂@chain', 'chemIsomerPractice.C₆H₁₂@ring']
+            .forEach(k => { try { W.localStorage.removeItem(k); } catch (e) { /* noop */ } });
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.renderList();
+
+        // ① お題ボタンの名前だけで範囲が言い切れている（開く前に何を書き出すか分かる）
+        const chainIdx = ip.problems.findIndex(p => p.skeleton === 'chain' && p.hCount === 12 && p.elements.length === 6);
+        assert(chainIdx >= 0, 'C₆H₁₂（鎖式）のお題が無い');
+        const btn = D.querySelector(`#ip-body button[data-ip-problem="${chainIdx}"]`);
+        assert(btn, 'C₆H₁₂（鎖式）のボタンが選択画面に無い');
+        assert(/C₆H₁₂（鎖式・13種）/.test(btn.textContent), `ボタンの表記が「${btn.textContent}」`);
+
+        // ② 押して開く回の総数は、ボタンの数と**同じ計算から出る**
+        btn.click();
+        assert(ip.active && ip.problem.skeleton === 'chain', '鎖式の回として開かない');
+        assert(ip.problem.total === 13, `総数が ${ip.problem.total}（13 を期待）`);
+
+        // ③ 見出しと注記が範囲を名乗る
+        const panel = () => D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+        assert(/✏️ C₆H₁₂ の鎖式異性体（全 13 種）/.test(panel()), `見出しが範囲を名乗らない（${panel().slice(0, 120)}）`);
+        assert(/環をもたない構造だけを数えます/.test(panel()), '範囲の注記が出ていない');
+        // ④ 作業帯にも出る
+        assert(/（鎖式）/.test(ip.stripLiveHtml()), `作業帯が範囲を名乗らない（${ip.stripLiveHtml()}）`);
+
+        // ⑤ 13種を1枚に描くと 13/13
+        // ⚠ **写しを作ってから `layoutMolecule` にかける。** `ip.targets` の分子は
+        //   `ip._cache` と**同じ実体**で、`layoutMolecule` は座標をその場で書き換える。
+        //   じかに渡すと**あとに走るテストが「座標の付いた正解集合」を見る**ことになり、
+        //   `lookupCompoundName` が幾何を読んで名前を落とす（実測: IP4 が C₆H₁₂ の2件で
+        //   「名称未登録」になった。テストの順番でしか出ない厄介な型）
+        const copyOf = (mol) => {
+            const c = new W.Molecule();
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => c.addAtom(a.element, a.x, a.y).id);
+            mol.bonds.forEach(b => c.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+            return c;
+        };
+        const mols = [...ip.targets.values()].map(copyOf);
+        const m = new W.Molecule();
+        mols.forEach((mol, k) => {
+            W.layoutMolecule(mol);
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => m.addAtom(a.element, a.x + 100 + (k % 4) * 260, a.y + 100 + Math.floor(k / 4) * 220).id);
+            mol.bonds.forEach(b => m.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+        });
+        g.userMolecule = m; g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.countMolecules() === 13, `13枚が置けていない（${g.countMolecules()}）`);
+        let sheet = ip.grade();
+        assert(sheet.found.size === 13 && sheet.missing.length === 0,
+            `13/13 にならない（${sheet.found.size}/13・未発見 ${sheet.missing.length}）`);
+        assert(W.localStorage.getItem('chemIsomerPractice.C₆H₁₂@chain') === '1',
+            'クリア記録の鍵が chemIsomerPractice.C₆H₁₂@chain でない');
+        assert(W.localStorage.getItem('chemIsomerPractice.C₆H₁₂') === null,
+            '鎖式の回のクリアが「C₆H₁₂ の全異性体」のクリア記録まで立てている（別の出題なのに鍵を共有している）');
+
+        // ⑥ ★ 分子式は合うが範囲の外（シクロヘキサン）を描くと、**責めない文言**で範囲を説明する。
+        //    ここが開発者向けの断り文のままだと、正しく描けた生徒に不具合の顔を見せる（§11-4・BZ5）
+        const ringIdx = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 12 && p.elements.length === 6);
+        const cycloSrc = ip.enumerate(ringIdx).isomers.find(x => x.atoms.length === 6 && x.bonds.length === 6);
+        assert(cycloSrc, 'シクロヘキサンが環式の正解集合に無い');
+        const cyclo = copyOf(cycloSrc);   // ⚠ ここも写し（上と同じ理由）
+        W.layoutMolecule(cyclo);
+        const cidx = new Map(cyclo.atoms.map((a, i) => [a.id, i]));
+        const cids = cyclo.atoms.map(a => m.addAtom(a.element, a.x + 100, a.y + 800).id);
+        cyclo.bonds.forEach(b => m.addBond(cids[cidx.get(b.atomId1)], cids[cidx.get(b.atomId2)], b.type));
+        g.updateDrawing();
+        sheet = ip.grade();
+        const scoped = sheet.rows.filter(r => r.status === 'scope');
+        assert(scoped.length === 1, `範囲外として指された図が ${scoped.length}個（1個を期待）`);
+        const said = ip.verdictOf(scoped[0]);
+        assert(/環をもたない構造だけが対象/.test(said), `断り文が範囲を説明していない（${said}）`);
+        assert(!/開発ログ/.test(said), `範囲外の図に開発者向けの文言が出ている（${said}）`);
+
+        // ⑦ 答え合わせの表題にも範囲が出る
+        ip.openReview('answer');
+        const ov = D.getElementById('ip-review-overlay');
+        assert(/答え合わせ — C₆H₁₂ の鎖式異性体/.test(ov.textContent.replace(/\s+/g, ' ')),
+            `答え合わせの表題が範囲を名乗らない（${ov.textContent.slice(0, 90)}）`);
+        ip.closeReview();
+        ip.stop();
+        ['chemIsomerPractice.C₆H₁₂', 'chemIsomerPractice.C₆H₁₂@chain']
+            .forEach(k => { try { W.localStorage.removeItem(k); } catch (e) { /* noop */ } });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IW20: ★否定対照 — 骨格のふるいを外すと上限を突き抜ける（＋群分けと断り方の行き先）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+
+        // ① ★ ふるい（`ipMatchesSkeleton`）を素通しに差し替えると、C₆H₁₂（鎖式）が
+        //    13 → 25種になり**上限20を突き抜ける** ＝ お題として成立しなくなる。
+        //    これを測ることで、13という数が「たまたま小さい」のではなく
+        //    **ふるいが効いた結果**だと分かる（＝ IW22 の緑が空振りでない証明）
+        const chainIdx = ip.problems.findIndex(p => p.skeleton === 'chain' && p.hCount === 12 && p.elements.length === 6);
+        const orig = W.ipMatchesSkeleton;
+        let broken;
+        try {
+            W.ipMatchesSkeleton = () => true;
+            ip._cache.clear();
+            broken = ip.enumerate(chainIdx).isomers.length;
+        } finally {
+            W.ipMatchesSkeleton = orig;
+            ip._cache.clear();
+        }
+        const fixed = ip.enumerate(chainIdx).isomers.length;
+        assert(broken === 25, `ふるいを外した C₆H₁₂ が ${broken}種（25種を期待 ＝ 差し替えが効いていない）`);
+        assert(broken > 20, 'ふるいを外しても上限を超えない ＝ この否定対照が何も見張っていない');
+        assert(fixed === 13, `ふるいを戻した C₆H₁₂（鎖式）が ${fixed}種（13種を期待）`);
+
+        // ② 不飽和度2以上のお題は**別の群**に並ぶ（ユーザー補足 2026-08-20:
+        //    「トレーニングとしてはやる価値がありそう」＝ 出さないのではなく、同じ顔で並べない）
+        ip.renderList();
+        const training = D.getElementById('ip-training-problems');
+        assert(training, '不飽和度2以上の群が画面に無い');
+        const trainIdx = [...training.querySelectorAll('button[data-ip-problem]')].map(b => +b.dataset.ipProblem);
+        assert(trainIdx.length === 3, `群に入っているお題が ${trainIdx.length}件（C₃H₄・C₄H₆・C₅H₈ の3件を期待）`);
+        trainIdx.forEach(i => {
+            const p = ip.problems[i];
+            assert(W.ipUnsaturation(p.elements, p.hCount) >= 2,
+                `不飽和度 ${W.ipUnsaturation(p.elements, p.hCount)} のお題が「じっくり練習する回」に入っている`);
+        });
+        // 定番の側に不飽和度2以上が紛れていない（＝ 群分けが本当に効いている）
+        [...D.querySelectorAll('#ip-body > div > button[data-ip-problem]')].forEach(b => {
+            const p = ip.problems[+b.dataset.ipProblem];
+            assert(W.ipUnsaturation(p.elements, p.hCount) < 2,
+                `不飽和度2以上のお題（${b.textContent}）が定番の群に残っている`);
+        });
+        // ⚠ **群の見出しで出題頻度を名乗らない**（repo の入試DBは分子式ごとの件数を持っていない）。
+        //    数えていないことを画面で断言しないための門番
+        const label = training.firstChild.textContent;
+        assert(!/入試|頻度|よく出る|まれ/.test(label), `群の見出しが出題頻度を名乗っている（${label}）`);
+        assert(/アレン/.test(label), `群の見出しが「何が正解に並ぶか」を言っていない（${label}）`);
+
+        // ③ 上限で断るときに**行き先を出す**（黙って「25種です」で終えない）
+        const toasts = [];
+        const origToast = g.showToast;
+        try {
+            g.showToast = function (t) { toasts.push(t); };
+            ip.startFromFormula('C6H12');
+        } finally { g.showToast = origToast; }
+        assert(!ip.active, 'C₆H₁₂（全異性体）が開いてしまう（上限20は据え置きのはず）');
+        assert(toasts.length === 1, `断り文が ${toasts.length}件`);
+        assert(/25種/.test(toasts[0]), `断り文に種類数が無い（${toasts[0]}）`);
+        assert(/鎖式・13種/.test(toasts[0]) && /環式・12種/.test(toasts[0]),
+            `断り文に行き先（骨格の型で分けたお題）が出ていない（${toasts[0]}）`);
+
+        g.setMode('puzzle');
+    });
+
+    test('IW21: ★否定対照 — 立体トグルが ON でも、正解の名前が1つも落ちない（環の不斉をもつ種）', async (c) => {
+        // ⚠ **全走でだけ赤くなっていた実害**（v1433）。お題は構造異性体だけを数える（§4.2）のに、
+        //   `lookupCompoundName` は「立体を名前に反映する」トグルが ON のとき、ライブラリの
+        //   **立体つき登録**と描かれた立体が一致しないと名前を返さない。正解の分子は列挙が返した
+        //   ままで**座標を持たない**＝立体が読めないので、**環の不斉をもつ種が軒並み名無しになる**。
+        //   鎖式が無事なのは `iupacName` が拾うからで、**環には系統名が無い**＝受け皿が無い。
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        const ringIdx = ip.problems.findIndex(p => p.skeleton === 'ring' && p.hCount === 12 && p.elements.length === 6);
+        assert(ringIdx >= 0, 'C₆H₁₂（環式）のお題が無い');
+        const keep = g.readStereo;
+        try {
+            [false, true].forEach(st => {
+                g.setReadStereo ? g.setReadStereo(st) : (g.readStereo = st);
+                if (ip.active) ip.stop();
+                ip.start(ringIdx);
+                const names = ip.answerPairs(ip.grade()).map(r => r.name);
+                assert(names.length === 12, `C₆H₁₂（環式）の行が ${names.length}（12 を期待）`);
+                const missing = names.filter(n => !n).length;
+                assert(missing === 0,
+                    `立体トグル ${st ? 'ON' : 'OFF'} で名前の無い行が ${missing} 件` +
+                    `（数えていない軸のせいで名前を落としている）`);
+            });
+
+            // ★ 空振り防止 —— **じかに `lookupCompoundName` を呼ぶ実装なら、ON で実際に落ちる**。
+            //   これが 0 になったら、この検査はもう何も見張っていない
+            g.setReadStereo ? g.setReadStereo(true) : (g.readStereo = true);
+            const raw = ip.enumerate(ringIdx).isomers.filter(m => {
+                const flat = new W.Molecule(), map = new Map();
+                m.atoms.forEach(a => map.set(a.id, flat.addAtom(a.element, 0, 0).id));
+                m.bonds.forEach(b => flat.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+                return !g.lookupCompoundName(flat);
+            });
+            assert(raw.length === 3,
+                `じかに引くと名無しになる種が ${raw.length} 件（3件を期待 ＝ 1,1,2-トリメチルシクロプロパン・` +
+                `1,2-ジメチルシクロブタン・1-エチル-2-メチルシクロプロパン。物差しが空回りしていないかの確認）`);
+            // ⚠ **トグルそのものは触らない**（総称で引くのは練習の中だけ。自由モードの見え方は不変）
+            assert(g.readStereo === true, 'constitutionalName が立体トグルを戻していない（自由モードの見え方が変わる）');
+        } finally {
+            g.setReadStereo ? g.setReadStereo(keep) : (g.readStereo = keep);
+            if (ip.active) ip.stop();
+            g.setMode('puzzle');
+        }
+    });
+
+    /* ===== IW23〜IW29 の道具（DESIGN_stereo_point.md 段1・段2・ハースの糖・v1435）=====
+     *
+     * ⚠ **正解集合の分子を直接キャンバスへ流し込まない**（IW19 と同じ理由）——
+     *   `ip.targets` の分子は `ip._cache` と同じ実体で、`layoutMolecule` は座標をその場で
+     *   書き換える。写しを作ってから並べる。
+     */
+    function ipStereoSheet(c, idx) {
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.start(idx);
+        const copyOf = (mol) => {
+            const o = new W.Molecule();
+            const im = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => o.addAtom(a.element, a.x, a.y).id);
+            mol.bonds.forEach(b => o.addBond(ids[im.get(b.atomId1)], ids[im.get(b.atomId2)], b.type));
+            return o;
+        };
+        const m = new W.Molecule();
+        // ★ シス・トランスに分けた答案は**座標が答えの一部**（v1440）。
+        //   ⚠ ここで `layoutMolecule` を掛けると主鎖が一直線に戻り、向きが読めなくなる
+        //   ＝ 「正解の図をそのまま写した答案」が `unread` に落ちる
+        const fixed = [...ip.targets.values()].map(mm => !!mm._ipFixedLayout);
+        [...ip.targets.values()].map(copyOf).forEach((mol, k) => {
+            if (!fixed[k]) W.layoutMolecule(mol);
+            const im = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            const ids = mol.atoms.map(a => m.addAtom(a.element,
+                a.x + 100 + (k % 4) * 260, a.y + 100 + Math.floor(k / 4) * 220).id);
+            mol.bonds.forEach(b => m.addBond(ids[im.get(b.atomId1)], ids[im.get(b.atomId2)], b.type));
+        });
+        g.userMolecule = m; g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        return m;
+    }
+
+    // 「立体が分かれる場所」に正しい印を付ける（正解の出どころは `stereoUnitsOf` ただ1つ）。
+    // `only` を渡すとその正準コードの成分だけに付ける
+    function ipMarkStereoPoints(c, only) {
+        const g = c.game, W = c.W;
+        let n = 0;
+        g.splitMolecules().forEach(part => {
+            if (only && W.canonicalCode(part) !== only) return;
+            const su = W.stereoUnitsOf(part);
+            su.centers.forEach(id => {
+                const a = g.userMolecule.atoms.find(x => x.id === id);
+                if (a) { a.isAsymmetricMarked = true; n++; }
+            });
+            su.bonds.forEach(([x, y]) => {
+                const b = g.userMolecule.bonds.find(z =>
+                    (z.atomId1 === x && z.atomId2 === y) || (z.atomId1 === y && z.atomId2 === x));
+                if (b) { b.isStereoMarked = true; n++; }
             });
         });
-        assert(total === 25, `総異性体数が ${total}（期待25）`);
+        g.updateDrawing();
+        return n;
+    }
+
+    const IP_STEREO_KEYS = ['chemIsomerPractice.C₅H₁₀@stereo', 'chemIsomerPractice.C₅H₁₂O@stereo'];
+    function ipStereoIdx(c, hCount) {
+        const ip = c.W.isomerPractice;
+        const i = ip.problems.findIndex(p => p.stereoAsked && p.hCount === hCount);
+        assert(i >= 0, `立体まで答える回（H${hCount}）のお題が無い`);
+        return i;
+    }
+    function ipStereoCleanup(c) {
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        IP_STEREO_KEYS.forEach(k => { try { W.localStorage.removeItem(k); } catch (e) { /* noop */ } });
+        if (ip.active) { ip.closeReview(); ip.stop(); }
+        g.deactivateStereoPointMode();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    }
+
+    test('IW23: 段1 —「立体が分かれる場所」を指せる（不斉炭素2つ／C=C 1本・過不足も言い分ける）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);        // C₅H₁₀（立体まで）
+        ipStereoSheet(c, idx);
+        // ★ v1440: シス・トランスを別の答案として数えるので 11枚（構造異性体は 10種）
+        assert(g.countMolecules() === 11, `C₅H₁₀ の答案 11枚が置けていない（${g.countMolecules()}）`);
+        ip._stereoOpened = true;               // 段1 を開いた状態（関門は IW28 が見る）
+
+        // ① 印ゼロ ＝ 場所をもつ2種だけが「足りない」。ほかの8種は「指さなかったのが正解」
+        let pairs = ip.answerPairs(ip.grade());
+        const short0 = pairs.filter(p => p.points && p.points.missing > 0);
+        // ★ v1440: 2-ペンテンはシス・トランスの **2行**に分かれたので 3行。
+        //   ⚠ 分けてもこの 2行は同じ C=C を持つ（場所の数は変わらない）
+        assert(short0.length === 3,
+            `印ゼロで「足りない」が ${short0.length}行（3行を期待 ＝ 1,2-ジメチルシクロプロパンと、シス・トランスの 2-ペンテン）`);
+        const ok0 = pairs.filter(p => p.points && p.points.ok);
+        assert(ok0.length === 8, `印ゼロで ○ が ${ok0.length}行（8行を期待）`);
+        assert(ok0.every(p => p.points.expected === 0), '場所を持つ構造が「印ゼロで ○」になっている');
+
+        // ② ★ 不斉炭素2つの行（1,2-ジメチルシクロプロパン）
+        const meso = pairs.find(p => p.points && p.points.missingCenters.length === 2);
+        assert(meso, '不斉炭素を2つもつ行が見つからない');
+        assert(/1,2-ジメチルシクロプロパン/.test(meso.name || ''),
+            `不斉2の行の名前が「${meso.name}」（1,2-ジメチルシクロプロパンを期待）`);
+        // ★ C=C だけの行（2-ペンテン）。⚠ **結合を指す側**がこの検査の主眼
+        const alkene = pairs.find(p => p.points && p.points.missingBonds.length === 1);
+        assert(alkene, 'C=C を1本もつ行が見つからない');
+        assert(/ペンテン/.test(alkene.name || ''), `C=C の行の名前が「${alkene.name}」`);
+        assert(alkene.points.missingCenters.length === 0, 'C=C だけの行に不斉炭素が数えられている');
+
+        // ③ 正しい印を付けると全11行が ○
+        //   ★ v1440: 答案が 11枚（シス・トランスを別々に描く）なので、印は
+        //   原子2（1,2-ジメチルシクロプロパン）＋ 結合2（シスとトランスの C=C 各1本）＝ 4
+        const marks = ipMarkStereoPoints(c);
+        assert(marks === 4, `付いた印が ${marks}個（原子2＋結合2 ＝ 4を期待）`);
+        assert(g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 2,
+            '結合の印が2本付いていない（結合を指す道が通っていない）');
+        pairs = ip.answerPairs(ip.grade());
+        const ng = pairs.filter(p => p.points && !p.points.ok);
+        assert(ng.length === 0, `印を正しく付けても ${ng.length}行が △（${ng.map(p => p.name).join('・')}）`);
+
+        // ④ 余分な印は「余分」と言う（△。ただし**責めない文言**）
+        const flat = g.userMolecule.atoms.find(a => a.element === 'C' && !a.isAsymmetricMarked);
+        flat.isAsymmetricMarked = true;
+        g.updateDrawing();
+        pairs = ip.answerPairs(ip.grade());
+        const over = pairs.filter(p => p.points && p.points.extra > 0);
+        assert(over.length === 1, `余分な印を1つ足したのに「余分」が ${over.length}行`);
+        const said = ip.stereoPointVerdict(over[0].points);
+        assert(said.mark === '△' && /立体が分かれる場所ではありません/.test(said.text),
+            `余分の文言が「${said.mark} ${said.text}」`);
+        assert(!/間違い|×/.test(said.text), `段1 の文言が責めている（${said.text}）`);
+
+        // ⑤ 描いていない構造は「—」（採れていない、であって不正解ではない）
+        assert(ip.stereoPointVerdict(null).mark === '—', '描いていない構造の印が「—」でない');
+        ipStereoCleanup(c);
+    });
+
+    /**
+     * ★ シス-2-ペンテンとトランス-2-ペンテンを1枚の答案用紙に描く（v1440）。
+     * ⚠ **C=C を横にして、両側の基を軸の上下に置く**（`readBondGeoFromCoords` が向きを読める形）。
+     * `sign` が両方 −1 ならどちらの基も上 ＝ シス、＋1 と混ぜればトランス。
+     */
+    const ipPenteneSheet = (c, kinds) => {
+        const W = c.W, m = new W.Molecule();
+        kinds.forEach((sign, k) => {
+            const ox = 100 + k * 300;
+            // sign === 0 は「向きの読めない図」（主鎖を一直線に描いたもの）
+            const pts = sign === 0
+                ? [[0, 0], [42, 0], [84, 0], [126, 0], [168, 0]]
+                : [[0, -42], [0, 0], [42, 0], [42, 42 * sign], [84, 42 * sign]];
+            const ids = pts.map(([x, y]) => m.addAtom('C', ox + x, 200 + y).id);
+            m.addBond(ids[0], ids[1], 1);
+            m.addBond(ids[1], ids[2], 2);   // C=C
+            m.addBond(ids[2], ids[3], 1);
+            m.addBond(ids[3], ids[4], 1);
+        });
+        c.game.userMolecule = m;
+        c.game.history = []; c.game.redoStack = [];
+        c.game.updateDrawing();
+        return m;
+    };
+
+    test('IW32: 鎖式のシス・トランスは別の答案として数える（C₅H₁₀・環と不斉炭素は据え置き・★否定対照つき）', async (c) => {
+        /**
+         * ★ ユーザー実機報告（2026-08-21）「C5H10 立体の書き出し／**鎖式は シス・トランスを
+         * 別に書き出すのが自然**／不斉炭素のマークと、立体異性体の総数を答えさせる」。
+         *
+         * **直す前の実測（v1439）**: 両方描くと2枚目が **`dup`（同じものをもう一度）** になり、
+         * 種類は 1 としか数えなかった。⚠ **見分けられないのではない** ——
+         * `readStereoOf` は同じ図を `…c` と `…t` に読み分けていて、
+         * **採点だけが `canonicalCode`（構造だけ）で突き合わせていた**。
+         *
+         * ★ **分けるのは鎖式の C=C だけ。**不斉炭素・環は据え置き ——
+         * 平面の直交作図では描き分けられない（くさび／ハース図が要る＝ `stereoPractice` の担当）。
+         */
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);   // C₅H₁₀（立体まで）
+        g.setMode('learn');
+        ip.start(idx);
+        try {
+            // ===== ① 答案集合 —— 2-ペンテンだけが2つに割れている =====
+            assert(ip.problem.structures === 10 && ip.problem.total === 11,
+                `構造 ${ip.problem.structures}種／答案 ${ip.problem.total}種（10／11 を期待）`);
+            assert(ip.geoSplit.size === 1, `分けた構造が ${ip.geoSplit.size}件（1件＝2-ペンテンを期待）`);
+            const names = [...ip.targets.values()].map(m => ip.constitutionalName(m) || '');
+            assert(names.filter(n => /シス-2-ペンテン/.test(n)).length === 1 &&
+                   names.filter(n => /トランス-2-ペンテン/.test(n)).length === 1,
+                `正解の列にシス／トランスが1つずつ並んでいない（${names.join('・')}）`);
+            // ⚠ 環と不斉炭素は分けていない（1,2-ジメチルシクロプロパンは1行のまま）
+            assert(names.filter(n => /1,2-ジメチルシクロプロパン/.test(n)).length === 1,
+                '環の立体まで分けてしまっている（平面の直交作図では描き分けられない）');
+            // ⚠ 段2 の答え（総数）は 13 のまま ＝ 書き出しの数と混ざっていない
+            assert(ip.problem.stereoTotal === 13, `総数が ${ip.problem.stereoTotal}（13 を期待）`);
+
+            // ===== ② ★ 正解の図が実際に描き分かれている（同じ絵を2行出していない） =====
+            const figs = [...ip.targets.values()].filter(m => m._ipFixedLayout);
+            assert(figs.length === 2, `座標を焼き付けた正解図が ${figs.length}件（2件を期待）`);
+            const geos = figs.map(m => {
+                const gg = W.readBondGeoFromCoords(m);
+                return Object.keys(gg).length === 1 ? Object.values(gg)[0] : null;
+            });
+            assert(geos.filter(x => x === 'syn').length === 1 && geos.filter(x => x === 'anti').length === 1,
+                `正解図の向きが読み分けられない（${geos.join('／')}）` +
+                ' ＝ 「答えは2つあるのに正解の列に出せる図は1つ」の表になっている');
+
+            // ===== ③ ★ 本題 —— 両方描くと**別々に数えられる** =====
+            ipPenteneSheet(c, [-1, 1]);
+            let sheet = ip.grade();
+            assert(sheet.rows.length === 2 && sheet.rows.every(r => r.status === 'ok'),
+                `2枚とも正解にならない（${sheet.rows.map(r => r.status).join('・')}）`);
+            assert(sheet.rows.every(r => !r.dup),
+                'シスとトランスが「同じものをもう一度」と言われている ＝ v1439 の症状そのもの');
+            assert(sheet.found.size === 2, `見つけた種類が ${sheet.found.size}（2 を期待）`);
+            assert(sheet.missing.length === 9, `未発見が ${sheet.missing.length}（9 を期待）`);
+            // 表の上でも左右が別の行に付く（並び順ではなく鍵で突き合わせている）
+            const pairs = ip.answerPairs(sheet);
+            const mine = pairs.filter(p => p.mine.length);
+            assert(mine.length === 2 && mine.every(p => p.result === 'ok'),
+                `対応表で ${mine.length}行にしか付いていない（2行・どちらも 〇 を期待）`);
+
+            // ===== ④ ★ 同じ向きを2枚描いたら、そちらは今までどおり「重複」 =====
+            ipPenteneSheet(c, [-1, -1]);
+            sheet = ip.grade();
+            assert(sheet.found.size === 1 && sheet.rows.filter(r => r.dup).length === 1,
+                `同じ向きを2枚描いたのに重複にならない（種類 ${sheet.found.size}）` +
+                ' ＝ 「別々に数える」が「何でも別々」に化けている');
+
+            // ===== ⑤ ★ 向きが読めない図は**間違いにしない**（第3の状態） =====
+            ipPenteneSheet(c, [0]);
+            sheet = ip.grade();
+            assert(sheet.rows.length === 1 && sheet.rows[0].status === 'unread',
+                `向きの読めない 2-ペンテンが ${sheet.rows[0].status}（unread を期待）`);
+            assert(sheet.found.size === 0, '向きが決まっていない図が種類に数えられている');
+            const said = ip.verdictOf(sheet.rows[0]);
+            assert(/まだシス・トランスが決まっていません/.test(said) && !/間違|×/.test(said),
+                `未確定の文言が責めている／設計どおりでない（${said}）`);
+
+            // ===== ⑥ ★★ 否定対照 —— 分け方を止めると、実際に v1439 の症状が戻る =====
+            //   ⚠ 鍵だけ差し替えても正解集合が合わなくなるだけ（`unknown`）なので、
+            //   **答案集合の作り方ごと**「分けない」に戻して同じ図を採点し直す
+            const realVariants = W.ipGeoVariants;
+            let loose;
+            try {
+                W.ipGeoVariants = (m) => [{ code: W.canonicalCode(m), pos: null }];
+                ip.stop();
+                ip.start(idx);
+                assert(ip.problem.total === 10 && ip.geoSplit.size === 0,
+                    `否定対照の前提が崩れた（${ip.problem.total}種・分け ${ip.geoSplit.size}件）`);
+                ipPenteneSheet(c, [-1, 1]);
+                loose = ip.grade();
+            } finally {
+                W.ipGeoVariants = realVariants;
+                ip.stop();
+                ip.start(idx);
+            }
+            assert(loose.found.size === 1 && loose.rows.some(r => r.dup),
+                `否定対照が空振り: 分け方を止めてもシス・トランスが別々に数えられる（${loose.found.size}種）` +
+                ' ＝ この検査は「鍵を立体まで伸ばした」ことを何も見張っていない');
+            assert(ip.problem.total === 11, '否定対照の後始末で 11種に戻らない');
+
+            // ===== ⑦ ★陰性対照 —— 立体を問わない回・分ける相手が無い回は1つも変わらない =====
+            ip.stop();
+            ip.start(8);                       // 素の C₅H₁₀（10種）
+            assert(ip.problem.total === 10 && ip.geoSplit.size === 0,
+                `素の C₅H₁₀ が ${ip.problem.total}種／分けた ${ip.geoSplit.size}件（10／0 を期待）`);
+            ipPenteneSheet(c, [-1, 1]);
+            const plain = ip.grade();
+            assert(plain.found.size === 1 && plain.rows.some(r => r.dup),
+                '立体を問わない回でシス・トランスが別々に数えられている（§4.2 の線が破れている）');
+            ip.stop();
+            ip.start(ipStereoIdx(c, 12));      // C₅H₁₂O（立体まで・C=C は無い）
+            assert(ip.problem.total === 14 && ip.geoSplit.size === 0,
+                `C₅H₁₂O が ${ip.problem.total}種／分けた ${ip.geoSplit.size}件（14／0 を期待）`);
+        } finally {
+            ipStereoCleanup(c);
+        }
+    });
+
+    test('IW24: ★否定対照 — 印モードで結合を指しても C=C が C≡C に化けない（tapHasOtherMeaning）', async (c) => {
+        /**
+         * ⚠ **設計書が「本当の難所」と名指しした所**（DESIGN_stereo_point.md §4-3）。
+         * 判定線（`svg-bond-hitbox`）は `stroke-width:20` で冒頭に `stopPropagation()` があるので、
+         * **結合の中央十数 px はキャンバス側のモード分岐に一度も届かない**。しかも無反応では済まず、
+         * 離したときの `click` が次数トグルへ落ちて C=C が C≡C に化ける
+         * （BUGNOTE_touch_ipad.md S6 ＝ 整形モードで実測された型）。
+         */
+        c.reset();
+        const g = c.game;
+
+        // --- A. いまの実装: 中点タップで**結合に印が付き**、次数は動かない ---
+        const A = buildButene(c);
+        g.stereoPointMode = true;
+        g.updateDrawing();
+        assert(g.tapHasOtherMeaning() === true,
+            '印モード中に tapHasOtherMeaning() が false（一覧から漏れている）');
+        assert(g.bondGestureEnabled() === false, '印モード中に判定線がふつうの結合操作をしようとしている');
+        const ccA = A.m.bonds.find(b => b.type === 2);
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300, true);
+        assert(ccA.isStereoMarked === true, '中点タップで結合の印が付かない（判定線に食われている）');
+        assert(A.types() === '1,2,1', `印を付けたはずが結合次数が ${A.types()} になった（C=C が C≡C へ化けた）`);
+        // もう一度叩くと外れる（トグル）。⚠ この手つきは判定線の自前ダブルタップ削除と同じ
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300, true);
+        assert(A.m.bonds.length === 3, `2回目のタップで結合が消えた（${A.m.bonds.length}本）`);
+        assert(ccA.isStereoMarked === false, '2回目のタップで印が外れない');
+
+        // --- A2. マウス: 離したあとの `click` が次数トグルに落ちない ---
+        // ⚠ **タッチだけでは足りない。** 化けの正体は「離したときの click」で、
+        //    タッチの経路には合成 click が無い（実測: この分岐を抜くと A は緑のまま）
+        c.reset();
+        const A2 = buildButene(c);
+        g.stereoPointMode = true;
+        g.updateDrawing();
+        const ccA2 = A2.m.bonds.find(b => b.type === 2);
+        realTapAt(c, hitboxNear(c, 400, 300), 400, 300);
+        assert(ccA2.isStereoMarked === true, 'マウスの中点クリックで結合の印が付かない');
+        assert(A2.types() === '1,2,1', `マウスで印を付けたら次数が ${A2.types()} になった（C≡C への化け）`);
+
+        // --- B. ★ 一覧から印モードを外すと**実際に赤くなる**（この検査が空振りでない証明）---
+        c.reset();
+        const B = buildButene(c);
+        g.stereoPointMode = true;
+        g.updateDrawing();
+        const orig = c.game.tapHasOtherMeaning;
+        let broke;
+        try {
+            // 「`tapHasOtherMeaning()` に印モードを足し忘れた」状態をそのまま作る
+            g.tapHasOtherMeaning = function () {
+                const keep = this.stereoPointMode;
+                this.stereoPointMode = false;
+                try { return orig.call(this); } finally { this.stereoPointMode = keep; }
+            };
+            const ccB = B.m.bonds.find(b => b.type === 2);
+            realTapAt(c, hitboxNear(c, 400, 300), 400, 300);
+            broke = { type: ccB.type, marked: !!ccB.isStereoMarked };
+        } finally {
+            delete g.tapHasOtherMeaning;
+            g.stereoPointMode = false;
+            g.updateDrawing();
+        }
+        assert(broke.marked === false && broke.type === 3,
+            `一覧から外しても壊れない（次数 ${broke.type}・印 ${broke.marked}）＝ ` +
+            'この否定対照は何も見張っていない（C≡C への化けを期待）');
+        c.reset();
+    });
+
+    test('IW25: 段2 — C₅H₁₀ の総数13が正解になり、満点は N＋1・メソ体の解説が出る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);
+        ipStereoSheet(c, idx);
+        assert(ip.problem.stereoTotal === 13,
+            `C₅H₁₀ の立体込みの総数が ${ip.problem.stereoTotal}（13 を期待）`);
+        // ★ v1440: シス・トランスを別の答案として数えるので **11**（構造異性体は 10）。
+        //   ⚠ 段2 の答え（13）とは別物 —— 差の 2 は 1,2-ジメチルシクロプロパンの立体で、
+        //   平面の直交作図では描き分けられないため段1・段2 の側で答える
+        assert(ip.problem.total === 11 && ip.problem.structures === 10,
+            `答案の数が ${ip.problem.total}／構造異性体が ${ip.problem.structures}（11／10 を期待）`);
+        ip._stereoOpened = true;
+        ipMarkStereoPoints(c);
+
+        // ① 素朴な 2ⁿ（14）は不正解・13 が正解
+        ip._stereoTotalInput = '14';
+        assert(ip.stereoTotalCorrect() === false, '14（素朴な 2ⁿ の合計）が正解になっている');
+        assert(ip.scoreOf(ip.grade()).score === 11, '14 と答えても総数の1点が入っている');
+        ip._stereoTotalInput = '13';
+        assert(ip.stereoTotalCorrect() === true, '13 が正解にならない');
+
+        // ② 満点 ＝ 構造の総数 ＋ 1
+        const s = ip.scoreOf(ip.grade());
+        assert(s.total === 12 && s.score === 12 && s.base === 11 && s.bonus === 1,
+            `スコアが ${s.score}/${s.total}（12/12 を期待。base=${s.base} bonus=${s.bonus}）`);
+
+        // ③ 空欄は不正解（0 と区別する）
+        ip._stereoTotalInput = '';
+        assert(ip.stereoTotalCorrect() === false, '空欄が正解になっている');
+        ip._stereoTotalInput = '13';
+
+        // ④ 答え合わせの面に、総数とメソ体の解説が出る
+        ip.finishAnswer();
+        const box = D.getElementById('ip-stereo-total-box');
+        assert(box, '段2 の結果の箱が出ない');
+        assert(box.dataset.ipStereoResult === 'ok', `段2 の結果が ${box.dataset.ipStereoResult}`);
+        const folds = [...D.querySelectorAll('.ip-stereo-fold')];
+        assert(folds.length === 1, `畳み込みの解説が ${folds.length}件（1件 ＝ 1,2-ジメチルシクロプロパンを期待）`);
+        assert(folds[0].dataset.ipFoldReason === 'meso',
+            `畳み込みの理由が ${folds[0].dataset.ipFoldReason}（meso を期待）`);
+        const t = folds[0].textContent.replace(/\s+/g, ' ');
+        assert(/1,2-ジメチルシクロプロパン ―― 2 か所あるのに 3 種/.test(t), `見出しが設計どおりでない（${t.slice(0, 60)}）`);
+        assert(/2 × 2 = 4 種ですが、この分子は 3 種しかありません/.test(t), `掛け算の説明が出ていない（${t.slice(0, 160)}）`);
+        assert(/これがメソ体です/.test(t), 'メソ体という言葉が出ていない');
+        assert(/1（シス・メソ体） ＋ 2（トランスの対） ＝ 3 種/.test(t), '足し算のまとめが出ていない');
+        assert(/鏡の面ができないか/.test(t), '★ の一文（数えたあとに鏡の面を確かめる）が出ていない');
+
+        // ⑤ ★ 満点の説明が「異性体の総数」という嘘にすり替わっていない
+        const summary = D.getElementById('ip-answer-summary').textContent.replace(/\s+/g, ' ');
+        // ★ v1440: `構造異性体 N種` とは呼べない（N は答案の数で、構造異性体より多い）。
+        //   分けたことごと名乗る（`answerCountLabel`）
+        assert(/満点は 書き出す 11種（構造異性体 10種のうち 1種はシス・トランスを別に数えます） ＋ 総数の1問 ＝ 12点/.test(summary),
+            `満点の説明が「${summary.slice(-160)}」`);
+
+        // ⑥ クリア記録は「全部描いた」だけでは立たず、段2 に当たって初めて立つ
+        assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀@stereo') === '1',
+            'クリア記録の鍵が chemIsomerPractice.C₅H₁₀@stereo でない');
+        assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀') === null,
+            '立体まで答える回のクリアが、素の C₅H₁₀ の記録まで立てている（別の出題なのに鍵を共有している）');
+        ip.closeReview();
+        ipStereoCleanup(c);
+
+        // ⑦ ★ 総数を外したままだとクリアにならない（関門が効いている）
+        ipStereoSheet(c, idx);
+        ip._stereoOpened = true;
+        ip._stereoTotalInput = '14';
+        ip.grade();
+        assert(W.localStorage.getItem('chemIsomerPractice.C₅H₁₀@stereo') === null,
+            '総数を外しても「全部描いた」だけでクリアになっている');
+        ipStereoCleanup(c);
+    });
+
+    test('IW26: ★陰性対照 — 既存お題の（N種）は1文字も変わらず、立体まで答える回だけ数を隠す', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.renderList();
+
+        // ① ★ 既存19問の表記は1文字も変わらない（v1433 の実測をそのまま凍結する）
+        const frozen = [
+            'C₄H₁₀（2種）', 'C₅H₁₂（3種）', 'C₃H₈O（3種）', 'C₆H₁₄（5種）', 'C₄H₈（5種）', 'C₄H₁₀O（7種）',
+            'C₂H₆O（2種）', 'C₃H₆（2種）', 'C₅H₁₀（10種）', 'C₅H₁₂O（14種）',
+            'C₄H₈（鎖式・3種）', 'C₄H₈（環式・2種）', 'C₅H₁₀（鎖式・5種）', 'C₅H₁₀（環式・5種）',
+            'C₆H₁₂（鎖式・13種）', 'C₆H₁₂（環式・12種）',
+            'C₃H₄（鎖式・2種）', 'C₄H₆（鎖式・4種）', 'C₅H₈（鎖式・9種）'
+        ];
+        frozen.forEach((want, i) => {
+            const b = D.querySelector(`#ip-body button[data-ip-problem="${i}"]`);
+            assert(b, `problems[${i}] のボタンが選択画面に無い`);
+            assert(b.textContent.replace(/ ✓$/, '') === want,
+                `既存お題の表記が変わっている: problems[${i}] は「${b.textContent}」（期待「${want}」）`);
+        });
+        const arBtn = D.querySelector('#ip-aromatic-presets button');
+        assert(arBtn && /C₈H₁₀（芳香族・4種）/.test(arBtn.textContent),
+            `芳香族プリセットの表記が変わっている（${arBtn && arBtn.textContent}）`);
+
+        // ② 立体まで答える回は**種類数を名乗らない**（別の枠に並ぶ）
+        const stWrap = D.getElementById('ip-stereo-problems');
+        assert(stWrap, '立体まで答える回の枠が選択画面に無い');
+        const stBtns = [...stWrap.querySelectorAll('button')];
+        assert(stBtns.length === 2, `立体まで答える回のボタンが ${stBtns.length}個（2個を期待）`);
+        stBtns.forEach(b => {
+            assert(/^C[₀-₉A-Za-z]*（立体まで）/.test(b.textContent), `表記が「${b.textContent}」`);
+            assert(!/\d種/.test(b.textContent) && !/[₀-₉]種/.test(b.textContent),
+                `立体まで答える回のボタンが種類数を出している（${b.textContent}）`);
+        });
+
+        // ③ ★ 隠すのは4か所そろえる（ボタン・見出し・作業帯・確認モードの要約）。
+        //    ⚠ 1か所でも漏れると「隠した」ことにならない
+        const idx = ipStereoIdx(c, 10);
+        ipStereoSheet(c, idx);
+        const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+        assert(/✏️ C₅H₁₀ の異性体（立体まで）/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
+        assert(!/全 10 種/.test(panel), `学習パネルに種類数が出ている（${panel.slice(0, 160)}）`);
+        const live = ip.stripLiveHtml();
+        assert(!/全 10 種/.test(live) && /（立体まで）/.test(live), `作業帯が種類数を出している（${live}）`);
+        ip.openReview('progress');
+        const ov = D.getElementById('ip-review-overlay').textContent.replace(/\s+/g, ' ');
+        assert(!/全 10 種/.test(ov), `確認モードに種類数が出ている（${ov.slice(0, 200)}）`);
+        ip.closeReview();
+
+        // ④ ★ 陰性対照の裏 —— 既存のお題では今までどおり「全 N 種」を出す（隠しが漏れていない）
+        ip.stop();
+        ip.start(8); // C₅H₁₀（10種・素の回）
+        const panel2 = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+        assert(/✏️ C₅H₁₀ の異性体（全 10 種）/.test(panel2),
+            `素の回の見出しまで変わっている（${panel2.slice(0, 60)}）`);
+        assert(/全 10 種/.test(ip.stripLiveHtml()), '素の回の作業帯から種類数が消えている');
+        ipStereoCleanup(c);
+    });
+
+    test('IW27: ★否定対照 — 段1 の判定は gradeStereoPoints 1本だけを通る（2か所に散っていない）', async (c) => {
+        /**
+         * ⚠ このリポジトリで繰り返している罠（DESIGN_stereo_point.md §8-2）——
+         * 「見せるだけだから `stereoUnitsOf` を直接呼べばいい」とすると、そこが2つ目の判定になり、
+         * 片方だけ直る事故の種になる。**判定を1本すげ替えたら、画面の段1 が全部そちらに従う**
+         * ことを機械で確かめる（従わない行があれば、そこが2つ目の判定）。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);
+        ipStereoSheet(c, idx);
+        ip._stereoOpened = true;
+        ipMarkStereoPoints(c);           // 正しい印 ＝ 素のままなら全行 ○
+
+        const before = ip.answerPairs(ip.grade());
+        assert(before.filter(p => p.points && p.points.ok).length === 11,
+            '前提（正しい印で11行とも ○）が満たされていない');
+
+        const orig = W.gradeStereoPoints;
+        let marks;
+        try {
+            // 判定を1本だけすげ替える（「いつも1か所足りない」と言う偽の判定）
+            W.gradeStereoPoints = () => ({
+                ok: false, expected: 9, marked: 0,
+                missingCenters: ['x'], missingBonds: [], extraCenters: [], extraBonds: [],
+                missing: 1, extra: 0
+            });
+            ip.openReview('answer');
+            marks = [...D.querySelectorAll('.ip-stereo-point-note')].map(n => n.dataset.ipPointsMark);
+        } finally {
+            W.gradeStereoPoints = orig;
+            ip.closeReview();
+        }
+        assert(marks.length === 11, `段1 の行が ${marks.length}件（11件を期待）`);
+        assert(marks.every(m => m === '△'),
+            `判定を1本すげ替えたのに ${marks.filter(m => m !== '△').length}行が従わなかった ＝ ` +
+            'その行は gradeStereoPoints を通らない別の判定から出ている');
+
+        // 戻したら元どおり（すげ替えが後を引いていない ＝ この検査自体が壊し切りでない）
+        ip.openReview('answer');
+        const after = [...D.querySelectorAll('.ip-stereo-point-note')].map(n => n.dataset.ipPointsMark);
+        assert(after.every(m => m === '○'), '判定を戻しても △ のまま（すげ替えが後を引いている）');
+        ip.closeReview();
+        ipStereoCleanup(c);
+    });
+
+    test('IW28: 段1 の関門と印の持ち越し（開くまで総数の欄は無い・始めた直後の印はゼロ）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        ipStereoCleanup(c);
+        const idx = ipStereoIdx(c, 10);
+
+        // ① 自由モードで印を付けてから練習を始めても、答案用紙は白紙（印はゼロ・§4-2）
+        g.setMode('free');
+        const pre = new W.Molecule();
+        const p1 = pre.addAtom('C', 400, 300), p2 = pre.addAtom('C', 442, 300);
+        pre.addBond(p1.id, p2.id, 2);
+        p1.isAsymmetricMarked = true;
+        pre.bonds[0].isStereoMarked = true;
+        g.userMolecule = pre;
+        g.updateDrawing();
+        ip.start(idx);
+        assert(g.userMolecule.atoms.length === 0, '練習を始めても答案用紙が白紙にならない');
+        assert(g.userMolecule.atoms.filter(a => a.isAsymmetricMarked).length === 0 &&
+               g.userMolecule.bonds.filter(b => b.isStereoMarked).length === 0,
+            '前の分子で付けた印が答案用紙に持ち越されている');
+
+        // ② ★ 段1 を一度も開いていないと、段2 の入力欄が出ない（§7-3 の関門）
+        assert(ip._stereoOpened === false, '始めた時点で段1 が開いたことになっている');
+        assert(D.querySelector('#ip-stereo-total') === null,
+            '段1 を開いていないのに総数の入力欄が出ている（関門が効いていない）');
+        const before = [...D.querySelectorAll('#ws-practice-actions .ws-action')].map(b => b.textContent);
+        assert(before[0] === '☆ 立体の場所', `作業帯の1つ目が「${before[0]}」（☆ 立体の場所を期待）`);
+
+        // ③ 開くと欄が出て、印モードに入る
+        ip.toggleStereoPointMode();
+        assert(g.stereoPointMode === true, '☆ を押しても印モードに入らない');
+        assert(D.querySelector('#ip-stereo-total'), '段1 を開いても総数の入力欄が出ない');
+        const on = [...D.querySelectorAll('#ws-practice-actions .ws-action')].map(b => b.textContent);
+        assert(on[0] === '☆ 印づけをやめる', `ON のときのボタンが「${on[0]}」`);
+
+        // ④ ★ 閉じても関門は開いたまま（開き直しで罰しない）・印も消えない
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'C'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4]] }]);
+        g.userMolecule.atoms[1].isAsymmetricMarked = true;
+        ip.toggleStereoPointMode();
+        assert(g.stereoPointMode === false, 'もう一度押しても印モードから出られない');
+        assert(g.userMolecule.atoms[1].isAsymmetricMarked === true, '印モードを閉じたら印が消えた');
+        assert(D.querySelector('#ip-stereo-total'), '閉じたら段2 の欄まで消えた（関門が戻っている）');
+
+        // ⑤ ↩（Undo）で結合の印が生き残る（serializeState / restoreState の往復）
+        const m2 = ipSheet(c, [{ atoms: ['C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2]] }]);
+        g.saveState();
+        m2.bonds[0].isStereoMarked = true;
+        g.saveState();
+        m2.atoms[0].isAsymmetricMarked = true;
+        g.updateDrawing();
+        g.undo();
+        assert(g.userMolecule.bonds[0].isStereoMarked === true,
+            '↩ を1回押しただけで結合の印が消えた（restoreState が new Bond で作り直している）');
+
+        // ⑤b ★ 否定対照 —— 印を引き継ぐときに **`Bond` の正規化を壊さない**。
+        //     ⚠ `Object.assign(bond, b)` にすると実際に壊れた（v1435 の実測）:
+        //     `demos-stereo.json` の V12 は `{"atomId1":"v12o5","atomId2":"v12c1"}` のように
+        //     **逆順で書いてある**行があり、丸ごと上書きすると「IDの小さい方が atomId1」の
+        //     不変条件が破れて `getBond()` が引けなくなり、**環化の反応が候補から消えた**（`N2` が赤）。
+        //     ⚠ 原子側は正規化を持たないので `Object.assign` で安全、という非対称がここにある
+        g.restoreState({
+            atoms: [{ id: 'zz1', element: 'C', x: 400, y: 300 }, { id: 'aa2', element: 'C', x: 442, y: 300 }],
+            bonds: [{ atomId1: 'zz1', atomId2: 'aa2', type: 2, isStereoMarked: true }],  // ★ わざと逆順
+            deletedBonds: []
+        });
+        const rb = g.userMolecule.bonds[0];
+        assert(rb.atomId1 === 'aa2' && rb.atomId2 === 'zz1',
+            `復元した結合の端点が正規化されていない（${rb.atomId1} / ${rb.atomId2}）＝ getBond() が引けなくなる`);
+        assert(g.userMolecule.getBond('zz1', 'aa2') === rb, '復元した結合が getBond() で引けない');
+        assert(rb.isStereoMarked === true, '正規化を守った代わりに印まで落としている');
+
+        // ⑥ 成分に切り出しても印が付いてくる（採点は成分ごとに見る）
+        ipSheet(c, [{ atoms: ['C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2]] }]);
+        g.userMolecule.bonds[0].isStereoMarked = true;
+        g.updateDrawing();
+        const part = g.splitMolecules()[0];
+        assert(part.bonds.some(b => b.isStereoMarked),
+            '成分に切り出すと結合の印が落ちる（画面には出ているのに採点表では付いていない状態になる）');
+
+        // ⑦ やり直すと段1・段2 とも白紙に戻る
+        ip._stereoTotalInput = '13';
+        ip.restartProblem();
+        assert(ip._stereoOpened === false && ip._stereoTotalInput === '',
+            `やり直しても段の状態が残っている（opened=${ip._stereoOpened} / total=「${ip._stereoTotalInput}」）`);
+        ipStereoCleanup(c);
+    });
+
+    test('IW29: ハースの糖は α/β の2種で採点できる（32種にならない・軸の外は責めない）', async (c) => {
+        /**
+         * ORDER B-2 の「ろ」＋ユーザー判断 2026-08-20「とりあえず αβ だけでやってみては」。
+         * ⚠ **読み取りも数え方も既存のまま**（`readRingParityFromHaworth` / `countStereoisomers`）。
+         *   新しい判定は1つも足していない。足したのは「動かしてよい単位」を選ぶ軸だけ。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, sp = W.stereoPractice;
+        try { W.localStorage.removeItem('chemStereoPractice.glucose-anomer'); } catch (e) { /* noop */ }
+        g.setMode('learn');
+        if (sp.active) sp.stop();
+        sp.renderList();
+        const i = sp.problems.findIndex(p => p.key === 'glucose-anomer');
+        assert(i >= 0, 'ハースの糖のお題が無い');
+        const data = sp.prepare(i);
+        assert(!data.disabled, 'ハースの糖のお題が準備できない（prepare が無効化した）');
+
+        // ① ★ 全体は32種のまま（数え方は変えていない）・用意するのは2種
+        assert(data.info.count === 32,
+            `countStereoisomers が ${data.info.count}（32 を期待 ＝ 数え方に手を入れていないことの確認）`);
+        assert(data.count === 2, `用意した変種が ${data.count}種（2種 ＝ α/β を期待）`);
+        assert(data.units.length === 1, `動かす単位が ${data.units.length}個（アノマー位1つを期待）`);
+        const btn = [...D.querySelectorAll('#sp-body button')].find(b => /グルコピラノース/.test(b.textContent));
+        assert(btn && /（2種）/.test(btn.textContent), `ボタンの表記が「${btn && btn.textContent}」`);
+
+        // ② 開くと「全 2 種」で、軸を画面で名乗る（宣言した以上、どこでも隠さない）
+        sp.start(i);
+        assert(sp.problem.total === 2, `お題の総数が ${sp.problem.total}（2 を期待）`);
+        const panel = D.getElementById('sp-body').textContent.replace(/\s+/g, ' ');
+        assert(/全 2 種/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
+        assert(D.getElementById('sp-axis-note'), '軸の断り書きが画面に無い');
+        assert(/アノマー位/.test(panel), '軸の断り書きにアノマー位が出ていない');
+
+        // ③ 2種を並べると 2/2 で、名前は α-／β-D-グルコース
+        const place = (t, dx) => {
+            const ids = t.atoms.map(a => {
+                const at = g.userMolecule.addAtom(a.element, a.x + dx, a.y);
+                if (a.haworthFace) at.haworthFace = a.haworthFace;
+                return at.id;
+            });
+            t.bonds.forEach(b => g.userMolecule.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+        };
+        g.userMolecule = new W.Molecule();
+        sp.problem.variants.forEach((v, k) => place(v.target, k * 420));
+        g.updateDrawing();
+        let sheet = sp.grade();
+        assert(sheet.rows.length === 2 && sheet.found.size === 2 && sheet.missing.length === 0,
+            `採点が rows=${sheet.rows.length} / found=${sheet.found.size} / 未発見=${sheet.missing.length}（2/2 を期待）`);
+        const names = [...sp.problem.byCode.keys()].map(cd => sp.stereoNameOf(cd)).join('・');
+        assert(/α-D-グルコース/.test(names) && /β-D-グルコース/.test(names),
+            `変種の名前が「${names}」（α-／β-D-グルコースを期待）`);
+        assert(W.localStorage.getItem('chemStereoPractice.glucose-anomer') === '1', 'クリア記録が残らない');
+
+        // ④ ★ 軸の外の立体（C1 以外を裏返した図）は **'axis'** ＝ 責めない文言で断る。
+        //    ⚠ ここが 'unknown'（開発ログ行き）に戻ると、正しく読める図を描いた人に不具合の顔を見せる
+        const all = W.spDetectUnits(g, sp.problem.target);
+        const mol0 = g.createTargetFromData({ target: sp.problem.target });
+        const axisUnits = W.spAxisFilter(mol0, all, 'anomeric');
+        const off = all.find(u => !axisUnits.includes(u));
+        assert(off, '軸の外の単位が見つからない（この検査の前提）');
+        const offTarget = W.spApplyFlip(g, sp.problem.target, off);
+        assert(offTarget, '軸の外の単位を裏返した図が作れない（この検査の前提）');
+        place(offTarget, 840);
+        g.updateDrawing();
+        sheet = sp.grade();
+        const offRows = sheet.rows.filter(r => r.status === 'axis');
+        assert(offRows.length === 1, `軸の外として指された図が ${offRows.length}個（1個を期待。` +
+            `いまの内訳: ${sheet.rows.map(r => r.status).join('・')}）`);
+        const said = sp.verdictOf(offRows[0]);
+        assert(/アノマー位だけを動かす回/.test(said), `軸の外の断り文が「${said}」`);
+        assert(!/開発ログ/.test(said), `軸の外の図に開発者向けの文言が出ている（${said}）`);
+
+        sp.stop();
+        try { W.localStorage.removeItem('chemStereoPractice.glucose-anomer'); } catch (e) { /* noop */ }
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IP4: 異性体練習 — 固定のお題すべてに名称が付き、列挙数が既知値と一致', async (c) => {
+        // ⚠ **v1433 でお題が 6 → 19 になった**（発注書 ORDER_isomer_2026-08-20 の A-5）。
+        //   期待値は**添字ごと**に書く ＝ 並べ替えたら赤くなる（回帰テストが `start(2)` のように
+        //   添字で開くので、並べ替えは「別の問題を開いたまま緑」を作る）。
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        const expected = [
+            //  0        1        2        3        4        5   ← ★ 陰性対照: 既存6問は1つも変わらない
+            ['C₄H₁₀', 2], ['C₅H₁₂', 3], ['C₃H₈O', 3], ['C₆H₁₄', 5], ['C₄H₈', 5], ['C₄H₁₀O', 7],
+            //  6〜18（v1433 で足したぶん）
+            ['C₂H₆O', 2], ['C₃H₆', 2], ['C₅H₁₀', 10], ['C₅H₁₂O', 14],
+            ['C₄H₈', 3, 'chain'], ['C₄H₈', 2, 'ring'],
+            ['C₅H₁₀', 5, 'chain'], ['C₅H₁₀', 5, 'ring'],
+            ['C₆H₁₂', 13, 'chain'], ['C₆H₁₂', 12, 'ring'],
+            ['C₃H₄', 2, 'chain'], ['C₄H₆', 4, 'chain'], ['C₅H₈', 9, 'chain'],
+            // 19〜20（v1435 で足した「立体まで答える回」。⚠ **骨格の型は付けない** ——
+            //   鎖式に絞ると C₅H₁₀ のメソ体が消える（DESIGN_stereo_point.md §1-2b））
+            ['C₅H₁₀', 10], ['C₅H₁₂O', 14]
+        ];
+        assert(ip.problems.length === expected.length,
+            `固定のお題が ${ip.problems.length}件（期待 ${expected.length}件。足したなら期待値の表も伸ばすこと）`);
+        let legacy = 0;
+        const unnamed = [];
+        ip.problems.forEach((p, i) => {
+            const [f, n, skel] = expected[i];
+            const data = ip.enumerate(i);
+            assert(!data.overflow, `${data.formula} が列挙打ち切り（overflow）になる`);
+            assert(data.formula === f, `problems[${i}] の分子式が ${data.formula}（期待 ${f}）＝ 並べ替えられている`);
+            assert((p.skeleton || null) === (skel || null),
+                `problems[${i}] の骨格の型が ${p.skeleton}（期待 ${skel || 'なし'}）`);
+            assert(data.isomers.length === n,
+                `${data.formula}${skel ? '（' + skel + '）' : ''} の異性体数が ${data.isomers.length}（期待 ${n}）`);
+            if (i < 6) legacy += data.isomers.length;
+            // ★ **正解の全部に名前が付くこと**が、お題に採るかどうかの分かれ目（設計 §11-7）。
+            //   ここが緩むと答え合わせの左列に「（名称未登録）」が並ぶ。
+            //
+            // ⚠ **名前は「座標なし」の写しで引く。** 列挙が返す分子は**全原子が (0,0)**で、
+            //   答え合わせの左列もその状態のまま `lookupCompoundName` を呼ぶ
+            //   （実測: `renderStandardFigure` は写しを描くので `ip.targets` の座標は 0,0 のまま。
+            //    答え合わせを2回開いても名前は1つも落ちない）。
+            //   ⚠ ところが `ip.enumerate()` が返す分子は `ip._cache` と**同じ実体**なので、
+            //   先に走ったどれかのテストが `layoutMolecule` にかけると座標が付く。すると
+            //   `lookupCompoundName` が幾何を読んでシス/トランスを決めてしまい、総称の登録が無い
+            //   分子（2-ヘキセン・3-ヘキセン）が名無しになる ＝ **テストの順番でしか出ない赤**。
+            //   写しの座標を落として引けば、アプリと同じ条件で・順番に依らずに測れる。
+            //   （それでも**正解集合を描画に使うテストは写しを渡すこと**。IW19 がそうしている）
+            // ⚠ **名前は答え合わせと同じ引き方で**（`constitutionalName` ＝ 総称で引く）。
+            //   じかに `lookupCompoundName` を呼ぶと、立体トグルが ON のとき環の不斉をもつ種が
+            //   軒並み名無しになる（→ IW21）。この検査は「お題として名前がそろうか」を見る場所で、
+            //   トグルの状態を測る場所ではない
+            data.isomers.forEach(m => {
+                const flat = new W.Molecule(), map = new Map();
+                m.atoms.forEach(a => map.set(a.id, flat.addAtom(a.element, 0, 0).id));
+                m.bonds.forEach(b => flat.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+                if (!ip.constitutionalName(flat)) unnamed.push(data.formula + ':' + W.canonicalCode(m));
+            });
+        });
+        assert(legacy === 25, `既存6問の総異性体数が ${legacy}（期待25）＝ 足したお題が既存を動かしている`);
         assert(unnamed.length === 0, `名称未登録の異性体がある: ${unnamed.join(', ')}`);
     });
 
@@ -13839,12 +17112,17 @@
 
         // ① 芳香族の回が **`problems`（列挙の道）に入っていない**。
         //    `problems` の各件は `enumerate(index)` → `enumerateConstitutionalIsomers` を通る
-        assert(Array.isArray(ip.problems) && ip.problems.length === 6,
-            `固定問題リストが ${ip.problems && ip.problems.length}件（6件を期待。芳香族をここへ足していないか）`);
+        //    ⚠ 件数は v1433 で 6 → 19・**v1435 で 21**（立体まで答える回を2つ足した・§18）。
+        //      見張っているのは**件数そのものではなく「C₈H₁₀ がこちらへ落ちていないこと」**なので、
+        //      重原子の上限（6個）も一緒に見る ＝ 生の列挙で扱えない式がここへ紛れ込めば赤くなる
+        assert(Array.isArray(ip.problems) && ip.problems.length === 21,
+            `固定問題リストが ${ip.problems && ip.problems.length}件（21件を期待。芳香族をここへ足していないか）`);
         ip.problems.forEach((p, i) => {
             const carbons = p.elements.filter(e => e === 'C').length;
             assert(!(carbons === 8 && p.hCount === 10),
                 `problems[${i}] に C₈H₁₀ が入っている ＝ 芳香族の回が生の列挙の道へ落ちている`);
+            assert(p.elements.length <= 6,
+                `problems[${i}] の重原子が ${p.elements.length}個 ＝ 生の列挙では扱えない式が固定リストに入っている`);
         });
 
         // ② 芳香族のプリセットは**分子式の文字列**だけを持ち、押すと `startFromFormula` を呼ぶ
@@ -14282,8 +17560,12 @@
     test('ST25: 環ビューは手前側の環結合を太く描く／「水」は操作の練習シリーズ', async (c) => {
         const W = c.W, g = c.game, D = c.D, sv = W.stereoView;
         // 項目11: ハース投影の慣習として手前側の環結合を太く描く。手前かどうかは 3D の z で
-        // 決めるので、環を回しても正しく入れ替わる。倒し角0°（ハース図の向き）では環が
-        // z=0 平面にあり差が出ない＝そのときは効かないのが正しい
+        // 決めるので、環を回しても正しく入れ替わる。
+        // ★ 2026-08-25 に**ハース図の向き（倒し角0°）でも効くようになった**。枝を環の面に垂直に
+        //   立てたぶん、模型は「少し倒して見るとハース図になる」組み方に変わり、その角度では
+        //   環そのものに奥行きが付くため ＝ **紙のハース投影で手前の辺を太く描く約束そのもの**
+        //   （DEVELOPMENT.md ★★発注の芯「クイズに太線が無い／紙のハース投影は手前の辺を太く描く」）。
+        //   v1450 まではここが「効かないのが正しい」と書いてあった（模型が平らだったため）。
         const e = (W.COMPOUNDS || []).find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
         assert(e, 'グルコピラノースがライブラリに無い');
         c.reset();
@@ -14301,7 +17583,19 @@
         };
         const flat = survey(0);
         assert(flat.n === 6, `環結合が ${flat.n} 本（6本を期待）`);
-        assert(flat.front === 0, 'ハース図の向き（倒し角0°）で手前判定が出ている（環はz=0平面なので出ないはず）');
+        assert(flat.front > 0 && flat.front < flat.n,
+            `ハース図の向き（倒し角0°）で手前の結合が ${flat.front}/${flat.n} 本（下側の辺だけが手前になるはず）`);
+        assert(flat.max > flat.min * 1.4,
+            `ハース図の向きで手前の結合が太くなっていない（${flat.min.toFixed(1)} 〜 ${flat.max.toFixed(1)}）`);
+        // ⚠ 太いのは**画面の下側**の辺（＝紙のハース投影で手前に描く辺）であること。
+        //   奥の辺を太くしていたら約束が逆になる ＝ 否定対照
+        sv.setRingTiltDeg(0);
+        const bold = [...D.querySelectorAll('#stereo-ring-svg [data-ring-front="1"] line')];
+        const thin = [...D.querySelectorAll('#stereo-ring-svg [data-ring-bond="ring"] line')]
+            .filter(l => !bold.includes(l));
+        const midY = (l) => (+l.getAttribute('y1') + +l.getAttribute('y2')) / 2;
+        assert(Math.min(...bold.map(midY)) > Math.max(...thin.map(midY)),
+            'ハース図の向きで太くなっているのが手前（画面の下側）の辺でない');
         const side = survey(90);
         assert(side.front > 0 && side.front < side.n,
             `真横で手前の結合が ${side.front}/${side.n} 本（一部だけが手前になるはず）`);
@@ -14509,11 +17803,13 @@
         close();
     });
 
-    test('ST21: 環ビューの対応範囲は飽和単環に限る／解説文が化合物に合う', async (c) => {
+    test('ST21: 環ビューの対応範囲は飽和環（単環＋橋でつないだ2環）／解説文が化合物に合う', async (c) => {
         const W = c.W, g = c.game, sv = W.stereoView;
-        // このビューは「環1つを平面とみなし、置換基が上下に突き出す」模型なので、
+        // このビューは「環を平面とみなし、置換基が上下に突き出す」模型なので、
         // 平面近似が成り立たない環では使わせない（ユーザー指摘「糖以外の環でも有効になっている」）。
-        // 縮合環は隣の環の原子が置換基扱いになり、芳香環・シクロアルケンは置換基が上下に出ない
+        // 縮合環は隣の環の原子が置換基扱いになり、芳香環・シクロアルケンは置換基が上下に出ない。
+        // ⚠ v1442 で「橋1原子でつないだ環2つ（二糖）」は受け入れるようにし、
+        //    縮合環の断り文も「原子を共有している」に直した（二糖は縮合環ではないため。SG8 が本体）
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
         const openWith = (name) => {
             const e = source.find(x => x.name === name && x.target);
@@ -14525,7 +17821,7 @@
         };
         const close = () => c.D.getElementById('btn-stereo-close').click();
 
-        [['ベンゼン', '二重結合'], ['シクロヘキセン', '二重結合'], ['ナフタレン', '環が2つ']]
+        [['ベンゼン', '二重結合'], ['シクロヘキセン', '二重結合'], ['ナフタレン', '原子を共有']]
             .forEach(([name, why]) => {
                 const tab = openWith(name);
                 assert(tab.disabled, `${name} で環ビューが有効になっている`);
@@ -14533,7 +17829,8 @@
                     `${name} の無効化理由が「${why}」を説明していない（${tab.title}）`);
                 close();
             });
-        ['シクロヘキサン', 'シクロヘキサノール', 'β-D-グルコース（β-D-グルコピラノース）']
+        ['シクロヘキサン', 'シクロヘキサノール', 'β-D-グルコース（β-D-グルコピラノース）',
+         'マルトース（麦芽糖）', 'スクロース（ショ糖）']
             .forEach(name => {
                 const tab = openWith(name);
                 assert(!tab.disabled, `${name} で環ビューが使えない`);
@@ -16656,12 +19953,20 @@
         const ringNodes = bm.nodes.filter(n => n.kind === 'ring');
         assert(ringNodes.length === 6, `環原子ノードが6個でない（${ringNodes.length}）`);
         assert(ringNodes.every(n => n.v[2] === 0), '環原子が z=0 の平面に乗っていない');
-        // 環原子の x,y は描かれた2D座標そのまま（環の重心を原点にしただけ）
-        assert(ringNodes.every(n => {
+        // 環原子の x は描かれた2D座標そのまま、y は 1/cos(a0) 倍
+        // （⚠ 2026-08-25 に変わった。枝を環の面に垂直にすると、ハース図は「a0 だけ倒して見た図」に
+        //   なるので、その角度から見て描いた縦位置に戻るよう模型の縦を伸ばしてある。
+        //   **描いた図を保つ**という主張そのものは、下の「倒し角0°の投影」で見る）
+        const KY = bm.nodes.filter(n => n.kind === 'ring').map(n => {
             const a = bMol.atoms.find(x => x.id === n.atomId);
-            return Math.abs(n.v[0] - (a.x - bm.center.x)) < 1e-9 &&
-                   Math.abs(n.v[1] - (a.y - bm.center.y)) < 1e-9;
-        }), '環原子が「描かれた2D座標のまま」置かれていない');
+            return { n, ax: a.x - bm.center.x, ay: a.y - bm.center.y };
+        });
+        const kRatio = KY.map(r => Math.abs(r.ay) > 1 ? r.n.v[1] / r.ay : null).filter(v => v !== null);
+        assert(kRatio.length >= 2, '環原子の縦位置がほとんど同じで、伸ばし方を確かめられない');
+        assert(kRatio.every(v => Math.abs(v - kRatio[0]) < 1e-9 && v > 1 && v < 2),
+            `環原子の縦の伸ばし方が一定でない（${kRatio.map(v => v.toFixed(3)).join(',')}）`);
+        assert(KY.every(r => Math.abs(r.n.v[0] - r.ax) < 1e-9),
+            '環原子の x が「描かれた2D座標のまま」置かれていない');
         const subNodes = bm.nodes.filter(n => n.kind === 'sub');
         assert(subNodes.length === 5, `環外置換基が5個でない（${subNodes.length}）`);
         assert(subNodes.every(n => Math.abs(n.face) === 1 && Math.abs(n.v[2] - n.face * bm.depth) < 1e-9),
@@ -16691,12 +19996,23 @@
         assert(sv.ringTilt === 0, '「⬔ ハース図の向き」で倒し角が0°にならない');
         const spread0 = Math.max(...ringYs()) - Math.min(...ringYs());
         assert(spread0 > 20, `ハース図の向きでも環が潰れている（幅 ${spread0.toFixed(2)}）`);
-        // 0°の投影は「描いた2D座標を拡大しただけ」＝ハース図そのもの
-        assert(sv._ringDrawn.filter(p => p.node.kind === 'ring').every(p => {
+        // ★ 0°の投影は「描いた2D座標を拡大したもの」＝ハース図。
+        // ⚠ 2026-08-25 以降は**ぴったり一致ではない**: 枝を環の面に垂直に立てたので、
+        //   この角度では環そのものに奥行きが付き、弱い透視で手前が数％大きく見える
+        //   （＝紙のハース投影で手前の辺を太く描くのと同じ事情）。実測 4.0px／半径 104px。
+        //   **見え方が「描いた図」であること**は保つので、半径の 6% を上限に見張る
+        const ringPts = sv._ringDrawn.filter(p => p.node.kind === 'ring');
+        const t0 = ringPts.map(p => {
             const a = bMol.atoms.find(x => x.id === p.node.atomId);
-            return Math.abs(p.x - (a.x - bm.center.x) * bm.scale) < 1e-6 &&
-                   Math.abs(p.y - (a.y - bm.center.y) * bm.scale) < 1e-6;
-        }), '倒し角0°の見え方が「描いたハース図そのもの」になっていない');
+            const ex = (a.x - bm.center.x) * bm.scale, ey = (a.y - bm.center.y) * bm.scale;
+            return { d: Math.hypot(p.x - ex, p.y - ey), r: Math.hypot(ex, ey) };
+        });
+        const t0r = Math.max(...t0.map(v => v.r));
+        assert(t0.every(v => v.d <= t0r * 0.06),
+            `倒し角0°の見え方が「描いたハース図」から離れている（最大 ${Math.max(...t0.map(v => v.d)).toFixed(1)}px / 半径 ${t0r.toFixed(0)}px）`);
+        // ⚠ 否定対照: ずれは 0 ではない（0 なら模型に奥行きが無い＝枝が面に垂直でない置き方に戻っている）
+        assert(Math.max(...t0.map(v => v.d)) > 0.5,
+            '倒し角0°で奥行きがまったく出ていない（枝を環の面に垂直に立てていない置き方に戻っている）');
         // スライダーで連続的に動かせる
         const slider = D.getElementById('stereo-ring-tilt');
         assert(slider, 'カメラのスライダーがない');
@@ -17090,7 +20406,8 @@
         assert(cmpUI, '表示中の図で対応づけできない');
         assert(D.querySelectorAll('#sq-svg-a .sq-overlay-marks circle').length === cmpUI.total,
             '一致/不一致の印の数が中心の数と合わない');
-        assert(D.getElementById('sq-overlay-note').textContent.includes('平行移動'),
+        // ⚠ 文言は 2026-08-25 に「平行移動」から「重ねました」へ変わった（回すようになったため。OV1〜OV4）
+        assert(D.getElementById('sq-overlay-note').textContent.includes('重ねました'),
             '重ね合わせの説明が出ない');
         btn.click(); // 解除
         assert(!D.querySelector('#sq-svg-a .sq-overlay-ghost, #sq-svg-a .sq-overlay-marks'),
@@ -17105,6 +20422,351 @@
             '次の問題にゴーストが持ち越される');
         assert(D.getElementById('sq-svg-b').style.opacity === '', '次の問題でも図Bが薄いまま');
         D.getElementById('btn-sq-close').click();
+    });
+
+    /* ==========================================================================
+     * OV: 重ね合わせビューの「回してから重ねる」（2026-08-25）
+     *
+     * ⚠⚠ **直す前に何が起きていたか。** 「🫟 重ねて確かめる」は図Bを**平行移動するだけ**で
+     * 回さなかった。ところが標準モードの出題は約半分が「同じ分子を 180° 回した図」なので、
+     * **交差してまるで重なっていない絵**の下に「すべて重なる＝同じ分子です」と書いていた
+     * （実測 400問: 180°回転の問題 196件・ずれ RMS **151.4px** ＝ 3マス超）。**言葉と絵が正反対。**
+     *
+     * 重ね合わせは「回転と平行移動だけで一致するか」なので、回転を試さない絵は
+     * そもそも重ね合わせの絵になっていない。直したあとは同じ条件で RMS **0.1px**。
+     *
+     * ★ 回してよい角度は「90°刻みで回して**立体を読み直し**、`canonicalCode` と
+     * `canonicalStereoCode` が変わらないもの」だけ ＝ `applyVerifiedFischerOp` の作法をそのまま借りる。
+     * ⚠ **鏡映はどの場合も使わない**（鏡映で重なるのがエナンチオマーの定義）。
+     * ========================================================================== */
+
+    test('OV1: 重ね合わせは「許された角度で回してから」重ねる（180°回転の図がぴったり合う）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'pair';   // 標準
+
+        // 対応づけた原子どうしの残りのずれ（px）。plan と同じ数え方を**テスト側で作り直す**
+        // （実装の返り値をそのまま信じないため）
+        const rmsOf = (molA, molB) => {
+            const a = W.readStereoOf(molA), b = W.readStereoOf(molB);
+            const cmp = W.stereoIsomorphismCompare(molA, a.stereo, molB, b.stereo);
+            if (!cmp) return null;
+            const pairs = [];
+            Object.keys(cmp.map).forEach(idA => {
+                const pa = molA.atoms.find(x => x.id === idA);
+                const pb = molB.atoms.find(x => x.id === cmp.map[idA]);
+                if (pa && pb) pairs.push([pa, pb]);
+            });
+            const dx = pairs.reduce((s, p) => s + (p[0].x - p[1].x), 0) / pairs.length;
+            const dy = pairs.reduce((s, p) => s + (p[0].y - p[1].y), 0) / pairs.length;
+            const ss = pairs.reduce((s, p) => {
+                const ex = p[0].x - (p[1].x + dx), ey = p[0].y - (p[1].y + dy);
+                return s + ex * ex + ey * ey;
+            }, 0);
+            return Math.sqrt(ss / pairs.length);
+        };
+
+        let rot = 0, rotBad = 0, sumAfter = 0, sumBefore = 0;
+        for (let i = 0; i < 120 && rot < 30; i++) {
+            q.nextQuestion();
+            const cur = q.current;
+            if (!cur || cur.how !== 'transform' || cur.turns !== 2 || cur.mirror) continue;
+            rot++;
+            const plan = q.overlayPlan();
+            assert(plan, '180°回転の問題で重ね合わせの手が作れない');
+            // ① 実装は 180° を選んでいる
+            if (plan.turns !== 2) rotBad++;
+            // ② 選んだ角度で図が**ぴったり**重なる（テスト側で測り直した値で見る）
+            const after = rmsOf(q._dispMolA, plan.molB);
+            // ③ 否定対照: 回さない（0°）ときのずれ
+            const before = rmsOf(q._dispMolA, q._dispMolB);
+            sumAfter += after * after; sumBefore += before * before;
+            assert(after < 2, `180°回してもずれが残る（${after.toFixed(1)}px・${cur.nameA}）`);
+            assert(before > 20, `否定対照が成立しない（回さないのに ${before.toFixed(1)}px しかずれない）`);
+        }
+        assert(rot >= 10, `180°回転の問題が集まらない（${rot}件）`);
+        assert(rotBad === 0, `180°を選ばなかった問題が ${rotBad} 件`);
+        const rmsAfter = Math.sqrt(sumAfter / rot), rmsBefore = Math.sqrt(sumBefore / rot);
+        assert(rmsAfter < 2 && rmsBefore > 50,
+            `RMS が期待の形にならない（回す ${rmsAfter.toFixed(1)}px / 回さない ${rmsBefore.toFixed(1)}px）`);
+    });
+
+    test('OV2: 回してよい角度は「回して読み直しても立体が変わらない」角度だけ（鏡映は使わない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        const entry = (name) => {
+            const e = q.pool.find(x => x.name === name);
+            assert(e, `${name} がプールに無い`);
+            return e;
+        };
+        // 図Bをこの登録の図に差し替えて、許された角度を数える
+        const allowedFor = (name) => {
+            const e = entry(name);
+            q._dispTargetB = e.target;
+            q._dispMolB = c.game.createTargetFromData({ target: e.target });
+            return q.overlayAllowedTurns();
+        };
+        // (1) ハース環（糖）は 0° だけ —— 面内で回すと「上に描く＝手前」の約束が崩れて
+        //     鏡像の図になる（DESIGN_sugar.md §1-2 の③が 0/16）
+        const haworth = allowedFor('β-D-グルコース（β-D-グルコピラノース）');
+        assert(haworth.length === 1 && haworth[0] === 0,
+            `ハース環で 0° 以外が許された（${haworth.join('/')}）`);
+        // (2) フィッシャー投影は 0° と 180° だけ —— 90° は縦（奥）と横（手前）が入れ替わり鏡像になる
+        const fischer = allowedFor('D-アラニン');
+        assert(fischer.length === 2 && fischer[0] === 0 && fischer[1] === 2,
+            `フィッシャーの許された角度が 0/180 でない（${fischer.join('/')}）`);
+        // (3) 不斉炭素が無く C=C だけの分子は 4つとも許される（回しても読みが変わらない）
+        const geo = allowedFor('シス-2-ブテン');
+        assert(geo.length === 4, `C=C だけの分子で角度が絞られた（${geo.join('/')}）`);
+
+        // (4) ⚠ 鏡映は選択肢に**入っていない**（試すのは 90°刻みの4通りだけ）。
+        //     だから鏡映で重なる関係＝エナンチオマーは、必ず「重ならない」と出る。
+        //     ⚠ ここが崩れると「鏡像異性体も同じ分子」になり、問いそのものが消える
+        D.getElementById('sq-mode').value = 'pair';
+        let mirrorPairs = 0;
+        for (let i = 0; i < 200 && mirrorPairs < 6; i++) {
+            q.nextQuestion();
+            if (!q.current || q.current.rel !== 'enantiomer') continue;
+            mirrorPairs++;
+            const plan = q.overlayPlan();
+            assert(plan && plan.mismatch > 0,
+                `鏡像異性体なのに「重なる」と出た（${q.current.nameA} / ${q.current.nameB}）`);
+        }
+        assert(mirrorPairs >= 3, `鏡像異性体の出題が集まらない（${mirrorPairs}件）`);
+    });
+
+    test('OV3: 画面の文字が「何をしたか」を言う／どう回しても重ならないときは言い切る', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'pair';
+        const note = () => D.getElementById('sq-overlay-note').textContent;
+        const btn = D.getElementById('btn-sq-overlay');
+        // ボタンの文言は「平行移動」ではない（回すようになったので、言葉も直す）
+        assert(!btn.textContent.includes('平行移動') && btn.textContent.includes('回して'),
+            `ボタンの文言が直っていない（${btn.textContent}）`);
+
+        let sawRot = false, sawNoRot = false, sawFail = false;
+        for (let i = 0; i < 200 && !(sawRot && sawNoRot && sawFail); i++) {
+            q.nextQuestion();
+            if (!q.current) continue;
+            q.answer(q.current.rel);
+            if (btn.classList.contains('hidden')) continue;
+            btn.click();
+            const t = note();
+            const plan = q.overlayPlan();
+            if (plan.turns === 0) {
+                sawNoRot = true;
+                assert(t.includes('回さずに'), `回さなかったのにそう書いていない: ${t.slice(0, 60)}`);
+            } else {
+                sawRot = true;
+                assert(t.includes(`${plan.turns * 90}° 回してから`),
+                    `${plan.turns * 90}° 回したのにそう書いていない: ${t.slice(0, 60)}`);
+            }
+            if (plan.mismatch > 0) {
+                sawFail = true;
+                assert(t.includes('紙面内でどう回しても重なりません'),
+                    `重ならないのに言い切っていない: ${t}`);
+                assert(t.includes('重ね合わせられない'), '重ね合わせの定義が画面に出ていない');
+                assert(!t.includes('すべて重なる'), '重ならないのに「すべて重なる」と書いている');
+            } else if (plan.rms < 2) {
+                assert(t.includes('ぴったり重なりました'), `重なったのにそう書いていない: ${t}`);
+            } else {
+                // 立体は一致しているが絵は合わない（鏡映と回転が打ち消し合った図など）。
+                // ここで「すべて重なる」と書くと**また絵と食い違う**
+                assert(t.includes('紙面内の回転では絵は重なりません'),
+                    `絵が合っていないのに合ったように書いている: ${t}`);
+            }
+            btn.click();   // 解除
+        }
+        assert(sawRot, '回す例が1件も出ない');
+        assert(sawNoRot, '回さない例が1件も出ない');
+        assert(sawFail, '重ならない例が1件も出ない');
+        D.getElementById('btn-sq-close').click();
+    });
+
+    test('OV4: 回転は見せ方だけ ——「一致/不一致」の判定は1つも動かない', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'all';
+        let n = 0;
+        for (let i = 0; i < 90 && n < 40; i++) {
+            q.nextQuestion();
+            if (!q.current) continue;
+            const plan = q.overlayPlan();
+            if (!plan) continue;
+            n++;
+            // 回す前（図Bそのもの）の比較
+            const a = W.readStereoOf(q._dispMolA), b = W.readStereoOf(q._dispMolB);
+            const raw = W.stereoIsomorphismCompare(q._dispMolA, a.stereo, q._dispMolB, b.stereo);
+            assert(raw, '回す前の比較ができない');
+            const rawBad = raw.centers.filter(x => !x.match).length + raw.geos.filter(x => !x.match).length;
+            assert(raw.total === plan.cmp.total && rawBad === plan.mismatch,
+                `回したら判定が動いた（${rawBad}/${raw.total} → ${plan.mismatch}/${plan.cmp.total}）`);
+            // 出題の正解（rel）とも食い違わない
+            assert((plan.mismatch === 0) === (q.current.rel === 'same'),
+                `「全一致⇔同じ分子」が崩れた（rel=${q.current.rel}・食い違い ${plan.mismatch}）`);
+        }
+        assert(n >= 20, `検査できた出題が少なすぎる（${n}件）`);
+        D.getElementById('sq-mode').value = 'pair';
+    });
+
+    /* ==========================================================================
+     * HQ: ハース版「同じ糖の図はどれ？」（DESIGN_sugar.md §1-2b 帰結3・2026-08-25）
+     *
+     * 入試の型「マルトースを上下反転した図から正しいものを選ばせる」。
+     * ★ **正誤の判定は読み手にさせる** —— 並べた図から `canonicalStereoCode` を読み直して
+     * 見本と比べるだけで、「この変換は正解」という表はコードのどこにも無い。
+     * ⚠ `compounds.json` は読むだけ（HQ4 が見張る）。
+     * ⚠ 最上位モードは増やしていない（既存の「🎯 同じ立体はどれ？」の出題を1つ足しただけ）。
+     * ========================================================================== */
+
+    test('HQ1: 出題は糖の環16件から作られ、正解はいつもちょうど1つ', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.choiceQuiz;
+        assert(q, 'choiceQuiz が初期化されていない');
+        q.buildHaworth();
+        // プールは chemistry.js の門番（ハース図として読む糖の環）とぴったり一致する
+        assert(q.hwPool.length === 16, `糖の環が 16件でない（${q.hwPool.length}件）`);
+        const names = q.hwPool.map(e => e.name).join('/');
+        ['グルコ', 'ガラクト', 'マンノ', 'アロ', 'グロ', 'フルクトフラノース',
+         'マルトース', 'セロビオース', 'ラクトース', 'スクロース'].forEach(k => {
+            assert(names.includes(k), `プールに ${k} が無い`);
+        });
+        // ⚠ 糖でない環（プロリン・シクロヘキサノン類）は入らない
+        assert(!names.includes('プロリン') && !names.includes('シクロ'),
+            `糖でない環が混ざっている（${names}）`);
+
+        const seen = new Set();
+        for (let i = 0; i < 200; i++) {
+            const cur = q.haworthQuestion();
+            assert(cur, '出題できない');
+            seen.add(cur.entry.name);
+            assert(cur.options.length === 3, `選択肢が3つでない（${cur.options.length}）`);
+            assert(cur.items.filter(m => m.same).length === 1,
+                `正解がちょうど1つでない（${cur.entry.name}）`);
+            assert(cur.items[cur.answer].same, 'answer が正解を指していない');
+            // ★ 出題側の「同じ」の印は、テスト側で図を読み直した結果と1件残らず一致する
+            //   ＝ 答えを表で持っていない（持っていたら、どこかでずれる）
+            const codeOf = (t) => {
+                const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+                return s ? s.stereoCode : null;
+            };
+            const gCode = codeOf(cur.goal);
+            cur.items.forEach(m => {
+                assert(m.same === (codeOf(m.target) === gCode),
+                    `出題の「同じ」の印が、図から読み直した結果と食い違う（${cur.entry.name}・${m.label}）`);
+            });
+            // 3つの図はどれも互いに違う絵（同じ絵が2つ並んだら問題にならない）
+            const shapes = cur.options.map(t => t.atoms.map(a => `${a.x},${a.y}`).join('|'));
+            assert(new Set(shapes).size === 3, `同じ絵が2つ並んだ（${cur.entry.name}）`);
+        }
+        assert(seen.size >= 12, `出題が偏っている（${seen.size}種）`);
+    });
+
+    test('HQ2: 3つの変換の意味（上下フリップだけが同じ分子）を糖16件の全数で確かめる', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        let flipSame = 0, mirrorSame = 0, rot180Same = 0, forgotSameShape = 0;
+        q.hwPool.forEach(e => {
+            const base = e.target, b = codeOf(base);
+            assert(b, `${e.name} の立体が読めない`);
+            if (codeOf(W.flipTargetVertically(base)) === b) flipSame++;
+            if (codeOf(W.rotateTargetInPlane(base, 0, true)) === b) mirrorSame++;
+            if (codeOf(W.rotateTargetInPlane(base, 2, false)) === b) rot180Same++;
+            // ⚠⚠ 否定対照にできない罠: 「面マークを直し忘れた上下反転」は
+            //     **正しい裏返しと1画素も違わない絵**になる（マークは描かれないので）
+            const cy = base.atoms.reduce((s, a) => s + a.y, 0) / base.atoms.length;
+            const forgot = { atoms: base.atoms.map(a => Object.assign({}, a, { y: Math.round(2 * cy - a.y) })),
+                             bonds: base.bonds.map(x => Object.assign({}, x)) };
+            const shape = (t) => t.atoms.map(a => `${a.element}${a.x},${a.y}`).join('|');
+            if (shape(forgot) === shape(W.flipTargetVertically(base))) forgotSameShape++;
+        });
+        const n = q.hwPool.length;
+        assert(flipSame === n, `上下フリップで立体が変わった（同じ ${flipSame}/${n}）`);
+        assert(mirrorSame === 0, `左右の鏡映が「同じ分子」になった（${mirrorSame}/${n}）`);
+        assert(rot180Same === 0, `面内180°回転が「同じ分子」になった（${rot180Same}/${n}）`);
+        assert(forgotSameShape === n,
+            `「面マーク直し忘れ」が見分けられる絵になった（${forgotSameShape}/${n}）——` +
+            'そうなったならこれも罠として出せる。出題を3択から見直すこと');
+    });
+
+    test('HQ3: 解説は「面の上下 × 番号をたどる向き」を言い、誤答の絵は L-糖だと言い切る', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.choiceQuiz;
+        // 人と同じ手順: 群のボタンを押すと出題が切り替わって開く
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(D.getElementById('pk-kind').value === 'haworth', '出題が切り替わらない');
+        assert(!D.getElementById('choice-quiz-modal').classList.contains('hidden'), 'モーダルが開かない');
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        // 4つ目の枠は隠れ、①〜③だけが出る
+        assert(D.getElementById('pk-cell-3').classList.contains('hidden'), '4つ目の枠が隠れない');
+        for (let k = 0; k < 3; k++) {
+            assert(!D.getElementById(`pk-cell-${k}`).classList.contains('hidden'), `${k} 番目の枠が出ない`);
+            assert(D.querySelectorAll(`#pk-opt-${k} .quiz-atoms g`).length > 0, `${k} 番目に図が描かれない`);
+        }
+        assert(D.getElementById('pk-task').textContent.includes('面の上下'),
+            'お題に読み方（面の上下×向き）が書かれていない');
+        // わざと間違える（誤答の解説を見るため）
+        const right = q.current.answer;
+        const wrong = (right + 1) % 3;
+        D.getElementById(`pk-cell-${wrong}`).click();
+        const res = D.getElementById('pk-result').textContent;
+        assert(res.includes('鏡像異性体（L-糖）'), `誤答の絵が何になったかを言っていない: ${res}`);
+        assert(/面（上下）/.test(res) && /向き/.test(res), `面と向きの話になっていない: ${res}`);
+        assert(res.includes('両方が逆'), `正解の理由（両方が逆）が出ていない: ${res}`);
+        assert(D.getElementById(`pk-cell-${right}`).classList.contains('pk-cell-right'), '正解の枠が光らない');
+        assert(D.getElementById(`pk-cell-${wrong}`).classList.contains('pk-cell-wrong'), '選んだ枠に印が付かない');
+        // 正解したときも「面 × 向き」の説明が出る
+        q.newQuestion();
+        D.getElementById(`pk-cell-${q.current.answer}`).click();
+        const res2 = D.getElementById('pk-result').textContent;
+        assert(res2.includes('⭕ 正解') && res2.includes('両方が逆'), `正解時の解説が足りない: ${res2}`);
+        assert(res2.includes('鏡像異性体'), '正解時にも「ほかは鏡像の図」を言うこと');
+        // ほかの出題へ戻したら4つ目の枠は戻る
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        assert(!D.getElementById('pk-cell-3').classList.contains('hidden'), '4つ目の枠が戻らない');
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('HQ4: 選択肢は座標変換だけで作る（compounds.json の図に触らない）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const snap = q.hwPool.map(e => JSON.stringify(e.target));
+        for (let i = 0; i < 60; i++) q.haworthQuestion();
+        q.hwPool.forEach((e, i) => {
+            assert(JSON.stringify(e.target) === snap[i],
+                `出題が登録の図を書き換えた（${e.name}）`);
+        });
+        // 見本は登録の図そのもの（作り直していない）／選択肢は結合の並びが同じで座標だけ違う
+        const cur = q.haworthQuestion();
+        assert(JSON.stringify(cur.goal) === JSON.stringify(cur.entry.target),
+            '見本が登録の図と違う');
+        cur.options.forEach((o, k) => {
+            assert(JSON.stringify(o.bonds) === JSON.stringify(cur.entry.target.bonds),
+                `${k} 番目の選択肢で結合が変わっている＝座標変換になっていない`);
+            assert(o.atoms.length === cur.entry.target.atoms.length &&
+                   o.atoms.every((a, j) => a.element === cur.entry.target.atoms[j].element),
+                `${k} 番目の選択肢で原子が変わっている`);
+        });
     });
 
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
@@ -18148,12 +21810,15 @@
                     `指定 ${want} なのに ${q.current.isSame ? '同じ' : '違う'} が出た（${i + 1}回目）`);
             }
         });
-        // 解除すると両方が出る（固定したままにならない）
+        // 解除すると**画面の既定の形＝4択**に戻る（2026-08-20 に2択→4択へ置き換えたため。
+        // 「答えが 同じ／違う」の指定は2択でしか意味を持たないので、指定＝2択・解除＝4択）
         q.setForced(null);
         assert(q.forced === null, '指定を解除できない');
-        let same = 0, diff = 0;
-        for (let i = 0; i < 40; i++) { q.nextQuestion(); q.current.isSame ? same++ : diff++; }
-        assert(same > 0 && diff > 0, `解除後も片方しか出ない（同じ ${same} / 違う ${diff}）`);
+        for (let i = 0; i < 10; i++) {
+            q.nextQuestion();
+            assert(q.current && q.current.form === 'choice',
+                `解除しても4択に戻らない（${i + 1}回目・form=${q.current && q.current.form}）`);
+        }
         D.getElementById('btn-quiz-close').click();
 
         // (3) 立体異性体クイズ … 3種類とも指定できる。
@@ -18349,18 +22014,31 @@
 
         // ---- (5) 規約: 面は**優先順位の高い置換基（酸素側）**が決め、もう1本は必ず反対面。
         //      主置換基が縦から外れて読めないときだけ、劣位側（-CH₂OH）を反転して使う。
-        //      スクロースのグリコシド酸素は縦から 29.5°（許容±25°の外）に描かれているので、
-        //      **この抜け道が効いてはじめてフルクトース側の C2 が読める**
+        //      ⚠ **v1446 でスクロースを真横に並べ直したとき、グリコシド酸素は縦から
+        //      29.5°（許容外）→ 18.7°（許容内）になった**（DESIGN_sugar.md §5-3 が
+        //      「裏返した向きで描けばこの無理は消える」と予告していたとおり）。
+        //      ＝ 登録の図はもう抜け道に頼っていない。**抜け道そのものはここで作って試す**
+        //      （登録がたまたま抜け道を通っているかどうかに、規約の検査を預けない）
         const suc = parOf('スクロース（ショ糖）');
         assert(suc[13] !== undefined, 'スクロースのフルクトース側 C2（添字13）が読めない');
+        // 主置換基（グリコシド酸素 (530,414)）だけをフルクトース側から見て縦から外す
+        //   ＝ 抜け道が効く条件。⚠ グルコース側（C1 は (488,300)）からは縦のままにして、
+        //     フルクトース C2 だけが抜け道に頼る形にする
+        const suc抜 = parOf('スクロース（ショ糖）', mol => { at(mol, 530, 414).x = 488; });
+        assert(suc抜[13] === suc[13],
+            `主置換基を縦から外したら C2 が読めなくなった（劣位側の反転で救う抜け道が効いていない: ${suc抜[13]}）`);
         // 環9中心ぶんの読みを丸ごと固定する。**この値は R/S に直して IUPAC 名と突き合わせてある**:
         //   グルコース側 = α-D-グルコピラノシル (2R,3R,4S,5S,6R)
         //   フルクトース側 = β-D-フルクトフラノシル (2S,3S,4S,5R)
         // （フルクトース環の C3・C4 は v710 まで裏返っていた。§6-3 を参照）
         assert(show(suc) === show({ 1: -1, 2: -1, 3: 1, 4: -1, 5: 1, 13: 1, 14: -1, 15: 1, 16: 1 }),
             `スクロースの環パリティが違う（${show(suc)}）`);
-        // 劣位側も縦から外すと、両方読めなくなってスキップされる（抜け道が無条件ではない）
-        const suc2 = parOf('スクロース（ショ糖）', mol => { at(mol, 540, 420).x = 580; });
+        // 劣位側（-CH₂OH の C (572,252)）も縦から外すと、両方読めなくなってスキップされる
+        // （抜け道が無条件ではない）
+        const suc2 = parOf('スクロース（ショ糖）', mol => {
+            at(mol, 530, 414).x = 488;   // 主置換基（グリコシド酸素）
+            at(mol, 572, 252).x = 672;   // 劣位側（-CH₂OH）
+        });
         assert(suc2[13] === undefined, '環外2本とも縦から外れているのに C2 を読んでしまう');
         // 同じ図をフルクトフラノース単体で確かめる（斜めの -OH でも読め、読みは変わらない）
         const 斜め = parOf('β-D-フルクトフラノース', mol => { at(mol, 470, 264).x = 530; });
@@ -19476,6 +23154,743 @@
         c.reset();
     });
 
+    /* ===== PM3・PM4: 重合でできた鎖は一直線（v1436・DESIGN_reaction_execution.md §14） =====
+     *
+     * ユーザー実機報告（2026-08-21）「現状、エチレンの付加重合後が一直線にならないので
+     * わかりにくい」。実測では**エチレン3個で 90° の折れが5か所・y のばらつき 84px**
+     * （単量体6個なら 210px）の階段になっていた。
+     *
+     * ⚠ 主張は**すべて座標の数**で書く。「折れていない」を目で見た印象ではなく
+     *   「R から R までの頂点の角度がすべて 180°」「y のばらつきが 0px」で言う。
+     * ⚠ 作図規約（CLAUDE.md）の例外は増やしていない ―― 置くのは直交の格子の上だけで、
+     *   変えたのは**4方向のどれを先に試すか**の順序。PM4 がそこを守る。
+     */
+    // 主鎖（R から R への最短路）の座標・角度を数で返す。PM3/PM4 が共有する
+    const polymerBackbone = (mol) => {
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `鎖の端の R が ${rs.length} 個（両端の2個を期待）`);
+        const prev = new Map([[rs[0].id, null]]);
+        const queue = [rs[0].id];
+        while (queue.length) {
+            const cur = queue.shift();
+            if (cur === rs[1].id) break;
+            mol.getNeighbors(cur).forEach(n => {
+                if (n.atom.element === 'H' || prev.has(n.atom.id)) return;
+                prev.set(n.atom.id, cur);
+                queue.push(n.atom.id);
+            });
+        }
+        assert(prev.has(rs[1].id), '両端の R が繋がっていない（鎖が1本になっていない）');
+        const ids = [];
+        for (let cur = rs[1].id; cur; cur = prev.get(cur)) ids.unshift(cur);
+        const at = id => mol.atoms.find(a => a.id === id);
+        const angles = [];
+        for (let i = 1; i < ids.length - 1; i++) {
+            const a = at(ids[i - 1]), b = at(ids[i]), q = at(ids[i + 1]);
+            let d = (Math.atan2(q.y - b.y, q.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x)) * 180 / Math.PI;
+            while (d > 180) d -= 360;
+            while (d < -180) d += 360;
+            angles.push(Math.round(Math.abs(d)));
+        }
+        const ys = ids.map(id => at(id).y), xs = ids.map(id => at(id).x);
+        return {
+            ids, angles, xs,
+            bent: angles.filter(a => a < 175).length,
+            ySpread: Math.round(Math.max(...ys) - Math.min(...ys)),
+            monotone: xs.every((v, i) => i === 0 || v >= xs[i - 1]) ||
+                      xs.every((v, i) => i === 0 || v <= xs[i - 1]),
+            text: ids.map(id => `${at(id).element}(${Math.round(at(id).x)},${Math.round(at(id).y)})`).join(' ')
+        };
+    };
+
+    test('PM3: 重合でできた鎖の主鎖が一直線になる（折れ0・y のばらつき0px を座標で見る）', async (c) => {
+        const g = c.game, W = c.W;
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const polymerize = (ruleId, names) => {
+            setup(names);
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} のルールが無い`);
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length === 1, `${names[0]}×${names.length} で候補が ${sites.length} 件（1件を期待）`);
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            return polymerBackbone(g.userMolecule);
+        };
+        // ---- (1) ユーザーの再現そのもの: エチレン3個 ----
+        //    直す前は `angles = [180,90,90,90,90,90]`・ySpread 84px の階段だった
+        const e3 = polymerize('addition_polymerization', new Array(3).fill('エチレン（エテン）'));
+        assert(e3.ids.length === 8, `主鎖が ${e3.ids.length} 原子（R+炭素6+R の8を期待）`);
+        assert(e3.bent === 0, `エチレン3個の鎖が折れている（${e3.angles.join(',')}。${e3.text}）`);
+        assert(e3.ySpread === 0, `主鎖の y が ${e3.ySpread}px ばらついている（0px を期待。${e3.text}）`);
+        assert(e3.monotone, `主鎖の x が単調でない（折り返している。${e3.text}）`);
+        // 刻みも一定（隣どうしがすべて同じ間隔＝等間隔の一直線）
+        const step = Math.abs(e3.xs[1] - e3.xs[0]);
+        assert(step > 0 && e3.xs.every((v, i) => i === 0 || Math.abs(v - e3.xs[i - 1]) === step),
+            `主鎖の刻みが一定でない（${e3.xs.join(',')}）`);
+
+        // ---- (2) 単量体を増やしても段が増えない（直す前は6個で 210px 上がっていた） ----
+        const e6 = polymerize('addition_polymerization', new Array(6).fill('エチレン（エテン）'));
+        assert(e6.ids.length === 14, `6個の主鎖が ${e6.ids.length} 原子（14 を期待）`);
+        assert(e6.bent === 0 && e6.ySpread === 0,
+            `エチレン6個の鎖が一直線でない（折れ${e6.bent}・y ${e6.ySpread}px。${e6.text}）`);
+
+        // ---- (3) 端の R も鎖の続きの位置に出る（もともと本体は直線だった3件の回帰） ----
+        //    直す前はどれも「末端の R だけ 90°・ySpread 42px」だった
+        [['addition_polymerization', '塩化ビニル'],
+         ['addition_polymerization', 'アクリロニトリル'],
+         ['alkyne_polymerization', 'アセチレン（エチン）']].forEach(([rid, name]) => {
+            const r = polymerize(rid, new Array(3).fill(name));
+            assert(r.bent === 0 && r.ySpread === 0,
+                `${name}3個の鎖が一直線でない（折れ${r.bent}・y ${r.ySpread}px。${r.text}）`);
+        });
+
+        // ---- (4) 縮合重合（ナイロン66）も一直線 ----
+        //    直す前は最初のジアミンが**まるごと 90° 立って**下へ伸び、y が 294px ばらついていた
+        const ny = polymerize('condensation_polymerization',
+            ['アジピン酸', 'アジピン酸', 'ヘキサメチレンジアミン', 'ヘキサメチレンジアミン']);
+        assert(ny.bent === 0 && ny.ySpread === 0,
+            `ナイロン66 の鎖が一直線でない（折れ${ny.bent}・y ${ny.ySpread}px。${ny.text}）`);
+
+        // ---- (5) 画面の並びと鎖の並びが一致する（並べ替えの向きを逆にすると赤くなる） ----
+        //    いちばん左に置いた単量体の炭素が、できた鎖でもいちばん左に来ること
+        setup(new Array(3).fill('エチレン（エテン）'));
+        const leftmost = g.userMolecule.atoms.filter(a => a.element === 'C')
+            .slice().sort((a, b) => a.x - b.x)[0].id;
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        poly.apply(g, poly.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const carbons = g.userMolecule.atoms.filter(a => a.element === 'C');
+        const minX = Math.min(...carbons.map(a => a.x));
+        assert(Math.abs(g.userMolecule.atoms.find(a => a.id === leftmost).x - minX) < 1,
+            'いちばん左に並べた単量体が、できた鎖の左端に来ていない（繋ぐ順と伸びる向きが逆）');
+        c.reset();
+    });
+
+    test('PM4（否定対照）: 一直線化は見た目だけ ― 判定にも手描きの分子にも触れない', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            names.forEach(n => g.summonMolecule(n));
+        };
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, '付加重合のルールが無い');
+
+        // ---- ① 2分子以上を自分で並べたときの従来の挙動が変わっていない ----
+        //    RX13 が主張していることを**そのまま**もう一度見る（並べ替えの向きを変えても
+        //    トポロジーは1つも変わらない、が今回の約束）
+        setup(['塩化ビニル', '塩化ビニル']);
+        assert(poly.detect(g.userMolecule).length === 1, '塩化ビニル2分子で付加重合が出ない');
+        poly.apply(g, poly.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const mol = g.userMolecule;
+        assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), '重合後に価標が壊れた');
+        assert(mol.bonds.filter(b => b.type === 2).length === 0, '二重結合が残っている');
+        assert(mol.atoms.filter(a => a.element === 'R').length === 2, 'R が両端の2個でない');
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        const seq = [];
+        let prev = rs[0].id, cur = mol.getNeighbors(rs[0].id).filter(n => n.atom.element === 'C')[0].atom.id;
+        for (let k = 0; k < 8; k++) {
+            seq.push(mol.getNeighbors(cur).some(n => n.atom.element === 'Cl') ? 'CHCl' : 'CH2');
+            const next = mol.getNeighbors(cur).filter(n => n.atom.element === 'C' && n.atom.id !== prev)[0];
+            if (!next) break;
+            prev = cur; cur = next.atom.id;
+        }
+        assert(seq.join('-') === 'CH2-CHCl-CH2-CHCl',
+            `頭-尾の並びが変わった（${seq.join('-')}。-CH2-CHCl- のくり返しを期待）`);
+        const pvcCode = CC(mol);
+
+        // ---- ② 正準コードは座標を1つも見ていない ----
+        //    重合後の分子を**まるごと動かしても・1原子だけずらしても**コードは変わらない
+        mol.atoms.forEach(a => { a.x += 137; a.y -= 89; });
+        assert(CC(mol) === pvcCode, '分子を平行移動しただけで正準コードが変わった');
+        const one = mol.atoms.find(a => a.element === 'Cl');
+        one.x += 61; one.y += 47;
+        assert(CC(mol) === pvcCode, '原子を1つずらしただけで正準コードが変わった');
+        // 同型判定（このコードベースでは「正準コードの一致」がそれ）も座標に依らない:
+        // 同じつながり方を**でたらめな座標**で組み直しても同じコードになる
+        const scrambled = new W.Molecule();
+        const map = new Map();
+        mol.atoms.filter(a => a.element !== 'H').forEach((a, i) => {
+            map.set(a.id, scrambled.addAtom(a.element, (i * 977) % 1234 - 600, (i * 613) % 811 - 400).id);
+        });
+        mol.bonds.forEach(b => {
+            if (map.has(b.atomId1) && map.has(b.atomId2)) {
+                scrambled.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+            }
+        });
+        assert(CC(scrambled) === pvcCode, '座標を組み替えただけで同型と判定されなくなった');
+
+        // ---- ③ 単量体を並べる向きを左右どちらにしても、できる高分子は同じ物 ----
+        //    （並べ替えの向きは**見た目のため**であって、生成物を変えてはいけない）
+        const codeFor = (flip) => {
+            setup(new Array(3).fill('エチレン（エテン）'));
+            if (flip) g.userMolecule.atoms.forEach(a => { a.x = -a.x; }); // 左右を入れ替えて並べ直す
+            const r = W.REACTION_RULES.find(x => x.id === 'addition_polymerization');
+            r.apply(g, r.detect(g.userMolecule)[0]);
+            g.updateDrawing();
+            return CC(g.userMolecule);
+        };
+        assert(codeFor(false) === codeFor(true),
+            '単量体を左右逆に並べると別の高分子ができる（座標が生成物を決めてしまっている）');
+
+        // ---- ④ ユーザーが手で描いた分子には1原子も触れない ----
+        //    重合に関わらない分子をキャンバスに残したまま重合し、その座標が動かないこと。
+        //    ⚠ **傍観分子を逃がす仕組み（planShoveAside）は残す**ので、
+        //      「離して置いた分子」で見る（重なっていれば逃がされてよい）
+        setup(['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）']);
+        const spectator = new W.Molecule();
+        const s1 = spectator.addAtom('C', -800, -600).id;
+        const s2 = spectator.addAtom('O', -758, -600).id;
+        spectator.addBond(s1, s2, 1);
+        spectator.atoms.forEach(a => g.userMolecule.atoms.push(a));
+        spectator.bonds.forEach(b => g.userMolecule.bonds.push(b));
+        g.updateDrawing();
+        const before = spectator.atoms.map(a => `${a.x},${a.y}`).join(' ');
+        const p2 = W.REACTION_RULES.find(x => x.id === 'addition_polymerization');
+        p2.apply(g, p2.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const after = g.userMolecule.atoms.filter(a => a.id === s1 || a.id === s2)
+            .map(a => `${a.x},${a.y}`).join(' ');
+        assert(before === after,
+            `重合と関係のない分子の座標が動いた（${before} → ${after}）`);
+
+        // ---- ⑤ 作図規約は広げていない: **主鎖**の結合はすべて直交で、長さは格子の刻みぴったり ----
+        //    「一直線にする」を 120° などの新しい角度で実現していないことを数で言う。
+        //    ★ここが赤くなるのは、まっすぐにするために斜めへ置いたとき。
+        //    ⚠ 見るのは主鎖だけ ―― 置換基（-Cl）が 120° に開いているのは
+        //      **CLAUDE.md がすでに認めている唯一の例外**（呼び出した分子の C=C まわり）で、
+        //      今回はそこに一切触っていない
+        setup(new Array(4).fill('塩化ビニル'));
+        const p3 = W.REACTION_RULES.find(x => x.id === 'addition_polymerization');
+        p3.apply(g, p3.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const G = W.GRID_SIZE || 42;
+        const back = polymerBackbone(g.userMolecule);
+        assert(back.bent === 0 && back.ySpread === 0,
+            `塩化ビニル4個の鎖が一直線でない（折れ${back.bent}・y ${back.ySpread}px）`);
+        back.ids.forEach((id, i) => {
+            if (i === 0) return;
+            const a1 = g.userMolecule.atoms.find(a => a.id === back.ids[i - 1]);
+            const a2 = g.userMolecule.atoms.find(a => a.id === id);
+            const dx = Math.abs(a1.x - a2.x), dy = Math.abs(a1.y - a2.y);
+            assert(dx < 1 || dy < 1,
+                `主鎖に斜めの結合ができた（${Math.round(dx)},${Math.round(dy)}）。` +
+                '一直線化は直交作図の中で行う約束（CLAUDE.md の例外を増やさない）');
+            assert(Math.abs(Math.max(dx, dy) - G) < 1,
+                `主鎖の結合が格子の刻みでない（${Math.round(Math.max(dx, dy))}px・刻み ${G}px）`);
+        });
+        // 置換基（-Cl）が既存の 120° のまま＝ こちらは**変えていない**ことも合わせて言う
+        const cl = g.userMolecule.atoms.filter(a => a.element === 'Cl');
+        assert(cl.length === 4, `Cl が ${cl.length} 個（単量体4個ぶんの4個を期待）`);
+        c.reset();
+    });
+
+    /* ===== PM5・PM6: 1分子からでも重合へ行ける（v1437・§15） =====
+     *
+     * ユーザー要望「１分子でも重合を出せるようにしたい → 複数分子を横一線に並べ反応させる」。
+     * ⚠ **既存の重合ルールは1文字も変えていない**（`detect` の「2つ以上並んでいるときだけ」は
+     *   過去のユーザー要望の実装なのでそのまま）。足したのは v1420 の呼び出し導線
+     *   （`findPartnerHints` / `makePartnerHintButton` / `runPartnerHint`）に乗った**入口**だけ。
+     */
+    test('PM5: 単量体1分子からでも重合の札が出て、押すと呼んで・横一線に並べて・重合まで進む', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const units = W.SELF_PARTNER_UNITS;
+        assert(units === 3, `並べる単量体が ${units} 個（3個の根拠は §15.1。変えたら設計書も直すこと）`);
+        // ★ 呼んだあと**全部を選べる**ことが押せる条件（`siteFilter()` の「2つ以上選んだら
+        //   箇所は選んだ分子の中に収まること」）。上限を超えると札を押しても止まる
+        assert(units <= (W.MAX_REACTION_SELECTION || 4),
+            `並べる数 ${units} が選択の上限 ${W.MAX_REACTION_SELECTION} を超えている（押しても進めない）`);
+
+        // ---- ① 1分子だけのときに札が出る（3つの重合すべて） ----
+        [['エチレン（エテン）', 'addition_polymerization'],
+         ['アセチレン（エチン）', 'alkyne_polymerization'],
+         ['1,3-ブタジエン', 'diene_polymerization']].forEach(([name, ruleId]) => {
+            const btns = partnerSetup(c, name);
+            const btn = btns.find(b => b.dataset.rule === ruleId);
+            assert(btn, `${name} 1分子で「${ruleId}」の札が出ない（出た札: ${btns.map(b => b.textContent).join(' / ') || 'なし'}）`);
+            assert(btn.dataset.count === String(units - 1),
+                `札の呼び出し個数が ${btn.dataset.count}（${units - 1} を期待）`);
+            assert(btn.textContent.includes(`もう${units - 1}つ呼び出す`),
+                `札が呼び出す個数を言っていない（${btn.textContent}）`);
+        });
+
+        // ---- ② 呼び出した結果が**横一線**に並ぶ（ユーザー明示。座標で言う） ----
+        partnerSetup(c, 'エチレン（エテン）');
+        for (let k = 0; k < units - 1; k++) {
+            assert(g.summonMolecule('エチレン（エテン）'), '2つめ以降が呼び出せない');
+        }
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        assert(heavy.length === units * 2, `重原子が ${heavy.length} 個（${units}分子 ×2 を期待）`);
+        const ys = [...new Set(heavy.map(a => Math.round(a.y)))];
+        assert(ys.length === 1, `呼び出した単量体が横一線でない（y が ${ys.join(',')}）`);
+        // 折り返し（SUMMON_ROW_WIDTH）にはまだ遠い ＝ 3個では段が変わらない
+        const xs = heavy.map(a => a.x);
+        assert(Math.max(...xs) < (W.SUMMON_ROW_WIDTH || 2400),
+            `並べた単量体が折り返しの幅 ${W.SUMMON_ROW_WIDTH} に届いている（横一線が崩れる）`);
+
+        // ---- ③ 札を押すと、呼んで・並べて・重合まで進む ----
+        const btns = partnerSetup(c, 'エチレン（エテン）');
+        const btn = btns.find(b => b.dataset.rule === 'addition_polymerization');
+        btn.click();
+        await c.tick(40);
+        assert(!W.reactor.lastDeadEnd,
+            `途中で止まった（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        assert(W.reactor.lastReaction && W.reactor.lastReaction.ruleId === 'addition_polymerization',
+            '札を押しても付加重合が実行されていない');
+        const mol = g.userMolecule;
+        assert(mol.atoms.filter(a => a.element === 'R').length === 2,
+            '両端の R が2個でない（重合が完了していない）');
+        assert(mol.bonds.filter(b => b.type === 2).length === 0, '二重結合が残っている');
+        assert(mol.atoms.filter(a => a.element === 'C').length === units * 2,
+            `主鎖の炭素が ${mol.atoms.filter(a => a.element === 'C').length} 個（${units}単位ぶんの ${units * 2} を期待）`);
+        // ★ できた鎖は一直線（PM3 と同じ数え方をここでも掛ける）
+        const back = polymerBackbone(mol);
+        assert(back.bent === 0 && back.ySpread === 0,
+            `1分子から作った鎖が一直線でない（折れ${back.bent}・y ${back.ySpread}px。${back.text}）`);
+        // モーダルは閉じている（箇所選び・↩ 反応前に戻す が押せる状態。v1420 の約束）
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'),
+            '重合まで進んだのに分子モーダルが開いたまま');
+
+        // ---- ④ アセチレンから押すと、名乗る高分子（ポリアセチレン）になる ----
+        const ab = partnerSetup(c, 'アセチレン（エチン）')
+            .find(b => b.dataset.rule === 'alkyne_polymerization');
+        ab.click();
+        await c.tick(40);
+        assert(!W.reactor.lastDeadEnd, `アセチレンで止まった（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        assert(g.lookupCompoundName(g.userMolecule) === 'ポリアセチレン',
+            `1分子から作った生成物が名乗らない（${g.lookupCompoundName(g.userMolecule) || '（未登録）'}）` +
+            '＝ 3単位という並べる数が、このアプリの高分子の図の規約と合っていない');
+
+        partnerCleanup(c);
+    });
+
+    test('PM6（否定対照）: 1分子の入口は既存の道を1つも変えない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const selfBtns = () => [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button[data-count]')];
+
+        // ---- ① **もう並べてある人には出さない**（すでに押せる反応をもう一度案内しない） ----
+        //    ＝ 2分子以上を自分で並べたときの従来の道はそのまま
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン（エテン）');
+        g.summonMolecule('エチレン（エテン）');
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly.detect(g.userMolecule).length === 1,
+            'エチレン2分子で付加重合が出ない（既存の道が壊れた）');
+        // ⚠ **土台は「いま見ている分子」1つ**で見る（v1429 の絞り込みと同じ渡し方）。
+        //    `null` を渡すとキャンバス全体が名乗れず、案内そのものが走らないので対照にならない
+        const one = g.moleculeAtomIdsOf(g.userMolecule.atoms.find(a => a.element === 'C').id);
+        assert(W.findPartnerHints(g, one).length >= 0, '案内が落ちた');
+        assert(!W.findPartnerHints(g, one).some(h => h.ruleId === 'addition_polymerization'),
+            '自分で2つ並べた人にまで「もう2つ呼び出す」の札が出る（同じ反応を二重に案内している）');
+        // 逆に**1つしか無い**ときは同じ渡し方で出る（③ の対照が効いていることの確認）
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン（エテン）');
+        const solo = g.moleculeAtomIdsOf(g.userMolecule.atoms.find(a => a.element === 'C').id);
+        assert(W.findPartnerHints(g, solo).some(h => h.ruleId === 'addition_polymerization'),
+            '1分子のときにも札が出ない（対照の前提が崩れている）');
+
+        // ---- ② 1分子でも、重合できない分子には出さない ----
+        ['ベンゼン', 'エタノール', '酢酸', 'シクロヘキセン'].forEach(name => {
+            if (!g.resolveCompound(name)) return;
+            partnerSetup(c, name);
+            assert(selfBtns().length === 0,
+                `${name} に「自分をもう何個か呼び出す」の札が出た（${selfBtns().map(b => b.textContent).join(' / ')}）`);
+        });
+
+        // ---- ③ 既存の札（別の化合物を1つ呼ぶ道）が件数も中身も変わっていない ----
+        const eth = partnerSetup(c, 'エタノール');
+        assert(eth.some(b => b.dataset.rule === 'esterification'),
+            'エタノールのエステル化の札が消えた');
+        assert(eth.some(b => b.dataset.rule === 'dehydration_inter'),
+            'エタノールの分子間脱水の札が消えた');
+        assert(eth.every(b => !b.dataset.count), 'エタノールの札に呼び出し個数が付いた');
+        assert(eth.every(b => b.textContent.includes(' を呼び出す →')),
+            `既存の札の文面が変わった（${eth.map(b => b.textContent).join(' / ')}）`);
+
+        // ---- ④ 名前で引けない分子には出さない（`summonMolecule` は名前しか受け取れない） ----
+        //    ★ここが赤くなるのは、呼べない分子に「呼び出す」と約束したとき
+        partnerSetup(c, 'エチレン（エテン）');
+        const realLookup = g.lookupCompoundName;
+        g.lookupCompoundName = () => null;
+        let hints;
+        try { hints = W.findPartnerHints(g, null); } finally { g.lookupCompoundName = realLookup; }
+        assert(!hints.some(h => h.count),
+            '名前で引けない分子にまで「自分を呼び出す」の札が出た（押しても呼べない）');
+
+        // ---- ⑤ 重合の detect そのものは「2つ以上」の約束のまま（入口を足しても本体は不変） ----
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン（エテン）');
+        assert(poly.detect(g.userMolecule).length === 0,
+            '1分子だけで付加重合が検出された（既存ルールの「2つ以上」の約束を壊している）');
+        W.SELF_PARTNER_RULES.forEach(id => {
+            const r = W.REACTION_RULES.find(x => x.id === id);
+            assert(r && !r.info, `${id} が実行できるルールでない（案内の行き先が説明カードになっている）`);
+        });
+
+        partnerCleanup(c);
+    });
+
+    /* ===== PM7〜PM12: 重合まわりの3件（動画レーンの実測報告 2026-08-26） =====
+     * 発注は video-scripts/ORDER_reactor_findings_2026-08-26.md。
+     * A ＝ スチレンの付加重合が「押せるのに効かない」／B ＝ 2回目の重合が一覧から消える／
+     * C ＝ 加硫が1本の鎖の中で橋を架ける。**3件とも原因は別**で、直しも別。 */
+
+    // 重合の下ごしらえ（毎回まっさらから名前で呼び出す）
+    const polySetup = (c, names) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // R から R まで主鎖（環に入らない重原子）を辿る
+    const mainChain = (c, mol) => {
+        const W = c.W;
+        const ring = W.ringAtomIds(mol);
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `両端の R が ${rs.length} 個`);
+        let prev = rs[0].id;
+        let cur = mol.getNeighbors(prev).filter(n => n.atom.element !== 'H')[0].atom.id;
+        const path = [prev, cur];
+        for (let k = 0; k < 60; k++) {
+            const nx = mol.getNeighbors(cur).filter(n => n.atom.id !== prev &&
+                n.atom.element !== 'H' && !ring.has(n.atom.id));
+            if (!nx.length) break;
+            prev = cur; cur = nx[0].atom.id; path.push(cur);
+            if (mol.atoms.find(a => a.id === cur).element === 'R') break;
+        }
+        return path.map(id => mol.atoms.find(a => a.id === id));
+    };
+
+    test('PM7: スチレンを並べると付加重合できる（環がぶら下がった単量体でも鎖が一直線）', async (c) => {
+        const g = c.game, W = c.W;
+        /* ★ **症状**（動画レーン実測）: スチレン×4 は「ボタンは出て押せるのに何も起きない」。
+         *   塩化ビニル×4 は通る。実測すると `detect` は正しく1件返しており、
+         *   落ちていたのは `apply` の中の `planAttachment` ＝
+         *   「生成物を配置する空間がありません」。×2 は通り、**×3 以上が必ず落ちる**。
+         * ★ **原因（2か所・どちらも作図）**:
+         *   1. 呼び出しの ±120° 整形（`reshapeVinylAngles`）が枝を**平行移動**していたため、
+         *      ベンゼン環が放射状でなくなり、ipso まわりの角度が **-60°/120°/-120°**
+         *      ＝ ビニルとの結合が環結合と 60° になっていた。環の炭素が頭の炭素の
+         *      **真反対 41px（鎖の伸びる先との隙間 2.0px）**まで回り込み、道を塞いでいた。
+         *   2. 直しても、**隣り合う単量体のベンゼン環どうしが 4.0px まで重なる**
+         *      （単量体1つぶんは主鎖2結合＝84px しかなく、環の幅は 69px）。 */
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, '付加重合のルールが無い');
+
+        // ---- ① 呼び出したスチレンのベンゼン環が放射状に付いている（原因1の直し） ----
+        let mol = polySetup(c, ['スチレン']);
+        const tail = mol.atoms.find(a => a.element === 'C' &&
+            mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1 &&
+            mol.getNeighbors(a.id).some(n => n.type === 2));
+        assert(tail, 'スチレンの =CH₂ が見つからない');
+        const head = mol.getNeighbors(tail.id).filter(n => n.type === 2)[0].atom;
+        const ipso = mol.getNeighbors(head.id).filter(n => n.atom.element === 'C' && n.type === 1)[0].atom;
+        const angAt = (o, p) => Math.atan2(p.y - o.y, p.x - o.x) * 180 / Math.PI;
+        const around = mol.getNeighbors(ipso.id).filter(n => n.atom.element !== 'H')
+            .map(n => angAt(ipso, n.atom)).sort((a, b) => a - b);
+        assert(around.length === 3, `ipso のまわりが ${around.length} 本`);
+        const gaps = [around[1] - around[0], around[2] - around[1], 360 - (around[2] - around[0])];
+        assert(gaps.every(x => Math.abs(x - 120) < 1),
+            `ipso のまわりが 120° ずつになっていない（${gaps.map(x => Math.round(x)).join('/')}）` +
+            '＝ 枝が平行移動で置かれている（回転で置くこと）');
+
+        // ---- ② スチレン ×2〜×5 が全部通る（×3 以上が落ちていた） ----
+        for (let n = 2; n <= 5; n++) {
+            mol = polySetup(c, new Array(n).fill('スチレン'));
+            const sites = poly.detect(mol);
+            assert(sites.length === 1, `スチレン×${n} で候補が ${sites.length} 件`);
+            poly.apply(g, sites[0]);
+            g.updateDrawing();
+            assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), `スチレン×${n} の重合で価標が壊れた`);
+            assert(mol.atoms.filter(a => a.element === 'R').length === 2,
+                `スチレン×${n} の重合で R が両端の2個になっていない`);
+        }
+
+        // ---- ③ 主鎖が一直線・フェニル基は主鎖と直交で交互（教科書の −[CH₂−CH(C₆H₅)]ₙ−） ----
+        mol = polySetup(c, new Array(4).fill('スチレン'));
+        poly.apply(g, poly.detect(mol)[0]);
+        g.updateDrawing();
+        const pts = mainChain(c, mol);
+        assert(pts.length === 10, `主鎖が ${pts.length} 原子（R+8C+R の 10 を期待）`);
+        const ys = pts.map(p => p.y);
+        assert(Math.max(...ys) - Math.min(...ys) < 1e-6,
+            `主鎖の y がばらついている（${(Math.max(...ys) - Math.min(...ys)).toFixed(1)}px）`);
+        const ring = W.ringAtomIds(mol);
+        const sides = pts.filter(p => mol.getNeighbors(p.id).some(n => ring.has(n.atom.id)))
+            .map(p => (mol.getNeighbors(p.id).find(n => ring.has(n.atom.id)).atom.y > p.y ? 1 : -1));
+        assert(sides.length === 4, `フェニル基が ${sides.length} 個`);
+        sides.forEach((s, i) => assert(s === sides[0] * (i % 2 ? -1 : 1),
+            `フェニル基が交互になっていない（${sides.join(',')}）＝ 同じ側にそろえると環がぶつかる`));
+        // 置換基は主鎖と直交（±120° のままだと隣とぶつかる）
+        pts.filter(p => mol.getNeighbors(p.id).some(n => ring.has(n.atom.id))).forEach(p => {
+            const ip = mol.getNeighbors(p.id).find(n => ring.has(n.atom.id)).atom;
+            assert(Math.abs(ip.x - p.x) < 1e-6,
+                `フェニル基が主鎖と直交していない（Δx=${(ip.x - p.x).toFixed(1)}px）`);
+        });
+    });
+
+    test('PM8（否定対照）: 環まわりの直しは作図だけ ― 化学の判定にも直交作図にも触れない', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+
+        // ---- ① 塩化ビニルの高分子は座標を変えても同じもの（正準コードは作図に依らない） ----
+        const codeAfter = (names) => {
+            const mol = polySetup(c, names);
+            poly.apply(g, poly.detect(mol)[0]);
+            g.updateDrawing();
+            return CC(g.userMolecule);
+        };
+        const pvc = codeAfter(['塩化ビニル', '塩化ビニル', '塩化ビニル']);
+        const ps = codeAfter(['スチレン', 'スチレン', 'スチレン']);
+        assert(pvc !== ps, 'PVC とポリスチレンが同じ正準コードになった');
+        assert(codeAfter(['塩化ビニル', '塩化ビニル', '塩化ビニル']) === pvc,
+            'PVC の正準コードが呼び出しのたびに変わる');
+
+        // ---- ② 主鎖はすべて直交・刻みぴったり（CLAUDE.md の作図例外を増やしていない） ----
+        let mol = polySetup(c, ['スチレン', 'スチレン', 'スチレン']);
+        poly.apply(g, poly.detect(mol)[0]);
+        g.updateDrawing();
+        const pts = mainChain(c, mol);
+        for (let i = 1; i < pts.length; i++) {
+            const dx = Math.abs(pts[i].x - pts[i - 1].x), dy = Math.abs(pts[i].y - pts[i - 1].y);
+            assert((dx < 1e-6) !== (dy < 1e-6), `主鎖の結合が斜め（${dx.toFixed(1)},${dy.toFixed(1)}）`);
+        }
+
+        // ---- ③ **環を含まない枝は今までどおり平行移動**（回すと直鎖が 30° 傾く） ----
+        //    オレイン酸の C=C の両側は長い直鎖。呼び出した図の結合が斜めだらけになっていないこと
+        if (g.resolveCompound('オレイン酸')) {
+            mol = polySetup(c, ['オレイン酸']);
+            const chainBonds = mol.bonds.filter(b => {
+                const p = mol.atoms.find(a => a.id === b.atomId1), q = mol.atoms.find(a => a.id === b.atomId2);
+                return p && q && p.element === 'C' && q.element === 'C';
+            });
+            const ortho = chainBonds.filter(b => {
+                const p = mol.atoms.find(a => a.id === b.atomId1), q = mol.atoms.find(a => a.id === b.atomId2);
+                return Math.abs(p.x - q.x) < 1e-6 || Math.abs(p.y - q.y) < 1e-6;
+            });
+            assert(ortho.length >= chainBonds.length - 4,
+                `オレイン酸の C-C が斜めだらけ（直交 ${ortho.length}/${chainBonds.length}）＝ 枝を回してしまっている`);
+        }
+
+        // ---- ④ 置換基が2本ある頭には触らない（どちらを回すかが一意でない） ----
+        if (g.resolveCompound('メタクリル酸メチル')) {
+            mol = polySetup(c, ['メタクリル酸メチル', 'メタクリル酸メチル']);
+            const before = mol.atoms.map(a => `${a.x},${a.y}`).join('|');
+            const sites = poly.detect(mol);
+            if (sites.length) {
+                try { poly.apply(g, sites[0]); } catch (e) { /* 置けないのは従来どおり */ }
+            } else {
+                assert(mol.atoms.map(a => `${a.x},${a.y}`).join('|') === before,
+                    '重合しないのに座標が動いた');
+            }
+        }
+
+        // ---- ⑤ エチレンのように置換基が無い単量体は1原子も余計に動かない ----
+        mol = polySetup(c, ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）']);
+        poly.apply(g, poly.detect(mol)[0]);
+        g.updateDrawing();
+        const eth = mainChain(c, mol);
+        assert(Math.max(...eth.map(p => p.y)) - Math.min(...eth.map(p => p.y)) < 1e-6,
+            'エチレンの鎖が一直線でなくなった（§14 の到達点を壊している）');
+    });
+
+    test('PM9: 鎖ができた後でも、並べ直した単量体をもう一度まとめて重合できる', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        /* ★ **症状**（動画レーン実測）: イソプレン×2 → 1,4-付加重合 →（成功）→
+         *   イソプレン×2 を足して重合、が効かない。結末は「① （該当なし）＋② イソプレン＋③ イソプレン」。
+         * ★ **原因（実測）**: `detect` は2回目も 1件・要素数8 を返しており、`apply` を直接呼べば成功する。
+         *   落としていたのは `ReactorPanel.siteFilter()` の `siteAllowed` ―― 何も選んでいないときは
+         *   「いま見ている分子（①）の原子を1つでも含む箇所」しか通さない。2回目の箇所は
+         *   ②③ の8原子だけなので **false**（実測）＝ ボタンが一覧から消えていた。
+         * ★ **直し**: 「並べた単量体をまとめて」繋ぐ重合は `wholeCanvas: true` で
+         *   この絞り込みの対象から外す（選択があるときは今までどおり選択が勝つ）。 */
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        assert(dien, '1,4-付加重合のルールが無い');
+        const btns = () => [...D.querySelectorAll('#reaction-actions [data-rule]')].map(b => b.dataset.rule);
+
+        const mol = polySetup(c, ['イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        g.summonMolecule('イソプレン');
+        g.summonMolecule('イソプレン');
+        g.updateDrawing();
+        g.openMoleculeModal();
+        W.reactor.refresh();
+        // 分析対象は ①（できたばかりの鎖）のまま ＝ 症状と同じ状態で見ている
+        const focus = g.moleculeModalAtomIds();
+        assert(focus && focus.size === 12, `分析対象が ① の鎖でない（${focus && focus.size}原子）`);
+        assert(btns().includes('diene_polymerization'),
+            `鎖を見ているあいだ 1,4-付加重合が一覧に出ない（${btns().join(' / ')}）`);
+
+        // 押せば本当に2本目の鎖ができる
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        assert(parts.length === 2, `2回目の重合のあと分子が ${parts.length} 個（鎖2本を期待）`);
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 4,
+            '鎖2本ぶんの R（4個）になっていない');
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('PM10（否定対照）: キャンバス全体を見るのは重合だけ ― 選択と他の反応の絞り込みは不変', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        const btns = () => [...D.querySelectorAll('#reaction-actions [data-rule]')].map(b => b.dataset.rule);
+
+        // ---- ① 印を持つのは「並べた単量体をまとめて」の3つだけ ----
+        const flagged = W.REACTION_RULES.filter(r => r.wholeCanvas).map(r => r.id).sort();
+        assert(flagged.join(',') === 'addition_polymerization,alkyne_polymerization,diene_polymerization',
+            `wholeCanvas を持つルールが増えている（${flagged.join(',')}）`);
+
+        // ---- ② v1429 の直しは生きている（見ている分子と無関係な反応は出ない） ----
+        //    ブタン酸を見ているのにケトンのヨードホルムが出る、が再発していないこと
+        polySetup(c, ['ブタン酸', 'エチルメチルケトン']);
+        const acid = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => p.atoms.some(a => a.element === 'O' &&
+                p.atoms.filter(x => x.element === 'O').length === 2));
+        assert(acid, 'ブタン酸が見つからない');
+        g.openMoleculeModal(acid.atoms.find(a => a.element === 'C').id);
+        W.reactor.refresh();
+        assert(!btns().includes('iodoform'),
+            `ブタン酸を見ているのにヨードホルムが出た（${btns().join(' / ')}）＝ v1429 の直しを壊している`);
+
+        // ---- ③ 選択があるときは選択が勝つ（重合でも） ----
+        const mol = polySetup(c, ['エチレン（エテン）', 'エチレン（エテン）', 'エタノール']);
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly.detect(mol).length === 1, 'エチレン2つで付加重合が出ない（前提が崩れている）');
+        const eq = W.reactor.siteFilter();
+        assert(eq.selSets.length === 0, '選択が残っている');
+        // エタノールだけを選ぶ ＝ 重合の箇所はその中に無いので落ちる
+        const ethanolC = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => p.atoms.some(a => a.element === 'O')).atoms.find(a => a.element === 'C').id;
+        g.selectedMolecules = [ethanolC];
+        const f = W.reactor.siteFilter();
+        assert(f.selSets.length === 1, '選択が1件にならない');
+        assert(!f.siteAllowed(poly.detect(mol)[0], poly),
+            '選択しているのに、選んでいない分子の重合が押せる（選択が勝つ約束を壊している）');
+        g.selectedMolecules = [];
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('PM11: 加硫は2本の鎖のあいだにだけ橋を架ける（1本の鎖では札を出さない）', async (c) => {
+        const g = c.game, W = c.W;
+        /* ★ **症状**（動画レーン実測）: イソプレン×4 を1本に重合してから加硫を押すと、
+         *   硫黄は入るが**同じ鎖の中でループ状に橋が架かる**（実測: 返っていた3組すべてが同一成分・
+         *   別の鎖どうしは 0組）。「2本のゴムの鎖を橋でつなぐ」という加硫の絵になっていない。
+         * ★ **直し**: `vulcanizablePairs` を「別の鎖どうし」に限る。
+         *   ⚠ 「別の鎖」は連結成分では測れない（1本目の架橋で2本が1分子になる）ので、
+         *      **硫黄を通らない成分**＝架橋する前の鎖を身元にする。 */
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        assert(vul, '加硫のルールが無い');
+
+        // ---- ① 鎖が1本だけなら候補ゼロ（ボタンが出ない） ----
+        let mol = polySetup(c, ['イソプレン', 'イソプレン', 'イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        assert(g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length === 1,
+            '4分子が1本の鎖になっていない（前提が崩れている）');
+        assert(vul.detect(g.userMolecule).length === 0,
+            `鎖1本で加硫の候補が ${vul.detect(g.userMolecule).length} 件出た（分子内ループになる）`);
+
+        // ---- ② 鎖を2本にすると架橋でき、1本目のあとも続けて架橋できる ----
+        mol = polySetup(c, ['イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        g.summonMolecule('イソプレン'); g.summonMolecule('イソプレン');
+        g.updateDrawing();
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        assert(vul.detect(g.userMolecule).length > 0, '鎖2本でも加硫の候補が出ない');
+        let bridges = 0;
+        for (let k = 0; k < 5; k++) {
+            const vs = vul.detect(g.userMolecule);
+            if (!vs.length) break;
+            vul.apply(g, vs[0]);
+            g.updateDrawing();
+            bridges++;
+        }
+        assert(bridges >= 2, `架橋が ${bridges} 本で止まった（1本目で2本の鎖が1分子になっても続けられること）`);
+        const sul = g.userMolecule.atoms.filter(a => a.element === 'S');
+        assert(sul.length === bridges, `硫黄が ${sul.length} 個（架橋 ${bridges} 本と合わない）`);
+        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)),
+            '加硫で価標が壊れた');
+        // 橋は必ず「別の鎖どうし」＝ 硫黄を外すと2つの成分に分かれる
+        const noS = new W.Molecule();
+        const map = new Map();
+        g.userMolecule.atoms.filter(a => a.element !== 'S' && a.element !== 'H')
+            .forEach(a => map.set(a.id, noS.addAtom(a.element, a.x, a.y).id));
+        g.userMolecule.bonds.forEach(b => {
+            if (map.has(b.atomId1) && map.has(b.atomId2)) noS.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+        });
+        const seen = new Set(); let chains = 0;
+        noS.atoms.forEach(a => {
+            if (seen.has(a.id)) return;
+            chains++;
+            const st = [a.id]; seen.add(a.id);
+            while (st.length) {
+                const cur = st.pop();
+                noS.getNeighbors(cur).forEach(n => { if (!seen.has(n.atom.id)) { seen.add(n.atom.id); st.push(n.atom.id); } });
+            }
+        });
+        assert(chains === 2, `硫黄を外すと鎖が ${chains} 本（2本を期待）＝ 同じ鎖の中で橋が架かっている`);
+    });
+
+    test('PM12（否定対照）: 加硫を絞っても、断り方と相手の見分けは変わらない', async (c) => {
+        const g = c.game, W = c.W;
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        const sulfur = (W.REAGENTS || []).find(r => r.id === 'sulfur');
+        assert(sulfur, '硫黄の瓶が無い');
+
+        // ---- ① 空振りの説明が「鎖をもう1本作る」まで言う（ボタンを消しただけにしない） ----
+        assert(/2本の鎖/.test(sulfur.miss) && /1,4-付加重合/.test(sulfur.miss),
+            `硫黄の miss が理由を言っていない（${sulfur.miss}）`);
+        assert(W.ruleUsesReagent(vul, 'sulfur'), '加硫が硫黄の瓶に結びついていない');
+
+        // ---- ② 単量体やふつうのアルケンは今までどおり相手にしない ----
+        ['イソプレン', '2-ブテン', 'シクロヘキセン'].forEach(name => {
+            if (!g.resolveCompound(name)) return;
+            const mol = polySetup(c, [name, name]);
+            assert(vul.detect(mol).length === 0, `${name} 2分子で加硫が出た（R の無い分子は相手にしない）`);
+        });
+
+        // ---- ③ 重合そのものは1件も減っていない ----
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const mol = polySetup(c, ['イソプレン', 'イソプレン', 'イソプレン', 'イソプレン']);
+        assert(dien.detect(mol).length === 1, '4分子の 1,4-付加重合が出なくなった');
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 4,
+            '1,4-付加重合で残る二重結合の数が変わった');
+    });
+
     test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
         const g = c.game, W = c.W;
         const CC = W.canonicalCode;
@@ -20006,8 +24421,16 @@
             return m ? Number(m[1]) : 1;
         };
 
+        // 選択なし ＝ **いま見ている分子**（分子モーダルが指す1分子）で絞る（v1429・RX43）。
+        // ここはシュウ酸を見ている状態なので、シュウ酸のカルボキシ基2 × アルコール2 = 4箇所。
+        // ⚠ v1428 まではここが6（キャンバス全部が混ざる）だった ＝ ユーザー報告のバグそのもの
         g.selectedMolecules = [];
-        assert(shownSites() === 6, '選択なしで6箇所出ない');
+        g.focusedMolecule = rep[0].id;
+        assert(shownSites() === 4, `選択なしで4箇所出ない（${shownSites()}）`);
+        // 見ている分子を酢酸へ切り替えれば、酢酸のカルボキシ基1 × アルコール2 = 2箇所
+        g.focusedMolecule = rep[3].id;
+        assert(shownSites() === 2, `酢酸を見ているのに2箇所出ない（${shownSites()}）`);
+        g.focusedMolecule = null;
 
         // 2つ選択（シュウ酸＋エタノール1つ）… カルボキシ基2 × そのアルコール1 = 2箇所
         g.selectedMolecules = [];
@@ -21020,6 +25443,11 @@
         for (const [w, h] of [[1920, 1080], [375, 667], [320, 568]]) {
             await withViewport(w, h, async (FW, FD, name) => {
                 const strip = () => Math.round(FD.getElementById('work-strip').getBoundingClientRect().height);
+                // ⚠ **先に分子を1つ置く**（v1454）。選ぶモードは「分子が0個」になると
+                //    自分で下りる（SB5）ので、空のキャンバスで旗だけ立ててもバッジは出ない
+                FW.game.setMode('free');
+                assert(FW.game.summonMolecule('エタノール'), `${name}: エタノールが呼び出せない`);
+                FW.game.updateDrawing();
                 const off = strip();
                 // ⚠ 帯が畳まれていると 0 と 0 を見比べて必ず通る ＝ 空振りの緑になる
                 assert(off > 0, `${name}: 作業帯が出ていない（測っても意味が無い）`);
@@ -21039,6 +25467,171 @@
                 assert(st.height >= 32, `${name}: 「やめる」が ${Math.round(st.height)}px（32px 未満）`);
             });
         }
+    });
+
+    test('SB5: ★ 分子が0個になったら選ぶモードは終わる（全消去・↩戻す・消しゴム／否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        /* ★ **ユーザー申し立て（実機）**: 「反応分子を選ぶ → **全消去などしてもモードが維持される**」。
+           ⚠ 空のキャンバスで選ぶモードに居ると、タップは選択に振り替えられたまま何も選べない
+             ＝ 作図に戻れない行き止まりになる（v1409 で塞いだ穴と同じ形）。
+           ⚠ **経路ごとに手当てを足さない** —— 下ろす条件は「分子が0個」の1つ（v1416 と同じ
+             「状態から導く」）。ここではその1つが、残っていた4経路すべてを閉じることを見る。 */
+        const 空にする道 = [
+            ['🗑 全消去', () => D.getElementById('btn-clear-all').click()],
+            ['🗑 全消去を2回', () => { D.getElementById('btn-clear-all').click(); D.getElementById('btn-clear-all').click(); }],
+            ['↩ 戻す（呼び出しを取り消す）', () => g.undo()],
+            ['図を直に空にする（消しゴムで全部消したのと同じ）', () => {
+                g.userMolecule = new W.Molecule(); g.updateDrawing();
+            }]
+        ];
+        const 下ごしらえ = () => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.saveState();
+            assert(g.summonMolecule('エタノール'), 'エタノールが呼び出せない');
+            g.updateDrawing();
+            rxTurnOnMoleculeSelect(c);
+            assert(g.reactionSelectMode && g.canvasMoleculeCount() === 1, '下ごしらえが崩れている');
+        };
+        空にする道.forEach(([name, act]) => {
+            下ごしらえ();
+            act();
+            assert(g.canvasMoleculeCount() === 0, `${name}: 分子が空にならなかった（前提が崩れている）`);
+            assert(!g.reactionSelectMode, `★ ${name} のあとも選ぶモードが残っている（作図に戻れない）`);
+            assert(g.selectedMolecules.length === 0, `★ ${name}: 選択（青の破線）が残っている`);
+            const badge = D.getElementById('canvas-mode-badge');
+            assert(!badge || badge.classList.contains('hidden'), `★ ${name}: バッジが残っている`);
+            // ★ 症状そのもの ——「作図に戻れるか」まで見る（旗だけ見て終わらない）
+            assert(rxCanDraw(c), `★ ${name} のあとに原子が置けない（行き止まりのまま）`);
+        });
+
+        // ---- ⚠ **呼び出しでは終わらない**（先に1つ選んでから相手を呼ぶ使い方を殺していない）----
+        下ごしらえ();
+        assert(g.summonMolecule('酢酸'), '酢酸が呼び出せない');
+        g.updateDrawing();
+        assert(g.reactionSelectMode,
+            '★ 相手を呼び出しただけで選ぶモードが下りている（v1409 の案内どおりの使い方が壊れる）');
+        assert(g.canvasMoleculeCount() === 2, '呼び出しで分子が2つになっていない');
+
+        // ===== ⚠ 否定対照: 「分子が0個」の門番を外すと、全消去してもモードが残る =====
+        下ごしらえ();
+        const 元 = g.canvasMoleculeCount;
+        g.canvasMoleculeCount = () => 1;      // ＝ v1453 までの実装と同じ（数を見ない）
+        let 残った = false;
+        try {
+            D.getElementById('btn-clear-all').click();
+            残った = g.reactionSelectMode;
+        } finally { g.canvasMoleculeCount = 元; }
+        assert(残った, '⚠ 否定対照が効いていない（門番を外しても全消去でモードが下りる）');
+        g.deactivateReactionSelectMode();
+        c.reset();
+    });
+
+    /* ===== SB4: 2段階モーフィングの①で止まっていることを画面に残す（v1454）=====
+     *
+     * ★ **ユーザー申し立て（実機）**: グルコースの「環化 → β-D-グルコース」を押すと
+     *   「**環になっていない**」。
+     *
+     * ★ **実測でこうなっていた**（このテストの否定対照がその再現）:
+     *   分子データは押した瞬間に確定する（重原子12・環1つ・名前も β-D-グルコピラノース・
+     *   環の形も**登録の図と同じ六角形**）。ところが**画面は①の静止画のまま**で、
+     *   ①は「まだ環が閉じていない図」＝ 名前だけ「β-D-グルコピラノース」と出た**開いた絵**。
+     *   止まっている断りは**9秒で消えるトースト1つだけ**なので、消えたあとの画面には
+     *   なぜそう見えるのかがどこにも書いていない ＝ 「環になっていない」と読むのが正しい。
+     * ⚠ **止め方そのものは直さない**（P12-7 M2f のユーザー要望「じっくり観察できる」）。
+     *   足すのは**止まっていることが画面に残ること**と**続きへの押しどころ**だけ。
+     * ⚠ **図を描き直す手当て（`standaloneDrawingOf`）は要らない** ——
+     *   ②の着地は測ると登録の図そのもの（このテストの③が数で押さえる）。
+     */
+    test('SB4: ★ 2段階の①で止まっているあいだ、バッジが出て「続きを見る」で進む（否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const badge = () => {
+            const b = D.getElementById('canvas-mode-badge');
+            return b && !b.classList.contains('hidden') ? b : null;
+        };
+        const rx = W.reactor;
+        /** 環化を実行し、**①で止まるまで待つ**（第1段階は 700ms）。止まったら true */
+        const 環化する = async () => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.name === W.REGISTERED_NAMES.chain).target });
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === 'cyclize_glucose_beta');
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length === 1, `下ごしらえ: 環化の箇所が ${sites.length} 件`);
+            W.reactor.execute(rule, sites[0]);
+            // ⚠ **待たないと空振りの緑になる** —— execute が返った時点ではまだ第1段階の再生中で
+            //   `_morphPause` は null。ここで待たずに `if (paused)` を書くと中身が1行も走らない
+            for (let i = 0; i < 60 && !rx._morphPause && rx._morphing; i++) {
+                await new Promise(r => setTimeout(r, 50));
+            }
+            return !!rx._morphPause;
+        };
+        // ---- ① 止まっているあいだはバッジが出て、モードが読める ----
+        //    ⚠ reduced-motion 環境ではそもそも止まらない（アニメを出さない）＝ その回は②③だけ見る
+        const 止まった = await 環化する();
+        assert(止まった || rx._reducedMotion(),
+            '★ ①で止まらなかった（2段階の見せ方が消えている。P12-7 M2f）');
+        if (止まった) {
+            const b = badge();
+            assert(b, '★ ①で止まっているのにバッジが出ていない（申し立ての画面そのもの）');
+            assert(b.getAttribute('data-mode') === 'morph-pause',
+                `data-mode が「${b.getAttribute('data-mode')}」（morph-pause を期待）`);
+            const txt = b.textContent;
+            assert(/止めています/.test(txt), `止まっていることが書かれていない: ${txt}`);
+            assert(/環が閉じます/.test(txt), `続きに何が起きるかが書かれていない: ${txt}`);
+            assert(!/編集できません/.test(txt), `★「編集できません」と書いている: ${txt}`);
+            // ⚠ 押しものの床（32px）を割らない
+            const stop = b.querySelector('.cmb-stop');
+            assert(stop && /続き/.test(stop.textContent), `「続きを見る」が無い: ${stop && stop.textContent}`);
+            assert(stop.getBoundingClientRect().height >= 32,
+                `「続きを見る」の高さが ${Math.round(stop.getBoundingClientRect().height)}px`);
+            // ---- ② 押すと進む（＝ 行き止まりではない）----
+            stop.click();
+            assert(!rx._morphPause, '★「続きを見る」を押しても①のままで止まっている');
+            assert(!badge(), '★ 進んだのにバッジが残る');
+        }
+        rx.finalizeMorph();
+        // ---- ③ ★ 着地は**登録の図そのもの**（＝ 図を描き直す手当ては要らない）----
+        const mol = g.userMolecule;
+        assert(g.lookupCompoundName(mol) === W.REGISTERED_NAMES.beta,
+            `★ 環化の着地が ${g.lookupCompoundName(mol)}`);
+        const cyc = W.haworthSugarCycles(mol);
+        assert(cyc.length === 1 && cyc[0].length === 6, `★ 環が ${cyc.length} 個・${cyc[0] && cyc[0].length} 員`);
+        const ref = g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.name === W.REGISTERED_NAMES.beta).target });
+        const 形 = (m) => {
+            const mx = Math.min(...m.atoms.map(a => a.x)), my = Math.min(...m.atoms.map(a => a.y));
+            return m.atoms.map(a => `${a.element}${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join(';');
+        };
+        assert(形(mol) === 形(ref),
+            '★ 環化の着地が登録の図と重ならない（平行移動を除く）——' +
+            ' 図を描き直す手当てが要るかどうかの判断がここで決まる');
+
+        // ===== ⚠ 否定対照: **バッジを出さない**と、止まった画面には断りが1つも無い =====
+        //   （＝ 上の①は空振りの緑ではない。申し立ての画面を再現して数で示す）
+        if (await 環化する()) {
+            const 元 = g.canvasModeBadgeSpec;
+            let 断り = null;
+            g.canvasModeBadgeSpec = () => null;      // ＝ v1453 までの実装と同じ
+            try {
+                g.syncCanvasModeBadge();
+                断り = badge();
+            } finally { g.canvasModeBadgeSpec = 元; }
+            assert(!断り, '⚠ 否定対照が効いていない（バッジを止めても出ている）');
+            // ⚠ そのとき画面に見えているのは「環が閉じていない図」＝ 申し立ての絵
+            const 見えている結合 = D.getElementById('bonds-group').querySelectorAll('line.svg-bond-ink').length;
+            const 実際の結合 = g.userMolecule.bonds.length;
+            assert(見えている結合 < 実際の結合 || rx._morphPause,
+                '⚠ 否定対照の前提が崩れている（止まっているのに画面が最終形になっている）');
+            g.syncCanvasModeBadge();
+            assert(badge(), '否定対照のあと元に戻っていない');
+        }
+        rx.finalizeMorph();
+        c.reset();
     });
 
     /**
@@ -21426,9 +26019,15 @@
         g.toggleMoleculeSelection(g.userMolecule.atoms[0]);
         assert(note().includes('選択中'), `選んでも「選択中」が出ない（${note()}）`);
 
-        // ④ ★選ぶモードでないときは無言（ふだんの画面に文が生えない）
+        // ④ ★選ぶモードでないときは**選び方の案内**を出さない（ふだんの画面に文が生えない）。
+        //    ⚠ v1429 から、2分子以上あるときは代わりに「いま見ている分子」の断りが出る
+        //      （黙って絞ると「反応が無い」と読まれるため・RX43）。ここでは
+        //      **選び方の文でないこと**と、断りが正しく出ることの両方を見る
         g.deactivateReactionSelectMode();
-        assert(note() === '', `選ぶモードでないのに案内が出ている（${note()}）`);
+        assert(!note().includes(hint) && !note().includes('タップすると選べます'),
+            `選ぶモードでないのに選び方の案内が出ている（${note()}）`);
+        assert(note() === W.RX_SCOPE_NOTE(g.lookupCompoundName(g.moleculeModalPart())),
+            `2分子あるのに「いま見ている分子」の断りが出ない（${note()}）`);
 
         // ⑤ 数え方は図の見出しと同じ切り分け（水素だけの欠片を分子として数えない）
         g.deactivateReactionSelectMode();
@@ -21735,6 +26334,723 @@
         c.reset();
     });
 
+    /**
+     * ===== RX40〜RX42: 「直近の反応」という1つの文脈（v1423） =====
+     *
+     * ユーザーの実機レビュー（2026-08-20）:
+     *   「試薬を作用させた後、**反応の前後を見る** / **この反応の機構を見る** が、
+     *    生成物に対するボタンの下に区別なく並んでいるのがわかりづらい」
+     *   「**この反応の機構を見る、に進むと、反応前に戻す、ができなくなる**」
+     *
+     * 割る軸はユーザー本人の言い直しが正: 「分子を変えるか変えないか」ではなく
+     * **1つ前の物質を変化させたという文脈の続きかどうか**。
+     * （前者だと「↩ 反応前に戻す」だけが振り返りの側から出ていってしまう）
+     */
+
+    // 自由モードで名前から分子を呼び、反応を実行して分子モーダルを開いたところまで進める
+    const rxContextSetup = (c, name, ruleId) => {
+        const g = c.game, W = c.W;
+        if (W.reactor.picking) { W.reactor.picking = null; g.clearUIOverlay(); }
+        g.deactivateReactionSelectMode();
+        g.selectedMolecules = [];
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule(name), `${name} が呼び出せない`);
+        const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+        assert(rule, `反応ルール ${ruleId} が無い`);
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, `${name} に ${ruleId} の箇所が無い`);
+        W.reactor.execute(rule, sites[0]);
+        g.openMoleculeModal();
+        return rule;
+    };
+
+    test('RX40: 反応の一覧は「この分子にできること」と「いま起きた反応」の2節に見出しで割れる', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        assert(W.RX_SECTION_NEXT && W.RX_SECTION_LAST && W.RX_UNDO_POINTER,
+            '節の見出しの文言が1か所（定数）に無い');
+
+        // ① 反応の**前**は節①だけ（振り返る対象がまだ無いのに節②の見出しを出さない）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule('エタノール'), 'エタノールが呼び出せない');
+        g.openMoleculeModal();
+        const heads = () => [...D.querySelectorAll('#reaction-actions .rx-section-head')]
+            .map(h => h.textContent);
+        assert(heads().some(t => t === W.RX_SECTION_NEXT),
+            `反応の前に「${W.RX_SECTION_NEXT}」の見出しが出ない（${heads().join(' / ')}）`);
+        assert(!heads().some(t => t.startsWith(W.RX_SECTION_LAST)),
+            `反応していないのに「${W.RX_SECTION_LAST}」の見出しが出ている（${heads().join(' / ')}）`);
+
+        // ② 反応の**後**は2節に割れる
+        rxContextSetup(c, 'エタノール', 'oxidize_primary');
+        const after = heads();
+        assert(after.filter(t => t === W.RX_SECTION_NEXT).length === 1,
+            `「${W.RX_SECTION_NEXT}」の見出しが1つでない（${after.join(' / ')}）`);
+        const lastHead = after.find(t => t.startsWith(W.RX_SECTION_LAST));
+        assert(lastHead, `「${W.RX_SECTION_LAST}」の見出しが出ない（${after.join(' / ')}）`);
+        assert(/（.+）$/.test(lastHead), `節②の見出しに反応名が入っていない（${lastHead}）`);
+
+        // ③ ★本題 — 振り返りと反応カードが**同じ節に混ざっていない**
+        const secOf = el => el && el.closest('.rx-section');
+        const cmp = [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('反応の前後を見る'));
+        assert(cmp, '「反応の前後を見る」が出ない（前提が崩れている）');
+        const rule = [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => !secOf(b) || secOf(b).querySelector('.rx-section-head').textContent === W.RX_SECTION_NEXT);
+        assert(rule, '反応カード（data-rule のボタン）が1つも出ていない');
+        assert(secOf(cmp) && secOf(rule) && secOf(cmp) !== secOf(rule),
+            '「反応の前後を見る」が反応カードと同じ節に並んでいる（区別なく並ぶ ＝ 申し立ての症状）');
+        assert(secOf(cmp).querySelector('.rx-section-head').textContent.startsWith(W.RX_SECTION_LAST),
+            '「反応の前後を見る」が節②に入っていない');
+
+        // ④ 「↩ 反応前に戻す」は**帯に1つだけ**。節の中では在り処を指すだけで、二重に置かない
+        const sec2 = secOf(cmp);
+        assert(sec2.textContent.includes(W.RX_UNDO_POINTER),
+            `節②が「↩ 反応前に戻す」の在り処を指していない（${sec2.textContent}）`);
+        assert(![...sec2.querySelectorAll('button')].some(b => b.textContent.includes('反応前に戻す')),
+            '節②に「↩ 反応前に戻す」のボタンが増えている（同じ出口が2か所にある）');
+        const strip = D.getElementById('btn-rx-undo');
+        assert(strip && !strip.classList.contains('hidden'),
+            '案内が指す先（帯の「↩ 反応前に戻す」）が出ていない');
+        assert(D.getElementById('ws-free').contains(strip), '札が帯（#ws-free）の外にある');
+
+        c.reset();
+    });
+
+    test('RX41: 機構を見にいって戻ってくると「↩ 反応前に戻す」がまた出る（文脈は続く）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-undo');
+        const shown = () => !btn.classList.contains('hidden');
+
+        // ベンゼンのニトロ化（mechanismId: benzene_nitration）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        g.placeModule('benzene', 420, 294, null);
+        const rule = W.REACTION_RULES.find(r => r.id === 'aromatic_nitration');
+        assert(rule, 'aromatic_nitration が無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, 'ニトロ化の箇所が無い');
+        W.reactor.execute(rule, sites[0]);
+        assert(shown(), '（下ごしらえ）反応後に札が出ていない');
+        const afterCode = W.canonicalCode(g.userMolecule);
+
+        // ① 「⚗ この反応の機構を見る」で学習モードへ
+        g.openMoleculeModal();
+        const mech = [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.textContent.includes('機構を見る'));
+        assert(mech, '「機構を見る」が出ない');
+        mech.click();
+        assert(g.currentMode === 'learn', `learn へ移らない（${g.currentMode}）`);
+        assert(W.reactionPlayer.active, '機構ビューアが起動しない');
+        // ビューアの絵が出ているあいだは札を引っ込めたまま（v1409 の手当てを残す）
+        assert(!shown(), '機構ビューアを開いても札が出たまま（見えていない図を書き換えられる）');
+        // ★ 記録は生きている（捨てると帰ってきても二度と出せない）
+        assert(W.reactor.lastReaction, '機構ジャンプで記録が捨てられている');
+
+        // ② 自由モードへ帰ると札が**また出る**（★これが申し立ての本体）
+        g.setMode('free');
+        assert(g.currentMode === 'free', '自由モードに戻れない');
+        assert(!W.reactionPlayer.active, '機構ビューアが終わっていない');
+        assert(W.canonicalCode(g.userMolecule) === afterCode,
+            '帰ってきた図が反応後と違う（退避・復帰が壊れている）');
+        assert(shown(), '機構を見て戻っても「↩ 反応前に戻す」が出ない（申し立ての症状）');
+
+        // ③ 押せば本当に反応前へ戻る（札が出るだけの空振りにしない）
+        const beforeCode = W.canonicalCode(
+            g.createTargetFromData({ target: W.reactor.snapshotToTarget(W.reactor.lastReaction.before) }));
+        btn.click();
+        assert(W.canonicalCode(g.userMolecule) === beforeCode,
+            '押しても反応前の図に戻らない');
+        assert(!shown(), '戻したのに札が出たまま');
+
+        c.reset();
+    });
+
+    test('RX42: ★否定対照 — 文脈が切れているときは出さない（全消去・描き足し）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-undo');
+        const shown = () => !btn.classList.contains('hidden');
+
+        // ① 全消去 → 学習 → 自由 では出ない（★モード離脱で捨てるのをやめても、
+        //    全消去の破棄まで一緒に外すとここが赤くなる）
+        rxContextSetup(c, 'エテン', 'add_br2');
+        D.getElementById('btn-molecule-modal-close').click();
+        assert(shown(), '（下ごしらえ）反応後に札が出ていない');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        assert(!W.reactor.lastReaction, '全消去しても記録が残っている');
+        g.setMode('learn');
+        g.setMode('free');
+        assert(!shown(), '全消去したのに、学習へ行って戻ると札が出る');
+
+        // ② 反応のあとに1原子描き足してから機構へ行って戻ると出ない
+        //    （★ syncUndoButton の門番を外すと赤。押した瞬間にその作図が黙って消える）
+        rxContextSetup(c, 'エテン', 'add_br2');
+        D.getElementById('btn-molecule-modal-close').click();
+        assert(shown(), '（下ごしらえ）反応後に札が出ていない');
+        const anchor = g.userMolecule.atoms[0];
+        g.saveState();
+        g.userMolecule.addAtom('C', anchor.x, anchor.y + 210);
+        g.updateDrawing();
+        assert(!shown(), '描き足しても札が出たまま（RX31 ① の門番が効いていない）');
+        assert(W.reactionPlayer.openById('ethene_br2'), 'ethene_br2 が開けない');
+        W.reactionPlayer.exit();
+        assert(!shown(), '描き足した図で機構を見て戻ると札が出る（門番が緩んでいる）');
+        // 描き足しを戻せば札も戻る（②が「常に出さない」で緑になっていないことの証明）
+        D.getElementById('btn-undo').click();
+        assert(shown(), '描き足しを戻しても札が戻らない（②が空振りしている）');
+
+        c.reset();
+    });
+
+    /*
+     * ===== RX43〜RX45: 反応は「いま見ている分子」のものだけを出す（v1429） =====
+     *
+     * ユーザーの実機報告（2026-08-20・原文）:
+     *   「**ブタン酸とエチルメチルケトンを２つ並べた状態で、ブタン酸の反応を見ると
+     *     ヨードホルム反応が表示され、ボタンを押すとケトンが反応します。**
+     *     2分子以上ある状態での可能な反応が混ざっています。
+     *     選択した分子の反応のみ表示するのがよいでしょう」
+     *
+     * 原因は `siteFilter()` の「何も選ばれていなければ素通し」。見ていたのは
+     * 「🎯 反応させる分子を選ぶ」の選択（`selectedMoleculeSets()`）だけで、
+     * **分子モーダルを開いただけでは選択にならない** ＝ 素通しのままキャンバス全体が混ざっていた。
+     *
+     * ⚠ 絞りすぎてもいけない —— エステル化のように**相手を要する反応**は、
+     *   見ている分子が関わっていれば残す（残さないと v1420 の「相手を呼び出す導線」が死ぬ）。
+     */
+
+    // 名前を並べて呼び出し、`which` 番目の分子モーダルを開いたところまで進める
+    const scopeSetup = (c, names, which) => {
+        const g = c.game, W = c.W;
+        if (W.reactor.picking) { W.reactor.picking = null; g.clearUIOverlay(); }
+        W.reactor.clearDeadEnd();
+        W.reactor.discardLastReaction();
+        g.deactivateReactionSelectMode();
+        g.selectedMolecules = [];
+        g.focusedMolecule = null;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        const parts = g.splitMolecules();
+        assert(parts.length === names.length,
+            `分子が ${parts.length} 個（${names.length} 個で始める前提が崩れている）`);
+        const rep = parts.map(p => p.atoms.find(a => a.element !== 'H') || p.atoms[0]);
+        g.openMoleculeModal(rep[which].id);
+        return rep;
+    };
+    const rxLabels = (D) => [...D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+    const 酸 = '酪酸（ブタン酸）', ケトン = 'エチルメチルケトン（ブタノン）';
+
+    test('RX43: 2分子あるとき、反応は「いま見ている分子」のものだけを出す（ユーザー報告そのもの）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+
+        // ① ブタン酸を開く —— ★ケトンの反応（ヨードホルム）が混ざらない
+        scopeSetup(c, [酸, ケトン], 0);
+        assert(D.getElementById('mm-name').textContent === 酸,
+            `開いた分子が違う（${D.getElementById('mm-name').textContent}）`);
+        let labels = rxLabels(D);
+        assert(!labels.some(t => t.includes('ヨードホルム')),
+            `ブタン酸を見ているのにヨードホルム反応が出る＝申し立ての症状（${labels.join(' / ')}）`);
+        // ② 見ている分子自身の反応は消えていない（絞りすぎの検出）
+        assert(labels.some(t => t.includes('中和')),
+            `ブタン酸自身の反応まで消えている（${labels.join(' / ')}）`);
+        // ③ 相手を要する反応への道は残る（v1420 の導線を殺していない）
+        assert([...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .some(b => b.dataset.rule === 'esterification'),
+            'エステル化（相手を呼び出す）への道まで消えている');
+
+        // ④ ★表示だけでなく**実行も**塞がっていること。瓶からも押せない
+        const iodo = W.REACTION_RULES.find(r => r.id === 'iodoform');
+        assert(iodo && iodo.detect(g.userMolecule).length === 1,
+            'キャンバス全体にはヨードホルムの箇所がある、という前提が崩れている');
+        const bottleId = iodo.reagentId;
+        assert(W.reactor.reagentHits(W.REAGENTS.find(r => r.id === bottleId)).length === 0,
+            '瓶からならヨードホルム反応が押せてしまう（絞り込みが1か所で効いていない）');
+        const before = W.canonicalCode(g.userMolecule);
+        const bottle = D.querySelector(`.rg-bottle[data-reagent="${bottleId}"]`);
+        assert(bottle, `瓶 ${bottleId} が見つからない`);
+        bottle.click();
+        await c.tick(30);
+        assert(W.canonicalCode(g.userMolecule) === before,
+            '瓶を押したら見ていない分子（ケトン）が反応した ＝ 申し立ての本体');
+        assert(!W.reactor.lastReaction, '実行していないのに反応が記録された');
+
+        // ⑤ ★陰性対照 —— ケトンを開けばヨードホルムは出る（「常に消す」で緑になっていない）
+        scopeSetup(c, [酸, ケトン], 1);
+        labels = rxLabels(D);
+        assert(D.getElementById('mm-name').textContent === ケトン,
+            `②の分子が開けていない（${D.getElementById('mm-name').textContent}）`);
+        assert(labels.some(t => t.includes('ヨードホルム')),
+            `ケトンを見ているのにヨードホルム反応が出ない（${labels.join(' / ')}）`);
+        assert(!labels.some(t => t.includes('中和')),
+            `ケトンを見ているのに酸の中和が出る（${labels.join(' / ')}）`);
+        assert(W.reactor.reagentHits(W.REAGENTS.find(r => r.id === bottleId)).length === 1,
+            'ケトンを見ているのに瓶からヨードホルムが押せない');
+
+        // ⑥ ★陰性対照 —— 分子が1つしか無いときの振る舞いは変えていない
+        scopeSetup(c, [ケトン], 0);
+        assert(rxLabels(D).some(t => t.includes('ヨードホルム')),
+            '1分子だけのときにヨードホルム反応が消えた（絞り込みが暴走している）');
+
+        // ⑦ ★文言 —— 黙って減らさない（「反応が無い」と読まれないように理由を書く）
+        scopeSetup(c, [酸, ケトン], 0);
+        const note = D.getElementById('reaction-selection').textContent;
+        assert(note === W.RX_SCOPE_NOTE(酸),
+            `どの分子を見ているかの断りが出ていない（${note}）`);
+        assert(note.includes(酸) && note.includes('切り替える'),
+            `断りに「見ている分子の名前」と「隣を見る手」の両方が無い（${note}）`);
+        scopeSetup(c, [ケトン], 0);
+        assert(D.getElementById('reaction-selection').textContent === '',
+            '1分子しか無いのに絞り込みの断りが出る（ふだんの画面に文が生える）');
+
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('RX44: ★否定対照 — 絞るのは「見ている分子が関わらない反応」だけ（選択・相手・呈色）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+
+        // ① 相手を要する反応は、**2分子にまたがる箇所そのもの**が残る
+        //    （「見ている分子の中で完結する反応だけ」に絞ると、ここが 0 になって赤くなる）
+        scopeSetup(c, [酸, 'エタノール'], 0);
+        const est = W.REACTION_RULES.find(r => r.id === 'esterification');
+        assert(est.detect(g.userMolecule).length === 1, 'エステル化の箇所が1つある前提が崩れている');
+        const { siteAllowed } = W.reactor.siteFilter();
+        assert(est.detect(g.userMolecule).every(siteAllowed),
+            '2分子にまたがるエステル化の箇所が絞り落とされた（相手を呼び出す導線が死ぬ）');
+        assert(rxLabels(D).some(t => t.startsWith('エステル化')),
+            `酸を見ているのにエステル化が出ない（${rxLabels(D).join(' / ')}）`);
+        // 相手側（エタノール）から見ても同じ箇所が残る（どちらが participant でもよい）
+        scopeSetup(c, [酸, 'エタノール'], 1);
+        assert(rxLabels(D).some(t => t.startsWith('エステル化')),
+            `アルコールを見ているのにエステル化が出ない（${rxLabels(D).join(' / ')}）`);
+
+        // ② 「🎯 反応させる分子を選ぶ」の絞り込みが**勝つ**（既存の振る舞いをそのまま）。
+        //    ケトンを選べば、開いている分子がブタン酸でもヨードホルムが出る
+        const rep = scopeSetup(c, [酸, ケトン], 0);
+        g.toggleMoleculeSelection(g.userMolecule.atoms.find(a => a.id === rep[1].id));
+        W.reactor.refresh();
+        assert(g.selectedMoleculeSets().length === 1, '選択が1件になっていない');
+        assert(rxLabels(D).some(t => t.includes('ヨードホルム')),
+            `選択が効いていない（${rxLabels(D).join(' / ')}）`);
+        assert(!rxLabels(D).some(t => t.includes('中和')),
+            `選択で絞れていない（${rxLabels(D).join(' / ')}）`);
+        assert(D.getElementById('reaction-selection').textContent.includes('選択中'),
+            '選択中の案内が「見ている分子」の断りに置き換わっている（既存の文言の回帰）');
+        g.selectedMolecules = [];
+
+        // ③ 呈色・検出も同じ絞り込みを通る（判定を2か所に書いていないことの実測）。
+        //    炭酸水素ナトリウムは -COOH に効く ＝ ケトンを見ているときは陰性
+        scopeSetup(c, [酸, ケトン], 1);
+        const nb = D.querySelector('.rg-bottle[data-reagent="nahco3"]');
+        assert(nb, '炭酸水素ナトリウムの瓶が無い');
+        nb.click();
+        let res = D.getElementById('mm-reagent-note').textContent;
+        assert(res.includes('陰性'),
+            `ケトンを見ているのに、隣のカルボン酸で陽性になる（${res.slice(0, 40)}）`);
+        // ★陰性対照 —— 酸を見れば陽性（「常に陰性」で緑になっていない）
+        scopeSetup(c, [酸, ケトン], 0);
+        D.querySelector('.rg-bottle[data-reagent="nahco3"]').click();
+        res = D.getElementById('mm-reagent-note').textContent;
+        assert(res.includes('陽性'), `カルボン酸を見ているのに陰性（${res.slice(0, 40)}）`);
+
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    /*
+     * ===== RX46〜RX48: 反応の一覧は「たどる」と「決める」が別（v1439） =====
+     *
+     * ユーザーの実機報告（2026-08-21・原文）:
+     *   「**反応機構ビューアー　反応の種類が選べない、すぐ選択される**」
+     *
+     * 実測（:8240・Playwright chromium。原文が1行なので症状の特定から始めた）:
+     * ```
+     * ▼ すぐ選択される —— 一覧は <select> で、`change` は「選び終えた」ではなく「値が動いた」で飛ぶ
+     *   ② select にフォーカス   active=false                       （まだ何も選んでいない）
+     *   ③ ↓ を1回押した         active=true / methane_chlorination / メニュー閉じる / 焦点=BODY
+     *   ④⑤ ↓ をさらに13回       何も起きない ＝ **2件目より先へ1件も進めない**
+     * ▼ 選べない —— 帯が出ているあいだ、メニューは中を触った瞬間に閉じる
+     *   ① 一覧から1件目を選ぶ   帯=出る / メニュー=引っ込む         （ここは正しい）
+     *   ② 📚 を押し直す         メニュー=開く / 帯=出たまま
+     *   ③ ⚗️ の見出しを押す     メニュー=閉じる ❌ アコーディオンも畳まれる ❌
+     * ```
+     * どちらも根は1つ ―― **「触れた」を「選んだ」として扱っていた**。
+     * v1379（一覧から選ぶだけで始まる）自体は正しく、**`<select>` に載せたことだけが
+     * 行き過ぎ**だった。戻さずに、一覧を押しもの（button）に替えて両立させる。
+     *
+     * ⚠ **「上下キーで change が飛ぶ」はテストからは撃てない**（信用されないイベントは
+     *   ネイティブの select を動かさない）。だから機械で見張るのは**性質のほう**:
+     *   「人の面に出ている一覧は、押して初めて決まるものである」。
+     *   上の実測がその性質を破ったときに何が起きるかの記録で、2つで1組になっている。
+     */
+
+    test('RX46: 反応の一覧は「押して確定する」もので、14件すべてに1手で届く', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length === 14,
+            `登録された反応が14件でない（${rp ? rp.reactions.length : 'なし'}件）`);
+
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+
+        // ① 人が触る一覧は #reaction-list。**`<select>` は面に出さない**
+        //    （出ていると、候補を1つ動かしただけで change が飛んで確定してしまう）
+        const list = D.getElementById('reaction-list');
+        assert(list, '反応の一覧（#reaction-list）が無い');
+        assert(list.checkVisibility(), 'アコーディオンを開いても反応の一覧が見えない');
+        const sel = D.getElementById('select-reaction');
+        assert(sel, '#select-reaction（選択の実体）が消えている ＝ ?open=mechanism と RX24 の入口が死ぬ');
+        assert(!sel.checkVisibility(),
+            '一覧が <select> のまま人の面に出ている（上下キー・iOS のピッカーで「触れた」が「選んだ」になる）');
+
+        // ② 一覧の中身は button だけ ＝ たどるのと決めるのが別（★症状の本体）
+        const items = [...list.querySelectorAll('[data-rx-id]')];
+        assert(items.length === 14, `一覧の押しものが ${items.length} 件（14件を期待）`);
+        assert(items.every(b => b.tagName === 'BUTTON'),
+            '一覧に button 以外の選択物が混ざっている（触れただけで値が動くもの）');
+        assert(!list.querySelector('select, input, [contenteditable]'),
+            '一覧に select / input が混ざっている');
+        // 14件が「反応の種類」で束ねてある（ユーザーの言葉どおり。畳まずに何があるか読める）
+        const heads = [...list.querySelectorAll('.quiz-group-head')].map(h => h.textContent);
+        const series = [...new Set(rp.reactions.map(r => r.series))];
+        assert(heads.length === series.length,
+            `種類の見出しが ${heads.length} 個（${series.length} 種を期待）`);
+        series.forEach(s => assert(heads.some(t => t.startsWith(s)), `「${s}」の見出しが無い`));
+
+        // ③ **たどっているあいだは始まらない**（焦点を移しても・キーを叩いても）
+        items[0].focus();
+        items[13].focus();
+        items[1].dispatchEvent(new W.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        items[1].dispatchEvent(new W.Event('focus', { bubbles: false }));
+        await c.tick(30);
+        assert(!rp.active && !D.getElementById('check-reaction-mode').checked,
+            '一覧をたどっただけで機構ビューアが始まっている（＝「すぐ選択される」）');
+        assert(!D.getElementById('study-modal').classList.contains('hidden'),
+            '一覧をたどっただけでメニューが閉じている（次の候補に手が届かない）');
+        assert(D.getElementById('ws-reaction').classList.contains('hidden'),
+            '一覧をたどっただけで作業帯が出ている');
+
+        // ④ 14件が重複なく並び、**1件ずつ押すと全部その反応が開く**（届かない件が無いことを数で）
+        const ids = items.map(b => b.dataset.rxId);
+        assert(new Set(ids).size === 14, '一覧に同じ反応が2度出ている');
+        rp.reactions.forEach(r => assert(ids.includes(r.id), `${r.id} が一覧に出ていない`));
+        const hit = [];
+        for (const b of items) {
+            g.setStudyOpen(true);
+            b.click();
+            await c.tick(10);
+            if (rp.active && rp.currentReaction && rp.currentReaction.id === b.dataset.rxId) {
+                hit.push(b.dataset.rxId);
+            }
+        }
+        assert(hit.length === 14,
+            `1手で開けたのは ${hit.length}/14 件（${ids.filter(i => !hit.includes(i)).join(' / ')} に届かない）`);
+        // 2件目・14件目を名指しでもう一度（「1件目しか開かない」で緑にならない）
+        const again = [1, 13];
+        for (const n of again) {
+            g.setStudyOpen(true);
+            items[n].click();
+            await c.tick(10);
+            assert(rp.currentReaction.id === ids[n],
+                `一覧の ${n + 1} 件目を押しても ${rp.currentReaction.id} が開く（${ids[n]} を期待）`);
+        }
+
+        rp.exit();
+        g.setStudyOpen(false);
+        g.setMode('puzzle');
+    });
+
+    test('RX47: ★否定対照 — 1件目を見たあとメニューへ戻れる（触った瞬間に閉じない／渡すときは閉じる）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        const study = D.getElementById('study-modal');
+        const open = () => !study.classList.contains('hidden');
+        const box = D.getElementById('reaction-box');
+        const btnOf = id => [...D.querySelectorAll('#reaction-list button[data-rx-id]')]
+            .find(b => b.dataset.rxId === id);
+
+        // ① 1件目を選ぶ → 始まってメニューは引っ込む（v1379 の約束。ここは回帰させない）
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        box.open = true;
+        const first = btnOf('ethene_br2');
+        assert(first, '一覧に ethene_br2 が無い');
+        first.click();
+        await c.tick(10);
+        assert(rp.active && rp.currentReaction.id === 'ethene_br2', '一覧から1件目が始まらない');
+        assert(!open(), '選んでもメニューが引っ込まない（キャンバスが見えない）');
+
+        // ② 帯が出たまま 📚 を開き直し、**中を触ってもメニューは閉じない**（★申し立ての本体）
+        D.querySelector('.mode-tab[data-mode="learn"]').click();
+        assert(open(), '📚 を押し直してもメニューが開かない');
+        assert(!D.getElementById('ws-reaction').classList.contains('hidden'),
+            '（前提）1件目の作業帯が出たままでない ＝ 症状の場面になっていない');
+        box.querySelector('summary').click();   // 畳む
+        await c.tick(10);
+        assert(open(), 'メニューを開き直して見出しを押した瞬間に閉じた（2件目の一覧へ手が届かない）');
+        box.querySelector('summary').click();   // 開き直す
+        await c.tick(10);
+        assert(open() && box.open, '見出しをもう一度押しても一覧が開かない（メニューごと消えている）');
+
+        // ③ そこから2件目・14件目を選べる（＝ 戻ってこられることを実際に通す）
+        btnOf('diazo_coupling').click();
+        await c.tick(10);
+        assert(rp.currentReaction.id === 'diazo_coupling',
+            `2件目に移れない（${rp.currentReaction && rp.currentReaction.id}）`);
+        assert(!open(), '2件目を選んでもメニューが引っ込まない（同じ面を選び直しても渡す）');
+
+        // ③' **同じ反応をもう一度選んでも**渡す。絵も帯の文字も1つも変わらないので
+        //     「キャンバスの側が動いたか」では決まらない ＝ 持ち主（ビューア）が自分で下ろす
+        D.querySelector('.mode-tab[data-mode="learn"]').click();
+        assert(open(), '（前提）メニューが開いていない');
+        btnOf('diazo_coupling').click();
+        await c.tick(10);
+        assert(!open(),
+            '同じ反応をもう一度選ぶとメニューが残る（キャンバスを覆ったまま ＝ 選んだ先が見えない）');
+
+        // ④ ★引っ込む働きそのものは生きている —— 隣の学習へバトンを渡すと閉じる
+        //    （「いつでも閉じない」に倒して緑にしていないことの証明）
+        rp.exit();
+        D.querySelector('.mode-tab[data-mode="learn"]').click();
+        assert(open(), '（前提）メニューが開いていない');
+        D.getElementById('learn-acc-practice').open = true;
+        let topic = null;
+        for (let i = 0; i < 60 && !topic; i++) {
+            topic = D.querySelector('#ip-body button');
+            if (!topic) await c.tick(50);
+        }
+        assert(topic, '異性体の書き出し練習のお題ボタンが出ない（前提が崩れている）');
+        topic.click();
+        await c.tick(20);
+        assert(!open(),
+            'お題を押してもメニューが被さったまま（バトンを渡したら引っ込む配線を丸ごと外している）');
+        assert(!D.getElementById('ws-practice').classList.contains('hidden'),
+            '（前提）練習の作業帯が出ていない');
+
+        W.isomerPractice.stop();
+        D.getElementById('learn-acc-practice').open = false;
+        g.setStudyOpen(false);
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('RX48: ★否定対照 — 新しい一覧から始めても v1379 の退避と v1423 の文脈が生きている', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        const undoBtn = D.getElementById('btn-rx-undo');
+        const shown = () => !undoBtn.classList.contains('hidden');
+
+        // ① 反応を実行して「直近の反応」の文脈を作る（RX41 と同じ下ごしらえ）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        g.placeModule('benzene', 420, 294, null);
+        const rule = W.REACTION_RULES.find(r => r.id === 'aromatic_nitration');
+        assert(rule, 'aromatic_nitration が無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, 'ニトロ化の箇所が無い');
+        W.reactor.execute(rule, sites[0]);
+        assert(shown(), '（下ごしらえ）反応後に「↩ 反応前に戻す」が出ていない');
+        const afterCode = W.canonicalCode(g.userMolecule);
+        const atomsBefore = g.userMolecule.atoms.length;
+
+        // ② **新しい一覧の押しもの**から入る ＝ v1379 の約束と v1374 の退避が通る
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+        const item = [...D.querySelectorAll('#reaction-list button[data-rx-id]')]
+            .find(b => b.dataset.rxId === 'benzene_nitration');
+        assert(item, '一覧に benzene_nitration が無い');
+        item.click();
+        await c.tick(10);
+        assert(rp.active && rp.currentReaction.id === 'benzene_nitration',
+            '一覧の押しものから始まらない（v1379 の回帰）');
+        assert(D.getElementById('check-reaction-mode').checked,
+            'スイッチの表示が追従しない（状態が2つに割れている）');
+        assert(!D.getElementById('ws-reaction').classList.contains('hidden'), '帯が出ない');
+        assert(D.getElementById('study-modal').classList.contains('hidden'), 'メニューが引っ込まない');
+        assert(rp.ownsCanvas() && rp.canvasBorrowed && rp.savedPuzzleMolecule &&
+            rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            'キャンバスの退避が抜けている（v1374・RX25 と同じ肝を新しい入口で）');
+        assert(!shown(), 'ビューア中も札が出たまま（v1409 の手当ての回帰）');
+        assert(W.reactor.lastReaction,
+            '一覧から機構を見にいくと直近の反応の記録が捨てられる（v1423 の回帰）');
+        // 選ばれている1件は一覧の印と `#select-reaction` の両方に出る（状態が1本）
+        assert(item.getAttribute('aria-current') === 'true', '選ばれている1件に印が付かない');
+        assert(D.getElementById('select-reaction').value ===
+            String(rp.reactions.findIndex(r => r.id === 'benzene_nitration')),
+            '選択の実体（#select-reaction）が一覧の押しものと食い違う');
+
+        // ③ 帰ってくると文脈が続いている（v1423・RX41 の新しい入口版）
+        g.setMode('free');
+        assert(!rp.active, 'ビューアが終わっていない');
+        assert(W.canonicalCode(g.userMolecule) === afterCode,
+            '帰ってきた図が反応後と違う（退避・復帰が壊れている）');
+        assert(shown(),
+            '一覧の押しものから機構を見て戻ると「↩ 反応前に戻す」が出ない（v1423 の回帰）');
+
+        c.reset();
+    });
+
+    /* ===== 反応で作る C=O の向き（CO1・検品レビュー C-7） =====
+       **C-7 は v928 で直っているのに、回帰テストが無いせいで台帳から閉じられず3回開き直された。**
+       台帳の書いた原因（`outwardCandidates` の候補順）は**誤り**で、あの関数が置くのは
+       芳香族の置換基とアセチル基だけ（どちらも枝を `角度±90°` に出すので元から縦）。
+       実際の原因は**酸化が酸素を置き直さない**こと ＝ 元のアルコールの `C—C—OH` が
+       そのまま `C—C=O` の一直線になる。直したのは `bendCarbonyl` と `freeSpotAround` の向きの優先順。
+       ここで**動く証拠**を固定して、二度と「痕跡が見つからない」と言われないようにする。 */
+
+    test('CO1: 反応で作る C=O は炭素鎖と一直線に出さない（検品レビュー C-7 の固定）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entryOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        const molOf = (name) => g.createTargetFromData({ target: entryOf(name).target });
+        // 平行移動を除いた図の形（座標の突き合わせ。回転・鏡映は同一視しない）
+        const shapeOf = (m) => {
+            const hv = m.atoms.filter(a => a.element !== 'H');
+            const mx = Math.min(...hv.map(a => a.x)), my = Math.min(...hv.map(a => a.y));
+            return hv.map(a => `${a.element}:${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join('|');
+        };
+        /* ★ この検査の物差し: **末端の =O が、同じ炭素についた「炭素」と正反対を向いている**数。
+           ⚠ -COOH の =O と -OH が正反対なのは**ライブラリ自身の描き方**（酢酸 C(440,300)=O(440,220)・
+           -OH(520,300)）なので数えない。数えると 140 件の空振りが出る（実測）。 */
+        const straightCO = (mol) => {
+            let n = 0;
+            mol.bonds.forEach(b => {
+                if (b.type !== 2) return;
+                const a1 = mol.atoms.find(a => a.id === b.atomId1);
+                const a2 = mol.atoms.find(a => a.id === b.atomId2);
+                if (!a1 || !a2) return;
+                let cc = null, oo = null;
+                if (a1.element === 'C' && a2.element === 'O') { cc = a1; oo = a2; }
+                else if (a2.element === 'C' && a1.element === 'O') { cc = a2; oo = a1; }
+                if (!cc || !oo) return;
+                if (mol.getNeighbors(oo.id).filter(x => x.atom.element !== 'H').length !== 1) return;
+                const ox = oo.x - cc.x, oy = oo.y - cc.y, ol = Math.hypot(ox, oy);
+                if (ol < 1e-6) return;
+                const hit = mol.getNeighbors(cc.id).filter(x => x.atom.element === 'C').some(x => {
+                    const dx = x.atom.x - cc.x, dy = x.atom.y - cc.y, dl = Math.hypot(dx, dy);
+                    return dl > 1e-6 && (ox * dx + oy * dy) / (ol * dl) < -0.99;
+                });
+                if (hit) n++;
+            });
+            return n;
+        };
+        const react = (mol, ruleId) => {
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} のルールが無い`);
+            const sites = rule.detect(mol);
+            assert(sites.length > 0, `${ruleId} が検出されない（テストの前提が崩れている）`);
+            g.userMolecule = mol;
+            rule.apply(g, sites[0]);
+            return g.userMolecule;
+        };
+
+        // ---- (1) V6 の道筋。**生成した図がライブラリの図と1px も違わない**（v928 の実測を固定） ----
+        let m = react(molOf('エタノール'), 'oxidize_primary');
+        assert(straightCO(m) === 0, '酸化したアセトアルデヒドの =O が鎖と一直線になっている');
+        /* ⚠ ここでライブラリの図と突き合わせない: 登録のアセトアルデヒドは刻みが違う
+           （C(358,300) C(400,300) O(400,240) ＝ 42px 刻み。エタノールは 80px 刻み）。
+           **向きは同じで大きさだけ違う**ので、形の一致は次の酢酸で見る */
+        m = react(m, 'oxidize_aldehyde');
+        assert(straightCO(m) === 0, '酸化した酢酸の =O が鎖と一直線になっている');
+        assert(shapeOf(m) === shapeOf(molOf('酢酸')),
+            `生成した酢酸がライブラリの図と違う（${shapeOf(m)}）`);
+
+        // ---- (2) ★否定対照 —— **直す前の形をそのまま書く**。ここが通ってしまうなら検査が効いていない ----
+        // エタノールは C(x)—C—O が横一列に描かれている。二重にするだけでは一直線のまま
+        const eth = molOf('エタノール');
+        const ethO = eth.atoms.find(a => a.element === 'O');
+        const ethC = eth.getNeighbors(ethO.id).find(x => x.atom.element === 'C').atom;
+        eth.getBond(ethO.id, ethC.id).type = 2; // bendCarbonyl を通さずに二重結合にする
+        assert(straightCO(eth) === 1,
+            'エタノールの -OH をただ二重にしても一直線と判定されない ＝ 物差しが効いていない');
+
+        // ---- (3) 酸化の全数走査（198件）。**新しく一直線を作るのは、下の既知の4件だけ** ----
+        const ids = ['oxidize_primary', 'oxidize_secondary', 'oxidize_primary_vigorous',
+                     'oxidize_aldehyde', 'oxidize_side_chain', 'open_glucopyranose'];
+        const worse = [];
+        let applied = 0;
+        ids.forEach(rid => {
+            const rule = W.REACTION_RULES.find(r => r.id === rid);
+            assert(rule, `${rid} のルールが無い`);
+            source.filter(e => e && e.target && e.name).forEach(e => {
+                let mol;
+                try { mol = g.createTargetFromData({ target: e.target }); } catch (err) { return; }
+                let sites;
+                try { sites = rule.detect(mol) || []; } catch (err) { return; }
+                if (!sites.length) return;
+                const before = straightCO(mol);
+                g.userMolecule = mol;
+                try { rule.apply(g, rule.detect(mol)[0]); } catch (err) { return; }
+                applied++;
+                if (straightCO(g.userMolecule) > before) worse.push(`${rid}|${e.name}`);
+            });
+        });
+        assert(applied >= 190, `走査した反応が ${applied} 件しかない（前提が崩れている）`);
+        /* ⚠ 既知の4件は**どちらも直しようが無い**ことを実測で確かめてある:
+           - 鎖状グルコースは**フィッシャー投影**（縦の鎖の上端に -CHO）＝ 一直線が紙の側の正しい形。
+             ライブラリの「D-グルコース（鎖状）」自身が O(358,174)-C(358,216)-C(358,258) と一直線に描いている
+           - トレオニンの2級酸化は、空いた直交の向きが2つとも別々の隣と一直線になる（どちらでも同じ）*/
+        const known = ['oxidize_secondary|トレオニン（スレオニン）',
+                       'open_glucopyranose|β-D-グルコース（β-D-グルコピラノース）',
+                       'open_glucopyranose|α-D-グルコース（α-D-グルコピラノース）'];
+        const unexpected = worse.filter(k => !known.includes(k));
+        assert(unexpected.length === 0,
+            `反応が C=O を鎖と一直線に出している: ${unexpected.join('、')}`);
+        // 既知の側も**黙って消えない**ように押さえる（消えたら直ったということ ＝ ここを更新する）
+        known.forEach(k => assert(worse.includes(k), `既知の ${k} が出ない（検査の前提が変わった）`));
+
+        // ---- (4) 鎖状グルコースは「ライブラリと同じフィッシャー投影」であることを言い切る ----
+        const opened = react(molOf('β-D-グルコース（β-D-グルコピラノース）'), 'open_glucopyranose');
+        assert(g.lookupCompoundName(opened) === 'D-グルコース（鎖状）',
+            `開環で鎖状グルコースにならない（${g.lookupCompoundName(opened)}）`);
+        assert(straightCO(molOf('D-グルコース（鎖状）')) === 1,
+            'ライブラリの鎖状グルコースが一直線でない（フィッシャー投影の前提が変わった）');
+
+        // ---- (5) ★ 逃がした先も一直線なら動かさない（v1455・利得の検査） ----
+        // トレオニンの -OH は右のメチルと一直線。折ると今度は上の主鎖と一直線＝得が無いので、
+        // **反応前の図の位置のまま**にする（発注の芯「反応の前後で形が対応する」）
+        const thr = molOf('トレオニン（スレオニン）');
+        const before = new Map(thr.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const thrOut = react(thr, 'oxidize_secondary');
+        const shifted = thrOut.atoms.filter(a => {
+            const p = before.get(a.id);
+            return p && (Math.abs(p.x - a.x) > 0.5 || Math.abs(p.y - a.y) > 0.5);
+        });
+        assert(shifted.length === 0,
+            `得が無いのに原子を動かしている（${shifted.map(a => a.element).join('、')}）`);
+        // ⚠ 否定対照: 得があるときは**ちゃんと動く**（動かないだけの実装で通してしまわない）
+        const et2 = molOf('エタノール');
+        const et2before = new Map(et2.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const et2out = react(et2, 'oxidize_primary');
+        assert(et2out.atoms.some(a => {
+            const p = et2before.get(a.id);
+            return p && (Math.abs(p.x - a.x) > 0.5 || Math.abs(p.y - a.y) > 0.5);
+        }), 'エタノールの酸化で =O が1px も動いていない ＝ 折る側が働いていない');
+
+        c.reset();
+    });
+
     /* ===== 行き止まりの報告（DE1〜3・v1420） =====
        「押したのに何も起きない」は今日だけで4件出た（相手の呼び出し・全体表示・モーダル・選ぶモード）。
        **汎用の仕組み**（`deadend.js` の `DeadEnd`）で、最初の設置場所が RX36 の失敗。
@@ -21911,13 +27227,16 @@
         c.reset();
         const g = c.game, W = c.W, sp = W.stereoPractice;
         assert(sp, 'stereoPractice が初期化されていない');
-        ['butene', 'lactic', 'tartaric', 'lactide'].forEach(k => {
+        ['butene', 'lactic', 'tartaric', 'lactide', 'glucose-anomer'].forEach(k => {
             try { W.localStorage.removeItem('chemStereoPractice.' + k); } catch (e) { /* noop */ }
         });
         g.setMode('learn');
 
-        // (1) 4題すべて準備でき、種類数が既知値（2ⁿ の畳み込み込み）と一致する
-        const want = [2, 2, 3, 4];
+        // (1) 全題が準備でき、種類数が既知値（2ⁿ の畳み込み込み）と一致する
+        // ⚠ v1435 で5題目（ハースの糖）が増えた。あれは**軸を宣言した回**（アノマー位だけを動かす）
+        //   なので、期待値は 2ⁿ ではなく「軸の単位だけを回した数」＝ 2。
+        //   ⚠ 全体は 32種のまま（`info.count`）＝ 数え方には手を入れていない（→ `IW29`）
+        const want = [2, 2, 3, 4, 2];
         const prepared = sp.problems.map((p, i) => sp.prepare(i));
         prepared.forEach((d, i) => {
             assert(!d.disabled, `${sp.problems[i].label} が準備できない`);
@@ -23380,6 +28699,287 @@
         } finally { a.kill(); }
     });
 
+    /* ===== 受け口⑥ クイズの出題範囲（QF・2026-08-22 ユーザー申し立て） =====
+     *
+     * ユーザー原文:「**qa アルカンの命名を練習する → 命名クイズ分野を問わない に飛ばされる**」
+     *
+     * 実測（v1448）: `?open=naming` の着地は 範囲「教科書・306件」／分野「**分野を問わない**」で、
+     * 1問目に **1-ナフトール**（芳香族）が出た。原因は qa が渡していないことではなく
+     * **こちらに受け口が無かった**こと（→ game.js の `applyQuizScopeParams`）。
+     *
+     * ⚠ **ここで見るのは「つまみが動いたか」ではなく「出題プールが実際に絞られたか」。**
+     * select の value だけを見ると、`computePool()` を呼び忘れても緑になる。 */
+
+    test('QF1: ?scope= ?field= でクイズの出題プールが実際に絞られる', async (c) => {
+        const a = await openFrame(
+            'index.html?open=naming&scope=named&field=' + encodeURIComponent('脂肪族'), asmReady);
+        try {
+            const D = a.D, W = a.W;
+            assert(!D.getElementById('naming-modal').classList.contains('hidden'),
+                '?open=naming で命名クイズが開かない（前提が崩れている）');
+            assert(D.getElementById('naming-scope').value === 'named',
+                `範囲のつまみが動いていない（${D.getElementById('naming-scope').value}）`);
+            assert(D.getElementById('naming-field').value === '脂肪族',
+                `分野のつまみが動いていない（${D.getElementById('naming-field').value}）`);
+            // **プールの中身で見る**（つまみだけ動いて絞られていない、を捕まえる）
+            const nq = W.namingQuiz;
+            assert(nq && nq.pool && nq.pool.length > 0, '絞ったら出題プールが空になった');
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(fields.size === 1 && fields.has('脂肪族'),
+                `プールに脂肪族以外が残っている（${[...fields].join('・')}）`);
+            // 画面の件数行も追随している（数が読めないと絞れたことが分からない）
+            assert(D.getElementById('naming-pool-count').textContent.includes(String(nq.pool.length)),
+                `件数行が古い（${D.getElementById('naming-pool-count').textContent}）`);
+            // 効かせたものをテストが読める（何が効いたか画面外からも分かる）
+            assert(W.__openFilters && W.__openFilters.field === '脂肪族',
+                '__openFilters に効かせた分野が載っていない');
+        } finally { a.kill(); }
+
+        // 「同じ化合物はどれ？」にも同じ口が開いている（つまみを持つクイズは2つ）
+        const b = await openFrame(
+            'index.html?open=quiz&field=' + encodeURIComponent('芳香族'), asmReady);
+        try {
+            assert(b.D.getElementById('quiz-field').value === '芳香族',
+                `?open=quiz で分野が効かない（${b.D.getElementById('quiz-field').value}）`);
+        } finally { b.kill(); }
+    });
+
+    test('QF2: 知らない値・指定なしは今までどおり（前方互換）', async (c) => {
+        // 否定対照の相方。**qa が新しい語彙を先に配っても壊れない**ことを見る。
+        // ここが緑でないと、受け口を足したことが既存のリンク全部の壊れ方になる
+        let a = await openFrame(
+            'index.html?open=naming&scope=zzz&field=' + encodeURIComponent('そんな分野'), asmReady);
+        try {
+            assert(a.D.getElementById('naming-scope').value === 'basic',
+                `知らない範囲の値が入った（${a.D.getElementById('naming-scope').value}）`);
+            assert(a.D.getElementById('naming-field').value === 'all',
+                `知らない分野の値が入った（${a.D.getElementById('naming-field').value}）`);
+            assert(a.W.__openFilters === null, '知らない値なのに何かを効かせている');
+        } finally { a.kill(); }
+
+        // 指定なし ＝ 既定（教科書・分野を問わない）のまま
+        a = await openFrame('index.html?open=naming', asmReady);
+        try {
+            assert(a.D.getElementById('naming-scope').value === 'basic' &&
+                   a.D.getElementById('naming-field').value === 'all',
+                '指定なしで既定が変わった');
+            const nq = a.W.namingQuiz;
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(fields.size > 1, '指定なしなのに分野が絞られている（既定が変わった）');
+        } finally { a.kill(); }
+    });
+
+    test('QF3: qa の「アルカンの命名を練習する」が分野を絞って着地する', async (c) => {
+        // **qa が実際に吐くリンクを踏む**（QB2 と同じ理由。こちらで URL を組み立て直すと
+        // 相手の送り出しが変わったことに気づけない ＝ 検査が自作自演になる）
+        const res = await fetch('../qa/questions.json?nocache=' + Date.now(), { cache: 'no-cache' });
+        assert(res.ok, 'qa の questions.json が読めない');
+        const QA = await res.json();
+        const item = QA.patterns.find(p => p.code === 'org.ali.alkane-names');
+        assert(item && item.link, 'qa に org.ali.alkane-names の飛び道具が無い');
+
+        const q1 = await openFrame(`../qa/?code=${encodeURIComponent(item.code)}`, qaReady);
+        let href;
+        try {
+            q1.D.getElementById('btn-reveal').click();
+            const link = q1.D.querySelector('.a-link');
+            assert(link, 'qa の答えに飛び道具リンクが出ない');
+            href = link.getAttribute('href');
+        } finally { q1.kill(); }
+        assert(/[?&]field=/.test(href),
+            `qa の送り出しに分野が載っていない（${href}）＝ 分野を問わないに着地する`);
+
+        const asm = await openFrame('index.html' + href.slice(href.indexOf('?')), asmReady);
+        try {
+            const nq = asm.W.namingQuiz;
+            assert(nq && nq.pool && nq.pool.length > 0, 'qa から来たのに出題プールが空');
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(!fields.has('芳香族'),
+                'アルカンの命名を押したのに芳香族が出題プールに残っている（1-ナフトールが出た症状そのもの）');
+            assert(asm.D.getElementById('naming-field').value !== 'all',
+                '分野が「分野を問わない」のまま（ユーザー申し立ての症状）');
+        } finally { asm.kill(); }
+    });
+
+    /* ===== 官能基・骨格の軸（QG・E1・2026-08-25 ユーザー承認） =====
+     *
+     * ユーザー承認案:「**官能基・骨格の軸を内部だけに持ち、URL からだけ指せるようにする。
+     * 画面のつまみは2つのまま増やさない**」
+     *
+     * **なぜ要るか（前レーンの実測・v1450）**: `?scope=` `?field=` は
+     * 「芳香族が出る」を止めただけで「**アルカンだけ**」にはなっていない
+     * （脂肪族225件にはアルコールもケトンも入る）。さらに **エステルは脂肪族と芳香族に
+     * またがる**ので、分野では絞れずリンクを外したままだった。
+     *
+     * ⚠ ここで見るのは4つ。**どれも「つまみが動いたか」ではなくプールの中身で見る**:
+     *   ・`?group=` が実際に効く（QG1）と、その緑が空振りでない（QG2 の否定対照）
+     *   ・知らない値・指定なしは今までどおり（QG3 の前方互換）
+     *   ・**分野では絞れないエステル**が官能基では絞れる（QG4）
+     *   ・qa が実際に吐くリンクを踏んで着地する（QG5） */
+
+    /** そのエントリが「C と H だけ・多重結合なし」か（**テスト側で独立に測る**。
+     *  `compoundGroupsOf` の結果をそのまま信じると、分類器の外れを分類器で検算することになる） */
+    const isPlainAlkane = (entry) => {
+        const mol = entry.mol;
+        if (!mol.atoms.every(a => a.element === 'C' || a.element === 'H')) return false;
+        if (!mol.atoms.some(a => a.element === 'C')) return false;
+        return mol.bonds.every(b => b.type === 1);
+    };
+
+    test('QG1: ?group=alkane で出題プールがアルカンだけになる（ユーザー承認 E1）', async (c) => {
+        const a = await openFrame('index.html?open=naming&scope=named&field=' +
+            encodeURIComponent('脂肪族') + '&group=alkane', asmReady);
+        try {
+            const D = a.D, W = a.W, nq = W.namingQuiz;
+            assert(!D.getElementById('naming-modal').classList.contains('hidden'),
+                '?open=naming で命名クイズが開かない（前提が崩れている）');
+            assert(nq && nq.pool && nq.pool.length > 0, '?group=alkane で出題プールが空になった');
+
+            // ① プールの**全件**がアルカン（テスト側の独立な物差しで測る）
+            const bad = nq.pool.map(i => nq.library[i]).filter(e => !isPlainAlkane(e));
+            assert(bad.length === 0,
+                `アルカンでないものが ${bad.length} 件残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            // ② 実際に引ける（居るだけでなく出題される）
+            nq.nextQuestion();
+            assert(isPlainAlkane(nq.current.entry),
+                `出題されたのがアルカンでない（${nq.current.entry.name}）`);
+            // ③ **黙って減らさない**——絞ってあることが画面に出る
+            const line = D.getElementById('naming-pool-count').textContent;
+            assert(line.includes('アルカン'),
+                `件数行が絞り込みを言っていない（${line}）＝ なぜ減ったのか画面から読めない`);
+            assert(line.includes(String(nq.pool.length)), `件数行が古い（${line}）`);
+            // ④ つまみは**2つのまま**（v1430 の畳み込みを壊していない）
+            assert(!D.getElementById('naming-group'),
+                '官能基のつまみが画面に生えている（人が触るつまみは 出題範囲・難易度 の2つだけ）');
+            assert(W.quizGroupValue() === 'alkane', `軸が効いていない（${W.quizGroupValue()}）`);
+        } finally { a.kill(); }
+    });
+
+    test('QG2: 否定対照 — 軸を外すとアルカン以外が実際に出る（QG1 の緑が空振りでないこと）', async (c) => {
+        const a = await openFrame('index.html?open=naming&scope=named&field=' +
+            encodeURIComponent('脂肪族') + '&group=alkane', asmReady);
+        try {
+            const D = a.D, W = a.W, nq = W.namingQuiz;
+            const nAlkane = nq.pool.length;
+            try {
+                // **軸だけを外す**（範囲・分野・シリーズは触らない）
+                W.QUIZ_GROUP_OVERRIDE = '';
+                nq.computePool();
+                assert(nq.pool.length > nAlkane,
+                    `軸を外しても件数が増えない（${nAlkane} → ${nq.pool.length}）＝ QG1 が見ているのは軸ではない`);
+                const others = nq.pool.map(i => nq.library[i]).filter(e => !isPlainAlkane(e));
+                assert(others.length > 0, '軸を外してもアルカン以外が1件も居ない（母数が最初から偏っている）');
+                // **実際に引ける**（居るだけでは QG1 ② の対照にならない）
+                const nm = others[0].name;
+                nq.setForced(nm);
+                nq.nextQuestion();
+                assert(nq.current.entry.name === nm,
+                    `軸を外しても ${nm} が出ない（出たのは ${nq.current.entry.name}）＝ QG1 ② が空振り`);
+                nq.setForced(null);
+                // 件数行からも但し書きが消える
+                assert(!D.getElementById('naming-pool-count').textContent.includes('だけに絞ってある'),
+                    '軸を外したのに「絞ってある」が残っている');
+            } finally {
+                delete W.QUIZ_GROUP_OVERRIDE;
+                nq.computePool();
+            }
+            // 戻したら本当に効く（差し替えが残っていないことの確認）
+            assert(nq.pool.length === nAlkane,
+                `軸を戻しても件数が戻らない（${nAlkane} → ${nq.pool.length}）`);
+        } finally { a.kill(); }
+    });
+
+    test('QG3: 知らない値・指定なしは今までどおり（前方互換）', async (c) => {
+        // qa が新しい語彙を先に配っても壊れないこと。ここが赤いと、軸を足したことが
+        // **既存のリンク全部の壊れ方**になる
+        let a = await openFrame('index.html?open=naming&group=__zzz__', asmReady);
+        let nUnknown;
+        try {
+            assert(a.W.quizGroupValue() === null,
+                `知らない値が効いた（${a.W.quizGroupValue()}）`);
+            nUnknown = a.W.namingQuiz.pool.length;
+            assert(!a.D.getElementById('naming-pool-count').textContent.includes('だけに絞ってある'),
+                '知らない値なのに絞り込みの但し書きが出ている');
+        } finally { a.kill(); }
+
+        a = await openFrame('index.html?open=naming', asmReady);
+        try {
+            assert(a.W.quizGroupValue() === null, '指定なしなのに軸が効いている');
+            assert(a.W.namingQuiz.pool.length === nUnknown,
+                `知らない値と指定なしで件数が違う（${nUnknown} / ${a.W.namingQuiz.pool.length}）`);
+        } finally { a.kill(); }
+
+        // 「同じ化合物はどれ？」にも同じ軸が効く（つまみを持つクイズは2つ）
+        a = await openFrame('index.html?open=quiz&group=alkane', asmReady);
+        try {
+            const q = a.W.quiz;
+            const bad = q.poolIndices.map(i => q.library[i]).filter(e => !isPlainAlkane(e));
+            assert(bad.length === 0,
+                `同じ化合物？のプールにアルカン以外が残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            assert(a.D.getElementById('quiz-pool-count').textContent.includes('アルカン'),
+                '同じ化合物？の件数行が絞り込みを言っていない');
+        } finally { a.kill(); }
+    });
+
+    test('QG4: ?group=ester は分野をまたぐ（分野では絞れないことの裏返し）', async (c) => {
+        const a = await openFrame('index.html?open=naming&group=ester', asmReady);
+        try {
+            const W = a.W, nq = W.namingQuiz;
+            assert(nq.pool.length > 0, '?group=ester で出題プールが空になった');
+            const names = nq.pool.map(i => nq.library[i].name);
+            // ① 教科書の定番が**脂肪族も芳香族も**残る（field で絞ると半分落ちるもの）
+            ['酢酸エチル', 'ギ酸メチル', '安息香酸メチル', 'サリチル酸メチル'].forEach(nm => {
+                assert(names.includes(nm), `教科書の定番「${nm}」がエステルのプールに居ない`);
+            });
+            const fields = new Set(nq.pool.map(i => nq.library[i].field));
+            assert(fields.has('脂肪族') && fields.has('芳香族'),
+                `エステルのプールが分野をまたいでいない（${[...fields].join('・')}）` +
+                '＝ 分野で絞れば足りたことになり、この軸の存在理由が消える');
+            // ② 全件が本当にエステル結合を持つ
+            const bad = nq.pool.map(i => nq.library[i])
+                .filter(e => !W.findFunctionalGroups(e.mol).some(g => g.type === 'ester'));
+            assert(bad.length === 0,
+                `エステルでないものが残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            // ③ **酸無水物は入らない**（紙の上では「無水酢酸」であって「酢酸〜エステル」ではない）
+            ['無水酢酸', '無水フタル酸', '無水マレイン酸'].forEach(nm => {
+                assert(!names.includes(nm), `酸無水物「${nm}」がエステルの命名の練習台に混じっている`);
+            });
+        } finally { a.kill(); }
+    });
+
+    test('QG5: qa の「エステルの命名を練習する」が官能基を絞って着地する', async (c) => {
+        // **qa が実際に吐くリンクを踏む**（QF3 と同じ理由。こちらで URL を組み立て直すと
+        // 相手の送り出しが変わったことに気づけない ＝ 検査が自作自演になる）
+        const res = await fetch('../qa/questions.json?nocache=' + Date.now(), { cache: 'no-cache' });
+        assert(res.ok, 'qa の questions.json が読めない');
+        const QA = await res.json();
+        const item = QA.patterns.find(p => p.code === 'org.carbonyl.ester-naming');
+        assert(item && item.link, 'qa に org.carbonyl.ester-naming の飛び道具が無い');
+
+        const q1 = await openFrame(`../qa/?code=${encodeURIComponent(item.code)}`, qaReady);
+        let href;
+        try {
+            q1.D.getElementById('btn-reveal').click();
+            const link = q1.D.querySelector('.a-link');
+            assert(link, 'qa の答えに飛び道具リンクが出ない');
+            href = link.getAttribute('href');
+        } finally { q1.kill(); }
+        assert(/[?&]group=ester\b/.test(href),
+            `qa の送り出しに官能基が載っていない（${href}）＝ 分野を問わないに着地する`);
+
+        const asm = await openFrame('index.html' + href.slice(href.indexOf('?')), asmReady);
+        try {
+            const nq = asm.W.namingQuiz;
+            assert(nq && nq.pool && nq.pool.length > 0, 'qa から来たのに出題プールが空');
+            const bad = nq.pool.map(i => nq.library[i])
+                .filter(e => !asm.W.findFunctionalGroups(e.mol).some(g => g.type === 'ester'));
+            assert(bad.length === 0,
+                `エステル以外が出題プールに残っている（${bad.slice(0, 5).map(e => e.name).join('・')}）`);
+            assert(asm.D.getElementById('naming-pool-count').textContent.includes('エステル'),
+                '件数行が絞り込みを言っていない');
+        } finally { asm.kill(); }
+    });
+
     /* ===== 分子モーダル（DESIGN_molecule_modal.md 第1段） =====
        「この分子について」をまとめて開く面。入口は**キャンバスの見出し**のタップ（同書 §10-1）。
        第1段で入るのは 🔬 調べる（📚 異性体・🧊 立体）だけで、⚗ 反応と試薬は第2段以降。 */
@@ -23741,8 +29341,18 @@
     test('RG1: reagentId が REAGENTS に実在し・瓶の id は重複せず・死んだ瓶が無い（第3段）', async (c) => {
         const W = c.W;
         const REAGENTS = W.REAGENTS, RULES = W.REACTION_RULES, TESTS = W.DETECTION_TESTS;
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 21,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの16本＋調べるもの5本＝21本）`);
+        // ⚠ `reagentId` は**文字列でも配列でもよい**（v1428。同じ反応が2本の瓶からできる）。
+        //    ここで正規化しておかないと、配列の側が「実在しない reagentId」に見えて
+        //    (3)(4)(4b) が全部おかしくなる（瓶が孤児に見え、死にリンクが増える）
+        const rIds = (r) => (!r.reagentId ? []
+            : (Array.isArray(r.reagentId) ? r.reagentId : [r.reagentId]));
+        assert(typeof W.ruleReagentIds === 'function' &&
+            W.ruleReagentIds({ reagentId: ['a', 'b'] }).join(',') === 'a,b' &&
+            W.ruleReagentIds({ reagentId: 'a' }).join(',') === 'a' &&
+            W.ruleReagentIds({}).length === 0,
+            'reactor 側の ruleReagentIds が無い／文字列と配列を同じに扱えていない');
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 22,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの17本＋調べるもの5本＝22本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -23754,17 +29364,17 @@
                 assert(r[k], `瓶 ${r.id || '(id無し)'} に ${k} が無い`));
         });
         // (3) ルール側・検出側の reagentId が実在する（死にリンク）
-        const dead = [...RULES, ...TESTS].filter(r => r.reagentId && !ids.includes(r.reagentId));
+        const dead = [...RULES, ...TESTS].filter(r => rIds(r).some(id => !ids.includes(id)));
         assert(dead.length === 0,
-            `REAGENTS に無い reagentId: ${dead.map(r => `${r.id}→${r.reagentId}`).join(', ')}`);
+            `REAGENTS に無い reagentId: ${dead.map(r => `${r.id}→${rIds(r).join('/')}`).join(', ')}`);
         // (4) 逆向き。**押しても何にも繋がらない瓶**があってはいけない
-        const used = new Set([...RULES, ...TESTS].map(r => r.reagentId).filter(Boolean));
+        const used = new Set([...RULES, ...TESTS].flatMap(rIds));
         const orphan = ids.filter(id => !used.has(id));
         assert(orphan.length === 0, `どのルールにも検出にも使われていない瓶: ${orphan.join(', ')}`);
         // (4b) 変えるものと調べるものは**排他**。同じ瓶が両方に載ると
         //      「押すと反応が進むこともあるし進まないこともある」になる
-        const byRule = new Set(RULES.map(r => r.reagentId).filter(Boolean));
-        const byTest = new Set(TESTS.map(t => t.reagentId));
+        const byRule = new Set(RULES.flatMap(rIds));
+        const byTest = new Set(TESTS.flatMap(rIds));
         const both = [...byRule].filter(id => byTest.has(id));
         assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
@@ -23776,7 +29386,10 @@
         //     v819 で中和と弱酸の遊離を足して 28 → 30
         //     v882 でグリコシド結合の加水分解（希硫酸）を足して 30 → 31
         //     v883 で金属ナトリウムとの反応を足して 31 → 32（**瓶も 20 → 21 本**）
-        const linked = RULES.filter(r => r.reagentId).map(r => r.id).sort();
+        //     v1428 で `oxidize_primary_vigorous`（1級アルコールを一気にカルボン酸まで）を
+        //           足して 32 → 33。同じとき酸化剤の瓶が KMnO₄ / K₂Cr₂O₇ の**2本**になった
+        //           （21 → 22本）が、**ルールは増えず両方の瓶に繋がっただけ**（§12-1）
+        const linked = RULES.filter(r => rIds(r).length).map(r => r.id).sort();
         const expected = [
             'add_br2', 'add_h2', 'add_hbr', 'add_hcl', 'add_hi', 'add_water',
             'bromination_activated_ring',
@@ -23786,23 +29399,26 @@
             'esterification', 'esterification_phenol_info',
             'hydrolysis_anhydride', 'hydrolysis_ester', 'hydrolysis_glycoside', 'iodoform',
             'neutralize_naoh', 'liberate_weak_acid', 'react_sodium',
-            'oxidize_aldehyde', 'oxidize_primary', 'oxidize_secondary', 'oxidize_tertiary_info',
+            'oxidize_aldehyde', 'oxidize_primary', 'oxidize_primary_vigorous',
+            'oxidize_secondary', 'oxidize_tertiary_info',
             'oxidize_side_chain', 'oxidative_cleavage', 'oxidation_out_of_scope_info',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 32, `瓶に紐づくルールが ${linked.length} 件（32件を期待）`);
+        assert(linked.length === 33, `瓶に紐づくルールが ${linked.length} 件（33件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
-        // (6) condition を持つのは「温度でしか割れない」2件だけ（§2.4）
+        // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
+        //     濃硫酸の温度2件（v1424）＋ 1級アルコールの 穏やかに／激しく 2件（v1428）
         const cond = RULES.filter(r => r.condition).map(r => r.id).sort();
-        assert(cond.join(',') === 'dehydration_inter,dehydration_intra',
-            `condition を持つルールが2件でない: ${cond.join(', ')}`);
-        // (7) 瓶の札が21本とも描かれている（区分の見出しは札に数えない）。
+        assert(cond.join(',') === 'dehydration_inter,dehydration_intra,oxidize_primary,oxidize_primary_vigorous',
+            `condition を持つルールが設計と違う: ${cond.join(', ')}`);
+        // (7) 瓶の札が22本とも描かれている（区分の見出しは札に数えない）。
         //     v883 で金属ナトリウム（試薬パレット §3.1 の13番目・§5 第4段の予定分）を足して 20 → 21
+        //     v1428 で酸化剤を KMnO₄ / K₂Cr₂O₇ の2本に割って 21 → 22（§12-1・試薬名を知るため）
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 21, `瓶の札が ${drawn.length} 個（21個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 16 &&
+        assert(drawn.length === 22, `瓶の札が ${drawn.length} 個（22個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 17 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの16本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの17本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -23872,6 +29488,473 @@
             `130〜140℃ の生成物が入口で違う\n  瓶: ${warmBottle}\n  自動案内: ${warmAuto}`);
 
         assert(hotBottle !== warmBottle, '温度を選び分けても生成物が同じ正準コードになっている');
+        c.reset();
+    });
+
+    test('RG12: 1分子でも温度を訊き、足りない条件はその場で相手を呼べる（§11・v1424）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const rg = W.REAGENTS.find(r => r.id === 'h2so4_conc');
+        const modal = () => D.getElementById('molecule-modal');
+        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+
+        /* (1) エタノール**1分子**。ここが直したところ ——
+           通る detect は分子内脱水の1つだけなので、v1422 までは「行き先が1つだから訊かない」で
+           黙って 160〜170℃ の反応が走っていた。130〜140℃ を選んだらどうなるかは高校で必ず問われるのに、
+           **分子を2つ並べた人にしか選択肢が見えなかった**。 */
+        setupReagent(c, ['エタノール']);
+        const hits = W.reactor.reagentHits(rg);
+        assert(hits.length === 1 && hits[0].rule.id === 'dehydration_intra',
+            `前提が変わった: エタノール1分子で通るのは分子内脱水1件のはず（いま: ${
+                hits.map(h => h.rule.id).join(', ') || 'なし'}）`);
+        // **空振りの緑よけ**: 直す前の数え方（通ったものだけ）なら1件 ＝ 訊かずに実行。
+        // 同じ場面で `reagentOptions` は2件を返す ＝ 増えたぶんがこの修正そのもの
+        const options = W.reactor.reagentOptions(rg, hits);
+        assert(options.length === 2,
+            `通っていない条件が選択肢に足されていない（${options.length} 件・2件を期待）`);
+        assert(options.filter(o => !o.sites).length === 1,
+            '「いまは材料が足りない条件」がちょうど1件でない');
+        assert(options.every(o => o.rule.condition),
+            '条件を持たないルールが条件の一覧に混ざっている');
+
+        const before = CC(g.userMolecule);
+        const beforeAtoms = g.userMolecule.atoms.length;
+        const beforeHistory = g.history.length;
+        bottle(c, 'h2so4_conc').click();
+        const choices = noteButtons(c);
+        assert(choices.length === 2,
+            `エタノール1分子で条件の一覧が出ない（ボタン ${choices.length} 個）: ${noteText().slice(0, 80)}`);
+        assert(choices.some(b => b.textContent.includes('160〜170')) &&
+               choices.some(b => b.textContent.includes('130〜140')),
+            `温度の見出しが出ていない: ${choices.map(b => b.textContent).join(' / ')}`);
+        assert(CC(g.userMolecule) === before,
+            `条件を訊く前に反応が走った\n  前: ${before}\n  後: ${CC(g.userMolecule)}`);
+        assert(g.userMolecule.atoms.length === beforeAtoms, '条件を訊いただけで原子数が変わった');
+        assert(g.history.length === beforeHistory,
+            `条件を訊いただけで Undo 履歴が ${beforeHistory} → ${g.history.length} に伸びた`);
+        assert(!modal().classList.contains('hidden'), '条件を選ぶ画面が出たのにモーダルが閉じている');
+
+        /* (2) 130〜140℃（分子間脱水）を選ぶ。**押せるが何も起きない、にしない** ——
+           何が足りないかを言い、その場で相手を呼び出す札を出す（v1420 の導線を場所だけ変えて再利用）。 */
+        const warm = choices.find(b => b.textContent.includes('130〜140'));
+        assert(warm.dataset.condMiss === '1',
+            '材料が足りない条件が、押す前に見分けられるようになっていない');
+        warm.click();
+        assert(noteText().includes('アルコールが2分子'),
+            `130〜140℃ を選んでも何が足りないかが言われない: ${noteText().slice(0, 140)}`);
+        assert(CC(g.userMolecule) === before, '条件を選んだだけで分子が変わった');
+        assert(g.history.length === beforeHistory, '条件を選んだだけで Undo 履歴が伸びた');
+        assert(!modal().classList.contains('hidden'), '説明を出した瞬間にモーダルが閉じている');
+        // 選び直せるように、条件の一覧そのものは残っている（もう片方の温度へ戻れる）
+        assert(noteButtons(c).some(b => b.dataset.cond === 'dehydration_intra'),
+            '説明を出したら、もう片方の温度に戻れなくなった');
+        const summon = noteButtons(c).find(b => b.dataset.partner);
+        assert(summon, `相手を呼び出す札が出ない: ${noteText().slice(0, 160)}`);
+        assert(summon.dataset.rule === 'dehydration_inter',
+            `呼び出しの札が別の反応を指している: ${summon.dataset.rule}`);
+        assert(summon.textContent.includes('エタノール'),
+            `同名の分子（エタノール）を呼ぶ札になっていない: ${summon.textContent}`);
+
+        /* (3) 札を押すと、呼んで・選んで・**エーテルまで**行く（札の約束を果たす）。 */
+        summon.click();
+        assert(!W.reactor.lastDeadEnd,
+            `途中で止まった: ${JSON.stringify(W.reactor.lastDeadEnd)}`);
+        assert(!W.reactor.picking, '1箇所しかないのに箇所選びで止まった');
+        const mol = () => g.userMolecule;
+        const hasEther = () => mol().atoms.some(a => a.element === 'O' &&
+            mol().getNeighbors(a.id).filter(n => n.atom.element === 'C').length === 2);
+        assert(hasEther(), '呼び出しの札を押しても C-O-C（ジエチルエーテル）ができていない');
+        const viaSummon = CC(mol());
+        // 最初から2分子並べて 130〜140℃ を選んだ場合と**同じ生成物**（入口が違っても中身は1つ）
+        setupReagent(c, ['エタノール', 'エタノール']);
+        bottle(c, 'h2so4_conc').click();
+        noteButtons(c).find(b => b.textContent.includes('130〜140')).click();
+        assert(!W.reactor.picking, '2分子からの分子間脱水で箇所選びに入った');
+        assert(viaSummon === CC(mol()),
+            `その場で呼び出した結果と、最初から2分子並べた結果が違う\n  呼び出し: ${viaSummon}\n  2分子: ${CC(mol())}`);
+
+        /* (4) 陰性対照その1: エタノール**2分子**は従来どおり。
+               2つとも通っているので「足りない条件」は1つも出ない（回帰していないこと） */
+        setupReagent(c, ['エタノール', 'エタノール']);
+        bottle(c, 'h2so4_conc').click();
+        const two = noteButtons(c);
+        assert(two.length === 2, `エタノール2分子の行き先が ${two.length} 通り（2通りを期待）`);
+        assert(two.every(b => b.dataset.condMiss !== '1'),
+            '2分子とも揃っているのに「条件が足りません」が出ている');
+
+        /* (5) 陰性対照その2: 脱水が1件も通らない分子では**温度を訊かない**。
+               ベンゼンに濃硫酸 ＝ スルホン化だけ ＝ 従来どおりそのまま実行してキャンバスへ返る */
+        setupReagent(c, ['ベンゼン']);
+        const benzene = CC(g.userMolecule);
+        bottle(c, 'h2so4_conc').click();
+        assert(noteButtons(c).length === 0,
+            `脱水が1件も通らない分子で条件を訊いている: ${
+                noteButtons(c).map(b => b.textContent).join(' / ')}`);
+        assert(CC(g.userMolecule) !== benzene, 'ベンゼンのスルホン化が実行されていない');
+        assert(modal().classList.contains('hidden'),
+            '反応が進んだのにモーダルが開いたまま（キャンバスへ返っていない）');
+
+        /* (6) 陰性対照その3: 別の瓶（臭素水）の挙動は1つも変わっていない */
+        setupReagent(c, ['エチレン（エテン）']);
+        const ethene = CC(g.userMolecule);
+        bottle(c, 'br2_water').click();
+        assert(noteButtons(c).length === 0, '臭素水が条件を訊くようになった');
+        assert(CC(g.userMolecule) !== ethene, '臭素水の付加が実行されなくなった');
+        setupReagent(c, ['エタン']);
+        const ethane = CC(g.userMolecule);
+        bottle(c, 'br2_water').click();
+        assert(CC(g.userMolecule) === ethane, '臭素水の空振りで分子が変わった');
+        assert(noteText().includes('C=C'), `臭素水の空振りの説明が変わった: ${noteText().slice(0, 60)}`);
+        c.reset();
+    });
+
+    test('RG13: 酸化剤は KMnO₄ / K₂Cr₂O₇ の2本。1級アルコールはどちらでも条件を訊き、'
+        + '「ふつうはこちら」は結果に添える（§12・v1428）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const toastEl = D.getElementById('canvas-toast');
+        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+        const entryOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return e;
+        };
+        // 登録エントリを素直にキャンバスへ置いた正準コード（生成物の答え合わせに使う）
+        const canvasOf = (name) => {
+            const mol = new W.Molecule();
+            const t = entryOf(name).target;
+            const ids = t.atoms.map(a => mol.addAtom(a.element, a.x, a.y).id);
+            t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            return CC(mol);
+        };
+        /* 瓶を押して**最後まで**進める。条件を訊かれたら見出しで選び、
+           箇所を訊かれたら1つ目を押す。戻すのはトーストに出た結果の文 */
+        const press = (name, reagentId, condLabel) => {
+            setupReagent(c, [name]);
+            toastEl.textContent = 'RG13-MARK';
+            bottle(c, reagentId).click();
+            if (condLabel) {
+                const b = noteButtons(c).find(x => x.textContent.includes(condLabel));
+                assert(b, `${name} × ${reagentId}: 「${condLabel}」の選択肢が出ない: ${
+                    noteButtons(c).map(x => x.textContent).join(' / ') || noteText().slice(0, 80)}`);
+                b.click();
+            }
+            if (W.reactor.picking) {
+                const site = W.reactor.picking.sites[0];
+                const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+                c.clickAt(atom.x, atom.y);
+            }
+            return { code: CC(g.userMolecule), toast: toastEl.textContent };
+        };
+
+        /* ---- (1) 瓶は2本。`[O]` を名乗る瓶はもう無く、**反応カードには `[O]` が残る** ---- */
+        const oxBottles = W.REAGENTS.filter(r => ['kmno4', 'k2cr2o7'].includes(r.id));
+        assert(oxBottles.length === 2, `酸化剤の瓶が ${oxBottles.length} 本（2本を期待）`);
+        assert(oxBottles.map(r => r.formula).join(',') === 'KMnO₄,K₂Cr₂O₇',
+            `瓶が試薬名（化学式）を名乗っていない: ${oxBottles.map(r => r.formula).join(', ')}`);
+        assert(!W.REAGENTS.some(r => r.formula === '[O]'),
+            '瓶がまだ [O] を名乗っている（試薬名を知る入口になっていない）');
+        oxBottles.forEach(r => assert(bottle(c, r.id), `瓶 ${r.id} の札が描かれていない`));
+        // ⚠ **陰性対照**: `[O]` は消したのではなく、居場所が反応カードのほうだった（§12-1）
+        const primary = W.REACTION_RULES.find(r => r.id === 'oxidize_primary');
+        assert(primary.label === '酸化 [O] → アルデヒド',
+            `反応カードの見出しから [O] が消えている: ${primary.label}`);
+        setupReagent(c, ['エタノール']);
+        const cards = [...D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+        assert(cards.some(t => t.startsWith('酸化 [O] → アルデヒド')),
+            `反応カードに「酸化 [O] → アルデヒド」が出ていない: ${cards.join(' / ')}`);
+
+        /* ---- (2) 1級アルコールは**どちらの瓶でも**2択。推される側だけが瓶で違う ---- */
+        const usualOf = (reagentId) => {
+            setupReagent(c, ['エタノール']);
+            bottle(c, reagentId).click();
+            const bs = noteButtons(c);
+            assert(bs.length === 2,
+                `エタノール × ${reagentId}: 条件の一覧が ${bs.length} 件（2件を期待）: ${noteText().slice(0, 100)}`);
+            assert(bs.some(b => b.textContent.includes('穏やかに')) &&
+                   bs.some(b => b.textContent.includes('激しく')),
+                `穏やかに／激しく が並んでいない: ${bs.map(b => b.textContent).join(' / ')}`);
+            // **どちらも実際に進める**（片方が「条件が足りません」で潰れていない）
+            assert(bs.every(b => b.dataset.condMiss !== '1'),
+                `1級アルコールなのに進めない条件がある: ${bs.map(b => b.textContent).join(' / ')}`);
+            const marked = bs.filter(b => b.dataset.condUsual === '1');
+            assert(marked.length === 1,
+                `「ふつうはこちら」の印が ${marked.length} 件（1件を期待・${reagentId}）`);
+            return marked[0].dataset.cond;
+        };
+        const usualKM = usualOf('kmno4'), usualCR = usualOf('k2cr2o7');
+        assert(usualKM === 'oxidize_primary_vigorous',
+            `KMnO₄ で推されているのが ${usualKM}（激しく酸化を期待）`);
+        assert(usualCR === 'oxidize_primary',
+            `K₂Cr₂O₇ で推されているのが ${usualCR}（穏やかに酸化を期待）`);
+        // **空振りの緑よけ**: 同じ数え方で「瓶によって印が動く」ことまで主張する
+        assert(usualKM !== usualCR, '推される側が瓶で変わっていない（印が固定されている）');
+
+        /* ---- (3) 選んだ条件どおりの生成物になる（行き先を決めるのは試薬名ではなく条件） ---- */
+        const mild = press('エタノール', 'k2cr2o7', '穏やかに');
+        const hard = press('エタノール', 'k2cr2o7', '激しく');
+        assert(mild.code === canvasOf('アセトアルデヒド'),
+            `穏やかに酸化でアセトアルデヒドにならない: ${mild.code}`);
+        assert(hard.code === canvasOf('酢酸'),
+            `激しく酸化で酢酸にならない: ${hard.code}`);
+        assert(mild.code !== hard.code, '否定対照が働いていない: 2つの条件で生成物が同じ');
+        // **K₂Cr₂O₇ でも激しく酸化すればカルボン酸まで行く**（§12-2 の要点そのもの）
+        assert(press('エタノール', 'kmno4', '激しく').code === hard.code,
+            '同じ「激しく酸化」で瓶によって生成物が違う（apply が瓶で分岐している）');
+        assert(press('エタノール', 'kmno4', '穏やかに').code === mild.code,
+            '同じ「穏やかに酸化」で瓶によって生成物が違う（apply が瓶で分岐している）');
+
+        /* ---- (4) ★ トルエン × K₂Cr₂O₇ … **図は変え、「一般的には」の注記を添える**（§12-3） ---- */
+        const tolCr = press('トルエン', 'k2cr2o7');
+        assert(tolCr.code === canvasOf('安息香酸'),
+            `トルエン × K₂Cr₂O₇ で安息香酸にならない（クロム酸系でも側鎖は酸化される）: ${tolCr.code}`);
+        assert(/一般的には/.test(tolCr.toast),
+            `「一般的には」で始まる注記が出ない: ${tolCr.toast.slice(0, 160)}`);
+        assert(/過マンガン酸カリウム/.test(tolCr.toast) && /ため/.test(tolCr.toast),
+            `注記が「使われる」で止まっていて理由が無い: ${tolCr.toast.slice(-160)}`);
+        // ⚠ **主語の使い分け**（§12-3 の3項）。化学の話に「入試では」を混ぜない
+        const usually = W.REACTION_RULES.filter(r => r.usually);
+        assert(usually.length >= 4, `usually を持つルールが ${usually.length} 件（4件以上を期待）`);
+        usually.forEach(r => {
+            assert(r.usually.note.startsWith('一般的には'),
+                `${r.id}: 注記が「一般的には」で始まっていない: ${r.usually.note.slice(0, 30)}`);
+            assert(!/入試/.test(r.usually.note),
+                `${r.id}: 化学の話（一般的には）に出題の作法（入試では）が混ざっている`);
+        });
+        // **ふつうの組み合わせでは黙る**（否定対照。いつでも出るなら注記は情報を持たない）
+        const tolKM = press('トルエン', 'kmno4');
+        assert(tolKM.code === tolCr.code,
+            `瓶で生成物が違う（apply が瓶で分岐している）\n  KMnO₄: ${tolKM.code}\n  K₂Cr₂O₇: ${tolCr.code}`);
+        assert(!/一般的には/.test(tolKM.toast),
+            `ふつうの組み合わせ（トルエン × KMnO₄）にも注記が出ている: ${tolKM.toast.slice(0, 120)}`);
+
+        /* ---- (5) ⚠ その注記は `miss` と**別の棚**（別の場所・別の言い方） ---- */
+        // ① 注記は結果（トースト）に出る。瓶の節には出ない
+        assert(!/一般的には/.test(noteText()),
+            `「ふつうはこちら」の注記が瓶の節（miss と同じ場所）に出ている: ${noteText().slice(0, 120)}`);
+        // ② miss は瓶の節に出て、注記の言い方（一般的には）を使っていない
+        setupReagent(c, ['エタン']);
+        const ethane = CC(g.userMolecule);
+        toastEl.textContent = 'RG13-MARK';
+        bottle(c, 'k2cr2o7').click();
+        assert(CC(g.userMolecule) === ethane, 'エタンに酸化剤が効いてしまっている');
+        assert(noteText().includes('酸化されにくい'),
+            `効かない組み合わせの説明（miss）が瓶の節に出ない: ${noteText().slice(0, 100)}`);
+        assert(!/一般的には/.test(noteText()),
+            `miss と「ふつうはこちら」が同じ文面で混ざっている: ${noteText().slice(0, 120)}`);
+        assert(toastEl.textContent === 'RG13-MARK',
+            `効かない組み合わせなのに結果のトーストが出ている: ${toastEl.textContent.slice(0, 80)}`);
+        // ③ データの側でも棚を分けておく（`miss` に注記の言い方を書き写さない）
+        W.REAGENTS.forEach(r => assert(!/一般的には/.test(r.miss || ''),
+            `瓶 ${r.id} の miss に「一般的には」が入っている（効かない／ふつう使わない が混ざる）`));
+
+        /* ---- (6) ⚠ 陰性対照: `apply` に瓶ごとの分岐が1つも入っていない ---- */
+        // ① 総当たり。同じ反応をどちらの瓶から起こしても正準コードが一致する
+        const pairs = [['2-プロパノール', null], ['アセトアルデヒド', null],
+            ['2-ブテン', null], ['o-キシレン', null]];
+        pairs.forEach(([name, cond]) => {
+            const a = press(name, 'kmno4', cond), b = press(name, 'k2cr2o7', cond);
+            assert(a.code === b.code,
+                `${name}: 瓶で生成物が違う\n  KMnO₄: ${a.code}\n  K₂Cr₂O₇: ${b.code}`);
+        });
+        // ② コードの側でも見張る。**瓶の id が `apply` や条件の仕組みに現れない**
+        const banned = ['kmno4', 'k2cr2o7', 'oxidant'];
+        W.REACTION_RULES.forEach(r => {
+            const src = String(r.apply || '') + String(r.detect || '');
+            banned.forEach(id => assert(!src.includes(`'${id}'`) && !src.includes(`"${id}"`),
+                `ルール ${r.id} の apply/detect が瓶 ${id} を名指ししている`));
+        });
+        ['reagentHits', 'reagentOptions', 'renderConditionChoice', 'explainConditionMiss',
+         'usuallyNote'].forEach(fn => {
+            const src = String(W.reactor[fn]);
+            assert(typeof W.reactor[fn] === 'function', `reactor.${fn} が無い`);
+            banned.forEach(id => assert(!src.includes(`'${id}'`) && !src.includes(`"${id}"`),
+                `reactor.${fn} が瓶 ${id} を名指ししている（§11 の「瓶を名指ししない」が破れている）`));
+        });
+
+        /* ---- (7) 陰性対照: 3級の⚠・範囲外の説明が回帰していない（どちらの瓶でも） ---- */
+        ['kmno4', 'k2cr2o7'].forEach(id => {
+            setupReagent(c, ['2-メチル-2-プロパノール']);
+            const before3 = CC(g.userMolecule);
+            const hist = g.history.length;
+            bottle(c, id).click();
+            assert(noteText().includes('酸化されにくい'),
+                `${id}: 3級アルコールの解説が出ない: ${noteText().slice(0, 80)}`);
+            assert(CC(g.userMolecule) === before3 && g.history.length === hist,
+                `${id}: 解説だけなのに分子か履歴が動いた`);
+            setupReagent(c, ['シクロヘキセン']);
+            const beforeR = CC(g.userMolecule);
+            bottle(c, id).click();
+            assert(noteText().includes('アジピン酸'),
+                `${id}: 範囲外（環の中の C=C）の説明が出ない: ${noteText().slice(0, 80)}`);
+            assert(CC(g.userMolecule) === beforeR, `${id}: 範囲外の説明なのに分子が変わった`);
+        });
+
+        /* ---- (8) 外に出た `?reagent=oxidant` を空振りにしない（瓶を割ったときの後始末） ---- */
+        setupReagent(c, ['エタノール']);
+        const alias = W.reactor.selectReagent('oxidant');
+        assert(alias && alias.reagentId === 'kmno4',
+            `古い ?reagent=oxidant が別名で解決されていない（リンクが空振りする）: ${JSON.stringify(alias)}`);
+        assert(W.reactor.selectReagent('zzz_no_such_bottle') === null,
+            '否定対照が働いていない: 知らない id まで何かに解決している');
+        c.reset();
+    });
+
+    /* RG14 は実機報告（2026-08-20）に対する**実測の答え**を固定する。
+     *
+     * 申し立ては2つだった:
+     *   ① 2-メチル-2-プロパノール（3級アルコール）で「可能な反応に 酸化（2か所）と出る。実際には反応しない」
+     *   ② 1-ブタノールで「反応か所が1か所しかないのに、反応か所の選択が出てくる」
+     *
+     * ⚠ **どちらも、その分子を1つだけ置いた盤面では起きない**（下の (1)〜(4) がそれを固定する）。
+     *   再現するのは**キャンバスに複数の分子が乗っているとき**で、
+     *   「酸化（2箇所）」の2箇所は**別の分子（1-ブタノールと 2-メチル-1-プロパノール）の -OH** だった
+     *   ＝ 3級アルコールが酸化されているのではなく、**箇所がキャンバス全体で数えられている**。
+     *   C₄H₁₀O の異性体をぜんぶ並べる練習をすると、この盤面がそのまま出来上がる。
+     *
+     * ⚠ **v1428（酸化剤を2本に割った回）の巻き添えではない。** v1427 を実際に配って同じ盤面を作ると、
+     *   同じ「酸化 [O] → アルデヒド（2箇所）」が出る（実測）。前からある性質である。
+     *
+     * ここで固定するのは**酸化のルールの側**（3級には実行できる酸化が1つも無い・箇所の数え方は
+     * 分子ごとに正しい）で、「一覧をどの分子に絞って見せるか」は別レーンの担当。
+     * (5) はその境目を、見た目ではなく**ルールの返す箇所**で押さえるので、
+     * 一覧の絞り方が変わっても意味を保つ。 */
+    test('RG14: 3級アルコールに実行できる酸化は1つも無い。箇所は1つなら選ばせず、'
+        + '2つ以上あるときだけ選ばせる（実機報告・2026-08-20）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const ruleOf = (id) => W.REACTION_RULES.find(r => r.id === id);
+        const cards = () => [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .map(b => ({ text: b.textContent, rule: b.dataset.rule }));
+        const oxCards = () => cards().filter(x => /酸化/.test(x.text));
+        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+        const toastEl = D.getElementById('canvas-toast');
+
+        /* ---- (1) 2-メチル-2-プロパノール1つ … 実行できる酸化が0件で、⚠ の解説だけが残る ---- */
+        setupReagent(c, ['2-メチル-2-プロパノール']);
+        const t3 = oxCards();
+        const runnable = t3.filter(x => !ruleOf(x.rule).info);
+        assert(runnable.length === 0,
+            `3級アルコールに実行できる酸化が出ている: ${runnable.map(x => x.text).join(' / ')}`);
+        // ⚠ **説明は残す**（「効かないこと自体が教材」＝ §4.2 ③）。消してはいけない
+        assert(t3.length === 1 && t3[0].rule === 'oxidize_tertiary_info',
+            `3級アルコールの ⚠ 解説が1枚だけ出ていない: ${t3.map(x => x.text).join(' / ')}`);
+        // `info` の札に「（N箇所）」は付かない（起こせる箇所の数ではないので数を書かない）
+        assert(!/箇所/.test(t3[0].text), `info の札に箇所の数が付いている: ${t3[0].text}`);
+        // ⚠ **守りは二重にかかっている**（否定対照 D を作って初めて分かった）。
+        //   `oxidize_primary` / `oxidize_secondary` の型のフィルタ（alcohol1・alcohol2）を外して
+        //   alcohol3 まで通しても、**3級の炭素には空き価標が無い**ので次のフィルタで落ちる。
+        //   ＝「級で弾く」と「空きで弾く」のどちらか一方が壊れても、3級は酸化されない
+        const t3c = W.findFunctionalGroups(g.userMolecule)
+            .find(x => x.type === 'alcohol3').atomIds[1];
+        assert(g.userMolecule.getFreeValency(t3c) === 0,
+            `3級アルコールの炭素に空き価標が ${g.userMolecule.getFreeValency(t3c)} ある` +
+            '（C=O にする余地があると読めてしまう）');
+        // 押しても分子も履歴も1つも動かず、解説だけがトーストに出る
+        const before3 = CC(g.userMolecule), hist3 = g.history.length;
+        [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => b.dataset.rule === 'oxidize_tertiary_info').click();
+        assert(CC(g.userMolecule) === before3 && g.history.length === hist3,
+            '⚠ の解説を押しただけで分子か履歴が動いた');
+        assert(/酸化されにくい/.test(toastEl.textContent),
+            `⚠ の解説の中身が出ない: ${toastEl.textContent.slice(0, 80)}`);
+        // 瓶から掛けても同じ（どちらの瓶でも「起こせるもの」は0件）
+        ['kmno4', 'k2cr2o7'].forEach(id => {
+            setupReagent(c, ['2-メチル-2-プロパノール']);
+            const rg = W.REAGENTS.find(r => r.id === id);
+            const opts = W.reactor.reagentOptions(rg, W.reactor.reagentHits(rg));
+            assert(opts.every(o => o.rule.info),
+                `${id}: 3級アルコールに実行できる酸化が瓶から出せる: ${
+                    opts.filter(o => !o.rule.info).map(o => o.rule.id).join(',')}`);
+            bottle(c, id).click();
+            assert(noteText().includes('酸化されにくい'),
+                `${id}: 3級アルコールの解説が瓶の節に出ない: ${noteText().slice(0, 80)}`);
+        });
+
+        /* ---- (2) ⚠ 陰性対照: 1級・2級では従来どおり酸化できる（v1428 の条件も回帰していない） ---- */
+        setupReagent(c, ['1-ブタノール']);
+        bottle(c, 'kmno4').click();
+        const bs1 = noteButtons(c);
+        assert(bs1.length === 2 && bs1.some(b => b.textContent.includes('穏やかに')) &&
+               bs1.some(b => b.textContent.includes('激しく')),
+            `1級アルコールで 穏やかに／激しく の2択が出ない: ${
+                bs1.map(b => b.textContent).join(' / ') || noteText().slice(0, 80)}`);
+        assert(bs1.every(b => b.dataset.condMiss !== '1'),
+            `1級アルコールなのに進めない条件がある: ${bs1.map(b => b.textContent).join(' / ')}`);
+        const bu1 = CC(g.userMolecule);
+        bs1.find(b => b.textContent.includes('穏やかに')).click();
+        assert(CC(g.userMolecule) !== bu1, '1級アルコールを穏やかに酸化しても図が変わらない');
+        // 2級は条件を持たないので、訊かずにそのままケトンまで進む
+        setupReagent(c, ['2-ブタノール']);
+        const bu2 = CC(g.userMolecule);
+        bottle(c, 'k2cr2o7').click();
+        assert(noteButtons(c).length === 0,
+            `2級アルコールで選択が出た（条件を持たないので即実行のはず）: ${
+                noteButtons(c).map(b => b.textContent).join(' / ')}`);
+        assert(CC(g.userMolecule) !== bu2, '2級アルコールが酸化されていない');
+        // トルエン × K₂Cr₂O₇ の注記（§12-3）が残っている
+        setupReagent(c, ['トルエン']);
+        toastEl.textContent = 'RG14-MARK';
+        bottle(c, 'k2cr2o7').click();
+        assert(/一般的には/.test(toastEl.textContent),
+            `トルエン × K₂Cr₂O₇ の「一般的には」の注記が消えている: ${toastEl.textContent.slice(0, 100)}`);
+
+        /* ---- (3) 箇所が1つなら**選ばせずにそのまま実行する**（②の申し立ての本体） ---- */
+        setupReagent(c, ['1-ブタノール']);
+        const b1 = CC(g.userMolecule);
+        [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => b.dataset.rule === 'oxidize_primary').click();
+        assert(!W.reactor.picking,
+            `箇所が1つしかないのに箇所の選択に入った: ${
+                W.reactor.picking ? W.reactor.picking.sites.length + '箇所' : ''}`);
+        assert(CC(g.userMolecule) !== b1, '箇所が1つのとき、押しても実行されていない');
+        // 札にも「（N箇所）」が付かない
+        setupReagent(c, ['1-ブタノール']);
+        oxCards().forEach(x => assert(!/箇所/.test(x.text),
+            `箇所が1つなのに札に数が書かれている: ${x.text}`));
+
+        /* ---- (4) ⚠ 陰性対照: 箇所が2つ以上あるときは従来どおり選ばせる ---- */
+        // 1分子で2箇所（エチレングリコールの -OH は2つ）
+        setupReagent(c, ['エチレングリコール']);
+        const naCard = [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .find(b => b.dataset.rule === 'react_sodium');
+        assert(naCard && /（2箇所）/.test(naCard.textContent),
+            `2箇所ある札に数が書かれていない: ${naCard ? naCard.textContent : '札が無い'}`);
+        const bg = CC(g.userMolecule);
+        naCard.click();
+        assert(W.reactor.picking && W.reactor.picking.sites.length === 2,
+            '箇所が2つあるのに選ばせていない（選ばせる仕組みが壊れている）');
+        assert(CC(g.userMolecule) === bg, '箇所を選ぶ前に実行されてしまっている');
+        W.reactor.picking = null;
+
+        /* ---- (5) ★ 実機報告の再現。「2か所」は**別の分子の -OH** だった ---- */
+        setupReagent(c, ['1-ブタノール', '2-ブタノール',
+            '2-メチル-1-プロパノール（イソブタノール）', '2-メチル-2-プロパノール']);
+        const mol = g.userMolecule;
+        const t3carbons = new Set(W.findFunctionalGroups(mol)
+            .filter(x => x.type === 'alcohol3').map(x => x.atomIds[1]));
+        assert(t3carbons.size === 1, `盤面に3級アルコールが ${t3carbons.size} 個（1個を期待）`);
+        const primarySites = ruleOf('oxidize_primary').detect(mol);
+        assert(primarySites.length === 2,
+            `1級アルコールの酸化が ${primarySites.length} 箇所（1-ブタノールとイソブタノールの2箇所を期待）`);
+        // ⚠ **ここが要点**: 2箇所のどちらも3級の炭素ではない ＝ 3級が酸化されているのではない
+        ['oxidize_primary', 'oxidize_primary_vigorous', 'oxidize_secondary',
+         'oxidize_aldehyde', 'oxidize_side_chain'].forEach(id => {
+            (ruleOf(id).detect(mol) || []).forEach(site => {
+                assert(!site.some(a => t3carbons.has(a)),
+                    `${id} が3級アルコールの炭素を酸化の箇所に数えている`);
+            });
+        });
+        // そして「🎯 反応させる分子を選ぶ」で3級を選べば、実行できる酸化は0件になる
+        //（＝ 一覧をどの分子に絞るかの問題であって、酸化のルールの問題ではない）
+        const t3o = W.findFunctionalGroups(mol).find(x => x.type === 'alcohol3');
+        g.selectedMolecules = [t3o.atomIds[0]];
+        g.updateDrawing();
+        const picked = oxCards().filter(x => !ruleOf(x.rule).info);
+        assert(picked.length === 0,
+            `3級アルコールだけを選んでも実行できる酸化が残る: ${picked.map(x => x.text).join(' / ')}`);
+        g.selectedMolecules = [];
         c.reset();
     });
 
@@ -23953,7 +30036,7 @@
         // 閉じてしまうと「効きません」の説明が出た瞬間に消える（DESIGN_molecule_modal.md §5-3）
         setupReagent(c, ['エタン']);
         const before = W.canonicalCode(g.userMolecule);
-        ['br2_water', 'oxidant', 'h2so4_conc'].forEach(id => {
+        ['br2_water', 'kmno4', 'k2cr2o7', 'h2so4_conc'].forEach(id => {
             bottle(c, id).click();
             assert(!modal.classList.contains('hidden'),
                 `効かない瓶「${id}」を押したらモーダルが閉じた（説明が読めない）`);
@@ -23962,20 +30045,22 @@
             assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
                 `効かない瓶「${id}」を押しても何も返らない（詰まりになる）`);
         });
-        // 効く瓶は従来どおり閉じてキャンバスへ返す（箇所選択・モーフィングがそこで起きる）
-        setupReagent(c, ['エタノール']);
-        bottle(c, 'oxidant').click();
+        // 効く瓶は従来どおり閉じてキャンバスへ返す（箇所選択・モーフィングがそこで起きる）。
+        // ⚠ v1428 から**1級アルコールは条件を訊く**（穏やかに／激しく）ので、
+        //    「押したら即実行」を見るここは 2級アルコール（行き先が1つ）で見る
+        setupReagent(c, ['2-プロパノール']);
+        bottle(c, 'kmno4').click();
         assert(modal.classList.contains('hidden'),
             '反応が進む瓶を押してもモーダルが開いたまま（モーフィングも前後比較も見えない）');
         assert(g.userMolecule.atoms.some(a => a.element === 'O' &&
             g.userMolecule.getNeighbors(a.id).some(n => n.type === 2)),
-            '酸化剤の瓶からアルデヒドができていない');
+            '酸化剤の瓶からケトンができていない');
         c.reset();
     });
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件と重合4件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・糖の縮合1件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
@@ -23983,11 +30068,18 @@
         // 試薬なしで起こるもの ＝ 糖の環化・開環（分子内の平衡）と、
         // 「並べた単量体をまとめる」操作でしかない重合4件（§3.1 の「入れないもの」）。
         // 2026-08-07 にアセチレンの付加重合と縮合重合を足して重合は 2 → 4 件
+        /* ★ 2026-08-26 に `condensation_glycoside`（糖どうしの縮合）を足して 8 件（`DESIGN_sugar.md` §4-8）。
+         * ⚠ **これは瓶の割り当て漏れではなく、意図して瓶を持たせていない**:
+         *   「濃硫酸を加えるとこうつながる」は正しくない（どの -OH につながるかも α/β も選べず混ざる）ので、
+         *   **瓶からの入口を作ると、この反応自身の断り文と画面が食い違う**。
+         *   ⚠ `DESIGN_sugar.md` §8-③ の推奨（h2so4_conc に相乗り）とは違う判断。
+         *   ★ 断り文（`RX_GLYCOSIDE_CAVEAT`）が画面に出ていることは GC5 が見張っている。 */
         const expected = ['addition_polymerization', 'alkyne_polymerization',
+            'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 7, `瓶を持たない実行ルールが ${now.length} 件（7件を期待）: ${now.join(', ')}`);
+        assert(now.length === 8, `瓶を持たない実行ルールが ${now.length} 件（8件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
         // 解説専用（info）で瓶を持たないのは縮合重合の案内1件だけ
@@ -24106,7 +30198,7 @@
         const beforeHistory = g.history.length;
         // トーストに書かれたかどうかを見分けるため、押す前に目印を置く
         toast.textContent = 'RG11-MARK';
-        bottle(c, 'oxidant').click();
+        bottle(c, 'kmno4').click();
         assert(noteEl.textContent.includes('酸化されにくい'),
             `3級アルコールの解説が瓶の節に出ていない: ${noteEl.textContent.slice(0, 60) || '（空）'}`);
         assert(toast.textContent === 'RG11-MARK',
@@ -24208,17 +30300,18 @@
             `総当たりが ${checked} 通り（${names.length} 分子 × 5本 ＝ ${names.length * 5} 通りを期待）`);
         // **否定対照**: 同じ数え方で「変えるもの」を押すと必ず変わる。
         // 変わらないなら、この検査は何も見ていない
-        setupReagent(c, ['エタノール']);
+        // ⚠ 1級アルコールは v1428 から条件を訊くので、ここは行き先が1つの 2級アルコールで見る
+        setupReagent(c, ['2-プロパノール']);
         const before = CC(g.userMolecule);
-        bottle(c, 'oxidant').click();
+        bottle(c, 'kmno4').click();
         assert(CC(g.userMolecule) !== before,
             '否定対照が働いていない: 変えるものの瓶を押しても正準コードが動かない');
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶21本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶22本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶21本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶22本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -24232,7 +30325,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 21, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 22, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
@@ -26533,7 +32626,7 @@
         } finally { a.kill(); }
 
         // ⚠ 収録の1手目を汚さない: ?rec= が付いていたら summon も reagent も無視する
-        a = await openApp('?rec=__no_such_demo__&summon=' + encodeURIComponent('エタノール') + '&reagent=oxidant');
+        a = await openApp('?rec=__no_such_demo__&summon=' + encodeURIComponent('エタノール') + '&reagent=kmno4');
         try {
             assert(a.W.game.userMolecule.atoms.length === 0,
                 '?rec= があるのに ?summon= が踏まれている（収録の1手目が汚れる）');
@@ -26693,7 +32786,7 @@
         c.reset();
     });
 
-    test('RC2: 酸化剤が側鎖酸化と酸化開裂まで届く（生成物5件が登録エントリと一致・否定対照つき）', async (c) => {
+    test('RC2: 酸化剤が側鎖酸化と酸化開裂まで届く（生成物9件が登録エントリと一致・否定対照つき）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const CC = W.canonicalCode;
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
@@ -26714,12 +32807,27 @@
 
         // ---- (1) 候補の数。**同じ数え方を陽性にも陰性にも掛ける** ----
         const n = (rule, name) => rule.detect(molOf(name)).length;
-        // 側鎖酸化は「環に直結した -CH₃」だけ。等価な位置はまとめる（p-キシレンの2つは1通り）
-        const sidePositive = { 'トルエン': 1, 'o-キシレン': 1, 'p-キシレン': 1, 'm-キシレン': 1 };
-        // **否定対照**: 側鎖が無い／-CH₃ でない／環そのものが酸化される（フェノール類・芳香族アミン）／
-        //               既存のルールが扱う（-CHO・-CH₂OH）
-        const sideNegative = ['ベンゼン', 'エチルベンゼン', 'スチレン', 'フェノール', 'アニリン',
-            '安息香酸', 'ベンズアルデヒド', 'ベンジルアルコール', 'エタノール'];
+        // 側鎖酸化は「環に直結していてベンジル位に水素がある炭化水素の側鎖」。
+        // **炭素2個以上でも図を変える**（2026-08-26 ユーザー決定・§10.3 決着）。
+        // 等価な位置はまとめる（p-キシレンの2つは1通り／p-エチルトルエンの2つは別の生成物なので2通り）
+        const sidePositive = {
+            'トルエン': 1, 'o-キシレン': 1, 'p-キシレン': 1, 'm-キシレン': 1,
+            'エチルベンゼン': 1, 'クメン（イソプロピルベンゼン）': 1, 'スチレン': 1,
+            'プロピルベンゼン': 1, 'ブチルベンゼン': 1,
+            'アリルベンゼン（3-フェニルプロペン）': 1,
+            'p-エチルトルエン（1-エチル-4-メチルベンゼン）': 2
+        };
+        // **否定対照**: 側鎖が無い／ベンジル位に水素が無い（`tert`-ブチルベンゼン・α-メチルスチレン）／
+        //               環そのものが酸化される（フェノール類・芳香族アミン）／
+        //               既存のルールが扱う（-CHO・-CH₂OH）／
+        //               **切れて出ていく側にもう1つ環がある**（ジフェニルメタン・テトラリン）／
+        //               **側鎖が炭化水素でない**（フェニルアラニン・フェニル酢酸・ケイ皮酸）
+        const sideNegative = ['ベンゼン', 'フェノール', 'アニリン',
+            '安息香酸', 'ベンズアルデヒド', 'ベンジルアルコール', 'エタノール',
+            'tert-ブチルベンゼン', 'α-メチルスチレン（2-フェニルプロペン）',
+            'フェニルアセチレン（エチニルベンゼン）',
+            'ジフェニルメタン', 'テトラリン（1,2,3,4-テトラヒドロナフタレン）',
+            'フェニルアラニン', 'フェニル酢酸', 'ケイ皮酸（桂皮酸・3-フェニルプロペン酸）'];
         Object.entries(sidePositive).forEach(([name, want]) => assert(n(side, name) === want,
             `${name}: 側鎖酸化の候補が ${n(side, name)} 件（${want} 件を期待）`));
         sideNegative.forEach(name => assert(n(side, name) === 0,
@@ -26732,13 +32840,13 @@
             `${name}: 酸化開裂の候補が ${n(cleave, name)} 件（1件を期待）`));
         cleaveNegative.forEach(name => assert(n(cleave, name) === 0,
             `${name}: 扱わないはずの酸化開裂が候補に出ている（${n(cleave, name)} 件）`));
-        assert(Object.keys(sidePositive).length === 4 && sideNegative.length === 9 &&
+        assert(Object.keys(sidePositive).length === 11 && sideNegative.length === 15 &&
                cleavePositive.length === 2 && cleaveNegative.length === 8,
-            '陽性6件・陰性17件を数えたことを主張の中に残す');
+            '陽性13件・陰性23件を数えたことを主張の中に残す');
 
         // ---- (2) 範囲外は info が理由を返す（黙って消えない） ----
         [['エチレン（エテン）', 1, '二酸化炭素'], ['シクロヘキセン', 1, 'アジピン酸'],
-         ['エチルベンゼン', 1, '安息香酸'], ['スチレン', 2, '二酸化炭素']].forEach(([name, want, word]) => {
+         ['α-メチルスチレン（2-フェニルプロペン）', 1, '二酸化炭素']].forEach(([name, want, word]) => {
             const mol = molOf(name);
             assert(info.detect(mol).length === want,
                 `${name}: 範囲外の案内が ${info.detect(mol).length} 件（${want} 件を期待）`);
@@ -26747,10 +32855,24 @@
                 `${name}: 範囲外の案内に「${word}」が出てこない`);
         });
         // **否定対照**: 範囲内・無関係の分子では案内を出さない（出すと自動案内が濁る）。
-        // とくに 2-メチル-2-プロパノール は酸化剤の hits が1件でなくなると RG11 が崩れる
-        ['トルエン', 'エタノール', '2-メチル-2-プロパノール', 'ベンゼン', '2-ブテン'].forEach(name => {
+        // とくに 2-メチル-2-プロパノール は酸化剤の hits が1件でなくなると RG11 が崩れる。
+        // ⚠ **エチルベンゼン・クメン・スチレンは「案内」から「実行」へ移った**（§10.3 決着）。
+        //   スチレンは末端 C=C を持つが、その C=C は側鎖ごと酸化されて消えるので案内は出さない
+        //   ——「押すと変わるボタン」の横に「ここでは変えません」を並べない
+        ['トルエン', 'エタノール', '2-メチル-2-プロパノール', 'ベンゼン', '2-ブテン',
+         'エチルベンゼン', 'クメン（イソプロピルベンゼン）', 'スチレン',
+         'アリルベンゼン（3-フェニルプロペン）'].forEach(name => {
             assert(info.detect(molOf(name)).length === 0,
                 `${name}: 範囲外の案内が出ている（${info.detect(molOf(name)).length} 件）`);
+        });
+        // **否定対照（文面）**: `chain` の枝を消したので、どの分子でも
+        // 「炭素2つ以上の側鎖 … ここでは図を変えません」は出ない
+        ['エチルベンゼン', 'スチレン', 'アントラセン', 'インドール'].forEach(name => {
+            const mol = molOf(name);
+            if (!info.detect(mol).length) return;
+            g.userMolecule = mol;
+            assert(!/炭素2つ以上の側鎖/.test(info.apply(g).caption),
+                `${name}: 実行できるようになった側鎖を「図を変えません」と案内している`);
         });
 
         // ---- (3) `detect` が数えるのは「1分子」か（第1段・第2段の教訓） ----
@@ -26767,6 +32889,8 @@
             'トルエンを2つ並べると側鎖酸化が1件に潰れる（detect がキャンバス全体で数えている）');
         assert(side.detect(twoOf('p-キシレン')).length === 2,
             'p-キシレン2個で側鎖酸化が2件にならない（等価判定が成分をまたいでいる）');
+        assert(side.detect(twoOf('エチルベンゼン')).length === 2,
+            'エチルベンゼン2個で側鎖酸化が2件にならない（炭素2個以上の側鎖でも成分ごとに数える）');
         assert(cleave.detect(twoOf('2-ブテン')).length === 2,
             '2-ブテンを2つ並べると酸化開裂が1件に潰れる');
 
@@ -26784,6 +32908,11 @@
             ['トルエン', side, 1, ['安息香酸']],
             ['o-キシレン', side, 2, ['フタル酸']],
             ['p-キシレン', side, 2, ['テレフタル酸']],
+            // ★ 炭素2個以上の側鎖も**同じ安息香酸**になる（切れて出ていく側は図に描かない）
+            ['エチルベンゼン', side, 1, ['安息香酸']],
+            ['クメン（イソプロピルベンゼン）', side, 1, ['安息香酸']],
+            ['スチレン', side, 1, ['安息香酸']],
+            ['p-エチルトルエン（1-エチル-4-メチルベンゼン）', side, 2, ['テレフタル酸']],
             ['2-ブテン', cleave, 1, ['酢酸', '酢酸']],
             ['2-メチル-2-ブテン', cleave, 1, ['アセトン', '酢酸']]
         ];
@@ -26802,11 +32931,40 @@
                 `${name} を ${times} 回酸化しても ${products.join(' + ')} にならない\n  実際: ${CC(mol)}\n  登録: ${want}`);
             matched++;
         });
-        assert(matched === 5, `正準コードで一致を確かめた組が ${matched} 件（5件を期待）`);
+        assert(matched === 9, `正準コードで一致を確かめた組が ${matched} 件（9件を期待）`);
+
+        // ---- (4b) ★否定対照 —— **切れて出ていく側が図に残っていない**こと ----
+        // 「安息香酸と同じ正準コード」だけでは、側鎖を落とさずに -COOH を足す実装
+        // （＝ 5本目の結合が生えた炭素）を見逃す可能性がある。原子の数で直接押さえる
+        [['エチルベンゼン', 2], ['クメン（イソプロピルベンゼン）', 3], ['スチレン', 2],
+         ['ブチルベンゼン', 4]].forEach(([name, chainCarbons]) => {
+            const mol = molOf(name);
+            const before = mol.atoms.length;
+            g.userMolecule = mol; g.updateDrawing();
+            const cap = side.apply(g, side.detect(mol)[0]).caption;
+            // 側鎖の炭素は (chainCarbons - 1) 個消え、O が2個増える ＝ 差し引き
+            assert(mol.atoms.length === before - (chainCarbons - 1) + 2,
+                `${name}: 原子数が合わない（${before} → ${mol.atoms.length}）＝ 側鎖が図に残っている`);
+            assert(mol.atoms.length === 9,
+                `${name}: 生成物の重原子が ${mol.atoms.length} 個（安息香酸の9個を期待）`);
+            // **図に残さないことをテキストで補う**（ユーザー決定・2026-08-26）
+            assert(/図に残していません/.test(cap) && /二酸化炭素/.test(cap),
+                `${name}: 出ていった側の行き先が caption で補われていない: ${cap.slice(-120)}`);
+        });
+        // **否定対照の対照**: -CH₃ のときは何も消えないので、その断りも出さない
+        {
+            const mol = molOf('トルエン');
+            const before = mol.atoms.length;
+            g.userMolecule = mol; g.updateDrawing();
+            const cap = side.apply(g, side.detect(mol)[0]).caption;
+            assert(mol.atoms.length === before + 2, 'トルエンで側鎖の炭素まで消えている');
+            assert(!/図に残していません/.test(cap),
+                'トルエンなのに「図に残していません」と断っている（消えたものが無いのに）');
+        }
 
         // ---- (5) 瓶からも同じ生成物になる。**否定対照**はエタン（今までどおり空振り） ----
         setupReagent(c, ['トルエン']);
-        bottle(c, 'oxidant').click();
+        bottle(c, 'kmno4').click();
         if (W.reactor.picking) {
             const site = W.reactor.picking.sites[0];
             const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
@@ -26814,9 +32972,19 @@
         }
         assert(CC(g.userMolecule) === canvasOf(['安息香酸']),
             `酸化剤の瓶からトルエンを押しても安息香酸にならない: ${CC(g.userMolecule)}`);
+        // ★ 炭素2個以上の側鎖も**瓶から**同じところへ着く（画面の道が通っていることの確認）
+        setupReagent(c, ['エチルベンゼン']);
+        bottle(c, 'kmno4').click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(CC(g.userMolecule) === canvasOf(['安息香酸']),
+            `酸化剤の瓶からエチルベンゼンを押しても安息香酸にならない: ${CC(g.userMolecule)}`);
         setupReagent(c, ['エタン']);
         const before = CC(g.userMolecule);
-        bottle(c, 'oxidant').click();
+        bottle(c, 'kmno4').click();
         assert(CC(g.userMolecule) === before, 'エタンに酸化剤が効いてしまっている');
         assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
             'エタン × 酸化剤で何も返らない');
@@ -27331,7 +33499,13 @@
         assert(five[3][1] === 0 && five[4][1] === 0,
             `末尾2枚の減り幅が ${five[3][1]} / ${five[4][1]} です（期待 0 / 0 ＝ 冗長な条件）`);
 
-        // ③ narrowing-problems.json が持つ B の実験列（順番は問題文どおり）でも 3。
+        // ③ narrowing-problems.json が持つ B の実験列でも 3。
+        //    ⚠⚠ **ここには「順番は問題文どおり」と書いてあったが、それは誤りだった**（2026-08-26 に直した）。
+        //    データの順は `carbonyl-no > na > h2-no > ox2 > iodo` ＝ 問題文の実験でいうと
+        //    **5 → 1 → 2 → 3 → 4** で、問題文の順ではなく**解き筋の順**。
+        //    ⚠ 解き筋の順であること自体は誤りではない（それが教材の実体）。
+        //    誤っていたのは**テストの主張のほう**で、こう書いてあるとテストを読んでも食い違いに気づけない。
+        //    どの列が問題文の順と違うかは、出荷 JSON の `stepNo` から NW33 が見張っている。
         //    データ側の expect と実際の絞り込みが一致しているかも一緒に見る
         assert(nw.problems, 'narrowing-problems.json が読めていません');
         const p = nw.problems.find((x) => x.id === '2022-東京大学-1I');
@@ -27342,7 +33516,10 @@
         assert(asStored[4][0] === colB.expect,
             `問題データの順で ${asStored[4][0]} 通り（JSON の expect は ${colB.expect}）`);
         assert(asStored[4][0] === 3, `問題データの順で ${asStored[4][0]} 通り（期待 3）`);
-        // 同じ5枚でも**途中の数はまったく違う**（順番が効く）。デモ順は 11 から、問題文順は 51 から
+        // 同じ5枚でも**途中の数はまったく違う**（順番が効く）。
+        // ⚠ デモ順は 11 から、**データの順（＝解き筋の順）は 51 から**。
+        //   ちなみに**問題文の順は 26 から**始まる（`na` が1枚目に来るので）——
+        //   もとのコメントはこの 51 を「問題文順」と書いていた（2026-08-26 に直した）
         assert(asStored[0][0] !== demo[0][0],
             '積む順を変えても1枚目の残りが同じです（順番が効いていない）');
     });
@@ -28640,6 +34817,191 @@
         }
     });
 
+    test('NW33: stepNo が出荷 JSON に載り、stack と対応が取れている（否定対照つき）', async (c) => {
+        // ⚠⚠ **これが無かったせいで、東大 1I の食い違いは出荷データ側から永久に見えなかった。**
+        // 仕様（_解析/db/narrowing/*.json）は `label` に「実験5」「実験1」…と番号を持っていたのに、
+        // 生成器が **step 単位では1つも出荷していなかった**ため、
+        // 「この列は問題文の順か」は**原理的に判定できない**状態だった（2026-08-19〜20 の調査）。
+        // `stepNo`（札1枚ごとの実験番号）を載せたので、ここから先は出荷 JSON だけで見張れる。
+        //
+        // ★ **何を赤にするか**（設計。ここを間違えると見張りが嘘をつく）:
+        //   赤 …「番号を持っているのに `stack` と対応が取れていない」ほうだけ
+        //   ⚠ **非昇順は赤にしない。** `stack` の順は**解き筋の順**で、それが教材の実体。
+        //      問題文の順と違うこと自体は誤りではないので、**どの列がそうかを名指しで固定する**だけ
+        const W = c.W;
+        const nw = W.narrowing;
+        // ⚠ **前のテストに寄りかからない。** `problems` は絞り込みモードを開いたときに読むので、
+        //   `--only=NW33` で単独に流すとまだ空。見張りが「流し方によって黙る」のは最悪なので、
+        //   ここで自分で読ませる（読み込みは冪等）
+        if (!nw.problems) await nw.loadProblems();
+        assert(nw.problems, 'narrowing-problems.json が読めていません');
+
+        /** 赤にする4条件。**否定対照でこの関数自身を試す**ので、判定は1か所にまとめる */
+        const redFlags = (col) => {
+            const s = col.stepNo, bad = [];
+            if (s === undefined) return bad;   // 欄が無いのは正しい形の1つ（番号が拾えない列）
+            if (!Array.isArray(s)) return ['stepNo が配列でない'];
+            if (s.length !== col.stack.length) bad.push(`長さ ${s.length} / stack ${col.stack.length} 枚`);
+            if (!col.stack.length) bad.push('stack が空なのに stepNo がある');
+            if (s.some((v) => v !== null && !(Number.isInteger(v) && v > 0))) bad.push('正の整数でも null でもない値');
+            if (s.length && s.every((v) => v === null)) bad.push('全部 null（拾えない列は欄ごと作らない規約）');
+            return bad;
+        };
+        const cols = nw.problems.flatMap((p) => p.columns.map((col) => ({ where: `${p.printed || p.id} / ${col.name}`, col })));
+        const red = cols.filter((x) => redFlags(x.col).length);
+        assert(red.length === 0,
+            `stepNo が stack と対応していない列があります: ${red.map((x) => `${x.where}（${redFlags(x.col).join('・')}）`).join(' / ')}`);
+        const withNo = cols.filter((x) => x.col.stepNo);
+        // ★ 2026-08-26 の出荷（19問50列 → 25問61列）で 30 → **33** になった。
+        //   新たに欄を持つのは 昭和薬大・薬4 / C ／ 東京薬大・薬4 / A・B の3本。
+        //   ⚠ **昭和薬大の B 列は出荷していない**（4枚目が1つも減らさないため。
+        //     DESIGN_narrowing_mode.md §16-4）ので、B のぶんはここに入らない
+        assert(withNo.length === 33,
+            `stepNo を持つ列が ${withNo.length} 本（期待 33 / 全 ${cols.length} 本）。`
+            + '欄が消えたら、出荷データから順番を検査する手段がまた無くなる');
+
+        // ★ 東大 1I の B —— 今回直した2つが、そのままここに出る
+        const p = nw.problems.find((x) => x.id === '2022-東京大学-1I');
+        assert(p, '東大 2021 前期1I の問題データが見つかりません');
+        const colB = p.columns.find((x) => x.name === 'B');
+        assert(colB.stack.join(',') === 'carbonyl-no,na,h2-no,ox2,iodo',
+            `B の札が ${colB.stack.join(',')}（期待 carbonyl-no,na,h2-no,ox2,iodo）。`
+            + '3枚目は問題文の実験2＝**水素付加**で、臭素水（br2-no）ではない');
+        assert((colB.stepNo || []).join(',') === '5,1,2,3,4',
+            `B の stepNo が ${JSON.stringify(colB.stepNo)}（期待 [5,1,2,3,4]）`);
+
+        // 非昇順の列は**名指しで固定**する。増えたら中身を見て、問題文の順ならこの表を足すこと
+        const isAsc = (s) => { const n = (s || []).filter((v) => v !== null); return n.every((v, i) => i === 0 || v >= n[i - 1]); };
+        const noAsc = cols.filter((x) => x.col.stepNo && !isAsc(x.col.stepNo)).map((x) => x.where);
+        assert(noAsc.join(' / ') === '東京大1Ⅰ / B',
+            `解き筋の順が問題文の順と違う列: ${noAsc.join(' / ') || 'なし'}（期待は東京大1Ⅰ / B の1本だけ）。`
+            + '⚠ これ自体は誤りではない（解き筋の順が正しい）。増えたことに気づくための定点');
+
+        // ★ 札を直した効き —— **最短が 3手・3通り → 2手・1通り**（途中の数は1つも動かない）
+        nw.formulaKey = p.formula;
+        nw.constraints = { ...p.constraints };
+        nw.pool = null;
+        const pool = await nw.buildPool();
+        assert(pool.length === 55, `開始が ${pool.length} 通り（期待 55）`);
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const apply = (ids) => ids.reduce((l, id) => l.filter(card(id).test), pool);
+        let cur = pool;
+        const seq = colB.stack.map((id) => (cur = cur.filter(card(id).test)).length);
+        assert(seq.join(',') === '51,26,8,5,3',
+            `途中の数が ${seq.join(',')}（期待 51,26,8,5,3）。札を替えても途中の数は動かないはず`);
+        assert(seq[4] === colB.expect, `最終 ${seq[4]} 通り（JSON の expect は ${colB.expect}）`);
+        let short = null, routes = 0;
+        for (let k = 1; k <= colB.stack.length && !short; k++) {
+            const acc = [];
+            const comb = (s, cu) => {
+                if (cu.length === k) { if (apply(cu).length === 3) acc.push(cu.join('+')); return; }
+                for (let j = s; j < colB.stack.length; j++) comb(j + 1, cu.concat(colB.stack[j]));
+            };
+            comb(0, []);
+            if (acc.length) { short = k; routes = acc.length; }
+        }
+        assert(short === 2 && routes === 1,
+            `3 通りへの最短が ${short} 手・${routes} 通り（期待 2手・1通り＝ h2-no+iodo）。`
+            + 'br2-no に戻ると 3手・3通りになる');
+
+        // ---- 否定対照 —— 上の redFlags が本当に赤くなるか、4通り壊して確かめる ----
+        // ⚠ 実データは触らない（**写しを壊す**）。ここが素通りすると、見張りは黙って何も見なくなる
+        const 壊し方 = [
+            ['長さがずれる', { stack: ['na', 'iodo'], stepNo: [1] }],
+            ['stack が空なのに欄がある', { stack: [], stepNo: [] }],
+            ['番号でない値', { stack: ['na'], stepNo: ['1'] }],
+            ['全部 null', { stack: ['na', 'iodo'], stepNo: [null, null] }],
+        ];
+        壊し方.forEach(([名, にせ]) => {
+            assert(redFlags(にせ).length > 0, `否定対照が素通りしました: ${名}`);
+        });
+        assert(redFlags({ stack: ['na', 'iodo'], stepNo: [2, null] }).length === 0,
+            '一部の札だけ番号を持つ列（滋賀医大3 / B の形）まで赤にしています');
+        assert(redFlags({ stack: ['na', 'iodo'] }).length === 0,
+            '欄を持たない列（対照の列・系列が混ざる列）まで赤にしています');
+    });
+
+    test('NW34: 問題の note が列だけの問題でも画面に出る（否定対照つき）', async (c) => {
+        // ⚠⚠ **出荷とは無関係の既存の欠陥**（2026-08-26 に発見）。
+        //   `pickProblem` は **断片パス（列が無くて割り方だけある問題）でしか `note` を描いていなかった**。
+        //   出荷19問のうち17問は列をもつので、**そちらの `note` は1文字も画面に出ていなかった**。
+        //   届かなかった断りの実例:
+        //     ・早稲田大 1(7)「模範解答は鏡像異性体を別々に数えている（7・5・4）／この画面は 6・3・2」
+        //     ・昭和薬科大 4「B はここまでしか絞れない（述語がまだ無い）」
+        //     ・東京理科大 6「書籍の答えは6。この画面はシス・トランスを1つに数える」
+        //   ★ **断りが届かないまま問題を増やすと、増やした数だけ嘘が増える**ので、
+        //     ここは出荷の前に塞ぐ。
+        const W = c.W, D = c.D;
+        const nw = W.narrowing;
+        if (!nw.problems) await nw.loadProblems();
+        assert(nw.problems && nw.problems.length, 'narrowing-problems.json が読めていません');
+
+        const src = D.getElementById('nw-source');
+        /** 出典欄に出ている注記（複数あれば連結）。⚠ `collapsed` の帯とは別のクラスで見る */
+        const shown = () => [...src.querySelectorAll('.nw-note')].map((x) => x.textContent).join('');
+
+        // ---- ① note を持つ問題は、列だけでも断片だけでも必ず出る ----
+        const withNote = nw.problems.filter((p) => p.note);
+        assert(withNote.length >= 10, `note を持つ問題が ${withNote.length} 件（期待 10 以上）`);
+        const 列だけ = withNote.filter((p) => p.columns.length);
+        const 断片だけ = withNote.filter((p) => !p.columns.length);
+        assert(列だけ.length >= 8 && 断片だけ.length >= 1,
+            `列だけ ${列だけ.length} 件 / 断片だけ ${断片だけ.length} 件。両方の経路を見たいので、どちらも 1 件以上必要`);
+        const 出ない = [];
+        for (const p of withNote) {
+            nw.pickProblem(p.id);
+            await nw.render();
+            // 先頭 12 文字が出ていれば描かれている（全文一致は太字化で崩れるので見ない）
+            if (!shown().includes(p.note.replace(/\*/g, '').slice(0, 12))) 出ない.push(p.printed || p.id);
+        }
+        assert(出ない.length === 0,
+            `note が画面に出ていない問題: ${出ない.join(' / ')}。`
+            + '⚠ 断片パスにしか描いていないと、列をもつ問題が全部ここに並ぶ');
+
+        // ---- ② Markdown の `**` は太字になり、生のアスタリスクが画面に残らない ----
+        const 星 = withNote.find((p) => /\*\*[^*]+\*\*/.test(p.note));
+        if (星) {
+            nw.pickProblem(星.id);
+            await nw.render();
+            assert(!/\*/.test(shown()), `注記に生の * が残っています（${星.printed || 星.id}）`);
+            assert(src.querySelector('.nw-note b'), '`**…**` が太字になっていません');
+        }
+
+        // ---- ③ 否定対照 —— 出ているのは**データ由来**か（見出しの飾りではないか） ----
+        // ⚠ 実データを壊しっぱなしにしない。写しを取って必ず戻す
+        const p東大 = nw.problems.find((x) => x.id === '2022-東京大学-1I');
+        assert(p東大 && p東大.note && p東大.columns.length, '東大 1I（列だけ・note あり）が見つかりません');
+        const 控え = p東大.note;
+        try {
+            nw.pickProblem(p東大.id);
+            await nw.render();
+            assert(shown().length > 0, '東大 1I の注記が出ていません');
+            p東大.note = '';
+            nw.pickProblem(p東大.id);
+            await nw.render();
+            assert(shown().length === 0, 'note が空なのに注記の欄が出ています（データ由来になっていない）');
+        } finally { p東大.note = 控え; }
+
+        // ---- ④ 否定対照 —— 前の問題の注記が居残らない ----
+        const 注記なし = { ...p東大, id: '__test__', note: '' };
+        nw.problems.push(注記なし);
+        try {
+            nw.pickProblem(p東大.id);
+            await nw.render();
+            assert(shown().length > 0, '東大 1I の注記が出ていません（復元に失敗？）');
+            nw.pickProblem('__test__');
+            await nw.render();
+            assert(shown().length === 0, '注記を持たない問題に切り替えても前の注記が残っています');
+            nw.pickProblem('');
+            await nw.render();
+            assert(src.classList.contains('hidden'), '「（自分で組む）」に戻しても出典が消えていません');
+        } finally { nw.problems = nw.problems.filter((x) => x.id !== '__test__'); }
+
+        nw.columns = [{ name: 'A', stack: [] }];
+        nw.active = 0;
+        await nw.render();
+    });
+
     // ===== PK: 「同じ？違う？」2択の答え合わせ（v1060・2026-08-12） =====
     // 4択は最初から markQuizChoices を通っていたのに、**同じクラスの2択だけ通っていなかった**。
     // 押せなくなるだけで「どちらを押したか」も「どちらが正解か」も画面に残らない。
@@ -29378,6 +35740,2834 @@
                     `${name}: 🎲 のせいで本体が横スクロールしている`);
             });
         }
+    });
+
+    // ===== SG: 見かけが変わっても同じ分子（ハース図の上下反転・独楽回転）=====
+    //
+    // 入試では「マルトースを上下反転した図はどれが正しいか」「教科書のフルクトースが
+    // 同じ構造だと見抜けるか」が問われる。アプリは α/β を**描かれた縦位置**から読む
+    // （DESIGN_stereochemistry.md §12.1 の明示の例外）ので、図を動かすと立体の読みが動く。
+    // ⚠ **DESIGN_sugar.md §1-2 の表がそのままこの帯**。環をもつ糖の登録16件で全数を測る。
+    //
+    // ⚠ 否定対照（SG2〜SG4）を落とすと、実装が「上下だけ入れ替える」に退化しても誰も気づかない。
+    //    SG1 だけでは守れない（何もしない実装でも通ってしまう）。
+
+    /** 環をもつ糖の登録（compounds.json）を全部拾う。ピラノース10・フラノース2・二糖4 ＝ 16件 */
+    function sugarRingEntries(W) {
+        return (W.COMPOUNDS || []).filter(e => {
+            if (!e.target || !e.target.atoms) return false;
+            const m = W.game.createTargetFromData({ target: e.target });
+            const ring = W.ringAtomIds(m);
+            if (!ring.size) return false;
+            if (!m.atoms.some(a => a.element === 'O' && ring.has(a.id))) return false;
+            // -OH が3本以上（乳酸3分子の環状エステルのような「環にOがある非糖」を外す）
+            const oh = m.atoms.filter(a => {
+                if (a.element !== 'O') return false;
+                const nb = m.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
+                return nb.length === 1 && nb[0].type === 1;
+            }).length;
+            return oh >= 3;
+        });
+    }
+
+    /** その図から読める立体まで込みのコード（game.js の照合と同じ手順） */
+    function codesOf(W, mol) {
+        const atomParity = Object.assign({},
+            W.readAtomParityFromFischer(mol), W.readRingParityFromHaworth(mol));
+        return {
+            code: W.canonicalCode(mol),
+            stereo: W.canonicalStereoCode(mol,
+                { atomParity, bondGeo: W.readBondGeoFromCoords(mol) })
+        };
+    }
+
+    /** 16件に操作を当て、コードが変わらなかった件数を数える */
+    function surveySugars(W, apply) {
+        const list = sugarRingEntries(W);
+        let sameCode = 0, sameStereo = 0;
+        const kept = [], moved = [];
+        list.forEach(e => {
+            const before = codesOf(W, W.game.createTargetFromData({ target: e.target }));
+            const mol = W.game.createTargetFromData({ target: e.target });
+            apply(mol);
+            const after = codesOf(W, mol);
+            if (after.code === before.code) sameCode++;
+            if (after.stereo === before.stereo) { sameStereo++; kept.push(e.id); } else moved.push(e.id);
+        });
+        return { n: list.length, sameCode, sameStereo, kept, moved };
+    }
+
+    /** 面マークを明示している登録のID（DESIGN_sugar.md §1-3 の8件） */
+    function markedIds(W) {
+        return sugarRingEntries(W)
+            .filter(e => e.target.atoms.some(a => a.haworthFace === 1 || a.haworthFace === -1))
+            .map(e => e.id);
+    }
+    const centroid = (mol) => {
+        const h = mol.atoms.filter(a => a.element !== 'H');
+        return { x: h.reduce((t, a) => t + a.x, 0) / h.length, y: h.reduce((t, a) => t + a.y, 0) / h.length };
+    };
+
+    test('SG1: ★ 上下反転（裏返す）は同じ分子のまま —— 環をもつ糖16件で全数', async (c) => {
+        const W = c.W;
+        const list = sugarRingEntries(W);
+        // 対象が減っていない／増えたのに測っていない、を先に捕まえる
+        assert(list.length === 16,
+            `環をもつ糖の登録が ${list.length} 件（16件のはず）。増えたなら SG1〜SG5 の対象に入るので確認すること: ` +
+            list.map(e => e.id).join(','));
+        ['maltose', 'cellobiose', 'lactose', 'sucrose', 'beta-d-glucose', 'beta-d-fructofuranose']
+            .forEach(id => assert(list.some(e => e.id === id), `${id} が16件に入っていない`));
+        // 門番: 環（ハース）で描かれた糖は反転してよい／鎖（フィッシャー）で描かれた糖は断る
+        list.forEach(e => {
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(W.canFlipHaworth(mol), `${e.id}: canFlipHaworth が false（環の糖は反転できるはず）`);
+        });
+        // ★ 反転の前後で、正準コードも立体の正準コードも 16/16 同一
+        const r = surveySugars(W, mol => assert(W.flipHaworth(mol), 'flipHaworth が false を返した'));
+        assert(r.sameCode === 16, `反転でトポロジーが変わった（同一 ${r.sameCode}/16）: ${r.moved.join(',')}`);
+        assert(r.sameStereo === 16,
+            `★ 反転で立体が変わった（同一 ${r.sameStereo}/16）: ${r.moved.join(',')}`);
+        // 対照: 平行移動でも当然変わらない
+        const t = surveySugars(W, mol => mol.atoms.forEach(a => { a.x += 137; a.y -= 91; }));
+        assert(t.sameCode === 16 && t.sameStereo === 16, '平行移動で座標依存の読みが動いた（対照が壊れている）');
+        // 2回反転すれば元の座標に戻る（操作が対合であること）
+        const e0 = list.find(x => x.id === 'sucrose');
+        const twice = W.game.createTargetFromData({ target: e0.target });
+        const orig = W.game.createTargetFromData({ target: e0.target });
+        W.flipHaworth(twice); W.flipHaworth(twice);
+        assert(twice.atoms.every((a, i) => Math.abs(a.y - orig.atoms[i].y) < 1e-6 &&
+                                           (a.haworthFace || null) === (orig.atoms[i].haworthFace || null)),
+            'スクロースを2回裏返しても元の図に戻らない');
+    });
+
+    test('SG2: ★否定対照 — 「上下だけ入れ替える」（面内180°回転）は 16件すべてで別の立体になる', async (c) => {
+        const W = c.W;
+        // 紙の上で図をくるっと回すのは 3D では回転だが、ハース投影の約束（上に描く＝手前）を
+        // 通すと**鏡像**になる。ハース図は向きの固定された表記であって、回して読み直せる図ではない
+        const r = surveySugars(W, mol => {
+            const c0 = centroid(mol);
+            mol.atoms.forEach(a => { a.x = 2 * c0.x - a.x; a.y = 2 * c0.y - a.y; });
+        });
+        assert(r.n === 16, `対象が ${r.n} 件`);
+        assert(r.sameCode === 16, 'トポロジーまで変わってしまった（面内回転は結合を変えないはず）');
+        assert(r.sameStereo === 0,
+            `上下だけ入れ替えたのに立体が保たれた件がある（同一 ${r.sameStereo}/16）: ${r.kept.join(',')}`);
+    });
+
+    test('SG3: ★否定対照 — 「たどる向きだけ逆にする」（左右の鏡映）も 16件すべてで別の立体になる', async (c) => {
+        const W = c.W;
+        const r = surveySugars(W, mol => {
+            const c0 = centroid(mol);
+            mol.atoms.forEach(a => { a.x = 2 * c0.x - a.x; });
+        });
+        assert(r.sameCode === 16, 'トポロジーまで変わってしまった（鏡映は結合を変えないはず）');
+        assert(r.sameStereo === 0,
+            `向きだけ逆にしたのに立体が保たれた件がある（同一 ${r.sameStereo}/16）: ${r.kept.join(',')}`);
+    });
+
+    test('SG4: ★否定対照 — 反転で面マークを直し忘れると、マークを持つ8件だけが鏡像に化ける', async (c) => {
+        const W = c.W;
+        // 面マーク（haworthFace）は**座標より優先**されるので、座標だけ反転するとマークが付いてこない。
+        // ⚠ ここが実装でいちばん踏みやすい地雷。データ（compounds.json）は触らず、
+        //    コード側で座標とマークの両方を回す ＝ flipHaworth がやっていること
+        const marked = markedIds(W);
+        assert(marked.length === 8, `面マークを持つ登録が ${marked.length} 件（8件のはず）: ${marked.join(',')}`);
+        const r = surveySugars(W, mol => {
+            const c0 = centroid(mol);
+            mol.atoms.forEach(a => { a.y = 2 * c0.y - a.y; }); // マークを直さない反転
+        });
+        assert(r.sameStereo === 8,
+            `面マークを直し忘れたときの同一件数が ${r.sameStereo}/16（8件のはず）`);
+        // 化けるのは「マークを持つ8件」ちょうど（別の8件が化けているのでは意味が違う）
+        assert(marked.every(id => r.moved.includes(id)) && r.moved.length === 8,
+            `化けた8件が面マークの8件と一致しない: 化けた=${r.moved.join(',')} / マーク=${marked.join(',')}`);
+    });
+
+    test('SG5: ★ 独楽回転（環の面内で回す）も同じ分子のまま —— 16件 × 全ステップ数', async (c) => {
+        const W = c.W;
+        const list = sugarRingEntries(W);
+        let cases = 0;
+        list.forEach(e => {
+            const before = codesOf(W, W.game.createTargetFromData({ target: e.target }));
+            const probe = W.game.createTargetFromData({ target: e.target });
+            const cycles = W.haworthSpinCycles(probe);
+            // 二糖（環2つ）は独楽回転できる環が2個。⚠ 部分一致で数えないこと
+            //   （"beta-d-ga**lactose**" のように単糖のIDに二糖の名前が入っている）
+            const want = ['maltose', 'cellobiose', 'lactose', 'sucrose'].includes(e.id) ? 2 : 1;
+            assert(cycles.length === want,
+                `${e.id}: 独楽回転できる環が ${cycles.length} 個（${want} 個のはず）`);
+            cycles.forEach((cyc, ci) => {
+                for (let k = 1; k < cyc.length; k++) {
+                    const mol = W.game.createTargetFromData({ target: e.target });
+                    const cs = W.haworthSpinCycles(mol);
+                    assert(W.spinHaworthRing(mol, cs[ci], k), `${e.id}: 独楽回転が断られた`);
+                    const after = codesOf(W, mol);
+                    assert(after.code === before.code, `${e.id}: 独楽回転(${k})でトポロジーが変わった`);
+                    assert(after.stereo === before.stereo,
+                        `★ ${e.id}: 独楽回転(環${ci + 1}・${k}席ぶん)で立体が変わった`);
+                    // 座標が本当に動いていること（何もしない実装で通らないように）
+                    const orig = W.game.createTargetFromData({ target: e.target });
+                    assert(mol.atoms.some((a, i) => Math.abs(a.x - orig.atoms[i].x) > 1e-6 ||
+                                                    Math.abs(a.y - orig.atoms[i].y) > 1e-6),
+                        `${e.id}: 独楽回転(${k})で図が1ピクセルも動いていない`);
+                    cases++;
+                }
+            });
+        });
+        assert(cases >= 16 * 4, `独楽回転を測った組み合わせが ${cases} 件しかない`);
+    });
+
+    test('SG6: 門番 — 開けたのは2つだけ（鎖の糖・縮合環は断る／鏡映は建てていない）', async (c) => {
+        const W = c.W;
+        // ⚠ **フィッシャー投影で描かれた鎖の糖は反転を断る。** フィッシャーは「縦＝奥」なので、
+        //    y を反転すると奥の2本を入れ替えただけ ＝ その中心が鏡像に化ける（ハース図と逆）
+        ['d-glucose', 'd-fructose', 'd-galactose', 'd-mannose'].forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(!W.canFlipHaworth(mol),
+                `${id}（鎖・フィッシャー）の反転を許してしまっている`);
+            // 実際、断らずに反転すると立体が変わる（門番が飾りでないことの実測）
+            const before = codesOf(W, W.game.createTargetFromData({ target: e.target }));
+            W.flipHaworth(mol);
+            assert(codesOf(W, mol).stereo !== before.stereo,
+                `${id}: 鎖の糖を反転しても立体が変わらない（門番の根拠が崩れている）`);
+        });
+        // 縮合環は独楽回転できない（席をずらす先が決まらない）
+        ['naphthalene', 'anthracene', 'phenanthrene'].forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            if (!e) return;
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(W.haworthSpinCycles(mol).length === 0, `${id}（縮合環）の独楽回転を許してしまっている`);
+        });
+        // 単環（ベンゼン・シクロヘキサン）はふつうに回せる
+        ['benzene', 'cyclohexane'].forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            if (!e) return;
+            const mol = W.game.createTargetFromData({ target: e.target });
+            assert(W.haworthSpinCycles(mol).length === 1, `${id}（単環）の独楽回転が断られた`);
+        });
+        // ⚠ 鏡映を当てる関数は建てていない（建てると別の化合物になる）
+        assert(typeof W.canFlipHaworth === 'function' && typeof W.spinHaworthRing === 'function',
+            '2つの操作が公開されていない');
+        assert(typeof W.mirrorHaworth === 'undefined',
+            '鏡映（mirrorHaworth）が生えている ＝ 別の化合物を作る操作を開けてしまっている');
+    });
+
+    test('SG7: 環ビューのカメラが 0〜180° に開き、180° で環が裏返って見える（陰性対照つき）', async (c) => {
+        const W = c.W, g = c.game, D = c.D, sv = W.stereoView;
+        const e = (W.COMPOUNDS || []).find(x => x.id === 'beta-d-glucose');
+        assert(e, 'β-D-グルコースがライブラリに無い');
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        g.updateDrawing();
+        sv.openAuto();
+        sv.setMode('ring');
+
+        const slider = D.getElementById('stereo-ring-tilt');
+        assert(slider && slider.getAttribute('max') === '180',
+            `倒し角のスライダーの上限が ${slider && slider.getAttribute('max')}（180 のはず）`);
+        // 投影された見え方（環原子と置換基）を指紋にする
+        const shot = () => sv._ringDrawn.filter(p => p.node.kind !== 'h')
+            .map(p => ({ kind: p.node.kind, face: p.node.face, x: p.x, y: p.y, z: p.z, k: p.k }));
+        const spread = (s) => {
+            const ys = s.filter(p => p.kind === 'ring').map(p => p.y);
+            return Math.max(...ys) - Math.min(...ys);
+        };
+
+        // ===== 陰性対照: 0〜90° の見え方は1つも変わっていない =====
+        sv.setRingTiltDeg(0);
+        const at0 = shot();
+        assert(spread(at0) > 20, 'ハース図の向き（0°）で環が潰れている');
+        sv.setRingTiltDeg(90);
+        const at90 = shot();
+        assert(spread(at90) < 0.5, `真横（90°）で環が一直線に並ばない（幅 ${spread(at90).toFixed(2)}）`);
+        assert(at90.filter(p => p.kind === 'sub').every(p => (p.face === 1 ? p.y < -10 : p.y > 10)),
+            '真横で上の面が上・下の面が下へ突き出していない（0〜90°の見え方が変わった）');
+        sv.setRingTiltDeg(45);
+        assert(spread(shot()) > spread(at90) && spread(shot()) < spread(at0),
+            '45°の潰れ具合が 0° と 90° の間にない（0〜90°の見え方が変わった）');
+
+        // ===== 180°: 環は潰れず、上下（と奥行き）が入れ替わる ＝ 裏返したハース図 =====
+        sv.setRingTiltDeg(180);
+        assert(Math.abs(sv.ringTilt - Math.PI) < 1e-9, '倒し角 180° が入らない（上限で切られている）');
+        const at180 = shot();
+        assert(Math.abs(spread(at180) - spread(at0)) < 0.5,
+            `180° で環の広がりが 0° と違う（${spread(at180).toFixed(1)} と ${spread(at0).toFixed(1)}）`);
+        // ⚠ 画面座標は弱透視の倍率 k がかかっている（手前は大きく見える）ので、k で割って比べる。
+        //    置換基の y はラベルの重なり回避でずらされるため、上下の反転は環原子で見る
+        const un = (p, key) => p[key] / p.k;
+        assert(at180.every((p, i) => Math.abs(un(p, 'x') - un(at0[i], 'x')) < 1e-6),
+            '180° で左右まで動いている（裏返しは左右を変えない）');
+        assert(at180.every((p, i) => Math.abs(p.z + at0[i].z) < 1e-6),
+            '180° で奥行き（手前・奥）が入れ替わっていない');
+        assert(at180.filter(p => p.kind === 'ring')
+                    .every((p, i) => Math.abs(un(p, 'y') + un(at0.filter(q => q.kind === 'ring')[i], 'y')) < 1e-6),
+            '180° の環原子が「0° の図を上下反転したもの」になっていない');
+        // 上の面（手前）の置換基が奥へ回る ＝ 裏から見ている
+        // ⚠ 2026-08-25 以降は**親の環原子と比べる**。枝を環の面に垂直に立てたので、ハース図の角度では
+        //   環そのものにも奥行きが付き、「上の面なら画面の絶対的な手前」とは限らなくなった
+        //   （環の奥側の炭素に付いた上の面の置換基は、環の手前側の炭素より奥にある ＝ それが正しい）。
+        const zRel = (deg) => {
+            sv.setRingTiltDeg(deg);
+            const pts = sv._ringDrawn;
+            return pts.filter(p => p.node.kind === 'sub' && p.node.face === 1).map(p => {
+                const host = pts.find(q => q.node.kind === 'ring' && q.node.atomId === p.node.hostId);
+                return p.z - host.z;
+            });
+        };
+        const rel0 = zRel(0), rel180 = zRel(180);
+        assert(rel0.length > 0 && rel0.every(v => v > 0),
+            'ハース図の向きで、上の面の置換基が親の環原子より手前に出ていない');
+        assert(rel180.every(v => v < 0),
+            '180° にしても上の面の置換基が（親の環原子から見て）奥へ回っていない');
+        sv.setRingTiltDeg(180);
+
+        // ===== プリセットのボタンと凡例 =====
+        sv.setRingCamera('side');
+        const flipBtn = D.getElementById('btn-stereo-ring-flip');
+        assert(flipBtn, '「⟳ 裏返す」のボタンが無い');
+        flipBtn.click();
+        assert(sv.ringTiltDeg() === 180 && sv.ringYaw === 0, '「⟳ 裏返す」で倒し角が180°にならない');
+        assert(flipBtn.classList.contains('active'), '「⟳ 裏返す」が押された表示にならない');
+        assert(!D.getElementById('btn-stereo-ring-side').classList.contains('active'),
+            '180° なのに「⬡ 真横」が押された表示のまま（88°以上をすべて真横と見ている）');
+        const note = D.getElementById('stereo-ring-note').textContent;
+        ['裏返', '分子は同じ', '鏡像体'].forEach(k =>
+            assert(note.includes(k), `180° の凡例に「${k}」が無い: ${note.slice(0, 120)}`));
+        // ⚠ 「同じ分子である」ことは名前でも言える（裏返しても名前は変わらない）
+        const flipped = g.createTargetFromData({ target: e.target });
+        W.flipHaworth(flipped);
+        assert(codesOf(W, flipped).stereo === codesOf(W, g.createTargetFromData({ target: e.target })).stereo,
+            '裏返したβ-D-グルコースの立体コードが変わった');
+
+        // ドラッグでも 90° を越えて 180° まで倒せる（上限で止まる）
+        sv.setRingCamera('haworth');
+        sv.rotateRingBy(0, 99);
+        assert(Math.abs(sv.ringTilt - Math.PI) < 1e-9,
+            `ドラッグの上限が ${sv.ringTiltDeg()}°（180° で止まるはず）`);
+        sv.setRingCamera('side');
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    // ===== SG8〜SG11: 二糖を「2つの環が同一平面」で横から見る（DESIGN_sugar.md 段2・v1442）=====
+    //
+    // ユーザー「環をヨコから見る、で２糖の場合、２つのハース環が同一平面にあるという仮定で見れるようにしたい」
+    // ★ 芯は「橋の酸素の面を両側の環でそろえる」こと。そろえるには**片方の環を裏返す**しかない
+    //   ＝ (2) と (3) は同じ機能。
+    // ⚠ **v1446 で、そろえる仕事は登録の図の側へ移った**（DS1〜。二糖4件を真横に並べ直したとき、
+    //   β-1,4 の2件とスクロースは片方の環を裏返した向きで描かないと真横に置けなかった）。
+    //   ＝ 模型は**裏返さずに**そのまま同一平面へ置ける（4件とも `need === false`）。
+    //   裏返しが要ることの証拠は「登録の図で2つの環の番号のたどる向きが食い違っている」ことの側にある。
+
+    const DISACCHARIDES = ['maltose', 'cellobiose', 'lactose', 'sucrose'];
+
+    /** 二糖を環ビューで開いて、StereoView と模型を返す */
+    function openDisaccharide(c, id) {
+        const W = c.W, g = c.game;
+        const e = (W.COMPOUNDS || []).find(x => x.id === id);
+        assert(e, `${id} がライブラリに無い`);
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        g.updateDrawing();
+        W.stereoView.openAuto();
+        W.stereoView.setMode('ring');
+        return { sv: W.stereoView, m: W.stereoView._ringModel, mol: g.userMolecule, entry: e };
+    }
+    /** 環B（＋そのぶら下がり）だけを裏返す —— 部分反転の呼び方そのもの */
+    function flipOneRing(W, mol, which, opts) {
+        const cycles = W.haworthSpinCycles(mol);
+        assert(cycles.length === 2, `環が2つでない（${cycles.length}）`);
+        const a = cycles[1 - which], b = cycles[which];
+        const bridge = W.haworthRingBridge(mol, a, b);
+        assert(bridge, '2つの環をつなぐ橋の原子が見つからない');
+        const ids = [...W.haworthRingSideIds(mol, b)];
+        assert(W.canFlipHaworth(mol, ids), '部分反転が門番に断られた');
+        const axis = (opts && opts.axis === 'centroid') ? undefined : bridge.atom.y;
+        if (opts && opts.forgetMark) {
+            // ⚠ 否定対照: 座標だけ反転して面マークを直し忘れる（flipHaworth を使わない）
+            const ax = axis !== undefined ? axis : bridge.atom.y;
+            ids.forEach(i => { const at = mol.atoms.find(x => x.id === i); at.y = 2 * ax - at.y; });
+        } else {
+            assert(W.flipHaworth(mol, ids, axis), 'flipHaworth が false を返した');
+        }
+        return { ids, bridge };
+    }
+
+    test('SG8: ★ 二糖4件が環ビューに入り、橋の酸素の面が両側でそろう（否定対照つき）', async (c) => {
+        const W = c.W, D = c.D;
+        const rows = [];
+        DISACCHARIDES.forEach(id => {
+            const { sv, m, mol } = openDisaccharide(c, id);
+            // ⚠ v1438 までは4件とも「縮合環では上下の意味が決まりません」で断られていた（§3-1）
+            assert(m, `${id}: 環ビューに入れない（${sv._ringUnavailReason || '理由なし'}）`);
+            assert(!D.getElementById('btn-stereo-tab-ring').disabled, `${id}: 環タブが無効のまま`);
+            assert(m.rings && m.rings.length === 2, `${id}: 環が2つの模型になっていない`);
+            assert(m.bridge, `${id}: 橋の情報が模型に無い`);
+            // 2つの環は同じ平面（z=0）に乗っている ＝ ★「同一平面」の中身
+            assert(m.nodes.filter(n => n.kind === 'ring').every(n => n.v[2] === 0),
+                `${id}: 2つの環が同じ平面（z=0）に乗っていない`);
+            assert(m.rings[0].cycle.every(x => !m.rings[1].cycle.includes(x)),
+                `${id}: 2つの環が原子を共有している（縮合環を通してしまった）`);
+            // ★ 橋の酸素は**節点1つ**（両方の環の置換基を兼ねるので z はただ1つ）
+            const bn = m.nodes.filter(n => n.atomId === m.bridge.atomId);
+            assert(bn.length === 1, `${id}: 橋の酸素の節点が ${bn.length} 個（1個のはず）`);
+            assert(bn[0].label === 'O', `${id}: 橋のラベルが「${bn[0].label}」（相手の糖まるごとになっている）`);
+            assert(Math.abs(bn[0].v[2] - bn[0].face * m.depth) < 1e-9, `${id}: 橋が面に応じた z にない`);
+            // ★★ そろっているか（環B側の面は裏返したなら反転して読む）
+            const eff = m.bridge.flipped ? -m.bridge.faceB : m.bridge.faceB;
+            assert(m.bridge.aligned && eff === m.bridge.faceA,
+                `${id}: 橋の面がそろっていない（A=${m.bridge.faceA} / B=${m.bridge.faceB} / 反転=${m.bridge.flipped}）`);
+            // 環から出る置換基で面が読めなかったものは0本
+            const flat = m.nodes.filter(n => n.kind === 'sub' && n.face === 0);
+            assert(flat.length === 0, `${id}: 面が読めない置換基が ${flat.length} 本（${flat.map(n => n.label)}）`);
+            // ⚠⚠ **裏返しは「上下」と「面（z）」を必ずセットで入れ替える**（§1-2 の②と③の違い）。
+            //    絵だけ上下を入れ替えて面を反転し忘れると、その環は**鏡像に化ける**。
+            //    模型の中でそれを捕まえるには「描かれた上下と face が一致しているか」を見ればよい
+            //    ——ただし橋の酸素だけは例外（2つの環の置換基を兼ねるので片側にしか合わせられない）。
+            // ⚠ 2026-08-25 以降、模型の枝は**環の面に垂直**（面内成分ゼロ）なので、
+            //   「描かれた上下」は模型ではなく**キャンバスの図そのもの**から読む
+            //   （模型の側で見ると dx=dy=0 になり、この否定対照が黙って素通りしてしまう）。
+            m.nodes.forEach(n => {
+                if (n.kind !== 'sub' || n.atomId === m.bridge.atomId) return;
+                const host = m.nodes.find(x => x.kind === 'ring' && x.atomId === n.hostId);
+                assert(host, `${id}: 置換基 ${n.label} の親の環原子が模型に無い`);
+                const sub = mol.atoms.find(x => x.id === n.atomId);
+                const hostAtom = mol.atoms.find(x => x.id === n.hostId);
+                const flipSign = m.rings[n.ring].flipped ? -1 : 1;
+                const dx = sub.x - hostAtom.x, dy = flipSign * (sub.y - hostAtom.y);
+                const len = Math.hypot(dx, dy);
+                if (!len || Math.abs(dy) / len < Math.cos(25 * Math.PI / 180)) return; // 縦から外れる
+                assert(n.face === (dy < 0 ? 1 : -1),
+                    `${id}: ${n.label}（環${n.ring + 1}）が「描かれた上下」と面の符号で食い違う ` +
+                    `(face=${n.face} / 図では${dy < 0 ? '上' : '下'}) ＝ 裏返しで面を反転し忘れている`);
+                assert(Math.abs(n.v[2] - n.face * m.depth) < 1e-9,
+                    `${id}: ${n.label} の z が面に応じた値になっていない`);
+            });
+            // 孤立した節点がない（橋を1つにまとめたときに結合を落としていないか）
+            const deg = new Array(m.nodes.length).fill(0);
+            m.bonds.forEach(x => { deg[x.a]++; deg[x.b]++; });
+            assert(deg.every(d => d > 0), `${id}: どの結合にもつながっていない節点がある`);
+            // 環の面（薄い多角形）が2枚敷かれている
+            assert(D.querySelectorAll('#stereo-ring-svg [data-ring-plane]').length === 2,
+                `${id}: 環の面が2枚描かれていない`);
+            rows.push({ id, faceA: m.bridge.faceA, faceB: m.bridge.faceB, need: m.bridge.need,
+                        senses: m.rings.map(r => r.sense) });
+
+            // ===== ⚠ 否定対照: 裏返さずに組むと面が食い違ったままになる =====
+            // ⚠ **人が押して切り替える口は無い**（v1447 で外した。二糖の片方の環だけを裏返すのは
+            //   グリコシド結合を切らないと起こせない ＝ 起きえない操作なので、ボタンにしない）。
+            //   代わりに**裏返す前の生の面**を見る ＝ 反転が要る3件は描かれた図のままだと
+            //   faceA ≠ faceB（そのまま置けば食い違う）なのに、模型は aligned。
+            //   ⚠ `need === flipped` が要 —— 同一平面に置くための内部の反転を誰かが外すと、
+            //   3件で `flipped` が false に落ちてここが赤くなる（v1442 の芯を守る門番）。
+            assert(m.bridge.need === (m.bridge.faceA !== m.bridge.faceB),
+                `${id}: 「裏返しが要るか」が、描かれた図の面の食い違いと合っていない`);
+            assert(m.bridge.need === m.bridge.flipped,
+                `${id}: 裏返しが要る（${m.bridge.need}）のに、実際に裏返したか（${m.bridge.flipped}）が食い違う`);
+            assert(m.bridge.aligned,
+                `${id}: 橋の面がそろっていない（同一平面に置くための内部の反転が効いていない）`);
+            // ⚠ 環ビューはキャンバスの分子を1ピクセルも動かさない（模型の中だけの操作）
+            const orig = c.game.createTargetFromData({ target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+            assert(mol.atoms.every((a, i) => Math.abs(a.x - orig.atoms[i].x) < 1e-9 &&
+                                             Math.abs(a.y - orig.atoms[i].y) < 1e-9),
+                `${id}: 環ビューがキャンバスの座標を書き換えている`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        // ★ v1446 以降: 登録の図がもう真横＆そろった向きなので、模型は4件とも裏返さない
+        assert(rows.every(r => !r.need),
+            '模型が登録の図を裏返している（登録の側でそろえたので裏返しは要らないはず）: ' +
+            rows.map(r => `${r.id}:A=${r.faceA}/B=${r.faceB}/need=${r.need}`).join(' '));
+        // ★ そのかわり「裏返して描いてある」ことは**番号をたどる向きの食い違い**として見える。
+        //   α-1,4（マルトース）だけが2つとも同じ向き、β-1,4 の2件とスクロースは食い違う
+        //   ＝ 教科書のセルロースの図で1つおきに環がひっくり返っているのと同じこと
+        const same = rows.filter(r => r.senses[0] === r.senses[1]).map(r => r.id);
+        assert(same.join(',') === 'maltose',
+            '「2つの環が同じ向きに描かれている二糖」がマルトース1件でない: ' +
+            rows.map(r => `${r.id}:${r.senses}`).join(' '));
+        assert(rows.every(r => r.senses.every(s => s === 1 || s === -1)),
+            '番号をたどる向きが決められない環がある: ' + rows.map(r => `${r.id}:${r.senses}`).join(' '));
+
+        // ===== 断り文（R-4）: 二糖は縮合環ではないので、その文で断ってはいけない =====
+        const naph = (W.COMPOUNDS || []).find(x => x.id === 'naphthalene');
+        if (naph) {
+            const { sv, m } = openDisaccharide(c, 'naphthalene');
+            assert(!m, 'ナフタレン（縮合環）で環ビューが組めてしまう');
+            assert(sv._ringUnavailReason.includes('原子を共有'),
+                '縮合環の断り文が「原子を共有している」になっていない: ' + sv._ringUnavailReason);
+            assert(!sv._ringUnavailReason.includes('環が2つ以上つながっている'),
+                '⚠ 断り文に「環が2つ以上つながっている」が残っている（二糖もこれで断られていた）');
+            D.getElementById('btn-stereo-close').click();
+        }
+        // ベンゼン（環内に二重結合）は従来どおり別の理由で断る＝陰性対照
+        const { sv: sb, m: mb } = openDisaccharide(c, 'benzene');
+        assert(!mb && sb._ringUnavailReason.includes('二重結合'), 'ベンゼンの断り方が変わっている');
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    test('SG9: ★ 片方の環だけを裏返しても分子は同じ（4件×2環＝8/8）／軸と面マークの否定対照', async (c) => {
+        const W = c.W;
+        // ⚠ **部分反転の呼び方**（v1442 で決めた3行）:
+        //     const ids = haworthRingSideIds(mol, cycleB);         … 環B＋そのぶら下がり
+        //     const br  = haworthRingBridge(mol, cycleA, cycleB);  … 橋の原子
+        //     flipHaworth(mol, ids, br.atom.y);                    … ⚠ 軸は橋の原子の y
+        const mk = id => c.game.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+        let ok = 0, cases = 0;
+        DISACCHARIDES.forEach(id => {
+            [0, 1].forEach(which => {
+                const before = codesOf(W, mk(id));
+                const mol = mk(id);
+                const { ids, bridge } = flipOneRing(W, mol, which);
+                // 片方の環だけが動いていること（何もしない実装でも、まるごと反転でも通らないように）
+                const orig = mk(id);
+                const set = new Set(ids);
+                const moved = mol.atoms.filter((a, i) => Math.abs(a.y - orig.atoms[i].y) > 1e-6);
+                assert(moved.length > 0, `${id}[環${which + 1}]: 図が1ピクセルも動いていない`);
+                // ⚠ 軸の上に乗っている原子は動かないので「動いた数 = ids の数」にはならない。
+                //    見るべきは「ids の外の原子が1つも動いていない」こと（＝相手の環と橋は据え置き）
+                assert(moved.every(a => set.has(a.id)),
+                    `${id}[環${which + 1}]: 裏返す対象の外の原子まで動いている（部分反転になっていない）`);
+                assert(ids.length < mol.atoms.length,
+                    `${id}[環${which + 1}]: 分子まるごとが対象になっている（部分反転になっていない）`);
+                // 橋の原子は据え置き（そこを軸にしているので当然だが、実装が変わったら気づけるように）
+                assert(!set.has(bridge.atom.id),
+                    `${id}[環${which + 1}]: 橋の原子まで裏返す対象に入っている（軸が自分と一緒に動く）`);
+                const after = codesOf(W, mol);
+                assert(after.code === before.code, `${id}[環${which + 1}]: 部分反転でトポロジーが変わった`);
+                if (after.stereo === before.stereo) ok++;
+                cases++;
+            });
+        });
+        assert(cases === 8 && ok === 8, `★ 部分反転で立体が保たれたのは ${ok}/8（8/8 のはず）`);
+
+        // ===== ⚠ 否定対照①: 軸を「その集合の重心」（flipHaworth の既定）にすると 8/8 で壊れる =====
+        // 部分反転では、動かさなかった側との境目（グリコシド酸素）だけが「片方だけ動いた」状態に
+        // なるので、軸を橋の原子の y に取らないと面の読みが回転と合わなくなる
+        let broke = 0;
+        DISACCHARIDES.forEach(id => {
+            [0, 1].forEach(which => {
+                const before = codesOf(W, mk(id));
+                const mol = mk(id);
+                flipOneRing(W, mol, which, { axis: 'centroid' });
+                if (codesOf(W, mol).stereo !== before.stereo) broke++;
+            });
+        });
+        assert(broke === 8,
+            `軸を重心にしたときに立体が変わったのが ${broke}/8（8/8 のはず。否定対照が効いていない）`);
+
+        // ===== ⚠ 否定対照②: 面マークを直し忘れると鏡像に化ける =====
+        // 二糖4件は面マークを持たないので、**冗長なマーク**（座標と同じ値）を足して同じ地雷を作る。
+        // ⚠ マークは座標より優先されるので、座標だけ反転するとマークが付いてこない（§1-3 の⑤）
+        let markedCases = 0, markedBroke = 0, markedKept = 0;
+        DISACCHARIDES.forEach(id => {
+            const withMarks = () => {
+                const mol = mk(id);
+                const ring = W.ringAtomIds(mol);
+                let n = 0;
+                mol.atoms.forEach(a => {
+                    if (!ring.has(a.id)) return;
+                    const outs = mol.getNeighbors(a.id)
+                        .filter(x => !ring.has(x.atom.id) && x.atom.element !== 'H');
+                    if (outs.length !== 1) return;
+                    // ⚠ 橋の酸素にはマークを置かない。橋は2つの環の置換基を兼ねるので、
+                    //    片側の縦位置でマークすると**もう片方の読みを上書きしてしまう**
+                    //    ＝ マークが冗長でなくなり、対照の前提（足しても立体は動かない）が崩れる
+                    const isBridge = mol.getNeighbors(outs[0].atom.id)
+                        .filter(x => ring.has(x.atom.id)).length >= 2;
+                    if (isBridge) return;
+                    const f = W.stereoView.constructor.faceOfSubstituent(a, outs[0].atom);
+                    if (f) { outs[0].atom.haworthFace = f; n++; }
+                });
+                return { mol, n };
+            };
+            const probe = withMarks();
+            assert(probe.n >= 6, `${id}: 冗長な面マークを ${probe.n} 個しか置けなかった`);
+            // マークが冗長であること（足しただけでは立体は動かない）＝ 対照の前提
+            assert(codesOf(W, probe.mol).stereo === codesOf(W, mk(id)).stereo,
+                `${id}: 足した面マークが冗長でない（対照の前提が崩れている）`);
+            const base = codesOf(W, withMarks().mol);
+            const bad = withMarks().mol;
+            flipOneRing(W, bad, 1, { forgetMark: true });
+            if (codesOf(W, bad).stereo !== base.stereo) markedBroke++;
+            const good = withMarks().mol;
+            flipOneRing(W, good, 1);
+            if (codesOf(W, good).stereo === base.stereo) markedKept++;
+            markedCases++;
+        });
+        assert(markedCases === 4 && markedBroke === 4,
+            `面マークを直し忘れたのに立体が保たれた二糖がある（化けたのは ${markedBroke}/4）`);
+        assert(markedKept === 4,
+            `flipHaworth（マークも反転）で立体が保たれなかった二糖がある（${markedKept}/4）`);
+    });
+
+    test('SG10: ★ スクロースをフルクトース側だけ反時計回り（教科書の向き）で見せ、元に戻せる', async (c) => {
+        const W = c.W, D = c.D;
+        // 出典: スクロースの図はグルコース側が時計回り・フルクトース側が反時計回り（§5-2）
+        // ⚠ **v1446 で、この向きは登録の図そのものになった**（DS1〜。真横に並べるには
+        //    フルクトース環を裏返した向きでしか描けない）。＝ 模型は何も裏返していないのに
+        //    教科書の向きで出る。「⇅」は**そこから登録以外の向き（両方 時計回り）へ**行き来する
+        const { sv, m, mol } = openDisaccharide(c, 'sucrose');
+        assert(m && m.rings.length === 2, 'スクロースが環ビューに入らない');
+        const glc = m.rings[0], fru = m.rings[1];
+        assert(glc.size === 6 && fru.size === 5,
+            `環の並びが「六員環→五員環」でない（${glc.size}/${fru.size}）`);
+        // ★ 教科書の向き: グルコース側 時計回り（+1）・フルクトース側 反時計回り（-1）
+        assert(glc.sense === 1, `グルコース側が時計回りでない（sense=${glc.sense}）`);
+        assert(fru.sense === -1, `★ フルクトース側が反時計回りでない（sense=${fru.sense}）`);
+        assert(!fru.flipped && !glc.flipped,
+            '模型が環を裏返している（登録の図がもう教科書の向きなので裏返しは要らないはず）');
+        // ⚠ 30° 問題は**登録の図を直したことで消えた**（§5-3 の「裏返した向きで描けば
+        //    この無理は消える」がそのとおりになった）。橋の面は両側から直接読める
+        assert(!m.bridge.derivedB && !m.bridge.derivedA,
+            'スクロースの橋の面がまだ「導出」になっている（真横に並べ直したら両側から直接読めるはず）');
+        const note = D.getElementById('stereo-ring-note').textContent;
+        assert(!note.includes('直接は読めません'),
+            '橋の面が直接読めるのに「直接は読めません」と書いている: ' + note.slice(0, 200));
+
+        // ===== ⚠ 人が切り替える口は置かない（v1447）=====
+        // 「⇅ もう一方の環を裏返す」ボタンは節ごと外した。理由は2つ:
+        //   ① 二糖の**片方の環だけ**の反転は、グリコシド結合を切らないと起こせない ＝ 起きえない
+        //   ② ボタンの文言が「登録の向きへ」と、アプリの内部の言葉を画面に出していた
+        // ＝ 環ビューは**橋の面がそろう向き（教科書の向き）に固定**。見た目は既定のまま。
+        assert(!D.getElementById('btn-stereo-ring-flipring'),
+            '「⇅ もう一方の環を裏返す」ボタンが残っている（起きえない操作を押させている）');
+        assert(!/登録/.test(D.getElementById('stereo-modal').textContent),
+            '★ 環ビューの画面に「登録」という内部の言葉が出ている');
+
+        // ⚠ **どちらの向きでも同じ分子**（裏返しは回転なので立体もトポロジーも動かない）
+        const e = (W.COMPOUNDS || []).find(x => x.id === 'sucrose');
+        const base = codesOf(W, c.game.createTargetFromData({ target: e.target }));
+        const flipped = c.game.createTargetFromData({ target: e.target });
+        flipOneRing(W, flipped, 1);
+        const after = codesOf(W, flipped);
+        assert(after.code === base.code && after.stereo === base.stereo,
+            '★ フルクトース環を裏返すと別の分子になってしまう');
+        // 名前も変わらない（「同じ分子である」をアプリの言葉で言い切る）
+        const nameOf = m2 => c.game.lookupCompoundName(m2);
+        const plainName = nameOf(c.game.createTargetFromData({ target: e.target }));
+        assert(plainName, 'スクロースの名前が引けない（前提が崩れている）');
+        assert(nameOf(flipped) === plainName,
+            `裏返したスクロースの名前が変わった（${nameOf(flipped)} / ${plainName}）`);
+        // キャンバスの分子は無傷
+        assert(mol.atoms.every((a, i) => Math.abs(a.y - e.target.atoms[i].y) < 1e-9),
+            'スクロースのキャンバス座標が書き換えられている');
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    test('SG11: ★「2つの環が同一平面」は仮定だと画面に書いてある（断定していない）', async (c) => {
+        const D = c.D;
+        // qa/KNOWLEDGE_CAVEATS.md の型。⚠ 実際はグリコシド結合まわりが回るので向きは決まっていない
+        DISACCHARIDES.forEach(id => {
+            openDisaccharide(c, id);
+            const note = D.getElementById('stereo-ring-note').textContent;
+            ['決めて', '仮定', 'グリコシド結合', '回る', '決まっていません'].forEach(k =>
+                assert(note.includes(k), `${id}: 同一平面の断り書きに「${k}」が無い: ${note.slice(0, 160)}`));
+            // ⚠ 断定していないこと
+            assert(!/2つの環は同じ平面にあります|同一平面です/.test(note),
+                `${id}: 「同一平面です」と断定している: ${note.slice(0, 160)}`);
+            // α/β はどの向きでも変わらない、と言い添える（読める立体は正しいままだから）
+            assert(note.includes('α/β'), `${id}: α/β が向きに依らないことが書かれていない`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        // 陰性対照: 単糖ではこの断り書きは出ない（環1つに「2つの環」は的外れ）
+        openDisaccharide(c, 'beta-d-glucose');
+        const mono = D.getElementById('stereo-ring-note').textContent;
+        assert(!mono.includes('グリコシド結合'),
+            '単糖の環ビューに二糖用の断り書きが出ている: ' + mono.slice(0, 160));
+        assert(mono.includes('員環を平面とみなし'), '単糖の凡例が壊れている: ' + mono.slice(0, 160));
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    // ===== RP1: ★ 枝は環の面に垂直（2026-08-25・ユーザー発注）=====
+    //
+    // ユーザー原文「ハース環をヨコから見る → 枝がハース環に対して斜めに位置しているように見えるので、
+    // 環の平面に対して垂直方向に枝を伸ばしたい」。
+    // ★ 実測での正体（報告の根拠）: v1450 までの模型は環外置換基を「描かれた2D座標のまま z=±depth」に
+    //   置いていたので、**枝は環の法線から 45° ずれていた**。倒し角90°・独楽回転0° のときだけ
+    //   その傾きが奥行き方向を向いて隠れ、**回すと寝てしまう**（α-D-グルコース yaw 90° で全10本が 45°）。
+    //   ＝「投影のせい」ではなく模型の側の問題だったので、模型を直した。
+    // ⚠ 面（上下）は1つも変えていない ＝ face の符号は SG8/ST13 が別に見張っている。
+    test('RP1: ★ 環外の枝が環の面に垂直に立つ（真横＋独楽回転／否定対照つき）', async (c) => {
+        const W = c.W, D = c.D;
+        const IDS = ['beta-d-glucose', 'alpha-d-glucose', 'beta-d-galactose'].concat(DISACCHARIDES);
+        const rows = [];
+        IDS.forEach(id => {
+            const { sv, m, mol } = openDisaccharide(c, id);
+            assert(m, `${id}: 環ビューに入れない`);
+            const bridgeId = m.bridge ? m.bridge.atomId : null;
+            // ===== ① 模型: 枝ベクトルが (0,0,±depth) ＝ 環の法線（z軸）そのもの =====
+            let checked = 0;
+            m.nodes.forEach(n => {
+                if (n.kind !== 'sub' && n.kind !== 'h') return;
+                if (n.atomId !== null && n.atomId === bridgeId) return; // 橋は2つの環を兼ねるので別扱い
+                const host = m.nodes.find(x => x.kind === 'ring' && x.atomId === n.hostId);
+                assert(host, `${id}: ${n.label} の親の環原子が模型に無い`);
+                const dx = n.v[0] - host.v[0], dy = n.v[1] - host.v[1], dz = n.v[2] - host.v[2];
+                assert(Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9,
+                    `${id}: ${n.label} の枝が環の面の中へ寝ている（面内成分 ${Math.hypot(dx, dy).toFixed(1)}）`);
+                assert(Math.abs(Math.abs(dz) - m.depth) < 1e-9,
+                    `${id}: ${n.label} の枝の長さが depth と違う（${Math.abs(dz).toFixed(1)} / ${m.depth.toFixed(1)}）`);
+                assert(Math.sign(dz) === n.face,
+                    `${id}: ${n.label} の枝の向きが face(${n.face}) と食い違う ＝ 面の情報が変わっている`);
+                checked++;
+            });
+            assert(checked >= 5, `${id}: 調べた枝が ${checked} 本しかない`);
+            // ===== ② 画面: 真横にすると、独楽をどれだけ回しても枝がまっすぐ立つ =====
+            //  ⚠ ここが発注の合否。v1450 までは yaw を入れると最大 45° まで寝ていた
+            const sideAngles = (yawDeg) => {
+                sv.setRingCamera('side');
+                sv.nudgeRingYaw(yawDeg);
+                const pts = sv._ringDrawn;
+                return m.bonds.filter(b => b.kind !== 'ring').map(b => {
+                    const p = pts[b.a], q = pts[b.b];
+                    if (q.node.atomId !== null && q.node.atomId === bridgeId) return null;
+                    const dx = q.x - p.x, dy = q.y - p.y;
+                    return { label: q.node.label, dx: Math.abs(dx),
+                             ang: Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI };
+                }).filter(Boolean);
+            };
+            [0, 30, 60, 90, 150].forEach(yaw => {
+                const list = sideAngles(yaw);
+                const worst = list.slice().sort((a, b) => a.ang - b.ang)[0];
+                assert(list.length > 0 && worst.ang > 89.5,
+                    `${id}: 真横で ${yaw}° 回すと ${worst.label} の枝が ${worst.ang.toFixed(1)}° まで寝る（垂直のはず）`);
+            });
+            // ===== ③ 橋の -O- だけは例外。⚠ 黙って例外にせず、画面にそう書く =====
+            if (m.bridge) {
+                const bn = m.nodes.find(n => n.atomId === bridgeId);
+                assert(Math.abs(bn.v[2] - bn.face * m.depth) < 1e-9,
+                    `${id}: 橋の高さが他の置換基とそろっていない`);
+                const note = D.getElementById('stereo-ring-note').textContent;
+                assert(note.includes('垂直') && note.includes('橋の -O- だけは'),
+                    `${id}: 橋が垂直にならないことが画面に書かれていない: ${note.slice(0, 200)}`);
+            }
+            rows.push({ id, checked, depth: m.depth });
+            // ===== ④ ⚠ 面（上下）は1つも変えていない ＝ 模型の face が、命名で使う環パリティと同符号 =====
+            //  （向きを直したついでに上下が入れ替わっていたら、名前と画面が食い違う）
+            //  ⚠ **模型ではなくキャンバスの図から読む**（模型の枝はもう面内成分ゼロなので、
+            //    模型を見ても「描かれた上下」は分からない ＝ 素通りしてしまう）
+            let faceChecked = 0;
+            m.nodes.forEach(n => {
+                if (n.kind !== 'sub' || (n.atomId !== null && n.atomId === bridgeId)) return;
+                const sub = mol.atoms.find(x => x.id === n.atomId);
+                const hostAtom = mol.atoms.find(x => x.id === n.hostId);
+                const flipSign = m.rings[n.ring].flipped ? -1 : 1;
+                const dx = sub.x - hostAtom.x, dy = flipSign * (sub.y - hostAtom.y);
+                const len = Math.hypot(dx, dy);
+                if (!len || Math.abs(dy) / len < Math.cos(25 * Math.PI / 180)) return;
+                assert(n.face === (dy < 0 ? 1 : -1),
+                    `${id}: ${n.label} の面(${n.face})が、図に描かれた上下（${dy < 0 ? '上' : '下'}）と食い違う`);
+                faceChecked++;
+            });
+            assert(faceChecked >= 4, `${id}: 上下を確かめられた置換基が ${faceChecked} 本しかない`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        assert(rows.length === IDS.length, '見た化合物が足りない');
+
+        // ===== ⚠ 否定対照: 1本だけ「描かれた2D座標のまま」に戻すと、②が実際に赤くなる =====
+        // （v1450 までの置き方そのもの。検査が本当に効いているかをその場で確かめる）
+        const { sv, m, mol } = openDisaccharide(c, 'beta-d-glucose');
+        const victim = m.nodes.find(n => n.kind === 'sub');
+        const a = mol.atoms.find(x => x.id === victim.atomId);
+        // 模型の縦の伸ばし方は、中心から最も離れた環原子で測る（中心近くで割ると 0 割りになる）
+        const gauge = m.nodes.filter(n => n.kind === 'ring')
+            .map(n => ({ n, ay: mol.atoms.find(x => x.id === n.atomId).y - m.center.y }))
+            .sort((p, q) => Math.abs(q.ay) - Math.abs(p.ay))[0];
+        const kY = gauge.n.v[1] / gauge.ay;
+        assert(isFinite(kY) && kY > 0, '模型の縦の伸ばし方を測れない');
+        victim.v = [a.x - m.center.x, (a.y - m.center.y) * kY, victim.face * m.depth];
+        sv.setRingCamera('side');
+        sv.nudgeRingYaw(90);
+        const pts = sv._ringDrawn;
+        const bad = m.bonds.filter(b => b.kind !== 'ring')
+            .map(b => ({ p: pts[b.a], q: pts[b.b] }))
+            .filter(x => x.q.node === victim)
+            .map(x => Math.atan2(Math.abs(x.q.y - x.p.y), Math.abs(x.q.x - x.p.x)) * 180 / Math.PI);
+        assert(bad.length === 1, '否定対照の枝が1本に定まらない');
+        assert(bad[0] < 89.5,
+            `否定対照: 描かれた座標のまま置いた枝が ${bad[0].toFixed(1)}° ＝ まだ垂直に見えている（検査が効いていない）`);
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    // ===== SG12: 切る側 —— 加水分解でできた単糖が名乗る（DESIGN_sugar.md 段4-a・v1444）=====
+    //
+    // ⚠ ここは環ビューではなく**キャンバスの反応実行**の話。段2・段3（SG8〜SG11）とは別の面。
+    // ★ 芯: ハース投影では**環外の置換基の縦位置**が α/β を決めるのに、
+    //   `freeSpotAround` はその約束を知らず -OH を**真横**に置いていた。
+    //   その中心だけが面を失い、**4件中3件で生成物の片方が名前を1つも出せなかった**（§4-2）。
+
+    /** 加水分解で切ったアノマー炭素と、そこに生えた -OH の向きを測って返す */
+    function hydrolyzeDisaccharide(c, id) {
+        const W = c.W, g = c.game;
+        const e = (W.COMPOUNDS || []).find(x => x.id === id);
+        assert(e, `${id} がライブラリに無い`);
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData({ target: e.target });
+        g.updateDrawing();
+        const mol = g.userMolecule;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        assert(rule, 'hydrolysis_glycoside が無い');
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `${id}: グリコシド結合の候補が ${sites.length} 件（1件を期待）`);
+        const [cId, oId] = sites[0];
+        const cA = mol.atoms.find(a => a.id === cId);
+        const bO = mol.atoms.find(a => a.id === oId);
+        // ⚠ 切る前に読む（引き離すと相手側の座標が動く）
+        const beforeC = { x: cA.x, y: cA.y };
+        const bridgeSide = bO.y < cA.y ? 1 : -1;   // 橋の -O- が出ていた面（上が +1）
+        /* ⚠⚠ **描き直し（v1450 の乙案）を止めてから切る。**
+         * SG12 が見張っているのは `haworthCleaveDirection` ＝ **切った直後に -OH をどちらへ置くか**で、
+         * そのあと図は「単独で描くときの図」でまるごと描き直される（SG18）。
+         * 描き直したあとの座標を測ると、見ているのは**その図の -OH の向き**であって
+         * 切る側の判断ではない ＝ `haworthCleaveDirection` を壊しても気づけない緑になる。
+         * ⚠ 名前（α/β）の検査はこの状態でも通る ＝ **切る側の判断だけで生成物が決まっている**ことの証拠。 */
+        const savedRedraw = g.redrawProductsAsStandalone;
+        g.redrawProductsAsStandalone = () => [];
+        let res;
+        try { res = rule.apply(g, sites[0]); } finally { g.redrawProductsAsStandalone = savedRedraw; }
+        g.updateDrawing();
+        const newO = mol.atoms.find(a => a.id === res.changed[1]);
+        assert(newO && newO.element === 'O', `${id}: 新しい -OH の酸素が見つからない`);
+        const dx = newO.x - beforeC.x, dy = newO.y - beforeC.y;
+        const len = Math.hypot(dx, dy);
+        // 縦からの角度（`readRingParityFromHaworth` の ±25° と同じ測り方）
+        const fromVert = Math.acos(Math.min(1, Math.abs(dy) / len)) * 180 / Math.PI;
+        return { mol, cId, newO, bridgeSide, fromVert, newSide: dy < 0 ? 1 : -1,
+                 cutAt: beforeC, caption: res.caption };
+    }
+
+    // 切れるアノマー炭素の座標（v1446 で二糖4件を真横に並べ直したときの図）。
+    // ⚠ スクロースは**両方の炭素がアノマー**なので、図を置き直すと切れる側が移りうる
+    //   （v1445 まではフルクトースの C2 (540,382)・いまはグルコースの C1）。
+    //   移ったこと自体は害でないが、黙って移ると SG12 の否定対照の意味が変わるのでここで押さえる
+    const HYDROLYSIS_CUT_AT = {
+        maltose: [458, 300], cellobiose: [458, 300], lactose: [458, 300], sucrose: [488, 300]
+    };
+
+    // 4件それぞれの、教科書どおりの生成物（並び順は問わない）
+    const HYDROLYSIS_EXPECTED = {
+        maltose: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
+        cellobiose: ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        lactose: ['β-D-ガラクトース（β-D-ガラクトピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        sucrose: ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトフラノース']
+    };
+
+    test('SG12: ★ 二糖4件の加水分解で、生成物2つが**両方とも**名乗る（-OH を縦に置く・否定対照つき）', async (c) => {
+        const g = c.game;
+        const saved = g.readStereo;
+        // ⚠ **必ず ON で測る。** OFF のままだと α/β を落として
+        //   「アロース／ガラクトース ほか3種 のどれか」に丸められ、
+        //   「直ったのか、トグルのせいで見えないだけなのか」が区別できない
+        g.setReadStereo(true);
+        try {
+            const rows = [];
+            Object.keys(HYDROLYSIS_EXPECTED).forEach(id => {
+                const h = hydrolyzeDisaccharide(c, id);
+                const parts = g.splitMolecules();
+                assert(parts.length === 2, `${id}: 生成物が ${parts.length} 個（2個を期待）`);
+                const names = parts.map(p => g.lookupCompoundName(p));
+                // ★★ これが段4-a そのもの: **null が1つも無い**
+                assert(names.every(n => !!n),
+                    `${id}: 生成物に名前の出ないものがある（${names.map(n => n === null ? 'null' : n).join(' / ')}）`);
+                assert(names.slice().sort().join(' + ') === HYDROLYSIS_EXPECTED[id].slice().sort().join(' + '),
+                    `${id}: 生成物が教科書どおりでない\n  実際: ${names.join(' + ')}\n  期待: ${HYDROLYSIS_EXPECTED[id].join(' + ')}`);
+                assert(h.cutAt.x === HYDROLYSIS_CUT_AT[id][0] && h.cutAt.y === HYDROLYSIS_CUT_AT[id][1],
+                    `${id}: 切れるアノマー炭素が (${h.cutAt.x},${h.cutAt.y})（期待 ` +
+                    `${HYDROLYSIS_CUT_AT[id]}）＝ 登録の図を動かしたら、この表も直すこと`);
+                // -OH は縦（±25° 以内）に立っている ＝ 面が読める向き
+                assert(h.fromVert <= 25,
+                    `${id}: 新しい -OH が縦から ${h.fromVert.toFixed(1)}°（25° 以内でないと α/β が読めない）`);
+                // ⚠ 加水分解はアノマー炭素の立体を変えない ＝ 橋が出ていた側にそのまま置く
+                assert(h.newSide === h.bridgeSide,
+                    `${id}: -OH が橋の -O- と反対の面に付いた（元の α/β が保たれていない）`);
+                // ⚠ **1つに決めたことを黙らない**（qa/KNOWLEDGE_CAVEATS.md の型）。
+                //   実際は変旋光で α/β が入れ替わっているので、図が片方だけだと画面で断る
+                ['変旋光', '片方の形だけ'].forEach(k => assert(h.caption.includes(k),
+                    `${id}: 加水分解の説明に「${k}」の断りが無い`));
+                rows.push(`${id}: ${names.join(' + ')}`);
+            });
+            assert(rows.length === 4, '4件そろっていない: ' + rows.join(' / '));
+
+            // ===== ⚠ 否定対照: -OH を**真横**へ戻すと、直す前の症状がそのまま出る =====
+            // （直しが効いていることの証明。ここが赤くならないなら SG12 は空振りの緑）
+            const lost = [];
+            Object.keys(HYDROLYSIS_EXPECTED).forEach(id => {
+                const h = hydrolyzeDisaccharide(c, id);
+                const cA = h.mol.atoms.find(a => a.id === h.cId);
+                const d = Math.hypot(h.newO.x - cA.x, h.newO.y - cA.y);
+                h.newO.x = cA.x + d; h.newO.y = cA.y;   // 真横（＝ freeSpotAround の既定の1番手）
+                g.updateDrawing();
+                const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+                if (names.some(n => !n)) lost.push(id);
+            });
+            // ⚠ **4件とも**落ちる。v1445 まではスクロースだけ落ちなかった（切れる側が
+            //   フルクトースの C2 で、環外に2本持つので「主置換基が読めなければ劣位側を
+            //   反転して使う」保険が効いた・DESIGN_compound_coverage.md §6-3）。
+            //   v1446 で切れる側がグルコースの C1 に移り、そこは環外に酸素1本なので保険が無い。
+            //   ＝ §6-3 の保険そのものは ST41 が見張る（登録の図に頼らない形に移した）
+            assert(lost.slice().sort().join(',') === 'cellobiose,lactose,maltose,sucrose',
+                '⚠ 否定対照が効いていない（-OH を真横に戻しても名前が落ちない）: 落ちたのは ' +
+                (lost.join(',') || 'なし'));
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('SG13: ★ 立体トグル OFF でも、加水分解の生成物（ハース環）を言い切る（ON と同じ名前・否定対照つき）', async (c) => {
+        const g = c.game;
+        const saved = g.readStereo;
+        // ⚠⚠ **この検査は 2026-08-22 に向きを変えた。**
+        //
+        //   もとは「OFF なら『アロース／ガラクトース ほか3種 のどれか（立体で決まります）』に
+        //   丸まること」を**固定していた**（2026-08-08 の「立体はトグルだけで決める」に沿った検査）。
+        //   ユーザーの確定でその線を引き直したので、**同じ場所で反対のことを見張る**:
+        //
+        //   > ハース環を使用して教科書で立体異性体を区別できる、立体視できるので、
+        //   > キャンバス上でも対応する立体異性体に同定する（名称に または を用いない）
+        //   > **ハース環を使う場合は、いつでも、立体構造を特定できるはずです**
+        //
+        //   ＝ 加水分解の生成物はハース図で描かれている（SG12 が -OH の縦置きを見張っている）ので、
+        //   **トグルの値に関わらず ON と同じ名前**でなければならない。
+        //   SG12 が ON を見張り、ここが「OFF でも同じ」を見張る。
+        g.setReadStereo(false);
+        try {
+            Object.keys(HYDROLYSIS_EXPECTED).forEach(id => {
+                hydrolyzeDisaccharide(c, id);
+                const parts = g.splitMolecules();
+                const names = parts.map(p => g.lookupCompoundName(p));
+                assert(names.every(n => !!n),
+                    `${id}: OFF で名前の出ない生成物がある（${names.map(n => n === null ? 'null' : n).join(' / ')}）`);
+                // ★★ これが引き直した線そのもの: **「または」を出さない**
+                assert(!names.some(n => n.includes('のどれか')),
+                    `${id}: OFF でハース環なのに「どれか」に丸めている（${names.join(' / ')}）`);
+                // ★ ON と1文字も違わない ＝ トグルはハース環の名前を左右しない
+                assert(names.slice().sort().join(' + ') === HYDROLYSIS_EXPECTED[id].slice().sort().join(' + '),
+                    `${id}: OFF の名前が ON と違う\n  実際: ${names.join(' + ')}\n  期待: ${HYDROLYSIS_EXPECTED[id].join(' + ')}`);
+
+                // ===== ⚠ 否定対照: **立体を切る口**（`opt.noStereo`）で引くと、直す前の症状に戻る =====
+                //   ここが赤くならないなら、この検査は「もともと言い切れていたもの」を見ていることになる
+                const old = parts.map(p => g.lookupCompoundName(p, { noStereo: true }));
+                assert(old.some(n => n && n.includes('のどれか（立体で決まります）')),
+                    `⚠ ${id}: 否定対照が効いていない —— 立体を切って引いても「どれか」に落ちない` +
+                    `（${old.join(' / ')}）`);
+                // フルクトフラノースは α/β しか候補が無いので、切ると総称に落ちる（＝ 元の SG13 の形）
+                if (id === 'sucrose') {
+                    assert(old.includes('フルクトフラノース'),
+                        `sucrose: 立体を切ったとき総称に落ちていない（${old.join(' / ')}）`);
+                }
+            });
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    // ===== SG14〜SG16: キャンバスで環を裏返す（DESIGN_sugar.md 段4-b・v1445）=====
+    //
+    // 環ビューの「⇅」（SG8〜SG11）は**模型の中だけ**を裏返すのでキャンバスは動かない。
+    // ここは**キャンバスの図そのもの**を置き直す側 ＝ ユーザーの発注
+    // 「キャンバス上でフルクトースをフリップできるのがよいです」。
+    //
+    // ⚠ **この帯の芯は「黙って鏡像に化けない」こと。** 半分だけの操作（上下だけ／向きだけ／
+    //    面マークの直し忘れ／軸の間違い）は §1-2 の実測で **0/16 か 8/16** ＝ 必ず壊れるので、
+    //    否定対照は「外すと必ず赤くなる」形に書ける。
+
+    /** キャンバスの裏返しが出る登録（＝ハース図として読む糖の環を持つもの）の ID */
+    const CANVAS_FLIP_IDS = [
+        'alpha-d-glucose', 'beta-d-glucose', 'alpha-d-galactose', 'beta-d-galactose',
+        'alpha-d-mannose', 'beta-d-mannose', 'alpha-d-allose', 'beta-d-allose',
+        'alpha-d-gulose', 'beta-d-gulose', 'alpha-d-fructofuranose', 'beta-d-fructofuranose',
+        'maltose', 'cellobiose', 'lactose', 'sucrose'
+    ];
+
+    test('SG14: ★ キャンバスで環を裏返しても分子は同じ（登録16件 全数）／軸・面マーク・ずらし向きの否定対照', async (c) => {
+        const W = c.W;
+        const mk = id => c.game.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+
+        // ---- ① 出る分子はちょうど16件（ピラノース10・フラノース2・二糖4）----
+        // ⚠ ラクトン・酸無水物は「環の O の隣が -O- を持つ炭素」なので**アノマーらしく見える**が、
+        //   その炭素は sp2（C=O）なので糖ではない。ここを外さないと 22件になる（実測）
+        const shown = (W.COMPOUNDS || []).filter(e => {
+            if (!e.target || !e.target.atoms) return false;
+            try { return W.haworthFlipPlan(c.game.createTargetFromData({ target: e.target })).ok; }
+            catch (x) { return false; }
+        }).map(e => e.id);
+        assert(shown.slice().sort().join(',') === CANVAS_FLIP_IDS.slice().sort().join(','),
+            `裏返しの門番が通す登録が16件でない（${shown.length}件）: ` + shown.join(' '));
+
+        // ---- ② 16件とも「裏返しても同じ分子・名前も同じ・向きは反転・押し直すと厳密に戻る」----
+        let kept = 0, flipped = 0, back = 0, named = 0;
+        const rows = [];
+        CANVAS_FLIP_IDS.forEach(id => {
+            const mol = mk(id);
+            const before = codesOf(W, mol);
+            const name0 = c.game.lookupCompoundName(mol);
+            const xy0 = mol.atoms.map(a => ({ x: a.x, y: a.y }));
+            const plan = W.haworthFlipPlan(mol);
+            assert(plan.ok, `${id}: 裏返しの下ごしらえが通らない（${plan.reason}）`);
+            const r = W.haworthCanvasFlip(mol);
+            assert(r.ok, `${id}: 裏返せなかった（${r.reason}）`);
+            const after = codesOf(W, mol);
+            assert(after.code === before.code, `${id}: 裏返しでトポロジーが変わった`);
+            if (after.stereo === before.stereo) kept++;
+            if (c.game.lookupCompoundName(mol) === name0 && !!name0) named++;
+            // 裏返す環の「番号をたどる向き」は必ず反転する（＝何もしない実装では通らない）
+            const s0 = plan.senses[plan.senses.length - 1], s1 = r.senses[r.senses.length - 1];
+            if (s1 === -s0 && s0 !== 0) flipped++;
+            // ⚠ 二糖では**動かさない側の環は1ピクセルも動かない**（部分反転になっているか）
+            if (plan.rings.length === 2) {
+                const set = new Set(plan.ids);
+                assert(mol.atoms.every((a, i) => set.has(a.id) ||
+                    (Math.abs(a.x - xy0[i].x) < 1e-9 && Math.abs(a.y - xy0[i].y) < 1e-9)),
+                    `${id}: 裏返す対象の外の原子まで動いている（部分反転になっていない）`);
+                assert(r.senses[0] === plan.senses[0],
+                    `${id}: 動かさない側の環の向きまで変わっている`);
+                // ⚠ **重なりを解く**（2手目）。裏返しただけだとスクロースは相手の環と
+                //   最短 5px ＝ 原子が重なった読めない絵になる（§4-9 の実測）
+                assert(r.clearance >= 30,
+                    `${id}: 裏返したあと2つの環が重なっている（結合していない原子どうしが ` +
+                    `${r.clearance.toFixed(0)}px。縦横にずらして解いていない）`);
+                // ⚠ グリコシド結合が伸びきった絵にしない（ずらし過ぎの見張り。
+                //   縦だけに逃げると 335px ＝ 平常の4倍まで伸びる）
+                assert(r.span <= 200,
+                    `${id}: グリコシド結合が ${r.span.toFixed(0)}px に伸びている（ずらし過ぎ）`);
+            }
+            rows.push(`${id}:${s0}→${s1}`);
+            // もう一度（覚えたずらし量の逆操作）で厳密に元の図へ
+            const r2 = W.haworthCanvasFlip(mol, { undo: { dx: r.dx, dy: r.dy } });
+            assert(r2.ok, `${id}: 元に戻せなかった（${r2.reason}）`);
+            if (mol.atoms.every((a, i) => Math.abs(a.x - xy0[i].x) < 1e-9 &&
+                                          Math.abs(a.y - xy0[i].y) < 1e-9) &&
+                codesOf(W, mol).stereo === before.stereo) back++;
+        });
+        assert(kept === 16, `★ 裏返して立体が保たれたのは ${kept}/16（16/16 のはず）: ` + rows.join(' '));
+        assert(named === 16, `裏返して名前が変わらなかったのは ${named}/16`);
+        assert(flipped === 16, `裏返す環の向きが反転したのは ${flipped}/16（16/16 のはず）: ` + rows.join(' '));
+        assert(back === 16, `押し直して厳密に元の図へ戻ったのは ${back}/16`);
+
+        // ===== ⚠ 否定対照①: 軸を「その集合の重心」にすると二糖が壊れる =====
+        // 部分反転では、境目（グリコシド酸素）だけが「片方だけ動いた」状態になるので、
+        // 軸を橋の原子の y に取らないと面の読みが回転と合わなくなる（§4-9 の実測: 0/8〜1/8）
+        let axisBroke = 0;
+        ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
+            const mol = mk(id);
+            const before = codesOf(W, mol);
+            const plan = W.haworthFlipPlan(mol);
+            const heavy = mol.atoms.filter(a => plan.ids.includes(a.id) && a.element !== 'H');
+            const cy = heavy.reduce((t, a) => t + a.y, 0) / heavy.length;
+            W.flipHaworth(mol, plan.ids, cy);           // ⚠ 軸を間違える
+            if (codesOf(W, mol).stereo !== before.stereo) axisBroke++;
+        });
+        assert(axisBroke === 4,
+            `軸を環の重心にしても立体が保たれた二糖がある（壊れたのは ${axisBroke}/4。否定対照が効いていない）`);
+
+        // ===== ⚠ 否定対照②: 面マークの反転を忘れると、マークを持つ8件が鏡像に化ける =====
+        // （§1-2 の⑤。座標だけ動かして `haworthFace` を置き去りにする）
+        let markBroke = 0, markTotal = 0;
+        markedIds(W).forEach(id => {
+            if (!CANVAS_FLIP_IDS.includes(id)) return;
+            markTotal++;
+            const mol = mk(id);
+            const before = codesOf(W, mol);
+            const plan = W.haworthFlipPlan(mol);
+            plan.ids.forEach(i => {
+                const a = mol.atoms.find(x => x.id === i);
+                a.y = 2 * plan.axisY - a.y;             // ⚠ 面マークを直し忘れる
+            });
+            if (codesOf(W, mol).stereo !== before.stereo) markBroke++;
+        });
+        assert(markTotal === 8 && markBroke === 8,
+            `面マークを直し忘れても立体が保たれた登録がある（化けたのは ${markBroke}/${markTotal}）`);
+
+        // ===== ⚠ 否定対照③: ずらす向きを逆（相手に近づく側）にすると立体が壊れる =====
+        // 裏返したあとの橋の結合の縦成分 d0（= 橋の y − hostB の y）が**縮む向き**へ
+        // 1本ぶんずらすと、その中心の面の読みが回転と合わなくなる ＝ 黙って鏡像に化ける。
+        // ⚠ 実装が **3手目（立体を確かめて巻き戻す）を持っていないと、この置き方を選びうる**
+        const dirBroke = [];
+        ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
+            const mol = mk(id);
+            const before = codesOf(W, mol);
+            const plan0 = W.haworthFlipPlan(mol);
+            const set = new Set(plan0.ids);
+            W.flipHaworth(mol, plan0.ids, plan0.axisY);
+            const hostB = mol.atoms.find(a => set.has(a.id) &&
+                mol.getNeighbors(a.id).some(n => !set.has(n.atom.id) && n.atom.element === 'O'));
+            const d0 = plan0.axisY - hostB.y;
+            mol.atoms.forEach(a => { if (set.has(a.id)) a.y += Math.sign(d0) * 38; });
+            if (codesOf(W, mol).stereo !== before.stereo) dirBroke.push(id);
+        });
+        // ⚠ スクロースだけ壊れないのは SG12 と同じ理由 —— フルクトースのアノマー炭素は
+        //   環外に2本持っていて、橋の面が読めなくても「劣位側の反対」で決まる保険が効くから
+        //   （DESIGN_compound_coverage.md §6-3）。**その保険が消えたらここが赤くなる**
+        assert(dirBroke.slice().sort().join(',') === 'cellobiose,lactose,maltose',
+            `⚠ 「相手に近づく向きへずらす」で壊れた二糖が3件でない（壊れたのは ${dirBroke.join(',') || 'なし'}）` +
+            ' ＝ 3手目（立体を確かめて巻き戻す）を外しても誰も気づかない');
+
+        // ===== ⚠ 否定対照④: 戻すのを探索でやり直すと、図が元に戻らない =====
+        // （＝「覚えたずらし量の逆操作」を外したときに起きること）
+        // ⚠ **v1446 で二糖4件を真横に並べ直したので、登録の4件はもうずらさずに裏返せる**
+        //   （4件とも dx=dy=0。上の ② で確かめている）＝ 登録だけでは対照にならない。
+        //   そこで**ずらしが要る図**を1つ作って対照にする —— v1445 まで登録されていた
+        //   スクロースの図（2つの環が上下に並んでいた）。ずらしが要る図はユーザーが手でも作れる
+        const V1445_SUCROSE = [
+            ['O', 555, 152], ['C', 600, 200], ['C', 530, 248], ['C', 470, 248], ['C', 400, 200],
+            ['C', 445, 152], ['O', 530, 286], ['O', 470, 210], ['C', 445, 114], ['O', 445, 76],
+            ['O', 400, 238], ['O', 600, 276], ['O', 470, 337], ['C', 540, 382], ['C', 495, 430],
+            ['C', 445, 430], ['C', 400, 382], ['C', 540, 420], ['O', 540, 458], ['O', 495, 392],
+            ['O', 445, 468], ['C', 400, 344], ['O', 400, 306]
+        ];
+        const oldSucrose = () => c.game.createTargetFromData({
+            target: {
+                atoms: V1445_SUCROSE.map(([element, x, y]) => ({ element, x, y })),
+                bonds: (W.COMPOUNDS || []).find(x => x.id === 'sucrose').target.bonds
+            }
+        });
+        // まず「この図はずらしが要る」ことを確かめる（対照が空振りしていない証拠）
+        const probe = W.haworthCanvasFlip(oldSucrose());
+        assert(probe.ok && (probe.dx !== 0 || probe.dy !== 0),
+            `対照に使う図がずらし無しで裏返せてしまう（dx=${probe.dx} dy=${probe.dy}）`);
+        let drift = 0;
+        [oldSucrose].forEach(make => {
+            const mol = make();
+            const xy0 = mol.atoms.map(a => ({ x: a.x, y: a.y }));
+            W.haworthCanvasFlip(mol);
+            W.haworthCanvasFlip(mol);   // ⚠ undo を渡さずにもう一度探索する
+            if (!mol.atoms.every((a, i) => Math.abs(a.x - xy0[i].x) < 1e-9 &&
+                                           Math.abs(a.y - xy0[i].y) < 1e-9)) drift++;
+        });
+        assert(drift >= 1,
+            '探索でやり直しても図が元に戻ってしまう（覚えたずらし量の逆操作が要らないことになる）');
+        // ⚠ 登録の4件は逆に「ずらさずに裏返せる」＝ 真横に並べ直した利き目（図が飛ばない）
+        ['maltose', 'cellobiose', 'lactose', 'sucrose'].forEach(id => {
+            const r = W.haworthCanvasFlip(mk(id));
+            assert(r.ok && r.dx === 0 && r.dy === 0,
+                `${id}: 裏返すのに図をずらしている（dx=${r.dx} dy=${r.dy}）＝ 真横に並んでいない合図`);
+        });
+
+        // ===== ⚠ 門番: ハース図として読む糖の環が無い分子では出さない =====
+        ['benzene', 'cyclohexane', 'naphthalene', 'd-glucose', 'gamma-butyrolactone',
+         'delta-valerolactone', 'succinic-anhydride', 'glycerol'].forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            if (!e) return;
+            const p = W.haworthFlipPlan(c.game.createTargetFromData({ target: e.target }));
+            assert(!p.ok && p.reason === 'none',
+                `${id}（糖の環ではない）を裏返せると言ってしまう（reason=${p.reason}）`);
+        });
+        // ⚠ 環が3つ以上／橋でつながっていない／鏡像に化ける図 は**理由をつけて断る**
+        const three = c.game.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === 'alpha-d-glucose').target });
+        const addCopy = (mol, id, dx) => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            const ids = e.target.atoms.map(a => mol.addAtom(a.element, a.x + dx, a.y).id);
+            (e.target.bonds || []).forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+        };
+        addCopy(three, 'beta-d-glucose', 900);
+        assert(W.haworthFlipPlan(three).reason === 'link',
+            '橋でつながっていない環2つを「片方だけ裏返せる」と言ってしまう');
+        addCopy(three, 'beta-d-galactose', 1800);
+        assert(W.haworthFlipPlan(three).reason === 'many',
+            '糖の環が3つあっても「どれを裏返すか決まる」と言ってしまう');
+        // フィッシャー投影として読む中心が混ざる図は断る（上下反転が読みの約束を壊す側）
+        const mixed = c.game.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === 'alpha-d-glucose').target });
+        addCopy(mixed, 'd-glucose', 900);
+        assert(W.haworthFlipPlan(mixed).reason === 'gate',
+            'フィッシャー投影の中心がある図を裏返せると言ってしまう（鏡像に化ける）');
+    });
+
+    test('SG15: ★ 押して裏返す口はどこにも無い（起きえない操作を押させない）／土台は残っている', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        // ⚠ **v1447 で外したもの**（ユーザー 2026-08-22「五員環を裏返すボタンはいりません」
+        //   「分子全体をフリップするならともかく、2糖のうち一部を反転させる意味はありません」）:
+        //     ・分子モーダルの「⇅ 環を裏返す（ハース図）」の節
+        //     ・環ビューの「⇅ もう一方の環を裏返す（＝ 登録の向きへ）」
+        //   理由は**片方の環だけの反転はグリコシド結合を切らないと起こせない ＝ 起きえない**から。
+        //   ⚠ この検査は「無いこと」を見張る —— 便利そうだからと生やし直すのを止めるのが仕事。
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === 'sucrose').target });
+        g.updateDrawing();
+        g.openMoleculeModal();
+        //   ⚠ **v1450 の帯の札（`#btn-flip-updown` ＝ ⇅ 上下に裏返す）とは別物。**
+        //     あちらは**分子まるごと**の反転で、意味のある操作（FL1〜FL3 が見張る）。
+        //     ここが禁じているのは v1445〜v1446 の**片方の環だけ**の口（`#btn-haworth-flip`）
+        ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-haworth-flip',
+         'btn-stereo-ring-flipring'].forEach(id => assert(!D.getElementById(id),
+            `#${id} が残っている（起きえない操作を押させる口）`));
+        assert(typeof g.flipHaworthOnCanvas !== 'function' &&
+               typeof g.syncHaworthFlipCard !== 'function',
+            'ボタンの中身が game に残っている（節だけ外して呼び口が残っている）');
+        // ⚠ **画面に内部の言葉（「登録の向き」＝ compounds.json の話）を出さない**
+        assert(!/登録の向き/.test(D.getElementById('molecule-modal').textContent),
+            '★ 分子モーダルに「登録の向き」という内部の言葉が出ている');
+        g.closeMoleculeModal();
+
+        // ===== ★ 土台は残っている: **分子まるごと**の裏返しは意味がある操作 =====
+        // （入試の応用: マルトースを上下反転した図を並べて「どれが正しい図か」を選ばせる型。
+        //  ⚠ 止めたいのは片方の環だけの反転であって、分子全体の反転ではない）
+        ['alpha-d-glucose', 'beta-d-fructofuranose', 'maltose'].forEach(id => {
+            const mol = g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+            const before = codesOf(W, mol);
+            const name0 = g.lookupCompoundName(mol);
+            const ids = mol.atoms.map(a => a.id);
+            assert(W.canFlipHaworth(mol, ids), `${id}: 分子まるごとの裏返しが門番で止まる`);
+            const heavy = mol.atoms.filter(a => a.element !== 'H');
+            const axisY = heavy.reduce((t, a) => t + a.y, 0) / heavy.length;
+            W.flipHaworth(mol, ids, axisY);
+            const after = codesOf(W, mol);
+            assert(after.code === before.code && after.stereo === before.stereo,
+                `★ ${id}: 分子まるごと裏返すと別の分子になる（土台が壊れている）`);
+            assert(g.lookupCompoundName(mol) === name0,
+                `${id}: 分子まるごと裏返したら名前が変わった`);
+        });
+
+        // ===== ★ 環ビューは「橋の面がそろう向き」に固定（見た目は既定のまま）=====
+        DISACCHARIDES.forEach(id => {
+            const { m } = openDisaccharide(c, id);
+            assert(m && m.bridge && m.bridge.aligned,
+                `${id}: 環ビューで橋の面がそろっていない（同一平面の内部の反転が消えている）`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        c.reset();
+    });
+
+    /* ===== HW1〜HW4: ハース環なら、トグルの値によらず立体異性体を言い切る（2026-08-22）=====
+     *
+     * **ユーザーの発注**（数日にわたって一貫して出ているもの）:
+     * > ハース環を使用して教科書で立体異性体を区別できる、立体視できるので、
+     * > キャンバス上でも対応する立体異性体に同定する（名称に または を用いない）
+     * > **ハース環を使用したときに限った話をしています**
+     * > **ハース環を使う場合は、いつでも、立体構造を特定できるはずです**
+     *
+     * ★ **根拠は「矛盾」**（ユーザー・2026-08-22）:
+     * > ハース環使用時に複数の異性体を提示しながら、立体視で１つの異性体を描画しているのは矛盾ですよね
+     *
+     * ⚠ **実害はあいまいさではなく、誤りに見えること**（ユーザー・同日）:
+     * > ユーザーからすると、教科書のαグルコースを描いたにもかかわらず、
+     * > キャンバスではグルコースと判定されないのは大きな問題です
+     *   代替表示は名前順の先頭2つだけを出すので、**グルコースは5つ中3番目 ＝「ほか3種」に隠れ**、
+     *   画面には「アロース／ガラクトース…」しか出ていなかった ＝ **別の糖だと言われたように読める。**
+     *   → **HW1 は「名前に『グルコース』が入る」を直接そう書いている**（「どれか」が無いだけの
+     *     検査にすると、空文字でも通ってしまう）。
+     *
+     * ⚠ **範囲はハース環に限る**（HW2 がフィッシャーへ漏れていないことを見張る）。
+     * ⚠ **描いていない立体は作らない**（HW3。斜めの置換基から「たぶん上」と推測しない）。
+     */
+
+    /** 登録のハース環16件（SG14 の CANVAS_FLIP_IDS と同じ顔ぶれ。読めた面の数つき） */
+    const HAWORTH_NAMED = [
+        ['alpha-d-glucose', 5, 'α-D-グルコース（α-D-グルコピラノース）'],
+        ['beta-d-glucose', 5, 'β-D-グルコース（β-D-グルコピラノース）'],
+        ['alpha-d-galactose', 5, 'α-D-ガラクトース（α-D-ガラクトピラノース）'],
+        ['beta-d-galactose', 5, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+        ['alpha-d-mannose', 5, 'α-D-マンノース（α-D-マンノピラノース）'],
+        ['beta-d-mannose', 5, 'β-D-マンノース（β-D-マンノピラノース）'],
+        ['alpha-d-allose', 5, 'α-D-アロース（α-D-アロピラノース）'],
+        ['beta-d-allose', 5, 'β-D-アロース（β-D-アロピラノース）'],
+        ['alpha-d-gulose', 5, 'α-D-グロース（α-D-グロピラノース）'],
+        ['beta-d-gulose', 5, 'β-D-グロース（β-D-グロピラノース）'],
+        ['alpha-d-fructofuranose', 4, 'α-D-フルクトフラノース'],
+        ['beta-d-fructofuranose', 4, 'β-D-フルクトフラノース'],
+        ['maltose', 10, 'マルトース（麦芽糖）'],
+        ['cellobiose', 10, 'セロビオース'],
+        ['lactose', 10, 'ラクトース（乳糖）'],
+        ['sucrose', 9, 'スクロース（ショ糖）']
+    ];
+
+    test('HW1: ★ 登録のハース環16件は、立体トグル OFF でも ON と同じ名前を言い切る（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const mk = id => g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+        const saved = g.readStereo;
+        try {
+            const bad = [];
+            HAWORTH_NAMED.forEach(([id, faces, expected]) => {
+                const mol = mk(id);
+                // ① 図から読めた面の数（ここが 0 なら「決まっている」と言えない）
+                const got = Object.keys(W.readRingParityFromHaworth(mol)).length;
+                assert(got === faces, `${id}: ハース図から読めた面が ${got}（${faces} を期待）`);
+                // ② トグル ON と OFF で**1文字も違わない**
+                g.setReadStereo(true);
+                const on = g.lookupCompoundName(mol);
+                g.setReadStereo(false);
+                const off = g.lookupCompoundName(mol);
+                assert(on === expected, `${id}: ON の名前が違う（${on}）`);
+                if (off !== on) bad.push(`${id}: OFF=${off} / ON=${on}`);
+                // ③ 「または」を出さない（発注の文言そのもの）
+                assert(!off.includes('のどれか'), `${id}: OFF で「どれか」に丸めている（${off}）`);
+            });
+            assert(bad.length === 0, '⚠ OFF と ON で名前が違う登録がある:\n  ' + bad.join('\n  '));
+
+            // ★★ ⚠ **実害そのものを直接書く**（ユーザー: 「教科書のαグルコースを描いたにもかかわらず、
+            //    キャンバスではグルコースと判定されないのは大きな問題です」）。
+            //    「『のどれか』を含まない」だけだと空文字でも通るので、**語で書く**
+            g.setReadStereo(false);
+            const glc = g.lookupCompoundName(mk('alpha-d-glucose'));
+            assert(glc.includes('グルコース'),
+                `★ 教科書の α-D-グルコピラノースを描いたのに、名前に「グルコース」が出ない: ${glc}`);
+            assert(glc.startsWith('α-'), `α-D-グルコピラノースなのに α- で始まらない: ${glc}`);
+            assert(!glc.includes('アロース') && !glc.includes('ガラクトース'),
+                `★ グルコースの図なのに別の糖の名前が出ている: ${glc}`);
+
+            // ===== ⚠ 否定対照: 立体を切る口（`opt.noStereo`）で引くと、直す前の症状がそのまま出る =====
+            //   直しが効いていることの証明。ここが赤くならないなら HW1 は空振りの緑
+            const back = HAWORTH_NAMED.filter(([id, , expected]) =>
+                g.lookupCompoundName(mk(id), { noStereo: true }) !== expected).map(([id]) => id);
+            // ⚠ **スクロースだけは直す前から言い切れていた**（その構造をもつ登録が1件しかない）。
+            //   ＝ 直したことで変わったのは 15件。ここを 16 と書くと必ず落ちる
+            assert(back.length === 15,
+                `⚠ 否定対照が効いていない（立体を切っても ${16 - back.length} 件が同じ名前のまま）: ` +
+                back.join(','));
+            assert(!back.includes('sucrose'),
+                'スクロースは直す前から言い切れていたという前提が崩れている（直しが乱暴すぎる合図）');
+            const oldGlc = g.lookupCompoundName(mk('alpha-d-glucose'), { noStereo: true });
+            assert(oldGlc.includes('のどれか（立体で決まります）') && !oldGlc.includes('グルコース'),
+                '⚠ 否定対照が効いていない —— 立体を切っても「グルコースが隠れる」症状が再現しない: ' + oldGlc);
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('HW2: ⚠ 例外はハース環だけ —— フィッシャー投影・鎖状の糖へは広がっていない（全登録 1059件）', async (c) => {
+        const W = c.W, g = c.game;
+        const saved = g.readStereo;
+        try {
+            g.setReadStereo(false);
+            // ① 鎖状の糖（フィッシャー投影で読む4件）と乳酸は、直す前と1文字も変わらない。
+            //    ⚠ ここが変わると「乳酸をフィッシャーで描いただけで OFF でも D-乳酸を名乗る」になる
+            const KEEP = [
+                ['d-glucose', 'ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか（立体で決まります）'],
+                ['d-galactose', 'ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか（立体で決まります）'],
+                ['d-mannose', 'ガラクトース（鎖状）／グルコース（鎖状）ほか1種 のどれか（立体で決まります）'],
+                ['d-fructose', 'フルクトース（鎖状）'],
+                ['lactic-acid', '乳酸'],
+                ['deoxyribose', 'デオキシリボース']
+            ];
+            KEEP.forEach(([id, expected]) => {
+                const e = (W.COMPOUNDS || []).find(x => x.id === id);
+                assert(e, `${id} の登録が無い`);
+                const name = g.lookupCompoundName(g.createTargetFromData({ target: e.target }));
+                assert(name === expected,
+                    `⚠ ${id}: OFF の名前が変わった ＝ 例外がハース環の外へ漏れている\n` +
+                    `  実際: ${name}\n  期待: ${expected}`);
+            });
+
+            // ② ★ 全登録（stages ＋ compounds）で例外が発火するのは**ちょうど17件**。
+            //    ⚠ 16件でないのは stages 側にも β-D-グルコースの図が1つあるから（同じ分子）
+            const all = [
+                ...(W.STAGES || []).map(s => ({ id: 'stage:' + s.id, target: s.target })),
+                ...(W.COMPOUNDS || []).map(x => ({ id: x.id, target: x.target }))
+            ].filter(e => e.target && e.target.atoms);
+            const fired = all.filter(e => {
+                try { return g.haworthNameStereoCode(g.createTargetFromData({ target: e.target })) !== null; }
+                catch (x) { return false; }
+            }).map(e => e.id);
+            assert(fired.length === 17,
+                `例外が発火する登録が ${fired.length} 件（17件を期待）: ` + fired.join(' '));
+            // 顔ぶれも見る（件数だけだと別のものと入れ替わっても通る）
+            const want = HAWORTH_NAMED.map(([id]) => id).concat(['stage:beta-d-glucose']).sort();
+            assert(fired.slice().sort().join(',') === want.join(','),
+                '例外が発火する顔ぶれが違う: ' + fired.slice().sort().join(' '));
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('HW3: ⚠ 描いていない立体は作らない —— 面が読めない図では例外が出ず、従来の断り方に戻る', async (c) => {
+        const W = c.W, g = c.game;
+        const saved = g.readStereo;
+        try {
+            g.setReadStereo(false);
+            const mk = id => g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+
+            // ① 置換基を**真横**に倒す（＝ 縦から ±25° を大きく外れる）と、面は1つも読めない。
+            //    ⚠ `stereo.js` の申し送り「斜めの結合から『たぶん上』と推測してはいけない
+            //    （描いていない立体を作ることになる）」がここで効いている
+            const flat = mk('alpha-d-glucose');
+            const ring = W.ringAtomIds(flat);
+            flat.atoms.forEach(a => {
+                if (ring.has(a.id)) return;
+                const host = flat.getNeighbors(a.id).find(n => ring.has(n.atom.id));
+                if (!host) return;
+                const d = Math.hypot(a.x - host.atom.x, a.y - host.atom.y) || 42;
+                a.x = host.atom.x + d; a.y = host.atom.y;     // 真横
+                a.haworthFace = undefined;                    // 面マークも外す（座標だけで読ませる）
+            });
+            assert(Object.keys(W.readRingParityFromHaworth(flat)).length === 0,
+                '真横に倒したのに面が読めている（±25° の門番が効いていない）');
+            assert(g.haworthNameStereoCode(flat) === null,
+                '⚠ 面が1つも読めない図で例外が発火している ＝ 描いていない立体を作っている');
+            const flatName = g.lookupCompoundName(flat);
+            assert(flatName.includes('のどれか（立体で決まります）'),
+                `面が読めない図では従来どおり断るはず: ${flatName}`);
+
+            // ② 環を置いただけ（ハース環モジュール）では、まだ何も決まっていない。
+            //    ⚠ アノマー炭素に -OH が無いので**そもそも糖の環として読まない**（門番の手前で落ちる）
+            ['haworth-pyranose', 'haworth-furanose'].forEach(kind => {
+                c.reset();
+                const plan = g.getHaworthPlacementPlan(kind, 400, 300);
+                assert(plan.valid, `${kind}: 空のキャンバスに置けない（${plan.reason}）`);
+                const bare = new W.Molecule();
+                const ids = plan.vertices.map(v => bare.addAtom(v.el, v.x, v.y).id);
+                plan.edges.forEach(e => bare.addBond(ids[e.i], ids[e.j], e.type || 1));
+                assert(W.haworthSugarCycles(bare).length === 0,
+                    `${kind}: 環を置いただけの図を「糖の環」と読んでいる（-OH がまだ無い）`);
+                assert(g.haworthNameStereoCode(bare) === null,
+                    `${kind}: 環を置いただけの図で立体コードが出ている`);
+            });
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('HW4: ★ 構造異性体の書き出しには、ハース環の例外も入らない（`opt.noStereo` の口・否定対照つき）', async (c) => {
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        assert(ip, 'isomerPractice が無い');
+        const saved = g.readStereo;
+        try {
+            const mol = g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.id === 'alpha-d-glucose').target });
+            // ⚠ 書き出し練習が数えているのは**構造異性体だけ**（§4.2）。
+            //   数えていない軸（立体）の名前を正解の欄に出してはいけない
+            [true, false].forEach(st => {
+                g.setReadStereo(st);
+                const n = ip.constitutionalName(mol);
+                assert(n && !n.startsWith('α-') && !n.startsWith('β-'),
+                    `トグル ${st ? 'ON' : 'OFF'} で、構造異性体の名前に α/β が漏れている: ${n}`);
+            });
+            // ⚠ トグルそのものは触らない（自由モードの見え方は1つも変えない。IP4 と同じ約束）
+            g.setReadStereo(true);
+            ip.constitutionalName(mol);
+            assert(g.readStereo === true, 'constitutionalName が立体トグルを戻していない');
+
+            // ===== ⚠ 否定対照: **口を使わず**トグルを OFF にするだけの旧実装だと、α- が漏れる =====
+            //   ここが赤くならないなら、`opt.noStereo` はもう何も守っていない
+            g.setReadStereo(false);
+            const leak = g.lookupCompoundName(mol);
+            assert(leak.startsWith('α-'),
+                '⚠ 否定対照が効いていない —— トグルを OFF にするだけの引き方で α- が出てこない: ' + leak);
+        } finally {
+            g.setReadStereo(saved);
+            if (ip.active) ip.stop();
+            c.reset();
+        }
+    });
+
+    /* ===== SG18: 加水分解の生成物は「単独で描くときの図」そのもの（v1450 で書き換え）=====
+     *
+     * ★ **検収条件はユーザーの言葉**（2026-08-24）:
+     * > **スクロースの加水分解は、反応前後の分子の表示が、どちらも教科書の図になるようにしてください。**
+     *
+     * ⚠ **v1447 の仕様（たどる向きだけを戻す）では足りなかった。** 向きをそろえても
+     *   **環の O の位置まではそろわない**ので「上下逆に見える」が残る（`DESIGN_sugar.md` §1-2b 帰結2）。
+     *   いまの仕様は**図そのものを写す**（乙案）＝ 生成物の座標が、単独で描くときの図と
+     *   **平行移動を除いて完全一致**する。
+     * ⚠ **「立体コードが不変」は必要条件であって検収条件ではない**（裏返しても立体は変わらないので、
+     *   コードだけを見ていると「上下逆の図」を緑で通してしまう）。だから**座標で見る**。
+     *
+     * ★ **v1453 で「置き場所」の主張を足した**（⑤）。ユーザー（2026-08-25）:
+     * > **「加水分解後に、フルクトース分子がグルコース分子の横に並ぶ方がよいです」**
+     *   ⚠ **形の主張（②）とは両立する。** そろえるのは**平行移動だけ**で、
+     *   ② はもともと平行移動を除いた比較だから、片方を強めても片方は落ちない。
+     */
+    test('SG18: ★ 加水分解でできた単糖は、単独で描くときの図と平行移動を除いて完全一致＋横一列に並ぶ（4件×2通り・実画面）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            /* 教科書の向きの図（片方の環が反時計回り）をキャンバスに作る。
+             * ⚠ **押すボタンはもう無い**（v1447 で外した ＝ 片方の環だけの反転は
+             *   グリコシド結合を切らないと起こせないので、人に押させない）。
+             *   ここは「切る前の図がそうなっていたら」を作るための**下ごしらえ**なので、
+             *   `haworthCanvasFlip` を直に呼んで作る。 */
+            const flipRingB = () => {
+                const part = g.moleculeModalPart();
+                assert(W.haworthCanvasFlip(part, {}).ok, '下ごしらえの裏返しが通らない');
+                part.atoms.forEach(p => {
+                    const a = g.userMolecule.atoms.find(x => x.id === p.id);
+                    if (!a) return;
+                    a.x = p.x; a.y = p.y;
+                    if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+                });
+                g.updateDrawing();
+            };
+            /** ★ その断片の図が「単独で描くときの図」と平行移動を除いてどれだけ違うか（px） */
+            const devFromStandalone = (part) => {
+                const d = g.standaloneDrawingOf(part);
+                if (!d) return null;                       // 引けない ＝ 比べようがない
+                const pairs = part.atoms.map(a => ({ a, t: d.spots.get(a.id) }));
+                const dx = pairs.reduce((s, p) => s + (p.a.x - p.t.x), 0) / pairs.length;
+                const dy = pairs.reduce((s, p) => s + (p.a.y - p.t.y), 0) / pairs.length;
+                // ⚠ 面マーク（`haworthFace`）も図の一部（座標より優先されるので、
+                //   置いてきぼりにするとその1中心だけ鏡像になる。`DESIGN_sugar.md` §1-3）
+                const face = a => (a.haworthFace === 1 || a.haworthFace === -1) ? a.haworthFace : 0;
+                return { dev: Math.max(...pairs.map(p => Math.hypot(p.a.x - p.t.x - dx, p.a.y - p.t.y - dy))),
+                         faces: pairs.filter(p => face(p.a) !== face(p.t)).length, dx, dy };
+            };
+            /** その断片の**環中心**（横一列にそろっているかは重心ではなく環中心で見る。
+             *  重心は環外の -CH₂OH の向きに引っぱられるので、目で見た「高さ」と合わない） */
+            const ringCenterOf = (p) => {
+                const cycles = W.haworthSugarCycles(p);
+                if (cycles.length !== 1) return null;
+                const ring = cycles[0].map(i => p.atoms.find(a => a.id === i));
+                return { x: ring.reduce((t, a) => t + a.x, 0) / ring.length,
+                         y: ring.reduce((t, a) => t + a.y, 0) / ring.length };
+            };
+            // 二糖を切って、生成物の（名前・図のずれ・立体コード・置き場所）を返す
+            const cleave = (id, flipFirst) => {
+                load(id);
+                if (flipFirst) flipRingB();
+                const sites = rule.detect(g.userMolecule);
+                assert(sites.length === 1, `${id}: グリコシド結合が ${sites.length} 件`);
+                const result = rule.apply(g, sites[0]);
+                g.updateDrawing();
+                const prods = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+                    .map(p => {
+                        const d = devFromStandalone(p);
+                        const heavy = p.atoms.filter(a => a.element !== 'H');
+                        return { name: g.lookupCompoundName(p), dev: d && d.dev, shift: d,
+                                 faces: d && d.faces,
+                                 sense: (W.haworthFlipPlan(p).senses || [])[0],
+                                 stereo: codesOf(W, p).stereo, code: codesOf(W, p).code,
+                                 ring: ringCenterOf(p), heavy: heavy.map(a => ({ x: a.x, y: a.y })),
+                                 cx: p.atoms.reduce((t, a) => t + a.x, 0) / p.atoms.length,
+                                 cy: p.atoms.reduce((t, a) => t + a.y, 0) / p.atoms.length };
+                    });
+                return { prods, redraws: result.haworthRedraws || [], caption: result.caption };
+            };
+            /** 2つの断片の**いちばん近い重原子どうし**の距離（重なっていないかの物差し） */
+            const nearestGap = (a, b) => Math.min(...a.heavy.map(p =>
+                Math.min(...b.heavy.map(q => Math.hypot(p.x - q.x, p.y - q.y)))));
+            const key = r => r.prods.map(p => `${p.name}|${p.code}|${p.stereo}`).sort().join(' ++ ');
+            const EPS = 0.001;   // 浮動小数の丸めぶん（実測の残差は 1e-13 台）
+
+            DISACCHARIDES.forEach(id => {
+                [false, true].forEach(flipFirst => {
+                    const r = cleave(id, flipFirst);
+                    const tag = `${id}（${flipFirst ? '片方の環を裏返した図から' : '素のまま'}）`;
+                    // ---- ① 2つとも名乗る（SG12 の緑を落とさない）----
+                    assert(r.prods.length === 2 && r.prods.every(p => p.name),
+                        `${tag}: 生成物に名無しがある: ` +
+                        r.prods.map(p => p.name === null ? 'null' : p.name).join(' / '));
+                    // ---- ② ★ これが本体 —— **単独で描くときの図と平行移動を除いて完全一致** ----
+                    r.prods.forEach(p => assert(p.dev !== null && p.dev < EPS,
+                        `★ ${tag}: ${p.name} の図が、単独で描くときの図と ${p.dev === null ? '比べられない' :
+                            p.dev.toFixed(2) + 'px ずれている'}（平行移動を除く）`));
+                    r.prods.forEach(p => assert(p.faces === 0,
+                        `★ ${tag}: ${p.name} の面マークが単独の図と ${p.faces} 原子ぶん食い違っている`));
+                    // ---- ③ 単独の図は時計回り（＝ 教科書の向き）で描かれている ----
+                    r.prods.forEach(p => assert(p.sense === 1,
+                        `${tag}: ${p.name} が時計回りで出ていない（${p.sense}）`));
+                    // ---- ④ ★ **位置は保つ** —— 単独の図の座標へ吸い寄せない ----
+                    //   写すのは**形だけ**で、置き場所は切ったときのまま。
+                    //   ⚠ 吸い寄せると2つの生成物が**同じ場所に重なる**（単独の図はどれも
+                    //     ほぼ同じ座標に描かれている。実測: 重心 (391,297)〜(406,311)）。
+                    //   ⚠ **v1453 で「横一列にそろえる」が入った**（⑤）ので、断片1つずつの重心は
+                    //     もう不動ではない。⚠ **不動なのは2つ合わせた重心**（そろえる基準を
+                    //     2断片の**中間**に取っているので、y の移動量はちょうど打ち消し合う）。
+                    //     ＝ 「吸い寄せない」の主張はここで持つ。実測で 8/8 とも 0（x も y も）
+                    const cenOf = pts => ({ x: pts.reduce((t, q) => t + q.x, 0) / pts.length,
+                                            y: pts.reduce((t, q) => t + q.y, 0) / pts.length });
+                    const drift = r.redraws.reduce((t, f) => {
+                        const b = cenOf(f.before), a2 = cenOf(f.after);
+                        return { x: t.x + (a2.x - b.x) * f.ids.length, y: t.y + (a2.y - b.y) * f.ids.length,
+                                 n: t.n + f.ids.length };
+                    }, { x: 0, y: 0, n: 0 });
+                    assert(drift.n && Math.hypot(drift.x / drift.n, drift.y / drift.n) < EPS,
+                        `★ ${tag}: 生成物ぜんたいの重心が描き直しで ` +
+                        `${Math.hypot(drift.x / drift.n, drift.y / drift.n).toFixed(1)}px 動いた` +
+                        `（並べても中心は動かないはず）`);
+                    assert(Math.hypot(r.prods[0].cx - r.prods[1].cx, r.prods[0].cy - r.prods[1].cy) > 60,
+                        `★ ${tag}: 2つの生成物が同じ場所に重なっている`);
+                    /* ---- ⑤ ★ **生成物2つは横一列に並ぶ**（v1453）----
+                     * ユーザー（2026-08-25・v1452 の実機確認後）:
+                     * > **「加水分解後に、フルクトース分子がグルコース分子の横に並ぶ方がよいです」**
+                     * ⚠ 高さは**環中心**で見る（重心だと環外の -CH₂OH の向きに引っぱられる）。
+                     * ⚠ 横は**重ならない**ことだけを見て、間隔をそろえに行かない
+                     *   （実測の目安は二糖の登録と同じ 249〜281px ＝ 大きく飛ばしていない）。 */
+                    const [rl, rr] = r.prods.slice().sort((a, b) => a.ring.x - b.ring.x);
+                    assert(rl.ring && rr.ring, `${tag}: 生成物の環中心が読めない`);
+                    assert(Math.abs(rl.ring.y - rr.ring.y) < EPS,
+                        `★ ${tag}: 2つの生成物の環中心の高さが ` +
+                        `${Math.abs(rl.ring.y - rr.ring.y).toFixed(1)}px 違う（横一列に並んでいない）`);
+                    assert(nearestGap(rl, rr) > 30,
+                        `★ ${tag}: 並べた2つの生成物が近すぎる（いちばん近い原子どうしで ` +
+                        `${nearestGap(rl, rr).toFixed(1)}px）`);
+                    const ringGap = rr.ring.x - rl.ring.x;
+                    assert(ringGap > 200 && ringGap < 340,
+                        `★ ${tag}: 環中心の横の間隔が ${ringGap.toFixed(1)}px ` +
+                        `（二糖の登録と同じ程度＝200〜340px のはず。大きく飛ばしていないか）`);
+                    // ---- ⑥ 画面の断りは、実際に描き直したかどうかと一致する ----
+                    const reshaped = r.redraws.some(x => x.reshaped);
+                    assert(/単独の分子として描くときの図に直しました/.test(r.caption) === reshaped,
+                        `${tag}: 描き直しの断りの出方が実際と食い違っている`);
+                    // ⚠ **画面に内部の言葉を出さない**（v1447 の前科。「登録」は compounds.json の話）
+                    assert(!/登録/.test(r.caption), `★ ${tag}: caption に内部の言葉「登録」が出ている`);
+                    // ---- ⑦ あとでアニメーションにする材料が残っている ----
+                    assert(r.redraws.length === 2, `${tag}: 描き直しの記録が ${r.redraws.length} 件（2件のはず）`);
+                    r.redraws.forEach(f => {
+                        assert(Array.isArray(f.before) && Array.isArray(f.after) &&
+                               f.before.length === f.after.length && f.before.length === f.ids.length,
+                            `${tag}: 描き直す前後の座標が揃っていない`);
+                        assert(f.before.every((p, i) => p.id === f.after[i].id && p.id === f.ids[i]),
+                            `${tag}: before / after / ids の並び順が食い違っている`);
+                        assert(r.prods.some(p => p.name === f.name),
+                            `${tag}: 描き直した分子の名前が生成物と合わない: ${f.name}`);
+                    });
+                    assert(r.redraws.some(f => f.before.some((p, i) =>
+                            Math.hypot(p.x - f.after[i].x, p.y - f.after[i].y) > 1)),
+                        `${tag}: 記録の before と after がどれも同じ（補間する材料になっていない）`);
+                    /* ⚠ **`after` は「並べ終えた最終位置」であること**（v1453）。
+                     * ユーザーが見ているのはアニメーションなので、滑って行き着く先が
+                     * 画面の図と違うと、着地した瞬間に図が跳ねる。 */
+                    r.redraws.forEach(f => f.after.forEach(q => {
+                        const a = g.userMolecule.atoms.find(x => x.id === q.id);
+                        assert(a && Math.abs(a.x - q.x) < EPS && Math.abs(a.y - q.y) < EPS,
+                            `★ ${tag}: ${f.name} の after が画面の最終位置と違う（アニメの行き先がずれる）`);
+                    }));
+                });
+                // ---- ⑧ 素から切っても、裏返した図から切っても、同じ分子（名前も立体も）----
+                const a = cleave(id, false), b = cleave(id, true);
+                assert(key(a) === key(b),
+                    `★ ${id}: 裏返してから切ると別の分子になる\n  素=${key(a)}\n  裏=${key(b)}`);
+            });
+
+            // ===== ⚠ 否定対照①: **描き直しをやめる**と、v1447 の症状（教科書と違う図）が戻る =====
+            //   ここが赤くならないなら、SG18 の②は空振りの緑
+            const orig = g.redrawProductsAsStandalone;
+            g.redrawProductsAsStandalone = () => [];
+            const stale = [];
+            try {
+                DISACCHARIDES.forEach(id => {
+                    const r = cleave(id, false);
+                    if (r.prods.some(p => p.dev === null || p.dev >= 1)) stale.push(id);
+                });
+            } finally {
+                g.redrawProductsAsStandalone = orig;
+            }
+            assert(stale.slice().sort().join(',') === DISACCHARIDES.slice().sort().join(','),
+                '⚠ 否定対照① が効いていない（描き直しをやめても図が単独の図と一致してしまう）: ' +
+                'ずれたのは ' + (stale.join(',') || 'なし'));
+
+            /* ===== ⚠ 否定対照①b: **横一列にそろえるのをやめる**と、高さのずれが戻る =====
+             * v1452 の症状そのもの。切るときの引き離し（`separateComponent`）が相手を
+             * **真下へ 2 マス**逃がすので、生成物は斜め下に落ちる（＝ 横に並んでいない）。
+             * ⚠ **見るのは「8件とも 0 でない」こと**（＝ ⑤ の 0 はそろえた結果であって、
+             *   たまたまそろっているのではない）。実測のずれは 18.9〜474.6px と幅があるので、
+             *   「全件が 100px 以上」のような一律のしきい値は置けない
+             *   （マルトースを裏返した図からだと 18.9px しかずれない）。
+             * ⚠ そのうえで**症状の大きさ**も1つ見る（いちばん大きいずれが 200px 超）。
+             * ここが赤くならないなら、⑤ は空振りの緑。 */
+            const origAlign = g.redrawProductsAsStandalone;
+            g.redrawProductsAsStandalone = function (o) {
+                return origAlign.call(this, { ...(o || {}), alignRow: false });
+            };
+            const skews = [];
+            try {
+                DISACCHARIDES.forEach(id => [false, true].forEach(flipFirst => {
+                    const r = cleave(id, flipFirst);
+                    const [rl, rr] = r.prods.slice().sort((a, b) => a.ring.x - b.ring.x);
+                    skews.push({ tag: `${id}${flipFirst ? '/裏' : ''}`, dy: Math.abs(rl.ring.y - rr.ring.y) });
+                }));
+            } finally {
+                g.redrawProductsAsStandalone = origAlign;
+            }
+            const level = skews.filter(s => s.dy < EPS);
+            assert(skews.length === DISACCHARIDES.length * 2 && !level.length,
+                '⚠ 否定対照①b が効いていない（そろえるのをやめても横一列のまま）: ' +
+                `そろったままなのは ${level.map(s => s.tag).join(',') || 'なし'}`);
+            assert(Math.max(...skews.map(s => s.dy)) > 200,
+                '⚠ 否定対照①b の症状が小さすぎる（いちばん大きいずれが ' +
+                `${Math.max(...skews.map(s => s.dy)).toFixed(1)}px。200px 超のはず）`);
+
+            // ===== ⚠ 否定対照②: **名前が引けない断片は触らない** =====
+            //   （ここが赤いなら「加水分解と切り離して図を整える機能」に化けている）
+            load('alpha-d-glucose');
+            const mol = g.userMolecule;
+            const part0 = g.moleculeModalPart();
+            // 環外の -OH を1本だけ真横へ倒す ＝ 面が読めなくなり、立体で1件に絞れなくなる
+            const ring = new Set(W.haworthSugarCycles(part0)[0]);
+            const outer = mol.atoms.find(a => a.element === 'O' && !ring.has(a.id) &&
+                mol.getNeighbors(a.id).some(n => ring.has(n.atom.id)));
+            assert(outer, '否定対照②の下ごしらえ: 環外の -OH が見つからない');
+            const host = mol.getNeighbors(outer.id).find(n => ring.has(n.atom.id)).atom;
+            outer.x = host.x + Math.hypot(outer.x - host.x, outer.y - host.y);
+            outer.y = host.y;
+            g.updateDrawing();
+            assert(g.standaloneDrawingOf(g.moleculeModalPart()) === null,
+                '⚠ 否定対照②の下ごしらえが効いていない（面を潰しても図が1件に絞れている）');
+            const snap = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
+            assert(g.redrawProductsAsStandalone().length === 0,
+                '★ 名前が引けない断片を描き直している');
+            assert(snap.every(s => s.a.x === s.x && s.a.y === s.y),
+                '★ 名前が引けない断片の座標を動かしている');
+
+            // ---- ⑨ ⚠ **常時自動ではない**: 置かれている図は、別の反応を通しても描き直さない ----
+            //   （前後の対応を作るのは加水分解の仕事で、作図のたびに図を整える機能ではない）
+            load('alpha-d-glucose');
+            flipRingB();   // 環が1つ ＝ 分子まるごとの裏返し
+            assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
+                '⑨ の下ごしらえ: α-D-グルコースを裏返せていない');
+            const na = W.REACTION_RULES.find(r => r.id === 'react_sodium');
+            const naSites = na.detect(g.userMolecule);
+            assert(naSites.length > 0, '⑨ の下ごしらえ: ナトリウムとの反応の箇所が無い');
+            na.apply(g, naSites[0]);
+            g.updateDrawing();
+            assert(W.haworthFlipPlan(g.moleculeModalPart()).senses[0] === -1,
+                '★ ユーザーが自分で裏返した図を、別の反応がアプリの都合で戻している（常時自動になっている）');
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    /* ===== FL1〜FL3: ⇅ 上下に裏返す（組み立て画面の札・v1450）=====
+     *
+     * ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
+     * > **「上下を入れ替えるように裏返す（カレンダーをめくる）」**
+     *
+     * ⚠ 動かすのは**いつも分子まるごと**。「片方の環だけ」は v1449 で禁止 ＝ 復活させない。
+     * ⚠⚠ **v1450 の「出してよい操作は②だけ」は狭すぎた**（`DESIGN_sugar.md` §1-2c の追補）。
+     *   ②しか無いのは**剛体の座標変換に限った場合**の話で、**置換基の付け替え**まで許すと
+     *   意味を保つ図は4枚ある（⇅・⇄・⟳）。KV1〜KV5 がその3枚を見張り、
+     *   **付け替えをしない**素朴な鏡映・回転が鏡像の図であることは SG2・SG3 が引き続き見張る。
+     */
+
+    test('FL1: ★ ⇅ の札が出るのはハース図の糖だけ（登録 16件と一致・エタノール/酢酸では出ない・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        // ---- ① 門番そのもの（登録全数）----
+        const gate = (W.COMPOUNDS || []).filter(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            return g.canFlipWholeHaworth(m);
+        }).map(e => e.id || e.name);
+        assert(gate.length === 16,
+            `★ ⇅ を出す門番が ${gate.length} 件（16件のはず）: ${gate.join(',')}`);
+        // ⚠ 顔ぶれも押さえる（`haworthFlipPlan` と同じ16件＝ §1-5 の内訳）
+        ['alpha-d-glucose', 'beta-d-glucose', 'maltose', 'cellobiose', 'lactose', 'sucrose',
+         'alpha-d-fructofuranose', 'beta-d-fructofuranose'].forEach(id =>
+            assert(gate.includes(id), `${id} が門番を通っていない`));
+
+        // ---- ② 実画面: 糖では出て、糖でないものでは出ない ----
+        const shown = (id) => {
+            c.reset();
+            g.setMode('free');
+            const e = (W.COMPOUNDS || []).find(x => x.id === id) || (W.STAGES || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            g.userMolecule = g.createTargetFromData({ target: e.target });
+            g.updateDrawing();
+            const b = D.getElementById('btn-flip-updown');
+            assert(b, '#btn-flip-updown が無い');
+            return !b.classList.contains('hidden');
+        };
+        ['maltose', 'sucrose', 'alpha-d-glucose'].forEach(id =>
+            assert(shown(id), `★ ${id} で ⇅ の札が出ていない`));
+        // ⚠ **L3（機能解説ロング）の収録待ちに影響しないこと**の実測 ——
+        //   台本が使うエタノール・酢酸では帯が1つも増えない
+        ['ethanol', 'acetic-acid'].forEach(id =>
+            assert(!shown(id), `★ ${id} で ⇅ の札が出ている（糖でない分子の帯を増やしている）`));
+
+        // ---- ③ 画面の言葉は**ユーザーの言い方**（内部の言葉を出さない）----
+        shown('maltose');
+        const btn = D.getElementById('btn-flip-updown');
+        assert(btn.textContent.trim() === '⇅ 上下に裏返す', `札の文言が違う: ${btn.textContent}`);
+        const title = btn.getAttribute('title') || '';
+        ['上下を入れ替えるように裏返', 'カレンダーをめくる'].forEach(k => assert(title.includes(k),
+            `★ 札の説明にユーザーの言い方「${k}」が無い: ${title}`));
+        assert(!/登録|compounds|sense/.test(title), `★ 札の説明に内部の言葉が出ている: ${title}`);
+
+        // ===== ⚠ 否定対照: 門番を外すと、糖でない分子でも札が出る =====
+        const orig = g.canFlipWholeHaworth;
+        g.canFlipWholeHaworth = () => true;
+        let leaked = false;
+        try { leaked = shown('ethanol'); } finally { g.canFlipWholeHaworth = orig; }
+        assert(leaked, '⚠ 否定対照が効いていない（門番を外してもエタノールで札が出ない）');
+        c.reset();
+    });
+
+    test('FL2: ★ ⇅ は分子まるごとを裏返す ―― 同じ分子・同じ名前・2回で完全に元へ（実画面・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            const snapOf = () => g.userMolecule.atoms.slice()
+                .sort((a, b) => (a.id < b.id ? -1 : 1))
+                .map(a => `${a.id}:${a.x},${a.y},${a.haworthFace || 0}`).join(';');
+            const press = () => {
+                const b = D.getElementById('btn-flip-updown');
+                assert(!b.classList.contains('hidden'), '⇅ の札が出ていない');
+                b.click();
+            };
+            // ★ 単糖も二糖も同じ札で動く（二糖は「片方の環だけ」ではなく分子まるごと）
+            ['alpha-d-glucose', 'beta-d-fructofuranose', 'maltose', 'cellobiose', 'lactose', 'sucrose']
+              .forEach(id => {
+                load(id);
+                const before = codesOf(W, g.userMolecule);
+                const name0 = g.lookupCompoundName(g.userMolecule);
+                const snap0 = snapOf();
+                const y0 = new Map(g.userMolecule.atoms.map(a => [a.id, a.y]));
+                press();
+                const snap1 = snapOf();
+                assert(snap1 !== snap0, `${id}: ⇅ を押しても図が1ピクセルも変わらない`);
+                // ---- ① ★ **分子まるごと** —— y + y' が全原子で同じ定数（＝ 1本の軸で折り返した）
+                //      ⚠ 片方の環だけを裏返すと、この定数が動いた側と動かない側で割れる
+                const sums = g.userMolecule.atoms.map(a => a.y + y0.get(a.id));
+                const spread = Math.max(...sums) - Math.min(...sums);
+                assert(spread < 1e-6,
+                    `★ ${id}: 分子まるごとを裏返していない（折り返しの軸が ${spread.toFixed(3)} ぶん割れている ＝ 一部だけが動いた）`);
+                // ---- ② 同じ分子・同じ名前 ----
+                const after = codesOf(W, g.userMolecule);
+                assert(after.code === before.code && after.stereo === before.stereo,
+                    `★ ${id}: ⇅ で別の分子になった`);
+                assert(g.lookupCompoundName(g.userMolecule) === name0,
+                    `★ ${id}: ⇅ で名前が変わった（${name0} → ${g.lookupCompoundName(g.userMolecule)}）`);
+                // ---- ③ ★ もう一度押すと**座標まで完全に**元へ戻る ----
+                press();
+                assert(snapOf() === snap0,
+                    `★ ${id}: 2回押しても元の図に戻らない（軸を覚えていない）`);
+                // ---- ④ ↩ 戻す でも戻る（履歴に1手として積んである）----
+                press();
+                assert(snapOf() !== snap0, `${id}: 3回目の ⇅ が効いていない`);
+                g.undo();
+                assert(snapOf() === snap0, `★ ${id}: ↩ 戻す で ⇅ の前に戻らない`);
+              });
+
+            // ===== ⚠ 否定対照①: **軸を覚えない**（毎回 重心を計算しなおす）と、2回押しても戻らない =====
+            const memoOff = [];
+            ['alpha-d-glucose', 'maltose', 'sucrose'].forEach(id => {
+                load(id);
+                const snap0 = snapOf();
+                const b = D.getElementById('btn-flip-updown');
+                b.click();
+                g._haworthFlipMemo = null;   // ＝ 覚えていない実装と同じ
+                b.click();
+                if (snapOf() !== snap0) memoOff.push(id);
+            });
+            // ⚠ **何件落ちるかは浮動小数の丸めしだい**（実測 chromium で 3件中2件 ＝
+            //   α-D-グルコース・スクロース。マルトースは軸を取り直しても丸めが打ち消し合って戻る）。
+            //   ＝ 件数では約束しない。**1件でも落ちれば「軸を覚えていることが効いている」証拠**で、
+            //   覚えていない実装なら本体側の 6/6 が通らない
+            assert(memoOff.length >= 1,
+                '⚠ 否定対照① が効いていない（軸を忘れても2回で戻ってしまう）: 戻らなかったのは ' +
+                (memoOff.join(',') || 'なし'));
+
+            // ===== ⚠ 否定対照②: **片方の環だけ**を裏返すと、①の「軸が1本」検査が赤くなる =====
+            //   （＝ ①は空振りの緑ではない。v1449 で禁止した操作をここで再現して確かめる）
+            load('maltose');
+            const y0 = new Map(g.userMolecule.atoms.map(a => [a.id, a.y]));
+            const part = g.moleculeModalPart();
+            assert(W.haworthCanvasFlip(part, {}).ok, '否定対照②の下ごしらえが通らない');
+            part.atoms.forEach(p => {
+                const a = g.userMolecule.atoms.find(x => x.id === p.id);
+                if (!a) return;
+                a.x = p.x; a.y = p.y;
+                if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+            });
+            const sums2 = g.userMolecule.atoms.map(a => a.y + y0.get(a.id));
+            assert(Math.max(...sums2) - Math.min(...sums2) > 1e-6,
+                '⚠ 否定対照② が効いていない（片方の環だけを裏返しても「軸が1本」に見える）');
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('FL3: ★ 置き直しの札は帯の3枚だけ（片方の環だけ・モーダルの口は復活していない）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === 'maltose').target });
+        g.updateDrawing();
+        // ⚠ 片方の環だけを裏返す口は無いまま（v1447 で外した節・v1449 の禁止）
+        ['mm-haworth', 'mm-haworth-sense', 'mm-haworth-note', 'btn-stereo-ring-flipring']
+            .forEach(id => assert(!D.getElementById(id), `#${id} が復活している`));
+        // ★ 押せる置き直しの口は**帯の3枚だけ**（モーダルには置かない ＝ §6-2a の「下は画面に出ない」）
+        const IDS = ['btn-flip-updown', 'btn-flip-leftright', 'btn-turn-half'];
+        const strip = D.getElementById('work-strip');
+        IDS.forEach(id => {
+            const b = D.getElementById(id);
+            assert(b, `#${id} が無い`);
+            assert(strip && strip.contains(b), `★ #${id} が作業帯の外にある`);
+        });
+        g.openMoleculeModal();
+        const modal = D.getElementById('molecule-modal');
+        IDS.forEach(id => assert(!modal.querySelector('#' + id),
+            `★ #${id} を分子モーダルの中に置いている（§6-2a: #mm-reaction の後ろは画面の外）`));
+        g.closeMoleculeModal();
+        // ⚠ **作業帯の**置き直しの札はこの3枚で打ち止め（4枚目を足すときは §1-2c の四元群を数え直す）。
+        //   ⚠ 数える範囲を作業帯に絞るのは、立体ビュー・フィッシャー面にも「回す」札があるため
+        //     （あちらは模型の中の話で、キャンバスの図は1ピクセルも動かない）
+        const turnish = [...strip.querySelectorAll('button')]
+            .filter(b => /裏返|回す|回転|鏡映|メリーゴーラン/.test((b.textContent || '') + (b.getAttribute('title') || '')))
+            .map(b => b.id || b.textContent.trim());
+        assert(turnish.length === IDS.length,
+            `★ 置き直しらしい札が ${turnish.length} 枚ある（3枚のはず）: ${turnish.join(',')}`);
+        c.reset();
+    });
+
+    /* ===== KV1〜KV5: ⇄ 左右に裏返す・⟳ 180°回す（DESIGN_sugar.md §1-2c の追補）=====
+     *
+     * ★ **ユーザーの発注**: 「同じ要領で左右に裏返す・180度メリーゴーラウンド回転のボタンも欲しい」。
+     *
+     * ★ **なぜ出してよくなったか**: §1-2b の帰結3（「②だけ」）は**剛体の座標変換に限った話**だった。
+     *   「環は動かし、置換基は付け根の環炭素について上下に付け替える」描き直しまで許すと、
+     *   意味を保つ図はちょうど4枚（クラインの四元群）—— 元・⇅・⇄・⟳。
+     * ⚠ **罠（SG2・SG3）とは別の絵**: あちらは**付け替えをしない**素朴な鏡映・回転で、
+     *   16件すべてが鏡像の図になる（0/16）。KV3 がその区別を1つのテストの中で並べて示す。
+     */
+
+    /** **同じ分子の中で**図が変わったかを見る指紋（座標＋面マーク。原子IDで並べる） */
+    const turnSig = (mol) => mol.atoms.slice()
+        .sort((a, b) => (a.id < b.id ? -1 : 1))
+        .map(a => `${a.id}:${a.x.toFixed(6)},${a.y.toFixed(6)},${a.haworthFace || 0}`).join(';');
+    /**
+     * **別々に作った分子どうし**を比べる指紋（平行移動を除いた図そのもの）。
+     * ⚠ **原子IDで並べてはいけない** —— IDは乱数（DEVELOPMENT.md の既知の地雷）なので、
+     *   同じ登録から2回作っただけで並びが変わる。ここは `createTargetFromData` が
+     *   **データの順**で足すことに拠って、配列の順のまま突き合わせる
+     */
+    const turnShape = (mol) => {
+        const mx = Math.min(...mol.atoms.map(a => a.x)), my = Math.min(...mol.atoms.map(a => a.y));
+        return mol.atoms.map(a =>
+            `${a.element}${(a.x - mx).toFixed(6)},${(a.y - my).toFixed(6)},${a.haworthFace || 0}`).join(';');
+    };
+
+    test('KV1: ★ ⇄ / ⟳ の札は ⇅ と同じ16件で一緒に出入りする（エタノール/酢酸では出ない・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        c.reset();
+        g.setMode('free');
+        // ---- ① 門番そのもの（登録全数）。**⇅ と1件も違わない**のが約束 ----
+        const flip = [], turn = [];
+        (W.COMPOUNDS || []).forEach(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            if (g.canFlipWholeHaworth(m)) flip.push(e.id);
+            if (g.canReframeWholeHaworth(m)) turn.push(e.id);
+        });
+        assert(turn.length === 16, `★ ⇄ / ⟳ を出す門番が ${turn.length} 件（16件のはず）: ${turn.join(',')}`);
+        assert(flip.join(',') === turn.join(','),
+            `★ ⇅ と ⇄/⟳ の門番が食い違う（⇅=${flip.length} / ⇄⟳=${turn.length}）: ` +
+            flip.filter(x => !turn.includes(x)).concat(turn.filter(x => !flip.includes(x))).join(','));
+        // ---- ② 実画面: 3枚そろって出る／糖でなければ3枚とも出ない ----
+        const IDS = ['btn-flip-updown', 'btn-flip-leftright', 'btn-turn-half'];
+        const shownAll = (id) => {
+            c.reset();
+            g.setMode('free');
+            const e = (W.COMPOUNDS || []).find(x => x.id === id) || (W.STAGES || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            g.userMolecule = g.createTargetFromData({ target: e.target });
+            g.updateDrawing();
+            return IDS.map(b => {
+                const el = D.getElementById(b);
+                assert(el, `#${b} が無い`);
+                return !el.classList.contains('hidden');
+            });
+        };
+        ['maltose', 'sucrose', 'alpha-d-glucose', 'beta-d-fructofuranose'].forEach(id => {
+            const v = shownAll(id);
+            assert(v.every(x => x), `★ ${id} で3枚そろっていない（${IDS.map((b, i) => b + '=' + v[i]).join(' ')}）`);
+        });
+        // ⚠ L3（機能解説ロング）の台本はエタノール・酢酸で進む ＝ 帯のボタンは1つも増えない
+        ['ethanol', 'acetic-acid'].forEach(id => {
+            const v = shownAll(id);
+            assert(v.every(x => !x), `★ ${id} で置き直しの札が出ている（糖でない分子の帯を増やしている）`);
+        });
+        // ---- ③ 画面の言葉は**ユーザーの言い方**（紙の動かし方で言う）----
+        shownAll('maltose');
+        [['btn-flip-leftright', '⇄ 左右に裏返す', ['左右を入れ替えるように裏返', '本のページをめくる']],
+         ['btn-turn-half', '⟳ 180°回す', ['180', 'メリーゴーランド']]].forEach(([id, text, keys]) => {
+            const b = D.getElementById(id);
+            assert(b.textContent.trim() === text, `札の文言が違う: ${b.textContent}`);
+            const title = b.getAttribute('title') || '';
+            keys.forEach(k => assert(title.includes(k), `★ ${id} の説明に「${k}」が無い: ${title}`));
+            assert(!/鏡映|付け替え|canonical|sense/.test(title), `★ ${id} の説明に内部の言葉が出ている: ${title}`);
+        });
+        // ===== ⚠ 否定対照: 門番を外すと、糖でない分子でも札が出る =====
+        const orig = g.canReframeWholeHaworth;
+        g.canReframeWholeHaworth = () => true;
+        let leaked = false;
+        try { leaked = shownAll('ethanol')[1]; } finally { g.canReframeWholeHaworth = orig; }
+        assert(leaked, '⚠ 否定対照が効いていない（門番を外してもエタノールで ⇄ が出ない）');
+        c.reset();
+    });
+
+    test('KV2: ★ ⇄ / ⟳ は同じ分子・同じ名前・2回で完全に元へ（実画面・↩ 戻す でも戻る）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const load = (id) => {
+                c.reset();
+                g.setMode('free');
+                g.userMolecule = g.createTargetFromData(
+                    { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+                g.updateDrawing();
+            };
+            const press = (btnId) => {
+                const b = D.getElementById(btnId);
+                assert(!b.classList.contains('hidden'), `${btnId} の札が出ていない`);
+                b.click();
+            };
+            let 数えた = 0;
+            ['btn-flip-leftright', 'btn-turn-half'].forEach(btnId => {
+                ['alpha-d-glucose', 'beta-d-fructofuranose', 'maltose', 'cellobiose', 'lactose', 'sucrose']
+                  .forEach(id => {
+                    load(id);
+                    const before = codesOf(W, g.userMolecule);
+                    const name0 = g.lookupCompoundName(g.userMolecule);
+                    const snap0 = turnSig(g.userMolecule);
+                    press(btnId);
+                    assert(turnSig(g.userMolecule) !== snap0, `${id}/${btnId}: 押しても図が1ピクセルも変わらない`);
+                    // ---- ① 同じ分子・同じ名前（＝ 鏡像の図を作っていない）----
+                    const after = codesOf(W, g.userMolecule);
+                    assert(after.code === before.code && after.stereo === before.stereo,
+                        `★ ${id}/${btnId}: 別の分子になった（門番が巻き戻していない）`);
+                    assert(g.lookupCompoundName(g.userMolecule) === name0,
+                        `★ ${id}/${btnId}: 名前が変わった（${name0} → ${g.lookupCompoundName(g.userMolecule)}）`);
+                    // ---- ② ★ もう一度押すと**座標まで完全に**元へ戻る ----
+                    //   ⚠ 軸（ハース糖の環原子の重心）はこの2操作で**不変**なので、
+                    //     ⇅ と違って覚えなくても戻る（KV5 がその不変を直に測る）
+                    press(btnId);
+                    assert(turnSig(g.userMolecule) === snap0,
+                        `★ ${id}/${btnId}: 2回押しても元の図に戻らない`);
+                    // ---- ③ ↩ 戻す でも戻る（履歴に1手として積んである）----
+                    press(btnId);
+                    assert(turnSig(g.userMolecule) !== snap0, `${id}/${btnId}: 3回目が効いていない`);
+                    g.undo();
+                    assert(turnSig(g.userMolecule) === snap0, `★ ${id}/${btnId}: ↩ 戻す で前に戻らない`);
+                    数えた++;
+                  });
+            });
+            assert(数えた === 12, `見た組み合わせが ${数えた} 件（2操作 × 6分子 = 12 件であるべき）`);
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    test('KV3: ★否定対照 — 「付け替え」を外すと 16件すべてが鏡像の図になる（門番が巻き戻す）', async (c) => {
+        const W = c.W, g = c.game;
+        // ★ ここがこの機能の芯。⇄ / ⟳ が同じ分子でいられるのは
+        //   **置換基を付け根の環炭素について上下に付け替えている**からで、
+        //   剛体の鏡映・回転だけなら鏡像の図（＝ v1451 の罠そのもの・SG2/SG3 と同じ結論）。
+        const list = sugarRingEntries(W);
+        assert(list.length === 16, `対象が ${list.length} 件`);
+        const rigidOnly = (mol, kind) => {
+            const plan = W.haworthTurnPlan(mol);
+            assert(plan.ok, '否定対照の下ごしらえが通らない');
+            mol.atoms.forEach(a => {
+                a.x = 2 * plan.axis.x - a.x;
+                if (kind === 'halfturn') {
+                    a.y = 2 * plan.axis.y - a.y;
+                    if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace;
+                }
+            });
+        };
+        ['leftright', 'halfturn'].forEach(kind => {
+            let 保たれた = 0, 罠 = 0, 別の絵 = 0;
+            list.forEach(e => {
+                const before = codesOf(W, g.createTargetFromData({ target: e.target }));
+                // ① 付け替えあり（本番）＝ 同じ分子
+                const good = g.createTargetFromData({ target: e.target });
+                assert(W.haworthTurn(good, W.haworthTurnPlan(good), kind), 'haworthTurn が false');
+                const a1 = codesOf(W, good);
+                if (a1.code === before.code && a1.stereo === before.stereo) 保たれた++;
+                // ② 付け替えなし（否定対照）＝ 鏡像の図
+                const bad = g.createTargetFromData({ target: e.target });
+                rigidOnly(bad, kind);
+                const a2 = codesOf(W, bad);
+                if (a2.code === before.code && a2.stereo !== before.stereo) 罠++;
+                // ③ ★ 両者は**1画素単位で別の絵**（罠と新しい操作は共存できる）
+                if (turnShape(good) !== turnShape(bad)) 別の絵++;
+            });
+            assert(保たれた === 16, `★ ${kind}: 付け替えありで立体が保たれたのは ${保たれた}/16`);
+            assert(罠 === 16, `⚠ ${kind} の否定対照が効いていない（付け替えを外しても鏡像にならなかった件がある: ${罠}/16）`);
+            assert(別の絵 === 16, `★ ${kind}: 罠と同じ絵になっている件がある（${別の絵}/16）`);
+        });
+    });
+
+    test('KV4: ★ 3枚は「同じ分子の図」ぜんぶ（クラインの四元群）—— ⇅→⇄ は ⟳ と同じ絵', async (c) => {
+        const W = c.W, g = c.game;
+        // ⚠ 照合は**平行移動を除いて**行う。⇅ は重原子の重心・⇄/⟳ は環原子の重心を軸にしており
+        //   （軸が不変であることのほうが図の落ち着きに効く。KV5）、群としての一致は縦横のずれを除いた形で立つ
+        const list = sugarRingEntries(W);
+        const mk = (id) => g.createTargetFromData({ target: list.find(e => e.id === id).target });
+        const UD = (m) => {
+            const heavy = m.atoms.filter(a => a.element !== 'H');
+            const cy = heavy.reduce((t, a) => t + a.y, 0) / heavy.length;
+            assert(W.flipHaworth(m, m.atoms.map(a => a.id), cy), 'flipHaworth が false');
+        };
+        const TURN = (m, kind) => assert(W.haworthTurn(m, W.haworthTurnPlan(m), kind), 'haworthTurn が false');
+        const 表 = [];
+        ['⇅→⇄ ＝ ⟳', '⟳→⇅ ＝ ⇄', '⇄→⟳ ＝ ⇅'].forEach(() => 表.push(0));
+        list.forEach(e => {
+            const id = e.id;
+            let a = mk(id); UD(a); TURN(a, 'leftright');
+            let b = mk(id); TURN(b, 'halfturn');
+            if (turnShape(a) === turnShape(b)) 表[0]++;
+            a = mk(id); TURN(a, 'halfturn'); UD(a);
+            b = mk(id); TURN(b, 'leftright');
+            if (turnShape(a) === turnShape(b)) 表[1]++;
+            a = mk(id); TURN(a, 'leftright'); TURN(a, 'halfturn');
+            b = mk(id); UD(b);
+            if (turnShape(a) === turnShape(b)) 表[2]++;
+        });
+        assert(表[0] === 16, `★ ⇅→⇄ が ⟳ と同じ絵にならない件がある（${表[0]}/16）`);
+        assert(表[1] === 16, `★ ⟳→⇅ が ⇄ と同じ絵にならない件がある（${表[1]}/16）`);
+        assert(表[2] === 16, `★ ⇄→⟳ が ⇅ と同じ絵にならない件がある（${表[2]}/16）`);
+        // ⚠ 否定対照: 4枚は**互いに別の絵**（同じ絵なら「3つの札」を出す意味が無い）
+        let 重なった = [];
+        list.forEach(e => {
+            const 元 = turnShape(mk(e.id));
+            const ud = mk(e.id); UD(ud);
+            const lr = mk(e.id); TURN(lr, 'leftright');
+            const hf = mk(e.id); TURN(hf, 'halfturn');
+            const set = new Set([元, turnShape(ud), turnShape(lr), turnShape(hf)]);
+            if (set.size !== 4) 重なった.push(e.id);
+        });
+        assert(!重なった.length, `⚠ 4枚のうち同じ絵になっているものがある: ${重なった.join(',')}`);
+        // ★ 教科書との突き合わせ: **スクロース中のフルクトース環は「⇄ の図」**（v1448 の登録）。
+        //   単独の β-D-フルクトフラノースに ⇄ を当てた図は、スクロースのフルクトース側と
+        //   （橋の酸素になる分を除いて）平行移動だけで重なる —— §1-2c の「証拠」を数で押さえる
+        const fru = mk('beta-d-fructofuranose'); TURN(fru, 'leftright');
+        const suc = mk('sucrose');
+        const cyc = W.haworthSugarCycles(suc);
+        const five = cyc.find(x => x.length === 5);
+        assert(five, 'スクロースに五員環が見つからない');
+        // ⚠ **点の位置だけで比べてはいけない** —— 五員環の頂点の集合は x 鏡映で自分に重なるので、
+        //   「置換基の位置の集合」まで一致してしまう（実測）。**読み**（どこが C2 で、
+        //   番号がどちら回りか）を見ないと、⇄ を当てた図と当てていない図の区別がつかない
+        const 読み = (mol, cycle) => {
+            const byId = new Map(mol.atoms.map(a => [a.id, a]));
+            const p = cycle.map(id => byId.get(id));
+            const st = W.haworthNumberingStart(mol, cycle);
+            assert(st, '下ごしらえ: 環の番号の起点が読めない');
+            const n = cycle.length;
+            const anomer = byId.get(cycle[(((st.oIndex + st.dir) % n) + n) % n]);
+            return [p.every(a => byId.get(cycle[st.oIndex]).y <= a.y) ? '環Oが上' : '環Oが下',
+                    p.every(a => anomer.x <= a.x) ? 'アノマーが左' : 'アノマーが左でない',
+                    '向き=' + W.haworthRingSense(mol, cycle)].join('/');
+        };
+        const 教科書 = 読み(suc, five);
+        assert(教科書 === '環Oが上/アノマーが左/向き=-1',
+            `下ごしらえ: スクロースのフルクトース環の読みが変わっている（${教科書}）`);
+        const fruCycle = W.haworthSugarCycles(fru)[0];
+        assert(読み(fru, fruCycle) === 教科書,
+            '★ 単独の β-D-フルクトフラノースに ⇄ を当てた図が、スクロースのフルクトース環と同じ読みにならない' +
+            `（${読み(fru, fruCycle)} / 教科書は ${教科書}）` +
+            ' —— §1-2c の「教科書が左右フリップの図を印刷している」証拠が崩れている');
+        // ⚠ 否定対照: **⇄ を当てなければ**別の読み（＝ 上の一致は空振りの緑ではない）
+        const 素 = mk('beta-d-fructofuranose');
+        assert(読み(素, W.haworthSugarCycles(素)[0]) !== 教科書,
+            '⚠ 否定対照が効いていない（⇄ を当てなくてもスクロースのフルクトース環と同じ読みになる）');
+    });
+
+    test('KV5: ★ 軸（ハース糖の環原子の重心）は ⇄ / ⟳ で不変 —— だから覚えなくても戻る・図が流れない', async (c) => {
+        const W = c.W, g = c.game;
+        // ⇅ が `_haworthFlipMemo` を要るのは**重原子の重心**を軸にしているから（FL2 の否定対照①）。
+        // ⇄ / ⟳ は**環原子の重心**を軸にする —— 環原子は剛体変換しか受けず、付け替えでは動かないので
+        // 軸そのものが操作で動かない ＝ 取り直しても同じ値になる。ここはその不変を直に測る
+        const list = sugarRingEntries(W);
+        const 枠 = (mol, ids) => {
+            const p = mol.atoms.filter(a => ids.has(a.id));
+            return [Math.min(...p.map(a => a.x)), Math.max(...p.map(a => a.x)),
+                    Math.min(...p.map(a => a.y)), Math.max(...p.map(a => a.y))].join(',');
+        };
+        let 不変 = 0, 復帰 = 0, 枠そのまま = 0;
+        list.forEach(e => {
+            ['leftright', 'halfturn'].forEach(kind => {
+                const m = g.createTargetFromData({ target: e.target });
+                const p0 = W.haworthTurnPlan(m);
+                const s0 = turnSig(m);
+                const ringIds = new Set();
+                W.haworthSugarCycles(m).forEach(cy => cy.forEach(i => ringIds.add(i)));
+                const box0 = 枠(m, ringIds);
+                W.haworthTurn(m, p0, kind);
+                const p1 = W.haworthTurnPlan(m);   // ★ 取り直す（覚えない）
+                if (Math.abs(p1.axis.x - p0.axis.x) < 1e-9 && Math.abs(p1.axis.y - p0.axis.y) < 1e-9) 不変++;
+                if (kind === 'leftright' && 枠(m, ringIds) === box0) 枠そのまま++;
+                W.haworthTurn(m, p1, kind);
+                if (turnSig(m) === s0) 復帰++;
+            });
+        });
+        assert(不変 === 32, `★ 軸が動いた組み合わせがある（不変 ${不変}/32）`);
+        assert(復帰 === 32, `★ 軸を取り直して2回当てても元に戻らない組み合わせがある（${復帰}/32）`);
+        // ⚠⚠ **v1461 で測るものを変えた。** それまでは「環の頂点がその場に留まる」（⇄ で 13/16）を
+        //   見ていたが、⇄ / ⟳ に**段の入れ替え**（③・TW1）が入って、環の**形**が変わるようになった
+        //   ＝ 頂点の集合は 4/16 しか留まらない。**留まってほしかったのは「図の置き場所」**なので、
+        //   ここは**環の外接枠**（囲む枠）で測る。⚠ 外れるのはスクロース1件だけ
+        //   （六員環と五員環で幅が違い、環の重心での鏡映が枠を自分に写さない）
+        assert(枠そのまま >= 14,
+            `⚠ ⇄ で環の外接枠がその場に留まった件が ${枠そのまま}/16（環の重心を軸にした効き目が消えている）`);
+    });
+
+    /* ===== TW1〜TW2: ⇄ / ⟳ で環のテンプレートの広い辺・狭い辺を入れ替える =====
+     *        （DESIGN_sugar.md §4-10d・ユーザー発注 2026-08-26。`_haworthSwapRingRows`）
+     *
+     * ★ **ユーザーが言語化した機構**（これが正）:
+     * > 5番の炭素の ↑ にはスペースがあるので、もともと多くの原子を付けられる。
+     * > 環を左右反転すると ↑ だった原子団が ↓ になるため、もともと原子を追加できなかった位置に潜り込む。
+     * ★ **ユーザーの選んだ道（甲）**: 環のテンプレートごと反転する（余白のある側も一緒に移る）。
+     *
+     * ⚠ **物差しを間違えると空振りの緑が出る**（§4-10c の失敗）。立体は `canonicalCode` ではなく
+     *   **門番と同じ `haworthStereoFingerprint`** で測ること（KV2 と同じ）。ここでは
+     *   「③を足しても外しても立体は同じ」を測るので、比べる相手は①②だけを当てた図。
+     */
+
+    /** 環に属さない重原子から、環の結合の線分までの最短距離（§4-10c の物差し・px） */
+    const 環線までの最短 = (W, mol) => {
+        const ring = W.ringAtomIds(mol);
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const 辺 = mol.bonds.filter(b => ring.has(b.atomId1) && ring.has(b.atomId2));
+        let best = Infinity;
+        mol.atoms.forEach(a => {
+            if (ring.has(a.id) || a.element === 'H') return;
+            辺.forEach(b => {
+                const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+                const vx = q.x - p.x, vy = q.y - p.y, L2 = vx * vx + vy * vy;
+                let t = L2 ? ((a.x - p.x) * vx + (a.y - p.y) * vy) / L2 : 0;
+                t = Math.max(0, Math.min(1, t));
+                best = Math.min(best, Math.hypot(a.x - (p.x + t * vx), a.y - (p.y + t * vy)));
+            });
+        });
+        return best;
+    };
+
+    /** ★ 否定対照そのもの: ①剛体と②付け替えだけを当てる（＝ ③段の入れ替えを外した v1460 まで） */
+    const 手12だけ = (W, mol, kind) => {
+        const plan = W.haworthTurnPlan(mol);
+        assert(plan.ok, '否定対照の下ごしらえが通らない');
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const mark = (a) => { if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace; };
+        mol.atoms.forEach(a => {
+            a.x = 2 * plan.axis.x - a.x;
+            if (kind === 'halfturn') { a.y = 2 * plan.axis.y - a.y; mark(a); }
+        });
+        const jobs = [];
+        plan.roots.forEach((rootIds, id) => {
+            const a = byId.get(id);
+            const ys = rootIds.map(r => byId.get(r)).filter(Boolean).map(r => r.y);
+            if (a && ys.length) jobs.push({ a, ry: ys.reduce((t, v) => t + v, 0) / ys.length });
+        });
+        jobs.forEach(j => { j.a.y = 2 * j.ry - j.a.y; mark(j.a); });
+    };
+
+    test('TW1: ★ ⇄ / ⟳ で CH₂OH が環に食い込まない —— 16件全数の距離（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const list = sugarRingEntries(W);
+        assert(list.length === 16, `対象が ${list.length} 件`);
+        // ---- 先に基準値: 元の図では 26〜31.3px（＝ ラベルが環の線に触れない）----
+        const 元 = list.map(e => 環線までの最短(W, g.createTargetFromData({ target: e.target })));
+        assert(Math.min(...元) >= 25.9 && Math.max(...元) <= 31.4,
+            `下ごしらえ: 元の図の基準値が変わっている（${Math.min(...元).toFixed(1)}〜${Math.max(...元).toFixed(1)}px）`);
+        ['leftright', 'halfturn'].forEach(kind => {
+            const 札 = kind === 'leftright' ? '⇄' : '⟳';
+            const 本番 = [], 対照 = [];
+            list.forEach(e => {
+                const good = g.createTargetFromData({ target: e.target });
+                assert(W.haworthTurn(good, W.haworthTurnPlan(good), kind), 'haworthTurn が false');
+                本番.push({ id: e.id, d: 環線までの最短(W, good) });
+                const bad = g.createTargetFromData({ target: e.target });
+                手12だけ(W, bad, kind);
+                対照.push({ id: e.id, d: 環線までの最短(W, bad) });
+            });
+            // ---- ① 本番: 1件も食い込まない（環の高さ 96px − 枝 76px ＝ 20px が上限）----
+            const 悪い = 本番.filter(x => x.d < 19.9);
+            assert(!悪い.length,
+                `★ ${札}: 環の線に近すぎる図がある —— ` +
+                悪い.map(x => `${x.id} ${x.d.toFixed(1)}px`).join(', '));
+            // ---- ② ★ 否定対照: ③（段の入れ替え）を外すと 14/16 で 2.4px まで入る ----
+            const 食い込み = 対照.filter(x => x.d < 10);
+            assert(食い込み.length === 14,
+                `⚠ 否定対照が効いていない（③を外して 10px 未満になったのが ${食い込み.length}/16・14件のはず）`);
+            assert(Math.min(...対照.map(x => x.d)) < 2.5,
+                `⚠ 否定対照の最悪値が ${Math.min(...対照.map(x => x.d)).toFixed(1)}px（2.4px のはず）`);
+            // ---- ③ ★ フラノース2件は元から無事 ＝ **③は無事なものを触っていない** ----
+            const フラ = ['alpha-d-fructofuranose', 'beta-d-fructofuranose'];
+            フラ.forEach(id => {
+                const a = 本番.find(x => x.id === id), b = 対照.find(x => x.id === id);
+                assert(Math.abs(a.d - b.d) < 1e-9 && a.d >= 25.9,
+                    `★ ${札}/${id}: 五員環は③の対象外のはず（本番 ${a.d.toFixed(1)} / ③抜き ${b.d.toFixed(1)}）`);
+            });
+        });
+    });
+
+    test('TW2: ★ 段の入れ替えは立体に触らない —— y も段もたどる順も動かさない（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        // ★ ③が動かすのは**環原子の x だけ**（と、付け根に付いて動く枝の x だけ）。
+        //   y も「どの段にいるか」も環をたどる順も変わらない ＝ `readRingParityFromHaworth` が
+        //   読む3つ（環の隣2本・置換基の縦位置・暗黙のH）のうち、符号に効くものに触っていない。
+        const list = sugarRingEntries(W);
+        ['leftright', 'halfturn'].forEach(kind => {
+            const 札 = kind === 'leftright' ? '⇄' : '⟳';
+            let 立体同じ = 0, y同じ = 0, 別の絵 = 0, 五員環そのまま = 0;
+            list.forEach(e => {
+                const good = g.createTargetFromData({ target: e.target });
+                const print0 = g.haworthStereoFingerprint(good);
+                assert(W.haworthTurn(good, W.haworthTurnPlan(good), kind), 'haworthTurn が false');
+                const bad = g.createTargetFromData({ target: e.target });
+                手12だけ(W, bad, kind);
+                // ① ③を足しても外しても、図から読める立体は同じ（＝ ③は立体に触っていない）
+                if (g.haworthStereoFingerprint(good) === g.haworthStereoFingerprint(bad)) 立体同じ++;
+                // ② ③は y に指1本触れない。⚠ **原子IDで突き合わせない**（IDは乱数）—— 元素と y と
+                //    面マークの**多重集合**で比べる（並べ替えてから突き合わせる ＝ x の並びに依らない）
+                const ygram = (m) => m.atoms.map(a => `${a.element}${a.y.toFixed(6)},${a.haworthFace || 0}`)
+                    .sort().join(';');
+                if (ygram(good) === ygram(bad)) y同じ++;
+                // ③ ★ 否定対照: それでも**絵は変わっている**（③が空振りなら直っていない）
+                if (turnShape(good) !== turnShape(bad)) 別の絵++;
+                // ④ 五員環しか持たない糖では③は何もしない
+                const 五員のみ = W.haworthSugarCycles(good).every(cy => cy.length === 5);
+                if (五員のみ && turnShape(good) === turnShape(bad)) 五員環そのまま++;
+                assert(print0 === g.haworthStereoFingerprint(good),
+                    `★ ${札}/${e.id}: ③まで当てたら立体が変わった`);
+            });
+            assert(立体同じ === 16, `★ ${札}: ③の有無で立体コードが食い違う件がある（${立体同じ}/16）`);
+            assert(y同じ === 16, `★ ${札}: ③が y を動かしている件がある（${y同じ}/16）`);
+            assert(別の絵 === 14, `⚠ ${札}: ③で絵が変わったのが ${別の絵}/16（六員環を含む14件のはず）`);
+            assert(五員環そのまま === 2, `⚠ ${札}: 五員環だけの糖で③が動いた（そのまま ${五員環そのまま}/2）`);
+        });
+    });
+
+    /* ===== SN1〜SN3: 糖の炭素番号を 🔢 に出す（DESIGN_iupac_check.md §N-7・ユーザー発注）=====
+     *
+     * ★ **ユーザーの発注**: 「糖類についても、主鎖と番号を振る でハース環の炭素番号が出るように」。
+     * ★ **ユーザーの決定**: 「**帯は不要です**」＝ 糖では鎖に沿う色を出さず、番号のバッジだけ。
+     *
+     * ⚠ **表は持たない。** アノマー炭素は「環内の O と環外の O の両方が付く環炭素」＝
+     *   `haworthNumberingStart` がすでに門番として読んでいるものそのもの。
+     * ⚠ **新しい面は作らない**（🔢 の添え字と字幕にそのまま乗る）。
+     *   ★ **糖でない分子の 🔢 は1ピクセルも変えない** —— SN3 が帯・名前の部品の側から見張る。
+     */
+
+    test('SN1: ★ ハース環の炭素番号 —— 登録16件で番号の個数と位置を全数検査（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const list = sugarRingEntries(W);
+        assert(list.length === 16, `対象が ${list.length} 件（16件のはず）`);
+        const 結線 = [];
+        list.forEach(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            const r = W.haworthCarbonNumbers(m);
+            assert(r.ok, `${e.id}: 番号が読めない（${r.reason}）`);
+            const ring = W.ringAtomIds(m);
+            const byId = new Map(m.atoms.map(a => [a.id, a]));
+            const 二糖 = r.rings.length === 2;
+            // ---- ① 個数: ヘキソースなので 1環につき炭素6つ（二糖なら12）----
+            assert(r.labels.size === (二糖 ? 12 : 6),
+                `${e.id}: 番号が ${r.labels.size} 個（${二糖 ? 12 : 6} 個のはず）`);
+            // ---- ② 環の O には番号を振らない ----
+            [...r.labels.keys()].forEach(id => assert(byId.get(id).element === 'C',
+                `${e.id}: 炭素でない原子に番号が付いている`));
+            // ---- ③ ★ C1（ケトースは C2）が**アノマー炭素** ＝ 環内の O と環外の O の両方が付く ----
+            r.rings.forEach(gr => {
+                const nb = m.getNeighbors(gr.anomerId);
+                assert(nb.some(n => n.atom.element === 'O' && ring.has(n.atom.id)),
+                    `${e.id}: アノマーとした炭素に環内の O が無い`);
+                assert(nb.some(n => n.atom.element === 'O' && !ring.has(n.atom.id)),
+                    `${e.id}: アノマーとした炭素に環外の O が無い`);
+                const lab = r.labels.get(gr.anomerId);
+                assert(lab === `${gr.anomerNumber}${gr.prime ? '′' : ''}`,
+                    `${e.id}: アノマーの番号が ${lab}（C${gr.anomerNumber} のはず）`);
+                assert(gr.anomerNumber === (gr.ketose ? 2 : 1),
+                    `${e.id}: アルドース/ケトースの見立てと起点が食い違う`);
+            });
+            // ---- ④ ★ C6 は**環の外**（環外の -CH₂OH）----
+            r.labels.forEach((lab, id) => {
+                if (parseInt(lab, 10) !== 6) return;
+                assert(!ring.has(id), `${e.id}: C${lab} が環の中にある`);
+            });
+            // ---- ⑤ ′ が付くのは二糖のときだけ・片方の環だけ ----
+            const primed = [...r.labels.values()].filter(l => l.includes('′')).length;
+            assert(primed === (二糖 ? 6 : 0), `${e.id}: ′ 付きが ${primed} 個`);
+            // ---- ⑥ 番号が飛ばず重ならない（1〜6 が1つずつ・環ごとに）----
+            r.rings.forEach(gr => {
+                const mine = [...r.labels.values()].filter(l => l.includes('′') === !!gr.prime)
+                    .map(l => parseInt(l, 10)).sort((a, b) => a - b);
+                assert(mine.join(',') === '1,2,3,4,5,6', `${e.id}: 番号が ${mine.join(',')}`);
+            });
+            if (二糖) {
+                const cyc = W.haworthSugarCycles(m);
+                const br = W.haworthRingBridge(m, cyc[0], cyc[1]);
+                結線.push(`${e.id}=C${r.labels.get(br.hostA.id)}–C${r.labels.get(br.hostB.id)}`);
+            }
+        });
+        // ---- ⑦ ★ 二糖のつなぎ目が教科書の型（′ は「つないだ相手の側」に付く）----
+        const 期待 = ['maltose=C1–C4′', 'cellobiose=C1–C4′', 'lactose=C1–C4′', 'sucrose=C1–C2′'];
+        期待.forEach(t => assert(結線.includes(t) || 結線.includes(t.replace(/C(\S+)–C(\S+)/, 'C$2–C$1')),
+            `★ 二糖のつなぎ目が教科書と違う（期待 ${t} / 実測 ${結線.join(' ')}）`));
+
+        // ===== ⚠ 否定対照: **起点をアノマー以外にする**と ③ が全件で赤くなる =====
+        //   （環の O の隣は2つある。反対側から数え始めると C1 は -CH₂OH を持つ炭素になり、
+        //    「環外の O が付く」を満たさない ＝ ③ は空振りの緑ではない）
+        let 破れた = 0;
+        list.forEach(e => {
+            const m = g.createTargetFromData({ target: e.target });
+            const ring = W.ringAtomIds(m);
+            W.haworthSugarCycles(m).forEach(cycle => {
+                const st = W.haworthNumberingStart(m, cycle);
+                const n = cycle.length;
+                // ⚠ わざと逆から数える ＝ 起点が「環の O の反対隣」になる
+                const 偽C1 = cycle[(((st.oIndex - st.dir) % n) + n) % n];
+                const nb = m.getNeighbors(偽C1);
+                if (!nb.some(x => x.atom.element === 'O' && !ring.has(x.atom.id))) 破れた++;
+            });
+        });
+        // ⚠ 環の数は 20（単糖12件 × 1 ＋ 二糖4件 × 2）。**環ごとに数える**ので分子数16ではない
+        assert(破れた === 20,
+            `⚠ 否定対照が効いていない（起点を逆にしても ③ を満たす環がある: 破れた ${破れた}/20）`);
+    });
+
+    test('SN2: ★ 実画面の 🔢 —— 糖では番号だけが出て帯は出ない（ユーザー決定「帯は不要」）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const load = (id) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = g.createTargetFromData(
+                { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+            g.updateDrawing();
+        };
+        // ⚠ **キャンバスの中だけを数える。** `.iupac-number` は分子モーダル・クイズの
+        //   サムネイルにも描かれる（`drawIupacNumberingIntoSvg`）ので、`document` 全体を
+        //   数えると**前のテストが残した札まで拾う**（全走で実際に赤くなった）
+        const 盤 = (sel) => [...D.getElementById('atoms-group').querySelectorAll(sel),
+                             ...D.getElementById('bonds-group').querySelectorAll(sel)];
+        const 見る = () => ({
+            番号: 盤('.iupac-number').map(t => t.textContent),
+            帯: 盤('.iupac-band').length,
+            部品: !D.getElementById('iupac-parts-row').classList.contains('hidden'),
+            濃い線: 盤('line.iupac-bond-lifted').length
+        });
+        // ---- ① α-D-グルコース: C1〜C6 が出て、帯は0本 ----
+        load('alpha-d-glucose');
+        assert(g.iupacNumberingDetail().kind === 'sugar', '糖として読めていない');
+        D.getElementById('btn-iupac-numbering').click();
+        let v = 見る();
+        assert(v.番号.slice().sort().join(',') === '1,2,3,4,5,6',
+            `★ α-D-グルコースの番号が ${v.番号.join(',')}`);
+        assert(v.帯 === 0, `★ 糖で主鎖の帯を引いている（${v.帯} 本）＝ ユーザー決定「帯は不要」に反する`);
+        assert(v.濃い線 === 0, '★ 糖で結合線を濃くしている（帯も光も無いのだから濃くする理由が無い）');
+        assert(!v.部品, '★ 糖で「名前の部品」の行を出している（糖の名前は部品に割れない）');
+        // ---- ② スクロース: C1〜C6 と C1′〜C6′ ----
+        load('sucrose');
+        D.getElementById('btn-iupac-numbering').click();
+        v = 見る();
+        assert(v.番号.length === 12, `★ スクロースの番号が ${v.番号.length} 個（12個のはず）`);
+        assert(v.番号.filter(t => t.includes('′')).length === 6,
+            `★ スクロースの ′ 付きが ${v.番号.filter(t => t.includes('′')).length} 個（6個のはず）`);
+        assert(v.帯 === 0, `★ 二糖で主鎖の帯を引いている（${v.帯} 本）`);
+        // ---- ③ もう一度押すと消える（既存のトグルに乗っている）----
+        D.getElementById('btn-iupac-numbering').click();
+        assert(見る().番号.length === 0, '★ もう一度押しても番号が消えない');
+        // ---- ④ 図を描き替えたら自分から消える（§3「状態は残さない」）----
+        load('alpha-d-glucose');
+        D.getElementById('btn-iupac-numbering').click();
+        assert(見る().番号.length === 6, '下ごしらえ: 番号が出ていない');
+        g.userMolecule.atoms[0].x += 40;
+        g.updateDrawing();
+        assert(見る().番号.length === 0 && !g.iupacNumberingActive(),
+            '★ 図を動かしても番号が残っている（状態を残さない約束が破れている）');
+        c.reset();
+    });
+
+    test('SN3: ★ 糖でない分子の 🔢 は1ピクセルも変えない（帯・名前の部品・言い分けが元のまま）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const load = (name) => {
+            c.reset();
+            g.setMode('free');
+            assert(g.summonMolecule(name), `${name} が呼び出せない`);
+            g.updateDrawing();
+        };
+        // ⚠ SN2 と同じ理由でキャンバスの中だけを数える（モーダル・サムネイルの札を拾わない）
+        const 盤 = (sel) => [...D.getElementById('atoms-group').querySelectorAll(sel),
+                             ...D.getElementById('bonds-group').querySelectorAll(sel)];
+        // ---- ① 鎖の分子: 帯が引かれ、名前の部品の行が出る（糖の枝に吸われていない）----
+        [['エタノール', 2], ['ヘキサン', 6], ['2-ブタノール', 4]].forEach(([name, n]) => {
+            load(name);
+            const det = g.iupacNumberingDetail();
+            assert(det && det.kind === 'chain', `${name}: kind が ${det && det.kind}（chain のはず）`);
+            D.getElementById('btn-iupac-numbering').click();
+            assert(盤('.iupac-band').length === n - 1,
+                `★ ${name}: 主鎖の帯が ${盤('.iupac-band').length} 本（${n - 1} 本のはず）`);
+            assert(盤('.iupac-number').length === n,
+                `★ ${name}: 番号が ${盤('.iupac-number').length} 個`);
+            assert(!D.getElementById('iupac-parts-row').classList.contains('hidden'),
+                `★ ${name}: 名前の部品の行が消えている`);
+            assert(盤('line.iupac-bond-lifted').length > 0,
+                `★ ${name}: 帯の下の結合線を濃くしていない（C-2 の手当てが消えている）`);
+        });
+        // ---- ② エーテル・環（ベンゼン）の言い分けも元のまま ----
+        load('ジエチルエーテル');
+        assert(g.iupacNumberingNotice().code === 'ether', '★ エーテルの言い分けが変わっている');
+        load('ベンゼン');
+        const n2 = g.iupacNumberingNotice();
+        assert(n2.code === 'ring' && !n2.ok,
+            `★ 糖でない環の言い分けが変わっている（${n2.code}）—— 糖の枝が環ぜんぶを飲み込んでいる`);
+        load('酢酸');
+        assert(g.iupacNumberingNotice().code === 'unsupported',
+            `★ 未対応の官能基の言い分けが変わっている（${g.iupacNumberingNotice().code}）`);
+        // ---- ③ ★ 分子が2つあるときは糖でも出さない（'multi' の言い分けをそのまま通す）----
+        c.reset();
+        g.setMode('free');
+        assert(g.summonMolecule('α-D-グルコース'), 'グルコースが呼び出せない');
+        assert(g.summonMolecule('エタノール'), 'エタノールが呼び出せない');
+        g.updateDrawing();
+        assert(g.countMolecules() >= 2, '下ごしらえ: 分子が2つになっていない');
+        assert(g.iupacNumberingDetail() === null, '★ 分子が2つあるのに糖の番号を出している');
+        assert(g.iupacNumberingNotice().code === 'multi',
+            `★ 分子が2つのときの言い分けが変わっている（${g.iupacNumberingNotice().code}）`);
+        c.reset();
+    });
+
+    // ===== DS1〜: 二糖の登録図は「2つの環を真横に並べる」（v1446）=====
+    //
+    // ユーザー「2糖は必ず真横に環を並べる、呼び出しのスクロースの構造がいまだに上下配置です」。
+    //
+    // ★ ここで分かったこと（実測）: **真横に並べるには、片方の環を裏返した向きで描くしかない**。
+    //   理由はハース投影の読みの約束の側にある —— 環外の置換基は**縦（±25°以内）**に描かないと
+    //   面（α/β）が読めない。2つの環の中心を同じ高さに置くと、橋の -O- は
+    //   「両方の host の上」か「両方の host の下」にしか置けない（1つの原子なので）。
+    //     α-1,4（マルトース）… C1 も C4 も -O- が**下** ＝ そのまま真横に置ける（裏返し不要）
+    //     β-1,4（セロビオース・ラクトース）… C1 は上・C4 は下 ＝ **矛盾する**
+    //     α1↔β2（スクロース）… 同じく矛盾する
+    //   ＝ 矛盾する3件は、片方の環を裏返して面の読みを反転させてはじめて真横に置ける。
+    //   これは教科書のセルロースの図で1つおきに環がひっくり返っているのと**同じ理由**。
+    // ⚠ 裏返しは §1-2 の②（y 反転＋たどる向き逆）＝ 回転なので、**立体は1つも変わらない**。
+
+    test('DS1: ★ 二糖4件は2つの環が真横（中心の y のずれ 0）／裏返しは片方だけ・否定対照つき', async (c) => {
+        const W = c.W, g = c.game;
+        const mk = id => g.createTargetFromData(
+            { target: (W.COMPOUNDS || []).find(x => x.id === id).target });
+        /** 描かれた環の中心と、番号をたどる向き */
+        const ringsOf = mol => W.haworthSpinCycles(mol).map(cy => {
+            const p = cy.map(i => mol.atoms.find(a => a.id === i));
+            return {
+                n: cy.length,
+                cx: p.reduce((t, a) => t + a.x, 0) / p.length,
+                cy: p.reduce((t, a) => t + a.y, 0) / p.length,
+                sense: W.haworthRingSense(mol, cy)
+            };
+        });
+        // ★ 立体は1つも変えていないことの証拠。**v1445（上下配置）の図で読めた値と同じ**
+        //   （環の不斉中心の面。添字は登録の原子の並び順）
+        const PARITY = {
+            maltose:    { 1: -1, 2: 1, 3: -1, 4: 1, 5: 1, 12: 1, 13: 1, 14: -1, 15: 1, 16: 1 },
+            cellobiose: { 1: 1, 2: 1, 3: -1, 4: 1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 },
+            lactose:    { 1: 1, 2: 1, 3: -1, 4: -1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 },
+            sucrose:    { 1: -1, 2: -1, 3: 1, 4: -1, 5: 1, 13: 1, 14: -1, 15: 1, 16: 1 }
+        };
+        const NAME = {
+            maltose: 'マルトース（麦芽糖）', cellobiose: 'セロビオース',
+            lactose: 'ラクトース（乳糖）', sucrose: 'スクロース（ショ糖）'
+        };
+        const saved = g.readStereo;
+        g.setReadStereo(true);   // ⚠ OFF だと α/β が丸まって「直ったか」が見えない
+        try {
+            const rows = [];
+            DISACCHARIDES.forEach(id => {
+                const mol = mk(id);
+                const r = ringsOf(mol);
+                assert(r.length === 2, `${id}: 環が2つでない（${r.length}）`);
+                // ★★ これが発注そのもの: 中心の y がそろっている
+                assert(Math.abs(r[0].cy - r[1].cy) < 1e-9,
+                    `★ ${id}: 2つの環の中心の縦のずれが ${Math.abs(r[0].cy - r[1].cy).toFixed(1)}px（0 のはず。上下配置になっている）`);
+                // 横には実際に離れている（重ねて「ずれ0」にしただけ、を弾く）
+                assert(Math.abs(r[0].cx - r[1].cx) >= 200,
+                    `${id}: 2つの環の横のずれが ${Math.abs(r[0].cx - r[1].cx).toFixed(0)}px（200px 以上のはず）`);
+                // 名乗る（図を動かして別の分子にしていない）
+                assert(g.lookupCompoundName(mk(id)) === NAME[id],
+                    `${id}: ${NAME[id]} を名乗らない（${g.lookupCompoundName(mk(id))}）`);
+                // ★ 立体が1つも変わっていない（v1445 の図で読めた面と同じ）
+                const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+                const par = {};
+                const raw = W.readRingParityFromHaworth(mol);
+                Object.keys(raw).forEach(k => { par[idx.get(k)] = raw[k]; });
+                assert(JSON.stringify(par) === JSON.stringify(PARITY[id]),
+                    `★ ${id}: 環の面の読みが v1445 と違う（立体が動いた）\n  いま: ${JSON.stringify(par)}\n  期待: ${JSON.stringify(PARITY[id])}`);
+                rows.push({ id, senses: r.map(x => x.sense), dx: Math.abs(r[0].cx - r[1].cx) });
+            });
+
+            // ★ 裏返しが要るのは α-1,4 以外（＝ 2つの環の向きが食い違って描いてある）
+            const same = rows.filter(x => x.senses[0] === x.senses[1]).map(x => x.id);
+            assert(same.join(',') === 'maltose',
+                '2つの環が同じ向きに描かれている二糖がマルトース1件でない: ' +
+                rows.map(x => `${x.id}:${x.senses}`).join(' '));
+
+            // ===== ⚠ 否定対照①: 検査は座標で効いている（環Bを縦にずらすと赤くなる）=====
+            DISACCHARIDES.forEach(id => {
+                const mol = mk(id);
+                const plan = W.haworthFlipPlan(mol);
+                plan.ids.forEach(i => { mol.atoms.find(a => a.id === i).y += 76; });
+                const r = ringsOf(mol);
+                assert(Math.abs(r[0].cy - r[1].cy) > 1e-9,
+                    `${id}: 環をずらしても「中心の y がそろっている」ままになる（検査が座標で効いていない）`);
+            });
+
+            // ===== ★ 否定対照②: 「2つの環を同じ向きにそろえる」と、必ず別の立体になる =====
+            // ＝ 真横に並べるために片方を裏返した向きで描いたことが、飾りではない証拠。
+            // ⚠ その環の**重心**で裏返す（＝ 図はその場で裏返り、橋の -O- は動かない）と、
+            //   たどる向きだけが反転して橋の面はそのまま ＝ その1中心だけが鏡像に化ける
+            const broke = [];
+            DISACCHARIDES.forEach(id => {
+                const mol = mk(id);
+                const before = codesOf(W, mk(id));
+                const plan = W.haworthFlipPlan(mol);
+                const ring = new Set(plan.target);
+                const p = plan.target.map(i => mol.atoms.find(a => a.id === i));
+                const cy = p.reduce((t, a) => t + a.y, 0) / p.length;
+                W.flipHaworth(mol, plan.ids, cy);      // ⚠ 軸はその環の重心
+                const after = codesOf(W, mol);
+                const r = ringsOf(mol);
+                // 向きは必ず反転している（対照が空振りしていない）
+                assert(r[0].sense !== 0 && r[1].sense !== 0, `${id}: 向きが読めない`);
+                assert(after.code === before.code, `${id}: 対照の操作でトポロジーまで変わった`);
+                if (after.stereo !== before.stereo) broke.push(id);
+                assert(ring.size >= 5, `${id}: 裏返す環が小さすぎる`);
+            });
+            assert(broke.slice().sort().join(',') === DISACCHARIDES.slice().sort().join(','),
+                '★ 環の向きをそろえても立体が変わらない二糖がある（描かれた向きが効いていない）: ' +
+                `壊れたのは ${broke.join(',') || 'なし'}`);
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    // ===== GC1〜GC5: つなぐ側 —— 糖どうしの縮合と、行きと帰りの対 =====
+    //   （`DESIGN_sugar.md` §4-8 / §4-8c / §4-8d ・ 発注「案2 ＋ 案3の狭い版」）
+    //
+    // ⚠ **期待値に座標を書かない。** 配置が原子IDの乱数で揺れる件を別セッションが調べている最中で、
+    //    座標を期待値にすると揺れて落ちる。見るのは
+    //    **「名前が引けるか」「登録の立体コードと一致するか」「面が読める中心の数」**の3つ。
+
+    // つないだ組と、そのとき出るはずの名前（登録のある二糖4件）
+    const GLYCO_PAIRS = [
+        ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）', 'マルトース（麦芽糖）', 10],
+        ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）', 'セロビオース', 10],
+        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトフラノース', 'スクロース（ショ糖）', 9],
+        ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）', 'ラクトース（乳糖）', 10]
+    ];
+    // ★ 否定対照: **α/β が違うだけ**の組。形（正準コード）は上と同じなのに、
+    //    立体が登録と合わないので候補に出てはいけない
+    const GLYCO_WRONG = [
+        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+        ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-フルクトフラノース'],
+        ['α-D-フルクトフラノース', 'α-D-グルコース（α-D-グルコピラノース）'],
+        ['α-D-ガラクトース（α-D-ガラクトピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+        ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-フルクトフラノース']
+    ];
+    const glycoRule = (W, id) => (W.REACTION_RULES || []).find(r => r.id === id);
+    // キャンバスを空にして、名前で分子を並べる
+    const glycoSetup = (c, names) => {
+        const g = c.game;
+        g.setMode('free');
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `分子を呼び出せない: ${n}`));
+        return g.userMolecule;
+    };
+    // 水以外でいちばん大きい分子
+    const glycoProduct = (c) => c.game.splitMolecules()
+        .filter(p => p.atoms.filter(a => a.element !== 'H').length > 3)
+        .sort((a, b) => b.atoms.length - a.atoms.length)[0];
+
+    test('GC1: ★ 糖どうしの縮合は登録のある二糖だけを候補に出す（4件が1件ずつ・α/β 違いは0件）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const cond = glycoRule(W, 'condensation_glycoside');
+        assert(cond, '糖どうしの縮合のルールが無い');
+        GLYCO_PAIRS.forEach(([a, b, want, faces]) => {
+            const mol = glycoSetup(c, [a, b]);
+            const sites = cond.detect(mol);
+            assert(sites.length === 1,
+                `${a} + ${b}: 候補が ${sites.length} 件（1件のはず）: ` +
+                sites.map(s => s.productName).join('／'));
+            assert(sites[0].productName === want,
+                `${a} + ${b}: 候補の名前が「${sites[0].productName}」（${want} のはず）`);
+            cond.apply({ userMolecule: mol }, sites[0]);
+            const part = glycoProduct(c);
+            assert(part, `${want}: 生成物が見つからない`);
+            assert(c.game.lookupCompoundName(part) === want,
+                `${want}: できた分子が「${c.game.lookupCompoundName(part)}」と名乗った`);
+            // ★ 登録の立体コードと一致（＝ α/β まで同じ分子ができている）
+            const parity = W.readRingParityFromHaworth(part);
+            const stereo = W.canonicalStereoCode(part,
+                { atomParity: parity, bondGeo: W.readBondGeoFromCoords(part) });
+            const entry = c.game.getCompoundLibrary().find(e => e.name === want);
+            assert(entry && entry.stereoCode === stereo,
+                `${want}: 登録の立体コードと一致しない（別の立体異性体ができている）`);
+            // ★ 面が読める中心の数（`planAttachment` で置くと1つ落ちる。§4-8c (a)）
+            assert(Object.keys(parity).length === faces,
+                `${want}: 面が読める中心が ${Object.keys(parity).length}（${faces} のはず）`);
+        });
+        // ⚠ 否定対照: α/β が違う組は形が同じでも出さない
+        GLYCO_WRONG.forEach(([a, b]) => {
+            const mol = glycoSetup(c, [a, b]);
+            const sites = cond.detect(mol);
+            assert(sites.length === 0,
+                `★否定対照 ${a} + ${b}: 登録に無い立体なのに ${sites.length} 件出た（` +
+                sites.map(s => s.productName).join('／') + '）');
+        });
+        c.reset();
+    });
+
+    test('GC2: ★ 絞り込みは手で書いた規則ではなく名前の引きで決まっている（ライブラリを隠すと候補が消える）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const cond = glycoRule(W, 'condensation_glycoside');
+        const [a, b, want] = GLYCO_PAIRS[0];
+        assert(cond.detect(glycoSetup(c, [a, b])).length === 1, '前提: マルトースが候補に出ていない');
+        /* ★ **「二糖を登録に足せば、そのまま候補になる」の裏返しを見る。**
+         * ⚠ データ（compounds.json）は触らない。**名前の引きだけ**を差し替えて、
+         *   その二糖が引けなくなった瞬間に候補が消えることを見る
+         *   ＝ 候補の可否がこの引きに乗っている（＝ 規則を手で書いていない）ことの証拠。 */
+        const orig = g.lookupCompoundName.bind(g);
+        try {
+            g.lookupCompoundName = (mol, opt) => {
+                const n = orig(mol, opt);
+                return n === want ? null : n;   // その二糖だけ「引けない」ことにする
+            };
+            const sites = cond.detect(glycoSetup(c, [a, b]));
+            assert(sites.length === 0,
+                `★ 名前が引けなくなっても候補が ${sites.length} 件残った（規則が手で書かれている）`);
+        } finally {
+            g.lookupCompoundName = orig;
+        }
+        // 戻したら復活する（差し替えの後始末が効いていることの確認も兼ねる）
+        assert(cond.detect(glycoSetup(c, [a, b])).length === 1, '名前の引きを戻しても候補が復活しない');
+        c.reset();
+    });
+
+    test('GC3: ★ エーテル合成に穴を開けていない（糖どうしのときだけ譲る）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const ether = glycoRule(W, 'dehydration_inter');
+        const cond = glycoRule(W, 'condensation_glycoside');
+        // ⚠ アルコール一般の分子間脱水は1件も減っていない
+        [['エタノール', 'エタノール'], ['メタノール', 'エタノール'],
+         ['1-プロパノール', '1-プロパノール'], ['エタノール', '1-プロパノール']].forEach(pair => {
+            const mol = glycoSetup(c, pair);
+            assert(ether.detect(mol).length === 1,
+                `${pair.join(' + ')}: 分子間脱水の候補が ${ether.detect(mol).length} 件（1件のはず）`);
+            assert(cond.detect(mol).length === 0,
+                `${pair.join(' + ')}: 糖でないのに糖の縮合が出た`);
+        });
+        // ★ 糖 ＋ アルコール（配糖体の向き）は**そのまま残す** ——
+        //    全体に効かせると 5→0 で黙って消えるところ（§4-8c (d)）
+        const mix = glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）', 'エタノール']);
+        assert(ether.detect(mix).length === 5,
+            `糖 + エタノールの分子間脱水が ${ether.detect(mix).length} 件（5件のはず）`);
+        assert(cond.detect(mix).length === 0, '糖 + エタノールで糖の縮合が出た（糖どうしではない）');
+        // ⚠ 糖どうしのときだけ、エーテルの札は身を引く（25 → 0）
+        const two = glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）',
+            'α-D-グルコース（α-D-グルコピラノース）']);
+        assert(ether.detect(two).length === 0,
+            `糖どうしなのにエーテルの札が ${ether.detect(two).length} 件残っている`);
+        c.reset();
+    });
+
+    test('GC4: ★ つないで切ると元の2分子に戻る（4件とも名前で一致）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const cond = glycoRule(W, 'condensation_glycoside');
+        const hyd = glycoRule(W, 'hydrolysis_glycoside');
+        const namesOn = () => g.splitMolecules()
+            .filter(p => p.atoms.filter(x => x.element !== 'H').length > 3)
+            .map(p => g.lookupCompoundName(p)).sort();
+        GLYCO_PAIRS.forEach(([a, b, want]) => {
+            const mol = glycoSetup(c, [a, b]);
+            const before = namesOn();
+            cond.apply({ userMolecule: mol }, cond.detect(mol)[0]);
+            assert(g.lookupCompoundName(glycoProduct(c)) === want, `${want}: つないだ結果が名乗らない`);
+            const cuts = hyd.detect(mol);
+            assert(cuts.length === 1, `${want}: 切り戻す箇所が ${cuts.length} 件（1件のはず）`);
+            hyd.apply(g, cuts[0]);
+            const after = namesOn();
+            assert(before.join('|') === after.join('|'),
+                `${want}: 往復で戻らない（${before.join('+')} → ${after.join('+')}）`);
+        });
+        c.reset();
+    });
+
+    test('GC5: ★ 行きと帰りの対は宣言した2組だけ（酸化のあとには出ない・取り消しとも別物）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        // ① 宣言そのもの（表に無いものは null）
+        assert(W.reverseRuleIdOf('esterification') === 'hydrolysis_ester', 'エステル化の対が引けない');
+        assert(W.reverseRuleIdOf('hydrolysis_ester') === 'esterification', '対が逆向きに引けない');
+        assert(W.reverseRuleIdOf('condensation_glycoside') === 'hydrolysis_glycoside', '糖の縮合の対が引けない');
+        assert(W.reverseRuleIdOf('hydrolysis_glycoside') === 'condensation_glycoside', '対が逆向きに引けない');
+        // ⚠ 否定対照: 教科書が逆を書いていない反応は対にしていない
+        ['oxidize_primary', 'oxidize_secondary', 'oxidize_aldehyde', 'dehydration_intra',
+         'dehydration_inter', 'iodoform', 'saponification'].forEach(id => {
+            assert(W.reverseRuleIdOf(id) === null, `★否定対照: ${id} に逆向きの対が宣言されている`);
+        });
+        // ② 画面に出るか（人と同じ手順で押す）
+        const revBtn = () => D.querySelector('#reaction-actions [data-reverse-rule]');
+        const press = (kw) => {
+            const b = [...D.querySelectorAll('#reaction-actions button')].find(x => x.textContent.includes(kw));
+            assert(b, `「${kw}」の札が無い: ` +
+                [...D.querySelectorAll('#reaction-actions button')].map(x => x.textContent).join(' / '));
+            b.click();
+        };
+        glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）']);
+        g.openMoleculeModal();
+        press('グリコシド結合で二糖');
+        g.openMoleculeModal();
+        const rev = revBtn();
+        assert(rev && rev.dataset.reverseRule === 'hydrolysis_glycoside',
+            '糖の縮合のあとに「逆向きの反応」の札が出ない');
+        // ⚠ 取り消しと混ざっていないこと（文言で言い切っている・内部の言葉を出していない）
+        const note = D.querySelector('#reaction-actions .rx-reverse-note');
+        assert(note && note.textContent.includes('操作の取り消しではありません'),
+            '「逆向きの反応」が取り消しと別物だと書かれていない');
+        assert(!/可逆|reverse|ルール|宣言/.test(note.textContent),
+            `内部の言葉が画面に出ている: ${note.textContent}`);
+        // ★ 消えない断り（字幕は 6.5 秒で消える）
+        const cv = D.querySelector('#reaction-actions .rx-caveat');
+        assert(cv && cv.textContent.includes('教科書には書かれていない'),
+            '教科書の外の話だという断りが節に残っていない');
+        assert(cv.textContent.includes('酵素') && cv.textContent.includes('加水分解の逆をたどるものではなく'),
+            '★ 生体では酵素が決めていて加水分解の逆ではない、という趣旨が断りに無い');
+        // ③ ★否定対照: 宣言していない反応（アルコールの酸化）のあとには出ない
+        glycoSetup(c, ['エタノール']);
+        g.openMoleculeModal();
+        press('酸化');
+        g.openMoleculeModal();
+        assert(!revBtn(), '★否定対照: 酸化のあとに「逆向きの反応」の札が出た');
+        assert(!D.querySelector('#reaction-actions .rx-reverse-missing'),
+            '★否定対照: 酸化のあとに逆向きの断りが出た');
+        assert(!D.querySelector('#reaction-actions .rx-caveat'),
+            '★否定対照: 酸化のあとに糖の断りが出た');
+        c.reset();
     });
 
     // ===== 一部だけ流す（`?only=`）=====

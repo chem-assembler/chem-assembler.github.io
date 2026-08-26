@@ -122,6 +122,33 @@ function slTrack(name, params) {
     return (r.cRight || 0) > 0 ? 'done' : 'unconfirmed';
   }
   function stateOf(code) { return stateOfRecord(rec(code)); }
+
+  // **緑が点くまでに何が残っているか**を、状態と同じ芯から答える（2026-08-23）。
+  //
+  // ⚠ **きっかけは「正解しても緑が点かない」という報告。** 実測すると仕様どおりで、
+  // 測定モードで4回正解して初めて緑になった（1〜3回目はオレンジ＝学習中）。
+  // つまり不具合は判定ではなく、**画面が条件の半分しか言っていなかった**こと:
+  // マップの注記は「測定モードでの正解で認定」とは書いていたが、
+  // **`box` を MASTER_BOX まで積む必要がある＝4回要る**とはどこにも書いていなかった。
+  //
+  // 残りを数で言えば、押した人が「あと何回か」を数えられる。
+  // **`stateOfRecord` と同じ2条件をここで読む** —— 条件を2か所に書くと必ずずれる。
+  function needsOf(r) {
+    // 未着手（seen=0）は box を見ない。**`stateOfRecord` が seen を先に見るのに合わせる** ——
+    // 合わせないと「残り0なのに未着手」という、どちらを信じてよいか分からない行が作れてしまう
+    var box = (r && r.seen) ? (r.box || 0) : 0;
+    return {
+      rounds: Math.max(0, MASTER_BOX - box),                   // あと何回正解を積むか
+      needChoice: !(r && (r.cRight || 0) > 0)                  // 測定モードでの正解がまだか
+    };
+  }
+  function needsLabel(r) {
+    var n = needsOf(r);
+    if (!n.rounds && !n.needChoice) return '';                 // もう定着している
+    if (!n.rounds) return '定着まで 測定モードで1回';
+    return '定着まで あと ' + n.rounds + ' 回' +
+      (n.needChoice ? '（うち1回は測定モード）' : '');
+  }
   var STATE_NAME = { new: '未着手', wip: '学習中', unconfirmed: '測定で未確認', done: '定着' };
   // 帯・凡例・一覧で使う順序。**定着 → 測定で未確認 → 学習中 → 未着手**（進んだものから）
   var STATES = ['done', 'unconfirmed', 'wip', 'new'];
@@ -246,7 +273,13 @@ function slTrack(name, params) {
           ' 項目を測定モードで確かめる</button></div>';
     }
 
-    html += '<p class="map-note"><b>定着は測定モード（複数選択）での正解で認定している。</b>' +
+    // ⚠ **条件を全部書く。** 以前は「測定モードでの正解で認定」しか書いておらず、
+    // **正解を MASTER_BOX 回積む必要がある**ことが画面のどこにも無かった。
+    // 1回正解して緑が点かないのは仕様どおりだが、それを画面が説明していなかった
+    html += '<p class="map-note"><b>緑（定着）が点く条件は2つ。</b>' +
+      '(1) <b>正解を ' + MASTER_BOX + ' 回積む</b>（途中で間違えると1回ぶんに戻る）。' +
+      '(2) そのうち <b>1回以上を測定モード（複数選択）で通す</b>。' +
+      '<b>1回正解しただけでは学習中（オレンジ）のまま</b>で、あと何回要るかは下の一覧に出る。' +
       'めくりの ○× は自分で押すものなので、練習の記録として数え、到達度の証明にはしていない' +
       '（TAXONOMY §4）。次にいつ出すかの判定には、めくりの結果も使っている。</p>';
 
@@ -277,10 +310,14 @@ function slTrack(name, params) {
     var ps = bucket(mapSel.unitId, mapSel.lv);
     var t = tallyHtml(ps);
 
+    // 状態の名前だけだと「なぜ緑にならないか」が読めない。**残りを数で言う**
+    // （needsLabel は stateOfRecord と同じ2条件から作っている）
     var rows = ps.map(function (p) {
       var st = stateOf(p.code);
+      var next = needsLabel(rec(p.code));
       return '<li class="mi ' + st + '"><i class="dot ' + st + '"></i>' +
-        '<span class="mi-k">' + esc(p.knowledge || p.code) + '</span>' +
+        '<span class="mi-k">' + esc(p.knowledge || p.code) +
+          (next ? '<b class="mi-next">' + esc(next) + '</b>' : '') + '</span>' +
         '<span class="mi-s">' + STATE_NAME[st] + '</span></li>';
     }).join('');
 
@@ -392,7 +429,27 @@ function slTrack(name, params) {
       case 'summon':    return { open: 'free', summon: summonKey(link) };
       case 'reaction':  return { open: 'free', summon: summonKey(link), reagent: link.reagent };
       case 'mechanism': return { open: 'mechanism', id: link.id };
-      case 'practice':  return { open: link.open };
+      // `practice` にも**分子を添えられる**（2026-08-21）。
+      // ⚠ `?open=stereo` は「キャンバスに載っている分子の立体を見る」画面なので、
+      //    分子を添えずに飛ばすと assembler は「sp3炭素がありません」の**トーストだけ**を出して
+      //    終わる ＝ 押した人には何も見えない（実測。DESIGN_assembler_bridge.md 変更履歴 2026-08-21）。
+      //    `summon` が無い kind では `summonKey` が undefined を返し、linkHtml が
+      //    falsy の値を落とすので、命名クイズ等の**分子の要らない行き先は今までどおり**
+      //
+      // ⚠ **出題範囲も渡せる**（2026-08-22。ユーザー申し立て「qa アルカンの命名を練習する →
+      //    命名クイズ分野を問わない に飛ばされる」）。実測では 1問目に 1-ナフトール が出た。
+      //    原因は「渡していない」ではなく **assembler に受け口が無かった**ことで、
+      //    向こうが `?scope=` `?field=` を新設したのでここから渡す。
+      //    ⚠ 値の意味（`named` とは何か・分野の名前）は**向こうの語彙**で、こちらは
+      //    棚卸し（jsonl）に書かれた文字列をそのまま運ぶだけ。判断を複製しない
+      //
+      // ⚠ **`group` も渡す**（2026-08-25。assembler の官能基・骨格の軸＝E1）。
+      //    `scope` / `field` だけでは「エステルの命名」が繋げなかった —— エステルは
+      //    **脂肪族（酢酸エチル）と芳香族（安息香酸メチル）にまたがる**ので、
+      //    分野で絞ると教科書の定番が半分落ちる。ここも値の意味は向こうの語彙で、運ぶだけ。
+      //    ⚠ この `link.group` は項目の `p.group`（習得マップの群）とは別物
+      case 'practice':  return { open: link.open, summon: summonKey(link),
+                                 scope: link.scope, field: link.field, group: link.group };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
     }
     return {};
@@ -700,7 +757,9 @@ function slTrack(name, params) {
     priority: priority,
     MASTER_BOX: MASTER_BOX,
     STORE_KEY: STORE_KEY,
-    stateOfRecord: stateOfRecord
+    stateOfRecord: stateOfRecord,
+    needsOf: needsOf,
+    needsLabel: needsLabel
   };
 
   // ---------- 来た道（アプリ横断の戻り道・v44） ----------
@@ -767,7 +826,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=86')
+  fetch('data/exam_usage.jsonl?v=89')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -782,7 +841,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=86')
+  fetch('questions.json?v=89')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
