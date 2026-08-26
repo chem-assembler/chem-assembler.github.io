@@ -37089,7 +37089,12 @@
         // ⇄ / ⟳ は**環原子の重心**を軸にする —— 環原子は剛体変換しか受けず、付け替えでは動かないので
         // 軸そのものが操作で動かない ＝ 取り直しても同じ値になる。ここはその不変を直に測る
         const list = sugarRingEntries(W);
-        let 不変 = 0, 復帰 = 0, 環そのまま = 0;
+        const 枠 = (mol, ids) => {
+            const p = mol.atoms.filter(a => ids.has(a.id));
+            return [Math.min(...p.map(a => a.x)), Math.max(...p.map(a => a.x)),
+                    Math.min(...p.map(a => a.y)), Math.max(...p.map(a => a.y))].join(',');
+        };
+        let 不変 = 0, 復帰 = 0, 枠そのまま = 0;
         list.forEach(e => {
             ['leftright', 'halfturn'].forEach(kind => {
                 const m = g.createTargetFromData({ target: e.target });
@@ -37097,22 +37102,152 @@
                 const s0 = turnSig(m);
                 const ringIds = new Set();
                 W.haworthSugarCycles(m).forEach(cy => cy.forEach(i => ringIds.add(i)));
-                const ring0 = m.atoms.filter(a => ringIds.has(a.id)).map(a => `${a.x},${a.y}`).sort().join(';');
+                const box0 = 枠(m, ringIds);
                 W.haworthTurn(m, p0, kind);
                 const p1 = W.haworthTurnPlan(m);   // ★ 取り直す（覚えない）
                 if (Math.abs(p1.axis.x - p0.axis.x) < 1e-9 && Math.abs(p1.axis.y - p0.axis.y) < 1e-9) 不変++;
-                const ring1 = m.atoms.filter(a => ringIds.has(a.id)).map(a => `${a.x},${a.y}`).sort().join(';');
-                if (kind === 'leftright' && ring1 === ring0) 環そのまま++;
+                if (kind === 'leftright' && 枠(m, ringIds) === box0) 枠そのまま++;
                 W.haworthTurn(m, p1, kind);
                 if (turnSig(m) === s0) 復帰++;
             });
         });
         assert(不変 === 32, `★ 軸が動いた組み合わせがある（不変 ${不変}/32）`);
         assert(復帰 === 32, `★ 軸を取り直して2回当てても元に戻らない組み合わせがある（${復帰}/32）`);
-        // ⚠ 環の頂点がその場に留まる件数は**約束しない**（環が2種類あるスクロースなど、
-        //   鏡映で自分に重ならない図がある）。1件でも留まれば「軸に環の重心を選んだ効き目」の証拠
-        assert(環そのまま >= 10,
-            `⚠ ⇄ で環がその場に留まった件が ${環そのまま}/16（環の重心を軸にした効き目が消えている）`);
+        // ⚠⚠ **v1461 で測るものを変えた。** それまでは「環の頂点がその場に留まる」（⇄ で 13/16）を
+        //   見ていたが、⇄ / ⟳ に**段の入れ替え**（③・TW1）が入って、環の**形**が変わるようになった
+        //   ＝ 頂点の集合は 4/16 しか留まらない。**留まってほしかったのは「図の置き場所」**なので、
+        //   ここは**環の外接枠**（囲む枠）で測る。⚠ 外れるのはスクロース1件だけ
+        //   （六員環と五員環で幅が違い、環の重心での鏡映が枠を自分に写さない）
+        assert(枠そのまま >= 14,
+            `⚠ ⇄ で環の外接枠がその場に留まった件が ${枠そのまま}/16（環の重心を軸にした効き目が消えている）`);
+    });
+
+    /* ===== TW1〜TW2: ⇄ / ⟳ で環のテンプレートの広い辺・狭い辺を入れ替える =====
+     *        （DESIGN_sugar.md §4-10d・ユーザー発注 2026-08-26。`_haworthSwapRingRows`）
+     *
+     * ★ **ユーザーが言語化した機構**（これが正）:
+     * > 5番の炭素の ↑ にはスペースがあるので、もともと多くの原子を付けられる。
+     * > 環を左右反転すると ↑ だった原子団が ↓ になるため、もともと原子を追加できなかった位置に潜り込む。
+     * ★ **ユーザーの選んだ道（甲）**: 環のテンプレートごと反転する（余白のある側も一緒に移る）。
+     *
+     * ⚠ **物差しを間違えると空振りの緑が出る**（§4-10c の失敗）。立体は `canonicalCode` ではなく
+     *   **門番と同じ `haworthStereoFingerprint`** で測ること（KV2 と同じ）。ここでは
+     *   「③を足しても外しても立体は同じ」を測るので、比べる相手は①②だけを当てた図。
+     */
+
+    /** 環に属さない重原子から、環の結合の線分までの最短距離（§4-10c の物差し・px） */
+    const 環線までの最短 = (W, mol) => {
+        const ring = W.ringAtomIds(mol);
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const 辺 = mol.bonds.filter(b => ring.has(b.atomId1) && ring.has(b.atomId2));
+        let best = Infinity;
+        mol.atoms.forEach(a => {
+            if (ring.has(a.id) || a.element === 'H') return;
+            辺.forEach(b => {
+                const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+                const vx = q.x - p.x, vy = q.y - p.y, L2 = vx * vx + vy * vy;
+                let t = L2 ? ((a.x - p.x) * vx + (a.y - p.y) * vy) / L2 : 0;
+                t = Math.max(0, Math.min(1, t));
+                best = Math.min(best, Math.hypot(a.x - (p.x + t * vx), a.y - (p.y + t * vy)));
+            });
+        });
+        return best;
+    };
+
+    /** ★ 否定対照そのもの: ①剛体と②付け替えだけを当てる（＝ ③段の入れ替えを外した v1460 まで） */
+    const 手12だけ = (W, mol, kind) => {
+        const plan = W.haworthTurnPlan(mol);
+        assert(plan.ok, '否定対照の下ごしらえが通らない');
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const mark = (a) => { if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace; };
+        mol.atoms.forEach(a => {
+            a.x = 2 * plan.axis.x - a.x;
+            if (kind === 'halfturn') { a.y = 2 * plan.axis.y - a.y; mark(a); }
+        });
+        const jobs = [];
+        plan.roots.forEach((rootIds, id) => {
+            const a = byId.get(id);
+            const ys = rootIds.map(r => byId.get(r)).filter(Boolean).map(r => r.y);
+            if (a && ys.length) jobs.push({ a, ry: ys.reduce((t, v) => t + v, 0) / ys.length });
+        });
+        jobs.forEach(j => { j.a.y = 2 * j.ry - j.a.y; mark(j.a); });
+    };
+
+    test('TW1: ★ ⇄ / ⟳ で CH₂OH が環に食い込まない —— 16件全数の距離（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const list = sugarRingEntries(W);
+        assert(list.length === 16, `対象が ${list.length} 件`);
+        // ---- 先に基準値: 元の図では 26〜31.3px（＝ ラベルが環の線に触れない）----
+        const 元 = list.map(e => 環線までの最短(W, g.createTargetFromData({ target: e.target })));
+        assert(Math.min(...元) >= 25.9 && Math.max(...元) <= 31.4,
+            `下ごしらえ: 元の図の基準値が変わっている（${Math.min(...元).toFixed(1)}〜${Math.max(...元).toFixed(1)}px）`);
+        ['leftright', 'halfturn'].forEach(kind => {
+            const 札 = kind === 'leftright' ? '⇄' : '⟳';
+            const 本番 = [], 対照 = [];
+            list.forEach(e => {
+                const good = g.createTargetFromData({ target: e.target });
+                assert(W.haworthTurn(good, W.haworthTurnPlan(good), kind), 'haworthTurn が false');
+                本番.push({ id: e.id, d: 環線までの最短(W, good) });
+                const bad = g.createTargetFromData({ target: e.target });
+                手12だけ(W, bad, kind);
+                対照.push({ id: e.id, d: 環線までの最短(W, bad) });
+            });
+            // ---- ① 本番: 1件も食い込まない（環の高さ 96px − 枝 76px ＝ 20px が上限）----
+            const 悪い = 本番.filter(x => x.d < 19.9);
+            assert(!悪い.length,
+                `★ ${札}: 環の線に近すぎる図がある —— ` +
+                悪い.map(x => `${x.id} ${x.d.toFixed(1)}px`).join(', '));
+            // ---- ② ★ 否定対照: ③（段の入れ替え）を外すと 14/16 で 2.4px まで入る ----
+            const 食い込み = 対照.filter(x => x.d < 10);
+            assert(食い込み.length === 14,
+                `⚠ 否定対照が効いていない（③を外して 10px 未満になったのが ${食い込み.length}/16・14件のはず）`);
+            assert(Math.min(...対照.map(x => x.d)) < 2.5,
+                `⚠ 否定対照の最悪値が ${Math.min(...対照.map(x => x.d)).toFixed(1)}px（2.4px のはず）`);
+            // ---- ③ ★ フラノース2件は元から無事 ＝ **③は無事なものを触っていない** ----
+            const フラ = ['alpha-d-fructofuranose', 'beta-d-fructofuranose'];
+            フラ.forEach(id => {
+                const a = 本番.find(x => x.id === id), b = 対照.find(x => x.id === id);
+                assert(Math.abs(a.d - b.d) < 1e-9 && a.d >= 25.9,
+                    `★ ${札}/${id}: 五員環は③の対象外のはず（本番 ${a.d.toFixed(1)} / ③抜き ${b.d.toFixed(1)}）`);
+            });
+        });
+    });
+
+    test('TW2: ★ 段の入れ替えは立体に触らない —— y も段もたどる順も動かさない（否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        // ★ ③が動かすのは**環原子の x だけ**（と、付け根に付いて動く枝の x だけ）。
+        //   y も「どの段にいるか」も環をたどる順も変わらない ＝ `readRingParityFromHaworth` が
+        //   読む3つ（環の隣2本・置換基の縦位置・暗黙のH）のうち、符号に効くものに触っていない。
+        const list = sugarRingEntries(W);
+        ['leftright', 'halfturn'].forEach(kind => {
+            const 札 = kind === 'leftright' ? '⇄' : '⟳';
+            let 立体同じ = 0, y同じ = 0, 別の絵 = 0, 五員環そのまま = 0;
+            list.forEach(e => {
+                const good = g.createTargetFromData({ target: e.target });
+                const print0 = g.haworthStereoFingerprint(good);
+                assert(W.haworthTurn(good, W.haworthTurnPlan(good), kind), 'haworthTurn が false');
+                const bad = g.createTargetFromData({ target: e.target });
+                手12だけ(W, bad, kind);
+                // ① ③を足しても外しても、図から読める立体は同じ（＝ ③は立体に触っていない）
+                if (g.haworthStereoFingerprint(good) === g.haworthStereoFingerprint(bad)) 立体同じ++;
+                // ② ③は y に指1本触れない。⚠ **原子IDで突き合わせない**（IDは乱数）—— 元素と y と
+                //    面マークの**多重集合**で比べる（並べ替えてから突き合わせる ＝ x の並びに依らない）
+                const ygram = (m) => m.atoms.map(a => `${a.element}${a.y.toFixed(6)},${a.haworthFace || 0}`)
+                    .sort().join(';');
+                if (ygram(good) === ygram(bad)) y同じ++;
+                // ③ ★ 否定対照: それでも**絵は変わっている**（③が空振りなら直っていない）
+                if (turnShape(good) !== turnShape(bad)) 別の絵++;
+                // ④ 五員環しか持たない糖では③は何もしない
+                const 五員のみ = W.haworthSugarCycles(good).every(cy => cy.length === 5);
+                if (五員のみ && turnShape(good) === turnShape(bad)) 五員環そのまま++;
+                assert(print0 === g.haworthStereoFingerprint(good),
+                    `★ ${札}/${e.id}: ③まで当てたら立体が変わった`);
+            });
+            assert(立体同じ === 16, `★ ${札}: ③の有無で立体コードが食い違う件がある（${立体同じ}/16）`);
+            assert(y同じ === 16, `★ ${札}: ③が y を動かしている件がある（${y同じ}/16）`);
+            assert(別の絵 === 14, `⚠ ${札}: ③で絵が変わったのが ${別の絵}/16（六員環を含む14件のはず）`);
+            assert(五員環そのまま === 2, `⚠ ${札}: 五員環だけの糖で③が動いた（そのまま ${五員環そのまま}/2）`);
+        });
     });
 
     /* ===== SN1〜SN3: 糖の炭素番号を 🔢 に出す（DESIGN_iupac_check.md §N-7・ユーザー発注）=====
