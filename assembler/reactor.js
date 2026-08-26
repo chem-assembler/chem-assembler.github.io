@@ -1666,6 +1666,76 @@ function vinylBonds(mol) {
 }
 
 /**
+ * 付加重合の下ごしらえ: **頭の置換基を、主鎖と直交する向きへ立て直す**
+ * （2026-08-26。スチレン3個以上が「配置する空間がありません」で必ず落ちていた件）。
+ *
+ * **なぜ要るか（実測）**: 鎖は R-tail₀-head₀-tail₁-… と繋がるので、次の単量体は
+ * **頭の、尾と反対側**へ来る。呼び出した単量体は C=C まわりが ±120° に開いた形なので、
+ * 頭の置換基は**鎖の伸びる向きから 60° しか離れていない**。単量体1つぶんの刻みは
+ * 主鎖2結合ぶん＝84px しかないので、スチレンでは
+ * **隣の単量体のベンゼン環どうしが 4.0px まで重なって置けなくなっていた**（実測）。
+ *
+ * ⚠ **二重結合が開いた時点で頭の炭素は sp3 になる**ので、±120° に開いておく理由はそこで消える。
+ * 教科書の −[CH₂−CH(C₆H₅)]ₙ− も −[CH₂−CHCl]ₙ− も置換基を**主鎖と直交**に描く。
+ *
+ * ⚠ 置換基が2本以上ある頭（メタクリル酸メチル等）は**触らない** ―― どちらを回すかが一意でない。
+ * ⚠ 回した結果、**分子の中で新たに詰まる**なら座標を戻す（`reshapeVinylAngles` と同じ約束）。
+ * @param side +1 / -1 … 直交のどちら側へ出すか。単量体ごとに交互にすると教科書の図になる
+ * @returns 回したら true
+ */
+function uprightChainSubstituent(mol, headId, tailId, side) {
+    const head = mol.atoms.find(a => a.id === headId);
+    const tail = mol.atoms.find(a => a.id === tailId);
+    if (!head || !tail) return false;
+    const subs = mol.getNeighbors(headId)
+        .filter(n => n.atom.id !== tailId && n.atom.element !== 'H').map(n => n.atom);
+    if (subs.length !== 1) return false;
+    const G = bondStep(mol, headId);
+    const MIN_CLEARANCE = G * 0.65;
+    const L = Math.hypot(head.x - tail.x, head.y - tail.y) || 1;
+    const ux = (head.x - tail.x) / L, uy = (head.y - tail.y) / L;
+    const tx = head.x + ux * G, ty = head.y + uy * G;   // 次の単量体の尾が来る場所
+    // ⚠ 見るのは**この単量体の中だけ**。ほかの単量体はこの後どうせ動かして繋ぐので、
+    //    そこに居ることを理由に枝を回すと、塞がっていないのに図が変わる
+    const comp = componentOf(mol, headId);
+    const others = mol.atoms.filter(a => a.element !== 'H' && comp.has(a.id) &&
+        a.id !== headId && a.id !== tailId);
+    const clear = () => others.every(a => Math.hypot(a.x - tx, a.y - ty) >= MIN_CLEARANCE);
+    // 枝（環も含めてまるごと）を、頭を軸に「主鎖と直交」へ回す
+    const branch = [];
+    {
+        const seen = new Set([headId, tailId, subs[0].id]);
+        const st = [subs[0].id];
+        while (st.length) {
+            const cur = st.pop();
+            branch.push(cur);
+            mol.getNeighbors(cur).forEach(n => {
+                if (!seen.has(n.atom.id)) { seen.add(n.atom.id); st.push(n.atom.id); }
+            });
+        }
+    }
+    const saved = branch.map(id => { const a = mol.atoms.find(x => x.id === id); return { a, x: a.x, y: a.y }; });
+    const a0 = Math.atan2(subs[0].y - head.y, subs[0].x - head.x);
+    const a1 = Math.atan2(ux * side, -uy * side);       // 軸を ±90° 回した向き
+    const ang = a1 - a0, c = Math.cos(ang), s = Math.sin(ang);
+    saved.forEach(({ a, x, y }) => {
+        const dx = x - head.x, dy = y - head.y;
+        a.x = head.x + dx * c - dy * s;
+        a.y = head.y + dx * s + dy * c;
+    });
+    // 回した結果、道が開いていて**分子の中で新たに詰まっていない**ことまで見て採用する
+    const heavy = mol.atoms.filter(a => a.element !== 'H' && comp.has(a.id));
+    const inBranch = new Set(branch);
+    const squeezed = heavy.some(a => inBranch.has(a.id) && heavy.some(b =>
+        b.id !== a.id && !inBranch.has(b.id) && Math.hypot(a.x - b.x, a.y - b.y) < MIN_CLEARANCE));
+    if (!clear() || squeezed) {
+        saved.forEach(({ a, x, y }) => { a.x = x; a.y = y; });
+        return false;
+    }
+    return true;
+}
+
+/**
  * 共役ジエン（C1=C2−C3=C4）を探す。1,4-付加重合（合成ゴム）の対象。
  * 分子内に C=C がちょうど2本あり、それが単結合1本を挟んで並んでいるものだけを返す
  * （どこを開くかが一意に決まる形に限る）。返り値は {c1, c2, c3, c4}
@@ -1718,10 +1788,44 @@ function vulcanizablePairs(mol) {
     });
     const vinyls = vinylBonds(mol).filter(v => inPolymer.has(v.head));
     const out = [];
+    /* ★ **架橋は「別の鎖どうし」に限る**（2026-08-26。動画レーンの実測報告 §4-1）。
+     * イソプレン×4 を1本の鎖に重合してから加硫を押すと、**同じ鎖の中で橋が架かって
+     * ループになっていた**（実測: 返っていた3組すべてが同一成分。別の鎖どうしは0組）。
+     * 硫黄は入るので分子式は増えるが、**「2本のゴムの鎖を橋でつなぐ」という加硫の絵にならない**。
+     * 加硫の要点は鎖どうしを結んで三次元の網目を作ることなので、分子内のループは
+     * 教材としてむしろ誤解のもと ―― 鎖が1本しか無いときは**ボタンを出さない**。
+     * ⚠ 下の「中点に空きがあるか」は隣り合う C=C を落とすだけで、
+     *   **鎖の端と端のように離れた同一鎖の組は素通りしていた**（それがこの症状の正体）。
+     * ⚠ 押す手がかりは硫黄の瓶の `miss`（「鎖をもう1本作ってください」）が担う。
+     *
+     * ⚠ **「別の鎖」は連結成分では測れない**。1本目の架橋で2本の鎖は1分子になるが、
+     *   加硫は続けて何本も橋を架けられる必要がある（硫黄を増やすとエボナイト）。
+     *   そこで**硫黄を取り除いたときの成分**＝架橋する前の鎖を「鎖の身元」にする。 */
+    const chainOf = (startId) => {                      // S を通らない連結成分
+        const seen = new Set([startId]);
+        const st = [startId];
+        while (st.length) {
+            const cur = st.pop();
+            mol.getNeighbors(cur).forEach(n => {
+                if (n.atom.element === 'S' || seen.has(n.atom.id)) return;
+                seen.add(n.atom.id); st.push(n.atom.id);
+            });
+        }
+        return seen;
+    };
+    const compKey = new Map();
+    vinyls.forEach(v => {
+        if (compKey.has(v.head)) return;
+        const chain = chainOf(v.head);
+        const key = [...chain].sort().join(',');
+        vinyls.forEach(w => { if (chain.has(w.head)) compKey.set(w.head, key); });
+    });
     const G = bondStep(mol);
     const MIN_CLEARANCE = G * 0.65;
     for (let i = 0; i < vinyls.length; i++) {
         for (let j = i + 1; j < vinyls.length; j++) {
+            // **別の鎖どうし**のときだけ橋を架ける（上の注記）
+            if (compKey.get(vinyls[i].head) === compKey.get(vinyls[j].head)) continue;
             // 二重結合の両端どちらでも架橋しうるので4通り見る
             [[vinyls[i].head, vinyls[i].tail], [vinyls[i].tail, vinyls[i].head]].forEach(([ca, ca2]) => {
                 [[vinyls[j].head, vinyls[j].tail], [vinyls[j].tail, vinyls[j].head]].forEach(([cb, cb2]) => {
@@ -2344,7 +2448,12 @@ const REAGENTS = [
         formula: 'S',
         kind: 'transform',
         acts: '重合でできたゴムの鎖に残っている C=C です（加硫）',
-        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。'
+        // ⚠ **「鎖が1本しかない」も空振りの理由になる**（2026-08-26）。加硫は
+        //    2本の鎖のあいだに橋を架ける反応なので、1本の鎖の中でループを作らせない
+        //    （`vulcanizablePairs` の注記）。押した人が次に何をすればよいかをここで言う
+        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。' +
+            '鎖が1本だけのときも架橋できません（加硫は**2本の鎖のあいだ**に硫黄の橋を架ける反応です）。' +
+            'もう一度 単量体を並べて 1,4-付加重合し、鎖を2本にしてから硫黄を加えてください。'
     },
     {
         // ⚠ **設計 §2.5 は「第3段までは構造を変えない」としていたが、`iodoform` は
@@ -3102,6 +3211,9 @@ const REACTION_RULES = [
     },
     {
         id: 'addition_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '付加重合（並べた単量体をまとめて）→ 高分子の繰り返し単位',
         // 同じ単量体が2つ以上あれば、**並んでいる全部を一度に繋ぐ**（P12-8。ユーザー要望
         // 「横一列に単量体を並べた状態から重合するところを見たい」）。
@@ -3157,6 +3269,10 @@ const REACTION_RULES = [
                 if (!b) throw new Error('二重結合が見つかりません');
                 b.type = 1;
             });
+            // 頭の置換基を主鎖と直交する向きへ立て直す（`uprightChainSubstituent`）。
+            // **単量体ごとに交互の側へ出す** ―― 同じ側にそろえると、隣の枝どうしが
+            // 84px 間隔でぶつかって置けなくなる（スチレンで実測。環の幅が 69px ある）
+            units.forEach((u, i) => uprightChainSubstituent(mol, u.head, u.tail, i % 2 ? -1 : 1));
             // 頭（置換基の多い炭素）に次の単量体の尾（少ない炭素）を繋ぐと、
             // 教科書どおりの「頭-尾（head-to-tail）」の並びになる
             const changed = [];
@@ -3208,6 +3324,9 @@ const REACTION_RULES = [
          * ビニル系に三重結合を混ぜると `conjugatedDienes` と `vulcanizablePairs` まで
          * 巻き添えになるので、**別のルールとして立てる**。 */
         id: 'alkyne_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '付加重合（アセチレンを並べて）→ ポリアセチレン',
         detect(mol) {
             const units = acetyleneUnits(mol);
@@ -3265,6 +3384,9 @@ const REACTION_RULES = [
     },
     {
         id: 'diene_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
+        //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
+        wholeCanvas: true,
         label: '1,4-付加重合（共役ジエンを並べて）→ 合成ゴム',
         // 共役ジエン（C1=C2-C3=C4）が同じもの2つ以上。1,3-ブタジエン・イソプレン・クロロプレン
         detect(mol) {
@@ -4537,10 +4659,25 @@ class Reactor {
         const focus = (!selSets.length && g.moleculeModalAtomIds) ? g.moleculeModalAtomIds() : null;
         const scope = selSets.length ? allSel : focus;
         const atomAllowed = id => !scope || scope.has(id);
-        const siteAllowed = site => {
+        /* ⚠ **第2引数は「ルール」**。`sites.filter(siteAllowed)` と書くと filter が第2引数に
+         *   **添字**を渡してしまうので、呼ぶ側は必ず `sites.filter(s => siteAllowed(s, rule))` と書く。 */
+        const siteAllowed = (site, rule) => {
             const ids = Array.isArray(site) ? site.filter(x => typeof x === 'string') : [];
             if (!ids.length) return true; // 箇所を持たない情報カードなどは絞らない
-            if (!selSets.length) return !focus || ids.some(id => focus.has(id));
+            if (!selSets.length) {
+                /* ★ **「並べた単量体をまとめて」の反応はキャンバス全体が対象**（2026-08-26）。
+                 * 動画レーンの実測: イソプレン×2 を重合してできた鎖 ① を見たまま
+                 * イソプレン×2 を足して重合しようとすると、**ボタンが一覧から消えていた**。
+                 * 箇所（②③ の8原子）に ① の原子が1つも無いのでここで落ちていた（実測 false）。
+                 * `detect` 自体は正しく1件返しており、`apply` を直接呼べば成功する ＝
+                 * **落としていたのはこの絞り込みだけ**。
+                 * ⚠ v1429 の事故（ブタン酸を見ているのにケトンのヨードホルムが押せる）とは形が違う:
+                 *   重合のラベルは「**並べた単量体をまとめて**」で、押した結果は必ずラベルどおり
+                 *   ＝ 見ていない分子が黙って別の反応をするわけではない。
+                 * ⚠ **選択があるときは今までどおり選択が勝つ**（この分岐は選択が無いときだけ）。 */
+                if (rule && rule.wholeCanvas) return true;
+                return !focus || ids.some(id => focus.has(id));
+            }
             if (selSets.length === 1) return ids.some(id => allSel.has(id));
             if (!ids.every(id => allSel.has(id))) return false;
             return selSets.filter(s => ids.some(id => s.has(id))).length >= 2;
@@ -4594,7 +4731,7 @@ class Reactor {
             }
             // ⚠ `selSets.length &&` の門番は外した（v1429）。選択が無いときも
             //    「いま見ている分子」で絞る ＝ 判定は `siteAllowed` ただ1つに任せる
-            if (!rule.info) sites = sites.filter(siteAllowed);
+            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             if (!rule.info) executable++;
             const btn = document.createElement('button');
@@ -4705,7 +4842,7 @@ class Reactor {
         const back = REACTION_RULES.find(r => r.id === backId);
         if (!back) return;
         let sites = [];
-        try { sites = (back.detect(mol) || []).filter(siteAllowed); } catch (e) { sites = []; }
+        try { sites = (back.detect(mol) || []).filter(s => siteAllowed(s, back)); } catch (e) { sites = []; }
         const note = document.createElement('div');
         note.style.cssText = 'font-size:11px; line-height:1.5; color:var(--text-secondary);';
         if (!sites.length) {
@@ -4903,7 +5040,7 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
-            if (!rule.info) sites = sites.filter(siteAllowed);
+            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             hits.push({ rule, sites });
         });
