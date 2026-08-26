@@ -1788,10 +1788,44 @@ function vulcanizablePairs(mol) {
     });
     const vinyls = vinylBonds(mol).filter(v => inPolymer.has(v.head));
     const out = [];
+    /* ★ **架橋は「別の鎖どうし」に限る**（2026-08-26。動画レーンの実測報告 §4-1）。
+     * イソプレン×4 を1本の鎖に重合してから加硫を押すと、**同じ鎖の中で橋が架かって
+     * ループになっていた**（実測: 返っていた3組すべてが同一成分。別の鎖どうしは0組）。
+     * 硫黄は入るので分子式は増えるが、**「2本のゴムの鎖を橋でつなぐ」という加硫の絵にならない**。
+     * 加硫の要点は鎖どうしを結んで三次元の網目を作ることなので、分子内のループは
+     * 教材としてむしろ誤解のもと ―― 鎖が1本しか無いときは**ボタンを出さない**。
+     * ⚠ 下の「中点に空きがあるか」は隣り合う C=C を落とすだけで、
+     *   **鎖の端と端のように離れた同一鎖の組は素通りしていた**（それがこの症状の正体）。
+     * ⚠ 押す手がかりは硫黄の瓶の `miss`（「鎖をもう1本作ってください」）が担う。
+     *
+     * ⚠ **「別の鎖」は連結成分では測れない**。1本目の架橋で2本の鎖は1分子になるが、
+     *   加硫は続けて何本も橋を架けられる必要がある（硫黄を増やすとエボナイト）。
+     *   そこで**硫黄を取り除いたときの成分**＝架橋する前の鎖を「鎖の身元」にする。 */
+    const chainOf = (startId) => {                      // S を通らない連結成分
+        const seen = new Set([startId]);
+        const st = [startId];
+        while (st.length) {
+            const cur = st.pop();
+            mol.getNeighbors(cur).forEach(n => {
+                if (n.atom.element === 'S' || seen.has(n.atom.id)) return;
+                seen.add(n.atom.id); st.push(n.atom.id);
+            });
+        }
+        return seen;
+    };
+    const compKey = new Map();
+    vinyls.forEach(v => {
+        if (compKey.has(v.head)) return;
+        const chain = chainOf(v.head);
+        const key = [...chain].sort().join(',');
+        vinyls.forEach(w => { if (chain.has(w.head)) compKey.set(w.head, key); });
+    });
     const G = bondStep(mol);
     const MIN_CLEARANCE = G * 0.65;
     for (let i = 0; i < vinyls.length; i++) {
         for (let j = i + 1; j < vinyls.length; j++) {
+            // **別の鎖どうし**のときだけ橋を架ける（上の注記）
+            if (compKey.get(vinyls[i].head) === compKey.get(vinyls[j].head)) continue;
             // 二重結合の両端どちらでも架橋しうるので4通り見る
             [[vinyls[i].head, vinyls[i].tail], [vinyls[i].tail, vinyls[i].head]].forEach(([ca, ca2]) => {
                 [[vinyls[j].head, vinyls[j].tail], [vinyls[j].tail, vinyls[j].head]].forEach(([cb, cb2]) => {
@@ -2414,7 +2448,12 @@ const REAGENTS = [
         formula: 'S',
         kind: 'transform',
         acts: '重合でできたゴムの鎖に残っている C=C です（加硫）',
-        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。'
+        // ⚠ **「鎖が1本しかない」も空振りの理由になる**（2026-08-26）。加硫は
+        //    2本の鎖のあいだに橋を架ける反応なので、1本の鎖の中でループを作らせない
+        //    （`vulcanizablePairs` の注記）。押した人が次に何をすればよいかをここで言う
+        miss: '単量体やふつうのアルケンは加硫の相手にしません。先に 1,4-付加重合で鎖を作ってください。' +
+            '鎖が1本だけのときも架橋できません（加硫は**2本の鎖のあいだ**に硫黄の橋を架ける反応です）。' +
+            'もう一度 単量体を並べて 1,4-付加重合し、鎖を2本にしてから硫黄を加えてください。'
     },
     {
         // ⚠ **設計 §2.5 は「第3段までは構造を変えない」としていたが、`iodoform` は
