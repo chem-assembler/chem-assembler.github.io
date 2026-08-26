@@ -2007,5 +2007,208 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-hydrolysis-vs-saponification",
+    "title": "V125: 加水分解とけん化のちがい（反応シリーズ⑱）",
+    "summary": "⭐ V19（けん化）との対。**同じエステルでも、酸で加水分解すると酸が、NaOH でけん化すると塩ができる**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "酢酸エチル",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "酢酸エチル"
+          },
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 5150
+          }
+        ]
+      },
+      {
+        "caption": "① 酸で加水分解",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "加水分解（エステル"
+          },
+          {
+            "type": "frame",
+            "width": 640
+          },
+          {
+            "type": "wait",
+            "ms": 4951
+          }
+        ]
+      },
+      {
+        "caption": "② 同じエステルを NaOH で",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "酢酸エチル"
+          },
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 2773
+          },
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "けん化"
+          },
+          {
+            "type": "frame",
+            "width": 640
+          },
+          {
+            "type": "wait",
+            "ms": 9756
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-nylon66",
+    "title": "V126: ナイロンを一から作ってみた（高分子③）",
+    "summary": "⭐ V116（PET）との対。**同じ縮合重合でも、つながる相手が -NH2 ならアミド結合＝ポリアミド**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "アジピン酸とヘキサメチレンジアミン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "アジピン酸"
+          },
+          {
+            "type": "summon",
+            "name": "ヘキサメチレンジアミン"
+          },
+          {
+            "type": "summon",
+            "name": "アジピン酸"
+          },
+          {
+            "type": "summon",
+            "name": "ヘキサメチレンジアミン"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 6183
+          }
+        ]
+      },
+      {
+        "caption": "縮合重合 → ナイロン66",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "縮合重合"
+          },
+          {
+            "type": "frame",
+            "width": 1500
+          },
+          {
+            "type": "wait",
+            "ms": 17129
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-hydration",
+    "title": "V127: アルケンに水を付けるとアルコール（反応シリーズ⑲）",
+    "summary": "⭐ V42（HBr のマルコフニコフ則）との対。**水の付加も同じ規則に従う**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "プロペン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "プロペン（プロピレン）"
+          },
+          {
+            "type": "frame",
+            "width": 460
+          },
+          {
+            "type": "wait",
+            "ms": 4939
+          }
+        ]
+      },
+      {
+        "caption": "水を付けると？",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "付加: H₂O"
+          },
+          {
+            "type": "frame",
+            "width": 500
+          },
+          {
+            "type": "wait",
+            "ms": 16991
+          }
+        ]
+      }
+    ]
   }
 ]
