@@ -3606,6 +3606,200 @@
         assert(q.taTimerId === null, 'モーダルを閉じてもタイマーが止まらない');
     });
 
+    /* ===== QD: タイムアタックの初期時間と、逓減する加算（2026-08-26） =====
+     *
+     * ユーザー決定:「**初期時間20秒**」「**加算の総量ではなく、正解数に応じて加算時間を
+     * 減らしていく**」。
+     *
+     * 直す前の実測（tools/quiz-time-census.mjs）:
+     *   ・1問の収支 ＝ ＋3.0秒（固定の加算）−（考えた時間 ＋ 送りの 0.9/1.8秒）
+     *   ・**考えが 2.1秒 を切ると毎問プラス**になり、残り時間が増え続けた
+     *     （1.2秒/問・全問正解で 25問 答えても終わらず、残りが 60→80.8秒 に増えた）
+     *   ・ボタンは「60秒」と書いてあるのに、終わる場合でも **145秒 走った**
+     *
+     * ここで見張るのは3つ:
+     *   QD1 加算が正解数に応じて減り、**0秒で床になる**（実機で1問ずつ測る）
+     *   QD2 **どんな速さ・正答率でも終わる**（＋ 否定対照: 逓減を外す／床を正にすると戻る）
+     *   QD3 **表示が実際と一致する**（文言は定数から組み立て、HTML に秒を直書きしない）
+     */
+
+    // 1問の消費（秒）。実装の送り（正解 900ms / 誤答 1800ms）を含む
+    const taCostSec = (think, ok) => think + (ok ? 0.9 : 1.8);
+
+    /**
+     * 加算の払い方 `bonus(n)` を与えて、遊びが何問・何秒で終わるかを回す。
+     * ⚠ 返す `clockSec` は**時計が走る秒数**（初期時間＋実際に払われた加算）。
+     * 問題の消費の合計ではない（最後の1問は時間切れで途中までしか使われないため）
+     */
+    const taSimulate = (bonus, limitSec, think, acc, giveUpSec) => {
+        let left = limitSec, asked = 0, correct = 0, paid = 0, credit = 0;
+        while (left > 0 && limitSec + paid < giveUpSec) {
+            credit += acc;
+            const ok = credit >= 1;
+            if (ok) credit -= 1;
+            left -= taCostSec(think, ok); asked++;
+            if (left <= 0) break;
+            if (ok) { correct++; const b = bonus(correct); paid += b; left += b; }
+        }
+        return { asked, correct, paid, clockSec: limitSec + paid,
+                 ended: limitSec + paid < giveUpSec };
+    };
+
+    test('QD1: 加算は正解数に応じて減り、0秒で床になる（実機で1問ずつ測る）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.quiz;
+        const STEP = W.QUIZ_TA_BONUS_STEP_MS, FIRST = W.QUIZ_TA_BONUS_MS;
+        assert(STEP > 0, `加算が減らない（step=${STEP}）＝ ユーザー決定「正解数に応じて減らす」が入っていない`);
+        assert(W.QUIZ_TA_LIMIT_MS === 20000, `初期時間が 20秒 でない（${W.QUIZ_TA_LIMIT_MS}ms）`);
+
+        // ① 式そのもの: n 回目の加算 ＝ max(0, 3000 − 200(n−1))
+        const zero = W.quizTimeAttackZeroAt();
+        assert(W.quizTimeAttackBonusMs(1) === FIRST, '1回目の加算が定義と違う');
+        assert(W.quizTimeAttackBonusMs(2) === FIRST - STEP, '2回目で減っていない');
+        assert(W.quizTimeAttackBonusMs(zero) === 0, `${zero}回目で 0秒 になっていない`);
+        assert(W.quizTimeAttackBonusMs(zero + 50) === 0, '床が 0秒 になっていない（負や再上昇がある）');
+        // 合計が**有限**であること。これが「必ず終わる」の根拠
+        const total = W.quizTimeAttackTotalBonusMs();
+        assert(isFinite(total) && total > 0, `加算の合計が有限でない（${total}）`);
+        let byHand = 0;
+        for (let n = 1; n <= zero + 200; n++) byHand += W.quizTimeAttackBonusMs(n);
+        assert(byHand === total, `合計の計算が合わない（手で足すと ${byHand} / 関数は ${total}）`);
+
+        // ② 実機で1問ずつ: 正解のたびに endsAt が**ちょうど階段どおり**伸びる
+        q.open();
+        D.getElementById('btn-quiz-timeattack').click();
+        assert(q.ta, 'タイムアタックが始まらない');
+        q.ta.endsAt += 3600000;          // 検査中に時間切れにならないよう先へ（伸びは差分で見る）
+        const gains = [];
+        for (let i = 0; i < zero + 8 && gains.length < zero + 1; i++) {
+            if (!q.current || q.current.form !== 'choice') { q.nextQuestion(); continue; }
+            const before = q.ta.endsAt;
+            q.answerChoice(q.current.answer);
+            gains.push(q.ta.endsAt - before);
+            if (q._advance) { W.clearTimeout(q._advance); q._advance = null; }
+            q.nextQuestion();
+        }
+        gains.forEach((g, i) => {
+            const want = W.quizTimeAttackBonusMs(i + 1);
+            assert(g === want, `${i + 1}問目の正解の加算が ${g}ms（式は ${want}ms）`);
+        });
+        assert(gains.length >= zero + 1, `${zero + 1}問ぶん測れていない（${gains.length}問）`);
+        assert(gains[gains.length - 1] === 0, '床まで行っても加算が 0秒 になっていない');
+        assert(gains.reduce((a, b) => a + b, 0) === total,
+            '実機で払われた合計が、関数の言う合計と違う');
+
+        // ③ **減っていることが画面に出ている**（黙って減らさない）
+        const timerText = D.getElementById('quiz-ta-timer').textContent;
+        assert(/加算はここまで/.test(timerText),
+            `床に着いたのに画面がそう言わない（${timerText}）`);
+        q.ta.correct = 0;
+        q.renderTimeAttack();
+        assert(/次の正解 ＋3秒/.test(D.getElementById('quiz-ta-timer').textContent),
+            `次の加算が画面に出ていない（${D.getElementById('quiz-ta-timer').textContent}）`);
+
+        q.stopTimeAttack(false);
+        try { W.localStorage.removeItem(W.QUIZ_TA_KEY); } catch (e) {}
+        D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QD2: どんな速さ・正答率でも終わる（否定対照: 逓減を外す／床を正にすると暴走が戻る）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const limitSec = W.QUIZ_TA_LIMIT_MS / 1000;
+        const capSec = W.QUIZ_TA_LIMIT_MS / 1000 + W.quizTimeAttackTotalBonusMs() / 1000;
+        const now = (n) => W.quizTimeAttackBonusMs(n) / 1000;
+
+        // ① 実装の払い方なら、**0秒で答える相手**まで含めて必ず上限内で終わる
+        const players = [[0, 1], [0.6, 1], [1.2, 1], [1.2, 0.8], [3, 0.8], [3, 0.5], [6, 0.5], [2, 0.25]];
+        players.forEach(([think, acc]) => {
+            const r = taSimulate(now, limitSec, think, acc, 3600);
+            assert(r.ended, `考え ${think}秒・正答率 ${acc * 100}% で1時間走っても終わらない`);
+            assert(r.clockSec <= capSec + 0.01,
+                `上限 ${capSec}秒 を超えた（${r.clockSec.toFixed(1)}秒・考え ${think}秒/正答率 ${acc * 100}%）`);
+        });
+
+        // ② 否定対照 その1 — **逓減を外す**（3秒固定）と、速い人には暴走が戻る
+        const flat = () => W.QUIZ_TA_BONUS_MS / 1000;
+        const bad = taSimulate(flat, limitSec, 1.2, 1, 3600);
+        assert(!bad.ended,
+            `逓減を外しても終わってしまう＝この検査が空回りしている（${bad.clockSec.toFixed(1)}秒で終了）`);
+        // 直す前に実測した通り、収支は毎問プラス（3.0 −(1.2＋0.9) ＝ ＋0.9秒）
+        assert(W.QUIZ_TA_BONUS_MS / 1000 - taCostSec(1.2, true) > 0,
+            '固定 3秒 でも収支が黒字にならない＝前提（実測）が変わっている');
+
+        // ③ 否定対照 その2 — **床を正の値にする**と、0秒で答える相手には暴走が戻る。
+        //    ＝ 効いているのは「減らすこと」ではなく **「0まで減らすこと」**
+        const floored = (n) => Math.max(1.0, W.quizTimeAttackBonusMs(n) / 1000);
+        const bad2 = taSimulate(floored, limitSec, 0, 1, 3600);
+        assert(!bad2.ended, '床 1.0秒 でも 0秒で答える相手が終わる＝床の意味を見誤っている');
+        // その床でも「ふつうの人」は終わる ＝ 差が出るのは速い人だけ、という実測どおり
+        assert(taSimulate(floored, limitSec, 3, 0.8, 3600).ended, '床 1.0秒 でふつうの人まで終わらない');
+
+        // ④ 否定対照 その3 — **調和（3/n）**は合計が発散するので「上限」が付かない。
+        //    終わりはするが、速いほど長引く（等比・一次床0 との言い分け）
+        //    「有限」と「発散」は**足し続けても増えなくなるか**で見分ける。
+        //    実装の払い方は 1000項 と 100万項 で**1ミリ秒も変わらない**（＝ 上限がある）。
+        //    調和は同じ区間で 20秒 以上ふえる（＝ いくらでも伸びる）
+        const sumUpTo = (f, N) => { let s = 0; for (let n = 1; n <= N; n++) s += f(n); return s; };
+        const oursShort = sumUpTo(now, 1000), oursLong = sumUpTo(now, 1000000);
+        assert(Math.abs(oursLong - oursShort) < 1e-6,
+            `実装の加算が足し続けると増える（${oursShort} → ${oursLong}）＝ 上限が無い`);
+        const harmShort = sumUpTo((n) => 3 / n, 1000), harmLong = sumUpTo((n) => 3 / n, 1000000);
+        assert(harmLong - harmShort > 20,
+            `調和が発散して見えない（${harmShort.toFixed(1)} → ${harmLong.toFixed(1)}）＝ 言い分けの確認が空回り`);
+        const h = (n) => 3 / n;
+        const slow = taSimulate(h, limitSec, 1.2, 1, 3600).clockSec;
+        const fast = taSimulate(h, limitSec, 0, 1, 3600).clockSec;
+        assert(fast > slow, '調和で「速いほど長引く」が出ない＝言い分けの根拠が崩れている');
+    });
+
+    test('QD3: 表示が実際と一致する（文言は定数から組み立て・HTML に秒を直書きしない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        W.quiz.open();
+
+        // ① ボタンと説明は**定数から入っている**
+        const btn = D.getElementById('btn-quiz-timeattack');
+        assert(btn.textContent === W.QUIZ_TA_LABEL,
+            `ボタンの文言が定数と違う（画面「${btn.textContent}」／定数「${W.QUIZ_TA_LABEL}」）`);
+        const rule = D.getElementById('quiz-ta-rule');
+        assert(rule && rule.textContent === W.QUIZ_TA_RULE, '遊び方の説明が定数から入っていない');
+
+        // ② 書いてある数字が**実際の数字**であること（これが 60秒 対 145秒 のずれを塞ぐ）
+        const limitSec = W.QUIZ_TA_LIMIT_MS / 1000;
+        const capSec = limitSec + W.quizTimeAttackTotalBonusMs() / 1000;
+        assert(W.QUIZ_TA_LABEL.includes(`${limitSec}秒`), `ボタンに初期時間 ${limitSec}秒 が出ていない`);
+        assert(W.QUIZ_TA_LABEL.includes(`${capSec}秒`), `ボタンに上限 ${capSec}秒 が出ていない`);
+        // 実際に走る秒が、書いてある上限を超えないこと（QD2 と同じ物差しで突き合わせる）
+        const worst = taSimulate((n) => W.quizTimeAttackBonusMs(n) / 1000, limitSec, 0, 1, 3600);
+        assert(worst.clockSec <= capSec + 0.01,
+            `表示は最長 ${capSec}秒 なのに ${worst.clockSec.toFixed(1)}秒 走る`);
+
+        // ③ **逓減することが表示に出ている**（黙って減らさない）
+        assert(W.QUIZ_TA_RULE.includes(`${W.QUIZ_TA_BONUS_STEP_MS / 1000}秒ずつ減り`),
+            `説明に「いくつずつ減るか」が無い（${W.QUIZ_TA_RULE}）`);
+        assert(W.QUIZ_TA_RULE.includes(`${W.quizTimeAttackZeroAt()}問目`),
+            '説明に「どこで 0秒 になるか」が無い');
+
+        // ④ 陰性対照 — **HTML 側に秒が直書きされていない**（同じ数字が2か所にある状態に戻さない）
+        const html = await (await fetch(`index.html?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        const m = html.match(/<button id="btn-quiz-timeattack"[^>]*>([\s\S]*?)<\/button>/);
+        assert(m, 'index.html にタイムアタックのボタンが見当たらない');
+        assert(m[1].trim() === '',
+            `index.html のボタンに文言が直書きされている（「${m[1].trim()}」）`);
+        assert(!/タイムアタック（[\d.]+秒/.test(html),
+            'index.html に「タイムアタック（N秒」が直書きされている');
+        assert(!/正解ごとに\s*[＋+][\d.]+秒/.test(html),
+            'index.html に加算の秒数が直書きされている（説明は quiz.js の QUIZ_TA_RULE 1か所）');
+        // 検査が空回りしていないこと: quiz.js には文言の組み立てが居る
+        const qsrc = await (await fetch(`quiz.js?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        assert(/QUIZ_TA_LABEL\s*=/.test(qsrc) && /QUIZ_TA_RULE\s*=/.test(qsrc),
+            'quiz.js に文言の組み立てが無い＝④ の検査が空回りしている');
+
+        D.getElementById('btn-quiz-close').click();
+    });
+
     test('QT5: 陰性対照 — 動画の台本が名指しする id が全部生きている（隠しても機械からは触れる）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
@@ -34193,6 +34387,102 @@
             await W.narrowing.render();
             modal.classList.add('hidden');
         }
+    });
+
+    test('NW33: stepNo が出荷 JSON に載り、stack と対応が取れている（否定対照つき）', async (c) => {
+        // ⚠⚠ **これが無かったせいで、東大 1I の食い違いは出荷データ側から永久に見えなかった。**
+        // 仕様（_解析/db/narrowing/*.json）は `label` に「実験5」「実験1」…と番号を持っていたのに、
+        // 生成器が **step 単位では1つも出荷していなかった**ため、
+        // 「この列は問題文の順か」は**原理的に判定できない**状態だった（2026-08-19〜20 の調査）。
+        // `stepNo`（札1枚ごとの実験番号）を載せたので、ここから先は出荷 JSON だけで見張れる。
+        //
+        // ★ **何を赤にするか**（設計。ここを間違えると見張りが嘘をつく）:
+        //   赤 …「番号を持っているのに `stack` と対応が取れていない」ほうだけ
+        //   ⚠ **非昇順は赤にしない。** `stack` の順は**解き筋の順**で、それが教材の実体。
+        //      問題文の順と違うこと自体は誤りではないので、**どの列がそうかを名指しで固定する**だけ
+        const W = c.W;
+        const nw = W.narrowing;
+        assert(nw.problems, 'narrowing-problems.json が読めていません');
+
+        /** 赤にする4条件。**否定対照でこの関数自身を試す**ので、判定は1か所にまとめる */
+        const redFlags = (col) => {
+            const s = col.stepNo, bad = [];
+            if (s === undefined) return bad;   // 欄が無いのは正しい形の1つ（番号が拾えない列）
+            if (!Array.isArray(s)) return ['stepNo が配列でない'];
+            if (s.length !== col.stack.length) bad.push(`長さ ${s.length} / stack ${col.stack.length} 枚`);
+            if (!col.stack.length) bad.push('stack が空なのに stepNo がある');
+            if (s.some((v) => v !== null && !(Number.isInteger(v) && v > 0))) bad.push('正の整数でも null でもない値');
+            if (s.length && s.every((v) => v === null)) bad.push('全部 null（拾えない列は欄ごと作らない規約）');
+            return bad;
+        };
+        const cols = nw.problems.flatMap((p) => p.columns.map((col) => ({ where: `${p.printed || p.id} / ${col.name}`, col })));
+        const red = cols.filter((x) => redFlags(x.col).length);
+        assert(red.length === 0,
+            `stepNo が stack と対応していない列があります: ${red.map((x) => `${x.where}（${redFlags(x.col).join('・')}）`).join(' / ')}`);
+        const withNo = cols.filter((x) => x.col.stepNo);
+        assert(withNo.length === 30,
+            `stepNo を持つ列が ${withNo.length} 本（期待 30 / 全 ${cols.length} 本）。`
+            + '欄が消えたら、出荷データから順番を検査する手段がまた無くなる');
+
+        // ★ 東大 1I の B —— 今回直した2つが、そのままここに出る
+        const p = nw.problems.find((x) => x.id === '2022-東京大学-1I');
+        assert(p, '東大 2021 前期1I の問題データが見つかりません');
+        const colB = p.columns.find((x) => x.name === 'B');
+        assert(colB.stack.join(',') === 'carbonyl-no,na,h2-no,ox2,iodo',
+            `B の札が ${colB.stack.join(',')}（期待 carbonyl-no,na,h2-no,ox2,iodo）。`
+            + '3枚目は問題文の実験2＝**水素付加**で、臭素水（br2-no）ではない');
+        assert((colB.stepNo || []).join(',') === '5,1,2,3,4',
+            `B の stepNo が ${JSON.stringify(colB.stepNo)}（期待 [5,1,2,3,4]）`);
+
+        // 非昇順の列は**名指しで固定**する。増えたら中身を見て、問題文の順ならこの表を足すこと
+        const isAsc = (s) => { const n = (s || []).filter((v) => v !== null); return n.every((v, i) => i === 0 || v >= n[i - 1]); };
+        const noAsc = cols.filter((x) => x.col.stepNo && !isAsc(x.col.stepNo)).map((x) => x.where);
+        assert(noAsc.join(' / ') === '東京大1Ⅰ / B',
+            `解き筋の順が問題文の順と違う列: ${noAsc.join(' / ') || 'なし'}（期待は東京大1Ⅰ / B の1本だけ）。`
+            + '⚠ これ自体は誤りではない（解き筋の順が正しい）。増えたことに気づくための定点');
+
+        // ★ 札を直した効き —— **最短が 3手・3通り → 2手・1通り**（途中の数は1つも動かない）
+        nw.formulaKey = p.formula;
+        nw.constraints = { ...p.constraints };
+        nw.pool = null;
+        const pool = await nw.buildPool();
+        assert(pool.length === 55, `開始が ${pool.length} 通り（期待 55）`);
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const apply = (ids) => ids.reduce((l, id) => l.filter(card(id).test), pool);
+        let cur = pool;
+        const seq = colB.stack.map((id) => (cur = cur.filter(card(id).test)).length);
+        assert(seq.join(',') === '51,26,8,5,3',
+            `途中の数が ${seq.join(',')}（期待 51,26,8,5,3）。札を替えても途中の数は動かないはず`);
+        assert(seq[4] === colB.expect, `最終 ${seq[4]} 通り（JSON の expect は ${colB.expect}）`);
+        let short = null, routes = 0;
+        for (let k = 1; k <= colB.stack.length && !short; k++) {
+            const acc = [];
+            const comb = (s, cu) => {
+                if (cu.length === k) { if (apply(cu).length === 3) acc.push(cu.join('+')); return; }
+                for (let j = s; j < colB.stack.length; j++) comb(j + 1, cu.concat(colB.stack[j]));
+            };
+            comb(0, []);
+            if (acc.length) { short = k; routes = acc.length; }
+        }
+        assert(short === 2 && routes === 1,
+            `3 通りへの最短が ${short} 手・${routes} 通り（期待 2手・1通り＝ h2-no+iodo）。`
+            + 'br2-no に戻ると 3手・3通りになる');
+
+        // ---- 否定対照 —— 上の redFlags が本当に赤くなるか、4通り壊して確かめる ----
+        // ⚠ 実データは触らない（**写しを壊す**）。ここが素通りすると、見張りは黙って何も見なくなる
+        const 壊し方 = [
+            ['長さがずれる', { stack: ['na', 'iodo'], stepNo: [1] }],
+            ['stack が空なのに欄がある', { stack: [], stepNo: [] }],
+            ['番号でない値', { stack: ['na'], stepNo: ['1'] }],
+            ['全部 null', { stack: ['na', 'iodo'], stepNo: [null, null] }],
+        ];
+        壊し方.forEach(([名, にせ]) => {
+            assert(redFlags(にせ).length > 0, `否定対照が素通りしました: ${名}`);
+        });
+        assert(redFlags({ stack: ['na', 'iodo'], stepNo: [2, null] }).length === 0,
+            '一部の札だけ番号を持つ列（滋賀医大3 / B の形）まで赤にしています');
+        assert(redFlags({ stack: ['na', 'iodo'] }).length === 0,
+            '欄を持たない列（対照の列・系列が混ざる列）まで赤にしています');
     });
 
     // ===== PK: 「同じ？違う？」2択の答え合わせ（v1060・2026-08-12） =====
