@@ -109,47 +109,81 @@ console.log(`\n  いちばん重い「${heaviest.name}」と いちばん軽い�
     `図の枚数が ${(heaviest.figs / lightest.figs).toFixed(1)} 倍 ／ ` +
     `読む文字数が ${(heaviest.chars / Math.max(1, lightest.chars)).toFixed(1)} 倍。`);
 
-// ===== ② タイムアタックは終わるか =====
+// ===== ② タイムアタックは終わるか（2026-08-26・逓減する加算） =====
+//
+// ⚠ ここは**実機を実時間で走らせる**。1回の計測に最長 44秒 かかるので、全体で数分。
 console.log('\n=== ② タイムアタックは終わるか（実機を実際に走らせた実測） ===');
 const consts = await page.evaluate(() => ({
     limit: window.QUIZ_TA_LIMIT_MS, bonus: window.QUIZ_TA_BONUS_MS,
-    label: document.getElementById('btn-quiz-timeattack').textContent.trim()
+    step: window.QUIZ_TA_BONUS_STEP_MS,
+    zeroAt: window.quizTimeAttackZeroAt(),
+    total: window.quizTimeAttackTotalBonusMs(),
+    ladder: Array.from({ length: 8 }, (_, i) => window.quizTimeAttackBonusMs(i + 1) / 1000),
+    label: document.getElementById('btn-quiz-timeattack').textContent.trim(),
+    rule: (document.getElementById('quiz-ta-rule') || { textContent: '' }).textContent.trim()
 }));
-console.log(`  いまの設定: 初期 ${consts.limit / 1000} 秒 ／ 正解ごとに ＋${consts.bonus / 1000} 秒 ／ 加算の上限なし`);
+const capSec = (consts.limit + consts.total) / 1000;
+console.log(`  いまの設定: 初期 ${consts.limit / 1000}秒 ／ 正解ごとに ＋${consts.bonus / 1000}秒 から ` +
+    `${consts.step / 1000}秒ずつ減り、${consts.zeroAt}回目の正解から 0秒`);
+console.log(`  加算の階段: ${consts.ladder.map(v => '＋' + v).join(' → ')} → …（合計 ${consts.total / 1000}秒）`);
+console.log(`  ⇒ **走る秒数の上限 ${capSec}秒**（初期 ${consts.limit / 1000} ＋ 加算の合計 ${consts.total / 1000}）`);
 console.log(`  ボタンの表示: 「${consts.label}」`);
-
-for (const think of [1200, 1800, 2400, 3000]) {
-    const r = await page.evaluate(async ({ think, max }) => {
-        const sleep = (ms) => new Promise(res => setTimeout(res, ms));
-        const q = window.quiz;
-        q.open();
-        q.startTimeAttack();
-        const started = q.ta.endsAt;
-        let n = 0;
-        while (q.ta && n < max) {
-            await sleep(think);
-            if (!q.ta) break;
-            const idx = (q.current && typeof q.current.answer === 'number') ? q.current.answer : -1;
-            if (idx < 0) break;
-            q.answerChoice(idx);
-            n++;
-            await sleep(950);   // 正解の送り（900ms）を待つ
-        }
-        const alive = !!q.ta;
-        const left = alive ? q.ta.endsAt - Date.now() : 0;
-        const grew = alive ? q.ta.endsAt - started : null;
-        const correct = q.ta ? q.ta.correct : null;
-        if (q.ta) q.stopTimeAttack(false);
-        return { alive, left, grew, n, correct };
-    }, { think, max: 25 });
-    const per = (think + 950) / 1000;
-    console.log(`  考え ${(think / 1000).toFixed(1)}秒（1問 ${per.toFixed(2)}秒）… ` +
-        (r.alive
-            ? `25問答えても終わらない。残り ${(r.left / 1000).toFixed(1)}秒（開始時より ${(r.grew / 1000).toFixed(1)}秒 増えた）`
-            : `${r.n}問で終了`) + `／正解 ${r.correct}`);
+console.log(`  説明の表示  : 「${consts.rule}」`);
+if (!consts.label.includes(String(consts.limit / 1000) + '秒') || !consts.label.includes(String(capSec) + '秒')) {
+    console.log('  ⚠⚠ ボタンの表示が実際の数字と合っていない');
 }
-console.log('\n  ⚠ 正解1問あたりの収支 ＝ ＋3.0秒（加算） −（考えた時間 ＋ 0.9秒の送り）。');
-console.log('    考えた時間が 2.1 秒を切ると収支が黒字になり、**時間は永久に増える**（加算にも総時間にも上限が無いため）。');
+
+/** 実機のタイムアタックを一定の速さで正解し続ける。`flat` を立てると逓減を打ち消す（否定対照） */
+const play = async (think, flat, max) => page.evaluate(async ({ think, flat, max }) => {
+    const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+    const q = window.quiz;
+    q.open();
+    q.startTimeAttack();
+    const t0 = Date.now();
+    let n = 0;
+    while (q.ta && n < max) {
+        await sleep(think);
+        if (!q.ta) break;
+        const idx = (q.current && typeof q.current.answer === 'number') ? q.current.answer : -1;
+        if (idx < 0) break;
+        const before = q.ta.endsAt;
+        q.answerChoice(idx);
+        // 否定対照: 逓減を打ち消して「昔の固定 ＋3秒」に戻す（実機のまま暴走を再現する）
+        if (flat && q.ta) q.ta.endsAt += window.QUIZ_TA_BONUS_MS - (q.ta.endsAt - before);
+        n++;
+        await sleep(950);
+    }
+    const alive = !!q.ta;
+    const out = { alive, n, correct: q.ta ? q.ta.correct : null,
+                  left: alive ? q.ta.endsAt - Date.now() : 0,
+                  ranSec: (Date.now() - t0) / 1000 };
+    if (q.ta) q.stopTimeAttack(false);
+    return out;
+}, { think, flat, max });
+
+console.log('\n  ―― いまの実装（正解数に応じて加算を減らす） ――');
+for (const think of [0, 600, 1200, 3000]) {
+    const r = await play(think, false, 200);
+    console.log(`  考え ${(think / 1000).toFixed(1)}秒（1問 ${((think + 950) / 1000).toFixed(2)}秒）… ` +
+        (r.alive ? `⚠ ${r.n}問 答えても終わらない（残り ${(r.left / 1000).toFixed(1)}秒）`
+                 : `${r.n}問で終了（正解 ${r.correct}）／ 走った時間 ${r.ranSec.toFixed(1)}秒`) +
+        (!r.alive && r.ranSec <= capSec + 1.5 ? '　✓ 上限内' : ''));
+}
+
+console.log('\n  ―― 否定対照: 逓減を外して昔の「固定 ＋3秒」に戻すと ――');
+for (const think of [1200]) {
+    const r = await play(think, true, 25);
+    console.log(`  考え ${(think / 1000).toFixed(1)}秒… ` +
+        (r.alive ? `⚠ ${r.n}問 答えても終わらない（残り ${(r.left / 1000).toFixed(1)}秒／` +
+                   `${r.ranSec.toFixed(1)}秒 走ってまだ続く）＝ 暴走が戻る`
+                 : `${r.n}問で終了（${r.ranSec.toFixed(1)}秒）— 暴走が再現しなかった`));
+}
+
+console.log('\n  ⚠ 1問の収支 ＝ ＋（その回の加算）−（考えた時間 ＋ 0.9秒の送り）。');
+console.log('    加算が固定 3.0秒 だと、考えが 2.1秒 を切る人には毎問プラスが乗って時間が増え続けた。');
+console.log('    加算を **0 に向かって減らす** と、どんなに速い人でも必ず「加算 < 1問の消費」に届く。');
+console.log(`    さらに床が 0 なので払われる加算の合計が有限（${consts.total / 1000}秒）＝ **必ず ${capSec}秒 以内に終わる**。`);
+console.log('    ⚠ 床を正の値にすると暴走は戻る（効くのは「減らすこと」ではなく「0まで減らすこと」）。');
 
 await browser.close();
 process.exit(0);
