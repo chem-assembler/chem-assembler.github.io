@@ -4823,6 +4823,8 @@ class Game {
     // 現在の側（外積の符号）を保存。2置換（各端1本）で側が不定なら trans 既定で展開。
     reshapeDoubleBond(bond, subsA, subsB) {
         const mol = this.userMolecule;
+        // 枝が環を含むかの判定に使う（下の place の「回すか・ずらすか」）
+        const ringIds = (typeof ringAtomIds === 'function') ? ringAtomIds(mol) : new Set();
         let cA = mol.atoms.find(x => x.id === bond.atomId1);
         let cB = mol.atoms.find(x => x.id === bond.atomId2);
         // **軸の向きは座標で決める**（DEVELOPMENT.md「順序が要る所は必ず座標で決める」）。
@@ -4881,7 +4883,24 @@ class Game {
                 else { dir = dM; usedM = true; }
                 const nx = carbon.x + dir.x * len;
                 const ny = carbon.y + dir.y * len;
-                this._moveSubtree(sub, [cA.id, cB.id], nx - sub.x, ny - sub.y);
+                /* ★ **環を含む枝は「ずらす」のではなく「回す」**（2026-08-26・実測）。
+                 * 平行移動は結合の長さこそ保つが、**枝の内部の向きをそのまま置き去りにする**。
+                 * 環がぶら下がっていると、環の外向き結合が環の中心を向かなくなる ＝
+                 * スチレンで実測すると、ipso 炭素まわりの3本の角度が
+                 * **-60° / 120° / -120°（＝ ビニルとの結合が環結合と 60°）**になっていた。
+                 * 六角形の隣の炭素が頭の炭素から 41px・177.6° の位置まで回り込むので、
+                 * **主鎖が伸びる向き（頭の反対側）が自分の環で塞がれ**、
+                 * スチレン3個以上の付加重合が「配置する空間がありません」で必ず落ちていた。
+                 * 回して置くと ipso まわりは 120°/120°/120° になり（実測）、環は放射状に戻る。
+                 * ⚠ 環を含まない枝は**今までどおり平行移動**する ―― 回すと直鎖が 30° 傾いて
+                 *   直交作図（CLAUDE.md）が崩れるため。環は 60° 対称なので回しても形が変わらない */
+                if (this._subtreeIds(sub, [cA.id, cB.id]).some(id => ringIds.has(id))) {
+                    const a0 = Math.atan2(sub.y - carbon.y, sub.x - carbon.x);
+                    const a1 = Math.atan2(ny - carbon.y, nx - carbon.x);
+                    this._rotateSubtree(sub, [cA.id, cB.id], carbon, a1 - a0);
+                } else {
+                    this._moveSubtree(sub, [cA.id, cB.id], nx - sub.x, ny - sub.y);
+                }
             });
         };
         place(cA, subsA, ux, uy);
@@ -4922,8 +4941,8 @@ class Game {
         });
     }
 
-    // root から到達できる原子（blockedIds を越えない）を dx,dy だけ剛体移動する
-    _moveSubtree(root, blockedIds, dx, dy) {
+    // root から到達できる原子（blockedIds を越えない）の ID 一覧
+    _subtreeIds(root, blockedIds) {
         const mol = this.userMolecule;
         const visited = new Set(blockedIds);
         visited.add(root.id);
@@ -4936,9 +4955,32 @@ class Game {
                 if (!visited.has(n.atom.id)) { visited.add(n.atom.id); stack.push(n.atom.id); }
             });
         }
-        ids.forEach(id => {
+        return ids;
+    }
+
+    // root から到達できる原子（blockedIds を越えない）を dx,dy だけ剛体移動する
+    _moveSubtree(root, blockedIds, dx, dy) {
+        const mol = this.userMolecule;
+        this._subtreeIds(root, blockedIds).forEach(id => {
             const a = mol.atoms.find(x => x.id === id);
             if (a) { a.x += dx; a.y += dy; }
+        });
+    }
+
+    /**
+     * root から到達できる原子（blockedIds を越えない）を pivot まわりに ang ラジアン回す。
+     * **剛体回転なので鏡映にはならず**、枝の内部の結合長も角度も変わらない
+     * （＝ 環の外向き結合が環の中心を向いたまま保たれる。`reshapeDoubleBond` の注記を参照）。
+     */
+    _rotateSubtree(root, blockedIds, pivot, ang) {
+        const mol = this.userMolecule;
+        const c = Math.cos(ang), s = Math.sin(ang);
+        this._subtreeIds(root, blockedIds).forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (!a) return;
+            const dx = a.x - pivot.x, dy = a.y - pivot.y;
+            a.x = pivot.x + dx * c - dy * s;
+            a.y = pivot.y + dx * s + dy * c;
         });
     }
 
