@@ -26,11 +26,15 @@
 //                        ＝ その stack が「効く順」に並べ替えられている証拠
 //   [J] 最短手数      … stack の部分集合で同じ最終値に届く最小枚数。
 //                        stack の長さより短ければ、その列は最短ではない
+//   [R] stepNo        … 札1枚ごとの実験番号（★ 2026-08-26 に出荷 JSON へ載せた）。
+//                        **番号を持っているのに stack と対応が取れていない**ものだけを赤にし、
+//                        非昇順（＝解き筋の順が問題文の順と違う）は数えて見せるだけ
 //
 // 出荷データでは**言えない**こと:
-//   ・「問題文の実験の順と違う」…… 出荷 JSON は実験番号を1つも持っていない。
-//     判定するには仕様側（_解析/db/narrowing/*.json）の step.label が要る
-//   ・「札が問題文の実験と違う」…… 同上。仕様の step.label と test を突き合わせるしかない
+//   ・「札が問題文の実験と違う」…… 出荷 JSON は試薬名を1つも持っていない（持ち出さない）。
+//     仕様側（_解析/db/narrowing/*.json）の step.label と test を突き合わせるしかない
+//   ⚠ **「順が問題文と違う」はかつてここに並んでいた**。実験番号が1文字も載っていなかったため
+//     判定が原理的に不可能で、それが「見えなくなる」の正体だった。[R] がその穴を塞いだ
 //
 // 仕様ディレクトリを渡したときに追加で言えること（出荷列 ←→ 仕様 target を**添字**で結ぶ）:
 //   [K0] 作り直しの一致  … 仕様の steps を翻訳し直した並びが、出荷 stack と一致するか。
@@ -173,6 +177,44 @@ show('I', 'うち「先頭なら減る」札（＝順番で効きが変わる）
 show('H', '抜いても最終値が変わらない札（冗長）');
 show('J', 'stack が最短でない列');
 
+// ---- [R] stepNo（★ 2026-08-26 に出荷 JSON へ載せた）----
+// ⚠⚠ **ここまでの検査は「順番が問題文どおりか」を1つも言えなかった。**
+//   出荷 JSON に実験番号が1文字も無かったからで、判定には仕様ディレクトリが要った
+//   （＝ 出荷したデータだけを見ている人には**永久に見えない**）。
+//   `stepNo`（札1枚ごとの実験番号）を載せたので、ここから下は**出荷 JSON だけで**言える。
+//
+// ★ **何を赤にするか**（設計。ここを間違えると見張りが嘘をつく）:
+//   赤 …「番号を持っているのに `stack` と対応が取れていない」ほうだけ。
+//        R1 長さが `stack` と違う ／ R2 要素が正の整数でも null でもない ／
+//        R3 全部 null（欄はあるのに中身が無い＝「番号が無い」と「番号を落とした」が混ざる。
+//           番号が拾えない列は**欄ごと作らない**のが規約） ／ R4 `stack` が空なのに欄がある
+//   ⚠ **非昇順は赤にしない。** `stack` の順は**解き筋の順**で、それが教材の実体。
+//        問題文の順と違うこと自体は誤りではないので、**数えて見せるだけ**にする
+const R = { bad: [], noAsc: [], partial: [], none: [] };
+P.forEach((p) => p.columns.forEach((col) => {
+    const w = `${p.printed || p.id} / ${col.name}`;
+    const s = col.stepNo;
+    if (s === undefined) { R.none.push(w); return; }
+    if (!Array.isArray(s)) { R.bad.push(`${w}: stepNo が配列でない（${JSON.stringify(s)}）`); return; }
+    if (s.length !== col.stack.length) { R.bad.push(`${w}: stepNo ${s.length} 個 / stack ${col.stack.length} 枚 ＝ 対応が取れていない`); return; }
+    if (!col.stack.length) { R.bad.push(`${w}: stack が空なのに stepNo がある`); return; }
+    const ng = s.filter((v) => v !== null && !(Number.isInteger(v) && v > 0));
+    if (ng.length) { R.bad.push(`${w}: 正の整数でも null でもない値 ${JSON.stringify(ng)}`); return; }
+    const n = s.filter((v) => v !== null);
+    if (!n.length) { R.bad.push(`${w}: stepNo が全部 null（番号が拾えない列は欄ごと作らない規約）`); return; }
+    if (n.length !== s.length) R.partial.push(`${w}: ${JSON.stringify(s)}`);
+    if (!n.every((v, i) => i === 0 || v >= n[i - 1])) R.noAsc.push(`${w}: ${s.join(' → ')}  [${col.stack.join(',')}]`);
+}));
+console.log(`\n[R] stepNo（出荷 JSON だけで見られる）: 欄あり ${cols - R.none.length} 本 / 欄なし ${R.none.length} 本`);
+console.log(`    ⚠ **赤（stack と対応が取れていない）: ${R.bad.length} 件**`);
+R.bad.forEach((s) => console.log('        ⚠ ' + s));
+console.log(`    ・一部の札だけ番号を持つ列（残りは null）: ${R.partial.length} 本`);
+R.partial.forEach((s) => console.log('        ・' + s));
+console.log(`    ・**非昇順 ＝ 解き筋の順が問題文の順と違う列: ${R.noAsc.length} 本**（誤りではない。数えるだけ）`);
+R.noAsc.forEach((s) => console.log('        ・' + s));
+console.log('    ・欄なし ＝ 番号が1つも拾えない列（解析者が立てた「対照」など）と、');
+console.log('      番号の系列が混ざる列（「実験4 → 問イ」）。どちらも並べ替えにも検査にも使えない');
+
 // ---- [K]〜[O] 仕様ディレクトリがあるときだけ ----
 // ⚠ **出荷 JSON だけでは順番も札も判定できない**（実験番号も試薬名も入っていない）。
 //   仕様（_解析/db/narrowing/*.json）と述語対応表（_解析/tools/narrowing-predicates.js）を
@@ -187,7 +229,11 @@ if (!specDir) {
     process.exit(0);
 }
 if (!fs.existsSync(specDir)) { console.log(`\n⚠ 仕様ディレクトリが見つからない: ${specDir}`); process.exit(0); }
-const { MAP } = require(path.resolve(specDir, '..', '..', 'tools', 'narrowing-predicates.js'));
+// ⚠ **`marker`（step.label から実験番号を拾う関数）も向こうから借りる。**
+//   もとはこのファイルにも同じ正規表現の写しがあったが、書き出し側（build-narrowing-data.js）が
+//   `stepNo` を作るのに同じ関数を使う以上、**2か所に持つと片方だけ直したときに黙ってずれる**
+//   （出荷された番号と、それを検査する番号が別の規則になる ＝ 見張りが嘘をつく）。
+const { MAP, marker } = require(path.resolve(specDir, '..', '..', 'tools', 'narrowing-predicates.js'));
 
 // ---- 仕様の test 1つ → カード id の配列（build-narrowing-data.js の translate と同じ規則）----
 function cardsOf(test, asConstraint) {
@@ -196,26 +242,6 @@ function cardsOf(test, asConstraint) {
     if (test && test.chiral !== undefined) return asConstraint ? [] : [test.chiral >= 1 ? 'optical' : 'optical-no'];
     if (test && test.ring !== undefined) return CARD.has(`ring${test.ring}`) ? [`ring${test.ring}`] : [];
     return [];
-}
-
-// ---- 問題文の通し番号を step の label から拾う ----
-// 系列（実験 / 操作 / 設問・問 / 条件 / 先頭の (N) / 先頭の (ア) / 先頭の (a)）ごとに拾う。
-// ⚠ **系列が混ざった列は昇順の判定をしない。** 「実験4 → 問イ」のように別の番号体系を
-//   またぐ順序は、どちらの体系が先かを機械が知らないので決められない
-const KANA = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ';
-const zen = (s) => s.replace(/[０-９Ａ-Ｚａ-ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-function marker(label) {
-    const L = zen(label || '');
-    let m;
-    if ((m = /(?:実験結果|実験)\s*[（(]?\s*([0-9]+)/.exec(L))) return { s: '実験', n: +m[1] };
-    if ((m = /操作\s*[（(]?\s*([0-9]+)/.exec(L))) return { s: '操作', n: +m[1] };
-    if ((m = /条件\s*[（(]?\s*([0-9]+)\s*[）)]?/.exec(L))) return { s: '条件', n: +m[1] };
-    if ((m = /(?:設問|問)\s*[（(]?\s*([0-9]+)/.exec(L))) return { s: '設問', n: +m[1] };
-    if ((m = /(?:設問|問)\s*[（(]?\s*([ア-ノ])/.exec(L))) return { s: '設問カナ', n: KANA.indexOf(m[1]) + 1 };
-    if ((m = /^[（(]\s*([0-9]+)\s*[）)]/.exec(L))) return { s: '丸数字', n: +m[1] };
-    if ((m = /^[（(]\s*([ア-ノ])\s*[）)]/.exec(L))) return { s: 'カナ', n: KANA.indexOf(m[1]) + 1 };
-    if ((m = /^[（(]\s*([a-z])\s*[）)]/.exec(L))) return { s: '英字', n: m[1].charCodeAt(0) - 96 };
-    return null;
 }
 
 // ---- 実験の語 → その実験を**そのまま**言うアプリの札 ----
