@@ -1286,7 +1286,7 @@ class IsomerPractice {
             wrap.id = 'ip-training-problems';
             wrap.style.cssText = 'margin-top:8px;';
             const lab = document.createElement('div');
-            lab.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            lab.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
             // ⚠ v1468: 47字 → 28字（ux-density 番外）。「環や多重結合を合わせて2つもつ式」は
             //    並んでいる分子式そのものなので落とし、**何を数えるかの約束**だけ残す（黙って減らさない側）
             lab.textContent = 'じっくり練習する回（三重結合・ジエン・アレンまで数えます）:';
@@ -1314,7 +1314,7 @@ class IsomerPractice {
             stWrap.id = 'ip-stereo-problems';
             stWrap.style.cssText = 'margin-top:8px;';
             const stLab = document.createElement('div');
-            stLab.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            stLab.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
             // ⚠ v1468: 63字 → 9字（ux-density 番外）。中身は**始めれば段ごとに帯が言う**手順の予告で、
             //    選ぶ前に読ませる必要がない（種類数を出さないことは IW26 が別に見張っている）
             stLab.textContent = '立体まで答える回:';
@@ -1334,7 +1334,7 @@ class IsomerPractice {
             arWrap.id = 'ip-aromatic-presets';
             arWrap.style.cssText = 'margin-top:8px;';
             const arLabel = document.createElement('div');
-            arLabel.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
+            arLabel.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px;';
             // ⚠ v1468: 34字 → 24字。「芳香族」と**数える範囲**は §11-4 の約束なので残す
             arLabel.textContent = 'よく出る芳香族の回（ベンゼン環をもつ構造だけ）:';
             arWrap.appendChild(arLabel);
@@ -3264,7 +3264,7 @@ class AlkylPractice {
         this.closeReview();
         this.body.innerHTML = '';
         const lead = document.createElement('div');
-        lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
+        lead.style.cssText = 'font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
         // ⚠ v1468: 111字 → 19字（ux-density §2-⑤・§4）。共通の1文は `#practice-lead` に1回だけ。
         //    「2つ目からは、空いている所を炭素でタップすれば付け根がその場に出ます」は
         //    **やれば出る**（muki の「押した結果は下に残ります」と同じ型）
@@ -4411,7 +4411,7 @@ class StereoIsomerPractice {
         this.body.innerHTML = '';
 
         const lead = document.createElement('div');
-        lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
+        lead.style.cssText = 'font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
         // ⚠ v1468: 103字 → 50字（ux-density §2-⑤）。共通の1文は `#practice-lead` に1回だけ。
         //    「お題の図が1つ置かれます」「＋ お題の図をもう1つ で並べて」は画面に出る（ボタンが見えている）
         lead.textContent = 'つながり方は変えずに、置換基の付き方だけを動かします。' +

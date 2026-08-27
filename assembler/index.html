@@ -669,7 +669,7 @@
 
                 <!-- 判定オプション（P10 M2）。**一度決めたら変えない設定**なのでモーダル側（§7-4） -->
                 <div style="padding:10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
-                    <div style="font-size:11px; color:var(--text-secondary); margin-bottom:6px;">判定オプション</div>
+                    <div style="font-size:12.5px; color:var(--text-secondary); margin-bottom:6px;">判定オプション</div>
                     <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="font-size:0.88rem; color:#fff;">不斉炭素原子（*）の指定も判定する</span>
                         <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px; flex-shrink:0;">
@@ -797,7 +797,7 @@
                         <!-- ⚠ 3枚のカードが「◯◯を選ぶと、キャンバスが答案用紙になります」を**3回**言っていた
                              （ux-density §2-⑤・§3-e。50＋111＋103字）。共通の1文はここに1回だけ置き、
                              各カードの lead は**その練習にしかない差分**だけにした（v1468） -->
-                        <div id="practice-lead" style="font-size:12px; color:var(--text-secondary); line-height:1.5;">選ぶと、キャンバスが答案用紙になります。</div>
+                        <div id="practice-lead" style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">選ぶと、キャンバスが答案用紙になります。</div>
                         <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
                         <div id="isomer-practice-card" class="card" style="gap:8px;">
                             <h3 style="font-size:13px; color:var(--text-secondary);">✏️ 異性体の書き出し練習</h3>
@@ -824,7 +824,7 @@
                     <summary>🔍 実験の結果から絞り込む</summary>
                     <div class="learn-acc-body">
                         <button id="btn-narrowing" class="secondary-btn" style="background:var(--color-bg); border:1px solid var(--neon-purple); color:#e0b0ff; cursor:pointer;">🔍 実験カードで絞り込む</button>
-                        <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5; text-align:left;">
+                        <p style="margin:0; font-size:12.5px; color:var(--text-muted); line-height:1.5; text-align:left;">
                             分子式から候補を全部つくり、実験カードを積んで減らしていきます。<b>積む順番で効きが変わります。</b></p>
                     </div>
                 </details>
@@ -846,7 +846,7 @@
                              「ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます」「終わるときは、その帯の『やめる』」
                              ＝ **出た瞬間に見える帯**を文で説明していた（さらに #study-modal が3度目を言っていた）。
                              残したのは EP8 が見張る3語（⚗ 反応させる・調べる／代表例／🎯 予測）だけ -->
-                        <p id="rx-viewer-note" style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
+                        <p id="rx-viewer-note" style="margin:0; font-size:12.5px; color:var(--text-muted); line-height:1.5;">
                             登録済みの反応を、<b>代表例の分子</b>で再生します。いま描いている分子を反応させるのは、キャンバスの「<b>⚗ 反応させる・調べる</b>」です。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もできます。</p>
                         <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
                             <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
@@ -1110,7 +1110,7 @@
                  「フィッシャー投影は 90°回すと鏡像になる」は**投影図の約束＝発展**なので消さない。
                  ただし**押す前に読ませる必要はない**（押せば #fp-status が結果を言う）ので、
                  画面に出すのは1行だけにして、本文は1文字も削らずに中へ入れた -->
-            <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
+            <p style="font-size:12.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
                 <b>どのボタンも同じ分子のままです</b>（90°だけは左右入れ替えとセット）。
             </p>
             <details id="fp-why-90" class="learn-acc cross-rules-acc">
@@ -1195,7 +1195,7 @@
                  規則の本文は `CROSS_RULES_HTML`（quiz.js）**1本**にまとめ、
                  両方の画面の `.cross-rules` に流し込んで、どちらからも開けるようにした。
                  ⚠ **中身は削っていない**（畳んだだけ）。既定は閉じる ＝ 画面に出るのは下の1行だけ -->
-            <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
+            <p style="font-size:12.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
                 <b>⟲ ⟳ は回転（立体は変わらない）、外枠の 鏡 は鏡像（立体が変わる）。</b>
             </p>
             <details id="cross-rules-ta" class="learn-acc cross-rules-acc">
@@ -1270,7 +1270,7 @@
                    （合計 447字で同じ4操作）。規則の本体は下の `#cross-rules-sp` に1本化して畳んだ
                  ・「使える手は…まったく同じ4種類です」は `#sp-task`（設問）が言っているので、
                    ここでは繰り返さない（§3-c の一本化。設問側に寄せた） -->
-            <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
+            <p style="font-size:12.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
                 A・B・C・D はただの目印です。手つきを覚えたら ⏱ 立体タイムアタックで実物の分子に当ててみてください。
             </p>
             <!-- ⚠ ⏱ 立体タイムアタックと**同じ本文**（quiz.js の CROSS_RULES_HTML）を流し込む。
@@ -1497,7 +1497,7 @@
                 </select></label></span>
             </div>
             <!-- 絞り込みが効いたことを数で見せる（「減ったつもりで減っていない」を画面で防ぐ） -->
-            <div id="quiz-pool-count" style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
+            <div id="quiz-pool-count" style="font-size:12.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
             <!-- タイムアタック（2026-08-20・ユーザー案「一定時間で何問解けるか」）。
                  ⚠ 種類は1つだけ。正解ごとに加算（加算は必ず画面に出す）
                  ⚠⚠ **秒数をここに書かないこと**（2026-08-26）。文言は quiz.js の
@@ -1509,7 +1509,7 @@
                 <span id="quiz-ta-best" style="color:var(--text-muted); font-family:var(--font-code);"></span>
             </div>
             <!-- 遊び方（初期時間・加算・逓減・上限）。中身は quiz.js が定数から入れる -->
-            <div id="quiz-ta-rule" style="font-size:11.5px; color:var(--text-muted); max-width:640px; margin:0 auto; line-height:1.5;"></div>
+            <div id="quiz-ta-rule" style="font-size:12.5px; color:var(--text-muted); max-width:640px; margin:0 auto; line-height:1.5;"></div>
             <div id="quiz-ta" class="hidden" style="font-size:14px; font-weight:bold; color:var(--neon-orange); font-family:var(--font-code);">
                 <span id="quiz-ta-timer"></span>
             </div>
@@ -1597,7 +1597,7 @@
                 <h3 style="font-size:12px; color:var(--text-secondary);">⚗ 反応</h3>
                 <div id="molecule-props" style="font-size:12px; line-height:1.5; color:var(--text-primary);">分子を作図するか、「名称から分子を呼び出す」で分子を出すと、ここに分類が表示されます。</div>
                 <button id="btn-reaction-select" class="view-btn" style="font-size:12px; padding:6px 8px;" title="キャンバスの分子をタップして選ぶと、その分子でできる反応だけが下に出ます。4つまで選べて、先に選んだ方が式の左になります">🎯 反応させる分子を選ぶ</button>
-                <div id="reaction-selection" style="font-size:11.5px; line-height:1.5; color:var(--neon-blue);"></div>
+                <div id="reaction-selection" style="font-size:12.5px; line-height:1.5; color:var(--neon-blue);"></div>
                 <div id="reaction-actions" style="display:flex; flex-direction:column; gap:5px;"></div>
                 <!-- 行き止まりの掲示板（v1420）。「相手を呼び出す → 反応」の札が途中で止まったとき、
                      **どこで止まったか**をここに残す（トーストは数秒で消えるため）。
@@ -1614,7 +1614,7 @@
                      ⚠ この節のボタンは「押したら閉じる」の一括処理から**外してある**（game.js の捕獲フェーズ）。
                      反応が進むときだけ閉じるかどうかを reactor.runReagentHit が自分で決める -->
                 <div id="mm-reagents" style="display:flex; flex-direction:column; gap:6px;">
-                    <h4 style="margin:0; font-size:11.5px; color:var(--text-secondary); font-weight:600;">試薬をかける</h4>
+                    <h4 style="margin:0; font-size:12.5px; color:var(--text-secondary); font-weight:600;">試薬をかける</h4>
                     <div id="mm-reagents-grid" class="rg-grid"></div>
                     <div id="mm-reagent-note" style="display:flex; flex-direction:column; gap:5px;"></div>
                 </div>
@@ -1648,7 +1648,7 @@
                 <!-- ⚠ v1468 で 38字 → 14字。もう1本の「※ 異性体・立体は別の画面で開くので、この画面は
                      いったん閉じます。」（32字）は落とした（ux-density §3-f）。
                      すぐ上に「🧊 立体で見る」ボタンが見えているので、行き先は名前だけで足りる -->
-                <p id="mm-rs-note" style="margin:0; font-size:11px; color:var(--text-muted);">※ R・S は「🧊 立体で見る」の中。</p>
+                <p id="mm-rs-note" style="margin:0; font-size:12.5px; color:var(--text-muted);">※ R・S は「🧊 立体で見る」の中。</p>
             </div>
             <button id="btn-molecule-modal-close" class="primary-btn modal-footer">閉じる</button>
         </div>
@@ -1838,7 +1838,7 @@
             <div id="tutorial-list" style="display:flex; flex-direction:column; gap:6px; width:100%; overflow-y:auto;"></div>
             <!-- ⚠ v1468 で 50字 → 24字（ux-density §4）。「デモは実際のキャンバス上で再生されます」は
                  再生すれば見える。残すのは**再生しても失わない**という保証だけ -->
-            <p style="font-size:11px; color:var(--text-muted); margin:0;">再生前の作図は終了時に戻ります（Esc で中断）。</p>
+            <p style="font-size:12.5px; color:var(--text-muted); margin:0;">再生前の作図は終了時に戻ります（Esc で中断）。</p>
             <!-- 遊び方と操作方法（A-5 → リボン統合 第2段）。もとは右パネルの末尾に3モード共通で
                  出ていた 1345px（PC 1549px）のブロックで、パズルの総高 2386px の過半を占めていた
                  （DESIGN_entry_points.md §2-3・D5）。v451 で `<details>` に畳み、
@@ -1984,7 +1984,7 @@
                     <option value="2">強</option>
                 </select></label></span>
             </div>
-            <div id="naming-pool-count" style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
+            <div id="naming-pool-count" style="font-size:12.5px; color:var(--text-muted); font-family:var(--font-code);"></div>
             <svg id="naming-svg" width="420" height="270" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;">
                 <g class="quiz-bonds"></g><g class="quiz-atoms"></g>
             </svg>
