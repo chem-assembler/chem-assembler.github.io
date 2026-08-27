@@ -2294,5 +2294,166 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-side-chain-any-length",
+    "title": "V129: 側鎖の長さも形も関係ない（反応シリーズ⑳）",
+    "summary": "⭐ **V117（トルエン → 安息香酸）の続き**。**v1465 で側鎖酸化が炭素2個以上の側鎖にも広がった**ので、**エチルベンゼン（炭素2個）・クメン（枝分かれ・炭素3個）・スチレン（二重結合つき）が、どれも同じ安息香酸になる**ところを1本にした（→ video-scripts/ORDER_reactor_findings_2026-08-26.md §2。動画レーンが「この回のいちばん面白いところ」と書いていた点）。**残るのは環に直結した炭素1個だけ**で、あとは切れて出ていく。⚠ **例外の `tert`-ブチルベンゼンは画にできない**——ベンジル位に水素が無いので**反応一覧にボタンが出ず**（実測: ニトロ化・スルホン化・塩素化の3つだけ）、**押す手が無い**。**説明欄と固定コメントで補う**。⚠ **構成は V115（同じ酸化なのに行き先が3つ）と同じ「全消去 → 次の分子」型**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "エチルベンゼン（側鎖は炭素2個）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "エチルベンゼン"
+          },
+          {
+            "type": "frame",
+            "width": 480
+          },
+          {
+            "type": "wait",
+            "ms": 2398
+          }
+        ]
+      },
+      {
+        "caption": "安息香酸",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "側鎖酸化"
+          },
+          {
+            "type": "frame",
+            "width": 480
+          },
+          {
+            "type": "wait",
+            "ms": 1562
+          }
+        ]
+      },
+      {
+        "caption": "クメン（側鎖は炭素3個）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "クメン"
+          },
+          {
+            "type": "hover",
+            "x": 482,
+            "y": 300
+          },
+          {
+            "type": "frame",
+            "width": 480
+          },
+          {
+            "type": "wait",
+            "ms": 850
+          }
+        ]
+      },
+      {
+        "caption": "また安息香酸",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "側鎖酸化"
+          },
+          {
+            "type": "frame",
+            "width": 480
+          },
+          {
+            "type": "wait",
+            "ms": 2364
+          }
+        ]
+      },
+      {
+        "caption": "スチレン（側鎖に二重結合）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-clear-all"
+          },
+          {
+            "type": "wait",
+            "ms": 300
+          },
+          {
+            "type": "summon",
+            "name": "スチレン"
+          },
+          {
+            "type": "hover",
+            "x": 482,
+            "y": 300
+          },
+          {
+            "type": "frame",
+            "width": 480
+          },
+          {
+            "type": "wait",
+            "ms": 973
+          }
+        ]
+      },
+      {
+        "caption": "やっぱり安息香酸",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "側鎖酸化"
+          },
+          {
+            "type": "frame",
+            "width": 480
+          },
+          {
+            "type": "wait",
+            "ms": 1354
+          }
+        ]
+      },
+      {
+        "caption": "残るのは環のとなりの炭素1個だけ",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6600
+          }
+        ]
+      }
+    ]
   }
 ]
