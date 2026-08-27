@@ -37441,6 +37441,117 @@
         }
     });
 
+    /* ===== SG19: ★ 加水分解が描き直すのは「切り離された2つ」だけ =====
+     *
+     * **ユーザー報告（2026-08-26・実機・v1461〜v1466）**:
+     * > **「スクロースの加水分解　となりの別分子もフリップする」**
+     *
+     * ★ **実測した原因**（推測ではない）: `redrawProductsAsStandalone` が
+     *   `splitMolecules()` で**キャンバス上の全連結成分**を回っていた。
+     *   ＝ ユーザーが ⇅／⇄／⟳ で裏返して置いておいた**となりの糖**まで
+     *   「単独で描くときの図」に戻していた（実測: となりの β-D-グルコースの原子が
+     *   最大 229px 動き、断り文にも切ってもいない分子の名前が出た）。
+     * ★ **直し方**: 反応の側から「この反応で切り離された原子ID」（`opt.only`）を渡し、
+     *   その断片だけを描き直す。⚠ **原子IDは乱数**なので、切ったあとの連結成分から取る。
+     *
+     * ⚠ **この関数の目的は「この加水分解の前後の図を対応させる」こと**なので、
+     *   相手はその反応で切り離された断片に限られる（`DESIGN_3d_correspondence.md` §8.0）。
+     */
+    test('SG19: ★ 加水分解の描き直しは、となりの別分子に1ピクセルも触らない（4件・否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+            assert(rule, 'hydrolysis_glycoside が無い');
+            /** 二糖 ＋ となりに「裏返して置いた別の糖」を作り、加水分解して隣の動きを測る */
+            const run = (id, patch) => {
+                c.reset();
+                g.setMode('free');
+                assert(g.summonMolecule(id), `${id} を呼び出せない`);
+                assert(g.summonMolecule('beta-d-glucose'), 'となりの分子を呼び出せない');
+                g.updateDrawing();
+                const parts = () => g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+                const glc = parts().find(p => W.haworthSugarCycles(p).length === 1);
+                assert(glc, 'となりの単糖が見つからない');
+                // ★ となりの分子を**ユーザーがやるのと同じ操作**で裏返しておく
+                //   （＝ 単独で描くときの図と違う置き方になる ＝ 描き直しの対象に見える）
+                assert(W.haworthCanvasFlip(glc, {}).ok, 'となりの分子を裏返せない');
+                glc.atoms.forEach(p => {
+                    const a = g.userMolecule.atoms.find(x => x.id === p.id);
+                    if (!a) return;
+                    a.x = p.x; a.y = p.y;
+                    if (p.haworthFace === 1 || p.haworthFace === -1) a.haworthFace = p.haworthFace;
+                    else delete a.haworthFace;
+                });
+                g.updateDrawing();
+                const watch = glc.atoms.map(a => {
+                    const r = g.userMolecule.atoms.find(x => x.id === a.id);
+                    return { id: a.id, x: r.x, y: r.y };
+                });
+                const nbName = g.lookupCompoundName(parts().find(p => p.atoms.some(a => a.id === watch[0].id)));
+                const sites = rule.detect(g.userMolecule);
+                assert(sites.length === 1, `${id}: グリコシド結合が ${sites.length} 件`);
+                const origRedraw = g.redrawProductsAsStandalone;
+                if (patch) g.redrawProductsAsStandalone = patch(origRedraw);
+                let result;
+                try { result = rule.apply(g, sites[0]); } finally { g.redrawProductsAsStandalone = origRedraw; }
+                g.updateDrawing();
+                const moved = Math.max(...watch.map(b => {
+                    const a = g.userMolecule.atoms.find(x => x.id === b.id);
+                    return a ? Math.hypot(a.x - b.x, a.y - b.y) : 1e9;
+                }));
+                return {
+                    moved, nbName, caption: result.caption,
+                    redraws: result.haworthRedraws || [],
+                    watchIds: new Set(watch.map(b => b.id))
+                };
+            };
+            const EPS = 0.001;
+            DISACCHARIDES.forEach(id => {
+                const r = run(id, null);
+                // ---- ① となりの分子は1ピクセルも動かない ----
+                assert(r.moved < EPS,
+                    `★ ${id}: となりの別分子が加水分解で ${r.moved.toFixed(1)}px 動いた（触ってはいけない）`);
+                // ---- ② 描き直しの記録に、となりの分子が1件も入っていない ----
+                assert(r.redraws.length === 2,
+                    `★ ${id}: 描き直しの記録が ${r.redraws.length} 件（切り離された2つのはず）`);
+                assert(!r.redraws.some(f => f.ids.some(i => r.watchIds.has(i))),
+                    `★ ${id}: 描き直しの記録にとなりの別分子が入っている`);
+                // ---- ③ 断り文に、切ってもいない分子の名前が出ない ----
+                //   ⚠ となりに置いたのは β-D-グルコース。マルトース/セロビオース/ラクトースの
+                //     生成物にも同名のものが出るので、**名前の重複が無い件だけ**で見る
+                if (!r.redraws.some(f => f.name === r.nbName)) {
+                    assert(!r.caption.includes(r.nbName),
+                        `★ ${id}: 断り文に、切ってもいない ${r.nbName} の名前が出ている`);
+                }
+            });
+            /* ===== ⚠ 否定対照: `only` を捨てると、報告どおり「となりも動く」が戻る =====
+             *   ここが赤くならないなら、① は空振りの緑 */
+            const bad = DISACCHARIDES.map(id => {
+                const r = run(id, (orig) => function (o) {
+                    const q = { ...(o || {}) };
+                    delete q.only;           // ★ v1466 までの呼び方そのもの
+                    return orig.call(this, q);
+                });
+                return { id, moved: r.moved, n: r.redraws.length };
+            });
+            const quiet = bad.filter(b => b.moved < EPS);
+            assert(!quiet.length,
+                '⚠ 否定対照が効いていない（`only` を捨ててもとなりの分子が動かない）: ' +
+                quiet.map(b => b.id).join(','));
+            assert(Math.max(...bad.map(b => b.moved)) > 100,
+                '⚠ 否定対照の症状が小さすぎる（いちばん大きい移動が ' +
+                `${Math.max(...bad.map(b => b.moved)).toFixed(1)}px。100px 超のはず）`);
+            assert(bad.every(b => b.n === 3),
+                '⚠ 否定対照: `only` を捨てたときの描き直しが3件（となりを含む）になっていない: ' +
+                bad.map(b => `${b.id}=${b.n}`).join(','));
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
     /* ===== FL1〜FL3: ⇅ 上下に裏返す（組み立て画面の札・v1450）=====
      *
      * ★ **ユーザーの言い方**（画面の文言はこれに合わせる）:
