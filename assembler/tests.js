@@ -3387,23 +3387,60 @@
         // むずかしいと ふつう の差が乱数に埋もれる）
         setQuizFilters(nq, 'all', 'all', 'all');
 
-        // 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
-        // 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
-        const measure = (level, n) => {
+        /* ★★ 見本は乱数で引かず、**決定的に散らした集合**を使う（2026-08-26・ぶれの直し）。
+         *
+         * ⚠ **以前は `nextQuestion()` にプールから乱数で引かせていた。** そのせいで
+         *   やさしい／ふつう／むずかしい が**別々の見本の集合**を見ることになり、
+         *   3つの検査が**乱数のしっぽで落ちる**ようになっていた（v1467 の全走で実際に落ちた）。
+         *   ★ 実測（60回ずつ回して分布を出した。N=60・範囲すべて）:
+         *     - `normal.avg < hard.avg` … 差の平均 0.345・SD 0.152・**最小 0.072** ＝ 0 まで **2.3σ**
+         *       → 1回の全走で **約1%** 落ちる（★ ここがいちばん危なかった）
+         *     - `hard.near > 0.5` … 平均 0.641・SD 0.056・最小 0.550 ＝ **2.5σ**（約0.6%）
+         *     - 否定対照の差 … 平均 **0.012**・SD 0.106・最大 0.256 ＝ しきい 0.3 まで **2.8σ**（約0.3%）
+         *   ★ **合わせて全走1回あたり約2%** ＝「v1466 は通って v1467 で落ちた」の正体。
+         *
+         * ⚠⚠ **「乱数だから しきい値を緩める」は採らない**（検査が鈍るだけ）。
+         *   ★ 採ったのは **見本の集合を固定すること**。プールは `computePool` が決定的に作る
+         *     （2回呼んで同じ並びになることを実測）ので、そこから等間隔に抜けば
+         *     **難易度3つが同じ見本を見る**。実測で **20回連続、統計値が1桁も動かない**
+         *     （avg / near / veryNear とも完全一致）＝ **ぶれが 0 になった**。
+         *
+         * ★ 否定対照は「差の平均が 0.012 ＝ 系統的な差は無い」ことも同時に示していた
+         *   （統合レーンの見立て「出題そのものが変わるので系統成分があるはず」は**実測では出なかった**）。
+         *   `nextQuestion` の見本の引きは `Math.random()` で、**難易度を1つも読まない**——
+         *   難易度が触るのは `pickQuizDistractors` の `confuse` だけ（`strength` は図の崩し方で、
+         *   `tiers` には効かない）。だから元から中立で、残っていたのは**引きの分散だけ**だった。
+         *
+         * 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
+         * 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
+         */
+        const N = 120;
+        const sampleNames = (n) => {
+            const step = Math.max(1, Math.floor(nq.pool.length / n));
+            const out = [];
+            for (let i = 0; i < nq.pool.length && out.length < n; i += step) {
+                out.push(nq.library[nq.pool[i]].name);
+            }
+            return out;
+        };
+        const NAMES = sampleNames(N);
+        assert(NAMES.length === N, `見本の集合が ${N} 件そろわない（${NAMES.length}件）`);
+        const measure = (level) => {
             nq.diffEl.value = level;
             let sum = 0, cnt = 0, hard = 0, near = 0;
-            for (let k = 0; k < n; k++) {
+            NAMES.forEach(name => {
+                nq.setForced(name);
                 nq.nextQuestion();
                 (nq.current.tiers || []).forEach(t => {
                     sum += t; cnt++;
                     if (t >= 2) near++;
                     if (t >= 3) hard++;
                 });
-            }
+            });
+            nq.setForced(null);
             return { avg: sum / cnt, near: near / cnt, veryNear: hard / cnt, cnt };
         };
-        const N = 60;
-        const easy = measure('easy', N), normal = measure('normal', N), hard = measure('hard', N);
+        const easy = measure('easy'), normal = measure('normal'), hard = measure('hard');
         assert(easy.cnt >= N * 3 - 3, `誤答が3つ作れていない（${easy.cnt}/${N * 3}）`);
         assert(easy.avg < normal.avg,
             `やさしい(${easy.avg.toFixed(2)}) が ふつう(${normal.avg.toFixed(2)}) より紛らわしい`);
@@ -3457,18 +3494,32 @@
         assert(normalSib < 0.5,
             `ふつうでそっくりさんを狙いすぎ（${(normalSib * 100).toFixed(0)}%）＝ むずかしいとの差が無い`);
 
-        // 否定対照 — 難易度を無視して常に「ふつう」で誤答を作ると、上の差が消える
+        /* ★ 否定対照 —— **同じ見本の集合に対して、誤答の作り方だけを替える**。
+         *
+         * ⚠ 上の `easy` / `hard` と**まったく同じ `NAMES` を、同じ順で**通す。
+         *   替えるのは `nq.difficulty()` が返すもの1つだけ ＝ 誤答の紛らわしさ（`confuse`）。
+         *   ★ だから残る差は「誤答の作り方の差」以外にありえない。実測で **30回とも差は 0.0000**。
+         * ⚠ 前は乱数で見本を引き直していたので、差が 0 にならず しきい 0.3 を置いていた
+         *   （＝ 2.8σ ＝ 全走の約0.3%で落ちる）。**しきいは 0.05 まで締めた**——
+         *   0 でなく 0.05 にしてあるのは、`pickQuizDistractors` が同じ段どうしの並びを
+         *   `shuffleArray` で決めるので、段3と段4が同点になる `confuse:1` では
+         *   理屈のうえで入れ替わりうるため（実測では起きていない）。
+         */
         const orig = nq.difficulty;
         let flat;
         try {
             nq.difficulty = () => W.quizDifficultyOf('normal');
-            flat = { easy: measure('easy', N), hard: measure('hard', N) };
+            flat = { easy: measure('easy'), hard: measure('hard') };
         } finally {
             nq.difficulty = orig;
         }
-        assert(!(flat.easy.avg < flat.hard.avg - 0.3),
-            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(2)} / ` +
-            `むずかしい ${flat.hard.avg.toFixed(2)}）＝ QT2 の緑が空振り`);
+        // ★ 対照が意味を持つ前提: 素の状態では、同じ見本でもはっきり差が出ている
+        assert(hard.avg - easy.avg > 1.0,
+            `同じ見本で やさしい(${easy.avg.toFixed(2)}) と むずかしい(${hard.avg.toFixed(2)}) の差が小さい` +
+            '＝ 否定対照が「消す」べき差が無い');
+        assert(Math.abs(flat.hard.avg - flat.easy.avg) < 0.05,
+            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(3)} / ` +
+            `むずかしい ${flat.hard.avg.toFixed(3)}）＝ QT2 の緑が空振り`);
 
         // 段の定義そのもの（人が読んで納得できる例で固定する）
         const tier = W.quizDistractorTier;
@@ -20767,6 +20818,172 @@
                    o.atoms.every((a, j) => a.element === cur.entry.target.atoms[j].element),
                 `${k} 番目の選択肢で原子が変わっている`);
         });
+    });
+
+    /* ==========================================================================
+     * HQ5〜HQ7: 採点のあとに「見本を実際に動かしてみる」（ユーザー発注 2026-08-26）
+     *
+     * > **採点後に実際に回転を試したい（解説の通りになるか確認）**
+     *
+     * ★ 押せる札はキャンバスの帯と同じ3つで、実体も `chemistry.js` の
+     *   `flipHaworth` / `haworthTurn` そのもの（`haworthTurnedTarget` が受け渡しだけを埋める）。
+     * ★ **一致は `FischerPractice.drawingKey`（絵）で見る。立体コードでは見られない**
+     *   —— 意味を保つ4枚は立体コードが全部同じだから（それを HQ7 が実測で示す）。
+     * ========================================================================== */
+
+    test('HQ5: 「動かしてみる」は採点前に出ない／採点後に ⇅ を押すと正解の図になる（実機の DOM）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.choiceQuiz;
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        const panel = D.getElementById('pk-turn');
+        assert(panel, '#pk-turn が無い');
+
+        // ⚠⚠ 採点前は出ない（出すと ⇅ を押した図が正解と一致して答えが分かる）
+        assert(panel.classList.contains('hidden'), '採点前に「動かしてみる」が出ている');
+        const before = W.FischerPractice.drawingKey(q.currentGoalFigure());
+        const locked = q.applyTurn('updown');
+        assert(locked && locked.ok === false && locked.reason === 'locked',
+            `採点前に札が効いてしまう（${JSON.stringify(locked)}）`);
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) === before,
+            '採点前に見本の図が動いた');
+        // ほかの出題（記号）では、採点しても出さない
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        D.getElementById('pk-cell-0').click();
+        assert(panel.classList.contains('hidden'), '記号の出題で「動かしてみる」が出ている');
+
+        // 採点したら出る
+        D.getElementById('pk-kind').value = 'haworth';
+        q.newQuestion();
+        const right = q.current.answer;
+        D.getElementById(`pk-cell-${right}`).click();
+        assert(!panel.classList.contains('hidden'), '採点しても「動かしてみる」が出ない');
+        const base = W.FischerPractice.drawingKey(q.currentGoalFigure());  // ⚠ 問題が変わったので取り直す
+        const drawn = () => D.querySelectorAll('#pk-goal .quiz-atoms g').length;
+        assert(drawn() > 0, '見本に図が描かれていない');
+
+        // ★ ⇅ を押すと、正解の図とぴったり同じ絵になる（＝ 解説のとおり）
+        D.getElementById('btn-pk-turn-updown').click();
+        const st = D.getElementById('pk-turn-status').textContent;
+        assert(st.includes(`${'①②③④'[right]} とぴったり同じ絵`),
+            `⇅ で正解の図に一致したと言っていない: ${st}`);
+        assert(st.includes('解説のとおり'), `解説との照らし合わせを言っていない: ${st}`);
+        assert(st.includes('⇅ 上下に裏返す'), `押した手が出ていない: ${st}`);
+        assert(drawn() > 0, '動かしたあと見本の図が消えた');
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) !== base,
+            '⇅ を押しても図が変わっていない');
+
+        // ⇄ / ⟳ は「どれとも違う絵だが、分子は見本のまま」と言う
+        D.getElementById('btn-pk-turn-reset').click();
+        D.getElementById('btn-pk-turn-leftright').click();
+        const st2 = D.getElementById('pk-turn-status').textContent;
+        assert(st2.includes('どれとも違う絵'), `⇄ の言い方が違う: ${st2}`);
+        assert(st2.includes('分子は見本のまま'), `⇄ で「同じ分子」を言っていない: ${st2}`);
+
+        // ↩ で元に戻る／次の問題では畳まれる
+        D.getElementById('btn-pk-turn-reset').click();
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) === base,
+            '↩ で元の図に戻らない');
+        q.newQuestion();
+        assert(panel.classList.contains('hidden'), '次の問題で「動かしてみる」が畳まれない');
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('HQ6: 糖16件の全数 —— ⇅ は正解の図と一致・⇄/⟳ は選択肢のどれとも違うが同じ分子', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const key = W.FischerPractice.drawingKey;
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        let hitAnswer = 0, backAgain = 0, sameMolecule = 0, offTheList = 0, quartet = 0;
+        const n = q.hwPool.length;
+        assert(n === 16, `プールが16件でない（${n}）`);
+        q.hwPool.forEach(e => {
+            const base = e.target, b = codeOf(base);
+            // 出題が「正解の図」として並べるのは flipTargetVertically(base)
+            const answerFig = W.flipTargetVertically(base);
+            const up = W.haworthTurnedTarget(c.game, base, 'updown');
+            assert(up, `${e.name}: ⇅ が当てられない`);
+            // ★ 平行移動を除いてぴったり一致（軸の取り方が違っても drawingKey では消える）
+            if (key(up) === key(answerFig)) hitAnswer++;
+            const figs = { updown: up };
+            ['leftright', 'halfturn'].forEach(k => {
+                const t = W.haworthTurnedTarget(c.game, base, k);
+                assert(t, `${e.name}: ${k} が当てられない`);
+                figs[k] = t;
+            });
+            Object.keys(figs).forEach(k => {
+                if (codeOf(figs[k]) === b) sameMolecule++;                    // 分子は変わらない
+                const back = W.haworthTurnedTarget(c.game, figs[k], k);
+                if (back && key(back) === key(base)) backAgain++;             // 2回押すと戻る
+            });
+            // ⇄ / ⟳ は、出題が並べる3枚（素朴な鏡映・180°回転）のどれとも違う絵
+            const list = [base, answerFig, W.rotateTargetInPlane(base, 0, true),
+                          W.rotateTargetInPlane(base, 2, false)].map(key);
+            ['leftright', 'halfturn'].forEach(k => {
+                if (!list.includes(key(figs[k]))) offTheList++;
+            });
+            // 4枚は互いに別の絵（元・⇅・⇄・⟳）
+            if (new Set([key(base), key(figs.updown), key(figs.leftright), key(figs.halfturn)]).size === 4) quartet++;
+        });
+        assert(hitAnswer === n, `⇅ が正解の図と一致しなかった（${hitAnswer}/${n}）`);
+        assert(sameMolecule === n * 3, `置き直しで分子が変わった（同じ ${sameMolecule}/${n * 3}）`);
+        assert(backAgain === n * 3, `2回押しても元の絵に戻らない（${backAgain}/${n * 3}）`);
+        assert(offTheList === n * 2, `⇄/⟳ が選択肢の絵と重なった（${offTheList}/${n * 2}）`);
+        assert(quartet === n, `元・⇅・⇄・⟳ の4枚が別の絵にならない（${quartet}/${n}）`);
+
+        // 実際に出題を作って、正解の図に一致することを DOM を通さずにも確かめる
+        for (let i = 0; i < 40; i++) {
+            const cur = q.haworthQuestion();
+            const up = W.haworthTurnedTarget(c.game, cur.goal, 'updown');
+            assert(up && key(up) === key(cur.items[cur.answer].target),
+                `出題 ${cur.entry.name}: ⇅ が正解の図に一致しない`);
+        }
+        // 糖でない分子には当てられない（門番は chemistry.js のものをそのまま借りている）
+        const eth = W.buildCompoundLibrary(c.game).find(x => x.name === 'エタノール');
+        assert(eth, 'エタノールが見つからない');
+        ['updown', 'leftright', 'halfturn'].forEach(k => {
+            assert(W.haworthTurnedTarget(c.game, eth.target, k) === null,
+                `糖でない分子に ${k} が当たってしまう`);
+        });
+    });
+
+    test('HQ7: 一致判定に立体コードは使えない（4枚とも同じコード）——だから絵で見ている', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        // ★ 「⇅ を押したら正解の図になった」は立体コードでは言えない ——
+        //    元・⇅・⇄・⟳ の4枚は**全部同じ立体コード**なので、区別が付かない
+        let indistinguishable = 0;
+        q.hwPool.forEach(e => {
+            const b = codeOf(e.target);
+            const codes = ['updown', 'leftright', 'halfturn']
+                .map(k => codeOf(W.haworthTurnedTarget(c.game, e.target, k)));
+            if (codes.every(x => x === b)) indistinguishable++;
+        });
+        assert(indistinguishable === q.hwPool.length,
+            `4枚の立体コードが割れた（${indistinguishable}/${q.hwPool.length}）——` +
+            'そうなったなら立体コードでも絵を区別できる。turnStatusText の物差しを見直すこと');
+        // 一方 drawingKey は 16件すべてで ⇅ と ⇄ を見分ける（＝ 物差しとして効いている）
+        const key = W.FischerPractice.drawingKey;
+        let split = 0;
+        q.hwPool.forEach(e => {
+            const a = key(W.haworthTurnedTarget(c.game, e.target, 'updown'));
+            const b = key(W.haworthTurnedTarget(c.game, e.target, 'leftright'));
+            if (a !== b) split++;
+        });
+        assert(split === q.hwPool.length, `drawingKey が ⇅ と ⇄ を見分けられない（${split}/${q.hwPool.length}）`);
     });
 
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
