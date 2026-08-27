@@ -1660,6 +1660,21 @@ button:hover {
     padding: 2px 10px 12px;
 }
 
+/* ===== 畳んだ読み物（v1468・ux-density §5）=====
+   ⚠ **新しい仕掛けは作っていない**。使うのは既存の `<details class="learn-acc">` そのままで、
+   ここで変えるのは**把手の背丈だけ**。学習メニューの `.learn-acc` は「モーダルの主役」だが、
+   ここで増やしたぶん（十字の規則・なぜ90°・判定オプション・出題プールの内訳）は
+   **本文のわきに置く読み物**なので、14.5px/13px の把手だと本文より大きくなって主客が逆になる。
+   ★ それでも 12.5px は本文と同じ ＝ v1468 の下限（11px を上げた先）を割らない */
+.cross-rules-acc { width: 100%; text-align: left; }
+.cross-rules-acc > summary { padding: 9px 10px; font-size: 12.5px; font-weight: 600; }
+.cross-rules-acc .learn-acc-body { font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
+/* 出題件数の行に付く「内訳」。`font-family: var(--font-code)` の1行の中に入るので更に控えめ */
+.quiz-pool-fold { display: inline-block; margin-left: 6px; vertical-align: middle; text-align: left; }
+.quiz-pool-fold > summary { padding: 3px 8px; font-size: 11.5px; font-weight: 600; min-height: 0; }
+.quiz-pool-fold > summary::after { margin-left: 6px; }
+.quiz-pool-fold .learn-acc-body { padding: 2px 8px 8px; font-size: 11.5px; line-height: 1.5; }
+
 /* クイズの3群（A-7・DESIGN_entry_points.md §6 Step 4）。
    8ボタンが並列に並んでいるだけでは、どれが何の練習かも、どれから始めるかも分からない */
 .quiz-group {
