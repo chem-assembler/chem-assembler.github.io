@@ -640,7 +640,9 @@
                         <button id="btn-random-stage" class="view-btn"
                                 style="width:100%; font-size:13px; padding:10px; min-height:36px;"
                                 title="いま選んでいるシリーズの中から、まだ出していない問題を1つ選びます">🎲 このシリーズからランダムに出題</button>
-                        <div id="random-status" style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;"></div>
+                        <!-- ⚠ 10.5px → 12.5px（v1472）。**文を 51字 → 9字 に減らしてから上げた**
+                             ＝ 字が大きくなっても1行に収まる（ux-density §7-3「減らした後で上げる」） -->
+                        <div id="random-status" style="font-size:12.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;"></div>
                     </div>
                 </div>
 
