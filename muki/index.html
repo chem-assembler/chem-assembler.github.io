@@ -105,6 +105,15 @@
         }
         #link-sep:hover { background:#1abc9c; }
         #link-sep small { display:block; font-weight:normal; font-size:12px; color:#d5f5f0; }
+
+        /* 系統分離モード（型A）への入口。⚠ 型B の隣に並べる（同じ単元の別の遊び方） */
+        #link-tree {
+            display:block; margin-bottom:15px; padding:12px; font-weight:bold;
+            background:#2471a3; color:#fff; border:2px solid #5dade2; border-radius:8px;
+            text-align:center; text-decoration:none; font-size:15px;
+        }
+        #link-tree:hover { background:#2980b9; }
+        #link-tree small { display:block; font-weight:normal; font-size:12px; color:#d6eaf8; }
     </style>
 </head>
 <body>
@@ -113,6 +122,7 @@
         <div class="sidebar" id="sidebar-left">
             <button id="btn-dict">📖 イオン図鑑を開く</button>
             <a id="link-sep" href="separation.html">🧪 イオンをつきとめる<small>容器に1種類だけ入っているイオンを当てる</small></a>
+            <a id="link-tree" href="tree.html">🌳 すべてのイオンを分ける<small>手順を組み立てて、混ざったイオンを分けきる</small></a>
 
             <h2>Game Mode</h2>
             <div class="mode-select" style="margin-bottom: 15px;">
