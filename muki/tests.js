@@ -2131,12 +2131,22 @@
             d.querySelector('.slot.leaf[data-leaf="L0"]').click();
             ok('置き先を押すと置かれる（★ タップ2段。⚠ ドラッグを使わない）',
                 w.treeUI.state.plan.Ag === 'L0' &&
-                !!d.querySelector('[data-placed="L0"] .card[data-ion="Ag"]'), uiOut);
+                d.querySelector('.slot.leaf[data-leaf="L0"]').getAttribute('data-ion') === 'Ag', uiOut);
             ok('置いた札は手札から消える',
                 !d.querySelector('#ion-deck .card[data-ion="Ag"]'), uiOut);
-            d.querySelector('[data-placed="L0"] .card[data-ion="Ag"]').click();
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
             ok('置いた札をもう一度押すと手札に戻る（★ 取り消しも同じ作法）',
                 !w.treeUI.state.plan.Ag && !!d.querySelector('#ion-deck .card[data-ion="Ag"]'), uiOut);
+            // ★★ 1つの終端に置けるイオンは1つだけ（⚠ 2つ積めたら赤）
+            d.querySelector('#ion-deck .card[data-ion="Ag"]').click();
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
+            d.querySelector('#ion-deck .card[data-ion="Cu"]').click();
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
+            ok('★★ 1つの沈殿に置けるイオンは1つだけ（⚠ 先に置いたものは手札に戻る）',
+                w.treeUI.state.plan.Cu === 'L0' && !w.treeUI.state.plan.Ag &&
+                !!d.querySelector('#ion-deck .card[data-ion="Ag"]') &&
+                d.querySelectorAll('[data-leaf="L0"]').length === 1, uiOut);
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
 
             // --- ③ 途中では何も返さない（§16-1） ---
             ok('置いている途中では、答え合わせを出さない',
@@ -2229,15 +2239,108 @@
             ok('375px 幅で横スクロールが出ない（' + d.documentElement.scrollWidth + ' ≦ ' +
                 d.documentElement.clientWidth + '）',
                 d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1, uiOut);
+            // ⚠ `.locked`（＝ 押せない・disabled）は押し所ではないので数えない。
+            //   ★ そのぶん「実験手順から考える」側で全部 44px 以上を別に見張っている（下の⑧）
             var small = [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset'))
                 .filter(function (el) {
                     var h = el.getBoundingClientRect().height;
-                    return h > 0 && h < 44;
+                    return h > 0 && h < 44 && el.className.indexOf('locked') < 0;
                 });
             if (small.length) warn('小さすぎる置き先: ' + small.length + ' 個');
             ok('枝・葉・札・ボタンが指で押せる大きさ（44px 以上）', small.length === 0, uiOut);
-            ok('ツリーが1本の縦の並びになっている（★ 375px でも読める形）',
-                d.querySelectorAll('#stages .stage').length === 7, uiOut);
+
+            // --- ⑧ ★★ 流れ図はディレクトリツリー（2026-08-28・ユーザー決定） ---
+            //   ⚠ ここが緩むと「縦に長くて下が押しづらい」に戻る
+            w.treeUI.start('read', 'a1');
+            var flow = d.getElementById('flow');
+            ok('★ 流れ図がディレクトリツリーの行の並びになっている', (function () {
+                return !!flow && flow.querySelectorAll('.row').length === 18 &&
+                    flow.querySelectorAll('.row.node').length === 11 &&
+                    flow.querySelectorAll('.row.edge').length === 7;
+            })(), uiOut);
+            ok('★★ 1つの節が1行に収まっている（⚠ 枠を積まない。実測の最大 ' + (function () {
+                var mx = 0;
+                [].slice.call(flow.querySelectorAll('.row')).forEach(function (e) {
+                    mx = Math.max(mx, Math.round(rectH(e)));
+                });
+                return mx;
+            })() + 'px）', (function () {
+                var bad = [];
+                [].slice.call(flow.querySelectorAll('.row')).forEach(function (e) {
+                    if (rectH(e) > 50) bad.push(e.textContent.trim().slice(0, 12) + ':' + Math.round(rectH(e)));
+                });
+                if (bad.length) warn('1行に収まっていない節: ' + bad.join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+            ok('★★ 主流はインデントしない（⚠ 溶液の節と試薬は深さ0）', (function () {
+                var main = [].slice.call(flow.querySelectorAll('.row.edge, .row.node.sol'));
+                return main.length === 13 && main.every(function (e) {
+                    return e.getAttribute('data-d') === '0';
+                });
+            })(), uiOut);
+            ok('★★ 脱出したもの（沈殿）が1段インデントする', (function () {
+                var esc = [].slice.call(flow.querySelectorAll('.row.node.ppt'));
+                return esc.length === 5 && esc.every(function (e) {
+                    return e.getAttribute('data-d') === '1' &&
+                        parseFloat(w.getComputedStyle(e).marginLeft) >= 16;
+                });
+            })(), uiOut);
+            ok('⚠ 深さを列で表していない（★ インデントだけ。375px で列が足りなくならない）',
+                !flow.getAttribute('data-cols') &&
+                w.getComputedStyle(flow).display !== 'grid', uiOut);
+            // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
+            ok('★★ 沈殿の枠は ▢（角ばった四角）', (function () {
+                var bad = [];
+                [].slice.call(flow.querySelectorAll('.row.node.ppt')).forEach(function (e) {
+                    var r = parseFloat(w.getComputedStyle(e).borderTopLeftRadius) || 0;
+                    if (r > 3) bad.push(r);
+                });
+                if (bad.length) warn('角丸になっている沈殿の枠: ' + bad.join('/'));
+                return bad.length === 0;
+            })(), uiOut);
+            ok('★★ 溶液の枠は ⬭（丸い枠）', (function () {
+                var bad = [];
+                [].slice.call(flow.querySelectorAll('.row.node.sol')).forEach(function (e) {
+                    var r = parseFloat(w.getComputedStyle(e).borderTopLeftRadius) || 0;
+                    if (r < 12) bad.push(r);
+                });
+                if (bad.length) warn('丸くなっていない溶液の枠: ' + bad.join('/'));
+                return bad.length === 0;
+            })(), uiOut);
+            ok('⚠ 相を色だけで区別していない（★ 枠の形が実際に違う）', (function () {
+                var a = w.getComputedStyle(flow.querySelector('.row.node.ppt')).borderTopLeftRadius;
+                var b2 = w.getComputedStyle(flow.querySelector('.row.node.sol')).borderTopLeftRadius;
+                return a !== b2;
+            })(), uiOut);
+            ok('★ 最後のろ液は主流の末端（溶液）で、そこにも置ける',
+                !!flow.querySelector('.row.node.sol.terminal[data-leaf="F"]'), uiOut);
+            // ⚠⚠ 置けるのは終端だけ（★ 木の形から出す。「沈殿だから置ける」ではない）
+            ok('⚠ 置き場があるのは終端の節だけ（★ 途中の節には置けない）', (function () {
+                var terminal = flow.querySelectorAll('.row.node.terminal[data-leaf]').length;
+                var inner = flow.querySelectorAll('.row.node.inner[data-leaf]').length;
+                return terminal === 6 && inner === 0;
+            })(), uiOut);
+            // ★★★ 縦の長さ。⚠ 上限を数で決めておかないと、じわじわ戻る
+            //   （★ 作り直す前の実測: ページ 2081px・流れ図 1097px）
+            ok('★★ 375px 幅で、ページの高さが 1750px 以内（実測 ' +
+                d.documentElement.scrollHeight + 'px。⚠ 作り直す前は 2081px）',
+                d.documentElement.scrollHeight <= 1750, uiOut);
+            ok('★ 流れ図の欄の高さが 780px 以内（実測 ' +
+                Math.round(rectH(d.getElementById('panel-tree'))) + 'px。⚠ 作り直す前は 1097px）',
+                rectH(d.getElementById('panel-tree')) <= 780, uiOut);
+            // ⚠ 「実験手順から考える」では試薬の行が押し所になる ＝ 44px を要る
+            w.treeUI.start('build', 'a1');
+            ok('★ 「実験手順から考える」では、押せるものが全部 44px 以上', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset'))
+                    .forEach(function (el) {
+                        var h = el.getBoundingClientRect().height;
+                        if (h > 0 && h < 44) bad.push(el.className + ':' + Math.round(h));
+                    });
+                if (bad.length) warn('小さすぎる押し所（build）: ' + bad.join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+            w.treeUI.start('read', 'a1');
         }
     }
 

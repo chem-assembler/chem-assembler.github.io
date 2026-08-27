@@ -111,64 +111,83 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
 
 .hint { font-size: 13px; color: var(--accent); margin: 6px 0 0; min-height: 1.7em; }
 
-/* --- ツリー --- */
-.beaker {
-    border: 1px dashed var(--line);
-    border-radius: 10px;
-    padding: 8px 12px;
-    font-size: 14px;
-    margin-bottom: 6px;
-}
-.beaker .ions { font-weight: bold; word-break: break-word; }
+/* --- 流れ図 ＝ ディレクトリツリー -----------------------------------
+   ★★ 形はユーザーが決めた（2026-08-28）:
+     ・**主流（溶液）は左端に一直線。**⚠ **インデントしない**
+     ・★ **脱出したものが1段インデントする**（⚠ **沈殿でも溶液でも同じ規則**）
+     ・★★ **深さはインデントで表す。**⚠⚠ **列を増やさない**
+       —— だから 375px で「3列目が入らない」という問題がそもそも起きない
+     ・★★ **相は枠の形だけで表す** —— **▢ ＝ 沈殿 ／ ⬭ ＝ 溶液**
+       ⚠ **色だけで区別しない**（色は補助）
+     ・★★ **1つの節を1行**。⚠ 枠を積まない（そこが縦に効く）           */
+.flow { display: block; }
 
-.stages { list-style: none; margin: 0; padding: 0; }
-.stage { position: relative; padding: 0 0 0 18px; border-left: 2px solid var(--line); }
-.stage.filled { border-left-color: var(--branch); }
-.stage .stem {
-    position: absolute; left: -9px; top: 12px;
-    width: 16px; height: 16px; border-radius: 50%;
-    background: var(--bg); border: 2px solid var(--line);
-    font-size: 9px; line-height: 12px; text-align: center; color: var(--dim);
-}
-.stage.filled .stem { border-color: var(--branch); color: var(--fg); }
-
-.slot {
-    display: block;
-    width: 100%;
-    min-height: 46px;
-    margin: 6px 0;
-    padding: 8px 12px;
+.row {
+    /* ★ インデント ＝ 深さ。⚠ 深さ2でも幅は 20px 増えるだけ */
+    margin-left: calc(var(--d, 0) * 20px);
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: calc(100% - var(--d, 0) * 20px);
+    margin-bottom: 3px;
+    padding: 4px 10px;
     font-family: inherit;
     font-size: 14px;
     text-align: left;
     color: var(--fg);
-    background: rgba(255, 255, 255, 0.04);
-    border: 2px dashed var(--line);
-    border-radius: 10px;
-    cursor: pointer;
+    box-sizing: border-box;
 }
-.slot.empty { color: var(--dim); }
-.slot.branch.set { border-style: solid; border-color: var(--branch); background: rgba(41, 128, 185, 0.22); }
-.slot.leaf.set { border-style: solid; border-color: var(--leaf); background: rgba(22, 160, 133, 0.18); }
-.slot.can { border-color: var(--accent); }
-.slot .sub { display: block; font-size: 11px; color: var(--dim); }
-.slot.locked { cursor: default; border-style: solid; border-color: var(--branch); background: rgba(41,128,185,.14); }
 
-/* 葉は枝から一段下げて、右に伸ばす（★ 375px でも読めるように縦に積む） */
-.leafwrap { padding-left: 16px; margin-bottom: 8px; position: relative; }
-.leafwrap::before {
+/* ├─ にあたる継ぎ手（★ 1段下がった行にだけ引く。⚠ 深さがいくつでも同じ引き方） */
+.row[data-d]:not([data-d="0"])::before {
     content: '';
-    position: absolute; left: 4px; top: -4px; width: 10px; height: 24px;
-    border-left: 2px solid var(--line); border-bottom: 2px solid var(--line);
-    border-bottom-left-radius: 6px;
+    position: absolute; left: -12px; top: -6px; width: 10px; height: calc(50% + 6px);
+    border-left: 2px solid var(--line);
+    border-bottom: 2px solid var(--line);
+    border-bottom-left-radius: 4px;
 }
-.leafwrap .leaf-title { font-size: 12px; color: var(--dim); }
-.leafwrap .placed { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-.final { margin-top: 6px; padding-left: 18px; }
-.final .leaf-title { font-size: 12px; color: var(--dim); }
 
-/* 置かれたイオン（押すと手札に戻る） */
-.placed .card { min-height: 44px; }
+/* --- 節（★ 相は枠の形） --- */
+.node {
+    border: 2px solid var(--line);
+    background: rgba(255, 255, 255, 0.04);
+    min-height: 30px;
+}
+/* ★★ 溶液 ＝ ⬭（丸い枠） */
+.node.sol { border-radius: 999px; }
+/* ★★ 沈殿 ＝ ▢（角ばった枠） */
+.node.ppt { border-radius: 0; }
+
+.node .node-title { font-size: 12px; color: var(--dim); flex: 0 0 auto; }
+.node .ions { font-weight: bold; font-size: 13px; min-width: 0; word-break: break-word; }
+/* 主流を継ぐだけの節（★ 押し所ではないので薄く・低く） */
+.node.inner { padding-top: 0; padding-bottom: 0; min-height: 22px; opacity: 0.85; }
+
+/* --- 終端（★ ここだけがイオンの置き場） --- */
+.slot { cursor: pointer; }
+.node.terminal { min-height: 44px; border-style: dashed; }
+.node.terminal .leaf-val { margin-left: auto; font-size: 12px; color: var(--dim); }
+.node.terminal.set { border-style: solid; border-color: var(--leaf); background: rgba(22, 160, 133, 0.2); }
+.node.terminal.set .leaf-val { font-size: 16px; font-weight: bold; color: var(--fg); }
+.node.terminal.can { border-color: var(--accent); }
+.node.terminal:disabled { cursor: default; }
+
+/* --- 試薬（★ 主流に加える ＝ インデントしない） --- */
+.row.edge {
+    min-height: 44px;
+    border: 2px dashed transparent;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.row.edge.set { border-style: solid; border-color: var(--branch); background: rgba(41, 128, 185, 0.22); }
+.row.edge.empty { color: var(--dim); }
+/* ⚠ 「イオンの行先を答える」では試薬はもう置いてあり、押せない（disabled）。
+   ★ 押し所ではないので 44px を要らない ＝ そのぶん縦が縮む。
+   ⚠ 「実験手順から考える」では押し所なので 44px のまま（回帰テストが見張っている）。 */
+.row.edge.locked { cursor: default; min-height: 32px; }
+.row.edge.can { border-color: var(--accent); }
+.row.edge .op-name { font-weight: bold; }
 
 /* --- 提出と答え合わせ --- */
 button.primary {

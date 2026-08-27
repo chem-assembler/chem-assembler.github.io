@@ -138,6 +138,9 @@
     function placeIon(leafId) {
         if (state.submitted) return;
         if (!state.sel || state.sel.type !== 'ion') { say('先にイオンの札を押してください。'); return; }
+        // ★★ 1つの葉に入るイオンは1つだけ（単離が目的なので、そもそも2つ置く意味がない）。
+        //   ⚠ すでに置いてあるものは手札に戻す ＝ 枠が中身で縦に伸びない
+        Object.keys(state.plan).forEach(function (i) { if (state.plan[i] === leafId) delete state.plan[i]; });
         state.plan[state.sel.id] = leafId;
         state.sel = null;
         say('');
@@ -150,95 +153,145 @@
         render();
     }
 
-    function leafBlock(leafId, title) {
-        var wrap = document.createElement('div');
-        wrap.className = 'leafwrap';
-        var t = document.createElement('div');
-        t.className = 'leaf-title';
-        t.textContent = title;
-        wrap.appendChild(t);
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'slot leaf empty' + (state.sel && state.sel.type === 'ion' ? ' can' : '');
-        b.setAttribute('data-leaf', leafId);
-        b.textContent = 'イオンを置く';
-        b.disabled = state.submitted;
-        b.addEventListener('click', function () { placeIon(leafId); });
-        wrap.appendChild(b);
-        wrap.appendChild(placedBox(leafId));
-        return wrap;
+    /**
+     * ★★★ 流れ図を **ディレクトリツリー**として組む（2026-08-28・ユーザー決定）。
+     *
+     * > ★ 「ディレクトリのツリーのようにすれば解決できるかなと考えていました」
+     * > ★★ 「相は枠の形で表現できます」
+     *
+     * 【★★ 「脱出」で全部そろう】
+     *   ・**主流は1本。**⚠ **インデントしない。**上から下へ一直線
+     *   ・★ **脱出したものが1段下がる**（⚠ **沈殿でも溶液でも同じ規則**）
+     *   ・★ **脱出しなかったほうが、主流を継ぐ**
+     *   ⚠ ふつうは沈殿が溶液から脱出するが、★ 属の中の分離では **溶液のほうが沈殿から脱出する**
+     *     （AgCl と PbCl₂ の沈殿に熱湯 → PbCl₂ が溶けて出ていく）。
+     *   ★★ **向きが逆でも同じ規則で書ける ＝ この骨格は相に依らない。**
+     *
+     * 【★ 深さは *インデント* で表す。⚠⚠ 列を増やさない】
+     *   ＝ 深さ2の問題（属の中の分離）が来ても、幅は 20px 増えるだけ。
+     *   ⚠ 375px で列が入らない、という心配がそもそも起きない。
+     *
+     * 【★★ イオンを置けるのは「終端」だけ】（2026-08-27・ユーザー決定）
+     *   ⚠⚠ **「沈殿だから置ける」と決め打ちしない。**★ 置けるかは **木の形**から出す
+     *     —— 子を持たない節が終端であり、そこだけが置き場になる。
+     *   ★ Ag⁺ と Pb²⁺ を含む沈殿は *子を持つ* ので置き場でなくなり、
+     *     熱湯で割ったあとの2つが置き場になる。**この関数を直さずに済む。**
+     *
+     * @returns rows[] —— 1行 ＝ 1つの節、または1つの試薬
+     *   { kind:'node', id, depth, phase:'sol'|'ppt', title, terminal, ions? }
+     *   { kind:'edge', slot, opId, depth }
+     */
+    function flowRows() {
+        var rows = [];
+        var pending = [];   // ⚠ 次の試薬より前に出す「主流を継ぐ」行
+
+        rows.push({
+            kind: 'node', id: 'start', depth: 0, phase: 'sol',
+            title: 'この容器', terminal: false, ions: state.problem.ions
+        });
+
+        state.seq.forEach(function (opId, slot) {
+            pending.forEach(function (r) { rows.push(r); });
+            pending = [];
+            rows.push({ kind: 'edge', slot: slot, opId: opId, depth: 0 });
+            if (!opId || !TREE_OPS[opId].splits) return;
+            // ★ 脱出したもの（いまは必ず沈殿）。⚠ 子を持たないので終端
+            //   ★ 沈殿側の分離を入れる一手では、ここに depth 2 の行が続く
+            rows.push({
+                kind: 'node', id: treeLeafId(slot), depth: 1, phase: 'ppt',
+                title: '沈殿', terminal: true
+            });
+            // ★ 脱出しなかったほうが主流を継ぐ。⚠ 次の試薬の直前に出す
+            //   （最後まで試薬が来なければ、下の「最後のろ液」が引き受ける）
+            pending.push({ kind: 'node', id: 'v' + slot, depth: 0, phase: 'sol', title: 'ろ液', terminal: false });
+        });
+
+        rows.push({
+            kind: 'node', id: TREE_FINAL_LEAF, depth: 0, phase: 'sol',
+            title: '最後のろ液', terminal: true
+        });
+        return rows;
     }
 
-    function placedBox(leafId) {
-        var box = document.createElement('div');
-        box.className = 'placed';
-        box.setAttribute('data-placed', leafId);
-        Object.keys(state.plan).forEach(function (ionId) {
-            if (state.plan[ionId] !== leafId) return;
-            var b = card('ion', ionId, ionName(ionId));
-            b.disabled = state.submitted;
-            b.addEventListener('click', function () { removeIon(ionId); });
-            box.appendChild(b);
+    /** 1つの節を1行で描く。★ 相は **枠の形** —— ▢ ＝ 沈殿 ／ ⬭ ＝ 溶液（⚠ 色だけで区別しない） */
+    function nodeRow(r) {
+        var placedIon = null;
+        if (r.terminal) {
+            Object.keys(state.plan).forEach(function (i) { if (state.plan[i] === r.id) placedIon = i; });
+        }
+        // ⚠⚠ 途中の節には置かせない（★ 終端だけが答案欄。どこを終端にするか自体が答案）
+        var el = document.createElement(r.terminal ? 'button' : 'div');
+        el.className = 'row node ' + r.phase + (r.terminal ? ' terminal' : ' inner');
+        el.setAttribute('data-node', r.id);
+        el.setAttribute('data-d', String(r.depth));
+        el.style.setProperty('--d', String(r.depth));
+        if (r.terminal) {
+            el.type = 'button';
+            el.className += ' slot leaf ' + (placedIon ? 'set' : 'empty') +
+                (!placedIon && state.sel && state.sel.type === 'ion' ? ' can' : '');
+            el.setAttribute('data-leaf', r.id);
+            if (placedIon) el.setAttribute('data-ion', placedIon);
+            el.disabled = state.submitted;
+            el.addEventListener('click', function () {
+                if (placedIon && !(state.sel && state.sel.type === 'ion')) removeIon(placedIon);
+                else placeIon(r.id);
+            });
+        }
+
+        var t = document.createElement('span');
+        t.className = 'node-title';
+        t.textContent = r.title;
+        el.appendChild(t);
+
+        if (r.ions) {
+            var ions = document.createElement('span');
+            ions.className = 'ions';
+            ions.id = 'beaker-ions';
+            ions.textContent = r.ions.map(ionName).join('　');
+            el.appendChild(ions);
+        }
+        if (r.terminal) {
+            var v = document.createElement('span');
+            v.className = 'leaf-val';
+            v.textContent = placedIon ? ionName(placedIon) : 'イオンを置く';
+            el.appendChild(v);
+        }
+        return el;
+    }
+
+    /** 1つの試薬を1行で描く（★ 主流に加える ＝ インデントしない） */
+    function edgeRow(r) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'row edge slot branch' + (r.opId ? ' set' : ' empty') +
+            (state.mode === 'read' ? ' locked' : '') +
+            (!r.opId && state.sel && state.sel.type === 'op' ? ' can' : '');
+        b.setAttribute('data-slot', String(r.slot));
+        b.setAttribute('data-d', String(r.depth));
+        b.style.setProperty('--d', String(r.depth));
+        b.disabled = state.submitted || state.mode === 'read';
+        var n = document.createElement('span');
+        n.className = 'op-name';
+        // ⚠ 詳しい操作（say）は行に出さない —— 1節1行を守るため。
+        //   ★ 手札の札と、答え合わせの各手の見出しに出る（そこは幅がある）
+        n.textContent = r.opId ? '＋ ' + TREE_OPS[r.opId].short : '＋ 操作を置く';
+        b.appendChild(n);
+        b.addEventListener('click', function () {
+            if (r.opId) removeOp(r.slot); else placeOp(r.slot);
         });
-        return box;
+        return b;
     }
 
     function renderTree() {
-        $('beaker-ions').textContent = state.problem.ions.map(ionName).join('　');
-
-        var ol = $('stages');
-        ol.textContent = '';
-        state.seq.forEach(function (opId, slot) {
-            var li = document.createElement('li');
-            li.className = 'stage' + (opId ? ' filled' : '');
-            li.setAttribute('data-slot', String(slot));
-
-            var stem = document.createElement('div');
-            stem.className = 'stem';
-            stem.textContent = String(slot + 1);
-            li.appendChild(stem);
-
-            var b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'slot branch' + (opId ? ' set' : ' empty') +
-                (state.mode === 'read' ? ' locked' : '') +
-                (!opId && state.sel && state.sel.type === 'op' ? ' can' : '');
-            b.setAttribute('data-slot', String(slot));
-            b.disabled = state.submitted || state.mode === 'read';
-            if (opId) {
-                var n = document.createElement('span');
-                n.textContent = TREE_OPS[opId].short;
-                var s = document.createElement('span');
-                s.className = 'sub';
-                s.textContent = TREE_OPS[opId].say;
-                b.appendChild(n);
-                b.appendChild(s);
-                b.addEventListener('click', function () { removeOp(slot); });
-            } else {
-                b.textContent = '操作を置く';
-                b.addEventListener('click', function () { placeOp(slot); });
-            }
-            li.appendChild(b);
-
-            // ★ 葉が生えるのは、沈殿をつくりうる操作を置いた枝だけ。
-            //   ⚠ 煮沸・希硝酸は何も沈めないので、葉が生えない
-            if (opId && TREE_OPS[opId].splits) {
-                li.appendChild(leafBlock(treeLeafId(slot), (slot + 1) + '手目の沈殿'));
-            }
-            ol.appendChild(li);
-        });
-
-        var fb = $('leaf-F');
-        fb.className = 'slot leaf empty' + (state.sel && state.sel.type === 'ion' ? ' can' : '');
-        fb.disabled = state.submitted;
-        var box = $('placed-F');
-        box.textContent = '';
-        Object.keys(state.plan).forEach(function (ionId) {
-            if (state.plan[ionId] !== TREE_FINAL_LEAF) return;
-            var b = card('ion', ionId, ionName(ionId));
-            b.disabled = state.submitted;
-            b.addEventListener('click', function () { removeIon(ionId); });
-            box.appendChild(b);
+        var flow = $('flow');
+        flow.textContent = '';
+        var rows = flowRows();
+        var maxDepth = 0;
+        rows.forEach(function (r) { if (r.depth > maxDepth) maxDepth = r.depth; });
+        // ⚠ 深さは **インデント**で表す。★ 列は増やさない（ここは報告用の印だけ）
+        flow.setAttribute('data-depth', String(maxDepth));
+        rows.forEach(function (r) {
+            flow.appendChild(r.kind === 'edge' ? edgeRow(r) : nodeRow(r));
         });
     }
 
@@ -262,7 +315,8 @@
             b.type = 'button';
             b.setAttribute('data-prob', p.id);
             // ⚠ 見出しに解き筋を書かない。★ 出すのは中身の数だけ
-            b.textContent = '容器 ' + (i + 1) + '（' + p.ions.length + '種）';
+            //   （★ 短くして1行に収める ＝ 選び直しのために縦を使わない）
+            b.textContent = '容器' + (i + 1) + '・' + p.ions.length + '種';
             b.className = (state.problem.id === p.id) ? 'active' : '';
             b.addEventListener('click', function () { start(state.mode, p.id); });
             pb.appendChild(b);
@@ -402,6 +456,8 @@
             var b = document.createElement('b');
             b.textContent = (s.slot + 1) + '手目 〔' + opShort(s.op) + '〕';
             d.appendChild(b);
+            // ★ 詳しい操作は、幅のあるここで言う（⚠ ツリーの行には入れない）
+            if (TREE_OPS[s.op]) d.appendChild(p(TREE_OPS[s.op].say + '。', 'caveat'));
             if (s.ppt.length) {
                 s.ppt.forEach(function (e) {
                     d.appendChild(p(e.f + '（' + e.c + '）が沈みました。' + e.why + '。'));
@@ -460,7 +516,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         $('btn-submit').addEventListener('click', submit);
         $('btn-reset').addEventListener('click', function () { start(state.mode, state.problem.id); });
-        $('leaf-F').addEventListener('click', function () { placeIon(TREE_FINAL_LEAF); });
         start('read', 'a1');
     });
 
