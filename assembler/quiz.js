@@ -844,11 +844,14 @@ const QUIZ_TA_LABEL =
     `${quizTaSec(QUIZ_TA_LIMIT_MS + quizTimeAttackTotalBonusMs())}秒）`;
 
 /** 逓減することを**黙ってやらない**ための説明。ボタンの下に出す */
+/* ⚠ v1468: 末尾の「どれだけ速く解いても NN秒で終わります。」（21字）を落とした（ux-density §3-d）。
+ * **すぐ上のボタン `QUIZ_TA_LABEL` が「最長 NN秒」と名乗っている** ＝ 同じ数字を2か所で言っていた。
+ * ⚠ 逓減の 2数字（0.2秒ずつ減り／16問目）は **QD3 が名指しで見張っている**ので落とさない
+ * （報告書の案「＋3秒（だんだん減り、合計 ＋24秒まで）」は QD3 の③に当たるので採らなかった）。 */
 const QUIZ_TA_RULE =
-    `正解ごとに ＋${quizTaSec(QUIZ_TA_BONUS_MS)}秒。ただし加算は1問ごとに ` +
-    `${quizTaSec(QUIZ_TA_BONUS_STEP_MS)}秒ずつ減り、${quizTimeAttackZeroAt()}問目の正解からは 0秒。` +
-    `加算は合計 ${quizTaSec(quizTimeAttackTotalBonusMs())}秒までなので、` +
-    `どれだけ速く解いても ${quizTaSec(QUIZ_TA_LIMIT_MS + quizTimeAttackTotalBonusMs())}秒で終わります。`;
+    `正解ごとに ＋${quizTaSec(QUIZ_TA_BONUS_MS)}秒。加算は1問ごとに ` +
+    `${quizTaSec(QUIZ_TA_BONUS_STEP_MS)}秒ずつ減り、${quizTimeAttackZeroAt()}問目からは 0秒` +
+    `（合計 ${quizTaSec(quizTimeAttackTotalBonusMs())}秒まで）。`;
 
 function readQuizTimeAttackRecord(mode) {
     try {
@@ -4003,10 +4006,13 @@ class SymbolPuzzle {
         this.finished = false;
         this.bestOps = null;
         if (this.taskEl) {
+            // ⚠ v1468: 「使える手は…まったく同じ4種類」の一本化先はここ（設問側。ux-density §3-c）。
+            //    相手を「分子のパズル」から **⏱ 立体タイムアタック** に名指しへ変えた
+            //    （行き先が画面のボタン名と一致する ＝ 探せる）
             this.taskEl.textContent =
                 '左の見本とぴったり同じ並びになるように、右の十字を操作してください。' +
                 '記号そのものに意味はありません（分子の枝の代わり）。' +
-                '使える手は分子のパズルとまったく同じ4種類です。';
+                '使える手は ⏱ 立体タイムアタックとまったく同じ4種類です。';
         }
         this.refresh(true);
     }
