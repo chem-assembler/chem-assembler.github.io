@@ -38570,6 +38570,205 @@
         c.reset();
     });
 
+    /* ===== RS1〜RS4: 場所不足で断られたときの出口（v1466・ユーザー決定 2026-08-26 案「い」）=====
+     *
+     * **何を守るテストか**: 反応が「…を置く空間がありません」で断るとき、断り文は
+     * 「**分子を離してから実行してください**」と案内していた。⚠ ところが離す手段は
+     * `Shift＋ドラッグ` しかなく（判定は `game.js` の `shiftKey` 1か所）、
+     * **Shift キーの無いタブレット・スマホでは案内どおりのことができない** ＝ 断り文が
+     * 行き止まりだった。押せる出口（🧹 分子を並べ直す）をここで見張る。
+     *
+     * ★ 否定対照は RS1（型の印を外すと赤）と RS3 の (c)（自動で反応をやり直すと赤）。
+     */
+
+    /** エタノールとベンゼンを 5マス寄せて「-OH を置く空間が無い」場面を作る（RS2・RS3 共通） */
+    const noRoomSetup = (c) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule('エタノール'), 'エタノールを呼び出せない');
+        assert(g.summonMolecule('ベンゼン'), 'ベンゼンを呼び出せない');
+        const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        assert(parts.length === 2, `2分子にならない（${parts.length}）`);
+        const benzene = parts.find(p => p.atoms.filter(a => a.element !== 'H').length === 6);
+        assert(benzene, 'ベンゼン環が見つからない');
+        // ★ 動かし方は Shift＋ドラッグの実体そのもの（`moveComponentBy`）＝ 手で寄せられる配置だけを作る
+        assert(g.moveComponentBy(new Set(benzene.atoms.map(a => a.id)), -(W.GRID_SIZE || 42) * 5, 0),
+            'ベンゼンを 5マス寄せられない（置ける配置しか作らない）');
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+
+    /** 2分子の重原子どうしの最短距離（離れたかどうかの物差し） */
+    const gapBetweenParts = (c) => {
+        const parts = c.game.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        assert(parts.length === 2, `分子が2つでない（${parts.length}）`);
+        const A = parts[0].atoms.filter(a => a.element !== 'H');
+        const B = parts[1].atoms.filter(a => a.element !== 'H');
+        let min = Infinity;
+        A.forEach(a => B.forEach(b => { min = Math.min(min, Math.hypot(a.x - b.x, a.y - b.y)); }));
+        return min;
+    };
+
+    /** 分子モーダルの反応の札を**人と同じ手順で**押す */
+    const pressReaction = (c, kw) => {
+        c.game.openMoleculeModal();
+        const list = [...c.D.querySelectorAll('#reaction-actions button')];
+        const b = list.find(x => x.textContent.includes(kw));
+        assert(b, `「${kw}」の札が無い: ${list.map(x => x.textContent).join(' / ')}`);
+        b.click();
+    };
+
+    test('RS1: ★否定対照 — 「場所が無い」は文言ではなく型（NoRoomError）で伝えている', async (c) => {
+        const W = c.W;
+        // ① 印そのもの
+        assert(typeof W.NoRoomError === 'function', 'NoRoomError が公開されていない');
+        const e = W.noRoom('テスト');
+        assert(e instanceof W.NoRoomError && e.noRoom === true && e.message === 'テスト',
+            'noRoom() が印の付いた例外を返さない');
+        assert(!(new W.Error('置く空間がありません')).noRoom,
+            '素の Error に印が付いている（型で分けられていない）');
+
+        /* ② ★★ **ここが否定対照**。`reactor.js` の中に「空間がありません」を素の `new Error` で
+         *    投げる行が1つでもあれば赤。1か所でも `throw noRoom(` を `throw new Error(` に
+         *    戻すと、この検査が落ちる ＝ 「文言で判定していない」が機械で守られている。
+         *  ⚠ 逆向きの穴（型は付いているが `execute` が見ていない）は RS2 が塞ぐ。 */
+        const src = await (await fetch(`reactor.js?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        const bad = src.split('\n')
+            .map((l, i) => ({ n: i + 1, l }))
+            .filter(x => /throw new Error\(/.test(x.l) && /(空間がありません|つなげません)/.test(x.l));
+        assert(bad.length === 0,
+            `場所不足を素の Error で投げている行がある（型で判定できない）: ${bad.map(x => x.n).join(',')}`);
+        const marked = src.split('\n').filter(l => /throw noRoom\('/.test(l)).length;
+        assert(marked >= 20, `throw noRoom( が ${marked} 行しかない（25 か所の想定）`);
+
+        /* ③ ⚠ **並べ直しても直らない失敗にまで印を付けていない**。
+         *    「多重結合が見つかりません」の類に札を出すと、押しても何も変わらない
+         *    ＝ 潰したはずの行き止まりの作り直しになる */
+        assert(/throw new Error\('多重結合が見つかりません'\)/.test(src),
+            '場所不足でない失敗まで NoRoomError にしている（札が空振りする）');
+    });
+
+    test('RS2: 場所不足で断られると「🧹 分子を並べ直す」が画面に出る（タッチの出口）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-spread');
+        assert(btn, '「🧹 分子を並べ直す」のボタンが index.html に無い');
+        assert(btn.classList.contains('hidden'), '（前提）はじめから札が出ている');
+
+        noRoomSetup(c);
+        const gap0 = gapBetweenParts(c);
+        assert(gap0 < 42, `（前提）寄せられていない（最短 ${gap0.toFixed(1)}px）`);
+        const atoms0 = g.userMolecule.atoms.length;
+
+        pressReaction(c, '一気にカルボン酸まで');
+
+        // ① 断られている（分子は1原子も変わっていない ＝ 中途半端な図を残していない）
+        assert(g.userMolecule.atoms.length === atoms0,
+            `断ったのに原子が ${g.userMolecule.atoms.length - atoms0} 個増えた`);
+        assert(W.reactor.lastNoRoom, '場所不足として受け取れていない（型の印が execute に届いていない）');
+        // ② 出口が画面に出ている
+        assert(!btn.classList.contains('hidden'), '断ったのに「🧹 分子を並べ直す」が出ない');
+        // ③ ⚠ **文言が Shift を要求していない**（これが発注の理由そのもの）
+        const t = toastText(c);
+        assert(t.includes('空間がありません'), `断りの理由が字幕に出ていない（${t}）`);
+        assert(t.includes('並べ直す'), `字幕が出口を指していない（${t}）`);
+        assert(!/離してから実行|Shift/.test(t),
+            `★ タッチでできない案内が残っている（${t}）`);
+        c.reset();
+    });
+
+    test('RS3: 札を押すと分子が離れる／図は変わらない／↩ で戻せる／★勝手に反応しない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-spread');
+        noRoomSetup(c);
+        const gap0 = gapBetweenParts(c);
+        const codes0 = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .map(p => W.canonicalCode(p)).sort().join('/');
+        pressReaction(c, '一気にカルボン酸まで');
+        assert(!btn.classList.contains('hidden'), '（前提）札が出ていない');
+        const atoms0 = g.userMolecule.atoms.length;
+        const hist0 = g.history.length;
+
+        btn.click();   // ★ 人と同じ手順で押す
+
+        // (a) 離れた
+        const gap1 = gapBetweenParts(c);
+        assert(gap1 > gap0, `並べ直したのに離れていない（${gap0.toFixed(1)} → ${gap1.toFixed(1)}px）`);
+        assert(gap1 >= W.MIN_COMPONENT_CLEARANCE,
+            `並べ直した先が近すぎる（${gap1.toFixed(1)}px < ${W.MIN_COMPONENT_CLEARANCE}）`);
+        // (b) 図（形）は1つも変わっていない ＝ 剛体の平行移動だけ
+        const codes1 = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .map(p => W.canonicalCode(p)).sort().join('/');
+        assert(codes1 === codes0, `並べ直しで構造が変わった\n前: ${codes0}\n後: ${codes1}`);
+        // (c) ★★ **否定対照** — 並べ直しただけで、反応は実行し直していない（案「あ」を採らなかった証拠）。
+        //     自動で再実行するようにすると、原子が増えてここが赤くなる
+        assert(g.userMolecule.atoms.length === atoms0,
+            `★ 並べ直しただけなのに原子が ${g.userMolecule.atoms.length - atoms0} 個増えた（勝手に反応した）`);
+        assert(!W.reactor.lastReaction, '★ 並べ直しただけなのに「直近の反応」が記録された');
+        const t = toastText(c);
+        assert(t.includes('並べ直しました') && t.includes('もう一度'),
+            `「もう一度お試しください」で止まっていない（${t}）`);
+        assert(btn.classList.contains('hidden'), '並べ直したあとも札が出たまま');
+        // (d) ↩ 戻す で取り消せる（勝手に動いたと感じた人の逃げ道）
+        assert(g.history.length > hist0, '並べ直しが履歴に積まれていない（↩ で戻せない）');
+        g.undo();
+        assert(Math.abs(gapBetweenParts(c) - gap0) < 0.01,
+            `↩ 戻す で元の配置に戻らない（${gapBetweenParts(c).toFixed(1)}px ≠ ${gap0.toFixed(1)}px）`);
+        // (e) そして本来やりたかった反応は、並べ直したあとなら通る
+        g.redo();
+        const rule = W.REACTION_RULES.find(r => r.id === 'oxidize_primary_vigorous');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, `箇所が1つでない（${sites.length}）`);
+        let err = null;
+        try { rule.apply(g, sites[0]); } catch (e) { err = e.message; }
+        assert(!err, `並べ直したのに同じ反応がまだ通らない（${err}）`);
+        c.reset();
+    });
+
+    test('RS4: 並べ直しても入らないときは正直に言う（黙って何も起きないをやらない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const btn = D.getElementById('btn-rx-spread');
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.history = []; g.redoStack = [];
+        /* ★ **1分子だけ**で、その -OH が**自分自身の骨格に囲まれている**分子を組む。
+         *   並べ直し（成分ごとの平行移動）は分子の中の詰まりを解けない ＝ 押しても入らない場面。 */
+        const m = g.userMolecule, X = 300, Y = 300;
+        const A = (dx, dy, el) => m.addAtom(el || 'C', X + dx, Y + dy);
+        const c1 = A(0, 0), c2 = A(80, 0), o = A(160, 0, 'O');
+        const ca = A(0, -80), cb = A(80, -80), cc = A(160, -80), cd = A(240, -80), ce = A(240, 0);
+        const cf = A(0, 80), cg = A(80, 80), ch = A(160, 80);
+        [[c1, c2], [c2, o], [c1, ca], [ca, cb], [cb, cc], [cc, cd], [cd, ce],
+         [c1, cf], [cf, cg], [cg, ch]].forEach(([p, q]) => m.addBond(p.id, q.id, 1));
+        g.updateDrawing();
+        assert(g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length === 1,
+            '（前提）1分子になっていない');
+        const shape0 = g.userMolecule.atoms.map(a => `${a.element}:${Math.round(a.x)},${Math.round(a.y)}`).sort().join('|');
+
+        pressReaction(c, '一気にカルボン酸まで');
+        assert(!btn.classList.contains('hidden'), '（前提）断られて札が出ていない');
+
+        btn.click();   // ★ 人と同じ手順で押す
+
+        const t = toastText(c);
+        assert(t.includes('場所が足りませんでした'),
+            `★ 入らなかったことを言っていない（${t}）`);
+        // ⚠ 次の手は**実際にできることだけ**を書く。拡大率では空きが1pxも増えないので
+        //   「画面を広くする」は案内に出さない
+        assert(t.includes('消す') && t.includes('伸ばす'),
+            `次の手（要らない分子を消す／結合を伸ばす）を案内していない（${t}）`);
+        assert(!/画面を広く|拡大/.test(t), `★ できないこと（拡大）を案内している（${t}）`);
+        // ⚠ 入らなかったのだから図は1pxも動いていない
+        const shape1 = g.userMolecule.atoms.map(a => `${a.element}:${Math.round(a.x)},${Math.round(a.y)}`).sort().join('|');
+        assert(shape1 === shape0, '入らなかったのに図が動いた');
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
