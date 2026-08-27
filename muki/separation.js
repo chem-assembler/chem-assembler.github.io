@@ -76,12 +76,22 @@
                 break;
             case 'flameNone':
                 box.appendChild(swatch(null, 'flame none'));
+                box.appendChild(note('色はつかない'));
                 break;
             default: // keep / none / nopre
+                // ⚠ 何も見えなかったことも「見えたもの」の1つ。空欄にせず、そう書く
                 box.appendChild(swatch(null, 'none'));
+                box.appendChild(note(obs.k === 'keep' ? '溶けない'
+                    : obs.k === 'nopre' ? '沈殿ができない' : '変化なし'));
                 break;
         }
         return box;
+    }
+    function note(text) {
+        var l = document.createElement('span');
+        l.className = 'sw-label';
+        l.textContent = text;
+        return l;
     }
     function arrow() {
         var a = document.createElement('span');
@@ -290,6 +300,8 @@
             d.appendChild(b);
             var entry = SEP_TABLE[state.truth] && SEP_TABLE[state.truth][s.op];
             var why = entry ? entry.why : flameWhy(state.truth);
+            // 出典の丸かっこで終わる書き方をしているので、句点はここでそろえる
+            if (why.slice(-1) !== '。') why += '。';
             d.appendChild(document.createTextNode(why));
             var dr = document.createElement('div');
             dr.className = 'drop';
