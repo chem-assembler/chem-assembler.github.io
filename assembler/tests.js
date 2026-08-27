@@ -30194,8 +30194,11 @@
             'oxidize_aldehyde', 'oxidize_primary', 'oxidize_primary_vigorous',
             'oxidize_secondary', 'oxidize_tertiary_info',
             'oxidize_side_chain', 'oxidative_cleavage', 'oxidation_out_of_scope_info',
+            // ★ v1472: ニトロ還元は**瓶を増やさず**、教科書が工業的製法として
+            //    名指しする H₂ ＋ 触媒（h2_ni）に相乗りさせた
+            'reduce_nitro',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 33, `瓶に紐づくルールが ${linked.length} 件（33件を期待）`);
+        assert(linked.length === 34, `瓶に紐づくルールが ${linked.length} 件（34件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -34151,6 +34154,96 @@
             assert(poly.detect(mol).length === 0,
                 '2分子で縮合重合が出ている（アミド化が「4分子要る」道の言い換えになっていない証明）');
         }
+        c.reset();
+    });
+
+    /* ★ RC7: ニトロ化合物の還元 → 芳香族アミン（§10.11-D #5・§10.11-F の3位・v1472）。
+     * ★ 教科書 本文 p.188・入試47件。**1段で直接アミンにし、塩の段は caption で補う**。 */
+    test('RC7: 芳香環のニトロ基が還元されてアミンになる（3組が登録エントリと一致・否定対照つき）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const red = W.REACTION_RULES.find(r => r.id === 'reduce_nitro');
+        const addH2 = W.REACTION_RULES.find(r => r.id === 'add_h2');
+        assert(red && addH2, 'ニトロ還元／水素付加のルールが無い');
+        assert(!red.info, 'ニトロ還元が「説明だけ」になっている');
+        // ★ 瓶は増やしていない（教科書が工業的製法として名指しする H₂ ＋ 触媒に相乗り）
+        assert(red.reagentId === 'h2_ni', `ニトロ還元の瓶が ${red.reagentId}（h2_ni を期待）`);
+        assert(!W.REAGENTS.some(r => /sn|スズ/i.test(r.id + r.name)), '瓶が増えている');
+
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+            g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const codeOf = (names) => { setup(names); return CC(g.userMolecule); };
+
+        // ---- (1) 候補の数 ----
+        const positive = { 'ニトロベンゼン': 1, 'p-ニトロトルエン': 1, 'm-ジニトロベンゼン': 2,
+            '2,4,6-トリニトロトルエン（TNT）': 3 };
+        Object.entries(positive).forEach(([n, want]) => assert(red.detect(setup([n])).length === want,
+            `${n}: ニトロ還元の候補が ${red.detect(setup([n])).length} 件（${want} 件を期待）`));
+        // **否定対照**: ⚠ **脂肪族のニトロ**（教科書は芳香族しか扱わない）／
+        //   もうアミン／ニトロ基が無い／アミド・ニトリルの N を巻き込まない
+        const negative = ['ニトロメタン', 'アニリン', 'ベンゼン', 'トルエン',
+            'アセトアニリド', 'アセトニトリル', 'エタノール'];
+        negative.forEach(n => {
+            assert(g.resolveCompound(n), `${n} がライブラリに無い（否定対照の前提が崩れている）`);
+            assert(red.detect(setup([n])).length === 0,
+                `${n}: 扱わないはずのニトロ還元が候補に出ている（${red.detect(setup([n])).length} 件）`);
+        });
+        assert(Object.keys(positive).length === 4 && negative.length === 7,
+            '陽性4件・陰性7件を数えたことを主張の中に残す');
+
+        // ---- (2) 生成物が**登録エントリと同じ正準コード**になる（3組） ----
+        let matched = 0;
+        [['ニトロベンゼン', 1, 'アニリン'], ['p-ニトロトルエン', 1, 'p-トルイジン'],
+         ['m-ジニトロベンゼン', 2, 'm-フェニレンジアミン']].forEach(([from, times, to]) => {
+            const mol = setup([from]);
+            for (let i = 0; i < times; i++) {
+                const sites = red.detect(mol);
+                assert(sites.length > 0, `${from}: ${i + 1} 回目の候補が0件`);
+                red.apply(g, sites[0]);
+                g.updateDrawing();
+            }
+            assert(CC(mol) === codeOf([to]),
+                `${from} → ${to} にならない\n  実際: ${CC(mol)}\n  登録: ${codeOf([to])}`);
+            matched++;
+        });
+        assert(matched === 3, `正準コードで一致を確かめた組が ${matched} 件（3件を期待）`);
+
+        // ---- (3) ★ 塩の段を**図でなく文で**補っている（§10.3-b の原則） ----
+        {
+            const mol = setup(['ニトロベンゼン']);
+            const before = mol.atoms.length;
+            const cap = red.apply(g, red.detect(mol)[0]).caption;
+            assert(mol.atoms.length === before - 2,
+                `原子が2つ（O×2）減っていない（${before} → ${mol.atoms.length}）`);
+            ['スズ', '塩酸', 'アニリン塩酸塩', '遊離'].forEach(w =>
+                assert(cap.includes(w), `塩の段が caption で補われていない（「${w}」が無い）: ${cap.slice(0, 120)}`));
+            // ⚠ 図にはイオンも塩も出さない（電荷はモデルに持ち込まない・§10.6）
+            assert(!mol.atoms.some(a => a.element === 'Cl' || a.element === 'Sn'),
+                '塩や金属が図に描かれている（§10.6 の線を越えている）');
+        }
+
+        // ---- (4) ★ 同じ瓶でも**ベンゼン環は水素化されない**（入試の頻出点） ----
+        {
+            const mol = setup(['ニトロベンゼン']);
+            assert(addH2.detect(mol).length === 0,
+                '水素付加がベンゼン環を拾っている（「ベンゼンは付加しにくい」を壊している）');
+            const before = CC(mol);
+            W.reactor.refresh();
+            const btn = [...D.querySelectorAll('#reaction-actions [data-rule]')]
+                .find(b => b.dataset.rule === 'reduce_nitro');
+            assert(btn, 'ニトロ還元が一覧に出ない');
+            assert(CC(mol) === before, '一覧を作っただけで分子が変わった');
+        }
+        // **否定対照**: C=C を持つ分子では今までどおり水素付加が出る（瓶を壊していない）
+        assert(addH2.detect(setup(['エチレン（エテン）'])).length === 1,
+            '水素付加の従来の候補が減った');
         c.reset();
     });
 

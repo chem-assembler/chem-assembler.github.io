@@ -2679,7 +2679,7 @@ const REAGENTS = [
         name: '水素・Ni',
         formula: 'H₂',
         kind: 'transform',
-        acts: 'C=C や C≡C の不飽和結合です（ニッケルや白金を触媒に加熱）',
+        acts: 'C=C や C≡C の不飽和結合（ニッケルや白金を触媒に加熱）と、芳香環についたニトロ基（還元されてアミノ基になります）です',
         miss: 'ベンゼン環も高温・高圧なら付加しますが、ふつうの条件では進みません（芳香族性を保つ方が安定なため）。'
     },
     // ハロゲン化水素は3本まとめて（上の表から生成）。**瓶の並びはここに入る**
@@ -4019,6 +4019,50 @@ const REACTION_RULES = [
         apply(game, site) {
             return addAcrossMultipleBond(game, site, null, null,
                 '水素 H₂ が付加しました（ニッケルや白金を触媒に加熱）。不飽和結合が減って飽和に近づきます。植物油に水素を付加して固める硬化油（マーガリンの原料）はこの反応の応用です。');
+        }
+    },
+    {
+        /* ★ ニトロ化合物の還元 → 芳香族アミン（§10.11-D #5・§10.11-F の3位・v1472）。
+         * ★ **教科書 本文 p.188**・入試47件（⚠ 上限値）・ニトロベンゼンもアニリンも登録済み。
+         *
+         * ★ **1段で直接アミンにする**（§10.3-b の原則）。教科書は
+         *   「スズ＋塩酸 → アニリン塩酸塩 → NaOH で遊離」の**2段**で書くが、
+         *   塩の段はイオン（§10.6 の壁）。⚠ **塩の段は caption で補う**。
+         *
+         * ⚠ **対象は芳香環に直結した -NO₂ だけ**。ニトロアルカンの還元も化学としては
+         *   起こるが、教科書が扱うのは芳香族だけ（§4-1 の線）。
+         *
+         * ★ **瓶は増やしていない**。教科書が工業的製法として名指しする **H₂ ＋ 触媒**に
+         *   相乗りする。⚠ そのため「H₂/Ni を作用させても**ベンゼン環は水素化されず、
+         *   ニトロ基だけが還元される**」が画面でそのまま起こる ＝ 入試の頻出点と一致する。 */
+        id: 'reduce_nitro',
+        reagentId: 'h2_ni',
+        label: '還元: -NO₂ → -NH₂（芳香族アミン）',
+        detect(mol) {
+            const arom = aromaticAtomSet(mol);
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'nitro')
+                .filter(g => mol.getNeighbors(g.atomIds[0])
+                    .some(n => n.atom.element === 'C' && arom.has(n.atom.id)))
+                .map(g => [g.atomIds[0]]);
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const nId = site[0];
+            const oIds = mol.getNeighbors(nId)
+                .filter(n => n.atom.element === 'O').map(n => n.atom.id);
+            if (oIds.length !== 2) throw new Error('ニトロ基の酸素が見つかりません');
+            oIds.forEach(id => mol.removeAtom(id));  // O が2つ外れ、自動水素が -NH₂ を描く
+            return {
+                caption: 'ニトロ基が還元されてアミノ基になりました（ニトロベンゼン → アニリン）。' +
+                    '実験室では**スズ Sn と濃塩酸**を使い、いったん**アニリン塩酸塩**（塩）ができます。' +
+                    'これに水酸化ナトリウム水溶液を加えると、弱塩基のアニリンが遊離します。' +
+                    'ここでは塩の段をとばして、遊離したアミンを直接描いています。' +
+                    '工業的には水素と触媒で還元します。' +
+                    '⚠ このとき**ベンゼン環は水素化されません** —— 環は安定（芳香族性）で、' +
+                    'ニトロ基のほうがずっと還元されやすいためです。',
+                changed: [nId]
+            };
         }
     },
     // H–X 付加は HBr・HCl・HI の3本。**`HYDROGEN_HALIDES` の表から生成する**ので、
