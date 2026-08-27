@@ -30853,7 +30853,7 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・糖の縮合1件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・縮合3件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
@@ -30867,17 +30867,23 @@
          *   **瓶からの入口を作ると、この反応自身の断り文と画面が食い違う**。
          *   ⚠ `DESIGN_sugar.md` §8-③ の推奨（h2so4_conc に相乗り）とは違う判断。
          *   ★ 断り文（`RX_GLYCOSIDE_CAVEAT`）が画面に出ていることは GC5 が見張っている。 */
-        const expected = ['addition_polymerization', 'alkyne_polymerization',
+        /* ★ 2026-08-27（v1472）に2件足して 10 件。⚠ **どちらも意図して瓶を持たせていない**:
+         *   `amidation` … 直接アミド化に当てる試薬を高校教材が名指ししない
+         *     （教科書はアミドの加水分解の**逆**として書くだけ）
+         *   `dehydration_anhydride` … 教科書は「加熱すると」としか書かない
+         *     （フタル酸 p.184・マレイン酸 p.157）。★ 資料に無い試薬を名乗らせない（§4-1） */
+        const expected = ['addition_polymerization', 'alkyne_polymerization', 'amidation',
             'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
-            'diene_polymerization', 'open_glucopyranose'].sort();
+            'dehydration_anhydride', 'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 8, `瓶を持たない実行ルールが ${now.length} 件（8件を期待）: ${now.join(', ')}`);
+        assert(now.length === 10, `瓶を持たない実行ルールが ${now.length} 件（10件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
-        // 解説専用（info）で瓶を持たないのは縮合重合の案内1件だけ
+        // 解説専用（info）で瓶を持たないのは、瓶を持たない反応の「できない側」だけ
+        // （縮合重合の案内／⚠ 分子内脱水がトランス形・未確定で起こらないときの案内）
         const infoUnlinked = RULES.filter(r => r.info && !r.reagentId).map(r => r.id).sort();
-        assert(infoUnlinked.join(',') === 'condensation_polymer_info',
+        assert(infoUnlinked.join(',') === 'condensation_polymer_info,dehydration_anhydride_info',
             `瓶を持たない info ルールが想定外: ${infoUnlinked.join(', ') || '（なし）'}`);
         // **否定対照**: reagentId を1つ外した写しでは、同じ数え方が必ずそれを拾う。
         // 拾えないなら数え方が壊れていて、上の合格は空振りの緑
@@ -34106,6 +34112,120 @@
             const poly = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
             assert(poly.detect(mol).length === 0,
                 '2分子で縮合重合が出ている（アミド化が「4分子要る」道の言い換えになっていない証明）');
+        }
+        c.reset();
+    });
+
+    /* ★ RC6: 分子内脱水 → 酸無水物（§10.11-D #3・§10.11-F の2位・v1472）。
+     * ⚠ これまで `hydrolysis_anhydride`（戻す方）だけが有る**片道**だった。 */
+    test('RC6: 分子内脱水で酸無水物ができる（3組が登録エントリと一致・シス/トランスの見分けつき）', async (c) => {
+        const W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const dehyd = W.REACTION_RULES.find(r => r.id === 'dehydration_anhydride');
+        const info = W.REACTION_RULES.find(r => r.id === 'dehydration_anhydride_info');
+        const hydro = W.REACTION_RULES.find(r => r.id === 'hydrolysis_anhydride');
+        assert(dehyd && info && hydro, '分子内脱水／案内／加水分解のルールが無い');
+        assert(!dehyd.info, '分子内脱水が「説明だけ」になっている（図が変わらない）');
+        // ⚠ 瓶は増やしていない（教科書は「加熱すると」としか書かない・§4-1）
+        assert(!dehyd.reagentId, `分子内脱水に瓶が結びついた（${dehyd.reagentId}）`);
+
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+            g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const codeOf = (names) => { setup(names); return CC(g.userMolecule); };
+
+        // ---- (1) 候補の数 ----
+        const positive = ['フタル酸', 'マレイン酸', 'コハク酸（ブタン二酸）', 'グルタル酸（ペンタン二酸）'];
+        positive.forEach(n => assert(dehyd.detect(setup([n])).length === 1,
+            `${n}: 分子内脱水の候補が ${dehyd.detect(setup([n])).length} 件（1件を期待）`));
+        // **否定対照**: 環が大きすぎる（テレフタル酸・アジピン酸）／
+        //   **メタなので環が閉じない**（イソフタル酸。⚠ 大きさだけ見ると6員で通ってしまう）／
+        //   小さすぎる（シュウ酸4員・マロン酸4員）／カルボキシ基が1つ（酢酸）／
+        //   **二酸だが他の官能基もある**（酒石酸・リンゴ酸＝ -OH ／ アスパラギン酸・
+        //   グルタミン酸＝ -NH₂。どれも高校では行き先を決められない）／
+        //   **もう酸無水物**（無水フタル酸）／**トランス形**（フマル酸）／
+        //   **シス/トランスが図から読めない**（ブテン二酸）
+        const negative = ['テレフタル酸', 'イソフタル酸', 'アジピン酸', 'シュウ酸',
+            'マロン酸（プロパン二酸）', '酢酸', '酒石酸', 'リンゴ酸',
+            'アスパラギン酸', 'グルタミン酸', '無水フタル酸', 'フマル酸',
+            'ブテン二酸（マレイン酸／フマル酸）'];
+        negative.forEach(n => {
+            assert(g.resolveCompound(n), `${n} がライブラリに無い（否定対照の前提が崩れている）`);
+            assert(dehyd.detect(setup([n])).length === 0,
+                `${n}: 起こらないはずの分子内脱水が候補に出ている（${dehyd.detect(setup([n])).length} 件）`);
+        });
+        assert(positive.length === 4 && negative.length === 13,
+            '陽性4件・陰性13件を数えたことを主張の中に残す');
+
+        // ---- (2) 生成物が**登録エントリと同じ正準コード**になる（3組） ----
+        let matched = 0;
+        [['フタル酸', '無水フタル酸'], ['マレイン酸', '無水マレイン酸'],
+         ['コハク酸（ブタン二酸）', '無水コハク酸']].forEach(([from, to]) => {
+            const mol = setup([from]);
+            const sites = dehyd.detect(mol);
+            assert(sites.length === 1, `${from}: 候補が ${sites.length} 件`);
+            const cap = dehyd.apply(g, sites[0]).caption;
+            g.updateDrawing();
+            const want = codeOf([to, '水']);
+            assert(CC(mol) === want,
+                `${from} → ${to} にならない\n  実際: ${CC(mol)}\n  登録: ${want}`);
+            assert(/員環の酸無水物/.test(cap), `${from}: caption が環の大きさを言っていない`);
+            matched++;
+        });
+        assert(matched === 3, `正準コードで一致を確かめた組が ${matched} 件（3件を期待）`);
+
+        // ---- (3) ★ フマル酸は「起こらない」を理由つきで返す（黙って消えない） ----
+        {
+            const mol = setup(['フマル酸']);
+            assert(info.detect(mol).length === 1,
+                `フマル酸: 案内が ${info.detect(mol).length} 件（1件を期待）`);
+            g.userMolecule = mol;
+            const cap = info.apply(g).caption;
+            assert(/トランス/.test(cap) && /マレイン酸/.test(cap) && /フマル酸/.test(cap),
+                `フマル酸の案内が見分け方を言っていない: ${cap.slice(0, 90)}`);
+        }
+        // ★ **シス/トランスが未確定の図**（CLAUDE.md が名指しするブテン二酸）は、
+        //   「起こらない」ではなく「まず描き分けて」と言う ＝ 断り方を取り違えない
+        {
+            const mol = setup(['ブテン二酸（マレイン酸／フマル酸）']);
+            assert(info.detect(mol).length === 1,
+                `ブテン二酸: 案内が ${info.detect(mol).length} 件（1件を期待）`);
+            g.userMolecule = mol;
+            const cap = info.apply(g).caption;
+            assert(/読み取れません/.test(cap) && /シス\/トランス整形/.test(cap),
+                `ブテン二酸の案内が「まず描き分けて」になっていない: ${cap.slice(0, 90)}`);
+            assert(!/トランス形）はなりません/.test(cap),
+                'ブテン二酸を「トランスだから起こらない」と言い切っている（未確定なのに）');
+        }
+        // **否定対照**: シス形（マレイン酸）や、二重結合と無関係な二酸には案内を出さない
+        ['マレイン酸', 'フタル酸', 'コハク酸（ブタン二酸）', 'テレフタル酸', '酢酸'].forEach(n => {
+            assert(info.detect(setup([n])).length === 0,
+                `${n}: 起こる（または関係ない）のに「起こらない」の案内が出ている`);
+        });
+
+        // ---- (4) ★ 片道が往復になった（§10.11-E が名指しした穴） ----
+        assert(W.reverseRuleIdOf('hydrolysis_anhydride') === 'dehydration_anhydride' &&
+               W.reverseRuleIdOf('dehydration_anhydride') === 'hydrolysis_anhydride',
+            '行きと帰りの対に酸無水物が入っていない（片道のまま）');
+        {
+            const before = codeOf(['フタル酸']);
+            const mol = setup(['フタル酸']);
+            dehyd.apply(g, dehyd.detect(mol)[0]);
+            g.updateDrawing();
+            const hSites = hydro.detect(mol);
+            assert(hSites.length === 1, `できた無水物を加水分解できない（${hSites.length} 件）`);
+            hydro.apply(g, hSites[0]);
+            g.updateDrawing();
+            // 水が1分子余分に残るので、フタル酸＋水と比べる
+            assert(CC(mol) === codeOf(['フタル酸', '水']),
+                `往復してフタル酸に戻らない\n  実際: ${CC(mol)}\n  期待: ${codeOf(['フタル酸', '水'])}`);
+            assert(before !== CC(mol), '前提が崩れている（水のぶんだけ違うはず）');
         }
         c.reset();
     });

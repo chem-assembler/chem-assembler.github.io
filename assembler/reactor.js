@@ -1651,6 +1651,153 @@ function oxidationOutOfScope(mol) {
     return { sites, kinds };
 }
 
+/* ==========================================================================
+ * 分子内脱水 → 酸無水物（§10.11-D #3・入試 563大問中53件・教科書 本文 p.184／p.157）
+ *
+ * ⚠ **逆の `hydrolysis_anhydride` だけが有る片道だった**（§10.11-E が名指しした形の穴）。
+ * ★ 台帳が「側鎖酸化と続けて効く形が定番」と書いており、
+ *   **o-キシレン → フタル酸（1段目・実装済み）→ 無水フタル酸（2段目・ここ）** がつながる。
+ *
+ * ★ **線の引き方**（判断できないものは出さない・DEVELOPMENT.md 4章）:
+ *  - **できる環は5員・6員だけ**。2つのカルボキシ炭素をつなぐ骨格の最短経路が
+ *    4原子（→5員）か5原子（→6員）のときだけ。⚠ シュウ酸（4員）・アジピン酸（7員）は外れる
+ *  - **経路が環の中を通るなら、隣り合っている（オルト）ときだけ**。
+ *    ⚠ これが無いと **イソフタル酸（メタ）が6員として通ってしまう**（実際には環にならない）
+ *  - **カルボキシ基以外の官能基を持つ分子は扱わない**（`dehydration_intra` と同じ線）。
+ *    ⚠ リンゴ酸・酒石酸・グルタミン酸のように、高校で行き先を決められないものを外す
+ *  - ★ **C=C をまたぐときはシス形だけ**。⚠ **マレイン酸はなるが、フマル酸はならない** ——
+ *    入試がいちばん問うのはここなので、`anti`（トランス）と「図から読めない」は
+ *    実行せず `dehydration_anhydride_info` が理由を返す
+ * ========================================================================== */
+
+/** cA から cB への骨格の最短経路（`skipIds` は通らない）。[cA, …, cB]。届かなければ null */
+function carboxylSkeletonPath(mol, cA, cB, skipIds) {
+    const skip = new Set(skipIds);
+    const prev = new Map([[cA, null]]);
+    const queue = [cA];
+    while (queue.length) {
+        const id = queue.shift();
+        if (id === cB) break;
+        for (const n of mol.getNeighbors(id)) {
+            if (n.atom.element === 'H' || skip.has(n.atom.id) || prev.has(n.atom.id)) continue;
+            prev.set(n.atom.id, id);
+            queue.push(n.atom.id);
+        }
+    }
+    if (!prev.has(cB)) return null;
+    const path = [];
+    for (let id = cB; id != null; id = prev.get(id)) path.push(id);
+    return path.reverse();
+}
+
+/**
+ * 二重結合 p=q をはさんで、置換基 sp と sq が同じ側か。
+ * `'syn'`（シス）／`'anti'`（トランス）／`null`（図が直線で読み取れない）。
+ * ⚠ 座標は原則「見た目専用」だが、**C=C まわりの幾何だけは 2D 構造式が幾何異性を伝える
+ *   標準的な手段**なので例外的に読む（chemistry.js `getDoubleBondGeometry` と同じ約束）。
+ */
+function doubleBondSideClass(mol, p, q, sp, sq) {
+    const at = id => mol.atoms.find(x => x.id === id);
+    const a = at(p), b = at(q), u = at(sp), v = at(sq);
+    if (!a || !b || !u || !v) return null;
+    const ax = b.x - a.x, ay = b.y - a.y;
+    const axisLen = Math.hypot(ax, ay) || 1;
+    const sideOf = (pt, origin) => {
+        const sx = pt.x - origin.x, sy = pt.y - origin.y;
+        const cross = ax * sy - ay * sx;
+        const norm = cross / (axisLen * (Math.hypot(sx, sy) || 1));
+        if (Math.abs(norm) < 0.1) return 0; // 直線描画（幾何が未確定）
+        return Math.sign(cross);
+    };
+    const sa = sideOf(u, a), sb = sideOf(v, b);
+    if (sa === 0 || sb === 0) return null;
+    return sa === sb ? 'syn' : 'anti';
+}
+
+/** 架橋の O を置く場所。ring を素直に描ける点が無ければ null */
+function anhydrideBridgeSpot(mol, cA, cB, path, ignoreIds) {
+    const at = id => mol.atoms.find(x => x.id === id);
+    const a = at(cA), b = at(cB);
+    if (!a || !b) return null;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const half = Math.hypot(b.x - a.x, b.y - a.y) / 2;
+    const G = bondStep(mol, cA);
+    // 経路の内側（両端を除く）の重心から離れる向きへ逃がす。重心が中点と重なる
+    // （直鎖の二酸を一直線に描いた場合）ときは、軸の左右を空いているほうから試す
+    const inner = path.slice(1, -1).map(at).filter(Boolean);
+    let ux = 0, uy = 0;
+    if (inner.length) {
+        const cx = inner.reduce((s, p) => s + p.x, 0) / inner.length;
+        const cy = inner.reduce((s, p) => s + p.y, 0) / inner.length;
+        ux = mx - cx; uy = my - cy;
+    }
+    if (Math.hypot(ux, uy) < 1e-6) { ux = -(b.y - a.y); uy = b.x - a.x; } // 軸の法線
+    const L = Math.hypot(ux, uy) || 1;
+    ux /= L; uy /= L;
+    // 正五角形に近い距離をまず狙い、詰まっていれば外へ広げる
+    const base = Math.sqrt(Math.max(0, (G * 0.75) * (G * 0.75) - half * half));
+    const cand = [];
+    [base, G * 0.5, G * 0.75, G].forEach(d => {
+        cand.push({ x: mx + ux * d, y: my + uy * d });
+        if (d > 1e-6) cand.push({ x: mx - ux * d, y: my - uy * d });
+    });
+    const skip = new Set([cA, cB, ...ignoreIds]);
+    const others = mol.atoms.filter(x => x.element !== 'H' && !skip.has(x.id));
+    const clear = G * 0.6;
+    for (const p of cand) {
+        if (others.every(o => Math.hypot(o.x - p.x, o.y - p.y) > clear)) return p;
+    }
+    return null;
+}
+
+/**
+ * 分子内脱水で酸無水物にできるカルボキシ基の組。
+ * 返り値は `{ site: [cA, ohA, cB, ohB], geo }`。`geo` は `'ok'`（実行できる）／
+ * `'anti'`（トランス。フマル酸）／`'unknown'`（図からシス/トランスが読めない）。
+ */
+function anhydrideDehydrationCandidates(mol) {
+    const groups = findFunctionalGroups(mol);
+    const carboxyls = groups.filter(g => g.type === 'carboxyl');
+    const rings = ringAtomIdsOf(mol);
+    const out = [];
+    for (let i = 0; i < carboxyls.length; i++) {
+        for (let j = i + 1; j < carboxyls.length; j++) {
+            const A = carboxyls[i], B = carboxyls[j];
+            const comp = componentOf(mol, A.atomIds[0]);
+            if (!comp.has(B.atomIds[0])) continue;        // 分子内だけ
+            // **カルボキシ基以外の官能基を持つ分子は扱わない**（行き先を決められない）。
+            // ⚠ 骨格そのもの（芳香環・C=C）は官能基として数えない ——
+            //    **マレイン酸の C=C を外すと、いちばん出る例が落ちる**。
+            //    C=C の向きは下の `geo` が別に見る（シスだけ通す）
+            const SKELETON = ['carboxyl', 'aromatic', 'cc_double'];
+            const others = groups.filter(g => !SKELETON.includes(g.type) &&
+                g.atomIds.some(id => comp.has(id)));
+            if (others.length) continue;
+            const oxy = [A.atomIds[1], A.atomIds[2], B.atomIds[1], B.atomIds[2]];
+            const path = carboxylSkeletonPath(mol, A.atomIds[0], B.atomIds[0], oxy);
+            if (!path || path.length < 4 || path.length > 5) continue;  // 5員・6員だけ
+            const innerIds = path.slice(1, -1);
+            // 経路が環の中を通るなら、隣り合っている（オルト）ときだけ
+            if (innerIds.some(id => rings.has(id)) && path.length !== 4) continue;
+            // C=C をまたぐなら**シス形だけ**（マレイン酸 ○ ／ フマル酸 ×）
+            let geo = 'ok';
+            for (let k = 0; k + 1 < path.length; k++) {
+                const bond = mol.getBond(path[k], path[k + 1]);
+                if (!bond || bond.type !== 2) continue;
+                if (rings.has(path[k]) && rings.has(path[k + 1])) continue; // 環の中は回れない＝常にシス
+                const cls = doubleBondSideClass(mol, path[k], path[k + 1], path[k - 1], path[k + 2]);
+                geo = cls === 'syn' ? geo : (cls === 'anti' ? 'anti' : 'unknown');
+                break;
+            }
+            out.push({
+                site: [A.atomIds[0], A.atomIds[2], B.atomIds[0], B.atomIds[2]],
+                path, geo
+            });
+        }
+    }
+    return out;
+}
+
 /* ---- 酸と塩の行き来（qa の棚卸しで**いちばん大きかった穴・7項目**） ----
  *
  * このアプリは電荷をモデルに持たず、**塩は「線1本の共有結合」として書く**流儀
@@ -3965,6 +4112,76 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★ 分子内脱水 → 酸無水物（§10.11-D #3・§10.11-F の2位・v1472）。
+         * ⚠ **瓶は足していない**。教科書は「加熱すると」としか書かず試薬を名指ししない
+         * （フタル酸 p.184・マレイン酸 p.157）ので、瓶を持たないルールにする（§4-1 の線）。 */
+        id: 'dehydration_anhydride',
+        label: '分子内脱水（-H₂O） → 酸無水物',
+        detect(mol) {
+            return anhydrideDehydrationCandidates(mol)
+                .filter(c => c.geo === 'ok' &&
+                    anhydrideBridgeSpot(mol, c.site[0], c.site[2], c.path, [c.site[1], c.site[3]]))
+                .map(c => c.site);
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [cA, ohA, cB, ohB] = site;
+            const cand = anhydrideDehydrationCandidates(mol)
+                .find(c => c.site[0] === cA && c.site[2] === cB);
+            const spot = cand && anhydrideBridgeSpot(mol, cA, cB, cand.path, [ohA, ohB]);
+            if (!spot) throw noRoom('環をつくる空間がありません');
+            const ring = cand.path.length + 1; // 架橋の O を足した環の大きさ
+            // 片方の -OH の O を架橋にし、もう片方の -OH は水として出す
+            mol.removeBond(cB, ohB);
+            parkAsWater(mol, ohB);
+            const o = mol.atoms.find(x => x.id === ohA);
+            o.x = spot.x; o.y = spot.y;
+            mol.addBond(ohA, cB, 1);
+            return {
+                caption: `2つのカルボキシ基から水がとれて、${ring}員環の酸無水物 -CO-O-CO- ができました（加熱）。` +
+                    'エステル化と同じ「-OH と -H がとれて水」ですが、相手が**同じ分子のもう1つの -COOH** なので環になります。' +
+                    'フタル酸 → 無水フタル酸、マレイン酸 → 無水マレイン酸がその例です。' +
+                    '⚠ 隣り合っていないと環が大きくなりすぎて起こりません' +
+                    '（テレフタル酸は酸無水物になりません）。',
+                changed: [cA, ohA, cB],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ⚠ **できない側を黙って消さない**（§9.2「陰性で説明できることを書く」）。
+         * ★ フマル酸（トランス）が無水物にならないことは、入試がいちばん問う点。 */
+        id: 'dehydration_anhydride_info',
+        label: '⚠ 分子内脱水 → 酸無水物（この形では起こらない）',
+        info: true,
+        detect(mol) {
+            return anhydrideDehydrationCandidates(mol)
+                .filter(c => c.geo !== 'ok').map(c => c.site);
+        },
+        apply(game) {
+            const kinds = new Set(anhydrideDehydrationCandidates(game.userMolecule)
+                .filter(c => c.geo !== 'ok').map(c => c.geo));
+            const parts = [];
+            if (kinds.has('anti')) {
+                parts.push('2つのカルボキシ基が**二重結合をはさんで反対側（トランス形）**にあります。' +
+                    '向かい合っていないので、そのままでは環になりません。' +
+                    'マレイン酸（シス形）は加熱すると容易に無水マレイン酸になりますが、' +
+                    'フマル酸（トランス形）はなりません —— これが2つを見分ける決め手です。');
+            }
+            if (kinds.has('unknown')) {
+                parts.push('二重結合のまわりが直線に描かれていて、**シスかトランスか図から読み取れません**。' +
+                    '左の「⇄ シス/トランス整形」で描き分けてから、もう一度見てください。');
+            }
+            // ⚠ 箇所が0件でも押されうる（`onRuleClick` は detect の結果をそのまま渡す）ので、
+            //    **必ず何か返す**（RX13 が「押しても解説が出ない」を見張っている）
+            return {
+                caption: parts.join('\n') ||
+                    'この分子には、2つのカルボキシ基から水がとれて環になる並びがありません' +
+                    '（5員環か6員環になる位置に -COOH が2つ要ります）。'
+            };
+        }
+    },
+    {
         // 酸無水物の加水分解（P12-8）。形は -CO-O- でエステルと同じだが、別の反応。
         // 無水酢酸＋水→酢酸2分子、無水フタル酸＋水→フタル酸。けん化とは呼ばない
         id: 'hydrolysis_anhydride',
@@ -4338,7 +4555,11 @@ const RX_UNDO_POINTER = '↩ 反応前に戻す は画面下の帯にありま�
  * ========================================================================== */
 const REVERSIBLE_REACTION_PAIRS = [
     ['esterification', 'hydrolysis_ester'],
-    ['condensation_glycoside', 'hydrolysis_glycoside']
+    ['condensation_glycoside', 'hydrolysis_glycoside'],
+    /* ★ 分子内脱水 ⇄ 酸無水物の加水分解（v1472）。
+     * ⚠ 教科書は**両方向とも本文に書いている**（フタル酸 → 無水フタル酸 p.184 ／
+     * 無水物 ＋ 水 → カルボン酸）。★ §10.11-E が「戻す方だけ有る片道」と名指しした穴。 */
+    ['dehydration_anhydride', 'hydrolysis_anhydride']
 ];
 
 /** その反応の「帰り」にあたる反応の id（宣言が無ければ null）。⚠ 対は両向きに引ける */
