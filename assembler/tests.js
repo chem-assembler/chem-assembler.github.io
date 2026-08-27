@@ -26967,6 +26967,102 @@
         g.setMode('puzzle');
     });
 
+    test('RX50: ★否定対照 — 予測の判定は「読める場所」に出る（14件で正解/不正解を撃ち分ける）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const toast = D.getElementById('canvas-toast');
+        assert(toast, 'キャンバス内の字幕 #canvas-toast が無い');
+
+        /* ★ ユーザー実機報告（2026-08-26）「生成物予測　判定が機能してない可能性」。
+           実測（:8221・Playwright）では**判定そのものは14件すべて正しかった**。
+           壊れていたのは出し先で、`#verify-result` に直に書いていた ―― あれは第5段で
+           `#panel-legacy`（aria-hidden）の中の隠しの器になっており、実測の矩形は
+           1280x900 でも 390x844 でも `0,0 26x626` ＝ 左上の 26px 幅の縦帯。
+           ⚠ この検査を赤くする壊し方 ＝ showToast をやめて #verify-result へ直に書き戻すこと。 */
+
+        // 最終状態から主生成物を **judge 側とは独立に** 組み直す（buildMainProductTarget を使わない）
+        const productOf = (rx) => {
+            const st = rx.states[rx.states.length - 1];
+            const heavy = st.atoms.map((a, i) => i).filter(i => st.atoms[i].element !== 'H');
+            const adj = new Map(heavy.map(i => [i, []]));
+            st.bonds.forEach(b => {
+                if (adj.has(b.atom1Index) && adj.has(b.atom2Index)) {
+                    adj.get(b.atom1Index).push(b.atom2Index);
+                    adj.get(b.atom2Index).push(b.atom1Index);
+                }
+            });
+            const seen = new Set(), comps = [];
+            heavy.forEach(i => {
+                if (seen.has(i)) return;
+                const comp = [], stack = [i];
+                while (stack.length) {
+                    const k = stack.pop();
+                    if (seen.has(k)) continue;
+                    seen.add(k); comp.push(k);
+                    adj.get(k).forEach(n => { if (!seen.has(n)) stack.push(n); });
+                }
+                comps.push(comp);
+            });
+            comps.sort((a, b) => b.length - a.length);
+            const keep = new Set(comps[0] || []);
+            const m = new W.Molecule(), map = new Map();
+            keep.forEach(i => { const a = st.atoms[i]; map.set(i, m.addAtom(a.element, a.x, a.y).id); });
+            st.bonds.forEach(b => {
+                if (map.has(b.atom1Index) && map.has(b.atom2Index)) {
+                    m.addBond(map.get(b.atom1Index), map.get(b.atom2Index), b.type);
+                }
+            });
+            return m;
+        };
+        const clearToast = () => { toast.textContent = ''; toast.className = 'hidden'; };
+        const judgeWith = (mol) => { clearToast(); g.userMolecule = mol; rp.judgePrediction(); return toast.className; };
+
+        g.setMode('learn');
+
+        // ★ここが本命 ―― 結果が**読める大きさで画面に出ている**。
+        //   14件の撃ち分けより**先**に見る（判定は元から正しく、壊れていたのは出し先なので、
+        //   撃ち分けの assert が先だと「常に不正解」という誤った診断で赤くなる）
+        rp.enter(0); rp.startPrediction();
+        clearToast();
+        const w0 = new W.Molecule(); w0.addAtom('C', 100, 100);
+        g.userMolecule = w0; rp.judgePrediction();
+        assert(toast.textContent.includes('不一致'),
+            `判定結果がキャンバス内の字幕に出ていない（${toast.textContent || '（空）'}）` +
+            ' ―― #verify-result は #panel-legacy の中の隠しの器（実測 26x626 の縦帯）');
+        assert(toast.className === 'error', `字幕の種別が error でない（${toast.className}）`);
+        {
+            const r = toast.getBoundingClientRect();
+            assert(r.width > 120 && r.height > 12,
+                `判定結果が読める大きさで出ていない（${Math.round(r.width)}x${Math.round(r.height)}）`);
+            assert(r.top < W.innerHeight && r.bottom > 0 && r.left < W.innerWidth && r.right > 0,
+                `判定結果が画面の外に出ている（${Math.round(r.left)},${Math.round(r.top)}）`);
+        }
+        rp.endPrediction(false);
+
+        rp.reactions.forEach((rx, i) => {
+            // ① 正解を入れたら success
+            rp.enter(i); rp.startPrediction();
+            assert(judgeWith(productOf(rx)) === 'success',
+                `${rx.id}: 主生成物を入れたのに正解にならない（判定が常に不正解）`);
+            assert(!rp.prediction, `${rx.id}: 正解したのに予測モードが終わらない`);
+
+            // ② わざと違うもの（炭素1個）を入れたら error
+            rp.enter(i); rp.startPrediction();
+            const wrong = new W.Molecule(); wrong.addAtom('C', 100, 100);
+            assert(judgeWith(wrong) === 'error',
+                `${rx.id}: 明らかな誤答が正解になる（判定が常に正解＝そもそも判定していない）`);
+
+            // ③ 空のままでも error（「何もしないで押したら通る」を塞ぐ）
+            rp.enter(i); rp.startPrediction();
+            assert(judgeWith(new W.Molecule()) === 'error',
+                `${rx.id}: 空のキャンバスで判定が通る`);
+            rp.endPrediction(false);
+        });
+        rp.exit();
+        g.setMode('puzzle');
+    });
+
     /* ===== 反応で作る C=O の向き（CO1・検品レビュー C-7） =====
        **C-7 は v928 で直っているのに、回帰テストが無いせいで台帳から閉じられず3回開き直された。**
        台帳の書いた原因（`outwardCandidates` の候補順）は**誤り**で、あの関数が置くのは
