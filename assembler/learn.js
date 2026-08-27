@@ -1227,10 +1227,10 @@ class IsomerPractice {
         this._pending = [];
         this.body.innerHTML = '';
 
-        const lead = document.createElement('div');
-        lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
-        lead.textContent = '分子式を選ぶと、キャンバスが答案用紙になります。構造異性体を並べて描き、「答え合わせ」で採点します。';
-        this.body.appendChild(lead);
+        // ⚠ v1468: 「分子式を選ぶと、キャンバスが答案用紙になります。…」（50字）は
+        //    3枚のカードで3回言っていたので、共通の1文を `#practice-lead`（index.html）へ1回だけ出した
+        //    （ux-density §2-⑤・§3-e）。この練習に固有の差分は無い ＝ lead を持たない
+        //    （何種類あるかはボタン自身が `C₄H₁₀（2種）` と名乗っている）
 
         /**
          * ★ お題を2つの群に分けて並べる（v1433・ユーザー補足 2026-08-20）。
@@ -1286,8 +1286,10 @@ class IsomerPractice {
             wrap.id = 'ip-training-problems';
             wrap.style.cssText = 'margin-top:8px;';
             const lab = document.createElement('div');
-            lab.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
-            lab.textContent = 'じっくり練習する回（環や多重結合を合わせて2つもつ式。三重結合・ジエン・アレンまで数えます）:';
+            lab.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            // ⚠ v1468: 47字 → 28字（ux-density 番外）。「環や多重結合を合わせて2つもつ式」は
+            //    並んでいる分子式そのものなので落とし、**何を数えるかの約束**だけ残す（黙って減らさない側）
+            lab.textContent = 'じっくり練習する回（三重結合・ジエン・アレンまで数えます）:';
             wrap.appendChild(lab);
             wrap.appendChild(training);
             this.body.appendChild(wrap);
@@ -1312,9 +1314,10 @@ class IsomerPractice {
             stWrap.id = 'ip-stereo-problems';
             stWrap.style.cssText = 'margin-top:8px;';
             const stLab = document.createElement('div');
-            stLab.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
-            stLab.textContent = '立体まで答える回（構造異性体を書き出し、立体が分かれる場所を指して、' +
-                '立体異性体も含めた総数まで答えます。種類数は採点のときに出します）:';
+            stLab.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
+            // ⚠ v1468: 63字 → 9字（ux-density 番外）。中身は**始めれば段ごとに帯が言う**手順の予告で、
+            //    選ぶ前に読ませる必要がない（種類数を出さないことは IW26 が別に見張っている）
+            stLab.textContent = '立体まで答える回:';
             stWrap.appendChild(stLab);
             stWrap.appendChild(stereo);
             this.body.appendChild(stWrap);
@@ -1331,8 +1334,9 @@ class IsomerPractice {
             arWrap.id = 'ip-aromatic-presets';
             arWrap.style.cssText = 'margin-top:8px;';
             const arLabel = document.createElement('div');
-            arLabel.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
-            arLabel.textContent = 'よく出る芳香族の回（ベンゼン環をもつ構造だけを数えます）:';
+            arLabel.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px;';
+            // ⚠ v1468: 34字 → 24字。「芳香族」と**数える範囲**は §11-4 の約束なので残す
+            arLabel.textContent = 'よく出る芳香族の回（ベンゼン環をもつ構造だけ）:';
             arWrap.appendChild(arLabel);
             const arGrid = document.createElement('div');
             arGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px;';
@@ -3260,8 +3264,11 @@ class AlkylPractice {
         this.closeReview();
         this.body.innerHTML = '';
         const lead = document.createElement('div');
-        lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
-        lead.textContent = '炭素数を選ぶと、キャンバスが答案用紙になります。付け根（C1 と結合手 R）はアプリが置くので、そこから炭素を伸ばして基を並べ、「答え合わせ」で採点します。2つ目からは、空いている所を炭素でタップすれば付け根がその場に出ます。';
+        lead.style.cssText = 'font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
+        // ⚠ v1468: 111字 → 19字（ux-density §2-⑤・§4）。共通の1文は `#practice-lead` に1回だけ。
+        //    「2つ目からは、空いている所を炭素でタップすれば付け根がその場に出ます」は
+        //    **やれば出る**（muki の「押した結果は下に残ります」と同じ型）
+        lead.textContent = '付け根（C1 と R）はアプリが置きます。';
         this.body.appendChild(lead);
         const grid = document.createElement('div');
         grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:6px;';
@@ -4404,9 +4411,11 @@ class StereoIsomerPractice {
         this.body.innerHTML = '';
 
         const lead = document.createElement('div');
-        lead.style.cssText = 'font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
-        lead.textContent = 'お題を選ぶとキャンバスが答案用紙になり、お題の図が1つ置かれます。つながり方は変えずに' +
-            '置換基の付き方だけを動かし、「＋ お題の図をもう1つ」で並べて書き出します。何種類あるかは単純な計算どおりとは限りません。';
+        lead.style.cssText = 'font-size:12.5px; color:var(--text-secondary); line-height:1.5; margin-bottom:6px;';
+        // ⚠ v1468: 103字 → 50字（ux-density §2-⑤）。共通の1文は `#practice-lead` に1回だけ。
+        //    「お題の図が1つ置かれます」「＋ お題の図をもう1つ で並べて」は画面に出る（ボタンが見えている）
+        lead.textContent = 'つながり方は変えずに、置換基の付き方だけを動かします。' +
+            '何種類あるかは単純な計算どおりとは限りません。';
         this.body.appendChild(lead);
 
         const grid = document.createElement('div');

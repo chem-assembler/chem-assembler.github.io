@@ -392,7 +392,12 @@ button:hover {
     text-align: center;
 }
 .canvas-header .tile-icon { font-size: 17px; line-height: 1.05; }
-.canvas-header .tile-label { font-size: 10px; }
+/* ⚠ v1468（ux-density §7-2）: 10px → **11px が上限**。
+   タイルは 52×46px 固定 × 8個 ＝ 416px で、ヘッダーの幅は 375端末で 361px
+   ＝ **すでに1行に入らず折り返している**。4字（「やり直し」「全体表示」）は
+   11px で 44px＝余白8px、12px だと 48px＝余白4px で padding を持つと溢れる。
+   ★ ここだけは 12.5px に上げない（実測で確かめた上限） */
+.canvas-header .tile-label { font-size: 11px; }
 
 /* ⚠ `.mobile-only { display: none }`（クラス1つ）は、上のタイル指定（クラス1つ＋要素1つ）に**負ける**。
    ☰ が PC のリボンに生えてしまうので、置き場所つきの指定で敷き直す。
@@ -544,12 +549,18 @@ button:hover {
     box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);
 }
 
+/* ⚠ v1468（ux-density §7-1 段B）: 11px → 12.5px。
+   **押しものが本文より小さい**のは逆で、モーダルのボタン 20種以上（「▶ 次の問題」「閉じる」
+   「⟲ 最初からやり直す」…）が全部ここに乗っていた。
+   ★ 高さは padding が持っているのでタップ標的 32px の床は動かない（check-mobile 検査4）。
+   ⚠ **順番が大事**: 先に第1便・第2便で文字を減らしてから上げている。
+      減らさずに上げるとモーダルが縦に伸びて MO1〜MO4 と check-mobile の検査3に当たる */
 .view-btn {
     background: rgba(0, 242, 254, 0.1);
     border-color: rgba(0, 242, 254, 0.3);
     color: var(--neon-blue);
     padding: 4px 10px;
-    font-size: 11px;
+    font-size: 12.5px;
     margin-right: 6px;
 }
 .view-btn:hover {
@@ -673,9 +684,12 @@ button:hover {
     background: rgba(255, 167, 38, 0.22);
     border-color: var(--neon-orange, #ffa502);
 }
+/* ⚠ v1468（ux-density §7-1 段C）: 10.5px → 12px。
+   **`K₂Cr₂O₇` の下付き文字は親の 0.6倍**なので、10.5px では実質 6px しかなかった
+   ＝ 受験生がいちばん読む必要のある記号がアプリでいちばん小さい、という逆転 */
 .rg-bottle .rg-formula {
     font-family: var(--font-code);
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: normal;
     color: var(--neon-orange, #ffa502);
 }
@@ -957,7 +971,7 @@ button:hover {
     border-color: rgba(255, 71, 87, 0.3);
     color: var(--neon-red);
     padding: 4px 10px;
-    font-size: 11px;
+    font-size: 12.5px;   /* v1468: .view-btn と同じ段（§7-1 段B） */
 }
 .danger-btn:hover {
     background: var(--neon-red);
@@ -1660,6 +1674,21 @@ button:hover {
     padding: 2px 10px 12px;
 }
 
+/* ===== 畳んだ読み物（v1468・ux-density §5）=====
+   ⚠ **新しい仕掛けは作っていない**。使うのは既存の `<details class="learn-acc">` そのままで、
+   ここで変えるのは**把手の背丈だけ**。学習メニューの `.learn-acc` は「モーダルの主役」だが、
+   ここで増やしたぶん（十字の規則・なぜ90°・判定オプション・出題プールの内訳）は
+   **本文のわきに置く読み物**なので、14.5px/13px の把手だと本文より大きくなって主客が逆になる。
+   ★ それでも 12.5px は本文と同じ ＝ v1468 の下限（11px を上げた先）を割らない */
+.cross-rules-acc { width: 100%; text-align: left; }
+.cross-rules-acc > summary { padding: 9px 10px; font-size: 12.5px; font-weight: 600; }
+.cross-rules-acc .learn-acc-body { font-size: 12.5px; line-height: 1.6; color: var(--text-secondary); }
+/* 出題件数の行に付く「内訳」。`font-family: var(--font-code)` の1行の中に入るので更に控えめ */
+.quiz-pool-fold { display: inline-block; margin-left: 6px; vertical-align: middle; text-align: left; }
+.quiz-pool-fold > summary { padding: 3px 8px; font-size: 11.5px; font-weight: 600; min-height: 0; }
+.quiz-pool-fold > summary::after { margin-left: 6px; }
+.quiz-pool-fold .learn-acc-body { padding: 2px 8px 8px; font-size: 11.5px; line-height: 1.5; }
+
 /* クイズの3群（A-7・DESIGN_entry_points.md §6 Step 4）。
    8ボタンが並列に並んでいるだけでは、どれが何の練習かも、どれから始めるかも分からない */
 .quiz-group {
@@ -1790,7 +1819,9 @@ button:hover {
     .mode-tab { padding: 12px 4px; }
 
     #left-panel > h2 { display: none; }
-    #left-panel .tool-group h3 { font-size: 10px; margin: 0 0 3px; white-space: nowrap; }
+    /* ⚠ v1468（§7-1 段E）: 10px → 11px まで。`white-space: nowrap` の**横スクロール帯の見出し**なので、
+       12.5px にすると 9字ぶん帯が伸びる（#left-panel は 375 で既に scrollWidth 2095 の帯） */
+    #left-panel .tool-group h3 { font-size: 11px; margin: 0 0 3px; white-space: nowrap; }
 
     /* ボタン削減（P11-M2b）: Selectは既定モード（他モード解除で自動復帰）、
        結合次数は結合線タップのトグルで変更できるため、モバイルでは非表示にする。
@@ -2372,10 +2403,10 @@ button:hover {
 .nw-constraints { display: flex; flex-wrap: wrap; gap: 8px 14px; width: 100%; font-size: 12px; color: var(--text-secondary); }
 .nw-constraints label { display: flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
 .nw-constraints select { flex: 0 1 auto; min-width: 0; max-width: 100%; padding: 4px; background: rgba(0,0,0,0.3); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; }
-.nw-hint { margin: 0; width: 100%; font-size: 11px; color: var(--text-muted); text-align: left; }
+.nw-hint { margin: 0; width: 100%; font-size: 12.5px; color: var(--text-muted); text-align: left; }
 .nw-start { margin: 0; width: 100%; font-size: 12.5px; color: var(--text-secondary); text-align: left; }
 
-.nw-enol-note { margin: 0; width: 100%; text-align: left; font-size: 11px; line-height: 1.5; color: #ffcf8f;
+.nw-enol-note { margin: 0; width: 100%; text-align: left; font-size: 12.5px; line-height: 1.5; color: #ffcf8f;
   background: rgba(255,180,90,0.08); border-left: 2px solid rgba(255,180,90,0.5); border-radius: 0 4px 4px 0; padding: 6px 8px; }
 .nw-stack { width: 100%; display: flex; flex-direction: column; gap: 4px; }
 .nw-empty { margin: 0; font-size: 12px; color: var(--text-muted); text-align: left; line-height: 1.6; }
@@ -2407,7 +2438,7 @@ button:hover {
 .nw-parts li b { color: #fff; font-variant-numeric: tabular-nums; }
 .nw-svg { background: rgba(15,20,28,0.85); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; max-width: 100%; }
 
-.nw-palette-head { width: 100%; text-align: left; font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.nw-palette-head { width: 100%; text-align: left; font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
 /* ⚠ **58枚を平らに並べると 1448px** ＝ モーダルの窓（968px）の1.5倍で探せない。
    カードが前から持っている row（何を訊いているか）でまとめ、cell（その答え）を横に並べると
    **20行**になって1画面に収まる。データは1文字も変えていない（発注書 §D-1）。 */
