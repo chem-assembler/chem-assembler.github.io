@@ -1686,7 +1686,9 @@ button:hover {
 /* ヘルプのデモ一覧の1行説明（v1472・ux-density §2-③）。
    ⚠ **新しい仕掛けは作っていない** —— `<details class="learn-acc">` そのままで、
    ここで変えるのは**把手を一覧の1行に詰めること**だけ（枠と地色を外し、余白を落とす）。
-   ★ 見た目は畳む前とほぼ同じ（見出し＋右端の ▾）で、消えるのは説明の1行だけ */
+   ★ 見た目は畳む前とほぼ同じ（見出し＋そのすぐ右の ▸）で、消えるのは説明の1行だけ。
+   ⚠ `::after` の `margin-left: auto`（親の `.learn-acc` 由来）は下で打ち消してある ——
+      13行ぶん並ぶ一覧では、印を右端まで飛ばすと**どの見出しに付いた印か**が読めなくなる */
 .tut-acc { border: none; background: none; width: 100%; text-align: left; }
 .tut-acc > summary {
     padding: 2px 0;
