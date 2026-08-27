@@ -353,6 +353,38 @@ function quizGroupValue() {
     return _quizGroupFromUrl;
 }
 
+/* ===== 十字の4操作の規則（⏱ 立体タイムアタック と 🔤 記号パズル で共有）=====
+ *
+ * ⚠ **同じ規則を2つの画面が別々の文で書いていた**（254字＋193字＝447字。ux-density §3-b）。
+ * v1468 で**本文を1本**にし、両方の `<details class="learn-acc">` に流し込む形にした。
+ * ★ 中身は畳んだだけで削っていない ＝ 「必要な人は開いて読める」。
+ * ⚠ 1文だけ**足した**（消したのではない）: 元は「十字は選んでいる中心（C）の4本の枝です」で
+ *    分子の側からしか読めなかったので、記号パズルからも読めるように言い添えている。
+ *
+ * ★ 立体化学の道具立て（紙の上で許される回転・辺は4つでも2通り）は
+ *   **教科書の【発展】の段**（DEVELOPMENT.md の3段の2段目）なので、消さずに畳む側。
+ */
+const CROSS_RULES_HTML =
+    '十字の中心が原子1つ、4本の枝はそこに付く4つのものです' +
+    '（分子なら<b>選んでいる中心（C）の4本の枝</b>、記号パズルなら A・B・C・D）。' +
+    '枝の外にある <b>⟲ ⟳</b> は<b>その枝を固定して、残り3つを送る</b>回し方＝紙の上で許される回転で、' +
+    '<b>立体異性体は変わりません</b>（逆回しがちょうど元に戻します）。' +
+    '立体を変えられるのは外枠の<b>鏡</b>だけ。<b>左辺・右辺＝縦軸の鏡（左右が入れ替わる）</b>、' +
+    '<b>上辺・下辺＝横軸の鏡（上下が入れ替わる）</b>で、' +
+    '<b>辺は4つでも結果は2通りしかありません</b>（鏡像は1つだけ）。' +
+    '180°回すには、鏡を2回（縦→横）押します。' +
+    'お題と立体が違う中心を見極めて鏡を使い、同じ分子を作ったら完成。判定は図の向きではなく分子で行います。';
+
+/**
+ * `.cross-rules`（⏱ と 🔤 の2か所）に上の本文を入れる。
+ * ⚠ **入口は2つでも本文は1つ**。片方だけ直して食い違う、が起きないようにするための形。
+ */
+function fillCrossRules() {
+    document.querySelectorAll('.cross-rules').forEach(el => {
+        if (!el.innerHTML.trim()) el.innerHTML = CROSS_RULES_HTML;
+    });
+}
+
 /** 出題件数の行に足す但し書き。**絞られていることを画面に出す**（黙って減らさない） */
 function quizGroupNote() {
     const g = QUIZ_GROUPS.find(x => x.value === quizGroupValue());
@@ -487,6 +519,26 @@ function quizOversizedNote(names) {
     // 名前は長いので、頭の「（」より前だけを見出しに使う（例: パルミチン酸ナトリウム（セッケン））
     const head = names.slice(0, 2).map(n => n.split('（')[0]).join('・');
     return ` ／ 鎖が長すぎる ${names.length} 件（${head}${names.length > 2 ? ' など' : ''}）は外してある`;
+}
+
+/** HTML に混ぜる前に化合物名を無害化する（名前は compounds.json 由来の素のテキスト） */
+function quizEscape(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * 出題件数の行を組み立てる（v1468・ux-density 番外）。
+ *
+ * ⚠ **「黙って減らさない」約束（v1434）は畳んでも守れる** —— 外した件数と代表名は
+ * `<details>` の中にそのまま残り、開けば読める。画面に出しっぱなしにするのは
+ * 「いま出題できる N 件」と、絞り込みの理由（リンク元の指定）だけ。
+ * ⚠ 閉じていても `textContent` には出るので、件数を読む既存の回帰テストはそのまま通る。
+ */
+function quizPoolCountHtml(head, tail) {
+    if (!tail) return quizEscape(head);
+    return quizEscape(head) +
+        '<details class="learn-acc quiz-pool-fold"><summary>内訳</summary>' +
+        `<div class="learn-acc-body">${quizEscape(tail.replace(/^\s*／\s*/, ''))}</div></details>`;
 }
 
 /**
@@ -1752,10 +1804,11 @@ class SameCompoundQuiz {
     renderPoolCount() {
         if (!this.poolCountEl) return;
         const n = this.poolIndices ? this.poolIndices.length : 0;
-        this.poolCountEl.textContent = n === 0
-            ? '⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote()
-            : `いま出題できる: ${n} 件（うち「違う」に使える組 ${this.pairs.length} 組）` +
-              quizGroupNote() + quizOversizedNote(this.oversized);
+        // ⚠ v1468: 「組」の数と「外してある」の但し書きは `内訳` に畳む（ux-density 番外）
+        this.poolCountEl.innerHTML = n === 0
+            ? quizEscape('⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote())
+            : quizPoolCountHtml(`いま出題できる: ${n} 件` + quizGroupNote(),
+                `うち「違う」に使える組 ${this.pairs.length} 組` + quizOversizedNote(this.oversized));
     }
 
     // 互換ラッパー（回帰テストから使用）
@@ -3484,6 +3537,7 @@ class StereoTimeAttack extends FischerPractice {
     constructor(game) {
         super(game, { prefix: 'ta', modalId: 'time-attack-modal', openBtnId: 'btn-time-attack' });
         if (!this.modal) return;
+        fillCrossRules();   // 十字の規則は1本（#cross-rules-ta / #cross-rules-sp の両方に入る）
         this.timerEl = document.getElementById('ta-timer');
         this.modeEl = document.getElementById('ta-mode');
         this.timerId = null;
@@ -3908,6 +3962,7 @@ class SymbolPuzzle {
         this.moves = 0;
         this.finished = false;
         this.taskEl = document.getElementById('sp-task');
+        fillCrossRules();   // 十字の規則は1本（#cross-rules-sp / #cross-rules-ta の両方に入る）
         this.statusEl = document.getElementById('sp-status');
         this.movesEl = document.getElementById('sp-moves');
         this.modeEl = document.getElementById('sp-mode');
@@ -5244,9 +5299,11 @@ class NamingQuiz {
     renderPoolCount() {
         if (!this.poolCountEl) return;
         const n = this.pool ? this.pool.length : 0;
-        this.poolCountEl.textContent = n === 0
-            ? '⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote()
-            : `いま出題できる: ${n} 件` + quizGroupNote() + quizOversizedNote(this.oversized);
+        // ⚠ v1468: 「外してある」の但し書きは `内訳` に畳む（ux-density 番外）
+        this.poolCountEl.innerHTML = n === 0
+            ? quizEscape('⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote())
+            : quizPoolCountHtml(`いま出題できる: ${n} 件` + quizGroupNote(),
+                quizOversizedNote(this.oversized));
     }
 
     /**

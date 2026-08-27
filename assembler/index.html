@@ -677,7 +677,6 @@
                             <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
                         </label>
                     </div>
-                    <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;">左の「✳不斉炭素原子マーク」で炭素に * を付けてから使います。</div>
                     <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
                         <span style="font-size:0.88rem; color:#fff;">立体（D/L・α/β）を名前に反映する</span>
                         <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px; flex-shrink:0;">
@@ -687,7 +686,17 @@
                             <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
                         </label>
                     </div>
-                    <div style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;"><b>ふだんは OFF のままで大丈夫です</b>（アラニン・乳酸のように総称で表示します）。ONにすると、フィッシャー投影（置換基を上下左右に描く）やハース環の上下から立体を読み取り、<b>D/L・α/β</b> を名前に付けます。高校化学では、まず総称で覚えて問題ありません。</div>
+                    <!-- ⚠ v1468（ux-density 番外）: 2つのトグルに付いていた説明 153字を1つに畳んだ。
+                         ★ 画面自身が「高校化学では、まず総称で覚えて問題ありません」と書いている
+                            ＝ **アプリがすでに発展だと認めている**内容なので、消さずに閉じる。
+                         ⚠ 中身は1文字も削っていない（不斉炭素の側の1行もそのまま中に入れた） -->
+                    <details id="puzzle-stereo-why" class="learn-acc cross-rules-acc" style="margin-top:8px;">
+                        <summary>立体（D/L・α/β）と * の指定について</summary>
+                        <div class="learn-acc-body">
+                            <div><b>ふだんは OFF のままで大丈夫です</b>（アラニン・乳酸のように総称で表示します）。ONにすると、フィッシャー投影（置換基を上下左右に描く）やハース環の上下から立体を読み取り、<b>D/L・α/β</b> を名前に付けます。高校化学では、まず総称で覚えて問題ありません。</div>
+                            <div>不斉炭素原子（*）の判定は、左の「✳不斉炭素原子マーク」で炭素に * を付けてから使います。</div>
+                        </div>
+                    </details>
                 </div>
             </div>
             <!-- フッター（§5-3 の 48）。「← 自由に戻る」は右パネルの #mode-tabs から移設。
@@ -1097,12 +1106,22 @@
                 <button id="btn-fp-cycle-ccw" class="view-btn" style="padding:8px;">⟲ 軸以外の3つを回す</button>
                 <button id="btn-fp-cycle-cw" class="view-btn" style="padding:8px;">⟳ 軸以外の3つを回す</button>
             </div>
+            <!-- ⚠ v1468（ux-density §2-⑨）: 172字を畳んだ。
+                 「フィッシャー投影は 90°回すと鏡像になる」は**投影図の約束＝発展**なので消さない。
+                 ただし**押す前に読ませる必要はない**（押せば #fp-status が結果を言う）ので、
+                 画面に出すのは1行だけにして、本文は1文字も削らずに中へ入れた -->
             <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
-                フィッシャー投影は紙面内で90°回すと鏡像（別の分子）になってしまいます。そこで90°ボタンは
-                「回してから左右の枝を入れ替える」までを1操作で行い、同じ分子を保ちます。
-                180°回転と、軸を1本固定して残り3本を回す操作は、そのままで同じ分子のままです。
-                どのボタンも、押した結果の図から立体を読み直して、分子が変わっていないことを確認しています。
+                <b>どのボタンも同じ分子のままです</b>（90°だけは左右入れ替えとセット）。
             </p>
+            <details id="fp-why-90" class="learn-acc cross-rules-acc">
+                <summary>なぜ 90° で左右を入れ替えるのか</summary>
+                <div class="learn-acc-body">
+                    フィッシャー投影は紙面内で90°回すと鏡像（別の分子）になってしまいます。そこで90°ボタンは
+                    「回してから左右の枝を入れ替える」までを1操作で行い、同じ分子を保ちます。
+                    180°回転と、軸を1本固定して残り3本を回す操作は、そのままで同じ分子のままです。
+                    どのボタンも、押した結果の図から立体を読み直して、分子が変わっていないことを確認しています。
+                </div>
+            </details>
             <div id="fp-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-fp-reset" class="view-btn" style="flex:1; padding:10px;">⟲ 最初の図に戻す</button>
@@ -1171,16 +1190,18 @@
                     <button id="btn-ta-rot-down-cw" class="cross-op" title="下の枝を固定して、残り3つを時計回りに送る">⟳</button>
                 </div>
             </div>
+            <!-- ⚠ v1468（ux-density §2-⑥・§3-b）: ここにあった 254字の規則は
+                 **記号パズル（193字）とまったく同じ4操作を別の文で**書いていた（合計 447字）。
+                 規則の本文は `CROSS_RULES_HTML`（quiz.js）**1本**にまとめ、
+                 両方の画面の `.cross-rules` に流し込んで、どちらからも開けるようにした。
+                 ⚠ **中身は削っていない**（畳んだだけ）。既定は閉じる ＝ 画面に出るのは下の1行だけ -->
             <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
-                十字は<b>選んでいる中心（C）の4本の枝</b>です。枝の外にある <b>⟲ ⟳</b> は
-                <b>その枝を固定して、残り3つを送る</b>回し方＝紙の上で許される回転で、
-                <b>立体異性体は変わりません</b>（逆回しがちょうど元に戻します）。
-                立体を変えられるのは外枠の<b>鏡</b>だけ。<b>左辺・右辺＝縦軸の鏡（左右が入れ替わる）</b>、
-                <b>上辺・下辺＝横軸の鏡（上下が入れ替わる）</b>で、
-                <b>辺は4つでも結果は2通りしかありません</b>（鏡像は1つだけ）。
-                180°回すには、鏡を2回（縦→横）押します。
-                お題と立体が違う中心を見極めて鏡を使い、同じ分子を作ったら完成。判定は図の向きではなく分子で行います。
+                <b>⟲ ⟳ は回転（立体は変わらない）、外枠の 鏡 は鏡像（立体が変わる）。</b>
             </p>
+            <details id="cross-rules-ta" class="learn-acc cross-rules-acc">
+                <summary>くわしい規則（十字の4操作）</summary>
+                <div class="learn-acc-body cross-rules"></div>
+            </details>
             <div id="ta-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <button id="btn-ta-best" class="view-btn hidden" style="padding:10px; border-color:var(--neon-purple); color:#e0b0ff;">▶ 最短手順を見る（お題の最初から再生）</button>
             <div class="modal-footer" style="display:flex; gap:10px;">
@@ -1252,6 +1273,12 @@
             <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
                 A・B・C・D はただの目印です。手つきを覚えたら ⏱ 立体タイムアタックで実物の分子に当ててみてください。
             </p>
+            <!-- ⚠ ⏱ 立体タイムアタックと**同じ本文**（quiz.js の CROSS_RULES_HTML）を流し込む。
+                 規則は1本・入口は2つ（ux-density §3-b） -->
+            <details id="cross-rules-sp" class="learn-acc cross-rules-acc">
+                <summary>くわしい規則（十字の4操作）</summary>
+                <div class="learn-acc-body cross-rules"></div>
+            </details>
             <div id="sp-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <div class="modal-footer" style="display:flex; gap:10px;">
                 <button id="btn-sp-reset" class="view-btn" style="flex:1; padding:10px;">⟲ 最初からやり直す</button>
