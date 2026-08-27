@@ -1526,6 +1526,27 @@ function alkeneCleavageClass(mol, site) {
     return inRing ? 'ring' : 'ok';
 }
 
+/**
+ * キャンバスの中のエチレン（C₂H₄）＝ **重原子が炭素2個だけで、C=C でつながった連結成分**。
+ * 返り値は `[C, C]` の配列。⚠ ワッカー法が**エチレンだけ**を相手にするための門番。
+ */
+function ethyleneUnits(mol) {
+    const seen = new Set();
+    const out = [];
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || seen.has(a.id)) return;
+        const comp = [...componentOf(mol, a.id)]
+            .filter(id => (mol.atoms.find(x => x.id === id) || {}).element !== 'H');
+        comp.forEach(id => seen.add(id));
+        if (comp.length !== 2) return;
+        if (!comp.every(id => (mol.atoms.find(x => x.id === id) || {}).element === 'C')) return;
+        const bond = mol.getBond(comp[0], comp[1]);
+        if (!bond || bond.type !== 2) return;
+        out.push([comp[0], comp[1]]);
+    });
+    return out;
+}
+
 /** 酸化開裂を実行できる C=C の一覧（`[id1, id2]` の配列） */
 function oxidativeCleavageSites(mol) {
     return multipleBondSites(mol)
@@ -2715,6 +2736,23 @@ const REAGENTS = [
         kind: 'transform',
         acts: 'フェノール性の -OH と、アミノ基 -NH₂ です（アセチル化）',
         miss: 'カルボン酸より反応性が高いので、直接エステル化が進みにくいフェノールもエステルにできます。アミドの N は電子を引かれていて反応しません。'
+    },
+    {
+        /* ★ ワッカー法の瓶（§10.11-D #27・§10.3-f C-3・v1472）。
+         * ⚠ **瓶が1本増える**（22 → 23本）。§10.9 は「足すなら先に区分をもう一段割る」と
+         *   申し送っているが、★ **区分を割らずに1本だけ足す**ほうを選んだ:
+         *   - 区分割りは試薬パレット側の設計（`DESIGN_reagent_palette.md`）で、
+         *     反応レーンが片手間に決める話ではない
+         *   - ⚠ この瓶は**エチレン専用**で、他の分子では必ず空振りする ＝ 区分が増える
+         *     たぐいの瓶ではない（既存の「変えるもの」の末尾に並ぶだけ）
+         * ★ 申し送り: CO₂ の瓶（§10.9）を足すときは、**そこで区分割りを決めること**。 */
+        id: 'o2_pdcl2',
+        name: '酸素・PdCl₂/CuCl₂',
+        formula: 'O₂',
+        kind: 'transform',
+        acts: 'エチレンです（酸化されてアセトアルデヒドになります）',
+        miss: 'この瓶はエチレンからアセトアルデヒドを作る工業的製法のためのものです。' +
+            '高校で扱うのはエチレンの場合だけなので、ほかの分子では何も起こしません。'
     },
     {
         id: 'sulfur',
@@ -4019,6 +4057,40 @@ const REACTION_RULES = [
         apply(game, site) {
             return addAcrossMultipleBond(game, site, null, null,
                 '水素 H₂ が付加しました（ニッケルや白金を触媒に加熱）。不飽和結合が減って飽和に近づきます。植物油に水素を付加して固める硬化油（マーガリンの原料）はこの反応の応用です。');
+        }
+    },
+    {
+        /* ★ ワッカー法（§10.11-D #27・§10.3-f C-3・v1472。ユーザーが「足す」と決めていた）。
+         * ★ **教科書 本文 p.150 に式がある**（p.282 に再掲）・入試12〜13件。
+         * ⚠ ただし**教科書に「ワッカー法」という名前は無い**（参考書が名づけている）ので、
+         *   caption でそのことを断る（§4-1）。
+         * ★ 図は素直 —— **炭素2個のまま残り、分子が消えない**（酸化開裂との違い）。
+         * ⚠ **対象はエチレンだけ**。末端アルケン一般でも似た反応は進むが、
+         *   教科書・入試が扱うのはエチレンの場合だけ（§4-1 の線）。 */
+        id: 'wacker_oxidation',
+        reagentId: 'o2_pdcl2',
+        label: 'ワッカー法（エチレン → アセトアルデヒド）',
+        detect(mol) { return ethyleneUnits(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [c1, c2] = site;
+            const spot = freeSpotAround(mol, c1);
+            if (!spot) throw noRoom('カルボニルの酸素を置く空間がありません');
+            const bond = mol.getBond(c1, c2);
+            if (!bond || bond.type !== 2) throw new Error('エチレンの C=C が見つかりません');
+            bond.type = 1;
+            const o = mol.addAtom('O', spot.x, spot.y);
+            mol.addBond(c1, o.id, 2);
+            bendCarbonyl(mol, c1, o.id);
+            return {
+                caption: 'エチレンが酸化されてアセトアルデヒドになりました。' +
+                    '塩化パラジウム(II) と塩化銅(II) を触媒に、酸素で酸化します。' +
+                    '**炭素は2個のまま残り**、C=C の片方が C=O に変わるだけです' +
+                    '（切れて減る酸化開裂との違いはここです）。' +
+                    'アセトアルデヒドの工業的製法で、教科書には式が載っています' +
+                    '（「ワッカー法」という呼び名は参考書のものです）。',
+                changed: [c1, c2, o.id]
+            };
         }
     },
     {
