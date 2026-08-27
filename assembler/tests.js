@@ -23983,7 +23983,9 @@
 
         // ---- ① 印を持つのは「並べた単量体をまとめて」の3つだけ ----
         const flagged = W.REACTION_RULES.filter(r => r.wholeCanvas).map(r => r.id).sort();
-        assert(flagged.join(',') === 'addition_polymerization,alkyne_polymerization,diene_polymerization',
+        // ⚠ **縮合重合は v1472 で足した**（v1465 の付け忘れ。PM13 で再現してから付けた）
+        assert(flagged.join(',') === 'addition_polymerization,alkyne_polymerization,' +
+               'condensation_polymerization,diene_polymerization',
             `wholeCanvas を持つルールが増えている（${flagged.join(',')}）`);
 
         // ---- ② v1429 の直しは生きている（見ている分子と無関係な反応は出ない） ----
@@ -24107,6 +24109,50 @@
         g.updateDrawing();
         assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 4,
             '1,4-付加重合で残る二重結合の数が変わった');
+    });
+
+    /* ★ PM13: **縮合重合にも同じ穴があった**（反応機構ビューアのレーンの申し送り・v1472）。
+     * ⚠ v1465 は付加重合の3本にだけ `wholeCanvas` を付けており、
+     * `condensation_polymerization` は外れていた。
+     * ★ **4分子ちょうどでは出ない穴**（箇所が4分子ぜんぶを含むので focus に必ず当たる）。
+     * 出るのは **1本目を作ったあと、単量体を並べ直して2本目を作るとき** ＝ PM9 と同じ形。 */
+    test('PM13: 鎖ができた後でも、並べ直した単量体をもう一度まとめて縮合重合できる', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        const cond = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        assert(cond, '縮合重合のルールが無い');
+        const btns = () => [...D.querySelectorAll('#reaction-actions [data-rule]')].map(b => b.dataset.rule);
+        const NY66 = ['アジピン酸', 'ヘキサメチレンジアミン', 'アジピン酸', 'ヘキサメチレンジアミン'];
+
+        // ---- ① 4分子ちょうどでは、モーダルで1つを見ていても出る（ここに穴は無い） ----
+        const first = polySetup(c, NY66);
+        assert(cond.detect(first).length === 1, '4分子で縮合重合が出ない（前提が崩れている）');
+        g.openMoleculeModal();
+        W.reactor.refresh();
+        assert(btns().includes('condensation_polymerization'),
+            `4分子で1つを見ているときに縮合重合が消えた（${btns().join(' / ')}）`);
+        D.getElementById('btn-molecule-modal-close').click();
+
+        // ---- ② 1本目を作ったあと、単量体を並べ直して2本目 ＝ PM9 と同じ形 ----
+        cond.apply(g, cond.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        NY66.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        g.updateDrawing();
+        g.openMoleculeModal();
+        W.reactor.refresh();
+        const focus = g.moleculeModalAtomIds();
+        assert(focus && focus.size > 12, `分析対象が①の鎖でない（${focus && focus.size}原子）`);
+        assert(cond.detect(g.userMolecule).length === 1,
+            '2回目の縮合重合を detect が見つけていない（穴の場所が違う）');
+        assert(btns().includes('condensation_polymerization'),
+            `鎖を見ているあいだ縮合重合が一覧に出ない（${btns().join(' / ')}）`);
+
+        // 押せば本当に2本目の鎖ができる
+        cond.apply(g, cond.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 4,
+            '鎖2本ぶんの R（4個）になっていない');
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
     });
 
     test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
