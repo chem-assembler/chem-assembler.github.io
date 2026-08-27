@@ -103,13 +103,15 @@
     // ---------------------------------------------------------------
     // 描画
     // ---------------------------------------------------------------
+    /** 一覧は「問題が3つ並んでいるだけ」。⚠ 難易度の印と候補の数より多くを書かない */
     function renderTabs() {
         var box = $('prob-tabs');
         box.textContent = '';
         SEP_PROBLEMS.forEach(function (p, i) {
+            var d = sepDifficulty(p);
             var b = document.createElement('button');
             b.type = 'button';
-            b.textContent = (i + 1) + '. ' + p.title;
+            b.textContent = '問題' + (i + 1) + '　' + d.mark + '　候補' + d.cands;
             b.className = (state.problem && state.problem.id === p.id) ? 'active' : '';
             b.setAttribute('data-prob', p.id);
             b.addEventListener('click', function () { start(p.id); });
@@ -119,8 +121,11 @@
 
     function renderProblem() {
         var p = state.problem;
-        $('prob-title').textContent = p.title;
-        $('prob-note').textContent = p.note;
+        var i = SEP_PROBLEMS.indexOf(p);
+        var d = sepDifficulty(p);
+        $('prob-title').textContent = '問題' + (i + 1);
+        // ⚠ ここに解き筋を書かない。出してよいのは難易度の印と候補の数だけ
+        $('prob-note').textContent = d.mark + '　候補 ' + d.cands;
         var box = $('cand-list');
         box.textContent = '';
         p.cands.forEach(function (c) {

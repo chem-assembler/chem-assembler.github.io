@@ -224,26 +224,27 @@ var SEP_TABLE = {
 // 出題（型B）
 //   ⚠ 候補リストの中身が難易度そのもの（§15-4・§16-6）。
 //   ★ 炎色反応が効くか効かないかで、同じ模型のまま難しさが変わる。
+//
+// ⚠⚠ **出題に説明文（title・note）を持たせない**（2026-08-27・ユーザー指摘）。
+//   ★ 「炎色で3つに割れるが、残り2つは沈殿を溶かさないと分かれない」のような一文は、
+//     冗長である以前に**解き筋そのもの**で、先に読ませたら問題が成立しない。
+//   ★ 画面に出すのは**難易度だけ**（`sepDifficulty()`。⚠ 試薬の名前を1つも含まない）。
+//   ⚠ **ここに文字列を足したくなったら、それは解き筋である可能性が高い**
+//     —— tests.js が「出題のデータに解き筋の語が無いこと」を機械で見張っている。
 // ---------------------------------------------------------------
 var SEP_PROBLEMS = [
     {
         id: 'b1',
-        title: '4つの中から1つ',
-        note: '炎色反応で3つに割れるが、残り2つは沈殿を溶かしてみないと分かれない。',
         cands: ['Ag', 'Pb', 'Cu', 'Na'],
         ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s']
     },
     {
         id: 'b2',
-        title: '炎色が効くもの・効かないもの',
-        note: '候補6つのうち4つは炎色反応で決まる。決まらない2つをどう分けるか。',
         cands: ['Ag', 'Pb', 'Cu', 'Ca', 'Na', 'K'],
         ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s', 'nh3']
     },
     {
         id: 'b3',
-        title: '炎色が1つも効かない',
-        note: '候補4つとも炎色反応では色が出ない。沈殿と、その溶け方だけが手がかり。',
         cands: ['Pb', 'Zn', 'Al', 'Fe3'],
         ops: ['flame', 'naoh', 'nh3', 'hcl', 'h2s']
     }
@@ -441,6 +442,31 @@ function sepAuditProblem(p) {
     };
 }
 
+/**
+ * ★ 難易度。⚠ **画面に出してよいのはこれだけ**（解き筋に触れる語を1つも含まない）。
+ *
+ * ★ 根拠は、門番がすでに数えている値だけから組む（手で難易度を付けない。§2-4）:
+ *   ① **候補の数** … 多いほど絞りきるのに手数が要る
+ *   ② **理想の最短手数** … どの中身でも決まる操作集合の、最小の大きさ（§3-5 の定義）
+ *   ③ ★ **単独の1手では決まらない候補の数** … ⚠ **「どれか1枚で当たる」で済まない候補が何個あるか**
+ *      （＝ `byIon` の最小集合が2手以上のもの。★ 死んでいる札が混ざるほど、ここが増える）
+ *
+ * ⚠ ③を入れないと、候補の数が同じ b1 と b3 が同じ難易度になる（実測）。
+ */
+function sepDifficulty(p) {
+    var a = sepAuditProblem(p);
+    var hard = p.cands.filter(function (x) { return a.byIon[x].size >= 2; }).length;
+    var score = p.cands.length + a.shortest + hard;
+    var stars = score <= 6 ? 1 : (score <= 8 ? 2 : 3);
+    return {
+        stars: stars,
+        mark: ['★☆☆', '★★☆', '★★★'][stars - 1],
+        score: score,
+        cands: p.cands.length,
+        shortest: a.shortest
+    };
+}
+
 // ---------------------------------------------------------------
 // 答え合わせ
 //   ★ 文面の向き（§3-3）: 「あなたは間違えました」ではなく「あなたの操作でこうなりました」。
@@ -500,6 +526,7 @@ if (typeof module !== 'undefined' && module.exports) {
         SEP_OPS: SEP_OPS, SEP_TABLE: SEP_TABLE, SEP_PROBLEMS: SEP_PROBLEMS,
         sepObserve: sepObserve, sepObsKey: sepObsKey, sepObsText: sepObsText,
         sepObsColor: sepObsColor, sepAlive: sepAlive, sepSplit: sepSplit,
-        sepSeparates: sepSeparates, sepAuditProblem: sepAuditProblem, sepGrade: sepGrade
+        sepSeparates: sepSeparates, sepAuditProblem: sepAuditProblem,
+        sepDifficulty: sepDifficulty, sepGrade: sepGrade
     };
 }

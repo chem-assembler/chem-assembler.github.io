@@ -522,6 +522,36 @@
                 a.shortest + '手）', a.shortest >= 2);
             ok('[' + prb.id + '] 門番を通っている', a.ok === true);
         });
+        // -----------------------------------------------------------
+        // ⚠⚠ 出題の文言に解き筋を出さない（2026-08-27・ユーザー指摘）
+        //   ★ 「炎色で3つに割れるが、残り2つは沈殿を溶かさないと分かれない」のような一文は、
+        //     冗長である以前に**答えを配っている**。⚠ 一覧の見出しも同じ（押す前に無駄と分かる）。
+        //   ★ 出してよいのは難易度だけ。⚠ **次に誰かが説明を足したときに、ここで止まる。**
+        // -----------------------------------------------------------
+        section('型B: 出題の文言に解き筋を出さない');
+        var SPOILER_WORDS = ['炎色', '沈殿', '溶か', '溶け', 'アンモニア', '塩酸', '硫化水素',
+            '水酸化', '熱水', '白金線', '錯イオン', '割れ', '分かれ'];
+        ok('出題のデータに、解き筋に触れる語が1つも無い', (function () {
+            var s = JSON.stringify(SEP_PROBLEMS);
+            var hit = SPOILER_WORDS.filter(function (w) { return s.indexOf(w) >= 0; });
+            if (hit.length) warn('出題のデータに解き筋の語: ' + hit.join('・'));
+            return hit.length === 0;
+        })());
+        ok('出題が持つのは id と候補と札だけ（説明文の欄を持たない）',
+            SEP_PROBLEMS.every(function (prb) {
+                return Object.keys(prb).sort().join(',') === 'cands,id,ops';
+            }));
+        ok('難易度は、門番が数えた値だけから出る（候補の数・理想の最短・単独で決まらない候補の数）',
+            SEP_PROBLEMS.every(function (prb) {
+                var d = sepDifficulty(prb);
+                return d.stars >= 1 && d.stars <= 3 && d.mark.length === 3 &&
+                    d.cands === prb.cands.length && d.shortest === sepAuditProblem(prb).shortest;
+            }));
+        ok('難易度に段が付いている（3問が同じ印で並ばない）', (function () {
+            var marks = SEP_PROBLEMS.map(function (prb) { return sepDifficulty(prb).mark; });
+            return marks.filter(function (m, i) { return marks.indexOf(m) === i; }).length >= 2;
+        })());
+
         // ★ 候補リストが難易度のつまみになっていること（§15-4）
         ok('b3 は候補4つとも炎色で色が出ない（＝炎色反応では1つも割れない）', (function () {
             var p3 = SEP_PROBLEMS.filter(function (x) { return x.id === 'b3'; })[0];
@@ -1339,6 +1369,23 @@
             // ⚠ 中身は 1 種類だけ、と学習者に伝えているか（§15-1）
             ok('「1種類だけ」であることを画面が言っている',
                 d.body.textContent.indexOf('1種類だけ') >= 0, uiOut);
+            // ⚠⚠ 出題まわりの文言に解き筋を出さない（2026-08-27・ユーザー指摘）
+            (function () {
+                var zone = [d.querySelector('.lead'), d.getElementById('prob-tabs'),
+                    d.getElementById('panel-problem')]
+                    .map(function (e) { return e ? e.textContent : ''; }).join(' ');
+                var words = (typeof SPOILER_WORDS !== 'undefined') ? SPOILER_WORDS : [];
+                var hit = words.filter(function (w) { return zone.indexOf(w) >= 0; });
+                if (hit.length) warn('出題まわりに解き筋の語: ' + hit.join('・'));
+                ok('出題まわり（導入・一覧・問題）に解き筋の語が出てこない', hit.length === 0, uiOut);
+                ok('導入は1〜2行に収まっている（' + d.querySelector('.lead').textContent.trim().length +
+                    '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
+                var tab0 = d.querySelector('#prob-tabs button').textContent.replace(/[\s　]/g, '');
+                ok('一覧は「問題N ＋ 難易度の印 ＋ 候補の数」だけ（実測「' + tab0 + '」）',
+                    /^問題1[★☆]{3}候補\d+$/.test(tab0), uiOut);
+                ok('問題の見出しに難易度の印が出ている',
+                    /[★☆]{3}/.test(d.getElementById('prob-note').textContent), uiOut);
+            })();
 
             // 出題を固定して遊ぶ（★ 実機の手順とそろえてある: b1・中身は Ag⁺）
             w.sepUI.start('b1', 'Ag');
