@@ -33986,6 +33986,84 @@
         c.reset();
     });
 
+    /* ★ RC5: 単発のアミド化（§10.11-D #13・§10.11-F の5位・v1472）。
+     * ⚠ これまでアミド結合は縮合重合の中だけ＝**4分子以上**要り、
+     * 酢酸 ＋ アニリン → アセトアニリド が作れなかった。 */
+    test('RC5: カルボン酸＋アミンで単発のアミド化ができる（2組が登録エントリと一致・否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const amide = W.REACTION_RULES.find(r => r.id === 'amidation');
+        const ester = W.REACTION_RULES.find(r => r.id === 'esterification');
+        assert(amide && ester, 'アミド化／エステル化のルールが無い（実装が消えている）');
+        assert(!amide.info, 'アミド化が「説明だけ」のルールになっている（図が変わらない）');
+        // ⚠ **瓶は増やしていない**（直接アミド化に当てる試薬が高校教材に無い・§4-1）
+        assert(!amide.reagentId, `アミド化に瓶が結びついた（${amide.reagentId}）`);
+        // ★ `apply` はエステル化と**同じ手続きを共有する**（写していないことをコードで押さえる）
+        assert(!/planAttachment/.test(String(amide.apply)) &&
+               !/planAttachment/.test(String(ester.apply)),
+            '縮合の手続きが apply に書き写されている（片方だけ直る事故のもと）');
+
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+            g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const codeOf = (names) => { setup(names); return CC(g.userMolecule); };
+
+        // ---- (1) 候補の数 ----
+        assert(amide.detect(setup(['酢酸', 'アニリン'])).length === 1,
+            '酢酸＋アニリンでアミド化が出ない（§10.11-D #13 の穴が塞がっていない）');
+        assert(amide.detect(setup(['酢酸', 'メチルアミン'])).length === 1,
+            '酢酸＋メチルアミンでアミド化が出ない');
+        // **否定対照**: 相手がアルコール／フェノール（エステル化の担当）／
+        //   3級アミン（N に H が無い）／アミドの N（求核性を失っている）／
+        //   分子内だけ（グリシン1分子＝ラクタムは対象外）／片方しか無い
+        [['酢酸', 'エタノール'], ['酢酸', 'フェノール'], ['酢酸', 'トリメチルアミン'],
+         ['酢酸', 'アセトアニリド'], ['グリシン'], ['酢酸'], ['アニリン']].forEach(names => {
+            assert(amide.detect(setup(names)).length === 0,
+                `${names.join(' ＋ ')}: アミド化が候補に出ている（${amide.detect(setup(names)).length} 件）`);
+        });
+        // **否定対照（逆向き）**: エステル化のほうは**広げていない**
+        assert(ester.detect(setup(['酢酸', 'アニリン'])).length === 0,
+            'エステル化がアミンまで拾っている（ALCOHOL_TYPES の線を動かしている）');
+        assert(ester.detect(setup(['酢酸', 'エタノール'])).length === 1,
+            'エステル化の従来の候補が減った');
+
+        // ---- (2) 生成物が**登録エントリと同じ正準コード**になる（2組） ----
+        let matched = 0;
+        [[['酢酸', 'アニリン'], 'アセトアニリド'],
+         [['酢酸', 'メチルアミン'], 'N-メチルアセトアミド']].forEach(([names, product]) => {
+            const mol = setup(names);
+            const sites = amide.detect(mol);
+            assert(sites.length === 1, `${names.join(' ＋ ')}: 候補が ${sites.length} 件`);
+            const cap = amide.apply(g, sites[0]).caption;
+            g.updateDrawing();
+            // 水が1分子とれるので、生成物＋水の2成分ぶんで比べる
+            const want = codeOf([product, '水']);
+            assert(CC(mol) === want,
+                `${names.join(' ＋ ')} → ${product} にならない\n  実際: ${CC(mol)}\n  登録: ${want}`);
+            assert(/アミド結合/.test(cap) && !/エステル結合/.test(cap),
+                `${product}: caption がエステルのままになっている: ${cap.slice(0, 80)}`);
+            matched++;
+        });
+        assert(matched === 2, `正準コードで一致を確かめた組が ${matched} 件（2件を期待）`);
+
+        // ---- (3) 4分子を並べなくても押せる（＝「縮合重合の中だけ」から出た証明） ----
+        {
+            const mol = setup(['酢酸', 'アニリン']);
+            assert(mol.atoms.filter(a => a.element !== 'H').length < 20,
+                '前提が崩れている（2分子だけのはず）');
+            const poly = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+            assert(poly.detect(mol).length === 0,
+                '2分子で縮合重合が出ている（アミド化が「4分子要る」道の言い換えになっていない証明）');
+        }
+        c.reset();
+    });
+
     test('ID7: stages.json の全件に id があり、compounds と食い違わない（合流させて使うため）', async (c) => {
         // `getCompoundLibrary()` は stages と compounds を**合流**させる。
         // 片方にしか id が無いと、stages にしかない58件が id で引けない
