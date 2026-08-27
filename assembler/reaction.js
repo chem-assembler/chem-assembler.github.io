@@ -223,10 +223,66 @@ class ReactionPlayer {
         });
     }
 
+    /**
+     * ★ 一覧へ促す（v1466・ユーザー実機報告「反応機構ビューアを選択すると、反応の選択をすっとばす」）。
+     *
+     * スイッチを入れただけの人に**14件の一覧があること**を見せる。案内は一覧の直前に置く
+     *（`#reaction-list` の中の先頭）＝ 押す先の真上に出るので、読んでから目を落とせば札がある。
+     * ⚠ 器は reaction.js が作る（`index.html` に新しい id を足さない）。
+     */
+    promptPick() {
+        if (!this.listEl) return;
+        if (this.box) this.box.open = true; // 畳んだまま促しても札が見えない
+        let hint = this.listEl.querySelector('#rx-pick-hint');
+        if (!hint) {
+            hint = document.createElement('p');
+            hint.id = 'rx-pick-hint';
+            hint.setAttribute('role', 'status');
+            hint.style.cssText = 'margin:0 0 6px; font-size:11.5px; line-height:1.5; ' +
+                'color:#ffd0e6; border:1px solid var(--neon-pink, #ff2a85); border-radius:6px; padding:6px 8px;';
+            this.listEl.insertBefore(hint, this.listEl.firstChild);
+        }
+        hint.textContent = 'まず、下の一覧から反応を選んでください（選んだ時点で始まります）。上のスイッチは、始めた反応を終えるためのものです。';
+        hint.classList.remove('hidden');
+        if (hint.scrollIntoView) hint.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** 一覧の促しを下ろす（反応が決まったら役目は終わり） */
+    clearPickPrompt() {
+        const hint = this.listEl && this.listEl.querySelector('#rx-pick-hint');
+        if (hint) hint.classList.add('hidden');
+    }
+
     initEvents() {
+        /**
+         * ★ **スイッチは入口ではない**（v1466・ユーザー実機報告「反応の選択をすっとばす」）。
+         *
+         * **実測した症状**（:8221・Playwright chromium。📚 学習 → ⚗️ 見出し → スイッチ）:
+         * ```
+         * ② ⚗️ 見出しを押す   active=false / 一覧=見える（14件）
+         * ③ スイッチを押す     active=true / cur=ethene_br2 / 帯=出る / メニュー=閉じる
+         *                     ＝ **一覧を1件も選ばせないまま先頭の反応が始まる**
+         * ```
+         * 原因は `enter(parseInt(this.selectEl.value) || 0)` ―― `#select-reaction` の値は
+         * 初期状態でも `"0"`（＝ 1件目）なので、**何も選んでいない人の代わりに先頭を選んでいた**。
+         * しかもスイッチは一覧より**上**にあり、押すと `enter()` が Study を閉じる（§11）ので、
+         * **一覧が存在することにすら気づけない**。
+         *
+         * ⚠ 「1件しか無いから飛ばしている」のではない（実測で一覧は 14件そろっている）。
+         *    **選択を代行していた**のが誤り。§9〜§11 で入口は「一覧から選ぶ」1本に定めてあり、
+         *    §9 の「出口はスイッチのまま」は v1399（§10）で取り下げ済み ＝
+         *    **スイッチに残っている役目は「終える」だけ**。
+         *
+         * ⚠ **`enter()` の `checkMode.checked = true` は `change` を撃たない**（プログラムからの
+         *    代入はイベントを起こさない）ので、表示の追従（§9）は今までどおり通る。
+         *    それでも `this.active` を先に見て素通りさせる ＝ 将来 `dispatchEvent` で
+         *    追従させる書き方に変わっても、ここが反応を選び直さない。
+         */
         this.checkMode.addEventListener('change', (e) => {
             if (e.target.checked) {
-                this.enter(parseInt(this.selectEl.value) || 0);
+                if (this.active) return; // enter() が立てた表示の追従。始め直さない
+                e.target.checked = false; // 「入っている」と見せない（状態を2つに割らない）
+                this.promptPick();
             } else {
                 this.exit();
             }
@@ -326,6 +382,7 @@ class ReactionPlayer {
         this.currentReaction = this.reactions[index];
         this.active = true;
         this.checkMode.checked = true;
+        this.clearPickPrompt(); // 選べたのだから促しは役目を終える（v1466）
         // 選択の実体（`#select-reaction`）と一覧の印を、どの入口から来ても合わせる
         this.selectEl.value = String(index);
         this.syncList();
