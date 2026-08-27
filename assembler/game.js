@@ -377,6 +377,56 @@ function splitCompoundName(name) {
     return { main, aliases };
 }
 
+/* ===== 文言の中の強調 `**…**`（v1467・2026-08-27 実発生） =====
+ *
+ * ⚠ **なぜ要るか**: reactor.js の反応の文言は Markdown の `**` で強調を書いてあるのに、
+ *   受け取る側が `textContent` に入れるだけだったので、**アスタリスクが記号のまま画面に
+ *   出ていた**。v1465 の録画フレームで「ベンゼン環は壊れずに**側鎖だけ**が酸化されます」と
+ *   表示されているのを目視で確認した。
+ *   ⚠ `**` を使う文言は reactor.js だけで 27 行あり、出口は
+ *      **字幕・試薬パネルの解説・呈色試験・「効きません」・`caveat` の5つ**ある。
+ *      1か所で直すと残りが取り残されるので、**出口をこの1つの道具に束ねる**。
+ *
+ * ⚠ **記法は narrowing.js の `nwNote` に合わせる**（`**…**` → `<b>`・同じ正規表現）。
+ *   アプリの中で強調の書き方を2つにしない。違うのは組み立て方だけで、
+ *   あちらは文字列を組むので `esc` してから innerHTML、こちらは
+ *   **innerHTML を使わず `createElement` ＋ `textContent` でノードを積む**
+ *   （逃がしもれという事故の型がそもそも起きない）。
+ *
+ * ⚠ **対にならない `**` はそのまま文字として出す。** 消して隠すと書き手が気づけない ——
+ *   気づく口は回帰テスト RX49 ⑤（`**` が対になっているか）の方に置いてある。
+ *   RX50 ① が「黙って消していない」ことの否定対照になっている。
+ */
+const EMPHASIS_RE = /\*\*([^*]+)\*\*/g;
+
+/** 太字にしたあと要素の `textContent` に残る文字列（＝ `**` を外しただけの素の文） */
+function stripEmphasis(text) {
+    return String(text == null ? '' : text).replace(new RegExp(EMPHASIS_RE.source, 'g'), '$1');
+}
+
+/**
+ * `**…**` を `<b class="em">` にして `el` に積む（上の注）。
+ * 戻り値は積んだあとの素の文＝ `stripEmphasis(text)` と一致する。
+ * ⚠ `EMPHASIS_RE` を直に使い回さない（`/g` は前回の続きから探すので、毎回作り直す）。
+ */
+function setEmphasisText(el, text) {
+    const s = String(text == null ? '' : text);
+    if (!el) return stripEmphasis(s);
+    el.textContent = '';
+    let i = 0, m;
+    const re = new RegExp(EMPHASIS_RE.source, 'g');
+    while ((m = re.exec(s)) !== null) {
+        if (m.index > i) el.appendChild(document.createTextNode(s.slice(i, m.index)));
+        const b = document.createElement('b');
+        b.className = 'em';
+        b.textContent = m[1];
+        el.appendChild(b);
+        i = re.lastIndex;
+    }
+    if (i < s.length) el.appendChild(document.createTextNode(s.slice(i)));
+    return el.textContent;
+}
+
 class Game {
     constructor() {
         this.currentStageIndex = 0;
@@ -3345,24 +3395,32 @@ class Game {
         // もともと右パネルの #verify-result はスクロールで見切れて気づかれないことがあり、
         // キャンバス内の字幕を主役にしてあった。第5段で右パネルが消え、#verify-result は
         // 隠しの互換の器（#panel-legacy）になったので、**見えるのはこの字幕だけ**（§2-7）
+        // ⚠ **`**…**` は太字にして出す**（v1467・`setEmphasisText`）。反応の文言は
+        //   Markdown 記法で書かれているので、素の `textContent` だとアスタリスクが記号のまま読める。
+        // ⚠ **下の「自分の表示中だけ」の見分けは `message` ではなく `plain` と比べる。**
+        //   太字にすると要素の `textContent` からは `**` が落ちるので、`message` と比べていた
+        //   ままだと `**` を含む回は永久に一致せず、**時計が来ても隠れずに出しっぱなしになる**。
+        //   比べる相手を「表示後に残る文字列」に替えるだけで、見分けの意味は元のまま
+        //   （＝ 誰かが後から別の文言を入れたら、こちらの時計では消さない）。
+        const plain = stripEmphasis(message);
         const canvasToast = document.getElementById('canvas-toast');
         if (canvasToast) {
-            canvasToast.textContent = message;
+            setEmphasisText(canvasToast, message);
             canvasToast.className = type; // success / error
             clearTimeout(this._canvasToastTimer);
             this._canvasToastTimer = setTimeout(() => {
-                if (canvasToast.textContent === message) canvasToast.className = 'hidden';
+                if (canvasToast.textContent === plain) canvasToast.className = 'hidden';
             }, ms);
         }
         const resultDiv = document.getElementById('verify-result');
         if (!resultDiv) return;
-        resultDiv.textContent = message;
+        setEmphasisText(resultDiv, message);
         resultDiv.className = `result-message ${type}`;
         resultDiv.classList.remove('hidden');
         clearTimeout(this._toastTimer);
         // 自分の表示中だけ隠す（後から別の判定結果等が出た場合はそれを消さない）
         this._toastTimer = setTimeout(() => {
-            if (resultDiv.textContent === message) resultDiv.classList.add('hidden');
+            if (resultDiv.textContent === plain) resultDiv.classList.add('hidden');
         }, ms);
     }
 
