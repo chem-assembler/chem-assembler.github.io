@@ -24746,7 +24746,14 @@
         // ④ 生成物予測モードを挟んでも答案は失われない（退避場所が1本しかない＝入れ子の罠）
         rp.openById('ethene_br2');
         rp.startPrediction();
-        assert(rp.prediction && g.userMolecule.atoms.length === 0, '予測モードでキャンバスが空にならない');
+        /* ⚠ **v1466 から予測のキャンバスは空ではない**（§14。反応する分子＝別の基質が載る）。
+           ここで見たいのは「**練習の答案が予測に持ち越されない**」ことなので、
+           空かどうかではなく**答案そのものではないこと**を見る（退避は1本＝入れ子の罠の検査）。 */
+        assert(rp.prediction, '予測モードに入れない');
+        assert(g.userMolecule !== rp.savedPuzzleMolecule,
+            '予測モードのキャンバスが練習の答案そのもの（退避が二重になっている）');
+        assert(rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            `退避された答案が ${rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length} 原子（${atomsBefore} を期待）`);
         g.userMolecule.addAtom('C', 300, 300); // 予測の作りかけ
         rp.endPrediction(false);
         assert(!rp.prediction && rp.ownsCanvas(), '予測モードを抜けてビューアに戻らない');
@@ -27040,11 +27047,23 @@
         }
         rp.endPrediction(false);
 
+        // ⚠ **正解は出題の形で変わる**（v1466・§14）。`practice` を持つ機構は
+        //   「別の分子に同じ反応を起こした生成物」が正解で、代表例の主生成物ではない。
+        //   持たない機構だけが従来どおり（最終状態の主生成物）
+        const copyOf = (m) => {
+            const out = new W.Molecule(), map = new Map();
+            m.atoms.forEach(a => map.set(a.id, out.addAtom(a.element, a.x, a.y).id));
+            m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            return out;
+        };
+        const rightAnswer = (rx) => (rp.practiceTargets && rp.practiceTargets.length)
+            ? copyOf(rp.practiceTargets[0]) : productOf(rx);
+
         rp.reactions.forEach((rx, i) => {
             // ① 正解を入れたら success
             rp.enter(i); rp.startPrediction();
-            assert(judgeWith(productOf(rx)) === 'success',
-                `${rx.id}: 主生成物を入れたのに正解にならない（判定が常に不正解）`);
+            assert(judgeWith(rightAnswer(rx)) === 'success',
+                `${rx.id}: 正解を入れたのに正解にならない（判定が常に不正解）`);
             assert(!rp.prediction, `${rx.id}: 正解したのに予測モードが終わらない`);
 
             // ② わざと違うもの（炭素1個）を入れたら error
@@ -27059,6 +27078,130 @@
                 `${rx.id}: 空のキャンバスで判定が通る`);
             rp.endPrediction(false);
         });
+        rp.exit();
+        g.setMode('puzzle');
+    });
+
+    test('RX51: 予測は「同じ反応を別の分子に」——反応する分子がキャンバスに出て、答えは見た代表例ではない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const toast = D.getElementById('canvas-toast');
+        const cap = D.getElementById('reaction-caption');
+        g.setMode('learn');
+
+        /* ★ ユーザー実機報告（2026-08-26）:
+             「直前で反応の代表例をみているので、やるなら、同じ反応を別な分子が起こしたときに
+               どうなるかを考えさせる」「反応する分子はキャンバスに表示する」
+           ⚠ この検査を赤くする壊し方 ＝ startPrediction を「キャンバスを空にする」に戻すこと
+             （②④が落ちる）／`practice` を無視して代表例の生成物を正解にすること（⑤が落ちる）。 */
+
+        const withPractice = rp.reactions.filter(r => r.practice);
+        assert(withPractice.length >= 11,
+            `練習問題を持つ機構が ${withPractice.length} 件（11件以上を期待）`);
+
+        const clearToast = () => { toast.className = 'hidden'; toast.textContent = ''; };
+        const copyOf = (m) => {
+            const out = new W.Molecule(), map = new Map();
+            m.atoms.forEach(a => map.set(a.id, out.addAtom(a.element, a.x, a.y).id));
+            m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            return out;
+        };
+        // 作図パレットに実在する元素だけで答えが書けるか（Na のように置けない元素を要求しない）
+        const palette = new Set([...D.querySelectorAll('[data-atom]')].map(b => b.dataset.atom));
+        assert(palette.size >= 5, `パレットの元素が読めない（${[...palette].join(',')}）`);
+
+        rp.reactions.forEach((rx, i) => {
+            rp.enter(i);
+            const spec = rp.practiceSpec();
+
+            // ① 練習問題を持たない機構では 🎯 予測 を出さない
+            //    （出すと「直前に見た答えの復唱」に戻る＝問いとして成立しない）
+            if (!spec) {
+                assert(rp.btnPredict.classList.contains('hidden'),
+                    `${rx.id}: 練習問題が無いのに 🎯 予測 が出ている（見た答えの復唱になる）`);
+                return;
+            }
+            assert(!rp.btnPredict.classList.contains('hidden'), `${rx.id}: 🎯 予測 が出ていない`);
+
+            rp.startPrediction();
+            assert(rp.prediction, `${rx.id}: 予測モードに入れない`);
+
+            // ② ★反応する分子がキャンバスに出ている（空にしない）
+            const mol = g.userMolecule;
+            assert(mol.atoms.filter(a => a.element !== 'H').length >= 2,
+                `${rx.id}: キャンバスが空のまま（反応する分子が表示されていない）`);
+            assert(g.atomsGroup.childElementCount > 0 && g.bondsGroup.childElementCount > 0,
+                `${rx.id}: 分子が描画されていない（原子 ${g.atomsGroup.childElementCount} / 結合 ${g.bondsGroup.childElementCount}）`);
+
+            // ③ その分子が**代表例とは別の分子**（同じものを出したら問いにならない）
+            const repro = rp.buildMainProductTarget();
+            const start = rx.states[0];
+            const startMol = new W.Molecule();
+            const added = start.atoms.map(a => startMol.addAtom(a.element, a.x, a.y));
+            start.bonds.forEach(b => startMol.addBond(added[b.atom1Index].id, added[b.atom2Index].id, b.type));
+            assert(!W.verifyMolecule(rp.mainComponent(mol), rp.mainComponent(startMol)),
+                `${rx.id}: キャンバスに出ているのが代表例と同じ分子`);
+
+            // ④ 案内文に**その別の分子の名前**が出る（お題＝反応名は先頭のまま・RX32）
+            const subj = cap.querySelector('.rx-predict-subject');
+            assert(subj && cap.firstChild === subj, `${rx.id}: お題が案内文の先頭にいない`);
+            (spec.substrate || []).forEach(n => {
+                assert(cap.textContent.includes(n), `${rx.id}: 案内文に別の分子「${n}」が出ていない`);
+            });
+
+            // ⑤ ★正解は「代表例の主生成物」ではない（見た答えを書いたら不正解）
+            clearToast();
+            g.userMolecule = copyOf(repro);
+            rp.judgePrediction();
+            assert(toast.className === 'error',
+                `${rx.id}: 代表例の主生成物を書いたら正解になった（さっき見せた答えを聞いている）`);
+
+            // ⑥ 正解の集合が1つ以上あり、どれもパレットで書ける元素だけでできている
+            rp.enter(i); rp.startPrediction();
+            assert(rp.practiceTargets.length >= 1, `${rx.id}: 正解が1つも作れていない`);
+            rp.practiceTargets.forEach(t => {
+                t.atoms.forEach(a => {
+                    assert(a.element === 'H' || palette.has(a.element),
+                        `${rx.id}: 正解に「${a.element}」が要るのに作図パレットに無い（答えられない問題）`);
+                });
+            });
+
+            // ⑦ 正解を入れたら正解・何もしないで押したら不正解
+            clearToast();
+            g.userMolecule = copyOf(rp.practiceTargets[0]);
+            rp.judgePrediction();
+            assert(toast.className === 'success',
+                `${rx.id}: 正解を入れたのに正解にならない（${rp.practiceTargets.length}通り中の1つめ）`);
+
+            rp.enter(i); rp.startPrediction();
+            clearToast();
+            rp.judgePrediction(); // 基質を置いたまま押す
+            assert(toast.className === 'error', `${rx.id}: 何も描き変えずに押しても正解になる`);
+            rp.endPrediction(false);
+        });
+
+        // ⑧ 芳香族置換は o と p の**両方**が正解（片方しか認めないと正しい答えが不正解になる）
+        rp.enter(rp.reactions.findIndex(r => r.id === 'benzene_nitration'));
+        rp.startPrediction();
+        assert(rp.practiceTargets.length === 2,
+            `トルエンのニトロ化の正解が ${rp.practiceTargets.length} 通り（o と p の2通りを期待）`);
+        const names = rp.practiceTargets.map(t => g.lookupCompoundName(t)).sort().join(',');
+        assert(names === 'o-ニトロトルエン,p-ニトロトルエン',
+            `主生成物の位置が違う（${names}）＝ メタを混ぜている／配向性で絞れていない`);
+        rp.practiceTargets.forEach(t => {
+            const cp = new W.Molecule(), map = new Map();
+            t.atoms.forEach(a => map.set(a.id, cp.addAtom(a.element, a.x, a.y).id));
+            t.bonds.forEach(b => cp.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            clearToast();
+            g.userMolecule = cp;
+            rp.judgePrediction();
+            assert(toast.className === 'success',
+                `${g.lookupCompoundName(t)} が正解にならない（正解は集合で持つこと）`);
+            rp.enter(rp.reactions.findIndex(r => r.id === 'benzene_nitration'));
+            rp.startPrediction();
+        });
+        rp.endPrediction(false);
         rp.exit();
         g.setMode('puzzle');
     });
