@@ -37868,8 +37868,11 @@
             const cleave = (id, flipFirst) => {
                 load(id);
                 if (flipFirst) flipRingB();
+                // ⚠ **切る前からあった原子**（この反応で生えた -OH は「動いた」の勘定に入れない）
+                const oldIds = new Set(g.userMolecule.atoms.map(a => a.id));
                 const sites = rule.detect(g.userMolecule);
                 assert(sites.length === 1, `${id}: グリコシド結合が ${sites.length} 件`);
+                const cutId = sites[0][0];      // ★ 切られる側（アンカー）の炭素
                 const result = rule.apply(g, sites[0]);
                 g.updateDrawing();
                 const prods = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
@@ -37884,7 +37887,7 @@
                                  cx: p.atoms.reduce((t, a) => t + a.x, 0) / p.atoms.length,
                                  cy: p.atoms.reduce((t, a) => t + a.y, 0) / p.atoms.length };
                     });
-                return { prods, redraws: result.haworthRedraws || [], caption: result.caption };
+                return { prods, redraws: result.haworthRedraws || [], caption: result.caption, oldIds, cutId };
             };
             /** 2つの断片の**いちばん近い重原子どうし**の距離（重なっていないかの物差し） */
             const nearestGap = (a, b) => Math.min(...a.heavy.map(p =>
@@ -37909,25 +37912,37 @@
                     // ---- ③ 単独の図は時計回り（＝ 教科書の向き）で描かれている ----
                     r.prods.forEach(p => assert(p.sense === 1,
                         `${tag}: ${p.name} が時計回りで出ていない（${p.sense}）`));
-                    // ---- ④ ★ **位置は保つ** —— 単独の図の座標へ吸い寄せない ----
-                    //   写すのは**形だけ**で、置き場所は切ったときのまま。
-                    //   ⚠ 吸い寄せると2つの生成物が**同じ場所に重なる**（単独の図はどれも
-                    //     ほぼ同じ座標に描かれている。実測: 重心 (391,297)〜(406,311)）。
-                    //   ⚠ **v1453 で「横一列にそろえる」が入った**（⑤）ので、断片1つずつの重心は
-                    //     もう不動ではない。⚠ **不動なのは2つ合わせた重心**（そろえる基準を
-                    //     2断片の**中間**に取っているので、y の移動量はちょうど打ち消し合う）。
-                    //     ＝ 「吸い寄せない」の主張はここで持つ。実測で 8/8 とも 0（x も y も）
-                    const cenOf = pts => ({ x: pts.reduce((t, q) => t + q.x, 0) / pts.length,
-                                            y: pts.reduce((t, q) => t + q.y, 0) / pts.length });
-                    const drift = r.redraws.reduce((t, f) => {
-                        const b = cenOf(f.before), a2 = cenOf(f.after);
-                        return { x: t.x + (a2.x - b.x) * f.ids.length, y: t.y + (a2.y - b.y) * f.ids.length,
-                                 n: t.n + f.ids.length };
-                    }, { x: 0, y: 0, n: 0 });
-                    assert(drift.n && Math.hypot(drift.x / drift.n, drift.y / drift.n) < EPS,
-                        `★ ${tag}: 生成物ぜんたいの重心が描き直しで ` +
-                        `${Math.hypot(drift.x / drift.n, drift.y / drift.n).toFixed(1)}px 動いた` +
-                        `（並べても中心は動かないはず）`);
+                    /* ---- ④ ★★ **位置は保つ** —— ⚠ **v1468 で物差しが変わった**（§4-9e・§4-9f）----
+                     * ユーザー（2026-08-26）:
+                     * > **「加水分解時に分子全体が↓にスライドするのをなくしたい」**
+                     * > **「グルコースは固定、フルクトースが回転して真横→に移動する」**
+                     * ⚠ v1453 は「**2つ合わせた重心が不動**」だった（そろえる基準が2断片の中間）。
+                     *   横一列にはなるが**両方が縦に動く** ＝ 画面ぜんたいが下へ滑って見えた。
+                     * ★ v1468 は **切られた側（アンカー）が 1px も動かない**。
+                     *   ＝ 「吸い寄せない」の主張はこちらが持つ（実測 8/8 とも 0.0000px）。
+                     * ⚠ 動く側の置き場所は**180°回転から出てくる値**なので、ここでは大きさを縛らない
+                     *   （⑤ で「重ならない・横に並ぶ」だけを見る）。 */
+                    const fixedSide = r.redraws.find(f => f.ids.includes(r.cutId));
+                    assert(fixedSide && fixedSide.flip, `★ ${tag}: 切られる側の記録が無い`);
+                    const held = Math.max(0, ...fixedSide.before
+                        .map((b, i) => ({ b, a: fixedSide.after[i] }))
+                        .filter(q => r.oldIds.has(q.b.id))
+                        .map(q => Math.hypot(q.a.x - q.b.x, q.a.y - q.b.y)));
+                    if (!flipFirst) {
+                        // ★ 登録の図から切ったとき ＝ 切られる側は回す必要が無い ＝ 1px も動かない
+                        assert(!fixedSide.flip.steps.length,
+                            `★ ${tag}: 切られる側に回転が要ると判定された（${fixedSide.flip.steps.map(x => x.kind)}）`);
+                        assert(held < EPS,
+                            `★ ${tag}: 切られる側が ${held.toFixed(2)}px 動いた（1pxも動かないはず）`);
+                    } else {
+                        /* ⚠ こちらは**下ごしらえで片方の環を裏返した図**から切っている。
+                         *   裏返るのは `orderHaworthRings` の環B ＝ 二糖によって
+                         *   切られる側だったり相手側だったりする（実測: スクロースは相手側の
+                         *   フルクトース・ほか3件は切られる側）。★ どちらでも
+                         *   **裏返した側は回して戻す・裏返していない側は動かない**が成り立つ。 */
+                        assert(fixedSide.flip.steps.length > 0 || held < EPS,
+                            `★ ${tag}: 切られる側を回さずに ${held.toFixed(2)}px 動かしている`);
+                    }
                     assert(Math.hypot(r.prods[0].cx - r.prods[1].cx, r.prods[0].cy - r.prods[1].cy) > 60,
                         `★ ${tag}: 2つの生成物が同じ場所に重なっている`);
                     /* ---- ⑤ ★ **生成物2つは横一列に並ぶ**（v1453）----
@@ -37945,9 +37960,14 @@
                         `★ ${tag}: 並べた2つの生成物が近すぎる（いちばん近い原子どうしで ` +
                         `${nearestGap(rl, rr).toFixed(1)}px）`);
                     const ringGap = rr.ring.x - rl.ring.x;
-                    assert(ringGap > 200 && ringGap < 340,
+                    /* ⚠ **v1468 で上限を広げた**（280.5 → 最大 394.0）。
+                     * ★ 間隔は**こちらが決める値ではなく、180°回転から出てくる値**になった
+                     *   （§4-9f。軸＝紙の右辺なので、横回転する分子は自分の幅ぶん右へ出る）。
+                     * 実測: マルトース/セロビオース/ラクトース 280.5・**スクロース 394.0**。
+                     * ⚠ それでも「飛ばしすぎない」は見張る（環の直径 200px の 2 倍 = 400px を上限に）。 */
+                    assert(ringGap > 200 && ringGap <= 400,
                         `★ ${tag}: 環中心の横の間隔が ${ringGap.toFixed(1)}px ` +
-                        `（二糖の登録と同じ程度＝200〜340px のはず。大きく飛ばしていないか）`);
+                        `（200〜400px のはず。大きく飛ばしていないか）`);
                     // ---- ⑥ 画面の断りは、実際に描き直したかどうかと一致する ----
                     const reshaped = r.redraws.some(x => x.reshaped);
                     assert(/単独の分子として描くときの図に直しました/.test(r.caption) === reshaped,
@@ -38000,36 +38020,48 @@
                 '⚠ 否定対照① が効いていない（描き直しをやめても図が単独の図と一致してしまう）: ' +
                 'ずれたのは ' + (stale.join(',') || 'なし'));
 
-            /* ===== ⚠ 否定対照①b: **横一列にそろえるのをやめる**と、高さのずれが戻る =====
-             * v1452 の症状そのもの。切るときの引き離し（`separateComponent`）が相手を
-             * **真下へ 2 マス**逃がすので、生成物は斜め下に落ちる（＝ 横に並んでいない）。
-             * ⚠ **見るのは「8件とも 0 でない」こと**（＝ ⑤ の 0 はそろえた結果であって、
-             *   たまたまそろっているのではない）。実測のずれは 18.9〜474.6px と幅があるので、
-             *   「全件が 100px 以上」のような一律のしきい値は置けない
-             *   （マルトースを裏返した図からだと 18.9px しかずれない）。
-             * ⚠ そのうえで**症状の大きさ**も1つ見る（いちばん大きいずれが 200px 超）。
-             * ここが赤くならないなら、⑤ は空振りの緑。 */
+            /* ===== ⚠ 否定対照①b: **横へ寄せる段をやめる**と、★ 縦回転の分子だけ列から落ちる =====
+             *
+             * ⚠⚠ **v1468 で意味が変わった**（§4-9f）。v1453 では「そろえるのをやめると
+             *   8件とも斜め下に落ちる」だったが、**置き場所が 180°回転から出てくる値**に
+             *   なったので、いまは**回転の種類で結果が分かれる**:
+             *
+             *   ★ **横回転（スクロース）・回さない（マルトース）… 寄せなくても列に並ぶ**
+             *     （縦の軸まわりに回すので y が動かない。実測 0.0 / 0.1px）
+             *   ★ **縦回転（セロビオース・ラクトース）… 環の縦幅ぶん（実測 96.0px）下へ開く**
+             *     （＝ ユーザー自身が「欠点」と書いた点。横へ寄せる段はそのために置いている）
+             *
+             * ここが赤くならないなら、⑤ の Δy=0 は空振りの緑。 */
             const origAlign = g.redrawProductsAsStandalone;
             g.redrawProductsAsStandalone = function (o) {
                 return origAlign.call(this, { ...(o || {}), alignRow: false });
             };
-            const skews = [];
+            const skews = {};
             try {
-                DISACCHARIDES.forEach(id => [false, true].forEach(flipFirst => {
-                    const r = cleave(id, flipFirst);
+                DISACCHARIDES.forEach(id => {
+                    const r = cleave(id, false);
                     const [rl, rr] = r.prods.slice().sort((a, b) => a.ring.x - b.ring.x);
-                    skews.push({ tag: `${id}${flipFirst ? '/裏' : ''}`, dy: Math.abs(rl.ring.y - rr.ring.y) });
-                }));
+                    skews[id] = { dy: Math.abs(rl.ring.y - rr.ring.y),
+                                  turn: (r.redraws.find(f => f.flip && f.flip.steps.length) || {})
+                                        .flip };
+                });
             } finally {
                 g.redrawProductsAsStandalone = origAlign;
             }
-            const level = skews.filter(s => s.dy < EPS);
-            assert(skews.length === DISACCHARIDES.length * 2 && !level.length,
-                '⚠ 否定対照①b が効いていない（そろえるのをやめても横一列のまま）: ' +
-                `そろったままなのは ${level.map(s => s.tag).join(',') || 'なし'}`);
-            assert(Math.max(...skews.map(s => s.dy)) > 200,
-                '⚠ 否定対照①b の症状が小さすぎる（いちばん大きいずれが ' +
-                `${Math.max(...skews.map(s => s.dy)).toFixed(1)}px。200px 超のはず）`);
+            const vertical = Object.entries(skews)
+                .filter(([, v]) => v.turn && v.turn.steps.some(x => x.kind === 'updown'));
+            assert(vertical.length === 2,
+                '⚠ 否定対照①b: 縦回転で戻す二糖が2件でない（' +
+                vertical.map(([k]) => k).join(',') + '）');
+            vertical.forEach(([id, v]) => assert(v.dy > 50,
+                `⚠ 否定対照①b が効いていない（寄せる段をやめても ${id} が横一列のまま: ` +
+                `${v.dy.toFixed(1)}px）`));
+            // ★ そのうえで「横回転・回さない分子は寄せなくても並ぶ」＝ 回転から出てきた値である証拠
+            Object.entries(skews)
+                .filter(([, v]) => !v.turn || !v.turn.steps.some(x => x.kind === 'updown'))
+                .forEach(([id, v]) => assert(v.dy < 1,
+                    `★ ${id} は縦回転しないのに、寄せる段をやめると ${v.dy.toFixed(1)}px ずれた` +
+                    `（横回転は y を動かさないはず）`));
 
             // ===== ⚠ 否定対照②: **名前が引けない断片は触らない** =====
             //   （ここが赤いなら「加水分解と切り離して図を整える機能」に化けている）
@@ -38177,6 +38209,270 @@
             assert(bad.every(b => b.n === 3),
                 '⚠ 否定対照: `only` を捨てたときの描き直しが3件（となりを含む）になっていない: ' +
                 bad.map(b => `${b.id}=${b.n}`).join(','));
+        } finally {
+            g.setReadStereo(saved);
+            c.reset();
+        }
+    });
+
+    /* ===== FA1〜FA3: ★★ 紙のフリップの軌跡（`DESIGN_sugar.md` §4-9f・v1468）=====
+     *
+     * **ユーザーの言葉**（2026-08-26。ここが正・そのまま引く）:
+     * > **フルクトース構造を紙と考えると、紙の右辺を固定した状態で机上で紙を横回転すればよいので、
+     * >   加水分解後は右にスライドするのがわかりやすい**
+     * > **セロビオース・ラクトースの場合は縦回転なので、紙の下辺を固定した状態で縦回転する**
+     * > **フルクトースであれば、1,2 の炭素は大きな半径で移動し、5,6 は小さな半径で移動する**
+     * > **すべての原子が紙面の右辺を軸に 180度回転する軌跡を通ればよい**
+     * > **理想は、紙のフリップを再現する軌跡を演算して原子を移動すること（移動中も糖の構造が変形しない）**
+     *
+     * ⚠ **v1467 までは始点→終点の直線補間**だったので、途中の形はどの瞬間も本物ではなかった。
+     */
+    test('FA1: ★★ 紙のフリップは軸まわりの剛体回転（移動＝半径×2・変形しない・軸上は不動／否定対照つき）', async (c) => {
+        const W = c.W, g = c.game;
+        c.reset();
+        g.setMode('free');
+        assert(typeof W.haworthFlipHinge === 'function' && typeof W.haworthFlipFrame === 'function' &&
+               typeof W.haworthFlipRadius === 'function', '紙のフリップの軌跡が公開されていない');
+        const rows = [];
+        DISACCHARIDES.concat(['alpha-d-glucose', 'beta-d-fructofuranose']).forEach(id => {
+            const e = (W.COMPOUNDS || []).find(x => x.id === id);
+            assert(e, `${id} がライブラリに無い`);
+            const mol = g.createTargetFromData({ target: e.target });
+            const ids = mol.atoms.map(a => a.id);
+            ['leftright', 'updown'].forEach(kind => {
+                const h = W.haworthFlipHinge(mol, ids, kind);
+                assert(h.ok, `${id}/${kind}: 紙の持ち方を組めない（${h.reason}）`);
+                /* ---- ① 軸は「紙の右辺」／「紙の下辺」 ----
+                 * ⚠ **紙の上での位置で見る。** 環外の枝は紙に**垂直**に立っているので、
+                 *   描かれた y は「紙の上の位置」ではない（二糖の橋の -O- は紙より 114px 下に
+                 *   描かれているが、紙の上では付け根と同じ高さ）。
+                 *   ＝ 下辺は**環の原子のいちばん下**。右辺は横には倒れないので描かれた x のまま。 */
+                const ringY = [];
+                W.haworthSugarCycles(mol).forEach(cy => cy.forEach(i => {
+                    const a = mol.atoms.find(x => x.id === i);
+                    if (a) ringY.push(a.y);
+                }));
+                assert(ringY.length, `${id}: ハース図の環が見つからない`);
+                const edge = kind === 'leftright'
+                    ? Math.max(...mol.atoms.map(a => a.x)) : Math.max(...ringY);
+                assert(Math.abs(h.axis - edge) < 1e-9,
+                    `${id}/${kind}: 軸が紙の${kind === 'leftright' ? '右' : '下'}辺に無い（${h.axis} ≠ ${edge}）`);
+                const at = th => W.haworthFlipFrame(h, th);
+                const f0 = at(0), fp = at(Math.PI);
+                // ---- ② 0° のコマは、描かれた図そのもの ----
+                f0.forEach(p => {
+                    const a = mol.atoms.find(x => x.id === p.id);
+                    assert(Math.abs(p.x - a.x) < 1e-9 && Math.abs(p.y - a.y) < 1e-9,
+                        `${id}/${kind}: 0°のコマが描かれた図と違う`);
+                });
+                // ---- ③ ★ 途中のどのコマでも、原子どうしの**3次元の距離**が変わらない ＝ 変形しない ----
+                const d3 = (f, i, j) => Math.hypot(f[i].X - f[j].X, f[i].Y - f[j].Y, f[i].Z - f[j].Z);
+                let drift = 0;
+                for (let k = 1; k <= 24; k++) {
+                    const f = at(Math.PI * k / 24);
+                    for (let i = 0; i < f.length; i++)
+                        for (let j = i + 1; j < f.length; j++)
+                            drift = Math.max(drift, Math.abs(d3(f, i, j) - d3(f0, i, j)));
+                }
+                assert(drift < 1e-9,
+                    `★ ${id}/${kind}: 回している途中で形が変わっている（3次元の距離が最大 ${drift.toFixed(3)} ずれた）`);
+                // ---- ④ ★ 軸の上に乗っている原子は 1px も動かない ----
+                let onAxis = 0;
+                f0.forEach((p, i) => {
+                    if (W.haworthFlipRadius(h, p.id) > 1e-9) return;
+                    onAxis++;
+                    for (let k = 0; k <= 8; k++) {
+                        const q = at(Math.PI * k / 8).find(z => z.id === p.id);
+                        assert(Math.hypot(q.x - p.x, q.y - p.y) < 1e-9,
+                            `★ ${id}/${kind}: 軸の上の原子が動いた`);
+                    }
+                });
+                assert(onAxis >= 1, `${id}/${kind}: 軸の上の原子が1つも無い`);
+                // ---- ⑤ ★★ 移動距離 ＝ 軸からの距離 × 2 ----
+                //   ⚠ **3次元では両方の向きで成り立つ**。⚠ **画面では横回転だけ**
+                //     （縦回転は、画面の縦が「動く向き」と「紙に垂直な分を描く向き」を兼ねるため）
+                const ratios3 = [], ratios2 = [];
+                fp.forEach(p => {
+                    const s0 = f0.find(z => z.id === p.id);
+                    const r = W.haworthFlipRadius(h, p.id);
+                    if (r < 1) return;
+                    ratios3.push(Math.hypot(p.X - s0.X, p.Y - s0.Y, p.Z - s0.Z) / r);
+                    ratios2.push(Math.hypot(p.x - s0.x, p.y - s0.y) / r);
+                });
+                assert(ratios3.length >= 4, `${id}/${kind}: 半径を測れる原子が足りない`);
+                assert(ratios3.every(v => Math.abs(v - 2) < 1e-6),
+                    `★ ${id}/${kind}: 3次元の移動距離が「半径×2」でない（${Math.min(...ratios3).toFixed(3)}〜${Math.max(...ratios3).toFixed(3)}）`);
+                if (kind === 'leftright') {
+                    assert(ratios2.every(v => Math.abs(v - 2) < 1e-6),
+                        `★ ${id}/横回転: 画面の移動距離が「半径×2」でない（${Math.min(...ratios2).toFixed(3)}〜${Math.max(...ratios2).toFixed(3)}）`);
+                }
+                // ---- ⑥ 180° のコマ ＝ ⇄／⇅ そのもの（式で確かめる）----
+                fp.forEach(p => {
+                    const t = h.points.find(z => z.id === p.id);
+                    const want = kind === 'leftright'
+                        ? { x: 2 * h.axis - t.p, y: t.q - t.n }
+                        : { x: t.p, y: 2 * h.axis - t.q - t.n };
+                    assert(Math.abs(p.x - want.x) < 1e-9 && Math.abs(p.y - want.y) < 1e-9,
+                        `★ ${id}/${kind}: 180°のコマが ${kind === 'leftright' ? '⇄' : '⇅'} と違う`);
+                });
+                rows.push({ id, kind, axis: h.axis });
+            });
+        });
+        assert(rows.length === 12, `見た組み合わせが ${rows.length} 通り（12通りのはず）`);
+        /* ===== ⚠ 否定対照: **直線補間に戻す**と ③⑤ が崩れる =====
+         *   （v1467 までの見せ方そのもの。ここが赤くならないなら FA1 は空振りの緑） */
+        const e = (W.COMPOUNDS || []).find(x => x.id === 'sucrose');
+        const mol = g.createTargetFromData({ target: e.target });
+        const h = W.haworthFlipHinge(mol, mol.atoms.map(a => a.id), 'leftright');
+        const f0 = W.haworthFlipFrame(h, 0), fp = W.haworthFlipFrame(h, Math.PI);
+        const lerp = t => f0.map((p, i) => ({
+            id: p.id, X: p.X + (fp[i].X - p.X) * t, Y: p.Y + (fp[i].Y - p.Y) * t,
+            Z: p.Z + (fp[i].Z - p.Z) * t
+        }));
+        const d3 = (f, i, j) => Math.hypot(f[i].X - f[j].X, f[i].Y - f[j].Y, f[i].Z - f[j].Z);
+        let bad = 0;
+        for (let k = 1; k < 24; k++) {
+            const f = lerp(k / 24);
+            for (let i = 0; i < f.length; i++)
+                for (let j = i + 1; j < f.length; j++)
+                    bad = Math.max(bad, Math.abs(d3(f, i, j) - d3(f0, i, j)));
+        }
+        assert(bad > 10,
+            `⚠ 否定対照が効いていない（直線補間でも形が変わらない: 最大 ${bad.toFixed(2)}）`);
+    });
+
+    test('FA2: ★ 加水分解は「回す → 寄せる」の段で見せる（4件＋トレハロース・軸のマーカーは残らない）', async (c) => {
+        const W = c.W, D = c.D, g = c.game;
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
+            const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+            const run = (build) => {
+                c.reset();
+                g.setMode('free');
+                build();
+                g.updateDrawing();
+                const sites = rule.detect(g.userMolecule);
+                assert(sites.length === 1, `グリコシド結合が ${sites.length} 件`);
+                const res = rule.apply(g, sites[0]);
+                g.updateDrawing();
+                return { res, shots: W.reactor.haworthFlipShots(res), cutId: sites[0][0] };
+            };
+            const fromLib = id => () => {
+                const e = (W.COMPOUNDS || []).find(x => x.id === id);
+                assert(e, `${id} がライブラリに無い`);
+                g.userMolecule = g.createTargetFromData({ target: e.target });
+            };
+            // ---- ① 登録の二糖4件: 回し方が分子ごとに決まる ----
+            const WANT = { sucrose: ['leftright'], maltose: [], cellobiose: ['updown'], lactose: ['updown'] };
+            DISACCHARIDES.forEach(id => {
+                const { res } = run(fromLib(id));
+                const rec = (res.haworthRedraws || []).filter(r => r.flip && r.flip.steps.length);
+                const got = rec.length ? rec[0].flip.steps.map(s => s.kind) : [];
+                assert(JSON.stringify(got) === JSON.stringify(WANT[id]),
+                    `★ ${id}: 回し方が ${JSON.stringify(got)}（${JSON.stringify(WANT[id])} のはず）`);
+                /* ⚠ **メリーゴーランドは選ばれない**（ユーザー指定「メリーゴーランドよりは
+                 *   縦横回転を優先する方針で揃えたほうがわかりやすそう」）。
+                 * ★ 門は**構造で閉じている** —— 軌跡の器は縦横の2種類しか受け取らない。
+                 *   下でその不在そのものを確かめる（＝ 名前を足せば通ってしまう作りではない）。 */
+                assert(!got.includes('halfturn'),
+                    `★ ${id}: メリーゴーランドが選ばれている`);
+                // ⚠ 段は「操作ごとに1つ」＝ 2つを1回の補間に混ぜていない
+                (res.haworthRedraws || []).forEach(r => {
+                    if (!r.flip) return;
+                    assert(r.flip.steps.length <= 2, `${id}: 段が ${r.flip.steps.length} つ`);
+                    r.flip.steps.forEach(s => assert(s.hinge && s.hinge.ok && typeof s.axis === 'number',
+                        `${id}: 段に軸が入っていない`));
+                });
+            });
+            // ---- ② ★ 2手が要る分子（トレハロース型 α,α-1,1）は**段が2つ** ----
+            //   ⚠ 登録が無いので手で組む（`compounds.json` に trehalose は 0 件）
+            const buildTrehalose = () => {
+                const anomerOf = (m) => {
+                    const cyc = W.haworthSugarCycles(m)[0];
+                    const st = W.haworthNumberingStart(m, cyc);
+                    const n = cyc.length;
+                    const cId = cyc[(((st.oIndex + st.dir) % n) + n) % n];
+                    const inRing = new Set(cyc);
+                    return { c: m.atoms.find(a => a.id === cId),
+                             o: m.getNeighbors(cId).map(x => x.atom)
+                                  .find(x => x.element === 'O' && !inRing.has(x.id)) };
+                };
+                const src = (W.COMPOUNDS || []).find(x => x.id === 'alpha-d-glucose');
+                const A = g.createTargetFromData({ target: src.target });
+                const an = anomerOf(A);
+                // ⚠ **ずらし幅は先に確定させる**（`an.c` は動かす当人なので、
+                //   ループの中で読み直すと1原子ごとに幅が変わって図が壊れる。実装中に実際にやった）
+                const dA = { x: 458 - an.c.x, y: 300 - an.c.y };
+                A.atoms.forEach(a => { a.x += dA.x; a.y += dA.y; });
+                const B = g.createTargetFromData({ target: src.target });
+                // ★ 環Bは ⇄ → ⇅ の2手で作る ＝ 戻すのにも2手が要る分子になる
+                ['leftright', 'updown'].forEach(kind => {
+                    const h = W.haworthFlipHinge(B, B.atoms.map(a => a.id), kind);
+                    assert(h.ok, 'トレハロースの下ごしらえが通らない');
+                    W.haworthFlipFrame(h, Math.PI).forEach(p => {
+                        const a = B.atoms.find(x => x.id === p.id);
+                        if (!a) return;
+                        a.x = p.x; a.y = p.y;
+                        if (a.haworthFace === 1 || a.haworthFace === -1) a.haworthFace = -a.haworthFace;
+                    });
+                });
+                const bn = anomerOf(B);
+                const dB = { x: 542 - bn.c.x, y: 300 - bn.c.y };
+                B.atoms.forEach(a => { a.x += dB.x; a.y += dB.y; });
+                const map = new Map();
+                B.atoms.forEach(a => {
+                    const na = A.addAtom(a.element, a.x, a.y);
+                    if (a.haworthFace === 1 || a.haworthFace === -1) na.haworthFace = a.haworthFace;
+                    map.set(a.id, na.id);
+                });
+                B.bonds.forEach(b => A.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+                // ⚠ 合体したあとに `anomerOf` を呼び直さない（環が2つになるので、
+                //   どちらの環が返るか決まらない）。★ 合体前に取った `an` をそのまま使う
+                A.removeAtom(map.get(bn.o.id));
+                const bridge = A.atoms.find(a => a.id === an.o.id);
+                bridge.x = 500; bridge.y = 414; delete bridge.haworthFace;
+                A.addBond(bridge.id, map.get(bn.c.id), 1);
+                g.userMolecule = A;
+            };
+            const tre = run(buildTrehalose);
+            const treRec = (tre.res.haworthRedraws || []).filter(r => r.flip && r.flip.steps.length);
+            assert(treRec.length === 1, `トレハロース: 回す断片が ${treRec.length} 件`);
+            const treSteps = treRec[0].flip.steps.map(s => s.kind);
+            assert(JSON.stringify(treSteps) === JSON.stringify(['leftright', 'updown']),
+                `★ トレハロース: 段が ${JSON.stringify(treSteps)}（['leftright','updown'] のはず）`);
+            const names = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+                .map(p => g.lookupCompoundName(p));
+            assert(names.length === 2 && names.every(n => n && /α-D-グルコース/.test(n)),
+                `★ トレハロース: 生成物が α-D-グルコース ×2 でない（${names.join(' / ')}）`);
+            // ---- ③ ★ 軸のマーカーは、回し終えたあと1つも残っていない ----
+            const axes = () => D.querySelectorAll('#chem-svg [data-flip-axis]').length;
+            assert(axes() === 0, `★ 回し終えたのに軸のマーカーが ${axes()} 本残っている`);
+            // ⚠ 否定対照: 描けば実際に出る（＝ 上の 0 が「そもそも描いていない」ではない）
+            const { res, shots } = run(fromLib('sucrose'));
+            assert(shots.length === 1, 'スクロースで回す断片が1つに定まらない');
+            const step = shots[0].flip.steps[0];
+            const pts = [...W.haworthFlipFrame(step.hinge, Math.PI / 2)];
+            W.reactor.renderFlipAxis(step, pts);
+            assert(axes() === 1, '⚠ 否定対照: 軸のマーカーを描いても出てこない（③ が空振り）');
+            const line = D.querySelector('#chem-svg [data-flip-axis]');
+            assert(line.getAttribute('stroke-dasharray'),
+                '軸のマーカーが破線でない（結合の線と読み違えられる）');
+            g.updateDrawing();
+            assert(axes() === 0, '★ 描き直しで軸のマーカーが消えない');
+            /* ---- ④ ★ メリーゴーランドの器そのものが無いこと ----
+             *   ⚠ 「候補に入れなかった」ではなく「**作れない**」を見る。
+             *   ここが通ると、あとから名前を足すだけで面内180°が混ざりうる */
+            const mol2 = g.userMolecule;
+            ['halfturn', 'merrygoround', 'spin'].forEach(k => {
+                const h = W.haworthFlipHinge(mol2, mol2.atoms.map(a => a.id), k);
+                assert(!h.ok && h.reason === 'kind',
+                    `★ 紙の軌跡が「${k}」を受け取ってしまう（縦横回転の2つだけのはず）`);
+            });
+            // ⚠ 対照: 縦横の2つはちゃんと組める（＝ 上の拒否が「何でも拒否」ではない）
+            ['leftright', 'updown'].forEach(k => assert(
+                W.haworthFlipHinge(mol2, mol2.atoms.map(a => a.id), k).ok,
+                `${k} が組めない（拒否の対照が成り立たない）`));
         } finally {
             g.setReadStereo(saved);
             c.reset();

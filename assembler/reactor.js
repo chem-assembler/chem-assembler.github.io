@@ -3948,6 +3948,13 @@ const REACTION_RULES = [
             // ⚠ **切る前に**橋の酸素がどちらの面に出ていたかを読む（引き離すと座標が動く）
             const dir = haworthCleaveDirection(mol, cId, oId);
             mol.removeBond(cId, oId);
+            /* ★ **紙を回し始める位置**（`DESIGN_sugar.md` §4-9f）。
+             * ⚠ すぐ下の引き離し（`separateComponent`）は相手を**真下へ 2 マス**動かす ——
+             *   これを回し始めの位置にすると「回す前にもう下へ落ちている」＝
+             *   ユーザー報告の**「分子全体が↓にスライドする」がここで作られる**。
+             * ⚠ 引き離しそのものは**外さない**（描き直しが効かない糖のときの受け皿）。
+             *   効いたときだけ、この位置から回した結果で置き直す。 */
+            const arcFrom = mol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
             // 相手の単糖を引き離す（架橋酸素はそちらに残る ＝ そのまま -OH になる）
             const rest = [...componentOf(mol, oId)];
             if (!rest.includes(cId)) {
@@ -3995,6 +4002,28 @@ const REACTION_RULES = [
                  * ⚠ **ここだけで頼む。** `alignRow` は既定 false なので、
                  *   一般の反応配置には影響しない。 */
                 alignRow: true,
+                /* ★★ **動かさない側 ＝ 切られた側**（`DESIGN_sugar.md` §4-9e）。
+                 * ユーザー（2026-08-26・v1461〜v1466 の実機確認後）:
+                 *   **「加水分解時に分子全体が↓にスライドするのをなくしたい」**
+                 *   **「グルコースは固定、フルクトースが回転して真横→に移動し、
+                 *     加水分解後の糖は2つ横に並ぶ」**
+                 *   **「フルクトースは横回転と同時に↓に平行移動している、↓移動が不要」**
+                 * ⚠ v1453 は「2断片の**中間**」を基準にしていたので**両方が縦に動き**、
+                 *   画面ぜんたいが下へ滑って見えた。★ 基準を**切られた側**に置くと、
+                 *   固定側は1pxも動かず、フリップする側は**横へ逃げるだけ**になる。
+                 * ⚠ **切られた側 ＝ `cId` の連結成分**（引き離されるのは `oId` 側 ＝ `rest`）。 */
+                anchor: [...componentOf(mol, cId)],
+                /* ★★ **置き場所は「紙を 180° 回した結果」で決める**（`DESIGN_sugar.md` §4-9f）。
+                 * ユーザー: **「すべての原子が紙面の右辺を軸に 180度回転する軌跡を通ればよい」**
+                 *   **「フルクトースであれば、1,2 の炭素は大きな半径で移動し、5,6 は小さな半径で移動する」**
+                 * ＝ 右へ／下へのずれは**こちらが与える値ではなく、回転から出てくる値**。 */
+                arc: true,
+                arcFrom,
+                /* ★ 置き場所を決めるときに数えない原子（§4-9f）:
+                 *   ① いま生やした -OH（切る前は存在しない）
+                 *   ② 橋だった -O-（環から 121px 離れた橋の位置に描かれている。ふつうの枝は 38px）
+                 * ⚠ 混ぜると、**切られる側でも重心が 43px ぶん引っぱられて固定側が動く**。 */
+                fitIgnore: [o.id, oId],
                 // 並べるときの重なりの物差し。⚠ **下の `escape` と同じものを渡す**
                 //   （別々に持つと、並べた図を逃がす側が真下へ 2 マス飛ばす）
                 overlaps: componentOverlaps,
@@ -6072,6 +6101,12 @@ class Reactor {
             highlight();
             return;
         }
+        /* ★★ 紙のフリップ（`DESIGN_sugar.md` §4-9f）。⚠ **直線補間ではなく 180° の回転**で見せる。
+         *   ここで返ると、下のふつうのモーフィングは走らない（＝ 二糖の加水分解だけの経路）。 */
+        if (this.haworthFlipShots(result).length) {
+            this.animateHaworthFlip(before, after, result, highlight);
+            return;
+        }
         // モーフィングは表示のみの上書き。世代トークンで多重・中断を安全に扱う
         const gen = ++this._morphGen;
         this._morphing = true;
@@ -6148,6 +6183,109 @@ class Reactor {
         });
     }
 
+    /* ==========================================================================
+     * ★★ 紙のフリップのアニメーション（`DESIGN_sugar.md` §4-9f・ユーザー発注 2026-08-26）
+     *
+     * **ユーザーの言葉**（そのまま）:
+     * > **理想は、紙のフリップを再現する軌跡を演算して原子を移動すること
+     * >   （移動中も糖の構造が変形しない）**
+     * > **すべての原子が紙面の右辺を軸に 180度回転する軌跡を通ればよい**
+     * > **フルクトースであれば、1,2 の炭素は大きな半径で移動し、5,6 は小さな半径で移動する**
+     * > **回転するときに軸をマーカーで表示するとより3Dアニメっぽくなり、わかりやすくなるかも**
+     *
+     * ⚠ **v1467 までは始点→終点の直線補間**だった ＝ 原子が近道を通るので、途中の形は
+     *   どの瞬間も本物ではない。★ ここは**軸まわりの剛体回転**を1コマずつ解く。
+     * ★ **z（キャンバス平面からの高さ）は `haworthFlipFrame` が返すコマの中だけの使い捨ての値**で、
+     *   `Molecule` には1つも入らない（`CLAUDE.md`「検証はトポロジーのみ・座標は見た目専用」）。
+     * ⚠ **途中のコマで結合や原子を足し引きしない**（動くのは座標だけ）。
+     * ========================================================================== */
+
+    /** 回す断片の一覧（回さない分子なら空配列） */
+    haworthFlipShots(result) {
+        return (result && result.haworthRedraws || [])
+            .filter(r => r.flip && r.flip.steps && r.flip.steps.length && r.flip.start && r.flip.end);
+    }
+
+    /** 回転の軸を破線で描く（⚠ 結合の線と読み違えられないよう、色も破線も別にする） */
+    renderFlipAxis(step, pts) {
+        const g = this.game;
+        if (!g.bondsGroup || !pts.length) return;
+        const pad = 60;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        if (step.kind === 'leftright') {
+            const ys = pts.map(p => p.y);
+            line.setAttribute('x1', step.axis); line.setAttribute('x2', step.axis);
+            line.setAttribute('y1', Math.min(...ys) - pad); line.setAttribute('y2', Math.max(...ys) + pad);
+        } else {
+            const xs = pts.map(p => p.x);
+            line.setAttribute('y1', step.axis); line.setAttribute('y2', step.axis);
+            line.setAttribute('x1', Math.min(...xs) - pad); line.setAttribute('x2', Math.max(...xs) + pad);
+        }
+        line.setAttribute('stroke', '#ffd166');
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke-dasharray', '10 8');
+        line.setAttribute('opacity', '0.85');
+        line.setAttribute('data-flip-axis', step.kind);   // ⚠ 回し終えたら1つも残らないこと（FA1）
+        g.bondsGroup.appendChild(line);
+    }
+
+    /**
+     * 回す → （2手目があればもう一度回す）→ 寄せる、の順で再生する。
+     * ⚠ **2つの操作を1回の補間に混ぜない**（ユーザー「操作ごとにアニメーションを段階で行う」）。
+     */
+    animateHaworthFlip(before, after, result, highlight) {
+        const g = this.game;
+        const shots = this.haworthFlipShots(result);
+        const gen = ++this._morphGen;
+        this._morphing = true;
+        this._morphSkip = false;
+        const smoothstep = t => t * t * (3 - 2 * t);
+        const stop = () => this._morphSkip || this._morphGen !== gen;
+        // 段の組み立て: 各断片の回転を順に並べ、最後に「寄せる」を1段
+        const legs = [];
+        shots.forEach(shot => {
+            shot.flip.steps.forEach((step, i) => legs.push({ kind: 'turn', shot, step, i }));
+            legs.push({ kind: 'slide', shot });
+        });
+        const posAt = (leg, t) => {
+            const map = new Map();
+            if (leg.kind === 'turn') {
+                // ★ 剛体の 180° 回転。⚠ 直線補間ではない ＝ 軌跡は弧になる
+                haworthFlipFrame(leg.step.hinge, Math.PI * t).forEach(p => map.set(p.id, p));
+            } else {
+                // 寄せる（平行移動だけ）。⚠ ここだけは直線でよい —— 形はもう変わらない
+                const to = new Map(leg.shot.after.map(p => [p.id, p]));
+                leg.shot.flip.end.forEach(p => {
+                    const q = to.get(p.id) || p;
+                    map.set(p.id, { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t });
+                });
+            }
+            return map;
+        };
+        const run = (k) => {
+            if (this._morphGen !== gen) return Promise.resolve(null);
+            if (k >= legs.length || this._morphSkip) return Promise.resolve(null);
+            const leg = legs[k];
+            const dur = leg.kind === 'turn' ? 900 : 350;
+            // 断り: 全体の進み具合（結合の消え方・新しい -OH の出方に使う）
+            const t0 = k / legs.length, span = 1 / legs.length;
+            return animateFramesLoop(dur, t => {
+                if (this._morphGen !== gen) return;
+                const e = smoothstep(t);
+                const map = posAt(leg, e);
+                this.renderMorphFrame(before, after, Math.min(1, t0 + span * e), map);
+                if (leg.kind === 'turn') this.renderFlipAxis(leg.step, [...map.values()]);
+            }, stop).then(() => run(k + 1));
+        };
+        this.renderMorphFrame(before, after, 0, posAt(legs[0], 0));
+        run(0).then(() => {
+            if (this._morphGen !== gen) return;
+            this._morphing = false;
+            g.updateDrawing();   // ⚠ ここで軸のマーカーも消える（bondsGroup が描き直される）
+            highlight();
+        });
+    }
+
     _reducedMotion() {
         return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
@@ -6182,7 +6320,7 @@ class Reactor {
     // before/after を t(0→1) で補間した描画データを返す純関数。原子はID対応で照合し、
     // 共通原子は座標を線形補間、脱離原子はフェードアウト、付加原子はフェードイン、
     // 結合は次数変化をクロスフェード・生成/消滅をフェードで表す（DOM非依存＝テスト可能）
-    interpolateMorph(before, after, t) {
+    interpolateMorph(before, after, t, override) {
         const lerp = (a, b) => a + (b - a) * t;
         const clamp = o => Math.max(0, Math.min(1, o));
         const afterById = new Map(after.atoms.map(a => [a.id, a]));
@@ -6195,6 +6333,12 @@ class Reactor {
         });
         after.atoms.forEach(a => {
             if (!beforeById.has(a.id)) atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(t) }); // 付加
+        });
+        /* ★ `override` … その原子だけ位置を差し替える（`DESIGN_sugar.md` §4-9f の紙の回転）。
+         * ⚠ **結合の端点を組む前に当てる**（あとから当てると線だけ取り残される）。 */
+        if (override) atoms.forEach(a => {
+            const p = override.get(a.id);
+            if (p) { a.x = p.x; a.y = p.y; }
         });
         const posById = new Map(atoms.map(a => [a.id, a]));
         const key = b => b.atomId1 < b.atomId2 ? `${b.atomId1} ${b.atomId2}` : `${b.atomId2} ${b.atomId1}`;
@@ -6217,11 +6361,11 @@ class Reactor {
     }
 
     // 補間1フレームを実キャンバス（atomsGroup/bondsGroup）に描く。自動水素は省略（完了時に通常描画で出る）
-    renderMorphFrame(before, after, t) {
+    renderMorphFrame(before, after, t, override) {
         const g = this.game;
         g.atomsGroup.innerHTML = '';
         g.bondsGroup.innerHTML = '';
-        const frame = this.interpolateMorph(before, after, t);
+        const frame = this.interpolateMorph(before, after, t, override);
         frame.bonds.forEach(bd => {
             const start = g.bondsGroup.childElementCount;
             g.renderBond(bd.x1, bd.y1, bd.x2, bd.y2, bd.type, false);
