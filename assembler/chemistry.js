@@ -4749,6 +4749,121 @@ function haworthTurn(mol, plan, kind) {
 }
 
 /* ==========================================================================
+ * ★★ 紙のフリップの軌跡（`DESIGN_sugar.md` §4-9f。ユーザー発注 2026-08-26）
+ *
+ * **ユーザーの言葉**（そのまま。ここが正）:
+ * > **スクロースの場合話は単純で、フルクトース構造を紙と考えると、紙の右辺を固定した状態で
+ * >   机上で紙を横回転すればよいので、加水分解後は右にスライドするのがわかりやすい**
+ * > **セロビオース・ラクトースの場合は縦回転なので、紙の下辺を固定した状態で机上で縦回転する**
+ * > **フルクトースであれば、1,2 の炭素は大きな半径で移動し、5,6 は小さな半径で移動する**
+ * > **すべての原子が紙面の右辺を軸に 180度回転する軌跡を通ればよい**
+ * > **ただし、この回転は、キャンバス平面に対する垂直方向の高さの値を持たせたうえで、
+ * >   それがどのように投影されるかを計算することになると思われる**
+ *
+ * ★ **芯**: 図を「紙」と見て、**辺を軸に 180° 回す剛体運動**を組み、そのコマを描く。
+ *   ＝ 移動量は**与える値ではなく、回転から出てくる値**（軸からの距離 × 2）。
+ *
+ * ★ **高さ（z）の持たせ方** —— ⚠⚠ **モデルには足さない。**
+ *   `Molecule` の原子に `z` を生やすと、正準コード・同型判定・立体判定に混ざり込む恐れがある
+ *   （`CLAUDE.md`「検証はトポロジーのみ・座標は見た目専用」／立体は `haworthFace` が担う）。
+ *   **z はこの関数が返すコマの中だけの使い捨ての値**で、回し終えたら捨てる。
+ *
+ * ★ **紙の上での持ち方**（ハース投影の約束をそのまま3次元に開く）:
+ *   - **環の原子** … 紙の中（p, q, n=0）
+ *   - **環外の枝** … 紙に**垂直**に立っている（p ＝ 自分の x・q ＝ **付け根の y**・n ＝ 付け根からの縦のずれ）
+ *     ＝ ハース図で「縦に描く」のは、**紙から手前／奥へ出ている**という意味だから
+ *
+ * ★ **投影は正射影＋ハースの約束**（`screen = (X, Y + Z)`。⚠ 透視は使わない）:
+ *   ① **終わりのコマが、いままでの図とぴったり一致する**（θ=π で ⇄／⇅ そのものになる。下の実測）
+ *   ② ★ **画面上の移動量も「軸からの距離 × 2」になる**（横回転の場合。Y は動かず X と Z が反転するので、
+ *      画面のずれは (−2u, −2n) ＝ 大きさ 2·hypot(u,n) ＝ 2 ×（軸からの3次元の距離））
+ *   ⚠ 透視にすると①が壊れる（残差 0.91px の一致を保てない）ので採らない。
+ *
+ * ★ **端点が既存の操作と一致すること**（式で確かめられる）:
+ *   - `leftright`（軸 ＝ 紙の**右辺**・縦の直線 x=x0）… θ=π で
+ *     環は (2x0−x, y)・枝は (2x0−x, 付け根y − n) ＝ **⇄（x 鏡映＋付け替え）そのもの**
+ *   - `updown`（軸 ＝ 紙の**下辺**・横の直線 y=y0）… θ=π で
+ *     すべての原子が (x, 2y0 − 描かれた y) ＝ **⇅（y 鏡映）そのもの**
+ *   ⚠ **⇄ の③（段の入れ替え・v1461）はこの軌跡には入らない**（あれは食い込みを避ける作図の型で、
+ *     紙の動きではない）。六員環に ⇄ を当てるときだけ端点が最大で段の幅ぶんずれる。
+ *
+ * ⚠ **メリーゴーランド（面内180°）はここでは作らない。** ユーザーの指定
+ *   「メリーゴーランドよりは縦横回転を優先する方針で揃えたほうがわかりやすそう」に従い、
+ *   2手が要る分子は **⇄ → ⇅ の2段**で見せる（この2つの合成が ⟳ になる ＝ §4-10b の四元群）。
+ * ========================================================================== */
+
+/**
+ * ★ 紙のフリップの下ごしらえ。**連結成分1つ**の原子 `ids` を「紙」と見て、軸と各原子の
+ *   紙の上での持ち方（p, q, n）を決める。
+ *
+ * `kind` … `'leftright'`（縦の軸まわり ＝ 横回転・本のページ）
+ *        / `'updown'`（横の軸まわり ＝ 縦回転・カレンダー）
+ * `axisAt` … 軸の位置を明示したいとき（省くと **紙の右辺／下辺**）。
+ *
+ * 戻り値 `{ ok, kind, axis, points:[{id,p,q,n}] }` / `{ ok:false, reason }`
+ */
+function haworthFlipHinge(mol, ids, kind, axisAt) {
+    if (kind !== 'leftright' && kind !== 'updown') return { ok: false, reason: 'kind' };
+    const list = (ids instanceof Set ? [...ids] : ids || []).slice();
+    if (!list.length) return { ok: false, reason: 'none' };
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    if (list.some(id => !byId.has(id))) return { ok: false, reason: 'none' };
+    const roots = haworthBranchRoots(mol, list);
+    const points = list.map(id => {
+        const a = byId.get(id);
+        const rs = (roots.get(id) || []).map(r => byId.get(r)).filter(Boolean);
+        // ⚠ 枝は**付け根の y** を紙の上の位置とし、そこからの縦のずれを「紙に垂直な高さ」に開く。
+        //   ⚠ 付け根が2つある（二糖の橋）ときは平均（`haworthTurn` の付け替えと同じ扱い）
+        const ry = rs.length ? rs.reduce((t, r) => t + r.y, 0) / rs.length : a.y;
+        return { id, p: a.x, q: ry, n: a.y - ry };
+    });
+    // ★ 軸 ＝ 紙の右辺（縦の軸）／紙の下辺（横の軸）。⚠ 見るのは**紙の上の位置**（p, q）
+    const axis = (axisAt !== undefined && axisAt !== null) ? axisAt
+        : (kind === 'leftright' ? Math.max(...points.map(t => t.p))
+                                : Math.max(...points.map(t => t.q)));
+    return { ok: true, kind, axis, points };
+}
+
+/**
+ * ★ 角度 θ（ラジアン・0→π）のコマ。戻り値は
+ *   `[{ id, x, y, X, Y, Z }]` —— `x,y` が**画面**、`X,Y,Z` が**剛体の3次元**（検査用・使い捨て）。
+ *
+ * ⚠ **`X,Y,Z` はどの θ でも剛体**（同じ回転行列を全原子に当てているので、原子どうしの
+ *   3次元の距離は1つも変わらない）＝「移動中も糖の構造が変形しない」はここで担保される。
+ * ⚠ **画面は `(X, Y + Z)`**（ハース投影の約束＝「紙に垂直な向きは縦に描く」を回転中も続ける）。
+ */
+function haworthFlipFrame(hinge, theta) {
+    if (!hinge || !hinge.ok) return [];
+    const c = Math.cos(theta), s = Math.sin(theta), a0 = hinge.axis;
+    return hinge.points.map(t => {
+        let X, Y, Z;
+        if (hinge.kind === 'leftright') {
+            const u = t.p - a0;
+            X = a0 + u * c - t.n * s; Y = t.q; Z = u * s + t.n * c;
+        } else {
+            const v = t.q - a0;
+            X = t.p; Y = a0 + v * c - t.n * s; Z = v * s + t.n * c;
+        }
+        /* ★ 画面 ＝ **剛体の正射影 (X, Y)** ＋ **ハースの約束ぶん (0, n·cosθ)**。
+         * ⚠ 「n·cosθ」＝ 枝のうち**まだ紙の外を向いている分**だけを縦に描く（＝ ハース図の約束を
+         *   回転中も続ける）。θ=0 で n まるごと・θ=90° で 0・θ=180° で −n になり、
+         *   端点はぴったり ⇄／⇅ に着く。
+         * ⚠⚠ **`Y + Z` にしてはいけない**（v1468 の実装中に実際にやった）——
+         *   縦回転で「環が先に 41% 行き過ぎてから戻る」動きになり、90° で環が線に潰れない
+         *   （実測: 環原子の画面 y が v(cosθ+sinθ) ＝ 45° で v√2）。 */
+        return { id: t.id, x: X, y: Y + t.n * c, X, Y, Z };
+    });
+}
+
+/** ★ その原子の「軸からの距離」（＝ 回る半径）。ユーザーの「1,2 は大きな半径・5,6 は小さな半径」 */
+function haworthFlipRadius(hinge, id) {
+    if (!hinge || !hinge.ok) return null;
+    const t = hinge.points.find(x => x.id === id);
+    if (!t) return null;
+    return Math.hypot(hinge.kind === 'leftright' ? t.p - hinge.axis : t.q - hinge.axis, t.n);
+}
+
+/* ==========================================================================
  * 糖の炭素番号（🔢 主鎖と番号を見る に相乗りする・ユーザー発注 2026-08-25）
  *
  * ★ **表は持たない。** アノマー炭素は**グラフから**決める ——
@@ -5355,6 +5470,10 @@ if (typeof window !== 'undefined') {
     window.haworthBranchRoots = haworthBranchRoots;
     window.haworthTurnPlan = haworthTurnPlan;
     window.haworthTurn = haworthTurn;
+    // ★ 紙のフリップの軌跡（§4-9f）。⚠ z はここが返すコマの中だけの使い捨ての値
+    window.haworthFlipHinge = haworthFlipHinge;
+    window.haworthFlipFrame = haworthFlipFrame;
+    window.haworthFlipRadius = haworthFlipRadius;
     // 糖の炭素番号（🔢 に相乗り）。⚠ 表は持たず、アノマー炭素はグラフから決める
     window.haworthCarbonNumbers = haworthCarbonNumbers;
     window.tetrahedralDirs = tetrahedralDirs;
