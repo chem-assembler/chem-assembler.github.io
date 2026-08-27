@@ -453,8 +453,9 @@ function treeGrade(problem, seq, plan) {
 var TREE_STANDARD_ORDER = ['hcl', 'h2s', 'boil', 'hno3', 'nh3', 'h2s', 'co3'];
 
 var TREE_MODES = {
-    read: { id: 'read', name: '行先を読む', mark: '★☆☆', preset: true },
-    build: { id: 'build', name: '手順から組む', mark: '★★☆', preset: false }
+    // ⚠ 名前はユーザーが決めた文言（2026-08-28）。★ 「行先」であって「行き先」ではない
+    read: { id: 'read', name: 'イオンの行先を答える', mark: '★☆☆', preset: true },
+    build: { id: 'build', name: '実験手順から考える', mark: '★★☆', preset: false }
 };
 
 // ⚠ 出題の説明文を持たせない（§18-6 (1)）。★ 解き筋を先に配ることになる。

@@ -324,7 +324,8 @@
             h3.textContent = 'ぜんぶ単離できました';
         } else if (g.verdict === 'misread') {
             h3.className = 'ng';
-            h3.textContent = '単離はできましたが、行先が机上と違いました';
+            // ⚠ 「机上」は設計書の語であって、学習者の語ではない（★ 画面には出さない）
+            h3.textContent = '単離はできましたが、置いた行先とは違いました';
         } else {
             h3.className = 'ng';
             h3.textContent = '単離できていない葉が ' + g.dirty + ' 枚あります';

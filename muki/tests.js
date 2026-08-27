@@ -1009,6 +1009,14 @@
                     return (m.name + m.mark + m.id).indexOf(w) < 0;
                 });
             }));
+        // ★ やり方の名前はユーザーが決めた文言（2026-08-28）。⚠ 勝手に言い換えない
+        ok('やり方の名前が、ユーザーの決めた文言のまま',
+            TREE_MODES.read.name === 'イオンの行先を答える' &&
+            TREE_MODES.build.name === '実験手順から考える');
+        ok('⚠ 「行き先」ではなく「行先」（★ 表記のゆれを作らない）',
+            Object.keys(TREE_MODES).every(function (k) {
+                return TREE_MODES[k].name.indexOf('行き先') < 0;
+            }));
         ok('札の名前に属の番号を書いていない（⚠ 書いたら並べる順を配ってしまう）',
             Object.keys(TREE_OPS).every(function (o) {
                 var t = TREE_OPS[o].short + TREE_OPS[o].say + TREE_OPS[o].mean;
@@ -2089,8 +2097,19 @@
                 var hit = (SPOILER_WORDS || []).filter(function (x) { return zone.indexOf(x) >= 0; });
                 if (hit.length) warn('型A の出題まわりに解き筋の語: ' + hit.join('・'));
                 ok('導入とやり方の欄に、解き筋の語が出てこない', hit.length === 0, uiOut);
-                ok('導入は1〜2行に収まっている（' + d.querySelector('.lead').textContent.trim().length +
-                    '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
+                var lead = d.querySelector('.lead').textContent.trim();
+                ok('導入は1行に収まっている（' + lead.length + '字）', lead.length <= 30, uiOut);
+                // ⚠ 画面を見れば分かること・押せば分かることを、導入に書かない（§18 と同じ縛り）
+                ok('⚠ 導入が「中身は分かっています」「提出すると…」を言い直していない',
+                    lead.indexOf('分かって') < 0 && lead.indexOf('提出') < 0 &&
+                    lead.indexOf('走らせ') < 0, uiOut);
+                ok('★ 中身が与えられていることは、画面（この容器の欄）から読み取れる',
+                    d.getElementById('beaker-ions').textContent.trim().length > 0, uiOut);
+                ok('やり方の名前が画面に出ている（ユーザーの決めた文言）',
+                    d.getElementById('modes').textContent.indexOf('イオンの行先を答える') >= 0 &&
+                    d.getElementById('modes').textContent.indexOf('実験手順から考える') >= 0, uiOut);
+                ok('⚠ 「机上」という設計書の語を画面に出さない',
+                    d.body.textContent.indexOf('机上') < 0, uiOut);
             })();
 
             // --- ① やさしい段（イオンの行先を答える）は、操作がもう置いてある ---
