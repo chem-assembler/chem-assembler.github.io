@@ -1440,41 +1440,44 @@ function activatedRingBrominationSites(mol) {
 
 /**
  * この C=C を酸化開裂の対象にしてよいか。返り値は
- * `'ok'`（実行する）／`'terminal'`／`'ring'`／`'triple'`／`'hetero'`（いずれも扱わない）。
+ * `'ok'`／`'ring'`（どちらも実行する）／`'terminal'`／`'triple'`／`'hetero'`（扱わない）。
  *
+ * - `ring` … 環の中の C=C。**実行する**（§10.3-d の実測 ＋ §10.11-F の1位・2026-08-27 ユーザー決定）。
+ *   環が開いて**1分子のまま**両端に官能基が付くので、`apply` は caption を言い分ける
  * - `terminal` … 端が =CH₂。酸化されると **CO₂ と水**になって出ていく。有機の図に残らないものを
  *   キャンバスに置くと、以後その CO₂ が反応の相手として数えられてしまう
- * - `ring` … 環の中の C=C。シクロヘキセン → アジピン酸は正しいが、環が開く形は
- *   「切ったのに1分子のまま」で前後比較の読み方が変わる。別項目として立てる
  * - `triple` … C≡C の開裂。高校では扱いが安定しない
  * - `hetero` … 炭素と水素だけでできていない分子。他の官能基との**酸化されやすさの順序**を
- *   高校の範囲では決められない（アルコールの酸化に置いた線引きと同じ考え方）
+ *   高校の範囲では決められない（アルコールの酸化に置いた線引きと同じ考え方）。
+ *   ⚠ **環の中の C=C にも同じ門番が当たる**（2-シクロヘキセン-1-オンなど）——
+ *   環かどうかより先に「炭化水素か」を見るようにした。鎖の `hetero` と扱いをそろえる
  */
 function alkeneCleavageClass(mol, site) {
     const [id1, id2] = site;
     const bond = mol.getBond(id1, id2);
     if (!bond) return null;
     if (bond.type !== 2) return 'triple';
-    const rings = ringAtomIdsOf(mol);
-    if (rings.has(id1) || rings.has(id2)) return 'ring';
     // 分子（連結成分）が炭素と水素だけでできていること
     const comp = componentOf(mol, id1);
     if (![...comp].every(id => {
         const a = mol.atoms.find(x => x.id === id);
         return a && (a.element === 'C' || a.element === 'H');
     })) return 'hetero';
+    const rings = ringAtomIdsOf(mol);
+    const inRing = rings.has(id1) || rings.has(id2);
     const others = (id, other) => mol.getNeighbors(id)
         .filter(n => n.atom.element !== 'H' && n.atom.id !== other);
     const a = others(id1, id2), b = others(id2, id1);
-    if (a.length === 0 || b.length === 0) return 'terminal';
+    if (a.length === 0 || b.length === 0) return 'terminal'; // 環の中では起こらない
     if (a.length > 2 || b.length > 2) return 'hetero';
     if (![...a, ...b].every(n => n.type === 1)) return 'hetero'; // 共役の内側は行き先が割れる
-    return 'ok';
+    return inRing ? 'ring' : 'ok';
 }
 
 /** 酸化開裂を実行できる C=C の一覧（`[id1, id2]` の配列） */
 function oxidativeCleavageSites(mol) {
-    return multipleBondSites(mol).filter(s => alkeneCleavageClass(mol, s) === 'ok');
+    return multipleBondSites(mol)
+        .filter(s => ['ok', 'ring'].includes(alkeneCleavageClass(mol, s)));
 }
 
 /**
@@ -1599,9 +1602,10 @@ function oxidationOutOfScope(mol) {
     // 実行できるボタンの横に「ここでは変えません」を並べると、どちらが起きるのか読めない
     const consumed = new Set();
     sideChainOxidationCandidates(mol).forEach(c => c.branch.forEach(id => consumed.add(id)));
+    // ⚠ `ring` は **v1472 で実行へ移った**（§10.3-d／§10.11-F の1位）ので、案内からは外れている
     multipleBondSites(mol).forEach(s => {
         const cls = alkeneCleavageClass(mol, s);
-        if (cls !== 'terminal' && cls !== 'ring') return;
+        if (cls !== 'terminal') return;
         if (s.every(id => consumed.has(id))) return;
         sites.push(s); kinds.add(cls);
     });
@@ -2876,6 +2880,8 @@ const REACTION_RULES = [
             const [id1, id2] = site;
             const bond = mol.getBond(id1, id2);
             if (!bond || bond.type !== 2) throw new Error('切る C=C が見つかりません');
+            // 環の中かどうかも**切る前**に見る（切ったあとは環でなくなる）
+            const inRing = alkeneCleavageClass(mol, site) === 'ring';
             // 行き先は**切る前**に決める（切ったあとでは「もとの相手」が分からなくなる）
             const carbons = (id, other) => mol.getNeighbors(id)
                 .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
@@ -2904,11 +2910,28 @@ const REACTION_RULES = [
             });
             const names = roles.map(([, nC]) => (nC === 1 ? 'カルボン酸' : 'ケトン'));
             const both = names[0] === names[1] ? `${names[0]}が2つ` : `${names[0]}と${names[1]}`;
+            const rule = '行き先は**その炭素についていた炭素の数**だけで決まります: ' +
+                '炭素が2つ（R₂C=）ならケトン、炭素が1つ（RCH=）ならアルデヒドを経てカルボン酸まで進みます。';
+            // ★ 環を切ったときは**分子が2つに分かれない**。数を言う言い方（「2つになりました」）は
+            //    そのままでは嘘になるので、言い分ける（§10.3-d／§10.3-e ①）
+            if (inRing) {
+                const ends = names[0] === names[1]
+                    ? (names[0] === 'カルボン酸' ? '両端にカルボキシ基をもつ' : '両端がケトンの')
+                    : '片方の端がカルボキシ基、もう片方がケトンの';
+                return {
+                    caption: `環が開いて、${ends}**1つの分子**になりました（酸化開裂）。` +
+                        '鎖状のアルケンと違って**分子は2つに分かれません**。' +
+                        'このため「切ったのに1分子で出てくる」ことが、もとが環だった印になります' +
+                        '（シクロヘキセン → アジピン酸）。' + rule +
+                        '⚠ 教科書の本文には出ませんが、傍用問題集と入試では構造決定の定番です。',
+                    changed,
+                    refit: true
+                };
+            }
             return {
                 caption: `C=C が切れて、${both}になりました（酸化開裂）。` +
                     '硫酸酸性の過マンガン酸カリウムのような強い酸化剤を使うと、二重結合のところで炭素鎖が切れます。' +
-                    '行き先は**その炭素についていた炭素の数**だけで決まります: ' +
-                    '炭素が2つ（R₂C=）ならケトン、炭素が1つ（RCH=）ならアルデヒドを経てカルボン酸まで進みます。' +
+                    rule +
                     'この反応は、できた化合物から**もとの二重結合の位置を逆算する**ために使います（構造決定）。' +
                     'できた分子は重なりを避けて離してあります。',
                 changed,
@@ -2931,11 +2954,6 @@ const REACTION_RULES = [
                 parts.push('**末端の C=C（=CH₂ の側）**は、酸化開裂すると二酸化炭素 CO₂ と水になって出ていきます。' +
                     '残る骨格のほうはカルボン酸（またはケトン）になります。' +
                     '図に残らないものを置くと以後の反応の相手として数えられてしまうので、ここでは切りません。');
-            }
-            if (kinds.has('ring')) {
-                parts.push('**環の中の C=C** を切ると環が開いて、両端にカルボキシ基をもつ1つの分子になります' +
-                    '（シクロヘキセン → アジピン酸。ナイロン66 の原料です）。' +
-                    'いまは「切ったのに1分子のまま」を図で扱えないので、ここでは変えません。');
             }
             return {
                 caption: (parts.join('\n') || 'この分子で酸化剤が働く形は、いまは図にしていません。') +
