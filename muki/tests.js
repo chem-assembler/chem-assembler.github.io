@@ -488,6 +488,53 @@
             }));
 
         // -----------------------------------------------------------
+        // ⚠⚠ 本の名前とページは画面に出さない。⚠ ただしデータからは消さない
+        //   （2026-08-27・ユーザー決定。★ §17-10 の `src` とまったく同じ扱い）
+        //   ★ 教科書は1社ではないので、ページ番号は学習者の手元と合わない。
+        //   ⚠ しかし出典を消すと、§4-1 の線を後から検算する手がかりが無くなる。
+        // -----------------------------------------------------------
+        section('型B: 出典はデータに残し、画面には出さない');
+        var BOOK_WORDS = ['教科書', '化学新研究', '新研究', '総合的研究', '要点&盲点',
+            '基本ノート', 'セミナー', '東京書籍', '三省堂', '旺文社', '参考書'];
+        ok('観察の説明（why）に本の名前が出てこない', (function () {
+            var bad = [];
+            allPairs.forEach(function (pr) {
+                var w = SEP_TABLE[pr[0]][pr[1]].why || '';
+                BOOK_WORDS.forEach(function (b) { if (w.indexOf(b) >= 0) bad.push(pr.join('×') + ':' + b); });
+            });
+            if (bad.length) warn('why に本の名前: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+        ok('観察の説明（why）にページ番号が出てこない',
+            allPairs.every(function (pr) {
+                return !/p\s*\.\s*\d+/i.test(SEP_TABLE[pr[0]][pr[1]].why || '');
+            }));
+        // ⚠ 「消したつもりが、出典ごと消えていた」を止める
+        ok('出典（ref）はデータに残っている', (function () {
+            var withRef = allPairs.filter(function (pr) { return !!SEP_TABLE[pr[0]][pr[1]].ref; });
+            if (withRef.length < 20) warn('ref を持つ観察が ' + withRef.length + ' 件しかない');
+            return withRef.length >= 20;
+        })());
+        ok('炎色を持つイオンは、色の出典をデータに持っている',
+            ['Cu', 'Ca', 'Na', 'K'].every(function (i) { return !!SEP_IONS[i].flame.ref; }));
+        ok('「炎色は7元素だけ」の出典もデータに持っている',
+            typeof SEP_FLAME_LIMIT_REF === 'string' && /p\s*\.\s*\d+/i.test(SEP_FLAME_LIMIT_REF));
+        // ★ スネークの図鑑（chemistry.js の note）にも本の名前が出ていないこと
+        ok('図鑑に出る注記にも本の名前・ページが出てこない', (function () {
+            var texts = [];
+            P.forEach(function (p) { texts.push(p.name, p.note || ''); });
+            allIonKeys.forEach(function (k) {
+                var i = ionOf(k);
+                texts.push(i.aqueous || '', i.aqueousNote || '');
+            });
+            var bad = texts.filter(function (t) {
+                return /p\s*\.\s*\d+/i.test(t) || BOOK_WORDS.some(function (b) { return t.indexOf(b) >= 0; });
+            });
+            if (bad.length) warn('図鑑の文言に出典: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+
+        // -----------------------------------------------------------
         // 色の名乗りと色相（既存の COLOR_WORDS をそのまま使う）
         // -----------------------------------------------------------
         section('型B: 色の名乗りと hex の整合');
@@ -1439,8 +1486,19 @@
                 res.textContent.indexOf('1つに決まっていました') >= 0, uiOut);
             ok('それまでの結果の解説が、手ごとに出る（§16-1）',
                 res.querySelectorAll('.why').length === 3, uiOut);
-            ok('解説に出典が入っている（教科書のページ）',
-                res.textContent.indexOf('教科書') >= 0, uiOut);
+            // ⚠⚠ 本の名前とページは画面に出さない（2026-08-27・ユーザー決定）。
+            //   ★ 世間で使われている教科書は1社ではないので、ページ番号は手元と合わない
+            var books = (typeof BOOK_WORDS !== 'undefined') ? BOOK_WORDS : [];
+            ok('答え合わせに本の名前が出てこない',
+                books.every(function (w) { return res.textContent.indexOf(w) < 0; }), uiOut);
+            ok('ページ番号も本の名前も、画面のどこにも出てこない',
+                !/p\s*\.\s*\d+/i.test(d.body.textContent) &&
+                books.every(function (w) { return d.body.textContent.indexOf(w) < 0; }), uiOut);
+            ok('答え合わせにページ番号が出てこない',
+                !/p\s*\.\s*\d+/i.test(res.textContent), uiOut);
+            ok('説明の中身は残っている（なぜそう見えたかを言っている）',
+                res.textContent.indexOf('溶けない') >= 0 &&
+                res.textContent.indexOf('7元素') >= 0, uiOut);
             ok('解説で初めて化学式が出る（途中では出さない）',
                 res.textContent.indexOf('AgCl') >= 0, uiOut);
             ok('⚠ 出典の別（参考書／教科書の区別）は画面に出さない（§17-10）',
