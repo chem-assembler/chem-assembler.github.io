@@ -62,15 +62,15 @@
         <p class="hint" id="hint"></p>
     </section>
 
+    <!-- ★★ 流れ図は「主流1列 ＋ 深さ」で組む（2026-08-28・ユーザー指摘で作り直した）。
+         ・溶液（ろ液）は **左の1列**を上から下へ。角丸
+         ・沈殿は主流から **右へ**出て、そこで止まる。□
+         ・⚠ 沈殿がさらに割れる問題を入れたら、そのさらに右へ伸びる（深さ＋1 ＝ 列＋1）
+         ⚠⚠ 列の数を定数で持たないこと。★ データの深さから出す（tree.js の treeColumns）。
+         ★ 深さ1のときの見た目が、ちょうど2カラムになる -->
     <section class="panel" id="panel-tree">
         <h2>ツリー</h2>
-        <div class="beaker">この容器 <span class="ions" id="beaker-ions"></span></div>
-        <ol class="stages" id="stages"></ol>
-        <div class="final">
-            <div class="leaf-title">最後のろ液</div>
-            <button class="slot leaf empty" id="leaf-F" data-leaf="F" type="button">イオンを置く</button>
-            <div class="placed" id="placed-F"></div>
-        </div>
+        <div class="flow" id="flow"></div>
     </section>
 
     <section class="panel" id="panel-submit">
