@@ -866,6 +866,45 @@ function translateAtoms(mol, ids, dx, dy) {
     });
 }
 
+/**
+ * カルボン酸の -OH と、相手（アルコールの -OH ／ アミンの -NH）の H がとれて縮合する。
+ * `site` は `[カルボン酸の C, 抜ける -OH の O, 相手の重原子（O または N）]`。
+ *
+ * ★ **エステル化とアミド化で、原子の動かし方は 1 か所も違わない**（水の抜き方も同じ）。
+ * 違うのは `detect` が相手に何を許すかと、`caption` の言葉だけなので、
+ * **ここを 2 本に写さない**（写すと片方だけ直る事故が起きる）。
+ *
+ * どちらの分子を動かすかは 3 段で決める（レビュー項目15）:
+ *  ① 分子を選んでいるなら、**先に選んだ方（式の左）は動かさない**（C-1）
+ *  ② 選んでいなければ**小さい方**を動かす。酢酸(4原子)＋エタノール(3原子) では
+ *     従来どおりアルコール側が動くので、CH₃COOH + HOCH₂CH₃ の並びは変わらない
+ *     （v347／C-2）。向きが入れ替わるのは、油脂のように**大きな多価アルコールへ
+ *     酸を1本ずつ足していく**場合だけ。大きい方を動かすと置き場が見つからず、
+ *     グリセリンの2本目・3本目のエステル化が「配置する空間がありません」で止まっていた
+ *  ③ 決めた向きで置けなければ、反対向きも試す。できる結合は同じなので化学は変わらない
+ */
+function applyAcidCondensation(mol, site) {
+    const [cId, ohOId, partnerId] = site;
+    const partnerIds = [...componentOf(mol, partnerId)];
+    const acidIds = [...componentOf(mol, cId)];
+    const preferAcidMoves = firstSelectedIsIn(partnerIds) ||
+        (!firstSelectedIsIn(acidIds) && acidIds.length < partnerIds.length);
+    let plan = null;
+    let swap = false;
+    for (const tryAcid of (preferAcidMoves ? [true, false] : [false, true])) {
+        plan = tryAcid
+            ? planAttachment(mol, partnerId, cId, acidIds, [ohOId])
+            : planAttachment(mol, cId, partnerId, partnerIds, [ohOId]);
+        if (plan) { swap = tryAcid; break; }
+    }
+    if (!plan) throw noRoom('生成物を配置する空間がありません');
+    mol.removeBond(cId, ohOId);
+    applyAttachment(mol, swap ? acidIds : partnerIds, plan);
+    mol.addBond(cId, partnerId, 1);
+    parkAsWater(mol, ohOId);
+    return [cId, partnerId];
+}
+
 const ALCOHOL_TYPES = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
 // アミンは級数ごとに型が分かれている（§9.6-7。1級 amine1 ／ 2級 amine2 ／ 3級 amine3）。
 // **反応で使うのは「N に水素が残る」1級・2級だけ**——アセチル化もアミド化も N の水素を
@@ -1440,41 +1479,78 @@ function activatedRingBrominationSites(mol) {
 
 /**
  * この C=C を酸化開裂の対象にしてよいか。返り値は
- * `'ok'`（実行する）／`'terminal'`／`'ring'`／`'triple'`／`'hetero'`（いずれも扱わない）。
+ * `'ok'`／`'ring'`／`'terminal'`（どれも実行する）／`'gone'`／`'triple'`／`'hetero'`（扱わない）。
  *
- * - `terminal` … 端が =CH₂。酸化されると **CO₂ と水**になって出ていく。有機の図に残らないものを
- *   キャンバスに置くと、以後その CO₂ が反応の相手として数えられてしまう
- * - `ring` … 環の中の C=C。シクロヘキセン → アジピン酸は正しいが、環が開く形は
- *   「切ったのに1分子のまま」で前後比較の読み方が変わる。別項目として立てる
+ * - `ring` … 環の中の C=C。**実行する**（§10.3-d の実測 ＋ §10.11-F の1位・2026-08-27 ユーザー決定）。
+ *   環が開いて**1分子のまま**両端に官能基が付くので、`apply` は caption を言い分ける
+ * - `terminal` … 端が =CH₂。**実行する**（§10.3-e ②・2026-08-27 ユーザー決定）。
+ *   =CH₂ の側はギ酸を経て CO₂ と水になるので**図には残さない**（§10.3-b の原則）。
+ *   ⚠ caption で**試薬を名指しし**、**ギ酸を経ること**を書かないと嘘になる（§10.3-e ②の推奨）
+ * - `gone` … 両端とも =CH₂（＝ エチレンだけ）。切ると**分子が丸ごと消える**ので実行しない。
+ *   ⚠ そもそも硫酸酸性 KMnO₄ で切った答えは資料のどこにも無く、
+ *   **教科書も入試も「赤紫色が消える」で止めている**（§10.3-f）。案内で同じところに止める
  * - `triple` … C≡C の開裂。高校では扱いが安定しない
  * - `hetero` … 炭素と水素だけでできていない分子。他の官能基との**酸化されやすさの順序**を
- *   高校の範囲では決められない（アルコールの酸化に置いた線引きと同じ考え方）
+ *   高校の範囲では決められない（アルコールの酸化に置いた線引きと同じ考え方）。
+ *   ⚠ **環の中の C=C にも同じ門番が当たる**（2-シクロヘキセン-1-オンなど）——
+ *   環かどうかより先に「炭化水素か」を見るようにした。鎖の `hetero` と扱いをそろえる
  */
 function alkeneCleavageClass(mol, site) {
     const [id1, id2] = site;
     const bond = mol.getBond(id1, id2);
     if (!bond) return null;
     if (bond.type !== 2) return 'triple';
-    const rings = ringAtomIdsOf(mol);
-    if (rings.has(id1) || rings.has(id2)) return 'ring';
     // 分子（連結成分）が炭素と水素だけでできていること
     const comp = componentOf(mol, id1);
     if (![...comp].every(id => {
         const a = mol.atoms.find(x => x.id === id);
         return a && (a.element === 'C' || a.element === 'H');
     })) return 'hetero';
+    const rings = ringAtomIdsOf(mol);
+    const inRing = rings.has(id1) || rings.has(id2);
     const others = (id, other) => mol.getNeighbors(id)
         .filter(n => n.atom.element !== 'H' && n.atom.id !== other);
     const a = others(id1, id2), b = others(id2, id1);
-    if (a.length === 0 || b.length === 0) return 'terminal';
+    // 環の中では端（炭素0個）は起こらないので、以下は鎖の話
+    if (a.length === 0 && b.length === 0) return 'gone';     // エチレンだけ
+    if (a.length === 0 || b.length === 0) {
+        const rest = a.length === 0 ? b : a;
+        if (rest.length > 2) return 'hetero';
+        // ⚠ **残る側が二重結合でつながっていたら行き先が割れる**（アレン）。
+        //    ここを見ないと C に =O と =C が同時に付いて価標が5本になる
+        if (!rest.every(n => n.type === 1)) return 'hetero';
+        return 'terminal';
+    }
     if (a.length > 2 || b.length > 2) return 'hetero';
     if (![...a, ...b].every(n => n.type === 1)) return 'hetero'; // 共役の内側は行き先が割れる
-    return 'ok';
+    return inRing ? 'ring' : 'ok';
+}
+
+/**
+ * キャンバスの中のエチレン（C₂H₄）＝ **重原子が炭素2個だけで、C=C でつながった連結成分**。
+ * 返り値は `[C, C]` の配列。⚠ ワッカー法が**エチレンだけ**を相手にするための門番。
+ */
+function ethyleneUnits(mol) {
+    const seen = new Set();
+    const out = [];
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || seen.has(a.id)) return;
+        const comp = [...componentOf(mol, a.id)]
+            .filter(id => (mol.atoms.find(x => x.id === id) || {}).element !== 'H');
+        comp.forEach(id => seen.add(id));
+        if (comp.length !== 2) return;
+        if (!comp.every(id => (mol.atoms.find(x => x.id === id) || {}).element === 'C')) return;
+        const bond = mol.getBond(comp[0], comp[1]);
+        if (!bond || bond.type !== 2) return;
+        out.push([comp[0], comp[1]]);
+    });
+    return out;
 }
 
 /** 酸化開裂を実行できる C=C の一覧（`[id1, id2]` の配列） */
 function oxidativeCleavageSites(mol) {
-    return multipleBondSites(mol).filter(s => alkeneCleavageClass(mol, s) === 'ok');
+    return multipleBondSites(mol)
+        .filter(s => ['ok', 'ring', 'terminal'].includes(alkeneCleavageClass(mol, s)));
 }
 
 /**
@@ -1599,13 +1675,162 @@ function oxidationOutOfScope(mol) {
     // 実行できるボタンの横に「ここでは変えません」を並べると、どちらが起きるのか読めない
     const consumed = new Set();
     sideChainOxidationCandidates(mol).forEach(c => c.branch.forEach(id => consumed.add(id)));
+    // ⚠ `ring` と `terminal` は **v1472 で実行へ移った**（§10.3-d／§10.3-e）ので案内から外れ、
+    //    残るのは `gone`（両端とも =CH₂ ＝ **エチレンだけ**）1種類になった
     multipleBondSites(mol).forEach(s => {
         const cls = alkeneCleavageClass(mol, s);
-        if (cls !== 'terminal' && cls !== 'ring') return;
+        if (cls !== 'gone') return;
         if (s.every(id => consumed.has(id))) return;
         sites.push(s); kinds.add(cls);
     });
     return { sites, kinds };
+}
+
+/* ==========================================================================
+ * 分子内脱水 → 酸無水物（§10.11-D #3・入試 563大問中53件・教科書 本文 p.184／p.157）
+ *
+ * ⚠ **逆の `hydrolysis_anhydride` だけが有る片道だった**（§10.11-E が名指しした形の穴）。
+ * ★ 台帳が「側鎖酸化と続けて効く形が定番」と書いており、
+ *   **o-キシレン → フタル酸（1段目・実装済み）→ 無水フタル酸（2段目・ここ）** がつながる。
+ *
+ * ★ **線の引き方**（判断できないものは出さない・DEVELOPMENT.md 4章）:
+ *  - **できる環は5員・6員だけ**。2つのカルボキシ炭素をつなぐ骨格の最短経路が
+ *    4原子（→5員）か5原子（→6員）のときだけ。⚠ シュウ酸（4員）・アジピン酸（7員）は外れる
+ *  - **経路が環の中を通るなら、隣り合っている（オルト）ときだけ**。
+ *    ⚠ これが無いと **イソフタル酸（メタ）が6員として通ってしまう**（実際には環にならない）
+ *  - **カルボキシ基以外の官能基を持つ分子は扱わない**（`dehydration_intra` と同じ線）。
+ *    ⚠ リンゴ酸・酒石酸・グルタミン酸のように、高校で行き先を決められないものを外す
+ *  - ★ **C=C をまたぐときはシス形だけ**。⚠ **マレイン酸はなるが、フマル酸はならない** ——
+ *    入試がいちばん問うのはここなので、`anti`（トランス）と「図から読めない」は
+ *    実行せず `dehydration_anhydride_info` が理由を返す
+ * ========================================================================== */
+
+/** cA から cB への骨格の最短経路（`skipIds` は通らない）。[cA, …, cB]。届かなければ null */
+function carboxylSkeletonPath(mol, cA, cB, skipIds) {
+    const skip = new Set(skipIds);
+    const prev = new Map([[cA, null]]);
+    const queue = [cA];
+    while (queue.length) {
+        const id = queue.shift();
+        if (id === cB) break;
+        for (const n of mol.getNeighbors(id)) {
+            if (n.atom.element === 'H' || skip.has(n.atom.id) || prev.has(n.atom.id)) continue;
+            prev.set(n.atom.id, id);
+            queue.push(n.atom.id);
+        }
+    }
+    if (!prev.has(cB)) return null;
+    const path = [];
+    for (let id = cB; id != null; id = prev.get(id)) path.push(id);
+    return path.reverse();
+}
+
+/**
+ * 二重結合 p=q をはさんで、置換基 sp と sq が同じ側か。
+ * `'syn'`（シス）／`'anti'`（トランス）／`null`（図が直線で読み取れない）。
+ * ⚠ 座標は原則「見た目専用」だが、**C=C まわりの幾何だけは 2D 構造式が幾何異性を伝える
+ *   標準的な手段**なので例外的に読む（chemistry.js `getDoubleBondGeometry` と同じ約束）。
+ */
+function doubleBondSideClass(mol, p, q, sp, sq) {
+    const at = id => mol.atoms.find(x => x.id === id);
+    const a = at(p), b = at(q), u = at(sp), v = at(sq);
+    if (!a || !b || !u || !v) return null;
+    const ax = b.x - a.x, ay = b.y - a.y;
+    const axisLen = Math.hypot(ax, ay) || 1;
+    const sideOf = (pt, origin) => {
+        const sx = pt.x - origin.x, sy = pt.y - origin.y;
+        const cross = ax * sy - ay * sx;
+        const norm = cross / (axisLen * (Math.hypot(sx, sy) || 1));
+        if (Math.abs(norm) < 0.1) return 0; // 直線描画（幾何が未確定）
+        return Math.sign(cross);
+    };
+    const sa = sideOf(u, a), sb = sideOf(v, b);
+    if (sa === 0 || sb === 0) return null;
+    return sa === sb ? 'syn' : 'anti';
+}
+
+/** 架橋の O を置く場所。ring を素直に描ける点が無ければ null */
+function anhydrideBridgeSpot(mol, cA, cB, path, ignoreIds) {
+    const at = id => mol.atoms.find(x => x.id === id);
+    const a = at(cA), b = at(cB);
+    if (!a || !b) return null;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const half = Math.hypot(b.x - a.x, b.y - a.y) / 2;
+    const G = bondStep(mol, cA);
+    // 経路の内側（両端を除く）の重心から離れる向きへ逃がす。重心が中点と重なる
+    // （直鎖の二酸を一直線に描いた場合）ときは、軸の左右を空いているほうから試す
+    const inner = path.slice(1, -1).map(at).filter(Boolean);
+    let ux = 0, uy = 0;
+    if (inner.length) {
+        const cx = inner.reduce((s, p) => s + p.x, 0) / inner.length;
+        const cy = inner.reduce((s, p) => s + p.y, 0) / inner.length;
+        ux = mx - cx; uy = my - cy;
+    }
+    if (Math.hypot(ux, uy) < 1e-6) { ux = -(b.y - a.y); uy = b.x - a.x; } // 軸の法線
+    const L = Math.hypot(ux, uy) || 1;
+    ux /= L; uy /= L;
+    // 正五角形に近い距離をまず狙い、詰まっていれば外へ広げる
+    const base = Math.sqrt(Math.max(0, (G * 0.75) * (G * 0.75) - half * half));
+    const cand = [];
+    [base, G * 0.5, G * 0.75, G].forEach(d => {
+        cand.push({ x: mx + ux * d, y: my + uy * d });
+        if (d > 1e-6) cand.push({ x: mx - ux * d, y: my - uy * d });
+    });
+    const skip = new Set([cA, cB, ...ignoreIds]);
+    const others = mol.atoms.filter(x => x.element !== 'H' && !skip.has(x.id));
+    const clear = G * 0.6;
+    for (const p of cand) {
+        if (others.every(o => Math.hypot(o.x - p.x, o.y - p.y) > clear)) return p;
+    }
+    return null;
+}
+
+/**
+ * 分子内脱水で酸無水物にできるカルボキシ基の組。
+ * 返り値は `{ site: [cA, ohA, cB, ohB], geo }`。`geo` は `'ok'`（実行できる）／
+ * `'anti'`（トランス。フマル酸）／`'unknown'`（図からシス/トランスが読めない）。
+ */
+function anhydrideDehydrationCandidates(mol) {
+    const groups = findFunctionalGroups(mol);
+    const carboxyls = groups.filter(g => g.type === 'carboxyl');
+    const rings = ringAtomIdsOf(mol);
+    const out = [];
+    for (let i = 0; i < carboxyls.length; i++) {
+        for (let j = i + 1; j < carboxyls.length; j++) {
+            const A = carboxyls[i], B = carboxyls[j];
+            const comp = componentOf(mol, A.atomIds[0]);
+            if (!comp.has(B.atomIds[0])) continue;        // 分子内だけ
+            // **カルボキシ基以外の官能基を持つ分子は扱わない**（行き先を決められない）。
+            // ⚠ 骨格そのもの（芳香環・C=C）は官能基として数えない ——
+            //    **マレイン酸の C=C を外すと、いちばん出る例が落ちる**。
+            //    C=C の向きは下の `geo` が別に見る（シスだけ通す）
+            const SKELETON = ['carboxyl', 'aromatic', 'cc_double'];
+            const others = groups.filter(g => !SKELETON.includes(g.type) &&
+                g.atomIds.some(id => comp.has(id)));
+            if (others.length) continue;
+            const oxy = [A.atomIds[1], A.atomIds[2], B.atomIds[1], B.atomIds[2]];
+            const path = carboxylSkeletonPath(mol, A.atomIds[0], B.atomIds[0], oxy);
+            if (!path || path.length < 4 || path.length > 5) continue;  // 5員・6員だけ
+            const innerIds = path.slice(1, -1);
+            // 経路が環の中を通るなら、隣り合っている（オルト）ときだけ
+            if (innerIds.some(id => rings.has(id)) && path.length !== 4) continue;
+            // C=C をまたぐなら**シス形だけ**（マレイン酸 ○ ／ フマル酸 ×）
+            let geo = 'ok';
+            for (let k = 0; k + 1 < path.length; k++) {
+                const bond = mol.getBond(path[k], path[k + 1]);
+                if (!bond || bond.type !== 2) continue;
+                if (rings.has(path[k]) && rings.has(path[k + 1])) continue; // 環の中は回れない＝常にシス
+                const cls = doubleBondSideClass(mol, path[k], path[k + 1], path[k - 1], path[k + 2]);
+                geo = cls === 'syn' ? geo : (cls === 'anti' ? 'anti' : 'unknown');
+                break;
+            }
+            out.push({
+                site: [A.atomIds[0], A.atomIds[2], B.atomIds[0], B.atomIds[2]],
+                path, geo
+            });
+        }
+    }
+    return out;
 }
 
 /* ---- 酸と塩の行き来（qa の棚卸しで**いちばん大きかった穴・7項目**） ----
@@ -2485,7 +2710,7 @@ const REAGENTS = [
         name: '水素・Ni',
         formula: 'H₂',
         kind: 'transform',
-        acts: 'C=C や C≡C の不飽和結合です（ニッケルや白金を触媒に加熱）',
+        acts: 'C=C や C≡C の不飽和結合（ニッケルや白金を触媒に加熱）と、芳香環についたニトロ基（還元されてアミノ基になります）です',
         miss: 'ベンゼン環も高温・高圧なら付加しますが、ふつうの条件では進みません（芳香族性を保つ方が安定なため）。'
     },
     // ハロゲン化水素は3本まとめて（上の表から生成）。**瓶の並びはここに入る**
@@ -2521,6 +2746,23 @@ const REAGENTS = [
         kind: 'transform',
         acts: 'フェノール性の -OH と、アミノ基 -NH₂ です（アセチル化）',
         miss: 'カルボン酸より反応性が高いので、直接エステル化が進みにくいフェノールもエステルにできます。アミドの N は電子を引かれていて反応しません。'
+    },
+    {
+        /* ★ ワッカー法の瓶（§10.11-D #27・§10.3-f C-3・v1472）。
+         * ⚠ **瓶が1本増える**（22 → 23本）。§10.9 は「足すなら先に区分をもう一段割る」と
+         *   申し送っているが、★ **区分を割らずに1本だけ足す**ほうを選んだ:
+         *   - 区分割りは試薬パレット側の設計（`DESIGN_reagent_palette.md`）で、
+         *     反応レーンが片手間に決める話ではない
+         *   - ⚠ この瓶は**エチレン専用**で、他の分子では必ず空振りする ＝ 区分が増える
+         *     たぐいの瓶ではない（既存の「変えるもの」の末尾に並ぶだけ）
+         * ★ 申し送り: CO₂ の瓶（§10.9）を足すときは、**そこで区分割りを決めること**。 */
+        id: 'o2_pdcl2',
+        name: '酸素・PdCl₂/CuCl₂',
+        formula: 'O₂',
+        kind: 'transform',
+        acts: 'エチレンです（酸化されてアセトアルデヒドになります）',
+        miss: 'この瓶はエチレンからアセトアルデヒドを作る工業的製法のためのものです。' +
+            '高校で扱うのはエチレンの場合だけなので、ほかの分子では何も起こしません。'
     },
     {
         id: 'sulfur',
@@ -2871,7 +3113,9 @@ const REACTION_RULES = [
         /* アルケンの酸化開裂 ＝ **構造決定の主役**（qa の需要は1項目だが単元そのもの）。
          * 生成物は「もとの C=C の炭素についていた炭素の数」だけで決まる:
          *   炭素2つ（R₂C=）→ ケトン ／ 炭素1つ（RCH=）→ カルボン酸
-         * 炭素0（=CH₂）は CO₂ になるので扱わない（`oxidation_out_of_scope_info`）。 */
+         * ★ 炭素0（=CH₂）は**ギ酸を経て CO₂**。v1472 から**図から消して実行する**
+         *   （§10.3-b の原則）。⚠ **両端とも炭素0のエチレンだけ**は実行せず、
+         *   `oxidation_out_of_scope_info` が案内を返す（§10.3-f）。 */
         id: 'oxidative_cleavage',
         reagentId: OXIDANT_REAGENT_IDS,
         label: '酸化 [O] → 酸化開裂（C=C を切る）',
@@ -2886,17 +3130,26 @@ const REACTION_RULES = [
             const [id1, id2] = site;
             const bond = mol.getBond(id1, id2);
             if (!bond || bond.type !== 2) throw new Error('切る C=C が見つかりません');
+            // 環の中か・端が =CH₂ かは**切る前**に見る（切ったあとは形が変わる）
+            const cls = alkeneCleavageClass(mol, site);
+            const inRing = cls === 'ring';
             // 行き先は**切る前**に決める（切ったあとでは「もとの相手」が分からなくなる）
             const carbons = (id, other) => mol.getNeighbors(id)
                 .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
-            const roles = [[id1, carbons(id1, id2)], [id2, carbons(id2, id1)]];
+            let roles = [[id1, carbons(id1, id2)], [id2, carbons(id2, id1)]];
+            /* ★ 末端（=CH₂）の側は、ギ酸を経て CO₂ と水になって出ていく。
+             * §10.3-b の原則（**残るものを描き、出ていくものは文で補う**）どおり
+             * **原子を消して図に残さない**。⚠ 置くと以後その CO₂ が反応の相手に数えられる。 */
+            const dropped = cls === 'terminal' ? roles.filter(([, n]) => n === 0).map(r => r[0]) : [];
+            if (dropped.length) roles = roles.filter(([, n]) => n > 0);
             mol.removeBond(id1, id2);
-            const part = [...componentOf(mol, id2)];
-            if (!part.includes(id1)) {
+            dropped.forEach(id => mol.removeAtom(id));
+            const part = [...componentOf(mol, roles[roles.length - 1][0])];
+            if (!dropped.length && !part.includes(id1)) {
                 const sep = separateComponent(mol, part);
                 if (sep) translateAtoms(mol, part, sep.dx, sep.dy);
             }
-            const changed = [id1, id2];
+            const changed = dropped.length ? [roles[0][0]] : [id1, id2];
             roles.forEach(([cid, nC]) => {
                 const s1 = freeSpotAround(mol, cid);
                 const s2 = nC === 1 ? freeSpotAround(mol, cid, s1 ? [s1] : []) : null;
@@ -2914,11 +3167,45 @@ const REACTION_RULES = [
             });
             const names = roles.map(([, nC]) => (nC === 1 ? 'カルボン酸' : 'ケトン'));
             const both = names[0] === names[1] ? `${names[0]}が2つ` : `${names[0]}と${names[1]}`;
+            const rule = '行き先は**その炭素についていた炭素の数**だけで決まります: ' +
+                '炭素が2つ（R₂C=）ならケトン、炭素が1つ（RCH=）ならアルデヒドを経てカルボン酸まで進みます。';
+            // ★ 環を切ったときは**分子が2つに分かれない**。数を言う言い方（「2つになりました」）は
+            //    そのままでは嘘になるので、言い分ける（§10.3-d／§10.3-e ①）
+            if (inRing) {
+                const ends = names[0] === names[1]
+                    ? (names[0] === 'カルボン酸' ? '両端にカルボキシ基をもつ' : '両端がケトンの')
+                    : '片方の端がカルボキシ基、もう片方がケトンの';
+                return {
+                    caption: `環が開いて、${ends}**1つの分子**になりました（酸化開裂）。` +
+                        '鎖状のアルケンと違って**分子は2つに分かれません**。' +
+                        'このため「切ったのに1分子で出てくる」ことが、もとが環だった印になります' +
+                        '（シクロヘキセン → アジピン酸）。' + rule +
+                        '⚠ 教科書の本文には出ませんが、傍用問題集と入試では構造決定の定番です。',
+                    changed,
+                    refit: true
+                };
+            }
+            /* ★ 末端の C=C（§10.3-e ②）。⚠ **文面を2か所直さないと嘘になる**:
+             *  ① **試薬を名指しする** —— 書かずに「CO₂ になります」とだけ言うと、
+             *     入試で多数派のオゾン分解の答え（HCHO・分子として残る）と食い違う
+             *  ② **ギ酸を経ることを書く** —— セミナーの答えはギ酸で止まっている（p.362）ので、
+             *     「必ず消える」と書くと傍用問題集の答えと食い違う */
+            if (dropped.length) {
+                return {
+                    caption: `末端の C=C が切れて、${names[0]}になりました（酸化開裂）。` +
+                        '**硫酸酸性の過マンガン酸カリウムでは**、=CH₂ の側は' +
+                        '**まずギ酸 HCOOH になり**、さらに酸化されて二酸化炭素 CO₂ と水まで進みます。' +
+                        '図に残らないので**描いていません**。' +
+                        '⚠ 同じ「切る」でも**オゾン分解（O₃ → Zn）ならホルムアルデヒド HCHO で止まり**、' +
+                        '分子として残ります。試薬で答えが変わるところです。' + rule,
+                    changed,
+                    refit: true
+                };
+            }
             return {
                 caption: `C=C が切れて、${both}になりました（酸化開裂）。` +
                     '硫酸酸性の過マンガン酸カリウムのような強い酸化剤を使うと、二重結合のところで炭素鎖が切れます。' +
-                    '行き先は**その炭素についていた炭素の数**だけで決まります: ' +
-                    '炭素が2つ（R₂C=）ならケトン、炭素が1つ（RCH=）ならアルデヒドを経てカルボン酸まで進みます。' +
+                    rule +
                     'この反応は、できた化合物から**もとの二重結合の位置を逆算する**ために使います（構造決定）。' +
                     'できた分子は重なりを避けて離してあります。',
                 changed,
@@ -2937,20 +3224,19 @@ const REACTION_RULES = [
         apply(game) {
             const kinds = oxidationOutOfScope(game.userMolecule).kinds;
             const parts = [];
-            if (kinds.has('terminal')) {
-                parts.push('**末端の C=C（=CH₂ の側）**は、酸化開裂すると二酸化炭素 CO₂ と水になって出ていきます。' +
-                    '残る骨格のほうはカルボン酸（またはケトン）になります。' +
-                    '図に残らないものを置くと以後の反応の相手として数えられてしまうので、ここでは切りません。');
-            }
-            if (kinds.has('ring')) {
-                parts.push('**環の中の C=C** を切ると環が開いて、両端にカルボキシ基をもつ1つの分子になります' +
-                    '（シクロヘキセン → アジピン酸。ナイロン66 の原料です）。' +
-                    'いまは「切ったのに1分子のまま」を図で扱えないので、ここでは変えません。');
+            /* ★ **エチレンだけ**（両端が =CH₂）。文面はユーザー承認済み（2026-08-27）。
+             * ⚠ **詳しい経路（グリコール → シュウ酸）は書かない。**
+             * ★ 要点は「教科書も入試もここで止めている」を、消極的な断りではなく
+             *   **止まる理由**として書くこと（§10.3-f C-1）。 */
+            if (kinds.has('gone')) {
+                parts.push('エチレンは、二酸化炭素 CO₂ と水になります。' +
+                    '炭素が2つとも出ていってしまうので、図に残る分子がありません。' +
+                    '教科書も入試も、エチレンについては「赤紫色が消える」までしか扱いません。');
             }
             return {
                 caption: (parts.join('\n') || 'この分子で酸化剤が働く形は、いまは図にしていません。') +
                     '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／芳香環の側鎖／' +
-                    '炭化水素の非末端 C=C の4つです。'
+                    '炭化水素の C=C（酸化開裂）の4つです。'
             };
         }
     },
@@ -3109,41 +3395,54 @@ const REACTION_RULES = [
             return sites;
         },
         apply(game, site) {
-            const [cId, ohOId, alcOId] = site;
-            const mol = game.userMolecule;
-            const alcIds = [...componentOf(mol, alcOId)];
-            const acidIds = [...componentOf(mol, cId)];
-            /*
-             * どちらの分子を動かすか。3段で決める（レビュー項目15）:
-             *
-             * ① 分子を選んでいるなら、**先に選んだ方（式の左）は動かさない**（C-1）
-             * ② 選んでいなければ**小さい方**を動かす。酢酸(4原子)＋エタノール(3原子) では
-             *    従来どおりアルコール側が動くので、CH₃COOH + HOCH₂CH₃ の並びは変わらない
-             *    （v347／C-2）。向きが入れ替わるのは、油脂のように**大きな多価アルコールへ
-             *    酸を1本ずつ足していく**場合だけ。大きい方を動かすと置き場が見つからず、
-             *    グリセリンの2本目・3本目のエステル化が「配置する空間がありません」で
-             *    止まっていた
-             * ③ 決めた向きで置けなければ、反対向きも試す。できる結合は同じなので化学は変わらない
-             */
-            const preferAcidMoves = firstSelectedIsIn(alcIds) ||
-                (!firstSelectedIsIn(acidIds) && acidIds.length < alcIds.length);
-            let plan = null;
-            let swap = false;
-            for (const tryAcid of (preferAcidMoves ? [true, false] : [false, true])) {
-                plan = tryAcid
-                    ? planAttachment(mol, alcOId, cId, acidIds, [ohOId])
-                    : planAttachment(mol, cId, alcOId, alcIds, [ohOId]);
-                if (plan) { swap = tryAcid; break; }
-            }
-            const movingIds = swap ? acidIds : alcIds;
-            if (!plan) throw noRoom('生成物を配置する空間がありません');
-            mol.removeBond(cId, ohOId);
-            applyAttachment(mol, movingIds, plan);
-            mol.addBond(cId, alcOId, 1);
-            parkAsWater(mol, ohOId);
+            const changed = applyAcidCondensation(game.userMolecule, site);
             return {
                 caption: 'エステル化（縮合）が起こりました。カルボン酸の -OH とアルコールの -H がとれて水になり、エステル結合 -COO- ができます（濃硫酸を触媒に加熱）。同位体で調べると、水の酸素はカルボン酸側から来ることが分かっています。',
-                changed: [cId, alcOId]
+                changed
+            };
+        }
+    },
+    {
+        /* ★ 単発のアミド化（§10.11-D #13・§10.11-F の5位・2026-08-27 ユーザー決定）。
+         *
+         * ⚠ **これまでアミド結合は「縮合重合」の中でしか作れず、単量体が4分子要った**
+         * （`condensation_polymerization` は `links.length < 3` で2組以上を求める）。
+         * そのため **酢酸 ＋ アニリン → アセトアニリド** が作れず、
+         * 「無水酢酸からは作れるのに、カルボン酸からは作れない」片道になっていた。
+         *
+         * ⚠ **瓶は足していない。**直接アミド化に当てる高校教材の試薬が無い
+         * （教科書はアミドの加水分解の**逆**として書くだけで、触媒を名指ししない）ので、
+         * `condensation_polymerization` と同じく**瓶を持たないルール**にする。
+         * `apply` はエステル化と 1 か所も違わないので `applyAcidCondensation` を共有する。 */
+        id: 'amidation',
+        label: 'アミド化（カルボン酸＋アミン, -H₂O）',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -CO-NH- ができる
+        detect(mol) {
+            const groups = findFunctionalGroups(mol);
+            const carboxyls = groups.filter(g => g.type === 'carboxyl');
+            // N に水素が残る1級・2級だけ（3級は H が無いので縮合できない）。
+            // **アミドの N は除く**（隣のカルボニルに電子を引かれて求核性を失っている）
+            const amines = groups.filter(g => AMINE_NH_TYPES.includes(g.type) &&
+                !isAmideNitrogen(mol, g.atomIds[0]));
+            const sites = [];
+            carboxyls.forEach(cx => {
+                const comp = componentOf(mol, cx.atomIds[0]);
+                amines.forEach(am => {
+                    if (comp.has(am.atomIds[0])) return; // 分子間反応のみ（ラクタムは対象外）
+                    sites.push([cx.atomIds[0], cx.atomIds[2], am.atomIds[0]]);
+                });
+            });
+            return sites;
+        },
+        apply(game, site) {
+            const changed = applyAcidCondensation(game.userMolecule, site);
+            return {
+                caption: 'アミド化（縮合）が起こりました。カルボン酸の -OH とアミンの -H がとれて水になり、' +
+                    'アミド結合 -CO-NH- ができます（加熱）。' +
+                    'このつながり方は、タンパク質のペプチド結合・ナイロンのアミド結合と同じものです。' +
+                    '⚠ 実際の合成では、カルボン酸より反応性の高い無水酢酸を使うほうがふつうです' +
+                    '（アニリン → アセトアニリドは「アセチル化」の瓶からも作れます）。',
+                changed
             };
         }
     },
@@ -3593,6 +3892,12 @@ const REACTION_RULES = [
          * 説明を返すだけで、実際の連結は「エステル化を1段ずつ」に任せていた）。
          * 単量体を 2組（4分子）以上並べたときだけ出る ＝ 1対1 のときは従来どおり説明だけ。 */
         id: 'condensation_polymerization',
+        // ★ **キャンバス全体が対象**（`siteFilter` の注記）。付加重合の3本と同じ理由で、
+        //    いま見ている分子で絞ると**2本目の鎖が作れなくなる**。
+        //    ⚠ v1465 はここを付け忘れていた（付加の3本にだけ付けた）。
+        //    **4分子ちょうどでは出ない穴**——箇所が4分子ぜんぶを含むので focus に必ず当たる。
+        //    出るのは「1本目を作ったあと、単量体を並べ直して2本目」のとき（PM13 で再現）
+        wholeCanvas: true,
         label: '縮合重合（2価の単量体を並べて）→ ポリエステル／ポリアミド',
         detect(mol) {
             const u = condensationPolymerUnits(mol);
@@ -3702,7 +4007,7 @@ const REACTION_RULES = [
             return {
                 caption: `2つずつ反応できる基を持った分子が揃っています。これは縮合重合（${kind}結合をくり返しつくる）の組み合わせです。` +
                     `付加重合と違い、つなぐたびに水がとれます（だから「縮合」）。` +
-                    `実際に1段つなぐには「エステル化」や「アセチル化」を使ってください。` +
+                    `実際に1段つなぐには「${kind}化」や「アセチル化」を使ってください。` +
                     `両端にまだ反応できる基が残るので、そこにさらに単量体をつなぐと鎖が伸びていきます。` +
                     `**同じ組み合わせをもう1組ずつ（合計4分子）並べると「縮合重合」が選べる**ようになり、鎖をまとめて作れます。`,
                 changed: []
@@ -3762,6 +4067,84 @@ const REACTION_RULES = [
         apply(game, site) {
             return addAcrossMultipleBond(game, site, null, null,
                 '水素 H₂ が付加しました（ニッケルや白金を触媒に加熱）。不飽和結合が減って飽和に近づきます。植物油に水素を付加して固める硬化油（マーガリンの原料）はこの反応の応用です。');
+        }
+    },
+    {
+        /* ★ ワッカー法（§10.11-D #27・§10.3-f C-3・v1472。ユーザーが「足す」と決めていた）。
+         * ★ **教科書 本文 p.150 に式がある**（p.282 に再掲）・入試12〜13件。
+         * ⚠ ただし**教科書に「ワッカー法」という名前は無い**（参考書が名づけている）ので、
+         *   caption でそのことを断る（§4-1）。
+         * ★ 図は素直 —— **炭素2個のまま残り、分子が消えない**（酸化開裂との違い）。
+         * ⚠ **対象はエチレンだけ**。末端アルケン一般でも似た反応は進むが、
+         *   教科書・入試が扱うのはエチレンの場合だけ（§4-1 の線）。 */
+        id: 'wacker_oxidation',
+        reagentId: 'o2_pdcl2',
+        label: 'ワッカー法（エチレン → アセトアルデヒド）',
+        detect(mol) { return ethyleneUnits(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [c1, c2] = site;
+            const spot = freeSpotAround(mol, c1);
+            if (!spot) throw noRoom('カルボニルの酸素を置く空間がありません');
+            const bond = mol.getBond(c1, c2);
+            if (!bond || bond.type !== 2) throw new Error('エチレンの C=C が見つかりません');
+            bond.type = 1;
+            const o = mol.addAtom('O', spot.x, spot.y);
+            mol.addBond(c1, o.id, 2);
+            bendCarbonyl(mol, c1, o.id);
+            return {
+                caption: 'エチレンが酸化されてアセトアルデヒドになりました。' +
+                    '塩化パラジウム(II) と塩化銅(II) を触媒に、酸素で酸化します。' +
+                    '**炭素は2個のまま残り**、C=C の片方が C=O に変わるだけです' +
+                    '（切れて減る酸化開裂との違いはここです）。' +
+                    'アセトアルデヒドの工業的製法で、教科書には式が載っています' +
+                    '（「ワッカー法」という呼び名は参考書のものです）。',
+                changed: [c1, c2, o.id]
+            };
+        }
+    },
+    {
+        /* ★ ニトロ化合物の還元 → 芳香族アミン（§10.11-D #5・§10.11-F の3位・v1472）。
+         * ★ **教科書 本文 p.188**・入試47件（⚠ 上限値）・ニトロベンゼンもアニリンも登録済み。
+         *
+         * ★ **1段で直接アミンにする**（§10.3-b の原則）。教科書は
+         *   「スズ＋塩酸 → アニリン塩酸塩 → NaOH で遊離」の**2段**で書くが、
+         *   塩の段はイオン（§10.6 の壁）。⚠ **塩の段は caption で補う**。
+         *
+         * ⚠ **対象は芳香環に直結した -NO₂ だけ**。ニトロアルカンの還元も化学としては
+         *   起こるが、教科書が扱うのは芳香族だけ（§4-1 の線）。
+         *
+         * ★ **瓶は増やしていない**。教科書が工業的製法として名指しする **H₂ ＋ 触媒**に
+         *   相乗りする。⚠ そのため「H₂/Ni を作用させても**ベンゼン環は水素化されず、
+         *   ニトロ基だけが還元される**」が画面でそのまま起こる ＝ 入試の頻出点と一致する。 */
+        id: 'reduce_nitro',
+        reagentId: 'h2_ni',
+        label: '還元: -NO₂ → -NH₂（芳香族アミン）',
+        detect(mol) {
+            const arom = aromaticAtomSet(mol);
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'nitro')
+                .filter(g => mol.getNeighbors(g.atomIds[0])
+                    .some(n => n.atom.element === 'C' && arom.has(n.atom.id)))
+                .map(g => [g.atomIds[0]]);
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const nId = site[0];
+            const oIds = mol.getNeighbors(nId)
+                .filter(n => n.atom.element === 'O').map(n => n.atom.id);
+            if (oIds.length !== 2) throw new Error('ニトロ基の酸素が見つかりません');
+            oIds.forEach(id => mol.removeAtom(id));  // O が2つ外れ、自動水素が -NH₂ を描く
+            return {
+                caption: 'ニトロ基が還元されてアミノ基になりました（ニトロベンゼン → アニリン）。' +
+                    '実験室では**スズ Sn と濃塩酸**を使い、いったん**アニリン塩酸塩**（塩）ができます。' +
+                    'これに水酸化ナトリウム水溶液を加えると、弱塩基のアニリンが遊離します。' +
+                    'ここでは塩の段をとばして、遊離したアミンを直接描いています。' +
+                    '工業的には水素と触媒で還元します。' +
+                    '⚠ このとき**ベンゼン環は水素化されません** —— 環は安定（芳香族性）で、' +
+                    'ニトロ基のほうがずっと還元されやすいためです。',
+                changed: [nId]
+            };
         }
     },
     // H–X 付加は HBr・HCl・HI の3本。**`HYDROGEN_HALIDES` の表から生成する**ので、
@@ -3895,6 +4278,76 @@ const REACTION_RULES = [
             return {
                 caption: 'ベンゼン環が塩素化されました（鉄または塩化鉄(III)を触媒に Cl₂ と反応）。触媒が Cl-Cl 結合を分極させ、塩素が求電子剤として働きます。同時に塩化水素 HCl が発生します。' + note,
                 changed: [site[0], ...added]
+            };
+        }
+    },
+    {
+        /* ★ 分子内脱水 → 酸無水物（§10.11-D #3・§10.11-F の2位・v1472）。
+         * ⚠ **瓶は足していない**。教科書は「加熱すると」としか書かず試薬を名指ししない
+         * （フタル酸 p.184・マレイン酸 p.157）ので、瓶を持たないルールにする（§4-1 の線）。 */
+        id: 'dehydration_anhydride',
+        label: '分子内脱水（-H₂O） → 酸無水物',
+        detect(mol) {
+            return anhydrideDehydrationCandidates(mol)
+                .filter(c => c.geo === 'ok' &&
+                    anhydrideBridgeSpot(mol, c.site[0], c.site[2], c.path, [c.site[1], c.site[3]]))
+                .map(c => c.site);
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [cA, ohA, cB, ohB] = site;
+            const cand = anhydrideDehydrationCandidates(mol)
+                .find(c => c.site[0] === cA && c.site[2] === cB);
+            const spot = cand && anhydrideBridgeSpot(mol, cA, cB, cand.path, [ohA, ohB]);
+            if (!spot) throw noRoom('環をつくる空間がありません');
+            const ring = cand.path.length + 1; // 架橋の O を足した環の大きさ
+            // 片方の -OH の O を架橋にし、もう片方の -OH は水として出す
+            mol.removeBond(cB, ohB);
+            parkAsWater(mol, ohB);
+            const o = mol.atoms.find(x => x.id === ohA);
+            o.x = spot.x; o.y = spot.y;
+            mol.addBond(ohA, cB, 1);
+            return {
+                caption: `2つのカルボキシ基から水がとれて、${ring}員環の酸無水物 -CO-O-CO- ができました（加熱）。` +
+                    'エステル化と同じ「-OH と -H がとれて水」ですが、相手が**同じ分子のもう1つの -COOH** なので環になります。' +
+                    'フタル酸 → 無水フタル酸、マレイン酸 → 無水マレイン酸がその例です。' +
+                    '⚠ 隣り合っていないと環が大きくなりすぎて起こりません' +
+                    '（テレフタル酸は酸無水物になりません）。',
+                changed: [cA, ohA, cB],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ⚠ **できない側を黙って消さない**（§9.2「陰性で説明できることを書く」）。
+         * ★ フマル酸（トランス）が無水物にならないことは、入試がいちばん問う点。 */
+        id: 'dehydration_anhydride_info',
+        label: '⚠ 分子内脱水 → 酸無水物（この形では起こらない）',
+        info: true,
+        detect(mol) {
+            return anhydrideDehydrationCandidates(mol)
+                .filter(c => c.geo !== 'ok').map(c => c.site);
+        },
+        apply(game) {
+            const kinds = new Set(anhydrideDehydrationCandidates(game.userMolecule)
+                .filter(c => c.geo !== 'ok').map(c => c.geo));
+            const parts = [];
+            if (kinds.has('anti')) {
+                parts.push('2つのカルボキシ基が**二重結合をはさんで反対側（トランス形）**にあります。' +
+                    '向かい合っていないので、そのままでは環になりません。' +
+                    'マレイン酸（シス形）は加熱すると容易に無水マレイン酸になりますが、' +
+                    'フマル酸（トランス形）はなりません —— これが2つを見分ける決め手です。');
+            }
+            if (kinds.has('unknown')) {
+                parts.push('二重結合のまわりが直線に描かれていて、**シスかトランスか図から読み取れません**。' +
+                    '左の「⇄ シス/トランス整形」で描き分けてから、もう一度見てください。');
+            }
+            // ⚠ 箇所が0件でも押されうる（`onRuleClick` は detect の結果をそのまま渡す）ので、
+            //    **必ず何か返す**（RX13 が「押しても解説が出ない」を見張っている）
+            return {
+                caption: parts.join('\n') ||
+                    'この分子には、2つのカルボキシ基から水がとれて環になる並びがありません' +
+                    '（5員環か6員環になる位置に -COOH が2つ要ります）。'
             };
         }
     },
@@ -4272,7 +4725,11 @@ const RX_UNDO_POINTER = '↩ 反応前に戻す は画面下の帯にありま�
  * ========================================================================== */
 const REVERSIBLE_REACTION_PAIRS = [
     ['esterification', 'hydrolysis_ester'],
-    ['condensation_glycoside', 'hydrolysis_glycoside']
+    ['condensation_glycoside', 'hydrolysis_glycoside'],
+    /* ★ 分子内脱水 ⇄ 酸無水物の加水分解（v1472）。
+     * ⚠ 教科書は**両方向とも本文に書いている**（フタル酸 → 無水フタル酸 p.184 ／
+     * 無水物 ＋ 水 → カルボン酸）。★ §10.11-E が「戻す方だけ有る片道」と名指しした穴。 */
+    ['dehydration_anhydride', 'hydrolysis_anhydride']
 ];
 
 /** その反応の「帰り」にあたる反応の id（宣言が無ければ null）。⚠ 対は両向きに引ける */
