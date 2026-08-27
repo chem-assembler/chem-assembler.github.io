@@ -1683,6 +1683,19 @@
             <div id="stereo-rs-row" style="margin:8px 0 0; width:100%; text-align:left;">
                 <p id="stereo-rs-letter" style="font-size:14px; color:var(--text-primary); line-height:1.5; margin:0;"></p>
                 <p id="stereo-rs-why" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; margin:3px 0 0;"></p>
+                <!-- ⚠ v1472: 「主鎖が縦に描かれていないため、判定しません。」の**続き 114字**をここへ畳んだ
+                     （ux-density §2 番外）。★ **消していない** —— 「縦が奥・横が手前」がフィッシャー投影
+                     のときだけ成り立つ、という約束は大学水準まで効く話で、必要な人は開けば読める。
+                     ⚠ 本文をここ（HTML）に据え置きにしてあるのは、**中身が空の状態を作らない**ため。
+                     stereo.js がするのは hidden の切り替えだけで、文言は持たない -->
+                <details id="stereo-rs-why-more" class="learn-acc cross-rules-acc hidden" style="margin-top:6px;">
+                    <summary>なぜ判定しないのか</summary>
+                    <div class="learn-acc-body">
+                        フィッシャー投影は主鎖を縦に描く約束で、「縦が奥・横が手前」もそのときだけ成り立ちます。
+                        十字に見えるだけの普通の構造式に記号を付けると、立体を指定していない図に
+                        嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。
+                    </div>
+                </details>
             </div>
             <!-- ⚠ ここにあった `#stereo-ring-hint`（53字・「この分子には環がないため…」）は
                  v1472 で消した。**使えないことは、ボタンが灰色（`.view-btn:disabled`＝不透明度 0.42）
