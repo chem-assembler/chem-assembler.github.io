@@ -30143,8 +30143,9 @@
             W.ruleReagentIds({ reagentId: 'a' }).join(',') === 'a' &&
             W.ruleReagentIds({}).length === 0,
             'reactor 側の ruleReagentIds が無い／文字列と配列を同じに扱えていない');
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 22,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの17本＋調べるもの5本＝22本）`);
+        // ★ v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23本
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 23,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの18本＋調べるもの5本＝23本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -30197,8 +30198,10 @@
             // ★ v1472: ニトロ還元は**瓶を増やさず**、教科書が工業的製法として
             //    名指しする H₂ ＋ 触媒（h2_ni）に相乗りさせた
             'reduce_nitro',
+            // ★ v1472: ワッカー法は瓶が1本増える（§10.9 の申し送りに触れる。判断は §10.12）
+            'wacker_oxidation',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 34, `瓶に紐づくルールが ${linked.length} 件（34件を期待）`);
+        assert(linked.length === 35, `瓶に紐づくルールが ${linked.length} 件（35件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -30209,11 +30212,12 @@
         // (7) 瓶の札が22本とも描かれている（区分の見出しは札に数えない）。
         //     v883 で金属ナトリウム（試薬パレット §3.1 の13番目・§5 第4段の予定分）を足して 20 → 21
         //     v1428 で酸化剤を KMnO₄ / K₂Cr₂O₇ の2本に割って 21 → 22（§12-1・試薬名を知るため）
+        //     v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 22, `瓶の札が ${drawn.length} 個（22個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 17 &&
+        assert(drawn.length === 23, `瓶の札が ${drawn.length} 個（23個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 18 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの17本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの18本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -31111,9 +31115,9 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶22本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶23本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶22本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶23本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -31127,7 +31131,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 22, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 23, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
@@ -34154,6 +34158,81 @@
             assert(poly.detect(mol).length === 0,
                 '2分子で縮合重合が出ている（アミド化が「4分子要る」道の言い換えになっていない証明）');
         }
+        c.reset();
+    });
+
+    /* ★ RC8: ワッカー法（§10.11-D #27・§10.3-f C-3・v1472。ユーザーが「足す」と決めていた）。
+     * ★ 教科書 本文 p.150 に式がある。⚠ **図は素直 —— 炭素2個のまま、分子が消えない**。 */
+    test('RC8: エチレンがワッカー法でアセトアルデヒドになる（登録エントリと一致・否定対照つき）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const wac = W.REACTION_RULES.find(r => r.id === 'wacker_oxidation');
+        assert(wac, 'ワッカー法のルールが無い');
+        assert(!wac.info, 'ワッカー法が「説明だけ」になっている');
+        const bot = (W.REAGENTS || []).find(r => r.id === 'o2_pdcl2');
+        assert(bot && bot.kind === 'transform', 'ワッカー法の瓶が無い（または区分が違う）');
+        assert(wac.reagentId === 'o2_pdcl2', `ワッカー法の瓶が ${wac.reagentId}`);
+
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+            g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const codeOf = (names) => { setup(names); return CC(g.userMolecule); };
+
+        // ---- (1) 候補の数。⚠ **エチレンだけ**（教科書・入試が扱うのはこの場合だけ） ----
+        assert(wac.detect(setup(['エチレン（エテン）'])).length === 1, 'エチレンでワッカー法が出ない');
+        assert(wac.detect(setup(['エチレン（エテン）', 'エチレン（エテン）'])).length === 2,
+            'エチレン2つで2件にならない（成分ごとに数えていない）');
+        // **否定対照**: ほかのアルケン（末端でも）／アルキン／飽和／すでにカルボニル／
+        //   **炭素2個でも C=C でない**（エタン・アセチレン）
+        ['プロペン（プロピレン）', '1-ブテン', '2-ブテン', 'シクロヘキセン',
+         'アセチレン（エチン）', 'エタン', 'アセトアルデヒド', 'ベンゼン',
+         'エタノール'].forEach(n => {
+            assert(g.resolveCompound(n), `${n} がライブラリに無い`);
+            assert(wac.detect(setup([n])).length === 0,
+                `${n}: エチレン専用のはずのワッカー法が候補に出ている（${wac.detect(setup([n])).length} 件）`);
+        });
+
+        // ---- (2) 生成物が**登録エントリと同じ正準コード**になる ----
+        {
+            const mol = setup(['エチレン（エテン）']);
+            const before = mol.atoms.length;
+            const cap = wac.apply(g, wac.detect(mol)[0]).caption;
+            g.updateDrawing();
+            assert(CC(mol) === codeOf(['アセトアルデヒド']),
+                `エチレン → アセトアルデヒドにならない\n  実際: ${CC(mol)}\n  登録: ${codeOf(['アセトアルデヒド'])}`);
+            // ★ **分子が消えない・炭素が減らない**（酸化開裂との違いがここ）
+            assert(mol.atoms.filter(a => a.element === 'C').length === 2,
+                '炭素が2個のまま残っていない');
+            assert(mol.atoms.length === before + 1, `原子が1つ（O）増えていない（${before} → ${mol.atoms.length}）`);
+            // ⚠ 教科書に「ワッカー法」の名前は無いので、そう断る（§4-1）
+            assert(/呼び名は参考書/.test(cap),
+                `教科書に名前が無いことを断っていない: ${cap.slice(-90)}`);
+            assert(/炭素は2個のまま/.test(cap), '「炭素が減らない」ことを言っていない');
+        }
+
+        // ---- (3) 瓶からも同じところへ着く ----
+        setupReagent(c, ['エチレン（エテン）']);
+        bottle(c, 'o2_pdcl2').click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(CC(g.userMolecule) === codeOf(['アセトアルデヒド']),
+            `瓶からエチレンを押してもアセトアルデヒドにならない: ${CC(g.userMolecule)}`);
+        // **否定対照**: プロペンでは空振りし、理由が返る
+        setupReagent(c, ['プロペン（プロピレン）']);
+        const before = CC(g.userMolecule);
+        bottle(c, 'o2_pdcl2').click();
+        assert(CC(g.userMolecule) === before, 'プロペンにワッカー法が効いてしまっている');
+        assert(D.getElementById('mm-reagent-note').textContent.includes('エチレン'),
+            'プロペン × ワッカー法の空振りで理由が返らない');
         c.reset();
     });
 
