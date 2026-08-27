@@ -30529,11 +30529,12 @@
                 `${id}: 3級アルコールの解説が出ない: ${noteText().slice(0, 80)}`);
             assert(CC(g.userMolecule) === before3 && g.history.length === hist,
                 `${id}: 解説だけなのに分子か履歴が動いた`);
-            setupReagent(c, ['シクロヘキセン']);
+            // ⚠ **シクロヘキセンは v1472 で実行へ移った**ので、範囲外の対照はエチレンで取る
+            setupReagent(c, ['エチレン（エテン）']);
             const beforeR = CC(g.userMolecule);
             bottle(c, id).click();
-            assert(noteText().includes('アジピン酸'),
-                `${id}: 範囲外（環の中の C=C）の説明が出ない: ${noteText().slice(0, 80)}`);
+            assert(noteText().includes('二酸化炭素'),
+                `${id}: 範囲外（末端の C=C）の説明が出ない: ${noteText().slice(0, 80)}`);
             assert(CC(g.userMolecule) === beforeR, `${id}: 範囲外の説明なのに分子が変わった`);
         });
 
@@ -33580,20 +33581,26 @@
             `${name}: 側鎖酸化の候補が ${n(side, name)} 件（${want} 件を期待）`));
         sideNegative.forEach(name => assert(n(side, name) === 0,
             `${name}: 側鎖酸化が候補に出ている（${n(side, name)} 件）`));
-        // 酸化開裂は「炭化水素の・環でない・末端でない C=C」だけ
-        const cleavePositive = ['2-ブテン', '2-メチル-2-ブテン'];
-        const cleaveNegative = ['エチレン（エテン）', 'プロペン（プロピレン）', 'シクロヘキセン',
-            '1,3-ブタジエン', 'ベンゼン', 'オレイン酸', 'アセチレン（エチン）', 'エタン'];
+        // 酸化開裂は「炭化水素の・末端でない C=C」だけ。
+        // ★ **環の中の C=C も実行する**（v1472・§10.3-d の実測と §10.11-F の1位）
+        const cleavePositive = ['2-ブテン', '2-メチル-2-ブテン',
+            'シクロヘキセン', 'シクロペンテン', '1-メチルシクロヘキセン'];
+        // **否定対照**: 末端（=CH₂）／芳香環／三重結合／飽和／
+        //   **炭化水素でない**（オレイン酸・2-シクロヘキセン-1-オン＝ 環でも門番は同じ）／
+        //   **共役の内側**（1,3-ブタジエン）
+        const cleaveNegative = ['エチレン（エテン）', 'プロペン（プロピレン）',
+            '1,3-ブタジエン', 'ベンゼン', 'オレイン酸', 'アセチレン（エチン）', 'エタン',
+            '2-シクロヘキセン-1-オン'];
         cleavePositive.forEach(name => assert(n(cleave, name) === 1,
             `${name}: 酸化開裂の候補が ${n(cleave, name)} 件（1件を期待）`));
         cleaveNegative.forEach(name => assert(n(cleave, name) === 0,
             `${name}: 扱わないはずの酸化開裂が候補に出ている（${n(cleave, name)} 件）`));
         assert(Object.keys(sidePositive).length === 11 && sideNegative.length === 15 &&
-               cleavePositive.length === 2 && cleaveNegative.length === 8,
-            '陽性13件・陰性23件を数えたことを主張の中に残す');
+               cleavePositive.length === 5 && cleaveNegative.length === 8,
+            '陽性16件・陰性23件を数えたことを主張の中に残す');
 
         // ---- (2) 範囲外は info が理由を返す（黙って消えない） ----
-        [['エチレン（エテン）', 1, '二酸化炭素'], ['シクロヘキセン', 1, 'アジピン酸'],
+        [['エチレン（エテン）', 1, '二酸化炭素'],
          ['α-メチルスチレン（2-フェニルプロペン）', 1, '二酸化炭素']].forEach(([name, want, word]) => {
             const mol = molOf(name);
             assert(info.detect(mol).length === want,
@@ -33607,11 +33614,23 @@
         // ⚠ **エチルベンゼン・クメン・スチレンは「案内」から「実行」へ移った**（§10.3 決着）。
         //   スチレンは末端 C=C を持つが、その C=C は側鎖ごと酸化されて消えるので案内は出さない
         //   ——「押すと変わるボタン」の横に「ここでは変えません」を並べない
+        // ⚠ **シクロヘキセン・シクロペンテンも「案内」から「実行」へ移った**（v1472）
         ['トルエン', 'エタノール', '2-メチル-2-プロパノール', 'ベンゼン', '2-ブテン',
          'エチルベンゼン', 'クメン（イソプロピルベンゼン）', 'スチレン',
-         'アリルベンゼン（3-フェニルプロペン）'].forEach(name => {
+         'アリルベンゼン（3-フェニルプロペン）',
+         'シクロヘキセン', 'シクロペンテン', '1-メチルシクロヘキセン'].forEach(name => {
             assert(info.detect(molOf(name)).length === 0,
                 `${name}: 範囲外の案内が出ている（${info.detect(molOf(name)).length} 件）`);
+        });
+        // **否定対照（文面）**: `ring` の枝を消したので、どの分子でも
+        // 「環の中の C=C … ここでは変えません」は出ない
+        ['エチレン（エテン）', 'α-メチルスチレン（2-フェニルプロペン）', 'リモネン'].forEach(name => {
+            if (!source.some(x => x.name === name && x.target)) return;
+            const mol = molOf(name);
+            if (!info.detect(mol).length) return;
+            g.userMolecule = mol;
+            assert(!/環の中の C=C/.test(info.apply(g).caption),
+                `${name}: 実行できるようになった環の中の C=C を「図を変えません」と案内している`);
         });
         // **否定対照（文面）**: `chain` の枝を消したので、どの分子でも
         // 「炭素2つ以上の側鎖 … ここでは図を変えません」は出ない
@@ -33662,7 +33681,10 @@
             ['スチレン', side, 1, ['安息香酸']],
             ['p-エチルトルエン（1-エチル-4-メチルベンゼン）', side, 2, ['テレフタル酸']],
             ['2-ブテン', cleave, 1, ['酢酸', '酢酸']],
-            ['2-メチル-2-ブテン', cleave, 1, ['アセトン', '酢酸']]
+            ['2-メチル-2-ブテン', cleave, 1, ['アセトン', '酢酸']],
+            // ★ 環の中の C=C（v1472）。**1分子のまま**なので products も1件
+            ['シクロヘキセン', cleave, 1, ['アジピン酸']],
+            ['シクロペンテン', cleave, 1, ['グルタル酸（ペンタン二酸）']]
         ];
         let matched = 0;
         runs.forEach(([name, rule, times, products]) => {
@@ -33679,7 +33701,33 @@
                 `${name} を ${times} 回酸化しても ${products.join(' + ')} にならない\n  実際: ${CC(mol)}\n  登録: ${want}`);
             matched++;
         });
-        assert(matched === 9, `正準コードで一致を確かめた組が ${matched} 件（9件を期待）`);
+        assert(matched === 11, `正準コードで一致を確かめた組が ${matched} 件（11件を期待）`);
+
+        // ---- (4c) ★環を切ったときは **caption を言い分ける**（残っていた仕事はここだけ・§10.3-d） ----
+        // 正準コードの一致だけでは「カルボン酸が2つになりました」と言い続けても緑になる
+        {
+            const ring = molOf('シクロヘキセン');
+            g.userMolecule = ring; g.updateDrawing();
+            const before = ring.atoms.length;
+            const cap = cleave.apply(g, cleave.detect(ring)[0]).caption;
+            assert(/1つの分子/.test(cap) && /環が開いて/.test(cap),
+                `シクロヘキセン: 「環が開いて1つの分子」と言い分けていない: ${cap.slice(0, 90)}`);
+            assert(!/が2つになりました/.test(cap),
+                `シクロヘキセン: 分子が2つできたと読める文面のまま: ${cap.slice(0, 90)}`);
+            // 図の側も押さえる（1分子のまま・O が4個増える）
+            assert(ring.atoms.length === before + 4,
+                `シクロヘキセン: 原子数が合わない（${before} → ${ring.atoms.length}）`);
+            assert(g.moleculeAtomIdsOf(ring.atoms[0].id).size === ring.atoms.length,
+                'シクロヘキセンを切ったのに2分子に分かれている（環なら1分子のまま）');
+        }
+        // **否定対照の対照**: 鎖状のときは「環が開いて」と言わない
+        {
+            const chain = molOf('2-ブテン');
+            g.userMolecule = chain; g.updateDrawing();
+            const cap = cleave.apply(g, cleave.detect(chain)[0]).caption;
+            assert(!/環が開いて/.test(cap) && /カルボン酸が2つ/.test(cap),
+                `2-ブテン: 鎖状なのに環の文面が出ている: ${cap.slice(0, 90)}`);
+        }
 
         // ---- (4b) ★否定対照 —— **切れて出ていく側が図に残っていない**こと ----
         // 「安息香酸と同じ正準コード」だけでは、側鎖を落とさずに -COOH を足す実装
