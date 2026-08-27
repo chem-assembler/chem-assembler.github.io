@@ -20769,6 +20769,172 @@
         });
     });
 
+    /* ==========================================================================
+     * HQ5〜HQ7: 採点のあとに「見本を実際に動かしてみる」（ユーザー発注 2026-08-26）
+     *
+     * > **採点後に実際に回転を試したい（解説の通りになるか確認）**
+     *
+     * ★ 押せる札はキャンバスの帯と同じ3つで、実体も `chemistry.js` の
+     *   `flipHaworth` / `haworthTurn` そのもの（`haworthTurnedTarget` が受け渡しだけを埋める）。
+     * ★ **一致は `FischerPractice.drawingKey`（絵）で見る。立体コードでは見られない**
+     *   —— 意味を保つ4枚は立体コードが全部同じだから（それを HQ7 が実測で示す）。
+     * ========================================================================== */
+
+    test('HQ5: 「動かしてみる」は採点前に出ない／採点後に ⇅ を押すと正解の図になる（実機の DOM）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.choiceQuiz;
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        const panel = D.getElementById('pk-turn');
+        assert(panel, '#pk-turn が無い');
+
+        // ⚠⚠ 採点前は出ない（出すと ⇅ を押した図が正解と一致して答えが分かる）
+        assert(panel.classList.contains('hidden'), '採点前に「動かしてみる」が出ている');
+        const before = W.FischerPractice.drawingKey(q.currentGoalFigure());
+        const locked = q.applyTurn('updown');
+        assert(locked && locked.ok === false && locked.reason === 'locked',
+            `採点前に札が効いてしまう（${JSON.stringify(locked)}）`);
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) === before,
+            '採点前に見本の図が動いた');
+        // ほかの出題（記号）では、採点しても出さない
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        D.getElementById('pk-cell-0').click();
+        assert(panel.classList.contains('hidden'), '記号の出題で「動かしてみる」が出ている');
+
+        // 採点したら出る
+        D.getElementById('pk-kind').value = 'haworth';
+        q.newQuestion();
+        const right = q.current.answer;
+        D.getElementById(`pk-cell-${right}`).click();
+        assert(!panel.classList.contains('hidden'), '採点しても「動かしてみる」が出ない');
+        const base = W.FischerPractice.drawingKey(q.currentGoalFigure());  // ⚠ 問題が変わったので取り直す
+        const drawn = () => D.querySelectorAll('#pk-goal .quiz-atoms g').length;
+        assert(drawn() > 0, '見本に図が描かれていない');
+
+        // ★ ⇅ を押すと、正解の図とぴったり同じ絵になる（＝ 解説のとおり）
+        D.getElementById('btn-pk-turn-updown').click();
+        const st = D.getElementById('pk-turn-status').textContent;
+        assert(st.includes(`${'①②③④'[right]} とぴったり同じ絵`),
+            `⇅ で正解の図に一致したと言っていない: ${st}`);
+        assert(st.includes('解説のとおり'), `解説との照らし合わせを言っていない: ${st}`);
+        assert(st.includes('⇅ 上下に裏返す'), `押した手が出ていない: ${st}`);
+        assert(drawn() > 0, '動かしたあと見本の図が消えた');
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) !== base,
+            '⇅ を押しても図が変わっていない');
+
+        // ⇄ / ⟳ は「どれとも違う絵だが、分子は見本のまま」と言う
+        D.getElementById('btn-pk-turn-reset').click();
+        D.getElementById('btn-pk-turn-leftright').click();
+        const st2 = D.getElementById('pk-turn-status').textContent;
+        assert(st2.includes('どれとも違う絵'), `⇄ の言い方が違う: ${st2}`);
+        assert(st2.includes('分子は見本のまま'), `⇄ で「同じ分子」を言っていない: ${st2}`);
+
+        // ↩ で元に戻る／次の問題では畳まれる
+        D.getElementById('btn-pk-turn-reset').click();
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) === base,
+            '↩ で元の図に戻らない');
+        q.newQuestion();
+        assert(panel.classList.contains('hidden'), '次の問題で「動かしてみる」が畳まれない');
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('HQ6: 糖16件の全数 —— ⇅ は正解の図と一致・⇄/⟳ は選択肢のどれとも違うが同じ分子', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const key = W.FischerPractice.drawingKey;
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        let hitAnswer = 0, backAgain = 0, sameMolecule = 0, offTheList = 0, quartet = 0;
+        const n = q.hwPool.length;
+        assert(n === 16, `プールが16件でない（${n}）`);
+        q.hwPool.forEach(e => {
+            const base = e.target, b = codeOf(base);
+            // 出題が「正解の図」として並べるのは flipTargetVertically(base)
+            const answerFig = W.flipTargetVertically(base);
+            const up = W.haworthTurnedTarget(c.game, base, 'updown');
+            assert(up, `${e.name}: ⇅ が当てられない`);
+            // ★ 平行移動を除いてぴったり一致（軸の取り方が違っても drawingKey では消える）
+            if (key(up) === key(answerFig)) hitAnswer++;
+            const figs = { updown: up };
+            ['leftright', 'halfturn'].forEach(k => {
+                const t = W.haworthTurnedTarget(c.game, base, k);
+                assert(t, `${e.name}: ${k} が当てられない`);
+                figs[k] = t;
+            });
+            Object.keys(figs).forEach(k => {
+                if (codeOf(figs[k]) === b) sameMolecule++;                    // 分子は変わらない
+                const back = W.haworthTurnedTarget(c.game, figs[k], k);
+                if (back && key(back) === key(base)) backAgain++;             // 2回押すと戻る
+            });
+            // ⇄ / ⟳ は、出題が並べる3枚（素朴な鏡映・180°回転）のどれとも違う絵
+            const list = [base, answerFig, W.rotateTargetInPlane(base, 0, true),
+                          W.rotateTargetInPlane(base, 2, false)].map(key);
+            ['leftright', 'halfturn'].forEach(k => {
+                if (!list.includes(key(figs[k]))) offTheList++;
+            });
+            // 4枚は互いに別の絵（元・⇅・⇄・⟳）
+            if (new Set([key(base), key(figs.updown), key(figs.leftright), key(figs.halfturn)]).size === 4) quartet++;
+        });
+        assert(hitAnswer === n, `⇅ が正解の図と一致しなかった（${hitAnswer}/${n}）`);
+        assert(sameMolecule === n * 3, `置き直しで分子が変わった（同じ ${sameMolecule}/${n * 3}）`);
+        assert(backAgain === n * 3, `2回押しても元の絵に戻らない（${backAgain}/${n * 3}）`);
+        assert(offTheList === n * 2, `⇄/⟳ が選択肢の絵と重なった（${offTheList}/${n * 2}）`);
+        assert(quartet === n, `元・⇅・⇄・⟳ の4枚が別の絵にならない（${quartet}/${n}）`);
+
+        // 実際に出題を作って、正解の図に一致することを DOM を通さずにも確かめる
+        for (let i = 0; i < 40; i++) {
+            const cur = q.haworthQuestion();
+            const up = W.haworthTurnedTarget(c.game, cur.goal, 'updown');
+            assert(up && key(up) === key(cur.items[cur.answer].target),
+                `出題 ${cur.entry.name}: ⇅ が正解の図に一致しない`);
+        }
+        // 糖でない分子には当てられない（門番は chemistry.js のものをそのまま借りている）
+        const eth = W.buildCompoundLibrary(c.game).find(x => x.name === 'エタノール');
+        assert(eth, 'エタノールが見つからない');
+        ['updown', 'leftright', 'halfturn'].forEach(k => {
+            assert(W.haworthTurnedTarget(c.game, eth.target, k) === null,
+                `糖でない分子に ${k} が当たってしまう`);
+        });
+    });
+
+    test('HQ7: 一致判定に立体コードは使えない（4枚とも同じコード）——だから絵で見ている', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        // ★ 「⇅ を押したら正解の図になった」は立体コードでは言えない ——
+        //    元・⇅・⇄・⟳ の4枚は**全部同じ立体コード**なので、区別が付かない
+        let indistinguishable = 0;
+        q.hwPool.forEach(e => {
+            const b = codeOf(e.target);
+            const codes = ['updown', 'leftright', 'halfturn']
+                .map(k => codeOf(W.haworthTurnedTarget(c.game, e.target, k)));
+            if (codes.every(x => x === b)) indistinguishable++;
+        });
+        assert(indistinguishable === q.hwPool.length,
+            `4枚の立体コードが割れた（${indistinguishable}/${q.hwPool.length}）——` +
+            'そうなったなら立体コードでも絵を区別できる。turnStatusText の物差しを見直すこと');
+        // 一方 drawingKey は 16件すべてで ⇅ と ⇄ を見分ける（＝ 物差しとして効いている）
+        const key = W.FischerPractice.drawingKey;
+        let split = 0;
+        q.hwPool.forEach(e => {
+            const a = key(W.haworthTurnedTarget(c.game, e.target, 'updown'));
+            const b = key(W.haworthTurnedTarget(c.game, e.target, 'leftright'));
+            if (a !== b) split++;
+        });
+        assert(split === q.hwPool.length, `drawingKey が ⇅ と ⇄ を見分けられない（${split}/${q.hwPool.length}）`);
+    });
+
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
