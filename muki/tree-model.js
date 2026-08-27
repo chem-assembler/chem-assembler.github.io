@@ -1,0 +1,500 @@
+// 色でみる無機化学 — 系統分離モード「型A: すべてのイオンを単離せよ」の模型
+//
+// DESIGN_separation.md §15-1・§15-2・§16-1・§16-2 に従う。
+//
+// 【型A は型B と何が違うか】
+//   ・中身は **与えられる**（⚠ 推理が無い ＝ 仮説集合 H を持たない。§15-1 の表）
+//   ・机上論。⚠ **途中では何も返さない。並べ終えてから答え合わせ**（§16-1）
+//   ・採点は **純度** ——「最後に残った各葉に、イオンが1種類だけ入っているか」（§15-2）
+//   ・画面は **ツリー**（枝に操作カード・葉にイオンカード）。⚠ 容器が増える画面ではない（§16-2）
+//
+// 【この模型の芯は Fe³⁺ → Fe²⁺】（§4-3・§15-2）
+//   煮沸＋希硝酸を飛ばすと、Fe²⁺ のままアンモニアの段を素通りし、次の段で FeS として沈む。
+//   ＝ 第4属の葉に Zn²⁺ と鉄が同居し、鉄の葉は空になる。**単離できていない葉が2つできる**。
+//   ⚠ **警告を出さない**（§4-3）。★ 結果を起こして、答え合わせで説明する。
+//
+// 【型B から借りたもの】
+//   SEP_IONS（イオンの名前・炎色）／SEP_COLORS（色名 → hex）／
+//   出典の持ち方（ref はデータに残し、画面には出さない。§18-6 (4)）／
+//   門番を「毎回の全走で通す」作法（§18-3）。
+//   ⚠ **SEP_IONS そのものは書き換えない** —— 型B の抽選の母集団が変わってしまう。
+//
+// 【DOM 非依存】tree.js（画面）と tests.js（回帰テスト）の両方が読む。
+
+'use strict';
+
+// 型B の模型から借りる（ブラウザでは separation-model.js が先に読まれている前提）
+var TREE_BASE = (typeof SEP_IONS !== 'undefined')
+    ? { ions: SEP_IONS, colors: SEP_COLORS }
+    : (function () { var m = require('./separation-model.js'); return { ions: m.SEP_IONS, colors: m.SEP_COLORS }; })();
+
+// ---------------------------------------------------------------
+// 色 —— ★ 型B の表をそのまま使い、型A だけに要るものを足す
+//   （⚠ SEP_COLORS 自体は書き換えない。型B の検査がその中身を数えている）
+// ---------------------------------------------------------------
+var TREE_COLORS = (function () {
+    var c = {};
+    Object.keys(TREE_BASE.colors).forEach(function (k) { c[k] = TREE_BASE.colors[k]; });
+    c['緑白色'] = '#cfe8d0';     // Fe(OH)₂。⚠ 型B の札では出番が無かった色
+    return c;
+})();
+
+// ---------------------------------------------------------------
+// イオン
+//   ⚠ **酸化数で分ける**（§4-4）。Fe³⁺ と Fe²⁺ は別の化学種。
+//   ★ ただし「葉に1種類だけか」を数えるときは **元素** で見る
+//     （鉄は Fe³⁺ で入って FeS で出ることがある。それでも鉄は鉄）。
+// ---------------------------------------------------------------
+var TREE_EXTRA_IONS = {
+    Fe2: { id: 'Fe2', name: 'Fe²⁺', jp: '鉄(II)イオン', flame: null }
+};
+
+function treeIon(id) { return TREE_BASE.ions[id] || TREE_EXTRA_IONS[id] || null; }
+
+/** 元素（★ 純度を数える単位）。Fe³⁺ も Fe²⁺ も「鉄」 */
+function treeElement(id) { return (id === 'Fe2' || id === 'Fe3') ? 'Fe' : id; }
+
+/** 元素の呼び名（答え合わせで使う） */
+var TREE_ELEMENT_JP = { Ag: '銀', Cu: '銅', Fe: '鉄', Zn: '亜鉛', Ca: 'カルシウム', Na: 'ナトリウム' };
+
+/**
+ * 属（§10-2 で「属」に決まっている。⚠ 教科書は「操作1〜5」なので画面の札には出さない。
+ * ★ 出すのは答え合わせだけ）。
+ */
+var TREE_GROUP = { Ag: 1, Cu: 2, Fe: 3, Zn: 4, Ca: 5, Na: 6 };
+
+// ---------------------------------------------------------------
+// 操作の札
+//   splits … ★ **その操作が沈殿をつくりうるか**。⚠ 状態ではなく札の性質として持つ。
+//            煮沸と希硝酸は何も沈めない ＝ 枝に置いても葉が生えない。
+//            ★ これが §13-4c の「分ける札」と、それ以外の区別にあたる。
+//   ⚠ 札の名前に属の番号を書かない —— 書いたら並べる順を配ってしまう。
+// ---------------------------------------------------------------
+var TREE_OPS = {
+    hcl: {
+        id: 'hcl', short: '希塩酸', splits: true,
+        say: '希塩酸を加える',
+        mean: '塩化物が水に溶けにくいイオンを沈殿させる'
+    },
+    h2sAcid: {
+        id: 'h2sAcid', short: '硫化水素（酸性）', splits: true,
+        say: '酸性のまま硫化水素を通す',
+        mean: '酸性でも沈殿する硫化物があるかを見る'
+    },
+    boil: {
+        id: 'boil', short: '煮沸', splits: false,
+        say: '煮沸する',
+        mean: '溶けている硫化水素を追い出す'
+    },
+    hno3: {
+        id: 'hno3', short: '希硝酸', splits: false,
+        say: '希硝酸を加えて加熱する',
+        mean: '酸化剤としてはたらく'
+    },
+    nh3: {
+        id: 'nh3', short: 'アンモニア水', splits: true,
+        say: '塩化アンモニウムを加えてから、アンモニア水を十分に加える',
+        mean: 'NH₄⁺ を共存させて OH⁻ を薄く保ったまま、塩基性にする'
+    },
+    h2sBase: {
+        id: 'h2sBase', short: '硫化水素（塩基性）', splits: true,
+        say: '塩基性にしてから硫化水素を通す',
+        mean: '塩基性でなければ沈殿しない硫化物を沈殿させる'
+    },
+    co3: {
+        id: 'co3', short: '炭酸アンモニウム', splits: true,
+        say: '炭酸アンモニウム水溶液を加える',
+        mean: '炭酸塩が水に溶けにくいイオンを沈殿させる'
+    }
+};
+
+// ---------------------------------------------------------------
+// 反応の表（⚠ **イオン × 札を悉皆で宣言する**。§4-1）
+//
+//   ppt  … 沈殿するか
+//   f    … 沈殿の化学式／c … 沈殿の色
+//   to   … ★ **化学種が変わる**（Fe³⁺ ⇄ Fe²⁺）。⚠ 酸化数を持たないと、この設計は成立しない（§4-4）
+//   turb … 沈殿ではない濁り（硫黄）。★ 見えるが、イオンは容器に残る
+//   h2s  … ⚠ **溶けている硫化水素が残っているときの差し替え**。
+//          ★ これが「煮沸してから硝酸」の *煮沸* の側の理由（W4・§10-4）
+//   ref  … 出典。⚠⚠ **画面には出さない**（§18-6 (4)）。データに残すのは §4-1 の線を後から検算するため
+//   src  … 'この教材' ＝ ⚠ **資料が直接は書いていない、こちらが埋めた組**。
+//          ★ 系統分離の順どおりに進めば通らない場所（＝ 出番のあとまで残っていた場合）だけに出る。
+//          回帰テストがこの件数を見張っている。
+// ---------------------------------------------------------------
+var TREE_RULES = {
+    Ag: {
+        hcl: { ppt: true, f: 'AgCl', c: '白色', why: '銀イオンが塩化物イオンと結びついて AgCl になり、水に溶けないので沈む', ref: '教科書 p.88 表1' },
+        h2sAcid: { ppt: true, f: 'Ag₂S', c: '黒色', why: 'Ag₂S は酸性でも沈殿する', ref: '教科書 p.96' },
+        boil: { ppt: false, why: '煮沸しても銀イオンは変わらない' },
+        hno3: { ppt: false, why: '希硝酸を加えても銀イオンは変わらない' },
+        nh3: { ppt: false, why: 'いったん褐色の Ag₂O ができるが、過剰のアンモニア水で [Ag(NH₃)₂]⁺ になって溶ける', ref: '教科書 p.90 式(10)' },
+        h2sBase: { ppt: true, f: 'Ag₂S', c: '黒色', why: 'Ag₂S は酸性でも塩基性でも沈殿する', ref: '教科書 p.96' },
+        co3: { ppt: false, src: 'この教材', why: '炭酸アンモニウムの液にはアンモニアが含まれるので、銀イオンは [Ag(NH₃)₂]⁺ になって溶けたまま残る' }
+    },
+    Cu: {
+        hcl: { ppt: false, why: '塩化銅(II) は水に溶けるので沈殿しない' },
+        h2sAcid: { ppt: true, f: 'CuS', c: '黒色', why: 'CuS は酸性でも沈殿する', ref: '教科書 p.88 表2・p.96' },
+        boil: { ppt: false, why: '煮沸しても銅(II)イオンは変わらない' },
+        hno3: { ppt: false, why: '希硝酸を加えても銅(II)イオンは変わらない' },
+        nh3: { ppt: false, why: 'いったん青白色の Cu(OH)₂ ができるが、過剰のアンモニア水で深青色の [Cu(NH₃)₄]²⁺ になって溶ける', ref: '教科書 p.90 式(4)(9)' },
+        h2sBase: { ppt: true, f: 'CuS', c: '黒色', why: 'CuS は酸性でも塩基性でも沈殿する', ref: '教科書 p.96' },
+        co3: { ppt: false, src: 'この教材', why: '炭酸アンモニウムの液にはアンモニアが含まれるので、銅(II)イオンは [Cu(NH₃)₄]²⁺ になって溶けたまま残る' }
+    },
+    Fe3: {
+        hcl: { ppt: false, why: '塩化鉄(III) は水に溶けるので沈殿しない' },
+        // ⚠⚠ この教材の芯。★ ここで鉄は沈まず、**Fe²⁺ に変わってろ液に残る**
+        h2sAcid: {
+            ppt: false, to: 'Fe2', turb: { c: '淡黄色', f: 'S' },
+            why: '硫化水素が還元剤としてはたらいて Fe³⁺ が Fe²⁺ になる。酸化された硫黄が淡黄色の濁りとして出るが、鉄そのものはろ液に残る',
+            ref: '教科書 p.83'
+        },
+        boil: { ppt: false, why: '煮沸しても鉄(III)イオンは変わらない' },
+        hno3: { ppt: false, why: '鉄はすでに Fe³⁺ なので、希硝酸を加えても変わらない' },
+        nh3: { ppt: true, f: 'FeO(OH)', c: '赤褐色', why: 'FeO(OH) は OH⁻ が薄くてもよく沈むので、この段で赤褐色の沈殿になる', ref: '教科書 p.90 式(3)' },
+        h2sBase: { ppt: true, to: 'Fe2', f: 'FeS', c: '黒色', src: 'この教材', why: '塩基性でも硫化水素は還元剤としてはたらき、生じた Fe²⁺ が FeS として沈む' },
+        co3: { ppt: true, f: 'FeO(OH)', c: '赤褐色', src: 'この教材', why: '炭酸アンモニウムの液は塩基性なので、まだ残っていた鉄(III)イオンはここで水酸化物として沈む' }
+    },
+    Fe2: {
+        hcl: { ppt: false, why: '塩化鉄(II) は水に溶けるので沈殿しない' },
+        h2sAcid: { ppt: false, why: 'FeS は酸性では沈殿しない', ref: '教科書 p.96' },
+        boil: { ppt: false, why: '煮沸しても鉄(II)イオンは変わらない' },
+        hno3: {
+            ppt: false, to: 'Fe3',
+            why: '希硝酸が酸化剤としてはたらいて、Fe²⁺ が Fe³⁺ に戻る',
+            ref: '教科書 p.83',
+            // ⚠ 煮沸していない容器に硝酸を入れても戻りきらない（§4-2 の決め）
+            h2s: { ppt: false, why: '溶けている硫化水素が残っているので、希硝酸を加えても Fe²⁺ は Fe³⁺ に戻りきらない' }
+        },
+        nh3: {
+            // ★★ 芯。Fe(OH)₂ は FeO(OH) ほど沈みやすくないので、この段では沈まない
+            ppt: false,
+            why: 'Fe(OH)₂ は FeO(OH) ほど沈みやすくないので、OH⁻ を薄く保ったこの段では沈まずに素通りする',
+            // W4（§10-4）: 煮沸していないと、塩基性になった時点で硫化物が混ざる
+            h2s: { ppt: true, f: 'FeS', c: '黒色', why: '溶けている硫化水素を追い出していないので、塩基性になった時点で FeS が沈み、この段の沈殿に混ざる' }
+        },
+        h2sBase: { ppt: true, f: 'FeS', c: '黒色', why: 'FeS は中性・塩基性で沈殿する', ref: '教科書 p.96' },
+        co3: { ppt: true, f: 'Fe(OH)₂', c: '緑白色', src: 'この教材', why: '炭酸アンモニウムの液は塩基性なので、まだ残っていた鉄(II)イオンはここで水酸化物として沈む' }
+    },
+    Zn: {
+        hcl: { ppt: false, why: '塩化亜鉛は水に溶けるので沈殿しない' },
+        h2sAcid: { ppt: false, why: 'ZnS は中性・塩基性でできる沈殿で、酸性では沈殿しない', ref: '教科書 p.96' },
+        boil: { ppt: false, why: '煮沸しても亜鉛イオンは変わらない' },
+        hno3: { ppt: false, why: '希硝酸を加えても亜鉛イオンは変わらない' },
+        nh3: {
+            ppt: false,
+            why: 'いったん白色の Zn(OH)₂ ができるが、過剰のアンモニア水で無色の [Zn(NH₃)₄]²⁺ になって溶ける',
+            ref: '教科書 p.90 式(8)',
+            h2s: { ppt: true, f: 'ZnS', c: '白色', why: '溶けている硫化水素を追い出していないので、塩基性になった時点で ZnS が沈み、この段の沈殿に混ざる' }
+        },
+        h2sBase: { ppt: true, f: 'ZnS', c: '白色', why: 'ZnS は中性・塩基性で沈殿する', ref: '教科書 p.96' },
+        co3: { ppt: false, src: 'この教材', why: '炭酸アンモニウムの液にはアンモニアが含まれるので、亜鉛イオンは [Zn(NH₃)₄]²⁺ になって溶けたまま残る' }
+    },
+    Ca: {
+        hcl: { ppt: false, why: '塩化カルシウムは水に溶けるので沈殿しない' },
+        h2sAcid: { ppt: false, why: 'カルシウムは硫化物の沈殿をつくらない', ref: '教科書 p.96' },
+        boil: { ppt: false, why: '煮沸してもカルシウムイオンは変わらない' },
+        hno3: { ppt: false, why: '希硝酸を加えてもカルシウムイオンは変わらない' },
+        nh3: { ppt: false, why: 'NH₄⁺ を共存させて OH⁻ を薄く保っているので、カルシウムの水酸化物は沈まない', ref: '教科書 p.90' },
+        h2sBase: { ppt: false, why: 'カルシウムは硫化物の沈殿をつくらない', ref: '教科書 p.96' },
+        co3: { ppt: true, f: 'CaCO₃', c: '白色', why: 'カルシウムイオンが炭酸イオンと結びついて CaCO₃ になり、水に溶けないので沈む', ref: '教科書 p.90 式(11)' }
+    },
+    Na: {
+        hcl: { ppt: false, why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        h2sAcid: { ppt: false, why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        boil: { ppt: false, why: '煮沸してもナトリウムイオンは変わらない' },
+        hno3: { ppt: false, why: '希硝酸を加えてもナトリウムイオンは変わらない' },
+        nh3: { ppt: false, why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        h2sBase: { ppt: false, why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        co3: { ppt: false, why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' }
+    }
+};
+
+/** 1組の規則を引く。⚠ 表に無い組は null（＝ 宣言もれ。門番が落とす） */
+function treeRule(ionId, opId, h2sLeft) {
+    var row = TREE_RULES[ionId];
+    if (!row || !row[opId]) return null;
+    var base = row[opId];
+    if (h2sLeft && base.h2s) {
+        // ⚠ 差し替えるのは結果だけ。出典は元の行のものを引き継ぐ
+        var merged = { ref: base.ref, src: base.src };
+        Object.keys(base.h2s).forEach(function (k) { merged[k] = base.h2s[k]; });
+        return merged;
+    }
+    return base;
+}
+
+// ---------------------------------------------------------------
+// 走らせる —— ★ **これが「アプリが実際に走らせた結果」**（§16-1 の答え合わせの片側）
+//   ⚠ 途中では何も返さない。返すのは並べ終えたあとの全体だけ。
+// ---------------------------------------------------------------
+
+/**
+ * @param ions  容器の中身（★ 与えられている。推理は無い）
+ * @param seq   枝に置かれた操作の列。⚠ **空の枝は飛ばす**（null が混ざってよい）
+ * @returns { stages, rest, feAsFeS }
+ *   stages[i] = { slot, op, splits, ppt:[{ion, from, f, c, why}], turb, left:[ion] }
+ *   rest      = 最後まで溶けたまま残ったイオン（＝ 最後のろ液の葉）
+ */
+function treeRun(ions, seq) {
+    var present = ions.slice();
+    var h2s = false;
+    var stages = [];
+    var feAsFeS = false;
+
+    seq.forEach(function (opId, slot) {
+        if (!opId) { stages.push({ slot: slot, op: null, splits: false, ppt: [], left: present.slice() }); return; }
+        var op = TREE_OPS[opId];
+        var ppt = [], next = [], turb = null;
+        present.forEach(function (ionId) {
+            var r = treeRule(ionId, opId, h2s);
+            if (!r) { next.push(ionId); return; }        // ⚠ 宣言もれ。門番が別途落とす
+            var become = r.to || ionId;
+            if (r.turb) turb = { c: r.turb.c, f: r.turb.f };
+            if (r.ppt) {
+                if (r.f === 'FeS') feAsFeS = true;
+                ppt.push({ ion: become, from: ionId, f: r.f, c: r.c, why: r.why, src: r.src });
+            } else {
+                next.push(become);
+            }
+        });
+        // 操作そのものが状態に効く（★ 溶けている硫化水素が残っているか）
+        if (opId === 'h2sAcid' || opId === 'h2sBase') h2s = true;
+        if (opId === 'boil') h2s = false;
+        present = next;
+        stages.push({ slot: slot, op: opId, splits: op.splits, ppt: ppt, turb: turb, left: present.slice() });
+    });
+
+    return { stages: stages, rest: present.slice(), feAsFeS: feAsFeS };
+}
+
+/** 葉の id。★ 枝 slot の沈殿側は 'L<slot>'、いちばん下のろ液は 'F' */
+function treeLeafId(slot) { return 'L' + slot; }
+var TREE_FINAL_LEAF = 'F';
+
+/** 実際に走らせた結果を「葉 → 元素の列」にたたむ（★ 純度を数える単位は元素） */
+function treeActualLeaves(run) {
+    var out = {};
+    run.stages.forEach(function (s) {
+        if (!s.op || !s.splits) return;
+        out[treeLeafId(s.slot)] = s.ppt.map(function (e) { return treeElement(e.ion); });
+    });
+    out[TREE_FINAL_LEAF] = run.rest.map(treeElement);
+    return out;
+}
+
+// ---------------------------------------------------------------
+// 採点 —— ★★ **純度**。⚠ 仮説を一切使わずに書ける（§15-2）
+// ---------------------------------------------------------------
+
+/**
+ * @param problem { ions, ops }
+ * @param seq     枝に置かれた操作の列（null 可）
+ * @param plan    ★ 本人の机上。{ ionId: leafId }。⚠ 置いていないイオンは入っていない
+ * @returns 採点
+ *   impure       … ⚠ 実際に2種類以上のイオンが来た葉（＝ 単離できていない）
+ *   emptyPlanned … ⚠ 本人がイオンを置いたのに、実際には何も来なかった葉
+ *   dirty        … ★ **単離できていない葉の数** ＝ impure + emptyPlanned（⚠ これが数えるもの）
+ *   misplaced    … 机上と実際で行先が違ったイオン
+ *   unplaced     … 机上でどこにも置かなかったイオン
+ *   isolated     … 実際に全部が別々の葉に1つずつ入ったか
+ *   matched      … 机上と実際が完全に一致したか
+ */
+function treeGrade(problem, seq, plan) {
+    var run = treeRun(problem.ions, seq);
+    var actual = treeActualLeaves(run);
+
+    // 葉の一覧（★ 実在する葉だけ。⚠ 操作が置かれていない枝には葉が無い）
+    var leaves = [];
+    run.stages.forEach(function (s) { if (s.op && s.splits) leaves.push(treeLeafId(s.slot)); });
+    leaves.push(TREE_FINAL_LEAF);
+
+    var planned = {};
+    leaves.forEach(function (l) { planned[l] = []; });
+    var unplaced = [];
+    problem.ions.forEach(function (ionId) {
+        var l = plan[ionId];
+        if (!l || leaves.indexOf(l) < 0) { unplaced.push(ionId); return; }
+        planned[l].push(treeElement(ionId));
+    });
+
+    var impure = [], emptyPlanned = [], rows = [];
+    leaves.forEach(function (l) {
+        var a = (actual[l] || []).slice(), p = planned[l].slice();
+        if (a.length >= 2) impure.push(l);
+        if (a.length === 0 && p.length >= 1) emptyPlanned.push(l);
+        rows.push({ leaf: l, actual: a, planned: p, same: a.slice().sort().join(',') === p.slice().sort().join(',') });
+    });
+
+    var misplaced = [];
+    problem.ions.forEach(function (ionId) {
+        var el = treeElement(ionId);
+        var where = null;
+        leaves.forEach(function (l) { if ((actual[l] || []).indexOf(el) >= 0) where = l; });
+        var said = plan[ionId] || null;
+        if (said && said !== where) misplaced.push({ ion: ionId, said: said, actual: where });
+    });
+
+    var isolated = leaves.every(function (l) { return (actual[l] || []).length <= 1; }) &&
+        problem.ions.every(function (ionId) {
+            var el = treeElement(ionId);
+            return leaves.some(function (l) { return (actual[l] || []).indexOf(el) >= 0; });
+        });
+    var matched = rows.every(function (r) { return r.same; }) && unplaced.length === 0;
+
+    var verdict;
+    if (!isolated) verdict = 'notIsolated';
+    else if (matched) verdict = 'perfect';
+    else verdict = 'misread';
+
+    return {
+        run: run, actual: actual, leaves: leaves, rows: rows,
+        impure: impure, emptyPlanned: emptyPlanned,
+        dirty: impure.length + emptyPlanned.length,
+        misplaced: misplaced, unplaced: unplaced,
+        isolated: isolated, matched: matched, verdict: verdict,
+        feAsFeS: run.feAsFeS
+    };
+}
+
+// ---------------------------------------------------------------
+// 出題
+//   ⚠ 型A は中身が既知なので、型B のような「見分けられるか」の門番は要らない。
+//   ★ 代わりに門番が見るのは **「配った札で、全部を単離しきる手順が実在するか」**。
+//     ⚠ 実在しない出題は解けない ＝ 出してはいけない（§2-4 の型A 版）。
+// ---------------------------------------------------------------
+
+// ★ 教科書の分属の順（＝ 模範解答）。⚠ 画面には出さない。門番と答え合わせだけが読む
+var TREE_STANDARD_ORDER = ['hcl', 'h2sAcid', 'boil', 'hno3', 'nh3', 'h2sBase', 'co3'];
+
+var TREE_MODES = {
+    read: { id: 'read', name: '行先を読む', mark: '★☆☆', preset: true },
+    build: { id: 'build', name: '手順から組む', mark: '★★☆', preset: false }
+};
+
+// ⚠ 出題の説明文を持たせない（§18-6 (1)）。★ 解き筋を先に配ることになる。
+//   画面に出してよいのは **難易度の印と、中身のイオン**だけ。
+var TREE_PROBLEMS = [
+    {
+        id: 'a1',
+        ions: ['Ag', 'Cu', 'Fe3', 'Zn', 'Ca', 'Na'],
+        ops: ['hcl', 'h2sAcid', 'boil', 'hno3', 'nh3', 'h2sBase', 'co3']
+    },
+    {
+        id: 'a2',
+        // ⚠ 亜鉛が居ない。★ 鉄を戻し忘れても葉は汚れないが、行先は変わる
+        //   （＝ 純度と一致・不一致が別のものだと分かる題材）
+        ions: ['Ag', 'Cu', 'Fe3', 'Ca', 'Na'],
+        ops: ['hcl', 'h2sAcid', 'boil', 'hno3', 'nh3', 'h2sBase', 'co3']
+    },
+    {
+        id: 'a3',
+        // ⚠ カルシウムが居ない ＝ 炭酸アンモニウムは何も沈めない。
+        //   ★ 配られた札を全部使う必要はない、を体験させる
+        ions: ['Ag', 'Cu', 'Fe3', 'Zn', 'Na'],
+        ops: ['hcl', 'h2sAcid', 'boil', 'hno3', 'nh3', 'h2sBase', 'co3']
+    }
+];
+
+/** 模範の手順（★ 配られた札を、教科書の順に並べたもの） */
+function treeIdealSeq(problem) {
+    return TREE_STANDARD_ORDER.filter(function (o) { return problem.ops.indexOf(o) >= 0; });
+}
+
+/** 空の机上（＝ 何も置いていない） */
+function treeEmptyPlan() { return {}; }
+
+/** 実際に走らせた結果から、机上を起こす（★ やさしい段の答え合わせ・門番が使う） */
+function treePlanFromRun(problem, seq) {
+    var run = treeRun(problem.ions, seq);
+    var actual = treeActualLeaves(run);
+    var plan = {};
+    problem.ions.forEach(function (ionId) {
+        var el = treeElement(ionId);
+        Object.keys(actual).forEach(function (l) {
+            if (actual[l].indexOf(el) >= 0) plan[ionId] = l;
+        });
+    });
+    return plan;
+}
+
+/**
+ * 出題の門番（§2-4 の型A 版）。⚠ 決めつけずに数える。
+ *   undeclared … 宣言もれ（イオン × 札）。⚠ 1件でもあれば出題データの不備
+ *   solvable   … ★ 配った札で、全部を単離しきる手順が実在するか
+ *   idealDirty … 模範の手順で単離できていない葉の数（★ 0 でなければ出題が壊れている）
+ *   feTrap     … ⚠ **希硝酸を抜いたときに、実際に結果が変わるか**
+ *                （★ この教材の芯が効く題材かどうか。§15-2）
+ *   feDirty    … その答案で単離できていない葉が何枚できるか
+ */
+function treeAuditProblem(p) {
+    var undeclared = [];
+    p.ions.concat(['Fe2']).forEach(function (c) {
+        if (!TREE_RULES[c]) { undeclared.push(c + '×*'); return; }
+        p.ops.forEach(function (o) { if (!treeRule(c, o, false)) undeclared.push(c + '×' + o); });
+        p.ops.forEach(function (o) { if (!treeRule(c, o, true)) undeclared.push(c + '×' + o + '(h2s)'); });
+    });
+
+    var ideal = treeIdealSeq(p);
+    var idealGrade = treeGrade(p, ideal, treePlanFromRun(p, ideal));
+
+    // ⚠ 芯が効くか ＝ 希硝酸を抜いた答案が、模範と違う結果になるか
+    // ★ **枝は空けたまま抜く**（詰めない）。⚠ 詰めると葉の番号がずれて、
+    //   「机上と実際の食い違い」ではなく「番号のずれ」を数えてしまう
+    var noHno3 = ideal.map(function (o) { return o === 'hno3' ? null : o; });
+    var trapGrade = treeGrade(p, noHno3, treePlanFromRun(p, ideal));
+    var feTrap = trapGrade.dirty > 0 || trapGrade.misplaced.length > 0;
+
+    return {
+        id: p.id,
+        undeclared: undeclared,
+        ideal: ideal,
+        idealDirty: idealGrade.dirty,
+        solvable: idealGrade.isolated,
+        feTrap: feTrap,
+        feDirty: trapGrade.dirty,
+        feMisplaced: trapGrade.misplaced.length,
+        ok: undeclared.length === 0 && idealGrade.isolated && idealGrade.dirty === 0
+    };
+}
+
+/** 出題を1件引く */
+function treeProblem(id) {
+    var hit = TREE_PROBLEMS.filter(function (p) { return p.id === id; });
+    return hit.length ? hit[0] : TREE_PROBLEMS[0];
+}
+
+/**
+ * ★ 型の鍵（型B の §18-6 (3) と同じ作法）。⚠ 送信も保存もしない。持つだけ。
+ * 版を 'A1' にしてある。⚠ 札の配り方か採点を変えたら上げること
+ */
+var TREE_KEY_VERSION = 'A1';
+function treeTypeKey(modeId, problem) {
+    return TREE_KEY_VERSION + '|' + modeId + '|' + problem.ions.slice().sort().join('-');
+}
+
+function treeRecord(modeId, problem, extra) {
+    var r = {
+        key: treeTypeKey(modeId, problem),
+        mode: modeId,
+        ions: problem.ions.slice(),
+        ops: problem.ops.slice()
+    };
+    if (extra) Object.keys(extra).forEach(function (k) { r[k] = extra[k]; });
+    return r;
+}
+
+// node からも読めるようにする。ブラウザでは何もしない
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        TREE_COLORS: TREE_COLORS, TREE_OPS: TREE_OPS, TREE_RULES: TREE_RULES,
+        TREE_PROBLEMS: TREE_PROBLEMS, TREE_MODES: TREE_MODES, TREE_GROUP: TREE_GROUP,
+        TREE_ELEMENT_JP: TREE_ELEMENT_JP, TREE_STANDARD_ORDER: TREE_STANDARD_ORDER,
+        TREE_FINAL_LEAF: TREE_FINAL_LEAF, TREE_KEY_VERSION: TREE_KEY_VERSION,
+        treeIon: treeIon, treeElement: treeElement, treeRule: treeRule,
+        treeRun: treeRun, treeLeafId: treeLeafId, treeActualLeaves: treeActualLeaves,
+        treeGrade: treeGrade, treeIdealSeq: treeIdealSeq, treeEmptyPlan: treeEmptyPlan,
+        treePlanFromRun: treePlanFromRun, treeAuditProblem: treeAuditProblem,
+        treeProblem: treeProblem, treeTypeKey: treeTypeKey, treeRecord: treeRecord
+    };
+}
