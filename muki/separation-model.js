@@ -67,13 +67,16 @@ var SEP_COMPLEXES = {
 //   names … ★ 色名が資料で割れるものは複数持つ（K⁺ は「赤紫」と「紫」）。
 //           画面に出すのは names[0]。残りは答え合わせの解説で「とも書かれます」と添える。
 // ---------------------------------------------------------------
+// ⚠ 炎色で色が出るのは7元素だけ、の出典。★ データに持つが画面には出さない
+var SEP_FLAME_LIMIT_REF = '教科書 化学基礎 p.21 表3（すべての元素が炎色反応を示すわけではない）';
+
 var SEP_IONS = {
     Ag: { id: 'Ag', name: 'Ag⁺', jp: '銀イオン', flame: null },
     Pb: { id: 'Pb', name: 'Pb²⁺', jp: '鉛(II)イオン', flame: null },
-    Cu: { id: 'Cu', name: 'Cu²⁺', jp: '銅(II)イオン', flame: { names: ['青緑色'] } },
-    Ca: { id: 'Ca', name: 'Ca²⁺', jp: 'カルシウムイオン', flame: { names: ['橙赤色'] } },
-    Na: { id: 'Na', name: 'Na⁺', jp: 'ナトリウムイオン', flame: { names: ['黄色'] } },
-    K: { id: 'K', name: 'K⁺', jp: 'カリウムイオン', flame: { names: ['赤紫色', '紫色'] } },
+    Cu: { id: 'Cu', name: 'Cu²⁺', jp: '銅(II)イオン', flame: { names: ['青緑色'], ref: '教科書 p.88 図1' } },
+    Ca: { id: 'Ca', name: 'Ca²⁺', jp: 'カルシウムイオン', flame: { names: ['橙赤色'], ref: '教科書 p.88 図1' } },
+    Na: { id: 'Na', name: 'Na⁺', jp: 'ナトリウムイオン', flame: { names: ['黄色'], ref: '教科書 p.88 図1' } },
+    K: { id: 'K', name: 'K⁺', jp: 'カリウムイオン', flame: { names: ['赤紫色', '紫色'], ref: '教科書 p.88 図1／薄い赤紫は参考書' } },
     Zn: { id: 'Zn', name: 'Zn²⁺', jp: '亜鉛イオン', flame: null },
     Al: { id: 'Al', name: 'Al³⁺', jp: 'アルミニウムイオン', flame: null },
     Fe3: { id: 'Fe3', name: 'Fe³⁺', jp: '鉄(III)イオン', flame: null }
@@ -149,105 +152,107 @@ var SEP_OPS = {
 //      「亜鉛は酸性では沈殿しない」のような、見た目に差の無い言い分けをすると、
 //      化学ではなくアプリの言い回しから答えが出てしまう（§12-6 で数えた漏れと同じ形）。
 // ---------------------------------------------------------------
+// ⚠⚠ **`ref`（本の名前とページ）は画面に出さない**（2026-08-27・ユーザー決定）。
+//   ★ 世間で使われている教科書は1社ではないので、ページ番号は学習者の手元と合わない。
+//   ⚠ **ただしデータからは消さない** —— §4-1 の線（教科書の外を再現しない）を
+//     後から検算できる唯一の手がかりだから。★ §17-10 の `src` とまったく同じ扱い。
 var SEP_TABLE = {
     Ag: {
-        hcl: { k: 'ppt', c: '白色', f: 'AgCl', why: '銀イオンは塩化物イオンと結びついて AgCl になり、水に溶けないので沈む（教科書 p.88 表1）' },
-        hclHot: { k: 'keep', f: 'AgCl', why: 'AgCl は熱水には溶けない（教科書 p.88）' },
-        hclNh3: { k: 'dissolve', toc: '無色', f: 'AgCl', to: '[Ag(NH₃)₂]⁺', why: 'AgCl はアンモニア水に溶けて、無色の錯イオン [Ag(NH₃)₂]⁺ になる（教科書 p.88・p.94）' },
-        h2s: { k: 'ppt', c: '黒色', f: 'Ag₂S', why: 'Ag₂S は酸性でも沈殿する（教科書 p.96）' },
-        nh3: { k: 'pptGone', c: '褐色', toc: '無色', f: 'Ag₂O', to: '[Ag(NH₃)₂]⁺', why: 'いったん褐色の Ag₂O ができ、過剰のアンモニア水で [Ag(NH₃)₂]⁺ になって溶ける（教科書 p.90 式(10)）' },
-        naoh: { k: 'pptKeep', c: '褐色', f: 'Ag₂O', why: 'Ag₂O は過剰の水酸化ナトリウムには溶けない（過剰の NaOH に溶けるのは Al(OH)₃ と Zn(OH)₂。教科書 p.90）' }
+        hcl: { k: 'ppt', c: '白色', f: 'AgCl', why: '銀イオンは塩化物イオンと結びついて AgCl になり、水に溶けないので沈む', ref: '教科書 p.88 表1' },
+        hclHot: { k: 'keep', f: 'AgCl', why: 'AgCl は熱水には溶けない', ref: '教科書 p.88' },
+        hclNh3: { k: 'dissolve', toc: '無色', f: 'AgCl', to: '[Ag(NH₃)₂]⁺', why: 'AgCl はアンモニア水に溶けて、無色の錯イオン [Ag(NH₃)₂]⁺ になる', ref: '教科書 p.88・p.94' },
+        h2s: { k: 'ppt', c: '黒色', f: 'Ag₂S', why: 'Ag₂S は酸性でも沈殿する', ref: '教科書 p.96' },
+        nh3: { k: 'pptGone', c: '褐色', toc: '無色', f: 'Ag₂O', to: '[Ag(NH₃)₂]⁺', why: 'いったん褐色の Ag₂O ができ、過剰のアンモニア水で [Ag(NH₃)₂]⁺ になって溶ける', ref: '教科書 p.90 式(10)' },
+        naoh: { k: 'pptKeep', c: '褐色', f: 'Ag₂O', why: 'Ag₂O は過剰の水酸化ナトリウムには溶けない（過剰の NaOH に溶けるのは Al(OH)₃ と Zn(OH)₂ だけ）', ref: '教科書 p.90' }
     },
     Pb: {
-        hcl: { k: 'ppt', c: '白色', f: 'PbCl₂', why: '鉛(II)イオンは塩化物イオンと結びついて PbCl₂ になり、冷水には溶けないので沈む（教科書 p.88 表1）' },
-        hclHot: { k: 'dissolve', toc: '無色', f: 'PbCl₂', why: 'PbCl₂ は熱水に溶ける（教科書 p.88）' },
-        hclNh3: { k: 'keep', f: 'PbCl₂', why: 'PbCl₂ はアンモニア水には溶けない（教科書 p.88）' },
-        h2s: { k: 'ppt', c: '黒色', f: 'PbS', why: 'PbS は酸性でも沈殿する（教科書 p.96）' },
-        nh3: { k: 'pptKeep', c: '白色', f: 'Pb(OH)₂', why: 'Pb(OH)₂ は過剰のアンモニア水には溶けない（過剰の NH₃ に溶けるのは Zn(OH)₂・Cu(OH)₂・Ag₂O。教科書 p.90）' },
-        naoh: { k: 'pptGone', c: '白色', toc: '無色', f: 'Pb(OH)₂', to: '[Pb(OH)₄]²⁻', why: 'Pb(OH)₂ は両性の水酸化物で、過剰の水酸化ナトリウムに溶ける（教科書 p.59 図32）' }
+        hcl: { k: 'ppt', c: '白色', f: 'PbCl₂', why: '鉛(II)イオンは塩化物イオンと結びついて PbCl₂ になり、冷水には溶けないので沈む', ref: '教科書 p.88 表1' },
+        hclHot: { k: 'dissolve', toc: '無色', f: 'PbCl₂', why: 'PbCl₂ は熱水に溶ける', ref: '教科書 p.88' },
+        hclNh3: { k: 'keep', f: 'PbCl₂', why: 'PbCl₂ はアンモニア水には溶けない', ref: '教科書 p.88' },
+        h2s: { k: 'ppt', c: '黒色', f: 'PbS', why: 'PbS は酸性でも沈殿する', ref: '教科書 p.96' },
+        nh3: { k: 'pptKeep', c: '白色', f: 'Pb(OH)₂', why: 'Pb(OH)₂ は過剰のアンモニア水には溶けない（過剰の NH₃ に溶けるのは Zn(OH)₂・Cu(OH)₂・Ag₂O だけ）', ref: '教科書 p.90' },
+        naoh: { k: 'pptGone', c: '白色', toc: '無色', f: 'Pb(OH)₂', to: '[Pb(OH)₄]²⁻', why: 'Pb(OH)₂ は両性の水酸化物で、過剰の水酸化ナトリウムに溶ける', ref: '教科書 p.59 図32' }
     },
     Cu: {
         hcl: { k: 'none', why: '塩化銅(II) は水に溶けるので、沈殿しない' },
         hclHot: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
         hclNh3: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
-        h2s: { k: 'ppt', c: '黒色', f: 'CuS', why: 'CuS は酸性でも沈殿する（教科書 p.88 表2・p.96）' },
-        nh3: { k: 'pptGone', c: '青白色', toc: '深青色', f: 'Cu(OH)₂', to: '[Cu(NH₃)₄]²⁺', why: 'いったん青白色の Cu(OH)₂ ができ、過剰のアンモニア水で深青色の [Cu(NH₃)₄]²⁺ になって溶ける（教科書 p.90 式(4)(9)・p.67 表4）' },
-        naoh: { k: 'pptKeep', c: '青白色', f: 'Cu(OH)₂', why: 'Cu(OH)₂ は過剰の水酸化ナトリウムには溶けない（教科書 p.90 式(4)）' }
+        h2s: { k: 'ppt', c: '黒色', f: 'CuS', why: 'CuS は酸性でも沈殿する', ref: '教科書 p.88 表2・p.96' },
+        nh3: { k: 'pptGone', c: '青白色', toc: '深青色', f: 'Cu(OH)₂', to: '[Cu(NH₃)₄]²⁺', why: 'いったん青白色の Cu(OH)₂ ができ、過剰のアンモニア水で深青色の [Cu(NH₃)₄]²⁺ になって溶ける', ref: '教科書 p.90 式(4)(9)・p.67 表4' },
+        naoh: { k: 'pptKeep', c: '青白色', f: 'Cu(OH)₂', why: 'Cu(OH)₂ は過剰の水酸化ナトリウムには溶けない', ref: '教科書 p.90 式(4)' }
     },
     Ca: {
         hcl: { k: 'none', why: '塩化カルシウムは水に溶けるので、沈殿しない' },
         hclHot: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
         hclNh3: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
-        h2s: { k: 'none', why: 'カルシウムは硫化物の沈殿をつくらない（教科書 p.96 の硫化物は CuS・PbS・Ag₂S・ZnS・FeS・MnS）' },
+        h2s: { k: 'none', why: 'カルシウムは硫化物の沈殿をつくらない（硫化物として沈殿するのは Cu・Pb・Ag・Zn・Fe・Mn）', ref: '教科書 p.96' },
         nh3: { k: 'none', why: 'カルシウムの水酸化物は、この条件では沈殿として見えない' }
     },
     Na: {
-        hcl: { k: 'none', why: 'ナトリウムの塩はすべて水に溶ける（教科書 p.88）' },
+        hcl: { k: 'none', why: 'ナトリウムの塩はすべて水に溶ける', ref: '教科書 p.88' },
         hclHot: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
         hclNh3: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
-        h2s: { k: 'none', why: 'ナトリウムはいかなる試薬とも沈殿をつくらない（教科書 p.88）' },
-        nh3: { k: 'none', why: 'ナトリウムはいかなる試薬とも沈殿をつくらない（教科書 p.88）' },
-        naoh: { k: 'none', why: 'ナトリウムはいかなる試薬とも沈殿をつくらない（教科書 p.88）' }
+        h2s: { k: 'none', why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        nh3: { k: 'none', why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        naoh: { k: 'none', why: 'ナトリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' }
     },
     K: {
-        hcl: { k: 'none', why: 'カリウムの塩はすべて水に溶ける（教科書 p.88）' },
+        hcl: { k: 'none', why: 'カリウムの塩はすべて水に溶ける', ref: '教科書 p.88' },
         hclHot: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
         hclNh3: { k: 'nopre', why: '希塩酸では沈殿ができないので、溶かす実験そのものが行えない' },
-        h2s: { k: 'none', why: 'カリウムはいかなる試薬とも沈殿をつくらない（教科書 p.88）' },
-        nh3: { k: 'none', why: 'カリウムはいかなる試薬とも沈殿をつくらない（教科書 p.88）' },
-        naoh: { k: 'none', why: 'カリウムはいかなる試薬とも沈殿をつくらない（教科書 p.88）' }
+        h2s: { k: 'none', why: 'カリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        nh3: { k: 'none', why: 'カリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' },
+        naoh: { k: 'none', why: 'カリウムはいかなる試薬とも沈殿をつくらない', ref: '教科書 p.88' }
     },
     Zn: {
         hcl: { k: 'none', why: '塩化亜鉛は水に溶けるので、沈殿しない' },
-        h2s: { k: 'none', why: 'ZnS は中性・塩基性でできる沈殿で、酸性では沈殿しない（教科書 p.96）' },
-        nh3: { k: 'pptGone', c: '白色', toc: '無色', f: 'Zn(OH)₂', to: '[Zn(NH₃)₄]²⁺', why: 'いったん白色の Zn(OH)₂ ができ、過剰のアンモニア水で無色の [Zn(NH₃)₄]²⁺ になって溶ける（教科書 p.90 式(8)・p.67）' },
-        naoh: { k: 'pptGone', c: '白色', toc: '無色', f: 'Zn(OH)₂', to: '[Zn(OH)₄]²⁻', why: 'Zn(OH)₂ は両性の水酸化物で、過剰の水酸化ナトリウムに溶ける（教科書 p.90 式(7)）' }
+        h2s: { k: 'none', why: 'ZnS は中性・塩基性でできる沈殿で、酸性では沈殿しない', ref: '教科書 p.96' },
+        nh3: { k: 'pptGone', c: '白色', toc: '無色', f: 'Zn(OH)₂', to: '[Zn(NH₃)₄]²⁺', why: 'いったん白色の Zn(OH)₂ ができ、過剰のアンモニア水で無色の [Zn(NH₃)₄]²⁺ になって溶ける', ref: '教科書 p.90 式(8)・p.67' },
+        naoh: { k: 'pptGone', c: '白色', toc: '無色', f: 'Zn(OH)₂', to: '[Zn(OH)₄]²⁻', why: 'Zn(OH)₂ は両性の水酸化物で、過剰の水酸化ナトリウムに溶ける', ref: '教科書 p.90 式(7)' }
     },
     Al: {
         hcl: { k: 'none', why: '塩化アルミニウムは水に溶けるので、沈殿しない' },
-        h2s: { k: 'none', why: 'アルミニウムは硫化物の沈殿をつくらない（教科書 p.96 の硫化物にアルミニウムは無い）' },
-        nh3: { k: 'pptKeep', c: '白色', f: 'Al(OH)₃', why: 'Al(OH)₃ は過剰のアンモニア水には溶けない（過剰の NH₃ に溶けるのは Zn(OH)₂・Cu(OH)₂・Ag₂O。教科書 p.90）' },
-        naoh: { k: 'pptGone', c: '白色', toc: '無色', f: 'Al(OH)₃', to: '[Al(OH)₄]⁻', why: 'Al(OH)₃ は両性の水酸化物で、過剰の水酸化ナトリウムに溶ける（教科書 p.90 式(6)）' }
+        h2s: { k: 'none', why: 'アルミニウムは硫化物の沈殿をつくらない', ref: '教科書 p.96' },
+        nh3: { k: 'pptKeep', c: '白色', f: 'Al(OH)₃', why: 'Al(OH)₃ は過剰のアンモニア水には溶けない（過剰の NH₃ に溶けるのは Zn(OH)₂・Cu(OH)₂・Ag₂O だけ）', ref: '教科書 p.90' },
+        naoh: { k: 'pptGone', c: '白色', toc: '無色', f: 'Al(OH)₃', to: '[Al(OH)₄]⁻', why: 'Al(OH)₃ は両性の水酸化物で、過剰の水酸化ナトリウムに溶ける', ref: '教科書 p.90 式(6)' }
     },
     Fe3: {
         hcl: { k: 'none', why: '塩化鉄(III) は水に溶けるので、沈殿しない' },
         // ⚠ ここは「変化なし」ではない。硫化水素が還元剤としてはたらき、
         //   酸化された硫黄が淡黄色の濁りになる（教科書 p.83 図説3 の脚注）。
         //   ★ 設計書 §11-4 の W11。教科書とセミナーの両方に載っている
-        h2s: { k: 'ppt', c: '淡黄色', f: 'S', why: '硫化水素が還元剤としてはたらいて Fe³⁺ が Fe²⁺ になり、酸化された硫黄 S が淡黄色の濁りとして出る（教科書 p.83）' },
-        nh3: { k: 'pptKeep', c: '赤褐色', f: 'FeO(OH)', why: 'FeO(OH) は過剰のアンモニア水にも過剰の水酸化ナトリウムにも溶けない（教科書 p.90）' },
-        naoh: { k: 'pptKeep', c: '赤褐色', f: 'FeO(OH)', why: 'FeO(OH) は過剰のアンモニア水にも過剰の水酸化ナトリウムにも溶けない（教科書 p.90）' }
+        h2s: { k: 'ppt', c: '淡黄色', f: 'S', why: '硫化水素が還元剤としてはたらいて Fe³⁺ が Fe²⁺ になり、酸化された硫黄 S が淡黄色の濁りとして出る', ref: '教科書 p.83' },
+        nh3: { k: 'pptKeep', c: '赤褐色', f: 'FeO(OH)', why: 'FeO(OH) は過剰のアンモニア水にも過剰の水酸化ナトリウムにも溶けない', ref: '教科書 p.90' },
+        naoh: { k: 'pptKeep', c: '赤褐色', f: 'FeO(OH)', why: 'FeO(OH) は過剰のアンモニア水にも過剰の水酸化ナトリウムにも溶けない', ref: '教科書 p.90' }
     }
 };
 
 // ---------------------------------------------------------------
-// 出題（型B）
-//   ⚠ 候補リストの中身が難易度そのもの（§15-4・§16-6）。
-//   ★ 炎色反応が効くか効かないかで、同じ模型のまま難しさが変わる。
+// 出題（型B）—— ★ 問題は「一覧」ではなく「毎回つくる」（2026-08-26・ユーザー決定）
+//
+//   ⚠⚠ **見た目は1問。**「べつの容器にする」を押すたびに、候補リストごと引き直す。
+//   ★ **難易度は学習者が選ぶ。**⚠ **難易度 ＝ 候補リストの型**（§15-4・§16-6）。
+//
+// ⚠⚠ **出題に説明文（title・note）を持たせない**（2026-08-27・ユーザー指摘）。
+//   ★ 「炎色で3つに割れるが、残り2つは沈殿を溶かさないと分かれない」のような一文は、
+//     冗長である以前に**解き筋そのもの**で、先に読ませたら問題が成立しない。
+//   ★ 画面に出すのは**難易度の印と候補の数だけ**（⚠ 試薬の名前を1つも含まない）。
+//   —— tests.js が「出題に解き筋の語が無いこと」を機械で見張っている。
+//
+// ★ 難易度は手で付けない（§2-4）。**門番が数えた値だけ**から出す（`sepDifficulty()`）。
 // ---------------------------------------------------------------
-var SEP_PROBLEMS = [
-    {
-        id: 'b1',
-        title: '4つの中から1つ',
-        note: '炎色反応で3つに割れるが、残り2つは沈殿を溶かしてみないと分かれない。',
-        cands: ['Ag', 'Pb', 'Cu', 'Na'],
-        ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s']
-    },
-    {
-        id: 'b2',
-        title: '炎色が効くもの・効かないもの',
-        note: '候補6つのうち4つは炎色反応で決まる。決まらない2つをどう分けるか。',
-        cands: ['Ag', 'Pb', 'Cu', 'Ca', 'Na', 'K'],
-        ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s', 'nh3']
-    },
-    {
-        id: 'b3',
-        title: '炎色が1つも効かない',
-        note: '候補4つとも炎色反応では色が出ない。沈殿と、その溶け方だけが手がかり。',
-        cands: ['Pb', 'Zn', 'Al', 'Fe3'],
-        ops: ['flame', 'naoh', 'nh3', 'hcl', 'h2s']
-    }
+var SEP_LEVELS = [
+    { id: 'easy', name: 'やさしい', mark: '★☆☆', min: 0, max: 7 },
+    { id: 'normal', name: 'ふつう', mark: '★★☆', min: 8, max: 9 },
+    { id: 'hard', name: 'むずかしい', mark: '★★★', min: 10, max: 999 }
 ];
+
+// 候補の数の範囲。⚠ 3未満は問題にならず、7以上は札の数に対して重い
+var SEP_CAND_MIN = 3, SEP_CAND_MAX = 6;
+
+// ★ 型の鍵の版。⚠ **札の配り方や門番を変えたら、この版を上げること**
+//   （集計を後からするなら、意味の変わった型を同じ鍵で混ぜてはいけない）
+var SEP_KEY_VERSION = 'B1';
 
 // ---------------------------------------------------------------
 // 観察を導く
@@ -441,6 +446,141 @@ function sepAuditProblem(p) {
     };
 }
 
+/**
+ * ★ 難易度。⚠ **画面に出してよいのはこれだけ**（解き筋に触れる語を1つも含まない）。
+ *
+ * ★ 根拠は、門番がすでに数えている値だけから組む（手で難易度を付けない。§2-4）:
+ *   ① **候補の数** … 多いほど絞りきるのに手数が要る
+ *   ② **理想の最短手数** … どの中身でも決まる操作集合の、最小の大きさ（§3-5 の定義）
+ *   ③ ★ **単独の1手では決まらない候補の数** … ⚠ **「どれか1枚で当たる」で済まない候補が何個あるか**
+ *      （＝ `byIon` の最小集合が2手以上のもの。★ 死んでいる札が混ざるほど、ここが増える）
+ *
+ * ⚠ ③を入れないと、候補の数が同じ b1 と b3 が同じ難易度になる（実測）。
+ */
+function sepDifficulty(p) {
+    var a = sepAuditProblem(p);
+    var hard = p.cands.filter(function (x) { return a.byIon[x].size >= 2; }).length;
+    var score = p.cands.length + a.shortest + hard;
+    // ★ 段の切り方は SEP_LEVELS の1か所だけに持つ（⚠ ここで二重に持たない）
+    var lid = sepLevelOf(score);
+    var idx = 0;
+    SEP_LEVELS.forEach(function (l, i) { if (l.id === lid) idx = i; });
+    return {
+        level: lid,
+        name: SEP_LEVELS[idx].name,
+        mark: SEP_LEVELS[idx].mark,
+        stars: idx + 1,
+        score: score,
+        cands: p.cands.length,
+        shortest: a.shortest,
+        hard: hard
+    };
+}
+
+/** そのイオンの組に、配れるだけ札を配る。⚠ 結果を宣言していない札は配らない（§4-1） */
+function sepDealFor(cands) {
+    return Object.keys(SEP_OPS).filter(function (o) {
+        return cands.every(function (c) { return !!sepObserve(c, o); });
+    });
+}
+
+/** 難易度の段（`sepDifficulty` の score から決まる） */
+function sepLevelOf(score) {
+    for (var i = 0; i < SEP_LEVELS.length; i++) {
+        if (score >= SEP_LEVELS[i].min && score <= SEP_LEVELS[i].max) return SEP_LEVELS[i].id;
+    }
+    return SEP_LEVELS[SEP_LEVELS.length - 1].id;
+}
+
+// ---------------------------------------------------------------
+// 抽選の母集団
+//   ⚠ **起動時には作らない**（§2-4 の地雷）。★ 最初に1問引くときに1度だけ作って持ち回る。
+//   ★ 費用は実測 44ms（イオン9・札7・候補3〜6個 ＝ 420 組の門番）。
+// ---------------------------------------------------------------
+var _sepPools = null;
+function sepPools() {
+    if (_sepPools) return _sepPools;
+    var ions = Object.keys(SEP_IONS);
+    var pools = {};
+    SEP_LEVELS.forEach(function (l) { pools[l.id] = []; });
+    sepSubsets(ions).forEach(function (C) {
+        if (C.length < SEP_CAND_MIN || C.length > SEP_CAND_MAX) return;
+        var ops = sepDealFor(C);
+        if (!ops.length) return;
+        var p = { id: 'gen', cands: C, ops: ops };
+        var a = sepAuditProblem(p);
+        if (!a.ok) return;                       // ⚠ 門番を通らない組は母集団に入れない
+        var d = sepDifficulty(p);
+        pools[sepLevelOf(d.score)].push({ cands: C, ops: ops, score: d.score });
+    });
+    _sepPools = pools;
+    return pools;
+}
+
+/**
+ * ★ 型の鍵。⚠ **遊ぶたびに変わらないもの**（＝ 集計できる単位）。
+ * ⚠⚠ 中身のイオン（truth）は入れない —— 同じ型の別の出題を、同じ鍵で数えたいから。
+ */
+function sepTypeKey(levelId, cands) {
+    return SEP_KEY_VERSION + '|' + levelId + '|' + cands.slice().sort().join('-');
+}
+
+/**
+ * 1問つくる。
+ *   opts.avoid … ⚠ **直前に出した型の鍵**。★ 等確率で引くと解き筋が2回3回と続くので、それだけ避ける
+ *   opts.rand  … 乱数（テストが固定するための口）
+ *   opts.cands / opts.ops / opts.truth … ⚠ **テストが出題を固定するための口**（画面は使わない）
+ */
+function sepMakeProblem(levelId, opts) {
+    opts = opts || {};
+    var rand = opts.rand || Math.random;
+    var cands, ops;
+    if (opts.cands) {
+        cands = opts.cands.slice();
+        ops = opts.ops ? opts.ops.slice() : sepDealFor(cands);
+    } else {
+        var pool = sepPools()[levelId] || [];
+        if (!pool.length) return null;
+        var pick = pool;
+        if (opts.avoid && pool.length > 1) {
+            pick = pool.filter(function (e) {
+                return sepTypeKey(levelId, e.cands) !== opts.avoid;
+            });
+            if (!pick.length) pick = pool;
+        }
+        var e = pick[Math.floor(rand() * pick.length)];
+        cands = e.cands.slice();
+        ops = e.ops.slice();
+    }
+    var truth = opts.truth || cands[Math.floor(rand() * cands.length)];
+    return {
+        id: sepTypeKey(levelId, cands),      // ★ 型の鍵 ＝ そのまま出題の id
+        key: sepTypeKey(levelId, cands),
+        level: levelId,
+        cands: cands,
+        ops: ops,
+        truth: truth
+    };
+}
+
+/**
+ * ★ 記録の形（⚠ **持たせるだけ。送信も保存もしない**）。
+ *   ★ 集計できる安定した単位は「型」であって、個々の出題ではない
+ *     （毎回つくる形にしたので、出題そのものは毎回別物）。
+ *   ⚠ 中身のイオン（truth）も残す —— **同じ型でも、入っていたイオンで難しさが変わる**。
+ */
+function sepRecord(problem, extra) {
+    var r = {
+        key: problem.key,
+        level: problem.level,
+        cands: problem.cands.slice(),
+        ops: problem.ops.slice(),
+        truth: problem.truth
+    };
+    if (extra) Object.keys(extra).forEach(function (k) { r[k] = extra[k]; });
+    return r;
+}
+
 // ---------------------------------------------------------------
 // 答え合わせ
 //   ★ 文面の向き（§3-3）: 「あなたは間違えました」ではなく「あなたの操作でこうなりました」。
@@ -497,9 +637,13 @@ function sepGrade(p, truth, picked, history) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         SEP_COLORS: SEP_COLORS, SEP_COMPLEXES: SEP_COMPLEXES, SEP_IONS: SEP_IONS,
-        SEP_OPS: SEP_OPS, SEP_TABLE: SEP_TABLE, SEP_PROBLEMS: SEP_PROBLEMS,
+        SEP_OPS: SEP_OPS, SEP_TABLE: SEP_TABLE, SEP_LEVELS: SEP_LEVELS,
+        SEP_FLAME_LIMIT_REF: SEP_FLAME_LIMIT_REF, SEP_KEY_VERSION: SEP_KEY_VERSION,
         sepObserve: sepObserve, sepObsKey: sepObsKey, sepObsText: sepObsText,
         sepObsColor: sepObsColor, sepAlive: sepAlive, sepSplit: sepSplit,
-        sepSeparates: sepSeparates, sepAuditProblem: sepAuditProblem, sepGrade: sepGrade
+        sepSeparates: sepSeparates, sepAuditProblem: sepAuditProblem,
+        sepDifficulty: sepDifficulty, sepGrade: sepGrade, sepDealFor: sepDealFor,
+        sepLevelOf: sepLevelOf, sepPools: sepPools, sepTypeKey: sepTypeKey,
+        sepMakeProblem: sepMakeProblem, sepRecord: sepRecord
     };
 }

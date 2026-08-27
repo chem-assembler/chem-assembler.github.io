@@ -38,18 +38,24 @@
     </div>
 
     <h1>イオンをつきとめる</h1>
+    <!-- ⚠ 導入は1行。★ 画面から読み取れないのは「1種類だけ」の1点だけなので、それだけ残す
+         （順番が自由なこと・結果が下に残ることは、1手押せば分かる） -->
     <p class="lead">
-        容器の中に入っている金属イオンは <strong>1種類だけ</strong>です。<br>
-        操作の札を押して結果を見て、どれか1つに決められたと思ったら「答える」を押してください。
-        <span class="lead-sub">札を押す順番に決まりはありません。押した結果は下に残ります。</span>
+        容器に入っている金属イオンは <strong>1種類だけ</strong>です。候補の中から言い当ててください。
     </p>
 
-    <div id="prob-tabs" class="tabs" role="tablist"></div>
+    <!-- ★ 問題の一覧は持たない。⚠ 押すたびに容器ごと引き直す（2026-08-26・ユーザー決定） -->
+    <section class="panel" id="panel-level">
+        <h2>難易度</h2>
+        <div id="levels" class="tabs"></div>
+        <button id="btn-new" class="secondary">べつの容器にする</button>
+    </section>
 
+    <!-- ⚠⚠ ここに出題の説明文を書かないこと。★ 解き筋を先に配ることになる（2026-08-27）。
+         出してよいのは難易度の印と候補の数だけ（tests.js が見張っている） -->
     <section class="panel" id="panel-problem">
-        <h2 id="prob-title">問題</h2>
+        <h2 id="prob-title">この容器</h2>
         <p class="note" id="prob-note"></p>
-        <p class="note">この容器に入っているのは、次のうちの <strong>どれか1つ</strong>です。</p>
         <div id="cand-list" class="chips"></div>
     </section>
 
@@ -69,7 +75,7 @@
         <div id="answer-choices" class="chips hidden"></div>
         <div id="result" class="result hidden"></div>
         <div id="after" class="after hidden">
-            <button id="btn-again" class="secondary">別の試料でもう一度</button>
+            <button id="btn-again" class="secondary">次の容器へ</button>
         </div>
     </section>
 

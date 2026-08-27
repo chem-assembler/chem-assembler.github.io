@@ -17,10 +17,15 @@
     'use strict';
 
     var state = {
-        problem: null,   // いま解いている問題
+        level: 'easy',   // 学習者が選んだ難易度
+        problem: null,   // いま解いている問題（★ 毎回つくる。一覧は持たない）
         truth: null,     // 実際に入っているイオン（⚠ 答えるまで画面に出さない）
         history: [],     // [{op, obs}] ★ 押した順に積む。上書きしない
-        answered: false
+        answered: false,
+        lastKey: null,   // ★ 直前に出した型の鍵。⚠ 続けて同じ型を出さないためだけに使う
+        // ★ 記録の器（⚠ **持つだけ。送信も保存もしない**）。
+        //   集計できる安定した単位は「型」であって、毎回つくる出題そのものではない
+        record: null
     };
 
     var $ = function (id) { return document.getElementById(id); };
@@ -103,24 +108,25 @@
     // ---------------------------------------------------------------
     // 描画
     // ---------------------------------------------------------------
-    function renderTabs() {
-        var box = $('prob-tabs');
+    /** 難易度は学習者が選ぶ。⚠ 段の名前と印より多くを書かない（解き筋に触れない） */
+    function renderLevels() {
+        var box = $('levels');
         box.textContent = '';
-        SEP_PROBLEMS.forEach(function (p, i) {
+        SEP_LEVELS.forEach(function (l) {
             var b = document.createElement('button');
             b.type = 'button';
-            b.textContent = (i + 1) + '. ' + p.title;
-            b.className = (state.problem && state.problem.id === p.id) ? 'active' : '';
-            b.setAttribute('data-prob', p.id);
-            b.addEventListener('click', function () { start(p.id); });
+            b.textContent = l.name + '　' + l.mark;
+            b.className = (state.level === l.id) ? 'active' : '';
+            b.setAttribute('data-level', l.id);
+            b.addEventListener('click', function () { start(l.id); });
             box.appendChild(b);
         });
     }
 
     function renderProblem() {
         var p = state.problem;
-        $('prob-title').textContent = p.title;
-        $('prob-note').textContent = p.note;
+        // ⚠ ここに解き筋を書かない。出してよいのは難易度の印と候補の数だけ
+        $('prob-note').textContent = levelOf(state.level).mark + '　候補 ' + p.cands.length;
         var box = $('cand-list');
         box.textContent = '';
         p.cands.forEach(function (c) {
@@ -190,8 +196,12 @@
         $('log-count').textContent = state.history.length ? '（' + state.history.length + '手）' : '';
     }
 
+    function levelOf(id) {
+        return SEP_LEVELS.filter(function (l) { return l.id === id; })[0] || SEP_LEVELS[0];
+    }
+
     function renderAll() {
-        renderTabs();
+        renderLevels();
         renderProblem();
         renderOps();
         renderLog();
@@ -258,6 +268,12 @@
         if (state.answered) return;
         state.answered = true;
         var g = sepGrade(state.problem, state.truth, pick, state.history);
+        // ★ 記録に結果を足す。⚠ **持つだけ。送信も保存もしない**
+        //   （★ 集計するなら単位は `key`＝型。⚠ 出題そのものは毎回別物になる）
+        state.record = sepRecord(state.problem, {
+            picked: pick, correct: g.correct, verdict: g.verdict,
+            steps: state.history.map(function (h) { return h.op; })
+        });
         var box = $('result');
         box.textContent = '';
 
@@ -322,14 +338,16 @@
         renderOps();
     }
 
-    /** 炎色反応の解説。★ 色名が資料で割れるものは、割れていることごと伝える */
+    /** 炎色反応の解説。★ 色名が資料で割れるものは、割れていることごと伝える
+        ⚠ 本の名前とページは出さない（教科書は1社ではないので、手元と合わない）。
+          出典は模型の `ref` に持っている */
     function flameWhy(ionId) {
         var f = SEP_IONS[ionId].flame;
         if (!f) {
             return '炎色反応で色が出るのは Li・Na・K・Ca・Sr・Ba・Cu の7元素だけで、'
-                + ionName(ionId) + ' は色を出しません（教科書 化学基礎 p.21 表3）。';
+                + ionName(ionId) + ' は色を出しません。';
         }
-        var s = ionName(ionId) + ' の炎色は' + f.names[0] + 'です（教科書 化学 p.88 図1）。';
+        var s = ionName(ionId) + ' の炎色は' + f.names[0] + 'です。';
         if (f.names.length > 1) {
             s += '資料によっては「' + f.names.slice(1).join('」「') + '」とも書かれます。';
         }
@@ -337,26 +355,36 @@
     }
 
     // ---------------------------------------------------------------
-    // 始める
+    // 始める —— ★ 問題は毎回つくる（一覧は持たない）
     // ---------------------------------------------------------------
-    function pickTruth(p) {
-        return p.cands[Math.floor(Math.random() * p.cands.length)];
-    }
 
-    /** @param truthId 省略時はランダム（回帰テストは中身を指定して呼ぶ） */
-    function start(problemId, truthId) {
-        var p = SEP_PROBLEMS.filter(function (x) { return x.id === problemId; })[0] || SEP_PROBLEMS[0];
+    /**
+     * @param levelId 難易度（省略時はいまの段）
+     * @param opts    ⚠ **テストが出題を固定するための口**（cands / ops / truth / rand）。
+     *                画面からは渡さない
+     */
+    function start(levelId, opts) {
+        state.level = levelId || state.level;
+        opts = opts || {};
+        // ★ 直前と同じ型は続けて出さない（⚠ 等確率で引くと解き筋が2回3回と続く）
+        if (!opts.cands && state.lastKey) opts.avoid = state.lastKey;
+        var p = sepMakeProblem(state.level, opts);
+        if (!p) return;                       // ⚠ 母集団が空（＝ 段の切り方か候補の設計ミス）
         state.problem = p;
-        state.truth = truthId || pickTruth(p);
+        state.truth = p.truth;
+        state.lastKey = p.key;
         state.history = [];
         state.answered = false;
+        // ★ 記録の器をここで作る。⚠ **送信も保存もしない**（外へ出すかはユーザーの判断）
+        state.record = sepRecord(p);
         renderAll();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         $('btn-answer').addEventListener('click', openAnswer);
-        $('btn-again').addEventListener('click', function () { start(state.problem.id); });
-        start(SEP_PROBLEMS[0].id);
+        $('btn-new').addEventListener('click', function () { start(state.level); });
+        $('btn-again').addEventListener('click', function () { start(state.level); });
+        start('easy');
     });
 
     // 回帰テスト（tests.js）が iframe の中から駆動するための口。
