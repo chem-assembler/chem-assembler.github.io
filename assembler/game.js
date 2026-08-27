@@ -8559,6 +8559,14 @@ class Game {
      * ⚠ **名前が引けない断片は触らない**（`standaloneDrawingOf` が `null` を返す）。
      * ⚠ **立体が変わる描き直しは1つも採らない**（写しの上で指紋を突き合わせてから本物へ移す）。
      *
+     * ★ `opt.only` … **この反応で生まれた原子ID**（配列か Set）。⚠ **加水分解では必ず渡すこと。**
+     *   これを渡すと、その原子を含む断片**だけ**を描き直す。
+     *   ⚠⚠ **渡さないとキャンバス上の全部の分子を描き直す**（v1466 までがそうだった）——
+     *   ユーザーが自分で ⇅／⇄／⟳ で裏返して置いておいた**となりの別分子**まで
+     *   「単独で描くときの図」に戻ってしまう（実測: となりの β-D-グルコースが最大 229px 動き、
+     *   断り文にも「切り離してできた…β-D-グルコース」と、切ってもいない分子の名前が出た）。
+     *   ★ この関数の目的は「**この加水分解の前後**の図を対応させる」ことなので、
+     *   相手は**その反応で切り離された断片**に限られる。
      * `opt.escape(mol, ids)` … 逃がし方（`{dx,dy}` か `null` を返す）。省くと逃がさない。
      * `opt.overlaps(mol, ids)` … 重なっているか（省くと横方向の押し広げをしない）。
      *   ⚠ **`escape` と同じ物差しのものを渡すこと**（別々に持つと、並べた図を逃がす側が飛ばす）。
@@ -8574,7 +8582,12 @@ class Game {
     redrawProductsAsStandalone(opt) {
         opt = opt || {};
         const plans = [];
+        // ★ 描き直す相手は「この反応で生まれた断片」だけ（`opt.only`）。
+        //   ⚠ 省かれたときだけ従来どおり全部を見る（既存の呼び出しを壊さないため）が、
+        //     加水分解の経路は必ず渡す ＝ となりの別分子には1ピクセルも触らない
+        const only = opt.only ? new Set(opt.only) : null;
         this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).forEach(part => {
+            if (only && !part.atoms.some(a => only.has(a.id))) return;
             const drawing = this.standaloneDrawingOf(part);
             if (!drawing) return;
             const print0 = this.haworthStereoFingerprint(part);
