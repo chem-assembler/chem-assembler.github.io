@@ -24746,7 +24746,14 @@
         // ④ 生成物予測モードを挟んでも答案は失われない（退避場所が1本しかない＝入れ子の罠）
         rp.openById('ethene_br2');
         rp.startPrediction();
-        assert(rp.prediction && g.userMolecule.atoms.length === 0, '予測モードでキャンバスが空にならない');
+        /* ⚠ **v1466 から予測のキャンバスは空ではない**（§14。反応する分子＝別の基質が載る）。
+           ここで見たいのは「**練習の答案が予測に持ち越されない**」ことなので、
+           空かどうかではなく**答案そのものではないこと**を見る（退避は1本＝入れ子の罠の検査）。 */
+        assert(rp.prediction, '予測モードに入れない');
+        assert(g.userMolecule !== rp.savedPuzzleMolecule,
+            '予測モードのキャンバスが練習の答案そのもの（退避が二重になっている）');
+        assert(rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            `退避された答案が ${rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length} 原子（${atomsBefore} を期待）`);
         g.userMolecule.addAtom('C', 300, 300); // 予測の作りかけ
         rp.endPrediction(false);
         assert(!rp.prediction && rp.ownsCanvas(), '予測モードを抜けてビューアに戻らない');
@@ -26904,6 +26911,299 @@
             '一覧の押しものから機構を見て戻ると「↩ 反応前に戻す」が出ない（v1423 の回帰）');
 
         c.reset();
+    });
+
+    test('RX49: ★否定対照 — スイッチは反応を選ばない（人の代わりに先頭を始めない／出口としては生きている）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const check = D.getElementById('check-reaction-mode');
+        const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
+        const studyOpen = () => !D.getElementById('study-modal').classList.contains('hidden');
+        const list = D.getElementById('reaction-list');
+
+        /* ★ ユーザー実機報告（2026-08-26）「反応機構ビューアを選択すると、反応の選択をすっとばす」。
+           実測（:8221・Playwright）では、スイッチを押した瞬間に active=true / ethene_br2 /
+           帯=出る / メニュー=閉じる ＝ **14件の一覧を1件も見せずに先頭が始まっていた**。
+           原因は `enter(parseInt(selectEl.value) || 0)` で、`#select-reaction` の初期値 "0" を
+           「人が選んだ 1件目」として扱っていたこと。
+           ⚠ この検査を赤くする壊し方 ＝ change の checked 側で `enter(...)` を呼び直すこと。 */
+
+        // 人と同じ入口（📚 学習 → ⚗️ アコーディオン）。**まだ何も選んでいない**
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+        assert(!rp.active && check.checked === false && !strip(),
+            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()}）`);
+        assert(list && list.querySelectorAll('button[data-rx-index]').length === rp.reactions.length,
+            '一覧の札がそろっていない（＝「1件しか無いから飛ばす」かどうかの区別がつかない）');
+
+        // ① スイッチを入れても**反応は始まらない**
+        check.checked = true;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active, 'スイッチだけで反応が始まった（選択をすっとばしている）');
+        assert(rp.currentReaction === null || !rp.canvasBorrowed,
+            'スイッチだけでキャンバスを取り上げている');
+        assert(!strip(), 'スイッチだけで帯が出た（反応が決まっていないのに操作面が出る）');
+        assert(check.checked === false, 'スイッチが入ったまま（active=false なのに入って見える＝状態が2つに割れる）');
+        assert(studyOpen(), '学習モーダルが閉じた（一覧に戻れない＝報告そのものの症状）');
+
+        // ② 代わりに「一覧から選べ」と促し、その札が**一覧の中で見えている**
+        const hint = list.querySelector('#rx-pick-hint');
+        assert(hint && !hint.classList.contains('hidden'), '一覧へ促す案内が出ていない');
+        assert(hint.textContent.includes('一覧'), `案内が一覧を指していない（${hint.textContent}）`);
+        assert(list.firstChild === hint, '案内が一覧の先頭にいない（札の下だと選び終えるまで目に入らない）');
+        const hb = hint.getBoundingClientRect();
+        assert(hb.width > 0 && hb.height > 0, '案内が描画されていない');
+
+        // ③ そのうえで一覧から選べば、今までどおり始まる（§9 の入口は壊していない）
+        rxPickFromList(c, 'esterification');
+        assert(rp.active && rp.currentReaction.id === 'esterification',
+            `一覧から選んでも始まらない（${rp.currentReaction && rp.currentReaction.id}）`);
+        assert(check.checked === true, 'スイッチの表示が追従しない（§9）');
+        assert(strip(), '帯が出ない');
+        assert(hint.classList.contains('hidden'), '選んだのに促しが残っている');
+
+        // ④ ★出口としては生きている（スイッチを外すと止まり、退避が返る）
+        check.checked = false;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active && !strip() && !rp.canvasBorrowed,
+            `スイッチで止まらない（active=${rp.active} / 帯=${strip()} / 借り=${rp.canvasBorrowed}）`);
+
+        g.setStudyOpen(false);
+        g.setMode('puzzle');
+    });
+
+    test('RX50: ★否定対照 — 予測の判定は「読める場所」に出る（14件で正解/不正解を撃ち分ける）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const toast = D.getElementById('canvas-toast');
+        assert(toast, 'キャンバス内の字幕 #canvas-toast が無い');
+
+        /* ★ ユーザー実機報告（2026-08-26）「生成物予測　判定が機能してない可能性」。
+           実測（:8221・Playwright）では**判定そのものは14件すべて正しかった**。
+           壊れていたのは出し先で、`#verify-result` に直に書いていた ―― あれは第5段で
+           `#panel-legacy`（aria-hidden）の中の隠しの器になっており、実測の矩形は
+           1280x900 でも 390x844 でも `0,0 26x626` ＝ 左上の 26px 幅の縦帯。
+           ⚠ この検査を赤くする壊し方 ＝ showToast をやめて #verify-result へ直に書き戻すこと。 */
+
+        // 最終状態から主生成物を **judge 側とは独立に** 組み直す（buildMainProductTarget を使わない）
+        const productOf = (rx) => {
+            const st = rx.states[rx.states.length - 1];
+            const heavy = st.atoms.map((a, i) => i).filter(i => st.atoms[i].element !== 'H');
+            const adj = new Map(heavy.map(i => [i, []]));
+            st.bonds.forEach(b => {
+                if (adj.has(b.atom1Index) && adj.has(b.atom2Index)) {
+                    adj.get(b.atom1Index).push(b.atom2Index);
+                    adj.get(b.atom2Index).push(b.atom1Index);
+                }
+            });
+            const seen = new Set(), comps = [];
+            heavy.forEach(i => {
+                if (seen.has(i)) return;
+                const comp = [], stack = [i];
+                while (stack.length) {
+                    const k = stack.pop();
+                    if (seen.has(k)) continue;
+                    seen.add(k); comp.push(k);
+                    adj.get(k).forEach(n => { if (!seen.has(n)) stack.push(n); });
+                }
+                comps.push(comp);
+            });
+            comps.sort((a, b) => b.length - a.length);
+            const keep = new Set(comps[0] || []);
+            const m = new W.Molecule(), map = new Map();
+            keep.forEach(i => { const a = st.atoms[i]; map.set(i, m.addAtom(a.element, a.x, a.y).id); });
+            st.bonds.forEach(b => {
+                if (map.has(b.atom1Index) && map.has(b.atom2Index)) {
+                    m.addBond(map.get(b.atom1Index), map.get(b.atom2Index), b.type);
+                }
+            });
+            return m;
+        };
+        const clearToast = () => { toast.textContent = ''; toast.className = 'hidden'; };
+        const judgeWith = (mol) => { clearToast(); g.userMolecule = mol; rp.judgePrediction(); return toast.className; };
+
+        g.setMode('learn');
+
+        // ★ここが本命 ―― 結果が**読める大きさで画面に出ている**。
+        //   14件の撃ち分けより**先**に見る（判定は元から正しく、壊れていたのは出し先なので、
+        //   撃ち分けの assert が先だと「常に不正解」という誤った診断で赤くなる）
+        rp.enter(0); rp.startPrediction();
+        clearToast();
+        const w0 = new W.Molecule(); w0.addAtom('C', 100, 100);
+        g.userMolecule = w0; rp.judgePrediction();
+        assert(toast.textContent.includes('不一致'),
+            `判定結果がキャンバス内の字幕に出ていない（${toast.textContent || '（空）'}）` +
+            ' ―― #verify-result は #panel-legacy の中の隠しの器（実測 26x626 の縦帯）');
+        assert(toast.className === 'error', `字幕の種別が error でない（${toast.className}）`);
+        {
+            const r = toast.getBoundingClientRect();
+            assert(r.width > 120 && r.height > 12,
+                `判定結果が読める大きさで出ていない（${Math.round(r.width)}x${Math.round(r.height)}）`);
+            assert(r.top < W.innerHeight && r.bottom > 0 && r.left < W.innerWidth && r.right > 0,
+                `判定結果が画面の外に出ている（${Math.round(r.left)},${Math.round(r.top)}）`);
+        }
+        rp.endPrediction(false);
+
+        // ⚠ **正解は出題の形で変わる**（v1466・§14）。`practice` を持つ機構は
+        //   「別の分子に同じ反応を起こした生成物」が正解で、代表例の主生成物ではない。
+        //   持たない機構だけが従来どおり（最終状態の主生成物）
+        const copyOf = (m) => {
+            const out = new W.Molecule(), map = new Map();
+            m.atoms.forEach(a => map.set(a.id, out.addAtom(a.element, a.x, a.y).id));
+            m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            return out;
+        };
+        const rightAnswer = (rx) => (rp.practiceTargets && rp.practiceTargets.length)
+            ? copyOf(rp.practiceTargets[0]) : productOf(rx);
+
+        rp.reactions.forEach((rx, i) => {
+            // ① 正解を入れたら success
+            rp.enter(i); rp.startPrediction();
+            assert(judgeWith(rightAnswer(rx)) === 'success',
+                `${rx.id}: 正解を入れたのに正解にならない（判定が常に不正解）`);
+            assert(!rp.prediction, `${rx.id}: 正解したのに予測モードが終わらない`);
+
+            // ② わざと違うもの（炭素1個）を入れたら error
+            rp.enter(i); rp.startPrediction();
+            const wrong = new W.Molecule(); wrong.addAtom('C', 100, 100);
+            assert(judgeWith(wrong) === 'error',
+                `${rx.id}: 明らかな誤答が正解になる（判定が常に正解＝そもそも判定していない）`);
+
+            // ③ 空のままでも error（「何もしないで押したら通る」を塞ぐ）
+            rp.enter(i); rp.startPrediction();
+            assert(judgeWith(new W.Molecule()) === 'error',
+                `${rx.id}: 空のキャンバスで判定が通る`);
+            rp.endPrediction(false);
+        });
+        rp.exit();
+        g.setMode('puzzle');
+    });
+
+    test('RX51: 予測は「同じ反応を別の分子に」——反応する分子がキャンバスに出て、答えは見た代表例ではない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const toast = D.getElementById('canvas-toast');
+        const cap = D.getElementById('reaction-caption');
+        g.setMode('learn');
+
+        /* ★ ユーザー実機報告（2026-08-26）:
+             「直前で反応の代表例をみているので、やるなら、同じ反応を別な分子が起こしたときに
+               どうなるかを考えさせる」「反応する分子はキャンバスに表示する」
+           ⚠ この検査を赤くする壊し方 ＝ startPrediction を「キャンバスを空にする」に戻すこと
+             （②④が落ちる）／`practice` を無視して代表例の生成物を正解にすること（⑤が落ちる）。 */
+
+        const withPractice = rp.reactions.filter(r => r.practice);
+        assert(withPractice.length >= 11,
+            `練習問題を持つ機構が ${withPractice.length} 件（11件以上を期待）`);
+
+        const clearToast = () => { toast.className = 'hidden'; toast.textContent = ''; };
+        const copyOf = (m) => {
+            const out = new W.Molecule(), map = new Map();
+            m.atoms.forEach(a => map.set(a.id, out.addAtom(a.element, a.x, a.y).id));
+            m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            return out;
+        };
+        // 作図パレットに実在する元素だけで答えが書けるか（Na のように置けない元素を要求しない）
+        const palette = new Set([...D.querySelectorAll('[data-atom]')].map(b => b.dataset.atom));
+        assert(palette.size >= 5, `パレットの元素が読めない（${[...palette].join(',')}）`);
+
+        rp.reactions.forEach((rx, i) => {
+            rp.enter(i);
+            const spec = rp.practiceSpec();
+
+            // ① 練習問題を持たない機構では 🎯 予測 を出さない
+            //    （出すと「直前に見た答えの復唱」に戻る＝問いとして成立しない）
+            if (!spec) {
+                assert(rp.btnPredict.classList.contains('hidden'),
+                    `${rx.id}: 練習問題が無いのに 🎯 予測 が出ている（見た答えの復唱になる）`);
+                return;
+            }
+            assert(!rp.btnPredict.classList.contains('hidden'), `${rx.id}: 🎯 予測 が出ていない`);
+
+            rp.startPrediction();
+            assert(rp.prediction, `${rx.id}: 予測モードに入れない`);
+
+            // ② ★反応する分子がキャンバスに出ている（空にしない）
+            const mol = g.userMolecule;
+            assert(mol.atoms.filter(a => a.element !== 'H').length >= 2,
+                `${rx.id}: キャンバスが空のまま（反応する分子が表示されていない）`);
+            assert(g.atomsGroup.childElementCount > 0 && g.bondsGroup.childElementCount > 0,
+                `${rx.id}: 分子が描画されていない（原子 ${g.atomsGroup.childElementCount} / 結合 ${g.bondsGroup.childElementCount}）`);
+
+            // ③ その分子が**代表例とは別の分子**（同じものを出したら問いにならない）
+            const repro = rp.buildMainProductTarget();
+            const start = rx.states[0];
+            const startMol = new W.Molecule();
+            const added = start.atoms.map(a => startMol.addAtom(a.element, a.x, a.y));
+            start.bonds.forEach(b => startMol.addBond(added[b.atom1Index].id, added[b.atom2Index].id, b.type));
+            assert(!W.verifyMolecule(rp.mainComponent(mol), rp.mainComponent(startMol)),
+                `${rx.id}: キャンバスに出ているのが代表例と同じ分子`);
+
+            // ④ 案内文に**その別の分子の名前**が出る（お題＝反応名は先頭のまま・RX32）
+            const subj = cap.querySelector('.rx-predict-subject');
+            assert(subj && cap.firstChild === subj, `${rx.id}: お題が案内文の先頭にいない`);
+            (spec.substrate || []).forEach(n => {
+                assert(cap.textContent.includes(n), `${rx.id}: 案内文に別の分子「${n}」が出ていない`);
+            });
+
+            // ⑤ ★正解は「代表例の主生成物」ではない（見た答えを書いたら不正解）
+            clearToast();
+            g.userMolecule = copyOf(repro);
+            rp.judgePrediction();
+            assert(toast.className === 'error',
+                `${rx.id}: 代表例の主生成物を書いたら正解になった（さっき見せた答えを聞いている）`);
+
+            // ⑥ 正解の集合が1つ以上あり、どれもパレットで書ける元素だけでできている
+            rp.enter(i); rp.startPrediction();
+            assert(rp.practiceTargets.length >= 1, `${rx.id}: 正解が1つも作れていない`);
+            rp.practiceTargets.forEach(t => {
+                t.atoms.forEach(a => {
+                    assert(a.element === 'H' || palette.has(a.element),
+                        `${rx.id}: 正解に「${a.element}」が要るのに作図パレットに無い（答えられない問題）`);
+                });
+            });
+
+            // ⑦ 正解を入れたら正解・何もしないで押したら不正解
+            clearToast();
+            g.userMolecule = copyOf(rp.practiceTargets[0]);
+            rp.judgePrediction();
+            assert(toast.className === 'success',
+                `${rx.id}: 正解を入れたのに正解にならない（${rp.practiceTargets.length}通り中の1つめ）`);
+
+            rp.enter(i); rp.startPrediction();
+            clearToast();
+            rp.judgePrediction(); // 基質を置いたまま押す
+            assert(toast.className === 'error', `${rx.id}: 何も描き変えずに押しても正解になる`);
+            rp.endPrediction(false);
+        });
+
+        // ⑧ 芳香族置換は o と p の**両方**が正解（片方しか認めないと正しい答えが不正解になる）
+        rp.enter(rp.reactions.findIndex(r => r.id === 'benzene_nitration'));
+        rp.startPrediction();
+        assert(rp.practiceTargets.length === 2,
+            `トルエンのニトロ化の正解が ${rp.practiceTargets.length} 通り（o と p の2通りを期待）`);
+        const names = rp.practiceTargets.map(t => g.lookupCompoundName(t)).sort().join(',');
+        assert(names === 'o-ニトロトルエン,p-ニトロトルエン',
+            `主生成物の位置が違う（${names}）＝ メタを混ぜている／配向性で絞れていない`);
+        rp.practiceTargets.forEach(t => {
+            const cp = new W.Molecule(), map = new Map();
+            t.atoms.forEach(a => map.set(a.id, cp.addAtom(a.element, a.x, a.y).id));
+            t.bonds.forEach(b => cp.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            clearToast();
+            g.userMolecule = cp;
+            rp.judgePrediction();
+            assert(toast.className === 'success',
+                `${g.lookupCompoundName(t)} が正解にならない（正解は集合で持つこと）`);
+            rp.enter(rp.reactions.findIndex(r => r.id === 'benzene_nitration'));
+            rp.startPrediction();
+        });
+        rp.endPrediction(false);
+        rp.exit();
+        g.setMode('puzzle');
     });
 
     /* ===== 反応で作る C=O の向き（CO1・検品レビュー C-7） =====
@@ -30984,17 +31284,19 @@
         g.setMode('learn');
         assert(strip.classList.contains('hidden'), '学習で何もしていないのに作業帯が出ている');
 
-        // **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → 機構モード ON。
-        // 直に rp.enter() を呼ぶと「Study が閉じる」配線を素通りしてしまう
+        /* **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → **一覧の1件を押す**。
+           直に `rp.enter()` を呼ぶと「Study が閉じる」配線を素通りしてしまう。
+           ⚠ **スイッチでは始まらない**（v1466・§12。スイッチが人の代わりに先頭を選んでいたのを
+              やめた ＝ 入口は §9〜§11 のとおり一覧1本）。ここも一覧から入る。 */
         D.querySelector('.canvas-header .mode-tab[data-mode="learn"]').click();
         const study = D.getElementById('study-modal');
         assert(!study.classList.contains('hidden'), '📚 タイルで Study モーダルが開かない');
         D.getElementById('reaction-box').open = true;
-        const chk = rp.checkMode;
-        chk.checked = true;
-        chk.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        const first = D.querySelector('#reaction-list button[data-rx-index]');
+        assert(first, '一覧の札が無い');
+        first.click();
         try {
-            assert(rp.active, '機構モードのスイッチで再生が始まらない');
+            assert(rp.active, '一覧から選んでも再生が始まらない');
             assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
                 '反応機構モードに入っても作業帯が出ない');
             // ⓪ **再生中に Study モーダルが被っていない**（この段の核心。§6-2 の「バトンを渡す」）
