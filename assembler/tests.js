@@ -8208,7 +8208,13 @@
         assert(!sv.picking, '選択モードが解除されない');
         assert(!c.D.getElementById('stereo-modal').classList.contains('hidden'), 'モーダルが開かない');
         const cap = c.D.getElementById('stereo-caption').textContent;
-        assert(cap.includes('109.5'), '結合角109.5°の説明がない');
+        // ★ v1472: 109.5°・正四面体の話は**キャプションから `#stereo-tetra-why` へ畳んだ**
+        //   （ux-density §2-④。図の読み方には要らないが、消してはいけない話）。
+        //   ⚠ ここは「どこに書いてあるか」ではなく「**消えていないか**」を見る検査なので、
+        //   畳んだ先を読む。既定で閉じていることは UX1 が併せて見る
+        const tetra = c.D.getElementById('stereo-tetra-why');
+        assert(tetra && !tetra.open, '109.5° の読み物（#stereo-tetra-why）が無いか、既定で開いている');
+        assert(tetra.textContent.includes('109.5'), '結合角109.5°の説明がない（畳んだのではなく消えている）');
         assert(cap.includes('不斉炭素原子です'), '不斉炭素原子の説明がない');
         assert(c.D.querySelectorAll('#stereo-svg text').length >= 5, 'くさび図のラベルが不足'); // 中心C+置換基4
         // P12-8 でフィッシャー準拠に変更: 横（左・右）の2本が塗りくさび、縦（上・下）の2本がハッシュ
@@ -19484,8 +19490,11 @@
         const p0 = slotParity(d.m, d.center, base);
         assert(p0 === 1 || p0 === -1, `初期配置のパリティが読めない（${p0}）`);
         const baseContents = contents(base);
-        assert(D.getElementById('stereo-wedge-note').textContent.includes('クリック'),
-            'クリックで並べ替えられることの案内がない');
+        // ★ v1472: 案内を 89字 → 20字にした（「置換基をタップすると、それが上に来ます。」）。
+        //   ⚠ 見るのは**押せば上に来ると書いてあるか**であって、語が「クリック」かどうかではない
+        assert(/(クリック|タップ)/.test(D.getElementById('stereo-wedge-note').textContent) &&
+               /上に来/.test(D.getElementById('stereo-wedge-note').textContent),
+            'クリック／タップで並べ替えられることの案内がない');
         assert(D.querySelector('#stereo-svg .wedge-slot.clickable'),
             'クリックできる見た目（clickable クラス）が付いていない');
 
@@ -29092,6 +29101,18 @@
      *     ------------------------------------------
      *     合計                1673 → 499 → 700（画面ごとに通っても総量で太るのを止める）
      *
+     *   ★ **v1472（2026-08-28）で足した／動かしたぶん**（同じ数え方・375×812 で実測）:
+     *     立体対照ビュー（新設）  109 →  20 →  40
+     *       ＝ #stereo-ring-hint 53字を消し、#stereo-wedge-note を 89 → 20字にした結果。
+     *         畳んだ2件（caption の 109.5° 65字／R・S を判定しない理由 114字）は
+     *         **字数ではなく下の畳み検査**が受け持つ
+     *     パズル: お題を選ぶ       7 →  16 →  36（#random-status 51 → 9字を数える側に移した）
+     *     ヘルプ                  24 →  24 →  45（据え置き。デモ一覧 363字を畳んだので
+     *         `#tutorial-list` の skip を外した ＝ **剥がすと 363字が乗って一発で落ちる**）
+     *     ------------------------------------------
+     *     合計                 499 → 528 → 700（上限は据え置き。10画面ぶんの上限の和は 751 で、
+     *         各画面が上限いっぱいだと総量で先に止まる ＝ 総量の側が効いている）
+     *
      *   ⚠ **余裕を 20字にしたのには理由がある。** 説明文が太るときの単位は「1文」で、
      *     このアプリの実物は 25〜60字だった（削った 9画面の実測。中央値 47字）。
      *     余裕を 20字に置くと、**足せば必ず超える**（UX2 がそれを実証する）。
@@ -29186,6 +29207,36 @@
             skip: ['#nw-stack', '#nw-result', '#nw-routes', '#nw-matrix', '#nw-palette', '#nw-filter',
                 '#nw-tabs', '#nw-preset', '#nw-source', '#nw-parts', '#nw-start', '#nw-hint', '#nw-warn'],
             open: (D, W) => W.narrowing.open()
+        },
+        {
+            /* ★ v1472 で足した画面。ここで削ったのは4件（ux-density §2-④・§4・§2 番外）:
+             *   #stereo-ring-hint     53字 → 消した（ボタンの灰色が言っている。ST13-F が見張る）
+             *   #stereo-wedge-note    89字 → 20字（残りはボタンのラベルが言っている）
+             *   #stereo-caption 2文目 65字 → #stereo-tetra-why に畳んだ
+             *   #stereo-rs-why       114字 → #stereo-rs-why-more に畳んだ
+             *
+             * ⚠ **数えるのは `#stereo-wedge-note` だけ**になる。ほかは役割が違う:
+             *   #stereo-caption / #stereo-*-note … **化学の説明**（図の読み方・模型の断り）
+             *   #stereo-rs-row（記号と、出せない理由）… **答え合わせ**
+             *   #stereo-title … 中心炭素の素性＝**データ**
+             * ★ 畳んだ2件（tetra-why / rs-why-more）は**字数ではなく下の畳み検査が受け持つ**
+             *   （閉じていること ＋ 中身が 20字以上）。字数の上限で守れるのは
+             *   「開いたまま置き直す」だけなので、そちらは畳み検査のほうが強い
+             */
+            name: '立体対照ビュー', root: '#stereo-modal', max: 40,
+            skip: ['#stereo-title', '#stereo-center-label', '#stereo-caption', '#stereo-rs-row', '#stereo-mol-caveat',
+                '#stereo-3d-note', '#stereo-ring-note', '#stereo-mol-note', '#stereo-branch-note',
+                '#stereo-ring-tilt-value', '#stereo-ring-yaw-value', '#stereo-mol-yaw-value'],
+            open: (D, W) => {
+                // ⚠ **主鎖が横の乳酸**を使う（R・S を判定しない図＝畳んだ #stereo-rs-why-more が
+                //    実際に出る状態）。読める図にすると畳みが hidden のままで検査が空振りする
+                const e = (W.COMPOUNDS || []).find(x => x.name === '乳酸');
+                assert(e, '（前提）乳酸がライブラリに無い');
+                W.game.setMode('free');
+                W.game.userMolecule = W.game.createTargetFromData({ target: e.target });
+                W.game.updateDrawing();
+                W.stereoView.openAuto();
+            }
         }
     ];
     const UX_TOTAL_MAX = 700;
@@ -29225,8 +29276,11 @@
         }
         D.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
         W.game.setMode('free');
+        // 立体の画面のために置いた分子を片付ける（次のテストへ持ち越さない）
+        W.game.userMolecule = new W.Molecule();
+        W.game.updateDrawing();
         assert(total <= UX_TOTAL_MAX,
-            `9画面の操作の案内の合計が ${total}字（上限 ${UX_TOTAL_MAX}字）＝ ` +
+            `${UX_SCREENS.length}画面の操作の案内の合計が ${total}字（上限 ${UX_TOTAL_MAX}字）＝ ` +
             `1画面ずつは上限内でも全体で太っている。内訳: ${lines.join(' / ')}`);
         // 空振り検出: すべて0字なら数え方が壊れている（セレクタの綴り違いなど）
         assert(total > 200, `合計 ${total}字 ＝ 数え方が空振りしている（${lines.join(' / ')}）`);
@@ -29263,6 +29317,8 @@
         }
         D.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
         W.game.setMode('free');
+        W.game.userMolecule = new W.Molecule();
+        W.game.updateDrawing();
     });
 
     test('UX3: 十字の4操作の規則が1本で、⏱ と 🔤 の両方から開ける（同じ説明を2か所に書かない）', async (c) => {
@@ -29284,6 +29340,84 @@
             'index.html に十字の規則が直書きされている ＝ 本文が1本という前提が崩れている');
         const qsrc = await (await fetch(`quiz.js?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
         assert(/CROSS_RULES_HTML\s*=/.test(qsrc), 'quiz.js に規則の本文（CROSS_RULES_HTML）が無い＝ 上の検査が空振りしている');
+    });
+
+    /* ===== UX4: ヘルプのデモ一覧の1行説明（v1472・ux-density §2-③）=====
+     *
+     * ⚠ **UX1 の字数だけでは、この画面を守れない。**
+     *   1行説明を畳むと `#tutorial-modal` の勘定は 0字になり、上限 45字に対して余裕だらけになる。
+     *   ★ そこで危ないのは「太る」ではなく **「畳みごと消える」**ほう ——
+     *   一覧を描き直すのは `tutorial.js` の1関数なので、`t.summary` を落とすだけで
+     *   363字が黙って消え、UX1 は緑のままになる。ここはその側を見張る。
+     *
+     * ★ 見るのは3つ:
+     *   ① 一覧の各行が `<details>` で、**既定は閉じている**（畳んである）
+     *   ② 中身が `tutorials.json` の `summary` と**1字も違わない**（畳んだ＝消していない）
+     *   ③ 押せば開いて**画面に出る**（畳んだものが読めなければ「消した」と同じ）
+     */
+    test('UX4: ヘルプのデモ一覧 — 1行説明が畳まれていて、開けば元の文がそのまま出る', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        const tp = W.tutorialPlayer;
+        assert(tp, 'tutorialPlayer が初期化されていない');
+        for (let i = 0; i < 30 && tp.tutorials.length === 0; i++) await c.tick(100);
+        assert(tp.tutorials.length >= 12, `チュートリアル項目が ${tp.tutorials.length} 件（12以上を期待）`);
+
+        // 前のテストが検索語を残していても素の一覧を見る（絞り込み中は行数が合わない）
+        const searchEl = D.getElementById('tutorial-search');
+        if (searchEl) searchEl.value = '';
+        D.getElementById('btn-help').click();
+        await c.tick(120);
+        const rows = [...D.querySelectorAll('#tutorial-list > div')];
+        assert(rows.length === tp.tutorials.length,
+            `一覧の行が ${rows.length}（データは ${tp.tutorials.length} 件）＝ 描き出しが噛み合っていない`);
+
+        let folded = 0;
+        rows.forEach((row) => {
+            const det = row.querySelector('details.tut-acc');
+            assert(det, `一覧の行が畳まれていない（details.tut-acc が無い）` +
+                '＝ 1行説明を押す前に並べる形に戻っている（ux-density §2-③）');
+            const t = tp.tutorials.find(x => x.id === det.dataset.tutorialSummary);
+            assert(t, `行が どのデータの行か分からない（data-tutorial-summary=${det.dataset.tutorialSummary}）`);
+            assert(!det.open, `「${t.title}」の1行説明が既定で開いている（既定は閉じる）`);
+            const sum = det.querySelector('summary');
+            assert(sum && sum.textContent.trim() === t.title,
+                `「${t.title}」の把手が見出しになっていない（${sum && sum.textContent}）`);
+            const body = det.querySelector('.learn-acc-body');
+            // ② **1字も違わない**。要約し直して短くするのは「畳む」ではなく「削る」
+            assert(body && body.textContent.trim() === t.summary,
+                `「${t.title}」の畳んだ中身が tutorials.json の summary と違う ＝ ` +
+                `畳んだのではなく書き換えている（画面「${body && body.textContent.trim()}」/ ` +
+                `データ「${t.summary}」）`);
+            folded += t.summary.replace(/\s+/g, '').length;
+        });
+        // 空振り検出。実測 363字（13本）なので、300 を割ったら**説明そのものが痩せている**
+        assert(folded >= 300,
+            `畳んである1行説明の合計が ${folded}字（実測 363字）＝ 畳んだのではなく消している`);
+
+        // ③ 押せば開いて、画面に文字として出る（畳んだものが読めることの確認）
+        const first = rows[0].querySelector('details.tut-acc');
+        first.open = true;
+        await c.tick(80);
+        const body0 = first.querySelector('.learn-acc-body');
+        assert(body0.offsetHeight > 0 && body0.getBoundingClientRect().width > 4,
+            '開いても1行説明が画面に出ない（畳んだのではなく隠しただけになっている）');
+        first.open = false;
+
+        // ★ 否定対照 — 畳みを剥がして説明を元の位置（行の直下）に戻すと、
+        //   UX1 が数える側に入って上限 45字を突き抜ける（＝ この移設が止め木として効いている）
+        const probe = D.createElement('div');
+        probe.textContent = tp.tutorials.map(t => t.summary).join('');
+        D.getElementById('tutorial-list').appendChild(probe);
+        await c.tick(60);
+        const help = UX_SCREENS.find(s => s.root === '#tutorial-modal');
+        const n = uxGuideChars(D, W, help.root, help.skip).n;
+        probe.remove();
+        assert(n > help.max,
+            `1行説明を畳みの外へ戻しても ${n}字（上限 ${help.max}字）で止まらない ＝ ` +
+            '#tutorial-list が UX1 の数える範囲から外れている（skip の指定を確かめること）');
+
+        D.getElementById('btn-tutorial-close').click();
     });
 
     /* ===== QB: アプリ横断の往復リンク（qa ⇄ assembler） =====
