@@ -1889,8 +1889,10 @@ class NarrowingMode {
         // 積んだカード（**いま選んでいる列のぶんだけ**）
         const stackEl = document.getElementById('nw-stack');
         stackEl.innerHTML = rows.length ? ''
-            : `<p class="nw-empty">下のカードを押して <b>化合物 ${this.col().name}</b> に積んでください。`
-              + '<b>積む順番で効きが変わります。</b>複数の化合物を追うときは「＋ 化合物」で列を足します。</p>';
+            // ⚠ v1468: 「複数の化合物を追うときは「＋ 化合物」で列を足します。」（26字）は落とした
+            //    （ux-density §4）。**「＋ 化合物」のボタンが画面に見えている**
+            : `<p class="nw-empty">下のカードを押して <b>化合物 ${this.col().name}</b> に積みます。`
+              + '<b>積む順番で効きが変わります。</b></p>';
         rows.forEach((r, i) => {
             const c = cardById[r.id];
             const div = document.createElement('div');

@@ -586,7 +586,9 @@
                 <button id="btn-target-zoom-reset" type="button" style="height:36px; padding:0 12px; font-size:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.06); color:#fff; cursor:pointer;">⟲ 全体</button>
                 <button id="btn-target-condense" type="button" class="hidden" style="height:36px; padding:0 12px; font-size:12px; border-radius:8px; border:1px solid var(--color-cyan); background:rgba(0,242,254,0.08); color:var(--color-cyan); cursor:pointer;">⛓ 鎖を伸ばす</button>
             </div>
-            <p style="margin:0; font-size:11px; color:var(--text-secondary);">ピンチ／ホイールで拡大、ドラッグで移動。ダブルタップでも拡大できます。</p>
+            <!-- ⚠ 「ピンチ／ホイールで拡大、ドラッグで移動。ダブルタップでも拡大できます。」（35字）は
+                 v1468 の削減で落とした（ux-density §4）。図を見せるだけのモーダルで、
+                 上に ＋／−／⟲ 全体 のボタンが並んでいる ＝ 触れば分かる -->
             <button id="btn-close-target" class="primary-btn modal-footer">閉じる</button>
         </div>
     </div>
@@ -611,8 +613,9 @@
     <div id="puzzle-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 520px;">
             <h2 class="neon-text" style="font-size:20px;">🧩 パズルのお題</h2>
-            <p style="margin:0; font-size:11.5px; color:var(--text-muted); line-height:1.5; text-align:left; width:100%;">
-                お題を選んだら、この画面は閉じてキャンバスに戻ります。お題の名前・分子式と「構造判定」は、キャンバスの下の帯にずっと出ています。</p>
+            <!-- ⚠ 「お題を選んだら、この画面は閉じてキャンバスに戻ります。…帯にずっと出ています。」（64字）は
+                 v1468 の削減で落とした（ux-density §3-a）。**閉じてキャンバスに戻ることは閉じた瞬間に見える**。
+                 同じことを #study-modal・#reaction-box が別の文で言っていた ＝ 3か所の重複 -->
             <div style="width:100%; text-align:left; display:flex; flex-direction:column; gap:12px;">
                 <div class="stage-select-box" style="display:flex; flex-direction:column; gap:8px;">
                     <div>
@@ -714,8 +717,8 @@
     <div id="study-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 520px;">
             <h2 class="neon-text" style="font-size:20px; color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple);">📚 学習</h2>
-            <p style="margin:0; font-size:11.5px; color:var(--text-muted); line-height:1.5; text-align:left; width:100%;">
-                練習を始めると、この画面は閉じてキャンバスに戻ります。操作と進み具合はキャンバスの下の帯に出ます。</p>
+            <!-- ⚠ 「練習を始めると、この画面は閉じてキャンバスに戻ります。…下の帯に出ます。」（49字）は
+                 v1468 の削減で落とした（ux-density §3-a。学習系5画面すべてに出ていた） -->
             <div id="study-body" style="width:100%; text-align:left;">
                 <!-- 群の見出し（D3・DESIGN_entry_points.md §10-3）。4項目が並列に並んでいるだけだと
                      ⚗️ 反応機構ビューアが「映像コンテンツ（見るだけ）」に読める、という指摘への手当て。
@@ -782,6 +785,10 @@
                 <details id="learn-acc-practice" class="learn-acc">
                     <summary>✏️ 構造の書き出し練習</summary>
                     <div class="learn-acc-body">
+                        <!-- ⚠ 3枚のカードが「◯◯を選ぶと、キャンバスが答案用紙になります」を**3回**言っていた
+                             （ux-density §2-⑤・§3-e。50＋111＋103字）。共通の1文はここに1回だけ置き、
+                             各カードの lead は**その練習にしかない差分**だけにした（v1468） -->
+                        <div id="practice-lead" style="font-size:12px; color:var(--text-secondary); line-height:1.5;">選ぶと、キャンバスが答案用紙になります。</div>
                         <!-- 異性体の書き出し練習（DESIGN_isomer_practice.md P12-1） -->
                         <div id="isomer-practice-card" class="card" style="gap:8px;">
                             <h3 style="font-size:13px; color:var(--text-secondary);">✏️ 異性体の書き出し練習</h3>
@@ -825,8 +832,13 @@
                              ② **見るだけではない** ⇒ 🎯 予測（#btn-rx-predict）は反応を選んだあとの
                                 作業帯にしか出ないので、メニューからは存在が見えていない。
                                 ⚠ **ボタンは増やさない**（反応を選ばないと押せないので、前に出すと空振りする） -->
+                        <!-- ⚠ v1468 で**下にあった 108字の案内をここへ畳み込んで1本にした**（ux-density §2-⑩）。
+                             以前は同じアコーディオンの中に案内が2本並び、下の1本が
+                             「ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます」「終わるときは、その帯の『やめる』」
+                             ＝ **出た瞬間に見える帯**を文で説明していた（さらに #study-modal が3度目を言っていた）。
+                             残したのは EP8 が見張る3語（⚗ 反応させる・調べる／代表例／🎯 予測）だけ -->
                         <p id="rx-viewer-note" style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
-                            登録済みの反応を、<b>代表例の分子</b>で再生します。いま描いている分子を反応させるのは、キャンバスの「<b>⚗ 反応させる・調べる</b>」です。</p>
+                            登録済みの反応を、<b>代表例の分子</b>で再生します。いま描いている分子を反応させるのは、キャンバスの「<b>⚗ 反応させる・調べる</b>」です。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もできます。</p>
                         <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
                             <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
                             <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
@@ -850,12 +862,10 @@
                              巻矢印は本体 SVG の #arrows-group に出るので、操作をここに置いておくと
                              モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
                              ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
-                        <!-- ⚠ ここの文は**実態と合わせて書く**（発注書B・v1416）。以前は「選ぶと出ます」と
-                             書いてあるのに、上のスイッチを入れるまで選択が捨てられていた ＝ 入口で詰まる。
-                             ⚠ **一覧より上に置く**（v1439）。押した先で何が起きるかの説明なので、
-                                14件の押しものの下にあると**選び終えるまで目に入らない** -->
-                        <p style="margin:0; font-size:11px; color:var(--text-muted); line-height:1.5;">
-                            反応を選ぶと始まります。ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もそこに出ます（見るだけではありません）。<b>終わるときは、その帯の「やめる」か、上のスイッチです。</b></p>
+                        <!-- ⚠ この 108字の案内は v1468 で **#rx-viewer-note（一覧より上）へ畳み込んだ**
+                             （ux-density §2-⑩・§3-a）。行き先の説明が2本に割れていたのが元の姿で、
+                             「ステップ送り・終わるときは帯のやめる」は**帯が出た瞬間に見える** ＝ 文で言う必要がない。
+                             ⚠ 案内が**一覧より上**にある条件（v1439）は #rx-viewer-note が引き継いでいる -->
                         <div id="reaction-list"></div>
                     </div>
                 </details>
@@ -906,7 +916,9 @@
             <svg id="nw-svg" class="nw-svg hidden" width="360" height="240"><g class="quiz-bonds"></g><g class="quiz-atoms"></g></svg>
             <div id="nw-routes" class="nw-routes hidden"></div>
             <div id="nw-preset" class="nw-preset hidden"></div>
-            <div class="nw-palette-head">積むカードを選ぶ（もう一度押すと外れます）。左が<b>調べること</b>、右のボタンが<b>その結果</b>です。ボタンに触れると実験の文が出ます</div>
+            <!-- ⚠ v1468 で 59字 → 13字（ux-density §4）。左に「−OH」・右に「○ ×」が並んでいるのを
+                 文で説明していた ＝ 見れば分かること。押す・外すの1往復だけ残す -->
+            <div class="nw-palette-head">押すと積む／もう一度で外す</div>
             <!-- タグと部分一致の絞り込み（発注書 ORDER_features_2026-08-15.md §D）。
                  ⚠ 貼り付け（sticky）にして「残り N 通り」を添える。一覧はモーダルのいちばん下なので、
                  カードを探しているあいだ #nw-result は画面の外に出ている -->
@@ -1232,12 +1244,13 @@
                     </div>
                 </div>
             </div>
+            <!-- ⚠ v1468 で 193字 → 50字（ux-density §2-⑦・§3-b/c）。
+                 ・4操作の規則は ⏱ 立体タイムアタックと**まったく同じ内容を別の文で**書いていた
+                   （合計 447字で同じ4操作）。規則の本体は下の `#cross-rules-sp` に1本化して畳んだ
+                 ・「使える手は…まったく同じ4種類です」は `#sp-task`（設問）が言っているので、
+                   ここでは繰り返さない（§3-c の一本化。設問側に寄せた） -->
             <p style="font-size:11.5px; color:var(--text-secondary); margin:0; line-height:1.55;">
-                ここでは<b>分子を使いません</b>。A・B・C・D はただの目印で、意味はありません。
-                使える手は分子のパズルと<b>まったく同じ4種類</b>です——
-                <b>⟲ ⟳ 回す</b>（押した枝を固定して残り3つを送る。<b>同じ立体のまま</b>）と、
-                外枠の<b>鏡</b>（<b>左辺・右辺＝左右が入れ替わる／上辺・下辺＝上下が入れ替わる</b>。<b>鏡像になる</b>）。
-                <b>辺は4つでも結果は2通りだけ</b>です。ここで手つきを覚えてから、⏱ 立体タイムアタックで実物の分子に当ててみてください。
+                A・B・C・D はただの目印です。手つきを覚えたら ⏱ 立体タイムアタックで実物の分子に当ててみてください。
             </p>
             <div id="sp-status" style="min-height:3.2em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
             <div class="modal-footer" style="display:flex; gap:10px;">
@@ -1605,8 +1618,10 @@
                      ⚠ ボタンにはしない: 行き先が上の「🧊 立体で見る」とまったく同じなので、
                      同じ場所へ2つ目の入口を作ることになる（入口見直しの「入口は増やさない」に反する）。
                      §6-3 が求めていた「1行で受け止められる形」はこれで満たしている -->
-                <p id="mm-rs-note" style="margin:0; font-size:11px; color:var(--text-muted);">※ R・S（不斉炭素の記号）は「🧊 立体で見る」の中で、中心炭素の欄に出ます。</p>
-                <p style="margin:0; font-size:11px; color:var(--text-muted);">※ 異性体・立体は別の画面で開くので、この画面はいったん閉じます。</p>
+                <!-- ⚠ v1468 で 38字 → 14字。もう1本の「※ 異性体・立体は別の画面で開くので、この画面は
+                     いったん閉じます。」（32字）は落とした（ux-density §3-f）。
+                     すぐ上に「🧊 立体で見る」ボタンが見えているので、行き先は名前だけで足りる -->
+                <p id="mm-rs-note" style="margin:0; font-size:11px; color:var(--text-muted);">※ R・S は「🧊 立体で見る」の中。</p>
             </div>
             <button id="btn-molecule-modal-close" class="primary-btn modal-footer">閉じる</button>
         </div>
@@ -1794,7 +1809,9 @@
             <!-- ⚠ 高さの上限は style.css 側（`#tutorial-list`）へ移した。遊び方を開いたときだけ
                  詰める指定（:has）を効かせるのに、インラインの max-height が邪魔をするため -->
             <div id="tutorial-list" style="display:flex; flex-direction:column; gap:6px; width:100%; overflow-y:auto;"></div>
-            <p style="font-size:11px; color:var(--text-muted); margin:0;">デモは実際のキャンバス上で再生されます。再生前の作図は終了時に復元されます（Escで中断できます）。</p>
+            <!-- ⚠ v1468 で 50字 → 24字（ux-density §4）。「デモは実際のキャンバス上で再生されます」は
+                 再生すれば見える。残すのは**再生しても失わない**という保証だけ -->
+            <p style="font-size:11px; color:var(--text-muted); margin:0;">再生前の作図は終了時に戻ります（Esc で中断）。</p>
             <!-- 遊び方と操作方法（A-5 → リボン統合 第2段）。もとは右パネルの末尾に3モード共通で
                  出ていた 1345px（PC 1549px）のブロックで、パズルの総高 2386px の過半を占めていた
                  （DESIGN_entry_points.md §2-3・D5）。v451 で `<details>` に畳み、
