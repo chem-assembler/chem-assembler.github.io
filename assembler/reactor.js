@@ -866,6 +866,45 @@ function translateAtoms(mol, ids, dx, dy) {
     });
 }
 
+/**
+ * カルボン酸の -OH と、相手（アルコールの -OH ／ アミンの -NH）の H がとれて縮合する。
+ * `site` は `[カルボン酸の C, 抜ける -OH の O, 相手の重原子（O または N）]`。
+ *
+ * ★ **エステル化とアミド化で、原子の動かし方は 1 か所も違わない**（水の抜き方も同じ）。
+ * 違うのは `detect` が相手に何を許すかと、`caption` の言葉だけなので、
+ * **ここを 2 本に写さない**（写すと片方だけ直る事故が起きる）。
+ *
+ * どちらの分子を動かすかは 3 段で決める（レビュー項目15）:
+ *  ① 分子を選んでいるなら、**先に選んだ方（式の左）は動かさない**（C-1）
+ *  ② 選んでいなければ**小さい方**を動かす。酢酸(4原子)＋エタノール(3原子) では
+ *     従来どおりアルコール側が動くので、CH₃COOH + HOCH₂CH₃ の並びは変わらない
+ *     （v347／C-2）。向きが入れ替わるのは、油脂のように**大きな多価アルコールへ
+ *     酸を1本ずつ足していく**場合だけ。大きい方を動かすと置き場が見つからず、
+ *     グリセリンの2本目・3本目のエステル化が「配置する空間がありません」で止まっていた
+ *  ③ 決めた向きで置けなければ、反対向きも試す。できる結合は同じなので化学は変わらない
+ */
+function applyAcidCondensation(mol, site) {
+    const [cId, ohOId, partnerId] = site;
+    const partnerIds = [...componentOf(mol, partnerId)];
+    const acidIds = [...componentOf(mol, cId)];
+    const preferAcidMoves = firstSelectedIsIn(partnerIds) ||
+        (!firstSelectedIsIn(acidIds) && acidIds.length < partnerIds.length);
+    let plan = null;
+    let swap = false;
+    for (const tryAcid of (preferAcidMoves ? [true, false] : [false, true])) {
+        plan = tryAcid
+            ? planAttachment(mol, partnerId, cId, acidIds, [ohOId])
+            : planAttachment(mol, cId, partnerId, partnerIds, [ohOId]);
+        if (plan) { swap = tryAcid; break; }
+    }
+    if (!plan) throw noRoom('生成物を配置する空間がありません');
+    mol.removeBond(cId, ohOId);
+    applyAttachment(mol, swap ? acidIds : partnerIds, plan);
+    mol.addBond(cId, partnerId, 1);
+    parkAsWater(mol, ohOId);
+    return [cId, partnerId];
+}
+
 const ALCOHOL_TYPES = ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'];
 // アミンは級数ごとに型が分かれている（§9.6-7。1級 amine1 ／ 2級 amine2 ／ 3級 amine3）。
 // **反応で使うのは「N に水素が残る」1級・2級だけ**——アセチル化もアミド化も N の水素を
@@ -3117,41 +3156,54 @@ const REACTION_RULES = [
             return sites;
         },
         apply(game, site) {
-            const [cId, ohOId, alcOId] = site;
-            const mol = game.userMolecule;
-            const alcIds = [...componentOf(mol, alcOId)];
-            const acidIds = [...componentOf(mol, cId)];
-            /*
-             * どちらの分子を動かすか。3段で決める（レビュー項目15）:
-             *
-             * ① 分子を選んでいるなら、**先に選んだ方（式の左）は動かさない**（C-1）
-             * ② 選んでいなければ**小さい方**を動かす。酢酸(4原子)＋エタノール(3原子) では
-             *    従来どおりアルコール側が動くので、CH₃COOH + HOCH₂CH₃ の並びは変わらない
-             *    （v347／C-2）。向きが入れ替わるのは、油脂のように**大きな多価アルコールへ
-             *    酸を1本ずつ足していく**場合だけ。大きい方を動かすと置き場が見つからず、
-             *    グリセリンの2本目・3本目のエステル化が「配置する空間がありません」で
-             *    止まっていた
-             * ③ 決めた向きで置けなければ、反対向きも試す。できる結合は同じなので化学は変わらない
-             */
-            const preferAcidMoves = firstSelectedIsIn(alcIds) ||
-                (!firstSelectedIsIn(acidIds) && acidIds.length < alcIds.length);
-            let plan = null;
-            let swap = false;
-            for (const tryAcid of (preferAcidMoves ? [true, false] : [false, true])) {
-                plan = tryAcid
-                    ? planAttachment(mol, alcOId, cId, acidIds, [ohOId])
-                    : planAttachment(mol, cId, alcOId, alcIds, [ohOId]);
-                if (plan) { swap = tryAcid; break; }
-            }
-            const movingIds = swap ? acidIds : alcIds;
-            if (!plan) throw noRoom('生成物を配置する空間がありません');
-            mol.removeBond(cId, ohOId);
-            applyAttachment(mol, movingIds, plan);
-            mol.addBond(cId, alcOId, 1);
-            parkAsWater(mol, ohOId);
+            const changed = applyAcidCondensation(game.userMolecule, site);
             return {
                 caption: 'エステル化（縮合）が起こりました。カルボン酸の -OH とアルコールの -H がとれて水になり、エステル結合 -COO- ができます（濃硫酸を触媒に加熱）。同位体で調べると、水の酸素はカルボン酸側から来ることが分かっています。',
-                changed: [cId, alcOId]
+                changed
+            };
+        }
+    },
+    {
+        /* ★ 単発のアミド化（§10.11-D #13・§10.11-F の5位・2026-08-27 ユーザー決定）。
+         *
+         * ⚠ **これまでアミド結合は「縮合重合」の中でしか作れず、単量体が4分子要った**
+         * （`condensation_polymerization` は `links.length < 3` で2組以上を求める）。
+         * そのため **酢酸 ＋ アニリン → アセトアニリド** が作れず、
+         * 「無水酢酸からは作れるのに、カルボン酸からは作れない」片道になっていた。
+         *
+         * ⚠ **瓶は足していない。**直接アミド化に当てる高校教材の試薬が無い
+         * （教科書はアミドの加水分解の**逆**として書くだけで、触媒を名指ししない）ので、
+         * `condensation_polymerization` と同じく**瓶を持たないルール**にする。
+         * `apply` はエステル化と 1 か所も違わないので `applyAcidCondensation` を共有する。 */
+        id: 'amidation',
+        label: 'アミド化（カルボン酸＋アミン, -H₂O）',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -CO-NH- ができる
+        detect(mol) {
+            const groups = findFunctionalGroups(mol);
+            const carboxyls = groups.filter(g => g.type === 'carboxyl');
+            // N に水素が残る1級・2級だけ（3級は H が無いので縮合できない）。
+            // **アミドの N は除く**（隣のカルボニルに電子を引かれて求核性を失っている）
+            const amines = groups.filter(g => AMINE_NH_TYPES.includes(g.type) &&
+                !isAmideNitrogen(mol, g.atomIds[0]));
+            const sites = [];
+            carboxyls.forEach(cx => {
+                const comp = componentOf(mol, cx.atomIds[0]);
+                amines.forEach(am => {
+                    if (comp.has(am.atomIds[0])) return; // 分子間反応のみ（ラクタムは対象外）
+                    sites.push([cx.atomIds[0], cx.atomIds[2], am.atomIds[0]]);
+                });
+            });
+            return sites;
+        },
+        apply(game, site) {
+            const changed = applyAcidCondensation(game.userMolecule, site);
+            return {
+                caption: 'アミド化（縮合）が起こりました。カルボン酸の -OH とアミンの -H がとれて水になり、' +
+                    'アミド結合 -CO-NH- ができます（加熱）。' +
+                    'このつながり方は、タンパク質のペプチド結合・ナイロンのアミド結合と同じものです。' +
+                    '⚠ 実際の合成では、カルボン酸より反応性の高い無水酢酸を使うほうがふつうです' +
+                    '（アニリン → アセトアニリドは「アセチル化」の瓶からも作れます）。',
+                changed
             };
         }
     },
@@ -3710,7 +3762,7 @@ const REACTION_RULES = [
             return {
                 caption: `2つずつ反応できる基を持った分子が揃っています。これは縮合重合（${kind}結合をくり返しつくる）の組み合わせです。` +
                     `付加重合と違い、つなぐたびに水がとれます（だから「縮合」）。` +
-                    `実際に1段つなぐには「エステル化」や「アセチル化」を使ってください。` +
+                    `実際に1段つなぐには「${kind}化」や「アセチル化」を使ってください。` +
                     `両端にまだ反応できる基が残るので、そこにさらに単量体をつなぐと鎖が伸びていきます。` +
                     `**同じ組み合わせをもう1組ずつ（合計4分子）並べると「縮合重合」が選べる**ようになり、鎖をまとめて作れます。`,
                 changed: []
