@@ -228,34 +228,31 @@ var SEP_TABLE = {
 };
 
 // ---------------------------------------------------------------
-// 出題（型B）
-//   ⚠ 候補リストの中身が難易度そのもの（§15-4・§16-6）。
-//   ★ 炎色反応が効くか効かないかで、同じ模型のまま難しさが変わる。
+// 出題（型B）—— ★ 問題は「一覧」ではなく「毎回つくる」（2026-08-26・ユーザー決定）
+//
+//   ⚠⚠ **見た目は1問。**「べつの容器にする」を押すたびに、候補リストごと引き直す。
+//   ★ **難易度は学習者が選ぶ。**⚠ **難易度 ＝ 候補リストの型**（§15-4・§16-6）。
 //
 // ⚠⚠ **出題に説明文（title・note）を持たせない**（2026-08-27・ユーザー指摘）。
 //   ★ 「炎色で3つに割れるが、残り2つは沈殿を溶かさないと分かれない」のような一文は、
 //     冗長である以前に**解き筋そのもの**で、先に読ませたら問題が成立しない。
-//   ★ 画面に出すのは**難易度だけ**（`sepDifficulty()`。⚠ 試薬の名前を1つも含まない）。
-//   ⚠ **ここに文字列を足したくなったら、それは解き筋である可能性が高い**
-//     —— tests.js が「出題のデータに解き筋の語が無いこと」を機械で見張っている。
+//   ★ 画面に出すのは**難易度の印と候補の数だけ**（⚠ 試薬の名前を1つも含まない）。
+//   —— tests.js が「出題に解き筋の語が無いこと」を機械で見張っている。
+//
+// ★ 難易度は手で付けない（§2-4）。**門番が数えた値だけ**から出す（`sepDifficulty()`）。
 // ---------------------------------------------------------------
-var SEP_PROBLEMS = [
-    {
-        id: 'b1',
-        cands: ['Ag', 'Pb', 'Cu', 'Na'],
-        ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s']
-    },
-    {
-        id: 'b2',
-        cands: ['Ag', 'Pb', 'Cu', 'Ca', 'Na', 'K'],
-        ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s', 'nh3']
-    },
-    {
-        id: 'b3',
-        cands: ['Pb', 'Zn', 'Al', 'Fe3'],
-        ops: ['flame', 'naoh', 'nh3', 'hcl', 'h2s']
-    }
+var SEP_LEVELS = [
+    { id: 'easy', name: 'やさしい', mark: '★☆☆', min: 0, max: 7 },
+    { id: 'normal', name: 'ふつう', mark: '★★☆', min: 8, max: 9 },
+    { id: 'hard', name: 'むずかしい', mark: '★★★', min: 10, max: 999 }
 ];
+
+// 候補の数の範囲。⚠ 3未満は問題にならず、7以上は札の数に対して重い
+var SEP_CAND_MIN = 3, SEP_CAND_MAX = 6;
+
+// ★ 型の鍵の版。⚠ **札の配り方や門番を変えたら、この版を上げること**
+//   （集計を後からするなら、意味の変わった型を同じ鍵で混ぜてはいけない）
+var SEP_KEY_VERSION = 'B1';
 
 // ---------------------------------------------------------------
 // 観察を導く
@@ -464,14 +461,124 @@ function sepDifficulty(p) {
     var a = sepAuditProblem(p);
     var hard = p.cands.filter(function (x) { return a.byIon[x].size >= 2; }).length;
     var score = p.cands.length + a.shortest + hard;
-    var stars = score <= 6 ? 1 : (score <= 8 ? 2 : 3);
+    // ★ 段の切り方は SEP_LEVELS の1か所だけに持つ（⚠ ここで二重に持たない）
+    var lid = sepLevelOf(score);
+    var idx = 0;
+    SEP_LEVELS.forEach(function (l, i) { if (l.id === lid) idx = i; });
     return {
-        stars: stars,
-        mark: ['★☆☆', '★★☆', '★★★'][stars - 1],
+        level: lid,
+        name: SEP_LEVELS[idx].name,
+        mark: SEP_LEVELS[idx].mark,
+        stars: idx + 1,
         score: score,
         cands: p.cands.length,
-        shortest: a.shortest
+        shortest: a.shortest,
+        hard: hard
     };
+}
+
+/** そのイオンの組に、配れるだけ札を配る。⚠ 結果を宣言していない札は配らない（§4-1） */
+function sepDealFor(cands) {
+    return Object.keys(SEP_OPS).filter(function (o) {
+        return cands.every(function (c) { return !!sepObserve(c, o); });
+    });
+}
+
+/** 難易度の段（`sepDifficulty` の score から決まる） */
+function sepLevelOf(score) {
+    for (var i = 0; i < SEP_LEVELS.length; i++) {
+        if (score >= SEP_LEVELS[i].min && score <= SEP_LEVELS[i].max) return SEP_LEVELS[i].id;
+    }
+    return SEP_LEVELS[SEP_LEVELS.length - 1].id;
+}
+
+// ---------------------------------------------------------------
+// 抽選の母集団
+//   ⚠ **起動時には作らない**（§2-4 の地雷）。★ 最初に1問引くときに1度だけ作って持ち回る。
+//   ★ 費用は実測 44ms（イオン9・札7・候補3〜6個 ＝ 420 組の門番）。
+// ---------------------------------------------------------------
+var _sepPools = null;
+function sepPools() {
+    if (_sepPools) return _sepPools;
+    var ions = Object.keys(SEP_IONS);
+    var pools = {};
+    SEP_LEVELS.forEach(function (l) { pools[l.id] = []; });
+    sepSubsets(ions).forEach(function (C) {
+        if (C.length < SEP_CAND_MIN || C.length > SEP_CAND_MAX) return;
+        var ops = sepDealFor(C);
+        if (!ops.length) return;
+        var p = { id: 'gen', cands: C, ops: ops };
+        var a = sepAuditProblem(p);
+        if (!a.ok) return;                       // ⚠ 門番を通らない組は母集団に入れない
+        var d = sepDifficulty(p);
+        pools[sepLevelOf(d.score)].push({ cands: C, ops: ops, score: d.score });
+    });
+    _sepPools = pools;
+    return pools;
+}
+
+/**
+ * ★ 型の鍵。⚠ **遊ぶたびに変わらないもの**（＝ 集計できる単位）。
+ * ⚠⚠ 中身のイオン（truth）は入れない —— 同じ型の別の出題を、同じ鍵で数えたいから。
+ */
+function sepTypeKey(levelId, cands) {
+    return SEP_KEY_VERSION + '|' + levelId + '|' + cands.slice().sort().join('-');
+}
+
+/**
+ * 1問つくる。
+ *   opts.avoid … ⚠ **直前に出した型の鍵**。★ 等確率で引くと解き筋が2回3回と続くので、それだけ避ける
+ *   opts.rand  … 乱数（テストが固定するための口）
+ *   opts.cands / opts.ops / opts.truth … ⚠ **テストが出題を固定するための口**（画面は使わない）
+ */
+function sepMakeProblem(levelId, opts) {
+    opts = opts || {};
+    var rand = opts.rand || Math.random;
+    var cands, ops;
+    if (opts.cands) {
+        cands = opts.cands.slice();
+        ops = opts.ops ? opts.ops.slice() : sepDealFor(cands);
+    } else {
+        var pool = sepPools()[levelId] || [];
+        if (!pool.length) return null;
+        var pick = pool;
+        if (opts.avoid && pool.length > 1) {
+            pick = pool.filter(function (e) {
+                return sepTypeKey(levelId, e.cands) !== opts.avoid;
+            });
+            if (!pick.length) pick = pool;
+        }
+        var e = pick[Math.floor(rand() * pick.length)];
+        cands = e.cands.slice();
+        ops = e.ops.slice();
+    }
+    var truth = opts.truth || cands[Math.floor(rand() * cands.length)];
+    return {
+        id: sepTypeKey(levelId, cands),      // ★ 型の鍵 ＝ そのまま出題の id
+        key: sepTypeKey(levelId, cands),
+        level: levelId,
+        cands: cands,
+        ops: ops,
+        truth: truth
+    };
+}
+
+/**
+ * ★ 記録の形（⚠ **持たせるだけ。送信も保存もしない**）。
+ *   ★ 集計できる安定した単位は「型」であって、個々の出題ではない
+ *     （毎回つくる形にしたので、出題そのものは毎回別物）。
+ *   ⚠ 中身のイオン（truth）も残す —— **同じ型でも、入っていたイオンで難しさが変わる**。
+ */
+function sepRecord(problem, extra) {
+    var r = {
+        key: problem.key,
+        level: problem.level,
+        cands: problem.cands.slice(),
+        ops: problem.ops.slice(),
+        truth: problem.truth
+    };
+    if (extra) Object.keys(extra).forEach(function (k) { r[k] = extra[k]; });
+    return r;
 }
 
 // ---------------------------------------------------------------
@@ -530,10 +637,13 @@ function sepGrade(p, truth, picked, history) {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         SEP_COLORS: SEP_COLORS, SEP_COMPLEXES: SEP_COMPLEXES, SEP_IONS: SEP_IONS,
-        SEP_OPS: SEP_OPS, SEP_TABLE: SEP_TABLE, SEP_PROBLEMS: SEP_PROBLEMS,
+        SEP_OPS: SEP_OPS, SEP_TABLE: SEP_TABLE, SEP_LEVELS: SEP_LEVELS,
+        SEP_FLAME_LIMIT_REF: SEP_FLAME_LIMIT_REF, SEP_KEY_VERSION: SEP_KEY_VERSION,
         sepObserve: sepObserve, sepObsKey: sepObsKey, sepObsText: sepObsText,
         sepObsColor: sepObsColor, sepAlive: sepAlive, sepSplit: sepSplit,
         sepSeparates: sepSeparates, sepAuditProblem: sepAuditProblem,
-        sepDifficulty: sepDifficulty, sepGrade: sepGrade
+        sepDifficulty: sepDifficulty, sepGrade: sepGrade, sepDealFor: sepDealFor,
+        sepLevelOf: sepLevelOf, sepPools: sepPools, sepTypeKey: sepTypeKey,
+        sepMakeProblem: sepMakeProblem, sepRecord: sepRecord
     };
 }
