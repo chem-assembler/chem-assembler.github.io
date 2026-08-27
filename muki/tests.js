@@ -21,9 +21,9 @@
 
     // 空振り防止。想定より明らかに少ない件数で「ALL PASS」と出たら、
     // それは通ったのではなく走っていない（fetch 失敗・iframe 未初期化など）
-    // ⚠ 系統分離モード（型B）の検査が丸ごと空振りしても気づけるように、
-    //   その件数ぶんを含めた下限にしてある（2026-08-27 時点の実測は 271 件）
-    var MIN_CASES = 200;
+    // ⚠ 系統分離モード（型B・型A）の検査が丸ごと空振りしても気づけるように、
+    //   その件数ぶんを含めた下限にしてある（2026-08-27 時点の実測は 303 件 → 型A を足して 405 件）
+    var MIN_CASES = 320;
 
     function section(title, target) {
         var h = document.createElement('h2');
@@ -41,6 +41,18 @@
     }
 
     function warn(msg) { if (window.console) console.warn('[muki tests] ' + msg); }
+
+    // ⚠⚠ 検査の途中で例外が飛ぶと #total が更新されず、**全走が黙って固まる**
+    //   （実測 2026-08-27: 否定対照で宣言もれを作ったら、門番のタイムアウト 25 分ぶん待たされた。
+    //    ⚠ 「落ちた」ではなく「待たされた」という、いちばん読みにくい壊れ方をする）。
+    // ★ 例外を捕まえて、その場で不合格として締める。⚠ 原因も画面に残す
+    window.addEventListener('error', function (e) {
+        var total = document.getElementById('total');
+        if (!total || /(ALL PASS|FAILED)/.test(total.textContent)) return;  // すでに締まっている
+        ok('⚠ 検査の途中で例外が飛んだ（' + (e.message || String(e.error)) + '）', false);
+        total.textContent = fail + ' FAILED / ' + (pass + fail);
+        total.className = 'fail';
+    });
 
     // ---------------------------------------------------------------
     // 色の道具（「褐色と名乗って紫」を機械で落とすため）
@@ -724,6 +736,313 @@
                     return e.cands.every(function (c) { return !!SEP_IONS[c]; });
                 });
             }));
+    }
+
+    // ===============================================================
+    // 系統分離モード「型A: すべてのイオンを分ける」（tree-model.js）
+    //
+    // ⚠ 型A は型B とは採点が別物。★ 見るのは **純度** ——
+    //   「最後に残った各葉に、イオンが1種類だけ入っているか」（§15-2）。
+    //   仮説集合 H は使わない（中身が既知だから）。
+    // ===============================================================
+    section('型A: 模型の読み込み');
+    var treeLoaded = ok('tree-model.js が読み込めている',
+        typeof TREE_OPS !== 'undefined' && typeof TREE_RULES !== 'undefined' &&
+        typeof TREE_PROBLEMS !== 'undefined' && typeof treeRun === 'function' &&
+        typeof treeGrade === 'function' && typeof treeAuditProblem === 'function');
+
+    if (treeLoaded) {
+        // -----------------------------------------------------------
+        // 悉皆で宣言しているか（§4-1）
+        // ⚠ 宣言もれがあると、そのイオンは黙って素通りする ＝ 結果の創作になる
+        // -----------------------------------------------------------
+        section('型A: イオン × 札を悉皆で宣言している（§4-1）');
+        var TREE_ALL_IONS = Object.keys(TREE_RULES);
+        var TREE_ALL_OPS = Object.keys(TREE_OPS);
+        ok('宣言の表が空でない（' + TREE_ALL_IONS.length + 'イオン × ' + TREE_ALL_OPS.length + '札）',
+            TREE_ALL_IONS.length >= 6 && TREE_ALL_OPS.length >= 6);
+        ok('すべての（イオン × 札）が宣言されている（硫化水素が残っている場合も含めて）', (function () {
+            var bad = [];
+            TREE_ALL_IONS.forEach(function (i) {
+                TREE_ALL_OPS.forEach(function (o) {
+                    if (!treeRule(i, o, false)) bad.push(i + '×' + o);
+                    if (!treeRule(i, o, true)) bad.push(i + '×' + o + '(h2s)');
+                });
+            });
+            if (bad.length) warn('宣言もれ: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+        ok('沈殿すると宣言したものは、化学式と色を持っている', (function () {
+            var bad = [];
+            TREE_ALL_IONS.forEach(function (i) {
+                TREE_ALL_OPS.forEach(function (o) {
+                    [false, true].forEach(function (h) {
+                        var r = treeRule(i, o, h);
+                        if (r && r.ppt && !(r.f && r.c)) bad.push(i + '×' + o);
+                    });
+                });
+            });
+            return bad.length === 0;
+        })());
+        ok('沈殿の色は、色名 → hex の表に載っている', (function () {
+            var bad = [];
+            TREE_ALL_IONS.forEach(function (i) {
+                TREE_ALL_OPS.forEach(function (o) {
+                    [false, true].forEach(function (h) {
+                        var r = treeRule(i, o, h);
+                        if (r && r.ppt && !(r.c in TREE_COLORS)) bad.push(r.c);
+                    });
+                });
+            });
+            if (bad.length) warn('色の表に無い色名: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+        ok('色名 → hex が、名乗りどおりの色になっている（緑白色を足したぶんも見る）', (function () {
+            var bad = [];
+            Object.keys(TREE_COLORS).forEach(function (n) {
+                var hex = TREE_COLORS[n];
+                if (hex === null) return;
+                var w = colorWordOf(n), c = hexToHsl(hex);
+                if (!w) { bad.push(n + ' に当てる色の語が無い'); return; }
+                if (!c || !w.test(c)) bad.push(n + ' (' + hex + ') は「' + w.why + '」に合わない');
+            });
+            if (bad.length) warn('型A の色の名乗り: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+
+        // -----------------------------------------------------------
+        // 酸化数で分ける（§4-4）
+        // ⚠ Fe³⁺ と Fe²⁺ を同じ鉄として持つと、この設計は成立しない
+        // -----------------------------------------------------------
+        section('型A: 酸化数で分ける（§4-4）');
+        ok('Fe³⁺ と Fe²⁺ は別の化学種として持っている',
+            !!TREE_RULES.Fe3 && !!TREE_RULES.Fe2 && treeIon('Fe3').name !== treeIon('Fe2').name);
+        ok('純度を数える単位は元素（Fe³⁺ も Fe²⁺ も鉄）',
+            treeElement('Fe3') === 'Fe' && treeElement('Fe2') === 'Fe' && treeElement('Zn') === 'Zn');
+
+        // -----------------------------------------------------------
+        // ★★★ この教材の芯 —— なぜ「煮沸してから硝酸」なのか（§4-3・§15-2）
+        // ⚠ ここが緩むと、型A を作った意味そのものが消える
+        // -----------------------------------------------------------
+        section('型A: 芯 —— 煮沸してから希硝酸（§4-3・§15-2）');
+        var pA = treeProblem('a1');
+        var idealA = treeIdealSeq(pA);
+        ok('a1 は Ag⁺・Cu²⁺・Fe³⁺・Zn²⁺・Ca²⁺・Na⁺（★ 鉄と亜鉛が両方いる）',
+            pA.ions.slice().sort().join(',') === 'Ag,Ca,Cu,Fe3,Na,Zn');
+        ok('酸性の硫化水素で、鉄は沈まずに Fe²⁺ になる（＝ 還元される）', (function () {
+            var r = treeRule('Fe3', 'h2sAcid', false);
+            return r.ppt === false && r.to === 'Fe2';
+        })());
+        ok('煮沸してから希硝酸を加えると Fe²⁺ は Fe³⁺ に戻る',
+            treeRule('Fe2', 'hno3', false).to === 'Fe3');
+        ok('⚠ 煮沸していない（硫化水素が残っている）容器では、希硝酸を加えても戻らない（§4-2 の決め）',
+            !treeRule('Fe2', 'hno3', true).to);
+        ok('アンモニアの段で Fe³⁺ は沈むが、Fe²⁺ は沈まない（★ ここが素通りの正体）',
+            treeRule('Fe3', 'nh3', false).ppt === true &&
+            treeRule('Fe2', 'nh3', false).ppt === false);
+        ok('塩基性の硫化水素で Fe²⁺ は FeS として沈む',
+            treeRule('Fe2', 'h2sBase', false).f === 'FeS');
+
+        // ★★ 模範の手順は、単離できて、机上と実際が一致する
+        var gIdeal = treeGrade(pA, idealA, treePlanFromRun(pA, idealA));
+        ok('模範の手順なら、単離できていない葉は 0 枚',
+            gIdeal.dirty === 0 && gIdeal.isolated === true && gIdeal.verdict === 'perfect');
+        ok('模範の手順では、葉が6枚できて、どれにもイオンが1つずつ',
+            gIdeal.leaves.length === 6 &&
+            gIdeal.leaves.every(function (l) { return gIdeal.actual[l].length === 1; }));
+
+        // ★★★ 芯そのもの。⚠ **葉の数で不一致になること**を数で押さえる
+        //   （⚠ 枝は空けたまま抜く。詰めると葉の番号がずれて、別のものを数えてしまう）
+        var seqNoHno3 = idealA.map(function (o) { return o === 'hno3' ? null : o; });
+        var gFe = treeGrade(pA, seqNoHno3, treePlanFromRun(pA, idealA));
+        ok('★★ 希硝酸を抜いた答案は、単離できていない葉が 2 枚になる（実測 ' + gFe.dirty + ' 枚）',
+            gFe.dirty === 2 && gFe.isolated === false && gFe.verdict === 'notIsolated');
+        ok('その1枚は「鉄と亜鉛が同居した葉」', (function () {
+            if (gFe.impure.length !== 1) return false;
+            return gFe.actual[gFe.impure[0]].slice().sort().join(',') === 'Fe,Zn';
+        })());
+        ok('もう1枚は「鉄を置いたのに、何も来なかった葉」（＝ アンモニアの段）', (function () {
+            if (gFe.emptyPlanned.length !== 1) return false;
+            var leaf = gFe.emptyPlanned[0];
+            return leaf === treeLeafId(idealA.indexOf('nh3')) && gFe.actual[leaf].length === 0;
+        })());
+        ok('鉄が FeS として沈んだことを、答え合わせの材料として持っている（§4-3 の説明の引き金）',
+            gFe.feAsFeS === true && gIdeal.feAsFeS === false);
+        ok('机上との食い違いも名指しできる（鉄をどこへ置いて、実際はどこへ来たか）', (function () {
+            var m = gFe.misplaced.filter(function (x) { return x.ion === 'Fe3'; });
+            return m.length === 1 && m[0].said !== m[0].actual;
+        })());
+
+        // ★ 煮沸のほうを抜くと、別の形で効く（W4・§10-4）
+        var seqNoBoil = idealA.map(function (o) { return o === 'boil' ? null : o; });
+        var gBoil = treeGrade(pA, seqNoBoil, treePlanFromRun(pA, idealA));
+        ok('煮沸を抜くと、硫化水素が残ったままアンモニアの段に入り、硫化物が第3属の沈殿に混ざる（W4）', (function () {
+            var leaf = treeLeafId(idealA.indexOf('nh3'));
+            return gBoil.actual[leaf].slice().sort().join(',') === 'Fe,Zn' && gBoil.dirty >= 2;
+        })());
+
+        // ⚠ 亜鉛がいない容器では、鉄を戻し忘れても葉は汚れない。★ でも行先は変わる
+        var pB = treeProblem('a2');
+        var idealB = treeIdealSeq(pB);
+        var gB = treeGrade(pB, idealB.map(function (o) { return o === 'hno3' ? null : o; }),
+            treePlanFromRun(pB, idealB));
+        ok('亜鉛がいない容器では、鉄を戻し忘れても同居は起きない（★ 純度と一致は別のもの）',
+            gB.impure.length === 0 && gB.misplaced.length === 1 && gB.verdict === 'misread');
+
+        // -----------------------------------------------------------
+        // ツリーの形（§16-2）
+        // -----------------------------------------------------------
+        section('型A: ツリーの形（§16-2）');
+        ok('葉が生えるのは、沈殿をつくりうる札を置いた枝だけ',
+            TREE_OPS.boil.splits === false && TREE_OPS.hno3.splits === false &&
+            TREE_OPS.hcl.splits === true && TREE_OPS.co3.splits === true);
+        ok('煮沸と希硝酸の枝には葉ができない（走らせた結果に、その葉が現れない）', (function () {
+            var run = treeRun(pA.ions, idealA);
+            var a = treeActualLeaves(run);
+            return !(treeLeafId(idealA.indexOf('boil')) in a) &&
+                !(treeLeafId(idealA.indexOf('hno3')) in a);
+        })());
+        ok('⚠ 空けた枝は詰めない（葉の番号は、置いた枝の番号のまま）', (function () {
+            var run = treeRun(pA.ions, seqNoHno3);
+            var a = treeActualLeaves(run);
+            // 4番目の枝（＝ 添字3）を空けても、アンモニアの葉は L4 のまま
+            return (treeLeafId(4) in a) && !(treeLeafId(3) in a);
+        })());
+        ok('最後のろ液の葉は必ずある（★ 沈殿させる試薬が無い属の行先）', (function () {
+            var run = treeRun(pA.ions, [null, null, null, null, null, null, null]);
+            var a = treeActualLeaves(run);
+            return a[TREE_FINAL_LEAF].length === pA.ions.length;
+        })());
+        ok('操作を1つも置かなければ、全部が最後のろ液に残る（＝ 単離できていない）', (function () {
+            var empty = [null, null, null, null, null, null, null];
+            var g = treeGrade(pA, empty, {});
+            return g.isolated === false && g.actual[TREE_FINAL_LEAF].length === 6;
+        })());
+
+        // -----------------------------------------------------------
+        // 出題の門番（§2-4 の型A 版）
+        // ⚠ 型A の門番が見るのは「見分けられるか」ではなく
+        //   ★ **配った札で、全部を単離しきる手順が実在するか**
+        // -----------------------------------------------------------
+        section('型A: 出題の門番');
+        ok('出題が2件以上ある', TREE_PROBLEMS.length >= 2);
+        TREE_PROBLEMS.forEach(function (p) {
+            var a = treeAuditProblem(p);
+            ok('[' + p.id + '] 宣言もれが無い（実測 ' + a.undeclared.length + ' 件）',
+                a.undeclared.length === 0);
+            ok('[' + p.id + '] 配った札で、全部を単離しきる手順が実在する',
+                a.solvable === true && a.idealDirty === 0 && a.ok === true);
+            ok('[' + p.id + '] ★ 芯が効く（希硝酸を抜くと結果が変わる。汚れた葉 ' +
+                a.feDirty + ' 枚・行先の食い違い ' + a.feMisplaced + ' 件）', a.feTrap === true);
+        });
+        ok('★ 少なくとも1問は、鉄を戻し忘れると葉が2枚汚れる（＝ 型A を作る意味そのもの）',
+            TREE_PROBLEMS.some(function (p) { return treeAuditProblem(p).feDirty >= 2; }));
+        ok('どの出題にも鉄が入っている（⚠ 入っていない出題は、この教材の芯を持たない）',
+            TREE_PROBLEMS.every(function (p) { return p.ions.indexOf('Fe3') >= 0; }));
+
+        // -----------------------------------------------------------
+        // ⚠ 出題に解き筋を持たせない（型B と同じ縛り。§18-6 (1)）
+        // -----------------------------------------------------------
+        section('型A: 出題の文言に解き筋を出さない');
+        ok('出題が持つのは id・中身・札だけ（説明文の欄を持たない）',
+            TREE_PROBLEMS.every(function (p) {
+                return Object.keys(p).sort().join(',') === 'id,ions,ops';
+            }));
+        ok('やり方の名前が、解き筋に触れる語を持たない',
+            Object.keys(TREE_MODES).every(function (k) {
+                var m = TREE_MODES[k];
+                // ⚠ 型B の検査が使う語彙をそのまま借りる（1か所で持つ）
+                return (SPOILER_WORDS || []).every(function (w) {
+                    return (m.name + m.mark + m.id).indexOf(w) < 0;
+                });
+            }));
+        ok('札の名前に属の番号を書いていない（⚠ 書いたら並べる順を配ってしまう）',
+            Object.keys(TREE_OPS).every(function (o) {
+                var t = TREE_OPS[o].short + TREE_OPS[o].say + TREE_OPS[o].mean;
+                return !/第[1-6１-６]属/.test(t) && !/第[1-6１-６]族/.test(t);
+            }));
+
+        // -----------------------------------------------------------
+        // 出典はデータに残し、画面には出さない（§18-6 (4)・§17-10 と同じ扱い）
+        // -----------------------------------------------------------
+        section('型A: 出典はデータに残し、画面には出さない');
+        var TREE_BOOKS = ['教科書', '化学新研究', '新研究', '総合的研究', '要点&盲点',
+            '基本ノート', 'セミナー', '東京書籍', '三省堂', '旺文社', '参考書'];
+        ok('説明（why）に本の名前が出てこない', (function () {
+            var bad = [];
+            TREE_ALL_IONS.forEach(function (i) {
+                TREE_ALL_OPS.forEach(function (o) {
+                    [false, true].forEach(function (h) {
+                        var w = (treeRule(i, o, h) || {}).why || '';
+                        TREE_BOOKS.forEach(function (b) { if (w.indexOf(b) >= 0) bad.push(i + '×' + o + ':' + b); });
+                    });
+                });
+            });
+            if (bad.length) warn('型A の why に本の名前: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+        ok('説明（why）にページ番号が出てこない', (function () {
+            var bad = [];
+            TREE_ALL_IONS.forEach(function (i) {
+                TREE_ALL_OPS.forEach(function (o) {
+                    var w = (TREE_RULES[i][o] || {}).why || '';
+                    if (/p\s*\.\s*\d+/i.test(w)) bad.push(i + '×' + o);
+                });
+            });
+            return bad.length === 0;
+        })());
+        ok('出典（ref）はデータに残っている', (function () {
+            var n = 0;
+            // ⚠ 宣言もれがあっても **ここで例外にしない**。例外を投げると #total が更新されず、
+            //   全走がそのまま黙って固まる（実測: 否定対照で 25 分待たされた）。
+            //   ★ 落とすのは上の「悉皆で宣言している」の1件で足りる
+            TREE_ALL_IONS.forEach(function (i) {
+                TREE_ALL_OPS.forEach(function (o) { if ((TREE_RULES[i][o] || {}).ref) n++; });
+            });
+            if (n < 15) warn('ref を持つ組が ' + n + ' 件しかない');
+            return n >= 15;
+        })());
+        // ⚠⚠ 資料が直接は書いていない組（src:'この教材'）を、増やしっぱなしにしない。
+        //   ★ しかも「模範の手順では1度も出番が無い」＝ 系統分離の順どおりなら通らない場所
+        //     だけに置いてある、を機械で押さえる
+        ok('資料に無い組（この教材が埋めたもの）は 8 件以内', (function () {
+            var n = [];
+            TREE_ALL_IONS.forEach(function (i) {
+                TREE_ALL_OPS.forEach(function (o) { if ((TREE_RULES[i][o] || {}).src) n.push(i + '×' + o); });
+            });
+            if (n.length) warn('この教材が埋めた組: ' + n.join(' / '));
+            return n.length <= 8;
+        })());
+        ok('★ 模範の手順では、この教材が埋めた組を1度も通らない', (function () {
+            var bad = [];
+            TREE_PROBLEMS.forEach(function (p) {
+                var run = treeRun(p.ions, treeIdealSeq(p));
+                run.stages.forEach(function (s) {
+                    s.ppt.forEach(function (e) { if (e.src) bad.push(p.id + ':' + e.f); });
+                });
+            });
+            if (bad.length) warn('模範の手順が、この教材の埋めた組を通っている: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+
+        // -----------------------------------------------------------
+        // 型の鍵（⚠ 送信も保存もしない。持つだけ）
+        // -----------------------------------------------------------
+        section('型A: 型の鍵と記録');
+        ok('同じ中身・同じやり方なら、並びが違っても同じ鍵',
+            treeTypeKey('read', { ions: ['Na', 'Ag', 'Cu'] }) ===
+            treeTypeKey('read', { ions: ['Cu', 'Ag', 'Na'] }));
+        ok('やり方が違えば別の鍵',
+            treeTypeKey('read', { ions: ['Na', 'Ag'] }) !== treeTypeKey('build', { ions: ['Na', 'Ag'] }));
+        ok('鍵に版が入っている（⚠ 札の配り方や採点を変えたら上げる）',
+            treeTypeKey('read', { ions: ['Ag'] }).indexOf(TREE_KEY_VERSION + '|') === 0);
+        ok('鍵が型B の鍵と混ざらない（版の頭文字が違う）',
+            typeof SEP_KEY_VERSION === 'string' &&
+            TREE_KEY_VERSION.charAt(0) !== SEP_KEY_VERSION.charAt(0));
+        ok('記録は、鍵とやり方と中身と札を持つ', (function () {
+            var r = treeRecord('build', pA, { dirty: 2 });
+            return r.mode === 'build' && r.ions.length === 6 && r.ops.length === 7 && r.dirty === 2;
+        })());
     }
 
     // ---------------------------------------------------------------
@@ -1667,10 +1986,239 @@
         }).then(next);
     }
 
-    // スネークの UI テストが終わったら、型B の画面へ進んでから締める。
-    // ⚠ finish() を直に呼ばないこと（型B のテストが丸ごと空振りする）
+    // ===============================================================
+    // 型A の画面（tree.html を iframe で実際に組んで提出する）
+    //
+    // ⚠ ここで測るのは「模型が正しいか」ではなく「画面が設計どおりに振る舞うか」:
+    //   ① ★ **タップ2段で置ける**（⚠ ドラッグ＆ドロップに戻っていないこと）
+    //   ② ★ **途中では何も返さない**（§16-1。提出するまで答え合わせが出ない）
+    //   ③ ★★ **鉄を戻し忘れた答案が、実際に葉の数で不一致になる**（§15-2）
+    //   ④ スマホ幅（375px）でツリーが読めて、置き先が押せる
+    // ===============================================================
+    function runTreeUI(done) {
+        section('型A の画面（tree.html）', uiOut);
+        // スネークの側からの入口
+        (function () {
+            var d0 = frame.contentDocument;
+            var a = d0 && d0.getElementById('link-tree');
+            ok('スネークの画面に、型A への入口がある', !!a, uiOut);
+            if (a) {
+                ok('入口のリンク先が tree.html',
+                    (a.getAttribute('href') || '').indexOf('tree.html') >= 0, uiOut);
+                ok('入口が指で押せる大きさ（' + Math.round(rectH(a)) + 'px ≧ ' + TAP_MIN + '）',
+                    rectH(a) >= TAP_MIN, uiOut);
+            }
+        })();
+        if (!onHttp) {
+            ok('tree.html を iframe で開ける（file:// では不可）', false, uiOut);
+            done();
+            return;
+        }
+        var f = document.createElement('iframe');
+        f.id = 'treeapp';
+        f.src = 'tree.html';
+        f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
+        f.style.height = '812px';
+        document.body.appendChild(f);
+
+        var tries = 0;
+        (function poll() {
+            var w = f.contentWindow, d = f.contentDocument;
+            var ready = !!(d && d.readyState === 'complete' && w && w.treeUI && w.treeUI.state.problem);
+            if (!ready) {
+                if (++tries > 120) { ok('tree.html が起動した', false, uiOut); done(); return; }
+                setTimeout(poll, 50);
+                return;
+            }
+            try { drive(w, d); } catch (e) {
+                ok('型A の画面を操作できた（' + e + '）', false, uiOut);
+            }
+            done();
+        })();
+
+        function drive(w, d) {
+            ok('tree.html が起動した', true, uiOut);
+            // ⚠ 出題まわりに解き筋を出さない（型B と同じ縛り）
+            (function () {
+                var zone = [d.querySelector('.lead'), d.getElementById('panel-mode')]
+                    .map(function (e) { return e ? e.textContent : ''; }).join(' ');
+                var hit = (SPOILER_WORDS || []).filter(function (x) { return zone.indexOf(x) >= 0; });
+                if (hit.length) warn('型A の出題まわりに解き筋の語: ' + hit.join('・'));
+                ok('導入とやり方の欄に、解き筋の語が出てこない', hit.length === 0, uiOut);
+                ok('導入は1〜2行に収まっている（' + d.querySelector('.lead').textContent.trim().length +
+                    '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
+            })();
+
+            // --- ① やさしい段（行先を読む）は、操作がもう置いてある ---
+            w.treeUI.start('read', 'a1');
+            ok('「行先を読む」では操作の手札を出さない（枝はもう埋まっている）',
+                d.querySelectorAll('#op-deck .card').length === 0, uiOut);
+            ok('枝が7つある', d.querySelectorAll('.slot.branch').length === 7, uiOut);
+            ok('葉は6つ（★ 煮沸と希硝酸の枝には葉が生えない）',
+                d.querySelectorAll('.slot.leaf').length === 6, uiOut);
+            ok('イオンの手札が6枚', d.querySelectorAll('#ion-deck .card').length === 6, uiOut);
+            ok('容器の中身が画面に出ている（★ 型A に推理は無い）',
+                d.getElementById('beaker-ions').textContent.indexOf('Fe³⁺') >= 0, uiOut);
+
+            // --- ② タップ2段で置ける／もう一度押すと戻る ---
+            var ionCard = d.querySelector('#ion-deck .card[data-ion="Ag"]');
+            ionCard.click();
+            ok('札を押すと選ばれた印がつく',
+                d.querySelector('#ion-deck .card[data-ion="Ag"]').className.indexOf('picked') >= 0, uiOut);
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
+            ok('置き先を押すと置かれる（★ タップ2段。⚠ ドラッグを使わない）',
+                w.treeUI.state.plan.Ag === 'L0' &&
+                !!d.querySelector('[data-placed="L0"] .card[data-ion="Ag"]'), uiOut);
+            ok('置いた札は手札から消える',
+                !d.querySelector('#ion-deck .card[data-ion="Ag"]'), uiOut);
+            d.querySelector('[data-placed="L0"] .card[data-ion="Ag"]').click();
+            ok('置いた札をもう一度押すと手札に戻る（★ 取り消しも同じ作法）',
+                !w.treeUI.state.plan.Ag && !!d.querySelector('#ion-deck .card[data-ion="Ag"]'), uiOut);
+
+            // --- ③ 途中では何も返さない（§16-1） ---
+            ok('置いている途中では、答え合わせを出さない',
+                d.getElementById('result').className.indexOf('hidden') >= 0, uiOut);
+            ok('途中で「そこは違います」と言わない（警告を出さない・§4-3）',
+                d.getElementById('hint').textContent.indexOf('違い') < 0 &&
+                d.body.textContent.indexOf('第3属') < 0, uiOut);
+
+            // --- ④ 正しく置いて提出 → 単離できた ---
+            [['Ag', 'L0'], ['Cu', 'L1'], ['Fe3', 'L4'], ['Zn', 'L5'], ['Ca', 'L6'], ['Na', 'F']]
+                .forEach(function (x) {
+                    d.querySelector('#ion-deck .card[data-ion="' + x[0] + '"]').click();
+                    d.querySelector('.slot.leaf[data-leaf="' + x[1] + '"]').click();
+                });
+            d.getElementById('btn-submit').click();
+            var res = d.getElementById('result');
+            ok('提出すると答え合わせが出る', res.className.indexOf('hidden') < 0, uiOut);
+            ok('模範どおりなら「ぜんぶ単離できました」',
+                res.querySelector('h3').textContent.indexOf('ぜんぶ単離できました') >= 0, uiOut);
+            ok('葉ごとに「実際に来たもの」と「あなたが置いた」が並ぶ',
+                res.querySelectorAll('.leafrow').length >= 6 &&
+                res.textContent.indexOf('実際に来たもの') >= 0 &&
+                res.textContent.indexOf('あなたが置いた') >= 0, uiOut);
+            ok('答え合わせで初めて化学式が出る（★ 途中のツリーには出さない）',
+                res.textContent.indexOf('FeO(OH)') >= 0, uiOut);
+            ok('模範どおりなら、鉄の説明（素通り）は出ない',
+                res.textContent.indexOf('素通り') < 0, uiOut);
+
+            // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
+            w.treeUI.start('build', 'a1');
+            ok('「手順から組む」では操作の手札が7枚出る',
+                d.querySelectorAll('#op-deck .card').length === 7, uiOut);
+            ok('組む前は葉が1つ（最後のろ液）だけ',
+                d.querySelectorAll('.slot.leaf').length === 1, uiOut);
+            [['hcl', 0], ['h2sAcid', 1], ['boil', 2], ['nh3', 4], ['h2sBase', 5], ['co3', 6]]
+                .forEach(function (x) {
+                    d.querySelector('#op-deck .card[data-op="' + x[0] + '"]').click();
+                    d.querySelector('.slot.branch[data-slot="' + x[1] + '"]').click();
+                });
+            ok('希硝酸だけ手札に残っている（＝ 置き忘れた答案）',
+                d.querySelectorAll('#op-deck .card').length === 1 &&
+                !!d.querySelector('#op-deck .card[data-op="hno3"]'), uiOut);
+            ok('★ 空けた枝は詰めない（アンモニアの葉は L4 のまま）',
+                !!d.querySelector('.slot.leaf[data-leaf="L4"]') &&
+                !d.querySelector('.slot.leaf[data-leaf="L3"]'), uiOut);
+            [['Ag', 'L0'], ['Cu', 'L1'], ['Fe3', 'L4'], ['Zn', 'L5'], ['Ca', 'L6'], ['Na', 'F']]
+                .forEach(function (x) {
+                    d.querySelector('#ion-deck .card[data-ion="' + x[0] + '"]').click();
+                    d.querySelector('.slot.leaf[data-leaf="' + x[1] + '"]').click();
+                });
+            d.getElementById('btn-submit').click();
+            var r2 = d.getElementById('result');
+            ok('★★ 鉄を戻し忘れた答案は「単離できていない葉が 2 枚あります」になる',
+                r2.querySelector('h3').textContent.indexOf('単離できていない葉が 2 枚') >= 0, uiOut);
+            ok('★ 記録も葉の数で持っている（dirty ＝ ' + w.treeUI.state.record.dirty + '）',
+                w.treeUI.state.record.dirty === 2 &&
+                w.treeUI.state.record.isolated === false, uiOut);
+            ok('同居した葉を名指しする', r2.textContent.indexOf('2 種類が同居しています') >= 0, uiOut);
+            ok('何も来なかった葉も名指しする', r2.textContent.indexOf('何も来ませんでした') >= 0, uiOut);
+            ok('★ 答え合わせで初めて「鉄は第3属です」と言う（⚠ 途中では言わない）',
+                r2.textContent.indexOf('鉄は第3属です') >= 0, uiOut);
+            ok('なぜ素通りしたかを言う（Fe(OH)₂ と FeO(OH) の沈みやすさ）',
+                r2.textContent.indexOf('素通り') >= 0 &&
+                r2.textContent.indexOf('Fe(OH)₂') >= 0, uiOut);
+            ok('⚠ この教材が足した説明であることを断っている（D10）',
+                r2.textContent.indexOf('この教材が足した説明です') >= 0, uiOut);
+            ok('⚠ 「間違い」と書かない（§3-3 の文面の向き）',
+                r2.textContent.indexOf('間違い') < 0 && r2.textContent.indexOf('誤り') < 0 &&
+                r2.textContent.indexOf('べきでした') < 0, uiOut);
+            // ⚠⚠ 本の名前とページは画面に出さない（型B と同じ。§18-6 (4)）
+            var books2 = (typeof BOOK_WORDS !== 'undefined') ? BOOK_WORDS : [];
+            ok('ページ番号も本の名前も、画面のどこにも出てこない',
+                !/p\s*\.\s*\d+/i.test(d.body.textContent) &&
+                books2.every(function (x) { return d.body.textContent.indexOf(x) < 0; }), uiOut);
+            ok('提出したあとは札が押せない',
+                d.getElementById('btn-submit').disabled === true, uiOut);
+
+            // --- ⑥ 置き直せる ---
+            d.getElementById('btn-reset').click();
+            ok('「置き直す」で最初からやり直せる',
+                Object.keys(w.treeUI.state.plan).length === 0 &&
+                w.treeUI.state.submitted === false &&
+                d.getElementById('result').className.indexOf('hidden') >= 0, uiOut);
+
+            // --- ⑦ スマホ幅で読めて、押せる ---
+            ok('375px 幅で横スクロールが出ない（' + d.documentElement.scrollWidth + ' ≦ ' +
+                d.documentElement.clientWidth + '）',
+                d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1, uiOut);
+            var small = [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset'))
+                .filter(function (el) {
+                    var h = el.getBoundingClientRect().height;
+                    return h > 0 && h < 44;
+                });
+            if (small.length) warn('小さすぎる置き先: ' + small.length + ' 個');
+            ok('枝・葉・札・ボタンが指で押せる大きさ（44px 以上）', small.length === 0, uiOut);
+            ok('ツリーが1本の縦の並びになっている（★ 375px でも読める形）',
+                d.querySelectorAll('#stages .stage').length === 7, uiOut);
+        }
+    }
+
+    // 型A の画面が、設計書の縛りを文面と作りの側でも守っているか
+    function runTreeSource(next) {
+        section('型A の縛り（tree.js / tree-model.js）');
+        if (!onHttp) { ok('ソースを読み取れる（http で開いていない）', false); next(); return; }
+        Promise.all([
+            fetch('tree.js', { cache: 'no-store' }).then(function (r) { return r.text(); }),
+            fetch('tree-model.js', { cache: 'no-store' }).then(function (r) { return r.text(); })
+        ]).then(function (srcs) {
+            var raw = srcs.join('\n');
+            ok('ソースを読み取れる', raw.length > 0);
+            var src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+            ok('コメントだけを外せている（中身は残っている）',
+                src.length > 0 && src.length < raw.length && src.indexOf('function treeRun') >= 0);
+            // ⚠⚠ タッチで確実に動かないものに戻していないこと（★ muki はスマホ前提）
+            ok('ドラッグ＆ドロップに戻していない（dataTransfer / draggable を使わない）',
+                src.indexOf('dataTransfer') < 0 && src.indexOf('draggable') < 0 &&
+                src.indexOf('dragstart') < 0 && src.indexOf('ondrop') < 0);
+            // §16-3 と同じ。★ 型A にも「まだわからない」は無い（中身が既知なので、そもそも要らない）
+            ok('「まだわからない」という選択肢を作っていない',
+                src.indexOf('まだわからない') < 0);
+            // §17-11: アプリが「確認できません」と言わない
+            ok('「確認できません」と言わない（§17-11）',
+                src.indexOf('確認できません') < 0);
+            // §5-5: 色は混ぜない。並べて見せる
+            ok('「混ざった色」を作らない（§5-5）',
+                src.indexOf('混ざった色') < 0 && src.indexOf('混色') < 0);
+            // §10-2: 群の呼び方は「属」。⚠ 「族」は周期表の族と衝突するので使わない
+            ok('群の呼び方は「属」（⚠ 「第N族」と書かない）', !/第[1-6１-６]族/.test(src));
+            ok('答え合わせでは「属」を使っている（§10-2）', /第[1-6１-６]属/.test(src));
+            // §4-3: 途中で警告を出さない
+            ok('途中で警告を出す文言を持たない（§4-3「警告を出さない」）',
+                src.indexOf('煮沸を忘れて') < 0 && src.indexOf('忘れています') < 0);
+        }).catch(function (e) {
+            ok('ソースを読み取れる（' + e + '）', false);
+        }).then(next);
+    }
+
+    // スネークの UI テストが終わったら、型B → 型A の画面へ進んでから締める。
+    // ⚠ finish() を直に呼ばないこと（型B・型A のテストが丸ごと空振りする）
     function endAll() {
-        runSeparationSource(function () { runSeparationUI(finish); });
+        runSeparationSource(function () {
+            runSeparationUI(function () {
+                runTreeSource(function () { runTreeUI(finish); });
+            });
+        });
     }
 
     function finish() {
