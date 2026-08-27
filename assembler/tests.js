@@ -102,7 +102,7 @@
  * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
- * | PM  | 1〜12  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない
+ * | PM  | 1〜14  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない | **13〜14 は動画レーンの実測報告 2026-08-27**（同書 §20）＝ **鎖が2本できても加硫の箇所選びが永久に終わらない**（札は「弾性ゴム（7箇所）」で、押しても 7→3→3→3 と同じ候補に戻り硫黄は1つも入らない）。原因は `vulcanizablePairs` が「硫黄がどちらの炭素に付くか」だけ違う＝**4原子がまったく同じ組**を何本も返し、`narrow` が候補を分ける原子を見つけられずに全原子へ落ちていたこと。13 が本体（C=C の組ごとに**短い橋1本だけ**返す ＝ 札も実数の「2箇所」になる／`narrow` の安全弁 ＝ 分ける原子が無いなら選ばせず先頭を実行）・**14 は否定対照**＝ 分けられる候補では今までどおり箇所選びに入る・架けられる橋の本数は減っていない・単量体は今までどおり相手にしない
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
@@ -24107,6 +24107,135 @@
         g.updateDrawing();
         assert(g.userMolecule.bonds.filter(b => b.type === 2).length === 4,
             '1,4-付加重合で残る二重結合の数が変わった');
+    });
+
+    /* 鎖を2本つくって加硫を押すまで（動画レーンの再現手順そのまま）。PM13・PM14 で共用 */
+    const twoRubberChains = (c) => {
+        const g = c.game, W = c.W;
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const mol = polySetup(c, ['イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(mol)[0]);
+        g.updateDrawing();
+        assert(g.summonMolecule('イソプレン') && g.summonMolecule('イソプレン'), 'イソプレンを追加できない');
+        g.updateDrawing();
+        const second = dien.detect(g.userMolecule);
+        assert(second.length === 1, `2回目の 1,4-付加重合が ${second.length} 件（前提が崩れている）`);
+        dien.apply(g, second[0]);
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // site（原子IDの並び）を「原子の集合」に潰した鍵。向き違いは同じ鍵になる
+    const siteKey = (s) => [...s].map(String).sort().join(',');
+    // 硫黄を通らない連結成分の数 ＝ 架橋する前の鎖が何本か
+    const chainCount = (c, mol) => {
+        const seen = new Set(); let n = 0;
+        mol.atoms.filter(a => a.element !== 'S' && a.element !== 'H').forEach(a => {
+            if (seen.has(a.id)) return;
+            n++;
+            const st = [a.id]; seen.add(a.id);
+            while (st.length) {
+                const cur = st.pop();
+                mol.getNeighbors(cur).forEach(x => {
+                    if (x.atom.element === 'S' || x.atom.element === 'H' || seen.has(x.atom.id)) return;
+                    seen.add(x.atom.id); st.push(x.atom.id);
+                });
+            }
+        });
+        return n;
+    };
+
+    test('PM13: 加硫の箇所選びが必ず終わる（同じ4原子の組を何本も返さない）', async (c) => {
+        const g = c.game, W = c.W;
+        /* ★ **症状**（動画レーン実測 v1465・ORDER_reactor_findings_2026-08-26.md §6-1）:
+         *   鎖を2本つくって加硫を押すと「弾性ゴム（7箇所）」の札は出るのに、光った原子を
+         *   クリックしても確定しない。何度押しても同じ候補に戻り、**硫黄は1つも入らない**
+         *   （実測: sites 7 → 3 → 3 → 3 →……）。
+         * ★ **原因**: `vulcanizablePairs` は「硫黄がどちらの炭素に付くか」で4通りを返すが、
+         *   site の**4原子はまったく同じ**。`Reactor.narrow` は原子の集合でしか候補を分けられず、
+         *   `distinguishing` が空になって全原子に落ちる ＝ 押すたび同じ候補に戻る堂々巡り。
+         * ★ **直し（2段構え）**: ① `vulcanizablePairs` は C=C の組ごとに**短い橋1本だけ**返す。
+         *   ② `narrow` に安全弁 ―― 分ける原子が1つも無いなら選ばせず先頭を実行する
+         *   （加硫以外のルールが同じ轍を踏んでも止まらない）。 */
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        assert(vul, '加硫のルールが無い');
+        twoRubberChains(c);
+
+        // ---- ① 候補に「原子の集合が同じ組」が2件以上ない（これが堂々巡りの正体） ----
+        const sites = vul.detect(g.userMolecule);
+        assert(sites.length > 0, '鎖2本で加硫の候補が出ない（前提が崩れている）');
+        const keys = sites.map(siteKey);
+        assert(new Set(keys).size === keys.length,
+            `候補 ${keys.length} 件に原子の集合が同じものがある（${keys.length - new Set(keys).size} 件が重複）` +
+            '＝ クリックで分けられず箇所選びが終わらない');
+
+        // ---- ② narrow → クリックで実際に確定し、硫黄が入る（クリック数に上限を置く） ----
+        const sBefore = g.userMolecule.atoms.filter(a => a.element === 'S').length;
+        W.reactor.narrow(vul, sites);
+        let clicks = 0;
+        while (W.reactor.picking && clicks < 6) {
+            const ps = W.reactor.picking.sites;
+            // 候補を分けている原子（全候補には入っていない原子）を1つ押す
+            const id = ps[0].find(x => ps.some(s => !s.includes(x)));
+            assert(id !== undefined, `${clicks} 回目のクリックで分ける原子が見つからない（安全弁が効いていない）`);
+            W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === id));
+            clicks++;
+            await c.tick(30);
+        }
+        assert(!W.reactor.picking, `${clicks} 回クリックしても箇所選びが終わらない（堂々巡り）`);
+        const sAfter = g.userMolecule.atoms.filter(a => a.element === 'S').length;
+        assert(sAfter === sBefore + 1, `硫黄が入っていない（S ${sBefore} → ${sAfter}）`);
+        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)),
+            '箇所選び経由の加硫で価標が壊れた');
+
+        // ---- ③ 安全弁そのもの: 原子の集合が同じ2件を渡したら、選ばせずに先頭を実行する ----
+        const mol2 = twoRubberChains(c);
+        const one = vul.detect(mol2)[0];
+        const twin = [one[1], one[0], one[3], one[2]];   // 向きだけ違う＝同じ4原子
+        assert(siteKey(one) === siteKey(twin), '双子の site が作れていない（テストの前提）');
+        const s0 = mol2.atoms.filter(a => a.element === 'S').length;
+        W.reactor.narrow(vul, [one, twin]);
+        await c.tick(30);
+        assert(!W.reactor.picking, '分けられない2件なのに箇所選びに入った（無限ループの入口）');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === s0 + 1,
+            '分けられない2件を渡したのに何も実行されなかった');
+    });
+
+    test('PM14（否定対照）: 安全弁は「分けられるとき」を先食いせず、架けられる橋も減っていない', async (c) => {
+        const g = c.game, W = c.W;
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+
+        // ---- ① 分けられる候補では今までどおり箇所選びに入る（何でも先頭実行に化けていない） ----
+        twoRubberChains(c);
+        const sites = vul.detect(g.userMolecule);
+        assert(sites.length > 1, `候補が ${sites.length} 件（複数を期待。1件では①の意味が無い）`);
+        W.reactor.narrow(vul, sites);
+        assert(W.reactor.picking && W.reactor.picking.sites.length === sites.length,
+            '分けられる候補なのに箇所選びに入らなかった（安全弁が効きすぎている）');
+        assert(g.uiGroup.querySelectorAll('circle').length > 0, '選ぶ箇所のハイライトが出ていない');
+        assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === 0,
+            '箇所選びに入っただけなのに硫黄が入った');
+        W.reactor.picking = null; g.clearUIOverlay();
+
+        // ---- ② 向き違いを1件にまとめても、架けられる橋の本数は減っていない ----
+        //   鎖2本 × C=C 2つずつ ＝ 橋は2本架かり、そのあと候補が尽きる
+        let bridges = 0;
+        for (let k = 0; k < 5; k++) {
+            const vs = vul.detect(g.userMolecule);
+            if (!vs.length) break;
+            vul.apply(g, vs[0]);
+            g.updateDrawing();
+            bridges++;
+        }
+        assert(bridges === 2, `架橋が ${bridges} 本（イソプレン2個の鎖2本なら2本。まとめすぎて組を落としている）`);
+        assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === 2,
+            '硫黄の数が架橋の本数と合わない');
+        assert(chainCount(c, g.userMolecule) === 2,
+            '硫黄を外すと鎖が2本にならない（同じ鎖の中で橋が架かっている）');
+        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)), '加硫で価標が壊れた');
+
+        // ---- ③ 相手にしない分子は今までどおり相手にしない ----
+        assert(vul.detect(polySetup(c, ['イソプレン', 'イソプレン'])).length === 0,
+            '単量体2つで加硫の候補が出た（R の無い分子は相手にしない）');
     });
 
     test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
