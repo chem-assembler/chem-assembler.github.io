@@ -36492,6 +36492,118 @@
         D.getElementById('btn-stereo-close').click();
     });
 
+    /* ===== RP2: ★ 橋の -O- は2つの結合炭素の**ちょうど中間**に立つ（2026-08-26・ユーザー報告）=====
+     *
+     * **ユーザー原文（実機・v1461〜v1466）**:
+     * > **「ハース環　2糖　立体視　環をヨコから → グリコシド結合が、結合炭素から
+     * >   ずれた位置に斜めに伸びている」**
+     *
+     * ★ **実測での正体**（RP1 と同じ形の落とし穴。推測ではない）: 橋の -O- だけ
+     *   **描かれた 2D 座標のまま**模型に置いていたので、キャンバスで橋が host の
+     *   114px 下に描かれている（面を ±25° 以内で読ませるための深い V）ぶんだけ
+     *   **模型の面の中を流れて**いた。⚠ **真横・独楽0° では奥行き方向に隠れて見えない**
+     *   ので、独楽を回して初めて出る（RP1 の枝とまったく同じ事情）。
+     *
+     *   実測（マルトース・真横）:
+     *     独楽90° … 直す前 **26.6°・2本とも dx = −51.2**（＝ 橋が環の線から横へ流れる）
+     *               直したあと **90.0°・dx = 0**（＝ ほかの枝と同じくまっすぐ立つ）
+     *
+     * ★ **橋を法線に立てることは原理的にできない**（2つの環の置換基を兼ねるので
+     *   両方には垂直に立てられない。`DESIGN_3d_correspondence.md` §7.1a）。
+     *   できるのは**面内のずれを最小にし、両側で対称にする**ことで、
+     *   それが「2つの host のちょうど中間」。だから見るのは角度そのものではなく
+     *   ★ **「2本の横のずれが打ち消し合うこと」**（＝ 中間に立っている、の直の言い換え）。
+     */
+    test('RP2: ★ 環ビューの橋の -O- が2つの結合炭素の中間に立つ（4件×独楽6角・否定対照つき）', async (c) => {
+        const W = c.W, D = c.D;
+        /** 真横で独楽を yaw 回したときの、橋につながる2本の結合の見え方 */
+        const bridgeBondsOnScreen = (sv, m, yaw) => {
+            const bid = m.bridge.atomId;
+            sv.setRingCamera('side');
+            sv.nudgeRingYaw(yaw);
+            const pts = sv._ringDrawn;
+            return m.bonds.filter(b => b.kind !== 'ring').map(b => {
+                const p = pts[b.a], q = pts[b.b];
+                if (!(q.node.atomId !== null && q.node.atomId === bid)) return null;
+                return { dx: q.x - p.x, dy: q.y - p.y, len: Math.hypot(q.x - p.x, q.y - p.y),
+                         ang: Math.atan2(Math.abs(q.y - p.y), Math.abs(q.x - p.x)) * 180 / Math.PI };
+            }).filter(Boolean);
+        };
+        const YAWS = [0, 30, 60, 90, 120, 150];
+        const worst = [];
+        DISACCHARIDES.forEach(id => {
+            const { sv, m, mol } = openDisaccharide(c, id);
+            assert(m && m.bridge, `${id}: 環ビューに入れない（橋が読めていない）`);
+            const bid = m.bridge.atomId;
+            const bn = m.nodes.find(n => n.atomId === bid);
+            const hA = m.nodes.find(n => n.kind === 'ring' && n.atomId === m.bridge.hostAId);
+            const hB = m.nodes.find(n => n.kind === 'ring' && n.atomId === m.bridge.hostBId);
+            assert(bn && hA && hB, `${id}: 橋と2つの結合炭素が模型に揃っていない`);
+            // ---- ① 模型: 面内の位置が2つの host のちょうど中間 ----
+            assert(Math.abs(bn.v[0] - (hA.v[0] + hB.v[0]) / 2) < 1e-9 &&
+                   Math.abs(bn.v[1] - (hA.v[1] + hB.v[1]) / 2) < 1e-9,
+                `★ ${id}: 橋の -O- が2つの結合炭素の中間に無い ` +
+                `(${bn.v[0].toFixed(1)},${bn.v[1].toFixed(1)}) ≠ ` +
+                `(${((hA.v[0] + hB.v[0]) / 2).toFixed(1)},${((hA.v[1] + hB.v[1]) / 2).toFixed(1)})`);
+            // ---- ② 高さは他の置換基とそろえたまま（面＝α/β の読みに触っていない）----
+            assert(Math.abs(bn.v[2] - bn.face * m.depth) < 1e-9,
+                `${id}: 橋の高さが他の置換基とそろっていない`);
+            // ---- ③ 模型: 2本の結合の長さが等しい（対称に架かっている）----
+            const len3 = (p, q) => Math.hypot(p.v[0] - q.v[0], p.v[1] - q.v[1], p.v[2] - q.v[2]);
+            assert(Math.abs(len3(bn, hA) - len3(bn, hB)) < 1e-9,
+                `${id}: 橋の2本の結合の長さが違う（${len3(bn, hA).toFixed(1)} / ${len3(bn, hB).toFixed(1)}）`);
+            // ---- ④ ★ 画面: どの独楽角でも、2本の横のずれが打ち消し合う ＝ 中間に立っている ----
+            YAWS.forEach(yaw => {
+                const bs = bridgeBondsOnScreen(sv, m, yaw);
+                assert(bs.length === 2, `${id}: 独楽${yaw}° で橋の結合が ${bs.length} 本`);
+                const dxSum = bs[0].dx + bs[1].dx;
+                assert(Math.abs(dxSum) < 1,
+                    `★ ${id}: 独楽${yaw}° で橋が結合炭素からずれた位置にある` +
+                    `（2本の横のずれの和 ${dxSum.toFixed(1)}px。打ち消し合うはず）`);
+                assert(Math.abs(bs[0].ang - bs[1].ang) < 2,
+                    `★ ${id}: 独楽${yaw}° で橋の2本の傾きが左右で違う` +
+                    `（${bs[0].ang.toFixed(1)}° / ${bs[1].ang.toFixed(1)}°）`);
+                // ⚠ 橋は垂直にはできない（§7.1a）。⚠ ただし**寝てはいけない**。
+                //   実測の最小は 51.9°（スクロース・独楽0°）なので 45° を下限に見張る
+                const flat = Math.min(bs[0].ang, bs[1].ang);
+                assert(flat > 45,
+                    `★ ${id}: 独楽${yaw}° で橋の結合が ${flat.toFixed(1)}° まで寝ている（45° 超のはず）`);
+                worst.push({ id, yaw, flat });
+            });
+            // ---- ⑤ 「橋だけは垂直にならない」と画面に書いてある（RP1 と同じ約束を落とさない）----
+            const note = D.getElementById('stereo-ring-note').textContent;
+            assert(note.includes('橋の -O- だけは'), `${id}: 橋の断りが画面から消えている`);
+            D.getElementById('btn-stereo-close').click();
+        });
+        assert(worst.length === DISACCHARIDES.length * YAWS.length, '見た組み合わせが足りない');
+
+        /* ===== ⚠ 否定対照: 橋を「描かれた 2D 座標のまま」へ戻すと、報告の症状が返る =====
+         *   （v1466 までの置き方そのもの。ここが赤くならないなら ④ は空振りの緑） */
+        const { sv, m, mol } = openDisaccharide(c, 'maltose');
+        const bn = m.nodes.find(n => n.atomId === m.bridge.atomId);
+        const ao = mol.atoms.find(x => x.id === m.bridge.atomId);
+        // 模型の縦の伸ばし方 K は、中心から最も離れた環原子で測る（0 割りを避ける）
+        const gauge = m.nodes.filter(n => n.kind === 'ring')
+            .map(n => ({ n, ay: mol.atoms.find(x => x.id === n.atomId).y - m.center.y }))
+            .sort((p, q) => Math.abs(q.ay) - Math.abs(p.ay))[0];
+        const K = gauge.n.v[1] / gauge.ay;
+        assert(isFinite(K) && K > 1 && K < 2, '模型の縦の伸ばし方を測れない');
+        const T = Math.sqrt(K * K - 1);          // tan(a0)。K = 1/cos(a0) から出る
+        bn.v = [ao.x - m.center.x, K * (ao.y - m.center.y) + bn.face * m.depth * T, bn.v[2]];
+        const bad = [];
+        YAWS.forEach(yaw => {
+            const bs = bridgeBondsOnScreen(sv, m, yaw);
+            bad.push({ yaw, dxSum: bs[0].dx + bs[1].dx, flat: Math.min(bs[0].ang, bs[1].ang) });
+        });
+        assert(bad.some(b => Math.abs(b.dxSum) > 1),
+            '⚠ 否定対照が効いていない（描かれた座標のまま置いても、橋が中間に立って見える）: ' +
+            bad.map(b => `${b.yaw}°=${b.dxSum.toFixed(1)}`).join(' '));
+        assert(bad.some(b => b.flat < 45),
+            '⚠ 否定対照が効いていない（描かれた座標のまま置いても、橋が寝ない）: ' +
+            bad.map(b => `${b.yaw}°=${b.flat.toFixed(1)}°`).join(' '));
+        D.getElementById('btn-stereo-close').click();
+    });
+
     // ===== SG12: 切る側 —— 加水分解でできた単糖が名乗る（DESIGN_sugar.md 段4-a・v1444）=====
     //
     // ⚠ ここは環ビューではなく**キャンバスの反応実行**の話。段2・段3（SG8〜SG11）とは別の面。
