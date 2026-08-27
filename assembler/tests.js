@@ -29136,10 +29136,13 @@
             open: (D, W) => D.getElementById('btn-help').click()
         },
         {
-            name: 'パズル: お題を選ぶ', root: '#puzzle-modal', max: 30,
-            // #target-desc は**化学の説明**、#random-status は game.js が書く残件数（データ）、
-            // #puzzle-howto は「何をするモードか」の常時案内（v1468 では触っていない）
-            skip: ['#target-info', '#random-status', '#puzzle-howto', '.toggle-container'],
+            name: 'パズル: お題を選ぶ', root: '#puzzle-modal', max: 36,
+            // #target-desc は**化学の説明**、#puzzle-howto は「何をするモードか」の常時案内。
+            // ★ **`#random-status` は v1472 で数える側に移した**（51字 →「全 N 問 ／ 未出題 M 問」9字）。
+            //   残件数そのものはデータだが、**そこに約束ごとの但し書きを足すのは操作の案内**で、
+            //   実際に「（出した問題は、ひととおり出るまで再び出ません）」が居座っていた。
+            //   数えないままだと、また同じ場所に書き足せてしまう ＝ 数える側に置く
+            skip: ['#target-info', '#puzzle-howto', '.toggle-container'],
             open: (D, W) => { W.game.setMode('puzzle'); D.getElementById('puzzle-modal').classList.remove('hidden'); }
         },
         {
@@ -36430,7 +36433,7 @@
         g.setPuzzleOpen(true);
         const left = g.randomBag.order.length - g.randomBag.pos;
         assert(left === list.length - 3, `一巡の残りが ${left}（期待 ${list.length - 3}）`);
-        assert(new RegExp(`まだ出していない問題は ${left} 問`).test(D.getElementById('random-status').textContent),
+        assert(new RegExp(`未出題 ${left} 問`).test(D.getElementById('random-status').textContent),
             `画面の残り（${D.getElementById('random-status').textContent}）が実際の残り ${left} と違う`);
         g.setPuzzleOpen(false);
     });
