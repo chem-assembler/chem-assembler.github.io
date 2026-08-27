@@ -795,7 +795,7 @@ function cleaveEster(game, site, asSalt) {
         if (sep) translateAtoms(mol, alcIds, sep.dx, sep.dy);
     }
     const spot = freeSpotAround(mol, cId);
-    if (!spot) throw noRoom('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
+    if (!spot) throw noRoom('生成物を配置する空間がありません');
     const o = mol.addAtom('O', spot.x, spot.y);
     mol.addBond(cId, o.id, 1);
     if (!asSalt) {
@@ -808,7 +808,7 @@ function cleaveEster(game, site, asSalt) {
     // 塩にする: 生えた -OH の O にさらに Na を付ける（-COONa）。
     // Na の置き場が無いときは酸のままにせず、ここで止める（中途半端な図を残さないため）
     const naSpot = freeSpotAround(mol, o.id, [{ x: spot.x, y: spot.y }]);
-    if (!naSpot) throw noRoom('ナトリウムを置く空間がありません。分子を離してから実行してください');
+    if (!naSpot) throw noRoom('ナトリウムを置く空間がありません');
     const na = mol.addAtom('Na', naSpot.x, naSpot.y);
     mol.addBond(o.id, na.id, 1);
     return {
@@ -1159,7 +1159,7 @@ function attachGroup(mol, cId, kind, dryRun = false) {
         return added;
     }
     if (dryRun) return false; // 置ける場所が無い
-    throw noRoom('置換基を置く空間がありません。まわりを空けてから実行してください');
+    throw noRoom('置換基を置く空間がありません');
 }
 
 // アセチル基 CH₃CO- を指定原子（フェノールのO・アミンのN）に取り付ける（P9-1検収フォロー）。
@@ -1191,7 +1191,7 @@ function attachAcetyl(mol, targetId) {
         });
         return added;
     }
-    throw noRoom('アセチル基を置く空間がありません。まわりを空けてから実行してください');
+    throw noRoom('アセチル基を置く空間がありません');
 }
 
 /**
@@ -2127,7 +2127,7 @@ function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
     [[cX, elemA], [cY, elemB]].forEach(([cid, el]) => {
         if (!el) return; // 水素は明示原子にせず自動水素に任せる
         const spot = freeSpotAround(mol, cid, reserved);
-        if (!spot) throw noRoom('付加する原子を置く空間がありません。結合を伸ばして空間を作ってから実行してください');
+        if (!spot) throw noRoom('付加する原子を置く空間がありません');
         reserved.push(spot);
         const atom = mol.addAtom(el, spot.x, spot.y);
         mol.addBond(cid, atom.id, 1);
@@ -2721,7 +2721,7 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             // 置き場を**先に**確かめる（途中で失敗して C=O だけの中途半端な形を残さない）
             const spot = freeSpotAround(mol, cId);
-            if (!spot) throw noRoom('-OH を置く空間がありません。まわりを空けてから実行してください');
+            if (!spot) throw noRoom('-OH を置く空間がありません');
             mol.getBond(oId, cId).type = 2;
             bendCarbonyl(mol, cId, oId);
             const o = mol.addAtom('O', spot.x, spot.y);
@@ -2779,7 +2779,7 @@ const REACTION_RULES = [
             // 空き位置を確認して -OH の O を追加する。方向を計算するだけでは、
             // その位置に既存原子があると完全に重なってしまう（P9-5監査で発見）
             const spot = freeSpotAround(mol, cId);
-            if (!spot) throw noRoom('-OH を置く空間がありません。まわりを空けてから実行してください');
+            if (!spot) throw noRoom('-OH を置く空間がありません');
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(cId, o.id, 1);
             return {
@@ -2838,7 +2838,7 @@ const REACTION_RULES = [
             // 側鎖を落としたあとに探すので、いま側鎖があった場所も空きとして使える
             const s1 = freeSpotAround(mol, mId);
             const s2 = s1 ? freeSpotAround(mol, mId, [s1]) : null;
-            if (!s1 || !s2) throw noRoom('-COOH を置く空間がありません。まわりを空けてから実行してください');
+            if (!s1 || !s2) throw noRoom('-COOH を置く空間がありません');
             const o1 = mol.addAtom('O', s1.x, s1.y);
             mol.addBond(mId, o1.id, 2);
             const o2 = mol.addAtom('O', s2.x, s2.y);
@@ -2891,7 +2891,7 @@ const REACTION_RULES = [
                 const s1 = freeSpotAround(mol, cid);
                 const s2 = nC === 1 ? freeSpotAround(mol, cid, s1 ? [s1] : []) : null;
                 if (!s1 || (nC === 1 && !s2)) {
-                    throw noRoom('生成物を置く空間がありません。分子を離してから実行してください');
+                    throw noRoom('生成物を置く空間がありません');
                 }
                 const o1 = mol.addAtom('O', s1.x, s1.y);
                 mol.addBond(cid, o1.id, 2);
@@ -2959,7 +2959,7 @@ const REACTION_RULES = [
             mol.removeBond(mId, kId);
             // ① メチル基だった炭素を引き離して CHI₃ にする
             const spots = freeSpotsForIodoform(mol, mId);
-            if (!spots) throw noRoom('ヨードホルムを置く空間がありません。分子を離してから実行してください');
+            if (!spots) throw noRoom('ヨードホルムを置く空間がありません');
             const added = spots.map(p => {
                 const i = mol.addAtom('I', p.x, p.y);
                 mol.addBond(mId, i.id, 1);
@@ -2976,11 +2976,11 @@ const REACTION_RULES = [
                 bendCarbonyl(mol, kId, oh.atom.id); // 鎖と一直線なら折る（C-7）
             }
             const oSpot = freeSpotAround(mol, kId);
-            if (!oSpot) throw noRoom('-COONa を置く空間がありません。まわりを空けてから実行してください');
+            if (!oSpot) throw noRoom('-COONa を置く空間がありません');
             const o = mol.addAtom('O', oSpot.x, oSpot.y);
             mol.addBond(kId, o.id, 1);
             const naSpot = freeSpotAround(mol, o.id, [oSpot]);
-            if (!naSpot) throw noRoom('ナトリウムを置く空間がありません。分子を離してから実行してください');
+            if (!naSpot) throw noRoom('ナトリウムを置く空間がありません');
             const na = mol.addAtom('Na', naSpot.x, naSpot.y);
             mol.addBond(o.id, na.id, 1);
             return {
@@ -3126,7 +3126,7 @@ const REACTION_RULES = [
                 if (plan) { swap = tryAcid; break; }
             }
             const movingIds = swap ? acidIds : alcIds;
-            if (!plan) throw noRoom('生成物を配置する空間がありません。分子を離してから実行してください');
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
             mol.removeBond(cId, ohOId);
             applyAttachment(mol, movingIds, plan);
             mol.addBond(cId, alcOId, 1);
@@ -3230,7 +3230,7 @@ const REACTION_RULES = [
             // B分子のうち、脱離するOを除いた部分を移動させてAのOに結合する
             const movingIds = [...componentOf(mol, cBId)].filter(id => id !== oBId);
             const plan = planAttachment(mol, oAId, cBId, movingIds, [oBId]);
-            if (!plan) throw noRoom('生成物を配置する空間がありません。分子を離してから実行してください');
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
             mol.removeBond(oBId, cBId);
             applyAttachment(mol, movingIds, plan);
             mol.addBond(oAId, cBId, 1);
@@ -3259,7 +3259,7 @@ const REACTION_RULES = [
         apply(game, site) {
             const mol = game.userMolecule;
             const done = applyGlycosidicCondensation(mol, site);
-            if (!done) throw noRoom('この向きにはつなげません。分子を離してから実行してください');
+            if (!done) throw noRoom('この向きにはつなげません');
             const name = site.productName || (registeredProductName(
                 subMolecule(mol, [...componentOf(mol, site[1])]).mol) || '');
             return {
@@ -3365,7 +3365,7 @@ const REACTION_RULES = [
                 movingIds.forEach(id => pending.delete(id));
                 const plan = planAttachment(mol, linkFrom, u.tail, movingIds, [...pending],
                     chainDirection(mol, linkBack, linkFrom));
-                if (!plan) throw noRoom('生成物を配置する空間がありません。分子を離してから実行してください');
+                if (!plan) throw noRoom('生成物を配置する空間がありません');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.tail, 1);
                 changed.push(linkFrom, u.tail);
@@ -3433,7 +3433,7 @@ const REACTION_RULES = [
                 movingIds.forEach(id => pending.delete(id));
                 const plan = planAttachment(mol, linkFrom, u.left, movingIds, [...pending],
                     chainDirection(mol, linkBack, linkFrom));
-                if (!plan) throw noRoom('生成物を配置する空間がありません。分子を離してから実行してください');
+                if (!plan) throw noRoom('生成物を配置する空間がありません');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.left, 1);
                 changed.push(linkFrom, u.left);
@@ -3510,7 +3510,7 @@ const REACTION_RULES = [
                 movingIds.forEach(id => pending.delete(id));
                 const plan = planAttachment(mol, linkFrom, u.c1, movingIds, [...pending],
                     chainDirection(mol, linkBack, linkFrom));
-                if (!plan) throw noRoom('生成物を配置する空間がありません。分子を離してから実行してください');
+                if (!plan) throw noRoom('生成物を配置する空間がありません');
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(linkFrom, u.c1, 1);
                 changed.push(linkFrom, u.c1);
@@ -3554,7 +3554,7 @@ const REACTION_RULES = [
             const best = vulcanizablePairs(mol)
                 .find(p => p.ca === ca && p.ca2 === ca2 && p.cb === cb && p.cb2 === cb2);
             if (!best) {
-                throw noRoom('鎖の間に硫黄を置く空間がありません。2本の鎖を1マスあけて並べてから実行してください');
+                throw noRoom('鎖の間に硫黄を置く空間がありません');
             }
             const ab = mol.getBond(best.ca, best.ca2), bb = mol.getBond(best.cb, best.cb2);
             if (!ab || !bb || ab.type !== 2 || bb.type !== 2) throw new Error('二重結合が残っていません');
@@ -3632,7 +3632,7 @@ const REACTION_RULES = [
                 movingIds.forEach(id => pending.delete(id));
                 const plan = planAttachment(mol, anchor, attach, movingIds, [oh, ...pending],
                     outward(anchor, attach));
-                if (!plan) throw noRoom('生成物を配置する空間がありません。分子を離してから実行してください');
+                if (!plan) throw noRoom('生成物を配置する空間がありません');
                 mol.removeBond(c, oh);
                 applyAttachment(mol, movingIds, plan);
                 mol.addBond(c, x, 1);
@@ -3775,7 +3775,7 @@ const REACTION_RULES = [
                     .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
                 const cX = subs(id2, id1) > subs(id1, id2) ? id2 : id1; // マルコフニコフ則
                 const spot = freeSpotAround(mol, cX);
-                if (!spot) throw noRoom('生成物を配置する空間がありません。まわりを空けてから実行してください');
+                if (!spot) throw noRoom('生成物を配置する空間がありません');
                 bond.type = 1;
                 const o = mol.addAtom('O', spot.x, spot.y);
                 mol.addBond(cX, o.id, 2);
@@ -3913,7 +3913,7 @@ const REACTION_RULES = [
                 if (sep) translateAtoms(mol, part, sep.dx, sep.dy);
             }
             const spot = freeSpotAround(mol, cId);
-            if (!spot) throw noRoom('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
+            if (!spot) throw noRoom('生成物を配置する空間がありません');
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(cId, o.id, 1);
             return {
@@ -3957,7 +3957,7 @@ const REACTION_RULES = [
             // 切った側には水から -OH が入る（自動水素が H を描く）。
             // ⚠ 置く向きは `haworthCleaveDirection` が決める ＝ もとの α/β を保つ
             const spot = freeSpotAround(mol, cId, [], dir);
-            if (!spot) throw noRoom('生成物を配置する空間がありません。結合を伸ばして空間を作ってから実行してください');
+            if (!spot) throw noRoom('生成物を配置する空間がありません');
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(cId, o.id, 1);
             /* ★ **切る前の図と切ったあとの図を対応させる**（段4-c）。
@@ -4039,7 +4039,7 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             const kind = acidKindOf(mol, oId, anchorId);
             const spot = freeSpotAround(mol, oId);
-            if (!spot) throw noRoom('ナトリウムを置く空間がありません。まわりを空けてから実行してください');
+            if (!spot) throw noRoom('ナトリウムを置く空間がありません');
             const na = mol.addAtom('Na', spot.x, spot.y);
             mol.addBond(oId, na.id, 1);
             return {
@@ -4073,7 +4073,7 @@ const REACTION_RULES = [
             const isAlcohol = findFunctionalGroups(mol)
                 .some(g => ALCOHOL_TYPES.includes(g.type) && g.atomIds[0] === oId);
             const spot = freeSpotAround(mol, oId);
-            if (!spot) throw noRoom('ナトリウムを置く空間がありません。まわりを空けてから実行してください');
+            if (!spot) throw noRoom('ナトリウムを置く空間がありません');
             const na = mol.addAtom('Na', spot.x, spot.y);
             mol.addBond(oId, na.id, 1);
             const kind = isAlcohol ? null : acidKindOf(mol, oId, anchorId);
@@ -4639,6 +4639,84 @@ class Reactor {
         this.undoBtn = document.getElementById('btn-rx-undo');
         if (this.undoBtn) this.undoBtn.addEventListener('click', () => this.undoLastReaction());
         this.syncUndoButton();
+        // 🧹 分子を並べ直す（v1466）。場所不足で断ったときだけ同じ帯に出る出口
+        this.lastNoRoom = null;   // { message } ＝ いま断られている理由（テストと報告の口）
+        this.spreadBtn = document.getElementById('btn-rx-spread');
+        if (this.spreadBtn) this.spreadBtn.addEventListener('click', () => this.spreadMolecules());
+        this.syncSpreadButton();
+    }
+
+    /**
+     * ★ 場所不足で断ったことを画面に出す（v1466・ユーザー決定 2026-08-26 の案「い」）。
+     *
+     * **なぜ**: 断り文は 25 か所あり、11 か所が「分子を離してから実行してください」と
+     * 案内していた。⚠ **離す手段は `Shift＋ドラッグ` しかない**（判定は `game.js` の
+     * `shiftKey` 1か所）ので、**Shift キーの無いタブレット・スマホでは案内どおりのことが
+     * できない** ＝ 断り文が行き止まりになっていた。押せる出口を1つ足す。
+     *
+     * ⚠ **来る道は型で決める**（`e.noRoom`）。`e.message` を読んで「空間」の字を探す作りに
+     *   すると、文言を1文字直しただけで札が出なくなる（静かに元の行き止まりへ戻る）。
+     * ⚠ **理由は捨てない**。「どこに置けなかったか」（-OH／ナトリウム／生成物…）は
+     *   人が次の手を決める材料なので、そのまま前半に残して出口の案内だけを足す。
+     */
+    showNoRoom(message) {
+        this.lastNoRoom = { message };
+        this.syncSpreadButton();
+        this.game.showToast(
+            `${message}。下の「🧹 分子を並べ直す」を押すと、分子どうしの間隔を空けます。`, 8000);
+    }
+
+    // 断りが解けた（反応が通った／反応前に戻した／キャンバスが空になった）ときに札を下ろす
+    clearNoRoom() {
+        this.lastNoRoom = null;
+        this.syncSpreadButton();
+    }
+
+    syncSpreadButton() {
+        if (!this.spreadBtn) return false;
+        const show = !!this.lastNoRoom;
+        this.spreadBtn.classList.toggle('hidden', !show);
+        return show;
+    }
+
+    /**
+     * ★ 「🧹 分子を並べ直す」を押したとき（v1466）。
+     *
+     * **実体は `game.tidyAnswerSlots()`** —— 異性体練習の「🧹 並べ直す」（W4・
+     * `DESIGN_isomer_practice.md` §12-5）と**まったく同じ道具**を借りる。新しく書かない理由:
+     *   - 成分ごとの**剛体平行移動だけ**（移動量は格子の整数倍・回転を混ぜない）と決まっており、
+     *     「整形で幾何が変わるなら座標を戻す」「シス/トランスが未確定の図は整形しない」を
+     *     すでに満たしている（検査は IW7）
+     *   - 落下先の判定が `MIN_COMPONENT_CLEARANCE` ＝ Shift＋ドラッグ（`canMoveComponentBy`）と
+     *     同じしきい値 ＝ 0.0px の完全重複を作る経路を増やさない
+     *   - **`saveState()` を自分で積む** ＝ ↩ 戻す で1手で取り消せる（勝手に動いたと感じた人の逃げ道）
+     *
+     * ⚠ **並べ直したあと、反応を自動で実行し直さない。** 案「あ」（アプリが並べ直して再試行）を
+     *   採らなかった理由がそれ ＝ ユーザーの操作を上書きしない。「もう一度お試しください」で止める。
+     * ⚠ **入らなかったときは正直に言う。** 黙って何も起きないのがいちばん悪い（元の症状そのもの）。
+     *   次の手は**タッチでも実際にできること**だけを挙げる:
+     *     ・要らない分子を消す（消しゴム）
+     *     ・結合線をドラッグして結合を伸ばす（`beginBondStretch`。`shiftKey` を見ないのでタッチで効く）
+     *   ⚠ 「画面を広くする」は**書かない** —— 置き場所はモデル座標で決まるので、
+     *      拡大率を変えても空きは1pxも増えない（できないことを案内しない）。
+     */
+    spreadMolecules() {
+        const g = this.game;
+        const r = g.tidyAnswerSlots();   // 中で saveState() を積む ＝ ↩ で戻せる
+        const CANT = '要らない分子を消すか、結合線をドラッグして結合を伸ばすと空きます。';
+        if (r.moved > 0) {
+            this.clearNoRoom();   // 図が動いた ＝ さっきの断りはもう古い
+            g.showToast(`分子 ${r.total}個を ${r.cols}×${r.rows} に並べ直しました。` +
+                'もう一度お試しください（↩ 戻す で元に戻せます）。', 8000, 'success');
+            return r;
+        }
+        // ここから先は**動かせなかった**場合。札は出したままにする
+        // （分子を1つ消したあとに押せば通ることがあるため）
+        if (r.reason === 'empty') g.showToast('キャンバスに分子がありません。', 6000);
+        else if (r.reason === 'alreadyTidy')
+            g.showToast(`分子はすでに離れていて、並べ直しても場所が足りませんでした。${CANT}`, 8000);
+        else g.showToast(`並べ直しても場所が足りませんでした。${CANT}`, 8000);
+        return r;
     }
 
     /**
@@ -4662,6 +4740,7 @@ class Reactor {
         if (!rx || !rx.beforeState) return false;
         const g = this.game;
         g.saveState();
+        this.clearNoRoom();          // 反応前へ戻す ＝ さっきの断りの前提ごと消える（v1466）
         this.discardLastReaction(); // 記録を捨ててから戻す（restoreState → refresh が札を下ろす）
         this._morphGen++;   // 走行中のモーフィングを無効化（戻した図を上書きさせない）
         this._morphing = false;
@@ -4785,6 +4864,7 @@ class Reactor {
             this._morphing = false;
             this._morphSkip = false;
             this.discardLastReaction();
+            this.clearNoRoom();  // 分子が1つも無いなら「並べ直す」も用が無い（v1466）
             return;
         }
 
@@ -5827,7 +5907,10 @@ class Reactor {
             // （履歴を捨てるだけでは中途半端な分子が残ってしまう）
             const saved = g.history.pop();
             if (saved) g.restoreState(JSON.parse(saved));
-            g.showToast('この反応は実行できませんでした: ' + e.message);
+            // ★ 場所不足だけは出口を添える（v1466）。**判定は型（`e.noRoom`）で行う**——
+            //   `e.message` の字を読む作りにすると、文言を1文字直した日に静かに札が出なくなる
+            if (e && e.noRoom) this.showNoRoom(e.message);
+            else g.showToast('この反応は実行できませんでした: ' + e.message);
             return;
         }
         /* 「効くが、ふつうはそちらを使わない」の一言を**結果に添える**（v1428・同書 §12-3）。
@@ -5845,6 +5928,7 @@ class Reactor {
             after: this.snapshotMolecule(g.userMolecule)
         };
         this.clearDeadEnd(); // 反応が通ったら、前に出した「ここで止まりました」は用済み（v1420）
+        this.clearNoRoom();  // 同じ理由で「置く場所がない」の札も下ろす（v1466）
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
         // 生成物データは確定済み。前→後をモーフィングで見せ、完了後に通常描画＋変化箇所ハイライト
         this.animateExecution(before, this.lastReaction.after, result, rule.morphStages || null);
@@ -6399,4 +6483,6 @@ if (typeof window !== 'undefined') {
     window.RX_SECTION_LAST = RX_SECTION_LAST;
     window.RX_UNDO_POINTER = RX_UNDO_POINTER;
     window.RX_SCOPE_NOTE = RX_SCOPE_NOTE;       // RX43（「いま見ている分子」の断り）が読む
+    window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
+    window.noRoom = noRoom;
 }
