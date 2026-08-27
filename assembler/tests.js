@@ -102,7 +102,7 @@
  * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
- * | PM  | 1〜14  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない | **13〜14 は動画レーンの実測報告 2026-08-27**（同書 §20）＝ **鎖が2本できても加硫の箇所選びが永久に終わらない**（札は「弾性ゴム（7箇所）」で、押しても 7→3→3→3 と同じ候補に戻り硫黄は1つも入らない）。原因は `vulcanizablePairs` が「硫黄がどちらの炭素に付くか」だけ違う＝**4原子がまったく同じ組**を何本も返し、`narrow` が候補を分ける原子を見つけられずに全原子へ落ちていたこと。13 が本体（C=C の組ごとに**短い橋1本だけ**返す ＝ 札も実数の「2箇所」になる／`narrow` の安全弁 ＝ 分ける原子が無いなら選ばせず先頭を実行）・**14 は否定対照**＝ 分けられる候補では今までどおり箇所選びに入る・架けられる橋の本数は減っていない・単量体は今までどおり相手にしない
+ * | PM  | 1〜12  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
@@ -24109,135 +24109,6 @@
             '1,4-付加重合で残る二重結合の数が変わった');
     });
 
-    /* 鎖を2本つくって加硫を押すまで（動画レーンの再現手順そのまま）。PM13・PM14 で共用 */
-    const twoRubberChains = (c) => {
-        const g = c.game, W = c.W;
-        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
-        const mol = polySetup(c, ['イソプレン', 'イソプレン']);
-        dien.apply(g, dien.detect(mol)[0]);
-        g.updateDrawing();
-        assert(g.summonMolecule('イソプレン') && g.summonMolecule('イソプレン'), 'イソプレンを追加できない');
-        g.updateDrawing();
-        const second = dien.detect(g.userMolecule);
-        assert(second.length === 1, `2回目の 1,4-付加重合が ${second.length} 件（前提が崩れている）`);
-        dien.apply(g, second[0]);
-        g.updateDrawing();
-        return g.userMolecule;
-    };
-    // site（原子IDの並び）を「原子の集合」に潰した鍵。向き違いは同じ鍵になる
-    const siteKey = (s) => [...s].map(String).sort().join(',');
-    // 硫黄を通らない連結成分の数 ＝ 架橋する前の鎖が何本か
-    const chainCount = (c, mol) => {
-        const seen = new Set(); let n = 0;
-        mol.atoms.filter(a => a.element !== 'S' && a.element !== 'H').forEach(a => {
-            if (seen.has(a.id)) return;
-            n++;
-            const st = [a.id]; seen.add(a.id);
-            while (st.length) {
-                const cur = st.pop();
-                mol.getNeighbors(cur).forEach(x => {
-                    if (x.atom.element === 'S' || x.atom.element === 'H' || seen.has(x.atom.id)) return;
-                    seen.add(x.atom.id); st.push(x.atom.id);
-                });
-            }
-        });
-        return n;
-    };
-
-    test('PM13: 加硫の箇所選びが必ず終わる（同じ4原子の組を何本も返さない）', async (c) => {
-        const g = c.game, W = c.W;
-        /* ★ **症状**（動画レーン実測 v1465・ORDER_reactor_findings_2026-08-26.md §6-1）:
-         *   鎖を2本つくって加硫を押すと「弾性ゴム（7箇所）」の札は出るのに、光った原子を
-         *   クリックしても確定しない。何度押しても同じ候補に戻り、**硫黄は1つも入らない**
-         *   （実測: sites 7 → 3 → 3 → 3 →……）。
-         * ★ **原因**: `vulcanizablePairs` は「硫黄がどちらの炭素に付くか」で4通りを返すが、
-         *   site の**4原子はまったく同じ**。`Reactor.narrow` は原子の集合でしか候補を分けられず、
-         *   `distinguishing` が空になって全原子に落ちる ＝ 押すたび同じ候補に戻る堂々巡り。
-         * ★ **直し（2段構え）**: ① `vulcanizablePairs` は C=C の組ごとに**短い橋1本だけ**返す。
-         *   ② `narrow` に安全弁 ―― 分ける原子が1つも無いなら選ばせず先頭を実行する
-         *   （加硫以外のルールが同じ轍を踏んでも止まらない）。 */
-        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
-        assert(vul, '加硫のルールが無い');
-        twoRubberChains(c);
-
-        // ---- ① 候補に「原子の集合が同じ組」が2件以上ない（これが堂々巡りの正体） ----
-        const sites = vul.detect(g.userMolecule);
-        assert(sites.length > 0, '鎖2本で加硫の候補が出ない（前提が崩れている）');
-        const keys = sites.map(siteKey);
-        assert(new Set(keys).size === keys.length,
-            `候補 ${keys.length} 件に原子の集合が同じものがある（${keys.length - new Set(keys).size} 件が重複）` +
-            '＝ クリックで分けられず箇所選びが終わらない');
-
-        // ---- ② narrow → クリックで実際に確定し、硫黄が入る（クリック数に上限を置く） ----
-        const sBefore = g.userMolecule.atoms.filter(a => a.element === 'S').length;
-        W.reactor.narrow(vul, sites);
-        let clicks = 0;
-        while (W.reactor.picking && clicks < 6) {
-            const ps = W.reactor.picking.sites;
-            // 候補を分けている原子（全候補には入っていない原子）を1つ押す
-            const id = ps[0].find(x => ps.some(s => !s.includes(x)));
-            assert(id !== undefined, `${clicks} 回目のクリックで分ける原子が見つからない（安全弁が効いていない）`);
-            W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === id));
-            clicks++;
-            await c.tick(30);
-        }
-        assert(!W.reactor.picking, `${clicks} 回クリックしても箇所選びが終わらない（堂々巡り）`);
-        const sAfter = g.userMolecule.atoms.filter(a => a.element === 'S').length;
-        assert(sAfter === sBefore + 1, `硫黄が入っていない（S ${sBefore} → ${sAfter}）`);
-        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)),
-            '箇所選び経由の加硫で価標が壊れた');
-
-        // ---- ③ 安全弁そのもの: 原子の集合が同じ2件を渡したら、選ばせずに先頭を実行する ----
-        const mol2 = twoRubberChains(c);
-        const one = vul.detect(mol2)[0];
-        const twin = [one[1], one[0], one[3], one[2]];   // 向きだけ違う＝同じ4原子
-        assert(siteKey(one) === siteKey(twin), '双子の site が作れていない（テストの前提）');
-        const s0 = mol2.atoms.filter(a => a.element === 'S').length;
-        W.reactor.narrow(vul, [one, twin]);
-        await c.tick(30);
-        assert(!W.reactor.picking, '分けられない2件なのに箇所選びに入った（無限ループの入口）');
-        assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === s0 + 1,
-            '分けられない2件を渡したのに何も実行されなかった');
-    });
-
-    test('PM14（否定対照）: 安全弁は「分けられるとき」を先食いせず、架けられる橋も減っていない', async (c) => {
-        const g = c.game, W = c.W;
-        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
-
-        // ---- ① 分けられる候補では今までどおり箇所選びに入る（何でも先頭実行に化けていない） ----
-        twoRubberChains(c);
-        const sites = vul.detect(g.userMolecule);
-        assert(sites.length > 1, `候補が ${sites.length} 件（複数を期待。1件では①の意味が無い）`);
-        W.reactor.narrow(vul, sites);
-        assert(W.reactor.picking && W.reactor.picking.sites.length === sites.length,
-            '分けられる候補なのに箇所選びに入らなかった（安全弁が効きすぎている）');
-        assert(g.uiGroup.querySelectorAll('circle').length > 0, '選ぶ箇所のハイライトが出ていない');
-        assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === 0,
-            '箇所選びに入っただけなのに硫黄が入った');
-        W.reactor.picking = null; g.clearUIOverlay();
-
-        // ---- ② 向き違いを1件にまとめても、架けられる橋の本数は減っていない ----
-        //   鎖2本 × C=C 2つずつ ＝ 橋は2本架かり、そのあと候補が尽きる
-        let bridges = 0;
-        for (let k = 0; k < 5; k++) {
-            const vs = vul.detect(g.userMolecule);
-            if (!vs.length) break;
-            vul.apply(g, vs[0]);
-            g.updateDrawing();
-            bridges++;
-        }
-        assert(bridges === 2, `架橋が ${bridges} 本（イソプレン2個の鎖2本なら2本。まとめすぎて組を落としている）`);
-        assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === 2,
-            '硫黄の数が架橋の本数と合わない');
-        assert(chainCount(c, g.userMolecule) === 2,
-            '硫黄を外すと鎖が2本にならない（同じ鎖の中で橋が架かっている）');
-        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)), '加硫で価標が壊れた');
-
-        // ---- ③ 相手にしない分子は今までどおり相手にしない ----
-        assert(vul.detect(polySetup(c, ['イソプレン', 'イソプレン'])).length === 0,
-            '単量体2つで加硫の候補が出た（R の無い分子は相手にしない）');
-    });
-
     test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
         const g = c.game, W = c.W;
         const CC = W.canonicalCode;
@@ -27551,6 +27422,173 @@
         rp.endPrediction(false);
         rp.exit();
         g.setMode('puzzle');
+    });
+
+    test('RX52: 反応の文言の `**…**` は太字になって出る（アスタリスクが画面に読めない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const toast = D.getElementById('canvas-toast');
+        const noteEl = () => D.getElementById('mm-reagent-note');
+        // 「記号としての `*`」が残っていないか。太字になっていれば消えている
+        const raw = (el) => (el && el.textContent || '').includes('*');
+        const bolds = (el) => (el ? el.querySelectorAll('b.em').length : 0);
+
+        // ① 道具そのものが公開されている（reactor.js から名前で呼べる ＝ 出口を1つに束ねられる）
+        assert(typeof W.setEmphasisText === 'function', 'setEmphasisText が公開されていない');
+        assert(typeof W.stripEmphasis === 'function', 'stripEmphasis が公開されていない');
+        assert(W.stripEmphasis('前**強調**後') === '前強調後', 'stripEmphasis が `**` を外さない');
+
+        // ② 出口その1 —— 字幕（`showToast`）。反応の `caption` はここへ出る
+        g.showToast('前**強調**後', 3000, 'success');
+        assert(!raw(toast), '字幕にアスタリスクが出ている: ' + toast.textContent);
+        assert(bolds(toast) === 1, '字幕の `**…**` が太字になっていない');
+        assert(toast.textContent === '前強調後', '字幕の文が変わっている: ' + toast.textContent);
+
+        /* ③ ★ **実物**の側鎖酸化（＝ 2026-08-27 に目視で見つけた、その文言そのもの）。
+              作りものの文字列だけで通すと、反応側の出口が繋がっていなくても緑になる */
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        g.summonMolecule('トルエン');
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'oxidize_side_chain');
+        assert(rule, '（前提）oxidize_side_chain が無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length > 0, '（前提）トルエンで側鎖酸化の箇所が見つからない');
+        W.reactor.execute(rule, sites[0]);
+        assert(/側鎖だけ/.test(toast.textContent), '（前提）出ている字幕が違う: ' + toast.textContent);
+        assert(!raw(toast), '側鎖酸化の字幕にアスタリスクが出ている（v1465 の再発）: ' + toast.textContent);
+        assert(bolds(toast) >= 1, '側鎖酸化の `caption` が太字になっていない');
+
+        /* ④ 出口その2〜4 —— 試薬パネルの3経路。**`**` を実際に持っている文言で試す**
+              （持っていない瓶で試すと、繋ぎ忘れていても素通りする） */
+        // 4-a: 「効きません」＝ `miss`（エタノール × NaOH。既存 §9.2 の空振りの道をそのまま使う）
+        setupReagent(c, ['エタノール']);
+        bottle(c, 'naoh_aq').click();
+        assert(/アルコールの -OH は中和されません/.test(noteEl().textContent),
+            '（前提）空振りの説明が出ていない: ' + noteEl().textContent.slice(0, 60));
+        assert(!raw(noteEl()), '「効きません」にアスタリスクが出ている: ' + noteEl().textContent);
+        assert(bolds(noteEl()) >= 1, '`miss` の `**…**` が太字になっていない');
+
+        // 4-b: 呈色・検出の陰性文 ＝ `negative`（エタノールに塩化鉄(III) ＝ 鎖の -OH なので陰性）
+        setupReagent(c, ['エタノール']);
+        bottle(c, 'fecl3').click();
+        assert(/呈色しません/.test(noteEl().textContent),
+            '（前提）陰性の説明が出ていない: ' + noteEl().textContent.slice(0, 60));
+        assert(!raw(noteEl()), '呈色の陰性文にアスタリスクが出ている: ' + noteEl().textContent);
+        assert(bolds(noteEl()) >= 1, '`negative` の `**…**` が太字になっていない');
+
+        // 4-c: `info` ルールの解説 ＝ `caption`（分子を変えずに文だけ出す経路）
+        const hasMark = (s) => typeof s === 'string' && s.includes('**');
+        setupReagent(c, ['エタノール']);
+        const infoRule = W.REACTION_RULES.find(r => {
+            if (!r.info) return false;
+            try { return hasMark(r.apply(g).caption); } catch (e) { return false; }
+        });
+        assert(infoRule, '（前提）`**` を含む `caption` を返す info ルールが無い');
+        W.reactor.showReagentInfo(infoRule);
+        assert(!raw(noteEl()), '試薬パネルの解説にアスタリスクが出ている: ' + noteEl().textContent);
+        assert(bolds(noteEl()) >= 1, 'info ルールの `caption` が太字になっていない');
+
+        /* ⑤ ★★ **ここがソース全体の見張り**。`**` が対になっていない文言が1つでもあれば、
+              太字にする側は**そのまま文字として出す**ので画面に記号が漏れる。
+              ⚠ コメントは除く —— このリポジトリの注釈は `**` だらけで、そちらは画面に出ない。 */
+        const src = await (await fetch('reactor.js?nocache=' + Date.now(), { cache: 'no-cache' })).text();
+        const codeLines = (text) => {
+            const out = [];
+            let inBlock = false;
+            for (const ln of text.split('\n')) {
+                let s = ln;
+                if (inBlock) {
+                    const e = s.indexOf('*/');
+                    if (e < 0) { out.push(''); continue; }
+                    s = s.slice(e + 2); inBlock = false;
+                }
+                for (;;) {
+                    const b = s.indexOf('/*');
+                    if (b < 0) break;
+                    const e = s.indexOf('*/', b + 2);
+                    if (e < 0) { s = s.slice(0, b); inBlock = true; break; }
+                    s = s.slice(0, b) + s.slice(e + 2);
+                }
+                const li = s.indexOf('//');
+                out.push(li >= 0 ? s.slice(0, li) : s);
+            }
+            return out;
+        };
+        const code = codeLines(src);
+        const odd = code
+            .map((l, i) => ({ n: i + 1, rest: l.replace(/\*\*([^*]+)\*\*/g, '') }))
+            .filter(x => x.rest.includes('**'));
+        assert(odd.length === 0,
+            '対になっていない `**` を含む文言がある（記号のまま画面に出る）: reactor.js:' +
+            odd.map(x => x.n).join(','));
+        // この検査が空回りしていないこと（`**` を使う文言自体は現に存在する）
+        const marked = code.filter(l => /\*\*([^*]+)\*\*/.test(l)).length;
+        assert(marked >= 20,
+            'reactor.js の文言に `**…**` が ' + marked + ' 行しかない（27 行の想定）＝ ⑤ が空回り');
+
+        c.reset();
+    });
+
+    test('RX53: ★否定対照 — 強調を隠して誤魔化していない・記法が2つに割れていない', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D;
+        const toast = D.getElementById('canvas-toast');
+
+        /* ① **対にならない `**` は消さずにそのまま出す。** ここを「とりあえず全部消す」に
+              すると、書き損じが画面からもテストからも見えなくなる。出したうえで
+              RX52 ⑤ が鳴らす、という二段構えであることを固定する。 */
+        g.showToast('とじていない **強調', 3000, 'success');
+        assert(toast.textContent.includes('**'),
+            '対になっていない `**` を黙って消している（書き損じに誰も気づけなくなる）');
+        assert(toast.querySelectorAll('b.em').length === 0,
+            '対になっていない `**` を太字にしている（どこまでが強調か決まらない）');
+
+        /* ② ★ **`**` を含む字幕がちゃんと消える。** `showToast` は「自分の表示中だけ隠す」ため
+              時計の中で中身を照合しているが、太字にすると要素の `textContent` からは `**` が
+              落ちる。渡された文字列と比べたままだと**永久に一致せず、字幕が出しっぱなしになる**
+              ＝ v1467 の直しがそのまま作り込む副作用。短い時計で実際に消えるまで見る。 */
+        g.showToast('消える**はず**の字幕', 40, 'success');
+        assert(!toast.classList.contains('hidden'), '（前提）出た直後に隠れている');
+        await c.tick(140);
+        assert(toast.classList.contains('hidden'),
+            '`**` を含む字幕が時計で消えない（textContent の照合が効いていない）');
+
+        /* ③ 逆に、**後から他所が別の文言を入れたら、こちらの時計では消さない**（元の見分けの意味）。
+              ②の直しで「無条件に隠す」にすり替わっていないことの対照。
+              `#verify-result` は reaction.js の判定結果も直に書き込む器なので、そこで試す。 */
+        const vr = D.getElementById('verify-result');
+        g.showToast('先に出た**文言**', 40, 'success');
+        vr.textContent = '後から他所が入れた判定結果';      // reaction.js の judgePrediction と同じ書き方
+        vr.classList.remove('hidden');
+        await c.tick(140);
+        assert(!vr.classList.contains('hidden'),
+            '先の字幕の時計が、後から他所が入れた判定結果まで消している');
+
+        /* ④ **記法をアプリの中で2つにしない。** narrowing.js は前から `**…**` → `<b>` を
+              やっている（`nwNote`）。同じ記号に2つの解釈を持たせると、書き手は
+              どちらの規則で書けばよいか決められない。**同じ正規表現**であることを字面で見る。 */
+        const gsrc = await (await fetch('game.js?nocache=' + Date.now(), { cache: 'no-cache' })).text();
+        const nsrc = await (await fetch('narrowing.js?nocache=' + Date.now(), { cache: 'no-cache' })).text();
+        const pat = /\/\\\*\\\*\(\[\^\*\]\+\)\\\*\\\*\//;
+        assert(pat.test(gsrc), 'game.js の強調の正規表現が想定の形でない（記法が変わった）');
+        assert(pat.test(nsrc), 'narrowing.js の強調の正規表現が想定の形でない（記法が2つに割れた）');
+
+        /* ⑤ **太字が見た目にも効いている。** `<b>` は既定で bold だが、それだけでは足りない
+              場所がある —— `.result-message` は全体がもともと bold なので、色が付かないと強調が消える。 */
+        const css = await (await fetch('style.css?nocache=' + Date.now(), { cache: 'no-cache' })).text();
+        assert(/b\.em\s*\{[^}]*color:/.test(css),
+            'style.css に `b.em` の色指定が無い（太字だけでは強調が埋もれる）');
+
+        /* ⑥ **innerHTML で組んでいない。** 逃がしもれという事故の型をそもそも作らない、が
+              `setEmphasisText` の設計の肝（narrowing.js は文字列を組むので esc してから innerHTML）。 */
+        const body = gsrc.slice(gsrc.indexOf('function setEmphasisText'));
+        assert(!/innerHTML/.test(body.slice(0, body.indexOf('\nclass Game'))),
+            'setEmphasisText が innerHTML を使っている（createElement で組む約束が破れている）');
+
+        c.reset();
     });
 
     /* ===== 反応で作る C=O の向き（CO1・検品レビュー C-7） =====
