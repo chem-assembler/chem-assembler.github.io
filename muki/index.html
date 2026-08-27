@@ -43,7 +43,7 @@
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="stylesheet" href="style.css?v=21">
+    <link rel="stylesheet" href="style.css?v=22">
     <style>
         /* Dict Modal Styles */
         #dict-modal {
@@ -95,6 +95,16 @@
         }
         #btn-dict:hover { background:#3498db; }
         #btn-dict:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 系統分離モード（型B）への入口。⚠ ゲームの操作を邪魔しない位置に置く
+           （左サイドバーの先頭・図鑑ボタンの下）。スネークの盤には触らない */
+        #link-sep {
+            display:block; margin-bottom:15px; padding:12px; font-weight:bold;
+            background:#16a085; color:#fff; border:2px solid #48c9b0; border-radius:8px;
+            text-align:center; text-decoration:none; font-size:15px;
+        }
+        #link-sep:hover { background:#1abc9c; }
+        #link-sep small { display:block; font-weight:normal; font-size:12px; color:#d5f5f0; }
     </style>
 </head>
 <body>
@@ -102,7 +112,8 @@
         <!-- Sidebar Left -->
         <div class="sidebar" id="sidebar-left">
             <button id="btn-dict">📖 イオン図鑑を開く</button>
-            
+            <a id="link-sep" href="separation.html">🧪 イオンをつきとめる<small>容器に1種類だけ入っているイオンを当てる</small></a>
+
             <h2>Game Mode</h2>
             <div class="mode-select" style="margin-bottom: 15px;">
                 <button id="btn-mode-classic" class="active" style="padding: 10px; font-size: 14px;">Classic<br><small>(通常)</small></button>
@@ -146,7 +157,7 @@
             <div id="header">
                 <div class="topbar">
                     <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-                    <span class="version">v21</span>
+                    <span class="version">v22</span>
                 </div>
                 <h1>Chem-Snake</h1>
                 <div class="score-display">
@@ -219,7 +230,7 @@
         <div id="share-msg" style="font-size:13px; color:#bdc3c7; margin-top: 8px; min-height:1.4em;"></div>
     </div>
 
-    <script src="chemistry.js?v=21"></script>
-    <script src="game.js?v=21"></script>
+    <script src="chemistry.js?v=22"></script>
+    <script src="game.js?v=22"></script>
 </body>
 </html>
