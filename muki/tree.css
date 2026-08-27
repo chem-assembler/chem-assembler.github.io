@@ -1,0 +1,242 @@
+/* 色でみる無機化学 — 系統分離モード（型A: すべてのイオンを分ける）
+   ⚠ separation.css（型B）とは別ファイルにしてある。
+     型B は「1手ずつ押して結果が下に積まれる」画面、こちらは「ツリーを組んで最後に提出する」画面で、
+     部品の形がまるで違う。混ぜると片方を直したときにもう片方が崩れる（型B が style.css を
+     避けたのと同じ理由）。★ 色と余白の取り方だけ、型B にそろえてある。 */
+
+:root {
+    --bg: #0f1723;
+    --panel: rgba(255, 255, 255, 0.06);
+    --line: rgba(255, 255, 255, 0.16);
+    --fg: #ecf0f1;
+    --dim: #a9b7c6;
+    --accent: #f1c40f;
+    --ok: #2ecc71;
+    --ng: #e74c3c;
+    --branch: #2980b9;
+    --leaf: #16a085;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: linear-gradient(180deg, #0b1021 0%, #16202f 100%);
+    color: var(--fg);
+    font-family: "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+    line-height: 1.7;
+    -webkit-text-size-adjust: 100%;
+}
+
+#tree-app {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 12px 14px 48px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+.topbar .hubLink {
+    color: var(--dim);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 4px;
+}
+.topbar .hubLink:hover { color: #fff; }
+.topbar .version { margin-left: auto; color: #7f8c8d; font-size: 12px; }
+
+h1 { font-size: 22px; margin: 10px 0 6px; }
+h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
+
+.lead { font-size: 14px; margin: 0 0 14px; }
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+}
+.note { font-size: 13px; color: var(--dim); margin: 0 0 10px; }
+
+/* --- やり方・容器の切り替え --- */
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.tabs button {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--fg);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+}
+.tabs button.active { background: var(--branch); border-color: #5dade2; font-weight: bold; }
+
+/* --- 手札（★ タップで選び、タップで置く。⚠ ドラッグは使わない） --- */
+.deck { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.deck:empty { display: none; }
+
+.card {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 48px;
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--fg);
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    max-width: 100%;
+}
+.card .sub { font-size: 11px; color: var(--dim); }
+.card.op { border-color: var(--branch); background: rgba(41, 128, 185, 0.22); }
+.card.ion { border-color: var(--leaf); background: rgba(22, 160, 133, 0.22); font-weight: bold; font-size: 16px; }
+.card.picked { outline: 3px solid var(--accent); outline-offset: 1px; }
+.card:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.hint { font-size: 13px; color: var(--accent); margin: 6px 0 0; min-height: 1.7em; }
+
+/* --- ツリー --- */
+.beaker {
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+.beaker .ions { font-weight: bold; word-break: break-word; }
+
+.stages { list-style: none; margin: 0; padding: 0; }
+.stage { position: relative; padding: 0 0 0 18px; border-left: 2px solid var(--line); }
+.stage.filled { border-left-color: var(--branch); }
+.stage .stem {
+    position: absolute; left: -9px; top: 12px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--line);
+    font-size: 9px; line-height: 12px; text-align: center; color: var(--dim);
+}
+.stage.filled .stem { border-color: var(--branch); color: var(--fg); }
+
+.slot {
+    display: block;
+    width: 100%;
+    min-height: 46px;
+    margin: 6px 0;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: left;
+    color: var(--fg);
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px dashed var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+}
+.slot.empty { color: var(--dim); }
+.slot.branch.set { border-style: solid; border-color: var(--branch); background: rgba(41, 128, 185, 0.22); }
+.slot.leaf.set { border-style: solid; border-color: var(--leaf); background: rgba(22, 160, 133, 0.18); }
+.slot.can { border-color: var(--accent); }
+.slot .sub { display: block; font-size: 11px; color: var(--dim); }
+.slot.locked { cursor: default; border-style: solid; border-color: var(--branch); background: rgba(41,128,185,.14); }
+
+/* 葉は枝から一段下げて、右に伸ばす（★ 375px でも読めるように縦に積む） */
+.leafwrap { padding-left: 16px; margin-bottom: 8px; position: relative; }
+.leafwrap::before {
+    content: '';
+    position: absolute; left: 4px; top: -4px; width: 10px; height: 24px;
+    border-left: 2px solid var(--line); border-bottom: 2px solid var(--line);
+    border-bottom-left-radius: 6px;
+}
+.leafwrap .leaf-title { font-size: 12px; color: var(--dim); }
+.leafwrap .placed { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.final { margin-top: 6px; padding-left: 18px; }
+.final .leaf-title { font-size: 12px; color: var(--dim); }
+
+/* 置かれたイオン（押すと手札に戻る） */
+.placed .card { min-height: 44px; }
+
+/* --- 提出と答え合わせ --- */
+button.primary {
+    width: 100%;
+    min-height: 52px;
+    font-size: 17px;
+    font-weight: bold;
+    font-family: inherit;
+    color: #10202b;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary {
+    width: 100%;
+    min-height: 48px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--fg);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.result { margin-top: 12px; }
+.result h3 { margin: 0 0 6px; font-size: 18px; }
+.result h3.ok { color: var(--ok); }
+.result h3.ng { color: var(--ng); }
+.result p { font-size: 14px; margin: 0 0 10px; }
+.result .leafrow {
+    font-size: 13px;
+    background: rgba(0, 0, 0, 0.35);
+    border-left: 4px solid var(--line);
+    border-radius: 0 8px 8px 0;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+.result .leafrow.bad { border-left-color: var(--ng); }
+.result .leafrow.good { border-left-color: var(--ok); }
+.result .leafrow b { color: var(--accent); }
+.result .line { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.result .tag { color: var(--dim); font-size: 12px; min-width: 6.5em; }
+.result .why {
+    font-size: 13px;
+    background: rgba(241, 196, 15, 0.1);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+.result .caveat { color: var(--dim); font-size: 12px; }
+
+/* 見えたものの色。⚠ 色は名前が主で、この四角はその見える化にすぎない（§5-5） */
+.sw {
+    display: inline-block;
+    width: 22px; height: 22px; border-radius: 5px; vertical-align: middle;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background-image: linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%),
+                      linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+}
+.sw-label { font-size: 12px; color: var(--dim); }
+
+.hidden { display: none; }
+.foot { text-align: center; margin-top: 24px; }
+.foot a { color: #7f8c8d; font-size: 12px; display: inline-flex; align-items: center; min-height: 32px; }

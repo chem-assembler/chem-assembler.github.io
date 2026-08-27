@@ -233,8 +233,13 @@ function treeRule(ionId, opId, h2sLeft) {
  * @param ions  容器の中身（★ 与えられている。推理は無い）
  * @param seq   枝に置かれた操作の列。⚠ **空の枝は飛ばす**（null が混ざってよい）
  * @returns { stages, rest, feAsFeS }
- *   stages[i] = { slot, op, splits, ppt:[{ion, from, f, c, why}], turb, left:[ion] }
+ *   stages[i] = { slot, op, splits, ppt:[{ion, from, f, c, why}], changes, turb, left:[ion] }
  *   rest      = 最後まで溶けたまま残ったイオン（＝ 最後のろ液の葉）
+ *
+ * ⚠ `changes` は **沈まなかったが化学種が変わったもの**（Fe³⁺ ⇄ Fe²⁺）。
+ *   ★ これを持たないと、答え合わせが「その手で何が起きたか」を言えない
+ *     —— 溶けている側の説明を *操作のあとの状態* から引くと、
+ *     「希硝酸を加えた」手の説明が「鉄はすでに Fe³⁺ なので変わらない」になってしまう（実機で踏んだ）。
  */
 function treeRun(ions, seq) {
     var present = ions.slice();
@@ -245,7 +250,8 @@ function treeRun(ions, seq) {
     seq.forEach(function (opId, slot) {
         if (!opId) { stages.push({ slot: slot, op: null, splits: false, ppt: [], left: present.slice() }); return; }
         var op = TREE_OPS[opId];
-        var ppt = [], next = [], turb = null;
+        var before = present.slice();
+        var ppt = [], next = [], turb = null, changes = [], stayWhy = [];
         present.forEach(function (ionId) {
             var r = treeRule(ionId, opId, h2s);
             if (!r) { next.push(ionId); return; }        // ⚠ 宣言もれ。門番が別途落とす
@@ -255,14 +261,21 @@ function treeRun(ions, seq) {
                 if (r.f === 'FeS') feAsFeS = true;
                 ppt.push({ ion: become, from: ionId, f: r.f, c: r.c, why: r.why, src: r.src });
             } else {
+                if (become !== ionId) changes.push({ from: ionId, to: become, why: r.why });
+                else stayWhy.push({ ion: ionId, why: r.why });
                 next.push(become);
             }
         });
         // 操作そのものが状態に効く（★ 溶けている硫化水素が残っているか）
+        var h2sBefore = h2s;
         if (opId === 'h2sAcid' || opId === 'h2sBase') h2s = true;
-        if (opId === 'boil') h2s = false;
+        if (opId === 'boil') { h2s = false; if (h2sBefore) changes.push({ from: null, to: null, why: '溶けていた硫化水素が追い出された' }); }
         present = next;
-        stages.push({ slot: slot, op: opId, splits: op.splits, ppt: ppt, turb: turb, left: present.slice() });
+        stages.push({
+            slot: slot, op: opId, splits: op.splits, ppt: ppt,
+            changes: changes, stayWhy: stayWhy, turb: turb,
+            before: before, left: present.slice()
+        });
     });
 
     return { stages: stages, rest: present.slice(), feAsFeS: feAsFeS };
