@@ -1479,12 +1479,16 @@ function activatedRingBrominationSites(mol) {
 
 /**
  * この C=C を酸化開裂の対象にしてよいか。返り値は
- * `'ok'`／`'ring'`（どちらも実行する）／`'terminal'`／`'triple'`／`'hetero'`（扱わない）。
+ * `'ok'`／`'ring'`／`'terminal'`（どれも実行する）／`'gone'`／`'triple'`／`'hetero'`（扱わない）。
  *
  * - `ring` … 環の中の C=C。**実行する**（§10.3-d の実測 ＋ §10.11-F の1位・2026-08-27 ユーザー決定）。
  *   環が開いて**1分子のまま**両端に官能基が付くので、`apply` は caption を言い分ける
- * - `terminal` … 端が =CH₂。酸化されると **CO₂ と水**になって出ていく。有機の図に残らないものを
- *   キャンバスに置くと、以後その CO₂ が反応の相手として数えられてしまう
+ * - `terminal` … 端が =CH₂。**実行する**（§10.3-e ②・2026-08-27 ユーザー決定）。
+ *   =CH₂ の側はギ酸を経て CO₂ と水になるので**図には残さない**（§10.3-b の原則）。
+ *   ⚠ caption で**試薬を名指しし**、**ギ酸を経ること**を書かないと嘘になる（§10.3-e ②の推奨）
+ * - `gone` … 両端とも =CH₂（＝ エチレンだけ）。切ると**分子が丸ごと消える**ので実行しない。
+ *   ⚠ そもそも硫酸酸性 KMnO₄ で切った答えは資料のどこにも無く、
+ *   **教科書も入試も「赤紫色が消える」で止めている**（§10.3-f）。案内で同じところに止める
  * - `triple` … C≡C の開裂。高校では扱いが安定しない
  * - `hetero` … 炭素と水素だけでできていない分子。他の官能基との**酸化されやすさの順序**を
  *   高校の範囲では決められない（アルコールの酸化に置いた線引きと同じ考え方）。
@@ -1507,7 +1511,16 @@ function alkeneCleavageClass(mol, site) {
     const others = (id, other) => mol.getNeighbors(id)
         .filter(n => n.atom.element !== 'H' && n.atom.id !== other);
     const a = others(id1, id2), b = others(id2, id1);
-    if (a.length === 0 || b.length === 0) return 'terminal'; // 環の中では起こらない
+    // 環の中では端（炭素0個）は起こらないので、以下は鎖の話
+    if (a.length === 0 && b.length === 0) return 'gone';     // エチレンだけ
+    if (a.length === 0 || b.length === 0) {
+        const rest = a.length === 0 ? b : a;
+        if (rest.length > 2) return 'hetero';
+        // ⚠ **残る側が二重結合でつながっていたら行き先が割れる**（アレン）。
+        //    ここを見ないと C に =O と =C が同時に付いて価標が5本になる
+        if (!rest.every(n => n.type === 1)) return 'hetero';
+        return 'terminal';
+    }
     if (a.length > 2 || b.length > 2) return 'hetero';
     if (![...a, ...b].every(n => n.type === 1)) return 'hetero'; // 共役の内側は行き先が割れる
     return inRing ? 'ring' : 'ok';
@@ -1516,7 +1529,7 @@ function alkeneCleavageClass(mol, site) {
 /** 酸化開裂を実行できる C=C の一覧（`[id1, id2]` の配列） */
 function oxidativeCleavageSites(mol) {
     return multipleBondSites(mol)
-        .filter(s => ['ok', 'ring'].includes(alkeneCleavageClass(mol, s)));
+        .filter(s => ['ok', 'ring', 'terminal'].includes(alkeneCleavageClass(mol, s)));
 }
 
 /**
@@ -1641,10 +1654,11 @@ function oxidationOutOfScope(mol) {
     // 実行できるボタンの横に「ここでは変えません」を並べると、どちらが起きるのか読めない
     const consumed = new Set();
     sideChainOxidationCandidates(mol).forEach(c => c.branch.forEach(id => consumed.add(id)));
-    // ⚠ `ring` は **v1472 で実行へ移った**（§10.3-d／§10.11-F の1位）ので、案内からは外れている
+    // ⚠ `ring` と `terminal` は **v1472 で実行へ移った**（§10.3-d／§10.3-e）ので案内から外れ、
+    //    残るのは `gone`（両端とも =CH₂ ＝ **エチレンだけ**）1種類になった
     multipleBondSites(mol).forEach(s => {
         const cls = alkeneCleavageClass(mol, s);
-        if (cls !== 'terminal') return;
+        if (cls !== 'gone') return;
         if (s.every(id => consumed.has(id))) return;
         sites.push(s); kinds.add(cls);
     });
@@ -3051,7 +3065,9 @@ const REACTION_RULES = [
         /* アルケンの酸化開裂 ＝ **構造決定の主役**（qa の需要は1項目だが単元そのもの）。
          * 生成物は「もとの C=C の炭素についていた炭素の数」だけで決まる:
          *   炭素2つ（R₂C=）→ ケトン ／ 炭素1つ（RCH=）→ カルボン酸
-         * 炭素0（=CH₂）は CO₂ になるので扱わない（`oxidation_out_of_scope_info`）。 */
+         * ★ 炭素0（=CH₂）は**ギ酸を経て CO₂**。v1472 から**図から消して実行する**
+         *   （§10.3-b の原則）。⚠ **両端とも炭素0のエチレンだけ**は実行せず、
+         *   `oxidation_out_of_scope_info` が案内を返す（§10.3-f）。 */
         id: 'oxidative_cleavage',
         reagentId: OXIDANT_REAGENT_IDS,
         label: '酸化 [O] → 酸化開裂（C=C を切る）',
@@ -3066,19 +3082,26 @@ const REACTION_RULES = [
             const [id1, id2] = site;
             const bond = mol.getBond(id1, id2);
             if (!bond || bond.type !== 2) throw new Error('切る C=C が見つかりません');
-            // 環の中かどうかも**切る前**に見る（切ったあとは環でなくなる）
-            const inRing = alkeneCleavageClass(mol, site) === 'ring';
+            // 環の中か・端が =CH₂ かは**切る前**に見る（切ったあとは形が変わる）
+            const cls = alkeneCleavageClass(mol, site);
+            const inRing = cls === 'ring';
             // 行き先は**切る前**に決める（切ったあとでは「もとの相手」が分からなくなる）
             const carbons = (id, other) => mol.getNeighbors(id)
                 .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
-            const roles = [[id1, carbons(id1, id2)], [id2, carbons(id2, id1)]];
+            let roles = [[id1, carbons(id1, id2)], [id2, carbons(id2, id1)]];
+            /* ★ 末端（=CH₂）の側は、ギ酸を経て CO₂ と水になって出ていく。
+             * §10.3-b の原則（**残るものを描き、出ていくものは文で補う**）どおり
+             * **原子を消して図に残さない**。⚠ 置くと以後その CO₂ が反応の相手に数えられる。 */
+            const dropped = cls === 'terminal' ? roles.filter(([, n]) => n === 0).map(r => r[0]) : [];
+            if (dropped.length) roles = roles.filter(([, n]) => n > 0);
             mol.removeBond(id1, id2);
-            const part = [...componentOf(mol, id2)];
-            if (!part.includes(id1)) {
+            dropped.forEach(id => mol.removeAtom(id));
+            const part = [...componentOf(mol, roles[roles.length - 1][0])];
+            if (!dropped.length && !part.includes(id1)) {
                 const sep = separateComponent(mol, part);
                 if (sep) translateAtoms(mol, part, sep.dx, sep.dy);
             }
-            const changed = [id1, id2];
+            const changed = dropped.length ? [roles[0][0]] : [id1, id2];
             roles.forEach(([cid, nC]) => {
                 const s1 = freeSpotAround(mol, cid);
                 const s2 = nC === 1 ? freeSpotAround(mol, cid, s1 ? [s1] : []) : null;
@@ -3114,6 +3137,23 @@ const REACTION_RULES = [
                     refit: true
                 };
             }
+            /* ★ 末端の C=C（§10.3-e ②）。⚠ **文面を2か所直さないと嘘になる**:
+             *  ① **試薬を名指しする** —— 書かずに「CO₂ になります」とだけ言うと、
+             *     入試で多数派のオゾン分解の答え（HCHO・分子として残る）と食い違う
+             *  ② **ギ酸を経ることを書く** —— セミナーの答えはギ酸で止まっている（p.362）ので、
+             *     「必ず消える」と書くと傍用問題集の答えと食い違う */
+            if (dropped.length) {
+                return {
+                    caption: `末端の C=C が切れて、${names[0]}になりました（酸化開裂）。` +
+                        '**硫酸酸性の過マンガン酸カリウムでは**、=CH₂ の側は' +
+                        '**まずギ酸 HCOOH になり**、さらに酸化されて二酸化炭素 CO₂ と水まで進みます。' +
+                        '図に残らないので**描いていません**。' +
+                        '⚠ 同じ「切る」でも**オゾン分解（O₃ → Zn）ならホルムアルデヒド HCHO で止まり**、' +
+                        '分子として残ります。試薬で答えが変わるところです。' + rule,
+                    changed,
+                    refit: true
+                };
+            }
             return {
                 caption: `C=C が切れて、${both}になりました（酸化開裂）。` +
                     '硫酸酸性の過マンガン酸カリウムのような強い酸化剤を使うと、二重結合のところで炭素鎖が切れます。' +
@@ -3136,15 +3176,19 @@ const REACTION_RULES = [
         apply(game) {
             const kinds = oxidationOutOfScope(game.userMolecule).kinds;
             const parts = [];
-            if (kinds.has('terminal')) {
-                parts.push('**末端の C=C（=CH₂ の側）**は、酸化開裂すると二酸化炭素 CO₂ と水になって出ていきます。' +
-                    '残る骨格のほうはカルボン酸（またはケトン）になります。' +
-                    '図に残らないものを置くと以後の反応の相手として数えられてしまうので、ここでは切りません。');
+            /* ★ **エチレンだけ**（両端が =CH₂）。文面はユーザー承認済み（2026-08-27）。
+             * ⚠ **詳しい経路（グリコール → シュウ酸）は書かない。**
+             * ★ 要点は「教科書も入試もここで止めている」を、消極的な断りではなく
+             *   **止まる理由**として書くこと（§10.3-f C-1）。 */
+            if (kinds.has('gone')) {
+                parts.push('エチレンは、二酸化炭素 CO₂ と水になります。' +
+                    '炭素が2つとも出ていってしまうので、図に残る分子がありません。' +
+                    '教科書も入試も、エチレンについては「赤紫色が消える」までしか扱いません。');
             }
             return {
                 caption: (parts.join('\n') || 'この分子で酸化剤が働く形は、いまは図にしていません。') +
                     '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／芳香環の側鎖／' +
-                    '炭化水素の非末端 C=C の4つです。'
+                    '炭化水素の C=C（酸化開裂）の4つです。'
             };
         }
     },
