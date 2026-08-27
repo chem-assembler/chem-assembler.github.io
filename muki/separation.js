@@ -327,14 +327,16 @@
         renderOps();
     }
 
-    /** 炎色反応の解説。★ 色名が資料で割れるものは、割れていることごと伝える */
+    /** 炎色反応の解説。★ 色名が資料で割れるものは、割れていることごと伝える
+        ⚠ 本の名前とページは出さない（教科書は1社ではないので、手元と合わない）。
+          出典は模型の `ref` に持っている */
     function flameWhy(ionId) {
         var f = SEP_IONS[ionId].flame;
         if (!f) {
             return '炎色反応で色が出るのは Li・Na・K・Ca・Sr・Ba・Cu の7元素だけで、'
-                + ionName(ionId) + ' は色を出しません（教科書 化学基礎 p.21 表3）。';
+                + ionName(ionId) + ' は色を出しません。';
         }
-        var s = ionName(ionId) + ' の炎色は' + f.names[0] + 'です（教科書 化学 p.88 図1）。';
+        var s = ionName(ionId) + ' の炎色は' + f.names[0] + 'です。';
         if (f.names.length > 1) {
             s += '資料によっては「' + f.names.slice(1).join('」「') + '」とも書かれます。';
         }
