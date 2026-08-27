@@ -63,10 +63,12 @@
     function renderDecks() {
         var od = $('op-deck');
         od.textContent = '';
-        // ⚠ やさしい段（行先を読む）では操作の手札を出さない。★ 枝はもう埋まっている
+        // ⚠ やさしい段（イオンの行先を答える）では操作の手札を出さない。★ 枝はもう埋まっている
         if (state.mode === 'build') {
             state.problem.ops.forEach(function (o) {
-                if (usedOps().indexOf(o) >= 0) return;
+                // ★ reuse の札（硫化水素）は置いても手札に残る
+                //   ⚠ 教科書の手順は同じ札を2度通す（液性が違うから結果が違う）
+                if (!TREE_OPS[o].reuse && usedOps().indexOf(o) >= 0) return;
                 var b = card('op', o, TREE_OPS[o].short, TREE_OPS[o].say);
                 b.disabled = state.submitted;
                 b.className += (state.sel && state.sel.type === 'op' && state.sel.id === o) ? ' picked' : '';
@@ -408,6 +410,11 @@
                     ? s.turb.f + ' の' + s.turb.c + 'の濁りが出ましたが、沈殿は分かれませんでした。'
                     : 'ここでは何も沈みませんでした。'));
             }
+            // ★★ 硫化水素だけは、そのときの容器の液性で結果が変わる。
+            //   ⚠ 途中のツリーには出さない（§16-1）。★ 走らせたあとの説明として、ここで初めて言う
+            if (s.op === 'h2s') {
+                d.appendChild(p('このとき容器は' + TREE_PH_JP[s.ph] + 'でした。', 'caveat'));
+            }
             // ⚠ 沈まなくても、化学種が変わっていることがある（★ この教材の芯）。
             //   ここを「操作のあとの状態」から引くと、希硝酸の手の説明が逆さまになる
             s.changes.forEach(function (ch) { d.appendChild(p(ch.why + '。', 'caveat')); });
@@ -433,7 +440,8 @@
         state.sel = null;
         state.submitted = false;
         state.plan = treeEmptyPlan();
-        var n = state.problem.ops.length;
+        // ⚠ 枝の数は札の枚数ではない（★ 硫化水素は1枚を2つの枝に置く）
+        var n = treeSlotCount(state.problem);
         state.seq = [];
         for (var i = 0; i < n; i++) state.seq.push(null);
         if (state.mode === 'read') {
