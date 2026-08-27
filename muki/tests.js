@@ -761,39 +761,32 @@
         var TREE_ALL_OPS = Object.keys(TREE_OPS);
         ok('宣言の表が空でない（' + TREE_ALL_IONS.length + 'イオン × ' + TREE_ALL_OPS.length + '札）',
             TREE_ALL_IONS.length >= 6 && TREE_ALL_OPS.length >= 6);
-        ok('すべての（イオン × 札）が宣言されている（硫化水素が残っている場合も含めて）', (function () {
-            var bad = [];
+        // ★ 悉皆は **容器の状態ぜんぶ**（液性3 × 硫化水素の残り2 ＝ 6通り）で回す
+        var treeEachRule = function (fn) {
             TREE_ALL_IONS.forEach(function (i) {
                 TREE_ALL_OPS.forEach(function (o) {
-                    if (!treeRule(i, o, false)) bad.push(i + '×' + o);
-                    if (!treeRule(i, o, true)) bad.push(i + '×' + o + '(h2s)');
+                    TREE_ENVS.forEach(function (env) { fn(treeRule(i, o, env), i, o, env); });
                 });
+            });
+        };
+        ok('容器の状態を悉皆で回している（液性3 × 硫化水素の残り2 ＝ ' + TREE_ENVS.length + '通り）',
+            TREE_ENVS.length === 6);
+        ok('すべての（イオン × 札 × 容器の状態）が宣言されている', (function () {
+            var bad = [];
+            treeEachRule(function (r, i, o, env) {
+                if (!r) bad.push(i + '×' + o + '(' + env.ph + (env.h2s ? '+h2s' : '') + ')');
             });
             if (bad.length) warn('宣言もれ: ' + bad.join(' / '));
             return bad.length === 0;
         })());
         ok('沈殿すると宣言したものは、化学式と色を持っている', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    [false, true].forEach(function (h) {
-                        var r = treeRule(i, o, h);
-                        if (r && r.ppt && !(r.f && r.c)) bad.push(i + '×' + o);
-                    });
-                });
-            });
+            treeEachRule(function (r, i, o) { if (r && r.ppt && !(r.f && r.c)) bad.push(i + '×' + o); });
             return bad.length === 0;
         })());
         ok('沈殿の色は、色名 → hex の表に載っている', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    [false, true].forEach(function (h) {
-                        var r = treeRule(i, o, h);
-                        if (r && r.ppt && !(r.c in TREE_COLORS)) bad.push(r.c);
-                    });
-                });
-            });
+            treeEachRule(function (r) { if (r && r.ppt && !(r.c in TREE_COLORS)) bad.push(r.c); });
             if (bad.length) warn('色の表に無い色名: ' + bad.join(' / '));
             return bad.length === 0;
         })());
@@ -829,19 +822,76 @@
         var idealA = treeIdealSeq(pA);
         ok('a1 は Ag⁺・Cu²⁺・Fe³⁺・Zn²⁺・Ca²⁺・Na⁺（★ 鉄と亜鉛が両方いる）',
             pA.ions.slice().sort().join(',') === 'Ag,Ca,Cu,Fe3,Na,Zn');
-        ok('酸性の硫化水素で、鉄は沈まずに Fe²⁺ になる（＝ 還元される）', (function () {
-            var r = treeRule('Fe3', 'h2sAcid', false);
+        var ACID = { ph: 'acid', h2s: false };
+        var BASE = { ph: 'base', h2s: false };
+        var NEUT = { ph: 'neutral', h2s: false };
+        ok('酸性の容器で硫化水素を通すと、鉄は沈まずに Fe²⁺ になる（＝ 還元される）', (function () {
+            var r = treeRule('Fe3', 'h2s', ACID);
             return r.ppt === false && r.to === 'Fe2';
         })());
         ok('煮沸してから希硝酸を加えると Fe²⁺ は Fe³⁺ に戻る',
-            treeRule('Fe2', 'hno3', false).to === 'Fe3');
+            treeRule('Fe2', 'hno3', ACID).to === 'Fe3');
         ok('⚠ 煮沸していない（硫化水素が残っている）容器では、希硝酸を加えても戻らない（§4-2 の決め）',
-            !treeRule('Fe2', 'hno3', true).to);
+            !treeRule('Fe2', 'hno3', { ph: 'acid', h2s: true }).to);
         ok('アンモニアの段で Fe³⁺ は沈むが、Fe²⁺ は沈まない（★ ここが素通りの正体）',
-            treeRule('Fe3', 'nh3', false).ppt === true &&
-            treeRule('Fe2', 'nh3', false).ppt === false);
-        ok('塩基性の硫化水素で Fe²⁺ は FeS として沈む',
-            treeRule('Fe2', 'h2sBase', false).f === 'FeS');
+            treeRule('Fe3', 'nh3', ACID).ppt === true &&
+            treeRule('Fe2', 'nh3', ACID).ppt === false);
+        ok('塩基性の容器で硫化水素を通すと Fe²⁺ は FeS として沈む',
+            treeRule('Fe2', 'h2s', BASE).f === 'FeS');
+
+        // -----------------------------------------------------------
+        // ★★★ 液性は **容器が持つ状態**（2026-08-28・ユーザー指摘の作り直し）
+        // ⚠ 札の中に閉じ込めると、希塩酸を置かなくても結果が同じになってしまう
+        //   ＝ 「手順を組む」ことが問われる型なのに、順番が結果に効かなくなる
+        // -----------------------------------------------------------
+        section('型A: 液性は容器の状態（§2-2）');
+        ok('★ 硫化水素の札は1枚だけ（⚠ 酸性用・塩基性用に割り戻したら赤）', (function () {
+            var h = Object.keys(TREE_OPS).filter(function (o) {
+                return (TREE_OPS[o].short + TREE_OPS[o].say).indexOf('硫化水素') >= 0;
+            });
+            return h.length === 1 && h[0] === 'h2s';
+        })());
+        ok('⚠ 札の名前に液性を書いていない（★ 液性は札の性質ではない）',
+            Object.keys(TREE_OPS).every(function (o) {
+                return TREE_OPS[o].short.indexOf('酸性') < 0 && TREE_OPS[o].short.indexOf('塩基性') < 0;
+            }));
+        ok('★ 液性を変える札と、変えない札がある（希塩酸→酸性・アンモニア水→塩基性）',
+            TREE_OPS.hcl.ph === 'acid' && TREE_OPS.nh3.ph === 'base' &&
+            !TREE_OPS.h2s.ph && !TREE_OPS.boil.ph);
+        ok('★ 硫化水素の結果は、容器の液性で変わる（Zn²⁺：酸性では沈まず、中性・塩基性では沈む）',
+            treeRule('Zn', 'h2s', ACID).ppt === false &&
+            treeRule('Zn', 'h2s', NEUT).ppt === true &&
+            treeRule('Zn', 'h2s', BASE).ppt === true);
+        ok('★ 何もしていない容器は「中性」（⚠ 教科書の硫化物の表と同じ語彙）',
+            TREE_PH_JP.neutral === '中性' && treeRun(['Zn'], []).stages.length === 0 &&
+            treeRun(['Zn'], ['h2s']).stages[0].ph === 'neutral');
+        ok('★ 走らせた結果が、各段の液性を持っている（答え合わせがそこから説明する）', (function () {
+            var s = treeRun(pA.ions, idealA).stages;
+            return s[0].ph === 'neutral' && s[0].phAfter === 'acid' &&
+                s[1].ph === 'acid' && s[4].phAfter === 'base' && s[5].ph === 'base';
+        })());
+        // ★★★ 否定対照そのもの: 希塩酸を置かずに硫化水素を置くと、結果が変わる
+        var seqNoHcl = idealA.map(function (o) { return o === 'hcl' ? null : o; });
+        ok('★★ 希塩酸を置かずに硫化水素を通すと、結果が変わる（⚠ 同じになったら赤）', (function () {
+            var withHcl = treeActualLeaves(treeRun(pA.ions, idealA));
+            var without = treeActualLeaves(treeRun(pA.ions, seqNoHcl));
+            return JSON.stringify(withHcl) !== JSON.stringify(without);
+        })());
+        ok('★ 酸性にしていない容器では、酸性では沈まない硫化物まで同じ葉に来る', (function () {
+            var a = treeActualLeaves(treeRun(pA.ions, seqNoHcl));
+            var leaf = a[treeLeafId(idealA.indexOf('h2s'))] || [];
+            // Ag・Cu だけでなく Fe・Zn まで来る ＝ 単離できていない
+            return leaf.length === 4 && leaf.indexOf('Zn') >= 0 && leaf.indexOf('Fe') >= 0;
+        })());
+        ok('★ 希塩酸を置き忘れた答案は、単離できていない葉ができる', (function () {
+            var g = treeGrade(pA, seqNoHcl, treePlanFromRun(pA, idealA));
+            return g.isolated === false && g.dirty >= 2;
+        })());
+        ok('★ 同じ札を2つの枝に置ける（⚠ 硫化水素は教科書の手順で2度通す）',
+            TREE_OPS.h2s.reuse === true &&
+            idealA.filter(function (o) { return o === 'h2s'; }).length === 2);
+        ok('★ 枝の数（' + treeSlotCount(pA) + '）は札の枚数（' + pA.ops.length + '）と別に数える',
+            treeSlotCount(pA) === 7 && pA.ops.length === 6);
 
         // ★★ 模範の手順は、単離できて、机上と実際が一致する
         var gIdeal = treeGrade(pA, idealA, treePlanFromRun(pA, idealA));
@@ -914,7 +964,7 @@
             return a[TREE_FINAL_LEAF].length === pA.ions.length;
         })());
         ok('操作を1つも置かなければ、全部が最後のろ液に残る（＝ 単離できていない）', (function () {
-            var empty = [null, null, null, null, null, null, null];
+            var empty = [null, null, null, null, null, null, null];   // ⚠ 枝は7本
             var g = treeGrade(pA, empty, {});
             return g.isolated === false && g.actual[TREE_FINAL_LEAF].length === 6;
         })());
@@ -934,6 +984,9 @@
                 a.solvable === true && a.idealDirty === 0 && a.ok === true);
             ok('[' + p.id + '] ★ 芯が効く（希硝酸を抜くと結果が変わる。汚れた葉 ' +
                 a.feDirty + ' 枚・行先の食い違い ' + a.feMisplaced + ' 件）', a.feTrap === true);
+            // ★★ 液性が状態として効いているか（⚠ 札の中に閉じ込めたら、ここが false になる）
+            ok('[' + p.id + '] ★★ 希塩酸を抜くと硫化水素の結果が変わる（汚れた葉 ' +
+                a.hclDirty + ' 枚）', a.hclTrap === true && a.hclDirty >= 2);
         });
         ok('★ 少なくとも1問は、鉄を戻し忘れると葉が2枚汚れる（＝ 型A を作る意味そのもの）',
             TREE_PROBLEMS.some(function (p) { return treeAuditProblem(p).feDirty >= 2; }));
@@ -970,35 +1023,27 @@
             '基本ノート', 'セミナー', '東京書籍', '三省堂', '旺文社', '参考書'];
         ok('説明（why）に本の名前が出てこない', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    [false, true].forEach(function (h) {
-                        var w = (treeRule(i, o, h) || {}).why || '';
-                        TREE_BOOKS.forEach(function (b) { if (w.indexOf(b) >= 0) bad.push(i + '×' + o + ':' + b); });
-                    });
-                });
+            treeEachRule(function (r, i, o) {
+                var w = (r || {}).why || '';
+                TREE_BOOKS.forEach(function (b) { if (w.indexOf(b) >= 0) bad.push(i + '×' + o + ':' + b); });
             });
             if (bad.length) warn('型A の why に本の名前: ' + bad.join(' / '));
             return bad.length === 0;
         })());
         ok('説明（why）にページ番号が出てこない', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    var w = (TREE_RULES[i][o] || {}).why || '';
-                    if (/p\s*\.\s*\d+/i.test(w)) bad.push(i + '×' + o);
-                });
+            treeEachRule(function (r, i, o) {
+                if (/p\s*\.\s*\d+/i.test((r || {}).why || '')) bad.push(i + '×' + o);
             });
             return bad.length === 0;
         })());
         ok('出典（ref）はデータに残っている', (function () {
-            var n = 0;
+            var seen = {};
             // ⚠ 宣言もれがあっても **ここで例外にしない**。例外を投げると #total が更新されず、
             //   全走がそのまま黙って固まる（実測: 否定対照で 25 分待たされた）。
             //   ★ 落とすのは上の「悉皆で宣言している」の1件で足りる
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) { if ((TREE_RULES[i][o] || {}).ref) n++; });
-            });
+            treeEachRule(function (r, i, o) { if (r && r.ref) seen[i + '×' + o] = 1; });
+            var n = Object.keys(seen).length;
             if (n < 15) warn('ref を持つ組が ' + n + ' 件しかない');
             return n >= 15;
         })());
@@ -1006,10 +1051,9 @@
         //   ★ しかも「模範の手順では1度も出番が無い」＝ 系統分離の順どおりなら通らない場所
         //     だけに置いてある、を機械で押さえる
         ok('資料に無い組（この教材が埋めたもの）は 8 件以内', (function () {
-            var n = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) { if ((TREE_RULES[i][o] || {}).src) n.push(i + '×' + o); });
-            });
+            var seen = {};
+            treeEachRule(function (r, i, o) { if (r && r.src) seen[i + '×' + o] = 1; });
+            var n = Object.keys(seen);
             if (n.length) warn('この教材が埋めた組: ' + n.join(' / '));
             return n.length <= 8;
         })());
@@ -1041,7 +1085,7 @@
             TREE_KEY_VERSION.charAt(0) !== SEP_KEY_VERSION.charAt(0));
         ok('記録は、鍵とやり方と中身と札を持つ', (function () {
             var r = treeRecord('build', pA, { dirty: 2 });
-            return r.mode === 'build' && r.ions.length === 6 && r.ops.length === 7 && r.dirty === 2;
+            return r.mode === 'build' && r.ions.length === 6 && r.ops.length === 6 && r.dirty === 2;
         })());
     }
 
@@ -2049,9 +2093,9 @@
                     '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
             })();
 
-            // --- ① やさしい段（行先を読む）は、操作がもう置いてある ---
+            // --- ① やさしい段（イオンの行先を答える）は、操作がもう置いてある ---
             w.treeUI.start('read', 'a1');
-            ok('「行先を読む」では操作の手札を出さない（枝はもう埋まっている）',
+            ok('「イオンの行先を答える」では操作の手札を出さない（枝はもう埋まっている）',
                 d.querySelectorAll('#op-deck .card').length === 0, uiOut);
             ok('枝が7つある', d.querySelectorAll('.slot.branch').length === 7, uiOut);
             ok('葉は6つ（★ 煮沸と希硝酸の枝には葉が生えない）',
@@ -2104,17 +2148,21 @@
 
             // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
             w.treeUI.start('build', 'a1');
-            ok('「手順から組む」では操作の手札が7枚出る',
-                d.querySelectorAll('#op-deck .card').length === 7, uiOut);
+            ok('「実験手順から考える」では操作の手札が6枚出る（★ 硫化水素は1枚）',
+                d.querySelectorAll('#op-deck .card').length === 6 &&
+                d.querySelectorAll('#op-deck .card[data-op="h2s"]').length === 1, uiOut);
             ok('組む前は葉が1つ（最後のろ液）だけ',
                 d.querySelectorAll('.slot.leaf').length === 1, uiOut);
-            [['hcl', 0], ['h2sAcid', 1], ['boil', 2], ['nh3', 4], ['h2sBase', 5], ['co3', 6]]
+            [['hcl', 0], ['h2s', 1], ['boil', 2], ['nh3', 4], ['h2s', 5], ['co3', 6]]
                 .forEach(function (x) {
                     d.querySelector('#op-deck .card[data-op="' + x[0] + '"]').click();
                     d.querySelector('.slot.branch[data-slot="' + x[1] + '"]').click();
                 });
-            ok('希硝酸だけ手札に残っている（＝ 置き忘れた答案）',
-                d.querySelectorAll('#op-deck .card').length === 1 &&
+            ok('★ 硫化水素は置いても手札に残る（⚠ 教科書の手順は2度通す）',
+                !!d.querySelector('#op-deck .card[data-op="h2s"]') &&
+                w.treeUI.state.seq[1] === 'h2s' && w.treeUI.state.seq[5] === 'h2s', uiOut);
+            ok('希硝酸が手札に残っている（＝ 置き忘れた答案）',
+                d.querySelectorAll('#op-deck .card').length === 2 &&
                 !!d.querySelector('#op-deck .card[data-op="hno3"]'), uiOut);
             ok('★ 空けた枝は詰めない（アンモニアの葉は L4 のまま）',
                 !!d.querySelector('.slot.leaf[data-leaf="L4"]') &&
