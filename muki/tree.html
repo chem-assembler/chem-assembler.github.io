@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。除外の作法は index.html と同じ（そちらに理由を書いた） -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noai, noimageai">
+    <title>すべてのイオンを分ける｜色でみる無機化学 — SchoolLenz</title>
+    <meta name="description" content="金属イオンの混合水溶液を、操作カードを枝に、イオンカードを葉に置いて分けきる机上モード。提出すると、組み立てた手順をそのまま走らせた結果と突き合わせます。">
+    <link rel="canonical" href="https://chem.schoollenz.com/muki/tree.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SchoolLenz">
+    <meta property="og:title" content="すべてのイオンを分ける｜色でみる無機化学">
+    <meta property="og:description" content="操作カードを枝に、イオンカードを葉に。組み立てた手順をアプリがそのまま走らせて、机上と実際の一致・不一致を返します。">
+    <meta property="og:url" content="https://chem.schoollenz.com/muki/tree.html">
+    <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="tree.css?v=23">
+</head>
+<body>
+<div id="tree-app">
+    <div class="topbar">
+        <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
+        <a class="hubLink" href="index.html">🐍 イオンスネーク</a>
+        <a class="hubLink" id="link-sep" href="separation.html">🧪 イオンをつきとめる</a>
+        <span class="version">v23</span>
+    </div>
+
+    <h1>すべてのイオンを分ける</h1>
+    <!-- ⚠ 導入は1行。★ 画面から読み取れないのは「机上で組んでから提出する」の1点だけなので、
+         それだけ残す（中身が分かっていることも、置き方も、画面を見れば分かる） -->
+    <p class="lead">
+        中身は分かっています。<strong>ぜんぶ置いてから提出</strong>すると、その手順をそのまま走らせます。
+    </p>
+
+    <!-- ⚠⚠ ここに解き筋を書かないこと（型B と同じ縛り。tests.js が見張っている）。
+         出してよいのは、やり方の名前と印だけ -->
+    <section class="panel" id="panel-mode">
+        <h2>やり方</h2>
+        <div id="modes" class="tabs"></div>
+        <div id="probs" class="tabs"></div>
+    </section>
+
+    <section class="panel" id="panel-hand">
+        <h2>手札</h2>
+        <!-- ★ タップで選び、タップで置く（⚠ ドラッグは使わない。理由は tree.js の冒頭） -->
+        <p class="note">札を押してから、置きたいところを押します。置いた札はもう一度押すと戻ります。</p>
+        <div id="op-deck" class="deck"></div>
+        <div id="ion-deck" class="deck"></div>
+        <p class="hint" id="hint"></p>
+    </section>
+
+    <section class="panel" id="panel-tree">
+        <h2>ツリー</h2>
+        <div class="beaker">この容器 <span class="ions" id="beaker-ions"></span></div>
+        <ol class="stages" id="stages"></ol>
+        <div class="final">
+            <div class="leaf-title">最後のろ液</div>
+            <button class="slot leaf empty" id="leaf-F" data-leaf="F" type="button">イオンを置く</button>
+            <div class="placed" id="placed-F"></div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-submit">
+        <!-- ⚠ 途中では何も返さない（§16-1）。★ 返すのは、ここを押したあとだけ -->
+        <button id="btn-submit" class="primary" type="button">提出する</button>
+        <button id="btn-reset" class="secondary" type="button">置き直す</button>
+        <div id="result" class="result hidden"></div>
+    </section>
+
+    <p class="foot">
+        <a href="../privacy.html">プライバシーポリシー</a>
+    </p>
+</div>
+
+<script src="separation-model.js?v=23"></script>
+<script src="tree-model.js?v=23"></script>
+<script src="tree.js?v=23"></script>
+</body>
+</html>
