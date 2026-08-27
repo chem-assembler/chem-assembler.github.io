@@ -5001,7 +5001,10 @@ class Reactor {
                 cv.className = 'rx-caveat';
                 cv.style.cssText = 'font-size:11px; line-height:1.6; color:var(--text-secondary); ' +
                     'border-left:2px solid var(--text-secondary); padding-left:6px;';
-                cv.textContent = lastRule.caveat;
+                // `**…**` は太字にして出す（v1467・game.js の `setEmphasisText`）。
+                // いまの `caveat` に `**` は無いが、**同じ書き手の同じ種類の文言**なので
+                // 出口だけ先に揃えておく（次に書かれたときに記号が漏れない）
+                setEmphasisText(cv, lastRule.caveat);
                 lastSec.appendChild(cv);
             }
             // ⚠ 「↩ 反応前に戻す」は**帯（`#ws-free`）にある1つだけ**（v1409）。
@@ -5330,8 +5333,9 @@ class Reactor {
         note.appendChild(head);
         const p = document.createElement('div');
         p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
-        p.textContent = (positive ? test.positive : test.negative) +
-            '（この試薬は構造を変えません。図はそのままです）';
+        // `**…**` は太字にして出す（v1467・game.js の `setEmphasisText`）
+        setEmphasisText(p, (positive ? test.positive : test.negative) +
+            '（この試薬は構造を変えません。図はそのままです）');
         note.appendChild(p);
         // どこが効いたのかを図の上でも示す。**モーダルを閉じたときに残っている**ので、
         // 閉じてから「この輪のところ」と確かめられる
@@ -5376,7 +5380,8 @@ class Reactor {
         note.innerHTML = '';
         const p = document.createElement('div');
         p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
-        p.textContent = rule.apply(this.game).caption;
+        // `**…**` は太字にして出す（v1467・game.js の `setEmphasisText`）
+        setEmphasisText(p, rule.apply(this.game).caption);
         note.appendChild(p);
     }
 
@@ -5500,8 +5505,9 @@ class Reactor {
             hints.forEach(h => note.appendChild(this.makePartnerHintButton(h)));
             return;
         }
-        p.textContent = `${reagent.name}（${reagent.formula}）が効くのは、${reagent.acts}。` +
-            'いまの分子にはどれもありません。' + (reagent.miss || '');
+        // `**…**` は太字にして出す（v1467・game.js の `setEmphasisText`）。`miss` の文言に多い
+        setEmphasisText(p, `${reagent.name}（${reagent.formula}）が効くのは、${reagent.acts}。` +
+            'いまの分子にはどれもありません。' + (reagent.miss || ''));
         note.appendChild(p);
     }
 
