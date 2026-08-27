@@ -912,6 +912,15 @@ button:hover {
 #canvas-toast.success { border-color: var(--neon-green); }
 #canvas-toast.error { border-color: var(--neon-red); }
 #canvas-toast.hidden { display: none; }
+/* 文言の中の `**…**`（v1467・game.js の `setEmphasisText` が `<b class="em">` にする）。
+   ⚠ **色は `#puzzle-howto strong` と同じシアンに揃える**。アプリの中で「ここが要点」の
+      見た目を2つにしない。
+   ⚠ 太字だけでは足りない場所がある —— `.result-message` は**全体がもともと bold** なので、
+      色が付かないと強調が消える。だから太さと色の両方を指定する。
+   ⚠ `.result-message` は success/error で文字色が緑・赤に変わるが、そちらは
+      第5段で隠しの器（`#panel-legacy`）になっていて画面には出ない（game.js の注）ので、
+      シアンで上書きして構わない。見える字幕は `#canvas-toast` の方。 */
+b.em { font-weight: 700; color: var(--neon-blue); }
 /* キャンバス左下に化合物名チップ（#mobile-name-chip・下8px＋高さ約27px）が出るため、
    bottom:14px だとトーストがその上に重なって名前を隠す（レビュー項目11）。
    チップの分だけ持ち上げる（44px ＝ 8+27 に 9px の余裕）。
