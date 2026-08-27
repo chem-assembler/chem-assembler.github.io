@@ -1294,6 +1294,18 @@
     // ===============================================================
     function runSeparationUI(done) {
         section('型B の画面（separation.html）', uiOut);
+        // スネークの側からの入口。⚠ 無いと URL を知っている人しかたどり着けない
+        (function () {
+            var d0 = frame.contentDocument;
+            var a = d0 && d0.getElementById('link-sep');
+            ok('スネークの画面に、型B への入口がある', !!a, uiOut);
+            if (a) {
+                ok('入口のリンク先が separation.html',
+                    (a.getAttribute('href') || '').indexOf('separation.html') >= 0, uiOut);
+                ok('入口が指で押せる大きさ（' + Math.round(rectH(a)) + 'px ≧ ' + TAP_MIN + '）',
+                    rectH(a) >= TAP_MIN, uiOut);
+            }
+        })();
         if (!onHttp) {
             ok('separation.html を iframe で開ける（file:// では不可）', false, uiOut);
             done();
