@@ -392,8 +392,9 @@
     section('型B: 模型の読み込み');
     var sepLoaded = ok('separation-model.js が読み込めている',
         typeof SEP_IONS !== 'undefined' && typeof SEP_OPS !== 'undefined' &&
-        typeof SEP_TABLE !== 'undefined' && typeof SEP_PROBLEMS !== 'undefined' &&
-        typeof sepObserve === 'function' && typeof sepAuditProblem === 'function');
+        typeof SEP_TABLE !== 'undefined' && typeof SEP_LEVELS !== 'undefined' &&
+        typeof sepObserve === 'function' && typeof sepAuditProblem === 'function' &&
+        typeof sepPools === 'function' && typeof sepMakeProblem === 'function');
 
     if (sepLoaded) {
         // -----------------------------------------------------------
@@ -488,6 +489,53 @@
             }));
 
         // -----------------------------------------------------------
+        // ⚠⚠ 本の名前とページは画面に出さない。⚠ ただしデータからは消さない
+        //   （2026-08-27・ユーザー決定。★ §17-10 の `src` とまったく同じ扱い）
+        //   ★ 教科書は1社ではないので、ページ番号は学習者の手元と合わない。
+        //   ⚠ しかし出典を消すと、§4-1 の線を後から検算する手がかりが無くなる。
+        // -----------------------------------------------------------
+        section('型B: 出典はデータに残し、画面には出さない');
+        var BOOK_WORDS = ['教科書', '化学新研究', '新研究', '総合的研究', '要点&盲点',
+            '基本ノート', 'セミナー', '東京書籍', '三省堂', '旺文社', '参考書'];
+        ok('観察の説明（why）に本の名前が出てこない', (function () {
+            var bad = [];
+            allPairs.forEach(function (pr) {
+                var w = SEP_TABLE[pr[0]][pr[1]].why || '';
+                BOOK_WORDS.forEach(function (b) { if (w.indexOf(b) >= 0) bad.push(pr.join('×') + ':' + b); });
+            });
+            if (bad.length) warn('why に本の名前: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+        ok('観察の説明（why）にページ番号が出てこない',
+            allPairs.every(function (pr) {
+                return !/p\s*\.\s*\d+/i.test(SEP_TABLE[pr[0]][pr[1]].why || '');
+            }));
+        // ⚠ 「消したつもりが、出典ごと消えていた」を止める
+        ok('出典（ref）はデータに残っている', (function () {
+            var withRef = allPairs.filter(function (pr) { return !!SEP_TABLE[pr[0]][pr[1]].ref; });
+            if (withRef.length < 20) warn('ref を持つ観察が ' + withRef.length + ' 件しかない');
+            return withRef.length >= 20;
+        })());
+        ok('炎色を持つイオンは、色の出典をデータに持っている',
+            ['Cu', 'Ca', 'Na', 'K'].every(function (i) { return !!SEP_IONS[i].flame.ref; }));
+        ok('「炎色は7元素だけ」の出典もデータに持っている',
+            typeof SEP_FLAME_LIMIT_REF === 'string' && /p\s*\.\s*\d+/i.test(SEP_FLAME_LIMIT_REF));
+        // ★ スネークの図鑑（chemistry.js の note）にも本の名前が出ていないこと
+        ok('図鑑に出る注記にも本の名前・ページが出てこない', (function () {
+            var texts = [];
+            P.forEach(function (p) { texts.push(p.name, p.note || ''); });
+            allIonKeys.forEach(function (k) {
+                var i = ionOf(k);
+                texts.push(i.aqueous || '', i.aqueousNote || '');
+            });
+            var bad = texts.filter(function (t) {
+                return /p\s*\.\s*\d+/i.test(t) || BOOK_WORDS.some(function (b) { return t.indexOf(b) >= 0; });
+            });
+            if (bad.length) warn('図鑑の文言に出典: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+
+        // -----------------------------------------------------------
         // 色の名乗りと色相（既存の COLOR_WORDS をそのまま使う）
         // -----------------------------------------------------------
         section('型B: 色の名乗りと hex の整合');
@@ -508,37 +556,136 @@
         // -----------------------------------------------------------
         // 出題の門番（§2-4 の型B 版・§16-6）
         // -----------------------------------------------------------
-        section('型B: 出題の門番（§2-4）');
-        ok('出題が3問ある', SEP_PROBLEMS.length === 3);
-        SEP_PROBLEMS.forEach(function (prb) {
-            var a = sepAuditProblem(prb);
-            ok('[' + prb.id + '] 配った札で、すべての（イオン×札）の結果が宣言されている' +
-                (a.undeclared.length ? '（欠け: ' + a.undeclared.join(',') + '）' : ''),
-                a.undeclared.length === 0);
-            ok('[' + prb.id + '] どの2つの候補も、配った札で見分けられる' +
-                (a.unresolved.length ? '（分けられない: ' + a.unresolved.join(',') + '）' : ''),
-                a.unresolved.length === 0);
-            ok('[' + prb.id + '] 理想の最短が2手以上（1手で全部決まる出題は出さない。実測 ' +
-                a.shortest + '手）', a.shortest >= 2);
-            ok('[' + prb.id + '] 門番を通っている', a.ok === true);
+        section('型B: 抽選の母集団と門番（§2-4）');
+        var pools = sepPools();
+        SEP_LEVELS.forEach(function (l) {
+            var pool = pools[l.id];
+            // ⚠ 1通りしか無い段は、毎回まったく同じ候補リストになる（＝ 抽選にならない）
+            ok('[' + l.name + '] 抽選の母集団が2通り以上ある（実測 ' + pool.length + ' 通り）',
+                pool.length >= 2);
+            ok('[' + l.name + '] 母集団の全部が門番を通っている（宣言もれ・見分けられない組・1手で決まる、が無い）',
+                pool.every(function (e) {
+                    var a = sepAuditProblem({ id: 'x', cands: e.cands, ops: e.ops });
+                    return a.ok && a.undeclared.length === 0 && a.unresolved.length === 0 && a.shortest >= 2;
+                }));
+            ok('[' + l.name + '] 母集団の全部が、この段の範囲に入っている',
+                pool.every(function (e) {
+                    return sepDifficulty({ id: 'x', cands: e.cands, ops: e.ops }).level === l.id;
+                }));
         });
-        // ★ 候補リストが難易度のつまみになっていること（§15-4）
-        ok('b3 は候補4つとも炎色で色が出ない（＝炎色反応では1つも割れない）', (function () {
-            var p3 = SEP_PROBLEMS.filter(function (x) { return x.id === 'b3'; })[0];
-            return p3.cands.every(function (c) { return SEP_IONS[c].flame === null; }) &&
-                sepSplit(p3.cands, 'flame').length === 1;
+        ok('候補の数は3〜6個に収まっている', SEP_LEVELS.every(function (l) {
+            return pools[l.id].every(function (e) { return e.cands.length >= 3 && e.cands.length <= 6; });
+        }));
+        ok('配る札は「結果を宣言してあるものだけ」（§4-1）', SEP_LEVELS.every(function (l) {
+            return pools[l.id].every(function (e) {
+                return e.ops.every(function (o) {
+                    return e.cands.every(function (c) { return !!sepObserve(c, o); });
+                });
+            });
+        }));
+        // -----------------------------------------------------------
+        // ⚠⚠ 出題の文言に解き筋を出さない（2026-08-27・ユーザー指摘）
+        //   ★ 「炎色で3つに割れるが、残り2つは沈殿を溶かさないと分かれない」のような一文は、
+        //     冗長である以前に**答えを配っている**。⚠ 一覧の見出しも同じ（押す前に無駄と分かる）。
+        //   ★ 出してよいのは難易度だけ。⚠ **次に誰かが説明を足したときに、ここで止まる。**
+        // -----------------------------------------------------------
+        section('型B: 出題の文言に解き筋を出さない');
+        var SPOILER_WORDS = ['炎色', '沈殿', '溶か', '溶け', 'アンモニア', '塩酸', '硫化水素',
+            '水酸化', '熱水', '白金線', '錯イオン', '割れ', '分かれ'];
+        ok('難易度の段が、解き筋に触れる語を持たない',
+            SEP_LEVELS.every(function (l) {
+                return SPOILER_WORDS.every(function (w) {
+                    return (l.name + l.mark + l.id).indexOf(w) < 0;
+                });
+            }));
+        ok('出題が持つのは鍵・段・候補・札・中身だけ（説明文の欄を持たない）', (function () {
+            var p = sepMakeProblem('easy');
+            return Object.keys(p).sort().join(',') === 'cands,id,key,level,ops,truth';
         })());
-        ok('b2 は炎色反応で4つに割れるが、決めきらない', (function () {
-            var p2 = SEP_PROBLEMS.filter(function (x) { return x.id === 'b2'; })[0];
-            var g = sepSplit(p2.cands, 'flame');
-            return g.length > 1 && g.some(function (x) { return x.length > 1; });
+        ok('難易度は、門番が数えた値だけから出る（候補の数・理想の最短・単独で決まらない候補の数）',
+            SEP_LEVELS.every(function (l) {
+                return pools[l.id].every(function (e) {
+                    var p = { id: 'x', cands: e.cands, ops: e.ops };
+                    var d = sepDifficulty(p);
+                    return d.score === d.cands + d.shortest + d.hard &&
+                        d.cands === e.cands.length && d.shortest === sepAuditProblem(p).shortest;
+                });
+            }));
+        ok('段の切り方は1か所（SEP_LEVELS）にしかない',
+            SEP_LEVELS.every(function (l) {
+                return typeof l.min === 'number' && typeof l.max === 'number' &&
+                    l.mark.length === 3 && sepLevelOf(l.min) === l.id && sepLevelOf(l.max) === l.id;
+            }));
+
+        // ★ 候補リストが難易度のつまみになっていること（§15-4）
+        ok('炎色を1つも持たない候補の組が、母集団に実在する（＝炎色が1つも割らない出題が作れる）',
+            (function () {
+                var all = [];
+                SEP_LEVELS.forEach(function (l) { all = all.concat(pools[l.id]); });
+                return all.some(function (e) {
+                    return e.cands.every(function (c) { return SEP_IONS[c].flame === null; }) &&
+                        sepSplit(e.cands, 'flame').length === 1;
+                });
+            })());
+        ok('炎色が割るが決めきらない候補の組も、母集団に実在する', (function () {
+            var all = [];
+            SEP_LEVELS.forEach(function (l) { all = all.concat(pools[l.id]); });
+            return all.some(function (e) {
+                var g = sepSplit(e.cands, 'flame');
+                return g.length > 1 && g.some(function (x) { return x.length > 1; });
+            });
+        })());
+
+        // -----------------------------------------------------------
+        // ★★ 型の鍵 —— 集計できる安定した単位（⚠ 送信も保存もしない。持つだけ）
+        //   ⚠ 毎回つくる形にしたので、「問題ごと」の問題が毎回別物になる。
+        //   ★ 数えられるのは「型」（候補リスト＋段）であって、個々の出題ではない。
+        // -----------------------------------------------------------
+        section('型B: 型の鍵と記録');
+        ok('同じ候補・同じ段なら、並びが違っても同じ鍵',
+            sepTypeKey('easy', ['Na', 'Ag', 'Cu']) === sepTypeKey('easy', ['Cu', 'Ag', 'Na']));
+        ok('段が違えば別の鍵',
+            sepTypeKey('easy', ['Na', 'Ag', 'Cu']) !== sepTypeKey('hard', ['Na', 'Ag', 'Cu']));
+        ok('候補が違えば別の鍵',
+            sepTypeKey('easy', ['Na', 'Ag', 'Cu']) !== sepTypeKey('easy', ['Na', 'Ag', 'Ca']));
+        ok('鍵に版が入っている（⚠ 札の配り方や門番を変えたら上げる）',
+            sepTypeKey('easy', ['Ag']).indexOf(SEP_KEY_VERSION + '|') === 0);
+        ok('鍵は中身のイオンで変わらない（同じ型の別の出題を、同じ鍵で数えられる）', (function () {
+            var a = sepMakeProblem('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'], truth: 'Ag' });
+            var b = sepMakeProblem('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'], truth: 'Pb' });
+            return a.key === b.key && a.truth !== b.truth;
+        })());
+        ok('記録は、鍵と段と候補と中身を持つ', (function () {
+            var p = sepMakeProblem('normal');
+            var r = sepRecord(p, { correct: true });
+            return r.key === p.key && r.level === p.level && r.truth === p.truth &&
+                r.cands.length === p.cands.length && r.correct === true;
+        })());
+        ok('中身は必ず候補の中から選ばれる', (function () {
+            for (var i = 0; i < 30; i++) {
+                var p = sepMakeProblem('normal');
+                if (p.cands.indexOf(p.truth) < 0) return false;
+            }
+            return true;
+        })());
+        // ⚠ 等確率で引くと解き筋が2回3回と続く。直近に出した型だけ避ける
+        ok('直前と同じ型は続けて出さない', (function () {
+            var last = null;
+            for (var i = 0; i < 40; i++) {
+                var p = sepMakeProblem('hard', { avoid: last });
+                if (last && p.key === last) return false;
+                last = p.key;
+            }
+            return true;
         })());
 
         // -----------------------------------------------------------
         // 絞り込みと採点
         // -----------------------------------------------------------
         section('型B: 絞り込みと採点');
-        var b1 = SEP_PROBLEMS[0];
+        // ★ 出題を固定して測る（⚠ 母集団から引くと毎回変わって、何が壊れたか分からない）
+        var b1 = { id: 'fixed', cands: ['Ag', 'Pb', 'Cu', 'Na'],
+            ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'] };
         var h1 = [{ op: 'flame', obs: sepObserve('Ag', 'flame') }];
         ok('b1 で炎色に色がつかなければ、残るのは Ag⁺ と Pb²⁺',
             sepAlive(b1.cands, h1).join(',') === 'Ag,Pb');
@@ -564,15 +711,18 @@
                 g.steps[1].dropped.join(',') === 'Pb';
         })());
         ok('候補を1つも減らさない手は、減らさなかったと分かる（§3-2）', (function () {
-            var p3 = SEP_PROBLEMS.filter(function (x) { return x.id === 'b3'; })[0];
+            var p3 = { id: 'fixed3', cands: ['Pb', 'Zn', 'Al', 'Fe3'],
+                ops: ['flame', 'naoh', 'nh3', 'hcl', 'h2s'] };
             var hh = [{ op: 'flame', obs: sepObserve('Zn', 'flame') }];
             var g = sepGrade(p3, 'Zn', 'Zn', hh);
             return g.steps[0].dropped.length === 0;
         })());
         // ⚠ 型B に「まだわからない」という答えは無い（§16-3）
         ok('答えの選択肢は候補だけ（「まだわからない」は無い）',
-            SEP_PROBLEMS.every(function (prb) {
-                return prb.cands.every(function (c) { return !!SEP_IONS[c]; });
+            SEP_LEVELS.every(function (l) {
+                return pools[l.id].every(function (e) {
+                    return e.cands.every(function (c) { return !!SEP_IONS[c]; });
+                });
             }));
     }
 
@@ -1339,9 +1489,55 @@
             // ⚠ 中身は 1 種類だけ、と学習者に伝えているか（§15-1）
             ok('「1種類だけ」であることを画面が言っている',
                 d.body.textContent.indexOf('1種類だけ') >= 0, uiOut);
+            // ⚠⚠ 出題まわりの文言に解き筋を出さない（2026-08-27・ユーザー指摘）
+            (function () {
+                var zone = [d.querySelector('.lead'), d.getElementById('panel-level'),
+                    d.getElementById('panel-problem')]
+                    .map(function (e) { return e ? e.textContent : ''; }).join(' ');
+                var words = (typeof SPOILER_WORDS !== 'undefined') ? SPOILER_WORDS : [];
+                var hit = words.filter(function (w) { return zone.indexOf(w) >= 0; });
+                if (hit.length) warn('出題まわりに解き筋の語: ' + hit.join('・'));
+                ok('出題まわり（導入・難易度・候補）に解き筋の語が出てこない', hit.length === 0, uiOut);
+                ok('導入は1〜2行に収まっている（' + d.querySelector('.lead').textContent.trim().length +
+                    '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
+                var lv0 = d.querySelector('#levels button').textContent.replace(/[\s　]/g, '');
+                ok('難易度は「段の名前 ＋ 印」だけ（実測「' + lv0 + '」）',
+                    /^[ぁ-んァ-ヶ一-龠]+[★☆]{3}$/.test(lv0), uiOut);
+                ok('難易度の段が3つ並んでいる',
+                    d.querySelectorAll('#levels button').length === 3, uiOut);
+                ok('見出しに難易度の印と候補の数が出ている',
+                    /[★☆]{3}/.test(d.getElementById('prob-note').textContent) &&
+                    /候補\s*\d+/.test(d.getElementById('prob-note').textContent), uiOut);
+            })();
 
-            // 出題を固定して遊ぶ（★ 実機の手順とそろえてある: b1・中身は Ag⁺）
-            w.sepUI.start('b1', 'Ag');
+            // ★ 問題の一覧を持たない（毎回つくる）。⚠ 引き直すたびに中身が変わること
+            (function () {
+                ok('問題の一覧（タブ）は無い', !d.getElementById('prob-tabs'), uiOut);
+                var keys = {}, truths = {};
+                for (var i = 0; i < 12; i++) {
+                    d.getElementById('btn-new').click();
+                    keys[w.sepUI.state.problem.key] = 1;
+                    truths[w.sepUI.state.truth] = 1;
+                }
+                ok('「べつの容器にする」で型が引き直される（12回で ' +
+                    Object.keys(keys).length + ' 種類）', Object.keys(keys).length >= 3, uiOut);
+                ok('中身も引き直される（12回で ' + Object.keys(truths).length + ' 種類）',
+                    Object.keys(truths).length >= 2, uiOut);
+                ok('難易度を選ぶと、その段の出題に変わる', (function () {
+                    d.querySelector('#levels button[data-level="hard"]').click();
+                    return w.sepUI.state.level === 'hard' &&
+                        w.sepUI.state.problem.key.indexOf('|hard|') > 0;
+                })(), uiOut);
+                // ★★ 型の鍵と中身を、記録できる形で持っている（⚠ 送信も保存もしない）
+                var r = w.sepUI.state.record;
+                ok('出題1問が、型の鍵と中身を記録できる形で持っている',
+                    !!r && r.key === w.sepUI.state.problem.key &&
+                    r.truth === w.sepUI.state.truth && r.cands.length > 0, uiOut);
+            })();
+
+            // 出題を固定して遊ぶ（★ 実機の手順とそろえてある: 中身は Ag⁺）
+            w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: 'Ag' });
             var cands = d.querySelectorAll('#cand-list .chip');
             ok('候補が4つ並ぶ（Ag⁺・Pb²⁺・Cu²⁺・Na⁺）', cands.length === 4, uiOut);
             ok('候補リストが答えを漏らしていない（どれが正解かの印が無い）',
@@ -1392,8 +1588,19 @@
                 res.textContent.indexOf('1つに決まっていました') >= 0, uiOut);
             ok('それまでの結果の解説が、手ごとに出る（§16-1）',
                 res.querySelectorAll('.why').length === 3, uiOut);
-            ok('解説に出典が入っている（教科書のページ）',
-                res.textContent.indexOf('教科書') >= 0, uiOut);
+            // ⚠⚠ 本の名前とページは画面に出さない（2026-08-27・ユーザー決定）。
+            //   ★ 世間で使われている教科書は1社ではないので、ページ番号は手元と合わない
+            var books = (typeof BOOK_WORDS !== 'undefined') ? BOOK_WORDS : [];
+            ok('答え合わせに本の名前が出てこない',
+                books.every(function (w) { return res.textContent.indexOf(w) < 0; }), uiOut);
+            ok('ページ番号も本の名前も、画面のどこにも出てこない',
+                !/p\s*\.\s*\d+/i.test(d.body.textContent) &&
+                books.every(function (w) { return d.body.textContent.indexOf(w) < 0; }), uiOut);
+            ok('答え合わせにページ番号が出てこない',
+                !/p\s*\.\s*\d+/i.test(res.textContent), uiOut);
+            ok('説明の中身は残っている（なぜそう見えたかを言っている）',
+                res.textContent.indexOf('溶けない') >= 0 &&
+                res.textContent.indexOf('7元素') >= 0, uiOut);
             ok('解説で初めて化学式が出る（途中では出さない）',
                 res.textContent.indexOf('AgCl') >= 0, uiOut);
             ok('⚠ 出典の別（参考書／教科書の区別）は画面に出さない（§17-10）',
@@ -1402,7 +1609,8 @@
                 d.querySelector('.op[data-op="h2s"]').disabled === true, uiOut);
 
             // ⚠ 「たまたま当たった」ときの文面（§3-5-4 (B) の向き）
-            w.sepUI.start('b1', 'Ag');
+            w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: 'Ag' });
             d.querySelector('.op[data-op="flame"]').click();
             d.getElementById('btn-answer').click();
             d.querySelector('#answer-choices button[data-pick="Ag"]').click();
