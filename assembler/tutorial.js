@@ -106,9 +106,32 @@ class TutorialPlayer {
                 const head = document.createElement('div');
                 head.style.cssText = 'display:flex; align-items:center; gap:10px;';
                 const info = document.createElement('div');
-                info.style.cssText = 'flex:1; text-align:left;';
-                info.innerHTML = `<div style="font-size:13.5px; color:#fff;">${t.title}</div>` +
-                                 `<div style="font-size:11.5px; color:var(--text-secondary);">${t.summary}</div>`;
+                info.style.cssText = 'flex:1; text-align:left; min-width:0;';
+                /* ★ 1行説明を畳む（v1472・ux-density §2-③ ＝ 実測でいちばん大きい1件）。
+                 *
+                 * ⚠ **押す前の1行説明が、押した結果（デモそのもの）と二重になっている。**
+                 *   「デモを見る」しかできない一覧に、13本ぶん 363字の前置きが並んでいた
+                 *   （実測。ヘルプ既定の見えている文字の半分以上がこれ）。
+                 *
+                 * ★ **消していない** —— 見出しを押せば出る。仕掛けは既存の
+                 *   `<details class="learn-acc">` そのままで、`.tut-acc` は把手の背丈を
+                 *   一覧の1行ぶんに詰めるだけの上書き（新しい仕掛けは作らない）。
+                 * ★ 字も 11.5px → 12.5px に上げた（減らしてから上げる、の順）。
+                 */
+                const det = document.createElement('details');
+                det.className = 'learn-acc tut-acc';
+                det.dataset.tutorialSummary = t.id;
+                const sum = document.createElement('summary');
+                sum.textContent = t.title;
+                const body = document.createElement('div');
+                body.className = 'learn-acc-body';
+                body.textContent = t.summary;
+                det.appendChild(sum);
+                det.appendChild(body);
+                // ⚠ 検索で**説明の側に当たった回は開いて出す**。閉じたままだと
+                //   「打った語が画面のどこにも無い」＝ 検索が壊れて見える
+                if (q && t.summary.includes(q) && !t.title.includes(q)) det.open = true;
+                info.appendChild(det);
                 head.appendChild(info);
 
                 const btn = document.createElement('button');

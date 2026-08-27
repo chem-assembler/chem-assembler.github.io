@@ -29135,9 +29135,12 @@
     const UX_SCREENS = [
         {
             name: 'ヘルプ（操作ガイド）', root: '#tutorial-modal', max: 45,
-            // #tutorial-list は**デモの一覧（データ）**。1行説明 363字が畳めていないのは
-            // tutorials.json / tutorial.js 側の宿題で、この検査の担当ではない
-            skip: ['#tutorial-list'],
+            // ★ v1472 で `#tutorial-list` の skip を外した。1行説明 13本 363字を
+            //   `<details class="learn-acc tut-acc">` に畳んだので、**一覧ごと数えても 0字**
+            //   （見出しは `<summary>`・「▶ デモを見る」は `<button>`＝どちらも数えない側）。
+            //   ⚠ 数える側に置いたことが要点 —— 畳みを剥がして説明を戻すと、
+            //   その瞬間に 363字がこの画面の勘定に乗って上限 45字を突き抜ける
+            skip: [],
             open: (D, W) => D.getElementById('btn-help').click()
         },
         {
