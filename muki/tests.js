@@ -21,7 +21,9 @@
 
     // 空振り防止。想定より明らかに少ない件数で「ALL PASS」と出たら、
     // それは通ったのではなく走っていない（fetch 失敗・iframe 未初期化など）
-    var MIN_CASES = 70;
+    // ⚠ 系統分離モード（型B）の検査が丸ごと空振りしても気づけるように、
+    //   その件数ぶんを含めた下限にしてある（2026-08-27 時点の実測は 271 件）
+    var MIN_CASES = 200;
 
     function section(title, target) {
         var h = document.createElement('h2');
@@ -75,6 +77,11 @@
     var COLOR_WORDS = [
         { word: '青白色', why: '青の色相（180〜260°）で明るい', test: function (c) { return hueIn(c, 180, 260) && c.l >= 0.55; } },
         { word: '青緑色', why: '青緑の色相（150〜200°）', test: function (c) { return hueIn(c, 150, 200) && c.s >= 0.2; } },
+        /* 以下3つは系統分離モード（型B）で増えた色名。
+           ⚠ 「橙赤色」は「赤色」を含むので、必ず「赤色」より前に置くこと */
+        { word: '深青色', why: '青の色相（200〜260°）で暗い', test: function (c) { return hueIn(c, 200, 260) && c.l <= 0.5; } },
+        { word: '橙赤色', why: '赤橙の色相（5〜35°）で鮮やか', test: function (c) { return hueIn(c, 5, 35) && c.s >= 0.5; } },
+        { word: '赤紫色', why: '赤紫の色相（280〜345°）', test: function (c) { return hueIn(c, 280, 345) && c.s >= 0.25; } },
         { word: '緑白色', why: '緑みの色相（80〜160°）で明るい', test: function (c) { return hueIn(c, 80, 160) && c.l >= 0.7; } },
         { word: '淡黄色', why: '黄の色相（35〜70°）で明るい', test: function (c) { return hueIn(c, 35, 70) && c.s >= 0.3 && c.l >= 0.4; } },
         { word: '褐色', why: '茶の色相（10〜50°）でくすんで暗め', test: function (c) { return hueIn(c, 10, 50) && c.s >= 0.15 && c.l >= 0.15 && c.l <= 0.6; } },
@@ -375,6 +382,200 @@
             return !i.aqueousNote || i.aqueous.indexOf(i.aqueousNote) < 0;
         }));
 
+    // ===============================================================
+    // 系統分離モード「型B: イオンをつきとめる」（separation-model.js）
+    //
+    // ⚠ ここで守っているのは、設計書 DESIGN_separation.md が
+    //   **実測と裏取りの上で決めたこと**であって、こちらの好みではない。
+    //   節番号を書いてあるので、落ちたときは設計書の該当節を読むこと。
+    // ===============================================================
+    section('型B: 模型の読み込み');
+    var sepLoaded = ok('separation-model.js が読み込めている',
+        typeof SEP_IONS !== 'undefined' && typeof SEP_OPS !== 'undefined' &&
+        typeof SEP_TABLE !== 'undefined' && typeof SEP_PROBLEMS !== 'undefined' &&
+        typeof sepObserve === 'function' && typeof sepAuditProblem === 'function');
+
+    if (sepLoaded) {
+        // -----------------------------------------------------------
+        // 炎色反応 —— 色が出るのは教科書の7元素だけ（§13-3 (4)・化学基礎 p.21 表3）
+        // ⚠ ここが緩むと「Ag⁺ を炎色で当てる」というありえない解法が生まれる
+        // -----------------------------------------------------------
+        section('型B: 炎色反応（色が出るのは7元素だけ）');
+        var FLAME_YES = ['Cu', 'Ca', 'Na', 'K'];      // 模型が持つイオンのうち炎色を持つもの
+        var FLAME_NO = ['Ag', 'Pb', 'Zn', 'Al', 'Fe3'];
+        ok('炎色を持つのは Cu²⁺・Ca²⁺・Na⁺・K⁺ だけ',
+            FLAME_YES.every(function (i) { return SEP_IONS[i] && SEP_IONS[i].flame; }));
+        ok('Ag⁺・Pb²⁺・Zn²⁺・Al³⁺・Fe³⁺ は炎色で色が出ない（教科書 化学基礎 p.21 表3 の但し書き）',
+            FLAME_NO.every(function (i) { return SEP_IONS[i] && SEP_IONS[i].flame === null; }));
+        ok('炎色を持たないイオンの観察は flameNone（＝「色はつかなかった」）',
+            FLAME_NO.every(function (i) { return sepObserve(i, 'flame').k === 'flameNone'; }));
+        // ★ 色名が資料で割れるものは複数受理する（K⁺ は「赤紫」と「紫」。COLOR_AUDIT.md §4-2）
+        ok('K⁺ の炎色は色名を複数持つ（赤紫色／紫色）',
+            SEP_IONS.K.flame.names.indexOf('赤紫色') >= 0 &&
+            SEP_IONS.K.flame.names.length >= 2);
+        ok('画面に出すのは1つ目（教科書の「赤紫」）', sepObserve('K', 'flame').c === '赤紫色');
+
+        // -----------------------------------------------------------
+        // 観察は答えを教えない（§2-3）
+        // ⚠ 化学式を観察に混ぜたら、その1手で答えを配ってしまう
+        // -----------------------------------------------------------
+        section('型B: 観察が化学式を漏らしていないか（§2-3）');
+        var allPairs = [];
+        Object.keys(SEP_TABLE).forEach(function (i) {
+            Object.keys(SEP_TABLE[i]).forEach(function (o) { allPairs.push([i, o]); });
+        });
+        ok('観察の表が空でない（' + allPairs.length + '組）', allPairs.length > 20);
+        ok('観察の文章に化学式が出てこない',
+            allPairs.every(function (pr) {
+                var e = SEP_TABLE[pr[0]][pr[1]];
+                if (!e.f) return true;
+                return sepObsText(e).indexOf(e.f) < 0;
+            }));
+        ok('見分けの鍵（obsKey）に化学式が入っていない',
+            allPairs.every(function (pr) {
+                var e = SEP_TABLE[pr[0]][pr[1]];
+                if (!e.f) return true;
+                return sepObsKey(e).indexOf(e.f) < 0;
+            }));
+        // ★ 被りは潰すものではなく道具（§16-6）。AgCl と PbCl₂ は**同じ見え方**でなければならない
+        ok('希塩酸での白い沈殿は Ag⁺ と Pb²⁺ で見分けがつかない（色の被りは道具・§16-6）',
+            sepObsKey(sepObserve('Ag', 'hcl')) === sepObsKey(sepObserve('Pb', 'hcl')));
+        ok('その2つは、沈殿に熱水を注ぐと分かれる（教科書 p.88）',
+            sepObsKey(sepObserve('Ag', 'hclHot')) !== sepObsKey(sepObserve('Pb', 'hclHot')));
+        // ⚠ 同じ見え方なら同じ文章。言い回しの違いから答えが出るのを止める（§12-6 の漏れと同じ形）
+        ok('同じ見え方（obsKey が同じ）の観察は、文章もまったく同じ', (function () {
+            var byKey = {}, bad = [];
+            allPairs.forEach(function (pr) {
+                var e = SEP_TABLE[pr[0]][pr[1]], k = sepObsKey(e), t = sepObsText(e);
+                if (byKey[k] === undefined) byKey[k] = t;
+                else if (byKey[k] !== t) bad.push(pr.join('×') + ' → ' + t);
+            });
+            if (bad.length) warn('見え方が同じなのに文章が違う: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+
+        // -----------------------------------------------------------
+        // 教科書の外を再現しない（§4-1）
+        // ⚠ 宣言していない組を黙って「変化なし」にしたら、それは創作
+        // -----------------------------------------------------------
+        section('型B: 教科書の外を再現しない（§4-1）');
+        ok('表に無い（イオン×札）の組は null を返す（「変化なし」にしない）',
+            sepObserve('Zn', 'hclHot') === null && sepObserve('Al', 'hclNh3') === null);
+        ok('null の観察は「扱っていません」と言う（「変化なし」と言わない）',
+            sepObsText(null).indexOf('扱っていません') >= 0 &&
+            sepObsText(null).indexOf('変化') < 0);
+
+        // -----------------------------------------------------------
+        // 錯イオンの色は出典の別を持つ。⚠ ただし画面には出さない（§17-10）
+        // -----------------------------------------------------------
+        section('型B: 錯イオンの色と出典（§17-10）');
+        ok('すべての錯イオンが出典の別（教科書／参考書）を持つ',
+            Object.keys(SEP_COMPLEXES).every(function (k) {
+                var s = SEP_COMPLEXES[k].src;
+                return s === '教科書' || s === '参考書';
+            }));
+        ok('[Al(OH)₄]⁻・[Zn(OH)₄]²⁻・[Pb(OH)₄]²⁻ は「教科書に記述なし」＝ 参考書',
+            SEP_COMPLEXES['[Al(OH)₄]⁻'].src === '参考書' &&
+            SEP_COMPLEXES['[Zn(OH)₄]²⁻'].src === '参考書' &&
+            SEP_COMPLEXES['[Pb(OH)₄]²⁻'].src === '参考書');
+        ok('[Cu(NH₃)₄]²⁺ は深青色で、出典は教科書（p.67 表4）',
+            SEP_COMPLEXES['[Cu(NH₃)₄]²⁺'].color === '深青色' &&
+            SEP_COMPLEXES['[Cu(NH₃)₄]²⁺'].src === '教科書');
+        ok('出典の別は画面の文章に出てこない（解説に「参考書」の語が無い）',
+            allPairs.every(function (pr) {
+                var w = SEP_TABLE[pr[0]][pr[1]].why || '';
+                return w.indexOf('参考書') < 0;
+            }));
+
+        // -----------------------------------------------------------
+        // 色の名乗りと色相（既存の COLOR_WORDS をそのまま使う）
+        // -----------------------------------------------------------
+        section('型B: 色の名乗りと hex の整合');
+        ok('色名 → hex の表が、名乗りどおりの色になっている', (function () {
+            var bad = [];
+            Object.keys(SEP_COLORS).forEach(function (n) {
+                var hex = SEP_COLORS[n];
+                if (hex === null) return;               // 無色は色コードで表せない
+                var w = colorWordOf(n), c = hexToHsl(hex);
+                if (!w) { bad.push(n + ' に当てる色の語が無い'); return; }
+                if (!c || !w.test(c)) bad.push(n + ' (' + hex + ') は「' + w.why + '」に合わない');
+            });
+            if (bad.length) warn('色の名乗り: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+        ok('無色は色コードを持たない（日本語で持つ）', SEP_COLORS['無色'] === null);
+
+        // -----------------------------------------------------------
+        // 出題の門番（§2-4 の型B 版・§16-6）
+        // -----------------------------------------------------------
+        section('型B: 出題の門番（§2-4）');
+        ok('出題が3問ある', SEP_PROBLEMS.length === 3);
+        SEP_PROBLEMS.forEach(function (prb) {
+            var a = sepAuditProblem(prb);
+            ok('[' + prb.id + '] 配った札で、すべての（イオン×札）の結果が宣言されている' +
+                (a.undeclared.length ? '（欠け: ' + a.undeclared.join(',') + '）' : ''),
+                a.undeclared.length === 0);
+            ok('[' + prb.id + '] どの2つの候補も、配った札で見分けられる' +
+                (a.unresolved.length ? '（分けられない: ' + a.unresolved.join(',') + '）' : ''),
+                a.unresolved.length === 0);
+            ok('[' + prb.id + '] 理想の最短が2手以上（1手で全部決まる出題は出さない。実測 ' +
+                a.shortest + '手）', a.shortest >= 2);
+            ok('[' + prb.id + '] 門番を通っている', a.ok === true);
+        });
+        // ★ 候補リストが難易度のつまみになっていること（§15-4）
+        ok('b3 は候補4つとも炎色で色が出ない（＝炎色反応では1つも割れない）', (function () {
+            var p3 = SEP_PROBLEMS.filter(function (x) { return x.id === 'b3'; })[0];
+            return p3.cands.every(function (c) { return SEP_IONS[c].flame === null; }) &&
+                sepSplit(p3.cands, 'flame').length === 1;
+        })());
+        ok('b2 は炎色反応で4つに割れるが、決めきらない', (function () {
+            var p2 = SEP_PROBLEMS.filter(function (x) { return x.id === 'b2'; })[0];
+            var g = sepSplit(p2.cands, 'flame');
+            return g.length > 1 && g.some(function (x) { return x.length > 1; });
+        })());
+
+        // -----------------------------------------------------------
+        // 絞り込みと採点
+        // -----------------------------------------------------------
+        section('型B: 絞り込みと採点');
+        var b1 = SEP_PROBLEMS[0];
+        var h1 = [{ op: 'flame', obs: sepObserve('Ag', 'flame') }];
+        ok('b1 で炎色に色がつかなければ、残るのは Ag⁺ と Pb²⁺',
+            sepAlive(b1.cands, h1).join(',') === 'Ag,Pb');
+        var h2 = h1.concat([{ op: 'hclHot', obs: sepObserve('Ag', 'hclHot') }]);
+        ok('沈殿が熱水に溶けなければ Ag⁺ に決まる',
+            sepAlive(b1.cands, h2).join(',') === 'Ag');
+        ok('決まった手順の採点は decided',
+            sepGrade(b1, 'Ag', 'Ag', h2).verdict === 'decided');
+        ok('決まっていないのに当てたら lucky（＝当たったが、別の試料なら同じに見えた）',
+            sepGrade(b1, 'Ag', 'Ag', h1).verdict === 'lucky');
+        ok('決まっていない状態で、残っていたもう一方を選んだら unread',
+            sepGrade(b1, 'Ag', 'Pb', h1).verdict === 'unread');
+        ok('観察と食い違うものを選んだら missed', (function () {
+            var g = sepGrade(b1, 'Ag', 'Cu', h1);
+            return g.verdict === 'missed' && g.conflicts.length > 0 && g.conflicts[0].step === 1;
+        })());
+        ok('採点は「何手目の、どの観察と食い違うか」を名指しできる（§3-3 の文面の材料）',
+            sepGrade(b1, 'Ag', 'Cu', h1).conflicts[0].op === 'flame');
+        ok('各手が何を消したかを、答え合わせのために持っている', (function () {
+            var g = sepGrade(b1, 'Ag', 'Ag', h2);
+            return g.steps.length === 2 &&
+                g.steps[0].dropped.join(',') === 'Cu,Na' &&
+                g.steps[1].dropped.join(',') === 'Pb';
+        })());
+        ok('候補を1つも減らさない手は、減らさなかったと分かる（§3-2）', (function () {
+            var p3 = SEP_PROBLEMS.filter(function (x) { return x.id === 'b3'; })[0];
+            var hh = [{ op: 'flame', obs: sepObserve('Zn', 'flame') }];
+            var g = sepGrade(p3, 'Zn', 'Zn', hh);
+            return g.steps[0].dropped.length === 0;
+        })());
+        // ⚠ 型B に「まだわからない」という答えは無い（§16-3）
+        ok('答えの選択肢は候補だけ（「まだわからない」は無い）',
+            SEP_PROBLEMS.every(function (prb) {
+                return prb.cands.every(function (c) { return !!SEP_IONS[c]; });
+            }));
+    }
+
     // ---------------------------------------------------------------
     // UI（iframe で実アプリを駆動）
     // ---------------------------------------------------------------
@@ -396,7 +597,7 @@
         var w = frame.contentWindow, d = frame.contentDocument;
         section('アプリの起動', uiOut);
         if (!ok('index.html が iframe で初期化された（init() が走った）', inited, uiOut)) {
-            finish();
+            endAll();
             return;
         }
         ok('fitBoard() が公開されている', typeof w.fitBoard === 'function', uiOut);
@@ -1018,7 +1219,7 @@
             ok('rAF が回っている（非表示のタブでは回らない。表示した状態で開き直すこと）',
                 false, uiOut);
             stopGameLoop(w);
-            finish();
+            endAll();
         }, 4000);
         (function tick() {
             if (loopDone) return;
@@ -1030,7 +1231,7 @@
                 ' 回。多重に積まれていれば40回を超える）',
                 ticks > 0 && ticks <= frames + 3, uiOut);
             stopGameLoop(w);
-            finish();
+            endAll();
         })();
     }
 
@@ -1082,6 +1283,188 @@
         }).then(next);
     }
 
+    // ===============================================================
+    // 型B の画面（separation.html を iframe で実際に遊ぶ）
+    //
+    // ⚠ ここで測るのは「模型が正しいか」ではなく「画面が設計どおりに振る舞うか」:
+    //   ① 炎色反応が最初から押せる（§15-4。分けるべきものが最初から無い）
+    //   ② ★ 結果が**積まれて並ぶ**（§16-5。「いまの姿」だけを持たない）
+    //   ③ 途中では何も言わない（D1(a)）／答えたときに初めて解説が出る
+    //   ④ スマホ幅（375px）で横に溢れない
+    // ===============================================================
+    function runSeparationUI(done) {
+        section('型B の画面（separation.html）', uiOut);
+        // スネークの側からの入口。⚠ 無いと URL を知っている人しかたどり着けない
+        (function () {
+            var d0 = frame.contentDocument;
+            var a = d0 && d0.getElementById('link-sep');
+            ok('スネークの画面に、型B への入口がある', !!a, uiOut);
+            if (a) {
+                ok('入口のリンク先が separation.html',
+                    (a.getAttribute('href') || '').indexOf('separation.html') >= 0, uiOut);
+                ok('入口が指で押せる大きさ（' + Math.round(rectH(a)) + 'px ≧ ' + TAP_MIN + '）',
+                    rectH(a) >= TAP_MIN, uiOut);
+            }
+        })();
+        if (!onHttp) {
+            ok('separation.html を iframe で開ける（file:// では不可）', false, uiOut);
+            done();
+            return;
+        }
+        var f = document.createElement('iframe');
+        f.id = 'sepapp';
+        f.src = 'separation.html?v=21';
+        f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
+        f.style.height = '812px';
+        document.body.appendChild(f);
+
+        var tries = 0;
+        (function poll() {
+            var w = f.contentWindow, d = f.contentDocument;
+            var ready = !!(d && d.readyState === 'complete' && w && w.sepUI && w.sepUI.state.problem);
+            if (!ready) {
+                if (++tries > 120) { ok('separation.html が起動した', false, uiOut); done(); return; }
+                setTimeout(poll, 50);
+                return;
+            }
+            try { drive(w, d); } catch (e) {
+                ok('型B の画面を操作できた（' + e + '）', false, uiOut);
+            }
+            done();
+        })();
+
+        function drive(w, d) {
+            ok('separation.html が起動した', true, uiOut);
+
+            // ⚠ 中身は 1 種類だけ、と学習者に伝えているか（§15-1）
+            ok('「1種類だけ」であることを画面が言っている',
+                d.body.textContent.indexOf('1種類だけ') >= 0, uiOut);
+
+            // 出題を固定して遊ぶ（★ 実機の手順とそろえてある: b1・中身は Ag⁺）
+            w.sepUI.start('b1', 'Ag');
+            var cands = d.querySelectorAll('#cand-list .chip');
+            ok('候補が4つ並ぶ（Ag⁺・Pb²⁺・Cu²⁺・Na⁺）', cands.length === 4, uiOut);
+            ok('候補リストが答えを漏らしていない（どれが正解かの印が無い）',
+                d.getElementById('cand-list').textContent.indexOf('正解') < 0, uiOut);
+
+            // ① 炎色反応が最初から押せる（★ 型A と違うところ。§13-4c・§15-4）
+            var flameBtn = d.querySelector('.op[data-op="flame"]');
+            ok('炎色反応の札が最初から押せる（型B は分けるべきものが最初から無い）',
+                !!flameBtn && !flameBtn.disabled, uiOut);
+            flameBtn.click();
+            ok('1手目の結果が並んだ', d.querySelectorAll('#log li').length === 1, uiOut);
+            ok('炎色反応が拒否されていない（「行えません」と言われない）',
+                d.getElementById('log').textContent.indexOf('行えません') < 0, uiOut);
+            ok('見えたものが文章で出ている（Ag⁺ なので色はつかない）',
+                d.getElementById('log').textContent.indexOf('炎に色はつかなかった') >= 0, uiOut);
+            ok('見えたものが絵でも出ている（色の札）',
+                d.querySelectorAll('#log .sw').length >= 1, uiOut);
+
+            // ② ★ 積んで並べる。⚠ 1手目が消えたら設計違反（§16-5）
+            var firstText = d.querySelector('#log li').textContent;
+            d.querySelector('.op[data-op="hcl"]').click();
+            ok('2手目を押しても1手目が残る（結果は積んで並べる・§16-5）',
+                d.querySelectorAll('#log li').length === 2 &&
+                d.querySelectorAll('#log li')[0].textContent === firstText, uiOut);
+            ok('2手目の結果が正しい（Ag⁺ ＋ 希塩酸 → 白色の沈殿）',
+                d.querySelectorAll('#log li')[1].textContent.indexOf('白色の沈殿') >= 0, uiOut);
+            ok('同じ札は二度押せない（実施済み）',
+                d.querySelector('.op[data-op="hcl"]').disabled === true, uiOut);
+
+            // ③ 途中では何も言わない（D1(a)）
+            ok('途中で候補の残りを教えていない',
+                d.getElementById('log').textContent.indexOf('残り') < 0 &&
+                d.getElementById('result').className.indexOf('hidden') >= 0, uiOut);
+
+            // 3手目で決めきる → 答える
+            d.querySelector('.op[data-op="hclHot"]').click();
+            ok('3手目まで並んだ', d.querySelectorAll('#log li').length === 3, uiOut);
+            d.getElementById('btn-answer').click();
+            ok('「答える」を押すと候補が選べる',
+                d.querySelectorAll('#answer-choices button[data-pick]').length === 4, uiOut);
+            d.querySelector('#answer-choices button[data-pick="Ag"]').click();
+
+            var res = d.getElementById('result');
+            ok('答え合わせが出た', res.className.indexOf('hidden') < 0, uiOut);
+            ok('正解が示される', res.textContent.indexOf('正解') >= 0 &&
+                res.textContent.indexOf('銀イオン') >= 0, uiOut);
+            ok('決まっていたと判定される（3手で1つに決まる手順を踏んだ）',
+                res.textContent.indexOf('1つに決まっていました') >= 0, uiOut);
+            ok('それまでの結果の解説が、手ごとに出る（§16-1）',
+                res.querySelectorAll('.why').length === 3, uiOut);
+            ok('解説に出典が入っている（教科書のページ）',
+                res.textContent.indexOf('教科書') >= 0, uiOut);
+            ok('解説で初めて化学式が出る（途中では出さない）',
+                res.textContent.indexOf('AgCl') >= 0, uiOut);
+            ok('⚠ 出典の別（参考書／教科書の区別）は画面に出さない（§17-10）',
+                res.textContent.indexOf('参考書') < 0, uiOut);
+            ok('答えたあとは札が押せない',
+                d.querySelector('.op[data-op="h2s"]').disabled === true, uiOut);
+
+            // ⚠ 「たまたま当たった」ときの文面（§3-5-4 (B) の向き）
+            w.sepUI.start('b1', 'Ag');
+            d.querySelector('.op[data-op="flame"]').click();
+            d.getElementById('btn-answer').click();
+            d.querySelector('#answer-choices button[data-pick="Ag"]').click();
+            var res2 = d.getElementById('result').textContent;
+            ok('決まっていないのに当てたら、そう言う（当たり外れの話にしない）',
+                res2.indexOf('同じものしか見えません') >= 0, uiOut);
+            ok('⚠ 「間違い」と書かない（§3-3 の文面の向き）',
+                res2.indexOf('間違い') < 0 && res2.indexOf('誤り') < 0, uiOut);
+            ok('分けるための次の一手を示す（責めずに道を示す）',
+                res2.indexOf('分かれます') >= 0, uiOut);
+
+            // ④ スマホ幅で横に溢れない
+            ok('375px 幅で横スクロールが出ない（' + d.documentElement.scrollWidth + ' ≦ ' +
+                d.documentElement.clientWidth + '）',
+                d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1, uiOut);
+            var small = [].slice.call(d.querySelectorAll('.op, #btn-answer')).filter(function (el) {
+                return el.getBoundingClientRect().height < 44;
+            });
+            ok('札と「答える」が指で押せる大きさ（44px 以上）', small.length === 0, uiOut);
+        }
+    }
+
+    // 型B の画面が、設計書の縛りを文面の側でも守っているか（ソースを読んで見る）
+    function runSeparationSource(next) {
+        section('型B の文面の縛り（separation.js / separation-model.js）');
+        if (!onHttp) { ok('ソースを読み取れる（http で開いていない）', false); next(); return; }
+        Promise.all([
+            fetch('separation.js', { cache: 'no-store' }).then(function (r) { return r.text(); }),
+            fetch('separation-model.js', { cache: 'no-store' }).then(function (r) { return r.text(); })
+        ]).then(function (srcs) {
+            var raw = srcs.join('\n');
+            ok('ソースを読み取れる', raw.length > 0);
+            // ⚠ **コメントを外してから見る**。設計書の縛りは「画面に出す文言」に掛かるもので、
+            //   「なぜそうしないか」をコードのコメントに書くことまで禁じてはいない
+            //   （むしろ書いておかないと、次の人が同じ穴を掘る）
+            var src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+            ok('コメントだけを外せている（中身は残っている）',
+                src.length > 0 && src.length < raw.length && src.indexOf('function sepObserve') >= 0);
+            // §16-3: 型B に「まだわからない」は要らない（ユーザー決定）
+            ok('「まだわからない」という選択肢を作っていない（§16-3）',
+                src.indexOf('まだわからない') < 0);
+            // §17-11: アプリが「確認できません」と言わない（他の資料に載る手を否定してしまう）
+            ok('「確認できません」と言わない（§17-11）',
+                src.indexOf('確認できません') < 0);
+            // §5-5: 色は混ぜない。並べて見せる
+            ok('「混ざった色」を作らない（§5-5）',
+                src.indexOf('混ざった色') < 0 && src.indexOf('混色') < 0);
+            // §10-2 / §11-3 E: 群の呼び方。教科書は「操作1〜5」で、参考書が「属」。
+            // ⚠ 型B は分属の段を持たないので、どちらの語も画面に出さないのが正しい
+            ok('分属の語（第1属・第1族）を型B の画面に出していない',
+                !/第[1-6１-６]属/.test(src) && !/第[1-6１-６]族/.test(src));
+        }).catch(function (e) {
+            ok('ソースを読み取れる（' + e + '）', false);
+        }).then(next);
+    }
+
+    // スネークの UI テストが終わったら、型B の画面へ進んでから締める。
+    // ⚠ finish() を直に呼ばないこと（型B のテストが丸ごと空振りする）
+    function endAll() {
+        runSeparationSource(function () { runSeparationUI(finish); });
+    }
+
     function finish() {
         var total = document.getElementById('total');
         var n = pass + fail;
@@ -1114,7 +1497,7 @@
         // file:// では iframe の中身に触れない。空振りのまま ALL PASS にしない
         runSource(function () {
             ok('UI テストを走らせられる（file:// では不可。ローカルサーバーで開くこと）', false, uiOut);
-            finish();
+            endAll();
         });
     } else {
         whenAppReady(function (inited) { runSource(function () { runUI(inited); }); });

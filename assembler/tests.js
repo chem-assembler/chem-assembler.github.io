@@ -3387,23 +3387,60 @@
         // むずかしいと ふつう の差が乱数に埋もれる）
         setQuizFilters(nq, 'all', 'all', 'all');
 
-        // 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
-        // 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
-        const measure = (level, n) => {
+        /* ★★ 見本は乱数で引かず、**決定的に散らした集合**を使う（2026-08-26・ぶれの直し）。
+         *
+         * ⚠ **以前は `nextQuestion()` にプールから乱数で引かせていた。** そのせいで
+         *   やさしい／ふつう／むずかしい が**別々の見本の集合**を見ることになり、
+         *   3つの検査が**乱数のしっぽで落ちる**ようになっていた（v1467 の全走で実際に落ちた）。
+         *   ★ 実測（60回ずつ回して分布を出した。N=60・範囲すべて）:
+         *     - `normal.avg < hard.avg` … 差の平均 0.345・SD 0.152・**最小 0.072** ＝ 0 まで **2.3σ**
+         *       → 1回の全走で **約1%** 落ちる（★ ここがいちばん危なかった）
+         *     - `hard.near > 0.5` … 平均 0.641・SD 0.056・最小 0.550 ＝ **2.5σ**（約0.6%）
+         *     - 否定対照の差 … 平均 **0.012**・SD 0.106・最大 0.256 ＝ しきい 0.3 まで **2.8σ**（約0.3%）
+         *   ★ **合わせて全走1回あたり約2%** ＝「v1466 は通って v1467 で落ちた」の正体。
+         *
+         * ⚠⚠ **「乱数だから しきい値を緩める」は採らない**（検査が鈍るだけ）。
+         *   ★ 採ったのは **見本の集合を固定すること**。プールは `computePool` が決定的に作る
+         *     （2回呼んで同じ並びになることを実測）ので、そこから等間隔に抜けば
+         *     **難易度3つが同じ見本を見る**。実測で **20回連続、統計値が1桁も動かない**
+         *     （avg / near / veryNear とも完全一致）＝ **ぶれが 0 になった**。
+         *
+         * ★ 否定対照は「差の平均が 0.012 ＝ 系統的な差は無い」ことも同時に示していた
+         *   （統合レーンの見立て「出題そのものが変わるので系統成分があるはず」は**実測では出なかった**）。
+         *   `nextQuestion` の見本の引きは `Math.random()` で、**難易度を1つも読まない**——
+         *   難易度が触るのは `pickQuizDistractors` の `confuse` だけ（`strength` は図の崩し方で、
+         *   `tiers` には効かない）。だから元から中立で、残っていたのは**引きの分散だけ**だった。
+         *
+         * 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
+         * 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
+         */
+        const N = 120;
+        const sampleNames = (n) => {
+            const step = Math.max(1, Math.floor(nq.pool.length / n));
+            const out = [];
+            for (let i = 0; i < nq.pool.length && out.length < n; i += step) {
+                out.push(nq.library[nq.pool[i]].name);
+            }
+            return out;
+        };
+        const NAMES = sampleNames(N);
+        assert(NAMES.length === N, `見本の集合が ${N} 件そろわない（${NAMES.length}件）`);
+        const measure = (level) => {
             nq.diffEl.value = level;
             let sum = 0, cnt = 0, hard = 0, near = 0;
-            for (let k = 0; k < n; k++) {
+            NAMES.forEach(name => {
+                nq.setForced(name);
                 nq.nextQuestion();
                 (nq.current.tiers || []).forEach(t => {
                     sum += t; cnt++;
                     if (t >= 2) near++;
                     if (t >= 3) hard++;
                 });
-            }
+            });
+            nq.setForced(null);
             return { avg: sum / cnt, near: near / cnt, veryNear: hard / cnt, cnt };
         };
-        const N = 60;
-        const easy = measure('easy', N), normal = measure('normal', N), hard = measure('hard', N);
+        const easy = measure('easy'), normal = measure('normal'), hard = measure('hard');
         assert(easy.cnt >= N * 3 - 3, `誤答が3つ作れていない（${easy.cnt}/${N * 3}）`);
         assert(easy.avg < normal.avg,
             `やさしい(${easy.avg.toFixed(2)}) が ふつう(${normal.avg.toFixed(2)}) より紛らわしい`);
@@ -3457,18 +3494,32 @@
         assert(normalSib < 0.5,
             `ふつうでそっくりさんを狙いすぎ（${(normalSib * 100).toFixed(0)}%）＝ むずかしいとの差が無い`);
 
-        // 否定対照 — 難易度を無視して常に「ふつう」で誤答を作ると、上の差が消える
+        /* ★ 否定対照 —— **同じ見本の集合に対して、誤答の作り方だけを替える**。
+         *
+         * ⚠ 上の `easy` / `hard` と**まったく同じ `NAMES` を、同じ順で**通す。
+         *   替えるのは `nq.difficulty()` が返すもの1つだけ ＝ 誤答の紛らわしさ（`confuse`）。
+         *   ★ だから残る差は「誤答の作り方の差」以外にありえない。実測で **30回とも差は 0.0000**。
+         * ⚠ 前は乱数で見本を引き直していたので、差が 0 にならず しきい 0.3 を置いていた
+         *   （＝ 2.8σ ＝ 全走の約0.3%で落ちる）。**しきいは 0.05 まで締めた**——
+         *   0 でなく 0.05 にしてあるのは、`pickQuizDistractors` が同じ段どうしの並びを
+         *   `shuffleArray` で決めるので、段3と段4が同点になる `confuse:1` では
+         *   理屈のうえで入れ替わりうるため（実測では起きていない）。
+         */
         const orig = nq.difficulty;
         let flat;
         try {
             nq.difficulty = () => W.quizDifficultyOf('normal');
-            flat = { easy: measure('easy', N), hard: measure('hard', N) };
+            flat = { easy: measure('easy'), hard: measure('hard') };
         } finally {
             nq.difficulty = orig;
         }
-        assert(!(flat.easy.avg < flat.hard.avg - 0.3),
-            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(2)} / ` +
-            `むずかしい ${flat.hard.avg.toFixed(2)}）＝ QT2 の緑が空振り`);
+        // ★ 対照が意味を持つ前提: 素の状態では、同じ見本でもはっきり差が出ている
+        assert(hard.avg - easy.avg > 1.0,
+            `同じ見本で やさしい(${easy.avg.toFixed(2)}) と むずかしい(${hard.avg.toFixed(2)}) の差が小さい` +
+            '＝ 否定対照が「消す」べき差が無い');
+        assert(Math.abs(flat.hard.avg - flat.easy.avg) < 0.05,
+            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(3)} / ` +
+            `むずかしい ${flat.hard.avg.toFixed(3)}）＝ QT2 の緑が空振り`);
 
         // 段の定義そのもの（人が読んで納得できる例で固定する）
         const tier = W.quizDistractorTier;
@@ -20769,6 +20820,172 @@
         });
     });
 
+    /* ==========================================================================
+     * HQ5〜HQ7: 採点のあとに「見本を実際に動かしてみる」（ユーザー発注 2026-08-26）
+     *
+     * > **採点後に実際に回転を試したい（解説の通りになるか確認）**
+     *
+     * ★ 押せる札はキャンバスの帯と同じ3つで、実体も `chemistry.js` の
+     *   `flipHaworth` / `haworthTurn` そのもの（`haworthTurnedTarget` が受け渡しだけを埋める）。
+     * ★ **一致は `FischerPractice.drawingKey`（絵）で見る。立体コードでは見られない**
+     *   —— 意味を保つ4枚は立体コードが全部同じだから（それを HQ7 が実測で示す）。
+     * ========================================================================== */
+
+    test('HQ5: 「動かしてみる」は採点前に出ない／採点後に ⇅ を押すと正解の図になる（実機の DOM）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.choiceQuiz;
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        const panel = D.getElementById('pk-turn');
+        assert(panel, '#pk-turn が無い');
+
+        // ⚠⚠ 採点前は出ない（出すと ⇅ を押した図が正解と一致して答えが分かる）
+        assert(panel.classList.contains('hidden'), '採点前に「動かしてみる」が出ている');
+        const before = W.FischerPractice.drawingKey(q.currentGoalFigure());
+        const locked = q.applyTurn('updown');
+        assert(locked && locked.ok === false && locked.reason === 'locked',
+            `採点前に札が効いてしまう（${JSON.stringify(locked)}）`);
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) === before,
+            '採点前に見本の図が動いた');
+        // ほかの出題（記号）では、採点しても出さない
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        D.getElementById('pk-cell-0').click();
+        assert(panel.classList.contains('hidden'), '記号の出題で「動かしてみる」が出ている');
+
+        // 採点したら出る
+        D.getElementById('pk-kind').value = 'haworth';
+        q.newQuestion();
+        const right = q.current.answer;
+        D.getElementById(`pk-cell-${right}`).click();
+        assert(!panel.classList.contains('hidden'), '採点しても「動かしてみる」が出ない');
+        const base = W.FischerPractice.drawingKey(q.currentGoalFigure());  // ⚠ 問題が変わったので取り直す
+        const drawn = () => D.querySelectorAll('#pk-goal .quiz-atoms g').length;
+        assert(drawn() > 0, '見本に図が描かれていない');
+
+        // ★ ⇅ を押すと、正解の図とぴったり同じ絵になる（＝ 解説のとおり）
+        D.getElementById('btn-pk-turn-updown').click();
+        const st = D.getElementById('pk-turn-status').textContent;
+        assert(st.includes(`${'①②③④'[right]} とぴったり同じ絵`),
+            `⇅ で正解の図に一致したと言っていない: ${st}`);
+        assert(st.includes('解説のとおり'), `解説との照らし合わせを言っていない: ${st}`);
+        assert(st.includes('⇅ 上下に裏返す'), `押した手が出ていない: ${st}`);
+        assert(drawn() > 0, '動かしたあと見本の図が消えた');
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) !== base,
+            '⇅ を押しても図が変わっていない');
+
+        // ⇄ / ⟳ は「どれとも違う絵だが、分子は見本のまま」と言う
+        D.getElementById('btn-pk-turn-reset').click();
+        D.getElementById('btn-pk-turn-leftright').click();
+        const st2 = D.getElementById('pk-turn-status').textContent;
+        assert(st2.includes('どれとも違う絵'), `⇄ の言い方が違う: ${st2}`);
+        assert(st2.includes('分子は見本のまま'), `⇄ で「同じ分子」を言っていない: ${st2}`);
+
+        // ↩ で元に戻る／次の問題では畳まれる
+        D.getElementById('btn-pk-turn-reset').click();
+        assert(W.FischerPractice.drawingKey(q.currentGoalFigure()) === base,
+            '↩ で元の図に戻らない');
+        q.newQuestion();
+        assert(panel.classList.contains('hidden'), '次の問題で「動かしてみる」が畳まれない');
+        D.getElementById('btn-pk-close').click();
+    });
+
+    test('HQ6: 糖16件の全数 —— ⇅ は正解の図と一致・⇄/⟳ は選択肢のどれとも違うが同じ分子', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const key = W.FischerPractice.drawingKey;
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        let hitAnswer = 0, backAgain = 0, sameMolecule = 0, offTheList = 0, quartet = 0;
+        const n = q.hwPool.length;
+        assert(n === 16, `プールが16件でない（${n}）`);
+        q.hwPool.forEach(e => {
+            const base = e.target, b = codeOf(base);
+            // 出題が「正解の図」として並べるのは flipTargetVertically(base)
+            const answerFig = W.flipTargetVertically(base);
+            const up = W.haworthTurnedTarget(c.game, base, 'updown');
+            assert(up, `${e.name}: ⇅ が当てられない`);
+            // ★ 平行移動を除いてぴったり一致（軸の取り方が違っても drawingKey では消える）
+            if (key(up) === key(answerFig)) hitAnswer++;
+            const figs = { updown: up };
+            ['leftright', 'halfturn'].forEach(k => {
+                const t = W.haworthTurnedTarget(c.game, base, k);
+                assert(t, `${e.name}: ${k} が当てられない`);
+                figs[k] = t;
+            });
+            Object.keys(figs).forEach(k => {
+                if (codeOf(figs[k]) === b) sameMolecule++;                    // 分子は変わらない
+                const back = W.haworthTurnedTarget(c.game, figs[k], k);
+                if (back && key(back) === key(base)) backAgain++;             // 2回押すと戻る
+            });
+            // ⇄ / ⟳ は、出題が並べる3枚（素朴な鏡映・180°回転）のどれとも違う絵
+            const list = [base, answerFig, W.rotateTargetInPlane(base, 0, true),
+                          W.rotateTargetInPlane(base, 2, false)].map(key);
+            ['leftright', 'halfturn'].forEach(k => {
+                if (!list.includes(key(figs[k]))) offTheList++;
+            });
+            // 4枚は互いに別の絵（元・⇅・⇄・⟳）
+            if (new Set([key(base), key(figs.updown), key(figs.leftright), key(figs.halfturn)]).size === 4) quartet++;
+        });
+        assert(hitAnswer === n, `⇅ が正解の図と一致しなかった（${hitAnswer}/${n}）`);
+        assert(sameMolecule === n * 3, `置き直しで分子が変わった（同じ ${sameMolecule}/${n * 3}）`);
+        assert(backAgain === n * 3, `2回押しても元の絵に戻らない（${backAgain}/${n * 3}）`);
+        assert(offTheList === n * 2, `⇄/⟳ が選択肢の絵と重なった（${offTheList}/${n * 2}）`);
+        assert(quartet === n, `元・⇅・⇄・⟳ の4枚が別の絵にならない（${quartet}/${n}）`);
+
+        // 実際に出題を作って、正解の図に一致することを DOM を通さずにも確かめる
+        for (let i = 0; i < 40; i++) {
+            const cur = q.haworthQuestion();
+            const up = W.haworthTurnedTarget(c.game, cur.goal, 'updown');
+            assert(up && key(up) === key(cur.items[cur.answer].target),
+                `出題 ${cur.entry.name}: ⇅ が正解の図に一致しない`);
+        }
+        // 糖でない分子には当てられない（門番は chemistry.js のものをそのまま借りている）
+        const eth = W.buildCompoundLibrary(c.game).find(x => x.name === 'エタノール');
+        assert(eth, 'エタノールが見つからない');
+        ['updown', 'leftright', 'halfturn'].forEach(k => {
+            assert(W.haworthTurnedTarget(c.game, eth.target, k) === null,
+                `糖でない分子に ${k} が当たってしまう`);
+        });
+    });
+
+    test('HQ7: 一致判定に立体コードは使えない（4枚とも同じコード）——だから絵で見ている', async (c) => {
+        c.reset();
+        const W = c.W;
+        const q = W.choiceQuiz;
+        q.buildHaworth();
+        const codeOf = (t) => {
+            const s = W.readStereoOf(c.game.createTargetFromData({ target: t }));
+            return s ? s.stereoCode : null;
+        };
+        // ★ 「⇅ を押したら正解の図になった」は立体コードでは言えない ——
+        //    元・⇅・⇄・⟳ の4枚は**全部同じ立体コード**なので、区別が付かない
+        let indistinguishable = 0;
+        q.hwPool.forEach(e => {
+            const b = codeOf(e.target);
+            const codes = ['updown', 'leftright', 'halfturn']
+                .map(k => codeOf(W.haworthTurnedTarget(c.game, e.target, k)));
+            if (codes.every(x => x === b)) indistinguishable++;
+        });
+        assert(indistinguishable === q.hwPool.length,
+            `4枚の立体コードが割れた（${indistinguishable}/${q.hwPool.length}）——` +
+            'そうなったなら立体コードでも絵を区別できる。turnStatusText の物差しを見直すこと');
+        // 一方 drawingKey は 16件すべてで ⇅ と ⇄ を見分ける（＝ 物差しとして効いている）
+        const key = W.FischerPractice.drawingKey;
+        let split = 0;
+        q.hwPool.forEach(e => {
+            const a = key(W.haworthTurnedTarget(c.game, e.target, 'updown'));
+            const b = key(W.haworthTurnedTarget(c.game, e.target, 'leftright'));
+            if (a !== b) split++;
+        });
+        assert(split === q.hwPool.length, `drawingKey が ⇅ と ⇄ を見分けられない（${split}/${q.hwPool.length}）`);
+    });
+
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
@@ -24746,7 +24963,14 @@
         // ④ 生成物予測モードを挟んでも答案は失われない（退避場所が1本しかない＝入れ子の罠）
         rp.openById('ethene_br2');
         rp.startPrediction();
-        assert(rp.prediction && g.userMolecule.atoms.length === 0, '予測モードでキャンバスが空にならない');
+        /* ⚠ **v1466 から予測のキャンバスは空ではない**（§14。反応する分子＝別の基質が載る）。
+           ここで見たいのは「**練習の答案が予測に持ち越されない**」ことなので、
+           空かどうかではなく**答案そのものではないこと**を見る（退避は1本＝入れ子の罠の検査）。 */
+        assert(rp.prediction, '予測モードに入れない');
+        assert(g.userMolecule !== rp.savedPuzzleMolecule,
+            '予測モードのキャンバスが練習の答案そのもの（退避が二重になっている）');
+        assert(rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length === atomsBefore,
+            `退避された答案が ${rp.savedPuzzleMolecule && rp.savedPuzzleMolecule.atoms.length} 原子（${atomsBefore} を期待）`);
         g.userMolecule.addAtom('C', 300, 300); // 予測の作りかけ
         rp.endPrediction(false);
         assert(!rp.prediction && rp.ownsCanvas(), '予測モードを抜けてビューアに戻らない');
@@ -26904,6 +27128,299 @@
             '一覧の押しものから機構を見て戻ると「↩ 反応前に戻す」が出ない（v1423 の回帰）');
 
         c.reset();
+    });
+
+    test('RX49: ★否定対照 — スイッチは反応を選ばない（人の代わりに先頭を始めない／出口としては生きている）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const check = D.getElementById('check-reaction-mode');
+        const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
+        const studyOpen = () => !D.getElementById('study-modal').classList.contains('hidden');
+        const list = D.getElementById('reaction-list');
+
+        /* ★ ユーザー実機報告（2026-08-26）「反応機構ビューアを選択すると、反応の選択をすっとばす」。
+           実測（:8221・Playwright）では、スイッチを押した瞬間に active=true / ethene_br2 /
+           帯=出る / メニュー=閉じる ＝ **14件の一覧を1件も見せずに先頭が始まっていた**。
+           原因は `enter(parseInt(selectEl.value) || 0)` で、`#select-reaction` の初期値 "0" を
+           「人が選んだ 1件目」として扱っていたこと。
+           ⚠ この検査を赤くする壊し方 ＝ change の checked 側で `enter(...)` を呼び直すこと。 */
+
+        // 人と同じ入口（📚 学習 → ⚗️ アコーディオン）。**まだ何も選んでいない**
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+        assert(!rp.active && check.checked === false && !strip(),
+            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()}）`);
+        assert(list && list.querySelectorAll('button[data-rx-index]').length === rp.reactions.length,
+            '一覧の札がそろっていない（＝「1件しか無いから飛ばす」かどうかの区別がつかない）');
+
+        // ① スイッチを入れても**反応は始まらない**
+        check.checked = true;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active, 'スイッチだけで反応が始まった（選択をすっとばしている）');
+        assert(rp.currentReaction === null || !rp.canvasBorrowed,
+            'スイッチだけでキャンバスを取り上げている');
+        assert(!strip(), 'スイッチだけで帯が出た（反応が決まっていないのに操作面が出る）');
+        assert(check.checked === false, 'スイッチが入ったまま（active=false なのに入って見える＝状態が2つに割れる）');
+        assert(studyOpen(), '学習モーダルが閉じた（一覧に戻れない＝報告そのものの症状）');
+
+        // ② 代わりに「一覧から選べ」と促し、その札が**一覧の中で見えている**
+        const hint = list.querySelector('#rx-pick-hint');
+        assert(hint && !hint.classList.contains('hidden'), '一覧へ促す案内が出ていない');
+        assert(hint.textContent.includes('一覧'), `案内が一覧を指していない（${hint.textContent}）`);
+        assert(list.firstChild === hint, '案内が一覧の先頭にいない（札の下だと選び終えるまで目に入らない）');
+        const hb = hint.getBoundingClientRect();
+        assert(hb.width > 0 && hb.height > 0, '案内が描画されていない');
+
+        // ③ そのうえで一覧から選べば、今までどおり始まる（§9 の入口は壊していない）
+        rxPickFromList(c, 'esterification');
+        assert(rp.active && rp.currentReaction.id === 'esterification',
+            `一覧から選んでも始まらない（${rp.currentReaction && rp.currentReaction.id}）`);
+        assert(check.checked === true, 'スイッチの表示が追従しない（§9）');
+        assert(strip(), '帯が出ない');
+        assert(hint.classList.contains('hidden'), '選んだのに促しが残っている');
+
+        // ④ ★出口としては生きている（スイッチを外すと止まり、退避が返る）
+        check.checked = false;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active && !strip() && !rp.canvasBorrowed,
+            `スイッチで止まらない（active=${rp.active} / 帯=${strip()} / 借り=${rp.canvasBorrowed}）`);
+
+        g.setStudyOpen(false);
+        g.setMode('puzzle');
+    });
+
+    test('RX50: ★否定対照 — 予測の判定は「読める場所」に出る（14件で正解/不正解を撃ち分ける）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const toast = D.getElementById('canvas-toast');
+        assert(toast, 'キャンバス内の字幕 #canvas-toast が無い');
+
+        /* ★ ユーザー実機報告（2026-08-26）「生成物予測　判定が機能してない可能性」。
+           実測（:8221・Playwright）では**判定そのものは14件すべて正しかった**。
+           壊れていたのは出し先で、`#verify-result` に直に書いていた ―― あれは第5段で
+           `#panel-legacy`（aria-hidden）の中の隠しの器になっており、実測の矩形は
+           1280x900 でも 390x844 でも `0,0 26x626` ＝ 左上の 26px 幅の縦帯。
+           ⚠ この検査を赤くする壊し方 ＝ showToast をやめて #verify-result へ直に書き戻すこと。 */
+
+        // 最終状態から主生成物を **judge 側とは独立に** 組み直す（buildMainProductTarget を使わない）
+        const productOf = (rx) => {
+            const st = rx.states[rx.states.length - 1];
+            const heavy = st.atoms.map((a, i) => i).filter(i => st.atoms[i].element !== 'H');
+            const adj = new Map(heavy.map(i => [i, []]));
+            st.bonds.forEach(b => {
+                if (adj.has(b.atom1Index) && adj.has(b.atom2Index)) {
+                    adj.get(b.atom1Index).push(b.atom2Index);
+                    adj.get(b.atom2Index).push(b.atom1Index);
+                }
+            });
+            const seen = new Set(), comps = [];
+            heavy.forEach(i => {
+                if (seen.has(i)) return;
+                const comp = [], stack = [i];
+                while (stack.length) {
+                    const k = stack.pop();
+                    if (seen.has(k)) continue;
+                    seen.add(k); comp.push(k);
+                    adj.get(k).forEach(n => { if (!seen.has(n)) stack.push(n); });
+                }
+                comps.push(comp);
+            });
+            comps.sort((a, b) => b.length - a.length);
+            const keep = new Set(comps[0] || []);
+            const m = new W.Molecule(), map = new Map();
+            keep.forEach(i => { const a = st.atoms[i]; map.set(i, m.addAtom(a.element, a.x, a.y).id); });
+            st.bonds.forEach(b => {
+                if (map.has(b.atom1Index) && map.has(b.atom2Index)) {
+                    m.addBond(map.get(b.atom1Index), map.get(b.atom2Index), b.type);
+                }
+            });
+            return m;
+        };
+        const clearToast = () => { toast.textContent = ''; toast.className = 'hidden'; };
+        const judgeWith = (mol) => { clearToast(); g.userMolecule = mol; rp.judgePrediction(); return toast.className; };
+
+        g.setMode('learn');
+
+        // ★ここが本命 ―― 結果が**読める大きさで画面に出ている**。
+        //   14件の撃ち分けより**先**に見る（判定は元から正しく、壊れていたのは出し先なので、
+        //   撃ち分けの assert が先だと「常に不正解」という誤った診断で赤くなる）
+        rp.enter(0); rp.startPrediction();
+        clearToast();
+        const w0 = new W.Molecule(); w0.addAtom('C', 100, 100);
+        g.userMolecule = w0; rp.judgePrediction();
+        assert(toast.textContent.includes('不一致'),
+            `判定結果がキャンバス内の字幕に出ていない（${toast.textContent || '（空）'}）` +
+            ' ―― #verify-result は #panel-legacy の中の隠しの器（実測 26x626 の縦帯）');
+        assert(toast.className === 'error', `字幕の種別が error でない（${toast.className}）`);
+        {
+            const r = toast.getBoundingClientRect();
+            assert(r.width > 120 && r.height > 12,
+                `判定結果が読める大きさで出ていない（${Math.round(r.width)}x${Math.round(r.height)}）`);
+            assert(r.top < W.innerHeight && r.bottom > 0 && r.left < W.innerWidth && r.right > 0,
+                `判定結果が画面の外に出ている（${Math.round(r.left)},${Math.round(r.top)}）`);
+        }
+        rp.endPrediction(false);
+
+        // ⚠ **正解は出題の形で変わる**（v1466・§14）。`practice` を持つ機構は
+        //   「別の分子に同じ反応を起こした生成物」が正解で、代表例の主生成物ではない。
+        //   持たない機構だけが従来どおり（最終状態の主生成物）
+        const copyOf = (m) => {
+            const out = new W.Molecule(), map = new Map();
+            m.atoms.forEach(a => map.set(a.id, out.addAtom(a.element, a.x, a.y).id));
+            m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            return out;
+        };
+        const rightAnswer = (rx) => (rp.practiceTargets && rp.practiceTargets.length)
+            ? copyOf(rp.practiceTargets[0]) : productOf(rx);
+
+        rp.reactions.forEach((rx, i) => {
+            // ① 正解を入れたら success
+            rp.enter(i); rp.startPrediction();
+            assert(judgeWith(rightAnswer(rx)) === 'success',
+                `${rx.id}: 正解を入れたのに正解にならない（判定が常に不正解）`);
+            assert(!rp.prediction, `${rx.id}: 正解したのに予測モードが終わらない`);
+
+            // ② わざと違うもの（炭素1個）を入れたら error
+            rp.enter(i); rp.startPrediction();
+            const wrong = new W.Molecule(); wrong.addAtom('C', 100, 100);
+            assert(judgeWith(wrong) === 'error',
+                `${rx.id}: 明らかな誤答が正解になる（判定が常に正解＝そもそも判定していない）`);
+
+            // ③ 空のままでも error（「何もしないで押したら通る」を塞ぐ）
+            rp.enter(i); rp.startPrediction();
+            assert(judgeWith(new W.Molecule()) === 'error',
+                `${rx.id}: 空のキャンバスで判定が通る`);
+            rp.endPrediction(false);
+        });
+        rp.exit();
+        g.setMode('puzzle');
+    });
+
+    test('RX51: 予測は「同じ反応を別の分子に」——反応する分子がキャンバスに出て、答えは見た代表例ではない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const toast = D.getElementById('canvas-toast');
+        const cap = D.getElementById('reaction-caption');
+        g.setMode('learn');
+
+        /* ★ ユーザー実機報告（2026-08-26）:
+             「直前で反応の代表例をみているので、やるなら、同じ反応を別な分子が起こしたときに
+               どうなるかを考えさせる」「反応する分子はキャンバスに表示する」
+           ⚠ この検査を赤くする壊し方 ＝ startPrediction を「キャンバスを空にする」に戻すこと
+             （②④が落ちる）／`practice` を無視して代表例の生成物を正解にすること（⑤が落ちる）。 */
+
+        const withPractice = rp.reactions.filter(r => r.practice);
+        assert(withPractice.length >= 11,
+            `練習問題を持つ機構が ${withPractice.length} 件（11件以上を期待）`);
+
+        const clearToast = () => { toast.className = 'hidden'; toast.textContent = ''; };
+        const copyOf = (m) => {
+            const out = new W.Molecule(), map = new Map();
+            m.atoms.forEach(a => map.set(a.id, out.addAtom(a.element, a.x, a.y).id));
+            m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            return out;
+        };
+        // 作図パレットに実在する元素だけで答えが書けるか（Na のように置けない元素を要求しない）
+        const palette = new Set([...D.querySelectorAll('[data-atom]')].map(b => b.dataset.atom));
+        assert(palette.size >= 5, `パレットの元素が読めない（${[...palette].join(',')}）`);
+
+        rp.reactions.forEach((rx, i) => {
+            rp.enter(i);
+            const spec = rp.practiceSpec();
+
+            // ① 練習問題を持たない機構では 🎯 予測 を出さない
+            //    （出すと「直前に見た答えの復唱」に戻る＝問いとして成立しない）
+            if (!spec) {
+                assert(rp.btnPredict.classList.contains('hidden'),
+                    `${rx.id}: 練習問題が無いのに 🎯 予測 が出ている（見た答えの復唱になる）`);
+                return;
+            }
+            assert(!rp.btnPredict.classList.contains('hidden'), `${rx.id}: 🎯 予測 が出ていない`);
+
+            rp.startPrediction();
+            assert(rp.prediction, `${rx.id}: 予測モードに入れない`);
+
+            // ② ★反応する分子がキャンバスに出ている（空にしない）
+            const mol = g.userMolecule;
+            assert(mol.atoms.filter(a => a.element !== 'H').length >= 2,
+                `${rx.id}: キャンバスが空のまま（反応する分子が表示されていない）`);
+            assert(g.atomsGroup.childElementCount > 0 && g.bondsGroup.childElementCount > 0,
+                `${rx.id}: 分子が描画されていない（原子 ${g.atomsGroup.childElementCount} / 結合 ${g.bondsGroup.childElementCount}）`);
+
+            // ③ その分子が**代表例とは別の分子**（同じものを出したら問いにならない）
+            const repro = rp.buildMainProductTarget();
+            const start = rx.states[0];
+            const startMol = new W.Molecule();
+            const added = start.atoms.map(a => startMol.addAtom(a.element, a.x, a.y));
+            start.bonds.forEach(b => startMol.addBond(added[b.atom1Index].id, added[b.atom2Index].id, b.type));
+            assert(!W.verifyMolecule(rp.mainComponent(mol), rp.mainComponent(startMol)),
+                `${rx.id}: キャンバスに出ているのが代表例と同じ分子`);
+
+            // ④ 案内文に**その別の分子の名前**が出る（お題＝反応名は先頭のまま・RX32）
+            const subj = cap.querySelector('.rx-predict-subject');
+            assert(subj && cap.firstChild === subj, `${rx.id}: お題が案内文の先頭にいない`);
+            (spec.substrate || []).forEach(n => {
+                assert(cap.textContent.includes(n), `${rx.id}: 案内文に別の分子「${n}」が出ていない`);
+            });
+
+            // ⑤ ★正解は「代表例の主生成物」ではない（見た答えを書いたら不正解）
+            clearToast();
+            g.userMolecule = copyOf(repro);
+            rp.judgePrediction();
+            assert(toast.className === 'error',
+                `${rx.id}: 代表例の主生成物を書いたら正解になった（さっき見せた答えを聞いている）`);
+
+            // ⑥ 正解の集合が1つ以上あり、どれもパレットで書ける元素だけでできている
+            rp.enter(i); rp.startPrediction();
+            assert(rp.practiceTargets.length >= 1, `${rx.id}: 正解が1つも作れていない`);
+            rp.practiceTargets.forEach(t => {
+                t.atoms.forEach(a => {
+                    assert(a.element === 'H' || palette.has(a.element),
+                        `${rx.id}: 正解に「${a.element}」が要るのに作図パレットに無い（答えられない問題）`);
+                });
+            });
+
+            // ⑦ 正解を入れたら正解・何もしないで押したら不正解
+            clearToast();
+            g.userMolecule = copyOf(rp.practiceTargets[0]);
+            rp.judgePrediction();
+            assert(toast.className === 'success',
+                `${rx.id}: 正解を入れたのに正解にならない（${rp.practiceTargets.length}通り中の1つめ）`);
+
+            rp.enter(i); rp.startPrediction();
+            clearToast();
+            rp.judgePrediction(); // 基質を置いたまま押す
+            assert(toast.className === 'error', `${rx.id}: 何も描き変えずに押しても正解になる`);
+            rp.endPrediction(false);
+        });
+
+        // ⑧ 芳香族置換は o と p の**両方**が正解（片方しか認めないと正しい答えが不正解になる）
+        rp.enter(rp.reactions.findIndex(r => r.id === 'benzene_nitration'));
+        rp.startPrediction();
+        assert(rp.practiceTargets.length === 2,
+            `トルエンのニトロ化の正解が ${rp.practiceTargets.length} 通り（o と p の2通りを期待）`);
+        const names = rp.practiceTargets.map(t => g.lookupCompoundName(t)).sort().join(',');
+        assert(names === 'o-ニトロトルエン,p-ニトロトルエン',
+            `主生成物の位置が違う（${names}）＝ メタを混ぜている／配向性で絞れていない`);
+        rp.practiceTargets.forEach(t => {
+            const cp = new W.Molecule(), map = new Map();
+            t.atoms.forEach(a => map.set(a.id, cp.addAtom(a.element, a.x, a.y).id));
+            t.bonds.forEach(b => cp.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            clearToast();
+            g.userMolecule = cp;
+            rp.judgePrediction();
+            assert(toast.className === 'success',
+                `${g.lookupCompoundName(t)} が正解にならない（正解は集合で持つこと）`);
+            rp.enter(rp.reactions.findIndex(r => r.id === 'benzene_nitration'));
+            rp.startPrediction();
+        });
+        rp.endPrediction(false);
+        rp.exit();
+        g.setMode('puzzle');
     });
 
     /* ===== 反応で作る C=O の向き（CO1・検品レビュー C-7） =====
@@ -30984,17 +31501,19 @@
         g.setMode('learn');
         assert(strip.classList.contains('hidden'), '学習で何もしていないのに作業帯が出ている');
 
-        // **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → 機構モード ON。
-        // 直に rp.enter() を呼ぶと「Study が閉じる」配線を素通りしてしまう
+        /* **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → **一覧の1件を押す**。
+           直に `rp.enter()` を呼ぶと「Study が閉じる」配線を素通りしてしまう。
+           ⚠ **スイッチでは始まらない**（v1466・§12。スイッチが人の代わりに先頭を選んでいたのを
+              やめた ＝ 入口は §9〜§11 のとおり一覧1本）。ここも一覧から入る。 */
         D.querySelector('.canvas-header .mode-tab[data-mode="learn"]').click();
         const study = D.getElementById('study-modal');
         assert(!study.classList.contains('hidden'), '📚 タイルで Study モーダルが開かない');
         D.getElementById('reaction-box').open = true;
-        const chk = rp.checkMode;
-        chk.checked = true;
-        chk.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        const first = D.querySelector('#reaction-list button[data-rx-index]');
+        assert(first, '一覧の札が無い');
+        first.click();
         try {
-            assert(rp.active, '機構モードのスイッチで再生が始まらない');
+            assert(rp.active, '一覧から選んでも再生が始まらない');
             assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
                 '反応機構モードに入っても作業帯が出ない');
             // ⓪ **再生中に Study モーダルが被っていない**（この段の核心。§6-2 の「バトンを渡す」）

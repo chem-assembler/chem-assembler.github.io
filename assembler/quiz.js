@@ -2282,6 +2282,58 @@ function flipTargetVertically(target) {
     };
 }
 
+/**
+ * ★ **キャンバスの帯にある3つの札（⇅・⇄・⟳）を、出題データ（target）に当てる。**
+ * 採点のあとで「解説のとおりになるか、自分の手で確かめる」ための道具
+ * （ユーザー発注 2026-08-26。DESIGN_sugar.md §1-2c ＝ ハース図で意味を保つ図は4枚ある）。
+ *
+ * ⚠ **新しい置き直しは1つも書いていない。** 実体は `chemistry.js` の
+ *   `flipHaworth`（⇅）と `haworthTurn`（⇄・⟳）そのもので、門番も
+ *   `haworthFlipPlan` / `canFlipHaworth` / `haworthTurnPlan` をそのまま借りる。
+ *   ここがやっているのは **mol ⇔ target の受け渡し**（クイズは target を、
+ *   キャンバスの札は Molecule を扱うので、その差だけを埋めている）。
+ *
+ * ⚠ **⇅ は分子まるごとに当てる**（`game.flipWholeHaworth` と同じ約束）。
+ *   `haworthFlipPlan().ids` は二糖では**片方の環だけ**を指すので、そこは借りず
+ *   **門番 `.ok` だけ**を借りる（v1449 で禁止した「片方の環だけ裏返す」を復活させない）。
+ *
+ * ⚠ **最後の関所も帯と同じ**: 当てたあとに図から立体コードを読み直し、
+ *   元と食い違ったら `null` を返す（黙って鏡像の図を作らない）。登録16件は全部通る。
+ *
+ * kind: 'updown' | 'leftright' | 'halfturn'。当てられなければ null。
+ */
+function haworthTurnedTarget(game, target, kind) {
+    if (typeof haworthFlipPlan !== 'function' || typeof haworthTurnPlan !== 'function') return null;
+    const mol = game.createTargetFromData({ target });
+    if (!mol.atoms.length) return null;
+    const print0 = game.haworthStereoFingerprint(mol);
+    if (kind === 'updown') {
+        if (!haworthFlipPlan(mol).ok) return null;              // 門番だけ借りる（ids は借りない）
+        const ids = mol.atoms.map(a => a.id);
+        if (!canFlipHaworth(mol, ids)) return null;
+        const heavy = mol.atoms.filter(a => a.element !== 'H');
+        const list = heavy.length ? heavy : mol.atoms;
+        flipHaworth(mol, ids, list.reduce((t, a) => t + a.y, 0) / list.length);
+    } else if (kind === 'leftright' || kind === 'halfturn') {
+        const plan = haworthTurnPlan(mol);
+        if (!plan.ok) return null;
+        if (!haworthTurn(mol, plan, kind)) return null;
+    } else {
+        return null;
+    }
+    if (game.haworthStereoFingerprint(mol) !== print0) return null;   // ★ 最後の関所
+    return {
+        atoms: target.atoms.map((a, i) => {
+            const o = Object.assign({}, a,
+                { x: Math.round(mol.atoms[i].x), y: Math.round(mol.atoms[i].y) });
+            const f = mol.atoms[i].haworthFace;
+            if (f === 1 || f === -1) o.haworthFace = f; else delete o.haworthFace;
+            return o;
+        }),
+        bonds: target.bonds.map(b => Object.assign({}, b))
+    };
+}
+
 class StereoQuiz {
     constructor(game) {
         this.game = game;
@@ -4103,6 +4155,13 @@ class StereoChoiceQuiz {
         on('btn-pk-dl-explain', () => { if (window.dlExplain) window.dlExplain.open(); });
         on('btn-pk-same', () => this.answerPair(true));
         on('btn-pk-diff', () => this.answerPair(false));
+        // ★ 採点のあとの「見本を実際に動かしてみる」（ハースの出題だけ・DESIGN_sugar.md §1-2c）
+        this.turnPanel = document.getElementById('pk-turn');
+        this.turnStatusEl = document.getElementById('pk-turn-status');
+        on('btn-pk-turn-updown', () => this.applyTurn('updown'));
+        on('btn-pk-turn-leftright', () => this.applyTurn('leftright'));
+        on('btn-pk-turn-half', () => this.applyTurn('halfturn'));
+        on('btn-pk-turn-reset', () => this.applyTurn(null));
         if (this.kindEl) this.kindEl.addEventListener('change', () => this.newQuestion());
         for (let i = 0; i < 4; i++) {
             const cell = document.getElementById(`pk-cell-${i}`);
@@ -4477,6 +4536,10 @@ class StereoChoiceQuiz {
                 ? `成績: ${this.score.correct} / ${this.score.asked}` : '';
         }
         if (this.streakEl) this.streakEl.textContent = this.streakText();
+        // ★ 新しい問題では「動かしてみる」を畳んで、見本を元の図に戻す（採点前は触らせない）
+        this.turnOps = [];
+        this.turnTarget = null;
+        this.syncTurnPanel();
         this.askedAt = Date.now();
     }
 
@@ -4551,6 +4614,9 @@ class StereoChoiceQuiz {
         // 出題中に出すと「どの系統か」「どの炭素か」の2段が消えて問題が成り立たない
         // （グルコースは中心が4つあるので、そこを探すこと自体が問い）。
         if (q.kind === 'dl') this.markDLReferences();
+        // ★ ハースでは**採点のあとだけ**、見本を自分の手で動かせるようにする（ユーザー発注 2026-08-26）。
+        //   採点前に出すと、⇅ を押した図が正解の選択肢に一致してしまう ＝ 答えが分かる
+        this.syncTurnPanel();
         if (this.scoreEl) this.scoreEl.textContent = `成績: ${this.score.correct} / ${this.score.asked}`;
     }
 
@@ -4640,6 +4706,137 @@ class StereoChoiceQuiz {
                  `——${rest.length > 1 ? 'どちらも' : 'これも'}鏡像異性体の図です）`;
         }
         return s;
+    }
+
+    /* ======================================================================
+     * ★ 採点のあとに「見本を実際に動かしてみる」（ユーザー発注 2026-08-26）
+     *
+     * > **採点後に実際に回転を試したい（解説の通りになるか確認）**
+     *
+     * ⚠ **押せる札はキャンバスの帯と同じ3つ**（⇅ 上下・⇄ 左右・⟳ 180°）。
+     *   実体も同じ `chemistry.js` の `flipHaworth` / `haworthTurn`
+     *   （受け渡しだけを `haworthTurnedTarget` が埋めている。新しい置き直しは書いていない）。
+     *
+     * ★ **一致判定に立体コードは使えない。** DESIGN_sugar.md §1-2c のとおり
+     *   意味を保つ図は4枚あり、**4枚とも `canonicalStereoCode` は同じ**
+     *   ＝ 立体コードでは「どの図になったか」を1つも区別できない。
+     *   聞きたいのは「解説どおり、正解の**絵**になったか」なので、
+     *   物差しは **`FischerPractice.drawingKey`（平行移動だけ無視した見た目の鍵）**を使う。
+     *   ⚠ 軸の取り方は帯と出題側で違う（重原子の重心 ⇔ 全原子の重心）が、
+     *     違いは平行移動だけなので `drawingKey` では消える。
+     *
+     * ★ **「同じ分子のまま」は別の物差しで見ている** —— `haworthTurnedTarget` の中で
+     *   `game.haworthStereoFingerprint` が元と食い違ったら図を捨てる（帯と同じ最後の関所）。
+     *   ＝ **絵の一致は drawingKey・分子の不変は立体コード**、と役割を分けてある。
+     * ====================================================================== */
+
+    /** いま見本の枠に出ている図（動かしていなければ元の図） */
+    currentGoalFigure() {
+        return this.turnTarget || (this.current ? this.current.goal : null);
+    }
+
+    /** 「動かしてみる」の出し入れ。⚠ **ハースの出題で、採点が済んだときだけ出す** */
+    syncTurnPanel() {
+        if (!this.turnPanel) return false;
+        const q = this.current;
+        const on = !!(q && q.kind === 'haworth' && this.answered);
+        this.turnPanel.classList.toggle('hidden', !on);
+        if (!on) {
+            this.turnOps = [];
+            this.turnTarget = null;
+            if (this.turnStatusEl) this.turnStatusEl.textContent = '';
+            return false;
+        }
+        this.updateTurnStatus();
+        return true;
+    }
+
+    /** 見本の枠に図を描き直す（⚠ ハースなので畳まない＝縦位置が面そのもの） */
+    paintGoalFigure(target) {
+        const svg = document.getElementById('pk-goal');
+        if (!svg) return;
+        const art = svg.querySelector('.pk-cross-art');
+        if (art) art.style.display = 'none';
+        ['.quiz-bonds', '.quiz-atoms', '.cross-labels'].forEach(sel => {
+            const g = svg.querySelector(sel);
+            if (g) g.innerHTML = '';
+        });
+        renderMoleculeIntoSvg(this.game, 'pk-goal', target, false, false);
+    }
+
+    /**
+     * 札を1つ押す（`kind === null` は「↩ 元の図に戻す」）。
+     * ⚠ **採点前は何もしない**（答えが分かってしまう）。戻り値 { ok, reason }。
+     */
+    applyTurn(kind) {
+        const q = this.current;
+        if (!q || q.kind !== 'haworth' || !this.answered) return { ok: false, reason: 'locked' };
+        if (kind === null) {
+            this.turnOps = [];
+            this.turnTarget = null;
+            this.paintGoalFigure(q.goal);
+            this.updateTurnStatus();
+            return { ok: true, reason: 'reset' };
+        }
+        const from = this.currentGoalFigure();
+        const next = haworthTurnedTarget(this.game, from, kind);
+        if (!next) {                       // 最後の関所に跳ねられた（登録16件では起きない）
+            if (this.turnStatusEl) {
+                this.turnStatusEl.textContent =
+                    'この図にはその置き直しを当てられませんでした（図が別の分子になってしまうため、当てずに戻しました）。';
+            }
+            return { ok: false, reason: 'gate' };
+        }
+        this.turnOps = (this.turnOps || []).concat([kind]);
+        this.turnTarget = next;
+        this.paintGoalFigure(next);
+        this.updateTurnStatus();
+        return { ok: true, reason: 'turned' };
+    }
+
+    /**
+     * いまの図が「どれと同じ絵か」を言う。
+     * ★ ここが発注の芯 ——「解説のとおりになるか」をアプリの側でも言い切る。
+     */
+    turnStatusText() {
+        const q = this.current;
+        if (!q || q.kind !== 'haworth') return '';
+        const LABEL = { updown: '⇅ 上下に裏返す', leftright: '⇄ 左右に裏返す', halfturn: '⟳ 180°回す' };
+        const ops = this.turnOps || [];
+        const head = ops.length
+            ? `押した手: ${ops.map(k => LABEL[k]).join(' → ')}（${ops.length}手）\n`
+            : '見本は元の図のままです。札を押すと、この図が動きます。\n';
+        const cur = this.currentGoalFigure();
+        const key = FischerPractice.drawingKey(cur);
+        if (key === FischerPractice.drawingKey(q.goal)) {
+            return ops.length
+                ? head + '→ いまの図は元の図と同じ絵です（ここまでの手が打ち消し合いました）。'
+                : head.trimEnd();
+        }
+        const hit = q.items.findIndex(m => FischerPractice.drawingKey(m.target) === key);
+        if (hit >= 0) {
+            // ⚠ 手の名前は head に出ているので、ここでは「どの手で来たか」を言い直さない
+            //   （⇄ → ⟳ の2手でも ⇅ と同じ絵に着く ＝ 四元群。§4-10b KV4）
+            return head + `→ いまの図は ${'①②③④'[hit]} とぴったり同じ絵になりました` +
+                (hit === q.answer
+                    ? '。★ 解説のとおり、これが正解の図です（分子は見本のまま）。'
+                    : `。⚠ ${'①②③④'[hit]} は同じ分子ではないはずなので、ここに来たら不具合です。`);
+        }
+        return head + '→ いまの図は ①〜③ のどれとも違う絵です。' +
+            'でも分子は見本のまま ＝ 同じ糖の図は、選択肢に出ている1枚のほかにもあります' +
+            '（ハース図で意味を保つ置き直しは ⇅・⇄・⟳ の3つで、元と合わせて4枚あります）。';
+    }
+
+    updateTurnStatus() {
+        if (this.turnStatusEl) this.turnStatusEl.textContent = this.turnStatusText();
+        // ⚠ **1280×720 では、この節はモーダルの見えている範囲より下に出る**（実測: 札の下端 689px・
+        //   読み上げる一行は 762px ＝ 画面の外）。押した結果を読む行が見えないと機能が成り立たないので、
+        //   出したときと押すたびに**いちばん少ないぶんだけ**スクロールして入れる（`block:'nearest'`
+        //   なので、すぐ上の解説の文は画面に残る）
+        if (this.turnPanel && !this.turnPanel.classList.contains('hidden') &&
+            this.turnPanel.scrollIntoView) {
+            this.turnPanel.scrollIntoView({ block: 'nearest' });
+        }
     }
 
     /** 記号モードで「見本まで回転だけで何手か」（12通りしかないので幅優先で必ず出る） */
