@@ -232,6 +232,7 @@
  *                  見る（帯の件数／除外数／summary が緑にならない）・3 は当たらない番号で赤く止まること
  *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
+ * | UX  | 1〜3   | 「操作の案内」の字数の上限（v1468・ux-density.md。ユーザー発注「説明が冗長・字が小さい／ただし発展の話は必要な人が見られるように」）。**1 が上限**（9画面ぶん。数えるのは押す前に読ませる説明だけで、化学の説明・答え合わせ・設問・一覧・図・**閉じた `<details>` の中身**は数えない。併せて `.learn-acc` が既定で閉じていること**と中身が空でないこと**を見る ＝ 「畳んだふりをして消す」で通せない）・**2 は否定対照**＝ 実物と同じ長さの1文（47字）を足すと**9画面すべてで**上限を超えること（余裕が広すぎて止め木にならない状態を検出する）・3 は十字の4操作の規則が `CROSS_RULES_HTML` 1本で ⏱ と 🔤 の両方から開けること |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
@@ -29044,6 +29045,234 @@
         assert(!D.getElementById('study-body').contains(btn),
             '反応実行の入口が学習メニューの中に置かれている（押した時点で #ws-free ごと消える）');
         g.setMode('free');
+    });
+
+    /* ===== UX: 「操作の案内」の字数の上限（v1468・ux-density.md）=====
+     *
+     * ユーザーの発注（2026-08-26）:
+     * > **Assembler も全体的に説明が冗長。…全体的に文字数が多い、字が小さい**
+     * > **ただし、発展的・大学レベルの話も必要な人は見られるように**
+     *
+     * ★ **この検査が要る理由**は、削ったことを記録するためではない ——
+     *   **次に誰かが親切のつもりで説明を1文足したとき、その場で止まる**ようにするため。
+     *   （muki レーンが同じ形の検査を入れている。説明文は放っておくと必ず太る）
+     *
+     * ⚠⚠ **何を数えるか＝ここが検査の全部。** 数える相手を間違えると
+     *    「削ってはいけないところを削れば緑になる」検査になり、害のほうが大きい。
+     *
+     *   数える  … **操作の案内**（押す前に読ませる説明・注記・行き先の案内・見出しの但し書き）
+     *   数えない… **化学の説明**（`#target-info`・`#nw-source` など）
+     *             **答え合わせ・解説**（`#*-status` / `#*-result`）★ ここは削らないと決めた場所
+     *             **設問・お題の文**（`#ta-task` / `#sp-task` …）と**データの一覧**
+     *               （`#reaction-list`・`#tutorial-list`・`#nw-stack` …）
+     *             **見出し・ボタン・フォーム**（`h1`〜`h4` / `button` / `select` / `label` / `summary`）
+     *             **図**（`svg` の中の元素記号・自動水素）
+     *             **閉じた `<details>` の中身** ＝ 画面に出ていないから
+     *
+     * ★ **畳んだ中身を数えないのは「隠せば通る」という抜け道ではない** ——
+     *   UX1 は同じ画面で **`.learn-acc` が既定で閉じていること**と、
+     *   **中身が空でないこと**を併せて見る。畳んだつもりで消した、が通らない。
+     *
+     * ★ **上限 N の決め方**（2026-08-27・実測。375×812 で数えた）:
+     *   削る前 → 削った後 → 置いた上限（＝「後」＋20字ぶんの余裕を、切りのよい数に丸めたもの）
+     *     ヘルプ                50 →  24 →  45
+     *     パズル: お題を選ぶ   224 →   7 →  30
+     *     学習メニュー（既定）  95 →  46 →  70
+     *     学習: 書き出し練習   428 → 172 → 195
+     *     学習: 反応機構       169 →  91 → 115
+     *     記号パズル           195 →  53 →  75
+     *     立体タイムアタック   267 →  45 →  70
+     *     フィッシャー投影     186 →  48 →  70
+     *     絞り込みモード        59 →  13 →  35
+     *     ------------------------------------------
+     *     合計                1673 → 499 → 700（画面ごとに通っても総量で太るのを止める）
+     *
+     *   ⚠ **余裕を 20字にしたのには理由がある。** 説明文が太るときの単位は「1文」で、
+     *     このアプリの実物は 25〜60字だった（削った 9画面の実測。中央値 47字）。
+     *     余裕を 20字に置くと、**足せば必ず超える**（UX2 がそれを実証する）。
+     *     100字も空けると「1文なら入る」＝ 止め木として働かない。
+     */
+
+    /** 「操作の案内」の字数（空白を除く）。⚠ 数え方の理由は上の帯のコメント */
+    const uxGuideChars = (D, W, rootSel, exclude) => {
+        const root = D.querySelector(rootSel);
+        assert(root, `${rootSel} が無い`);
+        const SKIP = ['summary', 'button', 'select', 'option', 'input', 'textarea', 'label',
+            'h1', 'h2', 'h3', 'h4', 'svg', '.modal-footer'].concat(exclude || []).join(',');
+        const parts = [];
+        const walk = (node) => {
+            if (node.nodeType === 3) {
+                const t = (node.textContent || '').replace(/\s+/g, '');
+                if (!t) return;
+                const el = node.parentElement;
+                if (!el || el.closest(SKIP)) return;
+                // 閉じた <details> の中は画面に出ていない ＝ 数えない（開いていれば数える）
+                let d = el.closest('details');
+                while (d) { if (!d.open) return; d = d.parentElement && d.parentElement.closest('details'); }
+                if (!el.checkVisibility || !el.checkVisibility()) return;
+                const r = el.getBoundingClientRect();
+                if (r.width < 4 || r.height < 4) return;
+                parts.push(t);
+                return;
+            }
+            if (node.nodeType !== 1) return;
+            if (node.tagName === 'SCRIPT' || node.tagName === 'STYLE' || node.tagName === 'TEMPLATE') return;
+            node.childNodes.forEach(walk);
+        };
+        walk(root);
+        return { n: parts.reduce((s, x) => s + x.length, 0), parts, root };
+    };
+
+    /**
+     * 検査する画面の一覧。`open` はその画面を出す手順、`skip` は上で言い分けた
+     * 「数えないもの」の追加指定（画面ごとに違うのでここに書く）。
+     */
+    const UX_SCREENS = [
+        {
+            name: 'ヘルプ（操作ガイド）', root: '#tutorial-modal', max: 45,
+            // #tutorial-list は**デモの一覧（データ）**。1行説明 363字が畳めていないのは
+            // tutorials.json / tutorial.js 側の宿題で、この検査の担当ではない
+            skip: ['#tutorial-list'],
+            open: (D, W) => D.getElementById('btn-help').click()
+        },
+        {
+            name: 'パズル: お題を選ぶ', root: '#puzzle-modal', max: 30,
+            // #target-desc は**化学の説明**、#random-status は game.js が書く残件数（データ）、
+            // #puzzle-howto は「何をするモードか」の常時案内（v1468 では触っていない）
+            skip: ['#target-info', '#random-status', '#puzzle-howto', '.toggle-container'],
+            open: (D, W) => { W.game.setMode('puzzle'); D.getElementById('puzzle-modal').classList.remove('hidden'); }
+        },
+        {
+            name: '学習メニュー（既定）', root: '#study-modal', max: 70, skip: [],
+            open: (D) => D.getElementById('study-modal').classList.remove('hidden')
+        },
+        {
+            name: '学習: 書き出し練習', root: '#learn-acc-practice', max: 195, skip: [],
+            open: (D) => { D.getElementById('study-modal').classList.remove('hidden'); D.getElementById('learn-acc-practice').open = true; }
+        },
+        {
+            name: '学習: 反応機構ビューア', root: '#reaction-box', max: 115,
+            skip: ['#reaction-list', '.toggle-container'],
+            open: (D) => { D.getElementById('study-modal').classList.remove('hidden'); D.getElementById('reaction-box').open = true; }
+        },
+        {
+            name: '記号パズル', root: '#symbol-puzzle-modal', max: 75,
+            skip: ['#sp-task', '#sp-status', '#sp-moves'],
+            open: (D, W) => W.symbolPuzzle.open()
+        },
+        {
+            name: '立体タイムアタック', root: '#time-attack-modal', max: 70,
+            skip: ['#ta-task', '#ta-status', '#ta-timer', '#ta-moves', '#ta-best'],
+            open: (D, W) => W.timeAttack.open()
+        },
+        {
+            name: 'フィッシャー投影の練習', root: '#fischer-practice-modal', max: 70,
+            skip: ['#fp-status', '#fp-centers', '#fp-axis', '#fp-task', '#fp-moves'],
+            open: (D, W) => W.fischerPractice.open()
+        },
+        {
+            name: '絞り込みモード', root: '#narrowing-modal', max: 35,
+            skip: ['#nw-stack', '#nw-result', '#nw-routes', '#nw-matrix', '#nw-palette', '#nw-filter',
+                '#nw-tabs', '#nw-preset', '#nw-source', '#nw-parts', '#nw-start', '#nw-hint', '#nw-warn'],
+            open: (D, W) => W.narrowing.open()
+        }
+    ];
+    const UX_TOTAL_MAX = 700;
+
+    test('UX1: 各画面の「操作の案内」が上限の字数に収まっている（説明が太ったらここで止まる）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        const lines = [];
+        let total = 0;
+        for (const s of UX_SCREENS) {
+            // 前の画面を閉じてから開く（重なったモーダルの文字を二重に数えない）
+            D.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+            D.querySelectorAll('#study-body > details').forEach(d => { d.open = false; });
+            s.open(D, W);
+            await c.tick(160);
+            const r = uxGuideChars(D, W, s.root, s.skip);
+            total += r.n;
+            lines.push(`${s.name} ${r.n}/${s.max}`);
+            assert(r.n <= s.max,
+                `「${s.name}」の操作の案内が ${r.n}字（上限 ${s.max}字）。` +
+                `⚠ 説明を足すなら、まず**それが操作の案内か**を確かめること。` +
+                `化学の説明・答え合わせ・設問なら数えないので、この検査には当たらない。` +
+                `当たったということは「押す前に読ませる文」を増やしている ＝ ` +
+                `ux-density.md §8 の線（操作の前に出す説明は削る）に反している。` +
+                `どうしても要る内容なら **<details class="learn-acc"> に畳む**（閉じた中身は数えない）。` +
+                `いま数えた文: ${JSON.stringify(r.parts)}`);
+
+            // ★ 畳んだものは「閉じている」ことと「中身が消えていない」ことを併せて見る
+            //   ＝ 上の上限を「畳んだふりをして消す」で通せないようにするための対
+            r.root.querySelectorAll('details.learn-acc').forEach(d => {
+                assert(!d.open, `「${s.name}」の ${d.id || d.querySelector('summary')?.textContent} が既定で開いている（畳んだ意味が無い）`);
+                const body = d.querySelector('.learn-acc-body');
+                assert(body && body.textContent.replace(/\s+/g, '').length >= 20,
+                    `「${s.name}」の ${d.id || '(無名の details)'} の中身が空か短すぎる ＝ ` +
+                    `**畳んだのではなく消している**（発展の話は「必要な人は見られるように」が発注）`);
+            });
+        }
+        D.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        W.game.setMode('free');
+        assert(total <= UX_TOTAL_MAX,
+            `9画面の操作の案内の合計が ${total}字（上限 ${UX_TOTAL_MAX}字）＝ ` +
+            `1画面ずつは上限内でも全体で太っている。内訳: ${lines.join(' / ')}`);
+        // 空振り検出: すべて0字なら数え方が壊れている（セレクタの綴り違いなど）
+        assert(total > 200, `合計 ${total}字 ＝ 数え方が空振りしている（${lines.join(' / ')}）`);
+    });
+
+    test('UX2: ★否定対照 — 説明を1文足すと UX1 が赤くなる（止め木が効いていることの証拠）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        // 実物の説明文と同じ長さの1文（削った9画面の中央値 47字にそろえた）
+        const ONE_SENTENCE = 'ここで選んだ内容はキャンバスの下の帯にそのまま出るので、あとから読み直すこともできます。';
+        assert(ONE_SENTENCE.length >= 40 && ONE_SENTENCE.length <= 60,
+            `対照に使う1文が 40〜60字でない（${ONE_SENTENCE.length}字）＝ 実物の太り方と釣り合っていない`);
+
+        for (const s of UX_SCREENS) {
+            D.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+            D.querySelectorAll('#study-body > details').forEach(d => { d.open = false; });
+            s.open(D, W);
+            await c.tick(160);
+            const before = uxGuideChars(D, W, s.root, s.skip);
+            const p = D.createElement('p');
+            p.className = 'ux-negative-control';
+            p.textContent = ONE_SENTENCE;
+            before.root.appendChild(p);
+            await c.tick(60);
+            const after = uxGuideChars(D, W, s.root, s.skip);
+            p.remove();
+            assert(after.n === before.n + ONE_SENTENCE.length,
+                `「${s.name}」で足した1文が数えられていない（${before.n} → ${after.n}）＝ ` +
+                `**この画面では検査が空振りしている**（root か skip の指定が実物とずれている）`);
+            assert(after.n > s.max,
+                `「${s.name}」は1文（${ONE_SENTENCE.length}字）足しても上限 ${s.max}字 を超えない` +
+                `（${before.n} → ${after.n}）＝ **余裕が広すぎて止め木になっていない**。` +
+                `上限は「実測＋20字」に置くこと（UX の帯のコメント参照）`);
+        }
+        D.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+        W.game.setMode('free');
+    });
+
+    test('UX3: 十字の4操作の規則が1本で、⏱ と 🔤 の両方から開ける（同じ説明を2か所に書かない）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        // v1468 以前は ⏱ 254字・🔤 193字で**同じ4操作を別の文で**書いていた（ux-density §3-b）。
+        // ★ 本文は quiz.js の CROSS_RULES_HTML 1本。入口が2つでも中身は同じ、を機械で見張る
+        const ta = D.getElementById('cross-rules-ta');
+        const sp = D.getElementById('cross-rules-sp');
+        assert(ta && sp, '十字の規則の入口（#cross-rules-ta / #cross-rules-sp）が両方そろっていない');
+        const body = (d) => d.querySelector('.learn-acc-body').textContent.replace(/\s+/g, '');
+        assert(body(ta).length > 150, `⏱ 側の規則が短すぎる（${body(ta).length}字）＝ 畳んだのではなく消えている`);
+        assert(body(ta) === body(sp),
+            '⏱ と 🔤 の規則の本文が食い違っている ＝ 1本にしたはずの説明が2本に割れている');
+        assert(!ta.open && !sp.open, '十字の規則が既定で開いている（既定は閉じる）');
+        // ⚠ 本文が HTML に直書きされていない（＝ 片方だけ直して食い違う形に戻していない）
+        const html = await (await fetch(`index.html?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        assert(!/辺は4つでも/.test(html),
+            'index.html に十字の規則が直書きされている ＝ 本文が1本という前提が崩れている');
+        const qsrc = await (await fetch(`quiz.js?nocache=${Date.now()}`, { cache: 'no-cache' })).text();
+        assert(/CROSS_RULES_HTML\s*=/.test(qsrc), 'quiz.js に規則の本文（CROSS_RULES_HTML）が無い＝ 上の検査が空振りしている');
     });
 
     /* ===== QB: アプリ横断の往復リンク（qa ⇄ assembler） =====
