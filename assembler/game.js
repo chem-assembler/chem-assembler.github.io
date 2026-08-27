@@ -8536,6 +8536,77 @@ class Game {
     }
 
     /**
+     * ★★ この断片を「単独で描くときの図」へ持っていく **紙の回し方** を選ぶ（`DESIGN_sugar.md` §4-9f）。
+     *
+     * **ユーザーの言葉**（2026-08-26。ここが正）:
+     * > **フルクトース構造を紙と考えると、紙の右辺を固定した状態で机上で紙を横回転すればよい**
+     * > **セロビオース・ラクトースの場合は縦回転なので、紙の下辺を固定した状態で縦回転する**
+     * > **メリーゴーランドよりは縦横回転を優先する方針で揃えたほうがわかりやすそう**
+     *
+     * ★ **試す順は 手数の少ない順、かつ 縦横回転だけ**（⚠ **メリーゴーランドは作らない**）:
+     *   `[]`（回さない）→ `⇄`（横回転）→ `⇅`（縦回転）→ `⇄ → ⇅`（＝ ⟳ と同じ図。四元群）。
+     *   **最初に「単独で描くときの図」に着地したものを採る。**
+     *
+     * ★ **実測（登録の二糖4件。物差しは平行移動を除いた最大ずれ）**:
+     *   スクロース … ⇄ で **0.91px**（⇅ は 142.5）／ セロビオース・ラクトース … ⇅ で **0.00px**（⇄ は 201.8）
+     *   マルトース … **回さないで 0.00px**（⇄ 220.9・⇅ 234.2）
+     *   ＝ **分子ごとに回し方が違う**。⚠ ここを1つに決め打ちしないこと。
+     * ⚠ **0.91px の残り**は ⇄ の③（段の入れ替え・v1461 §4-10d）ぶん。あれは食い込みを避ける
+     *   **作図の型**であって紙の動きではないので、軌跡には入らない。許容は 2px。
+     *
+     * 戻り値 `{ steps:[{kind, axis, hinge}], dx, dy, dev, end:[{id,x,y}] }` / `null`
+     *   —— `end` は**回し終えた位置**、`dx,dy` はそこから単独の図へ合わせる平行移動。
+     */
+    haworthFlipStepsToStandalone(part, drawing, ignore, from) {
+        if (typeof haworthFlipHinge !== 'function' || typeof haworthFlipFrame !== 'function') return null;
+        const ids = part.atoms.map(a => a.id);
+        const keep = part.atoms.map(a => ({ a, x: a.x, y: a.y }));
+        const restore = () => keep.forEach(k => { k.a.x = k.x; k.a.y = k.y; });
+        /* ★ **回し始めの位置**。⚠ 加水分解は切った直後に相手を**真下へ 2 マス**逃がしているので、
+         *   そのままだと「紙を回す前にもう下へ落ちている」＝ ユーザー報告の
+         *   **「分子全体が↓にスライドする」がここで作られる**。切った直後の位置から回す。 */
+        if (from) from.forEach(p => { const a = part.atoms.find(x => x.id === p.id); if (a) { a.x = p.x; a.y = p.y; } });
+        const home = part.atoms.map(a => ({ a, x: a.x, y: a.y }));
+        const reset = () => home.forEach(k => { k.a.x = k.x; k.a.y = k.y; });
+        const skip = ignore || new Set();
+        const TOL = 2;
+        // ⚠ 縦横回転だけ。手数の少ない順
+        const SEQ = [[], ['leftright'], ['updown'], ['leftright', 'updown']];
+        for (const seq of SEQ) {
+            reset();
+            const steps = [];
+            let ok = true;
+            for (const kind of seq) {
+                const h = haworthFlipHinge(part, ids, kind);
+                if (!h.ok) { ok = false; break; }
+                steps.push({ kind, axis: h.axis, hinge: h });
+                haworthFlipFrame(h, Math.PI).forEach(e => {
+                    const a = part.atoms.find(x => x.id === e.id);
+                    if (a) { a.x = e.x; a.y = e.y; }
+                });
+            }
+            if (!ok) continue;
+            const use = part.atoms.filter(a => drawing.spots.get(a.id) && !skip.has(a.id));
+            if (!use.length) break;
+            const m = use.length;
+            const dx = use.reduce((t, a) => t + (a.x - drawing.spots.get(a.id).x), 0) / m;
+            const dy = use.reduce((t, a) => t + (a.y - drawing.spots.get(a.id).y), 0) / m;
+            const dev = Math.max(...use.map(a => {
+                const t = drawing.spots.get(a.id);
+                return Math.hypot(a.x - t.x - dx, a.y - t.y - dy);
+            }));
+            if (dev <= TOL) {
+                const end = part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
+                const start = home.map(k => ({ id: k.a.id, x: k.x, y: k.y }));
+                restore();
+                return { steps, dx, dy, dev, end, start };
+            }
+        }
+        restore();
+        return null;
+    }
+
+    /**
      * ★ **何のためにあるか**（ユーザーの言葉・2026-08-22／2026-08-24 の検収条件）:
      *   **「フリップするのは加水分解前後の分子の形に対応するためです」**
      *   **「スクロースの加水分解は、反応前後の分子の表示が、どちらも教科書の図になるように」**
@@ -8586,19 +8657,35 @@ class Game {
         //   ⚠ 省かれたときだけ従来どおり全部を見る（既存の呼び出しを壊さないため）が、
         //     加水分解の経路は必ず渡す ＝ となりの別分子には1ピクセルも触らない
         const only = opt.only ? new Set(opt.only) : null;
+        // ★ 動かさない側（§4-9e。ユーザー「グルコースは固定」）
+        const anchor = opt.anchor ? new Set(opt.anchor) : null;
+        /* ★ 置き場所を決めるときに**数えない原子**（§4-9f）。
+         * ⚠ **この反応で生まれた -OH と、橋だった -O-** は「紙の上の点」ではない ——
+         *   前者はまだ存在しなかったし、後者は相手とつながる都合で
+         *   環から 121px 離れた橋の位置に描かれている（ふつうの枝は 38px）。
+         *   ★ 混ぜると、切られる側でも重心が 43px ぶん引っぱられて**固定側が動く**。 */
+        const ignoreFit = opt.fitIgnore ? new Set(opt.fitIgnore) : new Set();
         this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).forEach(part => {
             if (only && !part.atoms.some(a => only.has(a.id))) return;
             const drawing = this.standaloneDrawingOf(part);
             if (!drawing) return;
             const print0 = this.haworthStereoFingerprint(part);
             const before = part.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
-            // 位置は保つ ＝ 単独の図に**重心を合わせる平行移動**だけを足す
-            const n = part.atoms.length;
-            const cx = before.reduce((t, p) => t + p.x, 0) / n;
-            const cy = before.reduce((t, p) => t + p.y, 0) / n;
-            let tx = 0, ty = 0;
-            part.atoms.forEach(a => { const t = drawing.spots.get(a.id); tx += t.x; ty += t.y; });
-            tx = cx - tx / n; ty = cy - ty / n;
+            /* ★ 置き場所の決め方。
+             * ⚠ **既定（`opt.arc` 無し）は従来どおり「重心を保つ」** ＝ 既存の呼び出しは1pxも変わらない。
+             * ★ `opt.arc` のときは **紙を回した結果の位置**（§4-9f）。
+             *   ＝ 右へ／下へのずれは**こちらが与える値ではなく、180°回転から出てくる値**。 */
+            const flip = opt.arc
+                ? this.haworthFlipStepsToStandalone(part, drawing, ignoreFit, opt.arcFrom) : null;
+            let tx, ty;
+            if (flip) { tx = flip.dx; ty = flip.dy; }
+            else {
+                // 位置は保つ ＝ 単独の図に**重心を合わせる平行移動**だけを足す
+                const use = part.atoms.filter(a => !ignoreFit.has(a.id) && drawing.spots.get(a.id));
+                const m = use.length || 1;
+                tx = use.reduce((t, a) => t + (a.x - drawing.spots.get(a.id).x), 0) / m;
+                ty = use.reduce((t, a) => t + (a.y - drawing.spots.get(a.id).y), 0) / m;
+            }
             let moved = 0;
             part.atoms.forEach(a => {
                 const t = drawing.spots.get(a.id);
@@ -8613,7 +8700,7 @@ class Game {
             });
             // ★ 判断は写し（part）の上で終わらせる。採らないときは本物に1ピクセルも触れていない
             if (this.haworthStereoFingerprint(part) !== print0) return;
-            plans.push({ part, name: drawing.name, before, reshaped: moved > 0.001 });
+            plans.push({ part, name: drawing.name, before, reshaped: moved > 0.001, flip });
         });
         if (!plans.length) return [];
         // --- ここから本物へ写す ---
@@ -8626,10 +8713,14 @@ class Game {
         }));
         // ★ 生成物を横一列にそろえる（平行移動だけ。頼まれたときだけ ＝ 加水分解の経路だけ）。
         // ⚠ 重なりの物差しは**このあと逃がす側と同じもの**を渡す（`opt.overlaps`）
+        // ★ `opt.anchor` ＝ **動かさない側**（切られる側）。§4-9e
         if (opt.alignRow) this.alignRedrawnProductsInRow(plans, opt.overlaps &&
-            (ids => opt.overlaps(this.userMolecule, ids)));
+            (ids => opt.overlaps(this.userMolecule, ids)), opt.anchor);
         // 重なったら逃がす（平行移動だけなので、図は単独の図と一致したまま）
+        // ⚠ **動かさない側（`opt.anchor`）は逃がしにも乗せない** —— ここを素通りさせると、
+        //   「切られる側は1pxも動かさない」（§4-9e）が逃がしの一手で崩れる
         if (opt.escape) plans.forEach(({ part }) => {
+            if (anchor && part.atoms.some(a => anchor.has(a.id))) return;
             const ids = part.atoms.map(a => a.id);
             const sep = opt.escape(this.userMolecule, ids);
             if (!sep) return;
@@ -8638,9 +8729,13 @@ class Game {
                 if (a) { a.x += sep.dx; a.y += sep.dy; }
             });
         });
-        return plans.map(({ part, name, before, reshaped }) => ({
+        return plans.map(({ part, name, before, reshaped, flip }) => ({
             ids: part.atoms.map(a => a.id),
             name, reshaped, before,
+            /* ★ 紙の回し方（§4-9f）。⚠ **アニメーションを描く人のための材料**で、
+             *   図そのものはもう最終位置に入っている。`steps` が空なら「回さない分子」。 */
+            flip: flip ? { steps: flip.steps.map(s => ({ kind: s.kind, axis: s.axis, hinge: s.hinge })),
+                           start: flip.start, end: flip.end, dev: flip.dev } : null,
             after: part.atoms.map(a => {
                 const real = this.userMolecule.atoms.find(x => x.id === a.id);
                 return { id: a.id, x: real ? real.x : a.x, y: real ? real.y : a.y };
@@ -8664,7 +8759,19 @@ class Game {
      *   「単独の図と平行移動を除いて完全一致」はそのまま緑で両立する。
      * ⚠ **左右の順は切る前のまま**（左にあった断片が左）。並べ替えると
      *   「グリコシド結合のどちら側だったか」が読めなくなる。
-     * ⚠ **高さの基準は2断片の中間**（片方だけを動かさない）＝ **全体の重心が動かない**。
+     *
+     * ★★ **v1468 で「高さの基準」を変えた**（`DESIGN_sugar.md` §4-9e）。ユーザー（2026-08-26）:
+     * > **「加水分解時に分子全体が↓にスライドするのをなくしたい」**
+     * > **「グルコースは固定、フルクトースが回転して真横→に移動し、加水分解後の糖は2つ横に並ぶ」**
+     * > **「フルクトースは横回転と同時に↓に平行移動している、↓移動が不要」**
+     *
+     * ⚠ **v1453 は「2断片の中間」を基準にしていた**（＝ 2つ合わせた重心が動かない）。
+     *   横一列にはなるが、**両方が縦に動く** ＝ 画面ぜんたいが下へ滑って見える。
+     * ★ **v1468 は `anchorIds`（切られる側）を基準にする** ——
+     *   **動かさない側は 1px も触らず、もう片方だけを縦に合わせて横へ逃がす。**
+     *   ⚠ 登録の二糖は**2つの環中心がもともと同じ高さ**（§11）なので、
+     *   これで**フリップする側の環中心の y も切る前と変わらない**（実測 4件とも 0.000px）。
+     *
      * ⚠ **横は「重ならない最小の平行移動」だけ**。足りていれば 0。
      *   図が飛ぶのがいちばん読みにくいので、間隔をそろえに行かない。
      * ⚠ **重なりの物差しは自分で持たない** —— `overlaps(ids)` を呼び出し側からもらう
@@ -8677,9 +8784,13 @@ class Game {
      * ⚠ **押し広げても重なりが解けないなら、動かす前に戻す**（並べ損なうより、
      *   図が飛ばないほうがよい ＝ そのときは従来どおり逃がす側に任せる）。
      *
+     * `anchorIds` … ★ **動かさない側**の原子ID（配列か Set）。
+     *   ⚠ **これが2つの断片のうちちょうど1つを指さないときは、1pxも動かさない**
+     *   （どちらを固定するのか決められないまま並べると、また画面が滑る）。
+     *
      * 戻り値は実際に当てた平行移動（当てなければ `null`）。
      */
-    alignRedrawnProductsInRow(plans, overlaps) {
+    alignRedrawnProductsInRow(plans, overlaps, anchorIds) {
         if (!plans || plans.length !== 2) return null;
         if (typeof haworthSugarCycles !== 'function') return null;
         const mol = this.userMolecule;
@@ -8698,29 +8809,39 @@ class Game {
             };
         });
         if (info.some(x => !x || !x.ids.length)) return null;
-        const [L, R] = info.slice().sort((a, b) => a.cx - b.cx);   // 左右の順はそのまま
+        // ★ どちらが「動かさない側」か。⚠ ちょうど1つに決まらなければ何もしない
+        const keep = anchorIds ? new Set(anchorIds) : null;
+        if (!keep) return null;
+        const fixedAt = info.findIndex(x => x.ids.some(id => keep.has(id)));
+        if (fixedAt < 0) return null;
+        const FIX = info[fixedAt], MOVE = info[1 - fixedAt];
+        if (MOVE.ids.some(id => keep.has(id))) return null;   // 両方に掛かっている ＝ 決められない
         const undo = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
         const shift = (part, dx, dy) => part.ids.forEach(id => {
             const a = mol.atoms.find(x => x.id === id);
             if (a) { a.x += dx; a.y += dy; }
         });
-        // 高さ: 環中心の y を2つの中間へ（移動量は打ち消し合う ＝ 全体の重心は動かない）
-        const midY = (L.cy + R.cy) / 2;
-        let dyL = midY - L.cy, dyR = midY - R.cy, push = 0;
-        shift(L, 0, dyL); shift(R, 0, dyR);
-        // 横: 重なっているあいだだけ、少しずつ半分ずつ外へ（＝ 重ならない最小の平行移動）
+        /* ★ 高さ: **動かさない側の環中心の y** へ、もう片方だけを合わせる。
+         * ⚠ **固定側は 1px も触らない**（v1453 は中間へ寄せていたので両方が縦に動き、
+         *   画面ぜんたいが下へ滑って見えた ＝ ユーザー報告「分子全体が↓にスライドする」）。 */
+        const dyMove = FIX.cy - MOVE.cy;
+        let push = 0;
+        shift(MOVE, 0, dyMove);
+        /* ★ 横: 重なっているあいだ、**動かす側だけ**を固定側から離れる向きへ刻む
+         * （＝「フルクトースが回転して真横→に移動」）。⚠ 固定側は押し返さない。 */
         if (typeof overlaps === 'function') {
-            const STEP = GRID_SIZE / 4, LIMIT = GRID_SIZE * 3;
-            while (overlaps(L.ids) || overlaps(R.ids)) {
+            const STEP = GRID_SIZE / 4, LIMIT = GRID_SIZE * 6;
+            const away = (MOVE.cx >= FIX.cx) ? 1 : -1;   // 重なっていたら固定側の反対へ
+            while (overlaps(MOVE.ids) || overlaps(FIX.ids)) {
                 if (push >= LIMIT) {                     // 解けない ＝ 動かす前に戻す
                     undo.forEach(s => { s.a.x = s.x; s.a.y = s.y; });
                     return null;
                 }
-                shift(L, -STEP / 2, 0); shift(R, STEP / 2, 0);
+                shift(MOVE, away * STEP, 0);
                 push += STEP;
             }
         }
-        return { dyL, dyR, push, ringGapX: (R.cx - L.cx) + push };
+        return { dyMove, push, fixedAt, ringGapX: Math.abs(MOVE.cx - FIX.cx) + push };
     }
 
     // モーダルの配線（起動時に一度だけ）
