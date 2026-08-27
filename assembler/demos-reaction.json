@@ -2210,5 +2210,89 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-polystyrene-foam",
+    "title": "V128: 発泡スチロールを一から作ってみた（高分子④）",
+    "summary": "⭐ **V120（PVC）の続き**。**同じ付加重合でも、ぶら下がるものが変わると別の材料になる**——塩化ビニルなら水道管、スチレンなら発泡スチロール。⚠ **V120 はもともとこの題材で作ろうとして、付加重合がスチレンで効かず塩化ビニルに替えた回**（→ video-scripts/ORDER_reactor_findings_2026-08-26.md §1）。**v1465 で通るようになったので、新規の1本として作り直した**（V120 は据え置き）。⚠ **主鎖の炭素8個は y が全点 384 で一直線**・**ベンゼン環は上下交互**（実測。C₃₂H₃₂R₂）。⚠ **生成物の名前チップは「（ライブラリに該当なし）」**（ポリスチレンの鎖は未登録。V120 の PVC も同じ）ので、**名前はテロップで言う**。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "発泡スチロールの部品はスチレン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "スチレン"
+          },
+          {
+            "type": "summon",
+            "name": "スチレン"
+          },
+          {
+            "type": "summon",
+            "name": "スチレン"
+          },
+          {
+            "type": "summon",
+            "name": "スチレン"
+          },
+          {
+            "type": "frame",
+            "width": 1000
+          },
+          {
+            "type": "wait",
+            "ms": 2521
+          }
+        ]
+      },
+      {
+        "caption": "二重結合が開いて一直線につながる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "付加重合（並べた"
+          },
+          {
+            "type": "frame",
+            "width": 760
+          },
+          {
+            "type": "wait",
+            "ms": 1277
+          }
+        ]
+      },
+      {
+        "caption": "ベンゼン環が交互にぶら下がる",
+        "actions": [
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 2285
+          }
+        ]
+      },
+      {
+        "caption": "ぶら下がるものを変えれば別の材料",
+        "actions": [
+          {
+            "type": "wait",
+            "ms": 6439
+          }
+        ]
+      }
+    ]
   }
 ]
