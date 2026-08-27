@@ -35,6 +35,9 @@ class ReactionPlayer {
 
         // 生成物予測モード（M4）: パズルUIで主生成物を組み立てて判定する
         this.prediction = false;
+        // いま出している練習問題（`reactions.json` の `practice`）と、その正解の集合（v1466）
+        this.practice = null;
+        this.practiceTargets = [];
 
         // ===== キャンバスの持ち主（v1374・DESIGN_reaction_mechanism.md §7） =====
         // ビューアが開いているあいだ、キャンバス（userMolecule と履歴と視野）はビューアのもの。
@@ -383,6 +386,7 @@ class ReactionPlayer {
         this.active = true;
         this.checkMode.checked = true;
         this.clearPickPrompt(); // 選べたのだから促しは役目を終える（v1466）
+        this.syncPredictButton();
         // 選択の実体（`#select-reaction`）と一覧の印を、どの入口から来ても合わせる
         this.selectEl.value = String(index);
         this.syncList();
@@ -739,19 +743,186 @@ class ReactionPlayer {
         }
     }
 
-    // ===== 生成物予測モード（M4） =====
+    // ===== 生成物予測モード（M4 → v1466 で「別の分子で」に作り直し） =====
 
-    // 予測モード開始: キャンバスを空にしてパズルUIで主生成物を組み立てさせる
+    /**
+     * ★ 出題は「**同じ反応を、別の分子に起こしたらどうなるか**」（v1466・ユーザー実機報告）。
+     *
+     * **なぜ作り直したか**: それまでの予測は「いま見た代表例の主生成物を組み立てよ」だった。
+     * 人は直前にその反応を最後まで**再生して答えを見ている**（`goto(steps.length)` が
+     * 生成物を描く）ので、**さっき見せた答えをもう一度聞いている** ＝ 問いとして成立していない。
+     *
+     * `reactions.json` の `practice` が出題の中身:
+     * ```json
+     * "practice": { "rule": "add_br2", "substrate": ["プロペン（プロピレン）"] }
+     * ```
+     * - `substrate` … キャンバスに置く**別の分子**（`compounds.json` / `stages.json` の名前）
+     * - `rule` … `reactor.js` の `REACTION_RULES` の id。**正解はここを実際に走らせて出す**
+     *   ＝ 生成物の構造を手で書き写さない（書き写すと、反応ルールを直したとき静かにずれる）
+     * - `answers` … ルールが無い機構用の逃げ道（ライブラリの**名前**で正解を書く）
+     *
+     * ⚠ **`practice` を持たない機構は 🎯 予測を出さない。** 出せば「見た答えの復唱」に戻る。
+     */
+    practiceSpec() {
+        const p = this.currentReaction && this.currentReaction.practice;
+        return (p && (p.rule || (p.answers && p.answers.length))) ? p : null;
+    }
+
+    /**
+     * ★ 🎯 予測は「練習問題を持つ機構」だけに出す（v1466）。
+     *
+     * `practice` の無い機構（ラジカル置換・ジアゾ化・カップリング。**どれも `reactor.js` に
+     * 反応ルールが無く、別の分子を当てられない**）で出すと、
+     * **直前に再生して見た代表例の答えをもう一度聞く**だけになる ＝ 問いとして成立しない。
+     * 押せない札を出しておくより、**出さない**方が正直。
+     */
+    syncPredictButton() {
+        if (!this.btnPredict) return;
+        this.btnPredict.classList.toggle('hidden', !this.practiceSpec());
+    }
+
+    /** ライブラリ（stages.json ＋ compounds.json）から名前で1件引く */
+    libraryEntry(name) {
+        const src = (typeof STAGES !== 'undefined' ? STAGES : [])
+            .concat(typeof COMPOUNDS !== 'undefined' ? COMPOUNDS : []);
+        return src.find(e => e && e.name === name && e.target) || null;
+    }
+
+    /** 名前の並びから、キャンバスに置く分子を1つ作る（2分子はタテに離して置く） */
+    buildFromNames(names) {
+        const m = new Molecule();
+        let dy = 0;
+        for (const name of names) {
+            const e = this.libraryEntry(name);
+            if (!e) return null;
+            const src = this.game.createTargetFromData({ target: e.target });
+            const map = new Map();
+            src.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y + dy).id));
+            src.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            dy += 260; // 相手の分子と重ならない間隔（エステル化は2分子を並べる）
+        }
+        return m;
+    }
+
+    /** 分子の「最大の重原子連結成分」だけを取り出した新しい分子（＝主生成物の物差し） */
+    mainComponent(mol) {
+        const heavy = mol.atoms.filter(a => a.element !== 'H');
+        const seen = new Set();
+        const comps = [];
+        heavy.forEach(a => {
+            if (seen.has(a.id)) return;
+            const comp = [];
+            const stack = [a.id];
+            while (stack.length) {
+                const id = stack.pop();
+                if (seen.has(id)) continue;
+                seen.add(id);
+                comp.push(id);
+                mol.getNeighbors(id).forEach(n => {
+                    if (n.atom.element !== 'H' && !seen.has(n.atom.id)) stack.push(n.atom.id);
+                });
+            }
+            comps.push(comp);
+        });
+        comps.sort((a, b) => b.length - a.length);
+        const keep = new Set(comps[0] || []);
+        const out = new Molecule();
+        const map = new Map();
+        mol.atoms.forEach(a => { if (keep.has(a.id)) map.set(a.id, out.addAtom(a.element, a.x, a.y).id); });
+        mol.bonds.forEach(b => {
+            if (map.has(b.atomId1) && map.has(b.atomId2)) out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+        });
+        return out;
+    }
+
+    /**
+     * 出題の**正解の集合**を作る。返すのは分子の配列（どれか1つに合えば正解）。
+     *
+     * ⚠ **集合であることが要る。** トルエンのニトロ化は o と p の2通りがどちらも主生成物で、
+     *   1つだけを正解にすると**正しい答えが不正解になる**。
+     * ⚠ **メタは入れない。** `aromaticSiteRole()`（reactor.js・RX10 が見張っている規則層）が
+     *   `major` を教えてくれるので、**判断できるときは主生成物の位置だけ**を正解にする
+     *  （ベンゼンのように置換基が無い環では `null` が返るので、そのときは全箇所が正解）。
+     */
+    practiceAnswers(spec) {
+        // (a) 名前で書かれた正解（反応ルールを持たない機構の逃げ道）
+        if (!spec.rule) {
+            return (spec.answers || []).map(n => {
+                const m = this.buildFromNames([n]);
+                return m ? this.mainComponent(m) : null;
+            }).filter(Boolean);
+        }
+        // (b) 反応ルールを実際に走らせて出す（構造を手で書き写さない）
+        const rules = (typeof REACTION_RULES !== 'undefined') ? REACTION_RULES : [];
+        const rule = rules.find(r => r.id === spec.rule);
+        if (!rule) return [];
+        const g = this.game;
+        const saved = { m: g.userMolecule, h: g.history, r: g.redoStack };
+        const out = [];
+        try {
+            // 主生成物の位置だけに絞る（芳香族置換の配向性。判断できないときは全部）
+            const majors = (mol, sites) => {
+                if (typeof aromaticSiteRole !== 'function') return sites;
+                const roles = sites.map(s => {
+                    try { return Array.isArray(s) ? aromaticSiteRole(mol, s[0]) : null; } catch (e) { return null; }
+                });
+                if (!roles.every(r => r)) return sites; // 1つでも判断できなければ絞らない
+                const only = sites.filter((s, i) => roles[i].major);
+                return only.length ? only : sites;
+            };
+            const probe0 = this.buildFromNames(spec.substrate || []);
+            if (!probe0) return [];
+            let count = 0;
+            try { count = majors(probe0, rule.detect(probe0, g) || []).length; } catch (e) { return []; }
+            for (let i = 0; i < count; i++) {
+                // 箇所ごとに**まっさらな基質**から作り直す（apply は分子を書き換える）
+                const probe = this.buildFromNames(spec.substrate || []);
+                if (!probe) break;
+                g.userMolecule = probe;
+                g.history = [];
+                g.redoStack = [];
+                let sites = [];
+                try { sites = majors(probe, rule.detect(probe, g) || []); } catch (e) { break; }
+                if (!sites[i]) continue;
+                try { rule.apply(g, sites[i]); } catch (e) { continue; }
+                out.push(this.mainComponent(g.userMolecule));
+            }
+        } finally {
+            g.userMolecule = saved.m;
+            g.history = saved.h;
+            g.redoStack = saved.r;
+        }
+        return out;
+    }
+
+    /**
+     * 予測モード開始。
+     *
+     * ★ **反応する分子はキャンバスに出す**（v1466・ユーザー指示「反応する分子はキャンバスに表示する」）。
+     *   それまでは**キャンバスを空にして**組み立てさせていたので、
+     *   **何から何への予測かが画面から消えていた**（v1409 で案内文に名前を足したのはその手当てだったが、
+     *   言葉で名乗るのと図が出ているのは別のこと）。
+     *   いまは別の分子をそのまま置き、**その図を描き変えて**生成物にしてもらう。
+     */
     startPrediction() {
         if (!this.active || this.animating || this.prediction) return;
+        const spec = this.practiceSpec();
+        this.practice = spec;
+        this.practiceTargets = spec ? this.practiceAnswers(spec) : [];
+        // 正解が1つも作れなかったら出題しない（黙って「常に不正解」にしない）
+        if (spec && !this.practiceTargets.length) {
+            this.game.showToast('この反応の練習問題を用意できませんでした（データを確認してください）', 4000, 'error');
+            this.practice = null;
+            return;
+        }
         this.prediction = true;
 
-        // 組み立て用にキャンバスを空にする。**退避は enter() で済んでいる**
+        // 組み立て用にキャンバスを載せ替える。**退避は enter() で済んでいる**
         // （borrowCanvas は2度目を無視する）ので、ここでは載せ替えるだけ。
         // 載せ替えたぶん「持ち主の目印」も更新する ＝ 予測を作った分子を
         // 「別の作業に取られた」と誤認しない
         this.borrowCanvas();
-        this.borrowedMolecule = new Molecule();
+        this.borrowedMolecule = (spec && this.buildFromNames(spec.substrate || [])) || new Molecule();
         this.game.userMolecule = this.borrowedMolecule;
         this.game.history = [];
         this.game.redoStack = [];
@@ -768,7 +939,25 @@ class ReactionPlayer {
         // ビューアごと出たい人は、予測をやめてからもう一度押せばよい（枠も増えない）
         if (this.btnExit) this.btnExit.classList.add('hidden');
         this.setControlsEnabled(false);
-        this.fitToReaction(); // 反応と同じ視野のまま組み立てさせる
+        // ★ 視野は**置いた分子**に合わせる（v1466）。`fitToReaction()` は代表例の全状態に
+        //   合わせるので、別の分子を置いたときに画面の外や端に寄る
+        if (spec) this.fitToMolecule(this.borrowedMolecule);
+        else this.fitToReaction();
+    }
+
+    /** 分子が収まる視野にする（予測で置いた基質を画面いっぱいに見せる） */
+    fitToMolecule(mol) {
+        const atoms = mol && mol.atoms.length ? mol.atoms : null;
+        if (!atoms || !this.game.svg) { this.fitToReaction(); return; }
+        const xs = atoms.map(a => a.x), ys = atoms.map(a => a.y);
+        const minX = Math.min(...xs), maxX = Math.max(...xs);
+        const minY = Math.min(...ys), maxY = Math.max(...ys);
+        // 描き足すぶんの余白を大きめに取る（生成物は元より大きくなる）
+        let viewW = Math.max(420, (maxX - minX) + 320);
+        let viewH = Math.max(315, (maxY - minY) + 260);
+        if (viewW / viewH > 4 / 3) { viewH = viewW * 3 / 4; } else { viewW = viewH * 4 / 3; }
+        const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+        this.game.svg.setAttribute('viewBox', `${cx - viewW / 2} ${cy - viewH / 2} ${viewW} ${viewH}`);
     }
 
     /**
@@ -791,8 +980,20 @@ class ReactionPlayer {
         subject.className = 'rx-predict-subject';
         subject.textContent = '【' + this.predictionSubject() + '】';
         el.appendChild(subject);
-        el.appendChild(document.createTextNode(
-            'の主生成物（有機化合物）を組み立てて「判定」を押しましょう。副生成物（水・HClなど）は不要です。'));
+        /* ★ 「同じ反応を、別の分子に起こしたら」（v1466）。⚠ **お題（反応名）は先頭のまま**
+           ―― 案内文は `max-height:2.9em` で頭打ちなので、名前を先頭に置けば必ず最初に読める。
+           別の分子の名前はそのすぐ後ろ ＝ 「何を」「どうする」の順で1行に収まる。 */
+        const spec = this.practice;
+        if (spec) {
+            const names = (spec.substrate || []).join(' ＋ ');
+            el.appendChild(document.createTextNode(
+                `と同じ反応を、キャンバスの ${names} に起こすと？ ` +
+                'この図を描き変えて主生成物にし、「判定」を押しましょう。' +
+                '副生成物（水・HClなど）は残しても構いません。'));
+        } else {
+            el.appendChild(document.createTextNode(
+                'の主生成物（有機化合物）を組み立てて「判定」を押しましょう。副生成物（水・HClなど）は不要です。'));
+        }
         el.scrollTop = 0; // 頭出し（前のステップの説明でスクロールしていても名前から読ませる）
     }
 
@@ -832,8 +1033,15 @@ class ReactionPlayer {
      */
     judgePrediction() {
         if (!this.prediction) return;
-        const target = this.buildMainProductTarget();
-        const correct = verifyMolecule(this.game.userMolecule, target);
+        /* ★ 出題が「別の分子」のときは、その正解の**集合**と突き合わせる（v1466）。
+           ⚠ **人の側も「最大の重原子連結成分」で見る。** 基質をキャンバスに置いた以上、
+             とれた水や HCl が図に残るのが自然で、丸ごと比べると正しい答えが不正解になる
+             （案内文も「副生成物は残しても構いません」と言っている）。 */
+        const targets = (this.practice && this.practiceTargets && this.practiceTargets.length)
+            ? this.practiceTargets
+            : [this.buildMainProductTarget()];
+        const mine = this.practice ? this.mainComponent(this.game.userMolecule) : this.game.userMolecule;
+        const correct = targets.some(t => verifyMolecule(mine, t));
 
         this.game.showToast(
             correct
@@ -851,6 +1059,8 @@ class ReactionPlayer {
     endPrediction(showAnswer) {
         if (!this.prediction) return;
         this.prediction = false;
+        this.practice = null;
+        this.practiceTargets = [];
 
         // ⚠ ここでパズル分子を戻さない。**キャンバスの持ち主はビューアのまま**で、
         //   人の答案は exit() が返すまで退避したままにする（退避場所は1本なので、
@@ -861,7 +1071,7 @@ class ReactionPlayer {
         this.game.redoStack = [];
         this.game.clearUIOverlay();
 
-        this.btnPredict.classList.remove('hidden');
+        this.syncPredictButton(); // 練習問題を持たない機構では 🎯 予測 を出さない（v1466）
         this.btnJudge.classList.add('hidden');
         this.btnCancelPredict.classList.add('hidden');
         if (this.btnExit) this.btnExit.classList.remove('hidden'); // 🎯 予測 と一緒に戻す（v1399）
