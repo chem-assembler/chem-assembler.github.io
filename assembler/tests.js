@@ -31284,17 +31284,19 @@
         g.setMode('learn');
         assert(strip.classList.contains('hidden'), '学習で何もしていないのに作業帯が出ている');
 
-        // **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → 機構モード ON。
-        // 直に rp.enter() を呼ぶと「Study が閉じる」配線を素通りしてしまう
+        /* **人と同じ道で入る**: 📚 タイル → ⚗️ 反応機構ビューア → **一覧の1件を押す**。
+           直に `rp.enter()` を呼ぶと「Study が閉じる」配線を素通りしてしまう。
+           ⚠ **スイッチでは始まらない**（v1466・§12。スイッチが人の代わりに先頭を選んでいたのを
+              やめた ＝ 入口は §9〜§11 のとおり一覧1本）。ここも一覧から入る。 */
         D.querySelector('.canvas-header .mode-tab[data-mode="learn"]').click();
         const study = D.getElementById('study-modal');
         assert(!study.classList.contains('hidden'), '📚 タイルで Study モーダルが開かない');
         D.getElementById('reaction-box').open = true;
-        const chk = rp.checkMode;
-        chk.checked = true;
-        chk.dispatchEvent(new c.W.Event('change', { bubbles: true }));
+        const first = D.querySelector('#reaction-list button[data-rx-index]');
+        assert(first, '一覧の札が無い');
+        first.click();
         try {
-            assert(rp.active, '機構モードのスイッチで再生が始まらない');
+            assert(rp.active, '一覧から選んでも再生が始まらない');
             assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
                 '反応機構モードに入っても作業帯が出ない');
             // ⓪ **再生中に Study モーダルが被っていない**（この段の核心。§6-2 の「バトンを渡す」）
