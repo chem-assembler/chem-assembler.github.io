@@ -26906,6 +26906,67 @@
         c.reset();
     });
 
+    test('RX49: ★否定対照 — スイッチは反応を選ばない（人の代わりに先頭を始めない／出口としては生きている）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
+        assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
+        const check = D.getElementById('check-reaction-mode');
+        const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
+        const studyOpen = () => !D.getElementById('study-modal').classList.contains('hidden');
+        const list = D.getElementById('reaction-list');
+
+        /* ★ ユーザー実機報告（2026-08-26）「反応機構ビューアを選択すると、反応の選択をすっとばす」。
+           実測（:8221・Playwright）では、スイッチを押した瞬間に active=true / ethene_br2 /
+           帯=出る / メニュー=閉じる ＝ **14件の一覧を1件も見せずに先頭が始まっていた**。
+           原因は `enter(parseInt(selectEl.value) || 0)` で、`#select-reaction` の初期値 "0" を
+           「人が選んだ 1件目」として扱っていたこと。
+           ⚠ この検査を赤くする壊し方 ＝ change の checked 側で `enter(...)` を呼び直すこと。 */
+
+        // 人と同じ入口（📚 学習 → ⚗️ アコーディオン）。**まだ何も選んでいない**
+        g.setMode('learn');
+        g.setStudyOpen(true);
+        D.getElementById('reaction-box').open = true;
+        assert(!rp.active && check.checked === false && !strip(),
+            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()}）`);
+        assert(list && list.querySelectorAll('button[data-rx-index]').length === rp.reactions.length,
+            '一覧の札がそろっていない（＝「1件しか無いから飛ばす」かどうかの区別がつかない）');
+
+        // ① スイッチを入れても**反応は始まらない**
+        check.checked = true;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active, 'スイッチだけで反応が始まった（選択をすっとばしている）');
+        assert(rp.currentReaction === null || !rp.canvasBorrowed,
+            'スイッチだけでキャンバスを取り上げている');
+        assert(!strip(), 'スイッチだけで帯が出た（反応が決まっていないのに操作面が出る）');
+        assert(check.checked === false, 'スイッチが入ったまま（active=false なのに入って見える＝状態が2つに割れる）');
+        assert(studyOpen(), '学習モーダルが閉じた（一覧に戻れない＝報告そのものの症状）');
+
+        // ② 代わりに「一覧から選べ」と促し、その札が**一覧の中で見えている**
+        const hint = list.querySelector('#rx-pick-hint');
+        assert(hint && !hint.classList.contains('hidden'), '一覧へ促す案内が出ていない');
+        assert(hint.textContent.includes('一覧'), `案内が一覧を指していない（${hint.textContent}）`);
+        assert(list.firstChild === hint, '案内が一覧の先頭にいない（札の下だと選び終えるまで目に入らない）');
+        const hb = hint.getBoundingClientRect();
+        assert(hb.width > 0 && hb.height > 0, '案内が描画されていない');
+
+        // ③ そのうえで一覧から選べば、今までどおり始まる（§9 の入口は壊していない）
+        rxPickFromList(c, 'esterification');
+        assert(rp.active && rp.currentReaction.id === 'esterification',
+            `一覧から選んでも始まらない（${rp.currentReaction && rp.currentReaction.id}）`);
+        assert(check.checked === true, 'スイッチの表示が追従しない（§9）');
+        assert(strip(), '帯が出ない');
+        assert(hint.classList.contains('hidden'), '選んだのに促しが残っている');
+
+        // ④ ★出口としては生きている（スイッチを外すと止まり、退避が返る）
+        check.checked = false;
+        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        assert(!rp.active && !strip() && !rp.canvasBorrowed,
+            `スイッチで止まらない（active=${rp.active} / 帯=${strip()} / 借り=${rp.canvasBorrowed}）`);
+
+        g.setStudyOpen(false);
+        g.setMode('puzzle');
+    });
+
     /* ===== 反応で作る C=O の向き（CO1・検品レビュー C-7） =====
        **C-7 は v928 で直っているのに、回帰テストが無いせいで台帳から閉じられず3回開き直された。**
        台帳の書いた原因（`outwardCandidates` の候補順）は**誤り**で、あの関数が置くのは
