@@ -988,6 +988,47 @@
             ok('[' + p.id + '] ★★ 希塩酸を抜くと硫化水素の結果が変わる（汚れた葉 ' +
                 a.hclDirty + ' 枚）', a.hclTrap === true && a.hclDirty >= 2);
         });
+        // ★ 手数（2026-08-28・ユーザー「余計な手順は正解、ただし減点のようなあつかい」）
+        section('型A: 手数と、余計な手（★ 不正解にはしない）');
+        ok('★ 採点が手数を持っている（⚠ 空けた枝は数えない）', (function () {
+            var g = treeGrade(pA, idealA, treePlanFromRun(pA, idealA));
+            var g2 = treeGrade(pA, seqNoHno3, treePlanFromRun(pA, idealA));
+            return g.moves === 7 && g2.moves === 6;
+        })());
+        ok('★ 門番が理想の最短手数を持っている（' +
+            TREE_PROBLEMS.map(function (p) { return p.id + ':' + treeAuditProblem(p).shortest; }).join(' ') + '）',
+            TREE_PROBLEMS.every(function (p) {
+                var a = treeAuditProblem(p);
+                // ⚠ 下限を高く見積もらないこと。★ a2 は実測4手で足りる
+                //   （亜鉛が居ないので硫化水素は1回でよく、鉄が還元されないので煮沸も希硝酸も要らない）
+                return a.shortest >= 3 && a.shortest <= a.ideal.length;
+            }));
+        ok('★★ 属が欠けている容器では、飛ばせる段があるぶん最短が短い（⚠ 正解は1つではない）',
+            treeAuditProblem(treeProblem('a1')).shortest === 7 &&
+            treeAuditProblem(treeProblem('a2')).shortest < 7 &&
+            treeAuditProblem(treeProblem('a3')).shortest < 7);
+        ok('★★ 最短の手数で実際に単離できる（⚠ 数だけ出して解けなかったら赤）', (function () {
+            var bad = [];
+            TREE_PROBLEMS.forEach(function (p) {
+                var a = treeAuditProblem(p);
+                // ⚠ 手順そのものは画面に出さないが、検査では「その手数で解ける」ことを確かめる
+                var ideal = treeIdealSeq(p), trimmed = ideal.slice();
+                ideal.forEach(function (o, i) {
+                    var probe = trimmed.slice();
+                    probe[i] = null;
+                    if (treeGrade(p, probe, treePlanFromRun(p, probe)).isolated) trimmed = probe;
+                });
+                var g = treeGrade(p, trimmed, treePlanFromRun(p, trimmed));
+                if (!g.isolated || g.moves !== a.shortest) bad.push(p.id);
+            });
+            return bad.length === 0;
+        })());
+        ok('⚠ 余計な手があっても、単離できていれば単離できたと数える（★ 減点ではない）', (function () {
+            // 模範のうしろに「もう1回 硫化水素」を足した答案（★ 何も沈まない余計な手）
+            var extra = idealA.concat(['h2s']);
+            var g = treeGrade(pA, extra, treePlanFromRun(pA, idealA));
+            return g.isolated === true && g.moves === 8;
+        })());
         ok('★ 少なくとも1問は、鉄を戻し忘れると葉が2枚汚れる（＝ 型A を作る意味そのもの）',
             TREE_PROBLEMS.some(function (p) { return treeAuditProblem(p).feDirty >= 2; }));
         ok('どの出題にも鉄が入っている（⚠ 入っていない出題は、この教材の芯を持たない）',
@@ -2210,6 +2251,19 @@
                 w.treeUI.state.record.isolated === false, uiOut);
             ok('同居した葉を名指しする', r2.textContent.indexOf('2 種類が同居しています') >= 0, uiOut);
             ok('何も来なかった葉も名指しする', r2.textContent.indexOf('何も来ませんでした') >= 0, uiOut);
+            // ★ 間違えたところを名指しする（2026-08-28・ユーザー）
+            ok('★ どの葉に何が入り、どの葉が空かを、まとめて名指しする',
+                /〕の沈殿に 鉄と亜鉛 が入っています/.test(r2.textContent) &&
+                /〕の沈殿は空です（鉄 を置きました）/.test(r2.textContent), uiOut);
+            // ★ 手数を見せる。⚠⚠ 模範の手順は出さない（★ 正解は1つではない）
+            ok('★ 手数と理想の最短手数が出る',
+                /（\d+手／最短 \d+手）/.test(r2.textContent), uiOut);
+            ok('⚠⚠ 模範の手順そのものを示していない（★ 1つ示すと他の正解を否定する）',
+                r2.textContent.indexOf('正解は') < 0 && r2.textContent.indexOf('正しい手順') < 0 &&
+                r2.textContent.indexOf('模範') < 0 && r2.textContent.indexOf('の順に') < 0, uiOut);
+            ok('★ 記録が手数と最短手数を持っている（⚠ 率と共有の文面は次の一手）',
+                w.treeUI.state.record.moves === 6 &&
+                w.treeUI.state.record.shortest === 7, uiOut);
             ok('★ 答え合わせで初めて「鉄は第3属です」と言う（⚠ 途中では言わない）',
                 r2.textContent.indexOf('鉄は第3属です') >= 0, uiOut);
             ok('なぜ素通りしたかを言う（Fe(OH)₂ と FeO(OH) の沈みやすさ）',
