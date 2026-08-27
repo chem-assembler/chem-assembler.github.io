@@ -722,8 +722,12 @@ class Game {
         if (total < 2) { status.textContent = RANDOM_TOO_FEW_MSG; return; }
         const bag = (this.randomBag && this.randomBag.series === series) ? this.randomBag : null;
         const left = bag ? (bag.order.length - bag.pos) : total;
-        status.textContent = `このシリーズは全 ${total} 問。まだ出していない問題は ${left} 問です` +
-            '（出した問題は、ひととおり出るまで再び出ません）。';
+        // ⚠ **数だけ出す**（v1472・ux-density §4）。以前はここに
+        // 「（出した問題は、ひととおり出るまで再び出ません）」まで書いて 51字あったが、
+        // ★ **一巡の約束は押せば分かる**（`RANDOM_WRAPPED_MSG` が一巡した回に必ず出る）ので、
+        //   押す前に読ませる必要がない。**残件が減っていくこと自体が同じことを示している**。
+        //   減らしたぶん字を 10.5px → 12.5px に上げてある（減らしてから上げる、の順）
+        status.textContent = `全 ${total} 問 ／ 未出題 ${left} 問`;
     }
 
     initEventListeners() {
