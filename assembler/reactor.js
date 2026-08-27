@@ -1896,7 +1896,15 @@ function vulcanizablePairs(mol) {
         for (let j = i + 1; j < vinyls.length; j++) {
             // **別の鎖どうし**のときだけ橋を架ける（上の注記）
             if (compKey.get(vinyls[i].head) === compKey.get(vinyls[j].head)) continue;
-            // 二重結合の両端どちらでも架橋しうるので4通り見る
+            /* 二重結合の両端どちらでも架橋しうるので4通り見るが、**返すのは1本だけ**
+             * （v1467・DESIGN_reaction_execution.md §20）。4通りは「硫黄がどちらの炭素に
+             * 付くか」が違うだけで、**site の4原子はまったく同じ**になる。同じ4原子の組を
+             * 複数返すと、`Reactor.narrow` が「候補を分けている原子」を見つけられず
+             * **箇所選びが永久に終わらない**（実測: 7候補 → クリック → 3候補 → 以下同じ）。
+             * どちらの炭素に付くかは化学的に等価（どちらでも二重結合が単結合に移るだけ）
+             * なので、**短い橋になるほう**を選んで1件にまとめる ―― 教科書の図に近く、
+             * 「（N箇所）」の N も実際に選べる橋の本数と一致する。 */
+            let best = null;
             [[vinyls[i].head, vinyls[i].tail], [vinyls[i].tail, vinyls[i].head]].forEach(([ca, ca2]) => {
                 [[vinyls[j].head, vinyls[j].tail], [vinyls[j].tail, vinyls[j].head]].forEach(([cb, cb2]) => {
                     const A = mol.atoms.find(x => x.id === ca), B = mol.atoms.find(x => x.id === cb);
@@ -1907,9 +1915,11 @@ function vulcanizablePairs(mol) {
                     // （中点が鎖の内部に来るため）＝小さな環ができるのを防いでいる
                     if (mol.atoms.some(o => o.element !== 'H' &&
                         Math.hypot(o.x - sx, o.y - sy) < MIN_CLEARANCE)) return;
-                    out.push({ ca, ca2, cb, cb2, sx, sy, d: Math.hypot(A.x - B.x, A.y - B.y) });
+                    const cand = { ca, ca2, cb, cb2, sx, sy, d: Math.hypot(A.x - B.x, A.y - B.y) };
+                    if (!best || cand.d < best.d) best = cand;
                 });
             });
+            if (best) out.push(best);
         }
     }
     // 近い組から順に（教科書の図のように短い橋をかける）
@@ -5861,15 +5871,26 @@ class Reactor {
             this.execute(rule, sites[0], reagent);
             return;
         }
+        const ids = new Set();
+        sites.forEach(s => s.forEach(id => ids.add(id)));
+        const distinguishing = [...ids].filter(id => !sites.every(s => s.includes(id)));
+        /* ★ **安全弁**（v1467・§20）。残った候補の原子の集合が全部同じだと、どの原子を
+         *   押しても候補は1件に絞れない ―― 以前はここで全原子をハイライトして選ばせ直して
+         *   いたので、押す → 同じ候補に戻る → 押す …… と**箇所選びが永久に終わらなかった**
+         *   （実測: 加硫で 7候補 → 3候補 → 3候補 → 3候補。硫黄は1つも入らない）。
+         *   分けられないということは**どれを選んでも同じ4原子が反応する**ということなので、
+         *   先頭（＝ルールが「いちばん良い」と並べた1件）をそのまま実行する。
+         *   ⚠ 加硫は `vulcanizablePairs` 側でも同一の組を1件にまとめてある（§20）。
+         *      ここは**他のルールが同じ轍を踏まないための止め**で、通常は素通りする。 */
+        if (!distinguishing.length) {
+            this.execute(rule, sites[0], reagent);
+            return;
+        }
         // 図の形も覚えておく（v1420）。再描画が来たときに「まだ同じ図か」を見て、
         // 同じなら選ばせ続ける（`syncPicking`）。
         // 押した瓶も一緒に持っておく（箇所選びを挟んでも「ふつうはこちら」の一言が消えない）
         this.picking = { rule, sites, reagent, topo: this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) };
-        const ids = new Set();
-        sites.forEach(s => s.forEach(id => ids.add(id)));
-        const distinguishing = [...ids].filter(id => !sites.every(s => s.includes(id)));
-        const pickIds = distinguishing.length ? distinguishing : [...ids];
-        const atoms = pickIds
+        const atoms = distinguishing
             .map(id => this.game.userMolecule.atoms.find(a => a.id === id))
             .filter(Boolean);
         this.game.highlightAtoms(atoms);
