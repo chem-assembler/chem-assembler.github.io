@@ -813,21 +813,34 @@ class ReactionPlayer {
         return trimmed || raw;
     }
 
-    // 予測の判定: 最終状態の主生成物（最大の重原子連結成分）と比較する
+    /**
+     * 予測の判定: 最終状態の主生成物（最大の重原子連結成分）と比較する。
+     *
+     * ★ **結果は `game.showToast()` で出す**（v1466・ユーザー実機報告
+     *   「生成物予測　判定が機能してない可能性」）。
+     *
+     * **実測した症状**（:8221・Playwright）: **判定そのものは 14件すべてで正しく働いていた**
+     *（正解を入れれば success・メタン1個を入れれば error・空でも error）。
+     * 壊れていたのは**結果の出し先**で、ここだけが `#verify-result` に直に書いていた ――
+     * あれは第5段で `#panel-legacy`（`aria-hidden`）の中の**隠しの互換の器**になっており、
+     * 実測の矩形は **1280x900 でも 390x844 でも `0,0 26x626`**（左上の 26px 幅の縦帯）。
+     * ＝ **押しても何も出ないように見える**。
+     *
+     * ⚠ **自前で `#verify-result` を触らない。** `showToast()` はキャンバス内の字幕
+     *  （`#canvas-toast`・§2-7 で主役）と互換の器の**両方**へ書き、消すタイマーも1本で持つ。
+     *   ここで直接書くと、字幕に出ないうえに `_toastTimer` と競って消し合う。
+     */
     judgePrediction() {
         if (!this.prediction) return;
         const target = this.buildMainProductTarget();
         const correct = verifyMolecule(this.game.userMolecule, target);
 
-        const resultDiv = document.getElementById('verify-result');
-        if (resultDiv) {
-            resultDiv.textContent = correct
+        this.game.showToast(
+            correct
                 ? '正解です！反応の主生成物を正しく予測できました！'
-                : '不一致です。反応をもう一度再生して、結合の組み換えを確認してみましょう。';
-            resultDiv.className = correct ? 'result-message success' : 'result-message error';
-            resultDiv.classList.remove('hidden');
-            setTimeout(() => resultDiv.classList.add('hidden'), 4000);
-        }
+                : '不一致です。反応をもう一度再生して、結合の組み換えを確認してみましょう。',
+            4000,
+            correct ? 'success' : 'error');
         if (correct) {
             // 正解したら答え（最終状態）を表示して予測モードを終える
             this.endPrediction(true);
