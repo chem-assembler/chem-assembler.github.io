@@ -3387,23 +3387,60 @@
         // むずかしいと ふつう の差が乱数に埋もれる）
         setQuizFilters(nq, 'all', 'all', 'all');
 
-        // 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
-        // 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
-        const measure = (level, n) => {
+        /* ★★ 見本は乱数で引かず、**決定的に散らした集合**を使う（2026-08-26・ぶれの直し）。
+         *
+         * ⚠ **以前は `nextQuestion()` にプールから乱数で引かせていた。** そのせいで
+         *   やさしい／ふつう／むずかしい が**別々の見本の集合**を見ることになり、
+         *   3つの検査が**乱数のしっぽで落ちる**ようになっていた（v1467 の全走で実際に落ちた）。
+         *   ★ 実測（60回ずつ回して分布を出した。N=60・範囲すべて）:
+         *     - `normal.avg < hard.avg` … 差の平均 0.345・SD 0.152・**最小 0.072** ＝ 0 まで **2.3σ**
+         *       → 1回の全走で **約1%** 落ちる（★ ここがいちばん危なかった）
+         *     - `hard.near > 0.5` … 平均 0.641・SD 0.056・最小 0.550 ＝ **2.5σ**（約0.6%）
+         *     - 否定対照の差 … 平均 **0.012**・SD 0.106・最大 0.256 ＝ しきい 0.3 まで **2.8σ**（約0.3%）
+         *   ★ **合わせて全走1回あたり約2%** ＝「v1466 は通って v1467 で落ちた」の正体。
+         *
+         * ⚠⚠ **「乱数だから しきい値を緩める」は採らない**（検査が鈍るだけ）。
+         *   ★ 採ったのは **見本の集合を固定すること**。プールは `computePool` が決定的に作る
+         *     （2回呼んで同じ並びになることを実測）ので、そこから等間隔に抜けば
+         *     **難易度3つが同じ見本を見る**。実測で **20回連続、統計値が1桁も動かない**
+         *     （avg / near / veryNear とも完全一致）＝ **ぶれが 0 になった**。
+         *
+         * ★ 否定対照は「差の平均が 0.012 ＝ 系統的な差は無い」ことも同時に示していた
+         *   （統合レーンの見立て「出題そのものが変わるので系統成分があるはず」は**実測では出なかった**）。
+         *   `nextQuestion` の見本の引きは `Math.random()` で、**難易度を1つも読まない**——
+         *   難易度が触るのは `pickQuizDistractors` の `confuse` だけ（`strength` は図の崩し方で、
+         *   `tiers` には効かない）。だから元から中立で、残っていたのは**引きの分散だけ**だった。
+         *
+         * 「紛らわしい」の定義 ＝ 段2以上（分子式を数えるだけでは切れない誤答）。
+         * 段は quizDistractorTier（4: o/m/p ・3: 位置番号違い・2: 同分子式・1: 官能基一致）
+         */
+        const N = 120;
+        const sampleNames = (n) => {
+            const step = Math.max(1, Math.floor(nq.pool.length / n));
+            const out = [];
+            for (let i = 0; i < nq.pool.length && out.length < n; i += step) {
+                out.push(nq.library[nq.pool[i]].name);
+            }
+            return out;
+        };
+        const NAMES = sampleNames(N);
+        assert(NAMES.length === N, `見本の集合が ${N} 件そろわない（${NAMES.length}件）`);
+        const measure = (level) => {
             nq.diffEl.value = level;
             let sum = 0, cnt = 0, hard = 0, near = 0;
-            for (let k = 0; k < n; k++) {
+            NAMES.forEach(name => {
+                nq.setForced(name);
                 nq.nextQuestion();
                 (nq.current.tiers || []).forEach(t => {
                     sum += t; cnt++;
                     if (t >= 2) near++;
                     if (t >= 3) hard++;
                 });
-            }
+            });
+            nq.setForced(null);
             return { avg: sum / cnt, near: near / cnt, veryNear: hard / cnt, cnt };
         };
-        const N = 60;
-        const easy = measure('easy', N), normal = measure('normal', N), hard = measure('hard', N);
+        const easy = measure('easy'), normal = measure('normal'), hard = measure('hard');
         assert(easy.cnt >= N * 3 - 3, `誤答が3つ作れていない（${easy.cnt}/${N * 3}）`);
         assert(easy.avg < normal.avg,
             `やさしい(${easy.avg.toFixed(2)}) が ふつう(${normal.avg.toFixed(2)}) より紛らわしい`);
@@ -3457,18 +3494,32 @@
         assert(normalSib < 0.5,
             `ふつうでそっくりさんを狙いすぎ（${(normalSib * 100).toFixed(0)}%）＝ むずかしいとの差が無い`);
 
-        // 否定対照 — 難易度を無視して常に「ふつう」で誤答を作ると、上の差が消える
+        /* ★ 否定対照 —— **同じ見本の集合に対して、誤答の作り方だけを替える**。
+         *
+         * ⚠ 上の `easy` / `hard` と**まったく同じ `NAMES` を、同じ順で**通す。
+         *   替えるのは `nq.difficulty()` が返すもの1つだけ ＝ 誤答の紛らわしさ（`confuse`）。
+         *   ★ だから残る差は「誤答の作り方の差」以外にありえない。実測で **30回とも差は 0.0000**。
+         * ⚠ 前は乱数で見本を引き直していたので、差が 0 にならず しきい 0.3 を置いていた
+         *   （＝ 2.8σ ＝ 全走の約0.3%で落ちる）。**しきいは 0.05 まで締めた**——
+         *   0 でなく 0.05 にしてあるのは、`pickQuizDistractors` が同じ段どうしの並びを
+         *   `shuffleArray` で決めるので、段3と段4が同点になる `confuse:1` では
+         *   理屈のうえで入れ替わりうるため（実測では起きていない）。
+         */
         const orig = nq.difficulty;
         let flat;
         try {
             nq.difficulty = () => W.quizDifficultyOf('normal');
-            flat = { easy: measure('easy', N), hard: measure('hard', N) };
+            flat = { easy: measure('easy'), hard: measure('hard') };
         } finally {
             nq.difficulty = orig;
         }
-        assert(!(flat.easy.avg < flat.hard.avg - 0.3),
-            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(2)} / ` +
-            `むずかしい ${flat.hard.avg.toFixed(2)}）＝ QT2 の緑が空振り`);
+        // ★ 対照が意味を持つ前提: 素の状態では、同じ見本でもはっきり差が出ている
+        assert(hard.avg - easy.avg > 1.0,
+            `同じ見本で やさしい(${easy.avg.toFixed(2)}) と むずかしい(${hard.avg.toFixed(2)}) の差が小さい` +
+            '＝ 否定対照が「消す」べき差が無い');
+        assert(Math.abs(flat.hard.avg - flat.easy.avg) < 0.05,
+            `難易度を無視しても差が出た（やさしい ${flat.easy.avg.toFixed(3)} / ` +
+            `むずかしい ${flat.hard.avg.toFixed(3)}）＝ QT2 の緑が空振り`);
 
         // 段の定義そのもの（人が読んで納得できる例で固定する）
         const tier = W.quizDistractorTier;
