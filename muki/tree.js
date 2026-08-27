@@ -353,6 +353,13 @@
         return d;
     }
 
+    /** 葉の呼び名（★ 何手目の何の沈殿か。⚠ 番号だけだと、どこの話か分からない） */
+    function leafName(leafId) {
+        if (leafId === TREE_FINAL_LEAF) return '最後のろ液';
+        var slot = parseInt(leafId.slice(1), 10);
+        return (slot + 1) + '手目〔' + opShort(state.seq[slot]) + '〕の沈殿';
+    }
+
     function p(text, cls) {
         var e = document.createElement('p');
         if (cls) e.className = cls;
@@ -364,28 +371,57 @@
         if (state.submitted) return;
         state.submitted = true;
         var g = treeGrade(state.problem, state.seq, state.plan);
+        // ★ 記録は「後から率と共有の文面を組み立てられるだけ」を持つ（⚠ 送信も保存もしない）。
+        //   正解率% ／ 最短手順正解率% ／ SNS 共有は **次の一手**（ここでは形だけ塞がない）
         state.record = treeRecord(state.mode, state.problem, {
             seq: state.seq.slice(),
+            moves: g.moves, shortest: treeAuditProblem(state.problem).shortest,
             dirty: g.dirty, isolated: g.isolated, matched: g.matched, verdict: g.verdict
         });
 
         var box = $('result');
         box.textContent = '';
 
+        // ★ 手数（⚠ 余計な手があっても不正解にしない。§ 2026-08-28 のユーザー決定）
+        //   「最短」は門番が数えている理想の最短。⚠ 手順そのものは出さない
+        //   —— **正解は1つではない**ので、1つ示すと他の正解を否定することになる
+        var shortest = treeAuditProblem(state.problem).shortest;
+        var moves = '（' + g.moves + '手／最短 ' + shortest + '手）';
+
         var h3 = document.createElement('h3');
         if (g.verdict === 'perfect') {
             h3.className = 'ok';
-            h3.textContent = 'ぜんぶ単離できました';
+            h3.textContent = 'ぜんぶ単離できました' + moves;
         } else if (g.verdict === 'misread') {
             h3.className = 'ng';
             // ⚠ 「机上」は設計書の語であって、学習者の語ではない（★ 画面には出さない）
-            h3.textContent = '単離はできましたが、置いた行先とは違いました';
+            h3.textContent = '単離はできましたが、置いた行先とは違いました' + moves;
         } else {
             h3.className = 'ng';
-            h3.textContent = '単離できていない葉が ' + g.dirty + ' 枚あります';
+            h3.textContent = '単離できていない葉が ' + g.dirty + ' 枚あります' + moves;
         }
         box.appendChild(h3);
+        if (g.isolated && g.moves > shortest) {
+            box.appendChild(p('単離はできています。' + (g.moves - shortest) +
+                '手ぶん、この容器では要らない操作が入っていました。', 'caveat'));
+        }
         box.appendChild(p('あなたが並べた手順を、そのまま走らせました。'));
+
+        // ★ 間違えたところを名指しする（2026-08-28・ユーザー「間違えたところを指摘すればよい」）
+        //   ⚠ 模範の手順は出さない。★ 起きたことだけを言う
+        if (!g.isolated) {
+            var told = [];
+            g.impure.forEach(function (l) {
+                told.push(leafName(l) + 'に ' +
+                    (g.actual[l] || []).map(elJp).join('と') + ' が入っています');
+            });
+            g.emptyPlanned.forEach(function (l) {
+                var planned = (g.rows.filter(function (r) { return r.leaf === l; })[0] || {}).planned || [];
+                told.push(leafName(l) + 'は空です' +
+                    (planned.length ? '（' + planned.map(elJp).join('・') + ' を置きました）' : ''));
+            });
+            if (told.length) box.appendChild(p(told.join('。') + '。'));
+        }
 
         if (g.unplaced.length) {
             box.appendChild(p('置かなかったイオン：' + g.unplaced.map(ionName).join('・')));
@@ -397,11 +433,7 @@
             var bad = (r.actual.length >= 2) || (r.actual.length === 0 && r.planned.length >= 1) || !r.same;
             d.className = 'leafrow ' + (bad ? 'bad' : 'good');
             var title = document.createElement('b');
-            if (r.leaf === TREE_FINAL_LEAF) title.textContent = '最後のろ液';
-            else {
-                var slot = parseInt(r.leaf.slice(1), 10);
-                title.textContent = (slot + 1) + '手目〔' + opShort(state.seq[slot]) + '〕の沈殿';
-            }
+            title.textContent = leafName(r.leaf);
             d.appendChild(title);
 
             var stage = null;

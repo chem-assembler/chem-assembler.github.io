@@ -432,6 +432,10 @@ function treeGrade(problem, seq, plan) {
 
     return {
         run: run, actual: actual, leaves: leaves, rows: rows,
+        // ★ 実際に置いた手の数（⚠ 空けた枝は数えない）。
+        //   ⚠⚠ 余計な手があっても不正解にしない —— **どれが余計かは属の欠け方で変わる**。
+        //   ★ 手数を見せれば学習者が自分で気づける、というのがこの数の役目
+        moves: seq.filter(function (o) { return !!o; }).length,
         impure: impure, emptyPlanned: emptyPlanned,
         dirty: impure.length + emptyPlanned.length,
         misplaced: misplaced, unplaced: unplaced,
@@ -536,6 +540,18 @@ function treeAuditProblem(p) {
     var ideal = treeIdealSeq(p);
     var idealGrade = treeGrade(p, ideal, treePlanFromRun(p, ideal));
 
+    // ★ 理想の最短手数 —— 模範の手順から、抜いても単離できる手を落としていく。
+    //   ⚠ **正解は1つではない**（属が欠けていれば飛ばせる段がある・干渉しない段は入れ替わる）。
+    //   ★ だからここで出すのは「何手で足りるか」という数だけで、**手順そのものは出さない**。
+    //   ⚠⚠ 画面はこの数だけを見せる（§ 答え合わせで模範手順を示さない）。
+    var trimmed = ideal.slice();
+    ideal.forEach(function (o, i) {
+        var probe = trimmed.slice();
+        probe[i] = null;
+        if (treeGrade(p, probe, treePlanFromRun(p, probe)).isolated) trimmed = probe;
+    });
+    var shortest = trimmed.filter(function (o) { return !!o; }).length;
+
     // ⚠ 芯が効くか ＝ 希硝酸を抜いた答案が、模範と違う結果になるか
     // ★ **枝は空けたまま抜く**（詰めない）。⚠ 詰めると葉の番号がずれて、
     //   「机上と実際の食い違い」ではなく「番号のずれ」を数えてしまう
@@ -556,6 +572,7 @@ function treeAuditProblem(p) {
         undeclared: undeclared,
         ideal: ideal,
         idealDirty: idealGrade.dirty,
+        shortest: shortest,
         solvable: idealGrade.isolated,
         feTrap: feTrap,
         feDirty: trapGrade.dirty,
