@@ -258,7 +258,6 @@ class StereoView {
         this.paneRing = document.getElementById('stereo-pane-ring');
         this.ringSvg = document.getElementById('stereo-ring-svg');
         this.ringNoteEl = document.getElementById('stereo-ring-note');
-        this.ringHintEl = document.getElementById('stereo-ring-hint');
         this.ringTiltInput = document.getElementById('stereo-ring-tilt');
         this.ringTiltValueEl = document.getElementById('stereo-ring-tilt-value');
         this.ringBtnSide = document.getElementById('btn-stereo-ring-side');
@@ -3180,10 +3179,10 @@ class StereoView {
                 : (this._ringUnavailReason || RING_NO_RING_REASON);
             this.tabRing.setAttribute('data-ring-available', ok ? '1' : '0');
         }
-        if (this.ringHintEl) {
-            this.ringHintEl.textContent = ok ? '' : (this._ringUnavailReason || RING_NO_RING_REASON);
-            this.ringHintEl.classList.toggle('hidden', ok);
-        }
+        // ⚠ **理由を本文で書き足さない**（v1472・ux-density §4）。
+        //    ここには `#stereo-ring-hint` があり、使えない理由を 53字で書いていたが、
+        //    ★ **使えないことはボタンの灰色（`.view-btn:disabled`）で既に見えている**。
+        //    理由は上の `title` が持つ ＝ 消したのではなく、文から属性へ移した
     }
 
     updateRingButtons() {

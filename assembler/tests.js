@@ -20160,9 +20160,14 @@
         assert(sv._ringModel === null, '環が無いのに環モデルが作られている');
         assert(tabRing.disabled, '環の無い分子で環タブが無効化されない');
         assert(tabRing.title.includes('環がない'), '無効化した環タブに理由（title）が無い');
-        const hint = D.getElementById('stereo-ring-hint');
-        assert(hint && !hint.classList.contains('hidden') && hint.textContent.includes('環がない'),
-            '環が無い理由が画面に表示されない');
+        // ★ v1472: 理由の **53字の本文（`#stereo-ring-hint`）は消した**。
+        //   代わりに見張るのは「**灰色になっていること**」＝ 文で言わずに見た目で示す、が成立しているか。
+        //   ⚠ ここが緑のまま本文だけ戻ると意味が無いので、**本文が無いこと**も併せて見る
+        assert(!D.getElementById('stereo-ring-hint'),
+            '環タブの理由を書く本文（#stereo-ring-hint）が戻っている ＝ ボタンの灰色と二重に言っている');
+        assert(parseFloat(W.getComputedStyle(tabRing).opacity) < 0.6,
+            `環タブが灰色になっていない（opacity ${W.getComputedStyle(tabRing).opacity}）＝ ` +
+            '「使えないことは見た目で示す」が壊れている（本文を消した根拠がここ）');
         sv.setMode('ring'); // 直接呼ばれてもくさび図に落ちる（環ビューは開かない）
         assert(sv.mode === 'wedge' && paneRing.classList.contains('hidden'),
             '環が無いのに環ビューが開けてしまう');

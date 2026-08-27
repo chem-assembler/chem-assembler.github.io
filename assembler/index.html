@@ -1684,7 +1684,11 @@
                 <p id="stereo-rs-letter" style="font-size:14px; color:var(--text-primary); line-height:1.5; margin:0;"></p>
                 <p id="stereo-rs-why" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; margin:3px 0 0;"></p>
             </div>
-            <p id="stereo-ring-hint" class="hidden" style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:6px 0 0;"></p>
+            <!-- ⚠ ここにあった `#stereo-ring-hint`（53字・「この分子には環がないため…」）は
+                 v1472 で消した。**使えないことは、ボタンが灰色（`.view-btn:disabled`＝不透明度 0.42）
+                 で見えている**ので、53字で言い直す必要がない（ux-density §4）。
+                 ★ 理由そのものは消していない —— `#btn-stereo-tab-ring` の `title` が持っている
+                 （`updateRingTabState()`。使えるようになる条件＝環をつくる、まで書いてある） -->
             <div id="stereo-pane-wedge">
                 <svg id="stereo-svg" width="330" height="300" viewBox="-165 -150 330 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;"></svg>
                 <!-- P12-8: くさび図のローテーション（クリックした枝を上へ）＋鏡像比較 -->
