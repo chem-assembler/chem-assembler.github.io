@@ -1333,6 +1333,22 @@
                 <button id="btn-pk-diff" class="view-btn" style="flex:1; padding:12px; font-size:15px; border-color:var(--neon-orange); color:var(--neon-orange);">❌ 違う立体</button>
             </div>
             <div id="pk-result" style="min-height:3.4em; font-size:13px; line-height:1.6; text-align:left; white-space:pre-line;"></div>
+            <!-- ★ 採点のあとに「見本を実際に動かしてみる」（ユーザー発注 2026-08-26・DESIGN_sugar.md §1-2c）。
+                 札はキャンバスの帯と同じ3つ（⇅・⇄・⟳）で、実体も同じ chemistry.js の
+                 flipHaworth / haworthTurn。⚠ **採点前は出さない**（動かせると答えが分かってしまう）ので
+                 hidden で置き、StereoChoiceQuiz.syncTurnPanel() が付け外しする -->
+            <div id="pk-turn" class="hidden" style="border:1px solid rgba(224,176,255,0.35); border-radius:10px; padding:8px 10px; text-align:left;">
+                <div style="font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
+                    🔄 見本を実際に動かしてみる（解説のとおりになるか、自分の手で確かめる）
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button id="btn-pk-turn-updown" class="view-btn" style="flex:1; min-width:120px; padding:8px; font-size:13px;" title="上下を入れ替えるように裏返します（カレンダーをめくるように）">⇅ 上下に裏返す</button>
+                    <button id="btn-pk-turn-leftright" class="view-btn" style="flex:1; min-width:120px; padding:8px; font-size:13px;" title="左右を入れ替えるように裏返します（本のページをめくるように）">⇄ 左右に裏返す</button>
+                    <button id="btn-pk-turn-half" class="view-btn" style="flex:1; min-width:120px; padding:8px; font-size:13px;" title="裏返さずに、中心を軸に180°回します（メリーゴーランドのように）">⟳ 180°回す</button>
+                    <button id="btn-pk-turn-reset" class="view-btn" style="flex:1; min-width:120px; padding:8px; font-size:13px;">↩ 元の図に戻す</button>
+                </div>
+                <div id="pk-turn-status" style="font-size:12px; line-height:1.6; margin-top:6px; white-space:pre-line;"></div>
+            </div>
             <div class="modal-footer" style="display:flex; gap:10px;">
                 <!-- 発注書 F-2 の入口。D/L の出題を選んでいるときだけ出る（render() が付け外しする） -->
                 <button id="btn-pk-dl-explain" class="view-btn hidden" style="flex:1; padding:10px;">❓ D/L とは</button>
