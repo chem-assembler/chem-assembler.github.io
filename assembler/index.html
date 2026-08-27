@@ -1780,6 +1780,19 @@
                 <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
+            <!-- ⚠ v1472: キャプションの2文目（65字）をここへ畳んだ（ux-density §2-④）。
+                 ★ **消していない**。sp3 の 109.5°・正四面体は教科書本文で、必要な人は開けば読める。
+                 畳んだ理由は「**この図を読むのに要らない**」から —— くさび図の読み方は
+                 キャプション1文目（縦=奥/横=手前）だけで足りる。90° と 109.5° の関係は
+                 「作図の約束と実物の食い違い」の話で、読み方より一段あとにくる -->
+            <details id="stereo-tetra-why" class="learn-acc cross-rules-acc" style="margin-top:8px;">
+                <summary>なぜ 90° の直交で描くのか</summary>
+                <div class="learn-acc-body">
+                    作図では90°の直交で描いていますが、実際のsp3炭素の結合角は約109.5°で、
+                    4つの置換基は正四面体の頂点方向に伸びています。
+                    90°の十字は、その正四面体を紙の上に写すためのフィッシャー投影の約束です。
+                </div>
+            </details>
             <!-- P12-8 M2.5 その3: 「R・S とは何か」の読み物。
                  ここでするのは用語と決め方の骨組みの説明で、**実際の記号は上の
                  `#stereo-rs-row` が出す**（発注書 第4段 4b・v570 で入口を作った）。
