@@ -965,7 +965,21 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   異性体列挙の上限（1件）・CO₂ の瓶（1件）・イオンを扱えること（4件）・
     //   分子内エステル化（1件）で、**どれも酸化とは無関係**。
     //   ルールも 40→41（`oxidize_primary_vigorous` ＝ 1級アルコールを一気にカルボン酸まで）。
-    var KNOWN_BOTTLES = 22, KNOWN_RULES = 41, KNOWN_MECHANISMS = 14;   // 瓶は transform 16 ＋ detect 5
+    // ⚠ 2026-08-28 に 22→23 本・41→47 種へ。assembler v1477 が**入試頻度の調査（§10.11）から
+    //   7件を実装した** —— 環内/末端の酸化開裂・単発のアミド化・分子内脱水→酸無水物・
+    //   ワッカー法・ニトロ還元ほか。増えた瓶は `o2_pdcl2`（酸素・PdCl₂/CuCl₂）の1本だけ。
+    //   ★見直し候補7件を1件ずつ突き合わせた結果、**拾い直せるものは今回も1件も無い**:
+    //     - `org.aro.c8h10-isomers` … 列挙器の上限。反応とは無関係
+    //     - `org.phenol.phenoxide-co2` … CO₂ の瓶が要る。増えたのは o2_pdcl2 で別物
+    //     - `org.aroN.aniline-base` / `diazonium-decomp` / `bio.amino-acid-amphoteric` /
+    //       `bio.amino-acid-polyprotic` … 4件ともイオン（対イオンの持ち方）待ち。
+    //       ⚠ `reduce_nitro` が入ってアニリンは**作れる**ようになったが、壁は生成物ではなく
+    //       **結合を持たない対イオンをモデルとキャンバスがどう持つか**なので動いていない
+    //     - `org.carbonyl.lactone` … 分子内エステル化待ち。★ ただし**一歩近づいた** ——
+    //       `dehydration_anhydride`（分子内脱水→酸無水物）が入り、「同じ分子の中で環を閉じる」
+    //       仕掛けは**もう在る**。足りないのは COOH+COOH ではなく **OH+COOH に当てること**だけ。
+    //       ⚠ 次に assembler が分子内エステル化を足したら、この1件は本当に繋がる
+    var KNOWN_BOTTLES = 23, KNOWN_RULES = 47, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
