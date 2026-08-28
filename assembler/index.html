@@ -1737,11 +1737,26 @@
                     <button id="btn-stereo-mirror" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
                     <button id="btn-stereo-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 正面に戻す</button>
                 </div>
-                <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 軸を揃える）。鏡像モード中だけ出す -->
+                <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 軸を揃える / ★ 重ねてみる）。鏡像モード中だけ出す -->
                 <div id="stereo-mirror-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
                     <span>鏡像の配置:</span>
                     <button id="btn-stereo-mirror-layout-symmetric" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="右は左を画面上で鏡に映したままの配置。左右が常に同じように動きます">鏡面対称</button>
                     <button id="btn-stereo-mirror-layout-align" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="鏡像側の回転軸をオリジナルと同じ向きに構えます。軸を揃えても残り3つが重ならないことが見えます（回転軸に結合を選ぶと使えます）">軸を揃える</button>
+                    <!-- ★ ユーザー発注（2026-08-28）「鏡像異性体をオリジナルに重ねられるか試せるようにしたい。
+                         現状2つの図が同時に動くので、一方のみを動かして他方と重なるかを試せない」。
+                         設計と閾値の根拠は stereo.js の STEREO_FIT_SNAP_DEG の帯コメントが正 -->
+                    <button id="btn-stereo-mirror-layout-free" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="左を止めたまま、右（鏡像）だけを指で回して、左に重ねられるか試します。いちばんずれている結合の角度を出し、12°より小さくなったらぴったり重ねます">⊕ 重ねてみる</button>
+                </div>
+                <!-- ★ 重なりの答え合わせ（「⊕ 重ねてみる」のあいだだけ出す）。
+                     ⚠ これは**答え合わせ**であって操作の案内ではない（UX1 が数えない側。tests.js の帯を参照）。
+                     「⊙ いちばん近い向きへ」は、**いつまでも回させないための逃げ道** ——
+                     不斉炭素では何をどう回しても重ならないので、それを数で言い切って終わらせる -->
+                <div id="stereo-fit-row" class="hidden" style="margin-top:8px;">
+                    <p id="stereo-fit-result" style="font-size:13.5px; line-height:1.6; text-align:left; margin:0;"></p>
+                    <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:6px;">
+                        <button id="btn-stereo-fit-best" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="鏡像を「いちばん重なる向き」に置きます。重ねられる分子ならぴったり重なり、鏡像異性体なら、これ以上は近づかないことが数で分かります">⊙ いちばん近い向きへ</button>
+                        <button id="btn-stereo-fit-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="鏡像の向きを、鏡に映しただけの向き（はじめの向き）に戻します">⟲ 鏡像の向きを戻す</button>
+                    </div>
                 </div>
                 <p id="stereo-3d-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
             </div>
