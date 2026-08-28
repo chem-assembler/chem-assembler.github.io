@@ -4403,6 +4403,64 @@ function bottleRiderTotals(stage, a, b, scale) {
   return Object.keys(tot).map((sp) => ({ sp, n: tot[sp] }));
 }
 
+/* ================================================================================
+   【②】④を「実際の筆算」に寄せる（2026-08-28・ユーザーの指示）
+
+   > **イオン反応式 → 化学反応式 のプロセスをより実際の筆算に寄せましょう。**
+   > **瓶システムを採用しましたが、これは不正解時やヘルプ・解説に回してよいかもしれません**
+
+   紙の上の手順は「イオン反応式の**両辺に、式に出てこないイオンを必要なだけ足す**
+   → 陽イオンと陰イオンを組み直して化学式にする → 係数を整える」。
+   ⚠ これまでの④は「H⁺ 8個 を連れてきたのは？」＝ **出どころ当て**で、筆算ではなかった。
+
+   ★ **問うのは「両辺に何個ずつ足すか」**にする。⚠ **瓶は消さない** ——
+   出どころ当ては④のヘルプ（外したときに開く「どこから来たの？」）へ移す。
+
+   ⚠ **数を作り直さない。**`bottleRiderTotals` と同じ数を、同じ導出（bottlePlan の rider）から出す
+   —— 「両辺に足す N 個」と「瓶がついて来させた N 個」が**同じ数**であることが、
+   2つの言い方の橋そのもの（DESIGN_redox.md の B・発注書 §2-6 の「落ちている一文」）。 */
+function spectatorAddRows(stage, a, b, scale) {
+  const plan = bottlePlan(stage, a, b, scale);
+  if (!plan || plan.dataError) return null;
+  const acc = {}, order = [];
+  for (const B of plan.bottles) {
+    for (const r of B.riders) {
+      if (r.n <= 0) continue;
+      if (!acc[r.sp]) { acc[r.sp] = { sp: r.sp, n: 0, partners: [] }; order.push(r.sp); }
+      acc[r.sp].n += r.n;
+      // 相手（この瓶が覆っている左辺のイオン）。⚠ **足す個数は書かない**（それが問い）
+      for (const c of B.covers) acc[r.sp].partners.push({ sp: c.sp, n: c.need });
+    }
+  }
+  return order.map((sp) => acc[sp]);
+}
+
+/* 【②】④の採点。⚠ **答えの数は言わない**（molecularizeStep の言い方に合わせる）。
+   ⚠ 空欄（undefined）は「まだ入れていない」。0 は「足さない」と答えたことにする。 */
+function explainSpectatorAdd(stage, a, b, scale, sp, got) {
+  const rows = spectatorAddRows(stage, a, b, scale);
+  const row = rows && rows.find((r) => r.sp === sp);
+  if (!row) return null;
+  const D = (x) => SPECIES[x].disp;
+  const who = row.partners.map((p) => `${D(p.sp)} ${p.n}個`).join("・");
+  if (!Number.isInteger(got)) {
+    return { kind: "none", ok: false,
+      reason: `両辺に ${D(sp)} を何個ずつ足すか。相手がいないのは ${who}。` };
+  }
+  if (got < 0) return { kind: "wrong", ok: false, reason: `個数は 0 以上。` };
+  if (got < row.n) {
+    return { kind: "wrong", ok: false,
+      reason: `足りない。${who} が相手のいないまま残る ＝ イオンのままで化学式にならない。` };
+  }
+  if (got > row.n) {
+    return { kind: "wrong", ok: false,
+      reason: `多い。相手のいない ${D(sp)} が両辺に残ってしまう` +
+        `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。` };
+  }
+  return { kind: "ok", ok: true,
+    reason: `${D(sp)} がそろった。${who} が、これで化学式に組める。` };
+}
+
 /* 【D】全体の倍率は**例外**（DESIGN_redox.md の D）。
    ユーザーの言葉:「イオン反応式全体を2倍するのは、レアケース、右辺で係数に 1/2 が
    でてきたときに必要な措置です／他の場合は考慮する必要がありません」。
