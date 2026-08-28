@@ -41056,6 +41056,137 @@
         c.reset();
     });
 
+    /* ===== RV5・RV6: 糖どうしの縮合でできた二糖が自分自身に重ならない（v1477） =====
+     *
+     * ユーザー実機報告（2026-08-28）:「スクロース 加水分解 → フルクトースを選択して
+     * 逆向きの反応をする で フルクトースがグルコースに重なった」。
+     *
+     * ★ 物差し（この検査の「重なり」の定義）: **結合していない重原子どうしの距離**。
+     *   原子の丸は半径 10px なので、24px を割ると図として触れて見える。
+     * ★ 実測（直す前）: スクロース **2組・最短 17.2px**／
+     *   マルトース・セロビオース・ラクトースは 0組（最短 46〜63px）＝ **スクロースだけの症状**。
+     *   ⚠ 加水分解を経なくても同じ数が出た ＝ **逆向きの回転が戻っていないのではない**。 */
+    const rvOverlap = (mol) => {
+        const at = mol.atoms.filter(a => a.element !== 'H');
+        const bonded = new Set(mol.bonds.flatMap(b => [b.atomId1 + '|' + b.atomId2, b.atomId2 + '|' + b.atomId1]));
+        let pairs = 0, min = Infinity;
+        for (let i = 0; i < at.length; i++) {
+            for (let j = i + 1; j < at.length; j++) {
+                if (bonded.has(at[i].id + '|' + at[j].id)) continue;
+                const d = Math.hypot(at[i].x - at[j].x, at[i].y - at[j].y);
+                if (d < min) min = d;
+                if (d < 24) pairs++;
+            }
+        }
+        return { pairs, min: Math.round(min * 10) / 10 };
+    };
+    // 平行移動を除いた図の指紋（登録の図と同じ絵になったかを見る）
+    const rvShape = (mol) => {
+        const at = mol.atoms.filter(a => a.element !== 'H');
+        const mx = Math.min(...at.map(a => a.x)), my = Math.min(...at.map(a => a.y));
+        return at.map(a => `${a.element}:${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join(' ');
+    };
+    const rvCondense = async (c, names, want) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        names.forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_glycoside');
+        const sites = rule.detect(g.userMolecule);
+        const s = sites.find(x => want.test(x.productName));
+        assert(s, `${names.join(' ＋ ')}: ${want} の縮合が候補に出ない（${sites.map(x => x.productName).join('/') || '0件'}）`);
+        W.reactor.execute(rule, s, null);
+        await c.tick(60);
+        const parts = g.splitMolecules().filter(p => p.atoms.length > 3);
+        assert(parts.length === 1, `生成物が1分子になっていない（${parts.length}）`);
+        return parts[0];
+    };
+
+    test('RV5: 糖どうしの縮合でできた二糖は、その二糖を単独で描く図になる（自分自身に重ならない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const 登録の図 = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `（前提）${name} がライブラリに無い`);
+            g.updateDrawing();
+            return rvShape(g.userMolecule);
+        };
+        const 表 = [
+            [['α-D-グルコース', 'β-D-フルクトフラノース'], /スクロース/, 'スクロース'],
+            [['α-D-グルコース', 'α-D-グルコース'], /マルトース/, 'マルトース'],
+            [['β-D-グルコース', 'β-D-グルコース'], /セロビオース/, 'セロビオース'],
+            [['β-D-ガラクトース', 'β-D-グルコース'], /ラクトース/, 'ラクトース']
+        ];
+        for (const [単糖, 欲しい, 登録名] of 表) {
+            const want = 登録の図(登録名);
+            const prod = await rvCondense(c, 単糖, 欲しい);
+            const ov = rvOverlap(prod);
+            assert(ov.pairs === 0,
+                `${登録名}: 重なっている組が ${ov.pairs} 件（最短 ${ov.min}px）。直す前のスクロースは 2件・17.2px`);
+            assert(ov.min >= 40, `${登録名}: 最短が ${ov.min}px（登録の図は 46px 以上）`);
+            assert(rvShape(prod) === want, `${登録名}: 登録の図と違う絵になっている`);
+        }
+
+        // ★ ユーザーが報告した道そのもの: スクロース → 加水分解 → 逆向きの縮合
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('スクロース');
+        g.updateDrawing();
+        const hy = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        W.reactor.execute(hy, hy.detect(g.userMolecule)[0], null);
+        await c.tick(60);
+        const cd = W.REACTION_RULES.find(r => r.id === 'condensation_glycoside');
+        const back = cd.detect(g.userMolecule);
+        assert(back.length, '加水分解のあと、逆向きの縮合が候補に出ない');
+        W.reactor.execute(cd, back[0], null);
+        await c.tick(60);
+        const prod = g.splitMolecules().filter(p => p.atoms.length > 3)[0];
+        assert(g.lookupCompoundName(prod) === 'スクロース（ショ糖）',
+            `往復してスクロースに戻らない（${g.lookupCompoundName(prod)}）`);
+        const ov = rvOverlap(prod);
+        assert(ov.pairs === 0,
+            `★ ユーザー報告の道で重なっている（${ov.pairs} 件・最短 ${ov.min}px）`);
+        c.reset();
+    });
+
+    test('RV6: ★否定対照 — 描き直すのは「いま縮合してできた二糖」だけ（となりの分子に触らない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('α-D-グルコース');
+        g.summonMolecule('β-D-フルクトフラノース');
+        /* ★ となりに**自分で裏返して置いた**3つめの糖を用意する。
+           `redrawProductsAsStandalone` に `only` を渡し忘れると、これも
+           「単独で描くときの図」に戻される（v1466 で実際に起きた形）。 */
+        g.summonMolecule('β-D-グルコース');
+        g.updateDrawing();
+        const 傍観 = g.splitMolecules()
+            .filter(p => p.atoms.length > 3)
+            .sort((a, b) => Math.max(...b.atoms.map(x => x.x)) - Math.max(...a.atoms.map(x => x.x)))[0];
+        const 傍観ids = new Set(傍観.atoms.map(a => a.id));
+        // ⇅ の札と同じ道で裏返す（＝ 人が自分で置き直した図）
+        g.setFocusedMolecule([...傍観ids][0]);
+        const flip = g.flipWholeHaworth();
+        assert(flip.ok, `（前提）となりの糖を ⇅ で裏返せない（${flip.reason}）`);
+        const 位置 = () => [...傍観ids].map(id => {
+            const a = g.userMolecule.atoms.find(x => x.id === id);
+            return `${id}:${Math.round(a.x)},${Math.round(a.y)}`;
+        }).sort().join('|');
+        const 前 = 位置();
+
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_glycoside');
+        const sites = rule.detect(g.userMolecule);
+        const s = sites.find(x => /スクロース/.test(x.productName));
+        assert(s, `スクロースの縮合が出ない（${sites.map(x => x.productName).join('/') || '0件'}）`);
+        W.reactor.execute(rule, s, null);
+        await c.tick(60);
+        assert(位置() === 前, '★ 縮合と関係のないとなりの分子まで描き直している（`only` が効いていない）');
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
