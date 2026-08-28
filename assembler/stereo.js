@@ -292,6 +292,9 @@ class StereoView {
         this.rsWhyEl = document.getElementById('stereo-rs-why');
         // 「なぜ判定しないのか」の畳んだ続き（本文は index.html 据え置き。ここは出し入れだけ）
         this.rsWhyMoreEl = document.getElementById('stereo-rs-why-more');
+        // 「不斉炭素ではないから R・S が無い」の理由の畳んだ先（v1477。本文は index.html 据え置き）
+        this.rsWhyNonasymEl = document.getElementById('stereo-rs-why-nonasym');
+        this.mirrorHowEl = document.getElementById('stereo-mirror-how');
         this.rsFaceHBtn = document.getElementById('btn-stereo-rs-face-h');
         if (this.rsFaceHBtn) this.rsFaceHBtn.addEventListener('click', () => this.faceHydrogenAway());
         this.wedgeMirror = false;    // くさび図を鏡像と並べているか
@@ -544,7 +547,11 @@ class StereoView {
         if (this.pickBtn) this.pickBtn.disabled = true;
         this.updateRsTipsButton(); // 中心が無いので「H を奥に」は使えない
         this.updateRsReadout();    // 中心が無いので R・S の欄ごと隠す
-        if (this.captionEl) this.captionEl.textContent = why;
+        // ⚠ 畳んだ側も必ず埋める（空にできる経路を作らない。setCaption のコメントが理由）
+        this.setCaption(why,
+            'くさび図と「🧊 3Dで回す」は、1つの sp3炭素のまわりを見る図です。' +
+            '二重結合・三重結合・芳香環の炭素は平面なので、正四面体の立体配置そのものが決まりません。' +
+            'この分子は「🧊 分子全体」で見てください。');
         this.modal.classList.remove('hidden');
         this.setMode('mol');
     }
@@ -664,10 +671,15 @@ class StereoView {
         //    （ux-density §2 番外）。本文は index.html に据え置きの静的テキストで、
         //    ここでは**出す・出さないを切り替えるだけ** ＝ 中身が消えた状態が存在しない
         //    ＝ 「畳んだふりをして消す」ができない形。理由の1行目（22字）は上に出したまま
-        if (this.rsWhyMoreEl) {
-            this.rsWhyMoreEl.classList.toggle('hidden', !reason.more);
-            if (!reason.more) this.rsWhyMoreEl.open = false;
-        }
+        // ⚠ v1477: 畳んだ先は2つになった（フィッシャー用と「不斉でない」用）。
+        //    `more` はどちらを出すかの札で、**どちらの本文も index.html に据え置き**
+        const showMore = (el, on) => {
+            if (!el) return;
+            el.classList.toggle('hidden', !on);
+            if (!on) el.open = false;
+        };
+        showMore(this.rsWhyMoreEl, reason.more === true);
+        showMore(this.rsWhyNonasymEl, reason.more === 'nonasym');
     }
 
     /**
@@ -681,8 +693,10 @@ class StereoView {
      */
     rsUnreadableReason(mol, centerId) {
         if (!mol.isAsymmetricCarbon(centerId)) {
-            return { text: 'この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません' +
-                '（同じ置換基があると、鏡に映しても重ね合わせられます）。', more: false };
+            // ⚠ v1477: 64字 → 29字。**括弧の中（＝理由）は消していない** ——
+            //    `#stereo-rs-why-nonasym` に畳み、そこから「⊕ 重ねてみる」へ跳べるようにした
+            //    ＝ 理由を読ませるかわりに、その場で手で確かめられる（2026-08-28 の発注の本体）
+            return { text: 'この炭素は不斉炭素原子ではないので、R・S の区別がありません。', more: 'nonasym' };
         }
         if (StereoView.isRingAtom(mol, centerId)) {
             return { text: '環の中の炭素です。R・S はフィッシャー投影の十字から読んでいるので、' +
@@ -865,12 +879,12 @@ class StereoView {
         }
         // ⚠ v1472: 2文目（「作図では90°の直交で…正四面体の頂点方向に伸びています。」65字）は
         //    `#stereo-tetra-why` に畳んだ（ux-density §2-④）。★ **消していない**。
-        //    残す1文目は「図の読み方」＝ これが無いと図が読めない。畳んだ2文目は
-        //    「作図の約束と実物の食い違い」で、読み方より一段あとの話
-        this.captionEl.textContent =
-            'くさび図はフィッシャー投影の規約で描いています。縦（上・下）は紙面の奥＝ハッシュ（刻み線）、横（左・右）は紙面の手前＝▶（黒いくさび）への結合です。\n' +
-            stereoText + '\n' +
-            originNote;
+        // ⚠ v1477: 残っていた 215字（モーダルの文字の 54%）を、**図が読めなくなる1行だけ**残して
+        //    `#stereo-caption-more` に畳んだ。畳んだ側の1つ目は「不斉かどうか」だが、
+        //    ★ **同じことは `#stereo-center-label` が 24字で既に画面に出している**（2度言っていた）
+        this.setCaption(
+            '縦（上・下）は紙面の奥＝ハッシュ、横（左・右）は紙面の手前＝▶（くさび）です。',
+            'くさび図はフィッシャー投影の規約で描いています。\n' + stereoText + '\n' + originNote);
 
         // 3Dビューは毎回リセット（正面・鏡像オフ・回転軸は画面基準）してから開く
         this.mirror = false;
@@ -902,6 +916,17 @@ class StereoView {
         this.setMode('wedge');
         this.render3D();
         this.modal.classList.remove('hidden');
+    }
+
+    /**
+     * キャプションを「画面に出す1行」と「畳む残り」に分けて入れる（v1477）。
+     * ⚠ **`more` を空にしない**のが約束 —— UX1 は「畳んだ中身が 20字以上あること」を見ており、
+     *   空にできると「畳んだふりをして消す」が通ってしまう。呼ぶ側は必ず中身を渡すこと
+     */
+    setCaption(main, more) {
+        if (this.captionEl) this.captionEl.textContent = main;
+        const body = document.getElementById('stereo-caption-more-body');
+        if (body && more && more.replace(/\s+/g, '').length >= 20) body.textContent = more;
     }
 
     // 表示ラベル（ref は置換基の atomId または 'H'）
@@ -2083,10 +2108,13 @@ class StereoView {
         const cap = document.createElement('span');
         cap.textContent = '回転軸:';
         row.appendChild(cap);
+        // ⚠ v1477: 11px → 12px。ユーザー指摘「字が小さい」を実測したところ、
+        //    立体モーダルで **12px を下回っていた文字はこの回転軸ボタンと下の「軸の向き」だけ**
+        //    （375×812 で 10個・18字。本文はすべて 12〜15px だった）＝ 直す場所はここしかない
         const mk = (label, index, id) => {
             const b = document.createElement('button');
             b.className = 'view-btn stereo-axis-btn';
-            b.style.cssText = 'margin:0; font-size:11px; padding:4px 9px;';
+            b.style.cssText = 'margin:0; font-size:12px; padding:4px 9px;';
             b.textContent = label;
             b.id = id;
             b.dataset.axisIndex = (index === null ? '' : String(index));
@@ -2114,7 +2142,7 @@ class StereoView {
         FACINGS.forEach(([label, key, title]) => {
             const b = document.createElement('button');
             b.className = 'view-btn stereo-facing-btn';
-            b.style.cssText = 'margin:0; font-size:11px; padding:4px 9px;';
+            b.style.cssText = 'margin:0; font-size:12px; padding:4px 9px;';
             b.textContent = label;
             b.id = 'btn-stereo-facing-' + key;
             b.dataset.facing = key;
@@ -2593,23 +2621,15 @@ class StereoView {
             parts.push(this._isAsym
                 ? '左右は鏡像の関係です。同じように回転させても重ね合わせられません（＝鏡像異性体）。'
                 : 'この炭素は不斉ではないので、回すと重なります（左右は同じ分子です）。');
-            // P12-8: 鏡像ペインの構え方の解説
+            // ⚠ v1477: 3つの並べ方の説明（各 130字前後）は `#stereo-mirror-how` に畳んだ。
+            //    ★ **消していない**（本文は index.html に3つとも据え置き）。
+            //    ここに残すのは「いま何をすればよいか」の1行だけ ＝ 押す前に読ませる量を減らす
             if (this.mirrorLayout === 'free') {
-                parts.push('「重ねてみる」: 左は止まっています。右（鏡像）を指でつまんで回し、' +
-                           '左と同じ形にできるか試してください。' +
-                           '左の図をドラッグすると、両方が同じだけ回ります（見る向きが変わるだけです）。');
-            } else if (this.mirrorLayout === 'align' && this.axisVector()) {
-                const name = this.labelOf(this._dirs[this.axisIndex].ref);
-                parts.push(`「軸を揃える」: 鏡像側にも回転だけを加えて、「${name}」への軸を左と同じ向きに構えています。` +
-                           '軸の上の置換基はぴったり重なりますが、残り3つは回る向きが左右で逆なので、' +
-                           'どれだけ回しても重なりません。これが「鏡像異性体は回転では重ね合わせられない」ことの意味です。');
-            } else {
-                parts.push('「鏡面対称」: 右は左を画面の左右で鏡に映したままの配置です。' +
-                           'どちらを回しても左右がぴったり同じように動きます（常に厳密な鏡像）。' +
-                           '回転軸に結合を選んで「軸を揃える」にすると、鏡像側の軸を左と同じ向きに構え直して、' +
-                           '「軸を揃えても重ならない」ことを確かめられます。');
+                parts.push('左は止まっています。右（鏡像）を指で回して、左に重ねられるか試してください。');
             }
         }
+        // 3つの並べ方の畳んだ説明は、鏡像を並べているあいだだけ出す
+        if (this.mirrorHowEl) this.mirrorHowEl.classList.toggle('hidden', !this.mirror);
         this.noteEl.textContent = parts.join('\n');
     }
 

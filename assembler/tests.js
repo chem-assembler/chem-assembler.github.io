@@ -8207,7 +8207,14 @@
         c.clickAt(337, 300);
         assert(!sv.picking, '選択モードが解除されない');
         assert(!c.D.getElementById('stereo-modal').classList.contains('hidden'), 'モーダルが開かない');
-        const cap = c.D.getElementById('stereo-caption').textContent;
+        // ★ v1477: キャプションは「図が読めなくなる1行」だけを残し、残りを
+        //   `#stereo-caption-more` へ畳んだ（ユーザー指摘「モーダル内の説明が多く字が小さい」）。
+        //   ⚠ ここは「**消えていないか**」を見る検査なので、v1472 の tetra と同じく畳んだ先も読む。
+        //   既定で閉じていることと中身が空でないことは UX1 が併せて見る
+        const capOf = stereoCaptionText;
+        const cap = capOf(c.D);
+        assert(!c.D.getElementById('stereo-caption-more').open,
+            '#stereo-caption-more が既定で開いている（畳んだ意味が無い）');
         // ★ v1472: 109.5°・正四面体の話は**キャプションから `#stereo-tetra-why` へ畳んだ**
         //   （ux-density §2-④。図の読み方には要らないが、消してはいけない話）。
         //   ⚠ ここは「どこに書いてあるか」ではなく「**消えていないか**」を見る検査なので、
@@ -8254,7 +8261,7 @@
         c.D.getElementById('btn-stereo').click();
         assert(c.D.getElementById('stereo-center-label').textContent === '中心の炭素: sp3炭素',
             `メタンの中心表示が想定外（${c.D.getElementById('stereo-center-label').textContent}）`);
-        const cap2 = c.D.getElementById('stereo-caption').textContent;
+        const cap2 = capOf(c.D); // ⚠ v1477 で畳んだ側に移った（上のコメントが理由）
         assert(cap2.includes('不斉炭素原子ではありません'), 'メタンで不斉否定の説明がない');
         c.D.getElementById('btn-stereo-close').click();
         c.D.getElementById('verify-result').classList.add('hidden');
@@ -19148,6 +19155,16 @@
         g.updateDrawing();
     });
 
+    /**
+     * 立体モーダルのキャプションの中身（★ 畳んだ `#stereo-caption-more` も含めて読む）。
+     * ⚠ v1477 で「図が読めなくなる1行」以外を畳んだ（ユーザー指摘「説明が多く字が小さい」）。
+     *   キャプションを見ている検査はどれも「**消えていないか**」を見るものなので、
+     *   置き場所ではなく有無で判定する（畳まれていること自体は UX1 が見張る）
+     */
+    const stereoCaptionText = (D) =>
+        D.getElementById('stereo-caption').textContent + '\n' +
+        D.getElementById('stereo-caption-more').textContent;
+
     test('ST9: 疑似3D回転ビューア（P12-7 M3・描いた立体との一致／鏡像モード）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
@@ -19200,7 +19217,9 @@
         assert(sv._drawn.right === null, '鏡像モードでないのに2枚目が描かれている');
         assert(D.querySelectorAll('#stereo-3d-svg circle').length === 1 &&
                D.querySelectorAll('#stereo-3d-svg ellipse').length === 4, '中心＋置換基4個が描かれない');
-        assert(D.getElementById('stereo-caption').textContent.includes('あなたが描いた立体を反映しています'),
+        // ⚠ v1477: キャプションの「※」以下は `#stereo-caption-more` へ畳んだ（消していない）。
+        //   この検査は「消えていないか」を見るものなので、畳んだ先も含めて読む
+        assert(stereoCaptionText(D).includes('あなたが描いた立体を反映しています'),
             '立体が読めたのに「一例」注記のままになっている');
         assert(wedgeLabels().length === 5, 'くさび図（従来どおりの一例配置）が描かれていない');
 
@@ -19244,8 +19263,8 @@
         assert(sv._parity === null, '立体未指定なのにパリティを持っている');
         assert(D.getElementById('stereo-3d-note').textContent.includes('立体が指定されていません'),
             '立体未指定の注意書きが出ない');
-        assert(!D.getElementById('stereo-caption').textContent.includes('あなたが描いた立体を反映しています') &&
-               D.getElementById('stereo-caption').textContent.includes('一例'),
+        assert(!stereoCaptionText(D).includes('あなたが描いた立体を反映しています') &&
+               stereoCaptionText(D).includes('一例'),
             '立体未指定なのに「あなたが描いた立体」と断定している');
         assert(D.querySelectorAll('#stereo-3d-svg circle').length === 1 &&
                D.querySelectorAll('#stereo-3d-svg ellipse').length === 4, '立体未指定でも既定配置で描かれる');
@@ -19336,7 +19355,7 @@
         assert(rightR === 'OH', `OH を右に描いたのに右スロットが「${rightR}」`);
         assert(leftR === 'H', `OH を右に描いたのに左スロットが「${leftR}」`);
         const upR = slotLabel('up'), downR = slotLabel('down');
-        const cap = D.getElementById('stereo-caption').textContent;
+        const cap = stereoCaptionText(D); // ⚠ v1477 で「※」以下は畳んだ先にある（消していない）
         assert(cap.includes('あなたが描いた向きのまま'), '描いた向きのままである旨の説明がない');
         assert(cap.includes('あなたが描いた立体を反映しています'), '立体が読めたのに反映の説明がない');
         D.getElementById('btn-stereo-close').click();
@@ -19354,7 +19373,7 @@
         assert(W.fischerSlots(off.m, off.center) === null, '斜めなのにスロットが読めている');
         openStereo(off.m, off.center);
         assert(sv._slots === null, '立体未指定なのにスロットを持っている');
-        const capOff = D.getElementById('stereo-caption').textContent;
+        const capOff = stereoCaptionText(D);
         assert(capOff.includes('一例'), '立体未指定で「一例」の断り書きが出ない');
         assert(!capOff.includes('あなたが描いた立体を反映しています'),
             '立体未指定なのに「あなたが描いた立体」と断定している');
@@ -19785,8 +19804,17 @@
             assert(axisGap() < 1e-6, `軸の向き ${f} で軸そろえが崩れた（ずれ ${axisGap()}）`);
             assert(pL() === p0 && pR() === -p0, `軸の向き ${f} で「軸を揃える」の鏡像性が崩れた`);
         });
-        assert(D.getElementById('stereo-3d-note').textContent.includes('軸を揃える'),
-            '「軸を揃える」の説明が出ない');
+        // ⚠ v1477: 3つの並べ方の説明（各 130字前後）は `#stereo-mirror-how` に畳んだ
+        //   （ユーザー指摘「説明が多く字が小さい」）。★ **消していない**ので、ここは畳んだ先を見る。
+        //   ⚠ **3つとも**入っていることを見る —— 画面に出るのは常に1つなので、
+        //   JS で出し分ける形に戻すと残り2つが誰にも見えなくなる
+        const how = D.getElementById('stereo-mirror-how');
+        assert(how && !how.classList.contains('hidden'), '鏡像を並べているのに「3つの並べ方のちがい」が出ない');
+        assert(!how.open, '「3つの並べ方のちがい」が既定で開いている（畳んだ意味が無い）');
+        ['鏡面対称', '軸を揃える', '重ねてみる'].forEach(k =>
+            assert(how.textContent.includes(k), `「${k}」の説明が畳んだ先にも無い（消えている）`));
+        assert(how.querySelector('.learn-acc-body').textContent.replace(/\s+/g, '').length > 200,
+            '「3つの並べ方のちがい」の中身が短すぎる ＝ 畳んだのではなく削っている');
 
         // (c) 鏡面対称へ戻すと、また厳密な画面上の鏡像に戻る
         btnSym.click();
@@ -29475,6 +29503,181 @@
         assert(/これ以上は近づきません/.test(txt) && /70\.5/.test(txt) && /鏡像異性体/.test(txt),
             `「どう回しても重ならない」を数で言い切っていない（${txt}）＝ いつまでも回させることになる`);
         D.getElementById('btn-stereo-close').click();
+    });
+
+    /* ===== SF5・SF6: 立体モーダルに「一度に出ている字」の総量 =====
+     *
+     * > ユーザー（2026-08-28）「**モーダル内の説明が多く字が小さい。
+     * >   説明を簡素化・必要に応じて展開・ジャンプなどで対応したい**」
+     *
+     * ⚠⚠ **UX1 ではこの画面を守れない。** UX1 が数えるのは「操作の案内」だけで、
+     *    `#stereo-caption` / `#stereo-rs-row` / `#stereo-*-note` は
+     *    **化学の説明・答え合わせとして skip 指定に入っている**（UX の帯を参照）。
+     *    ところがユーザーが「多い」と言った3文は**全部その skip の中**にあった。
+     *    ＝ UX1 は緑のまま、画面は 399字（実測）だった。ここはその側を数える。
+     *
+     * ★ 数え方は UX1 と別（意図的）: **skip なし・画面に出ている文字を全部**
+     *   （見出しもボタンも数える。SVG の元素記号だけは図なので数えない）。
+     *   閉じた `<details>` の中を数えないのは UX1 と同じ ＝ 畳めば減る。
+     *   ⚠ だから **SF5 は「畳んだ中身が残っていること」を必ず併せて見る**
+     *     （畳みを口実に理由を消せてしまうため。1-B の発注は「量を減らす」で
+     *       「理由を消す」ではない）。
+     *
+     * ★ 上限の決め方（UX の帯と同じ「実測＋20字」。375×812 で実測）:
+     *     くさび図（乳酸・不斉炭素）          399 → 212 → 235
+     *     くさび図（2-プロパノール・不斉でない） 394 → 220 → 240
+     *     3D＋鏡像＋⊕重ねてみる（2-プロパノール） 665 → 444 → 465
+     *     ------------------------------------------------------
+     *     合計                              1458 → 876 → 940
+     *   何をどこへ動かしたか:
+     *     #stereo-caption      215 →  39字（残したのは「縦=奥・横=手前」の1行だけ。
+     *                                 残りは #stereo-caption-more へ。⚠ 畳んだ1つ目
+     *                                 「不斉炭素原子です」は #stereo-center-label が
+     *                                 24字で既に出しており、**2度言っていた**）
+     *     #stereo-3d-note      251 → 160字（3つの並べ方の説明 各130字前後を
+     *                                 #stereo-mirror-how へ。★ 3つとも1か所に置いた）
+     *     #stereo-rs-why        64 →  31字（括弧の中＝理由を #stereo-rs-why-nonasym へ。
+     *                                 そこから「⊕ 重ねてみる」へ跳べる＝発注の「ジャンプ」）
+     */
+
+    /** 立体モーダルに「いま画面に出ている」文字数（skip なし・SVG の図だけ除く） */
+    const stereoModalChars = (D) => {
+        const root = D.getElementById('stereo-modal');
+        let n = 0;
+        const walk = (node) => {
+            if (node.nodeType === 3) {
+                const t = (node.textContent || '').replace(/\s+/g, '');
+                if (!t) return;
+                const el = node.parentElement;
+                if (!el || el.closest('svg')) return;
+                let d = el.closest('details');
+                while (d) { if (!d.open) return; d = d.parentElement && d.parentElement.closest('details'); }
+                if (!el.checkVisibility || !el.checkVisibility()) return;
+                const r = el.getBoundingClientRect();
+                if (r.width < 4 || r.height < 4) return;
+                n += t.length;
+                return;
+            }
+            if (node.nodeType !== 1) return;
+            if (['SCRIPT', 'STYLE', 'TEMPLATE'].includes(node.tagName)) return;
+            node.childNodes.forEach(walk);
+        };
+        walk(root);
+        return n;
+    };
+
+    /** SF5/SF6 が見る3画面（開き方は共通） */
+    const SF_SCREENS = [
+        { name: 'くさび図（不斉炭素）', max: 235, cmp: '乳酸', open: (sv) => sv.setMode('wedge') },
+        { name: 'くさび図（不斉でない炭素）', max: 240, cmp: '2-プロパノール', open: (sv) => sv.setMode('wedge') },
+        {
+            name: '3D＋鏡像＋⊕重ねてみる', max: 465, cmp: '2-プロパノール',
+            open: (sv) => { sv.setMode('3d'); sv.setMirror(true); sv.setMirrorLayout('free'); }
+        }
+    ];
+    const SF_TOTAL_MAX = 940;
+
+    /** 名称ライブラリの分子を出して立体モーダルを開く（openAuto ＝ 中心は自動で選ぶ） */
+    const openStereoFor = async (c, name) => {
+        const e = (c.W.COMPOUNDS || []).find(x => x.name === name);
+        assert(e, `（前提）${name} がライブラリに無い`);
+        c.game.setMode('free');
+        c.game.userMolecule = c.game.createTargetFromData({ target: e.target });
+        c.game.updateDrawing();
+        c.W.stereoView.openAuto();
+        await c.tick(120);
+        c.W.stereoView.setAutoRotate(false);
+        return c.W.stereoView;
+    };
+
+    test('SF5: 立体モーダルに一度に出ている字が上限内で、畳んだ理由は残っている', async (c) => {
+        c.reset();
+        const D = c.D;
+        let total = 0;
+        const lines = [];
+        for (const s of SF_SCREENS) {
+            const sv = await openStereoFor(c, s.cmp);
+            s.open(sv);
+            await c.tick(120);
+            const n = stereoModalChars(D);
+            total += n;
+            lines.push(`${s.name} ${n}/${s.max}`);
+            assert(n <= s.max,
+                `「${s.name}」に出ている字が ${n}字（上限 ${s.max}字）。` +
+                `⚠ 説明を足すなら **畳む**こと（<details class="learn-acc">。閉じた中身は数えない）。` +
+                `⚠ ただし畳みを口実に消すのは下の検査が止める`);
+            D.getElementById('btn-stereo-close').click();
+        }
+        assert(total <= SF_TOTAL_MAX, `3画面の合計が ${total}字（上限 ${SF_TOTAL_MAX}字）。内訳: ${lines.join(' / ')}`);
+        assert(total > 400, `合計 ${total}字 ＝ 数え方が空振りしている（${lines.join(' / ')}）`);
+
+        // ★ 畳んだ理由が**残っている**こと。⚠ ユーザーが挙げた3文を1つずつ名指しで見る
+        //   （量を減らすのが発注で、理由を消すのは発注ではない）
+        const sv = await openStereoFor(c, '2-プロパノール');
+        sv.setMode('3d'); sv.setMirror(true);
+        await c.tick(120);
+        const has = (id, word, why) => {
+            const el = D.getElementById(id);
+            assert(el, `${id} が無い`);
+            assert(!el.open, `${id} が既定で開いている（畳んだ意味が無い）`);
+            assert(el.textContent.includes(word), `${why}（「${word}」が ${id} から消えている）`);
+        };
+        // ① R・S の見出し（17字）は**短くしていない**。判定が図に依ることを言う唯一の文なので残す
+        assert(D.getElementById('stereo-rs-letter').textContent.includes('この図では判定していません'),
+            'R・S の見出しから「この図では」が落ちている ＝ 判定が図に依ることが言えなくなる');
+        // ② 「同じ置換基があると重ね合わせられます」＝ 畳んだうえで、跳んで確かめられる
+        has('stereo-rs-why-nonasym', '重ね合わせられます', '不斉でない理由が消えている');
+        assert(D.getElementById('btn-stereo-rs-try-fit'),
+            '畳んだ理由から「⊕ 重ねてみる」へ跳ぶ口が無い（読ませるかわりに確かめさせる、が発注）');
+        // ③ 環が使えない理由は**本文にはもともと無い**（v1472 でタブの title へ移してある）。
+        //    ⚠ ここが「画面から消えていないか」の見張り
+        const ringTab = D.getElementById('btn-stereo-tab-ring');
+        assert(ringTab.disabled && /環をつくると/.test(ringTab.title),
+            '環ビューが使えない理由（環をつくると使える）がタブの title から消えている');
+        // 畳んだキャプションの中身（不斉の説明と「※」）も残っている
+        has('stereo-caption-more', '不斉炭素原子ではありません', 'キャプションの不斉の説明が消えている');
+        assert(D.getElementById('stereo-caption-more').textContent.includes('※'),
+            'キャプションの「※ どこから来た並びか」が消えている');
+        D.getElementById('btn-stereo-close').click();
+    });
+
+    test('SF6: ★否定対照 — 1文足すと SF5 が赤くなる／12px を下回る字が1つも無い', async (c) => {
+        c.reset();
+        const D = c.D;
+        const ONE = 'ここで選んだ内容はキャンバスの下の帯にそのまま出るので、あとから読み直すこともできます。';
+        assert(ONE.length >= 40 && ONE.length <= 60, `対照の1文が 40〜60字でない（${ONE.length}字）`);
+        for (const s of SF_SCREENS) {
+            const sv = await openStereoFor(c, s.cmp);
+            s.open(sv);
+            await c.tick(120);
+            const before = stereoModalChars(D);
+            const p = D.createElement('p');
+            p.className = 'sf-negative-control';
+            p.textContent = ONE;
+            D.querySelector('#stereo-modal .modal-content').appendChild(p);
+            await c.tick(60);
+            const after = stereoModalChars(D);
+            p.remove();
+            assert(after === before + ONE.length,
+                `「${s.name}」で足した1文が数えられていない（${before} → ${after}）＝ 検査が空振りしている`);
+            assert(after > s.max,
+                `「${s.name}」は1文（${ONE.length}字）足しても上限 ${s.max}字 を超えない（${before} → ${after}）` +
+                '＝ 余裕が広すぎて止め木になっていない');
+
+            // ★ 「字が小さい」の側 —— 12px を下回る文字が1つも無いこと。
+            //   ⚠ 実測（2026-08-28・修正前）では **回転軸と「軸の向き」のボタン 10個・18字が 11px** で、
+            //     本文はすべて 12〜15px だった ＝ 直す場所はそこしかなかった
+            const small = [];
+            D.getElementById('stereo-modal').querySelectorAll('*').forEach(el => {
+                if (el.closest('svg') || !el.checkVisibility || !el.checkVisibility()) return;
+                if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+                const fs = parseFloat(c.W.getComputedStyle(el).fontSize);
+                if (fs < 12) small.push(`${el.id || el.tagName}:${fs}px`);
+            });
+            assert(small.length === 0,
+                `「${s.name}」に 12px を下回る文字がある（${small.join(' / ')}）＝ ユーザー指摘「字が小さい」に戻っている`);
+            D.getElementById('btn-stereo-close').click();
+        }
     });
 
     /* ===== UX: 「操作の案内」の字数の上限（v1468・ux-density.md）=====
