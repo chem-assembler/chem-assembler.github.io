@@ -41272,6 +41272,133 @@
         c.reset();
     });
 
+    /* ===== RV9・RV10: 前後比較の印が二重結合を隠さない（v1477） =====
+     *
+     * ユーザー実機報告（2026-08-28）:
+     *   「オレンジのマーカーが太く、裏が二重結合になっているところがわかりづらい」
+     *   「二重結合のうち一本が切れて、新たな結合が生じる様子をわかりやすくしたい」
+     *   「レジェンドの『オレンジ』や『シアン』は色なので、文字で説明する必要がない」
+     *
+     * ★ 実測（直す前・イソプレン3個の 1,4-付加重合）:
+     *   二重結合 = 線幅 2.2px × 2本・間隔 5px ＝ 横幅 7.2px ／
+     *   印 = 線幅 7px・不透明度 0.9・**最後に append**（＝ 結合線の上）
+     *   ＝ 二重結合の ink の **95%** を 9割の濃さで塗りつぶしていた。 */
+    const rvCompare = async (c, names, ruleId) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        names.forEach(n => assert(g.summonMolecule(n), `（前提）${n} を呼べない`));
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, `（前提）${ruleId} の箇所が見つからない`);
+        W.reactor.execute(rule, sites[0], null);
+        await c.tick(80);
+        W.reactor.openCompare();
+        await c.tick(60);
+        const ov = c.D.getElementById('rx-compare-overlay');
+        assert(!ov.classList.contains('hidden'), '前後比較が開かない');
+        return [...ov.querySelectorAll('svg')];
+    };
+    const rvMarkKinds = (svg) => {
+        const m = [...svg.querySelectorAll('.rx-diff-mark')];
+        return {
+            half: m.filter(x => x.classList.contains('rx-diff-half')),
+            full: m.filter(x => x.tagName === 'line' && !x.classList.contains('rx-diff-half')),
+            circle: m.filter(x => x.tagName === 'circle')
+        };
+    };
+
+    test('RV9: 差分の印は結合線の下に敷き、「二重結合の1本ぶん」は片側の線にだけ引く', async (c) => {
+        const svgs = await rvCompare(c, ['イソプレン', 'イソプレン', 'イソプレン'], 'diene_polymerization');
+        assert(svgs.length === 2, `前後の図が2枚出ていない（${svgs.length}）`);
+
+        // ① ★ 印の層は**いちばん下**（結合線・原子より先に描く）
+        svgs.forEach((s, i) => {
+            const first = s.firstElementChild;
+            assert(first && first.classList.contains('rx-diff-layer'),
+                `${i === 0 ? '反応前' : '反応後'}: 印が結合線の上に乗っている（先頭の層 = ${first && first.getAttribute('class')}）`);
+        });
+
+        // ② 反応前は「二重結合が単結合になった」印だけ ＝ 全部が片側の印
+        const before = rvMarkKinds(svgs[0]);
+        assert(before.half.length === 6 && before.full.length === 0,
+            `反応前の印が 片側${before.half.length}・まるごと${before.full.length}（6と0が正）`);
+
+        // ③ ★ 片側の印は、二重結合の**2本のうち片方の線の上**に乗っている
+        //    （`renderTargetBond` の二重結合は垂直 ±2.5px。もう1本には触れていない）
+        const lines = [...svgs[0].querySelectorAll('.quiz-bonds line')];
+        const mid = (el) => ({
+            x: (+el.getAttribute('x1') + +el.getAttribute('x2')) / 2,
+            y: (+el.getAttribute('y1') + +el.getAttribute('y2')) / 2
+        });
+        before.half.forEach(mk => {
+            const p = mid(mk);
+            const ds = lines.map(l => { const q = mid(l); return Math.hypot(p.x - q.x, p.y - q.y); })
+                .sort((a, b) => a - b);
+            assert(ds[0] < 0.6, `片側の印が結合線に乗っていない（いちばん近い線まで ${ds[0].toFixed(1)}px）`);
+            assert(ds[1] > 4 && ds[1] < 6,
+                `もう1本の線との距離が ${ds[1].toFixed(1)}px（二重結合の間隔 5px が正 ＝ 2本目には掛かっていない）`);
+        });
+
+        // ④ 反応後は「新しくできた二重結合」＝ 片側、「新しくできた単結合」＝ まるごと
+        const after = rvMarkKinds(svgs[1]);
+        assert(after.half.length === 3, `反応後の片側の印が ${after.half.length}（新しい C=C の3件が正）`);
+        assert(after.full.length === 4,
+            `反応後のまるごとの印が ${after.full.length}（つないだ2本＋両端の R 2本 ＝ 4件が正）`);
+
+        // ⑤ 太さと濃さ（覆う量そのもの）
+        before.half.forEach(m => {
+            assert(m.getAttribute('stroke-width') === '5',
+                `片側の印の太さが ${m.getAttribute('stroke-width')}（直す前は 7 で、二重結合の横幅 7.2px をほぼ覆っていた）`);
+        });
+        after.full.forEach(m => {
+            assert(+m.getAttribute('opacity') <= 0.5,
+                `まるごとの印が濃すぎる（${m.getAttribute('opacity')}）`);
+        });
+        c.W.reactor.closeCompare();
+        c.reset();
+    });
+
+    test('RV10: ★否定対照 — 色の見本は残す／印を全部「片側」にしていない／凡例から色名だけ落とす', async (c) => {
+        const svgs = await rvCompare(c, ['エチレン', 'エチレン', 'エチレン'], 'addition_polymerization');
+        const D = c.D;
+
+        // ① 凡例に**色の名前**が無い（ユーザー指摘）が、**色の見本は3つ残っている**
+        const legend = D.getElementById('rx-cmp-legend');
+        assert(legend, '凡例が見つからない');
+        assert(!/オレンジ|シアン|(^|[^緑])緑/.test(legend.textContent),
+            `凡例に色の名前が残っている（${legend.textContent}）`);
+        const swatches = [...legend.querySelectorAll('.rx-legend-swatch')];
+        assert(swatches.length === 3, `色の見本が ${swatches.length} 個（3個が正 ＝ 色そのものは消していない）`);
+        const colors = new Set(swatches.map(s => s.style.background));
+        assert(colors.size === 3, `見本の色が ${colors.size} 種類（3種類が正）`);
+        // ⚠ **本当に見えているか**まで見る（`display:none` にしても数と色は残るので、
+        //    数えるだけの検査は「見本を消した」壊し方を素通りさせる・実際に確かめた）
+        swatches.forEach((s, i) => {
+            const r = s.getBoundingClientRect();
+            assert(r.width > 0 && r.height > 0,
+                `見本 ${i + 1} が描かれていない（${Math.round(r.width)}×${Math.round(r.height)}）`);
+        });
+        // 意味は字で残っている（見本だけにして意味まで消していない）
+        ['切れた結合', 'できた結合', '付加した原子'].forEach(w =>
+            assert(legend.textContent.includes(w), `凡例から「${w}」が消えている`));
+
+        // ② ★ **全部を「片側」にしていない**。エチレンの付加重合は
+        //    反応前 = C=C が単結合になる（片側3件）／反応後 = 新しい単結合とR（まるごと4件）
+        const before = rvMarkKinds(svgs[0]), after = rvMarkKinds(svgs[1]);
+        assert(before.half.length === 3 && before.full.length === 0,
+            `反応前が 片側${before.half.length}・まるごと${before.full.length}（3と0が正）`);
+        assert(after.half.length === 0 && after.full.length === 4,
+            `反応後が 片側${after.half.length}・まるごと${after.full.length}（0と4が正 ＝ ` +
+            '新しくできた単結合まで「1本ぶん」に化けていない）');
+
+        // ③ 印そのものは消えていない（「見やすくする」で情報を落としていない）
+        assert(after.circle.length === 2, `付加した原子の印が ${after.circle.length} 個（2個が正）`);
+        c.W.reactor.closeCompare();
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
