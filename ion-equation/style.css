@@ -1912,6 +1912,12 @@ main.timelineMain {
 .hbLine { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 4px; padding: 2px 0 4px; }
 .hbLine .fterm { gap: 2px; }
 .hbSlot[hidden] { display: none; }
+/* ★ 枠は6つとも最初から出しておき、**いま入れるところ**だけをハイライトする
+   （2026-08-28・ユーザーの指示）。隠して足止めすると、これから何を入れるのかが見えない。
+   ⚠ 枠に出ているのは種の名前だけ（数も辺も無い）ので、見せても答えは漏れない。 */
+.hbSlot.hbSlotNow .fcoefIn { border-color: #3b82c4; background: #f4f9fd; box-shadow: 0 0 0 2px #dbeaf6; }
+.step.hbNow { border-color: #3b82c4; background: #f6fafd; }
+.step.hbNow .stepNo { background: #3b82c4; }
 /* 完成したら枠の色だけ変える（式そのものは組み直さない ＝ 直したくなったら直せる） */
 .hbLine.hbDone .fcoefIn { border-color: #8fc4a5; background: #f2faf5; }
 /* 手順を選ぶ2つ。⚠ 帯（.strip）ではない —— 横に流れず、いつも両方見えていること自体が

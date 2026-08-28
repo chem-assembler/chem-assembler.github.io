@@ -56,19 +56,20 @@
     </section>
 
     <!-- 段の見出しは手順で入れ替わる（HALF_PROCS が持つ）。
-         前の段が片づくまで次の段は開かない（筆算が下へ伸びるのと同じ順） -->
+         ★ 段も欄も**はじめから3段とも出す**。いま入れる段だけをハイライトし、
+            まだ来ていない段はうすいまま置く（採点の文だけ伏せる。halfreaction.js の refresh） -->
     <section class="step" id="hbStep0">
-      <div class="stepHead"><span class="stepNo">1</span><span class="hbHead"></span><span class="oxRole hbLock" hidden>まだ開かない</span></div>
+      <div class="stepHead"><span class="stepNo">1</span><span class="hbHead"></span><span class="oxRole hbNowTag" hidden>いま入れるところ</span></div>
       <div class="hbExtra" hidden></div>
       <div class="hbMsg"></div>
     </section>
     <section class="step" id="hbStep1">
-      <div class="stepHead"><span class="stepNo">2</span><span class="hbHead"></span><span class="oxRole hbLock" hidden>まだ開かない</span></div>
+      <div class="stepHead"><span class="stepNo">2</span><span class="hbHead"></span><span class="oxRole hbNowTag" hidden>いま入れるところ</span></div>
       <div class="hbExtra" hidden></div>
       <div class="hbMsg"></div>
     </section>
     <section class="step" id="hbStep2">
-      <div class="stepHead"><span class="stepNo">3</span><span class="hbHead"></span><span class="oxRole hbLock" hidden>まだ開かない</span></div>
+      <div class="stepHead"><span class="stepNo">3</span><span class="hbHead"></span><span class="oxRole hbNowTag" hidden>いま入れるところ</span></div>
       <div class="hbExtra" hidden></div>
       <div class="hbMsg"></div>
     </section>
