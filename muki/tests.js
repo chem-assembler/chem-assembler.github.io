@@ -1305,6 +1305,65 @@
             });
             return n1 >= 10 && n2 >= 5;
         })());
+        // ---------------------------------------------------------------
+        // ★★★ MU-3 「イオンの行先を答える」に置く手順（2026-08-28・ユーザー指摘）
+        //   > 手順が3問すべてで同じになっている、最後の方はバリエーションを持たせるべき
+        //
+        // ⚠⚠ **症状の正体は出題ではなく、置く手順のほうだった** ——
+        //   出題は v27 の生成をちゃんと使っていたが、置いていたのは `treeIdealSeq`
+        //   ＝「配った札を教科書の順に並べたもの」で、⚠ 配る札はどの容器でも同じ。
+        //   ★ だから **母集団 120 組すべてで、まったく同じ7手**になっていた（下で数えている）。
+        // ---------------------------------------------------------------
+        (function () {
+            var idealSeqs = {}, needSeqs = {}, needCombos = {};
+            var notIsolated = [], movesBad = [];
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) {
+                    var p = treeBuildProblem(e.ions, l.id);
+                    idealSeqs[treeIdealSeq(p).join('>')] = 1;
+                    var need = treeNeededPlan(p);
+                    needSeqs[need.seq.join('>')] = 1;
+                    needCombos[need.seq.join('>') + '|' + JSON.stringify(need.sub)] = 1;
+                    // ★ 置いた手順で、実際に単離しきれること（⚠ 解けない盤面を置いたら赤）
+                    var g = treeGrade(p, need.seq, treePlanFromRun(p, need.seq, need.sub), need.sub);
+                    if (!g.isolated) notIsolated.push(treeIonKey(e.ions));
+                    // ★ 置いた手数が、門番の数えた理想の最短と一致すること
+                    if (g.moves !== e.shortest) movesBad.push(treeIonKey(e.ions));
+                });
+            });
+            var nIdeal = Object.keys(idealSeqs).length;
+            var nNeed = Object.keys(needSeqs).length;
+            var nCombo = Object.keys(needCombos).length;
+            // ⚠ これが「症状そのもの」の記録。★ 直す前の姿を数字で残しておく
+            ok('MU-3a ⚠ 模範の手順は、母集団のどの容器でも同じ（実測 ' + nIdeal + ' 通り）',
+                nIdeal === 1);
+            ok('MU-3b ★★ 置く手順は容器ごとに変わる（実測 ' + nNeed +
+                ' 通り／沈殿側の札も込みで ' + nCombo + ' 通り）',
+                nNeed >= 10 && nCombo >= 30);
+            ok('MU-3c ★ 置いた手順は、母集団の全 ' +
+                TREE_LEVELS.reduce(function (n, l) { return n + treePoolN[l.id]; }, 0) +
+                ' 組で単離しきる（⚠ 解けない盤面を置かない）', notIsolated.length === 0);
+            ok('MU-3d ★ 置いた手数が、門番の数えた理想の最短と一致する（⚠ 余計な段を置かない）',
+                movesBad.length === 0);
+        })();
+        // ★ 属が欠けていれば、その段は置かれない（⚠ 具体例で1件ずつ確かめる）
+        ok('MU-3e ⚠ 属が欠けた容器では、要らない段が置かれていない', (function () {
+            var bad = [];
+            // 【容器】→【置かれるべき手順】。★ どれも母集団に実在する組（上で全件を通している）
+            [
+                // 第1属（Ag・Pb）と第3属（Fe）だけ ＝ 硫化水素も煮沸も炭酸も要らない
+                [['Fe3', 'Ag', 'Al'], 'hcl>nh3'],
+                // 銅（第2属）が居るので硫化水素が要り、鉄を戻すのに煮沸と希硝酸も要る
+                [['Fe3', 'Cu', 'Zn'], 'hcl>h2s>boil>hno3>co3'],
+                // 属ごとに1つずつ ＝ 教科書の7手がまるごと要る
+                [['Fe3', 'Ag', 'Cu', 'Zn', 'Ca', 'Na'], 'hcl>h2s>boil>hno3>nh3>h2s>co3']
+            ].forEach(function (x) {
+                var got = treeNeededPlan(treeBuildProblem(x[0])).seq.join('>');
+                if (got !== x[1]) bad.push(x[0].join(',') + ' → ' + got + '（期待 ' + x[1] + '）');
+            });
+            if (bad.length) warn('置く手順が期待と違う: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
         // ★ 難易度は手で付けない（§2-4）。⚠ 門番が数えた値だけから出す
         ok('★★ 難易度の根拠が、門番の数えた値そのもの（中身の数＋最短手数＋3×属の中の組数）', (function () {
             var bad = [];
@@ -2579,6 +2638,36 @@
             ok('MU-2d 記録にも手数と最短を入れない（⚠ 入れると率に本人以外の手が混ざる）',
                 w.treeUI.state.record.moves === undefined &&
                 w.treeUI.state.record.shortest === undefined, uiOut);
+
+            // ★★★ MU-3 画面でも手順が変わるか（2026-08-28・ユーザー「手順が3問すべてで同じ」）
+            //   ⚠ 模型が15通り出せても、画面が模範の7手を置き続けていたら意味がない。
+            //   ★ 実際に引き直して、枝に並んだ札の列を数える
+            (function () {
+                var seen = {}, ionsSeen = {};
+                for (var i = 0; i < 24; i++) {
+                    d.getElementById('btn-new').click();
+                    seen[w.treeUI.state.seq.join('>')] = 1;
+                    ionsSeen[treeIonKey(w.treeUI.state.problem.ions)] = 1;
+                }
+                var n = Object.keys(seen).length;
+                ok('MU-3f ★★ 「べつの容器にする」で、置いてある手順も変わる（24回で ' +
+                    n + ' 通り）', n >= 3, uiOut);
+                ok('MU-3g ★ 容器の中身も変わっている（24回で ' +
+                    Object.keys(ionsSeen).length + ' 通り）',
+                    Object.keys(ionsSeen).length >= 5, uiOut);
+                // ⚠ 枝に空きが無いこと（★ 押せない段で空の枝を見せない）
+                ok('MU-3h ⚠ 置いてある手順に空の枝が無い',
+                    w.treeUI.state.seq.every(function (o) { return !!o; }) &&
+                    d.querySelectorAll('.slot.branch.empty').length === 0, uiOut);
+                // ★ 置いてある手順で、実際に単離しきれること（＝ 解ける盤面が出ている）
+                ok('MU-3i ★ 画面に出ている手順が、その容器を単離しきる', (function () {
+                    var S = w.treeUI.state;
+                    var plan = treePlanFromRun(S.problem, S.seq, S.sub);
+                    return treeGrade(S.problem, S.seq, plan, S.sub).isolated === true;
+                })(), uiOut);
+            })();
+            // ⚠ 次の検査は中身を固定して続ける（★ 上で引き直したので戻す）
+            w.treeUI.start('read', 'easy', { ions: UI_A1 });
 
             // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
             w.treeUI.start('build', 'easy', { ions: UI_A1 });

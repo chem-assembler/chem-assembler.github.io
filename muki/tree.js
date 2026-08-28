@@ -704,9 +704,14 @@
             // ★ 操作はもう置いてある（§16-2 のバリエーション）。⚠ 決めるのはイオンの行先だけ
             //   ★★ 沈殿側の札も置いてある —— ⚠ 置かないと「割らずに止めた木」になり、
             //     行先を答えるだけの段なのに単離できない答案しか作れなくなる
-            var ideal = treeIdealSeq(state.problem);
-            for (var j = 0; j < ideal.length && j < n; j++) state.seq[j] = ideal[j];
-            state.sub = treeIdealSub(state.problem, state.seq);
+            // ★★★ 置くのは **この容器で実際に要る手順**（2026-08-28・ユーザー指摘）:
+            //   > 手順が3問すべてで同じになっている、最後の方はバリエーションを持たせるべき
+            //   ⚠ 模範の手順（treeIdealSeq）は **配った札を教科書の順に並べたもの**で、
+            //     配る札はどの容器でも同じ ＝ **どの容器でも同じ7手**にしかならなかった（実測1通り）。
+            //   ★ 刈り込んだ手順は容器ごとに変わる（★ 実測 15 通り・沈殿側込みで 40 通り）。
+            var need = treeNeededPlan(state.problem);
+            state.seq = need.seq.slice();
+            state.sub = need.sub;
         }
         state.record = treeRecord(state.mode, state.problem);
         $('result').textContent = '';
