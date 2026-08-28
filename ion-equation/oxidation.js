@@ -5,7 +5,9 @@
    仮想的に単原子イオンに分解させてもよい**」
 
    ★ 徹底のさせ方は「段を分ける」。
-       段1 イオンに分ける（K₂Cr₂O₇ → 2K⁺ ＋ Cr₂O₇²⁻）… **ここを通らないと段2が出てこない**
+       段1 イオンに分ける（K₂Cr₂O₇ → 2K[＋1] ＋ Cr₂O₇[−2]）… **ここを通らないと段2が出てこない**
+           ⚠ 問うのは**電荷**（個数は原子の保存から決まるので印で出す）。
+              電荷を決めてから段2の「合計＝そのイオンの電荷」へ進む、という順序を守るため
        段2 それぞれのイオンの中で酸化数を決める（規則で決まるぶんは印。問うのは残り1つ）
        段3 仮想的に単原子イオンへ分ける（任意。⚠ 実在の電離ではないと断ってから見せる）
 
@@ -35,7 +37,8 @@ const clearEl      = document.getElementById("clearBanner");
 const TASKS = oxTaskList();
 
 let taskIdx = 0;
-let splitVals = [];   // 段1: 断片の個数（空欄は undefined）
+/* 段1: 断片の**電荷**（空欄は undefined）。⚠ 0 は「電荷 0 と答えた」＝ 誤答であって未入力ではない */
+let splitVals = [];
 let oxVals = {};      // 段2: { 断片の添字: { 元素: 値 } }
 let virtOpen = false;
 
@@ -97,29 +100,75 @@ function buildSplit() {
     const wrap = el("span", "fterm");
     // ⚠ ＋ は次の項の**中**に入れる。外に出すと折り返しで行末に取り残される（実機で確認）
     if (i > 0) wrap.appendChild(el("span", "fsep", "＋"));
-    const coef = el("span", "fcoef");
+    /* 個数は**印**。もとの式の原子がそのまま分かれるので、電荷が決まれば個数は考えなくてよい
+       （1個のときは書かない ＝ ふつうの式の書き方に合わせる） */
+    if (p.n > 1) {
+      const coef = el("span", "oxSplitN", String(p.n));
+      coef.title = "個数は、もとの式の原子がそのまま分かれるので決まる";
+      wrap.appendChild(coef);
+    }
+    /* ⚠ **電荷を消した式を出す。** Na⁺ と書いてしまうと答えがそこに書いてある ＝ 写せる。
+       上付きの電荷は式の末尾にしか来ないので、機械的に落とせる。 */
+    wrap.appendChild(el("span", "oxBigFormula", dispNoCharge(p.sp)));
     const inp = document.createElement("input");
     inp.type = "number";
-    inp.min = "1";
-    inp.max = "9";
-    inp.className = "fcoefIn";
+    inp.min = "-4";
+    inp.max = "4";
+    inp.step = "1";
+    inp.className = "oxIn oxChgIn";
     inp.id = "splitIn" + i;
     inp.value = splitVals[i] === undefined ? "" : String(splitVals[i]);
-    inp.setAttribute("aria-label", SPECIES[p.sp].disp + " の個数");
+    inp.setAttribute("aria-label", dispNoCharge(p.sp) + " の電荷");
     /* ⚠ **打っている途中に行を作り直さない**（redox.js の calcSlots と同じ作法）。
        innerHTML を入れ替えると入力欄そのものが別物になり、1文字打つたびに焦点が飛ぶ。
        oninput は値と印と判定文だけを塗り替える。 */
     inp.oninput = () => {
       const v = inp.value.trim();
-      if (v === "") delete splitVals[i]; else splitVals[i] = Number(v);
+      // ⚠ 「−」だけの途中と 0 を取り違えない（0 は答えとして受け取り、誤答と判定する）
+      if (v === "" || v === "-" || !Number.isInteger(Number(v))) delete splitVals[i];
+      else splitVals[i] = Number(v);
       refresh();
     };
-    coef.appendChild(inp);
-    wrap.appendChild(coef);
-    wrap.appendChild(el("span", "oxBigFormula", SPECIES[p.sp].disp));
+    wrap.appendChild(inp);
     right.appendChild(wrap);
   });
   splitSheetEl.appendChild(row);
+  // 検算の行（段2と同じ形）。**答えは書かない** —— いまの合計と、めざす合計だけ
+  const chk = el("div", "oxCheckLine");
+  chk.id = "splitChk";
+  splitSheetEl.appendChild(chk);
+}
+
+/* 電荷を落とした化学式（PO₄³⁻ → PO₄）。上付きの数字と ⁺⁻ は式の末尾にしか来ない */
+function dispNoCharge(sp) {
+  return SPECIES[sp].disp.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]*[⁺⁻]$/, "");
+}
+
+/* 段1の塗り替え（作り直さない）。検算の行と、入力欄の赤い印だけを更新する */
+function refreshSplit(res) {
+  const t = task();
+  const chk = document.getElementById("splitChk");
+  if (!chk) return;
+  let sum = 0, allIn = true;
+  const cells = t.parts.map((p, i) => {
+    const v = splitVals[i];
+    if (Number.isInteger(v)) sum += v * p.n; else allIn = false;
+    return `(${Number.isInteger(v) ? fmtOxNum(v) : "？"})×${p.n}`;
+  });
+  const want = SPECIES[t.sp].charge;
+  /* ⚠ 緑にするのは**通ったとき**だけ。合計だけ合って中身が違う回（＋と−が
+     たまたま打ち消し合う）で緑を出すと、「緑なのに進めない」に見える。
+     数そのものは書いてあるので、色は判定と一致させておくほうが読める。 */
+  chk.className = "oxCheckLine" + (allIn ? (res && res.ok ? " okcell" : " ngcell") : "");
+  chk.textContent = `${cells.join(" ＋ ")} ＝ ${allIn ? fmtOxNum(sum) : "？"}` +
+    `　　めざす合計 ＝ ${want === 0 ? "0（もとの粒は電気的に中性）" : fmtOxNum(want)}`;
+  t.parts.forEach((p, i) => {
+    const inp = document.getElementById("splitIn" + i);
+    if (!inp) return;
+    inp.classList.toggle("ng", !!(res && res.wrong && res.wrong.includes(i)));
+    const want2 = splitVals[i] === undefined ? "" : String(splitVals[i]);
+    if (document.activeElement !== inp && inp.value !== want2) inp.value = want2;
+  });
 }
 
 /* ---- 段2: イオンの中で酸化数を決める ---- */
@@ -265,6 +314,7 @@ function refresh() {
   const t = task();
   if (t.needsSplit) {
     const r = splitState();
+    refreshSplit(r);
     setStatusMsg(splitMsgEl, r.reason, r.ok ? "ok" : r.kind === "wrong" ? "ng" : "info");
     whySplitEl.textContent = t.verdict.reason.replace(/\*\*/g, "");
     whySplitEl.className = "footNote" + (t.verdict.kind === "possible" ? "" : " oxWhyStrong");
