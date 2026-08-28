@@ -40935,6 +40935,127 @@
         c.reset();
     });
 
+    /* ===== RV3・RV4: 反応の印（オレンジの破線）を次の分子へ持ち越さない（v1477） =====
+     *
+     * 動画レーンの実測報告 2026-08-26 §7。完成した mp4 のフレームで
+     * 「5秒＝まだ反応していない 1-プロパノールに印なし／17秒＝出しただけの
+     * 2-プロパノールに印あり」＝ **呼び出すと付くのではなく、前の印が残っている**。
+     *
+     * ★ 実アプリ（:9137）で再現した数 ＝ 反応直後 2個 → 全消去 **2個** → 呼び出し **2個**。 */
+    const rvMarks = (c) => c.D.getElementById('ui-group').querySelectorAll('[data-hl-atom]').length;
+    // 1-プロパノールを酸化して、印が2つ出た状態を作る（動画と同じ一手）
+    const rvReact = async (c) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('1-プロパノール');
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'oxidize_primary');
+        assert(rule, '（前提）oxidize_primary が REACTION_RULES に無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, '（前提）1-プロパノールで酸化の箇所が見つからない');
+        W.reactor.execute(rule, sites[0], null);
+        await c.tick(1400);   // モーフィング 800ms ＋ 余裕
+    };
+
+    test('RV3: 反応の印は、指す原子が図から消えたら一緒に消える（次の分子へ持ち越さない）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+
+        // ★ ① まず「印が出る」ことを確かめる（ここが死んでいると、以下は全部素通しになる）
+        await rvReact(c);
+        assert(rvMarks(c) === 2, `反応の直後に印が出ていない（${rvMarks(c)}個・2個が正）`);
+
+        // ② 🗑 全消去 … 動画の 13秒 → 17秒 で起きていた持ち越しそのもの
+        D.getElementById('btn-clear-all').click();
+        assert(rvMarks(c) === 0, `全消去のあとも印が ${rvMarks(c)} 個残っている`);
+        // ③ そのまま別の分子を呼ぶと、印が新しい分子の上に乗っていた
+        g.summonMolecule('2-プロパノール');
+        g.updateDrawing();
+        assert(rvMarks(c) === 0, `呼び出した分子の上に前の印が ${rvMarks(c)} 個乗っている`);
+
+        // ④ ↩ 戻す（リボン）… 巻き戻した図は「その反応で変わった図」ではない
+        await rvReact(c);
+        D.getElementById('btn-undo').click();
+        await c.tick(50);
+        assert(rvMarks(c) === 0, `↩ 戻す のあとも印が ${rvMarks(c)} 個残っている`);
+
+        // ⑤ ↩ 反応前に戻す（作業帯）
+        await rvReact(c);
+        assert(W.reactor.undoLastReaction(), '（前提）「反応前に戻す」が効かない');
+        await c.tick(50);
+        assert(rvMarks(c) === 0, `反応前に戻したのに印が ${rvMarks(c)} 個残っている`);
+
+        // ⑥ お題の読み込み（分子まるごと入れ替わる道）
+        await rvReact(c);
+        g.loadStage(0);
+        assert(rvMarks(c) === 0, `お題を読み込んだ後も印が ${rvMarks(c)} 個残っている`);
+
+        /* ⑦ ★ **空のキャンバスで全消去を押した**とき（`btnClearAll` の早い return を通る道）。
+           ⚠ ここが赤くなる壊し方 ＝ `clearUIOverlay()` を
+              `if (atoms.length === 0) return;` の**後ろ**へ動かすこと。 */
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.highlightAtoms([{ id: 'rv3-ghost', x: 100, y: 100 }]);
+        assert(rvMarks(c) === 1, '（前提）検査用の印が置けていない');
+        D.getElementById('btn-clear-all').click();
+        assert(rvMarks(c) === 0, '空のキャンバスで全消去を押すと印が残る（早い return の裏）');
+        c.reset();
+    });
+
+    test('RV4: ★否定対照 — いまの分子に居る原子を指す印は消さない（全部消しにしていない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('エタノール');
+        g.updateDrawing();
+        const target = g.userMolecule.atoms[0];
+        g.highlightAtoms([target]);
+        assert(rvMarks(c) === 1, `印が1つ置けていない（${rvMarks(c)}個）`);
+
+        // ① 図を描き直しても消えない（`updateDrawing` で全部消しにしていない ＝
+        //    RV3 は「常に clearUIOverlay する」実装でも通ってしまうので、ここで止める）
+        g.updateDrawing();
+        g.updateDrawing();
+        assert(rvMarks(c) === 1, `描き直しただけで印が消えた（${rvMarks(c)}個）`);
+
+        // ② 別の原子を足しても、生きている原子の印はそのまま
+        g.userMolecule.addAtom('C', target.x + 84, target.y);
+        g.updateDrawing();
+        assert(rvMarks(c) === 1, `原子を足しただけで印が消えた（${rvMarks(c)}個）`);
+
+        // ③ 指していた原子が居なくなって初めて消える
+        g.userMolecule.atoms = g.userMolecule.atoms.filter(a => a.id !== target.id);
+        g.userMolecule.bonds = g.userMolecule.bonds.filter(
+            b => b.atomId1 !== target.id && b.atomId2 !== target.id);
+        g.updateDrawing();
+        assert(rvMarks(c) === 0, `指す原子が消えたのに印が ${rvMarks(c)} 個残っている`);
+
+        /* ★ ④ **`uiGroup` の子の数で見てはいけない**（動画レーンの追加実測 2026-08-28）。
+           何も無い所へカーソルを置くと、`drawAtomPreview` が `clearUIOverlay()` してから
+           **原子配置のゴースト**を同じ器に描く ＝ 実測で「子 2 → 2」。
+           **数だけ見ていると「印が消えていない」と読み違える**。
+           ⚠ この検査（と RV3）が印を `[data-hl-atom]` で引いているのはそのため。
+           ここで「ゴーストは出ている・印は0」を固定して、引き方を後戻りさせない。 */
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('エタノール');
+        g.updateDrawing();
+        g.selectedTool = 'select';
+        g.selectedModule = null;
+        const anchor = g.userMolecule.atoms[0];
+        g.highlightAtoms([anchor]);
+        assert(rvMarks(c) === 1, '（前提）ゴーストの検査用の印が置けていない');
+        c.hoverAt(anchor.x + 84, anchor.y + 84);   // 原子の無い、置ける場所
+        const kids = c.D.getElementById('ui-group').children.length;
+        assert(kids > 0, `（前提）ゴーストが出ていない（uiGroup の子 ${kids} 個）`);
+        assert(rvMarks(c) === 0,
+            `★ ゴーストを反応の印と数えている（印 ${rvMarks(c)} 個・uiGroup の子 ${kids} 個）`);
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
