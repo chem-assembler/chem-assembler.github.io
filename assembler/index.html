@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1473">
+    <link rel="stylesheet" href="style.css?v=1474">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1473</div>
+            <div class="version">v1474</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -640,7 +640,9 @@
                         <button id="btn-random-stage" class="view-btn"
                                 style="width:100%; font-size:13px; padding:10px; min-height:36px;"
                                 title="いま選んでいるシリーズの中から、まだ出していない問題を1つ選びます">🎲 このシリーズからランダムに出題</button>
-                        <div id="random-status" style="font-size:10.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;"></div>
+                        <!-- ⚠ 10.5px → 12.5px（v1472）。**文を 51字 → 9字 に減らしてから上げた**
+                             ＝ 字が大きくなっても1行に収まる（ux-density §7-3「減らした後で上げる」） -->
+                        <div id="random-status" style="font-size:12.5px; color:var(--text-muted); margin-top:5px; line-height:1.5;"></div>
                     </div>
                 </div>
 
@@ -1681,8 +1683,25 @@
             <div id="stereo-rs-row" style="margin:8px 0 0; width:100%; text-align:left;">
                 <p id="stereo-rs-letter" style="font-size:14px; color:var(--text-primary); line-height:1.5; margin:0;"></p>
                 <p id="stereo-rs-why" style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; white-space:pre-line; margin:3px 0 0;"></p>
+                <!-- ⚠ v1472: 「主鎖が縦に描かれていないため、判定しません。」の**続き 114字**をここへ畳んだ
+                     （ux-density §2 番外）。★ **消していない** —— 「縦が奥・横が手前」がフィッシャー投影
+                     のときだけ成り立つ、という約束は大学水準まで効く話で、必要な人は開けば読める。
+                     ⚠ 本文をここ（HTML）に据え置きにしてあるのは、**中身が空の状態を作らない**ため。
+                     stereo.js がするのは hidden の切り替えだけで、文言は持たない -->
+                <details id="stereo-rs-why-more" class="learn-acc cross-rules-acc hidden" style="margin-top:6px;">
+                    <summary>なぜ判定しないのか</summary>
+                    <div class="learn-acc-body">
+                        フィッシャー投影は主鎖を縦に描く約束で、「縦が奥・横が手前」もそのときだけ成り立ちます。
+                        十字に見えるだけの普通の構造式に記号を付けると、立体を指定していない図に
+                        嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。
+                    </div>
+                </details>
             </div>
-            <p id="stereo-ring-hint" class="hidden" style="font-size:12.5px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:6px 0 0;"></p>
+            <!-- ⚠ ここにあった `#stereo-ring-hint`（53字・「この分子には環がないため…」）は
+                 v1472 で消した。**使えないことは、ボタンが灰色（`.view-btn:disabled`＝不透明度 0.42）
+                 で見えている**ので、53字で言い直す必要がない（ux-density §4）。
+                 ★ 理由そのものは消していない —— `#btn-stereo-tab-ring` の `title` が持っている
+                 （`updateRingTabState()`。使えるようになる条件＝環をつくる、まで書いてある） -->
             <div id="stereo-pane-wedge">
                 <svg id="stereo-svg" width="330" height="300" viewBox="-165 -150 330 300" style="background:rgba(15,20,28,0.85); border:1px solid rgba(255,255,255,0.15); border-radius:12px; max-width:100%;"></svg>
                 <!-- P12-8: くさび図のローテーション（クリックした枝を上へ）＋鏡像比較 -->
@@ -1774,6 +1793,19 @@
                 <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
+            <!-- ⚠ v1472: キャプションの2文目（65字）をここへ畳んだ（ux-density §2-④）。
+                 ★ **消していない**。sp3 の 109.5°・正四面体は教科書本文で、必要な人は開けば読める。
+                 畳んだ理由は「**この図を読むのに要らない**」から —— くさび図の読み方は
+                 キャプション1文目（縦=奥/横=手前）だけで足りる。90° と 109.5° の関係は
+                 「作図の約束と実物の食い違い」の話で、読み方より一段あとにくる -->
+            <details id="stereo-tetra-why" class="learn-acc cross-rules-acc" style="margin-top:8px;">
+                <summary>なぜ 90° の直交で描くのか</summary>
+                <div class="learn-acc-body">
+                    作図では90°の直交で描いていますが、実際のsp3炭素の結合角は約109.5°で、
+                    4つの置換基は正四面体の頂点方向に伸びています。
+                    90°の十字は、その正四面体を紙の上に写すためのフィッシャー投影の約束です。
+                </div>
+            </details>
             <!-- P12-8 M2.5 その3: 「R・S とは何か」の読み物。
                  ここでするのは用語と決め方の骨組みの説明で、**実際の記号は上の
                  `#stereo-rs-row` が出す**（発注書 第4段 4b・v570 で入口を作った）。
@@ -1999,19 +2031,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1473"></script>
+    <script src="chemistry.js?v=1474"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1473"></script>
-    <script src="game.js?v=1473"></script>
-    <script src="reaction.js?v=1473"></script>
-    <script src="quiz.js?v=1473"></script>
-    <script src="stereo.js?v=1473"></script>
-    <script src="reactor.js?v=1473"></script>
-    <script src="narrowing.js?v=1473"></script>
-    <script src="learn.js?v=1473"></script>
-    <script src="tutorial.js?v=1473"></script>
-    <script src="rec.js?v=1473"></script>
+    <script src="deadend.js?v=1474"></script>
+    <script src="game.js?v=1474"></script>
+    <script src="reaction.js?v=1474"></script>
+    <script src="quiz.js?v=1474"></script>
+    <script src="stereo.js?v=1474"></script>
+    <script src="reactor.js?v=1474"></script>
+    <script src="narrowing.js?v=1474"></script>
+    <script src="learn.js?v=1474"></script>
+    <script src="tutorial.js?v=1474"></script>
+    <script src="rec.js?v=1474"></script>
 </body>
 </html>
