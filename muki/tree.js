@@ -63,10 +63,12 @@
     function renderDecks() {
         var od = $('op-deck');
         od.textContent = '';
-        // ⚠ やさしい段（行先を読む）では操作の手札を出さない。★ 枝はもう埋まっている
+        // ⚠ やさしい段（イオンの行先を答える）では操作の手札を出さない。★ 枝はもう埋まっている
         if (state.mode === 'build') {
             state.problem.ops.forEach(function (o) {
-                if (usedOps().indexOf(o) >= 0) return;
+                // ★ reuse の札（硫化水素）は置いても手札に残る
+                //   ⚠ 教科書の手順は同じ札を2度通す（液性が違うから結果が違う）
+                if (!TREE_OPS[o].reuse && usedOps().indexOf(o) >= 0) return;
                 var b = card('op', o, TREE_OPS[o].short, TREE_OPS[o].say);
                 b.disabled = state.submitted;
                 b.className += (state.sel && state.sel.type === 'op' && state.sel.id === o) ? ' picked' : '';
@@ -136,6 +138,9 @@
     function placeIon(leafId) {
         if (state.submitted) return;
         if (!state.sel || state.sel.type !== 'ion') { say('先にイオンの札を押してください。'); return; }
+        // ★★ 1つの葉に入るイオンは1つだけ（単離が目的なので、そもそも2つ置く意味がない）。
+        //   ⚠ すでに置いてあるものは手札に戻す ＝ 枠が中身で縦に伸びない
+        Object.keys(state.plan).forEach(function (i) { if (state.plan[i] === leafId) delete state.plan[i]; });
         state.plan[state.sel.id] = leafId;
         state.sel = null;
         say('');
@@ -148,95 +153,145 @@
         render();
     }
 
-    function leafBlock(leafId, title) {
-        var wrap = document.createElement('div');
-        wrap.className = 'leafwrap';
-        var t = document.createElement('div');
-        t.className = 'leaf-title';
-        t.textContent = title;
-        wrap.appendChild(t);
-        var b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'slot leaf empty' + (state.sel && state.sel.type === 'ion' ? ' can' : '');
-        b.setAttribute('data-leaf', leafId);
-        b.textContent = 'イオンを置く';
-        b.disabled = state.submitted;
-        b.addEventListener('click', function () { placeIon(leafId); });
-        wrap.appendChild(b);
-        wrap.appendChild(placedBox(leafId));
-        return wrap;
+    /**
+     * ★★★ 流れ図を **ディレクトリツリー**として組む（2026-08-28・ユーザー決定）。
+     *
+     * > ★ 「ディレクトリのツリーのようにすれば解決できるかなと考えていました」
+     * > ★★ 「相は枠の形で表現できます」
+     *
+     * 【★★ 「脱出」で全部そろう】
+     *   ・**主流は1本。**⚠ **インデントしない。**上から下へ一直線
+     *   ・★ **脱出したものが1段下がる**（⚠ **沈殿でも溶液でも同じ規則**）
+     *   ・★ **脱出しなかったほうが、主流を継ぐ**
+     *   ⚠ ふつうは沈殿が溶液から脱出するが、★ 属の中の分離では **溶液のほうが沈殿から脱出する**
+     *     （AgCl と PbCl₂ の沈殿に熱湯 → PbCl₂ が溶けて出ていく）。
+     *   ★★ **向きが逆でも同じ規則で書ける ＝ この骨格は相に依らない。**
+     *
+     * 【★ 深さは *インデント* で表す。⚠⚠ 列を増やさない】
+     *   ＝ 深さ2の問題（属の中の分離）が来ても、幅は 20px 増えるだけ。
+     *   ⚠ 375px で列が入らない、という心配がそもそも起きない。
+     *
+     * 【★★ イオンを置けるのは「終端」だけ】（2026-08-27・ユーザー決定）
+     *   ⚠⚠ **「沈殿だから置ける」と決め打ちしない。**★ 置けるかは **木の形**から出す
+     *     —— 子を持たない節が終端であり、そこだけが置き場になる。
+     *   ★ Ag⁺ と Pb²⁺ を含む沈殿は *子を持つ* ので置き場でなくなり、
+     *     熱湯で割ったあとの2つが置き場になる。**この関数を直さずに済む。**
+     *
+     * @returns rows[] —— 1行 ＝ 1つの節、または1つの試薬
+     *   { kind:'node', id, depth, phase:'sol'|'ppt', title, terminal, ions? }
+     *   { kind:'edge', slot, opId, depth }
+     */
+    function flowRows() {
+        var rows = [];
+        var pending = [];   // ⚠ 次の試薬より前に出す「主流を継ぐ」行
+
+        rows.push({
+            kind: 'node', id: 'start', depth: 0, phase: 'sol',
+            title: 'この容器', terminal: false, ions: state.problem.ions
+        });
+
+        state.seq.forEach(function (opId, slot) {
+            pending.forEach(function (r) { rows.push(r); });
+            pending = [];
+            rows.push({ kind: 'edge', slot: slot, opId: opId, depth: 0 });
+            if (!opId || !TREE_OPS[opId].splits) return;
+            // ★ 脱出したもの（いまは必ず沈殿）。⚠ 子を持たないので終端
+            //   ★ 沈殿側の分離を入れる一手では、ここに depth 2 の行が続く
+            rows.push({
+                kind: 'node', id: treeLeafId(slot), depth: 1, phase: 'ppt',
+                title: '沈殿', terminal: true
+            });
+            // ★ 脱出しなかったほうが主流を継ぐ。⚠ 次の試薬の直前に出す
+            //   （最後まで試薬が来なければ、下の「最後のろ液」が引き受ける）
+            pending.push({ kind: 'node', id: 'v' + slot, depth: 0, phase: 'sol', title: 'ろ液', terminal: false });
+        });
+
+        rows.push({
+            kind: 'node', id: TREE_FINAL_LEAF, depth: 0, phase: 'sol',
+            title: '最後のろ液', terminal: true
+        });
+        return rows;
     }
 
-    function placedBox(leafId) {
-        var box = document.createElement('div');
-        box.className = 'placed';
-        box.setAttribute('data-placed', leafId);
-        Object.keys(state.plan).forEach(function (ionId) {
-            if (state.plan[ionId] !== leafId) return;
-            var b = card('ion', ionId, ionName(ionId));
-            b.disabled = state.submitted;
-            b.addEventListener('click', function () { removeIon(ionId); });
-            box.appendChild(b);
+    /** 1つの節を1行で描く。★ 相は **枠の形** —— ▢ ＝ 沈殿 ／ ⬭ ＝ 溶液（⚠ 色だけで区別しない） */
+    function nodeRow(r) {
+        var placedIon = null;
+        if (r.terminal) {
+            Object.keys(state.plan).forEach(function (i) { if (state.plan[i] === r.id) placedIon = i; });
+        }
+        // ⚠⚠ 途中の節には置かせない（★ 終端だけが答案欄。どこを終端にするか自体が答案）
+        var el = document.createElement(r.terminal ? 'button' : 'div');
+        el.className = 'row node ' + r.phase + (r.terminal ? ' terminal' : ' inner');
+        el.setAttribute('data-node', r.id);
+        el.setAttribute('data-d', String(r.depth));
+        el.style.setProperty('--d', String(r.depth));
+        if (r.terminal) {
+            el.type = 'button';
+            el.className += ' slot leaf ' + (placedIon ? 'set' : 'empty') +
+                (!placedIon && state.sel && state.sel.type === 'ion' ? ' can' : '');
+            el.setAttribute('data-leaf', r.id);
+            if (placedIon) el.setAttribute('data-ion', placedIon);
+            el.disabled = state.submitted;
+            el.addEventListener('click', function () {
+                if (placedIon && !(state.sel && state.sel.type === 'ion')) removeIon(placedIon);
+                else placeIon(r.id);
+            });
+        }
+
+        var t = document.createElement('span');
+        t.className = 'node-title';
+        t.textContent = r.title;
+        el.appendChild(t);
+
+        if (r.ions) {
+            var ions = document.createElement('span');
+            ions.className = 'ions';
+            ions.id = 'beaker-ions';
+            ions.textContent = r.ions.map(ionName).join('　');
+            el.appendChild(ions);
+        }
+        if (r.terminal) {
+            var v = document.createElement('span');
+            v.className = 'leaf-val';
+            v.textContent = placedIon ? ionName(placedIon) : 'イオンを置く';
+            el.appendChild(v);
+        }
+        return el;
+    }
+
+    /** 1つの試薬を1行で描く（★ 主流に加える ＝ インデントしない） */
+    function edgeRow(r) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'row edge slot branch' + (r.opId ? ' set' : ' empty') +
+            (state.mode === 'read' ? ' locked' : '') +
+            (!r.opId && state.sel && state.sel.type === 'op' ? ' can' : '');
+        b.setAttribute('data-slot', String(r.slot));
+        b.setAttribute('data-d', String(r.depth));
+        b.style.setProperty('--d', String(r.depth));
+        b.disabled = state.submitted || state.mode === 'read';
+        var n = document.createElement('span');
+        n.className = 'op-name';
+        // ⚠ 詳しい操作（say）は行に出さない —— 1節1行を守るため。
+        //   ★ 手札の札と、答え合わせの各手の見出しに出る（そこは幅がある）
+        n.textContent = r.opId ? '＋ ' + TREE_OPS[r.opId].short : '＋ 操作を置く';
+        b.appendChild(n);
+        b.addEventListener('click', function () {
+            if (r.opId) removeOp(r.slot); else placeOp(r.slot);
         });
-        return box;
+        return b;
     }
 
     function renderTree() {
-        $('beaker-ions').textContent = state.problem.ions.map(ionName).join('　');
-
-        var ol = $('stages');
-        ol.textContent = '';
-        state.seq.forEach(function (opId, slot) {
-            var li = document.createElement('li');
-            li.className = 'stage' + (opId ? ' filled' : '');
-            li.setAttribute('data-slot', String(slot));
-
-            var stem = document.createElement('div');
-            stem.className = 'stem';
-            stem.textContent = String(slot + 1);
-            li.appendChild(stem);
-
-            var b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'slot branch' + (opId ? ' set' : ' empty') +
-                (state.mode === 'read' ? ' locked' : '') +
-                (!opId && state.sel && state.sel.type === 'op' ? ' can' : '');
-            b.setAttribute('data-slot', String(slot));
-            b.disabled = state.submitted || state.mode === 'read';
-            if (opId) {
-                var n = document.createElement('span');
-                n.textContent = TREE_OPS[opId].short;
-                var s = document.createElement('span');
-                s.className = 'sub';
-                s.textContent = TREE_OPS[opId].say;
-                b.appendChild(n);
-                b.appendChild(s);
-                b.addEventListener('click', function () { removeOp(slot); });
-            } else {
-                b.textContent = '操作を置く';
-                b.addEventListener('click', function () { placeOp(slot); });
-            }
-            li.appendChild(b);
-
-            // ★ 葉が生えるのは、沈殿をつくりうる操作を置いた枝だけ。
-            //   ⚠ 煮沸・希硝酸は何も沈めないので、葉が生えない
-            if (opId && TREE_OPS[opId].splits) {
-                li.appendChild(leafBlock(treeLeafId(slot), (slot + 1) + '手目の沈殿'));
-            }
-            ol.appendChild(li);
-        });
-
-        var fb = $('leaf-F');
-        fb.className = 'slot leaf empty' + (state.sel && state.sel.type === 'ion' ? ' can' : '');
-        fb.disabled = state.submitted;
-        var box = $('placed-F');
-        box.textContent = '';
-        Object.keys(state.plan).forEach(function (ionId) {
-            if (state.plan[ionId] !== TREE_FINAL_LEAF) return;
-            var b = card('ion', ionId, ionName(ionId));
-            b.disabled = state.submitted;
-            b.addEventListener('click', function () { removeIon(ionId); });
-            box.appendChild(b);
+        var flow = $('flow');
+        flow.textContent = '';
+        var rows = flowRows();
+        var maxDepth = 0;
+        rows.forEach(function (r) { if (r.depth > maxDepth) maxDepth = r.depth; });
+        // ⚠ 深さは **インデント**で表す。★ 列は増やさない（ここは報告用の印だけ）
+        flow.setAttribute('data-depth', String(maxDepth));
+        rows.forEach(function (r) {
+            flow.appendChild(r.kind === 'edge' ? edgeRow(r) : nodeRow(r));
         });
     }
 
@@ -260,7 +315,8 @@
             b.type = 'button';
             b.setAttribute('data-prob', p.id);
             // ⚠ 見出しに解き筋を書かない。★ 出すのは中身の数だけ
-            b.textContent = '容器 ' + (i + 1) + '（' + p.ions.length + '種）';
+            //   （★ 短くして1行に収める ＝ 選び直しのために縦を使わない）
+            b.textContent = '容器' + (i + 1) + '・' + p.ions.length + '種';
             b.className = (state.problem.id === p.id) ? 'active' : '';
             b.addEventListener('click', function () { start(state.mode, p.id); });
             pb.appendChild(b);
@@ -297,6 +353,13 @@
         return d;
     }
 
+    /** 葉の呼び名（★ 何手目の何の沈殿か。⚠ 番号だけだと、どこの話か分からない） */
+    function leafName(leafId) {
+        if (leafId === TREE_FINAL_LEAF) return '最後のろ液';
+        var slot = parseInt(leafId.slice(1), 10);
+        return (slot + 1) + '手目〔' + opShort(state.seq[slot]) + '〕の沈殿';
+    }
+
     function p(text, cls) {
         var e = document.createElement('p');
         if (cls) e.className = cls;
@@ -308,27 +371,57 @@
         if (state.submitted) return;
         state.submitted = true;
         var g = treeGrade(state.problem, state.seq, state.plan);
+        // ★ 記録は「後から率と共有の文面を組み立てられるだけ」を持つ（⚠ 送信も保存もしない）。
+        //   正解率% ／ 最短手順正解率% ／ SNS 共有は **次の一手**（ここでは形だけ塞がない）
         state.record = treeRecord(state.mode, state.problem, {
             seq: state.seq.slice(),
+            moves: g.moves, shortest: treeAuditProblem(state.problem).shortest,
             dirty: g.dirty, isolated: g.isolated, matched: g.matched, verdict: g.verdict
         });
 
         var box = $('result');
         box.textContent = '';
 
+        // ★ 手数（⚠ 余計な手があっても不正解にしない。§ 2026-08-28 のユーザー決定）
+        //   「最短」は門番が数えている理想の最短。⚠ 手順そのものは出さない
+        //   —— **正解は1つではない**ので、1つ示すと他の正解を否定することになる
+        var shortest = treeAuditProblem(state.problem).shortest;
+        var moves = '（' + g.moves + '手／最短 ' + shortest + '手）';
+
         var h3 = document.createElement('h3');
         if (g.verdict === 'perfect') {
             h3.className = 'ok';
-            h3.textContent = 'ぜんぶ単離できました';
+            h3.textContent = 'ぜんぶ単離できました' + moves;
         } else if (g.verdict === 'misread') {
             h3.className = 'ng';
-            h3.textContent = '単離はできましたが、行先が机上と違いました';
+            // ⚠ 「机上」は設計書の語であって、学習者の語ではない（★ 画面には出さない）
+            h3.textContent = '単離はできましたが、置いた行先とは違いました' + moves;
         } else {
             h3.className = 'ng';
-            h3.textContent = '単離できていない葉が ' + g.dirty + ' 枚あります';
+            h3.textContent = '単離できていない葉が ' + g.dirty + ' 枚あります' + moves;
         }
         box.appendChild(h3);
+        if (g.isolated && g.moves > shortest) {
+            box.appendChild(p('単離はできています。' + (g.moves - shortest) +
+                '手ぶん、この容器では要らない操作が入っていました。', 'caveat'));
+        }
         box.appendChild(p('あなたが並べた手順を、そのまま走らせました。'));
+
+        // ★ 間違えたところを名指しする（2026-08-28・ユーザー「間違えたところを指摘すればよい」）
+        //   ⚠ 模範の手順は出さない。★ 起きたことだけを言う
+        if (!g.isolated) {
+            var told = [];
+            g.impure.forEach(function (l) {
+                told.push(leafName(l) + 'に ' +
+                    (g.actual[l] || []).map(elJp).join('と') + ' が入っています');
+            });
+            g.emptyPlanned.forEach(function (l) {
+                var planned = (g.rows.filter(function (r) { return r.leaf === l; })[0] || {}).planned || [];
+                told.push(leafName(l) + 'は空です' +
+                    (planned.length ? '（' + planned.map(elJp).join('・') + ' を置きました）' : ''));
+            });
+            if (told.length) box.appendChild(p(told.join('。') + '。'));
+        }
 
         if (g.unplaced.length) {
             box.appendChild(p('置かなかったイオン：' + g.unplaced.map(ionName).join('・')));
@@ -340,11 +433,7 @@
             var bad = (r.actual.length >= 2) || (r.actual.length === 0 && r.planned.length >= 1) || !r.same;
             d.className = 'leafrow ' + (bad ? 'bad' : 'good');
             var title = document.createElement('b');
-            if (r.leaf === TREE_FINAL_LEAF) title.textContent = '最後のろ液';
-            else {
-                var slot = parseInt(r.leaf.slice(1), 10);
-                title.textContent = (slot + 1) + '手目〔' + opShort(state.seq[slot]) + '〕の沈殿';
-            }
+            title.textContent = leafName(r.leaf);
             d.appendChild(title);
 
             var stage = null;
@@ -399,6 +488,8 @@
             var b = document.createElement('b');
             b.textContent = (s.slot + 1) + '手目 〔' + opShort(s.op) + '〕';
             d.appendChild(b);
+            // ★ 詳しい操作は、幅のあるここで言う（⚠ ツリーの行には入れない）
+            if (TREE_OPS[s.op]) d.appendChild(p(TREE_OPS[s.op].say + '。', 'caveat'));
             if (s.ppt.length) {
                 s.ppt.forEach(function (e) {
                     d.appendChild(p(e.f + '（' + e.c + '）が沈みました。' + e.why + '。'));
@@ -407,6 +498,11 @@
                 d.appendChild(p(s.turb
                     ? s.turb.f + ' の' + s.turb.c + 'の濁りが出ましたが、沈殿は分かれませんでした。'
                     : 'ここでは何も沈みませんでした。'));
+            }
+            // ★★ 硫化水素だけは、そのときの容器の液性で結果が変わる。
+            //   ⚠ 途中のツリーには出さない（§16-1）。★ 走らせたあとの説明として、ここで初めて言う
+            if (s.op === 'h2s') {
+                d.appendChild(p('このとき容器は' + TREE_PH_JP[s.ph] + 'でした。', 'caveat'));
             }
             // ⚠ 沈まなくても、化学種が変わっていることがある（★ この教材の芯）。
             //   ここを「操作のあとの状態」から引くと、希硝酸の手の説明が逆さまになる
@@ -433,7 +529,8 @@
         state.sel = null;
         state.submitted = false;
         state.plan = treeEmptyPlan();
-        var n = state.problem.ops.length;
+        // ⚠ 枝の数は札の枚数ではない（★ 硫化水素は1枚を2つの枝に置く）
+        var n = treeSlotCount(state.problem);
         state.seq = [];
         for (var i = 0; i < n; i++) state.seq.push(null);
         if (state.mode === 'read') {
@@ -451,7 +548,6 @@
     document.addEventListener('DOMContentLoaded', function () {
         $('btn-submit').addEventListener('click', submit);
         $('btn-reset').addEventListener('click', function () { start(state.mode, state.problem.id); });
-        $('leaf-F').addEventListener('click', function () { placeIon(TREE_FINAL_LEAF); });
         start('read', 'a1');
     });
 
