@@ -2344,7 +2344,59 @@
             ok('⚠ 深さを列で表していない（★ インデントだけ。375px で列が足りなくならない）',
                 !flow.getAttribute('data-cols') &&
                 w.getComputedStyle(flow).display !== 'grid', uiOut);
-            // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
+
+            // --- ★★★ 縦の罫が1本で通っているか（2026-08-28・ユーザー
+            //     「ろ液間にも線を伸ばして、容器からつながるように」） ---
+            //   ⚠ 擬似要素なので getBoundingClientRect が取れない。
+            //   ★ computed style の top / bottom から、行ごとの線分を絶対座標で組み立てて継ぎ目を測る
+            var rail = (function () {
+                return [].slice.call(flow.querySelectorAll('.row')).map(function (e) {
+                    var cs = w.getComputedStyle(e, '::before');
+                    var rc = e.getBoundingClientRect();
+                    var bw = parseFloat(w.getComputedStyle(e).borderLeftWidth) || 0;
+                    var top = parseFloat(cs.top), h = parseFloat(cs.height);
+                    return {
+                        x: rc.left + bw + parseFloat(cs.left),
+                        top: rc.top + top, bot: rc.top + top + h,
+                        drawn: parseFloat(cs.borderLeftWidth) > 0
+                    };
+                });
+            })();
+            ok('★ どの行にも縦の罫の線分がある（' + rail.length + ' 本）',
+                rail.length === 18 && rail.every(function (s) { return s.drawn; }), uiOut);
+            ok('★★ 縦の罫が1本の直線（⚠ 段が違っても同じ x に立つ）', (function () {
+                var xs = rail.map(function (s) { return Math.round(s.x); });
+                var uniq = xs.filter(function (v, i) { return xs.indexOf(v) === i; });
+                if (uniq.length > 1) warn('罫の x が割れている: ' + uniq.join('/'));
+                return uniq.length === 1;
+            })(), uiOut);
+            ok('★★★ 容器から最後のろ液まで、罫が途切れていない（⚠ 隙間が 0px）', (function () {
+                var worst = 0;
+                for (var i = 1; i < rail.length; i++) {
+                    worst = Math.max(worst, Math.abs(rail[i].top - rail[i - 1].bot));
+                }
+                if (worst > 0.5) warn('罫の切れ目の最大: ' + worst.toFixed(1) + 'px');
+                return worst <= 0.5;
+            })(), uiOut);
+            ok('★ 罫は容器の中で始まり、最後のろ液の中で終わる（⚠ 突き抜けない）', (function () {
+                var rows = flow.querySelectorAll('.row');
+                var a = rows[0].getBoundingClientRect(), z = rows[rows.length - 1].getBoundingClientRect();
+                return rail[0].top >= a.top && rail[0].top <= a.bottom &&
+                    rail[rail.length - 1].bot >= z.top && rail[rail.length - 1].bot <= z.bottom;
+            })(), uiOut);
+            ok('★ 罫の全長が、容器から最後のろ液までを覆っている（実測 ' +
+                Math.round(rail[rail.length - 1].bot - rail[0].top) + 'px）',
+                (rail[rail.length - 1].bot - rail[0].top) >= 400, uiOut);
+            ok('★ 罫から各行へ、横の継ぎ手が出ている（⚠ 容器だけは持たない）', (function () {
+                var rows = [].slice.call(flow.querySelectorAll('.row'));
+                var bad = rows.filter(function (e, i) {
+                    var cs = w.getComputedStyle(e, '::after');
+                    var has = cs.content !== 'none' && parseFloat(cs.borderTopWidth) > 0;
+                    return i === 0 ? has : !has;
+                });
+                return bad.length === 0;
+            })(), uiOut);
+                        // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
             ok('★★ 沈殿の枠は ▢（角ばった四角）', (function () {
                 var bad = [];
                 [].slice.call(flow.querySelectorAll('.row.node.ppt')).forEach(function (e) {

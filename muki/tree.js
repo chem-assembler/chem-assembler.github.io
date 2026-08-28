@@ -224,7 +224,9 @@
         el.className = 'row node ' + r.phase + (r.terminal ? ' terminal' : ' inner');
         el.setAttribute('data-node', r.id);
         el.setAttribute('data-d', String(r.depth));
-        el.style.setProperty('--d', String(r.depth));
+        // ★ 節のインデントは、その節の深さそのもの（⚠ 主流は 0 ＝ 左端に立つ）
+        el.setAttribute('data-i', String(r.depth));
+        el.style.setProperty('--i', String(r.depth));
         if (r.terminal) {
             el.type = 'button';
             el.className += ' slot leaf ' + (placedIon ? 'set' : 'empty') +
@@ -268,7 +270,8 @@
             (!r.opId && state.sel && state.sel.type === 'op' ? ' can' : '');
         b.setAttribute('data-slot', String(r.slot));
         b.setAttribute('data-d', String(r.depth));
-        b.style.setProperty('--d', String(r.depth));
+        b.setAttribute('data-i', String(r.depth));
+        b.style.setProperty('--i', String(r.depth));
         b.disabled = state.submitted || state.mode === 'read';
         var n = document.createElement('span');
         n.className = 'op-name';
