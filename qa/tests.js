@@ -442,6 +442,92 @@ function runDataTests(DATA) {
     });
   });
 
+  // ---- 聞き方の直し（ユーザー指摘・2026-08-28）----
+  // ⚠ ここは「間違い」ではなく**聞き方が悪い／触れていない**として直した5件を見張る。
+  // どれも文面を戻すと元の欠点がそのまま戻るので、**戻したら鳴る**形で釘を打つ。
+  // 出典はすべて R5 化学（第一学習社）。ページ番号はコミットメッセージ側に書いてある。
+  function variantOf(code, mode) {
+    var p = patterns.filter(function (x) { return x.code === code; })[0];
+    if (!p) throw new Error("項目が無い: " + code);
+    var v = p.variants.filter(function (x) { return x.mode === mode; })[0];
+    if (!v) throw new Error(code + ": " + mode + " が無い");
+    v._p = p;
+    return v;
+  }
+
+  t("QW1: 2価エステルの向きは「何が変わるか」を問う（書き出す作業のほうを聞かない）", function () {
+    var v = variantOf("org.carbonyl.diester-arrangement", "flip");
+    assert(v.q.indexOf("書き出す") < 0,
+      "問いが「書き出すと何が分かる？」に戻っている ＝ 作業のほうを聞いていて、" +
+      "こたえ（向きで加水分解の生成物が変わる）と噛み合わない: " + v.q);
+    assert(/向き[^。]*(変わる|変化)/.test(v.q),
+      "問いが「向きが違うと何が変わる？」を聞いていない: " + v.q);
+  });
+
+  t("QW2: エステル化の水は O の由来だけを問う（H は2分子から1個ずつ来る）", function () {
+    var v = variantOf("org.carbonyl.ester-water-origin", "flip");
+    // 教科書 p.162:「エステル化はカルボン酸のOHとアルコールのHから水を生じる反応」
+    // ＝ 水の H はカルボン酸の −OH の H と、アルコールの H の2個。
+    // だから「H はどちらの分子に由来するか」は答えが1つに決まらない
+    assert(v.q.indexOf("O と H") < 0,
+      "問いが「O と H は、それぞれどちらの分子に由来する？」に戻っている。" +
+      "水の H は2個あってカルボン酸とアルコールから1個ずつ来るので、H では由来が決まらない: " + v.q);
+    assert(/水の\s*O/.test(v.q), "問いが水の O の由来を聞いていない: " + v.q);
+    assert(/カルボン酸/.test(v.a) && /アルコール[^。]*(渡さ|水素原子だけ)/.test(v.a),
+      "こたえが「O はカルボン酸・アルコールは水素原子だけ」を言っていない: " + v.a);
+    assert(/H[^。]*2個|2個[^。]*H/.test(v.supplement || ""),
+      "補足が「水の H は2個ある」ことに触れていない ＝ なぜ H で問わないのかが分からない");
+  });
+
+  t("QW3: ギ酸の性質に還元性がある（フェーリングは陽性例に挙げない）", function () {
+    var v = variantOf("org.carbonyl.formic", "flip");
+    // 教科書 p.156:「ギ酸はホルミル基をもつので，還元性があり，銀鏡反応を示す」
+    assert(v.a.indexOf("還元性") >= 0, "こたえが還元性に触れていない: " + v.a);
+    assert(v.a.indexOf("銀鏡反応") >= 0, "こたえが銀鏡反応に触れていない: " + v.a);
+    // KNOWLEDGE_CAVEATS A-5: ギ酸はフェーリング液では錯体をつくって実質陰性。
+    // 「フェーリング陽性の物質」の例にギ酸を置かない
+    assert((v.a + (v.supplement || "")).indexOf("フェーリング") < 0,
+      "ギ酸の陽性例にフェーリング液を挙げている（A-5: 強塩基性のフェーリング液中では" +
+      "ギ酸イオンが銅(II)と錯体をつくり、実際には沈殿が出ない）");
+  });
+
+  t("QW4: カルボニルの還元に「入試ではこの対応でよい」の断りがある（試薬名は書かない）", function () {
+    var v = variantOf("org.carbonyl.reduction", "flip");
+    var s = v.supplement || "";
+    assert(s.indexOf("還元剤") >= 0 && /入試|高校/.test(s),
+      "補足が「どこまで還元されるかは還元剤で決まるが、入試ではこの対応で答えてよい」を" +
+      "言っていない ＝ ユーザー指摘（方法によって生成物が異なる）に応えていない: " + s);
+    // KNOWLEDGE_CAVEATS I-4:「設問側では試薬を明示しないままにしておく
+    // （明示すると範囲外に踏み込む）」。踏み越えたら鳴らす
+    var OUT_OF_SCOPE = ["水素化ホウ素", "水素化アルミニウム", "クレメンゼン", "ウォルフ",
+      "亜鉛アマルガム", "ヒドラジン"];
+    var body = [v.q, v.a, s].concat(v.options || []).join(" ");
+    OUT_OF_SCOPE.forEach(function (w) {
+      assert(body.indexOf(w) < 0,
+        "還元剤「" + w + "」を名指ししている（I-4: 明示すると高校の範囲外に踏み込む）");
+    });
+  });
+
+  t("QW5: フェーリング液の還元がアルデヒド限定になっていない", function () {
+    var v = variantOf("org.carbonyl.fehling", "flip");
+    var p = v._p;
+    // 教科書 p.218:「還元性を示す糖類をフェーリング液に加えて加熱すると，
+    // 酸化銅（Ⅰ）Cu2O の赤色沈殿を生じる」／p.219 フルクトースも還元性を示す
+    assert(/還元性を示す物質/.test(v.a),
+      "こたえが「アルデヒドを加えて加熱すると」のままで、陽性になる相手を" +
+      "アルデヒドに限定している: " + v.a);
+    assert(/還元性を示す物質/.test(p.knowledge),
+      "knowledge がアルデヒド限定のまま残っている: " + p.knowledge);
+    assert((v.supplement || "").indexOf("還元糖") >= 0,
+      "補足がアルデヒド以外の陽性例（還元糖）に触れていない");
+    // A-5: 「陽性なら必ずホルミル基」という逆を書かない、を明示しているか
+    assert(/逆向き|とは限|だけではな/.test(v.supplement || ""),
+      "補足が「陽性だからホルミル基がある、と逆に読まない」という断りを置いていない");
+    // A-5: ギ酸は実質陰性なので陽性例に混ぜない
+    assert((v.a + (v.supplement || "")).indexOf("ギ酸") < 0,
+      "フェーリングの陽性例にギ酸を挙げている（A-5 で実質陰性）");
+  });
+
   return results;
 }
 
@@ -879,7 +965,21 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   異性体列挙の上限（1件）・CO₂ の瓶（1件）・イオンを扱えること（4件）・
     //   分子内エステル化（1件）で、**どれも酸化とは無関係**。
     //   ルールも 40→41（`oxidize_primary_vigorous` ＝ 1級アルコールを一気にカルボン酸まで）。
-    var KNOWN_BOTTLES = 22, KNOWN_RULES = 41, KNOWN_MECHANISMS = 14;   // 瓶は transform 16 ＋ detect 5
+    // ⚠ 2026-08-28 に 22→23 本・41→47 種へ。assembler v1477 が**入試頻度の調査（§10.11）から
+    //   7件を実装した** —— 環内/末端の酸化開裂・単発のアミド化・分子内脱水→酸無水物・
+    //   ワッカー法・ニトロ還元ほか。増えた瓶は `o2_pdcl2`（酸素・PdCl₂/CuCl₂）の1本だけ。
+    //   ★見直し候補7件を1件ずつ突き合わせた結果、**拾い直せるものは今回も1件も無い**:
+    //     - `org.aro.c8h10-isomers` … 列挙器の上限。反応とは無関係
+    //     - `org.phenol.phenoxide-co2` … CO₂ の瓶が要る。増えたのは o2_pdcl2 で別物
+    //     - `org.aroN.aniline-base` / `diazonium-decomp` / `bio.amino-acid-amphoteric` /
+    //       `bio.amino-acid-polyprotic` … 4件ともイオン（対イオンの持ち方）待ち。
+    //       ⚠ `reduce_nitro` が入ってアニリンは**作れる**ようになったが、壁は生成物ではなく
+    //       **結合を持たない対イオンをモデルとキャンバスがどう持つか**なので動いていない
+    //     - `org.carbonyl.lactone` … 分子内エステル化待ち。★ ただし**一歩近づいた** ——
+    //       `dehydration_anhydride`（分子内脱水→酸無水物）が入り、「同じ分子の中で環を閉じる」
+    //       仕掛けは**もう在る**。足りないのは COOH+COOH ではなく **OH+COOH に当てること**だけ。
+    //       ⚠ 次に assembler が分子内エステル化を足したら、この1件は本当に繋がる
+    var KNOWN_BOTTLES = 23, KNOWN_RULES = 47, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
@@ -1466,6 +1566,130 @@ function runUiTests(doc, DATA) {
               "帯がどのコードを引けなかったのか言っていない（" + bb.textContent.trim() + "）");
             assert(a.D.querySelector("#back-band .bb-miss"), "見つからなかった見た目になっていない");
           } finally { a.kill(); }
+        });
+      });
+    }).then(function () {
+      // ---- 往復で演習の続きが残る（ユーザー申し立て 2026-08-28）----
+      // ⚠ 申し立て:「qa → assembler に飛ぶ → qa に戻る とその問題のみ表示、
+      // 答えを見たら終了（遷移前の状態が保存されていない）」。実測でも 2/10 → 1/1 だった。
+      //
+      // 上の「?code= で来ると1項目だけの回」は**控えが無いとき**の姿で、そこは変えていない。
+      // ここで見るのは**控えがあるときに続きへ返るか**。両方を並べて置くことで、
+      // 片方を直したつもりでもう片方を壊したら鳴る。
+      var RESUME_KEY = "qa.resume.v1";
+      function clearResume() { try { sessionStorage.removeItem(RESUME_KEY); } catch (e) {} }
+
+      // 演習を1つ始めて、飛び道具のある問題まで進み、そのリンクを押す（遷移はさせない）。
+      // ⚠ **進めるのに ○ を押すので localStorage の学習記録が動く**。テストが人の記録を
+      // 汚さないよう、前後で退避して戻す（キーは app.js の露出から取る）
+      function walkToLinkAndClick(a) {
+        var KEY = a.W.QaEngine.STORE_KEY;
+        var saved = a.W.localStorage.getItem(KEY);
+        try {
+          var start = a.D.querySelector('#unit-list button[data-unit="carbonyl"][data-mode="flip"]');
+          assert(start, "カルボニルの単元カードに暗記モードのボタンが無い");
+          start.click();
+          var link = null, seen = 0;
+          for (var i = 0; i < 40 && !link; i++) {
+            var rev = a.D.getElementById("btn-reveal");
+            if (!rev) break;                       // 回が尽きた（結果画面）
+            rev.click();
+            link = a.D.querySelector("#card-host a.a-link");
+            if (link) break;
+            seen++;
+            var good = a.D.getElementById("btn-good-q");
+            if (!good) break;
+            good.click();
+          }
+          assert(link, "カルボニルの回に飛び道具のある問題が1つも出なかった（回が短すぎる）");
+          var qof = a.D.getElementById("q-of").textContent.replace(/\s/g, "");
+          var qtext = a.D.querySelector(".q-text").textContent;
+          var href = link.getAttribute("href");
+          var code = decodeURIComponent((href.match(/[?&]code=([^&]+)/) || [])[1] || "");
+          // 押した瞬間に控える口を通したいが、iframe を assembler へ飛ばしたくないので
+          // 既定の遷移だけ止める。app.js の控えは capture で先に走るので影響しない
+          a.D.addEventListener("click", function (e) { e.preventDefault(); }, true);
+          link.click();
+          return { qof: qof, qtext: qtext, code: code, walked: seen };
+        } finally {
+          if (saved === null) a.W.localStorage.removeItem(KEY);
+          else a.W.localStorage.setItem(KEY, saved);
+        }
+      }
+
+      var trip = null;
+      return ta("QW6: 往復して戻ると演習の続きに返る（1問に潰れない）", function () {
+        clearResume();
+        return openWith("").then(function (a) {
+          try { trip = walkToLinkAndClick(a); } finally { a.kill(); }
+          var raw = sessionStorage.getItem(RESUME_KEY);
+          assert(raw, "飛び道具を押しても控えが残っていない（出て行くときに何も控えていない）");
+          var snap = JSON.parse(raw);
+          assert(snap.code === trip.code,
+            "控えている項目が押したリンクと違う（" + snap.code + " ≠ " + trip.code + "）");
+          assert(snap.queue.length > 1,
+            "控えの回が1問しかない（続きが残らないので往復の意味がない）");
+          // 戻ってくる
+          return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (b) {
+            try {
+              assert(!b.D.getElementById("view-study").classList.contains("hidden"),
+                "戻ってきて演習画面に着地しない");
+              var qof = b.D.getElementById("q-of").textContent.replace(/\s/g, "");
+              assert(qof === trip.qof,
+                "戻ったら回の位置が変わった（出るとき " + trip.qof + " → 戻って " + qof +
+                "）＝ 遷移前の状態が保存されていない");
+              assert(b.D.querySelector(".q-text").textContent === trip.qtext,
+                "戻ってきた問題が違う");
+              var bb = b.D.getElementById("back-band");
+              assert(bb.textContent.indexOf("続きから") >= 0,
+                "帯が続きへ返したことを言っていない（" + bb.textContent.trim() + "）");
+              // めくりは**こたえを開いた状態でしか飛び道具が出ない**ので、開いて返す
+              assert(b.D.querySelector("#card-host .answer"),
+                "こたえを閉じた状態で返している（押した飛び道具がもう画面に無い）");
+            } finally { b.kill(); clearResume(); }
+          });
+        });
+      }).then(function () {
+        return ta("QW7: 控えが無い／別の項目の控えなら、従来どおり1問だけの回に落ちる", function () {
+          clearResume();
+          var other = DATA.patterns.filter(function (p) { return p.code !== trip.code; })[0];
+          // まず控えが無い状態
+          return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (a) {
+            try {
+              assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+                "控えが無いのに続きを名乗っている（どこから来た続きか説明できない）");
+              assert(a.D.getElementById("back-band").textContent.indexOf("続きから") < 0,
+                "控えが無いのに帯が「続きから」と言っている");
+            } finally { a.kill(); }
+          }).then(function () {
+            // 次に**別の項目の**控えがある状態（噛み合わない控えを使い回さない）
+            sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+              code: other.code, unitId: other.unit, mode: "flip", scope: "daily", lv: null,
+              idx: 0, right: 0, wrong: 0, queue: [[other.code, 0], [other.code, 0]], revealed: false
+            }));
+            return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (a) {
+              try {
+                assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+                  "別の項目の控えで復元してしまった（押したのと違う問題の続きが出る）");
+              } finally { a.kill(); clearResume(); }
+            });
+          });
+        });
+      }).then(function () {
+        return ta("QW8: 項目が消えた古い控えは捨てて、1問だけの回に落ちる", function () {
+          // ⚠ 控えはコードで持っているので、**データを直した後に古い控えが残りうる**。
+          // 引き当てられないものが1つでもあれば復元しない（別の問題を出すほうが害が大きい）
+          sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+            code: trip.code, unitId: "carbonyl", mode: "flip", scope: "daily", lv: null,
+            idx: 0, right: 0, wrong: 0,
+            queue: [[trip.code, 0], ["org.gone.removed-item", 0]], revealed: false
+          }));
+          return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (a) {
+            try {
+              assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+                "消えた項目を含む控えで復元してしまった（引き当てられない問題が回に混ざる）");
+            } finally { a.kill(); clearResume(); }
+          });
         });
       });
     }).then(function () {
