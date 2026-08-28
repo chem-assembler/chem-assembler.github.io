@@ -3409,12 +3409,14 @@ class Game {
         const plain = stripEmphasis(message);
         const canvasToast = document.getElementById('canvas-toast');
         if (canvasToast) {
-            setEmphasisText(canvasToast, message);
-            canvasToast.className = type; // success / error
+            const shownMs = this.paintCanvasToast(canvasToast, message, type, ms);
             clearTimeout(this._canvasToastTimer);
+            // ⚠ 広げて読んでいる最中に消さないのは、**「続きを読む」を押した時点で
+            //    この時計を止める**から（`paintCanvasToast` の中）。ここに二重の見張りは置かない
+            //    ——「時計を止めた」を1か所にしておかないと、片方だけ直す日が来る
             this._canvasToastTimer = setTimeout(() => {
-                if (canvasToast.textContent === plain) canvasToast.className = 'hidden';
-            }, ms);
+                if (canvasToast.textContent === plain) this.hideCanvasToast();
+            }, shownMs);
         }
         const resultDiv = document.getElementById('verify-result');
         if (!resultDiv) return;
@@ -3426,6 +3428,71 @@ class Game {
         this._toastTimer = setTimeout(() => {
             if (resultDiv.textContent === plain) resultDiv.classList.add('hidden');
         }, ms);
+    }
+
+    /* ===== 長い字幕は「2行 ＋ 続きを読む」にたたむ（v1477・ユーザー実機報告） =====
+     *
+     * **測ったこと**（:9137・スクロースの加水分解＝いちばん長い caption 549字）:
+     *   ・375×812 … 字幕 332×396px ＝ **キャンバスの 53.2%** を覆う（しかも上端が
+     *     SVG の上へ 75px はみ出す）。1280×800 でも 680×235 ＝ **25.4%**
+     *   ・時計は 6500ms。日本語の黙読は 400〜600字/分 ＝ 6.7〜10字/秒 なので、
+     *     549字を読むには **55〜82秒** 要る。6.5秒で読めるのは **43〜65字**
+     *     ＝ **最長の解説の 1割も読み終わらないうちに消えていた**
+     *
+     * **直し方（★ 2つの不満は別物なので、手当ても2つ要る）**:
+     *   ① 覆う量 … 既定で **2行にたたむ**。広げても `max-height` で天井を作り、
+     *      あふれた分はその中をスクロールさせる ＝ **キャンバスの何割を覆うかが上限で決まる**
+     *   ② 消える … 広げているあいだは**時計を止める**（読み終わるまで消えない）。
+     *      かわりに **× で閉じられる**（読んだら消せる）＝「消えないだけ」にしない。
+     *      たたんだままの回も、**見えている2行を読むのに要る時間**まで表示を延ばす
+     *
+     * ⚠ **`#canvas-toast` の `textContent` は素の文言のままにする**。
+     *   22 か所の回帰テストがここを `===` や `includes` で読んでいるので、
+     *   「続きを読む」「×」の字は **CSS の `::after`** で出す ＝ 文字ノードを1つも足さない。
+     * ⚠ **短い字幕（たためない回）の振る舞いは1つも変えない**。たたむかどうかは
+     *   文字数ではなく**実際にあふれたか**（`scrollHeight > clientHeight`）で決める ＝
+     *   画面幅・文字サイズが変わっても判定がずれない。 */
+    paintCanvasToast(el, message, type, ms) {
+        const text = document.createElement('span');
+        text.className = 'ct-text';
+        setEmphasisText(text, message);
+        el.textContent = '';
+        el.appendChild(text);
+        el.className = type; // success / error（`hidden` と `long`・`open` はこの後で付ける）
+        // あふれるかどうかは**たたんだ状態で測る**。`long` を付けてから測ると
+        // 天井が効いて必ずあふれるので、先に素のまま測って比べる
+        const full = text.scrollHeight;
+        el.classList.add('long');
+        const clipped = text.clientHeight;
+        if (full <= clipped + 2) { el.classList.remove('long'); return ms; }
+        const more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'ct-more';
+        more.setAttribute('aria-label', '解説の続きを読む');
+        more.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const open = el.classList.toggle('open');
+            more.setAttribute('aria-label', open ? '解説をたたむ' : '解説の続きを読む');
+            // ★ 広げたら時計を止める ＝ 読み終わるまで消えない（RV1 ④ がここを見張る）
+            if (open) clearTimeout(this._canvasToastTimer);
+        });
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'ct-close';
+        close.setAttribute('aria-label', '解説を閉じる');
+        close.addEventListener('click', (e) => { e.stopPropagation(); this.hideCanvasToast(); });
+        el.appendChild(more);
+        el.appendChild(close);
+        // 見えている2行ぶんを読み切る時間は確保する（400字/分 ＝ 6.7字/秒 の遅いほうで見積もる）。
+        // 呼び出し側の指定より短くはしない・12秒より長くもしない
+        const visible = Math.round(stripEmphasis(message).length * clipped / Math.max(full, 1));
+        return Math.min(12000, Math.max(ms, Math.round(visible / 6.7 * 1000) + 1500));
+    }
+
+    hideCanvasToast() {
+        const el = document.getElementById('canvas-toast');
+        if (!el) return;
+        el.className = 'hidden';
     }
 
     // ===== 置けなかったクリックの説明（v1110・発注書「作図の当たり判定」要望A） =====
