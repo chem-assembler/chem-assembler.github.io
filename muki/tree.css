@@ -15,6 +15,18 @@
     --ng: #e74c3c;
     --branch: #2980b9;
     --leaf: #16a085;
+
+    /* --- 流れ図の骨組み（★ 1か所で持つ。⚠ 各所に数を散らさない） --- */
+    /* ★ 1段あたりのインデント（2026-08-28: 20px → 28px。ユーザー「もっと頭下げてよい」） */
+    --step: 28px;
+    /* ★ 縦の罫を引くための左の溝と、その中の罫の位置 */
+    --rail-gap: 16px;
+    --rail-x: 6px;
+    /* ★ 縦の罫は、横の継ぎ手より濃くする ——
+       ⚠ 同じ濃さだと「1本の流れ」ではなく「同じ太さの格子」に見える */
+    --rail: rgba(255, 255, 255, 0.34);
+    /* ★ 行と行のすきま。⚠ 縦の罫はこのぶんだけ上へ伸ばして継ぐ */
+    --row-gap: 3px;
 }
 
 * { box-sizing: border-box; }
@@ -119,18 +131,30 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
        —— だから 375px で「3列目が入らない」という問題がそもそも起きない
      ・★★ **相は枠の形だけで表す** —— **▢ ＝ 沈殿 ／ ⬭ ＝ 溶液**
        ⚠ **色だけで区別しない**（色は補助）
-     ・★★ **1つの節を1行**。⚠ 枠を積まない（そこが縦に効く）           */
-.flow { display: block; }
+     ・★★ **1つの節を1行**。⚠ 枠を積まない（そこが縦に効く）
+     ・★★★ **縦の罫は1本**（2026-08-28・ユーザー「ろ液間にも線を伸ばして、
+       容器からつながるように」）—— **容器から最後のろ液まで途切れない**。
+       ★ **そこから、加える試薬と脱出した沈殿が横に出る。**
+       ⚠ ディレクトリツリーの `│` と同じ役目。                            */
+.flow {
+    display: block;
+    position: relative;
+    /* ★ 罫を引く溝。⚠ 主流の枠より左に空ける（枠の上に線を重ねない） */
+    padding-left: var(--rail-gap);
+}
 
 .row {
-    /* ★ インデント ＝ 深さ。⚠ 深さ2でも幅は 20px 増えるだけ */
-    margin-left: calc(var(--d, 0) * 20px);
+    /* ★★ インデントの段数 `--i`（JS が入れる）:
+         **主流の節 ＝ 0 ／ 加える試薬 ＝ その節の深さ＋1 ／ 脱出した節 ＝ その深さ**
+       ⚠ 試薬と、その試薬で脱出した節が、同じ段にそろう（ユーザーの図のとおり）。 */
+    --i: 0;
+    margin-left: calc(var(--i) * var(--step));
     position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
-    width: calc(100% - var(--d, 0) * 20px);
-    margin-bottom: 3px;
+    width: calc(100% - var(--i) * var(--step));
+    margin-bottom: var(--row-gap);
     padding: 4px 10px;
     font-family: inherit;
     font-size: 14px;
@@ -139,14 +163,38 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
     box-sizing: border-box;
 }
 
-/* ├─ にあたる継ぎ手（★ 1段下がった行にだけ引く。⚠ 深さがいくつでも同じ引き方） */
-.row[data-d]:not([data-d="0"])::before {
+/* ★★★ 縦の罫（`│`）—— ⚠ **行ごとに描くが、隣の行とすきま無く継いで1本になる**。
+   ⚠⚠ `height: 100%` で書かないこと ——
+     擬似要素の 100% は **パディングボックス**の高さで、行の枠線（上下 2px）が抜ける。
+     その 4px ぶんだけ罫が切れる（★ 実測で踏んだ）。
+   ★ そこで `top` と `bottom` で外側へはみ出させる:
+     上端 ＝ 行の上の枠線より `--row-gap` だけ上 ／ 下端 ＝ 行の下の枠線の外
+     → **上の行の下端と、下の行の上端が、ちょうど同じ y になる。**
+   ⚠ x は行の左端からの相対で出す ＝ どの段にいても同じ位置に立つ。 */
+.row::before {
     content: '';
-    position: absolute; left: -12px; top: -6px; width: 10px; height: calc(50% + 6px);
-    border-left: 2px solid var(--line);
-    border-bottom: 2px solid var(--line);
-    border-bottom-left-radius: 4px;
+    position: absolute;
+    left: calc(var(--rail-x) - var(--rail-gap) - 2px - var(--i) * var(--step));
+    top: calc(-1 * var(--row-gap) - 2px);
+    bottom: -2px;
+    border-left: 2px solid var(--rail);
 }
+/* ★ 罫は「容器のまん中」で始まり、「最後のろ液のまん中」で終わる
+   （⚠ 上や下へ突き抜けさせない） */
+.flow .row:first-child::before { top: 50%; }
+.flow .row:last-child::before { bottom: 50%; }
+
+/* ★ 罫から横へ出る継ぎ手（`├─`）。⚠ 段が深いほど長くなるだけで、引き方は同じ */
+.row::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: calc(var(--rail-x) - var(--rail-gap) - 2px - var(--i) * var(--step));
+    width: calc(var(--rail-gap) + 2px + var(--i) * var(--step) - var(--rail-x));
+    border-top: 2px solid var(--line);
+}
+/* ⚠ 容器は流れの頭なので、入ってくる継ぎ手を持たない */
+.flow .row:first-child::after { content: none; }
 
 /* --- 節（★ 相は枠の形） --- */
 .node {

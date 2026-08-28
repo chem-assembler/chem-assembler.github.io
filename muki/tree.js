@@ -224,7 +224,9 @@
         el.className = 'row node ' + r.phase + (r.terminal ? ' terminal' : ' inner');
         el.setAttribute('data-node', r.id);
         el.setAttribute('data-d', String(r.depth));
-        el.style.setProperty('--d', String(r.depth));
+        // ★ 節のインデントは、その節の深さそのもの（⚠ 主流は 0 ＝ 左端に立つ）
+        el.setAttribute('data-i', String(r.depth));
+        el.style.setProperty('--i', String(r.depth));
         if (r.terminal) {
             el.type = 'button';
             el.className += ' slot leaf ' + (placedIon ? 'set' : 'empty') +
@@ -259,7 +261,12 @@
         return el;
     }
 
-    /** 1つの試薬を1行で描く（★ 主流に加える ＝ インデントしない） */
+    /**
+     * 1つの試薬を1行で描く。
+     * ★★ **試薬は、それを加える節より1段下げる**（2026-08-28・ユーザーの図のとおり）——
+     *   ⚠ **その試薬で脱出した節と、同じ段にそろう**（`＋塩酸` と `├─ ▢ 沈殿` が並ぶ）。
+     *   ★ 左端に立っているのは主流の節だけになり、脇のものと区別が付く。
+     */
     function edgeRow(r) {
         var b = document.createElement('button');
         b.type = 'button';
@@ -268,7 +275,8 @@
             (!r.opId && state.sel && state.sel.type === 'op' ? ' can' : '');
         b.setAttribute('data-slot', String(r.slot));
         b.setAttribute('data-d', String(r.depth));
-        b.style.setProperty('--d', String(r.depth));
+        b.setAttribute('data-i', String(r.depth + 1));
+        b.style.setProperty('--i', String(r.depth + 1));
         b.disabled = state.submitted || state.mode === 'read';
         var n = document.createElement('span');
         n.className = 'op-name';
