@@ -1871,6 +1871,11 @@ main.timelineMain {
   margin-top: 7px; padding-top: 6px; border-top: 1px dashed #dbe4ec;
   font-size: 13px; line-height: 1.6; color: #46525e;
 }
+/* ⚠ .okcell / .ngcell はこの規則より**前**にあるので、同じ強さでは負ける ——
+   色を付け直さないと、検算の行は太くなるだけで緑にも赤にもならない
+   （段1に検算の行を足したときに気づいた。段2の行も同じ状態だった） */
+.oxCheckLine.okcell { color: #2e8b57; }
+.oxCheckLine.ngcell { color: #c0392b; }
 .oxVirtLine { margin: 8px 0 6px; font-size: 17px; padding-bottom: 0; }
 .oxVirtIon { color: #8a4a1f; }
 /* ⚠ 仮の分け方の断り。**目立たせる** —— 実在の電離（段1）と取り違えると害になるため */
