@@ -732,6 +732,41 @@
             var g = sepGrade(p3, 'Zn', 'Zn', hh);
             return g.steps[0].dropped.length === 0;
         })());
+        // ★★★ MU-1 「実験は毎回、試料を少しずつ取って新しく行う」が **作りと合っているか**
+        //   （2026-08-28・ユーザー指摘で導入に書き足した一文の裏づけ）。
+        //   ⚠⚠ 文だけ直して作りが違っていたら、それは嘘になる。★ ここで機械で確かめる。
+        ok('MU-1d 観察は（イオン・操作）だけで決まる（⚠ sepObserve は履歴を受け取らない）',
+            sepObserve.length === 2);
+        ok('MU-1e 順番を入れ替えても、各操作の観察が1件も変わらない', (function () {
+            // ★ 画面（doOp）とまったく同じ呼び方で、札を押す順だけを変えて突き合わせる
+            function perms(a) {
+                if (a.length <= 1) return [a];
+                var o = [];
+                a.forEach(function (x, i) {
+                    perms(a.slice(0, i).concat(a.slice(i + 1))).forEach(function (r) {
+                        o.push([x].concat(r));
+                    });
+                });
+                return o;
+            }
+            var checked = 0, bad = 0;
+            Object.keys(SEP_IONS).forEach(function (ion) {
+                var dealt = sepDealFor([ion]);
+                var base = {};
+                dealt.forEach(function (o) { base[o] = sepObsKey(sepObserve(ion, o)); });
+                // ⚠ 全順列は 7! で重いので、配られた札の先頭5枚で回す（120 通り × 9 イオン）
+                perms(dealt.slice(0, 5)).forEach(function (order) {
+                    var history = [];
+                    order.forEach(function (o) {
+                        var obs = sepObserve(ion, o);
+                        history.push({ op: o, obs: obs });
+                        checked++;
+                        if (sepObsKey(obs) !== base[o]) bad++;
+                    });
+                });
+            });
+            return checked >= 5000 && bad === 0;
+        })());
         // ⚠ 型B に「まだわからない」という答えは無い（§16-3）
         ok('答えの選択肢は候補だけ（「まだわからない」は無い）',
             SEP_LEVELS.every(function (l) {
@@ -2202,8 +2237,24 @@
                 var hit = words.filter(function (w) { return zone.indexOf(w) >= 0; });
                 if (hit.length) warn('出題まわりに解き筋の語: ' + hit.join('・'));
                 ok('出題まわり（導入・難易度・候補）に解き筋の語が出てこない', hit.length === 0, uiOut);
-                ok('導入は1〜2行に収まっている（' + d.querySelector('.lead').textContent.trim().length +
-                    '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
+                // ⚠ 上限を 60 → 70 にした（2026-08-28・ユーザー指摘）——
+                //   ★ 「実験は毎回、試料を少しずつ取って新しく行います」の一文を足したため。
+                //   ⚠ これは飾りではなく、**画面から読み取れない作りの説明**（MU-1 が中身を見張る）
+                // ⚠ 数えるのは **読む長さ**。★ source の改行と字下げは畳んでから数える
+                //   （畳まないと、文を2行に折り返しただけで 10 字ぶん増えて落ちる）
+                var lead = d.querySelector('.lead').textContent.replace(/\s+/g, '').trim();
+                ok('MU-1a 導入は2〜3行に収まっている（' + lead.length + '字）',
+                    lead.length <= 70, uiOut);
+                // ★★ 毎回別の実験であることを、導入が言っているか（2026-08-28・ユーザー指摘）
+                //   ⚠ ここが欠けると「操作が積み上がる」と読まれる
+                ok('MU-1b 導入が「実験は毎回、試料を取って新しく行う」ことを言っている',
+                    lead.indexOf('毎回') >= 0 && lead.indexOf('試料') >= 0 &&
+                    (lead.indexOf('新しく') >= 0 || lead.indexOf('新たに') >= 0), uiOut);
+                // ⚠ AI っぽい飾りを入れない（2026-08-28・ユーザー指摘2回）。
+                //   ★ 「〜しましょう」の勧誘と、飾りの副詞を導入に置かない
+                ok('MU-1c 導入に「〜しましょう」や飾りの副詞が無い',
+                    lead.indexOf('しましょう') < 0 && lead.indexOf('ぜひ') < 0 &&
+                    lead.indexOf('しっかり') < 0 && lead.indexOf('じっくり') < 0, uiOut);
                 var lv0 = d.querySelector('#levels button').textContent.replace(/[\s　]/g, '');
                 ok('難易度は「段の名前 ＋ 印」だけ（実測「' + lv0 + '」）',
                     /^[ぁ-んァ-ヶ一-龠]+[★☆]{3}$/.test(lv0), uiOut);
