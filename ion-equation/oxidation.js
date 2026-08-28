@@ -5,7 +5,7 @@
    仮想的に単原子イオンに分解させてもよい**」
 
    ★ 徹底のさせ方は「段を分ける」。
-       段1 イオンに分ける（K₂Cr₂O₇ → 2K[＋1] ＋ Cr₂O₇[−2]）… **ここを通らないと段2が出てこない**
+       段1 イオンに分ける（K₂Cr₂O₇ → 2K[＋1] ＋ Cr₂O₇[−2]）… **ここを通らないと段2は書けない**
            ⚠ 問うのは**電荷**（個数は原子の保存から決まるので印で出す）。
               電荷を決めてから段2の「合計＝そのイオンの電荷」へ進む、という順序を守るため
        段2 それぞれのイオンの中で酸化数を決める（規則で決まるぶんは印。問うのは残り1つ）
@@ -16,14 +16,22 @@
 
    ⚠ **順序は強いない**（発注書 §6）。段1 の中でも段2 の中でも、どの欄から埋めてもよい。
    段1→段2 の順だけは動かせないが、それは③→④と同じ「筆算が下へ伸びる」順で、
-   同じ段の中で書く順を縛るのとは別の話。 */
+   同じ段の中で書く順を縛るのとは別の話。
+
+   ★ **枠は最初から出す**（2026-08-28・ユーザーの指示「枠は固定で出しておき、
+   入力する手順でハイライト」）。⚠ 以前は段1が正解になるまで段2そのものが hidden だった。
+   いまは段2の枠（イオンの箱・元素の行・入力欄）を最初から出し、いま入れる段を
+   ハイライトする。⚠ **ただし段2の「値」は段1の答えそのもの**なので、そこだけ伏せる:
+     ・箱の見出しの電荷（2K⁺ の ⁺）        → 電荷を落として書く
+     ・単原子イオンの灰色の数（K は +1）    → ？ にする（＝ 段1で問うている電荷そのもの）
+     ・検算の「めざす合計 ＝ +1（このイオンの電荷）」→ ？ にする
+   規則から来る灰色（O は −2・H は +1）は段1と無関係なので、そのまま出す。 */
 (() => {
 
 const stageNavEl   = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
 const step1El      = document.getElementById("step1");
 const step2El      = document.getElementById("step2");
-const step2LockEl  = document.getElementById("step2Locked");
 const step3El      = document.getElementById("step3");
 const splitSheetEl = document.getElementById("splitSheet");
 const splitMsgEl   = document.getElementById("splitMsg");
@@ -198,8 +206,17 @@ function oxInput(i, elName) {
   return inp;
 }
 
-/* 段2の枠を作る（1回だけ）。値の反映と印は refreshOx が受け持つ */
-function buildOxSheet() {
+/* この元素の灰色の数が「その断片の電荷から出ている」か（＝ 段1で問うている答えそのものか）。
+   単体の 0 も単原子イオンの値も、どちらも電荷からそのまま来る（oxKnownOf の最初の2枝）。 */
+function chargeDerived(sp) {
+  const s = SPECIES[sp];
+  const els = Object.keys(s.atoms);
+  return els.length === 1 && (s.charge === 0 || s.atoms[els[0]] === 1);
+}
+
+/* 段2の枠を作る。値の反映と印は refreshOx が受け持つ。
+   ⚠ masked ＝ 段1がまだ片づいていない状態。**枠は出すが、段1の答えになる値は伏せる。** */
+function buildOxSheet(masked) {
   oxSheetEl.innerHTML = "";
   const t = task();
   t.parts.forEach((p, i) => {
@@ -207,7 +224,9 @@ function buildOxSheet() {
     const box = el("div", "oxPart" + (p.ask ? " oxAsk" : " oxSettled"));
     box.id = "oxPart" + i;
     const head = el("div", "oxPartHead");
-    head.append(el("span", "oxBigFormula", (p.n > 1 ? p.n + " " : "") + s.disp));
+    // ⚠ 伏せるあいだは電荷を落として書く（2K⁺ の ⁺ が段1の答え）
+    head.append(el("span", "oxBigFormula",
+      (p.n > 1 ? p.n + " " : "") + (masked ? dispNoCharge(p.sp) : s.disp)));
     if (!p.ask) head.append(el("span", "oxRole", "これで決まり"));
     box.appendChild(head);
 
@@ -217,11 +236,16 @@ function buildOxSheet() {
       const r = el("div", "oxRow");
       r.append(el("span", "oxEl", eln));
       if (known) {
-        const g = el("span", "oxGiven", fmtOxNum(known.v));
+        // ⚠ 電荷から来る灰色だけ伏せる。規則から来る灰色（O は −2）は段1と無関係
+        const hide = masked && chargeDerived(p.sp);
+        const g = el("span", "oxGiven", hide ? "？" : fmtOxNum(known.v));
         g.title = known.why;
         r.appendChild(g);
       } else {
-        r.appendChild(oxInput(i, eln));
+        const inp = oxInput(i, eln);
+        // 段1が片づくまでは押せない（めざす合計が決まっていないので、採点しようがない）
+        inp.disabled = !!masked;
+        r.appendChild(inp);
       }
       r.append(el("span", "oxCount", "× " + s.atoms[eln] + " 個"));
       r.append(el("span", "oxWhy", known ? known.why : "これを、合計から出す"));
@@ -232,6 +256,16 @@ function buildOxSheet() {
     // 検算の行。**答えは言わない** —— いま合計がいくつで、めざす合計がいくつか、だけ
     const chk = el("div", "oxCheckLine");
     chk.id = "oxChk" + i;
+    if (masked) {
+      /* ⚠ めざす合計 ＝ そのイオンの電荷 ＝ 段1の答え。伏せるあいだは ？ のまま。
+         規則から来る数（O の −2）は上の行に出しているので、ここでも同じ数を出す
+         —— 行と検算で食い違うと「どちらが本当か」が分からなくなる。 */
+      const hide = chargeDerived(p.sp);
+      chk.textContent = Object.keys(s.atoms).map((eln) => {
+        const k = oxKnownOf(p.sp, eln);
+        return `(${k && !hide ? fmtOxNum(k.v) : "？"})×${s.atoms[eln]}`;
+      }).join(" ＋ ") + " ＝ ？　　めざす合計 ＝ ？（上の段で決める電荷）";
+    }
     box.appendChild(chk);
     oxSheetEl.appendChild(box);
   });
@@ -305,10 +339,12 @@ function buildVirtual() {
 }
 
 /* ---- 塗り替え（⚠ 入力欄は作り直さない） ----
-   段2の枠は「段1が片づいた瞬間」に1度だけ作る。それ以外は refreshOx が中身を塗るだけ。
-   ★ ここが **段を分けて徹底させる**しくみの実体 —— 段1が ok になるまで #step2 は hidden。 */
+   段2の枠は**最初から出す**。作り直すのは「回が変わったとき」と「伏せ方が変わったとき」だけ。
+   ★ ここが **段を分けて徹底させる**しくみの実体 —— 段1が ok になるまで段2の値は伏せたまま
+   （枠は見えるが、めざす合計が ？ なので**書きようがない**）。 */
 
-let oxBuiltFor = null;   // 段2の枠を作った回（taskIdx）
+let oxBuiltFor = null;     // 段2の枠を作った回（taskIdx）
+let oxBuiltMasked = null;  // そのとき伏せていたか（切り替わったら作り直す）
 
 function refresh() {
   const t = task();
@@ -320,22 +356,28 @@ function refresh() {
     whySplitEl.className = "footNote" + (t.verdict.kind === "possible" ? "" : " oxWhyStrong");
   }
   const done = splitDone();
-  step2El.hidden = !done;
-  step2LockEl.hidden = done;
+  // ★ いま入れるところをハイライトする（段は両方とも出したまま）
+  step1El.classList.toggle("stepNow", !done);
+  step2El.classList.toggle("stepNow", done);
+  step2El.classList.toggle("oxLocked", !done);
+  document.getElementById("step1Now").hidden = done;
+  document.getElementById("step2Now").hidden = !done;
+  if (oxBuiltFor !== taskIdx || oxBuiltMasked !== !done) {
+    buildOxSheet(!done);
+    oxBuiltFor = taskIdx; oxBuiltMasked = !done;
+  }
+  givenNoteEl.textContent =
+    "灰色の数は規則で決まったぶん —— 単体は 0、単原子イオンは電荷そのもの、" +
+    "化合物の中の O は −2・H は +1。自分で出すのは、残った1つだけ。";
   if (!done) {
-    oxBuiltFor = null;
-    oxSheetEl.innerHTML = "";
+    setStatusMsg(oxMsgEl, "上の段でイオンに分けると、ここが1個ずつの問題になる。", "info");
     step3El.hidden = true;
     clearEl.hidden = true;
     return;
   }
-  if (oxBuiltFor !== taskIdx) { buildOxSheet(); oxBuiltFor = taskIdx; }
   const res = checkOxSheet(t.sp, oxVals);
   refreshOx(res);
   setStatusMsg(oxMsgEl, res.reason, res.ok ? "ok" : res.kind === "wrong" ? "ng" : "info");
-  givenNoteEl.textContent =
-    "灰色の数は規則で決まったぶん —— 単体は 0、単原子イオンは電荷そのもの、" +
-    "化合物の中の O は −2・H は +1。自分で出すのは、残った1つだけ。";
   if (!res.ok) {
     step3El.hidden = true;
     clearEl.hidden = true;
@@ -392,7 +434,7 @@ function initTask() {
   const t = task();
   stageTitleEl.innerHTML = "";
   stageTitleEl.appendChild(el("strong", null, `${taskLabel(taskIdx)} —— ${SPECIES[t.sp].name}`));
-  oxBuiltFor = null;
+  oxBuiltFor = null; oxBuiltMasked = null;
   buildSplit();
   refresh();
 }
@@ -408,7 +450,8 @@ window.OxNum = {
     return {
       taskIdx, sp: t.sp, needsSplit: t.needsSplit, verdict: t.verdict.kind,
       splitOk: t.needsSplit ? sp.ok : true, splitRest: t.needsSplit ? sp.rest : 0,
-      step2Visible: !step2El.hidden, step3Visible: !step3El.hidden,
+      // ★ 段2は最初から見えている。進みを示すのは「伏せているか」のほう
+      step2Visible: !step2El.hidden, step2Masked: !!oxBuiltMasked, step3Visible: !step3El.hidden,
       oxOk: ox.ok, oxRest: ox.rest, asks: ox.total,
       clear: !clearEl.hidden,
     };

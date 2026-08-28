@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 半反応式を組む</title>
-<link rel="stylesheet" href="style.css?v=197">
+<link rel="stylesheet" href="style.css?v=198">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="半反応式">半反応式を組む</span></h1>
-  <div class="version">v197</div>
+  <div class="version">v198</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="出題を選ぶ"></nav></div>
@@ -56,19 +56,20 @@
     </section>
 
     <!-- 段の見出しは手順で入れ替わる（HALF_PROCS が持つ）。
-         前の段が片づくまで次の段は開かない（筆算が下へ伸びるのと同じ順） -->
+         ★ 段も欄も**はじめから3段とも出す**。いま入れる段だけをハイライトし、
+            まだ来ていない段はうすいまま置く（採点の文だけ伏せる。halfreaction.js の refresh） -->
     <section class="step" id="hbStep0">
-      <div class="stepHead"><span class="stepNo">1</span><span class="hbHead"></span><span class="oxRole hbLock" hidden>まだ開かない</span></div>
+      <div class="stepHead"><span class="stepNo">1</span><span class="hbHead"></span><span class="oxRole stepNowTag" hidden>いま入れるところ</span></div>
       <div class="hbExtra" hidden></div>
       <div class="hbMsg"></div>
     </section>
     <section class="step" id="hbStep1">
-      <div class="stepHead"><span class="stepNo">2</span><span class="hbHead"></span><span class="oxRole hbLock" hidden>まだ開かない</span></div>
+      <div class="stepHead"><span class="stepNo">2</span><span class="hbHead"></span><span class="oxRole stepNowTag" hidden>いま入れるところ</span></div>
       <div class="hbExtra" hidden></div>
       <div class="hbMsg"></div>
     </section>
     <section class="step" id="hbStep2">
-      <div class="stepHead"><span class="stepNo">3</span><span class="hbHead"></span><span class="oxRole hbLock" hidden>まだ開かない</span></div>
+      <div class="stepHead"><span class="stepNo">3</span><span class="hbHead"></span><span class="oxRole stepNowTag" hidden>いま入れるところ</span></div>
       <div class="hbExtra" hidden></div>
       <div class="hbMsg"></div>
     </section>
@@ -78,9 +79,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=197"></script>
-<script src="schematic.js?v=197"></script>
-<script src="header-ui.js?v=197"></script>
-<script src="halfreaction.js?v=197"></script>
+<script src="model.js?v=198"></script>
+<script src="schematic.js?v=198"></script>
+<script src="header-ui.js?v=198"></script>
+<script src="halfreaction.js?v=198"></script>
 </body>
 </html>
