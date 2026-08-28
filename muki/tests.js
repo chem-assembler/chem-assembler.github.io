@@ -22,8 +22,11 @@
     // 空振り防止。想定より明らかに少ない件数で「ALL PASS」と出たら、
     // それは通ったのではなく走っていない（fetch 失敗・iframe 未初期化など）
     // ⚠ 系統分離モード（型B・型A）の検査が丸ごと空振りしても気づけるように、
-    //   その件数ぶんを含めた下限にしてある（2026-08-27 時点の実測は 303 件 → 型A を足して 405 件）
-    var MIN_CASES = 320;
+    //   その件数ぶんを含めた下限にしてある（2026-08-27 時点の実測は 303 件 → 型A を足して 405 件
+    //   → レイアウトの追い込みで 457 件 → 沈殿側の枝と出題の生成で 524 件）
+    // ⚠ 下限は実測のすぐ下に置く。★ ゆるくすると、型A の画面の検査が丸ごと空振りしても
+    //   「少ないけど全部通った」に見えてしまう（★ 型A の画面だけで 95 件ある）
+    var MIN_CASES = 500;
 
     function section(title, target) {
         var h = document.createElement('h2');
@@ -748,10 +751,26 @@
     section('型A: 模型の読み込み');
     var treeLoaded = ok('tree-model.js が読み込めている',
         typeof TREE_OPS !== 'undefined' && typeof TREE_RULES !== 'undefined' &&
-        typeof TREE_PROBLEMS !== 'undefined' && typeof treeRun === 'function' &&
-        typeof treeGrade === 'function' && typeof treeAuditProblem === 'function');
+        typeof TREE_SUBOPS !== 'undefined' && typeof treeRun === 'function' &&
+        typeof treeGrade === 'function' && typeof treeAuditProblem === 'function' &&
+        typeof treeMakeProblem === 'function');
 
     if (treeLoaded) {
+        // ★ 出題は生成になったので、検査は **中身を固定した見本**で回す
+        //   （⚠ 抽選に頼ると、落ちたときに何を見ていたのか分からなくなる）。
+        //   ★ 生成そのものは、下の「出題の生成」の節が母集団ごと見る。
+        var TREE_SAMPLES = [
+            // ★ 属ごとに1つ（＝ 作り直す前の題材そのもの。芯がまるごと効く）
+            treeBuildProblem(['Ag', 'Cu', 'Fe3', 'Zn', 'Ca', 'Na']),
+            // ⚠ 亜鉛が居ない ＝ 鉄を戻し忘れても葉は汚れないが、行先は変わる
+            treeBuildProblem(['Ag', 'Cu', 'Fe3', 'Ca', 'Na']),
+            // ⚠ カルシウムが居ない ＝ 炭酸アンモニウムが1つも沈めない
+            treeBuildProblem(['Ag', 'Cu', 'Fe3', 'Zn', 'Na'])
+        ];
+        // ★★ 属の中に2組入っている容器（⚠ 沈殿側の枝が要る）
+        var TREE_SPLIT2 = treeBuildProblem(['Ag', 'Pb', 'Cu', 'Fe3', 'Al', 'Zn', 'Ca', 'Na']);
+        // ★ 属の中に1組だけ（第1属が2つ）
+        var TREE_SPLIT1 = treeBuildProblem(['Ag', 'Pb', 'Cu', 'Fe3', 'Zn', 'Ca', 'Na']);
         // -----------------------------------------------------------
         // 悉皆で宣言しているか（§4-1）
         // ⚠ 宣言もれがあると、そのイオンは黙って素通りする ＝ 結果の創作になる
@@ -818,7 +837,7 @@
         // ⚠ ここが緩むと、型A を作った意味そのものが消える
         // -----------------------------------------------------------
         section('型A: 芯 —— 煮沸してから希硝酸（§4-3・§15-2）');
-        var pA = treeProblem('a1');
+        var pA = TREE_SAMPLES[0];
         var idealA = treeIdealSeq(pA);
         ok('a1 は Ag⁺・Cu²⁺・Fe³⁺・Zn²⁺・Ca²⁺・Na⁺（★ 鉄と亜鉛が両方いる）',
             pA.ions.slice().sort().join(',') === 'Ag,Ca,Cu,Fe3,Na,Zn');
@@ -932,7 +951,7 @@
         })());
 
         // ⚠ 亜鉛がいない容器では、鉄を戻し忘れても葉は汚れない。★ でも行先は変わる
-        var pB = treeProblem('a2');
+        var pB = TREE_SAMPLES[1];
         var idealB = treeIdealSeq(pB);
         var gB = treeGrade(pB, idealB.map(function (o) { return o === 'hno3' ? null : o; }),
             treePlanFromRun(pB, idealB));
@@ -970,13 +989,157 @@
         })());
 
         // -----------------------------------------------------------
+        // ★★★ 沈殿側の枝（2026-08-28・§20-6 の (b)）
+        //
+        // ⚠⚠ ここが緩むと、この回で作ったものが丸ごと死ぬ ——
+        //   **属を欠けさせても手順は変わらない**ので、手順のバリエーションの源は
+        //   「属の中に2つ入れる」しかない。
+        // -----------------------------------------------------------
+        section('型A: 沈殿側の札（§20-6 の (b)）');
+        var idealS2 = treeIdealSeq(TREE_SPLIT2);
+        var subS2 = treeIdealSub(TREE_SPLIT2, idealS2);
+        ok('★ 属の中に2つ入るイオンを持っている（第1属 Ag/Pb・第3属 Fe/Al）',
+            TREE_GROUP.Ag === 1 && TREE_GROUP.Pb === 1 &&
+            TREE_GROUP.Fe === 3 && TREE_GROUP.Al === 3);
+        ok('★ 属の中に何組入るかを数えられる（0／1／2）',
+            treeCrowdedGroups(['Ag', 'Cu', 'Fe3', 'Na']) === 0 &&
+            treeCrowdedGroups(['Ag', 'Pb', 'Fe3', 'Na']) === 1 &&
+            treeCrowdedGroups(TREE_SPLIT2.ions) === 2);
+        ok('★ 沈殿側の札が2枚ある（熱湯・過剰の水酸化ナトリウム水溶液）',
+            Object.keys(TREE_SUBOPS).length === 2 &&
+            TREE_SUBOPS.hot.short === '熱湯' && TREE_SUBOPS.naoh.short.indexOf('水酸化ナトリウム') >= 0);
+        ok('⚠⚠ 沈殿側の表の鍵は、イオンではなく **沈殿の化学式**（★ PbCl₂ と PbS は別もの）',
+            treeSubRule('PbCl₂', 'hot').out === 'sol' &&
+            treeSubRule('PbS', 'hot').out === 'ppt');
+        ok('★★ 主流の札が生みうる沈殿ぜんぶ × 沈殿側の札ぜんぶが宣言されている（実測 ' +
+            treeAllFormulas().length + ' 式）', (function () {
+                var bad = [];
+                treeAllFormulas().forEach(function (f) {
+                    Object.keys(TREE_SUBOPS).forEach(function (o) {
+                        if (!treeSubRule(f, o)) bad.push(f + '×' + o);
+                    });
+                });
+                if (bad.length) warn('沈殿側の宣言もれ: ' + bad.join(' / '));
+                return bad.length === 0 && treeAllFormulas().length >= 12;
+            })());
+        ok('★ 溶け出すと宣言したものは、溶けた姿と色を持っている', (function () {
+            var bad = [];
+            Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                Object.keys(TREE_SUB_RULES[f]).forEach(function (o) {
+                    var r = TREE_SUB_RULES[f][o];
+                    if (r.out === 'sol' && !(r.f && r.c)) bad.push(f + '×' + o);
+                    if (r.c && !(r.c in TREE_COLORS)) bad.push(f + '×' + o + ':' + r.c);
+                });
+            });
+            return bad.length === 0;
+        })());
+        // ⚠ 出典（§4-1 の線を後から検算するため）。★ 教科書／参考書の別を残すこと
+        ok('★★ 沈殿側の規則は、全件が出典と「教科書／参考書」の別を持っている', (function () {
+            var bad = [], books = {};
+            Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                Object.keys(TREE_SUB_RULES[f]).forEach(function (o) {
+                    var r = TREE_SUB_RULES[f][o];
+                    if (!r.ref || !r.book) { bad.push(f + '×' + o); return; }
+                    if (r.book !== '教科書' && r.book !== '参考書') bad.push(f + '×' + o + ':' + r.book);
+                    books[r.book] = (books[r.book] || 0) + 1;
+                });
+            });
+            if (bad.length) warn('出典の無い沈殿側の組: ' + bad.join(' / '));
+            return bad.length === 0 && books['教科書'] > 0 && books['参考書'] > 0;
+        })());
+        ok('⚠ 沈殿側に「この教材が埋めた」組が無い（★ 全件が資料の裏づけを持つ）', (function () {
+            var n = 0;
+            Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                Object.keys(TREE_SUB_RULES[f]).forEach(function (o) {
+                    if (TREE_SUB_RULES[f][o].src) n++;
+                });
+            });
+            return n === 0;
+        })());
+        ok('⚠ 沈殿側の説明にも、本の名前とページ番号を書いていない', (function () {
+            var bad = [];
+            Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                Object.keys(TREE_SUB_RULES[f]).forEach(function (o) {
+                    var w = TREE_SUB_RULES[f][o].why || '';
+                    if (/p\s*\.\s*\d+/i.test(w)) bad.push(f + '×' + o);
+                    ['教科書', '化学新研究', '新研究', '総合的研究', '要点&盲点', '基本ノート',
+                        'セミナー', '東京書籍', '参考書'].forEach(function (b) {
+                            if (w.indexOf(b) >= 0) bad.push(f + '×' + o + ':' + b);
+                        });
+                });
+            });
+            return bad.length === 0;
+        })());
+        // ★ 第1属・第3属の分かれ方そのもの
+        ok('★★ 第1属: 熱湯で PbCl₂ だけ溶け、AgCl は沈殿のまま残る',
+            treeSubRule('PbCl₂', 'hot').out === 'sol' &&
+            treeSubRule('AgCl', 'hot').out === 'ppt');
+        ok('★★ 第3属: 過剰の水酸化ナトリウム水溶液で Al(OH)₃ だけ溶け、FeO(OH) は残る',
+            treeSubRule('Al(OH)₃', 'naoh').out === 'sol' &&
+            treeSubRule('Al(OH)₃', 'naoh').f === '[Al(OH)₄]⁻' &&
+            treeSubRule('FeO(OH)', 'naoh').out === 'ppt');
+        ok('⚠ 亜鉛は両性だが、そこに在るのは硫化物なので過剰の水酸化ナトリウムでは溶けない',
+            treeSubRule('ZnS', 'naoh').out === 'ppt');
+        ok('★ 模範の沈殿側の置き方を、決め打ちせずに悉皆で見つけている（実測 ' +
+            JSON.stringify(subS2) + '）',
+            subS2[idealS2.indexOf('hcl')] === 'hot' &&
+            subS2[idealS2.indexOf('nh3')] === 'naoh' &&
+            Object.keys(subS2).length === 2);
+
+        // ★★★ 発注の芯 —— 「割らずに止めると不正解」
+        var planS2 = treePlanFromRun(TREE_SPLIT2, idealS2, subS2);
+        var gSplit = treeGrade(TREE_SPLIT2, idealS2, planS2, subS2);
+        var gStop = treeGrade(TREE_SPLIT2, idealS2, planS2, {});
+        ok('★ 割れば、8種すべてが別々の葉に1つずつ入る（葉 ' + gSplit.leaves.length + '枚）',
+            gSplit.isolated === true && gSplit.dirty === 0 && gSplit.verdict === 'perfect' &&
+            gSplit.leaves.length === 8);
+        ok('★★★ 割らずに止めると、単離できていない葉が 2 枚できる（実測 ' + gStop.dirty + ' 枚）',
+            gStop.isolated === false && gStop.dirty === 2 &&
+            gStop.impure.length === 2);
+        ok('★ その2枚は「銀と鉛が同居した葉」と「鉄とアルミニウムが同居した葉」', (function () {
+            var got = gStop.impure.map(function (l) {
+                return gStop.actual[l].slice().sort().join(',');
+            }).sort().join(' / ');
+            return got === 'Ag,Pb / Al,Fe';
+        })());
+        ok('★ 属の中に1組だけの容器では、割らずに止めると葉は 1 枚汚れる', (function () {
+            var seq = treeIdealSeq(TREE_SPLIT1);
+            var sub = treeIdealSub(TREE_SPLIT1, seq);
+            var pl = treePlanFromRun(TREE_SPLIT1, seq, sub);
+            return Object.keys(sub).length === 1 &&
+                treeGrade(TREE_SPLIT1, seq, pl, {}).dirty === 1 &&
+                treeGrade(TREE_SPLIT1, seq, pl, sub).dirty === 0;
+        })());
+        ok('★★ 割った沈殿は、もう置き場ではない（⚠ 終端は木の形から出す。§20-4）', (function () {
+            var run = treeRun(TREE_SPLIT2.ions, idealS2, subS2);
+            var lv = treeLeafIds(run);
+            var slot = idealS2.indexOf('hcl');
+            return lv.indexOf(treeLeafId(slot)) < 0 &&
+                lv.indexOf(treeSubLeafId(slot, 's')) >= 0 &&
+                lv.indexOf(treeSubLeafId(slot, 'p')) >= 0;
+        })());
+        ok('★ 沈殿側の札も1手として数える（⚠ 割ると2手ぶん増える）',
+            gSplit.moves === gStop.moves + 2);
+        ok('⚠ 沈殿ができない枝に沈殿側の札を置いても効かない（★ 黙って無視する）', (function () {
+            var boil = idealS2.indexOf('boil');
+            var s = {}; s[boil] = 'hot';
+            var run = treeRun(TREE_SPLIT2.ions, idealS2, s);
+            return run.stages[boil].sub === null &&
+                treeLeafIds(run).indexOf(treeSubLeafId(boil, 's')) < 0;
+        })());
+        ok('★ 芯（希硝酸）は、属の中に2組ある容器でも効く', (function () {
+            var a = treeAuditProblem(TREE_SPLIT2);
+            return a.feTrap === true && a.hclTrap === true && a.splitTrap === true &&
+                a.pairs === 2 && a.splitDirty === 2;
+        })());
+
+        // -----------------------------------------------------------
         // 出題の門番（§2-4 の型A 版）
         // ⚠ 型A の門番が見るのは「見分けられるか」ではなく
         //   ★ **配った札で、全部を単離しきる手順が実在するか**
         // -----------------------------------------------------------
         section('型A: 出題の門番');
-        ok('出題が2件以上ある', TREE_PROBLEMS.length >= 2);
-        TREE_PROBLEMS.forEach(function (p) {
+        TREE_SAMPLES.concat([TREE_SPLIT1, TREE_SPLIT2]).forEach(function (p) {
             var a = treeAuditProblem(p);
             ok('[' + p.id + '] 宣言もれが無い（実測 ' + a.undeclared.length + ' 件）',
                 a.undeclared.length === 0);
@@ -996,31 +1159,40 @@
             return g.moves === 7 && g2.moves === 6;
         })());
         ok('★ 門番が理想の最短手数を持っている（' +
-            TREE_PROBLEMS.map(function (p) { return p.id + ':' + treeAuditProblem(p).shortest; }).join(' ') + '）',
-            TREE_PROBLEMS.every(function (p) {
+            TREE_SAMPLES.map(function (p) { return p.id + ':' + treeAuditProblem(p).shortest; }).join(' ') + '）',
+            TREE_SAMPLES.every(function (p) {
                 var a = treeAuditProblem(p);
                 // ⚠ 下限を高く見積もらないこと。★ a2 は実測4手で足りる
                 //   （亜鉛が居ないので硫化水素は1回でよく、鉄が還元されないので煮沸も希硝酸も要らない）
                 return a.shortest >= 3 && a.shortest <= a.ideal.length;
             }));
         ok('★★ 属が欠けている容器では、飛ばせる段があるぶん最短が短い（⚠ 正解は1つではない）',
-            treeAuditProblem(treeProblem('a1')).shortest === 7 &&
-            treeAuditProblem(treeProblem('a2')).shortest < 7 &&
-            treeAuditProblem(treeProblem('a3')).shortest < 7);
+            treeAuditProblem(TREE_SAMPLES[0]).shortest === 7 &&
+            treeAuditProblem(TREE_SAMPLES[1]).shortest < 7 &&
+            treeAuditProblem(TREE_SAMPLES[2]).shortest < 7);
         ok('★★ 最短の手数で実際に単離できる（⚠ 数だけ出して解けなかったら赤）', (function () {
             var bad = [];
-            TREE_PROBLEMS.forEach(function (p) {
+            TREE_SAMPLES.concat([TREE_SPLIT1, TREE_SPLIT2]).forEach(function (p) {
                 var a = treeAuditProblem(p);
                 // ⚠ 手順そのものは画面に出さないが、検査では「その手数で解ける」ことを確かめる
-                var ideal = treeIdealSeq(p), trimmed = ideal.slice();
+                var ideal = treeIdealSeq(p), sub = treeIdealSub(p, ideal), trimmed = ideal.slice();
+                var okIso = function (s, sb) {
+                    return treeGrade(p, s, treePlanFromRun(p, s, sb), sb).isolated;
+                };
                 ideal.forEach(function (o, i) {
                     var probe = trimmed.slice();
                     probe[i] = null;
-                    if (treeGrade(p, probe, treePlanFromRun(p, probe)).isolated) trimmed = probe;
+                    if (okIso(probe, sub)) trimmed = probe;
                 });
-                var g = treeGrade(p, trimmed, treePlanFromRun(p, trimmed));
-                if (!g.isolated || g.moves !== a.shortest) bad.push(p.id);
+                Object.keys(sub).forEach(function (k) {
+                    var probe = {};
+                    Object.keys(sub).forEach(function (k2) { if (k2 !== k) probe[k2] = sub[k2]; });
+                    if (okIso(trimmed, probe)) sub = probe;
+                });
+                var g = treeGrade(p, trimmed, treePlanFromRun(p, trimmed, sub), sub);
+                if (!g.isolated || g.moves !== a.shortest) bad.push(p.id + '(' + g.moves + '/' + a.shortest + ')');
             });
+            if (bad.length) warn('最短で解けない出題: ' + bad.join(' / '));
             return bad.length === 0;
         })());
         ok('⚠ 余計な手があっても、単離できていれば単離できたと数える（★ 減点ではない）', (function () {
@@ -1030,24 +1202,144 @@
             return g.isolated === true && g.moves === 8;
         })());
         ok('★ 少なくとも1問は、鉄を戻し忘れると葉が2枚汚れる（＝ 型A を作る意味そのもの）',
-            TREE_PROBLEMS.some(function (p) { return treeAuditProblem(p).feDirty >= 2; }));
+            TREE_SAMPLES.some(function (p) { return treeAuditProblem(p).feDirty >= 2; }));
         ok('どの出題にも鉄が入っている（⚠ 入っていない出題は、この教材の芯を持たない）',
-            TREE_PROBLEMS.every(function (p) { return p.ions.indexOf('Fe3') >= 0; }));
+            TREE_SAMPLES.every(function (p) { return p.ions.indexOf('Fe3') >= 0; }));
+
+        // -----------------------------------------------------------
+        // ★★★ 出題の生成（2026-08-28）—— ⚠ 直書きをやめ、型B と同じ道を通す
+        //
+        // ⚠⚠ ここが緩むと「題材が3件しかない」に戻る。
+        //   ★ 段ごとの母数と、母集団の全件が門番を通ることを、毎回の全走で数える。
+        // -----------------------------------------------------------
+        section('型A: 出題の生成と難易度');
+        var treePoolsAll = treePools();
+        var treePoolN = {};
+        TREE_LEVELS.forEach(function (l) { treePoolN[l.id] = (treePoolsAll[l.id] || []).length; });
+        ok('★ 段が3つある（やさしい／ふつう／むずかしい）',
+            TREE_LEVELS.length === 3 &&
+            TREE_LEVELS.map(function (l) { return l.id; }).join(',') === 'easy,normal,hard');
+        ok('★★ どの段にも十分な母数がある（実測 ' +
+            TREE_LEVELS.map(function (l) { return l.name + ' ' + treePoolN[l.id]; }).join('／') + '）',
+            TREE_LEVELS.every(function (l) { return treePoolN[l.id] >= 10; }));
+        ok('⚠ 1通りしか無い段が無い（★ あれば段の切り方が悪い）',
+            TREE_LEVELS.every(function (l) { return treePoolN[l.id] >= 2; }));
+        ok('★ 母集団の全件が門番を通っている（実測 ' +
+            TREE_LEVELS.reduce(function (n, l) { return n + treePoolN[l.id]; }, 0) + ' 組）', (function () {
+                var bad = [];
+                TREE_LEVELS.forEach(function (l) {
+                    (treePoolsAll[l.id] || []).forEach(function (e) {
+                        var a = treeAuditProblem(treeBuildProblem(e.ions));
+                        if (!a.ok) bad.push(treeIonKey(e.ions));
+                    });
+                });
+                if (bad.length) warn('門番を通らない出題が母集団に居る: ' + bad.slice(0, 5).join(' / '));
+                return bad.length === 0;
+            })());
+        ok('★★ 母集団のどの組も、理想の最短が2手以上（⚠ 1手で終わる容器は出さない）', (function () {
+            var bad = [];
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) {
+                    if (e.shortest < 2) bad.push(treeIonKey(e.ions) + ':' + e.shortest);
+                });
+            });
+            return bad.length === 0;
+        })());
+        ok('⚠⚠ 母集団のどの組にも鉄が入っている（★ 芯を持たない容器は出さない）', (function () {
+            var bad = [];
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) {
+                    if (e.ions.indexOf('Fe3') < 0) bad.push(treeIonKey(e.ions));
+                });
+            });
+            return bad.length === 0;
+        })());
+        ok('★★ 属の中に2つ入る組が母集団に居る（＝ 手順のバリエーションが実在する。実測 ' + (function () {
+            var n = 0;
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) { if (e.pairs >= 1) n++; });
+            });
+            return n;
+        })() + ' 組）', (function () {
+            var n1 = 0, n2 = 0;
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) {
+                    if (e.pairs === 1) n1++;
+                    if (e.pairs === 2) n2++;
+                });
+            });
+            return n1 >= 10 && n2 >= 5;
+        })());
+        // ★ 難易度は手で付けない（§2-4）。⚠ 門番が数えた値だけから出す
+        ok('★★ 難易度の根拠が、門番の数えた値そのもの（中身の数＋最短手数＋3×属の中の組数）', (function () {
+            var bad = [];
+            [TREE_SAMPLES[0], TREE_SPLIT1, TREE_SPLIT2].forEach(function (p) {
+                var a = treeAuditProblem(p), d = treeDifficulty(p, a);
+                if (d.score !== p.ions.length + a.shortest + 3 * a.pairs) bad.push(p.id);
+                if (d.ions !== p.ions.length || d.shortest !== a.shortest || d.pairs !== a.pairs) bad.push(p.id);
+            });
+            return bad.length === 0;
+        })());
+        ok('★ 属の中の組数が増えると、難易度の段も上がる（実測 ' +
+            [TREE_SAMPLES[0], TREE_SPLIT1, TREE_SPLIT2].map(function (p) {
+                var d = treeDifficulty(p); return d.pairs + '組→' + d.name + '(' + d.score + ')';
+            }).join('／') + '）',
+            treeDifficulty(TREE_SAMPLES[0]).score < treeDifficulty(TREE_SPLIT1).score &&
+            treeDifficulty(TREE_SPLIT1).score < treeDifficulty(TREE_SPLIT2).score &&
+            treeDifficulty(TREE_SPLIT2).level === 'hard');
+        ok('⚠ 段の切り方を2か所に持っていない（★ TREE_LEVELS の min/max だけ）',
+            treeLevelOf(TREE_LEVELS[0].max) === 'easy' &&
+            treeLevelOf(TREE_LEVELS[1].min) === 'normal' &&
+            treeLevelOf(TREE_LEVELS[2].min) === 'hard');
+        ok('★ 難易度が出す語に、解き筋が混じっていない',
+            TREE_LEVELS.every(function (l) {
+                return (SPOILER_WORDS || []).every(function (w) {
+                    return (l.name + l.mark + l.id).indexOf(w) < 0;
+                });
+            }));
+        // ★ 抽選（⚠ 乱数はテストが固定する）
+        ok('★ 段を指定して1問引ける（引いた組は、その段の母集団に居る）', (function () {
+            var bad = [];
+            TREE_LEVELS.forEach(function (l) {
+                for (var i = 0; i < 12; i++) {
+                    var q = treeMakeProblem(l.id, { rand: (function (k) { return function () { return k; }; })(i / 12) });
+                    if (!q) { bad.push(l.id + ':null'); continue; }
+                    if (treeDifficulty(q).level !== l.id) bad.push(l.id + ':' + q.id);
+                }
+            });
+            if (bad.length) warn('段と食い違う出題: ' + bad.join(' / '));
+            return bad.length === 0;
+        })());
+        ok('★★ 同じ容器が続けて出ない（⚠ 直前の組を避けて引く）', (function () {
+            var first = treeMakeProblem('normal', { rand: function () { return 0; } });
+            var next = treeMakeProblem('normal', {
+                rand: function () { return 0; }, avoid: treeIonKey(first.ions)
+            });
+            return treeIonKey(first.ions) !== treeIonKey(next.ions);
+        })());
+        ok('⚠ 出題は、どの中身でも同じだけ札を配る（★ 配る枚数がヒントにならない）', (function () {
+            var bad = [];
+            [TREE_SAMPLES[0], TREE_SPLIT1, TREE_SPLIT2].forEach(function (p) {
+                if (p.ops.join(',') !== TREE_MAIN_DEAL.join(',')) bad.push(p.id + ':ops');
+                if (p.subOps.join(',') !== TREE_SUB_DEAL.join(',')) bad.push(p.id + ':sub');
+            });
+            return bad.length === 0;
+        })());
 
         // -----------------------------------------------------------
         // ⚠ 出題に解き筋を持たせない（型B と同じ縛り。§18-6 (1)）
         // -----------------------------------------------------------
         section('型A: 出題の文言に解き筋を出さない');
         ok('出題が持つのは id・中身・札だけ（説明文の欄を持たない）',
-            TREE_PROBLEMS.every(function (p) {
-                return Object.keys(p).sort().join(',') === 'id,ions,ops';
+            TREE_SAMPLES.every(function (p) {
+                return Object.keys(p).sort().join(',') === 'id,ions,level,ops,subOps';
             }));
         ok('やり方の名前が、解き筋に触れる語を持たない',
             Object.keys(TREE_MODES).every(function (k) {
                 var m = TREE_MODES[k];
                 // ⚠ 型B の検査が使う語彙をそのまま借りる（1か所で持つ）
                 return (SPOILER_WORDS || []).every(function (w) {
-                    return (m.name + m.mark + m.id).indexOf(w) < 0;
+                    return (m.name + m.id).indexOf(w) < 0;
                 });
             }));
         // ★ やり方の名前はユーザーが決めた文言（2026-08-28）。⚠ 勝手に言い換えない
@@ -1108,8 +1400,8 @@
         })());
         ok('★ 模範の手順では、この教材が埋めた組を1度も通らない', (function () {
             var bad = [];
-            TREE_PROBLEMS.forEach(function (p) {
-                var run = treeRun(p.ions, treeIdealSeq(p));
+            TREE_SAMPLES.concat([TREE_SPLIT2]).forEach(function (p) {
+                var run = treeRun(p.ions, treeIdealSeq(p), treeIdealSub(p));
                 run.stages.forEach(function (s) {
                     s.ppt.forEach(function (e) { if (e.src) bad.push(p.id + ':' + e.f); });
                 });
@@ -1875,7 +2167,7 @@
         }
         var f = document.createElement('iframe');
         f.id = 'sepapp';
-        f.src = 'separation.html?v=26';
+        f.src = 'separation.html?v=27';
         f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
         f.style.height = '812px';
         document.body.appendChild(f);
@@ -2131,6 +2423,10 @@
 
         function drive(w, d) {
             ok('tree.html が起動した', true, uiOut);
+            // ★ 出題は生成になったので、画面の検査も **中身を固定して**駆動する
+            //   （⚠ 抽選のまま測ると、枝の数も葉の数も回ごとに変わる）
+            var UI_A1 = ['Ag', 'Cu', 'Fe3', 'Zn', 'Ca', 'Na'];                  // 属ごとに1つ
+            var UI_SPLIT2 = ['Ag', 'Pb', 'Cu', 'Fe3', 'Al', 'Zn', 'Ca', 'Na'];  // 属の中に2組
             // ⚠ 出題まわりに解き筋を出さない（型B と同じ縛り）
             (function () {
                 var zone = [d.querySelector('.lead'), d.getElementById('panel-mode')]
@@ -2154,7 +2450,7 @@
             })();
 
             // --- ① やさしい段（イオンの行先を答える）は、操作がもう置いてある ---
-            w.treeUI.start('read', 'a1');
+            w.treeUI.start('read', 'easy', { ions: UI_A1 });
             ok('「イオンの行先を答える」では操作の手札を出さない（枝はもう埋まっている）',
                 d.querySelectorAll('#op-deck .card').length === 0, uiOut);
             ok('枝が7つある', d.querySelectorAll('.slot.branch').length === 7, uiOut);
@@ -2217,10 +2513,11 @@
                 res.textContent.indexOf('素通り') < 0, uiOut);
 
             // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
-            w.treeUI.start('build', 'a1');
-            ok('「実験手順から考える」では操作の手札が6枚出る（★ 硫化水素は1枚）',
-                d.querySelectorAll('#op-deck .card').length === 6 &&
-                d.querySelectorAll('#op-deck .card[data-op="h2s"]').length === 1, uiOut);
+            w.treeUI.start('build', 'easy', { ions: UI_A1 });
+            ok('「実験手順から考える」では札が8枚出る（★ 主流6・沈殿側2。硫化水素は1枚）',
+                d.querySelectorAll('#op-deck .card').length === 8 &&
+                d.querySelectorAll('#op-deck .card[data-op="h2s"]').length === 1 &&
+                d.querySelectorAll('#op-deck .card[data-sub]').length === 2, uiOut);
             ok('組む前は葉が1つ（最後のろ液）だけ',
                 d.querySelectorAll('.slot.leaf').length === 1, uiOut);
             [['hcl', 0], ['h2s', 1], ['boil', 2], ['nh3', 4], ['h2s', 5], ['co3', 6]]
@@ -2232,7 +2529,7 @@
                 !!d.querySelector('#op-deck .card[data-op="h2s"]') &&
                 w.treeUI.state.seq[1] === 'h2s' && w.treeUI.state.seq[5] === 'h2s', uiOut);
             ok('希硝酸が手札に残っている（＝ 置き忘れた答案）',
-                d.querySelectorAll('#op-deck .card').length === 2 &&
+                d.querySelectorAll('#op-deck .card[data-op]').length === 2 &&
                 !!d.querySelector('#op-deck .card[data-op="hno3"]'), uiOut);
             ok('★ 空けた枝は詰めない（アンモニアの葉は L4 のまま）',
                 !!d.querySelector('.slot.leaf[data-leaf="L4"]') &&
@@ -2305,7 +2602,7 @@
 
             // --- ⑧ ★★ 流れ図はディレクトリツリー（2026-08-28・ユーザー決定） ---
             //   ⚠ ここが緩むと「縦に長くて下が押しづらい」に戻る
-            w.treeUI.start('read', 'a1');
+            w.treeUI.start('read', 'easy', { ions: UI_A1 });
             var flow = d.getElementById('flow');
             ok('★ 流れ図がディレクトリツリーの行の並びになっている', (function () {
                 return !!flow && flow.querySelectorAll('.row').length === 18 &&
@@ -2320,10 +2617,14 @@
                 return mx;
             })() + 'px）', (function () {
                 var bad = [];
-                [].slice.call(flow.querySelectorAll('.row')).forEach(function (e) {
+                [].slice.call(flow.querySelectorAll('.row')).forEach(function (e, i) {
                     // ⚠ 上限は実測（最大44px ＝ 押し所の下限）のすぐ上に置く。
                     //   ★ ゆるくすると「枠を積む」形に戻っても気づけない
-                    if (rectH(e) > 46) bad.push(e.textContent.trim().slice(0, 12) + ':' + Math.round(rectH(e)));
+                    // ⚠ 例外は先頭の「この容器」だけ —— ★ 中身のイオンが8つ並ぶと 375px で
+                    //   2行に折り返す（枠を積んでいるのではなく、文字が折り返しているだけ）。
+                    //   ★ そこだけ2行ぶんまで許し、それ以外は 46px のまま見張る。
+                    var cap = (i === 0) ? 72 : 46;
+                    if (rectH(e) > cap) bad.push(e.textContent.trim().slice(0, 12) + ':' + Math.round(rectH(e)));
                 });
                 if (bad.length) warn('1行に収まっていない節: ' + bad.join(' / '));
                 return bad.length === 0;
@@ -2452,15 +2753,18 @@
                 return terminal === 6 && inner === 0;
             })(), uiOut);
             // ★★★ 縦の長さ。⚠ 上限を数で決めておかないと、じわじわ戻る
-            //   （★ 作り直す前の実測: ページ 2081px・流れ図 1097px）
-            ok('★★ 375px 幅で、ページの高さが 1750px 以内（実測 ' +
+            //   （★ ディレクトリツリーに作り直す前の実測: ページ 2081px・流れ図 1097px）
+            // ⚠ 上限を 1750 → 1800 にした（2026-08-28）——
+            //   ★ 難易度の選択と「べつの容器にする」を足したぶん（実測 1691 → 1749）。
+            //   ⚠ ツリーの作りは1行も変えていない（流れ図の欄は 731px のまま）。
+            ok('★★ 375px 幅で、ページの高さが 1800px 以内（実測 ' +
                 d.documentElement.scrollHeight + 'px。⚠ 作り直す前は 2081px）',
-                d.documentElement.scrollHeight <= 1750, uiOut);
+                d.documentElement.scrollHeight <= 1800, uiOut);
             ok('★ 流れ図の欄の高さが 780px 以内（実測 ' +
                 Math.round(rectH(d.getElementById('panel-tree'))) + 'px。⚠ 作り直す前は 1097px）',
                 rectH(d.getElementById('panel-tree')) <= 780, uiOut);
             // ⚠ 「実験手順から考える」では試薬の行が押し所になる ＝ 44px を要る
-            w.treeUI.start('build', 'a1');
+            w.treeUI.start('build', 'easy', { ions: UI_A1 });
             ok('★ 「実験手順から考える」では、押せるものが全部 44px 以上', (function () {
                 var bad = [];
                 [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset'))
@@ -2471,7 +2775,184 @@
                 if (bad.length) warn('小さすぎる押し所（build）: ' + bad.join(' / '));
                 return bad.length === 0;
             })(), uiOut);
-            w.treeUI.start('read', 'a1');
+            driveSplit(w, d, UI_SPLIT2);
+            w.treeUI.start('read', 'easy', { ions: UI_A1 });
+        }
+
+        /**
+         * ★★★ 属の中に2組入っている容器を、画面から最後まで通す（2026-08-28）。
+         * ⚠ ここが緩むと「沈殿側の枝」が画面から消えても気づけない。
+         *
+         * 見るのは4つ:
+         *   ① ★ 沈殿側の札が、沈殿の節を押すだけで置ける（⚠ 枝ではない）
+         *   ② ★★ **割った沈殿は、その場で置き場でなくなる**（＝ 終端は木の形から出ている）
+         *   ③ ★★★ **割らずに止めて提出すると、単離できていない葉が2枚できる**
+         *   ④ 深さ2でも 375px で横スクロールが出ず、押し所が 44px 以上
+         */
+        function driveSplit(w, d, ions) {
+            section('型A の画面: 属の中に2つ入る容器（深さ2）', uiOut);
+            var pick = function (sel) { var e = d.querySelector(sel); if (e) e.click(); return !!e; };
+
+            // --- 主流だけ組む（★ まだ割らない） ---
+            w.treeUI.start('build', 'hard', { ions: ions });
+            ok('★ 沈殿側の札が手札にある（熱湯・過剰の水酸化ナトリウム水溶液）',
+                !!d.querySelector('#op-deck .card[data-sub="hot"]') &&
+                !!d.querySelector('#op-deck .card[data-sub="naoh"]'), uiOut);
+            [['hcl', 0], ['h2s', 1], ['boil', 2], ['hno3', 3], ['nh3', 4], ['h2s', 5], ['co3', 6]]
+                .forEach(function (x) {
+                    pick('#op-deck .card[data-op="' + x[0] + '"]');
+                    pick('.slot.branch[data-slot="' + x[1] + '"]');
+                });
+            var leavesBefore = [].slice.call(d.querySelectorAll('.slot.leaf'))
+                .map(function (e) { return e.getAttribute('data-leaf'); });
+            ok('★ 割る前の終端は6つ（実測 ' + leavesBefore.join(',') + '）',
+                leavesBefore.join(',') === 'L0,L1,L4,L5,L6,F', uiOut);
+
+            // --- ★★★ 割らずに止めた答案を、いったん提出してみる ---
+            [['Ag', 'L0'], ['Cu', 'L1'], ['Fe3', 'L4'], ['Zn', 'L5'], ['Ca', 'L6'], ['Na', 'F']]
+                .forEach(function (x) {
+                    pick('#ion-deck .card[data-ion="' + x[0] + '"]');
+                    pick('.slot.leaf[data-leaf="' + x[1] + '"]');
+                });
+            d.getElementById('btn-submit').click();
+            var rStop = d.getElementById('result');
+            ok('★★★ 割らずに止めると「単離できていない葉が 2 枚あります」になる（⚠ ここが' +
+                'この教材で属の中の分離をやる理由そのもの）',
+                rStop.querySelector('h3').textContent.indexOf('単離できていない葉が 2 枚') >= 0, uiOut);
+            ok('★ 同居した2枚を名指しする（銀と鉛／鉄とアルミニウム）',
+                /銀と鉛 が入っています/.test(rStop.textContent) &&
+                /鉄とアルミニウム が入っています/.test(rStop.textContent), uiOut);
+            ok('★ 記録も葉の数で持っている（dirty ＝ ' + w.treeUI.state.record.dirty + '）',
+                w.treeUI.state.record.dirty === 2 && w.treeUI.state.record.isolated === false, uiOut);
+
+            // --- ★ 割って組み直す ---
+            w.treeUI.start('build', 'hard', { ions: ions });
+            [['hcl', 0], ['h2s', 1], ['boil', 2], ['hno3', 3], ['nh3', 4], ['h2s', 5], ['co3', 6]]
+                .forEach(function (x) {
+                    pick('#op-deck .card[data-op="' + x[0] + '"]');
+                    pick('.slot.branch[data-slot="' + x[1] + '"]');
+                });
+            ok('★ 沈殿側の札を選ぶと、まだ割っていない沈殿だけが置き先として光る', (function () {
+                pick('#op-deck .card[data-sub="hot"]');
+                var can = d.querySelectorAll('.node.splittable.can').length;
+                var all = d.querySelectorAll('.node.splittable').length;
+                return can === all && all === 5;
+            })(), uiOut);
+            ok('★ 沈殿の節を押すと、その沈殿が割れる（⚠ 置き先は枝ではない）', (function () {
+                pick('.node[data-split="0"]');
+                return w.treeUI.state.sub['0'] === 'hot' &&
+                    !!d.querySelector('.row.edge.subbranch[data-subslot="0"]');
+            })(), uiOut);
+            pick('#op-deck .card[data-sub="naoh"]');
+            pick('.node[data-split="4"]');
+            var leavesAfter = [].slice.call(d.querySelectorAll('.slot.leaf'))
+                .map(function (e) { return e.getAttribute('data-leaf'); });
+            ok('★★ 割ると終端が8つになる（実測 ' + leavesAfter.join(',') + '）',
+                leavesAfter.join(',') === 'L0s,L0p,L1,L4s,L4p,L5,L6,F', uiOut);
+            ok('★★★ 割った沈殿は、その場で置き場でなくなる（⚠ 終端は木の形から出ている）',
+                !d.querySelector('.slot.leaf[data-leaf="L0"]') &&
+                !d.querySelector('.slot.leaf[data-leaf="L4"]'), uiOut);
+            ok('⚠ 深さは列ではなくインデントで表す（★ 深さ2の行がある・列は増えていない）', (function () {
+                var deep = [].slice.call(d.querySelectorAll('#flow .row[data-i="2"]'));
+                if (deep.length !== 4) return false;       // 沈殿側の試薬2行 ＋ 溶けた液2行
+                var step = parseFloat(w.getComputedStyle(d.querySelector('#flow .row[data-i="1"]')).marginLeft);
+                return deep.every(function (e) {
+                    return Math.abs(parseFloat(w.getComputedStyle(e).marginLeft) - 2 * step) < 1;
+                }) && !d.getElementById('flow').getAttribute('data-cols') &&
+                    w.getComputedStyle(d.getElementById('flow')).display !== 'grid';
+            })(), uiOut);
+            ok('★★ 深さ2でも縦の罫は1本のまま（⚠ 段が違っても同じ x に立つ）', (function () {
+                var xs = [].slice.call(d.querySelectorAll('#flow .row')).map(function (e) {
+                    var cs = w.getComputedStyle(e, '::before');
+                    var bw = parseFloat(w.getComputedStyle(e).borderLeftWidth) || 0;
+                    return Math.round(e.getBoundingClientRect().left + bw + parseFloat(cs.left));
+                });
+                var uniq = xs.filter(function (v, i) { return xs.indexOf(v) === i; });
+                if (uniq.length > 1) warn('深さ2で罫の x が割れている: ' + uniq.join('/'));
+                return uniq.length === 1;
+            })(), uiOut);
+            ok('⚠ 深さ2でも 375px で横スクロールが出ない（' + d.documentElement.scrollWidth +
+                ' ≦ ' + d.documentElement.clientWidth + '）',
+                d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1, uiOut);
+
+            [['Ag', 'L0p'], ['Pb', 'L0s'], ['Cu', 'L1'], ['Fe3', 'L4p'], ['Al', 'L4s'],
+            ['Zn', 'L5'], ['Ca', 'L6'], ['Na', 'F']].forEach(function (x) {
+                pick('#ion-deck .card[data-ion="' + x[0] + '"]');
+                pick('.slot.leaf[data-leaf="' + x[1] + '"]');
+            });
+            // ⚠ 深さ2の押し所も 44px 以上（★ 幅が減っても押せる大きさを保つ）
+            ok('★ 深さ2でも、押せるものが全部 44px 以上', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset, #btn-new'))
+                    .forEach(function (el) {
+                        var h = el.getBoundingClientRect().height;
+                        if (h > 0 && h < 44) bad.push(el.className + ':' + Math.round(h));
+                    });
+                if (bad.length) warn('小さすぎる押し所（深さ2）: ' + bad.join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+            // ⚠ 深さ2はいちばん行の多い形（★ 上限を数で決めておかないと、じわじわ伸びる）
+            ok('★ 深さ2・全部置いた状態でも、375px でページの高さが 2200px 以内（実測 ' +
+                d.documentElement.scrollHeight + 'px）',
+                d.documentElement.scrollHeight <= 2200, uiOut);
+
+            d.getElementById('btn-submit').click();
+            var rSplit = d.getElementById('result');
+            ok('★★ 割れば「ぜんぶ単離できました」になる',
+                rSplit.querySelector('h3').textContent.indexOf('ぜんぶ単離できました') >= 0, uiOut);
+            ok('★ 手数は、沈殿側の札も数えている（9手／最短 9手）',
+                /（9手／最短 9手）/.test(rSplit.textContent) &&
+                w.treeUI.state.record.moves === 9, uiOut);
+            ok('★ 沈殿を割った手の説明が出る（溶け出したもの・残ったもの）',
+                rSplit.textContent.indexOf('溶け出しました') >= 0 &&
+                rSplit.textContent.indexOf('沈殿のまま残りました') >= 0, uiOut);
+            ok('★ 割った先の姿が出る（PbCl₂ が溶けた／[Al(OH)₄]⁻ になった）',
+                rSplit.textContent.indexOf('PbCl₂') >= 0 &&
+                rSplit.textContent.indexOf('[Al(OH)₄]⁻') >= 0, uiOut);
+            ok('⚠ 深さ2でも、本の名前とページは画面に出てこない',
+                !/p\s*\.\s*\d+/i.test(d.body.textContent) &&
+                ((typeof BOOK_WORDS !== 'undefined') ? BOOK_WORDS : [])
+                    .every(function (x) { return d.body.textContent.indexOf(x) < 0; }), uiOut);
+
+            // --- 難易度の選択（★ 型B と同じ。⚠ 解き筋に触れる語を出さない） ---
+            section('型A の画面: 難易度の選択', uiOut);
+            ok('★ 難易度の段が3つ出ている',
+                d.querySelectorAll('#probs button[data-level]').length === 3, uiOut);
+            ok('★ 段の見出しは名前と印だけ（⚠ 試薬の名前もイオンの名前も出さない）', (function () {
+                var t = d.getElementById('probs').textContent;
+                return (SPOILER_WORDS || []).every(function (x) { return t.indexOf(x) < 0; }) &&
+                    t.indexOf('熱湯') < 0 && t.indexOf('属') < 0;
+            })(), uiOut);
+            ok('★ 「べつの容器にする」で、別の中身が出る', (function () {
+                var before = treeIonKey(w.treeUI.state.problem.ions);
+                d.getElementById('btn-new').click();
+                return treeIonKey(w.treeUI.state.problem.ions) !== before &&
+                    w.treeUI.state.submitted === false;
+            })(), uiOut);
+            ok('★ 段を選ぶと、その段の容器になる', (function () {
+                var bad = [];
+                ['easy', 'normal', 'hard'].forEach(function (l) {
+                    d.querySelector('#probs button[data-level="' + l + '"]').click();
+                    if (w.treeUI.state.level !== l) { bad.push(l); return; }
+                    if (treeDifficulty(w.treeUI.state.problem).level !== l) bad.push(l + ':' + w.treeUI.state.problem.id);
+                });
+                if (bad.length) warn('段と食い違う容器が出た: ' + bad.join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+            ok('⚠ やり方を替えても、いま出ている容器は変わらない（★ 引き直さない）', (function () {
+                var before = treeIonKey(w.treeUI.state.problem.ions);
+                d.querySelector('#modes button[data-mode="build"]').click();
+                var mid = treeIonKey(w.treeUI.state.problem.ions);
+                d.querySelector('#modes button[data-mode="read"]').click();
+                return mid === before && treeIonKey(w.treeUI.state.problem.ions) === before;
+            })(), uiOut);
+            ok('★ 「イオンの行先を答える」では、沈殿側の札も置いてある（⚠ 行先を答えるだけの段で、' +
+                '割らずに止めた木を渡さない）', (function () {
+                    w.treeUI.start('read', 'hard', { ions: ions });
+                    return Object.keys(w.treeUI.state.sub).length === 2 &&
+                        d.querySelectorAll('.slot.leaf').length === 8 &&
+                        d.querySelectorAll('#op-deck .card').length === 0;
+                })(), uiOut);
         }
     }
 
@@ -2507,6 +2988,22 @@
             // §4-3: 途中で警告を出さない
             ok('途中で警告を出す文言を持たない（§4-3「警告を出さない」）',
                 src.indexOf('煮沸を忘れて') < 0 && src.indexOf('忘れています') < 0);
+            // ★★ §20-4: 置き場は **木の形**から出す（⚠ 「沈殿だから置ける」と決め打ちしない）
+            ok('★★ 画面が置き場を木の形から出している（treeLeafIds を使う）',
+                src.indexOf('treeLeafIds') >= 0);
+            ok('⚠ 画面が「相が沈殿かどうか」で置き場を決めていない', (function () {
+                // ★ phase / ppt を見て terminal を決める書き方に戻したら赤くする
+                return !/terminal\s*[:=][^;\n]*(ppt|phase)/.test(src) &&
+                    !/(ppt|phase)[^;\n]*terminal\s*=/.test(src);
+            })());
+            // ★ §20-6: 出題は生成（⚠ 直書きの一覧に戻していない）
+            ok('★ 出題を直書きの一覧に戻していない（TREE_PROBLEMS が無い）',
+                src.indexOf('TREE_PROBLEMS') < 0 && src.indexOf('treePools') >= 0);
+            // ★ §2-4: 難易度を手で付けない ——
+            //   ⚠ 段の切り方（score の閾値）を模型の外に写していないこと
+            ok('⚠ 難易度の段の切り方を、模型の外に写していない（★ TREE_LEVELS の min/max だけ）',
+                (src.match(/min\s*:\s*\d+\s*,\s*max\s*:\s*\d+/g) || []).length ===
+                TREE_LEVELS.length);
         }).catch(function (e) {
             ok('ソースを読み取れる（' + e + '）', false);
         }).then(next);
