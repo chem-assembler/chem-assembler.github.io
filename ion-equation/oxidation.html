@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化数を決める</title>
-<link rel="stylesheet" href="style.css?v=197">
+<link rel="stylesheet" href="style.css?v=198">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化数">酸化数を決める</span></h1>
-  <div class="version">v197</div>
+  <div class="version">v198</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="出題を選ぶ"></nav></div>
@@ -47,23 +47,18 @@
   <div id="stageTitle"></div>
   <div id="timeline">
     <section class="step" id="step1">
-      <div class="stepHead"><span class="stepNo">1</span>イオンに分ける</div>
+      <div class="stepHead"><span class="stepNo">1</span>イオンに分ける<span class="oxRole stepNowTag" id="step1Now" hidden>いま入れるところ</span></div>
       <div class="sheetScroll"><div id="splitSheet"></div></div>
       <div id="splitMsg"></div>
       <div id="whySplit" class="footNote"></div>
     </section>
 
-    <!-- ★ 段1を片づけるまで段2は開かない。ただし「次に何をするのか」は先に見せる
-         —— 何が待っているか分からないまま足止めされると、ただの意地悪になる -->
-    <section class="step oxLocked" id="step2Locked">
-      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める<span class="oxRole">まだ開かない</span></div>
-      <div class="footNote">イオンに分けてから開きます。<strong>分けたあとは、イオン1個ずつが別々の問題になる</strong>——
-        規則で決まるところ（単体は 0、単原子イオンは電荷そのもの、化合物の中の O は −2・H は +1）を先に埋め、
-        残った1つを「合計＝そのイオンの電荷」から出します。</div>
-    </section>
-
+    <!-- ★ 段2の枠も最初から出す（2026-08-28・ユーザーの指示）。
+         ⚠ ただし**段2の値は段1の答えそのもの**（箱の見出しの電荷・単原子イオンの灰色の数・
+            「めざす合計 ＝ そのイオンの電荷」）なので、段1が片づくまでそこだけ ？ で伏せる。
+            oxidation.js の buildOxSheet(masked) を見よ -->
     <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める</div>
+      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める<span class="oxRole stepNowTag" id="step2Now" hidden>いま入れるところ</span></div>
       <div id="oxSheet"></div>
       <div id="oxMsg"></div>
       <div id="oxGivenNote" class="footNote"></div>
@@ -78,9 +73,9 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=197"></script>
-<script src="schematic.js?v=197"></script>
-<script src="header-ui.js?v=197"></script>
-<script src="oxidation.js?v=197"></script>
+<script src="model.js?v=198"></script>
+<script src="schematic.js?v=198"></script>
+<script src="header-ui.js?v=198"></script>
+<script src="oxidation.js?v=198"></script>
 </body>
 </html>
