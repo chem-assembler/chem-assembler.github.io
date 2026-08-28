@@ -794,20 +794,107 @@ function slTrack(name, params) {
     var who = BACK_APP_NAME[backFrom.app];
     var lead = who ? esc(who) + 'から戻りました' : '外部リンクから来ました';
     box.classList.remove('hidden');
-    box.innerHTML = backFrom.found
+    // 続きへ戻せたときは**どこへ戻したかを言う**。黙って続きが出ると、
+    // 「1問だけの回」との区別が付かず、直ったことが利用者に見えない
+    box.innerHTML = backFrom.resumed
+      ? '<span class="bb-where">' + lead + '（' + backFrom.resumed.at + ' / ' +
+        backFrom.resumed.of + ' の続きから）</span>'
+      : backFrom.found
       ? '<span class="bb-where">' + lead + '</span>'
       : '<span class="bb-where bb-miss">' + lead +
         'が、指定された項目（<b>' + esc(backFrom.code) + '</b>）は見つかりませんでした。単元の一覧を出しています</span>';
   }
 
+  // ---------- 演習の続き（往復で state を落とさない・ユーザー申し立て 2026-08-28） ----------
+  // 申し立て:「qa → assembler に飛ぶ → qa に戻る とその問題のみ表示、答えを見たら終了
+  // （遷移前の状態が保存されていない）」。実測でも 2/10 で飛んで 1/1 で戻ってきた。
+  //
+  // **原因は landOnCode が毎回まっさらな1問セッションを組み直していたこと**で、
+  // 出て行くときに何も控えていなかった。演習の途中に置いてある飛び道具を押した人は
+  // **続きへ戻りたい**のであって、そこで打ち切りたいわけではない。
+  //
+  // 控えは sessionStorage に置く（qa と assembler は同一オリジンなので**同じタブの中で
+  // 生き残る**。タブを閉じれば消えるので、日をまたいだ古い続きを掘り起こすことはない）。
+  // ⚠ **控えるのはコードと variant の添字だけ**。pattern オブジェクトをそのまま入れると
+  // データを直したときに古い文面を復元してしまう ＝ 引き当て直す形にする。
+  var RESUME_KEY = 'qa.resume.v1';
+
+  function saveResume() {
+    if (!session || !session.queue.length) return;
+    var item = session.queue[session.idx];
+    if (!item) return;                       // 結果画面から出て行くときは控えない
+    try {
+      sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+        code: item.pattern.code,             // 戻り先の照合に使う（別の項目から戻ったら捨てる）
+        unitId: session.unitId, mode: session.mode, scope: session.scope, lv: session.lv,
+        idx: session.idx, right: session.right, wrong: session.wrong,
+        queue: session.queue.map(function (it) {
+          return [it.pattern.code, (it.pattern.variants || []).indexOf(it.variant)];
+        }),
+        // めくりは**こたえを開いた状態でしか飛び道具が出ない**ので、開き直して返す
+        revealed: !!document.querySelector('#card-host .answer')
+      }));
+    } catch (e) { /* 保存できなくても往復そのものは壊さない */ }
+  }
+
+  // 控えを実際のセッションに戻す。**少しでも噛み合わなければ何もしない**（false を返して
+  // 従来の1問セッションに落ちる）。中途半端に復元して別の問題を出すほうが害が大きい
+  function resumeSession(code) {
+    var s;
+    try { s = JSON.parse(sessionStorage.getItem(RESUME_KEY)); } catch (e) { return false; }
+    if (!s || s.code !== code || !Array.isArray(s.queue)) return false;
+    var byCode = {};
+    DATA.patterns.forEach(function (p) { byCode[p.code] = p; });
+    var queue = [];
+    for (var i = 0; i < s.queue.length; i++) {
+      var p = byCode[s.queue[i][0]];
+      if (!p) return false;                                  // 項目が消えていた
+      var v = (p.variants || [])[s.queue[i][1]];
+      if (!v) return false;                                  // variant の並びが変わっていた
+      queue.push({ pattern: p, variant: v });
+    }
+    if (!queue[s.idx] || queue[s.idx].pattern.code !== code) return false;
+    session = {
+      unitId: s.unitId, mode: s.mode, scope: s.scope, lv: s.lv,
+      queue: queue, idx: s.idx, right: s.right, wrong: s.wrong
+    };
+    show('view-study');
+    renderStudy();
+    if (s.revealed && s.mode === 'flip') {
+      var rb = $('btn-reveal');
+      if (rb) rb.click();
+    }
+    return true;
+  }
+
+  // 飛び道具を押した瞬間に控える。**1か所で受ける**（めくりのこたえ欄と測定の採点後の
+  // 2か所に同じ処理を書くと、片方だけ直して食い違う）。capture で拾うので、
+  // リンクの既定の遷移が始まる前に必ず走る
+  document.addEventListener('click', function (e) {
+    var el = e.target;
+    while (el && el !== document) {
+      if (el.tagName === 'A' && el.className && String(el.className).indexOf('a-link') >= 0) {
+        saveResume();
+        return;
+      }
+      el = el.parentNode;
+    }
+  }, true);
+
   // `?code=` で来たときの着地。見つからなければ**ホームのまま**にして帯で理由を言う
-  //（黙って白紙にしない）。1項目だけなので scope は 'one' ＝ やめると単元一覧へ戻る
+  //（黙って白紙にしない）。控えがあれば**演習の続き**へ、無ければ従来どおり
+  // 1項目だけのめくり回（scope は 'one' ＝ やめると単元一覧へ戻る）
   function landOnCode() {
     backFrom = readBackParams();
     if (!backFrom) return false;
     var p = DATA.patterns.filter(function (q) { return q.code === backFrom.code; })[0];
     if (!p) { renderBackBand(); return false; }
     backFrom.found = true;
+    if (resumeSession(backFrom.code)) {
+      backFrom.resumed = { at: session.idx + 1, of: session.queue.length };
+      renderBackBand();
+      return true;
+    }
     renderBackBand();
     session = {
       unitId: p.unit, mode: 'flip', scope: 'one', lv: null,
@@ -826,7 +913,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=89')
+  fetch('data/exam_usage.jsonl?v=90')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -841,7 +928,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=89')
+  fetch('questions.json?v=90')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
