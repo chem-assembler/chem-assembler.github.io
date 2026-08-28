@@ -1905,3 +1905,23 @@ main.timelineMain {
   margin-left: 2px;
   position: relative; top: -0.5em;
 }
+
+/* ---- 【練習X】半反応式を組む（halfreaction.html）----
+   組み立て中の式。⚠ **筆算の5列グリッドは使わない**（→ をそろえる相手が1行しかいない）。
+   .oxSplitLine と同じ「折り返す1行」。欄が6つ並ぶので row-gap を少し広く取る。 */
+.hbLine { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 4px; padding: 2px 0 4px; }
+.hbLine .fterm { gap: 2px; }
+.hbSlot[hidden] { display: none; }
+/* 完成したら枠の色だけ変える（式そのものは組み直さない ＝ 直したくなったら直せる） */
+.hbLine.hbDone .fcoefIn { border-color: #8fc4a5; background: #f2faf5; }
+/* 手順を選ぶ2つ。⚠ 帯（.strip）ではない —— 横に流れず、いつも両方見えていること自体が
+   「2通りある」という説明になる（文言を増やさずに済ませる） */
+.hbProc { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.hbProc button {
+  min-height: 32px; padding: 4px 12px;
+  font-size: 12.5px; font-weight: bold;
+  border: 1px solid #b6c4d2; border-radius: 999px;
+  background: #fff; color: #46525e; cursor: pointer;
+}
+.hbProc button.active { background: #3b82c4; border-color: #3b82c4; color: #fff; }
+.hbOxLink { display: inline-block; margin-top: 4px; font-size: 12px; color: #2f5b7a; }
