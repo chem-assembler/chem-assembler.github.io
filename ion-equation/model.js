@@ -1916,32 +1916,52 @@ function oxTaskOf(sp) {
   return { sp, needsSplit: !!split, parts: frags, verdict: oxWholeVerdict(sp) };
 }
 
-/* 【段1の採点】イオンに分ける段。**答えの個数を持たず、原子と電荷の保存で見る。**
-   counts は断片の並び順の配列（空欄は undefined）。⚠ 0 と空欄を区別する。 */
-function checkOxSplit(sp, counts) {
+/* 【段1の採点】イオンに分ける段。**問うのは個数ではなく電荷**（ユーザー指摘・2026-08-28）。
+   ⚠ 前は「どのイオンが何個か」を入れさせ、原子の数が合うかで見ていた ——
+   **数を当てれば電荷を分かっていなくても通る**ので、順序が逆さまだった。
+   電荷が決まれば個数は原子の保存から決まる（それはアプリが印で出す）ので、
+   人が答えるのは電荷のほうにする。段2の「合計＝そのイオンの電荷」も、この電荷を土台にする。
+
+   charges は断片の並び順の配列（空欄は undefined）。
+   ⚠ **0 と空欄を区別する。** 0 は「電荷 0 と答えた」＝ 誤答であって、未入力ではない
+   （係数の作法 `v < 1` をここへ持ち込むと 0 が永遠に受け付けられない）。 */
+function checkOxSplit(sp, charges) {
   const task = oxTaskOf(sp);
   if (!task || !task.needsSplit) return null;
   const total = task.parts.length;
-  const filled = counts.filter((c) => Number.isInteger(c)).length;
+  const filled = task.parts.filter((p, i) => Number.isInteger(charges[i])).length;
   if (filled < total) {
     return { ok: false, kind: "partial", filled, total, rest: total - filled,
-      reason: `あと ${total - filled} つ。どの欄から埋めてもよい —— ` +
-        `もとの ${SPECIES[sp].disp} の原子が、そっくりそのまま分かれる。` };
+      reason: `あと ${total - filled} つ。どの欄から埋めてもよい —— イオン1個ぶんが持つ電荷を入れる。` };
   }
-  if (counts.some((c) => c < 1)) {
-    return { ok: false, kind: "wrong", filled, total, rest: 0,
-      reason: "0 個のイオンは書かない。分かれてできるイオンは、どれも1個以上ある。" };
-  }
+  /* 原子の数の検査は残す（両方見る）。個数はアプリが出すので、ここが破れるのは
+     電離表そのものが壊れているとき —— そのまま ok と言わせない。 */
   const left = [{ sp, n: 1 }];
-  const right = task.parts.map((p, i) => ({ sp: p.sp, n: counts[i] }));
-  const cmp = compareSides(left, right);
-  if (!cmp.balanced) {
+  const cmp = compareSides(left, task.parts.map((p) => ({ sp: p.sp, n: p.n })));
+  if (!cmp.rows.every((r) => r.ok)) {
     const rowNg = cmp.rows.filter((r) => !r.ok).map((r) => r.el);
     return { ok: false, kind: "wrong", filled, total, rest: 0, cmp,
-      reason: rowNg.length
-        ? `${rowNg.join("・")} の数が左右で合っていない（もとの式の原子は、分けても増えも減りもしない）`
-        : `電荷が合っていない（左 ${cmp.chargeLeft} / 右 ${cmp.chargeRight}）。` +
-          `${SPECIES[sp].disp} は電気的に中性なので、＋と−は打ち消し合う` };
+      reason: `${rowNg.join("・")} の数が左右で合っていない（分け方の表が壊れている）` };
+  }
+  /* ★ 採点の芯は電荷。まず**電気的中性**（合計＝もとの粒の電荷）を見る ——
+     これが画面の検算の行そのもので、外したときに何を直せばよいかが読める。 */
+  const want = SPECIES[sp].charge;
+  const sum = task.parts.reduce((a, p, i) => a + charges[i] * p.n, 0);
+  if (sum !== want) {
+    return { ok: false, kind: "wrong", filled, total, rest: 0, cmp, sum,
+      reason: `その電荷だと合計が ${fmtOxNum(sum)} になる。` +
+        (want === 0
+          ? `${SPECIES[sp].disp} は電気的に中性なので、＋と−は打ち消し合って 0 になる。`
+          : `もとの ${SPECIES[sp].disp} の電荷 ${fmtOxNum(want)} と同じにならない。`) };
+  }
+  /* 合計が合っていても、**それぞれの電荷が違えば通さない**（2つ以上ずれて打ち消し合う場合）。
+     ⚠ 理由文では**どのイオンかを名指ししない**（直す場所は wrong の赤い印が示す。
+     文で名指しすると、2つのうち片方と分かった時点でもう片方が消去法で割れる）。 */
+  const ng = task.parts.map((p, i) => i).filter((i) => charges[i] !== SPECIES[task.parts[i].sp].charge);
+  if (ng.length) {
+    return { ok: false, kind: "wrong", filled, total, rest: 0, cmp, sum, wrong: ng,
+      reason: `合計は ${fmtOxNum(want)} になったが、イオン1個ぶんの電荷が違う` +
+        `（2つ以上ずれて、たまたま打ち消し合っている）。` };
   }
   /* ⚠ **嘘をつかない。** 電離表にある種だけが「本当に起きる電離」で、
      そうでない塩（NaHCO₃ は水の中では Na⁺ ＋ HCO₃⁻、BaSO₄ はそもそもとけない）は

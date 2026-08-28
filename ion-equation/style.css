@@ -1887,3 +1887,7 @@ main.timelineMain {
    狭い画面でははみ出すより折り返すほうがよい（実機で右辺の2つめが画面外に出ていた） */
 .oxSplitLine { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; padding: 2px 0 4px; }
 .oxSplitLine .fterm { gap: 2px; }
+/* 段1で問うのは**電荷**（個数はアプリが出す印）。⚠ 電荷の欄は式のすぐ右に置く ——
+   上付きの電荷が書かれる場所に欄があるほうが、何を答えるのか読まずに分かる */
+.oxSplitN { font-size: 19px; font-weight: bold; color: #8d99a5; }
+.oxChgIn { width: 56px; margin-left: 2px; }
