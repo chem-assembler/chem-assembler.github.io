@@ -2321,7 +2321,9 @@
             })() + 'px）', (function () {
                 var bad = [];
                 [].slice.call(flow.querySelectorAll('.row')).forEach(function (e) {
-                    if (rectH(e) > 50) bad.push(e.textContent.trim().slice(0, 12) + ':' + Math.round(rectH(e)));
+                    // ⚠ 上限は実測（最大44px ＝ 押し所の下限）のすぐ上に置く。
+                    //   ★ ゆるくすると「枠を積む」形に戻っても気づけない
+                    if (rectH(e) > 46) bad.push(e.textContent.trim().slice(0, 12) + ':' + Math.round(rectH(e)));
                 });
                 if (bad.length) warn('1行に収まっていない節: ' + bad.join(' / '));
                 return bad.length === 0;
