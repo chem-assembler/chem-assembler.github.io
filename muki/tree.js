@@ -482,14 +482,25 @@
         if (state.submitted) return;
         state.submitted = true;
         var g = treeGrade(state.problem, state.seq, state.plan, state.sub);
+        // ★★★ 手数を数えてよいのは、**手順を学習者が決めた**ときだけ（2026-08-28・ユーザー指摘）:
+        //   > イオンの行先を答える → 手順はユーザー操作ではないので 解説に最短 など入れない
+        // ⚠⚠ 「イオンの行先を答える」では枝はこちらが置いている。★ そこで手数や最短を出すと、
+        //   **学習者が決めていない数で採点している**ことになる（⚠ 記録に残せば率にも混ざる）。
+        var mine = (state.mode === 'build');
         // ★ 記録は「後から率と共有の文面を組み立てられるだけ」を持つ（⚠ 送信も保存もしない）。
         //   正解率% ／ 最短手順正解率% ／ SNS 共有は **次の一手**（ここでは形だけ塞がない）
-        state.record = treeRecord(state.mode, state.problem, {
+        var rec = {
             seq: state.seq.slice(),
             sub: JSON.parse(JSON.stringify(state.sub)),
-            moves: g.moves, shortest: treeAuditProblem(state.problem).shortest,
             dirty: g.dirty, isolated: g.isolated, matched: g.matched, verdict: g.verdict
-        });
+        };
+        // ⚠ 手順が学習者のものでないときは、手数を記録にも入れない
+        //   —— ★ 入れると「最短手順正解率」に、本人が決めていない手が混ざる
+        if (mine) {
+            rec.moves = g.moves;
+            rec.shortest = treeAuditProblem(state.problem).shortest;
+        }
+        state.record = treeRecord(state.mode, state.problem, rec);
 
         var box = $('result');
         box.textContent = '';
@@ -497,8 +508,8 @@
         // ★ 手数（⚠ 余計な手があっても不正解にしない。§ 2026-08-28 のユーザー決定）
         //   「最短」は門番が数えている理想の最短。⚠ 手順そのものは出さない
         //   —— **正解は1つではない**ので、1つ示すと他の正解を否定することになる
-        var shortest = treeAuditProblem(state.problem).shortest;
-        var moves = '（' + g.moves + '手／最短 ' + shortest + '手）';
+        var shortest = mine ? treeAuditProblem(state.problem).shortest : null;
+        var moves = mine ? '（' + g.moves + '手／最短 ' + shortest + '手）' : '';
 
         var h3 = document.createElement('h3');
         if (g.verdict === 'perfect') {
@@ -513,11 +524,15 @@
             h3.textContent = '単離できていない葉が ' + g.dirty + ' 枚あります' + moves;
         }
         box.appendChild(h3);
-        if (g.isolated && g.moves > shortest) {
+        // ⚠ 「余計な手が入っていた」も、手順が学習者のものでなければ言わない
+        //   （★ 余計な手を入れたのはこちらなので、言えば言いがかりになる）
+        if (mine && g.isolated && g.moves > shortest) {
             box.appendChild(p('単離はできています。' + (g.moves - shortest) +
                 '手ぶん、この容器では要らない操作が入っていました。', 'caveat'));
         }
-        box.appendChild(p('あなたが並べた手順を、そのまま走らせました。'));
+        // ★ 何を走らせたのかは、手順を誰が並べたかで言い方が変わる
+        box.appendChild(p(mine ? 'あなたが並べた手順を、そのまま走らせました。'
+            : '置いてある手順を、そのまま走らせました。'));
 
         // ★ 間違えたところを名指しする（2026-08-28・ユーザー「間違えたところを指摘すればよい」）
         //   ⚠ 模範の手順は出さない。★ 起きたことだけを言う
