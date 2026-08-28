@@ -442,6 +442,92 @@ function runDataTests(DATA) {
     });
   });
 
+  // ---- 聞き方の直し（ユーザー指摘・2026-08-28）----
+  // ⚠ ここは「間違い」ではなく**聞き方が悪い／触れていない**として直した5件を見張る。
+  // どれも文面を戻すと元の欠点がそのまま戻るので、**戻したら鳴る**形で釘を打つ。
+  // 出典はすべて R5 化学（第一学習社）。ページ番号はコミットメッセージ側に書いてある。
+  function variantOf(code, mode) {
+    var p = patterns.filter(function (x) { return x.code === code; })[0];
+    if (!p) throw new Error("項目が無い: " + code);
+    var v = p.variants.filter(function (x) { return x.mode === mode; })[0];
+    if (!v) throw new Error(code + ": " + mode + " が無い");
+    v._p = p;
+    return v;
+  }
+
+  t("QW1: 2価エステルの向きは「何が変わるか」を問う（書き出す作業のほうを聞かない）", function () {
+    var v = variantOf("org.carbonyl.diester-arrangement", "flip");
+    assert(v.q.indexOf("書き出す") < 0,
+      "問いが「書き出すと何が分かる？」に戻っている ＝ 作業のほうを聞いていて、" +
+      "こたえ（向きで加水分解の生成物が変わる）と噛み合わない: " + v.q);
+    assert(/向き[^。]*(変わる|変化)/.test(v.q),
+      "問いが「向きが違うと何が変わる？」を聞いていない: " + v.q);
+  });
+
+  t("QW2: エステル化の水は O の由来だけを問う（H は2分子から1個ずつ来る）", function () {
+    var v = variantOf("org.carbonyl.ester-water-origin", "flip");
+    // 教科書 p.162:「エステル化はカルボン酸のOHとアルコールのHから水を生じる反応」
+    // ＝ 水の H はカルボン酸の −OH の H と、アルコールの H の2個。
+    // だから「H はどちらの分子に由来するか」は答えが1つに決まらない
+    assert(v.q.indexOf("O と H") < 0,
+      "問いが「O と H は、それぞれどちらの分子に由来する？」に戻っている。" +
+      "水の H は2個あってカルボン酸とアルコールから1個ずつ来るので、H では由来が決まらない: " + v.q);
+    assert(/水の\s*O/.test(v.q), "問いが水の O の由来を聞いていない: " + v.q);
+    assert(/カルボン酸/.test(v.a) && /アルコール[^。]*(渡さ|水素原子だけ)/.test(v.a),
+      "こたえが「O はカルボン酸・アルコールは水素原子だけ」を言っていない: " + v.a);
+    assert(/H[^。]*2個|2個[^。]*H/.test(v.supplement || ""),
+      "補足が「水の H は2個ある」ことに触れていない ＝ なぜ H で問わないのかが分からない");
+  });
+
+  t("QW3: ギ酸の性質に還元性がある（フェーリングは陽性例に挙げない）", function () {
+    var v = variantOf("org.carbonyl.formic", "flip");
+    // 教科書 p.156:「ギ酸はホルミル基をもつので，還元性があり，銀鏡反応を示す」
+    assert(v.a.indexOf("還元性") >= 0, "こたえが還元性に触れていない: " + v.a);
+    assert(v.a.indexOf("銀鏡反応") >= 0, "こたえが銀鏡反応に触れていない: " + v.a);
+    // KNOWLEDGE_CAVEATS A-5: ギ酸はフェーリング液では錯体をつくって実質陰性。
+    // 「フェーリング陽性の物質」の例にギ酸を置かない
+    assert((v.a + (v.supplement || "")).indexOf("フェーリング") < 0,
+      "ギ酸の陽性例にフェーリング液を挙げている（A-5: 強塩基性のフェーリング液中では" +
+      "ギ酸イオンが銅(II)と錯体をつくり、実際には沈殿が出ない）");
+  });
+
+  t("QW4: カルボニルの還元に「入試ではこの対応でよい」の断りがある（試薬名は書かない）", function () {
+    var v = variantOf("org.carbonyl.reduction", "flip");
+    var s = v.supplement || "";
+    assert(s.indexOf("還元剤") >= 0 && /入試|高校/.test(s),
+      "補足が「どこまで還元されるかは還元剤で決まるが、入試ではこの対応で答えてよい」を" +
+      "言っていない ＝ ユーザー指摘（方法によって生成物が異なる）に応えていない: " + s);
+    // KNOWLEDGE_CAVEATS I-4:「設問側では試薬を明示しないままにしておく
+    // （明示すると範囲外に踏み込む）」。踏み越えたら鳴らす
+    var OUT_OF_SCOPE = ["水素化ホウ素", "水素化アルミニウム", "クレメンゼン", "ウォルフ",
+      "亜鉛アマルガム", "ヒドラジン"];
+    var body = [v.q, v.a, s].concat(v.options || []).join(" ");
+    OUT_OF_SCOPE.forEach(function (w) {
+      assert(body.indexOf(w) < 0,
+        "還元剤「" + w + "」を名指ししている（I-4: 明示すると高校の範囲外に踏み込む）");
+    });
+  });
+
+  t("QW5: フェーリング液の還元がアルデヒド限定になっていない", function () {
+    var v = variantOf("org.carbonyl.fehling", "flip");
+    var p = v._p;
+    // 教科書 p.218:「還元性を示す糖類をフェーリング液に加えて加熱すると，
+    // 酸化銅（Ⅰ）Cu2O の赤色沈殿を生じる」／p.219 フルクトースも還元性を示す
+    assert(/還元性を示す物質/.test(v.a),
+      "こたえが「アルデヒドを加えて加熱すると」のままで、陽性になる相手を" +
+      "アルデヒドに限定している: " + v.a);
+    assert(/還元性を示す物質/.test(p.knowledge),
+      "knowledge がアルデヒド限定のまま残っている: " + p.knowledge);
+    assert((v.supplement || "").indexOf("還元糖") >= 0,
+      "補足がアルデヒド以外の陽性例（還元糖）に触れていない");
+    // A-5: 「陽性なら必ずホルミル基」という逆を書かない、を明示しているか
+    assert(/逆向き|とは限|だけではな/.test(v.supplement || ""),
+      "補足が「陽性だからホルミル基がある、と逆に読まない」という断りを置いていない");
+    // A-5: ギ酸は実質陰性なので陽性例に混ぜない
+    assert((v.a + (v.supplement || "")).indexOf("ギ酸") < 0,
+      "フェーリングの陽性例にギ酸を挙げている（A-5 で実質陰性）");
+  });
+
   return results;
 }
 
