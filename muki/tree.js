@@ -22,11 +22,14 @@
 
     var state = {
         mode: 'read',       // 'read'（操作は置いてある）／'build'（操作から組む）
+        level: 'easy',      // ★ 難易度は学習者が選ぶ（型B と同じ。⚠ 段の切り方は模型が持つ）
         problem: null,
         seq: [],            // 枝に置かれた操作。⚠ 空の枝は null（★ 詰めない。葉の番号がずれる）
+        sub: {},            // ★★ 沈殿側の札。{ 枝の番号: 札 }（2026-08-28）
         plan: {},           // 本人の机上。{ ionId: leafId }
-        sel: null,          // いま選んでいる札 { type:'op'|'ion', id }
+        sel: null,          // いま選んでいる札 { type:'op'|'sub'|'ion', id }
         submitted: false,
+        lastKey: null,      // ★ 直前に出した容器（⚠ 同じ容器を続けて出さないため）
         record: null        // ★ 型の鍵（⚠ 送信も保存もしない。持つだけ。§18-6 (3) と同じ作法）
     };
 
@@ -34,14 +37,28 @@
 
     function ionName(id) { var i = treeIon(id); return i ? i.name : id; }
     function ionFull(id) { var i = treeIon(id); return i ? i.name + '（' + i.jp + '）' : id; }
-    function opShort(id) { return TREE_OPS[id] ? TREE_OPS[id].short : id; }
+    function opShort(id) {
+        if (TREE_OPS[id]) return TREE_OPS[id].short;
+        if (TREE_SUBOPS[id]) return TREE_SUBOPS[id].short;
+        return id;
+    }
+    function opSay(id) {
+        if (TREE_OPS[id]) return TREE_OPS[id].say;
+        if (TREE_SUBOPS[id]) return TREE_SUBOPS[id].say;
+        return id;
+    }
     function elJp(el) { return TREE_ELEMENT_JP[el] || el; }
+    function levelOf(id) {
+        return TREE_LEVELS.filter(function (l) { return l.id === id; })[0] || TREE_LEVELS[0];
+    }
 
     // ---------------------------------------------------------------
     // 手札
     // ---------------------------------------------------------------
     function usedOps() { return state.seq.filter(function (o) { return !!o; }); }
     function placedIons() { return Object.keys(state.plan); }
+    /** ★ いま組んである木（⚠ 置き場も葉の名前も、ここから出す。決め打ちしない） */
+    function currentRun() { return treeRun(state.problem.ions, state.seq, state.sub); }
 
     function card(kind, id, main, sub) {
         var b = document.createElement('button');
@@ -75,6 +92,16 @@
                 b.addEventListener('click', function () { pick('op', o); });
                 od.appendChild(b);
             });
+            // ★★ 沈殿側の札（⚠ 置き先が枝ではなく **沈殿**）。
+            //   ⚠ 中身に合わせて配る枚数を変えない —— 変えると「熱湯が配られている ＝
+            //     第1属に2つある」と読めてしまい、それ自体が解き筋のヒントになる
+            (state.problem.subOps || []).forEach(function (o) {
+                var b = card('sub', o, TREE_SUBOPS[o].short, TREE_SUBOPS[o].say);
+                b.disabled = state.submitted;
+                b.className += (state.sel && state.sel.type === 'sub' && state.sel.id === o) ? ' picked' : '';
+                b.addEventListener('click', function () { pick('sub', o); });
+                od.appendChild(b);
+            });
         }
         var idk = $('ion-deck');
         idk.textContent = '';
@@ -92,11 +119,15 @@
         if (state.submitted) return;
         if (state.sel && state.sel.type === type && state.sel.id === id) state.sel = null;
         else state.sel = { type: type, id: id };
-        say(state.sel
-            ? (type === 'op' ? '〔' + opShort(id) + '〕を、置きたい枝を押して置いてください。'
-                : ionName(id) + ' を、行先の葉を押して置いてください。')
-            : '');
+        say(state.sel ? pickHint(type, id) : '');
         render();
+    }
+
+    function pickHint(type, id) {
+        if (type === 'op') return '〔' + opShort(id) + '〕を、置きたい枝を押して置いてください。';
+        // ★ 沈殿側の札は、置き先が枝ではなく **沈殿**
+        if (type === 'sub') return '〔' + opShort(id) + '〕を、割りたい沈殿を押して置いてください。';
+        return ionName(id) + ' を、行先の葉を押して置いてください。';
     }
 
     function say(msg) { $('hint').textContent = msg || ''; }
@@ -104,11 +135,12 @@
     // ---------------------------------------------------------------
     // ツリー
     // ---------------------------------------------------------------
+    /**
+     * ⚠⚠ 「沈殿だから置ける」と決め打ちしない（§20-4）。
+     * ★ 置き場かどうかは **木の形**から出す —— 模型が数えた終端の一覧に居るかどうか。
+     */
     function leafExists(leafId) {
-        if (leafId === TREE_FINAL_LEAF) return true;
-        var slot = parseInt(leafId.slice(1), 10);
-        var op = state.seq[slot];
-        return !!op && TREE_OPS[op].splits;
+        return treeLeafIds(currentRun()).indexOf(leafId) >= 0;
     }
 
     /** 葉が消えたら、そこに置いてあったイオンは手札に戻す */
@@ -131,6 +163,26 @@
     function removeOp(slot) {
         if (state.submitted || state.mode !== 'build') return;
         state.seq[slot] = null;
+        // ★ 枝が空けば、その沈殿ごと消える ＝ 沈殿側の札も置き場を失う
+        delete state.sub[slot];
+        dropOrphans();
+        render();
+    }
+
+    /** ★★ 沈殿側の札を置く（⚠ 置き先は枝ではなく沈殿の節） */
+    function placeSub(slot) {
+        if (state.submitted || state.mode !== 'build') return;
+        if (!state.sel || state.sel.type !== 'sub') return;
+        state.sub[slot] = state.sel.id;
+        state.sel = null;
+        dropOrphans();
+        say('');
+        render();
+    }
+
+    function removeSub(slot) {
+        if (state.submitted || state.mode !== 'build') return;
+        delete state.sub[slot];
         dropOrphans();
         render();
     }
@@ -183,33 +235,57 @@
      */
     function flowRows() {
         var rows = [];
-        var pending = [];   // ⚠ 次の試薬より前に出す「主流を継ぐ」行
+        var pending = [];       // ⚠ 次の試薬より前に出す「主流を継ぐ」行
+        var mainTail = 'start'; // ★ いま主流の末端になっている節
 
         rows.push({
-            kind: 'node', id: 'start', depth: 0, phase: 'sol',
-            title: 'この容器', terminal: false, ions: state.problem.ions
+            kind: 'node', id: 'start', parent: null, depth: 0, phase: 'sol',
+            title: 'この容器', ions: state.problem.ions
         });
 
         state.seq.forEach(function (opId, slot) {
-            pending.forEach(function (r) { rows.push(r); });
+            pending.forEach(function (r) { rows.push(r); mainTail = r.id; });
             pending = [];
             rows.push({ kind: 'edge', slot: slot, opId: opId, depth: 0 });
             if (!opId || !TREE_OPS[opId].splits) return;
-            // ★ 脱出したもの（いまは必ず沈殿）。⚠ 子を持たないので終端
-            //   ★ 沈殿側の分離を入れる一手では、ここに depth 2 の行が続く
+            var lid = treeLeafId(slot);
+            // ★ 脱出したもの（主流からは沈殿が脱出する）
             rows.push({
-                kind: 'node', id: treeLeafId(slot), depth: 1, phase: 'ppt',
-                title: '沈殿', terminal: true
+                kind: 'node', id: lid, parent: mainTail, depth: 1, phase: 'ppt',
+                title: '沈殿', subSlot: slot
             });
+            // ★★★ 沈殿側の枝（2026-08-28）—— ⚠ **同じ規則をもう一段深くで使うだけ**。
+            //   ★ 属の中の分離では **溶液のほうが沈殿から脱出する**（向きが逆でも規則は同じ）。
+            //   ⚠ 深さは **インデント**で表す ＝ 列は増えない（§20-3）。
+            if (state.sub[slot]) {
+                rows.push({ kind: 'edge', slot: slot, opId: state.sub[slot], depth: 1, isSub: true });
+                rows.push({
+                    kind: 'node', id: treeSubLeafId(slot, 's'), parent: lid, depth: 2,
+                    phase: 'sol', title: '溶けた液'
+                });
+                rows.push({
+                    kind: 'node', id: treeSubLeafId(slot, 'p'), parent: lid, depth: 1,
+                    phase: 'ppt', title: '沈殿の残り'
+                });
+            }
             // ★ 脱出しなかったほうが主流を継ぐ。⚠ 次の試薬の直前に出す
             //   （最後まで試薬が来なければ、下の「最後のろ液」が引き受ける）
-            pending.push({ kind: 'node', id: 'v' + slot, depth: 0, phase: 'sol', title: 'ろ液', terminal: false });
+            pending.push({
+                kind: 'node', id: 'v' + slot, parent: mainTail, depth: 0,
+                phase: 'sol', title: 'ろ液'
+            });
         });
 
         rows.push({
-            kind: 'node', id: TREE_FINAL_LEAF, depth: 0, phase: 'sol',
-            title: '最後のろ液', terminal: true
+            kind: 'node', id: TREE_FINAL_LEAF, parent: mainTail, depth: 0, phase: 'sol',
+            title: '最後のろ液'
         });
+
+        // ★★ **終端は木の形から出す**（§20-4・⚠ 「沈殿だから置ける」と決め打ちしない）——
+        //   子を持たない節だけが置き場になる。★ 沈殿を割れば、その沈殿は置き場でなくなる。
+        var hasChild = {};
+        rows.forEach(function (r) { if (r.parent) hasChild[r.parent] = 1; });
+        rows.forEach(function (r) { if (r.kind === 'node') r.terminal = !hasChild[r.id]; });
         return rows;
     }
 
@@ -219,22 +295,39 @@
         if (r.terminal) {
             Object.keys(state.plan).forEach(function (i) { if (state.plan[i] === r.id) placedIon = i; });
         }
+        // ★★ 沈殿側の札を置ける節か（⚠ 「割る」相手は沈殿。★ まだ割っていないものだけ）
+        var canSplit = r.subSlot != null && !state.sub[r.subSlot] &&
+            state.mode === 'build' && !state.submitted;
         // ⚠⚠ 途中の節には置かせない（★ 終端だけが答案欄。どこを終端にするか自体が答案）
-        var el = document.createElement(r.terminal ? 'button' : 'div');
+        var pressable = r.terminal || canSplit;
+        var el = document.createElement(pressable ? 'button' : 'div');
         el.className = 'row node ' + r.phase + (r.terminal ? ' terminal' : ' inner');
         el.setAttribute('data-node', r.id);
         el.setAttribute('data-d', String(r.depth));
         // ★ 節のインデントは、その節の深さそのもの（⚠ 主流は 0 ＝ 左端に立つ）
         el.setAttribute('data-i', String(r.depth));
         el.style.setProperty('--i', String(r.depth));
-        if (r.terminal) {
+        if (pressable) {
             el.type = 'button';
+            el.disabled = state.submitted;
+        }
+        if (canSplit) {
+            el.className += ' splittable' +
+                (state.sel && state.sel.type === 'sub' ? ' can' : '');
+            el.setAttribute('data-split', String(r.subSlot));
+        }
+        if (r.terminal) {
             el.className += ' slot leaf ' + (placedIon ? 'set' : 'empty') +
                 (!placedIon && state.sel && state.sel.type === 'ion' ? ' can' : '');
             el.setAttribute('data-leaf', r.id);
             if (placedIon) el.setAttribute('data-ion', placedIon);
-            el.disabled = state.submitted;
+        }
+        if (pressable) {
             el.addEventListener('click', function () {
+                // ★ 沈殿側の札を持っているなら、まずそれを置く（⚠ 終端でも同じ ——
+                //   割れば終端でなくなる、という順の入れ替わりがそのまま操作になる）
+                if (canSplit && state.sel && state.sel.type === 'sub') { placeSub(r.subSlot); return; }
+                if (!r.terminal) return;
                 if (placedIon && !(state.sel && state.sel.type === 'ion')) removeIon(placedIon);
                 else placeIon(r.id);
             });
@@ -270,10 +363,12 @@
     function edgeRow(r) {
         var b = document.createElement('button');
         b.type = 'button';
-        b.className = 'row edge slot branch' + (r.opId ? ' set' : ' empty') +
+        b.className = 'row edge slot ' + (r.isSub ? 'subbranch' : 'branch') +
+            (r.opId ? ' set' : ' empty') +
             (state.mode === 'read' ? ' locked' : '') +
             (!r.opId && state.sel && state.sel.type === 'op' ? ' can' : '');
         b.setAttribute('data-slot', String(r.slot));
+        if (r.isSub) b.setAttribute('data-subslot', String(r.slot));
         b.setAttribute('data-d', String(r.depth));
         b.setAttribute('data-i', String(r.depth + 1));
         b.style.setProperty('--i', String(r.depth + 1));
@@ -282,9 +377,10 @@
         n.className = 'op-name';
         // ⚠ 詳しい操作（say）は行に出さない —— 1節1行を守るため。
         //   ★ 手札の札と、答え合わせの各手の見出しに出る（そこは幅がある）
-        n.textContent = r.opId ? '＋ ' + TREE_OPS[r.opId].short : '＋ 操作を置く';
+        n.textContent = r.opId ? '＋ ' + opShort(r.opId) : '＋ 操作を置く';
         b.appendChild(n);
         b.addEventListener('click', function () {
+            if (r.isSub) { removeSub(r.slot); return; }
             if (r.opId) removeOp(r.slot); else placeOp(r.slot);
         });
         return b;
@@ -311,22 +407,23 @@
             var b = document.createElement('button');
             b.type = 'button';
             b.setAttribute('data-mode', m.id);
-            b.textContent = m.name + '　' + m.mark;
+            b.textContent = m.name;
             b.className = (state.mode === m.id) ? 'active' : '';
-            b.addEventListener('click', function () { start(m.id, state.problem.id); });
+            // ★ やり方を替えても、いま出ている容器はそのまま（⚠ 引き直さない）
+            b.addEventListener('click', function () { start(m.id, state.level, { ions: state.problem.ions }); });
             mb.appendChild(b);
         });
+        // ★ 難易度は学習者が選ぶ（型B と同じ）。
+        //   ⚠ 段の名前と印より多くを書かない —— 解き筋に触れない
         var pb = $('probs');
         pb.textContent = '';
-        TREE_PROBLEMS.forEach(function (p, i) {
+        TREE_LEVELS.forEach(function (l) {
             var b = document.createElement('button');
             b.type = 'button';
-            b.setAttribute('data-prob', p.id);
-            // ⚠ 見出しに解き筋を書かない。★ 出すのは中身の数だけ
-            //   （★ 短くして1行に収める ＝ 選び直しのために縦を使わない）
-            b.textContent = '容器' + (i + 1) + '・' + p.ions.length + '種';
-            b.className = (state.problem.id === p.id) ? 'active' : '';
-            b.addEventListener('click', function () { start(state.mode, p.id); });
+            b.setAttribute('data-level', l.id);
+            b.textContent = l.name + '　' + l.mark;
+            b.className = (state.level === l.id) ? 'active' : '';
+            b.addEventListener('click', function () { start(state.mode, l.id); });
             pb.appendChild(b);
         });
     }
@@ -364,8 +461,14 @@
     /** 葉の呼び名（★ 何手目の何の沈殿か。⚠ 番号だけだと、どこの話か分からない） */
     function leafName(leafId) {
         if (leafId === TREE_FINAL_LEAF) return '最後のろ液';
-        var slot = parseInt(leafId.slice(1), 10);
-        return (slot + 1) + '手目〔' + opShort(state.seq[slot]) + '〕の沈殿';
+        var m = /^L(\d+)([sp])?$/.exec(leafId);
+        if (!m) return leafId;
+        var slot = parseInt(m[1], 10);
+        var base = (slot + 1) + '手目〔' + opShort(state.seq[slot]) + '〕の沈殿';
+        if (!m[2]) return base;
+        // ★★ 沈殿をさらに割った先（⚠ どちらの側かを言葉で分ける）
+        var so = state.sub[slot];
+        return base + 'を〔' + opShort(so) + '〕で割った' + (m[2] === 's' ? '、溶けた液' : '残り');
     }
 
     function p(text, cls) {
@@ -378,11 +481,12 @@
     function submit() {
         if (state.submitted) return;
         state.submitted = true;
-        var g = treeGrade(state.problem, state.seq, state.plan);
+        var g = treeGrade(state.problem, state.seq, state.plan, state.sub);
         // ★ 記録は「後から率と共有の文面を組み立てられるだけ」を持つ（⚠ 送信も保存もしない）。
         //   正解率% ／ 最短手順正解率% ／ SNS 共有は **次の一手**（ここでは形だけ塞がない）
         state.record = treeRecord(state.mode, state.problem, {
             seq: state.seq.slice(),
+            sub: JSON.parse(JSON.stringify(state.sub)),
             moves: g.moves, shortest: treeAuditProblem(state.problem).shortest,
             dirty: g.dirty, isolated: g.isolated, matched: g.matched, verdict: g.verdict
         });
@@ -444,12 +548,20 @@
             title.textContent = leafName(r.leaf);
             d.appendChild(title);
 
-            var stage = null;
-            g.run.stages.forEach(function (s) { if (treeLeafId(s.slot) === r.leaf) stage = s; });
+            // ★ その葉に来たものの「姿」を、走らせた結果から引く。
+            //   ⚠ 沈殿を割った先は、割ったあとの姿（escaped / stay）で言う
+            var shown = null;
+            g.run.stages.forEach(function (s) {
+                if (!s.op || !s.splits) return;
+                if (s.sub) {
+                    if (treeSubLeafId(s.slot, 's') === r.leaf) shown = s.escaped;
+                    if (treeSubLeafId(s.slot, 'p') === r.leaf) shown = s.stay;
+                } else if (treeLeafId(s.slot) === r.leaf) shown = s.ppt;
+            });
             d.appendChild(line('実際に来たもの', function (row) {
                 if (!r.actual.length) { row.appendChild(document.createTextNode('なし')); return; }
-                if (stage) {
-                    stage.ppt.forEach(function (e) {
+                if (shown) {
+                    shown.forEach(function (e) {
                         row.appendChild(swatch(e.c));
                         var l = document.createElement('span');
                         l.textContent = e.f + '（' + e.c + '・' + elJp(treeElement(e.ion)) + '）';
@@ -522,6 +634,25 @@
                 });
             }
             box.appendChild(d);
+
+            // ★★ 沈殿側の札を置いた段は、そのあとにもう1つ手が続く（＝ 沈殿を割った手）
+            if (!s.sub) return;
+            var d2 = document.createElement('div');
+            d2.className = 'leafrow';
+            var b2 = document.createElement('b');
+            b2.textContent = (s.slot + 1) + '手目の沈殿 〔' + opShort(s.sub) + '〕';
+            d2.appendChild(b2);
+            d2.appendChild(p(opSay(s.sub) + '。', 'caveat'));
+            s.escaped.forEach(function (e) {
+                d2.appendChild(p(e.f + '（' + e.c + '）として溶け出しました。' + e.why + '。'));
+            });
+            s.stay.forEach(function (e) {
+                d2.appendChild(p(e.f + '（' + e.c + '）は沈殿のまま残りました。' + e.why + '。'));
+            });
+            if (!s.escaped.length) {
+                d2.appendChild(p('溶け出したものはありませんでした。', 'caveat'));
+            }
+            box.appendChild(d2);
         });
 
         box.className = 'result';
@@ -531,20 +662,36 @@
     // ---------------------------------------------------------------
     // 始める
     // ---------------------------------------------------------------
-    function start(modeId, probId) {
+    /**
+     * @param modeId  やり方
+     * @param levelId 難易度
+     * @param opts    ⚠ **テストが出題を固定するための口**（ions / rand）。画面からは渡さない
+     */
+    function start(modeId, levelId, opts) {
+        opts = opts || {};
         state.mode = modeId || state.mode;
-        state.problem = treeProblem(probId || (state.problem && state.problem.id));
+        state.level = levelId || state.level;
+        // ★ 直前と同じ容器は続けて出さない（⚠ 等確率で引くと同じ組が2回3回と続く）
+        if (!opts.ions && state.lastKey) opts.avoid = state.lastKey;
+        var p = treeMakeProblem(state.level, opts);
+        if (!p) return;                     // ⚠ 母集団が空（＝ 段の切り方か門番の設計ミス）
+        state.problem = p;
+        state.lastKey = treeIonKey(p.ions);
         state.sel = null;
         state.submitted = false;
         state.plan = treeEmptyPlan();
+        state.sub = {};
         // ⚠ 枝の数は札の枚数ではない（★ 硫化水素は1枚を2つの枝に置く）
         var n = treeSlotCount(state.problem);
         state.seq = [];
         for (var i = 0; i < n; i++) state.seq.push(null);
         if (state.mode === 'read') {
             // ★ 操作はもう置いてある（§16-2 のバリエーション）。⚠ 決めるのはイオンの行先だけ
+            //   ★★ 沈殿側の札も置いてある —— ⚠ 置かないと「割らずに止めた木」になり、
+            //     行先を答えるだけの段なのに単離できない答案しか作れなくなる
             var ideal = treeIdealSeq(state.problem);
             for (var j = 0; j < ideal.length && j < n; j++) state.seq[j] = ideal[j];
+            state.sub = treeIdealSub(state.problem, state.seq);
         }
         state.record = treeRecord(state.mode, state.problem);
         $('result').textContent = '';
@@ -555,8 +702,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         $('btn-submit').addEventListener('click', submit);
-        $('btn-reset').addEventListener('click', function () { start(state.mode, state.problem.id); });
-        start('read', 'a1');
+        // ★ 「置き直す」は同じ容器のまま最初から（⚠ 引き直さない）
+        $('btn-reset').addEventListener('click', function () {
+            start(state.mode, state.level, { ions: state.problem.ions });
+        });
+        $('btn-new').addEventListener('click', function () { start(state.mode, state.level); });
+        start('read', 'easy');
     });
 
     // 回帰テスト（tests.js）が iframe の中から駆動するための口。
@@ -566,6 +717,7 @@
         start: start,
         pick: pick,
         placeOp: placeOp,
+        placeSub: placeSub,
         placeIon: placeIon,
         submit: submit
     };
