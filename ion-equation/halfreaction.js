@@ -53,8 +53,14 @@ function plain(s) { return String(s).replace(/\*\*/g, ""); }
 
 /* ---- 式の面（1回だけ組み立て、あとは塗り替えるだけ）----
    ⚠ **打っている途中に作り直さない**（練習Y・redox.js と同じ作法）。
-   3つの種 × 左右 ＝ 6つの欄をはじめから作っておき、**まだ来ていない段の欄は hidden**。
-   作り直すと1文字打つたびに焦点が飛ぶ。 */
+   3つの種 × 左右 ＝ 6つの欄をはじめから作っておく。作り直すと1文字打つたびに焦点が飛ぶ。
+
+   ★ **欄は最初から6つとも見せる**（2026-08-28・ユーザーの指示「枠は固定で出しておき、
+   入力する手順でハイライト」）。⚠ 以前は「まだ来ていない段の欄は hidden」だったが、
+   隠すと**式が打つたびに伸び縮みして、これから何を入れるのかが見えない**。
+   いま入れる欄は `.hbSlotNow` で示す。⚠ **枠を見せても答えは漏れない**
+   —— 枠に入っているのは種の名前（H₂O・H⁺・e⁻）だけで、数も辺も書いていない。
+   ⚠ 漏れるのは**採点の文のほう**なので、そちらは今までどおり伏せる（refresh を見よ）。 */
 
 function termNode(t) {
   const wrap = el("span", "fterm");
@@ -114,7 +120,7 @@ function stepEls(i) {
   return {
     sec,
     head: sec.querySelector(".hbHead"),
-    lock: sec.querySelector(".hbLock"),
+    now: sec.querySelector(".hbNowTag"),
     extra: sec.querySelector(".hbExtra"),
     msg: sec.querySelector(".hbMsg"),
   };
@@ -161,13 +167,15 @@ function refresh() {
   const at = halfStepIndex(t, procId, vals);
   const done = halfBuildDone(t, procId, vals);
 
-  // 欄の出し入れ: まだ来ていない段の種は隠す。完成したら 0 の項も隠して式を整える
+  /* 欄の出し入れ: ★ **枠は全部出したまま**。隠すのは「完成して 0 になった項」だけ
+     （1 MnO₄⁻ ＋ 0 H₂O のような式にしないため）。いま入れる段の欄はハイライトする。 */
   p.steps.forEach((st, i) => {
     for (const side of SIDES) {
       const node = document.getElementById("hbSlot_" + KEYCODE[st.key] + "_" + side);
       const v = (vals[st.key] || {})[side];
       const zero = !Number.isInteger(v) || v === 0;
-      node.hidden = i > at || (done && zero);
+      node.hidden = done && zero;
+      node.classList.toggle("hbSlotNow", !done && i === at);
       const inp = document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side);
       const want = v === undefined ? "" : String(v);
       // 外（テストのフック）から入れたときだけ書き戻す（打っている途中は触らない）
@@ -178,14 +186,28 @@ function refresh() {
 
   p.steps.forEach((st, i) => {
     const e = stepEls(i);
-    const locked = i > at;
-    e.sec.classList.toggle("oxLocked", locked);
+    const ahead = i > at;                 // まだ来ていない段（うすいまま置いておく）
+    e.sec.classList.toggle("oxLocked", ahead);
+    e.sec.classList.toggle("hbNow", !done && i === at);
     e.head.textContent = st.head;
-    e.lock.hidden = !locked;
-    e.msg.hidden = locked;
-    e.extra.hidden = locked || st.by !== "ox";
+    e.now.hidden = done || i !== at;      // ★「いま入れるところ」の印
+    /* ⚠ **採点の文だけは、まだ来ていない段では出さない。** 全22出題×2手順を叩いて決めた:
+       ・空欄のままの先の段の文に、数は **88件中 0件** しか出てこない ＝ 文からは答えは漏れない
+       ・ただし先の段の欄に 0 と入れると、**88件中 52件が「そろった」と緑になる**
+         （前の段の H₂O をまだ置いていないので、O も H も 0 対 0 でそろって見える）。
+       うすい段に緑が出るのは嘘なので、文は「いまの段」に結びつけたままにする。
+       ⚠ **枠と見出しには数が1つも出てこない**ので、伏せるのはここ1か所で足りる。 */
+    e.msg.hidden = ahead;
+    e.extra.hidden = ahead || st.by !== "ox";
     if (!e.extra.hidden) buildOxHint(e.extra);
-    if (locked) { e.msg.textContent = ""; return; }
+    if (ahead) {
+      e.msg.textContent = "";
+      // 先の段の欄に、前に付いた赤い印を残さない
+      for (const side of SIDES) {
+        document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side).classList.remove("ng");
+      }
+      return;
+    }
     const r = checkHalfStep(t, procId, i, vals);
     const ngIn = r && r.kind === "wrong";
     for (const side of SIDES) {

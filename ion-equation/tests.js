@@ -2930,6 +2930,32 @@ function runModelTests() {
       "0 と空欄が同じ扱いになっている");
   });
 
+  /* ★ 枠を全部見せる（2026-08-28）ときに、どこまでなら漏れないかの実測を固定する。
+     ⚠ **この2つの数が入れ替わったら、伏せる場所を決め直すこと。** */
+  t("HALFBUILD: ★枠を先に見せても漏れない／⚠ 先の段の採点の文だけは緑が嘘になる", () => {
+    let digits = 0, greens = 0, total = 0;
+    for (const task of halfBuildList()) {
+      for (const p of ["A", "B"]) {
+        for (let i = 1; i < HALF_PROCS[p].steps.length; i++) {
+          total++;
+          // (1) 空欄のままの先の段の文に、数が出てこないこと（＝文から答えは読めない）
+          const empty = checkHalfStep(task, p, i, {});
+          if (/[0-9]/.test(empty.reason.replace("要らないときは 0", ""))) digits++;
+          // (2) 先の段に 0 と入れると「そろった」と緑になる（前の段の H₂O をまだ置いていないため）
+          const v = {}; v[HALF_PROCS[p].steps[i].key] = { left: 0 };
+          if (checkHalfStep(task, p, i, v).ok) greens++;
+        }
+      }
+    }
+    assert(total === 88, "先の段の総数が変わった: " + total);
+    assert(digits === 0, "先の段の採点の文に数が出ている（枠より先に文が漏らす）: " + digits);
+    // ⚠ ここが「文だけは伏せる」根拠。0 になったら伏せる必要が消える ＝ 決め直してよい
+    assert(greens === 52, "先の段が嘘の緑になる件数が変わった: " + greens);
+    // ⚠ 見出しには数が1つも出てこない（だから見出しは先に出してよい）
+    const heads = ["A", "B"].map((p) => HALF_PROCS[p].steps.map((s) => s.head).join(" ")).join(" ");
+    assert(!/[0-9]/.test(heads), "段の見出しに数が出ている: " + heads);
+  });
+
   t("compareSides: 電荷の不一致を検出する", () => {
     const cmp = compareSides([{ sp: "H+", n: 1 }], [{ sp: "H+", n: 1 }, { sp: "H+", n: 1 }]);
     assert(!cmp.balanced);
@@ -8659,14 +8685,27 @@ async function runHalfBuildUITests(iframe) {
     win.HalfBuild.goto("MnO4_red");
     win.HalfBuild.setProc("A");
     assert(JSON.stringify(state().steps) === JSON.stringify(["H2O", "H+", "e-"]), "手順A の段の並びが違う");
-    // まだ来ていない段の欄は式に出さない（＝そこから埋めることができない）
-    assert(doc.getElementById("hbSlot_h_left").hidden && doc.getElementById("hbSlot_e_left").hidden,
-      "1段目なのに H⁺・e⁻ の欄が出ている");
+    /* ★ 枠は6つとも最初から出ている（2026-08-28）。段の進みはハイライトで示す
+       —— 隠すと式が打つたびに伸び縮みして、これから何を入れるのかが見えない */
+    for (const k of ["w", "h", "e"]) for (const s of ["left", "right"]) {
+      assert(!doc.getElementById("hbSlot_" + k + "_" + s).hidden, "欄が隠れている: " + k + "/" + s);
+    }
+    assert(doc.getElementById("hbSlot_w_left").classList.contains("hbSlotNow") &&
+      !doc.getElementById("hbSlot_h_left").classList.contains("hbSlotNow"),
+      "1段目なのに H₂O の欄がハイライトされていない");
+    assert(doc.getElementById("hbStep0").classList.contains("hbNow"), "1段目がハイライトされていない");
     assert(doc.getElementById("hbStep1").classList.contains("oxLocked"), "2段目が開いたままになっている");
+    // ⚠ 伏せるのは**採点の文だけ**（先の段の緑は嘘になる。データ側のテストで実数を固定）
+    assert(doc.querySelector("#hbStep1 .hbMsg").hidden && doc.querySelector("#hbStep2 .hbMsg").hidden,
+      "まだ来ていない段の採点の文が出ている");
+    // 「いま入れるところ」の印は1つだけ
+    assert($$(".hbNowTag:not([hidden])").length === 1, "「いま入れるところ」の印が1つでない");
     typeInto("H2O", "right", 4);
-    assert(state().at === 1 && !doc.getElementById("hbSlot_h_left").hidden, "O を合わせても2段目が開かない");
+    assert(state().at === 1 && doc.getElementById("hbSlot_h_left").classList.contains("hbSlotNow"),
+      "O を合わせてもハイライトが2段目へ移らない");
     typeInto("H+", "left", 8);
-    assert(state().at === 2 && !doc.getElementById("hbSlot_e_left").hidden, "H を合わせても3段目が開かない");
+    assert(state().at === 2 && doc.getElementById("hbSlot_e_left").classList.contains("hbSlotNow"),
+      "H を合わせてもハイライトが3段目へ移らない");
     typeInto("e-", "left", 5);
     assert(state().done && state().clear, "手順A で最後まで組めない");
     assert(msgOf(2).includes("電荷"), "3段目が電荷の話になっていない: " + msgOf(2));
@@ -8678,9 +8717,11 @@ async function runHalfBuildUITests(iframe) {
     win.HalfBuild.goto("MnO4_red");
     win.HalfBuild.setProc("B");
     assert(JSON.stringify(state().steps) === JSON.stringify(["e-", "H2O", "H+"]), "手順B の段の並びが違う");
-    // 1段目に出るのは e⁻ の欄だけ（A ではここが H₂O だった）
-    assert(!doc.getElementById("hbSlot_e_left").hidden && doc.getElementById("hbSlot_w_left").hidden,
-      "手順B の1段目に H₂O の欄が出ている");
+    // 1段目でハイライトされるのは e⁻ の欄（A ではここが H₂O だった）。⚠ 枠は6つとも出たまま
+    assert(doc.getElementById("hbSlot_e_left").classList.contains("hbSlotNow") &&
+      !doc.getElementById("hbSlot_w_left").classList.contains("hbSlotNow"),
+      "手順B の1段目で H₂O の欄がハイライトされている");
+    assert(!doc.getElementById("hbSlot_w_left").hidden, "手順B でも枠は全部出したまま");
     // ⚠ 酸化数は印で与える（練習Y をもう一度やらせない）が、e⁻ の数は言わない
     const ox = doc.querySelector("#hbStep0 .hbExtra").textContent;
     assert(ox.includes("Mn") && ox.includes("+7") && ox.includes("+2") && ox.includes("1 個"),
