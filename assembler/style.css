@@ -912,6 +912,71 @@ button:hover {
 #canvas-toast.success { border-color: var(--neon-green); }
 #canvas-toast.error { border-color: var(--neon-red); }
 #canvas-toast.hidden { display: none; }
+
+/* ===== 長い字幕は「2行 ＋ 続きを読む」にたたむ（v1477・ユーザー実機報告） =====
+   **測った値**（スクロースの加水分解の caption ＝ 549字。game.js の `paintCanvasToast` の注が正）:
+     375×812 で 332×396px ＝ **キャンバスの 53.2%** を覆っていた（1280×800 でも 25.4%）。
+   ⚠ **「続きを読む」「×」の字は `::after` で出す**。`#canvas-toast` の `textContent` を
+      22 か所の回帰テストが読んでいるので、文字ノードを1つも足さない。
+   ⚠ **`.long` が付かない回（＝ あふれない短い字幕）には何も足さない** ＝ 従来どおりの見た目。 */
+#canvas-toast .ct-text { display: block; }
+/* たたんだ姿 ＝ 2行（line-height 1.5 なので 3em）。天井を CSS が持つので、
+   文言が何字になっても覆う量はここで決まる */
+#canvas-toast.long .ct-text {
+    max-height: 3em;
+    overflow: hidden;
+}
+/* 広げた姿。天井は**キャンバス（`#svg-wrapper`）の高さの 4割**。
+   ⚠ `vh` ではなく `%` にする —— 基準は画面ではなく**覆う相手**。`40vh` で測ったら
+      375×812 で 320px ＝ キャンバスの 58% になり、たたむ前より広く覆っていた（実測）。
+   ⚠ 天井は**トースト側**に置く（`.ct-text` の `%` は、高さ auto の親には効かない）。
+      本文を `flex:1 1 auto; min-height:0` にして、あふれた分をこの中でスクロールさせる */
+#canvas-toast.long.open {
+    max-height: 40%;
+    display: flex;
+    flex-direction: column;
+}
+#canvas-toast.long.open .ct-text {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    pointer-events: auto;   /* 中をスクロールするため。閉じれば元どおり素通しに戻る */
+    text-align: left;
+}
+#canvas-toast.long.open .ct-more { flex: 0 0 auto; }
+#canvas-toast.long .ct-more,
+#canvas-toast.long .ct-close {
+    pointer-events: auto;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    color: var(--neon-blue);
+    font-family: inherit;
+}
+#canvas-toast.long .ct-more {
+    display: block;
+    margin: 3px auto 0;
+    min-height: 32px;        /* 押しものの床（TAP1） */
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+}
+#canvas-toast.long .ct-more::after { content: '▾ 続きを読む'; }
+#canvas-toast.long.open .ct-more::after { content: '▴ たたむ'; }
+/* × は右上の角に重ねる（行を増やさない ＝ 覆う量を増やさない） */
+#canvas-toast.long .ct-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    line-height: 1;
+}
+#canvas-toast.long .ct-close::after { content: '×'; }
+/* × のぶんだけ右に余白を作る（文字が × の下に潜らないように） */
+#canvas-toast.long .ct-text { padding-right: 20px; }
 /* 文言の中の `**…**`（v1467・game.js の `setEmphasisText` が `<b class="em">` にする）。
    ⚠ **色は `#puzzle-howto strong` と同じシアンに揃える**。アプリの中で「ここが要点」の
       見た目を2つにしない。

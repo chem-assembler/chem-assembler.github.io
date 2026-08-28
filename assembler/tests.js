@@ -40850,6 +40850,91 @@
         c.reset();
     });
 
+    /* ===== RV1・RV2: 長い解説はキャンバスを覆わない／読み終わるまで消えない（v1477） =====
+     *
+     * ユーザー実機報告（2026-08-28）「反応時にポップアップする解説文が長いと肝心の
+     * キャンバスが見えない」「timeout で解説が消えるので、読めないときがある」。
+     *
+     * **測った値**（:9137・実アプリ・スクロースの加水分解の caption ＝ 549字）:
+     *   375×812 … 332×396px ＝ キャンバスの **53.2%** ／ 1280×800 … 680×235px ＝ **25.4%**
+     *   時計 6500ms に対し、549字の黙読は 400〜600字/分 ＝ **55〜82秒**必要だった。 */
+    const LONG_TOAST_MSG = '長い解説の文章です。'.repeat(40);   // 400字（実物の caption と同じ桁）
+
+    test('RV1: 長い字幕は2行にたたむ／広げているあいだは時計で消えない／× で閉じられる', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D;
+        const toast = D.getElementById('canvas-toast');
+        assert(toast, 'キャンバス内の字幕 #canvas-toast が無い');
+
+        // ① たたまれる ＝ `.long` が付き、本文の高さが素のときより低い
+        g.showToast(LONG_TOAST_MSG, 6500, 'success');
+        assert(toast.classList.contains('long'),
+            `400字の字幕がたたまれていない（class=${toast.className}）`);
+        const textEl = toast.querySelector('.ct-text');
+        assert(textEl, '本文の器（.ct-text）が無い');
+        const clipped = textEl.clientHeight;
+        toast.classList.remove('long');
+        const full = textEl.clientHeight;
+        toast.classList.add('long');
+        assert(clipped > 0 && clipped < full * 0.5,
+            `たたんでも高さが減っていない（たたむと ${clipped}px・素のまま ${full}px）`);
+
+        // ② 文字ノードは1つも足していない（22か所の回帰テストが textContent を読む）
+        assert(toast.textContent === LONG_TOAST_MSG,
+            `字幕の textContent に余計な字が混ざった（末尾 = ${toast.textContent.slice(-20)}）`);
+        const more = toast.querySelector('.ct-more'), close = toast.querySelector('.ct-close');
+        assert(more && close, '「続きを読む」と「×」が出ていない');
+
+        /* ③④ 時計。**表示時間そのものは `paintCanvasToast` の戻り値**なので、
+         *     ここだけ短い値に差し替えて待ち時間を詰める（時計の分岐だけを見る）。 */
+        const orig = g.paintCanvasToast;
+        g.paintCanvasToast = function (...a) { orig.apply(this, a); return 80; };
+        try {
+            // ③ たたんだままなら、いままでどおり時計で消える
+            g.showToast(LONG_TOAST_MSG, 6500, 'success');
+            await c.tick(300);
+            assert(toast.classList.contains('hidden'),
+                'たたんだままの字幕が時計で消えない（出しっぱなしになる）');
+            // ④ 広げているあいだは消えない（読み終わるまで残る）
+            g.showToast(LONG_TOAST_MSG, 6500, 'success');
+            toast.querySelector('.ct-more').click();
+            assert(toast.classList.contains('open'), '「続きを読む」で広がらない');
+            await c.tick(300);
+            assert(!toast.classList.contains('hidden'),
+                '★ 広げて読んでいる最中に時計が消してしまう（ユーザー報告そのもの）');
+            // ⑤ 読んだら消せる
+            toast.querySelector('.ct-close').click();
+            assert(toast.classList.contains('hidden'), '× を押しても閉じない');
+        } finally {
+            g.paintCanvasToast = orig;
+        }
+        c.reset();
+    });
+
+    test('RV2: ★否定対照 — 短い字幕は今までどおり／たたんだ回は読む時間ぶん表示を延ばす', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D;
+        const toast = D.getElementById('canvas-toast');
+
+        // ① 短い字幕には何も足さない（`.long` も押しものも付かない ＝ 従来の見た目のまま）
+        g.showToast('短い字幕', 3000, 'error');
+        assert(!toast.classList.contains('long'),
+            `短い字幕までたたんでいる（class=${toast.className}）`);
+        assert(toast.querySelectorAll('button').length === 0,
+            '短い字幕に「続きを読む」「×」を出している');
+        assert(toast.textContent === '短い字幕', `短い字幕の本文が変わった（${toast.textContent}）`);
+
+        // ② 表示時間は、たたんで**見えている分**を読み切れるまで延ばす（400字/分 で見積もる）。
+        //    ⚠ ここが赤くなる壊し方 ＝ `paintCanvasToast` の戻り値を `ms` に戻すこと
+        const shortMs = g.paintCanvasToast(toast, '短い字幕', 'error', 3000);
+        assert(shortMs === 3000, `短い字幕の表示時間まで変えている（${shortMs}ms・3000 が正）`);
+        const longMs = g.paintCanvasToast(toast, LONG_TOAST_MSG, 'success', 6500);
+        assert(longMs > 6500, `たたんだ字幕の表示時間が延びていない（${longMs}ms・6500 より長いのが正）`);
+        assert(longMs <= 12000, `表示時間に天井が無い（${longMs}ms）`);
+        g.hideCanvasToast();
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
