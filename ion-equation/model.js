@@ -3773,29 +3773,33 @@ function calcSheetRows(stage, a, b) {
 }
 
 /* ================================================================================
-   【①-B】×1 の欄は最初から埋めておく（v195・発注書 §4-1 の案 ①-B）
+   【③は合計の行だけを問う】（2026-08-28・ユーザーの指示）
 
-   v193 は「合計行を真上2行から写せる」ほうを塞いだが、**①の素の式から写せる**ほうは
-   残っていた（発注書 §6-9 の塞ぎ残し）。**倍率が ×1 の側は①の式そのまま**なので、
-   その欄は掛け算も足し算も要らない ＝ ①を見て書き写すだけの欄になる。
+   > **イオン反応式の係数を決めるところでは、合計した係数のみ入れる形がよさそう**
 
-   だから**その欄は最初から埋めて印にし、問うのは掛け算をした側だけ**にする。
-   ⚠ **表は持たない。**×1 かどうかは倍率と ionicCoeffRows の mult だけから出す。
+   ⚠ v193〜v195 は筆算の**3行とも**入力面にしていた（×a の行・×b の行・合計行 ＝ 182欄。
+   うち×1 の欄 87 を①-B で埋めて 95欄を問う）。**上の2行も印にして、問うのは合計行だけ**にする。
 
    埋める欄:
-     ox / red の行 … その行の倍率が 1 なら**行まるごと**（＝①の式そのまま。e⁻ も含む）
-     sum の行      … ×1 の行から**そのまま降りてくる**項（mult === 1）だけ。
+     ox / red の行 … **行まるごと**（倍率が1でも、かけ算をした行でも）
+     sum の行      … ×1 の行から**そのまま降りてくる**項（mult === 1）だけ ＝ ①-B の carve-out。
                      ⚠ both（両方の式に出る H₂O など）は縦の足し算が要るので問う側に残す
+
+   ⚠⚠ **これで「上の行から降ろすだけ」の欄が増えることは分かっている**（発注書 §6-2 が
+   v183 の却下理由として測ったのと同じ形）。実測: 問う 40欄のうち、**本当に足し算が要るのは
+   6欄**（both の項）で、**34欄は真上の行の数をそのまま下ろすだけ**。
+   ⚠ 数は tests.js の「SUM ONLY:」が固定している。**この形はユーザーの指示なので変えない**が、
+   もう一度組み直すときはこの数を根拠に話すこと。
 
    ⚠ 埋めた欄は「入力済み」として扱う（呼び出し側が vals に入れて checkCalcSheet に渡す）。
    **判定の意味は変えない** —— 空欄＝「まだ入れていない」と 0 の区別（分岐C）はそのまま。 */
 function calcGivenSlots(stage, a, b) {
   const rows = calcSheetRows(stage, a, b);
   if (!rows) return null;
-  const whole = (key, k) => (k === 1 ? rows[key].map((_, i) => i) : []);
+  const whole = (key) => rows[key].map((_, i) => i);
   return {
-    ox: whole("ox", a),
-    red: whole("red", b),
+    ox: whole("ox"),
+    red: whole("red"),
     sum: rows.sum.reduce((acc, t, i) => (t.from !== "both" && t.mult === 1 ? acc.concat(i) : acc), []),
   };
 }
@@ -3810,17 +3814,14 @@ function calcAskCount(stage, a, b) {
   return CALC_ROW_KEYS.reduce((n, key) => n + rows[key].length - given[key].length, 0);
 }
 
-/* 埋めた欄について画面に出す一文。⚠ **内部の語（slot・readOnly・given）は出さない。**
-   「①のまま（×1 なので）」と読める言い方にする。埋める欄が無ければ null。 */
+/* 埋めた欄について画面に出す一文。⚠ **内部の語（slot・readOnly・given）は出さない。** */
 function calcGivenNote(stage, a, b) {
   const given = calcGivenSlots(stage, a, b);
   if (!given) return null;
   if (!given.ox.length && !given.red.length && !given.sum.length) return null;
-  const oxName = "【還元剤】（酸化される式）", redName = "【酸化剤】（還元される式）";
-  const oneName = a === 1 ? oxName : redName;
-  const k = a === 1 ? b : a;
-  return `灰色の数字は①のまま —— ${oneName}は ×1 で、かけ算をしていない。` +
-    `自分で書くのは、×${k} をかけた側だけ。`;
+  return "灰色の数字はもう書いてあるぶん —— かけ算をした上の2行" +
+    (given.sum.length ? "と、①のまま降りてくる項" : "") +
+    "。自分で書くのは、いちばん下の合計の行だけ。";
 }
 
 /* 入れた係数の判定。**答えの数は言わない** —— どこから降りてくる数かまで。

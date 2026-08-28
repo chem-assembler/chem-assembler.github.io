@@ -2416,76 +2416,74 @@ function runModelTests() {
   });
 
   /* ================================================================================
-     【①-B】×1 の欄は最初から埋める（v195・発注書 §4-1 の案 ①-B）。
-     ⚠ 見張りたいのは **「①から写せる欄」が問う側に残っていないこと**。
-       v193 は「合計行を真上2行から写せる」ほうしか塞いでいない（発注書 §6-9 の塞ぎ残し）。
+     【③は合計の行だけを問う】（2026-08-28・ユーザーの指示「合計した係数のみ入れる」）。
+     ⚠ v195 の①-B（×1 の欄だけ埋める・182/87/95）を、**上の2行まるごと**へ広げた。
      ================================================================================ */
 
-  t("GIVEN: 埋める欄は、①の素の式にそのまま書いてある数だけ（87欄）", () => {
-    let given = 0, total = 0;
+  t("SUM ONLY: 問うのは合計の行だけ（182欄 → 埋め 142・問う 40）", () => {
+    let given = 0, total = 0, askedSum = 0, askedUp = 0;
     for (const st of REDOX_STAGES) {
       const [a, b] = st.answer;
       const rows = calcSheetRows(st, a, b), gv = calcGivenSlots(st, a, b);
-      const raw = { ox: HALF_REACTIONS[st.ox], red: HALF_REACTIONS[st.red] };
       for (const key of ["ox", "red", "sum"]) {
         total += rows[key].length;
-        for (const i of gv[key]) {
-          given++;
-          const t2 = rows[key][i];
-          // その数が①のどこに書いてあるか（＝ 写せることの根拠）を突き合わせる
-          const hr = key === "sum" ? raw[t2.from] : raw[key];
-          assert(hr, `${st.id}/${key}: 埋めた欄の出どころが引けない`);
-          const src = hr.left.concat(hr.right).find((x) => x.sp === t2.sp);
-          assert(src && src.n === t2.n,
-            `${st.id}/${key}/${SPECIES[t2.sp].disp}: 埋めた数 ${t2.n} が①の式（${src ? src.n : "無し"}）と違う`);
-        }
+        given += gv[key].length;
+        const ask = rows[key].length - gv[key].length;
+        if (key === "sum") askedSum += ask; else askedUp += ask;
       }
-      // ⚠ 埋めるのは「かけ算をしていない側」だけ。×2 以上の行を埋めていたら作業を奪っている
-      if (a > 1) assert(gv.ox.length === 0, st.id + ": ×" + a + " の行を埋めている");
-      if (b > 1) assert(gv.red.length === 0, st.id + ": ×" + b + " の行を埋めている");
+      // ★ 上の2行は倍率にかかわらず**行まるごと**埋まる（問う欄が1つも残らない）
+      assert(gv.ox.length === rows.ox.length && gv.red.length === rows.red.length,
+        st.id + ": 上の2行に問う欄が残っている");
+      // 合計行の埋めは①-B の carve-out のまま（×1 で、両方の式に出ない項）
+      for (const i of gv.sum) {
+        const t2 = rows.sum[i];
+        assert(t2.mult === 1 && t2.from !== "both",
+          `${st.id}/sum/${SPECIES[t2.sp].disp}: 足し算が要る項を埋めている`);
+      }
     }
-    assert(total === 182 && given === 87, `欄の数が違う（総数 ${total} / 埋め ${given}）`);
+    assert(total === 182 && given === 142, `欄の数が違う（総数 ${total} / 埋め ${given}）`);
+    assert(askedUp === 0, "上の2行に問う欄が残っている: " + askedUp);
+    assert(askedSum === 40, "問う欄（合計行）が 40 でない: " + askedSum);
   });
 
-  /* ⚠ 否定対照。①に同じ数がそのまま書いてある欄は **182欄中 96欄**（＝ 埋めをやめた v194 の姿では
-     この96欄が「①を見て写すだけ」で埋まる）。①-B はそのうち 87欄を埋めて問わない。
-     問う側に残る9欄は**すべて e⁻** —— これは②で e⁻ をそろえた結果そのもの
-     （両辺の e⁻ が同じ数になるように倍率を決めた）で、③の仕事ではない。
-     **重原子の欄は 1つも残らない。** */
-  t("GIVEN 否定対照: 写せる欄は 96 → 埋めて 9（すべて e⁻・重原子は 0）", () => {
-    let leakBefore = 0, leakAfter = 0, leakAfterHeavy = 0;
+  /* ⚠⚠ **否定対照 ＝ この形の代償を数で残す。**
+     上の2行を印にすると、合計行の項の多くが**真上の行の数をそのまま下ろすだけ**になる
+     （発注書 §6-2 が v183 の却下理由として測ったのと同じ形）。
+     本当に足し算が要るのは both（両方の式に出る）項だけ。**この数が動いたら形を考え直すこと。** */
+  t("SUM ONLY 否定対照: 問う 40欄のうち、足し算が要るのは 6欄だけ", () => {
+    let addNeeded = 0, copyDown = 0, mulRemoved = 0;
     for (const st of REDOX_STAGES) {
       const [a, b] = st.answer;
       const rows = calcSheetRows(st, a, b), gv = calcGivenSlots(st, a, b);
-      const raws = [HALF_REACTIONS[st.ox], HALF_REACTIONS[st.red]].map((h) => h.left.concat(h.right));
-      for (const key of ["ox", "red", "sum"]) {
-        rows[key].forEach((t2, i) => {
-          // ①のどこかに「同じ種で同じ数」が書いてあるか ＝ 目で拾えるか
-          if (!raws.some((r) => r.some((x) => x.sp === t2.sp && x.n === t2.n))) return;
-          leakBefore++;
-          if (gv[key].includes(i)) return;
-          leakAfter++;
-          if (t2.sp !== "e-") leakAfterHeavy++;
-        });
-      }
+      rows.sum.forEach((t2, i) => {
+        if (gv.sum.includes(i)) return;
+        if (t2.from === "both") addNeeded++; else copyDown++;
+      });
+      // 参考: この形で消えた「かけ算をする欄」（v195 では問うていた ×a・×b の行）
+      if (a > 1) mulRemoved += rows.ox.length;
+      if (b > 1) mulRemoved += rows.red.length;
     }
-    assert(leakBefore === 96, "埋めをやめたときに写せる欄が 96 でない: " + leakBefore);
-    assert(leakAfterHeavy === 0, "埋めても重原子の欄が写せるまま残っている: " + leakAfterHeavy);
-    assert(leakAfter === 9, "問う側に残る e⁻ の欄が 9 でない: " + leakAfter);
+    assert(addNeeded === 6, "足し算が要る欄が 6 でない: " + addNeeded);
+    assert(copyDown === 34, "真上から下ろすだけの欄が 34 でない: " + copyDown);
+    assert(mulRemoved === 55, "かけ算をする欄が 55 消えていない: " + mulRemoved);
   });
 
-  t("GIVEN: 問う欄が 0 になるのは r1・r3（倍率 1:1）の2件だけ", () => {
+  t("SUM ONLY: 問う欄が 0 になるのは r1・r3（倍率 1:1）の2件だけ", () => {
     const zero = REDOX_STAGES.filter((st) => calcAskCount(st, st.answer[0], st.answer[1]) === 0).map((s) => s.id);
     assert(zero.join() === "r1,r3", "問う欄が0のステージが違う: " + zero.join());
     let ask = 0;
     for (const st of REDOX_STAGES) ask += calcAskCount(st, st.answer[0], st.answer[1]);
-    assert(ask === 95, "問う欄の総数が 95 でない: " + ask);
-    // 埋める欄が1つも無い回（倍率がどちらも 2 以上）では、灰色の説明も出さない
+    assert(ask === 40, "問う欄の総数が 40 でない: " + ask);
     for (const st of REDOX_STAGES) {
       const [a, b] = st.answer;
       const note = calcGivenNote(st, a, b);
-      assert(!!note === (a === 1 || b === 1), st.id + ": 灰色の説明の出し方が倍率と合わない");
-      if (note) assert(!/slot|readOnly|given|給/.test(note), st.id + ": 内部の語が画面の文に出ている: " + note);
+      // 上の2行は必ず埋まるので、灰色の説明はどの回にも出る
+      assert(note, st.id + ": 灰色の説明が出ない");
+      assert(note.includes("合計の行だけ"), st.id + ": 何を書くのか言っていない: " + note);
+      // ①のまま降りてくる項がある回だけ、その断りが付く
+      assert(note.includes("①のまま") === (calcGivenSlots(st, a, b).sum.length > 0),
+        st.id + ": ①のまま降りてくる項の断りが実際と合わない: " + note);
+      assert(!/slot|readOnly|given|給/.test(note), st.id + ": 内部の語が画面の文に出ている: " + note);
     }
   });
 
@@ -2499,20 +2497,23 @@ function runModelTests() {
       for (const k of ["ox", "red", "sum"]) for (const i of gv[k]) v[k][i] = rows[k][i].n;
       return v;
     };
-    // ① 埋めた直後 ＝ 埋めた9欄は「入力済み」、残りは問う5欄
+    // 問う欄（合計行のうち埋めていないもの）の添字
+    const asked = rows.sum.map((_, i) => i).filter((i) => !gv.sum.includes(i));
+    // ① 埋めた直後 ＝ 埋めた12欄は「入力済み」、残りは問う2欄
     const start = checkCalcSheet(rs1, 5, 1, seed());
-    assert(start.kind === "partial" && start.filled === 9 && start.rest === 5,
+    assert(start.kind === "partial" && start.filled === 12 && start.rest === 2,
       "埋めた欄が入力済みとして数えられていない: " + JSON.stringify(start));
-    assert(start.reason.includes("あと 5 つ"), "残りの数が問う欄の数になっていない: " + start.reason);
+    assert(start.reason.includes("あと 2 つ"), "残りの数が問う欄の数になっていない: " + start.reason);
     assert(start.reason.includes("どの欄から埋めてもよい"), "順序を強いない一文が消えている: " + start.reason);
     // ② 0 は「入れた」と数えない（分岐C はそのまま）
-    const zero = seed(); zero.ox[0] = 0;
-    assert(checkCalcSheet(rs1, 5, 1, zero).filled === 9, "0 を「入れた」と数えている");
+    const zero = seed(); zero.sum[asked[0]] = 0;
+    assert(checkCalcSheet(rs1, 5, 1, zero).filled === 12, "0 を「入れた」と数えている");
     // ③ 間違いは間違いのまま印が付く
-    const bad = seed(); bad.ox[0] = 4;
+    const bad = seed(); bad.sum[asked[0]] = rows.sum[asked[0]].n + 1;
     const r = checkCalcSheet(rs1, 5, 1, bad);
-    assert(r.kind === "wrong" && r.wrong.ox.join() === "0", "間違いを指せない: " + JSON.stringify(r));
-    // ④ 問う5欄を埋めれば完成する（埋めた欄をもう一度書かせない）
+    assert(r.kind === "wrong" && r.wrong.sum.join() === String(asked[0]),
+      "間違いを指せない: " + JSON.stringify(r));
+    // ④ 問う2欄を埋めれば完成する（埋めた欄をもう一度書かせない）
     const all = seed();
     for (const k of ["ox", "red", "sum"]) rows[k].forEach((t2, i) => { all[k][i] = t2.n; });
     assert(checkCalcSheet(rs1, 5, 1, all).ok, "全部そろえても完成しない");
@@ -4862,10 +4863,10 @@ async function runUITests(iframe) {
     const d = p.doc, w = p.win;
     const wrap = d.getElementById("calcSheetWrap"), sheet = d.getElementById("calcSheet");
     const inputs = [...d.querySelectorAll("#calcSheet .fcoefIn")];
-    // 【①-B】v195 —— 14欄のうち5欄が入力欄・9欄は埋めた印（幅はどちらも 44px の枠）
-    assert(inputs.length === 5, "rs1 の入力欄が5個でない: " + inputs.length);
+    // ★ 14欄のうち2欄が入力欄（合計行）・12欄は印（幅はどちらも 44px の枠）
+    assert(inputs.length === 2, "rs1 の入力欄が2個でない: " + inputs.length);
     const marks = [...d.querySelectorAll("#calcSheet .fcoef.fgiven")];
-    assert(marks.length === 9, "rs1 の埋めた印が9個でない: " + marks.length);
+    assert(marks.length === 12, "rs1 の埋めた印が12個でない: " + marks.length);
     for (const el of marks) {
       assert(el.getBoundingClientRect().right <= p.w + 1, "埋めた印が画面の外に出ている");
     }
@@ -6570,8 +6571,8 @@ async function runRedoxUITests(iframe) {
     e.dispatchEvent(new win.Event("input", { bubbles: true }));
   };
   const ccGiven = () => $$("#calcSheet .fcoef.fgiven");
-  /* rs1（5:1）の模範。模範の数はここに手で書かず、model.js の導出から取る。
-     ⚠ 【①-B】v195 から **×1 の欄は最初から埋まっている**ので、返すのは**問う欄だけ**。
+  /* 模範。模範の数はここに手で書かず、model.js の導出から取る。
+     ⚠ **印の欄は最初から埋まっている**ので、返すのは**問う欄だけ**。
      埋まった欄まで入れて返すと「存在しない入力欄」を探して落ちる。 */
   const ccAnswers = (id, a, b) => {
     const st = REDOX_STAGES.find((s) => s.id === id);
@@ -6592,31 +6593,33 @@ async function runRedoxUITests(iframe) {
     return ccAnswers(id, a, b);
   };
 
-  await t("REDOX: ③の筆算が入力面 - 3行とも空欄で始まり、①からも筆算からも答えが読めない", async () => {
+  await t("REDOX: ③の筆算が入力面 - 問うのは合計の行だけ（上の2行は印）", async () => {
     const want = setupCalc("rs1", 5, 1);
-    /* ① 欄は3行ぶん先に全部出る（枠を先に出し、埋める順序は人に任せる）。
-       ⚠ 【①-B】v195 —— 14欄のうち **×1 の側の9欄は最初から埋まった印**で、
-       打てるのは**掛け算をした側の5欄**だけ。印が `<input>` に戻ると欄が 14 に増える */
-    assert(ccAll().length === 5, "rs1 の入力欄が5個でない: " + ccAll().length);
-    assert(ccGiven().length === 9, "rs1 の埋めた印が9個でない: " + ccGiven().length);
+    /* ★ 2026-08-28・ユーザーの指示「イオン反応式の係数を決めるところでは、
+       合計した係数のみ入れる形がよさそう」。14欄のうち **12欄が印**で、
+       打てるのは**合計行の2欄**（5 Fe²⁺・5 Fe³⁺）だけ。 */
+    assert(ccAll().length === 2, "rs1 の入力欄が2個でない: " + ccAll().length);
+    assert(ccGiven().length === 12, "rs1 の埋めた印が12個でない: " + ccGiven().length);
     assert(ccGiven().every((g) => !g.querySelector("input")), "埋めた印が入力欄になっている");
-    assert(want.length === 5, "問う欄の模範が5でない: " + want.length);
+    assert(want.length === 2, "問う欄の模範が2でない: " + want.length);
     assert(ccAll().every((i) => i.value === ""), "最初から数が入っている欄がある");
+    // ★ 打てる欄は合計行にしか無い（上の2行に <input> が1つも残っていない）
+    assert(ccAll().every((i) => i.id.startsWith("cc_sum_")),
+      "合計行の外に入力欄がある: " + ccAll().map((i) => i.id).join());
     // ② ④⑤（瓶の段）は出ない。「H⁺ 8個 を連れてきたのは？」に係数が入っているので
     assert(doc.getElementById("stepBottles").hidden, "書き終わる前から瓶の段が出ている（係数が下から漏れる）");
     assert(doc.getElementById("rowMol").hidden && doc.getElementById("head5").hidden,
       "書き終わる前から⑤が出ている");
-    /* ③ ⚠ B-1 の核心: **合計行の真上の「掛け算をした行」に答えが無い**。
-       ここが埋まっていると（＝ B-2「合計行だけ空欄」）合計行は目で拾えてしまう。
-       v183 が却下した「筆算を出したまま係数欄だけ空ける」に戻っていないことの固定。
-       ⚠ ×1 の行（rowSumRed）は①の式そのままなので、①-B で最初から埋めてある
-       ——「写せる欄」を残さないための埋めであって、答えを配っているのではない */
+    // ③ 上の2行は、かけ算をした側も印として**書いてある**（これが今回の指示の中身）
     const oxTxt = (doc.getElementById("rowSumOx").textContent || "").replace(/\s+/g, " ");
-    assert(!/5\s*Fe|5\s*e/.test(oxTxt), "rowSumOx に倍率をかけた答えが出ている: " + oxTxt);
+    assert(/5\s*Fe/.test(oxTxt), "×5 の行が印になっていない: " + oxTxt);
     const redTxt = (doc.getElementById("rowSumRed").textContent || "").replace(/\s+/g, " ");
     assert(/8\s*H⁺/.test(redTxt) && /4\s*H₂O/.test(redTxt), "×1 の行が埋まっていない: " + redTxt);
-    /* ④ **目に見えている**文字のどこにも、答えの係数の並びが無い。
-       隠れている段（別のステージで組んだままの DOM）まで拾わないよう枝を刈る */
+    /* ④ ⚠⚠ **この形の代償を、画面でも固定しておく。**
+       上の2行が印になったので、合計行の答えは**真上の行から読める**
+       （発注書 §6-2 が v183 の却下理由として測ったのと同じ形）。
+       ⚠ これはユーザーの指示なので直さない。**数はデータ側の
+       「SUM ONLY 否定対照」が持つ**（問う40欄中、足し算が要るのは6欄）。 */
     const visibleText = (root) => {
       let out = "";
       const walk = (n) => {
@@ -6629,30 +6632,24 @@ async function runRedoxUITests(iframe) {
       return out.replace(/\s+/g, " ");
     };
     const seen = visibleText(doc.getElementById("timeline"));
-    /* 見張るのは**掛け算をした側**（×5 の還元剤）。ここが読めてしまうと写すだけになる。
-       ⚠ 酸化剤側は ×1 なので、①の素の式の係数（8 H⁺・4 H₂O）が答えと同じ数になる ——
-       これは伏せようがないし、伏せる意味もない（掛け算をしていないので作業が無い）。
-       この段が測っているのは「①に倍率をかけて足す」ことで、その仕事は ×5 の側にある */
-    for (const s of ["5 Fe²⁺", "5 Fe³⁺"]) {
-      assert(!seen.includes(s), `答えの係数「${s}」が画面に出ている（写せてしまう）: ` + seen.slice(0, 240));
-    }
-    // 手がかりは①の素の半反応式（倍率なし）と、②で自分が決めた ×5・×1 だけ
+    assert(seen.includes("5 Fe"), "上の行が見えていない（印にしたはずの行が消えている）");
+    // 手がかりは①の素の半反応式（倍率なし）と、②で自分が決めた ×5・×1 と、印の2行
     const half = (doc.getElementById("halfSheet").textContent || "").replace(/\s+/g, " ");
     assert(half.includes("O₄⁻") && half.includes("e⁻"), "①の半反応式が消えている: " + half);
-    // ⑤ 残りの数は言うが、答えの数は言わない（残りは**問う欄の数**＝5）
+    // ⑤ 残りの数は言うが、答えの数は言わない（残りは**問う欄の数**＝2）
     const msg = () => doc.getElementById("calcMsgText").textContent;
-    assert(msg().includes("あと 5 つ"), "残りの欄数を言わない: " + msg());
+    assert(msg().includes("あと 2 つ"), "残りの欄数を言わない: " + msg());
     // 灰色の数字が何なのかを、内部の語を使わずに言う
     const gnote = doc.getElementById("calcGivenNote");
-    assert(gnote && !gnote.hidden && gnote.textContent.includes("×1"),
+    assert(gnote && !gnote.hidden && gnote.textContent.includes("合計の行だけ"),
       "灰色の数字の説明が出ていない: " + (gnote ? gnote.textContent : "無し"));
     assert(!/slot|readOnly|given/.test(gnote.textContent), "内部の語が画面に出ている: " + gnote.textContent);
     // 全部書き切ると、その場で④⑤が下に現れる（答え合わせになる）
     for (const w of want) ccPut(w.id, w.n);
     assert(ccAll().length === 0, "書き切っても入力欄が残る");
     assert(!doc.getElementById("stepBottles").hidden, "書き切っても瓶の段が出ない");
-    const sumOx = (doc.getElementById("rowSumOx").textContent || "").replace(/\s+/g, " ");
-    assert(sumOx.includes("5 Fe"), "書き切った筆算に答えが入らない: " + sumOx);
+    const ionicTxt = (doc.getElementById("rowIonic").textContent || "").replace(/\s+/g, " ");
+    assert(ionicTxt.includes("5 Fe"), "書き切った合計行に答えが入らない: " + ionicTxt);
   });
 
   await t("REDOX: ③の筆算 - どの欄から埋めてもよい（順序を変えても同じところに着く）", async () => {
@@ -6660,16 +6657,20 @@ async function runRedoxUITests(iframe) {
     let want = setupCalc("rs1", 5, 1);
     for (const w of want) ccPut(w.id, w.n);
     assert(!doc.getElementById("stepBottles").hidden, "上から順に埋めて完成しない");
-    // ② 下から逆順に（合計行 → ×b の行 → ×a の行）
+    // ② 下から逆順に（合計行の右から左へ）
     want = setupCalc("rs1", 5, 1);
-    assert(ccAll().length === 5, "開き直しで欄が作り直されない: " + ccAll().length);
+    assert(ccAll().length === 2, "開き直しで欄が作り直されない: " + ccAll().length);
     assert(ccAll().every((i) => i.value === ""), "開き直しても前に書いた数が残っている");
     for (const w of [...want].reverse()) ccPut(w.id, w.n);
     assert(!doc.getElementById("stepBottles").hidden, "逆順に埋めると完成しない（順序を強いている）");
-    // ③ ばらばらの順（合計行の途中 → ×a の行 → 残り）でも同じところに着く
+    /* ③ 欄が3つ以上ある回（rs3・5:2 は問う欄が6つ）でも、ばらばらの順で同じところに着く。
+       ⚠ rs1 は問う欄が2つしか無いので、順序の検査には足りない */
+    want = setupCalc("rs3", 5, 2);
+    assert(want.length === 6, "rs3 の問う欄が6でない: " + want.length);
+    for (const k of [3, 0, 5, 2, 4, 1]) ccPut(want[k].id, want[k].n);
+    assert(ccAll().length === 0, "ばらばらの順で完成しない（入力欄が残っている）");
     want = setupCalc("rs1", 5, 1);
-    const order = [3, 0, 4, 2, 1];
-    for (const k of order) ccPut(want[k].id, want[k].n);
+    for (const k of [1, 0]) ccPut(want[k].id, want[k].n);
     assert(!doc.getElementById("stepBottles").hidden, "ばらばらの順で完成しない");
     // どの道でも着く先は同じ（筆算に同じ答えが入る）
     const ionic = (doc.getElementById("rowIonic").textContent || "").replace(/\s+/g, " ");
@@ -6677,11 +6678,12 @@ async function runRedoxUITests(iframe) {
   });
 
   await t("REDOX: ③の筆算 - 空欄のまま赤は出ない（「まだ入れていない」と「間違い」を分ける）", async () => {
-    const want = setupCalc("rs1", 5, 1);
+    // ⚠ 問う欄が6つある回（rs3）で見る。rs1 は2欄しか無く、途中の段階が作れない
+    const want = setupCalc("rs3", 5, 2);
     const msg = () => doc.getElementById("calcMsgText").textContent;
     // ① 何も入れていない ＝ 印はどこにも付かない（0 と読んでいない証拠）
     assert($$("#calcSheet .fcoefIn.ng").length === 0, "空欄のまま赤が出ている");
-    assert(msg().includes("あと 5 つ") && !msg().includes("違う"), "空欄を間違い扱いしている: " + msg());
+    assert(msg().includes("あと 6 つ") && !msg().includes("違う"), "空欄を間違い扱いしている: " + msg());
     // ② 1つだけ間違える ＝ その欄だけに印。残りの空欄には付かない
     ccPut(want[0].id, want[0].n + 1);
     assert(doc.getElementById(want[0].id).classList.contains("ng"), "間違えた欄に印が付かない");
@@ -6692,9 +6694,9 @@ async function runRedoxUITests(iframe) {
     // ③ 消すと「まだ入れていない」に戻る（0 として残らない）
     ccPut(want[0].id, "");
     assert(!doc.getElementById(want[0].id).classList.contains("ng"), "空欄に戻しても赤が残る");
-    assert(msg().includes("あと 5 つ"), "空欄に戻しても残り数が戻らない: " + msg());
+    assert(msg().includes("あと 6 つ"), "空欄に戻しても残り数が戻らない: " + msg());
     // ④ 途中まで正しく埋めても、まだ赤は出ない
-    for (const w of want.slice(0, 3)) ccPut(w.id, w.n);
+    for (const w of want.slice(0, 4)) ccPut(w.id, w.n);
     assert($$("#calcSheet .fcoefIn.ng").length === 0, "正しく途中まで埋めた状態で赤が出る");
     assert(msg().includes("あと 2 つ"), "残りの数が減らない: " + msg());
     assert(doc.getElementById("stepBottles").hidden, "途中で瓶の段が出た");
@@ -6716,12 +6718,12 @@ async function runRedoxUITests(iframe) {
       const bs = [...doc.querySelectorAll(".halfRow .stepper button")].filter((b) => b.textContent === "−");
       bs[0].click();
     }
-    assert(ccAll().length === 5, "倍率を戻しても入力欄が作り直されない: " + ccAll().length);
+    assert(ccAll().length === 2, "倍率を戻しても入力欄が作り直されない: " + ccAll().length);
     assert(ccAll().every((i) => i.value === ""), "倍率を戻したのに前の答えが残っている");
   });
 
-  /* 【①-B】v195 —— **問う欄が0の回は③を入力面にしない**（r1・r3 は倍率 1:1）。
-     全欄が「①を写すだけ」なので、開いても問うものが無い画面になる。 */
+  /* **問う欄が0の回は③を入力面にしない**（r1・r3 は倍率 1:1）。
+     合計行の項がぜんぶ①のまま降りてくるので、開いても問うものが無い画面になる。 */
   await t("REDOX: ③ - 倍率 1:1 の回（r3）は入力面にせず、そのまま④⑤へ進む", async () => {
     openB("r3");
     assert(state().mult.join() === "1,1", "r3 の倍率が 1:1 でない: " + state().mult.join());
@@ -6736,7 +6738,7 @@ async function runRedoxUITests(iframe) {
     assert(!doc.getElementById("stepBottles").hidden, "問う欄が0の回で瓶の段が出ない（行き止まり）");
     // ⚠ 対照: 掛け算がある回（rs1）では、同じ画面がちゃんと入力面になる
     setupCalc("rs1", 5, 1);
-    assert(ccAll().length === 5, "掛け算のある回で入力面にならない: " + ccAll().length);
+    assert(ccAll().length === 2, "掛け算のある回で入力面にならない: " + ccAll().length);
   });
 
   /* 【F】有機（発展）の区別が、画面の3か所に出ていること。
@@ -8501,7 +8503,8 @@ async function runOxNumUITests(iframe) {
     assert(doc.getElementById("splitChk").classList.contains("ngcell"), "通らないのに検算の行が緑");
     const colNg = colorOf();
     assert(colNg !== colNeutral, "検算の行に赤が**乗っていない**（印は付いても色が上書きされている）");
-    assert(doc.getElementById("step2").hidden, "通らないのに段2が開いている");
+    // ★ 段2の枠は出たままだが、値は伏せたまま（開いていない）
+    assert(state().step2Masked, "通らないのに段2が開いている");
     typeInto("splitIn0", 1); typeInto("splitIn1", 1); typeInto("splitIn2", -3);
     assert(state().splitOk, "Na⁺ ＋1・H⁺ ＋1・PO₄³⁻ −3 が通らない");
     assert(doc.getElementById("splitChk").classList.contains("okcell"), "正解でも検算の行が緑にならない");
