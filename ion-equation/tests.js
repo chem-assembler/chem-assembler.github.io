@@ -2699,6 +2699,49 @@ function runModelTests() {
     assert(oxTaskOf("K2Cr2O7").verdict.kind === "possible", "K₂Cr₂O₇ の見立てが possible でない");
   });
 
+  t("OXNUM: 塩は電離表に無くても分けさせる（分子・多原子イオンは分けない）", () => {
+    /* ★ ユーザー指摘（2026-08-28）: Na₂HPO₄ を分けさせていなかった。
+       「分ける手を先に体に入れておく」と画面で言いながら、式のまま問うていた。 */
+    const t33 = oxTaskOf("Na2HPO4");
+    assert(t33.needsSplit, "Na₂HPO₄ を分けさせていない");
+    assert(JSON.stringify(t33.parts.map((p) => p.sp + "×" + p.n)) ===
+      JSON.stringify(["Na+×2", "H+×1", "PO4^3-×1"]),
+      "Na₂HPO₄ の分け方が 2Na⁺ ＋ H⁺ ＋ PO₄³⁻ でない: " + JSON.stringify(t33.parts));
+    for (const sp of ["NaH2PO4", "NaHCO3", "NaHSO4", "BaSO4"]) {
+      assert(oxTaskOf(sp).needsSplit, sp + ": 塩なのに分けさせていない");
+    }
+    /* ⚠ **分けてはいけないもの。** それ自体が1個のイオン（多原子イオン）と、
+       イオンにならない分子。ここに1つでも混じったら、嘘の電離を教えることになる。 */
+    for (const sp of ["MnO4-", "SO4^2-", "NO3-", "Cr2O7^2-", "C2O4^2-", "HCOO-"]) {
+      assert(!oxTaskOf(sp).needsSplit, sp + ": 多原子イオンそのものを分けさせている");
+    }
+    for (const sp of ["CO2", "NH3", "NO", "NO2", "SO2", "CH4", "C2H6", "H2S", "CHI3"]) {
+      assert(!oxTaskOf(sp).needsSplit, sp + ": 分子を分けさせている");
+    }
+    /* 手で並べた一覧ではなく**性質**で見張る: 分けた断片はどれも電荷を持つ
+       （＝ CH₄ → C ＋ 4H のような「原子への分解」が紛れ込まない） */
+    for (const task of oxTaskList()) {
+      if (!task.needsSplit) continue;
+      for (const p of task.parts) {
+        assert(SPECIES[p.sp].charge !== 0,
+          task.sp + " → " + p.sp + ": 電荷を持たない断片に分けている（イオンではない）");
+      }
+    }
+  });
+
+  t("OXNUM: 電離表に無い塩を「本当に起きる電離」と言わない", () => {
+    /* ⚠ NaHCO₃ は水の中では Na⁺ ＋ HCO₃⁻ で、H⁺ までは外れない。BaSO₄ はそもそもとけない。
+       酸化数を数えるために外して見せているだけなので、そこで嘘をつくと
+       段3（仮の分け方）で断っている境目が消える。 */
+    const salt = checkOxSplit("NaHCO3", [1, 1, 1]);
+    assert(salt.ok, "NaHCO₃ の正しい分け方が通らない: " + salt.reason);
+    assert(!salt.reason.includes("本当に起きる電離"), "電離表に無い塩を実在の電離だと言っている: " + salt.reason);
+    assert(salt.reason.includes("とは限らない"), "断りが入っていない: " + salt.reason);
+    // 電離表にある回では、これまでどおり「本当に起きる電離」と言い切る
+    assert(checkOxSplit("K2Cr2O7", [2, 1]).reason.includes("本当に起きる電離"),
+      "実在の電離を言わなくなっている");
+  });
+
   t("OXNUM: 段1の採点は答えの個数を持たず、原子と電荷の保存で判定する", () => {
     assert(checkOxSplit("K2Cr2O7", [2, 1]).ok, "2K⁺ ＋ Cr₂O₇²⁻ が不正解になる");
     const ng = checkOxSplit("K2Cr2O7", [1, 1]);
