@@ -2328,17 +2328,40 @@
                 if (bad.length) warn('1行に収まっていない節: ' + bad.join(' / '));
                 return bad.length === 0;
             })(), uiOut);
-            ok('★★ 主流はインデントしない（⚠ 溶液の節と試薬は深さ0）', (function () {
+            ok('★★ 深さは主流の節が持つ（⚠ 溶液の節と試薬は深さ0）', (function () {
                 var main = [].slice.call(flow.querySelectorAll('.row.edge, .row.node.sol'));
                 return main.length === 13 && main.every(function (e) {
                     return e.getAttribute('data-d') === '0';
                 });
             })(), uiOut);
-            ok('★★ 脱出したもの（沈殿）が1段インデントする', (function () {
+            // ★★ インデント（2026-08-28・ユーザー「沈殿 や 加える試薬 は もっと頭下げてよい」）
+            //   ⚠ 左端に立つのは主流の節だけ。★ 試薬と、その試薬で出た沈殿は同じ段にそろう
+            var INDENT_MIN = 24;    // ⚠ 作り直す前は 20px（試薬にいたっては 0）
+            ok('★★ 左端に立つのは主流（溶液）の節だけ', (function () {
+                var sol = [].slice.call(flow.querySelectorAll('.row.node.sol'));
+                return sol.length === 6 && sol.every(function (e) {
+                    return e.getAttribute('data-i') === '0' &&
+                        parseFloat(w.getComputedStyle(e).marginLeft) === 0;
+                });
+            })(), uiOut);
+            ok('★★ 加える試薬も1段下がる（⚠ 主流と同じ位置に立たない。実測 ' + (function () {
+                var e = flow.querySelector('.row.edge');
+                return Math.round(parseFloat(w.getComputedStyle(e).marginLeft));
+            })() + 'px ≧ ' + INDENT_MIN + '）', (function () {
+                var eg = [].slice.call(flow.querySelectorAll('.row.edge'));
+                return eg.length === 7 && eg.every(function (e) {
+                    return e.getAttribute('data-i') === '1' &&
+                        parseFloat(w.getComputedStyle(e).marginLeft) >= INDENT_MIN;
+                });
+            })(), uiOut);
+            ok('★★ 脱出したもの（沈殿）も1段下がる（★ 試薬とそろう）', (function () {
                 var esc = [].slice.call(flow.querySelectorAll('.row.node.ppt'));
-                return esc.length === 5 && esc.every(function (e) {
-                    return e.getAttribute('data-d') === '1' &&
-                        parseFloat(w.getComputedStyle(e).marginLeft) >= 16;
+                var eg = flow.querySelector('.row.edge');
+                if (esc.length !== 5) return false;
+                var want = parseFloat(w.getComputedStyle(eg).marginLeft);
+                return esc.every(function (e) {
+                    return e.getAttribute('data-d') === '1' && e.getAttribute('data-i') === '1' &&
+                        parseFloat(w.getComputedStyle(e).marginLeft) === want && want >= INDENT_MIN;
                 });
             })(), uiOut);
             ok('⚠ 深さを列で表していない（★ インデントだけ。375px で列が足りなくならない）',
@@ -2396,7 +2419,7 @@
                 });
                 return bad.length === 0;
             })(), uiOut);
-                        // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
+            // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
             ok('★★ 沈殿の枠は ▢（角ばった四角）', (function () {
                 var bad = [];
                 [].slice.call(flow.querySelectorAll('.row.node.ppt')).forEach(function (e) {
