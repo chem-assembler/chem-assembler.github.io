@@ -120,7 +120,7 @@ function stepEls(i) {
   return {
     sec,
     head: sec.querySelector(".hbHead"),
-    now: sec.querySelector(".hbNowTag"),
+    now: sec.querySelector(".stepNowTag"),
     extra: sec.querySelector(".hbExtra"),
     msg: sec.querySelector(".hbMsg"),
   };
@@ -188,7 +188,7 @@ function refresh() {
     const e = stepEls(i);
     const ahead = i > at;                 // まだ来ていない段（うすいまま置いておく）
     e.sec.classList.toggle("oxLocked", ahead);
-    e.sec.classList.toggle("hbNow", !done && i === at);
+    e.sec.classList.toggle("stepNow", !done && i === at);
     e.head.textContent = st.head;
     e.now.hidden = done || i !== at;      // ★「いま入れるところ」の印
     /* ⚠ **採点の文だけは、まだ来ていない段では出さない。** 全22出題×2手順を叩いて決めた:

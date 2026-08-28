@@ -8435,25 +8435,49 @@ async function runOxNumUITests(iframe) {
     return e;
   };
 
-  await t("OXNUM UI: 分けないと段2が出てこない（イオンに分けるのを飛ばせない）", async () => {
+  await t("OXNUM UI: ★段2の枠は最初から出す／⚠ 段1の答えになる値だけ伏せる", async () => {
     win.OxNum.goto("K2Cr2O7");
-    assert(doc.getElementById("step2").hidden, "分ける前から段2が出ている");
-    assert(!$$("#oxSheet .oxIn").length, "分ける前から酸化数の欄がある");
-    /* ⚠ 足止めするなら、何が待っているかは見せる（行き先の分からない足止めにしない）。
-       ただし予告の側に入力欄があってはいけない ＝ 入り口は1つだけ */
-    assert(!doc.getElementById("step2Locked").hidden, "段2の予告が出ていない");
-    assert(!$$("#step2Locked input").length, "予告の側に入力欄がある");
+    /* ★ 2026-08-28・ユーザーの指示「枠は固定で出しておき、入力する手順でハイライト」。
+       段2の箱・元素の行・入力欄は最初から見えている（隠して足止めしない）。 */
+    assert(!doc.getElementById("step2").hidden, "段2の枠が出ていない");
+    assert($$("#oxSheet .oxPart").length === 2, "段2の箱が2つ出ていない");
+    assert($$("#oxSheet .oxIn").length === 1, "段2の入力欄（Cr）が出ていない");
+    assert(state().step2Masked, "段2が伏せられていない");
+    // ⚠ 押せない（めざす合計が決まっていないので、採点しようがない）
+    assert($$("#oxSheet .oxIn").every((e) => e.disabled), "分ける前から段2の欄が押せる");
+    // いま入れるところは段1（ハイライトと印は1つだけ）
+    assert(doc.getElementById("step1").classList.contains("stepNow") &&
+      doc.getElementById("step2").classList.contains("oxLocked"), "ハイライトが段1に無い");
+    assert($$(".stepNowTag:not([hidden])").length === 1, "「いま入れるところ」の印が1つでない");
+    /* ⚠⚠ **ここが答えの漏れの検査。** 段2の値は段1の答えそのもの（K⁺ の +1・Cr₂O₇²⁻ の −2）。
+       伏せているあいだ、段2のどこにも電荷が出ていないこと。 */
+    const sheet = () => doc.getElementById("oxSheet").textContent;
+    assert(!/[⁺⁻]/.test(sheet()), "伏せているのに段2に電荷が書いてある（段1の答えが写せる）: " + sheet());
+    assert(!sheet().includes("このイオンの電荷"), "「めざす合計 ＝ そのイオンの電荷」が出ている");
+    assert(!/\+1/.test(sheet()), "単原子イオンの灰色（＝段1の答え）が出ている: " + sheet());
+    // ⚠ 規則から来る灰色（O は −2）は段1と無関係なので、伏せずに出す
+    assert(sheet().includes("−2 × 7 個") || sheet().includes("−2× 7 個") ||
+      $$("#oxSheet .oxGiven").some((g) => g.textContent === "−2"),
+      "規則で決まる O の −2 まで伏せている（伏せすぎ）");
+
     typeInto("splitIn0", 1);   // ★否定対照: Cr₂O₇²⁻ の電荷を +1 にする
     typeInto("splitIn1", 1);
     assert(!state().splitOk, "電荷違いを通した");
-    assert(doc.getElementById("step2").hidden, "間違った分け方でも段2が出ている");
+    assert(state().step2Masked, "間違った分け方でも段2が開いている");
     assert(doc.getElementById("splitMsg").textContent.includes("合計"),
       "合計がいくつになっているか言っていない: " + doc.getElementById("splitMsg").textContent);
     typeInto("splitIn1", -2);
-    assert(state().splitOk && !doc.getElementById("step2").hidden, "正しく分けても段2が出ない");
-    assert(doc.getElementById("step2Locked").hidden, "開いたあとも予告が残っている（段が2つに見える）");
+    assert(state().splitOk && !state().step2Masked, "正しく分けても段2が開かない");
+    // ★ 開いたら値が入り、ハイライトが段2へ移る
+    assert(/[⁺⁻]/.test(sheet()) && sheet().includes("このイオンの電荷"), "開いても値が入らない");
+    assert($$("#oxSheet .oxIn").every((e) => !e.disabled), "開いても段2の欄が押せない");
+    assert(doc.getElementById("step2").classList.contains("stepNow") &&
+      !doc.getElementById("step1").classList.contains("stepNow"), "ハイライトが段2へ移らない");
     assert(doc.getElementById("splitMsg").textContent.includes("本当に起きる電離"),
       "段1が実在の電離だと言っていない");
+    // ★ 否定対照: 段1を空欄に戻すと、また伏せる（開けっぱなしにならない）
+    win.OxNum.setSplit(1, null);
+    assert(state().step2Masked && !/[⁺⁻]/.test(sheet()), "段1を消しても段2が開いたまま");
   });
 
   await t("OXNUM UI: 段1で問うのは電荷（個数は印・式に電荷を書かない・数合わせでは通らない）", async () => {
@@ -8693,13 +8717,13 @@ async function runHalfBuildUITests(iframe) {
     assert(doc.getElementById("hbSlot_w_left").classList.contains("hbSlotNow") &&
       !doc.getElementById("hbSlot_h_left").classList.contains("hbSlotNow"),
       "1段目なのに H₂O の欄がハイライトされていない");
-    assert(doc.getElementById("hbStep0").classList.contains("hbNow"), "1段目がハイライトされていない");
+    assert(doc.getElementById("hbStep0").classList.contains("stepNow"), "1段目がハイライトされていない");
     assert(doc.getElementById("hbStep1").classList.contains("oxLocked"), "2段目が開いたままになっている");
     // ⚠ 伏せるのは**採点の文だけ**（先の段の緑は嘘になる。データ側のテストで実数を固定）
     assert(doc.querySelector("#hbStep1 .hbMsg").hidden && doc.querySelector("#hbStep2 .hbMsg").hidden,
       "まだ来ていない段の採点の文が出ている");
     // 「いま入れるところ」の印は1つだけ
-    assert($$(".hbNowTag:not([hidden])").length === 1, "「いま入れるところ」の印が1つでない");
+    assert($$(".stepNowTag:not([hidden])").length === 1, "「いま入れるところ」の印が1つでない");
     typeInto("H2O", "right", 4);
     assert(state().at === 1 && doc.getElementById("hbSlot_h_left").classList.contains("hbSlotNow"),
       "O を合わせてもハイライトが2段目へ移らない");

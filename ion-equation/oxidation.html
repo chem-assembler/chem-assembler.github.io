@@ -47,23 +47,18 @@
   <div id="stageTitle"></div>
   <div id="timeline">
     <section class="step" id="step1">
-      <div class="stepHead"><span class="stepNo">1</span>イオンに分ける</div>
+      <div class="stepHead"><span class="stepNo">1</span>イオンに分ける<span class="oxRole stepNowTag" id="step1Now" hidden>いま入れるところ</span></div>
       <div class="sheetScroll"><div id="splitSheet"></div></div>
       <div id="splitMsg"></div>
       <div id="whySplit" class="footNote"></div>
     </section>
 
-    <!-- ★ 段1を片づけるまで段2は開かない。ただし「次に何をするのか」は先に見せる
-         —— 何が待っているか分からないまま足止めされると、ただの意地悪になる -->
-    <section class="step oxLocked" id="step2Locked">
-      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める<span class="oxRole">まだ開かない</span></div>
-      <div class="footNote">イオンに分けてから開きます。<strong>分けたあとは、イオン1個ずつが別々の問題になる</strong>——
-        規則で決まるところ（単体は 0、単原子イオンは電荷そのもの、化合物の中の O は −2・H は +1）を先に埋め、
-        残った1つを「合計＝そのイオンの電荷」から出します。</div>
-    </section>
-
+    <!-- ★ 段2の枠も最初から出す（2026-08-28・ユーザーの指示）。
+         ⚠ ただし**段2の値は段1の答えそのもの**（箱の見出しの電荷・単原子イオンの灰色の数・
+            「めざす合計 ＝ そのイオンの電荷」）なので、段1が片づくまでそこだけ ？ で伏せる。
+            oxidation.js の buildOxSheet(masked) を見よ -->
     <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める</div>
+      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める<span class="oxRole stepNowTag" id="step2Now" hidden>いま入れるところ</span></div>
       <div id="oxSheet"></div>
       <div id="oxMsg"></div>
       <div id="oxGivenNote" class="footNote"></div>

@@ -1883,11 +1883,15 @@ main.timelineMain {
   font-size: 12.5px; line-height: 1.7; color: #8a4a1f;
   background: #fdf3ea; border: 1px solid #e6c9a8; border-radius: 8px; padding: 8px 11px;
 }
-/* 段1を片づけるまで出しておく「まだ開かない段2」。⚠ 押せる見た目にしない
-   —— 行き先の予告であって、入り口ではない（入り口が2つあるように見えると徹底が崩れる） */
+/* まだ来ていない段。★ **枠は出したまま**うすくする（隠して足止めしない）。
+   ⚠ 押せる見た目にはしない —— 中の値は伏せてあり、書きようがない */
 .step.oxLocked { background: #f6f8fa; border-style: dashed; }
 .step.oxLocked .stepNo { background: #b6c4d2; }
 .step.oxLocked[hidden] { display: none; }
+.step.oxLocked .oxIn:disabled { background: #f0f3f6; color: #b6c4d2; }
+/* ★ いま入れるところ（練習X・練習Y で共通）。段そのものを青で示す */
+.step.stepNow { border-color: #3b82c4; background: #f6fafd; }
+.step.stepNow .stepNo { background: #3b82c4; }
 /* 段1の式は**折り返す1行**（筆算のグリッドではない）。→ をそろえる相手がいないので、
    狭い画面でははみ出すより折り返すほうがよい（実機で右辺の2つめが画面外に出ていた） */
 /* ⚠ 上の余白 10px は「電荷の欄を半行ぶん持ち上げたぶん」の受け皿（2px ＋ 0.5em）。
@@ -1916,8 +1920,6 @@ main.timelineMain {
    （2026-08-28・ユーザーの指示）。隠して足止めすると、これから何を入れるのかが見えない。
    ⚠ 枠に出ているのは種の名前だけ（数も辺も無い）ので、見せても答えは漏れない。 */
 .hbSlot.hbSlotNow .fcoefIn { border-color: #3b82c4; background: #f4f9fd; box-shadow: 0 0 0 2px #dbeaf6; }
-.step.hbNow { border-color: #3b82c4; background: #f6fafd; }
-.step.hbNow .stepNo { background: #3b82c4; }
 /* 完成したら枠の色だけ変える（式そのものは組み直さない ＝ 直したくなったら直せる） */
 .hbLine.hbDone .fcoefIn { border-color: #8fc4a5; background: #f2faf5; }
 /* 手順を選ぶ2つ。⚠ 帯（.strip）ではない —— 横に流れず、いつも両方見えていること自体が
