@@ -7055,10 +7055,21 @@ class Reactor {
             const a = snap.atoms.find(x => x.id === b.atomId1), c = snap.atoms.find(x => x.id === b.atomId2);
             return a && c ? { x1: a.x, y1: a.y, x2: c.x, y2: c.y } : null;
         };
+        /* ★ **次数も一緒に返す**（v1477・ユーザー実機報告「二重結合のうち一本が切れて、
+         *   新たな結合が生じる様子をわかりやすくしたい」）。
+         *   `from`/`to` があると、`renderCompareFigure` が
+         *     2 → 1（**線1本ぶんだけ**切れた）と 1 → 0（結合ごと切れた）を描き分けられる。
+         *   ⚠ 差分の求め方そのものは1行も変えていない（返す情報が増えただけ）。 */
         const lostBonds = [];   // 消えた・次数が下がった結合 → 反応前の図
-        beforeB.forEach((b, k) => { if (b.type > typeAt(afterB, k)) { const s = seg(before, b); if (s) lostBonds.push(s); } });
+        beforeB.forEach((b, k) => {
+            const to = typeAt(afterB, k);
+            if (b.type > to) { const s = seg(before, b); if (s) lostBonds.push({ ...s, from: b.type, to }); }
+        });
         const gainedBonds = []; // 生成した・次数が上がった結合 → 反応後の図
-        afterB.forEach((b, k) => { if (b.type > typeAt(beforeB, k)) { const s = seg(after, b); if (s) gainedBonds.push(s); } });
+        afterB.forEach((b, k) => {
+            const from = typeAt(beforeB, k);
+            if (b.type > from) { const s = seg(after, b); if (s) gainedBonds.push({ ...s, from, to: b.type }); }
+        });
         return { removedAtoms, addedAtoms, lostBonds, gainedBonds };
     }
 
@@ -7176,11 +7187,26 @@ class Reactor {
         ov.appendChild(grid);
 
         // 凡例
+        /* 凡例（v1477・ユーザー実機報告「レジェンドの『オレンジ』や『シアン』は色なので、
+         * 文字で説明する必要がない」）。
+         * ★ **色の見本は残し、色の名前だけ落とす** ＝ 見本を見れば分かることを字で言わない。
+         * ★ かわりに、字でしか言えないこと（**線1本ぶんの印**の意味）を1行足す。 */
         const legend = document.createElement('div');
+        legend.id = 'rx-cmp-legend';
         legend.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.7; margin-bottom:10px;';
-        legend.innerHTML = '<span style="color:var(--neon-orange);">● オレンジ</span>＝切れた結合・脱離した原子（反応前）　' +
-            '<span style="color:var(--neon-blue);">● シアン</span>＝できた結合、' +
-            '<span style="color:var(--neon-green);">● 緑</span>＝付加した原子（反応後）';
+        const swatch = (color, text) =>
+            `<span class="rx-legend-item"><span class="rx-legend-swatch" aria-hidden="true" ` +
+            `style="display:inline-block; width:22px; height:5px; border-radius:3px; ` +
+            `vertical-align:middle; margin-right:4px; background:${color};"></span>${text}</span>`;
+        legend.innerHTML =
+            swatch('var(--neon-orange)', '切れた結合・脱離した原子（反応前）') + '　' +
+            swatch('var(--neon-blue)', 'できた結合') + '　' +
+            swatch('var(--neon-green)', '付加した原子（反応後）') +
+            '<br><span class="rx-legend-half">二重結合の**片方の線だけ**に印が付いているときは、' +
+            'その**1本ぶん**が切れた（できた）という意味です。</span>';
+        // `**…**` は太字にして出す（v1467・game.js の `setEmphasisText` と同じ見た目にそろえる）
+        const halfEl = legend.querySelector('.rx-legend-half');
+        if (halfEl && typeof setEmphasisText === 'function') setEmphasisText(halfEl, halfEl.textContent);
         ov.appendChild(legend);
 
         // 機構が登録されている反応なら「機構を見る（代表例）」の注記と案内を添える
@@ -7214,22 +7240,64 @@ class Reactor {
 
     // 1図を描き、その上に差分ハイライト（原子の枠・結合の強調）を重ねる。
     // viewBox 座標＝スナップショット座標なので、marks の x/y をそのまま使える
+    /* ===== 差分の印の描き方（v1477・ユーザー実機報告 2026-08-28） =====
+     *
+     * **ユーザーの言葉**:
+     * > **イソプレンの付加重合 二重結合のうち一本が切れて、新たな結合が生じる様子を
+     * >   わかりやすくしたい**
+     * > **反応の前後を見比べる、で、オレンジのマーカーが太く、裏が二重結合になっている
+     * >   ところがわかりづらい**
+     *
+     * ★ **測ったこと**（:9137・イソプレン3個の 1,4-付加重合の前後比較）:
+     *   二重結合 … 平行な2本・線幅 **2.2px**・間隔 **5px** ＝ 横幅 **7.2px**
+     *   印 …………… 線幅 **7px**・不透明度 **0.9**・**いちばん最後に append** ＝ 結合線の**上**
+     *   ＝ **二重結合の横幅の 97% を、9割の濃さで塗りつぶしていた**（だから裏が読めない）。
+     *
+     * ★ **どう直したか（案を2つ測って選んだ）**:
+     *   **案A（採った）** … ① 印を結合線の**下**に敷く（蛍光ペン）＋
+     *     ② 次数が下がっただけの結合（2→1）は**消える1本の位置**（垂直 ±2.5px の片側）に細く引く
+     *     ＝「二重結合のうち一本が切れる」がそのまま図になる。手数 **約25行**。
+     *     レイアウト・図の大きさ・台本には1つも触らない。
+     *   **案B（採らなかった）** … 段を分けて3コマ（反応前 → 切れた瞬間 → 反応後）にする。
+     *     ⚠ 中間の実体が `lastReaction` に無いので**保存から作る**必要があり、
+     *       2列 → 3列でコマ幅が **213px → 約 140px**（実測 445px の枠から算出）。
+     *       ★ **「見やすくする」ための変更で図が小さくなる**ので採らなかった。手数 80行以上。
+     *
+     * ⚠ **色そのものは変えていない**（オレンジ＝切れた／シアン＝できた／緑＝付加した原子）。
+     *   変えたのは**重ね順・太さ・濃さ**と、**1本ぶんかどうかの描き分け**だけ。 */
     renderCompareFigure(svgId, snapshot, marks) {
         renderMoleculeIntoSvg(this.game, svgId, this.snapshotToTarget(snapshot));
         const svg = document.getElementById(svgId);
         if (!svg) return;
         const NS = 'http://www.w3.org/2000/svg';
         const hi = document.createElementNS(NS, 'g');
+        hi.setAttribute('class', 'rx-diff-layer');
         (marks.bonds || []).forEach(bm => {
+            /* ★ 「二重結合の1本ぶんだけ」か「結合まるごと」かで引き方を変える。
+             * `to > 0` ＝ 結合は残る（次数だけ 2 → 1）＝ **消える／できる線は1本**なので、
+             * `renderTargetBond` が2本を置く位置（垂直 ±2.5px）の**片側**に細く引く。
+             * ⚠ 2.5 は `renderTargetBond` の二重結合の実体（`nx = -uy * 2.5`）と同じ値。
+             *   ここを勝手な数にすると、印が線の上に乗らずに横へずれる。 */
+            /* ⚠ 「1本ぶん」＝ **前も後も結合はある**（次数だけ変わった）とき。
+             *   どちらか片方が 0 なら結合そのものが消えた／生えたので、まるごとの印にする
+             *   （`to > 0` だけで見ると、新しくできた単結合 0→1 まで「1本ぶん」に化ける・実測） */
+            const half = bm.from > 0 && bm.to > 0;
+            const dx = bm.x2 - bm.x1, dy = bm.y2 - bm.y1;
+            const len = Math.hypot(dx, dy) || 1;
+            const ox = half ? (-dy / len) * 2.5 : 0;
+            const oy = half ? (dx / len) * 2.5 : 0;
+            // ⚠ 端は結合線と同じだけ縮める（`renderTargetBond` の offsetStart/End ＝ 10px）。
+            //   縮めないと印が原子の中心まで伸び、線1本の印が原子の丸から食み出す
+            const tx = (dx / len) * 10, ty = (dy / len) * 10;
             const line = document.createElementNS(NS, 'line');
-            line.setAttribute('x1', bm.x1); line.setAttribute('y1', bm.y1);
-            line.setAttribute('x2', bm.x2); line.setAttribute('y2', bm.y2);
+            line.setAttribute('x1', bm.x1 + ox + tx); line.setAttribute('y1', bm.y1 + oy + ty);
+            line.setAttribute('x2', bm.x2 + ox - tx); line.setAttribute('y2', bm.y2 + oy - ty);
             line.setAttribute('stroke', bm.color);
-            line.setAttribute('stroke-width', '7');
+            // 線の下に敷くので、細く・濃く。まるごとの印は蛍光ペンの幅（結合線がその上に乗る）
+            line.setAttribute('stroke-width', half ? '5' : '9');
             line.setAttribute('stroke-linecap', 'round');
-            line.setAttribute('opacity', bm.dashed ? '0.9' : '0.5');
-            if (bm.dashed) line.setAttribute('stroke-dasharray', '3 8');
-            line.setAttribute('class', 'rx-diff-mark');
+            line.setAttribute('opacity', half ? '0.95' : '0.45');
+            line.setAttribute('class', 'rx-diff-mark' + (half ? ' rx-diff-half' : ''));
             hi.appendChild(line);
         });
         (marks.atoms || []).forEach(am => {
@@ -7242,7 +7310,10 @@ class Reactor {
             c.setAttribute('class', 'rx-diff-mark');
             hi.appendChild(c);
         });
-        svg.appendChild(hi);
+        /* ★★ **結合線より下に敷く**（v1477）。ここが `svg.appendChild(hi)` だったので、
+         *   7px の印が 7.2px の二重結合をまるごと覆っていた。
+         *   ⚠ 原子の丸（`.quiz-atoms`）よりも下 ＝ 原子名も印に隠れない。 */
+        svg.insertBefore(hi, svg.firstChild);
     }
 }
 
