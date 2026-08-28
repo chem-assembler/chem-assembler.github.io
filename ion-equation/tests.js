@@ -2749,7 +2749,10 @@ function runModelTests() {
     assert(checkOxSplit("Na2HPO4", [1, 1, -3]).ok, "Na₂HPO₄ の電荷が不正解になる");
     // 合計（電気的中性）が合わないときは、そう言う
     const ng = checkOxSplit("K2Cr2O7", [1, -1]);
-    assert(!ng.ok && ng.kind === "wrong" && ng.reason.includes("合計"), "合計違いを通した: " + ng.reason);
+    // ⚠ **いま合計がいくつになっているか**を言う（(+1)×2 ＋ (−1)×1 ＝ +1）。
+    //    ここを「合計が違う」だけにすると、何を直せばよいか読めない
+    assert(!ng.ok && ng.kind === "wrong" && ng.reason.includes("合計が +1"),
+      "合計違いのときに、いまの合計を言っていない: " + ng.reason);
     // ★ 採点の芯が電荷であることの否定対照 —— **合計だけ合わせても通らない**
     const cancel = checkOxSplit("K2Cr2O7", [2, -4]);
     assert(!cancel.ok && cancel.kind === "wrong", "打ち消し合うだけの電荷を通した");
