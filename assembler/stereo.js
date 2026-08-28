@@ -100,6 +100,59 @@ const STEREO3D_AXIS_FACING = {
     left: [-1, 0, 0]
 };
 
+/* ===== ⊕ 重ねてみる（鏡像だけを回して、本当に重なるかを手で試す）=====
+ *
+ * > ユーザー（2026-08-28）「**鏡像異性体をオリジナルに重ねられるか試せるようにしたい。
+ * >   現状2つの図が同時に動くので、一方のみを動かして他方と重なるかを試せない**」
+ *
+ * ★ ここがこの教材の芯 ——「重ね合わせられないから別の物質だ」を、**文で言うのではなく
+ *   手で確かめさせる**。従来の2モードはどちらも**左右が連動する**（`render3D` を参照）:
+ *     'symmetric' … 右 = 左の最終ベクトルの x 反転。定義からして常に連動する
+ *     'align'     … 右も左と**同じ** `spinAround(…, ax, this.axisAngle)` と `this.rotate()` を通る
+ *   ＝ どちらのモードでも「片方だけを動かす」ことが原理的にできなかった。
+ *
+ * ★ 3つ目のモード 'free' は、鏡像の向きを **`_fitDirs`（分子空間の4方向）として別に持つ**。
+ *   カメラ（`this.rotate`）は左右で共通のまま ＝ **見る向きを変えても重なり具合は変わらない**
+ *   （＝ 判定がカメラに依存しない。SF3 がこれを見張る）。右ペインのドラッグだけが `_fitDirs` を回す。
+ *
+ * ★★ **重なりの判定基準**（ここを曖昧にすると「確かめた」ことにならない）:
+ *   対応する結合どうしの角度のうち、**いちばん大きいもの**（max）を「ずれ」とする。
+ *   対応づけは **置換基の中身（`code`）が同じもの同士**で、同じ中身が複数あるときは
+ *   入れ替えを許す（4! = 24 通りの総当たり）。⚠ 添字どうしで固定して比べると、
+ *   2-プロパノールのように CH₃ が2つある中心で**永久に重ならない**＝判定が壊れる。
+ *
+ * ★ **閾値 12° の決め方**（実測。推測ではない）:
+ *   ・不斉炭素（4つとも違う）では、どう回してもずれは **70.5288°** より小さくならない。
+ *     どの i でも m_i・v_i = −1/3+1/3+1/3 = 1/3（＝ 70.5288°）で**4本とも等しく**ずれており、
+ *     12³ のグリッド探索＋2万回の局所改良でもこれを下回る向きは出なかった（tools 外の実測）。
+ *   ・同じ置換基が2つ以上ある中心では **0°**（厳密に重なる向きが存在する。下の `bestFitDirs` の証明）。
+ *   ＝ 「重なる／重ならない」は 0° と 70.53° に完全に割れていて、その間に実例が無い。
+ *   そのうえで 12° を採ったのは**指で届くかどうか**の実測から:
+ *     ・ドラッグの効きは 1/STEREO3D_BOND rad ＝ **0.73°/px** なので、12° は指 16px ぶんの遊び
+ *       （スマホで1回のドラッグで入れられる。5° だと 7px 以内を狙うことになり入らない）
+ *     ・12° は結合長 78px に対して弦 **16.3px** ＝ 置換基ラベルの楕円の縦半径 15px とほぼ同じ
+ *       ＝「もう重なって見える」ぎりぎり手前
+ *     ・不斉ありの最小 70.53° に対して **5.9倍**の余裕（＝ 取り違えようがない）
+ *   ⚠ **12° は「重なったと言い張る許容」ではなく、掴まえる網の大きさ**。網に入ったら
+ *     `snapFit()` が**厳密な重なりの向きへ置き直す**ので、画面に出る数字は 0.0° になる。
+ */
+const STEREO_FIT_SNAP_DEG = 12;
+/** 4つのスロットの並べ替え 24 通り（`odd` は奇置換か＝鏡像と厳密に重ねられる対応か） */
+const STEREO_FIT_PERMS = (() => {
+    const inversions = (p) => {
+        let n = 0;
+        for (let i = 0; i < p.length; i++) for (let j = i + 1; j < p.length; j++) if (p[i] > p[j]) n++;
+        return n;
+    };
+    const out = [];
+    const go = (cur, rest) => {
+        if (!rest.length) { out.push({ p: cur.slice(), odd: inversions(cur) % 2 === 1 }); return; }
+        rest.forEach((r, i) => go(cur.concat(r), rest.filter((_, j) => j !== i)));
+    };
+    go([], [0, 1, 2, 3]);
+    return out;
+})();
+
 // フィッシャー投影の各スロットが指す3D方向（縦=紙面の奥・横=紙面の手前。SVG座標系で z+ が手前）。
 // この4本は同一平面に乗らないので、スロット割り当てだけで手性（パリティ）が決まる。
 // くさび図の並べ替えが「パリティを保つ操作」であることの根拠であり、テストの機械検証にも使う（P12-8）。
@@ -239,6 +292,9 @@ class StereoView {
         this.rsWhyEl = document.getElementById('stereo-rs-why');
         // 「なぜ判定しないのか」の畳んだ続き（本文は index.html 据え置き。ここは出し入れだけ）
         this.rsWhyMoreEl = document.getElementById('stereo-rs-why-more');
+        // 「不斉炭素ではないから R・S が無い」の理由の畳んだ先（v1477。本文は index.html 据え置き）
+        this.rsWhyNonasymEl = document.getElementById('stereo-rs-why-nonasym');
+        this.mirrorHowEl = document.getElementById('stereo-mirror-how');
         this.rsFaceHBtn = document.getElementById('btn-stereo-rs-face-h');
         if (this.rsFaceHBtn) this.rsFaceHBtn.addEventListener('click', () => this.faceHydrogenAway());
         this.wedgeMirror = false;    // くさび図を鏡像と並べているか
@@ -299,10 +355,20 @@ class StereoView {
         //   'symmetric' … 本当の鏡像配置のまま（「鏡に映すとこうなる」）
         //   'align'     … 鏡像側の回転軸をオリジナルと同じ画面上の向きに合わせる
         //                 （軸を揃えても残り3つが重ならない＝非重ね合わせが直接見える）
+        //   'free'      … ★ 鏡像だけをドラッグで回して「重なるか」を試す（上の帯のコメントが正）
         this.mirrorLayout = 'symmetric';
         this.mirrorLayoutRow = document.getElementById('stereo-mirror-layout-row');
         this.mirrorLayoutBtnSym = document.getElementById('btn-stereo-mirror-layout-symmetric');
         this.mirrorLayoutBtnAlign = document.getElementById('btn-stereo-mirror-layout-align');
+        this.mirrorLayoutBtnFree = document.getElementById('btn-stereo-mirror-layout-free');
+        // ★ 「⊕ 重ねてみる」の状態。_fitDirs は**鏡像側だけの向き**（分子空間の単位ベクトル4本）
+        this._fitDirs = null;    // null = このモードに入っていない
+        this._fitBest = null;    // その中心でいちばん近づけたずれ（度）
+        this._fitAtBest = false; // 「⊙ いちばん近い向きへ」で置いた直後か
+        this.fitRow = document.getElementById('stereo-fit-row');
+        this.fitResultEl = document.getElementById('stereo-fit-result');
+        this.fitBestBtn = document.getElementById('btn-stereo-fit-best');
+        this.fitResetBtn = document.getElementById('btn-stereo-fit-reset');
         this.angleX = 0;       // X軸まわり（上下の傾き）
         this.angleY = 0;       // Y軸まわり（左右の回転）
         this.axisIndex = null; // 回転軸に選んだ結合（_dirs の添字。null = 画面基準）
@@ -375,6 +441,17 @@ class StereoView {
         if (this.wedgeLayoutBtnAlign) this.wedgeLayoutBtnAlign.addEventListener('click', () => this.setWedgeMirrorLayout('align'));
         if (this.mirrorLayoutBtnSym) this.mirrorLayoutBtnSym.addEventListener('click', () => this.setMirrorLayout('symmetric'));
         if (this.mirrorLayoutBtnAlign) this.mirrorLayoutBtnAlign.addEventListener('click', () => this.setMirrorLayout('align'));
+        if (this.mirrorLayoutBtnFree) this.mirrorLayoutBtnFree.addEventListener('click', () => this.setMirrorLayout('free'));
+        if (this.fitBestBtn) this.fitBestBtn.addEventListener('click', () => this.goToBestFit());
+        if (this.fitResetBtn) this.fitResetBtn.addEventListener('click', () => { this.resetFitDirs(); this.render3D(); });
+        // ★ 「不斉炭素ではないから R・S が無い」の理由を、文で読ませずに**その場で確かめさせる**
+        //    （畳んだ説明の中に置いてある。1-B の「ジャンプ」の実装）
+        const rsTryFit = document.getElementById('btn-stereo-rs-try-fit');
+        if (rsTryFit) rsTryFit.addEventListener('click', () => {
+            this.setMode('3d');
+            this.setMirror(true);
+            this.setMirrorLayout('free');
+        });
         this.svg.addEventListener('click', (e) => this.handleWedgeClick(e));
         document.getElementById('btn-stereo-reset').addEventListener('click', () => this.resetAngles());
         this.svg3d.addEventListener('dblclick', () => this.resetAngles());
@@ -470,7 +547,11 @@ class StereoView {
         if (this.pickBtn) this.pickBtn.disabled = true;
         this.updateRsTipsButton(); // 中心が無いので「H を奥に」は使えない
         this.updateRsReadout();    // 中心が無いので R・S の欄ごと隠す
-        if (this.captionEl) this.captionEl.textContent = why;
+        // ⚠ 畳んだ側も必ず埋める（空にできる経路を作らない。setCaption のコメントが理由）
+        this.setCaption(why,
+            'くさび図と「🧊 3Dで回す」は、1つの sp3炭素のまわりを見る図です。' +
+            '二重結合・三重結合・芳香環の炭素は平面なので、正四面体の立体配置そのものが決まりません。' +
+            'この分子は「🧊 分子全体」で見てください。');
         this.modal.classList.remove('hidden');
         this.setMode('mol');
     }
@@ -590,10 +671,15 @@ class StereoView {
         //    （ux-density §2 番外）。本文は index.html に据え置きの静的テキストで、
         //    ここでは**出す・出さないを切り替えるだけ** ＝ 中身が消えた状態が存在しない
         //    ＝ 「畳んだふりをして消す」ができない形。理由の1行目（22字）は上に出したまま
-        if (this.rsWhyMoreEl) {
-            this.rsWhyMoreEl.classList.toggle('hidden', !reason.more);
-            if (!reason.more) this.rsWhyMoreEl.open = false;
-        }
+        // ⚠ v1477: 畳んだ先は2つになった（フィッシャー用と「不斉でない」用）。
+        //    `more` はどちらを出すかの札で、**どちらの本文も index.html に据え置き**
+        const showMore = (el, on) => {
+            if (!el) return;
+            el.classList.toggle('hidden', !on);
+            if (!on) el.open = false;
+        };
+        showMore(this.rsWhyMoreEl, reason.more === true);
+        showMore(this.rsWhyNonasymEl, reason.more === 'nonasym');
     }
 
     /**
@@ -607,8 +693,10 @@ class StereoView {
      */
     rsUnreadableReason(mol, centerId) {
         if (!mol.isAsymmetricCarbon(centerId)) {
-            return { text: 'この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません' +
-                '（同じ置換基があると、鏡に映しても重ね合わせられます）。', more: false };
+            // ⚠ v1477: 64字 → 29字。**括弧の中（＝理由）は消していない** ——
+            //    `#stereo-rs-why-nonasym` に畳み、そこから「⊕ 重ねてみる」へ跳べるようにした
+            //    ＝ 理由を読ませるかわりに、その場で手で確かめられる（2026-08-28 の発注の本体）
+            return { text: 'この炭素は不斉炭素原子ではないので、R・S の区別がありません。', more: 'nonasym' };
         }
         if (StereoView.isRingAtom(mol, centerId)) {
             return { text: '環の中の炭素です。R・S はフィッシャー投影の十字から読んでいるので、' +
@@ -791,12 +879,12 @@ class StereoView {
         }
         // ⚠ v1472: 2文目（「作図では90°の直交で…正四面体の頂点方向に伸びています。」65字）は
         //    `#stereo-tetra-why` に畳んだ（ux-density §2-④）。★ **消していない**。
-        //    残す1文目は「図の読み方」＝ これが無いと図が読めない。畳んだ2文目は
-        //    「作図の約束と実物の食い違い」で、読み方より一段あとの話
-        this.captionEl.textContent =
-            'くさび図はフィッシャー投影の規約で描いています。縦（上・下）は紙面の奥＝ハッシュ（刻み線）、横（左・右）は紙面の手前＝▶（黒いくさび）への結合です。\n' +
-            stereoText + '\n' +
-            originNote;
+        // ⚠ v1477: 残っていた 215字（モーダルの文字の 54%）を、**図が読めなくなる1行だけ**残して
+        //    `#stereo-caption-more` に畳んだ。畳んだ側の1つ目は「不斉かどうか」だが、
+        //    ★ **同じことは `#stereo-center-label` が 24字で既に画面に出している**（2度言っていた）
+        this.setCaption(
+            '縦（上・下）は紙面の奥＝ハッシュ、横（左・右）は紙面の手前＝▶（くさび）です。',
+            'くさび図はフィッシャー投影の規約で描いています。\n' + stereoText + '\n' + originNote);
 
         // 3Dビューは毎回リセット（正面・鏡像オフ・回転軸は画面基準）してから開く
         this.mirror = false;
@@ -805,6 +893,7 @@ class StereoView {
         this.angleY = 0;
         this.axisIndex = null;
         this.axisAngle = 0;
+        this.resetFitDirs(); // ★ 「⊕ 重ねてみる」の鏡像の向きも、中心を変えたら素の鏡像へ戻す
         this.updateMirrorButton();
         this.buildAxisButtons();
         this.updateRsTipsButton();
@@ -827,6 +916,17 @@ class StereoView {
         this.setMode('wedge');
         this.render3D();
         this.modal.classList.remove('hidden');
+    }
+
+    /**
+     * キャプションを「画面に出す1行」と「畳む残り」に分けて入れる（v1477）。
+     * ⚠ **`more` を空にしない**のが約束 —— UX1 は「畳んだ中身が 20字以上あること」を見ており、
+     *   空にできると「畳んだふりをして消す」が通ってしまう。呼ぶ側は必ず中身を渡すこと
+     */
+    setCaption(main, more) {
+        if (this.captionEl) this.captionEl.textContent = main;
+        const body = document.getElementById('stereo-caption-more-body');
+        if (body && more && more.replace(/\s+/g, '').length >= 20) body.textContent = more;
     }
 
     // 表示ラベル（ref は置換基の atomId または 'H'）
@@ -1693,14 +1793,167 @@ class StereoView {
     }
 
     /**
-     * 3Dビューの鏡像ペインの構え方を切り替える（P12-8。'symmetric' | 'align'）。
-     * どちらのモードでも「鏡像であること」（parityFromDirs が左右で逆）は変えない。
-     * align は鏡像側に**回転（行列式 +1）だけ**を追加で掛けるので、手性は不変。
+     * 3Dビューの鏡像ペインの構え方を切り替える（P12-8。'symmetric' | 'align' | 'free'）。
+     * どのモードでも「鏡像であること」（parityFromDirs が左右で逆）は変えない。
+     * align も free も鏡像側に**回転（行列式 +1）だけ**を追加で掛けるので、手性は不変。
      */
     setMirrorLayout(mode) {
-        this.mirrorLayout = mode === 'align' ? 'align' : 'symmetric';
+        this.mirrorLayout = (mode === 'align' || mode === 'free') ? mode : 'symmetric';
+        if (this.mirrorLayout === 'free') {
+            // ⚠ **結合を軸にした回転は「左の分子」を回してしまう**（`spinAround(…, ax, axisAngle)` は
+            //    左ペインにも掛かる）ので、このモードでは軸を外して画面基準に戻す。
+            //    ＝「左は動かない・右だけが動く」という約束を、操作の側から壊せなくする
+            this.axisIndex = null;
+            this.axisAngle = 0;
+            this._alignM = null;
+            this.setAutoRotate(false); // 勝手に回っていると「重ねる」操作にならない
+            this.resetFitDirs();
+            this.updateAxisButtons();
+        }
         this.updateMirrorButton();
         this.render3D();
+    }
+
+    /* ===== ⊕ 重ねてみる（判定の本体。帯のコメントが設計の正） ===== */
+
+    /** 鏡像の向きを「素の鏡像（＝画面の左右で映しただけ）」に戻す。このモードの初期状態 */
+    resetFitDirs() {
+        this._fitDirs = this._dirs ? this._dirs.map(d => [-d.v[0], d.v[1], d.v[2]]) : null;
+        this._fitBest = null;
+        this._fitAtBest = false;
+    }
+
+    /** 2つの単位ベクトルのなす角（度） */
+    static angleDeg(a, b) {
+        const d = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
+        return Math.acos(d) * 180 / Math.PI;
+    }
+
+    static normalize(v) {
+        const L = Math.hypot(v[0], v[1], v[2]) || 1;
+        return [v[0] / L, v[1] / L, v[2] / L];
+    }
+
+    /**
+     * ★ いま鏡像がオリジナルにどれだけ重なっているか。
+     * 返す `deg` は **対応する結合のうちいちばん大きいずれ**（度。0 なら完全に重なっている）。
+     * ⚠ 対応づけは **code が同じもの同士**で、同じ中身が複数あるときは入れ替えを許す
+     *    （固定して比べると CH₃ が2つある中心が永久に重ならない ＝ 判定が壊れる）。
+     * ⚠ **カメラを含めない**（`_fitDirs` も `_dirs` も分子空間）＝ どの向きから見ても同じ数が出る。
+     */
+    fitState() {
+        if (!this._dirs || !this._fitDirs) return null;
+        const codes = this._dirs.map(d => d.code);
+        let best = Infinity, bestPerm = null, bestOdd = false;
+        for (const q of STEREO_FIT_PERMS) {
+            let ok = true;
+            for (let i = 0; i < 4; i++) if (codes[i] !== codes[q.p[i]]) { ok = false; break; }
+            if (!ok) continue;
+            let mx = 0;
+            for (let i = 0; i < 4; i++) {
+                const a = StereoView.angleDeg(this._fitDirs[i], this._dirs[q.p[i]].v);
+                if (a > mx) mx = a;
+            }
+            if (mx < best) { best = mx; bestPerm = q.p; bestOdd = q.odd; }
+        }
+        if (bestPerm === null) return null;
+        return { deg: best, perm: bestPerm, odd: bestOdd, ok: best <= STEREO_FIT_SNAP_DEG };
+    }
+
+    /**
+     * ★ 「いちばん重なる向き」。**探索は要らない —— 幾何で決まる**:
+     *
+     * 鏡像は m_i = M v_i（M は鏡映）。ある置換 p で R m_i = v_{p(i)} となる R を探すと
+     * R·M = P_p（四面体の頂点を p に並べ替える等長写像）。det R = det P_p · det M で、
+     * det M = −1・det P_p = (−1)^(p の符号) なので、**R が真の回転（det +1）になるのは p が奇置換のとき**。
+     *   ・code を保つ**奇置換がある**（＝ 同じ置換基が2つ以上ある＝不斉でない）→ **ずれ 0°** の向きが存在し、
+     *     その向きはそのまま `_fitDirs[i] = _dirs[p[i]].v`
+     *   ・**無い**（＝4つとも違う＝不斉炭素）→ **素の鏡像のままがいちばん近い**。
+     *     どの i でも m_i・v_i = 1/3 ＝ 70.5288° で4本とも等しくずれている（グリッド＋局所改良でも
+     *     これを下回る向きは出なかった。帯のコメントの実測）
+     */
+    bestFitDirs() {
+        if (!this._dirs) return null;
+        const codes = this._dirs.map(d => d.code);
+        for (const q of STEREO_FIT_PERMS) {
+            if (!q.odd) continue;
+            let ok = true;
+            for (let i = 0; i < 4; i++) if (codes[i] !== codes[q.p[i]]) { ok = false; break; }
+            if (ok) return this._dirs.map((_, i) => this._dirs[q.p[i]].v.slice());
+        }
+        return this._dirs.map(d => [-d.v[0], d.v[1], d.v[2]]);
+    }
+
+    /** 「⊙ いちばん近い向きへ」。回しても届かない人を、いつまでも回させないための逃げ道 */
+    goToBestFit() {
+        if (!this._dirs) return;
+        this._fitDirs = this.bestFitDirs();
+        this._fitAtBest = true;
+        this.render3D();
+    }
+
+    /**
+     * 網（12°）に入ったら**厳密に重なる向きへ置き直す**。
+     * ⚠ こうしておくと「重なった」と出したときの画面のずれが本当に 0.0° になる
+     *    ＝ 12° は判定の甘さではなく、掴まえる網の大きさになる
+     */
+    snapFit() {
+        const f = this.fitState();
+        if (!f || !f.ok || !f.odd || f.deg <= 1e-9) return false;
+        this._fitDirs = this._dirs.map((d, i) => this._dirs[f.perm[i]].v.slice());
+        return true;
+    }
+
+    /** カメラの逆変換（画面基準のベクトル → 分子空間）。free モードでは `_alignM` は必ず null */
+    unrotate(v) {
+        const cx = Math.cos(-this.angleX), sx = Math.sin(-this.angleX);
+        const y1 = v[1] * cx - v[2] * sx, z1 = v[1] * sx + v[2] * cx;
+        const cy = Math.cos(-this.angleY), sy = Math.sin(-this.angleY);
+        return [v[0] * cy + z1 * sy, y1, -v[0] * sy + z1 * cy];
+    }
+
+    /**
+     * 右ペイン（鏡像）のドラッグ。**掴んだ置換基が指に付いてくる**ように回す。
+     * 画面空間で決めた回転軸を `unrotate` で分子空間へ移し（回転の共役）、`_fitDirs` だけを回す。
+     * px, py はペインの中心を原点にした SVG 座標
+     */
+    dragMirrorFree(dx, dy, px, py) {
+        const drawn = this._drawn && this._drawn.right;
+        if (!this._fitDirs || !drawn) return;
+        const g = this.grabPoint(drawn, px, py);          // 画面基準の単位ベクトル
+        const d = [dx / STEREO3D_BOND, dy / STEREO3D_BOND, 0];
+        const k = [g[1] * d[2] - g[2] * d[1], g[2] * d[0] - g[0] * d[2], g[0] * d[1] - g[1] * d[0]];
+        const th = Math.hypot(k[0], k[1], k[2]);
+        if (th < 1e-6) return;
+        const km = this.unrotate([k[0] / th, k[1] / th, k[2] / th]);
+        const a = Math.max(-0.35, Math.min(0.35, th));
+        this._fitDirs = this._fitDirs.map(v => StereoView.normalize(StereoView.spinAround(v, km, a)));
+        this._fitAtBest = false;
+        this.snapFit();
+        this.render3D();
+    }
+
+    /** ずれの表示（★ ここは「答え合わせ」＝ UX1 が数えない側。短く1行で出す） */
+    updateFitReadout() {
+        const on = !!(this.mirror && this.mirrorLayout === 'free' && this._fitDirs);
+        if (this.fitRow) this.fitRow.classList.toggle('hidden', !on);
+        const el = this.fitResultEl;
+        if (!el) return;
+        if (!on) { el.textContent = ''; return; }
+        const f = this.fitState();
+        if (!f) { el.textContent = ''; return; }
+        if (this._fitBest === null || f.deg < this._fitBest) this._fitBest = f.deg;
+        const n = (x) => x.toFixed(1);
+        if (f.deg <= 0.05) {
+            el.textContent = `✓ 重なりました（ずれ ${n(f.deg)}°）＝ 回すだけで重なる ＝ 同じ分子です。`;
+            el.style.color = 'var(--neon-green)';
+        } else if (this._fitAtBest) {
+            el.textContent = `✕ これ以上は近づきません（ずれ ${n(f.deg)}°）＝ どう回しても重ね合わせられない ＝ 鏡像異性体です。`;
+            el.style.color = 'var(--neon-orange)';
+        } else {
+            el.textContent = `ずれ ${n(f.deg)}°（いちばん近づけた ${n(this._fitBest)}°）／${STEREO_FIT_SNAP_DEG}° より小さくなると重ねます。`;
+            el.style.color = 'var(--text-secondary)';
+        }
     }
 
     // 鏡像側の軸をオリジナルの軸に重ねる回転行列（align モードかつ結合を軸に選んでいるときだけ）。
@@ -1719,13 +1972,26 @@ class StereoView {
         if (this.mirrorLayoutRow) this.mirrorLayoutRow.classList.toggle('hidden', !this.mirror);
         const onAxis = this.axisIndex !== null;
         if (this.mirrorLayoutBtnSym) {
-            this.mirrorLayoutBtnSym.classList.toggle('active', this.mirrorLayout !== 'align');
+            this.mirrorLayoutBtnSym.classList.toggle('active', this.mirrorLayout === 'symmetric');
         }
         if (this.mirrorLayoutBtnAlign) {
             this.mirrorLayoutBtnAlign.classList.toggle('active', this.mirrorLayout === 'align' && onAxis);
             this.mirrorLayoutBtnAlign.disabled = !onAxis;
             this.mirrorLayoutBtnAlign.style.opacity = onAxis ? '' : '0.45';
         }
+        if (this.mirrorLayoutBtnFree) {
+            this.mirrorLayoutBtnFree.classList.toggle('active', this.mirrorLayout === 'free');
+        }
+        // ⚠ 'free' のあいだは回転軸を選ばせない ——「左は固定」を操作の側から壊せなくするため
+        //    （軸を選ぶと `spinAround(…, ax, axisAngle)` が左ペインにも掛かる）
+        const lockAxis = this.mirror && this.mirrorLayout === 'free';
+        if (this.axisRow) {
+            this.axisRow.querySelectorAll('.stereo-axis-btn').forEach(b => {
+                b.disabled = lockAxis;
+                b.style.opacity = lockAxis ? '0.45' : '';
+            });
+        }
+        this.updateFitReadout();
     }
 
     setAutoRotate(on) {
@@ -1842,10 +2108,13 @@ class StereoView {
         const cap = document.createElement('span');
         cap.textContent = '回転軸:';
         row.appendChild(cap);
+        // ⚠ v1477: 11px → 12px。ユーザー指摘「字が小さい」を実測したところ、
+        //    立体モーダルで **12px を下回っていた文字はこの回転軸ボタンと下の「軸の向き」だけ**
+        //    （375×812 で 10個・18字。本文はすべて 12〜15px だった）＝ 直す場所はここしかない
         const mk = (label, index, id) => {
             const b = document.createElement('button');
             b.className = 'view-btn stereo-axis-btn';
-            b.style.cssText = 'margin:0; font-size:11px; padding:4px 9px;';
+            b.style.cssText = 'margin:0; font-size:12px; padding:4px 9px;';
             b.textContent = label;
             b.id = id;
             b.dataset.axisIndex = (index === null ? '' : String(index));
@@ -1873,7 +2142,7 @@ class StereoView {
         FACINGS.forEach(([label, key, title]) => {
             const b = document.createElement('button');
             b.className = 'view-btn stereo-facing-btn';
-            b.style.cssText = 'margin:0; font-size:11px; padding:4px 9px;';
+            b.style.cssText = 'margin:0; font-size:12px; padding:4px 9px;';
             b.textContent = label;
             b.id = 'btn-stereo-facing-' + key;
             b.dataset.facing = key;
@@ -2069,6 +2338,13 @@ class StereoView {
      * dx,dy と px,py は SVG 座標（px,py はドラッグ区間の中点＝掴んでいる点）
      */
     rotateByDrag(dx, dy, px, py) {
+        // ★ 「⊕ 重ねてみる」— 右ペインを掴んだら**鏡像だけ**を回す。
+        //    左ペインを掴んだときは下のターンテーブル（＝カメラ）に落ちる ＝ 左右が同じだけ動く
+        //    ＝ 見る向きが変わるだけで、重なり具合（ずれの角度）は1度も変わらない
+        if (this.mirror && this.mirrorLayout === 'free') {
+            const p = this.paneOfPoint(px, py);
+            if (p.right) { this.dragMirrorFree(dx, dy, px - p.ox, py - p.oy); return; }
+        }
         const ax = this.axisVector();
         if (!ax) {
             // 画面基準（軸なし）は従来どおりのターンテーブル。横＝左右に回す・縦＝見下ろす
@@ -2223,7 +2499,7 @@ class StereoView {
         const ax = this.axisVector();
         const turn = (v) => this.rotate(StereoView.spinAround(v, ax, this.axisAngle));
         const left = this._dirs.map((d, i) => ({ ref: d.ref, code: d.code, idx: i, v: turn(d.v) }));
-        // 鏡像ペインの作り方は2モード（P12-8）。どちらでも parityFromDirs は左右で逆＝鏡像のまま。
+        // 鏡像ペインの作り方は3モード（P12-8 ＋ 'free'）。どれでも parityFromDirs は左右で逆＝鏡像のまま。
         //  'symmetric'（既定）… **画面空間で**鏡映する。左ペインの最終ベクトル（視点変換まで済んだもの）
         //     の x を反転するだけなので、どんな回転・軸・向きでも常に厳密な鏡像になり、
         //     左右が完全に同期して動く。
@@ -2236,7 +2512,17 @@ class StereoView {
         let right = null;
         if (this.mirror) {
             const alignM = this.mirrorAlignMatrix();
-            if (alignM) {
+            if (this.mirrorLayout === 'free') {
+                // ★ 'free'（⊕ 重ねてみる）… 鏡像の向きは `_fitDirs` が別に持っている。
+                //    ⚠ **`spinAround(…, ax, axisAngle)` を通さない**のがこのモードの要点で、
+                //    左が動く経路をここで断ち切っている（軸は setMirrorLayout が外している）。
+                //    通すのはカメラ（`this.rotate`）だけ ＝ 左右で共通 ＝ 見る向きを変えても
+                //    重なり具合は変わらない
+                if (!this._fitDirs) this.resetFitDirs();
+                right = this._dirs.map((d, i) => ({
+                    ref: d.ref, code: d.code, idx: i, v: this.rotate(this._fitDirs[i])
+                }));
+            } else if (alignM) {
                 right = this._dirs.map((d, i) => ({
                     ref: d.ref, code: d.code, idx: i,
                     v: this.rotate(StereoView.spinAround(
@@ -2265,8 +2551,10 @@ class StereoView {
             svg.setAttribute('height', this.mirror ? 228 : 240);
         }
         if (right) {
-            this.drawPane(left, stacked3d ? 0 : -120, 'あなたの分子', stacked3d ? -114 : 0);
-            this.drawPane(right, stacked3d ? 0 : 120, '🪞 鏡像', stacked3d ? 114 : 0);
+            // ★ 'free' では「どちらが動くか」を見出しで言う（操作の説明を本文に書かないための置き換え）
+            const free = this.mirrorLayout === 'free';
+            this.drawPane(left, stacked3d ? 0 : -120, free ? 'あなたの分子（固定）' : 'あなたの分子', stacked3d ? -114 : 0);
+            this.drawPane(right, stacked3d ? 0 : 120, free ? '🪞 鏡像（ドラッグで回る）' : '🪞 鏡像', stacked3d ? 114 : 0);
             const NS = 'http://www.w3.org/2000/svg';
             const sep = document.createElementNS(NS, 'line');
             sep.setAttribute('x1', stacked3d ? -104 : 0); sep.setAttribute('y1', stacked3d ? 0 : -104);
@@ -2279,6 +2567,7 @@ class StereoView {
             this.drawPane(left, 0, null);
         }
         this.updateNote();
+        this.updateFitReadout();
     }
 
     // 1枚分の疑似3D図。奥から順に描く（画家のアルゴリズム）＋奥ほど小さく・暗く
@@ -2332,19 +2621,15 @@ class StereoView {
             parts.push(this._isAsym
                 ? '左右は鏡像の関係です。同じように回転させても重ね合わせられません（＝鏡像異性体）。'
                 : 'この炭素は不斉ではないので、回すと重なります（左右は同じ分子です）。');
-            // P12-8: 鏡像ペインの構え方の解説
-            if (this.mirrorLayout === 'align' && this.axisVector()) {
-                const name = this.labelOf(this._dirs[this.axisIndex].ref);
-                parts.push(`「軸を揃える」: 鏡像側にも回転だけを加えて、「${name}」への軸を左と同じ向きに構えています。` +
-                           '軸の上の置換基はぴったり重なりますが、残り3つは回る向きが左右で逆なので、' +
-                           'どれだけ回しても重なりません。これが「鏡像異性体は回転では重ね合わせられない」ことの意味です。');
-            } else {
-                parts.push('「鏡面対称」: 右は左を画面の左右で鏡に映したままの配置です。' +
-                           'どちらを回しても左右がぴったり同じように動きます（常に厳密な鏡像）。' +
-                           '回転軸に結合を選んで「軸を揃える」にすると、鏡像側の軸を左と同じ向きに構え直して、' +
-                           '「軸を揃えても重ならない」ことを確かめられます。');
+            // ⚠ v1477: 3つの並べ方の説明（各 130字前後）は `#stereo-mirror-how` に畳んだ。
+            //    ★ **消していない**（本文は index.html に3つとも据え置き）。
+            //    ここに残すのは「いま何をすればよいか」の1行だけ ＝ 押す前に読ませる量を減らす
+            if (this.mirrorLayout === 'free') {
+                parts.push('左は止まっています。右（鏡像）を指で回して、左に重ねられるか試してください。');
             }
         }
+        // 3つの並べ方の畳んだ説明は、鏡像を並べているあいだだけ出す
+        if (this.mirrorHowEl) this.mirrorHowEl.classList.toggle('hidden', !this.mirror);
         this.noteEl.textContent = parts.join('\n');
     }
 
@@ -3401,3 +3686,6 @@ class StereoView {
         parent.appendChild(t);
     }
 }
+
+// ★ 判定の閾値をテストから読めるようにする（tests.js は const を見られないため。SF1/SF4 が参照）
+StereoView.SNAP_DEG = STEREO_FIT_SNAP_DEG;
