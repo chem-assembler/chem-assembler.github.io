@@ -250,6 +250,7 @@ const MODES = [
   { id: "battery",   href: "battery.html",       label: "🔋 電池をつくる",       group: "play" },
   { id: "free",      href: "redox.html?free=1",  label: "⚗ 自由に組み合わせる",  group: "tool" },
   { id: "oxnum",     href: "oxidation.html",     label: "🔢 酸化数を決める",     group: "tool" },
+  { id: "halfbuild", href: "halfreaction.html",  label: "⚡ 半反応式を組む",     group: "tool" },
   { id: "condition", href: "condition.html",     label: "⚖ 液性で書き換える",    group: "tool" },
   { id: "portal",    href: "portal.html",        label: "☰ 単元から入る",       group: "find" },
   { id: "library",   href: "library.html",       label: "🔎 反応インデックス",   group: "find" },
@@ -2173,8 +2174,10 @@ function checkHalfStep(task, procId, stepIdx, vals) {
   const L = got.left, R = got.right;
   const has = (v) => Number.isInteger(v) && v > 0;
   if (!Number.isInteger(L) && !Number.isInteger(R)) {
+    // ⚠ e⁻ の段では「要らないときは 0」と言わない（酸化数が動く以上、必ず 1 個以上ある）
     return { ok: false, kind: "partial",
-      reason: `${D} を、左辺と右辺のどちらに何個置くかを入れる（要らないときは 0）。` };
+      reason: `${D} を、左辺と右辺のどちらに何個置くかを入れる` +
+        (st.by === "ox" ? "。" : "（要らないときは 0）。") };
   }
   if (has(L) && has(R)) {
     return { ok: false, kind: "wrong",
