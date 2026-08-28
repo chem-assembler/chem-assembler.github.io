@@ -8323,6 +8323,50 @@ async function runOxNumUITests(iframe) {
     assert(state().oxOk && !doc.getElementById("clearBanner").hidden, "Na₂HPO₄ を最後まで解けない");
   });
 
+  await t("OXNUM UI: 電荷の欄はイオンの右上（半行ぶん上・下付きは残る・押し所44px）", async () => {
+    /* ★ ユーザー指定（2026-08-28）: 電荷の欄は**イオンの右上**（Na⁺ の ⁺・SO₄²⁻ の ²⁻ が来る場所）。
+       ⚠ ただし**本物の上付きにはしない**（字を小さくすると押せなくなる）——
+       大きさは保ったまま**半行ぶん（0.5em ＝ 8px）持ち上げる**だけ。 */
+    win.OxNum.goto("CuSO4");   // ⚠ SO₄²⁻ は右下に ₄・右上に電荷が同時に来る回
+    const term = $$("#splitSheet .fterm")[1];
+    const f = term.querySelector(".oxBigFormula");
+    const box = term.querySelector(".oxChgIn");
+    assert(f && box, "電荷の欄が式と同じ項の中にない");
+    // 下付きは disp の素の文字。持ち上げても消えない（そして電荷は書かれていない）
+    assert(f.textContent === "SO₄", "下付きが消えた／電荷が書いてある: " + f.textContent);
+    const fr = f.getBoundingClientRect(), br = box.getBoundingClientRect();
+    assert(br.left >= fr.right - 1, "欄が式の右にない（横に並べただけ・重なっている）: " +
+      Math.round(br.left) + " / " + Math.round(fr.right));
+    const lift = (fr.top + fr.height / 2) - (br.top + br.height / 2);
+    assert(lift >= 6, "欄が半行ぶん持ち上がっていない（" + Math.round(lift) + "px）");
+    // ⚠ 上付きは小さくなりがち。押し所は 44px を割らない
+    assert(br.height >= 44 && br.width >= 44,
+      "押し所が 44px を割っている: " + Math.round(br.width) + "×" + Math.round(br.height));
+  });
+
+  await t("OXNUM UI: 375px でも電荷の欄が上の行に重ならず、横にも伸びない", async () => {
+    const { f: fr2, win: w2 } = await openProbeFrame("oxidation.html?sp=Na2HPO4", (w) => w.OxNum,
+      "position:fixed;left:-9999px;top:0;border:0;width:375px;height:812px");
+    assert(w2, "375px で oxidation.html が起動しない");
+    const d2 = fr2.contentDocument;
+    const boxes = [...d2.querySelectorAll("#splitSheet .oxChgIn")];
+    assert(boxes.length === 3, "375px で電荷の欄が3つでない: " + boxes.length);
+    // 段の見出しに食い込まない（半行ぶん持ち上げたぶんは、行の上の余白で受ける）
+    const head = d2.querySelector("#step1 .stepHead").getBoundingClientRect();
+    for (const b of boxes) {
+      assert(b.getBoundingClientRect().top >= head.bottom - 1, "持ち上げた欄が段の見出しに重なっている");
+    }
+    // 折り返した先の行でも、上の行と重ならない（狭い画面では式が2行に割れる）
+    const rows = boxes.map((b) => b.getBoundingClientRect()).sort((a, b) => a.top - b.top);
+    for (let i = 1; i < rows.length; i++) {
+      if (Math.abs(rows[i].top - rows[i - 1].top) < 2) continue;   // 同じ行
+      assert(rows[i].top >= rows[i - 1].bottom - 1, "折り返した電荷の欄が上の行に重なっている");
+    }
+    assert(d2.documentElement.scrollWidth <= w2.innerWidth + 1,
+      "375px で横に伸びている: " + d2.documentElement.scrollWidth + " / " + w2.innerWidth);
+    fr2.remove();
+  });
+
   await t("OXNUM UI: 問う欄は考えた側だけ（規則で決まるぶんは印で、入力欄にしない）", async () => {
     win.OxNum.goto("K2Cr2O7");
     typeInto("splitIn0", 1); typeInto("splitIn1", -2);
