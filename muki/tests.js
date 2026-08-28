@@ -2562,6 +2562,23 @@
                 res.textContent.indexOf('FeO(OH)') >= 0, uiOut);
             ok('模範どおりなら、鉄の説明（素通り）は出ない',
                 res.textContent.indexOf('素通り') < 0, uiOut);
+            // ★★★ MU-2 手数・最短は「手順を学習者が決めた」ときだけ（2026-08-28・ユーザー指摘）
+            //   > イオンの行先を答える → 手順はユーザー操作ではないので 解説に最短 など入れない
+            //   ⚠ ここは枝をこちらが置いている段。★ 本人が決めていない数で採点しない
+            // ⚠ 「1手目 〔希塩酸〕」の見出しは **何手かかったか** ではなく
+            //   **どの段の話か** の目印なので、これは残ってよい。★ 数えるほうだけを見る
+            ok('MU-2a 「イオンの行先を答える」の答え合わせに、手数も最短も出ない',
+                !/（\d+\s*手/.test(res.textContent) &&
+                res.textContent.indexOf('最短') < 0 &&
+                res.textContent.indexOf('手ぶん') < 0, uiOut);
+            ok('MU-2b 「余計な操作が入っていました」とも言わない（★ 入れたのはこちら）',
+                res.textContent.indexOf('要らない操作') < 0, uiOut);
+            ok('MU-2c 「あなたが並べた手順」と言わない（★ 並べたのはこちら）',
+                res.textContent.indexOf('あなたが並べた') < 0 &&
+                res.textContent.indexOf('置いてある手順を、そのまま走らせました') >= 0, uiOut);
+            ok('MU-2d 記録にも手数と最短を入れない（⚠ 入れると率に本人以外の手が混ざる）',
+                w.treeUI.state.record.moves === undefined &&
+                w.treeUI.state.record.shortest === undefined, uiOut);
 
             // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
             w.treeUI.start('build', 'easy', { ions: UI_A1 });
