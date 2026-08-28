@@ -1560,6 +1560,16 @@ main.timelineMain {
   background: #fff;
 }
 .bcNote { line-height: 1.6; }
+/* 【②】④を筆算に寄せた（2026-08-28）。問うのは「両辺に何個ずつ足すか」で、
+   瓶の「どこから来た？」は**外したときに開くヘルプ**へ移した（消してはいない） */
+.addIonRow { border-left-color: #b7cfe4; }
+#bottleWhy { margin: 8px 0 2px; border: 1px dashed #cfd9e3; border-radius: 8px; background: #fafcfe; }
+#bottleWhy > summary {
+  cursor: pointer; padding: 8px 11px; min-height: 32px; box-sizing: border-box;
+  font-size: 12.5px; font-weight: bold; color: #46525e;
+}
+#bottleWhy[open] > summary { border-bottom: 1px dashed #cfd9e3; }
+#bottleWhy > div { padding: 0 11px 9px; }
 /* 【3】v194・発注書 §6-7 の 3 —— ⑤で入れた本数が、そのまま化学反応式の左辺の係数。
    言葉（#bottleLeftMap）・位置（式の真上）・印（.fcoef.fromYou）の3つで同じものだと示す。
    ⚠ 右辺には印を付けない（自由度がゼロで、人が出した数ではないため）。 */

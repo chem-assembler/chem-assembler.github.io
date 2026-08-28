@@ -158,10 +158,19 @@
          **左辺は組み立てない ＝ 瓶がそのまま左辺**。ここが「左辺のイオンどうしを組んで
          HI を作ってしまう」つまずきの分かれ目なので、罠の選択肢もわざと出す -->
     <section class="step" id="stepBottles" hidden>
-      <div class="stepHead"><span class="stepNo">4</span>ビーカーに入れたもの — どの瓶が連れてきた？</div>
+      <!-- ★ 2026-08-28・ユーザーの指示「イオン反応式 → 化学反応式 のプロセスを
+           より実際の筆算に寄せましょう／瓶システムは不正解時やヘルプ・解説に回してよい」。
+           問うのは**紙の上でやる手つき**（両辺に、式に出てこないイオンを足す）。
+           ⚠ 瓶の「どこから来た？」は消さずに、外したときに開くヘルプへ移した -->
+      <div class="stepHead"><span class="stepNo">4</span>両辺に、式に出てこないイオンを足す</div>
       <div id="bottleRack"></div>
-      <div id="bottleQuiz"></div>
-      <div id="bottleMsg"></div>
+      <div id="addIonRows"></div>
+      <details id="bottleWhy">
+        <summary>どこから来たの？ —— ビーカーに入れた瓶で確かめる</summary>
+        <div id="bottleQuiz"></div>
+        <div id="bottleMsg"></div>
+      </details>
+      <div id="addIonMsg"></div>
       <div id="bottleTail" hidden>
         <div class="stepHead"><span class="stepNo">5</span>水を蒸発させる — 残ったイオンが対で塩に戻る</div>
         <div id="bottleCounts"></div>

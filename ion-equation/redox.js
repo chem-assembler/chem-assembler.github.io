@@ -1149,6 +1149,8 @@ function onMultChange() {
   bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
+  bottleAdd = {};
+  addIonKey = null;
   bottleCountKey = null;
   calcVals = { ox: {}, red: {}, sum: {} };
   calcDone = false;
@@ -1801,10 +1803,22 @@ const bottleSheetEl = document.getElementById("bottleSheet");
 const bottleLeftMapEl = document.getElementById("bottleLeftMap");
 const bottleTailMsgEl = document.getElementById("bottleTailMsg");
 const bottleScaleBoxEl = document.getElementById("bottleScaleBox");
+/* 【②】④の本体（両辺に足す個数）と、ヘルプへ移した瓶の出どころ当て */
+const addIonRowsEl = document.getElementById("addIonRows");
+const addIonMsgEl = document.getElementById("addIonMsg");
+const bottleWhyEl = document.getElementById("bottleWhy");
+let addIonKey = null;
+/* ⚠ 自分で閉じた人には、外しても開き直さない（打つたびに開くと邪魔になる） */
+if (bottleWhyEl) bottleWhyEl.addEventListener("toggle", () => {
+  if (!bottleWhyEl.open) bottleWhyEl.dataset.userClosed = "1";
+});
 
 /* ⑤で「イオン反応式の全体を何倍するか」。**常設の入力ではない**（v182・【D】）——
    右辺の係数に 1/2 が出たときだけ、案内の釦から 1 以外になる */
 let bottleScale = 1;
+/* 【②】④で人が入れる「両辺に足す傍観イオンの個数」（傍観イオン → 個数。未入力は持たない）。
+   ★ これが紙の上の手つきそのもの。⑤（瓶を何本）はこのあと。 */
+let bottleAdd = {};
 let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:KMnO4" / "ion:H+"）
 let bottleCounts = {};      // 瓶 → 入れた本数（⑤の数入力。未入力は持たない）
 let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
@@ -1847,8 +1861,69 @@ function updateBottleStep() {
   revealStep(stepBottlesEl, !!rows);
   if (!rows) return;
   buildBottleRack(st);
+  buildAddIonRows();
   buildBottleQuiz(rows);
   refreshBottleTail();
+}
+
+/* 【②】④の本体 —— 「両辺に、式に出てこないイオンを何個ずつ足すか」。
+   ⚠ **行を打つたびに作り直さない**（焦点が飛ぶ）。作り直すのは
+   「ステージ／倍率／全体の倍率」が変わったときだけ。 */
+function addIonId(sp) { return "ai_" + sp.replace(/[^A-Za-z0-9]/g, "_"); }
+
+function buildAddIonRows(force) {
+  if (!addIonRowsEl) return;
+  const key = `${stage().id}/${mult[0]}/${mult[1]}/${bottleScale}`;
+  if (!force && addIonKey === key) return;
+  addIonKey = key;
+  addIonRowsEl.innerHTML = "";
+  const rows = spectatorAddRows(stage(), mult[0], mult[1], bottleScale);
+  if (!rows) return;
+  const cap = document.createElement("div");
+  cap.className = "bottleCap";
+  cap.textContent = "イオン反応式には、相手のいないイオンが並んでいる。" +
+    "両辺に同じだけ足して、化学式に組めるようにする。";
+  addIonRowsEl.appendChild(cap);
+  for (const r of rows) {
+    const box = document.createElement("div");
+    box.className = "bottleCountRow addIonRow";
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "0";
+    inp.max = "99";
+    inp.inputMode = "numeric";
+    inp.className = "bottleCountInput";
+    inp.id = addIonId(r.sp);
+    inp.value = Number.isInteger(bottleAdd[r.sp]) ? String(bottleAdd[r.sp]) : "";
+    const label = document.createElement("label");
+    label.className = "pickLabel bcLabel";
+    label.htmlFor = inp.id;
+    label.textContent = `両辺に ${SPECIES[r.sp].disp} を`;
+    const unit = document.createElement("span");
+    unit.className = "bcUnit";
+    unit.textContent = "個ずつ";
+    const field = document.createElement("div");
+    field.className = "bcField";
+    field.append(label, inp, unit);
+    const note = document.createElement("div");
+    note.className = "pickNote bcNote";
+    inp.oninput = () => {
+      const v = parseInt(inp.value, 10);
+      // ⚠ 0 は「足さない」という答え（誤答）。空欄は「まだ入れていない」
+      if (Number.isInteger(v) && v >= 0) bottleAdd[r.sp] = v;
+      else delete bottleAdd[r.sp];
+      refreshBottleTail();
+    };
+    box.append(field, note);
+    addIonRowsEl.appendChild(box);
+  }
+}
+
+/* ④が片づいたか。⚠ **瓶の出どころ当ては条件にしない**（ヘルプへ移した） */
+function addIonDone() {
+  const rows = spectatorAddRows(stage(), mult[0], mult[1], bottleScale);
+  if (!rows) return false;
+  return rows.every((r) => bottleAdd[r.sp] === r.n);
 }
 
 function buildBottleRack(st) {
@@ -1917,15 +1992,41 @@ function buildBottleQuiz(rows) {
 function refreshBottleTail() {
   const rows = bottleRows();
   if (!rows) return;
+  // --- ヘルプ側（瓶の出どころ当て）の判定文。⚠ ここは⑤の門ではなくなった ---
   const okN = bottleAnsweredOk(rows);
-  const done = okN === rows.length;
-  bottleTailEl.hidden = !done;
+  const quizDone = okN === rows.length;
   const yet = rows.find((r) => !bottleRowOk(r));
-  bottleMsgEl.textContent = done
+  bottleMsgEl.textContent = quizDone
     ? "どのイオンにも、連れてきた瓶がある。左辺に書くのはイオンではなく、この瓶そのもの。"
     : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、どれかの瓶が連れてきたはず。`;
-  bottleMsgEl.className = done ? "okcell" : "";
-  if (done) drawBottleTail();
+  bottleMsgEl.className = quizDone ? "okcell" : "";
+
+  // --- ④の本体（両辺に足す個数）---
+  const add = spectatorAddRows(stage(), mult[0], mult[1], bottleScale) || [];
+  let done = 0, wrong = 0;
+  for (const r of add) {
+    const inp = document.getElementById(addIonId(r.sp));
+    if (!inp) continue;
+    const ex = explainSpectatorAdd(stage(), mult[0], mult[1], bottleScale, r.sp, bottleAdd[r.sp]);
+    const note = inp.parentElement.parentElement.querySelector(".bcNote");
+    note.textContent = ex ? ex.reason : "";
+    note.className = "pickNote bcNote" + (ex && ex.kind !== "none" ? (ex.ok ? " okcell" : " ngcell") : "");
+    inp.classList.toggle("ng", !!(ex && ex.kind === "wrong"));
+    if (ex && ex.ok) done++; else if (ex && ex.kind === "wrong") wrong++;
+    const want = Number.isInteger(bottleAdd[r.sp]) ? String(bottleAdd[r.sp]) : "";
+    if (document.activeElement !== inp && inp.value !== want) inp.value = want;
+  }
+  const allDone = done === add.length && add.length > 0;
+  /* ★ 外したら瓶のヘルプを開く（ユーザーの指示「不正解時やヘルプ・解説に回してよい」）。
+     ⚠ **自分で閉じた人にはもう開かない** —— 打つたびに開き直すと邪魔になる */
+  if (bottleWhyEl && wrong > 0 && !bottleWhyEl.dataset.userClosed) bottleWhyEl.open = true;
+  addIonMsgEl.textContent = allDone
+    ? "両辺に足した。ここから先は、陽イオンと陰イオンを組み直して化学式にするだけ。"
+    : `あと ${add.length - done} 種類。式の左辺と右辺を見て、相手のいないイオンを探す。`;
+  addIonMsgEl.className = allDone ? "okcell" : "";
+
+  bottleTailEl.hidden = !allDone;
+  if (allDone) drawBottleTail();
 }
 
 /* ⑤ 水を蒸発させる（v182 で作り直した・DESIGN_redox.md「実機レビュー」B・D）。
@@ -2036,9 +2137,17 @@ function applyBottleScale(to) {
     if (Number.isInteger(v)) next[sp] = v;
   }
   bottleCounts = next;
+  // 【②】④で足したイオンの個数も同じ倍率で掛ける（自分で出した数がそのまま倍になる）
+  const nextAdd = {};
+  for (const sp of Object.keys(bottleAdd)) {
+    const v = bottleAdd[sp] * k;
+    if (Number.isInteger(v)) nextAdd[sp] = v;
+  }
+  bottleAdd = nextAdd;
   bottleScale = to;
+  buildAddIonRows(true);
   buildBottleCountRows(true);
-  refreshBottleResult();
+  refreshBottleTail();
 }
 
 function drawBottleTail() {
@@ -3015,6 +3124,8 @@ function initStage() {
   bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
+  bottleAdd = {};
+  addIonKey = null;
   bottleCountKey = null;
   calcVals = { ox: {}, red: {}, sum: {} };
   calcDone = false;
