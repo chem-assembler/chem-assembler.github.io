@@ -1067,6 +1067,10 @@ class Game {
             // 「全消去」は巻矢印まで含めて消す。原子が空でも矢印だけ浮いて残るのを防ぐため、
             // Undo履歴の判定より先に解除する（検品レビュー 17）
             this.deactivateReactionMode();
+            // ★ 反応の印（オレンジの破線）も同じ理由でここ ＝ **下の早い return より前**（v1477）。
+            //   後ろに置くと「すでに空のキャンバスで全消去を押した」ときだけ印が残る
+            //   （空のときは下の `updateDrawing()` まで行かないので `dropStaleHighlights` も走らない）
+            this.clearUIOverlay();
             if (this.userMolecule.atoms.length === 0) return; // 空のときはUndo履歴を消費しない（開発方針 3.5章）
             this.saveState();
             this.userMolecule = new Molecule();
@@ -1367,6 +1371,11 @@ class Game {
         // 履歴を巻き戻すなら反応機構の表示は無効になる。巻矢印を残すと
         // 復元した分子の上に古い矢印が浮く（検品レビュー 16）
         this.deactivateReactionMode();
+        // ★ 反応の印（オレンジの破線）も同じ理由でここ（v1477）。巻き戻した図は
+        //   「その反応で変わった図」ではないので、印だけ残ると復元した分子の上に古い丸が浮く。
+        //   ⚠ 下の `dropStaleHighlights()` では足りない —— 巻き戻しても**原子は生きている**
+        //     反応（C-OH → C=O のような結合次数だけの変化）があり、そこだけ印が残ってしまう
+        this.clearUIOverlay();
         this.userMolecule = new Molecule();
         if (state.deletedBonds) {
             this.userMolecule.deletedBonds = state.deletedBonds;
@@ -5758,6 +5767,8 @@ class Game {
         // 環が壊れる経路は削除・消しゴム・右クリック・結合の削除と複数あるので、
         // 経路ごとに書かず**図を描き直すたびに1回**そろえる
         this.dropStaleBenzeneMarks();
+        // 反応の印（オレンジの破線）も、指す先が消えたらここで一緒に落とす（v1477・同関数の注）
+        this.dropStaleHighlights();
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
 
@@ -10165,8 +10176,37 @@ class Game {
             c.setAttribute('stroke', 'var(--neon-orange)');
             c.setAttribute('stroke-width', '2.5');
             c.setAttribute('stroke-dasharray', '4,3');
+            // ★ **どの原子を指している印か**を印自身に持たせる（v1477）。
+            //   これが無いと、下の `dropStaleHighlights()` が「もう居ない原子の印」を選り分けられない
+            c.setAttribute('data-hl-atom', String(a.id));
             this.uiGroup.appendChild(c);
         });
+    }
+
+    /* ===== 反応の印は、指している原子が図から消えたら一緒に消す（v1477） =====
+     *
+     * ユーザー（動画レーン）実測報告 2026-08-26 §7:「**全消去 → 別の分子を呼ぶ** をしても
+     * 前の反応の印が残ったまま新しい分子の上に乗る」。完成した mp4 のフレームで
+     * 5秒（まだ反応していない 1-プロパノール）に印が無く、17秒（出しただけの 2-プロパノール）に
+     * 印がある ＝「呼び出すと付く」のではなく**前の印が残っている**。
+     *
+     * ★ 実測（:9137・実アプリ。反応 → その操作 → 印の数／うち「もう居ない原子」を指す数）:
+     *     🗑 全消去 …………… 2 → 2（**2つとも宙に浮く**）
+     *     ↩ 戻す ……………… 2 → 2（1つが浮く）
+     *     ↩ 反応前に戻す …… 2 → 2（1つが浮く）
+     *     お題の読み込み …… 2 → 2（**2つとも浮く**）
+     *     名称から呼び出す … 2 → 2（浮かない ＝ 前の分子はまだ画面にある。**これは正しい**）
+     *
+     * ⚠ **経路ごとに `clearUIOverlay()` を足して回らない**（呼び出しは20か所以上あり、
+     *   次に増える経路で必ずまた漏れる）。`updateDrawing()` の「状態から導く」流儀
+     *   （同関数の冒頭・v1454 の注）に合わせ、**図を描き直すたびに1回**そろえる。
+     * ⚠ **「印を全部消す」ではない。** いまの分子に居る原子を指す印は残す ——
+     *   反応直後のハイライト・箇所選びの光り・答え合わせの丸は、そこに原子があるから意味がある。 */
+    dropStaleHighlights() {
+        const marks = this.uiGroup.querySelectorAll('[data-hl-atom]');
+        if (!marks.length) return;
+        const alive = new Set(this.userMolecule.atoms.map(a => String(a.id)));
+        marks.forEach(el => { if (!alive.has(el.getAttribute('data-hl-atom'))) el.remove(); });
     }
 
     /**
