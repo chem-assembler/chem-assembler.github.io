@@ -3666,3 +3666,6 @@ class StereoView {
         parent.appendChild(t);
     }
 }
+
+// ★ 判定の閾値をテストから読めるようにする（tests.js は const を見られないため。SF1/SF4 が参照）
+StereoView.SNAP_DEG = STEREO_FIT_SNAP_DEG;
