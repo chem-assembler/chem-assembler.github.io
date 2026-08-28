@@ -41187,6 +41187,91 @@
         c.reset();
     });
 
+    /* ===== RV7・RV8: 1分子からでもナイロン66（縮合重合）へ行ける（v1477） =====
+     *
+     * ユーザー要望（2026-08-28）:「ヘキサメチレンジアミン 可能な反応に 66ナイロンの合成が欲しい」。
+     * ★ 実測（直す前・ヘキサメチレンジアミンを1つだけ呼んだ画面）:
+     *   できる反応 = アセチル化 1件だけ／相手が要る反応 = 酢酸 → アミド化 1件だけ
+     *   ＝ ナイロン66 はどこにも無く、**出ない理由も画面に無かった**。 */
+    const rvPolyHint = (c, name) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule(name), `（前提）${name} がライブラリに無い`);
+        g.updateDrawing();
+        return W.findPartnerHints(g, null)
+            .filter(h => h.ruleId === 'condensation_polymerization');
+    };
+
+    test('RV7: 2価の単量体を1つ置いただけで「縮合重合」の札が出て、押すと最後まで進む', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // ① 教科書が名前を付けている2つの高分子へ、4つの単量体すべてから着ける
+        const 表 = [
+            ['ヘキサメチレンジアミン', 'アジピン酸'],
+            ['アジピン酸', 'ヘキサメチレンジアミン'],
+            ['エチレングリコール', 'テレフタル酸'],
+            ['テレフタル酸', 'エチレングリコール']
+        ];
+        表.forEach(([置いた, 相手]) => {
+            const hits = rvPolyHint(c, 置いた);
+            assert(hits.length === 1, `${置いた}: 縮合重合の札が ${hits.length} 件（1件が正）`);
+            assert(hits[0].name === 相手,
+                `${置いた}: 勧める相手が「${hits[0].name}」（教科書の相手は「${相手}」）`);
+            assert(hits[0].count === 2 && hits[0].selfCount === 1,
+                `${置いた}: 呼ぶ数が 相手${hits[0].count}・自分${hits[0].selfCount}（2と1が正）`);
+        });
+
+        // ② 札の文言に**呼ぶもの2種類とも**書いてある（4分子になる理由が読める）
+        const h = rvPolyHint(c, 'ヘキサメチレンジアミン')[0];
+        const btn = W.reactor.makePartnerHintButton(h);
+        assert(/アジピン酸/.test(btn.textContent) && /ヘキサメチレンジアミン/.test(btn.textContent),
+            `札に2種類とも書いていない（${btn.textContent}）`);
+
+        // ③ ★ 押すと最後まで進む（「押しても何も起きない札」を作らない）
+        btn.click();
+        await c.tick(120);
+        assert(!W.reactor.lastDeadEnd, `途中で止まった（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H') && p.atoms.length > 3);
+        assert(parts.length === 1, `鎖が1本になっていない（${parts.length} 分子）`);
+        const f = g.computeMolecularFormula(parts[0]);
+        assert(/N₄/.test(f) && /R₂/.test(f), `ポリアミドの鎖になっていない（${f}）`);
+        const toast = c.D.getElementById('canvas-toast').textContent;
+        assert(/ナイロン66/.test(toast), `結果の説明がナイロン66に触れていない（${toast.slice(0, 60)}）`);
+        c.reset();
+    });
+
+    test('RV8: ★否定対照 — 縮合重合の札は「2価の単量体で、まだ並べていない人」にだけ出る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // ① 縮合重合にならない分子には出さない（＝ 名前の一致ではなく detect が決めている）
+        ['エタノール', '酢酸', 'グリシン', 'エチレン', 'グリセリン', 'サリチル酸'].forEach(n => {
+            const hits = rvPolyHint(c, n);
+            assert(hits.length === 0, `${n} にまで縮合重合の札が出ている（${hits.map(h => h.name)}）`);
+        });
+        // ② ★ **もう4分子並べてある人には出さない**（押せる状態なのに「呼びなさい」は案内ではない）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        ['ヘキサメチレンジアミン', 'アジピン酸', 'アジピン酸', 'ヘキサメチレンジアミン']
+            .forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        assert(rule.detect(g.userMolecule).length === 1,
+            '（前提）4分子並べても縮合重合が押せる状態になっていない');
+        /* ⚠ **土台（`baseIds`）を渡して呼ぶ**。実アプリは「いま見ている分子」に絞って
+           `findPartnerHints` を呼ぶ（`cachedPartnerHints(scope)`）ので、`null` で呼ぶと
+           土台がキャンバス全部 ＝ 名前が引けず、**手前で return してしまって
+           この否定対照が素通りする**（実際に素通りするのを確かめてから直した）。 */
+        const 一分子 = g.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => g.lookupCompoundName(p) === 'ヘキサメチレンジアミン');
+        assert(一分子, '（前提）並べたヘキサメチレンジアミンを取り出せない');
+        const hits = W.findPartnerHints(g, new Set(一分子.atoms.map(a => a.id)))
+            .filter(h => h.ruleId === 'condensation_polymerization');
+        assert(hits.length === 0, `もう並べてあるのに「呼び出す」札が出ている（${hits.length} 件）`);
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して

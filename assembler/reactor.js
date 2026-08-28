@@ -4866,7 +4866,106 @@ function findPartnerHints(game, baseIds, ruleIds) {
         });
     });
     findSelfPartnerHints(game, baseIds, ruleIds, seenRules, hits);
+    findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits);
     return hits;
+}
+
+/* ==========================================================================
+ * ★★ 縮合重合の入口（v1477・ユーザー要望 2026-08-28
+ *    「ヘキサメチレンジアミン 可能な反応に 66ナイロンの合成が欲しい」）
+ *
+ * ★ **測ったこと**（:9137・ヘキサメチレンジアミンを1つだけ呼んだ画面）:
+ *   できる反応 …… **アセチル化 1件だけ**
+ *   相手が要る反応 … **酢酸 → アミド化 1件だけ**
+ *   ＝ ナイロン66 はどこにも出ていない。理由は
+ *   `condensationPolymerUnits` が **2価カルボン酸2個 ＋ 2価アミン2個（合計4分子）**を要求し、
+ *   説明だけの `condensation_polymer_info` も **1個ずつ揃っているとき**にしか出ないため
+ *   ＝ **1分子だけの人には、出ない理由すら画面に無い**。
+ *
+ * ★ **どちらを選んだか**: 「候補に出さないのが正しい」ではなく **出す** を選んだ。
+ *   ① §15（v1437）で **1分子からでも重合へ行ける入口**を作ると既に決めている。
+ *      付加重合だけ入口があって縮合重合に無いのは、決めの取りこぼし。
+ *   ② ⚠ 実測で **呼び出すだけで最後まで通る**ことを確かめた ——
+ *      ヘキサメチレンジアミン ＋ アジピン酸2つ ＋ 自分をもう1つ ＝ 4分子で
+ *      `condensation_polymerization.detect` が **1箇所**返し、実行して 34原子の
+ *      ポリアミドができた（`MAX_REACTION_SELECTION` は 4 ＝ ちょうど全部選べる）。
+ *   ③ 説明だけ足す案（`condensation_polymer_info` を1分子でも出す）も測ったが、
+ *      **押しても何も起きない札が1枚増えるだけ**で、ユーザーの要望
+ *      （「可能な反応に 66ナイロンの合成が欲しい」）に応えていない。
+ *
+ * ⚠ **`SELF_PARTNER_RULES` には入れない**（あちらは「自分をもう何個か」だけの形）。
+ *   ここは **相手を2つ ＋ 自分をもう1つ** ＝ 呼ぶ相手が2種類あるので、別の finder にする。
+ * ⚠ **この表は「探す範囲」でしかない。** 出るかどうかを決めるのは
+ *   `condensation_polymerization.detect`（＝ 化学の判定）で、名前の一致ではない
+ *   （`PARTNER_CANDIDATES` とまったく同じ約束。そちらも名前の一覧）。
+ * ⚠ **組にしてあるのは順番のため。** 一覧を平らな名前の並びにすると、
+ *   アジピン酸に**エチレングリコール**が先に当たってしまう（化学としては正しい
+ *   ポリエステルだが、教科書がアジピン酸の相手として書くのはヘキサメチレンジアミン）。
+ *   ★ 組にしておくと、4つの単量体それぞれから**教科書が名前を付けている高分子**へ着く
+ *   （`condensation_polymerization` の caption も、この2つだけを名指ししている）。
+ * ⚠ **限界を隠さない**: 表に無い2価単量体（自分で描いた別のジアミンなど）では札が出ない。
+ *   ライブラリ全体（900件超）から相手を探すこともできるが、
+ *   **相手が複数見つかったときにどれを勧めるかを決める根拠が無い**ので採らなかった。
+ * ========================================================================== */
+const COPOLYMER_RULE = 'condensation_polymerization';
+const COPOLYMER_PAIRS = [
+    ['アジピン酸', 'ヘキサメチレンジアミン'],  // ナイロン66（ポリアミド）
+    ['テレフタル酸', 'エチレングリコール']      // PET（ポリエステル）
+];
+
+function findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits) {
+    if (seenRules.has(COPOLYMER_RULE)) return;
+    if (ruleIds && !ruleIds.includes(COPOLYMER_RULE)) return;
+    const rule = REACTION_RULES.find(r => r.id === COPOLYMER_RULE);
+    if (!rule || rule.info) return;
+    const mol = game.userMolecule;
+    // 呼べるのは**名前で引ける分子**だけ（自分をもう1つ呼ぶので、自分の名前も要る）
+    const base = new Molecule();
+    copyMoleculeInto(base, mol, baseIds, 0);
+    const selfName = game.lookupCompoundName ? game.lookupCompoundName(base) : null;
+    if (!selfName) return;
+    const library = game.getCompoundLibrary() || [];
+    const selfEntry = library.find(e => e.name === selfName);
+    if (!selfEntry) return;
+    // ⚠ **もう並べてある人には出さない**（§15 と同じ約束。押せる状態なのに「呼びなさい」は案内ではない）
+    try { if (rule.detect(mol).length > 0) return; } catch (e) { return; }
+    // 自分が入っている組の**相手側**だけを試す（組にしてある理由は上の注）
+    const names = COPOLYMER_PAIRS
+        .filter(pair => pair.includes(selfName))
+        .map(pair => pair.find(n => n !== selfName));
+    for (const name of names) {
+        if (!name || name === selfName) continue;
+        const entry = library.find(e => e.name === name);
+        if (!entry) continue;
+        /* 試算は**実際に呼び出されるもの**（ライブラリの分子）で、**呼び出す順のまま**組む。
+         * ⚠ 順は 相手2つ → 自分1つ。`summonMolecule` は右へ横一線に並べ、
+         *   `condensationPolymerUnits` は x で並べて 酸→相手→酸→相手 の鎖にするので、
+         *   ここで順を変えると試算と本番がずれる */
+        const trial = new Molecule();
+        const mine = copyMoleculeInto(trial, mol, baseIds, 0);
+        const theirs = new Set();
+        const place = (src) => {
+            const maxX = Math.max(...trial.atoms.map(a => a.x), 0);
+            const minX = Math.min(...src.atoms.map(a => a.x), 0);
+            copyMoleculeInto(trial, src, null, maxX - minX + 84).forEach(id => theirs.add(id));
+        };
+        place(entry.mol);
+        place(entry.mol);
+        place(selfEntry.mol);
+        let sites = [];
+        try { sites = rule.detect(trial) || []; } catch (e) { continue; }
+        // 「呼び出したからできた」＝ 箇所が元の分子と呼び出した側の両方にまたがるものだけ
+        const crossing = sites.filter(s => Array.isArray(s) &&
+            s.some(x => mine.has(x)) && s.some(x => theirs.has(x)));
+        if (!crossing.length) continue;
+        seenRules.add(COPOLYMER_RULE);
+        hits.push({
+            name, label: rule.label, ruleId: COPOLYMER_RULE, siteCount: crossing.length,
+            count: 2,              // 呼び出す相手の個数
+            selfName, selfCount: 1 // ＋ 自分をもう何個（鎖にするには2組 ＝ 合計4分子）
+        });
+        return; // 1つの反応につき候補は1つまで（`findPartnerHints` の約束）
+    }
 }
 
 /**
@@ -6076,12 +6175,22 @@ class Reactor {
         // 相手が**自分と同じ分子**のとき（重合）は、いくつ呼ぶのかを札に書く（v1437・§15）
         const times = Math.max(1, h.count || 1);
         if (times > 1) btn.dataset.count = String(times);
-        const call = times > 1 ? `${h.name} をもう${times}つ呼び出す` : `${h.name} を呼び出す`;
-        const pick = times > 1 ? `${times + 1}つ` : '2つ';
+        /* 縮合重合は**相手2つ ＋ 自分をもう1つ**（v1477・§縮合重合の入口）。
+         * ⚠ 呼ぶものが2種類あるので、札にも2種類とも書く ——「アジピン酸を2つ呼ぶ」だけだと
+         *   なぜ4分子になるのかが読めない */
+        const selfTimes = Math.max(0, h.selfCount || 0);
+        if (selfTimes > 0) { btn.dataset.self = h.selfName || ''; btn.dataset.selfCount = String(selfTimes); }
+        const call = selfTimes > 0
+            ? `${h.name} を${times}つ と ${h.selfName} をもう${selfTimes}つ呼び出す`
+            : times > 1 ? `${h.name} をもう${times}つ呼び出す` : `${h.name} を呼び出す`;
+        const total = times + selfTimes;
+        const pick = total > 1 ? `${total + 1}つ` : '2つ';
         btn.textContent = `＋ ${call} → ${h.label}${many}`;
+        // 呼ぶものが2種類あるときは、説明でも2種類とも名指しする（札と食い違わせない）
+        const 呼ぶ = selfTimes > 0 ? `${h.name} と ${h.selfName}` : h.name;
         btn.title = many
-            ? `${h.name} を呼び出し、${pick}を選んでから「${h.label}」の箇所を選びます`
-            : `${h.name} を呼び出し、${pick}を選んで「${h.label}」まで実行します`;
+            ? `${呼ぶ} を呼び出し、${pick}を選んでから「${h.label}」の箇所を選びます`
+            : `${呼ぶ} を呼び出し、${pick}を選んで「${h.label}」まで実行します`;
         btn.addEventListener('click', () => this.runPartnerHint(h));
         return btn;
     }
@@ -6123,6 +6232,16 @@ class Reactor {
                     `「${h.name}」を呼び出せませんでした（上の説明を見てください）。反応は実行していません。`);
             }
         }
+        /* ★ 縮合重合は**自分ももう1つ**要る（v1477・§縮合重合の入口）。
+         * ⚠ 呼ぶ順は 相手 → 自分。`summonMolecule` は右へ横一線に並べ、
+         *   `condensationPolymerUnits` は x で並べて 酸→相手→酸→相手 の鎖にするので、
+         *   `findCoPolymerHints` の試算と同じ順に置く。 */
+        for (let k = 0; k < Math.max(0, h.selfCount || 0); k++) {
+            if (!g.summonMolecule(h.selfName)) {
+                return this.stopPartnerHint(h, 'summon',
+                    `「${h.selfName}」を呼び出せませんでした（上の説明を見てください）。反応は実行していません。`);
+            }
+        }
         const added = new Set(g.userMolecule.atoms.filter(a => !beforeIds.has(a.id)).map(a => a.id));
         if (added.size === 0) {
             return this.stopPartnerHint(h, 'summon',
@@ -6149,7 +6268,8 @@ class Reactor {
         const allowed = sites.filter(s => Array.isArray(s) && siteAllowed(s));
         if (allowed.length === 0) {
             return this.stopPartnerHint(h, 'select',
-                `「${h.name}」は置けましたが、${times + 1}つを選んでも ${h.label} が押せる状態になりませんでした。` +
+                `「${h.name}」は置けましたが、${times + Math.max(0, h.selfCount || 0) + 1}つを選んでも ` +
+                `${h.label} が押せる状態になりませんでした。` +
                 '反応は実行していません。');
         }
         // ④ ここまで通ったときだけ進む。**どちらでもモーダルは閉じる**
