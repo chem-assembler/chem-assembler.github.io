@@ -1836,10 +1836,26 @@ function oxSolveOf(sp) {
   return { el, n, rest, v };
 }
 
-/* イオンに分ける（実際に起きる電離。DISSOCIATION が正）。
-   [{ sp, n }] を電離表の並び順のまま返す。分けられない種は null。 */
+/* DISSOCIATION に載っていない塩も、イオンからできているなら分ける（ユーザー指摘・2026-08-28）。
+   ⚠ **一覧は手で持たない。** PARTS から機械的にふるう:
+     ・「自分自身1個」しか返さない種（CO₂・NH₃・SO₂・C）は、そもそも分けようがない ＝ 分子
+     ・断片に電荷 0 が1つでも混じる種（CH₄ → C ＋ 4H は ATOMIZATION 由来の**原子**）は塩ではない
+     ・PARTS にすら無い種（MnO₄⁻・SO₄²⁻・NO₃⁻ …）は**それ自体が1個のイオン**なので当然分けない
+   残るのは「どの断片も電荷を持つ」＝ イオンからできている化合物だけ（BaSO₄・NaHCO₃・Na₂HPO₄ …）。
+   ⚠ **DISSOCIATION が先**（PARTS は錯塩を配位子まで開く表示用の分解なので、電離としては行き過ぎ）。 */
+function oxSaltParts(sp) {
+  const parts = PARTS[sp];
+  if (!parts || (parts.length === 1 && parts[0] === sp)) return null;
+  if (!parts.every((p) => SPECIES[p] && SPECIES[p].charge !== 0)) return null;
+  return parts;
+}
+
+/* イオンに分ける。DISSOCIATION（実際に起きる電離）が先で、無ければ上の塩の分解。
+   [{ sp, n }] を表の並び順のまま返す。分けられない種は null。
+   ⚠ **後者は「水の中でこの形に分かれる」とは限らない**（NaHCO₃ は本当は Na⁺ ＋ HCO₃⁻）。
+   段1の正解文はそこを言い分ける（checkOxSplit）。 */
 function oxSplitOf(sp) {
-  const parts = DISSOCIATION[sp];
+  const parts = DISSOCIATION[sp] || oxSaltParts(sp);
   if (!parts) return null;
   const out = [];
   for (const p of parts) {
@@ -1927,8 +1943,14 @@ function checkOxSplit(sp, counts) {
         : `電荷が合っていない（左 ${cmp.chargeLeft} / 右 ${cmp.chargeRight}）。` +
           `${SPECIES[sp].disp} は電気的に中性なので、＋と−は打ち消し合う` };
   }
+  /* ⚠ **嘘をつかない。** 電離表にある種だけが「本当に起きる電離」で、
+     そうでない塩（NaHCO₃ は水の中では Na⁺ ＋ HCO₃⁻、BaSO₄ はそもそもとけない）は
+     「イオンが組んでできている」までしか言えない。ここを一緒くたにすると、
+     段3で断っている「仮の分け方」との境目が消える。 */
   return { ok: true, kind: "ok", filled, total, rest: 0, cmp,
-    reason: `そのとおり。${SPECIES[sp].disp} は水の中でこの形に分かれている（これは本当に起きる電離）。` };
+    reason: DISSOCIATION[sp]
+      ? `そのとおり。${SPECIES[sp].disp} は水の中でこの形に分かれている（これは本当に起きる電離）。`
+      : `そのとおり。${SPECIES[sp].disp} はこのイオンたちが組んでできている（水の中でこの形に分かれるとは限らない）。` };
 }
 
 /* 【段2の採点】イオンの中で酸化数を決める段。**模範解答は持たない。**
