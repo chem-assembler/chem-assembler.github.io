@@ -2733,23 +2733,36 @@ function runModelTests() {
     /* ⚠ NaHCO₃ は水の中では Na⁺ ＋ HCO₃⁻ で、H⁺ までは外れない。BaSO₄ はそもそもとけない。
        酸化数を数えるために外して見せているだけなので、そこで嘘をつくと
        段3（仮の分け方）で断っている境目が消える。 */
-    const salt = checkOxSplit("NaHCO3", [1, 1, 1]);
+    const salt = checkOxSplit("NaHCO3", [1, 1, -2]);
     assert(salt.ok, "NaHCO₃ の正しい分け方が通らない: " + salt.reason);
     assert(!salt.reason.includes("本当に起きる電離"), "電離表に無い塩を実在の電離だと言っている: " + salt.reason);
     assert(salt.reason.includes("とは限らない"), "断りが入っていない: " + salt.reason);
     // 電離表にある回では、これまでどおり「本当に起きる電離」と言い切る
-    assert(checkOxSplit("K2Cr2O7", [2, 1]).reason.includes("本当に起きる電離"),
+    assert(checkOxSplit("K2Cr2O7", [1, -2]).reason.includes("本当に起きる電離"),
       "実在の電離を言わなくなっている");
   });
 
-  t("OXNUM: 段1の採点は答えの個数を持たず、原子と電荷の保存で判定する", () => {
-    assert(checkOxSplit("K2Cr2O7", [2, 1]).ok, "2K⁺ ＋ Cr₂O₇²⁻ が不正解になる");
-    const ng = checkOxSplit("K2Cr2O7", [1, 1]);
-    assert(!ng.ok && ng.kind === "wrong" && ng.reason.includes("K"), "K の数違いを通した: " + ng.reason);
-    const part = checkOxSplit("K2Cr2O7", [2]);
+  t("OXNUM: 段1は個数ではなく電荷を問い、電荷が合っているかで採点する", () => {
+    /* ★ ユーザー指摘（2026-08-28）: 個数を問うと、**数を当てただけで電荷を分かっていなくても通る**。
+       電荷が決まれば個数は原子の保存から決まるので、順序を正して電荷を問う。 */
+    assert(checkOxSplit("K2Cr2O7", [1, -2]).ok, "K⁺ ＋ Cr₂O₇²⁻ の電荷が不正解になる");
+    assert(checkOxSplit("Na2HPO4", [1, 1, -3]).ok, "Na₂HPO₄ の電荷が不正解になる");
+    // 合計（電気的中性）が合わないときは、そう言う
+    const ng = checkOxSplit("K2Cr2O7", [1, -1]);
+    assert(!ng.ok && ng.kind === "wrong" && ng.reason.includes("合計"), "合計違いを通した: " + ng.reason);
+    // ★ 採点の芯が電荷であることの否定対照 —— **合計だけ合わせても通らない**
+    const cancel = checkOxSplit("K2Cr2O7", [2, -4]);
+    assert(!cancel.ok && cancel.kind === "wrong", "打ち消し合うだけの電荷を通した");
+    assert(!cancel.reason.includes("−2") && !cancel.reason.includes("K⁺"),
+      "外したときに答えを漏らしている: " + cancel.reason);
+    const part = checkOxSplit("K2Cr2O7", [1]);
     assert(!part.ok && part.kind === "partial" && part.rest === 1, "空欄が partial にならない");
-    // 倍にしたものは通さない（もとの1個が分かれる式なので 4K⁺ ＋ 2Cr₂O₇²⁻ は誤り）
-    assert(!checkOxSplit("K2Cr2O7", [4, 2]).ok, "倍にした式を通した");
+    /* ⚠ **0 と空欄の区別。** 0 は「電荷 0 と答えた」＝ 誤答であって、未入力ではない
+       （合計は 0 になるので、素通ししやすいところ） */
+    const zero = checkOxSplit("K2Cr2O7", [0, 0]);
+    assert(zero.kind === "wrong", "0 が「まだ入れていない」と読まれている: " + zero.kind);
+    // 原子の数の検査も残っている（分け方の表が壊れたら ok と言わない）
+    assert(checkOxSplit("K2Cr2O7", [1, -2]).cmp.rows.every((r) => r.ok), "原子の検算をしていない");
   });
 
   t("OXNUM: 段2の採点は模範解答を持たず、合計＝電荷だけで一意に決まる", () => {
@@ -8269,22 +8282,50 @@ async function runOxNumUITests(iframe) {
        ただし予告の側に入力欄があってはいけない ＝ 入り口は1つだけ */
     assert(!doc.getElementById("step2Locked").hidden, "段2の予告が出ていない");
     assert(!$$("#step2Locked input").length, "予告の側に入力欄がある");
-    typeInto("splitIn0", 1);   // ★否定対照: K を1個にする
+    typeInto("splitIn0", 1);   // ★否定対照: Cr₂O₇²⁻ の電荷を +1 にする
     typeInto("splitIn1", 1);
-    assert(!state().splitOk, "K の数違いを通した");
+    assert(!state().splitOk, "電荷違いを通した");
     assert(doc.getElementById("step2").hidden, "間違った分け方でも段2が出ている");
-    assert(doc.getElementById("splitMsg").textContent.includes("K"),
-      "どの原子が合っていないか言っていない: " + doc.getElementById("splitMsg").textContent);
-    typeInto("splitIn0", 2);
+    assert(doc.getElementById("splitMsg").textContent.includes("合計"),
+      "合計がいくつになっているか言っていない: " + doc.getElementById("splitMsg").textContent);
+    typeInto("splitIn1", -2);
     assert(state().splitOk && !doc.getElementById("step2").hidden, "正しく分けても段2が出ない");
     assert(doc.getElementById("step2Locked").hidden, "開いたあとも予告が残っている（段が2つに見える）");
     assert(doc.getElementById("splitMsg").textContent.includes("本当に起きる電離"),
       "段1が実在の電離だと言っていない");
   });
 
+  await t("OXNUM UI: 段1で問うのは電荷（個数は印・式に電荷を書かない・数合わせでは通らない）", async () => {
+    /* ★ ユーザー指摘（2026-08-28）: 個数を問うと、数を当てただけで通ってしまう。
+       Na₂HPO₄ は「塩を分けさせる」ほうの指摘の回でもある（一覧の33番）。 */
+    win.OxNum.goto("Na2HPO4");
+    assert(!$$("#splitSheet .fcoefIn").length, "段1に個数の入力欄が残っている");
+    const ins = $$("#splitSheet .oxChgIn");
+    assert(ins.length === 3, "電荷の欄が3つでない: " + ins.length);
+    /* ⚠ **答えを式に書かない。** Na⁺ と出したら、そこから写せてしまう */
+    const line = doc.querySelector("#splitSheet .oxSplitLine").textContent;
+    assert(!/[⁺⁻]/.test(line), "分けた先の式に電荷が書いてある（写せる）: " + line);
+    assert(line.includes("2 Na") || line.includes("2Na"), "個数の印が出ていない: " + line);
+    const chk = doc.getElementById("splitChk");
+    assert(chk && chk.textContent.includes("めざす合計"), "検算の行が無い: " + (chk && chk.textContent));
+    // ★否定対照: 合計だけ合わせても通らない（＋と−がたまたま打ち消し合う答え）
+    typeInto("splitIn0", 2); typeInto("splitIn1", 2); typeInto("splitIn2", -6);
+    assert(!state().splitOk, "打ち消し合うだけの電荷を通した");
+    assert(doc.getElementById("splitChk").classList.contains("ngcell"), "通らないのに検算の行が緑");
+    assert(doc.getElementById("step2").hidden, "通らないのに段2が開いている");
+    typeInto("splitIn0", 1); typeInto("splitIn1", 1); typeInto("splitIn2", -3);
+    assert(state().splitOk, "Na⁺ ＋1・H⁺ ＋1・PO₄³⁻ −3 が通らない");
+    assert(doc.getElementById("splitChk").classList.contains("okcell"), "正解でも検算の行が緑にならない");
+    // ⚠ 電離表に無い塩なので「本当に起きる電離」とは言わない
+    assert(!doc.getElementById("splitMsg").textContent.includes("本当に起きる電離"),
+      "電離表に無い塩を実在の電離だと言っている: " + doc.getElementById("splitMsg").textContent);
+    typeInto("oxIn2_P", 5);
+    assert(state().oxOk && !doc.getElementById("clearBanner").hidden, "Na₂HPO₄ を最後まで解けない");
+  });
+
   await t("OXNUM UI: 問う欄は考えた側だけ（規則で決まるぶんは印で、入力欄にしない）", async () => {
     win.OxNum.goto("K2Cr2O7");
-    typeInto("splitIn0", 2); typeInto("splitIn1", 1);
+    typeInto("splitIn0", 1); typeInto("splitIn1", -2);
     const ins = $$("#oxSheet .oxIn"), given = $$("#oxSheet .oxGiven");
     assert(ins.length === 1, "入力欄が1つでない: " + ins.length);
     assert(ins[0].id === "oxIn1_Cr", "問うているのが Cr でない: " + ins[0].id);
@@ -8298,7 +8339,7 @@ async function runOxNumUITests(iframe) {
 
   await t("OXNUM UI: 合計が電荷に届いたときだけ通る（±1 も 0 も落ちる）", async () => {
     win.OxNum.goto("K2Cr2O7");
-    typeInto("splitIn0", 2); typeInto("splitIn1", 1);
+    typeInto("splitIn0", 1); typeInto("splitIn1", -2);
     assert(state().oxRest === 1, "空欄が「あと1つ」になっていない");
     for (const v of [7, 5, 0]) {
       typeInto("oxIn1_Cr", v);
@@ -8316,9 +8357,9 @@ async function runOxNumUITests(iframe) {
 
   await t("OXNUM UI: 打っている途中に入力欄が作り直されない（焦点が飛ばない）", async () => {
     win.OxNum.goto("K2Cr2O7");
-    const before = typeInto("splitIn0", 2);
+    const before = typeInto("splitIn0", 1);
     assert(doc.getElementById("splitIn0") === before, "段1の入力欄が打つたびに別物になっている");
-    typeInto("splitIn1", 1);
+    typeInto("splitIn1", -2);
     const oxBefore = typeInto("oxIn1_Cr", 7);
     typeInto("oxIn1_Cr", 6);
     assert(doc.getElementById("oxIn1_Cr") === oxBefore, "段2の入力欄が打つたびに別物になっている");
@@ -8330,7 +8371,7 @@ async function runOxNumUITests(iframe) {
     assert(why.textContent.includes("Cu") && why.textContent.includes("S"),
       "未知が2つあることを言っていない: " + why.textContent);
     assert(why.classList.contains("oxWhyStrong"), "「分けないと解けない」回が目立っていない");
-    typeInto("splitIn0", 1); typeInto("splitIn1", 1);
+    typeInto("splitIn0", 2); typeInto("splitIn1", -2);
     typeInto("oxIn1_S", 6);
     assert(state().oxOk, "CuSO₄ を分けたあとに解けない");
     // ⚠ ふつうの回では正直に「式のままでも出せる」と言う（嘘の理由をつけない）
@@ -8341,7 +8382,7 @@ async function runOxNumUITests(iframe) {
 
   await t("OXNUM UI: 順序を強いない（どの欄から埋めてもよい）", async () => {
     win.OxNum.goto("Ag(NH3)2NO3");   // 段1が2欄・段2も2欄ある回
-    typeInto("splitIn1", 1);         // ★右から先に
+    typeInto("splitIn1", -1);        // ★右から先に
     assert(state().splitRest === 1 && !doc.getElementById("splitMsg").textContent.includes("順"),
       "右から埋めると順序を咎められる");
     typeInto("splitIn0", 1);
@@ -8354,7 +8395,7 @@ async function runOxNumUITests(iframe) {
 
   await t("OXNUM UI: 仮想の単原子イオンは、断りと一緒にしか出てこない", async () => {
     win.OxNum.goto("K2Cr2O7");
-    typeInto("splitIn0", 2); typeInto("splitIn1", 1);
+    typeInto("splitIn0", 1); typeInto("splitIn1", -2);
     assert(doc.getElementById("step3").hidden, "解く前から段3が出ている");
     typeInto("oxIn1_Cr", 6);
     assert(!doc.getElementById("step3").hidden, "解いても段3が出ない");
@@ -8371,7 +8412,7 @@ async function runOxNumUITests(iframe) {
   await t("OXNUM UI: 分ける相手がいない回は、段1で足踏みさせない", async () => {
     win.OxNum.goto("MnO4-");
     assert(!doc.getElementById("step2").hidden, "分けようがない回で段2が出ない");
-    assert(!$$("#splitSheet .fcoefIn").length, "分けようがない回に個数の入力欄がある");
+    assert(!$$("#splitSheet .oxChgIn").length, "分けようがない回に電荷の入力欄がある");
     assert(doc.getElementById("splitMsg").textContent.includes("分ける相手がいない"),
       "分けない理由を言っていない");
     typeInto("oxIn0_Mn", 7);
