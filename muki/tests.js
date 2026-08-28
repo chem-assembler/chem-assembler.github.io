@@ -761,39 +761,32 @@
         var TREE_ALL_OPS = Object.keys(TREE_OPS);
         ok('宣言の表が空でない（' + TREE_ALL_IONS.length + 'イオン × ' + TREE_ALL_OPS.length + '札）',
             TREE_ALL_IONS.length >= 6 && TREE_ALL_OPS.length >= 6);
-        ok('すべての（イオン × 札）が宣言されている（硫化水素が残っている場合も含めて）', (function () {
-            var bad = [];
+        // ★ 悉皆は **容器の状態ぜんぶ**（液性3 × 硫化水素の残り2 ＝ 6通り）で回す
+        var treeEachRule = function (fn) {
             TREE_ALL_IONS.forEach(function (i) {
                 TREE_ALL_OPS.forEach(function (o) {
-                    if (!treeRule(i, o, false)) bad.push(i + '×' + o);
-                    if (!treeRule(i, o, true)) bad.push(i + '×' + o + '(h2s)');
+                    TREE_ENVS.forEach(function (env) { fn(treeRule(i, o, env), i, o, env); });
                 });
+            });
+        };
+        ok('容器の状態を悉皆で回している（液性3 × 硫化水素の残り2 ＝ ' + TREE_ENVS.length + '通り）',
+            TREE_ENVS.length === 6);
+        ok('すべての（イオン × 札 × 容器の状態）が宣言されている', (function () {
+            var bad = [];
+            treeEachRule(function (r, i, o, env) {
+                if (!r) bad.push(i + '×' + o + '(' + env.ph + (env.h2s ? '+h2s' : '') + ')');
             });
             if (bad.length) warn('宣言もれ: ' + bad.join(' / '));
             return bad.length === 0;
         })());
         ok('沈殿すると宣言したものは、化学式と色を持っている', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    [false, true].forEach(function (h) {
-                        var r = treeRule(i, o, h);
-                        if (r && r.ppt && !(r.f && r.c)) bad.push(i + '×' + o);
-                    });
-                });
-            });
+            treeEachRule(function (r, i, o) { if (r && r.ppt && !(r.f && r.c)) bad.push(i + '×' + o); });
             return bad.length === 0;
         })());
         ok('沈殿の色は、色名 → hex の表に載っている', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    [false, true].forEach(function (h) {
-                        var r = treeRule(i, o, h);
-                        if (r && r.ppt && !(r.c in TREE_COLORS)) bad.push(r.c);
-                    });
-                });
-            });
+            treeEachRule(function (r) { if (r && r.ppt && !(r.c in TREE_COLORS)) bad.push(r.c); });
             if (bad.length) warn('色の表に無い色名: ' + bad.join(' / '));
             return bad.length === 0;
         })());
@@ -829,19 +822,76 @@
         var idealA = treeIdealSeq(pA);
         ok('a1 は Ag⁺・Cu²⁺・Fe³⁺・Zn²⁺・Ca²⁺・Na⁺（★ 鉄と亜鉛が両方いる）',
             pA.ions.slice().sort().join(',') === 'Ag,Ca,Cu,Fe3,Na,Zn');
-        ok('酸性の硫化水素で、鉄は沈まずに Fe²⁺ になる（＝ 還元される）', (function () {
-            var r = treeRule('Fe3', 'h2sAcid', false);
+        var ACID = { ph: 'acid', h2s: false };
+        var BASE = { ph: 'base', h2s: false };
+        var NEUT = { ph: 'neutral', h2s: false };
+        ok('酸性の容器で硫化水素を通すと、鉄は沈まずに Fe²⁺ になる（＝ 還元される）', (function () {
+            var r = treeRule('Fe3', 'h2s', ACID);
             return r.ppt === false && r.to === 'Fe2';
         })());
         ok('煮沸してから希硝酸を加えると Fe²⁺ は Fe³⁺ に戻る',
-            treeRule('Fe2', 'hno3', false).to === 'Fe3');
+            treeRule('Fe2', 'hno3', ACID).to === 'Fe3');
         ok('⚠ 煮沸していない（硫化水素が残っている）容器では、希硝酸を加えても戻らない（§4-2 の決め）',
-            !treeRule('Fe2', 'hno3', true).to);
+            !treeRule('Fe2', 'hno3', { ph: 'acid', h2s: true }).to);
         ok('アンモニアの段で Fe³⁺ は沈むが、Fe²⁺ は沈まない（★ ここが素通りの正体）',
-            treeRule('Fe3', 'nh3', false).ppt === true &&
-            treeRule('Fe2', 'nh3', false).ppt === false);
-        ok('塩基性の硫化水素で Fe²⁺ は FeS として沈む',
-            treeRule('Fe2', 'h2sBase', false).f === 'FeS');
+            treeRule('Fe3', 'nh3', ACID).ppt === true &&
+            treeRule('Fe2', 'nh3', ACID).ppt === false);
+        ok('塩基性の容器で硫化水素を通すと Fe²⁺ は FeS として沈む',
+            treeRule('Fe2', 'h2s', BASE).f === 'FeS');
+
+        // -----------------------------------------------------------
+        // ★★★ 液性は **容器が持つ状態**（2026-08-28・ユーザー指摘の作り直し）
+        // ⚠ 札の中に閉じ込めると、希塩酸を置かなくても結果が同じになってしまう
+        //   ＝ 「手順を組む」ことが問われる型なのに、順番が結果に効かなくなる
+        // -----------------------------------------------------------
+        section('型A: 液性は容器の状態（§2-2）');
+        ok('★ 硫化水素の札は1枚だけ（⚠ 酸性用・塩基性用に割り戻したら赤）', (function () {
+            var h = Object.keys(TREE_OPS).filter(function (o) {
+                return (TREE_OPS[o].short + TREE_OPS[o].say).indexOf('硫化水素') >= 0;
+            });
+            return h.length === 1 && h[0] === 'h2s';
+        })());
+        ok('⚠ 札の名前に液性を書いていない（★ 液性は札の性質ではない）',
+            Object.keys(TREE_OPS).every(function (o) {
+                return TREE_OPS[o].short.indexOf('酸性') < 0 && TREE_OPS[o].short.indexOf('塩基性') < 0;
+            }));
+        ok('★ 液性を変える札と、変えない札がある（希塩酸→酸性・アンモニア水→塩基性）',
+            TREE_OPS.hcl.ph === 'acid' && TREE_OPS.nh3.ph === 'base' &&
+            !TREE_OPS.h2s.ph && !TREE_OPS.boil.ph);
+        ok('★ 硫化水素の結果は、容器の液性で変わる（Zn²⁺：酸性では沈まず、中性・塩基性では沈む）',
+            treeRule('Zn', 'h2s', ACID).ppt === false &&
+            treeRule('Zn', 'h2s', NEUT).ppt === true &&
+            treeRule('Zn', 'h2s', BASE).ppt === true);
+        ok('★ 何もしていない容器は「中性」（⚠ 教科書の硫化物の表と同じ語彙）',
+            TREE_PH_JP.neutral === '中性' && treeRun(['Zn'], []).stages.length === 0 &&
+            treeRun(['Zn'], ['h2s']).stages[0].ph === 'neutral');
+        ok('★ 走らせた結果が、各段の液性を持っている（答え合わせがそこから説明する）', (function () {
+            var s = treeRun(pA.ions, idealA).stages;
+            return s[0].ph === 'neutral' && s[0].phAfter === 'acid' &&
+                s[1].ph === 'acid' && s[4].phAfter === 'base' && s[5].ph === 'base';
+        })());
+        // ★★★ 否定対照そのもの: 希塩酸を置かずに硫化水素を置くと、結果が変わる
+        var seqNoHcl = idealA.map(function (o) { return o === 'hcl' ? null : o; });
+        ok('★★ 希塩酸を置かずに硫化水素を通すと、結果が変わる（⚠ 同じになったら赤）', (function () {
+            var withHcl = treeActualLeaves(treeRun(pA.ions, idealA));
+            var without = treeActualLeaves(treeRun(pA.ions, seqNoHcl));
+            return JSON.stringify(withHcl) !== JSON.stringify(without);
+        })());
+        ok('★ 酸性にしていない容器では、酸性では沈まない硫化物まで同じ葉に来る', (function () {
+            var a = treeActualLeaves(treeRun(pA.ions, seqNoHcl));
+            var leaf = a[treeLeafId(idealA.indexOf('h2s'))] || [];
+            // Ag・Cu だけでなく Fe・Zn まで来る ＝ 単離できていない
+            return leaf.length === 4 && leaf.indexOf('Zn') >= 0 && leaf.indexOf('Fe') >= 0;
+        })());
+        ok('★ 希塩酸を置き忘れた答案は、単離できていない葉ができる', (function () {
+            var g = treeGrade(pA, seqNoHcl, treePlanFromRun(pA, idealA));
+            return g.isolated === false && g.dirty >= 2;
+        })());
+        ok('★ 同じ札を2つの枝に置ける（⚠ 硫化水素は教科書の手順で2度通す）',
+            TREE_OPS.h2s.reuse === true &&
+            idealA.filter(function (o) { return o === 'h2s'; }).length === 2);
+        ok('★ 枝の数（' + treeSlotCount(pA) + '）は札の枚数（' + pA.ops.length + '）と別に数える',
+            treeSlotCount(pA) === 7 && pA.ops.length === 6);
 
         // ★★ 模範の手順は、単離できて、机上と実際が一致する
         var gIdeal = treeGrade(pA, idealA, treePlanFromRun(pA, idealA));
@@ -914,7 +964,7 @@
             return a[TREE_FINAL_LEAF].length === pA.ions.length;
         })());
         ok('操作を1つも置かなければ、全部が最後のろ液に残る（＝ 単離できていない）', (function () {
-            var empty = [null, null, null, null, null, null, null];
+            var empty = [null, null, null, null, null, null, null];   // ⚠ 枝は7本
             var g = treeGrade(pA, empty, {});
             return g.isolated === false && g.actual[TREE_FINAL_LEAF].length === 6;
         })());
@@ -934,7 +984,51 @@
                 a.solvable === true && a.idealDirty === 0 && a.ok === true);
             ok('[' + p.id + '] ★ 芯が効く（希硝酸を抜くと結果が変わる。汚れた葉 ' +
                 a.feDirty + ' 枚・行先の食い違い ' + a.feMisplaced + ' 件）', a.feTrap === true);
+            // ★★ 液性が状態として効いているか（⚠ 札の中に閉じ込めたら、ここが false になる）
+            ok('[' + p.id + '] ★★ 希塩酸を抜くと硫化水素の結果が変わる（汚れた葉 ' +
+                a.hclDirty + ' 枚）', a.hclTrap === true && a.hclDirty >= 2);
         });
+        // ★ 手数（2026-08-28・ユーザー「余計な手順は正解、ただし減点のようなあつかい」）
+        section('型A: 手数と、余計な手（★ 不正解にはしない）');
+        ok('★ 採点が手数を持っている（⚠ 空けた枝は数えない）', (function () {
+            var g = treeGrade(pA, idealA, treePlanFromRun(pA, idealA));
+            var g2 = treeGrade(pA, seqNoHno3, treePlanFromRun(pA, idealA));
+            return g.moves === 7 && g2.moves === 6;
+        })());
+        ok('★ 門番が理想の最短手数を持っている（' +
+            TREE_PROBLEMS.map(function (p) { return p.id + ':' + treeAuditProblem(p).shortest; }).join(' ') + '）',
+            TREE_PROBLEMS.every(function (p) {
+                var a = treeAuditProblem(p);
+                // ⚠ 下限を高く見積もらないこと。★ a2 は実測4手で足りる
+                //   （亜鉛が居ないので硫化水素は1回でよく、鉄が還元されないので煮沸も希硝酸も要らない）
+                return a.shortest >= 3 && a.shortest <= a.ideal.length;
+            }));
+        ok('★★ 属が欠けている容器では、飛ばせる段があるぶん最短が短い（⚠ 正解は1つではない）',
+            treeAuditProblem(treeProblem('a1')).shortest === 7 &&
+            treeAuditProblem(treeProblem('a2')).shortest < 7 &&
+            treeAuditProblem(treeProblem('a3')).shortest < 7);
+        ok('★★ 最短の手数で実際に単離できる（⚠ 数だけ出して解けなかったら赤）', (function () {
+            var bad = [];
+            TREE_PROBLEMS.forEach(function (p) {
+                var a = treeAuditProblem(p);
+                // ⚠ 手順そのものは画面に出さないが、検査では「その手数で解ける」ことを確かめる
+                var ideal = treeIdealSeq(p), trimmed = ideal.slice();
+                ideal.forEach(function (o, i) {
+                    var probe = trimmed.slice();
+                    probe[i] = null;
+                    if (treeGrade(p, probe, treePlanFromRun(p, probe)).isolated) trimmed = probe;
+                });
+                var g = treeGrade(p, trimmed, treePlanFromRun(p, trimmed));
+                if (!g.isolated || g.moves !== a.shortest) bad.push(p.id);
+            });
+            return bad.length === 0;
+        })());
+        ok('⚠ 余計な手があっても、単離できていれば単離できたと数える（★ 減点ではない）', (function () {
+            // 模範のうしろに「もう1回 硫化水素」を足した答案（★ 何も沈まない余計な手）
+            var extra = idealA.concat(['h2s']);
+            var g = treeGrade(pA, extra, treePlanFromRun(pA, idealA));
+            return g.isolated === true && g.moves === 8;
+        })());
         ok('★ 少なくとも1問は、鉄を戻し忘れると葉が2枚汚れる（＝ 型A を作る意味そのもの）',
             TREE_PROBLEMS.some(function (p) { return treeAuditProblem(p).feDirty >= 2; }));
         ok('どの出題にも鉄が入っている（⚠ 入っていない出題は、この教材の芯を持たない）',
@@ -956,6 +1050,14 @@
                     return (m.name + m.mark + m.id).indexOf(w) < 0;
                 });
             }));
+        // ★ やり方の名前はユーザーが決めた文言（2026-08-28）。⚠ 勝手に言い換えない
+        ok('やり方の名前が、ユーザーの決めた文言のまま',
+            TREE_MODES.read.name === 'イオンの行先を答える' &&
+            TREE_MODES.build.name === '実験手順から考える');
+        ok('⚠ 「行き先」ではなく「行先」（★ 表記のゆれを作らない）',
+            Object.keys(TREE_MODES).every(function (k) {
+                return TREE_MODES[k].name.indexOf('行き先') < 0;
+            }));
         ok('札の名前に属の番号を書いていない（⚠ 書いたら並べる順を配ってしまう）',
             Object.keys(TREE_OPS).every(function (o) {
                 var t = TREE_OPS[o].short + TREE_OPS[o].say + TREE_OPS[o].mean;
@@ -970,35 +1072,27 @@
             '基本ノート', 'セミナー', '東京書籍', '三省堂', '旺文社', '参考書'];
         ok('説明（why）に本の名前が出てこない', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    [false, true].forEach(function (h) {
-                        var w = (treeRule(i, o, h) || {}).why || '';
-                        TREE_BOOKS.forEach(function (b) { if (w.indexOf(b) >= 0) bad.push(i + '×' + o + ':' + b); });
-                    });
-                });
+            treeEachRule(function (r, i, o) {
+                var w = (r || {}).why || '';
+                TREE_BOOKS.forEach(function (b) { if (w.indexOf(b) >= 0) bad.push(i + '×' + o + ':' + b); });
             });
             if (bad.length) warn('型A の why に本の名前: ' + bad.join(' / '));
             return bad.length === 0;
         })());
         ok('説明（why）にページ番号が出てこない', (function () {
             var bad = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) {
-                    var w = (TREE_RULES[i][o] || {}).why || '';
-                    if (/p\s*\.\s*\d+/i.test(w)) bad.push(i + '×' + o);
-                });
+            treeEachRule(function (r, i, o) {
+                if (/p\s*\.\s*\d+/i.test((r || {}).why || '')) bad.push(i + '×' + o);
             });
             return bad.length === 0;
         })());
         ok('出典（ref）はデータに残っている', (function () {
-            var n = 0;
+            var seen = {};
             // ⚠ 宣言もれがあっても **ここで例外にしない**。例外を投げると #total が更新されず、
             //   全走がそのまま黙って固まる（実測: 否定対照で 25 分待たされた）。
             //   ★ 落とすのは上の「悉皆で宣言している」の1件で足りる
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) { if ((TREE_RULES[i][o] || {}).ref) n++; });
-            });
+            treeEachRule(function (r, i, o) { if (r && r.ref) seen[i + '×' + o] = 1; });
+            var n = Object.keys(seen).length;
             if (n < 15) warn('ref を持つ組が ' + n + ' 件しかない');
             return n >= 15;
         })());
@@ -1006,10 +1100,9 @@
         //   ★ しかも「模範の手順では1度も出番が無い」＝ 系統分離の順どおりなら通らない場所
         //     だけに置いてある、を機械で押さえる
         ok('資料に無い組（この教材が埋めたもの）は 8 件以内', (function () {
-            var n = [];
-            TREE_ALL_IONS.forEach(function (i) {
-                TREE_ALL_OPS.forEach(function (o) { if ((TREE_RULES[i][o] || {}).src) n.push(i + '×' + o); });
-            });
+            var seen = {};
+            treeEachRule(function (r, i, o) { if (r && r.src) seen[i + '×' + o] = 1; });
+            var n = Object.keys(seen);
             if (n.length) warn('この教材が埋めた組: ' + n.join(' / '));
             return n.length <= 8;
         })());
@@ -1041,7 +1134,7 @@
             TREE_KEY_VERSION.charAt(0) !== SEP_KEY_VERSION.charAt(0));
         ok('記録は、鍵とやり方と中身と札を持つ', (function () {
             var r = treeRecord('build', pA, { dirty: 2 });
-            return r.mode === 'build' && r.ions.length === 6 && r.ops.length === 7 && r.dirty === 2;
+            return r.mode === 'build' && r.ions.length === 6 && r.ops.length === 6 && r.dirty === 2;
         })());
     }
 
@@ -1782,7 +1875,7 @@
         }
         var f = document.createElement('iframe');
         f.id = 'sepapp';
-        f.src = 'separation.html?v=24';
+        f.src = 'separation.html?v=25';
         f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
         f.style.height = '812px';
         document.body.appendChild(f);
@@ -2045,13 +2138,24 @@
                 var hit = (SPOILER_WORDS || []).filter(function (x) { return zone.indexOf(x) >= 0; });
                 if (hit.length) warn('型A の出題まわりに解き筋の語: ' + hit.join('・'));
                 ok('導入とやり方の欄に、解き筋の語が出てこない', hit.length === 0, uiOut);
-                ok('導入は1〜2行に収まっている（' + d.querySelector('.lead').textContent.trim().length +
-                    '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
+                var lead = d.querySelector('.lead').textContent.trim();
+                ok('導入は1行に収まっている（' + lead.length + '字）', lead.length <= 30, uiOut);
+                // ⚠ 画面を見れば分かること・押せば分かることを、導入に書かない（§18 と同じ縛り）
+                ok('⚠ 導入が「中身は分かっています」「提出すると…」を言い直していない',
+                    lead.indexOf('分かって') < 0 && lead.indexOf('提出') < 0 &&
+                    lead.indexOf('走らせ') < 0, uiOut);
+                ok('★ 中身が与えられていることは、画面（この容器の欄）から読み取れる',
+                    d.getElementById('beaker-ions').textContent.trim().length > 0, uiOut);
+                ok('やり方の名前が画面に出ている（ユーザーの決めた文言）',
+                    d.getElementById('modes').textContent.indexOf('イオンの行先を答える') >= 0 &&
+                    d.getElementById('modes').textContent.indexOf('実験手順から考える') >= 0, uiOut);
+                ok('⚠ 「机上」という設計書の語を画面に出さない',
+                    d.body.textContent.indexOf('机上') < 0, uiOut);
             })();
 
-            // --- ① やさしい段（行先を読む）は、操作がもう置いてある ---
+            // --- ① やさしい段（イオンの行先を答える）は、操作がもう置いてある ---
             w.treeUI.start('read', 'a1');
-            ok('「行先を読む」では操作の手札を出さない（枝はもう埋まっている）',
+            ok('「イオンの行先を答える」では操作の手札を出さない（枝はもう埋まっている）',
                 d.querySelectorAll('#op-deck .card').length === 0, uiOut);
             ok('枝が7つある', d.querySelectorAll('.slot.branch').length === 7, uiOut);
             ok('葉は6つ（★ 煮沸と希硝酸の枝には葉が生えない）',
@@ -2068,12 +2172,22 @@
             d.querySelector('.slot.leaf[data-leaf="L0"]').click();
             ok('置き先を押すと置かれる（★ タップ2段。⚠ ドラッグを使わない）',
                 w.treeUI.state.plan.Ag === 'L0' &&
-                !!d.querySelector('[data-placed="L0"] .card[data-ion="Ag"]'), uiOut);
+                d.querySelector('.slot.leaf[data-leaf="L0"]').getAttribute('data-ion') === 'Ag', uiOut);
             ok('置いた札は手札から消える',
                 !d.querySelector('#ion-deck .card[data-ion="Ag"]'), uiOut);
-            d.querySelector('[data-placed="L0"] .card[data-ion="Ag"]').click();
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
             ok('置いた札をもう一度押すと手札に戻る（★ 取り消しも同じ作法）',
                 !w.treeUI.state.plan.Ag && !!d.querySelector('#ion-deck .card[data-ion="Ag"]'), uiOut);
+            // ★★ 1つの終端に置けるイオンは1つだけ（⚠ 2つ積めたら赤）
+            d.querySelector('#ion-deck .card[data-ion="Ag"]').click();
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
+            d.querySelector('#ion-deck .card[data-ion="Cu"]').click();
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
+            ok('★★ 1つの沈殿に置けるイオンは1つだけ（⚠ 先に置いたものは手札に戻る）',
+                w.treeUI.state.plan.Cu === 'L0' && !w.treeUI.state.plan.Ag &&
+                !!d.querySelector('#ion-deck .card[data-ion="Ag"]') &&
+                d.querySelectorAll('[data-leaf="L0"]').length === 1, uiOut);
+            d.querySelector('.slot.leaf[data-leaf="L0"]').click();
 
             // --- ③ 途中では何も返さない（§16-1） ---
             ok('置いている途中では、答え合わせを出さない',
@@ -2104,17 +2218,21 @@
 
             // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
             w.treeUI.start('build', 'a1');
-            ok('「手順から組む」では操作の手札が7枚出る',
-                d.querySelectorAll('#op-deck .card').length === 7, uiOut);
+            ok('「実験手順から考える」では操作の手札が6枚出る（★ 硫化水素は1枚）',
+                d.querySelectorAll('#op-deck .card').length === 6 &&
+                d.querySelectorAll('#op-deck .card[data-op="h2s"]').length === 1, uiOut);
             ok('組む前は葉が1つ（最後のろ液）だけ',
                 d.querySelectorAll('.slot.leaf').length === 1, uiOut);
-            [['hcl', 0], ['h2sAcid', 1], ['boil', 2], ['nh3', 4], ['h2sBase', 5], ['co3', 6]]
+            [['hcl', 0], ['h2s', 1], ['boil', 2], ['nh3', 4], ['h2s', 5], ['co3', 6]]
                 .forEach(function (x) {
                     d.querySelector('#op-deck .card[data-op="' + x[0] + '"]').click();
                     d.querySelector('.slot.branch[data-slot="' + x[1] + '"]').click();
                 });
-            ok('希硝酸だけ手札に残っている（＝ 置き忘れた答案）',
-                d.querySelectorAll('#op-deck .card').length === 1 &&
+            ok('★ 硫化水素は置いても手札に残る（⚠ 教科書の手順は2度通す）',
+                !!d.querySelector('#op-deck .card[data-op="h2s"]') &&
+                w.treeUI.state.seq[1] === 'h2s' && w.treeUI.state.seq[5] === 'h2s', uiOut);
+            ok('希硝酸が手札に残っている（＝ 置き忘れた答案）',
+                d.querySelectorAll('#op-deck .card').length === 2 &&
                 !!d.querySelector('#op-deck .card[data-op="hno3"]'), uiOut);
             ok('★ 空けた枝は詰めない（アンモニアの葉は L4 のまま）',
                 !!d.querySelector('.slot.leaf[data-leaf="L4"]') &&
@@ -2133,6 +2251,19 @@
                 w.treeUI.state.record.isolated === false, uiOut);
             ok('同居した葉を名指しする', r2.textContent.indexOf('2 種類が同居しています') >= 0, uiOut);
             ok('何も来なかった葉も名指しする', r2.textContent.indexOf('何も来ませんでした') >= 0, uiOut);
+            // ★ 間違えたところを名指しする（2026-08-28・ユーザー）
+            ok('★ どの葉に何が入り、どの葉が空かを、まとめて名指しする',
+                /〕の沈殿に 鉄と亜鉛 が入っています/.test(r2.textContent) &&
+                /〕の沈殿は空です（鉄 を置きました）/.test(r2.textContent), uiOut);
+            // ★ 手数を見せる。⚠⚠ 模範の手順は出さない（★ 正解は1つではない）
+            ok('★ 手数と理想の最短手数が出る',
+                /（\d+手／最短 \d+手）/.test(r2.textContent), uiOut);
+            ok('⚠⚠ 模範の手順そのものを示していない（★ 1つ示すと他の正解を否定する）',
+                r2.textContent.indexOf('正解は') < 0 && r2.textContent.indexOf('正しい手順') < 0 &&
+                r2.textContent.indexOf('模範') < 0 && r2.textContent.indexOf('の順に') < 0, uiOut);
+            ok('★ 記録が手数と最短手数を持っている（⚠ 率と共有の文面は次の一手）',
+                w.treeUI.state.record.moves === 6 &&
+                w.treeUI.state.record.shortest === 7, uiOut);
             ok('★ 答え合わせで初めて「鉄は第3属です」と言う（⚠ 途中では言わない）',
                 r2.textContent.indexOf('鉄は第3属です') >= 0, uiOut);
             ok('なぜ素通りしたかを言う（Fe(OH)₂ と FeO(OH) の沈みやすさ）',
@@ -2162,15 +2293,110 @@
             ok('375px 幅で横スクロールが出ない（' + d.documentElement.scrollWidth + ' ≦ ' +
                 d.documentElement.clientWidth + '）',
                 d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1, uiOut);
+            // ⚠ `.locked`（＝ 押せない・disabled）は押し所ではないので数えない。
+            //   ★ そのぶん「実験手順から考える」側で全部 44px 以上を別に見張っている（下の⑧）
             var small = [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset'))
                 .filter(function (el) {
                     var h = el.getBoundingClientRect().height;
-                    return h > 0 && h < 44;
+                    return h > 0 && h < 44 && el.className.indexOf('locked') < 0;
                 });
             if (small.length) warn('小さすぎる置き先: ' + small.length + ' 個');
             ok('枝・葉・札・ボタンが指で押せる大きさ（44px 以上）', small.length === 0, uiOut);
-            ok('ツリーが1本の縦の並びになっている（★ 375px でも読める形）',
-                d.querySelectorAll('#stages .stage').length === 7, uiOut);
+
+            // --- ⑧ ★★ 流れ図はディレクトリツリー（2026-08-28・ユーザー決定） ---
+            //   ⚠ ここが緩むと「縦に長くて下が押しづらい」に戻る
+            w.treeUI.start('read', 'a1');
+            var flow = d.getElementById('flow');
+            ok('★ 流れ図がディレクトリツリーの行の並びになっている', (function () {
+                return !!flow && flow.querySelectorAll('.row').length === 18 &&
+                    flow.querySelectorAll('.row.node').length === 11 &&
+                    flow.querySelectorAll('.row.edge').length === 7;
+            })(), uiOut);
+            ok('★★ 1つの節が1行に収まっている（⚠ 枠を積まない。実測の最大 ' + (function () {
+                var mx = 0;
+                [].slice.call(flow.querySelectorAll('.row')).forEach(function (e) {
+                    mx = Math.max(mx, Math.round(rectH(e)));
+                });
+                return mx;
+            })() + 'px）', (function () {
+                var bad = [];
+                [].slice.call(flow.querySelectorAll('.row')).forEach(function (e) {
+                    // ⚠ 上限は実測（最大44px ＝ 押し所の下限）のすぐ上に置く。
+                    //   ★ ゆるくすると「枠を積む」形に戻っても気づけない
+                    if (rectH(e) > 46) bad.push(e.textContent.trim().slice(0, 12) + ':' + Math.round(rectH(e)));
+                });
+                if (bad.length) warn('1行に収まっていない節: ' + bad.join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+            ok('★★ 主流はインデントしない（⚠ 溶液の節と試薬は深さ0）', (function () {
+                var main = [].slice.call(flow.querySelectorAll('.row.edge, .row.node.sol'));
+                return main.length === 13 && main.every(function (e) {
+                    return e.getAttribute('data-d') === '0';
+                });
+            })(), uiOut);
+            ok('★★ 脱出したもの（沈殿）が1段インデントする', (function () {
+                var esc = [].slice.call(flow.querySelectorAll('.row.node.ppt'));
+                return esc.length === 5 && esc.every(function (e) {
+                    return e.getAttribute('data-d') === '1' &&
+                        parseFloat(w.getComputedStyle(e).marginLeft) >= 16;
+                });
+            })(), uiOut);
+            ok('⚠ 深さを列で表していない（★ インデントだけ。375px で列が足りなくならない）',
+                !flow.getAttribute('data-cols') &&
+                w.getComputedStyle(flow).display !== 'grid', uiOut);
+            // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
+            ok('★★ 沈殿の枠は ▢（角ばった四角）', (function () {
+                var bad = [];
+                [].slice.call(flow.querySelectorAll('.row.node.ppt')).forEach(function (e) {
+                    var r = parseFloat(w.getComputedStyle(e).borderTopLeftRadius) || 0;
+                    if (r > 3) bad.push(r);
+                });
+                if (bad.length) warn('角丸になっている沈殿の枠: ' + bad.join('/'));
+                return bad.length === 0;
+            })(), uiOut);
+            ok('★★ 溶液の枠は ⬭（丸い枠）', (function () {
+                var bad = [];
+                [].slice.call(flow.querySelectorAll('.row.node.sol')).forEach(function (e) {
+                    var r = parseFloat(w.getComputedStyle(e).borderTopLeftRadius) || 0;
+                    if (r < 12) bad.push(r);
+                });
+                if (bad.length) warn('丸くなっていない溶液の枠: ' + bad.join('/'));
+                return bad.length === 0;
+            })(), uiOut);
+            ok('⚠ 相を色だけで区別していない（★ 枠の形が実際に違う）', (function () {
+                var a = w.getComputedStyle(flow.querySelector('.row.node.ppt')).borderTopLeftRadius;
+                var b2 = w.getComputedStyle(flow.querySelector('.row.node.sol')).borderTopLeftRadius;
+                return a !== b2;
+            })(), uiOut);
+            ok('★ 最後のろ液は主流の末端（溶液）で、そこにも置ける',
+                !!flow.querySelector('.row.node.sol.terminal[data-leaf="F"]'), uiOut);
+            // ⚠⚠ 置けるのは終端だけ（★ 木の形から出す。「沈殿だから置ける」ではない）
+            ok('⚠ 置き場があるのは終端の節だけ（★ 途中の節には置けない）', (function () {
+                var terminal = flow.querySelectorAll('.row.node.terminal[data-leaf]').length;
+                var inner = flow.querySelectorAll('.row.node.inner[data-leaf]').length;
+                return terminal === 6 && inner === 0;
+            })(), uiOut);
+            // ★★★ 縦の長さ。⚠ 上限を数で決めておかないと、じわじわ戻る
+            //   （★ 作り直す前の実測: ページ 2081px・流れ図 1097px）
+            ok('★★ 375px 幅で、ページの高さが 1750px 以内（実測 ' +
+                d.documentElement.scrollHeight + 'px。⚠ 作り直す前は 2081px）',
+                d.documentElement.scrollHeight <= 1750, uiOut);
+            ok('★ 流れ図の欄の高さが 780px 以内（実測 ' +
+                Math.round(rectH(d.getElementById('panel-tree'))) + 'px。⚠ 作り直す前は 1097px）',
+                rectH(d.getElementById('panel-tree')) <= 780, uiOut);
+            // ⚠ 「実験手順から考える」では試薬の行が押し所になる ＝ 44px を要る
+            w.treeUI.start('build', 'a1');
+            ok('★ 「実験手順から考える」では、押せるものが全部 44px 以上', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset'))
+                    .forEach(function (el) {
+                        var h = el.getBoundingClientRect().height;
+                        if (h > 0 && h < 44) bad.push(el.className + ':' + Math.round(h));
+                    });
+                if (bad.length) warn('小さすぎる押し所（build）: ' + bad.join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+            w.treeUI.start('read', 'a1');
         }
     }
 
