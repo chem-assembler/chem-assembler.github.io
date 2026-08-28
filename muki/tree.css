@@ -15,6 +15,8 @@
     --ng: #e74c3c;
     --branch: #2980b9;
     --leaf: #16a085;
+    /* ★ 沈殿側の札（＝ 沈殿をもう一度割る手）。⚠ 主流の枝とは置き先が違うので色で分ける */
+    --split: #9b59b6;
 
     /* --- 流れ図の骨組み（★ 1か所で持つ。⚠ 各所に数を散らさない） --- */
     /* ★ 1段あたりのインデント（2026-08-28: 20px → 28px。ユーザー「もっと頭下げてよい」） */
@@ -117,6 +119,8 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
 }
 .card .sub { font-size: 11px; color: var(--dim); }
 .card.op { border-color: var(--branch); background: rgba(41, 128, 185, 0.22); }
+/* ★★ 沈殿側の札（⚠ 置き先が枝ではなく沈殿なので、見た目で分けておく） */
+.card.sub { border-color: var(--split); background: rgba(155, 89, 182, 0.22); }
 .card.ion { border-color: var(--leaf); background: rgba(22, 160, 133, 0.22); font-weight: bold; font-size: 16px; }
 .card.picked { outline: 3px solid var(--accent); outline-offset: 1px; }
 .card:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -236,6 +240,12 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
 .row.edge.locked { cursor: default; min-height: 32px; }
 .row.edge.can { border-color: var(--accent); }
 .row.edge .op-name { font-weight: bold; }
+/* ★★ 沈殿側の枝（★ 主流の枝と同じ引き方で、色だけ変える。
+   ⚠ 深さはインデントで出るので、ここで位置を足さない） */
+.row.edge.subbranch.set { border-color: var(--split); background: rgba(155, 89, 182, 0.22); }
+
+/* ★ まだ割っていない沈殿 —— 沈殿側の札を選んでいるときだけ、置けることを示す */
+.node.splittable.can { border-color: var(--split); border-style: solid; }
 
 /* --- 提出と答え合わせ --- */
 button.primary {
