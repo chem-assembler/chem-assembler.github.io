@@ -8308,14 +8308,19 @@ async function runOxNumUITests(iframe) {
     assert(line.includes("2 Na") || line.includes("2Na"), "個数の印が出ていない: " + line);
     const chk = doc.getElementById("splitChk");
     assert(chk && chk.textContent.includes("めざす合計"), "検算の行が無い: " + (chk && chk.textContent));
+    const colorOf = () => win.getComputedStyle(doc.getElementById("splitChk")).color;
+    const colNeutral = colorOf();   // まだ全部埋まっていない状態の色
     // ★否定対照: 合計だけ合わせても通らない（＋と−がたまたま打ち消し合う答え）
     typeInto("splitIn0", 2); typeInto("splitIn1", 2); typeInto("splitIn2", -6);
     assert(!state().splitOk, "打ち消し合うだけの電荷を通した");
     assert(doc.getElementById("splitChk").classList.contains("ngcell"), "通らないのに検算の行が緑");
+    const colNg = colorOf();
+    assert(colNg !== colNeutral, "検算の行に赤が**乗っていない**（印は付いても色が上書きされている）");
     assert(doc.getElementById("step2").hidden, "通らないのに段2が開いている");
     typeInto("splitIn0", 1); typeInto("splitIn1", 1); typeInto("splitIn2", -3);
     assert(state().splitOk, "Na⁺ ＋1・H⁺ ＋1・PO₄³⁻ −3 が通らない");
     assert(doc.getElementById("splitChk").classList.contains("okcell"), "正解でも検算の行が緑にならない");
+    assert(colorOf() !== colNg && colorOf() !== colNeutral, "正解と不正解で検算の行の色が変わらない");
     // ⚠ 電離表に無い塩なので「本当に起きる電離」とは言わない
     assert(!doc.getElementById("splitMsg").textContent.includes("本当に起きる電離"),
       "電離表に無い塩を実在の電離だと言っている: " + doc.getElementById("splitMsg").textContent);
