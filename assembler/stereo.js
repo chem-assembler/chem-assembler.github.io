@@ -237,6 +237,8 @@ class StereoView {
         this.rsRowEl = document.getElementById('stereo-rs-row');
         this.rsLetterEl = document.getElementById('stereo-rs-letter');
         this.rsWhyEl = document.getElementById('stereo-rs-why');
+        // 「なぜ判定しないのか」の畳んだ続き（本文は index.html 据え置き。ここは出し入れだけ）
+        this.rsWhyMoreEl = document.getElementById('stereo-rs-why-more');
         this.rsFaceHBtn = document.getElementById('btn-stereo-rs-face-h');
         if (this.rsFaceHBtn) this.rsFaceHBtn.addEventListener('click', () => this.faceHydrogenAway());
         this.wedgeMirror = false;    // くさび図を鏡像と並べているか
@@ -258,7 +260,6 @@ class StereoView {
         this.paneRing = document.getElementById('stereo-pane-ring');
         this.ringSvg = document.getElementById('stereo-ring-svg');
         this.ringNoteEl = document.getElementById('stereo-ring-note');
-        this.ringHintEl = document.getElementById('stereo-ring-hint');
         this.ringTiltInput = document.getElementById('stereo-ring-tilt');
         this.ringTiltValueEl = document.getElementById('stereo-ring-tilt-value');
         this.ringBtnSide = document.getElementById('btn-stereo-ring-side');
@@ -583,39 +584,52 @@ class StereoView {
 
         letterEl.innerHTML = '<b style="color:var(--text-secondary);">R・S: この図では判定していません</b>' +
             (dlHere ? `　／　<b style="color:var(--color-cyan);">D・L: ${dlHere.letter}体</b>` : '');
-        whyEl.textContent = this.rsUnreadableReason(mol, centerId) +
-            (dlElsewhere ? '\n' + dlElsewhere : '');
+        const reason = this.rsUnreadableReason(mol, centerId);
+        whyEl.textContent = reason.text + (dlElsewhere ? '\n' + dlElsewhere : '');
+        // ⚠ v1472: 「主鎖が縦でないから判定しない」の**理屈のほう（114字）は畳んだ**
+        //    （ux-density §2 番外）。本文は index.html に据え置きの静的テキストで、
+        //    ここでは**出す・出さないを切り替えるだけ** ＝ 中身が消えた状態が存在しない
+        //    ＝ 「畳んだふりをして消す」ができない形。理由の1行目（22字）は上に出したまま
+        if (this.rsWhyMoreEl) {
+            this.rsWhyMoreEl.classList.toggle('hidden', !reason.more);
+            if (!reason.more) this.rsWhyMoreEl.open = false;
+        }
     }
 
     /**
      * R・S を出せない理由。`assignRSDescriptor` が黙る条件を同じ順に当てて言葉にする。
      * **「直し方」まで書く**のが要点で、理由だけだと行き止まりに見える。
+     *
+     * ★ 返すのは `{ text, more }`（v1472）。`more` が true のときは、
+     *   **理屈の続きが `#stereo-rs-why-more` に畳んである**（index.html に据え置きの静的テキスト）。
+     *   ⚠ 続きを JS 側で作らないのは、**中身が空の状態を作らない**ため ——
+     *   「畳んだふりをして消す」がコード上できない形にしてある。
      */
     rsUnreadableReason(mol, centerId) {
         if (!mol.isAsymmetricCarbon(centerId)) {
-            return 'この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません' +
-                '（同じ置換基があると、鏡に映しても重ね合わせられます）。';
+            return { text: 'この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません' +
+                '（同じ置換基があると、鏡に映しても重ね合わせられます）。', more: false };
         }
         if (StereoView.isRingAtom(mol, centerId)) {
-            return '環の中の炭素です。R・S はフィッシャー投影の十字から読んでいるので、' +
+            return { text: '環の中の炭素です。R・S はフィッシャー投影の十字から読んでいるので、' +
                 '環（ハース投影）の中心では判定しません。環の立体は「⬍ α/β 面マーク」と' +
-                '「⬡ 環を横から」で扱います。';
+                '「⬡ 環を横から」で扱います。', more: false };
         }
         const slots = (typeof fischerSlots === 'function') ? fischerSlots(mol, centerId) : null;
         if (!slots) {
-            return '置換基が縦・横の軸から外れているため、フィッシャー投影として読めません。' +
+            return { text: '置換基が縦・横の軸から外れているため、フィッシャー投影として読めません。' +
                 '4つの枝を上下左右に描くと読めるようになります' +
-                (this._provisional ? '（下の「✓ この立体で図を確定する」でも揃えられます）' : '') + '。';
+                (this._provisional ? '（下の「✓ この立体で図を確定する」でも揃えられます）' : '') + '。',
+                more: false };
         }
         const isC = ref => ref !== 'H' && mol.atoms.find(a => a.id === ref).element === 'C';
         if (!isC(slots.up) || !isC(slots.down) || (isC(slots.left) && isC(slots.right))) {
-            return '主鎖が縦に描かれていないため、判定しません。フィッシャー投影は' +
-                '主鎖を縦に描く約束で、「縦が奥・横が手前」もそのときだけ成り立ちます。' +
-                '十字に見えるだけの普通の構造式に記号を付けると、立体を指定していない図に' +
-                '嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。';
+            // ⚠ ここだけ 136字あった。1行目（22字）だけ残し、**なぜ嘘になるのかの理屈 114字は畳む**。
+            //    畳んだ先は `#stereo-rs-why-more`（「なぜ判定しないのか」）
+            return { text: '主鎖が縦に描かれていないため、判定しません。', more: true };
         }
-        return '4つの枝に優先順位を付けられませんでした（辿っても差が出ない、または' +
-            'R（任意のアルキル基）のように原子番号が決まらないものを含んでいます）。';
+        return { text: '4つの枝に優先順位を付けられませんでした（辿っても差が出ない、または' +
+            'R（任意のアルキル基）のように原子番号が決まらないものを含んでいます）。', more: false };
     }
 
     /**
@@ -775,9 +789,12 @@ class StereoView {
             originNote = '※この描き方では立体が指定されていません（並びは一例です）。' +
                          '置換基をフィッシャー投影の軸方向（縦・横）に描くと、くさび図もその向きになります。';
         }
+        // ⚠ v1472: 2文目（「作図では90°の直交で…正四面体の頂点方向に伸びています。」65字）は
+        //    `#stereo-tetra-why` に畳んだ（ux-density §2-④）。★ **消していない**。
+        //    残す1文目は「図の読み方」＝ これが無いと図が読めない。畳んだ2文目は
+        //    「作図の約束と実物の食い違い」で、読み方より一段あとの話
         this.captionEl.textContent =
             'くさび図はフィッシャー投影の規約で描いています。縦（上・下）は紙面の奥＝ハッシュ（刻み線）、横（左・右）は紙面の手前＝▶（黒いくさび）への結合です。\n' +
-            '作図では90°の直交で描いていますが、実際のsp3炭素の結合角は約109.5°で、4つの置換基は正四面体の頂点方向に伸びています。\n' +
             stereoText + '\n' +
             originNote;
 
@@ -1569,8 +1586,11 @@ class StereoView {
                        'キャンバスの置換基がフィッシャー投影の十字（縦・横）に並び、以後は' +
                        '描いた立体として読まれます（↩ 戻す で元に戻せます）。');
         } else {
-            parts.push('置換基（文字・結合）をクリックすると、その置換基が上に来るように並べ替えます。' +
-                       '上の枝をクリック（または「↻ 残り3つを回す」）すると、上を固定したまま残りの3つが入れ替わります。');
+            // ⚠ **89字 → 20字**（v1472・ux-density §4）。消した後半
+            // 「上の枝をクリック（または「↻ 残り3つを回す」）すると、上を固定したまま残りの3つが
+            //  入れ替わります。」は、★ **ボタン「↻ 残り3つを回す」のラベルと title がそのまま言っている**
+            // ＝ 押す前に本文で言い直す必要がない（押した後の意味づけは下の `_wedgeCycled` の文が言う）
+            parts.push('置換基をタップすると、それが上に来ます。');
             if (this._wedgeCycled) {
                 parts.push('上の1つを固定して残り3つを回しても分子は変わりません（3つの巡回＝入れ替え2回分）。' +
                            '3回続けると元の並びに戻ります。右回り・左回りのどちらも同じ分子のままです。' +
@@ -3180,10 +3200,10 @@ class StereoView {
                 : (this._ringUnavailReason || RING_NO_RING_REASON);
             this.tabRing.setAttribute('data-ring-available', ok ? '1' : '0');
         }
-        if (this.ringHintEl) {
-            this.ringHintEl.textContent = ok ? '' : (this._ringUnavailReason || RING_NO_RING_REASON);
-            this.ringHintEl.classList.toggle('hidden', ok);
-        }
+        // ⚠ **理由を本文で書き足さない**（v1472・ux-density §4）。
+        //    ここには `#stereo-ring-hint` があり、使えない理由を 53字で書いていたが、
+        //    ★ **使えないことはボタンの灰色（`.view-btn:disabled`）で既に見えている**。
+        //    理由は上の `title` が持つ ＝ 消したのではなく、文から属性へ移した
     }
 
     updateRingButtons() {
