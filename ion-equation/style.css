@@ -1885,9 +1885,18 @@ main.timelineMain {
 .step.oxLocked[hidden] { display: none; }
 /* 段1の式は**折り返す1行**（筆算のグリッドではない）。→ をそろえる相手がいないので、
    狭い画面でははみ出すより折り返すほうがよい（実機で右辺の2つめが画面外に出ていた） */
-.oxSplitLine { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 4px; padding: 2px 0 4px; }
+/* ⚠ 上の余白 10px は「電荷の欄を半行ぶん持ち上げたぶん」の受け皿（2px ＋ 0.5em）。
+   これが無いと、持ち上げた欄が段の見出しに重なる */
+.oxSplitLine { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 4px; padding: 10px 0 4px; }
 .oxSplitLine .fterm { gap: 2px; }
-/* 段1で問うのは**電荷**（個数はアプリが出す印）。⚠ 電荷の欄は式のすぐ右に置く ——
-   上付きの電荷が書かれる場所に欄があるほうが、何を答えるのか読まずに分かる */
+/* 段1で問うのは**電荷**（個数はアプリが出す印）。
+   ★ 欄は**イオンの右上**（Na⁺ の ⁺・SO₄²⁻ の ²⁻ が来る場所）に置く。
+   ⚠ **本物の上付きにはしない** —— 字を小さくすると押せなくなる。
+   大きさは保ったまま **半行ぶん（0.5em ＝ 16px の半分 ＝ 8px）持ち上げる**だけにする。
+   ⚠ 下付き（PO₄ の ₄）は disp が持っている素の文字なので、持ち上げても消えない。 */
 .oxSplitN { font-size: 19px; font-weight: bold; color: #8d99a5; }
-.oxChgIn { width: 56px; margin-left: 2px; }
+.oxChgIn {
+  width: 56px; min-height: 44px;   /* ⚠ 押し所は 44px を割らない（上付きは小さくなりがち） */
+  margin-left: 2px;
+  position: relative; top: -0.5em;
+}
