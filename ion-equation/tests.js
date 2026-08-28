@@ -2739,6 +2739,138 @@ function runModelTests() {
     assert(OX_VIRTUAL_CAVEAT.includes("道具"), "断り文が「数えるための道具」だと言っていない");
   });
 
+  /* ---- 【練習X】半反応式を組む（ORDER_halfreaction_2026-08-22.md §2）---- */
+
+  /* 半反応式の正解から、人が入れる3つの項の入力値を作る（テストの中でだけ使う道具）。
+     ⚠ **アプリはこれを持たない** —— 採点は原子・電荷の保存と酸化数の変化だけで閉じている。 */
+  const halfTruth = (id) => {
+    const hr = HALF_REACTIONS[id];
+    const v = {};
+    for (const k of HALF_AUX) {
+      v[k] = {};
+      for (const s of ["left", "right"]) {
+        const t = hr[s].find((x) => x.sp === k);
+        if (t) v[k][s] = t.n;
+      }
+      if (v[k].left === undefined && v[k].right === undefined) v[k] = { left: 0 };  // 要らない回は 0
+    }
+    return v;
+  };
+
+  t("HALFBUILD: 出題は導出で作られ、片方の手順しか通らない回が混じらない", () => {
+    const list = halfBuildList();
+    assert(list.length >= 20, "出題できる式が少なすぎる: " + list.length);
+    for (const task of list) {
+      const hr = HALF_REACTIONS[task.id];
+      for (const t2 of [...hr.left, ...hr.right]) {
+        if (t2.sp === "e-") continue;
+        // ⚠ 有機・断片は手順B の「1個あたりの動き」が1つに決まらないので母数から外れている
+        assert(!oxPerAtomSpecies(t2.sp), task.id + ": 原子ごとに酸化数が違う種が混じっている");
+        assert(!SPECIES[t2.sp].name.includes("断片"), task.id + ": 反応の途中の断片が混じっている");
+        assert(t2.sp !== "OH-", task.id + ": 塩基性条件の式が混じっている（§7-5 は範囲外）");
+      }
+      assert(task.skeleton.left.length && task.skeleton.right.length,
+        task.id + ": 骨格の片側が空（H₂O・H⁺ 自身が主役の式は出せない）");
+      assert(task.change && !task.change.ambiguous, task.id + ": 酸化数の変化が1種類に決まらない");
+    }
+    // ★ 骨格が空になる式は、ちゃんと外れていること（外し忘れの見張り）
+    for (const id of ["H2O_ox", "H_red", "H2O2_red"]) {
+      assert(!halfBuildTaskOf(id), id + ": 骨格が片側だけになる式を出題に入れている");
+    }
+    assert(!halfBuildTaskOf("MnO4_red_neutral"), "塩基性条件の式を出題に入れている");
+    assert(list.some((x) => x.id === "MnO4_red"), "MnO₄⁻ → Mn²⁺ が出題に無い");
+  });
+
+  t("HALFBUILD: 与える面（骨格）に H₂O・H⁺・e⁻ が書いてない（答えが横に無い）", () => {
+    for (const task of halfBuildList()) {
+      const disp = halfSkeletonDisp(task.skeleton);
+      /* ⚠ 文字列の含み判定ではなく**項で見る** —— H₂O₂ は "H₂O" を含むが、
+         これは主役の過酸化水素であって、人が入れる水ではない */
+      for (const t2 of [...task.skeleton.left, ...task.skeleton.right]) {
+        assert(!HALF_AUX.includes(t2.sp), task.id + ": 骨格に " + SPECIES[t2.sp].disp + " が残っている: " + disp);
+      }
+      // ⚠ 完成した式（hr.disp）そのものは、骨格からは決して作れない
+      assert(disp !== HALF_REACTIONS[task.id].disp, task.id + ": 骨格が完成した式と同じ");
+    }
+    assert(halfSkeletonDisp(halfBuildTaskOf("Cr2O7_red").skeleton) === "Cr₂O₇²⁻ → 2 Cr³⁺",
+      "骨格の書き方が違う: " + halfSkeletonDisp(halfBuildTaskOf("Cr2O7_red").skeleton));
+  });
+
+  t("HALFBUILD: ★2通りの手順の両方で、全出題が最後まで通る", () => {
+    /* ここが §2 の要件（片方だけ作らない）の担保。同じ入力が A でも B でも成立し、
+       ⚠ **e⁻ の数を酸化数から導いた値が electronsOf と一致する**（独立の帳簿が2つ合う）。 */
+    let n = 0;
+    for (const task of halfBuildList()) {
+      const v = halfTruth(task.id);
+      for (const p of ["A", "B"]) {
+        assert(halfBuildDone(task, p, v), task.id + "/" + p + ": 正しい式なのに完成にならない");
+        assert(halfStepIndex(task, p, v) === HALF_PROCS[p].steps.length,
+          task.id + "/" + p + ": 段が最後まで進まない");
+      }
+      assert(task.electrons === electronsOf(HALF_REACTIONS[task.id]),
+        task.id + ": 酸化数から出した e⁻ 数(" + task.electrons + ")が式の e⁻ 数と違う");
+      n++;
+    }
+    assert(n >= 20, "通した式が少なすぎる: " + n);
+  });
+
+  t("HALFBUILD: ★否定対照 —— 数・辺・両辺置きは必ず落ち、答えは漏れない", () => {
+    const task = halfBuildTaskOf("MnO4_red");   // MnO₄⁻ → Mn²⁺（e⁻ 5個・左辺）
+    const v = halfTruth("MnO4_red");
+    const bad = (mut) => { const w = JSON.parse(JSON.stringify(v)); mut(w); return w; };
+    for (const p of ["A", "B"]) {
+      for (const d of [1, -1]) {
+        const w = bad((x) => { x["e-"] = { left: task.electrons + d }; });
+        assert(!halfBuildDone(task, p, w), p + ": e⁻ を " + d + " ずらしても通った");
+      }
+      const rev = bad((x) => { x["e-"] = { right: task.electrons }; });
+      assert(!halfBuildDone(task, p, rev), p + ": e⁻ を逆の辺に置いても通った");
+      const both = bad((x) => { x["H2O"] = { left: 4, right: 4 }; });
+      assert(!halfBuildDone(task, p, both), p + ": 両辺に H₂O を置いても通った");
+      const wet = bad((x) => { x["H2O"] = { left: 4 }; });
+      assert(!halfBuildDone(task, p, wet), p + ": H₂O を逆の辺に置いても通った");
+    }
+    /* ⚠ 漏らしてよいものと、いけないものを言い分ける。
+       ・O が「左 4 / 右 0」と出るのは**手順そのもの**（数えるのが仕事）なので漏れではない
+       ・⚠ **e⁻ の数だけは言ってはいけない** —— B の1段目はそれを出すのが問いだから */
+    const eMsgs = [
+      checkHalfStep(task, "B", 0, { "e-": { left: 3 } }).reason,
+      checkHalfStep(task, "B", 0, { "e-": { right: task.electrons } }).reason,
+      checkHalfStep(task, "B", 0, {}).reason,
+    ];
+    for (const m of eMsgs) {
+      assert(!m.includes(String(task.electrons)), "e⁻ の数を漏らしている: " + m);
+    }
+    // どの文にも、完成した式そのものは出てこない
+    const all = [];
+    for (const p of ["A", "B"]) {
+      for (let i = 0; i < 3; i++) all.push(String((checkHalfStep(task, p, i, v) || {}).reason));
+    }
+    assert(!all.join(" ").includes(HALF_REACTIONS[task.id].disp), "採点の文に完成した式が出ている");
+  });
+
+  t("HALFBUILD: 段のあいだは順序を強い、段の中では左右どちらから入れてもよい", () => {
+    const task = halfBuildTaskOf("MnO4_red");
+    const v = halfTruth("MnO4_red");
+    // 段のあいだ: 先の段だけ埋めても、そこまで進まない（③→④が下へ伸びるのと同じ筆算の順）
+    assert(halfStepIndex(task, "A", { "e-": v["e-"] }) === 0, "A: e⁻ だけ入れて先へ進めてしまう");
+    assert(halfStepIndex(task, "B", { "H2O": v["H2O"] }) === 0, "B: H₂O だけ入れて先へ進めてしまう");
+    // ★ B は e⁻ が1段目 ＝ A の並べ替えではない（段の並びそのものが違う）
+    assert(HALF_PROCS.B.steps[0].key === "e-" && HALF_PROCS.A.steps[2].key === "e-",
+      "2つの手順で e⁻ の位置が入れ替わっていない");
+    assert(HALF_PROCS.A.steps[2].by === "charge" && HALF_PROCS.B.steps[0].by === "ox",
+      "電荷が「解く材料」と「検算」で入れ替わっていない");
+    // 段の中: 片側だけ入れれば採点される（もう片方の空欄は 0 と読む）
+    const one = checkHalfStep(task, "A", 0, { "H2O": { right: 4 } });
+    assert(one.ok, "右だけ入れると通らない: " + one.reason);
+    // ⚠ 空欄と 0 の区別（0 は「要らない」という正しい答え）
+    assert(checkHalfStep(task, "A", 0, {}).kind === "partial", "両方空欄が partial にならない");
+    const zero = checkHalfStep(halfBuildTaskOf("Zn_ox"), "A", 0, { "H2O": { left: 0 } });
+    assert(zero.ok, "「水は要らない」を 0 で言えない: " + zero.reason);
+    assert(checkHalfStep(halfBuildTaskOf("Zn_ox"), "A", 0, {}).kind === "partial",
+      "0 と空欄が同じ扱いになっている");
+  });
+
   t("compareSides: 電荷の不一致を検出する", () => {
     const cmp = compareSides([{ sp: "H+", n: 1 }], [{ sp: "H+", n: 1 }, { sp: "H+", n: 1 }]);
     assert(!cmp.balanced);
