@@ -1555,6 +1555,130 @@ function runUiTests(doc, DATA) {
         });
       });
     }).then(function () {
+      // ---- 往復で演習の続きが残る（ユーザー申し立て 2026-08-28）----
+      // ⚠ 申し立て:「qa → assembler に飛ぶ → qa に戻る とその問題のみ表示、
+      // 答えを見たら終了（遷移前の状態が保存されていない）」。実測でも 2/10 → 1/1 だった。
+      //
+      // 上の「?code= で来ると1項目だけの回」は**控えが無いとき**の姿で、そこは変えていない。
+      // ここで見るのは**控えがあるときに続きへ返るか**。両方を並べて置くことで、
+      // 片方を直したつもりでもう片方を壊したら鳴る。
+      var RESUME_KEY = "qa.resume.v1";
+      function clearResume() { try { sessionStorage.removeItem(RESUME_KEY); } catch (e) {} }
+
+      // 演習を1つ始めて、飛び道具のある問題まで進み、そのリンクを押す（遷移はさせない）。
+      // ⚠ **進めるのに ○ を押すので localStorage の学習記録が動く**。テストが人の記録を
+      // 汚さないよう、前後で退避して戻す（キーは app.js の露出から取る）
+      function walkToLinkAndClick(a) {
+        var KEY = a.W.QaEngine.STORE_KEY;
+        var saved = a.W.localStorage.getItem(KEY);
+        try {
+          var start = a.D.querySelector('#unit-list button[data-unit="carbonyl"][data-mode="flip"]');
+          assert(start, "カルボニルの単元カードに暗記モードのボタンが無い");
+          start.click();
+          var link = null, seen = 0;
+          for (var i = 0; i < 40 && !link; i++) {
+            var rev = a.D.getElementById("btn-reveal");
+            if (!rev) break;                       // 回が尽きた（結果画面）
+            rev.click();
+            link = a.D.querySelector("#card-host a.a-link");
+            if (link) break;
+            seen++;
+            var good = a.D.getElementById("btn-good-q");
+            if (!good) break;
+            good.click();
+          }
+          assert(link, "カルボニルの回に飛び道具のある問題が1つも出なかった（回が短すぎる）");
+          var qof = a.D.getElementById("q-of").textContent.replace(/\s/g, "");
+          var qtext = a.D.querySelector(".q-text").textContent;
+          var href = link.getAttribute("href");
+          var code = decodeURIComponent((href.match(/[?&]code=([^&]+)/) || [])[1] || "");
+          // 押した瞬間に控える口を通したいが、iframe を assembler へ飛ばしたくないので
+          // 既定の遷移だけ止める。app.js の控えは capture で先に走るので影響しない
+          a.D.addEventListener("click", function (e) { e.preventDefault(); }, true);
+          link.click();
+          return { qof: qof, qtext: qtext, code: code, walked: seen };
+        } finally {
+          if (saved === null) a.W.localStorage.removeItem(KEY);
+          else a.W.localStorage.setItem(KEY, saved);
+        }
+      }
+
+      var trip = null;
+      return ta("QW6: 往復して戻ると演習の続きに返る（1問に潰れない）", function () {
+        clearResume();
+        return openWith("").then(function (a) {
+          try { trip = walkToLinkAndClick(a); } finally { a.kill(); }
+          var raw = sessionStorage.getItem(RESUME_KEY);
+          assert(raw, "飛び道具を押しても控えが残っていない（出て行くときに何も控えていない）");
+          var snap = JSON.parse(raw);
+          assert(snap.code === trip.code,
+            "控えている項目が押したリンクと違う（" + snap.code + " ≠ " + trip.code + "）");
+          assert(snap.queue.length > 1,
+            "控えの回が1問しかない（続きが残らないので往復の意味がない）");
+          // 戻ってくる
+          return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (b) {
+            try {
+              assert(!b.D.getElementById("view-study").classList.contains("hidden"),
+                "戻ってきて演習画面に着地しない");
+              var qof = b.D.getElementById("q-of").textContent.replace(/\s/g, "");
+              assert(qof === trip.qof,
+                "戻ったら回の位置が変わった（出るとき " + trip.qof + " → 戻って " + qof +
+                "）＝ 遷移前の状態が保存されていない");
+              assert(b.D.querySelector(".q-text").textContent === trip.qtext,
+                "戻ってきた問題が違う");
+              var bb = b.D.getElementById("back-band");
+              assert(bb.textContent.indexOf("続きから") >= 0,
+                "帯が続きへ返したことを言っていない（" + bb.textContent.trim() + "）");
+              // めくりは**こたえを開いた状態でしか飛び道具が出ない**ので、開いて返す
+              assert(b.D.querySelector("#card-host .answer"),
+                "こたえを閉じた状態で返している（押した飛び道具がもう画面に無い）");
+            } finally { b.kill(); clearResume(); }
+          });
+        });
+      }).then(function () {
+        return ta("QW7: 控えが無い／別の項目の控えなら、従来どおり1問だけの回に落ちる", function () {
+          clearResume();
+          var other = DATA.patterns.filter(function (p) { return p.code !== trip.code; })[0];
+          // まず控えが無い状態
+          return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (a) {
+            try {
+              assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+                "控えが無いのに続きを名乗っている（どこから来た続きか説明できない）");
+              assert(a.D.getElementById("back-band").textContent.indexOf("続きから") < 0,
+                "控えが無いのに帯が「続きから」と言っている");
+            } finally { a.kill(); }
+          }).then(function () {
+            // 次に**別の項目の**控えがある状態（噛み合わない控えを使い回さない）
+            sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+              code: other.code, unitId: other.unit, mode: "flip", scope: "daily", lv: null,
+              idx: 0, right: 0, wrong: 0, queue: [[other.code, 0], [other.code, 0]], revealed: false
+            }));
+            return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (a) {
+              try {
+                assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+                  "別の項目の控えで復元してしまった（押したのと違う問題の続きが出る）");
+              } finally { a.kill(); clearResume(); }
+            });
+          });
+        });
+      }).then(function () {
+        return ta("QW8: 項目が消えた古い控えは捨てて、1問だけの回に落ちる", function () {
+          // ⚠ 控えはコードで持っているので、**データを直した後に古い控えが残りうる**。
+          // 引き当てられないものが1つでもあれば復元しない（別の問題を出すほうが害が大きい）
+          sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+            code: trip.code, unitId: "carbonyl", mode: "flip", scope: "daily", lv: null,
+            idx: 0, right: 0, wrong: 0,
+            queue: [[trip.code, 0], ["org.gone.removed-item", 0]], revealed: false
+          }));
+          return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (a) {
+            try {
+              assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+                "消えた項目を含む控えで復元してしまった（引き当てられない問題が回に混ざる）");
+            } finally { a.kill(); clearResume(); }
+          });
+        });
+      });
+    }).then(function () {
       // ⚠ **確度は答えより先に目に入る位置に無いと意味がない**（2026-08-12）。
       // 「たぶん」の項目を、他の300項目と同じ顔で読ませてしまうのが避けたい事故。
       // データ側の検査（runDataTests）は印が付いているかまでしか見ないので、
