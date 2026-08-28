@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1477">
+    <link rel="stylesheet" href="style.css?v=1478">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1477</div>
+            <div class="version">v1478</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1696,6 +1696,21 @@
                         嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。
                     </div>
                 </details>
+                <!-- ⚠ v1478: 「この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません
+                     （同じ置換基があると、鏡に映しても重ね合わせられます）。」64字のうち、
+                     **括弧の中＝理由のほう**をここへ畳んだ（ユーザー指摘「モーダル内の説明が多く字が小さい」）。
+                     ★ **理由は消していない** —— それどころか、この理由は 2026-08-28 に入れた
+                     「⊕ 重ねてみる」で**その場で確かめられる**ようになったので、
+                     読ませるかわりに**跳べる**ようにした（下のボタン。これが発注の「ジャンプ」）。
+                     ⚠ 本文は静的に据え置く（stereo.js は hidden の出し入れだけ）＝ 中身が空の状態を作らない -->
+                <details id="stereo-rs-why-nonasym" class="learn-acc cross-rules-acc hidden" style="margin-top:6px;">
+                    <summary>なぜ区別が無いのか</summary>
+                    <div class="learn-acc-body">
+                        同じ置換基が2つ以上あると、鏡に映した形を<b>そのまま回すだけで元の形に重ね合わせられます</b>。
+                        重なってしまうなら別の分子ではないので、R・S で言い分ける必要そのものがありません。
+                        <button id="btn-stereo-rs-try-fit" class="view-btn" style="margin:6px 0 0; font-size:12px; padding:4px 9px;" title="3Dビューに切り替えて鏡像を並べ、鏡像だけを回して重ねられることを実際に確かめます">⊕ 重ねてみる（実際に重ねる）</button>
+                    </div>
+                </details>
             </div>
             <!-- ⚠ ここにあった `#stereo-ring-hint`（53字・「この分子には環がないため…」）は
                  v1472 で消した。**使えないことは、ボタンが灰色（`.view-btn:disabled`＝不透明度 0.42）
@@ -1737,12 +1752,40 @@
                     <button id="btn-stereo-mirror" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">🪞 鏡像と並べる</button>
                     <button id="btn-stereo-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;">⟲ 正面に戻す</button>
                 </div>
-                <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 軸を揃える）。鏡像モード中だけ出す -->
+                <!-- P12-8: 鏡像ペインの配置モード（鏡面対称 / 軸を揃える / ★ 重ねてみる）。鏡像モード中だけ出す -->
                 <div id="stereo-mirror-layout-row" class="hidden" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; margin-top:8px; font-size:12.5px; color:var(--text-secondary);">
                     <span>鏡像の配置:</span>
                     <button id="btn-stereo-mirror-layout-symmetric" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="右は左を画面上で鏡に映したままの配置。左右が常に同じように動きます">鏡面対称</button>
                     <button id="btn-stereo-mirror-layout-align" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="鏡像側の回転軸をオリジナルと同じ向きに構えます。軸を揃えても残り3つが重ならないことが見えます（回転軸に結合を選ぶと使えます）">軸を揃える</button>
+                    <!-- ★ ユーザー発注（2026-08-28）「鏡像異性体をオリジナルに重ねられるか試せるようにしたい。
+                         現状2つの図が同時に動くので、一方のみを動かして他方と重なるかを試せない」。
+                         設計と閾値の根拠は stereo.js の STEREO_FIT_SNAP_DEG の帯コメントが正 -->
+                    <button id="btn-stereo-mirror-layout-free" class="view-btn stereo-mirror-layout-btn" style="margin:0; font-size:12px; padding:4px 9px;" title="左を止めたまま、右（鏡像）だけを指で回して、左に重ねられるか試します。いちばんずれている結合の角度を出し、12°より小さくなったらぴったり重ねます">⊕ 重ねてみる</button>
                 </div>
+                <!-- ★ 重なりの答え合わせ（「⊕ 重ねてみる」のあいだだけ出す）。
+                     ⚠ これは**答え合わせ**であって操作の案内ではない（UX1 が数えない側。tests.js の帯を参照）。
+                     「⊙ いちばん近い向きへ」は、**いつまでも回させないための逃げ道** ——
+                     不斉炭素では何をどう回しても重ならないので、それを数で言い切って終わらせる -->
+                <div id="stereo-fit-row" class="hidden" style="margin-top:8px;">
+                    <p id="stereo-fit-result" style="font-size:13.5px; line-height:1.6; text-align:left; margin:0;"></p>
+                    <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:6px;">
+                        <button id="btn-stereo-fit-best" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="鏡像を「いちばん重なる向き」に置きます。重ねられる分子ならぴったり重なり、鏡像異性体なら、これ以上は近づかないことが数で分かります">⊙ いちばん近い向きへ</button>
+                        <button id="btn-stereo-fit-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="鏡像の向きを、鏡に映しただけの向き（はじめの向き）に戻します">⟲ 鏡像の向きを戻す</button>
+                    </div>
+                </div>
+                <!-- ⚠ v1478: 3つの並べ方の説明（各 130字前後）を `#stereo-3d-note` から**ここへ畳んだ**
+                     （ユーザー指摘「モーダル内の説明が多く字が小さい」）。★ **消していない** ——
+                     どれも「なぜそう見えるのか」の説明で、必要な人は開けば読める。
+                     ⚠ 本文を静的に持つのは、3つを1か所に並べておくため（画面に出るのは常に1つなので、
+                     JS で出し分けていると**残り2つの説明が誰にも見えない**）。stereo.js は hidden の出し入れだけ -->
+                <details id="stereo-mirror-how" class="learn-acc cross-rules-acc hidden" style="width:100%; text-align:left; margin-top:8px;">
+                    <summary>3つの並べ方のちがい</summary>
+                    <div class="learn-acc-body" style="font-size:13px; line-height:1.7;">
+                        <p style="margin:0;"><b style="color:var(--text-primary);">鏡面対称</b>：右は左を画面の左右で鏡に映したままの配置です。どちらを回しても左右がぴったり同じように動きます（常に厳密な鏡像）。</p>
+                        <p style="margin:0;"><b style="color:var(--text-primary);">軸を揃える</b>：鏡像側の回転軸をオリジナルと同じ向きに構えます。軸の上の置換基はぴったり重なりますが、残り3つは回る向きが左右で逆なので、どれだけ回しても重なりません。これが「鏡像異性体は回転では重ね合わせられない」ことの意味です（回転軸に結合を選ぶと使えます）。</p>
+                        <p style="margin:0;"><b style="color:var(--text-primary);">⊕ 重ねてみる</b>：左を止めて、右（鏡像）だけを指で回します。対応する4本の結合のうち、いちばんずれているものの角度を出し、12°より小さくなったらぴったり重ねます。不斉炭素では、どう回しても 70.5°より近づきません（＝ 重ね合わせられない、の中身）。</p>
+                    </div>
+                </details>
                 <p id="stereo-3d-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:10px 0 0;"></p>
             </div>
             <!-- P12-8: 環の「横から見る」ビュー（環を平面とみなした模式図）。中身は stereo.js が描く -->
@@ -1793,6 +1836,18 @@
                 <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
+            <!-- ⚠ v1478: キャプションは 215字あり、**モーダルに出ている文字の 54%** を1人で占めていた
+                 （実測 375×812・乳酸で 399字中 215字。ユーザー指摘「モーダル内の説明が多く字が小さい」）。
+                 ★ 残したのは**図が読めなくなる1行だけ**（縦=奥・横=手前）で、残りはここへ畳む:
+                   ・規約の言い回しの全文（フィッシャー投影の…）
+                   ・この炭素が不斉かどうかの説明 …… ⚠ **同じことは `#stereo-center-label` が
+                     24字で既に画面に出している**（「中心の炭素: 不斉炭素原子（…）」）＝ 2度言っていた
+                   ・並びがどこから来たかの「※」
+                 ⚠ 中身は stereo.js が毎回入れ直す（`setCaption`）。空にできない形にしてある -->
+            <details id="stereo-caption-more" class="learn-acc cross-rules-acc" style="width:100%; text-align:left; margin-top:6px;">
+                <summary>この図と、この炭素について</summary>
+                <div class="learn-acc-body" id="stereo-caption-more-body" style="white-space:pre-line;">くさび図はフィッシャー投影の規約で描いています。中心の炭素を選ぶと、その炭素についての説明がここに入ります。</div>
+            </details>
             <!-- ⚠ v1472: キャプションの2文目（65字）をここへ畳んだ（ux-density §2-④）。
                  ★ **消していない**。sp3 の 109.5°・正四面体は教科書本文で、必要な人は開けば読める。
                  畳んだ理由は「**この図を読むのに要らない**」から —— くさび図の読み方は
@@ -2031,19 +2086,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1477"></script>
+    <script src="chemistry.js?v=1478"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1477"></script>
-    <script src="game.js?v=1477"></script>
-    <script src="reaction.js?v=1477"></script>
-    <script src="quiz.js?v=1477"></script>
-    <script src="stereo.js?v=1477"></script>
-    <script src="reactor.js?v=1477"></script>
-    <script src="narrowing.js?v=1477"></script>
-    <script src="learn.js?v=1477"></script>
-    <script src="tutorial.js?v=1477"></script>
-    <script src="rec.js?v=1477"></script>
+    <script src="deadend.js?v=1478"></script>
+    <script src="game.js?v=1478"></script>
+    <script src="reaction.js?v=1478"></script>
+    <script src="quiz.js?v=1478"></script>
+    <script src="stereo.js?v=1478"></script>
+    <script src="reactor.js?v=1478"></script>
+    <script src="narrowing.js?v=1478"></script>
+    <script src="learn.js?v=1478"></script>
+    <script src="tutorial.js?v=1478"></script>
+    <script src="rec.js?v=1478"></script>
 </body>
 </html>

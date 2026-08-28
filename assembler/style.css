@@ -2088,6 +2088,14 @@ b.em { font-weight: 700; color: var(--neon-blue); }
       源順で下の枝が後ろにあるので、gap / padding / max-height は 1000px 側が勝つ */
 @media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
     #stereo-3d-svg { height: 168px; }
+    /* ★ 鏡像を並べているあいだは 168px を外す（2026-08-28・「⊕ 重ねてみる」を入れて発覚）。
+       スマホ縦では stereo.js が鏡像を**上下に積む**ので SVG は 240×456 になるが、
+       高さが 168px に固定されていたため meet で 0.368倍に縮み、
+       **結合 78 → 28px・ラベル 12.5 → 4.6px** ＝ 読めない大きさに潰れていた（実測）。
+       ⚠ 縮んでいたのは鏡像モードだけ（1枚のときは 240×228 なので 168px でも 0.74倍）。
+       `.wide-figure` は render3D が鏡像のあいだだけ付けるクラスなので、これで両立する。
+       幅は svg の `max-width:100%` が守る（モーダルは overflow-y:auto なので縦は伸びてよい） */
+    #stereo-pane-3d.wide-figure #stereo-3d-svg { height: auto; }
     /* 幅の上限は他モーダルと同じ 94vw に戻す（下の #stereo-modal の 980px は広い画面向け） */
     #stereo-modal .modal-content { --mp-y: 10px; --mp-gap: 6px; max-width: 94vw; }
     #stereo-caption { font-size: 12.5px; line-height: 1.45; }
