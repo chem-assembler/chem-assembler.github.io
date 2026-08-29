@@ -2868,14 +2868,35 @@
             ok('★ 罫の全長が、容器から最後のろ液までを覆っている（実測 ' +
                 Math.round(rail[rail.length - 1].bot - rail[0].top) + 'px）',
                 (rail[rail.length - 1].bot - rail[0].top) >= 400, uiOut);
-            ok('★ 罫から各行へ、横の継ぎ手が出ている（⚠ 容器だけは持たない）', (function () {
-                var rows = [].slice.call(flow.querySelectorAll('.row'));
-                var bad = rows.filter(function (e, i) {
-                    var cs = w.getComputedStyle(e, '::after');
-                    var has = cs.content !== 'none' && parseFloat(cs.borderTopWidth) > 0;
-                    return i === 0 ? has : !has;
+            // ★★★ MU-4 横の継ぎ手 `─` は **枝分かれの印**（2026-08-28・ユーザー指摘）:
+            //   > ろ液は - なしに ｜ につなぐ（インデントしない）
+            //   ⚠⚠ ろ液は枝分かれではなく **流れそのものの続き**。★ 縦の罫が通り抜けるだけでよい。
+            //   ⚠ 継ぎ手が付いていると「ろ液もどこかへ取り出したもの」に見え、
+            //     **取り出したのは沈殿のほうだ**という読みが崩れる。
+            var hasDash = function (e) {
+                var cs = w.getComputedStyle(e, '::after');
+                return cs.content !== 'none' && parseFloat(cs.borderTopWidth) > 0;
+            };
+            ok('MU-4a ★★ 主流の節（容器・ろ液・最後のろ液）に横の継ぎ手 ─ が無い', (function () {
+                var main = [].slice.call(flow.querySelectorAll('.row.node[data-i="0"]'));
+                var bad = main.filter(hasDash);
+                if (bad.length) warn('ろ液に継ぎ手が残っている: ' + bad.length + '行');
+                return main.length >= 3 && bad.length === 0;
+            })(), uiOut);
+            ok('MU-4b ★ 枝分かれ（沈殿・加える試薬）には横の継ぎ手 ─ が出ている', (function () {
+                var br = [].slice.call(flow.querySelectorAll('.row')).filter(function (e) {
+                    return parseInt(e.getAttribute('data-i'), 10) >= 1;
                 });
-                return bad.length === 0;
+                var bad = br.filter(function (e) { return !hasDash(e); });
+                if (bad.length) warn('継ぎ手の無い枝: ' + bad.length + '行');
+                return br.length >= 3 && bad.length === 0;
+            })(), uiOut);
+            ok('MU-4c ★ 主流の節はインデントされていない（⚠ 左端に一直線）', (function () {
+                var main = [].slice.call(flow.querySelectorAll('.row.node[data-i="0"]'));
+                var bad = main.filter(function (e) {
+                    return Math.round(parseFloat(w.getComputedStyle(e).marginLeft)) !== 0;
+                });
+                return main.length >= 3 && bad.length === 0;
             })(), uiOut);
             // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
             ok('★★ 沈殿の枠は ▢（角ばった四角）', (function () {
