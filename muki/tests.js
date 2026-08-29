@@ -2421,6 +2421,23 @@
                 res.textContent.indexOf('参考書') < 0, uiOut);
             ok('答えたあとは札が押せない',
                 d.querySelector('.op[data-op="h2s"]').disabled === true, uiOut);
+            // ★★★ MU-5 文字の大きさの下限（型A と同じ縛り。2026-08-28・ユーザー指摘）
+            ok('MU-5b ★★ 型B に 13px 未満の文字が無い（★ 版の帯を除く）', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('*')).forEach(function (e) {
+                    if (e.className && String(e.className).indexOf('version') >= 0) return;
+                    var own = [].slice.call(e.childNodes).filter(function (n) {
+                        return n.nodeType === 3 && n.textContent.trim();
+                    }).length;
+                    if (!own) return;
+                    var cs = w.getComputedStyle(e);
+                    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+                    var fs = parseFloat(cs.fontSize);
+                    if (fs < 13) bad.push((e.className || e.tagName) + ':' + fs + 'px');
+                });
+                if (bad.length) warn('13px 未満の文字: ' + bad.slice(0, 6).join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
 
             // ⚠ 「たまたま当たった」ときの文面（§3-5-4 (B) の向き）
             w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
@@ -2736,6 +2753,28 @@
             ok('提出したあとは札が押せない',
                 d.getElementById('btn-submit').disabled === true, uiOut);
 
+            // ★★★ MU-5 文字の大きさの下限（2026-08-28・ユーザー「フォントが小さい」）。
+            //   ⚠⚠ ここは **答え合わせまで出しきった状態**で測る ——
+            //     小さい字はたいてい解説側（.tag・.caveat・.leafrow）に溜まる。
+            //   ★ 版の帯（.version）だけは 12px 据え置き。読み物ではなく刻印なので数えない。
+            ok('MU-5a ★★ 型A に 13px 未満の文字が無い（★ 版の帯を除く）', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('*')).forEach(function (e) {
+                    if (e.className && String(e.className).indexOf('version') >= 0) return;
+                    // ⚠ 自分で文字を持っている要素だけ数える（★ 器は数えない）
+                    var own = [].slice.call(e.childNodes).filter(function (n) {
+                        return n.nodeType === 3 && n.textContent.trim();
+                    }).length;
+                    if (!own) return;
+                    var cs = w.getComputedStyle(e);
+                    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+                    var fs = parseFloat(cs.fontSize);
+                    if (fs < 13) bad.push((e.className || e.tagName) + ':' + fs + 'px');
+                })
+                if (bad.length) warn('13px 未満の文字: ' + bad.slice(0, 6).join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+
             // --- ⑥ 置き直せる ---
             d.getElementById('btn-reset').click();
             ok('「置き直す」で最初からやり直せる',
@@ -2932,12 +2971,18 @@
             })(), uiOut);
             // ★★★ 縦の長さ。⚠ 上限を数で決めておかないと、じわじわ戻る
             //   （★ ディレクトリツリーに作り直す前の実測: ページ 2081px・流れ図 1097px）
+            // ⚠ 上限を 1800 → 1900 にした（2026-08-28・ユーザー「フォントが小さい」）——
+            //   ★ 文字を1〜2px ずつ大きくしたぶん、縦が 1850px に伸びた（実測）。
+            //   ⚠⚠ これは**引き換え**であって、ゆるめたのではない ——
+            //     読めない字で縦を詰めても意味がない、というユーザーの判断。
+            //   ★ 1行の高さの上限（46px）は変えていないので、
+            //     「枠を積む」形に戻ったら今までどおり赤くなる。
             // ⚠ 上限を 1750 → 1800 にした（2026-08-28）——
             //   ★ 難易度の選択と「べつの容器にする」を足したぶん（実測 1691 → 1749）。
             //   ⚠ ツリーの作りは1行も変えていない（流れ図の欄は 731px のまま）。
-            ok('★★ 375px 幅で、ページの高さが 1800px 以内（実測 ' +
+            ok('★★ 375px 幅で、ページの高さが 1900px 以内（実測 ' +
                 d.documentElement.scrollHeight + 'px。⚠ 作り直す前は 2081px）',
-                d.documentElement.scrollHeight <= 1800, uiOut);
+                d.documentElement.scrollHeight <= 1900, uiOut);
             ok('★ 流れ図の欄の高さが 780px 以内（実測 ' +
                 Math.round(rectH(d.getElementById('panel-tree'))) + 'px。⚠ 作り直す前は 1097px）',
                 rectH(d.getElementById('panel-tree')) <= 780, uiOut);
