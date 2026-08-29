@@ -40493,7 +40493,14 @@
                 sites.map(s => s.productName).join('／'));
             assert(sites[0].productName === want,
                 `${a} + ${b}: 候補の名前が「${sites[0].productName}」（${want} のはず）`);
-            cond.apply({ userMolecule: mol }, sites[0]);
+            /* ⚠ **`game` は実物を渡す**（v1477）。`{ userMolecule: mol }` のスタブでは
+               `condensation_glycoside.apply` が呼ぶ `game.redrawProductsAsStandalone`
+               （＝ できた二糖を登録の図に直す）が無く、`is not a function` で落ちる。
+               すぐ下の GC4 の `hyd.apply(g, …)` はもともと実物を渡していて、
+               加水分解の側は前から同じメソッドを呼んでいる ＝ 実物を渡すのが元からの約束。
+               ★ `mol` は `c.game.userMolecule` そのものなので、**検査の中身は1つも変わらない**
+                 （面が読める中心の数 10/10/9/10 も立体コードの一致も実測で同じだった）。 */
+            cond.apply(c.game, sites[0]);
             const part = glycoProduct(c);
             assert(part, `${want}: 生成物が見つからない`);
             assert(c.game.lookupCompoundName(part) === want,
@@ -40586,7 +40593,8 @@
         GLYCO_PAIRS.forEach(([a, b, want]) => {
             const mol = glycoSetup(c, [a, b]);
             const before = namesOn();
-            cond.apply({ userMolecule: mol }, cond.detect(mol)[0]);
+            // ⚠ 実物の `game` を渡す（理由は GC1 の注。下の `hyd.apply(g, …)` と同じ扱いにそろえる）
+            cond.apply(g, cond.detect(mol)[0]);
             assert(g.lookupCompoundName(glycoProduct(c)) === want, `${want}: つないだ結果が名乗らない`);
             const cuts = hyd.detect(mol);
             assert(cuts.length === 1, `${want}: 切り戻す箇所が ${cuts.length} 件（1件のはず）`);
