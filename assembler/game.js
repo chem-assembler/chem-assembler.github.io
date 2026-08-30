@@ -9277,18 +9277,6 @@ class Game {
     }
 
     /**
-     * ★ 門番。キャンバスの図について「描いてよいもの」を**1回の計算から**取り出す。
-     *
-     * 返すのは `iupacNameDetail`（付け根 R があれば `iupacAlkylDetailFromR`）が返したものだけで、
-     * ここで鎖を選び直したり最長鎖を計算し直したりは**しない**。
-     * `findLongestCarbonChain` は IUPAC の主鎖ではない（実測 84件中 16件が食い違い、
-     * うち14件は炭素数が同じ）ので、ここから呼んではいけない —— IN2 が名指しで見張っている。
-     *
-     * @returns null | { kind:'chain', chain, name }
-     *              | { kind:'alkyl', chain, name, systematic }
-     *              | { kind:'ether', groups, name }
-     */
-    /**
      * ★ 🔢 が対象にする**1分子**を決める（`DESIGN_iupac_check.md` §N-8・ユーザー発注 2026-08-28
      *   「キャンバスに複数分子存在するときの主鎖と番号の挙動、選択した分子に番号を振りたい」）。
      *
@@ -9322,6 +9310,21 @@ class Game {
         return { mol: hit, count: parts.length, chosen: true };
     }
 
+    /**
+     * ★ 門番。キャンバスの図について「描いてよいもの」を**1回の計算から**取り出す。
+     *
+     * 返すのは `iupacNameDetail`（付け根 R があれば `iupacAlkylDetailFromR`）が返したものだけで、
+     * ここで鎖を選び直したり最長鎖を計算し直したりは**しない**。
+     * `findLongestCarbonChain` は IUPAC の主鎖ではない（実測 84件中 16件が食い違い、
+     * うち14件は炭素数が同じ）ので、ここから呼んではいけない —— IN2 が名指しで見張っている。
+     *
+     * ⚠ 見る相手は**キャンバス全体ではなく `iupacNumberingSubject()` が決めた1分子**（§N-8）。
+     *   分子が1つならそれは `this.userMolecule` そのもの ＝ 1分子の挙動は変わらない。
+     *
+     * @returns null | { kind:'chain', mol, chain, name }
+     *              | { kind:'alkyl', mol, chain, name, systematic }
+     *              | { kind:'ether', mol, groups, name }
+     */
     iupacNumberingDetail() {
         const subject = this.iupacNumberingSubject();
         const mol = subject.mol;
@@ -9453,7 +9456,7 @@ class Game {
                 message: `主鎖と番号を出しました（${det.name}）。表示中は作図できません（もう一度押すと消えます）。` };
         }
         // ===== ここから「出せない」の言い分け =====
-        // 順番は**手当ての近さ**で決める。分子を1つにするのがいちばん早い手当てなので先に見る
+        // 順番は**手当ての近さ**で決める。分子を選ぶのがいちばん早い手当てなので先に見る
         // ★ 分子が2つ以上あるときは「1つにしてください」ではなく「**選んでください**」（§N-8）。
         //   選べば出せるようになったので、消させるのはもう間違い ——
         //   ユーザーが並べて見比べている図を、番号を見るためだけに壊させることになる
