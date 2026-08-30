@@ -62,7 +62,10 @@
     <!-- ⚠⚠ ここに出題の説明文を書かないこと。★ 解き筋を先に配ることになる（2026-08-27）。
          出してよいのは難易度の印と候補の数だけ（tests.js が見張っている） -->
     <section class="panel" id="panel-problem">
-        <h2 id="prob-title">この容器</h2>
+        <!-- ★ 人に見せる問題 ID（2026-08-28・ユーザー「問題にIDを付与、成績の集計へ」）。
+             ⚠⚠ 中身のイオンは入っていない —— ★ 入れたら、解いている最中に答えを配ってしまう。
+             ⚠ 入っているのは候補の組だけで、それは下にそのまま並んでいる。 -->
+        <h2 id="prob-title">この容器 <span class="pid" id="prob-id"></span></h2>
         <p class="note" id="prob-note"></p>
         <div id="cand-list" class="chips"></div>
     </section>

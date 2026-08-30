@@ -127,6 +127,8 @@
         var p = state.problem;
         // ⚠ ここに解き筋を書かない。出してよいのは難易度の印と候補の数だけ
         $('prob-note').textContent = levelOf(state.level).mark + '　候補 ' + p.cands.length;
+        // ★ 人に見せる問題 ID（⚠ 中身は入っていないので、解いている最中に出してよい）
+        $('prob-id').textContent = p.pid;
         var box = $('cand-list');
         box.textContent = '';
         p.cands.forEach(function (c) {
@@ -264,15 +266,62 @@
         return hit.length ? hit[0] : null;
     }
 
+    /**
+     * ★★ その回の成績（2026-08-28・ユーザー「問題にIDを付与、成績の集計へ」
+     *   「結果を表示したい／正解率%　最短手順正解率%をだせるとよい」）。
+     *
+     * ⚠ ここに出すのは **今回1回ぶんだけ**。累計の率は出していない
+     *   （★ 何回ぶんを、どこに貯めるかを決めていないため。§22 に申し送り）。
+     * ★ 型B で手数を出してよい理由: **札を選んだのは学習者**だから
+     *   （⚠ 型A の「イオンの行先を答える」で出さないのは、そこでは選んでいないから）。
+     */
+    function scoreBox(sc, g) {
+        var box = document.createElement('div');
+        box.className = 'score';
+        var row = function (label, value) {
+            var d = document.createElement('div');
+            d.className = 'score-row';
+            var k = document.createElement('span');
+            k.className = 'score-k';
+            k.textContent = label;
+            var v = document.createElement('span');
+            v.className = 'score-v';
+            v.textContent = value;
+            d.appendChild(k);
+            d.appendChild(v);
+            box.appendChild(d);
+        };
+        row('問題', state.problem.pid + '　' + levelOf(state.level).mark +
+            '　候補 ' + state.problem.cands.length);
+        row('判定', g.correct ? '正解' : '不正解');
+        row('手数', sc.moves === 0 ? '操作なし' : sc.moves + '手');
+        // ⚠⚠ **決めきった回にだけ、最短の手数を出す**（実機で読み比べて決めた）。
+        //   ★ 決めきっていない回に出すと、数字が食い違って読める ——
+        //     炎色1手で当てただけの回に「手数 1手／決めるのに要る手数 1手」と並ぶ。
+        //     （⚠ この 1手 は「別の札なら1手で決まった」の意味で、
+        //       学習者が押した札のことではない。★ 並べると、決まっていないのに
+        //       最短で解けたように見える。）
+        //   ★ 足りなかった回に何が足りないかは、下の判定の一文が
+        //     「〔◯◯〕を行うと、この2つが分かれます」と名指しで言っている。
+        //   ⚠ 記録（record）には決めきらなかった回も残す —— 表示と集計は別。
+        if (sc.least != null && g.verdict === 'decided') {
+            row('決めるのに要る手数', sc.least + '手' + (sc.minimal ? '　最短で当てました' : ''));
+        }
+        return box;
+    }
+
     function answer(pick) {
         if (state.answered) return;
         state.answered = true;
         var g = sepGrade(state.problem, state.truth, pick, state.history);
+        var sc = sepScore(state.problem, state.truth, state.history, g.verdict);
         // ★ 記録に結果を足す。⚠ **持つだけ。送信も保存もしない**
         //   （★ 集計するなら単位は `key`＝型。⚠ 出題そのものは毎回別物になる）
         state.record = sepRecord(state.problem, {
             picked: pick, correct: g.correct, verdict: g.verdict,
-            steps: state.history.map(function (h) { return h.op; })
+            steps: state.history.map(function (h) { return h.op; }),
+            // ★ 率を後から出すのに要る数（⚠ 送信も保存もしない。持つだけ）
+            moves: sc.moves, least: sc.least, shortest: sc.shortest, minimal: sc.minimal
         });
         var box = $('result');
         box.textContent = '';
@@ -282,6 +331,8 @@
         h3.textContent = g.correct ? '正解 — ' + ionFull(state.truth)
             : '正解は ' + ionFull(state.truth) + ' でした';
         box.appendChild(h3);
+        // ★ その回の成績（⚠ 見出しのすぐ下。読む順は「結果 → なぜそうなったか」）
+        box.appendChild(scoreBox(sc, g));
 
         // ★ 判定の一文。⚠ 「あなたは間違えました」ではなく「あなたの操作でこうなりました」
         if (g.verdict === 'decided') {

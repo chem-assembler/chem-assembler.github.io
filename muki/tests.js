@@ -613,9 +613,13 @@
                     return (l.name + l.mark + l.id).indexOf(w) < 0;
                 });
             }));
-        ok('出題が持つのは鍵・段・候補・札・中身だけ（説明文の欄を持たない）', (function () {
+        // ⚠ `pid` を足した（2026-08-28・ユーザー「問題にIDを付与」）。
+        //   ★ これは **説明文ではなく名札** —— 中身は「型の版・段・候補の組」だけで、
+        //     解き筋も答えも入っていない（MU-6b が中身の漏れを見張っている）。
+        //   ⚠ この検査の役目は変わらない: **次に誰かが説明文の欄を足したら、ここで止まる。**
+        ok('出題が持つのは鍵・ID・段・候補・札・中身だけ（説明文の欄を持たない）', (function () {
             var p = sepMakeProblem('easy');
-            return Object.keys(p).sort().join(',') === 'cands,id,key,level,ops,truth';
+            return Object.keys(p).sort().join(',') === 'cands,id,key,level,ops,pid,truth';
         })());
         ok('難易度は、門番が数えた値だけから出る（候補の数・理想の最短・単独で決まらない候補の数）',
             SEP_LEVELS.every(function (l) {
@@ -732,6 +736,93 @@
             var g = sepGrade(p3, 'Zn', 'Zn', hh);
             return g.steps[0].dropped.length === 0;
         })());
+        // ---------------------------------------------------------------
+        // ★★★ MU-6 人に見せる問題 ID と、その回の成績
+        //   （2026-08-28・ユーザー「問題にIDを付与、成績の集計へ」）
+        // ---------------------------------------------------------------
+        ok('MU-6a ★ 問題 ID が短く、書き写せる形（実測 ' +
+            sepProblemId('easy', ['Ag', 'Pb', 'Cu', 'Na']) + '）', (function () {
+                var id = sepProblemId('easy', ['Ag', 'Pb', 'Cu', 'Na']);
+                return /^B1-[ENH]-[0-9A-Z]+$/.test(id) && id.length <= 10;
+            })());
+        ok('MU-6b ⚠⚠ 問題 ID が中身（答え）を漏らしていない', (function () {
+            // ★ 同じ候補の組なら、中に何が入っていても同じ ID になること
+            var ids = {};
+            ['Ag', 'Pb', 'Cu', 'Na'].forEach(function (t) {
+                var q = sepMakeProblem('easy', {
+                    cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                    ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: t
+                });
+                ids[q.pid] = 1;
+            });
+            return Object.keys(ids).length === 1;
+        })());
+        ok('MU-6c ★★ 母集団のどの出題も、ID が重ならない（実測 ' + (function () {
+            var n = 0;
+            SEP_LEVELS.forEach(function (l) { n += (pools[l.id] || []).length; });
+            return n;
+        })() + ' 組）', (function () {
+            var seen = {}, n = 0, dup = 0;
+            SEP_LEVELS.forEach(function (l) {
+                (pools[l.id] || []).forEach(function (e) {
+                    var id = sepProblemId(l.id, e.cands);
+                    n++;
+                    if (seen[id]) dup++;
+                    seen[id] = 1;
+                });
+            });
+            if (dup) warn('問題 ID が重なっている: ' + dup + '件');
+            return n > 0 && dup === 0;
+        })());
+        // ⚠⚠ ID は候補の組から引き直せる（★ ハッシュではない）。
+        //   ここが釘 —— SEP_IONS の並びを変えると ID が変わるので、そのときは版を上げること
+        ok('MU-6d ⚠ 既知の組の ID が動いていない（★ SEP_IONS の並びが変わると動く）',
+            sepProblemId('easy', ['Ag', 'Pb', 'Cu', 'Na']) === 'B1-E-N' &&
+            sepProblemId('hard', ['Ag', 'Pb', 'Cu', 'Ca', 'Na', 'K']) === 'B1-H-1R');
+        ok('MU-6e ★ 段が ID の1文字目で分かれている（E／N／H）',
+            SEP_LEVELS.map(function (l) { return l.code; }).join('') === 'ENH');
+        // ★ その回の成績
+        ok('MU-6f ★ 決めきった回は、手数と「決めるのに要る手数」が数えられる', (function () {
+            var q = { id: 'fixed', cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'] };
+            var hh = [{ op: 'flame', obs: sepObserve('Ag', 'flame') },
+                { op: 'hclHot', obs: sepObserve('Ag', 'hclHot') }];
+            var g = sepGrade(q, 'Ag', 'Ag', hh);
+            var sc = sepScore(q, 'Ag', hh, g.verdict);
+            return g.verdict === 'decided' && sc.moves === 2 && sc.least === 1 &&
+                sc.minimal === false;
+        })());
+        ok('MU-6g ⚠ 決めきっていない回は「最短で当てた」にならない', (function () {
+            var q = { id: 'fixed', cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'] };
+            var hh = [{ op: 'flame', obs: sepObserve('Ag', 'flame') }];
+            var g = sepGrade(q, 'Ag', 'Ag', hh);
+            // ★ 当たってはいるが決まっていない（lucky）＝ 最短の判定は付けない
+            return g.verdict === 'lucky' && sepScore(q, 'Ag', hh, g.verdict).minimal === false;
+        })());
+        ok('MU-6h ★★ 決めきった回は、手数が「決めるのに要る手数」を下回らない', (function () {
+            // ⚠ ここが崩れると、成績の表示が「最短より速い」という読めない形になる
+            var bad = [];
+            SEP_LEVELS.forEach(function (l) {
+                (pools[l.id] || []).slice(0, 12).forEach(function (e) {
+                    var q = { id: 'g', cands: e.cands, ops: e.ops };
+                    e.cands.forEach(function (t) {
+                        // ★ 全部の札を使えば必ず決まる ＝ decided の回を作れる
+                        var hh = e.ops.map(function (o) {
+                            return { op: o, obs: sepObserve(t, o) };
+                        });
+                        var g = sepGrade(q, t, t, hh);
+                        var sc = sepScore(q, t, hh, g.verdict);
+                        if (g.verdict === 'decided' && sc.moves < sc.least) {
+                            bad.push(sepProblemId(l.id, e.cands) + '/' + t);
+                        }
+                    });
+                });
+            });
+            if (bad.length) warn('手数が最短を下回った: ' + bad.slice(0, 4).join(' / '));
+            return bad.length === 0;
+        })());
+
         // ★★★ MU-1 「実験は毎回、試料を少しずつ取って新しく行う」が **作りと合っているか**
         //   （2026-08-28・ユーザー指摘で導入に書き足した一文の裏づけ）。
         //   ⚠⚠ 文だけ直して作りが違っていたら、それは嘘になる。★ ここで機械で確かめる。
@@ -2421,6 +2512,55 @@
                 res.textContent.indexOf('参考書') < 0, uiOut);
             ok('答えたあとは札が押せない',
                 d.querySelector('.op[data-op="h2s"]').disabled === true, uiOut);
+
+            // ★★★ MU-6 問題 ID と、その回の成績（2026-08-28・ユーザー指摘）
+            (function () {
+                var pid = d.getElementById('prob-id');
+                ok('MU-6i ★ 解いている最中から、問題 ID が画面に出ている（実測 ' +
+                    (pid ? pid.textContent : 'なし') + '）',
+                    !!pid && /^B1-[ENH]-[0-9A-Z]+$/.test(pid.textContent.trim()), uiOut);
+                // ⚠⚠ ID が答えを漏らしていないこと（★ 引き直しても、候補が同じなら同じ ID）
+                ok('MU-6j ⚠⚠ 画面の ID にイオンの名前が入っていない',
+                    !!pid && Object.keys(SEP_IONS).every(function (k) {
+                        return pid.textContent.indexOf(SEP_IONS[k].name) < 0 &&
+                            pid.textContent.indexOf(SEP_IONS[k].jp) < 0;
+                    }), uiOut);
+                var rows = [].slice.call(res.querySelectorAll('.score-row')).map(function (r) {
+                    return r.querySelector('.score-k').textContent + '=' +
+                        r.querySelector('.score-v').textContent;
+                });
+                ok('MU-6k ★ 答え合わせに、その回の成績が出る（' + rows.join(' / ') + '）',
+                    rows.length >= 3 &&
+                    rows[0].indexOf('問題=') === 0 && rows[0].indexOf('B1-') > 0 &&
+                    rows[1] === '判定=正解' && rows[2].indexOf('手数=3手') === 0, uiOut);
+                ok('MU-6l ★ 決めきった回は「決めるのに要る手数」も出る',
+                    rows.length === 4 && rows[3].indexOf('決めるのに要る手数=') === 0, uiOut);
+                ok('MU-6m ★ 記録が、率を後から出せるだけの数を持っている', (function () {
+                    var r = w.sepUI.state.record;
+                    return !!r && typeof r.pid === 'string' && r.moves === 3 &&
+                        typeof r.least === 'number' && typeof r.shortest === 'number' &&
+                        typeof r.minimal === 'boolean' && r.correct === true;
+                })(), uiOut);
+            })();
+            // ⚠ 決めきらずに答えた回は、最短の行を出さない（★ 数字が食い違って読めるため）
+            ok('MU-6n ⚠⚠ 決めきっていない回に「決めるのに要る手数」を出さない', (function () {
+                w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                    ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: 'Ag' });
+                w.sepUI.doOp('flame');            // ★ これだけでは Ag と Pb が分かれない
+                w.sepUI.answer('Ag');             // ＝ 当たったが決まっていない（lucky）
+                var rr = d.getElementById('result');
+                return w.sepUI.state.record.verdict === 'lucky' &&
+                    rr.textContent.indexOf('決めるのに要る手数') < 0 &&
+                    // ★ 代わりに、何を行えば分かれるかは判定の一文が名指ししている
+                    rr.textContent.indexOf('が分かれます') >= 0;
+            })(), uiOut);
+            // ⚠ 次の検査のために、決めきった回に戻しておく
+            w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: 'Ag' });
+            ['flame', 'hcl', 'hclHot'].forEach(function (o) { w.sepUI.doOp(o); });
+            w.sepUI.answer('Ag');
+            res = d.getElementById('result');
+
             // ★★★ MU-5 文字の大きさの下限（型A と同じ縛り。2026-08-28・ユーザー指摘）
             ok('MU-5b ★★ 型B に 13px 未満の文字が無い（★ 版の帯を除く）', (function () {
                 var bad = [];
