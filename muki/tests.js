@@ -613,9 +613,13 @@
                     return (l.name + l.mark + l.id).indexOf(w) < 0;
                 });
             }));
-        ok('出題が持つのは鍵・段・候補・札・中身だけ（説明文の欄を持たない）', (function () {
+        // ⚠ `pid` を足した（2026-08-28・ユーザー「問題にIDを付与」）。
+        //   ★ これは **説明文ではなく名札** —— 中身は「型の版・段・候補の組」だけで、
+        //     解き筋も答えも入っていない（MU-6b が中身の漏れを見張っている）。
+        //   ⚠ この検査の役目は変わらない: **次に誰かが説明文の欄を足したら、ここで止まる。**
+        ok('出題が持つのは鍵・ID・段・候補・札・中身だけ（説明文の欄を持たない）', (function () {
             var p = sepMakeProblem('easy');
-            return Object.keys(p).sort().join(',') === 'cands,id,key,level,ops,truth';
+            return Object.keys(p).sort().join(',') === 'cands,id,key,level,ops,pid,truth';
         })());
         ok('難易度は、門番が数えた値だけから出る（候補の数・理想の最短・単独で決まらない候補の数）',
             SEP_LEVELS.every(function (l) {
@@ -731,6 +735,128 @@
             var hh = [{ op: 'flame', obs: sepObserve('Zn', 'flame') }];
             var g = sepGrade(p3, 'Zn', 'Zn', hh);
             return g.steps[0].dropped.length === 0;
+        })());
+        // ---------------------------------------------------------------
+        // ★★★ MU-6 人に見せる問題 ID と、その回の成績
+        //   （2026-08-28・ユーザー「問題にIDを付与、成績の集計へ」）
+        // ---------------------------------------------------------------
+        ok('MU-6a ★ 問題 ID が短く、書き写せる形（実測 ' +
+            sepProblemId('easy', ['Ag', 'Pb', 'Cu', 'Na']) + '）', (function () {
+                var id = sepProblemId('easy', ['Ag', 'Pb', 'Cu', 'Na']);
+                return /^B1-[ENH]-[0-9A-Z]+$/.test(id) && id.length <= 10;
+            })());
+        ok('MU-6b ⚠⚠ 問題 ID が中身（答え）を漏らしていない', (function () {
+            // ★ 同じ候補の組なら、中に何が入っていても同じ ID になること
+            var ids = {};
+            ['Ag', 'Pb', 'Cu', 'Na'].forEach(function (t) {
+                var q = sepMakeProblem('easy', {
+                    cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                    ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: t
+                });
+                ids[q.pid] = 1;
+            });
+            return Object.keys(ids).length === 1;
+        })());
+        ok('MU-6c ★★ 母集団のどの出題も、ID が重ならない（実測 ' + (function () {
+            var n = 0;
+            SEP_LEVELS.forEach(function (l) { n += (pools[l.id] || []).length; });
+            return n;
+        })() + ' 組）', (function () {
+            var seen = {}, n = 0, dup = 0;
+            SEP_LEVELS.forEach(function (l) {
+                (pools[l.id] || []).forEach(function (e) {
+                    var id = sepProblemId(l.id, e.cands);
+                    n++;
+                    if (seen[id]) dup++;
+                    seen[id] = 1;
+                });
+            });
+            if (dup) warn('問題 ID が重なっている: ' + dup + '件');
+            return n > 0 && dup === 0;
+        })());
+        // ⚠⚠ ID は候補の組から引き直せる（★ ハッシュではない）。
+        //   ここが釘 —— SEP_IONS の並びを変えると ID が変わるので、そのときは版を上げること
+        ok('MU-6d ⚠ 既知の組の ID が動いていない（★ SEP_IONS の並びが変わると動く）',
+            sepProblemId('easy', ['Ag', 'Pb', 'Cu', 'Na']) === 'B1-E-N' &&
+            sepProblemId('hard', ['Ag', 'Pb', 'Cu', 'Ca', 'Na', 'K']) === 'B1-H-1R');
+        ok('MU-6e ★ 段が ID の1文字目で分かれている（E／N／H）',
+            SEP_LEVELS.map(function (l) { return l.code; }).join('') === 'ENH');
+        // ★ その回の成績
+        ok('MU-6f ★ 決めきった回は、手数と「決めるのに要る手数」が数えられる', (function () {
+            var q = { id: 'fixed', cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'] };
+            var hh = [{ op: 'flame', obs: sepObserve('Ag', 'flame') },
+                { op: 'hclHot', obs: sepObserve('Ag', 'hclHot') }];
+            var g = sepGrade(q, 'Ag', 'Ag', hh);
+            var sc = sepScore(q, 'Ag', hh, g.verdict);
+            return g.verdict === 'decided' && sc.moves === 2 && sc.least === 1 &&
+                sc.minimal === false;
+        })());
+        ok('MU-6g ⚠ 決めきっていない回は「最短で当てた」にならない', (function () {
+            var q = { id: 'fixed', cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'] };
+            var hh = [{ op: 'flame', obs: sepObserve('Ag', 'flame') }];
+            var g = sepGrade(q, 'Ag', 'Ag', hh);
+            // ★ 当たってはいるが決まっていない（lucky）＝ 最短の判定は付けない
+            return g.verdict === 'lucky' && sepScore(q, 'Ag', hh, g.verdict).minimal === false;
+        })());
+        ok('MU-6h ★★ 決めきった回は、手数が「決めるのに要る手数」を下回らない', (function () {
+            // ⚠ ここが崩れると、成績の表示が「最短より速い」という読めない形になる
+            var bad = [];
+            SEP_LEVELS.forEach(function (l) {
+                (pools[l.id] || []).slice(0, 12).forEach(function (e) {
+                    var q = { id: 'g', cands: e.cands, ops: e.ops };
+                    e.cands.forEach(function (t) {
+                        // ★ 全部の札を使えば必ず決まる ＝ decided の回を作れる
+                        var hh = e.ops.map(function (o) {
+                            return { op: o, obs: sepObserve(t, o) };
+                        });
+                        var g = sepGrade(q, t, t, hh);
+                        var sc = sepScore(q, t, hh, g.verdict);
+                        if (g.verdict === 'decided' && sc.moves < sc.least) {
+                            bad.push(sepProblemId(l.id, e.cands) + '/' + t);
+                        }
+                    });
+                });
+            });
+            if (bad.length) warn('手数が最短を下回った: ' + bad.slice(0, 4).join(' / '));
+            return bad.length === 0;
+        })());
+
+        // ★★★ MU-1 「実験は毎回、試料を少しずつ取って新しく行う」が **作りと合っているか**
+        //   （2026-08-28・ユーザー指摘で導入に書き足した一文の裏づけ）。
+        //   ⚠⚠ 文だけ直して作りが違っていたら、それは嘘になる。★ ここで機械で確かめる。
+        ok('MU-1d 観察は（イオン・操作）だけで決まる（⚠ sepObserve は履歴を受け取らない）',
+            sepObserve.length === 2);
+        ok('MU-1e 順番を入れ替えても、各操作の観察が1件も変わらない', (function () {
+            // ★ 画面（doOp）とまったく同じ呼び方で、札を押す順だけを変えて突き合わせる
+            function perms(a) {
+                if (a.length <= 1) return [a];
+                var o = [];
+                a.forEach(function (x, i) {
+                    perms(a.slice(0, i).concat(a.slice(i + 1))).forEach(function (r) {
+                        o.push([x].concat(r));
+                    });
+                });
+                return o;
+            }
+            var checked = 0, bad = 0;
+            Object.keys(SEP_IONS).forEach(function (ion) {
+                var dealt = sepDealFor([ion]);
+                var base = {};
+                dealt.forEach(function (o) { base[o] = sepObsKey(sepObserve(ion, o)); });
+                // ⚠ 全順列は 7! で重いので、配られた札の先頭5枚で回す（120 通り × 9 イオン）
+                perms(dealt.slice(0, 5)).forEach(function (order) {
+                    var history = [];
+                    order.forEach(function (o) {
+                        var obs = sepObserve(ion, o);
+                        history.push({ op: o, obs: obs });
+                        checked++;
+                        if (sepObsKey(obs) !== base[o]) bad++;
+                    });
+                });
+            });
+            return checked >= 5000 && bad === 0;
         })());
         // ⚠ 型B に「まだわからない」という答えは無い（§16-3）
         ok('答えの選択肢は候補だけ（「まだわからない」は無い）',
@@ -1269,6 +1395,65 @@
                 });
             });
             return n1 >= 10 && n2 >= 5;
+        })());
+        // ---------------------------------------------------------------
+        // ★★★ MU-3 「イオンの行先を答える」に置く手順（2026-08-28・ユーザー指摘）
+        //   > 手順が3問すべてで同じになっている、最後の方はバリエーションを持たせるべき
+        //
+        // ⚠⚠ **症状の正体は出題ではなく、置く手順のほうだった** ——
+        //   出題は v28 の生成をちゃんと使っていたが、置いていたのは `treeIdealSeq`
+        //   ＝「配った札を教科書の順に並べたもの」で、⚠ 配る札はどの容器でも同じ。
+        //   ★ だから **母集団 120 組すべてで、まったく同じ7手**になっていた（下で数えている）。
+        // ---------------------------------------------------------------
+        (function () {
+            var idealSeqs = {}, needSeqs = {}, needCombos = {};
+            var notIsolated = [], movesBad = [];
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) {
+                    var p = treeBuildProblem(e.ions, l.id);
+                    idealSeqs[treeIdealSeq(p).join('>')] = 1;
+                    var need = treeNeededPlan(p);
+                    needSeqs[need.seq.join('>')] = 1;
+                    needCombos[need.seq.join('>') + '|' + JSON.stringify(need.sub)] = 1;
+                    // ★ 置いた手順で、実際に単離しきれること（⚠ 解けない盤面を置いたら赤）
+                    var g = treeGrade(p, need.seq, treePlanFromRun(p, need.seq, need.sub), need.sub);
+                    if (!g.isolated) notIsolated.push(treeIonKey(e.ions));
+                    // ★ 置いた手数が、門番の数えた理想の最短と一致すること
+                    if (g.moves !== e.shortest) movesBad.push(treeIonKey(e.ions));
+                });
+            });
+            var nIdeal = Object.keys(idealSeqs).length;
+            var nNeed = Object.keys(needSeqs).length;
+            var nCombo = Object.keys(needCombos).length;
+            // ⚠ これが「症状そのもの」の記録。★ 直す前の姿を数字で残しておく
+            ok('MU-3a ⚠ 模範の手順は、母集団のどの容器でも同じ（実測 ' + nIdeal + ' 通り）',
+                nIdeal === 1);
+            ok('MU-3b ★★ 置く手順は容器ごとに変わる（実測 ' + nNeed +
+                ' 通り／沈殿側の札も込みで ' + nCombo + ' 通り）',
+                nNeed >= 10 && nCombo >= 30);
+            ok('MU-3c ★ 置いた手順は、母集団の全 ' +
+                TREE_LEVELS.reduce(function (n, l) { return n + treePoolN[l.id]; }, 0) +
+                ' 組で単離しきる（⚠ 解けない盤面を置かない）', notIsolated.length === 0);
+            ok('MU-3d ★ 置いた手数が、門番の数えた理想の最短と一致する（⚠ 余計な段を置かない）',
+                movesBad.length === 0);
+        })();
+        // ★ 属が欠けていれば、その段は置かれない（⚠ 具体例で1件ずつ確かめる）
+        ok('MU-3e ⚠ 属が欠けた容器では、要らない段が置かれていない', (function () {
+            var bad = [];
+            // 【容器】→【置かれるべき手順】。★ どれも母集団に実在する組（上で全件を通している）
+            [
+                // 第1属（Ag・Pb）と第3属（Fe）だけ ＝ 硫化水素も煮沸も炭酸も要らない
+                [['Fe3', 'Ag', 'Al'], 'hcl>nh3'],
+                // 銅（第2属）が居るので硫化水素が要り、鉄を戻すのに煮沸と希硝酸も要る
+                [['Fe3', 'Cu', 'Zn'], 'hcl>h2s>boil>hno3>co3'],
+                // 属ごとに1つずつ ＝ 教科書の7手がまるごと要る
+                [['Fe3', 'Ag', 'Cu', 'Zn', 'Ca', 'Na'], 'hcl>h2s>boil>hno3>nh3>h2s>co3']
+            ].forEach(function (x) {
+                var got = treeNeededPlan(treeBuildProblem(x[0])).seq.join('>');
+                if (got !== x[1]) bad.push(x[0].join(',') + ' → ' + got + '（期待 ' + x[1] + '）');
+            });
+            if (bad.length) warn('置く手順が期待と違う: ' + bad.join(' / '));
+            return bad.length === 0;
         })());
         // ★ 難易度は手で付けない（§2-4）。⚠ 門番が数えた値だけから出す
         ok('★★ 難易度の根拠が、門番の数えた値そのもの（中身の数＋最短手数＋3×属の中の組数）', (function () {
@@ -2167,7 +2352,7 @@
         }
         var f = document.createElement('iframe');
         f.id = 'sepapp';
-        f.src = 'separation.html?v=27';
+        f.src = 'separation.html?v=28';
         f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
         f.style.height = '812px';
         document.body.appendChild(f);
@@ -2202,8 +2387,24 @@
                 var hit = words.filter(function (w) { return zone.indexOf(w) >= 0; });
                 if (hit.length) warn('出題まわりに解き筋の語: ' + hit.join('・'));
                 ok('出題まわり（導入・難易度・候補）に解き筋の語が出てこない', hit.length === 0, uiOut);
-                ok('導入は1〜2行に収まっている（' + d.querySelector('.lead').textContent.trim().length +
-                    '字）', d.querySelector('.lead').textContent.trim().length <= 60, uiOut);
+                // ⚠ 上限を 60 → 70 にした（2026-08-28・ユーザー指摘）——
+                //   ★ 「実験は毎回、試料を少しずつ取って新しく行います」の一文を足したため。
+                //   ⚠ これは飾りではなく、**画面から読み取れない作りの説明**（MU-1 が中身を見張る）
+                // ⚠ 数えるのは **読む長さ**。★ source の改行と字下げは畳んでから数える
+                //   （畳まないと、文を2行に折り返しただけで 10 字ぶん増えて落ちる）
+                var lead = d.querySelector('.lead').textContent.replace(/\s+/g, '').trim();
+                ok('MU-1a 導入は2〜3行に収まっている（' + lead.length + '字）',
+                    lead.length <= 70, uiOut);
+                // ★★ 毎回別の実験であることを、導入が言っているか（2026-08-28・ユーザー指摘）
+                //   ⚠ ここが欠けると「操作が積み上がる」と読まれる
+                ok('MU-1b 導入が「実験は毎回、試料を取って新しく行う」ことを言っている',
+                    lead.indexOf('毎回') >= 0 && lead.indexOf('試料') >= 0 &&
+                    (lead.indexOf('新しく') >= 0 || lead.indexOf('新たに') >= 0), uiOut);
+                // ⚠ AI っぽい飾りを入れない（2026-08-28・ユーザー指摘2回）。
+                //   ★ 「〜しましょう」の勧誘と、飾りの副詞を導入に置かない
+                ok('MU-1c 導入に「〜しましょう」や飾りの副詞が無い',
+                    lead.indexOf('しましょう') < 0 && lead.indexOf('ぜひ') < 0 &&
+                    lead.indexOf('しっかり') < 0 && lead.indexOf('じっくり') < 0, uiOut);
                 var lv0 = d.querySelector('#levels button').textContent.replace(/[\s　]/g, '');
                 ok('難易度は「段の名前 ＋ 印」だけ（実測「' + lv0 + '」）',
                     /^[ぁ-んァ-ヶ一-龠]+[★☆]{3}$/.test(lv0), uiOut);
@@ -2311,6 +2512,72 @@
                 res.textContent.indexOf('参考書') < 0, uiOut);
             ok('答えたあとは札が押せない',
                 d.querySelector('.op[data-op="h2s"]').disabled === true, uiOut);
+
+            // ★★★ MU-6 問題 ID と、その回の成績（2026-08-28・ユーザー指摘）
+            (function () {
+                var pid = d.getElementById('prob-id');
+                ok('MU-6i ★ 解いている最中から、問題 ID が画面に出ている（実測 ' +
+                    (pid ? pid.textContent : 'なし') + '）',
+                    !!pid && /^B1-[ENH]-[0-9A-Z]+$/.test(pid.textContent.trim()), uiOut);
+                // ⚠⚠ ID が答えを漏らしていないこと（★ 引き直しても、候補が同じなら同じ ID）
+                ok('MU-6j ⚠⚠ 画面の ID にイオンの名前が入っていない',
+                    !!pid && Object.keys(SEP_IONS).every(function (k) {
+                        return pid.textContent.indexOf(SEP_IONS[k].name) < 0 &&
+                            pid.textContent.indexOf(SEP_IONS[k].jp) < 0;
+                    }), uiOut);
+                var rows = [].slice.call(res.querySelectorAll('.score-row')).map(function (r) {
+                    return r.querySelector('.score-k').textContent + '=' +
+                        r.querySelector('.score-v').textContent;
+                });
+                ok('MU-6k ★ 答え合わせに、その回の成績が出る（' + rows.join(' / ') + '）',
+                    rows.length >= 3 &&
+                    rows[0].indexOf('問題=') === 0 && rows[0].indexOf('B1-') > 0 &&
+                    rows[1] === '判定=正解' && rows[2].indexOf('手数=3手') === 0, uiOut);
+                ok('MU-6l ★ 決めきった回は「決めるのに要る手数」も出る',
+                    rows.length === 4 && rows[3].indexOf('決めるのに要る手数=') === 0, uiOut);
+                ok('MU-6m ★ 記録が、率を後から出せるだけの数を持っている', (function () {
+                    var r = w.sepUI.state.record;
+                    return !!r && typeof r.pid === 'string' && r.moves === 3 &&
+                        typeof r.least === 'number' && typeof r.shortest === 'number' &&
+                        typeof r.minimal === 'boolean' && r.correct === true;
+                })(), uiOut);
+            })();
+            // ⚠ 決めきらずに答えた回は、最短の行を出さない（★ 数字が食い違って読めるため）
+            ok('MU-6n ⚠⚠ 決めきっていない回に「決めるのに要る手数」を出さない', (function () {
+                w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                    ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: 'Ag' });
+                w.sepUI.doOp('flame');            // ★ これだけでは Ag と Pb が分かれない
+                w.sepUI.answer('Ag');             // ＝ 当たったが決まっていない（lucky）
+                var rr = d.getElementById('result');
+                return w.sepUI.state.record.verdict === 'lucky' &&
+                    rr.textContent.indexOf('決めるのに要る手数') < 0 &&
+                    // ★ 代わりに、何を行えば分かれるかは判定の一文が名指ししている
+                    rr.textContent.indexOf('が分かれます') >= 0;
+            })(), uiOut);
+            // ⚠ 次の検査のために、決めきった回に戻しておく
+            w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
+                ops: ['flame', 'hcl', 'hclHot', 'hclNh3', 'h2s'], truth: 'Ag' });
+            ['flame', 'hcl', 'hclHot'].forEach(function (o) { w.sepUI.doOp(o); });
+            w.sepUI.answer('Ag');
+            res = d.getElementById('result');
+
+            // ★★★ MU-5 文字の大きさの下限（型A と同じ縛り。2026-08-28・ユーザー指摘）
+            ok('MU-5b ★★ 型B に 13px 未満の文字が無い（★ 版の帯を除く）', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('*')).forEach(function (e) {
+                    if (e.className && String(e.className).indexOf('version') >= 0) return;
+                    var own = [].slice.call(e.childNodes).filter(function (n) {
+                        return n.nodeType === 3 && n.textContent.trim();
+                    }).length;
+                    if (!own) return;
+                    var cs = w.getComputedStyle(e);
+                    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+                    var fs = parseFloat(cs.fontSize);
+                    if (fs < 13) bad.push((e.className || e.tagName) + ':' + fs + 'px');
+                });
+                if (bad.length) warn('13px 未満の文字: ' + bad.slice(0, 6).join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
 
             // ⚠ 「たまたま当たった」ときの文面（§3-5-4 (B) の向き）
             w.sepUI.start('easy', { cands: ['Ag', 'Pb', 'Cu', 'Na'],
@@ -2511,6 +2778,53 @@
                 res.textContent.indexOf('FeO(OH)') >= 0, uiOut);
             ok('模範どおりなら、鉄の説明（素通り）は出ない',
                 res.textContent.indexOf('素通り') < 0, uiOut);
+            // ★★★ MU-2 手数・最短は「手順を学習者が決めた」ときだけ（2026-08-28・ユーザー指摘）
+            //   > イオンの行先を答える → 手順はユーザー操作ではないので 解説に最短 など入れない
+            //   ⚠ ここは枝をこちらが置いている段。★ 本人が決めていない数で採点しない
+            // ⚠ 「1手目 〔希塩酸〕」の見出しは **何手かかったか** ではなく
+            //   **どの段の話か** の目印なので、これは残ってよい。★ 数えるほうだけを見る
+            ok('MU-2a 「イオンの行先を答える」の答え合わせに、手数も最短も出ない',
+                !/（\d+\s*手/.test(res.textContent) &&
+                res.textContent.indexOf('最短') < 0 &&
+                res.textContent.indexOf('手ぶん') < 0, uiOut);
+            ok('MU-2b 「余計な操作が入っていました」とも言わない（★ 入れたのはこちら）',
+                res.textContent.indexOf('要らない操作') < 0, uiOut);
+            ok('MU-2c 「あなたが並べた手順」と言わない（★ 並べたのはこちら）',
+                res.textContent.indexOf('あなたが並べた') < 0 &&
+                res.textContent.indexOf('置いてある手順を、そのまま走らせました') >= 0, uiOut);
+            ok('MU-2d 記録にも手数と最短を入れない（⚠ 入れると率に本人以外の手が混ざる）',
+                w.treeUI.state.record.moves === undefined &&
+                w.treeUI.state.record.shortest === undefined, uiOut);
+
+            // ★★★ MU-3 画面でも手順が変わるか（2026-08-28・ユーザー「手順が3問すべてで同じ」）
+            //   ⚠ 模型が15通り出せても、画面が模範の7手を置き続けていたら意味がない。
+            //   ★ 実際に引き直して、枝に並んだ札の列を数える
+            (function () {
+                var seen = {}, ionsSeen = {};
+                for (var i = 0; i < 24; i++) {
+                    d.getElementById('btn-new').click();
+                    seen[w.treeUI.state.seq.join('>')] = 1;
+                    ionsSeen[treeIonKey(w.treeUI.state.problem.ions)] = 1;
+                }
+                var n = Object.keys(seen).length;
+                ok('MU-3f ★★ 「べつの容器にする」で、置いてある手順も変わる（24回で ' +
+                    n + ' 通り）', n >= 3, uiOut);
+                ok('MU-3g ★ 容器の中身も変わっている（24回で ' +
+                    Object.keys(ionsSeen).length + ' 通り）',
+                    Object.keys(ionsSeen).length >= 5, uiOut);
+                // ⚠ 枝に空きが無いこと（★ 押せない段で空の枝を見せない）
+                ok('MU-3h ⚠ 置いてある手順に空の枝が無い',
+                    w.treeUI.state.seq.every(function (o) { return !!o; }) &&
+                    d.querySelectorAll('.slot.branch.empty').length === 0, uiOut);
+                // ★ 置いてある手順で、実際に単離しきれること（＝ 解ける盤面が出ている）
+                ok('MU-3i ★ 画面に出ている手順が、その容器を単離しきる', (function () {
+                    var S = w.treeUI.state;
+                    var plan = treePlanFromRun(S.problem, S.seq, S.sub);
+                    return treeGrade(S.problem, S.seq, plan, S.sub).isolated === true;
+                })(), uiOut);
+            })();
+            // ⚠ 次の検査は中身を固定して続ける（★ 上で引き直したので戻す）
+            w.treeUI.start('read', 'easy', { ions: UI_A1 });
 
             // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
             w.treeUI.start('build', 'easy', { ions: UI_A1 });
@@ -2578,6 +2892,28 @@
                 books2.every(function (x) { return d.body.textContent.indexOf(x) < 0; }), uiOut);
             ok('提出したあとは札が押せない',
                 d.getElementById('btn-submit').disabled === true, uiOut);
+
+            // ★★★ MU-5 文字の大きさの下限（2026-08-28・ユーザー「フォントが小さい」）。
+            //   ⚠⚠ ここは **答え合わせまで出しきった状態**で測る ——
+            //     小さい字はたいてい解説側（.tag・.caveat・.leafrow）に溜まる。
+            //   ★ 版の帯（.version）だけは 12px 据え置き。読み物ではなく刻印なので数えない。
+            ok('MU-5a ★★ 型A に 13px 未満の文字が無い（★ 版の帯を除く）', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('*')).forEach(function (e) {
+                    if (e.className && String(e.className).indexOf('version') >= 0) return;
+                    // ⚠ 自分で文字を持っている要素だけ数える（★ 器は数えない）
+                    var own = [].slice.call(e.childNodes).filter(function (n) {
+                        return n.nodeType === 3 && n.textContent.trim();
+                    }).length;
+                    if (!own) return;
+                    var cs = w.getComputedStyle(e);
+                    if (cs.display === 'none' || cs.visibility === 'hidden') return;
+                    var fs = parseFloat(cs.fontSize);
+                    if (fs < 13) bad.push((e.className || e.tagName) + ':' + fs + 'px');
+                })
+                if (bad.length) warn('13px 未満の文字: ' + bad.slice(0, 6).join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
 
             // --- ⑥ 置き直せる ---
             d.getElementById('btn-reset').click();
@@ -2711,14 +3047,35 @@
             ok('★ 罫の全長が、容器から最後のろ液までを覆っている（実測 ' +
                 Math.round(rail[rail.length - 1].bot - rail[0].top) + 'px）',
                 (rail[rail.length - 1].bot - rail[0].top) >= 400, uiOut);
-            ok('★ 罫から各行へ、横の継ぎ手が出ている（⚠ 容器だけは持たない）', (function () {
-                var rows = [].slice.call(flow.querySelectorAll('.row'));
-                var bad = rows.filter(function (e, i) {
-                    var cs = w.getComputedStyle(e, '::after');
-                    var has = cs.content !== 'none' && parseFloat(cs.borderTopWidth) > 0;
-                    return i === 0 ? has : !has;
+            // ★★★ MU-4 横の継ぎ手 `─` は **枝分かれの印**（2026-08-28・ユーザー指摘）:
+            //   > ろ液は - なしに ｜ につなぐ（インデントしない）
+            //   ⚠⚠ ろ液は枝分かれではなく **流れそのものの続き**。★ 縦の罫が通り抜けるだけでよい。
+            //   ⚠ 継ぎ手が付いていると「ろ液もどこかへ取り出したもの」に見え、
+            //     **取り出したのは沈殿のほうだ**という読みが崩れる。
+            var hasDash = function (e) {
+                var cs = w.getComputedStyle(e, '::after');
+                return cs.content !== 'none' && parseFloat(cs.borderTopWidth) > 0;
+            };
+            ok('MU-4a ★★ 主流の節（容器・ろ液・最後のろ液）に横の継ぎ手 ─ が無い', (function () {
+                var main = [].slice.call(flow.querySelectorAll('.row.node[data-i="0"]'));
+                var bad = main.filter(hasDash);
+                if (bad.length) warn('ろ液に継ぎ手が残っている: ' + bad.length + '行');
+                return main.length >= 3 && bad.length === 0;
+            })(), uiOut);
+            ok('MU-4b ★ 枝分かれ（沈殿・加える試薬）には横の継ぎ手 ─ が出ている', (function () {
+                var br = [].slice.call(flow.querySelectorAll('.row')).filter(function (e) {
+                    return parseInt(e.getAttribute('data-i'), 10) >= 1;
                 });
-                return bad.length === 0;
+                var bad = br.filter(function (e) { return !hasDash(e); });
+                if (bad.length) warn('継ぎ手の無い枝: ' + bad.length + '行');
+                return br.length >= 3 && bad.length === 0;
+            })(), uiOut);
+            ok('MU-4c ★ 主流の節はインデントされていない（⚠ 左端に一直線）', (function () {
+                var main = [].slice.call(flow.querySelectorAll('.row.node[data-i="0"]'));
+                var bad = main.filter(function (e) {
+                    return Math.round(parseFloat(w.getComputedStyle(e).marginLeft)) !== 0;
+                });
+                return main.length >= 3 && bad.length === 0;
             })(), uiOut);
             // ★★ 相は枠の形で表す（⚠ 色だけで区別しない）
             ok('★★ 沈殿の枠は ▢（角ばった四角）', (function () {
@@ -2754,12 +3111,18 @@
             })(), uiOut);
             // ★★★ 縦の長さ。⚠ 上限を数で決めておかないと、じわじわ戻る
             //   （★ ディレクトリツリーに作り直す前の実測: ページ 2081px・流れ図 1097px）
+            // ⚠ 上限を 1800 → 1900 にした（2026-08-28・ユーザー「フォントが小さい」）——
+            //   ★ 文字を1〜2px ずつ大きくしたぶん、縦が 1850px に伸びた（実測）。
+            //   ⚠⚠ これは**引き換え**であって、ゆるめたのではない ——
+            //     読めない字で縦を詰めても意味がない、というユーザーの判断。
+            //   ★ 1行の高さの上限（46px）は変えていないので、
+            //     「枠を積む」形に戻ったら今までどおり赤くなる。
             // ⚠ 上限を 1750 → 1800 にした（2026-08-28）——
             //   ★ 難易度の選択と「べつの容器にする」を足したぶん（実測 1691 → 1749）。
             //   ⚠ ツリーの作りは1行も変えていない（流れ図の欄は 731px のまま）。
-            ok('★★ 375px 幅で、ページの高さが 1800px 以内（実測 ' +
+            ok('★★ 375px 幅で、ページの高さが 1900px 以内（実測 ' +
                 d.documentElement.scrollHeight + 'px。⚠ 作り直す前は 2081px）',
-                d.documentElement.scrollHeight <= 1800, uiOut);
+                d.documentElement.scrollHeight <= 1900, uiOut);
             ok('★ 流れ図の欄の高さが 780px 以内（実測 ' +
                 Math.round(rectH(d.getElementById('panel-tree'))) + 'px。⚠ 作り直す前は 1097px）',
                 rectH(d.getElementById('panel-tree')) <= 780, uiOut);

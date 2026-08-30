@@ -241,10 +241,12 @@ var SEP_TABLE = {
 //
 // ★ 難易度は手で付けない（§2-4）。**門番が数えた値だけ**から出す（`sepDifficulty()`）。
 // ---------------------------------------------------------------
+// ★ `code` … **人に見せる問題 ID に使う1文字**（2026-08-28・ユーザー「問題にIDを付与」）。
+//   ⚠ 段の名前をそのまま使うと ID が日本語になり、SNS にも板書にも書き写しづらい。
 var SEP_LEVELS = [
-    { id: 'easy', name: 'やさしい', mark: '★☆☆', min: 0, max: 7 },
-    { id: 'normal', name: 'ふつう', mark: '★★☆', min: 8, max: 9 },
-    { id: 'hard', name: 'むずかしい', mark: '★★★', min: 10, max: 999 }
+    { id: 'easy', name: 'やさしい', mark: '★☆☆', code: 'E', min: 0, max: 7 },
+    { id: 'normal', name: 'ふつう', mark: '★★☆', code: 'N', min: 8, max: 9 },
+    { id: 'hard', name: 'むずかしい', mark: '★★★', code: 'H', min: 10, max: 999 }
 ];
 
 // 候補の数の範囲。⚠ 3未満は問題にならず、7以上は札の数に対して重い
@@ -526,6 +528,33 @@ function sepTypeKey(levelId, cands) {
 }
 
 /**
+ * ★★★ **人に見せる問題 ID**（2026-08-28・ユーザー「問題にIDを付与、成績の集計へ」）。
+ *   例: `B1-E-2B`（型の版 ／ 段 ／ 候補の組）
+ *
+ * ⚠⚠ **中身のイオン（truth）を絶対に入れない。**
+ *   ★ ID は解いている最中に画面に出るので、truth が混ざれば **その場で答えを配る**。
+ *   ⚠ 入っているのは候補の組だけ ＝ **すでに画面に並んでいる情報**なので、何も漏れない。
+ *
+ * 【なぜ短縮するのか】型の鍵 `B1|easy|Ag-Cu-Na-Pb` は長すぎて、
+ *   板書にも SNS にも書き写せない。★ ID は「人が写して指させる」ためのもの。
+ *
+ * 【★ 数え方】候補の組を、`SEP_IONS` の並び順の **ビット**にして 36 進で書く。
+ *   ⚠ 逆に引ける（ハッシュではない）ので、ID から候補を復元できる。
+ *   ⚠⚠ **`SEP_IONS` の並びを変えると、同じ組の ID が変わる。**
+ *     ★ そのときは `SEP_KEY_VERSION` を上げること（tests.js が既知の組で釘を打っている）。
+ */
+function sepProblemId(levelId, cands) {
+    var order = Object.keys(SEP_IONS);
+    var mask = 0;
+    cands.forEach(function (c) {
+        var i = order.indexOf(c);
+        if (i >= 0) mask |= (1 << i);
+    });
+    var lv = SEP_LEVELS.filter(function (l) { return l.id === levelId; })[0] || SEP_LEVELS[0];
+    return SEP_KEY_VERSION + '-' + lv.code + '-' + mask.toString(36).toUpperCase();
+}
+
+/**
  * 1問つくる。
  *   opts.avoid … ⚠ **直前に出した型の鍵**。★ 等確率で引くと解き筋が2回3回と続くので、それだけ避ける
  *   opts.rand  … 乱数（テストが固定するための口）
@@ -556,10 +585,39 @@ function sepMakeProblem(levelId, opts) {
     return {
         id: sepTypeKey(levelId, cands),      // ★ 型の鍵 ＝ そのまま出題の id
         key: sepTypeKey(levelId, cands),
+        // ★ 人に見せる短い ID（⚠ 中身は入っていない ＝ 解いている最中に出してよい）
+        pid: sepProblemId(levelId, cands),
         level: levelId,
         cands: cands,
         ops: ops,
         truth: truth
+    };
+}
+
+/**
+ * ★★ **その回の成績**（2026-08-28・ユーザー「成績の集計へ」）。
+ *   ⚠ 数えるだけ。★ 文面は画面（separation.js）が組む。
+ *
+ * 返すもの:
+ *   moves    … 学習者が実際に行った操作の数
+ *   least    … ★ **この試料を決めるのに要る最小の手数**（＝ 入っていたイオンを他と分けきる最小の札の数）
+ *   shortest … ★ 中身が何であっても決まる操作集合の最小の大きさ（⚠ 試料に依らない物差し）
+ *   minimal  … ⚠ **最短で当てたか** —— 決まっていて、かつ手数が least と同じ
+ *
+ * ⚠ 「最短手順正解率」を後から出すなら、この2つの物差しは別に持つこと ——
+ *   `least` は運の要素が入る（どの札が効くかは中身次第）。
+ *   `shortest` は「どんな中身でも確実に決める」道の長さで、運が入らない。
+ */
+function sepScore(p, truth, history, verdict) {
+    var a = sepAuditProblem(p);
+    var least = a.byIon[truth] ? a.byIon[truth].size : null;
+    var moves = history.length;
+    return {
+        moves: moves,
+        least: least,
+        shortest: a.shortest,
+        // ⚠ 「決まっていた（decided）」でなければ最短もなにも無い
+        minimal: verdict === 'decided' && least !== null && moves === least
     };
 }
 
@@ -572,6 +630,8 @@ function sepMakeProblem(levelId, opts) {
 function sepRecord(problem, extra) {
     var r = {
         key: problem.key,
+        // ★ 人に見せる ID も残す（⚠ 集計の単位は key のまま。pid は「どの問題か指させる」ため）
+        pid: problem.pid || sepProblemId(problem.level, problem.cands),
         level: problem.level,
         cands: problem.cands.slice(),
         ops: problem.ops.slice(),
@@ -644,6 +704,7 @@ if (typeof module !== 'undefined' && module.exports) {
         sepSeparates: sepSeparates, sepAuditProblem: sepAuditProblem,
         sepDifficulty: sepDifficulty, sepGrade: sepGrade, sepDealFor: sepDealFor,
         sepLevelOf: sepLevelOf, sepPools: sepPools, sepTypeKey: sepTypeKey,
+        sepProblemId: sepProblemId, sepScore: sepScore,
         sepMakeProblem: sepMakeProblem, sepRecord: sepRecord
     };
 }
