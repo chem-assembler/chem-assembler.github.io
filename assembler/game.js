@@ -1067,6 +1067,10 @@ class Game {
             // 「全消去」は巻矢印まで含めて消す。原子が空でも矢印だけ浮いて残るのを防ぐため、
             // Undo履歴の判定より先に解除する（検品レビュー 17）
             this.deactivateReactionMode();
+            // ★ 反応の印（オレンジの破線）も同じ理由でここ ＝ **下の早い return より前**（v1477）。
+            //   後ろに置くと「すでに空のキャンバスで全消去を押した」ときだけ印が残る
+            //   （空のときは下の `updateDrawing()` まで行かないので `dropStaleHighlights` も走らない）
+            this.clearUIOverlay();
             if (this.userMolecule.atoms.length === 0) return; // 空のときはUndo履歴を消費しない（開発方針 3.5章）
             this.saveState();
             this.userMolecule = new Molecule();
@@ -1367,6 +1371,11 @@ class Game {
         // 履歴を巻き戻すなら反応機構の表示は無効になる。巻矢印を残すと
         // 復元した分子の上に古い矢印が浮く（検品レビュー 16）
         this.deactivateReactionMode();
+        // ★ 反応の印（オレンジの破線）も同じ理由でここ（v1477）。巻き戻した図は
+        //   「その反応で変わった図」ではないので、印だけ残ると復元した分子の上に古い丸が浮く。
+        //   ⚠ 下の `dropStaleHighlights()` では足りない —— 巻き戻しても**原子は生きている**
+        //     反応（C-OH → C=O のような結合次数だけの変化）があり、そこだけ印が残ってしまう
+        this.clearUIOverlay();
         this.userMolecule = new Molecule();
         if (state.deletedBonds) {
             this.userMolecule.deletedBonds = state.deletedBonds;
@@ -3409,12 +3418,14 @@ class Game {
         const plain = stripEmphasis(message);
         const canvasToast = document.getElementById('canvas-toast');
         if (canvasToast) {
-            setEmphasisText(canvasToast, message);
-            canvasToast.className = type; // success / error
+            const shownMs = this.paintCanvasToast(canvasToast, message, type, ms);
             clearTimeout(this._canvasToastTimer);
+            // ⚠ 広げて読んでいる最中に消さないのは、**「続きを読む」を押した時点で
+            //    この時計を止める**から（`paintCanvasToast` の中）。ここに二重の見張りは置かない
+            //    ——「時計を止めた」を1か所にしておかないと、片方だけ直す日が来る
             this._canvasToastTimer = setTimeout(() => {
-                if (canvasToast.textContent === plain) canvasToast.className = 'hidden';
-            }, ms);
+                if (canvasToast.textContent === plain) this.hideCanvasToast();
+            }, shownMs);
         }
         const resultDiv = document.getElementById('verify-result');
         if (!resultDiv) return;
@@ -3426,6 +3437,71 @@ class Game {
         this._toastTimer = setTimeout(() => {
             if (resultDiv.textContent === plain) resultDiv.classList.add('hidden');
         }, ms);
+    }
+
+    /* ===== 長い字幕は「2行 ＋ 続きを読む」にたたむ（v1477・ユーザー実機報告） =====
+     *
+     * **測ったこと**（:9137・スクロースの加水分解＝いちばん長い caption 549字）:
+     *   ・375×812 … 字幕 332×396px ＝ **キャンバスの 53.2%** を覆う（しかも上端が
+     *     SVG の上へ 75px はみ出す）。1280×800 でも 680×235 ＝ **25.4%**
+     *   ・時計は 6500ms。日本語の黙読は 400〜600字/分 ＝ 6.7〜10字/秒 なので、
+     *     549字を読むには **55〜82秒** 要る。6.5秒で読めるのは **43〜65字**
+     *     ＝ **最長の解説の 1割も読み終わらないうちに消えていた**
+     *
+     * **直し方（★ 2つの不満は別物なので、手当ても2つ要る）**:
+     *   ① 覆う量 … 既定で **2行にたたむ**。広げても `max-height` で天井を作り、
+     *      あふれた分はその中をスクロールさせる ＝ **キャンバスの何割を覆うかが上限で決まる**
+     *   ② 消える … 広げているあいだは**時計を止める**（読み終わるまで消えない）。
+     *      かわりに **× で閉じられる**（読んだら消せる）＝「消えないだけ」にしない。
+     *      たたんだままの回も、**見えている2行を読むのに要る時間**まで表示を延ばす
+     *
+     * ⚠ **`#canvas-toast` の `textContent` は素の文言のままにする**。
+     *   22 か所の回帰テストがここを `===` や `includes` で読んでいるので、
+     *   「続きを読む」「×」の字は **CSS の `::after`** で出す ＝ 文字ノードを1つも足さない。
+     * ⚠ **短い字幕（たためない回）の振る舞いは1つも変えない**。たたむかどうかは
+     *   文字数ではなく**実際にあふれたか**（`scrollHeight > clientHeight`）で決める ＝
+     *   画面幅・文字サイズが変わっても判定がずれない。 */
+    paintCanvasToast(el, message, type, ms) {
+        const text = document.createElement('span');
+        text.className = 'ct-text';
+        setEmphasisText(text, message);
+        el.textContent = '';
+        el.appendChild(text);
+        el.className = type; // success / error（`hidden` と `long`・`open` はこの後で付ける）
+        // あふれるかどうかは**たたんだ状態で測る**。`long` を付けてから測ると
+        // 天井が効いて必ずあふれるので、先に素のまま測って比べる
+        const full = text.scrollHeight;
+        el.classList.add('long');
+        const clipped = text.clientHeight;
+        if (full <= clipped + 2) { el.classList.remove('long'); return ms; }
+        const more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'ct-more';
+        more.setAttribute('aria-label', '解説の続きを読む');
+        more.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const open = el.classList.toggle('open');
+            more.setAttribute('aria-label', open ? '解説をたたむ' : '解説の続きを読む');
+            // ★ 広げたら時計を止める ＝ 読み終わるまで消えない（RV1 ④ がここを見張る）
+            if (open) clearTimeout(this._canvasToastTimer);
+        });
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'ct-close';
+        close.setAttribute('aria-label', '解説を閉じる');
+        close.addEventListener('click', (e) => { e.stopPropagation(); this.hideCanvasToast(); });
+        el.appendChild(more);
+        el.appendChild(close);
+        // 見えている2行ぶんを読み切る時間は確保する（400字/分 ＝ 6.7字/秒 の遅いほうで見積もる）。
+        // 呼び出し側の指定より短くはしない・12秒より長くもしない
+        const visible = Math.round(stripEmphasis(message).length * clipped / Math.max(full, 1));
+        return Math.min(12000, Math.max(ms, Math.round(visible / 6.7 * 1000) + 1500));
+    }
+
+    hideCanvasToast() {
+        const el = document.getElementById('canvas-toast');
+        if (!el) return;
+        el.className = 'hidden';
     }
 
     // ===== 置けなかったクリックの説明（v1110・発注書「作図の当たり判定」要望A） =====
@@ -5691,6 +5767,8 @@ class Game {
         // 環が壊れる経路は削除・消しゴム・右クリック・結合の削除と複数あるので、
         // 経路ごとに書かず**図を描き直すたびに1回**そろえる
         this.dropStaleBenzeneMarks();
+        // 反応の印（オレンジの破線）も、指す先が消えたらここで一緒に落とす（v1477・同関数の注）
+        this.dropStaleHighlights();
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
 
@@ -10098,8 +10176,37 @@ class Game {
             c.setAttribute('stroke', 'var(--neon-orange)');
             c.setAttribute('stroke-width', '2.5');
             c.setAttribute('stroke-dasharray', '4,3');
+            // ★ **どの原子を指している印か**を印自身に持たせる（v1477）。
+            //   これが無いと、下の `dropStaleHighlights()` が「もう居ない原子の印」を選り分けられない
+            c.setAttribute('data-hl-atom', String(a.id));
             this.uiGroup.appendChild(c);
         });
+    }
+
+    /* ===== 反応の印は、指している原子が図から消えたら一緒に消す（v1477） =====
+     *
+     * ユーザー（動画レーン）実測報告 2026-08-26 §7:「**全消去 → 別の分子を呼ぶ** をしても
+     * 前の反応の印が残ったまま新しい分子の上に乗る」。完成した mp4 のフレームで
+     * 5秒（まだ反応していない 1-プロパノール）に印が無く、17秒（出しただけの 2-プロパノール）に
+     * 印がある ＝「呼び出すと付く」のではなく**前の印が残っている**。
+     *
+     * ★ 実測（:9137・実アプリ。反応 → その操作 → 印の数／うち「もう居ない原子」を指す数）:
+     *     🗑 全消去 …………… 2 → 2（**2つとも宙に浮く**）
+     *     ↩ 戻す ……………… 2 → 2（1つが浮く）
+     *     ↩ 反応前に戻す …… 2 → 2（1つが浮く）
+     *     お題の読み込み …… 2 → 2（**2つとも浮く**）
+     *     名称から呼び出す … 2 → 2（浮かない ＝ 前の分子はまだ画面にある。**これは正しい**）
+     *
+     * ⚠ **経路ごとに `clearUIOverlay()` を足して回らない**（呼び出しは20か所以上あり、
+     *   次に増える経路で必ずまた漏れる）。`updateDrawing()` の「状態から導く」流儀
+     *   （同関数の冒頭・v1454 の注）に合わせ、**図を描き直すたびに1回**そろえる。
+     * ⚠ **「印を全部消す」ではない。** いまの分子に居る原子を指す印は残す ——
+     *   反応直後のハイライト・箇所選びの光り・答え合わせの丸は、そこに原子があるから意味がある。 */
+    dropStaleHighlights() {
+        const marks = this.uiGroup.querySelectorAll('[data-hl-atom]');
+        if (!marks.length) return;
+        const alive = new Set(this.userMolecule.atoms.map(a => String(a.id)));
+        marks.forEach(el => { if (!alive.has(el.getAttribute('data-hl-atom'))) el.remove(); });
     }
 
     /**
