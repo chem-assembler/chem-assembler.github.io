@@ -52,7 +52,7 @@
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
- * | IS  | 1〜2   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検 |
+ * | IS  | 1〜4   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜4 は「木しか作れない式」の枝刈り**（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」）。3 が本体（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる） |
  * | IW  | 1〜32 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
  *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
  *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
@@ -16736,6 +16736,154 @@
             });
         ip.stop();
         g.setMode('puzzle');
+    });
+
+    // ★ 不飽和度0の式は「単結合だけの木」しか作れない（`enumerationIsTreeOnly`）。
+    //   ユーザー要望「C₇H₁₆ の練習がしたい」（2026-08-31）を測ったところ、
+    //   **C₇H₁₆ は 4,000,000 節点の上限で打ち切られていた**（461ms で overflow）——
+    //   9種そろって見えていたのは偶然で、書き出し練習は overflow を見て断っていた。
+    //   完走させるには **30,000,000 節点・4.1秒** 要った ＝ 上限を上げる方向では直らない。
+    test('IS3: 飽和形の異性体列挙が木の枝刈りで完走する（C₇H₁₆ が打ち切られない）', async (c) => {
+        const W = c.W;
+        const parse = (f) => {
+            const heavy = []; let h = 0;
+            const re = /(Cl|Br|[CHONS])(\d*)/g; let m;
+            while ((m = re.exec(f)) !== null) {
+                const k = m[2] ? parseInt(m[2], 10) : 1;
+                if (m[1] === 'H') h += k; else for (let i = 0; i < k; i++) heavy.push(m[1]);
+            }
+            return { heavy, h };
+        };
+        // (a) 判定そのもの。**木しか作れない式**と、そうでない式を言い分ける
+        [['C7H16', true], ['C6H14', true], ['C4H10O', true], ['C6H13Cl', true],
+         ['C6H12', false],   // 不飽和度1（環・二重結合が作れる）
+         ['C6H6', false],
+         ['C4H11N', false],  // N は価数が文脈で動く（4価特例）ので木と言い切れない
+         ['C4H10S', false]]  // S も同じ（6↔2）
+            .forEach(([f, want]) => {
+                const { heavy, h } = parse(f);
+                assert(W.enumerationIsTreeOnly(heavy, h) === want,
+                    `${f} の enumerationIsTreeOnly が ${!want}（${want} を期待）`);
+            });
+
+        // (b) ★ C₇H₁₆ が**打ち切られず**に9種そろう。直す前は overflow=true だった
+        const t0 = W.performance.now();
+        const r = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'C', 'C', 'C'], 16, 4000000);
+        const ms = W.performance.now() - t0;
+        assert(!r.overflow, 'C₇H₁₆ の列挙が打ち切られた（木の枝刈りが効いていない）');
+        assert(r.isomers.length === 9, `C₇H₁₆ が ${r.isomers.length}種（9種を期待）`);
+        // 直す前は完走に 4,100ms（3,000万節点）。桁で判別できる位置にしきい値を置く
+        assert(ms < 1500, `C₇H₁₆ の列挙に ${Math.round(ms)}ms（1500ms 未満を期待）`);
+
+        // (c) ★★ **9種を名前で名指しする**（数だけ数えない）。
+        //     どれか1つでも欠ける・入れ替わると赤くなる。名前は `iupacName`（系統名）で引く
+        const WANT = [
+            'ヘプタン', '2-メチルヘキサン', '3-メチルヘキサン',
+            '2,2-ジメチルペンタン', '2,3-ジメチルペンタン', '2,4-ジメチルペンタン',
+            '3,3-ジメチルペンタン', '3-エチルペンタン', '2,2,3-トリメチルブタン'
+        ];
+        const got = r.isomers.map(m => W.iupacName(m) || '（名称なし）');
+        WANT.forEach(name => assert(got.includes(name), `C₇H₁₆ の正解に ${name} が無い（出たのは ${got.join('・')}）`));
+        got.forEach(name => assert(WANT.includes(name), `C₇H₁₆ の正解に余計な ${name} が入っている`));
+        assert(new Set(got).size === 9, `C₇H₁₆ の9種に同じ名前が2つある（${got.join('・')}）`);
+        // 採点は正準コードで突き合わせる（§12-7）ので、9つが**コードとしても**別物であること
+        assert(new Set(r.isomers.map(m => W.canonicalCode(m))).size === 9,
+            'C₇H₁₆ の9種が正準コードで区別しきれていない（採点が同じ図を2つ数える）');
+    });
+
+    test('IS4: 木の枝刈り・対称性の破りで答えが1種も減らない（否定対照）', async (c) => {
+        const W = c.W;
+        const parse = (f) => {
+            const heavy = []; let h = 0;
+            const re = /(Cl|Br|[CHONS])(\d*)/g; let m;
+            while ((m = re.exec(f)) !== null) {
+                const k = m[2] ? parseInt(m[2], 10) : 1;
+                if (m[1] === 'H') h += k; else for (let i = 0; i < k; i++) heavy.push(m[1]);
+            }
+            return { heavy, h };
+        };
+        // ★ 枝刈りは**速さのため**であって、答えを変えてはいけない。
+        //   ここに並べた種類数は**直す前の実装が打ち切らずに出した値**（node で全804式を
+        //   突き合わせ済み）。木の枝刈り（treeOnly）と、同じ元素の入れ替えを捨てる
+        //   `degreeOrdered` のどちらを外しても、必ずどれかが動く並びにしてある:
+        //     ・木を含む式（C₆H₁₄ 5種 など）……… treeOnly を外すと遅くなるだけで数は同じ
+        //     ・環と多重結合を含む式（C₆H₆ 217種・C₅H₈ 26種）… treeOnly の対象外なので
+        //       ここが減ったら `degreeOrdered` が刈りすぎている（＝答えを削っている）
+        //     ・ヘテロが2個以上の式（C₃H₈O₃ 28種）……… 同じ元素が3つ並ぶので
+        //       `degreeOrdered` の「隣どうしの比較」がいちばん効く場所
+        [['C4H10', 2], ['C5H12', 3], ['C6H14', 5], ['C7H16', 9],
+         ['C2H6O', 2], ['C3H8O', 3], ['C4H10O', 7], ['C5H12O', 14], ['C6H14O', 32],
+         ['C3H6', 2], ['C4H8', 5], ['C5H10', 10], ['C6H12', 25],
+         ['C4H6', 9], ['C5H8', 26], ['C6H10', 77], ['C6H6', 217],
+         ['C3H8O3', 28], ['C4H10O2', 28], ['C2H6O2', 5],
+         ['C4H9Cl', 4], ['C6H13Cl', 17],
+         ['C3H9N', 4], ['C4H11N', 8], ['C5H11N', 100],
+         ['C3H8S', 3], ['C4H10S', 7], ['C5H12S', 14],
+         ['C4H8O', 26], ['C5H10O', 74]].forEach(([f, total]) => {
+            const { heavy, h } = parse(f);
+            const r = W.enumerateConstitutionalIsomers(heavy, h, 4000000);
+            assert(!r.overflow, `${f} が打ち切られた`);
+            assert(r.isomers.length === total, `${f} が ${r.isomers.length}種（${total}種を期待）`);
+        });
+
+        // ★★ ここが本当の否定対照 —— **枝刈りを1つも持たない素朴な列挙**をこの場で書き、
+        //   本体の答えと1文字も違わないことを見る。数の表（上）は「直す前の値を書き写した」
+        //   だけなので、**書き写しごと間違えていたら気づけない**。素朴版は
+        //   `treeOnly` も `degreeOrdered` も知らないので、刈りすぎていれば必ず食い違う。
+        //   ⚠ 素朴版が使ってよいのは「価数の上限で枝を止める」ことだけ（それが無いと終わらない）。
+        //   最終判定は本体と同じ関数（`isValencyValid` / `getFreeValency`）で行う
+        const naive = (elements, hCount) => {
+            const n = elements.length;
+            const oCount = elements.filter(e => e === 'O').length;
+            const sMax = oCount === 0 ? 2 : 6;
+            const max = elements.map(e => (e === 'N' ? 4 : (e === 'S' ? sMax : (W.VALENCIES[e] || 0))));
+            const pairs = [];
+            for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) pairs.push([i, j]);
+            const used = new Array(n).fill(0);
+            const adj = Array.from({ length: n }, () => []);
+            const codes = new Set();
+            const walk = (k) => {
+                if (k === pairs.length) {
+                    // 連結か
+                    const seen = new Set([0]); const st = [0];
+                    while (st.length) {
+                        const v = st.pop();
+                        adj[v].forEach(([u]) => { if (!seen.has(u)) { seen.add(u); st.push(u); } });
+                    }
+                    if (seen.size !== n) return;
+                    const mol = new W.Molecule();
+                    const ids = elements.map(e => mol.addAtom(e, 0, 0).id);
+                    for (let v = 0; v < n; v++) adj[v].forEach(([u, t]) => { if (u > v) mol.addBond(ids[v], ids[u], t); });
+                    if (!ids.every(id => W.isValencyValid(mol, id))) return;
+                    let free = 0;
+                    ids.forEach(id => { free += mol.getFreeValency(id); });
+                    if (free !== hCount) return;
+                    codes.add(W.canonicalCode(mol));
+                    return;
+                }
+                const [i, j] = pairs[k];
+                const mt = Math.min(3, max[i] - used[i], max[j] - used[j]);
+                for (let t = 0; t <= mt; t++) {
+                    if (t > 0) { used[i] += t; used[j] += t; adj[i].push([j, t]); adj[j].push([i, t]); }
+                    walk(k + 1);
+                    if (t > 0) { used[i] -= t; used[j] -= t; adj[i].pop(); adj[j].pop(); }
+                }
+            };
+            walk(0);
+            return codes;
+        };
+        // 重原子5個までに絞る（素朴版は枝刈りが無いので、6個だと分単位になる）。
+        // 木しか作れない式・環と多重結合を含む式・ヘテロが並ぶ式を1つずつ入れる
+        ['C4H10', 'C5H12', 'C4H10O', 'C4H8', 'C4H6', 'C5H10', 'C3H8O3', 'C2H6O2',
+         'C4H9Cl', 'C3H9N', 'C4H11N', 'C3H8S', 'C4H10S'].forEach(f => {
+            const { heavy, h } = parse(f);
+            const mine = new Set(W.enumerateConstitutionalIsomers(heavy, h, 4000000)
+                .isomers.map(m => W.canonicalCode(m)));
+            const ref = naive(heavy, h);
+            assert(mine.size === ref.size,
+                `${f}: 本体 ${mine.size}種 ／ 枝刈り無しの素朴版 ${ref.size}種（枝刈りが答えを削っている）`);
+            ref.forEach(code => assert(mine.has(code), `${f}: 素朴版にしか無い異性体がある（${code}）`));
+        });
     });
 
     // ===== SP: 硫黄を含む分子式の異性体列挙（v950・2026-08-09） =====
