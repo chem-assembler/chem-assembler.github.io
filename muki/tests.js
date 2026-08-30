@@ -1131,9 +1131,11 @@
             treeCrowdedGroups(['Ag', 'Cu', 'Fe3', 'Na']) === 0 &&
             treeCrowdedGroups(['Ag', 'Pb', 'Fe3', 'Na']) === 1 &&
             treeCrowdedGroups(TREE_SPLIT2.ions) === 2);
-        ok('★ 沈殿側の札が2枚ある（熱湯・過剰の水酸化ナトリウム水溶液）',
-            Object.keys(TREE_SUBOPS).length === 2 &&
-            TREE_SUBOPS.hot.short === '熱湯' && TREE_SUBOPS.naoh.short.indexOf('水酸化ナトリウム') >= 0);
+        // ⚠ 2枚 → 3枚（2026-08-30・第5属を入れた回）
+        ok('★ 沈殿側の札が3枚ある（熱湯・過剰の水酸化ナトリウム水溶液・希酢酸とクロム酸カリウム）',
+            Object.keys(TREE_SUBOPS).length === 3 &&
+            TREE_SUBOPS.hot.short === '熱湯' && TREE_SUBOPS.naoh.short.indexOf('水酸化ナトリウム') >= 0 &&
+            TREE_SUBOPS.cro4.short.indexOf('クロム酸カリウム') >= 0);
         ok('⚠⚠ 沈殿側の表の鍵は、イオンではなく **沈殿の化学式**（★ PbCl₂ と PbS は別もの）',
             treeSubRule('PbCl₂', 'hot').out === 'sol' &&
             treeSubRule('PbS', 'hot').out === 'ppt');
@@ -2828,10 +2830,11 @@
 
             // --- ⑤ ★★★ 芯: 希硝酸を置き忘れた答案 ---
             w.treeUI.start('build', 'easy', { ions: UI_A1 });
-            ok('「実験手順から考える」では札が8枚出る（★ 主流6・沈殿側2。硫化水素は1枚）',
-                d.querySelectorAll('#op-deck .card').length === 8 &&
+            // ⚠ 8枚 → 9枚（2026-08-30・第5属を割る札を足した）
+            ok('「実験手順から考える」では札が9枚出る（★ 主流6・沈殿側3。硫化水素は1枚）',
+                d.querySelectorAll('#op-deck .card').length === 9 &&
                 d.querySelectorAll('#op-deck .card[data-op="h2s"]').length === 1 &&
-                d.querySelectorAll('#op-deck .card[data-sub]').length === 2, uiOut);
+                d.querySelectorAll('#op-deck .card[data-sub]').length === 3, uiOut);
             ok('組む前は葉が1つ（最後のろ液）だけ',
                 d.querySelectorAll('.slot.leaf').length === 1, uiOut);
             [['hcl', 0], ['h2s', 1], ['boil', 2], ['nh3', 4], ['h2s', 5], ['co3', 6]]
@@ -3158,9 +3161,10 @@
 
             // --- 主流だけ組む（★ まだ割らない） ---
             w.treeUI.start('build', 'hard', { ions: ions });
-            ok('★ 沈殿側の札が手札にある（熱湯・過剰の水酸化ナトリウム水溶液）',
+            ok('★ 沈殿側の札が手札にある（熱湯・過剰の水酸化ナトリウム水溶液・希酢酸とクロム酸カリウム）',
                 !!d.querySelector('#op-deck .card[data-sub="hot"]') &&
-                !!d.querySelector('#op-deck .card[data-sub="naoh"]'), uiOut);
+                !!d.querySelector('#op-deck .card[data-sub="naoh"]') &&
+                !!d.querySelector('#op-deck .card[data-sub="cro4"]'), uiOut);
             [['hcl', 0], ['h2s', 1], ['boil', 2], ['hno3', 3], ['nh3', 4], ['h2s', 5], ['co3', 6]]
                 .forEach(function (x) {
                     pick('#op-deck .card[data-op="' + x[0] + '"]');
@@ -3255,9 +3259,14 @@
                 return bad.length === 0;
             })(), uiOut);
             // ⚠ 深さ2はいちばん行の多い形（★ 上限を数で決めておかないと、じわじわ伸びる）
-            ok('★ 深さ2・全部置いた状態でも、375px でページの高さが 2200px 以内（実測 ' +
+            // ⚠ 上限を 2200 → 2450 にした（2026-08-30・第5属を入れた回）。★ 内訳は全部実測:
+            //   ① **手札が1枚増えたぶん +81px**（同じ容器で、新しい札を隠すと 2195px に戻る）
+            //   ② **属の中が3組になったぶん +124px**（★ 行が 24 → 27 に増える）
+            //   ⚠⚠ **流れ図の描き方は1行も変えていない** —— ★ 同じ容器（属の中2組）の
+            //   流れ図の高さは 1039px のままで、①は丸ごと手札の側にある。
+            ok('★ 深さ2・全部置いた状態でも、375px でページの高さが 2450px 以内（実測 ' +
                 d.documentElement.scrollHeight + 'px）',
-                d.documentElement.scrollHeight <= 2200, uiOut);
+                d.documentElement.scrollHeight <= 2450, uiOut);
 
             d.getElementById('btn-submit').click();
             var rSplit = d.getElementById('result');
