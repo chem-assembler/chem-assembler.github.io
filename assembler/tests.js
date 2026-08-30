@@ -16691,8 +16691,16 @@
         ip.startFromFormula('C5H12');
         assert(ip.active && ip.problem.total === 3, 'C5H12 の自由入力で開始できない');
         ip.stop();
+        // ★ v14xx: 重原子7個でも**木しか作れない式**は受理する（C₇H₁₆ ＝ ユーザー要望）。
+        //   線は個数ではなく `enumerationIsTreeOnly`。受理しない側は下の C₇H₁₄・C₈H₁₈ が見る
+        //   （言い分けの本体と否定対照は `IS5`）
         ip.startFromFormula('C7H16');
-        assert(!ip.active, '重原子7個の式を受理してしまう');
+        assert(ip.active && ip.problem.total === 9, 'C₇H₁₆（重原子7個・飽和形）を受理しない');
+        ip.stop();
+        ip.startFromFormula('C7H14');
+        assert(!ip.active, '重原子7個でも木しか作れない式でなければ断ること（C₇H₁₄）');
+        ip.startFromFormula('C8H18');
+        assert(!ip.active, '重原子8個の式を受理してしまう');
         ip.startFromFormula('CH5');
         assert(!ip.active, '原子価の合わない式を受理してしまう');
         ip.startFromFormula('C6H6');
@@ -16774,8 +16782,10 @@
         const ms = W.performance.now() - t0;
         assert(!r.overflow, 'C₇H₁₆ の列挙が打ち切られた（木の枝刈りが効いていない）');
         assert(r.isomers.length === 9, `C₇H₁₆ が ${r.isomers.length}種（9種を期待）`);
-        // 直す前は完走に 4,100ms（3,000万節点）。桁で判別できる位置にしきい値を置く
-        assert(ms < 1500, `C₇H₁₆ の列挙に ${Math.round(ms)}ms（1500ms 未満を期待）`);
+        // 直す前は完走に 4,100ms（3,000万節点）要り、400万節点では打ち切られていた。
+        // ⚠ **機械に依らない側は上の `!r.overflow`** で、時計はその裏取り。
+        //    実測 570〜770ms（node）なので、桁で判別できる 2500ms に置く
+        assert(ms < 2500, `C₇H₁₆ の列挙に ${Math.round(ms)}ms（2500ms 未満を期待）`);
 
         // (c) ★★ **9種を名前で名指しする**（数だけ数えない）。
         //     どれか1つでも欠ける・入れ替わると赤くなる。名前は `iupacName`（系統名）で引く
@@ -16793,7 +16803,7 @@
             'C₇H₁₆ の9種が正準コードで区別しきれていない（採点が同じ図を2つ数える）');
     });
 
-    test('IS4: 木の枝刈り・対称性の破りで答えが1種も減らない（否定対照）', async (c) => {
+    test('IS4: 木の枝刈りで答えが1種も減らない・代表も変わらない（否定対照）', async (c) => {
         const W = c.W;
         const parse = (f) => {
             const heavy = []; let h = 0;
@@ -16806,13 +16816,8 @@
         };
         // ★ 枝刈りは**速さのため**であって、答えを変えてはいけない。
         //   ここに並べた種類数は**直す前の実装が打ち切らずに出した値**（node で全804式を
-        //   突き合わせ済み）。木の枝刈り（treeOnly）と、同じ元素の入れ替えを捨てる
-        //   `degreeOrdered` のどちらを外しても、必ずどれかが動く並びにしてある:
-        //     ・木を含む式（C₆H₁₄ 5種 など）……… treeOnly を外すと遅くなるだけで数は同じ
-        //     ・環と多重結合を含む式（C₆H₆ 217種・C₅H₈ 26種）… treeOnly の対象外なので
-        //       ここが減ったら `degreeOrdered` が刈りすぎている（＝答えを削っている）
-        //     ・ヘテロが2個以上の式（C₃H₈O₃ 28種）……… 同じ元素が3つ並ぶので
-        //       `degreeOrdered` の「隣どうしの比較」がいちばん効く場所
+        //   突き合わせ済み）。木を含む式・環と多重結合を含む式・ヘテロが2個以上の式を
+        //   混ぜてあるので、`treeOnly` の条件を広げすぎても狭めすぎても動く
         [['C4H10', 2], ['C5H12', 3], ['C6H14', 5], ['C7H16', 9],
          ['C2H6O', 2], ['C3H8O', 3], ['C4H10O', 7], ['C5H12O', 14], ['C6H14O', 32],
          ['C3H6', 2], ['C4H8', 5], ['C5H10', 10], ['C6H12', 25],
@@ -16886,6 +16891,52 @@
                 `${f}: 本体 ${mine.size}種 ／ 枝刈り無しの素朴版 ${ref.size}種（枝刈りが答えを削っている）`);
             ref.forEach(code => assert(mine.has(code), `${f}: 素朴版にしか無い異性体がある（${code}）`));
         });
+
+        // ★★ **代表そのものを凍結する**（v14xx。これがいちばん効く番人）。
+        //   枝刈りは「答えの集合」だけでなく「**同型類からどの図を返すか**」も変えてはいけない。
+        //   `seen` は最初に出会った1つを残すので、探索順を変える枝刈り（元素の入れ替えを
+        //   捨てる類の「対称性の破り」）を入れると、集合は同じまま**返る図が総取り替え**になる。
+        //   実測（v14xx で試して取り下げた）: それを入れると `IW31`（正解図の主鎖が横一直線）の
+        //   否定対照が空振りし、`NW3b`（C₆H₆ の六員環）が33通り → 5通りに落ち、
+        //   `IN2` / `IN12` の凍結リストが外れた ＝ **画面に出る図が黙って全部差し替わる**。
+        //   ⚠ ここが赤くなったら「期待値を書き換える」のではなく、
+        //     **その枝刈りが代表を動かしていないかを先に疑うこと**。
+        const shape = (mol) => {
+            // ⚠ 原子IDは乱数で `addBond` が端点をIDで正規化する（CLAUDE.md「原子IDに順序を頼らない」）。
+            //    **添字に直し、ペアの向きと並びを正規化してから**文字列にする
+            const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
+            return mol.atoms.map(a => a.element).join('') + '|' +
+                mol.bonds.map(b => {
+                    const x = idx.get(b.atomId1), y = idx.get(b.atomId2);
+                    return `${Math.min(x, y)}-${Math.max(x, y)}:${b.type}`;
+                }).sort().join(' ');
+        };
+        const FROZEN = {
+            C4H10O: [
+                'CCCCO|0-4:1 1-3:1 2-3:1 3-4:1',
+                'CCCCO|0-4:1 1-3:1 2-3:1 2-4:1',
+                'CCCCO|0-3:1 1-3:1 2-3:1 3-4:1',
+                'CCCCO|0-3:1 1-3:1 2-3:1 2-4:1',
+                'CCCCO|0-3:1 1-2:1 2-4:1 3-4:1',
+                'CCCCO|0-3:1 1-2:1 2-3:1 3-4:1',
+                'CCCCO|0-3:1 1-2:1 1-4:1 2-3:1'
+            ],
+            C4H8: [
+                'CCCC|0-3:1 1-3:1 2-3:2',
+                'CCCC|0-3:1 1-2:1 2-3:2',
+                'CCCC|0-3:1 1-2:1 1-3:1 2-3:1',
+                'CCCC|0-3:1 1-2:2 2-3:1',
+                'CCCC|0-2:1 0-3:1 1-2:1 1-3:1'
+            ]
+        };
+        Object.keys(FROZEN).forEach(f => {
+            const { heavy, h } = parse(f);
+            const got = W.enumerateConstitutionalIsomers(heavy, h, 4000000).isomers.map(shape);
+            assert(got.length === FROZEN[f].length,
+                `${f} が ${got.length}種（凍結した ${FROZEN[f].length}種と違う）`);
+            got.forEach((s, i) => assert(s === FROZEN[f][i],
+                `${f} の ${i + 1}番目に返る図が変わった\n    いま  ${s}\n    凍結  ${FROZEN[f][i]}`));
+        });
     });
 
     // ★ ユーザー要望「異性体の書き出し練習で C₇H₁₆ の練習がしたい」（2026-08-31）。
@@ -16927,6 +16978,11 @@
         ip.stop();
 
         // (c) ★ 入力欄からも開く（重原子7個の門番が「木しか作れる式か」で開いている）
+        //    ⚠ 入口の名乗りも一緒に見る —— 「6個まで」と書いてあるのに C₇H₁₆ が開く、を防ぐ
+        const lead = D.querySelector('#ip-body div');
+        const leadText = [...D.querySelectorAll('#ip-body div')].map(d => d.textContent).join(' ');
+        assert(lead && /7個まで/.test(leadText),
+            `任意の分子式の入口が上限を「7個まで」と名乗っていない（${leadText.slice(0, 200)}）`);
         ip.startFromFormula('C7H16');
         assert(ip.active && ip.problem.total === 9, 'C7H16 と打っても開かない（重原子の門番）');
         ip.stop();
