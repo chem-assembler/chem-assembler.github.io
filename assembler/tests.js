@@ -52,7 +52,7 @@
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
- * | IS  | 1〜4   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜4 は「木しか作れない式」の枝刈り**（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」）。3 が本体（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる） |
+ * | IS  | 1〜5   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜5 は「木しか作れない式」の枝刈りと C₇H₁₆ のお題**（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。3 が列挙器（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる）・5 が画面（お題として並ぶ・入力欄からも開く・9種に名前が付く。**否定対照は「重原子7個でも木でなければ断る」**＝ C₇H₁₄・C₆H₁₅N・C₆H₁₄S が数える前に断られる） |
  * | IW  | 1〜32 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
  *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
  *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
@@ -16405,7 +16405,9 @@
             ['C₃H₄', 2, 'chain'], ['C₄H₆', 4, 'chain'], ['C₅H₈', 9, 'chain'],
             // 19〜20（v1435 で足した「立体まで答える回」。⚠ **骨格の型は付けない** ——
             //   鎖式に絞ると C₅H₁₀ のメソ体が消える（DESIGN_stereo_point.md §1-2b））
-            ['C₅H₁₀', 10], ['C₅H₁₂O', 14]
+            ['C₅H₁₀', 10], ['C₅H₁₂O', 14],
+            // 21（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」）。★ C₆H₁₄ の5種から9種へ
+            ['C₇H₁₆', 9]
         ];
         assert(ip.problems.length === expected.length,
             `固定のお題が ${ip.problems.length}件（期待 ${expected.length}件。足したなら期待値の表も伸ばすこと）`);
@@ -16886,6 +16888,76 @@
         });
     });
 
+    // ★ ユーザー要望「異性体の書き出し練習で C₇H₁₆ の練習がしたい」（2026-08-31）。
+    //   お題として並び、押せば9種の回が開き、答え合わせの左列に9つとも名前が出ること。
+    test('IS5: C₇H₁₆ の書き出し練習が開く（お題・入力欄の両方から・9種に名前が付く）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+
+        // (a) ★ お題のボタンが並んでいる（`renderList` が数え終えている＝門番で落ちていない）
+        ip.renderList();
+        const idx = ip.problems.findIndex(p => !p.skeleton && !p.stereoAsked &&
+            p.hCount === 16 && p.elements.length === 7 && p.elements.every(e => e === 'C'));
+        assert(idx >= 0, 'C₇H₁₆ のお題が固定リストに無い');
+        const btn = D.querySelector(`#ip-body button[data-ip-problem="${idx}"]`);
+        assert(btn, 'C₇H₁₆ のお題ボタンが画面に無い');
+        assert(!btn.disabled, 'C₇H₁₆ のお題ボタンが押せない（列挙が打ち切られている）');
+        assert(/C₇H₁₆/.test(btn.textContent) && /9種/.test(btn.textContent),
+            `C₇H₁₆ のボタンの表記が「${btn.textContent}」（「C₇H₁₆（9種）」を期待）`);
+        // ★ 不飽和度0 ＝ 素の群に並ぶ（「じっくり練習する回」ではない）
+        const train = D.getElementById('ip-training-problems');
+        assert(!train || !train.querySelector(`button[data-ip-problem="${idx}"]`),
+            'C₇H₁₆ が「じっくり練習する回」の群に入っている（不飽和度0なので素の群）');
+
+        // (b) 押すと9種の回が開く
+        ip.start(idx);
+        assert(ip.active, 'C₇H₁₆ のお題で練習が始まらない');
+        assert(ip.problem.formula === 'C₇H₁₆' && ip.problem.total === 9,
+            `開いた回が ${ip.problem.formula}・${ip.problem.total}種（C₇H₁₆・9種を期待）`);
+        // ★★ 9種を**名前で名指し**する（採点表の左列がこの名前を出す・§11-7）。
+        //    `constitutionalName` は答え合わせが実際に使う経路そのもの
+        const WANT = ['ヘプタン', '2-メチルヘキサン', '3-メチルヘキサン',
+            '2,2-ジメチルペンタン', '2,3-ジメチルペンタン', '2,4-ジメチルペンタン',
+            '3,3-ジメチルペンタン', '3-エチルペンタン', '2,2,3-トリメチルブタン'];
+        const names = [...ip.targets.values()].map(m => ip.constitutionalName(m) || '（名称未登録）');
+        WANT.forEach(n => assert(names.includes(n), `C₇H₁₆ の正解に ${n} が無い（出たのは ${names.join('・')}）`));
+        names.forEach(n => assert(WANT.includes(n), `C₇H₁₆ の正解に余計な ${n} が入っている`));
+        ip.stop();
+
+        // (c) ★ 入力欄からも開く（重原子7個の門番が「木しか作れる式か」で開いている）
+        ip.startFromFormula('C7H16');
+        assert(ip.active && ip.problem.total === 9, 'C7H16 と打っても開かない（重原子の門番）');
+        ip.stop();
+
+        // (d) ★★ 否定対照 —— 門番は**個数では開いていない**。
+        //    重原子7個でも木しか作れない式でなければ、**数える前に**断る。
+        //    ⚠ `!ip.active` だけでは対照にならない —— 門番を個数だけに緩めても、
+        //    これらは列挙のあと「打ち切りました」「N種で多すぎます」で断られて
+        //    やはり `active` は false になる。**どの断り文で止まったか**を見る
+        //    （実測: 緩めると C₇H₁₄ は 0.6 秒かけて「数え上げを途中で打ち切りました」に落ちる）
+        const toast = D.getElementById('canvas-toast');
+        [['C7H14', '不飽和度1（環・二重結合が作れる）'],
+         ['C6H15N', 'N を含む（価数が分子の形で決まる）'],
+         ['C6H14S', 'S を含む（同上）']].forEach(([f, why]) => {
+            if (ip.active) ip.stop();
+            ip.startFromFormula(f);
+            assert(!ip.active, `${f}（${why}）を受理してしまう ＝ 門番が個数だけで開いている`);
+            const msg = toast ? toast.textContent : '';
+            assert(/重原子が多すぎます/.test(msg),
+                `${f}（${why}）が重原子の門番で止まっていない ＝ 数えてから断っている（出た文: ${msg}）`);
+            assert(/飽和形/.test(msg), `${f} の断り文が「飽和形なら7個まで」を示していない（${msg}）`);
+        });
+        // 重原子8個は木しか作れなくても断る（C₇H₁₆O は 72種・C₈H₁₈ は 18種だが線の外）
+        if (ip.active) ip.stop();
+        ip.startFromFormula('C8H18');
+        assert(!ip.active, 'C₈H₁₈（重原子8個）を受理してしまう');
+
+        if (ip.active) ip.stop();
+        g.setMode('puzzle');
+    });
+
     // ===== SP: 硫黄を含む分子式の異性体列挙（v950・2026-08-09） =====
     // 実機報告「C₄H₁₀S₂ で 5.9秒・C₃H₈S₃ で 16.5秒 固まる」の再発検出。
     // 原因は **DFS の枝刈り上限で S を6価として伸ばし、葉で捨てていた**こと。
@@ -17329,17 +17401,21 @@
 
         // ① 芳香族の回が **`problems`（列挙の道）に入っていない**。
         //    `problems` の各件は `enumerate(index)` → `enumerateConstitutionalIsomers` を通る
-        //    ⚠ 件数は v1433 で 6 → 19・**v1435 で 21**（立体まで答える回を2つ足した・§18）。
+        //    ⚠ 件数は v1433 で 6 → 19・**v1435 で 21**（立体まで答える回を2つ足した・§18）・
+        //      **v14xx で 22**（C₇H₁₆・ユーザー要望 2026-08-31）。
         //      見張っているのは**件数そのものではなく「C₈H₁₀ がこちらへ落ちていないこと」**なので、
-        //      重原子の上限（6個）も一緒に見る ＝ 生の列挙で扱えない式がここへ紛れ込めば赤くなる
-        assert(Array.isArray(ip.problems) && ip.problems.length === 21,
-            `固定問題リストが ${ip.problems && ip.problems.length}件（21件を期待。芳香族をここへ足していないか）`);
+        //      重原子の上限も一緒に見る ＝ 生の列挙で扱えない式がここへ紛れ込めば赤くなる
+        assert(Array.isArray(ip.problems) && ip.problems.length === 22,
+            `固定問題リストが ${ip.problems && ip.problems.length}件（22件を期待。芳香族をここへ足していないか）`);
         ip.problems.forEach((p, i) => {
             const carbons = p.elements.filter(e => e === 'C').length;
             assert(!(carbons === 8 && p.hCount === 10),
                 `problems[${i}] に C₈H₁₀ が入っている ＝ 芳香族の回が生の列挙の道へ落ちている`);
-            assert(p.elements.length <= 6,
-                `problems[${i}] の重原子が ${p.elements.length}個 ＝ 生の列挙では扱えない式が固定リストに入っている`);
+            // ★ 上限は「個数」ではなく「木しか作れる式か」で決まる（v14xx。learn.js の
+            //   `IP_MAX_HEAVY` / `IP_MAX_HEAVY_TREE` と同じ判定を、ここでも列挙器の関数で引く）
+            const cap = W.enumerationIsTreeOnly(p.elements, p.hCount) ? 7 : 6;
+            assert(p.elements.length <= cap,
+                `problems[${i}] の重原子が ${p.elements.length}個（上限 ${cap}個）＝ 生の列挙では重すぎる式が固定リストに入っている`);
         });
 
         // ② 芳香族のプリセットは**分子式の文字列**だけを持ち、押すと `startFromFormula` を呼ぶ
