@@ -5828,7 +5828,7 @@
             g.summonMolecule('エタノール');
             assert(g.countMolecules() >= 2 && g.userMolecule.atoms.length > before,
                 '2分子にできなかった（検査が素通りする）');
-            // ⚠ v1482 から「**選んだ**分子には出る」（§N-8・MN1）。ここが見ているのは
+            // ⚠ この直し以降は「**選んだ**分子には出る」（§N-8・MN1）。ここが見ているのは
             //   **選んでいない**回で、選択を消してから測る（前のテストの選択が残っていると
             //   この検査が意味を変える）
             g.focusedMolecule = null;
