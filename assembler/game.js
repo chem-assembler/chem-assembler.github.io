@@ -5043,6 +5043,99 @@ class Game {
         };
         place(cA, subsA, ux, uy);
         place(cB, subsB, -ux, -uy);
+        this._orientCarbonylsOutward(cA, cB, subsA, subsB);
+    }
+
+    /**
+     * 整形のあと、**C=C に直結したカルボニル炭素の枝**を 90° 単位で回して、
+     * C=O の O が C=C の外を向くようにする（ユーザー指摘・2026-08-31）。
+     *
+     * ★ **なぜ要るか**: 上の `place` は枝を**平行移動**で置く（環を含む枝だけ回す）ので、
+     *   枝の内部の向きは**元の直交作図のまま**残る。ライブラリの図は C=C を横一直線に
+     *   引いて C=O を上へ立てているものが多く、整形で枝が下側（-120°）へ回ると
+     *   **C=O だけが上を向いたまま** ＝ O が C=C を向いて窮屈になる。
+     *   実測（v1481 時点。環外 C=C にカルボニルが付く 15件のうち **10件**）で
+     *   O と対岸のビニル炭素の距離が **21.7px**（＝ 2×42×sin15°）まで詰まっていた。
+     *   これは DEVELOPMENT.md v434 が呼び出し側（`reshapeVinylAngles`）で門番を立てて
+     *   **整形を丸ごと取り消していた**のと同じ形だが、**整形モードのタップにはその門番が無い**
+     *   ので、タップした人には詰まった図がそのまま残っていた。
+     *
+     * ⚠ **シス/トランスは1pxも動かさない。** 回すのは「カルボニル炭素より先」だけで、
+     *   カルボニル炭素そのものは軸のまま動かない ＝ `readBondGeoFromCoords` が見る
+     *   **基準置換基（ビニル炭素の隣の重原子）の位置は変わらない**。したがって
+     *   syn/anti の読みは定義上変わらず、CLAUDE.md の
+     *   「未確定を確定させるのは整形モードのタップだけの仕事」は保たれる。
+     *   それでも念のため、回した後に**立体コード全体**（フィッシャー・ハースの読みも込み）が
+     *   変わっていないことを確かめ、変わったら戻す —— 枝の中に不斉炭素があると
+     *   90° 回転がフィッシャーの読みを裏返しうるため（回転は絶対的な上下左右を変える）。
+     *
+     * 選び方: 直交作図を壊さない {+90°, -90°, 180°} だけを候補にし、
+     *   **枝と枝の外の重原子との最短距離が最大**になるものを採る（同点なら採らない）。
+     *   もともと外を向いている（外向き基準との角度が 90° 以下）枝には触らない
+     *   —— マレイン酸・フマル酸のように既に良い図を動かさないための門番。
+     */
+    _orientCarbonylsOutward(cA, cB, subsA, subsB) {
+        const mol = this.userMolecule;
+        const blocked = [cA.id, cB.id];
+        const allIds = new Set(mol.atoms.map(a => a.id));
+        const stereoOf = () => (typeof canonicalStereoCode === 'function'
+            ? canonicalStereoCode(mol, {
+                atomParity: { ...readAtomParityFromFischer(mol), ...readRingParityFromHaworth(mol) },
+                bondGeo: readBondGeoFromCoords(mol)
+            })
+            : '');
+        const pairs = subsA.map(s => ({ carbon: cA, sub: s }))
+            .concat(subsB.map(s => ({ carbon: cB, sub: s })));
+        pairs.forEach(({ carbon, sub }) => {
+            if (sub.element !== 'C') return;
+            const oxy = mol.getNeighbors(sub.id).find(n => n.type === 2 && n.atom.element === 'O');
+            if (!oxy) return;
+            // 外向きの基準＝「ビニル炭素 → カルボニル炭素」の向き
+            const wx = sub.x - carbon.x, wy = sub.y - carbon.y;
+            const wl = Math.hypot(wx, wy) || 1;
+            // cos（+1 が真外向き・0 が直角・-1 が C=C を向く）
+            const outness = () => {
+                const vx = oxy.atom.x - sub.x, vy = oxy.atom.y - sub.y;
+                return (wx * vx + wy * vy) / (wl * (Math.hypot(vx, vy) || 1));
+            };
+            if (outness() > -1e-6) return; // 直角より外を向いているなら触らない
+            const ids = this._subtreeIds(sub, blocked);
+            const inSub = new Set(ids);
+            // 枝の重原子と「枝の外」の重原子との最短距離（詰まり具合）
+            const gap = () => {
+                const heavy = mol.atoms.filter(a => a.element !== 'H');
+                let m = Infinity;
+                heavy.forEach(a => {
+                    if (!inSub.has(a.id)) return;
+                    heavy.forEach(b => {
+                        if (inSub.has(b.id)) return;
+                        const d = Math.hypot(a.x - b.x, a.y - b.y);
+                        if (d < m) m = d;
+                    });
+                });
+                return m;
+            };
+            const saved = ids.map(id => mol.atoms.find(x => x.id === id))
+                .filter(Boolean).map(a => ({ a, x: a.x, y: a.y }));
+            const restore = () => saved.forEach(s => { s.a.x = s.x; s.a.y = s.y; });
+            const code0 = stereoOf();
+            const through0 = this._hasBondThroughAtom(allIds);
+            const gap0 = gap();
+            let best = null;
+            [90, -90, 180].forEach(deg => {
+                restore();
+                this._rotateSubtree(sub, blocked, sub, deg * Math.PI / 180);
+                const ok = outness() > 1e-6
+                    && (through0 || !this._hasBondThroughAtom(allIds))
+                    && stereoOf() === code0;
+                const score = gap();
+                if (ok && (!best || score > best.score)) best = { deg, score };
+            });
+            restore();
+            if (best && best.score > gap0 + 1e-6) {
+                this._rotateSubtree(sub, blocked, sub, best.deg * Math.PI / 180);
+            }
+        });
     }
 
     // タップ位置に近い側の炭素の置換基部分木だけを C=C 軸に対して鏡映（cis⇄trans反転）

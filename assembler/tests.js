@@ -12078,6 +12078,201 @@
         assertRenderingRestored(c);
     });
 
+    /* ―― CX. C=C に付いたカルボニルの O の向き（ユーザー指摘・2026-08-31）――
+     * 「C=O の O が C=C の外側を向くようにしたい（分子読み込み時、シストランス整形時）」。
+     * `reshapeDoubleBond` は枝を**平行移動**で置くので、枝の内部の向きは元の直交作図のまま残る。
+     * ライブラリの図は C=C を横一直線に引いて C=O を上へ立てているものが多く、
+     * 枝が下側（-120°）へ回ると C=O だけが上を向いたまま ＝ O が C=C を向いた。
+     * 直す前の実測: 環外 C=C にカルボニルが付く **15件のうち10件**で、整形タップのあと
+     * O が外向き基準から 150°・対岸のビニル炭素まで **21.7px**。
+     */
+    test('CX1: 整形したとき C=O の O が C=C の外を向く（シス・トランス両方の否定対照つき）', async (c) => {
+        const g = c.game, W = c.W;
+        const names = [...new Set(g.getCompoundLibrary().map(e => e.name))];
+        // 環外 C=C に直結したカルボニルを全部見て「外向き基準との角度」と「O と C=C の距離」を返す
+        const probe = () => {
+            const mol = g.userMolecule;
+            const ring = W.ringAtomIds(mol);
+            const byId = new Map(mol.atoms.map(a => [a.id, a]));
+            const out = [];
+            mol.bonds.forEach(b => {
+                if (b.type !== 2) return;
+                const c1 = byId.get(b.atomId1), c2 = byId.get(b.atomId2);
+                if (!c1 || !c2 || c1.element !== 'C' || c2.element !== 'C') return;
+                if (ring.has(c1.id) || ring.has(c2.id)) return;
+                [[c1, c2], [c2, c1]].forEach(([e, o]) => {
+                    mol.getNeighbors(e.id).forEach(n => {
+                        if (n.atom.id === o.id || n.atom.element !== 'C') return;
+                        const cc = n.atom;
+                        mol.getNeighbors(cc.id).forEach(m => {
+                            if (m.type !== 2 || m.atom.element !== 'O') return;
+                            const ox = m.atom;
+                            const wx = cc.x - e.x, wy = cc.y - e.y;          // 外向き
+                            const vx = ox.x - cc.x, vy = ox.y - cc.y;        // C→O
+                            const cos = (wx * vx + wy * vy) /
+                                ((Math.hypot(wx, wy) || 1) * (Math.hypot(vx, vy) || 1));
+                            out.push({
+                                ang: Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI,
+                                d: Math.min(Math.hypot(ox.x - c1.x, ox.y - c1.y),
+                                    Math.hypot(ox.x - c2.x, ox.y - c2.y))
+                            });
+                        });
+                    });
+                });
+            });
+            return out;
+        };
+        const geo = () => JSON.stringify(W.readBondGeoFromCoords(g.userMolecule));
+        const summon = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            return g.summonMolecule(name);
+        };
+
+        // (1) ★ 正対照（実イベントで叩く）: ブテン二酸を整形タップ → O が外を向く
+        assert(names.includes('ブテン二酸（マレイン酸／フマル酸）'), 'ブテン二酸がライブラリに無い');
+        assert(summon('ブテン二酸（マレイン酸／フマル酸）'), 'ブテン二酸を呼び出せない');
+        // ★ 呼び出しただけでは幾何を確定させない（CLAUDE.md「未確定を確定させるのは
+        //   整形モードのタップだけの仕事」）。ここが崩れたら後段の検査ごと無効になる
+        assert(geo() === '{}', `ブテン二酸が呼び出しだけで幾何を確定させている（${geo()}）`);
+        const dbl = g.userMolecule.bonds.find(b => b.type === 2 && g._isNonRingCC(b));
+        assert(dbl, 'ブテン二酸に環外 C=C が見つからない');
+        const bCA = g.userMolecule.atoms.find(a => a.id === dbl.atomId1);
+        const reshapeBtn = c.D.getElementById('btn-cistrans-reshape');
+        assert(reshapeBtn, '左パレットにシス/トランス整形ボタンがない');
+        reshapeBtn.click();
+        assert(g.reshapeMode, '整形モードがONにならない');
+        c.clickAt(bCA.x, bCA.y);
+        const after = probe();
+        assert(after.length === 2, `ブテン二酸のカルボニルが ${after.length} 個しか見えない`);
+        after.forEach(p => {
+            assert(p.ang <= 90.01,
+                `整形後も C=O が内を向く（外向き基準から ${p.ang.toFixed(1)}°）`);
+            assert(p.d >= 27.3,
+                `整形後の O が C=C から ${p.d.toFixed(1)}px（27.3px 以上を期待。直す前は 21.7px）`);
+        });
+        g.reshapeMode = false;
+        reshapeBtn.classList.remove('active');
+
+        // (2) ★ 否定対照 ―― **シスとトランスの両方**。既に外を向いている図は1pxも動かさず、
+        //     syn/anti の読みも変わらない（＝ 直しがシス/トランスへ触っていない）
+        [['マレイン酸', 'syn'], ['フマル酸', 'anti']].forEach(([name, want]) => {
+            assert(summon(name), `${name} を呼び出せない`);
+            const g0 = geo();
+            assert(JSON.parse(g0)[Object.keys(JSON.parse(g0))[0]] === want,
+                `${name} の呼び出し直後が ${want} と読めない（${g0}）`);
+            const before = g.userMolecule.atoms.map(a => ({ x: a.x, y: a.y }));
+            const p0 = probe();
+            assert(p0.length === 2 && p0.every(p => p.ang <= 90.01),
+                `${name} は直す前から O が外向きのはず（${p0.map(p => p.ang.toFixed(0)).join('/')}°）`);
+            const bond = g.userMolecule.bonds.find(b => b.type === 2 && g._isNonRingCC(b));
+            const ca = g.userMolecule.atoms.find(a => a.id === bond.atomId1);
+            g._reshapeLastBond = null;
+            g.handleReshapeTap({ rawX: ca.x, rawY: ca.y });
+            assert(geo() === g0, `${name} の整形で幾何の読みが変わった（${g0} → ${geo()}）`);
+            const moved = g.userMolecule.atoms.some((a, i) =>
+                Math.abs(a.x - before[i].x) > 0.01 || Math.abs(a.y - before[i].y) > 0.01);
+            assert(!moved, `${name} は既に整った図なのに整形で原子が動いた`);
+        });
+
+        // (3) ライブラリ全件の掃き出し。呼び出し → 環外 C=C を1本ずつ整形タップして、
+        //     **もともと読めていた syn/anti が変わらないこと**と O が外を向くことを見る
+        const bad = withoutRendering(c, () => {
+            const list = [];
+            names.forEach(name => {
+                try { if (!summon(name)) return; } catch (e) { return; }
+                if (probe().length === 0) return;
+                const g0 = JSON.parse(geo());
+                g.userMolecule.bonds.filter(b => b.type === 2 && g._isNonRingCC(b)).forEach(b => {
+                    const ca = g.userMolecule.atoms.find(a => a.id === b.atomId1);
+                    if (!ca) return;
+                    g._reshapeLastBond = null;
+                    try { g.handleReshapeTap({ rawX: ca.x, rawY: ca.y }); } catch (e) { return; }
+                });
+                const g1 = JSON.parse(geo());
+                Object.keys(g0).forEach(k => {
+                    if (g1[k] !== g0[k]) list.push(`${name}: 幾何が ${g0[k]} → ${g1[k]}`);
+                });
+                probe().forEach(p => {
+                    if (p.ang > 90.01) list.push(`${name}: C=O が内向き ${p.ang.toFixed(1)}°`);
+                    if (p.d < 27.3) list.push(`${name}: O と C=C が ${p.d.toFixed(1)}px`);
+                });
+            });
+            return list;
+        });
+        assert(names.length > 500, `掃いた名称が ${names.length} 件しかない（試験の前提が崩れている）`);
+        assert(bad.length === 0,
+            `整形で C=O が内を向く／幾何が変わる分子がある: ${bad.slice(0, 6).join('、')}（計${bad.length}件）`);
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        assertRenderingRestored(c);
+    });
+
+    test('CX2: O の向き直しが動かすのは「カルボニル炭素より先」だけ（シス/トランスに触らない）', async (c) => {
+        const g = c.game, W = c.W;
+        // ★ この直しがシス/トランスと両立する理由の**構造的な**否定対照。
+        //   `readBondGeoFromCoords` が見るのは「ビニル炭素の隣の重原子」の位置だけなので、
+        //   カルボニル炭素そのものが動かないなら syn/anti は定義上変わらない。
+        //   後段（_orientCarbonylsOutward）を止めた図と入れた図を突き合わせ、
+        //   **C=C の2炭素とその直接の置換基原子は 1px も違わない**こと、
+        //   そのうえで **O は実際に動いている**（＝ 検査が何かを見ている）ことを確かめる。
+        const snapshot = () => {
+            const mol = g.userMolecule;
+            const ring = W.ringAtomIds(mol);
+            const keep = new Set();
+            mol.bonds.forEach(b => {
+                if (b.type !== 2) return;
+                const c1 = mol.atoms.find(a => a.id === b.atomId1);
+                const c2 = mol.atoms.find(a => a.id === b.atomId2);
+                if (!c1 || !c2 || c1.element !== 'C' || c2.element !== 'C') return;
+                if (ring.has(c1.id) || ring.has(c2.id)) return;
+                [c1, c2].forEach(e => {
+                    keep.add(e.id);
+                    mol.getNeighbors(e.id).forEach(n => keep.add(n.atom.id));
+                });
+            });
+            return { keep, pos: new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }])) };
+        };
+        const run = (name, withFix) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            const orig = g._orientCarbonylsOutward;
+            if (!withFix) g._orientCarbonylsOutward = function () { };
+            try {
+                g.summonMolecule(name);
+                const bond = g.userMolecule.bonds.find(b => b.type === 2 && g._isNonRingCC(b));
+                const ca = g.userMolecule.atoms.find(a => a.id === bond.atomId1);
+                g._reshapeLastBond = null;
+                g.handleReshapeTap({ rawX: ca.x, rawY: ca.y });
+            } finally {
+                g._orientCarbonylsOutward = orig;
+            }
+            return snapshot();
+        };
+        ['ブテン二酸（マレイン酸／フマル酸）', 'アクリル酸', 'メタクリル酸メチル'].forEach(name => {
+            // ★ 原子IDは呼び出しのたびに変わるので、突き合わせは**添字**で行う
+            //   （RF2 が「呼び出すたびに同じ図になる」ことを保証しているので添字は対応する）
+            const off = run(name, false), on = run(name, true);
+            const idsOff = [...off.pos.keys()], idsOn = [...on.pos.keys()];
+            assert(idsOff.length === idsOn.length, `${name}: 原子の数が食い違う`);
+            let axisMoved = 0, deepMoved = 0;
+            idsOff.forEach((id, i) => {
+                const a = off.pos.get(id), b = on.pos.get(idsOn[i]);
+                const same = Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
+                if (off.keep.has(id)) { if (!same) axisMoved++; }
+                else if (!same) deepMoved++;
+            });
+            assert(axisMoved === 0,
+                `${name}: 向き直しが C=C まわりの原子を ${axisMoved} 個動かした（シス/トランスに触っている）`);
+            assert(deepMoved > 0,
+                `${name}: 向き直しが1原子も動かしていない（この検査が何も見ていない）`);
+        });
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+    });
+
     // ===== Q. モード切替（P10 M1） =====
 
     test('QX1: 抜けるときの手当て（書きかけの確認・パズルのやめる。ユーザー判断 B・C）', async (c) => {
