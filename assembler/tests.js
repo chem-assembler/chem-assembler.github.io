@@ -41964,6 +41964,82 @@
         c.reset();
     });
 
+    /* RV12 —— 重合したとき、**鎖の両端の炭素にも印が付く**。
+     *
+     * 動画レーンの実測報告 2026-08-26 §9。ユーザーが V120 の完成品で見つけた:
+     * 「両端のC原子のみマーカーなし。Rの関係かもしれないが、実際には差が無いのですべてマーカーすべき」。
+     *
+     * 原因は `attachR` が **R の id しか返さない**こと。繋ぐループは `units[0]` の端に
+     * 一度も触れず、もう一方の端は最後の代入のあと push される前にループが終わる
+     * ＝ ★ **R は `changed` に入るのに、R を付けた炭素が入らない**。
+     * ⚠ **重合4種（付加・ポリアセチレン・ジエン・縮合）が同じ抜け方をしていた**ので、
+     * `attachREnds` に束ねて「次に重合を1種類足した人がまた忘れる」形を塞いだ。
+     *
+     * ⚠⚠ **数で引いてはいけない。** 両端2つが増えるだけなので、合計の数では
+     * 「R をまとめて消す」直し方も通ってしまう（動画レーンの指摘）。
+     * ★ **端の炭素を名指しで見る**＋ ★ **R にも印が残っていることを否定対照として押さえる**。 */
+    test('RV12: 重合したら鎖の両端の炭素にも印が付く（R だけでなく、R が生えた炭素も）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        g.setMode('free');
+
+        // ★ 付加重合（V120 の題材）と縮合重合（端で -OH が R に置き換わる ＝ 変化が大きい）の両方
+        const CASES = [
+            { names: ['スチレン', 'スチレン', 'スチレン'], rule: 'addition_polymerization' },
+            // ⚠ 縮合重合は **4分子**要る（2価カルボン酸2個＋2価アミン2個。`condensationPolymerUnits`）
+            { names: ['アジピン酸', 'ヘキサメチレンジアミン', 'アジピン酸', 'ヘキサメチレンジアミン'],
+              rule: 'condensation_polymerization' }
+        ];
+        for (const cs of CASES) {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            cs.names.forEach(n => { g.summonMolecule(n); g.updateDrawing(); });
+            const rule = W.REACTION_RULES.find(r => r.id === cs.rule);
+            assert(rule, `（前提）${cs.rule} が REACTION_RULES に無い`);
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length, `（前提）${cs.names.join('+')} で ${cs.rule} の箇所が見つからない`);
+            W.reactor.execute(rule, sites[0], null);
+            await c.tick(1400);
+
+            const mol = g.userMolecule;
+            const marked = new Set([...D.getElementById('ui-group').querySelectorAll('[data-hl-atom]')]
+                .map(el => el.getAttribute('data-hl-atom')));
+            const atomOf = (id) => mol.atoms.find(a => String(a.id) === String(id));
+
+            // 鎖の端 ＝ 「R が結合している重原子」。R の id からたどる（座標や順序に頼らない）
+            const rAtoms = mol.atoms.filter(a => a.element === 'R');
+            assert(rAtoms.length === 2,
+                `${cs.rule}: R が ${rAtoms.length} 個（両端2個が正 ＝ 前提が崩れている）`);
+            const endHeavies = rAtoms.map(r => {
+                const b = mol.bonds.find(x => x.atomId1 === r.id || x.atomId2 === r.id);
+                assert(b, `${cs.rule}: R が結合していない`);
+                return String(b.atomId1 === r.id ? b.atomId2 : b.atomId1);
+            });
+
+            // ① ★ **端の重原子に印が付く**（今回の指摘そのもの）
+            endHeavies.forEach((id, i) => {
+                const a = atomOf(id);
+                assert(marked.has(id),
+                    `${cs.rule}: 鎖の端 ${i + 1}/2（${a ? a.element : '?'}）に印が無い ＝ ` +
+                    'R は changed に入っているのに、R を付けた原子が入っていない');
+            });
+
+            // ② ★否定対照 —— **R そのものの印は残っている**
+            //    （「端がおかしいから R ごと消す」直し方をしたときに、ここで気づく）
+            rAtoms.forEach((r, i) => {
+                assert(marked.has(String(r.id)),
+                    `${cs.rule}: R ${i + 1}/2 の印が消えている（端をそろえるために R を落としていないか）`);
+            });
+
+            // ③ 中の炭素の印も生きている（①②を満たしたうえで、全部に付ける実装にしていない）
+            const heavy = mol.atoms.filter(a => a.element !== 'H' && a.element !== 'R');
+            assert(marked.size < heavy.length + rAtoms.length,
+                `${cs.rule}: 重原子と R の全部（${heavy.length + rAtoms.length}個）に印が付いている ＝ ` +
+                '「変わった所」を指す印になっていない');
+        }
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
