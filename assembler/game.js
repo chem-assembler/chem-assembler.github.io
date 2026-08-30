@@ -9286,8 +9286,43 @@ class Game {
      *              | { kind:'alkyl', chain, name, systematic }
      *              | { kind:'ether', groups, name }
      */
+    /**
+     * ★ 🔢 が対象にする**1分子**を決める（`DESIGN_iupac_check.md` §N-8・ユーザー発注 2026-08-28
+     *   「キャンバスに複数分子存在するときの主鎖と番号の挙動、選択した分子に番号を振りたい」）。
+     *
+     * ⚠ **新しい「選択」を作らない。**キャンバスには既に「いまこの分子の話をしている」という
+     *   1つきりの印（`focusedMolecule`）があり、
+     *   ・図の下の見出し（🔍①名前）のタップ … `openMoleculeModal(rep.id)` → `setFocusedMolecule`
+     *   ・「🎯 反応させる分子を選ぶ」のタップ … `toggleMoleculeSelection` が同時に立てる
+     *   ・分子モーダル／反応カードのチップ
+     *   のどれからも立つ。琥珀の枠が出ている分子がそれ ＝ **画面に既に見えている選択**。
+     *   反応の選択（`selectedMolecules`・青の破線と①②）は**最大4つ**なので番号の相手を
+     *   1つに決められない。こちらは使わない（ただし上のとおり、選ぶと `focusedMolecule` も動く）。
+     *
+     * ⚠ **選んでいないときは出さない**（`chosen:false`）。既定で①に振ると
+     *   「どれが◯◯？」と考えている生徒にアプリが答えを指すことになる ——
+     *   琥珀の枠を `explicit` まで出さないと決めたのと同じ理由（C-9）。
+     *
+     * ★ 分子が1つのときは `this.userMolecule` をそのまま返す ＝ **1分子の 🔢 は
+     *   ここから先で1ビットも変わらない**（連結成分の写しにすり替えない）。
+     *
+     * @returns { mol, count, chosen } — `mol` は対象の分子（出せないときは null）
+     */
+    iupacNumberingSubject() {
+        const all = this.userMolecule;
+        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (parts.length <= 1) return { mol: all, count: parts.length, chosen: true };
+        const hit = this.focusedMolecule
+            ? parts.find(p => p.atoms.some(a => a.id === this.focusedMolecule))
+            : null;
+        // 選んだ分子が反応や削除で消えていたら「選んでいない」に戻す（黙って隣を指さない）
+        if (!hit) return { mol: null, count: parts.length, chosen: false };
+        return { mol: hit, count: parts.length, chosen: true };
+    }
+
     iupacNumberingDetail() {
-        const mol = this.userMolecule;
+        const subject = this.iupacNumberingSubject();
+        const mol = subject.mol;
         if (!mol || !mol.atoms.some(a => a.element !== 'H')) return null;
         // 付け根マーカー R が付いていればアルキル基として読む（§4）。
         // **付け根が必ず C1** で、向きを選ぶ余地が無い ＝ 主鎖の場合より単純
@@ -9295,7 +9330,7 @@ class Game {
             if (typeof iupacAlkylDetailFromR !== 'function') return null;
             const d = iupacAlkylDetailFromR(mol);
             if (!d || !d.mainChain || !d.mainChain.length) return null;
-            return { kind: 'alkyl', chain: d.mainChain, name: d.name, systematic: d.systematic || d.name };
+            return { kind: 'alkyl', mol, chain: d.mainChain, name: d.name, systematic: d.systematic || d.name };
         }
         if (typeof iupacNameDetail !== 'function') return null;
         const d = iupacNameDetail(mol);
@@ -9304,11 +9339,13 @@ class Game {
         if (!d) return this.sugarNumberingDetail(mol);
         // エーテルは**主鎖に番号をつけない**（未対応ではなく規則そのもの。§N-5）
         if (d.kind === 'ether') return d.groups && d.groups.length === 2
-            ? { kind: 'ether', groups: d.groups, name: d.name, parts: d.nameParts } : null;
+            ? { kind: 'ether', mol, groups: d.groups, name: d.name, parts: d.nameParts } : null;
         if (d.kind !== 'chain' || !d.mainChain || !d.mainChain.length) return null;
         // parts / locants / dirReason は「名称の説明」（設計回 E）が使う。
         // ⚠ **ここでも新しい計算はしない。**門番が持ち出すのは `iupacNameDetail` が返したものだけ
-        return { kind: 'chain', chain: d.mainChain, name: d.name,
+        // ⚠ `mol` は**対象の1分子**（§N-8）。名前引き（`lookupCompoundName`）と
+        //   かけらの原子引き（`iupacPartAtoms`）はキャンバス全体ではなくこれを見る
+        return { kind: 'chain', mol, chain: d.mainChain, name: d.name,
             parts: d.nameParts, locants: d.locants, dirReason: d.dirReason };
     }
 
@@ -9324,13 +9361,14 @@ class Game {
      *   （環の酸素の隣を C1 と決める別の規則）。引くと「この鎖から名前が出た」という嘘になる。
      *   ⚠ 環に沿わせる案も採らない —— 環内の O には番号が無いので、帯と番号が食い違う。
      *
-     * ⚠ **分子が2つ以上なら出さない**（既存の 'multi' の言い分けをそのまま通す）。
+     * ⚠ 受け取る `mol` は**対象の1分子**（`iupacNumberingSubject`。§N-8）。分子が2つ以上あって
+     *   まだ選ばれていない回はここまで来ない（門番が先に null を返す）ので、
+     *   ここで分子の数を数え直さない —— 数えると「選んだ糖」まで一緒に断ってしまう。
      *
      * @returns null | { kind:'sugar', labels:Map(atomId→'1'/'1′'), name, note, rings }
      */
     sugarNumberingDetail(mol) {
         if (typeof haworthCarbonNumbers !== 'function') return null;
-        if (this.countMolecules() !== 1) return null;
         const r = haworthCarbonNumbers(mol);
         if (!r.ok || !r.labels.size) return null;
         const 二糖 = r.rings.length === 2;
@@ -9340,7 +9378,7 @@ class Game {
             : `環の酸素の隣（アノマー炭素）が C${r.rings[0].anomerNumber} です` +
               (ketose ? '（ケトースなので、その上の -CH₂OH が C1）。' : '。') +
               '環の酸素には番号を振りません。';
-        return { kind: 'sugar', labels: r.labels, rings: r.rings,
+        return { kind: 'sugar', mol, labels: r.labels, rings: r.rings,
                  name: this.lookupCompoundName(mol) || this.computeMolecularFormula(mol), note };
     }
 
@@ -9414,16 +9452,24 @@ class Game {
         }
         // ===== ここから「出せない」の言い分け =====
         // 順番は**手当ての近さ**で決める。分子を1つにするのがいちばん早い手当てなので先に見る
-        const n = this.countMolecules();
-        if (n >= 2) {
-            return { code: 'multi', ok: false, det: null,
-                message: `キャンバスに分子が${n}つあります。主鎖と番号は1つの分子について決まるので、1つだけにしてから押してください。` };
+        // ★ 分子が2つ以上あるときは「1つにしてください」ではなく「**選んでください**」（§N-8）。
+        //   選べば出せるようになったので、消させるのはもう間違い ——
+        //   ユーザーが並べて見比べている図を、番号を見るためだけに壊させることになる
+        const subject = this.iupacNumberingSubject();
+        if (subject.count >= 2 && !subject.chosen) {
+            return { code: 'multi', ok: false, det: null, subject,
+                message: `キャンバスに分子が${subject.count}つあります。主鎖と番号は1つの分子について決まるので、` +
+                    '番号を見たい分子を選んでから押してください（図の下の名前をタップするか、' +
+                    '「🎯 反応させる分子を選ぶ」でタップすると選べます）。' };
         }
-        if (typeof findAnyCycle === 'function' && findAnyCycle(mol)) {
-            return { code: 'ring', ok: false, det: null,
+        // ⚠ ここから先は**選ばれた1分子について**言う。キャンバス全体を見ると、
+        //   「ブタンとベンゼンが載っていてベンゼンを選んだ」回に環を指せない
+        const target = subject.mol || mol;
+        if (typeof findAnyCycle === 'function' && findAnyCycle(target)) {
+            return { code: 'ring', ok: false, det: null, subject,
                 message: '環が基本骨格です。環の番号づけはこのアプリではまだ扱いません（オレンジの点線が環です）。' };
         }
-        return { code: 'unsupported', ok: false, det: null,
+        return { code: 'unsupported', ok: false, det: null, subject,
             message: 'この官能基の系統名はこのアプリではまだ扱いません（画面の名前は名称ライブラリから引いています）。' };
     }
 
@@ -9439,8 +9485,11 @@ class Game {
             // 環は**言葉だけでは指せない**（「環」がどれか図の上で分からない）ので丸で名指しする。
             // 丸は「この原子が問題」の語彙（§3-1）＝ ここでは主鎖の帯ではなく丸が正しい
             if (notice.code === 'ring') {
+                // ⚠ 丸を付ける相手は**選ばれた1分子の環**（§N-8）。キャンバス全体で探すと、
+                //   選んでいない隣の分子の環を指してしまう
+                const ring = (notice.subject && notice.subject.mol) || this.userMolecule;
                 const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
-                this.highlightAtoms((findAnyCycle(this.userMolecule) || []).map(id => byId.get(id)).filter(Boolean));
+                this.highlightAtoms((findAnyCycle(ring) || []).map(id => byId.get(id)).filter(Boolean));
             }
             this.showToast(notice.message, 4000);
             return;
@@ -9546,7 +9595,9 @@ class Game {
                 lines.push('付け根（R）に付いた炭素が C1 です。');
             } else {
                 lines.push(`🔢 ${det.name}`);
-                const lib = this.lookupCompoundName(this.userMolecule);
+                // ⚠ 引く相手は**番号を出している1分子**（§N-8）。キャンバス全体を渡すと
+                //   分子が2つのとき必ず引けず、慣用名が黙って消える
+                const lib = this.lookupCompoundName(det.mol || this.userMolecule);
                 // ライブラリ名が系統名を**含んでいる**ときは添えない
                 // （「2-メチル-1-プロパノール（イソブタノール）」——読み手には同じ名前が2回並ぶだけ）
                 if (lib && lib !== det.name && lib.indexOf(det.name) < 0) lines.push(`（慣用名: ${lib}）`);
@@ -9581,7 +9632,9 @@ class Game {
      */
     iupacPartAtoms(det, part) {
         if (!det || !part) return [];
-        const mol = this.userMolecule;
+        // ⚠ 歩く相手は**番号を出している1分子**（§N-8）。キャンバス全体だと、
+        //   'ether-suffix' が隣の分子の酸素まで拾って光らせる
+        const mol = det.mol || this.userMolecule;
         const out = new Set();
         if (det.kind === 'ether') {
             if (part.role === 'ether-group') {
