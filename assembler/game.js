@@ -8998,7 +8998,9 @@ class Game {
         // モーダル側は下の捕獲フェーズが画面を閉じてくれるので、ここは切り替えるだけでよい
         ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
             const b = document.getElementById(id);
-            if (b) b.addEventListener('click', () => this.toggleIupacNumbering());
+            // ⚠ モーダル側から押されたことを伝える（§N-8）。モーダルは見出しでもう1分子を
+            //    名指ししているので、そこから押した回だけは**押しが「選ぶ」を兼ねる**
+            if (b) b.addEventListener('click', () => this.toggleIupacNumbering(id === 'mm-btn-iupac-numbering'));
         });
         // ⇅ 上下に裏返す（帯の札。DESIGN_sugar.md §1-2b 帰結3）。
         // ⚠ 入口は帯の1つだけ ＝ モーダルには置かない（§6-2a の実測で下は画面の外）
@@ -9473,11 +9475,25 @@ class Game {
             message: 'この官能基の系統名はこのアプリではまだ扱いません（画面の名前は名称ライブラリから引いています）。' };
     }
 
-    /** トグル（分子モーダルの `🔢 主鎖と番号を見る` と、自由モードの帯の同名ボタンが共有する） */
-    toggleIupacNumbering() {
+    /**
+     * トグル（分子モーダルの `🔢 主鎖と番号を見る` と、自由モードの帯の同名ボタンが共有する）。
+     *
+     * ★ `fromModal` ＝ 分子モーダルの入口から押された（§N-8）。**その押しが「選ぶ」を兼ねる。**
+     *   モーダルは見出し（🔍① ◯◯）で既に1分子を名指ししていて、反応の一覧もその分子で
+     *   絞ってある（`moleculeModalAtomIds`）。そこで 🔢 だけ「分子を選んでください」と
+     *   突き返すと、**同じ画面の中で言っていることが食い違う**。
+     * ⚠ 選ぶ相手は `moleculeModalPart()` ＝ **どの分子を見ているかを決める唯一の場所**
+     *   （見出しの名前・タブ・反応の一覧と同じもの）。ここで別の選び方をしない
+     */
+    toggleIupacNumbering(fromModal) {
         if (this.iupacNumbering) {
             this.setIupacNumbering(false);
             return;
+        }
+        if (fromModal && !this.iupacNumberingSubject().chosen) {
+            const part = this.moleculeModalPart();
+            const rep = part && part.atoms.find(a => a.element !== 'H');
+            if (rep) this.setFocusedMolecule(rep.id);
         }
         // ★ 出せるかどうかは門番だけが決める。ここに「対応している形」の一覧を書かない
         const notice = this.iupacNumberingNotice();
