@@ -88,6 +88,7 @@
  * | ML  | 1〜3   | 複数分子の見出し |
  * | MO  | 1〜4   | モーダルの縦オーバー（v1407・ユーザー報告2件「エテン → 反応させる・調べる／クイズ　モーダルが縦にオーバー」）。**20枚を悉皆で開いて実測する**（`getBBox()` は使わない・窓に依存しないよう `withViewport(1280,600)` で器を決め打ち）。1 が「枠が画面に収まる＋あふれた中身は枠の中で送れる」・2 が「見出しと `.modal-footer` は上端でも下端でも見えている」（貼り付き）・**3 は否定対照**＝ 高さの上限を外すと実際にあふれて押しものが画面から出る（測り方が空振りしていないことの証明）・**4 も否定対照**＝ 枠の余白と間隔は `--mp-x` / `--mp-y` / `--mp-gap` を通す（`padding:` や `gap:` を直に書くと**貼り付きの覆いだけ取り残されて隙間から中身が透ける**。実測で起きた型）。⚠ **台帳（MODAL の一覧）に足すのが新しいモーダルの門番**でもある |
  * | MM  | 1〜9   | 分子モーダル |
+ * | MN  | 1〜4   | 複数分子のときの主鎖と番号（ユーザー発注 2026-08-28「選択した分子に番号を振りたい」。DESIGN_iupac_check.md §N-8）。1 が本体（選んだ分子に帯と番号が出る・慣用名の引き先もその分子）・**2 は否定対照**＝ 選んでいない分子には出ない（片方ずつ選んで**相手が空**であることを両方向で見る ＝「全部に振る」実装が通らない）／何も選んでいなければ何も出ない／1分子のときは選択を要求しない・3 は断り文が選んだ分子について言う（隣に環があっても鎖を選べば出る）・4 は分子モーダルの 🔢（見出しが名指ししている分子に振る ＝ 押しが「選ぶ」を兼ねる。**陰性対照つき**＝ 帯の 🔢 は今までどおり選択を要求する） |
  * | N   | 1〜4   | チュートリアル・録画モード（N4 は縦型でパレットを隠しても台本が押せること） |
  * | NA  | 1      | 金属ナトリウムとの反応（アルコール／エーテルの見分け） |
  * | NM  | 1〜3   | 名称のマーカーと C=C（v1405・ユーザー申し立て「名称のマーカー：C=C に重なると
@@ -5827,12 +5828,230 @@
             g.summonMolecule('エタノール');
             assert(g.countMolecules() >= 2 && g.userMolecule.atoms.length > before,
                 '2分子にできなかった（検査が素通りする）');
+            // ⚠ この直し以降は「**選んだ**分子には出る」（§N-8・MN1）。ここが見ているのは
+            //   **選んでいない**回で、選択を消してから測る（前のテストの選択が残っていると
+            //   この検査が意味を変える）
+            g.focusedMolecule = null;
             g.setIupacNumbering(true);
             g.updateDrawing();
-            assert(inCanvasNumbers(D).length === 0, '分子が2つあるのに炭素番号が出ている');
-            assert(!g.iupacNumberingActive(), '分子が2つあるのに表示状態が残っている');
+            assert(inCanvasNumbers(D).length === 0, '分子が2つあって何も選んでいないのに炭素番号が出ている');
+            assert(!g.iupacNumberingActive(), '分子が2つあって何も選んでいないのに表示状態が残っている');
         } finally {
             g.setIupacNumbering(false);
+            g.focusedMolecule = null;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    /* ===== MN: 複数分子のときの主鎖と番号（DESIGN_iupac_check.md §N-8） =====
+     * ユーザー発注 2026-08-28「キャンバスに複数分子存在するときの主鎖と番号の挙動、
+     * 選択した分子に番号を振りたい」。
+     * MN1 が本体（選んだほうに出る）・**MN2 が否定対照**（選んでいないほうに出ない・
+     * 何も選んでいなければ何も出ない）。⚠ **数だけで見ない** ——
+     * 「全部の分子に番号を振る」実装は「番号が出ている」だけの検査を素通りする。
+     */
+
+    // 2分子（炭素数で見分けられる組）をキャンバスへ載せ、成分を返す共通の足場
+    const mnTwoMolecules = (g, W) => {
+        g.userMolecule = new W.Molecule();
+        g.focusedMolecule = null;
+        g.summonMolecule('1-ブタノール');
+        g.summonMolecule('エタノール');
+        const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        const byC = (n) => parts.find(p => p.atoms.filter(a => a.element === 'C').length === n);
+        return { parts, butanol: byC(4), ethanol: byC(2) };
+    };
+    // 画面の番号が乗っている原子IDの集合（IN4 と同じ物差し＝実装の印ではなく座標で引く）
+    const mnNumberedIds = (g, D) => {
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        const out = new Set();
+        inCanvasNumbers(D).forEach(t => {
+            const { x: px, y: py } = inNumberHost(t);
+            let near = null, best = Infinity;
+            heavy.forEach(a => { const d = Math.hypot(a.x - px, a.y - py); if (d < best) { best = d; near = a; } });
+            if (near && best < 1.5) out.add(near.id);
+        });
+        return out;
+    };
+
+    test('MN1: 分子が2つあっても、選んだ分子には主鎖と番号が出る（ユーザー発注 2026-08-28）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            const { butanol, ethanol } = mnTwoMolecules(g, W);
+            assert(butanol && ethanol && g.countMolecules() === 2,
+                '1-ブタノール＋エタノールの2分子を作れない（検査が素通りする）');
+            // ① 「選ぶ」は既にある印（focusedMolecule。図の下の名前のタップ・🎯 のタップが立てる）
+            g.setFocusedMolecule(butanol.atoms.find(a => a.element === 'C').id);
+            const notice = g.iupacNumberingNotice();
+            assert(notice.ok && notice.code === 'chain',
+                `選んだのに出せないと言われた（code=${notice.code} / ${notice.message}）`);
+            assert(notice.det && notice.det.name === '1-ブタノール',
+                `番号の相手が 1-ブタノール でない（${notice.det && notice.det.name}）`);
+            // ② 実際に押して、画面に番号が出る
+            g.toggleIupacNumbering();
+            assert(g.iupacNumberingActive(), '選んだのに主鎖と番号が点かない');
+            g.updateDrawing();
+            const nums = inCanvasNumbers(D).map(t => t.textContent.trim()).sort();
+            assert(nums.length === 4 && nums.join(',') === '1,2,3,4',
+                `番号が 1〜4 でない（${JSON.stringify(nums)}）`);
+            // ③ 番号は**選んだ分子の炭素の上**に乗っている
+            const on = mnNumberedIds(g, D);
+            const bIds = new Set(butanol.atoms.map(a => a.id));
+            assert(on.size === 4 && [...on].every(id => bIds.has(id)),
+                `番号が選んだ分子の外へ出ている（${on.size}個中 ${[...on].filter(id => !bIds.has(id)).length}個）`);
+            // ④ 帯（主鎖の色）も選んだ分子にだけ乗る。C4 の主鎖なので帯は3本、
+            //    端点はすべて選んだ分子の原子の座標に一致する
+            const bands = [...D.querySelectorAll('#chem-svg line.iupac-band')];
+            assert(bands.length === 3, `主鎖の帯が3本でない（${bands.length}本）`);
+            const bxy = new Set(butanol.atoms.map(a => `${Math.round(a.x)},${Math.round(a.y)}`));
+            bands.forEach(l => ['1', '2'].forEach(k => {
+                const key = `${Math.round(parseFloat(l.getAttribute('x' + k)))},${Math.round(parseFloat(l.getAttribute('y' + k)))}`;
+                assert(bxy.has(key), `帯の端点 (${key}) が選んだ分子の原子に乗っていない`);
+            }));
+            // ⑤ 慣用名の引き先も選んだ分子（キャンバス全体で引くと必ず外れる）
+            assert(g.lookupCompoundName(g.iupacNumberingDetail().mol) === '1-ブタノール',
+                '番号を出している分子の名前が引けない（引き先がキャンバス全体になっている）');
+        } finally {
+            g.setIupacNumbering(false);
+            g.focusedMolecule = null;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('MN2: ★否定対照 — 選んでいない分子には出ない／何も選んでいなければ何も出ない', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            const { butanol, ethanol } = mnTwoMolecules(g, W);
+            assert(butanol && ethanol, '2分子を作れない（検査が素通りする）');
+            const bIds = new Set(butanol.atoms.map(a => a.id));
+            const eIds = new Set(ethanol.atoms.map(a => a.id));
+
+            // ① 何も選んでいない ＝ 出さない。⚠ 言い方は「1つにしてください」ではなく「選んでください」
+            const none = g.iupacNumberingNotice();
+            assert(!none.ok && none.code === 'multi', `無選択で ${none.code} を返した`);
+            assert(/選/.test(none.message) && !/1つだけにしてから/.test(none.message),
+                `無選択の断り文が「選んでください」になっていない: ${none.message}`);
+            g.toggleIupacNumbering();
+            assert(!g.iupacNumberingActive(), '何も選んでいないのに主鎖と番号が点いた');
+            // 無理やり点けても描く側の門番が同じ答えを出す（IN3 と同じ二段構え）
+            g.setIupacNumbering(true); g.updateDrawing();
+            assert(inCanvasNumbers(D).length === 0, '何も選んでいないのに番号が描かれた');
+            g.setIupacNumbering(false);
+
+            // ② ★ここが本題 —— 選んだほうに出て、**選んでいないほうには出ない**。
+            //    「全部の分子に番号を振る」実装は ①③ を通ってしまうので、
+            //    片方ずつ選んで**相手側が空であること**を両方向で見る
+            [[butanol, bIds, eIds, 4, '1-ブタノール'], [ethanol, eIds, bIds, 2, 'エタノール']]
+                .forEach(([part, mine, theirs, want, label]) => {
+                    g.setFocusedMolecule(part.atoms.find(a => a.element === 'C').id);
+                    g.setIupacNumbering(true); g.updateDrawing();
+                    assert(g.iupacNumberingActive(), `${label} を選んだのに点かない`);
+                    const on = mnNumberedIds(g, D);
+                    assert(on.size === want, `${label} を選んだのに番号が ${on.size} 個（期待 ${want}）`);
+                    assert([...on].every(id => mine.has(id)),
+                        `${label} を選んだのに、選んでいない側の原子に番号が乗っている`);
+                    assert([...theirs].every(id => !on.has(id)),
+                        `${label} を選んだのに、選んでいない分子にも番号が出ている（全部に振る実装）`);
+                    g.setIupacNumbering(false);
+                });
+
+            // ③ 選んだ分子が消えたら「選んでいない」に戻る（黙って隣の分子を指さない）
+            g.setFocusedMolecule(ethanol.atoms.find(a => a.element === 'C').id);
+            [...eIds].forEach(id => g.userMolecule.removeAtom(id));
+            g.updateDrawing();
+            assert(g.countMolecules() === 1, 'エタノールを消せなかった（検査が素通りする）');
+            const after = g.iupacNumberingNotice();
+            assert(after.ok && after.det && after.det.name === '1-ブタノール',
+                `1分子に戻ったのに素直に出ない（code=${after.code}）`);
+
+            // ④ 陰性対照 —— 1分子だけのキャンバスでは、選択の有無で答えが変わらない
+            g.focusedMolecule = null;
+            const noSel = g.iupacNumberingNotice();
+            assert(noSel.ok && noSel.det && noSel.det.name === '1-ブタノール',
+                '1分子なのに「選んでください」と言われた（選択を要求する範囲が広がっている）');
+        } finally {
+            g.setIupacNumbering(false);
+            g.focusedMolecule = null;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('MN3: 選んだ分子について断る（環を選んだら「分子が2つ」ではなく「環」と言う）', async (c) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        try {
+            g.userMolecule = new W.Molecule();
+            g.focusedMolecule = null;
+            g.summonMolecule('1-ブタノール');
+            g.summonMolecule('ベンゼン');
+            const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+            const benzene = parts.find(p => p.atoms.filter(a => a.element === 'C').length === 6);
+            const butanol = parts.find(p => p.atoms.filter(a => a.element === 'C').length === 4);
+            assert(benzene && butanol, 'ベンゼンと 1-ブタノール を並べられない（検査が素通りする）');
+            // ⚠ 断り文は**選んだ分子について**言う。キャンバス全体を見ていると
+            //   「分子が2つあります」に落ちて、なぜ出ないのかが伝わらない
+            g.setFocusedMolecule(benzene.atoms[0].id);
+            const ring = g.iupacNumberingNotice();
+            assert(!ring.ok && ring.code === 'ring',
+                `ベンゼンを選んだのに ${ring.code} を返した（${ring.message}）`);
+            // 隣に環があっても、鎖のほうを選べば出る（環の存在がキャンバス全体に伝染しない）
+            g.setFocusedMolecule(butanol.atoms.find(a => a.element === 'C').id);
+            const ok = g.iupacNumberingNotice();
+            assert(ok.ok && ok.det && ok.det.name === '1-ブタノール',
+                `隣の環に引きずられて出せなくなっている（code=${ok.code}）`);
+        } finally {
+            g.setIupacNumbering(false);
+            g.focusedMolecule = null;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('MN4: 分子モーダルの 🔢 は、そのモーダルが見ている分子に振る（押しが「選ぶ」を兼ねる）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            const { butanol, ethanol } = mnTwoMolecules(g, W);
+            assert(butanol && ethanol, '2分子を作れない（検査が素通りする）');
+            g.updateDrawing();
+            // ⚠ 右パネルの入口（原子IDを渡さない）＝ **選択が立たないまま**モーダルが開く道。
+            //   ここが直す前は「見出しは①を名指ししているのに 🔢 は分子を選べと言う」だった
+            g.openMoleculeModal();
+            const part = g.moleculeModalPart();
+            assert(part, 'モーダルが分子を1つに決められていない（検査が素通りする）');
+            const name = g.lookupCompoundName(part);
+            assert(!g.iupacNumberingSubject().chosen, '下ごしらえ: 選択が立ってしまっている');
+            const btn = D.getElementById('mm-btn-iupac-numbering');
+            assert(btn, 'モーダルの 🔢 ボタンが無い');
+            btn.click();
+            assert(g.iupacNumberingActive(),
+                'モーダルの 🔢 が「分子を選んでください」で止まった（見出しは1分子を名指ししているのに）');
+            const det = g.iupacNumberingDetail();
+            assert(det && g.lookupCompoundName(det.mol) === name,
+                `モーダルが見ている分子（${name}）とは別の分子に番号が振られた`);
+            // ★ 押しが「選ぶ」を兼ねる ＝ 図の琥珀の枠・右パネルの分類と同じ分子を指す
+            assert(g.moleculeModalPart() && g.moleculeModalPart().atoms.some(a => a.id === g.focusedMolecule),
+                'モーダルの分子と focusedMolecule が食い違っている（画面の中で言うことが割れる）');
+            g.setIupacNumbering(false);
+            // ⚠ 陰性対照 —— 帯の側のボタンは今までどおり「選んでから」（押しが選ぶを兼ねるのは
+            //   モーダルだけ。キャンバスの帯から押した回に勝手に①を指すと C-9 に戻る）
+            g.focusedMolecule = null;
+            D.getElementById('btn-iupac-numbering').click();
+            assert(!g.iupacNumberingActive(),
+                '帯の 🔢 が、何も選んでいないのに①を指して点いた（C-9 に戻っている）');
+        } finally {
+            g.closeMoleculeModal();
+            g.setIupacNumbering(false);
+            g.focusedMolecule = null;
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
         }
