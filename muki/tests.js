@@ -1435,10 +1435,11 @@
 
         // ★★ 2-5 炎色反応 —— ⚠ §13-4b は動かさない（★ 炎色は「分ける札」ではない）
         ok('M5-5a ⚠⚠ 炎色反応は型A の札に1枚も無い（★ 分ける札ではないので、単離には1ミリも効かない）',
-            TREE_MAIN_DEAL.concat(TREE_SUB_DEAL).every(function (o) {
+            // ⚠ 配った札だけでなく、**模型が持つ札ぜんぶ**を見る（★ 表に足しただけでも赤くする）
+            Object.keys(TREE_OPS).concat(Object.keys(TREE_SUBOPS)).every(function (o) {
                 var c = TREE_OPS[o] || TREE_SUBOPS[o];
                 return c && c.short.indexOf('炎色') < 0 && (c.say || '').indexOf('白金線') < 0;
-            }));
+            }) && TREE_MAIN_DEAL.concat(TREE_SUB_DEAL).indexOf('flame') < 0);
         ok('M5-5b ★ Ca²⁺ と Ba²⁺ は炎色の色が違う（橙赤色／黄緑色）＝ 単離後の「確認」の材料はある',
             (function () {
                 var ca = treeIon('Ca'), ba = treeIon('Ba');
