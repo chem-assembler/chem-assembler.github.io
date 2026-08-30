@@ -3569,6 +3569,38 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             const done = applyGlycosidicCondensation(mol, site);
             if (!done) throw noRoom('この向きにはつなげません');
+            /* ★★ **できた二糖を「その二糖を単独で描くときの図」に直す**（v1477・ユーザー実機報告
+             * 「スクロース 加水分解 → フルクトースを選択して逆向きの反応をする で
+             *  フルクトースがグルコースに重なった」）。
+             *
+             * ★ **測ったこと**（:9137・実アプリ。物差しは「結合していない重原子どうしの距離」）:
+             *   スクロース … 重なる組 **2件・最短 17.2px**（原子の丸は半径 10px ＝ 図として触れている）
+             *   マルトース／セロビオース／ラクトース … 0件（最短 46〜63px）
+             *   登録のスクロースの図 … 0件（最短 46.1px）
+             *   ⚠ **加水分解を経なくても同じ**（呼び出した単糖2つを素直に縮合しても 2件・17.2px）
+             *   ＝ **v1476 の 180° 回転が戻っていないのではなく、縮合の置き方そのもの**。
+             *
+             * ★ **原因**: `applyGlycosidicCondensation` は相手を**平行移動だけ**で寄せる
+             *   （§4-8。回すと面が読めなくなるため）。置き場所は**供与側の環**から決めるので、
+             *   **受け側の接続炭素が自分の図のどちら端にあるか**は見ていない。
+             *   実測: グルコースの C1 は図の**右端**（local 200/200）・フルクトースの C2 も
+             *   図の**右端**（local 140/140）＝ 右端どうしを向かい合わせに置くので、
+             *   受け側の体が供与側へ折り返す。マルトース等は受け側の C4 が**左端**なので起きない。
+             *   ⚠ 登録のスクロースの図では、フルクトースの C2 が**左端**に来る描き方をしている
+             *   （＝ ⇄ を1回かけた図。`haworthFlipStepsToStandalone` の実測 0.91px）。
+             *
+             * ★ **直し方**: 新しい作図ルーチンを書かず、**加水分解が使っているのと同じ道具**を
+             *   逆向きに使う ＝ できた二糖を登録の図へ写す。行き先は
+             *   `registeredProductName` が既に「言い切れる1件」に絞ってあるので、
+             *   ここで引ける相手は必ず居る（引けなければ `[]` が返って**今までどおり**）。
+             * ⚠ **`only` を必ず渡す**（キャンバスの他の分子には1ピクセルも触れない）。
+             * ⚠ **名前で分岐しない**（スクロース名指しのハードコードを置かない）。 */
+            game.redrawProductsAsStandalone({
+                only: [...componentOf(mol, site[1])],
+                // 重なりの物差しと逃がし方は加水分解と同じものを渡す（別々に持つと片方だけ直る）
+                overlaps: componentOverlaps,
+                escape: (m, ids) => componentOverlaps(m, ids) ? separateComponent(m, ids) : null
+            });
             const name = site.productName || (registeredProductName(
                 subMolecule(mol, [...componentOf(mol, site[1])]).mol) || '');
             return {
@@ -4834,7 +4866,106 @@ function findPartnerHints(game, baseIds, ruleIds) {
         });
     });
     findSelfPartnerHints(game, baseIds, ruleIds, seenRules, hits);
+    findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits);
     return hits;
+}
+
+/* ==========================================================================
+ * ★★ 縮合重合の入口（v1477・ユーザー要望 2026-08-28
+ *    「ヘキサメチレンジアミン 可能な反応に 66ナイロンの合成が欲しい」）
+ *
+ * ★ **測ったこと**（:9137・ヘキサメチレンジアミンを1つだけ呼んだ画面）:
+ *   できる反応 …… **アセチル化 1件だけ**
+ *   相手が要る反応 … **酢酸 → アミド化 1件だけ**
+ *   ＝ ナイロン66 はどこにも出ていない。理由は
+ *   `condensationPolymerUnits` が **2価カルボン酸2個 ＋ 2価アミン2個（合計4分子）**を要求し、
+ *   説明だけの `condensation_polymer_info` も **1個ずつ揃っているとき**にしか出ないため
+ *   ＝ **1分子だけの人には、出ない理由すら画面に無い**。
+ *
+ * ★ **どちらを選んだか**: 「候補に出さないのが正しい」ではなく **出す** を選んだ。
+ *   ① §15（v1437）で **1分子からでも重合へ行ける入口**を作ると既に決めている。
+ *      付加重合だけ入口があって縮合重合に無いのは、決めの取りこぼし。
+ *   ② ⚠ 実測で **呼び出すだけで最後まで通る**ことを確かめた ——
+ *      ヘキサメチレンジアミン ＋ アジピン酸2つ ＋ 自分をもう1つ ＝ 4分子で
+ *      `condensation_polymerization.detect` が **1箇所**返し、実行して 34原子の
+ *      ポリアミドができた（`MAX_REACTION_SELECTION` は 4 ＝ ちょうど全部選べる）。
+ *   ③ 説明だけ足す案（`condensation_polymer_info` を1分子でも出す）も測ったが、
+ *      **押しても何も起きない札が1枚増えるだけ**で、ユーザーの要望
+ *      （「可能な反応に 66ナイロンの合成が欲しい」）に応えていない。
+ *
+ * ⚠ **`SELF_PARTNER_RULES` には入れない**（あちらは「自分をもう何個か」だけの形）。
+ *   ここは **相手を2つ ＋ 自分をもう1つ** ＝ 呼ぶ相手が2種類あるので、別の finder にする。
+ * ⚠ **この表は「探す範囲」でしかない。** 出るかどうかを決めるのは
+ *   `condensation_polymerization.detect`（＝ 化学の判定）で、名前の一致ではない
+ *   （`PARTNER_CANDIDATES` とまったく同じ約束。そちらも名前の一覧）。
+ * ⚠ **組にしてあるのは順番のため。** 一覧を平らな名前の並びにすると、
+ *   アジピン酸に**エチレングリコール**が先に当たってしまう（化学としては正しい
+ *   ポリエステルだが、教科書がアジピン酸の相手として書くのはヘキサメチレンジアミン）。
+ *   ★ 組にしておくと、4つの単量体それぞれから**教科書が名前を付けている高分子**へ着く
+ *   （`condensation_polymerization` の caption も、この2つだけを名指ししている）。
+ * ⚠ **限界を隠さない**: 表に無い2価単量体（自分で描いた別のジアミンなど）では札が出ない。
+ *   ライブラリ全体（900件超）から相手を探すこともできるが、
+ *   **相手が複数見つかったときにどれを勧めるかを決める根拠が無い**ので採らなかった。
+ * ========================================================================== */
+const COPOLYMER_RULE = 'condensation_polymerization';
+const COPOLYMER_PAIRS = [
+    ['アジピン酸', 'ヘキサメチレンジアミン'],  // ナイロン66（ポリアミド）
+    ['テレフタル酸', 'エチレングリコール']      // PET（ポリエステル）
+];
+
+function findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits) {
+    if (seenRules.has(COPOLYMER_RULE)) return;
+    if (ruleIds && !ruleIds.includes(COPOLYMER_RULE)) return;
+    const rule = REACTION_RULES.find(r => r.id === COPOLYMER_RULE);
+    if (!rule || rule.info) return;
+    const mol = game.userMolecule;
+    // 呼べるのは**名前で引ける分子**だけ（自分をもう1つ呼ぶので、自分の名前も要る）
+    const base = new Molecule();
+    copyMoleculeInto(base, mol, baseIds, 0);
+    const selfName = game.lookupCompoundName ? game.lookupCompoundName(base) : null;
+    if (!selfName) return;
+    const library = game.getCompoundLibrary() || [];
+    const selfEntry = library.find(e => e.name === selfName);
+    if (!selfEntry) return;
+    // ⚠ **もう並べてある人には出さない**（§15 と同じ約束。押せる状態なのに「呼びなさい」は案内ではない）
+    try { if (rule.detect(mol).length > 0) return; } catch (e) { return; }
+    // 自分が入っている組の**相手側**だけを試す（組にしてある理由は上の注）
+    const names = COPOLYMER_PAIRS
+        .filter(pair => pair.includes(selfName))
+        .map(pair => pair.find(n => n !== selfName));
+    for (const name of names) {
+        if (!name || name === selfName) continue;
+        const entry = library.find(e => e.name === name);
+        if (!entry) continue;
+        /* 試算は**実際に呼び出されるもの**（ライブラリの分子）で、**呼び出す順のまま**組む。
+         * ⚠ 順は 相手2つ → 自分1つ。`summonMolecule` は右へ横一線に並べ、
+         *   `condensationPolymerUnits` は x で並べて 酸→相手→酸→相手 の鎖にするので、
+         *   ここで順を変えると試算と本番がずれる */
+        const trial = new Molecule();
+        const mine = copyMoleculeInto(trial, mol, baseIds, 0);
+        const theirs = new Set();
+        const place = (src) => {
+            const maxX = Math.max(...trial.atoms.map(a => a.x), 0);
+            const minX = Math.min(...src.atoms.map(a => a.x), 0);
+            copyMoleculeInto(trial, src, null, maxX - minX + 84).forEach(id => theirs.add(id));
+        };
+        place(entry.mol);
+        place(entry.mol);
+        place(selfEntry.mol);
+        let sites = [];
+        try { sites = rule.detect(trial) || []; } catch (e) { continue; }
+        // 「呼び出したからできた」＝ 箇所が元の分子と呼び出した側の両方にまたがるものだけ
+        const crossing = sites.filter(s => Array.isArray(s) &&
+            s.some(x => mine.has(x)) && s.some(x => theirs.has(x)));
+        if (!crossing.length) continue;
+        seenRules.add(COPOLYMER_RULE);
+        hits.push({
+            name, label: rule.label, ruleId: COPOLYMER_RULE, siteCount: crossing.length,
+            count: 2,              // 呼び出す相手の個数
+            selfName, selfCount: 1 // ＋ 自分をもう何個（鎖にするには2組 ＝ 合計4分子）
+        });
+        return; // 1つの反応につき候補は1つまで（`findPartnerHints` の約束）
+    }
 }
 
 /**
@@ -6044,12 +6175,22 @@ class Reactor {
         // 相手が**自分と同じ分子**のとき（重合）は、いくつ呼ぶのかを札に書く（v1437・§15）
         const times = Math.max(1, h.count || 1);
         if (times > 1) btn.dataset.count = String(times);
-        const call = times > 1 ? `${h.name} をもう${times}つ呼び出す` : `${h.name} を呼び出す`;
-        const pick = times > 1 ? `${times + 1}つ` : '2つ';
+        /* 縮合重合は**相手2つ ＋ 自分をもう1つ**（v1477・§縮合重合の入口）。
+         * ⚠ 呼ぶものが2種類あるので、札にも2種類とも書く ——「アジピン酸を2つ呼ぶ」だけだと
+         *   なぜ4分子になるのかが読めない */
+        const selfTimes = Math.max(0, h.selfCount || 0);
+        if (selfTimes > 0) { btn.dataset.self = h.selfName || ''; btn.dataset.selfCount = String(selfTimes); }
+        const call = selfTimes > 0
+            ? `${h.name} を${times}つ と ${h.selfName} をもう${selfTimes}つ呼び出す`
+            : times > 1 ? `${h.name} をもう${times}つ呼び出す` : `${h.name} を呼び出す`;
+        const total = times + selfTimes;
+        const pick = total > 1 ? `${total + 1}つ` : '2つ';
         btn.textContent = `＋ ${call} → ${h.label}${many}`;
+        // 呼ぶものが2種類あるときは、説明でも2種類とも名指しする（札と食い違わせない）
+        const 呼ぶ = selfTimes > 0 ? `${h.name} と ${h.selfName}` : h.name;
         btn.title = many
-            ? `${h.name} を呼び出し、${pick}を選んでから「${h.label}」の箇所を選びます`
-            : `${h.name} を呼び出し、${pick}を選んで「${h.label}」まで実行します`;
+            ? `${呼ぶ} を呼び出し、${pick}を選んでから「${h.label}」の箇所を選びます`
+            : `${呼ぶ} を呼び出し、${pick}を選んで「${h.label}」まで実行します`;
         btn.addEventListener('click', () => this.runPartnerHint(h));
         return btn;
     }
@@ -6091,6 +6232,16 @@ class Reactor {
                     `「${h.name}」を呼び出せませんでした（上の説明を見てください）。反応は実行していません。`);
             }
         }
+        /* ★ 縮合重合は**自分ももう1つ**要る（v1477・§縮合重合の入口）。
+         * ⚠ 呼ぶ順は 相手 → 自分。`summonMolecule` は右へ横一線に並べ、
+         *   `condensationPolymerUnits` は x で並べて 酸→相手→酸→相手 の鎖にするので、
+         *   `findCoPolymerHints` の試算と同じ順に置く。 */
+        for (let k = 0; k < Math.max(0, h.selfCount || 0); k++) {
+            if (!g.summonMolecule(h.selfName)) {
+                return this.stopPartnerHint(h, 'summon',
+                    `「${h.selfName}」を呼び出せませんでした（上の説明を見てください）。反応は実行していません。`);
+            }
+        }
         const added = new Set(g.userMolecule.atoms.filter(a => !beforeIds.has(a.id)).map(a => a.id));
         if (added.size === 0) {
             return this.stopPartnerHint(h, 'summon',
@@ -6117,7 +6268,8 @@ class Reactor {
         const allowed = sites.filter(s => Array.isArray(s) && siteAllowed(s));
         if (allowed.length === 0) {
             return this.stopPartnerHint(h, 'select',
-                `「${h.name}」は置けましたが、${times + 1}つを選んでも ${h.label} が押せる状態になりませんでした。` +
+                `「${h.name}」は置けましたが、${times + Math.max(0, h.selfCount || 0) + 1}つを選んでも ` +
+                `${h.label} が押せる状態になりませんでした。` +
                 '反応は実行していません。');
         }
         // ④ ここまで通ったときだけ進む。**どちらでもモーダルは閉じる**
@@ -6903,10 +7055,21 @@ class Reactor {
             const a = snap.atoms.find(x => x.id === b.atomId1), c = snap.atoms.find(x => x.id === b.atomId2);
             return a && c ? { x1: a.x, y1: a.y, x2: c.x, y2: c.y } : null;
         };
+        /* ★ **次数も一緒に返す**（v1477・ユーザー実機報告「二重結合のうち一本が切れて、
+         *   新たな結合が生じる様子をわかりやすくしたい」）。
+         *   `from`/`to` があると、`renderCompareFigure` が
+         *     2 → 1（**線1本ぶんだけ**切れた）と 1 → 0（結合ごと切れた）を描き分けられる。
+         *   ⚠ 差分の求め方そのものは1行も変えていない（返す情報が増えただけ）。 */
         const lostBonds = [];   // 消えた・次数が下がった結合 → 反応前の図
-        beforeB.forEach((b, k) => { if (b.type > typeAt(afterB, k)) { const s = seg(before, b); if (s) lostBonds.push(s); } });
+        beforeB.forEach((b, k) => {
+            const to = typeAt(afterB, k);
+            if (b.type > to) { const s = seg(before, b); if (s) lostBonds.push({ ...s, from: b.type, to }); }
+        });
         const gainedBonds = []; // 生成した・次数が上がった結合 → 反応後の図
-        afterB.forEach((b, k) => { if (b.type > typeAt(beforeB, k)) { const s = seg(after, b); if (s) gainedBonds.push(s); } });
+        afterB.forEach((b, k) => {
+            const from = typeAt(beforeB, k);
+            if (b.type > from) { const s = seg(after, b); if (s) gainedBonds.push({ ...s, from, to: b.type }); }
+        });
         return { removedAtoms, addedAtoms, lostBonds, gainedBonds };
     }
 
@@ -7024,11 +7187,26 @@ class Reactor {
         ov.appendChild(grid);
 
         // 凡例
+        /* 凡例（v1477・ユーザー実機報告「レジェンドの『オレンジ』や『シアン』は色なので、
+         * 文字で説明する必要がない」）。
+         * ★ **色の見本は残し、色の名前だけ落とす** ＝ 見本を見れば分かることを字で言わない。
+         * ★ かわりに、字でしか言えないこと（**線1本ぶんの印**の意味）を1行足す。 */
         const legend = document.createElement('div');
+        legend.id = 'rx-cmp-legend';
         legend.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.7; margin-bottom:10px;';
-        legend.innerHTML = '<span style="color:var(--neon-orange);">● オレンジ</span>＝切れた結合・脱離した原子（反応前）　' +
-            '<span style="color:var(--neon-blue);">● シアン</span>＝できた結合、' +
-            '<span style="color:var(--neon-green);">● 緑</span>＝付加した原子（反応後）';
+        const swatch = (color, text) =>
+            `<span class="rx-legend-item"><span class="rx-legend-swatch" aria-hidden="true" ` +
+            `style="display:inline-block; width:22px; height:5px; border-radius:3px; ` +
+            `vertical-align:middle; margin-right:4px; background:${color};"></span>${text}</span>`;
+        legend.innerHTML =
+            swatch('var(--neon-orange)', '切れた結合・脱離した原子（反応前）') + '　' +
+            swatch('var(--neon-blue)', 'できた結合') + '　' +
+            swatch('var(--neon-green)', '付加した原子（反応後）') +
+            '<br><span class="rx-legend-half">二重結合の**片方の線だけ**に印が付いているときは、' +
+            'その**1本ぶん**が切れた（できた）という意味です。</span>';
+        // `**…**` は太字にして出す（v1467・game.js の `setEmphasisText` と同じ見た目にそろえる）
+        const halfEl = legend.querySelector('.rx-legend-half');
+        if (halfEl && typeof setEmphasisText === 'function') setEmphasisText(halfEl, halfEl.textContent);
         ov.appendChild(legend);
 
         // 機構が登録されている反応なら「機構を見る（代表例）」の注記と案内を添える
@@ -7062,22 +7240,64 @@ class Reactor {
 
     // 1図を描き、その上に差分ハイライト（原子の枠・結合の強調）を重ねる。
     // viewBox 座標＝スナップショット座標なので、marks の x/y をそのまま使える
+    /* ===== 差分の印の描き方（v1477・ユーザー実機報告 2026-08-28） =====
+     *
+     * **ユーザーの言葉**:
+     * > **イソプレンの付加重合 二重結合のうち一本が切れて、新たな結合が生じる様子を
+     * >   わかりやすくしたい**
+     * > **反応の前後を見比べる、で、オレンジのマーカーが太く、裏が二重結合になっている
+     * >   ところがわかりづらい**
+     *
+     * ★ **測ったこと**（:9137・イソプレン3個の 1,4-付加重合の前後比較）:
+     *   二重結合 … 平行な2本・線幅 **2.2px**・間隔 **5px** ＝ 横幅 **7.2px**
+     *   印 …………… 線幅 **7px**・不透明度 **0.9**・**いちばん最後に append** ＝ 結合線の**上**
+     *   ＝ **二重結合の横幅の 97% を、9割の濃さで塗りつぶしていた**（だから裏が読めない）。
+     *
+     * ★ **どう直したか（案を2つ測って選んだ）**:
+     *   **案A（採った）** … ① 印を結合線の**下**に敷く（蛍光ペン）＋
+     *     ② 次数が下がっただけの結合（2→1）は**消える1本の位置**（垂直 ±2.5px の片側）に細く引く
+     *     ＝「二重結合のうち一本が切れる」がそのまま図になる。手数 **約25行**。
+     *     レイアウト・図の大きさ・台本には1つも触らない。
+     *   **案B（採らなかった）** … 段を分けて3コマ（反応前 → 切れた瞬間 → 反応後）にする。
+     *     ⚠ 中間の実体が `lastReaction` に無いので**保存から作る**必要があり、
+     *       2列 → 3列でコマ幅が **213px → 約 140px**（実測 445px の枠から算出）。
+     *       ★ **「見やすくする」ための変更で図が小さくなる**ので採らなかった。手数 80行以上。
+     *
+     * ⚠ **色そのものは変えていない**（オレンジ＝切れた／シアン＝できた／緑＝付加した原子）。
+     *   変えたのは**重ね順・太さ・濃さ**と、**1本ぶんかどうかの描き分け**だけ。 */
     renderCompareFigure(svgId, snapshot, marks) {
         renderMoleculeIntoSvg(this.game, svgId, this.snapshotToTarget(snapshot));
         const svg = document.getElementById(svgId);
         if (!svg) return;
         const NS = 'http://www.w3.org/2000/svg';
         const hi = document.createElementNS(NS, 'g');
+        hi.setAttribute('class', 'rx-diff-layer');
         (marks.bonds || []).forEach(bm => {
+            /* ★ 「二重結合の1本ぶんだけ」か「結合まるごと」かで引き方を変える。
+             * `to > 0` ＝ 結合は残る（次数だけ 2 → 1）＝ **消える／できる線は1本**なので、
+             * `renderTargetBond` が2本を置く位置（垂直 ±2.5px）の**片側**に細く引く。
+             * ⚠ 2.5 は `renderTargetBond` の二重結合の実体（`nx = -uy * 2.5`）と同じ値。
+             *   ここを勝手な数にすると、印が線の上に乗らずに横へずれる。 */
+            /* ⚠ 「1本ぶん」＝ **前も後も結合はある**（次数だけ変わった）とき。
+             *   どちらか片方が 0 なら結合そのものが消えた／生えたので、まるごとの印にする
+             *   （`to > 0` だけで見ると、新しくできた単結合 0→1 まで「1本ぶん」に化ける・実測） */
+            const half = bm.from > 0 && bm.to > 0;
+            const dx = bm.x2 - bm.x1, dy = bm.y2 - bm.y1;
+            const len = Math.hypot(dx, dy) || 1;
+            const ox = half ? (-dy / len) * 2.5 : 0;
+            const oy = half ? (dx / len) * 2.5 : 0;
+            // ⚠ 端は結合線と同じだけ縮める（`renderTargetBond` の offsetStart/End ＝ 10px）。
+            //   縮めないと印が原子の中心まで伸び、線1本の印が原子の丸から食み出す
+            const tx = (dx / len) * 10, ty = (dy / len) * 10;
             const line = document.createElementNS(NS, 'line');
-            line.setAttribute('x1', bm.x1); line.setAttribute('y1', bm.y1);
-            line.setAttribute('x2', bm.x2); line.setAttribute('y2', bm.y2);
+            line.setAttribute('x1', bm.x1 + ox + tx); line.setAttribute('y1', bm.y1 + oy + ty);
+            line.setAttribute('x2', bm.x2 + ox - tx); line.setAttribute('y2', bm.y2 + oy - ty);
             line.setAttribute('stroke', bm.color);
-            line.setAttribute('stroke-width', '7');
+            // 線の下に敷くので、細く・濃く。まるごとの印は蛍光ペンの幅（結合線がその上に乗る）
+            line.setAttribute('stroke-width', half ? '5' : '9');
             line.setAttribute('stroke-linecap', 'round');
-            line.setAttribute('opacity', bm.dashed ? '0.9' : '0.5');
-            if (bm.dashed) line.setAttribute('stroke-dasharray', '3 8');
-            line.setAttribute('class', 'rx-diff-mark');
+            line.setAttribute('opacity', half ? '0.95' : '0.45');
+            line.setAttribute('class', 'rx-diff-mark' + (half ? ' rx-diff-half' : ''));
             hi.appendChild(line);
         });
         (marks.atoms || []).forEach(am => {
@@ -7090,7 +7310,10 @@ class Reactor {
             c.setAttribute('class', 'rx-diff-mark');
             hi.appendChild(c);
         });
-        svg.appendChild(hi);
+        /* ★★ **結合線より下に敷く**（v1477）。ここが `svg.appendChild(hi)` だったので、
+         *   7px の印が 7.2px の二重結合をまるごと覆っていた。
+         *   ⚠ 原子の丸（`.quiz-atoms`）よりも下 ＝ 原子名も印に隠れない。 */
+        svg.insertBefore(hi, svg.firstChild);
     }
 }
 

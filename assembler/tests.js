@@ -40979,7 +40979,14 @@
                 `${a} + ${b}: 候補が「${sites.map(s => s.productName).join('／')}」（${all.join('／')} のはず）`);
             const site = sites.find(s => s.productName === want);
             assert(site, `${a} + ${b}: 候補に ${want} が無い`);
-            cond.apply({ userMolecule: mol }, site);
+            /* ⚠ **`game` は実物を渡す**（v1479）。`{ userMolecule: mol }` のスタブでは
+               `condensation_glycoside.apply` が呼ぶ `game.redrawProductsAsStandalone`
+               （＝ できた二糖を登録の図に直す）が無く、`is not a function` で落ちる。
+               すぐ下の GC4 の `hyd.apply(g, …)` はもともと実物を渡していて、
+               加水分解の側は前から同じメソッドを呼んでいる ＝ 実物を渡すのが元からの約束。
+               ★ `mol` は `c.game.userMolecule` そのものなので、**検査の中身は1つも変わらない**
+                 （面が読める中心の数 10/10/9/10 も立体コードの一致も実測で同じだった）。 */
+            cond.apply(c.game, site);
             const part = glycoProduct(c);
             assert(part, `${want}: 生成物が見つからない`);
             assert(c.game.lookupCompoundName(part) === want,
@@ -41076,7 +41083,8 @@
             // ⚠ 先頭を取らない（α-D-グルコース ×2 は候補が2件 ＝ 名前で選ぶ）
             const site = cond.detect(mol).find(s => s.productName === want);
             assert(site, `${want}: 候補が見つからない`);
-            cond.apply({ userMolecule: mol }, site);
+            // ⚠ 実物の `game` を渡す（理由は GC1 の注。下の `hyd.apply(g, …)` と同じ扱いにそろえる）
+            cond.apply(g, site);
             assert(g.lookupCompoundName(glycoProduct(c)) === want, `${want}: つないだ結果が名乗らない`);
             const cuts = hyd.detect(mol);
             assert(cuts.length === 1, `${want}: 切り戻す箇所が ${cuts.length} 件（1件のはず）`);
@@ -41340,6 +41348,555 @@
         // ⚠ 入らなかったのだから図は1pxも動いていない
         const shape1 = g.userMolecule.atoms.map(a => `${a.element}:${Math.round(a.x)},${Math.round(a.y)}`).sort().join('|');
         assert(shape1 === shape0, '入らなかったのに図が動いた');
+        c.reset();
+    });
+
+    /* ===== RV1・RV2: 長い解説はキャンバスを覆わない／読み終わるまで消えない（v1477） =====
+     *
+     * ユーザー実機報告（2026-08-28）「反応時にポップアップする解説文が長いと肝心の
+     * キャンバスが見えない」「timeout で解説が消えるので、読めないときがある」。
+     *
+     * **測った値**（:9137・実アプリ・スクロースの加水分解の caption ＝ 549字）:
+     *   375×812 … 332×396px ＝ キャンバスの **53.2%** ／ 1280×800 … 680×235px ＝ **25.4%**
+     *   時計 6500ms に対し、549字の黙読は 400〜600字/分 ＝ **55〜82秒**必要だった。 */
+    const LONG_TOAST_MSG = '長い解説の文章です。'.repeat(40);   // 400字（実物の caption と同じ桁）
+
+    test('RV1: 長い字幕は2行にたたむ／広げているあいだは時計で消えない／× で閉じられる', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D;
+        const toast = D.getElementById('canvas-toast');
+        assert(toast, 'キャンバス内の字幕 #canvas-toast が無い');
+
+        // ① たたまれる ＝ `.long` が付き、本文の高さが素のときより低い
+        g.showToast(LONG_TOAST_MSG, 6500, 'success');
+        assert(toast.classList.contains('long'),
+            `400字の字幕がたたまれていない（class=${toast.className}）`);
+        const textEl = toast.querySelector('.ct-text');
+        assert(textEl, '本文の器（.ct-text）が無い');
+        const clipped = textEl.clientHeight;
+        toast.classList.remove('long');
+        const full = textEl.clientHeight;
+        toast.classList.add('long');
+        assert(clipped > 0 && clipped < full * 0.5,
+            `たたんでも高さが減っていない（たたむと ${clipped}px・素のまま ${full}px）`);
+
+        // ② 文字ノードは1つも足していない（22か所の回帰テストが textContent を読む）
+        assert(toast.textContent === LONG_TOAST_MSG,
+            `字幕の textContent に余計な字が混ざった（末尾 = ${toast.textContent.slice(-20)}）`);
+        const more = toast.querySelector('.ct-more'), close = toast.querySelector('.ct-close');
+        assert(more && close, '「続きを読む」と「×」が出ていない');
+
+        /* ③④ 時計。**表示時間そのものは `paintCanvasToast` の戻り値**なので、
+         *     ここだけ短い値に差し替えて待ち時間を詰める（時計の分岐だけを見る）。 */
+        const orig = g.paintCanvasToast;
+        g.paintCanvasToast = function (...a) { orig.apply(this, a); return 80; };
+        try {
+            // ③ たたんだままなら、いままでどおり時計で消える
+            g.showToast(LONG_TOAST_MSG, 6500, 'success');
+            await c.tick(300);
+            assert(toast.classList.contains('hidden'),
+                'たたんだままの字幕が時計で消えない（出しっぱなしになる）');
+            // ④ 広げているあいだは消えない（読み終わるまで残る）
+            g.showToast(LONG_TOAST_MSG, 6500, 'success');
+            toast.querySelector('.ct-more').click();
+            assert(toast.classList.contains('open'), '「続きを読む」で広がらない');
+            await c.tick(300);
+            assert(!toast.classList.contains('hidden'),
+                '★ 広げて読んでいる最中に時計が消してしまう（ユーザー報告そのもの）');
+            // ⑤ 読んだら消せる
+            toast.querySelector('.ct-close').click();
+            assert(toast.classList.contains('hidden'), '× を押しても閉じない');
+        } finally {
+            g.paintCanvasToast = orig;
+        }
+        c.reset();
+    });
+
+    test('RV2: ★否定対照 — 短い字幕は今までどおり／たたんだ回は読む時間ぶん表示を延ばす', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D;
+        const toast = D.getElementById('canvas-toast');
+
+        // ① 短い字幕には何も足さない（`.long` も押しものも付かない ＝ 従来の見た目のまま）
+        g.showToast('短い字幕', 3000, 'error');
+        assert(!toast.classList.contains('long'),
+            `短い字幕までたたんでいる（class=${toast.className}）`);
+        assert(toast.querySelectorAll('button').length === 0,
+            '短い字幕に「続きを読む」「×」を出している');
+        assert(toast.textContent === '短い字幕', `短い字幕の本文が変わった（${toast.textContent}）`);
+
+        // ② 表示時間は、たたんで**見えている分**を読み切れるまで延ばす（400字/分 で見積もる）。
+        //    ⚠ ここが赤くなる壊し方 ＝ `paintCanvasToast` の戻り値を `ms` に戻すこと
+        const shortMs = g.paintCanvasToast(toast, '短い字幕', 'error', 3000);
+        assert(shortMs === 3000, `短い字幕の表示時間まで変えている（${shortMs}ms・3000 が正）`);
+        const longMs = g.paintCanvasToast(toast, LONG_TOAST_MSG, 'success', 6500);
+        assert(longMs > 6500, `たたんだ字幕の表示時間が延びていない（${longMs}ms・6500 より長いのが正）`);
+        assert(longMs <= 12000, `表示時間に天井が無い（${longMs}ms）`);
+        g.hideCanvasToast();
+        c.reset();
+    });
+
+    /* ===== RV3・RV4: 反応の印（オレンジの破線）を次の分子へ持ち越さない（v1477） =====
+     *
+     * 動画レーンの実測報告 2026-08-26 §7。完成した mp4 のフレームで
+     * 「5秒＝まだ反応していない 1-プロパノールに印なし／17秒＝出しただけの
+     * 2-プロパノールに印あり」＝ **呼び出すと付くのではなく、前の印が残っている**。
+     *
+     * ★ 実アプリ（:9137）で再現した数 ＝ 反応直後 2個 → 全消去 **2個** → 呼び出し **2個**。 */
+    const rvMarks = (c) => c.D.getElementById('ui-group').querySelectorAll('[data-hl-atom]').length;
+    // 1-プロパノールを酸化して、印が2つ出た状態を作る（動画と同じ一手）
+    const rvReact = async (c) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('1-プロパノール');
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'oxidize_primary');
+        assert(rule, '（前提）oxidize_primary が REACTION_RULES に無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, '（前提）1-プロパノールで酸化の箇所が見つからない');
+        W.reactor.execute(rule, sites[0], null);
+        await c.tick(1400);   // モーフィング 800ms ＋ 余裕
+    };
+
+    test('RV3: 反応の印は、指す原子が図から消えたら一緒に消える（次の分子へ持ち越さない）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+
+        // ★ ① まず「印が出る」ことを確かめる（ここが死んでいると、以下は全部素通しになる）
+        await rvReact(c);
+        assert(rvMarks(c) === 2, `反応の直後に印が出ていない（${rvMarks(c)}個・2個が正）`);
+
+        // ② 🗑 全消去 … 動画の 13秒 → 17秒 で起きていた持ち越しそのもの
+        D.getElementById('btn-clear-all').click();
+        assert(rvMarks(c) === 0, `全消去のあとも印が ${rvMarks(c)} 個残っている`);
+        // ③ そのまま別の分子を呼ぶと、印が新しい分子の上に乗っていた
+        g.summonMolecule('2-プロパノール');
+        g.updateDrawing();
+        assert(rvMarks(c) === 0, `呼び出した分子の上に前の印が ${rvMarks(c)} 個乗っている`);
+
+        // ④ ↩ 戻す（リボン）… 巻き戻した図は「その反応で変わった図」ではない
+        await rvReact(c);
+        D.getElementById('btn-undo').click();
+        await c.tick(50);
+        assert(rvMarks(c) === 0, `↩ 戻す のあとも印が ${rvMarks(c)} 個残っている`);
+
+        // ⑤ ↩ 反応前に戻す（作業帯）
+        await rvReact(c);
+        assert(W.reactor.undoLastReaction(), '（前提）「反応前に戻す」が効かない');
+        await c.tick(50);
+        assert(rvMarks(c) === 0, `反応前に戻したのに印が ${rvMarks(c)} 個残っている`);
+
+        // ⑥ お題の読み込み（分子まるごと入れ替わる道）
+        await rvReact(c);
+        g.loadStage(0);
+        assert(rvMarks(c) === 0, `お題を読み込んだ後も印が ${rvMarks(c)} 個残っている`);
+
+        /* ⑦ ★ **空のキャンバスで全消去を押した**とき（`btnClearAll` の早い return を通る道）。
+           ⚠ ここが赤くなる壊し方 ＝ `clearUIOverlay()` を
+              `if (atoms.length === 0) return;` の**後ろ**へ動かすこと。 */
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.highlightAtoms([{ id: 'rv3-ghost', x: 100, y: 100 }]);
+        assert(rvMarks(c) === 1, '（前提）検査用の印が置けていない');
+        D.getElementById('btn-clear-all').click();
+        assert(rvMarks(c) === 0, '空のキャンバスで全消去を押すと印が残る（早い return の裏）');
+        c.reset();
+    });
+
+    test('RV4: ★否定対照 — いまの分子に居る原子を指す印は消さない（全部消しにしていない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('エタノール');
+        g.updateDrawing();
+        const target = g.userMolecule.atoms[0];
+        g.highlightAtoms([target]);
+        assert(rvMarks(c) === 1, `印が1つ置けていない（${rvMarks(c)}個）`);
+
+        // ① 図を描き直しても消えない（`updateDrawing` で全部消しにしていない ＝
+        //    RV3 は「常に clearUIOverlay する」実装でも通ってしまうので、ここで止める）
+        g.updateDrawing();
+        g.updateDrawing();
+        assert(rvMarks(c) === 1, `描き直しただけで印が消えた（${rvMarks(c)}個）`);
+
+        // ② 別の原子を足しても、生きている原子の印はそのまま
+        g.userMolecule.addAtom('C', target.x + 84, target.y);
+        g.updateDrawing();
+        assert(rvMarks(c) === 1, `原子を足しただけで印が消えた（${rvMarks(c)}個）`);
+
+        // ③ 指していた原子が居なくなって初めて消える
+        g.userMolecule.atoms = g.userMolecule.atoms.filter(a => a.id !== target.id);
+        g.userMolecule.bonds = g.userMolecule.bonds.filter(
+            b => b.atomId1 !== target.id && b.atomId2 !== target.id);
+        g.updateDrawing();
+        assert(rvMarks(c) === 0, `指す原子が消えたのに印が ${rvMarks(c)} 個残っている`);
+
+        /* ★ ④ **`uiGroup` の子の数で見てはいけない**（動画レーンの追加実測 2026-08-28）。
+           何も無い所へカーソルを置くと、`drawAtomPreview` が `clearUIOverlay()` してから
+           **原子配置のゴースト**を同じ器に描く ＝ 実測で「子 2 → 2」。
+           **数だけ見ていると「印が消えていない」と読み違える**。
+           ⚠ この検査（と RV3）が印を `[data-hl-atom]` で引いているのはそのため。
+           ここで「ゴーストは出ている・印は0」を固定して、引き方を後戻りさせない。 */
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('エタノール');
+        g.updateDrawing();
+        g.selectedTool = 'select';
+        g.selectedModule = null;
+        const anchor = g.userMolecule.atoms[0];
+        g.highlightAtoms([anchor]);
+        assert(rvMarks(c) === 1, '（前提）ゴーストの検査用の印が置けていない');
+        c.hoverAt(anchor.x + 84, anchor.y + 84);   // 原子の無い、置ける場所
+        const kids = c.D.getElementById('ui-group').children.length;
+        assert(kids > 0, `（前提）ゴーストが出ていない（uiGroup の子 ${kids} 個）`);
+        assert(rvMarks(c) === 0,
+            `★ ゴーストを反応の印と数えている（印 ${rvMarks(c)} 個・uiGroup の子 ${kids} 個）`);
+        c.reset();
+    });
+
+    /* ===== RV5・RV6: 糖どうしの縮合でできた二糖が自分自身に重ならない（v1477） =====
+     *
+     * ユーザー実機報告（2026-08-28）:「スクロース 加水分解 → フルクトースを選択して
+     * 逆向きの反応をする で フルクトースがグルコースに重なった」。
+     *
+     * ★ 物差し（この検査の「重なり」の定義）: **結合していない重原子どうしの距離**。
+     *   原子の丸は半径 10px なので、24px を割ると図として触れて見える。
+     * ★ 実測（直す前）: スクロース **2組・最短 17.2px**／
+     *   マルトース・セロビオース・ラクトースは 0組（最短 46〜63px）＝ **スクロースだけの症状**。
+     *   ⚠ 加水分解を経なくても同じ数が出た ＝ **逆向きの回転が戻っていないのではない**。 */
+    const rvOverlap = (mol) => {
+        const at = mol.atoms.filter(a => a.element !== 'H');
+        const bonded = new Set(mol.bonds.flatMap(b => [b.atomId1 + '|' + b.atomId2, b.atomId2 + '|' + b.atomId1]));
+        let pairs = 0, min = Infinity;
+        for (let i = 0; i < at.length; i++) {
+            for (let j = i + 1; j < at.length; j++) {
+                if (bonded.has(at[i].id + '|' + at[j].id)) continue;
+                const d = Math.hypot(at[i].x - at[j].x, at[i].y - at[j].y);
+                if (d < min) min = d;
+                if (d < 24) pairs++;
+            }
+        }
+        return { pairs, min: Math.round(min * 10) / 10 };
+    };
+    // 平行移動を除いた図の指紋（登録の図と同じ絵になったかを見る）
+    const rvShape = (mol) => {
+        const at = mol.atoms.filter(a => a.element !== 'H');
+        const mx = Math.min(...at.map(a => a.x)), my = Math.min(...at.map(a => a.y));
+        return at.map(a => `${a.element}:${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join(' ');
+    };
+    const rvCondense = async (c, names, want) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        names.forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_glycoside');
+        const sites = rule.detect(g.userMolecule);
+        const s = sites.find(x => want.test(x.productName));
+        assert(s, `${names.join(' ＋ ')}: ${want} の縮合が候補に出ない（${sites.map(x => x.productName).join('/') || '0件'}）`);
+        W.reactor.execute(rule, s, null);
+        await c.tick(60);
+        const parts = g.splitMolecules().filter(p => p.atoms.length > 3);
+        assert(parts.length === 1, `生成物が1分子になっていない（${parts.length}）`);
+        return parts[0];
+    };
+
+    test('RV5: 糖どうしの縮合でできた二糖は、その二糖を単独で描く図になる（自分自身に重ならない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const 登録の図 = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `（前提）${name} がライブラリに無い`);
+            g.updateDrawing();
+            return rvShape(g.userMolecule);
+        };
+        const 表 = [
+            [['α-D-グルコース', 'β-D-フルクトフラノース'], /スクロース/, 'スクロース'],
+            [['α-D-グルコース', 'α-D-グルコース'], /マルトース/, 'マルトース'],
+            [['β-D-グルコース', 'β-D-グルコース'], /セロビオース/, 'セロビオース'],
+            [['β-D-ガラクトース', 'β-D-グルコース'], /ラクトース/, 'ラクトース']
+        ];
+        for (const [単糖, 欲しい, 登録名] of 表) {
+            const want = 登録の図(登録名);
+            const prod = await rvCondense(c, 単糖, 欲しい);
+            const ov = rvOverlap(prod);
+            assert(ov.pairs === 0,
+                `${登録名}: 重なっている組が ${ov.pairs} 件（最短 ${ov.min}px）。直す前のスクロースは 2件・17.2px`);
+            assert(ov.min >= 40, `${登録名}: 最短が ${ov.min}px（登録の図は 46px 以上）`);
+            assert(rvShape(prod) === want, `${登録名}: 登録の図と違う絵になっている`);
+        }
+
+        // ★ ユーザーが報告した道そのもの: スクロース → 加水分解 → 逆向きの縮合
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('スクロース');
+        g.updateDrawing();
+        const hy = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        W.reactor.execute(hy, hy.detect(g.userMolecule)[0], null);
+        await c.tick(60);
+        const cd = W.REACTION_RULES.find(r => r.id === 'condensation_glycoside');
+        const back = cd.detect(g.userMolecule);
+        assert(back.length, '加水分解のあと、逆向きの縮合が候補に出ない');
+        W.reactor.execute(cd, back[0], null);
+        await c.tick(60);
+        const prod = g.splitMolecules().filter(p => p.atoms.length > 3)[0];
+        assert(g.lookupCompoundName(prod) === 'スクロース（ショ糖）',
+            `往復してスクロースに戻らない（${g.lookupCompoundName(prod)}）`);
+        const ov = rvOverlap(prod);
+        assert(ov.pairs === 0,
+            `★ ユーザー報告の道で重なっている（${ov.pairs} 件・最短 ${ov.min}px）`);
+        c.reset();
+    });
+
+    test('RV6: ★否定対照 — 描き直すのは「いま縮合してできた二糖」だけ（となりの分子に触らない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('α-D-グルコース');
+        g.summonMolecule('β-D-フルクトフラノース');
+        /* ★ となりに**自分で裏返して置いた**3つめの糖を用意する。
+           `redrawProductsAsStandalone` に `only` を渡し忘れると、これも
+           「単独で描くときの図」に戻される（v1466 で実際に起きた形）。 */
+        g.summonMolecule('β-D-グルコース');
+        g.updateDrawing();
+        const 傍観 = g.splitMolecules()
+            .filter(p => p.atoms.length > 3)
+            .sort((a, b) => Math.max(...b.atoms.map(x => x.x)) - Math.max(...a.atoms.map(x => x.x)))[0];
+        const 傍観ids = new Set(傍観.atoms.map(a => a.id));
+        // ⇅ の札と同じ道で裏返す（＝ 人が自分で置き直した図）
+        g.setFocusedMolecule([...傍観ids][0]);
+        const flip = g.flipWholeHaworth();
+        assert(flip.ok, `（前提）となりの糖を ⇅ で裏返せない（${flip.reason}）`);
+        const 位置 = () => [...傍観ids].map(id => {
+            const a = g.userMolecule.atoms.find(x => x.id === id);
+            return `${id}:${Math.round(a.x)},${Math.round(a.y)}`;
+        }).sort().join('|');
+        const 前 = 位置();
+
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_glycoside');
+        const sites = rule.detect(g.userMolecule);
+        const s = sites.find(x => /スクロース/.test(x.productName));
+        assert(s, `スクロースの縮合が出ない（${sites.map(x => x.productName).join('/') || '0件'}）`);
+        W.reactor.execute(rule, s, null);
+        await c.tick(60);
+        assert(位置() === 前, '★ 縮合と関係のないとなりの分子まで描き直している（`only` が効いていない）');
+        c.reset();
+    });
+
+    /* ===== RV7・RV8: 1分子からでもナイロン66（縮合重合）へ行ける（v1477） =====
+     *
+     * ユーザー要望（2026-08-28）:「ヘキサメチレンジアミン 可能な反応に 66ナイロンの合成が欲しい」。
+     * ★ 実測（直す前・ヘキサメチレンジアミンを1つだけ呼んだ画面）:
+     *   できる反応 = アセチル化 1件だけ／相手が要る反応 = 酢酸 → アミド化 1件だけ
+     *   ＝ ナイロン66 はどこにも無く、**出ない理由も画面に無かった**。 */
+    const rvPolyHint = (c, name) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule(name), `（前提）${name} がライブラリに無い`);
+        g.updateDrawing();
+        return W.findPartnerHints(g, null)
+            .filter(h => h.ruleId === 'condensation_polymerization');
+    };
+
+    test('RV7: 2価の単量体を1つ置いただけで「縮合重合」の札が出て、押すと最後まで進む', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // ① 教科書が名前を付けている2つの高分子へ、4つの単量体すべてから着ける
+        const 表 = [
+            ['ヘキサメチレンジアミン', 'アジピン酸'],
+            ['アジピン酸', 'ヘキサメチレンジアミン'],
+            ['エチレングリコール', 'テレフタル酸'],
+            ['テレフタル酸', 'エチレングリコール']
+        ];
+        表.forEach(([置いた, 相手]) => {
+            const hits = rvPolyHint(c, 置いた);
+            assert(hits.length === 1, `${置いた}: 縮合重合の札が ${hits.length} 件（1件が正）`);
+            assert(hits[0].name === 相手,
+                `${置いた}: 勧める相手が「${hits[0].name}」（教科書の相手は「${相手}」）`);
+            assert(hits[0].count === 2 && hits[0].selfCount === 1,
+                `${置いた}: 呼ぶ数が 相手${hits[0].count}・自分${hits[0].selfCount}（2と1が正）`);
+        });
+
+        // ② 札の文言に**呼ぶもの2種類とも**書いてある（4分子になる理由が読める）
+        const h = rvPolyHint(c, 'ヘキサメチレンジアミン')[0];
+        const btn = W.reactor.makePartnerHintButton(h);
+        assert(/アジピン酸/.test(btn.textContent) && /ヘキサメチレンジアミン/.test(btn.textContent),
+            `札に2種類とも書いていない（${btn.textContent}）`);
+
+        // ③ ★ 押すと最後まで進む（「押しても何も起きない札」を作らない）
+        btn.click();
+        await c.tick(120);
+        assert(!W.reactor.lastDeadEnd, `途中で止まった（${JSON.stringify(W.reactor.lastDeadEnd)}）`);
+        const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H') && p.atoms.length > 3);
+        assert(parts.length === 1, `鎖が1本になっていない（${parts.length} 分子）`);
+        const f = g.computeMolecularFormula(parts[0]);
+        assert(/N₄/.test(f) && /R₂/.test(f), `ポリアミドの鎖になっていない（${f}）`);
+        const toast = c.D.getElementById('canvas-toast').textContent;
+        assert(/ナイロン66/.test(toast), `結果の説明がナイロン66に触れていない（${toast.slice(0, 60)}）`);
+        c.reset();
+    });
+
+    test('RV8: ★否定対照 — 縮合重合の札は「2価の単量体で、まだ並べていない人」にだけ出る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // ① 縮合重合にならない分子には出さない（＝ 名前の一致ではなく detect が決めている）
+        ['エタノール', '酢酸', 'グリシン', 'エチレン', 'グリセリン', 'サリチル酸'].forEach(n => {
+            const hits = rvPolyHint(c, n);
+            assert(hits.length === 0, `${n} にまで縮合重合の札が出ている（${hits.map(h => h.name)}）`);
+        });
+        // ② ★ **もう4分子並べてある人には出さない**（押せる状態なのに「呼びなさい」は案内ではない）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        ['ヘキサメチレンジアミン', 'アジピン酸', 'アジピン酸', 'ヘキサメチレンジアミン']
+            .forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        assert(rule.detect(g.userMolecule).length === 1,
+            '（前提）4分子並べても縮合重合が押せる状態になっていない');
+        /* ⚠ **土台（`baseIds`）を渡して呼ぶ**。実アプリは「いま見ている分子」に絞って
+           `findPartnerHints` を呼ぶ（`cachedPartnerHints(scope)`）ので、`null` で呼ぶと
+           土台がキャンバス全部 ＝ 名前が引けず、**手前で return してしまって
+           この否定対照が素通りする**（実際に素通りするのを確かめてから直した）。 */
+        const 一分子 = g.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => g.lookupCompoundName(p) === 'ヘキサメチレンジアミン');
+        assert(一分子, '（前提）並べたヘキサメチレンジアミンを取り出せない');
+        const hits = W.findPartnerHints(g, new Set(一分子.atoms.map(a => a.id)))
+            .filter(h => h.ruleId === 'condensation_polymerization');
+        assert(hits.length === 0, `もう並べてあるのに「呼び出す」札が出ている（${hits.length} 件）`);
+        c.reset();
+    });
+
+    /* ===== RV9・RV10: 前後比較の印が二重結合を隠さない（v1477） =====
+     *
+     * ユーザー実機報告（2026-08-28）:
+     *   「オレンジのマーカーが太く、裏が二重結合になっているところがわかりづらい」
+     *   「二重結合のうち一本が切れて、新たな結合が生じる様子をわかりやすくしたい」
+     *   「レジェンドの『オレンジ』や『シアン』は色なので、文字で説明する必要がない」
+     *
+     * ★ 実測（直す前・イソプレン3個の 1,4-付加重合）:
+     *   二重結合 = 線幅 2.2px × 2本・間隔 5px ＝ 横幅 7.2px ／
+     *   印 = 線幅 7px・不透明度 0.9・**最後に append**（＝ 結合線の上）
+     *   ＝ 二重結合の ink の **95%** を 9割の濃さで塗りつぶしていた。 */
+    const rvCompare = async (c, names, ruleId) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        names.forEach(n => assert(g.summonMolecule(n), `（前提）${n} を呼べない`));
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, `（前提）${ruleId} の箇所が見つからない`);
+        W.reactor.execute(rule, sites[0], null);
+        await c.tick(80);
+        W.reactor.openCompare();
+        await c.tick(60);
+        const ov = c.D.getElementById('rx-compare-overlay');
+        assert(!ov.classList.contains('hidden'), '前後比較が開かない');
+        return [...ov.querySelectorAll('svg')];
+    };
+    const rvMarkKinds = (svg) => {
+        const m = [...svg.querySelectorAll('.rx-diff-mark')];
+        return {
+            half: m.filter(x => x.classList.contains('rx-diff-half')),
+            full: m.filter(x => x.tagName === 'line' && !x.classList.contains('rx-diff-half')),
+            circle: m.filter(x => x.tagName === 'circle')
+        };
+    };
+
+    test('RV9: 差分の印は結合線の下に敷き、「二重結合の1本ぶん」は片側の線にだけ引く', async (c) => {
+        const svgs = await rvCompare(c, ['イソプレン', 'イソプレン', 'イソプレン'], 'diene_polymerization');
+        assert(svgs.length === 2, `前後の図が2枚出ていない（${svgs.length}）`);
+
+        // ① ★ 印の層は**いちばん下**（結合線・原子より先に描く）
+        svgs.forEach((s, i) => {
+            const first = s.firstElementChild;
+            assert(first && first.classList.contains('rx-diff-layer'),
+                `${i === 0 ? '反応前' : '反応後'}: 印が結合線の上に乗っている（先頭の層 = ${first && first.getAttribute('class')}）`);
+        });
+
+        // ② 反応前は「二重結合が単結合になった」印だけ ＝ 全部が片側の印
+        const before = rvMarkKinds(svgs[0]);
+        assert(before.half.length === 6 && before.full.length === 0,
+            `反応前の印が 片側${before.half.length}・まるごと${before.full.length}（6と0が正）`);
+
+        // ③ ★ 片側の印は、二重結合の**2本のうち片方の線の上**に乗っている
+        //    （`renderTargetBond` の二重結合は垂直 ±2.5px。もう1本には触れていない）
+        const lines = [...svgs[0].querySelectorAll('.quiz-bonds line')];
+        const mid = (el) => ({
+            x: (+el.getAttribute('x1') + +el.getAttribute('x2')) / 2,
+            y: (+el.getAttribute('y1') + +el.getAttribute('y2')) / 2
+        });
+        before.half.forEach(mk => {
+            const p = mid(mk);
+            const ds = lines.map(l => { const q = mid(l); return Math.hypot(p.x - q.x, p.y - q.y); })
+                .sort((a, b) => a - b);
+            assert(ds[0] < 0.6, `片側の印が結合線に乗っていない（いちばん近い線まで ${ds[0].toFixed(1)}px）`);
+            assert(ds[1] > 4 && ds[1] < 6,
+                `もう1本の線との距離が ${ds[1].toFixed(1)}px（二重結合の間隔 5px が正 ＝ 2本目には掛かっていない）`);
+        });
+
+        // ④ 反応後は「新しくできた二重結合」＝ 片側、「新しくできた単結合」＝ まるごと
+        const after = rvMarkKinds(svgs[1]);
+        assert(after.half.length === 3, `反応後の片側の印が ${after.half.length}（新しい C=C の3件が正）`);
+        assert(after.full.length === 4,
+            `反応後のまるごとの印が ${after.full.length}（つないだ2本＋両端の R 2本 ＝ 4件が正）`);
+
+        // ⑤ 太さと濃さ（覆う量そのもの）
+        before.half.forEach(m => {
+            assert(m.getAttribute('stroke-width') === '5',
+                `片側の印の太さが ${m.getAttribute('stroke-width')}（直す前は 7 で、二重結合の横幅 7.2px をほぼ覆っていた）`);
+        });
+        after.full.forEach(m => {
+            assert(+m.getAttribute('opacity') <= 0.5,
+                `まるごとの印が濃すぎる（${m.getAttribute('opacity')}）`);
+        });
+        c.W.reactor.closeCompare();
+        c.reset();
+    });
+
+    test('RV10: ★否定対照 — 色の見本は残す／印を全部「片側」にしていない／凡例から色名だけ落とす', async (c) => {
+        const svgs = await rvCompare(c, ['エチレン', 'エチレン', 'エチレン'], 'addition_polymerization');
+        const D = c.D;
+
+        // ① 凡例に**色の名前**が無い（ユーザー指摘）が、**色の見本は3つ残っている**
+        const legend = D.getElementById('rx-cmp-legend');
+        assert(legend, '凡例が見つからない');
+        assert(!/オレンジ|シアン|(^|[^緑])緑/.test(legend.textContent),
+            `凡例に色の名前が残っている（${legend.textContent}）`);
+        const swatches = [...legend.querySelectorAll('.rx-legend-swatch')];
+        assert(swatches.length === 3, `色の見本が ${swatches.length} 個（3個が正 ＝ 色そのものは消していない）`);
+        const colors = new Set(swatches.map(s => s.style.background));
+        assert(colors.size === 3, `見本の色が ${colors.size} 種類（3種類が正）`);
+        // ⚠ **本当に見えているか**まで見る（`display:none` にしても数と色は残るので、
+        //    数えるだけの検査は「見本を消した」壊し方を素通りさせる・実際に確かめた）
+        swatches.forEach((s, i) => {
+            const r = s.getBoundingClientRect();
+            assert(r.width > 0 && r.height > 0,
+                `見本 ${i + 1} が描かれていない（${Math.round(r.width)}×${Math.round(r.height)}）`);
+        });
+        // 意味は字で残っている（見本だけにして意味まで消していない）
+        ['切れた結合', 'できた結合', '付加した原子'].forEach(w =>
+            assert(legend.textContent.includes(w), `凡例から「${w}」が消えている`));
+
+        // ② ★ **全部を「片側」にしていない**。エチレンの付加重合は
+        //    反応前 = C=C が単結合になる（片側3件）／反応後 = 新しい単結合とR（まるごと4件）
+        const before = rvMarkKinds(svgs[0]), after = rvMarkKinds(svgs[1]);
+        assert(before.half.length === 3 && before.full.length === 0,
+            `反応前が 片側${before.half.length}・まるごと${before.full.length}（3と0が正）`);
+        assert(after.half.length === 0 && after.full.length === 4,
+            `反応後が 片側${after.half.length}・まるごと${after.full.length}（0と4が正 ＝ ` +
+            '新しくできた単結合まで「1本ぶん」に化けていない）');
+
+        // ③ 印そのものは消えていない（「見やすくする」で情報を落としていない）
+        assert(after.circle.length === 2, `付加した原子の印が ${after.circle.length} 個（2個が正）`);
+        c.W.reactor.closeCompare();
         c.reset();
     });
 
