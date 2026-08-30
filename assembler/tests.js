@@ -41900,6 +41900,70 @@
         c.reset();
     });
 
+    /* RV11 —— 活性化環の臭素化で、**置換されない炭素に印が付かない**。
+     *
+     * 動画レーンの実測報告 2026-08-26 §8。ユーザーが V118 の完成品で見つけた:
+     * 「マーカーが1番のC原子にもついています。反応した原子ではない」。
+     * `changed: [anchor, ...targets, ...added]` の `anchor` は detect が
+     * 「環の外に重原子を1つ持つ炭素」として選んだ**目印**で、`apply` は触らない。
+     *
+     * ⚠⚠ **数で引いてはいけない。** この直しは印が「4つ → 3つ + Br 3つ」に減る形なので、
+     * 「印がある/ない」でも「合計が何個か」でも、**`anchor` を落としたつもりで `targets` を
+     * 落とした実装が通ってしまう**（動画レーンの指摘）。★ **Br が入った炭素と入っていない
+     * 炭素を名指しで見る**。 */
+    test('RV11: 活性化環の臭素化 — 印は Br が入った3か所だけ（-OH の付け根には付かない）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('フェノール');
+        g.updateDrawing();
+
+        const rule = W.REACTION_RULES.find(r => r.id === 'bromination_activated_ring');
+        assert(rule, '（前提）bromination_activated_ring が REACTION_RULES に無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length, '（前提）フェノールで活性化環の臭素化の箇所が見つからない');
+        const site = sites[0];
+        // detect の site は [anchor, ...targets]。anchor ＝ -OH の付け根（置換されない C1）
+        const anchorId = String(site[0]);
+        const targetIds = site.slice(1).map(String);
+        assert(targetIds.length === 3,
+            `（前提）置換される炭素が ${targetIds.length} 個（オルト2＋パラ1 ＝ 3個が正）`);
+
+        W.reactor.execute(rule, site, null);
+        await c.tick(1400);   // モーフィング 800ms ＋ 余裕
+
+        const marks = [...D.getElementById('ui-group').querySelectorAll('[data-hl-atom]')]
+            .map(el => el.getAttribute('data-hl-atom'));
+        const marked = new Set(marks);
+        const mol = g.userMolecule;
+        const atomOf = (id) => mol.atoms.find(a => String(a.id) === String(id));
+
+        // ① ★ **-OH の付け根には印が付かない**（今回の指摘そのもの）
+        assert(!marked.has(anchorId),
+            '-OH の付け根（置換されない C1）に印が付いている ＝ ' +
+            '「なぜ起きたか」の原子が「何が変わったか」の印に混ざっている');
+
+        // ② ★ **置換された3つの炭素には全部付く**（①だけだと targets ごと落としても通る）
+        targetIds.forEach((id, i) => {
+            assert(marked.has(id),
+                `置換された炭素 ${i + 1}/3 に印が無い（anchor を落とすつもりで targets を落としている）`);
+        });
+
+        // ③ ★ **入った Br 3つにも付く**（＝ added を落としていない）
+        const brMarked = marks.filter(id => { const a = atomOf(id); return a && a.element === 'Br'; });
+        assert(brMarked.length === 3,
+            `印の付いた Br が ${brMarked.length} 個（3個が正 ＝ added を落としていない）`);
+
+        // ④ 余りが無い（③までを満たしたうえで、関係ない原子を拾っていない）
+        assert(marked.size === 6,
+            `印が ${marked.size} 個（炭素3＋Br3 ＝ 6個が正・${[...marked].map(id => {
+                const a = atomOf(id); return a ? a.element : '?';
+            }).join(',')}）`);
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
