@@ -2216,6 +2216,36 @@ function attachR(mol, atomId, prefer) {
 }
 
 /**
+ * 鎖の両端に R を付け、**R と「R を付けた原子」の両方**の id を返す（v1481・動画レーン §9）。
+ *
+ * ⚠⚠ **`attachR` を直に呼ばないこと。** 直に呼ぶと返るのは R の id だけなので、
+ * `changed` に R しか入らない ＝ **R が生えている端の炭素にだけ印が付かない**。
+ * ユーザーが V120 の完成品で見つけた症状がこれ:
+ *   > **「両端のC原子のみマーカーなし。Rの関係かもしれないが、実際には差が無いのですべてマーカーすべき」**
+ *
+ * ★ 端の原子も中の原子と同じだけ変わっている —— 付加重合なら二重結合が開いて結合が1本増え、
+ *   縮合重合なら **-OH が落ちて R に置き換わっている**（むしろ変化は大きい）。
+ * ⚠ **位置が鎖の両端＝いちばん目が行く所**なので、「端だけ何か違う」と読めて
+ *   R の意味（この先も続く）と混ざる。
+ *
+ * ⚠ **重合4種が同じ抜け方をしていた**（付加・ポリアセチレン・ジエン・縮合）。
+ * ★ 1か所ずつ手で足すと**次に重合を1種類足した人がまた忘れる**ので、ここで束ねる。
+ *
+ * @param ends `[原子id, 向きの好み]` の配列
+ * @returns 付けた R と、その付け先の原子 id（R が置けなかった端も、原子のほうは必ず返す）
+ */
+function attachREnds(mol, ends) {
+    const out = [];
+    ends.forEach(([atomId, prefer]) => {
+        // ⚠ R が置けなくても原子のほうは必ず入れる（結合の変化は既に起きている）
+        out.push(atomId);
+        const r = attachR(mol, atomId, prefer);
+        if (r) out.push(r);
+    });
+    return out;
+}
+
+/**
  * アセチレン（HC≡CH）の分子だけを集める。付加重合するとポリアセチレンになる。
  *
  * **置換基のあるアルキンは対象にしない**（P12-8 の穴埋め・2026-08-07）。理由は2つ:
@@ -3716,10 +3746,10 @@ const REACTION_RULES = [
             // 両端に R を付けて「ここから先も同じ単位が続く」ことを示す。
             // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記。
             // 向きは**鎖をそのまま1歩伸ばした先**（v1436・§14）
-            const rIds = [
-                attachR(mol, units[0].tail, chainDirection(mol, units[0].head, units[0].tail)),
-                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
-            ].filter(Boolean);
+            const endIds = attachREnds(mol, [
+                [units[0].tail, chainDirection(mol, units[0].head, units[0].tail)],
+                [linkFrom, chainDirection(mol, linkBack, linkFrom)]
+            ]);
             const n = units.length;
             return {
                 caption: `単量体 ${n} 個が付加重合しました。二重結合が開いて次々に繋がり、繰り返し単位が ${n} 個ぶん並んでいます。` +
@@ -3727,7 +3757,7 @@ const REACTION_RULES = [
                     '付加重合では原子が1つも出入りしません（脱水などの副生成物が出ない）ので、' +
                     '単量体の分子式を n 倍したものが高分子の組成になります。' +
                     '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。',
-                changed: [...new Set([...changed, ...rIds])],
+                changed: [...new Set([...changed, ...endIds])],
                 refit: true // 伸びた鎖の全体が見えるように視野を合わせる
             };
         }
@@ -3781,10 +3811,10 @@ const REACTION_RULES = [
                 linkBack = u.left;
                 linkFrom = u.right;
             }
-            const rIds = [
-                attachR(mol, units[0].left, chainDirection(mol, units[0].right, units[0].left)),
-                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
-            ].filter(Boolean);
+            const endIds = attachREnds(mol, [
+                [units[0].left, chainDirection(mol, units[0].right, units[0].left)],
+                [linkFrom, chainDirection(mol, linkBack, linkFrom)]
+            ]);
             const n = units.length;
             return {
                 caption: `アセチレン ${n} 個が付加重合してポリアセチレンになりました。` +
@@ -3793,7 +3823,7 @@ const REACTION_RULES = [
                     '単結合と二重結合が交互に並ぶこの形を共役といい、電子が鎖に沿って動けるため、' +
                     'ヨウ素などを加えると金属に近い電気伝導性を示します（導電性高分子）。' +
                     '両端の R は「この先も同じ単位が続く」という印です。',
-                changed: [...new Set([...changed, ...rIds])],
+                changed: [...new Set([...changed, ...endIds])],
                 refit: true
             };
         }
@@ -3858,10 +3888,10 @@ const REACTION_RULES = [
                 linkBack = u.c3;
                 linkFrom = u.c4;
             }
-            const rIds = [
-                attachR(mol, units[0].c1, chainDirection(mol, units[0].c2, units[0].c1)),
-                attachR(mol, linkFrom, chainDirection(mol, linkBack, linkFrom))
-            ].filter(Boolean);
+            const endIds = attachREnds(mol, [
+                [units[0].c1, chainDirection(mol, units[0].c2, units[0].c1)],
+                [linkFrom, chainDirection(mol, linkBack, linkFrom)]
+            ]);
             const n = units.length;
             return {
                 caption: `共役ジエン ${n} 個が 1,4-付加重合しました。両端（1位と4位）の炭素で繋がり、` +
@@ -3871,7 +3901,7 @@ const REACTION_RULES = [
                     `いまの図は直交作図なのでシス・トランスを示していません。左の「⇄ シス/トランス整形」で` +
                     `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。` +
                     `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。`,
-                changed: [...new Set([...changed, ...rIds])],
+                changed: [...new Set([...changed, ...endIds])],
                 refit: true
             };
         }
@@ -3997,9 +4027,10 @@ const REACTION_RULES = [
             if (!endAcid || !endOther) throw new Error('鎖の端が見つかりません');
             mol.removeBond(endAcid.atomIds[0], endAcid.atomIds[2]);
             parkAsWater(mol, endAcid.atomIds[2]);
-            const rIds = [attachR(mol, endAcid.atomIds[0], outward(endAcid.atomIds[0])),
-                          attachR(mol, endOther.atomIds[0], outward(endOther.atomIds[0]))]
-                .filter(Boolean);
+            const endIds = attachREnds(mol, [
+                [endAcid.atomIds[0], outward(endAcid.atomIds[0])],
+                [endOther.atomIds[0], outward(endOther.atomIds[0])]
+            ]);
             const amide = AMINE_NH_TYPES.includes(endOther.type);
             const n = (links.length + 1) / 2;
             return {
@@ -4014,7 +4045,7 @@ const REACTION_RULES = [
                           + '（PET・ポリエステル）で、エステル結合 -CO-O- でつながっています。') +
                     '両端の R は「この先も同じ単位が続く」という印です' +
                     '（教科書では −[ ]ₙ− の角括弧で書きます）。',
-                changed: [...new Set([...changed, ...rIds])],
+                changed: [...new Set([...changed, ...endIds])],
                 refit: true
             };
         }
