@@ -1382,7 +1382,11 @@ class IsomerPractice {
         custom.style.cssText = 'margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px;';
         const clabel = document.createElement('div');
         clabel.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
-        clabel.textContent = '任意の分子式で練習（水素以外6個まで）:';
+        // ⚠ **上限を2か所で名乗らない。** 数は定数から出す（v14xx で 6 → 「6個まで・
+        //    二重結合も環も無い飽和形なら7個まで」に変わった。断り文とここが食い違うと、
+        //    C₇H₁₆ が開くのに入口が「6個まで」と言い張る）
+        clabel.textContent = `任意の分子式で練習（水素以外${IP_MAX_HEAVY}個まで・` +
+            `飽和形は${IP_MAX_HEAVY_TREE}個まで）:`;
         custom.appendChild(clabel);
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; gap:6px;';
