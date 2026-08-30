@@ -733,6 +733,65 @@ function treeIdealSub(problem, seq) {
     return sub;
 }
 
+/**
+ * ★★★ **この容器で実際に要る手順**（2026-08-28・ユーザー「手順が3問すべてで同じになっている」）。
+ *
+ * ⚠⚠ **これは新しい出題ではない。**★ `treeAuditProblem` が理想の最短手数を数えるのに
+ *   もともと使っていた刈り込みを、**数だけでなく手順そのものとして返す**ようにしただけ。
+ *
+ * 【なぜ要るのか】
+ *   ⚠ 模範の手順（`treeIdealSeq`）は **配った札を教科書の順に並べたもの**で、
+ *     配る札はどの出題でも同じ（`TREE_MAIN_DEAL`）。
+ *     ＝ **どの容器でも `hcl>h2s>boil>hno3>nh3>h2s>co3` の7手で、1通りしか出ない**（実測）。
+ *   ★ 刈り込んだあとは **容器ごとに変わる** —— 属が欠けていれば、その段は要らない。
+ *
+ * ⚠ 返す `seq` には **空き（null）が混ざる**。★ 葉の番号を保つため、ここでは詰めない
+ *   （詰めるのは `treeNeededPlan`）。
+ */
+function treeTrimPlan(p, ideal, idealSub) {
+    ideal = ideal || treeIdealSeq(p);
+    var trimmed = ideal.slice();
+    var trimmedSub = idealSub || treeIdealSub(p, ideal);
+    var stillOk = function (seq, sub) {
+        return treeGrade(p, seq, treePlanFromRun(p, seq, sub), sub).isolated;
+    };
+    ideal.forEach(function (o, i) {
+        var probe = trimmed.slice();
+        probe[i] = null;
+        if (stillOk(probe, trimmedSub)) trimmed = probe;
+    });
+    Object.keys(trimmedSub).forEach(function (k) {
+        var probe = {};
+        Object.keys(trimmedSub).forEach(function (k2) { if (k2 !== k) probe[k2] = trimmedSub[k2]; });
+        if (stillOk(trimmed, probe)) trimmedSub = probe;
+    });
+    return { seq: trimmed, sub: trimmedSub };
+}
+
+/**
+ * ★★ 刈り込んだ手順を **詰めて**返す（＝ 画面にそのまま置ける形）。
+ *   ⚠ 詰めると枝の番号が変わるので、★ **沈殿側の札の番号も付け替える**
+ *     （付け替えないと、札が別の枝に付いて木の形が変わる）。
+ * ⚠ 空いた枝を残さないのは「イオンの行先を答える」用だから ——
+ *   ★ その段では枝は押せないので、空の枝は読む邪魔にしかならない。
+ *   （「実験手順から考える」は今までどおり `treeSlotCount` ぶんの空き枝を出す）
+ */
+function treeNeededPlan(p) {
+    var t = treeTrimPlan(p);
+    var seq = [], map = {};
+    t.seq.forEach(function (o, i) {
+        if (!o) return;
+        map[i] = seq.length;
+        seq.push(o);
+    });
+    var sub = {};
+    Object.keys(t.sub).forEach(function (k) {
+        // ⚠ 落とした枝に付いていた札は捨てる（★ 置き場そのものが無くなっている）
+        if (map[k] != null) sub[map[k]] = t.sub[k];
+    });
+    return { seq: seq, sub: sub };
+}
+
 /** ★ 属の中に2つ以上入っている属の数（⚠ **これが手順の段数を決める**） */
 function treeCrowdedGroups(ions) {
     var n = {};
@@ -806,22 +865,9 @@ function treeAuditProblem(p) {
     //   ★ だからここで出すのは「何手で足りるか」という数だけで、**手順そのものは出さない**。
     //   ⚠⚠ 画面はこの数だけを見せる（§ 答え合わせで模範手順を示さない）。
     //   ★★ 沈殿側の札も同じやり方で落とす（⚠ 主流を先に、沈殿側をあとに）
-    var trimmed = ideal.slice(), trimmedSub = idealSub;
-    var stillOk = function (seq, sub) {
-        return treeGrade(p, seq, treePlanFromRun(p, seq, sub), sub).isolated;
-    };
-    ideal.forEach(function (o, i) {
-        var probe = trimmed.slice();
-        probe[i] = null;
-        if (stillOk(probe, trimmedSub)) trimmed = probe;
-    });
-    Object.keys(trimmedSub).forEach(function (k) {
-        var probe = {};
-        Object.keys(trimmedSub).forEach(function (k2) { if (k2 !== k) probe[k2] = trimmedSub[k2]; });
-        if (stillOk(trimmed, probe)) trimmedSub = probe;
-    });
-    var shortest = trimmed.filter(function (o) { return !!o; }).length +
-        Object.keys(trimmedSub).length;
+    var trim = treeTrimPlan(p, ideal, idealSub);
+    var shortest = trim.seq.filter(function (o) { return !!o; }).length +
+        Object.keys(trim.sub).length;
 
     // ⚠ 芯が効くか ＝ 希硝酸を抜いた答案が、模範と違う結果になるか
     // ★ **枝は空けたまま抜く**（詰めない）。⚠ 詰めると葉の番号がずれて、
@@ -1008,6 +1054,7 @@ if (typeof module !== 'undefined' && module.exports) {
         treeRun: treeRun, treeLeafId: treeLeafId, treeSubLeafId: treeSubLeafId,
         treeLeafIds: treeLeafIds, treeActualLeaves: treeActualLeaves,
         treeGrade: treeGrade, treeIdealSeq: treeIdealSeq, treeIdealSub: treeIdealSub,
+        treeTrimPlan: treeTrimPlan, treeNeededPlan: treeNeededPlan,
         treeCrowdedGroups: treeCrowdedGroups, treeEmptyPlan: treeEmptyPlan,
         treePlanFromRun: treePlanFromRun, treeAuditProblem: treeAuditProblem,
         treeDifficulty: treeDifficulty, treeLevelOf: treeLevelOf, treeIonKey: treeIonKey,

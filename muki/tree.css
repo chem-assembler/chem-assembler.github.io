@@ -53,7 +53,7 @@ body {
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    font-size: 13px;
+    font-size: 14px;
 }
 .topbar .hubLink {
     color: var(--dim);
@@ -69,7 +69,7 @@ body {
 h1 { font-size: 22px; margin: 10px 0 6px; }
 h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
 
-.lead { font-size: 14px; margin: 0 0 14px; }
+.lead { font-size: 15px; margin: 0 0 14px; }
 
 .panel {
     background: var(--panel);
@@ -78,7 +78,7 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
     padding: 14px;
     margin-bottom: 14px;
 }
-.note { font-size: 13px; color: var(--dim); margin: 0 0 10px; }
+.note { font-size: 14px; color: var(--dim); margin: 0 0 10px; }
 
 /* --- やり方・容器の切り替え --- */
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -86,7 +86,7 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
     flex: 1 1 auto;
     min-height: 44px;
     padding: 6px 12px;
-    font-size: 13px;
+    font-size: 14px;
     font-family: inherit;
     color: var(--fg);
     background: rgba(255, 255, 255, 0.07);
@@ -108,7 +108,7 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
     min-height: 48px;
     padding: 6px 12px;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 15px;
     color: var(--fg);
     background: rgba(0, 0, 0, 0.35);
     border: 1px solid var(--line);
@@ -117,15 +117,15 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
     text-align: left;
     max-width: 100%;
 }
-.card .sub { font-size: 11px; color: var(--dim); }
+.card .sub { font-size: 13px; color: var(--dim); }
 .card.op { border-color: var(--branch); background: rgba(41, 128, 185, 0.22); }
 /* ★★ 沈殿側の札（⚠ 置き先が枝ではなく沈殿なので、見た目で分けておく） */
 .card.sub { border-color: var(--split); background: rgba(155, 89, 182, 0.22); }
-.card.ion { border-color: var(--leaf); background: rgba(22, 160, 133, 0.22); font-weight: bold; font-size: 16px; }
+.card.ion { border-color: var(--leaf); background: rgba(22, 160, 133, 0.22); font-weight: bold; font-size: 17px; }
 .card.picked { outline: 3px solid var(--accent); outline-offset: 1px; }
 .card:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.hint { font-size: 13px; color: var(--accent); margin: 6px 0 0; min-height: 1.7em; }
+.hint { font-size: 14px; color: var(--accent); margin: 6px 0 0; min-height: 1.7em; }
 
 /* --- 流れ図 ＝ ディレクトリツリー -----------------------------------
    ★★ 形はユーザーが決めた（2026-08-28）:
@@ -161,7 +161,8 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
     margin-bottom: var(--row-gap);
     padding: 4px 10px;
     font-family: inherit;
-    font-size: 14px;
+    /* ★ 14px → 15px（2026-08-28・ユーザー「フォントが小さい」） */
+    font-size: 15px;
     text-align: left;
     color: var(--fg);
     box-sizing: border-box;
@@ -199,6 +200,16 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
 }
 /* ⚠ 容器は流れの頭なので、入ってくる継ぎ手を持たない */
 .flow .row:first-child::after { content: none; }
+/* ★★★ **主流の節（容器・ろ液・最後のろ液）は `─` を持たない**
+   （2026-08-28・ユーザー「ろ液は - なしに ｜ につなぐ（インデントしない）」）。
+   ⚠⚠ `─` は **枝分かれの印**。★ ろ液は枝分かれではなく、**流れそのものの続き**なので、
+     縦の罫 `｜` がそのまま通り抜けるだけでよい。
+   ⚠ `─` が付いていると「ろ液もどこかへ取り出したもの」に見え、
+     **取り出したのは沈殿のほうだ**という読みが崩れる。
+   ★ インデントのほうは v27 から 0 のまま（＝ ユーザーの「インデントしない」は既に満たしていた）。
+   ⚠ 対象は **節だけ**。試薬（.edge）は必ず 1 段以上下がるので、ここには当たらない
+     （node は data-i ＝ 深さ／edge は data-i ＝ 深さ+1 なので、edge に 0 は無い）。 */
+.flow .row.node[data-i="0"]::after { content: none; }
 
 /* --- 節（★ 相は枠の形） --- */
 .node {
@@ -211,17 +222,17 @@ h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
 /* ★★ 沈殿 ＝ ▢（角ばった枠） */
 .node.ppt { border-radius: 0; }
 
-.node .node-title { font-size: 12px; color: var(--dim); flex: 0 0 auto; }
-.node .ions { font-weight: bold; font-size: 13px; min-width: 0; word-break: break-word; }
+.node .node-title { font-size: 13px; color: var(--dim); flex: 0 0 auto; }
+.node .ions { font-weight: bold; font-size: 15px; min-width: 0; word-break: break-word; }
 /* 主流を継ぐだけの節（★ 押し所ではないので薄く・低く） */
 .node.inner { padding-top: 0; padding-bottom: 0; min-height: 22px; opacity: 0.85; }
 
 /* --- 終端（★ ここだけがイオンの置き場） --- */
 .slot { cursor: pointer; }
 .node.terminal { min-height: 44px; border-style: dashed; }
-.node.terminal .leaf-val { margin-left: auto; font-size: 12px; color: var(--dim); }
+.node.terminal .leaf-val { margin-left: auto; font-size: 13px; color: var(--dim); }
 .node.terminal.set { border-style: solid; border-color: var(--leaf); background: rgba(22, 160, 133, 0.2); }
-.node.terminal.set .leaf-val { font-size: 16px; font-weight: bold; color: var(--fg); }
+.node.terminal.set .leaf-val { font-size: 17px; font-weight: bold; color: var(--fg); }
 .node.terminal.can { border-color: var(--accent); }
 .node.terminal:disabled { cursor: default; }
 
@@ -278,9 +289,9 @@ button.secondary {
 .result h3 { margin: 0 0 6px; font-size: 18px; }
 .result h3.ok { color: var(--ok); }
 .result h3.ng { color: var(--ng); }
-.result p { font-size: 14px; margin: 0 0 10px; }
+.result p { font-size: 15px; margin: 0 0 10px; }
 .result .leafrow {
-    font-size: 13px;
+    font-size: 14px;
     background: rgba(0, 0, 0, 0.35);
     border-left: 4px solid var(--line);
     border-radius: 0 8px 8px 0;
@@ -291,16 +302,16 @@ button.secondary {
 .result .leafrow.good { border-left-color: var(--ok); }
 .result .leafrow b { color: var(--accent); }
 .result .line { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.result .tag { color: var(--dim); font-size: 12px; min-width: 6.5em; }
+.result .tag { color: var(--dim); font-size: 13px; min-width: 6.5em; }
 .result .why {
-    font-size: 13px;
+    font-size: 14px;
     background: rgba(241, 196, 15, 0.1);
     border-left: 4px solid var(--accent);
     border-radius: 0 8px 8px 0;
     padding: 8px 12px;
     margin-bottom: 8px;
 }
-.result .caveat { color: var(--dim); font-size: 12px; }
+.result .caveat { color: var(--dim); font-size: 13px; }
 
 /* 見えたものの色。⚠ 色は名前が主で、この四角はその見える化にすぎない（§5-5） */
 .sw {
@@ -312,8 +323,8 @@ button.secondary {
     background-size: 10px 10px;
     background-position: 0 0, 5px 5px;
 }
-.sw-label { font-size: 12px; color: var(--dim); }
+.sw-label { font-size: 13px; color: var(--dim); }
 
 .hidden { display: none; }
 .foot { text-align: center; margin-top: 24px; }
-.foot a { color: #7f8c8d; font-size: 12px; display: inline-flex; align-items: center; min-height: 32px; }
+.foot a { color: #7f8c8d; font-size: 13px; display: inline-flex; align-items: center; min-height: 32px; }
