@@ -1262,6 +1262,192 @@
         })());
 
         // -----------------------------------------------------------
+        // ★★★ M5 第5属（Ca²⁺ と Ba²⁺）—— 2026-08-30
+        //
+        // ⚠⚠ v27 は第5属を「判断待ち」として見送っていた（設計書 §21-2）。
+        //   ユーザーの回答（「希酢酸に溶かして K₂CrO₄」を1枚の札として配ってよいか → OK）
+        //   にもとづいて入れたぶん。
+        // ★ ここが緩むと、**主流の札だけでは絶対に分かれない組**が母集団から消える。
+        // -----------------------------------------------------------
+        section('型A: 第5属（Ca²⁺ と Ba²⁺）と、それを割る札');
+        // ★ 属の中に3組（第1属 Ag/Pb・第3属 Fe/Al・第5属 Ca/Ba）
+        var TREE_SPLIT3 = treeBuildProblem(['Ag', 'Pb', 'Cu', 'Fe3', 'Al', 'Ca', 'Ba', 'Na']);
+        // ★ 第5属だけが2つ（⚠ ほかの属は1つずつ）
+        var TREE_G5 = treeBuildProblem(['Fe3', 'Cu', 'Ca', 'Ba']);
+
+        ok('M5-1a ★ Ba²⁺ が模型に居て、Ca²⁺ と同じ第5属である',
+            !!treeIon('Ba') && treeIon('Ba').name === 'Ba²⁺' &&
+            TREE_GROUP.Ba === 5 && TREE_GROUP.Ca === 5 &&
+            TREE_ELEMENT_JP.Ba === 'バリウム' &&
+            TREE_UNIVERSE.indexOf('Ba') >= 0);
+        ok('M5-1b ⚠⚠ 型B の母集団（SEP_IONS）には足していない（★ 型B の問題 ID が動かない）',
+            typeof SEP_IONS !== 'undefined' && !SEP_IONS.Ba &&
+            Object.keys(SEP_IONS).length === 9);
+        ok('M5-1c ★★★ Ba²⁺ は主流の6札すべてで Ca²⁺ とまったく同じ答えを返す（⚠ 主流だけでは絶対に分かれない）',
+            (function () {
+                var bad = [];
+                TREE_MAIN_DEAL.forEach(function (o) {
+                    TREE_ENVS.forEach(function (env) {
+                        var a = treeRule('Ca', o, env), b = treeRule('Ba', o, env);
+                        if (!a || !b) { bad.push('宣言もれ ' + o); return; }
+                        if (!!a.ppt !== !!b.ppt || a.c !== b.c) bad.push(o + '(' + env.ph + ')');
+                    });
+                });
+                if (bad.length) warn('第5属の2つが主流で分かれてしまう: ' + bad.join(' / '));
+                return bad.length === 0;
+            })());
+        ok('M5-1d ★ 炭酸アンモニウムで BaCO₃（白色）が沈む（教科書の分属試薬そのもの）',
+            treeRule('Ba', 'co3', { ph: 'base', h2s: false }).ppt === true &&
+            treeRule('Ba', 'co3', { ph: 'base', h2s: false }).f === 'BaCO₃' &&
+            treeRule('Ba', 'co3', { ph: 'base', h2s: false }).c === '白色');
+
+        // ★★ 2-2 の決め —— **硫酸は札にしない**
+        //   ⚠ 教科書 p.90 式(13)(14)・p.96 は CaSO₄ も BaSO₄ も「白・強酸に不溶」＝
+        //     硫酸を加えても両方沈んで、属の中は割れない。
+        //   ★ そして「第5属を他から分ける」仕事は、**すでにある炭酸アンモニウムの札**がやっている。
+        ok('M5-2a ⚠⚠ 硫酸の札を配っていない（★ 硫酸では第5属の中が割れないため）',
+            !TREE_OPS.h2so4 && !TREE_SUBOPS.h2so4 &&
+            TREE_MAIN_DEAL.concat(TREE_SUB_DEAL).every(function (o) {
+                var c = TREE_OPS[o] || TREE_SUBOPS[o];
+                return c && c.short.indexOf('硫酸') < 0;
+            }));
+        ok('M5-2b ★★ 第5属を他から分けるのは、すでにある炭酸アンモニウムの札（⚠ 新しい札は要らなかった）',
+            (function () {
+                var env = { ph: 'base', h2s: false };
+                var sink = TREE_UNIVERSE.filter(function (i) {
+                    var r = treeRule(i, 'co3', env);
+                    return r && r.ppt;
+                });
+                // ⚠ Ag・Cu・Zn は錯イオンで溶けたまま／Pb・Fe・Al は先に落ちている属なので、
+                //   ★ 教科書の順で進めば、この段に残っているのは第5属と第6属だけ
+                return sink.indexOf('Ca') >= 0 && sink.indexOf('Ba') >= 0 &&
+                    sink.indexOf('Na') < 0;
+            })());
+
+        // ★★★ 3-1 の札 —— ⚠ **1枚である**
+        ok('M5-3a ★★ 「希酢酸に溶かす」と「クロム酸カリウムを加える」は1枚の札（⚠ 2枚に割っていない）',
+            TREE_SUBOPS.cro4.say.indexOf('希酢酸') >= 0 &&
+            TREE_SUBOPS.cro4.say.indexOf('クロム酸カリウム') >= 0 &&
+            Object.keys(TREE_SUBOPS).filter(function (o) {
+                var s = TREE_SUBOPS[o].say;
+                return s.indexOf('酢酸') >= 0 && s.indexOf('クロム酸') < 0;
+            }).length === 0);
+        ok('M5-3b ★ 沈殿側の札そのものが、出典と「教科書／参考書」の別を持っている（★ この札は参考書）',
+            (function () {
+                var bad = [];
+                Object.keys(TREE_SUBOPS).forEach(function (o) {
+                    var c = TREE_SUBOPS[o];
+                    if (!c.ref || (c.book !== '教科書' && c.book !== '参考書')) bad.push(o);
+                });
+                if (bad.length) warn('札の出典が無い: ' + bad.join(' / '));
+                return bad.length === 0 && TREE_SUBOPS.cro4.book === '参考書' &&
+                    TREE_SUBOPS.hot.book === '教科書' && TREE_SUBOPS.naoh.book === '教科書';
+            })());
+        ok('M5-3c ★★★ 第5属: 希酢酸とクロム酸カリウムで BaCO₃ だけが BaCrO₄（黄色）として残り、Ca²⁺ は溶けて出ていく',
+            treeSubRule('BaCO₃', 'cro4').out === 'ppt' &&
+            treeSubRule('BaCO₃', 'cro4').f === 'BaCrO₄' &&
+            treeSubRule('BaCO₃', 'cro4').c === '黄色' &&
+            treeSubRule('CaCO₃', 'cro4').out === 'sol' &&
+            treeSubRule('CaCO₃', 'cro4').f === 'Ca²⁺');
+        ok('M5-3d ⚠ 熱湯でも過剰の水酸化ナトリウム水溶液でも第5属は割れない（★ だからこの札が要る）',
+            treeSubRule('CaCO₃', 'hot').out === 'ppt' &&
+            treeSubRule('BaCO₃', 'hot').out === 'ppt' &&
+            treeSubRule('CaCO₃', 'naoh').out === 'ppt' &&
+            treeSubRule('BaCO₃', 'naoh').out === 'ppt');
+        ok('M5-3e ★ 悉皆が ' + treeAllFormulas().length + '式 × ' +
+            Object.keys(TREE_SUBOPS).length + '札 ＝ ' + (function () {
+                var n = 0;
+                Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                    n += Object.keys(TREE_SUB_RULES[f]).length;
+                });
+                return n;
+            })() + '組（⚠ 入れる前は 12式 × 2札 ＝ 24組）', (function () {
+                var n = 0;
+                Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                    n += Object.keys(TREE_SUB_RULES[f]).length;
+                });
+                return treeAllFormulas().length === 13 && Object.keys(TREE_SUBOPS).length === 3 &&
+                    n === 39 && treeAllFormulas().indexOf('BaCO₃') >= 0;
+            })());
+        ok('M5-3f ★ 出典の内訳が数えられる（' + (function () {
+            var b = {};
+            Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                Object.keys(TREE_SUB_RULES[f]).forEach(function (o) {
+                    var k = TREE_SUB_RULES[f][o].book;
+                    b[k] = (b[k] || 0) + 1;
+                });
+            });
+            return '教科書 ' + b['教科書'] + '／参考書 ' + b['参考書'];
+        })() + '）', (function () {
+            var b = {};
+            Object.keys(TREE_SUB_RULES).forEach(function (f) {
+                Object.keys(TREE_SUB_RULES[f]).forEach(function (o) {
+                    var k = TREE_SUB_RULES[f][o].book;
+                    b[k] = (b[k] || 0) + 1;
+                });
+            });
+            return b['教科書'] === 26 && b['参考書'] === 13;
+        })());
+
+        // ★★★ 2-4 の芯 —— 「割らなければならない理由」が採点から出るか（⚠ 葉の数で実測）
+        (function () {
+            var s3 = treeIdealSeq(TREE_SPLIT3), sb3 = treeIdealSub(TREE_SPLIT3, s3);
+            var pl3 = treePlanFromRun(TREE_SPLIT3, s3, sb3);
+            var gSplit3 = treeGrade(TREE_SPLIT3, s3, pl3, sb3);
+            var gStop3 = treeGrade(TREE_SPLIT3, s3, pl3, {});
+            ok('M5-4a ★★ 属の中に3組ある容器で、模範の沈殿側の置き方が3枚になる（実測 ' +
+                JSON.stringify(sb3) + '）',
+                Object.keys(sb3).length === 3 &&
+                sb3[s3.indexOf('hcl')] === 'hot' &&
+                sb3[s3.indexOf('nh3')] === 'naoh' &&
+                sb3[s3.indexOf('co3')] === 'cro4');
+            ok('M5-4b ★ 割れば、8種すべてが別々の葉に1つずつ入る（葉 ' + gSplit3.leaves.length + '枚）',
+                gSplit3.isolated === true && gSplit3.dirty === 0 && gSplit3.leaves.length === 9);
+            ok('M5-4c ★★★ 割らずに止めると、単離できていない葉が 3 枚できる（実測 ' + gStop3.dirty + ' 枚）',
+                gStop3.isolated === false && gStop3.dirty === 3 && gStop3.impure.length === 3);
+            ok('M5-4d ★ その3枚は「銀と鉛」「鉄とアルミニウム」「カルシウムとバリウム」', (function () {
+                var got = gStop3.impure.map(function (l) {
+                    return gStop3.actual[l].slice().sort().join(',');
+                }).sort().join(' / ');
+                if (got !== 'Ag,Pb / Al,Fe / Ba,Ca') warn('汚れた葉の中身: ' + got);
+                return got === 'Ag,Pb / Al,Fe / Ba,Ca';
+            })());
+            ok('M5-4e ★★★ 第5属だけが2つの容器でも、割らずに止めれば 1 枚汚れる（⚠ 門番が第5属を見ている）',
+                (function () {
+                    var s = treeIdealSeq(TREE_G5), sb = treeIdealSub(TREE_G5, s);
+                    var pl = treePlanFromRun(TREE_G5, s, sb);
+                    var a = treeAuditProblem(TREE_G5);
+                    var gS = treeGrade(TREE_G5, s, pl, sb), gT = treeGrade(TREE_G5, s, pl, {});
+                    var dirtyLeaf = gT.impure.map(function (l) {
+                        return gT.actual[l].slice().sort().join(',');
+                    }).join('');
+                    return a.pairs === 1 && a.splitTrap === true && a.splitDirty === 1 &&
+                        gS.dirty === 0 && gT.dirty === 1 && dirtyLeaf === 'Ba,Ca';
+                })());
+            ok('M5-4f ★ 芯（希硝酸・希塩酸）は、属の中に3組ある容器でも効く', (function () {
+                var a = treeAuditProblem(TREE_SPLIT3);
+                return a.feTrap === true && a.hclTrap === true && a.splitTrap === true &&
+                    a.pairs === 3 && a.splitDirty === 3 && a.ok === true;
+            })());
+            ok('M5-4g ★ 沈殿側の札3枚も、それぞれ1手として数える',
+                gSplit3.moves === gStop3.moves + 3);
+        })();
+
+        // ★★ 2-5 炎色反応 —— ⚠ §13-4b は動かさない（★ 炎色は「分ける札」ではない）
+        ok('M5-5a ⚠⚠ 炎色反応は型A の札に1枚も無い（★ 分ける札ではないので、単離には1ミリも効かない）',
+            TREE_MAIN_DEAL.concat(TREE_SUB_DEAL).every(function (o) {
+                var c = TREE_OPS[o] || TREE_SUBOPS[o];
+                return c && c.short.indexOf('炎色') < 0 && (c.say || '').indexOf('白金線') < 0;
+            }));
+        ok('M5-5b ★ Ca²⁺ と Ba²⁺ は炎色の色が違う（橙赤色／黄緑色）＝ 単離後の「確認」の材料はある',
+            (function () {
+                var ca = treeIon('Ca'), ba = treeIon('Ba');
+                return !!(ca && ca.flame) && !!(ba && ba.flame) &&
+                    ca.flame.names[0] === '橙赤色' && ba.flame.names[0] === '黄緑色' &&
+                    ca.flame.names[0] !== ba.flame.names[0];
+            })());
+
+        // -----------------------------------------------------------
         // 出題の門番（§2-4 の型A 版）
         // ⚠ 型A の門番が見るのは「見分けられるか」ではなく
         //   ★ **配った札で、全部を単離しきる手順が実在するか**
@@ -1382,6 +1568,40 @@
             });
             return bad.length === 0;
         })());
+        // ★★★ M5 第5属を入れたあとの母数（2026-08-30）。⚠ **入れる前は 62／37／21 ＝ 120 組**
+        ok('M5-6a ★★ 母数が第5属のぶん増えている（実測 ' +
+            TREE_LEVELS.map(function (l) { return l.name + ' ' + treePoolN[l.id]; }).join('／') +
+            ' ＝ ' + TREE_LEVELS.reduce(function (n, l) { return n + treePoolN[l.id]; }, 0) +
+            ' 組。⚠ 入れる前は 62／37／21 ＝ 120 組）',
+            TREE_LEVELS.reduce(function (n, l) { return n + treePoolN[l.id]; }, 0) === 246 &&
+            TREE_LEVELS.every(function (l) { return treePoolN[l.id] >= 20; }));
+        ok('M5-6b ★★★ 属の中に3組入る組が母集団に居る（実測 ' + (function () {
+            var n = 0;
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) { if (e.pairs === 3) n++; });
+            });
+            return n;
+        })() + ' 組）', (function () {
+            var n = 0;
+            TREE_LEVELS.forEach(function (l) {
+                (treePoolsAll[l.id] || []).forEach(function (e) { if (e.pairs === 3) n++; });
+            });
+            return n >= 5;
+        })());
+        ok('M5-6c ★ 母集団のどの組にもバリウムが入りうるが、中身の上限は 8 のまま（⚠ 9つ全部は出さない）',
+            (function () {
+                var hasBa = 0, over = [];
+                TREE_LEVELS.forEach(function (l) {
+                    (treePoolsAll[l.id] || []).forEach(function (e) {
+                        if (e.ions.indexOf('Ba') >= 0) hasBa++;
+                        if (e.ions.length > 8) over.push(treeIonKey(e.ions));
+                    });
+                });
+                if (over.length) warn('9種の出題が母集団に居る: ' + over.slice(0, 3).join(' / '));
+                return hasBa >= 50 && over.length === 0 && TREE_UNIVERSE.length === 9;
+            })());
+        ok('M5-6d ⚠ 鍵の版が上がっている（★ 札の配り方が変わったので、古い型と混ぜて数えない）',
+            TREE_KEY_VERSION === 'A4' && TREE_SUB_DEAL.length === 3);
         ok('★★ 属の中に2つ入る組が母集団に居る（＝ 手順のバリエーションが実在する。実測 ' + (function () {
             var n = 0;
             TREE_LEVELS.forEach(function (l) {
@@ -1433,6 +1653,10 @@
             ok('MU-3b ★★ 置く手順は容器ごとに変わる（実測 ' + nNeed +
                 ' 通り／沈殿側の札も込みで ' + nCombo + ' 通り）',
                 nNeed >= 10 && nCombo >= 30);
+            // ⚠ 第5属を入れた回の実測（2026-08-30）。★ 入れる前は 15 通り／沈殿側込み 40 通り
+            ok('M5-6e ★★ 第5属を入れて、沈殿側込みの手順が 40 → ' + nCombo +
+                ' 通りに増えた（⚠ 主流だけなら ' + nNeed + ' 通りで変わらない）',
+                nNeed === 15 && nCombo === 57);
             ok('MU-3c ★ 置いた手順は、母集団の全 ' +
                 TREE_LEVELS.reduce(function (n, l) { return n + treePoolN[l.id]; }, 0) +
                 ' 組で単離しきる（⚠ 解けない盤面を置かない）', notIsolated.length === 0);
@@ -3142,7 +3366,94 @@
                 return bad.length === 0;
             })(), uiOut);
             driveSplit(w, d, UI_SPLIT2);
+            driveG5(w, d);
             w.treeUI.start('read', 'easy', { ions: UI_A1 });
+        }
+
+        /**
+         * ★★★ M5 第5属を、画面から最後まで通す（2026-08-30）。
+         * ⚠ ここが緩むと、模型に第5属が居ても **画面から割れなく**なる。
+         *
+         * 見るのは4つ:
+         *   ① ★ 希酢酸とクロム酸カリウムの札が手札にある（★ 中身に依らず配る）
+         *   ② ★★★ 第5属の沈殿を割ると終端が増える（L6 → L6s・L6p）
+         *   ③ ★★★ 割らずに止めると「単離できていない葉が 3 枚」になり、名指しされる
+         *   ④ ⚠ いちばん行の多い形（属の中に3組）でも 375px で横に溢れず、押し所が 44px 以上
+         */
+        function driveG5(w, d) {
+            section('型A の画面: 第5属（Ca²⁺ と Ba²⁺）', uiOut);
+            var ions = ['Ag', 'Pb', 'Cu', 'Fe3', 'Al', 'Ca', 'Ba', 'Na'];
+            var pick = function (sel) { var e = d.querySelector(sel); if (e) e.click(); return !!e; };
+            var main = [['hcl', 0], ['h2s', 1], ['boil', 2], ['hno3', 3], ['nh3', 4], ['h2s', 5], ['co3', 6]];
+
+            // --- 主流だけ組んで、割らずに提出する ---
+            w.treeUI.start('build', 'hard', { ions: ions });
+            ok('M5-7a ★ 希酢酸とクロム酸カリウムの札が手札にある（⚠ 中身に依らず配る）',
+                !!d.querySelector('#op-deck .card[data-sub="cro4"]'), uiOut);
+            main.forEach(function (x) {
+                pick('#op-deck .card[data-op="' + x[0] + '"]');
+                pick('.slot.branch[data-slot="' + x[1] + '"]');
+            });
+            [['Ag', 'L0'], ['Cu', 'L1'], ['Fe3', 'L4'], ['Ca', 'L6'], ['Na', 'F']]
+                .forEach(function (x) {
+                    pick('#ion-deck .card[data-ion="' + x[0] + '"]');
+                    pick('.slot.leaf[data-leaf="' + x[1] + '"]');
+                });
+            d.getElementById('btn-submit').click();
+            var rStop = d.getElementById('result');
+            ok('M5-7b ★★★ 割らずに止めると「単離できていない葉が 3 枚あります」になる',
+                rStop.querySelector('h3').textContent.indexOf('単離できていない葉が 3 枚') >= 0, uiOut);
+            ok('M5-7c ★ カルシウムとバリウムが同居した葉を名指しする',
+                /カルシウムとバリウム が入っています/.test(rStop.textContent), uiOut);
+
+            // --- ★ 3組とも割る ---
+            w.treeUI.start('build', 'hard', { ions: ions });
+            main.forEach(function (x) {
+                pick('#op-deck .card[data-op="' + x[0] + '"]');
+                pick('.slot.branch[data-slot="' + x[1] + '"]');
+            });
+            [['hot', 0], ['naoh', 4], ['cro4', 6]].forEach(function (x) {
+                pick('#op-deck .card[data-sub="' + x[0] + '"]');
+                pick('.node[data-split="' + x[1] + '"]');
+            });
+            var leaves = [].slice.call(d.querySelectorAll('.slot.leaf'))
+                .map(function (e) { return e.getAttribute('data-leaf'); });
+            ok('M5-7d ★★★ 3組とも割ると終端が9つになる（実測 ' + leaves.join(',') + '）',
+                leaves.join(',') === 'L0s,L0p,L1,L4s,L4p,L5,L6s,L6p,F', uiOut);
+            [['Ag', 'L0p'], ['Pb', 'L0s'], ['Cu', 'L1'], ['Fe3', 'L4p'], ['Al', 'L4s'],
+            ['Ca', 'L6s'], ['Ba', 'L6p'], ['Na', 'F']].forEach(function (x) {
+                pick('#ion-deck .card[data-ion="' + x[0] + '"]');
+                pick('.slot.leaf[data-leaf="' + x[1] + '"]');
+            });
+            ok('M5-7e ⚠ 属の中に3組でも 375px で横スクロールが出ない（' +
+                d.documentElement.scrollWidth + ' ≦ ' + d.documentElement.clientWidth + '）',
+                d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1, uiOut);
+            ok('M5-7f ★ 属の中に3組でも、押せるものが全部 44px 以上', (function () {
+                var bad = [];
+                [].slice.call(d.querySelectorAll('.slot, .card, #btn-submit, #btn-reset, #btn-new'))
+                    .forEach(function (el) {
+                        var h = el.getBoundingClientRect().height;
+                        if (h > 0 && h < 44) bad.push(el.className + ':' + Math.round(h));
+                    });
+                if (bad.length) warn('小さすぎる押し所（3組）: ' + bad.join(' / '));
+                return bad.length === 0;
+            })(), uiOut);
+            // ⚠ 属の中に3組がいちばん行の多い形（★ 実測 2400px）
+            ok('M5-7g ★ 属の中に3組・全部置いた状態でも、375px でページの高さが 2450px 以内（実測 ' +
+                d.documentElement.scrollHeight + 'px）',
+                d.documentElement.scrollHeight <= 2450, uiOut);
+            d.getElementById('btn-submit').click();
+            var rSplit = d.getElementById('result');
+            ok('M5-7h ★★ 3組とも割れば「ぜんぶ単離できました」になる（10手／最短 10手）',
+                rSplit.querySelector('h3').textContent.indexOf('ぜんぶ単離できました') >= 0 &&
+                w.treeUI.state.record.moves === 10 &&
+                w.treeUI.state.record.dirty === 0, uiOut);
+            ok('M5-7i ★ 第5属を割った手の説明に BaCrO₄ が出る（⚠ 黄色い沈殿が残る側）',
+                rSplit.textContent.indexOf('BaCrO₄') >= 0, uiOut);
+            ok('M5-7j ⚠ 第5属を入れても、本の名前とページは画面に出てこない',
+                !/p\s*\.\s*\d+/i.test(d.body.textContent) &&
+                ((typeof BOOK_WORDS !== 'undefined') ? BOOK_WORDS : [])
+                    .every(function (x) { return d.body.textContent.indexOf(x) < 0; }), uiOut);
         }
 
         /**
