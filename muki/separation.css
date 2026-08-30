@@ -195,6 +195,28 @@ button.secondary {
 }
 .result .why b { color: var(--accent); }
 .result .drop { color: var(--dim); font-size: 13px; }
+
+/* --- ★★ 問題 ID と、その回の成績（2026-08-28・ユーザー「問題にIDを付与、成績の集計へ」） --- */
+/* ★ ID は書き写すものなので、等幅で字間を空ける（⚠ 0 と O を見間違えない） */
+.pid {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 13px;
+    font-weight: normal;
+    letter-spacing: 0.06em;
+    color: var(--dim);
+}
+.score {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+/* ⚠ ラベルと値を横に並べる。★ 375px で折れないよう、ラベルの幅は文字数で決める */
+.score-row { display: flex; gap: 10px; align-items: baseline; font-size: 14px; }
+.score-row + .score-row { margin-top: 2px; }
+.score-k { flex: 0 0 auto; min-width: 5.5em; color: var(--dim); font-size: 13px; }
+.score-v { flex: 1 1 auto; min-width: 0; font-weight: bold; }
 .hidden { display: none; }
 .foot { text-align: center; margin-top: 24px; }
 .foot a { color: #7f8c8d; font-size: 13px; display: inline-flex; align-items: center; min-height: 32px; }
