@@ -88,7 +88,7 @@
  * | ML  | 1〜3   | 複数分子の見出し |
  * | MO  | 1〜4   | モーダルの縦オーバー（v1407・ユーザー報告2件「エテン → 反応させる・調べる／クイズ　モーダルが縦にオーバー」）。**20枚を悉皆で開いて実測する**（`getBBox()` は使わない・窓に依存しないよう `withViewport(1280,600)` で器を決め打ち）。1 が「枠が画面に収まる＋あふれた中身は枠の中で送れる」・2 が「見出しと `.modal-footer` は上端でも下端でも見えている」（貼り付き）・**3 は否定対照**＝ 高さの上限を外すと実際にあふれて押しものが画面から出る（測り方が空振りしていないことの証明）・**4 も否定対照**＝ 枠の余白と間隔は `--mp-x` / `--mp-y` / `--mp-gap` を通す（`padding:` や `gap:` を直に書くと**貼り付きの覆いだけ取り残されて隙間から中身が透ける**。実測で起きた型）。⚠ **台帳（MODAL の一覧）に足すのが新しいモーダルの門番**でもある |
  * | MM  | 1〜9   | 分子モーダル |
- * | MN  | 1〜3   | 複数分子のときの主鎖と番号（ユーザー発注 2026-08-28「選択した分子に番号を振りたい」。DESIGN_iupac_check.md §N-8）。1 が本体（選んだ分子に帯と番号が出る・慣用名の引き先もその分子）・**2 は否定対照**＝ 選んでいない分子には出ない（片方ずつ選んで**相手が空**であることを両方向で見る ＝「全部に振る」実装が通らない）／何も選んでいなければ何も出ない／1分子のときは選択を要求しない・3 は断り文が選んだ分子について言う（隣に環があっても鎖を選べば出る） |
+ * | MN  | 1〜4   | 複数分子のときの主鎖と番号（ユーザー発注 2026-08-28「選択した分子に番号を振りたい」。DESIGN_iupac_check.md §N-8）。1 が本体（選んだ分子に帯と番号が出る・慣用名の引き先もその分子）・**2 は否定対照**＝ 選んでいない分子には出ない（片方ずつ選んで**相手が空**であることを両方向で見る ＝「全部に振る」実装が通らない）／何も選んでいなければ何も出ない／1分子のときは選択を要求しない・3 は断り文が選んだ分子について言う（隣に環があっても鎖を選べば出る）・4 は分子モーダルの 🔢（見出しが名指ししている分子に振る ＝ 押しが「選ぶ」を兼ねる。**陰性対照つき**＝ 帯の 🔢 は今までどおり選択を要求する） |
  * | N   | 1〜4   | チュートリアル・録画モード（N4 は縦型でパレットを隠しても台本が押せること） |
  * | NA  | 1      | 金属ナトリウムとの反応（アルコール／エーテルの見分け） |
  * | NM  | 1〜3   | 名称のマーカーと C=C（v1405・ユーザー申し立て「名称のマーカー：C=C に重なると
@@ -6008,6 +6008,48 @@
             assert(ok.ok && ok.det && ok.det.name === '1-ブタノール',
                 `隣の環に引きずられて出せなくなっている（code=${ok.code}）`);
         } finally {
+            g.setIupacNumbering(false);
+            g.focusedMolecule = null;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('MN4: 分子モーダルの 🔢 は、そのモーダルが見ている分子に振る（押しが「選ぶ」を兼ねる）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            const { butanol, ethanol } = mnTwoMolecules(g, W);
+            assert(butanol && ethanol, '2分子を作れない（検査が素通りする）');
+            g.updateDrawing();
+            // ⚠ 右パネルの入口（原子IDを渡さない）＝ **選択が立たないまま**モーダルが開く道。
+            //   ここが直す前は「見出しは①を名指ししているのに 🔢 は分子を選べと言う」だった
+            g.openMoleculeModal();
+            const part = g.moleculeModalPart();
+            assert(part, 'モーダルが分子を1つに決められていない（検査が素通りする）');
+            const name = g.lookupCompoundName(part);
+            assert(!g.iupacNumberingSubject().chosen, '下ごしらえ: 選択が立ってしまっている');
+            const btn = D.getElementById('mm-btn-iupac-numbering');
+            assert(btn, 'モーダルの 🔢 ボタンが無い');
+            btn.click();
+            assert(g.iupacNumberingActive(),
+                'モーダルの 🔢 が「分子を選んでください」で止まった（見出しは1分子を名指ししているのに）');
+            const det = g.iupacNumberingDetail();
+            assert(det && g.lookupCompoundName(det.mol) === name,
+                `モーダルが見ている分子（${name}）とは別の分子に番号が振られた`);
+            // ★ 押しが「選ぶ」を兼ねる ＝ 図の琥珀の枠・右パネルの分類と同じ分子を指す
+            assert(g.moleculeModalPart() && g.moleculeModalPart().atoms.some(a => a.id === g.focusedMolecule),
+                'モーダルの分子と focusedMolecule が食い違っている（画面の中で言うことが割れる）');
+            g.setIupacNumbering(false);
+            // ⚠ 陰性対照 —— 帯の側のボタンは今までどおり「選んでから」（押しが選ぶを兼ねるのは
+            //   モーダルだけ。キャンバスの帯から押した回に勝手に①を指すと C-9 に戻る）
+            g.focusedMolecule = null;
+            D.getElementById('btn-iupac-numbering').click();
+            assert(!g.iupacNumberingActive(),
+                '帯の 🔢 が、何も選んでいないのに①を指して点いた（C-9 に戻っている）');
+        } finally {
+            g.closeMoleculeModal();
             g.setIupacNumbering(false);
             g.focusedMolecule = null;
             g.userMolecule = new W.Molecule();
