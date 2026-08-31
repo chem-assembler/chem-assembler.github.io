@@ -2152,6 +2152,96 @@ function vulcanizablePairs(mol) {
     return out;
 }
 
+/**
+ * 加硫の1本目の橋を架ける前に、**相手の鎖を真下（または真上）へ寄せて「＝」に並べる**
+ * （v1484・2026-08-31。動画レーン V130 の収録映像から出た要望2件）。
+ *
+ * ★ **なぜ要るか（実測。推測ではない）** —— 台本どおり
+ * 「イソプレン×2 → 1,4-付加重合 → イソプレン×2 → 1,4-付加重合 → 加硫」を回すと、
+ * 2本の鎖は **x=[232..568] と x=[610..946]・y は 67px 重なる**、つまり
+ * **左右に一直線に並ぶ**。まとめた y の標準偏差は 39.7px ＝ 結合1本ぶんしかない。
+ * すると橋の足場になる C=C どうしが **357px（結合の 8.5本ぶん）**離れ、
+ * 硫黄はその中点に落ちるので **S-C の結合線が 167〜190px（刻みの 4.5倍）**になる。
+ * その線は水平に伸びるので、
+ *   - **鎖の主鎖の炭素の上を通る**（実測 0.0〜0.3px ＝ 完全に重なる）
+ *   - **両端の R をかすめる**（実測 2.1px・2.7px。単量体を変えても 0.6〜3.3px）
+ * ＝ 画では **「S が鎖の途中に埋まっていて、R から生えている」**ように読める。
+ * ⚠ **S が R に結合したことは一度も無い**（5通り・橋10本で 0本。§20-5 の否定対照に追加）。
+ * 起きていたのは**線が R の上を通る**ことで、直すべきは箇所選びではなく**置き場所**だった。
+ *
+ * ★ **教科書の描き方**（数研『R5化学Vol.2』6編）:
+ *   - **p.260 式(11)「架橋構造のポリスチレン」** … 主鎖を**上下2段の横並び**に描き、
+ *     架橋（p-ジビニルベンゼン由来の環）を**その間に縦に**渡す。⚠ 端は `R` ではなく素の「—」で、
+ *     **橋は必ず鎖の途中から出ている**
+ *   - **p.263 図22「硫黄による架橋構造」** … 波線の鎖を層に重ね、`-S-S-` を**隣り合う鎖のあいだに短く**渡す
+ * ＝ どちらも「**2本を上下に置いて、その間に短い橋**」。この関数はその形に寄せる。
+ *
+ * ⚠ **`planAttachment` には触らない**（他の46本の反応が全部使う共通の道具で、
+ * しかも「結合1本ぶんの距離に置く」ためのもの。加硫は**間に硫黄1個を挟む＝2本ぶん**離す）。
+ * 加硫だけの置き方をここに1つ足す。
+ *
+ * ⚠ **動かすのは剛体平行移動だけ**（回転も伸縮も鏡映もしない）＝ 幾何は変わらないので
+ * 「整形で幾何が変わるなら座標を戻す」の約束を満たす。
+ * ⚠ **すでに橋が架かって1分子になっているときは動かさない**（動かすと1本目の橋が伸びる）。
+ * ⚠ **置けなければ座標を1つも変えずに false を返す** ＝ 今までの絵に戻るだけ。
+ *
+ * 行き先の決め方: 橋の中点 M を「ca の真下（真上）にある**格子点**」に取り、
+ * cb を **M について ca と点対称**な位置へ運ぶ。こうすると
+ * `vulcanizablePairs` が硫黄を置く `round(中点/G)*G` が M そのものになるので、
+ * **C—S—C が一直線**になる（中点を格子へ丸めた分だけ橋が折れる、という副作用が出ない）。
+ */
+function stackChainsForBridge(mol, caId, cbId) {
+    const ca = mol.atoms.find(a => a.id === caId);
+    const cb = mol.atoms.find(a => a.id === cbId);
+    if (!ca || !cb) return false;
+    const moving = componentOf(mol, cbId);
+    if (moving.has(caId)) return false;              // もう1分子＝動かすと架けた橋が壊れる
+    const G = bondStep(mol);
+    if (!(G > 1)) return false;
+    const MIN_CLEARANCE = G * 0.65;
+    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    const movingAll = mol.atoms.filter(a => moving.has(a.id));
+    const movingHeavy = heavy.filter(a => moving.has(a.id));
+    const staticHeavy = heavy.filter(a => !moving.has(a.id));
+    if (!movingHeavy.length || !staticHeavy.length) return false;
+    const movingIds = new Set(movingAll.map(a => a.id));
+    const innerBonds = mol.bonds.filter(b => movingIds.has(b.atomId1) && movingIds.has(b.atomId2));
+    const staticBonds = mol.bonds.filter(b => !movingIds.has(b.atomId1) && !movingIds.has(b.atomId2));
+    const pos = new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+    // 下 → 上 の順。近い段（1歩）から試し、だめなら1段外へ
+    for (const k of [1, 2]) {
+        for (const sign of [1, -1]) {
+            const mx = Math.round(ca.x / G) * G;
+            const my = Math.round((ca.y + sign * k * G) / G) * G;
+            if (my === Math.round(ca.y / G) * G) continue;      // 中点が ca に重なる置き方は採らない
+            const dx = (2 * mx - ca.x) - cb.x;
+            const dy = (2 * my - ca.y) - cb.y;
+            const at = (a) => ({ x: a.x + dx, y: a.y + dy });
+            // ① 原子どうしが詰まらない ② 硫黄の席（M）が空いている
+            const okAtoms = movingHeavy.every(a => {
+                const p = at(a);
+                return staticHeavy.every(s => Math.hypot(s.x - p.x, s.y - p.y) >= MIN_CLEARANCE);
+            });
+            if (!okAtoms) continue;
+            const spotFree = staticHeavy.every(s => Math.hypot(s.x - mx, s.y - my) >= MIN_CLEARANCE) &&
+                movingHeavy.every(a => { const p = at(a); return Math.hypot(p.x - mx, p.y - my) >= MIN_CLEARANCE; });
+            if (!spotFree) continue;
+            // ③ 結合線が相手の原子を貫通しない（線が原子の上を通ると構造式が別物に見える）
+            const pierce = innerBonds.some(b => {
+                const s = at(pos.get(b.atomId1)), e = at(pos.get(b.atomId2));
+                return staticHeavy.some(q => pointSegmentDistance(q, s, e) < SHOVE_LINE_CLEARANCE);
+            }) || staticBonds.some(b => {
+                const s = pos.get(b.atomId1), e = pos.get(b.atomId2);
+                return movingHeavy.some(q => pointSegmentDistance(at(q), s, e) < SHOVE_LINE_CLEARANCE);
+            });
+            if (pierce) continue;
+            movingAll.forEach(a => { a.x += dx; a.y += dy; });
+            return true;
+        }
+    }
+    return false;
+}
+
 /** その原子を含む分子（連結成分）の正準コード。同じ単量体かの判定に使う */
 function componentCode(mol, atomId) {
     const ids = componentOf(mol, atomId);
@@ -3921,9 +4011,22 @@ const REACTION_RULES = [
         apply(game, site) {
             const mol = game.userMolecule;
             const [ca, ca2, cb, cb2] = site;
+            /* ★ 1本目の橋を架ける前に、**相手の鎖を真下（真上）へ寄せて「＝」に並べる**
+             * （v1484。動画レーン V130 の要望。理由と実測は `stackChainsForBridge` の注記）。
+             * ⚠ 置けなければ座標は1つも動かず、今までどおりの絵になるだけ。
+             * ⚠ 寄せると座標が変わるので、**硫黄の席は寄せたあとに取り直す**。 */
+            const before = new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+            stackChainsForBridge(mol, ca, cb);
             // detect が返した組をそのまま使う（置ける位置は detect 側で確かめてある）
-            const best = vulcanizablePairs(mol)
+            const findBest = () => vulcanizablePairs(mol)
                 .find(p => p.ca === ca && p.ca2 === ca2 && p.cb === cb && p.cb2 === cb2);
+            let best = findBest();
+            if (!best) {
+                // 寄せたせいで席が無くなることは（①②③の検査があるので）無いはずだが、
+                // 起きたときに黙って断らない ―― **元の座標へ戻して**もう一度だけ探す
+                mol.atoms.forEach(a => { const p = before.get(a.id); if (p) { a.x = p.x; a.y = p.y; } });
+                best = findBest();
+            }
             if (!best) {
                 throw noRoom('鎖の間に硫黄を置く空間がありません');
             }
