@@ -18870,10 +18870,14 @@
             q.basePool = null; q.pool = null;
             q.build(); q.computePool();
             const back = q.basePool.filter(p => hasR(p.mol)).map(p => `${p.name}=${p.count}`);
-            assert(back.length === 2 && back.includes('ポリアセチレン=6') && back.includes('ポリビニルアルコール=8'),
+            /* ⚠ **ここは高分子の登録エントリが増えるたびに動く数**（v1488・ビニロンを足した）。
+             *   見ているのは「絞り込みを外すと高分子が戻ってくる」ことなので、
+             *   **戻ってくる顔ぶれを名指しで**書く（件数だけにすると顔ぶれの入れ替わりに気づけない）。 */
+            const backWant = ['ポリアセチレン=6', 'ポリビニルアルコール=8', 'ビニロン=8'];
+            assert(back.length === backWant.length && backWant.every(w => back.includes(w)),
                 `否定対照が成立しない（絞り込みを外しても高分子が戻らない: ${back.join('・') || 'なし'}）`);
-            assert(q.basePool.length === after + 2,
-                `絞り込みで減る件数が2でない（${q.basePool.length} → ${after}）`);
+            assert(q.basePool.length === after + backWant.length,
+                `絞り込みで減る件数が ${backWant.length} でない（${q.basePool.length} → ${after}）`);
         } finally {
             W.StereoCountQuiz.isPolymerFragment = orig;
             q.basePool = null; q.pool = null;
@@ -25333,6 +25337,268 @@
         const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
         dien.apply(g, dien.detect(one)[0]); g.updateDrawing();
         assert(vul.detect(g.userMolecule).length === 0, '鎖1本で加硫の候補が出た（分子内ループになる）');
+        c.reset();
+    });
+
+    /* ===== PY5〜PY8: ビニロン（⚠ PY1〜PY4 は総数当ての別件で使用済み）（PVA のアセタール化）=====
+     * `DESIGN_reaction_execution.md` §21-4 (e) の1本目・ユーザー判断 D-P5（2026-08-31）。
+     * ★ **1タップで 2/3 まで進めて終わり**（繰り返し押せる形にしない）。
+     * 教科書（数研『R5化学Vol.2』6編 p.254 式(5)(3)）は PVA を**3ユニットぶん実際に描き**、
+     * 隣り合う -OH 2つが O-CH₂-O の六員環になって**3つ目の -OH は残る**形を示している。
+     * ⚠ 割合の但し書きは本文にも脚注にも無く、章末 p.268 問5(5) が同じ構造で質量計算をさせる
+     *   ＝ **教科書は 2/3 を暗黙の理想化として固定している**。
+     *
+     * ⚠⚠ **「2/3 になった」を割合だけで見ない**（でたらめな組み方でも割合は合う）。
+     *   PY6 は **どの -OH とどの -OH が組んだか**を主鎖の並び順で名指しして見る。 */
+    const pvaSetup = (c, withHCHO = true) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        assert(g.summonMolecule('ポリビニルアルコール'), 'ポリビニルアルコールが呼び出せない');
+        if (withHCHO) assert(g.summonMolecule('ホルムアルデヒド'), 'ホルムアルデヒドが呼び出せない');
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // R から R まで主鎖を辿り、-OH を持つ炭素を**並び順**に返す（実装とは別の道で数える）
+    const pvaHydroxylUnits = (mol) => {
+        const rs = mol.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `鎖の端の R が ${rs.length} 個`);
+        const path = [];
+        let prev = rs[0].id;
+        let cur = mol.getNeighbors(prev).filter(n => n.atom.element !== 'H')[0].atom.id;
+        path.push(prev, cur);
+        for (let k = 0; k < 80; k++) {
+            const nx = mol.getNeighbors(cur).filter(n => n.atom.id !== prev &&
+                n.atom.element !== 'H' && n.atom.element !== 'O');
+            if (!nx.length) break;
+            prev = cur; cur = nx[0].atom.id; path.push(cur);
+            if (mol.atoms.find(a => a.id === cur).element === 'R') break;
+        }
+        return path.map(id => {
+            const o = mol.getNeighbors(id).find(n => n.atom.element === 'O');
+            return { c: id, o: o ? o.atom.id : null };
+        }).filter(u => u.o);
+    };
+
+    test('PY5: PVA ＋ ホルムアルデヒドで、隣り合う -OH 2つが O-CH₂-O の六員環になる（1タップで 2/3）', async (c) => {
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'acetalization_pva');
+        assert(rule, 'アセタール化のルールが無い');
+        const mol = pvaSetup(c);
+        // ---- ① 反応前の前提（崩れたら以下は無意味） ----
+        const before = pvaHydroxylUnits(mol);
+        assert(before.length === 3, `PVA の -OH が ${before.length} 個（教科書と同じ3ユニットを期待）`);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `アセタール化の候補が ${sites.length} 件（1件を期待）`);
+        assert(sites[0].length === 3, `箇所が ${sites[0].length} 原子（-OH 2つ ＋ HCHO の C ＝ 3原子を期待）`);
+
+        // ---- ② 実行 ----
+        rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const m = g.userMolecule;
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), 'アセタール化で価標が壊れた');
+
+        // ---- ③ 六員環がちょうど1つできている（環の中身を名指しで見る） ----
+        const ring = W.ringAtomIds(m);
+        assert(ring.size === 6, `環に入った原子が ${ring.size} 個（六員環1つ ＝ 6個を期待）`);
+        const inRing = [...ring].map(id => m.atoms.find(a => a.id === id));
+        assert(inRing.filter(a => a.element === 'O').length === 2,
+            '環の中の O が2個でない（O-CH₂-O のアセタールになっていない）');
+        assert(inRing.filter(a => a.element === 'C').length === 4,
+            '環の中の C が4個でない（主鎖3つ ＋ 橋の CH₂ ＝ 4個を期待）');
+
+        // ---- ④ 2/3 —— **残る -OH はちょうど1個**、水が1分子できる ----
+        const chain = g.splitMolecules().slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+        const left = pvaHydroxylUnits(chain).filter(u =>
+            chain.getNeighbors(u.o).filter(n => n.atom.element !== 'H').length === 1);
+        assert(left.length === 1, `残った -OH が ${left.length} 個（3つのうち1つ ＝ 2/3 を期待）`);
+        const waters = g.splitMolecules().filter(w =>
+            w.atoms.filter(a => a.element !== 'H').length === 1 &&
+            w.atoms.filter(a => a.element === 'O').length === 1);
+        assert(waters.length === 1, `できた水が ${waters.length} 分子（1分子を期待）`);
+        c.reset();
+    });
+
+    test('PY6（否定対照）: 組むのは「主鎖で隣り合う -OH」だけ／相手も鎖も選り好みする／二度は押せない', async (c) => {
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'acetalization_pva');
+
+        /* ---- ① ★★ **どの -OH とどの -OH が組んだかを名指しで見る**。
+         *   ⚠ 割合（2/3）だけを見ると、1番目と3番目を組ませる（六員環にならない）実装でも
+         *      通ってしまう。主鎖の並び順で **1番目と2番目**が組み、**3番目が残る**ことを見る。 */
+        const mol = pvaSetup(c);
+        const units = pvaHydroxylUnits(mol);
+        const bridgeC = (() => {
+            rule.apply(g, rule.detect(mol)[0]);
+            g.updateDrawing();
+            const m = g.userMolecule;
+            const nb = id => m.getNeighbors(id).filter(n => n.atom.element !== 'H');
+            assert(nb(units[0].o).length === 2, '1番目の -OH がアセタールになっていない');
+            assert(nb(units[1].o).length === 2, '2番目の -OH がアセタールになっていない');
+            assert(nb(units[2].o).length === 1,
+                '3番目の -OH まで使われた（教科書は3つ目を残す。2/3 の割合だけ合わせていないか）');
+            const shared = nb(units[0].o).filter(n => nb(units[1].o).some(k => k.atom.id === n.atom.id));
+            assert(shared.length === 1, `1番目と2番目の O が共有する原子が ${shared.length} 個（橋の CH₂ 1個を期待）`);
+            assert(shared[0].atom.element === 'C', '橋が炭素でない');
+            return shared[0].atom;
+        })();
+        // 橋は -OH の O 2つだけに付く（主鎖の炭素にも R にも付かない）
+        const m1 = g.userMolecule;
+        const bn = m1.getNeighbors(bridgeC.id).filter(n => n.atom.element !== 'H');
+        assert(bn.length === 2 && bn.every(n => n.atom.element === 'O'),
+            `橋の CH₂ の隣が ${bn.map(n => n.atom.element).join('/')}（O 2つだけを期待）`);
+
+        // ---- ② ⚠ **二度は押せない**（1タップで 2/3 まで進めて終わり） ----
+        assert(rule.detect(m1).length === 0,
+            'アセタール化のあとにもう一度候補が出た（残った -OH に相手がいるように見えている）');
+
+        // ---- ③ 相手（ホルムアルデヒド）が無ければ出ない ----
+        assert(rule.detect(pvaSetup(c, false)).length === 0,
+            'ホルムアルデヒドが無いのにアセタール化の候補が出た');
+
+        // ---- ④ ★ **R で端を止めた鎖にだけ架ける**。単量体のジオールは相手にしない ----
+        [['エチレングリコール'], ['グリセリン'], ['1,2-エタンジオール']].forEach(([name]) => {
+            if (!g.resolveCompound(name)) return;
+            c.reset(); g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            assert(g.summonMolecule(name), `${name} が呼べない`);
+            assert(g.summonMolecule('ホルムアルデヒド'), 'ホルムアルデヒドが呼べない');
+            g.updateDrawing();
+            assert(rule.detect(g.userMolecule).length === 0,
+                `${name}（R の無い分子）でアセタール化の候補が出た`);
+        });
+
+        // ---- ⑤ 鎖でも -OH が隣り合っていなければ出ない（ポリアセチレン・PET・ナイロン66） ----
+        ['ポリアセチレン', 'ポリエチレンテレフタラート', 'ナイロン66'].forEach(name => {
+            if (!g.resolveCompound(name)) return;
+            c.reset(); g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            assert(g.summonMolecule(name), `${name} が呼べない`);
+            assert(g.summonMolecule('ホルムアルデヒド'), 'ホルムアルデヒドが呼べない');
+            g.updateDrawing();
+            assert(rule.detect(g.userMolecule).length === 0,
+                `${name} でアセタール化の候補が出た（隣り合う -OH は無い）`);
+        });
+
+        // ---- ⑥ アルデヒドなら何でも橋にするわけではない（アセトアルデヒドでは出ない） ----
+        if (g.resolveCompound('アセトアルデヒド')) {
+            c.reset(); g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            g.summonMolecule('ポリビニルアルコール');
+            g.summonMolecule('アセトアルデヒド');
+            g.updateDrawing();
+            assert(rule.detect(g.userMolecule).length === 0,
+                'アセトアルデヒドでアセタール化の候補が出た（橋はホルムアルデヒドの C だけ）');
+        }
+        c.reset();
+    });
+
+    test('PY7: PVA を見ているとき「＋ ホルムアルデヒド を呼び出す」の札が立つ', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        pvaSetup(c, false);                       // 相手はまだ呼ばない
+        const hints = W.findPartnerHints(g);
+        const hit = hints.find(h => h.ruleId === 'acetalization_pva');
+        assert(hit, `アセタール化の札が出ない（出た札: ${hints.map(h => h.ruleId).join(' / ') || 'なし'}）`);
+        assert(hit.name === 'ホルムアルデヒド', `札の相手が ${hit.name}（ホルムアルデヒドを期待）`);
+        // 相手を呼べば、実際にボタンが一覧に出る
+        assert(g.summonMolecule('ホルムアルデヒド'), 'ホルムアルデヒドが呼べない');
+        g.updateDrawing();
+        g.openMoleculeModal();
+        W.reactor.refresh();
+        const btns = [...D.querySelectorAll('#reaction-actions [data-rule]')].map(b => b.dataset.rule);
+        assert(btns.includes('acetalization_pva'),
+            `PVA を見ているのにアセタール化が一覧に出ない（${btns.join(' / ')}）`);
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    /* ★★ PY9: **鎖が長くても 2/3**（3ユニットごとに1組・残りは3つ目ごと）。
+     * ⚠ 登録エントリの PVA は3ユニットなので、**この道はデータからは踏めない**。
+     *   ここだけ図を組み立てて、①割り当ての規則と ②「1組ずつ順に見せる」ための
+     *   途中経過のコマ（`morphSequence`）が実際に2つ出ることを見る。 */
+    test('PY9: 6ユニットの PVA なら組は2つ（3つに1つ -OH が残る）／途中経過のコマも2つ出る', async (c) => {
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'acetalization_pva');
+        c.reset(); g.setMode('free');
+        const mol = g.userMolecule = new W.Molecule();
+        g.history = []; g.redoStack = [];
+        // R-[CH₂-CH(OH)]×6-R（登録エントリの PVA を6ユニットに伸ばした図）
+        const back = [];
+        for (let i = 0; i < 12; i++) back.push(mol.addAtom('C', 242 + i * 42, 300));
+        const rL = mol.addAtom('R', 200, 300), rR = mol.addAtom('R', 242 + 12 * 42, 300);
+        mol.addBond(rL.id, back[0].id, 1);
+        mol.addBond(back[11].id, rR.id, 1);
+        for (let i = 0; i + 1 < back.length; i++) mol.addBond(back[i].id, back[i + 1].id, 1);
+        const ohC = [];                       // -OH を持つ炭素（1つおき）
+        for (let i = 1; i < back.length; i += 2) {
+            const o = mol.addAtom('O', back[i].x, 342);
+            mol.addBond(back[i].id, o.id, 1);
+            ohC.push({ c: back[i], o });
+        }
+        assert(ohC.length === 6, `-OH が ${ohC.length} 個（6個を期待）`);
+        [0, 1].forEach(k => {                 // 橋にする HCHO を2分子
+            const cc = mol.addAtom('C', 300 + k * 120, 500);
+            const oo = mol.addAtom('O', 300 + k * 120, 440);
+            mol.addBond(cc.id, oo.id, 2);
+        });
+        g.updateDrawing();
+
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `候補が ${sites.length} 件（鎖1本 ＝ 1件を期待）`);
+        assert(sites[0].length === 6, `箇所が ${sites[0].length} 原子（組2つ ×3原子 ＝ 6原子を期待）`);
+        // ★ 組むのは「1番目と2番目」「4番目と5番目」＝ 3番目・6番目が残る
+        const want = new Set([ohC[0].o.id, ohC[1].o.id, ohC[3].o.id, ohC[4].o.id]);
+        const got = new Set([sites[0][0], sites[0][1], sites[0][3], sites[0][4]]);
+        assert(got.size === 4 && [...want].every(id => got.has(id)),
+            '組む -OH の割り当てが「3つのうち先の2つ」になっていない');
+
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        assert(Array.isArray(res.morphSequence) && res.morphSequence.length === 2,
+            `途中経過のコマが ${res.morphSequence && res.morphSequence.length} 個（1組ずつ ＝ 2個を期待）`);
+        // ★ 1コマ目では**まだ1組しかできていない**（2組を一気に描いていない）
+        const ringBonds = (snap) => snap.bonds.filter(b => {
+            const e = id => (snap.atoms.find(a => a.id === id) || {}).element;
+            return e(b.atomId1) === 'O' && e(b.atomId2) === 'C' || e(b.atomId1) === 'C' && e(b.atomId2) === 'O';
+        }).length;
+        assert(ringBonds(res.morphSequence[0]) < ringBonds(res.morphSequence[1]),
+            '1コマ目と2コマ目で結合の数が変わらない（1組ずつ進んでいない）');
+        const m = g.userMolecule;
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '6ユニットのアセタール化で価標が壊れた');
+        assert(W.ringAtomIds(m).size === 12, `環に入った原子が ${W.ringAtomIds(m).size} 個（六員環2つ ＝ 12個を期待）`);
+        const left = ohC.filter(u => m.getNeighbors(u.o.id).filter(n => n.atom.element !== 'H').length === 1);
+        assert(left.length === 2 && left.some(u => u.o.id === ohC[2].o.id) && left.some(u => u.o.id === ohC[5].o.id),
+            `残った -OH が ${left.length} 個（3番目と6番目の2個 ＝ 2/3 を期待）`);
+        assert(rule.detect(m).length === 0, '6ユニットでも二度目が押せてしまう');
+        c.reset();
+    });
+
+    test('PY8: できたビニロンが名乗れる（登録エントリと正準コードが一致する）', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const rule = W.REACTION_RULES.find(r => r.id === 'acetalization_pva');
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entry = source.find(x => x.name === 'ビニロン' && x.target);
+        assert(entry, 'ビニロンが名称ライブラリに無い');
+        const mol = pvaSetup(c);
+        rule.apply(g, rule.detect(mol)[0]);
+        g.updateDrawing();
+        const made = g.splitMolecules().slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+        assert(CC(made) === CC(g.createTargetFromData({ target: entry.target })),
+            'アセタール化でできた分子がビニロンの登録エントリと一致しない');
+        // 図そのものの規約: 両端が R・R は1本だけ・環はちょうど1つ・-OH が1つ残る
+        const fig = g.createTargetFromData({ target: entry.target });
+        const rs = fig.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `ビニロンの図の R が ${rs.length} 個（両端の2個を期待）`);
+        rs.forEach(r => assert(fig.getNeighbors(r.id).filter(x => x.atom.element !== 'H').length === 1,
+            'R が2本以上の結合を持っている'));
+        assert(W.ringAtomIds(fig).size === 6, 'ビニロンの図の環が六員環1つでない');
+        // ★ 否定対照: PVA とは別物（アセタール化していない図を登録していないこと）
+        const pva = source.find(x => x.name === 'ポリビニルアルコール');
+        assert(CC(fig) !== CC(g.createTargetFromData({ target: pva.target })),
+            'ビニロンの図がポリビニルアルコールと同じ');
         c.reset();
     });
 
@@ -32717,7 +32983,7 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・縮合3件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・縮合3件・アセタール化1件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
@@ -32736,12 +33002,20 @@
          *     （教科書はアミドの加水分解の**逆**として書くだけ）
          *   `dehydration_anhydride` … 教科書は「加熱すると」としか書かない
          *     （フタル酸 p.184・マレイン酸 p.157）。★ 資料に無い試薬を名乗らせない（§4-1） */
-        const expected = ['addition_polymerization', 'alkyne_polymerization', 'amidation',
+        /* ★ 2026-09-01（v1488）に `acetalization_pva`（ビニロン）を足して 11 件。
+         * ⚠ **これも意図して瓶を持たせていない** —— 橋になる -CH₂- は**瓶の試薬ではなく、
+         *   ユーザーがキャンバスに呼び出したホルムアルデヒドの炭素**である
+         *   （`DESIGN_reaction_execution.md` §21-6 (c)）。★ 瓶にすると
+         *   「どこから来た炭素か」が画面から消え、水が1分子とれる理由も見えなくなる。
+         *   入口は `PARTNER_CANDIDATES` の札（「＋ ホルムアルデヒド を呼び出す」）＝ PY7 が見張る */
+        const expected = ['acetalization_pva',
+            'addition_polymerization', 'alkyne_polymerization', 'amidation',
             'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'dehydration_anhydride', 'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 10, `瓶を持たない実行ルールが ${now.length} 件（10件を期待）: ${now.join(', ')}`);
+        assert(now.length === expected.length,
+            `瓶を持たない実行ルールが ${now.length} 件（${expected.length}件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
         // 解説専用（info）で瓶を持たないのは、瓶を持たない反応の「できない側」だけ
