@@ -780,6 +780,42 @@ function glycosidicCondensationSites(mol) {
 }
 
 /**
+ * ★★ **アシル-酸素開裂の共通部分**（v1490・CV1）。
+ * C-O 結合を切り、**O は切り離される側に残ってそのまま -OH になり**、C の側には
+ * 水から来た -OH を新しく生やす。エステルの加水分解・けん化・酸無水物の加水分解・
+ * グリコシド結合の加水分解が、**同じ十数行を4か所に別々に持っていた**ので1つにした。
+ *
+ * ★ **この関数のいちばんの仕事は `changed`（オレンジの破線を出す原子）を返すこと。**
+ * ⚠ 切る反応は **2つの分子**を作るのに、印の列挙は呼び出し側の記憶に任されていた
+ *   （`reactor.js` の `changed:` は 34か所あって書き方がばらばら）。その結果、
+ *   **エステルの加水分解・けん化・酸無水物の加水分解の3つで `oId` が落ちていた**
+ *   ＝ 酢酸エチルを加水分解すると**酢酸だけが光ってエタノールが光らない**
+ *   （ユーザー実機報告・V125 の完成品・2026-08-28）。
+ *   ⚠ 同じ形の `hydrolysis_glycoside` は `oId` を入れてあった ＝ **うっかりではなく
+ *   「列挙を人に任せる設計」の問題**。次に切る反応を足す人が忘れられない形にするのが直し。
+ * ★ 悉皆の見張りは **`CV1`**（反応で分子が分かれたら、分かれたどちらにも印が付く）。
+ *
+ * opts.dir  … 生やす -OH の向き（ハース図の α/β を保つため。糖のときだけ渡す）
+ * opts.onCut … 結合を切った直後・引き離す前に呼ぶ（糖が「紙を回し始める位置」を控える口）
+ */
+function cleaveAcylOxygen(mol, cId, oId, opts = {}) {
+    mol.removeBond(cId, oId);
+    if (opts.onCut) opts.onCut();
+    const rest = [...componentOf(mol, oId)];
+    if (!rest.includes(cId)) {
+        // 環（ラクトン・環状酸無水物）でなければ別の分子として引き離す
+        const sep = separateComponent(mol, rest);
+        if (sep) translateAtoms(mol, rest, sep.dx, sep.dy);
+    }
+    const spot = freeSpotAround(mol, cId, [], opts.dir);
+    if (!spot) throw noRoom('生成物を配置する空間がありません');
+    const o = mol.addAtom('O', spot.x, spot.y);
+    mol.addBond(cId, o.id, 1);
+    // ★ 酸の側（cId と生えた o）だけでなく、**切り離される側へ行く oId** も必ず入れる
+    return { o, spot, changed: [cId, o.id, oId] };
+}
+
+/**
  * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
  * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
  * asSalt=true  … -O-Na を付けてカルボン酸の塩にする（けん化）
@@ -787,22 +823,12 @@ function glycosidicCondensationSites(mol) {
 function cleaveEster(game, site, asSalt) {
     const [cId, , oId] = site;
     const mol = game.userMolecule;
-    mol.removeBond(cId, oId);
-    const alcIds = [...componentOf(mol, oId)];
-    if (!alcIds.includes(cId)) {
-        // 環状エステル（ラクトン）でなければアルコール分子として引き離す
-        const sep = separateComponent(mol, alcIds);
-        if (sep) translateAtoms(mol, alcIds, sep.dx, sep.dy);
-    }
-    const spot = freeSpotAround(mol, cId);
-    if (!spot) throw noRoom('生成物を配置する空間がありません');
-    const o = mol.addAtom('O', spot.x, spot.y);
-    mol.addBond(cId, o.id, 1);
+    const { o, spot, changed } = cleaveAcylOxygen(mol, cId, oId);
     if (!asSalt) {
         return {
             caption: 'エステルが加水分解されて、カルボン酸とアルコールに分かれました。' +
                      '酸を触媒に使うこの反応は平衡なので、逆のエステル化も同時に起こります。',
-            changed: [cId, o.id]
+            changed
         };
     }
     // 塩にする: 生えた -OH の O にさらに Na を付ける（-COONa）。
@@ -815,7 +841,7 @@ function cleaveEster(game, site, asSalt) {
         caption: 'けん化が起こりました。水酸化ナトリウムを使うので、できるのはカルボン酸ではなく' +
                  '**カルボン酸のナトリウム塩**です（油脂なら脂肪酸ナトリウム＝セッケンそのもの）。' +
                  '塩になると逆のエステル化が起こらないため、反応は完全に進みます。',
-        changed: [cId, o.id, na.id]
+        changed: [...changed, na.id]
     };
 }
 
@@ -4795,23 +4821,16 @@ const REACTION_RULES = [
             const [cId, , oId] = site;
             const mol = game.userMolecule;
             const ring = ringAtomIdsOf(mol).has(oId); // 環状の酸無水物（無水フタル酸など）
-            mol.removeBond(cId, oId);
-            const part = [...componentOf(mol, oId)];
-            if (!part.includes(cId)) {
-                const sep = separateComponent(mol, part);
-                if (sep) translateAtoms(mol, part, sep.dx, sep.dy);
-            }
-            const spot = freeSpotAround(mol, cId);
-            if (!spot) throw noRoom('生成物を配置する空間がありません');
-            const o = mol.addAtom('O', spot.x, spot.y);
-            mol.addBond(cId, o.id, 1);
+            // ★ 切り方も印の列挙も `cleaveAcylOxygen` に任せる（同書 CV1）。
+            //   ⚠ ここは `changed: [cId, o.id]` と書いてあり、**切り離される側の酢酸が光らなかった**
+            const { changed } = cleaveAcylOxygen(mol, cId, oId);
             return {
                 caption: '酸無水物が加水分解されました（-CO-O-CO- + H₂O → -COOH が2つ）。' +
                     (ring
                         ? '環状の酸無水物なので、環が開いて1つの分子に2つのカルボキシ基ができます（無水フタル酸 → フタル酸）。'
                         : '無水酢酸なら酢酸2分子になります。') +
                     'エステルの加水分解と形は似ていますが、酸無水物はカルボン酸より反応性が高く、水と容易に反応します（アセチル化の試薬に使えるのはこのためです）。この反応は「けん化」とは呼びません。',
-                changed: [cId, o.id]
+                changed
             };
         }
     },
@@ -4836,26 +4855,20 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             // ⚠ **切る前に**橋の酸素がどちらの面に出ていたかを読む（引き離すと座標が動く）
             const dir = haworthCleaveDirection(mol, cId, oId);
-            mol.removeBond(cId, oId);
-            /* ★ **紙を回し始める位置**（`DESIGN_sugar.md` §4-9f）。
-             * ⚠ すぐ下の引き離し（`separateComponent`）は相手を**真下へ 2 マス**動かす ——
-             *   これを回し始めの位置にすると「回す前にもう下へ落ちている」＝
-             *   ユーザー報告の**「分子全体が↓にスライドする」がここで作られる**。
-             * ⚠ 引き離しそのものは**外さない**（描き直しが効かない糖のときの受け皿）。
-             *   効いたときだけ、この位置から回した結果で置き直す。 */
-            const arcFrom = mol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
-            // 相手の単糖を引き離す（架橋酸素はそちらに残る ＝ そのまま -OH になる）
-            const rest = [...componentOf(mol, oId)];
-            if (!rest.includes(cId)) {
-                const sep = separateComponent(mol, rest);
-                if (sep) translateAtoms(mol, rest, sep.dx, sep.dy);
-            }
-            // 切った側には水から -OH が入る（自動水素が H を描く）。
-            // ⚠ 置く向きは `haworthCleaveDirection` が決める ＝ もとの α/β を保つ
-            const spot = freeSpotAround(mol, cId, [], dir);
-            if (!spot) throw noRoom('生成物を配置する空間がありません');
-            const o = mol.addAtom('O', spot.x, spot.y);
-            mol.addBond(cId, o.id, 1);
+            /* ★ 切る・引き離す・-OH を生やす・印を数えるは `cleaveAcylOxygen` に束ねた（CV1）。
+             *   ⚠ ここだけは**切った直後・引き離す前**に座標を控える必要があるので `onCut` で受ける。
+             *   ⚠ 置く向きは `haworthCleaveDirection` が決める ＝ もとの α/β を保つ。 */
+            let arcFrom = null;
+            const { o, changed } = cleaveAcylOxygen(mol, cId, oId, {
+                dir,
+                /* ★ **紙を回し始める位置**（`DESIGN_sugar.md` §4-9f）。
+                 * ⚠ すぐあとの引き離し（`separateComponent`）は相手を**真下へ 2 マス**動かす ——
+                 *   これを回し始めの位置にすると「回す前にもう下へ落ちている」＝
+                 *   ユーザー報告の**「分子全体が↓にスライドする」がここで作られる**。
+                 * ⚠ 引き離しそのものは**外さない**（描き直しが効かない糖のときの受け皿）。
+                 *   効いたときだけ、この位置から回した結果で置き直す。 */
+                onCut: () => { arcFrom = mol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y })); }
+            });
             /* ★ **切る前の図と切ったあとの図を対応させる**（段4-c）。
              * ユーザーの言葉（2026-08-22 ／ 検収条件は 2026-08-24）:
              *   **「フリップするのは加水分解前後の分子の形に対応するためです」**
@@ -4946,7 +4959,7 @@ const REACTION_RULES = [
                     'なお、切れてできた単糖は水の中で環が開いたり閉じたりして α形 と β形 が入れ替わっています（変旋光）。' +
                     'この図では、切る前にグリコシド結合が出ていた側に -OH を描いて片方の形だけを示しています。' +
                     redrawNote,
-                changed: [cId, o.id, oId],
+                changed,
                 refit: true
             };
         }
