@@ -80,13 +80,22 @@ const ASSET_RE = /(?:src|href)="([^"#?][^"]*?)(\?v=(\d+))?"/g;
  *     test.html が CERTAINTY_LEDGER.md などを読んでいるが、`?nocache=` + Date.now() で
  *     読むので版とは無関係（`?v=` を使っていない）
  *   - `tools/` 配下 … 開発用スクリプト。node で走らせるもので配信されない
+ *   - `assembler/demos*.json` … 録画モードの台本。**`rec.js` が `cache: 'no-cache'` で読み、
+ *     `?v=` を通していない**（2026-08-31・動画レーンの申告で判明）。
+ *     ⚠ **これは「例外」ではなく「規則の対象外」**。`?v=` を通さないファイルは
+ *     キャッシュバスターの守備範囲に最初から入っていない。
+ *     ★ **この前提が崩れたら下の規則5bが赤くなる**ので、黙って甘くはならない。
+ *     ⚠ **人の記憶で回すと必ず抜ける**（実際に3日で3回、意味のない版上げのために赤が出て、
+ *     そのたびに「本物の事故と区別できない赤」を1件増やしていた）。
  *
  * 逆に **`.json` / `.jsonl` は必ず数える**。qa/app.js が `questions.json?v=NN` を
  * `data/exam_usage.jsonl?v=NN` を読んでおり、ここが実際に事故った場所
  * （tests.js:817 に「v58 のまま置き去りになっていた」記録がある）。
+ * ⚠ **だから demos だけを名指しで外す**。「json を全部外す」は上の事故に戻る。
  */
 const isServedPath = rel =>
-    path.extname(rel).toLowerCase() !== '.md' && !/(^|\/)tools\//.test(rel);
+    path.extname(rel).toLowerCase() !== '.md' && !/(^|\/)tools\//.test(rel)
+    && !/(^|\/)demos[^/]*\.json$/.test(rel);
 const isExternal = (url) => /^(https?:)?\/\//.test(url) || url.startsWith('data:') || url.startsWith('mailto:');
 
 /* その資産が「別のアプリのもの」なら、そのアプリのディレクトリを返す（自分のものなら null）。
@@ -229,6 +238,58 @@ targets.sort().forEach(dir => {
     }
     summary.push(`  ${dir}: v${version || '?'}（html ${files.length}件${bumpNote}${skipNote}）`);
 });
+
+// ---------------------------------------------------------------
+// 5b. demos*.json を版の対象外にしている「前提」が、まだ生きているか
+// ---------------------------------------------------------------
+// ⚠⚠ **除外は、その理由が成り立っているあいだだけ正しい。**
+// `isServedPath` が `demos*.json` を外しているのは「`?v=` を通していないから」であって、
+// 「台本だから」ではない。★ **理由のほうが崩れたら、除外は黙って穴になる。**
+// そこでここで前提を2つとも機械で見張る:
+//
+//   (a) `rec.js` の台本ローダーが `cache: 'no-cache'` で読んでいること
+//   (b) どこからも `demos*.json?v=` の形で参照されていないこと
+//
+// どちらかが崩れたら**赤で止める**（＝ そのときは除外をやめるか、参照側を直すかを人が決める）。
+{
+    const recAbs = path.join(ROOT, 'assembler', 'rec.js');
+    if (fs.existsSync(recAbs)) {
+        const rec = fs.readFileSync(recAbs, 'utf8');
+        // DEMO_FILES を回している fetch が no-cache か。
+        // ⚠ 行番号で見ない（動く）。`DEMO_FILES` の for から次の閉じ括弧までを窓にする
+        const from = rec.indexOf('DEMO_FILES');
+        const win = from >= 0 ? rec.slice(from, from + 1200) : '';
+        if (!/cache:\s*['"]no-cache['"]/.test(win)) {
+            problems.push(
+                'assembler/rec.js: 台本（demos*.json）を no-cache で読まなくなっています。' +
+                '★ verify-release が demos*.json を版の対象外にしている理由がここなので、' +
+                '対象外をやめる（isServedPath から demos の行を消す）か、no-cache に戻してください');
+        }
+    }
+    // (b) `demos*.json?v=` の参照がどこかに生えていないか（html も js も見る）
+    const hits = [];
+    const scan = (dir) => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+            const abs = path.join(dir, e.name);
+            const rel = path.relative(ROOT, abs).replace(/\\/g, '/');
+            if (e.isDirectory()) {
+                // ⚠ `tools/` は配信されないので、そこに `?v=` の字が出ても事故にならない
+                //   （この検査自身の説明文がここで引っかかった。2026-08-31）
+                if (/^(\.git|node_modules|\.claude|tools)$/.test(e.name)) continue;
+                scan(abs);
+            } else if (/\.(html|js|mjs)$/.test(e.name)) {
+                const t = fs.readFileSync(abs, 'utf8');
+                if (/demos[^/"'\s]*\.json\?v=/.test(t)) hits.push(rel);
+            }
+        }
+    };
+    scan(ROOT);
+    if (hits.length) {
+        problems.push(
+            `demos*.json に ?v= を付けて読んでいる箇所があります（${hits.slice(0, 3).join(' ')}）。` +
+            '★ 版の対象外にしている前提が崩れたので、isServedPath から demos の行を消してください');
+    }
+}
 
 // ---------------------------------------------------------------
 // 8. これから push するコミットで、触ったアプリの版が上がっているか
