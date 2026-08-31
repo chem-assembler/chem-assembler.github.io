@@ -502,7 +502,7 @@ const IP_BENZENE_MIN_ISOMERS = 2;
 //   **環式に絞ったとき（1種＝シクロプロパンだけ）**。既存のお題 C₄H₁₀ が2種で成立しているので、
 //   下限は 2 で足りる（3 にすると C₄H₁₀・C₄H₈（環式）・C₂H₆O が落ちる）
 const IP_MIN_ISOMERS = 2;
-// ★ **重原子の個数の上限**（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。
+// ★ **重原子の個数の上限**（v1485・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。
 //
 // 6個だった線を、**「単結合の木しか作れない式」に限って7個まで**広げた
 // （`enumerationIsTreeOnly`。判定は列挙器と同じ関数を使う ＝ ここで別に書かない）。
@@ -545,6 +545,40 @@ const IP_SCOPES = {
         note: '※ 環をもつ構造だけを数えます（環をもたない異性体は対象外）。',
         reject: '分子式は合っていますが、この回は環をもつ構造だけが対象です',
         tip: '環をもつ構造異性体だけを書き出す回です（環をもたない異性体は対象外）'
+    },
+    /**
+     * ★★ 官能基で絞った回（v1489・ユーザー要望 2026-08-31
+     *    「C₆H₁₂O のケトン、C₇H₁₄O₂ のエステル、などは十分に可能だと思います」）。
+     *
+     * ⚠ 上の3つ（芳香族・鎖式・環式）と**まったく同じ枠組み**に乗せる ——
+     *   `scopeInfo()` が返す1つの箱が、見出し・注記・お題外の断り文・記録の鍵を全部決める。
+     *   ここに新しい判定や新しい文言の置き場所を作らない（§11-4）。
+     * ⚠ 鍵（`@fg-*`）は**新しい名前**にする。同じ分子式の素の回と混ざると
+     *   「ケトンだけ描いて C₆H₁₂O 全体の ✓ が付く」ことになる
+     */
+    'fg:ketone': {
+        tag: 'ケトン', key: '@fg-ketone', title: 'のケトン異性体',
+        note: '※ ケトン（R–CO–R′）だけを数えます。アルデヒドや、C=O をもたない異性体は対象外。',
+        reject: '分子式は合っていますが、この回はケトン（R–CO–R′）だけが対象です',
+        tip: 'ケトン（R–CO–R′）の構造異性体だけを書き出す回です'
+    },
+    'fg:aldehyde': {
+        tag: 'アルデヒド', key: '@fg-aldehyde', title: 'のアルデヒド異性体',
+        note: '※ アルデヒド（R–CHO）だけを数えます。ケトンや、C=O をもたない異性体は対象外。',
+        reject: '分子式は合っていますが、この回はアルデヒド（R–CHO）だけが対象です',
+        tip: 'アルデヒド（R–CHO）の構造異性体だけを書き出す回です'
+    },
+    'fg:ester': {
+        tag: 'エステル', key: '@fg-ester', title: 'のエステル異性体',
+        note: '※ エステル（R–COO–R′）だけを数えます。R がHのギ酸エステルも数えます。カルボン酸は対象外。',
+        reject: '分子式は合っていますが、この回はエステル（R–COO–R′）だけが対象です',
+        tip: 'エステル（R–COO–R′）の構造異性体だけを書き出す回です（ギ酸エステルも数えます）'
+    },
+    'fg:acid': {
+        tag: 'カルボン酸', key: '@fg-acid', title: 'のカルボン酸異性体',
+        note: '※ カルボン酸（R–COOH）だけを数えます。同じ分子式のエステルは対象外。',
+        reject: '分子式は合っていますが、この回はカルボン酸（R–COOH）だけが対象です',
+        tip: 'カルボン酸（R–COOH）の構造異性体だけを書き出す回です'
     }
 };
 // 骨格の型で正解集合をふるう。⚠ **判定は `findAnyCycle` 1本**（新しい数え方を書かない）
@@ -633,10 +667,29 @@ const IP_RESULT_COL = 62;
 //   ⚠ **小/中/大で変えない** —— 変わるのは「図の大きさ」であって、名前は小でも読めること
 const IP_NAME_FONT = { size: '14px', weight: '600' };
 
-// 段階ヒントの段数（W2・DESIGN_isomer_practice.md §13-2）。
-// 1=残り数とダブりの組数 / 2=系列の内訳 / 3=書き出しの手順 / 4=重複の組の名指し。
-// **1 → 4 の一方向（ラチェット）**で戻らない。段4のあとは答え合わせしか押せない（§15-5）
-const IP_HINT_MAX = 4;
+/**
+ * 段階ヒントの段（W2・DESIGN_isomer_practice.md §13-2）。
+ *
+ * ★★ v1489 で**中身を組み直した**（ユーザー指摘 2026-08-31「現状ヒントがあまり
+ *   ヒントになっていないので、中身を見直したいです」＋ 欲しいものの列挙:
+ *   **全部で何通りあるか／重複の有無・残り何種類か／抜けている構造の名称**）。
+ *
+ * | 段 | 出すもの | なぜここか |
+ * |---|---|---|
+ * | 1 | **全部で何種類か**（総数だけ） | ★ 出題では伏せた数（IH1）を、ここで初めて出す。**いちばん弱い** ＝ 目標が分かるだけ |
+ * | 2 | **重複が何組あるか ＋ 残り何種類か** | いまの答案への手ごたえ。⚠ どれとどれが同じかはまだ言わない |
+ * | 3 | **未発見の骨格の系列内訳 ＋ 書き出しの手順** | 「どう探すか」。旧 段2 と 段3 は同じ問いへの答えなので1段にまとめた |
+ * | 4 | **同じものを2回描いている組の名指し** | 「どれとどれが同じか」。同一性を見抜くのはこの練習の芯なので後ろに置く |
+ * | 5 | **抜けている構造の名称** | ★ **いちばん強い**（実質の答え）。⚠ 名前が付かない構造は数だけ言う |
+ *
+ * **1 → 5 の一方向（ラチェット）**で戻らない。段5のあとは答え合わせしか押せない（§15-5）
+ */
+const IP_HINT_MAX = 5;
+// 重複の**組を名指し**する段。⚠ `IP_HINT_MAX` と同じ値にしないこと ——
+// 最終段（名称）と束ねると「ダブりを知りたいだけで答えまで配られる」ようになる
+const IP_HINT_DUP = 4;
+// 抜けている構造の**名称**を出す段（＝最終段）
+const IP_HINT_NAMES = 5;
 
 /**
  * 主鎖を横一直線に、側鎖を上下に配した座標を返す。
@@ -1003,7 +1056,7 @@ function stereoFoldLines(mol, name, info, reason) {
 }
 
 /**
- * 異性体の書き出し練習（P12-1 → W1 でキャンバス答案用紙化 → W2 でヒント4段とスコア）。
+ * 異性体の書き出し練習（P12-1 → W1 でキャンバス答案用紙化 → W2 でヒント段とスコア）。
  *
  * ★ **キャンバスそのものが答案用紙**（DESIGN_isomer_practice.md §12）。
  * 「1つ描いて登録」は複数分子を扱えなかった時代の器で、W1 で捨てた。
@@ -1021,9 +1074,12 @@ function stereoFoldLines(mol, name, info, reason) {
  *
  * ★ W2（§13・§15-5）で進行が**一方向**になった:
  *
- *     ヒント段1 → 段2 → 段3 → 段4 → 答え合わせ（＝ 問題の終わり）
+ *     ヒント段1 → 段2 → 段3 → 段4 → 段5 → 答え合わせ（＝ 問題の終わり）
  *
- *   - 段は戻らない・ループしない。段4 のあとはヒントが打ち止めになり、
+ *     ★ v1489 で段の中身を組み直した（`IP_HINT_MAX` の上の表が正）。
+ *       1=総数 / 2=重複の有無と残り / 3=系列の内訳と手順 / 4=重複の名指し / 5=抜けた構造の名称
+ *
+ *   - 段は戻らない・ループしない。最終段のあとはヒントが打ち止めになり、
  *     ボタンが「答え合わせ」に置き換わる（押せないボタンを残さない・§15-5a-3）
  *   - **押した回数 ＝ 到達した段**（§15-5a）。ヒントの中身はキャンバスが変わるたびに
  *     数え直すが、**再表示のために押し直させない**。押し直しが要る作りは
@@ -1110,7 +1166,7 @@ class IsomerPractice {
             //   ⚠ **列挙は増えない** —— どちらも上の 8 / 9 と同じ分子式で、`_rawCache` を分け合う
             { elements: ['C', 'C', 'C', 'C', 'C'], hCount: 10, stereoAsked: true },        // 19: C₅H₁₀  構造10種・場所3か所・立体込み13（★メソ体が居る）
             { elements: ['C', 'C', 'C', 'C', 'C', 'O'], hCount: 12, stereoAsked: true },   // 20: C₅H₁₂O 構造14種・場所4か所・立体込み18（畳み込み無し）
-            // ── 重原子7個（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）──
+            // ── 重原子7個（v1485・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）──
             // ⚠ **お題を足す前に初回 renderList を測ること**（上の②）。C₇H₁₆ 自体は 11ms だが、
             //   足せるようになった理由は列挙器の枝刈り（`enumerationIsTreeOnly`）で、
             //   **同じ直しで既存19問も軒並み速くなっている**（実測は下のコミットメッセージ）。
@@ -1139,6 +1195,47 @@ class IsomerPractice {
          */
         this.aromaticPresets = ['C8H10'];
         this._arCache = new Map();
+
+        /**
+         * ★★ 官能基で絞った回（v1489・ユーザー要望 2026-08-31「重元素7以上でも
+         *    分類ごとの書き出しは対応を増やしたい」／案A ＝ お題ボタンを増やす）。
+         *
+         * ⚠ **`problems` にも `aromaticPresets` にも足せない。**
+         *   `problems` は総当たり（`enumerateConstitutionalIsomers`）の道で、
+         *   C₇H₁₄O₂ は重原子9個 ＝ 上限8個を超えて**1件も出せない**。
+         *   ★ 道は `enumerateFunctionalGroupIsomers`（種を置いて腕を貼る）で、
+         *     これは芳香族の回と**まったく同じ形**（新しい列挙アルゴリズムは書いていない）。
+         *
+         * ★ **並んでいる12件の選び方**（全数で洗い出した。測ったのは chemistry.js 側の関数）:
+         *     ① 種類数が 2〜20（`IP_MIN_ISOMERS`〜`IP_MAX_ISOMERS`）
+         *     ② **正解の全部に名前が付く**（答え合わせの左列とヒント段5 が「（名称未登録）」に
+         *        ならない）。⚠ ここで落ちたのが **C₇ の4件**:
+         *        ケトン C₇H₁₄O 15種（名無し12）／アルデヒド C₇H₁₄O 17種（名無し16）／
+         *        カルボン酸 C₇H₁₄O₂ 17種（名無し16）／エステル C₇H₁₄O₂ 45種（名無し39）。
+         *        ⚠ **①では落ちていない**（15種・17種は上限20の内側）——
+         *        落ちた理由は数ではなく名前なので、`compounds.json` を足せば開く
+         *
+         * ★ **お題ボタンは押されるまで数えない**（`prepareAromatic` と違うところ）。
+         *   ⚠ v1433 の申し送り「これ以上お題を足すならここ（初回 renderList）が先に効く」への答え。
+         *   ★ **種類数を伏せた（IH1）ので、ボタンの表記に種類数が要らなくなった** ＝
+         *     一覧を出すのに数える理由がもう無い。12件ぶんの列挙（合計 ~60ms）は起動から消えた。
+         *   ⚠ 代わりに「12件が本当に開く・数が既知値と合う・全部に名前が付く」は
+         *     **回帰テスト（IH2）が全件で見張る**（runtime の門番 → test の門番へ移した）
+         */
+        this.fgPresets = [
+            { formula: 'C5H10O',  cls: 'ketone' },     // 3種
+            { formula: 'C6H12O',  cls: 'ketone' },     // 6種（★ユーザーが名指しした式）
+            { formula: 'C4H8O',   cls: 'aldehyde' },   // 2種
+            { formula: 'C5H10O',  cls: 'aldehyde' },   // 4種
+            { formula: 'C6H12O',  cls: 'aldehyde' },   // 8種
+            { formula: 'C3H6O2',  cls: 'ester' },      // 2種（★ギ酸エステルが入る最小の回）
+            { formula: 'C4H8O2',  cls: 'ester' },      // 4種
+            { formula: 'C5H10O2', cls: 'ester' },      // 9種
+            { formula: 'C6H12O2', cls: 'ester' },      // 20種（上限ちょうど）
+            { formula: 'C4H8O2',  cls: 'acid' },       // 2種
+            { formula: 'C5H10O2', cls: 'acid' },       // 4種
+            { formula: 'C6H12O2', cls: 'acid' }        // 8種
+        ];
 
         if (this.body) {
             // 初回描画は列挙（最大 ~150ms）で初期ロードを妨げないよう次フレームに回す
@@ -1175,8 +1272,19 @@ class IsomerPractice {
      */
     clearKeyTail(p) {
         if (!p) return '';
-        const scope = p.aromaticOnly ? 'aromatic' : p.skeleton;
+        // ★ 範囲の名乗りは**この1行で全部決まる**（芳香族／骨格の型／官能基）。
+        //   ⚠ 官能基の回を足すときにここを直し忘れると、ケトンだけ描いて
+        //     C₆H₁₂O 全体の ✓ が付く（鍵が素の回と同じになる）
+        const scope = this.scopeKeyOf(p);
         return (scope ? IP_SCOPES[scope].key : '') + (p.stereoAsked ? '@stereo' : '');
+    }
+
+    /** お題 → `IP_SCOPES` の鍵（null なら範囲の宣言なし ＝ 全異性体）。**名乗る場所はここ1つ** */
+    scopeKeyOf(p) {
+        if (!p) return null;
+        if (p.aromaticOnly) return 'aromatic';
+        if (p.fgClass) return 'fg:' + p.fgClass;
+        return p.skeleton || null;
     }
 
     // クリア記録の鍵。⚠ **同じ分子式でも範囲が違えば別の出題**なので鍵を分ける（§11-4）
@@ -1192,9 +1300,8 @@ class IsomerPractice {
     /** いまの出題の「範囲」（骨格の型）。null なら全異性体。⚠ **名乗る言葉はここからしか出さない** */
     scopeInfo(problem) {
         const p = problem || this.problem;
-        if (!p) return null;
-        if (p.aromaticOnly) return IP_SCOPES.aromatic;
-        return p.skeleton ? IP_SCOPES[p.skeleton] : null;
+        const key = this.scopeKeyOf(p);
+        return key ? IP_SCOPES[key] : null;
     }
 
     /**
@@ -1210,7 +1317,9 @@ class IsomerPractice {
             if (p.elements.slice().sort().join(',') !== want) return;
             const d = this.enumerate(i);
             if (!d.overflow && d.isomers.length >= IP_MIN_ISOMERS && d.isomers.length <= IP_MAX_ISOMERS) {
-                out.push(`${d.formula}（${IP_SCOPES[p.skeleton].tag}・${d.isomers.length}種）`);
+                // ★ 種類数は出さない（v1489）。⚠ ここは**行き先の名前**を出す場所で、
+                //   お題ボタンと同じ文字列でないと「どれを押せばよいか」が分からなくなる
+                out.push(`${d.formula}（${IP_SCOPES[p.skeleton].tag}）`);
             }
         });
         return out;
@@ -1278,17 +1387,24 @@ class IsomerPractice {
             btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
                 (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
             // ⚠ **お題の名前だけで範囲が言い切れること**（ユーザー判断 2026-08-20）。
-            //    「（鎖式・13種）」まで読めば、開く前に何を書き出すのかが分かる
-            // ★ 立体まで答える回だけは**種類数を出さない**（v1435・ユーザー判断
-            //    「満点は採点時に示せばよい」）。名乗るのは分子式と「立体まで」の2つだけ
+            //    「（鎖式）」まで読めば、開く前に何を書き出すのかが分かる
+            // ★★ **種類数はどのお題でも名乗らない**（v1489・ユーザー判断 2026-08-31
+            //    「全部で何種類か、はオープンにしない出題の方がよいのでは？」）。
+            //    ⚠ 理由は**「もう出し切ったか」を自分で決めるのが、そもそも入試で問われる力**だから。
+            //    ⚠ v1435 で立体の回だけに入れた抜け道を、**22件ぜんぶに広げた**
+            //      ——「一部だけ数が見える」形にすると、見えない回が不具合に読める（§11-4 の裏）。
+            //    ★ 数を出す場所は3つだけに絞った: **答え合わせ**・**ヒントの段1**・
+            //      **上限20種で断るトースト**（断る理由そのものなので、伏せると理由が消える）
             btn.textContent = p.stereoAsked
                 ? `${data.formula}（立体まで）${cleared ? ' ✓' : ''}`
-                : `${data.formula}${sc ? '（' + sc.tag + '・' : '（'}${data.isomers.length}種）${cleared ? ' ✓' : ''}`;
+                : `${data.formula}${sc ? '（' + sc.tag + '）' : ''}${cleared ? ' ✓' : ''}`;
             if (p.stereoAsked) {
                 btn.title = '構造異性体を全部描き、立体が分かれる場所を指し、' +
                     '立体異性体も含めた総数まで答える回です（種類数は採点のときに出します）';
             } else if (sc) {
                 btn.title = sc.tip;
+            } else {
+                btn.title = 'この分子式の構造異性体を全部書き出す回です（種類数は採点のときに出します）';
             }
             btn.disabled = data.overflow || data.isomers.length < IP_MIN_ISOMERS;
             btn.addEventListener('click', () => this.start(i));
@@ -1336,7 +1452,7 @@ class IsomerPractice {
             const stLab = document.createElement('div');
             stLab.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px; line-height:1.5;';
             // ⚠ v1468: 63字 → 9字（ux-density 番外）。中身は**始めれば段ごとに帯が言う**手順の予告で、
-            //    選ぶ前に読ませる必要がない（種類数を出さないことは IW26 が別に見張っている）
+            //    選ぶ前に読ませる必要がない（種類数を出さないことは IH1 が別に見張っている）
             stLab.textContent = '立体まで答える回:';
             stWrap.appendChild(stLab);
             stWrap.appendChild(stereo);
@@ -1368,7 +1484,9 @@ class IsomerPractice {
                 btn.dataset.ipAromatic = src;
                 btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
                     (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
-                btn.textContent = `${data.formula}（芳香族・${data.count}種）${cleared ? ' ✓' : ''}`;
+                // ★ 種類数は出さない（上の makeButton と同じ理由・v1489）。
+                //   ⚠ `data.count` は**ボタンを出すかどうかの門番**としては今までどおり使う
+                btn.textContent = `${data.formula}（芳香族）${cleared ? ' ✓' : ''}`;
                 btn.title = 'ベンゼン環をもつ構造異性体だけを書き出す回です（環をもたない異性体は対象外）';
                 btn.addEventListener('click', () => this.startFromFormula(src));
                 arGrid.appendChild(btn);
@@ -1377,12 +1495,50 @@ class IsomerPractice {
             this.body.appendChild(arWrap);
         }
 
+        /**
+         * ★★ 官能基で絞った回（v1489・案A）。⚠ **押されるまで数えない**（`fgPresets` の前書き）。
+         *   だからこの枠を足しても初回 `renderList()` は1msも増えない。
+         */
+        if (this.fgPresets.length) {
+            const fgWrap = document.createElement('div');
+            fgWrap.id = 'ip-fg-presets';
+            fgWrap.style.cssText = 'margin-top:8px;';
+            const fgLabel = document.createElement('div');
+            fgLabel.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px;';
+            // ⚠ 「分子式 ＋ 分類」で絞る回だと言い切る（§11-4）。
+            // ⚠ **11字に抑える**（`UX1` の上限195字。素の 22字「（その分類のものだけ）」付きだと
+            //    この画面が 203字になって落ちる）。落とした括弧の中身は
+            //    **ボタン自身（`C₆H₁₂O（ケトン）`）と、開いたあとの注記（`IP_SCOPES.note`）が言う**
+            //    ＝ 押す前に読ませる必要がない（ux-density §8）
+            fgLabel.textContent = '分子式と分類で絞る回:';
+            fgWrap.appendChild(fgLabel);
+            const fgGrid = document.createElement('div');
+            fgGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px;';
+            this.fgPresets.forEach((pre, i) => {
+                const sc = IP_SCOPES['fg:' + pre.cls];
+                const parsed = this.parseFormula(pre.formula);
+                const label = parsed ? ipFormulaLabel(parsed.heavy, parsed.h) : pre.formula;
+                const cleared = this.isCleared(label, 'fg:' + pre.cls);
+                const btn = document.createElement('button');
+                btn.className = 'view-btn';
+                btn.dataset.ipFg = String(i);
+                btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                    (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+                btn.textContent = `${label}（${sc.tag}）${cleared ? ' ✓' : ''}`;
+                btn.title = sc.tip;
+                btn.addEventListener('click', () => this.startFromFgPreset(i));
+                fgGrid.appendChild(btn);
+            });
+            fgWrap.appendChild(fgGrid);
+            this.body.appendChild(fgWrap);
+        }
+
         // M3: 任意の分子式で練習
         const custom = document.createElement('div');
         custom.style.cssText = 'margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px;';
         const clabel = document.createElement('div');
         clabel.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
-        // ⚠ **上限を2か所で名乗らない。** 数は定数から出す（v14xx で 6 → 「6個まで・
+        // ⚠ **上限を2か所で名乗らない。** 数は定数から出す（v1489 で 6 → 「6個まで・
         //    二重結合も環も無い飽和形なら7個まで」に変わった。断り文とここが食い違うと、
         //    C₇H₁₆ が開くのに入口が「6個まで」と言い張る）
         clabel.textContent = `任意の分子式で練習（水素以外${IP_MAX_HEAVY}個まで・` +
@@ -1420,6 +1576,34 @@ class IsomerPractice {
             index, elements: p.elements, hCount: p.hCount, formula: data.formula,
             skeleton: p.skeleton || null, stereoAsked: !!p.stereoAsked
         }, data.isomers);
+    }
+
+    /**
+     * ★★ 官能基で絞った回を開く（v1489・案A）。
+     *
+     * ⚠ **ここで初めて数える**（一覧では数えない・`fgPresets` の前書き）。実測は
+     *   最も重い C₆H₁₂O₂ のエステルで 20ms ＝ 押してから開くまでに待たせる長さではない。
+     * ⚠ 断り方は既存の道と同じ「トーストで理由を言う」。**黙って何も起きないを作らない**
+     */
+    startFromFgPreset(index) {
+        const g = this.game;
+        const pre = this.fgPresets[index];
+        if (!pre) return;
+        const parsed = this.parseFormula(pre.formula);
+        const sc = IP_SCOPES['fg:' + pre.cls];
+        if (!parsed || !sc) { g.showToast('このお題を開けませんでした。'); return; }
+        const seed = enumerateFunctionalGroupIsomers(parsed.heavy, parsed.h, pre.cls);
+        if (!seed.applicable || seed.overflow || seed.isomers.length < IP_MIN_ISOMERS ||
+            seed.isomers.length > IP_MAX_ISOMERS) {
+            g.showToast(
+                `${ipFormulaLabel(parsed.heavy, parsed.h)} の${sc.tag}は、いまの練習では扱えません` +
+                `（数え上げが上限を超えたか、書き出すには多すぎます）。`, 6000);
+            return;
+        }
+        this.beginSession({
+            index: -1, elements: parsed.heavy, hCount: parsed.h,
+            formula: g.computeMolecularFormula(seed.isomers[0]), fgClass: pre.cls
+        }, seed.isomers);
     }
 
     // 任意の分子式から開始（M3）
@@ -1781,13 +1965,13 @@ class IsomerPractice {
         // 範囲を宣言した回（芳香族・鎖式・環式）は**出題そのものが違う**（全異性体ではない）ので
         // 見出しで必ず断る（設計 §11-4）
         const sc = this.scopeInfo();
-        // ★ 立体まで答える回は**種類数を名乗らない**（v1435・ユーザー判断「満点は採点時に示せばよい」）。
+        // ★★ **種類数はどの回でも名乗らない**（v1489・ユーザー判断 2026-08-31）。
         //   ⚠ 隠すのは数だけで、**何を書き出すのかは名乗る**（§11-4「宣言した以上、画面のどこでも隠さない」）
         head.textContent = this.problem.stereoAsked
             ? `✏️ ${this.problem.formula} の異性体（立体まで）`
             : (sc
-                ? `✏️ ${this.problem.formula} ${sc.title}（全 ${this.problem.total} 種）`
-                : `✏️ ${this.problem.formula} の異性体（全 ${this.problem.total} 種）`);
+                ? `✏️ ${this.problem.formula} ${sc.title}`
+                : `✏️ ${this.problem.formula} の異性体`);
         this.body.appendChild(head);
 
         if (this.problem.stereoAsked) {
@@ -2050,14 +2234,14 @@ class IsomerPractice {
         }
         const n = this.drawnCount();
         const sc = this.scopeInfo();
-        // ★ 立体まで答える回は帯でも種類数を出さない（v1435）。⚠ ここを直し忘れると、
+        // ★★ 帯でも種類数を出さない（v1489。v1435 は立体の回だけだった）。⚠ ここを直し忘れると、
         //   お題ボタンで隠した数がキャンバスの真下に出る ＝ 隠したことにならない
         if (this.problem.stereoAsked) {
             return `お題 <b>${esc(this.problem.formula)}</b>（立体まで） の異性体 ／ ` +
                 `いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
         }
-        return `お題 <b>${esc(this.problem.formula)}</b>${sc ? '（' + sc.tag + '）' : ''} の異性体 ` +
-            `全 ${this.problem.total} 種 ／ いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
+        return `お題 <b>${esc(this.problem.formula)}</b>${sc ? '（' + sc.tag + '）' : ''} の異性体 ／ ` +
+            `いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
     }
 
     /**
@@ -2113,7 +2297,7 @@ class IsomerPractice {
     /**
      * ヒントのボタン。★ **押す前に代償を見せる**（§15-5a-3）。
      * 「💡ヒント」とだけ書いてあると、いまの状態を見たいつもりで押して減点される。
-     * 段4 まで来たら**押せないボタンを残さず**「答え合わせ」に置き換える。
+     * 最終段まで来たら**押せないボタンを残さず**「答え合わせ」に置き換える。
      */
     hintButton() {
         const b = document.createElement('button');
@@ -2122,11 +2306,11 @@ class IsomerPractice {
         if (this._hintLevel >= IP_HINT_MAX) {
             b.style.cssText += ' border-color:var(--color-cyan); color:var(--color-cyan);';
             b.textContent = '🔍 答え合わせ（ヒントは打ち止め）';
-            b.title = 'ヒントは4段すべて使いました。あとは答え合わせだけです';
+            b.title = `ヒントは${IP_HINT_MAX}段すべて使いました。あとは答え合わせだけです`;
             b.addEventListener('click', () => this.finishAnswer());
         } else {
             b.textContent = `💡 次のヒント（あと ${IP_HINT_MAX - this._hintLevel}段・−1点）`;
-            b.title = 'ヒントは1→4段の一方向です。段は戻りません。到達した段の数だけスコアが減ります';
+            b.title = `ヒントは1→${IP_HINT_MAX}段の一方向です。段は戻りません。到達した段の数だけスコアが減ります`;
             b.addEventListener('click', () => this.nextHint());
         }
         return b;
@@ -2144,13 +2328,13 @@ class IsomerPractice {
     }
 
     /**
-     * ★ ヒントで**重複の組を名指し**してよいか ＝ 最終段に到達したときだけ（§13-3）。
+     * ★ ヒントで**重複の組を名指し**してよいか ＝ 段4 に到達したときだけ（§13-3）。
      *
      * 「①と④は同じ」は同一性の判定を1件ぶんタダで渡す行為で、この練習の学習価値の半分は
-     * そこを自分で見抜くこと（§1）。**数（段1）と組（段4）を分ける**のが折り合い点なので、
+     * そこを自分で見抜くこと（§1）。**数（段2）と組（段4）を分ける**のが折り合い点なので、
      * ここを true 固定に「親切にした」直しは IW6 が赤くする
      */
-    revealsDupPairs() { return this._hintLevel >= IP_HINT_MAX; }
+    revealsDupPairs() { return this._hintLevel >= IP_HINT_DUP; }
 
     /**
      * ★ この面が判定（名前・同一判定・未発見の内訳）を出してよいか（§13-1・v402 の線）。
@@ -2465,17 +2649,36 @@ class IsomerPractice {
         };
         const stageHead = (text) => line(text, 'font-size:12px; color:#e0b0ff; font-weight:bold; margin:8px 0 4px;');
 
-        // 段1: あといくつ ＋ **ダブりが何組あるか（数だけ）**。
-        // ⚠ どの図とどの図が同じかは段4 まで明かさない（§13-3。「探せ」の合図までが段1の仕事）
-        const dupCount = sheet.dupGroups.length;
-        line(`あと ${undiscovered.length}種 あります。` +
-            (dupCount > 0
-                ? `そして、同じものを2回以上描いた組が ${dupCount}組 あります（どれとどれかは言いません）。`
-                : 'いまのところ、同じものを2回描いてはいません。'),
+        /**
+         * ★ 段1: **全部で何種類か**だけ（v1489）。
+         *
+         * ⚠ 出題中は総数を1つも出さない（IH1）ので、**この行がその数の初出**になる。
+         *   だから段1 は「残りいくつ」ではなく「全部でいくつ」——
+         *   残り数は総数を知っていて初めて意味を持つ（引き算の答えを先に配ると段2 が空になる）。
+         * ⚠ 立体まで答える回でも、ここで出すのは**書き出す構造の数**だけ
+         *   （立体込みの総数は段2 で自分が答えるものなので明かさない）。
+         */
+        line(`このお題の答えは 全部で ${this.problem.total} 種 あります。` +
+            (this.problem.stereoAsked
+                ? '（これは書き出す図の数です。立体異性体も含めた総数は自分で答えてください）'
+                : ''),
             'font-size:12px; color:var(--text-secondary); line-height:1.6;');
 
-        // 段2: どの系列が足りないか
+        // ★ 段2: **重複の有無 ＋ 残り何種類**（ユーザー指摘の2つめ）。
+        // ⚠ どの図とどの図が同じかは段4 まで明かさない（§13-3。「探せ」の合図までがここの仕事）
         if (this._hintLevel >= 2) {
+            const dupCount = sheet.dupGroups.length;
+            stageHead('いまの答案');
+            line(`ちがう種類を ${uc.size}種 描けています。あと ${undiscovered.length}種 あります。`);
+            line(dupCount > 0
+                ? `・同じものを2回以上描いた組が ${dupCount}組 あります（どれとどれかは言いません）。`
+                : '・同じものを2回描いてはいません。');
+        }
+
+        // 段3: どの系列が足りないか ＋ 書き出し手順（未発見に含まれる系列の種別ごと）。
+        // ⚠ 旧 段2・段3 を1段にまとめた（v1489）—— どちらも「どう探すか」への答えで、
+        //   内訳だけ見せて手順を次の段に置くと、払った1点でできることが増えない
+        if (this._hintLevel >= 3) {
             stageHead(`未発見 ${undiscovered.length}種の内訳（骨格の系列ごと）`);
             const bySeries = new Map();
             undiscovered.forEach(u => {
@@ -2483,10 +2686,6 @@ class IsomerPractice {
                 bySeries.set(label, (bySeries.get(label) || 0) + 1);
             });
             [...bySeries.entries()].forEach(([label, n]) => line(`・${label} … あと ${n}`));
-        }
-
-        // 段3: 書き出し手順（未発見に含まれる系列の種別ごと）
-        if (this._hintLevel >= 3) {
             const cats = new Set(undiscovered.map(u => u.key.category));
             const proc = {
                 position: '同じ骨格のまま、-OH やエーテルの -O-（や置換基）の付く位置を、鎖の端から順に一通りずらしてみましょう（対称な位置どうしは同じ分子になります）。',
@@ -2508,8 +2707,8 @@ class IsomerPractice {
             });
         }
 
-        // 段4: 重複の**組を名指し**する（最終段）。
-        // ⚠ **名前は出さない**（名前まで出すのは答え合わせの面の仕事）。ここで渡すのは
+        // 段4: 重複の**組を名指し**する。
+        // ⚠ **名前は出さない**（自分の図の名前まで出すのは答え合わせの面の仕事）。ここで渡すのは
         //   「①と④を見比べろ」まで。同一性を見抜くのはこの練習の芯なので、丸ごとは渡さない
         if (this.revealsDupPairs()) {
             stageHead('同じものを2回描いている組');
@@ -2517,6 +2716,36 @@ class IsomerPractice {
                 line('・いまキャンバスに同じ組はありません。');
             } else {
                 sheet.dupGroups.forEach(d => line(`・${d.marks.join('と')} は同じものです（つながり方が同じ ＝ 同じ化合物）。`));
+            }
+        }
+
+        /**
+         * ★★ 段5（最終段）: **抜けている構造の名称**（v1489・ユーザー指摘の3つめ）。
+         *
+         * ⚠ **いちばん強いヒント**なので最後に置く。名前が分かれば図はほぼ書けるが、
+         *   「名前から構造を起こす」ところは残る ＝ 丸ごと配ってはいない
+         *   （図そのものを出すのは答え合わせの仕事）。
+         *
+         * ⚠⚠ **名前が付かない構造がある**（お題22件は `IP4` が全件命名を保証しているが、
+         *   任意の分子式・芳香族の回はその保証の外）。そのとき **黙って行を落とさない** ——
+         *   落とすと「あと3種」と言ったのに2つしか並ばず、**数え間違いに見える**。
+         *   名前の無いぶんは**数だけ**を1行で言い、名前が無いこと自体を明かす。
+         */
+        if (this._hintLevel >= IP_HINT_NAMES) {
+            stageHead('まだ描いていない構造の名前');
+            if (undiscovered.length === 0) {
+                line('・全種そろっています。あとは「答え合わせ」を押すだけです。');
+            } else {
+                const named = [], unnamed = [];
+                undiscovered.forEach(u => {
+                    const nm = this.constitutionalName(u.mol);
+                    if (nm) named.push(nm); else unnamed.push(u);
+                });
+                named.sort((a, b) => a.localeCompare(b, 'ja')).forEach(nm => line(`・${nm}`));
+                if (unnamed.length) {
+                    line(`・名前の付かない構造が ${unnamed.length}つ残っています` +
+                        '（このライブラリに登録が無く、系統名も作れない骨格です。答え合わせで図を見てください）。');
+                }
             }
         }
 
@@ -2643,11 +2872,10 @@ class IsomerPractice {
             const summary = document.createElement('div');
             summary.style.cssText = 'font-size:13px; color:var(--text-secondary); margin-bottom:10px; line-height:1.6;';
             // 確認モードは図の枚数だけ（自己判断の材料）。命名・同一判定は答え合わせでのみ
-            // ⚠ 立体まで答える回はここでも種類数を出さない（v1435。⚠ 直し忘れると
+            // ⚠ ここでも種類数を出さない（v1489。⚠ 直し忘れると
             //   「🔎 確認」を1回開くだけで隠した数が読める ＝ 隠したことにならない）
-            summary.textContent = this.problem.stereoAsked
-                ? `あなたが描いた図 ${sheet.rows.length}個。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`
-                : `あなたが描いた図 ${sheet.rows.length}個（全 ${this.problem.total} 種）。図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。`;
+            summary.textContent = `あなたが描いた図 ${sheet.rows.length}個。` +
+                '図をクリックすると作図に戻ります。同じかどうか・名前は「答えを見る」で確認できます。';
             this.overlay.appendChild(summary);
         }
 
@@ -5173,4 +5401,9 @@ if (typeof window !== 'undefined') {
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;
     window.STEREO_FOLD_NOTES = STEREO_FOLD_NOTES;
+    // ⚠ お題が成立する線（2〜20種）。`IH4` が「C₇ の4件は数ではなく名前で落ちている」
+    //   ＝ 残った宿題（§19-4）の母数を見張るのに使う。**検査から 20 を書き写さない**
+    //   （書き写すと、上限を変えたときに検査だけが古い線を見張り続ける）
+    window.IP_MAX_ISOMERS = IP_MAX_ISOMERS;
+    window.IP_MIN_ISOMERS = IP_MIN_ISOMERS;
 }
