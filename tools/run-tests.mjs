@@ -91,8 +91,17 @@ const fails = await page.$$eval('#results li.fail, .case.fail',
     els => els.map(e => e.textContent.trim()));
 // 合否は一覧の有無ではなく完了表示から決める（一覧の書式が変わっても門番が黙らないように）
 const okRun = /✅|ALL PASS/.test(summary) && !/[❌]|FAILED/.test(summary);
+// ★ **通ったテストが自分で書いた注記**（見張った本数など）は、緑でも読めるところに出す。
+//   ⚠ 悉皆の検査は「対象を絞って全部通った」がいちばん悪い形なので、
+//   ヘッドレスの門番でも「N 本中 M 本を見張った」が目に入るようにしておく（CV1）。
+const notes = await page.$$eval('#results li.pass span.detail',
+    els => els.map(e => e.textContent.trim()).filter(t => t && !/^⏱/.test(t)));
 console.log(`所要 ${Math.round((Date.now() - t0) / 1000)} 秒（エンジン: ${engineArg}）`);
 console.log(summary);
+if (notes.length) {
+    console.log('--- テストが測った数 ---');
+    notes.forEach(n => console.log('  ' + n.slice(0, 300)));
+}
 if (timingTop) {
     const timings = await page.evaluate(() => window.testTimings || null);
     if (!timings) {

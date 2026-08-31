@@ -21,6 +21,7 @@
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
  * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
+ * | CV  | 1〜3   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
@@ -43674,6 +43675,315 @@
         c.reset();
     });
 
+    /* ===== CV1〜CV3: 切る反応の印 —— 分かれたどちらの分子にも印が付く（悉皆・v1490） =====
+     *
+     * ★ **きっかけ**（ユーザー実機報告・V125 の完成品・2026-08-28）:
+     *   **「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」**
+     *   `cleaveEster` の `changed` に、切られてアルコール側へ行く酸素 `oId` が入っていなかった。
+     *
+     * ⚠ **1か所の書き忘れではない。** `reactor.js` の `changed:` は 34か所あり、
+     *   **同じ形の切る反応でも書き方がばらばら**だった ——
+     *   エステルの加水分解・けん化・酸無水物の加水分解は `oId` が落ち、
+     *   グリコシド結合の加水分解は入っていた（同じ人が同じ日に書いても揃わない）。
+     *   ＝ うっかりではなく「**印の列挙を人の記憶に任せる設計**」の問題。
+     *
+     * ★★ **だからこの検査は「切る反応を人が並べる」形にしない。**
+     *   **反応を実際に走らせて、連結成分が分かれたかどうかで対象を自動的に決める。**
+     *   次に切る反応を足した人も、名前を登録しなくても自動的に見張られる。
+     *
+     * ★ **物差し**: 反応前の1つの分子（連結成分）の原子が反応後に2つ以上の成分へ散ったら、
+     *   **散った先のどの成分にも `changed` の原子が1つ以上ある**こと。
+     *   ⚠ **「印が2つ以上ある」では通ってしまう**（酸の側だけで2つ出るため。CV3-① で実証）。
+     *
+     * ★ **脱離した水は対象外**と決めた（判断が分かれるところなので理由を書く）:
+     *   - 印は「**注目してほしい変化点**」を指すもので、生成物の目録ではない。
+     *     分子内脱水で外れた水にまで丸を付けると、**C=C ができたことがぼやける**。
+     *   - 除外は**気分ではなく機械で引ける** —— `parkAsWater()` が置いた酸素には
+     *     `fromReaction` が立っている。除外するのは「重原子が全部 `fromReaction` の成分」だけ。
+     *   - ⚠ **除外が広がっていないこと**は CV3-③ が見張る（除外した成分は必ず酸素1個）。
+     *
+     * ★ **見張れた本数は画面に出す**（緑のときも）。⚠ 対象を絞って「全部通った」と言うのが
+     *   いちばん悪い形なので、「N 本中 M 本を見張った・題材が無いのは M' 本」を必ず添える。
+     */
+
+    // 題材に相手の分子が要るルール（1分子のライブラリ走査では detect が通らないもの）。
+    // ⚠ **ここに無いルールは、ライブラリ全件から題材を自動で拾う**（手で並べない）
+    const CV_PAIR_SAMPLES = {
+        esterification: ['酢酸', 'エタノール'],
+        amidation: ['酢酸', 'アニリン'],
+        esterification_phenol_info: ['酢酸', 'フェノール'],
+        dehydration_inter: ['エタノール', 'エタノール'],
+        condensation_glycoside: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
+        addition_polymerization: ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'],
+        alkyne_polymerization: ['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）'],
+        diene_polymerization: ['1,3-ブタジエン', '1,3-ブタジエン', '1,3-ブタジエン'],
+        // 加硫は「重合してできた鎖が2本」要る。単量体からは組めないので、先に重合を2回走らせる
+        vulcanization: ['@二本の鎖'],
+        condensation_polymerization: ['アジピン酸', 'ヘキサメチレンジアミン', 'アジピン酸', 'ヘキサメチレンジアミン'],
+        condensation_polymer_info: ['アジピン酸', 'ヘキサメチレンジアミン'],
+        // ★ ビニロン（v1488・重合レーン）。**この検査が自分で見つけて名指しした** ——
+        //   v1488 を取り込んだ瞬間に CV1 が「題材が無いルールの一覧が宣言と違う
+        //   （実際: acetalization_pva ／ 宣言: なし）」で赤くなった ＝ 設計どおりの動き。
+        //   ⚠ 相手（ホルムアルデヒド）が要るので1分子の走査では拾えない
+        acetalization_pva: ['ポリビニルアルコール', 'ホルムアルデヒド']
+    };
+    // ⚠ **題材が用意できず見張れないルール**（0 本のうちは空のまま）。
+    //    ここが伸びたら報告に本数と名前を書くこと ＝ 黙って対象から外れないようにする
+    const CV_NO_SAMPLE = [];
+    /* ⚠⚠ **実際に分かれた（＝ この物差しが本当に効いた）ルールの下限**。
+     * ★ **題材を人が並べない**という方針は変えない —— これは「対象の一覧」ではなく
+     *   **減ったことに気づくためのラチェット**である。
+     * ⚠ **なぜ要るか**: 題材はライブラリの走査で自動に拾うので、**ライブラリが変わると
+     *   拾われる分子も変わる**。たとえば `hydrolysis_ester` の題材が酢酸エチルから
+     *   ラクトン（環状エステル＝切っても分子の数が増えない）に変わると、
+     *   この検査は**そのルールを黙って見逃したまま緑になる**（`cut` から `intact` へ移るだけ）。
+     *   本数は注記に出るが、**出ているだけでは誰も気づかない**（緑は読まれない）。
+     * ★ 増えるぶんは自由（次に切る反応を足した人は何も登録しなくてよい）。**減ったら赤**。 */
+    const CV_MUST_SPLIT = [
+        'oxidative_cleavage', 'iodoform', 'dehydration_intra', 'esterification', 'amidation',
+        'dehydration_inter', 'condensation_glycoside', 'condensation_polymerization',
+        'dehydration_anhydride', 'hydrolysis_anhydride', 'hydrolysis_ester',
+        'hydrolysis_glycoside', 'saponification', 'acetalization_pva'
+    ];
+
+    // 連結成分（原子IDの Set の配列）。⚠ 原子IDは乱数なので順序に頼らない
+    const cvComponents = (mol) => {
+        const adj = new Map();
+        mol.atoms.forEach(a => adj.set(a.id, []));
+        mol.bonds.forEach(b => {
+            if (!adj.has(b.atomId1) || !adj.has(b.atomId2)) return;
+            adj.get(b.atomId1).push(b.atomId2);
+            adj.get(b.atomId2).push(b.atomId1);
+        });
+        const seen = new Set(), out = [];
+        mol.atoms.forEach(a => {
+            if (seen.has(a.id)) return;
+            const stack = [a.id], set = new Set([a.id]);
+            seen.add(a.id);
+            while (stack.length) {
+                const x = stack.pop();
+                (adj.get(x) || []).forEach(y => {
+                    if (seen.has(y)) return;
+                    seen.add(y); set.add(y); stack.push(y);
+                });
+            }
+            out.push(set);
+        });
+        return out;
+    };
+    // 脱離した水（`parkAsWater` が置いた酸素だけからなる成分）か
+    const cvIsLeavingWater = (mol, set) => {
+        const heavy = [...set].map(id => mol.atoms.find(a => a.id === id))
+            .filter(a => a && a.element !== 'H');
+        return heavy.length > 0 && heavy.every(a => a.fromReaction);
+    };
+    /**
+     * 物差しの本体。反応の前後の成分と `changed` を渡すと
+     * 「分かれたのに印が無い成分」を返す（空なら合格）。
+     * ⚠ CV1（悉皆）と CV3（否定対照）が**同じ関数**を使う ＝ 物差しを2つ持たない
+     */
+    const cvUnmarkedProducts = (mol, before, after, changed) => {
+        const marks = new Set(changed || []);
+        const landed = before.map(b => after.filter(a => [...b].some(id => a.has(id))));
+        const split = landed.filter(list => list.length >= 2);
+        const products = [];
+        split.forEach(list => list.forEach(a => { if (!products.includes(a)) products.push(a); }));
+        return {
+            split: split.length > 0,
+            products,
+            water: products.filter(a => cvIsLeavingWater(mol, a)),
+            unmarked: products.filter(a => !cvIsLeavingWater(mol, a) && ![...a].some(id => marks.has(id)))
+        };
+    };
+    // 題材をキャンバスに並べる
+    const cvSetup = (c, names) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        if (names[0] === '@二本の鎖') {
+            const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+            assert(dien, 'diene_polymerization が無い（加硫の題材が組めない）');
+            for (let k = 0; k < 2; k++) {
+                for (let i = 0; i < 3; i++) g.summonMolecule('1,3-ブタジエン');
+                const s = dien.detect(g.userMolecule);
+                if (s.length) dien.apply(g, s[0]);
+            }
+        } else {
+            names.forEach(n => g.summonMolecule(n));
+        }
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+
+    test('CV1: 切る反応の悉皆 —— 反応で分子が分かれたら、分かれたどちらにも印が付く', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rules = W.REACTION_RULES;
+        assert(rules && rules.length, 'REACTION_RULES が読めない');
+
+        // ---- ① 題材さがし（手で並べない。ライブラリ全件を1回なめて、最初に通った分子を使う）
+        const picked = {};
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(x => x && x.target && x.name);
+        assert(source.length > 100, `ライブラリが読めていない（${source.length} 件）`);
+        for (const entry of source) {
+            const remaining = rules.filter(r => !picked[r.id] && !CV_PAIR_SAMPLES[r.id]);
+            if (!remaining.length) break;
+            let mol;
+            try { mol = g.createTargetFromData({ target: entry.target }); } catch (e) { continue; }
+            for (const r of remaining) {
+                try { if (r.detect && r.detect(mol).length > 0) picked[r.id] = [entry.name]; } catch (e) { /* 読めない図は飛ばす */ }
+            }
+        }
+        Object.keys(CV_PAIR_SAMPLES).forEach(id => {
+            if (rules.some(r => r.id === id)) picked[id] = CV_PAIR_SAMPLES[id];
+        });
+
+        // ---- ② 反応を実際に走らせて、分かれたかどうかで対象を決める
+        const noSample = [], cut = [], intact = [];
+        let waterSkipped = 0;
+        for (const rule of rules) {
+            const names = picked[rule.id];
+            if (!names) { noSample.push(rule.id); continue; }
+            const mol = cvSetup(c, names);
+            let sites = [];
+            try { sites = rule.detect(mol) || []; } catch (e) {
+                assert(false, `${rule.id}: 題材（${names.join('＋')}）で detect が例外（${e.message}）`);
+            }
+            assert(sites.length > 0,
+                `${rule.id}: 題材（${names.join('＋')}）で反応の箇所が出ない ＝ この題材ではこのルールを見張れていない`);
+            const before = cvComponents(mol);
+            g.saveState();
+            let res;
+            try { res = rule.apply(g, sites[0]); } catch (e) {
+                assert(false, `${rule.id}: 題材（${names.join('＋')}）で apply が例外（${e.message}）`);
+            }
+            const after = cvComponents(mol);
+            const v = cvUnmarkedProducts(mol, before, after, res && res.changed);
+            waterSkipped += v.water.length;
+            if (!v.split) { intact.push(rule.id); continue; }
+            cut.push(rule.id);
+            if (v.unmarked.length) {
+                const say = v.unmarked.map(s => [...s]
+                    .map(id => (mol.atoms.find(a => a.id === id) || {}).element)
+                    .filter(e => e && e !== 'H').join('')).join(' / ');
+                assert(false,
+                    `${rule.id}: 題材（${names.join('＋')}）で分子が ${before.length} → ${after.length} に分かれたのに、` +
+                    `印（changed）の無い生成物が ${v.unmarked.length} 個ある（${say}）` +
+                    '＝ 画面ではその分子だけ光らない。切る反応は cleaveAcylOxygen に束ねてある');
+            }
+        }
+
+        // ---- ③ 題材が無いルールは黙って減らさない（宣言と突き合わせる）
+        assert(JSON.stringify(noSample.slice().sort()) === JSON.stringify(CV_NO_SAMPLE.slice().sort()),
+            `題材が無いルールの一覧が宣言と違う（実際: ${noSample.join(',') || 'なし'} ／ ` +
+            `宣言: ${CV_NO_SAMPLE.join(',') || 'なし'}）。増えたなら報告に本数と名前を書き、CV_NO_SAMPLE を直すこと`);
+        // 空振り防止: 切れる反応が1本も無いのに緑、をあり得なくする
+        assert(cut.length >= 5,
+            `分かれた反応が ${cut.length} 本しかない ＝ 物差しが空振りしている疑い（${cut.join(',')}）`);
+        /* ★ **ラチェット**: いちど見張れた「分かれる反応」が、黙って見張られなくなるのを止める。
+         * ⚠ 題材はライブラリの走査で自動に拾うので、**ライブラリが変わると題材も変わる** ——
+         *   切る反応の題材が環状の相手（ラクトンなど＝切っても分子の数が増えない）に化けると、
+         *   `cut` から `intact` へ移るだけで**緑のまま見逃す**。注記の本数が減っても誰も気づかない。 */
+        const lost = CV_MUST_SPLIT.filter(id => !cut.includes(id) && rules.some(r => r.id === id));
+        assert(lost.length === 0,
+            `いちど見張れていた「分かれる反応」が ${lost.length} 本、分かれなくなっている（${lost.join(',')}）。` +
+            'ライブラリから拾った題材が変わって、切っても分子の数が増えない相手（環状のものなど）に' +
+            'なっていないか見ること。⚠ 反応そのものを変えたなら CV_MUST_SPLIT からその id を外し、' +
+            '外した理由をコミットに書くこと（黙って減らさない）');
+
+        c.reset();
+        return `見張った ${rules.length - noSample.length}/${rules.length} 本` +
+            `（分かれた反応 ${cut.length} 本・分かれない反応 ${intact.length} 本）` +
+            `／題材が無く見張れない ${noSample.length} 本${noSample.length ? '（' + noSample.join(',') + '）' : ''}` +
+            `／脱離した水として除外した生成物 ${waterSkipped} 個`;
+    });
+
+    test('CV2: ★否定対照 — スクロースの加水分解はグルコース側とフルクトース側の両方が光る', async (c) => {
+        /* ⭐ **正しく動いていることが実測で分かっている例**（動画レーンが V121 の完成品で確認。
+         *   グルコース側とフルクトース側の両方に破線の円）。⚠ ＝「切る反応が全部壊れている」
+         *   わけではないので、**同じ物差しがここで通る**ことを確かめて、CV1 の赤が
+         *   物差しの空振りでないと言えるようにする。 */
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        assert(rule, 'hydrolysis_glycoside が無い');
+        const mol = cvSetup(c, ['スクロース（ショ糖）']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `スクロースのグリコシド結合が ${sites.length} 箇所（1 のはず）`);
+        const before = cvComponents(mol);
+        assert(before.length === 1, `切る前が ${before.length} 分子（1 のはず）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const after = cvComponents(mol);
+        assert(after.length === 2, `切ったあとが ${after.length} 分子（2 のはず）`);
+        const v = cvUnmarkedProducts(mol, before, after, res.changed);
+        assert(v.split, 'スクロースが分かれたと読めていない（物差しの空振り）');
+        assert(v.unmarked.length === 0,
+            `スクロースの加水分解で印の無い生成物が ${v.unmarked.length} 個ある`);
+        // 「本当にグルコースとフルクトースに分かれた」ことを名前でも見る（2個に分かれただけでは弱い）
+        const shown = c.D.getElementById('compound-name').textContent;
+        // ⚠ 表示は「α-D-グルコース（α-D-グルコピラノース） ＋ β-D-フルクトフラノース」なので、
+        //    フルクトース側は語幹（フルクト）で見る（フラノース／フラノースの言い分けに引っかからない）
+        assert(shown.includes('グルコース') && shown.includes('フルクト'),
+            `切ったあとの表示が「${shown}」（グルコースとフルクトースを期待）`);
+        c.reset();
+    });
+
+    test('CV3: ★否定対照 — 「印が2つ以上」では通る／直しを外すと赤くなる／水の除外は酸素1個だけ', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const est = W.REACTION_RULES.find(r => r.id === 'hydrolysis_ester');
+        assert(est, 'hydrolysis_ester が無い');
+
+        // ---- ① **「印が2つ以上ある」では通ってしまう**（酸の側だけで2つ出る）
+        const mol = cvSetup(c, ['酢酸エチル']);
+        const sites = est.detect(mol);
+        assert(sites.length === 1, `酢酸エチルのエステル結合が ${sites.length} 箇所`);
+        const before = cvComponents(mol);
+        g.saveState();
+        const res = est.apply(g, sites[0]);
+        const after = cvComponents(mol);
+        assert(after.length === 2, `加水分解のあとが ${after.length} 分子（2 のはず）`);
+        assert((res.changed || []).length >= 2, '印が2つ未満（この否定対照が成り立たない）');
+        const acid = after.find(s => [...s].filter(id => res.changed.includes(id)).length >= 2);
+        assert(acid, '酸の側だけで印が2つある状態になっていない ＝ この否定対照の前提が崩れている');
+        // ⚠ ＝ 数だけ見る検査（`changed.length >= 2`）はここを緑にしてしまう。だから成分ごとに見る
+
+        // ---- ② **直しを外すと赤くなる**（物差しが空振りしていない証明）
+        //    この直しの前の `changed: [cId, o.id]` を、酸の側の原子だけ残して再現する
+        const old = res.changed.filter(id => acid.has(id));
+        const broken = cvUnmarkedProducts(mol, before, after, old);
+        assert(broken.unmarked.length === 1,
+            `直しを外した changed でも印の無い生成物が ${broken.unmarked.length} 個（1 個＝エタノール側を期待）`);
+        // いまの実装では通る
+        const now = cvUnmarkedProducts(mol, before, after, res.changed);
+        assert(now.unmarked.length === 0, 'いまの実装で印の無い生成物が残っている');
+
+        // ---- ③ **水の除外は広がっていない**（除外するのは酸素1個の成分だけ）
+        const deh = W.REACTION_RULES.find(r => r.id === 'dehydration_intra');
+        assert(deh, 'dehydration_intra が無い');
+        const m2 = cvSetup(c, ['1-プロパノール']);
+        const s2 = deh.detect(m2);
+        assert(s2.length > 0, '1-プロパノールで分子内脱水が出ない');
+        const b2 = cvComponents(m2);
+        g.saveState();
+        const r2 = deh.apply(g, s2[0]);
+        const a2 = cvComponents(m2);
+        const v2 = cvUnmarkedProducts(m2, b2, a2, r2.changed);
+        assert(v2.split, '分子内脱水で水が分かれたと読めていない');
+        assert(v2.water.length === 1, `水として除外した成分が ${v2.water.length} 個（1 個のはず）`);
+        v2.water.forEach(set => {
+            const heavy = [...set].map(id => m2.atoms.find(a => a.id === id)).filter(a => a && a.element !== 'H');
+            assert(heavy.length === 1 && heavy[0].element === 'O',
+                `水として除外した成分が ${heavy.map(a => a.element).join('')} ＝ 除外が広がっている`);
+        });
+        assert(v2.unmarked.length === 0, '分子内脱水で（水以外に）印の無い生成物がある');
+
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
@@ -43783,8 +44093,20 @@
             li.textContent = t.name;
             const t0 = performance.now();
             try {
-                await t.fn(ctx);
+                /* ★ **テストが「自分は何本を見張ったか」を画面に出せる口**（v1490・CV1）。
+                 * ⚠ 悉皆の検査は「対象を絞って全部通った」が**いちばん悪い形**なので、
+                 *   見張れた本数と見張れなかった本数を**緑のときにも画面へ出す**。
+                 *   `?only=` の「絞り込み実行です」と同じ考え方 ——
+                 *   あとで題材が足されたら、この数字が自動で動く。
+                 * 使い方: テストの `fn` が文字列を返すだけ（返さなければ今までどおり）。 */
+                const note = await t.fn(ctx);
                 li.className = 'pass';
+                if (typeof note === 'string' && note) {
+                    const span = document.createElement('span');
+                    span.className = 'detail';
+                    span.textContent = note;
+                    li.appendChild(span);
+                }
                 passed++;
             } catch (e) {
                 li.className = 'fail';
