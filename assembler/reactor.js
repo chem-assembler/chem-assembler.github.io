@@ -2166,6 +2166,170 @@ function vulcanizablePairs(mol) {
     return out;
 }
 
+/* ==========================================================================
+ * ★★ ビニロン（PVA のアセタール化）—— `DESIGN_reaction_execution.md` §21-4 (e) の1本目
+ *
+ * **教科書**（数研『R5化学Vol.2』6編 p.254 式(5)(3)）:
+ *   - ★ **PVA を3ユニットぶん実際に描く**（端は短い破線2本＋実線・`n` も角括弧も無し）
+ *   - **隣り合う2つの -OH が O-CH₂-O の六員環アセタールになり、3つ目の -OH は残る**
+ *   - ⚠ **割合の但し書きは本文にも脚注にも無い**。章末 p.268 問5(5) が同じ3ユニット構造を
+ *     `[ ]ₙ` で囲んで質量計算をさせる ＝ **教科書は 2/3 を暗黙の理想化として固定している**
+ *
+ * ★ **1タップで 2/3 まで進めて終わり**（ユーザー判断 D-P5・2026-08-31）。
+ * ⚠ **繰り返し押せる形にしない** —— 3ユニットずつ区切って先頭2つを橋渡しするので、
+ *   押したあとに残る -OH は**どれも隣に相手がいない** ＝ `detect` が自然に空になる。
+ *
+ * ★ **橋の炭素はキャンバスのホルムアルデヒドから持ってくる**（瓶を増やさない）。
+ *   HCHO の C が -CH₂- になり、**O は水になって離れる** ＝ 画面に出る水1分子が
+ *   「アセタール化で水がとれた」証拠になる。⚠ 入口は `PARTNER_CANDIDATES` に
+ *   `ホルムアルデヒド` を1行足すだけで立つ（`findPartnerHints` が試算して札を出す）。
+ * ========================================================================== */
+
+/** その炭素にぶら下がっている -OH の酸素 id（無ければ null）。エーテルの O は拾わない */
+function hydroxylOxygenOf(mol, cId) {
+    const a = mol.atoms.find(x => x.id === cId);
+    if (!a || a.element !== 'C') return null;
+    const hit = mol.getNeighbors(cId).find(n => {
+        if (n.atom.element !== 'O') return null;
+        const b = mol.getBond(cId, n.atom.id);
+        if (!b || b.type !== 1) return false;
+        // 重原子の隣が1つだけ ＝ まだ -OH（アセタール化すると2つになるので、ここで落ちる）
+        return mol.getNeighbors(n.atom.id).filter(m => m.atom.element !== 'H').length === 1;
+    });
+    return hit ? hit.atom.id : null;
+}
+
+/** キャンバスにあるホルムアルデヒド（C=O の2原子だけの分子）を集める */
+function formaldehydeMolecules(mol) {
+    const out = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || seen.has(a.id)) return;
+        const comp = componentOf(mol, a.id);
+        comp.forEach(id => seen.add(id));
+        const heavy = [...comp].map(id => mol.atoms.find(t => t.id === id))
+            .filter(x => x && x.element !== 'H');
+        if (heavy.length !== 2) return;
+        const c = heavy.find(x => x.element === 'C');
+        const o = heavy.find(x => x.element === 'O');
+        if (!c || !o) return;
+        const b = mol.getBond(c.id, o.id);
+        if (!b || b.type !== 2) return;
+        out.push({ c: c.id, o: o.id, x: c.x, y: c.y });
+    });
+    return out;
+}
+
+/**
+ * アセタール化できる「隣り合う -OH の組」を鎖ごとに返す。
+ *
+ * 返り値は `[{ chain, groups: [{ oA, cA, oB, cB, cMid, hc, ho }] }]`。
+ * ★ **鎖は R で端を止めたもの（重合の生成物）に限る**
+ *   —— `vulcanizablePairs` の `inPolymer`（2070〜2085行）と同じ絞り方。
+ *   単量体のジオール（エチレングリコール）にまでアセタールを架けない。
+ * ★ **3ユニットずつ区切り、各区切りの先頭2つだけを組にする** ＝ 教科書の 2/3。
+ * ⚠ **六員環になる並びだけ**（主鎖で炭素1つを挟む ＝ 主鎖の添字の差がちょうど2）。
+ * ⚠ **橋にする HCHO が組の数だけ要る**（足りなければ何も返さない ＝ 半端に架けない）。
+ */
+function acetalizableDiols(mol) {
+    const at = id => mol.atoms.find(x => x.id === id);
+    const hchos = formaldehydeMolecules(mol);
+    if (!hchos.length) return [];
+    const out = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element === 'H' || seen.has(a.id)) return;
+        const comp = componentOf(mol, a.id);
+        comp.forEach(id => seen.add(id));
+        const rs = [...comp].filter(id => (at(id) || {}).element === 'R');
+        if (rs.length !== 2) return;                     // 両端を R で止めた鎖だけ
+        const path = carboxylSkeletonPath(mol, rs[0], rs[1], []);
+        if (!path || path.length < 5) return;
+        const idx = new Map(path.map((id, i) => [id, i]));
+        // 主鎖の並び順に -OH 付きの炭素を拾う（原子IDの順には頼らない）
+        const units = [];
+        path.forEach(cid => { const o = hydroxylOxygenOf(mol, cid); if (o) units.push({ c: cid, o }); });
+        const groups = [];
+        for (let i = 0; i + 3 <= units.length; i += 3) {
+            const A = units[i], B = units[i + 1];
+            if (idx.get(B.c) - idx.get(A.c) !== 2) continue;   // 六員環にならない並びは組にしない
+            const cMid = path[idx.get(A.c) + 1];
+            groups.push({ oA: A.o, cA: A.c, oB: B.o, cB: B.c, cMid });
+        }
+        if (!groups.length) return;
+        if (groups.length > hchos.length) return;        // ⚠ 半端に架けない（全部そろって初めて出す）
+        // 橋にする HCHO を組ごとに1つずつ、近いものから割り当てる（使い回さない）
+        const free = hchos.slice();
+        groups.forEach(g => {
+            const a1 = at(g.oA), b1 = at(g.oB);
+            const mx = (a1.x + b1.x) / 2, my = (a1.y + b1.y) / 2;
+            let bi = 0;
+            free.forEach((h, k) => {
+                if (Math.hypot(h.x - mx, h.y - my) < Math.hypot(free[bi].x - mx, free[bi].y - my)) bi = k;
+            });
+            const h = free.splice(bi, 1)[0];
+            g.hc = h.c; g.ho = h.o;
+        });
+        out.push({ chain: comp, groups });
+    });
+    return out;
+}
+
+/**
+ * アセタールの橋（-CH₂-）を置く場所。置けなければ null。
+ *
+ * 置き場は `anhydrideBridgeSpot`（1753行）と同じ考えで、
+ * **環の内側（-OH をぶら下げている主鎖）の重心と反対向き**へ逃がす。
+ *
+ * ⚠⚠ **中点をそのまま使わない**（2026-08-31・実測して差し替えた）。PVA を素直に描くと
+ * -OH の O は主鎖の真下に 42px 間隔で並ぶので、中点は格子点に落ちて
+ * **六員環が 2×3 の長方形**にきれいに収まる —— が、**そこは主鎖の -CH₂- の
+ * 自動水素が下向きに出る場所**で、橋の -CH₂- の自動水素と 11.5px まで近づく
+ * （`tools/verify-compounds.js` の警告・実画面でも H の丸が重なって見えた）。
+ * ★ **主鎖から結合1本ぶん離した位置を先に試す** ＝ 教科書 p.254 の絵と同じ
+ * 「環が主鎖からぶら下がる」形になり、H も散る。
+ */
+function acetalBridgeSpot(mol, oAId, oBId, innerIds, ignoreIds) {
+    const at = id => mol.atoms.find(x => x.id === id);
+    const a = at(oAId), b = at(oBId);
+    if (!a || !b) return null;
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const G = bondStep(mol, oAId);
+    const inner = (innerIds || []).map(at).filter(Boolean);
+    let ux = 0, uy = 0;
+    if (inner.length) {
+        const cx = inner.reduce((s, p) => s + p.x, 0) / inner.length;
+        const cy = inner.reduce((s, p) => s + p.y, 0) / inner.length;
+        ux = mx - cx; uy = my - cy;
+    }
+    if (Math.hypot(ux, uy) < 1e-6) { ux = -(b.y - a.y); uy = b.x - a.x; }  // 軸の法線
+    const L = Math.hypot(ux, uy) || 1;
+    ux /= L; uy /= L;
+    const cand = [];
+    [G, G * 0.75, G * 0.5, 0].forEach(d => {
+        cand.push({ x: mx + ux * d, y: my + uy * d });
+        if (d > 1e-6) cand.push({ x: mx - ux * d, y: my - uy * d });
+    });
+    const skip = new Set([oAId, oBId, ...(ignoreIds || [])]);
+    const others = mol.atoms.filter(x => x.element !== 'H' && !skip.has(x.id));
+    const clear = G * 0.6;
+    for (const p of cand) {
+        if (others.every(o => Math.hypot(o.x - p.x, o.y - p.y) > clear)) return p;
+    }
+    return null;
+}
+
+/**
+ * いまの分子を1コマ写す（`Reactor.snapshotMolecule` と同じ形）。
+ * ★ 反応の途中経過を**1組ずつ順に見せる**ために `apply` が使う（`morphSequence`）。
+ */
+function snapshotFrame(mol) {
+    return {
+        atoms: mol.atoms.map(a => ({ id: a.id, element: a.element, x: a.x, y: a.y, charge: a.charge || 0 })),
+        bonds: mol.bonds.map(b => ({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }))
+    };
+}
+
 /**
  * 加硫の1本目の橋を架ける前に、**相手の鎖を真下（または真上）へ寄せて「＝」に並べる**
  * （v1484・2026-08-31。動画レーン V130 の収録映像から出た要望2件）。
@@ -4085,6 +4249,63 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ ビニロン（PVA のアセタール化・§21-4 (e) の1本目・入試34件）。
+         * 詳しい理由と教科書の読みは `acetalizableDiols`（2154行〜）の注記に書いた。
+         *
+         * ⚠ **瓶は増やさない**。橋の -CH₂- は**キャンバスに呼び出した HCHO の炭素**で、
+         *   その O は水になって離れる ＝ 「つなぐたびに水がとれる」が画面で見える。
+         * ⚠ **`wholeCanvas` は付けない**（加硫と同じ）—— 箇所が PVA と HCHO に
+         *   またがるので、どちらを見ていても `focus` に必ず当たる。 */
+        id: 'acetalization_pva',
+        label: 'アセタール化（ホルムアルデヒドで -OH を橋かけ）→ ビニロン',
+        detect(mol) {
+            return acetalizableDiols(mol).map(ch => {
+                const site = [];
+                ch.groups.forEach(g => site.push(g.oA, g.oB, g.hc));
+                return site;
+            });
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const at = id => mol.atoms.find(x => x.id === id);
+            // detect が返した組を引き当てる（原子IDの並びで照合。座標は動いているかもしれない）
+            const want = new Set();
+            for (let i = 0; i < site.length; i += 3) want.add(`${site[i]}\0${site[i + 1]}\0${site[i + 2]}`);
+            const chain = acetalizableDiols(mol).find(ch =>
+                ch.groups.length === want.size &&
+                ch.groups.every(g => want.has(`${g.oA}\0${g.oB}\0${g.hc}`)));
+            if (!chain) throw new Error('アセタール化できる -OH の組が見つかりません');
+            const stages = [];
+            const changed = [];
+            chain.groups.forEach(g => {
+                const spot = acetalBridgeSpot(mol, g.oA, g.oB, [g.cA, g.cMid, g.cB], [g.hc, g.ho]);
+                if (!spot) throw noRoom('アセタールの環を描く空間がありません');
+                const c = at(g.hc);
+                mol.removeBond(g.hc, g.ho);   // HCHO の C=O を切る ＝ O は水になって離れる
+                c.x = Math.round(spot.x);
+                c.y = Math.round(spot.y);
+                mol.addBond(g.oA, g.hc, 1);
+                mol.addBond(g.oB, g.hc, 1);
+                parkAsWater(mol, g.ho);
+                changed.push(g.oA, g.oB, g.hc, g.cA, g.cB);
+                // ★ **1組できるごとに1コマ写す** ＝ 隣どうしが組むところを順に見せる
+                stages.push(snapshotFrame(mol));
+            });
+            const n = chain.groups.length;
+            const left = [...chain.chain].filter(id => hydroxylOxygenOf(mol, id)).length;
+            return {
+                caption: `ポリビニルアルコールの -OH がホルムアルデヒドとアセタール化して、` +
+                    `隣り合う -OH 2つが O-CH₂-O の六員環になりました（${n} か所・残った -OH は ${left} 個）。` +
+                    '教科書はこの反応を「3つのうち2つ ＝ -OH の 2/3 がアセタール化する」形で描いていて、' +
+                    '残った -OH が水になじむので、ビニロンは合成繊維では珍しく吸湿性を持ちます。' +
+                    `つなぐたびに水が1分子とれます（画面の水 ${n} 分子がその証拠です）。`,
+                changed,
+                morphSequence: stages,
+                refit: true
+            };
+        }
+    },
+    {
         /* 縮合重合（P12-8 の穴埋め・2026-08-07）。ナイロン66 の図は登録済みなのに、
          * 反応実行モードからそこへ至る手段が無かった（下の `condensation_polymer_info` は
          * 説明を返すだけで、実際の連結は「エステル化を1段ずつ」に任せていた）。
@@ -4884,7 +5105,11 @@ const REACTION_RULES = [
  *
  * 候補は「名称から呼び出す」で実際に呼べるものだけにする（案内をそのまま実行できるように）。
  */
-const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール'];
+/* ⚠ **`ホルムアルデヒド` は §21-4 (e) の1本目（ビニロン）の入口**（2026-08-31）。
+ * PVA を呼び出して見ているとき「＋ ホルムアルデヒド を呼び出す → アセタール化」の札が立つ。
+ * ★ 札は名前の一致では出ない —— `findPartnerHints` が**実際に並べて `detect` を回し**、
+ *   箇所が2分子にまたがったときだけ出す（＝ 相手を足しても何も起きない分子では出ない）。 */
+const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール', 'ホルムアルデヒド'];
 
 // 畳んだ見出しの札と id（v1420）。**文言と id は1か所**——テストと実装が同じものを見る
 const PARTNER_HINTS_ID = 'partner-hints';
@@ -6916,6 +7141,17 @@ class Reactor {
             this.animateHaworthFlip(before, after, result, highlight);
             return;
         }
+        /* ★★ **1組ずつ順に見せる**（v1488・ユーザー判断 D-P5）。
+         * ⚠ ビニロンのアセタール化は**1タップで 2/3 まで進めて終わり**にしたので、
+         *   「押すたびに1組」で得られるはずだった「隣どうしが組むところが1組ずつ見える」を
+         *   ここで拾う ―― `apply` が**1組できるごとに写したコマ**（`morphSequence`）を
+         *   順につなぎ、各段はさらに「①寄る → ②結合ができる」の2つに割る
+         *   （`joinFirst` とまったく同じ割り方。⚠ 2つの操作を1回の補間に混ぜない）。
+         * ⚠ **組が1つのときは今までどおり**（段が1つ ＝ 既存の見え方と同じ）。 */
+        if (Array.isArray(result.morphSequence) && result.morphSequence.length) {
+            this.animateMorphSequence(before, result.morphSequence, highlight);
+            return;
+        }
         // モーフィングは表示のみの上書き。世代トークンで多重・中断を安全に扱う
         const gen = ++this._morphGen;
         this._morphing = true;
@@ -7008,6 +7244,50 @@ class Reactor {
      *   `Molecule` には1つも入らない（`CLAUDE.md`「検証はトポロジーのみ・座標は見た目専用」）。
      * ⚠ **途中のコマで結合や原子を足し引きしない**（動くのは座標だけ）。
      * ========================================================================== */
+
+    /**
+     * ★★ **途中経過を1組ずつ順に見せる**（v1488・ビニロンのアセタール化）。
+     *
+     * `apply` が「1組できるごとに写したコマ」を `morphSequence` で渡す。ここでは
+     * **前 → コマ1 → コマ2 → …** を順につなぎ、**各段をさらに「①寄る → ②結合ができる」**
+     * の2つに割って再生する（割り方は `joinFirst` と同じ `buildMidSnapshot('moveFirst')`）。
+     *
+     * ⚠ **2つの操作を1回の補間に混ぜない**（`animateHaworthFlip` と同じ約束）。
+     * ⚠ 最後のコマは `after` そのものなので、ここでは `after` を別に受け取らない。
+     * ⚠ 組が1つのときは段も1つ ＝ **今までの見え方と同じ**（新しい経路を増やしただけ）。
+     */
+    animateMorphSequence(before, stages, highlight) {
+        const g = this.game;
+        const gen = ++this._morphGen;
+        this._morphing = true;
+        this._morphSkip = false;
+        const smoothstep = t => t * t * (3 - 2 * t);
+        const stop = () => this._morphSkip || this._morphGen !== gen;
+        const shots = [before, ...stages];
+        this.renderMorphFrame(shots[0], shots[1], 0);  // 先に反応前を描く（ちらつき防止）
+        const run = (k) => {
+            if (this._morphGen !== gen || this._morphSkip || k + 1 >= shots.length) {
+                return Promise.resolve(null);
+            }
+            const from = shots[k], to = shots[k + 1];
+            const mid = this.buildMidSnapshot(from, to, 'moveFirst');
+            return animateFramesLoop(450,
+                t => { if (this._morphGen === gen) this.renderMorphFrame(from, mid, smoothstep(t)); },
+                stop
+            ).then(() => {
+                if (this._morphGen !== gen || this._morphSkip) return null;
+                return animateFramesLoop(400,
+                    t => { if (this._morphGen === gen) this.renderMorphFrame(mid, to, smoothstep(t)); },
+                    stop);
+            }).then(() => run(k + 1));
+        };
+        run(0).then(() => {
+            if (this._morphGen !== gen) return;
+            this._morphing = false;
+            g.updateDrawing();   // 自動水素を含む最終分子を描き直す
+            highlight();
+        });
+    }
 
     /** 回す断片の一覧（回さない分子なら空配列） */
     haworthFlipShots(result) {
@@ -7505,6 +7785,7 @@ if (typeof window !== 'undefined') {
     window.reverseRuleIdOf = reverseRuleIdOf;
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
+    window.acetalizableDiols = acetalizableDiols; // PY5〜PY8（ビニロン）が読む
     window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;
     window.SELF_PARTNER_RULES = SELF_PARTNER_RULES; // PM5・PM6（1分子からの重合の入口）が読む
     window.SELF_PARTNER_UNITS = SELF_PARTNER_UNITS;
