@@ -18869,7 +18869,7 @@
             q.basePool = null; q.pool = null;
             q.build(); q.computePool();
             const back = q.basePool.filter(p => hasR(p.mol)).map(p => `${p.name}=${p.count}`);
-            /* ⚠ **ここは高分子の登録エントリが増えるたびに動く数**（v1487・ビニロンを足した）。
+            /* ⚠ **ここは高分子の登録エントリが増えるたびに動く数**（v1488・ビニロンを足した）。
              *   見ているのは「絞り込みを外すと高分子が戻ってくる」ことなので、
              *   **戻ってくる顔ぶれを名指しで**書く（件数だけにすると顔ぶれの入れ替わりに気づけない）。 */
             const backWant = ['ポリアセチレン=6', 'ポリビニルアルコール=8', 'ビニロン=8'];
@@ -32982,7 +32982,7 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・縮合3件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・縮合3件・アセタール化1件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
@@ -33001,12 +33001,20 @@
          *     （教科書はアミドの加水分解の**逆**として書くだけ）
          *   `dehydration_anhydride` … 教科書は「加熱すると」としか書かない
          *     （フタル酸 p.184・マレイン酸 p.157）。★ 資料に無い試薬を名乗らせない（§4-1） */
-        const expected = ['addition_polymerization', 'alkyne_polymerization', 'amidation',
+        /* ★ 2026-09-01（v1488）に `acetalization_pva`（ビニロン）を足して 11 件。
+         * ⚠ **これも意図して瓶を持たせていない** —— 橋になる -CH₂- は**瓶の試薬ではなく、
+         *   ユーザーがキャンバスに呼び出したホルムアルデヒドの炭素**である
+         *   （`DESIGN_reaction_execution.md` §21-6 (c)）。★ 瓶にすると
+         *   「どこから来た炭素か」が画面から消え、水が1分子とれる理由も見えなくなる。
+         *   入口は `PARTNER_CANDIDATES` の札（「＋ ホルムアルデヒド を呼び出す」）＝ PY7 が見張る */
+        const expected = ['acetalization_pva',
+            'addition_polymerization', 'alkyne_polymerization', 'amidation',
             'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'dehydration_anhydride', 'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
-        assert(now.length === 10, `瓶を持たない実行ルールが ${now.length} 件（10件を期待）: ${now.join(', ')}`);
+        assert(now.length === expected.length,
+            `瓶を持たない実行ルールが ${now.length} 件（${expected.length}件を期待）: ${now.join(', ')}`);
         assert(now.join(',') === expected.join(','),
             `瓶の割り当て漏れ、または新しい反応に瓶が付いていない\n  いま: ${now.join(', ')}\n  設計: ${expected.join(', ')}`);
         // 解説専用（info）で瓶を持たないのは、瓶を持たない反応の「できない側」だけ
