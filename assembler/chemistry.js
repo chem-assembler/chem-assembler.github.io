@@ -483,7 +483,7 @@ function isValencyValid(mol, atomId) {
 }
 
 /**
- * ★ その分子式が **「単結合だけの木」しか作れない**か（v14xx・C₇H₁₆ の書き出し練習）。
+ * ★ その分子式が **「単結合だけの木」しか作れない**か（v1485・C₇H₁₆ の書き出し練習）。
  *
  * `record()` が通す条件は「重原子の空き価標の合計 ＝ 水素数」なので、
  * 重原子どうしが使う結合次数の合計は `B = (Σ価数 − 水素数) / 2` で**分子式だけで決まる**。
@@ -592,7 +592,7 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
     const minMax = elements.map(e => (e === 'S' ? 2 : (VALENCIES[e] || 0)));
 
     /**
-     * ★ **不飽和度0の式は「単結合だけの木」しか作れない**（v14xx・C₇H₁₆ の書き出し練習）。
+     * ★ **不飽和度0の式は「単結合だけの木」しか作れない**（v1485・C₇H₁₆ の書き出し練習）。
      * 根拠と、これを門番と共有する理由は `enumerationIsTreeOnly` の説明に書いた。
      * 二重・三重結合の枝と、n−1 本を超える辺の枝は**1つも答えに繋がらない**ので探索に入れない。
      *
@@ -660,7 +660,7 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
     };
 
     /**
-     * ⚠ **ここに「対称性の破り」を足さないこと**（v14xx で試して**取り下げた**）。
+     * ⚠ **ここに「対称性の破り」を足さないこと**（v1485 で試して**取り下げた**）。
      *
      * 「元素が同じで添字が隣り合う頂点は、次数が増える向きに並ばない」に絞ると、
      * 探索は劇的に速くなる（実測 C₆H₆ 4018ms → 255ms・C₆H₁₂O 1843ms → 489ms）。
@@ -930,6 +930,179 @@ function enumerateBenzeneRingIsomers(elements, hCount, options = {}) {
         };
         distribute(0, budget);
     });
+
+    return { isomers: overflow ? [] : isomers, overflow, applicable: true };
+}
+
+/**
+ * ★★ 官能基の種を置いてから腕を生やす異性体列挙（2026-08-31・ユーザー要望
+ *    「重元素7以上でも分類ごとの書き出しは対応を増やしたい／例えば C₆H₁₂O のケトン、
+ *      C₇H₁₄O₂ のエステル」）。
+ *
+ * ⚠⚠ **「全部列挙してから分類で捨てる」は破綻する。** C₇H₁₄O₂ は重原子9個で、
+ *    総当たりの `enumerateConstitutionalIsomers` は上限8個を超えて**1件も出せない**。
+ *    だから `enumerateBenzeneRingIsomers` と**まったく同じ形**にした ——
+ *    ベンゼン環の代わりに **-CO- / -CHO / -COO- / -COOH の種**を置き、
+ *    残りの炭素を腕（付け根 `R` つきの骨格）として `enumerateConstitutionalIsomers` に
+ *    数えさせて貼る。⚠ **新しい列挙アルゴリズムは1つも書いていない。**
+ *
+ * 種と腕の対応（★ 腕の本数と、腕が水素でよいかが分類ごとに違う）:
+ *
+ * | 分類 | 種 | 腕 | 腕が H でよいか |
+ * |---|---|---|---|
+ * | `ketone`   | R–**CO**–R′  | 2本 | ⚠ どちらも不可（H にするとアルデヒドになる） |
+ * | `aldehyde` | R–**CHO**    | 1本 | 不可（H ＝ ホルムアルデヒド。炭素数が1ずれる） |
+ * | `ester`    | R–**COO**–R′ | 2本 | ★ アシル側だけ可（**ギ酸エステル**。C₃H₆O₂ の2種の片方） |
+ * | `acid`     | R–**COOH**   | 1本 | 不可（H ＝ ギ酸。上と同じ理由） |
+ *
+ * ⚠ **対象は「種の O を除くと残りが全部 C」の式だけ**（`applicable: false` で断る）。
+ *   腕にヘテロ原子を許すと、同じ分子式で別の分類（エステルの中にエーテル＋酸）が
+ *   混ざり込む可能性を1つずつ検討することになり、**お題として何を数えたのかが言えなくなる**。
+ *
+ * 返り値は `enumerateBenzeneRingIsomers` と同じ `{ isomers, overflow, applicable }`。
+ */
+const FG_CLASS_SEEDS = {
+    // arms … 各腕の { minC }（0 なら水素でもよい）。baseH … 種そのものが持つ水素
+    ketone:   { oxygens: 1, arms: [{ minC: 1 }, { minC: 1 }], baseH: 0 },
+    aldehyde: { oxygens: 1, arms: [{ minC: 1 }],              baseH: 1 },
+    ester:    { oxygens: 2, arms: [{ minC: 0 }, { minC: 1 }], baseH: 0 },
+    acid:     { oxygens: 2, arms: [{ minC: 1 }],              baseH: 1 }
+};
+// 腕1本あたりの炭素の上限。⚠ ベンゼンの `BENZENE_REST_MAX` と同じ役目の門番
+const FG_ARM_MAX = 7;
+// 分子ぜんたいの炭素数の上限。**実測で引いた線**（枝刈りを入れたあと・PC）:
+//   C₇ は ケトン41ms・アルデヒド349ms・エステル294ms・カルボン酸257ms
+//   C₈ は ケトン425ms・アルデヒド4961ms・エステル5248ms・カルボン酸4701ms ＝ 画面が5秒固まる
+// ⚠ 断り方は `overflow`（＝「数え切れなかった」）。黙って数え落とさない
+const FG_MAX_CARBON = 7;
+/**
+ * ⚠⚠ **性能の要はここ**（ベンゼン側の `BENZENE_SUB_DOU_MAX` と同じ役目）。
+ *
+ * 腕の水素を「多い順に全部試す」と、**水素0本の腕**（＝ C₅ を不飽和度5で組む）まで
+ * 数えることになる。実測（この門番を入れる前）: アルデヒド C₆H₁₂O が **1615ms**、
+ * C₇H₁₄O は 4,000,000 ノードを超えて **1件も出せなかった**。
+ *
+ * ★ ところが**必要な不飽和度は分子式から先に分かる** —— 分子全体の不飽和度から
+ *   種の C=O ぶん（1）を引いた残りが、腕が使ってよい全部。CₙH₂ₙO・CₙH₂ₙO₂ なら **0**
+ *   ＝ 腕は飽和のアルキル基しかありえない。これを列挙に入る前の枝刈りにする。
+ * ⚠ 予算がこの上限を超える式は**黙って落とさず `overflow` で断る**
+ *   （静かに数え落とすと「20種のはずが18種のお題」が生まれる）
+ */
+const FG_ARM_DOU_MAX = 2;
+
+function enumerateFunctionalGroupIsomers(elements, hCount, className) {
+    const spec = FG_CLASS_SEEDS[className];
+    const none = ok => ({ isomers: [], overflow: false, applicable: ok });
+    if (!spec || !Array.isArray(elements)) return none(false);
+
+    // ① 種が食う原子を引く。⚠ **残りが全部 C でなければ扱わない**（上の断り）
+    const cCount = elements.filter(e => e === 'C').length;
+    const oCount = elements.filter(e => e === 'O').length;
+    if (cCount + oCount !== elements.length) return none(false);   // C・O 以外が混ざる
+    if (oCount !== spec.oxygens) return none(false);
+    if (cCount > FG_MAX_CARBON) return { isomers: [], overflow: true, applicable: true };
+    const m = cCount - 1;                                          // 腕に配れる炭素
+    if (m < spec.arms.reduce((a, x) => a + x.minC, 0)) return none(false);
+    if (m > FG_ARM_MAX * spec.arms.length) return { isomers: [], overflow: true, applicable: true };
+    // ★ 腕が使ってよい不飽和度の全部（分子全体 − 種の C=O ぶん1）。上の FG_ARM_DOU_MAX を参照
+    const armDouBudget = (2 * cCount + 2 - hCount) / 2 - 1;
+    if (!Number.isInteger(armDouBudget) || armDouBudget < 0) return none(true);
+    if (armDouBudget > FG_ARM_DOU_MAX) return { isomers: [], overflow: true, applicable: true };
+
+    // ② 種の組み立て。返すのは「腕の付け根になる原子ID」の並び（arms と同じ順）
+    const buildSeed = () => {
+        const mol = new Molecule();
+        const k = mol.addAtom('C', 0, 0).id;
+        mol.addBond(k, mol.addAtom('O', 0, 0).id, 2);              // C=O はどの分類にも要る
+        if (className === 'ketone' || className === 'aldehyde') {
+            return { mol, anchors: className === 'ketone' ? [k, k] : [k] };
+        }
+        const o2 = mol.addAtom('O', 0, 0).id;                      // -O- （エステル）／-OH（酸）
+        mol.addBond(k, o2, 1);
+        return { mol, anchors: className === 'ester' ? [k, o2] : [k] };
+    };
+
+    // ③ 腕（付け根 `R` つき骨格）の一覧。⚠ 問い合わせの使い回しはベンゼンと同じ
+    const fragCache = new Map();
+    const fragmentsOf = (nc, hs) => {
+        const key = nc + '#' + hs;
+        if (fragCache.has(key)) return fragCache.get(key);
+        const els = [];
+        for (let i = 0; i < nc; i++) els.push('C');
+        const out = enumerateConstitutionalIsomers(els.concat(['R']), hs, 4000000);
+        const r = out.overflow ? null : out.isomers;               // null = 打ち切り
+        fragCache.set(key, r);
+        return r;
+    };
+
+    const isomers = [];
+    const seen = new Set();
+    let overflow = false;
+
+    // ④ 腕の骨格が決まったら種に貼って1分子にする（貼り方はベンゼンの buildOne と同じ）
+    const assemble = (frags) => {
+        const { mol, anchors } = buildSeed();
+        frags.forEach((frag, i) => {
+            if (!frag) return;                                     // 腕が水素 ＝ 何も足さない
+            const map = new Map();
+            let anchor = null;
+            frag.atoms.forEach(a => {
+                if (a.element === 'R') { anchor = a.id; return; }
+                map.set(a.id, mol.addAtom(a.element, 0, 0).id);
+            });
+            frag.bonds.forEach(b => {
+                // ⚠ Bond は端点をID順に正規化するので、付け根がどちら側かは**両方見る**
+                if (b.atomId1 === anchor) mol.addBond(anchors[i], map.get(b.atomId2), b.type);
+                else if (b.atomId2 === anchor) mol.addBond(anchors[i], map.get(b.atomId1), b.type);
+                else mol.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+            });
+        });
+        const code = canonicalCode(mol);
+        if (!seen.has(code)) { seen.add(code); isomers.push(mol); }
+    };
+
+    // ⑤ 炭素と水素を腕へ配る。⚠ **水素の予算は「種の水素 ＋ 空の腕の水素」を引いた残り**
+    //   （空の腕は付け根に水素が1つ生えるので、そのぶんを先に払う）
+    const nArms = spec.arms.length;
+    const carbons = [], picks = [];
+    const chooseCarbons = (i, restC) => {
+        if (overflow) return;
+        if (i === nArms) {
+            if (restC !== 0) return;
+            const emptied = carbons.filter(n => n === 0).length;
+            distributeH(0, hCount - spec.baseH - emptied);
+            return;
+        }
+        const lo = spec.arms[i].minC;
+        for (let n = lo; n <= Math.min(restC, FG_ARM_MAX); n++) {
+            // 最後の腕まで minC を残せない配り方は先に捨てる
+            let need = 0;
+            for (let j = i + 1; j < nArms; j++) need += spec.arms[j].minC;
+            if (restC - n < need) break;
+            carbons.push(n); chooseCarbons(i + 1, restC - n); carbons.pop();
+            if (overflow) return;
+        }
+    };
+    // すべて単結合の木にしたときの水素数 ＝ その腕がもてる水素の最大（付け根の手を1つ引く）
+    const hMaxOf = nc => 4 * nc - 2 * (nc - 1) - 1;
+    const distributeH = (i, remain) => {
+        if (overflow) return;
+        if (i === nArms) { if (remain === 0) assemble(picks.slice()); return; }
+        if (carbons[i] === 0) { picks.push(null); distributeH(i + 1, remain); picks.pop(); return; }
+        const hi = Math.min(remain, hMaxOf(carbons[i]));
+        // ★ 腕の不飽和度が予算を超える水素数は**列挙に入る前に**捨てる（FG_ARM_DOU_MAX の前書き）
+        const lo = Math.max(0, hMaxOf(carbons[i]) - 2 * armDouBudget);
+        for (let hs = hi; hs >= lo; hs--) {
+            const fr = fragmentsOf(carbons[i], hs);
+            if (fr === null) { overflow = true; return; }
+            if (!fr.length) continue;
+            for (const f of fr) {
+                picks.push(f); distributeH(i + 1, remain - hs); picks.pop();
+                if (overflow) return;
+            }
+        }
+    };
+    chooseCarbons(0, m);
 
     return { isomers: overflow ? [] : isomers, overflow, applicable: true };
 }
@@ -5585,6 +5758,8 @@ if (typeof window !== 'undefined') {
     window.enumerateConstitutionalIsomers = enumerateConstitutionalIsomers;
     window.enumerationIsTreeOnly = enumerationIsTreeOnly;
     window.enumerateBenzeneRingIsomers = enumerateBenzeneRingIsomers;
+    window.enumerateFunctionalGroupIsomers = enumerateFunctionalGroupIsomers;
+    window.FG_CLASS_SEEDS = FG_CLASS_SEEDS;
     window.benzeneSubUnsaturation = benzeneSubUnsaturation;
     window.BENZENE_REST_MAX = BENZENE_REST_MAX;
     window.BENZENE_SUB_DOU_MAX = BENZENE_SUB_DOU_MAX;
