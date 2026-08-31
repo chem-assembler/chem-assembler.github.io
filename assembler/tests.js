@@ -24771,11 +24771,15 @@
         const g = c.game, W = c.W, D = c.D;
         const btns = () => [...D.querySelectorAll('#reaction-actions [data-rule]')].map(b => b.dataset.rule);
 
-        // ---- ① 印を持つのは「並べた単量体をまとめて」の3つだけ ----
+        // ---- ① 印を持つのは「並べた単量体をまとめて」繋ぐ重合だけ ----
         const flagged = W.REACTION_RULES.filter(r => r.wholeCanvas).map(r => r.id).sort();
-        // ⚠ **縮合重合は v1472 で足した**（v1465 の付け忘れ。PM13 で再現してから付けた）
+        /* ⚠ **縮合重合は v1472 で足した**（v1465 の付け忘れ。PM13 で再現してから付けた）
+         * ★ **開環重合は v1488**（`DESIGN_reaction_execution.md` §21-7）。
+         *   ⚠ **アセタール化（ビニロン）には付けていない** —— あちらの箇所は PVA と
+         *   ホルムアルデヒドに**またがる**ので、どちらを見ていても `focus` に必ず当たる
+         *   （加硫と同じ理由）。★ ここに増えてよいのは「単量体を横に並べる」形の重合だけ。 */
         assert(flagged.join(',') === 'addition_polymerization,alkyne_polymerization,' +
-               'condensation_polymerization,diene_polymerization',
+               'condensation_polymerization,diene_polymerization,ring_opening_polymerization',
             `wholeCanvas を持つルールが増えている（${flagged.join(',')}）`);
 
         // ---- ② v1429 の直しは生きている（見ている分子と無関係な反応は出ない） ----
@@ -25598,6 +25602,231 @@
         const pva = source.find(x => x.name === 'ポリビニルアルコール');
         assert(CC(fig) !== CC(g.createTargetFromData({ target: pva.target })),
             'ビニロンの図がポリビニルアルコールと同じ');
+        c.reset();
+    });
+
+    /* ===== PY10〜PY13: 開環重合（ε-カプロラクタム → ナイロン6）=====
+     * `DESIGN_reaction_execution.md` §21-4 (e) の2本目・入試44件。
+     * 教科書（数研『R5化学Vol.2』6編 p.251 式(2)）は環の図と鎖の図を同じ式の左右に置き、
+     * **副生成物なし**で書いている。⭐ 直前の式(1) がナイロン66（水が 2n 分子とれる縮合重合）で、
+     * **脱水の有無を並べて比較できる配置**になっている ＝ その対比は caption が言う（PY10 ④）。
+     *
+     * ⚠⚠ **「環が開いた」だけを見ない**（§21-1 (f)）。環を開いても座標は**七角形の弧のまま**で、
+     *   `planAttachment` は 4方向×4回転の**16通りすべてで置けない**（最良 17.5px／要求 25.5px）。
+     *   ★ だから PY10 は **「開いた先が一直線の鎖になっている」**ことを座標で見る。 */
+    const lactamSetup = (c, names) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+
+    test('PY10: ε-カプロラクタム3個が開環重合してナイロン6になる（環が消え、開いた先が一直線）', async (c) => {
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'ring_opening_polymerization');
+        assert(rule, '開環重合のルールが無い');
+        const mol = lactamSetup(c, ['ε-カプロラクタム', 'ε-カプロラクタム', 'ε-カプロラクタム']);
+        // ---- ① 反応前の前提 ----
+        assert(W.ringAtomIds(mol).size === 21, `反応前の環の原子が ${W.ringAtomIds(mol).size} 個（7員環×3 ＝ 21個を期待）`);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `候補が ${sites.length} 件（同じ単量体3個 ＝ 1件を期待）`);
+        assert(sites[0].length === 6, `箇所が ${sites[0].length} 原子（N と C=O を3組 ＝ 6原子を期待）`);
+
+        // ---- ② 実行 ----
+        rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const m = g.userMolecule;
+        assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '開環重合で価標が壊れた');
+        assert(W.ringAtomIds(m).size === 0, `環が ${W.ringAtomIds(m).size} 原子ぶん残っている（全部開くのを期待）`);
+        // ★ **副生成物なし** —— 分子は1つだけ（水が出ていたら2つ以上になる）
+        assert(g.splitMolecules().length === 1,
+            `分子が ${g.splitMolecules().length} 個（開環重合は副生成物が出ないので1個を期待）`);
+        assert(m.atoms.filter(a => a.element === 'O').length === 3,
+            'O の数が3個でない（水になって抜けた／増えた）');
+
+        /* ---- ③ ★★ **開いた先が一直線の鎖になっている**（ここが P-c の中身） ----
+         * ⚠ 「環が開いた」だけでは足りない —— 弧のまま繋ぐと図が重なって読めない。
+         *   R から R まで主鎖をたどり、**y が全部同じ・x が刻み一定で単調に増える**ことを見る。 */
+        const rs = m.atoms.filter(a => a.element === 'R');
+        assert(rs.length === 2, `鎖の端の R が ${rs.length} 個（両端の2個を期待）`);
+        const path = [];
+        let prev = rs[0].id;
+        let cur = m.getNeighbors(prev).filter(n => n.atom.element !== 'H')[0].atom.id;
+        path.push(prev, cur);
+        for (let k = 0; k < 60; k++) {
+            const nx = m.getNeighbors(cur).filter(n => n.atom.id !== prev &&
+                n.atom.element !== 'H' && n.atom.element !== 'O');
+            if (!nx.length) break;
+            prev = cur; cur = nx[0].atom.id; path.push(cur);
+            if (m.atoms.find(a => a.id === cur).element === 'R') break;
+        }
+        assert(path.length === 23,
+            `主鎖が ${path.length} 原子（R ＋ (N＋CH₂×5＋CO)×3 ＋ R ＝ 23原子を期待）`);
+        const pts = path.map(id => m.atoms.find(a => a.id === id));
+        const ys = [...new Set(pts.map(p => Math.round(p.y)))];
+        assert(ys.length === 1, `主鎖の y が ${ys.length} 通り（一直線 ＝ 1通りを期待。弧のまま繋いでいないか）`);
+        const steps = pts.slice(1).map((p, i) => Math.round(p.x - pts[i].x));
+        assert(steps.every(s => s > 0), '主鎖の x が単調に増えていない（折り返している）');
+        assert(Math.max(...steps) - Math.min(...steps) <= 2,
+            `主鎖の刻みがそろっていない（${Math.min(...steps)}〜${Math.max(...steps)}px）`);
+        // =O は主鎖の真上に1本ぶん（ナイロン66・PET の登録図と同じ描き方）
+        const step = steps[0];
+        m.atoms.filter(a => a.element === 'O').forEach(o => {
+            const cc = m.getNeighbors(o.id).find(n => n.atom.element === 'C');
+            assert(cc && Math.round(cc.atom.x) === Math.round(o.x) &&
+                Math.abs((cc.atom.y - o.y) - step) <= 2, '=O が主鎖の真上に置かれていない');
+        });
+
+        // ---- ④ 名乗れる／caption がナイロン66 との違いを言う ----
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const entry = source.find(x => x.name === 'ナイロン6' && x.target);
+        assert(entry, 'ナイロン6 が名称ライブラリに無い');
+        assert(W.canonicalCode(m) === W.canonicalCode(g.createTargetFromData({ target: entry.target })),
+            '開環重合でできた分子がナイロン6の登録エントリと一致しない');
+        c.reset();
+    });
+
+    test('PY11（否定対照）: 環の中の -CO-NH- だけが開く（環外のアミド・ラクトン・環状酸無水物では出ない）', async (c) => {
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'ring_opening_polymerization');
+        // ---- ① 1個では出ない（既存の重合3本と同じ約束） ----
+        assert(rule.detect(lactamSetup(c, ['ε-カプロラクタム'])).length === 0,
+            '単量体1個で開環重合の候補が出た');
+        // ---- ② ★ 出ない相手を名指しで並べる ----
+        const negatives = [
+            ['アセトアニリド', '環の**外**のアミド（環に N が無い）'],
+            ['シクロヘキサノン', '環の中に C=O はあるが N が無い'],
+            ['シクロヘキサン', 'ただの飽和環'],
+            ['γ-ブチロラクトン', '環状エステル（-CO-O-。N ではなく O）'],
+            ['無水フタル酸', '環状酸無水物（-CO-O-CO-）'],
+            ['ベンズアミド', '鎖状のアミド（環はベンゼン環で、そこに N は無い）'],
+            ['尿素', '環が無い'],
+            ['グリシン', 'アミノ酸（-NH₂ と -COOH が別々）'],
+            ['アジピン酸', '2価カルボン酸（縮合重合の側）']
+        ];
+        let checked = 0;
+        negatives.forEach(([name, why]) => {
+            if (!g.resolveCompound(name)) return;
+            assert(rule.detect(lactamSetup(c, [name, name])).length === 0,
+                `${name} 2個で開環重合の候補が出た（${why}）`);
+            checked++;
+        });
+        assert(checked >= 7, `見た否定対照が ${checked} 件（7件以上を期待）`);
+        // ---- ③ ★ 生成物（ナイロン6）をもう一度は開けない（二度押しで環に戻らない） ----
+        if (g.resolveCompound('ナイロン6')) {
+            assert(rule.detect(lactamSetup(c, ['ナイロン6', 'ナイロン6'])).length === 0,
+                'できあがったナイロン6にまた開環重合の候補が出た');
+        }
+        /* ---- ④ ★★ **違う環は1本の鎖に混ぜない**（正準コードでそろえる既存の門番と同じ） ----
+         * ⚠ 割合や件数だけを見ていると、7員環と5員環を1本に繋ぐ実装でも通ってしまう。 */
+        if (g.resolveCompound('2-ピロリドン')) {
+            const mixed = lactamSetup(c, ['ε-カプロラクタム', 'ε-カプロラクタム', '2-ピロリドン', '2-ピロリドン']);
+            const sites = rule.detect(mixed);
+            assert(sites.length === 2, `7員環2個＋5員環2個で候補が ${sites.length} 件（別々の2件を期待）`);
+            sites.forEach(s => assert(s.length === 4, `1件の箇所が ${s.length} 原子（2個ぶん ＝ 4原子を期待）`));
+            // 実行しても、混ざらない（片方だけが繋がり、もう片方は環のまま残る）
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            const m = g.userMolecule;
+            assert(m.atoms.every(a => W.isValencyValid(m, a.id)), '混在時の開環重合で価標が壊れた');
+            assert(W.ringAtomIds(m).size === 10,
+                `残った環の原子が ${W.ringAtomIds(m).size} 個（5員環2つ ＝ 10個を期待。相手まで開いていないか）`);
+            assert(g.splitMolecules().length === 3,
+                `分子が ${g.splitMolecules().length} 個（鎖1本 ＋ 環2つ ＝ 3個を期待）`);
+            /* ★★ **描き直した鎖が、残った環に重なっていない**（`straightChainSpot` の当たり判定）。
+             * ⚠ ここを見ないと「一直線になった」だけが緑で、**残した分子の上に重ねて引いていても通る**。 */
+            const chainIds = new Set(g.splitMolecules()
+                .slice().sort((a, b) => b.atoms.length - a.atoms.length)[0].atoms.map(a => a.id));
+            const G = W.bondStep(m);
+            let worst = Infinity, pair = '';
+            m.atoms.filter(a => chainIds.has(a.id)).forEach(a => {
+                m.atoms.filter(b => !chainIds.has(b.id)).forEach(b => {
+                    const d = Math.hypot(a.x - b.x, a.y - b.y);
+                    if (d < worst) { worst = d; pair = `${a.element}/${b.element}`; }
+                });
+            });
+            assert(worst >= G * 0.65,
+                `鎖と残った環が ${worst.toFixed(1)}px（${pair}）まで近づいた（刻み ${G.toFixed(1)}px の 0.65 倍以上を期待）`);
+        }
+        c.reset();
+    });
+
+    test('PY12: 1分子しか無くても「＋ ε-カプロラクタム をもう2つ呼び出す」の札が立つ', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        lactamSetup(c, ['ε-カプロラクタム']);
+        const hints = W.findPartnerHints(g);
+        const hit = hints.find(h => h.ruleId === 'ring_opening_polymerization');
+        assert(hit, `開環重合の札が出ない（出た札: ${hints.map(h => h.ruleId).join(' / ') || 'なし'}）`);
+        assert(hit.name === 'ε-カプロラクタム', `札の相手が ${hit.name}（自分自身を期待）`);
+        assert(hit.count === W.SELF_PARTNER_UNITS - 1,
+            `呼び出す個数が ${hit.count}（自分を含めて3個 ＝ もう2個を期待）`);
+        // ★ 人と同じ手順で押す —— 札のボタンが実際に一覧に出ていること
+        g.openMoleculeModal();
+        W.reactor.refresh();
+        const labels = [...D.querySelectorAll('#reaction-actions button')].map(b => b.textContent);
+        assert(labels.some(t => t.includes('ε-カプロラクタム') && t.includes('開環重合')),
+            `1分子のときの一覧に開環重合の札が無い（${labels.join(' / ') || 'なし'}）`);
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('PY13: ε-カプロラクタムの図が教科書の「潰した環」で、stages と compounds が同じ図', async (c) => {
+        const g = c.game, W = c.W;
+        /* ⚠⚠ **この化合物は stages.json と compounds.json の**両方**にある**（2026-09-01 実測。
+         *   `DESIGN_reaction_execution.md` §21-1 (i) の表は compounds.json 側だけを挙げていた）。
+         *   ★ `getCompoundLibrary()` は **stages を先に**並べるので、**呼び出しに使われるのは
+         *   stages 側**。片方だけ直すと、画面の図とライブラリの図が食い違う。 */
+        const inStages = (W.STAGES || []).find(x => x.id === 'epsilon-caprolactam');
+        const inCompounds = (W.COMPOUNDS || []).find(x => x.id === 'epsilon-caprolactam');
+        assert(inStages && inCompounds, 'ε-カプロラクタムが stages / compounds の両方に無い');
+        assert(JSON.stringify(inStages.target) === JSON.stringify(inCompounds.target),
+            'stages.json と compounds.json の ε-カプロラクタムの図が食い違っている');
+
+        /* ★ 教科書 p.251 式(2) の「横長の潰した環」——
+         *   **上下2段（y が2通り）＋ 左端の頂点1つ ＝ y は3通り**。
+         *   ⚠ もとの図はほぼ正七角形で **y が4通り・外接箱 88×128（縦長）**だった
+         *   （実測。環の重心からの距離 44.9〜45.5px ＝ ほぼ真円）。
+         *   ★ 直したあとは **162×42（横長）**で、環の重心からの距離は 23.8〜66.9px に開く。 */
+        const fig = g.createTargetFromData({ target: inStages.target });
+        const ring = W.ringAtomIds(fig);
+        assert(ring.size === 7, `環が ${ring.size} 員（7員環を期待）`);
+        const ringAtoms = [...ring].map(id => fig.atoms.find(a => a.id === id));
+        const ys = [...new Set(ringAtoms.map(a => Math.round(a.y)))].sort((p, q) => p - q);
+        assert(ys.length === 3, `環の y が ${ys.length} 通り（上段・下段・左の頂点 ＝ 3通りを期待）`);
+        assert(ys[2] - ys[0] === 42, `環の高さが ${ys[2] - ys[0]}px（結合1本ぶん 42px を期待）`);
+        const xs = ringAtoms.map(a => a.x);
+        assert(Math.max(...xs) - Math.min(...xs) === 120,
+            `環の幅が ${Math.max(...xs) - Math.min(...xs)}px（横長 120px を期待）`);
+        // ★ 右端で N と C=O が**縦1本線**で閉じている（教科書の閉環の描き方）
+        const n = ringAtoms.find(a => a.element === 'N');
+        const co = fig.getNeighbors(n.id).map(x => x.atom)
+            .find(a => a.element === 'C' && fig.getNeighbors(a.id).some(m => m.atom.element === 'O' && m.type === 2));
+        assert(co, '環の中に N と隣り合う C=O が無い');
+        assert(Math.round(co.x) === Math.round(n.x) && Math.abs(Math.abs(co.y - n.y) - 42) < 1,
+            '閉環の N-C(=O) が縦1本線になっていない');
+        // ★ 結合長がそろっている（もとの図は 38.9〜42.0px でばらついていた）
+        const lens = fig.bonds.map(b => {
+            const A = fig.atoms.find(a => a.id === b.atomId1), B = fig.atoms.find(a => a.id === b.atomId2);
+            return Math.hypot(A.x - B.x, A.y - B.y);
+        });
+        assert(Math.max(...lens) - Math.min(...lens) < 1,
+            `結合長のばらつきが ${(Math.max(...lens) - Math.min(...lens)).toFixed(1)}px（1px 未満を期待）`);
+
+        // ★ ナイロン6 の図も「単位3つ・両端 R」の規約どおり
+        const src = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const ny6 = src.find(x => x.name === 'ナイロン6' && x.target);
+        const p = g.createTargetFromData({ target: ny6.target });
+        assert(p.atoms.filter(a => a.element === 'R').length === 2, 'ナイロン6 の図の R が2個でない');
+        assert(p.atoms.filter(a => a.element === 'N').length === 3, 'ナイロン6 の図の単位が3つでない（N が3個）');
+        assert(W.ringAtomIds(p).size === 0, 'ナイロン6 の図に環が残っている');
+        // ★ 否定対照: ナイロン66 とは別物
+        const ny66 = src.find(x => x.name === 'ナイロン66' && x.target);
+        assert(W.canonicalCode(p) !== W.canonicalCode(g.createTargetFromData({ target: ny66.target })),
+            'ナイロン6 の図がナイロン66 と同じ');
         c.reset();
     });
 
@@ -32982,7 +33211,7 @@
 
     /* ===== 試薬パレット 第2段（DESIGN_reagent_palette.md §5 第2段・変えるもの13本） ===== */
 
-    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合4件・縮合3件・アセタール化1件だけ（§5 第2段）', async (c) => {
+    test('RG5: 瓶を持たない「実行できるルール」は環化3件・重合5件・縮合3件・アセタール化1件だけ（§5 第2段）', async (c) => {
         const W = c.W;
         const RULES = W.REACTION_RULES;
         // 数え方を関数にして、**同じ数え方を否定対照にも掛ける**（空振りの緑を避ける）
@@ -33007,7 +33236,12 @@
          *   （`DESIGN_reaction_execution.md` §21-6 (c)）。★ 瓶にすると
          *   「どこから来た炭素か」が画面から消え、水が1分子とれる理由も見えなくなる。
          *   入口は `PARTNER_CANDIDATES` の札（「＋ ホルムアルデヒド を呼び出す」）＝ PY7 が見張る */
+        /* ★ 同じ日に `ring_opening_polymerization`（ナイロン6）も足して 12 件。
+         * ⚠ **これも意図して瓶を持たせていない** —— 教科書 p.251 は触媒を名指しせず
+         *   「水を少量加えて加熱する」としか書かない。★ 資料に無い試薬を名乗らせない（§4-1）。
+         *   入口は `SELF_PARTNER_RULES`（「＋ 自分をもう2つ呼び出す」）＝ PY12 が見張る */
         const expected = ['acetalization_pva',
+            'ring_opening_polymerization',
             'addition_polymerization', 'alkyne_polymerization', 'amidation',
             'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
