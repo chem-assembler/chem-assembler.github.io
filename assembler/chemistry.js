@@ -483,6 +483,34 @@ function isValencyValid(mol, atomId) {
 }
 
 /**
+ * ★ その分子式が **「単結合だけの木」しか作れない**か（v14xx・C₇H₁₆ の書き出し練習）。
+ *
+ * `record()` が通す条件は「重原子の空き価標の合計 ＝ 水素数」なので、
+ * 重原子どうしが使う結合次数の合計は `B = (Σ価数 − 水素数) / 2` で**分子式だけで決まる**。
+ * 連結グラフには辺が n−1 本以上要るから、`B === n − 1` なら
+ * **辺はちょうど n−1 本・すべて単結合**（＝木）以外にあり得ない ＝ 環も多重結合も作れない。
+ * 言い換えれば**不飽和度0**のこと。
+ *
+ * ⚠ **N・S を含む式には使えない**。あちらは価数が分子の形で決まる
+ *（`isValencyValid` の N の4価特例・`maxValencyOf` の S 6↔2）ので、
+ * Σ価数から結合次数の合計を言い当てられない。
+ *
+ * ★ **列挙器の枝刈りと、書き出し練習の門番（learn.js の重原子の上限）が
+ * これを共有する。** 「重原子7個まで通してよい」根拠は
+ * *ここが真なら探索が桁で軽い* ということそのものなので、2か所で別々に書くと
+ * 片方だけ直したときに **門番だけが緩んで、数秒固まる式が通る**。
+ * 実測（重原子7個・この関数が真になる式を総当たり20式）: **最悪 44ms**。
+ * 偽になる式まで通すと 1551ms（C₄H₁₅ONS）まで伸びる。
+ */
+function enumerationIsTreeOnly(elements, hCount) {
+    const n = elements.length;
+    if (n <= 1) return false;
+    if (elements.some(e => CONTEXTUAL_VALENCY_ELEMENTS.includes(e))) return false;
+    const capSum = elements.reduce((s, e) => s + (VALENCIES[e] || 0), 0);
+    return (capSum - hCount) === 2 * (n - 1);
+}
+
+/**
  * 構造異性体の全列挙（P9-3）。重原子の組成と水素数を与えると、その分子式を満たす
  * 連結グラフをすべて生成し、正準コードで重複を除いて返す純粋関数。
  * 高校範囲の分子式（重原子7個程度まで）を想定し、それを超える場合は overflow を返す。
@@ -563,6 +591,18 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
     // 上下限に入らない枝は Molecule を組み立てずに捨てる（組み立てと正準コードが重いため）
     const minMax = elements.map(e => (e === 'S' ? 2 : (VALENCIES[e] || 0)));
 
+    /**
+     * ★ **不飽和度0の式は「単結合だけの木」しか作れない**（v14xx・C₇H₁₆ の書き出し練習）。
+     * 根拠と、これを門番と共有する理由は `enumerationIsTreeOnly` の説明に書いた。
+     * 二重・三重結合の枝と、n−1 本を超える辺の枝は**1つも答えに繋がらない**ので探索に入れない。
+     *
+     * 実測（Node・v1481 の実装との比較）: **C₇H₁₆ は 461ms で打ち切り（9種）→ 11ms で完走（9種）**。
+     * ⚠ 4,000,000 節点の上限（learn.js の `IP_ENUM_LIMIT`）では **C₇H₁₆ は打ち切りだった** ＝
+     * 9種そろっていたのは偶然で、書き出し練習は `overflow` を見て断っていた。
+     */
+    const treeOnly = enumerationIsTreeOnly(elements, hCount);
+    let edges = 0;
+
     const record = () => {
         if (contextual) {
             let hi = 0, lo = 0;
@@ -599,6 +639,45 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
         isomers.push(mol);
     };
 
+    /**
+     * `treeOnly` の枝刈り用。**いま張ってある辺だけで `from` から `to` へ行けるか**
+     * ＝ この2点をつなぐと環ができる。木には環が無いので、その枝は答えに繋がらない。
+     * n ≤ 8 なので訪問済みは 8bit のビットマスクで足りる（Set を作ると DFS の底で効く）。
+     */
+    const reaches = (from, to) => {
+        let seenMask = 1 << from;
+        const stack = [from];
+        while (stack.length) {
+            const v = stack.pop();
+            if (v === to) return true;
+            const list = adj[v];
+            for (let z = 0; z < list.length; z++) {
+                const u = list[z][0];
+                if (!(seenMask & (1 << u))) { seenMask |= 1 << u; stack.push(u); }
+            }
+        }
+        return false;
+    };
+
+    /**
+     * ⚠ **ここに「対称性の破り」を足さないこと**（v14xx で試して**取り下げた**）。
+     *
+     * 「元素が同じで添字が隣り合う頂点は、次数が増える向きに並ばない」に絞ると、
+     * 探索は劇的に速くなる（実測 C₆H₆ 4018ms → 255ms・C₆H₁₂O 1843ms → 489ms）。
+     * **答えの集合は1つも変わらない**（重原子6個までの全804式で確認済み）。
+     *
+     * ★ **それでも入れてはいけない理由**: 同型類から**どの代表を残すか**が変わる。
+     * `seen` は最初に出会った1つを残すので、**列挙が返す `Molecule` の形（原子の並び・
+     * どの添字が繋がっているか）が総取り替えになる**。これは下流に効く:
+     *   ・答え合わせの正解図の**自動レイアウト**が変わる（`IW31`「エーテルの正解図は
+     *     主鎖が横一直線」の否定対照が空振りになった）
+     *   ・`findAnyCycle` が返す環が変わる（`NW3b`「C₆H₆ の六員環は33通り」が5通りに落ちた）
+     *   ・凍結リストとの突き合わせが外れる（`IN2` / `IN12`）
+     * ＝ **速さのために、画面に出る図を黙って全部差し替える**ことになる。
+     * 速さが要るなら、代表を変えない形（下の `treeOnly` のように、
+     * **record() が捨てる枝だけを前倒しで捨てる**）で取ること。
+     */
+
     // 次数が確定した頂点 v が S として辻褄が合うか。2本まで（＝2価）ならいつでも可、
     // 3本以上使うなら S=O が要る。S 以外はいつでも真
     const sulfurSettled = (v) => {
@@ -617,17 +696,26 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
             return;
         }
         const [i, j] = pairs[k];
-        const maxType = Math.min(3, max[i] - used[i], max[j] - used[j]);
+        // ★ 木しか作れない式（treeOnly）では二重・三重結合の枝に入らない（上の説明）
+        const maxType = Math.min(treeOnly ? 1 : 3, max[i] - used[i], max[j] - used[j]);
         for (let t = 0; t <= maxType; t++) {
+            // ★ 木に環は無い。つないだ先が既につながっているなら、この枝は捨てる
+            if (t > 0 && treeOnly && reaches(i, j)) continue;
             if (t > 0) {
                 used[i] += t;
                 used[j] += t;
                 adj[i].push([j, t]);
                 adj[j].push([i, t]);
+                edges++;
             }
             // 枝刈り: その頂点に関わるペアが尽きたのに結合0本なら、連結分子にならない
             let ok = true;
-            if (n > 1) {
+            // 枝刈り: 木の辺の予算。多すぎ（環ができる）／残り全部使っても足りない（連結にならない）
+            if (treeOnly) {
+                if (edges > n - 1) ok = false;
+                else if (edges + (pairs.length - k - 1) < n - 1) ok = false;
+            }
+            if (ok && n > 1) {
                 if (lastPairOf[i] === k && adj[i].length === 0) ok = false;
                 if (ok && lastPairOf[j] === k && adj[j].length === 0) ok = false;
             }
@@ -645,6 +733,7 @@ function enumerateConstitutionalIsomers(elements, hCount, nodeLimit = 600000) {
                 used[j] -= t;
                 adj[i].pop();
                 adj[j].pop();
+                edges--;
             }
             if (overflow) return;
         }
@@ -5494,6 +5583,7 @@ if (typeof window !== 'undefined') {
     window.findOutOfScopeMotifs = findOutOfScopeMotifs;
     window.findCondensableGroups = findCondensableGroups;
     window.enumerateConstitutionalIsomers = enumerateConstitutionalIsomers;
+    window.enumerationIsTreeOnly = enumerationIsTreeOnly;
     window.enumerateBenzeneRingIsomers = enumerateBenzeneRingIsomers;
     window.benzeneSubUnsaturation = benzeneSubUnsaturation;
     window.BENZENE_REST_MAX = BENZENE_REST_MAX;
