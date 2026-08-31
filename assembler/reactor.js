@@ -2160,13 +2160,27 @@ function vulcanizablePairs(mol) {
                 [[vinyls[j].head, vinyls[j].tail], [vinyls[j].tail, vinyls[j].head]].forEach(([cb, cb2]) => {
                     const A = mol.atoms.find(x => x.id === ca), B = mol.atoms.find(x => x.id === cb);
                     if (!A || !B) return;
-                    const sx = Math.round((A.x + B.x) / 2 / G) * G;
-                    const sy = Math.round((A.y + B.y) / 2 / G) * G;
-                    // 硫黄を置ける空きがあること。**同じ鎖の隣どうしはここで落ちる**
-                    // （中点が鎖の内部に来るため）＝小さな環ができるのを防いでいる
+                    /* ★ 橋は **-S-S-（硫黄2個）**（v1487・2026-08-31。ユーザーの指示）。
+                     * 硫黄1個のときは席が1つ（中点）で済んだが、C-S-S-C は**結合3本**なので
+                     * 席は **1/3 と 2/3 の点**の2つになる（中点は S-S 結合の真ん中で、原子は来ない）。 */
+                    const seat = (t) => ({
+                        x: Math.round((A.x + (B.x - A.x) * t) / G) * G,
+                        y: Math.round((A.y + (B.y - A.y) * t) / G) * G
+                    });
+                    const s1 = seat(1 / 3), s2 = seat(2 / 3);
+                    // ⚠ 近すぎる組は 1/3 と 2/3 が同じ格子点へ丸まる（足場が刻みの2本ぶんだと
+                    //    0.67G と 1.33G がどちらも 1G になる）＝ 硫黄2個を置く場所が無い
+                    if (Math.hypot(s1.x - s2.x, s1.y - s2.y) < MIN_CLEARANCE) return;
+                    // 硫黄を置ける空きが**2席とも**あること。**同じ鎖の隣どうしはここで落ちる**
+                    // （席が鎖の内部に来るため）＝小さな環ができるのを防いでいる
                     if (mol.atoms.some(o => o.element !== 'H' &&
-                        Math.hypot(o.x - sx, o.y - sy) < MIN_CLEARANCE)) return;
-                    const cand = { ca, ca2, cb, cb2, sx, sy, d: Math.hypot(A.x - B.x, A.y - B.y) };
+                        (Math.hypot(o.x - s1.x, o.y - s1.y) < MIN_CLEARANCE ||
+                            Math.hypot(o.x - s2.x, o.y - s2.y) < MIN_CLEARANCE))) return;
+                    const cand = {
+                        ca, ca2, cb, cb2,
+                        s1x: s1.x, s1y: s1.y, s2x: s2.x, s2y: s2.y,
+                        d: Math.hypot(A.x - B.x, A.y - B.y)
+                    };
                     if (!best || cand.d < best.d) best = cand;
                 });
             });
@@ -2203,7 +2217,7 @@ function vulcanizablePairs(mol) {
  * ＝ どちらも「**2本を上下に置いて、その間に短い橋**」。この関数はその形に寄せる。
  *
  * ⚠ **`planAttachment` には触らない**（他の46本の反応が全部使う共通の道具で、
- * しかも「結合1本ぶんの距離に置く」ためのもの。加硫は**間に硫黄1個を挟む＝2本ぶん**離す）。
+ * しかも「結合1本ぶんの距離に置く」ためのもの。加硫は**間に硫黄2個を挟む＝3本ぶん**離す）。
  * 加硫だけの置き方をここに1つ足す。
  *
  * ⚠ **動かすのは剛体平行移動だけ**（回転も伸縮も鏡映もしない）＝ 幾何は変わらないので
@@ -2211,10 +2225,12 @@ function vulcanizablePairs(mol) {
  * ⚠ **すでに橋が架かって1分子になっているときは動かさない**（動かすと1本目の橋が伸びる）。
  * ⚠ **置けなければ座標を1つも変えずに false を返す** ＝ 今までの絵に戻るだけ。
  *
- * 行き先の決め方: 橋の中点 M を「ca の真下（真上）にある**格子点**」に取り、
- * cb を **M について ca と点対称**な位置へ運ぶ。こうすると
- * `vulcanizablePairs` が硫黄を置く `round(中点/G)*G` が M そのものになるので、
- * **C—S—C が一直線**になる（中点を格子へ丸めた分だけ橋が折れる、という副作用が出ない）。
+ * 行き先の決め方: 硫黄2個の席 s1・s2 を「ca の真下（真上）に **1歩・2歩** 進んだ格子点」に取り、
+ * cb を **3歩目の格子点**へ運ぶ。こうすると `vulcanizablePairs` が硫黄を置く
+ * `round(1/3 の点/G)*G`・`round(2/3 の点/G)*G` が s1・s2 そのものになるので、
+ * **C—S—S—C が一直線**になる（席を格子へ丸めた分だけ橋が折れる、という副作用が出ない）。
+ * ⚠ **硫黄1個だった v1484 までは 2歩**（中点1つ）。**v1487 で 3歩**になった ―― 実際の架橋は
+ * モノ／ジ／ポリスルフィドとさまざまで、その代表としてジ（-S-S-）を描くことにしたため。
  */
 function stackChainsForBridge(mol, caId, cbId) {
     const ca = mol.atoms.find(a => a.id === caId);
@@ -2237,20 +2253,27 @@ function stackChainsForBridge(mol, caId, cbId) {
     // 下 → 上 の順。近い段（1歩）から試し、だめなら1段外へ
     for (const k of [1, 2]) {
         for (const sign of [1, -1]) {
+            /* ★ 硫黄2個ぶん離す（v1487）。C-S-S-C は**結合3本**なので、ca と cb は
+             * **刻みの 3k 倍**だけ離れる（硫黄1個だった v1484 までは 2k 倍）。
+             * 席 s1・s2 を「ca の真下（真上）に並ぶ**格子点**」に取り、cb をその先の格子点へ運ぶと、
+             * `vulcanizablePairs` が丸める 1/3・2/3 の点が s1・s2 そのものになり、
+             * **C-S-S-C が一直線**になる（丸めた分だけ橋が折れる、という副作用が出ない）。 */
             const mx = Math.round(ca.x / G) * G;
-            const my = Math.round((ca.y + sign * k * G) / G) * G;
-            if (my === Math.round(ca.y / G) * G) continue;      // 中点が ca に重なる置き方は採らない
-            const dx = (2 * mx - ca.x) - cb.x;
-            const dy = (2 * my - ca.y) - cb.y;
+            const by = Math.round(ca.y / G) * G;
+            const s1 = { x: mx, y: by + sign * k * G };
+            const s2 = { x: mx, y: by + sign * 2 * k * G };
+            const dx = mx - cb.x;
+            const dy = (by + sign * 3 * k * G) - cb.y;
             const at = (a) => ({ x: a.x + dx, y: a.y + dy });
-            // ① 原子どうしが詰まらない ② 硫黄の席（M）が空いている
+            // ① 原子どうしが詰まらない ② 硫黄の席（s1・s2）が**2つとも**空いている
             const okAtoms = movingHeavy.every(a => {
                 const p = at(a);
                 return staticHeavy.every(s => Math.hypot(s.x - p.x, s.y - p.y) >= MIN_CLEARANCE);
             });
             if (!okAtoms) continue;
-            const spotFree = staticHeavy.every(s => Math.hypot(s.x - mx, s.y - my) >= MIN_CLEARANCE) &&
-                movingHeavy.every(a => { const p = at(a); return Math.hypot(p.x - mx, p.y - my) >= MIN_CLEARANCE; });
+            const spotFree = [s1, s2].every(m =>
+                staticHeavy.every(s => Math.hypot(s.x - m.x, s.y - m.y) >= MIN_CLEARANCE) &&
+                movingHeavy.every(a => { const p = at(a); return Math.hypot(p.x - m.x, p.y - m.y) >= MIN_CLEARANCE; }));
             if (!spotFree) continue;
             // ③ 結合線が相手の原子を貫通しない（線が原子の上を通ると構造式が別物に見える）
             const pierce = innerBonds.some(b => {
@@ -4058,21 +4081,31 @@ const REACTION_RULES = [
             }
             const ab = mol.getBond(best.ca, best.ca2), bb = mol.getBond(best.cb, best.cb2);
             if (!ab || !bb || ab.type !== 2 || bb.type !== 2) throw new Error('二重結合が残っていません');
-            // 硫黄が二重結合の炭素に付く＝二重結合が単結合になり、そこに架橋ができる。
-            // 硫黄は S=O を持たないので2価として扱われ、余分な水素は描かれない（v283）
+            /* 硫黄が二重結合の炭素に付く＝二重結合が単結合になり、そこに架橋ができる。
+             * 硫黄は S=O を持たないので2価として扱われ、余分な水素は描かれない（v283）。
+             * ★ 橋は **-S-S-（硫黄2個・ジスルフィド）**（v1487）。理由は caption と
+             *   DESIGN_reaction_execution.md §20-6 —— 実際の架橋はモノ／ジ／ポリと
+             *   さまざまで、その代表としてジを描く。 */
             ab.type = 1;
             bb.type = 1;
-            const s = mol.addAtom('S', best.sx, best.sy);
-            mol.addBond(best.ca, s.id, 1);
-            mol.addBond(best.cb, s.id, 1);
+            const s1 = mol.addAtom('S', best.s1x, best.s1y);
+            const s2 = mol.addAtom('S', best.s2x, best.s2y);
+            mol.addBond(best.ca, s1.id, 1);
+            mol.addBond(s1.id, s2.id, 1);
+            mol.addBond(best.cb, s2.id, 1);
             const a1 = best.ca, b1 = best.cb;
             return {
+                /* ⚠ **画面に「教科書ではこう描く」とは書かない**（DEVELOPMENT.md「『教科書に載っているか』の
+                 * 扱い方」3。架橋の描き方に正解は無いので、根拠づけると唯一の書き方だと誤解させる）。
+                 * ★ 出すのは**化学の中身**＝「実際はモノ・ジ・ポリとさまざま、図は代表してジ」。
+                 * ⚠ 足すぶん、二重結合の由来の一文を短くして総量を増やしすぎない（説明の削減・v1471）。 */
                 caption: '加硫が1か所進みました。硫黄が2本の鎖のあいだに入って架橋（橋かけ）しています。' +
-                    'ゴムに二重結合が残っているのは 1,4-付加重合の結果で、そこに硫黄が結びつきます。' +
+                    '硫黄は 1,4-付加重合で残った二重結合に結びつきます。' +
                     '架橋ができると鎖どうしがずれにくくなり、伸ばしても元に戻る弾性ゴムになります。' +
+                    '架橋の硫黄はモノ（1個）・ジ（2個）・ポリ（多数）とさまざまで、この図は代表としてジ（-S-S-）です。' +
                     '硫黄を多く加えて架橋を増やすと、硬くて弾性のないエボナイトになります。' +
                     'もう一度押すと別の場所も架橋できます。',
-                changed: [a1, b1, s.id],
+                changed: [a1, b1, s1.id, s2.id],
                 refit: true
             };
         }
