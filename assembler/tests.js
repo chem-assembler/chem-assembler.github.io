@@ -21,6 +21,7 @@
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
  * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
+ * | CV  | 1〜3   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
@@ -52,7 +53,7 @@
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
- * | IS  | 1〜5   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜5 は「木しか作れない式」の枝刈りと C₇H₁₆ のお題**（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。3 が列挙器（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる）・5 が画面（お題として並ぶ・入力欄からも開く・9種に名前が付く。**否定対照は「重原子7個でも木でなければ断る」**＝ C₇H₁₄・C₆H₁₅N・C₆H₁₄S が数える前に断られる） |
+ * | IS  | 1〜5   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜5 は「木しか作れない式」の枝刈りと C₇H₁₆ のお題**（v1485・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。3 が列挙器（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる）・5 が画面（お題として並ぶ・入力欄からも開く・9種に名前が付く。**否定対照は「重原子7個でも木でなければ断る」**＝ C₇H₁₄・C₆H₁₅N・C₆H₁₄S が数える前に断られる） |
  * | IW  | 1〜32 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
  *                  **7 は W4「答案を並べ直す」**＝剛体移動だけ・成分の相対座標が1つも変わらない否定対照。
  *                  **9 はヒントへの到達手段**＝帯 → 確認モード → 💡。
@@ -12647,14 +12648,14 @@
             g.setMode('puzzle');
         });
 
-    lxQuitCase('LX1: 異性体の書き出しを「やめる」と 🧪自由 へ戻る（タブの active も移る）', 'ip-body', /C₄H₁₀（2種）/);
+    lxQuitCase('LX1: 異性体の書き出しを「やめる」と 🧪自由 へ戻る（タブの active も移る）', 'ip-body', /^C₄H₁₀/);
     lxQuitCase('LX2: アルキル基の書き出しを「やめる」と 🧪自由 へ戻る', 'ak-body', /C₃H₇/);
     lxQuitCase('LX3: 立体異性体の書き出しを「やめる」と 🧪自由 へ戻る', 'sp-body', /2-ブテン/);
 
     test('LX4: 答え合わせで終了しても採点結果への道が残る（🧪自由 へ移るが帯は生きている）', async (c) => {
         c.reset();
         const g = c.game, D = c.D, W = c.W, ip = W.isomerPractice;
-        await lxStart(c, 'ip-body', /C₄H₁₀（2種）/);
+        await lxStart(c, 'ip-body', /^C₄H₁₀/);
         // ブタンを1つ描く（0個では答え合わせが押せない）
         let prev = null;
         for (let i = 0; i < 4; i++) {
@@ -12730,7 +12731,7 @@
         //   （＝ Study モーダルごと閉じる）に差し替えると、この検査が赤くなる。
         c.reset();
         const g = c.game, D = c.D, W = c.W;
-        await lxStart(c, 'ip-body', /C₄H₁₀（2種）/);
+        await lxStart(c, 'ip-body', /^C₄H₁₀/);
 
         // (1) Study モーダルを開き直してから、パネルの「練習をやめる」を押す
         lxOpenStudy(c);
@@ -13963,7 +13964,7 @@
         return m;
     }
 
-    test('IW5: ヒント4段 — 押すたびに1段ずつ積み上がり、段4のあとは答え合わせだけ（スコアつき）', async (c) => {
+    test('IW5: ヒント5段 — 押すたびに1段ずつ積み上がり、最終段のあとは答え合わせだけ（スコアつき）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
         g.setMode('learn');
@@ -13980,47 +13981,74 @@
         // 押す前: ヒントは1文字も出ておらず、ボタンが**代償を先に見せている**（§15-5a-3）
         assert(ip._hintLevel === 0 && !/あと \d+種 あります/.test(body.textContent),
             '押していないのにヒントが出ている');
-        assert(labels().some(s => /次のヒント（あと 4段・−1点）/.test(s)),
+        assert(labels().some(s => /次のヒント（あと 5段・−1点）/.test(s)),
             `ボタンに代償（残り段数・−1点）が出ていない（${JSON.stringify(labels())}）`);
 
-        // 段1: 残り数とダブりの**組数だけ**
+        // ★ 段1: **全部で何種類か だけ**（v1489）。出題では伏せた数の初出がここ（IH1）
         ip.nextHint();
         assert(ip._hintLevel === 1, `段が ${ip._hintLevel}（1 を期待）`);
-        assert(/あと 4種 あります/.test(body.textContent), `段1の残り数が出ない（${body.textContent.slice(0, 200)}）`);
-        assert(/1組 あります/.test(body.textContent), '段1でダブりの組数が出ない');
+        assert(/全部で 7 種 あります/.test(body.textContent), `段1の総数が出ない（${body.textContent.slice(0, 240)}）`);
+        assert(!/あと 4種 あります/.test(body.textContent), '★段1で残り数まで出ている（段2 の持ちもの）');
+        assert(!/1組 あります/.test(body.textContent), '★段1でダブりの組数まで出ている（段2 の持ちもの）');
         assert(!/内訳/.test(body.textContent), '段1で系列の内訳まで出ている');
-        assert(!/①と/.test(body.textContent), '段1で重複の組を明かしている（数だけのはず・§13-3）');
-        assert(labels().some(s => /次のヒント（あと 3段・−1点）/.test(s)), '残り段数の表示が減らない');
+        assert(!/①と/.test(body.textContent), '段1で重複の組を明かしている');
+        assert(labels().some(s => /次のヒント（あと 4段・−1点）/.test(s)), '残り段数の表示が減らない');
 
-        // 段2: 系列の内訳が**足される**（段1は残る＝積み上がる・§15-5a-2）
+        // ★ 段2: **重複の有無 ＋ 残り何種類**（段1は残る＝積み上がる・§15-5a-2）
         ip.nextHint();
-        assert(ip._hintLevel === 2 && /内訳/.test(body.textContent), '段2（系列の内訳）が出ない');
-        assert(/あと 4種 あります/.test(body.textContent), '段2に進むと段1が消える（積み上がっていない）');
-        assert(!/書き出しの手順/.test(body.textContent), '段2で手順まで出ている');
-        assert(!/①と/.test(body.textContent), '段2で重複の組を明かしている');
+        assert(ip._hintLevel === 2, `段が ${ip._hintLevel}（2 を期待）`);
+        assert(/あと 4種 あります/.test(body.textContent), `段2の残り数が出ない（${body.textContent.slice(0, 300)}）`);
+        assert(/1組 あります/.test(body.textContent), '段2でダブりの組数が出ない');
+        assert(/全部で 7 種 あります/.test(body.textContent), '段2に進むと段1が消える（積み上がっていない）');
+        assert(!/内訳/.test(body.textContent), '段2で系列の内訳まで出ている');
+        assert(!/①と/.test(body.textContent), '段2で重複の組を明かしている（数だけのはず・§13-3）');
 
-        // 段3: 手順。**ここまで重複の組は明かさない**（否定対照は IW6）
+        // 段3: 系列の内訳 ＋ 手順。**ここまで重複の組は明かさない**（否定対照は IW6）
         ip.nextHint();
-        assert(ip._hintLevel === 3 && /書き出しの手順/.test(body.textContent), '段3（手順）が出ない');
-        assert(/あと 4種 あります/.test(body.textContent) && /内訳/.test(body.textContent),
+        assert(ip._hintLevel === 3 && /内訳/.test(body.textContent) && /書き出しの手順/.test(body.textContent),
+            '段3（系列の内訳と手順）が出ない');
+        assert(/全部で 7 種 あります/.test(body.textContent) && /あと 4種 あります/.test(body.textContent),
             '段3に進むと段1・2 が消える（積み上がっていない）');
         assert(!/①と/.test(body.textContent), '★段3で重複の組を明かしている（段4 の持ちもの）');
 
-        // 段4: 組を名指し。ただし**名前は出さない**（名前は答え合わせの面の仕事）
+        // 段4: 組を名指し。ただし**名前は出さない**（名前は段5 と答え合わせの仕事）
         ip.nextHint();
         assert(ip._hintLevel === 4, `段が ${ip._hintLevel}（4 を期待）`);
         assert(/①と④ は同じもの/.test(body.textContent),
             `段4 で重複の組が名指しされない（${body.textContent.slice(-300)}）`);
+        assert(!/まだ描いていない構造の名前/.test(body.textContent),
+            '★段4 で抜けた構造の名称まで出ている（段5 の持ちもの）');
         assert(!/エタノール|プロパノール|ブタノール|エーテル/.test(
             body.textContent.slice(body.textContent.indexOf('同じものを2回描いている組'))),
             'ヒントの段4 が化合物名まで渡している');
 
+        // ★★ 段5（最終段）: **抜けている構造の名称**。⚠ 未発見のぶんが1件も落ちないこと
+        ip.nextHint();
+        assert(ip._hintLevel === 5, `段が ${ip._hintLevel}（5 を期待）`);
+        const missNames = [...ip.targets.entries()]
+            .filter(([code]) => !ip.grade().found.has(code))
+            .map(([, mol]) => ip.constitutionalName(mol));
+        assert(missNames.length === 4 && missNames.every(n => n),
+            `前提: 未発見4種すべてに名前が付く（${JSON.stringify(missNames)}）`);
+        const hintDivs = [...ip.buildHintBlock().querySelectorAll('div')].map(d => d.textContent);
+        const at5 = hintDivs.indexOf('まだ描いていない構造の名前');
+        assert(at5 >= 0, `段5 の見出しが出ない（${JSON.stringify(hintDivs.slice(-6))}）`);
+        const listed = hintDivs.slice(at5 + 1).map(t => t.replace(/^・/, ''));
+        assert(JSON.stringify(listed.slice().sort()) === JSON.stringify(missNames.slice().sort()),
+            `段5 が並べた名前が未発見と一致しない（出た ${JSON.stringify(listed)} / 期待 ${JSON.stringify(missNames)}）`);
+        // ★ 否定対照 —— **描けている種の名前は出さない**（残りだけを言う段であることの確認）
+        const foundNames = [...ip.targets.entries()]
+            .filter(([code]) => ip.grade().found.has(code))
+            .map(([, mol]) => ip.constitutionalName(mol));
+        assert(foundNames.length === 3, `前提: 描けている3種が取れない（${JSON.stringify(foundNames)}）`);
+        foundNames.forEach(n => assert(listed.indexOf(n) < 0, `段5 が描けている「${n}」まで並べている`));
+
         // 打ち止め: これ以上は進まず、ボタンが「答え合わせ」に置き換わる（押せないボタンを残さない）
         ip.nextHint();
-        assert(ip._hintLevel === 4, 'ヒントが4段で頭打ちにならない');
+        assert(ip._hintLevel === 5, 'ヒントが5段で頭打ちにならない');
         assert(!labels().some(s => /次のヒント/.test(s)), '打ち止めなのに「次のヒント」が残っている');
         assert(labels().some(s => /答え合わせ（ヒントは打ち止め）/.test(s)),
-            `段4 のあとボタンが答え合わせに変わらない（${JSON.stringify(labels())}）`);
+            `最終段のあとボタンが答え合わせに変わらない（${JSON.stringify(labels())}）`);
         assert(!/標準の書き方と答え/.test(body.textContent), 'ヒントに答え（正解一覧）が出てしまう');
 
         // ===== スコア: ヒント2段 → 7種そろえて答え合わせ ＝ 5点（§15-5b）=====
@@ -15003,22 +15031,26 @@
             bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5]],
             xy: [[0, 84], [42, 84], [84, 84], [126, 84], [168, 84], [42, 126]] };
         ipSheet(c, [hexane]);
-        ip.nextHint();
-        assert(ip._hintLevel === 1 && /あと 4種 あります/.test(body.textContent), '段1が出ない（前提）');
+        // ★ v1489 で「残り何種類」は**段2** に移った（段1 は総数だけ）。
+        //   ⚠ この検査が見たいのは**貼り付いたまま自動更新される**ことなので、
+        //     数がキャンバスで動く段（＝段2）まで進めてから測る
+        ip.nextHint(); ip.nextHint();
+        assert(ip._hintLevel === 2 && /全部で 5 種 あります/.test(body.textContent) &&
+               /あと 4種 あります/.test(body.textContent), '段1・段2 が出ない（前提）');
         const frozen = ip.grade();   // 押した瞬間の採点表（否定対照で使う）
 
         // ① 閉じて開き直すのは**無料**（段は進まない）
         ip.toggleHintPanel();
-        assert(ip._hintLevel === 1 && ip._hintOpen === false, '閉じたら段が動いた');
+        assert(ip._hintLevel === 2 && ip._hintOpen === false, '閉じたら段が動いた');
         assert(!/あと 4種 あります/.test(body.textContent), '閉じても中身が出たまま');
         assert(/無料/.test(body.textContent), '開き直しが無料であることが書かれていない（§15-5a-3）');
         ip.toggleHintPanel();
-        assert(ip._hintLevel === 1 && ip._hintOpen === true && /あと 4種 あります/.test(body.textContent),
+        assert(ip._hintLevel === 2 && ip._hintOpen === true && /あと 4種 あります/.test(body.textContent),
             '★開き直しで段が進んだ ＝ 読み返すだけで減点される');
 
         // ② 描き足すとヒントの中身が**押し直さずに**更新される
         ipSheet(c, [hexane, methylpentane]);
-        assert(ip._hintLevel === 1, '描いただけで段が進んだ');
+        assert(ip._hintLevel === 2, '描いただけで段が進んだ');
         assert(/あと 3種 あります/.test(body.textContent),
             `★ヒントが自動更新されない（${body.textContent.slice(0, 200)}）＝ 読み返すのに押し直しが要る`);
 
@@ -15032,11 +15064,17 @@
         } finally { delete ip.sheetForView; ip.renderSession(); }
         assert(/あと 3種 あります/.test(body.textContent), '戻しても自動更新に戻らない');
 
-        // ③ スコアは**到達した段**だけで決まる（読み返した回数は乗らない）
+        // ③ スコアは**到達した段**だけで決まる（読み返した回数は乗らない）。
+        //    ⚠ 3種目まで描いてから採点する —— 2種のままだと 2−2＝0 で**下限に貼りつき**、
+        //      読み返しが乗っていても同じ0点になる ＝ 空振りの緑になる
+        const dimethylbutane = { atoms: ['C', 'C', 'C', 'C', 'C', 'C'],
+            bonds: [[0, 1], [1, 2], [2, 3], [1, 4], [1, 5]],
+            xy: [[0, 0], [42, 0], [84, 0], [126, 0], [42, -42], [42, 42]] };
+        ipSheet(c, [hexane, methylpentane, dimethylbutane]);
         ip.toggleHintPanel(); ip.toggleHintPanel(); ip.toggleHintPanel();
         ip.finishAnswer();
-        assert(ip._finalScore.hints === 1 && ip._finalScore.raw === 2 && ip._finalScore.score === 1,
-            `読み返しが減点された（hints=${ip._finalScore.hints} score=${ip._finalScore.score}。1/2/1 を期待）`);
+        assert(ip._finalScore.hints === 2 && ip._finalScore.raw === 3 && ip._finalScore.score === 1,
+            `読み返しが減点された（hints=${ip._finalScore.hints} raw=${ip._finalScore.raw} score=${ip._finalScore.score}。2/3/1 を期待）`);
 
         ip.stop();
         g.userMolecule = new W.Molecule();
@@ -15083,20 +15121,20 @@
 
             // ③ その面に 💡 があり、押すと段が**1つだけ**進む
             assert(ovBtn(/次のヒント/), `★確認モードに 💡 が無い ＝ 直す前の症状（${ov.textContent.slice(0, 200)}）`);
-            assert(/あと 4段・−1点/.test(ovBtn(/次のヒント/).textContent),
+            assert(/あと 5段・−1点/.test(ovBtn(/次のヒント/).textContent),
                 `代償（残り段数・−1点）が出ていない（${ovBtn(/次のヒント/).textContent}）`);
             ovBtn(/次のヒント/).click();
             assert(ip._hintLevel === 1, `1回押して段が ${ip._hintLevel} ＝ 二重に進んでいる（減点も二重になる）`);
-            assert(/あと 3種 あります/.test(ov.textContent),
+            assert(/全部で 3 種 あります/.test(ov.textContent),
                 `確認モードにヒントの中身が出ない（${ov.textContent.slice(0, 300)}）`);
             assert(study.classList.contains('hidden'), '★ヒントを押すと 📚学習 が開く（答案が隠れる）');
 
             // ④ 学習パネル側と食い違わない（同じ段・同じ残り段数・同じ中身）
             const body = D.getElementById('ip-body');
-            assert(/あと 3種 あります/.test(body.textContent), '学習パネル側にヒントが反映されない');
-            assert([...body.querySelectorAll('button')].some(s => /次のヒント（あと 3段・−1点）/.test(s.textContent)),
+            assert(/全部で 3 種 あります/.test(body.textContent), '学習パネル側にヒントが反映されない');
+            assert([...body.querySelectorAll('button')].some(s => /次のヒント（あと 4段・−1点）/.test(s.textContent)),
                 '学習パネル側の残り段数が食い違う');
-            assert(/あと 3段・−1点/.test(ovBtn(/次のヒント/).textContent), '確認モード側の残り段数が食い違う');
+            assert(/あと 4段・−1点/.test(ovBtn(/次のヒント/).textContent), '確認モード側の残り段数が食い違う');
 
             // ★ 否定対照(1): 面の門番（carriesHintControl）を false にすると確認モードから 💡 が消える
             //    ＝ 上の「💡 がある」が**実際に見張っている**証明（消えなければ空振りの緑）
@@ -15920,7 +15958,8 @@
         assert(chainIdx >= 0, 'C₆H₁₂（鎖式）のお題が無い');
         const btn = D.querySelector(`#ip-body button[data-ip-problem="${chainIdx}"]`);
         assert(btn, 'C₆H₁₂（鎖式）のボタンが選択画面に無い');
-        assert(/C₆H₁₂（鎖式・13種）/.test(btn.textContent), `ボタンの表記が「${btn.textContent}」`);
+        // ★ v1489: 種類数は出さない（IH1）。ボタンが名乗るのは**式と範囲**だけ
+        assert(/^C₆H₁₂（鎖式）/.test(btn.textContent), `ボタンの表記が「${btn.textContent}」`);
 
         // ② 押して開く回の総数は、ボタンの数と**同じ計算から出る**
         btn.click();
@@ -15929,7 +15968,8 @@
 
         // ③ 見出しと注記が範囲を名乗る
         const panel = () => D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
-        assert(/✏️ C₆H₁₂ の鎖式異性体（全 13 種）/.test(panel()), `見出しが範囲を名乗らない（${panel().slice(0, 120)}）`);
+        assert(/✏️ C₆H₁₂ の鎖式異性体/.test(panel()), `見出しが範囲を名乗らない（${panel().slice(0, 120)}）`);
+        assert(!/全 13 種/.test(panel()), `見出しが種類数を出している（${panel().slice(0, 120)}）`);
         assert(/環をもたない構造だけを数えます/.test(panel()), '範囲の注記が出ていない');
         // ④ 作業帯にも出る
         assert(/（鎖式）/.test(ip.stripLiveHtml()), `作業帯が範囲を名乗らない（${ip.stripLiveHtml()}）`);
@@ -16058,8 +16098,12 @@
         assert(!ip.active, 'C₆H₁₂（全異性体）が開いてしまう（上限20は据え置きのはず）');
         assert(toasts.length === 1, `断り文が ${toasts.length}件`);
         assert(/25種/.test(toasts[0]), `断り文に種類数が無い（${toasts[0]}）`);
-        assert(/鎖式・13種/.test(toasts[0]) && /環式・12種/.test(toasts[0]),
+        // ★ v1489: 行き先の**お題名**はボタンと同じ表記（＝種類数なし）にそろえる。
+        //   ⚠ 断った式そのものの「25種」は残す —— それが断る理由で、伏せると理由が消える
+        assert(/C₆H₁₂（鎖式）/.test(toasts[0]) && /C₆H₁₂（環式）/.test(toasts[0]),
             `断り文に行き先（骨格の型で分けたお題）が出ていない（${toasts[0]}）`);
+        assert(!/鎖式・13種/.test(toasts[0]) && !/環式・12種/.test(toasts[0]),
+            `断り文が行き先の種類数まで出している（${toasts[0]}）`);
 
         g.setMode('puzzle');
     });
@@ -16529,7 +16573,16 @@
         ipStereoCleanup(c);
     });
 
-    test('IW26: ★陰性対照 — 既存お題の（N種）は1文字も変わらず、立体まで答える回だけ数を隠す', async (c) => {
+    test('IH1: 出題では種類数を伏せる（お題22件＋芳香族の全部）／★数は答え合わせとヒント段1に移っただけ', async (c) => {
+        /**
+         * ★ ユーザー判断 2026-08-31「全部で何種類か、はオープンにしない出題の方がよいのでは？」。
+         *   **もう出し切ったかを自分で決めるのが、そもそも入試で問われる力**なので、
+         *   出題中は総数を1つも出さない。⚠ v1435 で立体の回だけに入れた抜け道を全件に広げた
+         *   （旧 IW26 ＝「既存お題の（N種）は1文字も変わらない」を、この検査が置き換える）。
+         *
+         * ⚠⚠ **「数が消えた」だけを見てはいけない。** 数を全部消した実装でもそれは通る。
+         *   ★ この検査は **消えたこと（①〜③）と、移った先で確かに出ること（④⑤）を両方**見る。
+         */
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
         ipStereoCleanup(c);
@@ -16537,57 +16590,258 @@
         if (ip.active) ip.stop();
         ip.renderList();
 
-        // ① ★ 既存19問の表記は1文字も変わらない（v1433 の実測をそのまま凍結する）
+        // ① ★ お題22件の表記を凍結する（**式と範囲だけ**。種類数はどこにも無い）
         const frozen = [
-            'C₄H₁₀（2種）', 'C₅H₁₂（3種）', 'C₃H₈O（3種）', 'C₆H₁₄（5種）', 'C₄H₈（5種）', 'C₄H₁₀O（7種）',
-            'C₂H₆O（2種）', 'C₃H₆（2種）', 'C₅H₁₀（10種）', 'C₅H₁₂O（14種）',
-            'C₄H₈（鎖式・3種）', 'C₄H₈（環式・2種）', 'C₅H₁₀（鎖式・5種）', 'C₅H₁₀（環式・5種）',
-            'C₆H₁₂（鎖式・13種）', 'C₆H₁₂（環式・12種）',
-            'C₃H₄（鎖式・2種）', 'C₄H₆（鎖式・4種）', 'C₅H₈（鎖式・9種）'
+            'C₄H₁₀', 'C₅H₁₂', 'C₃H₈O', 'C₆H₁₄', 'C₄H₈', 'C₄H₁₀O',
+            'C₂H₆O', 'C₃H₆', 'C₅H₁₀', 'C₅H₁₂O',
+            'C₄H₈（鎖式）', 'C₄H₈（環式）', 'C₅H₁₀（鎖式）', 'C₅H₁₀（環式）',
+            'C₆H₁₂（鎖式）', 'C₆H₁₂（環式）',
+            'C₃H₄（鎖式）', 'C₄H₆（鎖式）', 'C₅H₈（鎖式）',
+            'C₅H₁₀（立体まで）', 'C₅H₁₂O（立体まで）', 'C₇H₁₆'
         ];
+        assert(ip.problems.length === frozen.length,
+            `お題が ${ip.problems.length}件（凍結した ${frozen.length}件と食い違う。足したら表記も凍結すること）`);
         frozen.forEach((want, i) => {
             const b = D.querySelector(`#ip-body button[data-ip-problem="${i}"]`);
             assert(b, `problems[${i}] のボタンが選択画面に無い`);
             assert(b.textContent.replace(/ ✓$/, '') === want,
-                `既存お題の表記が変わっている: problems[${i}] は「${b.textContent}」（期待「${want}」）`);
+                `お題の表記が変わっている: problems[${i}] は「${b.textContent}」（期待「${want}」）`);
+        });
+        // ② ★ どのボタンにも「N種」が1つも無い（凍結表と別の物差しで、抜け道ごと塞ぐ）
+        [...D.querySelectorAll('#ip-body button')].forEach(b => {
+            assert(!/[0-9０-９₀-₉]\s*種/.test(b.textContent),
+                `お題ボタンが種類数を出している（${b.textContent}）`);
         });
         const arBtn = D.querySelector('#ip-aromatic-presets button');
-        assert(arBtn && /C₈H₁₀（芳香族・4種）/.test(arBtn.textContent),
+        assert(arBtn && arBtn.textContent.replace(/ ✓$/, '') === 'C₈H₁₀（芳香族）',
             `芳香族プリセットの表記が変わっている（${arBtn && arBtn.textContent}）`);
 
-        // ② 立体まで答える回は**種類数を名乗らない**（別の枠に並ぶ）
-        const stWrap = D.getElementById('ip-stereo-problems');
-        assert(stWrap, '立体まで答える回の枠が選択画面に無い');
-        const stBtns = [...stWrap.querySelectorAll('button')];
-        assert(stBtns.length === 2, `立体まで答える回のボタンが ${stBtns.length}個（2個を期待）`);
-        stBtns.forEach(b => {
-            assert(/^C[₀-₉A-Za-z]*（立体まで）/.test(b.textContent), `表記が「${b.textContent}」`);
-            assert(!/\d種/.test(b.textContent) && !/[₀-₉]種/.test(b.textContent),
-                `立体まで答える回のボタンが種類数を出している（${b.textContent}）`);
-        });
-
         // ③ ★ 隠すのは4か所そろえる（ボタン・見出し・作業帯・確認モードの要約）。
-        //    ⚠ 1か所でも漏れると「隠した」ことにならない
-        const idx = ipStereoIdx(c, 10);
-        ipStereoSheet(c, idx);
+        //    ⚠ 1か所でも漏れると「隠した」ことにならない。**素の回**で見る（旧 IW26 は立体の回だった）
+        ip.stop();
+        ip.start(8);                                   // C₅H₁₀（素の回・全10種）
+        assert(ip.problem.total === 10, `前提が崩れている（total=${ip.problem.total}）`);
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2], [2, 3], [3, 4]] }]);
+        ip.renderSession();
         const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
-        assert(/✏️ C₅H₁₀ の異性体（立体まで）/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
-        assert(!/全 10 種/.test(panel), `学習パネルに種類数が出ている（${panel.slice(0, 160)}）`);
+        assert(/✏️ C₅H₁₀ の異性体/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
+        assert(!/全 10 種/.test(panel), `学習パネルに種類数が出ている（${panel.slice(0, 200)}）`);
         const live = ip.stripLiveHtml();
-        assert(!/全 10 種/.test(live) && /（立体まで）/.test(live), `作業帯が種類数を出している（${live}）`);
+        assert(!/全 10 種/.test(live) && /いま <span class="ws-live-ok">1個<\/span> 描いてあります/.test(live),
+            `作業帯が「いま N個 描いてあります」だけになっていない（${live}）`);
         ip.openReview('progress');
         const ov = D.getElementById('ip-review-overlay').textContent.replace(/\s+/g, ' ');
         assert(!/全 10 種/.test(ov), `確認モードに種類数が出ている（${ov.slice(0, 200)}）`);
+
+        // ④ ★★ 移った先その1 —— **ヒントの段1 では総数が出る**（ここで初めて分かる）
+        assert(ip._hintLevel === 0, '前提が崩れている（ヒントの段が0でない）');
+        ip.nextHint();
+        const hint = ip.buildHintBlock().textContent.replace(/\s+/g, ' ');
+        assert(/全部で 10 種/.test(hint), `ヒント段1 が総数を出していない（${hint.slice(0, 200)}）`);
         ip.closeReview();
 
-        // ④ ★ 陰性対照の裏 —— 既存のお題では今までどおり「全 N 種」を出す（隠しが漏れていない）
+        // ⑤ ★★ 移った先その2 —— **答え合わせでは今までどおり数を出す**
+        ip.finishAnswer();
+        const ans = D.getElementById('ip-review-overlay').textContent.replace(/\s+/g, ' ');
+        assert(/全 10種中/.test(ans), `答え合わせが総数を出していない（${ans.slice(0, 240)}）`);
+        assert(/未発見 9種/.test(ans), `答え合わせの未発見が出ていない（${ans.slice(0, 240)}）`);
+        ip.closeReview();
         ip.stop();
-        ip.start(8); // C₅H₁₀（10種・素の回）
-        const panel2 = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
-        assert(/✏️ C₅H₁₀ の異性体（全 10 種）/.test(panel2),
-            `素の回の見出しまで変わっている（${panel2.slice(0, 60)}）`);
-        assert(/全 10 種/.test(ip.stripLiveHtml()), '素の回の作業帯から種類数が消えている');
+
+        // ⑥ ★ 空振り防止 —— 直す前の文言が、この物差しを本当に弾くこと
+        assert(/[0-9０-９₀-₉]\s*種/.test('C₆H₁₄（5種）') && /[0-9０-９₀-₉]\s*種/.test('C₆H₁₂（鎖式・13種）'),
+            '直す前のボタン表記が新しい物差しを通ってしまう ＝ 空振りの緑');
+        assert(/全 10 種/.test('お題 C₅H₁₀ の異性体 全 10 種 ／ いま 0個 描いてあります'),
+            '直す前の帯が新しい物差しを通ってしまう ＝ 空振りの緑');
         ipStereoCleanup(c);
+    });
+
+    test('IH2: 分子式＋分類のお題12件（種を置いて腕を貼る列挙・全部に名前が付く・★否定対照つき）', async (c) => {
+        /**
+         * ★ ユーザー要望 2026-08-31「重元素7以上でも分類ごとの書き出しは対応を増やしたい／
+         *   例えば C₆H₁₂O のケトン、C₇H₁₄O₂ のエステル」＋ ユーザー確認済みの案A（お題ボタンを増やす）。
+         *
+         * ⚠⚠ **「全部列挙してから分類で捨てる」ではない**（分かれ目の実測は IH3）。
+         *   種（-CO-／-CHO／-COO-／-COOH）を置いて腕を貼る `enumerateFunctionalGroupIsomers`
+         *   を通す ＝ 芳香族の回とまったく同じ形。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+
+        // ★ 12件の顔ぶれ（数は**画面には出ない**が、開いた回の総数として突き合わせる）
+        const want = [
+            ['C₅H₁₀O（ケトン）', 3], ['C₆H₁₂O（ケトン）', 6],
+            ['C₄H₈O（アルデヒド）', 2], ['C₅H₁₀O（アルデヒド）', 4],
+            ['C₆H₁₂O（アルデヒド）', 8],
+            ['C₃H₆O₂（エステル）', 2], ['C₄H₈O₂（エステル）', 4],
+            ['C₅H₁₀O₂（エステル）', 9], ['C₆H₁₂O₂（エステル）', 20],
+            ['C₄H₈O₂（カルボン酸）', 2], ['C₅H₁₀O₂（カルボン酸）', 4],
+            ['C₆H₁₂O₂（カルボン酸）', 8]
+        ];
+
+        // ① ★★ **お題一覧は1件も数えない**（v1433 の申し送り「これ以上お題を足すなら
+        //    初回 renderList が先に効く」への答え。種類数を伏せたので数える理由が消えた）
+        const realEnum = W.enumerateFunctionalGroupIsomers;
+        let calls = 0;
+        W.enumerateFunctionalGroupIsomers = function (...a) { calls++; return realEnum.apply(this, a); };
+        try {
+            ip.renderList();
+            assert(calls === 0, `お題一覧を出すだけで分類つき列挙が ${calls}回 走った（起動が重くなる）`);
+            const btns = [...D.querySelectorAll('#ip-fg-presets button')];
+            assert(btns.length === want.length,
+                `分類つきのお題が ${btns.length}件（${want.length}件を期待）`);
+            btns.forEach((b, i) => {
+                assert(b.textContent.replace(/ ✓$/, '') === want[i][0],
+                    `お題の表記が「${b.textContent}」（期待「${want[i][0]}」）`);
+                // ★ IH1 と同じ約束 —— **種類数は出さない**
+                assert(!/[0-9０-９₀-₉]\s*種/.test(b.textContent),
+                    `分類つきのお題が種類数を出している（${b.textContent}）`);
+            });
+
+            // ② 12件すべてが**押すと開き**、総数が既知値と合い、**正解の全部に名前が付く**
+            //    ⚠ 名前は答え合わせの左列とヒント段5 が使う ＝ ここが緑なら「（名称未登録）」は出ない
+            want.forEach(([label, total], i) => {
+                calls = 0;
+                D.querySelector(`#ip-fg-presets button[data-ip-fg="${i}"]`).click();
+                assert(calls === 1, `${label}: 押したときの列挙が ${calls}回（1回を期待）`);
+                assert(ip.active && ip.problem, `${label}: 練習が始まらない`);
+                assert(ip.problem.total === total,
+                    `${label}: 総数が ${ip.problem.total}（${total} を期待）`);
+                const sc = ip.scopeInfo();
+                assert(sc && label.indexOf(sc.tag) > 0, `${label}: 範囲が名乗られない（${sc && sc.tag}）`);
+                const nameless = [...ip.targets.values()].filter(m => !ip.constitutionalName(m));
+                assert(nameless.length === 0,
+                    `${label}: 名前の付かない正解が ${nameless.length}件（お題の条件②を満たしていない）`);
+                // 見出し・作業帯が分類を名乗る（§11-4「宣言した以上、画面のどこでも隠さない」）
+                const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+                assert(panel.indexOf(sc.title) >= 0, `${label}: 見出しが分類を名乗らない（${panel.slice(0, 80)}）`);
+                assert(ip.stripLiveHtml().indexOf(sc.tag) >= 0, `${label}: 作業帯が分類を名乗らない`);
+                assert(!/全 \d+ 種/.test(panel), `${label}: 見出しが種類数を出している`);
+                ip.stop();
+            });
+        } finally { W.enumerateFunctionalGroupIsomers = realEnum; }
+
+        // ③ ★否定対照 —— **同じ分子式の別分類は別の集合**。ケトンの回にアルデヒドを描くと
+        //    「分子式は合うが対象外」（scope）になる ＝ `unknown`（開発ログ行き）ではない
+        const KETONE_KEY = 'chemIsomerPractice.C₅H₁₀O@fg-ketone';
+        const PLAIN_KEY = 'chemIsomerPractice.C₅H₁₀O';
+        try { W.localStorage.removeItem(KETONE_KEY); W.localStorage.removeItem(PLAIN_KEY); } catch (e) { /* noop */ }
+        ip.startFromFgPreset(0);                       // C₅H₁₀O（ケトン）3種
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'C', 'O'],
+                      bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5, 2]] }]);   // ペンタナール
+        const sheet = ip.grade();
+        assert(sheet.rows.length === 1 && sheet.rows[0].formula === ip.problem.formula,
+            `前提: 分子式が一致しない（${sheet.rows[0] && sheet.rows[0].formula}）`);
+        assert(sheet.rows[0].status === 'scope',
+            `★ケトンの回にアルデヒドを描いて status=${sheet.rows[0].status}（scope を期待）`);
+        assert(/ケトン/.test(ip.verdictOf(sheet.rows[0])),
+            `断り文が分類を名乗らない（${ip.verdictOf(sheet.rows[0])}）`);
+
+        // ④ ★ 記録の鍵が分かれる —— 3種そろえても、素の C₅H₁₀O の ✓ は付かない
+        const m = new W.Molecule();
+        [...ip.targets.values()].forEach((t, k) => {
+            W.layoutMolecule(t);
+            const idx = new Map(t.atoms.map((a, j) => [a.id, j]));
+            const ids = t.atoms.map(a => m.addAtom(a.element, a.x + 100 + k * 200, a.y + 120).id);
+            t.bonds.forEach(b => m.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+        });
+        g.userMolecule = m; g.updateDrawing();
+        assert(ip.grade().found.size === 3, 'ケトン3種がそろわない（前提）');
+        assert(W.localStorage.getItem(KETONE_KEY) === '1', '分類つきの回のクリア記録が残らない');
+        assert(W.localStorage.getItem(PLAIN_KEY) !== '1',
+            '★ケトンだけ描いたのに C₅H₁₀O 全体の ✓ が付いた（記録の鍵が分かれていない）');
+        // ボタンの ✓ も同じ鍵で引けている（表記の作り方が2つに割れていない）
+        ip.stop();
+        ip.renderList();
+        const b0 = D.querySelector('#ip-fg-presets button[data-ip-fg="0"]');
+        assert(/ ✓$/.test(b0.textContent), `クリアしたのに ✓ が付かない（${b0.textContent}）`);
+        const b1 = D.querySelector('#ip-fg-presets button[data-ip-fg="1"]');
+        assert(!/ ✓$/.test(b1.textContent), `解いていない回に ✓ が付いている（${b1.textContent}）`);
+
+        try { W.localStorage.removeItem(KETONE_KEY); } catch (e) { /* noop */ }
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IH3: ★否定対照 — 分類つき列挙は「全部列挙してから捨てる」道では出せない（C₇H₁₄O₂）', async (c) => {
+        /**
+         * ⚠ 発注書の分かれ目そのもの。**素の列挙では1件も出せない**式で、
+         *   種つき列挙が45件を出すことを並べて見る ＝ この設計の理由が消えたら赤くなる。
+         * ★ 45件は上限20を超えるのでお題には**しない**（④「何種類か答える」の受け皿・報告参照）。
+         */
+        const W = c.W;
+        const els = ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O', 'O'];   // C₇H₁₄O₂（重原子9個）
+        const plain = W.enumerateConstitutionalIsomers(els, 14, 4000000);
+        assert(plain.overflow || plain.isomers.length === 0,
+            `★素の列挙が C₇H₁₄O₂ を出せてしまった（${plain.isomers.length}件）＝ 前提が変わった`);
+        const t0 = Date.now();
+        const seeded = W.enumerateFunctionalGroupIsomers(els, 14, 'ester');
+        const ms = Date.now() - t0;
+        assert(seeded.applicable && !seeded.overflow && seeded.isomers.length === 45,
+            `種つき列挙が ${seeded.isomers.length}件（45件を期待・overflow=${seeded.overflow}）`);
+        assert(ms < 3000, `種つき列挙が ${ms}ms（実測 300ms 程度。桁で遅くなったら枝刈りが効いていない）`);
+
+        // ★ 枝刈りの門番（腕の不飽和度）が**黙って数え落とさない**こと ——
+        //   予算を超える式は overflow で断る（`FG_ARM_DOU_MAX`）
+        const rich = W.enumerateFunctionalGroupIsomers(['C', 'C', 'C', 'C', 'O'], 2, 'ketone');
+        assert(rich.applicable && rich.overflow,
+            `不飽和度が予算を超える式を黙って数えた（${rich.isomers.length}件・overflow=${rich.overflow}）`);
+        // ★ 炭素8個は**時間の線**で断る（実測 5秒。断り方は overflow ＝ 黙って落とさない）
+        const big = W.enumerateFunctionalGroupIsomers(
+            ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'O', 'O'], 16, 'ester');
+        assert(big.applicable && big.overflow, '炭素8個の式が門番を素通りした');
+        // ★ 種に合わない式は applicable:false で「扱わない」と言う（酸素の数が合わない）
+        const hetero = W.enumerateFunctionalGroupIsomers(['C', 'C', 'C', 'O', 'O'], 8, 'ketone');
+        assert(!hetero.applicable, 'ケトンの種に合わない酸素数の式を扱ってしまう');
+    });
+
+    test('IH4: ★C₇ の4件が落ちる理由は「数」ではなく「名前」（DESIGN §19-4 の母数の見張り）', async (c) => {
+        /**
+         * ⚠⚠ **これは仕様の見張りではなく「設計書の数が古くなったら赤くする」引き金**。
+         *
+         * ★ `DESIGN_isomer_practice.md` §19-4 の分かれ目そのもの ——
+         *   残った宿題「21種以上は何種類か答える出題」の**母数が何件か**は、
+         *   C₇ の4件が**どの条件で落ちているか**で決まる:
+         *     ・ケトン15・アルデヒド17・カルボン酸17 … **上限20の内側**（数では落ちていない）。
+         *       落としているのは条件②（正解の全部に名前が付く）＝ `compounds.json` を足せば開く
+         *     ・エステル45 … **上限20の外**（名前を足しても書き出しの回にはならない）
+         *   ⚠ だから **`compounds.json` に C₇ の名前が出そろった瞬間、母数は 4件 → 1件に縮む**。
+         *   そのとき §19-4 と `IsomerPractice.fgPresets` を**両方**見直す必要があるので、
+         *   ここが赤くなって知らせる（黙って古い設計書が残るのを防ぐ）。
+         *
+         * ⚠ 名前を1つ2つ足しただけでは赤くしない（`nameless > 0` を見る）＝
+         *   ふだんの `compounds.json` 追記の邪魔はしない。**全部そろったときだけ**赤くなる。
+         */
+        const W = c.W, ip = W.isomerPractice;
+        const C7 = [
+            { cls: 'ketone',   els: 7, o: 1, h: 14, total: 15, overCap: false },
+            { cls: 'aldehyde', els: 7, o: 1, h: 14, total: 17, overCap: false },
+            { cls: 'acid',     els: 7, o: 2, h: 14, total: 17, overCap: false },
+            { cls: 'ester',    els: 7, o: 2, h: 14, total: 45, overCap: true }
+        ];
+        C7.forEach(t => {
+            const els = [];
+            for (let i = 0; i < t.els; i++) els.push('C');
+            for (let i = 0; i < t.o; i++) els.push('O');
+            const r = W.enumerateFunctionalGroupIsomers(els, t.h, t.cls);
+            assert(r.applicable && !r.overflow,
+                `C₇ の${t.cls}が数え切れない（applicable=${r.applicable} overflow=${r.overflow}）`);
+            assert(r.isomers.length === t.total,
+                `C₇ の${t.cls}が ${r.isomers.length}種（${t.total}種を期待・§19-4 の表が古い）`);
+            // ★ 上限20 の内か外か ＝ 「数で落ちているか」
+            assert((r.isomers.length > W.IP_MAX_ISOMERS) === t.overCap,
+                `C₇ の${t.cls}の「上限20 を超えるか」が ${!t.overCap}（§19-4 の分かれ目が変わった）`);
+            const nameless = r.isomers.filter(m => !ip.constitutionalName(m)).length;
+            if (t.overCap) return;                     // エステルは数で落ちるので名前は問わない
+            // ★★ 数では落ちていない3件は、**名前で落ちている**ことを確かめる。
+            //   ここが 0 になったら「書き出しの回にできる」＝ §19-4 の母数が 4→1 に縮む
+            assert(nameless > 0,
+                `★ C₇ の${t.cls}に名前が出そろった（名無し0）—— ` +
+                'DESIGN_isomer_practice.md §19-4 の母数と fgPresets を見直してください');
+        });
     });
 
     test('IW27: ★否定対照 — 段1 の判定は gradeStereoPoints 1本だけを通る（2か所に散っていない）', async (c) => {
@@ -16820,7 +17074,7 @@
             // 19〜20（v1435 で足した「立体まで答える回」。⚠ **骨格の型は付けない** ——
             //   鎖式に絞ると C₅H₁₀ のメソ体が消える（DESIGN_stereo_point.md §1-2b））
             ['C₅H₁₀', 10], ['C₅H₁₂O', 14],
-            // 21（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」）。★ C₆H₁₄ の5種から9種へ
+            // 21（v1485・ユーザー要望「C₇H₁₆ の練習がしたい」）。★ C₆H₁₄ の5種から9種へ
             ['C₇H₁₆', 9]
         ];
         assert(ip.problems.length === expected.length,
@@ -17105,7 +17359,7 @@
         ip.startFromFormula('C5H12');
         assert(ip.active && ip.problem.total === 3, 'C5H12 の自由入力で開始できない');
         ip.stop();
-        // ★ v14xx: 重原子7個でも**木しか作れない式**は受理する（C₇H₁₆ ＝ ユーザー要望）。
+        // ★ v1485: 重原子7個でも**木しか作れない式**は受理する（C₇H₁₆ ＝ ユーザー要望）。
         //   線は個数ではなく `enumerationIsTreeOnly`。受理しない側は下の C₇H₁₄・C₈H₁₈ が見る
         //   （言い分けの本体と否定対照は `IS5`）
         ip.startFromFormula('C7H16');
@@ -17306,11 +17560,11 @@
             ref.forEach(code => assert(mine.has(code), `${f}: 素朴版にしか無い異性体がある（${code}）`));
         });
 
-        // ★★ **代表そのものを凍結する**（v14xx。これがいちばん効く番人）。
+        // ★★ **代表そのものを凍結する**（v1485。これがいちばん効く番人）。
         //   枝刈りは「答えの集合」だけでなく「**同型類からどの図を返すか**」も変えてはいけない。
         //   `seen` は最初に出会った1つを残すので、探索順を変える枝刈り（元素の入れ替えを
         //   捨てる類の「対称性の破り」）を入れると、集合は同じまま**返る図が総取り替え**になる。
-        //   実測（v14xx で試して取り下げた）: それを入れると `IW31`（正解図の主鎖が横一直線）の
+        //   実測（v1485 で試して取り下げた）: それを入れると `IW31`（正解図の主鎖が横一直線）の
         //   否定対照が空振りし、`NW3b`（C₆H₆ の六員環）が33通り → 5通りに落ち、
         //   `IN2` / `IN12` の凍結リストが外れた ＝ **画面に出る図が黙って全部差し替わる**。
         //   ⚠ ここが赤くなったら「期待値を書き換える」のではなく、
@@ -17369,8 +17623,9 @@
         const btn = D.querySelector(`#ip-body button[data-ip-problem="${idx}"]`);
         assert(btn, 'C₇H₁₆ のお題ボタンが画面に無い');
         assert(!btn.disabled, 'C₇H₁₆ のお題ボタンが押せない（列挙が打ち切られている）');
-        assert(/C₇H₁₆/.test(btn.textContent) && /9種/.test(btn.textContent),
-            `C₇H₁₆ のボタンの表記が「${btn.textContent}」（「C₇H₁₆（9種）」を期待）`);
+        // ★ v1489: 種類数は出さない（IH1）
+        assert(/^C₇H₁₆/.test(btn.textContent) && !/[0-9]\s*種/.test(btn.textContent),
+            `C₇H₁₆ のボタンの表記が「${btn.textContent}」（「C₇H₁₆」を期待）`);
         // ★ 不飽和度0 ＝ 素の群に並ぶ（「じっくり練習する回」ではない）
         const train = D.getElementById('ip-training-problems');
         assert(!train || !train.querySelector(`button[data-ip-problem="${idx}"]`),
@@ -17795,9 +18050,11 @@
         const btn = D.querySelector('#ip-aromatic-presets button[data-ip-aromatic="C8H10"]');
         assert(btn, '選択画面に芳香族のプリセットが無い（入力欄に打てる人にしか届かないまま）');
         assert(/芳香族/.test(btn.textContent), `ボタンの文言に「芳香族」が無い（${btn.textContent}）`);
-        assert(/4\s*種/.test(btn.textContent), `ボタンが種類数を出していない（${btn.textContent}）`);
-        // ★ ボタンの数と、押して開く回の総数は**同じ計算から出る**こと
-        const shown = parseInt(btn.textContent.replace(/[^0-9]/g, ''), 10);
+        // ★ v1489: **ボタンは種類数を出さない**（IH1）。
+        //   ⚠ ただし「ボタンを出すかどうか」と「開いた回の総数」が**同じ計算から出る**保証は残す
+        //     —— 表記から消したぶん、`prepareAromatic` のキャッシュを直に突き合わせる
+        assert(!/[0-9]\s*種/.test(btn.textContent), `ボタンが種類数を出している（${btn.textContent}）`);
+        const shown = ip.prepareAromatic('C8H10').count;
 
         // ② 押すだけで芳香族の回が開く（**入力欄には何も打たない**）
         const input = D.querySelector('#ip-body input[type="text"]');
@@ -17807,13 +18064,14 @@
         assert(ip.problem.aromaticOnly === true,
             '開いた回が芳香族の回になっていない（aromaticOnly が立っていない）');
         assert(ip.problem.total === 4, `総数が ${ip.problem.total}（4 を期待）`);
-        assert(String(shown).indexOf(String(ip.problem.total)) >= 0,
-            `ボタンの表記（${btn.textContent}）と開いた回の総数（${ip.problem.total}）が食い違う`);
+        assert(shown === ip.problem.total,
+            `プリセットの下ごしらえ（${shown}）と開いた回の総数（${ip.problem.total}）が食い違う`);
 
         // ③ 見出しと注記に「芳香族」の語が入っている
         const body = D.getElementById('ip-body').textContent;
-        assert(/✏️ C₈H₁₀ の芳香族異性体（全 4 種）/.test(body.replace(/\s+/g, ' ')),
-            `見出しが「✏️ C₈H₁₀ の芳香族異性体（全 4 種）」でない（${body.slice(0, 120)}）`);
+        assert(/✏️ C₈H₁₀ の芳香族異性体/.test(body.replace(/\s+/g, ' ')),
+            `見出しが「✏️ C₈H₁₀ の芳香族異性体」でない（${body.slice(0, 120)}）`);
+        assert(!/全 4 種/.test(body.replace(/\s+/g, ' ')), `見出しが種類数を出している（${body.slice(0, 120)}）`);
         assert(/ベンゼン環をもつ構造だけを数えます/.test(body), '範囲の注記が出ていない');
 
         // ④ ★ 完了条件 —— ベンゼン環4つを置けば 4/4。
@@ -17872,7 +18130,7 @@
         // ① 芳香族の回が **`problems`（列挙の道）に入っていない**。
         //    `problems` の各件は `enumerate(index)` → `enumerateConstitutionalIsomers` を通る
         //    ⚠ 件数は v1433 で 6 → 19・**v1435 で 21**（立体まで答える回を2つ足した・§18）・
-        //      **v14xx で 22**（C₇H₁₆・ユーザー要望 2026-08-31）。
+        //      **v1485 で 22**（C₇H₁₆・ユーザー要望 2026-08-31）。
         //      見張っているのは**件数そのものではなく「C₈H₁₀ がこちらへ落ちていないこと」**なので、
         //      重原子の上限も一緒に見る ＝ 生の列挙で扱えない式がここへ紛れ込めば赤くなる
         assert(Array.isArray(ip.problems) && ip.problems.length === 22,
@@ -17881,7 +18139,7 @@
             const carbons = p.elements.filter(e => e === 'C').length;
             assert(!(carbons === 8 && p.hCount === 10),
                 `problems[${i}] に C₈H₁₀ が入っている ＝ 芳香族の回が生の列挙の道へ落ちている`);
-            // ★ 上限は「個数」ではなく「木しか作れる式か」で決まる（v14xx。learn.js の
+            // ★ 上限は「個数」ではなく「木しか作れる式か」で決まる（v1485。learn.js の
             //   `IP_MAX_HEAVY` / `IP_MAX_HEAVY_TREE` と同じ判定を、ここでも列挙器の関数で引く）
             const cap = W.enumerationIsTreeOnly(p.elements, p.hCount) ? 7 : 6;
             assert(p.elements.length <= cap,
@@ -43651,6 +43909,315 @@
         c.reset();
     });
 
+    /* ===== CV1〜CV3: 切る反応の印 —— 分かれたどちらの分子にも印が付く（悉皆・v1490） =====
+     *
+     * ★ **きっかけ**（ユーザー実機報告・V125 の完成品・2026-08-28）:
+     *   **「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」**
+     *   `cleaveEster` の `changed` に、切られてアルコール側へ行く酸素 `oId` が入っていなかった。
+     *
+     * ⚠ **1か所の書き忘れではない。** `reactor.js` の `changed:` は 34か所あり、
+     *   **同じ形の切る反応でも書き方がばらばら**だった ——
+     *   エステルの加水分解・けん化・酸無水物の加水分解は `oId` が落ち、
+     *   グリコシド結合の加水分解は入っていた（同じ人が同じ日に書いても揃わない）。
+     *   ＝ うっかりではなく「**印の列挙を人の記憶に任せる設計**」の問題。
+     *
+     * ★★ **だからこの検査は「切る反応を人が並べる」形にしない。**
+     *   **反応を実際に走らせて、連結成分が分かれたかどうかで対象を自動的に決める。**
+     *   次に切る反応を足した人も、名前を登録しなくても自動的に見張られる。
+     *
+     * ★ **物差し**: 反応前の1つの分子（連結成分）の原子が反応後に2つ以上の成分へ散ったら、
+     *   **散った先のどの成分にも `changed` の原子が1つ以上ある**こと。
+     *   ⚠ **「印が2つ以上ある」では通ってしまう**（酸の側だけで2つ出るため。CV3-① で実証）。
+     *
+     * ★ **脱離した水は対象外**と決めた（判断が分かれるところなので理由を書く）:
+     *   - 印は「**注目してほしい変化点**」を指すもので、生成物の目録ではない。
+     *     分子内脱水で外れた水にまで丸を付けると、**C=C ができたことがぼやける**。
+     *   - 除外は**気分ではなく機械で引ける** —— `parkAsWater()` が置いた酸素には
+     *     `fromReaction` が立っている。除外するのは「重原子が全部 `fromReaction` の成分」だけ。
+     *   - ⚠ **除外が広がっていないこと**は CV3-③ が見張る（除外した成分は必ず酸素1個）。
+     *
+     * ★ **見張れた本数は画面に出す**（緑のときも）。⚠ 対象を絞って「全部通った」と言うのが
+     *   いちばん悪い形なので、「N 本中 M 本を見張った・題材が無いのは M' 本」を必ず添える。
+     */
+
+    // 題材に相手の分子が要るルール（1分子のライブラリ走査では detect が通らないもの）。
+    // ⚠ **ここに無いルールは、ライブラリ全件から題材を自動で拾う**（手で並べない）
+    const CV_PAIR_SAMPLES = {
+        esterification: ['酢酸', 'エタノール'],
+        amidation: ['酢酸', 'アニリン'],
+        esterification_phenol_info: ['酢酸', 'フェノール'],
+        dehydration_inter: ['エタノール', 'エタノール'],
+        condensation_glycoside: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
+        addition_polymerization: ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'],
+        alkyne_polymerization: ['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）'],
+        diene_polymerization: ['1,3-ブタジエン', '1,3-ブタジエン', '1,3-ブタジエン'],
+        // 加硫は「重合してできた鎖が2本」要る。単量体からは組めないので、先に重合を2回走らせる
+        vulcanization: ['@二本の鎖'],
+        condensation_polymerization: ['アジピン酸', 'ヘキサメチレンジアミン', 'アジピン酸', 'ヘキサメチレンジアミン'],
+        condensation_polymer_info: ['アジピン酸', 'ヘキサメチレンジアミン'],
+        // ★ ビニロン（v1488・重合レーン）。**この検査が自分で見つけて名指しした** ——
+        //   v1488 を取り込んだ瞬間に CV1 が「題材が無いルールの一覧が宣言と違う
+        //   （実際: acetalization_pva ／ 宣言: なし）」で赤くなった ＝ 設計どおりの動き。
+        //   ⚠ 相手（ホルムアルデヒド）が要るので1分子の走査では拾えない
+        acetalization_pva: ['ポリビニルアルコール', 'ホルムアルデヒド']
+    };
+    // ⚠ **題材が用意できず見張れないルール**（0 本のうちは空のまま）。
+    //    ここが伸びたら報告に本数と名前を書くこと ＝ 黙って対象から外れないようにする
+    const CV_NO_SAMPLE = [];
+    /* ⚠⚠ **実際に分かれた（＝ この物差しが本当に効いた）ルールの下限**。
+     * ★ **題材を人が並べない**という方針は変えない —— これは「対象の一覧」ではなく
+     *   **減ったことに気づくためのラチェット**である。
+     * ⚠ **なぜ要るか**: 題材はライブラリの走査で自動に拾うので、**ライブラリが変わると
+     *   拾われる分子も変わる**。たとえば `hydrolysis_ester` の題材が酢酸エチルから
+     *   ラクトン（環状エステル＝切っても分子の数が増えない）に変わると、
+     *   この検査は**そのルールを黙って見逃したまま緑になる**（`cut` から `intact` へ移るだけ）。
+     *   本数は注記に出るが、**出ているだけでは誰も気づかない**（緑は読まれない）。
+     * ★ 増えるぶんは自由（次に切る反応を足した人は何も登録しなくてよい）。**減ったら赤**。 */
+    const CV_MUST_SPLIT = [
+        'oxidative_cleavage', 'iodoform', 'dehydration_intra', 'esterification', 'amidation',
+        'dehydration_inter', 'condensation_glycoside', 'condensation_polymerization',
+        'dehydration_anhydride', 'hydrolysis_anhydride', 'hydrolysis_ester',
+        'hydrolysis_glycoside', 'saponification', 'acetalization_pva'
+    ];
+
+    // 連結成分（原子IDの Set の配列）。⚠ 原子IDは乱数なので順序に頼らない
+    const cvComponents = (mol) => {
+        const adj = new Map();
+        mol.atoms.forEach(a => adj.set(a.id, []));
+        mol.bonds.forEach(b => {
+            if (!adj.has(b.atomId1) || !adj.has(b.atomId2)) return;
+            adj.get(b.atomId1).push(b.atomId2);
+            adj.get(b.atomId2).push(b.atomId1);
+        });
+        const seen = new Set(), out = [];
+        mol.atoms.forEach(a => {
+            if (seen.has(a.id)) return;
+            const stack = [a.id], set = new Set([a.id]);
+            seen.add(a.id);
+            while (stack.length) {
+                const x = stack.pop();
+                (adj.get(x) || []).forEach(y => {
+                    if (seen.has(y)) return;
+                    seen.add(y); set.add(y); stack.push(y);
+                });
+            }
+            out.push(set);
+        });
+        return out;
+    };
+    // 脱離した水（`parkAsWater` が置いた酸素だけからなる成分）か
+    const cvIsLeavingWater = (mol, set) => {
+        const heavy = [...set].map(id => mol.atoms.find(a => a.id === id))
+            .filter(a => a && a.element !== 'H');
+        return heavy.length > 0 && heavy.every(a => a.fromReaction);
+    };
+    /**
+     * 物差しの本体。反応の前後の成分と `changed` を渡すと
+     * 「分かれたのに印が無い成分」を返す（空なら合格）。
+     * ⚠ CV1（悉皆）と CV3（否定対照）が**同じ関数**を使う ＝ 物差しを2つ持たない
+     */
+    const cvUnmarkedProducts = (mol, before, after, changed) => {
+        const marks = new Set(changed || []);
+        const landed = before.map(b => after.filter(a => [...b].some(id => a.has(id))));
+        const split = landed.filter(list => list.length >= 2);
+        const products = [];
+        split.forEach(list => list.forEach(a => { if (!products.includes(a)) products.push(a); }));
+        return {
+            split: split.length > 0,
+            products,
+            water: products.filter(a => cvIsLeavingWater(mol, a)),
+            unmarked: products.filter(a => !cvIsLeavingWater(mol, a) && ![...a].some(id => marks.has(id)))
+        };
+    };
+    // 題材をキャンバスに並べる
+    const cvSetup = (c, names) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        if (names[0] === '@二本の鎖') {
+            const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+            assert(dien, 'diene_polymerization が無い（加硫の題材が組めない）');
+            for (let k = 0; k < 2; k++) {
+                for (let i = 0; i < 3; i++) g.summonMolecule('1,3-ブタジエン');
+                const s = dien.detect(g.userMolecule);
+                if (s.length) dien.apply(g, s[0]);
+            }
+        } else {
+            names.forEach(n => g.summonMolecule(n));
+        }
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+
+    test('CV1: 切る反応の悉皆 —— 反応で分子が分かれたら、分かれたどちらにも印が付く', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rules = W.REACTION_RULES;
+        assert(rules && rules.length, 'REACTION_RULES が読めない');
+
+        // ---- ① 題材さがし（手で並べない。ライブラリ全件を1回なめて、最初に通った分子を使う）
+        const picked = {};
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(x => x && x.target && x.name);
+        assert(source.length > 100, `ライブラリが読めていない（${source.length} 件）`);
+        for (const entry of source) {
+            const remaining = rules.filter(r => !picked[r.id] && !CV_PAIR_SAMPLES[r.id]);
+            if (!remaining.length) break;
+            let mol;
+            try { mol = g.createTargetFromData({ target: entry.target }); } catch (e) { continue; }
+            for (const r of remaining) {
+                try { if (r.detect && r.detect(mol).length > 0) picked[r.id] = [entry.name]; } catch (e) { /* 読めない図は飛ばす */ }
+            }
+        }
+        Object.keys(CV_PAIR_SAMPLES).forEach(id => {
+            if (rules.some(r => r.id === id)) picked[id] = CV_PAIR_SAMPLES[id];
+        });
+
+        // ---- ② 反応を実際に走らせて、分かれたかどうかで対象を決める
+        const noSample = [], cut = [], intact = [];
+        let waterSkipped = 0;
+        for (const rule of rules) {
+            const names = picked[rule.id];
+            if (!names) { noSample.push(rule.id); continue; }
+            const mol = cvSetup(c, names);
+            let sites = [];
+            try { sites = rule.detect(mol) || []; } catch (e) {
+                assert(false, `${rule.id}: 題材（${names.join('＋')}）で detect が例外（${e.message}）`);
+            }
+            assert(sites.length > 0,
+                `${rule.id}: 題材（${names.join('＋')}）で反応の箇所が出ない ＝ この題材ではこのルールを見張れていない`);
+            const before = cvComponents(mol);
+            g.saveState();
+            let res;
+            try { res = rule.apply(g, sites[0]); } catch (e) {
+                assert(false, `${rule.id}: 題材（${names.join('＋')}）で apply が例外（${e.message}）`);
+            }
+            const after = cvComponents(mol);
+            const v = cvUnmarkedProducts(mol, before, after, res && res.changed);
+            waterSkipped += v.water.length;
+            if (!v.split) { intact.push(rule.id); continue; }
+            cut.push(rule.id);
+            if (v.unmarked.length) {
+                const say = v.unmarked.map(s => [...s]
+                    .map(id => (mol.atoms.find(a => a.id === id) || {}).element)
+                    .filter(e => e && e !== 'H').join('')).join(' / ');
+                assert(false,
+                    `${rule.id}: 題材（${names.join('＋')}）で分子が ${before.length} → ${after.length} に分かれたのに、` +
+                    `印（changed）の無い生成物が ${v.unmarked.length} 個ある（${say}）` +
+                    '＝ 画面ではその分子だけ光らない。切る反応は cleaveAcylOxygen に束ねてある');
+            }
+        }
+
+        // ---- ③ 題材が無いルールは黙って減らさない（宣言と突き合わせる）
+        assert(JSON.stringify(noSample.slice().sort()) === JSON.stringify(CV_NO_SAMPLE.slice().sort()),
+            `題材が無いルールの一覧が宣言と違う（実際: ${noSample.join(',') || 'なし'} ／ ` +
+            `宣言: ${CV_NO_SAMPLE.join(',') || 'なし'}）。増えたなら報告に本数と名前を書き、CV_NO_SAMPLE を直すこと`);
+        // 空振り防止: 切れる反応が1本も無いのに緑、をあり得なくする
+        assert(cut.length >= 5,
+            `分かれた反応が ${cut.length} 本しかない ＝ 物差しが空振りしている疑い（${cut.join(',')}）`);
+        /* ★ **ラチェット**: いちど見張れた「分かれる反応」が、黙って見張られなくなるのを止める。
+         * ⚠ 題材はライブラリの走査で自動に拾うので、**ライブラリが変わると題材も変わる** ——
+         *   切る反応の題材が環状の相手（ラクトンなど＝切っても分子の数が増えない）に化けると、
+         *   `cut` から `intact` へ移るだけで**緑のまま見逃す**。注記の本数が減っても誰も気づかない。 */
+        const lost = CV_MUST_SPLIT.filter(id => !cut.includes(id) && rules.some(r => r.id === id));
+        assert(lost.length === 0,
+            `いちど見張れていた「分かれる反応」が ${lost.length} 本、分かれなくなっている（${lost.join(',')}）。` +
+            'ライブラリから拾った題材が変わって、切っても分子の数が増えない相手（環状のものなど）に' +
+            'なっていないか見ること。⚠ 反応そのものを変えたなら CV_MUST_SPLIT からその id を外し、' +
+            '外した理由をコミットに書くこと（黙って減らさない）');
+
+        c.reset();
+        return `見張った ${rules.length - noSample.length}/${rules.length} 本` +
+            `（分かれた反応 ${cut.length} 本・分かれない反応 ${intact.length} 本）` +
+            `／題材が無く見張れない ${noSample.length} 本${noSample.length ? '（' + noSample.join(',') + '）' : ''}` +
+            `／脱離した水として除外した生成物 ${waterSkipped} 個`;
+    });
+
+    test('CV2: ★否定対照 — スクロースの加水分解はグルコース側とフルクトース側の両方が光る', async (c) => {
+        /* ⭐ **正しく動いていることが実測で分かっている例**（動画レーンが V121 の完成品で確認。
+         *   グルコース側とフルクトース側の両方に破線の円）。⚠ ＝「切る反応が全部壊れている」
+         *   わけではないので、**同じ物差しがここで通る**ことを確かめて、CV1 の赤が
+         *   物差しの空振りでないと言えるようにする。 */
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
+        assert(rule, 'hydrolysis_glycoside が無い');
+        const mol = cvSetup(c, ['スクロース（ショ糖）']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `スクロースのグリコシド結合が ${sites.length} 箇所（1 のはず）`);
+        const before = cvComponents(mol);
+        assert(before.length === 1, `切る前が ${before.length} 分子（1 のはず）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const after = cvComponents(mol);
+        assert(after.length === 2, `切ったあとが ${after.length} 分子（2 のはず）`);
+        const v = cvUnmarkedProducts(mol, before, after, res.changed);
+        assert(v.split, 'スクロースが分かれたと読めていない（物差しの空振り）');
+        assert(v.unmarked.length === 0,
+            `スクロースの加水分解で印の無い生成物が ${v.unmarked.length} 個ある`);
+        // 「本当にグルコースとフルクトースに分かれた」ことを名前でも見る（2個に分かれただけでは弱い）
+        const shown = c.D.getElementById('compound-name').textContent;
+        // ⚠ 表示は「α-D-グルコース（α-D-グルコピラノース） ＋ β-D-フルクトフラノース」なので、
+        //    フルクトース側は語幹（フルクト）で見る（フラノース／フラノースの言い分けに引っかからない）
+        assert(shown.includes('グルコース') && shown.includes('フルクト'),
+            `切ったあとの表示が「${shown}」（グルコースとフルクトースを期待）`);
+        c.reset();
+    });
+
+    test('CV3: ★否定対照 — 「印が2つ以上」では通る／直しを外すと赤くなる／水の除外は酸素1個だけ', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const est = W.REACTION_RULES.find(r => r.id === 'hydrolysis_ester');
+        assert(est, 'hydrolysis_ester が無い');
+
+        // ---- ① **「印が2つ以上ある」では通ってしまう**（酸の側だけで2つ出る）
+        const mol = cvSetup(c, ['酢酸エチル']);
+        const sites = est.detect(mol);
+        assert(sites.length === 1, `酢酸エチルのエステル結合が ${sites.length} 箇所`);
+        const before = cvComponents(mol);
+        g.saveState();
+        const res = est.apply(g, sites[0]);
+        const after = cvComponents(mol);
+        assert(after.length === 2, `加水分解のあとが ${after.length} 分子（2 のはず）`);
+        assert((res.changed || []).length >= 2, '印が2つ未満（この否定対照が成り立たない）');
+        const acid = after.find(s => [...s].filter(id => res.changed.includes(id)).length >= 2);
+        assert(acid, '酸の側だけで印が2つある状態になっていない ＝ この否定対照の前提が崩れている');
+        // ⚠ ＝ 数だけ見る検査（`changed.length >= 2`）はここを緑にしてしまう。だから成分ごとに見る
+
+        // ---- ② **直しを外すと赤くなる**（物差しが空振りしていない証明）
+        //    この直しの前の `changed: [cId, o.id]` を、酸の側の原子だけ残して再現する
+        const old = res.changed.filter(id => acid.has(id));
+        const broken = cvUnmarkedProducts(mol, before, after, old);
+        assert(broken.unmarked.length === 1,
+            `直しを外した changed でも印の無い生成物が ${broken.unmarked.length} 個（1 個＝エタノール側を期待）`);
+        // いまの実装では通る
+        const now = cvUnmarkedProducts(mol, before, after, res.changed);
+        assert(now.unmarked.length === 0, 'いまの実装で印の無い生成物が残っている');
+
+        // ---- ③ **水の除外は広がっていない**（除外するのは酸素1個の成分だけ）
+        const deh = W.REACTION_RULES.find(r => r.id === 'dehydration_intra');
+        assert(deh, 'dehydration_intra が無い');
+        const m2 = cvSetup(c, ['1-プロパノール']);
+        const s2 = deh.detect(m2);
+        assert(s2.length > 0, '1-プロパノールで分子内脱水が出ない');
+        const b2 = cvComponents(m2);
+        g.saveState();
+        const r2 = deh.apply(g, s2[0]);
+        const a2 = cvComponents(m2);
+        const v2 = cvUnmarkedProducts(m2, b2, a2, r2.changed);
+        assert(v2.split, '分子内脱水で水が分かれたと読めていない');
+        assert(v2.water.length === 1, `水として除外した成分が ${v2.water.length} 個（1 個のはず）`);
+        v2.water.forEach(set => {
+            const heavy = [...set].map(id => m2.atoms.find(a => a.id === id)).filter(a => a && a.element !== 'H');
+            assert(heavy.length === 1 && heavy[0].element === 'O',
+                `水として除外した成分が ${heavy.map(a => a.element).join('')} ＝ 除外が広がっている`);
+        });
+        assert(v2.unmarked.length === 0, '分子内脱水で（水以外に）印の無い生成物がある');
+
+        c.reset();
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
@@ -43760,8 +44327,20 @@
             li.textContent = t.name;
             const t0 = performance.now();
             try {
-                await t.fn(ctx);
+                /* ★ **テストが「自分は何本を見張ったか」を画面に出せる口**（v1490・CV1）。
+                 * ⚠ 悉皆の検査は「対象を絞って全部通った」が**いちばん悪い形**なので、
+                 *   見張れた本数と見張れなかった本数を**緑のときにも画面へ出す**。
+                 *   `?only=` の「絞り込み実行です」と同じ考え方 ——
+                 *   あとで題材が足されたら、この数字が自動で動く。
+                 * 使い方: テストの `fn` が文字列を返すだけ（返さなければ今までどおり）。 */
+                const note = await t.fn(ctx);
                 li.className = 'pass';
+                if (typeof note === 'string' && note) {
+                    const span = document.createElement('span');
+                    span.className = 'detail';
+                    span.textContent = note;
+                    li.appendChild(span);
+                }
                 passed++;
             } catch (e) {
                 li.className = 'fail';

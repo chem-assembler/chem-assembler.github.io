@@ -1724,7 +1724,7 @@
           },
           {
             "type": "wait",
-            "ms": 5252
+            "ms": 8655
           }
         ]
       },
@@ -1745,7 +1745,45 @@
           },
           {
             "type": "wait",
-            "ms": 10399
+            "ms": 8020
+          }
+        ]
+      },
+      {
+        "caption": "もう一度、はじめから",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-rx-undo"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 1500
+          }
+        ]
+      },
+      {
+        "caption": "フルクトースが裏返って、教科書の図になる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "二糖"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 10500
           }
         ]
       }
@@ -1866,7 +1904,7 @@
           },
           {
             "type": "wait",
-            "ms": 18601
+            "ms": 29156
           }
         ]
       }
@@ -1895,7 +1933,7 @@
           },
           {
             "type": "wait",
-            "ms": 7747
+            "ms": 6067
           }
         ]
       },
@@ -1916,7 +1954,7 @@
           },
           {
             "type": "wait",
-            "ms": 15988
+            "ms": 21174
           }
         ]
       }
