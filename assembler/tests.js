@@ -43391,7 +43391,7 @@
         // ⚠ ＝ 数だけ見る検査（`changed.length >= 2`）はここを緑にしてしまう。だから成分ごとに見る
 
         // ---- ② **直しを外すと赤くなる**（物差しが空振りしていない証明）
-        //    v1477 以前の `changed: [cId, o.id]` を、酸の側の原子だけ残して再現する
+        //    この直しの前の `changed: [cId, o.id]` を、酸の側の原子だけ残して再現する
         const old = res.changed.filter(id => acid.has(id));
         const broken = cvUnmarkedProducts(mol, before, after, old);
         assert(broken.unmarked.length === 1,
