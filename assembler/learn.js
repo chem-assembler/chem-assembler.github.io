@@ -502,6 +502,16 @@ const IP_BENZENE_MIN_ISOMERS = 2;
 //   **環式に絞ったとき（1種＝シクロプロパンだけ）**。既存のお題 C₄H₁₀ が2種で成立しているので、
 //   下限は 2 で足りる（3 にすると C₄H₁₀・C₄H₈（環式）・C₂H₆O が落ちる）
 const IP_MIN_ISOMERS = 2;
+// ★ **重原子の個数の上限**（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。
+//
+// 6個だった線を、**「単結合の木しか作れない式」に限って7個まで**広げた
+// （`enumerationIsTreeOnly`。判定は列挙器と同じ関数を使う ＝ ここで別に書かない）。
+// **根拠は「7個だから軽い」ではなく「木しか作れないから軽い」**:
+//   ・木しか作れない重原子7個の式（総当たり20式）……… 最悪 **44ms**（C₇H₁₆ は 11ms）
+//   ・それ以外の重原子7個の式（不飽和度0でも N・S を含むもの等）… 最悪 **1551ms**
+// 2つを1つの数（重原子の個数）で仕切ると、後者が門を通って画面が1.5秒固まる。
+const IP_MAX_HEAVY = 6;        // ふつうはここまで
+const IP_MAX_HEAVY_TREE = 7;   // 木しか作れない式（不飽和度0・N と S を含まない）はここまで
 
 /**
  * ★ 出題の「範囲」（骨格の型）を**1か所で名乗る**（v1433・発注書 A-5）。
@@ -1099,7 +1109,17 @@ class IsomerPractice {
             //   （1,2-ジメチルシクロプロパン）が消える**（§1-2b）。だから `skeleton` は付けない。
             //   ⚠ **列挙は増えない** —— どちらも上の 8 / 9 と同じ分子式で、`_rawCache` を分け合う
             { elements: ['C', 'C', 'C', 'C', 'C'], hCount: 10, stereoAsked: true },        // 19: C₅H₁₀  構造10種・場所3か所・立体込み13（★メソ体が居る）
-            { elements: ['C', 'C', 'C', 'C', 'C', 'O'], hCount: 12, stereoAsked: true }    // 20: C₅H₁₂O 構造14種・場所4か所・立体込み18（畳み込み無し）
+            { elements: ['C', 'C', 'C', 'C', 'C', 'O'], hCount: 12, stereoAsked: true },   // 20: C₅H₁₂O 構造14種・場所4か所・立体込み18（畳み込み無し）
+            // ── 重原子7個（v14xx・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）──
+            // ⚠ **お題を足す前に初回 renderList を測ること**（上の②）。C₇H₁₆ 自体は 11ms だが、
+            //   足せるようになった理由は列挙器の枝刈り（`enumerationIsTreeOnly`）で、
+            //   **同じ直しで既存19問も軒並み速くなっている**（実測は下のコミットメッセージ）。
+            // ★ C₆H₁₄ の5種から一気に9種へ増える回。上の4条件は全部満たす:
+            //   ① 9種（2〜20の内側）② 木しか作れない式なので門番の外（11ms）
+            //   ③ 9種すべて `stages.json` に登録済み（ヘプタン／2-メチルヘキサン／3-メチルヘキサン／
+            //      2,2-・2,3-・2,4-・3,3-ジメチルペンタン／3-エチルペンタン／2,2,3-トリメチルブタン）
+            //   ④ 環をもつ正解が0件なので型は分けない
+            { elements: ['C', 'C', 'C', 'C', 'C', 'C', 'C'], hCount: 16 }                  // 21: C₇H₁₆ 9種
         ];
         // 生の列挙の使い回し（分子式ごとに1回だけ数える）。鎖式と環式は同じ列挙を分け合う
         this._rawCache = new Map();
@@ -1362,7 +1382,11 @@ class IsomerPractice {
         custom.style.cssText = 'margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px;';
         const clabel = document.createElement('div');
         clabel.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
-        clabel.textContent = '任意の分子式で練習（水素以外6個まで）:';
+        // ⚠ **上限を2か所で名乗らない。** 数は定数から出す（v14xx で 6 → 「6個まで・
+        //    二重結合も環も無い飽和形なら7個まで」に変わった。断り文とここが食い違うと、
+        //    C₇H₁₆ が開くのに入口が「6個まで」と言い張る）
+        clabel.textContent = `任意の分子式で練習（水素以外${IP_MAX_HEAVY}個まで・` +
+            `飽和形は${IP_MAX_HEAVY_TREE}個まで）:`;
         custom.appendChild(clabel);
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; gap:6px;';
@@ -1429,8 +1453,17 @@ class IsomerPractice {
             }
             // 2種未満／多すぎ／打ち切り ＝ 種つきでは扱えない。**従来の道へ落とす**
         }
-        if (parsed.heavy.length > 6) {
-            g.showToast('重原子が多すぎます。水素を除いて6個までが練習の対象です。');
+        // ★ 重原子の上限（IP_MAX_HEAVY / IP_MAX_HEAVY_TREE）。
+        //   ⚠ 7個を通す条件は**列挙器と同じ関数で決める**（`enumerationIsTreeOnly`）。
+        //   ここに「重原子7個かつ不飽和度0」と書き写すと、N・S を含む式（価数が分子の形で
+        //   決まるので木と言い切れない）まで通って、画面が 1.5 秒固まる
+        const treeOnly = enumerationIsTreeOnly(parsed.heavy, parsed.h);
+        const heavyMax = treeOnly ? IP_MAX_HEAVY_TREE : IP_MAX_HEAVY;
+        if (parsed.heavy.length > heavyMax) {
+            g.showToast(treeOnly
+                ? `重原子が多すぎます。水素を除いて${IP_MAX_HEAVY_TREE}個までが練習の対象です。`
+                : `重原子が多すぎます。水素を除いて${IP_MAX_HEAVY}個まで` +
+                  `（二重結合も環も作れない飽和形にかぎり${IP_MAX_HEAVY_TREE}個まで）が練習の対象です。`);
             return;
         }
         // ⚠ **数える前の門番**（§7-1d）。ここを通すと C₆H₆ で 2.8 秒画面が固まる。
