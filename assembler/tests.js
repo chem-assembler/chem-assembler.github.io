@@ -24926,6 +24926,215 @@
         c.reset();
     });
 
+    /* ★ VL1 / VL2: **加硫の橋の置き場所**（v1484・動画レーン V130 の収録映像から出た要望2件）。
+     *
+     * **症状（実測）**: 台本どおり「イソプレン×2 → 1,4-付加重合 → ×2 → 1,4-付加重合 → 加硫」を
+     * 回すと、2本の鎖が **左右に一直線**に並ぶ（x=[232..568] と [610..946]・y は 67px 重なる・
+     * まとめた y の標準偏差は 39.7px ＝ 結合1本ぶん）。橋の足場になる C=C どうしが **357px**
+     * 離れるので S-C の結合線が **167〜190px（刻みの 4.5倍）**になり、その水平な線が
+     * **主鎖の炭素の上を通り**（0.0〜0.3px）**両端の R をかすめる**（2.1px・2.7px）。
+     *
+     * ⚠ **「S が R から生えている」は事実ではなかった** ―― 5通り・橋10本で S が R に
+     *    結合したのは **0本**。`vulcanizablePairs` は C=C しか足場にせず、R は1価。
+     *    起きていたのは「線が R の上を通る」で、直すべきは箇所選びではなく置き場所だった。
+     *
+     * ★ **直し**: `stackChainsForBridge`（reactor.js）。1本目の橋のときだけ相手の鎖を
+     *    剛体平行移動で真下（だめなら真上）へ寄せ、橋の中点を格子点に取って C-S-C を一直線にする。 */
+    const vulcChains = (c, name, n1, n2) => {          // 鎖を2本つくる（台本と同じ手順）
+        const g = c.game, W = c.W;
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        polySetup(c, new Array(n1).fill(name));
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        for (let k = 0; k < n2; k++) assert(g.summonMolecule(name), `${name} が呼べない`);
+        g.updateDrawing();
+        dien.apply(g, dien.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // 硫黄を通らない連結成分 ＝ 架橋する前の「鎖の身元」（reactor.js の chainOf と同じ見方）
+    const sFreeChains = (mol) => {
+        const seen = new Set(), out = [];
+        mol.atoms.filter(a => a.element !== 'H' && a.element !== 'S').forEach(a => {
+            if (seen.has(a.id)) return;
+            const st = [a.id], set = [a];
+            seen.add(a.id);
+            while (st.length) {
+                const cur = st.pop();
+                mol.getNeighbors(cur).forEach(n => {
+                    if (n.atom.element === 'H' || n.atom.element === 'S' || seen.has(n.atom.id)) return;
+                    seen.add(n.atom.id); set.push(n.atom); st.push(n.atom.id);
+                });
+            }
+            out.push(set);
+        });
+        return out;
+    };
+    const vlBand = (atoms, key) => {
+        const v = atoms.map(a => a[key]);
+        return [Math.min(...v), Math.max(...v)];
+    };
+    const vlOverlap = (p, q) => Math.min(p[1], q[1]) - Math.max(p[0], q[0]);
+
+    test('VL1: 加硫は2本の鎖を「＝」のように上下へ寄せてから、鎖の途中の C=C に橋を架ける', async (c) => {
+        const g = c.game, W = c.W;
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        assert(vul, '加硫のルールが無い');
+        const mol = vulcChains(c, 'イソプレン', 2, 2);
+        const G = W.bondStep(mol);
+
+        // ---- ① 症状の再現: 加硫を押す前は**左右に一直線**（この前提が崩れたら以下は無意味） ----
+        const before = sFreeChains(mol);
+        assert(before.length === 2, `加硫前の鎖が ${before.length} 本（2本を期待）`);
+        const bx = before.map(cs => vlBand(cs, 'x')), by = before.map(cs => vlBand(cs, 'y'));
+        assert(vlOverlap(bx[0], bx[1]) < 0 && vlOverlap(by[0], by[1]) > 0,
+            `加硫前の2本が左右並びでない（x の重なり ${vlOverlap(bx[0], bx[1]).toFixed(0)}px・` +
+            `y の重なり ${vlOverlap(by[0], by[1]).toFixed(0)}px）＝ 症状の前提が変わった`);
+
+        // ---- ② 1本目を架けると、2本が**上下**に並ぶ ----
+        const sites = vul.detect(mol);
+        assert(sites.length > 0, '加硫の候補が出ない');
+        vul.apply(g, sites[0]);
+        g.updateDrawing();
+        const after = sFreeChains(g.userMolecule);
+        assert(after.length === 2, `架橋後に硫黄を外した鎖が ${after.length} 本（2本を期待）`);
+        const ax = after.map(cs => vlBand(cs, 'x')), ay = after.map(cs => vlBand(cs, 'y'));
+        assert(vlOverlap(ay[0], ay[1]) <= 0,
+            `上下に分かれていない（y の帯が ${vlOverlap(ay[0], ay[1]).toFixed(0)}px 重なっている）`);
+        assert(vlOverlap(ax[0], ax[1]) > 0,
+            `真上・真下になっていない（x の帯が重ならない: ${JSON.stringify(ax)}）`);
+
+        // ---- ③ ⚠ **重なっていない**（「上下に並べた」を距離ゼロで達成していないこと） ----
+        const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+        let minGap = Infinity;
+        for (let i = 0; i < heavy.length; i++) for (let j = i + 1; j < heavy.length; j++)
+            minGap = Math.min(minGap, Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y));
+        assert(minGap >= G * 0.65,
+            `原子どうしが ${minGap.toFixed(1)}px まで詰まった（要求 ${(G * 0.65).toFixed(1)}px）`);
+
+        // ---- ④ ★ 橋は**鎖の途中の C=C**に架かっている（名指しで見る） ----
+        const m = g.userMolecule;
+        const sul = m.atoms.filter(a => a.element === 'S');
+        assert(sul.length === 1, `硫黄が ${sul.length} 個（1個を期待）＝ 橋が架かっていない`);
+        const nbs = m.getNeighbors(sul[0].id).map(n => n.atom);
+        assert(nbs.length === 2 && nbs.every(a => a.element === 'C'),
+            `硫黄の相手が ${nbs.map(a => a.element).join('/')}（炭素2つを期待）`);
+        nbs.forEach(a => {
+            // 「鎖の途中」＝ 重原子の隣が2つ以上あり、R が隣に無い
+            const heavyNb = m.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
+            assert(heavyNb.length >= 2, `橋の足場 C(${Math.round(a.x)},${Math.round(a.y)}) が鎖の端`);
+            assert(!heavyNb.some(n => n.atom.element === 'R'),
+                `橋の足場 C(${Math.round(a.x)},${Math.round(a.y)}) が R の隣＝鎖の末端に架かっている`);
+            assert(sites[0].includes(a.id), '橋の足場が detect の返した箇所に無い');
+        });
+        // 足場は別々の鎖（＝橋が鎖どうしを結んでいる）
+        const chainIdx = (id) => after.findIndex(cs => cs.some(a => a.id === id));
+        assert(chainIdx(nbs[0].id) >= 0 && chainIdx(nbs[1].id) >= 0 &&
+            chainIdx(nbs[0].id) !== chainIdx(nbs[1].id),
+            '橋の両足が同じ鎖にある（鎖どうしを結んでいない）');
+
+        // ---- ⑤ 橋が短く、C-S-C がほぼ一直線（症状は刻みの 4.5倍・水平に折れていた） ----
+        nbs.forEach(a => {
+            const len = Math.hypot(a.x - sul[0].x, a.y - sul[0].y);
+            assert(len <= G * 2.5,
+                `S-C の結合が ${len.toFixed(0)}px ＝ 刻みの ${(len / G).toFixed(1)}倍（2.5倍まで）`);
+        });
+        let ang = Math.abs(Math.atan2(nbs[0].y - sul[0].y, nbs[0].x - sul[0].x) -
+            Math.atan2(nbs[1].y - sul[0].y, nbs[1].x - sul[0].x)) * 180 / Math.PI;
+        if (ang > 180) ang = 360 - ang;
+        assert(Math.abs(180 - ang) < 20, `C-S-C が ${ang.toFixed(0)}° に折れている（180°付近を期待）`);
+        c.reset();
+    });
+
+    test('VL2（否定対照）: 硫黄は R に付かず、橋の線も R をかすめない／橋の本数と断り方は変えていない', async (c) => {
+        const g = c.game, W = c.W;
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const PSD = W.pointSegmentDistance;
+        assert(typeof PSD === 'function', 'pointSegmentDistance が window に無い');
+
+        /* ---- ① ★ 単量体を変えた何通りかで、S が R に付かず、橋の線も R をかすめない ----
+         * ⚠ 「R に架からない」だけを見ると**橋を1本も架けない実装でも通る**ので、
+         *    **硫黄が実際に入り、足場が鎖の途中の C=C だったこと**を同じループで見る。 */
+        let checked = 0;
+        [['イソプレン', 2, 2], ['1,3-ブタジエン', 2, 2], ['クロロプレン', 2, 2]].forEach(([name, n1, n2]) => {
+            if (!g.resolveCompound(name)) return;
+            const mol = vulcChains(c, name, n1, n2);
+            const G = W.bondStep(mol);
+            const sites = vul.detect(mol);
+            assert(sites.length > 0, `${name}: 加硫の候補が出ない`);
+            sites[0].forEach(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                assert(a && a.element === 'C', `${name}: 箇所に炭素でない原子が入っている`);
+            });
+            const ca = mol.atoms.find(x => x.id === sites[0][0]);
+            const cb = mol.atoms.find(x => x.id === sites[0][2]);
+            assert(mol.getBond(sites[0][0], sites[0][1]).type === 2 &&
+                mol.getBond(sites[0][2], sites[0][3]).type === 2, `${name}: 足場が C=C でない`);
+            [ca, cb].forEach(a => assert(
+                !mol.getNeighbors(a.id).some(n => n.atom.element === 'R'),
+                `${name}: 足場 (${Math.round(a.x)},${Math.round(a.y)}) が R の隣＝末端に架けようとしている`));
+            vul.apply(g, sites[0]);
+            g.updateDrawing();
+            const m = g.userMolecule;
+            const sul = m.atoms.filter(a => a.element === 'S');
+            assert(sul.length === 1, `${name}: 硫黄が ${sul.length} 個（1個を期待）＝ 橋を架けていない`);
+            const Rs = m.atoms.filter(a => a.element === 'R');
+            assert(Rs.length === 4, `${name}: R が ${Rs.length} 個（鎖2本ぶんの4個を期待）`);
+            m.getNeighbors(sul[0].id).forEach(n => {
+                assert(n.atom.element !== 'R', `${name}: 硫黄が R に直接結合した`);
+                Rs.forEach(r => {
+                    const d = PSD({ x: r.x, y: r.y }, sul[0], n.atom);
+                    assert(d >= G * 0.65,
+                        `${name}: 橋の線が R(${Math.round(r.x)},${Math.round(r.y)}) から ${d.toFixed(1)}px ` +
+                        `＝ R から生えているように見える（要求 ${(G * 0.65).toFixed(1)}px）`);
+                });
+            });
+            checked++;
+        });
+        assert(checked >= 2, `見た単量体が ${checked} 通り（2通り以上を期待）`);
+
+        // ---- ② 橋の本数が減っていない（台本の形＝イソプレン 2+2 で2本架かる・硫黄を外すと2本） ----
+        vulcChains(c, 'イソプレン', 2, 2);
+        let bridges = 0;
+        for (let k = 0; k < 5; k++) {
+            const vs = vul.detect(g.userMolecule);
+            if (!vs.length) break;
+            vul.apply(g, vs[0]); g.updateDrawing(); bridges++;
+        }
+        assert(bridges >= 2, `架橋が ${bridges} 本で止まった（台本は2回押す）`);
+        assert(sFreeChains(g.userMolecule).length === 2,
+            '硫黄を外すと鎖が2本にならない（同じ鎖の中で橋が架かっている）');
+        assert(g.userMolecule.atoms.every(a => W.isValencyValid(g.userMolecule, a.id)),
+            '加硫で価標が壊れた');
+
+        /* ---- ③ ⚠ **2本目の橋では鎖を動かさない**（動かすと1本目の橋が伸びる） ---- */
+        vulcChains(c, 'イソプレン', 2, 2);
+        vul.apply(g, vul.detect(g.userMolecule)[0]); g.updateDrawing();
+        const snap = new Map(g.userMolecule.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
+        const vs2 = vul.detect(g.userMolecule);
+        assert(vs2.length > 0, '2本目の候補が出ない');
+        vul.apply(g, vs2[0]); g.updateDrawing();
+        g.userMolecule.atoms.forEach(a => {
+            const p = snap.get(a.id);
+            if (!p) return;                                  // 2本目で足した硫黄
+            assert(Math.hypot(a.x - p.x, a.y - p.y) < 0.5,
+                `2本目の架橋で既存の原子 ${a.element} が動いた` +
+                `（${Math.round(p.x)},${Math.round(p.y)} → ${Math.round(a.x)},${Math.round(a.y)}）`);
+        });
+
+        // ---- ④ 相手の見分けと断り方は今までどおり（PM11・PM12 の要点を寄せ切らない） ----
+        const one = polySetup(c, ['イソプレン', 'イソプレン', 'イソプレン', 'イソプレン']);
+        dien.apply(g, dien.detect(one)[0]); g.updateDrawing();
+        assert(vul.detect(g.userMolecule).length === 0, '鎖1本で加硫の候補が出た（分子内ループになる）');
+        ['イソプレン', '2-ブテン'].forEach(name => {
+            if (!g.resolveCompound(name)) return;
+            const mm = polySetup(c, [name, name]);
+            assert(vul.detect(mm).length === 0, `${name} 2分子で加硫が出た（R の無い分子は相手にしない）`);
+        });
+        c.reset();
+    });
+
     test('FG2: PET の図が「単位3つ・両端 R」の規約どおりで、単位の数を実際に見ている', async (c) => {
         const g = c.game, W = c.W;
         const CC = W.canonicalCode;
