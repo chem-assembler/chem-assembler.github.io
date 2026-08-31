@@ -5588,7 +5588,7 @@ function findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits) {
 // 同じ単量体を何個も並べて起こす重合（＝相手が自分自身の反応）。
 // **縮合重合は入れない**: 相手が別の2価単量体で、しかも2組（4分子）要る ＝
 // 「自分をもう何個か」では説明が付かない（`condensation_polymer_info` が説明を持っている）
-/* ★ 2026-09-01（v1488）に `ring_opening_polymerization`（ε-カプロラクタム → ナイロン6）を追加。
+/* ★ 2026-09-01（v1491）に `ring_opening_polymerization`（ε-カプロラクタム → ナイロン6）を追加。
  *   ⚠ **ここに入れてよい形である**ことを確かめてから足した ―― 相手は「自分と同じ分子」で、
  *   別の単量体も水も要らない（§21-3 (b)「入口は SELF_PARTNER_RULES に1行足すだけ」）。 */
 const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'diene_polymerization',
