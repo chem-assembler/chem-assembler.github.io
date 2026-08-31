@@ -16797,6 +16797,52 @@
         assert(!hetero.applicable, 'ケトンの種に合わない酸素数の式を扱ってしまう');
     });
 
+    test('IH4: ★C₇ の4件が落ちる理由は「数」ではなく「名前」（DESIGN §19-4 の母数の見張り）', async (c) => {
+        /**
+         * ⚠⚠ **これは仕様の見張りではなく「設計書の数が古くなったら赤くする」引き金**。
+         *
+         * ★ `DESIGN_isomer_practice.md` §19-4 の分かれ目そのもの ——
+         *   残った宿題「21種以上は何種類か答える出題」の**母数が何件か**は、
+         *   C₇ の4件が**どの条件で落ちているか**で決まる:
+         *     ・ケトン15・アルデヒド17・カルボン酸17 … **上限20の内側**（数では落ちていない）。
+         *       落としているのは条件②（正解の全部に名前が付く）＝ `compounds.json` を足せば開く
+         *     ・エステル45 … **上限20の外**（名前を足しても書き出しの回にはならない）
+         *   ⚠ だから **`compounds.json` に C₇ の名前が出そろった瞬間、母数は 4件 → 1件に縮む**。
+         *   そのとき §19-4 と `IsomerPractice.fgPresets` を**両方**見直す必要があるので、
+         *   ここが赤くなって知らせる（黙って古い設計書が残るのを防ぐ）。
+         *
+         * ⚠ 名前を1つ2つ足しただけでは赤くしない（`nameless > 0` を見る）＝
+         *   ふだんの `compounds.json` 追記の邪魔はしない。**全部そろったときだけ**赤くなる。
+         */
+        const W = c.W, ip = W.isomerPractice;
+        const C7 = [
+            { cls: 'ketone',   els: 7, o: 1, h: 14, total: 15, overCap: false },
+            { cls: 'aldehyde', els: 7, o: 1, h: 14, total: 17, overCap: false },
+            { cls: 'acid',     els: 7, o: 2, h: 14, total: 17, overCap: false },
+            { cls: 'ester',    els: 7, o: 2, h: 14, total: 45, overCap: true }
+        ];
+        C7.forEach(t => {
+            const els = [];
+            for (let i = 0; i < t.els; i++) els.push('C');
+            for (let i = 0; i < t.o; i++) els.push('O');
+            const r = W.enumerateFunctionalGroupIsomers(els, t.h, t.cls);
+            assert(r.applicable && !r.overflow,
+                `C₇ の${t.cls}が数え切れない（applicable=${r.applicable} overflow=${r.overflow}）`);
+            assert(r.isomers.length === t.total,
+                `C₇ の${t.cls}が ${r.isomers.length}種（${t.total}種を期待・§19-4 の表が古い）`);
+            // ★ 上限20 の内か外か ＝ 「数で落ちているか」
+            assert((r.isomers.length > W.IP_MAX_ISOMERS) === t.overCap,
+                `C₇ の${t.cls}の「上限20 を超えるか」が ${!t.overCap}（§19-4 の分かれ目が変わった）`);
+            const nameless = r.isomers.filter(m => !ip.constitutionalName(m)).length;
+            if (t.overCap) return;                     // エステルは数で落ちるので名前は問わない
+            // ★★ 数では落ちていない3件は、**名前で落ちている**ことを確かめる。
+            //   ここが 0 になったら「書き出しの回にできる」＝ §19-4 の母数が 4→1 に縮む
+            assert(nameless > 0,
+                `★ C₇ の${t.cls}に名前が出そろった（名無し0）—— ` +
+                'DESIGN_isomer_practice.md §19-4 の母数と fgPresets を見直してください');
+        });
+    });
+
     test('IW27: ★否定対照 — 段1 の判定は gradeStereoPoints 1本だけを通る（2か所に散っていない）', async (c) => {
         /**
          * ⚠ このリポジトリで繰り返している罠（DESIGN_stereo_point.md §8-2）——

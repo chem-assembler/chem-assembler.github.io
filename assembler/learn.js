@@ -5401,4 +5401,9 @@ if (typeof window !== 'undefined') {
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;
     window.STEREO_FOLD_NOTES = STEREO_FOLD_NOTES;
+    // ⚠ お題が成立する線（2〜20種）。`IH4` が「C₇ の4件は数ではなく名前で落ちている」
+    //   ＝ 残った宿題（§19-4）の母数を見張るのに使う。**検査から 20 を書き写さない**
+    //   （書き写すと、上限を変えたときに検査だけが古い線を見張り続ける）
+    window.IP_MAX_ISOMERS = IP_MAX_ISOMERS;
+    window.IP_MIN_ISOMERS = IP_MIN_ISOMERS;
 }
