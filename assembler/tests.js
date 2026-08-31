@@ -16655,6 +16655,148 @@
         ipStereoCleanup(c);
     });
 
+    test('IH2: 分子式＋分類のお題12件（種を置いて腕を貼る列挙・全部に名前が付く・★否定対照つき）', async (c) => {
+        /**
+         * ★ ユーザー要望 2026-08-31「重元素7以上でも分類ごとの書き出しは対応を増やしたい／
+         *   例えば C₆H₁₂O のケトン、C₇H₁₄O₂ のエステル」＋ ユーザー確認済みの案A（お題ボタンを増やす）。
+         *
+         * ⚠⚠ **「全部列挙してから分類で捨てる」ではない**（分かれ目の実測は IH3）。
+         *   種（-CO-／-CHO／-COO-／-COOH）を置いて腕を貼る `enumerateFunctionalGroupIsomers`
+         *   を通す ＝ 芳香族の回とまったく同じ形。
+         */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+
+        // ★ 12件の顔ぶれ（数は**画面には出ない**が、開いた回の総数として突き合わせる）
+        const want = [
+            ['C₅H₁₀O（ケトン）', 3], ['C₆H₁₂O（ケトン）', 6],
+            ['C₄H₈O（アルデヒド）', 2], ['C₅H₁₀O（アルデヒド）', 4],
+            ['C₆H₁₂O（アルデヒド）', 8],
+            ['C₃H₆O₂（エステル）', 2], ['C₄H₈O₂（エステル）', 4],
+            ['C₅H₁₀O₂（エステル）', 9], ['C₆H₁₂O₂（エステル）', 20],
+            ['C₄H₈O₂（カルボン酸）', 2], ['C₅H₁₀O₂（カルボン酸）', 4],
+            ['C₆H₁₂O₂（カルボン酸）', 8]
+        ];
+
+        // ① ★★ **お題一覧は1件も数えない**（v1433 の申し送り「これ以上お題を足すなら
+        //    初回 renderList が先に効く」への答え。種類数を伏せたので数える理由が消えた）
+        const realEnum = W.enumerateFunctionalGroupIsomers;
+        let calls = 0;
+        W.enumerateFunctionalGroupIsomers = function (...a) { calls++; return realEnum.apply(this, a); };
+        try {
+            ip.renderList();
+            assert(calls === 0, `お題一覧を出すだけで分類つき列挙が ${calls}回 走った（起動が重くなる）`);
+            const btns = [...D.querySelectorAll('#ip-fg-presets button')];
+            assert(btns.length === want.length,
+                `分類つきのお題が ${btns.length}件（${want.length}件を期待）`);
+            btns.forEach((b, i) => {
+                assert(b.textContent.replace(/ ✓$/, '') === want[i][0],
+                    `お題の表記が「${b.textContent}」（期待「${want[i][0]}」）`);
+                // ★ IH1 と同じ約束 —— **種類数は出さない**
+                assert(!/[0-9０-９₀-₉]\s*種/.test(b.textContent),
+                    `分類つきのお題が種類数を出している（${b.textContent}）`);
+            });
+
+            // ② 12件すべてが**押すと開き**、総数が既知値と合い、**正解の全部に名前が付く**
+            //    ⚠ 名前は答え合わせの左列とヒント段5 が使う ＝ ここが緑なら「（名称未登録）」は出ない
+            want.forEach(([label, total], i) => {
+                calls = 0;
+                D.querySelector(`#ip-fg-presets button[data-ip-fg="${i}"]`).click();
+                assert(calls === 1, `${label}: 押したときの列挙が ${calls}回（1回を期待）`);
+                assert(ip.active && ip.problem, `${label}: 練習が始まらない`);
+                assert(ip.problem.total === total,
+                    `${label}: 総数が ${ip.problem.total}（${total} を期待）`);
+                const sc = ip.scopeInfo();
+                assert(sc && label.indexOf(sc.tag) > 0, `${label}: 範囲が名乗られない（${sc && sc.tag}）`);
+                const nameless = [...ip.targets.values()].filter(m => !ip.constitutionalName(m));
+                assert(nameless.length === 0,
+                    `${label}: 名前の付かない正解が ${nameless.length}件（お題の条件②を満たしていない）`);
+                // 見出し・作業帯が分類を名乗る（§11-4「宣言した以上、画面のどこでも隠さない」）
+                const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+                assert(panel.indexOf(sc.title) >= 0, `${label}: 見出しが分類を名乗らない（${panel.slice(0, 80)}）`);
+                assert(ip.stripLiveHtml().indexOf(sc.tag) >= 0, `${label}: 作業帯が分類を名乗らない`);
+                assert(!/全 \d+ 種/.test(panel), `${label}: 見出しが種類数を出している`);
+                ip.stop();
+            });
+        } finally { W.enumerateFunctionalGroupIsomers = realEnum; }
+
+        // ③ ★否定対照 —— **同じ分子式の別分類は別の集合**。ケトンの回にアルデヒドを描くと
+        //    「分子式は合うが対象外」（scope）になる ＝ `unknown`（開発ログ行き）ではない
+        const KETONE_KEY = 'chemIsomerPractice.C₅H₁₀O@fg-ketone';
+        const PLAIN_KEY = 'chemIsomerPractice.C₅H₁₀O';
+        try { W.localStorage.removeItem(KETONE_KEY); W.localStorage.removeItem(PLAIN_KEY); } catch (e) { /* noop */ }
+        ip.startFromFgPreset(0);                       // C₅H₁₀O（ケトン）3種
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'C', 'O'],
+                      bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5, 2]] }]);   // ペンタナール
+        const sheet = ip.grade();
+        assert(sheet.rows.length === 1 && sheet.rows[0].formula === ip.problem.formula,
+            `前提: 分子式が一致しない（${sheet.rows[0] && sheet.rows[0].formula}）`);
+        assert(sheet.rows[0].status === 'scope',
+            `★ケトンの回にアルデヒドを描いて status=${sheet.rows[0].status}（scope を期待）`);
+        assert(/ケトン/.test(ip.verdictOf(sheet.rows[0])),
+            `断り文が分類を名乗らない（${ip.verdictOf(sheet.rows[0])}）`);
+
+        // ④ ★ 記録の鍵が分かれる —— 3種そろえても、素の C₅H₁₀O の ✓ は付かない
+        const m = new W.Molecule();
+        [...ip.targets.values()].forEach((t, k) => {
+            W.layoutMolecule(t);
+            const idx = new Map(t.atoms.map((a, j) => [a.id, j]));
+            const ids = t.atoms.map(a => m.addAtom(a.element, a.x + 100 + k * 200, a.y + 120).id);
+            t.bonds.forEach(b => m.addBond(ids[idx.get(b.atomId1)], ids[idx.get(b.atomId2)], b.type));
+        });
+        g.userMolecule = m; g.updateDrawing();
+        assert(ip.grade().found.size === 3, 'ケトン3種がそろわない（前提）');
+        assert(W.localStorage.getItem(KETONE_KEY) === '1', '分類つきの回のクリア記録が残らない');
+        assert(W.localStorage.getItem(PLAIN_KEY) !== '1',
+            '★ケトンだけ描いたのに C₅H₁₀O 全体の ✓ が付いた（記録の鍵が分かれていない）');
+        // ボタンの ✓ も同じ鍵で引けている（表記の作り方が2つに割れていない）
+        ip.stop();
+        ip.renderList();
+        const b0 = D.querySelector('#ip-fg-presets button[data-ip-fg="0"]');
+        assert(/ ✓$/.test(b0.textContent), `クリアしたのに ✓ が付かない（${b0.textContent}）`);
+        const b1 = D.querySelector('#ip-fg-presets button[data-ip-fg="1"]');
+        assert(!/ ✓$/.test(b1.textContent), `解いていない回に ✓ が付いている（${b1.textContent}）`);
+
+        try { W.localStorage.removeItem(KETONE_KEY); } catch (e) { /* noop */ }
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('IH3: ★否定対照 — 分類つき列挙は「全部列挙してから捨てる」道では出せない（C₇H₁₄O₂）', async (c) => {
+        /**
+         * ⚠ 発注書の分かれ目そのもの。**素の列挙では1件も出せない**式で、
+         *   種つき列挙が45件を出すことを並べて見る ＝ この設計の理由が消えたら赤くなる。
+         * ★ 45件は上限20を超えるのでお題には**しない**（④「何種類か答える」の受け皿・報告参照）。
+         */
+        const W = c.W;
+        const els = ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O', 'O'];   // C₇H₁₄O₂（重原子9個）
+        const plain = W.enumerateConstitutionalIsomers(els, 14, 4000000);
+        assert(plain.overflow || plain.isomers.length === 0,
+            `★素の列挙が C₇H₁₄O₂ を出せてしまった（${plain.isomers.length}件）＝ 前提が変わった`);
+        const t0 = Date.now();
+        const seeded = W.enumerateFunctionalGroupIsomers(els, 14, 'ester');
+        const ms = Date.now() - t0;
+        assert(seeded.applicable && !seeded.overflow && seeded.isomers.length === 45,
+            `種つき列挙が ${seeded.isomers.length}件（45件を期待・overflow=${seeded.overflow}）`);
+        assert(ms < 3000, `種つき列挙が ${ms}ms（実測 300ms 程度。桁で遅くなったら枝刈りが効いていない）`);
+
+        // ★ 枝刈りの門番（腕の不飽和度）が**黙って数え落とさない**こと ——
+        //   予算を超える式は overflow で断る（`FG_ARM_DOU_MAX`）
+        const rich = W.enumerateFunctionalGroupIsomers(['C', 'C', 'C', 'C', 'O'], 2, 'ketone');
+        assert(rich.applicable && rich.overflow,
+            `不飽和度が予算を超える式を黙って数えた（${rich.isomers.length}件・overflow=${rich.overflow}）`);
+        // ★ 炭素8個は**時間の線**で断る（実測 5秒。断り方は overflow ＝ 黙って落とさない）
+        const big = W.enumerateFunctionalGroupIsomers(
+            ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'O', 'O'], 16, 'ester');
+        assert(big.applicable && big.overflow, '炭素8個の式が門番を素通りした');
+        // ★ 種に合わない式は applicable:false で「扱わない」と言う（酸素の数が合わない）
+        const hetero = W.enumerateFunctionalGroupIsomers(['C', 'C', 'C', 'O', 'O'], 8, 'ketone');
+        assert(!hetero.applicable, 'ケトンの種に合わない酸素数の式を扱ってしまう');
+    });
+
     test('IW27: ★否定対照 — 段1 の判定は gradeStereoPoints 1本だけを通る（2か所に散っていない）', async (c) => {
         /**
          * ⚠ このリポジトリで繰り返している罠（DESIGN_stereo_point.md §8-2）——
