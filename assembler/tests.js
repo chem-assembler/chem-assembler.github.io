@@ -12647,14 +12647,14 @@
             g.setMode('puzzle');
         });
 
-    lxQuitCase('LX1: 異性体の書き出しを「やめる」と 🧪自由 へ戻る（タブの active も移る）', 'ip-body', /C₄H₁₀（2種）/);
+    lxQuitCase('LX1: 異性体の書き出しを「やめる」と 🧪自由 へ戻る（タブの active も移る）', 'ip-body', /^C₄H₁₀/);
     lxQuitCase('LX2: アルキル基の書き出しを「やめる」と 🧪自由 へ戻る', 'ak-body', /C₃H₇/);
     lxQuitCase('LX3: 立体異性体の書き出しを「やめる」と 🧪自由 へ戻る', 'sp-body', /2-ブテン/);
 
     test('LX4: 答え合わせで終了しても採点結果への道が残る（🧪自由 へ移るが帯は生きている）', async (c) => {
         c.reset();
         const g = c.game, D = c.D, W = c.W, ip = W.isomerPractice;
-        await lxStart(c, 'ip-body', /C₄H₁₀（2種）/);
+        await lxStart(c, 'ip-body', /^C₄H₁₀/);
         // ブタンを1つ描く（0個では答え合わせが押せない）
         let prev = null;
         for (let i = 0; i < 4; i++) {
@@ -12730,7 +12730,7 @@
         //   （＝ Study モーダルごと閉じる）に差し替えると、この検査が赤くなる。
         c.reset();
         const g = c.game, D = c.D, W = c.W;
-        await lxStart(c, 'ip-body', /C₄H₁₀（2種）/);
+        await lxStart(c, 'ip-body', /^C₄H₁₀/);
 
         // (1) Study モーダルを開き直してから、パネルの「練習をやめる」を押す
         lxOpenStudy(c);
@@ -13963,7 +13963,7 @@
         return m;
     }
 
-    test('IW5: ヒント4段 — 押すたびに1段ずつ積み上がり、段4のあとは答え合わせだけ（スコアつき）', async (c) => {
+    test('IW5: ヒント5段 — 押すたびに1段ずつ積み上がり、最終段のあとは答え合わせだけ（スコアつき）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
         g.setMode('learn');
@@ -13980,47 +13980,74 @@
         // 押す前: ヒントは1文字も出ておらず、ボタンが**代償を先に見せている**（§15-5a-3）
         assert(ip._hintLevel === 0 && !/あと \d+種 あります/.test(body.textContent),
             '押していないのにヒントが出ている');
-        assert(labels().some(s => /次のヒント（あと 4段・−1点）/.test(s)),
+        assert(labels().some(s => /次のヒント（あと 5段・−1点）/.test(s)),
             `ボタンに代償（残り段数・−1点）が出ていない（${JSON.stringify(labels())}）`);
 
-        // 段1: 残り数とダブりの**組数だけ**
+        // ★ 段1: **全部で何種類か だけ**（v14xx）。出題では伏せた数の初出がここ（IH1）
         ip.nextHint();
         assert(ip._hintLevel === 1, `段が ${ip._hintLevel}（1 を期待）`);
-        assert(/あと 4種 あります/.test(body.textContent), `段1の残り数が出ない（${body.textContent.slice(0, 200)}）`);
-        assert(/1組 あります/.test(body.textContent), '段1でダブりの組数が出ない');
+        assert(/全部で 7 種 あります/.test(body.textContent), `段1の総数が出ない（${body.textContent.slice(0, 240)}）`);
+        assert(!/あと 4種 あります/.test(body.textContent), '★段1で残り数まで出ている（段2 の持ちもの）');
+        assert(!/1組 あります/.test(body.textContent), '★段1でダブりの組数まで出ている（段2 の持ちもの）');
         assert(!/内訳/.test(body.textContent), '段1で系列の内訳まで出ている');
-        assert(!/①と/.test(body.textContent), '段1で重複の組を明かしている（数だけのはず・§13-3）');
-        assert(labels().some(s => /次のヒント（あと 3段・−1点）/.test(s)), '残り段数の表示が減らない');
+        assert(!/①と/.test(body.textContent), '段1で重複の組を明かしている');
+        assert(labels().some(s => /次のヒント（あと 4段・−1点）/.test(s)), '残り段数の表示が減らない');
 
-        // 段2: 系列の内訳が**足される**（段1は残る＝積み上がる・§15-5a-2）
+        // ★ 段2: **重複の有無 ＋ 残り何種類**（段1は残る＝積み上がる・§15-5a-2）
         ip.nextHint();
-        assert(ip._hintLevel === 2 && /内訳/.test(body.textContent), '段2（系列の内訳）が出ない');
-        assert(/あと 4種 あります/.test(body.textContent), '段2に進むと段1が消える（積み上がっていない）');
-        assert(!/書き出しの手順/.test(body.textContent), '段2で手順まで出ている');
-        assert(!/①と/.test(body.textContent), '段2で重複の組を明かしている');
+        assert(ip._hintLevel === 2, `段が ${ip._hintLevel}（2 を期待）`);
+        assert(/あと 4種 あります/.test(body.textContent), `段2の残り数が出ない（${body.textContent.slice(0, 300)}）`);
+        assert(/1組 あります/.test(body.textContent), '段2でダブりの組数が出ない');
+        assert(/全部で 7 種 あります/.test(body.textContent), '段2に進むと段1が消える（積み上がっていない）');
+        assert(!/内訳/.test(body.textContent), '段2で系列の内訳まで出ている');
+        assert(!/①と/.test(body.textContent), '段2で重複の組を明かしている（数だけのはず・§13-3）');
 
-        // 段3: 手順。**ここまで重複の組は明かさない**（否定対照は IW6）
+        // 段3: 系列の内訳 ＋ 手順。**ここまで重複の組は明かさない**（否定対照は IW6）
         ip.nextHint();
-        assert(ip._hintLevel === 3 && /書き出しの手順/.test(body.textContent), '段3（手順）が出ない');
-        assert(/あと 4種 あります/.test(body.textContent) && /内訳/.test(body.textContent),
+        assert(ip._hintLevel === 3 && /内訳/.test(body.textContent) && /書き出しの手順/.test(body.textContent),
+            '段3（系列の内訳と手順）が出ない');
+        assert(/全部で 7 種 あります/.test(body.textContent) && /あと 4種 あります/.test(body.textContent),
             '段3に進むと段1・2 が消える（積み上がっていない）');
         assert(!/①と/.test(body.textContent), '★段3で重複の組を明かしている（段4 の持ちもの）');
 
-        // 段4: 組を名指し。ただし**名前は出さない**（名前は答え合わせの面の仕事）
+        // 段4: 組を名指し。ただし**名前は出さない**（名前は段5 と答え合わせの仕事）
         ip.nextHint();
         assert(ip._hintLevel === 4, `段が ${ip._hintLevel}（4 を期待）`);
         assert(/①と④ は同じもの/.test(body.textContent),
             `段4 で重複の組が名指しされない（${body.textContent.slice(-300)}）`);
+        assert(!/まだ描いていない構造の名前/.test(body.textContent),
+            '★段4 で抜けた構造の名称まで出ている（段5 の持ちもの）');
         assert(!/エタノール|プロパノール|ブタノール|エーテル/.test(
             body.textContent.slice(body.textContent.indexOf('同じものを2回描いている組'))),
             'ヒントの段4 が化合物名まで渡している');
 
+        // ★★ 段5（最終段）: **抜けている構造の名称**。⚠ 未発見のぶんが1件も落ちないこと
+        ip.nextHint();
+        assert(ip._hintLevel === 5, `段が ${ip._hintLevel}（5 を期待）`);
+        const missNames = [...ip.targets.entries()]
+            .filter(([code]) => !ip.grade().found.has(code))
+            .map(([, mol]) => ip.constitutionalName(mol));
+        assert(missNames.length === 4 && missNames.every(n => n),
+            `前提: 未発見4種すべてに名前が付く（${JSON.stringify(missNames)}）`);
+        const hintDivs = [...ip.buildHintBlock().querySelectorAll('div')].map(d => d.textContent);
+        const at5 = hintDivs.indexOf('まだ描いていない構造の名前');
+        assert(at5 >= 0, `段5 の見出しが出ない（${JSON.stringify(hintDivs.slice(-6))}）`);
+        const listed = hintDivs.slice(at5 + 1).map(t => t.replace(/^・/, ''));
+        assert(JSON.stringify(listed.slice().sort()) === JSON.stringify(missNames.slice().sort()),
+            `段5 が並べた名前が未発見と一致しない（出た ${JSON.stringify(listed)} / 期待 ${JSON.stringify(missNames)}）`);
+        // ★ 否定対照 —— **描けている種の名前は出さない**（残りだけを言う段であることの確認）
+        const foundNames = [...ip.targets.entries()]
+            .filter(([code]) => ip.grade().found.has(code))
+            .map(([, mol]) => ip.constitutionalName(mol));
+        assert(foundNames.length === 3, `前提: 描けている3種が取れない（${JSON.stringify(foundNames)}）`);
+        foundNames.forEach(n => assert(listed.indexOf(n) < 0, `段5 が描けている「${n}」まで並べている`));
+
         // 打ち止め: これ以上は進まず、ボタンが「答え合わせ」に置き換わる（押せないボタンを残さない）
         ip.nextHint();
-        assert(ip._hintLevel === 4, 'ヒントが4段で頭打ちにならない');
+        assert(ip._hintLevel === 5, 'ヒントが5段で頭打ちにならない');
         assert(!labels().some(s => /次のヒント/.test(s)), '打ち止めなのに「次のヒント」が残っている');
         assert(labels().some(s => /答え合わせ（ヒントは打ち止め）/.test(s)),
-            `段4 のあとボタンが答え合わせに変わらない（${JSON.stringify(labels())}）`);
+            `最終段のあとボタンが答え合わせに変わらない（${JSON.stringify(labels())}）`);
         assert(!/標準の書き方と答え/.test(body.textContent), 'ヒントに答え（正解一覧）が出てしまう');
 
         // ===== スコア: ヒント2段 → 7種そろえて答え合わせ ＝ 5点（§15-5b）=====
@@ -15003,22 +15030,26 @@
             bonds: [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5]],
             xy: [[0, 84], [42, 84], [84, 84], [126, 84], [168, 84], [42, 126]] };
         ipSheet(c, [hexane]);
-        ip.nextHint();
-        assert(ip._hintLevel === 1 && /あと 4種 あります/.test(body.textContent), '段1が出ない（前提）');
+        // ★ v14xx で「残り何種類」は**段2** に移った（段1 は総数だけ）。
+        //   ⚠ この検査が見たいのは**貼り付いたまま自動更新される**ことなので、
+        //     数がキャンバスで動く段（＝段2）まで進めてから測る
+        ip.nextHint(); ip.nextHint();
+        assert(ip._hintLevel === 2 && /全部で 5 種 あります/.test(body.textContent) &&
+               /あと 4種 あります/.test(body.textContent), '段1・段2 が出ない（前提）');
         const frozen = ip.grade();   // 押した瞬間の採点表（否定対照で使う）
 
         // ① 閉じて開き直すのは**無料**（段は進まない）
         ip.toggleHintPanel();
-        assert(ip._hintLevel === 1 && ip._hintOpen === false, '閉じたら段が動いた');
+        assert(ip._hintLevel === 2 && ip._hintOpen === false, '閉じたら段が動いた');
         assert(!/あと 4種 あります/.test(body.textContent), '閉じても中身が出たまま');
         assert(/無料/.test(body.textContent), '開き直しが無料であることが書かれていない（§15-5a-3）');
         ip.toggleHintPanel();
-        assert(ip._hintLevel === 1 && ip._hintOpen === true && /あと 4種 あります/.test(body.textContent),
+        assert(ip._hintLevel === 2 && ip._hintOpen === true && /あと 4種 あります/.test(body.textContent),
             '★開き直しで段が進んだ ＝ 読み返すだけで減点される');
 
         // ② 描き足すとヒントの中身が**押し直さずに**更新される
         ipSheet(c, [hexane, methylpentane]);
-        assert(ip._hintLevel === 1, '描いただけで段が進んだ');
+        assert(ip._hintLevel === 2, '描いただけで段が進んだ');
         assert(/あと 3種 あります/.test(body.textContent),
             `★ヒントが自動更新されない（${body.textContent.slice(0, 200)}）＝ 読み返すのに押し直しが要る`);
 
@@ -15032,11 +15063,17 @@
         } finally { delete ip.sheetForView; ip.renderSession(); }
         assert(/あと 3種 あります/.test(body.textContent), '戻しても自動更新に戻らない');
 
-        // ③ スコアは**到達した段**だけで決まる（読み返した回数は乗らない）
+        // ③ スコアは**到達した段**だけで決まる（読み返した回数は乗らない）。
+        //    ⚠ 3種目まで描いてから採点する —— 2種のままだと 2−2＝0 で**下限に貼りつき**、
+        //      読み返しが乗っていても同じ0点になる ＝ 空振りの緑になる
+        const dimethylbutane = { atoms: ['C', 'C', 'C', 'C', 'C', 'C'],
+            bonds: [[0, 1], [1, 2], [2, 3], [1, 4], [1, 5]],
+            xy: [[0, 0], [42, 0], [84, 0], [126, 0], [42, -42], [42, 42]] };
+        ipSheet(c, [hexane, methylpentane, dimethylbutane]);
         ip.toggleHintPanel(); ip.toggleHintPanel(); ip.toggleHintPanel();
         ip.finishAnswer();
-        assert(ip._finalScore.hints === 1 && ip._finalScore.raw === 2 && ip._finalScore.score === 1,
-            `読み返しが減点された（hints=${ip._finalScore.hints} score=${ip._finalScore.score}。1/2/1 を期待）`);
+        assert(ip._finalScore.hints === 2 && ip._finalScore.raw === 3 && ip._finalScore.score === 1,
+            `読み返しが減点された（hints=${ip._finalScore.hints} raw=${ip._finalScore.raw} score=${ip._finalScore.score}。2/3/1 を期待）`);
 
         ip.stop();
         g.userMolecule = new W.Molecule();
@@ -15083,20 +15120,20 @@
 
             // ③ その面に 💡 があり、押すと段が**1つだけ**進む
             assert(ovBtn(/次のヒント/), `★確認モードに 💡 が無い ＝ 直す前の症状（${ov.textContent.slice(0, 200)}）`);
-            assert(/あと 4段・−1点/.test(ovBtn(/次のヒント/).textContent),
+            assert(/あと 5段・−1点/.test(ovBtn(/次のヒント/).textContent),
                 `代償（残り段数・−1点）が出ていない（${ovBtn(/次のヒント/).textContent}）`);
             ovBtn(/次のヒント/).click();
             assert(ip._hintLevel === 1, `1回押して段が ${ip._hintLevel} ＝ 二重に進んでいる（減点も二重になる）`);
-            assert(/あと 3種 あります/.test(ov.textContent),
+            assert(/全部で 3 種 あります/.test(ov.textContent),
                 `確認モードにヒントの中身が出ない（${ov.textContent.slice(0, 300)}）`);
             assert(study.classList.contains('hidden'), '★ヒントを押すと 📚学習 が開く（答案が隠れる）');
 
             // ④ 学習パネル側と食い違わない（同じ段・同じ残り段数・同じ中身）
             const body = D.getElementById('ip-body');
-            assert(/あと 3種 あります/.test(body.textContent), '学習パネル側にヒントが反映されない');
-            assert([...body.querySelectorAll('button')].some(s => /次のヒント（あと 3段・−1点）/.test(s.textContent)),
+            assert(/全部で 3 種 あります/.test(body.textContent), '学習パネル側にヒントが反映されない');
+            assert([...body.querySelectorAll('button')].some(s => /次のヒント（あと 4段・−1点）/.test(s.textContent)),
                 '学習パネル側の残り段数が食い違う');
-            assert(/あと 3段・−1点/.test(ovBtn(/次のヒント/).textContent), '確認モード側の残り段数が食い違う');
+            assert(/あと 4段・−1点/.test(ovBtn(/次のヒント/).textContent), '確認モード側の残り段数が食い違う');
 
             // ★ 否定対照(1): 面の門番（carriesHintControl）を false にすると確認モードから 💡 が消える
             //    ＝ 上の「💡 がある」が**実際に見張っている**証明（消えなければ空振りの緑）
@@ -15920,7 +15957,8 @@
         assert(chainIdx >= 0, 'C₆H₁₂（鎖式）のお題が無い');
         const btn = D.querySelector(`#ip-body button[data-ip-problem="${chainIdx}"]`);
         assert(btn, 'C₆H₁₂（鎖式）のボタンが選択画面に無い');
-        assert(/C₆H₁₂（鎖式・13種）/.test(btn.textContent), `ボタンの表記が「${btn.textContent}」`);
+        // ★ v14xx: 種類数は出さない（IH1）。ボタンが名乗るのは**式と範囲**だけ
+        assert(/^C₆H₁₂（鎖式）/.test(btn.textContent), `ボタンの表記が「${btn.textContent}」`);
 
         // ② 押して開く回の総数は、ボタンの数と**同じ計算から出る**
         btn.click();
@@ -15929,7 +15967,8 @@
 
         // ③ 見出しと注記が範囲を名乗る
         const panel = () => D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
-        assert(/✏️ C₆H₁₂ の鎖式異性体（全 13 種）/.test(panel()), `見出しが範囲を名乗らない（${panel().slice(0, 120)}）`);
+        assert(/✏️ C₆H₁₂ の鎖式異性体/.test(panel()), `見出しが範囲を名乗らない（${panel().slice(0, 120)}）`);
+        assert(!/全 13 種/.test(panel()), `見出しが種類数を出している（${panel().slice(0, 120)}）`);
         assert(/環をもたない構造だけを数えます/.test(panel()), '範囲の注記が出ていない');
         // ④ 作業帯にも出る
         assert(/（鎖式）/.test(ip.stripLiveHtml()), `作業帯が範囲を名乗らない（${ip.stripLiveHtml()}）`);
@@ -16058,8 +16097,12 @@
         assert(!ip.active, 'C₆H₁₂（全異性体）が開いてしまう（上限20は据え置きのはず）');
         assert(toasts.length === 1, `断り文が ${toasts.length}件`);
         assert(/25種/.test(toasts[0]), `断り文に種類数が無い（${toasts[0]}）`);
-        assert(/鎖式・13種/.test(toasts[0]) && /環式・12種/.test(toasts[0]),
+        // ★ v14xx: 行き先の**お題名**はボタンと同じ表記（＝種類数なし）にそろえる。
+        //   ⚠ 断った式そのものの「25種」は残す —— それが断る理由で、伏せると理由が消える
+        assert(/C₆H₁₂（鎖式）/.test(toasts[0]) && /C₆H₁₂（環式）/.test(toasts[0]),
             `断り文に行き先（骨格の型で分けたお題）が出ていない（${toasts[0]}）`);
+        assert(!/鎖式・13種/.test(toasts[0]) && !/環式・12種/.test(toasts[0]),
+            `断り文が行き先の種類数まで出している（${toasts[0]}）`);
 
         g.setMode('puzzle');
     });
@@ -16529,7 +16572,16 @@
         ipStereoCleanup(c);
     });
 
-    test('IW26: ★陰性対照 — 既存お題の（N種）は1文字も変わらず、立体まで答える回だけ数を隠す', async (c) => {
+    test('IH1: 出題では種類数を伏せる（お題22件＋芳香族の全部）／★数は答え合わせとヒント段1に移っただけ', async (c) => {
+        /**
+         * ★ ユーザー判断 2026-08-31「全部で何種類か、はオープンにしない出題の方がよいのでは？」。
+         *   **もう出し切ったかを自分で決めるのが、そもそも入試で問われる力**なので、
+         *   出題中は総数を1つも出さない。⚠ v1435 で立体の回だけに入れた抜け道を全件に広げた
+         *   （旧 IW26 ＝「既存お題の（N種）は1文字も変わらない」を、この検査が置き換える）。
+         *
+         * ⚠⚠ **「数が消えた」だけを見てはいけない。** 数を全部消した実装でもそれは通る。
+         *   ★ この検査は **消えたこと（①〜③）と、移った先で確かに出ること（④⑤）を両方**見る。
+         */
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
         ipStereoCleanup(c);
@@ -16537,56 +16589,69 @@
         if (ip.active) ip.stop();
         ip.renderList();
 
-        // ① ★ 既存19問の表記は1文字も変わらない（v1433 の実測をそのまま凍結する）
+        // ① ★ お題22件の表記を凍結する（**式と範囲だけ**。種類数はどこにも無い）
         const frozen = [
-            'C₄H₁₀（2種）', 'C₅H₁₂（3種）', 'C₃H₈O（3種）', 'C₆H₁₄（5種）', 'C₄H₈（5種）', 'C₄H₁₀O（7種）',
-            'C₂H₆O（2種）', 'C₃H₆（2種）', 'C₅H₁₀（10種）', 'C₅H₁₂O（14種）',
-            'C₄H₈（鎖式・3種）', 'C₄H₈（環式・2種）', 'C₅H₁₀（鎖式・5種）', 'C₅H₁₀（環式・5種）',
-            'C₆H₁₂（鎖式・13種）', 'C₆H₁₂（環式・12種）',
-            'C₃H₄（鎖式・2種）', 'C₄H₆（鎖式・4種）', 'C₅H₈（鎖式・9種）'
+            'C₄H₁₀', 'C₅H₁₂', 'C₃H₈O', 'C₆H₁₄', 'C₄H₈', 'C₄H₁₀O',
+            'C₂H₆O', 'C₃H₆', 'C₅H₁₀', 'C₅H₁₂O',
+            'C₄H₈（鎖式）', 'C₄H₈（環式）', 'C₅H₁₀（鎖式）', 'C₅H₁₀（環式）',
+            'C₆H₁₂（鎖式）', 'C₆H₁₂（環式）',
+            'C₃H₄（鎖式）', 'C₄H₆（鎖式）', 'C₅H₈（鎖式）',
+            'C₅H₁₀（立体まで）', 'C₅H₁₂O（立体まで）', 'C₇H₁₆'
         ];
+        assert(ip.problems.length === frozen.length,
+            `お題が ${ip.problems.length}件（凍結した ${frozen.length}件と食い違う。足したら表記も凍結すること）`);
         frozen.forEach((want, i) => {
             const b = D.querySelector(`#ip-body button[data-ip-problem="${i}"]`);
             assert(b, `problems[${i}] のボタンが選択画面に無い`);
             assert(b.textContent.replace(/ ✓$/, '') === want,
-                `既存お題の表記が変わっている: problems[${i}] は「${b.textContent}」（期待「${want}」）`);
+                `お題の表記が変わっている: problems[${i}] は「${b.textContent}」（期待「${want}」）`);
+        });
+        // ② ★ どのボタンにも「N種」が1つも無い（凍結表と別の物差しで、抜け道ごと塞ぐ）
+        [...D.querySelectorAll('#ip-body button')].forEach(b => {
+            assert(!/[0-9０-９₀-₉]\s*種/.test(b.textContent),
+                `お題ボタンが種類数を出している（${b.textContent}）`);
         });
         const arBtn = D.querySelector('#ip-aromatic-presets button');
-        assert(arBtn && /C₈H₁₀（芳香族・4種）/.test(arBtn.textContent),
+        assert(arBtn && arBtn.textContent.replace(/ ✓$/, '') === 'C₈H₁₀（芳香族）',
             `芳香族プリセットの表記が変わっている（${arBtn && arBtn.textContent}）`);
 
-        // ② 立体まで答える回は**種類数を名乗らない**（別の枠に並ぶ）
-        const stWrap = D.getElementById('ip-stereo-problems');
-        assert(stWrap, '立体まで答える回の枠が選択画面に無い');
-        const stBtns = [...stWrap.querySelectorAll('button')];
-        assert(stBtns.length === 2, `立体まで答える回のボタンが ${stBtns.length}個（2個を期待）`);
-        stBtns.forEach(b => {
-            assert(/^C[₀-₉A-Za-z]*（立体まで）/.test(b.textContent), `表記が「${b.textContent}」`);
-            assert(!/\d種/.test(b.textContent) && !/[₀-₉]種/.test(b.textContent),
-                `立体まで答える回のボタンが種類数を出している（${b.textContent}）`);
-        });
-
         // ③ ★ 隠すのは4か所そろえる（ボタン・見出し・作業帯・確認モードの要約）。
-        //    ⚠ 1か所でも漏れると「隠した」ことにならない
-        const idx = ipStereoIdx(c, 10);
-        ipStereoSheet(c, idx);
+        //    ⚠ 1か所でも漏れると「隠した」ことにならない。**素の回**で見る（旧 IW26 は立体の回だった）
+        ip.stop();
+        ip.start(8);                                   // C₅H₁₀（素の回・全10種）
+        assert(ip.problem.total === 10, `前提が崩れている（total=${ip.problem.total}）`);
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2], [2, 3], [3, 4]] }]);
+        ip.renderSession();
         const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
-        assert(/✏️ C₅H₁₀ の異性体（立体まで）/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
-        assert(!/全 10 種/.test(panel), `学習パネルに種類数が出ている（${panel.slice(0, 160)}）`);
+        assert(/✏️ C₅H₁₀ の異性体/.test(panel), `見出しが「${panel.slice(0, 60)}」`);
+        assert(!/全 10 種/.test(panel), `学習パネルに種類数が出ている（${panel.slice(0, 200)}）`);
         const live = ip.stripLiveHtml();
-        assert(!/全 10 種/.test(live) && /（立体まで）/.test(live), `作業帯が種類数を出している（${live}）`);
+        assert(!/全 10 種/.test(live) && /いま <span class="ws-live-ok">1個<\/span> 描いてあります/.test(live),
+            `作業帯が「いま N個 描いてあります」だけになっていない（${live}）`);
         ip.openReview('progress');
         const ov = D.getElementById('ip-review-overlay').textContent.replace(/\s+/g, ' ');
         assert(!/全 10 種/.test(ov), `確認モードに種類数が出ている（${ov.slice(0, 200)}）`);
+
+        // ④ ★★ 移った先その1 —— **ヒントの段1 では総数が出る**（ここで初めて分かる）
+        assert(ip._hintLevel === 0, '前提が崩れている（ヒントの段が0でない）');
+        ip.nextHint();
+        const hint = ip.buildHintBlock().textContent.replace(/\s+/g, ' ');
+        assert(/全部で 10 種/.test(hint), `ヒント段1 が総数を出していない（${hint.slice(0, 200)}）`);
         ip.closeReview();
 
-        // ④ ★ 陰性対照の裏 —— 既存のお題では今までどおり「全 N 種」を出す（隠しが漏れていない）
+        // ⑤ ★★ 移った先その2 —— **答え合わせでは今までどおり数を出す**
+        ip.finishAnswer();
+        const ans = D.getElementById('ip-review-overlay').textContent.replace(/\s+/g, ' ');
+        assert(/全 10種中/.test(ans), `答え合わせが総数を出していない（${ans.slice(0, 240)}）`);
+        assert(/未発見 9種/.test(ans), `答え合わせの未発見が出ていない（${ans.slice(0, 240)}）`);
+        ip.closeReview();
         ip.stop();
-        ip.start(8); // C₅H₁₀（10種・素の回）
-        const panel2 = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
-        assert(/✏️ C₅H₁₀ の異性体（全 10 種）/.test(panel2),
-            `素の回の見出しまで変わっている（${panel2.slice(0, 60)}）`);
-        assert(/全 10 種/.test(ip.stripLiveHtml()), '素の回の作業帯から種類数が消えている');
+
+        // ⑥ ★ 空振り防止 —— 直す前の文言が、この物差しを本当に弾くこと
+        assert(/[0-9０-９₀-₉]\s*種/.test('C₆H₁₄（5種）') && /[0-9０-９₀-₉]\s*種/.test('C₆H₁₂（鎖式・13種）'),
+            '直す前のボタン表記が新しい物差しを通ってしまう ＝ 空振りの緑');
+        assert(/全 10 種/.test('お題 C₅H₁₀ の異性体 全 10 種 ／ いま 0個 描いてあります'),
+            '直す前の帯が新しい物差しを通ってしまう ＝ 空振りの緑');
         ipStereoCleanup(c);
     });
 
@@ -17369,8 +17434,9 @@
         const btn = D.querySelector(`#ip-body button[data-ip-problem="${idx}"]`);
         assert(btn, 'C₇H₁₆ のお題ボタンが画面に無い');
         assert(!btn.disabled, 'C₇H₁₆ のお題ボタンが押せない（列挙が打ち切られている）');
-        assert(/C₇H₁₆/.test(btn.textContent) && /9種/.test(btn.textContent),
-            `C₇H₁₆ のボタンの表記が「${btn.textContent}」（「C₇H₁₆（9種）」を期待）`);
+        // ★ v14xx: 種類数は出さない（IH1）
+        assert(/^C₇H₁₆/.test(btn.textContent) && !/[0-9]\s*種/.test(btn.textContent),
+            `C₇H₁₆ のボタンの表記が「${btn.textContent}」（「C₇H₁₆」を期待）`);
         // ★ 不飽和度0 ＝ 素の群に並ぶ（「じっくり練習する回」ではない）
         const train = D.getElementById('ip-training-problems');
         assert(!train || !train.querySelector(`button[data-ip-problem="${idx}"]`),
@@ -17795,9 +17861,11 @@
         const btn = D.querySelector('#ip-aromatic-presets button[data-ip-aromatic="C8H10"]');
         assert(btn, '選択画面に芳香族のプリセットが無い（入力欄に打てる人にしか届かないまま）');
         assert(/芳香族/.test(btn.textContent), `ボタンの文言に「芳香族」が無い（${btn.textContent}）`);
-        assert(/4\s*種/.test(btn.textContent), `ボタンが種類数を出していない（${btn.textContent}）`);
-        // ★ ボタンの数と、押して開く回の総数は**同じ計算から出る**こと
-        const shown = parseInt(btn.textContent.replace(/[^0-9]/g, ''), 10);
+        // ★ v14xx: **ボタンは種類数を出さない**（IH1）。
+        //   ⚠ ただし「ボタンを出すかどうか」と「開いた回の総数」が**同じ計算から出る**保証は残す
+        //     —— 表記から消したぶん、`prepareAromatic` のキャッシュを直に突き合わせる
+        assert(!/[0-9]\s*種/.test(btn.textContent), `ボタンが種類数を出している（${btn.textContent}）`);
+        const shown = ip.prepareAromatic('C8H10').count;
 
         // ② 押すだけで芳香族の回が開く（**入力欄には何も打たない**）
         const input = D.querySelector('#ip-body input[type="text"]');
@@ -17807,13 +17875,14 @@
         assert(ip.problem.aromaticOnly === true,
             '開いた回が芳香族の回になっていない（aromaticOnly が立っていない）');
         assert(ip.problem.total === 4, `総数が ${ip.problem.total}（4 を期待）`);
-        assert(String(shown).indexOf(String(ip.problem.total)) >= 0,
-            `ボタンの表記（${btn.textContent}）と開いた回の総数（${ip.problem.total}）が食い違う`);
+        assert(shown === ip.problem.total,
+            `プリセットの下ごしらえ（${shown}）と開いた回の総数（${ip.problem.total}）が食い違う`);
 
         // ③ 見出しと注記に「芳香族」の語が入っている
         const body = D.getElementById('ip-body').textContent;
-        assert(/✏️ C₈H₁₀ の芳香族異性体（全 4 種）/.test(body.replace(/\s+/g, ' ')),
-            `見出しが「✏️ C₈H₁₀ の芳香族異性体（全 4 種）」でない（${body.slice(0, 120)}）`);
+        assert(/✏️ C₈H₁₀ の芳香族異性体/.test(body.replace(/\s+/g, ' ')),
+            `見出しが「✏️ C₈H₁₀ の芳香族異性体」でない（${body.slice(0, 120)}）`);
+        assert(!/全 4 種/.test(body.replace(/\s+/g, ' ')), `見出しが種類数を出している（${body.slice(0, 120)}）`);
         assert(/ベンゼン環をもつ構造だけを数えます/.test(body), '範囲の注記が出ていない');
 
         // ④ ★ 完了条件 —— ベンゼン環4つを置けば 4/4。
