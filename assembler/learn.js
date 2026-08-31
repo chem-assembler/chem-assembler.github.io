@@ -545,6 +545,40 @@ const IP_SCOPES = {
         note: '※ 環をもつ構造だけを数えます（環をもたない異性体は対象外）。',
         reject: '分子式は合っていますが、この回は環をもつ構造だけが対象です',
         tip: '環をもつ構造異性体だけを書き出す回です（環をもたない異性体は対象外）'
+    },
+    /**
+     * ★★ 官能基で絞った回（v14xx・ユーザー要望 2026-08-31
+     *    「C₆H₁₂O のケトン、C₇H₁₄O₂ のエステル、などは十分に可能だと思います」）。
+     *
+     * ⚠ 上の3つ（芳香族・鎖式・環式）と**まったく同じ枠組み**に乗せる ——
+     *   `scopeInfo()` が返す1つの箱が、見出し・注記・お題外の断り文・記録の鍵を全部決める。
+     *   ここに新しい判定や新しい文言の置き場所を作らない（§11-4）。
+     * ⚠ 鍵（`@fg-*`）は**新しい名前**にする。同じ分子式の素の回と混ざると
+     *   「ケトンだけ描いて C₆H₁₂O 全体の ✓ が付く」ことになる
+     */
+    'fg:ketone': {
+        tag: 'ケトン', key: '@fg-ketone', title: 'のケトン異性体',
+        note: '※ ケトン（R–CO–R′）だけを数えます。アルデヒドや、C=O をもたない異性体は対象外。',
+        reject: '分子式は合っていますが、この回はケトン（R–CO–R′）だけが対象です',
+        tip: 'ケトン（R–CO–R′）の構造異性体だけを書き出す回です'
+    },
+    'fg:aldehyde': {
+        tag: 'アルデヒド', key: '@fg-aldehyde', title: 'のアルデヒド異性体',
+        note: '※ アルデヒド（R–CHO）だけを数えます。ケトンや、C=O をもたない異性体は対象外。',
+        reject: '分子式は合っていますが、この回はアルデヒド（R–CHO）だけが対象です',
+        tip: 'アルデヒド（R–CHO）の構造異性体だけを書き出す回です'
+    },
+    'fg:ester': {
+        tag: 'エステル', key: '@fg-ester', title: 'のエステル異性体',
+        note: '※ エステル（R–COO–R′）だけを数えます。R がHのギ酸エステルも数えます。カルボン酸は対象外。',
+        reject: '分子式は合っていますが、この回はエステル（R–COO–R′）だけが対象です',
+        tip: 'エステル（R–COO–R′）の構造異性体だけを書き出す回です（ギ酸エステルも数えます）'
+    },
+    'fg:acid': {
+        tag: 'カルボン酸', key: '@fg-acid', title: 'のカルボン酸異性体',
+        note: '※ カルボン酸（R–COOH）だけを数えます。同じ分子式のエステルは対象外。',
+        reject: '分子式は合っていますが、この回はカルボン酸（R–COOH）だけが対象です',
+        tip: 'カルボン酸（R–COOH）の構造異性体だけを書き出す回です'
     }
 };
 // 骨格の型で正解集合をふるう。⚠ **判定は `findAnyCycle` 1本**（新しい数え方を書かない）
@@ -1162,6 +1196,47 @@ class IsomerPractice {
         this.aromaticPresets = ['C8H10'];
         this._arCache = new Map();
 
+        /**
+         * ★★ 官能基で絞った回（v14xx・ユーザー要望 2026-08-31「重元素7以上でも
+         *    分類ごとの書き出しは対応を増やしたい」／案A ＝ お題ボタンを増やす）。
+         *
+         * ⚠ **`problems` にも `aromaticPresets` にも足せない。**
+         *   `problems` は総当たり（`enumerateConstitutionalIsomers`）の道で、
+         *   C₇H₁₄O₂ は重原子9個 ＝ 上限8個を超えて**1件も出せない**。
+         *   ★ 道は `enumerateFunctionalGroupIsomers`（種を置いて腕を貼る）で、
+         *     これは芳香族の回と**まったく同じ形**（新しい列挙アルゴリズムは書いていない）。
+         *
+         * ★ **並んでいる12件の選び方**（全数で洗い出した。測ったのは chemistry.js 側の関数）:
+         *     ① 種類数が 2〜20（`IP_MIN_ISOMERS`〜`IP_MAX_ISOMERS`）
+         *     ② **正解の全部に名前が付く**（答え合わせの左列とヒント段5 が「（名称未登録）」に
+         *        ならない）。⚠ ここで落ちたのが **C₇ の4件**:
+         *        ケトン C₇H₁₄O 15種（名無し12）／アルデヒド C₇H₁₄O 17種（名無し16）／
+         *        カルボン酸 C₇H₁₄O₂ 17種（名無し16）／エステル C₇H₁₄O₂ 45種（名無し39）。
+         *        ⚠ **①では落ちていない**（15種・17種は上限20の内側）——
+         *        落ちた理由は数ではなく名前なので、`compounds.json` を足せば開く
+         *
+         * ★ **お題ボタンは押されるまで数えない**（`prepareAromatic` と違うところ）。
+         *   ⚠ v1433 の申し送り「これ以上お題を足すならここ（初回 renderList）が先に効く」への答え。
+         *   ★ **種類数を伏せた（IH1）ので、ボタンの表記に種類数が要らなくなった** ＝
+         *     一覧を出すのに数える理由がもう無い。12件ぶんの列挙（合計 ~60ms）は起動から消えた。
+         *   ⚠ 代わりに「12件が本当に開く・数が既知値と合う・全部に名前が付く」は
+         *     **回帰テスト（IH2）が全件で見張る**（runtime の門番 → test の門番へ移した）
+         */
+        this.fgPresets = [
+            { formula: 'C5H10O',  cls: 'ketone' },     // 3種
+            { formula: 'C6H12O',  cls: 'ketone' },     // 6種（★ユーザーが名指しした式）
+            { formula: 'C4H8O',   cls: 'aldehyde' },   // 2種
+            { formula: 'C5H10O',  cls: 'aldehyde' },   // 4種
+            { formula: 'C6H12O',  cls: 'aldehyde' },   // 8種
+            { formula: 'C3H6O2',  cls: 'ester' },      // 2種（★ギ酸エステルが入る最小の回）
+            { formula: 'C4H8O2',  cls: 'ester' },      // 4種
+            { formula: 'C5H10O2', cls: 'ester' },      // 9種
+            { formula: 'C6H12O2', cls: 'ester' },      // 20種（上限ちょうど）
+            { formula: 'C4H8O2',  cls: 'acid' },       // 2種
+            { formula: 'C5H10O2', cls: 'acid' },       // 4種
+            { formula: 'C6H12O2', cls: 'acid' }        // 8種
+        ];
+
         if (this.body) {
             // 初回描画は列挙（最大 ~150ms）で初期ロードを妨げないよう次フレームに回す
             setTimeout(() => { if (!this.active) this.renderList(); }, 0);
@@ -1197,8 +1272,19 @@ class IsomerPractice {
      */
     clearKeyTail(p) {
         if (!p) return '';
-        const scope = p.aromaticOnly ? 'aromatic' : p.skeleton;
+        // ★ 範囲の名乗りは**この1行で全部決まる**（芳香族／骨格の型／官能基）。
+        //   ⚠ 官能基の回を足すときにここを直し忘れると、ケトンだけ描いて
+        //     C₆H₁₂O 全体の ✓ が付く（鍵が素の回と同じになる）
+        const scope = this.scopeKeyOf(p);
         return (scope ? IP_SCOPES[scope].key : '') + (p.stereoAsked ? '@stereo' : '');
+    }
+
+    /** お題 → `IP_SCOPES` の鍵（null なら範囲の宣言なし ＝ 全異性体）。**名乗る場所はここ1つ** */
+    scopeKeyOf(p) {
+        if (!p) return null;
+        if (p.aromaticOnly) return 'aromatic';
+        if (p.fgClass) return 'fg:' + p.fgClass;
+        return p.skeleton || null;
     }
 
     // クリア記録の鍵。⚠ **同じ分子式でも範囲が違えば別の出題**なので鍵を分ける（§11-4）
@@ -1214,9 +1300,8 @@ class IsomerPractice {
     /** いまの出題の「範囲」（骨格の型）。null なら全異性体。⚠ **名乗る言葉はここからしか出さない** */
     scopeInfo(problem) {
         const p = problem || this.problem;
-        if (!p) return null;
-        if (p.aromaticOnly) return IP_SCOPES.aromatic;
-        return p.skeleton ? IP_SCOPES[p.skeleton] : null;
+        const key = this.scopeKeyOf(p);
+        return key ? IP_SCOPES[key] : null;
     }
 
     /**
@@ -1410,6 +1495,44 @@ class IsomerPractice {
             this.body.appendChild(arWrap);
         }
 
+        /**
+         * ★★ 官能基で絞った回（v14xx・案A）。⚠ **押されるまで数えない**（`fgPresets` の前書き）。
+         *   だからこの枠を足しても初回 `renderList()` は1msも増えない。
+         */
+        if (this.fgPresets.length) {
+            const fgWrap = document.createElement('div');
+            fgWrap.id = 'ip-fg-presets';
+            fgWrap.style.cssText = 'margin-top:8px;';
+            const fgLabel = document.createElement('div');
+            fgLabel.style.cssText = 'font-size:12.5px; color:var(--text-secondary); margin-bottom:4px;';
+            // ⚠ 「分子式 ＋ 分類」で絞る回だと言い切る（§11-4）。
+            // ⚠ **11字に抑える**（`UX1` の上限195字。素の 22字「（その分類のものだけ）」付きだと
+            //    この画面が 203字になって落ちる）。落とした括弧の中身は
+            //    **ボタン自身（`C₆H₁₂O（ケトン）`）と、開いたあとの注記（`IP_SCOPES.note`）が言う**
+            //    ＝ 押す前に読ませる必要がない（ux-density §8）
+            fgLabel.textContent = '分子式と分類で絞る回:';
+            fgWrap.appendChild(fgLabel);
+            const fgGrid = document.createElement('div');
+            fgGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px;';
+            this.fgPresets.forEach((pre, i) => {
+                const sc = IP_SCOPES['fg:' + pre.cls];
+                const parsed = this.parseFormula(pre.formula);
+                const label = parsed ? ipFormulaLabel(parsed.heavy, parsed.h) : pre.formula;
+                const cleared = this.isCleared(label, 'fg:' + pre.cls);
+                const btn = document.createElement('button');
+                btn.className = 'view-btn';
+                btn.dataset.ipFg = String(i);
+                btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                    (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+                btn.textContent = `${label}（${sc.tag}）${cleared ? ' ✓' : ''}`;
+                btn.title = sc.tip;
+                btn.addEventListener('click', () => this.startFromFgPreset(i));
+                fgGrid.appendChild(btn);
+            });
+            fgWrap.appendChild(fgGrid);
+            this.body.appendChild(fgWrap);
+        }
+
         // M3: 任意の分子式で練習
         const custom = document.createElement('div');
         custom.style.cssText = 'margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px;';
@@ -1453,6 +1576,34 @@ class IsomerPractice {
             index, elements: p.elements, hCount: p.hCount, formula: data.formula,
             skeleton: p.skeleton || null, stereoAsked: !!p.stereoAsked
         }, data.isomers);
+    }
+
+    /**
+     * ★★ 官能基で絞った回を開く（v14xx・案A）。
+     *
+     * ⚠ **ここで初めて数える**（一覧では数えない・`fgPresets` の前書き）。実測は
+     *   最も重い C₆H₁₂O₂ のエステルで 20ms ＝ 押してから開くまでに待たせる長さではない。
+     * ⚠ 断り方は既存の道と同じ「トーストで理由を言う」。**黙って何も起きないを作らない**
+     */
+    startFromFgPreset(index) {
+        const g = this.game;
+        const pre = this.fgPresets[index];
+        if (!pre) return;
+        const parsed = this.parseFormula(pre.formula);
+        const sc = IP_SCOPES['fg:' + pre.cls];
+        if (!parsed || !sc) { g.showToast('このお題を開けませんでした。'); return; }
+        const seed = enumerateFunctionalGroupIsomers(parsed.heavy, parsed.h, pre.cls);
+        if (!seed.applicable || seed.overflow || seed.isomers.length < IP_MIN_ISOMERS ||
+            seed.isomers.length > IP_MAX_ISOMERS) {
+            g.showToast(
+                `${ipFormulaLabel(parsed.heavy, parsed.h)} の${sc.tag}は、いまの練習では扱えません` +
+                `（数え上げが上限を超えたか、書き出すには多すぎます）。`, 6000);
+            return;
+        }
+        this.beginSession({
+            index: -1, elements: parsed.heavy, hCount: parsed.h,
+            formula: g.computeMolecularFormula(seed.isomers[0]), fgClass: pre.cls
+        }, seed.isomers);
     }
 
     // 任意の分子式から開始（M3）
