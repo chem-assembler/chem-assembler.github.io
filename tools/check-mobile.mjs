@@ -150,7 +150,14 @@ const PAGES = [
     ['ratio', '/ratio/titration.html'],
     ['ratio', '/ratio/thermo.html'],
     ['ratio', '/ratio/balance.html'],
+    // ⚠ 2026-09-02: `/muki/` はイオンスネークそのものだったが、入口（3つの遊び方の一覧）に
+    //   なった。★ **この行をそのままにすると、測る対象が「盤の固定サイズを持つゲーム」から
+    //   「素直な1段組みの一覧」へ黙って入れ替わる** ＝ 検査が通っても意味が変わっている。
+    //   ⚠ 型B / 型A はもともと1行も無かったので、ここで対等に足す
     ['muki', '/muki/'],
+    ['muki', '/muki/snake.html'],
+    ['muki', '/muki/separation.html'],
+    ['muki', '/muki/tree.html'],
     ['qa', '/qa/'],
     ['assembler', '/assembler/'],
 ];
