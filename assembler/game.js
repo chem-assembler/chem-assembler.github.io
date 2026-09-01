@@ -10770,7 +10770,24 @@ class Game {
                 if (b.right <= r.left || b.left >= r.right || b.bottom <= r.top || b.top >= r.bottom) return;
                 const spanX = Math.min(b.right, r.right) - Math.max(b.left, r.left);
                 if (spanX < r.width * 0.5) return;
-                if (b.top - r.top <= r.height * 0.5) out.top = Math.max(out.top, Math.min(b.bottom, r.bottom) - r.top);
+                /* ⚠⚠ **天井か床かは「どちらの端に貼り付いているか」で決める**（実発生・2026-09-02）。
+                 *
+                 * 旧: `b.top - r.top <= r.height * 0.5` ＝ **帯の上端がキャンバスの上半分にあれば天井**。
+                 *   これは「帯はキャンバスよりずっと薄い」ことを前提にした式で、
+                 *   **帯が厚くなるか、キャンバスが薄くなると判定が反転する**。
+                 *
+                 * ★ 実測で反転していた場面（**課題とは関係なく、いまの main で起きている**）:
+                 *     320×568 ＋ 🧪 実験パレット（v1494）… `#svg-wrapper` が 234px まで縮み、
+                 *     下端に貼った `#work-strip` 128px の**上端が 106px**（＝ 234 の半分 117 より上）。
+                 *     → 天井と判定され `top=140 / bottom=0` ＝ 分子は**帯のある下半分へ寄せられ**、
+                 *       エタノールの **9原子すべてが帯の裏**に入った（実測）。
+                 *
+                 * ★ 端からの距離どうしを比べれば、帯が画面の何割を占めても判定は反転しない。
+                 *   薄い帯では旧式とまったく同じ答えになる ——
+                 *   リボンは上端に、作業帯・名称欄は下端に貼ってあるので、距離の勝ち負けは変わらない。 */
+                const dTop = Math.max(b.top, r.top) - r.top;
+                const dBottom = r.bottom - Math.min(b.bottom, r.bottom);
+                if (dTop <= dBottom) out.top = Math.max(out.top, Math.min(b.bottom, r.bottom) - r.top);
                 else out.bottom = Math.max(out.bottom, r.bottom - Math.max(b.top, r.top));
             });
         });
