@@ -5438,11 +5438,313 @@ class StereoIsomerPractice {
     }
 }
 
+/* =====================================================================
+ * 📖 資料（参考書） —— DESIGN_reference_book.md / DEVELOPMENT.md「B. 参考書化」
+ *
+ * ★ 作るのは3層のうち **2層だけ**: 説明（表）と 例題（代表1つを組む）。どちらも無料。
+ *   練習問題（有料）はここに無い —— 配信の設計がまだ決まっていない（paid §4）。
+ *
+ * ★★ この機能でいちばん大事な約束は「**参照は全体像で渡す**」
+ *    （DEVELOPMENT.md「上の『第3の道』は却下」原則1・ユーザー原文）:
+ *
+ *      > 参照するなら表全体であるべきです。該当部分をピンポイントで提示しては、
+ *      > 答えを見ているのと同じです。
+ *
+ *    ⚠ **＝ ヘキサンを組んでいる最中に「C6 = ヘキサン」の行だけを出す実装を、いかなる形でも
+ *       作らない**（帯でもツールチップでも部分表でも）。この描画器は **表を1枚まるごとしか
+ *       描けない**（行を絞る引数を持たない）ようにして、構造でそれを守る。`REF3` が否定対照で見張る。
+ *
+ * ★ 著作権（設計書 §1）: **表の中身をこのファイルにも reference.json にも書かない。**
+ *   行は `stages.json` の系列（＝ repo が既に持っている出題順）から機械で組む
+ *   ＝ どこかの本の表を写す余地が構造上ゼロになる。`REF5` が「reference.json に行データが無い」を見張る。
+ *
+ * ★ 例題の採点は**新しく作らない**。`stages.json` の各ステージが持つ `target` と、
+ *   既存のパズルモードの判定をそのまま使う（設計書 §5-2 の (b)）。
+ *   ここがやるのは `game.setMode('puzzle')` → `game.loadStage(idx)` の2手だけ。
+ *
+ * ⚠ ここに置いた理由（`reference.js` を新設しなかった理由）: このファイルは既に
+ *   「読む／練習する」側の器（LearnView・書き出し練習3つ）が集まっている場所で、
+ *   資料はその仲間。ファイルを増やすと `?v=` の対象と script タグが1本増える。
+ * ===================================================================== */
+
+/* 分子式の数字を下付きにする（CH4 → CH₄）。
+   ⚠ 表示だけの変換。データ側（stages.json の `formula`）は素の "C10H22" のまま触らない */
+function refSubscript(formula) {
+    return String(formula).replace(/\d+/g, m =>
+        m.split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join(''));
+}
+
+/* 分子式の先頭の C の数を読む（"CH4" → 1・"C10H22" → 10）。
+   ⚠ **手で数えて表に書かない**（書いた時点で「写す」余地ができる）。読めなければ null */
+function refCarbonCount(formula) {
+    const m = /^C(\d*)(?![a-z])/.exec(String(formula));
+    if (!m) return null;
+    return m[1] === '' ? 1 : parseInt(m[1], 10);
+}
+
+class ReferenceBook {
+    constructor() {
+        this.pages = null;      // reference.json の中身（開くまで読まない）
+        this.pageId = null;     // いま開いているページ
+        this.opened = false;
+        this.pane = null;
+    }
+
+    /* データは**開くまで読まない**（起動を1リクエストも重くしない）。
+       ⚠ `?v=` は通さず `cache: 'no-cache'` で読む —— stages.json / compounds.json / demos*.json と
+          同じ扱い（tools/verify-release.js の `isServedPath` の注記どおり、
+          `?v=` を通さないファイルはキャッシュバスターの守備範囲に最初から入らない） */
+    async load() {
+        if (this.pages) return this.pages;
+        const url = new URL('reference.json', window.location.href).href;
+        const res = await fetch(url, { cache: 'no-cache' });
+        if (!res.ok) throw new Error('reference.json HTTP ' + res.status);
+        this.pages = await res.json();
+        return this.pages;
+    }
+
+    pageById(id) {
+        return (this.pages || []).find(p => p.id === id) || null;
+    }
+
+    /* qa の知識コード（`org.ali.alkane-names` 等）から資料ページを引く。
+       ⚠ **コードの意味はこちらでは解釈しない**（CLAUDE.md「相手の項目表を複製しない」）。
+          reference.json の `codes` に書いてある文字列と突き合わせるだけ */
+    pageByCode(code) {
+        const c = String(code || '').trim();
+        if (!c) return null;
+        return (this.pages || []).find(p => (p.codes || []).includes(c)) || null;
+    }
+
+    /* 索引（📚 学習 → 📖 資料）を描く。いまは1ページだが、増えても同じ形で並ぶ */
+    async renderIndex() {
+        const box = document.getElementById('reference-list');
+        if (!box) return 0;
+        try { await this.load(); }
+        catch (e) {
+            box.textContent = '資料を読み込めませんでした（ローカルサーバー経由で開いてください）。';
+            return 0;
+        }
+        box.innerHTML = '';
+        this.pages.forEach(p => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'ref-index-btn';
+            b.dataset.refPage = p.id;
+            b.innerHTML = '📖 ' + escapeRefText(p.title)
+                + '<span>' + escapeRefText(p.unitLabel + ' / ' + p.group) + '</span>';
+            b.addEventListener('click', () => this.open(p.id));
+            box.appendChild(b);
+        });
+        return this.pages.length;
+    }
+
+    async open(pageId) {
+        try { await this.load(); } catch (e) { return false; }
+        const page = this.pageById(pageId) || this.pages[0];
+        if (!page) return false;
+        this.pageId = page.id;
+        this.render(page);
+        this.setOpen(true);
+        // 📚 学習モーダルは閉じる（資料はモーダルではなくペインなので、重ねると読めない）
+        if (window.game && window.game.setStudyOpen) window.game.setStudyOpen(false);
+        return true;
+    }
+
+    setOpen(on) {
+        const pane = document.getElementById('reference-pane');
+        if (!pane) return;
+        this.pane = pane;
+        pane.classList.toggle('hidden', !on);
+        this.opened = !!on;
+        const doc = document.getElementById('btn-ref-tab-doc');
+        const cv = document.getElementById('btn-ref-tab-canvas');
+        if (doc) { doc.classList.toggle('active', !!on); doc.setAttribute('aria-selected', on ? 'true' : 'false'); }
+        if (cv) { cv.classList.toggle('active', !on); cv.setAttribute('aria-selected', on ? 'false' : 'true'); }
+        /* ⚠ PC（≥1000px）ではペインが `main` の1列になる ＝ **キャンバスの実寸が変わる**。
+           `#svg-wrapper` を縮めても viewBox は自分で追いつかない（設計書 §4-3 の実測）ので、
+           ここで視野を取り直す。取り直さないと開閉のたびに縮尺がずれたまま残る */
+        if (window.game && window.game.fitCanvasToView) {
+            requestAnimationFrame(() => window.game.fitCanvasToView());
+        }
+    }
+
+    close() { this.setOpen(false); }
+
+    /* ページ1枚を描く。
+       ⚠ **引数はページ1枚だけ**。「この行だけ」「この範囲だけ」を渡す口を作らない（原則1） */
+    render(page) {
+        const body = document.getElementById('ref-body');
+        const title = document.getElementById('ref-title');
+        if (!body) return;
+        if (title) title.textContent = page.unitLabel + ' / ' + page.group;
+        body.innerHTML = '';
+        const h = document.createElement('h3');
+        h.textContent = page.title;
+        body.appendChild(h);
+        (page.blocks || []).forEach(b => {
+            const el = this.renderBlock(b);
+            if (el) body.appendChild(el);
+        });
+        body.scrollTop = 0;
+    }
+
+    renderBlock(b) {
+        if (b.kind === 'text') {
+            const p = document.createElement('p');
+            p.className = 'ref-p';
+            p.innerHTML = b.text;   // 強調（<b>・<sub>）だけを含む自分たちの文
+            return p;
+        }
+        if (b.kind === 'stageTable') return this.renderStageTable(b);
+        if (b.kind === 'example') return this.renderExample(b);
+        return null;
+    }
+
+    /* ★★ 表は **series 単位でしか作れない**（行を選ぶ引数が無い）。
+       これが「1行だけ出す」を構造で禁じている部分（原則1・`REF3` の否定対照）。 */
+    renderStageTable(block) {
+        const stages = (window.STAGES || []);
+        const rows = stages
+            .map((s, i) => ({ s, i }))
+            .filter(x => x.s.series === block.series);
+        const wrap = document.createElement('div');
+        wrap.className = 'ref-table-wrap';
+        if (block.caption) {
+            const cap = document.createElement('div');
+            cap.className = 'ref-cap';
+            cap.textContent = block.caption + '（' + rows.length + '行）';
+            wrap.appendChild(cap);
+        }
+        const t = document.createElement('table');
+        t.className = 'ref-table';
+        t.dataset.refSeries = block.series;
+        t.innerHTML = '<thead><tr><th>C の数</th><th>名称</th><th>分子式</th></tr></thead>';
+        const tb = document.createElement('tbody');
+        rows.forEach(({ s }) => {
+            const tr = document.createElement('tr');
+            const c = refCarbonCount(s.formula);
+            tr.innerHTML =
+                '<td class="ref-c">' + (c === null ? '—' : c) + '</td>'
+                + '<td>' + escapeRefText(s.name) + '</td>'
+                + '<td class="ref-formula">' + escapeRefText(refSubscript(s.formula)) + '</td>';
+            tb.appendChild(tr);
+        });
+        t.appendChild(tb);
+        wrap.appendChild(t);
+        return wrap;
+    }
+
+    /* 例題は**1ページに代表1つ**（ユーザー決定「例題はそのテーマを代表するもの／例題：ヘキサン」）。
+       ⚠ 表の10行それぞれにボタンを置かない —— 置いた瞬間、表は「説明」ではなく
+          「10問の一覧」になり、説明と例題の層が混ざる */
+    renderExample(block) {
+        const idx = (window.STAGES || []).findIndex(s => s.id === block.stageId);
+        const stage = idx >= 0 ? window.STAGES[idx] : null;
+        const box = document.createElement('div');
+        box.className = 'ref-example';
+        const h = document.createElement('h4');
+        h.textContent = '例題' + (stage ? '：' + stage.name + ' をつくる' : '');
+        box.appendChild(h);
+        if (block.lead) {
+            const p = document.createElement('p');
+            p.className = 'ref-p';
+            p.style.margin = '0';
+            p.innerHTML = block.lead;
+            box.appendChild(p);
+        }
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ref-try';
+        btn.id = 'btn-ref-try';
+        btn.dataset.refStage = block.stageId;
+        btn.textContent = stage ? '▶ ' + stage.name + 'を組んでみる' : '▶ 組んでみる';
+        btn.disabled = !stage;
+        btn.addEventListener('click', () => this.startExample(block.stageId));
+        box.appendChild(btn);
+        if (block.note) {
+            const n = document.createElement('p');
+            n.className = 'ref-note';
+            n.textContent = block.note;
+            box.appendChild(n);
+        }
+        return box;
+    }
+
+    /* ★★ 例題を始める ＝ **既存のパズルのお題を開くだけ**。
+       ⚠ 採点・正誤・クリアの記録はすべて既存のパズルモードのもの（`stages.json` の `target` 照合）。
+          ここで新しい判定を書いたら、同じことを2箇所で決めることになる。 */
+    startExample(stageId) {
+        const g = window.game;
+        const idx = (window.STAGES || []).findIndex(s => s.id === stageId);
+        if (!g || idx < 0) return false;
+        g.setMode('puzzle');
+        g.loadStage(idx);
+        /* 狭い画面では資料がキャンバスを覆っている ＝ 組む面が見えないので閉じる。
+           PC（分割）では**開いたまま**にする（設計書 §5-3「流れが途切れない」）。
+           ⚠ 判定は「いま重なっているか」＝ `position: fixed` かどうかで見る。
+              端末の幅を JS で数え直すと、CSS の閾値と2箇所で同じことを決めることになる */
+        const pane = document.getElementById('reference-pane');
+        const overlaying = pane && window.getComputedStyle(pane).position === 'fixed';
+        if (overlaying) this.setOpen(false);
+        else if (g.fitCanvasToView) requestAnimationFrame(() => g.fitCanvasToView());
+        return true;
+    }
+}
+
+/* 表の中身は stages.json 由来の素の文字列なので、そのまま HTML に差し込まない */
+function escapeRefText(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* 配線。⚠ **game.js は1行も触らない**（実験モードのレーンが同じファイルを触っている）。
+   `rec.js` と同じ作法で、自分の URL パラメータを自分で読み、`appReady` を待つ。 */
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', () => {
+        const book = new ReferenceBook();
+        window.referenceBook = book;
+
+        const acc = document.getElementById('learn-acc-reference');
+        // 索引はアコーディオンを開いたときに1回だけ組む（起動時に fetch しない）
+        if (acc) acc.addEventListener('toggle', () => { if (acc.open) book.renderIndex(); });
+
+        const close = document.getElementById('btn-ref-close');
+        if (close) close.addEventListener('click', () => book.close());
+        const tabCanvas = document.getElementById('btn-ref-tab-canvas');
+        if (tabCanvas) tabCanvas.addEventListener('click', () => book.close());
+        const tabDoc = document.getElementById('btn-ref-tab-doc');
+        if (tabDoc) tabDoc.addEventListener('click', () => book.setOpen(true));
+
+        /* 深いリンク `?open=reference[&code=<qa の知識コード>]`。
+           ⚠ **`OPEN_TARGETS`（game.js）には足していない** —— このレーンは game.js を触らない約束。
+              `applyOpenParam` は知らない `open` を無視して普通に開く（前方互換）ので、
+              ここで自分の名前だけを見る。`?from=` の帯・`?summon=` は今までどおり game.js が処理する。
+           ⚠ `?rec=`（収録）のときは何もしない —— 台本の1手目を汚さない（game.js と同じ約束） */
+        (async () => {
+            let params;
+            try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+            if (params.get('rec')) return;
+            if ((params.get('open') || '').trim().toLowerCase() !== 'reference') return;
+            for (let i = 0; i < 300 && !window.appReady; i++) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            try { await book.load(); } catch (e) { return; }
+            const byCode = book.pageByCode(params.get('code'));
+            // 知らない code は**無視して既定のページを開く**（前方互換。qa が先に語彙を配っても止まらない）
+            await book.open(byCode ? byCode.id : (book.pages[0] && book.pages[0].id));
+        })();
+    });
+}
+
 // ===== テスト（test.html）から見えるようにする =====
 // `function` 宣言はトップレベルで既に window に載るが、`const` は載らない。
 // ⚠ 段1 の採点（`gradeStereoPoints`）は**この1本だけが判定**なので、
 //   検査からもこの名前で叩けることが要る（別経路を作らないための見張りが `IW28`）
 if (typeof window !== 'undefined') {
+    window.ReferenceBook = ReferenceBook;
+    window.refSubscript = refSubscript;
+    window.refCarbonCount = refCarbonCount;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;
