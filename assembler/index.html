@@ -88,9 +88,13 @@
                      ⚠ **既存の .tool-group の id もクラスも1つも変えていない**。
                         出し分けは `#left-panel[data-palette]` 側の CSS だけでやる
                         ＝ 台本31本と回帰テストの契約はそのまま。
-                     ⚠ 出るのは 🧪自由 のときだけ（`data-modes`）。パズル・学習では
-                        setPalette('draw') に戻す（game.js） -->
-                <div id="palette-tabs" class="palette-tabs" data-modes="free" role="tablist">
+                     ⚠ 出るのは 🧪自由 のときだけ。パズル・学習では隠したうえで
+                        setPalette('draw') に戻す（game.js の setMode）。
+                     ⚠⚠ **`data-modes` は使わない** —— `Q1` が「`[data-modes]` を持つ要素は
+                        `#compound-info` の1つだけ」を不変条件として見張っている
+                        （右パネルを作り直さないための止め・第5段）。ここで2つ目を足すと、
+                        その止めが**機能を1つ足すたびに緩む**形になる。実測で赤くなって気づいた -->
+                <div id="palette-tabs" class="palette-tabs hidden" role="tablist">
                     <button id="btn-palette-draw" class="palette-tab active" data-palette="draw" role="tab" aria-selected="true" title="原子・環・官能基を置いて分子を組み立てます">✏️ 作図</button>
                     <button id="btn-palette-exp" class="palette-tab" data-palette="exp" role="tab" aria-selected="false" title="試薬の瓶を選んで、キャンバスの分子にかけます">🧪 実験</button>
                 </div>

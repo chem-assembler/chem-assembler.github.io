@@ -7401,7 +7401,11 @@ class Game {
         this.deactivateReactionSelectMode();
         // ★ 実験モードのパレットも 🧪自由 の中だけの持ち替え（DESIGN_experiment_mode.md §3-3）。
         //   ⚠ 🧩パズル・📚学習 へ移ったら**必ず作図の道具に戻す** —— 戻さないと、
-        //     お題の分子を組もうとした人の手元に原子ボタンが1つも無い画面が出る
+        //     お題の分子を組もうとした人の手元に原子ボタンが1つも無い画面が出る。
+        //   ⚠⚠ 出し入れに `data-modes` を使わない（`Q1` が「[data-modes] は #compound-info の
+        //     1つだけ」を見張っている・第5段）。ここは `.hidden` で自分で面倒を見る
+        const paletteTabs = document.getElementById('palette-tabs');
+        if (paletteTabs) paletteTabs.classList.toggle('hidden', mode !== 'free');
         if (mode !== 'free') this.setPalette('draw');
         // 学習モードを離れるときは異性体練習セッションを破棄する（P12-1）。
         // ★ 例外は1つ ——「**採点して終了した練習は 🧪自由 へ持って出る**」（v1392）。
