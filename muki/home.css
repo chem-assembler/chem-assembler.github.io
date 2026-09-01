@@ -1,0 +1,135 @@
+/* 色でみる無機化学 — 入口（3つの遊び方の一覧）
+ *
+ * ⚠ style.css（イオンスネーク）は使えない。あちらは body に
+ *   `height:100vh; overflow:hidden; display:flex; align-items:center` を敷いた
+ *   **盤の固定サイズ専用**の作りで、縦に伸びる一覧を載せると中身が画面外へ出る。
+ * ★ 作りは separation.css / tree.css と同じ「素直な1段組み」にそろえてある
+ *   （色・topbar・パネルの見え方を3枚で合わせるため）。
+ */
+
+:root {
+    --bg: #0f1723;
+    --panel: rgba(255, 255, 255, 0.06);
+    --line: rgba(255, 255, 255, 0.16);
+    --fg: #ecf0f1;
+    --dim: #a9b7c6;
+    --accent: #f1c40f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: linear-gradient(180deg, #0b1021 0%, #16202f 100%);
+    color: var(--fg);
+    font-family: "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+    line-height: 1.7;
+    -webkit-text-size-adjust: 100%;
+}
+
+#home {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 12px 14px 48px;
+}
+
+/* topbar は separation.css / tree.css と同じ形（ハブへ戻る道＋版表示） */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 14px;
+}
+.topbar .hubLink {
+    color: var(--dim);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;   /* 指で押せる下限。tests.js のタップ標的の検査に合わせる */
+    padding: 0 4px;
+}
+.topbar .hubLink:hover { color: #fff; }
+.topbar .version { margin-left: auto; color: #7f8c8d; font-size: 12px; }
+
+h1 {
+    font-size: 24px;
+    margin: 14px 0 4px;
+    letter-spacing: .02em;
+}
+
+.lead {
+    margin: 0 0 6px;
+    font-size: 15px;
+    color: var(--fg);
+}
+
+/* ⚠ 並びに意味があることを1行で言う。★ ここに解き筋は書かない
+   （型A・型B の画面と同じ縛り。出してよいのは「何をする画面か」だけ） */
+.order-note {
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: var(--dim);
+}
+
+.modes { list-style: none; margin: 0; padding: 0; }
+.modes li { margin: 0 0 12px; }
+
+/* 3枚の札は**同じ形・同じ大きさ**にする。
+   順序は付けるが、片方だけ小さくして「おまけ」に見せることはしない */
+a.mode {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 16px;
+    min-height: 44px;   /* 指で押せる大きさ（tests.js の下限 32px より広く取る） */
+}
+a.mode:hover { background: rgba(255, 255, 255, 0.11); border-color: rgba(255,255,255,0.3); }
+
+a.mode .step {
+    display: inline-block;
+    font-size: 12px;
+    color: #0b1021;
+    background: var(--accent);
+    border-radius: 999px;
+    padding: 0 9px;
+    margin-right: 8px;
+    font-weight: bold;
+    vertical-align: 2px;
+}
+a.mode .name { font-size: 18px; font-weight: bold; }
+a.mode .sub { display: block; font-size: 14px; color: var(--dim); margin-top: 4px; }
+
+/* 属性の札（何がやさしくて何が重いか）。⚠ 難易度の言い換えであって、解き筋ではない */
+a.mode .tag {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--dim);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1px 10px;
+    margin-top: 8px;
+}
+
+/* 色ごとに帯を変える（3つが並んだときに見分けられるように） */
+a.mode.snake { border-left-color: #f1c40f; }
+a.mode.snake .step { background: #f1c40f; }
+a.mode.sep   { border-left-color: #16a085; }
+a.mode.sep   .step { background: #16a085; color: #04211c; }
+a.mode.tree  { border-left-color: #5dade2; }
+a.mode.tree  .step { background: #5dade2; color: #06203a; }
+
+.foot {
+    margin-top: 28px;
+    font-size: 12px;
+    color: #7f8c8d;
+    text-align: center;
+}
+.foot a {
+    color: #7f8c8d;
+    display: inline-flex; align-items: center; min-height: 32px;
+}

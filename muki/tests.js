@@ -2,7 +2,7 @@
 //
 // ion-equation / ratio の test.html と同じ作法で、
 //   ① chemistry.js の純ロジック（DOM 非依存）
-//   ② 実アプリ（index.html）を iframe でそのまま動かして測る UI テスト
+//   ② 実アプリ（snake.html）を iframe でそのまま動かして測る UI テスト
 // を1ページに同居させる。
 //
 // このアプリは v1〜v6 のあいだ回帰テストが1本も無く、
@@ -1862,7 +1862,7 @@
     function runUI(inited) {
         var w = frame.contentWindow, d = frame.contentDocument;
         section('アプリの起動', uiOut);
-        if (!ok('index.html が iframe で初期化された（init() が走った）', inited, uiOut)) {
+        if (!ok('snake.html が iframe で初期化された（init() が走った）', inited, uiOut)) {
             endAll();
             return;
         }
@@ -2365,8 +2365,12 @@
 
         // ★ URL に UTM が正しく載っていること（1つずつ文字列で）
         var su = w.shareUrl();
-        ok('共有 URL が公開のアドレス（canonical）から作られている（localhost を配らない）: ' + su,
-            su.indexOf('https://chem.schoollenz.com/muki/') === 0, uiOut);
+        // ⚠⚠ 2026-09-02 に `/muki/` は入口（一覧）になった。★ ここを
+        //   `https://chem.schoollenz.com/muki/` の前方一致のままにすると、
+        //   **canonical を直し忘れて一覧を配っていても通ってしまう**（前方一致は snake.html も
+        //   一覧も同じだけ満たす）。★ 行き先まで固定する
+        ok('共有 URL がスネークの canonical から作られている（一覧ではなくゲームを配る）: ' + su,
+            su.indexOf('https://chem.schoollenz.com/muki/snake.html') === 0, uiOut);
         ok('utm_source=share（⚠ どこへ共有されたかは返らないので x / instagram に出し分けない）',
             su.indexOf('utm_source=share') >= 0 &&
             su.indexOf('utm_source=x') < 0 && su.indexOf('utm_source=instagram') < 0, uiOut);
