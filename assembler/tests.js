@@ -31216,7 +31216,14 @@
         g.setMode('puzzle');
         assert(panel.dataset.palette === 'draw', 'パズルへ移っても試薬のパレットのまま');
         assert(shown(D.querySelector('.atom-palette')), 'パズルモードで原子パレットが出ない');
+        assert(!shown(D.getElementById('palette-tabs')), 'パズルモードでパレットのタブが出ている');
+        // ⚠⚠ タブの出し入れに `data-modes` を使わない（`Q1` が「[data-modes] は1つだけ」を
+        //    不変条件として見張っている・第5段）。★ 実測で Q1 を割ったので、ここでも止める
+        assert([...D.querySelectorAll('[data-modes]')].length === 1,
+            `[data-modes] を持つ要素が増えている（${[...D.querySelectorAll('[data-modes]')].length}）` +
+            '——「右パネルを作り直さない」の止め（Q1）が機能追加のたびに緩む');
         g.setMode('free');
+        assert(shown(D.getElementById('palette-tabs')), '🧪自由 でパレットのタブが出ない');
         assert(panel.dataset.palette === 'draw', '自由へ戻ったら勝手に実験パレットになっている');
         // 知らない値は作図に落とす（前方互換）
         assert(g.setPalette('__nope__') === 'draw', '知らないパレット名が draw に落ちない');
