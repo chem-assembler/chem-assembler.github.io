@@ -118,6 +118,17 @@
     //   0回の本数が元に戻ることを確かめられる。結果ファイルの `comparableKey` にも載せる
     const GROUPS_ENABLED = !/[?&]nogroups=1/.test(location.search);
 
+    /* ★ 基点シードを外から固定する口: `audit.html?seed=1000`（v1497）。
+     * ⚠ **A/B は「同じ種の集合を両方で流す」でなければ成立しない**（`wilson95` の注記・
+     *   `auditRerun` の注記）。基点が `Date.now()` のままだと、否定対照（`?nogroups=1`）と
+     *   本走が**別の種の集合**になり、差が枝のせいか種のせいか分けられない。
+     * ⚠ 版をまたぐときは注意: `summon` の単品はライブラリの**添字**で引くので、
+     *   化合物が増減した版どうしでは同じ種でも別の分子が出る（レビュー §4-2b の落とし穴）。 */
+    const FIXED_SEED = (() => {
+        const m = /[?&]seed=(\d+)/.exec(location.search);
+        return m ? (Number(m[1]) >>> 0) : null;
+    })();
+
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
     // 再現可能な擬似乱数（mulberry32）
@@ -1020,7 +1031,9 @@
         report = window.__auditReport = {
             startedAt: new Date().toISOString(),
             finishedAt: null,
-            baseSeed: Date.now() >>> 0,
+            baseSeed: FIXED_SEED === null ? (Date.now() >>> 0) : FIXED_SEED,
+            // ⚠ 種を固定した実行はふだんの夜間監査と混ぜない（「毎晩ちがう種で回す」が本旨）
+            seedFixed: FIXED_SEED !== null,
             config: cfg,
             counts: { ok: 0, fail: 0, libraryChecks: 0, fuzzIterations: 0 },
             records: []
