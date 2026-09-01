@@ -18504,7 +18504,7 @@
             kinds[q.current.rel] = (kinds[q.current.rel] || 0) + 1;
             if (q.current.how === 'pair') usedPair++;
             const e = q.pool.find(x => x.name === q.current.nameA);
-            if (!e || e.centers !== 1 || e.fromRing || e.geoms !== 0) outOfScope++;
+            if (!e || e.centers !== 1 || e.fromRing || e.geoms !== 0 || !e.fullyRead) outOfScope++;
         }
         assert(outOfScope === 0, `範囲外の分子が ${outOfScope} 件出題された`);
         // ライブラリのペアを使わないのは答えが偏るから。該当する組は D/L の3組しかなく、
@@ -18513,6 +18513,42 @@
         assert(!kinds.diastereomer, '不斉炭素1個ではジアステレオマーは作れないはず');
         assert(kinds.same > 0 && kinds.enantiomer > 0,
             `「同じ」と「鏡像」の両方が出題されない（${JSON.stringify(kinds)}）`);
+
+        // (a2) 決定的な総当たり（2026-09-01）: 出題範囲の全分子 × 8通り（回転4 × 鏡映2）で、
+        //      読み直した関係が「同じ」か「鏡像」だけであること。紙面内の回転・鏡映は
+        //      **全部の中心のパリティを一斉に**反転するだけなので、ジアステレオマー
+        //      （一部の中心だけ違う）は原理的に作れない。上の60回は抽選なので、
+        //      範囲に紛れ込んだ1件（かつてのビニロン）を6回に1回しか赤くできなかった
+        const scope = q.pool.filter(e => e.centers === 1 && !e.fromRing && e.geoms === 0 && e.fullyRead);
+        assert(scope.length > 0, 'くさび図モードの出題範囲が空');
+        const badRel = [];
+        scope.forEach(e => {
+            const A = W.game.createTargetFromData({ target: e.target });
+            for (let t = 0; t < 4; t++) for (const m of [false, true]) {
+                if (t === 0 && !m) continue;
+                const B = W.game.createTargetFromData({ target: W.rotateTargetInPlane(e.target, t, m) });
+                const rel = W.StereoQuiz.relationOf(A, B);
+                if (rel !== 'same' && rel !== 'enantiomer') badRel.push(`${e.name} t=${t} m=${m} → ${rel}`);
+            }
+        });
+        assert(badRel.length === 0, `回した図の関係が同じ/鏡像以外になる: ${badRel.join('、')}`);
+
+        // (a3) 否定対照はビニロンを名指しで（v1488 で入った実在の事故例）。
+        //      不斉炭素3個のうち図から読めるのは鎖の CH-OH の1個だけ（アセタール環の
+        //      2個はハース形でないため読めない）＝ fullyRead=false で回す出題から外れる。
+        //      外しが要である証拠に、90°回すと環外の結合が縦になってハース環リーダーが
+        //      環の2中心を読み始め「ジアステレオマー」と誤読されることも突いておく
+        //      （読み手が回転に強くなってこの誤読が消えたら、外し自体を再検討してよい）
+        const vin = q.pool.find(e => e.name === 'ビニロン');
+        assert(vin, 'ビニロンがプールに居ない（否定対照が消えた）');
+        assert(vin.centers === 1 && !vin.fromRing && vin.geoms === 0,
+            'ビニロンの読みが変わり、否定対照の前提が崩れた');
+        assert(!vin.fullyRead, 'ビニロン（環内に読めない不斉炭素2個）が回す出題の範囲に入っている');
+        const vinRel = W.StereoQuiz.relationOf(
+            W.game.createTargetFromData({ target: vin.target }),
+            W.game.createTargetFromData({ target: W.rotateTargetInPlane(vin.target, 1, false) }));
+        assert(vinRel === 'diastereomer',
+            `ビニロン t=1 の誤読が再現しない（${vinRel}）＝この否定対照はもう成立していない`);
 
         // (b) 不斉炭素の4本は**くさび**で描かれ、素の線は残らない。
         //     向きは readAtomParityFromFischer と同じ軸判定（横=手前=塗り／縦=奥=破線）で、
