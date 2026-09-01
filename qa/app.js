@@ -913,7 +913,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=90')
+  fetch('data/exam_usage.jsonl?v=91')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -928,7 +928,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=90')
+  fetch('questions.json?v=91')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
