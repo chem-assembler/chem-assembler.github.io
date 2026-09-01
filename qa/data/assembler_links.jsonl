@@ -93,11 +93,11 @@
 {"code":"org.anal.apparatus-absorb","kind":"none","why":"塩化カルシウム管とソーダ石灰管という吸収剤の対応で、assembler は実験装置を扱わない"}
 {"code":"org.anal.apparatus-order","kind":"none","why":"吸収管をつなぐ順番とその理由（逆だと水も一緒に吸われる）で、装置の接続順は assembler にない"}
 {"code":"org.anal.apparatus-oxidant","kind":"none","why":"酸化銅(II) を完全燃焼のための酸化剤として使う目的の説明で、燃焼装置は assembler にない"}
-{"code":"org.anal.mass-c","kind":"none","why":"二酸化炭素の質量に 12/44 をかけるという計算手順で、分子を組んでも計算は見えない"}
-{"code":"org.anal.mass-h","kind":"none","why":"水の質量に 2/18 をかけるという計算手順で、分子を組んでも計算は見えない"}
-{"code":"org.anal.mass-o","kind":"none","why":"試料全体の質量から炭素と水素の質量を引くという差の計算で、分子の図とは関係しない"}
-{"code":"org.anal.composition-formula","kind":"none","why":"各元素の質量を原子量で割って最も簡単な整数比にする計算手順で、組成式は分子の図からは出てこない"}
-{"code":"org.anal.molecular-formula","kind":"none","why":"分子量が組成式の式量の何倍かで倍率を決める計算手順で、組成式と分子式の関係は数の上の話","note":"『分子式が決まっても構造は1つに決まらない』ことは異性体の項目（org.ali.iso-*）が isomer で担当。anal 側からそこへ橋を渡す価値はあるかもしれない"}
+{"code":"org.anal.mass-c","kind":"practice","label":"元素分析から炭素の質量を出す","open":"narrowing","panel":"ea","note":"2026-09-01 配線。ea パネルに値を入れると「C 2.400／H 0.400／O 3.200」と質量が名指しで出る（実機で確認: 試料6.0/CO₂8.8/H₂O3.6 mg）。12/44 を自分でかけたあと、画面の数と突き合わせられる"}
+{"code":"org.anal.mass-h","kind":"practice","label":"元素分析から水素の質量を出す","open":"narrowing","panel":"ea","note":"2026-09-01 配線。同じ ea パネルの「H 0.400」がこの項目。2/18 の計算結果と突き合わせる"}
+{"code":"org.anal.mass-o","kind":"practice","label":"元素分析から酸素の質量を出す","open":"narrowing","panel":"ea","note":"2026-09-01 配線。ea パネルの「O 3.200」は試料の質量から C・H を引いた差。引き算をしていることが3つ並ぶ表示で見える"}
+{"code":"org.anal.composition-formula","kind":"practice","label":"元素分析から組成式を出す","open":"narrowing","panel":"ea","note":"2026-09-01 配線。ea パネルが「物質量 C 2.00e-1／H 4.00e-1／O 2.00e-1 mol」→「組成式 CH2O（式量 30）」と、質量→物質量→整数比 の3段を全部見せる"}
+{"code":"org.anal.molecular-formula","kind":"practice","label":"組成式と分子量から分子式を出す","open":"narrowing","panel":"ea","note":"2026-09-01 配線。ea パネルが「分子式 C2H4O2（組成式の 2 倍）」と倍率を明示する。分子量の欄を空にすると倍率が決まらないことも試せる。★ 入試の出題数 94件（exam_usage.jsonl）＝ 有機の全316項目で最頻出"}
 {"code":"org.carbonyl.formyl","kind":"summon","label":"アセトアルデヒドを組んでホルミル基を見る","name":"アセトアルデヒド","note":"官能基検出で −CHO が名指しされる"}
 {"code":"org.carbonyl.ketone-def","kind":"summon","label":"アセトンを組んでカルボニル基の両側を見る","name":"アセトン","note":"C=O の左右がともに炭化水素基であること（アルデヒドとの違い）が図で見える"}
 {"code":"org.carbonyl.formula-isomer","kind":"isomer","label":"C₃H₆O の異性体を書き出す","formula":"C3H6O","note":"アルデヒド（プロピオンアルデヒド）とケトン（アセトン）が同じ分子式に並ぶのが本題"}
@@ -174,12 +174,12 @@
 {"code":"org.phenol.separation","kind":"none","why":"エーテル層と水層のあいだの移動（分液操作）と塩の水溶性は assembler に無い。分子の図では溶けている層を表せない"}
 {"code":"org.aroN.amino","kind":"summon","label":"アニリンを組み立てる","name":"アニリン"}
 {"code":"org.aroN.aniline-props","kind":"none","why":"油状液体・水に溶けにくい・空気中で酸化されて褐色になるという性質は assembler が表現しない（色の変化も扱わない）"}
-{"code":"org.aroN.aniline-base","kind":"none","why":"アニリンの塩基性と塩酸塩の生成は assembler が当面扱わない（電荷を持つ種と対イオンが未実装）","note":"★見直し候補。2026-08-06 ユーザー決定で当面保留 ——「イオンは最終的に assembler で扱いたい」ので ion-equation へは渡さない（渡すと後で引き取り直しになる）。足がかりは既にあり、chemistry.js の maxValencyOf が N の価標4本をアンモニウム型で許している。足りないのは結合を持たない対イオンをモデルとキャンバスがどう持つか"}
+{"code":"org.aroN.aniline-base","kind":"none","why":"アニリンの塩基性と塩酸塩の生成は、電荷を持つ種と対イオンが要る。assembler は分子1つの骨格を描く道具なので、これは反応式の側（ion-equation）で見せる型","note":"★見直し候補。待つ相手が変わった（2026-09-01・ユーザー決定「反応式を書く際には ion-equation」）。assembler が電荷を持つ種と対イオンを持てるようになるのを待つ必要はもう無く、待っているのは ion-equation にこの物質が収録されること。⚠ 実測（2026-09-01）: ion-equation に 酢酸・エタノール は在るが、アニリン・グリシン・フェノール・サリチル酸・ジアゾニウム塩は1件も無い。＝ 壁は「モデルの作り直し」から「データの追加」に下がった。収録されれば繋がる（旧: 2026-08-06 ユーザー決定で当面保留、chemistry.js の maxValencyOf が N の価標4本をアンモニウム型で許しているのが足がかり、と書いていた）"}
 {"code":"org.aroN.aniline-prep","kind":"none","why":"スズ（鉄）と塩酸による還元 −NO₂ → −NH₂ に対応する試薬が reactor の反応ルールに無いので、原料から生成物への変化を実行できない","note":"原料と生成物の分子はそれぞれ org.aro.nitration・org.aroN.amino で見える"}
 {"code":"org.aroN.aniline-detect","kind":"none","why":"さらし粉での赤紫色もアニリンブラックの黒色もどちらも色の変化で、assembler が表現しない"}
 {"code":"org.aroN.acetanilide","kind":"reaction","label":"アニリンのアセチル化を試す","name":"アニリン","reagent":"acetylation_anhydride","note":"reactor の acetylation_anhydride はアミンの −NH₂ を対象に含み、アニリン→アセトアニリドが実装の想定例としてコードに明記されている（生成物のアミドの N は再アセチル化されない対策も入っている）"}
 {"code":"org.aroN.diazotization","kind":"mechanism","label":"ジアゾ化の機構を見る","id":"aniline_diazotization"}
-{"code":"org.aroN.diazonium-decomp","kind":"none","why":"塩化ベンゼンジアゾニウムは assembler が当面扱わない（電荷を持つ種と対イオンが未実装）","note":"★見直し候補。2026-08-06 ユーザー決定で当面保留（イオンは最終的に assembler で扱う方針）。org.aroN.aniline-base・org.bio.amino-acid-amphoteric と同じ壁で、イオンが入れば3件まとめて拾い直せる。中身は2つ ——(1) 環に付いた N が C への単結合1本＋N への三重結合3本で N の価標3本を超える。既にある特例はニトロ基の電荷分離形とアンモニウム型（単結合4本・相手は C か H）の2つだけで N≡N⁺ はどちらにも当たらない、(2) 対イオン Cl⁻ に結合が無い（assembler レーンの回答）"}
+{"code":"org.aroN.diazonium-decomp","kind":"none","why":"塩化ベンゼンジアゾニウムは電荷を持つ種で、N≡N⁺ の価標と対イオン Cl⁻ を要する。分子の図ではなく反応式で見せる型","note":"★見直し候補。待つ相手が変わった（2026-09-01・ユーザー決定「反応式を書く際には ion-equation」）。assembler が電荷を持つ種と対イオンを持てるようになるのを待つ必要はもう無く、待っているのは ion-equation にこの物質が収録されること。⚠ 実測（2026-09-01）: ion-equation に 酢酸・エタノール は在るが、アニリン・グリシン・フェノール・サリチル酸・ジアゾニウム塩は1件も無い。＝ 壁は「モデルの作り直し」から「データの追加」に下がった。収録されれば繋がる（旧: assembler のイオン実装待ちとして org.aroN.aniline-base・org.bio.amino-acid-amphoteric と3件まとめて拾い直す、と書いていた。⚠ 価標の特例が要るという assembler 側の事情は、行き先が ion-equation になったので効かなくなった）"}
 {"code":"org.aroN.coupling","kind":"mechanism","label":"ジアゾカップリングの機構を見る","id":"diazo_coupling","note":"生成物の橙赤色は見えないが、2つの環が −N=N− でつながる過程は機構アニメで見える"}
 {"code":"org.aroN.azo-dye","kind":"summon","label":"アゾベンゼンを組み立てる","name":"アゾベンゼン","note":"アゾ基 −N=N− が2つの環をつなぐ形は見えるが、色をもつ理由（共役）と染料としての用途は見えない"}
 {"code":"org.aroN.benzoic","kind":"summon","label":"安息香酸を組み立てる","name":"安息香酸","note":"白色結晶・弱酸性・防腐剤という部分は見えない。カルボキシ基が環に直接結合している構造を見せる"}
@@ -228,7 +228,7 @@
 {"code":"org.bio.amino-acid-def","kind":"summon","label":"α-アミノ酸の形を組み立てる","name":"アラニン","note":"同じ1個の炭素にアミノ基・カルボキシ基・水素・側鎖 R が結合する形が見える。R が見える最小の例としてアラニンを選んだ（グリシンは R が H なので org.bio.amino-acid-chirality 側の話）"}
 {"code":"org.bio.amino-acid-sidechain","kind":"summon","label":"グルタミン酸の側鎖を見る","name":"グルタミン酸","note":"側鎖にカルボキシ基を余分にもつ＝酸性アミノ酸であることが見える。塩基性アミノ酸のリシンも見せたいが1つに絞った"}
 {"code":"org.bio.amino-acid-chirality","kind":"practice","label":"アラニンのくさび図で不斉炭素を見る","open":"stereo","name":"アラニン","note":"グリシンだけ不斉炭素をもたない理由（α位に水素が2個）はアラニンとグリシンを見比べると分かるが、summon は分子を1つしか指せないので、対のうち不斉炭素をもつ側（アラニン）を出す。⚠ 分子を添えないと open=stereo はトーストだけで終わる（2026-08-21 実測）"}
-{"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオン（−COO⁻ と −NH₃⁺）は assembler が当面扱わない（電荷を持つ種が未実装）","note":"★見直し候補。2026-08-06 ユーザー決定で当面保留（イオンは最終的に assembler で扱う方針）。アンモニウム型の N は既に価標4本を許しているので、対イオンの持ち方が入れば近い"}
+{"code":"org.bio.amino-acid-amphoteric","kind":"none","why":"双性イオン（−COO⁻ と −NH₃⁺）は電荷を持つ種で、強酸・強塩基と塩をつくるところまでが知識の本体。分子1つの骨格ではなく、反応式で見せる型","note":"★見直し候補。待つ相手が変わった（2026-09-01・ユーザー決定「反応式を書く際には ion-equation」）。assembler が電荷を持つ種と対イオンを持てるようになるのを待つ必要はもう無く、待っているのは ion-equation にこの物質が収録されること。⚠ 実測（2026-09-01）: ion-equation に 酢酸・エタノール は在るが、アニリン・グリシン・フェノール・サリチル酸・ジアゾニウム塩は1件も無い。＝ 壁は「モデルの作り直し」から「データの追加」に下がった。収録されれば繋がる（旧: アンモニウム型の N は既に価標4本を許しているので対イオンの持ち方が入れば近い、と書いていた）"}
 {"code":"org.bio.zwitterion-ph","kind":"none","why":"pH によって陽イオン・双性イオン・陰イオンの割合が動く平衡の話で、電荷も pH も assembler が持たない量"}
 {"code":"org.bio.isoelectric-point","kind":"none","why":"等電点は pH の値であり、電圧をかけたときどちらの電極へ動くか（電気泳動）も assembler では扱えない"}
 {"code":"org.bio.amino-acid-crystal","kind":"none","why":"結晶中で双性イオンが静電気的に引き合うこと・融点の高さ・水への溶けやすさは、いずれも分子1個の作図では見えない"}
@@ -296,12 +296,12 @@
 {"code":"org.anal.equivalent-h","kind":"summon","label":"1,3,5-トリメチルベンゼン（対称性の高い三置換体）を見る","name":"メシチレン","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
 {"code":"org.ali.alkane-branch-bp","kind":"isomer","label":"炭素数4のアルカン（直鎖と枝分かれ）を書き出して形を見比べる","formula":"C4H10","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
 {"code":"org.aro.orientation","kind":"reaction","label":"トルエンをニトロ化して置換できる位置を見る","name":"トルエン","reagent":"mixed_acid","note":"2026-08-10 追加（教科書の発展欄48件と296項目の突き合わせで未収録と判明）"}
-{"code":"org.bio.amino-acid-polyprotic","kind":"none","why":"電離平衡は水溶液中の量の話で、assembler は分子1つの骨格しか扱わないため段階が見えない","note":"★見直し候補。2026-08-10 追加（教科書の発展欄との突き合わせ）。イオンを扱えるようになれば、双性イオンや陽イオン・陰イオンの形は見せられる（org.bio.amino-acid-amphoteric と同じ壁）"}
+{"code":"org.bio.amino-acid-polyprotic","kind":"none","why":"電離平衡が二段か三段かは、水溶液中で何が H⁺ を出し入れするかの話。分子1つの骨格では段階が見えない","note":"★見直し候補。待つ相手が変わった（2026-09-01・ユーザー決定「反応式を書く際には ion-equation」）。assembler が電荷を持つ種と対イオンを持てるようになるのを待つ必要はもう無く、待っているのは ion-equation にこの物質が収録されること。⚠ 実測（2026-09-01）: ion-equation に 酢酸・エタノール は在るが、アニリン・グリシン・フェノール・サリチル酸・ジアゾニウム塩は1件も無い。＝ 壁は「モデルの作り直し」から「データの追加」に下がった。収録されれば繋がる（旧: イオンを扱えるようになれば双性イオンや陽イオン・陰イオンの形は見せられる、と書いていた）"}
 {"code":"org.aro.ortho-hbond","kind":"summon","label":"o-ニトロフェノールを組み立てて、隣り合う2つの置換基を見る","name":"o-ニトロフェノール","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）。分子内水素結合そのものは描けないが、置換基が隣り合っていることは見える"}
 {"code":"org.phenol.methyl-ether","kind":"summon","label":"アニソール（フェノールのメチルエーテル）を組み立てる","name":"アニソール","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）。フェノールと見比べると、ヒドロキシ基の水素がメチル基に変わっていることが見える"}
 {"code":"org.poly.end-group","kind":"none","why":"末端基の定量は溶液中の量の話で、assembler は1分子の骨格しか扱わないため本数を数える操作が無い（org.poly.average-mw と同じ壁）","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）"}
 {"code":"org.anal.mw-from-solution","kind":"none","why":"浸透圧や凝固点降下は溶液中の粒子の数の話で、assembler は溶液も測定も扱わない","note":"2026-08-11 追加（入試解析レーンの発注②・手筋81件から出た未収録知識）"}
-{"code":"org.clue.nitrogen-parity","kind":"none","why":"分子量の偶奇と窒素の数の関係は数の規則で、分子を1つ組んでも見えない。絞り込みモードの元素分析パネルがこの規則を使って候補の分子式を絞るが、あれは分子式を決める道具で、規則そのものを見せる画面ではない"}
+{"code":"org.clue.nitrogen-parity","kind":"practice","label":"分子量から窒素の数を絞る","open":"narrowing","panel":"ea","note":"2026-09-01 配線。ea パネルが「窒素則: 分子量が偶数 → 窒素の数は偶数（0個・2個…）※ハロゲンを含まないとき」と、規則そのものを1行で出す（実機で確認）。⚠ 旧 why の「規則そのものを見せる画面ではない」は誤りだった"}
 {"code":"org.clue.diethyl-ether-bp","kind":"summon","label":"ジエチルエーテルを呼び出す","name":"ジエチルエーテル","note":"沸点が低い理由（分子間で水素結合をつくらない）は構造を見れば分かる。同じ分子式の 1-ブタノールと見くらべられるとなおよい"}
 {"code":"org.clue.acetic-mp","kind":"summon","label":"酢酸を呼び出す","name":"酢酸","note":"二量体そのものは描けないが、カルボキシ基が2本の水素結合をつくれる形は構造から読める"}
 {"code":"org.clue.cho-ratio","kind":"summon","label":"マレイン酸を呼び出す","name":"マレイン酸","note":"シス形であることが図で見える。フマル酸と見くらべると、加熱で無水物になれるのがどちらかが分かる"}
@@ -313,4 +313,4 @@
 {"code":"org.clue.ester-smell","kind":"summon","label":"酢酸エチルを呼び出す","name":"酢酸エチル","note":"エステル結合の形が見える。カルボキシ基が残っていないので中性、という読みにつながる"}
 {"code":"org.clue.amino-acid-mp","kind":"none","why":"融点が高い理由は結晶中の双性イオンどうしの静電気的な引力で、これは結晶の話。分子を1つ組んでも見えない（アプリは1分子の構造式しか描かない）"}
 {"code":"org.clue.amino-acid-mw-parity","kind":"summon","label":"リシンを呼び出す","name":"リシン","note":"側鎖の先にもアミノ基があること（＝窒素2個）が図ではっきり見える。これが分子量を偶数にしている"}
-{"code":"org.clue.order","kind":"none","why":"どの手がかりから使うかは解く順番の話で、分子を1つ組んでも見えない。順番そのものを体験させるなら絞り込みモード（実験カードを積む順で効きが変わる画面）","note":"2026-09-01 更新。『あれは ?open= で開ける先に入っていない』は解消した ＝ assembler 側に ?open=narrowing（＋?panel=）の受け口ができた（EX1）。⚠ ここを kind:practice に変えるのは qa 側の別作業（tests.js の OPEN 一覧に narrowing を足し、gen_links.js で questions.json の link を作り直す。panel を渡す欄は棚卸し表の schema にまだ無い）"}
+{"code":"org.clue.order","kind":"practice","label":"実験カードを積んで絞り込む","open":"narrowing","panel":"enum","note":"2026-09-01 配線。実験カードの棚（nw-palette）と積んだカード（nw-stack）は第1タブ「構造を数える」の中にあるので panel=enum を指定する。積む順で残る候補の減り方が変わる ＝ 順番そのものが体験できる"}

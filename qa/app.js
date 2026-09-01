@@ -448,7 +448,13 @@ function slTrack(name, params) {
       //    **脂肪族（酢酸エチル）と芳香族（安息香酸メチル）にまたがる**ので、
       //    分野で絞ると教科書の定番が半分落ちる。ここも値の意味は向こうの語彙で、運ぶだけ。
       //    ⚠ この `link.group` は項目の `p.group`（習得マップの群）とは別物
-      case 'practice':  return { open: link.open, summon: summonKey(link),
+      //
+      // ⚠ **`panel` も渡す**（2026-09-01。assembler v1494 の受け口⑦ ＝ 絞り込みモードのタブ）。
+      //    これで有機の**計算**（元素分析）が繋がる —— `?open=narrowing&panel=ea` で
+      //    「元素分析から」のタブが選ばれた状態で開く。`panel` を落とすと既定の
+      //    「構造を数える」が開き、**リンクの札が約束した画面に着かない**。
+      //    値の意味（`enum|allot|frag|ea`）は向こうの語彙で、こちらは運ぶだけ
+      case 'practice':  return { open: link.open, summon: summonKey(link), panel: link.panel,
                                  scope: link.scope, field: link.field, group: link.group };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
     }
@@ -913,7 +919,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=91')
+  fetch('data/exam_usage.jsonl?v=92')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -928,7 +934,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=91')
+  fetch('questions.json?v=92')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
