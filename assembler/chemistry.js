@@ -3893,8 +3893,16 @@ function iupacAlkylName(adj, haloAdj, root, blocked) {
         const nm = _iupacAssemble(IUPAC_YL_STEM[chain.length], subs, chain.length === 1);
         if (!nm) return;
         const locs = subs.map(s => s.loc).sort((a, b) => a - b);
-        if (!best || _iupacCmpLocants(locs, best.locs) < 0 ||
-            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)) best = { nm, locs, chain, subs };
+        // 同点（同じ長さ）の鎖の決め方: ★ **置換基数が最多 → 置換基位置最小 → 辞書順**。
+        //   `iupacNameDetail` の `named.sort` と同じ並び（主鎖側は先に OH位置・多重結合位置を見るが、
+        //   基の側は付け根が必ず C1 で、枝は飽和なので、その2つは常に同点 ＝ ここから始まる）。
+        //   根拠: 1979 規則 A-2.6(a)「側鎖が最も多い鎖」／ 2013 勧告 P-46.1 (k)「置換基が最多」→ (l)「位置最小」→ (m)
+        //   （P-46.1.11 の例 `2-hydroxy-1-methylethyl` [not `1-(hydroxymethyl)ethyl`] が同じ形）。
+        //   ⚠ 2026-09-02 まで「位置最小 → 辞書順」だけだった（C₆ 以上の基で初めて割れる。C₁〜C₅ は同点候補の
+        //   枝数が常に等しいので影響なし。`ID11`／`AK` の否定対照が見張る）
+        if (!best || subs.length > best.subs.length ||
+            (subs.length === best.subs.length && (_iupacCmpLocants(locs, best.locs) < 0 ||
+            (_iupacCmpLocants(locs, best.locs) === 0 && nm.localeCompare(best.nm) < 0)))) best = { nm, locs, chain, subs };
     });
     // 入れ子の候補が1本でもあれば、名前を付けられる候補が残っていても**どちらを IUPAC が採るか決められない**
     if (nested || !best) return null;
