@@ -562,6 +562,31 @@
                     <div id="compound-formula">—</div>
                 </div>
             </div>
+
+            <!-- 📖 資料（参考書）ペイン（DESIGN_reference_book.md §4-3「案A（PC分割）＋案C（スマホ タブ）」）。
+                 ⚠ **DOM は1つ**。「横に並べる／重ねて切り替える」の振り分けは style.css の
+                    `@media (min-width: 1000px)` だけでやる（JS で端末を見て切り替えると、
+                    回転とウィンドウ変形のたびに状態を持ち直すことになる。設計書 §4-3）。
+                 ⚠ **既定で閉じている**（`.hidden`）。参考書は「見ながら解くもの」ではなく
+                    「わからなければ振り返るもの」＝ 開くのに一手かかるのは欠点ではない
+                    （DEVELOPMENT.md「第3の道は却下」原則2）。
+                 ⚠ **中身は learn.js が組み立てる**。ここには器だけを置く ——
+                    表の行を HTML に書くと「どこかの表を写す」余地がその場でできる（§1-2）。
+                 ⚠ z-index は 900 ＝ **モーダル（1000）より下**。重ねて出るのはキャンバスの上までで、
+                    📚 学習・ヘルプなどのモーダルは資料の上に開ける -->
+            <aside id="reference-pane" class="reference-pane hidden" aria-label="資料（参考書）">
+                <div class="ref-head">
+                    <!-- スマホでは資料がキャンバスを覆う ＝ 行き来はこのタブで。
+                         PC（≥1000px）では左右に並ぶので、タブは CSS で隠して ✕ だけ残す -->
+                    <div class="ref-tabs" role="tablist">
+                        <button id="btn-ref-tab-doc" class="ref-tab active" role="tab" aria-selected="true">📖 資料</button>
+                        <button id="btn-ref-tab-canvas" class="ref-tab" role="tab" aria-selected="false">🧪 キャンバス</button>
+                    </div>
+                    <span id="ref-title" class="ref-title"></span>
+                    <button id="btn-ref-close" class="ref-close" title="資料を閉じる" aria-label="資料を閉じる">✕</button>
+                </div>
+                <div id="ref-body" class="ref-body"></div>
+            </aside>
         </main>
     </div>
 
@@ -908,6 +933,20 @@
                              「ステップ送り・終わるときは帯のやめる」は**帯が出た瞬間に見える** ＝ 文で言う必要がない。
                              ⚠ 案内が**一覧より上**にある条件（v1439）は #rx-viewer-note が引き継いでいる -->
                         <div id="reaction-list"></div>
+                    </div>
+                </details>
+                <!-- 📖 資料（参考書）。DESIGN_reference_book.md §5・DEVELOPMENT.md「B. 参考書化」。
+                     ⚠ **`<details>` は末尾に足す**。既存4つ（#learn-acc-quiz / #learn-acc-practice /
+                        #learn-acc-narrowing / #reaction-box）の id も並び順も1つも動かさない
+                        ＝ EP7 が見張っている不変条件はそのまま（数だけ 4→5・見出し 2→3 になる）。
+                     ⚠ 入口をここに置くのは、参考書が「既定で開いていない・振り返るもの」だから
+                        （DEVELOPMENT.md 原則2）。リボンにタイルは足さない —— 9枠でちょうど埋まっていて
+                        10枠目は 320px で溢れる（DESIGN_ribbon_consolidation.md §1-1） -->
+                <div class="quiz-group-head">読んで確かめる<span>資料の表を見てから、キャンバスで試します</span></div>
+                <details id="learn-acc-reference" class="learn-acc">
+                    <summary>📖 資料（参考書）</summary>
+                    <div class="learn-acc-body">
+                        <div id="reference-list"></div>
                     </div>
                 </details>
             </div>

@@ -2969,3 +2969,189 @@ b.em { font-weight: 700; color: var(--neon-blue); }
     margin-bottom: 4px;
     text-align: center;
 }
+
+/* ===================================================================
+   📖 資料（参考書）ペイン —— DESIGN_reference_book.md §3-3 / §4-3
+
+   **DOM は1つ、振り分けは CSS だけ**（設計書 §4-3）:
+     [基底]                  … 重ねて切り替える（＝タブ）。キャンバスの面積は 1px も減らない
+     @media (min-width:1000px) … 左右に分割。資料は最大 380px
+
+   ★ 380px の根拠は実測（設計書 §3-2 実測④）: 1280×800 で 380px の資料ペインを置いても
+     デカン 34.7px・スクロース 30.0px で「読めない大きさ」の床（結合 28px）を保つ。
+     **440px にするとスクロース 27.0px で床を割る** ＝ 上限は 380px。
+   ★ 閾値 1000px は**新設していない**。立体ビューの2カラム化（上の @media (min-width: 1000px)）が
+     既に使っている値をそのまま借りる（閾値が増えるほど端末ごとの実測の組み合わせが増える）。
+
+   ⚠ **スマホで分割してはいけない**（設計書 §3-2 実測③）: 812×375 横に 240px の資料ペインを
+     置くとデカン 18.4px ＝ **375px 縦で分割しない 18.9px より悪い**。
+     資料ペインの最低幅（240px）を払った時点で、横向きの取り分（+5.8px）を使い切って足が出る。
+   =================================================================== */
+.reference-pane {
+    /* 基底＝重ねる。ヘッダー（50px）の下いっぱい。z-index 900 は**モーダル（1000）より下**
+       ＝ 資料の上に 📚 学習・ヘルプが開ける（.summon-ac の 1200・収録の 10000 とも競合しない） */
+    position: fixed;
+    top: 50px; left: 0; right: 0; bottom: 0;
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #0d1017;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+.ref-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.04);
+    flex: 0 0 auto;
+}
+.ref-tabs { display: flex; gap: 6px; }
+.ref-tab {
+    /* タップ標的の床は 32px（RB2 / RB15 が全端末で見張っている線） */
+    min-height: 32px;
+    padding: 5px 10px;
+    font-family: var(--font-main);
+    font-size: 12.5px;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.ref-tab.active {
+    color: #e0b0ff;
+    border-color: var(--neon-purple);
+    background: rgba(155, 89, 182, 0.18);
+}
+.ref-title {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-left: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ref-close {
+    flex: 0 0 auto;
+    min-width: 32px; min-height: 32px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.ref-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 16px 24px;
+    text-align: left;
+}
+.ref-body h3 {
+    font-size: 15px;
+    color: #e0b0ff;
+    margin: 0 0 10px;
+}
+.ref-p {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+/* 表そのもの。⚠ **10行そろって初めて規則が見える**ので、絞り込みも折りたたみも付けない
+   （DEVELOPMENT.md「参照は全体像で行う。部分を切り出して渡さない」） */
+.ref-table-wrap { overflow-x: auto; margin: 0 0 12px; }
+.ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-table th, .ref-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    white-space: nowrap;
+}
+.ref-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-table td.ref-c { text-align: right; color: var(--text-muted); }
+/* ⚠ ここは **--font-code を使わない**。装飾等幅では C が ⊏ に見えて読み取りづらい
+   （実機 375px で確認）。資料は読み物なので本文と同じ字で出す */
+.ref-table td.ref-formula { letter-spacing: 0.02em; }
+.ref-cap { font-size: 11.5px; color: var(--text-muted); margin: 0 0 6px; }
+/* 例題（無料）。★ **新しい採点は作らない** —— 押すと既存のパズルのお題
+   （stages.json の `target` 照合）へ渡すだけ（設計書 §5-2 の (b)） */
+.ref-example {
+    border: 1px solid var(--neon-purple);
+    border-radius: 10px;
+    padding: 12px;
+    background: rgba(155, 89, 182, 0.10);
+}
+.ref-example h4 { margin: 0 0 8px; font-size: 13px; color: #e0b0ff; }
+.ref-try {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    font-family: var(--font-main);
+    font-size: 13.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.ref-note { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 8px 0 0; }
+.ref-index-btn {
+    display: block;
+    width: 100%;
+    min-height: 36px;
+    padding: 8px 10px;
+    font-family: var(--font-main);
+    font-size: 13px;
+    text-align: left;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.25));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.ref-index-btn span { display: block; font-size: 11.5px; color: var(--text-muted); }
+
+/* モバイルはヘッダーが 44px（main の height 計算と同じ） */
+@media (max-width: 899px) {
+    .reference-pane { top: 44px; }
+}
+
+/* ★ PC だけ分割。ここでだけ資料が `main` の flex の1列になる */
+@media (min-width: 1000px) {
+    .reference-pane {
+        position: relative;
+        top: auto; left: auto; right: auto; bottom: auto;
+        z-index: auto;
+        /* ★ 天井は **340px**（1000px 付近では 27vw で取りすぎない ＝ 1000px で 270px）。
+           ⚠ 設計書 §3-2 実測④ の「380px なら デカン 34.7px」は **`main` の gap 15px を
+              数に入れていなかった**（このレーンの実測。380px のペインを置くと
+              キャンバスは 589 ではなく **558px**、デカン **32.9px**・スクロース **28.4px**）。
+              床は 28px なので 380 では余裕が 0.4px しか無い ＝ 天井を 340 に下げて、
+              設計書が意図した余裕（デカン 34.3・スクロース 30.4）に戻す。 */
+        flex: 0 0 clamp(260px, 27vw, 340px);
+        max-width: 340px;
+        border: 1px solid var(--border-color);
+        border-top: 1px solid var(--border-color);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    /* 左右に並んでいる ＝ 行き来する必要が無いのでタブは出さない（✕ だけ残す） */
+    .ref-tabs { display: none; }
+}
