@@ -796,7 +796,7 @@
     function reachLine(s) {
         if (!s) return '';
         return `反応への到達: 分子を変えられる ${s.rulesExecutable} 本のうち ` +
-            `**${s.rulesApplied} 本**で実際に分子が変わった（★ 0回 ${s.rulesZeroApplied} 本` +
+            `${s.rulesApplied} 本で実際に分子が変わった（★ 0回 ${s.rulesZeroApplied} 本` +
             `${s.rulesZeroApplied ? '：' + s.zeroAppliedIds.join(', ') : ''}）` +
             `／react の空振り ${s.missedPercent}%（${s.missed}/${s.attempts}）` +
             `／押した ${s.pressed} 回の内訳 分子を変える札 ${s.moleculeChangingPercent}%・` +
