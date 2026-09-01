@@ -627,7 +627,9 @@ const SHARE_UTM = 'utm_source=share&utm_medium=social&utm_campaign=muki_snake_re
 /** 共有する URL。⚠ ページが名乗っている canonical を使う（localhost のアドレスを配らない） */
 function shareUrl() {
     const link = document.querySelector('link[rel="canonical"]');
-    const base = (link && link.getAttribute('href')) || 'https://chem.schoollenz.com/muki/';
+    // ⚠ 2026-09-02: 予備の値も `/muki/snake.html` へ。`/muki/` は入口（3つの一覧）になったので、
+    //   canonical が消えたときにここが効くと**ゲームではなく一覧を配る**ことになる
+    const base = (link && link.getAttribute('href')) || 'https://chem.schoollenz.com/muki/snake.html';
     return base + (base.indexOf('?') >= 0 ? '&' : '?') + SHARE_UTM;
 }
 

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。除外の作法は index.html と同じ（そちらに理由を書いた）。
+     ⚠ 2026-09-02 にこのページが index.html から snake.html へ移ったとき、
+       **長い理由書きは index.html（＝ muki の入口）に置いたまま**にした
+       —— separation.html / tree.html が「index.html にある」と書いて指しているため -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+    <meta name="robots" content="noai, noimageai">
+    <title>イオンスネーク｜色でみる無機化学 — SchoolLenz</title>
+    <meta name="description" content="陽イオン・陰イオンをつないで沈殿の色を当てるアクションゲーム。硫化物とpHの特殊ルールやイオン図鑑つき。無機化学を遊んで覚える『色でみる無機化学』のミニゲーム。">
+    <!-- ⚠ 2026-09-02 に `/muki/` から `/muki/snake.html` へ移した（入口の整理・案あ）。
+         ★ **canonical を直すのを忘れないこと** —— game.js の shareUrl() はこの1行を読んで
+           共有 URL を作るので、ここが古いと**新しく共有された URL まで一覧へ着地する**。
+         ★ 旧 `/muki/` に着地する共有 URL（utm_campaign=muki_snake_result）は、
+           新しい index.html の受け口がここへ送り直す -->
+    <link rel="canonical" href="https://chem.schoollenz.com/muki/snake.html">
+    <!-- シェアされたときのカード。画像は化学レンズ共通（brand/og-chem.png）。
+         **絶対URLで書くこと** — SNS のクローラは相対パスを解決しない -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SchoolLenz">
+    <meta property="og:title" content="イオンスネーク｜色でみる無機化学">
+    <meta property="og:description" content="陽イオンと陰イオンをつないで、沈殿ができたらゲームオーバー。硫化物と液性の特殊ルールつき。沈殿の色と条件を、遊びながら覚える無料のミニゲームです。">
+    <meta property="og:url" content="https://chem.schoollenz.com/muki/snake.html">
+    <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="style.css?v=30">
+    <style>
+        /* Dict Modal Styles */
+        #dict-modal {
+            /* fixed で「いま見えている画面」に開く。absolute だと縦積みレイアウトで
+               下までスクロールしてから開いたとき、モーダルがページ先頭に張り付いて
+               画面の外に出る（375px 実測で下端 110px しか見えなかった）。
+               #rotate-hint・#game-over と同じ作法 */
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 200;
+        }
+        #dict-modal.hidden { display: none; }
+        .dict-box {
+            background: rgba(30, 39, 46, 0.95); padding: 30px; border-radius: 15px;
+            width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto;
+            border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .dict-box h2 { font-family: 'Orbitron', sans-serif; font-size: 32px; text-align: center; margin-bottom: 20px; color: #f1c40f; }
+        .dict-section { margin-bottom: 25px; }
+        .dict-section h3 { border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; margin-bottom: 15px; color: #bdc3c7; }
+        .dict-item { display: inline-block; padding: 8px 15px; margin: 5px; border-radius: 5px; font-weight: bold; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); font-size:18px; }
+        /* イオン1件＝タイル（ゲーム用の色）＋その下の「水溶液: ○○」（実際の色）。
+           取り違えを防ぐのが目的なので、この2つは必ず縦に並べて同時に見せる */
+        .dict-ion { display: inline-block; vertical-align: top; text-align: center; margin: 5px 8px 12px; }
+        .dict-ion .dict-item { display: block; margin: 0; }
+        .dict-aq { font-size: 12px; color: #bdc3c7; margin-top: 4px; white-space: nowrap; }
+        /* 教科書の「無色」と実験で見える色が食い違うイオン（S²⁻）だけに付く注記。
+           .dict-aq の nowrap は効かせず折り返す。1件だけ幅を取るので、この札は
+           他より広くしてよい（vertical-align:top なので隣は上でそろう） */
+        .dict-ion.hasNote { max-width: 300px; }
+        /* 札を広げるのは**注記を折り返すため**であって、タイルを広げるためではない。
+           .dict-item は display:block なので放っておくと札の幅いっぱい（278px）に伸び、
+           S²⁻ だけ横長の帯になって他のタイルと不揃いになる。中身の幅に戻す */
+        .dict-ion.hasNote .dict-item { display: inline-block; }
+        .dict-aq-note { font-size: 11px; color: #95a5a6; line-height: 1.45;
+                        margin-top: 4px; white-space: normal; text-align: left; }
+        .dict-note {
+            font-size: 13px; line-height: 1.6; color: #ecf0f1; margin: 0 0 20px;
+            background: rgba(0,0,0,0.4); border-left: 4px solid #f1c40f;
+            padding: 10px 14px; border-radius: 0 8px 8px 0;
+        }
+        .dict-note strong { color: #f1c40f; }
+
+
+        #btn-dict {
+            margin-bottom:15px; padding:12px; font-weight:bold; background:#2980b9; 
+            color:#fff; border:2px solid #85c1e9; border-radius:8px; cursor:pointer; 
+            width:100%; font-size:16px; transition:0.2s; box-shadow:0 0 10px rgba(41,128,185,0.5);
+        }
+        #btn-dict:hover { background:#3498db; }
+        #btn-dict:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 系統分離モード（型B）への入口。⚠ ゲームの操作を邪魔しない位置に置く
+           （左サイドバーの先頭・図鑑ボタンの下）。スネークの盤には触らない */
+        #link-sep {
+            display:block; margin-bottom:15px; padding:12px; font-weight:bold;
+            background:#16a085; color:#fff; border:2px solid #48c9b0; border-radius:8px;
+            text-align:center; text-decoration:none; font-size:15px;
+        }
+        #link-sep:hover { background:#1abc9c; }
+        #link-sep small { display:block; font-weight:normal; font-size:12px; color:#d5f5f0; }
+
+        /* 系統分離モード（型A）への入口。⚠ 型B の隣に並べる（同じ単元の別の遊び方） */
+        #link-tree {
+            display:block; margin-bottom:15px; padding:12px; font-weight:bold;
+            background:#2471a3; color:#fff; border:2px solid #5dade2; border-radius:8px;
+            text-align:center; text-decoration:none; font-size:15px;
+        }
+        #link-tree:hover { background:#2980b9; }
+        #link-tree small { display:block; font-weight:normal; font-size:12px; color:#d6eaf8; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Sidebar Left -->
+        <div class="sidebar" id="sidebar-left">
+            <button id="btn-dict">📖 イオン図鑑を開く</button>
+            <a id="link-sep" href="separation.html">🧪 イオンをつきとめる<small>容器に1種類だけ入っているイオンを当てる</small></a>
+            <a id="link-tree" href="tree.html">🌳 すべてのイオンを分ける<small>手順を組み立てて、混ざったイオンを分けきる</small></a>
+
+            <h2>Game Mode</h2>
+            <div class="mode-select" style="margin-bottom: 15px;">
+                <button id="btn-mode-classic" class="active" style="padding: 10px; font-size: 14px;">Classic<br><small>(通常)</small></button>
+                <button id="btn-mode-sulfide" style="padding: 10px; font-size: 14px; background: #8e44ad; border-color: #9b59b6;">Sulfide<br><small>(pH変化特化)</small></button>
+            </div>
+            
+            <h2>Difficulty</h2>
+            <div class="mode-select" style="margin-bottom: 15px;">
+                <button id="btn-easy" class="active">EASY</button>
+                <button id="btn-expert">EXPERT</button>
+            </div>
+            
+            <h2>Player Mode</h2>
+            <div class="mode-select">
+                <button id="btn-cation" class="active">陽イオン（頭）</button>
+                <button id="btn-anion">陰イオン（頭）</button>
+            </div>
+            
+            <h2 style="margin-top: 20px;">Rules</h2>
+            <!-- 【この向きを間違えないこと】このゲームは **沈殿ができた瞬間にゲームオーバー**
+                 （game.js の update(): `if (precipitate) die(...)`）。つまり食べてよいのは
+                 「溶けたまま」＝沈殿しない液性のほう。ZnS・FeS は酸性で溶けるので、
+                 Zn²⁺・Fe²⁺ を食べられるのは**酸性**のときだけ。
+                 span の data-ph は回帰テスト（tests.js）が chemistry.js の実装と
+                 突き合わせるための札。文・札・実装の3つがずれたら test.html が落ちる。 -->
+            <p style="font-size: 13px; line-height: 1.4; color: #bdc3c7;">
+                【Classic】逆電荷を食べて成長！<br><br>
+                【Sulfide】頭はS²⁻固定。背景が<span id="rule-safe-ph" data-ph="ACIDIC" style="color:#e74c3c">赤色(酸性)</span>の時だけZn²⁺やFe²⁺が食べられる特殊サバイバル！<br>
+                <span style="font-size:12px">（ZnS・FeS は酸性では溶けるので沈殿しない。<span id="rule-danger-ph" data-ph="BASIC" style="color:#3498db">青色(塩基性)</span>のときに食べると沈殿ができてゲームオーバー）</span>
+            </p>
+
+            <!-- GA4（アクセス解析）を入れているページ共通の導線。控えめな1行。
+                 min-height 32px は tests.js のタップ標的の検査（指で押せる下限）に合わせる -->
+            <p style="margin-top: auto; padding-top: 16px; text-align: center;">
+                <a href="../privacy.html" style="display: inline-flex; align-items: center; min-height: 32px; font-size: 11px; color: #7f8c8d;">プライバシーポリシー</a>
+            </p>
+        </div>
+
+        <!-- Main Game Area -->
+        <div id="main-area">
+            <div id="header">
+                <div class="topbar">
+                    <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
+                    <!-- ⚠ ハブへのリンクは**先頭のまま**にすること。tests.js は
+                         `.topbar .hubLink` の**1本目**が ../index.html であることを見ている。
+                         ★ こちらは muki の入口（3つの遊び方の一覧）へ戻る道 -->
+                    <a class="hubLink" href="index.html">◀ 色でみる無機化学</a>
+                    <span class="version">v30</span>
+                </div>
+                <h1>Chem-Snake</h1>
+                <div class="score-display">
+                    SCORE: <span id="score">0</span> <span style="font-size: 16px; color:#bdc3c7;">(Length: <span id="length">3</span>)</span>
+                    <span id="ph-display" style="margin-left: 20px; font-size: 16px; font-weight: bold; display: none;">水溶液: <span id="ph-value">-</span> <span id="ph-countdown" style="font-size: 14px; color: #bdc3c7; font-weight: normal; margin-left: 8px;"></span></span>
+                </div>
+            </div>
+            
+            <div id="board-container" style="position: relative; overflow: hidden; border-radius: 10px; background: rgba(0,0,0,0.5);">
+                <canvas id="game-board" width="600" height="600"></canvas>
+                <div id="effect-layer" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
+            </div>
+        </div>
+
+        <!-- Sidebar Right -->
+        <div class="sidebar" id="sidebar-right">
+            <h2>Current Head</h2>
+            <canvas id="head-preview" width="120" height="120" style="margin: 0 auto; display: block;"></canvas>
+            <div style="text-align: center; font-weight: bold; font-size: 20px; margin-top: 5px; color: #fff;" id="head-name">-</div>
+            
+            <h2 style="margin-top: 20px; color: #f1c40f;">NEXT Head</h2>
+            <canvas id="next-head-preview" width="80" height="80" style="margin: 0 auto; display: block;"></canvas>
+            <div style="text-align: center; font-weight: bold; font-size: 16px; margin-top: 5px; color: #f1c40f;" id="next-head-name">-</div>
+            
+            <div class="controls-hint" style="margin-top: 30px;">
+                <p>↑ ↓ ← → ／ スワイプ : Move</p>
+                <p style="font-size:13px;">画面タップ／方向キーでスタート</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 横持ちのときの案内。イオンスネークは縦画面専用（横だと盤が180px以下になり遊べない）。
+         出し入れは CSS のメディアクエリだけで行い、時間の進みは game.js が止める -->
+    <div id="rotate-hint">
+        <div class="rh-box">
+            <div class="rh-icon">📱</div>
+            <p class="rh-title">画面を縦にしてください</p>
+            <p class="rh-sub">イオンスネークは縦画面専用です。<br>横向きでは盤が小さくなりすぎて遊べません。</p>
+            <a class="rh-link" href="../index.html">🏠 化学レンズへ戻る</a>
+        </div>
+    </div>
+
+    <!-- Dict Modal -->
+    <div id="dict-modal" class="hidden">
+        <div class="dict-box">
+            <h2>ION DICTIONARY</h2>
+            <div id="dict-content"></div>
+            <div style="text-align:center; margin-top:30px;">
+                <button id="btn-dict-close" style="padding:12px 50px; font-size:18px; font-weight:bold; background:#e74c3c; border:none; border-radius:10px; color:#fff; cursor:pointer; box-shadow:0 5px 15px rgba(231,76,60,0.4);">閉じる (Close)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="game-over" class="hidden">
+        <h2>GAME OVER</h2>
+        <div id="death-reason" style="font-size:24px; color:#fff; margin-bottom: 5px;"></div>
+        <div id="death-formula" style="font-size:40px; font-weight:bold; margin-bottom: 5px; font-family:'Orbitron', sans-serif;"></div>
+        <div id="death-knowledge" style="font-size:16px; color:#ecf0f1; margin: 15px 0; line-height: 1.6; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);"></div>
+        <div id="death-settings" style="font-size:14px; color:#bdc3c7; margin-bottom: 20px; font-family:'Orbitron', sans-serif;"></div>
+        <p>Score: <span id="final-score">0</span></p>
+        <button id="restart-btn" style="margin-top: 15px;">Try Again</button>
+        <!-- 結果の共有（ユーザー決定 2026-08-25「とりあえずスネークのみ／WebShareAPI」）。
+             ⚠ **ボタンは1つ**。Instagram と TikTok には Web から投稿を起こす公式の口が無いので、
+                4つ並べると2つだけ動かないことになる。OS の共有シートなら選択肢に出る。
+             ⚠ navigator.share が無い環境（PC の多く）では「結果をコピー」に落とす
+                （押しても何も起きないボタンを出さない）。文言は game.js が差し替える。
+             ⚠ 既定は非表示。share も clipboard も無い環境では最後まで出さない -->
+        <button id="btn-share" style="display:none; margin-top: 10px;">結果をシェア</button>
+        <div id="share-msg" style="font-size:13px; color:#bdc3c7; margin-top: 8px; min-height:1.4em;"></div>
+    </div>
+
+    <script src="chemistry.js?v=30"></script>
+    <script src="game.js?v=30"></script>
+</body>
+</html>
