@@ -135,7 +135,11 @@ qa.patterns.forEach(function (p) {
   //   （エステルは脂肪族と芳香族にまたがる）のためにある。値は向こうの語彙（`ester` など）。
   // ⚠ **`link.group` と、項目そのものの `p.group`（習得マップの群）は別物**。
   //   入れ子が違うので衝突はしないが、読むときに取り違えないこと
-  ['formula', 'id', 'reagent', 'open', 'scope', 'field', 'group']
+  // `panel` … 絞り込みモードのタブ（2026-09-01・assembler v1494 の受け口⑦）。
+  //   `scope` / `field` と同じ「行き先の中のつまみ」なので、同じ列に並べて運ぶだけ。
+  //   ⚠ ここから落とすと `?open=narrowing` だけが付き、既定のタブ（構造を数える）が開く
+  //   ＝ 「元素分析から」を頼んだのに着かない。件数では見えないので tests.js の CF3 が見張る
+  ['formula', 'id', 'reagent', 'open', 'panel', 'scope', 'field', 'group']
     .forEach(function (k) { if (o[k]) link[k] = o[k]; });
   p.link = link;
   on++;
