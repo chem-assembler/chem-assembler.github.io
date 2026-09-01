@@ -50,7 +50,7 @@
  * | H   | 1      | くさび図モーダル |
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜10  | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ）。**I8〜I10 は結合の判定線がキャンバス側のモード分岐を食う型**（BUGNOTE_touch_ipad.md S6。I8 が否定対照＝ C=C の中点） |
- * | IC  | 1〜3   | ★ **お題を選ぶ線「腕がペンチルに収まる」**（ユーザー明言 2026-09-01「C7H14O2のエステルは人間には現実的ではなさそうです／ペンチル基に収まるところまででよいと思います」）。1 が線そのもの（`functionalArmCarbons`。並んでいるお題は全部 腕≤5・**落とした3件は腕6**＝アルデヒド C₇・カルボン酸 C₇・エステル C₇・線は4分類とも同じところを通る・ギ酸エステルのアシル側は 0 と数える）・2 が **C₇ に足した名前を1件ずつ名指し**（件数では見ない。位置番号を1つ間違えた名前も赤くする）・**3 は数え落としの門番**＝ 種と腕の道は**カルボニル炭素が環に載った分子を作れない**（C₆H₁₀O のケトンに**シクロヘキサノンが入らない**）ので、**お題は全部が不飽和度1**（飽和形）であること。⚠ 腕がペンチル以内でも21種以上になる**不飽和の式は13件ある**ので、②の母数を数え直す人は必ずここへ来る。⚠ **この線を列挙の門番 `FG_ARM_MAX` に下ろすと黙って数え落とす**（エステル C₇ が 45→44種） |
+ * | IC  | 1〜3   | ★ **お題を選ぶ線**。1 は 2026-09-01 に**架け替えた** —— ユーザー判断でアルデヒド C₇・カルボン酸 C₇ をお題に足した結果、**「腕がペンチルに収まる」は1件も落とさなくなった**（実測: `FG_MAX_CARBON` の内側の全域で「上限20 を通るのに 腕>5」はその2件だけ）ので**門番から外し**、いま 1 が見張るのは **お題 = 「2〜20種 ＋ 名前が出そろう ＋ 不飽和度1」を通るものの全部**（集合ごと突き合わせ・落ちたのはエステル C₇ の45種だけ・腕の線を門番に戻すとお題が2件減ることを実測・ギ酸エステルのアシル側は 0 と数える）。`functionalArmCarbons` は**測る道具として残す**・2 が **C₇ に足した名前を1件ずつ名指し**（件数では見ない。位置番号を1つ間違えた名前も赤くする）・**3 は数え落としの門番**＝ 種と腕の道は**カルボニル炭素が環に載った分子を作れない**（C₆H₁₀O のケトンに**シクロヘキサノンが入らない**）ので、**お題は全部が不飽和度1**（飽和形）であること。⚠ 腕がペンチル以内でも21種以上になる**不飽和の式は13件ある**ので、母数を数え直す人は必ずここへ来る。⚠ **腕の線を列挙の門番 `FG_ARM_MAX` に下ろすと黙って数え落とす**（エステル C₇ が 45→44種）—— 門番から外した今も同じ |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
  * | IH  | 1〜4   | 種類数を伏せた出題と分類つきのお題（v1489）。1 が「数を出さない4か所と、移った先（ヒント段1・答え合わせ）」・2 が分類つきのお題13件・3 は否定対照（「全部列挙してから捨てる」道では C₇H₁₄O₂ が1件も出せない）・**4 は引き金**＝ C₇ の4件が落ちる／通る理由が変わったら赤くする（2026-09-01 に一度引かれ、物差しを「名前が足りない」から「腕がペンチルを超える」へ架け替えた） |
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
@@ -16658,7 +16658,7 @@
         ipStereoCleanup(c);
     });
 
-    test('IH2: 分子式＋分類のお題13件（種を置いて腕を貼る列挙・全部に名前が付く・★否定対照つき）', async (c) => {
+    test('IH2: 分子式＋分類のお題15件（種を置いて腕を貼る列挙・全部に名前が付く・★否定対照つき）', async (c) => {
         /**
          * ★ ユーザー要望 2026-08-31「重元素7以上でも分類ごとの書き出しは対応を増やしたい／
          *   例えば C₆H₁₂O のケトン、C₇H₁₄O₂ のエステル」＋ ユーザー確認済みの案A（お題ボタンを増やす）。
@@ -16672,17 +16672,29 @@
         g.setMode('learn');
         if (ip.active) ip.stop();
 
-        // ★ 13件の顔ぶれ（数は**画面には出ない**が、開いた回の総数として突き合わせる）
-        //   ⚠ C₇H₁₄O（ケトン）は「ペンチルの線」で通った1件（`IC1` が線そのものを見張る）
+        // ★ 15件の顔ぶれ（数は**画面には出ない**が、開いた回の総数として突き合わせる）
+        //   ⚠ **C₇H₁₄O（アルデヒド）と C₇H₁₄O₂（カルボン酸）は 2026-09-01 に足した2件**
+        //     （ユーザー判断・DEVELOPMENT.md）。ここを「15件あるか」で見ないのが肝で、
+        //     **足した2件を名指しで**下の `NEW` が突き合わせる。
         const want = [
             ['C₅H₁₀O（ケトン）', 3], ['C₆H₁₂O（ケトン）', 6], ['C₇H₁₄O（ケトン）', 15],
             ['C₄H₈O（アルデヒド）', 2], ['C₅H₁₀O（アルデヒド）', 4],
-            ['C₆H₁₂O（アルデヒド）', 8],
+            ['C₆H₁₂O（アルデヒド）', 8], ['C₇H₁₄O（アルデヒド）', 17],
             ['C₃H₆O₂（エステル）', 2], ['C₄H₈O₂（エステル）', 4],
             ['C₅H₁₀O₂（エステル）', 9], ['C₆H₁₂O₂（エステル）', 20],
             ['C₄H₈O₂（カルボン酸）', 2], ['C₅H₁₀O₂（カルボン酸）', 4],
-            ['C₆H₁₂O₂（カルボン酸）', 8]
+            ['C₆H₁₂O₂（カルボン酸）', 8], ['C₇H₁₄O₂（カルボン酸）', 17]
         ];
+        // ★ 足した2件を**名指しで**（件数が15になっただけでは、別の式が混ざっても緑になる）
+        const NEW = [
+            { formula: 'C7H14O',  cls: 'aldehyde', label: 'C₇H₁₄O（アルデヒド）' },
+            { formula: 'C7H14O2', cls: 'acid',     label: 'C₇H₁₄O₂（カルボン酸）' }
+        ];
+        NEW.forEach(t => {
+            assert(ip.fgPresets.some(p => p.formula === t.formula && p.cls === t.cls),
+                `★ 2026-09-01 に足したはずの ${t.label} がお題に無い`);
+            assert(want.some(w => w[0] === t.label), `前提: ${t.label} が顔ぶれの表に無い`);
+        });
 
         // ① ★★ **お題一覧は1件も数えない**（v1433 の申し送り「これ以上お題を足すなら
         //    初回 renderList が先に効く」への答え。種類数を伏せたので数える理由が消えた）
@@ -16703,7 +16715,7 @@
                     `分類つきのお題が種類数を出している（${b.textContent}）`);
             });
 
-            // ② 12件すべてが**押すと開き**、総数が既知値と合い、**正解の全部に名前が付く**
+            // ② 15件すべてが**押すと開き**、総数が既知値と合い、**正解の全部に名前が付く**
             //    ⚠ 名前は答え合わせの左列とヒント段5 が使う ＝ ここが緑なら「（名称未登録）」は出ない
             want.forEach(([label, total], i) => {
                 calls = 0;
@@ -16805,29 +16817,31 @@
         /**
          * ⚠⚠ **これは仕様の見張りではなく「設計書の数が古くなったら赤くする」引き金**。
          *
-         * ★ **引き金は一度引かれた**（2026-09-01）。それまでこの検査は
+         * ★ **引き金は一度引かれた**（2026-09-01・前レーン）。それまでこの検査は
          *   「ケトン15・アルデヒド17・カルボン酸17 は**名前で**落ちている（`nameless > 0`）」を
          *   見張っていて、`compounds.json` に C₇ の名前が44件そろった瞬間に赤くなった。
          *   ⚠ **数を消して通したのではない。** 引き金が知らせたとおり §19-4 と `fgPresets` を
-         *   見直し、**新しい分かれ目**（ユーザー明言「ペンチル基に収まるところまで」）へ
-         *   物差しを架け替えた。いまここが見張るのは次の3つ:
+         *   見直した。⚠⚠ **その先も動いた**（同日・ユーザー判断 D-C1）——
+         *   **アルデヒド C₇ と カルボン酸 C₇ をお題に足した**ので、
+         *   「ペンチル基に収まる」は**門番ではなくなった**（`IC1` が実測で見張る）。
+         *
+         * いまここが見張るのは次の4つ:
          *     ① 4件の**種類数**（15/17/17/45）… 列挙が変わったら知りたい
          *     ② **名前は3分類とも出そろった**（`nameless === 0`）… 逆向きの見張り。
          *        名前が欠けたら答え合わせの左列とヒント段5 が「（名称未登録）」に戻る
-         *     ③ **エステルだけが上限20 の外**／★ **落としている本当の線は腕の炭素数**
-         *        （`IC1` が線そのもの、ここは「4件がどちら側か」を見る）
+         *     ③ **お題に入ったのは 15/17/17 の3件、外れたのはエステルだけ**。
+         *        ⚠ **落としている線は「上限20」1本だけ**（腕の炭素数はもう門番ではない・`IC1`）
+         *     ④ ★ **エステルにはまだ名無しが39件残る**（埋めたら赤 ＝ §19-5 を見直す引き金）
          *
-         * ★ §19-4 の宿題「21種以上は何種類か答える出題」は**やらないことに決まった**
-         *   （ユーザーが C₇H₁₄O₂ のエステルを出題から外したので、母数が 0 になった）。
-         *   ⚠ **母数がまた 1以上になったら**（＝ 腕がペンチル以内で 21種以上の式が現れたら）
-         *   ここではなく `IC1` が赤くなる。
+         * ★ §19-4 の宿題「21種以上は何種類か答える出題」は**やらないことに決まった**（§19-5c）。
+         *   ⚠ **母数がまた 1以上になったら**ここではなく `IC1` が赤くなる。
          */
         const W = c.W, ip = W.isomerPractice;
         const C7 = [
-            { cls: 'ketone',   els: 7, o: 1, h: 14, total: 15, overCap: false, arm: 5 },
-            { cls: 'aldehyde', els: 7, o: 1, h: 14, total: 17, overCap: false, arm: 6 },
-            { cls: 'acid',     els: 7, o: 2, h: 14, total: 17, overCap: false, arm: 6 },
-            { cls: 'ester',    els: 7, o: 2, h: 14, total: 45, overCap: true,  arm: 6 }
+            { cls: 'ketone',   els: 7, o: 1, h: 14, total: 15, overCap: false, arm: 5, listed: true },
+            { cls: 'aldehyde', els: 7, o: 1, h: 14, total: 17, overCap: false, arm: 6, listed: true },
+            { cls: 'acid',     els: 7, o: 2, h: 14, total: 17, overCap: false, arm: 6, listed: true },
+            { cls: 'ester',    els: 7, o: 2, h: 14, total: 45, overCap: true,  arm: 6, listed: false }
         ];
         C7.forEach(t => {
             const els = [];
@@ -16841,87 +16855,123 @@
             // ★ 上限20 の内か外か
             assert((r.isomers.length > W.IP_MAX_ISOMERS) === t.overCap,
                 `C₇ の${t.cls}の「上限20 を超えるか」が ${!t.overCap}（§19-4 の分かれ目が変わった）`);
-            // ★★ 腕の最大炭素数 ＝ いま4件を分けている線（ケトンだけ 5 ＝ ペンチルに収まる）
+            // ★ 腕の最大炭素数。⚠ **これはもう門番ではない**（`IC1` が「何も落としていない」を
+            //   実測で見張る）。ここで測るのは、物差しが動いていないことの確認だけ
             const arm = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, t.cls).max));
             assert(arm === t.arm,
                 `C₇ の${t.cls}の腕の最大が ${arm}（${t.arm} を期待・ペンチルの線の位置が変わった）`);
+            // ③ お題に入っているか（★ 分けているのは数だけ ＝ overCap と一致する）
+            const listed = ip.fgPresets.some(p =>
+                p.cls === t.cls && p.formula === (t.o === 2 ? 'C7H14O2' : 'C7H14O'));
+            assert(listed === t.listed,
+                `C₇ の${t.cls}が お題に${listed ? '入っている' : '入っていない'}（逆を期待）`);
+            assert(listed === !t.overCap,
+                `★ C₇ の${t.cls}の「お題に入るか」が「上限20 の内か」と食い違う ＝ ` +
+                '数以外の線でお題を選んでいる（DESIGN §19-5 を見直すこと）');
             if (t.cls === 'ester') return;             // エステルは名前を足していない（39件が名無し）
             // ★★ 逆向きの見張り —— 3分類は**名前が出そろっている**
             const nameless = r.isomers.filter(m => !ip.constitutionalName(m));
             assert(nameless.length === 0,
                 `★ C₇ の${t.cls}に名前の付かない正解が ${nameless.length}件 —— ` +
-                'compounds.json から C₇ の名前が失われた疑い（答え合わせが「（名称未登録）」に戻る）');
+                'compounds.json から C₇ の名前が失われた疑い（答え合わせと自由モードが' +
+                '「（名称未登録）」に戻る）');
         });
-        // ★ エステルだけは名無しが残ったまま（＝ ここを埋めても出題にはならない、を明示）
+        // ④ ★ エステルだけは名無しが残ったまま（＝ ここを埋めても出題にはならない、を明示）
+        //    ⚠ ここが赤くなる ＝ 名前が出そろった ＝ 外したままでよいかを §19-5 で見直す合図
         const est = W.enumerateFunctionalGroupIsomers(
             ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O', 'O'], 14, 'ester');
         assert(est.isomers.filter(m => !ip.constitutionalName(m)).length > 0,
             '★ C₇H₁₄O₂ のエステルにも名前が出そろった —— ' +
-            '出題からは外したまま（腕がヘキシル・45種）でよいかを DESIGN §19-5 で見直してください');
+            '出題からは外したまま（45種 > 上限20）でよいかを DESIGN §19-5 で見直してください');
     });
 
-    test('IC1: ★お題を選ぶ線は「腕がペンチルに収まる」（ユーザー明言・★否定対照つき）', async (c) => {
+    test('IC1: ★お題は「数え切れて名前が出そろう飽和の式」の全部（腕の線はもう何も落とさない）', async (c) => {
         /**
-         * ★★ ユーザー明言 2026-09-01:
-         *   > **C7H14O2のエステルは人間には現実的ではなさそうです**
-         *   > **ペンチル基に収まるところまででよいと思います**
+         * ★★ **この検査は 2026-09-01 に架け替えた。** それまでは
+         *   「お題を選ぶ線は腕がペンチルに収まる」を見張っていた（ユーザー明言
+         *   「C7H14O2のエステルは人間には現実的ではなさそうです／ペンチル基に収まるところまで」）。
          *
-         * ⚠⚠ **「12件が13件になった」を件数だけで見ない。** それだと
-         *   *どの* 式を足したかも、*なぜ* 止めたかも検査していない。ここが見るのは:
-         *     ① いま並んでいるお題の**全分子の腕が 5 以下**（線の内側にある）
-         *     ② ★否定対照 —— **落とした3件は本当に線の外**（アルデヒド C₇・カルボン酸 C₇・
-         *        エステル C₇ の腕はどれも 6 ＝ ヘキシル）
-         *     ③ ★否定対照 —— **線をちょうど跨ぐ**（腕5の式は全分類にあり、腕6の式は全部落ちる）
-         *     ④ ★否定対照 —— **この線を列挙の門番（`FG_ARM_MAX`）に下ろすと黙って数え落とす**
+         * ⚠⚠ **架け替えた理由は実測**。ユーザーが**アルデヒド C₇ と カルボン酸 C₇ をお題に足す**と
+         *   決めた（DEVELOPMENT.md 判断 D-C1）ので、**腕≤5 の線は1件も落とさなくなった**:
+         *   `FG_MAX_CARBON=7` の内側の**全域**（4分類 × C₂〜C₇ × 不飽和度1〜4）を数え直すと、
+         *   **「上限20 を通るのに 腕>5」は その2件しか無い**。
+         *   → 効いていない門番を残すと「この線で何かが落ちている」と誤解されるので**外した**。
+         *     `functionalArmCarbons` は**測る道具**として残し、④⑤がその物差しを見張る。
+         *
+         * ここが見るのは:
+         *   ① ★★ **お題 = 全域のうち「2〜20種 ＋ 名前が出そろう ＋ 不飽和度1」を通るものの全部**
+         *      （集合ごと突き合わせる ＝ 黙って1件外す／余計に足すと赤）
+         *   ② ★否定対照 —— **落ちたのはエステル C₇ だけで、理由は数（45 > 20）**
+         *   ③ ★★否定対照 —— **腕の線を門番に戻すと、いま並んでいるお題が2件減る**
+         *      （＝「もう何も落とさない」の裏取り。線がどこを通るかも同時に測る）
+         *   ④⑤ ★否定対照 —— 物差しそのもの（ギ酸エステルのアシル側は 0・分類違いは null）
          */
         const W = c.W, ip = W.isomerPractice;
         const ARM_MAX = 5;                              // ペンチル基
         const parse = f => ip.parseFormula(f);
 
-        // ① 並んでいるお題は全部、線の内側
-        assert(ip.fgPresets.length === 13, `分類つきのお題が ${ip.fgPresets.length}件（13件を期待）`);
-        ip.fgPresets.forEach(pre => {
-            const p = parse(pre.formula);
-            const r = W.enumerateFunctionalGroupIsomers(p.heavy, p.h, pre.cls);
-            assert(r.applicable && !r.overflow && r.isomers.length >= 2, `${pre.formula} ${pre.cls} が開かない`);
-            const worst = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, pre.cls).max));
-            assert(worst <= ARM_MAX,
-                `★ ${pre.formula} の${pre.cls}に腕が ${worst}個（ペンチル ${ARM_MAX} を超えるお題が並んでいる）`);
+        // ① ★★ 全域を数え直して、お題の集合と突き合わせる
+        //    ⚠ 実測 ~2.5s（overflow で断られる式は即返るので、重いのは C₇ の4件）
+        const eligible = [], measured = new Map();
+        ['ketone', 'aldehyde', 'ester', 'acid'].forEach(cls => {
+            const nO = (cls === 'ester' || cls === 'acid') ? 2 : 1;
+            for (let n = 2; n <= 7; n++) {
+                for (let dou = 1; dou <= 4; dou++) {
+                    const h = 2 * n + 2 - 2 * dou;
+                    if (h < 0) continue;
+                    const els = [];
+                    for (let i = 0; i < n; i++) els.push('C');
+                    for (let i = 0; i < nO; i++) els.push('O');
+                    const r = W.enumerateFunctionalGroupIsomers(els, h, cls);
+                    if (!r.applicable || r.overflow || r.isomers.length < W.IP_MIN_ISOMERS) continue;
+                    const formula = 'C' + n + 'H' + h + (nO > 1 ? 'O2' : 'O');
+                    const arm = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, cls).max));
+                    // ⚠ 名前は**要るときだけ**引く（不飽和の式は 149種 まであり、
+                    //   そこで名前を引くと検査が数秒伸びる。③の関門で先に落ちるので要らない）
+                    const nameless = (dou === 1 && r.isomers.length <= W.IP_MAX_ISOMERS)
+                        ? r.isomers.filter(m => !ip.constitutionalName(m)).length : -1;
+                    measured.set(formula + '/' + cls,
+                        { formula, cls, total: r.isomers.length, arm, nameless, dou });
+                    if (nameless === 0) eligible.push(formula + '/' + cls);
+                }
+            }
         });
+        const listed = ip.fgPresets.map(p => p.formula + '/' + p.cls);
+        const missing = eligible.filter(k => listed.indexOf(k) < 0);
+        const extra = listed.filter(k => eligible.indexOf(k) < 0);
+        assert(!missing.length && !extra.length,
+            '★★ お題の顔ぶれが「通るものの全部」と食い違う —— ' +
+            `並んでいないのに通る: ${missing.join('／') || 'なし'} ／ ` +
+            `通らないのに並んでいる: ${extra.join('／') || 'なし'}`);
+        assert(listed.length === 15, `分類つきのお題が ${listed.length}件（15件を期待）`);
 
-        // ② ★否定対照 —— 落とした3件は線の外。⚠ **数（上限20）では落ちていない**ものが2つある
-        const OUT = [
-            { formula: 'C7H14O',  cls: 'aldehyde', total: 17, arm: 6 },
-            { formula: 'C7H14O2', cls: 'acid',     total: 17, arm: 6 },
-            { formula: 'C7H14O2', cls: 'ester',    total: 45, arm: 6 }
-        ];
-        OUT.forEach(t => {
-            assert(!ip.fgPresets.some(p => p.formula === t.formula && p.cls === t.cls),
-                `${t.formula} の${t.cls}がお題に並んでいる（線の外のはず）`);
-            const p = parse(t.formula);
-            const r = W.enumerateFunctionalGroupIsomers(p.heavy, p.h, t.cls);
-            assert(r.isomers.length === t.total, `${t.formula} ${t.cls} が ${r.isomers.length}種`);
-            const worst = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, t.cls).max));
-            assert(worst === t.arm,
-                `★ ${t.formula} の${t.cls}の腕の最大が ${worst}（${t.arm}＝ヘキシルを期待。` +
-                'ここが 5 に落ちたら、その回はお題にできる ＝ fgPresets を見直すこと）');
-        });
+        // ② ★否定対照 —— **落ちたのはエステル C₇ だけ**（理由は数。名前でも腕でもない）
+        const est = measured.get('C7H14O2/ester');
+        assert(est && est.total === 45, `C₇H₁₄O₂ のエステルが ${est && est.total}種（45種を期待）`);
+        assert(est.total > W.IP_MAX_ISOMERS,
+            `★ エステル C₇ が上限 ${W.IP_MAX_ISOMERS} の内側に入った ＝ お題に加えるか見直すこと`);
+        const outByCount = [...measured.values()]
+            .filter(t => t.dou === 1 && t.total > W.IP_MAX_ISOMERS)
+            .map(t => t.formula + '/' + t.cls).sort();
+        assert(outByCount.join(' ') === 'C7H14O2/ester',
+            `★ 上限20 で落ちる飽和の式が ${outByCount.join('／')}（エステル C₇ だけを期待）`);
 
-        // ③ ★否定対照 —— 線は**全分類でちょうど同じところ**を通る（1分類だけの都合ではない）
-        const EDGE = [
-            { formula: 'C7H14O',  cls: 'ketone',   arm: 5 },   // 内側の端
-            { formula: 'C6H12O',  cls: 'aldehyde', arm: 5 },
-            { formula: 'C6H12O2', cls: 'ester',    arm: 5 },
-            { formula: 'C6H12O2', cls: 'acid',     arm: 5 }
-        ];
-        EDGE.forEach(t => {
-            const p = parse(t.formula);
-            const r = W.enumerateFunctionalGroupIsomers(p.heavy, p.h, t.cls);
-            const worst = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, t.cls).max));
-            assert(worst === t.arm, `${t.formula} の${t.cls}の腕の最大が ${worst}（${t.arm} を期待）`);
-            assert(ip.fgPresets.some(x => x.formula === t.formula && x.cls === t.cls),
-                `腕ちょうど5の ${t.formula}（${t.cls}）がお題に無い`);
+        // ③ ★★否定対照 —— 腕の線を**門番に戻したら**、いま並んでいるお題が減ることを実測で示す
+        //    （「もう何も落とさない」は「線が緩んだ」からではなく「落ちる先を採ることにした」から）
+        const wouldDrop = ip.fgPresets.filter(p => measured.get(p.formula + '/' + p.cls).arm > ARM_MAX)
+            .map(p => p.formula + '/' + p.cls).sort();
+        assert(wouldDrop.join(' ') === 'C7H14O/aldehyde C7H14O2/acid',
+            `★ 腕>${ARM_MAX} のお題が ${wouldDrop.join('／') || 'なし'}（` +
+            'アルデヒド C₇ とカルボン酸 C₇ の2件を期待。ここが「なし」に戻ったら ' +
+            '腕の線がまた門番として意味を持つので DESIGN §19-5 を見直すこと）');
+        // 線がどこを通るか（物差しが定数を返していないこと）を4分類で測る
+        [['C7H14O', 'ketone', 5], ['C6H12O', 'aldehyde', 5], ['C6H12O2', 'ester', 5],
+         ['C6H12O2', 'acid', 5], ['C7H14O', 'aldehyde', 6], ['C7H14O2', 'acid', 6],
+         ['C7H14O2', 'ester', 6]].forEach(([formula, cls, arm]) => {
+            const t = measured.get(formula + '/' + cls);
+            assert(t && t.arm === arm, `${formula} の${cls}の腕の最大が ${t && t.arm}（${arm} を期待）`);
         });
+        assert(parse('C7H14O').heavy.length === 8, '前提: parseFormula が壊れている');
 
         // ④ ★否定対照 —— 腕の数え方そのもの。ギ酸エステルは**アシル側が 0**（水素の腕）で、
         //    アルコール側だけが伸びる ＝ 2本の腕を1つに混ぜていない
