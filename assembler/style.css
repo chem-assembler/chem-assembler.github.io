@@ -226,6 +226,63 @@ h2 {
     font-weight: 700;
 }
 
+/* ---- 実験モードのタブ（DESIGN_experiment_mode.md §3-3・第1段の器） ----
+   ⚠ **既存の .tool-group には1つも手を入れない。** 出し分けは
+   `#left-panel[data-palette]` という**親側の1属性**だけでやる ——
+   マークアップに `.palette-draw` のようなクラスを撒くと、台本31本と
+   回帰テストが読んでいる id/クラスの契約に手が伸びる。
+   ⚠ `[data-modes]` の出し分け（setMode がインラインの display を書く）とは
+   **別の要素**に当てているので噛み合わない（#palette-tabs は data-modes 側、
+   .tool-group は data-palette 側）。 */
+.palette-tabs {
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+}
+.palette-tab {
+    flex: 1 1 auto;
+    min-height: 34px;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text-secondary);
+}
+.palette-tab.active {
+    color: var(--neon-orange, #ffa502);
+    border-color: var(--neon-orange, #ffa502);
+    background: rgba(255, 167, 38, 0.12);
+}
+/* 作図の道具は「試薬」タブのあいだだけ引っ込む。逆向きも同じ1行で足りる */
+#left-panel[data-palette="exp"] .tool-group:not(#exp-panel) { display: none; }
+#left-panel:not([data-palette="exp"]) #exp-panel { display: none; }
+.exp-lede {
+    margin: 0 0 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+/* ⚠ PC の柱では、答えの欄は**瓶23本より下**にある ＝ 押した瞬間は画面の外。
+   ★ 中身があるときだけ柱の下端に貼り付ける（`position: sticky`）。
+   「押した瓶のすぐ下に、読み終わるまで残す」（RG3・RG11）を、
+   スクロールを1回も要求せずに満たすための1手。中身が空のときは貼らない
+   （空の帯が柱の底を占め続けると、瓶が2本ぶん見えなくなる） */
+.exp-note {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 6px;
+}
+.exp-note:not(:empty) {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: 6px;
+    border: 1px solid rgba(255, 167, 38, 0.35);
+    border-radius: 8px;
+    background: var(--color-bg, #0d1117);
+}
+
 /* Buttons Styles */
 .grid-buttons {
     display: grid;
@@ -2000,6 +2057,84 @@ b.em { font-weight: 700; color: var(--neon-blue); }
     }
     #left-panel .atom-btn { font-size: 0; }
     #left-panel .atom-btn > span { font-size: 15px; font-weight: 700; }
+
+    /* ★ 実験モードの帯（DESIGN_experiment_mode.md §5-3）。
+       ⚠ **23本を1列で並べない** —— 実測で 2,070px ＝ 画面幅の 5.5倍になり、
+          モジュール11個（1,179px ＝ 3.1倍）の1.8倍の長さになる。
+          **2段に折る**と約半分（≒2.8倍）で、既に成立している形と同じ桁に収まる。
+       ⚠ 区分の見出し（.rg-group）は縦の格子のためのものなので、帯では畳む
+          ——「変えるもの／調べるもの」が2段の途中に挟まると段が崩れる。
+          読み上げには残す（幅0にするのではなく position で外に出す） */
+    /* ⚠ 帯では見出しも前口上も畳む —— タブに「🧪 実験」と書いてあるので二重になるうえ、
+       ここで使う 19px は**キャンバスから引いた 19px**（縦画面は 812px しかない） */
+    /* ⚠⚠ **横に流すのは瓶の格子だけ**（帯そのものは流さない）。
+       帯ごと横スクロールにすると、答えの欄が瓶と一緒に画面の外へ出ていく
+       ——「押した瓶のすぐ下に、読み終わるまで残す」（RG3）が成立しない。
+       ★ 実測でそうなった: 答えの欄が 199px に潰れ、右へスクロールすると消えた */
+    #left-panel[data-palette="exp"] { overflow-x: hidden; }
+    #left-panel #exp-panel {
+        min-width: 0;
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    /* タブは縦に積む ＝ 帯の左を 150px → 約72px にして、瓶に見える幅を返す */
+    #left-panel[data-palette="exp"] #palette-tabs {
+        flex-direction: column;
+        flex: 0 0 auto;
+        gap: 4px;
+    }
+    #left-panel[data-palette="exp"] .palette-tab { min-height: 30px; padding: 4px 6px; font-size: 11px; }
+    #left-panel #exp-panel > h3 { display: none; }
+    #left-panel #exp-panel .exp-lede { display: none; }
+    #left-panel #exp-reagents-grid {
+        display: grid;
+        grid-auto-flow: column;
+        grid-template-rows: repeat(2, auto);
+        grid-template-columns: none;
+        gap: 5px;
+        justify-content: start;
+        flex: 0 0 auto;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* ⚠ **区分の見出しは帯では文字を出さない**（読み上げには残す）。
+       実測: 縦書きにすると「変えるもの」の5文字が行の高さを 52px → 77.5px に押し上げ、
+       2段で 160px ＝ **キャンバスが 555 → 470px（-15.3%）まで削られた**。
+       見出しを畳むと 2段で 109px に収まり、削れは設計書の見積り（-11%）の側に戻る。
+       ⚠ 消すのは**縦画面の帯のときだけ**。PC の柱では今までどおり文字で出る */
+    #left-panel #exp-reagents-grid .rg-group {
+        position: absolute;
+        width: 1px; height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    #left-panel #exp-reagents-grid .rg-bottle { min-width: 84px; max-height: 48px; margin-top: 0; }
+    /* ⚠ 押した結果（条件の2択・空振りの説明）は**トーストに逃がさない** ——
+       トーストは数秒で消えるが、空振りの説明は読み終わるまで残す約束（RG3・MM8 の不変条件）。
+       ★ 代わりに帯を **160px に固定**して、答えはその中でスクロールさせる。
+       ⚠ **固定にするのが要点**: 高さを中身なりにすると、瓶を押した瞬間に帯が伸びて
+          **キャンバスが縮み、いま見ていた分子が動く**（実測 486 → 470px）。
+          出題の最中に図が跳ねるのがいちばん困る。
+       ★ 実測（375×812）: キャンバス 555 → 478px（-13.9%）で、押しても動かない。
+          ⚠ 設計書 §5-3 の見積り（-11%・493px）より 15px 大きい ＝ 答えの欄のぶん */
+    #left-panel[data-palette="exp"] { height: 160px; max-height: 160px; }
+    /* ⚠ 帯では貼り付けない（帯の高さが固定で、欄は最初から見えている） */
+    #left-panel[data-palette="exp"] #exp-reagent-note,
+    #left-panel[data-palette="exp"] #exp-reagent-note:not(:empty) {
+        position: static;
+        flex: 1 1 auto;
+        min-height: 0;
+        margin-top: 4px;
+        padding: 0;
+        border: 0;
+        background: none;
+        overflow-y: auto;
+        font-size: 11px;
+        line-height: 1.45;
+    }
 
     /* まだ横に道具があることを示す（レビュー項目2）。
        ✳不斉炭素マーク・⇄シス/トランス整形・⬍α/β面マークは列の後半にあり、
