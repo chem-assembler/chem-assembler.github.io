@@ -2436,7 +2436,18 @@ class StereoQuiz {
         this.pool = [];
         buildCompoundLibrary(this.game).forEach(e => {
             const info = readStereoOf(e.mol);
-            if (info) this.pool.push(Object.assign({}, e, info));
+            if (!info) return;
+            // 「図を回す」出題の資格: **図が分子の立体を語り尽くしているか**（ST26）。
+            // 不斉炭素がすべて図から読めていて、環の中に不斉炭素が無いこと。
+            // ビニロンはアセタール環の2中心がハース形でないためライブラリの向きでは読めず
+            // （読めた中心は鎖の CH-OH の1個だけ）、90°回すと環外の結合が縦になって
+            // ハース環リーダーが環の2中心を読み始める ＝ 読める中心が 1→3 個に化け、
+            // relationOf が「ジアステレオマー」を返してしまう。
+            // この資格はトポロジーで決まり回転では変わらないので、ここで1回だけ判定する
+            const ringIds = _ringAtomIds(e.mol);
+            const asym = e.mol.atoms.filter(a => a.element === 'C' && e.mol.isAsymmetricCarbon(a.id));
+            const fullyRead = info.centers === asym.length && !asym.some(a => ringIds.has(a.id));
+            this.pool.push(Object.assign({}, e, info, { fullyRead }));
         });
         // 構造式が同じ組だけを集める（分子が違えば立体の話にならない）
         this.pairs = [];
@@ -2472,7 +2483,11 @@ class StereoQuiz {
         // 「手前と奥が入れ替わったか」だけを見る練習にならない
         const wedge = mode === 'wedge';
         const inScope = (e) => !wedge || (e.centers === 1 && !e.fromRing && e.geoms === 0);
-        const flat = this.pool.filter(e => !e.fromRing && inScope(e));
+        // `fullyRead`（build で判定）: 図から読めない不斉炭素が残る分子（ビニロン1件）は
+        // 回すと読める中心の数が変わりうるので、回す出題に使わない。
+        // ⚠ `!fromRing` は「ハースで読めた環が無い」であって「環が無い」ではない——
+        // フェニルアラニン等のベンゼン環（環内に不斉炭素なし）は正当な出題として残る
+        const flat = this.pool.filter(e => !e.fromRing && e.fullyRead && inScope(e));
         const pairs = wedge
             ? this.pairs.filter(([i, j]) => inScope(this.pool[i]) && inScope(this.pool[j]))
             : this.pairs;
