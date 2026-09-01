@@ -50,7 +50,9 @@
  * | H   | 1      | くさび図モーダル |
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜10  | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ）。**I8〜I10 は結合の判定線がキャンバス側のモード分岐を食う型**（BUGNOTE_touch_ipad.md S6。I8 が否定対照＝ C=C の中点） |
+ * | IC  | 1〜3   | ★ **お題を選ぶ線「腕がペンチルに収まる」**（ユーザー明言 2026-09-01「C7H14O2のエステルは人間には現実的ではなさそうです／ペンチル基に収まるところまででよいと思います」）。1 が線そのもの（`functionalArmCarbons`。並んでいるお題は全部 腕≤5・**落とした3件は腕6**＝アルデヒド C₇・カルボン酸 C₇・エステル C₇・線は4分類とも同じところを通る・ギ酸エステルのアシル側は 0 と数える）・2 が **C₇ に足した名前を1件ずつ名指し**（件数では見ない。位置番号を1つ間違えた名前も赤くする）・**3 は数え落としの門番**＝ 種と腕の道は**カルボニル炭素が環に載った分子を作れない**（C₆H₁₀O のケトンに**シクロヘキサノンが入らない**）ので、**お題は全部が不飽和度1**（飽和形）であること。⚠ 腕がペンチル以内でも21種以上になる**不飽和の式は13件ある**ので、②の母数を数え直す人は必ずここへ来る。⚠ **この線を列挙の門番 `FG_ARM_MAX` に下ろすと黙って数え落とす**（エステル C₇ が 45→44種） |
  * | ID  | 1〜9   | 化合物 id と URL の受け口（compounds / stages） |
+ * | IH  | 1〜4   | 種類数を伏せた出題と分類つきのお題（v1489）。1 が「数を出さない4か所と、移った先（ヒント段1・答え合わせ）」・2 が分類つきのお題13件・3 は否定対照（「全部列挙してから捨てる」道では C₇H₁₄O₂ が1件も出せない）・**4 は引き金**＝ C₇ の4件が落ちる／通る理由が変わったら赤くする（2026-09-01 に一度引かれ、物差しを「名前が足りない」から「腕がペンチルを超える」へ架け替えた） |
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜5   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜5 は「木しか作れない式」の枝刈りと C₇H₁₆ のお題**（v1485・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。3 が列挙器（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる）・5 が画面（お題として並ぶ・入力欄からも開く・9種に名前が付く。**否定対照は「重原子7個でも木でなければ断る」**＝ C₇H₁₄・C₆H₁₅N・C₆H₁₄S が数える前に断られる） |
@@ -16656,7 +16658,7 @@
         ipStereoCleanup(c);
     });
 
-    test('IH2: 分子式＋分類のお題12件（種を置いて腕を貼る列挙・全部に名前が付く・★否定対照つき）', async (c) => {
+    test('IH2: 分子式＋分類のお題13件（種を置いて腕を貼る列挙・全部に名前が付く・★否定対照つき）', async (c) => {
         /**
          * ★ ユーザー要望 2026-08-31「重元素7以上でも分類ごとの書き出しは対応を増やしたい／
          *   例えば C₆H₁₂O のケトン、C₇H₁₄O₂ のエステル」＋ ユーザー確認済みの案A（お題ボタンを増やす）。
@@ -16670,9 +16672,10 @@
         g.setMode('learn');
         if (ip.active) ip.stop();
 
-        // ★ 12件の顔ぶれ（数は**画面には出ない**が、開いた回の総数として突き合わせる）
+        // ★ 13件の顔ぶれ（数は**画面には出ない**が、開いた回の総数として突き合わせる）
+        //   ⚠ C₇H₁₄O（ケトン）は「ペンチルの線」で通った1件（`IC1` が線そのものを見張る）
         const want = [
-            ['C₅H₁₀O（ケトン）', 3], ['C₆H₁₂O（ケトン）', 6],
+            ['C₅H₁₀O（ケトン）', 3], ['C₆H₁₂O（ケトン）', 6], ['C₇H₁₄O（ケトン）', 15],
             ['C₄H₈O（アルデヒド）', 2], ['C₅H₁₀O（アルデヒド）', 4],
             ['C₆H₁₂O（アルデヒド）', 8],
             ['C₃H₆O₂（エステル）', 2], ['C₄H₈O₂（エステル）', 4],
@@ -16798,29 +16801,33 @@
         assert(!hetero.applicable, 'ケトンの種に合わない酸素数の式を扱ってしまう');
     });
 
-    test('IH4: ★C₇ の4件が落ちる理由は「数」ではなく「名前」（DESIGN §19-4 の母数の見張り）', async (c) => {
+    test('IH4: ★C₇ の4件が落ちる／通る理由（DESIGN §19-4・§19-5 の分かれ目の見張り）', async (c) => {
         /**
          * ⚠⚠ **これは仕様の見張りではなく「設計書の数が古くなったら赤くする」引き金**。
          *
-         * ★ `DESIGN_isomer_practice.md` §19-4 の分かれ目そのもの ——
-         *   残った宿題「21種以上は何種類か答える出題」の**母数が何件か**は、
-         *   C₇ の4件が**どの条件で落ちているか**で決まる:
-         *     ・ケトン15・アルデヒド17・カルボン酸17 … **上限20の内側**（数では落ちていない）。
-         *       落としているのは条件②（正解の全部に名前が付く）＝ `compounds.json` を足せば開く
-         *     ・エステル45 … **上限20の外**（名前を足しても書き出しの回にはならない）
-         *   ⚠ だから **`compounds.json` に C₇ の名前が出そろった瞬間、母数は 4件 → 1件に縮む**。
-         *   そのとき §19-4 と `IsomerPractice.fgPresets` を**両方**見直す必要があるので、
-         *   ここが赤くなって知らせる（黙って古い設計書が残るのを防ぐ）。
+         * ★ **引き金は一度引かれた**（2026-09-01）。それまでこの検査は
+         *   「ケトン15・アルデヒド17・カルボン酸17 は**名前で**落ちている（`nameless > 0`）」を
+         *   見張っていて、`compounds.json` に C₇ の名前が44件そろった瞬間に赤くなった。
+         *   ⚠ **数を消して通したのではない。** 引き金が知らせたとおり §19-4 と `fgPresets` を
+         *   見直し、**新しい分かれ目**（ユーザー明言「ペンチル基に収まるところまで」）へ
+         *   物差しを架け替えた。いまここが見張るのは次の3つ:
+         *     ① 4件の**種類数**（15/17/17/45）… 列挙が変わったら知りたい
+         *     ② **名前は3分類とも出そろった**（`nameless === 0`）… 逆向きの見張り。
+         *        名前が欠けたら答え合わせの左列とヒント段5 が「（名称未登録）」に戻る
+         *     ③ **エステルだけが上限20 の外**／★ **落としている本当の線は腕の炭素数**
+         *        （`IC1` が線そのもの、ここは「4件がどちら側か」を見る）
          *
-         * ⚠ 名前を1つ2つ足しただけでは赤くしない（`nameless > 0` を見る）＝
-         *   ふだんの `compounds.json` 追記の邪魔はしない。**全部そろったときだけ**赤くなる。
+         * ★ §19-4 の宿題「21種以上は何種類か答える出題」は**やらないことに決まった**
+         *   （ユーザーが C₇H₁₄O₂ のエステルを出題から外したので、母数が 0 になった）。
+         *   ⚠ **母数がまた 1以上になったら**（＝ 腕がペンチル以内で 21種以上の式が現れたら）
+         *   ここではなく `IC1` が赤くなる。
          */
         const W = c.W, ip = W.isomerPractice;
         const C7 = [
-            { cls: 'ketone',   els: 7, o: 1, h: 14, total: 15, overCap: false },
-            { cls: 'aldehyde', els: 7, o: 1, h: 14, total: 17, overCap: false },
-            { cls: 'acid',     els: 7, o: 2, h: 14, total: 17, overCap: false },
-            { cls: 'ester',    els: 7, o: 2, h: 14, total: 45, overCap: true }
+            { cls: 'ketone',   els: 7, o: 1, h: 14, total: 15, overCap: false, arm: 5 },
+            { cls: 'aldehyde', els: 7, o: 1, h: 14, total: 17, overCap: false, arm: 6 },
+            { cls: 'acid',     els: 7, o: 2, h: 14, total: 17, overCap: false, arm: 6 },
+            { cls: 'ester',    els: 7, o: 2, h: 14, total: 45, overCap: true,  arm: 6 }
         ];
         C7.forEach(t => {
             const els = [];
@@ -16831,16 +16838,208 @@
                 `C₇ の${t.cls}が数え切れない（applicable=${r.applicable} overflow=${r.overflow}）`);
             assert(r.isomers.length === t.total,
                 `C₇ の${t.cls}が ${r.isomers.length}種（${t.total}種を期待・§19-4 の表が古い）`);
-            // ★ 上限20 の内か外か ＝ 「数で落ちているか」
+            // ★ 上限20 の内か外か
             assert((r.isomers.length > W.IP_MAX_ISOMERS) === t.overCap,
                 `C₇ の${t.cls}の「上限20 を超えるか」が ${!t.overCap}（§19-4 の分かれ目が変わった）`);
-            const nameless = r.isomers.filter(m => !ip.constitutionalName(m)).length;
-            if (t.overCap) return;                     // エステルは数で落ちるので名前は問わない
-            // ★★ 数では落ちていない3件は、**名前で落ちている**ことを確かめる。
-            //   ここが 0 になったら「書き出しの回にできる」＝ §19-4 の母数が 4→1 に縮む
-            assert(nameless > 0,
-                `★ C₇ の${t.cls}に名前が出そろった（名無し0）—— ` +
-                'DESIGN_isomer_practice.md §19-4 の母数と fgPresets を見直してください');
+            // ★★ 腕の最大炭素数 ＝ いま4件を分けている線（ケトンだけ 5 ＝ ペンチルに収まる）
+            const arm = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, t.cls).max));
+            assert(arm === t.arm,
+                `C₇ の${t.cls}の腕の最大が ${arm}（${t.arm} を期待・ペンチルの線の位置が変わった）`);
+            if (t.cls === 'ester') return;             // エステルは名前を足していない（39件が名無し）
+            // ★★ 逆向きの見張り —— 3分類は**名前が出そろっている**
+            const nameless = r.isomers.filter(m => !ip.constitutionalName(m));
+            assert(nameless.length === 0,
+                `★ C₇ の${t.cls}に名前の付かない正解が ${nameless.length}件 —— ` +
+                'compounds.json から C₇ の名前が失われた疑い（答え合わせが「（名称未登録）」に戻る）');
+        });
+        // ★ エステルだけは名無しが残ったまま（＝ ここを埋めても出題にはならない、を明示）
+        const est = W.enumerateFunctionalGroupIsomers(
+            ['C', 'C', 'C', 'C', 'C', 'C', 'C', 'O', 'O'], 14, 'ester');
+        assert(est.isomers.filter(m => !ip.constitutionalName(m)).length > 0,
+            '★ C₇H₁₄O₂ のエステルにも名前が出そろった —— ' +
+            '出題からは外したまま（腕がヘキシル・45種）でよいかを DESIGN §19-5 で見直してください');
+    });
+
+    test('IC1: ★お題を選ぶ線は「腕がペンチルに収まる」（ユーザー明言・★否定対照つき）', async (c) => {
+        /**
+         * ★★ ユーザー明言 2026-09-01:
+         *   > **C7H14O2のエステルは人間には現実的ではなさそうです**
+         *   > **ペンチル基に収まるところまででよいと思います**
+         *
+         * ⚠⚠ **「12件が13件になった」を件数だけで見ない。** それだと
+         *   *どの* 式を足したかも、*なぜ* 止めたかも検査していない。ここが見るのは:
+         *     ① いま並んでいるお題の**全分子の腕が 5 以下**（線の内側にある）
+         *     ② ★否定対照 —— **落とした3件は本当に線の外**（アルデヒド C₇・カルボン酸 C₇・
+         *        エステル C₇ の腕はどれも 6 ＝ ヘキシル）
+         *     ③ ★否定対照 —— **線をちょうど跨ぐ**（腕5の式は全分類にあり、腕6の式は全部落ちる）
+         *     ④ ★否定対照 —— **この線を列挙の門番（`FG_ARM_MAX`）に下ろすと黙って数え落とす**
+         */
+        const W = c.W, ip = W.isomerPractice;
+        const ARM_MAX = 5;                              // ペンチル基
+        const parse = f => ip.parseFormula(f);
+
+        // ① 並んでいるお題は全部、線の内側
+        assert(ip.fgPresets.length === 13, `分類つきのお題が ${ip.fgPresets.length}件（13件を期待）`);
+        ip.fgPresets.forEach(pre => {
+            const p = parse(pre.formula);
+            const r = W.enumerateFunctionalGroupIsomers(p.heavy, p.h, pre.cls);
+            assert(r.applicable && !r.overflow && r.isomers.length >= 2, `${pre.formula} ${pre.cls} が開かない`);
+            const worst = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, pre.cls).max));
+            assert(worst <= ARM_MAX,
+                `★ ${pre.formula} の${pre.cls}に腕が ${worst}個（ペンチル ${ARM_MAX} を超えるお題が並んでいる）`);
+        });
+
+        // ② ★否定対照 —— 落とした3件は線の外。⚠ **数（上限20）では落ちていない**ものが2つある
+        const OUT = [
+            { formula: 'C7H14O',  cls: 'aldehyde', total: 17, arm: 6 },
+            { formula: 'C7H14O2', cls: 'acid',     total: 17, arm: 6 },
+            { formula: 'C7H14O2', cls: 'ester',    total: 45, arm: 6 }
+        ];
+        OUT.forEach(t => {
+            assert(!ip.fgPresets.some(p => p.formula === t.formula && p.cls === t.cls),
+                `${t.formula} の${t.cls}がお題に並んでいる（線の外のはず）`);
+            const p = parse(t.formula);
+            const r = W.enumerateFunctionalGroupIsomers(p.heavy, p.h, t.cls);
+            assert(r.isomers.length === t.total, `${t.formula} ${t.cls} が ${r.isomers.length}種`);
+            const worst = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, t.cls).max));
+            assert(worst === t.arm,
+                `★ ${t.formula} の${t.cls}の腕の最大が ${worst}（${t.arm}＝ヘキシルを期待。` +
+                'ここが 5 に落ちたら、その回はお題にできる ＝ fgPresets を見直すこと）');
+        });
+
+        // ③ ★否定対照 —— 線は**全分類でちょうど同じところ**を通る（1分類だけの都合ではない）
+        const EDGE = [
+            { formula: 'C7H14O',  cls: 'ketone',   arm: 5 },   // 内側の端
+            { formula: 'C6H12O',  cls: 'aldehyde', arm: 5 },
+            { formula: 'C6H12O2', cls: 'ester',    arm: 5 },
+            { formula: 'C6H12O2', cls: 'acid',     arm: 5 }
+        ];
+        EDGE.forEach(t => {
+            const p = parse(t.formula);
+            const r = W.enumerateFunctionalGroupIsomers(p.heavy, p.h, t.cls);
+            const worst = Math.max(...r.isomers.map(m => W.functionalArmCarbons(m, t.cls).max));
+            assert(worst === t.arm, `${t.formula} の${t.cls}の腕の最大が ${worst}（${t.arm} を期待）`);
+            assert(ip.fgPresets.some(x => x.formula === t.formula && x.cls === t.cls),
+                `腕ちょうど5の ${t.formula}（${t.cls}）がお題に無い`);
+        });
+
+        // ④ ★否定対照 —— 腕の数え方そのもの。ギ酸エステルは**アシル側が 0**（水素の腕）で、
+        //    アルコール側だけが伸びる ＝ 2本の腕を1つに混ぜていない
+        const e3 = W.enumerateFunctionalGroupIsomers(['C', 'C', 'C', 'O', 'O'], 6, 'ester');
+        const arms3 = e3.isomers.map(m => W.functionalArmCarbons(m, 'ester').arms.join('+')).sort();
+        assert(arms3.join(' / ') === '0+2 / 1+1',
+            `C₃H₆O₂ のエステルの腕が ${arms3.join(' / ')}（"0+2"（ギ酸エチル）と "1+1"（酢酸メチル）を期待）`);
+        // 種の形に合わない分子には null（「腕0本」ではない）を返す ＝ 見落としを緑にしない
+        assert(W.functionalArmCarbons(e3.isomers[0], 'ketone') === null,
+            'エステルをケトンとして腕を数えてしまう（分類の取り違えが黙って通る）');
+    });
+
+    test('IC3: ★★種と腕の道は「環に載った C=O」を作れない ＝ 不飽和の式はお題にしない', async (c) => {
+        /**
+         * ⚠⚠ **これは「数え落とし」の門番**（DESIGN §19-5c の後半）。
+         *
+         * `enumerateFunctionalGroupIsomers` は腕を**それぞれ独立した断片**として1本ずつ貼るので、
+         * **2本の腕をつないで環にする道が無い** ＝ **カルボニル炭素が環に載った分子を1つも作れない**。
+         * ★ 飽和の式（CₙH₂ₙO・CₙH₂ₙO₂）では C=O が不飽和度を使い切るので**環は原理的に作れず、
+         *   列挙は完全**。⚠ **不飽和の式に広げた瞬間、シクロヘキサノンやラクトンが黙って落ちる。**
+         *
+         * ★ **腕がペンチル以内でも 21種以上になる不飽和の式は 13件ある**ので、
+         *   「②（何種類か答える）の母数」を数え直す人は必ずここへ来る。**そこで止める。**
+         */
+        const W = c.W, ip = W.isomerPractice;
+
+        // ① いま並んでいるお題は**全部が不飽和度1**（＝ C=O ぶんだけ。環が作れないことが害にならない）
+        ip.fgPresets.forEach(pre => {
+            const p = ip.parseFormula(pre.formula);
+            const nc = p.heavy.filter(e => e === 'C').length;
+            const dou = (2 * nc + 2 - p.h) / 2;
+            assert(dou === 1,
+                `★ ${pre.formula}（${pre.cls}）の不飽和度が ${dou} —— ` +
+                '種と腕の道は環に載った C=O を作れないので、不飽和の式をお題にすると黙って数え落とす ' +
+                '（DESIGN_isomer_practice.md §19-5c）');
+        });
+
+        // ② ★否定対照 —— 実際に落ちることを見る。C₆H₁₀O のケトンに**シクロヘキサノンが入らない**
+        const ring = new W.Molecule();
+        const ids = [];
+        for (let i = 0; i < 6; i++) ids.push(ring.addAtom('C', 0, 0).id);
+        for (let i = 0; i < 6; i++) ring.addBond(ids[i], ids[(i + 1) % 6], 1);
+        ring.addBond(ids[0], ring.addAtom('O', 0, 0).id, 2);
+        const want = W.canonicalCode(ring);
+        const r = W.enumerateFunctionalGroupIsomers(['C', 'C', 'C', 'C', 'C', 'C', 'O'], 10, 'ketone');
+        assert(r.applicable && !r.overflow && r.isomers.length === 18,
+            `C₆H₁₀O のケトンが ${r.isomers.length}種（18種を期待）`);
+        assert(!r.isomers.some(m => W.canonicalCode(m) === want),
+            '★ シクロヘキサノンが列挙に入るようになった —— 環に載った種を置く道ができたなら、' +
+            '不飽和の式をお題にできる。DESIGN §19-5c を見直してください');
+        const inRing = r.isomers.filter(m => {
+            const cy = W.findAnyCycle(m);
+            if (!cy) return false;
+            const s = new Set(cy);
+            const k = m.atoms.find(a => a.element === 'C' &&
+                m.getNeighbors(a.id).some(n => n.type === 2 && n.atom.element === 'O'));
+            return k && s.has(k.id);
+        });
+        assert(inRing.length === 0,
+            `カルボニル炭素が環に載った生成物が ${inRing.length}件 出た（0件のはず）`);
+        // ⚠ 「環そのものが作れない」わけではない（腕の中の環は作れる）＝ 測り方の空振りではない
+        assert(r.isomers.filter(m => W.findAnyCycle(m)).length > 0,
+            '環をもつ生成物が1件も無い（腕の中の環まで作れていない ＝ この対照が空振り）');
+    });
+
+    test('IC2: ★足した C₇ の名前を1つずつ名指しで見る（件数では見ない）', async (c) => {
+        /**
+         * ⚠⚠ **「名前が44件増えた」を件数で見てはいけない。**
+         *   件数だけなら**位置番号を1つ間違えた名前**も、**別の構造に付いた名前**も緑になる。
+         *   ここは C₇ の3分類の正解に付く名前を**全部そろえて突き合わせる** ＝
+         *   1件でも欠ける・綴りが変わる・別の名前に化けると赤くなる。
+         *
+         * ★ この一覧は**独立に2通りで作った名前**（DESIGN §19-5）:
+         *   (A) アプリの `iupacName` に、C=O を C-OH に読み替えたアルコールを名付けさせて語尾を移す
+         *   (B) 主鎖・番号・置換基を自前で組み立てる
+         *   49件すべて一致した。⚠ **(A) をここで再現しないこと** ——
+         *   それは「同じ道でもう一度作って同じだった」でしかない。ここは**結果を書き留める**側。
+         */
+        const W = c.W, ip = W.isomerPractice;
+        const WANT = {
+            ketone: [
+                '2-ヘプタノン（メチルペンチルケトン）', '2-メチル-3-ヘキサノン', '2,2-ジメチル-3-ペンタノン',
+                '2,4-ジメチル-3-ペンタノン', '3-エチル-2-ペンタノン', '3-ヘプタノン（エチルブチルケトン）',
+                '3-メチル-2-ヘキサノン', '3,3-ジメチル-2-ペンタノン', '3,4-ジメチル-2-ペンタノン',
+                '4-ヘプタノン（ジプロピルケトン）', '4-メチル-2-ヘキサノン', '4-メチル-3-ヘキサノン',
+                '4,4-ジメチル-2-ペンタノン', '5-メチル-2-ヘキサノン', '5-メチル-3-ヘキサノン'
+            ],
+            aldehyde: [
+                '2-エチル-2-メチルブタナール', '2-エチル-3-メチルブタナール', '2-エチルペンタナール',
+                '2-メチルヘキサナール', '2,2-ジメチルペンタナール', '2,2,3-トリメチルブタナール',
+                '2,3-ジメチルペンタナール', '2,3,3-トリメチルブタナール', '2,4-ジメチルペンタナール',
+                '3-エチルペンタナール', '3-メチルヘキサナール', '3,3-ジメチルペンタナール',
+                '3,4-ジメチルペンタナール', '4-メチルヘキサナール', '4,4-ジメチルペンタナール',
+                '5-メチルヘキサナール', 'ヘプタナール'
+            ],
+            acid: [
+                '2-エチル-2-メチルブタン酸', '2-エチル-3-メチルブタン酸', '2-エチルペンタン酸',
+                '2-メチルヘキサン酸', '2,2-ジメチルペンタン酸', '2,2,3-トリメチルブタン酸',
+                '2,3-ジメチルペンタン酸', '2,3,3-トリメチルブタン酸', '2,4-ジメチルペンタン酸',
+                '3-エチルペンタン酸', '3-メチルヘキサン酸', '3,3-ジメチルペンタン酸',
+                '3,4-ジメチルペンタン酸', '4-メチルヘキサン酸', '4,4-ジメチルペンタン酸',
+                '5-メチルヘキサン酸', 'ヘプタン酸（エナント酸）'
+            ]
+        };
+        Object.keys(WANT).forEach(cls => {
+            const els = [];
+            for (let i = 0; i < 7; i++) els.push('C');
+            for (let i = 0; i < (cls === 'acid' ? 2 : 1); i++) els.push('O');
+            const r = W.enumerateFunctionalGroupIsomers(els, 14, cls);
+            const got = r.isomers.map(m => ip.constitutionalName(m) || '（名称未登録）')
+                .sort((a, b) => a.localeCompare(b, 'ja'));
+            const want = WANT[cls];
+            assert(got.length === want.length, `C₇ の${cls}が ${got.length}種（${want.length}種を期待）`);
+            const miss = want.filter(n => got.indexOf(n) < 0);
+            const extra = got.filter(n => want.indexOf(n) < 0);
+            assert(!miss.length && !extra.length,
+                `C₇ の${cls}の名前が食い違う —— 出なかった: ${miss.join('／') || 'なし'} ` +
+                `／ 想定外に出た: ${extra.join('／') || 'なし'}`);
         });
     });
 
