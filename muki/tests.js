@@ -2,7 +2,7 @@
 //
 // ion-equation / ratio の test.html と同じ作法で、
 //   ① chemistry.js の純ロジック（DOM 非依存）
-//   ② 実アプリ（index.html）を iframe でそのまま動かして測る UI テスト
+//   ② 実アプリ（snake.html）を iframe でそのまま動かして測る UI テスト
 // を1ページに同居させる。
 //
 // このアプリは v1〜v6 のあいだ回帰テストが1本も無く、
@@ -23,10 +23,13 @@
     // それは通ったのではなく走っていない（fetch 失敗・iframe 未初期化など）
     // ⚠ 系統分離モード（型B・型A）の検査が丸ごと空振りしても気づけるように、
     //   その件数ぶんを含めた下限にしてある（2026-08-27 時点の実測は 303 件 → 型A を足して 405 件
-    //   → レイアウトの追い込みで 457 件 → 沈殿側の枝と出題の生成で 524 件）
+    //   → レイアウトの追い込みで 457 件 → 沈殿側の枝と出題の生成で 524 件
+    //   → 第5属で 599 件 → **入口の整理（ME）で 629 件**）
     // ⚠ 下限は実測のすぐ下に置く。★ ゆるくすると、型A の画面の検査が丸ごと空振りしても
     //   「少ないけど全部通った」に見えてしまう（★ 型A の画面だけで 95 件ある）
-    var MIN_CASES = 500;
+    // ⚠ ME（入口と受け口）は**いちばん最後**に走るので、下限をゆるいままにすると
+    //   「旧 `/muki/` の着地」の検査が丸ごと落ちても気づけない（実測 629 → 620 に上げた）
+    var MIN_CASES = 620;
 
     function section(title, target) {
         var h = document.createElement('h2');
@@ -1624,7 +1627,7 @@
         //   > 手順が3問すべてで同じになっている、最後の方はバリエーションを持たせるべき
         //
         // ⚠⚠ **症状の正体は出題ではなく、置く手順のほうだった** ——
-        //   出題は v29 の生成をちゃんと使っていたが、置いていたのは `treeIdealSeq`
+        //   出題は v30 の生成をちゃんと使っていたが、置いていたのは `treeIdealSeq`
         //   ＝「配った札を教科書の順に並べたもの」で、⚠ 配る札はどの容器でも同じ。
         //   ★ だから **母集団 120 組すべてで、まったく同じ7手**になっていた（下で数えている）。
         // ---------------------------------------------------------------
@@ -1862,7 +1865,7 @@
     function runUI(inited) {
         var w = frame.contentWindow, d = frame.contentDocument;
         section('アプリの起動', uiOut);
-        if (!ok('index.html が iframe で初期化された（init() が走った）', inited, uiOut)) {
+        if (!ok('snake.html が iframe で初期化された（init() が走った）', inited, uiOut)) {
             endAll();
             return;
         }
@@ -2365,8 +2368,12 @@
 
         // ★ URL に UTM が正しく載っていること（1つずつ文字列で）
         var su = w.shareUrl();
-        ok('共有 URL が公開のアドレス（canonical）から作られている（localhost を配らない）: ' + su,
-            su.indexOf('https://chem.schoollenz.com/muki/') === 0, uiOut);
+        // ⚠⚠ 2026-09-02 に `/muki/` は入口（一覧）になった。★ ここを
+        //   `https://chem.schoollenz.com/muki/` の前方一致のままにすると、
+        //   **canonical を直し忘れて一覧を配っていても通ってしまう**（前方一致は snake.html も
+        //   一覧も同じだけ満たす）。★ 行き先まで固定する
+        ok('共有 URL がスネークの canonical から作られている（一覧ではなくゲームを配る）: ' + su,
+            su.indexOf('https://chem.schoollenz.com/muki/snake.html') === 0, uiOut);
         ok('utm_source=share（⚠ どこへ共有されたかは返らないので x / instagram に出し分けない）',
             su.indexOf('utm_source=share') >= 0 &&
             su.indexOf('utm_source=x') < 0 && su.indexOf('utm_source=instagram') < 0, uiOut);
@@ -2579,7 +2586,7 @@
         }
         var f = document.createElement('iframe');
         f.id = 'sepapp';
-        f.src = 'separation.html?v=29';
+        f.src = 'separation.html?v=30';
         f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
         f.style.height = '812px';
         document.body.appendChild(f);
@@ -3693,12 +3700,226 @@
         }).then(next);
     }
 
-    // スネークの UI テストが終わったら、型B → 型A の画面へ進んでから締める。
-    // ⚠ finish() を直に呼ばないこと（型B・型A のテストが丸ごと空振りする）
+    // ===============================================================
+    // ME: 入口（/muki/）と、旧 `/muki/` の着地（2026-09-02・入口の整理「案あ」）
+    //
+    // ⚠⚠ **このアプリで壊してはいけないのは「一覧が出ること」ではなく
+    //   「旧 `/muki/` の着地が壊れていないこと」。**
+    //   2026-08-25〜09-02 のあいだ `/muki/` はイオンスネークそのもので、
+    //   結果画面の共有ボタンが `?utm_campaign=muki_snake_result` 付きの URL を配っていた。
+    //   ★ その URL を受け取った人はゲームを期待して来る。
+    //
+    // ここで見るのは4つ:
+    //   ① 入口が3つの面を**すべて**指していて、どれも実在すること
+    //   ② 旧 URL（共有の UTM）がスネークへ着地すること ＝ **否定対照の本命**
+    //   ③ 知らない `?open=` ・別の UTM は**一覧のまま**（前方互換。エラーで止めない）
+    //   ④ ⚠ `?v=` が html と **tests.js の中**でそろっていること
+    //      （★ verify-release.js は .html しか見ない ＝ js の中の `?v=` は死角）
+    // ===============================================================
+
+    // 入口とスネークの「名乗り」を、ソースを読んで突き合わせる
+    function runEntrySource(next) {
+        section('ME1〜ME2: 入口の名乗りと、3つの面の行き来');
+        if (!onHttp) { ok('ME: ソースを読み取れる（http で開いていない）', false); next(); return; }
+        var FILES = ['index.html', 'snake.html', 'separation.html', 'tree.html', 'test.html', 'tests.js'];
+        Promise.all(FILES.map(function (f) {
+            return fetch(f, { cache: 'no-store' }).then(function (r) { return r.text(); });
+        })).then(function (texts) {
+            var src = {};
+            FILES.forEach(function (f, i) { src[f] = texts[i]; });
+            var dom = {};
+            ['index.html', 'snake.html', 'separation.html', 'tree.html'].forEach(function (f) {
+                dom[f] = new DOMParser().parseFromString(src[f], 'text/html');
+            });
+            var meta = function (f, sel, attr) {
+                var el = dom[f].querySelector(sel);
+                return el ? el.getAttribute(attr) : null;
+            };
+
+            // --- ME1: `/muki/` の名乗りが「アプリ」になった（⚠ 罠1: title と OGP が動く） ---
+            ok('ME1-1: `/muki/` の title がアプリ名（色でみる無機化学）になっている',
+                /色でみる無機化学/.test(dom['index.html'].title));
+            ok('ME1-2: ⚠ `/muki/` がもう「イオンスネーク」を名乗っていない（名前は snake.html が引き継いだ）',
+                dom['index.html'].title.indexOf('イオンスネーク') < 0 &&
+                (meta('index.html', 'meta[property="og:title"]', 'content') || '').indexOf('イオンスネーク') < 0);
+            ok('ME1-3: `/muki/` の canonical と og:url が `/muki/`',
+                meta('index.html', 'link[rel="canonical"]', 'href') === 'https://chem.schoollenz.com/muki/' &&
+                meta('index.html', 'meta[property="og:url"]', 'content') === 'https://chem.schoollenz.com/muki/');
+            ok('ME1-4: ⚠⚠ スネークの canonical と og:url が `/muki/snake.html`' +
+                '（★ ここが古いと game.js の shareUrl() が一覧を配る）',
+                meta('snake.html', 'link[rel="canonical"]', 'href') === 'https://chem.schoollenz.com/muki/snake.html' &&
+                meta('snake.html', 'meta[property="og:url"]', 'content') === 'https://chem.schoollenz.com/muki/snake.html');
+            ok('ME1-5: スネークは「イオンスネーク」を名乗ったまま（検索で来る人を落とさない）',
+                dom['snake.html'].title.indexOf('イオンスネーク') >= 0);
+
+            // --- ME2: 一覧が3つの面をすべて指し、順序が付いている ---
+            var cards = [].slice.call(dom['index.html'].querySelectorAll('a.mode'));
+            var hrefs = cards.map(function (a) { return a.getAttribute('href'); });
+            ok('ME2-1: ★ 入口が3つの面をすべて指している（' + hrefs.join(' / ') + '）',
+                cards.length === 3 && hrefs.indexOf('snake.html') >= 0 &&
+                hrefs.indexOf('separation.html') >= 0 && hrefs.indexOf('tree.html') >= 0);
+            // ⚠ 並びは「やさしい順」。★ 先頭がスネークなのは、旧 `/muki/` に着地していた
+            //   人の期待にいちばん近いからでもある（DEVELOPMENT.md の罠4）
+            ok('ME2-2: 一覧の先頭がスネーク（やさしい順・旧 `/muki/` の期待に近い順）',
+                hrefs[0] === 'snake.html');
+            ok('ME2-3: 3枚とも同じ形の札（片方だけ「おまけ」に見せていない）',
+                cards.every(function (a) {
+                    return a.querySelector('.name') && a.querySelector('.sub') && a.querySelector('.tag');
+                }));
+            ok('ME2-4: 入口にハブへ戻る道・版表示・プライバシーポリシーがある',
+                !!dom['index.html'].querySelector('.topbar .hubLink[href="../index.html"]') &&
+                !!dom['index.html'].querySelector('.topbar .version') &&
+                !!dom['index.html'].querySelector('a[href="../privacy.html"]'));
+
+            // --- ME3: 3つの面が互いに行き来できる（★ どこからでも他の2つへ行ける） ---
+            var link = function (f, sel) {
+                var a = dom[f].querySelector(sel);
+                return a ? a.getAttribute('href') : null;
+            };
+            ok('ME3-1: スネーク → 型B / 型A / 入口',
+                link('snake.html', '#link-sep') === 'separation.html' &&
+                link('snake.html', '#link-tree') === 'tree.html' &&
+                !!dom['snake.html'].querySelector('.topbar a[href="index.html"]'));
+            ok('ME3-2: 型B → スネーク / 型A / 入口',
+                link('separation.html', '#link-snake') === 'snake.html' &&
+                link('separation.html', '#link-tree') === 'tree.html' &&
+                !!dom['separation.html'].querySelector('.topbar a[href="index.html"]'));
+            ok('ME3-3: 型A → スネーク / 型B / 入口',
+                link('tree.html', '#link-snake') === 'snake.html' &&
+                link('tree.html', '#link-sep') === 'separation.html' &&
+                !!dom['tree.html'].querySelector('.topbar a[href="index.html"]'));
+            // ⚠ 否定対照: 移したのに「🐍」の札が index.html を指したままになっていないか。
+            //   ★ これは 404 にならず**一覧に着地する**ので、見た目では気づけない事故
+            ok('ME3-4: ⚠ 否定対照 — 「イオンスネーク」の札が index.html を指していない',
+                ['separation.html', 'tree.html'].every(function (f) {
+                    return [].slice.call(dom[f].querySelectorAll('a')).every(function (a) {
+                        return !(/イオンスネーク/.test(a.textContent) &&
+                                 a.getAttribute('href') === 'index.html');
+                    });
+                }));
+
+            // --- ME4: 受け口の作りをソースで見る（⚠ 動きは ME5 で iframe から測る） ---
+            var entry = src['index.html'];
+            var iRecv = entry.indexOf('MUKI_OPEN_TARGETS');
+            var iGtag = entry.indexOf('googletagmanager.com');
+            ok('ME4-1: ⚠ 受け口が gtag より前にある（転送で page_view を二重に数えない）',
+                iRecv >= 0 && iGtag > iRecv);
+            ok('ME4-2: 転送するときは ga-disable を立ててから飛ぶ',
+                /ga-disable-G-403BPCLQ0D'\]\s*=\s*true;[\s\S]{0,200}location\.replace/.test(entry));
+            ok('ME4-3: 転送はクエリとフラグメントを連れて行く（UTM が転送先で数えられる）',
+                /location\.replace\([^)]*location\.search[^)]*location\.hash/.test(entry));
+            ok('ME4-4: 転送は replace（戻るボタンで入口に捕まらない）',
+                entry.indexOf('location.replace') >= 0 && !/location\.href\s*=/.test(entry));
+
+            // --- ME5: ⚠⚠ `?v=` が html と **tests.js の中**でそろっている ---
+            //   ★ verify-release.js は .html しか見ないので、js に埋めた `?v=` は死角。
+            //     muki は実際にここを踏んだ（DEVELOPMENT.md の罠5）
+            var vs = {};
+            FILES.forEach(function (f) {
+                (src[f].match(/\?v=(\d+)/g) || []).forEach(function (m) {
+                    var v = m.slice(3);
+                    (vs[v] = vs[v] || []).push(f);
+                });
+            });
+            var vlist = Object.keys(vs);
+            ok('ME5-1: ⚠⚠ `?v=` が muki の中でそろっている（★ tests.js の中の ?v= も数える。' +
+                'verify-release.js の死角）: ' +
+                vlist.map(function (v) { return 'v' + v + '→' + [].concat(vs[v]).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(','); }).join(' / '),
+                vlist.length === 1);
+
+            // --- ME6: 受け口の語彙の行き先が実在する（死にリンクを作らない） ---
+            var m = entry.match(/MUKI_OPEN_TARGETS\s*=\s*\{([^}]*)\}/);
+            ok('ME6-0: 受け口の語彙をソースから読めた', !!m);
+            var dests = m ? (m[1].match(/'([^']+\.html)'/g) || []).map(function (s) { return s.slice(1, -1); }) : [];
+            ok('ME6-1: 語彙が3つの面をすべて覆っている（' + dests.join(' / ') + '）',
+                dests.length === 3 && dests.indexOf('snake.html') >= 0 &&
+                dests.indexOf('separation.html') >= 0 && dests.indexOf('tree.html') >= 0);
+            return Promise.all(dests.map(function (d) {
+                return fetch(d, { cache: 'no-store', method: 'GET' }).then(function (r) { return r.ok; });
+            })).then(function (oks) {
+                ok('ME6-2: 語彙の行き先がすべて実在する（改名の取り残しで 404 を作らない）',
+                    oks.length === 3 && oks.every(Boolean));
+            });
+        }).catch(function (e) {
+            ok('ME: 入口のソースを読み取れる（' + e + '）', false);
+        }).then(next);
+    }
+
+    // ★★ 旧 `/muki/` の着地を、実際に iframe で開いて測る（ここがこの回の本命）
+    function runEntryUI(next) {
+        section('ME7: ★★ 旧 `/muki/` の着地（受け口を実際に開いて測る）', uiOut);
+        if (!onHttp) {
+            ok('ME7: 入口を iframe で開ける（file:// では不可）', false, uiOut);
+            next();
+            return;
+        }
+        // 1件ぶんの探り。⚠ 転送は非同期なので、**行き先が変わらなくなるまで**待つ
+        function probe(query, cb) {
+            var f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; width:375px; height:600px;';
+            f.src = 'index.html' + query;
+            document.body.appendChild(f);
+            var tries = 0;
+            setTimeout(function poll() {
+                var w = f.contentWindow, d = f.contentDocument;
+                var ready = !!(d && d.readyState === 'complete' && w && w.location);
+                if (!ready && ++tries < 100) { setTimeout(poll, 50); return; }
+                var res = { file: '', search: '', title: '' };
+                try {
+                    res.file = (w.location.pathname || '').split('/').pop();
+                    res.search = w.location.search;
+                    res.title = d.title;
+                } catch (e) { res.err = String(e); }
+                f.remove();
+                cb(res);
+            }, 250);
+        }
+        // ⚠ iframe は `index.html` を名指しで開くので、転送されなかったときの
+        //   pathname の末尾は 'index.html'。★ 公開の `/muki/` と同じ実体
+        var STAY = 'index.html';
+        var CASES = [
+            ['', STAY, '素の `/muki/` は一覧のまま（★ 検索・ハブ・直打ちはここへ来る）'],
+            ['?open=snake', 'snake.html', '?open=snake でスネーク'],
+            ['?open=separation', 'separation.html', '?open=separation で型B'],
+            ['?open=tree', 'tree.html', '?open=tree で型A'],
+            ['?utm_source=share&utm_medium=social&utm_campaign=muki_snake_result', 'snake.html',
+             '★★ 旧 `/muki/` の共有 URL がスネークへ着地する（壊してはいけないもの）'],
+            ['?open=__no_such_mode__', STAY, '⚠ 否定対照 — 知らない ?open= は一覧のまま（エラーで止めない）'],
+            ['?utm_campaign=other_campaign', STAY, '⚠ 否定対照 — 別の UTM は一覧のまま（何にでも転送しない）'],
+            ['?slz_internal=1', STAY, '⚠ 否定対照 — 関係のない引数で転送しない']
+        ];
+        var i = 0;
+        (function step() {
+            if (i >= CASES.length) {
+                // ★★ 旧 URL の UTM が転送先まで届いているか（届かないと GA4 で流入が消える）
+                probe('?utm_source=share&utm_medium=social&utm_campaign=muki_snake_result', function (r) {
+                    ok('ME7-9: ★ 転送先まで UTM が届いている（' + r.search + '）',
+                        r.file === 'snake.html' &&
+                        r.search.indexOf('utm_campaign=muki_snake_result') >= 0 &&
+                        r.search.indexOf('utm_source=share') >= 0, uiOut);
+                    next();
+                });
+                return;
+            }
+            var c = CASES[i++];
+            probe(c[0], function (r) {
+                ok('ME7-' + i + ': ' + c[2] + '（→ ' + (r.file === STAY ? '一覧' : r.file) + '）',
+                    r.file === c[1], uiOut);
+                step();
+            });
+        })();
+    }
+
+    // スネークの UI テストが終わったら、型B → 型A → 入口の順に進んでから締める。
+    // ⚠ finish() を直に呼ばないこと（型B・型A・入口のテストが丸ごと空振りする）
     function endAll() {
         runSeparationSource(function () {
             runSeparationUI(function () {
-                runTreeSource(function () { runTreeUI(finish); });
+                runTreeSource(function () {
+                    runTreeUI(function () {
+                        runEntrySource(function () { runEntryUI(finish); });
+                    });
+                });
             });
         });
     }
