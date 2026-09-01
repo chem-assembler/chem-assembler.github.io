@@ -979,7 +979,23 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //       `dehydration_anhydride`（分子内脱水→酸無水物）が入り、「同じ分子の中で環を閉じる」
     //       仕掛けは**もう在る**。足りないのは COOH+COOH ではなく **OH+COOH に当てること**だけ。
     //       ⚠ 次に assembler が分子内エステル化を足したら、この1件は本当に繋がる
-    var KNOWN_BOTTLES = 23, KNOWN_RULES = 47, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    // ⚠ 2026-09-01 に 47→49 種へ。assembler v1488 が**ビニロン**（`acetalization_pva`）、
+    //   v1491 が**開環重合**（ε-カプロラクタム → ナイロン6）を足した。瓶は 23 のまま
+    //   （ビニロンの -CH₂- は瓶ではなく**キャンバスの HCHO** から来る）。
+    //   ★見直し候補7件を1件ずつ突き合わせた結果、**拾い直せるものは今回も1件も無い**
+    //   ——2本とも重合で、列挙器の上限・CO₂ の瓶・対イオン・分子内エステル化のどれにも当たらない。
+    // ★★ ただし**4件の待っている相手が変わった**（2026-09-01 ユーザー決定）:
+    //   > **反応式を書く際には ion-equ というのが基本的な使い分け**
+    //   ＝ `org.aroN.aniline-base` / `diazonium-decomp` / `bio.amino-acid-amphoteric` /
+    //   `bio.amino-acid-polyprotic` の4件は、**assembler が対イオンを持てるようになるのを
+    //   待つ必要が無くなった**。⚠ 待つ相手は「ion-equation にその物質が収録されること」に移った。
+    //   ⚠ 実測（2026-09-01）: ion-equation に**酢酸とエタノールは在る**が、
+    //   **アニリン・グリシン・フェノール・サリチル酸・ジアゾニウムは1件も無い**
+    //   （監査ログに名前が出るだけ）。★ だから今はまだ繋がらないが、
+    //   **壁はモデルの作り直しではなくデータの追加**に下がった。
+    //   ⚠⚠ この検査は v1488 から6版ぶん赤いまま見逃されていた（統合セッションが
+    //   assembler を触ったときに qa の全走を回していなかった。`DEVELOPMENT.md` に記録）。
+    var KNOWN_BOTTLES = 23, KNOWN_RULES = 49, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
