@@ -4638,6 +4638,12 @@
           "asAnswer": 0,
           "asTool": 26
         }
+      },
+      "link": {
+        "kind": "practice",
+        "label": "元素分析から炭素の質量を出す",
+        "open": "narrowing",
+        "panel": "ea"
       }
     },
     {
@@ -4685,6 +4691,12 @@
           "asAnswer": 0,
           "asTool": 26
         }
+      },
+      "link": {
+        "kind": "practice",
+        "label": "元素分析から水素の質量を出す",
+        "open": "narrowing",
+        "panel": "ea"
       }
     },
     {
@@ -4729,6 +4741,12 @@
           "asAnswer": 0,
           "asTool": 26
         }
+      },
+      "link": {
+        "kind": "practice",
+        "label": "元素分析から酸素の質量を出す",
+        "open": "narrowing",
+        "panel": "ea"
       }
     },
     {
@@ -4775,6 +4793,12 @@
           "asAnswer": 0,
           "asTool": 26
         }
+      },
+      "link": {
+        "kind": "practice",
+        "label": "元素分析から組成式を出す",
+        "open": "narrowing",
+        "panel": "ea"
       }
     },
     {
@@ -4822,6 +4846,12 @@
           "asAnswer": 0,
           "asTool": 45
         }
+      },
+      "link": {
+        "kind": "practice",
+        "label": "組成式と分子量から分子式を出す",
+        "open": "narrowing",
+        "panel": "ea"
       }
     },
     {
@@ -14768,6 +14798,12 @@
       "evidence": {
         "textbook": "本文",
         "seminar": "未登場"
+      },
+      "link": {
+        "kind": "practice",
+        "label": "実験カードを積んで絞り込む",
+        "open": "narrowing",
+        "panel": "enum"
       }
     },
     {
@@ -14813,6 +14849,12 @@
       "evidence": {
         "textbook": "本文",
         "seminar": "未登場"
+      },
+      "link": {
+        "kind": "practice",
+        "label": "分子量から窒素の数を絞る",
+        "open": "narrowing",
+        "panel": "ea"
       }
     },
     {
