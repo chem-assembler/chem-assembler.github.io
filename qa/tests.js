@@ -710,7 +710,7 @@ function quizVocabulary(src) {
   return val;
 }
 
-function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS) {
+function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS, ASM_HTML) {
   var results = [];
   var t = function (name, fn) {
     try { fn(); results.push({ name: name, ok: true }); }
@@ -722,13 +722,21 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     "ethene_h2o", "ethanol_e1", "saponification", "benzene_sulfonation", "benzene_chlorination",
     "ethanol_ether", "ethanol_oxidation", "propanol2_oxidation", "aniline_diazotization",
     "diazo_coupling"];
-  var OPEN = ["naming", "countquiz", "stereo", "fischer", "practice"];
+  // `narrowing` … 🔍 実験カードで絞り込む（2026-09-01・assembler v1494 の受け口⑦）。
+  // これで有機の**計算**（元素分析）と「手がかりを使う順番」が繋がる。
+  // ⚠ 分子は要らない（絞り込みモードは分子式から候補を立てる画面で、キャンバスを見ない）
+  var OPEN = ["naming", "countquiz", "stereo", "fischer", "practice", "narrowing"];
   // `open` の行き先のうち、**キャンバスに載っている分子**を見る画面。
   // ここへ飛ばすときは代表分子を添えないと空振りする（下の検査で鳴らす）。
   // `naming` / `countquiz` / `fischer` / `practice` は assembler が自前で題材を出すので不要
   // （実測済み: naming → naming-modal、countquiz → count-quiz-modal、
   //   fischer → fischer-practice-modal、practice → study-modal。2026-08-21）
   var OPEN_NEEDS_MOLECULE = { stereo: 1, isomer: 1 };
+  // `panel` を渡せる行き先（2026-09-01）。**`scope` / `field` と同じ立場**＝「行き先の中のつまみ」。
+  // ⚠ `panel` を `kind` にしないのは、`kind` が「リンクの形（何を添えるか）」の軸で、
+  //   `open` が「行き先」の軸だから。`narrowing` は assembler の `OPEN_TARGETS` の1値なので
+  //   `naming` と同じ層に置く（DESIGN_organic_calc.md §3-1）
+  var OPEN_HAS_PANEL = { narrowing: 1 };
   var NEED = {
     summon: ["label", "name"], isomer: ["label", "formula"], mechanism: ["label", "id"],
     reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"]
@@ -778,6 +786,13 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
           o.code + ": 試薬 id「" + o.reagent + "」が reactor.js に無い（瓶にもルールにも見つからない）");
       }
       if (o.kind === "practice") assert(OPEN.indexOf(o.open) >= 0, o.code + ": 未登録の open 値「" + o.open + "」");
+      // CF1: `panel` は「行き先の中のつまみ」なので、つまみを持つ行き先にしか付けられない
+      if (o.panel) {
+        assert(o.kind === "practice",
+          o.code + ": panel は kind=practice でしか渡せない（kind=" + o.kind + "）");
+        assert(OPEN_HAS_PANEL[o.open],
+          o.code + ": open=" + o.open + " にはタブが無い（panel を渡しても assembler が無視する）");
+      }
       // ⚠ **キャンバスの分子を見る行き先には代表分子が要る**（2026-08-21・ユーザー報告 → 実測）。
       //   `?open=stereo` だけで飛ばすと assembler は `btn-stereo` を押し、キャンバスが空なので
       //   `openAuto(null)` が「立体を見られる sp3炭素がありません」の**トーストを数秒出して終わる**。
@@ -792,6 +807,26 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
       }
       if (o.kind === "isomer") assert(!/[₀-₉]/.test(o.formula), o.code + ": formula に下付き文字（URL に載るので ASCII 数字で書く）");
       assert(!/\*\*/.test(JSON.stringify(o)), o.code + ": Markdown の ** が混入している");
+    });
+  });
+
+  // CF2: ⚠ **タブ名（panel）も assembler の語彙**（2026-09-01）。
+  //   `scope` / `field` とまったく同じ壊れ方をする —— assembler の受け口⑦は
+  //   `.nw-mode-tab[data-panel="…"]` を DOM に聞き、**見つからなければ何もしない**
+  //   （既定の enum のまま開く）。つまり綴りを間違えても**エラーも出ず、画面も開く**ので、
+  //   「元素分析から」を頼んだのに「構造を数える」が出ていることに誰も気づけない。
+  //   だから assembler/index.html の実物からタブ名を読んで突き合わせる。
+  t("棚卸し: タブ名（panel）が assembler の実在のタブと一致している", function () {
+    if (!ASM_HTML) return;   // assembler/index.html を読めない環境ではスキップ
+    var tabs = {};
+    var re = /class="[^"]*nw-mode-tab[^"]*"[^>]*data-panel="([a-z]+)"/g, m;
+    while ((m = re.exec(ASM_HTML))) tabs[m[1]] = true;
+    assert(Object.keys(tabs).length > 0,
+      "assembler/index.html に .nw-mode-tab[data-panel] が1つも無い（相手が作りを変えた？ この検査を直す）");
+    rows.forEach(function (o) {
+      if (!o.panel) return;
+      assert(tabs[o.panel], o.code + ": 知らない panel「" + o.panel +
+        "」（assembler の実在のタブは " + Object.keys(tabs).join(" / ") + "）");
     });
   });
 
@@ -861,6 +896,16 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
       assert(p.link.kind === o.kind,
         p.code + ": kind がずれている（表 " + o.kind + " / 配信 " + p.link.kind + "）。gen_links.js を回し直す");
       assert(p.link.label === o.label, p.code + ": label がずれている。gen_links.js を回し直す");
+      // CF3: ⚠ **`open` と `panel` は配信データにも載っていないと URL に付かない**（2026-09-01）。
+      //   `kind` と `label` だけを見ていると、`?open=narrowing` は付いたのに `?panel=ea` が
+      //   落ちている状態を**「繋がった1件」として数えてしまう** ＝ 押すと既定のタブ
+      //   （構造を数える）が開き、元素分析の画面には着かない。件数では見えない壊れ方なので、
+      //   運ぶ欄そのものを1つずつ突き合わせる
+      ["open", "panel"].forEach(function (k) {
+        assert((p.link[k] || null) === (o[k] || null),
+          p.code + ": " + k + " がずれている（表 " + (o[k] || "なし") +
+          " / 配信 " + (p.link[k] || "なし") + "）。gen_links.js を回し直す");
+      });
     });
   });
 
