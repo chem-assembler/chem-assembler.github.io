@@ -3581,3 +3581,26 @@ M1〜M5 の続きではなく、**列挙（M1〜M4）と配分（M5）の間に�
 - ⚠ **他にもアプリをまたいで見張っている検査があるかは、まだ数えていない。**
   ★ **`ion-equation/test.html` が `../ratio/model.js` を読んでいるのと同じ形の依存が
   他にもありうる**（`CLAUDE.md` の規則6が `?v=` については見ているが、*中身* は見ていない）
+
+### ⚠⚠ `verify-release.js` は worktree の外から呼ぶと「嘘の合格」を出す（2026-09-02・実発生）
+
+```
+cd worktrees/<lane> && node "本体/tools/verify-release.js" qa   → ✅ （⚠ 嘘。本体の木を見ている）
+cd worktrees/<lane> && node tools/verify-release.js qa          → ❌ qa: 版が v91 のまま（★ 正しい）
+```
+
+★ **`ROOT` が `__dirname` 由来なので、どこから呼んでも *自分が置かれている木* を検査する。**
+⚠⚠ **失敗が「エラー」ではなく「合格」として出るので気づけない。**
+★ **`verify-compounds.js` も同じ**（`path.resolve(__dirname,'..','assembler')`）。
+
+**⚠ `run-tests.mjs` とは逆なので混ざりやすい:**
+
+| 道具 | 対象の決まり方 | ★ worktree でどうするか |
+|---|---|---|
+| **`run-tests.mjs`** | ★ **引数の URL** | ★ **本体のを借りてよい**（**worktree に `node_modules` が無いので、むしろそれが正解**） |
+| ⚠ **`verify-release.js`** | ⚠ **自分が置かれている木** | ⚠⚠ **必ず worktree の中のを呼ぶ**（**本体のを借りると嘘の合格**） |
+| ⚠ **`verify-compounds.js`** | ⚠ **同上** | ⚠ **同上** |
+
+★ **統合セッション側は、マージ用の worktree と main で自分で走らせているので公開物への影響は無い。**
+⚠ **ただしレーンが「verify-release 通りました」と報告しても、★ 呼び方によっては本体側の話**なので、
+**報告を鵜呑みにしない**（★ **統合側がマージ後にもう一度走らせるのが最後の砦**）。
