@@ -26826,6 +26826,147 @@
         c.reset();
     });
 
+    /* ===== PR1〜PR2: 付加重合の生成物5件の登録（DESIGN_organic_tree.md §2-3 (a)）=====
+     * 系統樹の設計レーンの実測「反応は通っているのに生成物が名称ライブラリに無く
+     * 『（未登録）』が出る」を埋めたぶん。**登録が5件増えた**を件数で見ない ――
+     * ★ **その反応を実際に起こすと、その名前が出る**を5組それぞれ名指しで見る。
+     *
+     * 図の規約は既存の高分子（ポリアセチレン・PVA・ナイロン66・PET・ビニロン・ナイロン6）と同じ
+     * **3単位＋両端 R**（`DESIGN_reaction_execution.md` §21-1 (b)）。
+     *
+     * ⚠ **名前は正準コードで引くので、座標までは一致しない**（実測）: 反応は置換基を
+     *   上下交互に出す（`uprightChainSubstituent` の `i % 2`）が、登録図は PVA と同じく
+     *   全部同じ側に出している。**それでも名前は出る** ＝ 一致を見るのは座標ではなくコード。 */
+
+    // 単量体を n 個呼んで付加重合させ、いちばん大きい成分を返す
+    const addPolymerize = (c, monomer, n) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        for (let i = 0; i < n; i++) assert(g.summonMolecule(monomer), `${monomer} が呼び出せない`);
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, `${monomer}×${n} で候補が ${sites.length} 件（1件を期待）`);
+        rule.apply(g, sites[0]);
+        g.updateDrawing();
+        return g.splitMolecules().slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+    };
+    // 単量体・重合体・図の重原子数・エステル結合の数
+    const ADDITION_POLYMERS = [
+        ['エチレン（エテン）', 'ポリエチレン', 8, 0],
+        ['プロペン（プロピレン）', 'ポリプロピレン', 11, 0],
+        ['塩化ビニル', 'ポリ塩化ビニル', 11, 0],
+        ['アクリロニトリル', 'ポリアクリロニトリル', 14, 0],
+        ['酢酸ビニル', 'ポリ酢酸ビニル', 20, 3]
+    ];
+
+    test('PR1: 付加重合の生成物5件が名乗れる（反応を実際に起こして名前を名指しで見る）', async (c) => {
+        const g = c.game;
+        ADDITION_POLYMERS.forEach(([monomer, polymer]) => {
+            const made = addPolymerize(c, monomer, 3);
+            assert(g.lookupCompoundName(made) === polymer,
+                `${monomer}3個の生成物が「${g.lookupCompoundName(made) || '（未登録）'}」（${polymer} を期待）`);
+            /* ★ 否定対照: **単位の数を実際に見ている**（FG2 の PET・LB23 の PVA と同じ性質）。
+             *   ここが赤くならないなら「R が両端に付いた鎖なら何でもその名前」になっている */
+            [2, 4].forEach(n => {
+                const other = addPolymerize(c, monomer, n);
+                assert(g.lookupCompoundName(other) !== polymer,
+                    `${monomer}${n}個でも「${polymer}」と名乗った（3単位の図を見ていない）`);
+            });
+        });
+        c.reset();
+    });
+
+    test('PR2: 5件の図が「3単位＋両端 R」で、反応でできた分子と正準コードが一致する', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const figOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} が名称ライブラリに無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        // R から R まで、重原子だけを辿った主鎖の長さ
+        const backboneLength = (mol, nm) => {
+            const rs = mol.atoms.filter(a => a.element === 'R');
+            assert(rs.length === 2, `${nm} の R が ${rs.length} 個（両端の2個を期待）`);
+            rs.forEach(r => assert(mol.getNeighbors(r.id).filter(x => x.atom.element !== 'H').length === 1,
+                `${nm} の R が2本以上の結合を持っている`));
+            const prev = new Map(), seen = new Set([rs[0].id]), q = [rs[0].id];
+            while (q.length) {
+                const cur = q.shift();
+                mol.getNeighbors(cur).forEach(nb => {
+                    if (nb.atom.element === 'H' || seen.has(nb.atom.id)) return;
+                    seen.add(nb.atom.id); prev.set(nb.atom.id, cur); q.push(nb.atom.id);
+                });
+            }
+            let cur = rs[1].id, len = 0;
+            while (prev.has(cur)) { cur = prev.get(cur); len++; }
+            return len - 1; // R と R のあいだの重原子の数
+        };
+        ADDITION_POLYMERS.forEach(([monomer, polymer, atomCount, esters]) => {
+            const fig = figOf(polymer);
+            assert(fig.atoms.length === atomCount,
+                `${polymer} の図が ${fig.atoms.length} 原子（${atomCount} を期待）`);
+            assert(backboneLength(fig, polymer) === 6,
+                `${polymer} の主鎖が炭素6個でない（1単位2個 × 3単位）`);
+            assert(W.ringAtomIds(fig).size === 0, `${polymer} の図に環がある`);
+            assert(CC(addPolymerize(c, monomer, 3)) === CC(fig),
+                `${monomer}3個の生成物が ${polymer} の登録エントリと一致しない`);
+            if (esters) assert(W.findFunctionalGroups(fig).filter(x => x.type === 'ester').length === esters,
+                `${polymer} の図のエステル結合が ${esters} か所でない`);
+        });
+        // ★ 否定対照 ①: 5件が互いに別物（同じ図を貼り間違えていない）
+        const codes = ADDITION_POLYMERS.map(([, nm]) => CC(figOf(nm)));
+        assert(new Set(codes).size === ADDITION_POLYMERS.length,
+            '5件の図に同じものが混ざっている');
+        // ★ 否定対照 ②: ポリエチレンはポリアセチレン（二重結合が残る）と別物
+        assert(CC(figOf('ポリエチレン')) !== CC(figOf('ポリアセチレン')),
+            'ポリエチレンの図がポリアセチレンと同じ（二重結合を開き忘れている）');
+        // ★ 否定対照 ③: ポリ酢酸ビニルはポリビニルアルコールと別物（けん化の行き先が同じでない）
+        assert(CC(figOf('ポリ酢酸ビニル')) !== CC(figOf('ポリビニルアルコール')),
+            'ポリ酢酸ビニルの図がポリビニルアルコールと同じ');
+        c.reset();
+    });
+
+    test('PR3: 酢酸ビニル → ポリ酢酸ビニル → けん化 → ポリビニルアルコール が2手とも名乗れる', async (c) => {
+        /* ★ **登録しただけで反応と繋がっていない、を通さないための1本。**
+         *   `DESIGN_organic_tree.md` §2-3 (a) は「付加重合5本 ＋ ポリ酢酸ビニル→PVA のけん化1本」
+         *   を数えている。★ 6本目のけん化は**既存のルール（`saponification`）がそのまま効く**ので、
+         *   ポリ酢酸ビニルを登録した時点で**両端に名前が付いた辺**になった（実測）。 */
+        const g = c.game, W = c.W;
+        const names = () => g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .map(p => g.lookupCompoundName(p) || '（未登録）');
+        const made = addPolymerize(c, '酢酸ビニル', 3);
+        assert(g.lookupCompoundName(made) === 'ポリ酢酸ビニル', 'けん化の前がポリ酢酸ビニルでない');
+        const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
+        // エステルは3か所（単位3つ）。1か所ずつ、無くなるまで効かせる
+        let sites = sap.detect(g.userMolecule);
+        assert(sites.length === 3, `けん化できる箇所が ${sites.length}（3単位ぶんの3を期待）`);
+        for (let i = 0; i < 3; i++) {
+            const s = sap.detect(g.userMolecule);
+            assert(s.length === 3 - i, `${i}回目のあとの残りが ${s.length}（${3 - i} を期待）`);
+            sap.apply(g, s[0]);
+            g.updateDrawing();
+        }
+        const after = names();
+        assert(after.includes('ポリビニルアルコール'),
+            `けん化の行き先が「${after.join('・')}」（ポリビニルアルコールを期待）`);
+        assert(after.filter(n => n === '酢酸ナトリウム').length === 3,
+            `副生成物の酢酸ナトリウムが3個でない（${after.join('・')}）`);
+        assert(!after.includes('（未登録）'), `名無しの成分が残った（${after.join('・')}）`);
+        // ★ 否定対照: 途中（1回だけ）ではまだ PVA ではない ＝ 3か所とも外して初めて名乗る
+        addPolymerize(c, '酢酸ビニル', 3);
+        sap.apply(g, sap.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        assert(!names().includes('ポリビニルアルコール'),
+            `1か所けん化しただけでポリビニルアルコールと名乗った（${names().join('・')}）`);
+        c.reset();
+    });
+
     test('RX10b: 反応の生成物が母体の刻みで置かれる（結合線が無関係な原子を貫通しない）', async (c) => {
         const g = c.game, W = c.W;
         // 名称ライブラリの分子は 80px 刻み、GRID_SIZE は 42px。生成物を 42px 固定で置くと
