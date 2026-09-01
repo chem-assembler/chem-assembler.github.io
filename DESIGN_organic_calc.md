@@ -571,6 +571,6 @@ node tools/verify-release.js qa
 |---|---|---|
 | **`tools/run-tests.mjs`** | ★ **本体のものを、worktree の URL に向けて** | ⚠ `playwright` が `tools/record/node_modules` にしか無い。★ **見る対象は URL で決まる** |
 | ⚠⚠ **`tools/verify-release.js`** | ★★ **worktree 自身のものを** | ⚠⚠ **`ROOT` が `__dirname` 由来。外から呼ぶと *本体の木* を検査して合格する** |
-| **`tools/verify-compounds.js`** | ★★ **worktree 自身のもの**（⚠ **実測:  ＝ 同じ罠**） | |
+| **`tools/verify-compounds.js`** | ★★ **worktree 自身のもの** | ⚠ **実測: `const ROOT = path.resolve(__dirname, '..', 'assembler')` ＝ 同じ罠。**★ こちらは `assembler/` を見るので、外から呼ぶと *本体の* `compounds.json` を検査する |
 
 
