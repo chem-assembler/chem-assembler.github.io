@@ -2356,6 +2356,122 @@ function snapshotFrame(mol) {
     };
 }
 
+/* ==========================================================================
+ * ★★ 開環重合（ε-カプロラクタム → ナイロン6）—— `DESIGN_reaction_execution.md`
+ *     §21-4 (e) の2本目（入試 44件）
+ *
+ * **教科書**（数研『R5化学Vol.2』6編 p.251 式(2)）:
+ *   - 単量体は**横長の「潰した環」**（左端の頂点に H₂C・上枝 -CH₂-CH₂-NH・
+ *     下枝 -CH₂-CH₂-C=O・右端で NH と C=O を縦1本線で閉環）
+ *   - 重合体は `-[N(H)-(CH₂)₅-C(=O)]-ₙ`。★ **副生成物なし**
+ *   - ⭐ **直前の式(1) がナイロン66**（`n+n → [ ]ₙ + 2n H₂O`）で、
+ *     **脱水の有無を並べて比較できる配置**になっている
+ *     → ★ **その対比は caption で言う**（画面に2つの式を並べる仕掛けは足さない）
+ *
+ * ⚠⚠ **ここが 4本のうち唯一「新しい作図routine」を要る1本**（P-c）。
+ * §21-1 (f) の実測: 環を開いても**座標は七角形の弧のまま**で、
+ * `planAttachment` の 4方向 × 4回転 = **16通りすべてで置けない**
+ * （最良 17.5px／要求 25.5px）。⚠ **傍観分子をどかす道も効かない**
+ * （邪魔者そのものが相手の環 ＝ `bystanderIds` が空になる）。
+ * ★ したがって **`planAttachment` を呼ばず、ほどいた鎖を一直線に描き直す**。
+ * ========================================================================== */
+
+/**
+ * ラクタム（環の中に -CO-NH- を持つ環状アミド）の単量体を、**同じものどうしまとめて**返す。
+ *
+ * 返り値は `[[{ n, c, o, ring, comp, x }, …], …]`（2個以上そろった組だけ）。
+ * ★ **絞り方は「環 ＋ カルボニルの O だけ」**——
+ *   ⚠ 置換基のあるラクタムは扱わない（開いた先の鎖の描き方が一意に決まらない）。
+ *   ⚠ アセトアニリド（環の**外**のアミド）は環に N が無いので落ちる。
+ *   ⚠ 環に N が2つ以上あるもの（ピペラジンジオン等）も落とす（どこで開くかが決まらない）。
+ * ★ **並べる順は画面の並び**（コンポーネントの左端の x）。既存の重合3本と同じ約束。
+ */
+function lactamUnits(mol) {
+    const ring = ringAtomIdsOf(mol);
+    const at = id => mol.atoms.find(x => x.id === id);
+    const groups = new Map();
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element === 'H' || seen.has(a.id)) return;
+        const comp = componentOf(mol, a.id);
+        comp.forEach(id => seen.add(id));
+        const heavy = [...comp].map(at).filter(x => x && x.element !== 'H');
+        // 環の外にある重原子は「カルボニルの O」1つだけ
+        const outside = heavy.filter(x => !ring.has(x.id));
+        if (outside.length !== 1 || outside[0].element !== 'O') return;
+        const o = outside[0];
+        const ob = mol.getNeighbors(o.id).filter(n => n.atom.element !== 'H');
+        if (ob.length !== 1 || ob[0].type !== 2 || ob[0].atom.element !== 'C') return;
+        const cId = ob[0].atom.id;                       // カルボニル炭素（環の中）
+        if (!ring.has(cId)) return;
+        const inRing = heavy.filter(x => ring.has(x.id));
+        if (inRing.length < 5) return;                   // 4員環以下は高校で扱わない
+        if (inRing.some(x => x.element !== 'C' && x.element !== 'N')) return;
+        const ns = inRing.filter(x => x.element === 'N');
+        if (ns.length !== 1) return;
+        const nId = ns[0].id;
+        const amide = mol.getBond(nId, cId);
+        if (!amide || amide.type !== 1) return;          // N と C=O が環の中で直に結合
+        // ⚠ 環に多重結合が残っていない（素直な飽和ラクタムだけ）
+        const ids = new Set(inRing.map(x => x.id));
+        if (mol.bonds.some(b => ids.has(b.atomId1) && ids.has(b.atomId2) && b.type !== 1)) return;
+        const code = componentCode(mol, a.id);
+        if (!groups.has(code)) groups.set(code, []);
+        groups.get(code).push({
+            n: nId, c: cId, o: o.id, comp,
+            x: Math.min(...heavy.map(p => p.x))
+        });
+    });
+    const out = [];
+    groups.forEach(list => {
+        if (list.length < 2) return;
+        list.sort((p, q) => p.x - q.x);                  // 画面の並びのまま繋ぐ
+        out.push(list);
+    });
+    return out;
+}
+
+/**
+ * ★★ **P-c: 開いた環を、一直線の鎖に描き直す。**
+ *
+ * `backbone`（主鎖の原子 id を繋がる順に並べたもの）を刻み `G` の横一列に置き、
+ * `pendants`（主鎖の原子 id → その上にぶら下げる原子 id）を**真上**へ置く
+ * （＝ ナイロン66・PET の登録図とまったく同じ描き方。=O が y-G の一列に並ぶ）。
+ *
+ * ⚠ **置き場は探す**。関わらない分子（水・別の化合物）と重ならない縦位置を、
+ *   もとの高さから上下へ1刻みずつ広げて探す。見つからなければ null を返す
+ *   （呼ぶ側が `noRoom` に落とす）。
+ *
+ * @returns `{ x0, y0 }`（左端の主鎖原子の座標）または null
+ */
+function straightChainSpot(mol, backbone, pendants, G) {
+    const at = id => mol.atoms.find(x => x.id === id);
+    const own = new Set(backbone);
+    pendants.forEach((list) => list.forEach(id => own.add(id)));
+    const others = mol.atoms.filter(x => x.element !== 'H' && !own.has(x.id));
+    const pts = backbone.map(at).filter(Boolean);
+    const x0 = Math.round(Math.min(...pts.map(p => p.x)));
+    const baseY = Math.round(pts.reduce((s, p) => s + p.y, 0) / pts.length);
+    const clear = G * 0.65;
+    // もとの高さ → 下へ1刻み → 上へ1刻み …（8刻みまで）
+    const offsets = [0];
+    for (let k = 1; k <= 8; k++) offsets.push(k * G, -k * G);
+    for (const dy of offsets) {
+        const y0 = baseY + dy;
+        const spots = [];
+        backbone.forEach((id, i) => {
+            spots.push({ x: x0 + i * G, y: y0 });
+            (pendants.get(id) || []).forEach(() => spots.push({ x: x0 + i * G, y: y0 - G }));
+        });
+        // ⚠ 両端に付く R のぶんも先に見ておく（後から置けないと端だけ印が欠ける）
+        spots.push({ x: x0 - G, y: y0 }, { x: x0 + backbone.length * G, y: y0 });
+        if (spots.every(s => others.every(o => Math.hypot(o.x - s.x, o.y - s.y) > clear))) {
+            return { x0, y0 };
+        }
+    }
+    return null;
+}
+
 /**
  * 加硫の1本目の橋を架ける前に、**相手の鎖を真下（または真上）へ寄せて「＝」に並べる**
  * （v1484・2026-08-31。動画レーン V130 の収録映像から出た要望2件）。
@@ -4332,6 +4448,81 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ 開環重合（ε-カプロラクタム → ナイロン6・§21-4 (e) の2本目・入試44件）。
+         * 詳しい理由と教科書の読みは `lactamUnits`（2333行〜）の注記に書いた。
+         *
+         * ⚠ **瓶は増やさない**。教科書は触媒を名指ししない（p.251 は「水を少量加えて加熱」）。
+         * ★ **キャンバス全体が対象**（既存の重合3本と同じ）。
+         * ⚠ **`planAttachment` を1度も呼ばない** —— 環の弧のまま繋ごうとすると
+         *   16通り全滅することが実測で分かっている（§21-1 (f)）。ほどいて直線に描き直す。 */
+        id: 'ring_opening_polymerization',
+        wholeCanvas: true,
+        label: '開環重合（環状アミドの環が開いてつながる）→ ナイロン6',
+        detect(mol) {
+            return lactamUnits(mol).map(list => list.flatMap(u => [u.n, u.c]));
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const at = id => mol.atoms.find(x => x.id === id);
+            const units = [];
+            for (let i = 0; i < site.length; i += 2) units.push({ n: site[i], c: site[i + 1] });
+            if (units.length < 2) throw new Error('単量体が2つ以上必要です');
+            const G = bondStep(mol, units[0].n);
+            /* ---- ① 環を開く（アミド結合 N-C(=O) を1本切るだけ。⚠ 原子は出入りしない） ----
+             * ★ 切ってから N → C の道を取ると、**環を回ったほうの並び**（＝ ほどいた鎖）が出る。
+             *   切る前に取ると最短経路 ＝ 切ろうとしているアミド結合そのものになってしまう。 */
+            units.forEach(u => {
+                if (!mol.getBond(u.n, u.c)) throw new Error('アミド結合が見つかりません');
+                mol.removeBond(u.n, u.c);
+                u.path = carboxylSkeletonPath(mol, u.n, u.c, []);
+                if (!u.path || u.path.length < 5) throw new Error('環をほどけませんでした');
+            });
+            // ---- ② 全部つないだ姿の主鎖を作る（N → …CH₂… → C=O → 次の N → …） ----
+            const backbone = units.flatMap(u => u.path);
+            const pendants = new Map();
+            units.forEach(u => {
+                const o = mol.getNeighbors(u.c).find(n => n.atom.element === 'O' && n.type === 2);
+                if (o) pendants.set(u.c, [o.atom.id]);
+            });
+            // ---- ③ ★★ P-c: 一直線に描き直す（環の弧のままでは置けない） ----
+            const spot = straightChainSpot(mol, backbone, pendants, G);
+            if (!spot) throw noRoom('つながった鎖を置く空間がありません');
+            backbone.forEach((id, i) => {
+                const a = at(id);
+                a.x = spot.x0 + i * G;
+                a.y = spot.y0;
+                (pendants.get(id) || []).forEach(oid => {
+                    const p = at(oid);
+                    if (p) { p.x = a.x; p.y = a.y - G; }   // =O は真上（ナイロン66 の図と同じ）
+                });
+            });
+            // ---- ④ 開いた端どうしをつなぐ（★ 水は1分子も出ない） ----
+            const changed = [];
+            for (let i = 1; i < units.length; i++) {
+                mol.addBond(units[i - 1].c, units[i].n, 1);
+                changed.push(units[i - 1].c, units[i].n);
+            }
+            const endIds = attachREnds(mol, [
+                [units[0].n, { x: -1, y: 0 }],
+                [units[units.length - 1].c, { x: 1, y: 0 }]
+            ]);
+            const n = units.length;
+            const ringSize = units[0].path.length;
+            return {
+                caption: `環状アミド ${n} 個が開環重合しました。環の中の -CO-NH- が1か所ずつ切れて、` +
+                    `切り口どうしが次々につながっています（${ringSize} 員環 → 繰り返し単位 ${n} 個）。` +
+                    '⚠ **水は1分子も出ません**。ここが縮合重合との違いで、' +
+                    'ナイロン66 は2種類の単量体（アジピン酸＋ヘキサメチレンジアミン）から' +
+                    '水がとれてつながる縮合重合、ナイロン6 は1種類の環が開いてつながる開環重合です。' +
+                    '作り方は違いますが、どちらもアミド結合 -CO-NH- でつながったナイロンです。' +
+                    '両端の R は「この先も同じ単位が続く」という印です（教科書では −[ ]ₙ− の角括弧で書きます）。' +
+                    '環の弧のままでは繋げないので、ほどいた鎖をまっすぐに描き直しました。',
+                changed: [...new Set([...changed, ...endIds])],
+                refit: true
+            };
+        }
+    },
+    {
         /* 縮合重合（P12-8 の穴埋め・2026-08-07）。ナイロン66 の図は登録済みなのに、
          * 反応実行モードからそこへ至る手段が無かった（下の `condensation_polymer_info` は
          * 説明を返すだけで、実際の連結は「エステル化を1段ずつ」に任せていた）。
@@ -5397,7 +5588,11 @@ function findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits) {
 // 同じ単量体を何個も並べて起こす重合（＝相手が自分自身の反応）。
 // **縮合重合は入れない**: 相手が別の2価単量体で、しかも2組（4分子）要る ＝
 // 「自分をもう何個か」では説明が付かない（`condensation_polymer_info` が説明を持っている）
-const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'diene_polymerization'];
+/* ★ 2026-09-01（v1491）に `ring_opening_polymerization`（ε-カプロラクタム → ナイロン6）を追加。
+ *   ⚠ **ここに入れてよい形である**ことを確かめてから足した ―― 相手は「自分と同じ分子」で、
+ *   別の単量体も水も要らない（§21-3 (b)「入口は SELF_PARTNER_RULES に1行足すだけ」）。 */
+const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'diene_polymerization',
+    'ring_opening_polymerization'];
 /**
  * 呼び出して並べる単量体の数（自分を含む）。**3 にした根拠**（v1437・§15.1 に実測）:
  *   ① このアプリ自身の高分子の図が「**3単位＋両端 R**」の規約（LB23）。実際
@@ -7799,6 +7994,7 @@ if (typeof window !== 'undefined') {
     window.aromaticSiteRole = aromaticSiteRole; // 配向性（テスト・検証ツール用）
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
     window.acetalizableDiols = acetalizableDiols; // PY5〜PY8（ビニロン）が読む
+    window.lactamUnits = lactamUnits;             // PY10〜PY13（開環重合）が読む
     window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;
     window.SELF_PARTNER_RULES = SELF_PARTNER_RULES; // PM5・PM6（1分子からの重合の入口）が読む
     window.SELF_PARTNER_UNITS = SELF_PARTNER_UNITS;
