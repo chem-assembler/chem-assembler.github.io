@@ -942,10 +942,17 @@
                      ⚠ 入口をここに置くのは、参考書が「既定で開いていない・振り返るもの」だから
                         （DEVELOPMENT.md 原則2）。リボンにタイルは足さない —— 9枠でちょうど埋まっていて
                         10枠目は 320px で溢れる（DESIGN_ribbon_consolidation.md §1-1） -->
-                <div class="quiz-group-head">読んで確かめる<span>資料の表を見てから、キャンバスで試します</span></div>
+                <div class="quiz-group-head">読む<span>表を見てから試します</span></div>
                 <details id="learn-acc-reference" class="learn-acc">
                     <summary>📖 資料（参考書）</summary>
                     <div class="learn-acc-body">
+                        <!-- ⚠ **この案内は消せない**。`UX1` が「畳んだ `<details>` の中身が
+                             20字以上あること」を見張っている（＝「畳んだふりをして消す」の封じ）。
+                             閉じているあいだは操作の案内の字数には入らないので、ここには書いてよい -->
+                        <p id="reference-lead" style="margin:0; font-size:12.5px; color:var(--text-muted); line-height:1.5; text-align:left;">
+                            単元ごとの読み物です。<b>表で規則をひととおり見てから</b>、例題をキャンバスで組んで確かめます。</p>
+                        <!-- 一覧は learn.js が reference.json から組む（開いたときに1回だけ読む）。
+                             ⚠ 行を HTML に書かない ＝ 表を写す余地をここにも作らない -->
                         <div id="reference-list"></div>
                     </div>
                 </details>

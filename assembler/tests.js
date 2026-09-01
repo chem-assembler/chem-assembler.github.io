@@ -13171,8 +13171,10 @@
         // 件数まで固定する（1か所だけ古い 899px のまま残ると、上の「よそもの」で捕まる。
         // 逆に**ブロックごと消えた**場合はここで捕まる）
         // ⚠ 5 → 6（v1416・キャンバス上の常設バッジ `#canvas-mode-badge` の詰めを足した）。
+        // ⚠ 6 → 7（2026-09-02・📖 資料ペインの `top: 44px`。ヘッダーを 44px にしているのが
+        //    この条件なので、同じ1行に合わせるのが正しい）。
         //    件数はブロックを**足したとき**にここで一緒に上げる（減ったときは赤で捕まる）
-        assert(数[共通] === 6, `縦横共通のブロックが ${数[共通]} 個（6個であるべき）`);
+        assert(数[共通] === 7, `縦横共通のブロックが ${数[共通]} 個（7個であるべき）`);
         assert(数[縦] === 1, `縦（M1）のブロックが ${数[縦]} 個（1個であるべき）`);
         assert(数[横] === 1, `横（M2）のブロックが ${数[横]} 個（1個であるべき）`);
         // 否定対照 —— 上限を外して `(orientation: portrait)` 単独にすると縦長の PC まで
@@ -32035,7 +32037,7 @@
         assert(kids.length === 8, `#study-body 直下の要素が 8（見出し3＋details5）でない（${kids.length}）`);
         assert(/手を動かす/.test(heads[0].textContent), '1つめの見出しが「手を動かす」でない');
         assert(/登録された反応を見る/.test(heads[1].textContent), '2つめの見出しが「登録された反応を見る」でない');
-        assert(/読んで確かめる/.test(heads[2].textContent), '3つめの見出しが「読んで確かめる」でない');
+        assert(/読む/.test(heads[2].textContent), '3つめの見出しが「読む」でない');
 
         // 位置: 「手を動かす」の下に3つ・「登録された反応を見る」の下に1つ・「読んで確かめる」の下に1つ
         assert(kids[0] === heads[0], '「手を動かす」が #study-body の先頭にない');
@@ -32044,7 +32046,7 @@
         assert(kids.indexOf(heads[1]) === kids.indexOf(accs[3]) - 1,
             '「登録された反応を見る」が ⚗️ 反応機構ビューアの直前にない');
         assert(kids.indexOf(heads[2]) === kids.indexOf(accs[4]) - 1,
-            '「読んで確かめる」が 📖 資料（参考書）の直前にない');
+            '「読む」が 📖 資料（参考書）の直前にない');
     });
 
     test('EP8: 機構ビューアの案内が、作業帯のボタンの実際の文言を名指しする（D4・D2）', async (c) => {
@@ -45324,16 +45326,33 @@
                 `${name}: 資料を出すとデカンの結合が ${decBefore.toFixed(1)} → ${W.game.screenPxPerGrid().toFixed(1)}px に変わった`);
         });
 
-        // --- 1280×800: 分割する。★ 資料を出しても在庫の大物が床を割らない
-        await withReference(1280, 800, async (W, D, name) => {
+        /* --- ★★ 分割は 1200px から。⚠ **設計書 §4-3 の「閾値は新設せず 1000px を流用」は誤り**
+           （このレーンの実測。資料を開いてデカン／スクロースを出したとき）:
+               1000 → デカン 22.6 ✗ ／ 1100 → 26.8 ✗ ／ 1150 → 29.3 ○ だがスクロース 25.4 ✗
+               1200 → デカン 32.9 ○・スクロース 28.4 ○
+           ＝ **閾値は「借りられる値」ではなく「測って決まる値」だった。** */
+
+        // ★否定対照: 閾値の1px下（1199）は**分割しない**。ここが緩むと 1000〜1199 の床割れが戻る
+        await withReference(1199, 800, async (W, D, name) => {
+            const pane = D.getElementById('reference-pane');
+            assert(W.getComputedStyle(pane).position === 'fixed',
+                `${name}: 閾値（1200px）の下なのに分割している。⚠ 1199px 以下で分割すると床を割る（実測）`);
+            assert(W.getComputedStyle(D.querySelector('.ref-tabs')).display !== 'none',
+                `${name}: 重ねているのに行き来のタブが出ていない`);
+        });
+
+        // 1200×800（★ 閾値ちょうど ＝ いちばん厳しい側）で、在庫の大物が床を割らない
+        await withReference(1200, 800, async (W, D, name) => {
             const pane = D.getElementById('reference-pane');
             assert(W.getComputedStyle(pane).position !== 'fixed',
-                `${name}: PC でも重ねている（分割になっていない）`);
+                `${name}: 閾値ちょうどなのに分割になっていない`);
             assert(W.getComputedStyle(D.querySelector('.ref-tabs')).display === 'none',
                 `${name}: 左右に並んでいるのに行き来のタブが出ている（切り替える相手がいない）`);
             const paneW = pane.getBoundingClientRect().width;
-            assert(paneW > 0 && paneW <= 380,
-                `${name}: 資料ペインが ${Math.round(paneW)}px（実測で 380px を超えると在庫の大物が床を割る）`);
+            assert(paneW > 0 && paneW <= 340,
+                `${name}: 資料ペインが ${Math.round(paneW)}px（実測で 340px を超えると在庫の大物が床を割る）`);
+            // ⚠ **スクロースを外さない** —— 在庫で最大級（424×238単位）で、閾値を決めたのはこの分子。
+            //    デカンだけ見ていると 1150px でも通ってしまう（デカン 29.3 ○ / スクロース 25.4 ✗）
             for (const nm of ['デカン', 'スクロース']) {
                 // ⚠ 呼び出しは**足す**ので、前の分子を消してから測る
                 //   （消さずに続けて呼ぶと2分子ぶんに視野が合い、実測が2倍近く小さく出る）
