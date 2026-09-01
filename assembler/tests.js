@@ -38,6 +38,11 @@
  *                  「D だから R とは限らない」をアプリ自身の CIP に計算させる（L-システインだけ (R)）／
  *                  用語は鏡像異性体（qa/KNOWLEDGE_CAVEATS.md J-4）／R/S の決め方は書き写さない） |
  * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが2つ挿さっていること・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
+ * | EQ  | 1      | 実験モード 第2段（DESIGN_experiment_mode.md）。**1 は課題とは別件の実発生**＝
+ *                  `obstructedInsets()` が「帯の上端がキャンバスの上半分か」で天井／床を決めており、
+ *                  キャンバスが薄くなると反転していた（320px ＋ 🧪 実験パレットで
+ *                  呼んだ分子 9/9 原子が作業帯の裏）。否定対照は「旧式と新式で答えが分かれる配置か」を
+ *                  その場で計算して主張に含める形 |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
@@ -31995,6 +32000,63 @@
         assert(snap() === before, 'モーダル側の空振りで分子が変わった');
         g.closeMoleculeModal();
         g.setPalette('draw');
+    });
+
+    /* ===== EQ1: 厚い帯を「天井」と読み違えない（obstructedInsets・実発生） =====
+     *
+     * ⚠⚠ **これは実験モードの課題（第2段）とは別の、いま main に在る不具合の門番**。
+     *   `obstructedInsets()` は「帯の上端がキャンバスの上半分にあれば天井」で天井／床を決めていた。
+     *   これは**帯がキャンバスよりずっと薄い**ことを前提にした式で、
+     *   **キャンバスが薄くなると反転する**。
+     *
+     * ★ 実測（v1494 の 🧪 実験パレット・320×568。**課題を1問も置いていない状態で起きる**）:
+     *     `#svg-wrapper` 234px ／ 下端に貼った `#work-strip` 128px ／ 帯の上端は 106px。
+     *     106 ≦ 117（＝ 234 の半分）なので**天井**と判定され、`top=140 / bottom=0`。
+     *     `fitCanvasToMolecule` は空いている「下半分」へ分子を寄せる ＝ **帯の裏**。
+     *     エタノールの重原子＋水素 9個が**9個とも帯の下**に入った。
+     *
+     * ★ 否定対照は「旧式ならどう答えたか」をその場で計算して突き合わせる ——
+     *   **旧式と新式の答えが分かれる配置になっていること**を主張に含めるので、
+     *   直しを戻せば必ず赤くなるし、症状の出ない配置で緑になることもない。 */
+    test('EQ1: 厚い帯を「天井」と読み違えず、呼んだ分子が帯の裏に入らない（320px・実発生）', async () => {
+        await withViewport(320, 568, async (W, D, name) => {
+            const g = W.game;
+            g.setMode('free');
+            // 🧪 実験パレットにすると左パネルが 83 → 160px になり、キャンバスが 311 → 234px へ縮む
+            D.querySelector('#palette-tabs .palette-tab[data-palette="exp"]').click();
+            await new Promise(r => setTimeout(r, 150));
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule('エタノール'), `${name}: エタノールを呼び出せない`);
+            g.updateDrawing();
+
+            const svg = D.getElementById('chem-svg');
+            const strip = D.getElementById('work-strip');
+            const r = svg.getBoundingClientRect();
+            const b = strip.getBoundingClientRect();
+            assert(b.height > 1 && r.height > 1, `${name}: 帯かキャンバスの高さが取れない`);
+
+            // ★ **症状の出る配置になっているか**（前提。ここが崩れたら緑は空振り）
+            const 旧式は天井 = (b.top - r.top) <= r.height * 0.5;
+            assert(旧式は天井,
+                `${name}: 旧式でも床と読める配置になっている` +
+                `（帯の上端 ${Math.round(b.top - r.top)}px / キャンバス高の半分 ${Math.round(r.height / 2)}px）` +
+                ' —— この幅で帯が薄くなったなら、EQ1 の前提を測り直すこと');
+            const ins = g.obstructedInsets();
+            assert(ins.bottom > 0 && ins.top === 0,
+                `${name}: 下端に貼った帯が床として数えられていない（top=${Math.round(ins.top)} / bottom=${Math.round(ins.bottom)}）`);
+
+            // ★ 本体: 呼んだ分子が帯の裏に入っていない
+            const 裏 = [...D.querySelectorAll('#atoms-group circle')].filter(c => {
+                const cr = c.getBoundingClientRect();
+                if (cr.width === 0) return false;
+                return cr.bottom > b.top && cr.top < b.bottom && cr.right > b.left && cr.left < b.right;
+            });
+            const 全部 = [...D.querySelectorAll('#atoms-group circle')].filter(c => c.getBoundingClientRect().width > 0);
+            assert(全部.length >= 3, `${name}: 原子が描かれていない（${全部.length}個）`);
+            assert(裏.length === 0,
+                `${name}: 呼び出した分子の ${裏.length}/${全部.length} 個が作業帯の裏に入っている` +
+                '（obstructedInsets が帯を天井と読み違えている）');
+        });
     });
 
     /* ===== EP7〜EP9: 学習メニューの言い直し（D・DESIGN_entry_points.md §10） =====
