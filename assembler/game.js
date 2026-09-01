@@ -8699,10 +8699,13 @@ class Game {
         this.currentQuest = { ...q, goalCode };
         this._questDone = false;
         this.setQuestOpen(false);
-        // ⚠⚠ **画面を先に作り替えてから分子を置く。** `summonMolecule` は
+        // ★ **画面を先に作り替えてから分子を置く。** `summonMolecule` は
         //   `fitCanvasToMolecule` を通り、そこで `obstructedInsets()`（帯・パレットが
-        //   キャンバスをどれだけ覆っているか）を読んで**帯の下に分子を置かない**ようにしている。
-        //   置いてから帯を出すと、その勘定が1回ぶん古い ＝ 出発物が帯の裏に隠れる。
+        //   キャンバスをどれだけ覆っているか）を読んで帯の下に分子を置かないようにしているので、
+        //   置いてから帯を出すと、その勘定が1回ぶん古い。
+        // ⚠ **ただし、いまの帯の厚みでは順序を入れ替えても結果は変わらなかった**（実測。
+        //   375/320 の3課題で隠れた原子の数が同じ ＝ **この順序を見張るテストは書いていない**）。
+        //   保つのは、帯やパレットが将来もっと厚くなったときに効くため。
         this.setPalette('exp');
         this.syncQuestStrip();
         if (!this.placeQuestStart()) {
