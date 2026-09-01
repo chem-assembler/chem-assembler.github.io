@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1496">
+    <link rel="stylesheet" href="style.css?v=1497">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1496</div>
+            <div class="version">v1497</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -562,6 +562,31 @@
                     <div id="compound-formula">—</div>
                 </div>
             </div>
+
+            <!-- 📖 資料（参考書）ペイン（DESIGN_reference_book.md §4-3「案A（PC分割）＋案C（スマホ タブ）」）。
+                 ⚠ **DOM は1つ**。「横に並べる／重ねて切り替える」の振り分けは style.css の
+                    `@media (min-width: 1000px)` だけでやる（JS で端末を見て切り替えると、
+                    回転とウィンドウ変形のたびに状態を持ち直すことになる。設計書 §4-3）。
+                 ⚠ **既定で閉じている**（`.hidden`）。参考書は「見ながら解くもの」ではなく
+                    「わからなければ振り返るもの」＝ 開くのに一手かかるのは欠点ではない
+                    （DEVELOPMENT.md「第3の道は却下」原則2）。
+                 ⚠ **中身は learn.js が組み立てる**。ここには器だけを置く ——
+                    表の行を HTML に書くと「どこかの表を写す」余地がその場でできる（§1-2）。
+                 ⚠ z-index は 900 ＝ **モーダル（1000）より下**。重ねて出るのはキャンバスの上までで、
+                    📚 学習・ヘルプなどのモーダルは資料の上に開ける -->
+            <aside id="reference-pane" class="reference-pane hidden" aria-label="資料（参考書）">
+                <div class="ref-head">
+                    <!-- スマホでは資料がキャンバスを覆う ＝ 行き来はこのタブで。
+                         PC（≥1000px）では左右に並ぶので、タブは CSS で隠して ✕ だけ残す -->
+                    <div class="ref-tabs" role="tablist">
+                        <button id="btn-ref-tab-doc" class="ref-tab active" role="tab" aria-selected="true">📖 資料</button>
+                        <button id="btn-ref-tab-canvas" class="ref-tab" role="tab" aria-selected="false">🧪 キャンバス</button>
+                    </div>
+                    <span id="ref-title" class="ref-title"></span>
+                    <button id="btn-ref-close" class="ref-close" title="資料を閉じる" aria-label="資料を閉じる">✕</button>
+                </div>
+                <div id="ref-body" class="ref-body"></div>
+            </aside>
         </main>
     </div>
 
@@ -908,6 +933,27 @@
                              「ステップ送り・終わるときは帯のやめる」は**帯が出た瞬間に見える** ＝ 文で言う必要がない。
                              ⚠ 案内が**一覧より上**にある条件（v1439）は #rx-viewer-note が引き継いでいる -->
                         <div id="reaction-list"></div>
+                    </div>
+                </details>
+                <!-- 📖 資料（参考書）。DESIGN_reference_book.md §5・DEVELOPMENT.md「B. 参考書化」。
+                     ⚠ **`<details>` は末尾に足す**。既存4つ（#learn-acc-quiz / #learn-acc-practice /
+                        #learn-acc-narrowing / #reaction-box）の id も並び順も1つも動かさない
+                        ＝ EP7 が見張っている不変条件はそのまま（数だけ 4→5・見出し 2→3 になる）。
+                     ⚠ 入口をここに置くのは、参考書が「既定で開いていない・振り返るもの」だから
+                        （DEVELOPMENT.md 原則2）。リボンにタイルは足さない —— 9枠でちょうど埋まっていて
+                        10枠目は 320px で溢れる（DESIGN_ribbon_consolidation.md §1-1） -->
+                <div class="quiz-group-head">読む<span>表を見てから試します</span></div>
+                <details id="learn-acc-reference" class="learn-acc">
+                    <summary>📖 資料（参考書）</summary>
+                    <div class="learn-acc-body">
+                        <!-- ⚠ **この案内は消せない**。`UX1` が「畳んだ `<details>` の中身が
+                             20字以上あること」を見張っている（＝「畳んだふりをして消す」の封じ）。
+                             閉じているあいだは操作の案内の字数には入らないので、ここには書いてよい -->
+                        <p id="reference-lead" style="margin:0; font-size:12.5px; color:var(--text-muted); line-height:1.5; text-align:left;">
+                            単元ごとの読み物です。<b>表で規則をひととおり見てから</b>、例題をキャンバスで組んで確かめます。</p>
+                        <!-- 一覧は learn.js が reference.json から組む（開いたときに1回だけ読む）。
+                             ⚠ 行を HTML に書かない ＝ 表を写す余地をここにも作らない -->
+                        <div id="reference-list"></div>
                     </div>
                 </details>
             </div>
@@ -1726,7 +1772,7 @@
                         嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。
                     </div>
                 </details>
-                <!-- ⚠ v1496: 「この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません
+                <!-- ⚠ v1497: 「この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません
                      （同じ置換基があると、鏡に映しても重ね合わせられます）。」64字のうち、
                      **括弧の中＝理由のほう**をここへ畳んだ（ユーザー指摘「モーダル内の説明が多く字が小さい」）。
                      ★ **理由は消していない** —— それどころか、この理由は 2026-08-28 に入れた
@@ -1803,7 +1849,7 @@
                         <button id="btn-stereo-fit-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="鏡像の向きを、鏡に映しただけの向き（はじめの向き）に戻します">⟲ 鏡像の向きを戻す</button>
                     </div>
                 </div>
-                <!-- ⚠ v1496: 3つの並べ方の説明（各 130字前後）を `#stereo-3d-note` から**ここへ畳んだ**
+                <!-- ⚠ v1497: 3つの並べ方の説明（各 130字前後）を `#stereo-3d-note` から**ここへ畳んだ**
                      （ユーザー指摘「モーダル内の説明が多く字が小さい」）。★ **消していない** ——
                      どれも「なぜそう見えるのか」の説明で、必要な人は開けば読める。
                      ⚠ 本文を静的に持つのは、3つを1か所に並べておくため（画面に出るのは常に1つなので、
@@ -1866,7 +1912,7 @@
                 <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
-            <!-- ⚠ v1496: キャプションは 215字あり、**モーダルに出ている文字の 54%** を1人で占めていた
+            <!-- ⚠ v1497: キャプションは 215字あり、**モーダルに出ている文字の 54%** を1人で占めていた
                  （実測 375×812・乳酸で 399字中 215字。ユーザー指摘「モーダル内の説明が多く字が小さい」）。
                  ★ 残したのは**図が読めなくなる1行だけ**（縦=奥・横=手前）で、残りはここへ畳む:
                    ・規約の言い回しの全文（フィッシャー投影の…）
@@ -2116,19 +2162,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1496"></script>
+    <script src="chemistry.js?v=1497"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1496"></script>
-    <script src="game.js?v=1496"></script>
-    <script src="reaction.js?v=1496"></script>
-    <script src="quiz.js?v=1496"></script>
-    <script src="stereo.js?v=1496"></script>
-    <script src="reactor.js?v=1496"></script>
-    <script src="narrowing.js?v=1496"></script>
-    <script src="learn.js?v=1496"></script>
-    <script src="tutorial.js?v=1496"></script>
-    <script src="rec.js?v=1496"></script>
+    <script src="deadend.js?v=1497"></script>
+    <script src="game.js?v=1497"></script>
+    <script src="reaction.js?v=1497"></script>
+    <script src="quiz.js?v=1497"></script>
+    <script src="stereo.js?v=1497"></script>
+    <script src="reactor.js?v=1497"></script>
+    <script src="narrowing.js?v=1497"></script>
+    <script src="learn.js?v=1497"></script>
+    <script src="tutorial.js?v=1497"></script>
+    <script src="rec.js?v=1497"></script>
 </body>
 </html>
