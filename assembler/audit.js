@@ -879,7 +879,10 @@
                     // ★ **確率 GROUP_SHARE で「その反応が起きる題材」を丸ごと並べる**（§4-3 の手当て）。
                     //   単品を1件引くだけでは、同じ単量体が2〜4個そろう確率がほぼ 0 になる
                     const ruleIds = rxSamples ? Object.keys(rxSamples) : [];
-                    if (GROUPS_ENABLED && ruleIds.length && rnd() < GROUP_SHARE) {
+                    // ⚠ サイコロは**枝を止めていても必ず振る**（`?nogroups=1` の否定対照で
+                    //    乱数の並びがここで1つずれると、比べているものが変わってしまう）
+                    const groupRoll = rnd();
+                    if (GROUPS_ENABLED && ruleIds.length && groupRoll < GROUP_SHARE) {
                         const rid = ruleIds[Math.floor(rnd() * ruleIds.length)];
                         const names = rxSamples[rid];
                         ops.push(`summon@${rid} ${names.join('+')}`.slice(0, 60));
@@ -1184,11 +1187,19 @@
      * かならず「同じ版をもう一度流した差」をノイズの床として並べること。**
      */
     window.auditReport = () => report;
+    /* ⚠ **再生でも題材を用意してから走る**（v1497）。用意しないと `summon` の枝が
+     *   「組」を引けず、**同じ種でも操作列が丸ごと別物になる** ＝ 再現の道具が壊れる。
+     *   本走が済んでいれば作り直さない（ライブラリ全件の総当たりなので数秒かかる） */
+    const ensureSamples = (W, g) => {
+        if (!rxSamples) rxSamples = buildReactionSamples(W, g);
+        return rxSamples;
+    };
     window.auditRerun = async (seed, opsCount) => {
         opsCount = opsCount || Math.max(1, Number(document.getElementById('fuzz-ops').value) || 80);
         const W = frame.contentWindow;
         const D = frame.contentDocument;
         const errBox = [];
+        ensureSamples(W, W.game);
         W.addEventListener('error', ev => errBox.push(ev.message));
         return fuzzOnce(W, D, W.game, seed, opsCount, errBox);
     };
@@ -1198,6 +1209,7 @@
         const W = frame.contentWindow;
         const D = frame.contentDocument;
         const errBox = [];
+        ensureSamples(W, W.game);
         return fuzzOnce(W, D, W.game, seed, opsCount, errBox, onOp);
     };
 
