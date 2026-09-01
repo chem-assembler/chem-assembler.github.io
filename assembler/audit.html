@@ -20,6 +20,15 @@
         button:disabled { opacity: 0.4; cursor: default; }
         #progress { font-size: 13px; color: #ffd479; min-height: 1.4em; margin-bottom: 8px; font-family: monospace; }
         #summary { font-size: 15px; font-weight: bold; margin-bottom: 8px; }
+        /* ②が「反応の面へどこまで届いたか」。⚠ 緑でも読まれるところに置く（v1497） */
+        #reach { font-size: 12.5px; color: #7fe8ef; line-height: 1.6; margin-bottom: 8px;
+                 font-family: monospace; word-break: break-all; }
+        details.scope { font-size: 12px; color: #9aa3b5; line-height: 1.7; margin-bottom: 12px;
+                        background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 8px; }
+        details.scope summary { cursor: pointer; color: #ffd479; font-weight: bold; }
+        details.scope table { border-collapse: collapse; margin-top: 8px; font-size: 11.5px; }
+        details.scope th, details.scope td { border: 1px solid #2a3348; padding: 3px 6px; text-align: left; }
+        details.scope th { color: #e8eaf0; }
         #summary.pass { color: #4ade80; }
         #summary.fail { color: #f87171; }
         #results { list-style: none; padding: 0; margin: 0 0 12px; font-size: 12px; font-family: monospace; }
@@ -62,8 +71,43 @@
         <button id="btn-stop" disabled>■ 停止</button>
         <button id="btn-download" disabled>⤓ 結果JSONを保存</button>
     </div>
+    <!-- ★★ 監査の「内側」と「外側」（2026-09-02・DESIGN_review_pack2.md §4-4／発注書 B ③）。
+         ⚠ **設計書にだけ書くと、監査を回す人は読まない。** 回す画面に置く。 -->
+    <details class="scope">
+        <summary>⚠ この監査が見ている面／見ていない面（開いて読む）</summary>
+        <p>
+            定期レビュー（2026-09-02）の実測: <b>直前の20版（v1476〜v1495）の変更14件のうち、監査の内側にあったのは 0 件</b>。
+            ②ファズは <b>49本の反応のうち16本に1回も届いておらず</b>、「react」を引いた回の 45% はボタンが無くて空振り、
+            押せた回の 38% は「🔍 反応の前後を見る」（＝分子を変えない札）だった。
+            <b>v1497 で②に「相手を並べる組」の枝を足し、到達の本数と空振り率を毎回出すようにした</b>
+            （上の「反応への到達」の行）。⚠ <b>それでも下の「外」は外のまま</b>。
+        </p>
+        <table>
+            <tr><th>面</th><th>監査</th><th>代わりの門番</th></tr>
+            <tr><td>自由キャンバスの作図（配置・モジュール・次数・削除・伸縮・Undo/Redo）</td><td>★ 内（②）</td><td>—</td></tr>
+            <tr><td>登録図の自動作図・名称対応・異性体列挙</td><td>★ 内（①）</td><td>—</td></tr>
+            <tr><td>画面サイズ・当たり判定</td><td>★ 内（③④）</td><td>—</td></tr>
+            <tr><td><b>反応の実行（重合・加硫・ビニロン・開環・縮合・糖・酸無水物ほか）</b></td><td>★ <b>v1497 から内</b>（②の「組」の枝。到達本数は画面に出る）</td><td>PY / VL / VS / RV / CV</td></tr>
+            <tr><td>反応の前後比較の<b>中身</b>（字幕・図の並べ方）</td><td>⚠ 札は押されるが中身は未検査（`inspectMolecule` は分子しか見ない）</td><td>RV1-2・RV9-10</td></tr>
+            <tr><td>実験モード（🧪 タブ・試薬の瓶）</td><td>外（タブも瓶も押さない）</td><td>EX2-4</td></tr>
+            <tr><td>書き出し練習（異性体）… <code>learn.js</code> は一度も呼ばれない</td><td>外</td><td>IH・IC・IS・ID10-11・AK</td></tr>
+            <tr><td>絞り込みモード・<code>?open=narrowing</code></td><td>外</td><td>EX1・ID5-6</td></tr>
+            <tr><td>クイズ（同じ／違う・命名）</td><td>外</td><td>ST 系</td></tr>
+            <tr><td>立体視（くさび図・鏡像を重ねる）</td><td>外</td><td>SF1-6</td></tr>
+            <tr><td>主鎖と番号</td><td>外</td><td>MN1-4</td></tr>
+            <tr><td>整形モード（タップで整える）</td><td>外（ファズは整形モードに入らない）</td><td>CT / RS 系</td></tr>
+            <tr><td>反応機構ビューア・チュートリアル・分子モーダルの UI</td><td>外</td><td>既存テスト</td></tr>
+            <tr><td>自動水素どうしの近さ</td><td>外（物差しは H と重原子だけ）</td><td><code>verify-compounds.js</code>（警告のみ）</td></tr>
+        </table>
+        <p>
+            ⚠ <b>否定対照の回し方</b>: <code>audit.html?nogroups=1</code> で「組」の枝を止められる。
+            止めた実行は結果ファイルの <code>comparableKey</code> の <code>grp=0</code> で見分けが付く
+            ＝ <b>本走と取り違えて並べられない</b>。
+        </p>
+    </details>
     <div id="progress">待機中</div>
     <div id="summary"></div>
+    <div id="reach"></div>
     <ul id="results"></ul>
     <div id="frame-wrap"><iframe id="audit-frame" src="index.html?v=1496"></iframe></div>
     <script src="audit.js?v=1496"></script>
