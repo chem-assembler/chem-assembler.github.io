@@ -40498,6 +40498,9 @@
             }],
             ['confirm-modal', async (W, D) => { D.getElementById('confirm-modal').classList.remove('hidden'); }],
             ['summon-modal', async (W, D) => { 押す(D, '#btn-summon'); await 待つ(300); }],
+            // 🎯 実験モードの課題の一覧（第2段）。**中身が多い状態で開く**＝ 12問の札が並ぶ姿そのもの。
+            //    ⚠ 台帳に足すのが新しいモーダルの門番（この節の冒頭の約束）
+            ['quest-modal', async (W, D) => { 押す(D, '.mode-tab[data-mode="free"]'); await 待つ(200); W.game.setQuestOpen(true); await 待つ(200); }],
             ['nring-modal', async (W, D) => { D.getElementById('nring-modal').classList.remove('hidden'); }],
         ];
 
