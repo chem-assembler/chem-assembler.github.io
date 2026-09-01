@@ -1904,7 +1904,45 @@
           },
           {
             "type": "wait",
-            "ms": 29156
+            "ms": 9280
+          }
+        ]
+      },
+      {
+        "caption": "もう一度、はじめから",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-rx-undo"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 1200
+          }
+        ]
+      },
+      {
+        "caption": "折れ曲がりが消えて、まっすぐになる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "付加: H₂"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 12000
           }
         ]
       }
