@@ -527,4 +527,50 @@ bio    / 酵素                3項目   ← 一問一答で足りる型
 
 | 日付 | 内容 |
 |---|---|
-| 2026-09-01 | 新規。§0 申し送りの数は全部「語の出現回数」だった／§1 ③ 分子量・重合度の数え直し（134 → 28 → 6）／§2 ② /ratio/ は有機の計算を受けられない（壁4つ・砂場の否定対照で赤16件・入試の頻度で優先順が入れ替わる）／§3 ① 元素分析の7項目を配線（活動0 が 8 → 6・否定対照3件） |
+| 2026-09-01 | 新規。§0 申し送りの数は全部「語の出現回数」だった／§1 ③ 分子量・重合度の数え直し（134 → 28 → 6）／§2 ② /ratio/ は有機の計算を受けられない（壁4つ・砂場の否定対照で赤16件・入試の頻度で優先順が入れ替わる）／§3 ① 元素分析の7項目を配線（活動0 が 8 → 6・否定対照3件）／§4 verify-release.js は worktree の外から呼ぶと嘘の合格を出す |
+---
+
+## 4. ⚠⚠ 測るときに踏んだ罠 —— `verify-release.js` は **worktree の外から呼ぶと嘘の合格を出す**
+
+★ **`DEVELOPMENT.md` の「測るときの罠」に足すべき内容なので、ここに書き残す**
+（⚠ **このレーンは `DEVELOPMENT.md` を触らない約束なので、統合側で移してください**）。
+
+### ★ 何が起きたか
+
+⚠ **`CLAUDE.md` の「worktree に `tools/record/node_modules` が無いので、本体の
+`tools/run-tests.mjs` を worktree の URL に向けて走らせる」に引きずられて、
+`verify-release.js` も本体のものを呼んだ:**
+
+```
+cd C:/Antigravity/worktrees/calc-frame
+node "C:/Users/maequ/…/OrganicChemistryPuzzle/tools/verify-release.js" qa
+  → ✅ 不合格の問題はありません   ⚠⚠ 嘘
+```
+
+★ **同じ瞬間に、worktree 自身の copy を呼ぶと:**
+
+```
+cd C:/Antigravity/worktrees/calc-frame
+node tools/verify-release.js qa
+  → ❌ qa: push 待ちのコミットで5件を変えているのに、版が origin/main と同じ v91 のままです
+```
+
+### ★ 原因
+
+★ **`verify-release.js` は `ROOT` を `__dirname` から決める** ——
+⚠ **`cd` した先ではなく、*スクリプトが置かれている木* を見る。**
+★ **`run-tests.mjs` は URL を引数で受けるので木を選べるが、`verify-release.js` は選べない。**
+
+### ⚠⚠ なぜ危ないか
+
+★ **「本体の tools を借りる」は `run-tests.mjs` では正しく、`verify-release.js` では *逆* になる。**
+⚠ **しかも失敗の出方が「エラー」ではなく「合格」なので、間違えたことに気づけない。**
+★ **本体の作業ツリーがきれいなら、どのレーンから呼んでも必ず ✅ が出る。**
+
+| ツール | ⚠ worktree からどう呼ぶか | 理由 |
+|---|---|---|
+| **`tools/run-tests.mjs`** | ★ **本体のものを、worktree の URL に向けて** | ⚠ `playwright` が `tools/record/node_modules` にしか無い。★ **見る対象は URL で決まる** |
+| ⚠⚠ **`tools/verify-release.js`** | ★★ **worktree 自身のものを** | ⚠⚠ **`ROOT` が `__dirname` 由来。外から呼ぶと *本体の木* を検査して合格する** |
+| **`tools/verify-compounds.js`** | ★★ **worktree 自身のもの**（⚠ **実測:  ＝ 同じ罠**） | |
+
+
