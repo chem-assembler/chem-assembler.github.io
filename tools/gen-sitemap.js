@@ -34,7 +34,15 @@ const PAGES = [
     ['/ion-equation/battery.html', 'ion-equation/battery.html'],
     ['/ion-equation/condition.html', 'ion-equation/condition.html'],
     ['/qa/', 'qa/index.html'],
+    // ⚠ 2026-09-02: `/muki/` は入口（3つの遊び方の一覧）になり、スネークは snake.html へ移った。
+    //   ★ `/muki/` だけを載せていると、**中身のある3枚が sitemap から消えた**ことになる
+    //     （旧 `/muki/` ＝ スネークの実体は、この日から snake.html にある）。
+    //   ⚠ 型B / 型A は前から canonical と OGP を名乗っていたのに sitemap に無かった。
+    //     入口を作って対等に並べたので、ここでも対等に載せる
     ['/muki/', 'muki/index.html'],
+    ['/muki/snake.html', 'muki/snake.html'],
+    ['/muki/separation.html', 'muki/separation.html'],
+    ['/muki/tree.html', 'muki/tree.html'],
     ['/privacy.html', 'privacy.html'],
 ];
 
