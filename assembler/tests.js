@@ -13,7 +13,7 @@
  * | 接頭辞 | 使用済み | 守備範囲 |
  * |---|---|---|
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
- * | AK  | 1〜9   | アルキル基の書き出し練習（W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」。**9 は帯の「🧹 並べ直す」**＝ W4 を3つの書き出し練習でそろえる最後の1つ。押せる／押せないを `drawnCount()` ではなく**成分の数**で決める（こちらの drawnCount は付け根だけの枠を数えないので、枠を増やしただけの人がいちばん散らかった状態で押せなくなる）） |
+ * | AK  | 1〜11  | アルキル基の書き出し練習と**アルキル基の命名規則**（**10〜11 は `ID11` の直し（同点主鎖は「置換基数が最多」を先に見る）の影響範囲**＝ 10 が「効く相手は C₆ 1件・C₇ 3件だけ・C₁〜C₅ は 0」を名指しと全域の性質（採った鎖の枝は同点候補の最大）で固定、11 が接頭辞・エーテルの基名への波及と、登録図で 0 件であること。W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」。**9 は帯の「🧹 並べ直す」**＝ W4 を3つの書き出し練習でそろえる最後の1つ。押せる／押せないを `drawnCount()` ではなく**成分の数**で決める（こちらの drawnCount は付け根だけの枠を数えないので、枠を増やしただけの人がいちばん散らかった状態で押せなくなる）） |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
@@ -51,7 +51,7 @@
  * | HX  | 1〜4   | 伸長した結合線が「自動水素」の下をくぐらない（HX3 は否定対照・HX4 は自由配置） |
  * | I   | 1〜10  | タッチ／ポインタ（ピンチ・長押し・幽霊ポインタ）。**I8〜I10 は結合の判定線がキャンバス側のモード分岐を食う型**（BUGNOTE_touch_ipad.md S6。I8 が否定対照＝ C=C の中点） |
  * | IC  | 1〜3   | ★ **お題を選ぶ線**。1 は 2026-09-01 に**架け替えた** —— ユーザー判断でアルデヒド C₇・カルボン酸 C₇ をお題に足した結果、**「腕がペンチルに収まる」は1件も落とさなくなった**（実測: `FG_MAX_CARBON` の内側の全域で「上限20 を通るのに 腕>5」はその2件だけ）ので**門番から外し**、いま 1 が見張るのは **お題 = 「2〜20種 ＋ 名前が出そろう ＋ 不飽和度1」を通るものの全部**（集合ごと突き合わせ・落ちたのはエステル C₇ の45種だけ・腕の線を門番に戻すとお題が2件減ることを実測・ギ酸エステルのアシル側は 0 と数える）。`functionalArmCarbons` は**測る道具として残す**・2 が **C₇ に足した名前を1件ずつ名指し**（件数では見ない。位置番号を1つ間違えた名前も赤くする）・**3 は数え落としの門番**＝ 種と腕の道は**カルボニル炭素が環に載った分子を作れない**（C₆H₁₀O のケトンに**シクロヘキサノンが入らない**）ので、**お題は全部が不飽和度1**（飽和形）であること。⚠ 腕がペンチル以内でも21種以上になる**不飽和の式は13件ある**ので、母数を数え直す人は必ずここへ来る。⚠ **腕の線を列挙の門番 `FG_ARM_MAX` に下ろすと黙って数え落とす**（エステル C₇ が 45→44種）—— 門番から外した今も同じ |
- * | ID  | 1〜11  | 1〜9 は**化合物 id と URL の受け口**（compounds / stages）。⚠ **10〜11 は別の話**（発注が接頭辞 `ID` を指定したが 1〜9 が使用済みだったため続き番号にした）＝ ★ **C₇H₁₄O₂ のエステル45種の名前**（ユーザー判断 D-C3・2026-09-01「名無し39件にも名前を足す」）。10 が **45件を1つずつ名指し**（件数では見ない。⚠ 名前を足しても**出題には入らない**ことも見る ＝ 45種 > 上限20）・**11 は凍結**＝ アプリの `iupacName`（アルカン側）は「置換基数が最多」を見るのに `iupacAlkylName`（アルキル基側）は見ないので、**C₆ のアルキル基1つで名前が割れる**（`1-イソプロピルプロピル` / 古典 IUPAC の `1-エチル-2-メチルプロピル`）。compounds.json には古典側を入れた。★否定対照 = **C₃〜C₅ では起こりえない**（同点の最長鎖で枝の数が違うものが0件）＝ アルキル基の書き出し練習（`carbonCounts=[3,4,5]`）には届かない |
+ * | ID  | 1〜11  | 1〜9 は**化合物 id と URL の受け口**（compounds / stages）。⚠ **10〜11 は別の話**（発注が接頭辞 `ID` を指定したが 1〜9 が使用済みだったため続き番号にした）＝ ★ **C₇H₁₄O₂ のエステル45種の名前**（ユーザー判断 D-C3・2026-09-01「名無し39件にも名前を足す」）。10 が **45件を1つずつ名指し**（件数では見ない。⚠ 名前を足しても**出題には入らない**ことも見る ＝ 45種 > 上限20）・**11 は同点主鎖の規則**＝ `iupacAlkylName`（アルキル基側）も `iupacName`（アルカン側）と同じく「置換基数が最多」を先に見る（1979 A-2.6(a)／2013 P-46.1(k)）。★ 2026-09-02 まで抜けていて **C₆ のアルキル基1つで名前が割れていた**（`1-イソプロピルプロピル` → 正しくは `1-エチル-2-メチルプロピル`）。それまでは誤ったほうを凍結していたが、直して架け替えた。★否定対照 = **C₃〜C₅ では起こりえない**（同点の最長鎖で枝の数が違うものが0件）＝ アルキル基の書き出し練習（`carbonCounts=[3,4,5]`）には届かない。影響範囲の名指しは `AK10`・接頭辞／エーテルへの波及は `AK11` |
  * | IH  | 1〜4   | 種類数を伏せた出題と分類つきのお題（v1489）。1 が「数を出さない4か所と、移った先（ヒント段1・答え合わせ）」・2 が分類つきのお題13件・3 は否定対照（「全部列挙してから捨てる」道では C₇H₁₄O₂ が1件も出せない）・**4 は引き金**＝ C₇ の4件が落ちる／通る理由が変わったら赤くする（2026-09-01 に一度引かれ、物差しを「名前が足りない」から「腕がペンチルを超える」へ架け替えた） |
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
@@ -8304,6 +8304,170 @@
         g.setMode('puzzle');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    // 付け根 R 付きのアルキル基を「根付き木」として作る補助（AK10・AK11）。
+    // 木 = 子の配列の入れ子。`[]` が炭素1個。`[[[]],[[],[]]]` = CH₃CH₂–CH(–)–CH(CH₃)₂（エチルが [[]]・イソプロピルが [[],[]]）
+    const akTreeMol = (W, tree) => {
+        const m = new W.Molecule();
+        const build = (t, parent) => {
+            const id = m.addAtom('C', 0, 0).id;
+            if (parent != null) m.addBond(parent, id, 1);
+            t.forEach(k => build(k, id));
+            return id;
+        };
+        const root = build(tree, null);
+        m.addBond(root, m.addAtom('R', 0, 0).id, 1);
+        return m;
+    };
+    // 付け根から伸びる**同点の最長鎖**を全部集め、鎖ごとの枝の本数を返す（AK10 の否定対照用。命名の実装は使わない）
+    const akTiedChainBranchCounts = (mol) => {
+        const r = mol.atoms.find(a => a.element === 'R');
+        const start = mol.getNeighbors(r.id).find(x => x.atom.element === 'C').atom.id;
+        const adj = new Map(mol.atoms.filter(a => a.element === 'C').map(a => [a.id, []]));
+        mol.bonds.forEach(b => {
+            if (adj.has(b.atomId1) && adj.has(b.atomId2)) { adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1); }
+        });
+        let best = 0, paths = [];
+        const path = [], seen = new Set();
+        const go = (x) => {
+            path.push(x); seen.add(x);
+            if (path.length > best) { best = path.length; paths = [path.slice()]; }
+            else if (path.length === best) paths.push(path.slice());
+            adj.get(x).forEach(y => { if (!seen.has(y)) go(y); });
+            path.pop(); seen.delete(x);
+        };
+        go(start);
+        return paths.map(p => {
+            const inChain = new Set(p);
+            return { chain: p, branches: p.reduce((k, cId) => k + adj.get(cId).filter(y => !inChain.has(y)).length, 0) };
+        });
+    };
+
+    test('AK10: ★★アルキル基の同点主鎖 —— 「置換基数が最多」が効く相手は C₆ に1件・C₇ に3件だけ（C₁〜C₅ は 0）', async (c) => {
+        /**
+         * `ID11` の直しの**影響範囲を名指しで**固定する（「直った1件」だけを見ない）。
+         *   ① 効く相手の数: 付け根からの最長鎖が同点で、鎖ごとに枝の本数が違う種 ＝ C₁〜C₅ で 0・C₆ で 1・C₇ で 3
+         *      （2026-09-02 実測。根付き木で C₁₀ まで数えると 0,0,0,0,0,1,3,9,20,44）
+         *   ② その4件の名前を名指し（旧 → 新）:
+         *        C₆ 1-イソプロピルプロピル        → 1-エチル-2-メチルプロピル
+         *        C₇ 1-tert-ブチルプロピル         → 1-エチル-2,2-ジメチルプロピル
+         *        C₇ 1-イソプロピル-1-メチルプロピル → 1-エチル-1,2-ジメチルプロピル
+         *        C₇ 2-イソプロピルブチル          → 2-エチル-3-メチルブチル
+         *   ③ ★否定対照 = 全種で「採った鎖の枝の本数 = 同点候補の最大」（規則 (k) が全域で成り立つ）。
+         *      ⚠ 直しすぎの見張り: C₁〜C₅ は同点候補の枝の本数が**全部等しい**ので、この規則は何も選べない
+         *      ＝ アルキル基の書き出し練習（`carbonCounts=[3,4,5]`）の名前は1つも変わらない
+         *   ④ ★否定対照 = 慣用名への置き換えは生きている（sec-ブチル・tert-ブチル・イソペンチル・ネオペンチル）
+         */
+        const W = c.W;
+        // ① ③: C₁〜C₇ を全列挙（C₇+R = 8原子が列挙器の上限）
+        const expectHit = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 1, 7: 3 };
+        const expectCount = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 17, 7: 39 };
+        const hitNames = [];
+        for (let n = 1; n <= 7; n++) {
+            const out = W.enumerateConstitutionalIsomers(Array(n).fill('C').concat(['R']), 2 * n + 1, 8000000);
+            assert(!out.overflow && out.isomers.length === expectCount[n],
+                `C${n} のアルキル基が ${out.isomers.length} 種（${expectCount[n]} を期待）`);
+            let hit = 0;
+            out.isomers.forEach(mol => {
+                const tied = akTiedChainBranchCounts(mol);
+                const most = Math.max(...tied.map(t => t.branches));
+                const differ = tied.some(t => t.branches !== most);
+                const d = W.iupacAlkylDetailFromR(mol);
+                assert(d && d.name, `C${n} のアルキル基に名前が付かない`);
+                // ③ 採った鎖（名前と同じ計算の鎖）は同点候補の中で枝が最多
+                const chosen = tied.find(t => t.chain.length === d.mainChain.length && t.chain.every((id, k) => id === d.mainChain[k]));
+                assert(chosen, `C${n}「${d.name}」の返す鎖が最長鎖の候補に無い`);
+                assert(chosen.branches === most,
+                    `C${n}「${d.name}」が枝 ${chosen.branches} 本の鎖を採った（同点候補の最大は ${most}）＝ 規則 (k) が効いていない`);
+                if (differ) { hit++; hitNames.push(d.name); }
+            });
+            assert(hit === expectHit[n],
+                `C${n} で「同点の最長鎖の枝の本数が違う」種が ${hit}（${expectHit[n]} を期待）—— ` +
+                (n <= 5 ? '書き出し練習の範囲に規則が届くようになった' : '影響範囲が申し送りと違う'));
+        }
+        // ② 名指し（列挙の順序に依らないよう集合で見る）
+        const want = ['1-エチル-2-メチルプロピル', '1-エチル-2,2-ジメチルプロピル', '1-エチル-1,2-ジメチルプロピル', '2-エチル-3-メチルブチル'];
+        assert(hitNames.slice().sort().join('|') === want.slice().sort().join('|'),
+            `規則が効いた4件の名前が [${hitNames.join(', ')}]（[${want.join(', ')}] を期待）`);
+        // 構造から直に引き直す（列挙に頼らない裏取り）
+        const direct = [
+            [[[[]], [[], []]], '1-エチル-2-メチルプロピル'],               // CH₃CH₂–CH(–)–CH(CH₃)₂
+            [[[[]], [[], [], []]], '1-エチル-2,2-ジメチルプロピル'],       // CH₃CH₂–CH(–)–C(CH₃)₃
+            [[[[]], [], [[], []]], '1-エチル-1,2-ジメチルプロピル'],       // CH₃CH₂–C(CH₃)(–)–CH(CH₃)₂
+            [[[[[]], [[], []]]], '2-エチル-3-メチルブチル']                // –CH₂–CH(C₂H₅)–CH(CH₃)₂
+        ];
+        direct.forEach(([tree, name]) => {
+            const got = W.iupacAlkylNameFromR(akTreeMol(W, tree));
+            assert(got === name, `木 ${JSON.stringify(tree)} の名前が「${got}」（「${name}」を期待）`);
+        });
+        // ④ 慣用名は生きている
+        const retained = [
+            [[[[]]], 'プロピル'], [[[], []], 'イソプロピル'], [[[[[]]]], 'ブチル'], [[[], [[]]], 'sec-ブチル'],
+            [[[[], []]], 'イソブチル'], [[[], [], []], 'tert-ブチル'], [[[[[], []]]], 'イソペンチル'], [[[[], [], []]], 'ネオペンチル'],
+            [[[[]], [[]]], '1-エチルプロピル'], [[[], [[], []]], '1,2-ジメチルプロピル']
+        ];
+        retained.forEach(([tree, name]) => {
+            const got = W.iupacAlkylNameFromR(akTreeMol(W, tree));
+            assert(got === name, `木 ${JSON.stringify(tree)} の名前が「${got}」（「${name}」を期待）`);
+        });
+    });
+
+    test('AK11: ★否定対照 — 直しは置換基の接頭辞とエーテルの基名にも届く（届かない範囲も名指し）', async (c) => {
+        /**
+         * `iupacAlkylName` は `iupacName` が枝の名前を作るときにも呼ばれる（`_iupacCollectSubs`）ので、
+         * 主鎖に付く枝が C₆ 以上のとき接頭辞も変わる。★ ただし枝を丸ごと残すには主鎖が枝より長い必要があり、
+         * この C₆ の基（付け根から3炭素）が枝として残るには**主鎖の両側に4炭素以上** ＝ 総炭素 15 以上。
+         * 幹の表（`IUPAC_ALKANE_STEM`）は C₁₀ までなので、主鎖 9〜10 の 15〜16 炭素にしか出ない
+         * ＝ compounds.json（1,025件）・stages.json（114件）で名前が変わるものは 0（2026-09-02 実測）。
+         * エーテルは付け根が O なので短くても出る（C₆ の基のメチルエーテル ＝ C₇）。
+         */
+        const W = c.W;
+        const attachC6 = (mol, parent) => {   // CH₃CH₂–CH(–)–CH(CH₃)₂ を parent に付ける
+            const root = mol.addAtom('C', 0, 0).id;
+            const e1 = mol.addAtom('C', 0, 0).id, e2 = mol.addAtom('C', 0, 0).id;
+            const i1 = mol.addAtom('C', 0, 0).id, i2 = mol.addAtom('C', 0, 0).id, i3 = mol.addAtom('C', 0, 0).id;
+            mol.addBond(root, e1, 1); mol.addBond(e1, e2, 1);
+            mol.addBond(root, i1, 1); mol.addBond(i1, i2, 1); mol.addBond(i1, i3, 1);
+            if (parent != null) mol.addBond(parent, root, 1);
+            return root;
+        };
+        const chainOf = (mol, n) => {
+            const ids = [];
+            for (let k = 0; k < n; k++) ids.push(mol.addAtom('C', 0, 0).id);
+            for (let k = 0; k + 1 < n; k++) mol.addBond(ids[k], ids[k + 1], 1);
+            return ids;
+        };
+        // ① 接頭辞: 5-(C₆基)ノナン（総炭素 15）
+        { const m = new W.Molecule(); attachC6(m, chainOf(m, 9)[4]);
+          assert(W.iupacName(m) === '5-(1-エチル-2-メチルプロピル)ノナン',
+              `枝の接頭辞が「${W.iupacName(m)}」（5-(1-エチル-2-メチルプロピル)ノナン を期待）`); }
+        // ② アルコールでも同じ（主鎖は OH を含む最長 ＝ 枝は残る）
+        { const m = new W.Molecule(); const ch = chainOf(m, 9); m.addBond(ch[0], m.addAtom('O', 0, 0).id, 1); attachC6(m, ch[4]);
+          assert(W.iupacName(m) === '5-(1-エチル-2-メチルプロピル)-1-ノナノール',
+              `アルコールの枝の接頭辞が「${W.iupacName(m)}」`); }
+        // ③ エーテルの基名（付け根が O）
+        { const m = new W.Molecule(); const o = m.addAtom('O', 0, 0).id; m.addBond(o, attachC6(m, null), 1); m.addBond(o, m.addAtom('C', 0, 0).id, 1);
+          assert(W.iupacName(m) === '1-エチル-2-メチルプロピルメチルエーテル',
+              `エーテルの基名が「${W.iupacName(m)}」`); }
+        // ④ ★否定対照: 主鎖が短いと枝はそもそも残らない（主鎖が枝を通る）＝ この直しと無関係に同じ名前
+        { const m = new W.Molecule(); const ch = chainOf(m, 3); m.addBond(ch[0], m.addAtom('O', 0, 0).id, 1); attachC6(m, ch[1]);
+          assert(W.iupacName(m) === '3-エチル-2,4-ジメチル-1-ペンタノール',
+              `対照の名前が「${W.iupacName(m)}」（3-エチル-2,4-ジメチル-1-ペンタノール を期待）`); }
+        // ⑤ ★否定対照: 登録図では1件も変わらない —— 登録名に体系名が入っている図は、直した後もその名前を返す
+        //    （`lookupCompoundName` 優先で画面は変わらないが、`iupacName` 自身も登録名と食い違わないことを見る）
+        const lib = W.COMPOUNDS || [];
+        assert(lib.length >= 1000, `compounds.json が ${lib.length} 件しか読めていない`);
+        let checked = 0;
+        lib.forEach(e => {
+            if (!e.target) return;
+            const name = W.iupacName(c.game.createTargetFromData({ target: e.target }));
+            if (!name) return;
+            checked++;
+            if (/(イソプロピル|tert-ブチル|sec-ブチル|イソブチル|ネオペンチル)[^)]*(プロピル|ブチル|ペンチル)\)/.test(name))
+                assert(false, `登録図 ${e.id} の名前「${name}」に慣用名つきの複合枝が残っている（同点主鎖の規則が効いていない）`);
+        });
+        assert(checked >= 90, `iupacName が付く登録図が ${checked} 件しか見えない（99 件前後を期待）`);
     });
 
     // ===== G. 学習体験の小粒改善（P7-4） =====
@@ -17230,32 +17394,37 @@
             '★ 名前を足したらエステル C₇ がお題に入った —— 45種 > 上限20 なので入れてはいけない');
     });
 
-    test('ID11: ★★アプリの中で命名の規則が1つ食い違っている（C₆ のアルキル基で初めて出る）', async (c) => {
+    test('ID11: ★★アルキル基の同点主鎖は「置換基数が最多」を先に見る（C₆ の基で初めて効く）', async (c) => {
         /**
-         * ⚠⚠ **これは「バグを見つけた」ではなく「食い違いを凍結した」検査**
-         *   （`IN2` の凍結リストと同じ役目）。**直したらここが赤くなり、直したことに気づける。**
+         * ★ 2026-09-02 に**架け替えた**。それまでは「食い違いの凍結」（`IN2` の凍結リストと同じ役目）で、
+         *   アプリが返す**誤ったほう**（1-イソプロピルプロピル）を固定していた。
          *
          * ★ 実測（`ID1` の名前を2通りで作ったときに出た。45件中これ1件だけ）:
          *   分子 CH₃CH₂–CH(–)–CH(CH₃)₂ ＝ 炭素6個のアルキル基を名付けると
-         *     - アプリの `iupacAlkylNameFromR` … **1-イソプロピルプロピル**
-         *     - 古典 IUPAC（側鎖が最も多い鎖を採る）… **1-エチル-2-メチルプロピル**
+         *     - 直す前の `iupacAlkylNameFromR` … 1-イソプロピルプロピル（枝1本・位置 [1]）
+         *     - 規則どおり … **1-エチル-2-メチルプロピル**（枝2本・位置 [1,2]）
          *
-         * ⚠ **原因はアプリの中の規則の順番が2か所で違うこと**:
+         * ⚠ **原因はアプリの中の規則の順番が2か所で違ったこと**:
          *     `iupacName`（アルカン・アルコール側）… OH位置 → 多重結合位置 →
          *        **置換基数が最多** → 置換基位置最小 → 辞書順（`named.sort`）
-         *     `iupacAlkylName`（置換基・アルキル基側）… **置換基位置最小 → 辞書順**だけ
-         *        （「置換基数が最多」が無い）
+         *     `iupacAlkylName`（置換基・アルキル基側）… 置換基位置最小 → 辞書順 **だけ**だった
          *
-         * ★ **compounds.json には古典側（1-エチル-2-メチルプロピル）を入れた。**
-         *   ⚠ いまアプリが C₆ のアルキル基の名前を**画面に出す場所は無い**
-         *   （アルキル基の書き出し練習は `carbonCounts = [3,4,5]`）ので、食い違っても表示は割れない。
-         *   ★ ②の否定対照が「C₃〜C₅ では起こりえない」ことを実測で示す。
+         * ★ 規則の根拠（両方が同じことを言う）:
+         *     1979 規則 A-2.6「同じ長さの鎖が主鎖を争うとき (a) 側鎖が最も多い鎖 → (b) 側鎖の位置番号が最小」
+         *       （A-2.25 は基の鎖を「自由原子価の炭素から始まる最長鎖」とだけ言い、同点は A-2.6 に従う）
+         *     2013 勧告 P-46.1「置換基の主鎖」(b) 最長 → (d) 多重結合 → (h) 自由原子価の位置 → (i) 多重結合の位置 →
+         *       **(k) 置換基が最多** → (l) 置換基の位置最小 → (m) 辞書順先の置換基の位置。
+         *       P-46.1.11 の例 `2-hydroxy-1-methylethyl` [not `1-(hydroxymethyl)ethyl`] がこの分子と同じ形
+         *   基の側は付け根が必ず C1・枝は飽和なので (h)(i) は常に同点 ＝ `iupacAlkylName` の同点処理は
+         *   「置換基数が最多 → 位置最小 → 辞書順」から始まってよい。
          *
-         * ⚠ **直すなら `iupacAlkylName` 側**（規則を1本足す）。影響は置換基の接頭辞にも及ぶので、
-         *   このレーンでは触っていない（化学モデルの変更 ＝ CLAUDE.md「モデルの使い分け」）。
+         * ★ `compounds.json` の `ギ酸(1-エチル-2-メチルプロピル)` はもとから規則側だったので、データは触っていない。
+         *   ⚠ 直す前も後も、画面に出る名前は1つも変わらない（登録図 1,025件・stages 114件で変化 0。
+         *   アルキル基の書き出し練習は `carbonCounts=[3,4,5]` で、②のとおり C₅ 以下では規則が効く相手がいない）。
+         *   影響の全体は `AK10`／`AK11` と DESIGN_isomer_practice.md §19-6c。
          */
         const W = c.W;
-        // ① 食い違いそのもの（凍結）
+        // ① 直った本体
         const m = new W.Molecule();
         const root = m.addAtom('C', 0, 0).id;
         const e1 = m.addAtom('C', 0, 0).id, e2 = m.addAtom('C', 0, 0).id;     // エチル
@@ -17263,10 +17432,14 @@
         m.addBond(root, e1, 1); m.addBond(e1, e2, 1);
         m.addBond(root, i1, 1); m.addBond(i1, i2, 1); m.addBond(i1, i3, 1);   // イソプロピル
         m.addBond(root, m.addAtom('R', 0, 0).id, 1);
-        assert(W.iupacAlkylNameFromR(m) === '1-イソプロピルプロピル',
-            `★ アプリのアルキル基の名前が「${W.iupacAlkylNameFromR(m)}」に変わった —— ` +
-            '「置換基数が最多」を足したなら compounds.json の ' +
-            '「ギ酸(1-エチル-2-メチルプロピル)」と一致したはず。DESIGN §19-6 を見直してください');
+        assert(W.iupacAlkylNameFromR(m) === '1-エチル-2-メチルプロピル',
+            `★ C₆ のアルキル基の名前が「${W.iupacAlkylNameFromR(m)}」（1-エチル-2-メチルプロピル を期待）—— ` +
+            'iupacAlkylName の同点処理から「置換基数が最多」が抜けていないか。' +
+            'compounds.json の「ギ酸(1-エチル-2-メチルプロピル)」と食い違う');
+        // ★ 名前と鎖は同じ1回の計算から出る（N-6）: 採った鎖は root → CH(CH₃) → CH₃ の3本で、枝は [1,2]
+        const d = W.iupacAlkylDetailFromR(m);
+        assert(d && d.mainChain.length === 3 && d.mainChain[0] === root && d.mainChain[1] === i1,
+            '名前は直ったのに、返す鎖がイソプロピル側（枝2本の鎖）を通っていない ＝ 名前と帯が食い違う');
 
         // ② ★否定対照 —— この食い違いは **C₆ で初めて起こりうる**。
         //    測り方: 付け根から伸びる最長鎖が複数あって、**枝の本数が候補ごとに違う**か
