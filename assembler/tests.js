@@ -45299,7 +45299,20 @@
                 `${name}: 資料が分割（in-flow）になっている。⚠ スマホの分割は実測で「縦のまま分割しない」より悪い`);
             assert(W.getComputedStyle(D.querySelector('.ref-tabs')).display !== 'none',
                 `${name}: 重ねているのに行き来のタブが出ていない（戻れない）`);
-            assert(refRowNames(D).length >= 10, `${name}: 狭い画面だと表が10行そろわない`);
+            /* ★★ 狭い画面でも**行を減らさない**（2026-09-02・ユーザー決定の言い直し:
+               「画面に入らないことの解決策として *中身を切る* を選ばない。
+                 切り替える・畳む・別ページにする・スクロールと拡大縮小で見せる、は可」）。
+               ⚠ DOM に10行あっても CSS で隠していたら同じことなので、**見えている行**で数える */
+            const seriesN = W.STAGES.filter(s => s.series === 'アルカン（直鎖）').length;
+            const rows = [...D.querySelectorAll('#ref-body table.ref-table tbody tr')];
+            const shownRows = rows.filter(tr => tr.getClientRects().length > 0);
+            assert(rows.length === seriesN && shownRows.length === seriesN,
+                `${name}: 表が ${shownRows.length}/${rows.length} 行しか見えない（${seriesN} 行そろっているべき。` +
+                '狭いからといって行を間引いていないか）');
+            // 縦に伸びたぶんはスクロールで見せる（切らない）。器がスクロールできることを確かめる
+            const body = D.getElementById('ref-body');
+            assert(W.getComputedStyle(body).overflowY === 'auto',
+                `${name}: 資料の本文がスクロールできない（入らないぶんが切れる）`);
 
             const after = wrap.getBoundingClientRect();
             assert(Math.abs(after.width - before.width) < 1 && Math.abs(after.height - before.height) < 1,
