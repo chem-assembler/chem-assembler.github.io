@@ -42,9 +42,12 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
 <meta name="twitter:card" content="summary_large_image">
-<!-- chem-lens hub  v5  (2026-07-31)  自己完結・外部アセットなし ／ 無機カードを /muki/（イオンスネーク）へ接続
+<!-- chem-lens hub  v5  (2026-07-31)  自己完結・外部アセットなし ／ 無機カードを /muki/ へ接続
      ／ 理論カードと「はじめる」を ion-equation の単元入り口（portal.html）へ ／ 一問一答 /qa/ をカード＋単元表に接続
-     ／ 有機アプリの表示名を「パズルでみる有機化学」に確定（URL /assembler/ は据え置き） -->
+     ／ 有機アプリの表示名を「パズルでみる有機化学」に確定（URL /assembler/ は据え置き）
+     ⚠ 2026-09-02: `/muki/` の中身が変わった（イオンスネーク単体 → 3つの遊び方の入口）。
+       スネークは /muki/snake.html へ移り、系統分離（型B /muki/separation.html・
+       型A /muki/tree.html）が対等に並んだ。★ 単元行は「機能名どおりの画面」へ直に着地させる -->
 <title>化学レンズ — 大学受験の化学を、見えるように | SchoolLenz</title>
 <meta name="description" content="有機化学の構造式も、反応式の係数合わせも、画面で組み立てながら理解する。化学レンズ（SchoolLenz）は大学受験の化学を「見て納得」できる無料の学習アプリ集です。広告なし・ログイン不要・インストール不要で、ブラウザですぐ使えます。">
 
@@ -316,11 +319,13 @@
           <div class="scope-row"><span class="scope-k">対象</span><span class="lvl adv">化学</span></div>
           <div class="scope-row"><span class="scope-k">単元</span><span class="units">金属イオンの分離・確認／沈殿の色／炎色反応／錯イオン</span></div>
         </div>
-        <div class="tags"><span>沈殿の色</span><span>炎色反応</span><span>イオン図鑑</span></div>
-        <div class="snake-note">🎮 ミニゲーム「イオンスネーク」で遊べます（沈殿の色・イオン図鑑つき）</div>
+        <div class="tags"><span>沈殿の色</span><span>炎色反応</span><span>系統分離</span><span>イオン図鑑</span></div>
+        <!-- ⚠ 2026-09-02: 行き先が「ミニゲーム」から「3つの遊び方の入口」になったので、
+             カードの一言と「あそぶ」も直す。★ 押した先に何があるかを先に言う -->
+        <div class="snake-note">🎮 ミニゲーム「イオンスネーク」＋ 系統分離（つきとめる／分ける）の3つ</div>
         <div class="card-foot">
           <span class="state on"><span class="led"></span>一部公開</span>
-          <span class="open">あそぶ<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="open">ひらく<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </div>
       </a>
 
@@ -432,10 +437,21 @@
           <tr class="unit"><td class="u">電池・電気分解</td><td class="app">イオンでみる化学反応式 <span class="mode">— イオン化傾向・電池（予定）</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
 
           <tr class="grp"><td colspan="3">化学（発展）— 無機</td></tr>
-          <tr class="unit"><td class="u">金属イオンの分離・確認</td><td class="app">色でみる無機化学 <span class="mode">— 系統分離</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
-          <tr class="unit"><td class="u">沈殿の生成と色</td><td class="app"><a href="https://chem.schoollenz.com/muki/">色でみる無機化学</a> ＋ <a href="https://chem.schoollenz.com/ion-equation/portal.html#u-precip">イオンでみる</a> <span class="mode">— 沈殿</span></td><td><span class="st on"><span class="led"></span>一部公開</span></td></tr>
-          <!-- muki に炎色反応のコンテンツはまだ無い（沈殿の生成と色は上の行が担う）。
-               実態ができるまではリンクなしの準備中に留める -->
+          <!-- ⚠ 2026-09-02: 系統分離は「準備中」ではなく**もう公開されている**（型B v20〜・型A v27〜）。
+               `/muki/` がスネークだったころは、この行から指せる画面が無いので準備中に置いていた。
+               ★ 単元行は機能名どおりの画面へ直に着地させる（受け口 `/muki/?open=` は通さない
+                 —— 内部のリンクで往復を1回増やしても得るものが無い） -->
+          <tr class="unit"><td class="u">金属イオンの分離・確認</td><td class="app"><a href="https://chem.schoollenz.com/muki/separation.html">色でみる無機化学</a> <span class="mode">— イオンをつきとめる</span> ＋ <a href="https://chem.schoollenz.com/muki/tree.html">すべてのイオンを分ける</a></td><td><span class="st on"><span class="led"></span>公開</span></td></tr>
+          <!-- ⚠ 沈殿の色を担うのはスネーク。`/muki/` は入口（3つの一覧）になったので、
+               ここは snake.html を直に指す（一覧に着地させると1手増える） -->
+          <tr class="unit"><td class="u">沈殿の生成と色</td><td class="app"><a href="https://chem.schoollenz.com/muki/snake.html">色でみる無機化学</a> ＋ <a href="https://chem.schoollenz.com/ion-equation/portal.html#u-precip">イオンでみる</a> <span class="mode">— 沈殿</span></td><td><span class="st on"><span class="led"></span>一部公開</span></td></tr>
+          <!-- ⚠ 2026-09-02 に実測して分かったこと: この注記の「まだ無い」は**もう正しくない**。
+               型B（separation.html）に炎色反応の操作札があり、教科書の但し書き
+               （化学基礎 p.21 表3「すべての元素が炎色反応を示すわけではない」）まで含めて
+               動く。イオンの色もスネークのイオン図鑑が「水溶液: ○○」で持っている。
+               ★ ただし**どちらも「同定の中の1操作」「図鑑の1行」**で、この単元を正面から
+               扱う画面ではない。★ 行を公開に倒すかは中身の判断なので、muki-entry レーンは
+               事実だけ書き足して行はそのままにした（判断は単元表の持ち主へ） -->
           <tr class="unit"><td class="u">炎色反応・イオンの色</td><td class="app">色でみる無機化学 <span class="mode">— 炎色反応・イオンの色（予定）</span></td><td><span class="st soon"><span class="led"></span>準備中</span></td></tr>
 
           <tr class="grp"><td colspan="3">化学（発展）— 有機</td></tr>
