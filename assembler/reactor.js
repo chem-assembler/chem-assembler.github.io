@@ -5873,8 +5873,13 @@ class Reactor {
         this._hintCache = null;
         // 試薬パレット（DESIGN_reagent_palette.md 第1段）。瓶の札と、瓶を押した結果を返す欄。
         // 瓶は3本とも**いつでも押せる**ので、作図のたびに組み直す必要がない ＝ ここで一度だけ描く
-        this.reagentsEl = document.getElementById('mm-reagents-grid');
-        this.reagentNoteEl = document.getElementById('mm-reagent-note');
+        // ⚠ **瓶の一覧は2か所に出る**（v1492・DESIGN_experiment_mode.md 第1段）:
+        //    ① 分子モーダルの中（従来どおり。1つも消していない ＝ D-E2 は未決）
+        //    ② 左パレットの「🧪 実験」タブ（新）
+        //    ★ 描くのは**同じ1つの `REAGENTS` から同じ1つの関数**で（`renderReagents`）、
+        //      瓶の札を書き写さない。押した先も `onReagentClick` の1本 ＝ 入口が2つでも中身は1つ
+        //      （`DESIGN_reagent_palette.md` RG4 と同じ考え方）
+        this.reagentGridIds = ['mm-reagents-grid', 'exp-reagents-grid'];
         this.renderReagents();
         // ↩ 反応前に戻す（v1409）。帯（#ws-free）の中に置いた1つだけの出口
         this.undoBtn = document.getElementById('btn-rx-undo');
@@ -6318,8 +6323,36 @@ class Reactor {
      * 格子を2つに割らないのは、320px で列数が変わったときに区分ごとに折り返しがずれると
      * 「同じ大きさの札が並ぶ」という読み方が崩れるから。
      */
+    /**
+     * ★ **押した瓶の答えを、どこへ返すか**（v1492・DESIGN_experiment_mode.md 第1段）。
+     *
+     * ⚠ **返す先は「いま人が見ている面」**でなければならない。空振りの説明も条件の2択も、
+     *   押した瓶のすぐ下に出て・読み終わるまで残るのが約束（`RG3` / `RG11` / `MM8`）で、
+     *   裏の面へ返すと**押したのに何も起きていないように見える**。
+     *
+     * ⚠ **分子モーダルが開いていれば必ずモーダル側**（＝ 従来どおり `#mm-reagent-note`）。
+     *   モーダルの中の瓶を押したのに答えが裏のパレットへ行く、を作らないため。
+     *   ★ この一行が、瓶に触れる既存の緑のテスト 22件をそのまま緑に保つ不変条件でもある。
+     */
+    get reagentNoteEl() {
+        const modal = document.getElementById('molecule-modal');
+        const modalOpen = !!modal && !modal.classList.contains('hidden');
+        if (!modalOpen) {
+            const panel = document.getElementById('left-panel');
+            if (panel && panel.dataset.palette === 'exp') {
+                const note = document.getElementById('exp-reagent-note');
+                if (note) return note;
+            }
+        }
+        return document.getElementById('mm-reagent-note');
+    }
+
     renderReagents() {
-        const el = this.reagentsEl;
+        (this.reagentGridIds || ['mm-reagents-grid'])
+            .forEach(id => this.renderReagentsInto(document.getElementById(id)));
+    }
+
+    renderReagentsInto(el) {
         if (!el) return;
         el.innerHTML = '';
         let kind = null;

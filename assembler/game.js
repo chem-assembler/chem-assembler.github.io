@@ -7399,6 +7399,10 @@ class Game {
         // 「🎯 反応させる分子を選ぶ」は 🧪自由 の分子モーダルの道具なので、
         // モードが変わったら下ろす（v1409。持ち越すとタップが作図に戻らない）
         this.deactivateReactionSelectMode();
+        // ★ 実験モードのパレットも 🧪自由 の中だけの持ち替え（DESIGN_experiment_mode.md §3-3）。
+        //   ⚠ 🧩パズル・📚学習 へ移ったら**必ず作図の道具に戻す** —— 戻さないと、
+        //     お題の分子を組もうとした人の手元に原子ボタンが1つも無い画面が出る
+        if (mode !== 'free') this.setPalette('draw');
         // 学習モードを離れるときは異性体練習セッションを破棄する（P12-1）。
         // ★ 例外は1つ ——「**採点して終了した練習は 🧪自由 へ持って出る**」（v1392）。
         //   `finishAnswer()` は `_finished` を立てたままセッションを生かし、帯を
@@ -8484,6 +8488,56 @@ class Game {
     closeMoleculeModal() {
         const modal = document.getElementById('molecule-modal');
         if (modal) modal.classList.add('hidden');
+    }
+
+    /* ===== 実験モード（DESIGN_experiment_mode.md 第1段の「器」・D-E1「覆す」） =====
+     *
+     * ★ **芯はユーザー原文の最後の1行**:「可能な反応は必要な知識を調べる、
+     *   実験モードは実際にやってみる・自分の知識を確認するのが目的」。
+     *   ＝ **引く**（分子 → できる反応）に対して **試す**（試薬 → 起こること）を1つ足す。
+     *
+     * ⚠⚠ **4つ目のモードは作らない**（`DESIGN_ui_modes.md` の 🧩📚🧪 の上に階層を積まない）。
+     *   実体は「🧪自由モードの中で、左のパレットが何を並べているか」の持ち替え ＝
+     *   原子パレット ↔ モジュールパレットの持ち替えと同じ操作にしか見えないようにする。
+     *
+     * ⚠ **今回は *足す* だけ。**「⚗ この分子にできること」からも試薬の瓶からも
+     *   1つも消していない（D-E2 ＝ 消す範囲はユーザー判断待ち）。
+     *   ＝ モーダル側の道は今までどおり全部生きている（否定対照で見張る）。
+     *
+     * ⚠ **新しい化学は1本も足さない**（D-E10）。瓶を押した先は `reactor.onReagentClick`
+     *   ＝ モーダルの瓶とまったく同じ経路で、Undo も前後比較も機構ジャンプもそのまま効く。
+     */
+    setupPaletteTabs() {
+        document.querySelectorAll('#palette-tabs .palette-tab').forEach(b => {
+            b.addEventListener('click', () => this.setPalette(b.dataset.palette));
+        });
+        this.setPalette(this.currentPalette || 'draw');
+    }
+
+    /**
+     * 左パレットの持ち替え。`draw`（既定・作図の道具）／`exp`（試薬の瓶）。
+     *
+     * ⚠ **出し分けは `#left-panel[data-palette]` の1属性だけ**で、既存の `.tool-group` の
+     *   id もクラスも1つも触らない（台本31本と回帰テストの契約を動かさないため）。
+     * ⚠ **知らない値は `draw` に落とす**（前方互換。`?palette=` を将来外から受けても止まらない）。
+     */
+    setPalette(name) {
+        const panel = document.getElementById('left-panel');
+        const to = name === 'exp' ? 'exp' : 'draw';
+        this.currentPalette = to;
+        if (panel) panel.dataset.palette = to;
+        document.querySelectorAll('#palette-tabs .palette-tab').forEach(b => {
+            const on = b.dataset.palette === to;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        // 実験の面に入ったら、いま押せる状態を作り直す。⚠ 瓶の一覧は分子によらず一定なので
+        //    描き直さない（`renderReagents` は起動時に1回だけ）。消すのは前回の答えだけ
+        if (to === 'draw' && window.reactor && window.reactor.clearReagentNote) {
+            const note = document.getElementById('exp-reagent-note');
+            if (note) note.innerHTML = '';
+        }
+        return to;
     }
 
     /**
@@ -11235,6 +11289,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.tutorialPlayer = new TutorialPlayer(window.game);
         // 学習タブの「沈んでいた出題」への近道（A-7）。クイズ本体の生成より後に配線する
         setupQuizShortcuts();
+        // ★ 実験モードのタブ（DESIGN_experiment_mode.md 第1段）。
+        //   ⚠ **Reactor より後**に配線する —— タブを押した先で瓶を描き直す口があるため
+        window.game.setupPaletteTabs();
 
         // モード初期化（P10 M1）: 前回のモードを復元。**既定は🧪自由**
         // （DESIGN_entry_points.md §8b。自由を標準にし、パズル・学習は呼び出す行き先にした）

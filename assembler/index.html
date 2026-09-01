@@ -80,8 +80,20 @@
         <!-- メインコンテンツ領域 -->
         <main>
             <!-- 左パネル: ツールと原子パレット -->
-            <section id="left-panel" class="glass-panel">
+            <section id="left-panel" class="glass-panel" data-palette="draw">
                 <h2>TOOLS</h2>
+                <!-- ★ 実験モードのタブ（DESIGN_experiment_mode.md §3-3・D-E1「覆す」）。
+                     ⚠ **4つ目のモードは作らない** —— 🧪自由モードの中で「左のパレットが
+                     何を並べているか」を持ち替えるだけ（原子↔モジュールの持ち替えと同じ操作）。
+                     ⚠ **既存の .tool-group の id もクラスも1つも変えていない**。
+                        出し分けは `#left-panel[data-palette]` 側の CSS だけでやる
+                        ＝ 台本31本と回帰テストの契約はそのまま。
+                     ⚠ 出るのは 🧪自由 のときだけ（`data-modes`）。パズル・学習では
+                        setPalette('draw') に戻す（game.js） -->
+                <div id="palette-tabs" class="palette-tabs" data-modes="free" role="tablist">
+                    <button id="btn-palette-draw" class="palette-tab active" data-palette="draw" role="tab" aria-selected="true" title="原子・環・官能基を置いて分子を組み立てます">✏️ 作図</button>
+                    <button id="btn-palette-exp" class="palette-tab" data-palette="exp" role="tab" aria-selected="false" title="試薬の瓶を選んで、キャンバスの分子にかけます">🧪 実験</button>
+                </div>
                 <!-- 並びは**使う順路**（DESIGN_entry_points.md A-1）: 原子を置く → 環・官能基を足す
                      → 作図の道具 → 仕上げの印。機能が増えた順に置いていた旧並びでは、
                      いちばん最初に要る炭素ボタンが 375px 縦で画面外 265px 先にいて、
@@ -145,6 +157,20 @@
                         <button id="btn-cistrans-reshape" class="tool-btn" title="ONにして C=C（非環）をタップすると両端の置換基を±120°に整えます。同じ結合を再タップでシス⇄トランスを反転">⇄ シス/トランス整形</button>
                         <button id="btn-haworth-mark" class="tool-btn" title="ONにして環の炭素に付いた置換基（-OH の O や -CH2OH の C）をタップすると、ハース投影の上(▲)／下(▼)の面を切り替えます。糖の α/β を指定できます">⬍ α/β 面マーク</button>
                     </div>
+                </div>
+
+                <!-- ★ 実験モードのパレット（DESIGN_experiment_mode.md 第1段の「器」）。
+                     瓶の中身は `reactor.renderReagents()` が `#mm-reagents-grid` と
+                     **同じ1つの REAGENTS から**描く ＝ 瓶の一覧を2か所に書き写さない。
+                     ⚠ **分子モーダルの瓶を移していない・消していない**（D-E2 は未決）。
+                        ここは *足しただけ* で、モーダル側の道は今までどおり全部生きている。
+                     ⚠ 押した結果（条件の2択・空振りの説明）は `#exp-reagent-note` に返る。
+                        返し先の切り替えは reactor の `reagentNoteEl` が面倒を見る -->
+                <div class="tool-group" id="exp-panel">
+                    <h3>試薬をかける</h3>
+                    <p id="exp-lede" class="exp-lede">瓶を選ぶと、キャンバスの分子にかけます。<b>効かない瓶も押せます</b> —— 効かなかった理由が返ります。</p>
+                    <div id="exp-reagents-grid" class="rg-grid"></div>
+                    <div id="exp-reagent-note" class="exp-note"></div>
                 </div>
             </section>
 
