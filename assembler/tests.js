@@ -31088,6 +31088,83 @@
         });
     });
 
+    /* ===== EX1: 絞り込みモードの受け口（DESIGN_paid_workbook.md「効く順 ①」・D-W11） =====
+     *
+     * ⚠ **これが無かったので、有機の計算（元素分析）と「手がかりを使う順番」は
+     *    「枠が無い」ではなく「配線が無い」状態だった。**器（`elementalAnalysis` ほか）は
+     *    最初から全部あって、`?open=` から指せないだけだった（paid §1-3 の実測）。
+     *
+     * ★ 見るのは3つ: ①開く道が本当に通ること ②タブの指定が効くこと
+     * ③**知らない値・値なしでも壊れないこと**（前方互換。qa が先に語彙を配っても止まらない）。 */
+    test('EX1: ?open=narrowing で絞り込みモードが開き、?panel= でタブが選ばれる', async (c) => {
+        const openApp = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+            f.src = `index.html${query}`;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                await new Promise(r => setTimeout(r, 60));
+                return { W: f.contentWindow, D: f.contentDocument, kill: () => f.remove() };
+            } catch (e) { f.remove(); throw e; }
+        };
+        const shown = (D, id) => !D.getElementById(id).classList.contains('hidden');
+
+        // ① 開く道（`?open=narrowing` 単独）
+        let a = await openApp('?open=narrowing');
+        try {
+            assert(a.W.game.currentMode === 'learn', '?open=narrowing で学習モードにならない');
+            assert(a.D.getElementById('learn-acc-narrowing').open,
+                '?open=narrowing で絞り込みの箱（#learn-acc-narrowing）が開かない');
+            assert(shown(a.D, 'narrowing-modal'), '?open=narrowing で絞り込みモードが開かない');
+            // タブの指定が無いときは既定（構造を数える）のまま ＝ 前方互換
+            assert(a.W.narrowing.panel === 'enum',
+                `?panel= が無いのに既定のタブでない（${a.W.narrowing.panel}）`);
+        } finally { a.kill(); }
+
+        // ② タブの指定。⚠ **タブ名は書き写さず、実在するタブを DOM から取る**
+        //    （在庫の数・名前をテストに焼き込まない・DESIGN_review_pack1.md §8-2）
+        const panels = [...c.D.querySelectorAll('.nw-mode-tab')].map(b => b.dataset.panel);
+        assert(panels.length >= 2 && panels.includes('ea'),
+            `絞り込みモードのタブが読めない（${panels.join(' / ')}）`);
+        for (const p of panels) {
+            a = await openApp('?open=narrowing&panel=' + encodeURIComponent(p));
+            try {
+                assert(shown(a.D, 'narrowing-modal'), `?panel=${p} で絞り込みモードが開かない`);
+                assert(a.W.narrowing.panel === p,
+                    `?panel=${p} が効いていない（${a.W.narrowing.panel}）`);
+                assert(!a.D.getElementById('nw-panel-' + p).classList.contains('hidden'),
+                    `?panel=${p} で当のパネルが隠れたまま`);
+            } finally { a.kill(); }
+        }
+
+        // ③ 否定対照: 知らないタブ名は**無視して普通に開く**（エラーで止めない）
+        a = await openApp('?open=narrowing&panel=__no_such_panel__');
+        try {
+            assert(shown(a.D, 'narrowing-modal'), '知らない ?panel= で絞り込みモードごと開かなくなった');
+            assert(a.W.narrowing.panel === 'enum',
+                `知らない ?panel= が既定を壊している（${a.W.narrowing.panel}）`);
+        } finally { a.kill(); }
+
+        // ③' 否定対照: `?panel=` は絞り込み以外の行き先を汚さない
+        a = await openApp('?open=naming&panel=ea');
+        try {
+            assert(shown(a.D, 'naming-modal'), '?panel= を添えたら命名クイズが開かなくなった');
+            assert(!shown(a.D, 'narrowing-modal'), '?open=naming なのに絞り込みモードが開いている');
+        } finally { a.kill(); }
+
+        // ④ 否定対照: 収録中（?rec=）は今までどおり踏まない
+        a = await openApp('?open=narrowing&rec=__no_such_demo__');
+        try {
+            assert(!shown(a.D, 'narrowing-modal'),
+                '?rec= があるのに ?open=narrowing が踏まれている（収録が1手ずれる）');
+        } finally { a.kill(); }
+    });
+
     /* ===== EP7〜EP9: 学習メニューの言い直し（D・DESIGN_entry_points.md §10） =====
      *
      * ユーザーの指摘:「学習メニューの中で反応機構モードが、映像コンテンツ（見るだけ）のように

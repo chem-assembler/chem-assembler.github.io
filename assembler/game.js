@@ -10853,6 +10853,8 @@ function setupQuizShortcuts() {
  * - `reagent=<瓶id または反応ルールid>` … summon した分子に対し試薬を選んだ状態にする。
  *   **`open` が無くても効く**
  * - `id=<機構id>` … `open=mechanism` と組で、登録済み14件のうち1つを開く
+ * - `panel=<enum|allot|frag|ea>` … `open=narrowing` と組で、絞り込みモードのタブを選ぶ
+ *   （例 `?open=narrowing&panel=ea` ＝ 元素分析から）
  * - `scope=<basic|named|all>` / `field=<脂肪族 など>` … クイズの**出題範囲を絞る**
  *   （`open=quiz` `open=naming` と組。→ applyQuizScopeParams）
  *
@@ -10882,6 +10884,11 @@ const OPEN_TARGETS = {
     // 📚 学習 → アコーディオンを開くところまで（中で何をするかは本人が選ぶ）
     practice: { mode: 'learn', acc: 'learn-acc-practice' },
     mechanism: { mode: 'learn', acc: 'reaction-box' },
+    // 📚 学習 → 🔍 実験カードで絞り込む（DESIGN_paid_workbook.md「効く順 ①」）。
+    // ⚠ **これが無かったので、有機の計算（元素分析）と「手がかりを使う順番」は
+    //    *枠が無い* のではなく *配線が無い* 状態だった**（paid §1-3 の実測）。
+    //    絞り込みモード側は1行も触らない ＝ 開く道を1本足すだけ
+    narrowing: { mode: 'learn', acc: 'learn-acc-narrowing', btn: 'btn-narrowing' },
     // 🧪 自由（＝標準）で、いま描いている分子を調べる。分子が無ければボタン側が案内を出す。
     // ⚠ 📚・🧊 は分子モーダルの中へ移ったが、**行き先は1手のまま**にする（設計書 §4-2）。
     // 隠れているボタンでも `click()` は効くので、分子モーダルを開かずに相手を直接開ける
@@ -11034,6 +11041,18 @@ function applyOpenParam(search) {
     if (name === 'mechanism') {
         const mid = (params.get('id') || '').trim();
         if (mid && window.reactionPlayer) window.reactionPlayer.openById(mid);
+    }
+
+    // 受け口⑦ `?open=narrowing&panel=<enum|allot|frag|ea>` … 絞り込みモードのタブを選ぶ。
+    // ⚠ **タブの一覧をここに書き写さない。** 実在するタブ（`.nw-mode-tab[data-panel]`）を
+    //    DOM に聞く ＝ 絞り込み側がタブを増減しても、こちらは黙って追随する。
+    //    知らない値・タブの無い版では**何もしない**（`open()` の既定 enum のまま）＝ 前方互換
+    if (name === 'narrowing') {
+        const panel = (params.get('panel') || '').trim().toLowerCase();
+        const tab = panel
+            ? document.querySelector('.nw-mode-tab[data-panel="' + CSS.escape(panel) + '"]')
+            : null;
+        if (tab && window.narrowing) window.narrowing.setPanel(panel);
     }
 
     // 受け口⑥ `?scope=` / `?field=` … クイズの出題範囲を絞る。**ボタンを押した後**でなければ
