@@ -448,7 +448,13 @@ function slTrack(name, params) {
       //    **脂肪族（酢酸エチル）と芳香族（安息香酸メチル）にまたがる**ので、
       //    分野で絞ると教科書の定番が半分落ちる。ここも値の意味は向こうの語彙で、運ぶだけ。
       //    ⚠ この `link.group` は項目の `p.group`（習得マップの群）とは別物
-      case 'practice':  return { open: link.open, summon: summonKey(link),
+      //
+      // ⚠ **`panel` も渡す**（2026-09-01。assembler v1494 の受け口⑦ ＝ 絞り込みモードのタブ）。
+      //    これで有機の**計算**（元素分析）が繋がる —— `?open=narrowing&panel=ea` で
+      //    「元素分析から」のタブが選ばれた状態で開く。`panel` を落とすと既定の
+      //    「構造を数える」が開き、**リンクの札が約束した画面に着かない**。
+      //    値の意味（`enum|allot|frag|ea`）は向こうの語彙で、こちらは運ぶだけ
+      case 'practice':  return { open: link.open, summon: summonKey(link), panel: link.panel,
                                  scope: link.scope, field: link.field, group: link.group };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
     }
