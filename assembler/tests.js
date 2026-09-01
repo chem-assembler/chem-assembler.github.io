@@ -31323,6 +31323,238 @@
         });
     });
 
+    /* ===== EX1: 絞り込みモードの受け口（DESIGN_paid_workbook.md「効く順 ①」・D-W11） =====
+     *
+     * ⚠ **これが無かったので、有機の計算（元素分析）と「手がかりを使う順番」は
+     *    「枠が無い」ではなく「配線が無い」状態だった。**器（`elementalAnalysis` ほか）は
+     *    最初から全部あって、`?open=` から指せないだけだった（paid §1-3 の実測）。
+     *
+     * ★ 見るのは3つ: ①開く道が本当に通ること ②タブの指定が効くこと
+     * ③**知らない値・値なしでも壊れないこと**（前方互換。qa が先に語彙を配っても止まらない）。 */
+    test('EX1: ?open=narrowing で絞り込みモードが開き、?panel= でタブが選ばれる', async (c) => {
+        const openApp = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+            f.src = `index.html${query}`;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                await new Promise(r => setTimeout(r, 60));
+                return { W: f.contentWindow, D: f.contentDocument, kill: () => f.remove() };
+            } catch (e) { f.remove(); throw e; }
+        };
+        const shown = (D, id) => !D.getElementById(id).classList.contains('hidden');
+
+        // ① 開く道（`?open=narrowing` 単独）
+        let a = await openApp('?open=narrowing');
+        try {
+            assert(a.W.game.currentMode === 'learn', '?open=narrowing で学習モードにならない');
+            assert(a.D.getElementById('learn-acc-narrowing').open,
+                '?open=narrowing で絞り込みの箱（#learn-acc-narrowing）が開かない');
+            assert(shown(a.D, 'narrowing-modal'), '?open=narrowing で絞り込みモードが開かない');
+            // タブの指定が無いときは既定（構造を数える）のまま ＝ 前方互換
+            assert(a.W.narrowing.panel === 'enum',
+                `?panel= が無いのに既定のタブでない（${a.W.narrowing.panel}）`);
+        } finally { a.kill(); }
+
+        // ② タブの指定。⚠ **タブ名は書き写さず、実在するタブを DOM から取る**
+        //    （在庫の数・名前をテストに焼き込まない・DESIGN_review_pack1.md §8-2）
+        const panels = [...c.D.querySelectorAll('.nw-mode-tab')].map(b => b.dataset.panel);
+        assert(panels.length >= 2 && panels.includes('ea'),
+            `絞り込みモードのタブが読めない（${panels.join(' / ')}）`);
+        for (const p of panels) {
+            a = await openApp('?open=narrowing&panel=' + encodeURIComponent(p));
+            try {
+                assert(shown(a.D, 'narrowing-modal'), `?panel=${p} で絞り込みモードが開かない`);
+                assert(a.W.narrowing.panel === p,
+                    `?panel=${p} が効いていない（${a.W.narrowing.panel}）`);
+                assert(!a.D.getElementById('nw-panel-' + p).classList.contains('hidden'),
+                    `?panel=${p} で当のパネルが隠れたまま`);
+            } finally { a.kill(); }
+        }
+
+        // ③ 否定対照: 知らないタブ名は**無視して普通に開く**（エラーで止めない）
+        a = await openApp('?open=narrowing&panel=__no_such_panel__');
+        try {
+            assert(shown(a.D, 'narrowing-modal'), '知らない ?panel= で絞り込みモードごと開かなくなった');
+            assert(a.W.narrowing.panel === 'enum',
+                `知らない ?panel= が既定を壊している（${a.W.narrowing.panel}）`);
+        } finally { a.kill(); }
+
+        // ③' 否定対照: `?panel=` は絞り込み以外の行き先を汚さない
+        a = await openApp('?open=naming&panel=ea');
+        try {
+            assert(shown(a.D, 'naming-modal'), '?panel= を添えたら命名クイズが開かなくなった');
+            assert(!shown(a.D, 'narrowing-modal'), '?open=naming なのに絞り込みモードが開いている');
+        } finally { a.kill(); }
+
+        // ④ 否定対照: 収録中（?rec=）は今までどおり踏まない
+        a = await openApp('?open=narrowing&rec=__no_such_demo__');
+        try {
+            assert(!shown(a.D, 'narrowing-modal'),
+                '?rec= があるのに ?open=narrowing が踏まれている（収録が1手ずれる）');
+        } finally { a.kill(); }
+    });
+
+    /* ===== EX2〜EX4: 実験モードの器（DESIGN_experiment_mode.md 第1段・D-E1「覆す」） =====
+     *
+     * ★ **芯**（ユーザー原文）:「可能な反応は必要な知識を調べる、実験モードは
+     *   実際にやってみる・自分の知識を確認するのが目的」。
+     *   ＝ **引く**（分子 → できる反応）の隣に **試す**（試薬 → 起こること）を1つ足す。
+     *
+     * ⚠⚠ **第1段は *足す* だけ**（D-E2 ＝ 何をモーダルから消すかはユーザー判断待ち）。
+     *   ★ したがって固定すべき不変条件は3つあり、**3つ目がいちばん大事**:
+     *     ① 実験のパレットから試薬をかけると**反応が実際に起きる**（EX3）
+     *     ② 効かない分子には**理由が返る**（罰ではない・EX4）
+     *     ③ ⚠ **モーダル側の既存の道が1本も欠けていない**（EX2・EX4 の否定対照）
+     *
+     * ⚠ **在庫の数（瓶23本・ルール49本…）をこのファイルに書かない**
+     *   （DESIGN_review_pack1.md §8-2 —— 3本の設計書で既に食い違っていた）。
+     *   数は必ず `W.REAGENTS` から取る。 */
+    test('EX2: 🧪 実験タブでパレットが持ち替わり、モーダルの瓶は1本も減らない', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const tabs = [...D.querySelectorAll('#palette-tabs .palette-tab')];
+        assert(tabs.length === 2, `パレットのタブが2つでない（${tabs.length}）`);
+        const panel = D.getElementById('left-panel');
+        const shown = (el) => el && W.getComputedStyle(el).display !== 'none';
+
+        g.setMode('free');
+        g.setPalette('draw');
+        const drawGroups = [...D.querySelectorAll('#left-panel .tool-group')]
+            .filter(el => el.id !== 'exp-panel');
+        assert(drawGroups.length > 0, '作図の道具のまとまりが1つも無い（前提が崩れている）');
+        assert(drawGroups.every(shown), '作図タブなのに作図の道具が隠れている');
+        assert(!shown(D.getElementById('exp-panel')), '作図タブなのに試薬のパレットが出ている');
+
+        // 🧪 実験へ持ち替える。⚠ **押すのは人が押すのと同じボタン**
+        tabs.find(b => b.dataset.palette === 'exp').click();
+        assert(panel.dataset.palette === 'exp', 'タブを押しても data-palette が切り替わらない');
+        assert(shown(D.getElementById('exp-panel')), '実験タブなのに試薬のパレットが出ない');
+        assert(drawGroups.every(el => !shown(el)), '実験タブなのに作図の道具が残っている');
+        assert(tabs.find(b => b.dataset.palette === 'exp').classList.contains('active'),
+            '押したタブに印が付かない');
+
+        // ⚠ 瓶の数は**データから取る**（在庫の数を焼き込まない）
+        const ids = (sel) => [...D.querySelectorAll(`${sel} .rg-bottle`)].map(b => b.dataset.reagent);
+        const want = W.REAGENTS.map(r => r.id);
+        assert(ids('#exp-reagents-grid').join(',') === want.join(','),
+            `実験パレットの瓶が REAGENTS と一致しない（${ids('#exp-reagents-grid').length} / ${want.length}）`);
+        // ★★ 否定対照（いちばん大事）: **モーダルの瓶を1本も消していない**（D-E2 は未決）
+        assert(ids('#mm-reagents-grid').join(',') === want.join(','),
+            '分子モーダルの瓶が減っている（第1段は *足す* だけのはず）');
+
+        // ⚠ 🧩パズル・📚学習 へ移ったら作図の道具に戻る（戻さないと原子ボタンが1つも無い画面になる）
+        g.setMode('puzzle');
+        assert(panel.dataset.palette === 'draw', 'パズルへ移っても試薬のパレットのまま');
+        assert(shown(D.querySelector('.atom-palette')), 'パズルモードで原子パレットが出ない');
+        assert(!shown(D.getElementById('palette-tabs')), 'パズルモードでパレットのタブが出ている');
+        // ⚠⚠ タブの出し入れに `data-modes` を使わない（`Q1` が「[data-modes] は1つだけ」を
+        //    不変条件として見張っている・第5段）。★ 実測で Q1 を割ったので、ここでも止める
+        assert([...D.querySelectorAll('[data-modes]')].length === 1,
+            `[data-modes] を持つ要素が増えている（${[...D.querySelectorAll('[data-modes]')].length}）` +
+            '——「右パネルを作り直さない」の止め（Q1）が機能追加のたびに緩む');
+        g.setMode('free');
+        assert(shown(D.getElementById('palette-tabs')), '🧪自由 でパレットのタブが出ない');
+        assert(panel.dataset.palette === 'draw', '自由へ戻ったら勝手に実験パレットになっている');
+        // 知らない値は作図に落とす（前方互換）
+        assert(g.setPalette('__nope__') === 'draw', '知らないパレット名が draw に落ちない');
+        g.setPalette('draw');
+    });
+
+    test('EX3: 実験パレットの試薬で反応が実際に起きる（行き先は伏せない・D-E3）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        // 目標の正準コードは**その場でライブラリから作る**（コードを書き写さない）
+        const codeOf = (name) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `${name} を呼び出せない`);
+            return CC(g.userMolecule);
+        };
+        const ethene = codeOf('エチレン');
+
+        c.reset();
+        g.setMode('free');
+        g.setPalette('exp');
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule('エタノール'), 'エタノールを呼び出せない');
+        g.updateDrawing();
+
+        const b = D.querySelector('#exp-reagents-grid [data-reagent="h2so4_conc"]');
+        assert(b, '実験パレットに濃硫酸の瓶が無い');
+        b.click();
+        // ⚠ 答えは**押した瓶のすぐ下**（実験の面）に返る。モーダルの節には書かない
+        const note = D.getElementById('exp-reagent-note');
+        assert(note.textContent.trim(), '実験パレットで瓶を押しても答えが返らない');
+        assert(!D.getElementById('mm-reagent-note').textContent.trim(),
+            '実験の面で押したのに、答えが分子モーダルの節（裏の面）へ返っている');
+
+        // ★★ D-E3（ユーザー決定「伏せない」）: 条件の2択は**行き先を書いたまま**出す。
+        //    ⚠ 設計書 exp §3-4 の「行き先を落とす」は決定で廃止された節
+        const choices = [...note.querySelectorAll('[data-cond]')].map(x => x.textContent);
+        assert(choices.length === 2, `濃硫酸の行き先が2通り出ない（${choices.length}）`);
+        assert(choices.some(t => t.includes('160〜170')) && choices.some(t => t.includes('130〜140')),
+            `条件の見出しが温度になっていない: ${choices.join(' / ')}`);
+        assert(choices.some(t => t.includes('アルケン')),
+            '条件の選択肢から行き先が消えている（D-E3 は「伏せない」）');
+
+        // ★ 実際に反応させる（ここが器の本体。パレットが出るだけでは何も確かめていない）
+        const pick = [...note.querySelectorAll('[data-cond]')].find(x => x.textContent.includes('160〜170'));
+        pick.click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        const parts = g.splitMolecules().map(p => CC(p));
+        assert(parts.includes(ethene),
+            `エタノール × 濃硫酸(160〜170℃) でエチレンができていない（${parts.join(' / ')}）`);
+        assert(parts.length >= 2, '脱水したのに水が残っていない（副生成物が消えている）');
+        assert(W.reactor.lastReaction && /脱水/.test(W.reactor.lastReaction.label),
+            '直近の反応として記録されていない（前後比較・機構ジャンプが効かなくなる）');
+        // ↩ 反応前に戻す は既存のものがそのまま効く（新規に作らない・D-E14）
+        assert(!D.getElementById('btn-rx-undo').classList.contains('hidden'),
+            '実験パレットから反応させると「↩ 反応前に戻す」が出ない');
+        g.setPalette('draw');
+    });
+
+    test('EX4: 効かない試薬は理由を返し、分子も履歴も1つも変えない（罰にしない）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        c.reset();
+        g.setMode('free');
+        g.setPalette('exp');
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule('エタン'), 'エタンを呼び出せない');
+        g.updateDrawing();
+        const snap = () => `${g.userMolecule.atoms.length}/${g.userMolecule.bonds.length}`;
+        const before = snap();
+
+        D.querySelector('#exp-reagents-grid [data-reagent="br2_water"]').click();
+        const note = D.getElementById('exp-reagent-note');
+        const said = note.textContent;
+        assert(snap() === before, `効かない瓶で分子が変わった（${before} → ${snap()}）`);
+        assert(said.includes('効くのは'), `効かない理由が返っていない: ${said.slice(0, 60)}`);
+        // ★ `explainPlacementMiss` の決め④「叱らない」を借りる（exp §4-1）
+        assert(!/間違い|不正解|失敗/.test(said), `叱る文言が混ざっている: ${said.slice(0, 80)}`);
+
+        // ★★ 否定対照: モーダル側の道は1本も欠けていない
+        g.openMoleculeModal();
+        assert(!D.getElementById('molecule-modal').classList.contains('hidden'), 'モーダルが開かない');
+        D.querySelector('#mm-reagents-grid [data-reagent="br2_water"]').click();
+        assert(D.getElementById('mm-reagent-note').textContent.includes('効くのは'),
+            'モーダルの瓶を押しても、モーダルの節に答えが返らない（返し先が実験の面へ逃げている）');
+        assert(!D.getElementById('molecule-modal').classList.contains('hidden'),
+            '効かない瓶でモーダルが閉じた（MM8 の不変条件）');
+        assert(snap() === before, 'モーダル側の空振りで分子が変わった');
+        g.closeMoleculeModal();
+        g.setPalette('draw');
+    });
+
     /* ===== EP7〜EP9: 学習メニューの言い直し（D・DESIGN_entry_points.md §10） =====
      *
      * ユーザーの指摘:「学習メニューの中で反応機構モードが、映像コンテンツ（見るだけ）のように
