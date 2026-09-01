@@ -21,6 +21,10 @@ let COMPOUNDS = []; // 名称判定用の追加ライブラリ（compounds.json�
 // クイズの出題範囲の追加名簿（quiz-scope.json。{ note, textbook: [名前, …] }）。
 // **構造から導出できない「高校で扱うか」だけを人が名前で印を付ける場所**（quiz.js が読む）
 let QUIZ_SCOPE = { textbook: [] };
+// 実験モードの課題（quests.json。{ _readme, quests: [{ id, group, start, goal, hands, why }, …] }）。
+// ⚠ **正準コードはここに持たない** —— start / goal は名前だけで、コードは起動時に
+//   ライブラリから作る（D-E10「新しい化学は1本も足さない」。判定を2か所に書かない）
+let QUESTS = [];
 const GRID_SIZE = 42;
 // 別々の分子（連結成分）の重原子どうしが、これより近づいてはいけない距離（px）。
 // 新規配置（getSnappedCoords）・分子ごとの移動（canMoveComponentBy）・答案の並べ直し
@@ -430,6 +434,10 @@ function setEmphasisText(el, text) {
 class Game {
     constructor() {
         this.currentStageIndex = 0;
+        // 🎯 実験モードの課題（第2段）。null なら `maybeQuestClear()` は1行で返る
+        // ＝ 課題を始めていない人の作図には、判定のぶんを1つも足さない
+        this.currentQuest = null;
+        this._questDone = false;
         // 🎲 ランダム出題（発注書 D-4・v1417）。**どれもメモリだけ**（localStorage には書かない）
         this.randomBag = null;   // { series, order（シャッフル済みの添字）, pos } ＝ 一巡の記録
         this.randomRun = null;   // ランダムで出題中のシリーズ名（「次のお題へ」の行き先が変わる）
@@ -5972,6 +5980,9 @@ class Game {
         if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.onDrawingChange();
         // 8. パズルの自動判定（2026-08-13）。**重原子の数が合ったときだけ**同型判定まで進む
         this.maybeAutoClear();
+        // 8.5 実験モードの課題の判定（第2段）。**課題を始めていないときは 1行で返る**ので、
+        //     ふだんの作図には `splitMolecules()` を1回も増やさない（`maybeAutoClear` と同じ約束）
+        this.maybeQuestClear();
     }
 
     // 分子が2つ以上あるとき、各分子の下に「① 酢酸」のような見出しを描く（P12-8。ユーザー要望）。
@@ -7310,6 +7321,9 @@ class Game {
             ['summon-modal', 'btn-summon-cancel'],
             ['nring-modal', 'btn-nring-cancel'],
             ['naming-modal', 'btn-naming-close'],
+            // 🎯 実験モードの課題の一覧（第2段）。⚠ `.modal-overlay` を1枚足したら
+            //    ここに書く（BC1 が数え上げて「背景で閉じる」を要求する）
+            ['quest-modal', 'btn-quest-close'],
         ];
         表.forEach(([modalId, closeId]) => {
             const modal = document.getElementById(modalId);
@@ -7407,6 +7421,11 @@ class Game {
         const paletteTabs = document.getElementById('palette-tabs');
         if (paletteTabs) paletteTabs.classList.toggle('hidden', mode !== 'free');
         if (mode !== 'free') this.setPalette('draw');
+        // ★ 課題も 🧪自由 の中のものなので、離れたら終わる（第2段）。
+        //   ⚠ **キャンバスには手を出さない** —— やめても作った分子はそのまま残る。
+        //   ⚠ ここで終わらせないと、🧩パズルのお題ストリップと課題の帯が2段に並んで
+        //     「いまどちらの作業中か」が読めなくなる（書き出し練習にも同じ理由の決めがある）
+        if (mode !== 'free' && this.currentQuest) this.stopQuest();
         // 学習モードを離れるときは異性体練習セッションを破棄する（P12-1）。
         // ★ 例外は1つ ——「**採点して終了した練習は 🧪自由 へ持って出る**」（v1392）。
         //   `finishAnswer()` は `_finished` を立てたままセッションを生かし、帯を
@@ -8542,6 +8561,255 @@ class Game {
             if (note) note.innerHTML = '';
         }
         return to;
+    }
+
+    /* ===== 🎯 実験モードの課題（DESIGN_experiment_mode.md 第2段・ユーザー決定 2026-09-01） =====
+     *
+     * ★ **ユーザーの原文が仕様のすべて**（4行）:
+     *   ① 課題を始めたら、出発物質がキャンバスに置かれる
+     *   ② 正しい反応手順をたどって目的の物質を作ればクリア
+     *   ③ 何回でもやり直せる
+     *   ④ 到達判定は「目標がある」（余りは副生成物として許す）
+     *
+     * ⚠⚠ **判定は素通しの「ある」**（D-E4 = (a)。DESIGN_review_pack1.md §2 の #5）。
+     *   `splitMolecules()` のどれかが目標の正準コードに一致すれば合格で、
+     *   **「余っているのは反応の副生成物だけか」は見ない**。設計書 §7-2 は (c) を推していたが、
+     *   ユーザーの決定は緩い側だった —— **罰なし・何回でもやり直せる設計では、
+     *   呼び出した相手が残ったまま通っても実害が無い**（レビューの読み）。
+     *   ★ 帰結を正直に書く: **✏️作図 タブに戻って目標を手で描いてもクリアになる。**
+     *     門番は置かない ——「反応でできた原子か」を見る門番は、
+     *     図がずれたので原子を1つ動かした人まで黙って落とす（罰しない設計と噛み合わない）。
+     *
+     * ⚠ **伏せる仕掛けは1つも作らない**（D-E3）。条件の2択も反応カードも今までどおり。
+     *   出題の向きを1つ足すだけで、画面から消すものは無い。
+     *
+     * ⚠ **新しい判定機構を1本も足さない**。使うのは `canonicalCode` と `splitMolecules()` だけで、
+     *   これはステージの自動判定（`maybeAutoClear`）が使っている道具と同じ層。
+     */
+    setupQuests() {
+        const open = document.getElementById('btn-quest-open');
+        const head = document.getElementById('ws-quest-head');
+        const close = document.getElementById('btn-quest-close');
+        const restart = document.getElementById('btn-quest-restart');
+        const quit = document.getElementById('btn-quest-quit');
+        if (open) open.addEventListener('click', () => this.setQuestOpen(true));
+        if (head) head.addEventListener('click', () => this.setQuestOpen(true));
+        if (close) close.addEventListener('click', () => this.setQuestOpen(false));
+        if (restart) restart.addEventListener('click', () => this.restartQuest());
+        if (quit) quit.addEventListener('click', () => this.stopQuest());
+    }
+
+    /** 課題の一覧の開閉。開くたびに描き直す（通した印が増えるため） */
+    setQuestOpen(on) {
+        const m = document.getElementById('quest-modal');
+        if (!m) return;
+        if (on) this.renderQuestList();
+        m.classList.toggle('hidden', !on);
+    }
+
+    /** 通した課題の id の集合（`chemAssembler.cleared` と同じ形・別の鍵） */
+    getQuestClearedSet() {
+        try {
+            return new Set(JSON.parse(localStorage.getItem('chemAssembler.questCleared') || '[]'));
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    /**
+     * ★ 記録するのは**通した課題の id だけ**（D-E9 = 残す。ただし「成績」にはしない）。
+     *
+     * ⚠ **手数・所要時間・正答率は持たない。** 理由は2つ:
+     *   ① `explainPlacementMiss` の決め③「変わると嘘になる数字を文言に入れない」——
+     *      最短手数は箇所1つ・分子1つで測った下限でしかなく（設計書 §2-2）、本当の最短ではない
+     *   ② ⚠⚠ **あとで有料の問題集が同じ枠を使う**（DESIGN_paid_workbook.md D-W13）。
+     *      採点・記録・解説は有料側が売るものなので、無料側に成績の器を先に作ると
+     *      「後から取り上げる」形になるか、二重管理になる。**id の集合だけ**なら、
+     *      有料側は自分の鍵で自分の記録を持てばよく、どちらも相手を知らないままでいられる。
+     */
+    markQuestCleared(id) {
+        const cleared = this.getQuestClearedSet();
+        if (cleared.has(id)) return;
+        cleared.add(id);
+        try {
+            localStorage.setItem('chemAssembler.questCleared', JSON.stringify([...cleared]));
+        } catch (e) { /* プライベートブラウジング等では記録を諦める */ }
+    }
+
+    /** 課題の一覧を描く。⚠ **目標は名前と手数だけ**（図では出さない・D-E15） */
+    renderQuestList() {
+        const box = document.getElementById('quest-list');
+        if (!box) return;
+        box.innerHTML = '';
+        if (!QUESTS.length) {
+            const p = document.createElement('p');
+            p.style.cssText = 'font-size:13px; color:var(--text-muted);';
+            p.textContent = '課題データ（quests.json）を読み込めませんでした。実験モードそのものは今までどおり使えます。';
+            box.appendChild(p);
+            return;
+        }
+        const cleared = this.getQuestClearedSet();
+        let group = null;
+        QUESTS.forEach(q => {
+            if (q.group !== group) {
+                group = q.group;
+                const h = document.createElement('div');
+                h.className = 'quest-group-head';
+                h.textContent = group;
+                box.appendChild(h);
+            }
+            const b = document.createElement('button');
+            b.className = 'view-btn quest-item';
+            b.dataset.quest = q.id;
+            const route = document.createElement('span');
+            route.className = 'q-route';
+            route.textContent = `${q.start} → ${q.goal}`;
+            const hands = document.createElement('span');
+            hands.className = 'q-hands';
+            hands.textContent = `${q.hands}手`;
+            b.append(route, hands);
+            if (cleared.has(q.id)) {
+                const done = document.createElement('span');
+                done.className = 'q-done';
+                done.textContent = '✓';
+                b.appendChild(done);
+            }
+            b.addEventListener('click', () => this.startQuest(q.id));
+            box.appendChild(b);
+        });
+    }
+
+    /**
+     * 課題を始める。戻り値 `{ ok, reason }`（テストと `?quest=` が読む）。
+     *
+     * ★ **第1段からの引き継ぎは2手だけ**: `summonMolecule` で出発物を置き、
+     *   `setPalette('exp')` で試薬の面にする。新しい入口も新しいモードも作らない。
+     */
+    startQuest(id) {
+        const q = QUESTS.find(x => x.id === id);
+        if (!q) return { ok: false, reason: 'unknown' };
+        const startEntry = this.resolveCompound(q.start);
+        const goalEntry = this.resolveCompound(q.goal);
+        // ライブラリから引けない名前は**黙って始めない**（空のキャンバスに課題の帯だけ出さない）
+        if (!startEntry || !goalEntry) return { ok: false, reason: 'library' };
+        const goalCode = canonicalCode(goalEntry.mol);
+        // ⚠ 出発物がそのまま目標なら、置いた瞬間に合格になる ＝ 課題として成立しない
+        if (canonicalCode(startEntry.mol) === goalCode) return { ok: false, reason: 'same' };
+        this.setMode('free');
+        this.currentQuest = { ...q, goalCode };
+        this._questDone = false;
+        this.setQuestOpen(false);
+        // ⚠⚠ **画面を先に作り替えてから分子を置く。** `summonMolecule` は
+        //   `fitCanvasToMolecule` を通り、そこで `obstructedInsets()`（帯・パレットが
+        //   キャンバスをどれだけ覆っているか）を読んで**帯の下に分子を置かない**ようにしている。
+        //   置いてから帯を出すと、その勘定が1回ぶん古い ＝ 出発物が帯の裏に隠れる。
+        this.setPalette('exp');
+        this.syncQuestStrip();
+        if (!this.placeQuestStart()) {
+            this.currentQuest = null;
+            this.syncQuestStrip();
+            return { ok: false, reason: 'place' };
+        }
+        this.syncQuestStrip();
+        return { ok: true, quest: this.currentQuest };
+    }
+
+    /**
+     * ★ 「何回でもやり直せる」（ユーザー決定③）の実体。
+     *
+     * ⚠ `↩ 反応前に戻す` は**直前の1手**しか戻さない（v1409）。3手さまよった人が
+     *   出発点へ帰る道はここにしか無い。⚠ **この操作自体も `↩ 戻す` で取り消せる**
+     *   （🗑 全消去 と同じく `saveState()` を通す）＝ 押し間違いで作図が黙って消えない。
+     */
+    restartQuest() {
+        if (!this.currentQuest) return false;
+        this._questDone = false;
+        const ok = this.placeQuestStart();
+        this.syncQuestStrip();
+        return ok;
+    }
+
+    /** キャンバスを空にして出発物を1つ置く（🗑 全消去 と同じ形＝ Undo で戻せる） */
+    placeQuestStart() {
+        this.deactivateReactionMode();
+        this.clearUIOverlay();
+        this.saveState();
+        this.userMolecule = new Molecule();
+        // `summonMolecule` の中でもう一度 `saveState()` が走る ＝ ↩ 戻す 2回で元の図へ帰る
+        const ok = this.summonMolecule(this.currentQuest.start);
+        this.updateDrawing();
+        return ok;
+    }
+
+    /** 課題をやめる。⚠ **キャンバスには手を出さない**（作った分子を黙って消さない） */
+    stopQuest() {
+        this.currentQuest = null;
+        this._questDone = false;
+        this.syncQuestStrip();   // 帯を畳み、「名称から呼び出す」の段を戻す
+        return true;
+    }
+
+    /**
+     * ★★ 課題の帯（`#ws-quest`）を今の状態にそろえる。**ここが「外したときの返し方」**。
+     *
+     * `explainPlacementMiss` から借りた4つの決め（設計書 §4-1）を、そのまま当てている:
+     *   ① 言葉は「なぜ」・図は「どこ」…… 「どこ」はキャンバスの見出し（`🔍 アセトアルデヒド`）が
+     *      既に持っているので、帯は**いま何ができているか**を名前で言うだけにする。
+     *      ⚠ **答えは1文字も増えない** —— 帯に出る名前は、その分子の見出しに既に出ている名前と同じ
+     *   ② 同じ文言を出し直さない …… 外すたびにトーストを出さない。帯は**状態**であって通知ではない
+     *   ③ 変わると嘘になる数字を書かない …… 「あと何手」「試した回数」を出さない
+     *   ④ 叱らない …… 「間違い」「不正解」「失敗」の語をここでは1つも使わない
+     */
+    syncQuestStrip() {
+        const q = this.currentQuest;
+        const strip = document.getElementById('work-strip');
+        if (strip) strip.classList.toggle('quest-on', !!q);
+        if (!q) { this.setWorkPane('ws-quest', false); return; }
+        const route = document.getElementById('quest-route');
+        const now = document.getElementById('quest-now');
+        if (route) {
+            route.textContent = `${q.start} → ${q.goal}`;
+            const head = document.getElementById('ws-quest-head');
+            if (head) head.title = `課題: ${q.start} から ${q.goal} をつくる（${q.hands}手）。押すと課題の一覧を開きます`;
+        }
+        if (now) {
+            const parts = this.splitMolecules()
+                .filter(p => p.atoms.some(a => a.element !== 'H'));
+            const names = parts.map(p => this.lookupCompoundName(p) || this.computeMolecularFormula(p));
+            now.textContent = this._questDone
+                ? `✅ できました（${q.goal}）`
+                : (names.length ? `いま: ${names.join(' ＋ ')}` : 'いま: キャンバスは空です');
+            now.title = this._questDone
+                ? '目標の分子がキャンバスにあります。別の課題へ移るか、↻ はじめから でもう一度たどれます'
+                : 'いまキャンバスにある分子です（効かない瓶を押しても、ここは変わりません）';
+            now.classList.toggle('q-cleared', !!this._questDone);
+        }
+        this.setWorkPane('ws-quest', true);
+    }
+
+    /**
+     * 課題の到達判定。`updateDrawing()` の末尾から呼ぶ（`maybeAutoClear` の隣＝同じ形）。
+     *
+     * ⚠ **判定は「目標の正準コードを持つ成分があるか」だけ**（D-E4「目標がある」）。
+     *   副生成物（水・ギ酸ナトリウム・エタノール…）が残っていても通る ——
+     *   ユーザーが最初に挙げた例「エタノール → エテン」がまさに水を残すので、
+     *   「目標だけ」にすると**例題そのものが通らない**（設計書 §7-2 の実測）。
+     */
+    maybeQuestClear() {
+        const q = this.currentQuest;
+        if (!q) return;
+        this.syncQuestStrip();
+        if (this._questDone) return;
+        const parts = this.splitMolecules();
+        if (!parts.some(p => canonicalCode(p) === q.goalCode)) return;
+        this._questDone = true;
+        this.markQuestCleared(q.id);
+        this.syncQuestStrip();
+        // 描画の途中から知らせに入らない（`maybeAutoClear` と同じ理由で次のタスクへ回す）
+        setTimeout(() => {
+            this.showToast(`できました —— ${q.goal} がキャンバスにあります。`, 4000, 'success');
+            slTrack('quest_clear', { app: 'assembler', quest: q.id });
+        }, 0);
     }
 
     /**
@@ -10971,6 +11239,11 @@ const OPEN_TARGETS = {
     stereo: { mode: 'free', btn: 'btn-stereo' },
     // 分子モーダルそのもの（DESIGN_molecule_modal.md §5-1 の「外」経路）
     molecule: { mode: 'free', fn: () => window.game.openMoleculeModal() },
+    // 🧪 実験モード（DESIGN_experiment_mode.md 第2段・D-E5 = (c) 両方）。
+    // ⚠ **4つ目のモードは作らない**（§3-3）ので、行き先は「🧪自由 の中でパレットを持ち替える」だけ。
+    //    `?open=experiment&quest=<id>` で1問を直接始められる（下の受け口⑧）。
+    //    `quest` だけを付けて `open` を省いても効く ＝ qa と参考書から張るリンクを短くできる
+    experiment: { mode: 'free', fn: () => window.game.setPalette('exp') },
     // どこからでも: 操作ガイド
     help: { btn: 'btn-help' }
 };
@@ -11050,7 +11323,7 @@ function applyOpenParam(search) {
     // v801 までは `open` が無いと即 return していたので、`?summon=<名称>` 単独は
     // 何も起きなかった。qa（一問一答）が張りたいのは「分子を1つ出すだけ」が最多なので、
     // ここで止めると受け口の半分が使えない。**モードは 🧪自由**（描いた分子を触れる場所）
-    if (!target && (params.get('summon') || params.get('reagent'))) window.game.setMode('free');
+    if (!target && (params.get('summon') || params.get('reagent') || params.get('quest'))) window.game.setMode('free');
     if (target && target.mode) window.game.setMode(target.mode);
 
     // シリーズの指定（部分一致）。ハブの単元名とシリーズ名は綴りが完全には一致しないので、
@@ -11078,6 +11351,17 @@ function applyOpenParam(search) {
     //    `?open=` を持たない `?summon=` 単独なので、後ろに置くと**戻り道が出る場面が半分になる**。
     //    `?open=isomer&formula=` も下で早期 return するため、ここが唯一の共通点
     window.__fromBand = renderFromBand(params, summoned);
+
+    /* 受け口⑧ `?quest=<課題id>` … 実験モードの課題を1問だけ始める（第2段・D-E5）。
+     *
+     * ⚠ **`?open=` が無くても効く**（`?summon=` と同じ扱い）。qa の配線と参考書から張るのは
+     *    「この反応をやってみる」の1本なので、`open` を必須にすると受け口が使われない。
+     * ⚠ **`?summon=` より後**に置く。課題はキャンバスを空にしてから出発物を置くので、
+     *    先に呼んだ分子を消してしまう ＝ 両方を書いた URL では課題が勝つ。
+     *    ★ ただし**課題を始められなかったときは、呼んだ分子をそのまま残す**（黙って白紙にしない）。
+     * ⚠ 知らない id は**黙って無視**する（前方互換。エラーで止めない）。 */
+    const questId = (params.get('quest') || '').trim();
+    if (questId) window.game.startQuest(questId);
 
     if (!target) return null;
 
@@ -11219,6 +11503,20 @@ window.addEventListener('DOMContentLoaded', async () => {
             console.warn('quiz-scope.json のロードに失敗（出題範囲はお題のみで動作）:', e);
         }
         window.QUIZ_SCOPE = QUIZ_SCOPE;
+
+        // 実験モードの課題（DESIGN_experiment_mode.md 第2段・D-E8 (a)）。
+        // ⚠ **無くてもアプリは動く**（quiz-scope.json と同じ扱い）。読めなければ
+        //    🎯 課題に挑む が「読み込めませんでした」と言うだけで、実験モードそのものは今までどおり。
+        // ⚠ `?v=` は付かない（`{cache:'no-cache'}` で再検証。narrowing-problems.json と同じ形）
+        //    ＝ `verify-release.js` の規則3・4の対象外。1行1問の形は tests.js の EQ2 が見張る
+        try {
+            const questUrl = new URL('quests.json', window.location.href).href;
+            const questRes = await fetch(questUrl, { cache: 'no-cache' });
+            if (questRes.ok) QUESTS = (await questRes.json()).quests || [];
+        } catch (e) {
+            console.warn('quests.json のロードに失敗（実験モードの課題は出ません）:', e);
+        }
+        window.QUESTS = QUESTS;
         // 定数・純関数の公開（テストが同じ定義を参照できるようにする。const は window に載らない）
         window.GRID_SIZE = GRID_SIZE;
         window.MIN_COMPONENT_CLEARANCE = MIN_COMPONENT_CLEARANCE;
@@ -11313,6 +11611,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         // ★ 実験モードのタブ（DESIGN_experiment_mode.md 第1段）。
         //   ⚠ **Reactor より後**に配線する —— タブを押した先で瓶を描き直す口があるため
         window.game.setupPaletteTabs();
+        // ★ 実験モードの課題（第2段）。⚠ **パレットのタブより後** —— 課題を始めると
+        //   `setPalette('exp')` を通るので、タブの配線が先に済んでいる必要がある
+        window.game.setupQuests();
 
         // モード初期化（P10 M1）: 前回のモードを復元。**既定は🧪自由**
         // （DESIGN_entry_points.md §8b。自由を標準にし、パズル・学習は呼び出す行き先にした）

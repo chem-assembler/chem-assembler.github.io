@@ -171,6 +171,16 @@
                      ⚠ 押した結果（条件の2択・空振りの説明）は `#exp-reagent-note` に返る。
                         返し先の切り替えは reactor の `reagentNoteEl` が面倒を見る -->
                 <div class="tool-group" id="exp-panel">
+                    <!-- ★ 課題への入口（DESIGN_experiment_mode.md 第2段・D-E5）。
+                         ⚠ **`.tool-group` を新しく作らない** —— EX2 が「`#left-panel` の
+                            `.tool-group`（`#exp-panel` を除く）は実験タブのあいだ全部隠れている」を
+                            不変条件にしている。ここに1つ足すと、その止めが機能追加のたびに緩む。
+                         ⚠ **h3 より前に置く**。375px の帯では h3 も前口上も畳まれる（style.css）ので、
+                            後ろに置くと**スマホから課題を始める道が消える**。
+                         ★ 一覧そのものは `#quest-modal`（別の枠）。帯の 160px に一覧を入れると、
+                           押した瓶の答えを返す `#exp-reagent-note` の場所が無くなる -->
+                    <button id="btn-quest-open" class="view-btn exp-quest-open"
+                            title="出発物を置いて、目的の物質を作る課題を選びます（何回でもやり直せます）">🎯 課題に挑む</button>
                     <h3>試薬をかける</h3>
                     <p id="exp-lede" class="exp-lede">瓶を選ぶと、キャンバスの分子にかけます。<b>効かない瓶も押せます</b> —— 効かなかった理由が返ります。</p>
                     <div id="exp-reagents-grid" class="rg-grid"></div>
@@ -324,6 +334,34 @@
                             ぶつかった。下端は #mobile-name-chip（左下）と重なるので、帯が出ているあいだは
                             チップを帯の上へ逃がす（style.css）。 -->
                     <div id="work-strip" class="canvas-overlay work-strip hidden">
+                        <!-- 🎯 実験モードの課題の帯（DESIGN_experiment_mode.md 第2段）。
+                             ★ 置き場所は 🧩 お題ストリップとまったく同じ理由 —— **課題は解いているあいだ
+                               ずっと見えていなければならない**（何を何にするのかを覚えさせない）。
+                             ⚠ ここは 🧪自由 の `#ws-free` と**同時に出る**面なので、そのぶん帯が厚くなる。
+                                代わりに課題の最中は「名称から呼び出す」の1段を畳む（下の `#ws-free-summon`）
+                                ＝ 実測でキャンバスを覆う量の増分が **+79px → +34px**（375×812）。
+                             ★ 「いま」の欄が**外したときの返し方**そのもの（設計書 §4-1 の決め）:
+                                 ① 言葉は「なぜ」・図は「どこ」…… キャンバスの見出し（🔍 名前）が「どこ」を持つので、
+                                    帯は**いま何ができているか**を名前で言うだけにする
+                                 ② 同じ文言を出し直さない …… 外すたびにトーストを出さない。帯は**状態**であって通知ではない
+                                 ③ 変わると嘘になる数字を書かない …… 「あと何手」「正解率」を出さない
+                                 ④ 叱らない …… 「間違い」「不正解」「失敗」の語を1つも持たない
+                             ⚠ 目標は**名前で出す・図では出さない**（D-E15。図を出すと「組め」に読める）。 -->
+                        <div id="ws-quest" class="ws-pane hidden">
+                            <div class="ws-row">
+                                <button id="ws-quest-head" class="view-btn ws-action ws-quest-head"
+                                        title="課題の一覧を開きます（別の課題に移れます）">🎯 <span id="quest-route">—</span></button>
+                                <span id="quest-now" class="ws-quest-now">いま: —</span>
+                                <span class="ws-spacer"></span>
+                                <!-- ★ 「何回でもやり直せる」（ユーザー決定③）の押しもの。
+                                     ⚠ `↩ 反応前に戻す` は**1手ぶん**しか戻らない（v1409）。3手さまよった人が
+                                        出発点へ帰る道はここにしか無い。⚠ これ自体も `↩ 戻す` で取り消せる -->
+                                <button id="btn-quest-restart" class="view-btn ws-action"
+                                        title="キャンバスを空にして、出発物をもう一度置きます（↩ 戻す で取り消せます）">↻ はじめから</button>
+                                <button id="btn-quest-quit" class="view-btn ws-action"
+                                        title="課題をやめます（キャンバスはそのまま残ります）">やめる</button>
+                            </div>
+                        </div>
                         <!-- 🧩 お題ストリップ（第4段・§7-3 の案A）。
                              パズルの筋書きは「**お題を読む → キャンバスで組む → 判定を押す**」で、
                              お題は組んでいるあいだずっと見えていなければならない ＝ 課題そのものだから。
@@ -366,7 +404,12 @@
                                 §4-2 の「出し入れは持ち主が行う」を破る**2つ目**で、理由も同じ
                                 （その作業を始めたかではなく、**モードそのもの**だから） -->
                         <div id="ws-free" class="ws-pane hidden">
-                            <div class="ws-row">
+                            <!-- ⚠ id は**足しただけ**（`ws-free-summon`）。課題の最中はこの1段を畳む
+                                 （style.css の `#work-strip.quest-on`）—— 出発物はアプリが置くので
+                                 「名称から呼び出す」は課題のあいだ使い道が無く、そのぶんの 40px を
+                                 課題の帯に回すと**キャンバスを覆う量がほとんど増えない**（実測 +79px → +34px）。
+                                 ⚠ 課題をやめれば元どおり出る（消したのではなく畳んだだけ）。 -->
+                            <div class="ws-row" id="ws-free-summon">
                                 <label class="ws-label" for="summon-input">名称から呼び出す</label>
                                 <!-- ⚠ **`<datalist>` は使わない**（v1406・実発生）。ブラウザが描く部品なので
                                      候補を選んだことを知る手段が `input` / `change` しか無く、**打った文字列と
@@ -2064,6 +2107,27 @@
             <div class="modal-footer" style="display:flex; gap:8px;">
                 <button id="btn-summon-cancel" class="view-btn" style="flex:1; padding:10px; min-height:38px;">閉じる</button>
                 <button id="btn-summon-ok" class="primary-btn" style="flex:1; padding:10px; min-height:38px;">呼び出す</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🎯 実験モードの課題の一覧（DESIGN_experiment_mode.md 第2段・D-E5）。
+         ⚠ **`.modal-overlay` を1枚足したら、機械の見張りが3つ増える**（実測で確かめた）:
+            ・BC1 …… `.modal-overlay` を数え上げて「背景で閉じる」を要求する
+                      ＝ `setupBackdropClose` の表に足す
+            ・BC5 …… 背景で閉じるなら自前の「閉じる」ボタンを持つこと ＝ `#btn-quest-close`
+            ・MO1〜MO4 …… 台帳に足すと縦オーバーの悉皆に乗る
+         ⚠ **目標を図で出さない**（D-E15）。一覧に出るのは名前と手数だけ。 -->
+    <div id="quest-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 520px;">
+            <h2 class="neon-text" style="font-size:20px; color:var(--neon-orange); text-shadow:0 0 10px var(--neon-orange);">🎯 実験モードの課題</h2>
+            <p style="font-size:13px; line-height:1.7; color:var(--text-secondary);">
+                出発物をキャンバスに置きます。<b>試薬の瓶を選んで、目的の物質を作ってください。</b><br>
+                効かない瓶も押せます。外しても失うものはありません（<b>何回でもやり直せます</b>）。
+            </p>
+            <div id="quest-list"></div>
+            <div class="modal-footer" style="display:flex; gap:8px;">
+                <button id="btn-quest-close" class="view-btn" style="flex:1; padding:10px; min-height:38px;">閉じる</button>
             </div>
         </div>
     </div>

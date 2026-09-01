@@ -262,6 +262,55 @@ h2 {
     line-height: 1.5;
     color: var(--text-muted);
 }
+/* ---- 🎯 実験モードの課題（DESIGN_experiment_mode.md 第2段） ---- */
+/* 課題への入口。瓶の棚の上に1つだけ。⚠ **h3 と前口上が畳まれる 375px の帯でも残す**
+   （畳んでしまうと、スマホから課題を始める道が1つも無くなる） */
+.exp-quest-open {
+    width: 100%;
+    min-height: 32px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    color: var(--neon-orange, #ffa502);
+    border-color: var(--neon-orange, #ffa502);
+}
+/* 課題の一覧（#quest-modal）。**目標は名前と手数だけ**（図は出さない・D-E15） */
+.quest-group-head {
+    margin: 10px 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+.quest-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    padding: 8px 10px;
+    min-height: 38px;
+    margin: 0 0 5px;
+    font-size: 13px;
+}
+.quest-item .q-route { flex: 1 1 auto; min-width: 0; }
+.quest-item .q-hands,
+.quest-item .q-done { flex: 0 0 auto; font-size: 11.5px; color: var(--text-muted); }
+.quest-item .q-done { color: var(--neon-green); }
+/* 課題の帯（#ws-quest） */
+.ws-quest-head { color: var(--neon-orange, #ffa502); border-color: var(--neon-orange, #ffa502); }
+.ws-quest-now {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ws-quest-now.q-cleared { color: var(--neon-green); font-weight: 700; }
+/* ⚠ 課題の最中は「名称から呼び出す」の1段を畳む（出発物はアプリが置くので使い道が無い）。
+   ★ これで帯がキャンバスを覆う量の増分が **+79px → +34px** になる（375×812 の実測）。
+   ⚠ 消すのではなく畳むだけ ＝ 課題をやめれば元どおり出る（WS1 が見る素の 🧪自由 は無傷） */
+#work-strip.quest-on #ws-free-summon { display: none; }
 /* ⚠ PC の柱では、答えの欄は**瓶23本より下**にある ＝ 押した瞬間は画面の外。
    ★ 中身があるときだけ柱の下端に貼り付ける（`position: sticky`）。
    「押した瓶のすぐ下に、読み終わるまで残す」（RG3・RG11）を、
