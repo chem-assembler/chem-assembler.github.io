@@ -1108,6 +1108,76 @@ function enumerateFunctionalGroupIsomers(elements, hCount, className) {
 }
 
 /**
+ * ★★ 種に付く**腕の炭素数**を、できあがった分子から読み直す純粋関数
+ *    （ユーザー明言 2026-09-01「**ペンチル基に収まるところまででよい**」を機械で引くため）。
+ *
+ * ⚠⚠ **これは列挙の門番ではない。お題を選ぶための物差しである。**
+ *    `FG_ARM_MAX`（＝7）を 5 に下げて済ませたくなるが、**それをやると黙って数え落とす**:
+ *    エステル C₇H₁₄O₂ は腕が2本なので `m > FG_ARM_MAX * 2` の入口検査を素通りし、
+ *    `chooseCarbons` の `Math.min(restC, FG_ARM_MAX)` だけが効いて
+ *    **ギ酸ヘキシルが1件だけ消えた 44種**が返る ＝ DESIGN §19-3 が禁じた
+ *    「20種のはずが18種のお題」そのもの。**断るなら overflow、選ぶなら外側で**。
+ *
+ * 返り値 `{ arms, max }`。⚠ **`arms` の並びは `FG_CLASS_SEEDS[className].arms` と同じ**
+ * （エステルは アシル側 → アルコール側）。腕が水素の場合は **0**（ギ酸エステル）。
+ * 種の形に合わない分子は `null`（「この分類ではない」＝ 0本ではない）。
+ */
+function functionalArmCarbons(mol, className) {
+    const spec = FG_CLASS_SEEDS[className];
+    if (!spec || !mol || !mol.atoms) return null;
+    let found = null;
+    for (const a of mol.atoms) {
+        if (a.element !== 'C') continue;
+        const nb = mol.getNeighbors(a.id);
+        const dbl = nb.filter(n => n.type === 2 && n.atom.element === 'O');
+        if (dbl.length !== 1) continue;
+        const sgl = nb.filter(n => n.type === 1 && n.atom.element === 'O');
+        const cs = nb.filter(n => n.atom.element === 'C').map(n => n.atom.id);
+        let hit = null;
+        if (className === 'ketone' && !sgl.length && cs.length === 2) {
+            hit = { core: [a.id, dbl[0].atom.id], roots: cs };
+        } else if (className === 'aldehyde' && !sgl.length && cs.length === 1) {
+            hit = { core: [a.id, dbl[0].atom.id], roots: cs };
+        } else if ((className === 'acid' || className === 'ester') && sgl.length === 1) {
+            const o2 = sgl[0].atom.id;
+            const o2nb = mol.getNeighbors(o2);
+            if (className === 'acid' && o2nb.length === 1 && cs.length <= 1) {
+                hit = { core: [a.id, dbl[0].atom.id, o2], roots: cs };
+            }
+            if (className === 'ester' && o2nb.length === 2 && cs.length <= 1) {
+                const alk = o2nb.find(n => n.atom.id !== a.id);
+                if (alk && alk.atom.element === 'C') {
+                    // ⚠ アシル側が水素（ギ酸エステル）でも腕は2本と数える ＝ 0 を並べる
+                    hit = { core: [a.id, dbl[0].atom.id, o2], roots: [...cs, alk.atom.id], acylEmpty: !cs.length };
+                }
+            }
+        }
+        if (!hit) continue;
+        if (found) return null;                       // 種が2つ以上 ＝ この分類だと言い切れない
+        found = hit;
+    }
+    if (!found) return null;
+    const size = (root) => {
+        const seen = new Set([...found.core, root]);
+        const q = [root];
+        let n = 0;
+        while (q.length) {
+            const x = q.shift(); n++;
+            mol.getNeighbors(x).forEach(nb => {
+                if (nb.atom.element !== 'C' || seen.has(nb.atom.id)) return;
+                seen.add(nb.atom.id); q.push(nb.atom.id);
+            });
+        }
+        return n;
+    };
+    let arms = found.roots.map(size);
+    // 腕の本数を種の定義にそろえる（足りないぶんは水素の腕 ＝ 0）
+    if (className === 'ester' && found.acylEmpty) arms = [0, arms[arms.length - 1]];
+    while (arms.length < spec.arms.length) arms.push(0);
+    return { arms, max: Math.max(...arms) };
+}
+
+/**
  * 分子の自動レイアウト（P9-3b）。座標を持たない分子（異性体列挙の結果など）に、
  * このアプリの直交作図コンセプトに沿ったグリッド座標を割り当てる純粋関数。
  * - 環は長方形/家型のテンプレート（手描きの縮合環と同じ流儀）で配置
@@ -5759,6 +5829,7 @@ if (typeof window !== 'undefined') {
     window.enumerationIsTreeOnly = enumerationIsTreeOnly;
     window.enumerateBenzeneRingIsomers = enumerateBenzeneRingIsomers;
     window.enumerateFunctionalGroupIsomers = enumerateFunctionalGroupIsomers;
+    window.functionalArmCarbons = functionalArmCarbons;
     window.FG_CLASS_SEEDS = FG_CLASS_SEEDS;
     window.benzeneSubUnsaturation = benzeneSubUnsaturation;
     window.BENZENE_REST_MAX = BENZENE_REST_MAX;
