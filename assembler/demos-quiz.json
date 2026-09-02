@@ -1403,5 +1403,44 @@
         ]
       }
     ]
+  },
+  {
+    "id": "quiz-naming-glycerin",
+    "title": "V135: 化粧水の保湿成分、名前は？（クイズ⑲・命名）",
+    "summary": "**仮**（誤答の顔ぶれを見てから書き直す）。芯は **-OH が3つ ＝ 3価アルコール**。油脂のけん化で石けんといっしょに出てくる分子（V19 とつながる）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この構造式の名前は？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "naming",
+            "name": "グリセリン"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-naming"
+          },
+          {
+            "type": "wait",
+            "ms": 11750
+          }
+        ]
+      },
+      {
+        "caption": "-OH が3つ ＝ 3価アルコール",
+        "actions": [
+          {
+            "type": "quizAnswer",
+            "quiz": "naming"
+          },
+          {
+            "type": "wait",
+            "ms": 13500
+          }
+        ]
+      }
+    ]
   }
 ]
