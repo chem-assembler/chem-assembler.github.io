@@ -22,7 +22,7 @@
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
  * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
  * | CV  | 1〜3   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個） |
- * | TR  | 1〜    | **系統樹のために足した反応**（`DESIGN_organic_tree.md` §2-3 (b)・`D-T10`）。設計レーンが「教科書の系統図にあってアプリに無い辺」を12本数え、そのうち**軽くて入試に出るもの**から足した。**奇数番が「起きる」・偶数番が否定対照**（起きてはいけない相手で1件も出ないこと＋門番を外せば材料はあると示すこと）。1〜2 は **酢酸2分子 → 無水酢酸**（`hydrolysis_anhydride` だけが有って**行きが無かった片道**を閉じた。二酸は分子内脱水へ譲る） |
+ * | TR  | 1〜8   | **系統樹のために足した反応**（`DESIGN_organic_tree.md` §2-3 (b)・`D-T10`）。設計レーンが「教科書の系統図にあってアプリに無い辺」を12本数え、そのうち**軽くて入試に出るもの**から足した。**奇数番が「起きる」・偶数番が否定対照**（起きてはいけない相手で1件も出ないこと＋門番を外せば材料はあると示すこと）。1〜2 は **酢酸2分子 → 無水酢酸**（`hydrolysis_anhydride` だけが有って**行きが無かった片道**を閉じた。二酸は分子内脱水へ譲る）。3〜4 は **ベンゼン → シクロヘキサン**（原子を1つも足さず環の6本を単結合にするだけ。⚠ 同じ瓶の `reduce_nitro` が「環は水素化されません」と書いているので、ニトロベンゼンでは出さない）。5〜6 は **ベンゼン＋プロペン → クメン**（クメン法の1段目。②③は -O-O- が描けないので caption で断る）。7〜8 は **アセチレン＋酢酸 → 酢酸ビニル**（**縮合ではなく付加**なので水が1分子も出ない ＝ 分子が2つになったら赤） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
@@ -34575,8 +34575,14 @@
          * ⚠ **これも意図して瓶を持たせていない** —— 教科書 p.181 は
          *   「触媒を用いて」としか書き、**触媒の名前を挙げていない**（§4-1）。
          *   相手のプロペンはキャンバスに呼び出す（アセタール化と同じ形）。 */
+        /* ★ 同じレーンで `add_carboxylic_acid_alkyne`（アセチレン＋酢酸 → 酢酸ビニル）を
+         * 足して 15 件。⚠ **これも意図して瓶を持たせていない** —— 教科書 p.31 は
+         *   「アセチレンに触媒を用いて…酢酸 CH₃COOH を付加すると」としか書き、
+         *   触媒の名前を挙げていない（§4-1）。★ 相手の酢酸は `PARTNER_CANDIDATES` に
+         *   もう入っているので、「＋ 酢酸 を呼び出す」の札が自動で出る（TR7 が見張る）。 */
         const expected = ['acetalization_pva',
             'ring_opening_polymerization',
+            'add_carboxylic_acid_alkyne',
             'addition_polymerization', 'alkylate_arene_propene',
             'alkyne_polymerization', 'amidation',
             'condensation_glycoside',
@@ -45051,7 +45057,10 @@
         /* ★ クメン法の1段目（ベンゼン＋プロペン → クメン・系統樹レーン vNNNN）。
          * ⚠ **水が1分子も出ない付加**なので `CV_MUST_SPLIT` には入れない
          *   （分かれたら逆にそちらが赤）。 */
-        alkylate_arene_propene: ['ベンゼン', 'プロペン（プロピレン）']
+        alkylate_arene_propene: ['ベンゼン', 'プロペン（プロピレン）'],
+        /* ★ アセチレン＋酢酸 → 酢酸ビニル（系統樹レーン vNNNN）。こちらも**付加**なので
+         *   水は出ず、`CV_MUST_SPLIT` には入れない。 */
+        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸']
     };
     // ⚠ **題材が用意できず見張れないルール**（0 本のうちは空のまま）。
     //    ここが伸びたら報告に本数と名前を書くこと ＝ 黙って対象から外れないようにする
@@ -45612,6 +45621,92 @@
             'トルエンで o/m/p の3箇所が出ない（既存の芳香族置換と扱いがずれている）');
         assert(rule.detect(trSetup(c, ['ナフタレン', 'プロペン（プロピレン）'])).length === 2,
             'ナフタレンで2箇所（α/β）が出ない（既存の芳香族置換と扱いがずれている）');
+        c.reset();
+    });
+
+    test('TR7: アセチレン＋酢酸 → 酢酸ビニル。★ 縮合ではなく付加なので水が出ない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const rule = W.REACTION_RULES.find(r => r.id === 'add_carboxylic_acid_alkyne');
+        assert(rule, 'add_carboxylic_acid_alkyne が REACTION_RULES に無い');
+
+        // ---- ① 走らせると酢酸ビニルになる
+        const mol = trSetup(c, ['アセチレン（エチン）', '酢酸']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `アセチレン＋酢酸で箇所が ${sites.length} 件（1件を期待）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        assert(trName(c) === '酢酸ビニル', `できたのは「${trName(c)}」（酢酸ビニルを期待）`);
+        /* ---- ② ★ **ここが化学の芯**: 水が1分子も出ない ＝ エステル化（縮合）ではなく付加。
+         *   ⚠ 分子が2つになっていたら、どこかで -OH を切っている（＝ 縮合になっている）。 */
+        assert(g.splitMolecules().length === 1,
+            `付加なのに分子が ${g.splitMolecules().length} 個ある（水を出していないか確かめる）`);
+        assert(!/水/.test(trName(c)), `生成物の並びに水が出ている: 「${trName(c)}」`);
+        assert(mol.atoms.filter(a => a.element === 'O').length === 2,
+            `酸素が ${mol.atoms.filter(a => a.element === 'O').length} 個（酢酸の2個がそのまま残るはず）`);
+        // ---- ③ 印（changed）を名指しで見る
+        assert(Array.isArray(res.changed) && res.changed.length === 3,
+            `印が ${(res.changed || []).length} 個（C≡C の2つ ＋ 橋になる O ＝ 3個を期待）`);
+        const els = res.changed.map(id => (mol.atoms.find(a => a.id === id) || {}).element).sort();
+        assert(els.join('') === 'CCO', `印の付いた原子が ${els.join('')}（C・C・O を期待）`);
+        // ---- ④ caption が「付加であって縮合ではない」と言っている
+        assert(/水は1分子も出ません/.test(res.caption),
+            `caption が「水が出ない」に触れていない: ${res.caption.slice(0, 160)}`);
+
+        /* ---- ⑤ ★ 入口がある —— 酢酸は `PARTNER_CANDIDATES` に既に入っているので、
+         *   アセチレン1分子から「＋ 酢酸 を呼び出す」の札が自動で出る（瓶を足さない理由） */
+        assert(W.PARTNER_CANDIDATES.includes('酢酸'), '酢酸が相手の候補に入っていない');
+        trSetup(c, ['アセチレン（エチン）']);
+        g.openMoleculeModal();
+        const hints = [...D.querySelectorAll('#' + W.PARTNER_HINTS_ID + ' button')];
+        assert(hints.some(b => b.dataset.rule === 'add_carboxylic_acid_alkyne'),
+            'アセチレン1分子から「＋ 酢酸 を呼び出す → 酢酸ビニル」の札が出ない ＝ ' +
+            '瓶を持たないこの反応に入口が無い。出ている札: ' +
+            (hints.map(b => b.dataset.rule).join(', ') || '（なし）'));
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    test('TR8: ★否定対照 — 酢酸の付加はアセチレンだけ。塩化ビニルは前から通ることも確かめる', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'add_carboxylic_acid_alkyne');
+        assert(rule, 'add_carboxylic_acid_alkyne が無い');
+        const negatives = [
+            [['アセチレン（エチン）'], '相手が要る'],
+            [['酢酸'], 'アセチレンが要る'],
+            [['エチレン（エテン）', '酢酸'], '二重結合には効かない（教科書はアルキンだけ）'],
+            [['プロピン', '酢酸'], '置換アルキンは対象外（教科書はアセチレンだけ）'],
+            [['1-ブチン', '酢酸'], '同上'],
+            [['アセチレン（エチン）', 'エタノール'], '相手が -COOH でない'],
+            [['アセチレン（エチン）', '酢酸エチル'], 'エステルは -COOH でない'],
+            [['アセチレン（エチン）', 'アセトアルデヒド'], '同上'],
+            [['アセチレン（エチン）', '無水酢酸'], '酸無水物は -COOH でない'],
+            [['酢酸ビニル', '酢酸'], 'もう三重結合が無い']
+        ];
+        const fired = [];
+        negatives.forEach(([names, why]) => {
+            const n = rule.detect(trSetup(c, names)).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
+
+        // **空振りの緑を避ける**: 同じ数え方がアセチレン＋酢酸では1件拾う
+        assert(rule.detect(trSetup(c, ['アセチレン（エチン）', '酢酸'])).length === 1,
+            '否定対照の数え方が壊れている（アセチレン＋酢酸でも0件になる）');
+        /* ★ **教科書の同じ1文の3つのうち、塩化ビニルは前から通る**（5編 p.31）。
+         *   ⚠ ここを測っておかないと「3つとも無かった」と読まれる。
+         *   ★ 残る1つ（HCN → アクリロニトリル）は**瓶が1本要る**ので、この版では足していない。 */
+        const hcl = W.REACTION_RULES.find(r => r.id === 'add_hcl');
+        const mol = trSetup(c, ['アセチレン（エチン）']);
+        const hs = hcl.detect(mol);
+        assert(hs.length === 1, `アセチレンに HCl の箇所が ${hs.length} 件（1件を期待）`);
+        g.saveState();
+        hcl.apply(g, hs[0]);
+        g.updateDrawing();
+        assert(trName(c) === '塩化ビニル',
+            `アセチレン＋HCl から「${trName(c)}」（塩化ビニル ＝ 前から通ることの確認）`);
         c.reset();
     });
 
