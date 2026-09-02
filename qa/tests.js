@@ -1040,7 +1040,11 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   **壁はモデルの作り直しではなくデータの追加**に下がった。
     //   ⚠⚠ この検査は v1488 から6版ぶん赤いまま見逃されていた（統合セッションが
     //   assembler を触ったときに qa の全走を回していなかった。`DEVELOPMENT.md` に記録）。
-    var KNOWN_BOTTLES = 23, KNOWN_RULES = 49, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    // ★ 2026-09-02（v1501）: 系統樹の辺を埋める反応を4本足したので 49 → 53。
+    //   無水酢酸（酢酸2分子）／ベンゼンの水素化／クメン／酢酸ビニル。
+    //   ⚠ **瓶は1本も増えていない**（4本とも既存の瓶に相乗り）ので KNOWN_BOTTLES は 23 のまま。
+    //   ★見直し候補7件はこの4本でも1件も繋がらない（別レーンが1件ずつ突き合わせ済み）。
+    var KNOWN_BOTTLES = 23, KNOWN_RULES = 53, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
