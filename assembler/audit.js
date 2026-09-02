@@ -14,10 +14,14 @@
     const btnStart = document.getElementById('btn-start');
     const btnStop = document.getElementById('btn-stop');
     const btnDownload = document.getElementById('btn-download');
+    const reachEl = document.getElementById('reach');
 
     let running = false;
     let stopReq = false;
     let report = null;
+    // ②ファズが「反応の面」へどこまで届いたかの帳簿と、そのための題材（v1502・下の注記）
+    let rxLedger = null;
+    let rxSamples = null;
 
     // 判定のしきい値。**結果ファイルにこの値をそのまま書き出す**ので、
     // 検査で使う値と記録される値がずれない（ずれると版をまたいだ比較が静かに壊れる）。
@@ -44,7 +48,10 @@
      * 割合を変えたら **`OP_MIX_ID` を上げること** —— `summary.comparableKey` に載るので、
      * 内訳の違う実行どうしを並べてしまう事故（操作数 105→100 の前例）が機械的に防げる。
      */
-    const OP_MIX_ID = 2;
+    // mix=3（v1502）… `summon` に「**相手を並べる組**」の枝が入った版。
+    // 割合の表そのものは mix=2 と同じだが、`summon` が引くものが変わった
+    // ＝ **反応に届く回数がまるごと変わる**ので、mix=2 の実行とは並べられない
+    const OP_MIX_ID = 3;
     const OP_MIX = [
         ['place', 0.30],    // 原子配置
         ['module', 0.14],   // モジュール配置
@@ -57,6 +64,96 @@
         ['undo', 0.07],
         ['redo', 0.04]
     ];
+
+    /* ===== ★★ ファズを「反応の面」へ届かせる（v1502・DESIGN_review_pack2.md §4-3／発注書 B） =====
+     *
+     * ⚠⚠ **定期レビューの実測（2026-09-02）**: 200シード × 80操作 ＝ 16,000操作を流したところ、
+     *   **49本の反応のうち16本に1回も届いていなかった**（重合4・加硫・ビニロン・開環重合・
+     *   縮合重合・糖の縮合／加水分解・酸無水物2本・ワッカー・活性化環の臭素化・環化／開環）。
+     *   さらに「react」を引いた回の **45% はボタンが0個で空振り**、押せた回の **38% は
+     *   「🔍 反応の前後を見る」**（＝ 分子を変えない札）だった。
+     *
+     * ★ **原因は乱数の少なさではなく、題材の作り方**。`summon` は 1,145件から**一様に1件**引くので、
+     *   **同じ単量体が2〜4個そろう確率がほぼ 0**。届かない16本の中心は「相手が要る反応」だった。
+     *
+     * ★ **手当て**: `summon` の枝に「**その反応が起きる題材を丸ごと並べる**」道を足す（`GROUP_SHARE`）。
+     *   題材は **`buildReactionSamples()` が全ルールぶん用意する** ——
+     *     ・相手が要るもの … 下の `PAIR_SAMPLES`（手で書いた表。tests.js の `CV_PAIR_SAMPLES` と同じ中身）
+     *     ・1分子で起きるもの … **ライブラリ全件を1回なめて `detect` が通った最初の分子**（手で並べない）
+     *   ＝ ★ **次に反応を1本足した人は、何も登録しなくても自動的にファズの対象に入る。**
+     *
+     * ⚠ **`PAIR_SAMPLES` は tests.js の `CV_PAIR_SAMPLES` と二重に持っている。**
+     *   audit.html は tests.js を読み込まない（tests.js は load で自分から走り出す IIFE）ので
+     *   そのままでは使い回せなかった。**片方だけ古くなる**のを防ぐため、
+     *   ★ **`FZ1` が「2つの表が1文字でも違えば赤」にする**（このファイルを回帰テストから
+     *   ライブラリとして読み込んで突き合わせる。→ ファイル末尾の `window.CHEM_AUDIT`）。
+     */
+
+    // 相手の分子が要るルールの題材（rule id → 呼び出す化合物名の並び）。
+    // ⚠⚠ **tests.js の `CV_PAIR_SAMPLES` と完全に同じにすること**（`FZ1` が見張る）
+    const PAIR_SAMPLES = {
+        esterification: ['酢酸', 'エタノール'],
+        amidation: ['酢酸', 'アニリン'],
+        esterification_phenol_info: ['酢酸', 'フェノール'],
+        dehydration_inter: ['エタノール', 'エタノール'],
+        condensation_glycoside: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
+        addition_polymerization: ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'],
+        alkyne_polymerization: ['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）'],
+        diene_polymerization: ['1,3-ブタジエン', '1,3-ブタジエン', '1,3-ブタジエン'],
+        // 加硫は「重合してできた鎖が2本」要る。単量体からは組めないので、先に重合を2回走らせる
+        vulcanization: ['@二本の鎖'],
+        condensation_polymerization: ['アジピン酸', 'ヘキサメチレンジアミン', 'アジピン酸', 'ヘキサメチレンジアミン'],
+        condensation_polymer_info: ['アジピン酸', 'ヘキサメチレンジアミン'],
+        acetalization_pva: ['ポリビニルアルコール', 'ホルムアルデヒド'],
+        ring_opening_polymerization: ['ε-カプロラクタム', 'ε-カプロラクタム', 'ε-カプロラクタム'],
+        /* ★ 系統樹レーンが v1501 で足した3本（酢酸2分子 → 無水酢酸／ベンゼン＋プロペン → クメン／
+         *   アセチレン＋酢酸 → 酢酸ビニル）。⚠ **この3行は `FZ1` と `FZ2` が自分で見つけて名指しした** ——
+         *   v1501 と v1502 が同じ版で出会った瞬間に、FZ1 が「表がずれている」・
+         *   FZ2 が「題材を作れなかった反応が3本」で赤くなった ＝ 設計どおりの動き。
+         *   ★ **二重持ちを機械で見張る、という判断がそのまま効いた実例**（人は気づいていない）。 */
+        dehydration_anhydride_inter: ['酢酸', '酢酸'],
+        alkylate_arene_propene: ['ベンゼン', 'プロペン（プロピレン）'],
+        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸']
+    };
+
+    // `summon` を引いたとき、単品ではなく「組」を並べる割合。
+    // ⚠ 1.0 にはしない —— **単品の呼び出しで出る失敗（段送り・見出しの重なり）が消える**。
+    // 0.45 は「16本に届く」と「今までの面を見続ける」を両立させるための配分（実測は報告に残す）
+    const GROUP_SHARE = 0.45;
+
+    /* ★ **札の選び方をカバレッジで誘導する割合**（v1502・2つめの手当て）。
+     *
+     * ⚠ **「組」を足すだけでは届かなかった**（実測・同じ種300個の A/B）:
+     *   0回の本数は 14 → 10 にしか減らず、届くようになったのは重合4本と開環重合だけ。
+     *   ★ 残りが届かない理由は題材ではなく **札の選び方** —— 題材を並べた直後でも、
+     *   一覧には 10〜20 枚の札が並んでいて、狙いの1枚が当たる確率が 1/10 以下になる。
+     *
+     * ★ **手当て**: react を引いたとき、半分の確率で「**まだ届いていない札**」を選ぶ
+     *   （届いた回数 → 押した回数 の順に少ないものを選び、同点は乱数）。
+     *   ⚠ 残りの半分は今までどおり一様な乱数 ＝ **元の分布を消さない**
+     *   （消すと「よく通る道でだけ起きる壊れ方」が見つからなくなる）。
+     * ⚠ 「🔍 反応の前後を見る」など rule id を持たない札は**いちばん後回し**にする
+     *   ＝ レビューが指摘した「押せた回の 38% が前後比較」の偏りも同時に薄まる。
+     */
+    const REACT_COVERAGE_SHARE = 0.5;
+
+    // 否定対照の口: `audit.html?nogroups=1` で「組」の枝を、`?noguide=1` で札の誘導を止める。
+    // ★ **「届くようになった」を回数だけで言わない**ため —— 両方止めた実行（＝ v1496 までの
+    //   ファズと同じ選び方）で 0回の本数が元に戻ることを確かめられる。
+    //   結果ファイルの `comparableKey` にも載せるので、止めた実行を本走と取り違えない
+    const GROUPS_ENABLED = !/[?&]nogroups=1/.test(location.search);
+    const GUIDE_ENABLED = !/[?&]noguide=1/.test(location.search);
+
+    /* ★ 基点シードを外から固定する口: `audit.html?seed=1000`（v1502）。
+     * ⚠ **A/B は「同じ種の集合を両方で流す」でなければ成立しない**（`wilson95` の注記・
+     *   `auditRerun` の注記）。基点が `Date.now()` のままだと、否定対照（`?nogroups=1`）と
+     *   本走が**別の種の集合**になり、差が枝のせいか種のせいか分けられない。
+     * ⚠ 版をまたぐときは注意: `summon` の単品はライブラリの**添字**で引くので、
+     *   化合物が増減した版どうしでは同じ種でも別の分子が出る（レビュー §4-2b の落とし穴）。 */
+    const FIXED_SEED = (() => {
+        const m = /[?&]seed=(\d+)/.exec(location.search);
+        return m ? (Number(m[1]) >>> 0) : null;
+    })();
 
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -589,6 +686,179 @@
         progress(`④当たり判定の検査 環→鎖→先端に枝（方位 ${stats.okDirs}/5・帯 ${stats.maxBandPx}px）`);
     }
 
+    /**
+     * ★ 全ルールぶんの「題材」を用意する（rule id → 呼び出す化合物名の並び）。
+     *
+     * ⚠ **手で並べるのは相手が要るものだけ**（`PAIR_SAMPLES`）。それ以外は
+     *   ライブラリ全件を1回なめて `detect` が通った最初の分子を採る ＝
+     *   **反応を足した人が登録を忘れても、黙って対象から外れない**。
+     *   （tests.js の `CV1` ①と同じ拾い方。物差しを2つ持たないため考え方をそろえてある）
+     *
+     * ⚠ 走査は `entry.mol`（ライブラリの共有インスタンス）を **読むだけ**。`detect` は
+     *   トポロジーしか見ないので、ここで作図し直す必要はない（1,145件ぶんの写しを作らない）。
+     */
+    function buildReactionSamples(W, g) {
+        const rules = (W && W.REACTION_RULES) || [];
+        const out = {};
+        rules.forEach(r => { if (PAIR_SAMPLES[r.id]) out[r.id] = PAIR_SAMPLES[r.id].slice(); });
+        let lib = [];
+        try { lib = W.buildCompoundLibrary(g); } catch (e) { lib = []; }
+        for (const entry of lib) {
+            const rest = rules.filter(r => !out[r.id]);
+            if (!rest.length) break;
+            for (const r of rest) {
+                try { if (r.detect && r.detect(entry.mol).length > 0) out[r.id] = [entry.name]; }
+                catch (e) { /* 読めない図は飛ばす */ }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 題材をキャンバスへ並べる。⚠ `@二本の鎖` だけは特別（加硫）——
+     * **単量体からは組めない**ので、先にジエンの重合を2回走らせて鎖を2本作る。
+     * （tests.js の `cvSetup` と同じ組み立て。ここだけ `rule.apply` を直に呼ぶ ＝
+     *  「反応の題材を用意する」ための下ごしらえで、ファズが押した操作ではない）
+     */
+    function summonGroup(W, g, names) {
+        if (!names || !names.length) return;
+        if (names[0] === '@二本の鎖') {
+            const dien = (W.REACTION_RULES || []).find(r => r.id === 'diene_polymerization');
+            if (!dien) return;
+            for (let k = 0; k < 2; k++) {
+                for (let i = 0; i < 3; i++) g.summonMolecule('1,3-ブタジエン');
+                let s = [];
+                try { s = dien.detect(g.userMolecule) || []; } catch (e) { s = []; }
+                if (s.length) { try { dien.apply(g, s[0]); } catch (e) { /* 置き場が無いなど */ } }
+            }
+            g.updateDrawing();
+            return;
+        }
+        names.forEach(n => g.summonMolecule(n));
+    }
+
+    /* ===== ★★ 「どこまで届いたか」の帳簿（発注書 B ②） =====
+     *
+     * ⚠⚠ **これがいちばん大事**: 届いていないことに**次の人が気づける形**にする。
+     *   DEVELOPMENT.md の「『見張れた』と『見張っていない』が区別できない検査は、無いより危ない」。
+     *
+     * ★ **回数ではなく本数で出す**（1本に1万回届いても意味がない）。
+     *   ・`rulesZeroApplied` … 一度も**実際に分子が変わらなかった**反応の本数（★ 必ず出す）
+     *   ・`missedPercent`    … 「react」を引いたのにボタンが0個だった割合（＝ 空振り）
+     *   ・`pressedByKind`    … 押した札の内訳（分子を変える札／前後比較／機構／解説カード）
+     */
+    function newReactionLedger(W) {
+        const rules = (W && W.REACTION_RULES) || [];
+        return {
+            attempts: 0,   // 「react」を引いた回数
+            missed: 0,     // そのうちボタンが0個だった回数（空振り）
+            pressed: 0,    // 実際に押した回数
+            byKind: { rule: 0, reverse: 0, info: 0, compare: 0, mechanism: 0, partner: 0, other: 0 },
+            pressedRules: {},  // rule id → 押した回数
+            appliedRules: {},  // rule id → **実際に分子が変わった**回数（reactor.lastReaction で見る）
+            groupSummons: {},  // rule id → その題材を並べた回数
+            ruleIds: rules.map(r => r.id),
+            infoIds: rules.filter(r => r.info).map(r => r.id)
+        };
+    }
+
+    /**
+     * ★ どの札を押すかを決める（カバレッジ誘導。上の `REACT_COVERAGE_SHARE` の注記）。
+     *
+     * ⚠ **純関数にしてある**（帳簿と乱数を引数で受ける）ので `FZ4` が作りごとの札で単体検査できる。
+     * ★ 物差しは「**届いた回数 → 押した回数**」の辞書順で少ないもの。
+     *   - 届いた回数を先に見るので、**押しても分子が変わらない札**（解説カード）が
+     *     いつまでも「0回」で選ばれ続けることがない（押した回数で後回しになる）
+     *   - rule id を持たない札（前後比較・機構）は最後に回す
+     */
+    function pickReactionButton(btns, led, rnd, guided) {
+        if (!btns.length) return null;
+        if (!guided || !led || rnd() >= REACT_COVERAGE_SHARE) {
+            return btns[Math.floor(rnd() * btns.length)];
+        }
+        const cost = (b) => {
+            const ds = b.dataset || {};
+            const rid = ds.rule || ds.reverseRule;
+            if (!rid) return Infinity;                       // 札に反応が結びついていない
+            return (led.appliedRules[rid] || 0) * 1000 + (led.pressedRules[rid] || 0);
+        };
+        let best = [], bestN = Infinity;
+        btns.forEach(b => {
+            const n = cost(b);
+            if (n < bestN) { bestN = n; best = [b]; }
+            else if (n === bestN) best.push(b);
+        });
+        if (!best.length) best = btns;                        // 全部 Infinity（rule id 無し）
+        return best[Math.floor(rnd() * best.length)];
+    }
+
+    // 押した札が何だったかを数える。⚠ 見分けは **DOM の属性**で行う（文言に頼るのは最後だけ）
+    function tallyPressedButton(led, btn) {
+        const ds = btn.dataset || {};
+        if (ds.partner) { led.byKind.partner++; return 'partner'; }
+        if (ds.reverseRule) {
+            led.byKind.reverse++;
+            led.pressedRules[ds.reverseRule] = (led.pressedRules[ds.reverseRule] || 0) + 1;
+            return 'reverse';
+        }
+        if (ds.rule) {
+            const info = led.infoIds.indexOf(ds.rule) >= 0;
+            led.byKind[info ? 'info' : 'rule']++;
+            led.pressedRules[ds.rule] = (led.pressedRules[ds.rule] || 0) + 1;
+            return info ? 'info' : 'rule';
+        }
+        const t = btn.textContent || '';
+        if (t.indexOf('前後') >= 0) { led.byKind.compare++; return 'compare'; }
+        if (t.indexOf('機構') >= 0) { led.byKind.mechanism++; return 'mechanism'; }
+        led.byKind.other++;
+        return 'other';
+    }
+
+    /**
+     * 帳簿から「毎回出す数」を作る。**純関数**（`FZ3` が作りごとの入力で単体検査する）。
+     * ⚠ 分母は用途ごとに変える: 空振り率は「react を引いた回数」・
+     *   札の内訳は「押せた回数」・到達の本数は「**分子を変えられる反応の本数**」
+     *   （解説カード `rule.info` は押しても分子が変わらないので分母から外す）。
+     */
+    function summarizeReactions(led) {
+        if (!led) return null;
+        const pct = (n, d) => d ? +(n / d * 100).toFixed(1) : null;
+        const execIds = (led.ruleIds || []).filter(id => (led.infoIds || []).indexOf(id) < 0);
+        const zeroPressed = execIds.filter(id => !(led.pressedRules || {})[id]);
+        const zeroApplied = execIds.filter(id => !(led.appliedRules || {})[id]);
+        return {
+            attempts: led.attempts,
+            missed: led.missed,
+            missedPercent: pct(led.missed, led.attempts),
+            pressed: led.pressed,
+            pressedByKind: led.byKind,
+            comparePercent: pct((led.byKind || {}).compare, led.pressed),
+            moleculeChangingPercent: pct((led.byKind || {}).rule + (led.byKind || {}).reverse, led.pressed),
+            rulesTotal: (led.ruleIds || []).length,
+            rulesExecutable: execIds.length,
+            rulesPressed: execIds.length - zeroPressed.length,
+            rulesApplied: execIds.length - zeroApplied.length,
+            rulesZeroPressed: zeroPressed.length,
+            rulesZeroApplied: zeroApplied.length,
+            zeroPressedIds: zeroPressed,
+            zeroAppliedIds: zeroApplied,
+            groupSummons: led.groupSummons,
+            pressCounts: led.pressedRules,
+            applyCounts: led.appliedRules
+        };
+    }
+
+    // 画面に出す1行（緑でも読めるところに置く。⚠ 結果 JSON を開かないと分からない形にしない）
+    function reachLine(s) {
+        if (!s) return '';
+        return `反応への到達: 分子を変えられる ${s.rulesExecutable} 本のうち ` +
+            `${s.rulesApplied} 本で実際に分子が変わった（★ 0回 ${s.rulesZeroApplied} 本` +
+            `${s.rulesZeroApplied ? '：' + s.zeroAppliedIds.join(', ') : ''}）` +
+            `／react の空振り ${s.missedPercent}%（${s.missed}/${s.attempts}）` +
+            `／押した ${s.pressed} 回の内訳 分子を変える札 ${s.moleculeChangingPercent}%・` +
+            `前後を見る ${s.comparePercent}%`;
+    }
+
     // ---------- ②ランダム操作ファズ ----------
     async function fuzzOnce(W, D, g, seed, opsCount, errBox, onOp) {
         const rnd = mulberry32(seed);
@@ -645,9 +915,14 @@
                 if (kind === 'react') {
                     // 反応の実行（P9-1 M2〜M5）。適用箇所の選択待ちになったら候補をクリックして確定する
                     const btns = [...D.querySelectorAll('#reaction-actions button')];
+                    // ★ 空振り（ボタンが0個）も数える —— 数えないと「react を 11% 引いている」
+                    //   という**予定**と、実際に押せた回数の差（実測 45%）が誰にも見えない
+                    if (rxLedger) rxLedger.attempts++;
                     if (btns.length) {
-                        const btn = btns[Math.floor(rnd() * btns.length)];
+                        const btn = pickReactionButton(btns, rxLedger, rnd, GUIDE_ENABLED);
                         ops.push('react ' + btn.textContent.slice(0, 16));
+                        const lastBefore = (W.reactor && W.reactor.lastReaction) || null;
+                        if (rxLedger) { rxLedger.pressed++; tallyPressedButton(rxLedger, btn); }
                         btn.click();
                         if (W.reactor && W.reactor.picking) {
                             const sites = W.reactor.picking.sites;
@@ -656,13 +931,36 @@
                             if (target) clickAt(target.x, target.y);
                             else W.reactor.picking = null;
                         }
+                        // ★ **押した**と**実際に分子が変わった**は別。到達の本数は後者で数える
+                        //   （箇所の選択で外した回・情報カードを押した回を「届いた」に混ぜない）
+                        const lastAfter = (W.reactor && W.reactor.lastReaction) || null;
+                        if (rxLedger && lastAfter && lastAfter !== lastBefore && lastAfter.ruleId) {
+                            rxLedger.appliedRules[lastAfter.ruleId] =
+                                (rxLedger.appliedRules[lastAfter.ruleId] || 0) + 1;
+                        }
+                    } else if (rxLedger) {
+                        rxLedger.missed++;
                     }
                 } else if (kind === 'summon') {
                     // 名称からの分子呼び出し（P9-1 M1）
-                    const lib = g.getCompoundLibrary();
-                    const entry = lib[Math.floor(rnd() * lib.length)];
-                    ops.push('summon ' + entry.name);
-                    g.summonMolecule(entry.name);
+                    // ★ **確率 GROUP_SHARE で「その反応が起きる題材」を丸ごと並べる**（§4-3 の手当て）。
+                    //   単品を1件引くだけでは、同じ単量体が2〜4個そろう確率がほぼ 0 になる
+                    const ruleIds = rxSamples ? Object.keys(rxSamples) : [];
+                    // ⚠ サイコロは**枝を止めていても必ず振る**（`?nogroups=1` の否定対照で
+                    //    乱数の並びがここで1つずれると、比べているものが変わってしまう）
+                    const groupRoll = rnd();
+                    if (GROUPS_ENABLED && ruleIds.length && groupRoll < GROUP_SHARE) {
+                        const rid = ruleIds[Math.floor(rnd() * ruleIds.length)];
+                        const names = rxSamples[rid];
+                        ops.push(`summon@${rid} ${names.join('+')}`.slice(0, 60));
+                        if (rxLedger) rxLedger.groupSummons[rid] = (rxLedger.groupSummons[rid] || 0) + 1;
+                        summonGroup(W, g, names);
+                    } else {
+                        const lib = g.getCompoundLibrary();
+                        const entry = lib[Math.floor(rnd() * lib.length)];
+                        ops.push('summon ' + entry.name);
+                        g.summonMolecule(entry.name);
+                    }
                 } else if (kind === 'place') {
                     // 原子配置（既存原子の近傍グリッド）
                     const els = ['C', 'C', 'C', 'O', 'N', 'Cl', 'Br'];
@@ -747,7 +1045,13 @@
             const { ops, issues } = await fuzzOnce(W, D, g, seed, opsCount, errBox);
             addResult('fuzz', `#${it} seed=${seed}`, issues, issues.length ? { ops } : {});
             progress(`②ランダム操作ファズ ${it + 1}/${iterations}（シード基点 ${baseSeed}）`);
+            // ★ 到達の数は**走行中も画面に出す**（結果 JSON を開かないと分からない形にしない）。
+            //   毎回数え直すと 49本 × 反復ぶん無駄なので 20 反復に1回
+            if (reachEl && (it % 20 === 19 || it === iterations - 1)) {
+                reachEl.textContent = reachLine(summarizeReactions(rxLedger));
+            }
         }
+        if (reachEl) reachEl.textContent = reachLine(summarizeReactions(rxLedger));
     }
 
     async function start() {
@@ -773,13 +1077,21 @@
             opsCount: Math.max(1, Number(document.getElementById('fuzz-ops').value) || 25),
             thresholds: THRESHOLDS,
             opMixId: OP_MIX_ID,
-            opMix: Object.fromEntries(OP_MIX)
+            opMix: Object.fromEntries(OP_MIX),
+            // ★ 「組」の枝の有無と配分。⚠ **止めた実行（?nogroups=1）と並べない**ので
+            //   `comparableKey` にも載せる（否定対照の実行を本走と取り違えないため）
+            groupSummons: GROUPS_ENABLED,
+            groupShare: GROUPS_ENABLED ? GROUP_SHARE : 0,
+            reactGuide: GUIDE_ENABLED,
+            reactCoverageShare: GUIDE_ENABLED ? REACT_COVERAGE_SHARE : 0
         };
         // 監査結果は window にも出す（ヘッドレスの検証スクリプトから読むため）
         report = window.__auditReport = {
             startedAt: new Date().toISOString(),
             finishedAt: null,
-            baseSeed: Date.now() >>> 0,
+            baseSeed: FIXED_SEED === null ? (Date.now() >>> 0) : FIXED_SEED,
+            // ⚠ 種を固定した実行はふだんの夜間監査と混ぜない（「毎晩ちがう種で回す」が本旨）
+            seedFixed: FIXED_SEED !== null,
             config: cfg,
             counts: { ok: 0, fail: 0, libraryChecks: 0, fuzzIterations: 0 },
             records: []
@@ -819,6 +1131,15 @@
             if (!stopReq) await runTipBranchTarget(W, D, g);
         }
         if (cfg.fuzz && !stopReq) {
+            // 題材づくりは1回だけ（ライブラリ全件 × detect の総当たりなので数秒かかる）
+            progress('②の題材を用意しています（全ルールぶん）…');
+            rxSamples = buildReactionSamples(W, g);
+            rxLedger = newReactionLedger(W);
+            report.reactionSamples = Object.fromEntries(
+                Object.entries(rxSamples).map(([k, v]) => [k, v.join('＋')]));
+            // ⚠ **題材が作れなかったルールはここで名指しする**（黙って対象から外さない）
+            report.reactionSamplesMissing =
+                (W.REACTION_RULES || []).map(r => r.id).filter(id => !rxSamples[id]);
             await runFuzz(W, D, g, cfg.iterations, cfg.opsCount, report.baseSeed, errBox);
         }
 
@@ -905,7 +1226,11 @@
             // `bondLinePx` は v1160 で足した「結合線の下の原子」のしきい値。
             // `hydrogenLinePx` は v1240 で足した「結合線の下の自動水素」のしきい値。
             // 検査が1つ増えた実行と増える前の実行は並べられないので鍵に載せる
-            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx},${report.config.thresholds.bondLinePx},${report.config.thresholds.hydrogenLinePx}/mix=${report.config.opMixId}`
+            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx},${report.config.thresholds.bondLinePx},${report.config.thresholds.hydrogenLinePx}/mix=${report.config.opMixId}/grp=${report.config.groupShare}/cov=${report.config.reactCoverageShare}`,
+            /* ★★ **反応の面へどこまで届いたか**（v1502・発注書 B ②）。
+             * ⚠ **回数ではなく本数を見ること** —— 1本に1万回届いても、他の48本が0回なら
+             *   「監査がバグを見つけてくれる」は成り立たない。`rulesZeroApplied` が要。 */
+            reactions: summarizeReactions(rxLedger)
         };
     }
 
@@ -933,11 +1258,19 @@
      * かならず「同じ版をもう一度流した差」をノイズの床として並べること。**
      */
     window.auditReport = () => report;
+    /* ⚠ **再生でも題材を用意してから走る**（v1502）。用意しないと `summon` の枝が
+     *   「組」を引けず、**同じ種でも操作列が丸ごと別物になる** ＝ 再現の道具が壊れる。
+     *   本走が済んでいれば作り直さない（ライブラリ全件の総当たりなので数秒かかる） */
+    const ensureSamples = (W, g) => {
+        if (!rxSamples) rxSamples = buildReactionSamples(W, g);
+        return rxSamples;
+    };
     window.auditRerun = async (seed, opsCount) => {
         opsCount = opsCount || Math.max(1, Number(document.getElementById('fuzz-ops').value) || 80);
         const W = frame.contentWindow;
         const D = frame.contentDocument;
         const errBox = [];
+        ensureSamples(W, W.game);
         W.addEventListener('error', ev => errBox.push(ev.message));
         return fuzzOnce(W, D, W.game, seed, opsCount, errBox);
     };
@@ -947,8 +1280,35 @@
         const W = frame.contentWindow;
         const D = frame.contentDocument;
         const errBox = [];
+        ensureSamples(W, W.game);
         return fuzzOnce(W, D, W.game, seed, opsCount, errBox, onOp);
     };
+
+    /* ★ **回帰テスト（tests.js）から「ライブラリとして」読み込むための口**（v1502）。
+     *
+     * ⚠ audit.html は tests.js を読み込めない（tests.js は load で自分から走り出す IIFE）ので、
+     *   題材の表を共有するには**こちら側を読ませる**しかない。`FZ1`〜`FZ3` は
+     *   test.html の中へこのファイルを差し込んで、ここに出したものだけを見る。
+     * ⚠ **`?v=` を付けて読み込ませない**（`verify-release.js` は .html しか見ないので
+     *   .js の中のキャッシュバスターは版の更新もれの死角になる）。テスト側は毎回違う
+     *   使い捨ての語を付けて読む。 */
+    window.CHEM_AUDIT = {
+        PAIR_SAMPLES,
+        OP_MIX_ID,
+        OP_MIX,
+        GROUP_SHARE,
+        REACT_COVERAGE_SHARE,
+        buildReactionSamples,
+        summonGroup,
+        newReactionLedger,
+        tallyPressedButton,
+        pickReactionButton,
+        summarizeReactions
+    };
+
+    // ⚠ ここから下は audit.html の中でしか意味がない。ライブラリとして読まれたときは
+    //    ボタンが無いので、素通りさせる（読み込んだだけで例外を投げない）
+    if (!btnStart || !btnStop || !btnDownload) return;
 
     btnStart.addEventListener('click', start);
     btnStop.addEventListener('click', () => { stopReq = true; });
