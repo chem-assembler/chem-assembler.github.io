@@ -5482,6 +5482,89 @@ function refCarbonCount(formula) {
     return m[1] === '' ? 1 : parseInt(m[1], 10);
 }
 
+/* stages.json の1件から、そのお題の**正解の図**を分子として組む。
+   ⚠ 組み方は `game.js` の `createTargetFromData` の1本だけを使う ——
+      ここで2つ目の組み方を持つと、お題の図と資料の表が別々の解釈を持ちうる。 */
+function refStageMolecule(stage) {
+    const g = window.game;
+    if (!g || !stage || !stage.target || typeof g.createTargetFromData !== 'function') return null;
+    try { return g.createTargetFromData(stage); } catch (e) { return null; }
+}
+
+/* ★★ 分子式を**構造から**組む（H は空き価標＝暗黙の水素を数える）。並びは C・H・あとはアルファベット順。
+   ⚠ **`stages.json` の `formula` を読み替えて作らない。** あの欄は示性式のことがある
+      （1-ブテンは "CH2=CHCH2CH3"・グリセリンは "C3H5(OH)3"）ので、文字列から分子式を作ると
+      系列によって黙って壊れる。図から数えれば、どの系列でも同じ1本の道で出る。 */
+function refFormulaFromStructure(mol) {
+    if (!mol || !mol.atoms) return '';
+    const n = {};
+    let h = 0;
+    mol.atoms.forEach(a => {
+        n[a.element] = (n[a.element] || 0) + 1;
+        h += mol.getFreeValency(a.id);
+    });
+    n.H = (n.H || 0) + h;
+    const rest = Object.keys(n).filter(k => k !== 'C' && k !== 'H').sort();
+    return ['C', 'H'].concat(rest).filter(k => n[k] > 0)
+        .map(k => k + (n[k] > 1 ? n[k] : '')).join('');
+}
+
+/* 主鎖（いちばん長い炭素の鎖）の長さ。判定は chemistry.js の1本（命名が使っているのと同じもの） */
+function refMainChainLength(mol) {
+    if (!mol || typeof findLongestCarbonChain !== 'function') return null;
+    try { const c = findLongestCarbonChain(mol); return c ? c.length : null; }
+    catch (e) { return null; }
+}
+
+/* 官能基の一覧を1行にする。⚠ **言い回しは `game.functionalGroupSummary` の1本**
+   （「⚗ この分子の反応」カードが出しているのと同じ文）。資料だけ別の言い方をしない */
+function refFunctionalSummary(mol) {
+    const g = window.game;
+    if (!mol || !g || typeof g.functionalGroupSummary !== 'function') return '';
+    try { return g.functionalGroupSummary(mol); } catch (e) { return ''; }
+}
+
+/* ★★ **表の列の作り方は、ここにしか無い。**
+ *
+ * `reference.json` が選べるのは `variant` の名前だけで、中身（何を何列出すか）はコード側。
+ * ⚠ **どの列も `stages.json` の1件から機械で作る**（名称は出題データそのもの、
+ *    分子式・主鎖・官能基は**お題の図から計算**）＝ 手で書いた値を混ぜる口が1つも無い。
+ * ⚠ **行を選ぶ口はどの variant にも無い**（原則1・`REF3`）。系列を指したら、その系列の全件。
+ */
+const REF_TABLE_VARIANTS = {
+    // 既定（第1ページ・アルカンの命名）。C の数は分子式の先頭から読む
+    carbon: {
+        head: ['C の数', '名称', '分子式'],
+        cells: (s) => [
+            { text: refCarbonCount(s.formula) === null ? '—' : String(refCarbonCount(s.formula)), cls: 'ref-c' },
+            { text: s.name },
+            { text: refSubscript(s.formula), cls: 'ref-formula' }
+        ]
+    },
+    // 分子式でまとめる（第2ページ・異性体）。★ まとめる鍵は**図から計算した分子式**なので、
+    //   示性式で書かれた系列でも同じように束ねられる
+    grouped: {
+        needsMolecule: true,
+        head: ['分子式', '名称', '主鎖の C の数'],
+        groupKey: (s, mol) => refFormulaFromStructure(mol),
+        cells: (s, mol) => [
+            { text: s.name },
+            { text: refMainChainLength(mol) === null ? '—' : String(refMainChainLength(mol)), cls: 'ref-c' }
+        ]
+    },
+    // 官能基（第3ページ）。★ 検出は chemistry.js の `findFunctionalGroups` ＝
+    //   アプリが分子を見るときと同じ1本。資料のためだけの判定を作らない
+    functional: {
+        needsMolecule: true,
+        head: ['名称', '分子式', '官能基'],
+        cells: (s, mol) => [
+            { text: s.name },
+            { text: refSubscript(refFormulaFromStructure(mol)), cls: 'ref-formula' },
+            { text: refFunctionalSummary(mol), cls: 'ref-fg' }
+        ]
+    }
+};
+
 class ReferenceBook {
     constructor() {
         this.pages = null;      // reference.json の中身（開くまで読まない）
@@ -5571,6 +5654,23 @@ class ReferenceBook {
 
     close() { this.setOpen(false); }
 
+    /* 深いリンク `?open=reference[&code=<qa の知識コード>]` を1本で受ける。
+       ★ 入口は2つある（`OPEN_TARGETS`（game.js）から呼ばれる道と、`appReady` を待つ自前の道）が、
+          **開く判断はこの1本**にまとめてある ＝ 2箇所が違う版のページを開く事故が起きない。
+       ⚠ 二重に呼ばれても最初の1回だけ効かせる（どちらの道が先に着いても結果が同じ）。 */
+    async openFromSearch(search) {
+        let params;
+        try { params = new URLSearchParams(search); } catch (e) { return false; }
+        if (params.get('rec')) return false;   // 収録中は台本の1手目を汚さない
+        if ((params.get('open') || '').trim().toLowerCase() !== 'reference') return false;
+        if (this._deepLinkDone) return false;
+        this._deepLinkDone = true;
+        try { await this.load(); } catch (e) { return false; }
+        // 知らない code は**無視して既定のページ**（前方互換。qa が先に語彙を配っても止まらない）
+        const byCode = this.pageByCode(params.get('code'));
+        return await this.open(byCode ? byCode.id : (this.pages[0] && this.pages[0].id));
+    }
+
     /* ページ1枚を描く。
        ⚠ **引数はページ1枚だけ**。「この行だけ」「この範囲だけ」を渡す口を作らない（原則1） */
     render(page) {
@@ -5602,12 +5702,18 @@ class ReferenceBook {
     }
 
     /* ★★ 表は **series 単位でしか作れない**（行を選ぶ引数が無い）。
-       これが「1行だけ出す」を構造で禁じている部分（原則1・`REF3` の否定対照）。 */
+       これが「1行だけ出す」を構造で禁じている部分（原則1・`REF3` の否定対照）。
+       ⚠ `series` は文字列でも配列でもよい（複数の系列を続けて並べる）が、
+          **どちらも「その系列の全件」しか出せない** —— 系列の中から行を選ぶ引数は無い。 */
     renderStageTable(block) {
         const stages = (window.STAGES || []);
-        const rows = stages
-            .map((s, i) => ({ s, i }))
-            .filter(x => x.s.series === block.series);
+        const names = Array.isArray(block.series) ? block.series : [block.series];
+        const rows = [];
+        names.forEach(nm => stages.forEach(s => { if (s.series === nm) rows.push(s); }));
+        const v = REF_TABLE_VARIANTS[block.variant] || REF_TABLE_VARIANTS.carbon;
+        // 図は1行につき1回だけ組む（列ごとに組み直さない）
+        const built = rows.map(s => ({ s, mol: v.needsMolecule ? refStageMolecule(s) : null }));
+
         const wrap = document.createElement('div');
         wrap.className = 'ref-table-wrap';
         if (block.caption) {
@@ -5618,18 +5724,57 @@ class ReferenceBook {
         }
         const t = document.createElement('table');
         t.className = 'ref-table';
-        t.dataset.refSeries = block.series;
-        t.innerHTML = '<thead><tr><th>C の数</th><th>名称</th><th>分子式</th></tr></thead>';
-        const tb = document.createElement('tbody');
-        rows.forEach(({ s }) => {
-            const tr = document.createElement('tr');
-            const c = refCarbonCount(s.formula);
-            tr.innerHTML =
-                '<td class="ref-c">' + (c === null ? '—' : c) + '</td>'
-                + '<td>' + escapeRefText(s.name) + '</td>'
-                + '<td class="ref-formula">' + escapeRefText(refSubscript(s.formula)) + '</td>';
-            tb.appendChild(tr);
+        t.dataset.refSeries = names.join(' / ');
+        const thead = document.createElement('thead');
+        const htr = document.createElement('tr');
+        v.head.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            htr.appendChild(th);
         });
+        thead.appendChild(htr);
+        t.appendChild(thead);
+
+        const tb = document.createElement('tbody');
+        const put = (tr, c) => {
+            const td = document.createElement('td');
+            if (c.cls) td.className = c.cls;
+            td.textContent = c.text;
+            tr.appendChild(td);
+        };
+        if (v.groupKey) {
+            /* 同じ鍵が続くあいだを1つの群として、先頭の行にだけ見出しのセルを置く（rowspan）。
+               ⚠ **行は1つも減らない**（隠すのでも畳むのでもなく、左の1列を共有するだけ）。
+                  狭い画面で行を間引かないことは `REF4` が「見えている行数」で見張っている */
+            let i = 0;
+            while (i < built.length) {
+                const key = v.groupKey(built[i].s, built[i].mol);
+                let j = i;
+                while (j < built.length && v.groupKey(built[j].s, built[j].mol) === key) j++;
+                for (let k = i; k < j; k++) {
+                    const tr = document.createElement('tr');
+                    if (k === i) {
+                        const td = document.createElement('td');
+                        td.className = 'ref-group ref-formula';
+                        td.rowSpan = j - i;
+                        td.appendChild(document.createTextNode(refSubscript(key)));
+                        const n = document.createElement('span');
+                        n.textContent = (j - i) + ' 件';
+                        td.appendChild(n);
+                        tr.appendChild(td);
+                    }
+                    v.cells(built[k].s, built[k].mol).forEach(c => put(tr, c));
+                    tb.appendChild(tr);
+                }
+                i = j;
+            }
+        } else {
+            built.forEach(({ s, mol }) => {
+                const tr = document.createElement('tr');
+                v.cells(s, mol).forEach(c => put(tr, c));
+                tb.appendChild(tr);
+            });
+        }
         t.appendChild(tb);
         wrap.appendChild(t);
         return wrap;
@@ -5717,22 +5862,17 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         if (tabDoc) tabDoc.addEventListener('click', () => book.setOpen(true));
 
         /* 深いリンク `?open=reference[&code=<qa の知識コード>]`。
-           ⚠ **`OPEN_TARGETS`（game.js）には足していない** —— このレーンは game.js を触らない約束。
-              `applyOpenParam` は知らない `open` を無視して普通に開く（前方互換）ので、
-              ここで自分の名前だけを見る。`?from=` の帯・`?summon=` は今までどおり game.js が処理する。
+           ★ `OPEN_TARGETS`（game.js）にも `reference` が入ったので、ふつうは**そちらが先に**
+             `openFromSearch` を呼ぶ（`applyOpenParam` は `appReady` の直前に走る）。
+           ⚠ **それでもこの道を残す**: `applyOpenParam` は `stages.json` の読み込みに失敗すると
+             1度も呼ばれない。ここは `appReady` を待つだけなので、受け口が game.js の起動順に
+             縛られない。⚠ 二重に開かないことは `openFromSearch` 側の1回きりの札で保証する。
            ⚠ `?rec=`（収録）のときは何もしない —— 台本の1手目を汚さない（game.js と同じ約束） */
         (async () => {
-            let params;
-            try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
-            if (params.get('rec')) return;
-            if ((params.get('open') || '').trim().toLowerCase() !== 'reference') return;
             for (let i = 0; i < 300 && !window.appReady; i++) {
                 await new Promise(r => setTimeout(r, 100));
             }
-            try { await book.load(); } catch (e) { return; }
-            const byCode = book.pageByCode(params.get('code'));
-            // 知らない code は**無視して既定のページを開く**（前方互換。qa が先に語彙を配っても止まらない）
-            await book.open(byCode ? byCode.id : (book.pages[0] && book.pages[0].id));
+            await book.openFromSearch(window.location.search);
         })();
     });
 }
@@ -5745,6 +5885,12 @@ if (typeof window !== 'undefined') {
     window.ReferenceBook = ReferenceBook;
     window.refSubscript = refSubscript;
     window.refCarbonCount = refCarbonCount;
+    // 表の列を作る側（`REF8`/`REF9` が「手打ちではなく図から出ている」ことを確かめる口）
+    window.refStageMolecule = refStageMolecule;
+    window.refFormulaFromStructure = refFormulaFromStructure;
+    window.refMainChainLength = refMainChainLength;
+    window.refFunctionalSummary = refFunctionalSummary;
+    window.REF_TABLE_VARIANTS = REF_TABLE_VARIANTS;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;

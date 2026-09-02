@@ -11247,6 +11247,13 @@ const OPEN_TARGETS = {
     //    `?open=experiment&quest=<id>` で1問を直接始められる（下の受け口⑧）。
     //    `quest` だけを付けて `open` を省いても効く ＝ qa と参考書から張るリンクを短くできる
     experiment: { mode: 'free', fn: () => window.game.setPalette('exp') },
+    // 📖 資料（参考書。DESIGN_reference_book.md §10-7 の残り1件）。
+    // ⚠ **モードを変えない**（`mode` を書かない）—— 資料は「読みながら、いまのモードのまま試す」
+    //    もので、器はキャンバスに重なる（狭い画面）か横に並ぶ（≥1200px）ペイン。
+    //    モードを 'learn' にすると 📚 学習モーダルが開いて、その直後に資料が閉じる ＝ 一瞬ちらつく。
+    // ⚠ **ページの選択（`?code=`）はここで解釈しない。** 資料側の1本（`openFromSearch`）に渡す
+    //    ＝ 開く道が2本あってもページを決める場所は1つ（learn.js）に保つ
+    reference: { fn: () => window.referenceBook && window.referenceBook.openFromSearch(window.location.search) },
     // どこからでも: 操作ガイド
     help: { btn: 'btn-help' }
 };
