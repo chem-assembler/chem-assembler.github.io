@@ -56,6 +56,7 @@
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
+ * | FZ  | 1〜4   | ★ **夜間監査のファズが「反応の面」に届いているか**（v1502・DESIGN_review_pack2.md §4-3／発注書 B）。定期レビューの実測で **49本の反応のうち16本にファズが1回も届いていなかった**（相手が要る反応が中心。`summon` は 1,145件から一様に1件しか引かないので同じ単量体がそろわない）。手当ては `audit.js` 側（「相手を並べる組」の枝＋到達本数・空振り率の記録）で、ここはそれが空振りしていないことの見張り。1 が題材の表の二重持ち（tests.js の `CV_PAIR_SAMPLES` と audit.js の `PAIR_SAMPLES`）が食い違わないこと・**2 が本体**＝ 監査の題材を並べると届いていなかった 16 本のボタンが実際に生えること（★否定対照 = 相手を並べなければ生えない・空のキャンバスでは 0 本）・3 が「監査が出す数」の作り＝ **回数ではなく本数**（1本に1万回届いても `rulesApplied` は 1）と率の分母（★否定対照 = 1回も引かなければ率は null）・**4 は札の選び方**＝ 「組」を足すだけでは 0回が 14→10 本にしか減らなかった（同じ種300個の A/B の実測）ので、半分の確率で「まだ届いていない札」を選ぶ誘導を足した。その物差し（届いた回数 → 押した回数）を純関数で単体検査する（★否定対照 = `?noguide=1` で一様な乱数に戻る・乱数が外れた回も一様） |
  * | FV  | 1〜3   | 🔍「全体表示」が合わせる先（v1402・ユーザー申し立て「分子を呼び出して表示したとき、全体表示、でそれらの分子が枠内に入らない」）。`fitCanvasToTarget()` は名前のとおり**お題**に合わせる関数で、🧪自由にはお題が無い ＝ 範囲が (400,300) の1点に潰れて視野がそこへ飛んでいた（実測 160原子中 12個）。1 が本体（自由・学習で描いたもの全体に合う。呼び終えた直後と、画面外へ飛ばしてからの2通り）・**2 は否定対照**＝ 🧩パズルは今までどおりお題に合わせる（viewBox の実数で固定。自由の直しがパズルへ漏れると赤）・**3 も否定対照**＝ 空のキャンバスでも視野が1点に潰れない／お題の視野を借りに行かない |
  * | G   | 1〜4   | 保存・Redo・任意員環・不斉マーク |
  * | GB  | 1〜4   | 1原子ドラッグの廃止とベンゼンの特別扱い撤廃（例外ゼロ・v1180） |
@@ -46887,6 +46888,245 @@
                 `隣が ${cs.nb} の炭素（${cs.why}）を選んだのに「${shown}」（${cs.want} を期待）`);
         }
         c.reset();
+    });
+
+    /* ===== FZ1〜FZ3: 夜間監査のファズが「反応の面」に届いているか（v1502） =====
+     *
+     * ★★ **きっかけ**（定期レビュー・DESIGN_review_pack2.md §4-3・2026-09-02）:
+     *   200シード × 80操作 ＝ 16,000操作を流したところ、**49本の反応のうち16本に1回も届いていなかった**
+     *   （重合4・加硫・ビニロン・開環重合・縮合重合・糖の縮合／加水分解・酸無水物・ワッカー・
+     *   活性化環の臭素化・環化／開環）。「react」を引いた回の 45% はボタンが無くて空振り、
+     *   押せた回の 38% は「🔍 反応の前後を見る」だった。
+     *   ＝ ★ **「バグの発見は監査ページに任せる」（CLAUDE.md）が、反応の面では成立していなかった。**
+     *
+     * ★ 手当ては `audit.js` 側（`summon` に「相手を並べる組」の枝＋到達本数と空振り率の記録）。
+     *   ここに置くのは、その手当てが**空振りしていないこと**を毎回の全走で見張る3件:
+     *     FZ1 … 題材の表が tests.js の `CV_PAIR_SAMPLES` と食い違っていない（★ 二重持ちの見張り）
+     *     FZ2 … 監査の題材を並べると、**届いていなかった17本の反応ボタンが実際に生える**（否定対照つき）
+     *     FZ3 … 監査が出す数の作り（**回数ではなく本数**）が正しい（純関数の単体検査）
+     *     FZ4 … 札の選び方（まだ届いていない反応を優先する誘導）の物差し（同上）
+     *
+     * ⚠ **数え方**: レビューの「16本」は `dehydration_anhydride` と `dehydration_anhydride_info` を
+     *   1つに束ねた数え方だった。ここは**ルールの id で数える**ので、下の一覧は
+     *   **押して分子が変わりうる 16 本**（`*_info` は解説カードで分子を変えないので、
+     *   一覧からも到達の分母からも外してある ＝ `rulesExecutable` は 49 本のうち 43 本）。
+     */
+
+    /* ★ `audit.js` を **ライブラリとして** test.html に読み込む。
+     *
+     * ⚠ **逆向き（audit.html から tests.js）はできない** —— tests.js は `load` で自分から
+     *   走り出す IIFE で、audit.html には `#app-frame` も `#summary` も無い。
+     *   だから題材の表を共有するには**こちらから audit.js を読む**しかない。
+     * ⚠ **`?v=` を付けない**（`.js` の中のキャッシュバスターは `verify-release.js` の死角＝
+     *   qa/app.js で実際に踏んだ形）。毎回違う使い捨ての語を付けて、必ず新しいものを読む。 */
+    let _auditLibPromise = null;
+    const loadAuditLib = () => {
+        if (_auditLibPromise) return _auditLibPromise;
+        _auditLibPromise = new Promise((resolve, reject) => {
+            if (window.CHEM_AUDIT) return resolve(window.CHEM_AUDIT);
+            const s = document.createElement('script');
+            s.src = 'audit.js?fz=' + Date.now();
+            s.onload = () => window.CHEM_AUDIT
+                ? resolve(window.CHEM_AUDIT)
+                : reject(new Error('audit.js は読めたが window.CHEM_AUDIT が出ていない'));
+            s.onerror = () => reject(new Error('audit.js を読み込めない（配信の場所が変わった？）'));
+            document.head.appendChild(s);
+        });
+        return _auditLibPromise;
+    };
+
+    /* ⚠⚠ **ラチェット**: 2026-09-02 の定期レビューでファズが1回も届いていなかった反応。
+     * ★ ここが**減ることはあってよい**（反応を削ったとき）が、**この一覧のどれかで
+     *   ボタンが生えなくなったら赤**。「届くようにした」を回数ではなく**本数**で固定する。 */
+    const FZ_ZERO_REACH_20260902 = [
+        'addition_polymerization', 'alkyne_polymerization', 'diene_polymerization', 'vulcanization',
+        'acetalization_pva', 'ring_opening_polymerization', 'condensation_polymerization',
+        'condensation_glycoside', 'hydrolysis_glycoside', 'hydrolysis_anhydride',
+        'dehydration_anhydride', 'wacker_oxidation', 'bromination_activated_ring',
+        'cyclize_glucose_alpha', 'cyclize_glucose_beta', 'open_glucopyranose'
+    ];
+
+    test('FZ1: 監査ファズの題材の表が、CV_PAIR_SAMPLES と1文字も違わない（二重持ちの見張り）', async (c) => {
+        /* ⚠ **表は2か所にある**（tests.js の `CV_PAIR_SAMPLES` と audit.js の `PAIR_SAMPLES`）。
+         * 1つにまとめられなかった理由は上の `loadAuditLib` の注記のとおり。
+         * ★ **片方だけ古くなる**のがこの形のいちばんの危険なので、機械で突き合わせる。 */
+        const lib = await loadAuditLib();
+        const mine = CV_PAIR_SAMPLES, theirs = lib.PAIR_SAMPLES;
+        assert(theirs && typeof theirs === 'object', 'audit.js が PAIR_SAMPLES を出していない');
+
+        const norm = (t) => Object.keys(t).sort().map(k => k + '=' + t[k].join('|')).join('\n');
+        assert(norm(mine) === norm(theirs),
+            '題材の表がずれている（tests.js の CV_PAIR_SAMPLES と audit.js の PAIR_SAMPLES）。\n' +
+            'tests.js 側: ' + norm(mine) + '\naudit.js 側: ' + norm(theirs) +
+            '\n★ どちらかに反応を足したら、もう片方にも同じ行を足すこと');
+
+        // ② 名前が本当にライブラリで引けること（改名・削除で黙って空振りしないように）
+        let checked = 0;
+        Object.entries(theirs).forEach(([id, names]) => {
+            names.forEach(n => {
+                if (n.startsWith('@')) return;   // 加硫の「@二本の鎖」は組み立ての指示
+                assert(c.game.resolveCompound(n),
+                    `${id} の題材「${n}」がライブラリで引けない（改名・削除されている）`);
+                checked++;
+            });
+        });
+        assert(checked >= 25, `題材の名前を ${checked} 件しか確かめていない（表が空になっていないか）`);
+
+        // ③ ★否定対照 —— わざと1文字変えた表なら、この見張りが違いを見つけること
+        const broken = JSON.parse(JSON.stringify(theirs));
+        broken.esterification = ['酢酸', 'メタノール'];
+        assert(norm(broken) !== norm(theirs), '表の突き合わせそのものが働いていない（否定対照）');
+
+        return `題材 ${Object.keys(theirs).length} 本ぶん・化合物名 ${checked} 件を突き合わせた`;
+    });
+
+    test('FZ2: 監査の題材を並べると、届いていなかった16本の反応ボタンが実際に生える', async (c) => {
+        /* ★ **物差し**: `#reaction-actions button[data-rule="<id>"]` が DOM に出ること。
+         *   ファズが押すのはまさにこのボタン（`audit.js` の react の枝）なので、
+         *   「生える ＝ ファズが押しうる」まで言える。
+         * ⚠ **回数ではなく本数**で見る。1本が何回出ようと、0本の一覧が空でなければ赤。 */
+        const lib = await loadAuditLib();
+        const g = c.game, D = c.D, W = c.W;
+        c.reset();
+        g.setMode('free');
+
+        const samples = lib.buildReactionSamples(W, g);
+        const ruleIds = W.REACTION_RULES.map(r => r.id);
+        // ① 題材が1本も欠けていないこと（欠けたら黙って対象から外れる）
+        const missing = ruleIds.filter(id => !samples[id]);
+        assert(missing.length === 0,
+            `題材を作れなかった反応が ${missing.length} 本ある（${missing.join(',')}）。` +
+            'ライブラリから消えた化合物を使っていないか、PAIR_SAMPLES に足りない行がないか見ること');
+
+        const buttonsFor = () => new Set(
+            [...D.querySelectorAll('#reaction-actions button[data-rule]')].map(b => b.dataset.rule));
+        const setup = (names) => {
+            g.userMolecule = new W.Molecule();
+            g.history = []; g.redoStack = [];
+            g.updateDrawing();
+            lib.summonGroup(W, g, names);
+            g.updateDrawing();
+        };
+
+        // ② ★★ 一覧の 16 本すべてでボタンが生える
+        const targets = FZ_ZERO_REACH_20260902.filter(id => ruleIds.includes(id));
+        assert(targets.length === FZ_ZERO_REACH_20260902.length,
+            `一覧のうち ${FZ_ZERO_REACH_20260902.length - targets.length} 本が REACTION_RULES から消えている` +
+            `（${FZ_ZERO_REACH_20260902.filter(id => !ruleIds.includes(id)).join(',')}）。` +
+            '反応を消したなら FZ_ZERO_REACH_20260902 からも外し、理由をコミットに書くこと');
+        const notShown = [];
+        for (const id of targets) {
+            setup(samples[id]);
+            if (!buttonsFor().has(id)) notShown.push(`${id}（題材: ${samples[id].join('＋')}）`);
+        }
+        assert(notShown.length === 0,
+            `題材を並べても反応ボタンが生えない反応が ${notShown.length} 本ある: ${notShown.join(' / ')}` +
+            ' ＝ 夜間監査のファズはこの反応に届かない');
+
+        // ③ ★否定対照 —— **相手を並べなければ生えない**（＝ ②が「いつでも生える」ではない）
+        //    ⚠ 通った件数を数える（数えないと、題材が単品ばかりになった日に黙って空振りする）
+        let controls = 0;
+        const leaked = [];
+        for (const id of targets) {
+            const names = samples[id];
+            if (names.length < 2 || names[0].startsWith('@')) continue;
+            setup([names[0]]);
+            controls++;
+            if (buttonsFor().has(id)) leaked.push(`${id}（${names[0]} 1個だけで生えた）`);
+        }
+        assert(controls >= 6,
+            `否定対照を ${controls} 件しか回していない（相手が要る題材が減っていないか）`);
+        assert(leaked.length === 0,
+            `相手を並べなくても生える反応が ${leaked.length} 本ある: ${leaked.join(' / ')}` +
+            ' ＝ ②は「組」の効果を見ていない（単品でも届いていたことになる）');
+
+        // ④ 何も置かなければ1本も生えない（物差しそのものの空振りよけ）
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        assert(buttonsFor().size === 0, '空のキャンバスで反応ボタンが生えている（物差しが壊れている）');
+
+        c.reset();
+        return `届いていなかった ${targets.length} 本すべてでボタンを確認（否定対照 ${controls} 件）`;
+    });
+
+    test('FZ3: 監査が出す数は「回数」ではなく「本数」（0回の本数・空振り率の作り）', async () => {
+        /* ⚠⚠ 発注書 B ②の要点そのもの: **1本に1万回届いても意味がない**。
+         * `summarizeReactions` は純関数なので、作りごとの帳簿を渡して直に確かめる
+         * （監査を5,000反復回さないと確かめられない形にしない）。 */
+        const lib = await loadAuditLib();
+        const s = lib.summarizeReactions;
+        assert(typeof s === 'function', 'audit.js が summarizeReactions を出していない');
+
+        // ① ★ 1本に1万回でも「届いた本数」は1（回数で誤魔化せない）
+        const led = {
+            attempts: 100, missed: 45, pressed: 55,
+            byKind: { rule: 20, reverse: 1, info: 3, compare: 21, mechanism: 10, partner: 0, other: 0 },
+            pressedRules: { a: 10000 }, appliedRules: { a: 10000 }, groupSummons: {},
+            ruleIds: ['a', 'b', 'c', 'zinfo'], infoIds: ['zinfo']
+        };
+        const r = s(led);
+        assert(r.rulesExecutable === 3, `分子を変えられる反応が ${r.rulesExecutable} 本（3 のはず＝解説カードは外す）`);
+        assert(r.rulesApplied === 1, `届いた本数が ${r.rulesApplied}（1 のはず）`);
+        assert(r.rulesZeroApplied === 2, `0回の本数が ${r.rulesZeroApplied}（2 のはず）`);
+        assert(r.zeroAppliedIds.join(',') === 'b,c', `0回の名指しが ${r.zeroAppliedIds.join(',')}`);
+        assert(r.applyCounts.a === 10000, '回数そのものも残しておくこと（本数だけだと原因が追えない）');
+
+        // ② 空振り率の分母は「react を引いた回数」・札の内訳の分母は「押せた回数」
+        assert(r.missedPercent === 45, `空振り率が ${r.missedPercent}%（45% のはず）`);
+        assert(r.comparePercent === 38.2, `前後を見るの割合が ${r.comparePercent}%（21/55 のはず）`);
+        assert(r.moleculeChangingPercent === 38.2,
+            `分子を変える札の割合が ${r.moleculeChangingPercent}%（(20+1)/55 のはず）`);
+
+        // ③ ★否定対照 —— **全部に届いていれば 0回は 0 本**／1本も引かなければ率は null
+        const full = s(Object.assign({}, led, { appliedRules: { a: 1, b: 1, c: 1 } }));
+        assert(full.rulesZeroApplied === 0 && full.zeroAppliedIds.length === 0,
+            '全部に届いた帳簿でも「0回」が残る（数え方が逆）');
+        const none = s(Object.assign({}, led, { attempts: 0, missed: 0, pressed: 0 }));
+        assert(none.missedPercent === null && none.comparePercent === null,
+            '1回も引いていないのに率が出る（0除算を 0% と言うと「空振りしていない」と読める）');
+
+        // ④ 押しただけと実際に変わったのを言い分けている（箇所の選択で外した回を「届いた」にしない）
+        const pressedOnly = s(Object.assign({}, led, { pressedRules: { a: 5, b: 5 }, appliedRules: { a: 5 } }));
+        assert(pressedOnly.rulesPressed === 2 && pressedOnly.rulesApplied === 1,
+            `押した本数 ${pressedOnly.rulesPressed} / 変わった本数 ${pressedOnly.rulesApplied}（2 と 1 のはず）`);
+    });
+
+    test('FZ4: 札の選び方 — まだ届いていない反応を優先する（誘導を切れば一様な乱数に戻る）', async () => {
+        /* ★ **「組」を足すだけでは届かなかった**（実測・同じ種300個の A/B で 0回が 14→10 本）。
+         *   題材を並べた直後でも一覧には 10〜20 枚の札が並ぶので、狙いの1枚が当たる確率が 1/10 以下。
+         *   `pickReactionButton` は半分の確率で「届いた回数 → 押した回数」の少ない札を選ぶ。
+         * ⚠ **純関数なので作りごとの札で確かめられる**（監査を5,000反復回さないと分からない形にしない）。 */
+        const lib = await loadAuditLib();
+        const pick = lib.pickReactionButton;
+        assert(typeof pick === 'function', 'audit.js が pickReactionButton を出していない');
+
+        const btn = (rule, text) => ({ dataset: rule ? { rule } : {}, textContent: text || rule || '前後' });
+        const led = {
+            appliedRules: { a: 5, b: 0 }, pressedRules: { a: 5, b: 7, info1: 3 }
+        };
+        const btns = [btn('a'), btn('b'), btn('info1'), btn(null, '🔍 反応の前後を見る')];
+        const always = () => 0;            // 誘導が必ず効く乱数（0 < 0.5・添字は先頭）
+
+        // ① 届いていない札（b・info1）のうち、押した回数が少ない info1 が選ばれる
+        assert(pick(btns, led, always, true).dataset.rule === 'info1',
+            '届いていない札のうち「押した回数が少ないほう」を選んでいない');
+        // ② 押した回数が並んだら、届いた回数が 0 のものが勝つ（a は届いているので選ばれない）
+        const led2 = { appliedRules: { a: 5 }, pressedRules: { a: 1, b: 9, info1: 9 } };
+        const chosen = pick(btns, led2, always, true).dataset.rule;
+        assert(chosen === 'b' || chosen === 'info1',
+            `届いた回数の多い札（${chosen}）が、押した回数が少ないだけで選ばれている`);
+        // ③ ★否定対照 —— **誘導を切れば一様な乱数**（乱数 0 なら先頭の札）
+        assert(pick(btns, led, always, false).dataset.rule === 'a',
+            '誘導を切っても誘導が効いている（?noguide=1 の否定対照が成立しない）');
+        // ④ ★否定対照 —— 誘導が入っていても、乱数が外れれば一様（0.9 >= 0.5 → 添字 0.9*4=3）
+        const high = () => 0.9;
+        assert(pick(btns, led, high, true) === btns[3],
+            '誘導の当たり外れが乱数で決まっていない（いつも誘導＝元の分布が消える）');
+        // ⑤ 反応が結びついていない札しか無ければ、そこから選ぶ（Infinity 同士で選べなくならない）
+        const onlyPlain = [btn(null, '🔍 反応の前後を見る'), btn(null, '⚗ 機構を見る')];
+        assert(pick(onlyPlain, led, always, true) !== null && pick(onlyPlain, led, always, true).textContent,
+            'rule id を持たない札しか無いときに選べなくなっている');
+        assert(pick([], led, always, true) === null, '札が0枚のときに null を返していない');
     });
 
     // ===== 一部だけ流す（`?only=`）=====
