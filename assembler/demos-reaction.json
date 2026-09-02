@@ -2801,5 +2801,76 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-phthalic-anhydride",
+    "title": "V134: フタル酸から無水フタル酸（反応シリーズ㉒）",
+    "summary": "⭐ **芯は「となりあうカルボキシ基だけが、水をとって環になる」**。**V122（塩 → もとの酸）と同じ「往復」型**——**加熱で水をとり、水を加えて戻す。**⚠ **できる環は五員環**（ベンゼン環に縮合する。六員環ではない）。⭐ **落としどころは「となりあっていないとできない」**——**テレフタル酸は向かいあわせなので作れない。**⚠⚠ **往復のあと、キャンバスに水が1分子残る**（結末は `① フタル酸 ＋ ② 水  C₈H₈O₅`）。**脱水でとれた水がそのまま浮いていて、加水分解は瓶から別の水を使う**ため。⭐ **これは筋が通っている**（アプリの試薬は瓶から来る）ので、そのまま見せる ＝ **「とれた水がまだそこにある」が画で分かる。**",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "フタル酸（-COOH がとなりあう）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "フタル酸"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 2500
+          }
+        ]
+      },
+      {
+        "caption": "加熱 → 水がとれて五員環（分子内脱水）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "酸無水物"
+          },
+          {
+            "type": "frame",
+            "width": 700
+          },
+          {
+            "type": "wait",
+            "ms": 10200
+          }
+        ]
+      },
+      {
+        "caption": "水を加えると、もとのフタル酸に戻る",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "加水分解（酸無水物"
+          },
+          {
+            "type": "frame",
+            "width": 700
+          },
+          {
+            "type": "wait",
+            "ms": 12000
+          }
+        ]
+      }
+    ]
   }
 ]
