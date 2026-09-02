@@ -3751,6 +3751,8 @@ const REACTION_RULES = [
             });
             // ② 残った側は炭素が1つ減った**カルボン酸のナトリウム塩**。
             //    CH₃CH(OH)- のときは、-OH がまず酸化されて C=O になってから切れる
+            // ★ -OH が C=O になった酸素も「変わった原子」＝ 印に入れる（v1500・CV4）
+            let oxidizedO = null;
             if (!wasCarbonyl) {
                 const oh = mol.getNeighbors(kId).find(n =>
                     n.type === 1 && n.atom.element === 'O' &&
@@ -3758,6 +3760,7 @@ const REACTION_RULES = [
                 if (!oh) throw new Error('酸化する -OH が見つかりません');
                 mol.getBond(kId, oh.atom.id).type = 2;
                 bendCarbonyl(mol, kId, oh.atom.id); // 鎖と一直線なら折る（C-7）
+                oxidizedO = oh.atom.id;
             }
             const oSpot = freeSpotAround(mol, kId);
             if (!oSpot) throw noRoom('-COONa を置く空間がありません');
@@ -3777,7 +3780,7 @@ const REACTION_RULES = [
                     '陽性なのは CH₃-CO- か CH₃-CH(OH)- を持つものだけです: ' +
                     'エタノール・2-プロパノール・アセトアルデヒド・アセトン・乳酸は陽性、' +
                     '**1-プロパノールとメタノールは陰性**（CH₃-CH(OH)- の形になっていない）。',
-                changed: [mId, kId, ...added, o.id, na.id]
+                changed: [mId, kId, ...added, o.id, na.id, ...(oxidizedO ? [oxidizedO] : [])]
             };
         }
     },
@@ -4327,7 +4330,10 @@ const REACTION_RULES = [
                 b23.type = 2; // 中央へ移った二重結合
             });
             // 端（C4）に次の単量体の端（C1）を繋ぐ＝1位と4位で繋がるので「1,4-付加」
-            const changed = [];
+            /* ★★ **中央へ移った二重結合の両端（C2・C3）にも印を付ける**（v1500・CV4）。
+             * ⚠ caption 自身が「二重結合は両端から中央へ移っています。ここが付加重合との違い」と
+             *   言っている**当の原子**に印が無かった ＝ 教材の要点が画面で光っていなかった。 */
+            const changed = units.flatMap(u => [u.c2, u.c3]);
             // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）
             const pending = new Set();
             units.slice(1).forEach(u => componentOf(mol, u.c1).forEach(id => pending.add(id)));
@@ -4424,7 +4430,10 @@ const REACTION_RULES = [
                     '架橋の硫黄はモノ（1個）・ジ（2個）・ポリ（多数）とさまざまで、この図は代表としてジ（-S-S-）です。' +
                     '硫黄を多く加えて架橋を増やすと、硬くて弾性のないエボナイトになります。' +
                     'もう一度押すと別の場所も架橋できます。',
-                changed: [a1, b1, s1.id, s2.id],
+                /* ★ 印は**二重結合が単結合になった両端**（`ca`／`ca2`・`cb`／`cb2`）と硫黄2個。
+                 * ⚠ v1500 まで相方（`ca2`・`cb2`）が落ちていた —— 同じ「多重結合を1本減らす」
+                 *   `addAcrossMultipleBond` は両端を入れているのに、加硫だけ流儀が違った（CV4）。 */
+                changed: [a1, best.ca2, b1, best.cb2, s1.id, s2.id],
                 refit: true
             };
         }
@@ -4468,7 +4477,10 @@ const REACTION_RULES = [
                 mol.addBond(g.oA, g.hc, 1);
                 mol.addBond(g.oB, g.hc, 1);
                 parkAsWater(mol, g.ho);
-                changed.push(g.oA, g.oB, g.hc, g.cA, g.cB);
+                /* ⚠ 印は**結合が変わった原子だけ**（v1500・CV4）。`cA`・`cB` は -OH を
+                 * ぶら下げていた主鎖の炭素で、結合は1本も変わっていないので入れない
+                 * （同じ六員環の `cMid` に印が無いのと揃う。v1480 で外した `anchor` と同じ形）。 */
+                changed.push(g.oA, g.oB, g.hc);
                 // ★ **1組できるごとに1コマ写す** ＝ 隣どうしが組むところを順に見せる
                 stages.push(snapshotFrame(mol));
             });
