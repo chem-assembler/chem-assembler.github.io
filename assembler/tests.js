@@ -136,6 +136,7 @@
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
+ * | RM  | 1〜3   | **反応の印と箇所選び**（vNNNN・定期レビュー pack2 の発注書 A ＋ 動画レーンの実測 v1494）。**1 はジエンの 1,4-付加重合で「中央へ移った C=C の炭素」が画面で光る**（caption が要点だと言っている当の原子。⚠ 題材はイソプレン —— ブタジエンだと重原子14個が全部「変わった原子」になり、「全部に印を付ける実装ではない」の否定対照が立たない）。**2 はポリ酢酸ビニルのけん化**＝ 箇所が2つ以上あるとき札を押しただけでは図が変わらず**箇所選び**に入る（＝ 動画レーンの「押しても動かない」は仕様）・そのとき必ず字幕で言う・押す→選ぶを3回でポリビニルアルコールに着地する。**3 は単糖2つの縮合**＝ detect は空ではなく**2件**（マルトース 1→4／トレハロース 1→1）で、押す炭素の隣（C・O・O ならアノマー炭素→トレハロース／C・C・O なら4位→マルトース）でどちらになるかが決まる |
  * | DE  | 1〜3   | 行き止まりの報告（v1420）。**汎用の仕組み**（`DeadEnd`）で、最初の設置場所が
  *                  「相手の分子を呼び出す」の失敗（RX36）。1 が本文の中身（版・やろうとしたこと・
  *                  **どこで止まったか**・キャンバスの中身・環境が全部そろい、会話の文脈が無くても読めること）・
@@ -45373,6 +45374,150 @@
             assert(!marked.has(String(m.id)),
                 `枝のメチル基 ${i + 1}/3 に印が付いている ＝ 結合が1本も変わっていない原子まで光っている`);
         });
+        c.reset();
+    });
+
+    /* RM2 —— ★ **教科書の道すじ「ポリ酢酸ビニル → けん化 → PVA」が最後まで通る**（vNNNN）。
+     *
+     * ★ **きっかけ**（動画レーンの実測・v1494）: 「酢酸ビニル×3 → 付加重合 → けん化 で
+     *   酢酸ナトリウムが1つ出たあと、**もう2回押しても分子式が動かない**」。
+     * ★★ **実測して分かったこと（＝ これは仕様）**: けん化の箇所が2つ以上あるときは
+     *   ボタンを押した時点では反応せず、**箇所選び**（`narrow`）に入る ——
+     *   ハイライトされた原子をキャンバスで**もう一度押す**まで図は変わらない。
+     *   ⚠ ボタンだけを何度押しても、そのたび箇所選びに入り直すので**何も起こらない**。
+     *   油脂のけん化（`RX` 帯の既存テスト）と同じ作法で、1タップ1か所は意図されたもの。
+     * ⚠ **「1タップで全部外す」には変えなかった**。理由は油脂のけん化が
+     *   モノ→ジ→トリと**中間体に名前が出る**段階表示を教材にしているため。
+     *
+     * ★ この検査が守るのは3つ:
+     *   ① **ボタンを押しただけでは図が変わらない**（動画レーンが見た症状そのもの）
+     *   ② ⚠ **そのとき必ず字幕で「箇所を選べ」と言う**（黙って何も起きないのが最悪の形）
+     *   ③ ★ 押す→選ぶ を3回で **ポリビニルアルコール** に着地する（道すじが繋がっている） */
+    test('RM2: ポリ酢酸ビニルは「押す→箇所を選ぶ」を3回でポリビニルアルコールになる', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        for (let i = 0; i < 3; i++) { g.summonMolecule('酢酸ビニル'); g.updateDrawing(); }
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, '（前提）addition_polymerization が無い');
+        const ps = poly.detect(g.userMolecule);
+        assert(ps.length, '（前提）酢酸ビニル3分子で付加重合の箇所が出ない');
+        W.reactor.execute(poly, ps[0], null);
+        await c.tick(1400);
+
+        const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
+        assert(sap, '（前提）saponification が無い');
+        assert(sap.detect(g.userMolecule).length === 3,
+            `ポリ酢酸ビニルのエステルが ${sap.detect(g.userMolecule).length} 箇所（3箇所が正）`);
+        /* ⚠ **主鎖の -CH₂-** でモーダルを開く（実機で「鎖のどこかを触って開く」に相当）。
+         *   ★ アセチル基の側で開くと、1回目のあと「見ている分子」が酢酸ナトリウムへ移り、
+         *     **けん化の札が一覧から消える**（実測・vNNNN。`siteFilter` の focus 絞り込み）。 */
+        const backbone = g.userMolecule.atoms.find(a => a.element === 'C' &&
+            g.userMolecule.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 2 &&
+            g.userMolecule.getNeighbors(a.id).every(n => n.atom.element === 'C' || n.atom.element === 'H'));
+        assert(backbone, '（前提）主鎖の -CH₂- が見つからない');
+        g.openMoleculeModal(backbone.id);
+
+        const sapButton = () => [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.dataset.rule === 'saponification');
+        for (let n = 1; n <= 3; n++) {
+            const b = sapButton();
+            assert(b, `${n} 回目: けん化の札が一覧に無い`);
+            const before = g.computeMolecularFormula();
+            b.click();
+            await c.tick(300);
+            if (n < 3) {
+                // ① ★ **押しただけでは図が変わらない**（動画レーンが見た症状）
+                assert(W.reactor.picking,
+                    `${n} 回目: 箇所が ${4 - n} 個あるのに箇所選びに入っていない`);
+                assert(g.computeMolecularFormula() === before,
+                    `${n} 回目: ボタンを押しただけで図が変わった（箇所選びの仕様が変わっている）`);
+                // ② ★ **黙っていない**（字幕で次の一手を言う）
+                const toast = D.getElementById('canvas-toast');
+                assert(toast && /クリック|選/.test(toast.textContent),
+                    `${n} 回目: 箇所選びに入ったのに字幕が「${toast ? toast.textContent.trim() : 'なし'}」` +
+                    ' ＝ 押しても何も起きないように見える');
+                const marks = [...D.querySelectorAll('#ui-group [data-hl-atom]')]
+                    .map(el => el.getAttribute('data-hl-atom'));
+                assert(marks.length >= 2, `${n} 回目: ハイライトされた原子が ${marks.length} 個`);
+                W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === marks[0]));
+            } else {
+                // 残り1箇所なら `narrow` は素通りして即実行する
+                assert(!W.reactor.picking, '3 回目: 残り1箇所なのに箇所選びに入った');
+            }
+            await c.tick(1400);
+            g.updateDrawing();
+        }
+        // ③ ★ 着地点 —— PVA と 酢酸ナトリウム3個
+        const shown = D.getElementById('compound-name').textContent;
+        assert(shown.includes('ポリビニルアルコール'),
+            `けん化3回のあとが「${shown}」（ポリビニルアルコールを期待）`);
+        assert((shown.match(/酢酸ナトリウム/g) || []).length === 3,
+            `酢酸ナトリウムが ${(shown.match(/酢酸ナトリウム/g) || []).length} 個（3個が正）`);
+        assert(sap.detect(g.userMolecule).length === 0,
+            'けん化3回のあともエステルが残っている');
+        c.reset();
+    });
+
+    /* RM3 —— ★ **単糖2つの縮合は「どちらの二糖を作るか」を選ばせる段に入る**（vNNNN）。
+     *
+     * ★ **きっかけ**（動画レーンの実測・v1494）: 「α-D-グルコースを2つ呼んで
+     *   『縮合（単糖2分子, -H₂O）』を押しても**何も起きない**」。
+     * ★★ **実測**: `detect` は **2件**返す（マルトース 1→4 ／ トレハロース 1→1）ので
+     *   RM2 と同じ箇所選びに入る。**detect が空なのではない。**
+     * ★ **どこを押すか**（動画レーンへの答え）: ハイライトされる4原子は
+     *   **2つめに呼び出したグルコース**にあり、
+     *     - **1位（アノマー炭素 ＝ 重原子の隣が C・O・O）とその -OH** → **トレハロース**
+     *     - **4位の炭素（重原子の隣が C・C・O）とその -OH** → **マルトース（麦芽糖）**
+     *   ⚠ **画面のピクセルで覚えないこと** —— 呼び出しの位置は毎回同じとは限らない。
+     *      引くのは「隣に何が付いているか」。 */
+    test('RM3: 単糖2つの縮合は箇所選びに入り、選んだ炭素でマルトース／トレハロースが分かれる', async (c) => {
+        const GLC = 'α-D-グルコース（α-D-グルコピラノース）';
+        // どちらの候補を選ぶかを「押す炭素の隣の元素」で決める（座標にも並びにも頼らない）
+        const CASES = [
+            { nb: 'COO', want: 'トレハロース', why: '1位（アノマー炭素）どうし ＝ 1→1' },
+            { nb: 'CCO', want: 'マルトース', why: '1位と4位 ＝ 1→4' }
+        ];
+        for (const cs of CASES) {
+            c.reset();
+            const g = c.game, D = c.D, W = c.W;
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            g.summonMolecule(GLC); g.summonMolecule(GLC);
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === 'condensation_glycoside');
+            assert(rule, '（前提）condensation_glycoside が無い');
+            const sites = rule.detect(g.userMolecule);
+            // ★ ここが動画レーンの問いの答え ——「detect が空」ではなく **2件**
+            assert(sites.length === 2,
+                `α-D-グルコース2つの縮合の箇所が ${sites.length} 件（マルトースとトレハロースで2件が正）`);
+            g.openMoleculeModal(g.userMolecule.atoms.find(a => a.element !== 'H').id);
+            const btn = [...D.querySelectorAll('#reaction-actions button')]
+                .find(b => b.dataset.rule === 'condensation_glycoside');
+            assert(btn, '縮合の札が一覧に無い');
+            btn.click();
+            await c.tick(300);
+            assert(W.reactor.picking && W.reactor.picking.sites.length === 2,
+                '押した直後に箇所選びに入っていない（2件あるのに即実行している）');
+            const marks = [...D.querySelectorAll('#ui-group [data-hl-atom]')]
+                .map(el => el.getAttribute('data-hl-atom'));
+            assert(marks.length === 4,
+                `ハイライトされた原子が ${marks.length} 個（候補2件 × O と C ＝ 4個が正）`);
+            const nbOf = id => g.userMolecule.getNeighbors(id)
+                .filter(n => n.atom.element !== 'H').map(n => n.atom.element).sort().join('');
+            const target = marks.map(id => g.userMolecule.atoms.find(a => a.id === id))
+                .find(a => a && a.element === 'C' && nbOf(a.id) === cs.nb);
+            assert(target, `隣が ${cs.nb} の炭素がハイライトされていない（${cs.why}）`);
+            W.reactor.handlePick(target);
+            await c.tick(1500);
+            g.updateDrawing();
+            const shown = D.getElementById('compound-name').textContent;
+            assert(shown.includes(cs.want),
+                `隣が ${cs.nb} の炭素（${cs.why}）を選んだのに「${shown}」（${cs.want} を期待）`);
+        }
         c.reset();
     });
 
