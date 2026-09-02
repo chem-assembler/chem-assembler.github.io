@@ -34571,9 +34571,14 @@
          * 足して 13 件。⚠ **これも意図して瓶を持たせていない** —— 分子内のほうと同じ理由で、
          *   教科書は「加熱すると」「脱水すると」としか書き、試薬を名指ししない（§4-1）。
          *   入口は `PARTNER_CANDIDATES` の札（「＋ 酢酸 を呼び出す」）＝ 酢酸は既に候補にある。 */
+        /* ★ 同じレーンで `alkylate_arene_propene`（ベンゼン＋プロペン → クメン）を足して 14 件。
+         * ⚠ **これも意図して瓶を持たせていない** —— 教科書 p.181 は
+         *   「触媒を用いて」としか書き、**触媒の名前を挙げていない**（§4-1）。
+         *   相手のプロペンはキャンバスに呼び出す（アセタール化と同じ形）。 */
         const expected = ['acetalization_pva',
             'ring_opening_polymerization',
-            'addition_polymerization', 'alkyne_polymerization', 'amidation',
+            'addition_polymerization', 'alkylate_arene_propene',
+            'alkyne_polymerization', 'amidation',
             'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'dehydration_anhydride', 'dehydration_anhydride_inter',
@@ -45042,7 +45047,11 @@
         /* ★ 分子間脱水 → 酸無水物（酢酸2分子 → 無水酢酸・系統樹レーン vNNNN）。
          * ⚠ 相手がもう1分子のカルボン酸なので、1分子ずつの走査では拾えない。
          *   ⚠ **同じ分子を2つ**（`dehydration_inter` と同じ形）。 */
-        dehydration_anhydride_inter: ['酢酸', '酢酸']
+        dehydration_anhydride_inter: ['酢酸', '酢酸'],
+        /* ★ クメン法の1段目（ベンゼン＋プロペン → クメン・系統樹レーン vNNNN）。
+         * ⚠ **水が1分子も出ない付加**なので `CV_MUST_SPLIT` には入れない
+         *   （分かれたら逆にそちらが赤）。 */
+        alkylate_arene_propene: ['ベンゼン', 'プロペン（プロピレン）']
     };
     // ⚠ **題材が用意できず見張れないルール**（0 本のうちは空のまま）。
     //    ここが伸びたら報告に本数と名前を書くこと ＝ 黙って対象から外れないようにする
@@ -45524,6 +45533,85 @@
         const hits2 = W.reactor.reagentHits(W.REAGENTS.find(r => r.id === 'h2_ni')).map(h => h.rule.id);
         assert(hits2.join(',') === 'hydrogenate_benzene_ring',
             `ベンゼンで H₂/Ni から出る反応が ${hits2.join(',')}（環の水素化だけを期待）`);
+        c.reset();
+    });
+
+    test('TR5: ベンゼン＋プロペン → クメン（クメン法の1段目）。★ 環につくのは置換基の多い側', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'alkylate_arene_propene');
+        assert(rule, 'alkylate_arene_propene が REACTION_RULES に無い');
+
+        // ---- ① ベンゼン＋プロペンで1件（6頂点は等価なので `aromaticSites` が1件にまとめる）
+        const mol = trSetup(c, ['ベンゼン', 'プロペン（プロピレン）']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1,
+            `ベンゼン＋プロペンで箇所が ${sites.length} 件（1件を期待。6頂点は等価）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        /* ---- ② ★ **プロピルベンゼンではなくクメン**（マルコフニコフ則の向き）。
+         *   ⚠ ここが化学の芯 —— 環につくのが末端の炭素なら n-プロピルベンゼンになる。
+         *   名前で見るので、向きが逆になったら必ず赤くなる。 */
+        assert(trName(c).includes('クメン'),
+            `できたのは「${trName(c)}」（クメン（イソプロピルベンゼン）を期待。` +
+            'プロピルベンゼンなら C=C の開く向きが逆になっている）');
+        // 分子は1つ（付加なので水も何も出ない）
+        assert(g.splitMolecules().length === 1,
+            `付加なのに分子が ${g.splitMolecules().length} 個に分かれた`);
+        // ---- ③ 印（changed）を名指しで見る。環の炭素と、C=C の2つ
+        assert(Array.isArray(res.changed) && res.changed.length === 3,
+            `印が ${(res.changed || []).length} 個（環の C と C=C の2つ ＝ 3個を期待）`);
+        const els = res.changed.map(id => (mol.atoms.find(a => a.id === id) || {}).element);
+        assert(els.every(e => e === 'C'), `印の付いた原子が ${els.join('')}（すべて C を期待）`);
+        assert(new Set(res.changed).size === 3, '印に同じ原子が重複している');
+        // ---- ④ 残り2段を黙って落としていない（caption が言葉で書く）
+        assert(/クメン法/.test(res.caption) && /フェノール/.test(res.caption) &&
+               /アセトン/.test(res.caption),
+            `caption がクメン法の続き（フェノールとアセトン）に触れていない: ${res.caption.slice(0, 200)}`);
+        assert(/実行できません/.test(res.caption),
+            'caption が「②③はこのアプリでは実行できない」と断っていない（半分だけ実装したことを黙っている）');
+        c.reset();
+    });
+
+    test('TR6: ★否定対照 — クメン法の1段目は「プロペン1分子 × 炭化水素の芳香環」だけ', async (c) => {
+        c.reset();
+        const W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'alkylate_arene_propene');
+        assert(rule, 'alkylate_arene_propene が無い');
+        const negatives = [
+            [['ベンゼン'], '相手が要る'],
+            [['プロペン（プロピレン）'], '環が要る'],
+            [['ベンゼン', 'エチレン（エテン）'], '重原子3個でない（教科書はプロペンだけを書く）'],
+            [['ベンゼン', '1-ブテン'], '同上'],
+            [['ベンゼン', 'アセチレン（エチン）'], '三重結合は vinylBonds に入らない'],
+            [['ベンゼン', 'プロピン'], '同上'],
+            [['ベンゼン', 'シクロプロペン'], '環内の C=C は vinylBonds が外す'],
+            [['ニトロベンゼン', 'プロペン（プロピレン）'], '電子求引基のついた環では進まない'],
+            [['フェノール', 'プロペン（プロピレン）'], 'ヘテロ原子あり（教科書が扱わない）'],
+            [['アニリン', 'プロペン（プロピレン）'], '同上'],
+            [['安息香酸', 'プロペン（プロピレン）'], '同上'],
+            [['シクロヘキサン', 'プロペン（プロピレン）'], '芳香環が無い']
+        ];
+        const fired = [];
+        negatives.forEach(([names, why]) => {
+            const n = rule.detect(trSetup(c, names)).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
+
+        // **空振りの緑を避ける**: 同じ数え方がベンゼン＋プロペンでは1件拾う
+        assert(rule.detect(trSetup(c, ['ベンゼン', 'プロペン（プロピレン）'])).length === 1,
+            '否定対照の数え方が壊れている（ベンゼン＋プロペンでも0件になる）');
+        /* ★ **黙って落としていないことも書き残す**（このレーンが「測ったら違った」側）:
+         *   ⚠ トルエン・ナフタレンでは**進む**。既存の芳香族置換4本（ニトロ化・スルホン化・
+         *   ハロゲン化・活性環の臭素化）が縮合環も置換体も一律に通しているのと同じ扱いで、
+         *   ここだけ特別扱いしない。★ 生成物（シメン・イソプロピルナフタレン）は
+         *   ライブラリに無いので「（ライブラリに該当なし）」と出るが、それは登録の話。 */
+        assert(rule.detect(trSetup(c, ['トルエン', 'プロペン（プロピレン）'])).length === 3,
+            'トルエンで o/m/p の3箇所が出ない（既存の芳香族置換と扱いがずれている）');
+        assert(rule.detect(trSetup(c, ['ナフタレン', 'プロペン（プロピレン）'])).length === 2,
+            'ナフタレンで2箇所（α/β）が出ない（既存の芳香族置換と扱いがずれている）');
         c.reset();
     });
 
