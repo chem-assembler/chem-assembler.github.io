@@ -2639,5 +2639,167 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-nylon6-ring-opening",
+    "title": "V132: ナイロン6を一から作ってみた（高分子シリーズ⑦）",
+    "summary": "⭐ **芯は「1種類の環が開いて、そのままつながる」**。**V126（ナイロン66）との対**——**66 は2種類の単量体から水がとれる縮合重合、6 は1種類の環が開くだけで何もとれない**。⚠ **ε-カプロラクタムは7員環の環状アミド**（ラクタム）。結末は `ナイロン6  C₁₈H₃₃N₃O₃R₂`。⚠⚠ **できる鎖は一直線で、とても横長**（3ユニットで 924px・高さは O の 42px ぶんだけ）。**そのままだと 9:16 で豆粒になる**ので、**後半は繰り返し単位ひとつへ寄る**（`frame` の `cx`/`cy`/`width` で1ユニットだけ映す）。⭐ **寄る先で「6 は部品の炭素の数」を読む** ＝ **画面で数えられる。**",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ε-カプロラクタム（環になったアミド）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "ε-カプロラクタム"
+          },
+          {
+            "type": "summon",
+            "name": "ε-カプロラクタム"
+          },
+          {
+            "type": "summon",
+            "name": "ε-カプロラクタム"
+          },
+          {
+            "type": "frame",
+            "width": 830
+          },
+          {
+            "type": "wait",
+            "ms": 2742
+          }
+        ]
+      },
+      {
+        "caption": "環が開いて、そのままつながる（開環重合）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "開環重合"
+          },
+          {
+            "type": "frame",
+            "width": 1050
+          },
+          {
+            "type": "wait",
+            "ms": 7191
+          }
+        ]
+      },
+      {
+        "caption": "「6」は部品の炭素の数",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 437,
+            "cy": 285,
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 14944
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "reaction-nitrobenzene-to-aniline",
+    "title": "V133: ニトロベンゼンからアニリン（反応シリーズ㉑）",
+    "summary": "⭐ **芯は「ベンゼン環は水素化されない。変わるのはニトロ基だけ」** ＝ **V117（ベンゼン環は酸化されない）の対**。**同じ環が、酸化にも水素化にも耐える。**⚠ **ニトロベンゼンはライブラリに無い**ので、**ベンゼンからニトロ化して作る**（V40 の1手目と同じ）。⭐⭐ **最後に「🔍 反応の前後を見る」を開く**——**反応前（ニトロベンゼン）と反応後（アニリン）が並び、環が1原子も変わっていないことがそのまま見える**。**この回の主張がそのまま絵になる。**⚠ **札に id が無い**ので `.view-btn` ＋ `contains` で押す。⚠ **アプリの説明文どおり、瓶は H₂/触媒**（教科書の工業的製法）。**実験室のスズ＋濃塩酸とアニリン塩酸塩の段はナレーションで補う**（アプリは塩の段を飛ばす）。結末は `アニリン  C₆H₇N`。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ベンゼン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "ベンゼン"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 750
+          }
+        ]
+      },
+      {
+        "caption": "ニトロ化（濃硝酸＋濃硫酸）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "ニトロ化"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 1750
+          }
+        ]
+      },
+      {
+        "caption": "還元 → アニリン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "還元: -NO₂"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 7700
+          }
+        ]
+      },
+      {
+        "caption": "環は1原子も変わっていない",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "button",
+            "selector": ".view-btn",
+            "contains": "反応の前後を見る"
+          },
+          {
+            "type": "wait",
+            "ms": 19500
+          }
+        ]
+      }
+    ]
   }
 ]
