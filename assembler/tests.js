@@ -38,7 +38,7 @@
  *                  **4 も否定対照**＝ 説明の文とアプリの判定の一致（3系統をライブラリ全件で照合／
  *                  「D だから R とは限らない」をアプリ自身の CIP に計算させる（L-システインだけ (R)）／
  *                  用語は鏡像異性体（qa/KNOWLEDGE_CAVEATS.md J-4）／R/S の決め方は書き写さない） |
- * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが2つ挿さっていること・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
+ * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが挿さっていること（2026-09-02 に 📖 資料を**末尾へ**足して 4→5・見出し 2→3）・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
@@ -135,6 +135,7 @@
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
  * | RB  | 1〜17  | リボン統合 |
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
+ * | REF | 1〜7   | 📖 資料（参考書）第1ページ（DESIGN_reference_book.md）。⚠ 接頭辞が `RB` でないのは **`RB` を「リボン統合」が既に使っている**ため。1 索引→ページが開く（既定は閉）・2 表はシリーズの行が**全部**出て C の数は分子式から作る・**3 は否定対照**＝「いま要る1行だけ」を出す実装が入り込んでいない（例題中も減らない／描画器に行を絞る口が無い／1行だけの表を混ぜると検査が気づく）・4 は 375 で分割せずタブ（キャンバスが 1px も減らない）／1280 で分割しても結合 28px の床を保つ・5 は reference.json に**行データが無い**（表は stages.json から機械で作る＝著作権 §1-2）・6 は例題が**既存ステージの採点**を使う（資料側に採点を持たない）・**7 は否定対照つき**＝ `?open=reference&code=` で開き、`?rec=` では開かない |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
  * | DE  | 1〜3   | 行き止まりの報告（v1420）。**汎用の仕組み**（`DeadEnd`）で、最初の設置場所が
@@ -13171,8 +13172,10 @@
         // 件数まで固定する（1か所だけ古い 899px のまま残ると、上の「よそもの」で捕まる。
         // 逆に**ブロックごと消えた**場合はここで捕まる）
         // ⚠ 5 → 6（v1416・キャンバス上の常設バッジ `#canvas-mode-badge` の詰めを足した）。
+        // ⚠ 6 → 7（2026-09-02・📖 資料ペインの `top: 44px`。ヘッダーを 44px にしているのが
+        //    この条件なので、同じ1行に合わせるのが正しい）。
         //    件数はブロックを**足したとき**にここで一緒に上げる（減ったときは赤で捕まる）
-        assert(数[共通] === 6, `縦横共通のブロックが ${数[共通]} 個（6個であるべき）`);
+        assert(数[共通] === 7, `縦横共通のブロックが ${数[共通]} 個（7個であるべき）`);
         assert(数[縦] === 1, `縦（M1）のブロックが ${数[縦]} 個（1個であるべき）`);
         assert(数[横] === 1, `横（M2）のブロックが ${数[横]} 個（1個であるべき）`);
         // 否定対照 —— 上限を外して `(orientation: portrait)` 単独にすると縦長の PC まで
@@ -19805,10 +19808,14 @@
             q.basePool = null; q.pool = null;
             q.build(); q.computePool();
             const back = q.basePool.filter(p => hasR(p.mol)).map(p => `${p.name}=${p.count}`);
-            /* ⚠ **ここは高分子の登録エントリが増えるたびに動く数**（v1488・ビニロンを足した）。
+            /* ⚠ **ここは高分子の登録エントリが増えるたびに動く数**（v1488・ビニロンを足した／
+             *   付加重合の生成物5件を足したときに ポリプロピレン以下の4件が増えた）。
              *   見ているのは「絞り込みを外すと高分子が戻ってくる」ことなので、
-             *   **戻ってくる顔ぶれを名指しで**書く（件数だけにすると顔ぶれの入れ替わりに気づけない）。 */
-            const backWant = ['ポリアセチレン=6', 'ポリビニルアルコール=8', 'ビニロン=8'];
+             *   **戻ってくる顔ぶれを名指しで**書く（件数だけにすると顔ぶれの入れ替わりに気づけない）。
+             *   ★ **ポリエチレンがここに居ないのは正しい** —— 立体異性体の総数が 1（実測）で、
+             *   R の絞り込みとは無関係にもともと出題プールへ載らない（他の6件は 6〜8）。 */
+            const backWant = ['ポリアセチレン=6', 'ポリビニルアルコール=8', 'ビニロン=8',
+                'ポリプロピレン=8', 'ポリ塩化ビニル=8', 'ポリアクリロニトリル=8', 'ポリ酢酸ビニル=8'];
             assert(back.length === backWant.length && backWant.every(w => back.includes(w)),
                 `否定対照が成立しない（絞り込みを外しても高分子が戻らない: ${back.join('・') || 'なし'}）`);
             assert(q.basePool.length === after + backWant.length,
@@ -26823,6 +26830,147 @@
         c.reset();
     });
 
+    /* ===== PR1〜PR2: 付加重合の生成物5件の登録（DESIGN_organic_tree.md §2-3 (a)）=====
+     * 系統樹の設計レーンの実測「反応は通っているのに生成物が名称ライブラリに無く
+     * 『（未登録）』が出る」を埋めたぶん。**登録が5件増えた**を件数で見ない ――
+     * ★ **その反応を実際に起こすと、その名前が出る**を5組それぞれ名指しで見る。
+     *
+     * 図の規約は既存の高分子（ポリアセチレン・PVA・ナイロン66・PET・ビニロン・ナイロン6）と同じ
+     * **3単位＋両端 R**（`DESIGN_reaction_execution.md` §21-1 (b)）。
+     *
+     * ⚠ **名前は正準コードで引くので、座標までは一致しない**（実測）: 反応は置換基を
+     *   上下交互に出す（`uprightChainSubstituent` の `i % 2`）が、登録図は PVA と同じく
+     *   全部同じ側に出している。**それでも名前は出る** ＝ 一致を見るのは座標ではなくコード。 */
+
+    // 単量体を n 個呼んで付加重合させ、いちばん大きい成分を返す
+    const addPolymerize = (c, monomer, n) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        for (let i = 0; i < n; i++) assert(g.summonMolecule(monomer), `${monomer} が呼び出せない`);
+        g.updateDrawing();
+        const rule = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, `${monomer}×${n} で候補が ${sites.length} 件（1件を期待）`);
+        rule.apply(g, sites[0]);
+        g.updateDrawing();
+        return g.splitMolecules().slice().sort((a, b) => b.atoms.length - a.atoms.length)[0];
+    };
+    // 単量体・重合体・図の重原子数・エステル結合の数
+    const ADDITION_POLYMERS = [
+        ['エチレン（エテン）', 'ポリエチレン', 8, 0],
+        ['プロペン（プロピレン）', 'ポリプロピレン', 11, 0],
+        ['塩化ビニル', 'ポリ塩化ビニル', 11, 0],
+        ['アクリロニトリル', 'ポリアクリロニトリル', 14, 0],
+        ['酢酸ビニル', 'ポリ酢酸ビニル', 20, 3]
+    ];
+
+    test('PR1: 付加重合の生成物5件が名乗れる（反応を実際に起こして名前を名指しで見る）', async (c) => {
+        const g = c.game;
+        ADDITION_POLYMERS.forEach(([monomer, polymer]) => {
+            const made = addPolymerize(c, monomer, 3);
+            assert(g.lookupCompoundName(made) === polymer,
+                `${monomer}3個の生成物が「${g.lookupCompoundName(made) || '（未登録）'}」（${polymer} を期待）`);
+            /* ★ 否定対照: **単位の数を実際に見ている**（FG2 の PET・LB23 の PVA と同じ性質）。
+             *   ここが赤くならないなら「R が両端に付いた鎖なら何でもその名前」になっている */
+            [2, 4].forEach(n => {
+                const other = addPolymerize(c, monomer, n);
+                assert(g.lookupCompoundName(other) !== polymer,
+                    `${monomer}${n}個でも「${polymer}」と名乗った（3単位の図を見ていない）`);
+            });
+        });
+        c.reset();
+    });
+
+    test('PR2: 5件の図が「3単位＋両端 R」で、反応でできた分子と正準コードが一致する', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const figOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} が名称ライブラリに無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        // R から R まで、重原子だけを辿った主鎖の長さ
+        const backboneLength = (mol, nm) => {
+            const rs = mol.atoms.filter(a => a.element === 'R');
+            assert(rs.length === 2, `${nm} の R が ${rs.length} 個（両端の2個を期待）`);
+            rs.forEach(r => assert(mol.getNeighbors(r.id).filter(x => x.atom.element !== 'H').length === 1,
+                `${nm} の R が2本以上の結合を持っている`));
+            const prev = new Map(), seen = new Set([rs[0].id]), q = [rs[0].id];
+            while (q.length) {
+                const cur = q.shift();
+                mol.getNeighbors(cur).forEach(nb => {
+                    if (nb.atom.element === 'H' || seen.has(nb.atom.id)) return;
+                    seen.add(nb.atom.id); prev.set(nb.atom.id, cur); q.push(nb.atom.id);
+                });
+            }
+            let cur = rs[1].id, len = 0;
+            while (prev.has(cur)) { cur = prev.get(cur); len++; }
+            return len - 1; // R と R のあいだの重原子の数
+        };
+        ADDITION_POLYMERS.forEach(([monomer, polymer, atomCount, esters]) => {
+            const fig = figOf(polymer);
+            assert(fig.atoms.length === atomCount,
+                `${polymer} の図が ${fig.atoms.length} 原子（${atomCount} を期待）`);
+            assert(backboneLength(fig, polymer) === 6,
+                `${polymer} の主鎖が炭素6個でない（1単位2個 × 3単位）`);
+            assert(W.ringAtomIds(fig).size === 0, `${polymer} の図に環がある`);
+            assert(CC(addPolymerize(c, monomer, 3)) === CC(fig),
+                `${monomer}3個の生成物が ${polymer} の登録エントリと一致しない`);
+            if (esters) assert(W.findFunctionalGroups(fig).filter(x => x.type === 'ester').length === esters,
+                `${polymer} の図のエステル結合が ${esters} か所でない`);
+        });
+        // ★ 否定対照 ①: 5件が互いに別物（同じ図を貼り間違えていない）
+        const codes = ADDITION_POLYMERS.map(([, nm]) => CC(figOf(nm)));
+        assert(new Set(codes).size === ADDITION_POLYMERS.length,
+            '5件の図に同じものが混ざっている');
+        // ★ 否定対照 ②: ポリエチレンはポリアセチレン（二重結合が残る）と別物
+        assert(CC(figOf('ポリエチレン')) !== CC(figOf('ポリアセチレン')),
+            'ポリエチレンの図がポリアセチレンと同じ（二重結合を開き忘れている）');
+        // ★ 否定対照 ③: ポリ酢酸ビニルはポリビニルアルコールと別物（けん化の行き先が同じでない）
+        assert(CC(figOf('ポリ酢酸ビニル')) !== CC(figOf('ポリビニルアルコール')),
+            'ポリ酢酸ビニルの図がポリビニルアルコールと同じ');
+        c.reset();
+    });
+
+    test('PR3: 酢酸ビニル → ポリ酢酸ビニル → けん化 → ポリビニルアルコール が2手とも名乗れる', async (c) => {
+        /* ★ **登録しただけで反応と繋がっていない、を通さないための1本。**
+         *   `DESIGN_organic_tree.md` §2-3 (a) は「付加重合5本 ＋ ポリ酢酸ビニル→PVA のけん化1本」
+         *   を数えている。★ 6本目のけん化は**既存のルール（`saponification`）がそのまま効く**ので、
+         *   ポリ酢酸ビニルを登録した時点で**両端に名前が付いた辺**になった（実測）。 */
+        const g = c.game, W = c.W;
+        const names = () => g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'))
+            .map(p => g.lookupCompoundName(p) || '（未登録）');
+        const made = addPolymerize(c, '酢酸ビニル', 3);
+        assert(g.lookupCompoundName(made) === 'ポリ酢酸ビニル', 'けん化の前がポリ酢酸ビニルでない');
+        const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
+        // エステルは3か所（単位3つ）。1か所ずつ、無くなるまで効かせる
+        let sites = sap.detect(g.userMolecule);
+        assert(sites.length === 3, `けん化できる箇所が ${sites.length}（3単位ぶんの3を期待）`);
+        for (let i = 0; i < 3; i++) {
+            const s = sap.detect(g.userMolecule);
+            assert(s.length === 3 - i, `${i}回目のあとの残りが ${s.length}（${3 - i} を期待）`);
+            sap.apply(g, s[0]);
+            g.updateDrawing();
+        }
+        const after = names();
+        assert(after.includes('ポリビニルアルコール'),
+            `けん化の行き先が「${after.join('・')}」（ポリビニルアルコールを期待）`);
+        assert(after.filter(n => n === '酢酸ナトリウム').length === 3,
+            `副生成物の酢酸ナトリウムが3個でない（${after.join('・')}）`);
+        assert(!after.includes('（未登録）'), `名無しの成分が残った（${after.join('・')}）`);
+        // ★ 否定対照: 途中（1回だけ）ではまだ PVA ではない ＝ 3か所とも外して初めて名乗る
+        addPolymerize(c, '酢酸ビニル', 3);
+        sap.apply(g, sap.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        assert(!names().includes('ポリビニルアルコール'),
+            `1か所けん化しただけでポリビニルアルコールと名乗った（${names().join('・')}）`);
+        c.reset();
+    });
+
     test('RX10b: 反応の生成物が母体の刻みで置かれる（結合線が無関係な原子を貫通しない）', async (c) => {
         const g = c.game, W = c.W;
         // 名称ライブラリの分子は 80px 刻み、GRID_SIZE は 42px。生成物を 42px 固定で置くと
@@ -32017,27 +32165,34 @@
         //   #learn-acc-narrowing の位置は EP4 が見ている
         const accs = kids.filter(el => el.tagName === 'DETAILS');
         const ids = accs.map(el => el.id);
-        assert(ids.length === 4, `#study-body 直下の <details> が4つでない（${ids.length}: ${ids.join(' / ')}）`);
-        ['learn-acc-quiz', 'learn-acc-practice', 'learn-acc-narrowing', 'reaction-box'].forEach((id, i) => {
-            assert(ids[i] === id,
-                `${i + 1}番目の <details> が #${id} でない（#${ids[i]}）。id と並び順は不変条件`);
-        });
+        // ⚠ 5つめ（#learn-acc-reference・📖 資料）は 2026-09-02 に**末尾へ足した**もの
+        //   （DESIGN_reference_book.md）。★ 見張っているのは「数」ではなく
+        //   **既存4つの id と並び順が動いていないこと**なので、足すのは末尾に限る
+        assert(ids.length === 5, `#study-body 直下の <details> が5つでない（${ids.length}: ${ids.join(' / ')}）`);
+        ['learn-acc-quiz', 'learn-acc-practice', 'learn-acc-narrowing', 'reaction-box', 'learn-acc-reference']
+            .forEach((id, i) => {
+                assert(ids[i] === id,
+                    `${i + 1}番目の <details> が #${id} でない（#${ids[i]}）。id と並び順は不変条件`);
+            });
 
-        // 足したのは見出しの <div> 2つだけ。★ `<details>` の**外**（#study-body 直下）に置く。
+        // 足したのは見出しの <div>（いまは3つ）。★ `<details>` の**外**（#study-body 直下）に置く。
         //   中に入れると「開かないと群が読めない」＝ 言い分けたい相手に届かない
         const heads = kids.filter(el => el.classList.contains('quiz-group-head'));
-        assert(heads.length === 2,
-            `#study-body 直下の群の見出しが2つでない（${heads.length}）。<details> の中に入れていないか`);
-        assert(kids.length === 6, `#study-body 直下の要素が 6（見出し2＋details4）でない（${kids.length}）`);
+        assert(heads.length === 3,
+            `#study-body 直下の群の見出しが3つでない（${heads.length}）。<details> の中に入れていないか`);
+        assert(kids.length === 8, `#study-body 直下の要素が 8（見出し3＋details5）でない（${kids.length}）`);
         assert(/手を動かす/.test(heads[0].textContent), '1つめの見出しが「手を動かす」でない');
         assert(/登録された反応を見る/.test(heads[1].textContent), '2つめの見出しが「登録された反応を見る」でない');
+        assert(/読む/.test(heads[2].textContent), '3つめの見出しが「読む」でない');
 
-        // 位置: 「手を動かす」の下に3つ・「登録された反応を見る」の下に1つ
+        // 位置: 「手を動かす」の下に3つ・「登録された反応を見る」の下に1つ・「読んで確かめる」の下に1つ
         assert(kids[0] === heads[0], '「手を動かす」が #study-body の先頭にない');
         assert(kids.indexOf(heads[1]) - kids.indexOf(heads[0]) === 4,
             '「手を動かす」の下に <details> が3つ並んでいない');
         assert(kids.indexOf(heads[1]) === kids.indexOf(accs[3]) - 1,
             '「登録された反応を見る」が ⚗️ 反応機構ビューアの直前にない');
+        assert(kids.indexOf(heads[2]) === kids.indexOf(accs[4]) - 1,
+            '「読む」が 📖 資料（参考書）の直前にない');
     });
 
     test('EP8: 機構ビューアの案内が、作業帯のボタンの実際の文言を名指しする（D4・D2）', async (c) => {
@@ -45370,6 +45525,362 @@
         assert(hits2.join(',') === 'hydrogenate_benzene_ring',
             `ベンゼンで H₂/Ni から出る反応が ${hits2.join(',')}（環の水素化だけを期待）`);
         c.reset();
+    });
+
+    /* =====================================================================
+     * REF: 📖 資料（参考書） —— DESIGN_reference_book.md / DEVELOPMENT.md「B. 参考書化」
+     *
+     * ⚠ 接頭辞は `RB` ではなく `REF`。**`RB` は既に「リボン統合」が RB1〜RB17 で使っている**
+     *   （発注書は `RB` を指定していたが、現物と衝突するのでずらした）。
+     *
+     * ★ ここで固定したいのは「ページが出る」ではなく、**原則が守られていること**:
+     *   ① 表は10行**全部**出る（1行だけ出す実装を通さない ＝ DEVELOPMENT.md 原則1）
+     *   ② 375px では**分割せずタブ**（実測③: スマホの分割は縦のまま分割しないより悪い）
+     *   ③ 例題は**既存ステージの採点**を使う（新しい採点を作っていない）
+     *   ④ 表の行データが reference.json にもコードにも**無い**（写す余地がゼロ ＝ 著作権 §1-2）
+     * ===================================================================== */
+
+    // 資料ページの器を持つ本体を、指定の大きさで開く（withViewport の上に資料を開くだけ）
+    async function withReference(w, h, fn) {
+        return withViewport(w, h, async (W, D, name) => {
+            assert(W.referenceBook, `${name}: window.referenceBook が居ない（learn.js の配線）`);
+            const ok = await W.referenceBook.open('alkane-naming');
+            assert(ok, `${name}: 資料ページ alkane-naming を開けない`);
+            await new Promise(r => setTimeout(r, 250));
+            return await fn(W, D, name);
+        });
+    }
+    // 資料の表の行（名称の列）を読む
+    const refRowNames = (D) =>
+        [...D.querySelectorAll('#ref-body table.ref-table tbody tr')].map(tr => tr.children[1].textContent.trim());
+
+    test('REF1: 📚 学習 → 📖 資料 の索引からページが開き、資料ペインが出る（Study は閉じる）', async (c) => {
+        const D = c.D, W = c.W;
+        assert(W.referenceBook, 'window.referenceBook が居ない');
+        const acc = D.getElementById('learn-acc-reference');
+        assert(acc && acc.querySelector('summary'), '#learn-acc-reference（📖 資料）が無い');
+        assert(!acc.open, '📖 資料が既定で開いている（参考書は「既定で開いていない」＝ 原則2）');
+
+        const n = await W.referenceBook.renderIndex();
+        const btns = [...D.querySelectorAll('#reference-list .ref-index-btn')];
+        assert(n >= 1 && btns.length === n,
+            `索引のボタン数（${btns.length}）が reference.json のページ数（${n}）と合わない`);
+
+        W.game.setStudyOpen(true);
+        btns[0].click();
+        await new Promise(r => setTimeout(r, 300));
+        const pane = D.getElementById('reference-pane');
+        assert(!pane.classList.contains('hidden'), '索引を押しても資料ペインが開かない');
+        assert(D.getElementById('study-modal').classList.contains('hidden'),
+            '資料を開いても 📚 学習 が開いたまま（モーダルが資料に重なる）');
+        assert(/アルカンの命名/.test(D.querySelector('#ref-body h3').textContent), 'ページの見出しが出ていない');
+
+        W.referenceBook.close();
+        assert(pane.classList.contains('hidden'), '✕ で閉じられない');
+        c.reset();
+    });
+
+    test('REF2: 表はシリーズの10行が全部出て、C の数は分子式から機械で作られている', async (c) => {
+        const D = c.D, W = c.W;
+        await W.referenceBook.open('alkane-naming');
+        await new Promise(r => setTimeout(r, 200));
+
+        const series = 'アルカン（直鎖）';
+        const inStages = W.STAGES.filter(s => s.series === series);
+        const names = refRowNames(D);
+        // ★ 件数は**検査に書き写さない**（stages.json 側が増減したらそちらが正）
+        assert(names.length === inStages.length,
+            `表の行が ${names.length} 行で、stages.json の「${series}」${inStages.length}件と合わない`);
+        assert(names.length >= 10, `「${series}」が ${names.length} 件しかない（10件そろっている前提が崩れた）`);
+        inStages.forEach(s => assert(names.includes(s.name), `表に ${s.name} の行が無い`));
+
+        // C の数は手打ちではなく分子式から読む（refCarbonCount）。CH4 → 1・C10H22 → 10
+        assert(W.refCarbonCount('CH4') === 1 && W.refCarbonCount('C10H22') === 10,
+            'refCarbonCount が分子式から C の数を読めていない');
+        const rows = [...D.querySelectorAll('#ref-body table.ref-table tbody tr')];
+        rows.forEach((tr, i) => {
+            const shown = tr.children[0].textContent.trim();
+            const want = String(W.refCarbonCount(inStages[i].formula));
+            assert(shown === want,
+                `${inStages[i].name} の C の数が ${shown}（分子式 ${inStages[i].formula} からは ${want}）`);
+            assert(tr.children[2].textContent.trim() === W.refSubscript(inStages[i].formula),
+                `${inStages[i].name} の分子式が stages.json と違う`);
+        });
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF3: ★否定対照 — 「いま要る1行だけ」を出す実装が入り込んでいない（原則1）', async (c) => {
+        const D = c.D, W = c.W;
+        /* DEVELOPMENT.md（ユーザー原文）:
+             「参照するなら表全体であるべきです。該当部分をピンポイントで提示しては、
+              答えを見ているのと同じです。」
+           ＝ ヘキサンを組んでいる最中に `C6 = ヘキサン` の行だけを出したら不合格。 */
+        await W.referenceBook.open('alkane-naming');
+        await new Promise(r => setTimeout(r, 200));
+        const before = refRowNames(D);
+        const series = 'アルカン（直鎖）';
+        const full = W.STAGES.filter(s => s.series === series).length;
+
+        // ① 例題（ヘキサン）を始めても、表は10行のまま。
+        //    ⚠ 狭い画面では資料がキャンバスを覆うので閉じる仕様。閉じたら開き直して中身を見る
+        //    （見たいのは「開いている／いない」ではなく「開いたときに何行あるか」）
+        W.referenceBook.startExample('hexane');
+        await new Promise(r => setTimeout(r, 300));
+        if (D.getElementById('reference-pane').classList.contains('hidden')) {
+            W.referenceBook.setOpen(true);
+            await new Promise(r => setTimeout(r, 150));
+        }
+        const during = refRowNames(D);
+        assert(during.length === full,
+            `例題を始めたら表が ${during.length} 行に減った（${full} 行のままであるべき）`);
+        assert(during.join(',') === before.join(','), '例題を始めたら表の中身が変わった（絞り込みが入っている）');
+
+        // ② 画面のどこにも「1行だけの表」が生えていない
+        const tables = [...D.querySelectorAll('#ref-body table.ref-table')];
+        assert(tables.length === 1, `#ref-body に表が ${tables.length} 枚ある（1枚のはず）`);
+        tables.forEach(t => assert(t.tBodies[0].rows.length === full,
+            `表の行が ${t.tBodies[0].rows.length}（${full} 行そろっていない）`));
+
+        // ③ 描画器そのものが「行を選ぶ」口を持たない ＝ 構造で守れている。
+        //    引数はブロック1つだけで、渡すのは series 名。stageId を渡しても効かないことを見る
+        assert(W.ReferenceBook.prototype.renderStageTable.length === 1,
+            'renderStageTable が引数を2つ以上取る（行を絞る口が生えていないか）');
+        const sneaky = W.referenceBook.renderStageTable({ series, stageId: 'hexane', row: 6, only: 'hexane' });
+        assert(sneaky.querySelectorAll('tbody tr').length === full,
+            '行を指す引数（stageId / row / only）を渡すと表が絞れてしまう');
+
+        // ④ ★否定対照の否定対照 —— 上の②の検査が「1行だけの表」を実際に見つけられること。
+        //    見つけられないなら、②は何も見張っていない
+        const fake = D.createElement('table');
+        fake.className = 'ref-table';
+        fake.innerHTML = '<tbody><tr><td>6</td><td>ヘキサン</td><td>C₆H₁₄</td></tr></tbody>';
+        D.getElementById('ref-body').appendChild(fake);
+        const caught = [...D.querySelectorAll('#ref-body table.ref-table')]
+            .some(t => t.tBodies[0].rows.length !== full);
+        assert(caught, '1行だけの表を混ぜても②の検査が気づかない（検査が空振りしている）');
+        fake.remove();
+
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF4: 375 は分割せずタブ／1280 は分割しても読める大きさの床（結合28px）を保つ', async (c) => {
+        /* 判定のものさしは repo の中にあるもの（style.css 2156-: 結合 28px・ラベル 4.6px で
+           「読めない大きさ」と自分で書いている実測値）。★ 新しい基準を発明しない。 */
+        const FLOOR = 28;
+
+        // --- 375×812 縦: 重ねる（タブ）＝ キャンバスは 1px も減らない
+        await withViewport(375, 812, async (W, D, name) => {
+            const wrap = D.getElementById('svg-wrapper');
+            const before = wrap.getBoundingClientRect();
+            W.game.summonMolecule('デカン');
+            await new Promise(r => setTimeout(r, 250));
+            const decBefore = W.game.screenPxPerGrid();
+
+            const ok = await W.referenceBook.open('alkane-naming');
+            assert(ok, `${name}: 資料が開けない`);
+            await new Promise(r => setTimeout(r, 250));
+            const pane = D.getElementById('reference-pane');
+            assert(W.getComputedStyle(pane).position === 'fixed',
+                `${name}: 資料が分割（in-flow）になっている。⚠ スマホの分割は実測で「縦のまま分割しない」より悪い`);
+            assert(W.getComputedStyle(D.querySelector('.ref-tabs')).display !== 'none',
+                `${name}: 重ねているのに行き来のタブが出ていない（戻れない）`);
+            /* ★★ 狭い画面でも**行を減らさない**（2026-09-02・ユーザー決定の言い直し:
+               「画面に入らないことの解決策として *中身を切る* を選ばない。
+                 切り替える・畳む・別ページにする・スクロールと拡大縮小で見せる、は可」）。
+               ⚠ DOM に10行あっても CSS で隠していたら同じことなので、**見えている行**で数える */
+            const seriesN = W.STAGES.filter(s => s.series === 'アルカン（直鎖）').length;
+            const rows = [...D.querySelectorAll('#ref-body table.ref-table tbody tr')];
+            const shownRows = rows.filter(tr => tr.getClientRects().length > 0);
+            assert(rows.length === seriesN && shownRows.length === seriesN,
+                `${name}: 表が ${shownRows.length}/${rows.length} 行しか見えない（${seriesN} 行そろっているべき。` +
+                '狭いからといって行を間引いていないか）');
+            // 縦に伸びたぶんはスクロールで見せる（切らない）。器がスクロールできることを確かめる
+            const body = D.getElementById('ref-body');
+            assert(W.getComputedStyle(body).overflowY === 'auto',
+                `${name}: 資料の本文がスクロールできない（入らないぶんが切れる）`);
+
+            const after = wrap.getBoundingClientRect();
+            assert(Math.abs(after.width - before.width) < 1 && Math.abs(after.height - before.height) < 1,
+                `${name}: 資料を出すとキャンバスが ${Math.round(before.width)}×${Math.round(before.height)} → ` +
+                `${Math.round(after.width)}×${Math.round(after.height)} に縮んだ（タブは 1px も取らない約束）`);
+            W.game.fitCanvasToMolecule(W.game.userMolecule);
+            await new Promise(r => setTimeout(r, 150));
+            assert(Math.abs(W.game.screenPxPerGrid() - decBefore) < 0.5,
+                `${name}: 資料を出すとデカンの結合が ${decBefore.toFixed(1)} → ${W.game.screenPxPerGrid().toFixed(1)}px に変わった`);
+        });
+
+        /* --- ★★ 分割は 1200px から。⚠ **設計書 §4-3 の「閾値は新設せず 1000px を流用」は誤り**
+           （このレーンの実測。資料を開いてデカン／スクロースを出したとき）:
+               1000 → デカン 22.6 ✗ ／ 1100 → 26.8 ✗ ／ 1150 → 29.3 ○ だがスクロース 25.4 ✗
+               1200 → デカン 32.9 ○・スクロース 28.4 ○
+           ＝ **閾値は「借りられる値」ではなく「測って決まる値」だった。** */
+
+        // ★否定対照: 閾値の1px下（1199）は**分割しない**。ここが緩むと 1000〜1199 の床割れが戻る
+        await withReference(1199, 800, async (W, D, name) => {
+            const pane = D.getElementById('reference-pane');
+            assert(W.getComputedStyle(pane).position === 'fixed',
+                `${name}: 閾値（1200px）の下なのに分割している。⚠ 1199px 以下で分割すると床を割る（実測）`);
+            assert(W.getComputedStyle(D.querySelector('.ref-tabs')).display !== 'none',
+                `${name}: 重ねているのに行き来のタブが出ていない`);
+        });
+
+        // 1200×800（★ 閾値ちょうど ＝ いちばん厳しい側）で、在庫の大物が床を割らない
+        await withReference(1200, 800, async (W, D, name) => {
+            const pane = D.getElementById('reference-pane');
+            assert(W.getComputedStyle(pane).position !== 'fixed',
+                `${name}: 閾値ちょうどなのに分割になっていない`);
+            assert(W.getComputedStyle(D.querySelector('.ref-tabs')).display === 'none',
+                `${name}: 左右に並んでいるのに行き来のタブが出ている（切り替える相手がいない）`);
+            const paneW = pane.getBoundingClientRect().width;
+            assert(paneW > 0 && paneW <= 340,
+                `${name}: 資料ペインが ${Math.round(paneW)}px（実測で 340px を超えると在庫の大物が床を割る）`);
+            // ⚠ **スクロースを外さない** —— 在庫で最大級（424×238単位）で、閾値を決めたのはこの分子。
+            //    デカンだけ見ていると 1150px でも通ってしまう（デカン 29.3 ○ / スクロース 25.4 ✗）
+            for (const nm of ['デカン', 'スクロース']) {
+                // ⚠ 呼び出しは**足す**ので、前の分子を消してから測る
+                //   （消さずに続けて呼ぶと2分子ぶんに視野が合い、実測が2倍近く小さく出る）
+                W.game.userMolecule = new W.Molecule();
+                W.game.updateDrawing();
+                W.game.summonMolecule(nm);
+                await new Promise(r => setTimeout(r, 250));
+                W.game.fitCanvasToMolecule(W.game.userMolecule);
+                await new Promise(r => setTimeout(r, 150));
+                const px = W.game.screenPxPerGrid();
+                assert(px >= FLOOR,
+                    `${name}: 資料を開いた状態で ${nm} の結合が ${px.toFixed(1)}px ＝ 読めない大きさの床（${FLOOR}px）を割った`);
+            }
+        });
+    });
+
+    test('REF5: reference.json は「行データを持たない」（表は stages.json から機械で作る）', async (c) => {
+        const W = c.W;
+        /* 著作権の守り（DESIGN_review_pack1.md §5-1 の「スキーマの制約に格上げ」）:
+           手打ちの表が構造上存在できなければ、表の転写事故は起きない。 */
+        const res = await fetch('reference.json?nocache=' + Date.now());
+        assert(res.ok, 'reference.json が読めない');
+        const text = await res.text();
+        const pages = JSON.parse(text);
+        assert(Array.isArray(pages) && pages.length >= 1, 'reference.json がページの配列でない');
+
+        // 1行1ページ・末尾追記（CLAUDE.md の作法。行数 = 件数 + 2）
+        const lines = text.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
+        assert(lines.length === pages.length + 2,
+            `reference.json が「1行1ページ」でない（${lines.length}行 / ${pages.length}件・期待 ${pages.length + 2}行）。` +
+            'JSON.parse → JSON.stringify で書き戻していないか');
+
+        const BANNED = ['name', 'formula', 'atoms', 'bonds', 'target', 'rows'];
+        pages.forEach(p => {
+            assert(p.id && p.title && p.unitLabel && p.group, `${p.id}: 見出しの欄が欠けている`);
+            // ★ 「この表を作った理由」を1行で書けること（§1-2 の運用ルール）を機械で見る
+            assert(typeof p.why === 'string' && p.why.length >= 20, `${p.id}: why（この表を作った理由）が空か短すぎる`);
+            assert(Array.isArray(p.source) && p.source.length >= 1, `${p.id}: source（参照する repo データ）が無い`);
+            assert(Array.isArray(p.codes) && p.codes.length >= 1, `${p.id}: codes（qa の知識コード）が無い`);
+            assert(typeof p.singleSource === 'boolean', `${p.id}: singleSource が真偽値でない`);
+            // 参照先が実在すること（stages:<series>）
+            p.source.forEach(s => {
+                const m = /^stages:(.+)$/.exec(s);
+                if (!m) return;
+                assert(W.STAGES.some(st => st.series === m[1]),
+                    `${p.id}: source の系列「${m[1]}」が stages.json に無い`);
+            });
+            // ★ 行データを1つも持たないこと（持てば「写す」余地がその場でできる）
+            const scan = (o, path) => {
+                if (Array.isArray(o)) return o.forEach((v, i) => scan(v, `${path}[${i}]`));
+                if (o && typeof o === 'object') Object.keys(o).forEach(k => {
+                    assert(!BANNED.includes(k),
+                        `${p.id}: reference.json に行データの欄 "${k}" がある（${path}）。` +
+                        '表の行は stages.json から機械で作る約束（手打ちの表を作らない）');
+                    scan(o[k], `${path}.${k}`);
+                });
+            };
+            scan(p.blocks || [], 'blocks');
+        });
+    });
+
+    test('REF6: 例題は既存ステージの採点をそのまま使う（新しい採点を作っていない）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        await W.referenceBook.open('alkane-naming');
+        await new Promise(r => setTimeout(r, 200));
+        const btn = D.getElementById('btn-ref-try');
+        assert(btn, '例題の「▶ 組んでみる」が無い');
+        // ★ 例題は1ページに**代表1つ**（表の10行にボタンを付けない ＝ 説明と例題の層を混ぜない）
+        assert(D.querySelectorAll('#ref-body .ref-try').length === 1,
+            `例題のボタンが ${D.querySelectorAll('#ref-body .ref-try').length} 個ある（代表1つのはず）`);
+        assert(D.querySelectorAll('#ref-body table.ref-table button').length === 0,
+            '表の行にボタンが付いている（表は「説明」であって「10問の一覧」ではない）');
+
+        btn.click();
+        await new Promise(r => setTimeout(r, 300));
+        const stage = W.STAGES[g.currentStageIndex];
+        assert(g.currentMode === 'puzzle', `例題を押しても 🧩パズル にならない（${g.currentMode}）`);
+        assert(stage && stage.id === 'hexane', `例題のお題が hexane でない（${stage && stage.id}）`);
+        assert(stage.series === 'アルカン（直鎖）', '例題のお題が既存の系列から来ていない');
+        // ★ 採点の実体（target）は stages.json 側にある
+        assert(stage.target && Array.isArray(stage.target.atoms) && stage.target.atoms.length === 6,
+            '既存ステージの target（採点データ）を使っていない');
+        assert(D.getElementById('select-stage').value === String(g.currentStageIndex),
+            'お題の選択が既存のつまみと同期していない（別経路でお題を持っている）');
+
+        // ★ 否定対照: 資料側が採点を持っていないこと
+        ['grade', 'check', 'checkAnswer', 'judge', 'verify'].forEach(k => {
+            assert(!(k in W.ReferenceBook.prototype),
+                `ReferenceBook が採点らしきメソッド "${k}" を持っている（採点は stages.json 側の1本のはず）`);
+        });
+
+        // 実際に組み上げると、**既存のパズルの判定**がクリアを記録する
+        const t = g.createTargetFromData(stage);
+        const m = new W.Molecule();
+        const map = new Map();
+        t.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y).id));
+        t.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+        g.userMolecule = m;
+        g.updateDrawing();
+        await new Promise(r => setTimeout(r, 300));
+        assert(g.getClearedSet().has(stage.name),
+            '資料の例題を組み上げても、既存のパズルの判定がクリアを記録しない');
+
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF7: ?open=reference[&code=] で資料が開く（知らない code は既定ページ・?rec= では開かない）', async (c) => {
+        const openWith = async (query, wantOpen) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; top:0; width:1280px; height:800px; border:0;';
+            f.src = 'index.html' + query;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                // 開く側は appReady のあと fetch を1本挟む。開くなら待ち、開かないなら待ってから確かめる
+                for (let i = 0; i < 30; i++) {
+                    const p = f.contentDocument.getElementById('reference-pane');
+                    if (p && !p.classList.contains('hidden')) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                const p = f.contentDocument.getElementById('reference-pane');
+                const shown = !!p && !p.classList.contains('hidden');
+                assert(shown === wantOpen,
+                    `${query}: 資料が${shown ? '開いた' : '開かない'}（期待は${wantOpen ? '開く' : '開かない'}）`);
+                return f.contentDocument;
+            } finally { f.remove(); }
+        };
+
+        // ① コード指定つき（qa の知識コード。★ 意味は解釈せず reference.json の codes と突き合わせるだけ）
+        let D = await openWith('?se=0&open=reference&code=org.ali.alkane-names', true);
+        assert(/アルカンの命名/.test(D.querySelector('#ref-body h3').textContent), 'code で指したページが開いていない');
+        // ② 知らない code は無視して既定のページ（前方互換。qa が先に語彙を配っても止まらない）
+        D = await openWith('?se=0&open=reference&code=org.zzz.not-yet-written', true);
+        assert(D.querySelector('#ref-body h3'), '知らない code で真っ白になっている');
+        // ③ ★否定対照: 収録中（?rec=）は開かない — 台本の1手目を汚さない
+        await openWith('?se=0&rec=live&open=reference', false);
+        // ④ ★否定対照: 指定が無ければ既定で閉じている（参考書は「振り返るもの」）
+        await openWith('?se=0', false);
     });
 
     // ===== 一部だけ流す（`?only=`）=====
