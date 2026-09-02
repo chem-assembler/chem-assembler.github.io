@@ -4925,6 +4925,66 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★ 分子間脱水（カルボン酸2分子）→ 酸無水物（`DESIGN_organic_tree.md` §2-3 (b)・vNNNN）。
+         *
+         * ⚠⚠ **これは「片道」を閉じる修正である。** `hydrolysis_anhydride`（無水酢酸 ＋ 水 →
+         *   酢酸2分子）は前からあったのに、**行きが無かった** ——
+         *   `dehydration_inter` は `ALCOHOL_TYPES` しか見ないので酢酸2分子では 0 件
+         *   （実測。系統樹レーンの §2-3 (b) が名指しした穴）。
+         *   ★ `dehydration_anhydride`（分子内・v1472）が閉じたのは**環になる二酸の側だけ**で、
+         *   **教科書がいちばん先に書く 酢酸 → 無水酢酸 は、まだどこからも作れなかった。**
+         *
+         * ★ **`apply` はエステル化・アミド化と 1 か所も違わない。**
+         *   カルボン酸 A の -OH がとれ、相手 B の -OH の酸素が架橋になる
+         *   ＝ `applyAcidCondensation` の site の形（[酸のC, 抜ける-OHのO, 相手の重原子]）に
+         *   そのまま乗る（相手の重原子が「アルコールの O」ではなく「もう1つのカルボン酸の O」）。
+         *   ⚠ **写さない**（写すと片方だけ直る）。
+         *
+         * ⚠ **-COOH を1つだけ持つ分子どうしに絞る。** 二酸（フタル酸・マレイン酸）では
+         *   **分子内脱水のほうが起こる**（`dehydration_anhydride`。5・6員環）ので、
+         *   ここで分子間もぶつけると「教科書が書いていない高分子（ポリ酸無水物）」への道を
+         *   画面に出すことになる。★ 門番は名前ではなく**構造**（-COOH の数）で立てる。
+         *
+         * ⚠ **瓶は足していない。** `dehydration_anhydride`（分子内）と同じ理由 ——
+         *   教科書は「加熱すると」「脱水すると」としか書かず、試薬を名指ししない（§4-1 の線）。 */
+        id: 'dehydration_anhydride_inter',
+        label: '分子間脱水（カルボン酸2分子, -H₂O） → 酸無水物',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -CO-O-CO- でつながる
+        detect(mol) {
+            const carboxyls = findFunctionalGroups(mol).filter(g => g.type === 'carboxyl');
+            // 「その分子がもつ -COOH は1つだけか」を分子ごとに数える（二酸は分子内脱水へ譲る）
+            const lone = carboxyls.filter(cx => {
+                const comp = componentOf(mol, cx.atomIds[0]);
+                return carboxyls.filter(o => comp.has(o.atomIds[0])).length === 1;
+            });
+            const sites = [];
+            for (let i = 0; i < lone.length; i++) {
+                for (let j = i + 1; j < lone.length; j++) {
+                    const a = lone[i], b = lone[j];
+                    if (componentOf(mol, a.atomIds[0]).has(b.atomIds[0])) continue; // 別分子どうしのみ
+                    /* ⚠ **向きは1通りでよい**。A の -OH が水になって B の -OH の酸素が架橋になる形も、
+                     * その逆も、できあがる -CO-O-CO- はまったく同じ分子である（実測で正準コードが一致）。
+                     * 2通り出すと、押しても同じものができる札が2枚並ぶだけになる。 */
+                    sites.push([a.atomIds[0], a.atomIds[2], b.atomIds[2]]);
+                }
+            }
+            return sites;
+        },
+        apply(game, site) {
+            const changed = applyAcidCondensation(game.userMolecule, site);
+            return {
+                caption: 'カルボン酸2分子から水がとれて、酸無水物 -CO-O-CO- ができました（加熱・脱水）。' +
+                    '酢酸2分子からは無水酢酸ができます。' +
+                    'エステル化と同じ「-OH と -H がとれて水」ですが、相手が**アルコールではなくもう1つのカルボン酸**なので、' +
+                    '2つのカルボニルが1つの酸素をはさむ形になります。' +
+                    'できた酸無水物はカルボン酸より反応性が高く、アセチル化の試薬として使えます' +
+                    '（アニリン → アセトアニリド、サリチル酸 → アセチルサリチル酸）。' +
+                    '⚠ 逆に水を加えると、もとのカルボン酸2分子に戻ります。',
+                changed
+            };
+        }
+    },
+    {
         /* ★ 分子内脱水 → 酸無水物（§10.11-D #3・§10.11-F の2位・v1472）。
          * ⚠ **瓶は足していない**。教科書は「加熱すると」としか書かず試薬を名指ししない
          * （フタル酸 p.184・マレイン酸 p.157）ので、瓶を持たないルールにする（§4-1 の線）。 */
@@ -5363,7 +5423,15 @@ const REVERSIBLE_REACTION_PAIRS = [
     /* ★ 分子内脱水 ⇄ 酸無水物の加水分解（v1472）。
      * ⚠ 教科書は**両方向とも本文に書いている**（フタル酸 → 無水フタル酸 p.184 ／
      * 無水物 ＋ 水 → カルボン酸）。★ §10.11-E が「戻す方だけ有る片道」と名指しした穴。 */
-    ['dehydration_anhydride', 'hydrolysis_anhydride']
+    ['dehydration_anhydride', 'hydrolysis_anhydride'],
+    /* ★ 分子間脱水 ⇄ 酸無水物の加水分解（vNNNN）。⚠ **表の並びに意味がある** ——
+     * `reverseRuleIdOf` は最初に当たった組を返すので、`hydrolysis_anhydride` の帰りは
+     * 上の行の `dehydration_anhydride`（分子内）のまま変わらない。
+     * ★ ここで足しているのは**行きの側だけ**（酢酸2分子 → 無水酢酸 のあとに
+     * 「🔁 逆向きの反応をする」が出る）。⚠ 無水物から戻るときに分子内・分子間の
+     * どちらを名乗るかは**図を見ないと決められない**（環状なら分子内）ので、
+     * 帰り側の宣言は増やさない。 */
+    ['dehydration_anhydride_inter', 'hydrolysis_anhydride']
 ];
 
 /** その反応の「帰り」にあたる反応の id（宣言が無ければ null）。⚠ 対は両向きに引ける */

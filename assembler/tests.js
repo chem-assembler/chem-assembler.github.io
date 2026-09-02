@@ -22,6 +22,7 @@
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
  * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
  * | CV  | 1〜3   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個） |
+ * | TR  | 1〜    | **系統樹のために足した反応**（`DESIGN_organic_tree.md` §2-3 (b)・`D-T10`）。設計レーンが「教科書の系統図にあってアプリに無い辺」を12本数え、そのうち**軽くて入試に出るもの**から足した。**奇数番が「起きる」・偶数番が否定対照**（起きてはいけない相手で1件も出ないこと＋門番を外せば材料はあると示すこと）。1〜2 は **酢酸2分子 → 無水酢酸**（`hydrolysis_anhydride` だけが有って**行きが無かった片道**を閉じた。二酸は分子内脱水へ譲る） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
@@ -34407,12 +34408,17 @@
          * ⚠ **これも意図して瓶を持たせていない** —— 教科書 p.251 は触媒を名指しせず
          *   「水を少量加えて加熱する」としか書かない。★ 資料に無い試薬を名乗らせない（§4-1）。
          *   入口は `SELF_PARTNER_RULES`（「＋ 自分をもう2つ呼び出す」）＝ PY12 が見張る */
+        /* ★ vNNNN（系統樹レーン）に `dehydration_anhydride_inter`（酢酸2分子 → 無水酢酸）を
+         * 足して 13 件。⚠ **これも意図して瓶を持たせていない** —— 分子内のほうと同じ理由で、
+         *   教科書は「加熱すると」「脱水すると」としか書き、試薬を名指ししない（§4-1）。
+         *   入口は `PARTNER_CANDIDATES` の札（「＋ 酢酸 を呼び出す」）＝ 酢酸は既に候補にある。 */
         const expected = ['acetalization_pva',
             'ring_opening_polymerization',
             'addition_polymerization', 'alkyne_polymerization', 'amidation',
             'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
-            'dehydration_anhydride', 'diene_polymerization', 'open_glucopyranose'].sort();
+            'dehydration_anhydride', 'dehydration_anhydride_inter',
+            'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
         assert(now.length === expected.length,
             `瓶を持たない実行ルールが ${now.length} 件（${expected.length}件を期待）: ${now.join(', ')}`);
@@ -44873,7 +44879,11 @@
          *   （既存の重合3本と同じ約束）ので、ここに3個ぶん並べる。
          *   ⚠ **`CV_MUST_SPLIT` には入れない** —— 開環重合は**水が1分子も出ない**ので、
          *   反応の前後で分子の数が増えない（増えたらそちらが赤）。 */
-        ring_opening_polymerization: ['ε-カプロラクタム', 'ε-カプロラクタム', 'ε-カプロラクタム']
+        ring_opening_polymerization: ['ε-カプロラクタム', 'ε-カプロラクタム', 'ε-カプロラクタム'],
+        /* ★ 分子間脱水 → 酸無水物（酢酸2分子 → 無水酢酸・系統樹レーン vNNNN）。
+         * ⚠ 相手がもう1分子のカルボン酸なので、1分子ずつの走査では拾えない。
+         *   ⚠ **同じ分子を2つ**（`dehydration_inter` と同じ形）。 */
+        dehydration_anhydride_inter: ['酢酸', '酢酸']
     };
     // ⚠ **題材が用意できず見張れないルール**（0 本のうちは空のまま）。
     //    ここが伸びたら報告に本数と名前を書くこと ＝ 黙って対象から外れないようにする
@@ -44890,7 +44900,8 @@
     const CV_MUST_SPLIT = [
         'oxidative_cleavage', 'iodoform', 'dehydration_intra', 'esterification', 'amidation',
         'dehydration_inter', 'condensation_glycoside', 'condensation_polymerization',
-        'dehydration_anhydride', 'hydrolysis_anhydride', 'hydrolysis_ester',
+        'dehydration_anhydride', 'dehydration_anhydride_inter',
+        'hydrolysis_anhydride', 'hydrolysis_ester',
         'hydrolysis_glycoside', 'saponification', 'acetalization_pva'
     ];
 
@@ -45129,6 +45140,115 @@
         });
         assert(v2.unmarked.length === 0, '分子内脱水で（水以外に）印の無い生成物がある');
 
+        c.reset();
+    });
+
+    /* ===== TR: 系統樹のために足した反応（`DESIGN_organic_tree.md` §2-3 (b)・`D-T10`） =====
+     *
+     * ★ **出どころ**: 系統樹の設計レーンが「教科書の系統図にあってアプリに無い辺」を
+     *   12 本数え、そのうち**軽くて入試に出るもの**から順に足した。
+     * ⚠ **どのテストも否定対照を対にする**（「起きる」だけを見ない ＝
+     *   「起きてはいけない相手で起きない」を必ず並べる）。 */
+
+    // キャンバスに名前で分子を並べ、いまの userMolecule を返す（TR 系で共有）
+    const trSetup = (c, names) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        names.forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    const trName = (c) => c.D.getElementById('compound-name').textContent;
+
+    test('TR1: 酢酸2分子 → 無水酢酸（分子間脱水）。★ 片道だった酸無水物に「行き」ができた', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'dehydration_anhydride_inter');
+        assert(rule, 'dehydration_anhydride_inter が REACTION_RULES に無い');
+
+        // ---- ① 酢酸2分子で1件だけ出る（同じ生成物になる向きを2枚出さない）
+        const mol = trSetup(c, ['酢酸', '酢酸']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1,
+            `酢酸2分子で箇所が ${sites.length} 件（1件を期待。向きは1通りでよい ＝ できる分子は同じ）`);
+
+        // ---- ② 走らせると**登録エントリの正準コードと一致する無水酢酸**ができる
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const shown = trName(c);
+        assert(shown.includes('無水酢酸'), `できたのは「${shown}」（無水酢酸を期待）`);
+        assert(shown.includes('水'), `脱離した水が画面に出ていない: 「${shown}」`);
+
+        // ---- ③ 印（changed）を名指しで見る。⚠ **数だけ見ない** ——
+        //     この反応は水が分かれるので、CV1 と同じ物差し（成分ごと）で確かめる
+        assert(Array.isArray(res.changed) && res.changed.length === 2,
+            `印が ${(res.changed || []).length} 個（2個＝架橋をつくった C と O を期待）`);
+        const anhydrideAtoms = g.splitMolecules()
+            .filter(part => part.atoms.some(a => a.element === 'C'))[0];
+        assert(anhydrideAtoms, '無水酢酸の成分が取り出せない');
+        assert(res.changed.some(id => anhydrideAtoms.atoms.some(a => a.id === id)),
+            '無水酢酸の側に印が1つも付いていない（画面でその分子が光らない）');
+        const els = res.changed.map(id => (mol.atoms.find(a => a.id === id) || {}).element).sort();
+        assert(els.join('') === 'CO', `印の付いた原子が ${els.join('')}（C と O を期待）`);
+
+        // ---- ④ 帰り（加水分解）で酢酸2分子に戻る ＝ 往復が閉じた
+        assert(W.reverseRuleIdOf('dehydration_anhydride_inter') === 'hydrolysis_anhydride',
+            '分子間脱水に「逆向きの反応」が宣言されていない');
+        const back = W.REACTION_RULES.find(r => r.id === 'hydrolysis_anhydride');
+        const bs = back.detect(mol);
+        assert(bs.length === 1, `できた無水酢酸で加水分解の箇所が ${bs.length} 件（1件を期待）`);
+        g.saveState();
+        back.apply(g, bs[0]);
+        g.updateDrawing();
+        const after = trName(c);
+        assert((after.match(/酢酸/g) || []).length >= 2,
+            `往復して酢酸2分子に戻っていない: 「${after}」`);
+        assert(!after.includes('無水酢酸'), `往復したのに無水酢酸が残っている: 「${after}」`);
+        c.reset();
+    });
+
+    test('TR2: ★否定対照 — 分子間の酸無水物は「-COOH が1つだけの分子どうし」でしか起きない', async (c) => {
+        c.reset();
+        const W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'dehydration_anhydride_inter');
+        assert(rule, 'dehydration_anhydride_inter が無い');
+        /* ⚠ **「起きる」だけを見ない。** 起きてはいけない相手を名前で並べ、全部 0 件であること。
+         *   ★ とくに**二酸2分子**（フタル酸・マレイン酸）が 0 件であることが要 ——
+         *   ここが通ると、教科書が書いていないポリ酸無水物への道を画面に出すことになる。
+         *   二酸の行き先は `dehydration_anhydride`（分子内・5/6員環）が持っている。 */
+        const negatives = [
+            [['酢酸'], '1分子だけでは分子間反応にならない'],
+            [['フタル酸', 'フタル酸'], '二酸は分子内脱水（環）へ譲る'],
+            [['マレイン酸', 'マレイン酸'], '同上'],
+            [['テレフタル酸', 'テレフタル酸'], '二酸（分子内でも環にならない）'],
+            [['酢酸', 'エタノール'], '相手がアルコールならエステル化'],
+            [['エタノール', 'エタノール'], 'アルコール2分子はエーテル（dehydration_inter）'],
+            [['酢酸', 'アニリン'], '相手がアミンならアミド化'],
+            [['アセトアルデヒド', 'アセトアルデヒド'], '-COOH が無い'],
+            [['無水酢酸', '無水酢酸'], 'もう酸無水物になっている'],
+            [['酢酸エチル', '酢酸エチル'], 'エステルは -COOH ではない'],
+            [['アニリン', 'アニリン'], '-COOH が無い']
+        ];
+        const fired = [];
+        negatives.forEach(([names, why]) => {
+            const mol = trSetup(c, names);
+            const n = rule.detect(mol).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
+
+        // **空振りの緑を避ける**: 同じ数え方が、起きるべき相手ではちゃんと拾えること
+        assert(rule.detect(trSetup(c, ['酢酸', '酢酸'])).length === 1,
+            '否定対照の数え方が壊れている（酢酸2分子でも0件になる）');
+        // **もう1つの空振り止め**: 門番（-COOH が1つだけ）を外した写しでは二酸が通ってしまう
+        //   ＝ 上の「フタル酸で0件」は門番が効いている証拠であって、材料が無いからではない
+        const phthalic = trSetup(c, ['フタル酸', 'フタル酸']);
+        const carboxyls = W.findFunctionalGroups(phthalic).filter(g => g.type === 'carboxyl');
+        assert(carboxyls.length === 4,
+            `フタル酸2分子のカルボキシ基が ${carboxyls.length} 個（4個＝材料はある）`);
         c.reset();
     });
 
