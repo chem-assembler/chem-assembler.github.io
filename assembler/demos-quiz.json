@@ -1499,5 +1499,52 @@
         ]
       }
     ]
+  },
+  {
+    "id": "quiz-same-propanol",
+    "title": "V137: 同じ分子式なのに（クイズ㉑・同じ？違う？）",
+    "summary": "⭐ **芯はシス・トランス**——**二重結合は回らないので、入れかえられない。**⭐⭐ **同じ日の1本目（V134・無水フタル酸）とつながる**——**マレイン酸は加熱すると水がとれるが、フマル酸はならない。理由は同じ「となりあっているか」。**⚠ **出題は `setForcedPair` で固定できる**ので、この回は分子名を言ってよい（立体異性体クイズと違い、同じ？違う？はペアを指定できる）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この2つ、同じ化合物？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "same",
+            "value": "diff"
+          },
+          {
+            "type": "quizForce",
+            "quiz": "same",
+            "pair": [
+              "1-プロパノール",
+              "2-プロパノール"
+            ]
+          },
+          {
+            "type": "button",
+            "selector": "#btn-quiz"
+          },
+          {
+            "type": "wait",
+            "ms": 12939
+          }
+        ]
+      },
+      {
+        "caption": "答えは「違う」",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-quiz-diff"
+          },
+          {
+            "type": "wait",
+            "ms": 21500
+          }
+        ]
+      }
+    ]
   }
 ]
