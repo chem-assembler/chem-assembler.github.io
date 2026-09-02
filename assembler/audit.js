@@ -113,10 +113,28 @@
     // 0.45 は「16本に届く」と「今までの面を見続ける」を両立させるための配分（実測は報告に残す）
     const GROUP_SHARE = 0.45;
 
-    // 否定対照の口: `audit.html?nogroups=1` で「組」の枝を止める。
-    // ★ **「届くようになった」を回数だけで言わない**ため —— 枝を止めた実行で
-    //   0回の本数が元に戻ることを確かめられる。結果ファイルの `comparableKey` にも載せる
+    /* ★ **札の選び方をカバレッジで誘導する割合**（v1497・2つめの手当て）。
+     *
+     * ⚠ **「組」を足すだけでは届かなかった**（実測・同じ種300個の A/B）:
+     *   0回の本数は 14 → 10 にしか減らず、届くようになったのは重合4本と開環重合だけ。
+     *   ★ 残りが届かない理由は題材ではなく **札の選び方** —— 題材を並べた直後でも、
+     *   一覧には 10〜20 枚の札が並んでいて、狙いの1枚が当たる確率が 1/10 以下になる。
+     *
+     * ★ **手当て**: react を引いたとき、半分の確率で「**まだ届いていない札**」を選ぶ
+     *   （届いた回数 → 押した回数 の順に少ないものを選び、同点は乱数）。
+     *   ⚠ 残りの半分は今までどおり一様な乱数 ＝ **元の分布を消さない**
+     *   （消すと「よく通る道でだけ起きる壊れ方」が見つからなくなる）。
+     * ⚠ 「🔍 反応の前後を見る」など rule id を持たない札は**いちばん後回し**にする
+     *   ＝ レビューが指摘した「押せた回の 38% が前後比較」の偏りも同時に薄まる。
+     */
+    const REACT_COVERAGE_SHARE = 0.5;
+
+    // 否定対照の口: `audit.html?nogroups=1` で「組」の枝を、`?noguide=1` で札の誘導を止める。
+    // ★ **「届くようになった」を回数だけで言わない**ため —— 両方止めた実行（＝ v1496 までの
+    //   ファズと同じ選び方）で 0回の本数が元に戻ることを確かめられる。
+    //   結果ファイルの `comparableKey` にも載せるので、止めた実行を本走と取り違えない
     const GROUPS_ENABLED = !/[?&]nogroups=1/.test(location.search);
+    const GUIDE_ENABLED = !/[?&]noguide=1/.test(location.search);
 
     /* ★ 基点シードを外から固定する口: `audit.html?seed=1000`（v1497）。
      * ⚠ **A/B は「同じ種の集合を両方で流す」でなければ成立しない**（`wilson95` の注記・
@@ -736,6 +754,36 @@
         };
     }
 
+    /**
+     * ★ どの札を押すかを決める（カバレッジ誘導。上の `REACT_COVERAGE_SHARE` の注記）。
+     *
+     * ⚠ **純関数にしてある**（帳簿と乱数を引数で受ける）ので `FZ4` が作りごとの札で単体検査できる。
+     * ★ 物差しは「**届いた回数 → 押した回数**」の辞書順で少ないもの。
+     *   - 届いた回数を先に見るので、**押しても分子が変わらない札**（解説カード）が
+     *     いつまでも「0回」で選ばれ続けることがない（押した回数で後回しになる）
+     *   - rule id を持たない札（前後比較・機構）は最後に回す
+     */
+    function pickReactionButton(btns, led, rnd, guided) {
+        if (!btns.length) return null;
+        if (!guided || !led || rnd() >= REACT_COVERAGE_SHARE) {
+            return btns[Math.floor(rnd() * btns.length)];
+        }
+        const cost = (b) => {
+            const ds = b.dataset || {};
+            const rid = ds.rule || ds.reverseRule;
+            if (!rid) return Infinity;                       // 札に反応が結びついていない
+            return (led.appliedRules[rid] || 0) * 1000 + (led.pressedRules[rid] || 0);
+        };
+        let best = [], bestN = Infinity;
+        btns.forEach(b => {
+            const n = cost(b);
+            if (n < bestN) { bestN = n; best = [b]; }
+            else if (n === bestN) best.push(b);
+        });
+        if (!best.length) best = btns;                        // 全部 Infinity（rule id 無し）
+        return best[Math.floor(rnd() * best.length)];
+    }
+
     // 押した札が何だったかを数える。⚠ 見分けは **DOM の属性**で行う（文言に頼るのは最後だけ）
     function tallyPressedButton(led, btn) {
         const ds = btn.dataset || {};
@@ -863,7 +911,7 @@
                     //   という**予定**と、実際に押せた回数の差（実測 45%）が誰にも見えない
                     if (rxLedger) rxLedger.attempts++;
                     if (btns.length) {
-                        const btn = btns[Math.floor(rnd() * btns.length)];
+                        const btn = pickReactionButton(btns, rxLedger, rnd, GUIDE_ENABLED);
                         ops.push('react ' + btn.textContent.slice(0, 16));
                         const lastBefore = (W.reactor && W.reactor.lastReaction) || null;
                         if (rxLedger) { rxLedger.pressed++; tallyPressedButton(rxLedger, btn); }
@@ -1025,7 +1073,9 @@
             // ★ 「組」の枝の有無と配分。⚠ **止めた実行（?nogroups=1）と並べない**ので
             //   `comparableKey` にも載せる（否定対照の実行を本走と取り違えないため）
             groupSummons: GROUPS_ENABLED,
-            groupShare: GROUPS_ENABLED ? GROUP_SHARE : 0
+            groupShare: GROUPS_ENABLED ? GROUP_SHARE : 0,
+            reactGuide: GUIDE_ENABLED,
+            reactCoverageShare: GUIDE_ENABLED ? REACT_COVERAGE_SHARE : 0
         };
         // 監査結果は window にも出す（ヘッドレスの検証スクリプトから読むため）
         report = window.__auditReport = {
@@ -1168,7 +1218,7 @@
             // `bondLinePx` は v1160 で足した「結合線の下の原子」のしきい値。
             // `hydrogenLinePx` は v1240 で足した「結合線の下の自動水素」のしきい値。
             // 検査が1つ増えた実行と増える前の実行は並べられないので鍵に載せる
-            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx},${report.config.thresholds.bondLinePx},${report.config.thresholds.hydrogenLinePx}/mix=${report.config.opMixId}/grp=${report.config.groupShare}`,
+            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx},${report.config.thresholds.bondLinePx},${report.config.thresholds.hydrogenLinePx}/mix=${report.config.opMixId}/grp=${report.config.groupShare}/cov=${report.config.reactCoverageShare}`,
             /* ★★ **反応の面へどこまで届いたか**（v1497・発注書 B ②）。
              * ⚠ **回数ではなく本数を見ること** —— 1本に1万回届いても、他の48本が0回なら
              *   「監査がバグを見つけてくれる」は成り立たない。`rulesZeroApplied` が要。 */
@@ -1239,10 +1289,12 @@
         OP_MIX_ID,
         OP_MIX,
         GROUP_SHARE,
+        REACT_COVERAGE_SHARE,
         buildReactionSamples,
         summonGroup,
         newReactionLedger,
         tallyPressedButton,
+        pickReactionButton,
         summarizeReactions
     };
 
