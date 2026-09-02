@@ -4752,6 +4752,93 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★ ベンゼン ＋ プロペン → クメン（クメン法の1段目）
+         * （§10.11-D #4・入試49件／`DESIGN_organic_tree.md` §2-3 (b)・vNNNN）。
+         * ★ **12本のうち入試件数がいちばん大きい辺**（`クメン` で 49/563 大問）。
+         *
+         * ★ **教科書 本文 p.181**（数研 R5化学Vol.2-5編）:
+         *   「クメン法では，まず，触媒を用いてベンゼンとプロペン（プロピレン）から
+         *    クメンをつくる。これを酸素で酸化したのち，硫酸で分解すると，
+         *    フェノールとアセトンが得られる」
+         *   ⚠ **触媒の名前は書かれていない**（「触媒を用いて」だけ）ので、
+         *   **瓶は足さず・caption でも試薬を名乗らない**（§4-1 の線）。
+         *   相手のプロペンは**キャンバスに呼び出す**（アセタール化と同じ形）。
+         *
+         * ⚠⚠ **足すのは3段のうち1段目だけ。** 2段目の中間体（クメンヒドロペルオキシド）は
+         *   **-O-O-（過酸化物）**で、いまのモデルは価標として持てない（§10.11-D #4）。
+         *   ★ **caption が残り2段を言葉で書く**（黙って半分だけ実装しない）。
+         *
+         * 門番:
+         *   ① 相手は**プロペン1分子**に絞る（重原子3個・全部C・C=C がその分子に1つだけ）。
+         *      ⚠ アレン CH₂=C=CH₂ も重原子3個の炭化水素なので、**C=C の本数**で落とす。
+         *   ② 環の側は**炭化水素の芳香環**だけ。フリーデル・クラフツのアルキル化は
+         *      ニトロベンゼンのような強い電子求引基のついた環では進まないし、
+         *      フェノール・アニリンでも教科書は扱わない。
+         *   ③ 環につくのは**置換基の多い側の炭素**（`vinylBonds` の head）＝ マルコフニコフ則。
+         *      だから CH₃-CH₂-CH₂- ではなく **(CH₃)₂CH-** が生えて、イソプロピルベンゼンになる。 */
+        id: 'alkylate_arene_propene',
+        label: 'アルキル化: ベンゼン＋プロペン → クメン（クメン法の1段目）',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②環と炭素がつながる
+        detect(mol) {
+            // ① プロペン1分子ぶんの C=C を集める
+            const vinyls = vinylBonds(mol);
+            const units = [];
+            vinyls.forEach(({ head, tail }) => {
+                const comp = componentOf(mol, head);
+                const heavy = [...comp].map(id => mol.atoms.find(a => a.id === id))
+                    .filter(a => a && a.element !== 'H');
+                if (heavy.length !== 3 || heavy.some(a => a.element !== 'C')) return;
+                // ⚠ アレン（C=C が2本）を落とす。プロペンは1本
+                if (vinyls.filter(v => comp.has(v.head)).length !== 1) return;
+                units.push({ head, tail, comp });
+            });
+            if (!units.length) return [];
+            // ② 炭化水素の芳香環の、置換できる位置（等価な位置は `aromaticSites` がまとめる）
+            const sites = [];
+            aromaticSites(mol, null).forEach(([ringId]) => {
+                const ringComp = componentOf(mol, ringId);
+                const hetero = [...ringComp].some(id => {
+                    const a = mol.atoms.find(x => x.id === id);
+                    return a && a.element !== 'C' && a.element !== 'H';
+                });
+                if (hetero) return;
+                units.forEach(u => {
+                    if (ringComp.has(u.head)) return;   // 別分子どうしのみ
+                    sites.push([ringId, u.head, u.tail]);
+                });
+            });
+            return sites;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [ringId, headId, tailId] = site;
+            const bond = mol.getBond(headId, tailId);
+            if (!bond || bond.type !== 2) throw new Error('プロペンの C=C が見つかりません');
+            // 配向性は**書き換える前の環**で判断する（既存の芳香族置換4本と同じ約束）。
+            // ベンゼンは6頂点が等価なので空文字。トルエンなどでは o/p の説明が付く
+            const note = orientationNote(mol, ringId);
+            const movingIds = [...componentOf(mol, headId)];
+            // ⚠ **置き場を先に確かめる**（途中で失敗して C=C だけ開いた形を残さない）
+            const plan = planAttachment(mol, ringId, headId, movingIds);
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
+            bond.type = 1;                       // 二重結合が開く（付加であって置換ではない）
+            applyAttachment(mol, movingIds, plan);
+            mol.addBond(ringId, headId, 1);
+            return {
+                caption: 'ベンゼンにプロペンが付加して、クメン（イソプロピルベンゼン）ができました' +
+                    '（触媒を用いる）。C=C が開いて、**置換基の多いほうの炭素**が環につくので、' +
+                    'プロピル基 CH₃CH₂CH₂- ではなく**イソプロピル基 (CH₃)₂CH-** が生えます' +
+                    '（マルコフニコフ則と同じ向きです）。' +
+                    '\n★ これは**クメン法の1段目**です。フェノールの工業的製法で、続きは' +
+                    '②クメンを空気（酸素）で酸化してクメンヒドロペルオキシドにし、' +
+                    '③硫酸で分解すると**フェノールとアセトンが同時に**得られます。' +
+                    '⚠ ②③はこのアプリでは実行できません —— 中間体が -O-O- という結合をもち、' +
+                    'いまの図の描き方では表せないためです。' + note,
+                changed: [ringId, headId, tailId]
+            };
+        }
+    },
+    {
         /* ★ ベンゼン環の水素化 → シクロヘキサン環
          * （§10.11-D #9・入試35件／`DESIGN_organic_tree.md` §2-3 (b)・vNNNN）。
          * ★ **教科書 本文 p.177**（Pt/Ni を触媒に 3H₂）。ベンゼンもシクロヘキサンも登録済み。
