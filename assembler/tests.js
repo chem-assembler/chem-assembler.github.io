@@ -33719,8 +33719,12 @@
             'reduce_nitro',
             // ★ v1472: ワッカー法は瓶が1本増える（§10.9 の申し送りに触れる。判断は §10.12）
             'wacker_oxidation',
+            /* ★ vNNNN（系統樹レーン）: ベンゼン環の水素化も**瓶を増やさず** h2_ni に相乗り。
+             *   ⚠ 同じ瓶に `reduce_nitro` が居るので、detect は炭化水素だけに絞ってある
+             *   （ニトロベンゼンで両方出ると「環は水素化されません」という説明と食い違う）。 */
+            'hydrogenate_benzene_ring',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 35, `瓶に紐づくルールが ${linked.length} 件（35件を期待）`);
+        assert(linked.length === 36, `瓶に紐づくルールが ${linked.length} 件（36件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -45249,6 +45253,122 @@
         const carboxyls = W.findFunctionalGroups(phthalic).filter(g => g.type === 'carboxyl');
         assert(carboxyls.length === 4,
             `フタル酸2分子のカルボキシ基が ${carboxyls.length} 個（4個＝材料はある）`);
+        c.reset();
+    });
+
+    test('TR3: ベンゼン → シクロヘキサン（H₂ ×3）。★ 側鎖を先に水素化すれば環まで届く', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrogenate_benzene_ring');
+        assert(rule, 'hydrogenate_benzene_ring が REACTION_RULES に無い');
+
+        // ---- ① ベンゼン → シクロヘキサン（**登録エントリと正準コードが一致**）
+        const mol = trSetup(c, ['ベンゼン']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `ベンゼンで箇所が ${sites.length} 件（1件を期待）`);
+        assert(sites[0].length === 6, `箇所の原子が ${sites[0].length} 個（環の6個を期待）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        assert(trName(c) === 'シクロヘキサン', `できたのは「${trName(c)}」（シクロヘキサンを期待）`);
+        // **原子を1つも足さず・1つも消していない**（この反応がいちばん軽い理由そのもの）
+        assert(mol.atoms.filter(a => a.element !== 'H').length === 6,
+            `重原子が ${mol.atoms.filter(a => a.element !== 'H').length} 個（6個のまま を期待）`);
+        assert(mol.bonds.every(b => b.type === 1 ||
+            mol.atoms.find(a => a.id === b.atomId1).element === 'H'), '環に二重結合が残っている');
+        // ---- ② 印（changed）を名指しで見る。★ 変わったのは環の6個ちょうど
+        assert(Array.isArray(res.changed) && res.changed.length === 6,
+            `印が ${(res.changed || []).length} 個（環の6個を期待）`);
+        assert(res.changed.every(id => sites[0].includes(id)),
+            '印が環の外に付いている');
+
+        // ---- ③ トルエン → メチルシクロヘキサン（環に置換基があっても通る）
+        const tol = trSetup(c, ['トルエン']);
+        const ts = rule.detect(tol);
+        assert(ts.length === 1, `トルエンで箇所が ${ts.length} 件（1件を期待）`);
+        g.saveState();
+        rule.apply(g, ts[0]);
+        g.updateDrawing();
+        assert(trName(c) === 'メチルシクロヘキサン', `トルエンから「${trName(c)}」（メチルシクロヘキサンを期待）`);
+
+        // ---- ④ ★ 教科書どおりの順序が、画面の操作の順序になっている
+        //     スチレンでは環の札は出ず、H₂ は側鎖に効く → エチルベンゼン →
+        //     そこで初めて環の札が出る → エチルシクロヘキサン
+        const sty = trSetup(c, ['スチレン']);
+        assert(rule.detect(sty).length === 0, 'スチレンで環の水素化が出ている（側鎖が先のはず）');
+        const addH2 = W.REACTION_RULES.find(r => r.id === 'add_h2');
+        const vinyl = addH2.detect(sty);
+        assert(vinyl.length === 1, `スチレンで add_h2 が ${vinyl.length} 件（側鎖の1件を期待）`);
+        g.saveState();
+        addH2.apply(g, vinyl[0]);
+        g.updateDrawing();
+        assert(trName(c) === 'エチルベンゼン', `側鎖を水素化して「${trName(c)}」（エチルベンゼンを期待）`);
+        const ring2 = rule.detect(sty);
+        assert(ring2.length === 1, '側鎖を水素化したのに環の札が出ない（順序の道が途切れている）');
+        g.saveState();
+        rule.apply(g, ring2[0]);
+        g.updateDrawing();
+        assert(trName(c) === 'エチルシクロヘキサン', `さらに環まで進めて「${trName(c)}」`);
+        c.reset();
+    });
+
+    test('TR4: ★否定対照 — 環の水素化は炭化水素だけ。ニトロベンゼンでは「環は水素化されない」と食い違わない', async (c) => {
+        c.reset();
+        const W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrogenate_benzene_ring');
+        assert(rule, 'hydrogenate_benzene_ring が無い');
+        /* ⚠⚠ **いちばん大事な否定対照はニトロベンゼン。** この瓶（h2_ni）には
+         *   `reduce_nitro` が相乗りしていて、その caption が
+         *   「⚠ このときベンゼン環は水素化されません」と書いている。
+         *   ★ 環の水素化がここで出ると、**画面が自分の説明と正面から食い違う**。 */
+        const negatives = [
+            ['ニトロベンゼン', '同じ瓶の reduce_nitro の説明と食い違う'],
+            ['p-ニトロトルエン', '同上'],
+            ['フェノール', 'ヘテロ原子あり'],
+            ['アニリン', 'ヘテロ原子あり'],
+            ['安息香酸', 'ヘテロ原子あり'],
+            ['スチレン', '側鎖の C=C が先'],
+            ['ナフタレン', '縮合環（テトラリンは教科書外・登録も無い）'],
+            ['シクロヘキサン', 'もう芳香環でない'],
+            ['ヘキサン', '環が無い'],
+            ['1,3-シクロヘキサジエン', '芳香環ではない（交互でない）'],
+            ['エチレン（エテン）', '芳香環が無い'],
+            ['アセチレン（エチン）', '芳香環が無い']
+        ];
+        const fired = [];
+        negatives.forEach(([name, why]) => {
+            const n = rule.detect(trSetup(c, [name])).length;
+            if (n) fired.push(`${name} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
+
+        // **空振りの緑を避ける**: 同じ数え方がベンゼンでは1件拾う
+        assert(rule.detect(trSetup(c, ['ベンゼン'])).length === 1,
+            '否定対照の数え方が壊れている（ベンゼンでも0件になる）');
+        /* ★ **材料が無いから0件、ではないことを示す**:
+         *   ニトロベンゼン・フェノール・ナフタレンには芳香環が実在する（環の数え方は通っている）。
+         *   落としているのは門番であって、環が見つからないからではない。 */
+        [['ニトロベンゼン', 1], ['フェノール', 1], ['ナフタレン', 0]].forEach(([name, want]) => {
+            const mol = trSetup(c, [name]);
+            const rings = W.isolatedBenzeneRings ? W.isolatedBenzeneRings(mol) : null;
+            if (rings) {
+                assert(rings.length === want,
+                    `${name} の単独ベンゼン環が ${rings.length} 個（${want} 個を期待）`);
+            } else {
+                // 環の数え方が公開されていない環境では、芳香族の結合が在ることで代用する
+                assert(W.findAromaticBondKeys(mol).size > 0,
+                    `${name} に芳香族の結合が1本も無い（材料が無いだけ、になっている）`);
+            }
+        });
+        // ★ 瓶から見ても食い違っていないこと（ニトロベンゼンで h2_ni を押すと還元だけ）
+        trSetup(c, ['ニトロベンゼン']);
+        const hits = W.reactor.reagentHits(W.REAGENTS.find(r => r.id === 'h2_ni')).map(h => h.rule.id);
+        assert(hits.join(',') === 'reduce_nitro',
+            `ニトロベンゼンで H₂/Ni から出る反応が ${hits.join(',')}（reduce_nitro だけを期待）`);
+        trSetup(c, ['ベンゼン']);
+        const hits2 = W.reactor.reagentHits(W.REAGENTS.find(r => r.id === 'h2_ni')).map(h => h.rule.id);
+        assert(hits2.join(',') === 'hydrogenate_benzene_ring',
+            `ベンゼンで H₂/Ni から出る反応が ${hits2.join(',')}（環の水素化だけを期待）`);
         c.reset();
     });
 

@@ -1409,6 +1409,45 @@ function aromaticAtomSet(mol) {
 }
 
 /**
+ * **単独のベンゼン環**（縮合していない6員の芳香環）を、環の原子IDの配列で返す。
+ *
+ * ★ 数え方は `findAromaticBondKeys` の**結合**から成分に組み直す
+ * （6員閉路の列挙を2つ持たないため）。**原子6個・結合6本ちょうど**の成分だけを通すので、
+ * ⚠ **ナフタレンのような縮合環は落ちる**（原子10・結合11）。ビフェニルは2つ返る。
+ *
+ * ⚠ **なぜ縮合環を落とすか**: ナフタレンに水素を1つの環だけ付加した形（テトラリン）は
+ * 教科書が扱わないうえ、登録も無い。★ アプリが名前を言い切れないものを作らない。
+ */
+function isolatedBenzeneRings(mol) {
+    const keys = findAromaticBondKeys(mol);
+    const bonds = mol.bonds.filter(b => keys.has(
+        b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`));
+    const adj = new Map();
+    bonds.forEach(b => {
+        if (!adj.has(b.atomId1)) adj.set(b.atomId1, []);
+        if (!adj.has(b.atomId2)) adj.set(b.atomId2, []);
+        adj.get(b.atomId1).push(b.atomId2);
+        adj.get(b.atomId2).push(b.atomId1);
+    });
+    const seen = new Set(), out = [];
+    for (const startId of adj.keys()) {
+        if (seen.has(startId)) continue;
+        const ids = new Set([startId]), stack = [startId];
+        seen.add(startId);
+        while (stack.length) {
+            const x = stack.pop();
+            (adj.get(x) || []).forEach(y => {
+                if (seen.has(y)) return;
+                seen.add(y); ids.add(y); stack.push(y);
+            });
+        }
+        const inside = bonds.filter(b => ids.has(b.atomId1) && ids.has(b.atomId2));
+        if (ids.size === 6 && inside.length === 6) out.push([...ids]);
+    }
+    return out;
+}
+
+/**
  * 環炭素 ringId についているのが「触媒なしの置換を通すほど強く活性化する基」か。
  * 通すのは **-OH（フェノール）と -NH₂（アニリン）の2つだけ**。
  *
@@ -4710,6 +4749,57 @@ const REACTION_RULES = [
         apply(game, site) {
             return addAcrossMultipleBond(game, site, null, null,
                 '水素 H₂ が付加しました（ニッケルや白金を触媒に加熱）。不飽和結合が減って飽和に近づきます。植物油に水素を付加して固める硬化油（マーガリンの原料）はこの反応の応用です。');
+        }
+    },
+    {
+        /* ★ ベンゼン環の水素化 → シクロヘキサン環
+         * （§10.11-D #9・入試35件／`DESIGN_organic_tree.md` §2-3 (b)・vNNNN）。
+         * ★ **教科書 本文 p.177**（Pt/Ni を触媒に 3H₂）。ベンゼンもシクロヘキサンも登録済み。
+         *
+         * ⚠⚠ **「ベンゼンは付加しにくい」を壊さないための門番が2つ要る**
+         *   （§10.11-F 次点が名指しした注意そのもの）:
+         *
+         *   ① **炭化水素だけからなる分子**に絞る。★ いちばん効くのは
+         *      **ニトロベンゼンが落ちること** —— この瓶（h2_ni）には `reduce_nitro` が
+         *      相乗りしていて、その caption が「⚠ このときベンゼン環は水素化されません」と
+         *      書いている。★ 環の水素化を同じ瓶から同時に出すと、**画面が自分の説明と食い違う**。
+         *      フェノール・アニリンも同じ理由でここには来ない。
+         *
+         *   ② **ふつうの多重結合（C=C・C≡C）が分子に無いこと**。★ スチレンに H₂ を当てれば
+         *      **先に側鎖のビニル基が水素化される**（環はずっと付加しにくい）ので、
+         *      両方を同時に札として出すと**順序を取り違えさせる**。
+         *      ⚠ 側鎖を先に水素化してエチルベンゼンにすれば、そこで環の札が出る
+         *      ＝ 教科書どおりの順序が画面の操作の順序になる。
+         *
+         * ★ **図の書き換えはいちばん軽い**——原子を1つも足さず・1つも消さない。
+         *   環の6本を単結合にすると、自動水素が CH₂ を6つ描く。 */
+        id: 'hydrogenate_benzene_ring',
+        reagentId: 'h2_ni',
+        label: '付加: H₂ ×3 → ベンゼン環がシクロヘキサン環になる',
+        detect(mol) {
+            // ① 炭化水素だけ（ヘテロ原子があれば1件も出さない）
+            if (mol.atoms.some(a => a.element !== 'C' && a.element !== 'H')) return [];
+            // ② ふつうの C=C / C≡C が残っていれば、そちらが先。ここでは出さない
+            if (multipleBondSites(mol).length) return [];
+            return isolatedBenzeneRings(mol);
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const ring = new Set(site);
+            const inside = mol.bonds.filter(b => ring.has(b.atomId1) && ring.has(b.atomId2));
+            if (inside.length !== 6) throw new Error('ベンゼン環の6本が見つかりません');
+            inside.forEach(b => { b.type = 1; });   // 原子は足さない。自動水素が CH₂ を描く
+            return {
+                caption: 'ベンゼン環に水素が付加して、シクロヘキサン環になりました' +
+                    '（C₆H₆ ＋ 3H₂ → C₆H₁₂）。ニッケルや白金を触媒に、**高温・高圧**で反応させます。' +
+                    '⚠ ベンゼン環はふつうの二重結合とは違って**付加しにくい** —— ' +
+                    '6個の電子が環全体に広がって安定している（芳香族性）ためで、' +
+                    'だからベンゼンは臭素水を脱色せず、置換のほうが起こります。' +
+                    'ここは「起こらない」のではなく「特別な条件が要る」反応です。' +
+                    '\n⚠ 側鎖に二重結合があるとき（スチレンなど）は、**そちらが先に**水素化されます。' +
+                    '先に側鎖を水素化してから、もう一度この反応を見てください。',
+                changed: site
+            };
         }
     },
     {
@@ -8099,6 +8189,9 @@ if (typeof window !== 'undefined') {
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
     window.acetalizableDiols = acetalizableDiols; // PY5〜PY8（ビニロン）が読む
     window.lactamUnits = lactamUnits;             // PY10〜PY13（開環重合）が読む
+    // ★ 単独のベンゼン環（縮合していない6員の芳香環）。TR4 が
+    //   「材料が無いから0件、ではない」を示すのに読む
+    window.isolatedBenzeneRings = isolatedBenzeneRings;
     window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;
     window.SELF_PARTNER_RULES = SELF_PARTNER_RULES; // PM5・PM6（1分子からの重合の入口）が読む
     window.SELF_PARTNER_UNITS = SELF_PARTNER_UNITS;
