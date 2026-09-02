@@ -38,6 +38,20 @@
  *                  「D だから R とは限らない」をアプリ自身の CIP に計算させる（L-システインだけ (R)）／
  *                  用語は鏡像異性体（qa/KNOWLEDGE_CAVEATS.md J-4）／R/S の決め方は書き写さない） |
  * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが挿さっていること（2026-09-02 に 📖 資料を**末尾へ**足して 4→5・見出し 2→3）・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
+ * | EQ  | 1〜8   | 実験モード 第2段の課題（DESIGN_experiment_mode.md）。**1 は課題とは別件の実発生**＝
+ *                  `obstructedInsets()` が「帯の上端がキャンバスの上半分か」で天井／床を決めており、
+ *                  キャンバスが薄くなると反転していた（320px ＋ 🧪 実験パレットで
+ *                  呼んだ分子 9/9 原子が作業帯の裏）。否定対照は「旧式と新式で答えが分かれる配置か」を
+ *                  その場で計算して主張に含める形。
+ *                  2 が課題データの形と中身（1行1問・行数 = 問数 + 2・start/goal がライブラリから引ける・
+ *                  ⚠ 台帳の入試頻度が画面に漏れていない）・3 が入口（🎯 の札／`?open=experiment`／
+ *                  `?quest=` 単独／知らない id は黙って無視）・4 が本体（**正しい手順で通る／
+ *                  副生成物が残っていても通る／2手の途中では通らない**）・
+ *                  **5 は否定対照**（違う瓶では通らない／課題を始めていなければ目標を置いても記録が増えない／
+ *                  パズルへ移れば課題は終わる／帯に叱る文言と手数の数字が無い）・
+ *                  **6 は「何回でもやり直せる」**（↻ で未達に戻る・通した記録は消えない・↩ 戻す で取り消せる）・
+ *                  **7 は陰性対照**（瓶の本数・空振りの理由・やめてもキャンバスが残る）・
+ *                  8 が 375px の実測（帯の増分 ≦ 50px・押しものが画面の中・出発物が帯の裏に入らない） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
  * | FR  | 1      | ハース環（フラノース）モジュール |
@@ -32145,6 +32159,423 @@
         g.setPalette('draw');
     });
 
+    /* ===== EQ1: 厚い帯を「天井」と読み違えない（obstructedInsets・実発生） =====
+     *
+     * ⚠⚠ **これは実験モードの課題（第2段）とは別の、いま main に在る不具合の門番**。
+     *   `obstructedInsets()` は「帯の上端がキャンバスの上半分にあれば天井」で天井／床を決めていた。
+     *   これは**帯がキャンバスよりずっと薄い**ことを前提にした式で、
+     *   **キャンバスが薄くなると反転する**。
+     *
+     * ★ 実測（v1494 の 🧪 実験パレット・320×568。**課題を1問も置いていない状態で起きる**）:
+     *     `#svg-wrapper` 234px ／ 下端に貼った `#work-strip` 128px ／ 帯の上端は 106px。
+     *     106 ≦ 117（＝ 234 の半分）なので**天井**と判定され、`top=140 / bottom=0`。
+     *     `fitCanvasToMolecule` は空いている「下半分」へ分子を寄せる ＝ **帯の裏**。
+     *     エタノールの重原子＋水素 9個が**9個とも帯の下**に入った。
+     *
+     * ★ 否定対照は「旧式ならどう答えたか」をその場で計算して突き合わせる ——
+     *   **旧式と新式の答えが分かれる配置になっていること**を主張に含めるので、
+     *   直しを戻せば必ず赤くなるし、症状の出ない配置で緑になることもない。 */
+    test('EQ1: 厚い帯を「天井」と読み違えず、呼んだ分子が帯の裏に入らない（320px・実発生）', async () => {
+        await withViewport(320, 568, async (W, D, name) => {
+            const g = W.game;
+            g.setMode('free');
+            // 🧪 実験パレットにすると左パネルが 83 → 160px になり、キャンバスが 311 → 234px へ縮む
+            D.querySelector('#palette-tabs .palette-tab[data-palette="exp"]').click();
+            await new Promise(r => setTimeout(r, 150));
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule('エタノール'), `${name}: エタノールを呼び出せない`);
+            g.updateDrawing();
+
+            const svg = D.getElementById('chem-svg');
+            const strip = D.getElementById('work-strip');
+            const r = svg.getBoundingClientRect();
+            const b = strip.getBoundingClientRect();
+            assert(b.height > 1 && r.height > 1, `${name}: 帯かキャンバスの高さが取れない`);
+
+            // ★ **症状の出る配置になっているか**（前提。ここが崩れたら緑は空振り）
+            const 旧式は天井 = (b.top - r.top) <= r.height * 0.5;
+            assert(旧式は天井,
+                `${name}: 旧式でも床と読める配置になっている` +
+                `（帯の上端 ${Math.round(b.top - r.top)}px / キャンバス高の半分 ${Math.round(r.height / 2)}px）` +
+                ' —— この幅で帯が薄くなったなら、EQ1 の前提を測り直すこと');
+            const ins = g.obstructedInsets();
+            assert(ins.bottom > 0 && ins.top === 0,
+                `${name}: 下端に貼った帯が床として数えられていない（top=${Math.round(ins.top)} / bottom=${Math.round(ins.bottom)}）`);
+
+            // ★ 本体: 呼んだ分子が帯の裏に入っていない
+            const 裏 = [...D.querySelectorAll('#atoms-group circle')].filter(c => {
+                const cr = c.getBoundingClientRect();
+                if (cr.width === 0) return false;
+                return cr.bottom > b.top && cr.top < b.bottom && cr.right > b.left && cr.left < b.right;
+            });
+            const 全部 = [...D.querySelectorAll('#atoms-group circle')].filter(c => c.getBoundingClientRect().width > 0);
+            assert(全部.length >= 3, `${name}: 原子が描かれていない（${全部.length}個）`);
+            assert(裏.length === 0,
+                `${name}: 呼び出した分子の ${裏.length}/${全部.length} 個が作業帯の裏に入っている` +
+                '（obstructedInsets が帯を天井と読み違えている）');
+        });
+    });
+
+
+    /* ===== EQ2〜EQ8: 実験モードの課題（DESIGN_experiment_mode.md 第2段） =====
+     *
+     * ★ **ユーザー決定（2026-09-01）の4行がそのまま不変条件**:
+     *   ① 課題を始めたら、出発物質がキャンバスに置かれる（EQ4）
+     *   ② 正しい反応手順をたどって目的の物質を作ればクリア（EQ4）
+     *   ③ 何回でもやり直せる（EQ6）
+     *   ④ 到達判定は「目標がある」＝ 副生成物が残っていても通る（EQ4・EQ5）
+     *
+     * ⚠⚠ **「クリアできる」だけを見ない。** 否定対照を名指しで置く:
+     *   EQ5 …… **違う瓶を押してもクリアにならない**（判定が素通しになっていないこと）
+     *   EQ5 …… **課題を始めていなければ、目標を作ってもクリアの記録が増えない**
+     *   EQ6 …… **やり直すと未達に戻る**（一度立った旗が下りること）
+     *   EQ7 …… **課題を始める前の 🧪自由 の面は1つも欠けていない**（帯・瓶・モーダルの道）
+     *
+     * ⚠ **在庫の数（課題12問・瓶23本…）をこのファイルに書かない**
+     *   （DESIGN_review_pack1.md §8-2）。数は `W.QUESTS` / `W.REAGENTS` から取る。 */
+
+    // 課題を1つ、瓶から実際にたどる（箇所を選ぶ反応にも対応する）。戻り値は最後の成分の名前
+    async function 課題をたどる(c, questId, 手順) {
+        const g = c.game, D = c.D, W = c.W;
+        const r = g.startQuest(questId);
+        assert(r.ok, `${questId} を始められない（${r.reason}）`);
+        for (const [瓶, 条件] of 手順) {
+            const b = D.querySelector(`#exp-reagents-grid [data-reagent="${瓶}"]`);
+            assert(b, `実験パレットに瓶 ${瓶} が無い`);
+            b.click();
+            const note = D.getElementById('exp-reagent-note');
+            const 選択肢 = [...note.querySelectorAll('[data-cond]')];
+            if (選択肢.length) {
+                const pick = 条件 ? 選択肢.find(x => x.textContent.includes(条件)) : 選択肢[0];
+                assert(pick, `条件「${条件}」の選択肢が出ない（${選択肢.map(x => x.textContent).join(' / ')}）`);
+                pick.click();
+            }
+            if (W.reactor.picking) {
+                const site = W.reactor.picking.sites[0];
+                const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+                assert(atom, '箇所の選択で当てる原子が見つからない');
+                c.clickAt(atom.x, atom.y);
+            }
+        }
+        return g.splitMolecules().map(p => g.lookupCompoundName(p) || '(名前なし)');
+    }
+
+    test('EQ2: quests.json が1行1問の規約を守り、12問すべてライブラリから引ける', async (c) => {
+        const W = c.W;
+        const quests = W.QUESTS;
+        assert(Array.isArray(quests) && quests.length > 0, '課題データが読み込まれていない');
+
+        // ★ **形の検査**（`verify-release.js` の死角。`?v=` が付かないので機械の見張りがここしかない）。
+        //   compounds.json の「膨らむ」事故と narrowing-problems.json の「1行に潰れる」事故は
+        //   どちらも**差分から変更の大きさが読めない**という同じ害なので、両方を塞ぐ形で見る
+        const raw = await (await fetch('quests.json?nocache=' + Date.now())).text();
+        assert(raw.charCodeAt(0) !== 0xFEFF, 'quests.json に BOM が付いている（UTF-8 BOM なしが規約）');
+        const crlf = (raw.match(/\r\n/g) || []).length, lf = (raw.match(/\n/g) || []).length;
+        assert(crlf === lf, `quests.json の改行が CRLF で揃っていない（CRLF ${crlf} / LF ${lf}）`);
+        const lines = raw.replace(/\r\n$/, '').split('\r\n');
+        assert(lines.length === quests.length + 2,
+            `quests.json が1行1問になっていない（${quests.length} 問なのに ${lines.length} 行。期待は ${quests.length + 2} 行）` +
+            `${lines.length === 1 ? ' ＝ JSON.stringify そのままで書き戻された疑い（差分がいつも 1 1 になる）' : ''}`);
+        assert(lines[0].startsWith('{"_readme":') && lines[0].endsWith('"quests":['),
+            'quests.json の1行目が {"_readme":… で始まり "quests":[ で終わっていない');
+        assert(lines[lines.length - 1] === ']}', 'quests.json の最終行が "]}" 単独ではない');
+        quests.forEach((q, i) => {
+            const L = lines[i + 1], tail = i === quests.length - 1 ? '}' : '},';
+            assert(L.startsWith('{') && L.endsWith(tail),
+                `quests.json の ${i + 2} 行目（${q.id}）が "{" で始まり "${tail}" で終わる1問になっていない`);
+        });
+
+        // ★ **中身の検査**: id が重複せず、start / goal がライブラリから引けて、別物であること。
+        //   ⚠ ここが `assembler_links.jsonl` と同じ「名前で書いた配線」の門番 ——
+        //     ライブラリの表示名が変われば、この検査が先に赤くなる
+        const ids = new Set();
+        const g = c.game;
+        quests.forEach(q => {
+            assert(q.id && !ids.has(q.id), `課題の id が重複している: ${q.id}`);
+            ids.add(q.id);
+            assert(q.group && q.start && q.goal, `${q.id}: group / start / goal のどれかが空`);
+            assert(q.hands === 1 || q.hands === 2, `${q.id}: hands が ${q.hands}（第1弾は1手か2手だけ）`);
+            assert(q.why && q.why.length > 10, `${q.id}: why（選んだ理由の台帳）が空`);
+            const s = g.resolveCompound(q.start), t = g.resolveCompound(q.goal);
+            assert(s, `${q.id}: 出発物「${q.start}」をライブラリから引けない`);
+            assert(t, `${q.id}: 目標「${q.goal}」をライブラリから引けない`);
+            assert(W.canonicalCode(s.mol) !== W.canonicalCode(t.mol),
+                `${q.id}: 出発物と目標が同じ分子（始めた瞬間に合格になる）`);
+        });
+        // ⚠ **画面に出題頻度を書かない**（DEVELOPMENT.md P12-1 の既決）。
+        //    why は台帳なので、一覧の DOM に漏れていないことを見る
+        c.game.setQuestOpen(true);
+        const 一覧 = c.D.getElementById('quest-list').textContent;
+        c.game.setQuestOpen(false);
+        assert(!/\d+\/283|org\.[a-z]/.test(一覧),
+            `課題の一覧に台帳（入試頻度・qa のコード）が漏れている: ${一覧.slice(0, 120)}`);
+    });
+
+    test('EQ3: 🎯 課題に挑む → 一覧 → 押すと出発物が置かれ、実験の面になる（D-E5）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        // ⚠ 使い捨ての本体（`?quest=` の受け口は起動時にしか踏まれないので、共有の器では見られない）
+        const openApp = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; width:1000px; height:800px;';
+            f.src = `index.html${query}`;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                await new Promise(r => setTimeout(r, 60));
+                return { W: f.contentWindow, D: f.contentDocument, kill: () => f.remove() };
+            } catch (e) { f.remove(); throw e; }
+        };
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+
+        // 入口①: 実験パレットの `🎯 課題に挑む`
+        D.querySelector('#palette-tabs .palette-tab[data-palette="exp"]').click();
+        D.getElementById('btn-quest-open').click();
+        assert(!D.getElementById('quest-modal').classList.contains('hidden'), '課題の一覧が開かない');
+        const 札 = [...D.querySelectorAll('#quest-list [data-quest]')];
+        assert(札.length === W.QUESTS.length,
+            `一覧の札が課題データと合わない（${札.length} / ${W.QUESTS.length}）`);
+        // ⚠ 目標は**名前と手数だけ**（図では出さない・D-E15）
+        assert(!D.querySelector('#quest-list svg'), '課題の一覧に構造式の図が出ている（D-E15）');
+
+        const q0 = W.QUESTS[0];
+        札.find(b => b.dataset.quest === q0.id).click();
+        assert(D.getElementById('quest-modal').classList.contains('hidden'), '課題を選んでも一覧が閉じない');
+        assert(D.getElementById('left-panel').dataset.palette === 'exp',
+            '課題を始めても実験パレットにならない（setPalette("exp") の1手が抜けている）');
+        assert(!D.getElementById('ws-quest').classList.contains('hidden'), '課題の帯が出ない');
+        assert(D.getElementById('quest-route').textContent === `${q0.start} → ${q0.goal}`,
+            `帯の課題名が違う: ${D.getElementById('quest-route').textContent}`);
+        // ① 出発物がキャンバスに置かれている
+        const 成分 = g.splitMolecules().map(p => g.lookupCompoundName(p));
+        assert(成分.length === 1 && 成分[0] === q0.start,
+            `出発物が置かれていない（${成分.join(' / ')}）`);
+        // ⚠ 課題の最中は「名称から呼び出す」の段を畳む（キャンバスを覆う量を増やさないため）
+        assert(!D.getElementById('ws-free-summon').getBoundingClientRect().height,
+            '課題の最中に「名称から呼び出す」の段が畳まれていない');
+
+        // 入口②: `?open=experiment&quest=<id>`（`?open=` 無しでも効くことも見る）
+        for (const 引数 of ['?open=experiment&quest=' + q0.id, '?quest=' + q0.id]) {
+            const a = await openApp(引数);
+            try {
+                assert(a.W.game.currentQuest && a.W.game.currentQuest.id === q0.id,
+                    `${引数}: 課題が始まっていない`);
+                assert(a.D.getElementById('left-panel').dataset.palette === 'exp',
+                    `${引数}: 実験パレットになっていない`);
+                assert(a.W.game.splitMolecules().length === 1, `${引数}: 出発物が1つ置かれていない`);
+            } finally { a.kill(); }
+        }
+        // ⚠ 知らない id は黙って無視（前方互換）
+        const a = await openApp('?quest=__no_such_quest__');
+        try {
+            assert(!a.W.game.currentQuest, '知らない課題 id で課題が始まっている');
+            assert(!a.W.game.userMolecule.atoms.length, '知らない課題 id でキャンバスに何かが置かれた');
+        } finally { a.kill(); }
+        g.stopQuest();
+        g.setPalette('draw');
+    });
+
+    test('EQ4: 正しい手順でクリアになる —— 副生成物が残っていても通る（D-E4「目標がある」）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        W.localStorage.removeItem('chemAssembler.questCleared');
+
+        // ★ ユーザーが挙げた例題そのもの。⚠ **水が別分子として残る** ＝
+        //   「目標だけ」で判定していたらここが赤くなる
+        let 成分 = await 課題をたどる(c, 'eq-ethanol-ethene', [['h2so4_conc', '160〜170']]);
+        assert(g._questDone, `エタノール → エチレン が合格にならない（${成分.join(' / ')}）`);
+        assert(成分.length >= 2, `脱水したのに副生成物が残っていない（${成分.join(' / ')}）＝ 前提が崩れている`);
+        assert(D.getElementById('quest-now').textContent.includes('できました'),
+            `帯が合格を映していない: ${D.getElementById('quest-now').textContent}`);
+        assert(g.getQuestClearedSet().has('eq-ethanol-ethene'), '通した課題が記録されていない');
+
+        // ★ 2手の課題（ベンゼン → ニトロ化 → 還元 → アニリン）。途中では合格しないこと
+        const r = g.startQuest('eq-benzene-aniline');
+        assert(r.ok, '2手の課題を始められない');
+        const 一手 = (瓶) => {
+            const b = D.querySelector(`#exp-reagents-grid [data-reagent="${瓶}"]`);
+            assert(b, `${瓶} の瓶が見つからない（瓶の id が変わったら EQ4 を測り直すこと）`);
+            b.click();
+            const 選択肢 = [...D.getElementById('exp-reagent-note').querySelectorAll('[data-cond]')];
+            if (選択肢.length) 選択肢[0].click();
+            if (W.reactor.picking) {
+                const site = W.reactor.picking.sites[0];
+                const a = g.userMolecule.atoms.find(x => site.includes(x.id));
+                assert(a, '箇所の選択で当てる原子が見つからない');
+                c.clickAt(a.x, a.y);
+            }
+        };
+        一手('mixed_acid');
+        assert(!g._questDone, '1手目（ニトロ化）で 2手の課題が合格になっている');
+        assert(D.getElementById('quest-now').textContent.includes('ニトロベンゼン'),
+            `帯が途中の分子を映していない: ${D.getElementById('quest-now').textContent}`);
+        一手('h2_ni');
+        assert(g._questDone,
+            `ベンゼン → アニリン（2手）が合格にならない（${g.splitMolecules().map(p => g.lookupCompoundName(p)).join(' / ')}）`);
+        g.stopQuest();
+        g.setPalette('draw');
+        W.localStorage.removeItem('chemAssembler.questCleared');
+    });
+
+    test('EQ5: 否定対照 —— 違う瓶ではクリアにならない／課題を始めていなければ記録も増えない', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        W.localStorage.removeItem('chemAssembler.questCleared');
+
+        // ① **違う手順**: 目標はエチレンなのに、穏やかに酸化してアセトアルデヒドを作る
+        const 成分 = await 課題をたどる(c, 'eq-ethanol-ethene', [['kmno4', '穏やかに']]);
+        assert(成分.some(n => n === 'アセトアルデヒド'),
+            `前提が崩れている（酸化で別のものができていない: ${成分.join(' / ')}）`);
+        assert(!g._questDone,
+            `目標と違う分子ができたのに合格になっている（${成分.join(' / ')}）＝ 判定が素通し`);
+        assert(!g.getQuestClearedSet().has('eq-ethanol-ethene'), '未達なのに記録が増えている');
+        // ⚠ **罰しない**（設計書 §4-1 の決め④）。分子も帯も「間違い」と言わない
+        const 帯 = D.getElementById('quest-now').textContent;
+        assert(!/間違い|不正解|失敗|残念/.test(帯), `帯に叱る文言が混ざっている: ${帯}`);
+        assert(帯.includes('アセトアルデヒド'), `帯がいまの分子を名指ししていない: ${帯}`);
+        // ⚠ **変わると嘘になる数字を書かない**（決め③）
+        assert(!/あと\s*\d|\d\s*手目|\d+\s*回/.test(帯), `帯に手数・回数が書かれている: ${帯}`);
+
+        // ② **課題を始めていないとき**は、同じ分子を作っても記録が1件も増えない
+        g.stopQuest();
+        assert(!g.currentQuest, 'やめたのに課題が残っている');
+        assert(D.getElementById('ws-quest').classList.contains('hidden'), 'やめたのに課題の帯が残っている');
+        const 前 = g.getQuestClearedSet().size;
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule('エチレン'), 'エチレンを呼び出せない');
+        g.updateDrawing();
+        assert(g.getQuestClearedSet().size === 前,
+            '課題を始めていないのに、目標の分子を置いただけで記録が増えた');
+
+        // ③ 🧩パズルへ移ったら課題は終わる（帯が2段に並ばない）
+        g.startQuest('eq-ethanol-ethene');
+        g.setMode('puzzle');
+        assert(!g.currentQuest, 'パズルへ移っても課題が残っている');
+        assert(D.getElementById('ws-quest').classList.contains('hidden'), 'パズルモードで課題の帯が出ている');
+        g.setMode('free');
+        g.setPalette('draw');
+        W.localStorage.removeItem('chemAssembler.questCleared');
+    });
+
+    test('EQ6: 何回でもやり直せる —— ↻ はじめから で未達に戻り、↩ 戻す で取り消せる（決定③）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        W.localStorage.removeItem('chemAssembler.questCleared');
+        await 課題をたどる(c, 'eq-ethanol-ethene', [['h2so4_conc', '160〜170']]);
+        assert(g._questDone, '前提が崩れている（1回目で合格しない）');
+
+        // ★ 帯の `↻ はじめから` は人が押すのと同じボタンで押す
+        D.getElementById('btn-quest-restart').click();
+        assert(!g._questDone, 'やり直しても合格の旗が下りない');
+        const 成分 = g.splitMolecules().map(p => g.lookupCompoundName(p));
+        assert(成分.length === 1 && 成分[0] === 'エタノール',
+            `やり直したのに出発物だけになっていない（${成分.join(' / ')}）`);
+        assert(D.getElementById('quest-now').textContent.includes('エタノール'),
+            '帯がやり直し後の状態を映していない');
+        // ⚠ 一度通した記録は消さない（やり直しは罰ではない）
+        assert(g.getQuestClearedSet().has('eq-ethanol-ethene'), 'やり直しで通した記録まで消えている');
+
+        // ★ もう一度たどれる（何回でも）
+        const b = D.querySelector('#exp-reagents-grid [data-reagent="h2so4_conc"]');
+        b.click();
+        const pick = [...D.getElementById('exp-reagent-note').querySelectorAll('[data-cond]')]
+            .find(x => x.textContent.includes('160〜170'));
+        pick.click();
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const a = g.userMolecule.atoms.find(x => site.includes(x.id));
+            c.clickAt(a.x, a.y);
+        }
+        assert(g._questDone, '2回目のやり直しで合格にならない');
+
+        // ⚠ `↻ はじめから` は ↩ 戻す で取り消せる（押し間違いで作図が黙って消えない）
+        const 前 = g.userMolecule.atoms.length;
+        D.getElementById('btn-quest-restart').click();
+        g.undo();
+        g.undo();
+        assert(g.userMolecule.atoms.length === 前,
+            `↻ はじめから を ↩ 戻す で取り消せない（${前} → ${g.userMolecule.atoms.length}）`);
+        g.stopQuest();
+        g.setPalette('draw');
+        W.localStorage.removeItem('chemAssembler.questCleared');
+    });
+
+    test('EQ7: 陰性対照 —— 課題は既存の 🧪自由 の道を1本も塞いでいない', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        g.setPalette('draw');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+
+        // ① 課題を始めていない 🧪自由 は今までどおり（帯も瓶もモーダルも）
+        assert(D.getElementById('ws-quest').classList.contains('hidden'), '課題を始めていないのに帯が出ている');
+        assert(D.getElementById('ws-free-summon').getBoundingClientRect().height > 0,
+            '課題を始めていないのに「名称から呼び出す」の段が畳まれている');
+        const 瓶 = (sel) => [...D.querySelectorAll(`${sel} .rg-bottle`)].map(b => b.dataset.reagent).join(',');
+        const 全部 = W.REAGENTS.map(r => r.id).join(',');
+        assert(瓶('#mm-reagents-grid') === 全部, '分子モーダルの瓶が減っている');
+        assert(瓶('#exp-reagents-grid') === 全部, '実験パレットの瓶が減っている');
+
+        // ② 課題の最中でも、瓶の空振りは今までどおり理由を返す（罰にしない・EX4 と同じ道）
+        g.startQuest('eq-benzene-nitrobenzene');
+        D.querySelector('#exp-reagents-grid [data-reagent="br2_water"]').click();
+        const said = D.getElementById('exp-reagent-note').textContent;
+        assert(said.includes('効くのは'), `課題の最中に空振りの理由が返らない: ${said.slice(0, 60)}`);
+        assert(!/間違い|不正解|失敗/.test(said), `空振りの説明に叱る文言が混ざっている: ${said.slice(0, 80)}`);
+        assert(!g._questDone, '空振りで合格になっている');
+
+        // ③ 課題をやめてもキャンバスは残る（作った分子を黙って消さない）
+        const 原子数 = g.userMolecule.atoms.length;
+        g.stopQuest();
+        assert(g.userMolecule.atoms.length === 原子数,
+            `課題をやめたらキャンバスが変わった（${原子数} → ${g.userMolecule.atoms.length}）`);
+        assert(D.getElementById('ws-free-summon').getBoundingClientRect().height > 0,
+            '課題をやめても「名称から呼び出す」の段が戻らない');
+        g.setPalette('draw');
+    });
+
+    test('EQ8: 課題の帯を出しても、押しものと分子が画面の中に残る（375・実測）', async () => {
+        await withViewport(375, 812, async (W, D, name) => {
+            const g = W.game;
+            const 素の帯 = D.getElementById('work-strip').getBoundingClientRect().height;
+            const r = g.startQuest('eq-benzene-aniline');
+            assert(r.ok, `${name}: 課題を始められない（${r.reason}）`);
+            await new Promise(x => setTimeout(x, 200));
+
+            const strip = D.getElementById('work-strip').getBoundingClientRect();
+            // ★ 増分を主張の形にする（「名称から呼び出す」を畳んだぶんが効いていないと増分が倍になる）
+            assert(strip.height - 素の帯 <= 50,
+                `${name}: 課題の帯でキャンバスを覆う量が ${Math.round(strip.height - 素の帯)}px 増えた` +
+                '（「名称から呼び出す」の段を畳む手当てが効いていない）');
+            // 帯の押しものが画面の中にあること
+            ['ws-quest-head', 'btn-quest-restart', 'btn-quest-quit'].forEach(id => {
+                const b = D.getElementById(id).getBoundingClientRect();
+                assert(b.width > 0 && b.top >= -1 && b.bottom <= W.innerHeight + 1,
+                    `${name}: #${id} が画面の外（y=${Math.round(b.top)}〜${Math.round(b.bottom)} / 画面 ${W.innerHeight}）`);
+                assert(b.height >= 30, `${name}: #${id} の高さが ${Math.round(b.height)}px（帯の押しものの床は 34px）`);
+            });
+            // ★ 出発物が帯の裏に入っていない（EQ1 の直しが課題の面でも効いていること）
+            const 円 = [...D.querySelectorAll('#atoms-group circle')].filter(x => x.getBoundingClientRect().width > 0);
+            assert(円.length >= 6, `${name}: 出発物が描かれていない（${円.length}個）`);
+            const 裏 = 円.filter(x => {
+                const cr = x.getBoundingClientRect();
+                return cr.bottom > strip.top && cr.top < strip.bottom && cr.right > strip.left && cr.left < strip.right;
+            });
+            assert(裏.length === 0, `${name}: 出発物の ${裏.length}/${円.length} 個が課題の帯の裏にある`);
+            // ★ 読める大きさで出ている（アプリ自身の床と同じ物差し）
+            assert(g.screenPxPerGrid() >= W.SUMMON_MIN_BOND_PX,
+                `${name}: 結合1本 ${g.screenPxPerGrid().toFixed(1)}px（床 ${W.SUMMON_MIN_BOND_PX}px）`);
+            W.game.stopQuest();
+        });
+    });
+
     /* ===== EP7〜EP9: 学習メニューの言い直し（D・DESIGN_entry_points.md §10） =====
      *
      * ユーザーの指摘:「学習メニューの中で反応機構モードが、映像コンテンツ（見るだけ）のように
@@ -40222,6 +40653,9 @@
             }],
             ['confirm-modal', async (W, D) => { D.getElementById('confirm-modal').classList.remove('hidden'); }],
             ['summon-modal', async (W, D) => { 押す(D, '#btn-summon'); await 待つ(300); }],
+            // 🎯 実験モードの課題の一覧（第2段）。**中身が多い状態で開く**＝ 12問の札が並ぶ姿そのもの。
+            //    ⚠ 台帳に足すのが新しいモーダルの門番（この節の冒頭の約束）
+            ['quest-modal', async (W, D) => { 押す(D, '.mode-tab[data-mode="free"]'); await 待つ(200); W.game.setQuestOpen(true); await 待つ(200); }],
             ['nring-modal', async (W, D) => { D.getElementById('nring-modal').classList.remove('hidden'); }],
         ];
 

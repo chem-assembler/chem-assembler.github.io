@@ -1,0 +1,14 @@
+{"_readme":"実験モードの課題（DESIGN_experiment_mode.md 第2段）。1行1問・末尾に追記のみ・整形し直さない（compounds.json / narrowing-problems.json と同じ規約。行数 = 問数 + 2 を assembler/tests.js の EQ1 が見張る）。start / goal は resolveCompound が引ける名称（id・主名・別名も可）で、正準コードはアプリが起動時にライブラリから作る ＝ 化学をこのファイルに書き写さない。why は選んだ理由の台帳（qa/data/exam_usage.jsonl の知識項目コードと件数。母数は 有機283大問）で、画面には出さない —— 画面の文言で出題頻度を名乗らないのは既決（DEVELOPMENT.md P12-1）。","quests":[
+{"id":"eq-ethanol-ethene","group":"アルケン・アルキン","start":"エタノール","goal":"エチレン（エテン）","hands":1,"why":"org.ali.ethanol-dehydration 87/283。ユーザーが挙げた例題そのもの。水が副生成物として残る＝D-E4「目標がある」でしか通らない1問"},
+{"id":"eq-acetylene-vinylchloride","group":"アルケン・アルキン","start":"アセチレン（エチン）","goal":"塩化ビニル","hands":1,"why":"org.poly.vinyl-monomers 66/283。付加重合の単量体づくりへ続く"},
+{"id":"eq-ethanol-acetaldehyde","group":"アルコール","start":"エタノール","goal":"アセトアルデヒド","hands":1,"why":"org.alcohol.oxidation 54/283。第1級アルコールの穏やかな酸化。同じ瓶で条件が2つに割れる（D-E3 で行き先は伏せない）"},
+{"id":"eq-ipa-acetone","group":"アルコール","start":"2-プロパノール","goal":"アセトン","hands":1,"why":"org.alcohol.class 43/283・org.carbonyl.acetone-prep 38/283。第2級アルコールの酸化はケトンで止まる"},
+{"id":"eq-acetaldehyde-acetic","group":"アルデヒド・ケトン","start":"アセトアルデヒド","goal":"酢酸","hands":1,"why":"org.carbonyl.aldehyde-oxidation 68/283。アルデヒドは酸化されてカルボン酸になる"},
+{"id":"eq-ethanol-iodoform","group":"アルデヒド・ケトン","start":"エタノール","goal":"ヨードホルム（トリヨードメタン）","hands":1,"why":"org.alcohol.iodoform 59/283。ギ酸ナトリウムが一緒に残る＝副生成物つきの合格"},
+{"id":"eq-ester-hydrolysis","group":"カルボン酸・エステル","start":"酢酸エチル","goal":"酢酸","hands":1,"why":"org.carbonyl.ester-hydrolysis 57/283。エタノールが残ったままで合格する（けん化と行き先が違うことも同じ瓶棚で確かめられる）"},
+{"id":"eq-salicylic-aspirin","group":"カルボン酸・エステル","start":"サリチル酸","goal":"アセチルサリチル酸","hands":1,"why":"org.aroN.aspirin 45/283。無水酢酸によるアセチル化"},
+{"id":"eq-toluene-benzoic","group":"芳香族の置換","start":"トルエン","goal":"安息香酸","hands":1,"why":"org.aro.sidechain-oxidation 58/283。環ではなく側鎖が酸化される"},
+{"id":"eq-benzene-nitrobenzene","group":"芳香族の置換","start":"ベンゼン","goal":"ニトロベンゼン","hands":1,"why":"org.aro.nitration 38/283。芳香族の求電子置換の代表"},
+{"id":"eq-aniline-acetanilide","group":"芳香族の窒素化合物","start":"アニリン","goal":"アセトアニリド","hands":1,"why":"org.aroN.acetanilide 55/283。アミノ基のアセチル化"},
+{"id":"eq-benzene-aniline","group":"芳香族の窒素化合物","start":"ベンゼン","goal":"アニリン","hands":2,"why":"org.aroN.aniline-prep 32/283。ニトロ化 → 還元。★ 教科書が名前で呼ぶ2手の経路として実測で確かめられた数少ない1つ"}
+]}
