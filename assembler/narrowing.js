@@ -113,6 +113,31 @@ const NARROW_CARDS = [
     // 環状エステル（ラクトン）。加水分解しても分子の数が増えず、−OH と −COOH が同じ分子から出る。
     // エステルの思考ルーチンの②（不飽和度が余ったらラクトンを疑う）がこれ
     { id: 'lactone', say: ['加水分解すると1種類の化合物だけになり、−OH と −COOH をもっていた'], mean: '環状エステル（ラクトン）', row: '酸・エステル', cell: 'ラクトン', test: (m) => NW.groups(m).includes('ester') && !!NW.ring(m) },
+    /**
+     * ★★ M12: **加水分解してから、出てきた片割れの性質を見る**（vNNNN・ユーザー要望 2026-08-31
+     *    「エステルの加水分解生成物の条件からの絞りこみ」）。
+     *
+     * ⚠ **`ester` カードとは働きが違う。** `ester` は「エステル結合をもつ」で止まるが、
+     *   入試が実際に書くのは**出てきた酸とアルコールの性質**のほう。
+     *   実測（`qa/data/exam_usage.jsonl`・有機283大問の悉皆）:
+     *   手筋「**エステルの加水分解からアルコールと酸を割り出す**」は **51/283 大問**で、
+     *   109 ある手筋のうち **5位**。⚠ それなのに、ここには `ester` と `lactone` の
+     *   2枚しか無く、**どんな酸・どんなアルコールが出たかを言う手が1枚も無かった**。
+     *
+     * ★ 型は `dehyd*`（M8）と同じ「反応させてから見る」で、下請けは `NW.hydrolysis`。
+     * ⚠ **ラクトンはどれも false**（切っても1分子で、別々の「アルコール」が出てこない）＝
+     *   そこは `lactone` カードの持ち場。**同じことを2枚で言わない**。
+     * ⚠ **具体名（「酢酸が得られた」）のカードは作らない。** 分子式ごとに札が要るうえ、
+     *   1枚で答えが決まる ＝ ユーザーの原則（参照は全体像で渡す）に反する。
+     *   出すのは**性質**だけにして、絞るのは積み重ねの側の仕事にする。
+     */
+    { id: 'hyd-acid-formic', say: ['加水分解して得られたカルボン酸が銀鏡反応を示した'], mean: '加水分解で出る酸がギ酸', row: '加水分解生成物', cell: '酸＝ギ酸', test: (m) => NW.hydAcidIsFormic(m) },
+    { id: 'hyd-acid-formic-no', say: ['加水分解して得られたカルボン酸は銀鏡反応を示さなかった'], mean: '加水分解で出る酸はギ酸でない', row: '加水分解生成物', cell: '酸≠ギ酸', test: (m) => NW.hydrolysis(m).pairs.length > 0 && !NW.hydAcidIsFormic(m) },
+    { id: 'hyd-alc-1', say: ['加水分解して得られたアルコールを酸化するとアルデヒドになった'], mean: '加水分解で出るアルコールが第一級', row: '加水分解生成物', cell: 'アルコール1級', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.groups(p.alc).includes('alcohol1')) },
+    { id: 'hyd-alc-2', say: ['加水分解して得られたアルコールを酸化するとケトンになった'], mean: '加水分解で出るアルコールが第二級', row: '加水分解生成物', cell: 'アルコール2級', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.groups(p.alc).includes('alcohol2')) },
+    { id: 'hyd-alc-3', say: ['加水分解して得られたアルコールは酸化されなかった'], mean: '加水分解で出るアルコールが第三級', row: '加水分解生成物', cell: 'アルコール3級', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.groups(p.alc).includes('alcohol3')) },
+    { id: 'hyd-alc-iodoform', say: ['加水分解して得られたアルコールがヨードホルム反応を示した'], mean: '加水分解で出るアルコールが CH3-CH(OH)-', row: '加水分解生成物', cell: 'アルコールがヨード陽性', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.iodoform(p.alc)) },
+    { id: 'hyd-alc-chiral', say: ['加水分解して得られたアルコールに光学異性体が存在した'], mean: '加水分解で出るアルコールが不斉炭素をもつ', row: '加水分解生成物', cell: 'アルコールに不斉', test: (m) => NW.hydrolysis(m).pairs.some((p) => NW.chiral(p.alc) >= 1) },
     // カルボニルの数。二価アルデヒド（熊本大 前3 の A）のように「2つもつ」が決め手になる
     { id: 'carbonyl2', say: ['還元すると二価のアルコールが得られた'], mean: 'カルボニルを2つもつ', row: 'C=O', cell: '2つ', test: (m) => NW.carbonylCount(m) === 2 },
     { id: 'ketone-no', say: ['還元すると第一級アルコールだけが得られた'], mean: 'ケトンをもたない', row: 'C=O', cell: 'ケトン×', test: (m) => !NW.groups(m).includes('ketone') },
@@ -199,6 +224,9 @@ const NARROW_ROW_TAGS = {
     '環上の位置': ['構造', '立体'],
     'オゾン分解': ['分子式', '反応性'],
     '酸・エステル': ['酸・塩基', '反応性'],
+    // ★ M12: 加水分解して出た**酸の側とアルコールの側**の両方を言う行なので、
+    //   「1枚が複数のタグに出る」の実例が行そのものに出る（上の注記を参照）
+    '加水分解生成物': ['アルコール', '酸・塩基', '反応性'],
     '脱水生成物': ['反応性'],
     '光学異性体': ['立体'],
     '付加物': ['立体', '反応性'],
@@ -924,6 +952,72 @@ const NW = {
             });
         });
         return found;
+    },
+    /**
+     * ★★ エステルを加水分解して、**できたカルボン酸とアルコールの組**を返す（M12・vNNNN）。
+     *
+     * ⚠ **`dehydration` と同じ「反応させてから見る」型のカード**の下請け。
+     *   他のカードは「その分子がどんな性質をもつか」を見るが、これは
+     *   **切ったあとの片割れの性質**を見る（設計書 §5 の2段構え）。
+     *
+     * ★ **切る向きは reactor.js の `cleaveAcylOxygen` と同じアシル-酸素開裂**にそろえる ——
+     *   カルボニル炭素と架橋酸素の間で切り、**架橋の O はアルコール側に残る**（エステル化で
+     *   水になったのは酸側の −OH だから）。⚠ ここを逆に切ると、メタノールがメタンになり、
+     *   ギ酸が炭酸になる（実測。この向き違いで最初の集計が丸ごと狂った）。
+     *
+     * ⚠ **切っても1分子のまま（ラクトン・環状酸無水物）は組を返さない。**
+     *   そちらは既存の `lactone` カードの持ち場で、加水分解しても「アルコール」と
+     *   「カルボン酸」が別々の分子として出てこないから ＝ このカードの文言が成り立たない。
+     *
+     * ⚠ **エステル結合が2つ以上あれば組も2つ以上返す**（油脂・二価エステル）。
+     *   カードの述語は `some` で見る ＝「得られたアルコールの1つが〜」という読み。
+     *
+     * 返り値 { pairs: [{ acid, alc }] } —— どちらも座標を持たない検査用の Molecule
+     */
+    hydrolysis(m) {
+        if (m._nwHyd) return m._nwHyd;
+        const res = { pairs: [] };
+        findFunctionalGroups(m).filter((g) => g.type === 'ester').forEach((g) => {
+            const [cId, , oId] = g.atomIds;   // [カルボニルC, =O, -O-]
+            // アシル-酸素結合だけを外した写しを作る
+            const sub = new Molecule(); const map = {};
+            m.atoms.forEach((a) => { map[a.id] = sub.addAtom(a.element, a.x, a.y).id; });
+            m.bonds.forEach((b) => {
+                const isCut = (b.atomId1 === cId && b.atomId2 === oId)
+                    || (b.atomId2 === cId && b.atomId1 === oId);
+                if (!isCut) sub.addBond(map[b.atomId1], map[b.atomId2], b.type);
+            });
+            const adj = {};
+            sub.atoms.forEach((a) => { adj[a.id] = []; });
+            sub.bonds.forEach((b) => { adj[b.atomId1].push(b.atomId2); adj[b.atomId2].push(b.atomId1); });
+            const reach = (s) => {
+                const seen = new Set([s]); const st = [s];
+                while (st.length) { const x = st.pop(); adj[x].forEach((y) => { if (!seen.has(y)) { seen.add(y); st.push(y); } }); }
+                return seen;
+            };
+            const acidSide = reach(map[cId]);
+            if (acidSide.has(map[oId])) return;   // ラクトン ＝ 切っても1分子（lactone カードの持ち場）
+            const alcSide = reach(map[oId]);
+            const carve = (ids, capId) => {
+                const s2 = new Molecule(); const m2 = {};
+                sub.atoms.forEach((a) => { if (ids.has(a.id)) m2[a.id] = s2.addAtom(a.element, a.x, a.y).id; });
+                sub.bonds.forEach((b) => {
+                    if (ids.has(b.atomId1) && ids.has(b.atomId2)) s2.addBond(m2[b.atomId1], m2[b.atomId2], b.type);
+                });
+                // 酸の側だけ、切り口に水由来の −OH を生やす（アルコール側は架橋の O がそのまま −OH）
+                if (capId !== null) { const o = s2.addAtom('O', 0, 0); s2.addBond(m2[capId], o.id, 1); }
+                return s2;
+            };
+            try {
+                res.pairs.push({ acid: carve(acidSide, map[cId]), alc: carve(alcSide, null) });
+            } catch (e) { /* 作れないものは組に数えない */ }
+        });
+        m._nwHyd = res;
+        return res;
+    },
+    /** 加水分解で出たカルボン酸がギ酸（＝銀鏡反応を示すカルボン酸）か */
+    hydAcidIsFormic(m) {
+        return NW.hydrolysis(m).pairs.some((p) => p.acid.atoms.filter((a) => a.element === 'C').length === 1);
     },
     /**
      * α-アミノ酸か（M10・ニンヒドリン反応）。
