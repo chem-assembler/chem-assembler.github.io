@@ -32263,6 +32263,34 @@
         return g.splitMolecules().map(p => g.lookupCompoundName(p) || '(名前なし)');
     }
 
+    /* ===== ⚠ EQ は「実験の面が見えている」前提を**自分で作る**（v1504・実測で直した） =====
+     *
+     * ★ **何に依存していたか**: `#molecule-modal` が開いたままかどうか。
+     *   `reactor.reagentNoteEl`（reactor.js）は **「分子モーダルが開いていれば必ず
+     *   `#mm-reagent-note`」** という不変条件を持つ。これは仕様として正しい
+     *   （モーダルの中の瓶を押したのに答えが裏のパレットへ出る、を作らないため）。
+     *   ところが試薬まわりの下ごしらえ `setupReagent()` は `openMoleculeModal()` を呼ぶだけで
+     *   閉じないので、**モーダルを開けたまま去るテスト**（実測では RX52）の直後に EQ が走ると、
+     *   実験パレットの瓶を押した答えが全部モーダル側へ返る ＝ `#exp-reagent-note` に
+     *   条件の2択が出ず、`課題をたどる` が条件を押せないので分子が1つも変わらない。
+     *
+     * ★ **実測（2026-09-02）**: `?only=RX52` を1件だけ流し終えた時点で
+     *   `molecule-modal` は開いたまま・`reactor.reagentNoteEl.id === 'mm-reagent-note'`。
+     *   `?only=RX,EQ` / `?only=CV,RG,EQ,PM,RX,GC` で EQ4〜EQ7 が落ち、`?only=EQ` 単独と
+     *   全走では通っていた ＝ 全走では間に挟まる別のテストがたまたまモーダルを閉じていた。
+     *
+     * ⚠ **先に走る側に後始末を足す方向では直さない**。それだと「いまの並び」でしか
+     *   成り立たず、次にモーダルを開けたまま去るテストが足された日にまた黙って落ちる。
+     *   ⚠ `?only=` の絞り込み側（順序を変える等）で辻褄を合わせるのはもっと悪い ——
+     *   絞ると通るように見えるだけで、状態依存はそのまま残る。 */
+    function 実験の面を用意する(c) {
+        const g = c.game, D = c.D;
+        if (g.closeMoleculeModal) g.closeMoleculeModal();
+        const modal = D.getElementById('molecule-modal');
+        assert(modal && modal.classList.contains('hidden'),
+            'EQ の前提を作れない（分子モーダルが閉じない）＝ 瓶の答えが #mm-reagent-note へ逃げる');
+    }
+
     test('EQ2: quests.json が1行1問の規約を守り、12問すべてライブラリから引ける', async (c) => {
         const W = c.W;
         const quests = W.QUESTS;
@@ -32333,6 +32361,7 @@
             } catch (e) { f.remove(); throw e; }
         };
         c.reset();
+        実験の面を用意する(c);
         g.setMode('free');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
@@ -32387,6 +32416,7 @@
     test('EQ4: 正しい手順でクリアになる —— 副生成物が残っていても通る（D-E4「目標がある」）', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         W.localStorage.removeItem('chemAssembler.questCleared');
 
         // ★ ユーザーが挙げた例題そのもの。⚠ **水が別分子として残る** ＝
@@ -32429,6 +32459,7 @@
     test('EQ5: 否定対照 —— 違う瓶ではクリアにならない／課題を始めていなければ記録も増えない', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         W.localStorage.removeItem('chemAssembler.questCleared');
 
         // ① **違う手順**: 目標はエチレンなのに、穏やかに酸化してアセトアルデヒドを作る
@@ -32469,6 +32500,7 @@
     test('EQ6: 何回でもやり直せる —— ↻ はじめから で未達に戻り、↩ 戻す で取り消せる（決定③）', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         W.localStorage.removeItem('chemAssembler.questCleared');
         await 課題をたどる(c, 'eq-ethanol-ethene', [['h2so4_conc', '160〜170']]);
         assert(g._questDone, '前提が崩れている（1回目で合格しない）');
@@ -32512,6 +32544,7 @@
     test('EQ7: 陰性対照 —— 課題は既存の 🧪自由 の道を1本も塞いでいない', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         g.setMode('free');
         g.setPalette('draw');
         g.userMolecule = new W.Molecule();
@@ -39945,11 +39978,19 @@
                 return [...pal.querySelectorAll('.nw-cell')].map((b) => b.dataset.card);
             };
 
-            // (1) 意味から引く（受け入れ条件）。「ヨード」でヨードホルムの2枚だけ
+            /* (1) 意味から引く（受け入れ条件）。「ヨード」でヨードホルムの札だけ。
+             * ⚠ v1505 で **3枚**になった —— M12 の `hyd-alc-iodoform`
+             *   「加水分解して得られたアルコールがヨードホルム反応を示した」が当たる。
+             * ★ **これは当たって正しい**（問題文の語で探す人は、エステルの回でも「ヨード」と打つ）。
+             *   ⚠ 行は 1 → 2（`ヨードホルム` と `加水分解生成物`）。**行が増えるのも正しい** ——
+             *   同じ「ヨードホルム陽性」でも、**もとの分子で見るのか、切ったあとの片割れで見るのか**は
+             *   別の制約で、`cell` も別（○ ／ アルコールがヨード陽性）。 */
             const byMean = await type('ヨード');
-            assert(byMean.length === 2 && byMean.includes('iodo') && byMean.includes('iodo-no'),
-                `「ヨード」で ${byMean.length} 枚出ました（期待 2枚 = iodo・iodo-no）: ${byMean.join(',')}`);
-            assert(pal.querySelectorAll('.nw-grp').length === 1, '「ヨード」で行が1つに絞れていません');
+            assert(byMean.length === 3 && byMean.includes('iodo') && byMean.includes('iodo-no')
+                && byMean.includes('hyd-alc-iodoform'),
+                `「ヨード」で ${byMean.length} 枚出ました（期待 3枚 = iodo・iodo-no・hyd-alc-iodoform）: ${byMean.join(',')}`);
+            assert(pal.querySelectorAll('.nw-grp').length === 2,
+                '「ヨード」で行が2つ（ヨードホルム・加水分解生成物）に絞れていません');
 
             // (2) 実験の文から引く。問題文を読んでいる人は「ヨウ素と水酸化ナトリウム」で探す。
             //     ⚠ mean にこの語は無いので、**say に当てていなければ 0 枚になる**（片側だけの否定対照）
@@ -40077,7 +40118,8 @@
             const miss = W.NARROW_CARDS.filter((x) => !W.NARROW_ROWS.includes(x.row)).map((x) => x.row);
             assert(miss.length === 0,
                 `カードにあるのに行の台帳に無い行があります: ${[...new Set(miss)].join('・')}`);
-            assert(W.NARROW_ROWS.length === 20, `行が ${W.NARROW_ROWS.length} 種（期待 20）`);
+            // ⚠ v1505 で 20 → 21（M12 の `加水分解生成物`）。**行が増えたら気づけるように数を固定してある**
+            assert(W.NARROW_ROWS.length === 21, `行が ${W.NARROW_ROWS.length} 種（期待 21）`);
 
             // ★ 4行を**1つの代表で済ませず、4つとも**表に出ることを見る。
             //   カードと、そのカードが埋めるセルの中身まで確かめる（行だけ出て空欄では意味がない）
@@ -40160,8 +40202,9 @@
             // 行の台帳は**表示だけ**の話で、`test`（制約の実体）には触っていない。
             // カードの定義を動かした（環の大きさを push から配列の中へ）ので、
             // **枚数・id・順に依存した効き**が変わっていないことをここで固定する。
-            assert(W.NARROW_CARDS.length === 58, `カードが ${W.NARROW_CARDS.length} 枚（期待 58）`);
-            assert(new Set(W.NARROW_CARDS.map((x) => x.id)).size === 58, 'カードの id が重複しています');
+            // ⚠ v1505 で 58 → 65（M12 の加水分解生成物 7枚）。**枚数を固定してあるので気づける**
+            assert(W.NARROW_CARDS.length === 65, `カードが ${W.NARROW_CARDS.length} 枚（期待 65）`);
+            assert(new Set(W.NARROW_CARDS.map((x) => x.id)).size === 65, 'カードの id が重複しています');
             [3, 4, 5, 6, 7, 8].forEach((n) => {
                 const r = W.NARROW_CARDS.find((x) => x.id === `ring${n}`);
                 assert(r && r.row === '環の大きさ' && r.cell === `${n}員`,
@@ -47276,6 +47319,359 @@
         assert(pick(onlyPlain, led, always, true) !== null && pick(onlyPlain, led, always, true).textContent,
             'rule id を持たない札しか無いときに選べなくなっている');
         assert(pick([], led, always, true) === null, '札が0枚のときに null を返していない');
+    });
+
+    /* =====================================================================
+     * REF8〜REF11: 📖 資料の2枚目・3枚目（DESIGN_reference_book.md §10-7 の残り）
+     *
+     * ★ 2枚目「同じ分子式で、別の分子」（枝分かれアルカン15件を分子式でまとめる）
+     * ★ 3枚目「官能基のかたちと名前」（アルコールとエーテル8件＋アルデヒドとケトン3件）
+     *
+     * ⚠ **ここで固定したいのは「ページが増えたこと」ではなく、増やし方が原則を割っていないこと**:
+     *   ① 表の行は **stages.json の系列そのもの**（件数を検査にもデータにも書き写さない）
+     *   ② 新しい列（分子式・主鎖・官能基）は **お題の図から計算**したもので、手打ちが混ざらない
+     *   ③ 1枚目と同じく **表は全体・例題は代表1つ・採点は既存ステージ**
+     *   ④ `?open=reference` が `OPEN_TARGETS` 経由でも効く（`EP6` の突き合わせに乗る）
+     * ===================================================================== */
+
+    // reference.json をそのまま読む（検査がページの一覧を書き写さないため）
+    async function refPagesJson() {
+        const res = await fetch('reference.json?nocache=' + Date.now());
+        assert(res.ok, 'reference.json が読めない');
+        return await res.json();
+    }
+    // ページが表に使うと宣言している系列（block.series は文字列でも配列でもよい）
+    const refSeriesOf = (page) => {
+        const out = [];
+        (page.blocks || []).forEach(b => {
+            if (b.kind !== 'stageTable') return;
+            (Array.isArray(b.series) ? b.series : [b.series]).forEach(s => out.push(s));
+        });
+        return out;
+    };
+    const refBodyRows = (D) => [...D.querySelectorAll('#ref-body table.ref-table tbody tr')];
+
+    test('REF8: 2枚目・3枚目が索引に並び、表の行は stages.json の系列そのもの（件数を書き写さない）', async (c) => {
+        const D = c.D, W = c.W;
+        const pages = await refPagesJson();
+        assert(pages.length >= 3, `資料が ${pages.length} ページしかない（2枚目・3枚目が入っていない）`);
+        // 索引は reference.json から機械で組む ＝ ページを足したら黙って並ぶ
+        const n = await W.referenceBook.renderIndex();
+        assert(n === pages.length && D.querySelectorAll('#reference-list .ref-index-btn').length === pages.length,
+            `索引のボタン数が reference.json のページ数（${pages.length}）と合わない`);
+        // ⚠ ページ id は検査に書き写さない。reference.json に在るものを全部見る
+        for (const p of pages) {
+            assert(await W.referenceBook.open(p.id), `${p.id}: 開けない`);
+            await new Promise(r => setTimeout(r, 200));
+            const series = refSeriesOf(p);
+            assert(series.length >= 1, `${p.id}: 表が1枚も無い（資料は表が本体）`);
+            const want = [];
+            series.forEach(nm => W.STAGES.forEach(s => { if (s.series === nm) want.push(s); }));
+            assert(want.length >= 10,
+                `${p.id}: 表の元になる系列（${series.join(' / ')}）が ${want.length} 件しかない`
+                + '（10行そろって初めて規則の形になる、が前提）');
+            const rows = refBodyRows(D);
+            assert(rows.length === want.length,
+                `${p.id}: 表が ${rows.length} 行で、stages.json の ${want.length} 件と合わない`);
+            // 名称は必ずどこかの列に出ている（列の並びは variant ごとに違うので行の文字列で見る）
+            want.forEach((s, i) => assert(rows[i].textContent.includes(s.name),
+                `${p.id}: ${i + 1} 行目に ${s.name} が出ていない（並びが stages.json の出題順から外れた）`));
+        }
+        W.referenceBook.close();
+        c.reset();
+
+        /* ★★ 狭い画面でも**行を減らさない**（2026-09-02・ユーザー決定「画面に入らないことの
+           解決策として *中身を切る* を選ばない」）。⚠ `REF4` は1枚目しか見ていないので、
+           **増えたページも同じ線で見る** —— DOM に在っても CSS で隠していたら同じことなので、
+           `getClientRects()` で**見えている行**を数える。 */
+        await withViewport(375, 812, async (W2, D2, name) => {
+            for (const p of pages) {
+                assert(await W2.referenceBook.open(p.id), `${name}: ${p.id} を開けない`);
+                await new Promise(r => setTimeout(r, 250));
+                const want = [];
+                refSeriesOf(p).forEach(nm => W2.STAGES.forEach(s => { if (s.series === nm) want.push(s); }));
+                const rows = [...D2.querySelectorAll('#ref-body table.ref-table tbody tr')];
+                const shown = rows.filter(tr => tr.getClientRects().length > 0);
+                assert(rows.length === want.length && shown.length === want.length,
+                    `${name}: ${p.id} の表が ${shown.length}/${rows.length} 行しか見えない`
+                    + `（${want.length} 行そろっているべき。狭いからといって行を間引いていないか）`);
+                // 入らないぶんは**横にも縦にもスクロールで見せる**（切らない）
+                assert(W2.getComputedStyle(D2.getElementById('ref-body')).overflowY === 'auto',
+                    `${name}: ${p.id} の本文がスクロールできない`);
+                assert(W2.getComputedStyle(D2.querySelector('.ref-table-wrap')).overflowX === 'auto',
+                    `${name}: ${p.id} の表が横にスクロールできない（列が増えたときに切れる）`);
+            }
+        });
+    });
+
+    test('REF9: 新しい列（分子式・主鎖・官能基）は図から計算されている（手打ちが混ざらない）', async (c) => {
+        const D = c.D, W = c.W;
+        /* ★ 著作権の守り（§1-2）を「行データを持たない」の一段先まで見る ——
+           reference.json に無くても、**learn.js に手で書いた表**があれば同じことなので、
+           画面に出ている値が chemistry.js の計算と一致することを確かめる。 */
+        const pages = await refPagesJson();
+        const stageByName = new Map(W.STAGES.map(s => [s.name, s]));
+        let sawFormulaDiff = 0, sawChainDiff = 0, checked = 0;
+
+        for (const p of pages) {
+            assert(await W.referenceBook.open(p.id), `${p.id}: 開けない`);
+            await new Promise(r => setTimeout(r, 200));
+            refBodyRows(D).forEach(tr => {
+                // まとめの見出しセル（rowspan）は「分子式＋件数」の2つの子を持つので、式の側だけ読む
+                const cells = [...tr.children].map(td => td.classList.contains('ref-group')
+                    ? (td.firstChild ? td.firstChild.textContent.trim() : '')
+                    : td.textContent.trim());
+                const stage = W.STAGES.find(s => cells.includes(s.name));
+                if (!stage) return;
+                const mol = W.refStageMolecule(stage);
+                assert(mol && mol.atoms.length > 0, `${stage.name}: お題の図を組めない`);
+                const calcF = W.refSubscript(W.refFormulaFromStructure(mol));
+                const rawF = W.refSubscript(stage.formula);
+                const chain = W.refMainChainLength(mol);
+                const groups = W.refFunctionalSummary(mol);
+                cells.forEach(txt => {
+                    // 分子式らしいセルは、必ず**図から計算した分子式**か stages.json の formula のどちらか
+                    if (/^[A-Z][A-Za-z₀-₉()=]*$/.test(txt) && /[A-Z]/.test(txt)) {
+                        assert(txt === calcF || txt === rawF,
+                            `${stage.name}: 式のセル「${txt}」が図から計算した ${calcF} とも stages.json の ${rawF} とも違う`);
+                        if (txt === calcF && calcF !== rawF) sawFormulaDiff++;
+                    }
+                    if (txt === groups) checked++;
+                });
+                // 主鎖の列を持つページでは、その値が chemistry.js の findLongestCarbonChain と一致する
+                const numeric = cells.filter(t => /^\d+$/.test(t)).map(Number);
+                if (chain !== null && numeric.includes(chain) && chain !== W.refCarbonCount(stage.formula)) sawChainDiff++;
+            });
+        }
+        /* ★否定対照になっている点 ——
+           ① 分子式の列が `stages.json` の `formula` の**写しではない**こと（メタノールは CH3OH と CH4O で違う）。
+              一致するものしか無ければ「示性式をそのまま出しているだけ」でも通ってしまう */
+        assert(sawFormulaDiff >= 2,
+            `分子式の列が stages.json の formula と1つも食い違わない（${sawFormulaDiff}件）。`
+            + '示性式を書き写しているだけでも通ってしまう');
+        /* ② 主鎖の列が「C の数」の言い換えではないこと（2,2-ジメチルプロパンは C5 だが主鎖3） */
+        assert(sawChainDiff >= 2,
+            `主鎖の列が C の数と1つも食い違わない（${sawChainDiff}件）。C の数の列と区別が付いていない`);
+        /* ③ 官能基の列は `game.functionalGroupSummary` の1本から来ている（資料だけの言い方を作っていない） */
+        assert(checked >= 5, `官能基の列が game.functionalGroupSummary と一致した行が ${checked} 件しかない`);
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF10: 新しい2枚も「表は全体・例題は代表1つ・採点は既存ステージ」（原則1と4）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const pages = await refPagesJson();
+        for (const p of pages) {
+            await W.referenceBook.open(p.id);
+            await new Promise(r => setTimeout(r, 200));
+            const full = refBodyRows(D).length;
+            assert(D.querySelectorAll('#ref-body table.ref-table').length === 1,
+                `${p.id}: 表が1枚ではない`);
+            assert(D.querySelectorAll('#ref-body table.ref-table button').length === 0,
+                `${p.id}: 表の行にボタンが付いている（表は「説明」であって「N問の一覧」ではない）`);
+            assert(D.querySelectorAll('#ref-body .ref-try').length === 1,
+                `${p.id}: 例題のボタンが1つではない（例題は代表1つ）`);
+
+            // ★否定対照: 行を指す引数を渡しても絞れない（variant が増えても口が生えていない）
+            const block = (p.blocks || []).find(b => b.kind === 'stageTable');
+            const sneaky = W.referenceBook.renderStageTable(
+                Object.assign({}, block, { stageId: 'hexane', row: 3, only: 'ヘキサン', limit: 1 }));
+            assert(sneaky.querySelectorAll('tbody tr').length === full,
+                `${p.id}: 行を指す引数（stageId / row / only / limit）で表が絞れてしまう`);
+
+            // 例題を始めても表は減らない（狭い画面では閉じる仕様なので開き直して中身を見る）
+            const btn = D.getElementById('btn-ref-try');
+            const stageId = btn.dataset.refStage;
+            const idx = W.STAGES.findIndex(s => s.id === stageId);
+            assert(idx >= 0, `${p.id}: 例題の stageId「${stageId}」が stages.json に無い`);
+            btn.click();
+            await new Promise(r => setTimeout(r, 300));
+            assert(g.currentMode === 'puzzle', `${p.id}: 例題を押しても 🧩パズル にならない`);
+            assert(g.currentStageIndex === idx, `${p.id}: 例題のお題が ${stageId} でない`);
+            // ★ 採点の実体は stages.json 側（資料は新しい判定を1行も持たない）
+            const stage = W.STAGES[idx];
+            assert(stage.target && Array.isArray(stage.target.atoms) && stage.target.atoms.length >= 3,
+                `${p.id}: 既存ステージの target（採点データ）を使っていない`);
+            if (D.getElementById('reference-pane').classList.contains('hidden')) {
+                W.referenceBook.setOpen(true);
+                await new Promise(r => setTimeout(r, 150));
+            }
+            assert(refBodyRows(D).length === full,
+                `${p.id}: 例題を始めたら表が ${refBodyRows(D).length} 行に減った（${full} 行のままであるべき）`);
+
+            // 実際に組み上げると、**既存のパズルの判定**がクリアを記録する
+            const t = g.createTargetFromData(stage);
+            const m = new W.Molecule();
+            const map = new Map();
+            t.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y).id));
+            t.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            g.userMolecule = m;
+            g.updateDrawing();
+            await new Promise(r => setTimeout(r, 300));
+            assert(g.getClearedSet().has(stage.name),
+                `${p.id}: 例題を組み上げても既存のパズルの判定がクリアを記録しない`);
+            c.reset();
+        }
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF11: ?open=reference が OPEN_TARGETS 経由でも効く（EP6 の突き合わせに乗る）', async (c) => {
+        const W = c.W;
+        assert(W.OPEN_TARGETS && 'reference' in W.OPEN_TARGETS,
+            'OPEN_TARGETS に reference が無い（ハブから ?open=reference を指せない ＝ EP6 が受けられない）');
+        /* ⚠ **モードを変えない**（`mode` を持たない）—— 資料は「いまのモードのまま読む」もの。
+           mode:'learn' にすると 📚 学習が開いて直後に資料が閉じる ＝ ちらつく */
+        assert(!W.OPEN_TARGETS.reference.mode,
+            'OPEN_TARGETS.reference がモードを切り替えている（資料はいまのモードのまま開く）');
+
+        const openWith = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; top:0; width:1280px; height:800px; border:0;';
+            f.src = 'index.html' + query;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                for (let i = 0; i < 30; i++) {
+                    const p = f.contentDocument.getElementById('reference-pane');
+                    if (p && !p.classList.contains('hidden')) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                return f;
+            } catch (e) { f.remove(); throw e; }
+        };
+
+        // ① 3枚目の知識コードで、3枚目が開く（開く道が2本あってもページを決める場所は1つ）
+        let f = await openWith('?se=0&open=reference&code=org.alcohol.hydroxy');
+        try {
+            const D = f.contentDocument;
+            assert(!D.getElementById('reference-pane').classList.contains('hidden'), '資料が開かない');
+            const pages = f.contentWindow.referenceBook.pages;
+            const want = pages.find(p => (p.codes || []).includes('org.alcohol.hydroxy'));
+            assert(want, 'org.alcohol.hydroxy を持つページが reference.json に無い');
+            assert(D.querySelector('#ref-body h3').textContent.trim() === want.title,
+                `code で指したページが開いていない（${D.querySelector('#ref-body h3').textContent}）`);
+            // 表が1枚だけ ＝ 2本の道が両方走って二重に描いていない
+            assert(D.querySelectorAll('#ref-body table.ref-table').length === 1,
+                '資料が二重に描かれている（OPEN_TARGETS と learn.js の両方が開いた）');
+        } finally { f.remove(); }
+
+        // ② ★否定対照: 収録中（?rec=）は開かない —— 受け口が増えても台本の1手目を汚さない
+        f = await openWith('?se=0&rec=live&open=reference');
+        try {
+            assert(f.contentDocument.getElementById('reference-pane').classList.contains('hidden'),
+                '?rec= が付いているのに資料が開いた（新しい受け口が収録の約束を破っている）');
+        } finally { f.remove(); }
+    });
+
+    /* ===== NW35: 加水分解生成物の性質で絞る（M12・v1505） =====
+     *
+     * ★ ユーザー要望（2026-08-31）「**エステルの加水分解生成物の条件からの絞りこみ**」。
+     * ★ 測ってから足した:
+     *   ・`qa/data/exam_usage.jsonl`（有機283大問の悉皆）の手筋
+     *     「**エステルの加水分解からアルコールと酸を割り出す**」は **51/283**（109手筋中5位）
+     *   ・それなのに絞り込みモードには `ester` と `lactone` の2枚しか無く、
+     *     **出てきた酸・アルコールの性質を言う手が1枚も無かった**
+     * ⚠ 見張るのは3つ:
+     *   ① 切る向き（アシル-酸素開裂）—— **逆に切るとメタノールがメタンになる**（実発生）
+     *   ② ラクトンでは1枚も立たない（`lactone` カードの持ち場を侵さない）
+     *   ③ 実際の候補集合が割れる（0 のカードは置く意味がない）
+     */
+    test('NW35: 加水分解生成物の性質で絞る（M12・否定対照つき）', async (c) => {
+        const W = c.W;
+        const NW = W.NW;
+        const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
+        const HYD = ['hyd-acid-formic', 'hyd-acid-formic-no', 'hyd-alc-1', 'hyd-alc-2',
+            'hyd-alc-3', 'hyd-alc-iodoform', 'hyd-alc-chiral'];
+        HYD.forEach((id) => assert(card(id), `カード ${id} が無い`));
+        // 行とタグが台帳から出ている（手書きの行台帳を作らない・NW30 と同じ性質）
+        assert(W.NARROW_ROW_ORDER.includes('加水分解生成物'), '「加水分解生成物」の行が出ていない');
+        HYD.forEach((id) => assert(card(id).row === '加水分解生成物' && (card(id).tags || []).length === 3,
+            `${id} の row / tags が台帳から出ていない`));
+
+        // ---- ① 切る向き。**名前で引く**（数では通ってしまう） ----
+        const nameOf = (mol) => c.game.lookupCompoundName(mol);
+        // ⚠ `resolveCompound` が返すのは **`target` を持たない索引エントリ**（`{id,name,mol,code,…}`）。
+        //   `createTargetFromData({target: e.target})` と書くと**原子0個の分子**が返り、
+        //   官能基が1つも見つからないまま「0 組」で落ちる（このレーンで実際に踏んだ）
+        const molOf = (name) => {
+            const e = c.game.resolveCompound(name);
+            assert(e && e.mol && e.mol.atoms.length, `${name} をライブラリから引けない`);
+            return e.mol;
+        };
+        const pairsOf = (name) => NW.hydrolysis(molOf(name)).pairs;
+        const p1 = pairsOf('酢酸エチル');
+        assert(p1.length === 1, `酢酸エチルの加水分解が ${p1.length} 組（期待 1）`);
+        assert(nameOf(p1[0].acid) === '酢酸', `酸の側が「${nameOf(p1[0].acid)}」（期待 酢酸）`);
+        assert(nameOf(p1[0].alc) === 'エタノール', `アルコールの側が「${nameOf(p1[0].alc)}」（期待 エタノール）`);
+        // ⚠ **逆向きに切ると起きること**を名前で書き留める（架橋の O が酸側に残る形）:
+        //   ギ酸メチル → 「炭酸」と「メタン」。数はどちらも1組なので、数では絶対に気づけない
+        const p2 = pairsOf('ギ酸メチル');
+        assert(nameOf(p2[0].acid) === 'ギ酸' && nameOf(p2[0].alc) === 'メタノール',
+            `ギ酸メチルが ${nameOf(p2[0].acid)} ＋ ${nameOf(p2[0].alc)}（期待 ギ酸＋メタノール）`);
+        // エステル結合が2つ以上あれば組も2つ以上（二価エステル）
+        assert(pairsOf('シュウ酸ジエチル').length === 2, 'シュウ酸ジエチルが2組に分かれていない');
+
+        // ---- ② ★否定対照 —— エステルでないもの・ラクトンでは1枚も立たない ----
+        ['エタノール', '酢酸', 'アセトン', 'ジエチルエーテル'].forEach((n) => {
+            const m = molOf(n);
+            HYD.forEach((id) => assert(!card(id).test(m), `${n} で ${id} が立っている`));
+        });
+        const lac = molOf('γ-ブチロラクトン（4-ブタノリド）');
+        assert(NW.hydrolysis(lac).pairs.length === 0, 'ラクトンが2分子に分かれている');
+        HYD.forEach((id) => assert(!card(id).test(lac), `ラクトンで ${id} が立っている`));
+        assert(card('lactone').test(lac), 'ラクトンで lactone カードが立たない（持ち場が空いている）');
+
+        // ---- ③ 名指しの答え合わせ（どのカードが立つか） ----
+        const says = (name) => HYD.filter((id) => card(id).test(molOf(name))).join(',');
+        assert(says('ギ酸エチル') === 'hyd-acid-formic,hyd-alc-1,hyd-alc-iodoform',
+            `ギ酸エチルで立つカードが ${says('ギ酸エチル')}`);
+        assert(says('酢酸イソプロピル') === 'hyd-acid-formic-no,hyd-alc-2,hyd-alc-iodoform',
+            `酢酸イソプロピルで立つカードが ${says('酢酸イソプロピル')}`);
+        assert(says('ギ酸tert-ブチル') === 'hyd-acid-formic,hyd-alc-3',
+            `ギ酸tert-ブチルで立つカードが ${says('ギ酸tert-ブチル')}`);
+        /* ★ 不斉は**出てきたアルコールの側**で見る。
+         * ⚠⚠ この対照は最初 **ギ酸sec-ブチル（立つ）／ギ酸イソプロピル（立たない）** の2件だけで
+         *   書いていて、**「もとのエステルの不斉を見る」取り違えを1つも赤くしなかった**
+         *   （どちらの分子も「エステルの不斉」と「アルコールの不斉」が一致するため）。
+         *   ★ 分ける1件が **2-メチルブタン酸メチル** —— **エステルは不斉炭素をもつのに、
+         *   出てくるアルコールはメタノール**（不斉ゼロ）。ここが唯一の見張り。 */
+        assert(says('ギ酸sec-ブチル').includes('hyd-alc-chiral'), 'ギ酸sec-ブチルで hyd-alc-chiral が立たない');
+        assert(!says('ギ酸イソプロピル').includes('hyd-alc-chiral'), 'ギ酸イソプロピルで hyd-alc-chiral が立っている');
+        assert(NW.chiral(molOf('2-メチルブタン酸メチル')) === 1,
+            '2-メチルブタン酸メチル自身が不斉炭素をもっていない（この対照が成り立たない）');
+        assert(!says('2-メチルブタン酸メチル').includes('hyd-alc-chiral'),
+            '2-メチルブタン酸メチルで hyd-alc-chiral が立っている（もとの分子の不斉を見ている）');
+        // フェノールのエステルは「アルコール」の3枚がどれも立たない（酸の側だけ言える）
+        assert(says('酢酸フェニル') === 'hyd-acid-formic-no', `酢酸フェニルで立つカードが ${says('酢酸フェニル')}`);
+
+        // ---- ④ 実際の候補集合が割れる（滋賀医大 2021-3 と同じ C5H10O2・焼いた JSON） ----
+        const nw = W.narrowing;
+        assert(nw, '絞り込みモードが初期化されていません');
+        nw.formulaKey = 'C5H10O2';
+        nw.constraints = { chiral: '', ring: '', noEnol: true };
+        nw.pool = null;
+        const pool = await nw.buildPool();
+        assert(pool.length === 352, `C5H10O2 の候補が ${pool.length} 通り（期待 352）`);
+        const n = (id) => pool.filter((m) => card(id).test(m)).length;
+        assert(n('hyd-acid-formic') === 4 && n('hyd-acid-formic-no') === 5,
+            `ギ酸/ギ酸でない が ${n('hyd-acid-formic')}/${n('hyd-acid-formic-no')}（期待 4/5 ＝ エステル9種）`);
+        assert(n('hyd-alc-1') === 4 && n('hyd-alc-2') === 2 && n('hyd-alc-3') === 1,
+            `アルコールの級が ${n('hyd-alc-1')}/${n('hyd-alc-2')}/${n('hyd-alc-3')}（期待 4/2/1）`);
+        assert(n('hyd-alc-iodoform') === 3, `ヨードホルム陽性が ${n('hyd-alc-iodoform')}（期待 3）`);
+        assert(n('hyd-alc-chiral') === 1, `不斉をもつアルコールが ${n('hyd-alc-chiral')}（期待 1）`);
+        // ★否定対照 —— 7枚とも「0 でも全部でもない」＝ 置く意味がある
+        HYD.forEach((id) => assert(n(id) > 0 && n(id) < pool.length,
+            `${id} が ${n(id)}/${pool.length}（0 か全部 ＝ このお題では割れない）`));
+        // ★否定対照 —— 既存のカードの答えを1つも動かしていない
+        assert(pool.filter((m) => card('ester').test(m)).length === 9,
+            'ester カードの数が変わった（既存の絞り込みに影響が出ている）');
+        assert(pool.filter((m) => card('lactone').test(m)).length === 0,
+            'C5H10O2 にラクトンが出た（既存の lactone カードの答えが変わっている）');
     });
 
     // ===== 一部だけ流す（`?only=`）=====
