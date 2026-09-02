@@ -1409,6 +1409,45 @@ function aromaticAtomSet(mol) {
 }
 
 /**
+ * **単独のベンゼン環**（縮合していない6員の芳香環）を、環の原子IDの配列で返す。
+ *
+ * ★ 数え方は `findAromaticBondKeys` の**結合**から成分に組み直す
+ * （6員閉路の列挙を2つ持たないため）。**原子6個・結合6本ちょうど**の成分だけを通すので、
+ * ⚠ **ナフタレンのような縮合環は落ちる**（原子10・結合11）。ビフェニルは2つ返る。
+ *
+ * ⚠ **なぜ縮合環を落とすか**: ナフタレンに水素を1つの環だけ付加した形（テトラリン）は
+ * 教科書が扱わないうえ、登録も無い。★ アプリが名前を言い切れないものを作らない。
+ */
+function isolatedBenzeneRings(mol) {
+    const keys = findAromaticBondKeys(mol);
+    const bonds = mol.bonds.filter(b => keys.has(
+        b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`));
+    const adj = new Map();
+    bonds.forEach(b => {
+        if (!adj.has(b.atomId1)) adj.set(b.atomId1, []);
+        if (!adj.has(b.atomId2)) adj.set(b.atomId2, []);
+        adj.get(b.atomId1).push(b.atomId2);
+        adj.get(b.atomId2).push(b.atomId1);
+    });
+    const seen = new Set(), out = [];
+    for (const startId of adj.keys()) {
+        if (seen.has(startId)) continue;
+        const ids = new Set([startId]), stack = [startId];
+        seen.add(startId);
+        while (stack.length) {
+            const x = stack.pop();
+            (adj.get(x) || []).forEach(y => {
+                if (seen.has(y)) return;
+                seen.add(y); ids.add(y); stack.push(y);
+            });
+        }
+        const inside = bonds.filter(b => ids.has(b.atomId1) && ids.has(b.atomId2));
+        if (ids.size === 6 && inside.length === 6) out.push([...ids]);
+    }
+    return out;
+}
+
+/**
  * 環炭素 ringId についているのが「触媒なしの置換を通すほど強く活性化する基」か。
  * 通すのは **-OH（フェノール）と -NH₂（アニリン）の2つだけ**。
  *
@@ -4725,6 +4764,215 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★ アセチレン ＋ 酢酸 → 酢酸ビニル
+         * （`DESIGN_organic_tree.md` §2-3 (b) の**新規の穴**・v1501）。
+         * ⚠ **§10.11 の全数突き合わせに入っていなかった辺**。数え直すと
+         *   `酢酸ビニル` が 43/563 大問（うち `アセチレン` と同じ大問に出るのが 19 件）。
+         *
+         * ★ **教科書 本文 p.31**（数研 R5化学Vol.2-5編）の1文がこれを含む3つを並べて書いている:
+         *   「アセチレンに触媒を用いて塩化水素 HCl，シアン化水素 HCN，酢酸 CH₃COOH を
+         *    付加すると，それぞれ塩化ビニル，アクリロニトリル，酢酸ビニルを生じる。
+         *    また，これらの化合物はいずれもビニル基をもち，付加重合して高分子化合物を生じる」
+         *   ★ **3つのうち塩化ビニルは既に通る**（`add_hcl` がアセチレンに効く・実測）。
+         *   ⚠ **アクリロニトリルは HCN の瓶が要る**ので、この版では足していない（報告に回す）。
+         *
+         * ⚠ **触媒の名前は書かれていない**（「触媒を用いて」だけ）ので瓶は足さない。
+         *   ★ 相手の酢酸は `PARTNER_CANDIDATES` に**もう入っている**ので、
+         *   アセチレンの分子モーダルに「＋ 酢酸 を呼び出す」の札が自動で出る。
+         *
+         * ★ **図の意味**: 三重結合が二重結合になり、酢酸の -OH の酸素がそのまま橋になる。
+         *   **水は1分子も出ない**（縮合ではなく付加）—— ここがエステル化との違いで、
+         *   だから「ビニルアルコールのエステル」に見えるのに、
+         *   ビニルアルコールからは作れない（不安定ですぐアセトアルデヒドになる）。 */
+        id: 'add_carboxylic_acid_alkyne',
+        label: '付加: アセチレン＋酢酸 → 酢酸ビニル',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②三重結合が開いてつながる
+        detect(mol) {
+            /* ★ **アセチレン1分子の集め方は `acetyleneUnits` を借りる**（付加重合と同じもの）。
+             * ⚠ **同じ名前の関数を自分で書きかけて実際に踏んだ** —— 後ろの宣言が勝つので
+             *   静かに上書きされ、`detect` が `{left, right}` を配列として分解しようとして落ちた。
+             *   ★ 数え方が2つになる事故でもあるので、借りるのが正しい。
+             * ★ あちらの門番（分子全体が C≡C の2原子 ＝ アセチレンだけ）がそのまま要る ——
+             *   教科書がこの付加を書いているのはアセチレンについてだけ（5編 p.31）。 */
+            const units = acetyleneUnits(mol);
+            if (!units.length) return [];
+            const carboxyls = findFunctionalGroups(mol).filter(g => g.type === 'carboxyl');
+            const sites = [];
+            units.forEach(u => {
+                const comp = componentOf(mol, u.left);
+                carboxyls.forEach(cx => {
+                    if (comp.has(cx.atomIds[0])) return;   // 別分子どうしのみ
+                    // [アセチレンの C（酸素がつく側）, もう一方の C, 酸の -OH の O, 酸の C]
+                    sites.push([u.left, u.right, cx.atomIds[2], cx.atomIds[0]]);
+                });
+            });
+            return sites;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [c1, c2, oId] = site;
+            const bond = mol.getBond(c1, c2);
+            if (!bond || bond.type !== 3) throw new Error('アセチレンの C≡C が見つかりません');
+            const acidIds = [...componentOf(mol, oId)];
+            // ⚠ **置き場を先に確かめる**（途中で失敗して三重結合だけ開いた形を残さない）
+            const plan = planAttachment(mol, c1, oId, acidIds);
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
+            bond.type = 2;                       // 三重 → 二重（付加。水は出ない）
+            applyAttachment(mol, acidIds, plan);
+            mol.addBond(c1, oId, 1);
+            return {
+                caption: 'アセチレンに酢酸が付加して、酢酸ビニル CH₂=CH-O-CO-CH₃ ができました（触媒を用いる）。' +
+                    '三重結合が二重結合になり、酢酸の -OH の**酸素がそのまま橋**になります。' +
+                    '⚠ **水は1分子も出ません** —— これは縮合（エステル化）ではなく**付加**です。' +
+                    '\n同じようにアセチレンに塩化水素を付加すると塩化ビニル、' +
+                    'シアン化水素を付加するとアクリロニトリルができます。' +
+                    'どれもビニル基 CH₂=CH- をもち、付加重合して高分子になります' +
+                    '（酢酸ビニル → ポリ酢酸ビニル → けん化してポリビニルアルコール → ビニロン）。' +
+                    '\n★ できた分子は「ビニルアルコールのエステル」の形をしていますが、' +
+                    'ビニルアルコールからは作れません（不安定で、すぐアセトアルデヒドに変わるためです）。',
+                changed: [c1, c2, oId]
+            };
+        }
+    },
+    {
+        /* ★ ベンゼン ＋ プロペン → クメン（クメン法の1段目）
+         * （§10.11-D #4・入試49件／`DESIGN_organic_tree.md` §2-3 (b)・v1501）。
+         * ★ **12本のうち入試件数がいちばん大きい辺**（`クメン` で 49/563 大問）。
+         *
+         * ★ **教科書 本文 p.181**（数研 R5化学Vol.2-5編）:
+         *   「クメン法では，まず，触媒を用いてベンゼンとプロペン（プロピレン）から
+         *    クメンをつくる。これを酸素で酸化したのち，硫酸で分解すると，
+         *    フェノールとアセトンが得られる」
+         *   ⚠ **触媒の名前は書かれていない**（「触媒を用いて」だけ）ので、
+         *   **瓶は足さず・caption でも試薬を名乗らない**（§4-1 の線）。
+         *   相手のプロペンは**キャンバスに呼び出す**（アセタール化と同じ形）。
+         *
+         * ⚠⚠ **足すのは3段のうち1段目だけ。** 2段目の中間体（クメンヒドロペルオキシド）は
+         *   **-O-O-（過酸化物）**で、いまのモデルは価標として持てない（§10.11-D #4）。
+         *   ★ **caption が残り2段を言葉で書く**（黙って半分だけ実装しない）。
+         *
+         * 門番:
+         *   ① 相手は**プロペン1分子**に絞る（重原子3個・全部C・C=C がその分子に1つだけ）。
+         *      ⚠ アレン CH₂=C=CH₂ も重原子3個の炭化水素なので、**C=C の本数**で落とす。
+         *   ② 環の側は**炭化水素の芳香環**だけ。フリーデル・クラフツのアルキル化は
+         *      ニトロベンゼンのような強い電子求引基のついた環では進まないし、
+         *      フェノール・アニリンでも教科書は扱わない。
+         *   ③ 環につくのは**置換基の多い側の炭素**（`vinylBonds` の head）＝ マルコフニコフ則。
+         *      だから CH₃-CH₂-CH₂- ではなく **(CH₃)₂CH-** が生えて、イソプロピルベンゼンになる。 */
+        id: 'alkylate_arene_propene',
+        label: 'アルキル化: ベンゼン＋プロペン → クメン（クメン法の1段目）',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②環と炭素がつながる
+        detect(mol) {
+            // ① プロペン1分子ぶんの C=C を集める
+            const vinyls = vinylBonds(mol);
+            const units = [];
+            vinyls.forEach(({ head, tail }) => {
+                const comp = componentOf(mol, head);
+                const heavy = [...comp].map(id => mol.atoms.find(a => a.id === id))
+                    .filter(a => a && a.element !== 'H');
+                if (heavy.length !== 3 || heavy.some(a => a.element !== 'C')) return;
+                // ⚠ アレン（C=C が2本）を落とす。プロペンは1本
+                if (vinyls.filter(v => comp.has(v.head)).length !== 1) return;
+                units.push({ head, tail, comp });
+            });
+            if (!units.length) return [];
+            // ② 炭化水素の芳香環の、置換できる位置（等価な位置は `aromaticSites` がまとめる）
+            const sites = [];
+            aromaticSites(mol, null).forEach(([ringId]) => {
+                const ringComp = componentOf(mol, ringId);
+                const hetero = [...ringComp].some(id => {
+                    const a = mol.atoms.find(x => x.id === id);
+                    return a && a.element !== 'C' && a.element !== 'H';
+                });
+                if (hetero) return;
+                units.forEach(u => {
+                    if (ringComp.has(u.head)) return;   // 別分子どうしのみ
+                    sites.push([ringId, u.head, u.tail]);
+                });
+            });
+            return sites;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [ringId, headId, tailId] = site;
+            const bond = mol.getBond(headId, tailId);
+            if (!bond || bond.type !== 2) throw new Error('プロペンの C=C が見つかりません');
+            // 配向性は**書き換える前の環**で判断する（既存の芳香族置換4本と同じ約束）。
+            // ベンゼンは6頂点が等価なので空文字。トルエンなどでは o/p の説明が付く
+            const note = orientationNote(mol, ringId);
+            const movingIds = [...componentOf(mol, headId)];
+            // ⚠ **置き場を先に確かめる**（途中で失敗して C=C だけ開いた形を残さない）
+            const plan = planAttachment(mol, ringId, headId, movingIds);
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
+            bond.type = 1;                       // 二重結合が開く（付加であって置換ではない）
+            applyAttachment(mol, movingIds, plan);
+            mol.addBond(ringId, headId, 1);
+            return {
+                caption: 'ベンゼンにプロペンが付加して、クメン（イソプロピルベンゼン）ができました' +
+                    '（触媒を用いる）。C=C が開いて、**置換基の多いほうの炭素**が環につくので、' +
+                    'プロピル基 CH₃CH₂CH₂- ではなく**イソプロピル基 (CH₃)₂CH-** が生えます' +
+                    '（マルコフニコフ則と同じ向きです）。' +
+                    '\n★ これは**クメン法の1段目**です。フェノールの工業的製法で、続きは' +
+                    '②クメンを空気（酸素）で酸化してクメンヒドロペルオキシドにし、' +
+                    '③硫酸で分解すると**フェノールとアセトンが同時に**得られます。' +
+                    '⚠ ②③はこのアプリでは実行できません —— 中間体が -O-O- という結合をもち、' +
+                    'いまの図の描き方では表せないためです。' + note,
+                changed: [ringId, headId, tailId]
+            };
+        }
+    },
+    {
+        /* ★ ベンゼン環の水素化 → シクロヘキサン環
+         * （§10.11-D #9・入試35件／`DESIGN_organic_tree.md` §2-3 (b)・v1501）。
+         * ★ **教科書 本文 p.177**（Pt/Ni を触媒に 3H₂）。ベンゼンもシクロヘキサンも登録済み。
+         *
+         * ⚠⚠ **「ベンゼンは付加しにくい」を壊さないための門番が2つ要る**
+         *   （§10.11-F 次点が名指しした注意そのもの）:
+         *
+         *   ① **炭化水素だけからなる分子**に絞る。★ いちばん効くのは
+         *      **ニトロベンゼンが落ちること** —— この瓶（h2_ni）には `reduce_nitro` が
+         *      相乗りしていて、その caption が「⚠ このときベンゼン環は水素化されません」と
+         *      書いている。★ 環の水素化を同じ瓶から同時に出すと、**画面が自分の説明と食い違う**。
+         *      フェノール・アニリンも同じ理由でここには来ない。
+         *
+         *   ② **ふつうの多重結合（C=C・C≡C）が分子に無いこと**。★ スチレンに H₂ を当てれば
+         *      **先に側鎖のビニル基が水素化される**（環はずっと付加しにくい）ので、
+         *      両方を同時に札として出すと**順序を取り違えさせる**。
+         *      ⚠ 側鎖を先に水素化してエチルベンゼンにすれば、そこで環の札が出る
+         *      ＝ 教科書どおりの順序が画面の操作の順序になる。
+         *
+         * ★ **図の書き換えはいちばん軽い**——原子を1つも足さず・1つも消さない。
+         *   環の6本を単結合にすると、自動水素が CH₂ を6つ描く。 */
+        id: 'hydrogenate_benzene_ring',
+        reagentId: 'h2_ni',
+        label: '付加: H₂ ×3 → ベンゼン環がシクロヘキサン環になる',
+        detect(mol) {
+            // ① 炭化水素だけ（ヘテロ原子があれば1件も出さない）
+            if (mol.atoms.some(a => a.element !== 'C' && a.element !== 'H')) return [];
+            // ② ふつうの C=C / C≡C が残っていれば、そちらが先。ここでは出さない
+            if (multipleBondSites(mol).length) return [];
+            return isolatedBenzeneRings(mol);
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const ring = new Set(site);
+            const inside = mol.bonds.filter(b => ring.has(b.atomId1) && ring.has(b.atomId2));
+            if (inside.length !== 6) throw new Error('ベンゼン環の6本が見つかりません');
+            inside.forEach(b => { b.type = 1; });   // 原子は足さない。自動水素が CH₂ を描く
+            return {
+                caption: 'ベンゼン環に水素が付加して、シクロヘキサン環になりました' +
+                    '（C₆H₆ ＋ 3H₂ → C₆H₁₂）。ニッケルや白金を触媒に、**高温・高圧**で反応させます。' +
+                    '⚠ ベンゼン環はふつうの二重結合とは違って**付加しにくい** —— ' +
+                    '6個の電子が環全体に広がって安定している（芳香族性）ためで、' +
+                    'だからベンゼンは臭素水を脱色せず、置換のほうが起こります。' +
+                    'ここは「起こらない」のではなく「特別な条件が要る」反応です。' +
+                    '\n⚠ 側鎖に二重結合があるとき（スチレンなど）は、**そちらが先に**水素化されます。' +
+                    '先に側鎖を水素化してから、もう一度この反応を見てください。',
+                changed: site
+            };
+        }
+    },
+    {
         /* ★ ワッカー法（§10.11-D #27・§10.3-f C-3・v1472。ユーザーが「足す」と決めていた）。
          * ★ **教科書 本文 p.150 に式がある**（p.282 に再掲）・入試12〜13件。
          * ⚠ ただし**教科書に「ワッカー法」という名前は無い**（参考書が名づけている）ので、
@@ -4933,6 +5181,66 @@ const REACTION_RULES = [
             return {
                 caption: 'ベンゼン環が塩素化されました（鉄または塩化鉄(III)を触媒に Cl₂ と反応）。触媒が Cl-Cl 結合を分極させ、塩素が求電子剤として働きます。同時に塩化水素 HCl が発生します。' + note,
                 changed: [site[0], ...added]
+            };
+        }
+    },
+    {
+        /* ★ 分子間脱水（カルボン酸2分子）→ 酸無水物（`DESIGN_organic_tree.md` §2-3 (b)・v1501）。
+         *
+         * ⚠⚠ **これは「片道」を閉じる修正である。** `hydrolysis_anhydride`（無水酢酸 ＋ 水 →
+         *   酢酸2分子）は前からあったのに、**行きが無かった** ——
+         *   `dehydration_inter` は `ALCOHOL_TYPES` しか見ないので酢酸2分子では 0 件
+         *   （実測。系統樹レーンの §2-3 (b) が名指しした穴）。
+         *   ★ `dehydration_anhydride`（分子内・v1472）が閉じたのは**環になる二酸の側だけ**で、
+         *   **教科書がいちばん先に書く 酢酸 → 無水酢酸 は、まだどこからも作れなかった。**
+         *
+         * ★ **`apply` はエステル化・アミド化と 1 か所も違わない。**
+         *   カルボン酸 A の -OH がとれ、相手 B の -OH の酸素が架橋になる
+         *   ＝ `applyAcidCondensation` の site の形（[酸のC, 抜ける-OHのO, 相手の重原子]）に
+         *   そのまま乗る（相手の重原子が「アルコールの O」ではなく「もう1つのカルボン酸の O」）。
+         *   ⚠ **写さない**（写すと片方だけ直る）。
+         *
+         * ⚠ **-COOH を1つだけ持つ分子どうしに絞る。** 二酸（フタル酸・マレイン酸）では
+         *   **分子内脱水のほうが起こる**（`dehydration_anhydride`。5・6員環）ので、
+         *   ここで分子間もぶつけると「教科書が書いていない高分子（ポリ酸無水物）」への道を
+         *   画面に出すことになる。★ 門番は名前ではなく**構造**（-COOH の数）で立てる。
+         *
+         * ⚠ **瓶は足していない。** `dehydration_anhydride`（分子内）と同じ理由 ——
+         *   教科書は「加熱すると」「脱水すると」としか書かず、試薬を名指ししない（§4-1 の線）。 */
+        id: 'dehydration_anhydride_inter',
+        label: '分子間脱水（カルボン酸2分子, -H₂O） → 酸無水物',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -CO-O-CO- でつながる
+        detect(mol) {
+            const carboxyls = findFunctionalGroups(mol).filter(g => g.type === 'carboxyl');
+            // 「その分子がもつ -COOH は1つだけか」を分子ごとに数える（二酸は分子内脱水へ譲る）
+            const lone = carboxyls.filter(cx => {
+                const comp = componentOf(mol, cx.atomIds[0]);
+                return carboxyls.filter(o => comp.has(o.atomIds[0])).length === 1;
+            });
+            const sites = [];
+            for (let i = 0; i < lone.length; i++) {
+                for (let j = i + 1; j < lone.length; j++) {
+                    const a = lone[i], b = lone[j];
+                    if (componentOf(mol, a.atomIds[0]).has(b.atomIds[0])) continue; // 別分子どうしのみ
+                    /* ⚠ **向きは1通りでよい**。A の -OH が水になって B の -OH の酸素が架橋になる形も、
+                     * その逆も、できあがる -CO-O-CO- はまったく同じ分子である（実測で正準コードが一致）。
+                     * 2通り出すと、押しても同じものができる札が2枚並ぶだけになる。 */
+                    sites.push([a.atomIds[0], a.atomIds[2], b.atomIds[2]]);
+                }
+            }
+            return sites;
+        },
+        apply(game, site) {
+            const changed = applyAcidCondensation(game.userMolecule, site);
+            return {
+                caption: 'カルボン酸2分子から水がとれて、酸無水物 -CO-O-CO- ができました（加熱・脱水）。' +
+                    '酢酸2分子からは無水酢酸ができます。' +
+                    'エステル化と同じ「-OH と -H がとれて水」ですが、相手が**アルコールではなくもう1つのカルボン酸**なので、' +
+                    '2つのカルボニルが1つの酸素をはさむ形になります。' +
+                    'できた酸無水物はカルボン酸より反応性が高く、アセチル化の試薬として使えます' +
+                    '（アニリン → アセトアニリド、サリチル酸 → アセチルサリチル酸）。' +
+                    '⚠ 逆に水を加えると、もとのカルボン酸2分子に戻ります。',
+                changed
             };
         }
     },
@@ -5375,7 +5683,15 @@ const REVERSIBLE_REACTION_PAIRS = [
     /* ★ 分子内脱水 ⇄ 酸無水物の加水分解（v1472）。
      * ⚠ 教科書は**両方向とも本文に書いている**（フタル酸 → 無水フタル酸 p.184 ／
      * 無水物 ＋ 水 → カルボン酸）。★ §10.11-E が「戻す方だけ有る片道」と名指しした穴。 */
-    ['dehydration_anhydride', 'hydrolysis_anhydride']
+    ['dehydration_anhydride', 'hydrolysis_anhydride'],
+    /* ★ 分子間脱水 ⇄ 酸無水物の加水分解（v1501）。⚠ **表の並びに意味がある** ——
+     * `reverseRuleIdOf` は最初に当たった組を返すので、`hydrolysis_anhydride` の帰りは
+     * 上の行の `dehydration_anhydride`（分子内）のまま変わらない。
+     * ★ ここで足しているのは**行きの側だけ**（酢酸2分子 → 無水酢酸 のあとに
+     * 「🔁 逆向きの反応をする」が出る）。⚠ 無水物から戻るときに分子内・分子間の
+     * どちらを名乗るかは**図を見ないと決められない**（環状なら分子内）ので、
+     * 帰り側の宣言は増やさない。 */
+    ['dehydration_anhydride_inter', 'hydrolysis_anhydride']
 ];
 
 /** その反応の「帰り」にあたる反応の id（宣言が無ければ null）。⚠ 対は両向きに引ける */
@@ -8043,6 +8359,9 @@ if (typeof window !== 'undefined') {
     window.bondStep = bondStep;                 // その分子の作図の刻み（RX19 の距離判定で使う）
     window.acetalizableDiols = acetalizableDiols; // PY5〜PY8（ビニロン）が読む
     window.lactamUnits = lactamUnits;             // PY10〜PY13（開環重合）が読む
+    // ★ 単独のベンゼン環（縮合していない6員の芳香環）。TR4 が
+    //   「材料が無いから0件、ではない」を示すのに読む
+    window.isolatedBenzeneRings = isolatedBenzeneRings;
     window.PARTNER_CANDIDATES = PARTNER_CANDIDATES;
     window.SELF_PARTNER_RULES = SELF_PARTNER_RULES; // PM5・PM6（1分子からの重合の入口）が読む
     window.SELF_PARTNER_UNITS = SELF_PARTNER_UNITS;
