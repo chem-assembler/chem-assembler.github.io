@@ -2639,5 +2639,78 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-nylon6-ring-opening",
+    "title": "V132: ナイロン6を一から作ってみた（高分子シリーズ⑦）",
+    "summary": "⭐ **芯は「1種類の環が開いて、そのままつながる」**。**V126（ナイロン66）との対**——**66 は2種類の単量体から水がとれる縮合重合、6 は1種類の環が開くだけで何もとれない**。⚠ **ε-カプロラクタムは7員環の環状アミド**（ラクタム）。結末は `ナイロン6  C₁₈H₃₃N₃O₃R₂`。⚠⚠ **できる鎖は一直線で、とても横長**（3ユニットで 924px・高さは O の 42px ぶんだけ）。**そのままだと 9:16 で豆粒になる**ので、**後半は繰り返し単位ひとつへ寄る**（`frame` の `cx`/`cy`/`width` で1ユニットだけ映す）。⭐ **寄る先で「6 は部品の炭素の数」を読む** ＝ **画面で数えられる。**",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ε-カプロラクタム（環になったアミド）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "ε-カプロラクタム"
+          },
+          {
+            "type": "summon",
+            "name": "ε-カプロラクタム"
+          },
+          {
+            "type": "summon",
+            "name": "ε-カプロラクタム"
+          },
+          {
+            "type": "frame",
+            "width": 830
+          },
+          {
+            "type": "wait",
+            "ms": 2742
+          }
+        ]
+      },
+      {
+        "caption": "環が開いて、そのままつながる（開環重合）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "開環重合"
+          },
+          {
+            "type": "frame",
+            "width": 1050
+          },
+          {
+            "type": "wait",
+            "ms": 7191
+          }
+        ]
+      },
+      {
+        "caption": "「6」は部品の炭素の数",
+        "actions": [
+          {
+            "type": "frame",
+            "cx": 437,
+            "cy": 285,
+            "width": 420
+          },
+          {
+            "type": "wait",
+            "ms": 14944
+          }
+        ]
+      }
+    ]
   }
 ]
