@@ -47129,6 +47129,253 @@
         assert(pick([], led, always, true) === null, '札が0枚のときに null を返していない');
     });
 
+    /* =====================================================================
+     * REF8〜REF11: 📖 資料の2枚目・3枚目（DESIGN_reference_book.md §10-7 の残り）
+     *
+     * ★ 2枚目「同じ分子式で、別の分子」（枝分かれアルカン15件を分子式でまとめる）
+     * ★ 3枚目「官能基のかたちと名前」（アルコールとエーテル8件＋アルデヒドとケトン3件）
+     *
+     * ⚠ **ここで固定したいのは「ページが増えたこと」ではなく、増やし方が原則を割っていないこと**:
+     *   ① 表の行は **stages.json の系列そのもの**（件数を検査にもデータにも書き写さない）
+     *   ② 新しい列（分子式・主鎖・官能基）は **お題の図から計算**したもので、手打ちが混ざらない
+     *   ③ 1枚目と同じく **表は全体・例題は代表1つ・採点は既存ステージ**
+     *   ④ `?open=reference` が `OPEN_TARGETS` 経由でも効く（`EP6` の突き合わせに乗る）
+     * ===================================================================== */
+
+    // reference.json をそのまま読む（検査がページの一覧を書き写さないため）
+    async function refPagesJson() {
+        const res = await fetch('reference.json?nocache=' + Date.now());
+        assert(res.ok, 'reference.json が読めない');
+        return await res.json();
+    }
+    // ページが表に使うと宣言している系列（block.series は文字列でも配列でもよい）
+    const refSeriesOf = (page) => {
+        const out = [];
+        (page.blocks || []).forEach(b => {
+            if (b.kind !== 'stageTable') return;
+            (Array.isArray(b.series) ? b.series : [b.series]).forEach(s => out.push(s));
+        });
+        return out;
+    };
+    const refBodyRows = (D) => [...D.querySelectorAll('#ref-body table.ref-table tbody tr')];
+
+    test('REF8: 2枚目・3枚目が索引に並び、表の行は stages.json の系列そのもの（件数を書き写さない）', async (c) => {
+        const D = c.D, W = c.W;
+        const pages = await refPagesJson();
+        assert(pages.length >= 3, `資料が ${pages.length} ページしかない（2枚目・3枚目が入っていない）`);
+        // 索引は reference.json から機械で組む ＝ ページを足したら黙って並ぶ
+        const n = await W.referenceBook.renderIndex();
+        assert(n === pages.length && D.querySelectorAll('#reference-list .ref-index-btn').length === pages.length,
+            `索引のボタン数が reference.json のページ数（${pages.length}）と合わない`);
+        // ⚠ ページ id は検査に書き写さない。reference.json に在るものを全部見る
+        for (const p of pages) {
+            assert(await W.referenceBook.open(p.id), `${p.id}: 開けない`);
+            await new Promise(r => setTimeout(r, 200));
+            const series = refSeriesOf(p);
+            assert(series.length >= 1, `${p.id}: 表が1枚も無い（資料は表が本体）`);
+            const want = [];
+            series.forEach(nm => W.STAGES.forEach(s => { if (s.series === nm) want.push(s); }));
+            assert(want.length >= 10,
+                `${p.id}: 表の元になる系列（${series.join(' / ')}）が ${want.length} 件しかない`
+                + '（10行そろって初めて規則の形になる、が前提）');
+            const rows = refBodyRows(D);
+            assert(rows.length === want.length,
+                `${p.id}: 表が ${rows.length} 行で、stages.json の ${want.length} 件と合わない`);
+            // 名称は必ずどこかの列に出ている（列の並びは variant ごとに違うので行の文字列で見る）
+            want.forEach((s, i) => assert(rows[i].textContent.includes(s.name),
+                `${p.id}: ${i + 1} 行目に ${s.name} が出ていない（並びが stages.json の出題順から外れた）`));
+        }
+        W.referenceBook.close();
+        c.reset();
+
+        /* ★★ 狭い画面でも**行を減らさない**（2026-09-02・ユーザー決定「画面に入らないことの
+           解決策として *中身を切る* を選ばない」）。⚠ `REF4` は1枚目しか見ていないので、
+           **増えたページも同じ線で見る** —— DOM に在っても CSS で隠していたら同じことなので、
+           `getClientRects()` で**見えている行**を数える。 */
+        await withViewport(375, 812, async (W2, D2, name) => {
+            for (const p of pages) {
+                assert(await W2.referenceBook.open(p.id), `${name}: ${p.id} を開けない`);
+                await new Promise(r => setTimeout(r, 250));
+                const want = [];
+                refSeriesOf(p).forEach(nm => W2.STAGES.forEach(s => { if (s.series === nm) want.push(s); }));
+                const rows = [...D2.querySelectorAll('#ref-body table.ref-table tbody tr')];
+                const shown = rows.filter(tr => tr.getClientRects().length > 0);
+                assert(rows.length === want.length && shown.length === want.length,
+                    `${name}: ${p.id} の表が ${shown.length}/${rows.length} 行しか見えない`
+                    + `（${want.length} 行そろっているべき。狭いからといって行を間引いていないか）`);
+                // 入らないぶんは**横にも縦にもスクロールで見せる**（切らない）
+                assert(W2.getComputedStyle(D2.getElementById('ref-body')).overflowY === 'auto',
+                    `${name}: ${p.id} の本文がスクロールできない`);
+                assert(W2.getComputedStyle(D2.querySelector('.ref-table-wrap')).overflowX === 'auto',
+                    `${name}: ${p.id} の表が横にスクロールできない（列が増えたときに切れる）`);
+            }
+        });
+    });
+
+    test('REF9: 新しい列（分子式・主鎖・官能基）は図から計算されている（手打ちが混ざらない）', async (c) => {
+        const D = c.D, W = c.W;
+        /* ★ 著作権の守り（§1-2）を「行データを持たない」の一段先まで見る ——
+           reference.json に無くても、**learn.js に手で書いた表**があれば同じことなので、
+           画面に出ている値が chemistry.js の計算と一致することを確かめる。 */
+        const pages = await refPagesJson();
+        const stageByName = new Map(W.STAGES.map(s => [s.name, s]));
+        let sawFormulaDiff = 0, sawChainDiff = 0, checked = 0;
+
+        for (const p of pages) {
+            assert(await W.referenceBook.open(p.id), `${p.id}: 開けない`);
+            await new Promise(r => setTimeout(r, 200));
+            refBodyRows(D).forEach(tr => {
+                // まとめの見出しセル（rowspan）は「分子式＋件数」の2つの子を持つので、式の側だけ読む
+                const cells = [...tr.children].map(td => td.classList.contains('ref-group')
+                    ? (td.firstChild ? td.firstChild.textContent.trim() : '')
+                    : td.textContent.trim());
+                const stage = W.STAGES.find(s => cells.includes(s.name));
+                if (!stage) return;
+                const mol = W.refStageMolecule(stage);
+                assert(mol && mol.atoms.length > 0, `${stage.name}: お題の図を組めない`);
+                const calcF = W.refSubscript(W.refFormulaFromStructure(mol));
+                const rawF = W.refSubscript(stage.formula);
+                const chain = W.refMainChainLength(mol);
+                const groups = W.refFunctionalSummary(mol);
+                cells.forEach(txt => {
+                    // 分子式らしいセルは、必ず**図から計算した分子式**か stages.json の formula のどちらか
+                    if (/^[A-Z][A-Za-z₀-₉()=]*$/.test(txt) && /[A-Z]/.test(txt)) {
+                        assert(txt === calcF || txt === rawF,
+                            `${stage.name}: 式のセル「${txt}」が図から計算した ${calcF} とも stages.json の ${rawF} とも違う`);
+                        if (txt === calcF && calcF !== rawF) sawFormulaDiff++;
+                    }
+                    if (txt === groups) checked++;
+                });
+                // 主鎖の列を持つページでは、その値が chemistry.js の findLongestCarbonChain と一致する
+                const numeric = cells.filter(t => /^\d+$/.test(t)).map(Number);
+                if (chain !== null && numeric.includes(chain) && chain !== W.refCarbonCount(stage.formula)) sawChainDiff++;
+            });
+        }
+        /* ★否定対照になっている点 ——
+           ① 分子式の列が `stages.json` の `formula` の**写しではない**こと（メタノールは CH3OH と CH4O で違う）。
+              一致するものしか無ければ「示性式をそのまま出しているだけ」でも通ってしまう */
+        assert(sawFormulaDiff >= 2,
+            `分子式の列が stages.json の formula と1つも食い違わない（${sawFormulaDiff}件）。`
+            + '示性式を書き写しているだけでも通ってしまう');
+        /* ② 主鎖の列が「C の数」の言い換えではないこと（2,2-ジメチルプロパンは C5 だが主鎖3） */
+        assert(sawChainDiff >= 2,
+            `主鎖の列が C の数と1つも食い違わない（${sawChainDiff}件）。C の数の列と区別が付いていない`);
+        /* ③ 官能基の列は `game.functionalGroupSummary` の1本から来ている（資料だけの言い方を作っていない） */
+        assert(checked >= 5, `官能基の列が game.functionalGroupSummary と一致した行が ${checked} 件しかない`);
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF10: 新しい2枚も「表は全体・例題は代表1つ・採点は既存ステージ」（原則1と4）', async (c) => {
+        const D = c.D, W = c.W, g = c.game;
+        const pages = await refPagesJson();
+        for (const p of pages) {
+            await W.referenceBook.open(p.id);
+            await new Promise(r => setTimeout(r, 200));
+            const full = refBodyRows(D).length;
+            assert(D.querySelectorAll('#ref-body table.ref-table').length === 1,
+                `${p.id}: 表が1枚ではない`);
+            assert(D.querySelectorAll('#ref-body table.ref-table button').length === 0,
+                `${p.id}: 表の行にボタンが付いている（表は「説明」であって「N問の一覧」ではない）`);
+            assert(D.querySelectorAll('#ref-body .ref-try').length === 1,
+                `${p.id}: 例題のボタンが1つではない（例題は代表1つ）`);
+
+            // ★否定対照: 行を指す引数を渡しても絞れない（variant が増えても口が生えていない）
+            const block = (p.blocks || []).find(b => b.kind === 'stageTable');
+            const sneaky = W.referenceBook.renderStageTable(
+                Object.assign({}, block, { stageId: 'hexane', row: 3, only: 'ヘキサン', limit: 1 }));
+            assert(sneaky.querySelectorAll('tbody tr').length === full,
+                `${p.id}: 行を指す引数（stageId / row / only / limit）で表が絞れてしまう`);
+
+            // 例題を始めても表は減らない（狭い画面では閉じる仕様なので開き直して中身を見る）
+            const btn = D.getElementById('btn-ref-try');
+            const stageId = btn.dataset.refStage;
+            const idx = W.STAGES.findIndex(s => s.id === stageId);
+            assert(idx >= 0, `${p.id}: 例題の stageId「${stageId}」が stages.json に無い`);
+            btn.click();
+            await new Promise(r => setTimeout(r, 300));
+            assert(g.currentMode === 'puzzle', `${p.id}: 例題を押しても 🧩パズル にならない`);
+            assert(g.currentStageIndex === idx, `${p.id}: 例題のお題が ${stageId} でない`);
+            // ★ 採点の実体は stages.json 側（資料は新しい判定を1行も持たない）
+            const stage = W.STAGES[idx];
+            assert(stage.target && Array.isArray(stage.target.atoms) && stage.target.atoms.length >= 3,
+                `${p.id}: 既存ステージの target（採点データ）を使っていない`);
+            if (D.getElementById('reference-pane').classList.contains('hidden')) {
+                W.referenceBook.setOpen(true);
+                await new Promise(r => setTimeout(r, 150));
+            }
+            assert(refBodyRows(D).length === full,
+                `${p.id}: 例題を始めたら表が ${refBodyRows(D).length} 行に減った（${full} 行のままであるべき）`);
+
+            // 実際に組み上げると、**既存のパズルの判定**がクリアを記録する
+            const t = g.createTargetFromData(stage);
+            const m = new W.Molecule();
+            const map = new Map();
+            t.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y).id));
+            t.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+            g.userMolecule = m;
+            g.updateDrawing();
+            await new Promise(r => setTimeout(r, 300));
+            assert(g.getClearedSet().has(stage.name),
+                `${p.id}: 例題を組み上げても既存のパズルの判定がクリアを記録しない`);
+            c.reset();
+        }
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF11: ?open=reference が OPEN_TARGETS 経由でも効く（EP6 の突き合わせに乗る）', async (c) => {
+        const W = c.W;
+        assert(W.OPEN_TARGETS && 'reference' in W.OPEN_TARGETS,
+            'OPEN_TARGETS に reference が無い（ハブから ?open=reference を指せない ＝ EP6 が受けられない）');
+        /* ⚠ **モードを変えない**（`mode` を持たない）—— 資料は「いまのモードのまま読む」もの。
+           mode:'learn' にすると 📚 学習が開いて直後に資料が閉じる ＝ ちらつく */
+        assert(!W.OPEN_TARGETS.reference.mode,
+            'OPEN_TARGETS.reference がモードを切り替えている（資料はいまのモードのまま開く）');
+
+        const openWith = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; top:0; width:1280px; height:800px; border:0;';
+            f.src = 'index.html' + query;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300; i++) {
+                    if (f.contentWindow && f.contentWindow.appReady) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                for (let i = 0; i < 30; i++) {
+                    const p = f.contentDocument.getElementById('reference-pane');
+                    if (p && !p.classList.contains('hidden')) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                return f;
+            } catch (e) { f.remove(); throw e; }
+        };
+
+        // ① 3枚目の知識コードで、3枚目が開く（開く道が2本あってもページを決める場所は1つ）
+        let f = await openWith('?se=0&open=reference&code=org.alcohol.hydroxy');
+        try {
+            const D = f.contentDocument;
+            assert(!D.getElementById('reference-pane').classList.contains('hidden'), '資料が開かない');
+            const pages = f.contentWindow.referenceBook.pages;
+            const want = pages.find(p => (p.codes || []).includes('org.alcohol.hydroxy'));
+            assert(want, 'org.alcohol.hydroxy を持つページが reference.json に無い');
+            assert(D.querySelector('#ref-body h3').textContent.trim() === want.title,
+                `code で指したページが開いていない（${D.querySelector('#ref-body h3').textContent}）`);
+            // 表が1枚だけ ＝ 2本の道が両方走って二重に描いていない
+            assert(D.querySelectorAll('#ref-body table.ref-table').length === 1,
+                '資料が二重に描かれている（OPEN_TARGETS と learn.js の両方が開いた）');
+        } finally { f.remove(); }
+
+        // ② ★否定対照: 収録中（?rec=）は開かない —— 受け口が増えても台本の1手目を汚さない
+        f = await openWith('?se=0&rec=live&open=reference');
+        try {
+            assert(f.contentDocument.getElementById('reference-pane').classList.contains('hidden'),
+                '?rec= が付いているのに資料が開いた（新しい受け口が収録の約束を破っている）');
+        } finally { f.remove(); }
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
