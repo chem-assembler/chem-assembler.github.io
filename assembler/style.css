@@ -3146,6 +3146,17 @@ b.em { font-weight: 700; color: var(--neon-blue); }
     font-weight: 600;
 }
 .ref-table td.ref-c { text-align: right; color: var(--text-muted); }
+/* 分子式でまとめた群の見出し（第2ページ）。⚠ **行は1つも減らない** ——
+   左の1列を rowspan で共有するだけで、隠しても畳んでもいない（`REF4` が見えている行数で見張る） */
+.ref-table td.ref-group {
+    vertical-align: top;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* 官能基の列（第3ページ）。⚠ ここだけ折り返す —— 「1級アルコール×2」のような長い語が
+   nowrap のままだと表が横に伸びて、狭い画面で横スクロールしないと名称の列が読めない */
+.ref-table td.ref-fg { white-space: normal; min-width: 7.5em; }
 /* ⚠ ここは **--font-code を使わない**。装飾等幅では C が ⊏ に見えて読み取りづらい
    （実機 375px で確認）。資料は読み物なので本文と同じ字で出す */
 .ref-table td.ref-formula { letter-spacing: 0.02em; }
