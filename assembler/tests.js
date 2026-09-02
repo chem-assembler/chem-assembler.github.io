@@ -32263,6 +32263,34 @@
         return g.splitMolecules().map(p => g.lookupCompoundName(p) || '(名前なし)');
     }
 
+    /* ===== ⚠ EQ は「実験の面が見えている」前提を**自分で作る**（vNNNN・実測で直した） =====
+     *
+     * ★ **何に依存していたか**: `#molecule-modal` が開いたままかどうか。
+     *   `reactor.reagentNoteEl`（reactor.js）は **「分子モーダルが開いていれば必ず
+     *   `#mm-reagent-note`」** という不変条件を持つ。これは仕様として正しい
+     *   （モーダルの中の瓶を押したのに答えが裏のパレットへ出る、を作らないため）。
+     *   ところが試薬まわりの下ごしらえ `setupReagent()` は `openMoleculeModal()` を呼ぶだけで
+     *   閉じないので、**モーダルを開けたまま去るテスト**（実測では RX52）の直後に EQ が走ると、
+     *   実験パレットの瓶を押した答えが全部モーダル側へ返る ＝ `#exp-reagent-note` に
+     *   条件の2択が出ず、`課題をたどる` が条件を押せないので分子が1つも変わらない。
+     *
+     * ★ **実測（2026-09-02）**: `?only=RX52` を1件だけ流し終えた時点で
+     *   `molecule-modal` は開いたまま・`reactor.reagentNoteEl.id === 'mm-reagent-note'`。
+     *   `?only=RX,EQ` / `?only=CV,RG,EQ,PM,RX,GC` で EQ4〜EQ7 が落ち、`?only=EQ` 単独と
+     *   全走では通っていた ＝ 全走では間に挟まる別のテストがたまたまモーダルを閉じていた。
+     *
+     * ⚠ **先に走る側に後始末を足す方向では直さない**。それだと「いまの並び」でしか
+     *   成り立たず、次にモーダルを開けたまま去るテストが足された日にまた黙って落ちる。
+     *   ⚠ `?only=` の絞り込み側（順序を変える等）で辻褄を合わせるのはもっと悪い ——
+     *   絞ると通るように見えるだけで、状態依存はそのまま残る。 */
+    function 実験の面を用意する(c) {
+        const g = c.game, D = c.D;
+        if (g.closeMoleculeModal) g.closeMoleculeModal();
+        const modal = D.getElementById('molecule-modal');
+        assert(modal && modal.classList.contains('hidden'),
+            'EQ の前提を作れない（分子モーダルが閉じない）＝ 瓶の答えが #mm-reagent-note へ逃げる');
+    }
+
     test('EQ2: quests.json が1行1問の規約を守り、12問すべてライブラリから引ける', async (c) => {
         const W = c.W;
         const quests = W.QUESTS;
@@ -32333,6 +32361,7 @@
             } catch (e) { f.remove(); throw e; }
         };
         c.reset();
+        実験の面を用意する(c);
         g.setMode('free');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
@@ -32387,6 +32416,7 @@
     test('EQ4: 正しい手順でクリアになる —— 副生成物が残っていても通る（D-E4「目標がある」）', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         W.localStorage.removeItem('chemAssembler.questCleared');
 
         // ★ ユーザーが挙げた例題そのもの。⚠ **水が別分子として残る** ＝
@@ -32429,6 +32459,7 @@
     test('EQ5: 否定対照 —— 違う瓶ではクリアにならない／課題を始めていなければ記録も増えない', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         W.localStorage.removeItem('chemAssembler.questCleared');
 
         // ① **違う手順**: 目標はエチレンなのに、穏やかに酸化してアセトアルデヒドを作る
@@ -32469,6 +32500,7 @@
     test('EQ6: 何回でもやり直せる —— ↻ はじめから で未達に戻り、↩ 戻す で取り消せる（決定③）', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         W.localStorage.removeItem('chemAssembler.questCleared');
         await 課題をたどる(c, 'eq-ethanol-ethene', [['h2so4_conc', '160〜170']]);
         assert(g._questDone, '前提が崩れている（1回目で合格しない）');
@@ -32512,6 +32544,7 @@
     test('EQ7: 陰性対照 —— 課題は既存の 🧪自由 の道を1本も塞いでいない', async (c) => {
         const g = c.game, W = c.W, D = c.D;
         c.reset();
+        実験の面を用意する(c);
         g.setMode('free');
         g.setPalette('draw');
         g.userMolecule = new W.Molecule();
