@@ -83,7 +83,40 @@ const doneText = () => {
 //    600000（10分）では 84% まで来ていた。ここを食い潰すと、門番が
 //    「テストが落ちた」ではなく「タイムアウトで落ちた」という**読みにくい形**で壊れる。
 //    残りが3割を切ったら、上限を上げるか重いテストを削るかを判断する。
-await page.waitForFunction(doneText, null, { timeout: 1500000, polling: 2000 });
+//    ★ 2026-09-02 に 1500 秒 → 2400 秒へ。743件の全走が**同時走行時で 880〜1,055 秒**
+//      ＝ 1500 秒のうち 59〜70% まで来ており、「2倍以上」を割っていた（vNNNN）。
+const TIMEOUT_MS = 2400000;
+try {
+    await page.waitForFunction(doneText, null, { timeout: TIMEOUT_MS, polling: 2000 });
+} catch (e) {
+    // ⚠ **上限に達した ＝ サーバーが死んだ、とは限らない**（実際にそう誤読した事故がある）。
+    //   いちばん多いのは「重いテストが増えて素で足りない」で、次が「隣のレーンと同時走行で
+    //   遅くなった」。落ちる前に**どこまで進んでいたか**を出して、読み分けられるようにする。
+    const 進捗 = await page.evaluate(() => {
+        const li = document.querySelectorAll('#results li');
+        const last = li[li.length - 1];
+        return {
+            件数: li.length,
+            最後: last ? last.textContent.trim().slice(0, 120) : '(1件も終わっていない)',
+            見出し: (document.getElementById('summary') || {}).textContent || ''
+        };
+    }).catch(() => null);
+    console.error(`⏱ ${Math.round(TIMEOUT_MS / 1000)} 秒の上限に達したので待つのをやめました（${Math.round((Date.now() - t0) / 1000)} 秒経過）。`);
+    console.error('  ⚠ これは「テストが落ちた」でも「サーバーが落ちた」でもありません ——');
+    console.error('    ページが完了の合図を出す前に、こちらが待つのをやめただけです。');
+    if (進捗) {
+        console.error(`  ここまでに終わったテスト: ${進捗.件数} 件 / 最後に終わったのは ${進捗.最後}`);
+        if (進捗.件数 > 0) {
+            console.error('  → 件数が進んでいるなら**素で足りていない**（重いテストが増えたか、同時走行で遅い）。');
+            console.error('     上限（TIMEOUT_MS）を上げるか、`--timings` で遅いテストを名指しすること。');
+        } else {
+            console.error('  → 1件も終わっていないなら、配信サーバーや起動側を疑う。');
+            console.error(`     まず ${target} をブラウザで開けるか確かめること。`);
+        }
+    }
+    await browser.close();
+    process.exit(1);
+}
 
 const summary = await page.evaluate(doneText);
 // 失敗の中身。assembler は #results li.fail、ratio / ion / muki は div.case.fail
