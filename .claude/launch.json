@@ -216,6 +216,19 @@
       "autoPort": false
     },
     {
+      "name": "refbook-floor-9471",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "9471",
+        "--directory",
+        "C:/Users/maequ/マイドライブ/Antigravity/OrganicChemistryPuzzle/.claude/worktrees/quirky-goldberg-be805f"
+      ],
+      "port": 9471,
+      "autoPort": false
+    },
+    {
       "name": "l2-8161",
       "runtimeExecutable": "python",
       "runtimeArgs": [
