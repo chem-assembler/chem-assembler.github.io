@@ -2712,5 +2712,94 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-nitrobenzene-to-aniline",
+    "title": "V133: ニトロベンゼンからアニリン（反応シリーズ㉑）",
+    "summary": "⭐ **芯は「ベンゼン環は水素化されない。変わるのはニトロ基だけ」** ＝ **V117（ベンゼン環は酸化されない）の対**。**同じ環が、酸化にも水素化にも耐える。**⚠ **ニトロベンゼンはライブラリに無い**ので、**ベンゼンからニトロ化して作る**（V40 の1手目と同じ）。⭐⭐ **最後に「🔍 反応の前後を見る」を開く**——**反応前（ニトロベンゼン）と反応後（アニリン）が並び、環が1原子も変わっていないことがそのまま見える**。**この回の主張がそのまま絵になる。**⚠ **札に id が無い**ので `.view-btn` ＋ `contains` で押す。⚠ **アプリの説明文どおり、瓶は H₂/触媒**（教科書の工業的製法）。**実験室のスズ＋濃塩酸とアニリン塩酸塩の段はナレーションで補う**（アプリは塩の段を飛ばす）。結末は `アニリン  C₆H₇N`。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "ベンゼン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "ベンゼン"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 750
+          }
+        ]
+      },
+      {
+        "caption": "ニトロ化（濃硝酸＋濃硫酸）",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "ニトロ化"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 1750
+          }
+        ]
+      },
+      {
+        "caption": "還元 → アニリン",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "還元: -NO₂"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 7700
+          }
+        ]
+      },
+      {
+        "caption": "環は1原子も変わっていない",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "button",
+            "selector": ".view-btn",
+            "contains": "反応の前後を見る"
+          },
+          {
+            "type": "wait",
+            "ms": 19500
+          }
+        ]
+      }
+    ]
   }
 ]
