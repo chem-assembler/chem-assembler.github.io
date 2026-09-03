@@ -49436,6 +49436,84 @@
         return `水面 y=${g.phaseDividerY ?? '—'}／札 ${cards.length} 枚`;
     });
 
+    test('SEP2: 瓶は混合物の全成分に順にかかり、効いた成分だけが層を移る（否定対照つき）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const R = W.reactor, REAGENTS = W.REAGENTS;
+        const bottleOf = id => {
+            const b = REAGENTS.find(r => r.id === id);
+            assert(b, `瓶 ${id} が無い`);
+            return b;
+        };
+        /* ★ 題材は「効くもの2つ＋効かないもの1つ」。
+         * ⚠ **2つの否定対照は別の性質を見る**（同じ性質の対照を2つ置いても誤りは1つも捕まらない）:
+         *   ① フェノールも一緒に塩になる … **先頭で止まらず全成分を回る**ことの対照
+         *   ② 効いた成分の**名前**が合う … **他の成分の箇所を横取りしない**ことの対照
+         * ⚠⚠ **効かないものを先頭に置く**。実測: 後ろに置くと、箇所の横取りを入れても
+         *   図の見た目も件数も同じになり、②が空振りする（実際に空振りするのを確かめた）。 */
+        sepSetup(c, ['ニトロベンゼン', '安息香酸', 'フェノール']);
+        g.startSeparation();
+        const nitroSig = sepBondSig({
+            atoms: sepPart(c, 'ニトロベンゼン').atoms, bonds: sepPart(c, 'ニトロベンゼン').bonds
+        });
+        const historyBefore = g.history.length;
+
+        const res = R.applyToMixture(bottleOf('naoh_aq'));
+        // ★ ② 効いた成分・効かなかった成分を**名前で**突き合わせる（数では捕まらない）
+        assert(res && res.hits.slice().sort().join(',') === ['安息香酸', 'フェノール'].sort().join(','),
+            `★ 効いた成分の名前が違う（${(res && res.hits.join('・')) || 'なし'}）＝ ` +
+            '別の成分の箇所を横取りしている');
+        assert(res.misses.join(',') === 'ニトロベンゼン',
+            `★ 効かなかった成分の名前が違う（${res.misses.join('・') || 'なし'}）`);
+        const after = g.separationParts();
+        const byName = n => after.find(r => r.name === n);
+        // ★ ①「全成分を回る」——2件とも塩になった（1件目で止まっていたらここで赤）
+        assert(byName('安息香酸ナトリウム') && byName('安息香酸ナトリウム').phase === 'aq',
+            `安息香酸が水層へ移っていない（${after.map(r => r.name + ':' + r.phase).join(' / ')}）`);
+        const phenoxide = after.find(r => /フェノキシド/.test(r.name));
+        assert(phenoxide && phenoxide.phase === 'aq',
+            `★ 2件目のフェノールが塩になっていない ＝ 先頭の成分で止まっている（${after.map(r => r.name).join(' / ')}）`);
+        // ★ ②「当たらない成分に効かせない」——ニトロベンゼンは構造も層も変わらない
+        const nitroNow = sepPart(c, 'ニトロベンゼン');
+        assert(nitroNow, '★ ニトロベンゼンが別の分子に化けた（効かない成分にまで apply が走った）');
+        assert(sepBondSig({ atoms: nitroNow.atoms, bonds: nitroNow.bonds }) === nitroSig,
+            '★ ニトロベンゼンの結合が変わった（効かない成分にまで apply が走った）');
+        assert(g.phaseOfPart(nitroNow) === 'ether', '★ 中性のニトロベンゼンまで水層へ移った');
+        // ★ Undo は1段だけ（1回の押しで N 個の履歴を積まない）
+        assert(g.history.length === historyBefore + 1,
+            `混合物への1回の押しで履歴が ${g.history.length - historyBefore} 段積まれた（1段のはず）`);
+
+        // ---- 逆向き（遊離）でも同じ仕組みが働き、層が戻る
+        R.applyToMixture(bottleOf('h2so4_dil'));
+        const back = g.separationParts();
+        assert(back.filter(r => r.phase === 'aq').length === 0,
+            `遊離させたのに水層に残っている（${back.map(r => r.name + ':' + r.phase).join(' / ')}）`);
+        assert(back.some(r => r.name === '安息香酸') && back.some(r => r.name === 'フェノール'),
+            `遊離してもとの酸に戻っていない（${back.map(r => r.name).join(' / ')}）`);
+
+        // ---- ★ 表はここ1つ（`RULE_PHASE`）。反応の apply に層の分岐が散っていないこと
+        assert(W.RULE_PHASE && W.RULE_PHASE.neutralize_naoh &&
+            W.RULE_PHASE.neutralize_naoh.phase === 'aq' &&
+            W.RULE_PHASE.liberate_weak_acid.phase === 'ether',
+            'ルール → 層の対応表（RULE_PHASE）が読めない／中身が違う');
+        // ⚠ 表に載っていない反応は層を動かさない（＝ 中性が残る、が仕組みで保証されている）
+        assert(!W.RULE_PHASE.add_br2 && !W.RULE_PHASE.oxidize_primary,
+            '層と関係のない反応まで対応表に載っている');
+
+        /* ---- ⚠ **分液を開いていなければ、瓶は今までどおり1分子ずつ**（混合物にはならない）。
+         * ★ 実測: 面を閉じた状態で同じ2成分に NaOH をかけると、変わるのは
+         *   「いま見ている分子」の1件だけ（`siteFilter` の焦点。v1429）＝ ここが2件になったら、
+         *   分液の面の外にまで混合物の振る舞いが漏れている。 */
+        g.endSeparation();
+        sepSetup(c, ['安息香酸', 'フェノール']);
+        R.onReagentClick(bottleOf('naoh_aq'));
+        const names2 = g.splitMolecules().map(p => g.lookupCompoundName(p));
+        assert(!names2.some(n => /フェノキシド/.test(n)) || !names2.includes('安息香酸ナトリウム'),
+            `★ 分液を開いていないのに瓶が2成分ともに効いた（${names2.join(' / ')}）`);
+        c.reset();
+        return `混合物にかけた成分 3／効いた 2・効かない 1`;
+    });
+
     /* ★★ SEP6: **どの幅から「札の一覧」にするか**（D-I2・ユーザー決定「スマホでは
      *   カードタップ時に拡大して構造式を示す」）。
      *
