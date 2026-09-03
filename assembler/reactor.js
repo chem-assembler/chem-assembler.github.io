@@ -4796,7 +4796,25 @@ const REACTION_RULES = [
              *   教科書がこの付加を書いているのはアセチレンについてだけ（5編 p.31）。 */
             const units = acetyleneUnits(mol);
             if (!units.length) return [];
-            const carboxyls = findFunctionalGroups(mol).filter(g => g.type === 'carboxyl');
+            /* ⚠⚠ **酸の側にも門番が要る**（v1508 の定期レビュー。もとは -COOH さえあれば
+             *   何でも通っていた）。★ **実測で決めた** —— 酸を16種そろえて走らせると、
+             *   **名前が付く生成物は酢酸の1つだけ**で、残り15種は全部「（ライブラリに該当なし）」
+             *   （ギ酸・プロピオン酸・安息香酸・乳酸・サリチル酸・グリシン・アジピン酸・
+             *    シュウ酸・マレイン酸・フタル酸・酪酸・アクリル酸・クロロ酢酸・
+             *    ステアリン酸・テレフタル酸。二酸は2箇所も出る）。
+             *   ⚠ グリシン（-NH₂）・乳酸／サリチル酸（-OH）はそもそも**そちらが先に反応する**。
+             *   ★ **教科書（5編 p.31）は酢酸を名指し**しており、広げる根拠が入試にも無い。
+             *   → **酢酸1つに絞る**。門番は名前ではなく構造で立てる:
+             *      「-COOH を持つ分子の重原子がちょうど4個」＝ CH₃COOH ただ1つ
+             *      （HCOOCH₃ のような形はエステルなので carboxyl が立たない）。 */
+            const carboxyls = findFunctionalGroups(mol).filter(g => g.type === 'carboxyl')
+                .filter(cx => {
+                    const comp = componentOf(mol, cx.atomIds[0]);
+                    const heavy = mol.atoms.filter(a => comp.has(a.id) && a.element !== 'H');
+                    if (heavy.length !== 4) return false;               // 酢酸の重原子は C,C,O,O
+                    // 残る1個が -COOH の炭素についた炭素（＝メチル基）であること
+                    return mol.getNeighbors(cx.atomIds[0]).some(n => n.atom.element === 'C');
+                });
             const sites = [];
             units.forEach(u => {
                 const comp = componentOf(mol, u.left);
@@ -4876,6 +4894,19 @@ const REACTION_RULES = [
                 units.push({ head, tail, comp });
             });
             if (!units.length) return [];
+            /* ③ ⚠⚠ **環の側にふつうの C=C / C≡C があったら出さない**（v1508。§10.14-G）。
+             *   ★ **根拠は「教科書に無い」ではなく反応の仕組み** —— アルケンを使う
+             *   フリーデル・クラフツのアルキル化は、**アルケンをプロトン化して
+             *   カルボカチオンを作る**ところから始まる（＝ 強い酸が要る）。
+             *   ⚠ スチレンの側鎖はその条件で**ベンジル位カチオン**になる ——
+             *   系の中でいちばん安定なカチオンで、プロペンからできるイソプロピルカチオンより
+             *   安定なので、**先に反応するのは環ではなく側鎖の C=C** である
+             *   （実際、スチレンはルイス酸／プロトン酸でカチオン重合する）。
+             *   ★ **環がアルキル化される絵を見せるのは、順序を取り違えさせる。**
+             *   ⚠ 同じ理由でフェニルアセチレン（C≡C）も落ちる。
+             *   ★ この門番は `hydrogenate_benzene_ring` の②と**同じ考え方・同じ範囲の見方**
+             *   （その分子だけを見る）にそろえてある。 */
+            const multiples = multipleBondSites(mol);
             // ② 炭化水素の芳香環の、置換できる位置（等価な位置は `aromaticSites` がまとめる）
             const sites = [];
             aromaticSites(mol, null).forEach(([ringId]) => {
@@ -4885,6 +4916,7 @@ const REACTION_RULES = [
                     return a && a.element !== 'C' && a.element !== 'H';
                 });
                 if (hetero) return;
+                if (multiples.some(ids => ids.some(id => ringComp.has(id)))) return;  // ③
                 units.forEach(u => {
                     if (ringComp.has(u.head)) return;   // 別分子どうしのみ
                     sites.push([ringId, u.head, u.tail]);
@@ -4946,12 +4978,27 @@ const REACTION_RULES = [
         id: 'hydrogenate_benzene_ring',
         reagentId: 'h2_ni',
         label: '付加: H₂ ×3 → ベンゼン環がシクロヘキサン環になる',
+        /* ⚠⚠ **門番は「その分子（連結成分）」だけを見る**（v1508 の定期レビューで直した）。
+         *   ★ もとは `mol.atoms.some(…)` / `multipleBondSites(mol).length` と
+         *   **キャンバス全体**を見ていたので、**ベンゼンの隣に別の分子が浮いているだけで
+         *   札が消えていた**（実機で確認: ベンゼン＋エタノール／ベンゼン＋水／
+         *   ベンゼン＋シクロヘキセン）。⚠ そのとき瓶は「ふつうの条件では進みません」と
+         *   **化学として間違った説明**を出す。
+         *   ⚠⚠ 系統樹は全体を1キャンバスに描くので、これは例外ではなく常態だった。
+         *   ★ **絞り込みの線（①②）は1つも変えていない** —— 変えたのは「どの範囲を見るか」だけ。
+         *   実測でもナフタレンは 0・スチレンは側鎖→環の順のまま（TR3・TR4）。 */
         detect(mol) {
-            // ① 炭化水素だけ（ヘテロ原子があれば1件も出さない）
-            if (mol.atoms.some(a => a.element !== 'C' && a.element !== 'H')) return [];
-            // ② ふつうの C=C / C≡C が残っていれば、そちらが先。ここでは出さない
-            if (multipleBondSites(mol).length) return [];
-            return isolatedBenzeneRings(mol);
+            const multiples = multipleBondSites(mol);
+            return isolatedBenzeneRings(mol).filter(ring => {
+                const comp = componentOf(mol, ring[0]);
+                // ① **その分子が**炭化水素だけからできていること
+                //    （ニトロベンゼンは落ちる ＝ 同じ瓶の `reduce_nitro` の説明と食い違わない）
+                if (mol.atoms.some(a => comp.has(a.id) &&
+                    a.element !== 'C' && a.element !== 'H')) return false;
+                // ② **その分子に**ふつうの C=C / C≡C が残っていないこと（残っていればそちらが先）
+                if (multiples.some(ids => ids.some(id => comp.has(id)))) return false;
+                return true;
+            });
         },
         apply(game, site) {
             const mol = game.userMolecule;
@@ -5211,11 +5258,34 @@ const REACTION_RULES = [
         label: '分子間脱水（カルボン酸2分子, -H₂O） → 酸無水物',
         morphStages: 'joinFirst', // ①2分子が並ぶ → ②水がとれて -CO-O-CO- でつながる
         detect(mol) {
-            const carboxyls = findFunctionalGroups(mol).filter(g => g.type === 'carboxyl');
-            // 「その分子がもつ -COOH は1つだけか」を分子ごとに数える（二酸は分子内脱水へ譲る）
+            const groups = findFunctionalGroups(mol);
+            const carboxyls = groups.filter(g => g.type === 'carboxyl');
+            /* ⚠⚠ **-OH や -NH₂ を持つ酸を通してはいけない**（v1508 の定期レビューが実機で発見）。
+             *   もとの門番は「-COOH が1つ」しか見ていなかったので、次の相手で札が出ていた:
+             *     グリシン×2 … ★ **教科書はここをペプチド結合として教える**
+             *     酢酸＋グリシン／アラニン … -NH₂ があるのでアミド化が先
+             *     酢酸＋乳酸 … -OH があるのでエステル化が先
+             *     酢酸＋サリチル酸 … ⚠⚠ 実験モードの課題 `eq-salicylic-aspirin` の
+             *                       分子モーダルに誤った相手札が出ていた（アセチル化が先）
+             *   ★ 門番は名前ではなく**構造**で立てる ＝「先に反応する基を持たない酸だけ」。 */
+            const BLOCKING = new Set([...ALCOHOL_TYPES, 'phenol', 'enol',
+                'amine1', 'amine2', 'amine3']);
+            /* ⚠ **ギ酸だけは別の判断が要る。** 無水ギ酸は単離できず（脱水すると CO になる）、
+             *   ★ この「単離できない」は**構造からは読めない**。
+             *   書ける門番は「-COOH の炭素に炭素が隣り合うこと」という構造の形になるが、
+             *   ⚠ **その形にした理由は構造ではない**ので、ここに理由を残しておく。
+             *   （この門番が落とすのはギ酸ただ1つ。シュウ酸などの二酸は上の -COOH の数で先に落ちる） */
+            const hasCarbonNeighbour = (cId) =>
+                mol.getNeighbors(cId).some(n => n.atom.element === 'C');
             const lone = carboxyls.filter(cx => {
                 const comp = componentOf(mol, cx.atomIds[0]);
-                return carboxyls.filter(o => comp.has(o.atomIds[0])).length === 1;
+                // 「その分子がもつ -COOH は1つだけか」（二酸は分子内脱水へ譲る）
+                if (carboxyls.filter(o => comp.has(o.atomIds[0])).length !== 1) return false;
+                // その分子に「先に反応する基」（-OH・フェノール・-NH₂）が無いこと
+                if (groups.some(g => BLOCKING.has(g.type) &&
+                    g.atomIds.some(id => comp.has(id)))) return false;
+                // ギ酸を外す（上の理由）
+                return hasCarbonNeighbour(cx.atomIds[0]);
             });
             const sites = [];
             for (let i = 0; i < lone.length; i++) {
