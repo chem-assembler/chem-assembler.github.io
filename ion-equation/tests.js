@@ -2858,6 +2858,35 @@ function runModelTests() {
     assert(OX_VIRTUAL_CAVEAT.includes("道具"), "断り文が「数えるための道具」だと言っていない");
   });
 
+  /* ★ 数の書き方は3本ある（2026-09-03・ユーザーの指摘で分けた）。
+     ⚠ **この検査は「3本が別物であること」を見張る。** 1本にまとめられた瞬間に
+     酸化数かイオンの電荷のどちらかが壊れる —— 値が同じ（単原子イオンの酸化数＝電荷）でも
+     書き方が違うので、機械では気づけない。 */
+  t("OXNUM: 表記は3本 —— 酸化数(+1)・イオンの電荷(2−)を混ぜない", () => {
+    // (1) 酸化数 … 符号が先・1 も書く
+    assert(fmtOxNum(1) === "+1" && fmtOxNum(3) === "+3", "酸化数の＋の書き方が変わった: " + fmtOxNum(1));
+    assert(fmtOxNum(-2) === "−2" && fmtOxNum(-1) === "−1", "酸化数の−の書き方が変わった: " + fmtOxNum(-2));
+    assert(fmtOxNum(0) === "0", "酸化数の 0 の書き方が変わった: " + fmtOxNum(0));
+    // (2) イオン1個ぶんの電荷 … 数が先・符号があと・1 は書かない
+    assert(fmtIonCharge(1) === "+" && fmtIonCharge(-1) === "−",
+      "1価のイオンで数を書いてしまっている: " + fmtIonCharge(1) + " / " + fmtIonCharge(-1));
+    assert(fmtIonCharge(2) === "2+" && fmtIonCharge(-2) === "2−" && fmtIonCharge(-3) === "3−",
+      "多価のイオンの書き方が違う: " + [2, -2, -3].map(fmtIonCharge).join(" "));
+    assert(fmtIonCharge(0) === "0", "電荷 0 は数の 0（0− とは書かない）: " + fmtIonCharge(0));
+    // ⚠ 平の文字であること（上付きにしない。式の右肩に付けるときだけ oxidation.js の supCharge）
+    assert(!/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]/.test([1, -1, 2, -2, 3, -3, 0].map(fmtIonCharge).join("")),
+      "イオンの電荷が上付きになっている");
+    // 負号はどちらも本物のマイナス（U+2212）。同じ画面で - と − が混ざらない
+    assert(fmtIonCharge(-2).includes("−") && fmtOxNum(-2).includes("−"),
+      "負号がハイフンになっている");
+    /* ★★ 否定対照の芯: **2本が別物**であること。
+       片方をもう片方で済ませた（＝一括置換した）瞬間にここが落ちる。 */
+    for (const v of [1, -1, 2, -2, 3, -3]) {
+      assert(fmtOxNum(v) !== fmtIonCharge(v),
+        "酸化数とイオンの電荷が同じ書き方になっている（表記を1本にまとめた）: " + v + " → " + fmtOxNum(v));
+    }
+  });
+
   /* ---- 【練習X】半反応式を組む（ORDER_halfreaction_2026-08-22.md §2）---- */
 
   /* 半反応式の正解から、人が入れる3つの項の入力値を作る（テストの中でだけ使う道具）。
@@ -8795,6 +8824,71 @@ async function runOxNumUITests(iframe) {
       "分けない理由を言っていない");
     typeInto("oxIn0_Mn", 7);
     assert(state().oxOk, "MnO₄⁻ の Mn ＝ +7 が通らない");
+  });
+
+  /* ★★ 2026-09-03・ユーザーの指摘:
+       「電離したイオンの電荷は ＋1でなく ＋、−2でなく 2− とイオン式の表記にする」
+     ⚠⚠ **この検査の主目的は「イオン式にできたこと」ではなく、
+        「酸化数まで巻き込んで一括置換されていないこと」**。
+        同じ `fmtOxNum` が両方の意味で使われていたのが症状なので、
+        **どこが酸化数でどこが電荷かを名前で押さえておかないと、次に誰かが全部変える。** */
+  await t("OXNUM UI: ★★電荷はイオン式（＋ / 2−）・酸化数は今までどおり（+1 / −2）", async () => {
+    win.OxNum.goto("(NH4)2SO4");            // 2NH₄⁺ ＋ SO₄²⁻。H は +1・O は −2 の灰色が両方出る回
+    typeInto("splitIn0", 1);
+    typeInto("splitIn1", -2);
+    assert(state().splitOk, "段1 が通らない（この検査の前提が崩れている）");
+
+    /* ---- (1) 電荷を書くところ ＝ 段1 の検算行のセル。イオン式で出る ---- */
+    const splitChk = doc.getElementById("splitChk").textContent;
+    assert(splitChk.includes("(+)×2"),
+      "＋1価のイオンが「(+)」になっていない（＋1 のままでは酸化数の書き方）: " + splitChk);
+    assert(splitChk.includes("(2−)×1"),
+      "−2価のイオンが「(2−)」になっていない: " + splitChk);
+    assert(!splitChk.includes("(+1)") && !splitChk.includes("(−2)"),
+      "段1 のセルに酸化数の書き方が残っている: " + splitChk);
+    // ⚠ 平の文字であること（上付きにしない。ユーザー「ボックスの位置で上付きを表現している」）
+    assert(!/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]/.test(splitChk),
+      "段1 の検算行に上付きの電荷が混じっている: " + splitChk);
+    // 負号は本物のマイナス（U+2212）。同じ画面で - と − が混ざらない
+    assert(splitChk.includes("2−"), "イオンの負号がハイフンになっている: " + splitChk);
+
+    /* ---- (2) ★★否定対照の芯 —— **酸化数の場所は +1 / −2 のまま** ----
+       ⚠ ここを名前（元素の行の見出し）で引く。位置や順番で引くと、
+       並びが変わっただけで嘘の合格・嘘の不合格になる。 */
+    const grey = (elName) => {
+      const row = $$("#oxSheet .oxRow").find((r) => r.querySelector(".oxEl").textContent === elName);
+      assert(row, "元素の行が無い: " + elName);
+      const g = row.querySelector(".oxGiven");
+      assert(g, elName + " の灰色の数が無い（入力欄になっている？）");
+      return { text: g.textContent, why: row.querySelector(".oxWhy").textContent };
+    };
+    const h = grey("H"), o = grey("O");
+    assert(h.why.includes("水素") && h.text === "+1",
+      "化合物の中の H の酸化数が +1 でなくなっている（電荷の表記に巻き込まれた）: " + JSON.stringify(h));
+    assert(o.why.includes("酸素") && o.text === "−2",
+      "化合物の中の O の酸化数が −2 でなくなっている: " + JSON.stringify(o));
+
+    /* ⚠ いちばん取り違えやすいのは**単原子イオン** —— 値は電荷そのものだが、
+       この欄が問うているのは**酸化数**なので +3 のまま。 */
+    win.OxNum.goto("Cr2(SO4)3");            // Cr³⁺ ＋ 3SO₄²⁻
+    typeInto("splitIn0", 3);
+    typeInto("splitIn1", -2);
+    assert(state().splitOk, "Cr₂(SO₄)₃ の段1 が通らない");
+    const cr = grey("Cr");
+    assert(cr.why.includes("単原子イオン") && cr.text === "+3",
+      "単原子イオンの酸化数が電荷の表記になっている（値は同じでも欄の意味が違う）: " + JSON.stringify(cr));
+    // ★ 同じ回の段1 のセルでは、同じ +3 が「3+」と書かれている（＝ 2つの表記が同居している）
+    assert(doc.getElementById("splitChk").textContent.includes("(3+)×2"),
+      "段1 で ＋3価のイオンが「(3+)」になっていない: " + doc.getElementById("splitChk").textContent);
+
+    /* ---- (3) 「めざす合計 ＝ ＜値＞（このイオンの電荷）」は**数のまま**にした ----
+       理由は oxidation.js の refreshOx の注記（＝ の両側が同じ量／箱の見出しが
+       既に SO₄²⁻ とイオン式で出ている／教科書の書き方は確かめていない）。
+       ⚠ **断りの言葉は残す** —— 名前は電荷・書き方は検算の数、と分けているだけ。 */
+    const chk = $$("#oxSheet .oxCheckLine").map((e) => e.textContent).join(" ／ ");
+    assert(chk.includes("（このイオンの電荷）"), "検算の右辺が電荷だと言っていない: " + chk);
+    assert(chk.includes("−2（このイオンの電荷）"),
+      "検算の右辺が数（−2）でなくなっている ＝ ＝ の両側で書き方が違う: " + chk);
   });
 
   await t("OXNUM UI: 帯の出題が oxTaskList とそのまま一致する（手で並べていない）", async () => {
