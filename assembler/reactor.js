@@ -1448,6 +1448,154 @@ function isolatedBenzeneRings(mol) {
 }
 
 /**
+ * フェノールの工業的製法2本のための、置き換わる基を探す（v1511）。
+ *
+ * ★ どちらも **芳香環についた基が -ONa に置き換わる**という同じ形なので、
+ *   探すところと置き換えるところを1つにまとめる（同じ判定を2つ書かない）。
+ *
+ *   kind === 'sulfonate' … アルカリ融解。**-SO₃Na（ナトリウム塩）だけ**を探す
+ *   kind === 'chloro'    … クロロベンゼンの加水分解。**芳香環に直結した -Cl**
+ *
+ * ⚠⚠ **アルカリ融解の相手を「ベンゼンスルホン酸」ではなく「その*ナトリウム塩*」にした**
+ *   のは、教科書がそう書くから（ベンゼンスルホン酸ナトリウムを NaOH と融解する）。
+ *   ★ 副産物として、**既存の緑を1つも触らずに済む**:
+ *   ベンゼンスルホン酸に NaOH を掛けたときに通るのは今までどおり中和（`neutralize_naoh`）
+ *   1本だけなので、**条件を選ぶ画面が新たに出てしまう人がいない**（実測で確かめた）。
+ *   ＝ 道すじは 濃硫酸 → 中和 → 融解 → 弱酸の遊離 の4手で、どの手も教科書の1段に対応する。
+ *
+ * ⚠⚠ **一置換のベンゼン環だけ**（`isolatedBenzeneRings` ＝ 縮合していない6員の芳香環で、
+ *   環の外に出ている重原子がその基1つだけ）。★ **実測で決めた** ——
+ *   広く「芳香環についた -Cl なら何でも」にすると **32 分子・33 通りのうち 32 通りが
+ *   「（未登録）」**（o-クロロトルエン・p-クロロフェノール …）で、名前が出るのは
+ *   クロロベンゼンの1件だけだった。-SO₃Na 側も 2 分子中 1 件が未登録
+ *   （アルキルベンゼンスルホン酸ナトリウム ＝ 洗剤。これを融解させる場面は教科書に無い）。
+ *   ★ 絞ると **どちらも 1 分子・1 通り・未登録 0 件**になる。
+ *   ⚠ 教科書もこの2本を「**クロロベンゼン**の加水分解」「**ベンゼンスルホン酸ナトリウム**の
+ *   アルカリ融解」と、物質を名指しで呼んでいる。
+ * ★ 副産物として、**既存の画面が1つも変わらない** —— 絞る前は
+ *   o/m/p-クロロベンゼンスルホン酸の3件で NaOH の行き先が 1 → 2 通りに増えていた（実測）。
+ *
+ * 返す site は `[環の炭素, 外れる基の起点（S または Cl）]`。
+ */
+function phenoxidePrecursorSites(mol, kind) {
+    const sites = [];
+    isolatedBenzeneRings(mol).forEach(ring => {
+        const ringSet = new Set(ring);
+        // 環の外に出ている重原子（＝置換基の起点）を集める
+        const subs = [];
+        ring.forEach(cId => {
+            mol.getNeighbors(cId).forEach(n => {
+                if (n.atom.element === 'H' || ringSet.has(n.atom.id)) return;
+                subs.push({ cId, id: n.atom.id, element: n.atom.element, type: n.type });
+            });
+        });
+        // ⚠ **一置換体だけ**（下の注記）。二置換体や縮合環はここへ来ない
+        if (subs.length !== 1) return;
+        const sub = subs[0];
+        if (sub.type !== 1) return;
+        if (kind === 'chloro') {
+            if (sub.element === 'Cl') sites.push([sub.cId, sub.id]);
+            return;
+        }
+        // -SO₃Na … S に酸素が3つ、そのうち1つが Na を持っている（＝ 酸ではなく塩）
+        if (sub.element !== 'S') return;
+        const around = mol.getNeighbors(sub.id).filter(x => x.atom.id !== sub.cId);
+        if (around.length !== 3 || !around.every(x => x.atom.element === 'O')) return;
+        if (!around.some(x => mol.getNeighbors(x.atom.id).some(y => y.atom.element === 'Na'))) return;
+        sites.push([sub.cId, sub.id]);
+    });
+    return sites;
+}
+
+/** 芳香環の炭素についた基（起点 leaveId から先）を外し、代わりに -ONa を付ける。 */
+function replaceWithPhenoxide(mol, cId, leaveId) {
+    // 外す基の原子を集める（起点から、環へ戻らずに辿れる範囲）
+    const drop = new Set([leaveId]);
+    const stack = [leaveId];
+    while (stack.length) {
+        const x = stack.pop();
+        mol.getNeighbors(x).forEach(n => {
+            if (n.atom.id === cId || drop.has(n.atom.id)) return;
+            drop.add(n.atom.id);
+            stack.push(n.atom.id);
+        });
+    }
+    drop.forEach(id => mol.removeAtom(id));
+    // 空いたところへ -O-Na（塩は線1本の共有結合で書く ＝ §10.6 の流儀。電荷モデルは持たない）
+    const added = attachGroup(mol, cId, 'O');
+    if (!added) throw noRoom('-ONa を置く空間がありません');
+    const oId = added[0];
+    const spot = freeSpotAround(mol, oId);
+    if (!spot) throw noRoom('ナトリウムを置く空間がありません');
+    const na = mol.addAtom('Na', spot.x, spot.y);
+    mol.addBond(oId, na.id, 1);
+    return [cId, oId, na.id];
+}
+
+/**
+ * アルカンの水素を1つ塩素に置き換えられる炭素を返す（ラジカル置換・光。v1511）。
+ *
+ * ⚠⚠ **ユーザーの指摘そのもの**（2026-09-03）:
+ *   「アルカン全般に Cl2との置換反応がリストされていないと思います」。
+ *   実測でも、メタン・プロパン・シクロヘキサン・クロロメタンのどれでも
+ *   **53本の反応が1本も出なかった**（塩素の反応は `aromatic_halogenation` だけで、
+ *   あれは鉄触媒による**環**の置換）。
+ *
+ * ★ **対象は「鎖状の飽和炭化水素（と、その塩素化物）」**。門番は名前ではなく構造で立てる:
+ *   ① その成分の重原子が **C と Cl だけ**（O・N・S が混ざるものは扱わない）
+ *   ② その成分の結合が**すべて単結合**（＝ C=C・C≡C・芳香環はここへ来ない）
+ *   ③ その成分が**木**（結合の数 ＝ 原子の数 − 1）＝ 環を含まない
+ *
+ * ⚠⚠ ③（環を落とす）は**実測で決めた**。シクロアルカンも化学としては同じ置換が起こるが、
+ *   ③を外した写しで数えると **環を含む飽和炭化水素 29 件・1置換の生成物 93 通りのうち
+ *   名前が付いたのは 2 件だけ**（クロロシクロペンタン・クロロシクロヘキサン ＝ たまたま
+ *   登録済み）で、**残り 91 通りが「（未登録）」**だった。
+ *   ★ 鎖状のほうは逆に **38 件・120 通りの全部に名前が付く**（実測。`iupacName` が
+ *   1,2-ジクロロプロパン のように系統名で言い切る）。
+ *   ⚠ 教科書がアルカンの光置換を書くのもメタンなど鎖式で、シクロアルカンでは書かない。
+ *   ★ 直すなら `iupacName` が環の置換体を名乗れるようにするのが先で、そちらが済んだら
+ *     この門番③を外すだけで広がる（**登録で埋めない** —— 系統名で出るものは登録しない約束）。
+ *
+ * ★ **同じ生成物になる位置はまとめる**（`aromaticSites` と同じ考え方・同じ道具）。
+ *   エタンの2つの炭素はどちらを置換してもクロロエタンなので**1件**にする ——
+ *   まとめないと「押しても同じ答えにしかならない箇所選び」が出る。
+ *   プロパンは 1位・2位 の**2件**（1-クロロプロパン ／ 2-クロロプロパン）＝
+ *   ここで初めて箇所選びに意味が出る。
+ *   ⚠ `aromaticSiteClass` は名前こそ芳香族だが、中身は「位相だけの複製に目印を付けて
+ *   正準コードを取る」＝ 置換位置一般の等価判定で、成分の同一性もキーに混ぜてある
+ *   （同じ分子を2つ並べたとき2つめが消えない）。**同じ判定を2つ書かない。**
+ */
+function alkaneSubstitutionSites(mol) {
+    const sites = [];
+    const seenComp = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || seenComp.has(a.id)) return;
+        const comp = componentOf(mol, a.id);
+        comp.forEach(id => seenComp.add(id));
+        const atoms = [...comp].map(id => mol.atoms.find(x => x.id === id)).filter(Boolean);
+        // ① 重原子は C と Cl だけ
+        if (!atoms.every(x => x.element === 'C' || x.element === 'Cl')) return;
+        const bonds = mol.bonds.filter(b => comp.has(b.atomId1) && comp.has(b.atomId2));
+        // ② すべて単結合
+        if (!bonds.every(b => b.type === 1)) return;
+        // ③ 木（環を含まない）
+        if (bonds.length !== atoms.length - 1) return;
+        const seenClass = new Set();
+        atoms
+            .filter(x => x.element === 'C' && mol.getFreeValency(x.id) >= 1)
+            // 置く空間が無い位置は候補に出さない（`aromaticSites` と同じ約束）
+            .filter(x => attachGroup(mol, x.id, 'Cl', true))
+            .forEach(x => {
+                const key = aromaticSiteClass(mol, x.id);
+                if (seenClass.has(key)) return;
+                seenClass.add(key);
+                sites.push([x.id]);
+            });
+    });
+    return sites;
+}
+
+/**
  * 環炭素 ringId についているのが「触媒なしの置換を通すほど強く活性化する基」か。
  * 通すのは **-OH（フェノール）と -NH₂（アニリン）の2つだけ**。
  *
@@ -2963,13 +3111,35 @@ function freeSpotsForIodoform(mol, cId) {
  * 還元性を示す炭素（銀鏡反応・フェーリング液が陽性になる根拠）を返す。
  *
  * ① -CHO（アルデヒド）… カルボニル炭素に水素が残っているので酸化されうる
- * ② 環状の糖のアノマー炭素（ヘミアセタール）… 水の中で開環して -CHO を出すので還元性を示す。
- *    「環の酸素」と「環の外の -OH」が同じ炭素についている形で見分ける。
- *    グリコシド結合（スクロース側）の酸素は重原子の隣が2つあるので外れる ＝ 非還元糖
+ * ② 環状の糖のアノマー炭素（ヘミアセタール／ヘミケタール）… 水の中で開環して
+ *    カルボニル基を出すので還元性を示す。「環の酸素」と「環の外の -OH」が
+ *    同じ炭素についている形で見分ける。
+ *    グリコシド結合（スクロース側）の酸素は重原子の隣が2つあるので外れる ＝ 非還元糖。
+ *    ⚠ **この②は「隣に水素があるか」を要求していない**ので、ケトースの環状形
+ *    （α/β-D-フルクトフラノース ＝ ヘミケタール）も前から陽性で拾えている（実測・v1511）。
+ * ★ ③ **α-ヒドロキシケトン**（カルボニル炭素の隣の炭素に -OH）… 塩基性の条件で
+ *    **エンジオールを経てアルデヒドへ移る**ので還元性を示す。**鎖状のフルクトースが代表**で、
+ *    「ケトースなのに還元糖」の理由がこれ（教科書もフェーリング液で陽性として扱う）。
+ *
+ * ⚠⚠ ③ の門番は **「α炭素に水素が残っている」の1つだけ**（自由価標が1以上）。
+ *   エンジオールは α位の水素がエノール化して初めてできるので、これが化学そのものの条件になる。
+ *   ★ この1つで **α-ケト酸**（ピルビン酸・オキサロ酢酸・α-ケトグルタル酸・2-オキソ酪酸の4件）が
+ *   ちょうど落ちる —— あれは隣の -OH が **カルボキシ基の -OH** で、その炭素は
+ *   C・=O・-OH で価標を使い切っていて水素が無い。
+ *   ⚠ **はじめは「α炭素が sp3」の門番も並べていたが、外した。** 実測すると
+ *   **ライブラリ1,000件超のどれでも結果が1件も変わらず**（陽性 111 件のまま）、
+ *   ⚠ **否定対照が赤くならなかった**（KT を3件とも通した）＝ 効いていない門番だった。
+ *   ★ 効かない門番を残すと「対照が対照になっていない」ことに気づけなくなる。
+ *
+ * ⚠ **糖を名指ししない**（この関数はもともと「判定を構造から引く」で通している）。
+ *   ③ で新しく陽性になるのは実測で5件 —— D-フルクトース（鎖状）・ヒドロキシアセトン・
+ *   ジヒドロキシアセトン・2-ヒドロキシシクロペンタノン・2-ヒドロキシシクロヘキサノン。
+ *   後ろ2つ（アシロイン）も実際にフェーリング液を還元するので、広がりすぎではない。
  */
 function reducingCarbonylAtoms(mol) {
     const ids = [];
-    findFunctionalGroups(mol)
+    const groups = findFunctionalGroups(mol);
+    groups
         .filter(g => g.type === 'aldehyde')
         .forEach(g => ids.push(...g.atomIds));
     const ring = ringAtomIdsOf(mol);
@@ -2980,6 +3150,19 @@ function reducingCarbonylAtoms(mol) {
         const hydroxyl = nb.find(n => !ring.has(n.atom.id) &&
             mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
         if (ringO && hydroxyl) ids.push(a.id, hydroxyl.atom.id);
+    });
+    // ③ α-ヒドロキシケトン（ケトースが還元糖になる理由）
+    groups.filter(g => g.type === 'ketone').forEach(g => {
+        const [cId, oId] = g.atomIds;
+        mol.getNeighbors(cId)
+            .filter(n => n.type === 1 && n.atom.element === 'C')
+            .forEach(n => {
+                const alpha = n.atom.id;
+                if (mol.getFreeValency(alpha) < 1) return; // α位に水素が無い ＝ エンジオールにならない
+                const oh = mol.getNeighbors(alpha).find(x => x.type === 1 && x.atom.element === 'O' &&
+                    mol.getNeighbors(x.atom.id).filter(y => y.atom.element !== 'H').length === 1);
+                if (oh) ids.push(cId, oId, alpha, oh.atom.id);
+            });
     });
     return [...new Set(ids)];
 }
@@ -3217,7 +3400,34 @@ const REAGENTS = [
         formula: 'Cl₂',
         kind: 'transform',
         acts: 'ベンゼン環です（鉄を触媒に置換）',
-        miss: '光を当てるとアルカンの水素とも置換しますが（ラジカル置換）、このアプリでは鉄触媒による環の置換だけを扱います。'
+        // ⚠ v1511 まではここに「このアプリでは鉄触媒による環の置換だけを扱います」と書いてあった。
+        //   ★ アルカンの光置換を入れた（隣の瓶）ので、**その文はもう嘘**。行き先を指す文に替える
+        miss: 'アルカンの水素とも置換しますが、そちらは鉄触媒ではなく**光**が要ります（ラジカル置換）。隣の「塩素・光」の瓶を使ってください。'
+    },
+    {
+        /* ★ アルカンの光置換の瓶（v1511・ユーザー指摘「アルカン全般に Cl2との置換反応が
+         *   リストされていない」）。
+         *
+         * ⚠⚠ **瓶を1本増やした**（23 → 24本）。★ **`cl2_fe` に相乗りさせなかった**理由:
+         *   - この瓶は**条件そのもの**を名乗っている（鉄触媒 ／ 光）。この app は
+         *     「水素・Ni」「水・酸触媒」「酸素・PdCl₂/CuCl₂」のように**試薬＋条件**を
+         *     瓶の名前に載せる流儀で、そこへ素直に並ぶ
+         *   - ★ **隣に並べると画面で比べられる**（酸化剤2本・NaOH aq と Na を隣に置いたのと同じ理由）。
+         *     同じ Cl₂ でも行き先が違う、が瓶の棚で読める
+         *   - ⚠ `condition`（同じ瓶で2択を訊く仕組み）は**使えない**。実測すると
+         *     ベンゼンでは環の置換だけ・アルカンでは光の置換だけが通り、**2つが同時に通る分子が
+         *     いまの在庫に1つも無い**（芳香環と鎖の -CH₃ を併せ持つトルエンは、下の
+         *     `chlorinate_alkane` の門番①②で落ちる）＝ 2択の画面が出る場面が存在しない。
+         *     ★ 条件は `label` と caption で言う。
+         *   ⚠ 代償は「在庫の数を固定した検査」5か所（RG1 の3か所・MM9・qa の KNOWN_BOTTLES）。 */
+        id: 'cl2_light',
+        name: '塩素・光',
+        formula: 'Cl₂',
+        kind: 'transform',
+        acts: 'アルカン（鎖状の飽和炭化水素）の水素です（光を当てると1つずつ塩素に置き換わります）',
+        miss: 'アルカンは反応しにくい炭化水素ですが、光を当てると塩素と**置換**反応を起こします（付加ではありません）。' +
+            'ベンゼン環は光では置換されず、鉄を触媒にした「塩素・鉄触媒」の瓶を使います。' +
+            'C=C や C≡C をもつ分子では、置換より先に**付加**が起こるのでこの瓶では扱いません。'
     },
     {
         id: 'mixed_acid',
@@ -3293,14 +3503,14 @@ const REAGENTS = [
         name: 'アンモニア性硝酸銀',
         formula: 'AgNO₃/NH₃',
         kind: 'detect',
-        acts: '-CHO をもつアルデヒドと還元糖です'
+        acts: '-CHO をもつアルデヒドと還元糖（フルクトースのようなケトースを含む）です'
     },
     {
         id: 'fehling',
         name: 'フェーリング液',
         formula: 'Cu²⁺',
         kind: 'detect',
-        acts: '-CHO をもつアルデヒドと還元糖です'
+        acts: '-CHO をもつアルデヒドと還元糖（フルクトースのようなケトースを含む）です'
     },
     {
         id: 'fecl3',
@@ -3340,15 +3550,15 @@ const DETECTION_TESTS = [
         id: 'tollens',
         reagentId: 'ag_ammonia',
         detect: reducingCarbonylAtoms,
-        positive: '銀が析出して、試験管の内側が鏡のようになります（銀鏡反応）。還元性を示すのは -CHO をもつアルデヒドと還元糖で、-CHO 自身は酸化されてカルボン酸（の塩）に変わります。',
-        negative: 'この分子に還元性の -CHO はありません。ケトンは同じカルボニル基 C=O を持ちますが、カルボニル炭素に水素が無いので酸化されず、銀鏡反応を示しません。「同じ C=O でも還元性があるのは -CHO だけ」がこの試薬の要点です。'
+        positive: '銀が析出して、試験管の内側が鏡のようになります（銀鏡反応）。還元性を示すのは -CHO をもつアルデヒドと還元糖で、-CHO 自身は酸化されてカルボン酸（の塩）に変わります。フルクトースのような**ケトース**も、カルボニル基の隣の炭素に -OH があるため、塩基性の条件でアルデヒドに移り変わって還元性を示します。',
+        negative: 'この分子に還元性を示す構造はありません。ケトンは同じカルボニル基 C=O を持ちますが、カルボニル炭素に水素が無いので酸化されず、銀鏡反応を示しません。「同じ C=O でも、そのままで還元性を示すのは -CHO」がこの試薬の要点です。ただし**カルボニル基の隣の炭素に -OH をもつケトンは例外**で、フルクトースのようなケトースが還元糖に数えられるのはこのためです（アセトンのようなふつうのケトンは陰性のままです）。'
     },
     {
         id: 'fehling',
         reagentId: 'fehling',
         detect: reducingCarbonylAtoms,
-        positive: '赤色の沈殿 Cu₂O（酸化銅(I)）ができます。フェーリング液の青い Cu²⁺ が還元されて Cu⁺ になった色です。銀鏡反応と同じく -CHO（還元糖を含む）の検出に使います。',
-        negative: 'この分子に還元性の -CHO はありません。フェーリング液を還元するのは -CHO をもつものだけで、ケトンやカルボン酸は還元しません。'
+        positive: '赤色の沈殿 Cu₂O（酸化銅(I)）ができます。フェーリング液の青い Cu²⁺ が還元されて Cu⁺ になった色です。銀鏡反応と同じく -CHO（還元糖を含む）の検出に使います。フルクトースのような**ケトース**も、塩基性のフェーリング液の中でアルデヒドに移り変わるため陽性になります。',
+        negative: 'この分子に還元性を示す構造はありません。フェーリング液を還元するのは -CHO をもつものと、**カルボニル基の隣の炭素に -OH をもつケトン**（フルクトースのようなケトース）で、アセトンのようなふつうのケトンやカルボン酸は還元しません。'
     },
     {
         id: 'fecl3',
@@ -5217,6 +5427,66 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★ アルカンの塩素化（光によるラジカル置換・v1511）。
+         *
+         * ⚠⚠ **ユーザーの指摘**（2026-09-03）「アルカン全般に Cl2との置換反応がリストされて
+         *   いないと思います」。実測でも、メタン・エタン・プロパン・シクロヘキサン・
+         *   クロロメタンのどれでも **53本の反応が1本も出なかった**。
+         *
+         * ★★ **混合物になることを、操作で見せる。**
+         *   実際の光塩素化は ① どの水素が置き換わるかを選べず ② 1つで止まらない、の2つの意味で
+         *   混合物になる。⚠ このアプリは「1つの決まった生成物」を返す作りなので、どちらも
+         *   **画面の断り書きだけ**にすると「ここでは 2-クロロプロパンができるのだ」と読まれる。
+         *   そこで:
+         *   - ① は **箇所選び**にした（`detect` が置換位置ごとに1件返す）。プロパンなら
+         *     1位・2位 の2件が光り、押したほうができる ＝ **選べてしまう**という手ざわりが、
+         *     「実際は選べない」の caption と噛み合う（けん化・二糖の縮合と同じ仕組み）
+         *   - ② は **段数を止めない**。押すたびに Cl が1つ増え、メタンなら
+         *     クロロメタン → ジクロロメタン → クロロホルム → 四塩化炭素 まで行く
+         *     （教科書がそこまで書く並びで、実測で **4段とも名前が付く**）
+         *   ★ caption は毎回「実際には混ざる」を言う。⚠ 1回目だけ言うのでは足りない ——
+         *     多置換のほうは2回目以降に起こる話なので、そこで消えると読み落とす。
+         *
+         * ★ 対象範囲は `alkaneSubstitutionSites` の門番3つ（C と Cl だけ・全部単結合・木）。
+         *   **枝分かれは入れ、環は落とした**（理由は同関数の注記＝生成物の名前の実測）。
+         *
+         * ⚠ **瓶は `cl2_light`（新設）。`cl2_fe` に相乗りさせていない**（瓶の注記を見ること）。 */
+        id: 'chlorinate_alkane',
+        reagentId: 'cl2_light',
+        label: 'アルカンの置換（Cl₂・光）→ 塩化アルキル',
+        detect: (mol) => alkaneSubstitutionSites(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const cId = site[0];
+            const added = attachGroup(mol, cId, 'Cl');
+            // **何段目か**を数えて言う（1つで止まらないことを、その分子の実物で言うため）
+            const comp = componentOf(mol, cId);
+            const chlorines = [...comp]
+                .map(id => mol.atoms.find(a => a.id === id))
+                .filter(a => a && a.element === 'Cl').length;
+            const carbons = [...comp]
+                .map(id => mol.atoms.find(a => a.id === id))
+                .filter(a => a && a.element === 'C');
+            const restHydrogen = carbons.some(a => mol.getFreeValency(a.id) >= 1);
+            return {
+                caption: 'アルカンの水素が1つ塩素に置き換わりました（置換反応）。' +
+                    '光（紫外線）が Cl₂ を塩素原子に分け、それが水素を引き抜いて進むラジカル置換で、' +
+                    '同時に塩化水素 HCl ができます。**付加ではなく置換**になるのは、' +
+                    'アルカンに付加できる多重結合が無いからです。' +
+                    `いまこの分子には塩素が ${chlorines} 個ついています。` +
+                    (restHydrogen
+                        ? '⚠ **実際には1つでは止まりません。** 置き換わる水素を選ぶこともできないので、' +
+                          '置換の数も位置も違うものが**混ざって**できます。' +
+                          'もう一度この瓶を押すと、次の置換に進めます。'
+                        : '⚠ **水素がすべて塩素に置き換わりました。** 実際の反応では、' +
+                          'ここまで進む前の段階のものも混ざって残っています。') +
+                    '⚠ このアプリは1回の操作で1つの生成物を描くので、' +
+                    '**画面に出ているのは混合物の中の1つ**だと思って見てください。',
+                changed: [cId, ...added]
+            };
+        }
+    },
+    {
         id: 'aromatic_halogenation',
         reagentId: 'cl2_fe',
         mechanismId: 'benzene_chlorination',
@@ -5615,6 +5885,69 @@ const REACTION_RULES = [
                       'これだけでは酸の強さは分かりません。' + kind.rank) +
                     'できた塩・アルコキシドに強い酸（希硫酸）を加えると、もとの形に戻せます（弱酸の遊離）。',
                 changed: [oId, na.id]
+            };
+        }
+    },
+    {
+        /* ★ フェノールの工業的製法 その1: アルカリ融解（v1511・入試 11 大問）。
+         *   ベンゼンスルホン酸ナトリウム ＋ NaOH →（高温で融解）→ ナトリウムフェノキシド。
+         *
+         * ⚠ **瓶は足していない。** `naoh_aq` に相乗りする（発注の実測どおり）。
+         *   ★ ⚠ ただし NaOH aq の瓶に「固体の NaOH と融解させる」反応をぶら下げているので、
+         *   **条件は label と caption で必ず言う**（水溶液のままでは起こらない）。
+         * ⚠ **`condition`（同じ瓶の2択）は使っていない。** 実測で、この反応が通る分子
+         *   （-SO₃Na をもつもの）では `naoh_aq` の他のルールが1本も通らない
+         *   ＝ 2択の画面が出る場面が無く、`condition` を付けても見えないまま
+         *   `RG1 (6)` の「condition は4件ちょうど」だけが動く。
+         *
+         * ★ 系統樹の上でここが埋まると、ベンゼン →(濃硫酸) ベンゼンスルホン酸 →(NaOH) その塩
+         *   →(融解) フェノキシド →(希硫酸・弱酸の遊離) フェノール が**4手ぜんぶつながる**。 */
+        id: 'alkali_fusion',
+        reagentId: 'naoh_aq',
+        label: 'フェノールの製法: アルカリ融解（固体の NaOH と高温で融解）',
+        detect: (mol) => phenoxidePrecursorSites(mol, 'sulfonate'),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const changed = replaceWithPhenoxide(mol, site[0], site[1]);
+            return {
+                caption: 'スルホ基のナトリウム塩 -SO₃Na が -ONa に置き換わり、' +
+                    'ナトリウムフェノキシドができました（アルカリ融解）。' +
+                    '⚠ **水溶液では起こりません** —— 固体の水酸化ナトリウムと混ぜて' +
+                    '**高温で融解**させる、という激しい条件が要ります。' +
+                    '同時に亜硫酸ナトリウム Na₂SO₃ ができますが、この画面には描いていません。' +
+                    'フェノールの工業的製法の1つで、ここに希硫酸を加えると' +
+                    '弱酸の遊離でフェノールが取り出せます。' +
+                    'ベンゼンから見ると スルホン化 → 中和 → アルカリ融解 → 弱酸の遊離 の4段です。',
+                changed
+            };
+        }
+    },
+    {
+        /* ★ フェノールの工業的製法 その2: クロロベンゼンの加水分解（v1511・入試 9 大問）。
+         *   クロロベンゼン ＋ NaOH 水溶液 →（高温・高圧）→ ナトリウムフェノキシド ＋ NaCl。
+         *
+         * ⚠ **条件が上の1本と違う**（あちらは固体の NaOH と融解、こちらは水溶液で高温・高圧）。
+         *   ★ 同じ瓶にぶら下がるので、**label で条件まで言い切る**（`aromatic_halogenation` が
+         *   「（Cl₂・鉄触媒）」と書いているのと同じ流儀）。
+         * ⚠ **芳香環に直結した -Cl だけ**を見る。鎖についた -Cl（アルカンの塩素化でできるもの）は
+         *   高校ではここに入れない ——「ハロゲンは環に付いていると外れにくく、強い条件が要る」
+         *   という話そのものが、この反応の見どころだから。 */
+        id: 'hydrolysis_chlorobenzene',
+        reagentId: 'naoh_aq',
+        label: 'フェノールの製法: クロロベンゼンの加水分解（NaOH aq・高温高圧）',
+        detect: (mol) => phenoxidePrecursorSites(mol, 'chloro'),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const changed = replaceWithPhenoxide(mol, site[0], site[1]);
+            return {
+                caption: '環についた塩素が -ONa に置き換わり、ナトリウムフェノキシドができました。' +
+                    '⚠ **常温の水酸化ナトリウム水溶液では起こりません** —— ' +
+                    '**高温・高圧**（およそ 300℃・200気圧）という条件が要ります。' +
+                    '環に直結したハロゲンは、鎖についたハロゲンより格段に外れにくいからです。' +
+                    '同時に塩化ナトリウム NaCl ができますが、この画面には描いていません。' +
+                    'これもフェノールの工業的製法の1つで、希硫酸を加えると' +
+                    '弱酸の遊離でフェノールが取り出せます。',
+                changed
             };
         }
     },
@@ -8418,6 +8751,11 @@ if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
     window.REAGENTS = REAGENTS;                 // 試薬瓶（RG1 の死にリンク検査が読む）
     window.DETECTION_TESTS = DETECTION_TESTS;   // 呈色・検出（RG7・RG8 が読む）
+    /* ★ 還元性の判定は**ここが唯一の正**（v1511）。⚠ 絞り込みモードの札「銀鏡反応を示した」は
+     *   `narrowing.js` が `groups(m).includes('aldehyde')` で別に判定していて、
+     *   **環状糖もフルクトースも全部 陰性**になる（統合セッションの実測）＝ 判定が2か所にある。
+     *   ★ こちらから呼べるように出しておく（乗り換えは narrowing.js 側の仕事）。 */
+    window.reducingCarbonylAtoms = reducingCarbonylAtoms;
     // `reagentId` が文字列でも配列でもよいことを、テスト側も同じ関数で読む（v1428）
     window.ruleReagentIds = ruleReagentIds;
     window.ruleUsesReagent = ruleUsesReagent;
