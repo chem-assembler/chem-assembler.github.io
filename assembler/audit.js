@@ -22,6 +22,8 @@
     // ②ファズが「反応の面」へどこまで届いたかの帳簿と、そのための題材（v1502・下の注記）
     let rxLedger = null;
     let rxSamples = null;
+    // ②ファズが「新しい面」（🧪 瓶・🎯 課題・📖 資料）へどこまで届いたかの帳簿（vNNNN・下の注記）
+    let faceLedger = null;
 
     // 判定のしきい値。**結果ファイルにこの値をそのまま書き出す**ので、
     // 検査で使う値と記録される値がずれない（ずれると版をまたいだ比較が静かに壊れる）。
@@ -51,18 +53,25 @@
     // mix=3（v1502）… `summon` に「**相手を並べる組**」の枝が入った版。
     // 割合の表そのものは mix=2 と同じだが、`summon` が引くものが変わった
     // ＝ **反応に届く回数がまるごと変わる**ので、mix=2 の実行とは並べられない
-    const OP_MIX_ID = 3;
+    //
+    // mix=4（vNNNN）… **新しい面3つの枝**（`bottle`／`quest`／`refbook`）が入った版。
+    //   ⚠ 既存の10種の割合も下げている（合計 1.0 を保つため）ので、
+    //   **mix=3 の実行とは1つも並べられない**（作図の面に当たる回数そのものが減る）。
+    const OP_MIX_ID = 4;
     const OP_MIX = [
-        ['place', 0.30],    // 原子配置
-        ['module', 0.14],   // モジュール配置
-        ['toggle', 0.11],   // 結合次数トグル
+        ['place', 0.26],    // 原子配置
+        ['module', 0.12],   // モジュール配置
+        ['toggle', 0.10],   // 結合次数トグル
         ['cut', 0.06],      // 結合切断
-        ['erase', 0.07],    // 原子削除
-        ['stretch', 0.05],  // 結合の伸縮ドラッグ（**mix=1 では一度も回っていなかった**）
+        ['erase', 0.06],    // 原子削除
+        ['stretch', 0.04],  // 結合の伸縮ドラッグ（**mix=1 では一度も回っていなかった**）
         ['react', 0.11],    // 反応の実行
         ['summon', 0.05],   // 名称からの呼び出し
-        ['undo', 0.07],
-        ['redo', 0.04]
+        ['bottle', 0.06],   // 🧪 実験パレットの瓶を押す（vNNNN）
+        ['quest', 0.03],    // 🎯 実験モードの課題を1問はじめる（vNNNN）
+        ['refbook', 0.02],  // 📖 資料のページを1枚ひらく（vNNNN）
+        ['undo', 0.06],
+        ['redo', 0.03]
     ];
 
     /* ===== ★★ ファズを「反応の面」へ届かせる（v1502・DESIGN_review_pack2.md §4-3／発注書 B） =====
@@ -143,6 +152,138 @@
     //   結果ファイルの `comparableKey` にも載せるので、止めた実行を本走と取り違えない
     const GROUPS_ENABLED = !/[?&]nogroups=1/.test(location.search);
     const GUIDE_ENABLED = !/[?&]noguide=1/.test(location.search);
+
+    /* ===== ★★ ファズを「新しい面」へ届かせる（vNNNN・DESIGN_review_pack3.md §1／発注書 B ②） =====
+     *
+     * ⚠⚠ **定期レビュー第3回の実測（2026-09-03）**: 6版で足した面 8 つのうち、
+     *   ②ファズが実際に触るのは 2 つだけだった。**ユーザーに見える新しい面4つ
+     *   （参考書のページ・課題12問・`?open=reference`・`?quest=`）は 0**。
+     *   300反復 × 80操作で `referenceBook.open/render` 0回・`startQuest` 0回・
+     *   `setPalette('exp')` 0回・瓶のクリック 0回。
+     *   ＝ ★ CLAUDE.md の「バグの発見は監査ページに任せ、モデルは修正に使う」が、
+     *   **新しい面については成立していなかった**（2回続けて同じ指摘）。
+     *
+     * ★ **手当ての形は v1502（反応の面）と同じ2枚組**:
+     *   ① 枝を足す（`bottle`／`quest`／`refbook` を `OP_MIX` に）
+     *   ② ⚠ **枝だけでは足りない** —— v1502 の実測では「題材を並べる枝」を足しただけでは
+     *      0回が 14 → 10 本にしか減らず、**半分の確率で「まだ届いていない札」を選ぶ誘導**を
+     *      足して初めて 2 本になった。だから面の側でも同じ誘導を掛ける（`pickLeastReached`）。
+     *
+     * ⚠⚠ **「開いた」を数えない。** v1502 の `rulesApplied` が「押した」ではなく
+     *   「**実際に分子が変わった**」を数えているのと同じ考えで、面ごとに
+     *   「**その面で何かが起きた**」を数える:
+     *     ・🧪 瓶   … 押して**分子が変わった**か、**答えが返った**（呈色・条件の2択・空振りの説明）
+     *     ・🎯 課題 … 「始めた」ではなく「**達成した**」（`_questDone` ＝ 目標の分子ができた）
+     *     ・📖 資料 … 開いただけでなく「**表の行が実際に生えた**」（0行なら赤）
+     *
+     * ★ **面の側の不変条件も見る**（監査が「回数を数えるだけ」にならないように）:
+     *   ・押した瓶は必ず答えを返す（`RG3`/`RG11`/`MM8` の約束）＝ **無反応なら赤**
+     *   ・課題は必ず始められる（`startQuest().ok`）＝ **始まらなければ赤**
+     *   ・`stageTable` を持つ資料のページは必ず行が生える ＝ **0行なら赤**
+     */
+    const FACE_COVERAGE_SHARE = 0.5;
+
+    // 否定対照の口: `audit.html?nofaces=1` で新しい面の枝を丸ごと止める（＝ v1511 までのファズ）。
+    // ⚠ `comparableKey` にも載せるので、止めた実行を本走と取り違えない
+    const FACES_ENABLED = !/[?&]nofaces=1/.test(location.search);
+
+    /**
+     * ★ まだ「何かが起きていない」ものを優先して1つ選ぶ（面の誘導。純関数 ＝ `FZ6` が単体検査する）。
+     *
+     * ⚠ **乱数は誘導を切っても同じ回数だけ振る**（必ず2回）。`?noguide=1` の否定対照で
+     *   乱数の並びがここでずれると、比べているものが変わってしまう
+     *   （v1502 の `pickReactionButton` は `!guided` で短絡していて1回しか振らない ——
+     *   同じ落とし穴を新しい側では踏まない）。
+     */
+    function pickLeastReached(ids, counts, rnd, guided) {
+        if (!ids || !ids.length) return null;
+        const roll = rnd();
+        if (!guided || roll >= FACE_COVERAGE_SHARE) return ids[Math.floor(rnd() * ids.length)];
+        let best = [], bestN = Infinity;
+        ids.forEach(id => {
+            const n = (counts && counts[id]) || 0;
+            if (n < bestN) { bestN = n; best = [id]; }
+            else if (n === bestN) best.push(id);
+        });
+        return best[Math.floor(rnd() * best.length)];
+    }
+
+    /**
+     * 新しい面の帳簿。⚠ **id の一覧はアプリから写す**（監査が自分で並べない）——
+     * 瓶を1本・課題を1問・資料を1ページ足した人が、何も登録しなくても分母に入る。
+     */
+    function newFaceLedger(W) {
+        const pages = (W && W.referenceBook && W.referenceBook.pages) || [];
+        return {
+            bottle: {
+                attempts: 0, pressed: 0, changed: 0, answered: 0, picked: 0, silent: 0,
+                effect: {},                       // 瓶 id → **何かが起きた**回数
+                ids: ((W && W.REAGENTS) || []).map(r => r.id)
+            },
+            quest: {
+                attempts: 0, started: 0, startFailed: 0, cleared: 0,
+                clears: {},                       // 課題 id → **達成した**回数
+                ids: ((W && W.QUESTS) || []).map(q => q.id)
+            },
+            ref: {
+                attempts: 0, opened: 0, examples: 0, rowsTotal: 0, empty: 0,
+                rows: {},                         // ページ id → 生えた表の行のべ数
+                ids: pages.map(p => p.id),
+                // `stageTable` を持たないページは「行が0でも正しい」ので分けて持つ
+                tableIds: pages.filter(p => (p.blocks || []).some(b => b.kind === 'stageTable'))
+                    .map(p => p.id)
+            }
+        };
+    }
+
+    /**
+     * 帳簿から「毎回出す数」を作る。**純関数**（`FZ7` が作りごとの入力で単体検査する）。
+     * ⚠ 分母は「**その面にいくつ在るか**」（瓶の本数・課題の問数・ページ数）。
+     *   分子は「**何かが起きた**数」で、押した回数でも開いた回数でもない。
+     */
+    function summarizeFaces(f) {
+        if (!f) return null;
+        const zero = (ids, counts) => (ids || []).filter(id => !(counts || {})[id]);
+        const bz = zero(f.bottle.ids, f.bottle.effect);
+        const qz = zero(f.quest.ids, f.quest.clears);
+        const rz = zero(f.ref.ids, f.ref.rows);
+        return {
+            bottles: {
+                total: f.bottle.ids.length, reached: f.bottle.ids.length - bz.length, zeroIds: bz,
+                attempts: f.bottle.attempts, pressed: f.bottle.pressed,
+                changed: f.bottle.changed, answered: f.bottle.answered,
+                conditionPicked: f.bottle.picked, silent: f.bottle.silent,
+                counts: f.bottle.effect
+            },
+            quests: {
+                total: f.quest.ids.length, cleared: f.quest.ids.length - qz.length, zeroIds: qz,
+                attempts: f.quest.attempts, started: f.quest.started,
+                startFailed: f.quest.startFailed, clearEvents: f.quest.cleared,
+                counts: f.quest.clears
+            },
+            reference: {
+                total: f.ref.ids.length, rendered: f.ref.ids.length - rz.length, zeroIds: rz,
+                attempts: f.ref.attempts, opened: f.ref.opened,
+                rowsTotal: f.ref.rowsTotal, examples: f.ref.examples, emptyTables: f.ref.empty,
+                counts: f.ref.rows
+            }
+        };
+    }
+
+    // 画面に出す1行（★ **緑のときも出す** —— 絞って全部通った実行と見分けが付かなくなるため）
+    function faceReachLine(s) {
+        if (!s) return '';
+        const zero = (o) => o.zeroIds.length ? '：' + o.zeroIds.join(', ') : '';
+        return `新しい面への到達: 🧪 瓶 ${s.bottles.reached}/${s.bottles.total} 本で何かが起きた` +
+            `（押した ${s.bottles.pressed}・分子が変わった ${s.bottles.changed}・答えが返った ${s.bottles.answered}` +
+            `・無反応 ${s.bottles.silent}／★ 0回 ${s.bottles.zeroIds.length} 本${zero(s.bottles)}）` +
+            `／🎯 課題 ${s.quests.cleared}/${s.quests.total} 問を**達成**` +
+            `（始めた ${s.quests.started}・始まらなかった ${s.quests.startFailed}` +
+            `／★ 0回 ${s.quests.zeroIds.length} 問${zero(s.quests)}）` +
+            `／📖 資料 ${s.reference.rendered}/${s.reference.total} ページ` +
+            `（表 のべ ${s.reference.rowsTotal} 行・例題 ${s.reference.examples} 回` +
+            `・空の表 ${s.reference.emptyTables}／★ 0回 ${s.reference.zeroIds.length} ページ${zero(s.reference)}）`;
+    }
 
     /* ★ 基点シードを外から固定する口: `audit.html?seed=1000`（v1502）。
      * ⚠ **A/B は「同じ種の集合を両方で流す」でなければ成立しない**（`wilson95` の注記・
@@ -874,6 +1015,21 @@
         g.selectedAtomType = 'C';
         g.asymmetricMode = false;
         errBox.length = 0;
+        /* ★ 新しい面の後片付け（vNNNN）。⚠ **反復を独立させる**のは分子と履歴だけでは足りない ——
+         *   課題の帯・実験パレット・資料のペインが前の反復から残っていると、
+         *   同じ種でも別の画面から始まる ＝ 失敗の再現ができなくなる。
+         *   ⚠ 枝を止めているとき（`?nofaces=1`）は触るものが何も無いので走らせない。 */
+        if (FACES_ENABLED) {
+            try { if (g.currentQuest) g.stopQuest(); } catch (e) { /* 課題が無い版 */ }
+            try { if (W.referenceBook && W.referenceBook.opened) W.referenceBook.setOpen(false); }
+            catch (e) { /* 資料が無い版 */ }
+            try { if (g.currentMode !== 'free') g.setMode('free'); } catch (e) { /* 同上 */ }
+            try { g.setPalette('draw'); } catch (e) { /* 同上 */ }
+        }
+        // 面の側の不変条件（押した瓶が無反応・課題が始まらない・資料の表が0行）をこの反復ぶん貯める
+        const faceIssues = [];
+        // 「達成した」を1回の課題につき1度だけ数えるための札（`startQuest` のたびに下ろす）
+        let questCounted = false;
 
         const svg = D.getElementById('chem-svg');
         const toClient = (x, y) => {
@@ -961,6 +1117,143 @@
                         ops.push('summon ' + entry.name);
                         g.summonMolecule(entry.name);
                     }
+                } else if (kind === 'bottle') {
+                    /* 🧪 実験パレットの瓶を押す（vNNNN）。
+                     * ⚠ **押すのは画面の札そのもの**（`#exp-reagents-grid .rg-bottle`）——
+                     *   `onReagentClick` を直に呼ぶと、タブの持ち替え・返す先の切り替え
+                     *   （`reagentNoteEl`）という v1494 の分岐を素通りしてしまう。 */
+                    const led = faceLedger && faceLedger.bottle;
+                    if (led) led.attempts++;
+                    g.setPalette('exp');
+                    const grid = D.getElementById('exp-reagents-grid');
+                    const all = grid ? [...grid.querySelectorAll('.rg-bottle')] : [];
+                    const ids = all.map(b => b.dataset.reagent);
+                    // ⚠ サイコロは**枝を止めていても必ず振る**（`?nofaces=1` の否定対照で
+                    //    乱数の並びがここでずれると、比べているものが変わってしまう）
+                    const rid = pickLeastReached(ids, led ? led.effect : null, rnd, GUIDE_ENABLED);
+                    if (!FACES_ENABLED || !rid) {
+                        ops.push('bottle (止めた)');
+                    } else {
+                        ops.push('bottle ' + rid);
+                        const btn = all[ids.indexOf(rid)];
+                        const note = D.getElementById('exp-reagent-note');
+                        const toastEl = D.getElementById('canvas-toast');
+                        const toastBefore = toastEl ? toastEl.textContent : '';
+                        const lastBefore = (W.reactor && W.reactor.lastReaction) || null;
+                        btn.click();
+                        // 同じ瓶で行き先が2つ以上ある（濃硫酸の温度・酸化剤の強さ）ときは、
+                        // 条件を選ぶまで何も起きない ＝ ここで選ばないと「押しただけ」で終わる
+                        const conds = note ? [...note.querySelectorAll('button[data-cond]')] : [];
+                        if (conds.length) {
+                            const c = conds[Math.floor(rnd() * conds.length)];
+                            if (led) led.picked++;
+                            ops.push('bottle-cond ' + c.dataset.cond);
+                            c.click();
+                        }
+                        // 箇所の選択待ちは react の枝と同じ形で確定する。
+                        // ⚠ **外した回を「無反応」に混ぜない**（外したのは監査のほうなので）
+                        let missedSite = false;
+                        if (W.reactor && W.reactor.picking) {
+                            const sites = W.reactor.picking.sites;
+                            const site = sites[Math.floor(rnd() * sites.length)];
+                            const target = g.userMolecule.atoms.find(x => site.includes(x.id));
+                            if (target) clickAt(target.x, target.y);
+                            else { W.reactor.picking = null; missedSite = true; }
+                        }
+                        const lastAfter = (W.reactor && W.reactor.lastReaction) || null;
+                        const changed = !!(lastAfter && lastAfter !== lastBefore);
+                        /* ⚠ **答えの返り先は3つある。** 1つしか見ないと「返っているのに
+                         *   返っていない」と読む ＝ **監査の物差しのほうが壊れる**（実測で2回踏んだ）:
+                         *     ① 瓶の節 …… ふつうの返し先（`reactor.reagentNoteEl`）
+                         *     ② 分子モーダルの節 …… モーダルが開いていればそちらへ返る（v1494）
+                         *     ③ ★ **キャンバスの字幕（トースト）** …… `info` ルール（解説だけの札）と
+                         *        「箇所を選んでください」はここにしか出ない（`onRuleClick` / `narrow`） */
+                        const mmNote = D.getElementById('mm-reagent-note');
+                        const toastAfter = toastEl ? toastEl.textContent : '';
+                        const answered = !!((note && note.textContent.trim()) ||
+                            (mmNote && mmNote.textContent.trim()) ||
+                            (toastAfter && toastAfter !== toastBefore));
+                        if (led) {
+                            led.pressed++;
+                            if (changed) led.changed++;
+                            if (answered) led.answered++;
+                            if (changed || answered) led.effect[rid] = (led.effect[rid] || 0) + 1;
+                            else if (!missedSite) {
+                                // ⚠ **押した瓶は必ず答えを返す**（RG3 / RG11 / MM8 の不変条件）。
+                                //   返らないのは「押したのに何も起きていない」画面そのもの
+                                const modal = D.getElementById('molecule-modal');
+                                const open = !!modal && !modal.classList.contains('hidden');
+                                led.silent++;
+                                faceIssues.push(`瓶「${rid}」を押したが、分子も変わらず答えも返らなかった` +
+                                    `（分子モーダル ${open ? '開' : '閉'}・原子 ${g.userMolecule.atoms.length} 個）`);
+                            }
+                        }
+                    }
+                } else if (kind === 'quest') {
+                    /* 🎯 実験モードの課題を1問はじめる（vNNNN）。
+                     * ⚠ **達成はここでは数えない** —— 数えるのは下の「1操作ごとの見張り」で、
+                     *   ★ **ファズ自身のランダムな操作が目標の分子を作ったとき**だけ。
+                     *   ここで目標を呼び出して通せば数は増えるが、それは監査ではなく自作自演。 */
+                    const led = faceLedger && faceLedger.quest;
+                    if (led) led.attempts++;
+                    const qids = (W.QUESTS || []).map(q => q.id);
+                    const qid = pickLeastReached(qids, led ? led.clears : null, rnd, GUIDE_ENABLED);
+                    if (!FACES_ENABLED || !qid) {
+                        ops.push('quest (止めた)');
+                    } else {
+                        ops.push('quest ' + qid);
+                        const r = g.startQuest(qid);
+                        questCounted = false;
+                        if (r && r.ok) { if (led) led.started++; }
+                        else {
+                            if (led) led.startFailed++;
+                            faceIssues.push(`課題「${qid}」が始められない（${(r && r.reason) || '?'}）`);
+                        }
+                    }
+                } else if (kind === 'refbook') {
+                    /* 📖 資料（参考書）のページを1枚ひらく（vNNNN）。
+                     * ⚠ **「開いた」ではなく「表の行が生えた」**を数える。
+                     *   `stageTable` は `stages.json` の系列名で行を集めるので、
+                     *   ★ **系列名が変わると表が黙って0行になる** —— そこを赤にする。 */
+                    const led = faceLedger && faceLedger.ref;
+                    if (led) led.attempts++;
+                    const rb = W.referenceBook;
+                    const pids = (rb && rb.pages ? rb.pages : []).map(p => p.id);
+                    const pid = pickLeastReached(pids, led ? led.rows : null, rnd, GUIDE_ENABLED);
+                    const exampleRoll = rnd();
+                    const closeRoll = rnd();
+                    if (!FACES_ENABLED || !pid) {
+                        ops.push('refbook (止めた)');
+                    } else {
+                        ops.push('refbook ' + pid);
+                        await rb.open(pid);
+                        const rows = D.querySelectorAll('#ref-body table.ref-table tbody tr').length;
+                        if (led) {
+                            led.opened++;
+                            led.rowsTotal += rows;
+                            if (rows) led.rows[pid] = (led.rows[pid] || 0) + rows;
+                            if (led.tableIds.indexOf(pid) >= 0 && !rows) {
+                                led.empty++;
+                                faceIssues.push(`資料「${pid}」の表が0行（stages.json の系列名が変わった？）`);
+                            }
+                        }
+                        /* ★ 例題の札は「押せる」ではなく「**お題が実際に開いた**」まで見る。
+                         * ⚠ **押したあとは 🧪自由 へ戻す。** パズルモードに居座らせると
+                         *   このファズの他の枝（反応・呼び出し）が別の面を触ることになり、
+                         *   同じ実行の中で2つの面の失敗率が混ざる。 */
+                        if (exampleRoll < 0.25) {
+                            const tryBtn = D.getElementById('btn-ref-try');
+                            if (tryBtn && !tryBtn.disabled) {
+                                const wanted = tryBtn.dataset.refStage;
+                                tryBtn.click();
+                                const opened = (W.STAGES || [])[g.currentStageIndex];
+                                if (opened && opened.id === wanted) { if (led) led.examples++; }
+                                else faceIssues.push(`資料の例題「${wanted}」を押してもお題が開かない`);
+                                g.setMode('free');
+                            }
+                        }
+                        if (closeRoll < 0.5) rb.setOpen(false);
+                    }
                 } else if (kind === 'place') {
                     // 原子配置（既存原子の近傍グリッド）
                     const els = ['C', 'C', 'C', 'O', 'N', 'Cl', 'Br'];
@@ -1031,11 +1324,23 @@
             } catch (e) {
                 return { ops, issues: ['同期例外: ' + e.message] };
             }
+            /* ★★ 課題の「**達成**」はここで数える（vNNNN）。
+             * ⚠ 数えるのは `_questDone` ＝ **目標の分子がキャンバスにある**ときだけで、
+             *   「始めた」は数えない（発注書の要点そのもの）。
+             *   1回の課題につき1度だけ（`questCounted`）＝ 帯が出ている間じゅう加算しない。 */
+            if (FACES_ENABLED && faceLedger && !questCounted && g.currentQuest && g._questDone) {
+                questCounted = true;
+                const qid = g.currentQuest.id;
+                faceLedger.quest.clears[qid] = (faceLedger.quest.clears[qid] || 0) + 1;
+                faceLedger.quest.cleared++;
+            }
             if (onOp) onOp(k, ops[ops.length - 1], g);
             if (k % 8 === 7) await sleep(0); // clickの抑止フラグ解除などを進める
         }
         await sleep(10);
-        const issues = inspectMolecule(W, g).concat(errBox.map(m => 'JSエラー: ' + m));
+        const issues = inspectMolecule(W, g)
+            .concat(faceIssues)
+            .concat(errBox.map(m => 'JSエラー: ' + m));
         return { ops, issues };
     }
 
@@ -1048,10 +1353,24 @@
             // ★ 到達の数は**走行中も画面に出す**（結果 JSON を開かないと分からない形にしない）。
             //   毎回数え直すと 49本 × 反復ぶん無駄なので 20 反復に1回
             if (reachEl && (it % 20 === 19 || it === iterations - 1)) {
-                reachEl.textContent = reachLine(summarizeReactions(rxLedger));
+                showReach();
             }
         }
-        if (reachEl) reachEl.textContent = reachLine(summarizeReactions(rxLedger));
+        showReach();
+    }
+
+    /* 到達の数を画面に出す（★ **緑のときも出す**）。反応の面（v1502）と新しい面（vNNNN）を
+     * 同じ場所に2行で並べる ＝ 結果 JSON を開かないと分からない形にしない */
+    function showReach() {
+        if (!reachEl) return;
+        reachEl.textContent = '';
+        [reachLine(summarizeReactions(rxLedger)), faceReachLine(summarizeFaces(faceLedger))]
+            .filter(Boolean)
+            .forEach(t => {
+                const d = document.createElement('div');
+                d.textContent = t;
+                reachEl.appendChild(d);
+            });
     }
 
     async function start() {
@@ -1083,7 +1402,11 @@
             groupSummons: GROUPS_ENABLED,
             groupShare: GROUPS_ENABLED ? GROUP_SHARE : 0,
             reactGuide: GUIDE_ENABLED,
-            reactCoverageShare: GUIDE_ENABLED ? REACT_COVERAGE_SHARE : 0
+            reactCoverageShare: GUIDE_ENABLED ? REACT_COVERAGE_SHARE : 0,
+            // ★ 新しい面（🧪 瓶・🎯 課題・📖 資料）の枝の有無（vNNNN）。
+            //   ⚠ 止めた実行（`?nofaces=1`）を本走と取り違えないので `comparableKey` にも載せる
+            faces: FACES_ENABLED,
+            faceCoverageShare: (FACES_ENABLED && GUIDE_ENABLED) ? FACE_COVERAGE_SHARE : 0
         };
         // 監査結果は window にも出す（ヘッドレスの検証スクリプトから読むため）
         report = window.__auditReport = {
@@ -1135,6 +1458,11 @@
             progress('②の題材を用意しています（全ルールぶん）…');
             rxSamples = buildReactionSamples(W, g);
             rxLedger = newReactionLedger(W);
+            /* ★ 資料のページ一覧は**開くまで読まれない**（`ReferenceBook.load`）ので、
+             *   帳簿を作る前にここで1回だけ読む。読めなければページ 0 件のまま進み、
+             *   `faceReachLine` が「0/0 ページ」と出す ＝ 黙って対象から外れない。 */
+            try { if (W.referenceBook) await W.referenceBook.load(); } catch (e) { /* 配信が無い */ }
+            faceLedger = newFaceLedger(W);
             report.reactionSamples = Object.fromEntries(
                 Object.entries(rxSamples).map(([k, v]) => [k, v.join('＋')]));
             // ⚠ **題材が作れなかったルールはここで名指しする**（黙って対象から外さない）
@@ -1226,11 +1554,15 @@
             // `bondLinePx` は v1160 で足した「結合線の下の原子」のしきい値。
             // `hydrogenLinePx` は v1240 で足した「結合線の下の自動水素」のしきい値。
             // 検査が1つ増えた実行と増える前の実行は並べられないので鍵に載せる
-            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx},${report.config.thresholds.bondLinePx},${report.config.thresholds.hydrogenLinePx}/mix=${report.config.opMixId}/grp=${report.config.groupShare}/cov=${report.config.reactCoverageShare}`,
+            comparableKey: `ops=${report.config.opsCount}/thr=${report.config.thresholds.heavyMinPx},${report.config.thresholds.hydrogenMinPx},${report.config.thresholds.bondLinePx},${report.config.thresholds.hydrogenLinePx}/mix=${report.config.opMixId}/grp=${report.config.groupShare}/cov=${report.config.reactCoverageShare}/fac=${report.config.faceCoverageShare}`,
             /* ★★ **反応の面へどこまで届いたか**（v1502・発注書 B ②）。
              * ⚠ **回数ではなく本数を見ること** —— 1本に1万回届いても、他の48本が0回なら
              *   「監査がバグを見つけてくれる」は成り立たない。`rulesZeroApplied` が要。 */
-            reactions: summarizeReactions(rxLedger)
+            reactions: summarizeReactions(rxLedger),
+            /* ★★ **新しい面へどこまで届いたか**（vNNNN・DESIGN_review_pack3.md §1）。
+             * ⚠ **「開いた」ではなく「何かが起きた」**（瓶＝変わった/答えが返った・
+             *   課題＝**達成した**・資料＝**表の行が生えた**）。 */
+            faces: summarizeFaces(faceLedger)
         };
     }
 
@@ -1265,12 +1597,21 @@
         if (!rxSamples) rxSamples = buildReactionSamples(W, g);
         return rxSamples;
     };
+    /* ⚠ 再生では**新しい面の帳簿も要る**（vNNNN）。無いと `bottle`／`quest`／`refbook` の枝が
+     *   誘導に使う数を持てず、**同じ種でも押す札が変わる** ＝ 再現の道具が壊れる。 */
+    const ensureFaceLedger = async (W) => {
+        if (faceLedger) return faceLedger;
+        try { if (W.referenceBook) await W.referenceBook.load(); } catch (e) { /* 配信が無い */ }
+        faceLedger = newFaceLedger(W);
+        return faceLedger;
+    };
     window.auditRerun = async (seed, opsCount) => {
         opsCount = opsCount || Math.max(1, Number(document.getElementById('fuzz-ops').value) || 80);
         const W = frame.contentWindow;
         const D = frame.contentDocument;
         const errBox = [];
         ensureSamples(W, W.game);
+        await ensureFaceLedger(W);
         W.addEventListener('error', ev => errBox.push(ev.message));
         return fuzzOnce(W, D, W.game, seed, opsCount, errBox);
     };
@@ -1281,6 +1622,7 @@
         const D = frame.contentDocument;
         const errBox = [];
         ensureSamples(W, W.game);
+        await ensureFaceLedger(W);
         return fuzzOnce(W, D, W.game, seed, opsCount, errBox, onOp);
     };
 
@@ -1303,7 +1645,13 @@
         newReactionLedger,
         tallyPressedButton,
         pickReactionButton,
-        summarizeReactions
+        summarizeReactions,
+        // 新しい面（vNNNN）。`FZ5`〜`FZ7` が読む
+        FACE_COVERAGE_SHARE,
+        pickLeastReached,
+        newFaceLedger,
+        summarizeFaces,
+        faceReachLine
     };
 
     // ⚠ ここから下は audit.html の中でしか意味がない。ライブラリとして読まれたときは

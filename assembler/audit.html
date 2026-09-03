@@ -79,7 +79,7 @@
             定期レビュー（2026-09-02）の実測: <b>直前の20版（v1476〜v1495）の変更14件のうち、監査の内側にあったのは 0 件</b>。
             ②ファズは <b>49本の反応のうち16本に1回も届いておらず</b>、「react」を引いた回の 45% はボタンが無くて空振り、
             押せた回の 38% は「🔍 反応の前後を見る」（＝分子を変えない札）だった。
-            <b>v1497 で②に「相手を並べる組」の枝と「まだ届いていない札を優先する」選び方を足し、
+            <b>v1502 で②に「相手を並べる組」の枝と「まだ届いていない札を優先する」選び方を足し、
             到達の本数と空振り率を毎回出すようにした</b>（上の「反応への到達」の行）。
             <b>実測①（同じ種300個 × 80操作の A/B・<code>?nogroups=1&amp;noguide=1</code> が否定対照）</b>:
             分子を変えられる 43 本のうち <b>29 本 → 36 本</b>に到達（0回 <b>14 本 → 7 本</b>）。
@@ -92,28 +92,55 @@
             ⚠ 残る 2 本が届かないのは題材ではなく<b>寿命</b> —— 組を並べてから react を引くまでに
             平均 9 操作あり、その間の <code>place</code>／<code>cut</code> が糖の環を壊してしまう
             （失敗記録の <code>ops</code> で確認）。単量体が3個並ぶ重合は生き残るので届く。
-            ⚠ <b>それでも下の「外」は外のまま</b>。
+            ⚠ <b>「分子を変えられる 43 本」は実測当時（v1500）の数。反応が増えるたびに変わるので、
+            いまの数は上の「反応への到達」の行を読むこと</b>（画面の数は動的）。
         </p>
+        <p>
+            ⚠⚠ <b>定期レビュー第3回（2026-09-03・<code>DESIGN_review_pack3.md</code>）で、同じ指摘が2回続けて出た</b>:
+            <b>6版で足した面 8 つのうち、②ファズが実際に触るのは 2 つだけ</b>で、
+            <b>ユーザーに見える新しい面4つ（参考書のページ・課題12問・<code>?open=reference</code>・<code>?quest=</code>）は 0</b>
+            だった（300反復 × 80操作で <code>referenceBook.open</code> 0回・<code>startQuest</code> 0回・
+            <code>setPalette('exp')</code> 0回・瓶のクリック 0回）。
+            <b>vNNNN で②に <code>bottle</code>（🧪 瓶を押す）・<code>quest</code>（🎯 課題を始める）・
+            <code>refbook</code>（📖 資料を開く）の3枝と、面ごとの誘導を足した</b>（上の「新しい面への到達」の行）。
+            ⚠⚠ <b>数えるのは「開いた」ではなく「何かが起きた」</b> ——
+            瓶は<b>分子が変わった／答えが返った</b>、課題は<b>始めた ではなく達成した</b>、
+            資料は<b>表の行が実際に生えた</b>。<br>
+            <b>実測（同じ種60個 × 80操作・vNNNN）</b>: 🧪 瓶 <b>24/24 本</b>で何かが起きた・
+            🎯 課題 <b>11/12 問を達成</b>（届かない1問は 2手 の <code>eq-benzene-aniline</code>）・
+            📖 資料 <b>3/3 ページ</b>（表 のべ 1,093 行）。⚠ <b>それでも下の「外」は外のまま。</b>
+        </p>
+        <!-- ★★ 表の各行は `data-face` / `data-audit="in|out"` / `data-op`（内なら触る枝の名前）を持つ。
+             ⚠ **手で書いた表は必ず古くなる**（実際、上の「v1497」は v1502 の誤りだった）ので、
+             `assembler/tests.js` の `FZ8` が `audit.js` の `OP_MIX` と**両向きで**突き合わせる:
+               ・「内」なのに枝が書かれていない／消えた枝を名乗っている → 赤
+               ・★ **枝を足したのに、どの行からも名乗られていない → 赤**（表の直し忘れ） -->
         <table>
             <tr><th>面</th><th>監査</th><th>代わりの門番</th></tr>
-            <tr><td>自由キャンバスの作図（配置・モジュール・次数・削除・伸縮・Undo/Redo）</td><td>★ 内（②）</td><td>—</td></tr>
-            <tr><td>登録図の自動作図・名称対応・異性体列挙</td><td>★ 内（①）</td><td>—</td></tr>
-            <tr><td>画面サイズ・当たり判定</td><td>★ 内（③④）</td><td>—</td></tr>
-            <tr><td><b>反応の実行（重合・加硫・ビニロン・開環・縮合・糖・酸無水物ほか）</b></td><td>★ <b>v1497 から内</b>（②の「組」の枝。到達本数は画面に出る）</td><td>PY / VL / VS / RV / CV</td></tr>
-            <tr><td>反応の前後比較の<b>中身</b>（字幕・図の並べ方）</td><td>⚠ 札は押されるが中身は未検査（`inspectMolecule` は分子しか見ない）</td><td>RV1-2・RV9-10</td></tr>
-            <tr><td>実験モード（🧪 タブ・試薬の瓶）</td><td>外（タブも瓶も押さない）</td><td>EX2-4</td></tr>
-            <tr><td>書き出し練習（異性体）… <code>learn.js</code> は一度も呼ばれない</td><td>外</td><td>IH・IC・IS・ID10-11・AK</td></tr>
-            <tr><td>絞り込みモード・<code>?open=narrowing</code></td><td>外</td><td>EX1・ID5-6</td></tr>
-            <tr><td>クイズ（同じ／違う・命名）</td><td>外</td><td>ST 系</td></tr>
-            <tr><td>立体視（くさび図・鏡像を重ねる）</td><td>外</td><td>SF1-6</td></tr>
-            <tr><td>主鎖と番号</td><td>外</td><td>MN1-4</td></tr>
-            <tr><td>整形モード（タップで整える）</td><td>外（ファズは整形モードに入らない）</td><td>CT / RS 系</td></tr>
-            <tr><td>反応機構ビューア・チュートリアル・分子モーダルの UI</td><td>外</td><td>既存テスト</td></tr>
-            <tr><td>自動水素どうしの近さ</td><td>外（物差しは H と重原子だけ）</td><td><code>verify-compounds.js</code>（警告のみ）</td></tr>
+            <tr data-face="canvas" data-audit="in" data-op="place,module,toggle,cut,erase,stretch,undo,redo"><td>自由キャンバスの作図（配置・モジュール・次数・削除・伸縮・Undo/Redo）</td><td>★ 内（②）</td><td>—</td></tr>
+            <tr data-face="library" data-audit="in" data-op="library"><td>登録図の自動作図・名称対応・異性体列挙</td><td>★ 内（①）</td><td>—</td></tr>
+            <tr data-face="viewport" data-audit="in" data-op="viewport,tap"><td>画面サイズ・当たり判定</td><td>★ 内（③④）</td><td>—</td></tr>
+            <tr data-face="reaction" data-audit="in" data-op="react,summon"><td><b>反応の実行（重合・加硫・ビニロン・開環・縮合・糖・酸無水物ほか）</b></td><td>★ <b>v1502 から内</b>（②の「組」の枝。到達本数は画面に出る）</td><td>PY / VL / VS / RV / CV</td></tr>
+            <tr data-face="compare" data-audit="in" data-op="react"><td>反応の前後比較の<b>中身</b>（字幕・図の並べ方）</td><td>⚠ 札は押されるが中身は未検査（<code>inspectMolecule</code> は分子しか見ない）</td><td>RV1-2・RV9-10</td></tr>
+            <tr data-face="reagent-palette" data-audit="in" data-op="bottle"><td><b>実験モード（🧪 タブ・試薬の瓶・条件の2択・呈色）</b></td><td>★ <b>vNNNN から内</b>（②の <code>bottle</code> 枝。⚠ <b>押した瓶が何も返さなければ赤</b>）</td><td>EX2-4・RG3・RG11・MM8</td></tr>
+            <tr data-face="quest" data-audit="in" data-op="quest"><td><b>🎯 実験モードの課題（12問・帯・一覧）</b></td><td>★ <b>vNNNN から内</b>（②の <code>quest</code> 枝。⚠ <b>数えるのは「達成した」問数だけ</b>）</td><td>EQ2-8</td></tr>
+            <tr data-face="reference" data-audit="in" data-op="refbook"><td><b>📖 資料（参考書のページ・表・例題）… <code>learn.js</code></b></td><td>★ <b>vNNNN から内</b>（②の <code>refbook</code> 枝。⚠ <b>表が0行なら赤</b>・例題は「お題が実際に開いた」まで見る）</td><td>REF1-11</td></tr>
+            <tr data-face="deep-link" data-audit="out"><td><code>?open=reference</code>・<code>?quest=</code>・<code>?open=…</code> の受け口</td><td>外（<b>構造的に</b>: iframe の src は <code>index.html</code> 固定で、起動時にしか読まれない）</td><td>EP5-7・REF11・EQ3</td></tr>
+            <tr data-face="isomer-practice" data-audit="out"><td>書き出し練習（異性体・「条件にある構造」13問）</td><td>外</td><td>IH・IC・IS・ID10-11・AK</td></tr>
+            <tr data-face="narrowing" data-audit="out"><td>絞り込みモード・<code>?open=narrowing</code></td><td>外</td><td>EX1・ID5-6</td></tr>
+            <tr data-face="quiz" data-audit="out"><td>クイズ（同じ／違う・命名）</td><td>外</td><td>ST 系</td></tr>
+            <tr data-face="stereo" data-audit="out"><td>立体視（くさび図・鏡像を重ねる）</td><td>外</td><td>SF1-6</td></tr>
+            <tr data-face="mainchain" data-audit="out"><td>主鎖と番号</td><td>外</td><td>MN1-4</td></tr>
+            <tr data-face="tidy" data-audit="out"><td>整形モード（タップで整える）</td><td>外（ファズは整形モードに入らない）</td><td>CT / RS 系</td></tr>
+            <tr data-face="misc-ui" data-audit="out"><td>反応機構ビューア・チュートリアル・分子モーダルの UI</td><td>外</td><td>既存テスト</td></tr>
+            <tr data-face="hydrogen-gap" data-audit="out"><td>自動水素どうしの近さ</td><td>外（物差しは H と重原子だけ）</td><td><code>verify-compounds.js</code>（警告のみ）</td></tr>
         </table>
         <p>
             ⚠ <b>否定対照の回し方</b>: <code>audit.html?nogroups=1&amp;noguide=1</code> で
             「組」の枝と札の誘導を止められる（＝ v1496 までのファズと同じ選び方）。
+            <code>?nofaces=1</code> で<b>新しい面の3枝（🧪 瓶・🎯 課題・📖 資料）を丸ごと止められる</b>
+            （＝ v1511 までのファズと同じ面しか触らない。<code>comparableKey</code> の
+            <code>fac=0</code> で見分けが付く）。
             止めた実行は結果ファイルの <code>comparableKey</code> の <code>grp=0/cov=0</code> で見分けが付く
             ＝ <b>本走と取り違えて並べられない</b>。
             <code>audit.html?seed=1000</code> で基点シードを固定できる（A/B は
