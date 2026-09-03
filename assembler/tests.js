@@ -31889,10 +31889,21 @@
             assert(shown(a.D, 'naming-modal'), '?open=naming で命名クイズが開かない');
         } finally { a.kill(); }
 
+        /* ⚠⚠ vNNNN で 📚 学習の ⚗️ 反応機構ビューアの札を撤去した（ユーザー決定 2026-09-03）。
+           ★ 着地点は **📖 資料（参考書）の「反応の道すじ（反応機構）」の表**。
+           ⚠ **モードは変えない**（資料は「いまのモードのまま読む」もの。`REF11` の決め）ので、
+              ここで `currentMode === 'learn'` は見ない —— 見るのは**機構の一覧に着いたか**。 */
         a = await openApp('?open=mechanism');
         try {
-            assert(a.W.game.currentMode === 'learn', '?open=mechanism で学習モードにならない');
-            assert(a.D.getElementById('reaction-box').open, '?open=mechanism で反応機構ビューアが開かない');
+            for (let i = 0; i < 40; i++) {
+                if (a.D.querySelector('#ref-body table.ref-mech-table')) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            assert(!a.D.getElementById('reference-pane').classList.contains('hidden'),
+                '?open=mechanism で資料が開かない');
+            const rows = a.D.querySelectorAll('#ref-body table.ref-mech-table tbody tr');
+            assert(rows.length === a.W.reactionPlayer.reactions.length,
+                `?open=mechanism で機構の一覧に着かない（${rows.length} 行）`);
         } finally { a.kill(); }
 
         // シリーズの指定（部分一致）。ハブの単元行と1対1に対応させるために要る
@@ -32722,49 +32733,60 @@
      * 答えは「メニューに反応実行を足す」ではなく（EP9 がその理由を固定する）、
      * **名札を直し・群を見出しで言い分け・行き先を1行書く**の3つ。 */
 
-    test('EP7: 学習メニューが群の見出しで「やる／見る」を言い分ける（D3）', async (c) => {
+    test('EP7: 学習メニューが群の見出しで「やる／読む」を言い分ける（D3）', async (c) => {
         const D = c.D;
         const body = D.getElementById('study-body');
         assert(body, '#study-body が無い');
         const kids = [...body.children];
 
-        // ★ <details> の数・id・並び順は1つも変えない（これが D3 でいちばん危ないところ）。
-        //   #reaction-box は reactions.json が読めないとき reaction.js が丸ごと隠すので id を動かせず、
-        //   #learn-acc-quiz は demos-stereo.json が `>summary` で開き、
-        //   #learn-acc-narrowing の位置は EP4 が見ている
+        /* ★★ **この検査が守っているもの**（数そのものではない）:
+             ① `<details>` の **id と並び順**が動かないこと —— 外から名指しで開かれるものがある
+                （`demos-stereo.json` が `#learn-acc-quiz>summary` を押し、
+                 `#learn-acc-narrowing` の位置は `EP4` が見ている）。
+                ⚠ **足すときは末尾に限る**（既存の並びを1つも動かさないため）。
+             ② 群の見出しが `<details>` の **外**（`#study-body` 直下）に在ること ——
+                中に入れると「開かないと群が読めない」＝ 言い分けたい相手に届かない。
+             ③ 見出しと `<details>` の**対応**（どの見出しがどの群を指しているか）。
+
+           ⚠⚠ **vNNNN で `#reaction-box`（⚗️ 反応機構ビューア）を撤去した**
+             （ユーザー決定 2026-09-03「消す方がすっきりすると思います」。機構は
+              📖 資料の4枚目へ移した）。★ 群は「登録された反応を見る」が消えて2つになったが、
+             **①〜③ はそのまま**。数は下の一覧から機械で出す ＝ 数字を2か所に書かない。 */
+        const WANT = [
+            { head: /手を動かす/, accs: ['learn-acc-quiz', 'learn-acc-practice', 'learn-acc-narrowing'] },
+            { head: /読む/, accs: ['learn-acc-reference'] }
+        ];
+        const wantIds = WANT.reduce((a, g) => a.concat(g.accs), []);
+
         const accs = kids.filter(el => el.tagName === 'DETAILS');
         const ids = accs.map(el => el.id);
-        // ⚠ 5つめ（#learn-acc-reference・📖 資料）は 2026-09-02 に**末尾へ足した**もの
-        //   （DESIGN_reference_book.md）。★ 見張っているのは「数」ではなく
-        //   **既存4つの id と並び順が動いていないこと**なので、足すのは末尾に限る
-        assert(ids.length === 5, `#study-body 直下の <details> が5つでない（${ids.length}: ${ids.join(' / ')}）`);
-        ['learn-acc-quiz', 'learn-acc-practice', 'learn-acc-narrowing', 'reaction-box', 'learn-acc-reference']
-            .forEach((id, i) => {
-                assert(ids[i] === id,
-                    `${i + 1}番目の <details> が #${id} でない（#${ids[i]}）。id と並び順は不変条件`);
-            });
+        assert(ids.length === wantIds.length,
+            `#study-body 直下の <details> が ${wantIds.length} つでない（${ids.length}: ${ids.join(' / ')}）`);
+        wantIds.forEach((id, i) => assert(ids[i] === id,
+            `${i + 1}番目の <details> が #${id} でない（#${ids[i]}）。id と並び順は不変条件`));
+        // ⚠ 撤去したものが戻っていないこと（戻すなら、この検査ごと直す）
+        assert(!D.getElementById('reaction-box'),
+            '#reaction-box が復活している（機構の入口は 📖 資料の4枚目に1本化したはず）');
 
-        // 足したのは見出しの <div>（いまは3つ）。★ `<details>` の**外**（#study-body 直下）に置く。
-        //   中に入れると「開かないと群が読めない」＝ 言い分けたい相手に届かない
+        // 見出しは `<details>` の**外**（#study-body 直下）
         const heads = kids.filter(el => el.classList.contains('quiz-group-head'));
-        assert(heads.length === 3,
-            `#study-body 直下の群の見出しが3つでない（${heads.length}）。<details> の中に入れていないか`);
-        assert(kids.length === 8, `#study-body 直下の要素が 8（見出し3＋details5）でない（${kids.length}）`);
-        assert(/手を動かす/.test(heads[0].textContent), '1つめの見出しが「手を動かす」でない');
-        assert(/登録された反応を見る/.test(heads[1].textContent), '2つめの見出しが「登録された反応を見る」でない');
-        assert(/読む/.test(heads[2].textContent), '3つめの見出しが「読む」でない');
+        assert(heads.length === WANT.length,
+            `#study-body 直下の群の見出しが ${WANT.length} つでない（${heads.length}）。<details> の中に入れていないか`);
+        assert(kids.length === WANT.length + wantIds.length,
+            `#study-body 直下の要素が ${WANT.length + wantIds.length}（見出し${WANT.length}＋details${wantIds.length}）でない（${kids.length}）`);
+        WANT.forEach((g, i) => assert(g.head.test(heads[i].textContent),
+            `${i + 1}つめの見出しが ${g.head} に合わない（${heads[i].textContent}）`));
 
-        // 位置: 「手を動かす」の下に3つ・「登録された反応を見る」の下に1つ・「読んで確かめる」の下に1つ
-        assert(kids[0] === heads[0], '「手を動かす」が #study-body の先頭にない');
-        assert(kids.indexOf(heads[1]) - kids.indexOf(heads[0]) === 4,
-            '「手を動かす」の下に <details> が3つ並んでいない');
-        assert(kids.indexOf(heads[1]) === kids.indexOf(accs[3]) - 1,
-            '「登録された反応を見る」が ⚗️ 反応機構ビューアの直前にない');
-        assert(kids.indexOf(heads[2]) === kids.indexOf(accs[4]) - 1,
-            '「読む」が 📖 資料（参考書）の直前にない');
+        // 位置: 各見出しの直後から、その群の <details> が並ぶ
+        assert(kids[0] === heads[0], '1つめの見出しが #study-body の先頭にない');
+        WANT.forEach((g, i) => {
+            const at = kids.indexOf(heads[i]);
+            g.accs.forEach((id, k) => assert(kids[at + 1 + k] && kids[at + 1 + k].id === id,
+                `「${heads[i].textContent.split(/\s/)[0]}」の ${k + 1} 番目が #${id} でない`));
+        });
     });
 
-    test('EP8: 機構ビューアの案内が、作業帯のボタンの実際の文言を名指しする（D4・D2）', async (c) => {
+    test('EP8: 機構の資料が、作業帯のボタンの実際の文言を名指しする（D4・D2）', async (c) => {
         c.reset();
         const D = c.D, W = c.W, g = c.game;
         g.setMode('free');
@@ -32775,15 +32797,24 @@
         const stem = btn.textContent.split('（')[0].trim();
         assert(stem === '⚗ 反応させる・調べる', `作業帯のボタンの名札が変わっている（${stem}）`);
 
-        const note = D.getElementById('rx-viewer-note');
-        assert(note, '#rx-viewer-note（機構ビューアの行き先の案内）が無い');
-        assert(note.textContent.includes(stem),
-            `機構ビューアの案内が作業帯のボタン「${stem}」を名指ししていない（2か所が別の名前で同じものを指す）`);
-        // reactor.js の既存の注記と同じ語（「あなたの分子そのものではなく代表例の分子で再生します」）
-        assert(/代表例/.test(note.textContent), '「代表例の分子で再生する」が案内に無い（reactor.js と語が食い違う）');
-        // 「見るだけ」ではないこと ＝ 🎯 予測 の存在がメニューから読める（ボタンは増やさない）
-        const rxBody = D.getElementById('reaction-box').querySelector('.learn-acc-body');
-        assert(/🎯 予測/.test(rxBody.textContent), '🎯 予測 の案内が機構ビューアに無い（「見るだけ」に読めてしまう）');
+        /* ⚠⚠ **案内の置き場所が vNNNN で変わった**。以前は 📚 学習の ⚗️ アコーディオンの中の
+           `#rx-viewer-note` に在ったが、**その札ごと撤去した**（ユーザー決定 2026-09-03）。
+           ★ いま同じことを言っているのは **📖 資料の4枚目「反応の道すじ（反応機構）」の本文**。
+           ★★ **守っているものは同じ3つ**:
+             ① 自分の分子を反応させる場所を**名指しで**教える（2か所が別の名前で同じものを指さない）
+             ② ここは**代表例**の再生であることを言う（`reactor.js` の注記と語をそろえる）
+             ③ 「見るだけ」ではないこと ＝ **🎯 予測**の存在が読める（ボタンは増やさない） */
+        await W.referenceBook.openMechanisms();
+        await c.tick(20);
+        const refBody = D.getElementById('ref-body');
+        assert(refBody && D.querySelector('#ref-body table.ref-mech-table'),
+            '機構の資料が開かない（案内の置き場所ごと消えている）');
+        const text = refBody.textContent;
+        assert(text.includes(stem),
+            `機構の資料が作業帯のボタン「${stem}」を名指ししていない（2か所が別の名前で同じものを指す）`);
+        assert(/代表例/.test(text), '「代表例の分子で再生する」が資料に無い（reactor.js と語が食い違う）');
+        assert(/🎯 予測/.test(text), '🎯 予測 の案内が機構の資料に無い（「見るだけ」に読めてしまう）');
+        W.referenceBook.close();
 
         // ★ 件数で文言を切り替えない（U3 の案3 は採らない）。
         //   探すもののラベルが状態で変わると、一度覚えた名前で探せなくなる
@@ -32805,7 +32836,6 @@
         assert(zero.split('（')[0].trim() === stem,
             `0件のときに名札が変わっている（${zero} ／ ${eth}）＝ U3 の案3を踏んでいる`);
     });
-
     test('EP9: 学習モードでは自由モードの帯が隠れる（D1 の根拠・★否定対照）', async (c) => {
         // ★ この検査だけは「直したこと」ではなく「**直さなかった理由**」を固定する。
         //   `setMode('learn')` になった瞬間 #ws-free が hidden になるので、
@@ -33326,11 +33356,13 @@
             name: '学習: 書き出し練習', root: '#learn-acc-practice', max: 195, skip: [],
             open: (D) => { D.getElementById('study-modal').classList.remove('hidden'); D.getElementById('learn-acc-practice').open = true; }
         },
-        {
-            name: '学習: 反応機構ビューア', root: '#reaction-box', max: 115,
-            skip: ['#reaction-list', '.toggle-container'],
-            open: (D) => { D.getElementById('study-modal').classList.remove('hidden'); D.getElementById('reaction-box').open = true; }
-        },
+        /* ⚠⚠ 「学習: 反応機構ビューア」（`#reaction-box`・上限115字）は **vNNNN で外した** ——
+           画面そのものを撤去したため（ユーザー決定 2026-09-03。機構は 📖 資料の4枚目へ）。
+           ★ **行き先の案内は消えていない**（資料の本文へ移り、`EP8` が3語を見張っている）。
+           ⚠ **資料のページは、ここに足さない** —— この帯が数えているのは「操作の案内」で、
+             資料は**読み物そのもの**。字数の上限をかけると「中身を切る」誘惑に直結し、
+             `DESIGN_reference_book.md` §10-5 のユーザー決定（画面に入らないことの解決策として
+             *中身を切る* を選ばない）と正面から衝突する。 */
         {
             name: '記号パズル', root: '#symbol-puzzle-modal', max: 75,
             skip: ['#sp-task', '#sp-status', '#sp-moves'],
@@ -36085,10 +36117,13 @@
         D.querySelector('.canvas-header .mode-tab[data-mode="learn"]').click();
         const study = D.getElementById('study-modal');
         assert(!study.classList.contains('hidden'), '📚 タイルで Study モーダルが開かない');
-        D.getElementById('reaction-box').open = true;
-        const first = D.querySelector('#reaction-list button[data-rx-index]');
-        assert(first, '一覧の札が無い');
+        // ⚠ 一覧は vNNNN で 📖 資料の4枚目へ移った（⚗️ の札ごと撤去）
+        await W.referenceBook.openMechanisms();
+        await c.tick(20);
+        const first = D.querySelector('#ref-body table.ref-mech-table button.ref-mech-play');
+        assert(first, '資料の機構の表に ▶ が無い');
         first.click();
+        await c.tick(20);
         try {
             assert(rp.active, '一覧から選んでも再生が始まらない');
             assert(!strip.classList.contains('hidden') && !pane.classList.contains('hidden'),
@@ -36122,7 +36157,7 @@
             assert(strip.contains(cap), '説明（#reaction-caption）が作業帯の外にある');
             assert(cap.textContent.length > 0, 'ステップを進めても説明が出ない');
         } finally {
-            D.getElementById('reaction-box').open = false;
+            W.referenceBook.close();
             rp.exit();
             g.setMode('free');
         }
@@ -36159,7 +36194,8 @@
             assert(!study.classList.contains('hidden'), '📚 タイルで Study モーダルが開かない');
             assert(tile.classList.contains('active'), '学習中なのに 📚 タイルが点灯しない');
             // メニューの中身は右パネルから**そのまま**移ってきている（id・内部構造は無改変）
-            ['learn-acc-quiz', 'learn-acc-practice', 'reaction-box'].forEach(id => {
+            // ⚠ vNNNN で #reaction-box は撤去。3つめは 📖 資料（参考書）
+            ['learn-acc-quiz', 'learn-acc-practice', 'learn-acc-reference'].forEach(id => {
                 assert(study.contains(D.getElementById(id)), `${id} が Study モーダルの中に無い`);
             });
             // 枠は縦スクロール（3つ全開で 320px 幅では 4.5画面ある・§6-1）
