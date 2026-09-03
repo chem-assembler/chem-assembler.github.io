@@ -2852,10 +2852,51 @@ function runModelTests() {
     assert(vp.length === 2, "Cr₂O₇²⁻ が2種にほどけない");
     assert(vp.find((x) => x.el === "Cr").ox === 6 && vp.find((x) => x.el === "Cr").n === 2, "Cr が 2個 ×(+6) でない");
     assert(vp.find((x) => x.el === "O").ox === -2 && vp.find((x) => x.el === "O").n === 7, "O が 7個 ×(−2) でない");
-    // ⚠ 断り文が「実在の電離ではない」と言っていること（消したら赤くする）
-    assert(/実際に起き(て|る)/.test(OX_VIRTUAL_CAVEAT) && OX_VIRTUAL_CAVEAT.includes("電離ではない"),
-      "断り文が「実在の電離ではない」と言っていない");
-    assert(OX_VIRTUAL_CAVEAT.includes("道具"), "断り文が「数えるための道具」だと言っていない");
+    /* ⚠⚠ **見張っているのは文面ではなく「断りを必ず添える」という約束**
+       （model.js の注記 ＋ qa/KNOWLEDGE_CAVEATS.md の型）。
+       ★ 文面はユーザーが書き直せる（2026-09-03 に一度そうなった）ので、
+       **語句の丸ごと一致で見ない** —— 毎回赤くなる検査は、中身を見ない検査になる
+       （DEVELOPMENT.md「毎回出る赤は抜けより高くつく」）。
+       ⚠ 代わりに、断りが**必ず持っていなければならない2つの向き**を見る:
+         (1) **仮の話だと言っている**（仮想 ／ 仮に ／ …としたとき）
+         (2) **本当にはそうならないと言っている**（実際には ／ 実際に起き…ない）
+       この2つが欠けた断りは、仮の分け方を本当の電離に見せてしまう。 */
+    const cav = OX_VIRTUAL_CAVEAT;
+    assert(cav && cav.length >= 20, "断り文が空か短すぎる（断らずに仮の分け方を見せている）: " + cav);
+    assert(/仮想|仮に|とした(とき|場合)/.test(cav),
+      "断り文が「仮の話だ」と言っていない: " + cav);
+    assert(/実際に/.test(cav), "断り文が「実際にはそうならない」と言っていない: " + cav);
+    // ⚠ 画面に出すのは素の文（強調の ** は書かない。書かれても剥がして出す側の作法は別）
+    assert(!cav.includes("**"), "断り文に強調記法が入っている（画面に ** が出る恐れ）: " + cav);
+  });
+
+  /* ★ 数の書き方は3本ある（2026-09-03・ユーザーの指摘で分けた）。
+     ⚠ **この検査は「3本が別物であること」を見張る。** 1本にまとめられた瞬間に
+     酸化数かイオンの電荷のどちらかが壊れる —— 値が同じ（単原子イオンの酸化数＝電荷）でも
+     書き方が違うので、機械では気づけない。 */
+  t("OXNUM: 表記は3本 —— 酸化数(+1)・イオンの電荷(2−)を混ぜない", () => {
+    // (1) 酸化数 … 符号が先・1 も書く
+    assert(fmtOxNum(1) === "+1" && fmtOxNum(3) === "+3", "酸化数の＋の書き方が変わった: " + fmtOxNum(1));
+    assert(fmtOxNum(-2) === "−2" && fmtOxNum(-1) === "−1", "酸化数の−の書き方が変わった: " + fmtOxNum(-2));
+    assert(fmtOxNum(0) === "0", "酸化数の 0 の書き方が変わった: " + fmtOxNum(0));
+    // (2) イオン1個ぶんの電荷 … 数が先・符号があと・1 は書かない
+    assert(fmtIonCharge(1) === "+" && fmtIonCharge(-1) === "−",
+      "1価のイオンで数を書いてしまっている: " + fmtIonCharge(1) + " / " + fmtIonCharge(-1));
+    assert(fmtIonCharge(2) === "2+" && fmtIonCharge(-2) === "2−" && fmtIonCharge(-3) === "3−",
+      "多価のイオンの書き方が違う: " + [2, -2, -3].map(fmtIonCharge).join(" "));
+    assert(fmtIonCharge(0) === "0", "電荷 0 は数の 0（0− とは書かない）: " + fmtIonCharge(0));
+    // ⚠ 平の文字であること（上付きにしない。式の右肩に付けるときだけ oxidation.js の supCharge）
+    assert(!/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]/.test([1, -1, 2, -2, 3, -3, 0].map(fmtIonCharge).join("")),
+      "イオンの電荷が上付きになっている");
+    // 負号はどちらも本物のマイナス（U+2212）。同じ画面で - と − が混ざらない
+    assert(fmtIonCharge(-2).includes("−") && fmtOxNum(-2).includes("−"),
+      "負号がハイフンになっている");
+    /* ★★ 否定対照の芯: **2本が別物**であること。
+       片方をもう片方で済ませた（＝一括置換した）瞬間にここが落ちる。 */
+    for (const v of [1, -1, 2, -2, 3, -3]) {
+      assert(fmtOxNum(v) !== fmtIonCharge(v),
+        "酸化数とイオンの電荷が同じ書き方になっている（表記を1本にまとめた）: " + v + " → " + fmtOxNum(v));
+    }
   });
 
   /* ---- 【練習X】半反応式を組む（ORDER_halfreaction_2026-08-22.md §2）---- */
@@ -8771,20 +8812,35 @@ async function runOxNumUITests(iframe) {
     assert(state().oxOk, "下→上の順で埋めると通らない");
   });
 
-  await t("OXNUM UI: 仮想の単原子イオンは、断りと一緒にしか出てこない", async () => {
+  await t("OXNUM UI: 仮想の単原子イオンは、断りと一緒に・ひらかずに出る", async () => {
     win.OxNum.goto("K2Cr2O7");
     typeInto("splitIn0", 1); typeInto("splitIn1", -2);
     assert(doc.getElementById("step3").hidden, "解く前から段3が出ている");
     typeInto("oxIn1_Cr", 6);
     assert(!doc.getElementById("step3").hidden, "解いても段3が出ない");
-    assert(!$$("#virtWrap .oxCaveat").length, "開く前から中身が出ている");
-    doc.querySelector("#virtWrap button").click();
+    /* ★ 2026-09-03・ユーザーの指示「ひらく・閉じるはなくてよい（常時表示）」。
+       ⚠ 段3 が出るのは段2 が解けてからのまま（姿は人が入れた数から組み立てるので、
+       答える前は描きようがない）。無くしたのは**その中の開閉の釦**。 */
+    assert(!$$("#virtWrap button").length && !$$("#virtWrap details").length,
+      "段3 にひらく・閉じるが残っている");
     const line = doc.querySelector("#virtWrap .oxVirtLine");
     const cav = doc.querySelector("#virtWrap .oxCaveat");
     assert(line && line.textContent.includes("Cr⁶⁺") && line.textContent.includes("O²⁻"),
-      "仮の分け方が 2Cr⁶⁺ ＋ 7O²⁻ になっていない: " + (line && line.textContent));
-    assert(cav && cav.textContent.includes("実際に起きている電離ではない"),
-      "⚠ 断りが付いていない（これが無いと仮の話が本当の電離に見える）");
+      "ひとりでに出るはずの仮の分け方（2Cr⁶⁺ ＋ 7O²⁻）が出ていない: " + (line && line.textContent));
+    /* ⚠⚠ **断りが必ず付いていること。** ここも文面ではなく約束で見る
+       （データ側の「必ず断りが付く」と同じ2つの向き）。 */
+    assert(cav && cav.textContent.trim().length >= 20,
+      "⚠ 断りが付いていない（これが無いと仮の話が本当の電離に見える）: " + (cav && cav.textContent));
+    assert(/仮想|仮に|とした(とき|場合)/.test(cav.textContent) && /実際に/.test(cav.textContent),
+      "断りが「仮の話」「実際にはそうならない」の両方を言っていない: " + cav.textContent);
+    assert(cav.textContent === OX_VIRTUAL_CAVEAT.replace(/\*\*/g, ""),
+      "画面の断りが model.js の OX_VIRTUAL_CAVEAT と別物になっている（文面を2か所に持っている）");
+    // ★ 別の回でもそのまま出る（前の文は Cr₂O₇²⁻ を名指ししていて、他の回では話が合っていなかった）
+    win.OxNum.goto("MnO4-");
+    typeInto("oxIn0_Mn", 7);
+    const cav2 = doc.querySelector("#virtWrap .oxCaveat");
+    assert(cav2 && cav2.textContent === cav.textContent, "回が変わると断りが変わる／消える");
+    assert(!/Cr/.test(cav2.textContent), "断りが特定の化学種を名指ししている（他の回で話が合わない）: " + cav2.textContent);
   });
 
   await t("OXNUM UI: 分ける相手がいない回は、段1で足踏みさせない", async () => {
@@ -8795,6 +8851,71 @@ async function runOxNumUITests(iframe) {
       "分けない理由を言っていない");
     typeInto("oxIn0_Mn", 7);
     assert(state().oxOk, "MnO₄⁻ の Mn ＝ +7 が通らない");
+  });
+
+  /* ★★ 2026-09-03・ユーザーの指摘:
+       「電離したイオンの電荷は ＋1でなく ＋、−2でなく 2− とイオン式の表記にする」
+     ⚠⚠ **この検査の主目的は「イオン式にできたこと」ではなく、
+        「酸化数まで巻き込んで一括置換されていないこと」**。
+        同じ `fmtOxNum` が両方の意味で使われていたのが症状なので、
+        **どこが酸化数でどこが電荷かを名前で押さえておかないと、次に誰かが全部変える。** */
+  await t("OXNUM UI: ★★電荷はイオン式（＋ / 2−）・酸化数は今までどおり（+1 / −2）", async () => {
+    win.OxNum.goto("(NH4)2SO4");            // 2NH₄⁺ ＋ SO₄²⁻。H は +1・O は −2 の灰色が両方出る回
+    typeInto("splitIn0", 1);
+    typeInto("splitIn1", -2);
+    assert(state().splitOk, "段1 が通らない（この検査の前提が崩れている）");
+
+    /* ---- (1) 電荷を書くところ ＝ 段1 の検算行のセル。イオン式で出る ---- */
+    const splitChk = doc.getElementById("splitChk").textContent;
+    assert(splitChk.includes("(+)×2"),
+      "＋1価のイオンが「(+)」になっていない（＋1 のままでは酸化数の書き方）: " + splitChk);
+    assert(splitChk.includes("(2−)×1"),
+      "−2価のイオンが「(2−)」になっていない: " + splitChk);
+    assert(!splitChk.includes("(+1)") && !splitChk.includes("(−2)"),
+      "段1 のセルに酸化数の書き方が残っている: " + splitChk);
+    // ⚠ 平の文字であること（上付きにしない。ユーザー「ボックスの位置で上付きを表現している」）
+    assert(!/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]/.test(splitChk),
+      "段1 の検算行に上付きの電荷が混じっている: " + splitChk);
+    // 負号は本物のマイナス（U+2212）。同じ画面で - と − が混ざらない
+    assert(splitChk.includes("2−"), "イオンの負号がハイフンになっている: " + splitChk);
+
+    /* ---- (2) ★★否定対照の芯 —— **酸化数の場所は +1 / −2 のまま** ----
+       ⚠ ここを名前（元素の行の見出し）で引く。位置や順番で引くと、
+       並びが変わっただけで嘘の合格・嘘の不合格になる。 */
+    const grey = (elName) => {
+      const row = $$("#oxSheet .oxRow").find((r) => r.querySelector(".oxEl").textContent === elName);
+      assert(row, "元素の行が無い: " + elName);
+      const g = row.querySelector(".oxGiven");
+      assert(g, elName + " の灰色の数が無い（入力欄になっている？）");
+      return { text: g.textContent, why: row.querySelector(".oxWhy").textContent };
+    };
+    const h = grey("H"), o = grey("O");
+    assert(h.why.includes("水素") && h.text === "+1",
+      "化合物の中の H の酸化数が +1 でなくなっている（電荷の表記に巻き込まれた）: " + JSON.stringify(h));
+    assert(o.why.includes("酸素") && o.text === "−2",
+      "化合物の中の O の酸化数が −2 でなくなっている: " + JSON.stringify(o));
+
+    /* ⚠ いちばん取り違えやすいのは**単原子イオン** —— 値は電荷そのものだが、
+       この欄が問うているのは**酸化数**なので +3 のまま。 */
+    win.OxNum.goto("Cr2(SO4)3");            // Cr³⁺ ＋ 3SO₄²⁻
+    typeInto("splitIn0", 3);
+    typeInto("splitIn1", -2);
+    assert(state().splitOk, "Cr₂(SO₄)₃ の段1 が通らない");
+    const cr = grey("Cr");
+    assert(cr.why.includes("単原子イオン") && cr.text === "+3",
+      "単原子イオンの酸化数が電荷の表記になっている（値は同じでも欄の意味が違う）: " + JSON.stringify(cr));
+    // ★ 同じ回の段1 のセルでは、同じ +3 が「3+」と書かれている（＝ 2つの表記が同居している）
+    assert(doc.getElementById("splitChk").textContent.includes("(3+)×2"),
+      "段1 で ＋3価のイオンが「(3+)」になっていない: " + doc.getElementById("splitChk").textContent);
+
+    /* ---- (3) 「めざす合計 ＝ ＜値＞（このイオンの電荷）」は**数のまま**にした ----
+       理由は oxidation.js の refreshOx の注記（＝ の両側が同じ量／箱の見出しが
+       既に SO₄²⁻ とイオン式で出ている／教科書の書き方は確かめていない）。
+       ⚠ **断りの言葉は残す** —— 名前は電荷・書き方は検算の数、と分けているだけ。 */
+    const chk = $$("#oxSheet .oxCheckLine").map((e) => e.textContent).join(" ／ ");
+    assert(chk.includes("（このイオンの電荷）"), "検算の右辺が電荷だと言っていない: " + chk);
+    assert(chk.includes("−2（このイオンの電荷）"),
+      "検算の右辺が数（−2）でなくなっている ＝ ＝ の両側で書き方が違う: " + chk);
   });
 
   await t("OXNUM UI: 帯の出題が oxTaskList とそのまま一致する（手で並べていない）", async () => {
@@ -8941,6 +9062,93 @@ async function runHalfBuildUITests(iframe) {
     assert(!state().done && state().at === 0, "手順を切り替えても答えが残っている");
     assert(doc.getElementById("hbIn_e_left").value === "", "入力欄に前の手順の数が残っている");
     assert(doc.getElementById("clearBanner").hidden, "切り替えたのにクリアが出たまま");
+  });
+
+  /* ★★ 2026-09-03・ユーザーの実機報告:
+       「手順のボックスがハイライトされているが、他のボックスも入力可能である／
+         他のボックスを入力済みにすると、手順A、B、どちらも同じ入力順で正解できてしまう」
+     ⚠ **これは「見た目の親切」ではなく、手順を2つ用意した意味が消える穴**だった。
+     枠を6つとも出した v198 の副産物で、**段をまたいだ順序が効かなくなっていた**
+     （`ORDER_halfreaction_2026-08-22.md` §6 の決め「段のあいだは順序を強いる」に反する）。
+     ★ 直しは **隠す**ではなく **閉じる**（`disabled`）—— 枠は見えたまま、打てるのはいまの段だけ。
+     ⚠ **順序は UI の話で、model.js は持たない**（`halfBuildDone` は式が正しいかだけを見る）。
+        だから見張る場所はここ ＝ この検査を外すと、誰も順序を見ていない状態に戻る。 */
+  await t("HALF UI: ★★まだ来ていない段の欄は閉じる（同じ入力順では両方 解けない）", async () => {
+    const inp = (key, side) => doc.getElementById("hbIn_" + IN[key] + "_" + side);
+    win.HalfBuild.goto("MnO4_red");
+    win.HalfBuild.setProc("B");                     // 段の並びは e⁻ → H₂O → H⁺
+    assert(!inp("e-", "left").disabled && !inp("e-", "right").disabled,
+      "B の1段目（e⁻）の欄まで閉じている（段の中では左右どちらからでも入れられること）");
+    assert(inp("H2O", "left").disabled && inp("H2O", "right").disabled &&
+      inp("H+", "left").disabled && inp("H+", "right").disabled,
+      "B の1段目なのに、まだ来ていない段の欄が開いている");
+    // ⚠ 閉じるのは disabled であって hidden ではない（v198 のご指示「枠は固定で出す」は生きている）
+    for (const k of ["w", "h", "e"]) for (const s of ["left", "right"]) {
+      assert(!doc.getElementById("hbSlot_" + k + "_" + s).hidden, "欄を隠してしまっている: " + k + "/" + s);
+    }
+    /* ★★ ここが否定対照の芯。**手順A の順（H₂O → H⁺ → e⁻）を手順B の面で打つ**と、
+       直す前は最後まで着いてクリアし、締めに「先に決めた e⁻ …個のまま」と嘘まで出ていた。 */
+    typeInto("H2O", "right", 4);
+    assert(state().at === 0 && !state().done, "手順B の面で H₂O から打ててしまう（B の芯を通らない）");
+    typeInto("H+", "left", 8);
+    assert(state().at === 0 && !state().done, "手順B の面で H⁺ から打ててしまう");
+    assert(doc.getElementById("clearBanner").hidden, "順を外した入力でクリアが出ている");
+    /* ★★ **この1行が芯**。上の2打ちが本当に捨てられたかは `at` では見えない
+       （どちらにせよ 0 のまま）ので、**e⁻ を入れた瞬間に何段進むか**で見分ける:
+         ・捨てていれば **1段だけ**進む（H₂O も H⁺ もまだ空）
+         ・受け取っていれば **一気に 3 まで飛んでクリア** ＝ 報告された抜け道そのもの
+       ⚠ 実際、`oninput` の閉じ判定を外した否定対照はここで落ちた。 */
+    typeInto("e-", "left", 5);
+    assert(state().at === 1,
+      "e⁻ を入れた途端に段が飛んだ ＝ 順を外した H₂O・H⁺ を受け取っている: " + state().at);
+    assert(!state().done, "手順A の入力順のまま手順B がクリアできてしまう");
+    assert(!inp("H2O", "left").disabled, "1段進んでも次の段の欄が開かない");
+    assert(inp("H+", "left").disabled, "その先の段まで一緒に開いている");
+    typeInto("H2O", "right", 4);
+    typeInto("H+", "left", 8);
+    assert(state().done, "手順B の順なら最後まで通る");
+    // ★ 済んだ段は開けたまま（間違いに気づいたら前に戻って直せる）
+    assert(!inp("e-", "left").disabled, "完成したら前の段が閉じてしまい、直しに戻れない");
+    /* ★ 逆向きも同じ穴だった: 手順A の面で B の順（e⁻ から）に打つ */
+    win.HalfBuild.setProc("A");
+    assert(!inp("H2O", "left").disabled && inp("e-", "left").disabled,
+      "手順A の1段目が H₂O になっていない（段の並びが手順で入れ替わること）");
+    typeInto("e-", "left", 5);
+    assert(state().at === 0 && !state().done, "手順A の面で e⁻ から打ててしまう");
+  });
+
+  /* ★ 「最後にもう一度同じ問題を解くボタンが欲しい」（2026-09-03・ユーザーの要望）。
+     ⚠ 3つの行き先が**どれも「同じ式」に見える**ので、言葉で言い分けられていることまで見る。 */
+  await t("HALF UI: クリア後の行き先は3つ（もう一度／もう一方の手順／次の式）", async () => {
+    win.HalfBuild.goto("MnO4_red");
+    win.HalfBuild.setProc("B");
+    solveB();
+    assert(state().done && !doc.getElementById("clearBanner").hidden, "クリアにならない");
+    const ids = $$("#clearBanner button").map((b) => b.id);
+    assert(JSON.stringify(ids) === JSON.stringify(["hbSwap", "hbRetry", "hbNext"]),
+      "クリア後の釦が3つ揃っていない（並びも見る）: " + ids.join(","));
+    const label = (id) => doc.getElementById(id).textContent;
+    assert(label("hbSwap").includes("手順A"),
+      "もう一方の手順へ行く道が消えている（この練習の眼目）: " + label("hbSwap"));
+    assert(label("hbRetry").includes("もう一度") && label("hbRetry").includes("手順B"),
+      "「もう一度」が同じ手順のままだと言っていない: " + label("hbRetry"));
+    assert(label("hbNext").includes("次の式"), "別の式へ行く道が無い: " + label("hbNext"));
+    // ★ もう一度 ＝ 式も手順もそのまま・入力だけ空に戻る
+    const before = state();
+    doc.getElementById("hbRetry").click();
+    const after = state();
+    assert(after.id === before.id && after.proc === before.proc,
+      "「もう一度」で式か手順が変わった: " + JSON.stringify(after));
+    assert(!after.done && after.at === 0 && doc.getElementById("clearBanner").hidden,
+      "「もう一度」でクリアが残っている: " + JSON.stringify(after));
+    assert(doc.getElementById("hbIn_e_left").value === "" &&
+      doc.getElementById("hbIn_w_right").value === "", "入力欄に前の答えが残っている");
+    // ⚠ もう一度でも同じ手順を通る（先の段はまた閉じる）
+    assert(doc.getElementById("hbIn_w_left").disabled, "「もう一度」なのに先の段が開いたまま");
+    // ★ もう一方の手順へ移る道は生きている
+    solveB();
+    doc.getElementById("hbSwap").click();
+    assert(state().proc === "A" && !state().done, "「同じ式を手順Aで組む」で移れない");
   });
 
   await t("HALF UI: 空欄と 0 を区別する／打っている途中に入力欄が作り直されない", async () => {
