@@ -3197,6 +3197,70 @@ b.em { font-weight: 700; color: var(--neon-blue); }
    （実機 375px で確認）。資料は読み物なので本文と同じ字で出す */
 .ref-table td.ref-formula { letter-spacing: 0.02em; }
 .ref-cap { font-size: 11.5px; color: var(--text-muted); margin: 0 0 6px; }
+/* 反応機構の表（第4ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   stages の表は「行に ▶ を置かない」（説明と練習の層を混ぜない・設計書 §10-2）が
+   機構の表は1行が読み物そのものなので ▶ を置く。class を分けておくと
+   `REF6`/`REF10` の「`table.ref-table` の中にボタンが無い」がそのまま生き続ける */
+.ref-mech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-mech-table th, .ref-mech-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-mech-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ref-mech-table td.ref-group {
+    vertical-align: top;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-mech-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 型の列も**折り返す**。「芳香族置換反応」を nowrap にすると、それだけで
+   資料ペイン（実測 271px）の3分の1を食う */
+.ref-mech-table td.ref-group { white-space: normal; width: 4.5em; }
+/* 反応名・1行説明・段数・▶ を1つの欄に入れる（どれも reactions.json の1件から）。
+   ⚠⚠ **4列にしない。** 実測（1280px・ペイン 320px・器 271px）で
+      「型 / 反応 / 段数 / ▶」は表が **426px** になり、**▶ が器の右外**（+155px）に出て
+      横スクロールしないと押せなかった ＝ **押すものが見えない** */
+.ref-mech-table td.ref-mech-name { white-space: normal; }
+.ref-mech-table td.ref-mech-name b { color: var(--text-primary); }
+.ref-mech-name .ref-mech-desc {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+.ref-mech-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+.ref-mech-steps { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+.ref-mech-play {
+    min-height: 32px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    font-family: var(--font-main);
+    font-size: 12.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
 /* 例題（無料）。★ **新しい採点は作らない** —— 押すと既存のパズルのお題
    （stages.json の `target` 照合）へ渡すだけ（設計書 §5-2 の (b)） */
 .ref-example {
