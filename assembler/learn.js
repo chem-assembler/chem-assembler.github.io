@@ -587,6 +587,243 @@ function ipMatchesSkeleton(mol, skeleton) {
     if (skeleton === 'ring') return !!findAnyCycle(mol);
     return true;
 }
+
+/* ============================================================================
+ * ★★ 「条件にある構造を書き出す」（v1510・ユーザー原文 2026-09-03）
+ *
+ * > 書き出しを充実させ／一通りすべて書き出させる／条件にある構造を書き出す／に分けるイメージです
+ * > 脱水して2-ブテンになるアルコールを書き出す、立体異性体の有無、あるいは
+ * > 水をふかして2-ブタノールになるアルケンの書き出し、立体異性体の有無 が実践的です
+ * > これは書き出しというよりも構造推定です
+ * > 現在の異性体の書き出しに、分子式以外の条件を追加したものになります
+ * > 答えが多くない書き出し問題は練習問題として有用と考えます
+ *
+ * ★ **アルコールとアルケンをつなぐ辺は1本の関係**（脱水と水の付加は同じ辺の逆向き）:
+ *
+ *     アルコール A（-OH が Cα）  --[Cβ から H を1つ、Cα から OH を取る]-->  アルケン K（Cα=Cβ）
+ *
+ *   ⚠ **この辺を数える関数を2つ書かない。** `ipDehydrationEdges` が唯一の出どころで、
+ *     水の付加（`ipHydrationEdges`）は同じ辺を**アルケンの側から**組み立てるだけ。
+ *     ★ (B) の「アルコールとアルケンの対応表（反応系統樹）」も、この辺をそのまま並べる。
+ *
+ * ⚠⚠ **`reactor.js` の `dehydration_intra` は使えない**（借りようとして測った）。
+ *   あちらは `game.userMolecule` を書き換える**実行**の道で、
+ *   ・ザイツェフ則の**主生成物1つだけ**を作る（副生成物を返さない）
+ *   ・返り値が分子ではなく画面用の caption つきの結果オブジェクト
+ *   ＝ 「その構造ができるアルコールをすべて」を組み立てるのに必要な**辺の一覧**が取れない。
+ *   ★ ここは列挙の側の道具なので、判定を借りるのではなく**同じ規則を列挙用に書く**。
+ *   ⚠ 規則が2か所になるので、**両者が同じ主生成物を返すこと**を `CS2` が実測で見張る。
+ * ========================================================================== */
+
+/** 暗黙の水素の数（重原子だけのモデルなので、価標の余りがそのまま H の数） */
+function ipImplicitH(mol, atomId) {
+    return maxValencyOf(mol, atomId) - mol.getUsedValency(atomId);
+}
+
+/**
+ * 原子IDの対応表つきの写し。⚠ **座標で対応づけない**（原子IDに順序を頼らないのと同じ理由で、
+ * 座標も「たまたま重ならない」ことに頼る材料。列挙器の並べ方を変えた日に静かに壊れる）
+ */
+function ipCloneWithMap(mol) {
+    const m = new Molecule();
+    const map = new Map();
+    mol.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y).id));
+    mol.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+    return { m, map };
+}
+
+/** -OH の酸素（重原子の次数1・炭素に単結合）。アルコールなら1個、エーテル・フェノールなら0個 */
+function ipHydroxylOxygens(mol) {
+    return mol.atoms.filter(a => {
+        if (a.element !== 'O') return false;
+        const n = mol.getNeighbors(a.id).filter(x => x.atom.element !== 'H');
+        return n.length === 1 && n[0].type === 1 && n[0].atom.element === 'C';
+    });
+}
+
+/**
+ * ★ 分子内脱水（β脱離）でできるアルケンを**すべて**返す。
+ * 返り値 `[{ code, betaH, major }]`。`major` はザイツェフ則の主生成物
+ * （＝ 抜ける H が最も少ない炭素から取ったもの）。
+ *
+ * ⚠ **主生成物だけに絞らない。** 絞ると「2-ブタノールを脱水すると1-ブテンもできる」が
+ *   関係から消える ＝ 教科書が混合物と書いていることを画面が否定する。
+ *   絞るかどうかは**出題を選ぶ側**（`ipSolveCondition`）が決める。
+ */
+function ipDehydrationEdges(mol) {
+    const out = [];
+    ipHydroxylOxygens(mol).forEach(o => {
+        const alpha = mol.getNeighbors(o.id).find(x => x.atom.element === 'C');
+        if (!alpha) return;
+        mol.getNeighbors(alpha.atom.id).forEach(b => {
+            if (b.atom.id === o.id || b.atom.element !== 'C' || b.type !== 1) return;
+            if (ipImplicitH(mol, b.atom.id) < 1) return;   // β炭素に抜ける H が無い
+            const { m, map } = ipCloneWithMap(mol);
+            m.removeAtom(map.get(o.id));
+            const bond = m.getBond(map.get(alpha.atom.id), map.get(b.atom.id));
+            if (!bond) return;
+            bond.type = 2;
+            out.push({ code: canonicalCode(m), betaH: ipImplicitH(mol, b.atom.id) });
+        });
+    });
+    const minH = out.length ? Math.min(...out.map(e => e.betaH)) : 0;
+    // 同じアルケンへ複数の β から行ける場合は、いちばん置換の多い経路（＝ H の少ない β）を採る
+    const best = new Map();
+    out.forEach(e => { const c = best.get(e.code); if (!c || e.betaH < c.betaH) best.set(e.code, e); });
+    return [...best.values()].map(e => ({ code: e.code, betaH: e.betaH, major: e.betaH === minH }));
+}
+
+/**
+ * ★ アルケンへの水の付加でできるアルコールを**すべて**返す（上の辺の逆向き）。
+ * 返り値 `[{ code, markov }]`。`markov` はマルコフニコフ則の主生成物
+ * （＝ H の少ない側の炭素に -OH が付く。両側の H が同数なら両方が主生成物）。
+ */
+function ipHydrationEdges(mol) {
+    const out = [];
+    mol.bonds.filter(b => b.type === 2).forEach(b => {
+        const a1 = mol.atoms.find(a => a.id === b.atomId1), a2 = mol.atoms.find(a => a.id === b.atomId2);
+        if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
+        const h1 = ipImplicitH(mol, a1.id), h2 = ipImplicitH(mol, a2.id);
+        [[a1, h1 <= h2], [a2, h2 <= h1]].forEach(([host, markov]) => {
+            const { m, map } = ipCloneWithMap(mol);
+            const bond = m.getBond(map.get(a1.id), map.get(a2.id));
+            if (!bond) return;
+            bond.type = 1;
+            const o = m.addAtom('O', host.x, host.y - IP_HSTEP);
+            m.addBond(map.get(host.id), o.id, 1);
+            out.push({ code: canonicalCode(m), markov });
+        });
+    });
+    const best = new Map();
+    out.forEach(e => { const c = best.get(e.code); if (!c || (e.markov && !c.markov)) best.set(e.code, e); });
+    return [...best.values()];
+}
+
+/**
+ * ★★ 条件の語彙（2つの型）。⚠ **文言はここからしか出さない**（`IP_SCOPES` と同じ流儀）。
+ *
+ * `answerFormula` … 答えの分子式（重原子と水素の数）。
+ *   ⚠ 答えの集合が**1つの分子式に収まる**ことが、この器を使える条件そのもの ——
+ *   `grade()` は「分子式が違う → お題の式を言う」「分子式は合うが集合に無い → 対象外」で
+ *   採点しており、答えの式が混ざると前者の断り文が嘘になる。
+ *   ・脱水（答えはアルコール CnH(2n+2)O）・付加（答えはアルケン CnH(2n)）とも1つに収まる。
+ */
+const IP_COND_KINDS = {
+    /** 脱水して K になるアルコールを書き出す（K はアルケン） */
+    dehydration: {
+        tag: '脱水', verb: '脱水すると',
+        askFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
+        srcFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
+        title: (t) => `脱水すると ${t} になるアルコール`,
+        note: (t) => `※ 濃硫酸で分子内脱水すると ${t} になるアルコールを、すべて書き出します（ほかの構造は対象外）。`,
+        reject: (t) => `分子式は合っていますが、この回は「脱水すると ${t} になるアルコール」だけが対象です`,
+        tip: (t) => `分子内脱水で ${t} ができるアルコールだけを書き出す回です`
+    },
+    /** 水を付加して A になるアルケンを書き出す（A はアルコール） */
+    hydration: {
+        tag: '水の付加', verb: '水を付加すると',
+        askFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
+        srcFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
+        title: (t) => `水を付加すると ${t} になるアルケン`,
+        note: (t) => `※ 水を付加すると ${t} になるアルケンを、すべて書き出します（ほかの構造は対象外）。`,
+        reject: (t) => `分子式は合っていますが、この回は「水を付加すると ${t} になるアルケン」だけが対象です`,
+        tip: (t) => `水の付加で ${t} ができるアルケンだけを書き出す回です`
+    }
+};
+
+/**
+ * ★★ 出題の在庫（C₂〜C₅）。⚠ **ここに並んでいるのは「主生成物だけを数えても、
+ *   副生成物まで数えても、答えの集合が変わらない」ものの *全部* である**（`CS3` が総当たりで確かめる）。
+ *
+ * ⚠⚠ **これは「答えが少ないから落とす」門番ではない。**
+ *   ユーザーは「**答えが多くない書き出し問題は練習問題として有用**」と明言しており、
+ *   別レーンの実測（1つのアルケンを作るアルコールは最大2種）を理由に落とした前の判断は
+ *   **覆されている**（DESIGN_isomer_practice.md §20-1）。★ だから答えが1種の回も並べる
+ *   —— `IP_MIN_ISOMERS`（2種未満は出さない）は**この型には掛けない**。
+ *
+ * ★ 落としているのは**化学の読みが割れるもの**だけ。実例:
+ *   ・「脱水して1-ブテンになるアルコール」…… 副生成物まで数えると {1-ブタノール, 2-ブタノール}、
+ *      ザイツェフの主生成物だけなら {1-ブタノール}。**どちらの答えも教室で通る**ので出さない
+ *   ・「水を付加して1-ブタノールになるアルケン」…… マルコフニコフ則では**1つも無い**
+ *      （1-ブテンの主生成物は 2-ブタノール）。ぜんぶ数えれば {1-ブテン}。同じ理由で出さない
+ *   ★ 落ちた数は C₂〜C₅ で 型1 が 4件・型2 が 7件（`CS3` が毎回数え直す）。
+ *
+ * ★ **13件はすべて `stereoAsked`**（立体まで答える）。理由は §20-3 ——
+ *   立体の段が「立体異性体がある回」にだけ出ると、**段の有無が答えを漏らす**。
+ *   ⚠ 13件のうち立体異性体をもつ答えを含むのは6件・含まないのは7件（`CS4` が名前で見張る）。
+ */
+const IP_COND_PRESETS = [
+    // ── 型1: 脱水して K になるアルコール（答えはアルコール）──
+    { id: 'de-c2-ethene',   kind: 'dehydration', carbons: 2, target: 'エテン' },
+    { id: 'de-c3-propene',  kind: 'dehydration', carbons: 3, target: 'プロペン' },
+    { id: 'de-c4-2mepro',   kind: 'dehydration', carbons: 4, target: '2-メチルプロペン' },
+    { id: 'de-c4-2butene',  kind: 'dehydration', carbons: 4, target: '2-ブテン' },   // ★ ユーザーが挙げた例
+    { id: 'de-c5-2me2bue',  kind: 'dehydration', carbons: 5, target: '2-メチル-2-ブテン' },
+    { id: 'de-c5-2pentene', kind: 'dehydration', carbons: 5, target: '2-ペンテン' },
+    // ── 型2: 水を付加して A になるアルケン（答えはアルケン）──
+    { id: 'hy-c2-ethanol',  kind: 'hydration', carbons: 2, target: 'エタノール' },
+    { id: 'hy-c3-2propol',  kind: 'hydration', carbons: 3, target: '2-プロパノール' },
+    { id: 'hy-c4-2me2prol', kind: 'hydration', carbons: 4, target: '2-メチル-2-プロパノール' },
+    { id: 'hy-c4-2butanol', kind: 'hydration', carbons: 4, target: '2-ブタノール' },  // ★ ユーザーが挙げた例
+    { id: 'hy-c5-2me2buol', kind: 'hydration', carbons: 5, target: '2-メチル-2-ブタノール' },
+    { id: 'hy-c5-2pentol',  kind: 'hydration', carbons: 5, target: '2-ペンタノール' },
+    { id: 'hy-c5-3pentol',  kind: 'hydration', carbons: 5, target: '3-ペンタノール' }
+];
+
+/**
+ * ★★ 条件の回も **`IP_SCOPES` の同じ枠**に乗せる（§16-7 の流儀）——
+ *   見出し・注記・お題外の断り文・記録の鍵が、この1つの箱から全部出る。
+ *   ⚠ 新しい文言の置き場所をここ以外に作らない（作った瞬間に「宣言したのに画面のどこかで隠れる」が生まれる）。
+ * ★ `headline` は条件の回だけがもつ欄 —— 見出しが「分子式 ＋ 範囲」ではなく**条件そのもの**になる
+ *   （「C₄H₁₀O の異性体」では何を書き出すのか言えていない）。
+ */
+IP_COND_PRESETS.forEach(pre => {
+    const k = IP_COND_KINDS[pre.kind];
+    IP_SCOPES['cond:' + pre.id] = {
+        tag: k.tag,
+        key: '@cond-' + pre.id,
+        headline: k.title(pre.target),
+        title: 'の' + k.title(pre.target),   // 保険（headline を使わない道が万一できたとき用）
+        note: k.note(pre.target),
+        reject: k.reject(pre.target),
+        tip: k.tip(pre.target)
+    };
+});
+
+/**
+ * ★ 条件を解いて「答えの集合」と「条件に出てくる相手の分子」を返す。
+ * 返り値 `{ answers:[Molecule], target:Molecule, formula }`。解けなければ null。
+ *
+ * ⚠ **答えは列挙器の分子そのもの**（作り直さない）＝ 図の座標も名前も既存の道と同じものが出る。
+ * ⚠ 相手（target）は**名前で引く**（`iupacName`）。式や座標で持つと、命名器を直したときに
+ *   出題の相手が黙って入れ替わる。名前で引けなければ null を返して**開かない**（`CS1`）。
+ */
+// 列挙の使い回し。⚠ 13件の出題が使う分子式は 8つだけ（C₂〜C₅ のアルカン形とアルコール形）で、
+//   同じ式が最大4回出てくる。素で数え直すと 13件ぶんで 574ms、共有すれば 8件ぶんで済む
+const IP_COND_ENUM_CACHE = new Map();
+function ipCondEnumerate(heavy, h) {
+    const key = heavy.join(',') + '/' + h;
+    if (!IP_COND_ENUM_CACHE.has(key)) {
+        IP_COND_ENUM_CACHE.set(key, enumerateConstitutionalIsomers(heavy, h, IP_ENUM_LIMIT));
+    }
+    return IP_COND_ENUM_CACHE.get(key);
+}
+
+function ipSolveCondition(pre) {
+    const kind = IP_COND_KINDS[pre && pre.kind];
+    if (!kind) return null;
+    const af = kind.askFormula(pre.carbons), sf = kind.srcFormula(pre.carbons);
+    const ask = ipCondEnumerate(af.heavy, af.h);
+    const src = ipCondEnumerate(sf.heavy, sf.h);
+    if (ask.overflow || src.overflow) return null;
+    const target = src.isomers.find(m => iupacName(m) === pre.target);
+    if (!target) return null;
+    const tc = canonicalCode(target);
+    const edges = pre.kind === 'dehydration' ? ipDehydrationEdges : ipHydrationEdges;
+    const answers = ask.isomers.filter(m => edges(m).some(e => e.code === tc));
+    if (!answers.length) return null;
+    return { answers, target, formula: ipFormulaLabel(af.heavy, af.h) };
+}
 // ★ お題を2つの群に分ける境目（v1433・ユーザー補足 2026-08-20:
 //   「環や二重結合が複数ある化合物の書き出しは、入試問題に出される可能性は極めて低いが、
 //     トレーニングとしてはやる価値がありそう」）。
@@ -1283,6 +1520,16 @@ class IsomerPractice {
             { formula: 'C7H14O2', cls: 'acid' }        // 17種（★2026-09-01 に足した・腕 6）
         ];
 
+        /**
+         * ★★ 「条件にある構造を書き出す」の在庫（v1510）。中身は `IP_COND_PRESETS`（1か所）。
+         * ⚠ **`problems` にも `fgPresets` にも足さない** —— あちらは「一通りすべて書き出す」で、
+         *   こちらは**並ぶ選択肢**であって下位のオプションではない（ユーザー原文 2026-09-03:
+         *   「書き出しを充実させ／一通りすべて書き出させる／条件にある構造を書き出す／に分ける」）。
+         * ★ `fgPresets` と同じく**押されるまで数えない**（一覧を出す費用は 0ms）。
+         */
+        this.condPresets = IP_COND_PRESETS;
+        this._condCache = new Map();
+
         if (this.body) {
             // 初回描画は列挙（最大 ~150ms）で初期ロードを妨げないよう次フレームに回す
             setTimeout(() => { if (!this.active) this.renderList(); }, 0);
@@ -1330,6 +1577,8 @@ class IsomerPractice {
         if (!p) return null;
         if (p.aromaticOnly) return 'aromatic';
         if (p.fgClass) return 'fg:' + p.fgClass;
+        // ★ 条件の回（v1510）。⚠ 鍵を分ける ＝ 同じ分子式の素の回と ✓ が混ざらない
+        if (p.condId) return 'cond:' + p.condId;
         return p.skeleton || null;
     }
 
@@ -1418,6 +1667,29 @@ class IsomerPractice {
          * ⚠ 画面の文言で出題頻度を名乗らない（repo の入試DBは分子式ごとの件数を持っていない）。
          *   言うのは「何が正解に並ぶか」だけ。
          */
+        /**
+         * ★★ 書き出しは **2種類ある**（ユーザー原文 2026-09-03）:
+         *
+         * > 書き出しを充実させ／**一通りすべて書き出させる**／**条件にある構造を書き出す**／に分けるイメージです
+         *
+         * ⚠ **並ぶ選択肢であって上下関係ではない。** 条件つきを「全部書き出す」の絞り込みオプションとして
+         *   中に埋めると、この分けが画面から読み取れなくなる（ユーザーの分け方が消える）。
+         * ★ 見出しの語は**ユーザーの言い方をそのまま使う**（「構造推定」は説明のための言葉で、
+         *   画面の見出しに使えとは言われていない）。
+         * ⚠ `<h3>` にしてあるのは飾りではない —— `UX1`（この画面の操作の案内 195字）は
+         *   見出しを数えない側に置いており、**見出しは説明文ではない**という線がそのまま効く。
+         */
+        const makeSection = (id, text) => {
+            const h = document.createElement('h3');
+            h.id = id;
+            h.className = 'ip-section-head';
+            h.style.cssText = 'font-size:13px; color:var(--text-primary); font-weight:bold; ' +
+                'margin:0 0 6px; padding-bottom:3px; border-bottom:1px solid var(--border-color);';
+            h.textContent = text;
+            return h;
+        };
+        this.body.appendChild(makeSection('ip-head-all', '① 一通りすべて書き出す'));
+
         const makeGrid = () => {
             const grid = document.createElement('div');
             grid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:6px;';
@@ -1581,6 +1853,7 @@ class IsomerPractice {
 
         // M3: 任意の分子式で練習
         const custom = document.createElement('div');
+        custom.id = 'ip-custom-formula';
         custom.style.cssText = 'margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:8px;';
         const clabel = document.createElement('div');
         clabel.style.cssText = 'font-size:11px; color:var(--text-secondary); margin-bottom:4px;';
@@ -1607,6 +1880,42 @@ class IsomerPractice {
         row.appendChild(go);
         custom.appendChild(row);
         this.body.appendChild(custom);
+
+        /**
+         * ★★ ② 条件にある構造を書き出す（v1510）。
+         *
+         * ⚠ **①（一通りすべて）と並ぶ第2の種類**で、①の絞り込みではない。
+         *   だから枠を①の中（お題の群のひとつ）ではなく、**見出しを立てて下に置く**。
+         * ★ ボタンの文字だけで何を書き出すか言い切れること（§16-2 の「但し書きに頼らない」）——
+         *   `脱水 → 2-ブテン` / `水の付加 → 2-ブタノール` と、**条件そのもの**を出す。
+         * ★ **押されるまで数えない**（`condPresets` の前書き）＝ 一覧を出す費用は 0ms。
+         */
+        if (this.condPresets.length) {
+            this.body.appendChild(makeSection('ip-head-cond', '② 条件にある構造を書き出す'));
+            const cdWrap = document.createElement('div');
+            cdWrap.id = 'ip-cond-presets';
+            const cdGrid = document.createElement('div');
+            cdGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:6px;';
+            this.condPresets.forEach((pre, i) => {
+                const sc = IP_SCOPES['cond:' + pre.id];
+                const k = IP_COND_KINDS[pre.kind];
+                const af = k.askFormula(pre.carbons);
+                // ★ 記録の鍵は `<答えの分子式>@cond-<id>@stereo`（`clearKeyTail` が組む1か所）
+                const cleared = this.isCleared(ipFormulaLabel(af.heavy, af.h),
+                    { condId: pre.id, stereoAsked: true });
+                const btn = document.createElement('button');
+                btn.className = 'view-btn';
+                btn.dataset.ipCond = String(i);
+                btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                    (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+                btn.textContent = `${k.tag} → ${pre.target}${cleared ? ' ✓' : ''}`;
+                btn.title = sc.tip + '（立体異性体の有無まで答えます）';
+                btn.addEventListener('click', () => this.startFromCondPreset(i));
+                cdGrid.appendChild(btn);
+            });
+            cdWrap.appendChild(cdGrid);
+            this.body.appendChild(cdWrap);
+        }
     }
 
     // ===== 練習開始 =====
@@ -1650,6 +1959,44 @@ class IsomerPractice {
             index: -1, elements: parsed.heavy, hCount: parsed.h,
             formula: g.computeMolecularFormula(seed.isomers[0]), fgClass: pre.cls
         }, seed.isomers);
+    }
+
+    /**
+     * ★★ 「条件にある構造を書き出す」を開く（v1510）。
+     *
+     * ⚠ **`IP_MIN_ISOMERS`（2種未満は出さない）を掛けない。** この型は答えが1種でも成立する
+     *   —— ユーザー明言「**答えが多くない書き出し問題は練習問題として有用**」
+     *   （DESIGN_isomer_practice.md §20-1）。★ 掛けると、ユーザーが挙げた
+     *   「脱水して2-ブテンになるアルコール」（答え 2-ブタノールの1種）が消える。
+     * ★ **`stereoAsked` は必ず true**（§20-3）。立体の段が「立体異性体がある回」にだけ出ると、
+     *   段の有無そのものが答えを漏らす。
+     */
+    startFromCondPreset(index) {
+        const g = this.game;
+        const pre = this.condPresets[index];
+        if (!pre) return;
+        if (!this._condCache.has(pre.id)) this._condCache.set(pre.id, ipSolveCondition(pre));
+        const solved = this._condCache.get(pre.id);
+        const sc = IP_SCOPES['cond:' + pre.id];
+        if (!solved || !sc) {
+            // ⚠ 黙って何も起きないを作らない（既存の道と同じ「トーストで理由を言う」）
+            g.showToast(`「${pre.target}」の回を開けませんでした（条件に合う構造が見つかりません）。`, 6000);
+            return;
+        }
+        const af = IP_COND_KINDS[pre.kind].askFormula(pre.carbons);
+        this.beginSession({
+            index: -1, elements: af.heavy, hCount: af.h,
+            formula: g.computeMolecularFormula(solved.answers[0]),
+            condId: pre.id, stereoAsked: true
+        }, solved.answers);
+    }
+
+    /** 条件の回1件の下ごしらえ（ボタンを出すかどうかの門番だけ。⚠ 一覧では呼ばない＝押されるまで数えない） */
+    prepareCond(index) {
+        const pre = this.condPresets[index];
+        if (!pre) return null;
+        if (!this._condCache.has(pre.id)) this._condCache.set(pre.id, ipSolveCondition(pre));
+        return this._condCache.get(pre.id);
     }
 
     // 任意の分子式から開始（M3）
@@ -2013,11 +2360,15 @@ class IsomerPractice {
         const sc = this.scopeInfo();
         // ★★ **種類数はどの回でも名乗らない**（v1489・ユーザー判断 2026-08-31）。
         //   ⚠ 隠すのは数だけで、**何を書き出すのかは名乗る**（§11-4「宣言した以上、画面のどこでも隠さない」）
-        head.textContent = this.problem.stereoAsked
-            ? `✏️ ${this.problem.formula} の異性体（立体まで）`
-            : (sc
-                ? `✏️ ${this.problem.formula} ${sc.title}`
-                : `✏️ ${this.problem.formula} の異性体`);
+        // ★ 条件の回は**条件そのもの**を見出しにする（v1510）。「C₄H₁₀O の異性体（立体まで）」では
+        //   何を書き出すのか言えていない ＝ §11-4「宣言した以上、画面のどこでも隠さない」に反する
+        head.textContent = (sc && sc.headline)
+            ? `✏️ ${sc.headline}`
+            : (this.problem.stereoAsked
+                ? `✏️ ${this.problem.formula} の異性体（立体まで）`
+                : (sc
+                    ? `✏️ ${this.problem.formula} ${sc.title}`
+                    : `✏️ ${this.problem.formula} の異性体`));
         this.body.appendChild(head);
 
         if (this.problem.stereoAsked) {
@@ -2282,6 +2633,12 @@ class IsomerPractice {
         const sc = this.scopeInfo();
         // ★★ 帯でも種類数を出さない（v1489。v1435 は立体の回だけだった）。⚠ ここを直し忘れると、
         //   お題ボタンで隠した数がキャンバスの真下に出る ＝ 隠したことにならない
+        // ★ 条件の回は帯でも条件を名乗る（v1510）。⚠ 立体の回の文言を先に当てると
+        //   「C₄H₁₀O（立体まで）の異性体」になり、**何を書き出すのかが帯から消える**
+        if (sc && sc.headline) {
+            return `お題 <b>${esc(sc.headline)}</b>（${esc(this.problem.formula)}） ／ ` +
+                `いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
+        }
         if (this.problem.stereoAsked) {
             return `お題 <b>${esc(this.problem.formula)}</b>（立体まで） の異性体 ／ ` +
                 `いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
@@ -2865,8 +3222,11 @@ class IsomerPractice {
         const title = document.createElement('div');
         title.style.cssText = 'font-size:16px; color:#fff; font-weight:bold;';
         const scopeHere = this.scopeInfo();
+        // ★ 条件の回は条件そのものを名乗り、分子式は括弧に落とす（v1510・見出しと同じ理由）
         title.textContent = (answerMode ? '答え合わせ' : '書き出しの確認') +
-            ` — ${this.problem.formula}${scopeHere ? ' ' + scopeHere.title : ''}`;
+            (scopeHere && scopeHere.headline
+                ? ` — ${scopeHere.headline}（${this.problem.formula}）`
+                : ` — ${this.problem.formula}${scopeHere ? ' ' + scopeHere.title : ''}`);
         headRow.appendChild(title);
         const sizeWrap = document.createElement('div');
         sizeWrap.style.cssText = 'display:flex; gap:4px; align-items:center;';
@@ -6039,4 +6399,12 @@ if (typeof window !== 'undefined') {
     //   （書き写すと、上限を変えたときに検査だけが古い線を見張り続ける）
     window.IP_MAX_ISOMERS = IP_MAX_ISOMERS;
     window.IP_MIN_ISOMERS = IP_MIN_ISOMERS;
+    // ★★ 「条件にある構造を書き出す」の部品（v1510）。⚠ 出しているのは**関係を作る側**で、
+    //   出題を選ぶ側（`ipSolveCondition`）も一緒に出す ＝ `CS3` が在庫を総当たりで作り直せる。
+    //   検査が自前で辺を数え直すと、規則が2か所になって「検査だけが古い」日が来る
+    window.ipDehydrationEdges = ipDehydrationEdges;
+    window.ipHydrationEdges = ipHydrationEdges;
+    window.ipSolveCondition = ipSolveCondition;
+    window.IP_COND_PRESETS = IP_COND_PRESETS;
+    window.IP_COND_KINDS = IP_COND_KINDS;
 }
