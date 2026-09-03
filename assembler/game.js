@@ -1415,6 +1415,13 @@ class Game {
         this.history.push(this.serializeState());
         if (this.history.length > 30) this.history.shift(); // 履歴最大30件
         this.redoStack = []; // 新しい操作を行ったらRedo履歴は無効になる
+        /* ★ **変化の直前の「見ている分子」を控える**（v1509・`refocusToMainFragment` が読む）。
+         * 反応も作図も、図を書き換える前に必ずここを通る（`reactor.execute` は
+         * `rule.apply` の直前に呼ぶ）ので、控えを取る場所はここ1か所で足りる。
+         * ⚠ **焦点が無いときは1行で返る** ＝ ふだんの作図に走査を1回も増やさない。 */
+        this._focusAnchorIds = this.focusedMolecule &&
+            this.userMolecule.atoms.some(a => a.id === this.focusedMolecule)
+            ? this.moleculeAtomIdsOf(this.focusedMolecule) : null;
     }
 
     undo() {
@@ -5870,6 +5877,10 @@ class Game {
         this.dropStaleBenzeneMarks();
         // 反応の印（オレンジの破線）も、指す先が消えたらここで一緒に落とす（v1477・同関数の注）
         this.dropStaleHighlights();
+        // ★ 「いま見ている分子」が割れていたら、焦点を大きいほうの破片へ移す（v1509）。
+        //   ⚠ **下の `updateReactionCard()`（→ `reactor.refresh()`）より前**に置く ——
+        //   焦点は反応の一覧の絞り込みに使われるので、後ろに置くと1描画ぶん古い分子で絞る
+        this.refocusToMainFragment();
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
 
@@ -8441,6 +8452,57 @@ class Game {
         return { part, mark: marks.get(part), listed, marks, explicit };
     }
 
+    /**
+     * ★ **「いま見ている分子」が割れたら、焦点を大きいほうの破片へ移す**（v1509）。
+     *
+     * ⚠ **症状**（動画レーンの実測・v1500 で `tests.js` RM2 に注記だけ残っていたもの）:
+     *   酢酸ビニル×3 → 付加重合 → **アセチル基の側の原子でモーダルを開いて**けん化すると、
+     *   1回目のあと **けん化の札が一覧から消える**。主鎖の -CH₂- で開けば消えない。
+     *
+     * ★ **原因**（実測。`siteFilter` は無実）: 焦点は**原子ID 1個**で持っている
+     *   （`focusedMolecule`）。けん化はアシル-酸素開裂なので、**タップしたアセチル基の炭素は
+     *   酢酸ナトリウムの側へ持っていかれる**。原子は生きているので
+     *   `moleculeModalPart()` は素直にその破片（重原子5個の酢酸ナトリウム）を返し、
+     *   `reactor.siteFilter()` の focus 絞り込みが、残り2箇所のエステル（高分子の側）を
+     *   **設計どおり**落とす（実測: `detect` 2件 → `siteAllowed` 通過 0件）。
+     *   ＝ 壊れているのは絞り込みではなく**焦点の追随**。
+     *
+     * ⚠ **「焦点を外す（キャンバス全体に戻す）」では直らない**（実測・v1509）:
+     *   `focusedMolecule = null` にしても `moleculeModalAtomIds()` は分子が2つ以上あれば
+     *   **`list[0]`（＝ たまたま先頭に来る酢酸ナトリウム）**を返すので、通過は 0件のまま。
+     *
+     * ★ 直し方は「**変化した側のうち、いちばん大きい破片**へ焦点を移す」。
+     *   高分子 vs 副生成物、油脂 vs セッケン、どちらも「本体に残る」ほうを選ぶ。
+     *   ⚠ **控え（`_focusAnchorIds`）に由来する破片しか見ない** ＝ その反応に
+     *   関わっていない別の分子へ焦点が飛ぶことはない。
+     *   ⚠ `wholeCanvas` を広げる案は採らない（他の反応の絞り込みまで緩む）。
+     */
+    refocusToMainFragment() {
+        const anchor = this._focusAnchorIds;
+        this._focusAnchorIds = null; // 1回の変化につき1回だけ効かせる（消費したら捨てる）
+        if (!anchor || !this.focusedMolecule) return;
+        const mol = this.userMolecule;
+        const alive = id => mol.atoms.some(a => a.id === id);
+        if (!alive(this.focusedMolecule)) return; // 焦点の原子ごと消えた ＝ 従来どおり ① へ戻る
+        const heavyIds = ids => [...ids].filter(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            return a && a.element !== 'H';
+        });
+        const now = this.moleculeAtomIdsOf(this.focusedMolecule);
+        let bestAtom = this.focusedMolecule;
+        let bestN = heavyIds(now).length;
+        const seen = new Set(now);
+        anchor.forEach(id => {
+            if (seen.has(id) || !alive(id)) return;
+            const part = this.moleculeAtomIdsOf(id);
+            part.forEach(x => seen.add(x));
+            const heavy = heavyIds(part);
+            // 重原子の数で比べる（水素だけの破片は焦点にしない）。同数なら今のまま
+            if (heavy.length > bestN) { bestN = heavy.length; bestAtom = heavy[0]; }
+        });
+        if (bestAtom !== this.focusedMolecule) this.focusedMolecule = bestAtom;
+    }
+
     // 分析対象を切り替える（カードのチップ・「🎯 反応させる分子を選ぶ」のタップから呼ばれる）
     setFocusedMolecule(atomId) {
         if (!this.userMolecule.atoms.some(a => a.id === atomId)) return;
@@ -8547,6 +8609,7 @@ class Game {
     setPalette(name) {
         const panel = document.getElementById('left-panel');
         const to = name === 'exp' ? 'exp' : 'draw';
+        const from = this.currentPalette;
         this.currentPalette = to;
         if (panel) panel.dataset.palette = to;
         document.querySelectorAll('#palette-tabs .palette-tab').forEach(b => {
@@ -8560,6 +8623,11 @@ class Game {
             const note = document.getElementById('exp-reagent-note');
             if (note) note.innerHTML = '';
         }
+        /* ★ **タブを持ち替えたら図も描き直す**（v1509）。
+         *   「試薬をかける先」の琥珀の枠は `renderFocusFrame` が実験パレットのときだけ出す
+         *   （同関数の注）ので、ここで描き直さないと**次に何かを触るまで枠が出ない／消えない**。
+         *   ⚠ 持ち替えたときだけ（`from !== to`）＝ 起動時と作図のたびの再描画は1回も増やさない。 */
+        if (from !== to && this.atomsGroup) this.updateDrawing();
         return to;
     }
 
@@ -9525,10 +9593,31 @@ class Game {
 
     renderFocusFrame(hidden) {
         const info = this.focusedMoleculeInfo(hidden);
-        // **利用者が自分で分子を選ぶまで枠は出さない**（2026-08-05・C-9）。
-        // 以前は既定で ① に付いたので、「◯◯はどれ？」と問う場面で
-        // アプリが勝手に答えを指していた（動画では冒頭で答えが漏れた）
-        if (!info || !info.explicit) return;
+        /* **利用者が自分で分子を選ぶまで枠は出さない**（2026-08-05・C-9）。
+         * 以前は既定で ① に付いたので、「◯◯はどれ？」と問う場面で
+         * アプリが勝手に答えを指していた（動画では冒頭で答えが漏れた）
+         *
+         * ★★ **例外は 🧪 実験パレットのときだけ**（v1509・ユーザー実機報告 2026-09-03
+         *   「複数分子ある状態で実験モードに入ると、1つの分子が選択されているのに
+         *    それがマーカーされていません」）。
+         *
+         * ⚠ **食い違いの正体**（実測）: 枠を出すかどうかは `info.explicit`
+         *   （＝ 人が自分で選んだか）で決まるのに、**瓶と反応の一覧の絞り込み
+         *   （`reactor.siteFilter()` の `focus`）は `moleculeModalPart()`** で決まり、
+         *   そちらは**誰も選んでいなくても `list[0]`（＝ ①）へ落ちる**。
+         *   実測: ブタン酸＋エチルメチルケトンを置き `focusedMolecule = null` にしても
+         *   `siteFilter().focus` は 6原子（酪酸）を指したまま ＝
+         *   **アプリは ① に効かせると決めているのに、画面には何も出ていない。**
+         *
+         * ★ 実験パレットでは「どれに効くか」が押す前に分かることが要件なので、
+         *   ここだけ暗黙の焦点にも枠を出す。⚠ **答えが漏れる心配のある面
+         *   （🧩パズル・📚学習・クイズ）は `currentPalette !== 'exp'` なので今までどおり。**
+         * ⚠ **新しい印は作らない** —— 既存の琥珀の枠をそのまま使う
+         *   （`changed` の橙の破線は `#ui-group` の**原子ごとの丸**、選択は**青の破線**で、
+         *   形も色も層も別）。変えるのは**札の文言だけ**（下の `tag.textContent`）。 */
+        if (!info) return;
+        const expPalette = this.currentPalette === 'exp';
+        if (!info.explicit && !expPalette) return;
         const NS = 'http://www.w3.org/2000/svg';
         const atoms = info.part.atoms
             .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
@@ -9574,7 +9663,10 @@ class Game {
         tag.setAttribute('stroke', 'rgba(7,9,12,0.85)');
         tag.setAttribute('stroke-width', '4');
         tag.setAttribute('pointer-events', 'none');
-        tag.textContent = '⚗ 分析中';
+        /* ⚠ **暗黙の焦点のときは言葉を変える。** 人が選んだ ＝「分析中」、
+         *   アプリが ① に決めた ＝「試薬をかける先」。同じ言葉にすると
+         *   「自分で選んだつもり」と「アプリが決めた」を見分けられない。 */
+        tag.textContent = info.explicit ? '⚗ 分析中' : '⚗ 試薬をかける先';
         this.atomsGroup.appendChild(tag);
     }
 
@@ -11117,6 +11209,46 @@ class Game {
                 // 空いている領域の中心に、分子の中心が重なるように原点を決める
                 vx = cx - viewW * ((ins.left + freeW / 2) / rect.width);
                 vy = cy - viewH * ((ins.top + freeH / 2) / rect.height);
+            }
+            /* ★★ **狭い画面では、余白と最小視野を「分子が入る限界」まで詰める**（v1509）。
+             *
+             * ⚠ **実測（320×568・🧪 実験パレット。この worktree で測った値）**:
+             *   `#svg-wrapper` 234px に 128px の作業帯が重なり、**使える帯は 106px**。
+             *   そこへ**上の2行の下限**——最小視野 360×270 と 余白 240×180——が効くと、
+             *   分子の大小によらず結合が 11.6〜16.2px に張り付く:
+             *
+             *   | 分子（幅×高・単位） | 現行 320 | 現行 360 | 現行 375 |
+             *   |---|--:|--:|--:|
+             *   | エタノール 160×0    | 14.6 | 21.1 | 23.3 |
+             *   | ベンゼン 80×69      | 16.2 | 23.5 | 25.9 |
+             *   | アニリン 122×69     | 16.1 | 23.4 | 25.8 |
+             *   | サリチル酸 164×131  | 14.0 | 20.4 | 22.5 |
+             *   | アセチルサリチル酸 164×197 | 11.6 | 16.8 | 18.6 |
+             *
+             *   ★ **ベンゼン（2格しかない）とアセチルサリチル酸（5格）が同じ 16px**
+             *   ＝ 効いているのは分子の大きさではなく**下限そのもの**。
+             *   `SUMMON_MIN_BOND_PX`（24px）は「これを割ったら合わせ直す」引き金だが、
+             *   合わせ直した先が下限に当たって**割ったままになる**、という形の穴だった。
+             *
+             * ★ 直し方は「**下限は好みで、分子が入ることは要件**」と順番を決めること。
+             *   余白と最小視野を詰めてよいのは**分子（＋左右上下 1格）が空き領域に入る限界まで**。
+             *   ⚠ **広げる方向には動かさない**（`f <= 1`）＝ すでに読める場面の見え方は変えない。
+             *   ⚠ **入りきらない分子は入りきらないまま**（アセチルサリチル酸は 320 では
+             *      高さ 197 単位 ＝ 106px の帯では原理的に 22px 台が上限）。
+             *      ここは縮尺の話ではなく**場所の話**なので、下限では直せない（§報告）。 */
+            const bondPx = GRID_SIZE * Math.min(rect.width / viewW, rect.height / viewH);
+            if (freeW > 0 && freeH > 0 && bondPx < SUMMON_MIN_BOND_PX) {
+                // ① 読める大きさに届かせるのに要る倍率（1 未満 ＝ 視野を詰める）
+                const wanted = bondPx / SUMMON_MIN_BOND_PX;
+                // ② 分子（＋1格の余白）が空き領域に収まる限界。これ以上は詰められない
+                const needW = (W + GRID_SIZE * 2) * (rect.width / freeW) / viewW;
+                const needH = (H + GRID_SIZE * 2) * (rect.height / freeH) / viewH;
+                const f = Math.min(1, Math.max(wanted, needW, needH));
+                if (f < 1) {
+                    viewW *= f; viewH *= f;
+                    vx = cx - viewW * ((ins.left + freeW / 2) / rect.width);
+                    vy = cy - viewH * ((ins.top + freeH / 2) / rect.height);
+                }
             }
         }
 
