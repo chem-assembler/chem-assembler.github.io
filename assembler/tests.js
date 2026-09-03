@@ -46609,6 +46609,15 @@
                 assert(W.STAGES.some(st => st.series === m[1]),
                     `${p.id}: source の系列「${m[1]}」が stages.json に無い`);
             });
+            /* ★★ どのページも**表のブロックを1つ以上持つ**（資料は表が本体）。
+               ⚠ これが無いと、`REF8`/`REF10`（stages の表を持つページだけを見る）と
+                  `REF12`（機構の表を持つページだけを見る）の**すき間**に、
+                  表を1枚も持たないページを置いて全部の物差しから逃げられる。
+               ⚠ 種類が増えたらここに足すこと ＝ **逃げ道は必ず1行の追加として残る。** */
+            const TABLE_KINDS = ['stageTable', 'mechanismTable'];
+            assert((p.blocks || []).some(b => TABLE_KINDS.includes(b.kind)),
+                `${p.id}: 表のブロック（${TABLE_KINDS.join(' / ')}）が1つも無い`
+                + '（資料は表が本体。表を持たないページは、行を機械で組む約束の外へ出てしまう）');
             // ★ 行データを1つも持たないこと（持てば「写す」余地がその場でできる）
             const scan = (o, path) => {
                 if (Array.isArray(o)) return o.forEach((v, i) => scan(v, `${path}[${i}]`));
@@ -47350,15 +47359,23 @@
         return out;
     };
     const refBodyRows = (D) => [...D.querySelectorAll('#ref-body table.ref-table tbody tr')];
+    /* ★ 「stages の表を持つページ」だけを見る（`REF8` / `REF10`）。
+     * ⚠ 4枚目（反応機構）は表の元が `stages.json` ではなく `reactions.json` なので、
+     *   系列・例題・採点の物差しがそのままでは当たらない —— そちらは `REF12` が同じ強さで見る。
+     * ⚠⚠ **「表を持たないページ」を作って全部の検査から逃げる**道を残さないため、
+     *   `REF5` に「どのページも表のブロックを1つ以上持つ」を足してある。 */
+    const refStagePages = (pages) =>
+        pages.filter(p => (p.blocks || []).some(b => b.kind === 'stageTable'));
 
     test('REF8: 2枚目・3枚目が索引に並び、表の行は stages.json の系列そのもの（件数を書き写さない）', async (c) => {
         const D = c.D, W = c.W;
-        const pages = await refPagesJson();
+        const allPages = await refPagesJson();
+        const pages = refStagePages(allPages);
         assert(pages.length >= 3, `資料が ${pages.length} ページしかない（2枚目・3枚目が入っていない）`);
         // 索引は reference.json から機械で組む ＝ ページを足したら黙って並ぶ
         const n = await W.referenceBook.renderIndex();
-        assert(n === pages.length && D.querySelectorAll('#reference-list .ref-index-btn').length === pages.length,
-            `索引のボタン数が reference.json のページ数（${pages.length}）と合わない`);
+        assert(n === allPages.length && D.querySelectorAll('#reference-list .ref-index-btn').length === allPages.length,
+            `索引のボタン数が reference.json のページ数（${allPages.length}）と合わない`);
         // ⚠ ページ id は検査に書き写さない。reference.json に在るものを全部見る
         for (const p of pages) {
             assert(await W.referenceBook.open(p.id), `${p.id}: 開けない`);
@@ -47460,7 +47477,7 @@
 
     test('REF10: 新しい2枚も「表は全体・例題は代表1つ・採点は既存ステージ」（原則1と4）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        const pages = await refPagesJson();
+        const pages = refStagePages(await refPagesJson());
         for (const p of pages) {
             await W.referenceBook.open(p.id);
             await new Promise(r => setTimeout(r, 200));
@@ -47672,6 +47689,195 @@
             'ester カードの数が変わった（既存の絞り込みに影響が出ている）');
         assert(pool.filter((m) => card('lactone').test(m)).length === 0,
             'C5H10O2 にラクトンが出た（既存の lactone カードの答えが変わっている）');
+    });
+
+    /* =====================================================================
+     * REF12・REF13: 反応機構を参考書に内蔵した（4枚目・2026-09-03・ref-mech レーン）
+     *
+     * ★ ユーザー指示「**反応機構モードは参考書の中に内蔵したほうがいいですね**」。
+     * ⚠ **作り直していない** —— 巻矢印もステップ送りも予測も `reaction.js` の1本のまま。
+     *   資料が持つのは「14件の全体像を出す表」と「▶ で `openById` を呼ぶ」だけ。
+     *
+     * ⚠ ここで固定したいのは4つ:
+     *   ① 表は **reactions.json の全件**（`REF8` の「系列そのもの」と同じ線。⚠ **名前で引く** ——
+     *      件数だけを見る検査は、並びが壊れても中身が入れ替わっても緑のままになる）
+     *   ② 行を絞る引数を渡しても絞れない（原則1「参照は全体像で渡す」を構造で守っているか）
+     *   ③ ▶ が **既存のビューア**を動かす（選択の実体 `#select-reaction` に合流している ＝
+     *      入口が増えても「選ばれているのはどれか」を持つ場所が2つに割れていない）
+     *   ④ 資料が**再生器を持っていない**（`reaction.js` の写しを作っていない）
+     * ===================================================================== */
+
+    /* 機構を1件 画面に出すのに要る「視野の広さ」。
+       ⚠ `reaction.js` の `fitToReaction` と**同じ式**（余白 200×160・最小 360×270・4:3 へそろえる）。
+          `requiredViewWidth`（分子・余白 240×180）とは余白が違うので、借りずに別に持つ。
+       ★★ この値の大きい順が「読みにくい順」＝ **最悪ケースを名前で選ばない**（§12-2 の教訓）。 */
+    function requiredViewWidthForReaction(rx) {
+        let mnX = Infinity, mxX = -Infinity, mnY = Infinity, mxY = -Infinity;
+        (rx.states || []).forEach(st => (st.atoms || []).forEach(a => {
+            mnX = Math.min(mnX, a.x); mxX = Math.max(mxX, a.x);
+            mnY = Math.min(mnY, a.y); mxY = Math.max(mxY, a.y);
+        }));
+        if (!(mxX >= mnX)) return 0;
+        const vw = Math.max(360, (mxX - mnX) + 200);
+        const vh = Math.max(270, (mxY - mnY) + 160);
+        return (vw / vh > 4 / 3) ? vw : vh * (4 / 3);
+    }
+
+    test('REF12: 資料の4枚目に登録済みの機構が全件並び、▶ が既存のビューアを動かす（作り直していない）', async (c) => {
+        const D = c.D, W = c.W;
+        const pages = await refPagesJson();
+        const page = pages.find(p => (p.blocks || []).some(b => b.kind === 'mechanismTable'));
+        assert(page, 'reference.json に機構の表を持つページが無い（4枚目が入っていない）');
+
+        // 索引から開ける（ページを足したら黙って並ぶ ＝ 索引は reference.json から機械で組む）
+        const n = await W.referenceBook.renderIndex();
+        assert(n === pages.length, `索引のボタン数 ${n} が reference.json の ${pages.length} 件と合わない`);
+        assert(D.querySelector(`#reference-list .ref-index-btn[data-ref-page="${page.id}"]`),
+            `索引に ${page.id} のボタンが無い`);
+        assert(await W.referenceBook.open(page.id), `${page.id}: 開けない`);
+        await new Promise(r => setTimeout(r, 200));
+
+        /* ---- ① 表は reactions.json の全件。⚠ **名前で引く**（件数だけでは中身の入れ替えに気づけない） ---- */
+        const res = await fetch('reactions.json?nocache=' + Date.now());
+        assert(res.ok, 'reactions.json が読めない');
+        const RX = await res.json();
+        assert(RX.length >= 10, `reactions.json が ${RX.length} 件しかない（この検査の前提が崩れている）`);
+        // 資料は2つ目の一覧を持たない（reaction.js が読んだ1本をそのまま見ている）
+        const shown = W.refMechanisms();
+        assert(shown.length === RX.length && shown.every((r, i) => r.id === RX[i].id),
+            '資料の表の出どころが reactions.json（reaction.js が読んだ1本）と違う ＝ 2つ目の一覧を持っている');
+        const rows = [...D.querySelectorAll('#ref-body table.ref-mech-table tbody tr')];
+        assert(rows.length === RX.length,
+            `機構の表が ${rows.length} 行で、reactions.json の ${RX.length} 件と合わない`
+            + '（14件そろって初めて「型の地図」になる ＝ 原則1）');
+        // ⚠ **名前で引く。** 数が合っていても中身が入れ替われば赤くなる
+        RX.forEach(r => {
+            const tr = rows.find(x => x.dataset.rxId === r.id);
+            assert(tr, `「${r.name}」の行が表に無い（id ${r.id}）`);
+            assert(tr.textContent.includes(r.name), `「${r.name}」の名前が行に出ていない`);
+            // 段数は steps.length から機械で出ている（手打ちの数が混ざらない）
+            assert(tr.textContent.includes(`${(r.steps || []).length} 段`),
+                `「${r.name}」の段数が ${(r.steps || []).length} 段として出ていない`);
+        });
+        /* ★★ 並びは**ビューアの一覧と同じ**（型でまとめた順）。
+           ⚠ 検査の中で並べ直さない —— **画面に出ている2つの一覧を突き合わせる**。
+              一致していないと「型の地図」が2通りある ＝ 資料とビューアで型の切り方が食い違う。
+           ⚠ `reactions.json` の生の並びは型の順では**ない**ので、素直に上から並べると
+              同じ型が2か所に割れる（このレーンが実際に踏んだ）。 */
+        const viewerIds = [...D.querySelectorAll('#reaction-list button[data-rx-id]')].map(b => b.dataset.rxId);
+        assert(viewerIds.length === RX.length,
+            `ビューアの一覧が ${viewerIds.length} 件（この突き合わせの前提が崩れている）`);
+        assert(rows.map(tr => tr.dataset.rxId).join(',') === viewerIds.join(','),
+            '資料の表とビューアの一覧の並びが違う（型のまとめ方が2通りある）\n'
+            + `  資料  : ${rows.map(tr => tr.dataset.rxId).join(',')}\n`
+            + `  一覧  : ${viewerIds.join(',')}`);
+        // ★ 型は1つにつき見出しのセルが1つ ＝ 同じ型が2か所に割れていない
+        const seriesCount = new Set(RX.map(r => r.series)).size;
+        const groupCells = D.querySelectorAll('#ref-body table.ref-mech-table td.ref-group');
+        assert(groupCells.length === seriesCount,
+            `型の見出しが ${groupCells.length} 個（型は ${seriesCount} 種類）＝ 同じ型が2か所に割れている`);
+        [...new Set(RX.map(r => r.series))].forEach(s => {
+            const td = [...groupCells].find(x => x.firstChild && x.firstChild.textContent.trim() === s);
+            assert(td, `反応の型「${s}」が表に出ていない`);
+            // ⚠ 行を減らして「まとめた」ことにしていない ＝ 束ねた件数ぶん行がある
+            const want = RX.filter(r => r.series === s).length;
+            assert(td.rowSpan === want && td.textContent.includes(`${want} 件`),
+                `型「${s}」が ${td.rowSpan} 行ぶんになっている（reactions.json は ${want} 件）`);
+        });
+        // 見えている行も同じ数（CSS で隠して「畳んだふり」をしていない・§10-5）
+        assert(rows.filter(tr => tr.getClientRects().length > 0).length === RX.length,
+            '機構の表の行が CSS で隠されている（狭いからといって行を間引かない）');
+
+        /* ---- ② ★否定対照: 行を指す引数を渡しても絞れない（原則1を構造で守っているか） ---- */
+        const block = (page.blocks || []).find(b => b.kind === 'mechanismTable');
+        const sneaky = W.referenceBook.renderMechanismTable(Object.assign({}, block,
+            { id: 'esterification', ids: ['esterification'], series: '縮合反応', only: 'エステル化', row: 3, limit: 1 }));
+        assert(sneaky.querySelectorAll('tbody tr').length === RX.length,
+            `機構の表が引数（id / ids / series / only / row / limit）で ${sneaky.querySelectorAll('tbody tr').length} 行に絞れてしまう`);
+
+        /* ---- ③ ▶ は14件ぶんそろっていて、押すと**既存のビューア**がその1件を再生する ---- */
+        const plays = [...D.querySelectorAll('#ref-body table.ref-mech-table button.ref-mech-play')];
+        assert(plays.length === RX.length,
+            `▶ が ${plays.length} 個しかない（${RX.length} 件ぜんぶ入口を持つ ＝ 内蔵した意味）`);
+        RX.forEach(r => assert(plays.some(b => b.dataset.rxId === r.id && (b.getAttribute('aria-label') || '').includes(r.name)),
+            `「${r.name}」の ▶ が無い（名前で引けない）`));
+        // ⚠ 押す1件は**先頭ではなく最後**にする（「先頭を代わりに選ぶ」実装なら赤くなる・v1466 の症状）
+        const want = RX[RX.length - 1];
+        const btn = plays.find(b => b.dataset.rxId === want.id);
+        btn.click();
+        await new Promise(r => setTimeout(r, 400));
+        const rp = W.reactionPlayer;
+        assert(rp && rp.active, `▶「${want.name}」を押しても機構ビューアが始まらない`);
+        assert(rp.currentReaction && rp.currentReaction.id === want.id,
+            `▶「${want.name}」を押したのに再生されているのは「${rp.currentReaction && rp.currentReaction.name}」`);
+        // 選択の実体は `#select-reaction` の1本のまま（入口が増えても状態が2つに割れない）
+        assert(D.getElementById('select-reaction').value === String(RX.findIndex(r => r.id === want.id)),
+            '資料から始めたとき `#select-reaction` が追従していない（選択を持つ場所が2つに割れている）');
+        // 帯（ステップ送り）も今までどおり出る ＝ 再生の器は reaction.js のまま
+        assert(D.getElementById('ws-reaction') && !D.getElementById('ws-reaction').classList.contains('hidden'),
+            '資料から始めたときステップ送りの帯が出ない');
+        rp.exit();
+        await new Promise(r => setTimeout(r, 200));
+
+        /* ---- ④ ★否定対照: 資料は再生器を1つも持っていない（reaction.js の写しを作っていない） ---- */
+        ['renderState', 'renderArrows', 'drawCurvedArrow', 'goto', 'play', 'animateArrows', 'enter']
+            .forEach(k => assert(!(k in W.ReferenceBook.prototype),
+                `ReferenceBook が再生器らしきメソッド "${k}" を持っている（巻矢印は reaction.js の1本のはず）`));
+        // ⚠ stages の表の約束は**そのまま生きている**（機構の表と class を分けた理由）
+        assert(D.querySelectorAll('#ref-body table.ref-table').length === 0,
+            '機構のページに stages の表が混ざっている');
+
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF13: 資料が見せている機構も床（結合28px）を保つ —— 1200px・資料ペインを開いたまま', async (c) => {
+        /* ★ 2026-09-03 のユーザー決定「床を守る範囲 ＝ **資料が見せている分子**まで」を、
+             4枚目にも同じ形で当てる（`REF4` の機構版）。
+           ⚠ **名前を焼き込まない** —— `requiredViewWidthForReaction` の大きい順で機械に選ばせる
+             （§12-2「最悪ケースは選ぶのではなくデータから決まる形にする」）。 */
+        const res = await fetch('reactions.json?nocache=' + Date.now());
+        assert(res.ok, 'reactions.json が読めない');
+        const RX = await res.json();
+        let worst = null, easiest = null;
+        RX.forEach(r => {
+            const v = requiredViewWidthForReaction(r);
+            if (!(v > 0)) return;
+            if (!worst || v > worst.v) worst = { id: r.id, name: r.name, v };
+            if (!easiest || v < easiest.v) easiest = { id: r.id, name: r.name, v };
+        });
+        assert(worst && easiest && worst.id !== easiest.id, '機構の視野を機械で並べられない');
+
+        await withViewport(1200, 800, async (W, D, name) => {
+            const pages = await W.referenceBook.load();
+            const page = pages.find(p => (p.blocks || []).some(b => b.kind === 'mechanismTable'));
+            assert(page, `${name}: 機構のページが無い`);
+            assert(await W.referenceBook.open(page.id), `${name}: 機構のページを開けない`);
+            await new Promise(r => setTimeout(r, 250));
+            // 1200px では左右に分割される（重ねない）＝ 資料を開いたままキャンバスが痩せる条件
+            assert(W.getComputedStyle(D.getElementById('reference-pane')).position !== 'fixed',
+                `${name}: 資料が重ねて出ている（1200px は分割のはず。この検査の前提が崩れている）`);
+
+            const measure = async (id) => {
+                assert(W.referenceBook.playMechanism(id), `${name}: ${id} を資料から再生できない`);
+                await new Promise(r => setTimeout(r, 350));
+                assert(W.reactionPlayer.currentReaction.id === id, `${name}: ${id} が再生されていない`);
+                return W.game.screenPxPerGrid();
+            };
+            const pxWorst = await measure(worst.id);
+            const pxEasiest = await measure(easiest.id);
+            W.reactionPlayer.exit();
+
+            assert(pxWorst >= 28,
+                `${name}: 資料を開いたまま「${worst.name}」を再生すると結合 ${pxWorst.toFixed(1)}px（床は 28px）`
+                + '。資料ペインがキャンバスを痩せさせすぎている');
+            // ★ 物差しそのものの検算 —— 視野を食う側が実際に小さく出ていること。
+            //   逆なら「床を守れている」のではなく requiredViewWidthForReaction が壊れている
+            assert(pxWorst < pxEasiest,
+                `${name}: 視野を食う「${worst.name}」（${worst.v.toFixed(0)}）が`
+                + `「${easiest.name}」（${easiest.v.toFixed(0)}）より小さく出ていない`
+                + `（${pxWorst.toFixed(1)} / ${pxEasiest.toFixed(1)}）＝ 選抜の物差しが効いていない`);
+        });
     });
 
     // ===== 一部だけ流す（`?only=`）=====
