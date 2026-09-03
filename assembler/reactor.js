@@ -2094,6 +2094,46 @@ function sodiumReactiveSites(mol) {
     });
 }
 
+/**
+ * ★ **炭酸より強い酸だけ**（カルボン酸・スルホン酸）を集める（DESIGN_ion_layer.md I-1）。
+ *
+ * ⚠ **フェノールを外すのがこの関数の全部**。酸の強さは
+ *   **カルボン酸 > 炭酸 > フェノール** なので、NaHCO₃ から CO₂ を追い出せるのは
+ *   炭酸より強い側だけ ＝ **分液でカルボン酸とフェノールを分ける手**そのもの。
+ * ★ 判定は `acidKindOf` に任せる（酸の種類を見分ける規則を2か所に書かない）。
+ */
+function strongerThanCarbonicAcidSites(mol) {
+    return neutralizableAcidSites(mol)
+        .filter(([oId, anchorId]) => acidKindOf(mol, oId, anchorId).name !== 'フェノール');
+}
+
+/**
+ * ★ 塩基性のアミンの N を集める（`amine_hcl` / `amine_liberate_naoh`。I-1）。
+ *
+ * ⚠ **アミドの N は除く**（隣のカルボニルに電子を引かれていて塩基性を示さない）。
+ *   除き方は `amidation` の detect と同じ `isAmideNitrogen` ＝ 規則を2か所に書かない。
+ * ★ 3級アミンも含める —— N に水素が残っているかは**縮合**の条件であって、
+ *   塩をつくる（N の非共有電子対が H⁺ を受け取る）ことの条件ではない。
+ */
+function basicAmineNitrogens(mol) {
+    return findFunctionalGroups(mol)
+        .filter(g => ['amine1', 'amine2', 'amine3'].includes(g.type) &&
+            !isAmideNitrogen(mol, g.atomIds[0]))
+        .map(g => [g.atomIds[0]]);
+}
+
+/**
+ * ★ その原子の**成分が水層に居るか**（原子の印 `phase`。DESIGN_ion_layer.md §3-4）。
+ *
+ * ⚠ **電荷は1文字も見ない。** アミンの塩は構造を変えずに印だけで表しているので、
+ *   「塩になっているか」を図から読む道は無い ＝ **印がこのルールの入口そのもの**。
+ * ⚠ 成分の中の1原子でも印を持てば水層（印は塩になった箇所に付く）。
+ */
+function inAqueousPhase(mol, atomId) {
+    const ids = componentOf(mol, atomId);
+    return mol.atoms.some(a => ids.has(a.id) && a.phase === 'aq');
+}
+
 function liberatableSaltSites(mol) {
     const sites = [];
     mol.atoms.forEach(a => {
@@ -3257,9 +3297,18 @@ const HYDROGEN_HALIDE_REAGENTS = HYDROGEN_HALIDES.map(h => ({
     name: h.name,
     formula: h.formula,
     kind: 'transform',
-    acts: 'C=C や C≡C の不飽和結合です',
+    /* ★ 塩酸だけは仕事が3つになる（DESIGN_ion_layer.md I-1・D-I4「瓶を足さず相乗り」）:
+     *   付加（C=C・C≡C）／弱酸の遊離（入試の遊離 45件がこれ）／アミンの塩（水層へ・46件）。
+     *   ⚠ **瓶は1本も増えていない**。増えたのは、この瓶に繋がるルールのほう。 */
+    acts: h.key === 'hcl'
+        ? 'C=C や C≡C の不飽和結合と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）と、アミン（塩になって水層へ移ります）です'
+        : 'C=C や C≡C の不飽和結合です',
     miss: '左右非対称なアルケンでは「H はすでに H の多い炭素へ」付きます（マルコフニコフ則）。' +
-        'ハロゲン化水素はどれも同じ規則に従うので、瓶を変えても付く位置は変わりません。'
+        'ハロゲン化水素はどれも同じ規則に従うので、瓶を変えても付く位置は変わりません。' +
+        (h.key === 'hcl'
+            ? '塩酸は弱酸の遊離（塩からもとの酸を追い出す）とアミンの塩づくりにも使いますが、' +
+              'いまの分子には塩もアミンもありません。'
+            : '')
 }));
 
 // ⚠ `id` は **`add_hbr` を含めて従来どおり**（`add_hbr` / `add_hcl` / `add_hi`）。
@@ -3291,6 +3340,22 @@ const HYDROGEN_HALIDE_RULES = HYDROGEN_HALIDES.map(h => ({
  *   瓶ごとに違うのは「ふつうどちらを使うか」（`usually`）だけ ＝ `apply` に分岐は1つも入らない。
  */
 const OXIDANT_REAGENT_IDS = ['kmno4', 'k2cr2o7'];
+
+/* ===== ルール → 層の対応表（DESIGN_ion_layer.md I-1・§4-5 #3）=====
+ *
+ * ★★ **表はここ1つ。** 反応の `apply` に層の分岐を1行も入れない
+ *   ——「どの層へ移るか」は反応の中身ではなく**分液という見方**の話なので、
+ *   `usually`（ふつうはこの試薬）と同じく `apply` の外で足す（§12-1 の約束と同じ流儀）。
+ * ⚠ ここに載っていない反応は層を動かさない ＝ **中性の成分は残る**（これが分液の芯）。
+ * ★ `note` は見出しに添える断り。`amine_hcl` は**構造を1原子も変えない**ので、
+ *   変えていないことを画面で言う（D-I3。嘘を画面に出さない）。 */
+const RULE_PHASE = {
+    neutralize_naoh: { phase: 'aq', note: '' },
+    neutralize_nahco3: { phase: 'aq', note: '' },
+    amine_hcl: { phase: 'aq', note: 'salt-not-drawn' },
+    liberate_weak_acid: { phase: 'ether', note: '' },
+    amine_liberate_naoh: { phase: 'ether', note: '' }
+};
 // 2本に共通の説明（どちらも同じものに効く。違うのは強さの既定と、ふつうどちらを使うか）
 const OXIDANT_ACTS = '1級・2級アルコールとアルデヒド、芳香族の側鎖（環に直結した -CH₃）、' +
     '炭化水素の C=C（酸化開裂）です';
@@ -5844,6 +5909,45 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★ 中和（酸 ＋ NaHCO₃ → 塩 ＋ CO₂）。DESIGN_ion_layer.md I-1。
+         *
+         * ⚠⚠ **フェノールには効かない**のが要点。酸の強さは
+         *   **カルボン酸 > 炭酸 > フェノール** なので、NaHCO₃ から CO₂ を追い出せるのは
+         *   炭酸より強い酸だけ ＝ **分液でカルボン酸とフェノールを分ける手**そのもの。
+         *   `neutralize_naoh` と detect を共有しないのはここだけの理由で、
+         *   判定は `acidKindOf`（既存）に任せてある（`strongerThanCarbonicAcidSites`）。
+         * ★ 入試64件のうち NaHCO₃ が出るのは 41件（1手目だけでも 15件）。
+         *   ⚠ **順序は固定しない**（教科書順「塩酸→NaHCO₃→NaOH」は 3件だけ。D-I10）。
+         * ⚠ **発生する CO₂ は描かない**（`neutralize_naoh` が水を描かないのと同じ流儀。
+         *   画面の分子に無い分子は描かず、文面で言う）。
+         * ★ 同じ瓶に「調べるもの」の NaHCO₃（CO₂ が出る／出ない）が既に居る。
+         *   ⚠ 押したときに走るのは**今までどおり検出のほう**で、この反応が出るのは
+         *   **反応の一覧**と**分液の混合物**から（`onReagentClick` を1行も変えていない）。 */
+        id: 'neutralize_nahco3',
+        reagentId: 'nahco3',
+        label: '中和（酸 + NaHCO₃, CO₂ 発生）→ ナトリウム塩',
+        detect(mol) { return strongerThanCarbonicAcidSites(mol); },
+        apply(game, site) {
+            const [oId, anchorId] = site;
+            const mol = game.userMolecule;
+            const kind = acidKindOf(mol, oId, anchorId);
+            const spot = freeSpotAround(mol, oId);
+            if (!spot) throw noRoom('ナトリウムを置く空間がありません');
+            const na = mol.addAtom('Na', spot.x, spot.y);
+            mol.addBond(oId, na.id, 1);
+            return {
+                caption: `${kind.name}が炭酸水素ナトリウムと中和して、ナトリウム塩になりました` +
+                    '（二酸化炭素 CO₂ が発生します。図には描いていません）。' +
+                    '炭酸より強い酸だけが NaHCO₃ から CO₂ を追い出せるので、' +
+                    '**この反応が起こること自体が「炭酸より強い酸」の証拠**です。' +
+                    '（このアプリは電荷を持たないので、塩は線1本の共有結合として書いています。' +
+                    '実際は -O⁻ と Na⁺ のイオン結合です。）' +
+                    '塩になると水に溶けやすくなります。' + kind.rank,
+                changed: [oId, na.id]
+            };
+        }
+    },
+    {
         /* 金属ナトリウムとの反応（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
          *
          * **発生する H₂ は描かない。** とれる水素はもともと自動水素（明示原子ではない）なので、
@@ -5955,7 +6059,12 @@ const REACTION_RULES = [
         /* 弱酸の遊離（塩 ＋ 強酸 → もとの酸）。上の中和のちょうど逆向きで、
          * **けん化やヨードホルム反応の生成物（-COONa）からも引ける**。 */
         id: 'liberate_weak_acid',
-        reagentId: 'h2so4_dil',
+        /* ★★ **塩酸でも引けるようにする**（DESIGN_ion_layer.md I-1・§1 #3）。
+         * ⚠ v1506 まで瓶は希硫酸1本だけだった。⚠ **入試64件で遊離に使う試薬は
+         *   塩酸 45件・硫酸 14件・CO₂ 7件** ＝ **いちばん多い塩酸で引けなかった**。
+         * ★ `reagentId` は配列を受ける（v1428）ので、**瓶を1本も足さずに**直せる
+         *   （`DESIGN_reagent_palette.md` §10.5「瓶を足す前に既存の瓶に付けられないかを見る」）。 */
+        reagentId: ['h2so4_dil', 'hcl'],
         label: '弱酸の遊離（塩 + 強酸）→ もとの酸',
         detect(mol) { return liberatableSaltSites(mol); },
         apply(game, site) {
@@ -5974,6 +6083,59 @@ const REACTION_RULES = [
                     '希硫酸や塩酸は硫酸イオン・塩化物イオンとして塩の側に残ります。' + kind.rank +
                     'けん化でできたカルボン酸の塩（セッケンを含む）も、この操作で酸に戻せます。',
                 changed: [oId]
+            };
+        }
+    },
+    {
+        /* ★★ アミン ＋ 塩酸 → 塩（水層へ）。DESIGN_ion_layer.md I-1・D-I3。
+         *
+         * ⚠⚠ **構造を1原子も変えない。** アニリン塩酸塩 C₆H₅NH₃Cl は
+         *   **いまのモデルでは描けない**（線1本で N-Cl と書くと `isValencyValid` は通るが、
+         *   分子式 C₆H₆ClN ＝ **N-クロロアニリンという別の分子の図**になる。設計書 §3-1 の実測）。
+         *   ★ だから第1段では**層の印だけ**を付け、**画面で「塩の形はまだ描きません」と断る**
+         *     （見出しの `PHASE_CAPTIONS['aq:salt-not-drawn']`）。⚠ 嘘を画面に出さないため。
+         *   ★ 「原理的に無理」ではなく「**まだ**」と書く —— 電荷が入れば（I-3）
+         *     同じルールが本物の塩を描く。
+         * ★ 入試64件のうち **アミンが水層へ移るのは 46件**。
+         *   ＝ アニリン塩酸塩を*描けなくても*、この操作は 46件で要る（設計書 §4-2）。
+         * ⚠ この反応は `CV4_NO_CHANGE_RULES` に名指しで載る（構造を変えないのが仕様）。 */
+        id: 'amine_hcl',
+        reagentId: 'hcl',
+        label: '塩をつくる（アミン + 塩酸）→ 水層へ',
+        detect(mol) {
+            // すでに水層に居るアミンは対象外（同じ操作を二度「効いた」と言わない）
+            return basicAmineNitrogens(mol).filter(([nId]) => !inAqueousPhase(mol, nId));
+        },
+        apply(game, site) {
+            return {
+                caption: 'アミンは塩基なので、塩酸と塩をつくって水に溶けます（水層へ移りました）。' +
+                    'この性質で、中性の物質やフェノール類から分けられます。' +
+                    '⚠ **塩の形はまだ描きません** —— アニリン塩酸塩 C₆H₅NH₃Cl は ' +
+                    'N が4本の手を使う形で、いまのこのアプリの書き方（線1本の塩）では' +
+                    '別の分子の図になってしまうためです。図はもとのままで、**層だけが変わっています**。' +
+                    'なお、この塩に水酸化ナトリウムを加えるともとのアミンが遊離して有機層へ戻ります。',
+                changed: []
+            };
+        }
+    },
+    {
+        /* ★ アミンの塩 ＋ NaOH → アミンが遊離して有機層へ（I-1）。上の逆向き。
+         * ⚠ **構造を1原子も変えない**（上と同じ理由）。動くのは層の印だけ。
+         * ★ **detect が読むのは層の印**（`phase === 'aq'`）＝ 印がこのルールの入口そのもの。
+         *   ⚠ だから「塩酸をかけていないアニリン」には効かない（否定対照 SEP4）。 */
+        id: 'amine_liberate_naoh',
+        reagentId: 'naoh_aq',
+        label: 'アミンの遊離（塩 + NaOH）→ 有機層へ',
+        detect(mol) {
+            return basicAmineNitrogens(mol).filter(([nId]) => inAqueousPhase(mol, nId));
+        },
+        apply(game, site) {
+            return {
+                caption: '水酸化ナトリウムを加えたので、アミンの塩から**もとのアミンが遊離**して' +
+                    '有機層（エーテル層）へ戻りました。' +
+                    '「強い塩基は弱い塩基をその塩から追い出す」——弱酸の遊離とちょうど対になる操作です。' +
+                    '⚠ ここでも**塩の形は描いていない**ので、図はもとのままで層だけが変わっています。',
+                changed: []
             };
         }
     },
@@ -7246,7 +7408,119 @@ class Reactor {
         return conditioned.concat(plain);
     }
 
+    /**
+     * ★★ 混合物に瓶をかける（DESIGN_ion_layer.md I-1・§4-5 #2）。
+     *
+     * ⚠⚠ **`wholeCanvas`（重合）とは別物。** あちらは `detect` が**1回で全体を見る**
+     *   （並べた単量体をまとめて1つの鎖にする）。こちらは
+     *   **成分ごとに既存の `detect` を回すだけ**で、反応ルールを1行も書き換えない。
+     *
+     * ★ **箇所選択は出さない**（§4-5 #2）。混合物では「どれに効くか」が問いなので、
+     *   効いた成分だけが動けばよい —— どの -COOH かを選ばせるのはこの面の問いではない。
+     * ★ **試薬の順は固定しない**（D-I10）。押した順に効くだけで、
+     *   **順序の正解は出さない**（D-I15。教科書順は入試64件中3件しかない）。
+     * ⚠ **1回の押しで Undo は1段**（`saveState` は先頭で1回だけ）。
+     *   前後比較は出さない（1つの反応ではないので「反応の前後」と名乗れない）。
+     */
+    applyToMixture(reagent) {
+        const g = this.game;
+        const rules = REACTION_RULES.filter(r => ruleUsesReagent(r, reagent.id) && !r.info);
+        if (!rules.length) { this.explainReagentMiss(reagent); return; }
+        // 成分の顔ぶれは**先に**取る（apply が図を書き換えるので、途中で数え直さない）
+        const parts = g.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H'))
+            .map(p => ({
+                ids: p.atoms.map(a => a.id),
+                name: g.lookupCompoundName(p) || g.computeMolecularFormula(p)
+            }));
+        if (!parts.length) { this.explainReagentMiss(reagent); return; }
+        this.clearReagentNote();
+        g.saveState();
+        const hits = [], misses = [], captions = [];
+        let applied = 0;
+        parts.forEach(part => {
+            const mine = new Set(part.ids);
+            for (const rule of rules) {
+                let sites = [];
+                // ⚠ **成分ごとに detect を回し直す**（前の成分の apply で図が変わっているため）
+                try { sites = rule.detect(g.userMolecule) || []; } catch (e) {
+                    console.error('反応ルール検出エラー:', rule.id, e); continue;
+                }
+                // その成分の原子を含む箇所だけ（他の成分に跨る箇所＝分子間反応はここでは採らない）
+                /* ⚠⚠ **その成分の原子だけでできている箇所**に限る。ここを
+                 *   「最初に見つかった箇所」にすると、**別の成分の箇所を横取りして
+                 *   効いた成分の名前がずれる**（否定対照 SEP2-② が実際にこれを捕まえる。
+                 *   ⚠ 図の見た目は同じになるので、名前で引かないと空振りする）。
+                 *   ★ 他の成分に跨る箇所（分子間のエステル化など）もここで落ちる。 */
+                const site = sites.find(s => Array.isArray(s) &&
+                    s.filter(x => typeof x === 'string').length > 0 &&
+                    s.filter(x => typeof x === 'string').every(x => mine.has(x)));
+                if (!site) continue;
+                try {
+                    const res = rule.apply(g, site);
+                    applied++;
+                    hits.push(part.name);
+                    if (res && res.caption) captions.push(`${part.name}: ${res.caption}`);
+                    this.assignPhaseFor(rule, site, part.ids);
+                } catch (e) {
+                    console.error('反応実行エラー:', rule.id, e);
+                    misses.push(`${part.name}（置く場所が足りませんでした）`);
+                }
+                return;   // 1成分につき1つの反応まで（同じ瓶で二度は効かせない）
+            }
+            misses.push(part.name);
+        });
+        if (!applied) { g.history.pop(); this.explainReagentMiss(reagent); return { hits, misses }; }
+        this.discardLastReaction();   // 「反応の前後」は1つの反応の話。混合物では名乗らない
+        g.updateDrawing();
+        if (g.fitSeparationView) g.fitSeparationView();
+        this.reportMixture(reagent, hits, misses, captions);
+        /* ★ **効いた／効かないを名前で返す**（D-I15。順序の正解は出さない）。
+         * ⚠ 検査は**数ではなく名前**を見る —— 数だけだと「別の成分の箇所を横取りした」
+         *   壊れ方が図の上では同じに見えて通ってしまう（SEP2-② の実測）。 */
+        return { hits, misses };
+    }
+
+    /** ルール → 層の対応表を引いて、その成分に層の印を付ける（表は `RULE_PHASE` ただ1つ） */
+    assignPhaseFor(rule, site, partIds) {
+        const g = this.game;
+        const to = RULE_PHASE[rule.id];
+        // ⚠ **表に載っていない反応はここで返る**（＝ 既存の反応の道は1行も変わらない）
+        if (!to || !g.setPartPhase || !Array.isArray(site)) return;
+        /* 反応のあとに**その成分が誰なのか**を引き直す ——「塩ができた」で原子が増え、
+         * 「遊離した」で金属が消えるので、反応前の id の並びをそのまま使えない。
+         * ⚠ 生き残っている id を1つ拾って連結成分をたどる（原子IDの順序には頼らない）。 */
+        const alive = partIds.concat(site.filter(x => typeof x === 'string'))
+            .find(id => g.userMolecule.atoms.some(a => a.id === id));
+        if (!alive) return;
+        g.setPartPhase([...g.moleculeAtomIdsOf(alive)], to.phase, to.note);
+    }
+
+    /**
+     * 混合物にかけた結果の返し方。
+     * ★ **効いた／効かないだけ返す**（D-I15）。⚠ 順序の正解も、次に何を入れるべきかも言わない。
+     */
+    reportMixture(reagent, hits, misses, captions) {
+        const note = this.reagentNoteEl;
+        const head = `${reagent.name}（${reagent.formula}）を混合物にかけました。` +
+            `効いたのは ${hits.length} 成分（${hits.join('・')}）` +
+            (misses.length ? `／効かなかったのは ${misses.length} 成分（${misses.join('・')}）` : '') + '。';
+        this.game.showToast(head, 6000, 'success');
+        if (!note) return;
+        note.innerHTML = '';
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        setEmphasisText(p, head + (captions.length ? '\n' + captions.join('\n') : ''));
+        p.style.whiteSpace = 'pre-line';
+        note.appendChild(p);
+    }
+
     onReagentClick(reagent) {
+        // ★ 分液の面を開いているあいだは、瓶は**キャンバスの全成分に順に**かかる（I-1・§4-5 #2）
+        if (this.game.separationActive && REACTION_RULES.some(r => ruleUsesReagent(r, reagent.id) && !r.info)) {
+            this.applyToMixture(reagent);
+            return;
+        }
         // 呈色・検出の瓶（第3段）は反応ルールを持たない。**構造を変えず、陽性/陰性を返すだけ**
         const tests = DETECTION_TESTS.filter(t => t.reagentId === reagent.id);
         if (tests.length) { this.runDetection(reagent, tests); return; }
@@ -7964,6 +8238,10 @@ class Reactor {
          *   `apply` に瓶ごとの分岐を1つも入れないまま言える（§12-1 の約束）。 */
         const note = this.usuallyNote(rule, reagent);
         if (note) result = { ...result, caption: `${result.caption}\n${note}` };
+        /* ★ 層の割り当ても `apply` の外で足す（DESIGN_ion_layer.md §4-5 #3）。
+         * ⚠ **`applyToMixture` と同じ関数**を通す ＝ 表（`RULE_PHASE`）を2か所で読まない。
+         *   ここが無いと、反応カードから中和したときだけ層が動かない（入口で結果が割れる）。 */
+        this.assignPhaseFor(rule, site, []);
         // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
@@ -8756,6 +9034,7 @@ if (typeof window !== 'undefined') {
      *   **環状糖もフルクトースも全部 陰性**になる（統合セッションの実測）＝ 判定が2か所にある。
      *   ★ こちらから呼べるように出しておく（乗り換えは narrowing.js 側の仕事）。 */
     window.reducingCarbonylAtoms = reducingCarbonylAtoms;
+    window.RULE_PHASE = RULE_PHASE;             // ルール → 層の対応表（SEP 群が読む）
     // `reagentId` が文字列でも配列でもよいことを、テスト側も同じ関数で読む（v1428）
     window.ruleReagentIds = ruleReagentIds;
     window.ruleUsesReagent = ruleUsesReagent;
