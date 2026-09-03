@@ -48,7 +48,7 @@ let taskIdx = 0;
 /* 段1: 断片の**電荷**（空欄は undefined）。⚠ 0 は「電荷 0 と答えた」＝ 誤答であって未入力ではない */
 let splitVals = [];
 let oxVals = {};      // 段2: { 断片の添字: { 元素: 値 } }
-let virtOpen = false;
+/* ⚠ 段3 の開閉の状態（virtOpen）は持たない —— 2026-09-03 に常時表示にした（buildVirtual） */
 
 function task() { return TASKS[taskIdx]; }
 
@@ -59,7 +59,9 @@ function el(tag, cls, text) {
   return e;
 }
 
-/* 上付きの電荷（Cr⁶⁺）。SPECIES に無い**仮想の単原子イオン**を書くために要る */
+/* 上付きの電荷（Cr⁶⁺）。SPECIES に無い**仮想の単原子イオン**を書くために要る。
+   ⚠ **使うのは「化学式の右肩に付けるとき」だけ。** 欄や検算の行の中は平の文字
+   （model.js の fmtIonCharge）、酸化数は fmtOxNum ―― 3本の使い分けは model.js の注記を見よ。 */
 const SUP = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
 function supCharge(v) {
   if (v === 0) return "";
@@ -158,16 +160,30 @@ function refreshSplit(res) {
   const chk = document.getElementById("splitChk");
   if (!chk) return;
   let sum = 0, allIn = true;
+  /* ★★ **ここのセルはイオン1個ぶんの電荷** ＝ イオン式の書き方で出す（＋ / 2−）。
+     ⚠ **酸化数の +1 / −2 ではない**（2026-09-03・ユーザーの指摘
+     「電離したイオンの電荷は ＋1でなく ＋、−2でなく 2− とイオン式の表記にする」）。
+     ★ この段だけイオン式で書くのには理由がある: **段1 の見出しは電荷を落とした式**
+     （NH₄・SO₄）で、欄はその**右肩**に置いてある ＝ この画面で「NH₄⁺ の ⁺」を
+     文字として見せる場所が、この行しか無い。段2は箱の見出しが NH₄⁺・SO₄²⁻ と
+     イオン式で出ているので、あちらでは重ねて書かない（refreshOx の注記）。
+     ⚠ **平の文字で出す**（上付きにしない）。ユーザーの指示:
+     「ボックスの位置で上付きを表現しているのでそのまま平文で」。 */
   const cells = t.parts.map((p, i) => {
     const v = splitVals[i];
     if (Number.isInteger(v)) sum += v * p.n; else allIn = false;
-    return `(${Number.isInteger(v) ? fmtOxNum(v) : "？"})×${p.n}`;
+    return `(${Number.isInteger(v) ? fmtIonCharge(v) : "？"})×${p.n}`;
   });
   const want = SPECIES[t.sp].charge;
   /* ⚠ 緑にするのは**通ったとき**だけ。合計だけ合って中身が違う回（＋と−が
      たまたま打ち消し合う）で緑を出すと、「緑なのに進めない」に見える。
      数そのものは書いてあるので、色は判定と一致させておくほうが読める。 */
   chk.className = "oxCheckLine" + (allIn ? (res && res.ok ? " okcell" : " ngcell") : "");
+  /* ⚠ **足した結果（＝ の右）は数のまま。** セルは「＋ が2個」「2− が1個」という
+     イオンの名指しだが、合計は足し算の答えなので、`(＋)×2 ＋ (2−)×1 ＝ +1` のように
+     **名指しと計算の結果を書き分ける**。ここも 2+ 形にすると、＝ の両側が
+     同じ書き方になって「名指しの並び」と「答え」の区別が消える。
+     ⚠ いまのデータでは段1の親（塩）は 25件とも中性なので、めざす合計は常に 0。 */
   chk.textContent = `${cells.join(" ＋ ")} ＝ ${allIn ? fmtOxNum(sum) : "？"}` +
     `　　めざす合計 ＝ ${want === 0 ? "0（もとの粒は電気的に中性）" : fmtOxNum(want)}`;
   t.parts.forEach((p, i) => {
@@ -288,6 +304,19 @@ function refreshOx(res) {
     const chk = document.getElementById("oxChk" + i);
     if (chk) {
       chk.className = "oxCheckLine" + (allKnown ? (ok ? " okcell" : " ngcell") : "");
+      /* ⚠⚠ **ここは「めざす合計 ＝ ＜値＞（このイオンの電荷）」＝ 判断が要る1か所**
+         （2026-09-03）。左辺は**酸化数の和**、右辺は**イオンの電荷**で、種類が違う。
+         ★ **数のまま（−2）にした。** イオン式（2−）にしなかった理由は3つ:
+           (1) **＝ の両側が同じ量**（左の「＝ ？」が埋まると同じ数になる）。
+               片側だけ書き方を変えると、**別の量に見える**か、
+               **足し算の途中で書き換えが1回はさまる**
+           (2) この段でイオン式が要らないのは、**箱の見出しが既に NH₄⁺ / SO₄²⁻ と
+               イオン式で出ている**から。段1（見出しが電荷を落とした NH₄・SO₄）と違い、
+               「⁺ をどう書くか」を見せる場所が別にある
+           (3) ⚠ **教科書がどちらで書くかは確かめられていない。**
+               数研1社しか読んでいないので「教科書はこう書く」を根拠にしない
+               （DEVELOPMENT.md）。⇒ **画面の理由（(1)(2)）だけで決める。**
+         ★ **「（このイオンの電荷）」という断りは残す** ＝ 名前は電荷・書き方は検算の数、と分ける。 */
       chk.textContent = `${cells.join(" ＋ ")} ＝ ${allKnown ? fmtOxNum(sum) : "？"}` +
         `　　めざす合計 ＝ ${s.charge === 0 ? "0（電気的に中性）" : fmtOxNum(s.charge) + "（このイオンの電荷）"}`;
     }
@@ -304,7 +333,14 @@ function refreshOx(res) {
   });
 }
 
-/* ---- 段3: 仮想的に単原子イオンへ分ける（⚠ 断りを外さない） ---- */
+/* ---- 段3: 仮想的に単原子イオンへ分ける（⚠ 断りを外さない） ----
+
+   ★ **ひらく・閉じるは無くした**（2026-09-03・ユーザーの指示「ひらく・閉じるはなくてよい
+   （常時表示）」）。⚠ 開閉していたのは `<details>` ではなく、ここで作っていた
+   `<button class="igSkip">仮の分け方を見る（数えかたの正体）</button>` の1つ。
+   ⚠ **段3 そのものが出るのは段2 が解けてから**で、これは変えていない ——
+   ここに描く姿は**人が入れた数から組み立てている**ので、答える前は描きようがない
+   （答えの表を持たない、というこのモードの決めの裏返し）。 */
 
 function buildVirtual() {
   virtWrapEl.innerHTML = "";
@@ -314,12 +350,6 @@ function buildVirtual() {
   const s = SPECIES[target.sp];
   if (Object.keys(s.atoms).length < 2) { step3El.hidden = true; return; }
   step3El.hidden = false;
-  const btn = document.createElement("button");
-  btn.className = "igSkip";
-  btn.textContent = virtOpen ? "仮の分け方を閉じる" : "仮の分け方を見る（数えかたの正体）";
-  btn.onclick = () => { virtOpen = !virtOpen; buildVirtual(); };
-  virtWrapEl.appendChild(btn);
-  if (!virtOpen) return;
 
   // 値は答えの表からではなく、**人が入れた数**から組み立てる（ここでも答えを持たない）
   const got = (oxVals[t.parts.indexOf(target)] || {})[target.ask];
@@ -333,6 +363,9 @@ function buildVirtual() {
     line.append(el("span", "fterm oxVirtIon", (v.n > 1 ? v.n + " " : "") + v.el + supCharge(v.ox)));
   });
   virtWrapEl.appendChild(line);
+  /* ⚠ **断りは必ず添える**（model.js の OX_VIRTUAL_CAVEAT の注記）。
+     ⚠ ** の剥がしは残す —— いまの文には無いが、他の判定文と同じ作法にしておく
+     （文面を書き換えた人が ** を入れても、画面に ** が出ない） */
   const cav = el("div", "oxCaveat");
   cav.textContent = OX_VIRTUAL_CAVEAT.replace(/\*\*/g, "");
   virtWrapEl.appendChild(cav);
@@ -429,7 +462,6 @@ function buildStageNav() {
 function initTask() {
   splitVals = [];
   oxVals = {};
-  virtOpen = false;
   buildStageNav();
   const t = task();
   stageTitleEl.innerHTML = "";
@@ -472,7 +504,8 @@ window.OxNum = {
     if (v === null) delete oxVals[i][elName]; else oxVals[i][elName] = v;
     refresh();
   },
-  toggleVirtual() { virtOpen = !virtOpen; buildVirtual(); return virtOpen; },
+  /* ⚠ toggleVirtual は無くした（段3 は常時表示）。
+     見るときは state().step3Visible と #virtWrap の中身を直接読む */
 };
 
 const idParam = new URLSearchParams(location.search).get("sp");

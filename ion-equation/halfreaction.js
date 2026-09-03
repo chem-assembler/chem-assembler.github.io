@@ -60,7 +60,24 @@ function plain(s) { return String(s).replace(/\*\*/g, ""); }
    隠すと**式が打つたびに伸び縮みして、これから何を入れるのかが見えない**。
    いま入れる欄は `.hbSlotNow` で示す。⚠ **枠を見せても答えは漏れない**
    —— 枠に入っているのは種の名前（H₂O・H⁺・e⁻）だけで、数も辺も書いていない。
-   ⚠ 漏れるのは**採点の文のほう**なので、そちらは今までどおり伏せる（refresh を見よ）。 */
+   ⚠ 漏れるのは**採点の文のほう**なので、そちらは今までどおり伏せる（refresh を見よ）。
+
+   ★★ **ただし「見せる」と「打てる」は別**（2026-09-03・ユーザーの実機報告で判明）。
+   ⚠ 枠を出した回（v198）の副産物として**段をまたいで順序を強いなくなり**、
+   **手順B の面で A の順（H₂O → H⁺ → e⁻）に打っても最後まで着く**ようになっていた。
+   実測（`localhost` の実機・MnO4_red）:
+     手順B で H₂O右4 → H⁺左8 → e⁻左5 と打つと **そのままクリア**し、
+     しかも締めに「**先に決めた e⁻ 5 個のまま**」と出る ＝ **画面が嘘をつく**。
+     逆向き（手順A の面で e⁻ → H₂O → H⁺）も同じく通る。
+   ⚠ **＝ 手順を2つ用意した意味が消える。** 「先に e⁻ を決める」という手順B の芯を
+   一度も通らずにクリアできてしまう（setProc が入力を捨てているのと同じ穴が、
+   切り替えではなく**打つ順**から開いていた）。
+   ★ **直し: まだ来ていない段の欄だけ `disabled` にする。**
+     ・**隠さない**ので v198 のご指示（枠は固定で出す）はそのまま生きる
+     ・**済んだ段の欄は開けたまま** ＝ 前に戻って直せる（`i > at` だけを閉じる）
+     ・**段の中は今までどおり自由**（左右どちらから入れてもよい）
+       ＝ `ORDER_halfreaction_2026-08-22.md` §6 の決め
+       「**段のあいだは順序を強いる／段の中では強いない**」に、ようやく揃う */
 
 function termNode(t) {
   const wrap = el("span", "fterm");
@@ -86,6 +103,10 @@ function slotNode(key, side) {
   inp.id = "hbIn_" + KEYCODE[key] + "_" + side;
   inp.setAttribute("aria-label", SPECIES[key].disp + " を" + (side === "left" ? "左辺" : "右辺") + "に何個");
   inp.oninput = () => {
+    /* ⚠ **閉じている欄の値は受け取らない。** 人の指では disabled な欄に打てないが、
+       テストや監査は `input` を自分で投げるので、ここで閉じておかないと
+       「段のあいだは順序を強いる」の否定対照が空振りする（＝何も見張らない検査になる） */
+    if (inp.disabled) return;
     const v = inp.value.trim();
     if (!vals[key]) vals[key] = {};
     /* ⚠ **空欄と 0 を区別する。** 0 は「この辺には要らない」という正しい答えなので、
@@ -168,15 +189,24 @@ function refresh() {
   const done = halfBuildDone(t, procId, vals);
 
   /* 欄の出し入れ: ★ **枠は全部出したまま**。隠すのは「完成して 0 になった項」だけ
-     （1 MnO₄⁻ ＋ 0 H₂O のような式にしないため）。いま入れる段の欄はハイライトする。 */
+     （1 MnO₄⁻ ＋ 0 H₂O のような式にしないため）。いま入れる段の欄はハイライトする。
+     ★ **まだ来ていない段（i > at）の欄だけ閉じる**（冒頭の注記）。
+     ⚠ 閉じるのは **`disabled`** であって `hidden` ではない —— 枠は見えたまま、打てないだけ。 */
   p.steps.forEach((st, i) => {
+    const ahead = i > at;               // まだ来ていない段
     for (const side of SIDES) {
       const node = document.getElementById("hbSlot_" + KEYCODE[st.key] + "_" + side);
       const v = (vals[st.key] || {})[side];
       const zero = !Number.isInteger(v) || v === 0;
       node.hidden = done && zero;
       node.classList.toggle("hbSlotNow", !done && i === at);
+      node.classList.toggle("hbSlotAhead", ahead);
       const inp = document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side);
+      inp.disabled = ahead;
+      /* ⚠ 押しても無反応、にはしない（なぜ打てないのかを、答えを言わずに返す）。
+         ★ 数も辺も出さない ＝ ここから答えは漏れない */
+      if (ahead) inp.title = "前の段が片づくと入れられる";
+      else inp.removeAttribute("title");
       const want = v === undefined ? "" : String(v);
       // 外（テストのフック）から入れたときだけ書き戻す（打っている途中は触らない）
       if (document.activeElement !== inp && inp.value !== want) inp.value = want;
@@ -245,6 +275,21 @@ function showClear() {
   b.textContent = `同じ式を${HALF_PROCS[other].label.split("：")[0]}で組む →`;
   b.onclick = () => setProc(other);
   clearEl.appendChild(b);
+  /* ★ 「もう一度同じ問題を解く」（2026-09-03・ユーザーの要望）。
+     ⚠ **3つの行き先を、画面の言葉で言い分ける**（どれも「同じ式」に見えてしまうので）:
+       ・**この釦** … 式も手順も**そのまま**。手が覚えるまで繰り返すためのもの
+       ・「同じ式を手順◯で組む →」 … 式は同じ・**手順だけ**もう一方へ（この練習の眼目）
+       ・「次の式へ →」 … **別の式**へ
+     ⚠ この面に「↺ やり直す」は無い（他モードと違い、途中で捨てる釦は置いていない）ので、
+     ここが**唯一の入れ直し口**になる。だから置き場所はクリア後の帯 ＝
+     ユーザーの言う「**最後に**もう一度」。常設にすると、段を1つずつ進む面に
+     4つ目の釦が居座って、いま入れる場所から目が逸れる。
+     ⚠ 並びは 手順替え → もう一度 → 次の式 の順（既存の2つの位置を動かさない）。 */
+  const rt = document.createElement("button");
+  rt.id = "hbRetry";
+  rt.textContent = `↺ 同じ式をもう一度（${proc().label.split("：")[0]} のまま）`;
+  rt.onclick = () => { vals = {}; refresh(); };   // 式も手順も組み直さない（欄の値は refresh が消す）
+  clearEl.appendChild(rt);
   if (taskIdx < TASKS.length - 1) {
     const nx = document.createElement("button");
     nx.id = "hbNext";
