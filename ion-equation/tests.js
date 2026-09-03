@@ -8943,6 +8943,93 @@ async function runHalfBuildUITests(iframe) {
     assert(doc.getElementById("clearBanner").hidden, "切り替えたのにクリアが出たまま");
   });
 
+  /* ★★ 2026-09-03・ユーザーの実機報告:
+       「手順のボックスがハイライトされているが、他のボックスも入力可能である／
+         他のボックスを入力済みにすると、手順A、B、どちらも同じ入力順で正解できてしまう」
+     ⚠ **これは「見た目の親切」ではなく、手順を2つ用意した意味が消える穴**だった。
+     枠を6つとも出した v198 の副産物で、**段をまたいだ順序が効かなくなっていた**
+     （`ORDER_halfreaction_2026-08-22.md` §6 の決め「段のあいだは順序を強いる」に反する）。
+     ★ 直しは **隠す**ではなく **閉じる**（`disabled`）—— 枠は見えたまま、打てるのはいまの段だけ。
+     ⚠ **順序は UI の話で、model.js は持たない**（`halfBuildDone` は式が正しいかだけを見る）。
+        だから見張る場所はここ ＝ この検査を外すと、誰も順序を見ていない状態に戻る。 */
+  await t("HALF UI: ★★まだ来ていない段の欄は閉じる（同じ入力順では両方 解けない）", async () => {
+    const inp = (key, side) => doc.getElementById("hbIn_" + IN[key] + "_" + side);
+    win.HalfBuild.goto("MnO4_red");
+    win.HalfBuild.setProc("B");                     // 段の並びは e⁻ → H₂O → H⁺
+    assert(!inp("e-", "left").disabled && !inp("e-", "right").disabled,
+      "B の1段目（e⁻）の欄まで閉じている（段の中では左右どちらからでも入れられること）");
+    assert(inp("H2O", "left").disabled && inp("H2O", "right").disabled &&
+      inp("H+", "left").disabled && inp("H+", "right").disabled,
+      "B の1段目なのに、まだ来ていない段の欄が開いている");
+    // ⚠ 閉じるのは disabled であって hidden ではない（v198 のご指示「枠は固定で出す」は生きている）
+    for (const k of ["w", "h", "e"]) for (const s of ["left", "right"]) {
+      assert(!doc.getElementById("hbSlot_" + k + "_" + s).hidden, "欄を隠してしまっている: " + k + "/" + s);
+    }
+    /* ★★ ここが否定対照の芯。**手順A の順（H₂O → H⁺ → e⁻）を手順B の面で打つ**と、
+       直す前は最後まで着いてクリアし、締めに「先に決めた e⁻ …個のまま」と嘘まで出ていた。 */
+    typeInto("H2O", "right", 4);
+    assert(state().at === 0 && !state().done, "手順B の面で H₂O から打ててしまう（B の芯を通らない）");
+    typeInto("H+", "left", 8);
+    assert(state().at === 0 && !state().done, "手順B の面で H⁺ から打ててしまう");
+    assert(doc.getElementById("clearBanner").hidden, "順を外した入力でクリアが出ている");
+    /* ★★ **この1行が芯**。上の2打ちが本当に捨てられたかは `at` では見えない
+       （どちらにせよ 0 のまま）ので、**e⁻ を入れた瞬間に何段進むか**で見分ける:
+         ・捨てていれば **1段だけ**進む（H₂O も H⁺ もまだ空）
+         ・受け取っていれば **一気に 3 まで飛んでクリア** ＝ 報告された抜け道そのもの
+       ⚠ 実際、`oninput` の閉じ判定を外した否定対照はここで落ちた。 */
+    typeInto("e-", "left", 5);
+    assert(state().at === 1,
+      "e⁻ を入れた途端に段が飛んだ ＝ 順を外した H₂O・H⁺ を受け取っている: " + state().at);
+    assert(!state().done, "手順A の入力順のまま手順B がクリアできてしまう");
+    assert(!inp("H2O", "left").disabled, "1段進んでも次の段の欄が開かない");
+    assert(inp("H+", "left").disabled, "その先の段まで一緒に開いている");
+    typeInto("H2O", "right", 4);
+    typeInto("H+", "left", 8);
+    assert(state().done, "手順B の順なら最後まで通る");
+    // ★ 済んだ段は開けたまま（間違いに気づいたら前に戻って直せる）
+    assert(!inp("e-", "left").disabled, "完成したら前の段が閉じてしまい、直しに戻れない");
+    /* ★ 逆向きも同じ穴だった: 手順A の面で B の順（e⁻ から）に打つ */
+    win.HalfBuild.setProc("A");
+    assert(!inp("H2O", "left").disabled && inp("e-", "left").disabled,
+      "手順A の1段目が H₂O になっていない（段の並びが手順で入れ替わること）");
+    typeInto("e-", "left", 5);
+    assert(state().at === 0 && !state().done, "手順A の面で e⁻ から打ててしまう");
+  });
+
+  /* ★ 「最後にもう一度同じ問題を解くボタンが欲しい」（2026-09-03・ユーザーの要望）。
+     ⚠ 3つの行き先が**どれも「同じ式」に見える**ので、言葉で言い分けられていることまで見る。 */
+  await t("HALF UI: クリア後の行き先は3つ（もう一度／もう一方の手順／次の式）", async () => {
+    win.HalfBuild.goto("MnO4_red");
+    win.HalfBuild.setProc("B");
+    solveB();
+    assert(state().done && !doc.getElementById("clearBanner").hidden, "クリアにならない");
+    const ids = $$("#clearBanner button").map((b) => b.id);
+    assert(JSON.stringify(ids) === JSON.stringify(["hbSwap", "hbRetry", "hbNext"]),
+      "クリア後の釦が3つ揃っていない（並びも見る）: " + ids.join(","));
+    const label = (id) => doc.getElementById(id).textContent;
+    assert(label("hbSwap").includes("手順A"),
+      "もう一方の手順へ行く道が消えている（この練習の眼目）: " + label("hbSwap"));
+    assert(label("hbRetry").includes("もう一度") && label("hbRetry").includes("手順B"),
+      "「もう一度」が同じ手順のままだと言っていない: " + label("hbRetry"));
+    assert(label("hbNext").includes("次の式"), "別の式へ行く道が無い: " + label("hbNext"));
+    // ★ もう一度 ＝ 式も手順もそのまま・入力だけ空に戻る
+    const before = state();
+    doc.getElementById("hbRetry").click();
+    const after = state();
+    assert(after.id === before.id && after.proc === before.proc,
+      "「もう一度」で式か手順が変わった: " + JSON.stringify(after));
+    assert(!after.done && after.at === 0 && doc.getElementById("clearBanner").hidden,
+      "「もう一度」でクリアが残っている: " + JSON.stringify(after));
+    assert(doc.getElementById("hbIn_e_left").value === "" &&
+      doc.getElementById("hbIn_w_right").value === "", "入力欄に前の答えが残っている");
+    // ⚠ もう一度でも同じ手順を通る（先の段はまた閉じる）
+    assert(doc.getElementById("hbIn_w_left").disabled, "「もう一度」なのに先の段が開いたまま");
+    // ★ もう一方の手順へ移る道は生きている
+    solveB();
+    doc.getElementById("hbSwap").click();
+    assert(state().proc === "A" && !state().done, "「同じ式を手順Aで組む」で移れない");
+  });
+
   await t("HALF UI: 空欄と 0 を区別する／打っている途中に入力欄が作り直されない", async () => {
     win.HalfBuild.goto("Zn_ox");     // 水も H⁺ も要らない回（0 が正しい答えになる）
     win.HalfBuild.setProc("A");
