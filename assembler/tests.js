@@ -12968,18 +12968,24 @@
         assert([...D.querySelectorAll('#ip-body button')].some(b => /C₄H₁₀/.test(b.textContent)),
             'やめたあとお題選びに戻っていない');
 
-        // (2) 反応機構ビューアを止めるのも Study モーダルの中 ＝ 学習の面は残る（二重終了にしない）
+        /* (2) 反応機構ビューアが止まっても、学習の面（Study モーダル）が開いていれば
+           そこに残る ＝ 二重に終了しない。
+           ⚠ vNNNN 以前は「Study の中のスイッチを外す」で止めていた。**⚗️ の札ごと撤去した**ので、
+              Study の中にビューアを止める押しものはもう無い（出口は帯の「やめる」＝
+              Study が閉じている場面にしか出ない）。
+           ★ ここで見たいのは *止め方* ではなく **止まった直後にモードが落ちないこと** なので、
+              止めるのは `exit()` を直に呼ぶ形にした。そのうえで**画面を1回押して**
+              `setupLearnExit` の判定を実際に走らせる（呼ばないと何も確かめていない）。 */
         const sel = D.getElementById('select-reaction');
         sel.value = '0';
         sel.dispatchEvent(new W.Event('change', { bubbles: true }));
-        assert(W.reactionPlayer.active, '一覧から選んでもビューアが始まらない（前提が崩れている）');
+        assert(W.reactionPlayer.active, '選択の実体から選んでもビューアが始まらない（前提が崩れている）');
         lxOpenStudy(c);
-        const cb = D.getElementById('check-reaction-mode');
-        cb.checked = false;
-        cb.dispatchEvent(new W.Event('change', { bubbles: true }));
-        assert(!W.reactionPlayer.active, 'チェックを外してもビューアが終わらない');
+        W.reactionPlayer.exit();
+        assert(!W.reactionPlayer.active, 'ビューアが終わっていない（前提が崩れている）');
+        D.getElementById('study-body').click();
         assert(g.currentMode === 'learn',
-            'ビューアを止めた場所（Study モーダル）が開いているのに自由モードへ落ちた');
+            'ビューアが止まった場所（Study モーダル）が開いているのに自由モードへ落ちた');
 
         D.getElementById('btn-study-close').click();
         // (3) その Study モーダルを閉じたら、そこで初めて 🧪自由 へ移る
@@ -13099,17 +13105,18 @@
         // 「モードで出し分ける」から「タイルで開く」に変わっただけなので、開いてから同じことを見る
         g.setStudyOpen(true);
         assert(rendered('#learn-acc-quiz > summary') && rendered('#learn-acc-practice > summary') &&
-            rendered('#reaction-box > summary'), '学習でアコーディオンの入り口が出ない');
+            rendered('#learn-acc-reference > summary'), '学習でアコーディオンの入り口が出ない');
         const accQuiz = D.getElementById('learn-acc-quiz');
-        const accRx = D.getElementById('reaction-box');
+        // ⚠ vNNNN で ⚗️ 反応機構ビューアの札を撤去したので、3つめは 📖 資料（参考書）
+        const accRx = D.getElementById('learn-acc-reference');
         assert(!accQuiz.open && !accRx.open, 'アコーディオンの既定が折りたたみでない');
         // 閉じた details の中身は display:none ではなく content-visibility で隠れる（Chrome 97+）ため
         // offsetParent ベースの rendered() では判定できない。checkVisibility() で見えないことを確認する
         assert(!D.getElementById('btn-quiz').checkVisibility(), '折りたたみ中なのにクイズボタンが見えている');
         accQuiz.open = true; accRx.open = true;
-        // ⚠ 機構の一覧は `#select-reaction` から**押しものの一覧 `#reaction-list` へ移した**（v1439）。
-        //   select は選択の実体として残っているが面には出ない（RX46 ①がその決まりを見ている）
-        assert(rendered('#btn-quiz') && rendered('#reaction-list'), 'アコーディオンを開いてもクイズ/機構が出ない');
+        // ⚠ 機構の一覧は vNNNN で **📖 資料（参考書）の4枚目**へ移った。
+        //   `#select-reaction`（選択の実体）は帯の中に残っているが面には出ない（RX46 ①が見ている）
+        assert(rendered('#btn-quiz') && rendered('#reference-list'), 'アコーディオンを開いてもクイズ/資料が出ない');
         accQuiz.open = false; accRx.open = false;
         g.setStudyOpen(false);
         assert(wrapperHidden('puzzle free'), '学習で名前・分子式の器が隠れていない（出し分けが効いていない）');
@@ -27879,10 +27886,18 @@
         g.setMode('free');
         assert(!rp.active, 'モードを移ってもビューアが残っている');
 
-        // (5) ビューア自身の操作（#reaction-box の中）ではビューアは終わらない
+        /* (5) ビューア自身の操作ではビューアは終わらない。
+           ⚠ vNNNN 以前は「`#reaction-box` の中」＝ Study の中に例外があった。
+              ★ いまビューアの持ちものは **📖 資料の ▶（`#ref-body`）と帯（`#ws-reaction`）**で、
+                どちらも `#study-body` の外 ＝ 例外を書かずに済んでいる。
+              **機構から別の機構へ移っても終わらない**ことを、資料の ▶ で実際に通す。 */
         open();
-        D.getElementById('select-reaction').click();
-        assert(rp.active, 'ビューア自身の操作でビューアが終わってしまう');
+        await rxPlayFromReference(c, 'esterification');
+        assert(rp.active && rp.currentReaction.id === 'esterification',
+            `資料の ▶ で移れない（${rp.currentReaction && rp.currentReaction.id}）`);
+        await rxPlayFromReference(c, 'ethene_br2');
+        assert(rp.active && rp.currentReaction.id === 'ethene_br2',
+            'ビューア自身の操作（資料の ▶）でビューアが終わってしまう');
         rp.exit();
 
         g.userMolecule = new W.Molecule();
@@ -27941,7 +27956,29 @@
      * 見るのは**`active` が false の状態で `change` を撃つこと**。
      */
 
-    // 一覧から `id` の反応を「選ぶ」（人が select を操作したときと同じ change を撃つ）
+    /* ★★ **人と同じ入口で機構を1件 再生する**（vNNNN 以降・唯一のメニュー入口）。
+     *
+     * ⚠ 📚 学習 → ⚗️ 反応機構ビューアの札は **vNNNN で撤去した**（ユーザー決定 2026-09-03
+     *   「消す方がすっきりすると思います」）。機構は **📖 資料（参考書）の4枚目**に移り、
+     *   14件の表の各行にある **▶ 見る** が入口になっている。
+     * ★ ここは **DOM のボタンを実際に押す**（`playMechanism` を直に呼ばない）＝
+     *   「押しものが本当に配線されているか」まで通る。
+     */
+    async function rxPlayFromReference(c, id) {
+        const W = c.W, D = c.D;
+        assert(W.referenceBook, 'window.referenceBook が居ない（資料が読み込まれていない）');
+        await W.referenceBook.openMechanisms();
+        await c.tick(20);
+        const btn = [...D.querySelectorAll('#ref-body table.ref-mech-table button.ref-mech-play')]
+            .find(b => b.dataset.rxId === id);
+        assert(btn, `資料の機構の表に「${id}」の ▶ が無い`);
+        btn.click();
+        await c.tick(20);
+        return btn;
+    }
+
+    // 選択の実体（`#select-reaction`）から `id` の反応を「選ぶ」（change を撃つ）。
+    // ⚠ vNNNN で人が触る一覧は資料へ移ったが、**合流先はここのまま** ＝ この経路は生きている
     function rxPickFromList(c, id) {
         const rp = c.W.reactionPlayer;
         const i = rp.reactions.findIndex(r => r.id === id);
@@ -27956,26 +27993,31 @@
         c.reset();
         const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
         assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
-        const check = D.getElementById('check-reaction-mode');
         const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
         const studyOpen = () => !D.getElementById('study-modal').classList.contains('hidden');
 
-        // 人と同じ入口を作る: 📚 学習 → Study モーダル → ⚗️ のアコーディオンを開く
+        // 人と同じ入口を作る: 📚 学習 → Study モーダル → 📖 資料（⚗️ の札は vNNNN で撤去）
         g.setMode('learn');
         g.setStudyOpen(true);
-        D.getElementById('reaction-box').open = true;
+        D.getElementById('learn-acc-reference').open = true;
+        await c.tick(20);
 
-        // ★ テスト前提 ＝ 症状の出発点。**チェックはまだ入っていない**
-        assert(!rp.active && check.checked === false && !strip() && studyOpen(),
-            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()} / モーダル=${studyOpen()}）`);
+        // ★ テスト前提 ＝ 症状の出発点。**まだ1件も選んでいない**
+        assert(!rp.active && !strip() && studyOpen(),
+            `開始前の状態が違う（active=${rp.active} / 帯=${strip()} / モーダル=${studyOpen()}）`);
 
         // ① 一覧から選ぶ **だけ**（★ここが否定対照。`if (this.active)` を戻すと以下が全部赤）
         rxPickFromList(c, 'ethene_br2');
         assert(rp.active, '一覧から選んでも始まらない（change が捨てられている＝入口で詰まる）');
         assert(rp.currentReaction && rp.currentReaction.id === 'ethene_br2',
             `別の反応が開いている（${rp.currentReaction && rp.currentReaction.id}）`);
-        // ② スイッチの表示が追従する（状態が2つに割れない）
-        assert(check.checked === true, 'スイッチがオフのまま（画面の状態が2つに割れている）');
+        /* ② 選択の実体が追従する（状態が2つに割れない）。
+           ⚠ vNNNN 以前はここで **スイッチ（#check-reaction-mode）の表示**を見ていたが、
+              ⚗️ の札ごと撤去したので、いま状態を持っているのは `#select-reaction` の1本だけ。
+              ★ **見張るものが減ったのではなく、割れる先が無くなった** */
+        assert(D.getElementById('select-reaction').value ===
+            String(rp.reactions.findIndex(r => r.id === 'ethene_br2')),
+            '選択の実体（#select-reaction）が始まった反応と食い違う');
         // ③ 帯が出て、学習モーダルは引っ込む（案内文どおり「キャンバスの下」が見える）
         assert(strip(), '帯 #ws-reaction が出ない（案内文と食い違う）');
         assert(!studyOpen(), '学習モーダルが開いたままでキャンバスが見えない');
@@ -27988,11 +28030,13 @@
         assert(rp.canvasBorrowed && rp.savedPuzzleMolecule === saved && rp.savedViewBox === vb,
             '反応を選び直すと退避が取り直されている（二重退避＝答案が空で上書きされる）');
 
-        // ⑤ 出口は今までどおり ―― チェックを外すと止まる
-        check.checked = false;
-        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        /* ⑤ 出口 ―― 帯の「やめる」で止まる。
+           ⚠ vNNNN 以前はここが「チェックを外す」だった。**スイッチは札ごと撤去した**ので、
+              出口は帯（`#btn-rx-exit`・v1399）と `setMode` / `setWorkPane` の3本。
+              ★ 出口が1本減ったこと自体は RX26 が本体で見ている（ここは「入って出られる」の確認）。 */
+        D.getElementById('btn-rx-exit').click();
         assert(!rp.active && !strip() && !rp.canvasBorrowed,
-            `チェックを外しても止まらない（active=${rp.active} / 帯=${strip()} / 借り=${rp.canvasBorrowed}）`);
+            `帯の「やめる」で止まらない（active=${rp.active} / 帯=${strip()} / 借り=${rp.canvasBorrowed}）`);
 
         g.setStudyOpen(false);
         g.setMode('puzzle');
@@ -28017,7 +28061,6 @@
             `テスト前提が崩れている（${atomsBefore}原子 / ${foundBefore}種）`);
 
         g.setStudyOpen(true);
-        D.getElementById('reaction-box').open = true;
         assert(!rp.active, 'テスト前提（まだ始まっていない）が崩れている');
 
         // ① 一覧から選ぶだけで始まり、答案は**退避されている**（抜けていない）
@@ -28037,10 +28080,9 @@
         assert(rp.savedPuzzleMolecule.atoms.length === atomsBefore,
             `渡り歩いたら退避が ${rp.savedPuzzleMolecule.atoms.length} 原子になった（${atomsBefore} を期待）`);
 
-        // ③ スイッチを切って戻る ＝ 答案・履歴・採点が丸ごと戻る
-        const check = D.getElementById('check-reaction-mode');
-        check.checked = false;
-        check.dispatchEvent(new W.Event('change', { bubbles: true }));
+        // ③ 帯の「やめる」で戻る ＝ 答案・履歴・採点が丸ごと戻る
+        //    ⚠ vNNNN 以前は「スイッチを切る」だった（⚗️ の札ごと撤去したので帯の出口に付け替え）
+        D.getElementById('btn-rx-exit').click();
         assert(!rp.active && !rp.canvasBorrowed, 'ビューアが閉じきっていない');
         assert(g.userMolecule.atoms.length === atomsBefore,
             `答案が ${g.userMolecule.atoms.length} 原子（${atomsBefore} を期待）`);
@@ -28072,7 +28114,6 @@
         c.reset();
         const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
         assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
-        const check = D.getElementById('check-reaction-mode');
         const btn = D.getElementById('btn-rx-exit');
         const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
         assert(btn, '帯に出口のボタン #btn-rx-exit が無い（見ている画面から抜ける道が無い）');
@@ -28092,10 +28133,9 @@
 
         g.setMode('learn');
         g.setStudyOpen(true);
-        D.getElementById('reaction-box').open = true;
         rxPickFromList(c, 'ethene_br2');
-        assert(rp.active && rp.ownsCanvas() && check.checked && strip(),
-            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()}）`);
+        assert(rp.active && rp.ownsCanvas() && strip(),
+            `開始前の状態が違う（active=${rp.active} / 帯=${strip()}）`);
         assert(rxSvgSplit(c).mine === 0, '開いた直後に自分の図が残っている（テスト前提が崩れている）');
         assert(!btn.classList.contains('hidden'), '見ているあいだ出口のボタンが隠れている');
 
@@ -28105,9 +28145,13 @@
         // (1) ビューアが止まり、帯が畳まれる
         assert(!rp.active, '帯の「やめる」を押してもビューアが止まらない');
         assert(!strip(), '帯 #ws-reaction が畳まれない（止まったのに操作だけ残る）');
-        // (2) チェックボックスの表示が追従する（状態が2つに割れない・発注書 §B の受け入れ条件）
-        assert(check.checked === false,
-            'チェックボックスが「オン」のまま（画面の状態が2つに割れている）');
+        /* (2) ⚠ vNNNN 以前はここで **チェックボックスの表示が追従するか**を見ていた
+              （出口が2つあり、状態が2か所に写っていたため）。**スイッチは札ごと撤去した**ので、
+              いま追従を確かめる相手は帯の出入りだけ ＝ (1) がそれを見ている。
+           ★ 代わりに、**出口が1本になったことで消えていないもの**を見る:
+              選択の実体（`#select-reaction`）は残っていて、次に開くときの手がかりになる。 */
+        assert(D.getElementById('select-reaction'),
+            '#select-reaction（選択の実体）が消えている ＝ ?open=mechanism&id= の入口が死ぬ');
         // (3) 退避されていた答案・履歴が戻る（＝既存の exit() に合流している証拠）
         assert(!rp.canvasBorrowed && rp.savedPuzzleMolecule === null,
             '退避が残っている（別経路で止めていて returnCanvas() を通っていない）');
@@ -29778,72 +29822,76 @@
      *   上の実測がその性質を破ったときに何が起きるかの記録で、2つで1組になっている。
      */
 
-    test('RX46: 反応の一覧は「押して確定する」もので、14件すべてに1手で届く', async (c) => {
+    test('RX46: 機構の一覧は「押して確定する」もので、登録済みの全件に1手で届く', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
-        assert(rp && rp.reactions.length === 14,
-            `登録された反応が14件でない（${rp ? rp.reactions.length : 'なし'}件）`);
+        assert(rp && rp.reactions.length >= 10,
+            `登録された反応が少なすぎる（${rp ? rp.reactions.length : 'なし'}件）`);
 
+        /* ⚠⚠ **一覧の置き場所が vNNNN で変わった**（ユーザー決定 2026-09-03
+           「消す方がすっきりすると思います」）。📚 学習 → ⚗️ の札は撤去し、
+           一覧は **📖 資料（参考書）の4枚目「反応の道すじ（反応機構）」の表**になった。
+           ★ **この検査が守っているものは変えていない**:
+             ① 人の面に出ている一覧は**押して初めて決まる**（`<select>` を面に出さない）
+             ② **たどっているあいだは始まらない**（焦点・キー操作で確定しない）
+             ③ **全件に1手で届く**（届かない件が1つも無いことを、名前で数える）
+           ⚠ ①の理由は v1439 の実測（閉じた select の ↓ 1回で enter() まで走り、
+             2件目より先へ1件も進めなかった）。器が表に変わっても理由は同じ。 */
         g.setMode('learn');
         g.setStudyOpen(true);
-        D.getElementById('reaction-box').open = true;
+        await W.referenceBook.openMechanisms();
+        await c.tick(20);
 
-        // ① 人が触る一覧は #reaction-list。**`<select>` は面に出さない**
-        //    （出ていると、候補を1つ動かしただけで change が飛んで確定してしまう）
-        const list = D.getElementById('reaction-list');
-        assert(list, '反応の一覧（#reaction-list）が無い');
-        assert(list.checkVisibility(), 'アコーディオンを開いても反応の一覧が見えない');
+        // ① 人が触る一覧は資料の表。**`<select>` は面に出さない**
+        const table = D.querySelector('#ref-body table.ref-mech-table');
+        assert(table, '資料に機構の表が無い（一覧の置き場所が消えている）');
+        assert(table.checkVisibility(), '資料を開いても機構の表が見えない');
         const sel = D.getElementById('select-reaction');
         assert(sel, '#select-reaction（選択の実体）が消えている ＝ ?open=mechanism と RX24 の入口が死ぬ');
         assert(!sel.checkVisibility(),
             '一覧が <select> のまま人の面に出ている（上下キー・iOS のピッカーで「触れた」が「選んだ」になる）');
+        assert(!table.querySelector('select, input, [contenteditable]'),
+            '表に select / input が混ざっている（触れただけで値が動くもの）');
 
-        // ② 一覧の中身は button だけ ＝ たどるのと決めるのが別（★症状の本体）
-        const items = [...list.querySelectorAll('[data-rx-id]')];
-        assert(items.length === 14, `一覧の押しものが ${items.length} 件（14件を期待）`);
-        assert(items.every(b => b.tagName === 'BUTTON'),
-            '一覧に button 以外の選択物が混ざっている（触れただけで値が動くもの）');
-        assert(!list.querySelector('select, input, [contenteditable]'),
-            '一覧に select / input が混ざっている');
-        // 14件が「反応の種類」で束ねてある（ユーザーの言葉どおり。畳まずに何があるか読める）
-        const heads = [...list.querySelectorAll('.quiz-group-head')].map(h => h.textContent);
+        // ② 押しものは button だけ ＝ たどるのと決めるのが別（★症状の本体）
+        const items = [...table.querySelectorAll('button.ref-mech-play')];
+        assert(items.length === rp.reactions.length,
+            `一覧の押しものが ${items.length} 件（${rp.reactions.length} 件を期待）`);
+        assert(items.every(b => b.tagName === 'BUTTON'), '一覧に button 以外の選択物が混ざっている');
+        // 反応の「型」で束ねてある（畳まずに何があるか読める）
+        const heads = [...table.querySelectorAll('td.ref-group')];
         const series = [...new Set(rp.reactions.map(r => r.series))];
         assert(heads.length === series.length,
-            `種類の見出しが ${heads.length} 個（${series.length} 種を期待）`);
-        series.forEach(s => assert(heads.some(t => t.startsWith(s)), `「${s}」の見出しが無い`));
+            `型の見出しが ${heads.length} 個（${series.length} 種を期待）`);
+        series.forEach(s => assert(heads.some(td => td.firstChild && td.firstChild.textContent.trim() === s),
+            `「${s}」の見出しが無い`));
 
         // ③ **たどっているあいだは始まらない**（焦点を移しても・キーを叩いても）
         items[0].focus();
-        items[13].focus();
+        items[items.length - 1].focus();
         items[1].dispatchEvent(new W.KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
         items[1].dispatchEvent(new W.Event('focus', { bubbles: false }));
         await c.tick(30);
-        assert(!rp.active && !D.getElementById('check-reaction-mode').checked,
-            '一覧をたどっただけで機構ビューアが始まっている（＝「すぐ選択される」）');
-        assert(!D.getElementById('study-modal').classList.contains('hidden'),
-            '一覧をたどっただけでメニューが閉じている（次の候補に手が届かない）');
+        assert(!rp.active, '一覧をたどっただけで機構ビューアが始まっている（＝「すぐ選択される」）');
         assert(D.getElementById('ws-reaction').classList.contains('hidden'),
             '一覧をたどっただけで作業帯が出ている');
 
-        // ④ 14件が重複なく並び、**1件ずつ押すと全部その反応が開く**（届かない件が無いことを数で）
+        // ④ 重複なく並び、**1件ずつ押すと全部その反応が開く**（届かない件が無いことを名前で）
         const ids = items.map(b => b.dataset.rxId);
-        assert(new Set(ids).size === 14, '一覧に同じ反応が2度出ている');
-        rp.reactions.forEach(r => assert(ids.includes(r.id), `${r.id} が一覧に出ていない`));
-        const hit = [];
+        assert(new Set(ids).size === ids.length, '一覧に同じ反応が2度出ている');
+        rp.reactions.forEach(r => assert(ids.includes(r.id), `${r.name}（${r.id}）が一覧に出ていない`));
+        const miss = [];
         for (const b of items) {
-            g.setStudyOpen(true);
             b.click();
             await c.tick(10);
-            if (rp.active && rp.currentReaction && rp.currentReaction.id === b.dataset.rxId) {
-                hit.push(b.dataset.rxId);
+            if (!(rp.active && rp.currentReaction && rp.currentReaction.id === b.dataset.rxId)) {
+                miss.push(b.dataset.rxId);
             }
         }
-        assert(hit.length === 14,
-            `1手で開けたのは ${hit.length}/14 件（${ids.filter(i => !hit.includes(i)).join(' / ')} に届かない）`);
-        // 2件目・14件目を名指しでもう一度（「1件目しか開かない」で緑にならない）
-        const again = [1, 13];
-        for (const n of again) {
-            g.setStudyOpen(true);
+        assert(miss.length === 0,
+            `1手で開けない機構がある: ${miss.join(' / ')}（${ids.length - miss.length}/${ids.length} 件）`);
+        // 2件目・最後を名指しでもう一度（「1件目しか開かない」で緑にならない）
+        for (const n of [1, items.length - 1]) {
             items[n].click();
             await c.tick(10);
             assert(rp.currentReaction.id === ids[n],
@@ -29851,63 +29899,66 @@
         }
 
         rp.exit();
+        W.referenceBook.close();
         g.setStudyOpen(false);
         g.setMode('puzzle');
     });
-
-    test('RX47: ★否定対照 — 1件目を見たあとメニューへ戻れる（触った瞬間に閉じない／渡すときは閉じる）', async (c) => {
+    test('RX47: ★否定対照 — 1件目を見たあと一覧へ戻れる（PC は開いたまま／狭い画面は一手で戻る）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
-        const study = D.getElementById('study-modal');
-        const open = () => !study.classList.contains('hidden');
-        const box = D.getElementById('reaction-box');
-        const btnOf = id => [...D.querySelectorAll('#reaction-list button[data-rx-id]')]
+        const pane = D.getElementById('reference-pane');
+        const paneOpen = () => !pane.classList.contains('hidden');
+        const btnOf = id => [...D.querySelectorAll('#ref-body table.ref-mech-table button.ref-mech-play')]
             .find(b => b.dataset.rxId === id);
 
-        // ① 1件目を選ぶ → 始まってメニューは引っ込む（v1379 の約束。ここは回帰させない）
+        /* ⚠⚠ この検査は vNNNN で相手が変わった（ユーザー決定「消す方がすっきりする」）。
+           以前は「📚 学習のメニューを開き直して2件目を選べるか」＝ **メニューが閉じてしまうと
+           2件目に手が届かない**という申し立てだった。⚗️ の札を撤去したいま、一覧は
+           **📖 資料の表**にあり、器の性質そのものが変わっている:
+             ・**PC（分割・1200px 以上）では資料は開いたまま** ＝ 戻る操作が要らない
+             ・**狭い画面では資料がキャンバスを覆う**ので、再生を始めた側が自分でどかす
+               （`playMechanism`）。戻るのは 📚 学習 → 📖 資料 の一手（原則2「一手かかるのは欠点ではない」）
+           ★ **守っているものは同じ**: 1件見たあと、**2件目・最後の1件へ実際に移れること**。 */
+
+        // ① 1件目を選ぶ → 始まる
         g.setMode('learn');
         g.setStudyOpen(true);
-        box.open = true;
-        const first = btnOf('ethene_br2');
-        assert(first, '一覧に ethene_br2 が無い');
-        first.click();
-        await c.tick(10);
-        assert(rp.active && rp.currentReaction.id === 'ethene_br2', '一覧から1件目が始まらない');
-        assert(!open(), '選んでもメニューが引っ込まない（キャンバスが見えない）');
+        await rxPlayFromReference(c, 'ethene_br2');
+        assert(rp.active && rp.currentReaction.id === 'ethene_br2', '資料の ▶ から1件目が始まらない');
+        assert(D.getElementById('study-modal').classList.contains('hidden'),
+            '再生が始まっても Study モーダルがキャンバスを覆ったまま');
 
-        // ② 帯が出たまま 📚 を開き直し、**中を触ってもメニューは閉じない**（★申し立ての本体）
-        D.querySelector('.mode-tab[data-mode="learn"]').click();
-        assert(open(), '📚 を押し直してもメニューが開かない');
-        assert(!D.getElementById('ws-reaction').classList.contains('hidden'),
-            '（前提）1件目の作業帯が出たままでない ＝ 症状の場面になっていない');
-        box.querySelector('summary').click();   // 畳む
-        await c.tick(10);
-        assert(open(), 'メニューを開き直して見出しを押した瞬間に閉じた（2件目の一覧へ手が届かない）');
-        box.querySelector('summary').click();   // 開き直す
-        await c.tick(10);
-        assert(open() && box.open, '見出しをもう一度押しても一覧が開かない（メニューごと消えている）');
+        /* ② 覆っていなければ資料は開いたまま ＝ 表を読みながら見られる。
+              覆っているなら閉じている ＝ 見ている面が隠れない。
+           ⚠ **どちらであるべきかを幅で数え直さない**（CSS の閾値を2か所で持たない・
+              `startExample` と同じ作法）。`position` を見て、その場合の正解を言う */
+        const overlaying = W.getComputedStyle(pane).position === 'fixed';
+        assert(paneOpen() === !overlaying,
+            overlaying
+                ? '狭い画面なのに資料が開いたまま（見ている機構が隠れる）'
+                : 'PC なのに資料が閉じた（表を読みながら見られない）');
 
-        // ③ そこから2件目・14件目を選べる（＝ 戻ってこられることを実際に通す）
-        btnOf('diazo_coupling').click();
-        await c.tick(10);
-        assert(rp.currentReaction.id === 'diazo_coupling',
+        // ③ そこから2件目・最後の1件へ移れる（＝ 戻ってこられることを実際に通す）
+        const last = rp.reactions[rp.reactions.length - 1].id;
+        await rxPlayFromReference(c, last);
+        assert(rp.currentReaction.id === last,
+            `最後の1件に移れない（${rp.currentReaction && rp.currentReaction.id}）`);
+        await rxPlayFromReference(c, 'esterification');
+        assert(rp.currentReaction.id === 'esterification',
             `2件目に移れない（${rp.currentReaction && rp.currentReaction.id}）`);
-        assert(!open(), '2件目を選んでもメニューが引っ込まない（同じ面を選び直しても渡す）');
 
-        // ③' **同じ反応をもう一度選んでも**渡す。絵も帯の文字も1つも変わらないので
-        //     「キャンバスの側が動いたか」では決まらない ＝ 持ち主（ビューア）が自分で下ろす
-        D.querySelector('.mode-tab[data-mode="learn"]').click();
-        assert(open(), '（前提）メニューが開いていない');
-        btnOf('diazo_coupling').click();
-        await c.tick(10);
-        assert(!open(),
-            '同じ反応をもう一度選ぶとメニューが残る（キャンバスを覆ったまま ＝ 選んだ先が見えない）');
+        // ③' **同じ反応をもう一度選んでも**同じところへ着く（印も付いたまま）
+        const again = await rxPlayFromReference(c, 'esterification');
+        assert(rp.active && rp.currentReaction.id === 'esterification',
+            '同じ反応をもう一度選ぶと止まる／別のものが開く');
+        const row = again.closest('tr');
+        assert(row && row.getAttribute('aria-current') === 'true',
+            'いま再生している1件に表の上で印が付かない（どれを見ているのか分からない）');
 
-        // ④ ★引っ込む働きそのものは生きている —— 隣の学習へバトンを渡すと閉じる
-        //    （「いつでも閉じない」に倒して緑にしていないことの証明）
-        rp.exit();
+        /* ④ ★引っ込む働きそのものは生きている —— 隣の学習へバトンを渡すと終わる
+              （「いつでも終わらない」に倒して緑にしていないことの証明） */
         D.querySelector('.mode-tab[data-mode="learn"]').click();
-        assert(open(), '（前提）メニューが開いていない');
+        assert(!D.getElementById('study-modal').classList.contains('hidden'), '（前提）メニューが開いていない');
         D.getElementById('learn-acc-practice').open = true;
         let topic = null;
         for (let i = 0; i < 60 && !topic; i++) {
@@ -29917,19 +29968,18 @@
         assert(topic, '異性体の書き出し練習のお題ボタンが出ない（前提が崩れている）');
         topic.click();
         await c.tick(20);
-        assert(!open(),
-            'お題を押してもメニューが被さったまま（バトンを渡したら引っ込む配線を丸ごと外している）');
+        assert(!rp.active, '隣の学習を始めてもビューアが終わらない（練習が始まったのに描けない）');
         assert(!D.getElementById('ws-practice').classList.contains('hidden'),
             '（前提）練習の作業帯が出ていない');
 
         W.isomerPractice.stop();
         D.getElementById('learn-acc-practice').open = false;
+        W.referenceBook.close();
         g.setStudyOpen(false);
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
         g.setMode('puzzle');
     });
-
     test('RX48: ★否定対照 — 新しい一覧から始めても v1379 の退避と v1423 の文脈が生きている', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;

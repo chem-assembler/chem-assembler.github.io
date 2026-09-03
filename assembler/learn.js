@@ -6175,6 +6175,8 @@ class ReferenceBook {
         });
         t.appendChild(tb);
         wrap.appendChild(t);
+        // 開き直したときも、いま再生中の1件に印が残る（印の出どころは 1 本 ＝ syncMechanismTable）
+        setTimeout(() => this.syncMechanismTable(), 0);
         return wrap;
     }
 
@@ -6189,11 +6191,44 @@ class ReferenceBook {
      */
     playMechanism(id) {
         const rp = window.reactionPlayer;
-        if (!rp || typeof rp.openById !== 'function') return false;
+        if (!rp || typeof rp.pick !== 'function') return false;
+        const index = (rp.reactions || []).findIndex(r => r.id === id);
+        if (index < 0) return false;
         const pane = document.getElementById('reference-pane');
         const overlaying = pane && window.getComputedStyle(pane).position === 'fixed';
-        const ok = rp.openById(id);
+        /* ⚠ **`pick()` を通す**（`enter()` を直に呼ばない）。`pick` は「押しものから呼ばれる
+           唯一の口」で、`#select-reaction` の値を決めて `change` を撃つ ＝
+           選択の実体が1本のまま保たれる（`reaction.js` §pick）。再生中は素通りする守りも付いてくる。 */
+        rp.pick(index);
+        const ok = !!(rp.currentReaction && rp.currentReaction.id === id);
         if (ok && overlaying) this.setOpen(false);
+        this.syncMechanismTable();
+        return ok;
+    }
+
+    /* いま再生している1件に表の上で印を付ける。
+       ⚠ `reaction.js` の `syncList()` は 📚 学習の一覧（vNNNN で撤去）を見ていたので、
+          資料の表の分はこちらが持つ。**選択の実体は `#select-reaction` のまま**で、
+          ここがやるのは印だけ（状態を2つに持たない）。 */
+    syncMechanismTable() {
+        const rp = window.reactionPlayer;
+        const cur = (rp && rp.active && rp.currentReaction) ? rp.currentReaction.id : null;
+        document.querySelectorAll('#ref-body table.ref-mech-table tbody tr').forEach(tr => {
+            tr.setAttribute('aria-current', tr.dataset.rxId === cur ? 'true' : 'false');
+        });
+    }
+
+    /* ★ 機構のページを開く（`?open=mechanism[&id=]` の着地点）。
+       ⚠ **ページ id を呼ぶ側に書き写させない** —— 機構の表を持つページを自分で探す。
+       ★ `id` があれば、開いたうえでその1件を再生する（狭い画面では `playMechanism` が
+          資料をどかす）。⚠ 知らない id は**無視して表だけ**（前方互換。qa が先に語彙を配っても止まらない）。 */
+    async openMechanisms(id) {
+        try { await this.load(); } catch (e) { return false; }
+        const page = (this.pages || []).find(p =>
+            (p.blocks || []).some(b => b.kind === 'mechanismTable'));
+        if (!page) return false;
+        const ok = await this.open(page.id);
+        if (ok && id) this.playMechanism(String(id).trim());
         return ok;
     }
 
