@@ -21,6 +21,7 @@
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
  * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
+ * | CS  | 1〜5   | ★★ **「条件にある構造を書き出す」**（v1510・ユーザー原文 2026-09-03「書き出しを充実させ／一通りすべて書き出させる／条件にある構造を書き出す／に分けるイメージです」。設計は `DESIGN_isomer_practice.md` §20）。**書き出しの面が2種類に分かれた**ので、①（分子式＋分類で全部）と②（条件で1〜数個）が**画面から読み取れる**ことがまず要件。1 が本体（見出し2本・②が①の中に埋まっていない・13件を開いて答えを**名前で**突き合わせ・見出しと作業帯が条件そのものを名乗る）・**2 は否定対照**＝ 同じ分子式でも条件に合わない構造は `scope` で断られ、断り文が条件を名乗る（＋合う構造は `ok` ＝ ①が「何でも scope」の空振りでないこと）・**3 は在庫の門番**＝ C₂〜C₅ を総当たりして出題を作り直し集合ごと突き合わせる。⚠⚠ **落としているのは「ザイツェフ／マルコフニコフの主生成物だけを数えるか、副生成物まで数えるかで答えが変わるもの」11件だけで、答えの少なさではない**（ユーザー明言「答えが多くない書き出し問題は練習問題として有用」＝ `IP_MIN_ISOMERS` はこの型に掛けない。**答えが1種の回が4件 出荷されている**ことをここで固定する）・**4 は「立体異性体の有無」**＝ 13件すべてが `stereoAsked`（★ 段が「立体異性体がある回」にだけ出ると**段の有無が答えを漏らす**）で、**あり6件・なし7件を名指し**・**5 は陰性対照**＝ ②を足しても①の答えの数が1つも動かない（開く前後のスナップショット比較。`IP4` の既知値の表とは別の壊れ方＝キャッシュ汚染を見る）＋記録の鍵が①と衝突しない |
  * | CV  | 1〜4   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個）。**4 は分子が増えない反応まで広げた悉皆**（v1500）＝ 反応の前後で「重原子ごとの隣の原子 id ＋ 結合次数」を取り、変わったのに印が無い／変わっていないのに印がある を全 49 本で見る。⚠ **1 は分かれた成分しか見ないので、分子が増えない 35 本は無検査だった** —— 実測で4本の赤（ジエン重合の中央へ移った C=C 6個・加硫の相方2個・ヨードホルムの O 1個の渡し落とし／ビニロンの cA・cB の渡しすぎ）。名指しの許容は2件・変化なしが正しい `_info` 6本も名指しで固定 |
  * | TR  | 1〜8   | **系統樹のために足した反応**（`DESIGN_organic_tree.md` §2-3 (b)・`D-T10`）。設計レーンが「教科書の系統図にあってアプリに無い辺」を12本数え、そのうち**軽くて入試に出るもの**から足した。**奇数番が「起きる」・偶数番が否定対照**（起きてはいけない相手で1件も出ないこと＋門番を外せば材料はあると示すこと）。1〜2 は **酢酸2分子 → 無水酢酸**（`hydrolysis_anhydride` だけが有って**行きが無かった片道**を閉じた。二酸は分子内脱水へ譲る）。3〜4 は **ベンゼン → シクロヘキサン**（原子を1つも足さず環の6本を単結合にするだけ。⚠ 同じ瓶の `reduce_nitro` が「環は水素化されません」と書いているので、ニトロベンゼンでは出さない）。5〜6 は **ベンゼン＋プロペン → クメン**（クメン法の1段目。②③は -O-O- が描けないので caption で断る）。7〜8 は **アセチレン＋酢酸 → 酢酸ビニル**（**縮合ではなく付加**なので水が1分子も出ない ＝ 分子が2つになったら赤） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
@@ -39,11 +40,22 @@
  *                  「D だから R とは限らない」をアプリ自身の CIP に計算させる（L-システインだけ (R)）／
  *                  用語は鏡像異性体（qa/KNOWLEDGE_CAVEATS.md J-4）／R/S の決め方は書き写さない） |
  * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが挿さっていること（2026-09-02 に 📖 資料を**末尾へ**足して 4→5・見出し 2→3）・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
- * | EQ  | 1〜8   | 実験モード 第2段の課題（DESIGN_experiment_mode.md）。**1 は課題とは別件の実発生**＝
+ * | EQ  | 1〜10  | 実験モード 第2段の課題（DESIGN_experiment_mode.md）。**1 は課題とは別件の実発生**＝
  *                  `obstructedInsets()` が「帯の上端がキャンバスの上半分か」で天井／床を決めており、
  *                  キャンバスが薄くなると反転していた（320px ＋ 🧪 実験パレットで
  *                  呼んだ分子 9/9 原子が作業帯の裏）。否定対照は「旧式と新式で答えが分かれる配置か」を
  *                  その場で計算して主張に含める形。
+ *                  **9 も課題とは別件**＝ **1 の「振り分け」ではなく「そもそも読める大きさになっていない」ほう**。
+ *                  320×568 の使える帯 106px に対して `fitCanvasToMolecule` の下限
+ *                  （最小視野 360×270・余白 240×180）が効き、**分子の大小によらず結合 11.6〜16.2px**
+ *                  （床 24px）に張り付いていた。否定対照は「入りきらない分子を押し出していない」と
+ *                  「広い画面では旧式と viewBox が1つも違わない」の2本。
+ *                  **10 も課題とは別件**＝ 実験パレットで「試薬をかける先」が見えること。
+ *                  枠を出すかどうかは `focusedMoleculeInfo().explicit` で決まるのに、
+ *                  絞り込み（`siteFilter()` の `focus`）は `moleculeModalPart()` で決まり、
+ *                  **誰も選んでいなくても `list[0]` へ落ちる** ＝ 効かせる相手は決まっているのに
+ *                  画面に何も出ていなかった。否定対照は「作図パレットでは出ない（C-9）」
+ *                  「人が選んだときは『⚗ 分析中』のまま」「分子が1つなら出ない」の3本。
  *                  2 が課題データの形と中身（1行1問・行数 = 問数 + 2・start/goal がライブラリから引ける・
  *                  ⚠ 台帳の入試頻度が画面に漏れていない）・3 が入口（🎯 の札／`?open=experiment`／
  *                  `?quest=` 単独／知らない id は黙って無視）・4 が本体（**正しい手順で通る／
@@ -153,7 +165,7 @@
  * | REF | 1〜7   | 📖 資料（参考書）第1ページ（DESIGN_reference_book.md）。⚠ 接頭辞が `RB` でないのは **`RB` を「リボン統合」が既に使っている**ため。1 索引→ページが開く（既定は閉）・2 表はシリーズの行が**全部**出て C の数は分子式から作る・**3 は否定対照**＝「いま要る1行だけ」を出す実装が入り込んでいない（例題中も減らない／描画器に行を絞る口が無い／1行だけの表を混ぜると検査が気づく）・4 は 375 で分割せずタブ（キャンバスが 1px も減らない）／1280 で分割しても結合 28px の床を保つ・5 は reference.json に**行データが無い**（表は stages.json から機械で作る＝著作権 §1-2）・6 は例題が**既存ステージの採点**を使う（資料側に採点を持たない）・**7 は否定対照つき**＝ `?open=reference&code=` で開き、`?rec=` では開かない |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RM  | 1〜3   | **反応の印と箇所選び**（v1500・定期レビュー pack2 の発注書 A ＋ 動画レーンの実測 v1494）。**1 はジエンの 1,4-付加重合で「中央へ移った C=C の炭素」が画面で光る**（caption が要点だと言っている当の原子。⚠ 題材はイソプレン —— ブタジエンだと重原子14個が全部「変わった原子」になり、「全部に印を付ける実装ではない」の否定対照が立たない）。**2 はポリ酢酸ビニルのけん化**＝ 箇所が2つ以上あるとき札を押しただけでは図が変わらず**箇所選び**に入る（＝ 動画レーンの「押しても動かない」は仕様）・そのとき必ず字幕で言う・押す→選ぶを3回でポリビニルアルコールに着地する。**3 は単糖2つの縮合**＝ detect は空ではなく**2件**（マルトース 1→4／トレハロース 1→1）で、押す炭素の隣（C・O・O ならアノマー炭素→トレハロース／C・C・O なら4位→マルトース）でどちらになるかが決まる |
+ * | RM  | 1〜4   | **反応の印と箇所選び**（v1500・定期レビュー pack2 の発注書 A ＋ 動画レーンの実測 v1494）。**1 はジエンの 1,4-付加重合で「中央へ移った C=C の炭素」が画面で光る**（caption が要点だと言っている当の原子。⚠ 題材はイソプレン —— ブタジエンだと重原子14個が全部「変わった原子」になり、「全部に印を付ける実装ではない」の否定対照が立たない）。**2 はポリ酢酸ビニルのけん化**＝ 箇所が2つ以上あるとき札を押しただけでは図が変わらず**箇所選び**に入る（＝ 動画レーンの「押しても動かない」は仕様）・そのとき必ず字幕で言う・押す→選ぶを3回でポリビニルアルコールに着地する。**3 は単糖2つの縮合**＝ detect は空ではなく**2件**（マルトース 1→4／トレハロース 1→1）で、押す炭素の隣（C・O・O ならアノマー炭素→トレハロース／C・C・O なら4位→マルトース）でどちらになるかが決まる。**4 は RM2 が注記で避けていた「アセチル基の側で開く」道**＝ 焦点は原子ID 1個なので、けん化で**タップした炭素が酢酸ナトリウムの側へ移り**、`siteFilter` の focus 絞り込みが残りのエステルを設計どおり落としていた（実測 detect 2件 → 通過 0件）。直したのは `game.refocusToMainFragment()`（変化した側の**大きいほうの破片**へ焦点を移す）で、否定対照は「焦点を名前で確かめる」と「傍観者のトルエンに飛ばない・1原子も変わらない」 |
  * | DE  | 1〜3   | 行き止まりの報告（v1420）。**汎用の仕組み**（`DeadEnd`）で、最初の設置場所が
  *                  「相手の分子を呼び出す」の失敗（RX36）。1 が本文の中身（版・やろうとしたこと・
  *                  **どこで止まったか**・キャンバスの中身・環境が全部そろい、会話の文脈が無くても読めること）・
@@ -3074,10 +3086,16 @@
                 `「同じ化合物？」の出題プールに ${nm} が残っている`);
             assert(!nq.pool.some(i => lib[i].name === nm),
                 `命名クイズの出題プールに ${nm} が残っている`);
-            // 収録用の名指し（setForced）でも呼び出せない＝プールの外にある
+            // 収録用の名指し（setForced）でも呼び出せない＝プールの外にある。
+            // ⚠ v1507 から**別の問題にすり替えず、理由を出して1問も出さない**
+            //   （すり替えは「指定したのに黙って別の問題」＝ 収録で実害が出た形）
             nq.setForced(nm);
+            const why = nq.forcedNameIssue();
+            assert(why && why.includes('絞り込み'),
+                `${nm} の名指しが通ってしまう（理由: ${why}）`);
             nq.nextQuestion();
-            assert(nq.current.entry.name !== nm, `命名クイズが名指しで ${nm} を出した`);
+            assert(nq.current === null,
+                `命名クイズが名指しの代わりに別の問題を出した（${nq.current && nq.current.entry.name}）`);
         });
         nq.setForced(null);
         // 実際に引いても出ない（100問ずつ）
@@ -11711,7 +11729,30 @@
         // 渡さないと state 付きの台本（7/28件）が空のキャンバスから始まり、
         // 「反応ボタンが見つかりません」で落ちる。play() は例外を握りつぶすので、
         // 渡し忘れていた間はテストが素通りしていた（2026-08-02 に発覚）
+        /* ⚠ **1本ごとにクイズのつまみを既定へ戻す**（v1507）。
+         *
+         * `keepResult: true` は復元しない約束なので、`#naming-series` を絞る台本（V62）が
+         * **次の台本のつまみを絞ったまま**にする。本番の収録は1本＝1回のページ読み込みなので
+         * 起こらない（実測: 台本が名指ししている 15 件すべてが、まっさらな既定で通る）が、
+         * この連続再生でだけ**次の台本の名指しが「絞り込みの外」になる**。
+         * ★ v1502 まではそれが**黙って別の化合物へすり替わって**いたので N2 は緑だった
+         *   ＝ **緑が「台本どおりの絵が出ている」を意味していなかった**。
+         * 名指しが通らないと出題を止めるようにした今は正直に赤くなるので、
+         * 後片付け（この test の末尾）と同じことを**1本ごとに**する。 */
+        const resetQuizFilters = () => {
+            [['cq-series', c.W.countQuiz], ['quiz-series', c.W.quiz], ['naming-series', c.W.namingQuiz]]
+                .forEach(([id, q]) => {
+                    const sel = c.D.getElementById(id);
+                    if (!sel || !q) return;
+                    sel.value = 'all';
+                    if (q.scopeEl) q.scopeEl.value = c.W.QUIZ_SCOPE_DEFAULT;
+                    if (q.fieldEl) q.fieldEl.value = 'all';
+                    if (q.computePool) q.computePool();
+                    if (q.computePools) q.computePools();
+                });
+        };
         for (const d of demos.filter(d => d.id !== 'intro-draw')) {
+            resetQuizFilters();
             await tp.play(d.id, { fast: true, keepResult: true, initialState: d.state });
             assert(!tp.lastError, `デモ「${d.id}」の再生が落ちた: ${tp.lastError && tp.lastError.message}`);
         }
@@ -11737,16 +11778,7 @@
         // その系列に畳み込みの起きる分子が1つも無かった、というだけの話だった。
         // 台本が増えるたびに同じ穴が空くので、**3つのクイズをまとめて戻す**。
         // **範囲（レベル）と分野も戻す**（2026-08-20 に足した軸。既定は範囲＝basic・分野＝all）
-        [['cq-series', c.W.countQuiz], ['quiz-series', c.W.quiz], ['naming-series', c.W.namingQuiz]]
-            .forEach(([id, q]) => {
-                const sel = c.D.getElementById(id);
-                if (!sel || !q) return;
-                sel.value = 'all';
-                if (q.scopeEl) q.scopeEl.value = c.W.QUIZ_SCOPE_DEFAULT;
-                if (q.fieldEl) q.fieldEl.value = 'all';
-                if (q.computePool) q.computePool();     // 総数当て・命名
-                if (q.computePools) q.computePools();   // 同じ化合物？（複数プールを持つ）
-            });
+        resetQuizFilters();   // ⚠ 中身は上の `resetQuizFilters` へ畳んだ（同じことを2回書かない）
     });
 
     test('N2b: 立体を名前に出す台本は readStereo を宣言している（P13-2・2026-08-04）', async (c) => {
@@ -45899,11 +45931,25 @@
             [['アセトアルデヒド', 'アセトアルデヒド'], '-COOH が無い'],
             [['無水酢酸', '無水酢酸'], 'もう酸無水物になっている'],
             [['酢酸エチル', '酢酸エチル'], 'エステルは -COOH ではない'],
-            [['アニリン', 'アニリン'], '-COOH が無い']
+            [['アニリン', 'アニリン'], '-COOH が無い'],
+            /* ⚠⚠ ここから下は **v1508 の定期レビューが実機で見つけた穴**（`-COOH が1つ` しか
+             *   見ていなかったので、-OH や -NH₂ を持つ酸まで通っていた）。
+             *   ★ どれも「酸無水物にならない」のではなく **別の官能基が先に反応する** 側の話。 */
+            [['グリシン', 'グリシン'], '⚠ 教科書はここをペプチド結合として教える'],
+            [['酢酸', 'グリシン'], '-NH₂ があるのでアミド化が先'],
+            [['酢酸', 'アラニン'], '同上'],
+            [['酢酸', '乳酸'], '-OH があるのでエステル化が先'],
+            [['酢酸', 'サリチル酸'], '⚠ フェノール性 -OH があるのでアセチル化が先（eq-salicylic-aspirin）'],
+            [['ギ酸', 'ギ酸'], '⚠ 無水ギ酸は単離できない'],
+            [['ギ酸', '酢酸'], '同上（片方がギ酸でも無水物にしない）']
         ];
         const fired = [];
         negatives.forEach(([names, why]) => {
             const mol = trSetup(c, names);
+            // ⚠ **名前が引けずに空のキャンバスで 0 件**（＝ 空振りの緑）を先に潰す
+            assert(c.game.splitMolecules().length === names.length,
+                `否定対照の材料が置けていない: ${names.join('＋')} → ` +
+                `${c.game.splitMolecules().length} 分子（${names.length} 分子を期待）`);
             const n = rule.detect(mol).length;
             if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
         });
@@ -45918,6 +45964,19 @@
         const carboxyls = W.findFunctionalGroups(phthalic).filter(g => g.type === 'carboxyl');
         assert(carboxyls.length === 4,
             `フタル酸2分子のカルボキシ基が ${carboxyls.length} 個（4個＝材料はある）`);
+        /* ★ **絞りすぎていないことも固定する**（v1508）。門番が落とすのは
+         *   「先に反応する基（-OH・-NH₂）を持つ酸」と「ギ酸」だけで、
+         *   ⚠ **酢酸以外を一律に落としたのではない** —— 混合の酸無水物は今までどおり通る
+         *   （生成物がライブラリに無いのは登録の話で、反応の話ではない。§10.13-E）。 */
+        [['酢酸', '安息香酸'], ['酢酸', 'プロピオン酸'], ['プロピオン酸', '安息香酸']]
+            .forEach(names => {
+                assert(rule.detect(trSetup(c, names)).length === 1,
+                    `${names.join('＋')} で札が出ない（門番を絞りすぎている）`);
+            });
+        // ★ ギ酸を落とすのは**構造**（-COOH の炭素に炭素が隣り合うこと）で、名前ではない
+        const formic = trSetup(c, ['ギ酸', 'ギ酸']);
+        assert(W.findFunctionalGroups(formic).filter(g => g.type === 'carboxyl').length === 2,
+            'ギ酸2分子のカルボキシ基が2個ない（材料が無いだけ、になっている）');
         c.reset();
     });
 
@@ -46007,6 +46066,35 @@
         });
         assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
 
+        /* ⚠⚠ **もう一方向の否定対照 —— 「札が出るべきなのに消える」側**（v1508 の定期レビュー）。
+         *   ★ ①②の門番は「その分子」ではなく**キャンバス全体**を見ていたので、
+         *   **ベンゼンの隣に別の分子が浮いているだけで札が消えていた**（実機で確認）。
+         *   ⚠ そのとき瓶は「ふつうの条件では進みません」と説明する ＝ **化学として嘘をつく**。
+         *   ⚠⚠ 系統樹は全体を1キャンバスに描くので、これは例外ではなく常態になる。 */
+        const shouldFire = [
+            [['ベンゼン', 'エタノール'], '隣の分子のヘテロ原子で消えてはいけない'],
+            [['ベンゼン', '水'], '⚠ 脱水の残りが浮いているだけで消えてはいけない'],
+            [['ベンゼン', 'シクロヘキセン'], '隣の分子の C=C で消えてはいけない'],
+            [['ベンゼン', 'ニトロベンゼン'], 'ベンゼンの側の1件は残る（ニトロベンゼンの側は出ない）'],
+            [['ベンゼン', 'ベンゼン'], '2分子なら2件']
+        ];
+        const missing = [];
+        shouldFire.forEach(([names, why]) => {
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length,
+                `材料が置けていない: ${names.join('＋')}`);
+            const want = names.filter(n => n === 'ベンゼン').length;
+            const n = rule.detect(mol).length;
+            if (n !== want) missing.push(`${names.join('＋')} で ${n} 件（${want} 件を期待・${why}）`);
+        });
+        assert(missing.length === 0,
+            `隣に別の分子があるだけで札が消える（門番がキャンバス全体を見ている）: ${missing.join(' / ')}`);
+        // ★ 瓶から見ても札が残ること（ベンゼン＋水で H₂/Ni を押して「進みません」にならない）
+        trSetup(c, ['ベンゼン', '水']);
+        const withWater = W.reactor.reagentHits(W.REAGENTS.find(r => r.id === 'h2_ni')).map(h => h.rule.id);
+        assert(withWater.includes('hydrogenate_benzene_ring'),
+            `ベンゼン＋水で H₂/Ni から出る反応が ${withWater.join(',') || '（なし）'}（環の水素化が消えている）`);
+
         // **空振りの緑を避ける**: 同じ数え方がベンゼンでは1件拾う
         assert(rule.detect(trSetup(c, ['ベンゼン'])).length === 1,
             '否定対照の数え方が壊れている（ベンゼンでも0件になる）');
@@ -46087,16 +46175,30 @@
             [['ベンゼン', '1-ブテン'], '同上'],
             [['ベンゼン', 'アセチレン（エチン）'], '三重結合は vinylBonds に入らない'],
             [['ベンゼン', 'プロピン'], '同上'],
-            [['ベンゼン', 'シクロプロペン'], '環内の C=C は vinylBonds が外す'],
+            /* ⚠⚠ もとは `シクロプロペン` だったが、**この名前はライブラリに無い**
+             *   ＝ 2分子目が置かれず、**空振りで緑になっていた**（v1508 で材料の検査を
+             *   足して発覚）。★ 登録のある環アルケンに差し替える。 */
+            [['ベンゼン', 'シクロペンテン'], '環内の C=C は vinylBonds が外す（重原子の数でも落ちる）'],
             [['ニトロベンゼン', 'プロペン（プロピレン）'], '電子求引基のついた環では進まない'],
             [['フェノール', 'プロペン（プロピレン）'], 'ヘテロ原子あり（教科書が扱わない）'],
             [['アニリン', 'プロペン（プロピレン）'], '同上'],
             [['安息香酸', 'プロペン（プロピレン）'], '同上'],
-            [['シクロヘキサン', 'プロペン（プロピレン）'], '芳香環が無い']
+            [['シクロヘキサン', 'プロペン（プロピレン）'], '芳香環が無い'],
+            /* ⚠⚠ v1508 で足した門番③（§10.14-G）。★ **根拠は「教科書に無い」ではなく反応の仕組み** ——
+             *   アルケンを使うアルキル化は**アルケンをプロトン化してカルボカチオンを作る**
+             *   ところから始まるので、系には強い酸がある。⚠ スチレンの側鎖はその条件で
+             *   **ベンジル位カチオン**になり（プロペンのイソプロピルカチオンより安定）、
+             *   **先に反応するのは環ではなく側鎖**。実際スチレンはそこでカチオン重合する。 */
+            [['スチレン', 'プロペン（プロピレン）'], '⚠ 側鎖の C=C が先（ベンジル位カチオン）'],
+            [['フェニルアセチレン（エチニルベンゼン）', 'プロペン（プロピレン）'], '同上（C≡C）'],
+            [['1,3-ブタジエン', 'プロペン（プロピレン）'], '芳香環が無い']
         ];
         const fired = [];
         negatives.forEach(([names, why]) => {
-            const n = rule.detect(trSetup(c, names)).length;
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length,
+                `否定対照の材料が置けていない: ${names.join('＋')}`);
+            const n = rule.detect(mol).length;
             if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
         });
         assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
@@ -46109,10 +46211,27 @@
          *   ハロゲン化・活性環の臭素化）が縮合環も置換体も一律に通しているのと同じ扱いで、
          *   ここだけ特別扱いしない。★ 生成物（シメン・イソプロピルナフタレン）は
          *   ライブラリに無いので「（ライブラリに該当なし）」と出るが、それは登録の話。 */
-        assert(rule.detect(trSetup(c, ['トルエン', 'プロペン（プロピレン）'])).length === 3,
-            'トルエンで o/m/p の3箇所が出ない（既存の芳香族置換と扱いがずれている）');
-        assert(rule.detect(trSetup(c, ['ナフタレン', 'プロペン（プロピレン）'])).length === 2,
-            'ナフタレンで2箇所（α/β）が出ない（既存の芳香族置換と扱いがずれている）');
+        /* ★★ **「たまたま通っている」を「意図して通している」に変える**（v1508・§10.14-G）。
+         *   ⚠ ここに並ぶ相手は、**教科書に無いが実験事実として進む**と調べて決めたもの:
+         *   - **トルエン・エチルベンゼン・クメン** … アルキル基は**活性化基**なので、
+         *     生成物のほうが原料より反応しやすい。★ **多置換が止まらないのは
+         *     フリーデル・クラフツのアルキル化の教科書的な弱点**そのもの
+         *     （クメン法でジイソプロピルベンゼンが混じるのは実際の工業上の課題）。
+         *   - **ビフェニル** … フェニル基は**弱い活性化基で o,p-配向性**。進む。
+         *   - **ナフタレン** … 縮合環でも芳香族置換は進む（既存4本と同じ扱い）。
+         *   ⚠ **生成物はどれも「（ライブラリに該当なし）」**（実測）。★ ただしそれは
+         *   **この反応に固有の話ではない** —— 既存の芳香族置換4本も、エチルベンゼン・
+         *   クメン・ビフェニル・スチレン・ナフタレンでは同じく未登録になる（実測）。
+         *   ＝ **登録の話であって、反応の話ではない。** */
+        [[['トルエン'], 3, 'o/m/p'], [['ナフタレン'], 2, 'α/β'],
+         [['エチルベンゼン'], 3, 'アルキル基は活性化基'], [['クメン（イソプロピルベンゼン）'], 3, '同上'],
+         [['ビフェニル'], 3, 'フェニル基は弱い活性化基・o,p-配向性']]
+            .forEach(([names, want, why]) => {
+                const n = rule.detect(trSetup(c, [...names, 'プロペン（プロピレン）'])).length;
+                assert(n === want,
+                    `${names[0]} で ${n} 箇所（${want} 箇所を期待・${why}）` +
+                    ' ＝ 意図して通している相手が通らなくなっている');
+            });
         c.reset();
     });
 
@@ -46175,11 +46294,29 @@
             [['アセチレン（エチン）', '酢酸エチル'], 'エステルは -COOH でない'],
             [['アセチレン（エチン）', 'アセトアルデヒド'], '同上'],
             [['アセチレン（エチン）', '無水酢酸'], '酸無水物は -COOH でない'],
-            [['酢酸ビニル', '酢酸'], 'もう三重結合が無い']
+            [['酢酸ビニル', '酢酸'], 'もう三重結合が無い'],
+            /* ⚠⚠ ここから下は **v1508 の定期レビューが実機で見つけた穴**（酸の側に門番が無く、
+             *   -COOH さえあれば何でも通っていた ＝ **14組中13組が「（未登録）」の生成物**）。
+             *   ★ 教科書（5編 p.31）は**酢酸を名指し**しており、それ以外は入試にも出ない。 */
+            [['アセチレン（エチン）', '安息香酸'], '⚠ 教科書は酢酸だけを書く（生成物も未登録）'],
+            [['アセチレン（エチン）', 'ギ酸'], '同上'],
+            [['アセチレン（エチン）', 'グリシン'], '⚠ -NH₂ があるのでそちらが先'],
+            [['アセチレン（エチン）', 'アジピン酸'], '⚠ 二酸は2箇所に出て、しかも生成物が未登録'],
+            [['アセチレン（エチン）', '乳酸'], '⚠ -OH があるのでそちらが先'],
+            [['アセチレン（エチン）', 'サリチル酸'], '同上'],
+            /* ★ この2つは「先に反応する基」を持たないので、-OH/-NH₂ だけを見る門番では通ってしまう。
+             *   ⚠ **門番が「酢酸だけ」であることを、ここで固定する**（弱い門番で緑にさせない）。 */
+            [['アセチレン（エチン）', 'プロピオン酸'], '⚠ 教科書は酢酸だけ（生成物も未登録）'],
+            [['アセチレン（エチン）', 'クロロ酢酸'], '同上']
         ];
         const fired = [];
         negatives.forEach(([names, why]) => {
-            const n = rule.detect(trSetup(c, names)).length;
+            // ⚠ **名前が引けずに空のキャンバスで 0 件**（＝ 空振りの緑）を先に潰す
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length,
+                `否定対照の材料が置けていない: ${names.join('＋')} → ` +
+                `${c.game.splitMolecules().length} 分子（${names.length} 分子を期待）`);
+            const n = rule.detect(mol).length;
             if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
         });
         assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
@@ -46187,6 +46324,13 @@
         // **空振りの緑を避ける**: 同じ数え方がアセチレン＋酢酸では1件拾う
         assert(rule.detect(trSetup(c, ['アセチレン（エチン）', '酢酸'])).length === 1,
             '否定対照の数え方が壊れている（アセチレン＋酢酸でも0件になる）');
+        /* ★ **材料が無いから0件、ではない**: 落とした酸にも -COOH は実在する
+         *   （門番が落としているのであって、カルボキシ基の数え方が壊れているのではない）。 */
+        [['プロピオン酸', 1], ['安息香酸', 1], ['アジピン酸', 2], ['グリシン', 1]].forEach(([name, want]) => {
+            const mol = trSetup(c, ['アセチレン（エチン）', name]);
+            const n = W.findFunctionalGroups(mol).filter(g => g.type === 'carboxyl').length;
+            assert(n === want, `${name} のカルボキシ基が ${n} 個（${want} 個＝材料はある）`);
+        });
         /* ★ **教科書の同じ1文の3つのうち、塩化ビニルは前から通る**（5編 p.31）。
          *   ⚠ ここを測っておかないと「3つとも無かった」と読まれる。
          *   ★ 残る1つ（HCN → アクリロニトリル）は**瓶が1本要る**ので、この版では足していない。 */
@@ -47672,6 +47816,858 @@
             'ester カードの数が変わった（既存の絞り込みに影響が出ている）');
         assert(pool.filter((m) => card('lactone').test(m)).length === 0,
             'C5H10O2 にラクトンが出た（既存の lactone カードの答えが変わっている）');
+    });
+
+    /* ===== QP: 収録の「指定」は、通らないなら黙らない（v1507・動画レーンの実機報告） =====
+     *
+     * **何が起きたか**: 台本に `setForcedPair('マレイン酸', 'フマル酸')` と書いたのに、
+     * **まったく別の問題が、エラーも警告も無しに出た**。台本が1本無駄になり、
+     * しかも**撮り終わってから**気づいた ＝ 収録の道具として最悪の壊れ方。
+     *
+     * ⚠ **マレイン酸／フマル酸が「違う」の組に入らないのは正しい**（土俵の定義）。
+     * このクイズの正解は `verifyMolecule`＝**重原子のつながり方だけ**で決まり、
+     * 画面にもそう書いてある（`showPremise`）。**シス・トランスはこの土俵では「同じ」**。
+     * ＝ **直すのは土俵ではなく「黙ること」**。`pairs` は1件も広げない（QP3 が見張る）。
+     */
+    test('QP1: 通らない指定は「なぜ通らないか」を言い分ける（黙って抽選に戻らない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, q = W.quiz;
+        assert(typeof q.forcedPairIssue === 'function', '組の指定を診断する口が無い');
+        q.open();
+        // ⚠ **つまみを既定へ戻してから測る。** 前のテストが絞ったまま残していると
+        //    「通る指定」が絞り込みの外になり、**赤が理由の取り違えになる**（全走で実際に踏んだ）
+        setQuizFilters(q, 'all', 'all', 'all');
+
+        // (1) 3つの理由を言い分ける。**打ち手が違うので、まとめて「出せません」にしない**
+        // ⚠ **`setForcedPair` の戻り値は「あとから変わりようのない理由」だけ**なので、
+        //    絞り込みも含めて見たいときは `forcedPairIssue()` を直に呼ぶ
+        const noName = q.setForcedPair('マレインさん', 'フマル酸');
+        assert(noName && noName.includes('ライブラリにありません') && noName.includes('マレインさん'),
+            `「その名前が無い」を言えていない: ${noName}`);
+
+        const sameTopo = q.setForcedPair('マレイン酸', 'フマル酸');
+        assert(sameTopo && sameTopo.includes('つながり方が同じ'),
+            `「この土俵では同じ扱い」を言えていない: ${sameTopo}`);
+        // ⚠ ここで「名前が無い」と言ってはいけない（**両方とも実在する**）
+        assert(!sameTopo.includes('ライブラリにありません'),
+            '実在する名前を「無い」と言っている（打ち手を誤らせる）');
+
+        const otherFormula = q.setForcedPair('エタノール', '酢酸');
+        assert(otherFormula && otherFormula.includes('分子式が違います'),
+            `「分子式が違う」を言えていない: ${otherFormula}`);
+
+        // (2) 通る指定では null（＝ 通るはずのものまで止めていない）
+        assert(q.setForcedPair('1-プロパノール', '2-プロパノール') === null,
+            '通る指定を通らないと言っている');
+
+        // (3) 絞り込みで外れたときは、そう言う（題材ではなく つまみ を戻せばよい）
+        // (4) ★ **黙って別の問題を出さない** —— 画面に理由が出て、問題は作られない
+        // ⚠ **つまみを戻すのは assert より前**。ここで落ちたときにつまみが芳香族のまま
+        //    残ると、**後続の QP2 / QP5 まで巻き添えで赤くなる**（否定対照で実際に踏んだ）
+        const field = D.getElementById('quiz-field');
+        const saved = field.value;
+        field.value = '芳香族';
+        field.dispatchEvent(new W.Event('change', { bubbles: true }));
+        q.setForcedPair('1-プロパノール', '2-プロパノール');
+        const outOfScope = q.forcedPairIssue();
+        assert(q.forcedPairIssue(false) === null,
+            '絞り込みを「変わりようのない理由」に数えている（台本は開く前に指定するので落ちてしまう）');
+        q.nextQuestion();
+        const msg = D.getElementById('quiz-result').textContent;
+        const made = q.current;
+        field.value = saved;
+        field.dispatchEvent(new W.Event('change', { bubbles: true }));
+        setQuizFilters(q, 'all', 'all', 'all');
+        q.setForcedPair(null, null);
+        D.getElementById('btn-quiz-close').click();
+
+        assert(outOfScope && outOfScope.includes('絞り込み'),
+            `「絞り込みの外」を言えていない: ${outOfScope}`);
+        assert(msg.includes('指定された組では出題できません'),
+            `通らない指定なのに画面が断っていない: ${msg}`);
+        assert(made === null, '通らない指定なのに問題が作られている（＝黙って別の問題）');
+    });
+
+    test('QP2: 通る指定は毎回そのとおりに出る（名前で確かめる。数では見ない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, q = W.quiz;
+        q.open();
+        setQuizFilters(q, 'all', 'all', 'all');
+        // ⚠ **`setForced('diff')` を添えない。** 添えると通ってしまうので、
+        //    「組の指定だけで決まるか」を見る物差しにならない
+        //    （v1502 は `wantSame` が抽選のままで、**通る指定でも半分は無視**されていた。実測 6/12）
+        assert(q.forced === null, '答えの指定が残っている（この検査の物差しが鈍る）');
+        assert(q.setForcedPair('1-プロパノール', '2-プロパノール') === null, '通る指定が通らない');
+        const want = ['1-プロパノール', '2-プロパノール'].join('|');
+        for (let i = 0; i < 12; i++) {
+            q.nextQuestion();
+            assert(q.current, `指定した組で出題できない（${i + 1}回目）`);
+            const got = [q.current.nameA, q.current.nameB].sort().join('|');
+            assert(got === want,
+                `指定した組が無視された（${i + 1}回目）: ${q.current.nameA} / ${q.current.nameB}`);
+        }
+        // 解除すると今までどおり（4択の既定に戻る）
+        q.setForcedPair(null, null);
+        q.nextQuestion();
+        assert(q.current && q.current.form === 'choice', '指定を外しても4択に戻らない');
+        D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QP3: 出題プールは1件も広げていない（土俵の定義を変えていない）', async (c) => {
+        c.reset();
+        const W = c.W, q = W.quiz;
+        q.buildLibrary();
+        const lib = q.library;
+        // ⚠ **数だけでなく中身**を見る。「違う」の組は
+        //   「分子式が同じ」かつ「verifyMolecule が違うと言う」もの**だけ**であること
+        let bad = null;
+        q.allPairs.forEach(([i, j]) => {
+            if (bad) return;
+            if (lib[i].formula !== lib[j].formula) bad = `分子式が違う組が入っている: ${lib[i].name} / ${lib[j].name}`;
+            else if (W.verifyMolecule(lib[i].mol, lib[j].mol)) bad = `同型の組が入っている: ${lib[i].name} / ${lib[j].name}`;
+        });
+        assert(!bad, bad);
+        // シス・トランスだけが違う組は**この土俵では「同じ」**なので、載っていないのが正しい
+        const 載っていないはず = [
+            ['マレイン酸', 'フマル酸'],
+            ['シス-2-ブテン', 'トランス-2-ブテン'],
+            ['D-乳酸', 'L-乳酸']
+        ];
+        載っていないはず.forEach(([a, b]) => {
+            const ok = lib.some(e => e.name === a) && lib.some(e => e.name === b);
+            assert(ok, `検査の前提が崩れた（名前がライブラリから消えた）: ${a} / ${b}`);
+            const hit = q.allPairs.some(([i, jj]) =>
+                (lib[i].name === a && lib[jj].name === b) || (lib[i].name === b && lib[jj].name === a));
+            assert(!hit, `土俵の定義が変わっている（立体だけ違う組が「違う」に入った）: ${a} / ${b}`);
+        });
+    });
+
+    test('QP4: 命名クイズの名指しも黙らない＋台本の指定が次へ漏れない', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, nq = W.namingQuiz;
+        assert(typeof nq.forcedNameIssue === 'function', '命名クイズに指定を診断する口が無い');
+        nq.open();
+        setQuizFilters(nq, 'all', 'all', 'all');
+
+        assert((nq.setForced('アセトンさん') || '').includes('ライブラリにありません'),
+            '無い名前を「無い」と言えていない');
+        // 同じ図が別名でも登録されているもの（正解が一意に決まらないので出題対象外）
+        const dup = nq.setForced('マレイン酸');
+        assert(dup && dup.includes('一意に決まらない'), `別名重複の理由を言えていない: ${dup}`);
+        assert(nq.setForced('2-プロパノール') === null, '通る名指しが通らない');
+        nq.nextQuestion();
+        assert(nq.current && nq.current.entry.name === '2-プロパノール',
+            `名指しどおりに出ていない: ${nq.current && nq.current.entry.name}`);
+
+        // ★ 通らない名指しでは**黙って別の問題を出さない**
+        nq.setForced('アセトンさん');
+        nq.nextQuestion();
+        assert(D.getElementById('naming-result').textContent.includes('指定された問題は出せません'),
+            '通らない名指しなのに画面が断っていない');
+        assert(nq.current === null, '通らない名指しなのに別の問題が出ている');
+        nq.setForced(null);
+        D.getElementById('btn-naming-close').click();
+
+        // 台本から指定でき、**再生が終わると元に戻る**（2026-08-09 の `name` は退避もれだった。
+        // 漏れると次の台本の出題を止めるところまで悪化する）
+        const tp = W.tutorialPlayer;
+        const probe = {
+            id: '__qp4probe__', title: 'probe',
+            steps: [{ caption: 'x', actions: [{ type: 'quizForce', quiz: 'naming', name: '2-プロパノール' }] }]
+        };
+        tp.tutorials = tp.tutorials.filter(t => t.id !== probe.id);
+        tp.tutorials.push(probe);
+        tp.lastError = null;
+        await tp.play(probe.id, { fast: true });
+        assert(!tp.lastError, `通る名指しの台本が落ちた: ${tp.lastError && tp.lastError.message}`);
+        assert(!nq.forcedName, `台本の名指しが再生後も残っている: ${nq.forcedName}`);
+        tp.tutorials = tp.tutorials.filter(t => t.id !== probe.id);
+    });
+
+    test('QP5: 台本は通らない指定で止まる（撮り終わってから気づく を無くす）', async (c) => {
+        c.reset();
+        const W = c.W, tp = W.tutorialPlayer;
+        const run = async (id, action) => {
+            tp.tutorials = tp.tutorials.filter(t => t.id !== id);
+            tp.tutorials.push({ id, title: 'probe', steps: [{ caption: 'x', actions: [action] }] });
+            tp.lastError = null;
+            await tp.play(id, { fast: true });
+            const e = tp.lastError;
+            tp.tutorials = tp.tutorials.filter(t => t.id !== id);
+            return e ? e.message : null;
+        };
+        // 通らないペア → 落ちる。**理由が message に入る**（収録ツールのログに残る）
+        const bad = await run('__qp5bad__',
+            { type: 'quizForce', quiz: 'same', pair: ['マレイン酸', 'フマル酸'] });
+        assert(bad && bad.includes('ペアの指定が通りません'), `通らないペアで止まらない: ${bad}`);
+        assert(bad.includes('つながり方が同じ'), `台本のログに理由が残らない: ${bad}`);
+        // 無い名前 → 落ちる
+        const badName = await run('__qp5name__',
+            { type: 'quizForce', quiz: 'naming', name: 'アセトンさん' });
+        assert(badName && badName.includes('出題の指定が通りません'), `無い名前で止まらない: ${badName}`);
+        // ★ **通る指定は今までどおり完走する**（通るはずのものまで止めていない）
+        assert(await run('__qp5ok__',
+            { type: 'quizForce', quiz: 'same', pair: ['1-プロパノール', '2-プロパノール'] }) === null,
+            '通るペアの台本まで止めている');
+        assert(await run('__qp5ok2__',
+            { type: 'quizForce', quiz: 'naming', name: '2-プロパノール' }) === null,
+            '通る名指しの台本まで止めている');
+        assert(await run('__qp5ok3__',
+            { type: 'quizForce', quiz: 'same', value: 'diff' }) === null,
+            '既存の value 指定の台本まで止めている');
+    });
+
+    /* RM4 —— ★ **アセチル基の側で開いても、けん化が最後まで通る**（v1509・(A) の本体）。
+     *
+     * ⚠ **RM2 は症状を注記に書いて避けていた**（「主鎖の -CH₂- で開く。★ アセチル基の側で
+     *   開くと1回目のあと札が消える」）。ここはその**避けていた側**を通す。
+     *
+     * ★ **原因は `siteFilter` ではなく焦点の追随**（実測・v1509）:
+     *   焦点は原子ID 1個（`focusedMolecule`）で持つ。けん化はアシル-酸素開裂なので
+     *   **タップしたアセチル基の炭素は酢酸ナトリウムの側へ移る**。原子は生きているので
+     *   `moleculeModalPart()` はその破片を返し、`siteFilter` の focus 絞り込みが
+     *   **設計どおり**残り2箇所を落とす（実測: `detect` 2件 → 通過 0件）。
+     *   直したのは `game.refocusToMainFragment()`（大きいほうの破片へ焦点を移す）。
+     *
+     * ★ この検査が守るのは3つ:
+     *   ① アセチル基の側で開いても、押す→選ぶ を3回で **ポリビニルアルコール** に着地する
+     *   ② ★否定対照 —— **焦点は「変化した側の大きいほう」へ移っている**（名前で確かめる。
+     *      酢酸ナトリウムを指していない ＝ 数が合っただけの緑にしない）
+     *   ③ ★否定対照 —— **無関係な分子には飛ばない**（別に置いたトルエンは焦点にならない・
+     *      1原子も変わらない）＝ `wholeCanvas` を広げる方向の直しではないこと */
+    test('RM4: アセチル基の側で開いてもけん化が3回通り、焦点は高分子側に残る', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        for (let i = 0; i < 3; i++) { g.summonMolecule('酢酸ビニル'); g.updateDrawing(); }
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, '（前提）addition_polymerization が無い');
+        const ps = poly.detect(g.userMolecule);
+        assert(ps.length, '（前提）酢酸ビニル3分子で付加重合の箇所が出ない');
+        W.reactor.execute(poly, ps[0], null);
+        await c.tick(1400);
+        // ③ の材料 —— 反応に関わらない傍観者を1つ置く（焦点が飛ばないことを見る）
+        g.summonMolecule('トルエン');
+        g.updateDrawing();
+        const tolueneIds = new Set(g.splitMolecules()
+            .filter(p => p.atoms.length === 7 && p.atoms.every(a => a.element === 'C'))
+            .flatMap(p => p.atoms.map(a => a.id)));
+        assert(tolueneIds.size === 7, `（前提）傍観者のトルエンが引けない（${tolueneIds.size} 原子）`);
+
+        const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
+        assert(sap.detect(g.userMolecule).length === 3,
+            `（前提）ポリ酢酸ビニルのエステルが ${sap.detect(g.userMolecule).length} 箇所（3が正）`);
+        /* ⚠ **アセチル基のメチル炭素**で開く（RM2 が避けていた側）。
+         *   引くのは座標ではなく「隣が C=O の炭素1つだけ」＝ 呼び出しの位置に頼らない */
+        const mol0 = g.userMolecule;
+        const nbs = id => mol0.getNeighbors(id).filter(n => n.atom.element !== 'H');
+        const methyl = mol0.atoms.find(a => a.element === 'C' && nbs(a.id).length === 1 &&
+            nbs(a.id)[0].atom.element === 'C' &&
+            mol0.getNeighbors(nbs(a.id)[0].atom.id).some(n => n.type === 2 && n.atom.element === 'O'));
+        assert(methyl, '（前提）アセチル基のメチル炭素が見つからない');
+        g.openMoleculeModal(methyl.id);
+
+        const sapButton = () => [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.dataset.rule === 'saponification');
+        for (let n = 1; n <= 3; n++) {
+            const b = sapButton();
+            assert(b, `${n} 回目: けん化の札が一覧に無い（アセチル基の側で開くと消える症状の再発）`);
+            b.click();
+            await c.tick(300);
+            if (W.reactor.picking) {
+                const marks = [...D.querySelectorAll('#ui-group [data-hl-atom]')]
+                    .map(el => el.getAttribute('data-hl-atom'));
+                assert(marks.length >= 2, `${n} 回目: ハイライトされた原子が ${marks.length} 個`);
+                W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === marks[0]));
+            }
+            await c.tick(1400);
+            g.updateDrawing();
+        }
+        // ① 着地点
+        const shown = D.getElementById('compound-name').textContent;
+        assert(shown.includes('ポリビニルアルコール'),
+            `けん化3回のあとが「${shown}」（ポリビニルアルコールを期待）`);
+        assert(sap.detect(g.userMolecule).length === 0,
+            'けん化3回のあともエステルが残っている');
+        // ② ★否定対照 —— 焦点は**名前で**確かめる（数が合っただけの緑にしない）
+        const focusPart = g.moleculeModalPart();
+        assert(focusPart, '焦点の分子が引けない');
+        const focusName = g.lookupCompoundName(focusPart) || '';
+        assert(focusName.includes('ポリビニルアルコール'),
+            `焦点が「${focusName || '（名前なし）'}」を指している（ポリビニルアルコールを期待）` +
+            ' ＝ 副生成物（酢酸ナトリウム）へ焦点が移ったままなら症状は直っていない');
+        // ③ ★否定対照 —— 傍観者のトルエンには飛ばない・1原子も変わっていない
+        assert(!tolueneIds.has(g.focusedMolecule),
+            '反応に関わらないトルエンへ焦点が飛んだ（控えに由来する破片だけを見る約束が破れている）');
+        const toluene = g.splitMolecules().find(p => p.atoms.some(a => tolueneIds.has(a.id)));
+        assert(toluene && toluene.atoms.length === 7 && toluene.atoms.every(a => a.element === 'C'),
+            'けん化3回でトルエンの図が変わっている（絞り込みを緩めて別の分子まで反応させていないか）');
+        c.reset();
+    });
+
+    /* EQ9 —— ★ **狭い画面で、呼んだ分子がアプリ自身の床（`SUMMON_MIN_BOND_PX`）まで拡がる**（v1509・(B) の本体）。
+     *
+     * ⚠ **EQ1（v1499）とは別の穴**。あちらは「帯を天井と読み違えて分子を帯の裏へ寄せる」＝ **振り分け**。
+     *   ここは **そもそも読める大きさになっていない** ほう。
+     *
+     * ★ **実測（320×568・🧪 実験パレット。この worktree で測った値）**:
+     *   使える帯は 106px（`#svg-wrapper` 234px − 作業帯 128px）。そこへ
+     *   `fitCanvasToMolecule` の下限（最小視野 360×270・余白 240×180）が効いて、
+     *   **分子の大小によらず結合が 11.6〜16.2px に張り付いていた**:
+     *     エタノール 14.6 ／ ベンゼン 16.2 ／ アニリン 16.1 ／ サリチル酸 14.0 ／
+     *     アセチルサリチル酸 11.6 ／ デカン 9.4（床は 24px）。
+     *   ★ **ベンゼン（高さ 69 単位）とアセチルサリチル酸（197 単位）が同じ 16px**
+     *     ＝ 効いていたのは分子の大きさではなく**下限そのもの**。
+     *
+     * ⚠ **発注の見立てとは違っていた点**（測った結果）:
+     *   「アニリン・アセチルサリチル酸で 2原子ぶんが帯にかかる」は **0原子**（v1499 で直っている）。
+     *   「375px 以上では 0 件」も、**床を割る件数で見れば 375 でも 5件中 4件が割っていた**。
+     *
+     * ★ 守るのは3つ:
+     *   ① 320×568 で **ベンゼン・アニリン・エタノール**が床（24px）に届く
+     *   ② ★否定対照 —— **入りきらない分子を無理に拡大していない**（アセチルサリチル酸は
+     *      高さ 197 単位で 106px の帯に 24px では入らない。全原子が可視域の中に残ること）
+     *   ③ ★否定対照 —— **広げる方向には動かしていない** ＝ もともと床を超えている広い画面では、
+     *      旧式の viewBox と1桁も違わない（同じ式をその場で計算して突き合わせる） */
+    test('EQ9: 狭い画面で呼んだ分子が床（24px）まで拡がり、広い画面の見え方は1つも変わらない', async () => {
+        // 旧式（この直しを入れる前の `fitCanvasToMolecule`）をその場で再現する
+        const 旧式 = (W, D, mol) => {
+            const g = W.game;
+            const b = g.calculateTargetBounds(mol);
+            const bw = b.maxX - b.minX, bh = b.maxY - b.minY;
+            const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+            let vW = Math.max(360, bw + 240), vH = Math.max(270, bh + 180);
+            if (vW / vH > 4 / 3) vH = vW * 3 / 4; else vW = vH * 4 / 3;
+            let vx = cx - vW / 2, vy = cy - vH / 2;
+            const rect = g.svg.getBoundingClientRect();
+            const ins = g.obstructedInsets();
+            const fw = rect.width - ins.left - ins.right, fh = rect.height - ins.top - ins.bottom;
+            if (fw > 0 && fh > 0 && (ins.top || ins.bottom || ins.left || ins.right)) {
+                const ratio = Math.max(rect.width / fw, rect.height / fh);
+                vW *= ratio; vH *= ratio;
+                vx = cx - vW * ((ins.left + fw / 2) / rect.width);
+                vy = cy - vH * ((ins.top + fh / 2) / rect.height);
+            }
+            return [vx, vy, vW, vH].map(n => Math.round(n)).join(' ');
+        };
+        const いまの箱 = (W) => W.game.svg.getAttribute('viewBox').split(/[\s,]+/).map(n => Math.round(+n)).join(' ');
+        const 呼ぶ = async (W, D, name) => {
+            const g = W.game;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            assert(g.summonMolecule(name) !== false, `${name} を呼び出せない`);
+            /* ⚠ `summonMolecule` は「床を割っているときだけ」合わせ直す（`SUMMON_MIN_BOND_PX`）。
+             *   広い画面では合わせ直しを通らず、**前の視野が残る**ので比べる相手が定まらない。
+             *   どちらの幅でも同じ土俵にするため、ここで明示的に呼ぶ（同じ関数）。 */
+            g.fitCanvasToMolecule(g.userMolecule);
+            g.updateDrawing();
+            await new Promise(r => setTimeout(r, 120));
+        };
+
+        // ===== ① 本体 —— 320×568 の 🧪 実験パレット =====
+        await withViewport(320, 568, async (W, D, name) => {
+            const g = W.game;
+            g.setMode('free');
+            D.querySelector('#palette-tabs .palette-tab[data-palette="exp"]').click();
+            await new Promise(r => setTimeout(r, 150));
+            const FLOOR = W.SUMMON_MIN_BOND_PX;
+            assert(typeof FLOOR === 'number' && FLOOR > 0, 'SUMMON_MIN_BOND_PX が公開されていない');
+            // 前提 —— 帯がキャンバスの半分近くを覆っている（覆っていなければこの検査は空振り）
+            await 呼ぶ(W, D, 'ベンゼン');
+            const ins = g.obstructedInsets();
+            const rect = g.svg.getBoundingClientRect();
+            assert(ins.bottom > rect.height * 0.3,
+                `${name}: 作業帯がキャンバスの ${Math.round(ins.bottom / rect.height * 100)}% しか覆っていない` +
+                ' ＝ この幅で帯が薄くなったなら EQ9 の前提を測り直すこと');
+            // ★ 入りきる分子は床に届く（直す前は ベンゼン 16.2 / アニリン 16.1 / エタノール 14.6）
+            for (const 分子 of ['ベンゼン', 'アニリン', 'エタノール']) {
+                await 呼ぶ(W, D, 分子);
+                const px = g.screenPxPerGrid();
+                assert(px >= FLOOR - 0.5,
+                    `${name}: ${分子} の結合が ${px.toFixed(1)}px（床 ${FLOOR}px）` +
+                    ' ＝ 呼び出しの合わせ直しが下限（最小視野 360×270・余白 240×180）に当たって、割ったままになっている');
+            }
+            // ★ 直しがこの幅で**実際に効いている**こと（旧式と答えが違う）
+            await 呼ぶ(W, D, 'ベンゼン');
+            assert(いまの箱(W) !== 旧式(W, D, g.userMolecule),
+                `${name}: 旧式と同じ viewBox のまま ＝ 詰める枝を通っていない（検査が空振りする）`);
+
+            // ===== ② ★否定対照 —— 入りきらない分子を無理に拡大していない =====
+            await 呼ぶ(W, D, 'アセチルサリチル酸');
+            const m = g.svg.getScreenCTM();
+            const r2 = g.svg.getBoundingClientRect();
+            const i2 = g.obstructedInsets();
+            const box = { l: r2.left + i2.left, t: r2.top + i2.top, r: r2.right - i2.right, b: r2.bottom - i2.bottom };
+            const 外 = g.userMolecule.atoms.filter(a => {
+                const p = new W.DOMPoint(a.x, a.y).matrixTransform(m);
+                return p.x < box.l || p.x > box.r || p.y < box.t || p.y > box.b;
+            });
+            assert(外.length === 0,
+                `${name}: アセチルサリチル酸の ${外.length}/${g.userMolecule.atoms.length} 個が可視域の外に出た` +
+                ' ＝ 床に届かせるために分子を画面の外へ押し出している（詰めてよいのは「分子が入る限界」まで）');
+        });
+
+        // ===== ③ ★否定対照 —— 広い画面では旧式と1つも違わない =====
+        await withViewport(1100, 800, async (W, D, name) => {
+            const g = W.game;
+            g.setMode('free');
+            for (const 分子 of ['ベンゼン', 'アニリン', 'アセチルサリチル酸']) {
+                await 呼ぶ(W, D, 分子);
+                assert(g.screenPxPerGrid() >= W.SUMMON_MIN_BOND_PX,
+                    `${name}: ${分子} が広い画面でも床を割っている（前提が崩れている）`);
+                assert(いまの箱(W) === 旧式(W, D, g.userMolecule),
+                    `${name}: ${分子} の視野が旧式と違う（${いまの箱(W)} ≠ ${旧式(W, D, g.userMolecule)}）` +
+                    ' ＝ もともと読めていた画面の見え方まで変えている');
+            }
+        });
+    });
+
+    /* EQ10 —— ★ **🧪 実験パレットでは「試薬をかける先」が図の上で分かる**（v1509・ユーザー実機報告 2026-09-03）。
+     *
+     * ⚠ **ユーザーの言葉**:「複数分子ある状態で実験モードに入ると、1つの分子が選択されているのに
+     *   それがマーカーされていません」。
+     *
+     * ★ **食い違いの正体（実測）**: 枠を出すかどうかは `focusedMoleculeInfo().explicit`
+     *   （＝ 人が自分で選んだか）で決まるのに、**瓶と反応の一覧の絞り込み
+     *   （`reactor.siteFilter()` の `focus`）は `moleculeModalPart()`** で決まり、
+     *   そちらは**誰も選んでいなくても `list[0]`（＝ ①）へ落ちる**。
+     *   実測: ブタン酸＋エチルメチルケトンで `focusedMolecule = null` にしても
+     *   `siteFilter().focus` は 6原子（酪酸）を指したまま ＝
+     *   **アプリは ① に効かせると決めているのに、画面には何も出ていない。**
+     *
+     * ★ 守るのは4つ:
+     *   ① 実験パレットに入ると、**誰も選んでいなくても**枠と札が出て、**絞り込みが指す分子**を囲む
+     *   ② ★否定対照 —— **作図パレットでは出ない**（C-9「利用者が選ぶまで枠は出さない」を壊していない）
+     *   ③ ★否定対照 —— **人が自分で選んだときは札が「⚗ 分析中」のまま**（2つを見分けられる）
+     *   ④ ★否定対照 —— **分子が1つだけなら出ない**（指す相手が1つしかない ＝ 枠は図を汚すだけ） */
+    test('EQ10: 実験パレットでは「試薬をかける先」が枠と札で見える（作図パレットでは出ない）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        g.setMode('free');
+        const 札 = () => [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => /^⚗/.test(t));
+        const 琥珀の枠 = () => [...D.querySelectorAll('#atoms-group rect')]
+            .filter(r => (r.getAttribute('stroke') || '').includes('neon-orange'));
+
+        // ===== ④ 先に否定対照 —— 分子が1つのときは出ない =====
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン');
+        g.setPalette('exp');
+        await c.tick(150);
+        assert(札().length === 0,
+            `分子が1つしか無いのに札が出ている（${札().join(' / ')}）＝ 指す相手が1つのときは枠を出さない`);
+
+        // ===== ① 本体 —— 2分子・誰も選んでいない状態で実験パレットへ =====
+        g.setPalette('draw');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン');
+        g.summonMolecule('エタン');
+        g.focusedMolecule = null;      // 誰も選んでいない（実機で実験タブを押した直後と同じ）
+        g.updateDrawing();
+        await c.tick(150);
+        // ② ★否定対照 —— 作図パレットでは出ない
+        assert(札().length === 0,
+            `作図パレットで札が出ている（${札().join(' / ')}）＝ C-9「利用者が選ぶまで枠は出さない」が壊れている`);
+        // 前提 —— 絞り込みは誰も選んでいなくても ① を指している（ここが崩れたら緑が空振り）
+        const 指す先 = g.moleculeModalPart();
+        assert(指す先, '（前提）絞り込みが指す分子が引けない');
+        const 指す先の名前 = g.lookupCompoundName(指す先) || '';
+        assert(指す先の名前.includes('エチレン'),
+            `（前提）絞り込みが「${指す先の名前}」を指している（エチレンを期待）`);
+        assert((W.reactor.siteFilter().focus || new Set()).size > 0,
+            '（前提）誰も選んでいないのに絞り込みが働いていない ＝ この検査の題目が成り立たない');
+
+        g.setPalette('exp');
+        await c.tick(200);
+        assert(札().includes('⚗ 試薬をかける先'),
+            `実験パレットに入っても札が出ない（${札().join(' / ') || 'なし'}）` +
+            ' ＝ 効かせる相手が決まっているのに画面には何も出ていない');
+        // ★ 枠が囲むのは**絞り込みが指す分子**（名前で引いた当の分子の原子が全部入り、相手は入らない）
+        const frames = 琥珀の枠();
+        assert(frames.length >= 1, `琥珀の枠が ${frames.length} 個`);
+        const fr = frames[0];
+        const box = {
+            x1: +fr.getAttribute('x'), y1: +fr.getAttribute('y'),
+            x2: +fr.getAttribute('x') + +fr.getAttribute('width'),
+            y2: +fr.getAttribute('y') + +fr.getAttribute('height')
+        };
+        const 中 = a => a.x >= box.x1 && a.x <= box.x2 && a.y >= box.y1 && a.y <= box.y2;
+        const 指す先の重原子 = 指す先.atoms.filter(a => a.element !== 'H');
+        assert(指す先の重原子.every(中),
+            `枠が「${指す先の名前}」の原子を全部囲んでいない ＝ 別の分子を指している`);
+        const 相手 = g.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => !p.atoms.some(a => 指す先.atoms.some(b => b.id === a.id)));
+        assert(相手, '（前提）相手の分子（エタン）が引けない');
+        assert(!相手.atoms.filter(a => a.element !== 'H').every(中),
+            `枠が相手（${g.lookupCompoundName(相手) || '?'}）まで囲んでいる ＝ 1分子を指す印になっていない`);
+
+        // ===== ③ ★否定対照 —— 人が自分で選んだときは「⚗ 分析中」のまま =====
+        const eth = 指す先.atoms.find(a => a.element !== 'H');
+        g.setFocusedMolecule(eth.id);
+        await c.tick(150);
+        assert(札().includes('⚗ 分析中'),
+            `人が選んだのに札が「${札().join(' / ')}」（⚗ 分析中 を期待）` +
+            ' ＝ 自分で選んだのとアプリが決めたのを見分けられない');
+        assert(!札().includes('⚗ 試薬をかける先'),
+            '人が選んでいるのに「⚗ 試薬をかける先」の札が残っている');
+        g.setPalette('draw');
+        c.reset();
+    });
+
+    /* ============================================================================
+     * CS: ★★ 「条件にある構造を書き出す」（v1510・ユーザー原文 2026-09-03）
+     *
+     * > 書き出しを充実させ／一通りすべて書き出させる／条件にある構造を書き出す／に分けるイメージです
+     *
+     * 設計は DESIGN_isomer_practice.md §20。ここが見張るのは4つ:
+     *   CS1 … 画面が「2種類ある」と読める ＋ 13件が開いて答えが**名前で**既知値と一致する
+     *   CS2 … ★否定対照。同じ分子式の**条件に合わない構造**は `scope` で断られ、
+     *          断り文が条件そのものを名乗る（＝ 条件が採点に効いている）
+     *   CS3 … 在庫の門番。C₂〜C₅ を総当たりして出題を作り直し、**集合ごと**突き合わせる
+     *          （落としているのは「化学の読みが割れるもの」だけで、**答えの少なさではない**）
+     *   CS4 … 立体異性体の有無が答えの一部になっている ＋ ★否定対照
+     *          「立体の段が全13件に出る」（段の有無が答えを漏らさない）
+     *   CS5 … ★陰性対照。①「一通りすべて」側の答えの数が1つも動かない ＋ 記録の鍵が重ならない
+     * ========================================================================== */
+
+    /**
+     * ★ 出題の在庫を**その場で作り直す**（`CS3` と `CS5` が共有）。
+     * ⚠ 辺の数え方は `learn.js` の `ipDehydrationEdges` / `ipHydrationEdges` を**借りる**
+     *   —— ここで自前に書き直すと規則が2か所になり、「検査だけが古い」日が来る。
+     */
+    const csRebuildInventory = (W) => {
+        const out = { ship: [], dropped: [] };
+        const eq = (a, b) => a.size === b.size && [...a].every(x => b.has(x));
+        for (let n = 2; n <= 5; n++) {
+            const alcs = W.enumerateConstitutionalIsomers(Array(n).fill('C').concat(['O']), 2 * n + 2).isomers;
+            const alks = W.enumerateConstitutionalIsomers(Array(n).fill('C'), 2 * n).isomers;
+            const de = new Map(alcs.map(m => [W.canonicalCode(m), W.ipDehydrationEdges(m)]));
+            const hy = new Map(alks.map(m => [W.canonicalCode(m), W.ipHydrationEdges(m)]));
+            // 型1: 脱水して K になるアルコール（ぜんぶ数える読み ↔ ザイツェフの主生成物だけの読み）
+            alks.forEach(k => {
+                const kc = W.canonicalCode(k);
+                const all = new Set(), maj = new Set();
+                alcs.forEach(a => {
+                    const e = de.get(W.canonicalCode(a)).find(x => x.code === kc);
+                    if (!e) return;
+                    all.add(W.canonicalCode(a));
+                    if (e.major) maj.add(W.canonicalCode(a));
+                });
+                if (!all.size) return;
+                (eq(all, maj) ? out.ship : out.dropped)
+                    .push({ kind: 'dehydration', carbons: n, target: W.iupacName(k), n: all.size });
+            });
+            // 型2: 水を付加して A になるアルケン（ぜんぶ数える読み ↔ マルコフニコフの主生成物だけの読み）
+            alcs.forEach(a => {
+                const ac = W.canonicalCode(a);
+                const all = new Set(), maj = new Set();
+                alks.forEach(k => {
+                    const e = hy.get(W.canonicalCode(k)).find(x => x.code === ac);
+                    if (!e) return;
+                    all.add(W.canonicalCode(k));
+                    if (e.markov) maj.add(W.canonicalCode(k));
+                });
+                if (!all.size) return;
+                (eq(all, maj) ? out.ship : out.dropped)
+                    .push({ kind: 'hydration', carbons: n, target: W.iupacName(a), n: all.size });
+            });
+        }
+        return out;
+    };
+
+    test('CS1: 条件の回 — 画面が「書き出しは2種類ある」と読め、13件の答えが名前で一致する', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        assert(ip, 'isomerPractice が初期化されていない');
+        g.setMode('learn');
+        ip.renderList();
+
+        // ① ★★ 入口が **2種類** に分かれて読める（ユーザーの言い方をそのまま見出しにする）
+        const heads = [...D.querySelectorAll('#ip-body h3.ip-section-head')].map(h => h.textContent);
+        assert(heads.length === 2, `書き出しの見出しが ${heads.length}本（2本を期待）: ${heads.join(' / ')}`);
+        assert(/一通りすべて書き出す/.test(heads[0]),
+            `①の見出しが「${heads[0]}」（ユーザーの言い方「一通りすべて書き出す」を期待）`);
+        assert(/条件にある構造を書き出す/.test(heads[1]),
+            `②の見出しが「${heads[1]}」（ユーザーの言い方「条件にある構造を書き出す」を期待）`);
+        // ⚠ 私（発注側）が使った「構造推定」は説明のための言葉で、画面の見出しに使う語ではない
+        assert(!/構造推定/.test(D.getElementById('ip-body').textContent),
+            '★ 見出しに「構造推定」が出ている（ユーザーが後で言い直した語に寄せること）');
+        // ⚠ ②は①の**中**ではない（絞り込みオプションとして埋めると2分割が読めなくなる）
+        const condWrap = D.getElementById('ip-cond-presets');
+        assert(condWrap, '②の枠（#ip-cond-presets）が無い');
+        assert(!D.getElementById('ip-fg-presets').contains(condWrap) &&
+               !D.getElementById('ip-custom-formula').contains(condWrap),
+            '★ 条件の回が①の枠の中に埋まっている（2種類あることが画面から読めない）');
+
+        // ② ★ お題一覧を出すだけでは1件も数えない（fgPresets と同じ約束）
+        const realEnum = W.enumerateConstitutionalIsomers;
+        let calls = 0;
+        W.enumerateConstitutionalIsomers = function (...a) { calls++; return realEnum.apply(this, a); };
+        try { ip.renderList(); } finally { W.enumerateConstitutionalIsomers = realEnum; }
+        assert(calls === 0, `②の一覧を出すだけで列挙が ${calls}回 走った（起動が重くなる）`);
+
+        // ③ ★★ 13件を1つずつ開き、答えを**名前で**突き合わせる（件数では見ない）
+        //    ⚠ `total` は立体まで分けた数（鎖の C=C はシス・トランスが別の答案）なので、
+        //       `structures`（構造の数）と分けて見る
+        const WANT = [
+            ['de-c2-ethene',   '脱水すると エテン になるアルコール',            'C₂H₆O',  ['エタノール']],
+            ['de-c3-propene',  '脱水すると プロペン になるアルコール',          'C₃H₈O',  ['1-プロパノール', '2-プロパノール']],
+            ['de-c4-2mepro',   '脱水すると 2-メチルプロペン になるアルコール',  'C₄H₁₀O', ['2-メチル-1-プロパノール', '2-メチル-2-プロパノール']],
+            ['de-c4-2butene',  '脱水すると 2-ブテン になるアルコール',          'C₄H₁₀O', ['2-ブタノール']],
+            ['de-c5-2me2bue',  '脱水すると 2-メチル-2-ブテン になるアルコール', 'C₅H₁₂O', ['2-メチル-2-ブタノール', '3-メチル-2-ブタノール']],
+            ['de-c5-2pentene', '脱水すると 2-ペンテン になるアルコール',        'C₅H₁₂O', ['2-ペンタノール', '3-ペンタノール']],
+            ['hy-c2-ethanol',  '水を付加すると エタノール になるアルケン',      'C₂H₄',   ['エテン']],
+            ['hy-c3-2propol',  '水を付加すると 2-プロパノール になるアルケン',  'C₃H₆',   ['プロペン']],
+            ['hy-c4-2me2prol', '水を付加すると 2-メチル-2-プロパノール になるアルケン', 'C₄H₈', ['2-メチルプロペン']],
+            ['hy-c4-2butanol', '水を付加すると 2-ブタノール になるアルケン',    'C₄H₈',   ['1-ブテン', '2-ブテン']],
+            ['hy-c5-2me2buol', '水を付加すると 2-メチル-2-ブタノール になるアルケン', 'C₅H₁₀', ['2-メチル-1-ブテン', '2-メチル-2-ブテン']],
+            ['hy-c5-2pentol',  '水を付加すると 2-ペンタノール になるアルケン',  'C₅H₁₀',  ['1-ペンテン', '2-ペンテン']],
+            ['hy-c5-3pentol',  '水を付加すると 3-ペンタノール になるアルケン',  'C₅H₁₀',  ['2-ペンテン']]
+        ];
+        const btns = [...D.querySelectorAll('#ip-cond-presets button')];
+        assert(btns.length === WANT.length,
+            `②のお題が ${btns.length}件（${WANT.length}件を期待）`);
+        WANT.forEach(([id, headline, formula, names], i) => {
+            assert(ip.condPresets[i].id === id,
+                `condPresets[${i}] が ${ip.condPresets[i].id}（${id} を期待 ＝ 並べ替えられている）`);
+            D.querySelector(`#ip-cond-presets button[data-ip-cond="${i}"]`).click();
+            assert(ip.active && ip.problem, `${id}: 練習が始まらない`);
+            assert(ip.problem.formula === formula,
+                `${id}: 答えの分子式が ${ip.problem.formula}（${formula} を期待）`);
+            assert(ip.problem.stereoAsked === true,
+                `★ ${id}: 立体まで答える回になっていない（段の有無が答えを漏らす・§20-3）`);
+            // ★ 答えを名前で（数ではなく顔ぶれで）
+            const got = [...ip.targets.values()].map(m => W.iupacName(m) || '(名称未登録)');
+            const uniq = [...new Set(got)].sort();
+            assert(uniq.join(' / ') === names.slice().sort().join(' / '),
+                `${id}: 答えが [${uniq.join(', ')}]（[${names.join(', ')}] を期待）`);
+            assert(ip.problem.structures === names.length,
+                `${id}: 構造の数が ${ip.problem.structures}（${names.length} を期待）`);
+            // ★ 見出し・作業帯が**条件そのもの**を名乗る（分子式だけでは何を書き出すか言えていない）
+            const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+            assert(panel.indexOf(headline) >= 0,
+                `${id}: 見出しが条件を名乗らない（${panel.slice(0, 90)}）`);
+            assert(ip.stripLiveHtml().indexOf(headline) >= 0,
+                `${id}: 作業帯が条件を名乗らない（${ip.stripLiveHtml()}）`);
+            assert(!/[0-9０-９]+\s*種/.test(panel), `${id}: 見出しが種類数を出している（${panel.slice(0, 90)}）`);
+            ip.stop();
+        });
+
+        // ④ ⚠ ボタンの表記そのもの（押す前に何を書き出すか読める）
+        ip.renderList();
+        const labels = [...D.querySelectorAll('#ip-cond-presets button')]
+            .map(b => b.textContent.replace(/ ✓$/, ''));
+        assert(labels[3] === '脱水 → 2-ブテン', `ボタンの表記が「${labels[3]}」（「脱水 → 2-ブテン」を期待）`);
+        assert(labels[9] === '水の付加 → 2-ブタノール', `ボタンの表記が「${labels[9]}」`);
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('CS2: ★否定対照 — 条件に合わない同分子式の構造は「対象外」になり、断り文が条件を名乗る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        g.setMode('learn');
+        // 「脱水すると 2-ブテン になるアルコール」＝ 答えは 2-ブタノールの1種
+        ip.startFromCondPreset(3);
+        assert(ip.problem && ip.problem.condId === 'de-c4-2butene', '前提: 条件の回が開かない');
+
+        // ① 条件に合わない 1-ブタノール（C₄H₁₀O・脱水しても 1-ブテンにしかならない）
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4]] }]);
+        let sheet = ip.grade();
+        assert(sheet.rows.length === 1 && sheet.rows[0].formula === ip.problem.formula,
+            `前提: 分子式が一致しない（${sheet.rows[0] && sheet.rows[0].formula}）`);
+        assert(sheet.rows[0].status === 'scope',
+            `★ 1-ブタノールを描いて status=${sheet.rows[0].status}（scope を期待）`);
+        const said = ip.verdictOf(sheet.rows[0]);
+        assert(/2-ブテン/.test(said) && /脱水/.test(said),
+            `断り文が条件を名乗らない（${said}）`);
+        assert(!/開発ログ/.test(said), `正しく描けた生徒に不具合の顔を見せている（${said}）`);
+
+        // ② 条件に合う 2-ブタノールなら通る（①が「何を描いても scope」の空振りでないことの対）
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C', 'O'], bonds: [[0, 1], [1, 2], [2, 3], [1, 4]] }]);
+        sheet = ip.grade();
+        assert(sheet.rows[0].status === 'ok',
+            `★ 2-ブタノールを描いて status=${sheet.rows[0].status}（ok を期待 ＝ ①が空振りしている）`);
+
+        // ③ ★否定対照 — 逆向きの回でも同じ（1-ブテンは通り、シクロブタンは分子式が違う）
+        ip.stop();
+        ip.startFromCondPreset(9);   // 水を付加すると 2-ブタノール になるアルケン
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2], [2, 3]] }]);
+        assert(ip.grade().rows[0].status === 'ok', '1-ブテンが通らない（前提）');
+        // 2-メチルプロペン（C₄H₈ だが、水を付加しても 2-ブタノールにならない）
+        ipSheet(c, [{ atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2], [1, 3]] }]);
+        const row = ip.grade().rows[0];
+        assert(row.status === 'scope',
+            `★ 2-メチルプロペンを描いて status=${row.status}（scope を期待）`);
+        assert(/2-ブタノール/.test(ip.verdictOf(row)), `断り文が条件を名乗らない（${ip.verdictOf(row)}）`);
+
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('CS3: 在庫の門番 — C₂〜C₅ を総当たりで作り直し、13件と集合ごと一致する', async (c) => {
+        /**
+         * ⚠⚠ **落としているのは「化学の読みが割れるもの」だけで、答えの少なさではない。**
+         *   ユーザー明言「**答えが多くない書き出し問題は練習問題として有用**」——
+         *   別レーンの実測（1アルケンを作るアルコールは最大2種）を理由に落とした前の判断は
+         *   覆されている（DESIGN_isomer_practice.md §20-1）。
+         * ★ **答えが1種の回が4件、実際に出荷されている**ことをここで押さえる
+         *   （`IP_MIN_ISOMERS` を掛け直すと、その4件が消えて赤くなる ＝ CS3 が門番になる）。
+         */
+        const W = c.W, ip = W.isomerPractice;
+        const inv = csRebuildInventory(W);
+        const key = (x) => `${x.kind}/${x.carbons}/${x.target}`;
+        const got = ip.condPresets.map(key).sort();
+        const want = inv.ship.map(key).sort();
+        assert(got.join('\n') === want.join('\n'),
+            '★ 出荷している出題が、その場で作り直した在庫と食い違う。\n' +
+            `  出荷: ${got.join(' / ')}\n  在庫: ${want.join(' / ')}`);
+
+        // ★ 落ちたぶんは**名指しで**並べる（数だけだと入れ替わっても緑になる）
+        const dropped = inv.dropped.map(key).sort();
+        const WANT_DROPPED = [
+            // 型1: ザイツェフの主生成物だけを数えるか、副生成物まで数えるかで答えが変わる
+            'dehydration/4/1-ブテン', 'dehydration/5/1-ペンテン',
+            'dehydration/5/2-メチル-1-ブテン', 'dehydration/5/3-メチル-1-ブテン',
+            // 型2: マルコフニコフ則では1つも無い（＝ 主生成物としては作れないアルコール）
+            'hydration/3/1-プロパノール', 'hydration/4/1-ブタノール',
+            'hydration/4/2-メチル-1-プロパノール', 'hydration/5/1-ペンタノール',
+            'hydration/5/2-メチル-1-ブタノール', 'hydration/5/3-メチル-1-ブタノール',
+            'hydration/5/3-メチル-2-ブタノール'
+        ].sort();
+        assert(dropped.join('\n') === WANT_DROPPED.join('\n'),
+            `落とした出題の顔ぶれが変わった: ${dropped.join(' / ')}`);
+
+        // ★★ **答えが1種の回が実際に出荷されている**（「少ないから落とす」を掛けていない証拠）
+        const singles = inv.ship.filter(x => x.n === 1).map(key).sort();
+        assert(singles.join(' / ') === [
+            'dehydration/2/エテン', 'dehydration/4/2-ブテン',
+            'hydration/2/エタノール', 'hydration/3/2-プロパノール',
+            'hydration/4/2-メチル-2-プロパノール', 'hydration/5/3-ペンタノール'
+        ].sort().join(' / '),
+            `答えが1種の出題の顔ぶれが変わった（6件を期待）: ${singles.join(' / ')}`);
+        singles.forEach(k => assert(got.includes(k),
+            `★ 答えが1種の出題「${k}」が出荷から落ちている ＝ ` +
+            `「答えが少ない」を門番にしている（ユーザー判断で覆された線・§20-1）`));
+        assert(singles.includes('dehydration/4/2-ブテン'),
+            '★ ユーザーが名指しした「脱水して2-ブテンになるアルコール」が1種の側に居ない（前提）');
+        /**
+         * ⚠⚠ **在庫表を突き合わせるだけでは、この線を守れない**（2026-09-03 に実測でそうなった）。
+         *   `startFromCondPreset` に `IP_MIN_ISOMERS` を掛け直す破壊を入れたところ、
+         *   **表は1文字も変わらないのでここは緑のまま**で、赤くなったのは別の3件だった。
+         *   ★ だから「並んでいるか」ではなく「**実際に開くか**」を、6件ぜんぶで見る。
+         */
+        singles.forEach(k => {
+            const i = ip.condPresets.findIndex(p => key({ kind: p.kind, carbons: p.carbons, target: p.target }) === k);
+            assert(i >= 0, `前提: ${k} が condPresets に無い`);
+            ip.startFromCondPreset(i);
+            assert(ip.active && ip.problem && ip.problem.condId === ip.condPresets[i].id,
+                `★ 答えが1種の出題「${k}」が押しても開かない ＝ ` +
+                `実行時に「答えが少ない」の門番が掛かっている（ユーザー判断で覆された線・§20-1）`);
+            assert(ip.problem.structures === 1,
+                `${k}: 構造の数が ${ip.problem.structures}（1を期待 ＝ この検査の前提）`);
+            ip.stop();
+        });
+
+        // ⚠ 空振り検出: 在庫が空／全部通ると、この検査は何も見ていない
+        assert(inv.ship.length === 13 && inv.dropped.length === 11,
+            `作り直した在庫が 出荷${inv.ship.length}件・落選${inv.dropped.length}件（13/11 を期待）`);
+    });
+
+    test('CS4: 立体異性体の有無が答えの一部 — 段は13件すべてに出る（有無が段から漏れない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        g.setMode('learn');
+        /**
+         * ★★ ユーザーは両方の型に「**立体異性体の有無**」を添えた（原文 2026-09-03）。
+         * ⚠ **段を「立体異性体がある回」にだけ出してはいけない** —— 段の有無そのものが答えになる。
+         *   だから 13件すべてが `stereoAsked` で、**そのうち立体異性体をもつのは6件・もたないのは7件**。
+         */
+        const WITH = ['de-c4-2butene', 'de-c5-2me2bue', 'de-c5-2pentene',
+                      'hy-c4-2butanol', 'hy-c5-2pentol', 'hy-c5-3pentol'];
+        const WITHOUT = ['de-c2-ethene', 'de-c3-propene', 'de-c4-2mepro',
+                         'hy-c2-ethanol', 'hy-c3-2propol', 'hy-c4-2me2prol', 'hy-c5-2me2buol'];
+        assert(WITH.length + WITHOUT.length === ip.condPresets.length,
+            `名指しの表が ${WITH.length + WITHOUT.length}件（${ip.condPresets.length}件を期待）`);
+        ip.condPresets.forEach((pre, i) => {
+            ip.startFromCondPreset(i);
+            assert(ip.problem.stereoAsked === true, `${pre.id}: 立体の段が出ない`);
+            assert(typeof ip.problem.stereoTotal === 'number',
+                `${pre.id}: 立体込みの総数が数えられていない`);
+            const has = ip.problem.stereoTotal > ip.problem.structures;
+            const listed = WITH.includes(pre.id);
+            assert(has === listed,
+                `★ ${pre.id}: 立体異性体${has ? 'あり' : 'なし'}（表では${listed ? 'あり' : 'なし'}）` +
+                `構造 ${ip.problem.structures}種・立体込み ${ip.problem.stereoTotal}種`);
+            ip.stop();
+        });
+
+        // ★ ユーザーが挙げた2件を名指しで（この2つが両方 出てくる題材を選んだのは偶然ではない）
+        ip.startFromCondPreset(3);   // 脱水 → 2-ブテン ＝ 答え 2-ブタノール（不斉炭素）
+        assert(ip.problem.structures === 1 && ip.problem.stereoTotal === 2,
+            `2-ブタノール: 構造 ${ip.problem.structures}／立体込み ${ip.problem.stereoTotal}（1／2 を期待 ＝ 不斉炭素）`);
+        const units = W.stereoUnitsOf([...ip.targets.values()][0]);
+        assert(units.centers.length === 1 && units.bonds.length === 0,
+            `2-ブタノールの立体の場所が 不斉炭素${units.centers.length}・C=C${units.bonds.length}（1・0 を期待）`);
+        ip.stop();
+
+        ip.startFromCondPreset(9);   // 水の付加 → 2-ブタノール ＝ 答え 1-ブテン・2-ブテン（シス/トランス）
+        assert(ip.problem.structures === 2 && ip.problem.stereoTotal === 3,
+            `1-/2-ブテン: 構造 ${ip.problem.structures}／立体込み ${ip.problem.stereoTotal}（2／3 を期待 ＝ 2-ブテンのシス・トランス）`);
+        // ★ 鎖の C=C は**別々の答案として書き出す**（v1440 の約束がここでも効く）
+        assert(ip.targets.size === 3,
+            `答案の数が ${ip.targets.size}（3を期待 ＝ 1-ブテン・シス2-ブテン・トランス2-ブテン）`);
+        ip.stop();
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('CS5: ★陰性対照 — ②を足しても①「一通りすべて」の答えの数が1つも動かない', async (c) => {
+        c.reset();
+        const W = c.W, ip = W.isomerPractice;
+        /**
+         * ⚠ 発注の要件そのもの ——「分類で絞る書き出しはすでに実装済みで、
+         *   そちらの答えの集合が動くと事故になる」。
+         * ★ `IP4` は既知値の表と突き合わせるが、ここが見るのは**別の壊れ方**:
+         *   条件の回を開いたあとに①の答えが変わる（列挙キャッシュの汚染・共有状態の取り違え）。
+         *   だから **開く前と後で同じスナップショットを取って比べる**。
+         */
+        const snap = () => ip.problems.map((p, i) => {
+            const d = ip.enumerate(i);
+            return `${i}:${d.formula}${p.skeleton ? '@' + p.skeleton : ''}=${d.isomers.length}`;
+        }).join(' | ');
+        const before = snap();
+        ip.condPresets.forEach((pre, i) => { ip.startFromCondPreset(i); ip.stop(); });
+        const after = snap();
+        assert(before === after,
+            `★ 条件の回を開いたあとに①の答えの数が動いた\n  前: ${before}\n  後: ${after}`);
+        // 空振り検出（スナップショットが空文字なら何も見ていない）
+        assert(before.length > 100 && /C₄H₁₀=2/.test(before), `スナップショットが空振り: ${before}`);
+
+        // ★ 記録の鍵が①と重ならない（同じ分子式の素の回に ✓ が飛ばない）
+        const allKeys = new Set(ip.problems.map(p => {
+            const d = ip.enumerate(ip.problems.indexOf(p));
+            return d.formula + ip.clearKeyTail(p);
+        }));
+        ip.condPresets.forEach(pre => {
+            const tail = ip.clearKeyTail({ condId: pre.id, stereoAsked: true });
+            assert(/^@cond-/.test(tail), `${pre.id}: 記録の鍵のしっぽが「${tail}」（@cond- で始まるはず）`);
+            ['C₂H₆O', 'C₃H₈O', 'C₄H₁₀O', 'C₅H₁₂O', 'C₂H₄', 'C₃H₆', 'C₄H₈', 'C₅H₁₀'].forEach(f => {
+                assert(!allKeys.has(f + tail),
+                    `★ ${pre.id}: 記録の鍵が①のお題と衝突している（${f + tail}）`);
+            });
+        });
     });
 
     // ===== 一部だけ流す（`?only=`）=====
