@@ -122,7 +122,14 @@
          *   ★ **二重持ちを機械で見張る、という判断がそのまま効いた実例**（人は気づいていない）。 */
         dehydration_anhydride_inter: ['酢酸', '酢酸'],
         alkylate_arene_propene: ['ベンゼン', 'プロペン（プロピレン）'],
-        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸']
+        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸'],
+        /* ★ アミンの遊離（分液レーン・DESIGN_ion_layer.md I-1）。
+         * ⚠⚠ **相手の分子ではなく「層の印」が要る**唯一の行 —— `amine_liberate_naoh` の
+         *   detect は**水層に居るアミン**（`atom.phase === 'aq'`）だけを見る。
+         *   電荷を持たない第1段では、アミンの塩は構造が素のアミンとまったく同じなので、
+         *   **ライブラリの分子を並べただけでは絶対に作れない**（＝ ここに書かないと
+         *   夜間監査のファズがこの反応に一生届かない。`FZ2` がまさにそれで赤くなった）。 */
+        amine_liberate_naoh: ['@水層のアニリン']
     };
 
     // `summon` を引いたとき、単品ではなく「組」を並べる割合。
@@ -863,6 +870,20 @@
      */
     function summonGroup(W, g, names) {
         if (!names || !names.length) return;
+        /* ★ 塩酸をかけて水層の印を付けたアニリン（`amine_liberate_naoh` の入口はこの印）。
+         * ⚠ tests.js の `cvSetup` と**同じ組み立て**にすること（二重持ちの片割れ）。 */
+        if (names[0] === '@水層のアニリン') {
+            g.summonMolecule('アニリン');
+            g.updateDrawing();
+            const hcl = (W.REACTION_RULES || []).find(r => r.id === 'amine_hcl');
+            let s = [];
+            if (hcl) { try { s = hcl.detect(g.userMolecule) || []; } catch (e) { s = []; } }
+            if (s.length && g.setPartPhase) {
+                g.setPartPhase([...g.moleculeAtomIdsOf(s[0][0])], 'aq', 'salt-not-drawn');
+            }
+            g.updateDrawing();
+            return;
+        }
         if (names[0] === '@二本の鎖') {
             const dien = (W.REACTION_RULES || []).find(r => r.id === 'diene_polymerization');
             if (!dien) return;
