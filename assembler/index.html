@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1505">
+    <link rel="stylesheet" href="style.css?v=1510">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1505</div>
+            <div class="version">v1510</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1815,7 +1815,7 @@
                         嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。
                     </div>
                 </details>
-                <!-- ⚠ v1505: 「この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません
+                <!-- ⚠ v1510: 「この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません
                      （同じ置換基があると、鏡に映しても重ね合わせられます）。」64字のうち、
                      **括弧の中＝理由のほう**をここへ畳んだ（ユーザー指摘「モーダル内の説明が多く字が小さい」）。
                      ★ **理由は消していない** —— それどころか、この理由は 2026-08-28 に入れた
@@ -1892,7 +1892,7 @@
                         <button id="btn-stereo-fit-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="鏡像の向きを、鏡に映しただけの向き（はじめの向き）に戻します">⟲ 鏡像の向きを戻す</button>
                     </div>
                 </div>
-                <!-- ⚠ v1505: 3つの並べ方の説明（各 130字前後）を `#stereo-3d-note` から**ここへ畳んだ**
+                <!-- ⚠ v1510: 3つの並べ方の説明（各 130字前後）を `#stereo-3d-note` から**ここへ畳んだ**
                      （ユーザー指摘「モーダル内の説明が多く字が小さい」）。★ **消していない** ——
                      どれも「なぜそう見えるのか」の説明で、必要な人は開けば読める。
                      ⚠ 本文を静的に持つのは、3つを1か所に並べておくため（画面に出るのは常に1つなので、
@@ -1955,7 +1955,7 @@
                 <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
-            <!-- ⚠ v1505: キャプションは 215字あり、**モーダルに出ている文字の 54%** を1人で占めていた
+            <!-- ⚠ v1510: キャプションは 215字あり、**モーダルに出ている文字の 54%** を1人で占めていた
                  （実測 375×812・乳酸で 399字中 215字。ユーザー指摘「モーダル内の説明が多く字が小さい」）。
                  ★ 残したのは**図が読めなくなる1行だけ**（縦=奥・横=手前）で、残りはここへ畳む:
                    ・規約の言い回しの全文（フィッシャー投影の…）
@@ -2226,19 +2226,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1505"></script>
+    <script src="chemistry.js?v=1510"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1505"></script>
-    <script src="game.js?v=1505"></script>
-    <script src="reaction.js?v=1505"></script>
-    <script src="quiz.js?v=1505"></script>
-    <script src="stereo.js?v=1505"></script>
-    <script src="reactor.js?v=1505"></script>
-    <script src="narrowing.js?v=1505"></script>
-    <script src="learn.js?v=1505"></script>
-    <script src="tutorial.js?v=1505"></script>
-    <script src="rec.js?v=1505"></script>
+    <script src="deadend.js?v=1510"></script>
+    <script src="game.js?v=1510"></script>
+    <script src="reaction.js?v=1510"></script>
+    <script src="quiz.js?v=1510"></script>
+    <script src="stereo.js?v=1510"></script>
+    <script src="reactor.js?v=1510"></script>
+    <script src="narrowing.js?v=1510"></script>
+    <script src="learn.js?v=1510"></script>
+    <script src="tutorial.js?v=1510"></script>
+    <script src="rec.js?v=1510"></script>
 </body>
 </html>
