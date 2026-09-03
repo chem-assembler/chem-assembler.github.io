@@ -71,12 +71,29 @@
     window.__recEvents = [];
     window.__recOnAction = (type) => window.__recEvents.push({ t: Date.now(), type });
 
+    /**
+     * ⚠ **綴りを間違えたパラメータを黙って既定へ落とさない**（vNNNN）。
+     * `?rec=` の**知らない id** は前から `__recState='error'` で止まるが、
+     * **見た目のつまみ（format / cursor / caption / speed）は黙って既定に落ちていた**
+     * ＝ `?cursor=touchh` で撮ると「指カーソルのつもりが矢印」の素材が黙って上がる。
+     * ★ ここは**止めない**（絵は撮れているので、止めるとかえって損をする）。
+     *   警告だけ出して既定で続ける ＝ 収録ツールのログに残り、後から気づける。
+     * ⚠ **パラメータが無いのは「指定していない」だけ**なので何も言わない
+     *   （前方互換の黙りはそちら側）。
+     */
+    const warnParam = (key, allowed) => {
+        const v = params.get(key);
+        if (v !== null && v !== '' && !allowed.includes(v)) {
+            console.warn(`[rec] ?${key}=${v} は知らない値です（使えるのは ${allowed.join(' / ')}）。既定で続けます。`);
+        }
+        return v;
+    };
     // クリーン画面はスクリプト評価の時点で立てる（ヘッダー等の映り込みを防ぐ）
     document.documentElement.classList.add('recording');
-    if (params.get('format') === 'short') document.documentElement.classList.add('rec-short');
-    const cursor = params.get('cursor') || 'touch';
+    if (warnParam('format', ['wide', 'short']) === 'short') document.documentElement.classList.add('rec-short');
+    const cursor = warnParam('cursor', ['mouse', 'touch', 'none']) || 'touch';
     if (cursor === 'none') document.documentElement.classList.add('rec-no-cursor');
-    if (params.get('caption') === '0') document.documentElement.classList.add('rec-no-caption');
+    if (warnParam('caption', ['0', '1']) === '0') document.documentElement.classList.add('rec-no-caption');
 
     /**
      * ライブ収録支援（?rec=live・2026-08-04）。**人がその場で操作し、収録は OBS 等の外部ツール**。
@@ -126,8 +143,19 @@
         return;
     }
 
-    const speed = Math.max(0.25, Math.min(4, parseFloat(params.get('speed')) || 1));
-    const delay = Math.max(0, parseInt(params.get('delay'), 10) || 1000);
+    // ⚠ 数のつまみも同じ（`?speed=x2` は数として読めず、黙って等速で撮れてしまう）
+    const warnNumber = (key, raw, used) => {
+        const v = params.get(key);
+        if (v !== null && v !== '' && (!isFinite(raw) || raw !== used)) {
+            console.warn(`[rec] ?${key}=${v} は使えないか範囲外です。${used} で続けます。`);
+        }
+    };
+    const rawSpeed = parseFloat(params.get('speed'));
+    const speed = Math.max(0.25, Math.min(4, rawSpeed || 1));
+    warnNumber('speed', rawSpeed, speed);
+    const rawDelay = parseInt(params.get('delay'), 10);
+    const delay = Math.max(0, rawDelay || 1000);
+    warnNumber('delay', rawDelay, delay);
 
     async function start() {
         // アプリ本体（appReady）とチュートリアルデータ（fire-and-forget ロード）の両方を待つ

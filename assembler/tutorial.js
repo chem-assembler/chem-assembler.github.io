@@ -209,6 +209,12 @@ class TutorialPlayer {
             // （4択に置き換えたことで初めて症状として見えた。それまでは
             // 「出題される組が固定される」という気づきにくい形で漏れていた）
             forcedQuizPair: window.quiz ? (window.quiz.forcedPair || null) : undefined,
+            // **命名クイズの名指しも退避する**（vNNNN）。2026-08-09 に `quizForce` の `name` を
+            // 足したとき、ここへ書き足すのを忘れていた ＝ `quiz-naming-urea` を再生したあと
+            // 命名クイズが**ずっと尿素**になっていた（黙って効き続けるので気づけない）。
+            // ⚠ 名指しが通らないときに出題を止めるようにした今は、**居座った名指しが
+            //    次の台本の出題を止める**ところまで悪化する ＝ 退避はもう必須
+            forcedQuizName: window.namingQuiz ? (window.namingQuiz.forcedName || null) : undefined,
             forcedStereoQuiz: window.stereoQuiz ? window.stereoQuiz.forced : undefined
         };
         /**
@@ -255,6 +261,9 @@ class TutorialPlayer {
             if (window.quiz && saved.forcedQuiz !== undefined) window.quiz.forced = saved.forcedQuiz;
             if (window.quiz && saved.forcedQuizPair !== undefined) {
                 window.quiz.forcedPair = saved.forcedQuizPair;
+            }
+            if (window.namingQuiz && saved.forcedQuizName !== undefined) {
+                window.namingQuiz.forcedName = saved.forcedQuizName;
             }
             if (window.stereoQuiz && saved.forcedStereoQuiz !== undefined) {
                 window.stereoQuiz.forced = saved.forcedStereoQuiz;
@@ -519,16 +528,25 @@ class TutorialPlayer {
                 if (a.name || a.pair) {
                     const q = a.quiz === 'same' ? window.quiz : window.namingQuiz;
                     if (!q) throw new Error('出題を指定できるクイズがありません: ' + a.quiz);
+                    // ⚠⚠ **通らない指定で再生を続けない**（vNNNN。動画レーンの実機報告）。
+                    // ここは v1502 まで**指定して終わり**で、通らなければクイズ側が黙って
+                    // 抽選に戻していた ＝ **台本に書いた題材と違う問題が、無警告で撮れてしまう**。
+                    // 他のアクション（`button` / `select` / `reactionButton` / `quizAnswer`）は
+                    // 見つからなければ throw するのに、ここだけ穴が空いていた。
+                    // throw すると play() が catch → rec.js が `__recState='error'` にする
+                    // ＝ **収録ツールが止まる**（DESIGN_recording_mode.md §2 の完了シグナル）。
                     if (a.pair) {
                         if (typeof q.setForcedPair !== 'function') {
                             throw new Error('ペア指定に対応していません: ' + a.quiz);
                         }
-                        q.setForcedPair(a.pair[0], a.pair[1]);
+                        const issue = q.setForcedPair(a.pair[0], a.pair[1]);
+                        if (issue) throw new Error('ペアの指定が通りません: ' + issue);
                     } else {
                         if (typeof q.setForced !== 'function') {
                             throw new Error('名前指定に対応していません: ' + a.quiz);
                         }
-                        q.setForced(a.name);
+                        const issue = q.setForced(a.name);
+                        if (issue) throw new Error('出題の指定が通りません: ' + issue);
                     }
                     break;
                 }
