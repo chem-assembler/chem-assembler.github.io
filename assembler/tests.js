@@ -39,11 +39,22 @@
  *                  「D だから R とは限らない」をアプリ自身の CIP に計算させる（L-システインだけ (R)）／
  *                  用語は鏡像異性体（qa/KNOWLEDGE_CAVEATS.md J-4）／R/S の決め方は書き写さない） |
  * | EP  | 1〜9   | 入口と導線（作業帯・深いリンク・ハブ）。**7〜9 は学習メニューの言い直し**＝ DESIGN_entry_points.md §10。7 は `#study-body` の `<details>` の id と並びが不変で群の見出しが挿さっていること（2026-09-02 に 📖 資料を**末尾へ**足して 4→5・見出し 2→3）・8 は名札と機構ビューアの案内が同じ語であること（＋件数で文言が変わらないこと）・**9 は否定対照**＝ 学習モードで `#ws-free` が hidden（D1 の根拠） |
- * | EQ  | 1〜8   | 実験モード 第2段の課題（DESIGN_experiment_mode.md）。**1 は課題とは別件の実発生**＝
+ * | EQ  | 1〜10  | 実験モード 第2段の課題（DESIGN_experiment_mode.md）。**1 は課題とは別件の実発生**＝
  *                  `obstructedInsets()` が「帯の上端がキャンバスの上半分か」で天井／床を決めており、
  *                  キャンバスが薄くなると反転していた（320px ＋ 🧪 実験パレットで
  *                  呼んだ分子 9/9 原子が作業帯の裏）。否定対照は「旧式と新式で答えが分かれる配置か」を
  *                  その場で計算して主張に含める形。
+ *                  **9 も課題とは別件**＝ **1 の「振り分け」ではなく「そもそも読める大きさになっていない」ほう**。
+ *                  320×568 の使える帯 106px に対して `fitCanvasToMolecule` の下限
+ *                  （最小視野 360×270・余白 240×180）が効き、**分子の大小によらず結合 11.6〜16.2px**
+ *                  （床 24px）に張り付いていた。否定対照は「入りきらない分子を押し出していない」と
+ *                  「広い画面では旧式と viewBox が1つも違わない」の2本。
+ *                  **10 も課題とは別件**＝ 実験パレットで「試薬をかける先」が見えること。
+ *                  枠を出すかどうかは `focusedMoleculeInfo().explicit` で決まるのに、
+ *                  絞り込み（`siteFilter()` の `focus`）は `moleculeModalPart()` で決まり、
+ *                  **誰も選んでいなくても `list[0]` へ落ちる** ＝ 効かせる相手は決まっているのに
+ *                  画面に何も出ていなかった。否定対照は「作図パレットでは出ない（C-9）」
+ *                  「人が選んだときは『⚗ 分析中』のまま」「分子が1つなら出ない」の3本。
  *                  2 が課題データの形と中身（1行1問・行数 = 問数 + 2・start/goal がライブラリから引ける・
  *                  ⚠ 台帳の入試頻度が画面に漏れていない）・3 が入口（🎯 の札／`?open=experiment`／
  *                  `?quest=` 単独／知らない id は黙って無視）・4 が本体（**正しい手順で通る／
@@ -153,7 +164,7 @@
  * | REF | 1〜7   | 📖 資料（参考書）第1ページ（DESIGN_reference_book.md）。⚠ 接頭辞が `RB` でないのは **`RB` を「リボン統合」が既に使っている**ため。1 索引→ページが開く（既定は閉）・2 表はシリーズの行が**全部**出て C の数は分子式から作る・**3 は否定対照**＝「いま要る1行だけ」を出す実装が入り込んでいない（例題中も減らない／描画器に行を絞る口が無い／1行だけの表を混ぜると検査が気づく）・4 は 375 で分割せずタブ（キャンバスが 1px も減らない）／1280 で分割しても結合 28px の床を保つ・5 は reference.json に**行データが無い**（表は stages.json から機械で作る＝著作権 §1-2）・6 は例題が**既存ステージの採点**を使う（資料側に採点を持たない）・**7 は否定対照つき**＝ `?open=reference&code=` で開き、`?rec=` では開かない |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
- * | RM  | 1〜3   | **反応の印と箇所選び**（v1500・定期レビュー pack2 の発注書 A ＋ 動画レーンの実測 v1494）。**1 はジエンの 1,4-付加重合で「中央へ移った C=C の炭素」が画面で光る**（caption が要点だと言っている当の原子。⚠ 題材はイソプレン —— ブタジエンだと重原子14個が全部「変わった原子」になり、「全部に印を付ける実装ではない」の否定対照が立たない）。**2 はポリ酢酸ビニルのけん化**＝ 箇所が2つ以上あるとき札を押しただけでは図が変わらず**箇所選び**に入る（＝ 動画レーンの「押しても動かない」は仕様）・そのとき必ず字幕で言う・押す→選ぶを3回でポリビニルアルコールに着地する。**3 は単糖2つの縮合**＝ detect は空ではなく**2件**（マルトース 1→4／トレハロース 1→1）で、押す炭素の隣（C・O・O ならアノマー炭素→トレハロース／C・C・O なら4位→マルトース）でどちらになるかが決まる |
+ * | RM  | 1〜4   | **反応の印と箇所選び**（v1500・定期レビュー pack2 の発注書 A ＋ 動画レーンの実測 v1494）。**1 はジエンの 1,4-付加重合で「中央へ移った C=C の炭素」が画面で光る**（caption が要点だと言っている当の原子。⚠ 題材はイソプレン —— ブタジエンだと重原子14個が全部「変わった原子」になり、「全部に印を付ける実装ではない」の否定対照が立たない）。**2 はポリ酢酸ビニルのけん化**＝ 箇所が2つ以上あるとき札を押しただけでは図が変わらず**箇所選び**に入る（＝ 動画レーンの「押しても動かない」は仕様）・そのとき必ず字幕で言う・押す→選ぶを3回でポリビニルアルコールに着地する。**3 は単糖2つの縮合**＝ detect は空ではなく**2件**（マルトース 1→4／トレハロース 1→1）で、押す炭素の隣（C・O・O ならアノマー炭素→トレハロース／C・C・O なら4位→マルトース）でどちらになるかが決まる。**4 は RM2 が注記で避けていた「アセチル基の側で開く」道**＝ 焦点は原子ID 1個なので、けん化で**タップした炭素が酢酸ナトリウムの側へ移り**、`siteFilter` の focus 絞り込みが残りのエステルを設計どおり落としていた（実測 detect 2件 → 通過 0件）。直したのは `game.refocusToMainFragment()`（変化した側の**大きいほうの破片**へ焦点を移す）で、否定対照は「焦点を名前で確かめる」と「傍観者のトルエンに飛ばない・1原子も変わらない」 |
  * | DE  | 1〜3   | 行き止まりの報告（v1420）。**汎用の仕組み**（`DeadEnd`）で、最初の設置場所が
  *                  「相手の分子を呼び出す」の失敗（RX36）。1 が本文の中身（版・やろうとしたこと・
  *                  **どこで止まったか**・キャンバスの中身・環境が全部そろい、会話の文脈が無くても読めること）・
@@ -47127,6 +47138,308 @@
         assert(pick(onlyPlain, led, always, true) !== null && pick(onlyPlain, led, always, true).textContent,
             'rule id を持たない札しか無いときに選べなくなっている');
         assert(pick([], led, always, true) === null, '札が0枚のときに null を返していない');
+    });
+
+    /* RM4 —— ★ **アセチル基の側で開いても、けん化が最後まで通る**（vNNNN・(A) の本体）。
+     *
+     * ⚠ **RM2 は症状を注記に書いて避けていた**（「主鎖の -CH₂- で開く。★ アセチル基の側で
+     *   開くと1回目のあと札が消える」）。ここはその**避けていた側**を通す。
+     *
+     * ★ **原因は `siteFilter` ではなく焦点の追随**（実測・vNNNN）:
+     *   焦点は原子ID 1個（`focusedMolecule`）で持つ。けん化はアシル-酸素開裂なので
+     *   **タップしたアセチル基の炭素は酢酸ナトリウムの側へ移る**。原子は生きているので
+     *   `moleculeModalPart()` はその破片を返し、`siteFilter` の focus 絞り込みが
+     *   **設計どおり**残り2箇所を落とす（実測: `detect` 2件 → 通過 0件）。
+     *   直したのは `game.refocusToMainFragment()`（大きいほうの破片へ焦点を移す）。
+     *
+     * ★ この検査が守るのは3つ:
+     *   ① アセチル基の側で開いても、押す→選ぶ を3回で **ポリビニルアルコール** に着地する
+     *   ② ★否定対照 —— **焦点は「変化した側の大きいほう」へ移っている**（名前で確かめる。
+     *      酢酸ナトリウムを指していない ＝ 数が合っただけの緑にしない）
+     *   ③ ★否定対照 —— **無関係な分子には飛ばない**（別に置いたトルエンは焦点にならない・
+     *      1原子も変わらない）＝ `wholeCanvas` を広げる方向の直しではないこと */
+    test('RM4: アセチル基の側で開いてもけん化が3回通り、焦点は高分子側に残る', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        for (let i = 0; i < 3; i++) { g.summonMolecule('酢酸ビニル'); g.updateDrawing(); }
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        assert(poly, '（前提）addition_polymerization が無い');
+        const ps = poly.detect(g.userMolecule);
+        assert(ps.length, '（前提）酢酸ビニル3分子で付加重合の箇所が出ない');
+        W.reactor.execute(poly, ps[0], null);
+        await c.tick(1400);
+        // ③ の材料 —— 反応に関わらない傍観者を1つ置く（焦点が飛ばないことを見る）
+        g.summonMolecule('トルエン');
+        g.updateDrawing();
+        const tolueneIds = new Set(g.splitMolecules()
+            .filter(p => p.atoms.length === 7 && p.atoms.every(a => a.element === 'C'))
+            .flatMap(p => p.atoms.map(a => a.id)));
+        assert(tolueneIds.size === 7, `（前提）傍観者のトルエンが引けない（${tolueneIds.size} 原子）`);
+
+        const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
+        assert(sap.detect(g.userMolecule).length === 3,
+            `（前提）ポリ酢酸ビニルのエステルが ${sap.detect(g.userMolecule).length} 箇所（3が正）`);
+        /* ⚠ **アセチル基のメチル炭素**で開く（RM2 が避けていた側）。
+         *   引くのは座標ではなく「隣が C=O の炭素1つだけ」＝ 呼び出しの位置に頼らない */
+        const mol0 = g.userMolecule;
+        const nbs = id => mol0.getNeighbors(id).filter(n => n.atom.element !== 'H');
+        const methyl = mol0.atoms.find(a => a.element === 'C' && nbs(a.id).length === 1 &&
+            nbs(a.id)[0].atom.element === 'C' &&
+            mol0.getNeighbors(nbs(a.id)[0].atom.id).some(n => n.type === 2 && n.atom.element === 'O'));
+        assert(methyl, '（前提）アセチル基のメチル炭素が見つからない');
+        g.openMoleculeModal(methyl.id);
+
+        const sapButton = () => [...D.querySelectorAll('#reaction-actions button')]
+            .find(b => b.dataset.rule === 'saponification');
+        for (let n = 1; n <= 3; n++) {
+            const b = sapButton();
+            assert(b, `${n} 回目: けん化の札が一覧に無い（アセチル基の側で開くと消える症状の再発）`);
+            b.click();
+            await c.tick(300);
+            if (W.reactor.picking) {
+                const marks = [...D.querySelectorAll('#ui-group [data-hl-atom]')]
+                    .map(el => el.getAttribute('data-hl-atom'));
+                assert(marks.length >= 2, `${n} 回目: ハイライトされた原子が ${marks.length} 個`);
+                W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === marks[0]));
+            }
+            await c.tick(1400);
+            g.updateDrawing();
+        }
+        // ① 着地点
+        const shown = D.getElementById('compound-name').textContent;
+        assert(shown.includes('ポリビニルアルコール'),
+            `けん化3回のあとが「${shown}」（ポリビニルアルコールを期待）`);
+        assert(sap.detect(g.userMolecule).length === 0,
+            'けん化3回のあともエステルが残っている');
+        // ② ★否定対照 —— 焦点は**名前で**確かめる（数が合っただけの緑にしない）
+        const focusPart = g.moleculeModalPart();
+        assert(focusPart, '焦点の分子が引けない');
+        const focusName = g.lookupCompoundName(focusPart) || '';
+        assert(focusName.includes('ポリビニルアルコール'),
+            `焦点が「${focusName || '（名前なし）'}」を指している（ポリビニルアルコールを期待）` +
+            ' ＝ 副生成物（酢酸ナトリウム）へ焦点が移ったままなら症状は直っていない');
+        // ③ ★否定対照 —— 傍観者のトルエンには飛ばない・1原子も変わっていない
+        assert(!tolueneIds.has(g.focusedMolecule),
+            '反応に関わらないトルエンへ焦点が飛んだ（控えに由来する破片だけを見る約束が破れている）');
+        const toluene = g.splitMolecules().find(p => p.atoms.some(a => tolueneIds.has(a.id)));
+        assert(toluene && toluene.atoms.length === 7 && toluene.atoms.every(a => a.element === 'C'),
+            'けん化3回でトルエンの図が変わっている（絞り込みを緩めて別の分子まで反応させていないか）');
+        c.reset();
+    });
+
+    /* EQ9 —— ★ **狭い画面で、呼んだ分子がアプリ自身の床（`SUMMON_MIN_BOND_PX`）まで拡がる**（vNNNN・(B) の本体）。
+     *
+     * ⚠ **EQ1（v1499）とは別の穴**。あちらは「帯を天井と読み違えて分子を帯の裏へ寄せる」＝ **振り分け**。
+     *   ここは **そもそも読める大きさになっていない** ほう。
+     *
+     * ★ **実測（320×568・🧪 実験パレット。この worktree で測った値）**:
+     *   使える帯は 106px（`#svg-wrapper` 234px − 作業帯 128px）。そこへ
+     *   `fitCanvasToMolecule` の下限（最小視野 360×270・余白 240×180）が効いて、
+     *   **分子の大小によらず結合が 11.6〜16.2px に張り付いていた**:
+     *     エタノール 14.6 ／ ベンゼン 16.2 ／ アニリン 16.1 ／ サリチル酸 14.0 ／
+     *     アセチルサリチル酸 11.6 ／ デカン 9.4（床は 24px）。
+     *   ★ **ベンゼン（高さ 69 単位）とアセチルサリチル酸（197 単位）が同じ 16px**
+     *     ＝ 効いていたのは分子の大きさではなく**下限そのもの**。
+     *
+     * ⚠ **発注の見立てとは違っていた点**（測った結果）:
+     *   「アニリン・アセチルサリチル酸で 2原子ぶんが帯にかかる」は **0原子**（v1499 で直っている）。
+     *   「375px 以上では 0 件」も、**床を割る件数で見れば 375 でも 5件中 4件が割っていた**。
+     *
+     * ★ 守るのは3つ:
+     *   ① 320×568 で **ベンゼン・アニリン・エタノール**が床（24px）に届く
+     *   ② ★否定対照 —— **入りきらない分子を無理に拡大していない**（アセチルサリチル酸は
+     *      高さ 197 単位で 106px の帯に 24px では入らない。全原子が可視域の中に残ること）
+     *   ③ ★否定対照 —— **広げる方向には動かしていない** ＝ もともと床を超えている広い画面では、
+     *      旧式の viewBox と1桁も違わない（同じ式をその場で計算して突き合わせる） */
+    test('EQ9: 狭い画面で呼んだ分子が床（24px）まで拡がり、広い画面の見え方は1つも変わらない', async () => {
+        // 旧式（この直しを入れる前の `fitCanvasToMolecule`）をその場で再現する
+        const 旧式 = (W, D, mol) => {
+            const g = W.game;
+            const b = g.calculateTargetBounds(mol);
+            const bw = b.maxX - b.minX, bh = b.maxY - b.minY;
+            const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+            let vW = Math.max(360, bw + 240), vH = Math.max(270, bh + 180);
+            if (vW / vH > 4 / 3) vH = vW * 3 / 4; else vW = vH * 4 / 3;
+            let vx = cx - vW / 2, vy = cy - vH / 2;
+            const rect = g.svg.getBoundingClientRect();
+            const ins = g.obstructedInsets();
+            const fw = rect.width - ins.left - ins.right, fh = rect.height - ins.top - ins.bottom;
+            if (fw > 0 && fh > 0 && (ins.top || ins.bottom || ins.left || ins.right)) {
+                const ratio = Math.max(rect.width / fw, rect.height / fh);
+                vW *= ratio; vH *= ratio;
+                vx = cx - vW * ((ins.left + fw / 2) / rect.width);
+                vy = cy - vH * ((ins.top + fh / 2) / rect.height);
+            }
+            return [vx, vy, vW, vH].map(n => Math.round(n)).join(' ');
+        };
+        const いまの箱 = (W) => W.game.svg.getAttribute('viewBox').split(/[\s,]+/).map(n => Math.round(+n)).join(' ');
+        const 呼ぶ = async (W, D, name) => {
+            const g = W.game;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            assert(g.summonMolecule(name) !== false, `${name} を呼び出せない`);
+            /* ⚠ `summonMolecule` は「床を割っているときだけ」合わせ直す（`SUMMON_MIN_BOND_PX`）。
+             *   広い画面では合わせ直しを通らず、**前の視野が残る**ので比べる相手が定まらない。
+             *   どちらの幅でも同じ土俵にするため、ここで明示的に呼ぶ（同じ関数）。 */
+            g.fitCanvasToMolecule(g.userMolecule);
+            g.updateDrawing();
+            await new Promise(r => setTimeout(r, 120));
+        };
+
+        // ===== ① 本体 —— 320×568 の 🧪 実験パレット =====
+        await withViewport(320, 568, async (W, D, name) => {
+            const g = W.game;
+            g.setMode('free');
+            D.querySelector('#palette-tabs .palette-tab[data-palette="exp"]').click();
+            await new Promise(r => setTimeout(r, 150));
+            const FLOOR = W.SUMMON_MIN_BOND_PX;
+            assert(typeof FLOOR === 'number' && FLOOR > 0, 'SUMMON_MIN_BOND_PX が公開されていない');
+            // 前提 —— 帯がキャンバスの半分近くを覆っている（覆っていなければこの検査は空振り）
+            await 呼ぶ(W, D, 'ベンゼン');
+            const ins = g.obstructedInsets();
+            const rect = g.svg.getBoundingClientRect();
+            assert(ins.bottom > rect.height * 0.3,
+                `${name}: 作業帯がキャンバスの ${Math.round(ins.bottom / rect.height * 100)}% しか覆っていない` +
+                ' ＝ この幅で帯が薄くなったなら EQ9 の前提を測り直すこと');
+            // ★ 入りきる分子は床に届く（直す前は ベンゼン 16.2 / アニリン 16.1 / エタノール 14.6）
+            for (const 分子 of ['ベンゼン', 'アニリン', 'エタノール']) {
+                await 呼ぶ(W, D, 分子);
+                const px = g.screenPxPerGrid();
+                assert(px >= FLOOR - 0.5,
+                    `${name}: ${分子} の結合が ${px.toFixed(1)}px（床 ${FLOOR}px）` +
+                    ' ＝ 呼び出しの合わせ直しが下限（最小視野 360×270・余白 240×180）に当たって、割ったままになっている');
+            }
+            // ★ 直しがこの幅で**実際に効いている**こと（旧式と答えが違う）
+            await 呼ぶ(W, D, 'ベンゼン');
+            assert(いまの箱(W) !== 旧式(W, D, g.userMolecule),
+                `${name}: 旧式と同じ viewBox のまま ＝ 詰める枝を通っていない（検査が空振りする）`);
+
+            // ===== ② ★否定対照 —— 入りきらない分子を無理に拡大していない =====
+            await 呼ぶ(W, D, 'アセチルサリチル酸');
+            const m = g.svg.getScreenCTM();
+            const r2 = g.svg.getBoundingClientRect();
+            const i2 = g.obstructedInsets();
+            const box = { l: r2.left + i2.left, t: r2.top + i2.top, r: r2.right - i2.right, b: r2.bottom - i2.bottom };
+            const 外 = g.userMolecule.atoms.filter(a => {
+                const p = new W.DOMPoint(a.x, a.y).matrixTransform(m);
+                return p.x < box.l || p.x > box.r || p.y < box.t || p.y > box.b;
+            });
+            assert(外.length === 0,
+                `${name}: アセチルサリチル酸の ${外.length}/${g.userMolecule.atoms.length} 個が可視域の外に出た` +
+                ' ＝ 床に届かせるために分子を画面の外へ押し出している（詰めてよいのは「分子が入る限界」まで）');
+        });
+
+        // ===== ③ ★否定対照 —— 広い画面では旧式と1つも違わない =====
+        await withViewport(1100, 800, async (W, D, name) => {
+            const g = W.game;
+            g.setMode('free');
+            for (const 分子 of ['ベンゼン', 'アニリン', 'アセチルサリチル酸']) {
+                await 呼ぶ(W, D, 分子);
+                assert(g.screenPxPerGrid() >= W.SUMMON_MIN_BOND_PX,
+                    `${name}: ${分子} が広い画面でも床を割っている（前提が崩れている）`);
+                assert(いまの箱(W) === 旧式(W, D, g.userMolecule),
+                    `${name}: ${分子} の視野が旧式と違う（${いまの箱(W)} ≠ ${旧式(W, D, g.userMolecule)}）` +
+                    ' ＝ もともと読めていた画面の見え方まで変えている');
+            }
+        });
+    });
+
+    /* EQ10 —— ★ **🧪 実験パレットでは「試薬をかける先」が図の上で分かる**（vNNNN・ユーザー実機報告 2026-09-03）。
+     *
+     * ⚠ **ユーザーの言葉**:「複数分子ある状態で実験モードに入ると、1つの分子が選択されているのに
+     *   それがマーカーされていません」。
+     *
+     * ★ **食い違いの正体（実測）**: 枠を出すかどうかは `focusedMoleculeInfo().explicit`
+     *   （＝ 人が自分で選んだか）で決まるのに、**瓶と反応の一覧の絞り込み
+     *   （`reactor.siteFilter()` の `focus`）は `moleculeModalPart()`** で決まり、
+     *   そちらは**誰も選んでいなくても `list[0]`（＝ ①）へ落ちる**。
+     *   実測: ブタン酸＋エチルメチルケトンで `focusedMolecule = null` にしても
+     *   `siteFilter().focus` は 6原子（酪酸）を指したまま ＝
+     *   **アプリは ① に効かせると決めているのに、画面には何も出ていない。**
+     *
+     * ★ 守るのは4つ:
+     *   ① 実験パレットに入ると、**誰も選んでいなくても**枠と札が出て、**絞り込みが指す分子**を囲む
+     *   ② ★否定対照 —— **作図パレットでは出ない**（C-9「利用者が選ぶまで枠は出さない」を壊していない）
+     *   ③ ★否定対照 —— **人が自分で選んだときは札が「⚗ 分析中」のまま**（2つを見分けられる）
+     *   ④ ★否定対照 —— **分子が1つだけなら出ない**（指す相手が1つしかない ＝ 枠は図を汚すだけ） */
+    test('EQ10: 実験パレットでは「試薬をかける先」が枠と札で見える（作図パレットでは出ない）', async (c) => {
+        c.reset();
+        const g = c.game, D = c.D, W = c.W;
+        g.setMode('free');
+        const 札 = () => [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => /^⚗/.test(t));
+        const 琥珀の枠 = () => [...D.querySelectorAll('#atoms-group rect')]
+            .filter(r => (r.getAttribute('stroke') || '').includes('neon-orange'));
+
+        // ===== ④ 先に否定対照 —— 分子が1つのときは出ない =====
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン');
+        g.setPalette('exp');
+        await c.tick(150);
+        assert(札().length === 0,
+            `分子が1つしか無いのに札が出ている（${札().join(' / ')}）＝ 指す相手が1つのときは枠を出さない`);
+
+        // ===== ① 本体 —— 2分子・誰も選んでいない状態で実験パレットへ =====
+        g.setPalette('draw');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.summonMolecule('エチレン');
+        g.summonMolecule('エタン');
+        g.focusedMolecule = null;      // 誰も選んでいない（実機で実験タブを押した直後と同じ）
+        g.updateDrawing();
+        await c.tick(150);
+        // ② ★否定対照 —— 作図パレットでは出ない
+        assert(札().length === 0,
+            `作図パレットで札が出ている（${札().join(' / ')}）＝ C-9「利用者が選ぶまで枠は出さない」が壊れている`);
+        // 前提 —— 絞り込みは誰も選んでいなくても ① を指している（ここが崩れたら緑が空振り）
+        const 指す先 = g.moleculeModalPart();
+        assert(指す先, '（前提）絞り込みが指す分子が引けない');
+        const 指す先の名前 = g.lookupCompoundName(指す先) || '';
+        assert(指す先の名前.includes('エチレン'),
+            `（前提）絞り込みが「${指す先の名前}」を指している（エチレンを期待）`);
+        assert((W.reactor.siteFilter().focus || new Set()).size > 0,
+            '（前提）誰も選んでいないのに絞り込みが働いていない ＝ この検査の題目が成り立たない');
+
+        g.setPalette('exp');
+        await c.tick(200);
+        assert(札().includes('⚗ 試薬をかける先'),
+            `実験パレットに入っても札が出ない（${札().join(' / ') || 'なし'}）` +
+            ' ＝ 効かせる相手が決まっているのに画面には何も出ていない');
+        // ★ 枠が囲むのは**絞り込みが指す分子**（名前で引いた当の分子の原子が全部入り、相手は入らない）
+        const frames = 琥珀の枠();
+        assert(frames.length >= 1, `琥珀の枠が ${frames.length} 個`);
+        const fr = frames[0];
+        const box = {
+            x1: +fr.getAttribute('x'), y1: +fr.getAttribute('y'),
+            x2: +fr.getAttribute('x') + +fr.getAttribute('width'),
+            y2: +fr.getAttribute('y') + +fr.getAttribute('height')
+        };
+        const 中 = a => a.x >= box.x1 && a.x <= box.x2 && a.y >= box.y1 && a.y <= box.y2;
+        const 指す先の重原子 = 指す先.atoms.filter(a => a.element !== 'H');
+        assert(指す先の重原子.every(中),
+            `枠が「${指す先の名前}」の原子を全部囲んでいない ＝ 別の分子を指している`);
+        const 相手 = g.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H'))
+            .find(p => !p.atoms.some(a => 指す先.atoms.some(b => b.id === a.id)));
+        assert(相手, '（前提）相手の分子（エタン）が引けない');
+        assert(!相手.atoms.filter(a => a.element !== 'H').every(中),
+            `枠が相手（${g.lookupCompoundName(相手) || '?'}）まで囲んでいる ＝ 1分子を指す印になっていない`);
+
+        // ===== ③ ★否定対照 —— 人が自分で選んだときは「⚗ 分析中」のまま =====
+        const eth = 指す先.atoms.find(a => a.element !== 'H');
+        g.setFocusedMolecule(eth.id);
+        await c.tick(150);
+        assert(札().includes('⚗ 分析中'),
+            `人が選んだのに札が「${札().join(' / ')}」（⚗ 分析中 を期待）` +
+            ' ＝ 自分で選んだのとアプリが決めたのを見分けられない');
+        assert(!札().includes('⚗ 試薬をかける先'),
+            '人が選んでいるのに「⚗ 試薬をかける先」の札が残っている');
+        g.setPalette('draw');
+        c.reset();
     });
 
     // ===== 一部だけ流す（`?only=`）=====
