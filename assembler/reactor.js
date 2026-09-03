@@ -2963,13 +2963,35 @@ function freeSpotsForIodoform(mol, cId) {
  * 還元性を示す炭素（銀鏡反応・フェーリング液が陽性になる根拠）を返す。
  *
  * ① -CHO（アルデヒド）… カルボニル炭素に水素が残っているので酸化されうる
- * ② 環状の糖のアノマー炭素（ヘミアセタール）… 水の中で開環して -CHO を出すので還元性を示す。
- *    「環の酸素」と「環の外の -OH」が同じ炭素についている形で見分ける。
- *    グリコシド結合（スクロース側）の酸素は重原子の隣が2つあるので外れる ＝ 非還元糖
+ * ② 環状の糖のアノマー炭素（ヘミアセタール／ヘミケタール）… 水の中で開環して
+ *    カルボニル基を出すので還元性を示す。「環の酸素」と「環の外の -OH」が
+ *    同じ炭素についている形で見分ける。
+ *    グリコシド結合（スクロース側）の酸素は重原子の隣が2つあるので外れる ＝ 非還元糖。
+ *    ⚠ **この②は「隣に水素があるか」を要求していない**ので、ケトースの環状形
+ *    （α/β-D-フルクトフラノース ＝ ヘミケタール）も前から陽性で拾えている（実測・vNNNN）。
+ * ★ ③ **α-ヒドロキシケトン**（カルボニル炭素の隣の炭素に -OH）… 塩基性の条件で
+ *    **エンジオールを経てアルデヒドへ移る**ので還元性を示す。**鎖状のフルクトースが代表**で、
+ *    「ケトースなのに還元糖」の理由がこれ（教科書もフェーリング液で陽性として扱う）。
+ *
+ * ⚠⚠ ③ の門番は **「α炭素に水素が残っている」の1つだけ**（自由価標が1以上）。
+ *   エンジオールは α位の水素がエノール化して初めてできるので、これが化学そのものの条件になる。
+ *   ★ この1つで **α-ケト酸**（ピルビン酸・オキサロ酢酸・α-ケトグルタル酸・2-オキソ酪酸の4件）が
+ *   ちょうど落ちる —— あれは隣の -OH が **カルボキシ基の -OH** で、その炭素は
+ *   C・=O・-OH で価標を使い切っていて水素が無い。
+ *   ⚠ **はじめは「α炭素が sp3」の門番も並べていたが、外した。** 実測すると
+ *   **ライブラリ1,000件超のどれでも結果が1件も変わらず**（陽性 111 件のまま）、
+ *   ⚠ **否定対照が赤くならなかった**（KT を3件とも通した）＝ 効いていない門番だった。
+ *   ★ 効かない門番を残すと「対照が対照になっていない」ことに気づけなくなる。
+ *
+ * ⚠ **糖を名指ししない**（この関数はもともと「判定を構造から引く」で通している）。
+ *   ③ で新しく陽性になるのは実測で5件 —— D-フルクトース（鎖状）・ヒドロキシアセトン・
+ *   ジヒドロキシアセトン・2-ヒドロキシシクロペンタノン・2-ヒドロキシシクロヘキサノン。
+ *   後ろ2つ（アシロイン）も実際にフェーリング液を還元するので、広がりすぎではない。
  */
 function reducingCarbonylAtoms(mol) {
     const ids = [];
-    findFunctionalGroups(mol)
+    const groups = findFunctionalGroups(mol);
+    groups
         .filter(g => g.type === 'aldehyde')
         .forEach(g => ids.push(...g.atomIds));
     const ring = ringAtomIdsOf(mol);
@@ -2980,6 +3002,19 @@ function reducingCarbonylAtoms(mol) {
         const hydroxyl = nb.find(n => !ring.has(n.atom.id) &&
             mol.getNeighbors(n.atom.id).filter(x => x.atom.element !== 'H').length === 1);
         if (ringO && hydroxyl) ids.push(a.id, hydroxyl.atom.id);
+    });
+    // ③ α-ヒドロキシケトン（ケトースが還元糖になる理由）
+    groups.filter(g => g.type === 'ketone').forEach(g => {
+        const [cId, oId] = g.atomIds;
+        mol.getNeighbors(cId)
+            .filter(n => n.type === 1 && n.atom.element === 'C')
+            .forEach(n => {
+                const alpha = n.atom.id;
+                if (mol.getFreeValency(alpha) < 1) return; // α位に水素が無い ＝ エンジオールにならない
+                const oh = mol.getNeighbors(alpha).find(x => x.type === 1 && x.atom.element === 'O' &&
+                    mol.getNeighbors(x.atom.id).filter(y => y.atom.element !== 'H').length === 1);
+                if (oh) ids.push(cId, oId, alpha, oh.atom.id);
+            });
     });
     return [...new Set(ids)];
 }
@@ -3293,14 +3328,14 @@ const REAGENTS = [
         name: 'アンモニア性硝酸銀',
         formula: 'AgNO₃/NH₃',
         kind: 'detect',
-        acts: '-CHO をもつアルデヒドと還元糖です'
+        acts: '-CHO をもつアルデヒドと還元糖（フルクトースのようなケトースを含む）です'
     },
     {
         id: 'fehling',
         name: 'フェーリング液',
         formula: 'Cu²⁺',
         kind: 'detect',
-        acts: '-CHO をもつアルデヒドと還元糖です'
+        acts: '-CHO をもつアルデヒドと還元糖（フルクトースのようなケトースを含む）です'
     },
     {
         id: 'fecl3',
@@ -3340,15 +3375,15 @@ const DETECTION_TESTS = [
         id: 'tollens',
         reagentId: 'ag_ammonia',
         detect: reducingCarbonylAtoms,
-        positive: '銀が析出して、試験管の内側が鏡のようになります（銀鏡反応）。還元性を示すのは -CHO をもつアルデヒドと還元糖で、-CHO 自身は酸化されてカルボン酸（の塩）に変わります。',
-        negative: 'この分子に還元性の -CHO はありません。ケトンは同じカルボニル基 C=O を持ちますが、カルボニル炭素に水素が無いので酸化されず、銀鏡反応を示しません。「同じ C=O でも還元性があるのは -CHO だけ」がこの試薬の要点です。'
+        positive: '銀が析出して、試験管の内側が鏡のようになります（銀鏡反応）。還元性を示すのは -CHO をもつアルデヒドと還元糖で、-CHO 自身は酸化されてカルボン酸（の塩）に変わります。フルクトースのような**ケトース**も、カルボニル基の隣の炭素に -OH があるため、塩基性の条件でアルデヒドに移り変わって還元性を示します。',
+        negative: 'この分子に還元性を示す構造はありません。ケトンは同じカルボニル基 C=O を持ちますが、カルボニル炭素に水素が無いので酸化されず、銀鏡反応を示しません。「同じ C=O でも、そのままで還元性を示すのは -CHO」がこの試薬の要点です。ただし**カルボニル基の隣の炭素に -OH をもつケトンは例外**で、フルクトースのようなケトースが還元糖に数えられるのはこのためです（アセトンのようなふつうのケトンは陰性のままです）。'
     },
     {
         id: 'fehling',
         reagentId: 'fehling',
         detect: reducingCarbonylAtoms,
-        positive: '赤色の沈殿 Cu₂O（酸化銅(I)）ができます。フェーリング液の青い Cu²⁺ が還元されて Cu⁺ になった色です。銀鏡反応と同じく -CHO（還元糖を含む）の検出に使います。',
-        negative: 'この分子に還元性の -CHO はありません。フェーリング液を還元するのは -CHO をもつものだけで、ケトンやカルボン酸は還元しません。'
+        positive: '赤色の沈殿 Cu₂O（酸化銅(I)）ができます。フェーリング液の青い Cu²⁺ が還元されて Cu⁺ になった色です。銀鏡反応と同じく -CHO（還元糖を含む）の検出に使います。フルクトースのような**ケトース**も、塩基性のフェーリング液の中でアルデヒドに移り変わるため陽性になります。',
+        negative: 'この分子に還元性を示す構造はありません。フェーリング液を還元するのは -CHO をもつものと、**カルボニル基の隣の炭素に -OH をもつケトン**（フルクトースのようなケトース）で、アセトンのようなふつうのケトンやカルボン酸は還元しません。'
     },
     {
         id: 'fecl3',
@@ -8348,6 +8383,11 @@ if (typeof window !== 'undefined') {
     window.REACTION_RULES = REACTION_RULES;
     window.REAGENTS = REAGENTS;                 // 試薬瓶（RG1 の死にリンク検査が読む）
     window.DETECTION_TESTS = DETECTION_TESTS;   // 呈色・検出（RG7・RG8 が読む）
+    /* ★ 還元性の判定は**ここが唯一の正**（vNNNN）。⚠ 絞り込みモードの札「銀鏡反応を示した」は
+     *   `narrowing.js` が `groups(m).includes('aldehyde')` で別に判定していて、
+     *   **環状糖もフルクトースも全部 陰性**になる（統合セッションの実測）＝ 判定が2か所にある。
+     *   ★ こちらから呼べるように出しておく（乗り換えは narrowing.js 側の仕事）。 */
+    window.reducingCarbonylAtoms = reducingCarbonylAtoms;
     // `reagentId` が文字列でも配列でもよいことを、テスト側も同じ関数で読む（v1428）
     window.ruleReagentIds = ruleReagentIds;
     window.ruleUsesReagent = ruleUsesReagent;

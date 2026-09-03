@@ -100,6 +100,7 @@
  *                  DESIGN_isomer_practice.md / DESIGN_stereo_point.md
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
+ * | KT  | 1〜3   | ⚠⚠ **還元性の判定にケトースを入れた**（vNNNN・ユーザー指摘「ヒドロキシケトンも含めると話がさらに複雑になりますね」）。`reducingCarbonylAtoms` は ①-CHO ②環のヘミアセタール しか見ておらず、**鎖状の D-フルクトースが陰性**だった ＝ 化学の誤り（教科書はフェーリング液で陽性として扱う）。③ **α-ヒドロキシケトン**（門番は「α位に水素が残っている」の1つだけ）を足して直した。1 が名前で引く台帳（陽性9件・陰性10件。⚠ **スクロース・トレハロースが陰性のまま**＝入試で問われる区別、**アセトン・ブタノン・アセトフェノンが陰性のまま**＝瓶の `negative` の要点、**α-ケト酸4件が陰性のまま**＝隣の -OH はカルボキシ基のもので水素が無い）・**2 は否定対照**＝ 分子を5通り作り変えて判定が動くこと（⚠ **-O- に変える対照はライブラリの分子では立たない** ——緩めた写しで全件測っても判定が変わる分子が0件だったので、その場で作る）・3 が画面の文言（「還元性があるのは -CHO だけ」と言い切ったままだと判定と説明が食い違う） |
  * | L   | 1〜9   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る。**9 は呼んだ分子が「見えるところ」に来ること**＝ ユーザー申し立て「最初呼び出されないが、スクロールすると急に現れる」。⚠ 画面外に着地していたのではなく（`fitCanvasToMolecule` が全体に合わせるので座標は常に視野の中）、**全体に合わせるほど呼んだ本人が縮む**のが正体（実測 結合1本 13.7px）。位置と**大きさ**（`SUMMON_MIN_BOND_PX`）の2本立てで測り、⑦ が「いつでも寄せる」に倒す否定対照 |
  * | LB  | 1〜22  | 名称ライブラリ（compounds.json）の弾ごとの検品 |
  * | LX  | 1〜6   | 学習を終えたら 🧪自由 へ戻る（v1392・ユーザー申し立て「上のタブは学習モードが選択されたまま」）。**見るのは `currentMode` だけでなく `.mode-tab` の `active`**（申し立てはタブの見た目なので、内部変数だけの検査は空振りする）。1〜3 が3つの書き出し練習の「やめる」（＋図が消えないこと）・4 が答え合わせで終了しても「🔍 結果を見る」「↻ もう一度」が帯に残ること（＋採点結果の面を開くあいだ帯が畳まれること・「もう一度」で学習へ戻ること・🧩パズルへ移るときは捨てること）・5 が学習メニューのクイズ3枚・**6 は否定対照**＝ Study モーダル（お題選び・機構ビューアのチェック）が画面に出ているあいだは移さない（`stop()` で無条件に移す実装に差し替えると赤くなる） |
@@ -47523,6 +47524,191 @@
             'ester カードの数が変わった（既存の絞り込みに影響が出ている）');
         assert(pool.filter((m) => card('lactone').test(m)).length === 0,
             'C5H10O2 にラクトンが出た（既存の lactone カードの答えが変わっている）');
+    });
+
+    /* ===== KT: 還元性の判定（ケトースを陽性にする・vNNNN） =====
+     *
+     * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。
+     *   `reducingCarbonylAtoms` は ①-CHO ②環のヘミアセタール しか見ていなかったので、
+     *   **鎖状の D-フルクトースが陰性**だった。★ ケトースは塩基性の条件で
+     *   **エンジオールを経てアルデヒドへ移る**ので還元性を示し、教科書もフェーリング液で
+     *   陽性として扱う ＝ 画面が化学と食い違っていた。
+     *
+     * ★ 直したのは③（α-ヒドロキシケトン）を足したこと。⚠ **糖を名指ししない**
+     *   （このリポジトリは「判定を構造から引く」で通している）。
+     * ⚠ **範囲を広げると壊れるもの**が2つあり、どちらも名前で見張る:
+     *   - **ふつうのケトンが陰性のまま**（アセトン・ブタノン・アセトフェノン）
+     *     ＝ 瓶の `negative` の要点そのもの
+     *   - **スクロース・トレハロースが陰性のまま** ＝ 入試で問われる還元糖／非還元糖の区別
+     * ⚠ **数では引かない**（RV12 の教訓）。すべて名前で引く。
+     */
+    const KT_REDUCING = (c, name) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule(name), `${name} がライブラリから呼び出せない`);
+        g.updateDrawing();
+        return W.reducingCarbonylAtoms(g.userMolecule).length > 0;
+    };
+
+    test('KT1: 還元性は構造から引く —— ケトースは陽性・ふつうのケトンと非還元糖は陰性', async (c) => {
+        c.reset();
+        const W = c.W;
+        assert(typeof W.reducingCarbonylAtoms === 'function',
+            'reducingCarbonylAtoms が公開されていない（絞り込みモードから呼べる形にしておくこと）');
+        // [分子名, 期待, なぜこの1件を見るのか]
+        const cases = [
+            ['アセトアルデヒド', true, '-CHO（1）'],
+            ['α-D-グルコース（α-D-グルコピラノース）', true, '環のヘミアセタール（2）'],
+            ['マルトース（麦芽糖）', true, '片方の環がヘミアセタールのまま ＝ 還元糖'],
+            ['D-フルクトース（鎖状）', true, '★ これが直した本体。ケトースだが還元糖'],
+            ['α-D-フルクトフラノース', true, '★ 環のケトース（ヘミケタール）は 2 が前から拾えていた'],
+            ['β-D-フルクトフラノース', true, '同上'],
+            ['ヒドロキシアセトン（アセトール）', true, '★ 糖でないα-ヒドロキシケトンも還元性を示す'],
+            ['ジヒドロキシアセトン', true, '最も小さいケトース'],
+            ['2-ヒドロキシシクロヘキサノン', true, 'アシロイン。環でもα位に -OH があれば陽性'],
+            ['アセトン', false, '⚠ ふつうのケトン。瓶の negative の要点'],
+            ['エチルメチルケトン（ブタノン）', false, '⚠ 同上'],
+            ['アセトフェノン', false, '⚠ 同上'],
+            ['シクロヘキサノン', false, '⚠ α位に -OH が無い環状ケトン'],
+            ['スクロース（ショ糖）', false, '⚠⚠ 非還元糖。入試で問われる区別'],
+            ['トレハロース', false, '⚠⚠ 同上'],
+            ['ピルビン酸', false, '⚠ α-ケト酸。隣の -OH はカルボキシ基のもので、その炭素に水素が無い'],
+            ['オキサロ酢酸', false, '⚠ 同上'],
+            ['α-ケトグルタル酸（2-オキソグルタル酸）', false, '⚠ 同上'],
+            ['2-オキソ酪酸（α-ケト酪酸）', false, '⚠ 同上']
+        ];
+        let pos = 0, neg = 0;
+        cases.forEach(([name, want, why]) => {
+            const got = KT_REDUCING(c, name);
+            assert(got === want,
+                `${name} は${want ? '陽性' : '陰性'}のはず（${why}）が ${got ? '陽性' : '陰性'} になっている`);
+            if (want) pos++; else neg++;
+        });
+        // 空振りの緑よけ（陽性だけ・陰性だけを数えていない）
+        assert(pos >= 9 && neg >= 10, `陽性 ${pos} 件・陰性 ${neg} 件（陽性9件以上・陰性10件以上を期待）`);
+        c.reset();
+        return `名前で引いた ${cases.length} 件（陽性 ${pos} 件・陰性 ${neg} 件）`;
+    });
+
+    test('KT2: ★否定対照 — 判定が動いているのは名前ではなく構造（5通り作り変えて確かめる）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `${name} が呼び出せない`);
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const reducing = (mol) => W.reducingCarbonylAtoms(mol).length > 0;
+        const ketoneCarbon = (mol) => {
+            const k = W.findFunctionalGroups(mol).find(x => x.type === 'ketone');
+            assert(k, 'ケトンのカルボニル炭素が見つからない');
+            return k.atomIds[0];
+        };
+
+        // (1) フルクトース（鎖状）から**α位の -OH を外す**と陰性に戻る
+        //     ＝ 陽性の理由が「フルクトースだから」ではなく「隣の炭素に -OH があるから」
+        let mol = load('D-フルクトース（鎖状）');
+        assert(reducing(mol), '前提が崩れている: 鎖状フルクトースが陽性でない');
+        const kc = ketoneCarbon(mol);
+        const alphaOxygens = [];
+        mol.getNeighbors(kc).filter(n => n.type === 1 && n.atom.element === 'C').forEach(n => {
+            mol.getNeighbors(n.atom.id).forEach(x => {
+                if (x.type === 1 && x.atom.element === 'O' &&
+                    mol.getNeighbors(x.atom.id).filter(y => y.atom.element !== 'H').length === 1) {
+                    alphaOxygens.push(x.atom.id);
+                }
+            });
+        });
+        assert(alphaOxygens.length >= 1, 'フルクトースのα位に -OH が見つからない（前提が崩れている）');
+        alphaOxygens.forEach(id => mol.removeAtom(id));
+        assert(!reducing(mol),
+            `α位の -OH を ${alphaOxygens.length} 個 外してもまだ陽性 ＝ 名前や別の理由で陽性にしている`);
+
+        // (2) アセトンに -OH を1つ足すと陽性になる（ヒドロキシアセトンと同じ形）
+        mol = load('アセトン');
+        assert(!reducing(mol), '前提が崩れている: アセトンが陰性でない');
+        const c2 = ketoneCarbon(mol);
+        const methyl = mol.getNeighbors(c2).find(n => n.atom.element === 'C');
+        const o = mol.addAtom('O', methyl.atom.x, methyl.atom.y + 42);
+        mol.addBond(methyl.atom.id, o.id, 1);
+        assert(reducing(mol),
+            'アセトンのメチル基に -OH を足しても陰性のまま ＝ α-ヒドロキシケトンを拾えていない');
+
+        /* (2b) その -OH の酸素にメチル基を挿すと（＝ α-アルコキシケトン）また陰性になる。
+         *      ⚠ **エンジオールになるには -OH の水素が要る**ので、エーテルの -O- では移り変われない。
+         *      ⚠⚠ **この対照はライブラリの分子では立たない** —— 「隣が O ならなんでも」に
+         *      緩めた写しで全 1,000 件超を測っても**判定が変わる分子が1件も無かった**（実測）。
+         *      ★ だから**その場で作る**。作らないと、この緩みは緑のまま通り抜ける。 */
+        const cap = mol.addAtom('C', o.x + 42, o.y + 42);
+        mol.addBond(o.id, cap.id, 1);
+        assert(!reducing(mol),
+            '-OH の酸素にメチル基を挿しても陽性のまま ＝ エーテルの -O- を -OH と読んでいる');
+        mol.removeAtom(cap.id);
+        assert(reducing(mol), 'メチル基を外しても陽性に戻らない（作り変えの手順が壊れている）');
+
+        // (3) そのα炭素の水素を**炭素で全部つぶす**と、また陰性になる
+        //     ＝ エンジオールは α位の水素があって初めてできる（第三級のα-ヒドロキシケトンは還元性なし）
+        let guard = 0;
+        while (mol.getFreeValency(methyl.atom.id) >= 1 && guard++ < 4) {
+            const add = mol.addAtom('C', methyl.atom.x - 42 * guard, methyl.atom.y + 42 * guard);
+            mol.addBond(methyl.atom.id, add.id, 1);
+        }
+        assert(mol.getFreeValency(methyl.atom.id) === 0, 'α炭素の水素をつぶしきれていない（前提が崩れている）');
+        assert(!reducing(mol),
+            'α位の水素を全部つぶしても陽性のまま ＝ 「α位に水素が残っている」の門番が効いていない');
+
+        /* (4) ピルビン酸（α-ケト酸）は陰性のまま。★ **なぜ陰性なのか**まで確かめる ——
+         *     隣の -OH は**カルボキシ基の -OH** で、その炭素は C・=O・-OH で価標を使い切って
+         *     いるから水素が無い。⚠ 実測: カルボニルの二重結合の酸素を外して**水素が戻る**と
+         *     陽性へ変わる ＝ 効いている門番は「α位に水素が残っているか」の1つだけ。
+         *     ⚠⚠ **はじめは「α炭素が sp3」という門番も並べていたが、外した** ——
+         *     その1行を消しても KT が3件とも通ってしまい（実測）、対照が対照になっていなかった。 */
+        mol = load('ピルビン酸');
+        assert(!reducing(mol), '前提が崩れている: ピルビン酸が陰性でない');
+        const kc2 = ketoneCarbon(mol);
+        const acid = mol.getNeighbors(kc2)
+            .find(n => n.atom.element === 'C' && mol.getNeighbors(n.atom.id).some(x => x.type === 2));
+        assert(acid, 'ピルビン酸のカルボキシ炭素が見つからない');
+        assert(mol.getFreeValency(acid.atom.id) === 0,
+            'ピルビン酸のカルボキシ炭素に自由価標が残っている（陰性の理由の見立てが違う）');
+        const dblO = mol.getNeighbors(acid.atom.id).find(x => x.type === 2 && x.atom.element === 'O');
+        mol.removeAtom(dblO.atom.id);
+        assert(mol.getFreeValency(acid.atom.id) >= 1, 'C=O を外しても水素が戻っていない');
+        assert(reducing(mol),
+            'α位に水素が戻っても陰性のまま ＝ 「α位に水素が残っている」の門番が判定を決めていない');
+
+        c.reset();
+        return '5通り（-OH を外す／足す／-O- に変える／α位の水素をつぶす／α位に水素を戻す）で判定が動いた';
+    });
+
+    test('KT3: 銀鏡・フェーリングの説明文が「-CHO だけ」と言い切っていない（画面と化学の食い違い）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        const noteEl = D.getElementById('mm-reagent-note');
+        // ★ 陰性の説明は**ふつうのケトンで**読む（陽性の分子では出ない）
+        [['ag_ammonia', 'アセトン'], ['fehling', 'アセトン']].forEach(([id, name]) => {
+            setupReagent(c, [name]);
+            bottle(c, id).click();
+            const t = noteEl.textContent;
+            assert(t.includes('陰性'), `${name} × ${id} が陰性になっていない: ${t.slice(0, 80)}`);
+            assert(t.includes('ケトース') || t.includes('フルクトース'),
+                `${id} の陰性の説明がケトースの例外に触れていない ＝ 判定と説明が食い違う: ${t.slice(0, 160)}`);
+            assert(!t.includes('還元性があるのは -CHO だけ'),
+                `${id} の陰性の説明が「-CHO だけ」と言い切ったまま（ケトースを陽性にした以上、嘘になる）`);
+        });
+        // ★ 陽性の側も、ケトースが陽性になる理由を言っている
+        setupReagent(c, ['D-フルクトース（鎖状）']);
+        bottle(c, 'fehling').click();
+        const t = noteEl.textContent;
+        assert(t.includes('陽性'), `鎖状フルクトース × フェーリングが陽性でない: ${t.slice(0, 90)}`);
+        assert(t.includes('ケトース'), `陽性の説明がケトースに触れていない: ${t.slice(0, 160)}`);
+        // 瓶の acts（効くもの）も同じことを言っている
+        const ag = W.REAGENTS.find(r => r.id === 'ag_ammonia');
+        assert(/ケトース/.test(ag.acts), `アンモニア性硝酸銀の acts がケトースに触れていない: ${ag.acts}`);
+        c.reset();
     });
 
     // ===== 一部だけ流す（`?only=`）=====
