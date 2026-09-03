@@ -1821,7 +1821,7 @@
     test('E1: 反応モード進入で状態0＋巻矢印を描画（エテン+Br2）', async (c) => {
         c.reset();
         const rp = c.W.reactionPlayer;
-        rp.checkMode.checked = true;
+        // ⚠ vNNNN でスイッチ（#check-reaction-mode）は札ごと撤去した ＝ 立てる表示がもう無い
         rp.enter(0);
         assert(c.D.querySelectorAll('#atoms-group .svg-atom-node').length === 8, '状態0の原子数が8でない');
         assert(c.D.getElementById('arrows-group').children.length === 2, '巻矢印が2本でない');
@@ -1831,7 +1831,6 @@
     test('E2: ステップ送り（電荷表示→最終状態）と離脱', async (c) => {
         c.reset();
         const rp = c.W.reactionPlayer;
-        rp.checkMode.checked = true;
         rp.enter(0);
         c.D.getElementById('btn-rx-next').click();
         assert(c.D.querySelectorAll('.svg-charge').length === 2, '中間体の形式電荷が2個でない');
@@ -1845,7 +1844,6 @@
     test('E3: 生成物予測のターゲット＝主生成物（C2Br2・副生成物除外）', async (c) => {
         c.reset();
         const rp = c.W.reactionPlayer;
-        rp.checkMode.checked = true;
         rp.enter(0);
         const target = rp.buildMainProductTarget();
         const elems = target.atoms.map(a => a.element).sort().join(',');
@@ -1894,8 +1892,7 @@
 
         // v99以降に追加した全機構をステップ送りで最後まで再生
         for (let ri = 4; ri < rp.reactions.length; ri++) {
-            rp.checkMode.checked = true;
-            rp.enter(ri);
+                rp.enter(ri);
             for (let s = 0; s < rp.currentReaction.steps.length; s++) {
                 c.D.getElementById('btn-rx-next').click();
             }
@@ -9272,7 +9269,6 @@
             'ニトロベンゼンの正解判定が壊れた');
         // 反応ビューアの生成物予測ターゲットも正しい分子式になる
         const rp = c.W.reactionPlayer;
-        rp.checkMode.checked = true;
         rp.enter(rp.reactions.findIndex(r => r.name.includes('ニトロ化')));
         const t = rp.buildMainProductTarget();
         assert(g.computeMolecularFormula(t) === 'C₆H₅NO₂',
