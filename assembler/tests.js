@@ -338,6 +338,9 @@
             // ON のまま次のテストへ漏れると、**キャンバスのタップが全部選択に化けて**
             // 作図系のテストがまとめて赤くなる（原因が症状から読めない型）
             if (g.deactivateReactionSelectMode) g.deactivateReactionSelectMode();
+            // 🧪 分液の帯も同じ理由で落とす（DESIGN_ion_layer.md I-1）。出したまま次のテストへ
+            // 漏れると、見出しに「（水層）」が付いて**名前を読む検査がまとめて赤くなる**
+            if (g.separationActive && g.endSeparation) g.endSeparation();
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
             D.getElementById('verify-result').classList.add('hidden');
@@ -34391,6 +34394,12 @@
              *   実測で、この2本が通る分子では `naoh_aq` の他のルールが1本も通らず、
              *   2択の画面が出る場面が無い（`condition` を付けても見えない）。 */
             'alkali_fusion', 'hydrolysis_chlorobenzene',
+            /* ★ v1512（分液レーン・DESIGN_ion_layer.md I-1）: 3本足して 39 → 42。
+             *   ⚠ **瓶は1本も増えていない**（v1511 の 24本のまま）——
+             *   `neutralize_nahco3` は「調べるもの」の NaHCO₃ に、
+             *   `amine_hcl` は塩化水素に、`amine_liberate_naoh` は NaOH に相乗りしている。
+             *   `liberate_weak_acid` は瓶が希硫酸1本から**希硫酸＋塩酸の2本**になった
+             *   （入試の遊離は塩酸45件・硫酸14件で、いちばん多い塩酸で引けなかった）。 */
             'saponification', 'vulcanization'].sort();
         assert(linked.length === 39, `瓶に紐づくルールが ${linked.length} 件（39件を期待）`);
         assert(linked.join(',') === expected.join(','),
@@ -45587,7 +45596,7 @@
         alkylate_arene_propene: ['ベンゼン', 'プロペン（プロピレン）'],
         /* ★ アセチレン＋酢酸 → 酢酸ビニル（系統樹レーン v1501）。こちらも**付加**なので
          *   水は出ず、`CV_MUST_SPLIT` には入れない。 */
-        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸']
+        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸'],
     };
     // ⚠ **題材が用意できず見張れないルール**（0 本のうちは空のまま）。
     //    ここが伸びたら報告に本数と名前を書くこと ＝ 黙って対象から外れないようにする
@@ -46912,7 +46921,7 @@
      * ★ ここが**伸びたら赤**にする ＝ 「反応を選んだのに図が変わらない」を見張る。 */
     const CV4_NO_CHANGE_RULES = [
         'oxidize_tertiary_info', 'oxidation_out_of_scope_info', 'esterification_phenol_info',
-        'condensation_polymer_info', 'aromatic_deactivated_info', 'dehydration_anhydride_info'
+        'condensation_polymer_info', 'aromatic_deactivated_info', 'dehydration_anhydride_info',
     ];
 
     // 重原子ごとの「隣の原子 id ＋ 結合次数」の集合（文字列）。
@@ -49303,6 +49312,262 @@
                     `★ ${pre.id}: 記録の鍵が①のお題と衝突している（${f + tail}）`);
             });
         });
+    });
+
+    /* ===== SEP: 分液の層（DESIGN_ion_layer.md I-1）=====
+     *
+     * ★ **電荷は1文字も入っていない**のが要点（設計書 §0）。入試64件のうち 51件は
+     *   「層」という入れ物と NaHCO₃・塩酸の遊離・アミンの札だけで追える。
+     * ⚠ だからこの帯の検査も**電荷を1度も見ない**。見るのは
+     *   ①原子の印 `phase` ②水面の帯 ③瓶が全成分に順にかかること ④効いた成分だけが移ること。
+     */
+
+    // 分液の題材をキャンバスに並べる（★ 名前で分子を選ぶのはここだけ ＝ 化学の中身の題材）
+    const sepSetup = (c, names) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        names.forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // 成分（連結成分）を名前で引く。⚠ **数を数えるのではなく名前で引く**（発注の要件）
+    const sepPart = (c, name) => c.game.splitMolecules().find(p => c.game.lookupCompoundName(p) === name);
+    const sepIds = (c, name) => {
+        const p = sepPart(c, name);
+        assert(p, `題材に「${name}」が居ない（ライブラリの名前が変わった？）`);
+        return p.atoms.map(a => a.id);
+    };
+    // その成分の見出し（`captionForPart` を通す ＝ 画面に出る字そのもの）
+    const sepCaption = (c, name) => {
+        const g = c.game;
+        const { parts, marks } = g.markedMolecules(null);
+        const p = parts.find(x => g.lookupCompoundName(x) === name);
+        assert(p, `見出しを引けない（${name} が居ない）`);
+        return g.captionForPart(p, marks.get(p));
+    };
+    // 重原子ごとの「隣の原子 id ＋ 結合次数」（CV4 と同じ物差し。構造が変わっていないことの証明に使う）
+    const sepBondSig = (mol) => {
+        const lists = new Map();
+        mol.atoms.forEach(a => { if (a.element !== 'H') lists.set(a.id, []); });
+        mol.bonds.forEach(b => {
+            if (lists.has(b.atomId1)) lists.get(b.atomId1).push(`${b.atomId2}:${b.type}`);
+            if (lists.has(b.atomId2)) lists.get(b.atomId2).push(`${b.atomId1}:${b.type}`);
+        });
+        return [...lists.entries()].map(([id, l]) => `${id}=${l.sort().join(',')}`).sort().join('|');
+    };
+
+    test('SEP1: 層の印と水面の帯 —— 印が付いた成分だけが水層へ移り、見出しと札にそう出る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        sepSetup(c, ['安息香酸', 'ニトロベンゼン']);
+        assert(!g.separationActive, '始める前から分液の面が出ている');
+        assert([...D.querySelectorAll('#bonds-group text')].length === 0,
+            '★ 分液を始めていないのに水面の帯が描かれている（ふだんの作図に何も足さない約束）');
+
+        g.startSeparation();
+        assert(g.separationActive && g.phaseDividerY != null, '分液を始めても面が出ない');
+        assert(g.phaseDividerY % 42 === 0, `水面が格子の上に無い（y=${g.phaseDividerY}）`);
+        assert(!D.getElementById('ws-sep').classList.contains('hidden'), '分液の帯が出ていない');
+        // 始めた時点では全員が有機層（水面より上）
+        assert(g.userMolecule.atoms.every(a => a.element === 'H' || a.y < g.phaseDividerY),
+            '分液を始めた時点で水面より下に居る成分がある');
+
+        const acid = sepIds(c, '安息香酸'), nitro = sepIds(c, 'ニトロベンゼン');
+        const nitroBefore = nitro.map(id => g.userMolecule.atoms.find(a => a.id === id).y).join(',');
+        const acidBefore = new Map(acid.map(id => [id, g.userMolecule.atoms.find(a => a.id === id).y]));
+        g.setPartPhase(acid, 'aq');
+        g.updateDrawing();
+
+        // ---- ① 移るのは印を付けた成分だけ（★ 否定対照: ニトロベンゼンは1px も動かない）
+        const acidAtoms = acid.map(id => g.userMolecule.atoms.find(a => a.id === id));
+        assert(acidAtoms.every(a => a.y > g.phaseDividerY),
+            '印を付けた成分が水面より下に降りていない');
+        assert(nitro.map(id => g.userMolecule.atoms.find(a => a.id === id).y).join(',') === nitroBefore,
+            '★ 印を付けていないニトロベンゼンまで動いた（層の割り当てが成分ごとになっていない）');
+        /* 平行移動は**マスの整数倍**（原子が格子点から外れない）。
+         * ⚠ 「移した後の y がマスの倍数」では測れない —— ベンゼン環の縦は 42 の倍数ではない
+         *   （実測でこの検査は最初そこで落ちた）。見るのは**動いた量**そのもの。 */
+        const dys = [...new Set(acidAtoms.map(a => a.y - acidBefore.get(a.id)))];
+        assert(dys.length === 1 && dys[0] !== 0 && dys[0] % 42 === 0,
+            `水層へ移すときの平行移動がマス（42）の整数倍でない、または成分の中でばらけた（${dys.join(',')}）`);
+
+        // ---- ② 見出しの字（★ 否定対照: 有機層の側に「（水層）」が付かない）
+        assert(/（水層）$/.test(sepCaption(c, '安息香酸')),
+            `水層の見出しに「（水層）」が無い: ${sepCaption(c, '安息香酸')}`);
+        assert(!/水層/.test(sepCaption(c, 'ニトロベンゼン')),
+            `★ 有機層のニトロベンゼンにまで層の字が付いた: ${sepCaption(c, 'ニトロベンゼン')}`);
+
+        // ---- ③ 帯は文字で層を示す（D-I2 の共通欄）
+        const bandTexts = [...D.querySelectorAll('#bonds-group text')].map(t => t.textContent);
+        assert(bandTexts.includes('水層') && bandTexts.some(t => /有機層/.test(t)),
+            `水面の帯に層の名前が出ていない（${bandTexts.join(' / ') || 'なし'}）`);
+        const cards = [...D.querySelectorAll('.sep-card')].map(b => b.textContent);
+        assert(cards.some(t => /安息香酸（水層）/.test(t)) && cards.some(t => /ニトロベンゼン$/.test(t)),
+            `帯の札が層ごとに出ていない（${cards.join(' / ') || 'なし'}）`);
+        // 札は押せる（スマホの形＝タップで1件を拡大）。帯の 34px の床を守る
+        const card = D.querySelector('.sep-card');
+        assert(card.getBoundingClientRect().height >= 32,
+            `帯の札が ${card.getBoundingClientRect().height.toFixed(1)}px（32px の床を割っている）`);
+
+        // ---- ④ ★★ 否定対照が効くことの実証: 手で層の外へ出すと見出しが変わる
+        //      （`phaseSuffix` が「印が aq なら必ず（水層）」なら、ここは変わらないまま通ってしまう）
+        acid.forEach(id => { g.userMolecule.atoms.find(a => a.id === id).y -= 42 * 12; });
+        g.updateDrawing();
+        assert(/層の外/.test(sepCaption(c, '安息香酸')),
+            `★ 水層の印のまま帯の外へ出したのに見出しが変わらない: ${sepCaption(c, '安息香酸')}`);
+
+        // ---- ⑤ 印は ↩ でも消えず、分液をやめても残る（塩は塩のまま。消えるのは見せ方だけ）
+        g.saveState();
+        g.setPartPhase(acid, 'ether');
+        assert(g.userMolecule.atoms.filter(a => a.phase === 'aq').length === 0, '印を落とせていない');
+        g.undo();
+        assert(g.userMolecule.atoms.filter(a => a.phase === 'aq').length === acid.length,
+            '★ ↩ で戻したのに層の印が復元されない（restoreState が追加プロパティを写していない）');
+        g.endSeparation();
+        assert(!g.separationActive && D.getElementById('ws-sep').classList.contains('hidden'),
+            '分液をやめても帯が下りない');
+        assert(g.userMolecule.atoms.filter(a => a.phase === 'aq').length === acid.length,
+            '★ 分液をやめただけで層の印まで消えた（印は化学の話で、面の開閉とは別）');
+        assert([...D.querySelectorAll('#bonds-group text')].length === 0,
+            '分液をやめても水面の帯が残っている');
+        c.reset();
+        return `水面 y=${g.phaseDividerY ?? '—'}／札 ${cards.length} 枚`;
+    });
+
+    /* ★★ SEP6: **どの幅から「札の一覧」にするか**（D-I2・ユーザー決定「スマホでは
+     *   カードタップ時に拡大して構造式を示す」）。
+     *
+     * ⚠⚠ **幅で分岐しない。** 見るのは **いま画面に出ている結合が何 px か**
+     *   （`screenPxPerGrid()`）で、床は **28px**（DEVELOPMENT.md 2026-09-02）。
+     *   幅で決めると「狭い画面でも小さい分子なら並べて見える」場面と
+     *   「広い画面でも大きい分子は読めない」場面を両方とも取り違える。
+     *
+     * ★★ **題材は名前で選ばない。** 分液に出る4つのクラス（アミン／酸／フェノール／中性）を
+     *   `findFunctionalGroups` で機械的に分け、各クラスの**いちばん視野を食う1件**を
+     *   `requiredViewWidth`（REF4 と同じ物差し）で拾う ＝ **最悪ケースがデータから決まる**。
+     *   ⚠ ライブラリが変われば題材も変わる。**検査に分子の名前を1つも書かない。** */
+    test('SEP6: 分液の見せ方は「結合が読める太さか」で切り替わる（題材はライブラリから機械で拾う）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // ---- ① クラス分け（★ 順に当てる ＝ アミノ酸のように2つ当たるものは先頭のクラスへ）
+        const CLASSES = [
+            ['アミン', ts => ts.some(t => /^amine[123]$/.test(t))],
+            ['酸', ts => ts.includes('carboxyl') || ts.includes('sulfo')],
+            ['フェノール', ts => ts.includes('phenol')],
+            ['中性', () => true]
+        ];
+        const buckets = CLASSES.map(() => []);
+        // ⚠ `getCompoundLibrary()` の項目が持つのは `mol`（組み立て済み）で `target` ではない。
+        //   `requiredViewWidth` は `{atoms}` を読むので、そのまま `target` の位置へ渡す
+        g.getCompoundLibrary().forEach(e => {
+            const mol = e.mol;
+            const els = ((mol && mol.atoms) || []).map(a => a.element);
+            if (!els.length || els.some(x => ['R', 'Na', 'K'].includes(x))) return;
+            // 芳香環を持つものだけ（分液に出るのはほぼ芳香族。設計書 §4-3 と同じ絞り方）
+            if (!W.findAromaticBondKeys(mol).size) return;
+            const ts = W.findFunctionalGroups(mol).map(x => x.type);
+            const i = CLASSES.findIndex(([, hit]) => hit(ts));
+            buckets[i].push({ name: e.name, target: mol });
+        });
+        buckets.forEach((b, i) => assert(b.length >= 5,
+            `クラス「${CLASSES[i][0]}」の候補が ${b.length} 件しかない（ライブラリの読み方が壊れている）`));
+        /* ★ 各クラスから**最悪**と**中央**の2組を機械で作る。
+         * ⚠ 最悪だけだと片側（札）にしか倒れず、切り替えを1度も見られない（実測でそうなった）。
+         *   ★ 中央の組が「並べて見せる」側を担う ＝ **両方の枝を通す題材がデータから決まる**。 */
+        const sorted = buckets.map(b => b
+            .map(e => ({ name: e.name, v: requiredViewWidth(e.target) }))
+            .filter(x => x.v > 0)
+            .sort((a, b2) => a.v - b2.v));
+        const pick = (l, at) => l[at].name;
+        const worstNames = sorted.map(l => pick(l, l.length - 1));
+        const midNames = sorted.map(l => pick(l, Math.floor(l.length / 2)));
+        /* ⚠ **成分の数も変える。** 入試64件で拾えた成分数は 1〜12（最頻 4）なので、
+         *   4成分だけを見ると片側にしか倒れない（実測でそうなった）。
+         *   ★ 2成分の組は**同じ一覧の先頭2クラス**から機械で取る（名前で選ばない）。 */
+        const MIXES = [
+            { tag: '最悪4', names: worstNames },
+            { tag: '中央4', names: midNames },
+            { tag: '中央2', names: midNames.slice(0, 2) }
+        ];
+        MIXES.forEach(m => assert(new Set(m.names).size === m.names.length,
+            `${m.tag}の組に重複がある: ${m.names.join(' / ')}`));
+
+        /* ---- ② 幅ごとに「結合が何 px になるか」を実測する。
+         * ⚠ **`withViewport` で器を決め打つ**（テストページの窓の幅で結論が変わらないように）。 */
+        const WIDTHS = [320, 375, 768, 900, 1280];
+        const measured = [];
+        for (const w of WIDTHS) {
+            await withViewport(w, w < 700 ? 812 : 800, async (FW, FD) => {
+                for (const mix of MIXES) {
+                    const fg = FW.game;
+                    fg.setMode('free');
+                    fg.userMolecule = new FW.Molecule();
+                    fg.updateDrawing();
+                    mix.names.forEach(n => fg.summonMolecule(n));
+                    fg.updateDrawing();
+                    fg.startSeparation();
+                    /* ★ **実際に層ができた形で測る**（上と下に分かれた形）。
+                     * ⚠ 移すのは**先頭の半分**（機械。名前で選ばない）。 */
+                    const half = Math.max(1, Math.floor(mix.names.length / 2));
+                    fg.splitMolecules().slice(0, half).forEach(p =>
+                        fg.setPartPhase(p.atoms.map(a => a.id), 'aq'));
+                    fg.updateDrawing();
+                    // 「並べて見せる」ときの結合の太さ（＝ 全体に合わせた縮尺）
+                    fg.separationFocusId = null;
+                    fg.fitCanvasToMolecule(fg.userMolecule);
+                    const all = fg.screenPxPerGrid();
+                    // 実際の振り分け（床を割ったら1件へ寄る）
+                    fg.fitSeparationView();
+                    const cards = [...FD.querySelectorAll('.sep-card')].length;
+                    measured.push({ w, tag: mix.tag, all, focused: !!fg.separationFocusId,
+                        one: fg.screenPxPerGrid(),
+                        canvas: Math.round(fg.svg.getBoundingClientRect().width) });
+                    // ★ 札は**どの幅でも**成分の数だけ出ている（拡大しても一覧は消えない）
+                    assert(cards === mix.names.length,
+                        `${w}px（${mix.tag}）: 帯の札が ${cards} 枚（${mix.names.length} 枚のはず）`);
+                    fg.endSeparation();
+                }
+            });
+        }
+        // ---- ③ 床の判定と振り分けが一致する（「幅で分岐していない」ことの実測）
+        const FLOOR = W.SEPARATION_MIN_BOND_PX;
+        assert(FLOOR > 0, '分液の床（SEPARATION_MIN_BOND_PX）が読めない');
+        measured.forEach(m => assert(m.focused === (m.all < FLOOR),
+            `${m.w}px（${m.tag}）: 並べたときの結合が ${m.all.toFixed(1)}px なのに ` +
+            `${m.focused ? '1件へ寄せた' : '並べたまま'}（床 ${FLOOR}px と食い違う）`));
+        // ★ 否定対照: 両方の枝を通っていなければ、この検査は切り替えを1度も見ていない
+        const narrow = measured.filter(m => m.focused), wide = measured.filter(m => !m.focused);
+        assert(narrow.length > 0 && wide.length > 0,
+            `★ 全部が同じ見せ方になった（札 ${narrow.length}／並べ ${wide.length}）＝ 切り替えを1度も見ていない。` +
+            `実測 ` + measured.map(m => `${m.w}px/${m.tag}:${m.all.toFixed(1)}→${m.one.toFixed(1)}`).join(' '));
+        // ★ 1件に寄せたら、その1件は床を超えている（寄せる意味があることの実測）
+        narrow.forEach(m => assert(m.one > m.all,
+            `${m.w}px（${m.tag}）: 1件へ寄せても大きくなっていない（${m.all.toFixed(1)} → ${m.one.toFixed(1)}px）`));
+        /* ★ 同じ幅でも**成分が大きいほど細くなる**（物差しが「幅」ではなく「分子」を見ていることの実測）。
+         * ⚠ **幅の単調増加では測れない**（実測: 768px 14.9 → 900px 12.0 で下がる。
+         *   900px で左パレットが横に出てキャンバスが狭くなるため ＝ 幅と広さは別物）。
+         *   ★ この食い違いこそ「幅で分岐してはいけない」ことの証拠なので、対照はこちら側に置く。 */
+        WIDTHS.forEach(w => {
+            const worstAt = measured.find(m => m.w === w && m.tag === '最悪4');
+            const midAt = measured.find(m => m.w === w && m.tag === '中央4');
+            assert(worstAt.all < midAt.all,
+                `${w}px: 最悪ケース（${worstAt.all.toFixed(1)}px）が中央値（${midAt.all.toFixed(1)}px）より` +
+                '細くない ＝ 物差しが分子の大きさを見ていない');
+        });
+        c.reset();
+        const flipOf = tag => {
+            const hit = measured.find(m => m.tag === tag && !m.focused);
+            return hit ? `${hit.w}px から並べて表示` : '測った幅では全部が札';
+        };
+        return `キャンバス実寸 ` +
+            [...new Set(measured.map(m => `${m.w}→${m.canvas}px`))].join('/') + '　' +
+            MIXES.map(mix =>
+                `【${mix.tag}】${mix.names.join('／')} → ` +
+                measured.filter(m => m.tag === mix.tag)
+                    .map(m => `${m.w}px:${m.all.toFixed(1)}${m.focused ? '札' : '並'}`).join(' ') +
+                `（${flipOf(mix.tag)}）`).join('　');
     });
 
     // ===== 一部だけ流す（`?only=`）=====
