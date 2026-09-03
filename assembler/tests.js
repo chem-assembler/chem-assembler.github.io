@@ -48164,6 +48164,95 @@
         });
     });
 
+    /* =====================================================================
+     * REF14: ★否定対照 —— **入口を1つ消したあと、残った道が両方とも生きている**
+     *
+     * ⚠⚠ vNNNN で 📚 学習の ⚗️ 反応機構ビューアの札を撤去した
+     *   （ユーザー決定 2026-09-03「消す方がすっきりすると思います」）。
+     * ★★ **入口が減ったことを数える検査は置かない**（`EP7` が「復活していないこと」を
+     *   1行で見ているだけで足りる）。**大事なのは、残した2本が本当に使えること**:
+     *
+     *   ① **📖 資料の4枚目の ▶**（人がメニューからたどり着く唯一の道）
+     *   ② **`?open=mechanism&id=<機構id>`**（qa の飛び道具10件・ハブの1本が指している URL）
+     *
+     * ⚠ **名前で確かめる。** 「何かが再生された」では、①と②が別々の機構を開いていても
+     *   緑になる。**同じ id を渡したら同じ機構が出る**ことまで見る。
+     * ★ **見る相手はデータから機械で選ぶ**（先頭・最後・段数が最多の1件）——
+     *   名前を焼き込むと、`reactions.json` が入れ替わったときに検査だけが古い1件を見続ける。
+     * ===================================================================== */
+    test('REF14: ★否定対照 — 資料の ▶ と ?open=mechanism&id= の両方から、同じ機構が名前どおり再生できる', async (c) => {
+        const W = c.W, D = c.D;
+        const res = await fetch('reactions.json?nocache=' + Date.now());
+        assert(res.ok, 'reactions.json が読めない');
+        const RX = await res.json();
+        assert(RX.length >= 3, `reactions.json が ${RX.length} 件（この検査の前提が崩れている）`);
+
+        // 見る相手を機械で選ぶ（先頭・最後・段数が最多）＝ 名前を検査に書き写さない
+        const most = RX.reduce((a, b) => ((b.steps || []).length > (a.steps || []).length ? b : a), RX[0]);
+        const picks = [...new Set([RX[0].id, RX[RX.length - 1].id, most.id])];
+        assert(picks.length >= 2, '見る相手が1件しか選べていない');
+        const nameOf = (id) => (RX.find(r => r.id === id) || {}).name;
+
+        // ---- ① 📖 資料の4枚目の ▶ ----
+        c.reset();
+        for (const id of picks) {
+            await rxPlayFromReference(c, id);
+            assert(W.reactionPlayer.active,
+                `資料の ▶ から「${nameOf(id)}」が再生されない`);
+            assert(W.reactionPlayer.currentReaction.id === id,
+                `資料の ▶ で「${nameOf(id)}」を押したのに`
+                + `「${W.reactionPlayer.currentReaction.name}」が再生されている`);
+            // 巻矢印の器（本体 SVG）とステップ送りの帯が両方そろっている ＝ 再生器が生きている
+            assert(!D.getElementById('ws-reaction').classList.contains('hidden'),
+                `「${nameOf(id)}」でステップ送りの帯が出ない`);
+            assert(D.getElementById('arrows-group'), '巻矢印の器（#arrows-group）が無い');
+        }
+        W.reactionPlayer.exit();
+        W.referenceBook.close();
+        c.reset();
+
+        // ---- ② `?open=mechanism&id=`（qa の飛び道具とハブが指している形）----
+        const openUrl = async (query) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = 'position:absolute; left:-9999px; top:0; width:1280px; height:800px; border:0;';
+            f.src = 'index.html' + query;
+            document.body.appendChild(f);
+            try {
+                for (let i = 0; i < 300 && !(f.contentWindow && f.contentWindow.appReady); i++) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                assert(f.contentWindow && f.contentWindow.appReady, `${query} でアプリが起動しない`);
+                for (let i = 0; i < 50; i++) {
+                    if (f.contentWindow.reactionPlayer && f.contentWindow.reactionPlayer.active) break;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                return f;
+            } catch (e) { f.remove(); throw e; }
+        };
+        for (const id of picks) {
+            const f = await openUrl('?se=0&open=mechanism&id=' + encodeURIComponent(id));
+            try {
+                const W2 = f.contentWindow, D2 = f.contentDocument;
+                assert(W2.reactionPlayer && W2.reactionPlayer.active,
+                    `?open=mechanism&id=${id} で「${nameOf(id)}」が再生されない`
+                    + '（qa の飛び道具10件とハブの1本がこの URL を指している）');
+                assert(W2.reactionPlayer.currentReaction.id === id,
+                    `?open=mechanism&id=${id} で「${W2.reactionPlayer.currentReaction.name}」が再生されている`
+                    + `（${nameOf(id)} を期待）`);
+                // 選択の実体が追従している ＝ 状態を持つ場所が1本のまま
+                assert(D2.getElementById('select-reaction').value === String(RX.findIndex(r => r.id === id)),
+                    `?open=mechanism&id=${id} で #select-reaction が追従していない`);
+                // ★ 全体像も一緒に着いている（1件だけ出して終わりにしない ＝ 原則1）
+                const rows = D2.querySelectorAll('#ref-body table.ref-mech-table tbody tr');
+                assert(rows.length === RX.length,
+                    `?open=mechanism&id=${id} で機構の一覧が出ない（${rows.length} 行）`);
+                assert([...rows].find(tr => tr.dataset.rxId === id)
+                    .getAttribute('aria-current') === 'true',
+                    `?open=mechanism&id=${id} で、いま見ている1件に表の上で印が付かない`);
+            } finally { f.remove(); }
+        }
+    });
+
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
      *
      * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。
