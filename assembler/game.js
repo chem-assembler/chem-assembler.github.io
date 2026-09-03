@@ -149,6 +149,47 @@ function moleculeMark(i) {
 // 一致すると、サブピクセルの丸めで判定が反転して落ちたり通ったりする）
 const LABEL_CHIP_HEIGHT = 34;
 
+/* ===== 分液の層（DESIGN_ion_layer.md I-1・§4-5）=====
+ *
+ * ★ **電荷は1文字も入れない。** 層は「原子の印」で持つ（`atom.phase`）ので、
+ *   `chemistry.js` の正準コード・同型判定・分子式・連結成分・列挙のどれにも触れない
+ *   （印は `buildHeavyGraph` が読まない。設計書 §3-4）。
+ * ★ 既定は `'ether'`（＝ **印が無い ＝ 有機層**）。`'aq'` だけを明示的に持つ。
+ * ⚠ 見出しの文言は**ここ1か所**。`amine_hcl` は構造を1原子も変えないので、
+ *   「塩の形はまだ描きません」と**画面で断る**（D-I3。嘘を画面に出さないため）。
+ *   ★ 「原理的に無理」ではなく「**まだ**」と書く（`chem-ion-in-assembler` の取り決め）。 */
+const PHASE_AQ = 'aq';
+const PHASE_ETHER = 'ether';
+const PHASE_LAYER_NAMES = { [PHASE_AQ]: '水層', [PHASE_ETHER]: '有機層（エーテル層）' };
+const PHASE_CAPTIONS = {
+    [PHASE_AQ]: '（水層）',
+    // `amine_hcl` の印（構造を変えないので、変えていないことを見出しで言う）
+    'aq:salt-not-drawn': '（塩酸塩として水層に。塩の形はまだ描きません）',
+    // 印は `aq` なのに帯の中に居ない ＝ 手でドラッグして層の外へ出した（D-I8）
+    'aq:outside': '（水層のはずが層の外に出ています）'
+};
+/* 水面から成分までの空き（マス）。見出し（分子の下端＋1.1〜1.65マス）が水面をまたがない幅。
+ * ⚠ 平行移動は**マスの整数倍**に丸める ＝ 原子が格子点から外れない */
+const PHASE_GAP_ROWS = 3;
+/* ★ **札にするかどうかの物差し**（D-I2・スマホの形）。
+ * ⚠ **画面の幅では決めない。** 幅で決めると「狭い画面でも小さい分子なら並べて見える」場面と
+ *   「広い画面でも大きい分子は読めない」場面を両方とも取り違える。
+ *   見るのは**いま画面に出ている結合が何 px か**（`screenPxPerGrid()`）。
+ *
+ * ⚠⚠ **床は `SUMMON_MIN_BOND_PX`（24px）＝ このアプリが既に使っている「読める」下限**を借りる。
+ *   ★ **新しい縮尺の理屈を作らない**（発注の要件）——「呼び出した分子が読めるか」を
+ *     決めている値を、そのまま「並べて読めるか」にも使う。
+ * ⚠⚠ **設計書 §4-3 の 28px（DEVELOPMENT.md 2026-09-02 の床）は採らなかった。理由は実測**:
+ *   28px を床にすると、**ライブラリの最悪ケースも中央値も、320〜1280px のどの幅でも
+ *   1件も届かない**（実測 4.8〜24.0px）＝「PC は構造式を並べて見せる」という D-I2 の枝が
+ *   **一度も通らない死んだ道**になる。設計書 §8 が自ら断っているとおり §4-3 の数は
+ *   **作業帯（`obstructedInsets`）の縮みを入れていない**見積りで、分液は自分の帯
+ *   （`#ws-sep`）を出すぶんキャンバスがさらに狭くなる。
+ * ★ 実測は `SEP6` が毎回やり直す（ライブラリが変われば題材も数も変わる）。
+ * ⚠ ちょうど床と同じ値で判定が揺れないよう **0.5px の余裕**をとる
+ *   （`LABEL_CHIP_HEIGHT` を 32 ではなく 34 にしたのと同じ理由）。 */
+const SEPARATION_MIN_BOND_PX = SUMMON_MIN_BOND_PX - 0.5;
+
 // ★ 書き出し練習中だけ、見出しが自分の図から離れてよい上限（マス）と、その手前で掛ける値段（v1440）。
 // **上限のほうが本体**（値段だけでは足りない ＝ 重なりの値段は**重なった図形の数だけ積み上がる**ので、
 // 自動水素まで数えると 1か所で 5万・6万になり、どんな値段でも遠くのほうが安くなる。実測済み）。
@@ -516,6 +557,14 @@ class Game {
         this.uiGroup = document.getElementById('ui-group');
         // 置けなかったクリックのしるし専用（ui-group と違い pointermove で消さない。v1110）
         this.missGroup = document.getElementById('miss-group');
+        /* ★ 分液の層（DESIGN_ion_layer.md I-1）。**電荷は1文字も持たない** ——
+         * 「どちらの層に居るか」は原子の印 `phase` で持ち、ここには
+         * 「いま分液の面を出しているか」と「水面のモデル座標」だけを置く。
+         * ⚠ 印そのものは反応が付ける（`reactor` の `RULE_PHASE`）ので、
+         *   この2つを false / null に戻しても**分子のデータは1原子も変わらない**。 */
+        this.separationActive = false;
+        this.phaseDividerY = null;
+        this.separationFocusId = null;  // 札から拡大した1件（スマホの形。D-I2）
 
         this.coordDisplay = document.getElementById('coord-display');
         this.btnVerify = document.getElementById('btn-verify');
@@ -5883,6 +5932,9 @@ class Game {
         this.refocusToMainFragment();
         this.atomsGroup.innerHTML = '';
         this.bondsGroup.innerHTML = '';
+        // 0. 分液の水面（DESIGN_ion_layer.md I-1）。**いちばん先に描く**＝ 作図の下に敷く。
+        //    ⚠ 面を開いていなければ1行で返る ＝ ふだんの作図に何も足さない
+        this.renderPhaseBand();
 
         // 官能基の縮約表示（P9-2）: 対象の原子・結合を隠し、1枚のカードとしてまとめて描く。
         // 作図データ自体は変えない（表示だけの切替なので、判定・反応・エクスポートに影響しない）
@@ -5991,6 +6043,9 @@ class Game {
         if (window.stereoPractice && window.stereoPractice.active) window.stereoPractice.onDrawingChange();
         // 8. パズルの自動判定（2026-08-13）。**重原子の数が合ったときだけ**同型判定まで進む
         this.maybeAutoClear();
+        // 8.4 分液の帯の札（DESIGN_ion_layer.md I-1）。**面を開いていないときは 1行で返る**ので、
+        //     ふだんの作図に `splitMolecules()` を1回も増やさない（下の課題の判定と同じ約束）
+        if (this.separationActive) this.syncSeparationStrip();
         // 8.5 実験モードの課題の判定（第2段）。**課題を始めていないときは 1行で返る**ので、
         //     ふだんの作図には `splitMolecules()` を1回も増やさない（`maybeAutoClear` と同じ約束）
         this.maybeQuestClear();
@@ -6064,7 +6119,9 @@ class Game {
     captionForPart(part, mark) {
         if (this.worksheetActive()) return mark || moleculeMark(0);
         const name = this.lookupCompoundName(part) || this.computeMolecularFormula(part);
-        return `🔍 ${mark ? mark + ' ' : ''}${name}`.trim();
+        // ★ 分液の面を開いているあいだは、どの層に居るかを見出しに添える（I-1・§4-5 #4）。
+        //   ⚠ 文言は `phaseSuffix()` ただ1つ ＝ 帯の札と図の見出しが同じ字を出す
+        return `🔍 ${mark ? mark + ' ' : ''}${name}${this.phaseSuffix(part)}`.trim();
     }
 
     /**
@@ -7018,6 +7075,242 @@ class Game {
         const any = [...strip.querySelectorAll('.ws-pane')].some(p => !p.classList.contains('hidden'));
         strip.classList.toggle('hidden', !any);
         this.syncWorkStripHeight();
+    }
+
+    /* ===== 分液の層（DESIGN_ion_layer.md I-1）=====
+     *
+     * ★ **モードを増やさない**（§4-4）。🧪 実験パレットの中のトグルで帯が出るだけで、
+     *   `[data-modes]` も `currentMode` も1つも増えない（`Q1` はそのまま緑）。
+     * ⚠ **印（`atom.phase`）は分液の面を出していなくても付く。** 塩になれば水に溶ける、は
+     *   面を開いているかどうかと関係のない化学の話なので、
+     *   「面を開いているあいだだけ反応の中身が変わる」形にしない（CV1/CV4 は面を開かずに走る）。
+     *   面が変えるのは**見せ方だけ** ＝ 水面の帯・平行移動・見出しの「（水層）」。
+     */
+
+    /** 分液の面を開く。⚠ **分子のデータは1原子も変えない**（水面の位置を決めるだけ） */
+    startSeparation() {
+        const heavy = this.userMolecule.atoms.filter(a => a.element !== 'H');
+        // 水面は「いま置いてある分子の下」。空のキャンバスなら格子の原点あたりに置く
+        const bottom = heavy.length ? Math.max(...heavy.map(a => a.y)) : 0;
+        this.phaseDividerY = Math.round((bottom + GRID_SIZE * PHASE_GAP_ROWS) / GRID_SIZE) * GRID_SIZE;
+        this.separationActive = true;
+        this.separationFocusId = null;
+        // すでに `aq` の印が付いている成分は、面を開いた時点で水層へ降ろす
+        this.splitMolecules().forEach(part => {
+            if (this.phaseOfPart(part) === PHASE_AQ) this.movePartToPhase(part.atoms.map(a => a.id), PHASE_AQ);
+        });
+        this.setWorkPane('ws-sep', true);
+        this.updateDrawing();
+        this.fitSeparationView();
+    }
+
+    /** 分液の面を閉じる。⚠ **印は消さない**（塩は塩のまま。見せ方だけを戻す） */
+    endSeparation() {
+        this.separationActive = false;
+        this.separationFocusId = null;
+        this.setWorkPane('ws-sep', false);
+        this.updateDrawing();
+        if (this.userMolecule.atoms.length) this.fitCanvasToMolecule(this.userMolecule);
+    }
+
+    /** その成分（連結成分）が居る層。⚠ **印を持つ原子が1つでもあれば水層**（塩になった箇所） */
+    phaseOfPart(part) {
+        const atoms = (part && part.atoms) || [];
+        return atoms.some(a => a.phase === PHASE_AQ) ? PHASE_AQ : PHASE_ETHER;
+    }
+
+    /** 見出しに添える文字（`captionForPart` から呼ぶ唯一の入口） */
+    phaseSuffix(part) {
+        if (!this.separationActive) return '';
+        if (this.phaseOfPart(part) !== PHASE_AQ) return '';
+        const atoms = (part.atoms || []).filter(a => a.element !== 'H');
+        // 帯の中に居ないなら、そう言う（D-I8。手でドラッグして層の外へ出せてしまうため）
+        if (this.phaseDividerY != null && atoms.length &&
+            !atoms.every(a => a.y > this.phaseDividerY)) return PHASE_CAPTIONS['aq:outside'];
+        const note = atoms.map(a => a.phaseNote).find(Boolean);
+        return PHASE_CAPTIONS[`${PHASE_AQ}:${note}`] || PHASE_CAPTIONS[PHASE_AQ];
+    }
+
+    /**
+     * 成分に層の印を付け、面が開いていれば帯へ／帯から出す。
+     * ⚠ **印を付けるのと動かすのは別**。印はいつでも付き、動くのは面が開いているときだけ。
+     */
+    setPartPhase(atomIds, phase, note) {
+        const ids = new Set(atomIds);
+        this.userMolecule.atoms.forEach(a => {
+            if (!ids.has(a.id)) return;
+            if (phase === PHASE_AQ) { a.phase = PHASE_AQ; if (note) a.phaseNote = note; else delete a.phaseNote; }
+            else { delete a.phase; delete a.phaseNote; }
+        });
+        if (this.separationActive) this.movePartToPhase(atomIds, phase);
+    }
+
+    /**
+     * 成分を水面の上／下へ平行移動する。**座標は見た目専用**（CLAUDE.md）なので、
+     * 結合・元素・判定には1つも影響しない。
+     * ⚠ 動かす量は**マスの整数倍**に丸める ＝ 原子が格子点から外れない。
+     */
+    movePartToPhase(atomIds, phase) {
+        if (this.phaseDividerY == null) return;
+        const ids = new Set(atomIds);
+        const atoms = this.userMolecule.atoms.filter(a => ids.has(a.id) && a.element !== 'H');
+        if (!atoms.length) return;
+        const top = Math.min(...atoms.map(a => a.y)), bottom = Math.max(...atoms.map(a => a.y));
+        const want = phase === PHASE_AQ
+            ? this.phaseDividerY + GRID_SIZE * PHASE_GAP_ROWS - top      // 上端を水面の下へ
+            : this.phaseDividerY - GRID_SIZE * PHASE_GAP_ROWS - bottom;  // 下端を水面の上へ
+        // すでに正しい側に居るなら動かさない（反応のたびに図が跳ねない）
+        if (phase === PHASE_AQ ? top > this.phaseDividerY : bottom < this.phaseDividerY) return;
+        const dy = Math.round(want / GRID_SIZE) * GRID_SIZE;
+        if (!dy) return;
+        this.userMolecule.atoms.forEach(a => { if (ids.has(a.id)) a.y += dy; });
+    }
+
+    /**
+     * 水面の帯を描く。**作図と同じ層（`bondsGroup`）のいちばん先**に置く ＝
+     * カーソルを動かしただけで消える `uiGroup` には置かない（選択枠と同じ理由）。
+     * ⚠ 帯は「文字で示す」（D-I2 の共通欄）ので、線だけでなく層の名前を必ず添える。
+     */
+    renderPhaseBand() {
+        if (!this.separationActive || this.phaseDividerY == null) return;
+        const NS = 'http://www.w3.org/2000/svg';
+        /* ⚠ **`visibleModelRect()` は null を返しうる**（キャンバスが `display:none`・
+         *   タブが裏に居るなど、`getBoundingClientRect()` が 0 のとき。実測）。
+         *   そこで返ると**帯だけが黙って消える**ので、viewBox を控えに使う
+         *   ——ここは当たり判定ではなく「どこからどこまで線を引くか」なので、
+         *   `getScreenCTM()` 必須の規約（クライアント座標⇔SVG座標の変換）には当たらない。 */
+        const vb = this.svg && this.svg.viewBox && this.svg.viewBox.baseVal;
+        const view = this.visibleModelRect() ||
+            (vb && vb.width > 0 ? { x: vb.x, y: vb.y, w: vb.width, h: vb.height } : null);
+        if (!view) return;
+        const y = this.phaseDividerY;
+        const s = this.labelScale();
+        const water = document.createElementNS(NS, 'rect');
+        water.setAttribute('x', view.x);
+        water.setAttribute('y', y);
+        water.setAttribute('width', view.w);
+        water.setAttribute('height', Math.max(0, view.y + view.h - y));
+        water.setAttribute('fill', 'rgba(0,242,254,0.07)');
+        water.setAttribute('pointer-events', 'none');
+        this.bondsGroup.appendChild(water);
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', view.x); line.setAttribute('y1', y);
+        line.setAttribute('x2', view.x + view.w); line.setAttribute('y2', y);
+        line.setAttribute('stroke', 'rgba(0,242,254,0.55)');
+        line.setAttribute('stroke-width', String(2 * s));
+        line.setAttribute('stroke-dasharray', `${8 * s} ${6 * s}`);
+        line.setAttribute('pointer-events', 'none');
+        this.bondsGroup.appendChild(line);
+        const put = (text, ty, anchor) => {
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', view.x + 10 * s);
+            t.setAttribute('y', ty);
+            t.setAttribute('font-size', String(13 * s));
+            t.setAttribute('font-weight', '700');
+            t.setAttribute('fill', 'rgba(0,242,254,0.75)');
+            t.setAttribute('dominant-baseline', anchor);
+            t.setAttribute('pointer-events', 'none');
+            t.textContent = text;
+            this.bondsGroup.appendChild(t);
+        };
+        put(PHASE_LAYER_NAMES[PHASE_ETHER], y - 6 * s, 'auto');
+        put(PHASE_LAYER_NAMES[PHASE_AQ], y + 6 * s, 'hanging');
+    }
+
+    /**
+     * 層ごとの成分の一覧（帯の札と、`applyToMixture` の見出しが同じ1か所を読む）。
+     * ⚠ 番号は図の見出し（`markedMolecules`）と同じものを使う ＝ 札と図でずれない。
+     */
+    separationParts() {
+        const { parts, marks } = this.markedMolecules(null);
+        return parts
+            .filter(p => p.atoms.some(a => a.element !== 'H'))
+            .map((p, i) => ({
+                part: p,
+                mark: marks.get(p) || '',
+                name: this.lookupCompoundName(p) || this.computeMolecularFormula(p),
+                phase: this.phaseOfPart(p),
+                suffix: this.phaseSuffix(p),
+                anchorId: (p.atoms.find(a => a.element !== 'H') || p.atoms[0]).id,
+                index: i
+            }));
+    }
+
+    /**
+     * 帯の中身を張り替える（★ **層の帯は文字で示す** ＝ PC でもスマホでも同じ文が出る）。
+     * ★ スマホ縦は**札の一覧＋タップで1件を拡大**（D-I2・ユーザー決定）。
+     *   ⚠ 拡大は `fitCanvasToMolecule` がそのまま担当する ＝ 新しい縮尺の理屈を作らない。
+     */
+    syncSeparationStrip() {
+        const box = document.getElementById('sep-cards');
+        const note = document.getElementById('sep-note');
+        if (!box) return;
+        box.innerHTML = '';
+        const rows = this.separationParts();
+        [PHASE_ETHER, PHASE_AQ].forEach(phase => {
+            const here = rows.filter(r => r.phase === phase);
+            const row = document.createElement('div');
+            row.className = 'sep-row';
+            row.dataset.phase = phase;
+            const head = document.createElement('span');
+            head.className = 'sep-layer-name';
+            head.textContent = PHASE_LAYER_NAMES[phase];
+            row.appendChild(head);
+            if (!here.length) {
+                const empty = document.createElement('span');
+                empty.className = 'sep-empty';
+                empty.textContent = '—';
+                row.appendChild(empty);
+            }
+            here.forEach(r => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'sep-card';
+                b.dataset.sepAtom = r.anchorId;
+                b.textContent = `${r.mark ? r.mark + ' ' : ''}${r.name}${r.suffix}`;
+                b.title = '押すと、この1件だけを大きく表示します';
+                b.addEventListener('click', () => this.focusSeparationCard(r.anchorId));
+                row.appendChild(b);
+            });
+            box.appendChild(row);
+        });
+        if (note) {
+            note.textContent = this.separationFocusId
+                ? '1件だけを拡大しています。ほかの札を押すと切り替わり、「全体を見る」で並べて表示に戻ります。'
+                : '瓶を押すと、キャンバスの全部の成分に順にかかります。効いたものだけが層を移ります。';
+        }
+        const back = document.getElementById('btn-sep-all');
+        if (back) back.classList.toggle('hidden', !this.separationFocusId);
+        this.syncWorkStripHeight();
+    }
+
+    /** 札を押したとき ＝ その1件だけを拡大する（スマホの形。`fitCanvasToMolecule` に任せる） */
+    focusSeparationCard(atomId) {
+        const ids = this.moleculeAtomIdsOf(atomId);
+        const part = { atoms: this.userMolecule.atoms.filter(a => ids.has(a.id)) };
+        if (!part.atoms.length) return;
+        this.separationFocusId = atomId;
+        this.fitCanvasToMolecule(part);
+        this.syncSeparationStrip();
+    }
+
+    /**
+     * 分液のあいだの視野合わせ。
+     * ★ **並べて見せるか、1件ずつ見せるかは「結合が何 px か」で決める**（`SEPARATION_MIN_BOND_PX`）。
+     *   まず全体に合わせ、床（28px）を割ったときだけ1件へ寄せる。
+     * ⚠ 幅で分岐しない ＝ 大きい分子ばかりの PC でも、小さい分子だけのスマホでも正しく振れる。
+     */
+    fitSeparationView() {
+        if (!this.separationActive) return;
+        if (!this.userMolecule.atoms.length) { this.syncSeparationStrip(); return; }
+        this.separationFocusId = null;
+        this.fitCanvasToMolecule(this.userMolecule);
+        const px = this.screenPxPerGrid();
+        if (px < SEPARATION_MIN_BOND_PX) {
+            const rows = this.separationParts();
+            if (rows.length > 1) { this.focusSeparationCard(rows[0].anchorId); return; }
+        }
+        this.syncSeparationStrip();
     }
 
     /** 作業帯の実測の高さを CSS 変数へ。#mobile-name-chip がこれを見て上へ逃げる */
@@ -8665,6 +8958,13 @@ class Game {
         if (close) close.addEventListener('click', () => this.setQuestOpen(false));
         if (restart) restart.addEventListener('click', () => this.restartQuest());
         if (quit) quit.addEventListener('click', () => this.stopQuest());
+        // 🧪 分液の出入り（DESIGN_ion_layer.md I-1）。**モードではない**ので `setMode` を通さない
+        const sepOn = document.getElementById('btn-sep-start');
+        const sepOff = document.getElementById('btn-sep-end');
+        const sepAll = document.getElementById('btn-sep-all');
+        if (sepOn) sepOn.addEventListener('click', () => this.startSeparation());
+        if (sepOff) sepOff.addEventListener('click', () => this.endSeparation());
+        if (sepAll) sepAll.addEventListener('click', () => this.fitSeparationView());
     }
 
     /** 課題の一覧の開閉。開くたびに描き直す（通した印が増えるため） */
@@ -11668,6 +11968,8 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.MAX_REACTION_SELECTION = MAX_REACTION_SELECTION;
         // 名称呼び出しの「見えた」の床（L9 がアプリと**同じ定義**で測るために出す）
         window.SUMMON_MIN_BOND_PX = SUMMON_MIN_BOND_PX;
+        // 分液の「並べて見せるか札にするか」の床（SEP6 がアプリと**同じ値**で測るために出す）
+        window.SEPARATION_MIN_BOND_PX = SEPARATION_MIN_BOND_PX;
         window.ATOM_TAP_RADIUS = ATOM_TAP_RADIUS;
         // 当たり判定のつまみ（否定対照 HA1〜HA4 が一時的に差し替えて「外すと赤くなる」ことを示す）
         window.HIT_AREAS = HIT_AREAS;
