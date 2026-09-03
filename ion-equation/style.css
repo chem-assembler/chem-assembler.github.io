@@ -1930,6 +1930,12 @@ main.timelineMain {
    （2026-08-28・ユーザーの指示）。隠して足止めすると、これから何を入れるのかが見えない。
    ⚠ 枠に出ているのは種の名前だけ（数も辺も無い）ので、見せても答えは漏れない。 */
 .hbSlot.hbSlotNow .fcoefIn { border-color: #3b82c4; background: #f4f9fd; box-shadow: 0 0 0 2px #dbeaf6; }
+/* ★★ **見せることと、打てることは別**（2026-09-03）。まだ来ていない段の欄は
+   **出したまま閉じる**（`disabled`）。開けておくと手順B の面で手順A の順に打ててしまい、
+   「先に e⁻ を決める」という手順B の芯を通らずにクリアできた（halfreaction.js の冒頭）。
+   ⚠ 段の札（.step.oxLocked）と同じ灰色に寄せて、「まだここではない」を1つの見え方で言う。 */
+.hbSlot .fcoefIn:disabled { background: #f0f3f6; color: #b6c4d2; border-color: #d6dee6; cursor: not-allowed; }
+.hbSlot.hbSlotAhead .oxBigFormula { color: #93a3b2; }
 /* 完成したら枠の色だけ変える（式そのものは組み直さない ＝ 直したくなったら直せる） */
 .hbLine.hbDone .fcoefIn { border-color: #8fc4a5; background: #f2faf5; }
 /* 手順を選ぶ2つ。⚠ 帯（.strip）ではない —— 横に流れず、いつも両方見えていること自体が

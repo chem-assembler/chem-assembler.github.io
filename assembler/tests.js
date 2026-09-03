@@ -13,6 +13,7 @@
  * | 接頭辞 | 使用済み | 守備範囲 |
  * |---|---|---|
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
+ * | AC  | 1〜3   | ⚠⚠ **アルカンの塩素化**（v1511・ユーザー指摘「アルカン全般に Cl2との置換反応がリストされていないと思います」）。実測でもメタン・エタン・プロパン・シクロヘキサン・クロロメタンで**53本が1本も出なかった**（塩素の反応は鉄触媒による**環**の置換だけ）。★ **混合物を操作で見せる** —— ①どの水素かは**箇所選び**（同じ生成物になる位置は畳む。プロパンで2件・エタンは1件）②何段目かは**止めない**（メタン → 四塩化炭素の4段）。1 が対象範囲（門番3つ＝C と Cl だけ・全部単結合・木）と畳み方（★同じ分子を2つ並べても2つめが消えない）・2 が段と生成物の**名前**（メタン4段を教科書の並びで照合＋ライブラリ 38 分子・120 通りの生成物すべてに名前が付く）・3 が画面（瓶2本が隣り合う／箇所選び／caption が毎回「混合物」と「いま何個」を言い、埋まりきった段だけ言い分ける／★否定対照＝ベンゼンに光は効かずアルカンに鉄触媒も効かない）。⚠ **瓶が1本増えた**（23 → 24本。`cl2_fe` に相乗りさせなかった理由はコード側の注記） |
  * | AK  | 1〜11  | アルキル基の書き出し練習と**アルキル基の命名規則**（**10〜11 は `ID11` の直し（同点主鎖は「置換基数が最多」を先に見る）の影響範囲**＝ 10 が「効く相手は C₆ 1件・C₇ 3件だけ・C₁〜C₅ は 0」を名指しと全域の性質（採った鎖の枝は同点候補の最大）で固定、11 が接頭辞・エーテルの基名への波及と、登録図で 0 件であること。W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」。**9 は帯の「🧹 並べ直す」**＝ W4 を3つの書き出し練習でそろえる最後の1つ。押せる／押せないを `drawnCount()` ではなく**成分の数**で決める（こちらの drawnCount は付け根だけの枠を数えないので、枠を増やしただけの人がいちばん散らかった状態で押せなくなる）） |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
@@ -112,6 +113,7 @@
  *                  DESIGN_isomer_practice.md / DESIGN_stereo_point.md
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
+ * | KT  | 1〜3   | ⚠⚠ **還元性の判定にケトースを入れた**（v1511・ユーザー指摘「ヒドロキシケトンも含めると話がさらに複雑になりますね」）。`reducingCarbonylAtoms` は ①-CHO ②環のヘミアセタール しか見ておらず、**鎖状の D-フルクトースが陰性**だった ＝ 化学の誤り（教科書はフェーリング液で陽性として扱う）。③ **α-ヒドロキシケトン**（門番は「α位に水素が残っている」の1つだけ）を足して直した。1 が名前で引く台帳（陽性9件・陰性10件。⚠ **スクロース・トレハロースが陰性のまま**＝入試で問われる区別、**アセトン・ブタノン・アセトフェノンが陰性のまま**＝瓶の `negative` の要点、**α-ケト酸4件が陰性のまま**＝隣の -OH はカルボキシ基のもので水素が無い）・**2 は否定対照**＝ 分子を5通り作り変えて判定が動くこと（⚠ **-O- に変える対照はライブラリの分子では立たない** ——緩めた写しで全件測っても判定が変わる分子が0件だったので、その場で作る）・3 が画面の文言（「還元性があるのは -CHO だけ」と言い切ったままだと判定と説明が食い違う） |
  * | L   | 1〜9   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る。**9 は呼んだ分子が「見えるところ」に来ること**＝ ユーザー申し立て「最初呼び出されないが、スクロールすると急に現れる」。⚠ 画面外に着地していたのではなく（`fitCanvasToMolecule` が全体に合わせるので座標は常に視野の中）、**全体に合わせるほど呼んだ本人が縮む**のが正体（実測 結合1本 13.7px）。位置と**大きさ**（`SUMMON_MIN_BOND_PX`）の2本立てで測り、⑦ が「いつでも寄せる」に倒す否定対照 |
  * | LB  | 1〜22  | 名称ライブラリ（compounds.json）の弾ごとの検品 |
  * | LX  | 1〜6   | 学習を終えたら 🧪自由 へ戻る（v1392・ユーザー申し立て「上のタブは学習モードが選択されたまま」）。**見るのは `currentMode` だけでなく `.mode-tab` の `active`**（申し立てはタブの見た目なので、内部変数だけの検査は空振りする）。1〜3 が3つの書き出し練習の「やめる」（＋図が消えないこと）・4 が答え合わせで終了しても「🔍 結果を見る」「↻ もう一度」が帯に残ること（＋採点結果の面を開くあいだ帯が畳まれること・「もう一度」で学習へ戻ること・🧩パズルへ移るときは捨てること）・5 が学習メニューのクイズ3枚・**6 は否定対照**＝ Study モーダル（お題選び・機構ビューアのチェック）が画面に出ているあいだは移さない（`stop()` で無条件に移す実装に差し替えると赤くなる） |
@@ -131,10 +133,12 @@
  *                  （＋帯と光が本当に C=C を覆っていることを画素の変化で確かめる＝物差しの空回り防止）・
  *                  3 は呼び出し口が3つとも塞がっていること（キャンバス・サムネイル・アルキル基）と
  *                  後始末（消したら素に戻る）・自動水素の線は濃くしないこと・環では帯ごと出ないこと |
+ * | NU  | 1     | ⚠⚠ **倍数接頭辞が9個以上で黙って落ちていた**（v1511・実測で発見）。`IUPAC_MULT` が 8 で切れており、`IUPAC_MULT[n] || ''` が接頭辞を落として `1,1,1,2,2,3,3,4,4-クロロブタン`（ノナ が消えた誤り）を画面に出していた。⚠ 手で描けば前から出せたので新しいバグではないが、アルカンの光塩素化（AC 帯）で**押すだけで届く**ようになった。★ 直しは2つで**両方要る** —— ①表を 20 まで伸ばす ②表に無い個数では`iupacName` が **null** を返す（①だけだと 21 個目でまた黙って嘘をつく）。**否定対照は2通り**＝ 表を 8 に戻す／null を返す1行を外す、のどちらでも赤くなる。⚠ 8個以下の名前が1つも動いていないことも名前で照合する |
  * | NW  | 1〜22・30〜32 | 絞り込みモード（DESIGN_narrowing_mode.md）。台帳に載っていなかったので登録した。**30〜32 はマトリクスの行の台帳を1つにした件**（v1395）＝ `NARROW_ROWS` が手書きの16行で、後から足した**芳香環・環上の位置・アミノ基・アミドの4行が抜けていた**（積んでも表に生えない＝窒素の問題はまるごと表に映らない）。30 が「4行とも表に出る（行だけでなくセルの中身まで）＋台帳が1つ（`NARROW_ROWS === NARROW_ROW_ORDER`）」・**31 は否定対照**＝「カードに出てこない行は出さない」（全行素通しで直すと赤）・**32 も否定対照**＝ 行の台帳は表示だけの話で `test` の効きが1つも変わらないこと（カードの定義順を動かしたので、環の大きさ6枚が別々の n を見ていることも実物で見る）。⚠ **23〜29 は欠番**（並行レーンとの番号衝突を避けて空けた）。**20〜22 はカードが多すぎて探せない件**＝ 発注書 ORDER_features_2026-08-15.md §D。20 が「58枚を row で 20行にまとめ、タグで絞る（★1枚が複数のタグに出る・カウンタが画面から出ない）」・21 が「実験の文からも意味からも引ける＋ say を配列にした2層化（★2つめの実験文を実際に足して引けることまで見る）」・**22 は否定対照**＝ 絞り込みで一覧から消えたカードを積んだ側から外せること／収録の台本が隠し文字で文言からカードを選べること |
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜12  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない
+ * | PH  | 1〜3   | ★ **フェノールの工業的製法2本**（v1511・ユーザー承認）。系統樹レーンが名指しした穴（§10.13-A #9 アルカリ融解 入試11大問／#10 クロロベンゼンの加水分解 入試9大問）で、⚠ あのレーンは「イオンの壁の向こう」として見送ったが**壁の位置が違った** —— ナトリウムフェノキシドは登録済みで、Na を線1本で描く既存の流儀にそのまま乗る（瓶も要らず `naoh_aq` に相乗り）。1 が対象範囲（★**一置換のベンゼン環だけ**。⚠ 広げると 32 分子・33 通りのうち 32 通りが「（未登録）」になる実測）と生成物の**名前**・2 が道すじ（ベンゼン → スルホン化 → 中和 → 融解 → 弱酸の遊離 の4段と、塩素化 → 加水分解 → 弱酸の遊離 の3段。★ 各段の名前まで照合）・**3 が条件の言い分けと否定対照**（⚠ 条件が2本で違う〈固体 NaOH と融解／水溶液で高温高圧〉のに同じ瓶なので label と caption で言う。⚠⚠ **既存の NaOH の行き先が1分子も増えていない**＝「1タップで終わっていた人に選択面が出る」費用を払っていない） |
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
@@ -34316,8 +34320,9 @@
             W.ruleReagentIds({}).length === 0,
             'reactor 側の ruleReagentIds が無い／文字列と配列を同じに扱えていない');
         // ★ v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23本
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 23,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの18本＋調べるもの5本＝23本）`);
+        // ★ v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24本（ユーザー指摘）
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 24,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの19本＋調べるもの5本＝24本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -34376,8 +34381,18 @@
              *   ⚠ 同じ瓶に `reduce_nitro` が居るので、detect は炭化水素だけに絞ってある
              *   （ニトロベンゼンで両方出ると「環は水素化されません」という説明と食い違う）。 */
             'hydrogenate_benzene_ring',
+            /* ★ v1511: アルカンの光塩素化。⚠ **`cl2_fe`（鉄触媒）に相乗りさせず、瓶を1本足した**
+             *   —— 瓶の名前が条件そのもの（鉄触媒 ／ 光）で、隣に並べないと画面で比べられない。
+             *   実測: 2つが同時に通る分子が在庫に1つも無いので `condition` の2択は使えない。 */
+            'chlorinate_alkane',
+            /* ★ v1511: フェノールの工業的製法2本。⚠ **瓶は足していない**（`naoh_aq` に相乗り）。
+             *   ⚠ 条件が2本で違う（固体の NaOH と融解 ／ 水溶液で高温・高圧）ので、
+             *   `condition`（2択UI）ではなく **label と caption** で言い分けている ——
+             *   実測で、この2本が通る分子では `naoh_aq` の他のルールが1本も通らず、
+             *   2択の画面が出る場面が無い（`condition` を付けても見えない）。 */
+            'alkali_fusion', 'hydrolysis_chlorobenzene',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 36, `瓶に紐づくルールが ${linked.length} 件（36件を期待）`);
+        assert(linked.length === 39, `瓶に紐づくルールが ${linked.length} 件（39件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -34389,11 +34404,12 @@
         //     v883 で金属ナトリウム（試薬パレット §3.1 の13番目・§5 第4段の予定分）を足して 20 → 21
         //     v1428 で酸化剤を KMnO₄ / K₂Cr₂O₇ の2本に割って 21 → 22（§12-1・試薬名を知るため）
         //     v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23
+        //     v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 23, `瓶の札が ${drawn.length} 個（23個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 18 &&
+        assert(drawn.length === 24, `瓶の札が ${drawn.length} 個（24個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 19 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの18本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの19本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -35320,9 +35336,9 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶23本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶24本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶23本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶24本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -35336,7 +35352,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 23, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 24, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
@@ -48022,6 +48038,625 @@
                 + `「${easiest.name}」（${easiest.v.toFixed(0)}）より小さく出ていない`
                 + `（${pxWorst.toFixed(1)} / ${pxEasiest.toFixed(1)}）＝ 選抜の物差しが効いていない`);
         });
+    });
+
+    /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
+     *
+     * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。
+     *   `reducingCarbonylAtoms` は ①-CHO ②環のヘミアセタール しか見ていなかったので、
+     *   **鎖状の D-フルクトースが陰性**だった。★ ケトースは塩基性の条件で
+     *   **エンジオールを経てアルデヒドへ移る**ので還元性を示し、教科書もフェーリング液で
+     *   陽性として扱う ＝ 画面が化学と食い違っていた。
+     *
+     * ★ 直したのは③（α-ヒドロキシケトン）を足したこと。⚠ **糖を名指ししない**
+     *   （このリポジトリは「判定を構造から引く」で通している）。
+     * ⚠ **範囲を広げると壊れるもの**が2つあり、どちらも名前で見張る:
+     *   - **ふつうのケトンが陰性のまま**（アセトン・ブタノン・アセトフェノン）
+     *     ＝ 瓶の `negative` の要点そのもの
+     *   - **スクロース・トレハロースが陰性のまま** ＝ 入試で問われる還元糖／非還元糖の区別
+     * ⚠ **数では引かない**（RV12 の教訓）。すべて名前で引く。
+     */
+    const KT_REDUCING = (c, name) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule(name), `${name} がライブラリから呼び出せない`);
+        g.updateDrawing();
+        return W.reducingCarbonylAtoms(g.userMolecule).length > 0;
+    };
+
+    test('KT1: 還元性は構造から引く —— ケトースは陽性・ふつうのケトンと非還元糖は陰性', async (c) => {
+        c.reset();
+        const W = c.W;
+        assert(typeof W.reducingCarbonylAtoms === 'function',
+            'reducingCarbonylAtoms が公開されていない（絞り込みモードから呼べる形にしておくこと）');
+        // [分子名, 期待, なぜこの1件を見るのか]
+        const cases = [
+            ['アセトアルデヒド', true, '-CHO（1）'],
+            ['α-D-グルコース（α-D-グルコピラノース）', true, '環のヘミアセタール（2）'],
+            ['マルトース（麦芽糖）', true, '片方の環がヘミアセタールのまま ＝ 還元糖'],
+            ['D-フルクトース（鎖状）', true, '★ これが直した本体。ケトースだが還元糖'],
+            ['α-D-フルクトフラノース', true, '★ 環のケトース（ヘミケタール）は 2 が前から拾えていた'],
+            ['β-D-フルクトフラノース', true, '同上'],
+            ['ヒドロキシアセトン（アセトール）', true, '★ 糖でないα-ヒドロキシケトンも還元性を示す'],
+            ['ジヒドロキシアセトン', true, '最も小さいケトース'],
+            ['2-ヒドロキシシクロヘキサノン', true, 'アシロイン。環でもα位に -OH があれば陽性'],
+            ['アセトン', false, '⚠ ふつうのケトン。瓶の negative の要点'],
+            ['エチルメチルケトン（ブタノン）', false, '⚠ 同上'],
+            ['アセトフェノン', false, '⚠ 同上'],
+            ['シクロヘキサノン', false, '⚠ α位に -OH が無い環状ケトン'],
+            ['スクロース（ショ糖）', false, '⚠⚠ 非還元糖。入試で問われる区別'],
+            ['トレハロース', false, '⚠⚠ 同上'],
+            ['ピルビン酸', false, '⚠ α-ケト酸。隣の -OH はカルボキシ基のもので、その炭素に水素が無い'],
+            ['オキサロ酢酸', false, '⚠ 同上'],
+            ['α-ケトグルタル酸（2-オキソグルタル酸）', false, '⚠ 同上'],
+            ['2-オキソ酪酸（α-ケト酪酸）', false, '⚠ 同上']
+        ];
+        let pos = 0, neg = 0;
+        cases.forEach(([name, want, why]) => {
+            const got = KT_REDUCING(c, name);
+            assert(got === want,
+                `${name} は${want ? '陽性' : '陰性'}のはず（${why}）が ${got ? '陽性' : '陰性'} になっている`);
+            if (want) pos++; else neg++;
+        });
+        // 空振りの緑よけ（陽性だけ・陰性だけを数えていない）
+        assert(pos >= 9 && neg >= 10, `陽性 ${pos} 件・陰性 ${neg} 件（陽性9件以上・陰性10件以上を期待）`);
+        c.reset();
+        return `名前で引いた ${cases.length} 件（陽性 ${pos} 件・陰性 ${neg} 件）`;
+    });
+
+    test('KT2: ★否定対照 — 判定が動いているのは名前ではなく構造（5通り作り変えて確かめる）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `${name} が呼び出せない`);
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const reducing = (mol) => W.reducingCarbonylAtoms(mol).length > 0;
+        const ketoneCarbon = (mol) => {
+            const k = W.findFunctionalGroups(mol).find(x => x.type === 'ketone');
+            assert(k, 'ケトンのカルボニル炭素が見つからない');
+            return k.atomIds[0];
+        };
+
+        // (1) フルクトース（鎖状）から**α位の -OH を外す**と陰性に戻る
+        //     ＝ 陽性の理由が「フルクトースだから」ではなく「隣の炭素に -OH があるから」
+        let mol = load('D-フルクトース（鎖状）');
+        assert(reducing(mol), '前提が崩れている: 鎖状フルクトースが陽性でない');
+        const kc = ketoneCarbon(mol);
+        const alphaOxygens = [];
+        mol.getNeighbors(kc).filter(n => n.type === 1 && n.atom.element === 'C').forEach(n => {
+            mol.getNeighbors(n.atom.id).forEach(x => {
+                if (x.type === 1 && x.atom.element === 'O' &&
+                    mol.getNeighbors(x.atom.id).filter(y => y.atom.element !== 'H').length === 1) {
+                    alphaOxygens.push(x.atom.id);
+                }
+            });
+        });
+        assert(alphaOxygens.length >= 1, 'フルクトースのα位に -OH が見つからない（前提が崩れている）');
+        alphaOxygens.forEach(id => mol.removeAtom(id));
+        assert(!reducing(mol),
+            `α位の -OH を ${alphaOxygens.length} 個 外してもまだ陽性 ＝ 名前や別の理由で陽性にしている`);
+
+        // (2) アセトンに -OH を1つ足すと陽性になる（ヒドロキシアセトンと同じ形）
+        mol = load('アセトン');
+        assert(!reducing(mol), '前提が崩れている: アセトンが陰性でない');
+        const c2 = ketoneCarbon(mol);
+        const methyl = mol.getNeighbors(c2).find(n => n.atom.element === 'C');
+        const o = mol.addAtom('O', methyl.atom.x, methyl.atom.y + 42);
+        mol.addBond(methyl.atom.id, o.id, 1);
+        assert(reducing(mol),
+            'アセトンのメチル基に -OH を足しても陰性のまま ＝ α-ヒドロキシケトンを拾えていない');
+
+        /* (2b) その -OH の酸素にメチル基を挿すと（＝ α-アルコキシケトン）また陰性になる。
+         *      ⚠ **エンジオールになるには -OH の水素が要る**ので、エーテルの -O- では移り変われない。
+         *      ⚠⚠ **この対照はライブラリの分子では立たない** —— 「隣が O ならなんでも」に
+         *      緩めた写しで全 1,000 件超を測っても**判定が変わる分子が1件も無かった**（実測）。
+         *      ★ だから**その場で作る**。作らないと、この緩みは緑のまま通り抜ける。 */
+        const cap = mol.addAtom('C', o.x + 42, o.y + 42);
+        mol.addBond(o.id, cap.id, 1);
+        assert(!reducing(mol),
+            '-OH の酸素にメチル基を挿しても陽性のまま ＝ エーテルの -O- を -OH と読んでいる');
+        mol.removeAtom(cap.id);
+        assert(reducing(mol), 'メチル基を外しても陽性に戻らない（作り変えの手順が壊れている）');
+
+        // (3) そのα炭素の水素を**炭素で全部つぶす**と、また陰性になる
+        //     ＝ エンジオールは α位の水素があって初めてできる（第三級のα-ヒドロキシケトンは還元性なし）
+        let guard = 0;
+        while (mol.getFreeValency(methyl.atom.id) >= 1 && guard++ < 4) {
+            const add = mol.addAtom('C', methyl.atom.x - 42 * guard, methyl.atom.y + 42 * guard);
+            mol.addBond(methyl.atom.id, add.id, 1);
+        }
+        assert(mol.getFreeValency(methyl.atom.id) === 0, 'α炭素の水素をつぶしきれていない（前提が崩れている）');
+        assert(!reducing(mol),
+            'α位の水素を全部つぶしても陽性のまま ＝ 「α位に水素が残っている」の門番が効いていない');
+
+        /* (4) ピルビン酸（α-ケト酸）は陰性のまま。★ **なぜ陰性なのか**まで確かめる ——
+         *     隣の -OH は**カルボキシ基の -OH** で、その炭素は C・=O・-OH で価標を使い切って
+         *     いるから水素が無い。⚠ 実測: カルボニルの二重結合の酸素を外して**水素が戻る**と
+         *     陽性へ変わる ＝ 効いている門番は「α位に水素が残っているか」の1つだけ。
+         *     ⚠⚠ **はじめは「α炭素が sp3」という門番も並べていたが、外した** ——
+         *     その1行を消しても KT が3件とも通ってしまい（実測）、対照が対照になっていなかった。 */
+        mol = load('ピルビン酸');
+        assert(!reducing(mol), '前提が崩れている: ピルビン酸が陰性でない');
+        const kc2 = ketoneCarbon(mol);
+        const acid = mol.getNeighbors(kc2)
+            .find(n => n.atom.element === 'C' && mol.getNeighbors(n.atom.id).some(x => x.type === 2));
+        assert(acid, 'ピルビン酸のカルボキシ炭素が見つからない');
+        assert(mol.getFreeValency(acid.atom.id) === 0,
+            'ピルビン酸のカルボキシ炭素に自由価標が残っている（陰性の理由の見立てが違う）');
+        const dblO = mol.getNeighbors(acid.atom.id).find(x => x.type === 2 && x.atom.element === 'O');
+        mol.removeAtom(dblO.atom.id);
+        assert(mol.getFreeValency(acid.atom.id) >= 1, 'C=O を外しても水素が戻っていない');
+        assert(reducing(mol),
+            'α位に水素が戻っても陰性のまま ＝ 「α位に水素が残っている」の門番が判定を決めていない');
+
+        c.reset();
+        return '5通り（-OH を外す／足す／-O- に変える／α位の水素をつぶす／α位に水素を戻す）で判定が動いた';
+    });
+
+    test('KT3: 銀鏡・フェーリングの説明文が「-CHO だけ」と言い切っていない（画面と化学の食い違い）', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W;
+        const noteEl = D.getElementById('mm-reagent-note');
+        // ★ 陰性の説明は**ふつうのケトンで**読む（陽性の分子では出ない）
+        [['ag_ammonia', 'アセトン'], ['fehling', 'アセトン']].forEach(([id, name]) => {
+            setupReagent(c, [name]);
+            bottle(c, id).click();
+            const t = noteEl.textContent;
+            assert(t.includes('陰性'), `${name} × ${id} が陰性になっていない: ${t.slice(0, 80)}`);
+            assert(t.includes('ケトース') || t.includes('フルクトース'),
+                `${id} の陰性の説明がケトースの例外に触れていない ＝ 判定と説明が食い違う: ${t.slice(0, 160)}`);
+            assert(!t.includes('還元性があるのは -CHO だけ'),
+                `${id} の陰性の説明が「-CHO だけ」と言い切ったまま（ケトースを陽性にした以上、嘘になる）`);
+        });
+        // ★ 陽性の側も、ケトースが陽性になる理由を言っている
+        setupReagent(c, ['D-フルクトース（鎖状）']);
+        bottle(c, 'fehling').click();
+        const t = noteEl.textContent;
+        assert(t.includes('陽性'), `鎖状フルクトース × フェーリングが陽性でない: ${t.slice(0, 90)}`);
+        assert(t.includes('ケトース'), `陽性の説明がケトースに触れていない: ${t.slice(0, 160)}`);
+        // 瓶の acts（効くもの）も同じことを言っている
+        const ag = W.REAGENTS.find(r => r.id === 'ag_ammonia');
+        assert(/ケトース/.test(ag.acts), `アンモニア性硝酸銀の acts がケトースに触れていない: ${ag.acts}`);
+        c.reset();
+    });
+
+    /* ===== NU: 倍数接頭辞（同じ置換基が9個以上）・v1511 =====
+     *
+     * ⚠⚠ **実測で見つけた誤り。** `IUPAC_MULT` が **8 で切れていて**、表に無い個数では
+     *   `IUPAC_MULT[n] || ''` が**黙って接頭辞を落とし**ていた:
+     *     `1,1,1,2,2,3,3,4,4-クロロブタン`（★ ノナ が消えている）
+     *   ⚠ **新しく生まれたバグではない**（手で Cl を9個描けば前から出せた）が、
+     *   アルカンの光塩素化（AC 帯）を入れて**押すだけで届く**ようになったので直した。
+     * ★ 直しは2つで、**両方要る**:
+     *   ① 表を 20 まで伸ばす（在庫のアルカンを塩素で埋めても届く範囲）
+     *   ② 表に無い個数では **null を返す**（言い切れないものは名乗らない）
+     *   ⚠ ①だけだと 21 個目でまた黙って嘘をつくので、②が無いと直したことにならない。
+     */
+    test('NU1: 同じ置換基が9個以上でも倍数接頭辞が落ちない／21個以上では名前を作らない', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // 幹に塩素を n 個ぶら下げた分子を作って名前を引く（座標は名前に効かないので格子に置く）
+        const chlorinate = (base, n) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(base), `${base} が呼び出せない`);
+            const mol = g.userMolecule;
+            let put = 0;
+            while (put < n) {
+                const cc = mol.atoms.find(a => a.element === 'C' && mol.getFreeValency(a.id) >= 1);
+                assert(cc, `${base} に塩素を ${n} 個 付けきれない（${put} 個で価標が尽きた）`);
+                const cl = mol.addAtom('Cl', cc.x + 42 + put * 3, cc.y + 42 + put * 3);
+                mol.addBond(cc.id, cl.id, 1);
+                put++;
+            }
+            return W.iupacName(mol);
+        };
+        // [幹, 個数, 期待する倍数接頭辞]
+        const rows = [
+            ['ブタン', 8, 'オクタクロロ'],
+            ['ブタン', 9, 'ノナクロロ'],     // ★ ここが直したところ（前は「クロロブタン」になっていた）
+            ['ブタン', 10, 'デカクロロ'],
+            ['ヘキサン', 11, 'ウンデカクロロ'],
+            ['ヘキサン', 12, 'ドデカクロロ'],
+            ['ヘキサン', 13, 'トリデカクロロ'],
+            ['オクタン', 18, 'オクタデカクロロ'],
+            ['デカン', 19, 'ノナデカクロロ'],
+            ['デカン', 20, 'イコサクロロ']
+        ];
+        const bad = [];
+        rows.forEach(([base, n, want]) => {
+            const name = chlorinate(base, n);
+            if (!name || !name.includes(want)) bad.push(`${base}+Cl×${n} → ${name || 'null'}（${want} を期待）`);
+        });
+        assert(bad.length === 0, `倍数接頭辞が付かない\n  ${bad.join('\n  ')}`);
+
+        /* ★ 21 個以上は**名乗らない**（表を伸ばしただけでは、その先でまた黙って嘘をつく）。
+         * ⚠ ここが `null` でないと、`lookupCompoundName` が誤った名前を画面へ出す。 */
+        assert(chlorinate('デカン', 21) === null,
+            `塩素21個で名前を作ってしまう: ${chlorinate('デカン', 21)}`);
+        assert(chlorinate('デカン', 22) === null,
+            `塩素22個で名前を作ってしまう: ${chlorinate('デカン', 22)}`);
+
+        /* ★否定対照 —— 8個以下は前から正しかったので、**直しで何も動いていない**こと。
+         * ⚠ 表を伸ばしたついでに既存の名前が変わっていたら、それは回帰。 */
+        const keep = [
+            ['プロパン', 2, '1,1-ジクロロプロパン'],
+            ['プロパン', 3, '1,1,1-トリクロロプロパン'],
+            ['プロパン', 4, '1,1,1,2-テトラクロロプロパン'],
+            ['プロパン', 8, '1,1,1,2,2,3,3,3-オクタクロロプロパン']
+        ];
+        keep.forEach(([base, n, want]) => assert(chlorinate(base, n) === want,
+            `既存の名前が変わった: ${base}+Cl×${n} → ${chlorinate(base, n)}（${want} のはず）`));
+        c.reset();
+        return `9〜20個で ${rows.length} 通り・21/22個で null・8個以下で ${keep.length} 通りを照合`;
+    });
+
+    /* ===== AC: アルカンの塩素化（光によるラジカル置換・v1511） =====
+     *
+     * ⚠⚠ **ユーザーの指摘**（2026-09-03）「アルカン全般に Cl2との置換反応がリストされて
+     *   いないと思います」。実測でも、メタン・エタン・プロパン・シクロヘキサン・
+     *   クロロメタンのどれでも **53本の反応が1本も出なかった**（塩素の反応は
+     *   `aromatic_halogenation` ＝ 鉄触媒による**環**の置換だけだった）。
+     *
+     * ★ **見張るのは「混合物をどう見せたか」の3つ**:
+     *   1 … 対象範囲（門番3つ）と、置換位置が**同じ生成物になる分だけ畳まれている**こと
+     *   2 … 段数を止めない（メタン → 四塩化炭素まで4段。★ 名前が4段とも出る）
+     *   3 … 画面（瓶が2本並ぶ・箇所選びに入る・caption が混合物を必ず言う）
+     * ⚠ **数だけを数える検査にしない** —— 生成物は**名前で**引く（RV12 の教訓）。
+     */
+    const AC_RULE = (c) => {
+        const r = c.W.REACTION_RULES.find(x => x.id === 'chlorinate_alkane');
+        assert(r, 'chlorinate_alkane が REACTION_RULES に無い');
+        return r;
+    };
+    const AC_LOAD = (c, names) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        (Array.isArray(names) ? names : [names]).forEach(n =>
+            assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    const AC_NAME = (c) => {
+        const g = c.game, W = c.W;
+        const lib = g.lookupCompoundName(g.userMolecule);
+        return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+    };
+
+    test('AC1: 対象は鎖状の飽和炭化水素だけ ＝ 同じ生成物になる位置は畳む', async (c) => {
+        c.reset();
+        const rule = AC_RULE(c);
+        const at = (name) => { AC_LOAD(c, name); return rule.detect(c.game.userMolecule).length; };
+        // [分子, 期待する箇所数, なぜその数か]
+        const rows = [
+            ['メタン', 1, '炭素1つ'],
+            ['エタン', 1, '★ 2つの炭素はどちらを置換してもクロロエタン ＝ 畳んで1件'],
+            ['プロパン', 2, '★ 1位・2位 で生成物が違う ＝ ここで初めて箇所選びに意味が出る'],
+            ['ブタン', 2, '1位・2位'],
+            ['2-メチルプロパン', 2, '3つのメチルは等価、あとは中央の1つ'],
+            ['ペンタン', 3, '1位・2位・3位'],
+            ['クロロメタン', 1, '★ すでに塩素が付いていても続けられる'],
+            ['1-クロロプロパン（塩化プロピル）', 3, '対称性が落ちるので3件に増える'],
+            ['四塩化炭素', 0, '⚠ 置き換える水素がもう無い'],
+            ['シクロヘキサン', 0, '⚠ 環は対象外（生成物の名前が出ないため。門番3）'],
+            ['ベンゼン', 0, '⚠ 芳香環は対象外（門番2＝単結合だけ）。こちらは鉄触媒の瓶'],
+            ['トルエン', 0, '⚠ 環をもつので対象外（側鎖の光塩素化は入れていない）'],
+            ['エチレン（エテン）', 0, '⚠ C=C は付加が先（門番2）'],
+            ['アセチレン（エチン）', 0, '⚠ C≡C も同じ'],
+            ['エタノール', 0, '⚠ 酸素が混ざるものは対象外（門番1）'],
+            ['酢酸', 0, '⚠ 同上']
+        ];
+        const bad = rows.filter(([n, want]) => at(n) !== want)
+            .map(([n, want]) => `${n}: ${at(n)}箇所（${want}を期待）`);
+        assert(bad.length === 0, `箇所の数が設計と違う\n  ${bad.join('\n  ')}`);
+        // ★ 空振りよけ: 0 件のものだけ・1 件のものだけを数えていない
+        assert(rows.filter(([, w]) => w > 0).length >= 8 && rows.filter(([, w]) => w === 0).length >= 7,
+            '通る例・通らない例のどちらかしか見ていない');
+
+        /* ★ 畳み方が「分子ごと」であること（`aromaticSites` が v779 で踏んだ穴と同じ形）。
+         * ⚠ 同じ分子を2つ並べたときに2つめが消えてはいけない。 */
+        AC_LOAD(c, ['プロパン', 'プロパン']);
+        assert(rule.detect(c.game.userMolecule).length === 4,
+            `プロパン2分子で ${rule.detect(c.game.userMolecule).length} 箇所（4箇所を期待）` +
+            ' ＝ 別の分子の等価な位置まで畳んでいる');
+        c.reset();
+        return `${rows.length} 分子で箇所数を照合（通る 9・通らない 7）`;
+    });
+
+    test('AC2: 段数を止めない —— メタンから四塩化炭素まで、4段とも名前が出る', async (c) => {
+        c.reset();
+        const g = c.game, rule = AC_RULE(c);
+        AC_LOAD(c, 'メタン');
+        const seq = [AC_NAME(c)];
+        for (let i = 0; i < 6; i++) {
+            const sites = rule.detect(g.userMolecule);
+            if (!sites.length) break;
+            rule.apply(g, sites[0]);
+            seq.push(AC_NAME(c));
+        }
+        // ⚠ **名前で引く**（原子数では「置換が進んだ」しか言えない）
+        assert(seq.join(' → ') === 'メタン → クロロメタン → ジクロロメタン → クロロホルム → 四塩化炭素',
+            `メタンの連打が教科書の並びにならない: ${seq.join(' → ')}`);
+
+        // ★ プロパンは押した箇所で生成物が変わる（＝ 箇所選びが混合物の「位置」を担っている）
+        const made = [];
+        for (const k of [0, 1]) {
+            AC_LOAD(c, 'プロパン');
+            rule.apply(g, rule.detect(g.userMolecule)[k]);
+            made.push(AC_NAME(c));
+        }
+        assert(made.includes('1-クロロプロパン（塩化プロピル）') &&
+               made.includes('2-クロロプロパン（塩化イソプロピル）'),
+            `プロパンの2箇所が別の生成物になっていない: ${made.join(' / ')}`);
+
+        /* ★ 生成物に名前が付くことを**ライブラリ全件**で確かめる（範囲を鎖状に絞った根拠）。
+         * ⚠ ここが「（未登録）だらけ」になるなら範囲の取り方が間違っている。 */
+        const src = (c.W.COMPOUNDS || []).concat(c.W.STAGES || [])
+            .filter(x => x && x.target && x.name);
+        const seen = new Set();
+        let mols = 0, products = 0;
+        const unnamed = [];
+        for (const e of src) {
+            if (seen.has(e.name)) continue;
+            seen.add(e.name);
+            AC_LOAD(c, e.name);
+            const n = rule.detect(g.userMolecule).length;
+            if (!n) continue;
+            mols++;
+            for (let k = 0; k < n; k++) {
+                AC_LOAD(c, e.name);
+                rule.apply(g, rule.detect(g.userMolecule)[k]);
+                products++;
+                const nm = AC_NAME(c);
+                if (nm === '（未登録）') unnamed.push(`${e.name}#${k}`);
+            }
+        }
+        assert(mols >= 20, `対象になったライブラリの分子が ${mols} 件しかない（物差しが空振り）`);
+        assert(unnamed.length === 0,
+            `1置換の生成物 ${products} 通りのうち ${unnamed.length} 件に名前が出ない: ` +
+            `${unnamed.slice(0, 8).join(', ')}`);
+        c.reset();
+        return `メタン4段＋ライブラリ ${mols} 分子・${products} 通りの生成物すべてに名前が出た`;
+    });
+
+    test('AC3: 画面 —— 塩素の瓶が2本並び、押すと箇所選びに入り、caption が混合物を必ず言う', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const noteEl = D.getElementById('mm-reagent-note');
+        // ★ 2本の瓶が**隣り合って**いる（同じ Cl₂ で行き先が違うことを棚で比べさせる）
+        const ids = W.REAGENTS.map(r => r.id);
+        assert(ids.includes('cl2_light'), '「塩素・光」の瓶が無い');
+        assert(ids.indexOf('cl2_light') === ids.indexOf('cl2_fe') + 1,
+            `塩素の瓶2本が隣り合っていない（cl2_fe=${ids.indexOf('cl2_fe')} / cl2_light=${ids.indexOf('cl2_light')}）`);
+        assert(bottle(c, 'cl2_light'), '「塩素・光」の札が描かれていない');
+
+        // ① メタン（1箇所）… 箇所選びを挟まずそのまま進む
+        setupReagent(c, ['メタン']);
+        bottle(c, 'cl2_light').click();
+        assert(!W.reactor.picking, '1箇所しかないのに箇所選びに入った');
+        assert(AC_NAME(c) === 'クロロメタン', `メタン＋Cl₂/光 が ${AC_NAME(c)} になった`);
+
+        // ② プロパン（2箇所）… 箇所選びに入り、押した原子で行き先が決まる
+        setupReagent(c, ['プロパン']);
+        bottle(c, 'cl2_light').click();
+        assert(W.reactor.picking, '2箇所あるのに箇所選びに入らない');
+        const sites = W.reactor.picking.sites;
+        // ⚠ 画面のピクセルで覚えない（§25-3）。中央の炭素は「隣の重原子が2つ」で引く
+        const middle = sites.map(s => g.userMolecule.atoms.find(a => a.id === s[0]))
+            .find(a => g.userMolecule.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 2);
+        assert(middle, '中央の炭素が候補に出ていない');
+        c.clickAt(middle.x, middle.y);
+        assert(!W.reactor.picking, '箇所を選んでも選択モードが解けない');
+        assert(AC_NAME(c) === '2-クロロプロパン（塩化イソプロピル）',
+            `中央の炭素を選んだのに ${AC_NAME(c)} になった`);
+
+        /* ③ caption は**毎回**混合物を言う。⚠ 1回目だけでは足りない ——
+         *   「1つで止まらない」のほうは2回目以降に起こる話なので、そこで消えると読み落とす。 */
+        const rule = AC_RULE(c);
+        AC_LOAD(c, 'メタン');
+        for (let i = 0; i < 4; i++) {
+            const s = rule.detect(g.userMolecule);
+            assert(s.length, `${i + 1} 段目で箇所が消えた`);
+            const cap = rule.apply(g, s[0]).caption;
+            assert(cap.includes('混合物'), `${i + 1} 段目の caption が混合物に触れていない: ${cap.slice(0, 90)}`);
+            assert(cap.includes('置換'), `${i + 1} 段目の caption が「置換」と言っていない`);
+            assert(cap.includes(`塩素が ${i + 1} 個`),
+                `${i + 1} 段目の caption が「いま何個ついているか」を言っていない: ${cap.slice(0, 160)}`);
+            /* ⚠ **まだ水素が残る段と、埋まりきった段で言い分ける。**
+             * ★ ここを「どちらの段でも同じ文が出る」実装にすると、
+             *   「1つでは止まらない」が四塩化炭素の画面にも出て嘘になる。 */
+            const done = i === 3;
+            assert(cap.includes('1つでは止まりません') === !done,
+                `${i + 1} 段目（${done ? '全置換ずみ' : 'まだ水素あり'}）の caption の言い分けが逆: ${cap.slice(0, 200)}`);
+            assert(cap.includes('すべて塩素に置き換わりました') === done,
+                `${i + 1} 段目（${done ? '全置換ずみ' : 'まだ水素あり'}）の caption の言い分けが逆: ${cap.slice(0, 200)}`);
+        }
+
+        /* ④ ★否定対照 —— 鉄触媒の瓶とは行き先が違う。
+         *   ベンゼンに「塩素・光」は効かず、アルカンに「塩素・鉄触媒」も効かない。 */
+        setupReagent(c, ['ベンゼン']);
+        bottle(c, 'cl2_light').click();
+        assert(noteEl.textContent.includes('鉄'),
+            `ベンゼンに「塩素・光」を掛けたのに、鉄触媒の瓶へ案内していない: ${noteEl.textContent.slice(0, 140)}`);
+        assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'),
+            '⚠ ベンゼンが「塩素・光」で塩素化された（環の置換に光は使わない）');
+        setupReagent(c, ['プロパン']);
+        bottle(c, 'cl2_fe').click();
+        assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'),
+            '⚠ プロパンが「塩素・鉄触媒」で塩素化された（アルカンの置換に鉄触媒は使わない）');
+        assert(noteEl.textContent.includes('光'),
+            `アルカンに鉄触媒を掛けたのに、光の瓶へ案内していない: ${noteEl.textContent.slice(0, 140)}`);
+        c.reset();
+    });
+
+    /* ===== PH: フェノールの工業的製法2本（v1511） =====
+     *
+     * ★ 系統樹レーン（`DESIGN_reaction_execution.md` §10.13-A の #9・#10）が名指しした穴。
+     *   入試 11 大問（アルカリ融解）と 9 大問（クロロベンゼンの加水分解）。
+     *   ⚠ あのレーンは「イオンの壁の向こう」として見送ったが、**壁の位置が違った** ——
+     *   ナトリウムフェノキシドは登録済みで、Na を線1本で描く既存の流儀にそのまま乗る。
+     *
+     * ★ **見張るのは3つ**:
+     *   1 … 対象範囲（一置換のベンゼン環だけ）と、生成物の**名前**
+     *   2 … 教科書の4手／3手がぜんぶつながること（ベンゼンから フェノール まで）
+     *   3 … 条件の言い分けと、⚠ **既存の画面が1つも変わっていないこと**
+     */
+    test('PH1: 一置換のベンゼン環だけが -ONa に置き換わる（生成物はナトリウムフェノキシド）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = (id) => {
+            const r = W.REACTION_RULES.find(x => x.id === id);
+            assert(r, `${id} が REACTION_RULES に無い`);
+            return r;
+        };
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `${name} が呼び出せない`);
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const nameNow = () => {
+            const lib = g.lookupCompoundName(g.userMolecule);
+            return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+        };
+        const AF = rule('alkali_fusion'), HC = rule('hydrolysis_chlorobenzene');
+        // [分子, ルール, 期待する箇所数, なぜ]
+        const rows = [
+            ['ベンゼンスルホン酸ナトリウム', AF, 1, '★ 教科書のアルカリ融解の相手はこの塩'],
+            ['ベンゼンスルホン酸', AF, 0, '⚠ 酸のままでは通さない（先に中和して塩にする）'],
+            ['クロロベンゼン', HC, 1, '★ 教科書の加水分解の相手'],
+            ['クロロベンゼン', AF, 0, '⚠ -SO₃Na ではない'],
+            ['ベンゼンスルホン酸ナトリウム', HC, 0, '⚠ -Cl ではない'],
+            ['p-ジクロロベンゼン（パラジクロロベンゼン）', HC, 0, '⚠ 二置換体は対象外（生成物に名前が出ない）'],
+            ['o-クロロトルエン', HC, 0, '⚠ 同上'],
+            ['o-クロロベンゼンスルホン酸', HC, 0, '⚠ 同上。★ ここを通すと NaOH の行き先が 1 → 2 通りに増える'],
+            ['アルキルベンゼンスルホン酸ナトリウム', AF, 0, '⚠ 洗剤。これを融解させる場面は教科書に無い'],
+            ['ベンゼン', HC, 0, '⚠ 置換基が無い'],
+            ['フェノール', HC, 0, '⚠ もう -OH'],
+            ['1,2-ジクロロエタン', HC, 0, '⚠⚠ 鎖についた -Cl は対象外（環に付いているから外れにくい、が要点）']
+        ];
+        const bad = rows.filter(([n, r, want]) => { load(n); return r.detect(g.userMolecule).length !== want; })
+            .map(([n, r, want]) => { load(n); return `${n} × ${r.id}: ${r.detect(g.userMolecule).length}箇所（${want}を期待）`; });
+        assert(bad.length === 0, `箇所の数が設計と違う\n  ${bad.join('\n  ')}`);
+        assert(rows.filter(([, , w]) => w > 0).length === 2, '通る例が2件でない（物差しが空振り）');
+
+        // ★ 生成物は**名前で**引く（原子を数えても「何かが起きた」しか言えない）
+        [['ベンゼンスルホン酸ナトリウム', AF], ['クロロベンゼン', HC]].forEach(([n, r]) => {
+            load(n);
+            const res = r.apply(g, r.detect(g.userMolecule)[0]);
+            assert(nameNow() === 'ナトリウムフェノキシド（フェノールのナトリウム塩）',
+                `${n} × ${r.id} の生成物が ${nameNow()}`);
+            // 印は「変わったところ」＝ 環の炭素・新しい O・新しい Na の3つ（CV4 の物差しと同じ考え方）
+            assert(res.changed.length === 3, `${r.id} の印が ${res.changed.length} 個（3個を期待）`);
+        });
+        c.reset();
+        return `${rows.length} 通りで箇所数を照合（通る2・通らない10）／生成物は2本とも名前で確認`;
+    });
+
+    test('PH2: ベンゼンからフェノールまで、2つの道すじが最後までつながる', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const nameNow = () => {
+            const lib = g.lookupCompoundName(g.userMolecule);
+            return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+        };
+        const walk = (ids) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule('ベンゼン'), 'ベンゼンが呼び出せない');
+            g.updateDrawing();
+            const seq = ['ベンゼン'];
+            ids.forEach(id => {
+                const r = W.REACTION_RULES.find(x => x.id === id);
+                assert(r, `${id} が無い`);
+                const s = r.detect(g.userMolecule);
+                assert(s.length, `${id} の箇所が出ない（ここで道すじが切れている）: ${seq.join(' → ')}`);
+                r.apply(g, s[0]);
+                seq.push(nameNow());
+            });
+            return seq;
+        };
+        // ① スルホン化 → 中和 → アルカリ融解 → 弱酸の遊離（教科書の4段）
+        const a = walk(['aromatic_sulfonation', 'neutralize_naoh', 'alkali_fusion', 'liberate_weak_acid']);
+        assert(a.join(' → ') === 'ベンゼン → ベンゼンスルホン酸 → ベンゼンスルホン酸ナトリウム → ' +
+            'ナトリウムフェノキシド（フェノールのナトリウム塩） → フェノール',
+            `アルカリ融解の道すじが教科書の並びにならない: ${a.join(' → ')}`);
+        // ② 塩素化 → 加水分解 → 弱酸の遊離（教科書の3段）
+        const b = walk(['aromatic_halogenation', 'hydrolysis_chlorobenzene', 'liberate_weak_acid']);
+        assert(b.join(' → ') === 'ベンゼン → クロロベンゼン → ' +
+            'ナトリウムフェノキシド（フェノールのナトリウム塩） → フェノール',
+            `クロロベンゼンの道すじが教科書の並びにならない: ${b.join(' → ')}`);
+        c.reset();
+        return '4段（アルカリ融解）・3段（加水分解）とも、各段の名前まで一致';
+    });
+
+    test('PH3: 条件は label と caption で言い分ける／★既存の NaOH の画面が1つも変わっていない', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const AF = W.REACTION_RULES.find(x => x.id === 'alkali_fusion');
+        const HC = W.REACTION_RULES.find(x => x.id === 'hydrolysis_chlorobenzene');
+        /* ⚠ 2本は**条件が違う**（固体の NaOH と融解 ／ 水溶液で高温・高圧）のに、
+         *   同じ「NaOH aq」の瓶にぶら下がる。★ だから条件は札の見出しと結果の文の両方で言う。 */
+        assert(/融解/.test(AF.label), `アルカリ融解の label に条件が無い: ${AF.label}`);
+        assert(/高温|高圧/.test(HC.label), `加水分解の label に条件が無い: ${HC.label}`);
+        assert(AF.label !== HC.label, '2本の札の見出しが同じ');
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `${name} が呼べない`);
+            g.updateDrawing();
+        };
+        load('ベンゼンスルホン酸ナトリウム');
+        const capA = AF.apply(g, AF.detect(g.userMolecule)[0]).caption;
+        assert(capA.includes('水溶液では起こりません') && capA.includes('融解'),
+            `アルカリ融解の caption が「水溶液では起こらない」と言っていない: ${capA.slice(0, 140)}`);
+        assert(capA.includes('Na₂SO₃'), `抜けていく亜硫酸ナトリウムに触れていない: ${capA.slice(0, 200)}`);
+        load('クロロベンゼン');
+        const capB = HC.apply(g, HC.detect(g.userMolecule)[0]).caption;
+        assert(capB.includes('高温') && capB.includes('高圧'),
+            `加水分解の caption に条件が無い: ${capB.slice(0, 140)}`);
+        assert(capB.includes('NaCl'), `抜けていく塩化ナトリウムに触れていない: ${capB.slice(0, 200)}`);
+        assert(!capB.includes('融解'), '加水分解の caption にアルカリ融解の条件が混ざっている');
+
+        /* ★★ 否定対照 —— **既存の緑を1つも触っていない**。
+         * ⚠ `naoh_aq` に2本ぶら下げたので、押したときの行き先が増えた分子があると
+         *   「1タップで終わっていた人に選択面が出る」（§10.13-A #6 で見送りの決め手になった費用）。
+         *   実測: 増えるのは -SO₃Na / 一置換のクロロベンゼンだけで、そちらは**元が0通り**。 */
+        const rg = W.REAGENTS.find(r => r.id === 'naoh_aq');
+        const opts = (name) => {
+            load(name);
+            return W.reactor.reagentOptions(rg, W.reactor.reagentHits(rg));
+        };
+        [['酢酸', 1, '中和だけ'],
+         ['フェノール', 1, '中和だけ'],
+         ['酢酸エチル', 1, 'けん化だけ'],
+         ['ベンゼンスルホン酸', 1, '⚠ 中和だけ（酸のままではアルカリ融解を出さない）'],
+         ['o-クロロベンゼンスルホン酸', 1, '⚠ 中和だけ（二置換体は加水分解を出さない）'],
+         ['ベンゼン', 0, '効かない'],
+         ['ベンゼンスルホン酸ナトリウム', 1, '★ 新しく1通り（元は0通り）'],
+         ['クロロベンゼン', 1, '★ 新しく1通り（元は0通り）']
+        ].forEach(([name, want, why]) => {
+            const n = opts(name).length;
+            assert(n === want, `${name} で NaOH の行き先が ${n} 通り（${want} 通りを期待・${why}）`);
+        });
+        // 2通り以上になって選択面が出る分子は1つも増えていない ＝ 誰の操作も増えていない
+        assert(!W.reactor.picking, '前提が崩れている: 箇所選びが残っている');
+
+        // 画面から実際に押せる（瓶 → そのまま実行 → キャンバスへ返る）
+        setupReagent(c, ['クロロベンゼン']);
+        bottle(c, 'naoh_aq').click();
+        assert(!W.reactor.picking, '1箇所しかないのに箇所選びに入った');
+        assert(g.userMolecule.atoms.some(a => a.element === 'Na'),
+            'クロロベンゼン＋NaOH aq で -ONa ができていない');
+        assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'), '塩素が外れていない');
+        c.reset();
     });
 
     /* ===== QP: 収録の「指定」は、通らないなら黙らない（v1507・動画レーンの実機報告） =====

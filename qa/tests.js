@@ -1044,7 +1044,12 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   無水酢酸（酢酸2分子）／ベンゼンの水素化／クメン／酢酸ビニル。
     //   ⚠ **瓶は1本も増えていない**（4本とも既存の瓶に相乗り）ので KNOWN_BOTTLES は 23 のまま。
     //   ★見直し候補7件はこの4本でも1件も繋がらない（別レーンが1件ずつ突き合わせ済み）。
-    var KNOWN_BOTTLES = 23, KNOWN_RULES = 53, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    // ★ 2026-09-03（v1511）: 塩素・光の瓶を1本足し、実行ルールを3本足した
+    //   （アルカンの光塩素化／アルカリ融解／クロロベンゼンの加水分解）。瓶 23→24・ルール 53→56。
+    //   ⚠ ★見直し候補7件はこの3本でも1件も繋がらない（org.phenol.phenoxide-co2 は CO₂ の瓶待ちで、
+    //   足したのは Cl₂ の瓶なので別物。ただしフェノキシドへの行きが2本増えたので、
+    //   CO₂ の瓶が入れば一気に繋がる位置に来た）。
+    var KNOWN_BOTTLES = 24, KNOWN_RULES = 56, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
