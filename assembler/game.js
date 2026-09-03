@@ -11361,7 +11361,17 @@ const OPEN_TARGETS = {
     countquiz: { mode: 'learn', acc: 'learn-acc-quiz', btn: 'btn-count-quiz' },
     // 📚 学習 → アコーディオンを開くところまで（中で何をするかは本人が選ぶ）
     practice: { mode: 'learn', acc: 'learn-acc-practice' },
-    mechanism: { mode: 'learn', acc: 'reaction-box' },
+    /* ⚠⚠ vNNNN で 📚 学習の ⚗️ 反応機構ビューアの札を撤去した（ユーザー決定 2026-09-03）。
+       ★ 行き先を **📖 資料（参考書）の「反応の道すじ（反応機構）」** へ向け直す ——
+         ここは 14件の全体像が表で見える唯一の面で、各行の ▶ からその場で再生できる。
+       ⚠ **`mode` は持たせない**（`reference` と同じ理由。資料はいまのモードのまま読むもので、
+         `learn` にすると 📚 が開いて直後に閉じる ＝ ちらつく。`REF11` が見張っている）。
+       ⚠ **どのページを開くかを game.js に書き写さない** —— 機構の表を持つページを
+         `ReferenceBook` 側が自分で探す（ページ id を2か所に持たない）。
+       ⚠ **ここは空にしてある** —— `id` の有無で「表を開くだけ」と「1件を再生する」が
+         分かれるので、**受け口④の1か所**（下の `name === 'mechanism'`）でまとめて決める。
+         ここに `fn` を置くと、非同期の描画と ④ の再生が競って**スマホで資料が開き直る**。 */
+    mechanism: {},
     // 📚 学習 → 🔍 実験カードで絞り込む（DESIGN_paid_workbook.md「効く順 ①」）。
     // ⚠ **これが無かったので、有機の計算（元素分析）と「手がかりを使う順番」は
     //    *枠が無い* のではなく *配線が無い* 状態だった**（paid §1-3 の実測）。
@@ -11537,11 +11547,18 @@ function applyOpenParam(search) {
     // ボタンが無い行き先（分子モーダルはキャンバスの見出しから開くので id 付きのボタンが無い）
     if (target.fn) target.fn();
 
-    // 受け口④ `?open=mechanism&id=<機構id>` … 14件のうち1つを選んで開く。
-    // `id` が無い・知らない id のときは従来どおり**箱を開けるだけ**（前方互換）
+    /* 受け口④ `?open=mechanism&id=<機構id>` … 登録済みの機構から1つを選んで再生する。
+       `id` が無い・知らない id のときは**資料の表を開くだけ**（前方互換。人が一覧から選ぶ）。
+       ⚠ **`reactionPlayer.openById` を直に呼ばず `referenceBook.playMechanism` を通す**（vNNNN）——
+         狭い画面では資料ペインがキャンバスを覆うので、**再生を始めた側が自分でどかす**必要がある。
+         直に `openById` を呼ぶと、スマホで「資料が開いたまま、その裏で機構が動く」になる。
+       ⚠ 資料が読めない版・読み込みに失敗した場面では、**再生器へ直に落ちる**（受け口を死なせない。
+         qa の飛び道具10件とハブの1本がこの URL を指している） */
     if (name === 'mechanism') {
         const mid = (params.get('id') || '').trim();
-        if (mid && window.reactionPlayer) window.reactionPlayer.openById(mid);
+        const book = window.referenceBook;
+        if (book && book.openMechanisms) book.openMechanisms(mid);
+        else if (mid && window.reactionPlayer) window.reactionPlayer.openById(mid);
     }
 
     // 受け口⑦ `?open=narrowing&panel=<enum|allot|frag|ea>` … 絞り込みモードのタブを選ぶ。

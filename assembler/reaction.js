@@ -14,10 +14,19 @@ class ReactionPlayer {
         this.view = 0;
 
         this.arrowsGroup = document.getElementById('arrows-group');
-        this.box = document.getElementById('reaction-box');
-        this.checkMode = document.getElementById('check-reaction-mode');
-        this.selectEl = document.getElementById('select-reaction');
-        this.listEl = document.getElementById('reaction-list'); // 人が押す一覧（v1439）
+        /* ⚠⚠ **vNNNN で 📚 学習の ⚗️ 反応機構ビューアの札を撤去した**
+           （ユーザー決定 2026-09-03「消す方がすっきりすると思います」。機構は 📖 資料の4枚目へ）。
+           ★ **この3つ（箱・スイッチ・一覧）は DOM から消えたので、いつも null になる。**
+             使う側はすべて null を見て素通りする ＝ 再生器そのものは1行も変えていない。
+           ⚠ **`this.selectEl`（選択の実体）だけは残っている**（`#ws-reaction` の中へ移した）——
+             `?open=mechanism&id=` も 📖 資料の ▶ も `pick()`/`openById()` からここへ合流する。
+           ★ 一覧の描画（`populateList` / `syncList` / `promptPick`）は**そのまま残してある** ——
+             どれも `listEl` を見て素通りするので害が無く、消すと「一覧をどう組んでいたか」の
+             記録（v1439 の押しもの化・v1466 の促し）まで消える。 */
+        this.box = document.getElementById('reaction-box');            // ⚠ vNNNN 以降つねに null
+        this.checkMode = document.getElementById('check-reaction-mode'); // ⚠ 同上
+        this.selectEl = document.getElementById('select-reaction');    // ★ 残っている（帯の中）
+        this.listEl = document.getElementById('reaction-list');        // ⚠ vNNNN 以降つねに null
         this.captionEl = document.getElementById('reaction-caption');
         this.stepLabelEl = document.getElementById('reaction-step-label');
         this.btnPrev = document.getElementById('btn-rx-prev');
@@ -281,7 +290,7 @@ class ReactionPlayer {
          *    それでも `this.active` を先に見て素通りさせる ＝ 将来 `dispatchEvent` で
          *    追従させる書き方に変わっても、ここが反応を選び直さない。
          */
-        this.checkMode.addEventListener('change', (e) => {
+        if (this.checkMode) this.checkMode.addEventListener('change', (e) => {
             if (e.target.checked) {
                 if (this.active) return; // enter() が立てた表示の追従。始め直さない
                 e.target.checked = false; // 「入っている」と見せない（状態を2つに割らない）
@@ -355,7 +364,12 @@ class ReactionPlayer {
             studyBody.addEventListener('click', (e) => {
                 if (!this.active) return;
                 const btn = e.target && e.target.closest ? e.target.closest('button') : null;
-                if (!btn || btn.closest('#reaction-box')) return;
+                /* ⚠ vNNNN 以前は「ただし `#reaction-box`（ビューア自身の一覧）は除く」という
+                   但し書きがここに在った。**その箱ごと撤去した**ので、いま `#study-body` の中に
+                   ビューアの持ちものは1つも無い ＝ 例外なしで返してよい。
+                   ★ 📖 資料の ▶ は `#ref-body`（資料ペイン＝ `#study-body` の外）なので、
+                     ここには届かない ＝ 機構から機構へ移るときにビューアが終わってしまうことはない。 */
+                if (!btn) return;
                 this.exit();
             }, true);
         }
@@ -384,7 +398,7 @@ class ReactionPlayer {
         const index = this.reactions[reactionIndex] ? reactionIndex : 0;
         this.currentReaction = this.reactions[index];
         this.active = true;
-        this.checkMode.checked = true;
+        if (this.checkMode) this.checkMode.checked = true;
         this.clearPickPrompt(); // 選べたのだから促しは役目を終える（v1466）
         this.syncPredictButton();
         // 選択の実体（`#select-reaction`）と一覧の印を、どの入口から来ても合わせる
@@ -424,7 +438,7 @@ class ReactionPlayer {
         this.stopRequested = true; // 再生中なら中断
         if (this.prediction) this.endPrediction(false);
         this.active = false;
-        this.checkMode.checked = false;
+        if (this.checkMode) this.checkMode.checked = false;
         this.syncList();
         this.clearArrows();
         this.captionEl.textContent = '';
