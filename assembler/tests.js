@@ -3074,10 +3074,16 @@
                 `「同じ化合物？」の出題プールに ${nm} が残っている`);
             assert(!nq.pool.some(i => lib[i].name === nm),
                 `命名クイズの出題プールに ${nm} が残っている`);
-            // 収録用の名指し（setForced）でも呼び出せない＝プールの外にある
+            // 収録用の名指し（setForced）でも呼び出せない＝プールの外にある。
+            // ⚠ v1507 から**別の問題にすり替えず、理由を出して1問も出さない**
+            //   （すり替えは「指定したのに黙って別の問題」＝ 収録で実害が出た形）
             nq.setForced(nm);
+            const why = nq.forcedNameIssue();
+            assert(why && why.includes('絞り込み'),
+                `${nm} の名指しが通ってしまう（理由: ${why}）`);
             nq.nextQuestion();
-            assert(nq.current.entry.name !== nm, `命名クイズが名指しで ${nm} を出した`);
+            assert(nq.current === null,
+                `命名クイズが名指しの代わりに別の問題を出した（${nq.current && nq.current.entry.name}）`);
         });
         nq.setForced(null);
         // 実際に引いても出ない（100問ずつ）
@@ -11711,7 +11717,30 @@
         // 渡さないと state 付きの台本（7/28件）が空のキャンバスから始まり、
         // 「反応ボタンが見つかりません」で落ちる。play() は例外を握りつぶすので、
         // 渡し忘れていた間はテストが素通りしていた（2026-08-02 に発覚）
+        /* ⚠ **1本ごとにクイズのつまみを既定へ戻す**（v1507）。
+         *
+         * `keepResult: true` は復元しない約束なので、`#naming-series` を絞る台本（V62）が
+         * **次の台本のつまみを絞ったまま**にする。本番の収録は1本＝1回のページ読み込みなので
+         * 起こらない（実測: 台本が名指ししている 15 件すべてが、まっさらな既定で通る）が、
+         * この連続再生でだけ**次の台本の名指しが「絞り込みの外」になる**。
+         * ★ v1502 まではそれが**黙って別の化合物へすり替わって**いたので N2 は緑だった
+         *   ＝ **緑が「台本どおりの絵が出ている」を意味していなかった**。
+         * 名指しが通らないと出題を止めるようにした今は正直に赤くなるので、
+         * 後片付け（この test の末尾）と同じことを**1本ごとに**する。 */
+        const resetQuizFilters = () => {
+            [['cq-series', c.W.countQuiz], ['quiz-series', c.W.quiz], ['naming-series', c.W.namingQuiz]]
+                .forEach(([id, q]) => {
+                    const sel = c.D.getElementById(id);
+                    if (!sel || !q) return;
+                    sel.value = 'all';
+                    if (q.scopeEl) q.scopeEl.value = c.W.QUIZ_SCOPE_DEFAULT;
+                    if (q.fieldEl) q.fieldEl.value = 'all';
+                    if (q.computePool) q.computePool();
+                    if (q.computePools) q.computePools();
+                });
+        };
         for (const d of demos.filter(d => d.id !== 'intro-draw')) {
+            resetQuizFilters();
             await tp.play(d.id, { fast: true, keepResult: true, initialState: d.state });
             assert(!tp.lastError, `デモ「${d.id}」の再生が落ちた: ${tp.lastError && tp.lastError.message}`);
         }
@@ -11737,16 +11766,7 @@
         // その系列に畳み込みの起きる分子が1つも無かった、というだけの話だった。
         // 台本が増えるたびに同じ穴が空くので、**3つのクイズをまとめて戻す**。
         // **範囲（レベル）と分野も戻す**（2026-08-20 に足した軸。既定は範囲＝basic・分野＝all）
-        [['cq-series', c.W.countQuiz], ['quiz-series', c.W.quiz], ['naming-series', c.W.namingQuiz]]
-            .forEach(([id, q]) => {
-                const sel = c.D.getElementById(id);
-                if (!sel || !q) return;
-                sel.value = 'all';
-                if (q.scopeEl) q.scopeEl.value = c.W.QUIZ_SCOPE_DEFAULT;
-                if (q.fieldEl) q.fieldEl.value = 'all';
-                if (q.computePool) q.computePool();     // 総数当て・命名
-                if (q.computePools) q.computePools();   // 同じ化合物？（複数プールを持つ）
-            });
+        resetQuizFilters();   // ⚠ 中身は上の `resetQuizFilters` へ畳んだ（同じことを2回書かない）
     });
 
     test('N2b: 立体を名前に出す台本は readStereo を宣言している（P13-2・2026-08-04）', async (c) => {
@@ -47672,6 +47692,205 @@
             'ester カードの数が変わった（既存の絞り込みに影響が出ている）');
         assert(pool.filter((m) => card('lactone').test(m)).length === 0,
             'C5H10O2 にラクトンが出た（既存の lactone カードの答えが変わっている）');
+    });
+
+    /* ===== QP: 収録の「指定」は、通らないなら黙らない（v1507・動画レーンの実機報告） =====
+     *
+     * **何が起きたか**: 台本に `setForcedPair('マレイン酸', 'フマル酸')` と書いたのに、
+     * **まったく別の問題が、エラーも警告も無しに出た**。台本が1本無駄になり、
+     * しかも**撮り終わってから**気づいた ＝ 収録の道具として最悪の壊れ方。
+     *
+     * ⚠ **マレイン酸／フマル酸が「違う」の組に入らないのは正しい**（土俵の定義）。
+     * このクイズの正解は `verifyMolecule`＝**重原子のつながり方だけ**で決まり、
+     * 画面にもそう書いてある（`showPremise`）。**シス・トランスはこの土俵では「同じ」**。
+     * ＝ **直すのは土俵ではなく「黙ること」**。`pairs` は1件も広げない（QP3 が見張る）。
+     */
+    test('QP1: 通らない指定は「なぜ通らないか」を言い分ける（黙って抽選に戻らない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, q = W.quiz;
+        assert(typeof q.forcedPairIssue === 'function', '組の指定を診断する口が無い');
+        q.open();
+        // ⚠ **つまみを既定へ戻してから測る。** 前のテストが絞ったまま残していると
+        //    「通る指定」が絞り込みの外になり、**赤が理由の取り違えになる**（全走で実際に踏んだ）
+        setQuizFilters(q, 'all', 'all', 'all');
+
+        // (1) 3つの理由を言い分ける。**打ち手が違うので、まとめて「出せません」にしない**
+        // ⚠ **`setForcedPair` の戻り値は「あとから変わりようのない理由」だけ**なので、
+        //    絞り込みも含めて見たいときは `forcedPairIssue()` を直に呼ぶ
+        const noName = q.setForcedPair('マレインさん', 'フマル酸');
+        assert(noName && noName.includes('ライブラリにありません') && noName.includes('マレインさん'),
+            `「その名前が無い」を言えていない: ${noName}`);
+
+        const sameTopo = q.setForcedPair('マレイン酸', 'フマル酸');
+        assert(sameTopo && sameTopo.includes('つながり方が同じ'),
+            `「この土俵では同じ扱い」を言えていない: ${sameTopo}`);
+        // ⚠ ここで「名前が無い」と言ってはいけない（**両方とも実在する**）
+        assert(!sameTopo.includes('ライブラリにありません'),
+            '実在する名前を「無い」と言っている（打ち手を誤らせる）');
+
+        const otherFormula = q.setForcedPair('エタノール', '酢酸');
+        assert(otherFormula && otherFormula.includes('分子式が違います'),
+            `「分子式が違う」を言えていない: ${otherFormula}`);
+
+        // (2) 通る指定では null（＝ 通るはずのものまで止めていない）
+        assert(q.setForcedPair('1-プロパノール', '2-プロパノール') === null,
+            '通る指定を通らないと言っている');
+
+        // (3) 絞り込みで外れたときは、そう言う（題材ではなく つまみ を戻せばよい）
+        // (4) ★ **黙って別の問題を出さない** —— 画面に理由が出て、問題は作られない
+        // ⚠ **つまみを戻すのは assert より前**。ここで落ちたときにつまみが芳香族のまま
+        //    残ると、**後続の QP2 / QP5 まで巻き添えで赤くなる**（否定対照で実際に踏んだ）
+        const field = D.getElementById('quiz-field');
+        const saved = field.value;
+        field.value = '芳香族';
+        field.dispatchEvent(new W.Event('change', { bubbles: true }));
+        q.setForcedPair('1-プロパノール', '2-プロパノール');
+        const outOfScope = q.forcedPairIssue();
+        assert(q.forcedPairIssue(false) === null,
+            '絞り込みを「変わりようのない理由」に数えている（台本は開く前に指定するので落ちてしまう）');
+        q.nextQuestion();
+        const msg = D.getElementById('quiz-result').textContent;
+        const made = q.current;
+        field.value = saved;
+        field.dispatchEvent(new W.Event('change', { bubbles: true }));
+        setQuizFilters(q, 'all', 'all', 'all');
+        q.setForcedPair(null, null);
+        D.getElementById('btn-quiz-close').click();
+
+        assert(outOfScope && outOfScope.includes('絞り込み'),
+            `「絞り込みの外」を言えていない: ${outOfScope}`);
+        assert(msg.includes('指定された組では出題できません'),
+            `通らない指定なのに画面が断っていない: ${msg}`);
+        assert(made === null, '通らない指定なのに問題が作られている（＝黙って別の問題）');
+    });
+
+    test('QP2: 通る指定は毎回そのとおりに出る（名前で確かめる。数では見ない）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, q = W.quiz;
+        q.open();
+        setQuizFilters(q, 'all', 'all', 'all');
+        // ⚠ **`setForced('diff')` を添えない。** 添えると通ってしまうので、
+        //    「組の指定だけで決まるか」を見る物差しにならない
+        //    （v1502 は `wantSame` が抽選のままで、**通る指定でも半分は無視**されていた。実測 6/12）
+        assert(q.forced === null, '答えの指定が残っている（この検査の物差しが鈍る）');
+        assert(q.setForcedPair('1-プロパノール', '2-プロパノール') === null, '通る指定が通らない');
+        const want = ['1-プロパノール', '2-プロパノール'].join('|');
+        for (let i = 0; i < 12; i++) {
+            q.nextQuestion();
+            assert(q.current, `指定した組で出題できない（${i + 1}回目）`);
+            const got = [q.current.nameA, q.current.nameB].sort().join('|');
+            assert(got === want,
+                `指定した組が無視された（${i + 1}回目）: ${q.current.nameA} / ${q.current.nameB}`);
+        }
+        // 解除すると今までどおり（4択の既定に戻る）
+        q.setForcedPair(null, null);
+        q.nextQuestion();
+        assert(q.current && q.current.form === 'choice', '指定を外しても4択に戻らない');
+        D.getElementById('btn-quiz-close').click();
+    });
+
+    test('QP3: 出題プールは1件も広げていない（土俵の定義を変えていない）', async (c) => {
+        c.reset();
+        const W = c.W, q = W.quiz;
+        q.buildLibrary();
+        const lib = q.library;
+        // ⚠ **数だけでなく中身**を見る。「違う」の組は
+        //   「分子式が同じ」かつ「verifyMolecule が違うと言う」もの**だけ**であること
+        let bad = null;
+        q.allPairs.forEach(([i, j]) => {
+            if (bad) return;
+            if (lib[i].formula !== lib[j].formula) bad = `分子式が違う組が入っている: ${lib[i].name} / ${lib[j].name}`;
+            else if (W.verifyMolecule(lib[i].mol, lib[j].mol)) bad = `同型の組が入っている: ${lib[i].name} / ${lib[j].name}`;
+        });
+        assert(!bad, bad);
+        // シス・トランスだけが違う組は**この土俵では「同じ」**なので、載っていないのが正しい
+        const 載っていないはず = [
+            ['マレイン酸', 'フマル酸'],
+            ['シス-2-ブテン', 'トランス-2-ブテン'],
+            ['D-乳酸', 'L-乳酸']
+        ];
+        載っていないはず.forEach(([a, b]) => {
+            const ok = lib.some(e => e.name === a) && lib.some(e => e.name === b);
+            assert(ok, `検査の前提が崩れた（名前がライブラリから消えた）: ${a} / ${b}`);
+            const hit = q.allPairs.some(([i, jj]) =>
+                (lib[i].name === a && lib[jj].name === b) || (lib[i].name === b && lib[jj].name === a));
+            assert(!hit, `土俵の定義が変わっている（立体だけ違う組が「違う」に入った）: ${a} / ${b}`);
+        });
+    });
+
+    test('QP4: 命名クイズの名指しも黙らない＋台本の指定が次へ漏れない', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, nq = W.namingQuiz;
+        assert(typeof nq.forcedNameIssue === 'function', '命名クイズに指定を診断する口が無い');
+        nq.open();
+        setQuizFilters(nq, 'all', 'all', 'all');
+
+        assert((nq.setForced('アセトンさん') || '').includes('ライブラリにありません'),
+            '無い名前を「無い」と言えていない');
+        // 同じ図が別名でも登録されているもの（正解が一意に決まらないので出題対象外）
+        const dup = nq.setForced('マレイン酸');
+        assert(dup && dup.includes('一意に決まらない'), `別名重複の理由を言えていない: ${dup}`);
+        assert(nq.setForced('2-プロパノール') === null, '通る名指しが通らない');
+        nq.nextQuestion();
+        assert(nq.current && nq.current.entry.name === '2-プロパノール',
+            `名指しどおりに出ていない: ${nq.current && nq.current.entry.name}`);
+
+        // ★ 通らない名指しでは**黙って別の問題を出さない**
+        nq.setForced('アセトンさん');
+        nq.nextQuestion();
+        assert(D.getElementById('naming-result').textContent.includes('指定された問題は出せません'),
+            '通らない名指しなのに画面が断っていない');
+        assert(nq.current === null, '通らない名指しなのに別の問題が出ている');
+        nq.setForced(null);
+        D.getElementById('btn-naming-close').click();
+
+        // 台本から指定でき、**再生が終わると元に戻る**（2026-08-09 の `name` は退避もれだった。
+        // 漏れると次の台本の出題を止めるところまで悪化する）
+        const tp = W.tutorialPlayer;
+        const probe = {
+            id: '__qp4probe__', title: 'probe',
+            steps: [{ caption: 'x', actions: [{ type: 'quizForce', quiz: 'naming', name: '2-プロパノール' }] }]
+        };
+        tp.tutorials = tp.tutorials.filter(t => t.id !== probe.id);
+        tp.tutorials.push(probe);
+        tp.lastError = null;
+        await tp.play(probe.id, { fast: true });
+        assert(!tp.lastError, `通る名指しの台本が落ちた: ${tp.lastError && tp.lastError.message}`);
+        assert(!nq.forcedName, `台本の名指しが再生後も残っている: ${nq.forcedName}`);
+        tp.tutorials = tp.tutorials.filter(t => t.id !== probe.id);
+    });
+
+    test('QP5: 台本は通らない指定で止まる（撮り終わってから気づく を無くす）', async (c) => {
+        c.reset();
+        const W = c.W, tp = W.tutorialPlayer;
+        const run = async (id, action) => {
+            tp.tutorials = tp.tutorials.filter(t => t.id !== id);
+            tp.tutorials.push({ id, title: 'probe', steps: [{ caption: 'x', actions: [action] }] });
+            tp.lastError = null;
+            await tp.play(id, { fast: true });
+            const e = tp.lastError;
+            tp.tutorials = tp.tutorials.filter(t => t.id !== id);
+            return e ? e.message : null;
+        };
+        // 通らないペア → 落ちる。**理由が message に入る**（収録ツールのログに残る）
+        const bad = await run('__qp5bad__',
+            { type: 'quizForce', quiz: 'same', pair: ['マレイン酸', 'フマル酸'] });
+        assert(bad && bad.includes('ペアの指定が通りません'), `通らないペアで止まらない: ${bad}`);
+        assert(bad.includes('つながり方が同じ'), `台本のログに理由が残らない: ${bad}`);
+        // 無い名前 → 落ちる
+        const badName = await run('__qp5name__',
+            { type: 'quizForce', quiz: 'naming', name: 'アセトンさん' });
+        assert(badName && badName.includes('出題の指定が通りません'), `無い名前で止まらない: ${badName}`);
+        // ★ **通る指定は今までどおり完走する**（通るはずのものまで止めていない）
+        assert(await run('__qp5ok__',
+            { type: 'quizForce', quiz: 'same', pair: ['1-プロパノール', '2-プロパノール'] }) === null,
+            '通るペアの台本まで止めている');
+        assert(await run('__qp5ok2__',
+            { type: 'quizForce', quiz: 'naming', name: '2-プロパノール' }) === null,
+            '通る名指しの台本まで止めている');
+        assert(await run('__qp5ok3__',
+            { type: 'quizForce', quiz: 'same', value: 'diff' }) === null,
+            '既存の value 指定の台本まで止めている');
     });
 
     // ===== 一部だけ流す（`?only=`）=====

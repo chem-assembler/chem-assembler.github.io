@@ -1629,7 +1629,14 @@ function drawWedges(mol, hydrogens, group) {
 function readForcedFromUrl(key, allowed) {
     try {
         const v = new URLSearchParams(location.search).get(key);
-        return allowed.includes(v) ? v : null;
+        if (allowed.includes(v)) return v;
+        // ⚠ **知らない値を黙って捨てない**（v1507）。`?quiz=` は収録の入口の1つなので、
+        // 綴りを間違えると「指定したのに抽選のまま撮れる」。パラメータが**無い**のは
+        // 指定していないだけなので何も言わない（前方互換の黙りはこちら側）。
+        if (v !== null && v !== '') {
+            console.warn(`[quiz] ?${key}=${v} は受け付けられません（使えるのは ${allowed.join(' / ')}）。指定は無視します。`);
+        }
+        return null;
     } catch (e) {
         return null;
     }
@@ -1825,13 +1832,79 @@ class SameCompoundQuiz {
      * `setForced('same'/'diff')` は**答え**を決めるだけで、**どの化合物が出るかは決まらない**。
      * 範囲を絞っても、C₆H₁₂O₆ のように候補が4件ある系列では狙いが定まらなかった
      * （グルコース対フルクトースを狙って、鎖状グルコース対環状グルコースが出た）。
+     *
+     * ⚠⚠ **指定が通らないときに黙って抽選へ戻らない**（v1507。動画レーンの実機報告）。
+     * `setForcedPair('マレイン酸', 'フマル酸')` と書いた台本から、**まったく別の問題
+     * （α-D-グルコース／D-グルコース）が、エラーも警告も無しに出た**。
+     * 台本が1本無駄になり、しかも**撮り終わってから**気づく ＝ 収録の道具として最悪の壊れ方。
+     * @returns 通らない理由（文字列）。通るなら null ＝ **台本側はこれを見て再生を止める**
+     *          （tutorial.js の `quizForce`）。
      */
     setForcedPair(nameA, nameB) {
         this.forcedPair = (nameA && nameB) ? [nameA, nameB] : null;
+        // ⚠ **ここでは「あとから変わりようのない理由」しか見ない**（`checkScope` を渡さない）。
+        //    台本は `quizForce` を**クイズを開く前**に置く決まりなので、絞り込みは
+        //    この後の `select` で変わる ＝ ここで絞り込みを理由に止めると、
+        //    **正しい台本（V62 など）まで落ちる**（実測。N2 が赤くなって気づいた）
+        return this.forcedPair ? this.forcedPairIssue(false) : null;
     }
 
+    /**
+     * 名前で指定した組が、いま出題できるか。**できないなら「なぜ」を返す**。
+     *
+     * ★ **理由を言い分けるのが仕事**——「その名前は無い」と「名前はあるが組の表に無い」は
+     * 打ち手が違う（前者は綴り直し・後者は題材の選び直しか絞り込みの解除）。
+     *
+     * ⚠ **毎回その場で数え直す（覚えておかない）。** 絞り込み（範囲・分野・シリーズ）は
+     * 指定した後から動くので、`setForcedPair` の時点の答えを持ち回ると黙ってずれる。
+     * 走査するのは高々 `allPairs`（実測 6099 組）なので、1問ごとに数え直して差し支えない。
+     *
+     * @param checkScope 絞り込み（範囲・分野・シリーズ）の外かどうかも見るか。
+     *   **出題の直前は true**（実際に出せないので断る）／**指定を受けた瞬間は false**
+     *   —— その時点の絞り込みは**まだ動く**（台本は開く前に指定する決まり）。
+     */
+    forcedPairIssue(checkScope = true) {
+        if (!this.forcedPair) return null;
+        const [a, b] = this.forcedPair;
+        this.buildLibrary();
+        const lib = this.library;
+        const asA = lib.filter(e => e.name === a), asB = lib.filter(e => e.name === b);
+        const missing = [];
+        if (!asA.length) missing.push(a);
+        if (!asB.length) missing.push(b);
+        if (missing.length) {
+            return `その名前はライブラリにありません: ${missing.join('・')}`;
+        }
+        if (a === b) return `同じ名前を2つ指定しています（「違う」の組になりません）: ${a}`;
+        // 「同じ」の指定と組の指定は両立しない（組は必ず「違う」問題になる）
+        if (this.forced === 'same') {
+            return `「同じ」の指定（setForced('same')）と組の指定は両立しません。` +
+                   `組を出すなら 'diff' にするか、答えの指定を外してください`;
+        }
+        const isWanted = ([p, q]) =>
+            (lib[p].name === a && lib[q].name === b) || (lib[p].name === b && lib[q].name === a);
+        if (this.pairs && this.pairs.some(isWanted)) return null;
+        if (this.allPairs && this.allPairs.some(isWanted)) {
+            return checkScope ? `${a} と ${b} は、いまの絞り込み（範囲・分野・シリーズ・図の長さの上限）の外です` : null;
+        }
+        // ライブラリには在るのに「違う」の組の表（allPairs）に無い ＝ 理由は2つのどちらか。
+        // allPairs は「分子式が同じ」かつ「verifyMolecule が違うと言う」組だけを収めている
+        if (!asA.some(x => asB.some(y => x.formula === y.formula))) {
+            return `${a}（${asA[0].formula}）と ${b}（${asB[0].formula}）は分子式が違います。` +
+                   `「違う」の組に使えるのは分子式が同じもの（異性体）どうしだけです`;
+        }
+        return `${a} と ${b} は、重原子のつながり方が同じ図として登録されています。` +
+               `このクイズの正解は verifyMolecule（つながり方だけ）で決まるので、` +
+               `シス・トランスや D/L だけが違う組は「違う」の組にできません`;
+    }
+
+    /** @returns 指定が受け付けられなかった理由（文字列）。受け付けたなら null */
     setForced(v) {
         this.forced = (v === 'same' || v === 'diff') ? v : null;
+        if (v && this.forced !== v) {
+            return `「同じ化合物？」の答えの指定は same / diff のどちらかです: ${v}`;
+        }
+        return null;
     }
 
     /** 1問ぶんの素材を作る。描画はしない（指定どおりか確かめてから描くため） */
@@ -1970,12 +2043,32 @@ class SameCompoundQuiz {
     nextPairQuestion() {
         const strength = this.strength();
 
+        /**
+         * ⚠⚠ **名前で組を指定されたのに通らないときは、黙って抽選に戻らない**（v1507）。
+         * 出す代わりに**なぜ通らないかを画面に出して、1問も出さない**。
+         * 録画モードのクリーン画面でもこの欄（`#quiz-result`）は主役の中に映るので、
+         * **収録の絵をひと目見れば分かる**＝「撮り終わってから気づく」を無くす。
+         * 台本から来た指定は tutorial.js の `quizForce` が別途 throw して再生ごと止める。
+         */
+        const pairIssue = this.forcedPairIssue();
+        if (pairIssue) {
+            this.resultEl.textContent = '⚠ 指定された組では出題できません: ' + pairIssue;
+            this.resultEl.className = '';
+            // 前の問題を残さない（残すと `quizAnswer` が古い問題の答えを押す）
+            this.current = null;
+            return;
+        }
+
         // 出題の指定があるときは、**作ったものが本当に指定どおりか `verifyMolecule` で
         // 確かめてから採用する**（生成の意図ではなく実際の関係で決める。
         // 「同じ？違う？」の StereoChoiceQuiz と同じ流儀）
         let built = null;
         for (let tries = 0; tries < 30 && !built; tries++) {
+            // ⚠ **組を名前で指定されたら「違う」に決まる**（v1507）。ここが抽選のままだったので、
+            // **通る指定でも半分は無視されて別の問題が出ていた**（実測 6/12。同じく無警告）。
+            // 組は2つの異なる化合物を指すので、「同じ」の問題にはそもそもできない
             const wantSame = this.pairs.length === 0 ? true
+                : this.forcedPair ? false
                 : this.forced ? this.forced === 'same' : Math.random() < 0.5;
             const cand = this.buildTargets(wantSame, strength);
             if (!this.forced) { built = cand; break; }
@@ -1991,6 +2084,19 @@ class SameCompoundQuiz {
             return;
         }
         const { entryA, entryB, targetA, targetB } = built;
+        // ★ **出したものを名前で確かめる**（v1507）。数が合っているかではなく、
+        //   **実際に出た問題**を見る ＝ 指定が素通りしたら、ここで必ず捕まる
+        if (this.forcedPair) {
+            const got = [entryA.name, entryB.name].sort().join('|');
+            if (got !== [...this.forcedPair].sort().join('|')) {
+                this.resultEl.textContent =
+                    `⚠ 指定された組（${this.forcedPair.join(' / ')}）ではなく ` +
+                    `${entryA.name} / ${entryB.name} が作られました。出題を止めます。`;
+                this.resultEl.className = '';
+                this.current = null;
+                return;
+            }
+        }
 
         this.applyForm(true);
         const molA = renderMoleculeIntoSvg(this.game, 'quiz-svg-a', targetA);
@@ -5328,10 +5434,43 @@ class NamingQuiz {
      * 動画のナレーションが範囲に踏み込んだ話（「となりがオルト」など）をすると、
      * 想定外の分子（置換基のないナフタレン等）が出た瞬間に嘘になる。
      * `StereoQuiz.setForced` と同じ役割を、こちらは**名前**で持たせる。
-     * 指定が出題プールに無ければ無視する（絞り込みと衝突しても壊れない）。
+     *
+     * ⚠⚠ **2026-09-03 に方針を変えた。** それまでは「指定が出題プールに無ければ無視する
+     * （絞り込みと衝突しても壊れない）」だったが、**壊れないのではなく黙って別の問題が出る**
+     * ＝ 収録では最悪の壊れ方だった（`SameCompoundQuiz.setForcedPair` で実害が出た。v1507）。
+     * いまは**理由を返し、出題そのものを止める**。
+     * @returns 通らない理由（文字列）。通るなら null
      */
     setForced(name) {
         this.forcedName = name || null;
+        // ⚠ 絞り込みは見ない（`SameCompoundQuiz.setForcedPair` と同じ理由。
+        //    V62 は `quizForce` の**後**に `#naming-series` を絞る）
+        return this.forcedName ? this.forcedNameIssue(false) : null;
+    }
+
+    /**
+     * 名前で指定した問題が、いま出題できるか。できないなら**なぜ**を返す。
+     * 理由は3つに割れる（打ち手が違うので言い分ける）:
+     *   ・ライブラリに無い名前            → 綴りを直す
+     *   ・同じ図の別名が在る（basePool 外）→ 命名クイズでは正解が一意に決まらないので題材を変える
+     *   ・絞り込みの外                    → 範囲・分野・シリーズを戻す
+     * @param checkScope → `SameCompoundQuiz.forcedPairIssue` と同じ約束
+     */
+    forcedNameIssue(checkScope = true) {
+        if (!this.forcedName) return null;
+        this.build();
+        const name = this.forcedName;
+        if (!this.library.some(e => e.name === name)) {
+            return `その名前はライブラリにありません: ${name}`;
+        }
+        if (!this.basePool.some(i => this.library[i].name === name)) {
+            return `${name} は、同じ図が別の名前でも登録されているため命名クイズでは出題しません` +
+                   `（正解が一意に決まらない）`;
+        }
+        if (!this.pool || !this.pool.some(i => this.library[i].name === name)) {
+            return checkScope ? `${name} は、いまの絞り込み（範囲・分野・シリーズ・図の長さの上限）の外です` : null;
+        }
+        return null;
     }
 
     nextQuestion() {
@@ -5347,8 +5486,16 @@ class NamingQuiz {
         }
         let idx = this.pool[Math.floor(Math.random() * this.pool.length)];
         if (this.forcedName) {
-            const hit = this.pool.find(i => this.library[i].name === this.forcedName);
-            if (hit !== undefined) idx = hit;
+            // ⚠ **通らない指定は黙って抽選に戻さない**（v1507）。理由を出して1問も出さない
+            const issue = this.forcedNameIssue();
+            if (issue) {
+                this.choicesEl.innerHTML = '';
+                this.resultEl.textContent = '⚠ 指定された問題は出せません: ' + issue;
+                this.resultEl.className = '';
+                this.current = null;
+                return;
+            }
+            idx = this.pool.find(i => this.library[i].name === this.forcedName);
         }
         const entry = this.library[idx];
         const strength = this.strength();
