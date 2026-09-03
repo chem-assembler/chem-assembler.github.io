@@ -3291,6 +3291,22 @@ const HYDROGEN_HALIDE_RULES = HYDROGEN_HALIDES.map(h => ({
  *   瓶ごとに違うのは「ふつうどちらを使うか」（`usually`）だけ ＝ `apply` に分岐は1つも入らない。
  */
 const OXIDANT_REAGENT_IDS = ['kmno4', 'k2cr2o7'];
+
+/* ===== ルール → 層の対応表（DESIGN_ion_layer.md I-1・§4-5 #3）=====
+ *
+ * ★★ **表はここ1つ。** 反応の `apply` に層の分岐を1行も入れない
+ *   ——「どの層へ移るか」は反応の中身ではなく**分液という見方**の話なので、
+ *   `usually`（ふつうはこの試薬）と同じく `apply` の外で足す（§12-1 の約束と同じ流儀）。
+ * ⚠ ここに載っていない反応は層を動かさない ＝ **中性の成分は残る**（これが分液の芯）。
+ * ★ `note` は見出しに添える断り。`amine_hcl` は**構造を1原子も変えない**ので、
+ *   変えていないことを画面で言う（D-I3。嘘を画面に出さない）。 */
+const RULE_PHASE = {
+    neutralize_naoh: { phase: 'aq', note: '' },
+    neutralize_nahco3: { phase: 'aq', note: '' },
+    amine_hcl: { phase: 'aq', note: 'salt-not-drawn' },
+    liberate_weak_acid: { phase: 'ether', note: '' },
+    amine_liberate_naoh: { phase: 'ether', note: '' }
+};
 // 2本に共通の説明（どちらも同じものに効く。違うのは強さの既定と、ふつうどちらを使うか）
 const OXIDANT_ACTS = '1級・2級アルコールとアルデヒド、芳香族の側鎖（環に直結した -CH₃）、' +
     '炭化水素の C=C（酸化開裂）です';
@@ -7246,7 +7262,119 @@ class Reactor {
         return conditioned.concat(plain);
     }
 
+    /**
+     * ★★ 混合物に瓶をかける（DESIGN_ion_layer.md I-1・§4-5 #2）。
+     *
+     * ⚠⚠ **`wholeCanvas`（重合）とは別物。** あちらは `detect` が**1回で全体を見る**
+     *   （並べた単量体をまとめて1つの鎖にする）。こちらは
+     *   **成分ごとに既存の `detect` を回すだけ**で、反応ルールを1行も書き換えない。
+     *
+     * ★ **箇所選択は出さない**（§4-5 #2）。混合物では「どれに効くか」が問いなので、
+     *   効いた成分だけが動けばよい —— どの -COOH かを選ばせるのはこの面の問いではない。
+     * ★ **試薬の順は固定しない**（D-I10）。押した順に効くだけで、
+     *   **順序の正解は出さない**（D-I15。教科書順は入試64件中3件しかない）。
+     * ⚠ **1回の押しで Undo は1段**（`saveState` は先頭で1回だけ）。
+     *   前後比較は出さない（1つの反応ではないので「反応の前後」と名乗れない）。
+     */
+    applyToMixture(reagent) {
+        const g = this.game;
+        const rules = REACTION_RULES.filter(r => ruleUsesReagent(r, reagent.id) && !r.info);
+        if (!rules.length) { this.explainReagentMiss(reagent); return; }
+        // 成分の顔ぶれは**先に**取る（apply が図を書き換えるので、途中で数え直さない）
+        const parts = g.splitMolecules()
+            .filter(p => p.atoms.some(a => a.element !== 'H'))
+            .map(p => ({
+                ids: p.atoms.map(a => a.id),
+                name: g.lookupCompoundName(p) || g.computeMolecularFormula(p)
+            }));
+        if (!parts.length) { this.explainReagentMiss(reagent); return; }
+        this.clearReagentNote();
+        g.saveState();
+        const hits = [], misses = [], captions = [];
+        let applied = 0;
+        parts.forEach(part => {
+            const mine = new Set(part.ids);
+            for (const rule of rules) {
+                let sites = [];
+                // ⚠ **成分ごとに detect を回し直す**（前の成分の apply で図が変わっているため）
+                try { sites = rule.detect(g.userMolecule) || []; } catch (e) {
+                    console.error('反応ルール検出エラー:', rule.id, e); continue;
+                }
+                // その成分の原子を含む箇所だけ（他の成分に跨る箇所＝分子間反応はここでは採らない）
+                /* ⚠⚠ **その成分の原子だけでできている箇所**に限る。ここを
+                 *   「最初に見つかった箇所」にすると、**別の成分の箇所を横取りして
+                 *   効いた成分の名前がずれる**（否定対照 SEP2-② が実際にこれを捕まえる。
+                 *   ⚠ 図の見た目は同じになるので、名前で引かないと空振りする）。
+                 *   ★ 他の成分に跨る箇所（分子間のエステル化など）もここで落ちる。 */
+                const site = sites.find(s => Array.isArray(s) &&
+                    s.filter(x => typeof x === 'string').length > 0 &&
+                    s.filter(x => typeof x === 'string').every(x => mine.has(x)));
+                if (!site) continue;
+                try {
+                    const res = rule.apply(g, site);
+                    applied++;
+                    hits.push(part.name);
+                    if (res && res.caption) captions.push(`${part.name}: ${res.caption}`);
+                    this.assignPhaseFor(rule, site, part.ids);
+                } catch (e) {
+                    console.error('反応実行エラー:', rule.id, e);
+                    misses.push(`${part.name}（置く場所が足りませんでした）`);
+                }
+                return;   // 1成分につき1つの反応まで（同じ瓶で二度は効かせない）
+            }
+            misses.push(part.name);
+        });
+        if (!applied) { g.history.pop(); this.explainReagentMiss(reagent); return { hits, misses }; }
+        this.discardLastReaction();   // 「反応の前後」は1つの反応の話。混合物では名乗らない
+        g.updateDrawing();
+        if (g.fitSeparationView) g.fitSeparationView();
+        this.reportMixture(reagent, hits, misses, captions);
+        /* ★ **効いた／効かないを名前で返す**（D-I15。順序の正解は出さない）。
+         * ⚠ 検査は**数ではなく名前**を見る —— 数だけだと「別の成分の箇所を横取りした」
+         *   壊れ方が図の上では同じに見えて通ってしまう（SEP2-② の実測）。 */
+        return { hits, misses };
+    }
+
+    /** ルール → 層の対応表を引いて、その成分に層の印を付ける（表は `RULE_PHASE` ただ1つ） */
+    assignPhaseFor(rule, site, partIds) {
+        const g = this.game;
+        const to = RULE_PHASE[rule.id];
+        // ⚠ **表に載っていない反応はここで返る**（＝ 既存の反応の道は1行も変わらない）
+        if (!to || !g.setPartPhase || !Array.isArray(site)) return;
+        /* 反応のあとに**その成分が誰なのか**を引き直す ——「塩ができた」で原子が増え、
+         * 「遊離した」で金属が消えるので、反応前の id の並びをそのまま使えない。
+         * ⚠ 生き残っている id を1つ拾って連結成分をたどる（原子IDの順序には頼らない）。 */
+        const alive = partIds.concat(site.filter(x => typeof x === 'string'))
+            .find(id => g.userMolecule.atoms.some(a => a.id === id));
+        if (!alive) return;
+        g.setPartPhase([...g.moleculeAtomIdsOf(alive)], to.phase, to.note);
+    }
+
+    /**
+     * 混合物にかけた結果の返し方。
+     * ★ **効いた／効かないだけ返す**（D-I15）。⚠ 順序の正解も、次に何を入れるべきかも言わない。
+     */
+    reportMixture(reagent, hits, misses, captions) {
+        const note = this.reagentNoteEl;
+        const head = `${reagent.name}（${reagent.formula}）を混合物にかけました。` +
+            `効いたのは ${hits.length} 成分（${hits.join('・')}）` +
+            (misses.length ? `／効かなかったのは ${misses.length} 成分（${misses.join('・')}）` : '') + '。';
+        this.game.showToast(head, 6000, 'success');
+        if (!note) return;
+        note.innerHTML = '';
+        const p = document.createElement('div');
+        p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
+        setEmphasisText(p, head + (captions.length ? '\n' + captions.join('\n') : ''));
+        p.style.whiteSpace = 'pre-line';
+        note.appendChild(p);
+    }
+
     onReagentClick(reagent) {
+        // ★ 分液の面を開いているあいだは、瓶は**キャンバスの全成分に順に**かかる（I-1・§4-5 #2）
+        if (this.game.separationActive && REACTION_RULES.some(r => ruleUsesReagent(r, reagent.id) && !r.info)) {
+            this.applyToMixture(reagent);
+            return;
+        }
         // 呈色・検出の瓶（第3段）は反応ルールを持たない。**構造を変えず、陽性/陰性を返すだけ**
         const tests = DETECTION_TESTS.filter(t => t.reagentId === reagent.id);
         if (tests.length) { this.runDetection(reagent, tests); return; }
@@ -7964,6 +8092,10 @@ class Reactor {
          *   `apply` に瓶ごとの分岐を1つも入れないまま言える（§12-1 の約束）。 */
         const note = this.usuallyNote(rule, reagent);
         if (note) result = { ...result, caption: `${result.caption}\n${note}` };
+        /* ★ 層の割り当ても `apply` の外で足す（DESIGN_ion_layer.md §4-5 #3）。
+         * ⚠ **`applyToMixture` と同じ関数**を通す ＝ 表（`RULE_PHASE`）を2か所で読まない。
+         *   ここが無いと、反応カードから中和したときだけ層が動かない（入口で結果が割れる）。 */
+        this.assignPhaseFor(rule, site, []);
         // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
@@ -8756,6 +8888,7 @@ if (typeof window !== 'undefined') {
      *   **環状糖もフルクトースも全部 陰性**になる（統合セッションの実測）＝ 判定が2か所にある。
      *   ★ こちらから呼べるように出しておく（乗り換えは narrowing.js 側の仕事）。 */
     window.reducingCarbonylAtoms = reducingCarbonylAtoms;
+    window.RULE_PHASE = RULE_PHASE;             // ルール → 層の対応表（SEP 群が読む）
     // `reagentId` が文字列でも配列でもよいことを、テスト側も同じ関数で読む（v1428）
     window.ruleReagentIds = ruleReagentIds;
     window.ruleUsesReagent = ruleUsesReagent;
