@@ -48,7 +48,7 @@ let taskIdx = 0;
 /* 段1: 断片の**電荷**（空欄は undefined）。⚠ 0 は「電荷 0 と答えた」＝ 誤答であって未入力ではない */
 let splitVals = [];
 let oxVals = {};      // 段2: { 断片の添字: { 元素: 値 } }
-let virtOpen = false;
+/* ⚠ 段3 の開閉の状態（virtOpen）は持たない —— 2026-09-03 に常時表示にした（buildVirtual） */
 
 function task() { return TASKS[taskIdx]; }
 
@@ -333,7 +333,14 @@ function refreshOx(res) {
   });
 }
 
-/* ---- 段3: 仮想的に単原子イオンへ分ける（⚠ 断りを外さない） ---- */
+/* ---- 段3: 仮想的に単原子イオンへ分ける（⚠ 断りを外さない） ----
+
+   ★ **ひらく・閉じるは無くした**（2026-09-03・ユーザーの指示「ひらく・閉じるはなくてよい
+   （常時表示）」）。⚠ 開閉していたのは `<details>` ではなく、ここで作っていた
+   `<button class="igSkip">仮の分け方を見る（数えかたの正体）</button>` の1つ。
+   ⚠ **段3 そのものが出るのは段2 が解けてから**で、これは変えていない ——
+   ここに描く姿は**人が入れた数から組み立てている**ので、答える前は描きようがない
+   （答えの表を持たない、というこのモードの決めの裏返し）。 */
 
 function buildVirtual() {
   virtWrapEl.innerHTML = "";
@@ -343,12 +350,6 @@ function buildVirtual() {
   const s = SPECIES[target.sp];
   if (Object.keys(s.atoms).length < 2) { step3El.hidden = true; return; }
   step3El.hidden = false;
-  const btn = document.createElement("button");
-  btn.className = "igSkip";
-  btn.textContent = virtOpen ? "仮の分け方を閉じる" : "仮の分け方を見る（数えかたの正体）";
-  btn.onclick = () => { virtOpen = !virtOpen; buildVirtual(); };
-  virtWrapEl.appendChild(btn);
-  if (!virtOpen) return;
 
   // 値は答えの表からではなく、**人が入れた数**から組み立てる（ここでも答えを持たない）
   const got = (oxVals[t.parts.indexOf(target)] || {})[target.ask];
@@ -362,6 +363,9 @@ function buildVirtual() {
     line.append(el("span", "fterm oxVirtIon", (v.n > 1 ? v.n + " " : "") + v.el + supCharge(v.ox)));
   });
   virtWrapEl.appendChild(line);
+  /* ⚠ **断りは必ず添える**（model.js の OX_VIRTUAL_CAVEAT の注記）。
+     ⚠ ** の剥がしは残す —— いまの文には無いが、他の判定文と同じ作法にしておく
+     （文面を書き換えた人が ** を入れても、画面に ** が出ない） */
   const cav = el("div", "oxCaveat");
   cav.textContent = OX_VIRTUAL_CAVEAT.replace(/\*\*/g, "");
   virtWrapEl.appendChild(cav);
@@ -458,7 +462,6 @@ function buildStageNav() {
 function initTask() {
   splitVals = [];
   oxVals = {};
-  virtOpen = false;
   buildStageNav();
   const t = task();
   stageTitleEl.innerHTML = "";
@@ -501,7 +504,8 @@ window.OxNum = {
     if (v === null) delete oxVals[i][elName]; else oxVals[i][elName] = v;
     refresh();
   },
-  toggleVirtual() { virtOpen = !virtOpen; buildVirtual(); return virtOpen; },
+  /* ⚠ toggleVirtual は無くした（段3 は常時表示）。
+     見るときは state().step3Visible と #virtWrap の中身を直接読む */
 };
 
 const idParam = new URLSearchParams(location.search).get("sp");

@@ -2852,10 +2852,22 @@ function runModelTests() {
     assert(vp.length === 2, "Cr₂O₇²⁻ が2種にほどけない");
     assert(vp.find((x) => x.el === "Cr").ox === 6 && vp.find((x) => x.el === "Cr").n === 2, "Cr が 2個 ×(+6) でない");
     assert(vp.find((x) => x.el === "O").ox === -2 && vp.find((x) => x.el === "O").n === 7, "O が 7個 ×(−2) でない");
-    // ⚠ 断り文が「実在の電離ではない」と言っていること（消したら赤くする）
-    assert(/実際に起き(て|る)/.test(OX_VIRTUAL_CAVEAT) && OX_VIRTUAL_CAVEAT.includes("電離ではない"),
-      "断り文が「実在の電離ではない」と言っていない");
-    assert(OX_VIRTUAL_CAVEAT.includes("道具"), "断り文が「数えるための道具」だと言っていない");
+    /* ⚠⚠ **見張っているのは文面ではなく「断りを必ず添える」という約束**
+       （model.js の注記 ＋ qa/KNOWLEDGE_CAVEATS.md の型）。
+       ★ 文面はユーザーが書き直せる（2026-09-03 に一度そうなった）ので、
+       **語句の丸ごと一致で見ない** —— 毎回赤くなる検査は、中身を見ない検査になる
+       （DEVELOPMENT.md「毎回出る赤は抜けより高くつく」）。
+       ⚠ 代わりに、断りが**必ず持っていなければならない2つの向き**を見る:
+         (1) **仮の話だと言っている**（仮想 ／ 仮に ／ …としたとき）
+         (2) **本当にはそうならないと言っている**（実際には ／ 実際に起き…ない）
+       この2つが欠けた断りは、仮の分け方を本当の電離に見せてしまう。 */
+    const cav = OX_VIRTUAL_CAVEAT;
+    assert(cav && cav.length >= 20, "断り文が空か短すぎる（断らずに仮の分け方を見せている）: " + cav);
+    assert(/仮想|仮に|とした(とき|場合)/.test(cav),
+      "断り文が「仮の話だ」と言っていない: " + cav);
+    assert(/実際に/.test(cav), "断り文が「実際にはそうならない」と言っていない: " + cav);
+    // ⚠ 画面に出すのは素の文（強調の ** は書かない。書かれても剥がして出す側の作法は別）
+    assert(!cav.includes("**"), "断り文に強調記法が入っている（画面に ** が出る恐れ）: " + cav);
   });
 
   /* ★ 数の書き方は3本ある（2026-09-03・ユーザーの指摘で分けた）。
@@ -8800,20 +8812,35 @@ async function runOxNumUITests(iframe) {
     assert(state().oxOk, "下→上の順で埋めると通らない");
   });
 
-  await t("OXNUM UI: 仮想の単原子イオンは、断りと一緒にしか出てこない", async () => {
+  await t("OXNUM UI: 仮想の単原子イオンは、断りと一緒に・ひらかずに出る", async () => {
     win.OxNum.goto("K2Cr2O7");
     typeInto("splitIn0", 1); typeInto("splitIn1", -2);
     assert(doc.getElementById("step3").hidden, "解く前から段3が出ている");
     typeInto("oxIn1_Cr", 6);
     assert(!doc.getElementById("step3").hidden, "解いても段3が出ない");
-    assert(!$$("#virtWrap .oxCaveat").length, "開く前から中身が出ている");
-    doc.querySelector("#virtWrap button").click();
+    /* ★ 2026-09-03・ユーザーの指示「ひらく・閉じるはなくてよい（常時表示）」。
+       ⚠ 段3 が出るのは段2 が解けてからのまま（姿は人が入れた数から組み立てるので、
+       答える前は描きようがない）。無くしたのは**その中の開閉の釦**。 */
+    assert(!$$("#virtWrap button").length && !$$("#virtWrap details").length,
+      "段3 にひらく・閉じるが残っている");
     const line = doc.querySelector("#virtWrap .oxVirtLine");
     const cav = doc.querySelector("#virtWrap .oxCaveat");
     assert(line && line.textContent.includes("Cr⁶⁺") && line.textContent.includes("O²⁻"),
-      "仮の分け方が 2Cr⁶⁺ ＋ 7O²⁻ になっていない: " + (line && line.textContent));
-    assert(cav && cav.textContent.includes("実際に起きている電離ではない"),
-      "⚠ 断りが付いていない（これが無いと仮の話が本当の電離に見える）");
+      "ひとりでに出るはずの仮の分け方（2Cr⁶⁺ ＋ 7O²⁻）が出ていない: " + (line && line.textContent));
+    /* ⚠⚠ **断りが必ず付いていること。** ここも文面ではなく約束で見る
+       （データ側の「必ず断りが付く」と同じ2つの向き）。 */
+    assert(cav && cav.textContent.trim().length >= 20,
+      "⚠ 断りが付いていない（これが無いと仮の話が本当の電離に見える）: " + (cav && cav.textContent));
+    assert(/仮想|仮に|とした(とき|場合)/.test(cav.textContent) && /実際に/.test(cav.textContent),
+      "断りが「仮の話」「実際にはそうならない」の両方を言っていない: " + cav.textContent);
+    assert(cav.textContent === OX_VIRTUAL_CAVEAT.replace(/\*\*/g, ""),
+      "画面の断りが model.js の OX_VIRTUAL_CAVEAT と別物になっている（文面を2か所に持っている）");
+    // ★ 別の回でもそのまま出る（前の文は Cr₂O₇²⁻ を名指ししていて、他の回では話が合っていなかった）
+    win.OxNum.goto("MnO4-");
+    typeInto("oxIn0_Mn", 7);
+    const cav2 = doc.querySelector("#virtWrap .oxCaveat");
+    assert(cav2 && cav2.textContent === cav.textContent, "回が変わると断りが変わる／消える");
+    assert(!/Cr/.test(cav2.textContent), "断りが特定の化学種を名指ししている（他の回で話が合わない）: " + cav2.textContent);
   });
 
   await t("OXNUM UI: 分ける相手がいない回は、段1で足踏みさせない", async () => {
