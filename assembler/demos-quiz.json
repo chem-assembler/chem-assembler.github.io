@@ -1585,5 +1585,62 @@
         ]
       }
     ]
+  },
+  {
+    "id": "quiz-stereo-wrong-then-overlay",
+    "title": "V140: わざと間違えてみる（クイズ㉓・立体）",
+    "summary": "**仮**（挙動を見てから書き直す）。⭐ **V113 の類題**——**同じ入門（くさび）モードで、わざと「鏡像異性体」を押して ✗ を出してから、重ねて確かめて直す。**⚠ **誤答のあとに重ね合わせが押せるかを実測する。**",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "この2つ、どんな関係？",
+        "actions": [
+          {
+            "type": "quizForce",
+            "quiz": "stereo",
+            "value": "same"
+          },
+          {
+            "type": "button",
+            "selector": "#btn-stereo-quiz"
+          },
+          {
+            "type": "select",
+            "selector": "#sq-mode",
+            "contains": "入門"
+          },
+          {
+            "type": "wait",
+            "ms": 8148
+          }
+        ]
+      },
+      {
+        "caption": "わざと「鏡像異性体」を押す",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-sq-enantiomer"
+          },
+          {
+            "type": "wait",
+            "ms": 10669
+          }
+        ]
+      },
+      {
+        "caption": "重ねて確かめる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-sq-overlay"
+          },
+          {
+            "type": "wait",
+            "ms": 13448
+          }
+        ]
+      }
+    ]
   }
 ]
