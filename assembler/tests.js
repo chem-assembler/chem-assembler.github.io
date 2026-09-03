@@ -34344,12 +34344,31 @@
         const used = new Set([...RULES, ...TESTS].flatMap(rIds));
         const orphan = ids.filter(id => !used.has(id));
         assert(orphan.length === 0, `どのルールにも検出にも使われていない瓶: ${orphan.join(', ')}`);
-        // (4b) 変えるものと調べるものは**排他**。同じ瓶が両方に載ると
-        //      「押すと反応が進むこともあるし進まないこともある」になる
+        /* (4b) 変えるものと調べるものは**原則として排他**。同じ瓶が両方に載ると
+         *      「押すと反応が進むこともあるし進まないこともある」になる。
+         * ★★ **例外は炭酸水素ナトリウムただ1本**（DESIGN_ion_layer.md I-1・v1510）。
+         *   ⚠ **これは化学のほうが排他でない**: NaHCO₃ にカルボン酸を入れると
+         *     **CO₂ が出る（＝ 調べる）と同時に塩ができる（＝ 変える）**。片方だけを持つと、
+         *     分液で「カルボン酸だけを水層へ移す」という入試64件中41件の操作が書けない。
+         *   ★ **押したときに走るのは今までどおり検出のほう**（`onReagentClick` は
+         *     `DETECTION_TESTS` を先に見る）＝ RG7・RG8 の不変条件は1つも動いていない。
+         *     反応のほうへの入口は**反応の一覧**と**分液の混合物**だけ。
+         *   ⚠ 名指しの1本以外がここに増えたら赤（例外を1本に留めるためのラチェット）。 */
+        const SPLIT_ROLE_BOTTLES = ['nahco3'];
         const byRule = new Set(RULES.flatMap(rIds));
         const byTest = new Set(TESTS.flatMap(rIds));
         const both = [...byRule].filter(id => byTest.has(id));
-        assert(both.length === 0, `反応ルールと検出の両方に使われている瓶: ${both.join(', ')}`);
+        assert(both.slice().sort().join(',') === SPLIT_ROLE_BOTTLES.slice().sort().join(','),
+            `反応ルールと検出の両方に使われている瓶が宣言と違う（実際: ${both.join(', ') || 'なし'} ／ ` +
+            `宣言: ${SPLIT_ROLE_BOTTLES.join(', ')}）`);
+        // ★ 例外の瓶は**押しても図が変わらない**（＝ 検出のほうが勝つ）ことを実測で押さえる
+        SPLIT_ROLE_BOTTLES.forEach(id => {
+            setupReagent(c, ['酢酸']);
+            const before = W.canonicalCode(c.game.userMolecule);
+            bottle(c, id).click();
+            assert(W.canonicalCode(c.game.userMolecule) === before,
+                `★ ${id} を押したら図が変わった（両方に載る瓶でも、押したときは検出が勝つこと）`);
+        });
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
             `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
         // (5) 第2段で紐づくのは 32 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
@@ -34400,8 +34419,9 @@
              *   `amine_hcl` は塩化水素に、`amine_liberate_naoh` は NaOH に相乗りしている。
              *   `liberate_weak_acid` は瓶が希硫酸1本から**希硫酸＋塩酸の2本**になった
              *   （入試の遊離は塩酸45件・硫酸14件で、いちばん多い塩酸で引けなかった）。 */
+            'neutralize_nahco3',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 39, `瓶に紐づくルールが ${linked.length} 件（39件を期待）`);
+        assert(linked.length === 40, `瓶に紐づくルールが ${linked.length} 件（40件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -49512,6 +49532,58 @@
             `★ 分液を開いていないのに瓶が2成分ともに効いた（${names2.join(' / ')}）`);
         c.reset();
         return `混合物にかけた成分 3／効いた 2・効かない 1`;
+    });
+
+    test('SEP3: NaHCO₃ はカルボン酸に効いてフェノールには効かない（酸の強さの見分け）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, R = W.reactor;
+        const rule = W.REACTION_RULES.find(r => r.id === 'neutralize_nahco3');
+        assert(rule, 'neutralize_nahco3 が無い');
+        assert(W.ruleUsesReagent(rule, 'nahco3'), 'neutralize_nahco3 が炭酸水素ナトリウムの瓶に繋がっていない');
+
+        /* ★★ **これが分液の芯**。同じ「酸性の -OH」でも、炭酸より強い側だけが NaHCO₃ と反応する。
+         * ⚠ 否定対照は**別の性質を2つ**:
+         *   ① フェノールには効かない        … 酸の強さで割れていることの対照
+         *   ② そのフェノールも NaOH には効く … ①が「フェノールは何にも効かない」ではないことの対照
+         *      （①だけだと、detect が全部落ちていても緑になる）
+         * ★ スルホン酸も炭酸より強いので効く（3つめの側から同じ規則を確かめる）。 */
+        const want = [
+            ['安息香酸', true, 'カルボン酸は炭酸より強い'],
+            ['酢酸', true, '鎖のカルボン酸でも同じ'],
+            ['ベンゼンスルホン酸', true, 'スルホン酸は硫酸に近い強い酸'],
+            ['フェノール', false, '★ フェノールは炭酸より弱い ＝ ここが分液の分かれ目'],
+            ['エタノール', false, 'アルコールの -OH はそもそも酸性でない'],
+            ['ニトロベンゼン', false, '酸性の -OH が無い']
+        ];
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        want.forEach(([name, hit]) => assert(lib.has(name), `題材「${name}」がライブラリに無い`));
+        let pos = 0, neg = 0;
+        want.forEach(([name, hit, why]) => {
+            sepSetup(c, [name]);
+            const n = rule.detect(g.userMolecule).length;
+            assert(hit ? n > 0 : n === 0,
+                `${name}: NaHCO₃ の箇所が ${n} 件（${hit ? '効くはず' : '効かないはず'}／${why}）`);
+            if (hit) pos++; else neg++;
+        });
+        assert(pos >= 3 && neg >= 3, `陽性 ${pos} 件・陰性 ${neg} 件（空振りの緑よけ）`);
+
+        // ★ 否定対照②: 同じフェノールが NaOH には効く（＝ ①が「全部落ちている」ではない）
+        sepSetup(c, ['フェノール']);
+        const naoh = W.REACTION_RULES.find(r => r.id === 'neutralize_naoh');
+        assert(naoh.detect(g.userMolecule).length > 0,
+            '★ フェノールが NaOH にも効かない ＝ 酸の判定そのものが落ちている（①が空振り）');
+
+        // ---- 混合物でやると、カルボン酸だけが水層へ移りフェノールは残る（入試の定番の1手）
+        sepSetup(c, ['安息香酸', 'フェノール']);
+        g.startSeparation();
+        const res = R.applyToMixture(W.REAGENTS.find(r => r.id === 'nahco3'));
+        assert(res.hits.join(',') === '安息香酸' && res.misses.join(',') === 'フェノール',
+            `★ NaHCO₃ が「カルボン酸だけ」になっていない（効いた: ${res.hits.join('・') || 'なし'}／` +
+            `効かない: ${res.misses.join('・') || 'なし'}）`);
+        assert(g.phaseOfPart(sepPart(c, 'フェノール')) === 'ether',
+            'フェノールが水層へ移ってしまった');
+        c.reset();
+        return `NaHCO₃ が効く ${pos} 件・効かない ${neg} 件`;
     });
 
     /* ★★ SEP6: **どの幅から「札の一覧」にするか**（D-I2・ユーザー決定「スマホでは

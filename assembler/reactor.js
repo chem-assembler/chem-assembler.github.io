@@ -2094,6 +2094,19 @@ function sodiumReactiveSites(mol) {
     });
 }
 
+/**
+ * ★ **炭酸より強い酸だけ**（カルボン酸・スルホン酸）を集める（DESIGN_ion_layer.md I-1）。
+ *
+ * ⚠ **フェノールを外すのがこの関数の全部**。酸の強さは
+ *   **カルボン酸 > 炭酸 > フェノール** なので、NaHCO₃ から CO₂ を追い出せるのは
+ *   炭酸より強い側だけ ＝ **分液でカルボン酸とフェノールを分ける手**そのもの。
+ * ★ 判定は `acidKindOf` に任せる（酸の種類を見分ける規則を2か所に書かない）。
+ */
+function strongerThanCarbonicAcidSites(mol) {
+    return neutralizableAcidSites(mol)
+        .filter(([oId, anchorId]) => acidKindOf(mol, oId, anchorId).name !== 'フェノール');
+}
+
 function liberatableSaltSites(mol) {
     const sites = [];
     mol.atoms.forEach(a => {
@@ -5855,6 +5868,45 @@ const REACTION_RULES = [
                     '実際は -O⁻ と Na⁺ のイオン結合です。）' +
                     '塩になると水に溶けやすくなります。' + kind.rank +
                     'できた塩に強い酸（希硫酸・塩酸）を加えると、もとの酸が遊離して戻ってきます。',
+                changed: [oId, na.id]
+            };
+        }
+    },
+    {
+        /* ★ 中和（酸 ＋ NaHCO₃ → 塩 ＋ CO₂）。DESIGN_ion_layer.md I-1。
+         *
+         * ⚠⚠ **フェノールには効かない**のが要点。酸の強さは
+         *   **カルボン酸 > 炭酸 > フェノール** なので、NaHCO₃ から CO₂ を追い出せるのは
+         *   炭酸より強い酸だけ ＝ **分液でカルボン酸とフェノールを分ける手**そのもの。
+         *   `neutralize_naoh` と detect を共有しないのはここだけの理由で、
+         *   判定は `acidKindOf`（既存）に任せてある（`strongerThanCarbonicAcidSites`）。
+         * ★ 入試64件のうち NaHCO₃ が出るのは 41件（1手目だけでも 15件）。
+         *   ⚠ **順序は固定しない**（教科書順「塩酸→NaHCO₃→NaOH」は 3件だけ。D-I10）。
+         * ⚠ **発生する CO₂ は描かない**（`neutralize_naoh` が水を描かないのと同じ流儀。
+         *   画面の分子に無い分子は描かず、文面で言う）。
+         * ★ 同じ瓶に「調べるもの」の NaHCO₃（CO₂ が出る／出ない）が既に居る。
+         *   ⚠ 押したときに走るのは**今までどおり検出のほう**で、この反応が出るのは
+         *   **反応の一覧**と**分液の混合物**から（`onReagentClick` を1行も変えていない）。 */
+        id: 'neutralize_nahco3',
+        reagentId: 'nahco3',
+        label: '中和（酸 + NaHCO₃, CO₂ 発生）→ ナトリウム塩',
+        detect(mol) { return strongerThanCarbonicAcidSites(mol); },
+        apply(game, site) {
+            const [oId, anchorId] = site;
+            const mol = game.userMolecule;
+            const kind = acidKindOf(mol, oId, anchorId);
+            const spot = freeSpotAround(mol, oId);
+            if (!spot) throw noRoom('ナトリウムを置く空間がありません');
+            const na = mol.addAtom('Na', spot.x, spot.y);
+            mol.addBond(oId, na.id, 1);
+            return {
+                caption: `${kind.name}が炭酸水素ナトリウムと中和して、ナトリウム塩になりました` +
+                    '（二酸化炭素 CO₂ が発生します。図には描いていません）。' +
+                    '炭酸より強い酸だけが NaHCO₃ から CO₂ を追い出せるので、' +
+                    '**この反応が起こること自体が「炭酸より強い酸」の証拠**です。' +
+                    '（このアプリは電荷を持たないので、塩は線1本の共有結合として書いています。' +
+                    '実際は -O⁻ と Na⁺ のイオン結合です。）' +
+                    '塩になると水に溶けやすくなります。' + kind.rank,
                 changed: [oId, na.id]
             };
         }
