@@ -34369,6 +34369,17 @@
             assert(W.canonicalCode(c.game.userMolecule) === before,
                 `★ ${id} を押したら図が変わった（両方に載る瓶でも、押したときは検出が勝つこと）`);
         });
+        /* ⚠⚠ **開けた分子モーダルをここで閉じる**（v1512）。`setupReagent` はモーダルを開く。
+         * 開いたままにすると `reactor.refresh()` が**相手の呼び出しの案内**
+         * （`[data-rule]` を持つ札）を描き続け、あとから走る `FZ2` の否定対照
+         * （「相手を並べなければ反応ボタンは生えない」）が **1分子だけで6本 生えた**と言って赤くなる。
+         * ⚠ `c.reset()` では閉じない（`reset` はモーダルに触らない）。
+         * ★ **これは実測で見つけた既存のもろさ**（v1512 のレーンが自分の変更を疑って調べたら、
+         *   `main` でも `?only=RG7,FZ2` で同じ赤が出た ＝ 元からある）。全走では
+         *   RG7 と FZ2 のあいだの検査がたまたま閉じているので表に出ていない。
+         * ★ `RG1` は元々モーダルを開かない検査なので、開けたぶんは自分で片づける。 */
+        const mmClose = c.D.getElementById('btn-molecule-modal-close');
+        if (mmClose) mmClose.click();
         REAGENTS.forEach(r => assert(r.kind === 'detect' ? byTest.has(r.id) : byRule.has(r.id),
             `瓶 ${r.id} の kind（${r.kind}）と実際の繋ぎ先が食い違っている`));
         // (5) 第2段で紐づくのは 32 件ちょうど（増減したら気づけるように数と顔ぶれを固定する）
