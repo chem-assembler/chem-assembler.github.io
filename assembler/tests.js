@@ -126,6 +126,7 @@
  * | O   | 1〜2   | 官能基カード・スルホ基 |
  * | P   | 1〜3   | 官能基配置・不斉マーク編集 |
  * | PM  | 1〜12  | 重合の穴埋め（アセチレンの付加重合・縮合重合。図はあるのに到達できなかった反応）。**3〜4 は生成物の鎖が一直線になること**＝ DESIGN_reaction_execution.md §14（ユーザー実機報告「エチレンの付加重合後が一直線にならない」。実測で 90° の折れ5か所・y のばらつき 84px の階段だった）。3 が本体（折れ0・y のばらつき 0px・刻み一定・画面の並びと鎖の並びが一致）・**4 は否定対照**＝ 一直線化は見た目だけ（正準コードは座標をずらしても組み替えても変わらない／単量体を左右逆に並べても同じ高分子／重合に関わらない分子は1原子も動かない／主鎖の結合はすべて直交で刻みぴったり＝ CLAUDE.md の作図例外を増やしていない）。**5〜6 は1分子からの入口**＝ 同書 §15（ユーザー要望「1分子でも重合を出せるようにしたい」）。5 が本体（エチレン1個で札が出て、押すと呼んで・並べて・重合まで進む／呼んだ結果が横一線）・**6 は否定対照**＝ 2分子以上を自分で並べたときの従来の道が変わっていない・単量体でない分子には札を出さない | **7〜12 は動画レーンの実測報告 2026-08-26**（DESIGN_reaction_execution.md §18）＝ スチレンの付加重合が ×3 以上で必ず落ちる／鎖ができた後の2回目の重合が一覧から消える／加硫が1本の鎖の中で橋を架ける。**3件とも原因が別**。7 が本体（±120° 整形が環の枝を平行移動していたので ipso まわりが -60°/120°/-120° になり、鎖の伸びる先との隙間が実測 2.0px ＝ 自分の環で道を塞いでいた／隣の環どうしも 4.0px 重なる）・**8 は否定対照**＝ 直したのは作図だけ（正準コードは不変・主鎖は直交・**環を含まない枝は平行移動のまま**でオレイン酸が傾かない・置換基2本の頭は触らない）。9 が本体（siteFilter の focus 絞り込みが 2回目の重合の箇所を落としていた ＝ detect は1件返し apply は成功する。wholeCanvas で外す）・**10 は否定対照**＝ 印を持つのは重合の3つだけ・v1429 のヨードホルムは再発していない・**選択があるときは選択が勝つ**。11 が本体（vulcanizablePairs が返した3組すべてが同一成分＝分子内ループ。硫黄を通らない成分を「鎖の身元」にして別の鎖どうしに限る）・**12 は否定対照**＝ 硫黄の瓶の miss が理由と次の一手を言う・重合そのものは1件も減っていない
+ * | PH  | 1〜3   | ★ **フェノールの工業的製法2本**（vNNNN・ユーザー承認）。系統樹レーンが名指しした穴（§10.13-A #9 アルカリ融解 入試11大問／#10 クロロベンゼンの加水分解 入試9大問）で、⚠ あのレーンは「イオンの壁の向こう」として見送ったが**壁の位置が違った** —— ナトリウムフェノキシドは登録済みで、Na を線1本で描く既存の流儀にそのまま乗る（瓶も要らず `naoh_aq` に相乗り）。1 が対象範囲（★**一置換のベンゼン環だけ**。⚠ 広げると 32 分子・33 通りのうち 32 通りが「（未登録）」になる実測）と生成物の**名前**・2 が道すじ（ベンゼン → スルホン化 → 中和 → 融解 → 弱酸の遊離 の4段と、塩素化 → 加水分解 → 弱酸の遊離 の3段。★ 各段の名前まで照合）・**3 が条件の言い分けと否定対照**（⚠ 条件が2本で違う〈固体 NaOH と融解／水溶液で高温高圧〉のに同じ瓶なので label と caption で言う。⚠⚠ **既存の NaOH の行き先が1分子も増えていない**＝「1タップで終わっていた人に選択面が出る」費用を払っていない） |
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
@@ -34352,8 +34353,14 @@
              *   —— 瓶の名前が条件そのもの（鉄触媒 ／ 光）で、隣に並べないと画面で比べられない。
              *   実測: 2つが同時に通る分子が在庫に1つも無いので `condition` の2択は使えない。 */
             'chlorinate_alkane',
+            /* ★ vNNNN: フェノールの工業的製法2本。⚠ **瓶は足していない**（`naoh_aq` に相乗り）。
+             *   ⚠ 条件が2本で違う（固体の NaOH と融解 ／ 水溶液で高温・高圧）ので、
+             *   `condition`（2択UI）ではなく **label と caption** で言い分けている ——
+             *   実測で、この2本が通る分子では `naoh_aq` の他のルールが1本も通らず、
+             *   2択の画面が出る場面が無い（`condition` を付けても見えない）。 */
+            'alkali_fusion', 'hydrolysis_chlorobenzene',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 37, `瓶に紐づくルールが ${linked.length} 件（37件を期待）`);
+        assert(linked.length === 39, `瓶に紐づくルールが ${linked.length} 件（39件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -47986,6 +47993,170 @@
             '⚠ プロパンが「塩素・鉄触媒」で塩素化された（アルカンの置換に鉄触媒は使わない）');
         assert(noteEl.textContent.includes('光'),
             `アルカンに鉄触媒を掛けたのに、光の瓶へ案内していない: ${noteEl.textContent.slice(0, 140)}`);
+        c.reset();
+    });
+
+    /* ===== PH: フェノールの工業的製法2本（vNNNN） =====
+     *
+     * ★ 系統樹レーン（`DESIGN_reaction_execution.md` §10.13-A の #9・#10）が名指しした穴。
+     *   入試 11 大問（アルカリ融解）と 9 大問（クロロベンゼンの加水分解）。
+     *   ⚠ あのレーンは「イオンの壁の向こう」として見送ったが、**壁の位置が違った** ——
+     *   ナトリウムフェノキシドは登録済みで、Na を線1本で描く既存の流儀にそのまま乗る。
+     *
+     * ★ **見張るのは3つ**:
+     *   1 … 対象範囲（一置換のベンゼン環だけ）と、生成物の**名前**
+     *   2 … 教科書の4手／3手がぜんぶつながること（ベンゼンから フェノール まで）
+     *   3 … 条件の言い分けと、⚠ **既存の画面が1つも変わっていないこと**
+     */
+    test('PH1: 一置換のベンゼン環だけが -ONa に置き換わる（生成物はナトリウムフェノキシド）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = (id) => {
+            const r = W.REACTION_RULES.find(x => x.id === id);
+            assert(r, `${id} が REACTION_RULES に無い`);
+            return r;
+        };
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `${name} が呼び出せない`);
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        const nameNow = () => {
+            const lib = g.lookupCompoundName(g.userMolecule);
+            return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+        };
+        const AF = rule('alkali_fusion'), HC = rule('hydrolysis_chlorobenzene');
+        // [分子, ルール, 期待する箇所数, なぜ]
+        const rows = [
+            ['ベンゼンスルホン酸ナトリウム', AF, 1, '★ 教科書のアルカリ融解の相手はこの塩'],
+            ['ベンゼンスルホン酸', AF, 0, '⚠ 酸のままでは通さない（先に中和して塩にする）'],
+            ['クロロベンゼン', HC, 1, '★ 教科書の加水分解の相手'],
+            ['クロロベンゼン', AF, 0, '⚠ -SO₃Na ではない'],
+            ['ベンゼンスルホン酸ナトリウム', HC, 0, '⚠ -Cl ではない'],
+            ['p-ジクロロベンゼン（パラジクロロベンゼン）', HC, 0, '⚠ 二置換体は対象外（生成物に名前が出ない）'],
+            ['o-クロロトルエン', HC, 0, '⚠ 同上'],
+            ['o-クロロベンゼンスルホン酸', HC, 0, '⚠ 同上。★ ここを通すと NaOH の行き先が 1 → 2 通りに増える'],
+            ['アルキルベンゼンスルホン酸ナトリウム', AF, 0, '⚠ 洗剤。これを融解させる場面は教科書に無い'],
+            ['ベンゼン', HC, 0, '⚠ 置換基が無い'],
+            ['フェノール', HC, 0, '⚠ もう -OH'],
+            ['1,2-ジクロロエタン', HC, 0, '⚠⚠ 鎖についた -Cl は対象外（環に付いているから外れにくい、が要点）']
+        ];
+        const bad = rows.filter(([n, r, want]) => { load(n); return r.detect(g.userMolecule).length !== want; })
+            .map(([n, r, want]) => { load(n); return `${n} × ${r.id}: ${r.detect(g.userMolecule).length}箇所（${want}を期待）`; });
+        assert(bad.length === 0, `箇所の数が設計と違う\n  ${bad.join('\n  ')}`);
+        assert(rows.filter(([, , w]) => w > 0).length === 2, '通る例が2件でない（物差しが空振り）');
+
+        // ★ 生成物は**名前で**引く（原子を数えても「何かが起きた」しか言えない）
+        [['ベンゼンスルホン酸ナトリウム', AF], ['クロロベンゼン', HC]].forEach(([n, r]) => {
+            load(n);
+            const res = r.apply(g, r.detect(g.userMolecule)[0]);
+            assert(nameNow() === 'ナトリウムフェノキシド（フェノールのナトリウム塩）',
+                `${n} × ${r.id} の生成物が ${nameNow()}`);
+            // 印は「変わったところ」＝ 環の炭素・新しい O・新しい Na の3つ（CV4 の物差しと同じ考え方）
+            assert(res.changed.length === 3, `${r.id} の印が ${res.changed.length} 個（3個を期待）`);
+        });
+        c.reset();
+        return `${rows.length} 通りで箇所数を照合（通る2・通らない10）／生成物は2本とも名前で確認`;
+    });
+
+    test('PH2: ベンゼンからフェノールまで、2つの道すじが最後までつながる', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const nameNow = () => {
+            const lib = g.lookupCompoundName(g.userMolecule);
+            return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+        };
+        const walk = (ids) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule('ベンゼン'), 'ベンゼンが呼び出せない');
+            g.updateDrawing();
+            const seq = ['ベンゼン'];
+            ids.forEach(id => {
+                const r = W.REACTION_RULES.find(x => x.id === id);
+                assert(r, `${id} が無い`);
+                const s = r.detect(g.userMolecule);
+                assert(s.length, `${id} の箇所が出ない（ここで道すじが切れている）: ${seq.join(' → ')}`);
+                r.apply(g, s[0]);
+                seq.push(nameNow());
+            });
+            return seq;
+        };
+        // ① スルホン化 → 中和 → アルカリ融解 → 弱酸の遊離（教科書の4段）
+        const a = walk(['aromatic_sulfonation', 'neutralize_naoh', 'alkali_fusion', 'liberate_weak_acid']);
+        assert(a.join(' → ') === 'ベンゼン → ベンゼンスルホン酸 → ベンゼンスルホン酸ナトリウム → ' +
+            'ナトリウムフェノキシド（フェノールのナトリウム塩） → フェノール',
+            `アルカリ融解の道すじが教科書の並びにならない: ${a.join(' → ')}`);
+        // ② 塩素化 → 加水分解 → 弱酸の遊離（教科書の3段）
+        const b = walk(['aromatic_halogenation', 'hydrolysis_chlorobenzene', 'liberate_weak_acid']);
+        assert(b.join(' → ') === 'ベンゼン → クロロベンゼン → ' +
+            'ナトリウムフェノキシド（フェノールのナトリウム塩） → フェノール',
+            `クロロベンゼンの道すじが教科書の並びにならない: ${b.join(' → ')}`);
+        c.reset();
+        return '4段（アルカリ融解）・3段（加水分解）とも、各段の名前まで一致';
+    });
+
+    test('PH3: 条件は label と caption で言い分ける／★既存の NaOH の画面が1つも変わっていない', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const AF = W.REACTION_RULES.find(x => x.id === 'alkali_fusion');
+        const HC = W.REACTION_RULES.find(x => x.id === 'hydrolysis_chlorobenzene');
+        /* ⚠ 2本は**条件が違う**（固体の NaOH と融解 ／ 水溶液で高温・高圧）のに、
+         *   同じ「NaOH aq」の瓶にぶら下がる。★ だから条件は札の見出しと結果の文の両方で言う。 */
+        assert(/融解/.test(AF.label), `アルカリ融解の label に条件が無い: ${AF.label}`);
+        assert(/高温|高圧/.test(HC.label), `加水分解の label に条件が無い: ${HC.label}`);
+        assert(AF.label !== HC.label, '2本の札の見出しが同じ');
+        const load = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule(name), `${name} が呼べない`);
+            g.updateDrawing();
+        };
+        load('ベンゼンスルホン酸ナトリウム');
+        const capA = AF.apply(g, AF.detect(g.userMolecule)[0]).caption;
+        assert(capA.includes('水溶液では起こりません') && capA.includes('融解'),
+            `アルカリ融解の caption が「水溶液では起こらない」と言っていない: ${capA.slice(0, 140)}`);
+        assert(capA.includes('Na₂SO₃'), `抜けていく亜硫酸ナトリウムに触れていない: ${capA.slice(0, 200)}`);
+        load('クロロベンゼン');
+        const capB = HC.apply(g, HC.detect(g.userMolecule)[0]).caption;
+        assert(capB.includes('高温') && capB.includes('高圧'),
+            `加水分解の caption に条件が無い: ${capB.slice(0, 140)}`);
+        assert(capB.includes('NaCl'), `抜けていく塩化ナトリウムに触れていない: ${capB.slice(0, 200)}`);
+        assert(!capB.includes('融解'), '加水分解の caption にアルカリ融解の条件が混ざっている');
+
+        /* ★★ 否定対照 —— **既存の緑を1つも触っていない**。
+         * ⚠ `naoh_aq` に2本ぶら下げたので、押したときの行き先が増えた分子があると
+         *   「1タップで終わっていた人に選択面が出る」（§10.13-A #6 で見送りの決め手になった費用）。
+         *   実測: 増えるのは -SO₃Na / 一置換のクロロベンゼンだけで、そちらは**元が0通り**。 */
+        const rg = W.REAGENTS.find(r => r.id === 'naoh_aq');
+        const opts = (name) => {
+            load(name);
+            return W.reactor.reagentOptions(rg, W.reactor.reagentHits(rg));
+        };
+        [['酢酸', 1, '中和だけ'],
+         ['フェノール', 1, '中和だけ'],
+         ['酢酸エチル', 1, 'けん化だけ'],
+         ['ベンゼンスルホン酸', 1, '⚠ 中和だけ（酸のままではアルカリ融解を出さない）'],
+         ['o-クロロベンゼンスルホン酸', 1, '⚠ 中和だけ（二置換体は加水分解を出さない）'],
+         ['ベンゼン', 0, '効かない'],
+         ['ベンゼンスルホン酸ナトリウム', 1, '★ 新しく1通り（元は0通り）'],
+         ['クロロベンゼン', 1, '★ 新しく1通り（元は0通り）']
+        ].forEach(([name, want, why]) => {
+            const n = opts(name).length;
+            assert(n === want, `${name} で NaOH の行き先が ${n} 通り（${want} 通りを期待・${why}）`);
+        });
+        // 2通り以上になって選択面が出る分子は1つも増えていない ＝ 誰の操作も増えていない
+        assert(!W.reactor.picking, '前提が崩れている: 箇所選びが残っている');
+
+        // 画面から実際に押せる（瓶 → そのまま実行 → キャンバスへ返る）
+        setupReagent(c, ['クロロベンゼン']);
+        bottle(c, 'naoh_aq').click();
+        assert(!W.reactor.picking, '1箇所しかないのに箇所選びに入った');
+        assert(g.userMolecule.atoms.some(a => a.element === 'Na'),
+            'クロロベンゼン＋NaOH aq で -ONa ができていない');
+        assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'), '塩素が外れていない');
         c.reset();
     });
 

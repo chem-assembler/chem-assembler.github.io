@@ -1448,6 +1448,91 @@ function isolatedBenzeneRings(mol) {
 }
 
 /**
+ * フェノールの工業的製法2本のための、置き換わる基を探す（vNNNN）。
+ *
+ * ★ どちらも **芳香環についた基が -ONa に置き換わる**という同じ形なので、
+ *   探すところと置き換えるところを1つにまとめる（同じ判定を2つ書かない）。
+ *
+ *   kind === 'sulfonate' … アルカリ融解。**-SO₃Na（ナトリウム塩）だけ**を探す
+ *   kind === 'chloro'    … クロロベンゼンの加水分解。**芳香環に直結した -Cl**
+ *
+ * ⚠⚠ **アルカリ融解の相手を「ベンゼンスルホン酸」ではなく「その*ナトリウム塩*」にした**
+ *   のは、教科書がそう書くから（ベンゼンスルホン酸ナトリウムを NaOH と融解する）。
+ *   ★ 副産物として、**既存の緑を1つも触らずに済む**:
+ *   ベンゼンスルホン酸に NaOH を掛けたときに通るのは今までどおり中和（`neutralize_naoh`）
+ *   1本だけなので、**条件を選ぶ画面が新たに出てしまう人がいない**（実測で確かめた）。
+ *   ＝ 道すじは 濃硫酸 → 中和 → 融解 → 弱酸の遊離 の4手で、どの手も教科書の1段に対応する。
+ *
+ * ⚠⚠ **一置換のベンゼン環だけ**（`isolatedBenzeneRings` ＝ 縮合していない6員の芳香環で、
+ *   環の外に出ている重原子がその基1つだけ）。★ **実測で決めた** ——
+ *   広く「芳香環についた -Cl なら何でも」にすると **32 分子・33 通りのうち 32 通りが
+ *   「（未登録）」**（o-クロロトルエン・p-クロロフェノール …）で、名前が出るのは
+ *   クロロベンゼンの1件だけだった。-SO₃Na 側も 2 分子中 1 件が未登録
+ *   （アルキルベンゼンスルホン酸ナトリウム ＝ 洗剤。これを融解させる場面は教科書に無い）。
+ *   ★ 絞ると **どちらも 1 分子・1 通り・未登録 0 件**になる。
+ *   ⚠ 教科書もこの2本を「**クロロベンゼン**の加水分解」「**ベンゼンスルホン酸ナトリウム**の
+ *   アルカリ融解」と、物質を名指しで呼んでいる。
+ * ★ 副産物として、**既存の画面が1つも変わらない** —— 絞る前は
+ *   o/m/p-クロロベンゼンスルホン酸の3件で NaOH の行き先が 1 → 2 通りに増えていた（実測）。
+ *
+ * 返す site は `[環の炭素, 外れる基の起点（S または Cl）]`。
+ */
+function phenoxidePrecursorSites(mol, kind) {
+    const sites = [];
+    isolatedBenzeneRings(mol).forEach(ring => {
+        const ringSet = new Set(ring);
+        // 環の外に出ている重原子（＝置換基の起点）を集める
+        const subs = [];
+        ring.forEach(cId => {
+            mol.getNeighbors(cId).forEach(n => {
+                if (n.atom.element === 'H' || ringSet.has(n.atom.id)) return;
+                subs.push({ cId, id: n.atom.id, element: n.atom.element, type: n.type });
+            });
+        });
+        // ⚠ **一置換体だけ**（下の注記）。二置換体や縮合環はここへ来ない
+        if (subs.length !== 1) return;
+        const sub = subs[0];
+        if (sub.type !== 1) return;
+        if (kind === 'chloro') {
+            if (sub.element === 'Cl') sites.push([sub.cId, sub.id]);
+            return;
+        }
+        // -SO₃Na … S に酸素が3つ、そのうち1つが Na を持っている（＝ 酸ではなく塩）
+        if (sub.element !== 'S') return;
+        const around = mol.getNeighbors(sub.id).filter(x => x.atom.id !== sub.cId);
+        if (around.length !== 3 || !around.every(x => x.atom.element === 'O')) return;
+        if (!around.some(x => mol.getNeighbors(x.atom.id).some(y => y.atom.element === 'Na'))) return;
+        sites.push([sub.cId, sub.id]);
+    });
+    return sites;
+}
+
+/** 芳香環の炭素についた基（起点 leaveId から先）を外し、代わりに -ONa を付ける。 */
+function replaceWithPhenoxide(mol, cId, leaveId) {
+    // 外す基の原子を集める（起点から、環へ戻らずに辿れる範囲）
+    const drop = new Set([leaveId]);
+    const stack = [leaveId];
+    while (stack.length) {
+        const x = stack.pop();
+        mol.getNeighbors(x).forEach(n => {
+            if (n.atom.id === cId || drop.has(n.atom.id)) return;
+            drop.add(n.atom.id);
+            stack.push(n.atom.id);
+        });
+    }
+    drop.forEach(id => mol.removeAtom(id));
+    // 空いたところへ -O-Na（塩は線1本の共有結合で書く ＝ §10.6 の流儀。電荷モデルは持たない）
+    const added = attachGroup(mol, cId, 'O');
+    if (!added) throw noRoom('-ONa を置く空間がありません');
+    const oId = added[0];
+    const spot = freeSpotAround(mol, oId);
+    if (!spot) throw noRoom('ナトリウムを置く空間がありません');
+    const na = mol.addAtom('Na', spot.x, spot.y);
+    mol.addBond(oId, na.id, 1);
+    return [cId, oId, na.id];
+}
+
+/**
  * アルカンの水素を1つ塩素に置き換えられる炭素を返す（ラジカル置換・光。vNNNN）。
  *
  * ⚠⚠ **ユーザーの指摘そのもの**（2026-09-03）:
@@ -5730,6 +5815,69 @@ const REACTION_RULES = [
                       'これだけでは酸の強さは分かりません。' + kind.rank) +
                     'できた塩・アルコキシドに強い酸（希硫酸）を加えると、もとの形に戻せます（弱酸の遊離）。',
                 changed: [oId, na.id]
+            };
+        }
+    },
+    {
+        /* ★ フェノールの工業的製法 その1: アルカリ融解（vNNNN・入試 11 大問）。
+         *   ベンゼンスルホン酸ナトリウム ＋ NaOH →（高温で融解）→ ナトリウムフェノキシド。
+         *
+         * ⚠ **瓶は足していない。** `naoh_aq` に相乗りする（発注の実測どおり）。
+         *   ★ ⚠ ただし NaOH aq の瓶に「固体の NaOH と融解させる」反応をぶら下げているので、
+         *   **条件は label と caption で必ず言う**（水溶液のままでは起こらない）。
+         * ⚠ **`condition`（同じ瓶の2択）は使っていない。** 実測で、この反応が通る分子
+         *   （-SO₃Na をもつもの）では `naoh_aq` の他のルールが1本も通らない
+         *   ＝ 2択の画面が出る場面が無く、`condition` を付けても見えないまま
+         *   `RG1 (6)` の「condition は4件ちょうど」だけが動く。
+         *
+         * ★ 系統樹の上でここが埋まると、ベンゼン →(濃硫酸) ベンゼンスルホン酸 →(NaOH) その塩
+         *   →(融解) フェノキシド →(希硫酸・弱酸の遊離) フェノール が**4手ぜんぶつながる**。 */
+        id: 'alkali_fusion',
+        reagentId: 'naoh_aq',
+        label: 'フェノールの製法: アルカリ融解（固体の NaOH と高温で融解）',
+        detect: (mol) => phenoxidePrecursorSites(mol, 'sulfonate'),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const changed = replaceWithPhenoxide(mol, site[0], site[1]);
+            return {
+                caption: 'スルホ基のナトリウム塩 -SO₃Na が -ONa に置き換わり、' +
+                    'ナトリウムフェノキシドができました（アルカリ融解）。' +
+                    '⚠ **水溶液では起こりません** —— 固体の水酸化ナトリウムと混ぜて' +
+                    '**高温で融解**させる、という激しい条件が要ります。' +
+                    '同時に亜硫酸ナトリウム Na₂SO₃ ができますが、この画面には描いていません。' +
+                    'フェノールの工業的製法の1つで、ここに希硫酸を加えると' +
+                    '弱酸の遊離でフェノールが取り出せます。' +
+                    'ベンゼンから見ると スルホン化 → 中和 → アルカリ融解 → 弱酸の遊離 の4段です。',
+                changed
+            };
+        }
+    },
+    {
+        /* ★ フェノールの工業的製法 その2: クロロベンゼンの加水分解（vNNNN・入試 9 大問）。
+         *   クロロベンゼン ＋ NaOH 水溶液 →（高温・高圧）→ ナトリウムフェノキシド ＋ NaCl。
+         *
+         * ⚠ **条件が上の1本と違う**（あちらは固体の NaOH と融解、こちらは水溶液で高温・高圧）。
+         *   ★ 同じ瓶にぶら下がるので、**label で条件まで言い切る**（`aromatic_halogenation` が
+         *   「（Cl₂・鉄触媒）」と書いているのと同じ流儀）。
+         * ⚠ **芳香環に直結した -Cl だけ**を見る。鎖についた -Cl（アルカンの塩素化でできるもの）は
+         *   高校ではここに入れない ——「ハロゲンは環に付いていると外れにくく、強い条件が要る」
+         *   という話そのものが、この反応の見どころだから。 */
+        id: 'hydrolysis_chlorobenzene',
+        reagentId: 'naoh_aq',
+        label: 'フェノールの製法: クロロベンゼンの加水分解（NaOH aq・高温高圧）',
+        detect: (mol) => phenoxidePrecursorSites(mol, 'chloro'),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const changed = replaceWithPhenoxide(mol, site[0], site[1]);
+            return {
+                caption: '環についた塩素が -ONa に置き換わり、ナトリウムフェノキシドができました。' +
+                    '⚠ **常温の水酸化ナトリウム水溶液では起こりません** —— ' +
+                    '**高温・高圧**（およそ 300℃・200気圧）という条件が要ります。' +
+                    '環に直結したハロゲンは、鎖についたハロゲンより格段に外れにくいからです。' +
+                    '同時に塩化ナトリウム NaCl ができますが、この画面には描いていません。' +
+                    'これもフェノールの工業的製法の1つで、希硫酸を加えると' +
+                    '弱酸の遊離でフェノールが取り出せます。',
+                changed
             };
         }
     },
