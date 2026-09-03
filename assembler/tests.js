@@ -13,6 +13,7 @@
  * | 接頭辞 | 使用済み | 守備範囲 |
  * |---|---|---|
  * | A   | 1〜4   | 起動・データロード・座標変換の土台 |
+ * | AC  | 1〜3   | ⚠⚠ **アルカンの塩素化**（vNNNN・ユーザー指摘「アルカン全般に Cl2との置換反応がリストされていないと思います」）。実測でもメタン・エタン・プロパン・シクロヘキサン・クロロメタンで**53本が1本も出なかった**（塩素の反応は鉄触媒による**環**の置換だけ）。★ **混合物を操作で見せる** —— ①どの水素かは**箇所選び**（同じ生成物になる位置は畳む。プロパンで2件・エタンは1件）②何段目かは**止めない**（メタン → 四塩化炭素の4段）。1 が対象範囲（門番3つ＝C と Cl だけ・全部単結合・木）と畳み方（★同じ分子を2つ並べても2つめが消えない）・2 が段と生成物の**名前**（メタン4段を教科書の並びで照合＋ライブラリ 38 分子・120 通りの生成物すべてに名前が付く）・3 が画面（瓶2本が隣り合う／箇所選び／caption が毎回「混合物」と「いま何個」を言い、埋まりきった段だけ言い分ける／★否定対照＝ベンゼンに光は効かずアルカンに鉄触媒も効かない）。⚠ **瓶が1本増えた**（23 → 24本。`cl2_fe` に相乗りさせなかった理由はコード側の注記） |
  * | AK  | 1〜11  | アルキル基の書き出し練習と**アルキル基の命名規則**（**10〜11 は `ID11` の直し（同点主鎖は「置換基数が最多」を先に見る）の影響範囲**＝ 10 が「効く相手は C₆ 1件・C₇ 3件だけ・C₁〜C₅ は 0」を名指しと全域の性質（採った鎖の枝は同点候補の最大）で固定、11 が接頭辞・エーテルの基名への波及と、登録図で 0 件であること。W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」。**9 は帯の「🧹 並べ直す」**＝ W4 を3つの書き出し練習でそろえる最後の1つ。押せる／押せないを `drawnCount()` ではなく**成分の数**で決める（こちらの drawnCount は付け根だけの枠を数えないので、枠を増やしただけの人がいちばん散らかった状態で押せなくなる）） |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
@@ -34286,8 +34287,9 @@
             W.ruleReagentIds({}).length === 0,
             'reactor 側の ruleReagentIds が無い／文字列と配列を同じに扱えていない');
         // ★ v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23本
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 23,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの18本＋調べるもの5本＝23本）`);
+        // ★ vNNNN でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24本（ユーザー指摘）
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 24,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの19本＋調べるもの5本＝24本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -34346,8 +34348,12 @@
              *   ⚠ 同じ瓶に `reduce_nitro` が居るので、detect は炭化水素だけに絞ってある
              *   （ニトロベンゼンで両方出ると「環は水素化されません」という説明と食い違う）。 */
             'hydrogenate_benzene_ring',
+            /* ★ vNNNN: アルカンの光塩素化。⚠ **`cl2_fe`（鉄触媒）に相乗りさせず、瓶を1本足した**
+             *   —— 瓶の名前が条件そのもの（鉄触媒 ／ 光）で、隣に並べないと画面で比べられない。
+             *   実測: 2つが同時に通る分子が在庫に1つも無いので `condition` の2択は使えない。 */
+            'chlorinate_alkane',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 36, `瓶に紐づくルールが ${linked.length} 件（36件を期待）`);
+        assert(linked.length === 37, `瓶に紐づくルールが ${linked.length} 件（37件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -34359,11 +34365,12 @@
         //     v883 で金属ナトリウム（試薬パレット §3.1 の13番目・§5 第4段の予定分）を足して 20 → 21
         //     v1428 で酸化剤を KMnO₄ / K₂Cr₂O₇ の2本に割って 21 → 22（§12-1・試薬名を知るため）
         //     v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23
+        //     vNNNN でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 23, `瓶の札が ${drawn.length} 個（23個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 18 &&
+        assert(drawn.length === 24, `瓶の札が ${drawn.length} 個（24個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 19 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの18本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの19本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -35290,9 +35297,9 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶23本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶24本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶23本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶24本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -35306,7 +35313,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 23, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 24, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
@@ -47781,6 +47788,205 @@
             `既存の名前が変わった: ${base}+Cl×${n} → ${chlorinate(base, n)}（${want} のはず）`));
         c.reset();
         return `9〜20個で ${rows.length} 通り・21/22個で null・8個以下で ${keep.length} 通りを照合`;
+    });
+
+    /* ===== AC: アルカンの塩素化（光によるラジカル置換・vNNNN） =====
+     *
+     * ⚠⚠ **ユーザーの指摘**（2026-09-03）「アルカン全般に Cl2との置換反応がリストされて
+     *   いないと思います」。実測でも、メタン・エタン・プロパン・シクロヘキサン・
+     *   クロロメタンのどれでも **53本の反応が1本も出なかった**（塩素の反応は
+     *   `aromatic_halogenation` ＝ 鉄触媒による**環**の置換だけだった）。
+     *
+     * ★ **見張るのは「混合物をどう見せたか」の3つ**:
+     *   1 … 対象範囲（門番3つ）と、置換位置が**同じ生成物になる分だけ畳まれている**こと
+     *   2 … 段数を止めない（メタン → 四塩化炭素まで4段。★ 名前が4段とも出る）
+     *   3 … 画面（瓶が2本並ぶ・箇所選びに入る・caption が混合物を必ず言う）
+     * ⚠ **数だけを数える検査にしない** —— 生成物は**名前で**引く（RV12 の教訓）。
+     */
+    const AC_RULE = (c) => {
+        const r = c.W.REACTION_RULES.find(x => x.id === 'chlorinate_alkane');
+        assert(r, 'chlorinate_alkane が REACTION_RULES に無い');
+        return r;
+    };
+    const AC_LOAD = (c, names) => {
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        (Array.isArray(names) ? names : [names]).forEach(n =>
+            assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    const AC_NAME = (c) => {
+        const g = c.game, W = c.W;
+        const lib = g.lookupCompoundName(g.userMolecule);
+        return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+    };
+
+    test('AC1: 対象は鎖状の飽和炭化水素だけ ＝ 同じ生成物になる位置は畳む', async (c) => {
+        c.reset();
+        const rule = AC_RULE(c);
+        const at = (name) => { AC_LOAD(c, name); return rule.detect(c.game.userMolecule).length; };
+        // [分子, 期待する箇所数, なぜその数か]
+        const rows = [
+            ['メタン', 1, '炭素1つ'],
+            ['エタン', 1, '★ 2つの炭素はどちらを置換してもクロロエタン ＝ 畳んで1件'],
+            ['プロパン', 2, '★ 1位・2位 で生成物が違う ＝ ここで初めて箇所選びに意味が出る'],
+            ['ブタン', 2, '1位・2位'],
+            ['2-メチルプロパン', 2, '3つのメチルは等価、あとは中央の1つ'],
+            ['ペンタン', 3, '1位・2位・3位'],
+            ['クロロメタン', 1, '★ すでに塩素が付いていても続けられる'],
+            ['1-クロロプロパン（塩化プロピル）', 3, '対称性が落ちるので3件に増える'],
+            ['四塩化炭素', 0, '⚠ 置き換える水素がもう無い'],
+            ['シクロヘキサン', 0, '⚠ 環は対象外（生成物の名前が出ないため。門番3）'],
+            ['ベンゼン', 0, '⚠ 芳香環は対象外（門番2＝単結合だけ）。こちらは鉄触媒の瓶'],
+            ['トルエン', 0, '⚠ 環をもつので対象外（側鎖の光塩素化は入れていない）'],
+            ['エチレン（エテン）', 0, '⚠ C=C は付加が先（門番2）'],
+            ['アセチレン（エチン）', 0, '⚠ C≡C も同じ'],
+            ['エタノール', 0, '⚠ 酸素が混ざるものは対象外（門番1）'],
+            ['酢酸', 0, '⚠ 同上']
+        ];
+        const bad = rows.filter(([n, want]) => at(n) !== want)
+            .map(([n, want]) => `${n}: ${at(n)}箇所（${want}を期待）`);
+        assert(bad.length === 0, `箇所の数が設計と違う\n  ${bad.join('\n  ')}`);
+        // ★ 空振りよけ: 0 件のものだけ・1 件のものだけを数えていない
+        assert(rows.filter(([, w]) => w > 0).length >= 8 && rows.filter(([, w]) => w === 0).length >= 7,
+            '通る例・通らない例のどちらかしか見ていない');
+
+        /* ★ 畳み方が「分子ごと」であること（`aromaticSites` が v779 で踏んだ穴と同じ形）。
+         * ⚠ 同じ分子を2つ並べたときに2つめが消えてはいけない。 */
+        AC_LOAD(c, ['プロパン', 'プロパン']);
+        assert(rule.detect(c.game.userMolecule).length === 4,
+            `プロパン2分子で ${rule.detect(c.game.userMolecule).length} 箇所（4箇所を期待）` +
+            ' ＝ 別の分子の等価な位置まで畳んでいる');
+        c.reset();
+        return `${rows.length} 分子で箇所数を照合（通る 9・通らない 7）`;
+    });
+
+    test('AC2: 段数を止めない —— メタンから四塩化炭素まで、4段とも名前が出る', async (c) => {
+        c.reset();
+        const g = c.game, rule = AC_RULE(c);
+        AC_LOAD(c, 'メタン');
+        const seq = [AC_NAME(c)];
+        for (let i = 0; i < 6; i++) {
+            const sites = rule.detect(g.userMolecule);
+            if (!sites.length) break;
+            rule.apply(g, sites[0]);
+            seq.push(AC_NAME(c));
+        }
+        // ⚠ **名前で引く**（原子数では「置換が進んだ」しか言えない）
+        assert(seq.join(' → ') === 'メタン → クロロメタン → ジクロロメタン → クロロホルム → 四塩化炭素',
+            `メタンの連打が教科書の並びにならない: ${seq.join(' → ')}`);
+
+        // ★ プロパンは押した箇所で生成物が変わる（＝ 箇所選びが混合物の「位置」を担っている）
+        const made = [];
+        for (const k of [0, 1]) {
+            AC_LOAD(c, 'プロパン');
+            rule.apply(g, rule.detect(g.userMolecule)[k]);
+            made.push(AC_NAME(c));
+        }
+        assert(made.includes('1-クロロプロパン（塩化プロピル）') &&
+               made.includes('2-クロロプロパン（塩化イソプロピル）'),
+            `プロパンの2箇所が別の生成物になっていない: ${made.join(' / ')}`);
+
+        /* ★ 生成物に名前が付くことを**ライブラリ全件**で確かめる（範囲を鎖状に絞った根拠）。
+         * ⚠ ここが「（未登録）だらけ」になるなら範囲の取り方が間違っている。 */
+        const src = (c.W.COMPOUNDS || []).concat(c.W.STAGES || [])
+            .filter(x => x && x.target && x.name);
+        const seen = new Set();
+        let mols = 0, products = 0;
+        const unnamed = [];
+        for (const e of src) {
+            if (seen.has(e.name)) continue;
+            seen.add(e.name);
+            AC_LOAD(c, e.name);
+            const n = rule.detect(g.userMolecule).length;
+            if (!n) continue;
+            mols++;
+            for (let k = 0; k < n; k++) {
+                AC_LOAD(c, e.name);
+                rule.apply(g, rule.detect(g.userMolecule)[k]);
+                products++;
+                const nm = AC_NAME(c);
+                if (nm === '（未登録）') unnamed.push(`${e.name}#${k}`);
+            }
+        }
+        assert(mols >= 20, `対象になったライブラリの分子が ${mols} 件しかない（物差しが空振り）`);
+        assert(unnamed.length === 0,
+            `1置換の生成物 ${products} 通りのうち ${unnamed.length} 件に名前が出ない: ` +
+            `${unnamed.slice(0, 8).join(', ')}`);
+        c.reset();
+        return `メタン4段＋ライブラリ ${mols} 分子・${products} 通りの生成物すべてに名前が出た`;
+    });
+
+    test('AC3: 画面 —— 塩素の瓶が2本並び、押すと箇所選びに入り、caption が混合物を必ず言う', async (c) => {
+        c.reset();
+        const D = c.D, W = c.W, g = c.game;
+        const noteEl = D.getElementById('mm-reagent-note');
+        // ★ 2本の瓶が**隣り合って**いる（同じ Cl₂ で行き先が違うことを棚で比べさせる）
+        const ids = W.REAGENTS.map(r => r.id);
+        assert(ids.includes('cl2_light'), '「塩素・光」の瓶が無い');
+        assert(ids.indexOf('cl2_light') === ids.indexOf('cl2_fe') + 1,
+            `塩素の瓶2本が隣り合っていない（cl2_fe=${ids.indexOf('cl2_fe')} / cl2_light=${ids.indexOf('cl2_light')}）`);
+        assert(bottle(c, 'cl2_light'), '「塩素・光」の札が描かれていない');
+
+        // ① メタン（1箇所）… 箇所選びを挟まずそのまま進む
+        setupReagent(c, ['メタン']);
+        bottle(c, 'cl2_light').click();
+        assert(!W.reactor.picking, '1箇所しかないのに箇所選びに入った');
+        assert(AC_NAME(c) === 'クロロメタン', `メタン＋Cl₂/光 が ${AC_NAME(c)} になった`);
+
+        // ② プロパン（2箇所）… 箇所選びに入り、押した原子で行き先が決まる
+        setupReagent(c, ['プロパン']);
+        bottle(c, 'cl2_light').click();
+        assert(W.reactor.picking, '2箇所あるのに箇所選びに入らない');
+        const sites = W.reactor.picking.sites;
+        // ⚠ 画面のピクセルで覚えない（§25-3）。中央の炭素は「隣の重原子が2つ」で引く
+        const middle = sites.map(s => g.userMolecule.atoms.find(a => a.id === s[0]))
+            .find(a => g.userMolecule.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 2);
+        assert(middle, '中央の炭素が候補に出ていない');
+        c.clickAt(middle.x, middle.y);
+        assert(!W.reactor.picking, '箇所を選んでも選択モードが解けない');
+        assert(AC_NAME(c) === '2-クロロプロパン（塩化イソプロピル）',
+            `中央の炭素を選んだのに ${AC_NAME(c)} になった`);
+
+        /* ③ caption は**毎回**混合物を言う。⚠ 1回目だけでは足りない ——
+         *   「1つで止まらない」のほうは2回目以降に起こる話なので、そこで消えると読み落とす。 */
+        const rule = AC_RULE(c);
+        AC_LOAD(c, 'メタン');
+        for (let i = 0; i < 4; i++) {
+            const s = rule.detect(g.userMolecule);
+            assert(s.length, `${i + 1} 段目で箇所が消えた`);
+            const cap = rule.apply(g, s[0]).caption;
+            assert(cap.includes('混合物'), `${i + 1} 段目の caption が混合物に触れていない: ${cap.slice(0, 90)}`);
+            assert(cap.includes('置換'), `${i + 1} 段目の caption が「置換」と言っていない`);
+            assert(cap.includes(`塩素が ${i + 1} 個`),
+                `${i + 1} 段目の caption が「いま何個ついているか」を言っていない: ${cap.slice(0, 160)}`);
+            /* ⚠ **まだ水素が残る段と、埋まりきった段で言い分ける。**
+             * ★ ここを「どちらの段でも同じ文が出る」実装にすると、
+             *   「1つでは止まらない」が四塩化炭素の画面にも出て嘘になる。 */
+            const done = i === 3;
+            assert(cap.includes('1つでは止まりません') === !done,
+                `${i + 1} 段目（${done ? '全置換ずみ' : 'まだ水素あり'}）の caption の言い分けが逆: ${cap.slice(0, 200)}`);
+            assert(cap.includes('すべて塩素に置き換わりました') === done,
+                `${i + 1} 段目（${done ? '全置換ずみ' : 'まだ水素あり'}）の caption の言い分けが逆: ${cap.slice(0, 200)}`);
+        }
+
+        /* ④ ★否定対照 —— 鉄触媒の瓶とは行き先が違う。
+         *   ベンゼンに「塩素・光」は効かず、アルカンに「塩素・鉄触媒」も効かない。 */
+        setupReagent(c, ['ベンゼン']);
+        bottle(c, 'cl2_light').click();
+        assert(noteEl.textContent.includes('鉄'),
+            `ベンゼンに「塩素・光」を掛けたのに、鉄触媒の瓶へ案内していない: ${noteEl.textContent.slice(0, 140)}`);
+        assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'),
+            '⚠ ベンゼンが「塩素・光」で塩素化された（環の置換に光は使わない）');
+        setupReagent(c, ['プロパン']);
+        bottle(c, 'cl2_fe').click();
+        assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'),
+            '⚠ プロパンが「塩素・鉄触媒」で塩素化された（アルカンの置換に鉄触媒は使わない）');
+        assert(noteEl.textContent.includes('光'),
+            `アルカンに鉄触媒を掛けたのに、光の瓶へ案内していない: ${noteEl.textContent.slice(0, 140)}`);
+        c.reset();
     });
 
     // ===== 一部だけ流す（`?only=`）=====
