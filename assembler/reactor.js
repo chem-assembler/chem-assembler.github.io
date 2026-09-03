@@ -2107,6 +2107,33 @@ function strongerThanCarbonicAcidSites(mol) {
         .filter(([oId, anchorId]) => acidKindOf(mol, oId, anchorId).name !== 'フェノール');
 }
 
+/**
+ * ★ 塩基性のアミンの N を集める（`amine_hcl` / `amine_liberate_naoh`。I-1）。
+ *
+ * ⚠ **アミドの N は除く**（隣のカルボニルに電子を引かれていて塩基性を示さない）。
+ *   除き方は `amidation` の detect と同じ `isAmideNitrogen` ＝ 規則を2か所に書かない。
+ * ★ 3級アミンも含める —— N に水素が残っているかは**縮合**の条件であって、
+ *   塩をつくる（N の非共有電子対が H⁺ を受け取る）ことの条件ではない。
+ */
+function basicAmineNitrogens(mol) {
+    return findFunctionalGroups(mol)
+        .filter(g => ['amine1', 'amine2', 'amine3'].includes(g.type) &&
+            !isAmideNitrogen(mol, g.atomIds[0]))
+        .map(g => [g.atomIds[0]]);
+}
+
+/**
+ * ★ その原子の**成分が水層に居るか**（原子の印 `phase`。DESIGN_ion_layer.md §3-4）。
+ *
+ * ⚠ **電荷は1文字も見ない。** アミンの塩は構造を変えずに印だけで表しているので、
+ *   「塩になっているか」を図から読む道は無い ＝ **印がこのルールの入口そのもの**。
+ * ⚠ 成分の中の1原子でも印を持てば水層（印は塩になった箇所に付く）。
+ */
+function inAqueousPhase(mol, atomId) {
+    const ids = componentOf(mol, atomId);
+    return mol.atoms.some(a => ids.has(a.id) && a.phase === 'aq');
+}
+
 function liberatableSaltSites(mol) {
     const sites = [];
     mol.atoms.forEach(a => {
@@ -6042,6 +6069,59 @@ const REACTION_RULES = [
                     '希硫酸や塩酸は硫酸イオン・塩化物イオンとして塩の側に残ります。' + kind.rank +
                     'けん化でできたカルボン酸の塩（セッケンを含む）も、この操作で酸に戻せます。',
                 changed: [oId]
+            };
+        }
+    },
+    {
+        /* ★★ アミン ＋ 塩酸 → 塩（水層へ）。DESIGN_ion_layer.md I-1・D-I3。
+         *
+         * ⚠⚠ **構造を1原子も変えない。** アニリン塩酸塩 C₆H₅NH₃Cl は
+         *   **いまのモデルでは描けない**（線1本で N-Cl と書くと `isValencyValid` は通るが、
+         *   分子式 C₆H₆ClN ＝ **N-クロロアニリンという別の分子の図**になる。設計書 §3-1 の実測）。
+         *   ★ だから第1段では**層の印だけ**を付け、**画面で「塩の形はまだ描きません」と断る**
+         *     （見出しの `PHASE_CAPTIONS['aq:salt-not-drawn']`）。⚠ 嘘を画面に出さないため。
+         *   ★ 「原理的に無理」ではなく「**まだ**」と書く —— 電荷が入れば（I-3）
+         *     同じルールが本物の塩を描く。
+         * ★ 入試64件のうち **アミンが水層へ移るのは 46件**。
+         *   ＝ アニリン塩酸塩を*描けなくても*、この操作は 46件で要る（設計書 §4-2）。
+         * ⚠ この反応は `CV4_NO_CHANGE_RULES` に名指しで載る（構造を変えないのが仕様）。 */
+        id: 'amine_hcl',
+        reagentId: 'hcl',
+        label: '塩をつくる（アミン + 塩酸）→ 水層へ',
+        detect(mol) {
+            // すでに水層に居るアミンは対象外（同じ操作を二度「効いた」と言わない）
+            return basicAmineNitrogens(mol).filter(([nId]) => !inAqueousPhase(mol, nId));
+        },
+        apply(game, site) {
+            return {
+                caption: 'アミンは塩基なので、塩酸と塩をつくって水に溶けます（水層へ移りました）。' +
+                    'この性質で、中性の物質やフェノール類から分けられます。' +
+                    '⚠ **塩の形はまだ描きません** —— アニリン塩酸塩 C₆H₅NH₃Cl は ' +
+                    'N が4本の手を使う形で、いまのこのアプリの書き方（線1本の塩）では' +
+                    '別の分子の図になってしまうためです。図はもとのままで、**層だけが変わっています**。' +
+                    'なお、この塩に水酸化ナトリウムを加えるともとのアミンが遊離して有機層へ戻ります。',
+                changed: []
+            };
+        }
+    },
+    {
+        /* ★ アミンの塩 ＋ NaOH → アミンが遊離して有機層へ（I-1）。上の逆向き。
+         * ⚠ **構造を1原子も変えない**（上と同じ理由）。動くのは層の印だけ。
+         * ★ **detect が読むのは層の印**（`phase === 'aq'`）＝ 印がこのルールの入口そのもの。
+         *   ⚠ だから「塩酸をかけていないアニリン」には効かない（否定対照 SEP4）。 */
+        id: 'amine_liberate_naoh',
+        reagentId: 'naoh_aq',
+        label: 'アミンの遊離（塩 + NaOH）→ 有機層へ',
+        detect(mol) {
+            return basicAmineNitrogens(mol).filter(([nId]) => inAqueousPhase(mol, nId));
+        },
+        apply(game, site) {
+            return {
+                caption: '水酸化ナトリウムを加えたので、アミンの塩から**もとのアミンが遊離**して' +
+                    '有機層（エーテル層）へ戻りました。' +
+                    '「強い塩基は弱い塩基をその塩から追い出す」——弱酸の遊離とちょうど対になる操作です。' +
+                    '⚠ ここでも**塩の形は描いていない**ので、図はもとのままで層だけが変わっています。',
+                changed: []
             };
         }
     },

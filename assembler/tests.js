@@ -34419,9 +34419,9 @@
              *   `amine_hcl` は塩化水素に、`amine_liberate_naoh` は NaOH に相乗りしている。
              *   `liberate_weak_acid` は瓶が希硫酸1本から**希硫酸＋塩酸の2本**になった
              *   （入試の遊離は塩酸45件・硫酸14件で、いちばん多い塩酸で引けなかった）。 */
-            'neutralize_nahco3',
+            'neutralize_nahco3', 'amine_hcl', 'amine_liberate_naoh',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 40, `瓶に紐づくルールが ${linked.length} 件（40件を期待）`);
+        assert(linked.length === 42, `瓶に紐づくルールが ${linked.length} 件（42件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -45617,6 +45617,12 @@
         /* ★ アセチレン＋酢酸 → 酢酸ビニル（系統樹レーン v1501）。こちらも**付加**なので
          *   水は出ず、`CV_MUST_SPLIT` には入れない。 */
         add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸'],
+        /* ★ アミンの遊離（分液レーン・v1510）。⚠ **相手の分子ではなく「層の印」が要る**
+         *   —— `amine_liberate_naoh` の detect は
+         *   **水層に居るアミン**（`atom.phase === 'aq'`）だけを見るので、
+         *   ライブラリから素で拾った分子では 0 件になり、題材なしで黙って見張れなくなる。
+         *   ★ 印を付ける手順そのものが題材なので、`@` の作り置きで組む（`cvSetup`）。 */
+        amine_liberate_naoh: ['@水層のアニリン']
     };
     // ⚠ **題材が用意できず見張れないルール**（0 本のうちは空のまま）。
     //    ここが伸びたら報告に本数と名前を書くこと ＝ 黙って対象から外れないようにする
@@ -45693,7 +45699,16 @@
         g.setMode('free');
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
-        if (names[0] === '@二本の鎖') {
+        if (names[0] === '@水層のアニリン') {
+            // 塩酸をかけて水層の印を付けたアニリン（`amine_liberate_naoh` の入口はこの印）
+            g.summonMolecule('アニリン');
+            g.updateDrawing();
+            const hcl = W.REACTION_RULES.find(r => r.id === 'amine_hcl');
+            assert(hcl, 'amine_hcl が無い（アミンの遊離の題材が組めない）');
+            const s = hcl.detect(g.userMolecule);
+            assert(s.length, 'アニリンで amine_hcl の箇所が出ない');
+            g.setPartPhase([...g.moleculeAtomIdsOf(s[0][0])], 'aq', 'salt-not-drawn');
+        } else if (names[0] === '@二本の鎖') {
             const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
             assert(dien, 'diene_polymerization が無い（加硫の題材が組めない）');
             for (let k = 0; k < 2; k++) {
@@ -46942,6 +46957,15 @@
     const CV4_NO_CHANGE_RULES = [
         'oxidize_tertiary_info', 'oxidation_out_of_scope_info', 'esterification_phenol_info',
         'condensation_polymer_info', 'aromatic_deactivated_info', 'dehydration_anhydride_info',
+        /* ★★ v1510（分液レーン・DESIGN_ion_layer.md I-1）。⚠ **上の6本と理由が違う。**
+         * 上は「この条件では起こらない」を説明するだけの `_info` だが、こちらは
+         * **実際に起こる反応なのに図を変えない**:
+         *   アニリン塩酸塩 C₆H₅NH₃Cl は N が4本の手を使う形で、いまの「線1本の塩」では
+         *   **N-クロロアニリンという別の分子の図**になる（設計書 §3-1 の実測）。
+         * ★ だから第1段は**層の印だけ**を変え、画面で「**塩の形はまだ描きません**」と断る
+         *   （D-I3。⚠ 嘘を画面に出さない）。電荷が入れば（I-3）同じルールが本物の塩を描く。
+         * ⚠ そのとき**この2本はここから外れる**（外したら理由をコミットに書くこと）。 */
+        'amine_hcl', 'amine_liberate_naoh'
     ];
 
     // 重原子ごとの「隣の原子 id ＋ 結合次数」の集合（文字列）。
@@ -49584,6 +49608,73 @@
             'フェノールが水層へ移ってしまった');
         c.reset();
         return `NaHCO₃ が効く ${pos} 件・効かない ${neg} 件`;
+    });
+
+    test('SEP4: アミンの塩と遊離は「印だけ」——構造を1原子も変えず、画面でそう断る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, R = W.reactor;
+        const hcl = W.REACTION_RULES.find(r => r.id === 'amine_hcl');
+        const lib = W.REACTION_RULES.find(r => r.id === 'amine_liberate_naoh');
+        assert(hcl && lib, 'amine_hcl / amine_liberate_naoh が無い');
+        assert(W.ruleUsesReagent(hcl, 'hcl') && W.ruleUsesReagent(lib, 'naoh_aq'),
+            'アミンの2本が瓶（塩化水素／NaOH）に繋がっていない');
+        assert(W.RULE_PHASE.amine_hcl.phase === 'aq' &&
+            W.RULE_PHASE.amine_hcl.note === 'salt-not-drawn' &&
+            W.RULE_PHASE.amine_liberate_naoh.phase === 'ether',
+            'アミンの2本の層の割り当てが対応表と違う');
+
+        /* ★ 否定対照は**別の性質を3つ**:
+         *   ① ニトロベンゼン … アミンでないものには効かない
+         *   ② アセトアニリド … **アミドの N は塩基でない**（隣の C=O に電子を引かれている）。
+         *      ⚠ **実測の訂正**: `findFunctionalGroups` は既にここを除いている
+         *        （「隣の炭素が =O を持つ N は amine を立てない」・chemistry.js）ので、
+         *        `basicAmineNitrogens` の `isAmideNitrogen` は**二重の守り**。
+         *        ＝ この行が捕まえるのは reactor 側ではなく **chemistry 側の将来の回帰**。
+         *        reactor 側に効く対照は下の ③ と「構造を1原子も変えない」の2つ（実測で確認済み）
+         *   ③ 有機層のアニリン … 遊離のほうは**印が入口**なので、印が無ければ効かない */
+        [['ニトロベンゼン', 0, 'アミンでない'],
+         ['アセトアニリド', 0, '★ アミドの N は塩基性を示さない'],
+         ['アニリン', 1, '芳香族アミン'],
+         ['メチルアミン', 1, '鎖のアミンでも同じ'],
+         ['トリメチルアミン', 1, '3級アミンも N の非共有電子対で塩をつくる']
+        ].forEach(([name, n, why]) => {
+            sepSetup(c, [name]);
+            assert(hcl.detect(g.userMolecule).length === n,
+                `${name}: amine_hcl の箇所が ${hcl.detect(g.userMolecule).length} 件（${n} 件のはず／${why}）`);
+            // ★ ③ 印を付けていないうちは遊離のほうは 0 件
+            assert(lib.detect(g.userMolecule).length === 0,
+                `★ ${name}: 水層の印が無いのに amine_liberate_naoh が出た（印が入口になっていない）`);
+        });
+
+        // ---- 構造を1原子も変えないこと（★ 分子式・正準コード・結合の署名の3つで押さえる）
+        sepSetup(c, ['アニリン']);
+        g.startSeparation();
+        const before = W.canonicalCode(g.userMolecule);
+        const beforeSig = sepBondSig(g.userMolecule);
+        const beforeAtoms = g.userMolecule.atoms.length;
+        R.applyToMixture(W.REAGENTS.find(r => r.id === 'hcl'));
+        assert(W.canonicalCode(g.userMolecule) === before,
+            `★ amine_hcl が図を変えた（塩の形はまだ描かない約束）\n  前: ${before}\n  後: ${W.canonicalCode(g.userMolecule)}`);
+        assert(sepBondSig(g.userMolecule) === beforeSig && g.userMolecule.atoms.length === beforeAtoms,
+            '★ amine_hcl が結合か原子を変えた（Cl を線1本で描くと N-クロロアニリンという別の分子になる）');
+        assert(g.phaseOfPart(sepPart(c, 'アニリン')) === 'aq', 'アニリンが水層へ移っていない');
+        // ★ **嘘を画面に出さない** —— 見出しで「まだ描いていない」と断る（D-I3）
+        const cap = sepCaption(c, 'アニリン');
+        assert(/塩の形はまだ描きません/.test(cap),
+            `★ 塩を描いていないことを画面で断っていない: ${cap}`);
+        assert(/まだ/.test(cap) && !/できません|無理/.test(cap),
+            `「原理的に無理」ではなく「まだ」と書く取り決めに反している: ${cap}`);
+
+        // ---- 遊離（NaOH）で有機層へ戻り、印も断りも消える
+        assert(lib.detect(g.userMolecule).length === 1,
+            '★ 水層の印を付けたのに amine_liberate_naoh が出ない（印が入口になっていない）');
+        R.applyToMixture(W.REAGENTS.find(r => r.id === 'naoh_aq'));
+        assert(W.canonicalCode(g.userMolecule) === before, '★ 遊離のほうが図を変えた');
+        assert(g.phaseOfPart(sepPart(c, 'アニリン')) === 'ether', 'アニリンが有機層へ戻っていない');
+        assert(!/水層|まだ/.test(sepCaption(c, 'アニリン')),
+            `有機層へ戻ったのに断りが残っている: ${sepCaption(c, 'アニリン')}`);
+        c.reset();
+        return 'アミン 3種で塩・遊離／アミド・ニトロは対象外';
     });
 
     /* ★★ SEP6: **どの幅から「札の一覧」にするか**（D-I2・ユーザー決定「スマホでは
