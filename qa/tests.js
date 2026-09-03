@@ -1049,7 +1049,7 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   ⚠ ★見直し候補7件はこの3本でも1件も繋がらない（org.phenol.phenoxide-co2 は CO₂ の瓶待ちで、
     //   足したのは Cl₂ の瓶なので別物。ただしフェノキシドへの行きが2本増えたので、
     //   CO₂ の瓶が入れば一気に繋がる位置に来た）。
-    var KNOWN_BOTTLES = 24, KNOWN_RULES = 56, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    var KNOWN_BOTTLES = 24, KNOWN_RULES = 59, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
