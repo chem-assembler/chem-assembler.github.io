@@ -5565,6 +5565,20 @@ const REF_TABLE_VARIANTS = {
     }
 };
 
+/* ★★ 登録済みの反応機構を **そのまま全部** 返す（reactions.json の14件）。
+ *
+ * ⚠ **引数を1つも持たない。** 「この系列だけ」「この1件だけ」を渡す口が無い ＝
+ *   資料の表は必ず全件になる（原則1「参照は全体像で渡す」を構造で守る。`renderStageTable` が
+ *   系列の中から行を選べないのと同じ作り）。
+ * ⚠ **実体は reaction.js が起動時に読んだ1本**（`window.reactionPlayer.reactions`）。
+ *   資料のために2つ目の fetch も2つ目の並び順も持たない —— 持つと、ビューアの一覧と
+ *   資料の表が別々の版を見ることになる。
+ */
+function refMechanisms() {
+    const rp = window.reactionPlayer;
+    return (rp && Array.isArray(rp.reactions)) ? rp.reactions : [];
+}
+
 class ReferenceBook {
     constructor() {
         this.pages = null;      // reference.json の中身（開くまで読まない）
@@ -5697,8 +5711,130 @@ class ReferenceBook {
             return p;
         }
         if (b.kind === 'stageTable') return this.renderStageTable(b);
+        if (b.kind === 'mechanismTable') return this.renderMechanismTable(b);
         if (b.kind === 'example') return this.renderExample(b);
         return null;
+    }
+
+    /* ★★ 反応機構の表（第4ページ）。**登録済みの機構を1件残らず**、型でまとめて出す。
+     *
+     * ⚠ **`block` から読むのは見出しの文字（`caption`）だけ。** 系列も id も件数も受け取らない ＝
+     *   「この型だけ」「この1件だけ」の表を作る口が構造上ない（原則1・`REF12` の否定対照）。
+     *
+     * ★ **列はどれも `reactions.json` の1件から機械で作る** —— 反応の型（`series`）・
+     *   反応の名前と説明（`name` / `desc`・**このリポジトリが書いた文**）・段数（`steps.length`）。
+     *   ⚠ 資料のためだけの言い換えを持たない（`refFunctionalSummary` が
+     *      `game.functionalGroupSummary` の1本を借りているのと同じ約束）。
+     *
+     * ★★ **行に ▶ を置く理由**（⚠ stages の表では §10-2 で「置かない」と決めたのと逆になる）:
+     *   stages の表は1行が**お題**なので、▶ を並べると「説明」が「N問の一覧」に化けて
+     *   説明と練習の層が混ざる。**機構の表は1行が読み物そのもの**（見るためのアニメ）で、
+     *   ここに練習の層は無い —— 押して見ることが「読む」にあたる。
+     *   ⚠ **stages 側の禁止はそのまま生きている**（表の class が違うので `REF6`/`REF10` の
+     *      「`table.ref-table` の中にボタンが無い」は今までどおり赤くなる）。
+     */
+    renderMechanismTable(block) {
+        const list = refMechanisms();
+        const wrap = document.createElement('div');
+        wrap.className = 'ref-table-wrap';
+        if (block.caption) {
+            const cap = document.createElement('div');
+            cap.className = 'ref-cap';
+            cap.textContent = block.caption + '（' + list.length + '件）';
+            wrap.appendChild(cap);
+        }
+        const t = document.createElement('table');
+        t.className = 'ref-mech-table';
+        const thead = document.createElement('thead');
+        const htr = document.createElement('tr');
+        /* ⚠ **2列しかない。** 実測（1280px・資料ペイン 320px・表の器 271px）で
+           「型 / 反応 / 段数 / ▶」の4列は **表が 426px** になり、**▶ が器の外**へ出ていた
+           （右へ 155px はみ出す ＝ **押すものが見えない**）。段数と ▶ は反応の欄の中へ入れた。 */
+        ['反応の型', '反応'].forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            htr.appendChild(th);
+        });
+        thead.appendChild(htr);
+        t.appendChild(thead);
+
+        const tb = document.createElement('tbody');
+        /* ★ 型（`series`）でまとめ、先頭の行にだけ見出しのセルを置く（rowspan）。
+           ⚠ **並べ方は `reaction.js` の `populateList` と同じ**（型は最初に出てきた順・
+              その中は reactions.json の順）—— ⚠ **`reactions.json` の並びは型の順ではない**ので、
+              「続いているあいだ」でまとめると **付加反応が 1件ずつ2か所に割れる**（実測で割れた）。
+              ★ ビューアの一覧と同じ並びになるので、**型の地図が2通りにならない**（`REF12` が見張る）。
+           ⚠ **行は1つも減らない**（左の1列を共有するだけ。第2ページの `grouped` と同じ） */
+        const seriesOrder = [];
+        list.forEach(r => { if (!seriesOrder.includes(r.series)) seriesOrder.push(r.series); });
+        seriesOrder.forEach(key => {
+            const members = list.filter(r => r.series === key);
+            members.forEach((r, k) => {
+                const tr = document.createElement('tr');
+                tr.dataset.rxId = r.id;
+                if (k === 0) {
+                    const td = document.createElement('td');
+                    td.className = 'ref-group';
+                    td.rowSpan = members.length;
+                    td.appendChild(document.createTextNode(key));
+                    const n = document.createElement('span');
+                    n.textContent = members.length + ' 件';
+                    td.appendChild(n);
+                    tr.appendChild(td);
+                }
+                const tdName = document.createElement('td');
+                tdName.className = 'ref-mech-name';
+                const b = document.createElement('b');
+                b.textContent = r.name;
+                tdName.appendChild(b);
+                if (r.desc) {
+                    const d = document.createElement('span');
+                    d.className = 'ref-mech-desc';
+                    d.textContent = r.desc;
+                    tdName.appendChild(d);
+                }
+                const foot = document.createElement('div');
+                foot.className = 'ref-mech-foot';
+                const steps = document.createElement('span');
+                steps.className = 'ref-mech-steps';
+                steps.textContent = ((r.steps || []).length) + ' 段';
+                foot.appendChild(steps);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'ref-mech-play';
+                btn.dataset.rxId = r.id;
+                btn.textContent = '▶ 見る';
+                btn.title = r.name + 'の機構を見る';
+                btn.setAttribute('aria-label', r.name + 'の機構を見る');
+                btn.addEventListener('click', () => this.playMechanism(r.id));
+                foot.appendChild(btn);
+                tdName.appendChild(foot);
+                tr.appendChild(tdName);
+                tb.appendChild(tr);
+            });
+        });
+        t.appendChild(tb);
+        wrap.appendChild(t);
+        return wrap;
+    }
+
+    /* ★★ 機構を1件 再生する ＝ **既存のビューアを開くだけ**（`reaction.js` の再生器）。
+     *
+     * ⚠ **巻矢印もステップ送りも予測も、ここでは1行も作らない。** 入口が資料に増えただけで、
+     *   選択の実体（`#select-reaction`）も `?open=mechanism&id=` も今までどおり `openById` に合流する
+     *   ＝ 「いま選ばれているのはどれか」を持つ場所は1つのまま（`reaction.js` §pick の約束）。
+     * ⚠ 資料ペインが**キャンバスを覆っている**（`position: fixed`＝スマホ）ときだけ閉じる。
+     *   PC（分割）では開いたまま ＝ 左で表を読みながら右でアニメを見られる。
+     *   判定を「幅を JS で数える」でやらないのは `startExample` と同じ理由（CSS の閾値を2か所で持たない）。
+     */
+    playMechanism(id) {
+        const rp = window.reactionPlayer;
+        if (!rp || typeof rp.openById !== 'function') return false;
+        const pane = document.getElementById('reference-pane');
+        const overlaying = pane && window.getComputedStyle(pane).position === 'fixed';
+        const ok = rp.openById(id);
+        if (ok && overlaying) this.setOpen(false);
+        return ok;
     }
 
     /* ★★ 表は **series 単位でしか作れない**（行を選ぶ引数が無い）。
@@ -5890,6 +6026,9 @@ if (typeof window !== 'undefined') {
     window.refFormulaFromStructure = refFormulaFromStructure;
     window.refMainChainLength = refMainChainLength;
     window.refFunctionalSummary = refFunctionalSummary;
+    // 反応機構の表（第4ページ）の出どころ。`REF12` が「表の14件が reactions.json そのもの」
+    // ＝ 資料が2つ目の一覧を持っていないことを、この口から確かめる
+    window.refMechanisms = refMechanisms;
     window.REF_TABLE_VARIANTS = REF_TABLE_VARIANTS;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
