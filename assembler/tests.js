@@ -49305,6 +49305,196 @@
         });
     });
 
+    /* =====================================================================
+     * FZ5〜FZ8: 夜間監査のファズが「**新しい面**」に届いているか（vNNNN）
+     *
+     * ★★ **きっかけ**（定期レビュー第3回・`DESIGN_review_pack3.md` §1・2026-09-03）:
+     *   6版で足した面 8 つのうち、②ファズが実際に触るのは **2 つ**だけだった。
+     *   **ユーザーに見える新しい面4つ（参考書のページ・課題12問・`?open=reference`・`?quest=`）は 0**。
+     *   300反復 × 80操作で `referenceBook.open/render` 0回・`startQuest` 0回・
+     *   `setPalette('exp')` 0回・瓶のクリック 0回。**2回続けて同じ指摘**（第2回は 14件中 0件）。
+     *
+     * ★ 手当ては `audit.js` 側（`bottle`／`quest`／`refbook` の枝＋面ごとの到達の記録）。
+     *   ここに置くのは、その手当てが**空振りしていないこと**を毎回の全走で見張る4件:
+     *     FZ5 … 操作の内訳（`OP_MIX`）が壊れていない（合計 1.0・新しい3枝が在る・`OP_MIX_ID` が上がった）
+     *     FZ6 … 面の誘導（`pickLeastReached`）の物差し（純関数の単体検査・否定対照つき）
+     *     FZ7 … 監査が出す数の作り（**「開いた」ではなく「何かが起きた」**）が正しい（同上）
+     *     FZ8 … ★★ `audit.html` の自己申告の表と、**実際の枝**が食い違ったら赤
+     *
+     * ⚠ **FZ8 が要る理由**: 手で書いた表は必ず古くなる。実際、第3回のレビューが
+     *   「`v1497` で②に組の枝を足した」は **v1502 の誤り**だと指摘している
+     *   （＝ 自己申告は書いた直後から腐り始める）。**枝を足して表を直し忘れたら赤**にする。
+     * ===================================================================== */
+
+    test('FZ5: 監査の操作の内訳（OP_MIX）— 合計 1.0・新しい面の3枝が在る・版が上がっている', async () => {
+        const lib = await loadAuditLib();
+        const mix = lib.OP_MIX;
+        assert(Array.isArray(mix) && mix.length, 'audit.js が OP_MIX を出していない');
+
+        /* ① ★ 合計が 1.0（分岐は「累積の表を上から見る」形なので、足りないと
+         *   **最後の枝が黙って残りを全部持っていく**・超えると末尾の枝が一度も回らない。
+         *   v719 まで実際に「伸縮が一度も実行されていない」状態だった） */
+        const sum = mix.reduce((a, [, v]) => a + v, 0);
+        assert(Math.abs(sum - 1) < 1e-9, `OP_MIX の合計が ${sum}（1.0 でないと末尾の枝が回らない）`);
+        mix.forEach(([n, v]) => assert(v > 0, `枝「${n}」の割合が ${v}（0 の枝は一度も回らない）`));
+
+        // ② 新しい面の3枝が在る（消したら赤 ＝ 「届かせた」を戻すときは意識的に）
+        const names = mix.map(m => m[0]);
+        ['bottle', 'quest', 'refbook'].forEach(n =>
+            assert(names.indexOf(n) >= 0, `OP_MIX に「${n}」の枝が無い（新しい面へ届かなくなる）`));
+        // ③ 版が上がっている（内訳が変わったのに mix が同じだと、比べられない実行を並べてしまう）
+        assert(lib.OP_MIX_ID >= 4,
+            `OP_MIX_ID が ${lib.OP_MIX_ID}（面の枝を入れた版は 4 以上。上げないと mix=3 の実行と並べてしまう）`);
+        // ④ ★否定対照 —— 合計の検査そのものが働くこと
+        assert(Math.abs(mix.concat([['x', 0.1]]).reduce((a, [, v]) => a + v, 0) - 1) >= 1e-9,
+            '合計の検査が働いていない（枝を1つ足しても 1.0 のままと言っている）');
+
+        return `枝 ${mix.length} 種・合計 ${sum.toFixed(4)}・mix=${lib.OP_MIX_ID}`;
+    });
+
+    test('FZ6: 面の誘導 — まだ何も起きていないものを優先する（誘導を切れば一様な乱数）', async () => {
+        /* ★ v1502 の実測が効いている: 「題材を並べる枝」を足すだけでは 0回が 14→10 本に
+         *   しか減らず、**半分の確率で「まだ届いていない札」を選ぶ誘導**を足して初めて 2 本になった。
+         *   面の側も同じ形なので、物差しを純関数で単体検査する。 */
+        const lib = await loadAuditLib();
+        const pick = lib.pickLeastReached;
+        assert(typeof pick === 'function', 'audit.js が pickLeastReached を出していない');
+
+        const ids = ['a', 'b', 'c'];
+        const counts = { a: 5, b: 0, c: 2 };   // b だけ「何も起きていない」
+        const always = () => 0;                // 誘導が必ず効く（0 < 0.5・添字は先頭）
+        // ① 0回のものが選ばれる
+        assert(pick(ids, counts, always, true) === 'b',
+            'まだ何も起きていないものを選んでいない');
+        // ② 全部に届いていれば、いちばん少ないものが選ばれる
+        assert(pick(ids, { a: 5, b: 3, c: 2 }, always, true) === 'c',
+            '回数がいちばん少ないものを選んでいない');
+        // ③ ★否定対照 —— 誘導を切れば一様な乱数（乱数 0 なら先頭）
+        assert(pick(ids, counts, always, false) === 'a',
+            '誘導を切っても誘導が効いている（?noguide=1 の否定対照が成立しない）');
+        // ④ ★否定対照 —— 誘導が入っていても、乱数が外れれば一様（0.9 >= 0.5 → 添字 0.9*3=2）
+        assert(pick(ids, counts, () => 0.9, true) === 'c',
+            '誘導の当たり外れが乱数で決まっていない（いつも誘導＝元の分布が消える）');
+        /* ⑤ ★★ **乱数は誘導の有無にかかわらず同じ回数だけ振る**。
+         *   ずれると `?noguide=1` の A/B が「別の種を流した」のと同じになり、
+         *   差が誘導のせいか乱数のせいか分けられなくなる（v1502 の `pickReactionButton` は
+         *   `!guided` で短絡していて1回しか振らない ＝ 同じ落とし穴を新しい側では踏まない）。 */
+        const countDraws = (guided) => {
+            let n = 0;
+            pick(ids, counts, () => { n++; return 0.3; }, guided);
+            return n;
+        };
+        assert(countDraws(true) === countDraws(false),
+            `乱数を振る回数が誘導の有無で違う（誘導あり ${countDraws(true)} 回 / 無し ${countDraws(false)} 回）`);
+        // ⑥ 空の一覧では null（面がまだ1つも無い版で落ちない）
+        assert(pick([], counts, always, true) === null, '空の一覧で null を返していない');
+    });
+
+    test('FZ7: 監査が出す「新しい面への到達」は、開いた回数ではなく“何かが起きた”数', async () => {
+        /* ⚠⚠ 発注書の要点そのもの: **「開いた」を数えるだけにしない**。
+         *   ・🧪 瓶 …… 押して**分子が変わった**か**答えが返った**
+         *   ・🎯 課題 …… 「始めた」ではなく「**達成した**」
+         *   ・📖 資料 …… 開いただけでなく「**表の行が生えた**」
+         *   `summarizeFaces` は純関数なので、作りごとの帳簿を渡して直に確かめる。 */
+        const lib = await loadAuditLib();
+        const s = lib.summarizeFaces;
+        assert(typeof s === 'function', 'audit.js が summarizeFaces を出していない');
+
+        const led = {
+            bottle: { attempts: 30, pressed: 30, changed: 4, answered: 24, picked: 2, silent: 2,
+                      effect: { b1: 28 }, ids: ['b1', 'b2', 'b3'] },
+            // ★ 「始めた 100 回・達成 0 回」＝ **届いていない**（ここを 100 と読ませない）
+            quest: { attempts: 100, started: 100, startFailed: 0, cleared: 0,
+                     clears: {}, ids: ['q1', 'q2'] },
+            ref: { attempts: 9, opened: 9, examples: 1, rowsTotal: 30, empty: 1,
+                   rows: { p1: 30 }, ids: ['p1', 'p2'], tableIds: ['p1', 'p2'] }
+        };
+        const r = s(led);
+        // ① 1本に28回起きても「届いた本数」は 1（回数で誤魔化せない）
+        assert(r.bottles.reached === 1 && r.bottles.total === 3,
+            `瓶の到達が ${r.bottles.reached}/${r.bottles.total}（1/3 のはず）`);
+        assert(r.bottles.zeroIds.join(',') === 'b2,b3', `0回の瓶が ${r.bottles.zeroIds.join(',')}`);
+        // ② ★ 「始めた 100 回」でも達成が 0 なら到達は 0 問
+        assert(r.quests.cleared === 0 && r.quests.started === 100,
+            `始めた回数を達成と読んでいる（達成 ${r.quests.cleared}・始めた ${r.quests.started}）`);
+        assert(r.quests.zeroIds.length === 2, '達成 0 の課題が名指しされていない');
+        // ③ 資料は「開いた 9 回」ではなく「行が生えたページ数」
+        assert(r.reference.rendered === 1 && r.reference.opened === 9,
+            `資料の到達が ${r.reference.rendered}（行が生えたのは1ページ）・開いた ${r.reference.opened}`);
+        assert(r.reference.emptyTables === 1, '表が0行だった回が落ちている（黙って通してはいけない）');
+        // ④ 回数そのものも残す（本数だけだと原因が追えない）
+        assert(r.bottles.counts.b1 === 28 && r.bottles.silent === 2, '内訳の回数が落ちている');
+        // ⑤ ★否定対照 —— 全部に起きていれば 0回は 0 件
+        const full = s(Object.assign({}, led, {
+            bottle: Object.assign({}, led.bottle, { effect: { b1: 1, b2: 1, b3: 1 } })
+        }));
+        assert(full.bottles.zeroIds.length === 0 && full.bottles.reached === 3,
+            '全部に届いた帳簿でも「0回」が残る（数え方が逆）');
+        // ⑥ 面がまだ1つも無い版でも落ちない（0/0 と出す ＝ 黙って対象から外れない）
+        const empty = s({ bottle: { ids: [], effect: {} }, quest: { ids: [], clears: {} },
+                          ref: { ids: [], rows: {}, tableIds: [] } });
+        assert(empty.bottles.total === 0 && empty.quests.total === 0 && empty.reference.total === 0,
+            '空の帳簿で落ちる（面がまだ無い版で監査が止まる）');
+        // ⑦ 画面に出す行が、緑のときも数を含んでいること（結果 JSON を開かないと分からない形にしない）
+        const line = lib.faceReachLine(r);
+        ['1/3', '0/2', '1/2'].forEach(n =>
+            assert(line.indexOf(n) >= 0, `到達の行に「${n}」が出ていない: ${line}`));
+        assert(line.indexOf('b2') >= 0 && line.indexOf('q1') >= 0,
+            `0回のものが名指しされていない: ${line}`);
+    });
+
+    test('FZ8: audit.html の自己申告の表が、実際の枝と食い違っていない', async () => {
+        /* ★★ **手で書いた表は必ず古くなる。**
+         *   実際に第3回のレビューが「`v1497` で②に組の枝を足した」は **v1502 の誤り**だと
+         *   指摘している。**枝を足して表を直し忘れたら赤**にするのがこの検査。
+         *
+         * ★ 突き合わせの形: 表の各行は
+         *     `data-face`（面の名前）・`data-audit="in|out"`（内か外か）・
+         *     `data-op`（内なら、その面を触る `OP_MIX` の枝の名前をコンマ区切りで）
+         *   を持つ。ここが `audit.js` の `OP_MIX` と両向きで一致することを見る。 */
+        const lib = await loadAuditLib();
+        const res = await fetch('audit.html?nocache=' + Date.now());
+        assert(res.ok, 'audit.html を読めない（配信の場所が変わった？）');
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const rows = [...doc.querySelectorAll('details.scope tr[data-face]')];
+        assert(rows.length >= 10,
+            `自己申告の表の行が ${rows.length} 行しかない（data-face が付いていない行がある？）`);
+
+        const opNames = lib.OP_MIX.map(m => m[0]);
+        const claimed = new Set();
+        rows.forEach(tr => {
+            const face = tr.dataset.face;
+            const inOut = tr.dataset.audit;
+            assert(inOut === 'in' || inOut === 'out',
+                `行「${face}」の data-audit が「${inOut}」（in か out のはず）`);
+            const ops = (tr.dataset.op || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (inOut === 'in') {
+                assert(ops.length > 0,
+                    `行「${face}」は「内」と名乗っているのに、触る枝（data-op）が書かれていない`);
+                ops.forEach(op => {
+                    assert(opNames.indexOf(op) >= 0 || op === 'library' || op === 'viewport' || op === 'tap',
+                        `行「${face}」が名乗る枝「${op}」は audit.js に無い（枝を消したのに表が「内」のまま）`);
+                    claimed.add(op);
+                });
+            } else {
+                assert(ops.length === 0,
+                    `行「${face}」は「外」と名乗っているのに、触る枝（data-op）が書かれている（${ops.join(',')}）`);
+            }
+        });
+
+        /* ★★ 逆向き —— **枝を足して表を直し忘れたら赤**。
+         * ⚠ ここが無いと「表は古いが全部の行が正しい」で緑になる（＝ 第3回の指摘が再発する）。 */
+        const orphan = opNames.filter(op => !claimed.has(op));
+        assert(orphan.length === 0,
+            `audit.js の枝 ${orphan.join(', ')} が、audit.html の表のどの行からも名乗られていない` +
+            ' ＝ 監査が触っている面が自己申告に書かれていない（枝を足したら表にも1行足すこと）');
+
+        // ★否定対照 —— 表に無い枝を1つ混ぜたら、この逆向きの検査が見つけること
+        assert(opNames.concat(['__ghost__']).filter(op => !claimed.has(op)).length === 1,
+            '逆向きの突き合わせが働いていない（枝を足しても「全部名乗られている」と言っている）');
+        return `自己申告 ${rows.length} 行・枝 ${opNames.length} 種を突き合わせた（内 ${claimed.size} 種）`;
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
