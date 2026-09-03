@@ -49677,6 +49677,50 @@
         return 'アミン 3種で塩・遊離／アミド・ニトロは対象外';
     });
 
+    test('SEP5: 弱酸の遊離が塩酸でも引ける（瓶は1本も増やさない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, R = W.reactor;
+        const rule = W.REACTION_RULES.find(r => r.id === 'liberate_weak_acid');
+        assert(rule, 'liberate_weak_acid が無い');
+        /* ★★ **入試64件で遊離に使う試薬は 塩酸45・硫酸14・CO₂7**（設計書 §4-1）。
+         * ⚠ v1506 まで瓶は希硫酸1本だけで、**いちばん多い塩酸で引けなかった**。 */
+        assert(W.ruleUsesReagent(rule, 'hcl') && W.ruleUsesReagent(rule, 'h2so4_dil'),
+            `遊離の瓶が ${W.ruleReagentIds(rule).join('・')}（希硫酸と塩酸の両方であること）`);
+        // ⚠ 瓶は1本も増えていない（相乗り。D-I4）
+        assert(W.REAGENTS.length === 24, `瓶が ${W.REAGENTS.length} 本（v1511 の 24本のままであること）`);
+
+        // ---- 塩酸でも希硫酸でも、同じ塩から同じ酸が戻る
+        const codes = {};
+        ['hcl', 'h2so4_dil'].forEach(id => {
+            sepSetup(c, ['安息香酸ナトリウム']);
+            g.startSeparation();
+            const res = R.applyToMixture(W.REAGENTS.find(r => r.id === id));
+            assert(res.hits.join(',') === '安息香酸ナトリウム',
+                `${id}: 遊離が効いていない（効いた: ${res.hits.join('・') || 'なし'}）`);
+            const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+            assert(names.includes('安息香酸'), `${id}: 遊離してもとの酸に戻っていない（${names.join(' / ')}）`);
+            assert(g.phaseOfPart(sepPart(c, '安息香酸')) === 'ether', `${id}: 有機層へ戻っていない`);
+            codes[id] = W.canonicalCode(g.userMolecule);
+        });
+        assert(codes.hcl === codes.h2so4_dil,
+            `★ 塩酸と希硫酸で生成物が違う\n  塩酸: ${codes.hcl}\n  希硫酸: ${codes.h2so4_dil}`);
+
+        /* ---- ★★ 否定対照: **塩化水素の瓶がもとの仕事を失っていない**。
+         * ⚠ ここが要 —— `reagentId` を配列に替えたときに書き間違えると、
+         *   遊離は通るのに **C=C への付加が瓶から消える**（既存の道が黙って死ぬ形）。 */
+        sepSetup(c, ['エチレン（エテン）']);
+        const addHcl = W.REACTION_RULES.find(r => r.id === 'add_hcl');
+        assert(addHcl.detect(g.userMolecule).length === 1, 'エチレンで塩化水素の付加の箇所が出ない');
+        const hits = R.reagentHits(W.REAGENTS.find(r => r.id === 'hcl')).map(h => h.rule.id);
+        assert(hits.includes('add_hcl'),
+            `★ 塩化水素の瓶から C=C への付加が消えた（いま出るのは ${hits.join('・') || 'なし'}）`);
+        // ★ 逆向きの対照: 塩を持たないエチレンでは遊離は出ない（瓶が何にでも効くようになっていない）
+        assert(!hits.includes('liberate_weak_acid'),
+            '★ 塩が無いエチレンで弱酸の遊離が出た（detect が塩を見ていない）');
+        c.reset();
+        return '塩酸・希硫酸のどちらでも遊離／付加は無傷';
+    });
+
     /* ★★ SEP6: **どの幅から「札の一覧」にするか**（D-I2・ユーザー決定「スマホでは
      *   カードタップ時に拡大して構造式を示す」）。
      *
