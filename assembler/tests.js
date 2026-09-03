@@ -46229,6 +46229,77 @@
     const refRowNames = (D) =>
         [...D.querySelectorAll('#ref-body table.ref-table tbody tr')].map(tr => tr.children[1].textContent.trim());
 
+    /**
+     * ★★ 分子を1つ画面に出すのに要る「視野の広さ」（モデル座標）。
+     *
+     * ⚠ `game.js` の `fitCanvasToMolecule` と**同じ式**（余白 240×180・最小 360×270・
+     * 最後に 4:3 へそろえる）。viewBox が必ず 4:3 に正規化されるので、画面上の縮尺は
+     *
+     *     結合の太さ px ＝（その画面で決まる定数）÷ この値
+     *
+     * で**厳密に**効く。実測（1200×800・資料ペイン300px・キャンバス558px）で
+     * デカン 32.9px（視野618）・ステアリン酸 20.4px（視野996）＝ ちょうど逆比になっており、
+     * ナイロン66（視野2046）の 9.9px まで小数第1位まで一致した。
+     *
+     * ★★ **＝ この値の大きい順が「読みにくい順」そのもの。**
+     * だから最悪ケースは**名前を焼き込まずに座標だけから選べる**。
+     * ⚠ 以前ここは「デカンとスクロース」と名前で書いてあり、**在庫にもっと横長の分子が
+     *   入ったことに気づけなかった**（スクロースは 1090件中 26位でしかなかった）。
+     */
+    function requiredViewWidth(target) {
+        const atoms = (target && target.atoms) || [];
+        if (!atoms.length) return 0;
+        const xs = atoms.map(a => a.x), ys = atoms.map(a => a.y);
+        const vw = Math.max(360, (Math.max(...xs) - Math.min(...xs)) + 240);
+        const vh = Math.max(270, (Math.max(...ys) - Math.min(...ys)) + 180);
+        return (vw / vh > 4 / 3) ? vw : vh * (4 / 3);
+    }
+
+    // 与えられた一覧から「いちばん視野を食う1件／いちばん食わない1件」を選ぶ。
+    // ⚠ 返すのは名前**と**その値。検査の失敗メッセージに名前が出れば足り、検査には書き写さない
+    function widestNarrowest(entries) {
+        let worst = null, easiest = null;
+        entries.forEach(e => {
+            const v = requiredViewWidth(e.target);
+            if (!(v > 0)) return;
+            if (!worst || v > worst.v) worst = { name: e.name, v };
+            if (!easiest || v < easiest.v) easiest = { name: e.name, v };
+        });
+        return { worst, easiest };
+    }
+
+    /**
+     * ★ 資料ページが**実際に表へ出している**分子（＝ 床を守る範囲。2026-09-03 ユーザー決定）。
+     * `reference.json` の `source: "stages:<系列>"` から系列を引き、その系列の stages を返す。
+     * ⚠ ページを足せば物差しも自動で伸びる。**検査に系列名も件数も書かない。**
+     */
+    async function referenceShownStages(W) {
+        const pages = await W.referenceBook.load();
+        const series = new Set();
+        pages.forEach(p => (p.source || []).forEach(s => {
+            const m = /^stages:(.+)$/.exec(s);
+            if (m) series.add(m[1]);
+        }));
+        return W.STAGES.filter(s => series.has(s.series));
+    }
+
+    // 在庫ぜんぶ（stages + compounds）。`getCompoundLibrary()` と同じ2つの出どころを見る
+    const stockEntries = (W) => [...(W.STAGES || []), ...(W.COMPOUNDS || [])];
+
+    // 前の分子を消してから1件呼び、視野を合わせて結合の太さを測る。
+    // ⚠ `summonMolecule` は**足す**ので、消さずに続けて呼ぶと2分子ぶんに視野が合い、
+    //    実測が2倍近く小さく出る（§10-6 の落とし穴）
+    async function summonAndMeasure(W, nm) {
+        W.game.userMolecule = new W.Molecule();
+        W.game.updateDrawing();
+        const ok = W.game.summonMolecule(nm);
+        assert(ok, `「${nm}」を呼び出せない（ライブラリから機械で選んだ名前が引けない）`);
+        await new Promise(r => setTimeout(r, 250));
+        W.game.fitCanvasToMolecule(W.game.userMolecule);
+        await new Promise(r => setTimeout(r, 150));
+        return W.game.screenPxPerGrid();
+    }
+
     test('REF1: 📚 学習 → 📖 資料 の索引からページが開き、資料ペインが出る（Study は閉じる）', async (c) => {
         const D = c.D, W = c.W;
         assert(W.referenceBook, 'window.referenceBook が居ない');
@@ -46340,9 +46411,14 @@
         c.reset();
     });
 
-    test('REF4: 375 は分割せずタブ／1280 は分割しても読める大きさの床（結合28px）を保つ', async (c) => {
+    test('REF4: 375 は分割せずタブ／1200 は分割しても「資料が見せている分子」が床（結合28px）を保つ', async (c) => {
         /* 判定のものさしは repo の中にあるもの（style.css 2156-: 結合 28px・ラベル 4.6px で
-           「読めない大きさ」と自分で書いている実測値）。★ 新しい基準を発明しない。 */
+           「読めない大きさ」と自分で書いている実測値）。★ 新しい基準を発明しない。
+
+           ★★ **床を守る範囲**（2026-09-03・ユーザー決定。設計書 §12-1）:
+           **「資料が見せている分子」まで** ＝ 資料ペインが、読者がその資料のために触っている
+           分子を潰していないこと。在庫ぜんぶではない —— 在庫の大物は資料を1pxも出さなくても
+           床を割り、**どの閾値でも救えない**（そちらは `REF4b`）。 */
         const FLOOR = 28;
 
         // --- 375×812 縦: 重ねる（タブ）＝ キャンバスは 1px も減らない
@@ -46387,16 +46463,22 @@
         });
 
         /* --- ★★ 分割は 1200px から。⚠ **設計書 §4-3 の「閾値は新設せず 1000px を流用」は誤り**
-           （このレーンの実測。資料を開いてデカン／スクロースを出したとき）:
-               1000 → デカン 22.6 ✗ ／ 1100 → 26.8 ✗ ／ 1150 → 29.3 ○ だがスクロース 25.4 ✗
-               1200 → デカン 32.9 ○・スクロース 28.4 ○
-           ＝ **閾値は「借りられる値」ではなく「測って決まる値」だった。** */
+           （実測。資料を開いてデカンを出したとき）:
+               1000 → 22.6 ✗ ／ 1100 → 26.8 ✗ ／ 1150 → 29.3 ○ ／ 1200 → 32.9 ○
+           ＝ **閾値は「借りられる値」ではなく「測って決まる値」だった。**
 
-        // ★否定対照: 閾値の1px下（1199）は**分割しない**。ここが緩むと 1000〜1199 の床割れが戻る
+           ⚠ **1200 という値を決めたのはスクロース**（1150 で 25.4 ✗）だったが、
+             床を守る範囲を「資料が見せている分子」に絞った結果、**スクロースは範囲の外**になった
+             （実測 1200px で 30.6px。在庫 1090件中26位で、そもそも最悪ケースでもなかった）。
+           ★ ＝ いまの 1200 は**余裕のある値**で、下げる余地はある。
+             ⚠ **下げるかどうかはこのレーンでは決めていない**（下げると 1000〜1199 の
+                実測をやり直すことになり、資料の話を超える）。値が黙って動かないよう下の否定対照で留める。 */
+
+        // ★否定対照: 閾値の1px下（1199）は**分割しない**。ここが緩むと閾値が黙って動く
         await withReference(1199, 800, async (W, D, name) => {
             const pane = D.getElementById('reference-pane');
             assert(W.getComputedStyle(pane).position === 'fixed',
-                `${name}: 閾値（1200px）の下なのに分割している。⚠ 1199px 以下で分割すると床を割る（実測）`);
+                `${name}: 閾値（1200px）の下なのに分割している。⚠ 下げるなら 1000〜1199 を測り直してから`);
             assert(W.getComputedStyle(D.querySelector('.ref-tabs')).display !== 'none',
                 `${name}: 重ねているのに行き来のタブが出ていない`);
         });
@@ -46410,22 +46492,89 @@
                 `${name}: 左右に並んでいるのに行き来のタブが出ている（切り替える相手がいない）`);
             const paneW = pane.getBoundingClientRect().width;
             assert(paneW > 0 && paneW <= 340,
-                `${name}: 資料ペインが ${Math.round(paneW)}px（実測で 340px を超えると在庫の大物が床を割る）`);
-            // ⚠ **スクロースを外さない** —— 在庫で最大級（424×238単位）で、閾値を決めたのはこの分子。
-            //    デカンだけ見ていると 1150px でも通ってしまう（デカン 29.3 ○ / スクロース 25.4 ✗）
-            for (const nm of ['デカン', 'スクロース']) {
-                // ⚠ 呼び出しは**足す**ので、前の分子を消してから測る
-                //   （消さずに続けて呼ぶと2分子ぶんに視野が合い、実測が2倍近く小さく出る）
-                W.game.userMolecule = new W.Molecule();
-                W.game.updateDrawing();
-                W.game.summonMolecule(nm);
-                await new Promise(r => setTimeout(r, 250));
-                W.game.fitCanvasToMolecule(W.game.userMolecule);
-                await new Promise(r => setTimeout(r, 150));
-                const px = W.game.screenPxPerGrid();
-                assert(px >= FLOOR,
-                    `${name}: 資料を開いた状態で ${nm} の結合が ${px.toFixed(1)}px ＝ 読めない大きさの床（${FLOOR}px）を割った`);
+                `${name}: 資料ペインが ${Math.round(paneW)}px（実測で 340px を超えると資料の分子が床を割る）`);
+
+            /* ★★ **床を守る範囲は「資料が見せている分子」**（2026-09-03・ユーザー決定。§12-1）。
+               ⚠ ここに**名前を書かない** —— `reference.json` の `source` から系列を引き、
+                 その系列の stages のうち「いちばん視野を食う1件」を機械で選ぶ。
+                 前は「デカンとスクロース」と焼き込んであり、**在庫にもっと横長の分子が
+                 入ったことに気づけなかった**（スクロースは 1090件中26位・実測 30.6px で
+                 そもそも床を決めていない）。 */
+            const shown = await referenceShownStages(W);
+            assert(shown.length >= 2,
+                `${name}: 資料ページが表に出している分子が ${shown.length} 件しか引けない（reference.json の source が読めていない）`);
+            const { worst, easiest } = widestNarrowest(shown);
+
+            const pxWorst = await summonAndMeasure(W, worst.name);
+            assert(pxWorst >= FLOOR,
+                `${name}: 資料を開いた状態で、資料が見せている分子のうち**いちばん横長の**「${worst.name}」の結合が ` +
+                `${pxWorst.toFixed(1)}px ＝ 読めない大きさの床（${FLOOR}px）を割った。` +
+                '⚠ 資料ページを足したときは、その系列に大物が入っていないかを見ること');
+
+            /* ★ 物差しそのものの検算（＝ この選抜が空振りしていないこと）。
+               `requiredViewWidth` が実際の縮尺と**同じ向き**に並んでいるなら、
+               視野を食う側は必ず小さく出る。逆なら、床を守れているのではなく物差しが壊れている */
+            const pxEasiest = await summonAndMeasure(W, easiest.name);
+            assert(worst.name !== easiest.name && worst.v > easiest.v,
+                `${name}: 最大と最小が同じ分子になった（資料が1系列しか出していないか、選抜が効いていない）`);
+            assert(pxWorst <= pxEasiest + 0.5,
+                `${name}: 要る視野が広いほうの「${worst.name}」（視野${Math.round(worst.v)}・${pxWorst.toFixed(1)}px）が、` +
+                `狭いほうの「${easiest.name}」（視野${Math.round(easiest.v)}・${pxEasiest.toFixed(1)}px）より大きく出ている ` +
+                '＝ requiredViewWidth が画面の縮尺と別の順に並んでいる（最悪ケースの選抜が当てにならない）');
+        });
+    });
+
+    test('REF4b: 在庫でいちばん横長の分子は 1200px で床を割る —— 折り返さず、拡大縮小で読む', async (c) => {
+        /* ★★ 2026-09-03・ユーザー決定。「折り返しよりもスクロール、拡大縮小でユーザーが対応」。
+             ＝ `D-R5`（直鎖が横に長い分子は画面に対して大きすぎる）に**折り返し作図は作らない**。
+                CLAUDE.md／§10-5 の「切り替える・畳む・別ページにする・**スクロールと拡大縮小で見せる**、は可」
+                のうち最後の1つを採る、という判断。
+
+           ⚠⚠ **これは参考書化が持ち込んだ問題ではない。** 在庫でいちばん横長の分子は
+              **資料を1pxも出していなくても**床を割る（実測 1200px・資料閉のキャンバス873px で 15.5px）。
+              床に載せるにはウィンドウ約2255px が要る ＝ **どの分割の閾値を選んでも届かない。**
+
+           ★ この検査が固定するのは2つ:
+             ① 「在庫の最大は床を割る」という**事実**（名前ではなく、座標から機械で選んだ1件で見る）。
+                ⚠ ここが緑にできるようになったら**前提が変わっている** —— 落ちたら設計書 §12 を直すこと。
+             ② その穴を**逃げ道が埋めている**こと（拡大すれば床を越える・パンで端まで行ける）。
+                ②が無いまま①だけ認めると、ただ読めない分子を放置しているのと同じ。 */
+        const FLOOR = 28;
+        await withReference(1200, 800, async (W, D, name) => {
+            const { worst } = widestNarrowest(stockEntries(W));
+            assert(worst, `${name}: 在庫（STAGES + COMPOUNDS）が読めない`);
+
+            const fitted = await summonAndMeasure(W, worst.name);
+            assert(fitted < FLOOR,
+                `${name}: 在庫でいちばん横長の「${worst.name}」（要る視野 ${Math.round(worst.v)}）が ` +
+                `${fitted.toFixed(1)}px ＝ 床（${FLOOR}px）を割らなくなった。★ 前提が変わっている: ` +
+                'DESIGN_reference_book.md §12 の記録（在庫最大は 1200px では床に載らない）を測り直して直すこと');
+
+            // ② 逃げ道その1: 拡大（Ctrl+ホイール）で床を越えられる。
+            //    ⚠ viewBox を直に書き換えず、**ユーザーが触るのと同じ入口**（wheel イベント）で回す
+            const svg = W.game.svg;
+            const box = svg.getBoundingClientRect();
+            const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+            for (let i = 0; i < 60 && W.game.screenPxPerGrid() < FLOOR; i++) {
+                svg.dispatchEvent(new W.WheelEvent('wheel',
+                    { deltaY: -100, ctrlKey: true, clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
             }
+            const zoomed = W.game.screenPxPerGrid();
+            assert(zoomed >= FLOOR,
+                `${name}: 「${worst.name}」を Ctrl+ホイールで拡大しても ${zoomed.toFixed(1)}px までしか上がらない ` +
+                `＝ 床（${FLOOR}px）に届かない。折り返さずに拡大縮小で読ませる方針の逃げ道が塞がっている`);
+
+            // ② 逃げ道その2: パン（ホイール）で横へ動ける ＝ 拡大した先で端まで行ける。
+            //    分子は 1806単位ぶん横に伸びているので、動けなければ拡大は読むことの役に立たない
+            const before = W.game.visibleModelRect();
+            svg.dispatchEvent(new W.WheelEvent('wheel',
+                { deltaX: 400, deltaY: 0, clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
+            await new Promise(r => setTimeout(r, 100));
+            const after = W.game.visibleModelRect();
+            assert(before && after && after.x > before.x + 1,
+                `${name}: 拡大したあとホイールで横へパンできない（見えている範囲が ` +
+                `${before ? before.x.toFixed(0) : '?'} → ${after ? after.x.toFixed(0) : '?'}）` +
+                '＝ 拡大しても分子の端まで行けない');
         });
     });
 
