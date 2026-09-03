@@ -37689,10 +37689,19 @@
                 '選択欄が開いた機構に合っていない（人が前後へ移れない）');
         } finally { a.kill(); }
 
-        // ④ `id` が無いときは従来どおり**箱を開けるだけ**（前方互換）
+        /* ④ `id` が無いときは**一覧を出すだけ**（前方互換）。
+           ⚠ vNNNN 以前は「⚗️ の箱を開けるだけ」だった。**その箱を撤去した**ので、
+              いまの一覧は 📖 資料の4枚目の表。★ 見張るものは同じ ——
+              **行き先が生きている**ことと、**勝手に1件を始めない**こと。 */
         a = await openApp('?open=mechanism');
         try {
-            assert(a.D.getElementById('reaction-box').open, '?open=mechanism で箱が開かない');
+            for (let i = 0; i < 40; i++) {
+                if (a.D.querySelector('#ref-body table.ref-mech-table')) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            const rows = a.D.querySelectorAll('#ref-body table.ref-mech-table tbody tr');
+            assert(rows.length === a.W.reactionPlayer.reactions.length,
+                `?open=mechanism で機構の一覧が出ない（${rows.length} 行）`);
             assert(!(a.W.reactionPlayer && a.W.reactionPlayer.active),
                 'id が無いのに機構が自動で始まっている（従来の行き先が変わった）');
         } finally { a.kill(); }
@@ -37738,7 +37747,15 @@
         // 知らない機構 id … 箱は開くが機構は始まらない
         a = await openApp('?open=mechanism&id=zzz_no_such_mechanism');
         try {
-            assert(a.D.getElementById('reaction-box').open, '知らない機構 id で箱まで開かなくなっている');
+            // ⚠ vNNNN 以前は「箱まで開かなくなっていない」を見ていた。**箱は撤去した**ので、
+            //    いま「行き先まで死んでいない」ことを示すのは**資料の一覧が出ること**
+            for (let i = 0; i < 40; i++) {
+                if (a.D.querySelector('#ref-body table.ref-mech-table')) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            assert(a.D.querySelectorAll('#ref-body table.ref-mech-table tbody tr').length ===
+                a.W.reactionPlayer.reactions.length,
+                '知らない機構 id で一覧まで出なくなっている（前方互換が壊れている）');
             assert(!(a.W.reactionPlayer && a.W.reactionPlayer.active),
                 '知らない機構 id で何かが始まっている');
         } finally { a.kill(); }
@@ -48022,18 +48039,22 @@
             assert(tr.textContent.includes(`${(r.steps || []).length} 段`),
                 `「${r.name}」の段数が ${(r.steps || []).length} 段として出ていない`);
         });
-        /* ★★ 並びは**ビューアの一覧と同じ**（型でまとめた順）。
-           ⚠ 検査の中で並べ直さない —— **画面に出ている2つの一覧を突き合わせる**。
-              一致していないと「型の地図」が2通りある ＝ 資料とビューアで型の切り方が食い違う。
+        /* ★★ 並びは「型ごとにひとまとまり・型の順は最初に出てきた順・型の中は
+           `reactions.json` の順」（`reaction.js` の `populateList` と同じまとめ方）。
+           ⚠⚠ vNNNN 以前はここで**ビューアの一覧（`#reaction-list`）と突き合わせて**いたが、
+              **その一覧ごと撤去した**（📚 学習の ⚗️ の札を消したため）＝ 相手が居ない。
+              ★ 代わりに **`reactions.json` から同じ規則で組み直して照合する**。
+              ⚠ これは「実装の写し」ではなく**仕様そのもの**（型でまとまっていること・
+                 型の中で元の順を崩さないこと）で、どちらを崩しても赤くなる。
            ⚠ `reactions.json` の生の並びは型の順では**ない**ので、素直に上から並べると
               同じ型が2か所に割れる（このレーンが実際に踏んだ）。 */
-        const viewerIds = [...D.querySelectorAll('#reaction-list button[data-rx-id]')].map(b => b.dataset.rxId);
-        assert(viewerIds.length === RX.length,
-            `ビューアの一覧が ${viewerIds.length} 件（この突き合わせの前提が崩れている）`);
-        assert(rows.map(tr => tr.dataset.rxId).join(',') === viewerIds.join(','),
-            '資料の表とビューアの一覧の並びが違う（型のまとめ方が2通りある）\n'
-            + `  資料  : ${rows.map(tr => tr.dataset.rxId).join(',')}\n`
-            + `  一覧  : ${viewerIds.join(',')}`);
+        const order = [];
+        [...new Set(RX.map(r => r.series))].forEach(s =>
+            RX.forEach(r => { if (r.series === s) order.push(r.id); }));
+        assert(rows.map(tr => tr.dataset.rxId).join(',') === order.join(','),
+            '機構の表の並びが「型でまとめた順」でない（同じ型が2か所に割れていないか）\n'
+            + `  画面  : ${rows.map(tr => tr.dataset.rxId).join(',')}\n`
+            + `  期待  : ${order.join(',')}`);
         // ★ 型は1つにつき見出しのセルが1つ ＝ 同じ型が2か所に割れていない
         const seriesCount = new Set(RX.map(r => r.series)).size;
         const groupCells = D.querySelectorAll('#ref-body table.ref-mech-table td.ref-group');
