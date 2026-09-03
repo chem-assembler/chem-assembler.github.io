@@ -307,6 +307,42 @@ h2 {
     white-space: nowrap;
 }
 .ws-quest-now.q-cleared { color: var(--neon-green); font-weight: 700; }
+/* 分液の帯（#ws-sep。DESIGN_ion_layer.md I-1）。
+   ★ **層は文字で示す**（D-I2 の共通欄）＝ PC でもスマホでも「有機層 / 水層」の行が出る。
+   ★ 札はスマホで「タップして1件を拡大」する押しもの ＝ 帯の 34px の床をそのまま守る
+     （`.work-strip button { min-height: 34px }` が上に効く）。
+   ⚠ 札が増えても帯が育ちすぎないよう、**札の行だけを横に送る**（`overflow-x:auto`）。
+     縦に折り返すとキャンバスが 320px で見えなくなる（課題の帯で実測した型） */
+.ws-sep-title { flex: 0 0 auto; font-weight: 700; color: var(--color-cyan, #00f2fe); }
+.sep-cards { display: flex; flex-direction: column; gap: 4px; }
+.sep-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.sep-row .sep-layer-name {
+    flex: 0 0 auto;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.sep-row[data-phase="aq"] .sep-layer-name { color: var(--color-cyan, #00f2fe); }
+.sep-row .sep-empty { flex: 0 0 auto; font-size: 11.5px; color: var(--text-muted); }
+.sep-card {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+    background: rgba(0, 242, 254, 0.08);
+    border: 1px solid rgba(0, 242, 254, 0.45);
+    border-radius: 17px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.sep-note { font-size: 11px; line-height: 1.5; color: var(--text-secondary); }
 /* ⚠ 課題の最中は「名称から呼び出す」の1段を畳む（出発物はアプリが置くので使い道が無い）。
    ★ これで帯がキャンバスを覆う量の増分が **+79px → +34px** になる（375×812 の実測）。
    ⚠ 消すのではなく畳むだけ ＝ 課題をやめれば元どおり出る（WS1 が見る素の 🧪自由 は無傷） */

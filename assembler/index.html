@@ -181,6 +181,12 @@
                            押した瓶の答えを返す `#exp-reagent-note` の場所が無くなる -->
                     <button id="btn-quest-open" class="view-btn exp-quest-open"
                             title="出発物を置いて、目的の物質を作る課題を選びます（何回でもやり直せます）">🎯 課題に挑む</button>
+                    <!-- ★ 分液への入口（DESIGN_ion_layer.md §4-4「モードを増やさない」）。
+                         ⚠ **`.tool-group` を新しく作らない**（`EX2` の不変条件。上の 🎯 と同じ理由）。
+                         ★ 押すと水面の帯が出て、瓶が**キャンバスの全成分に順にかかる**ようになる
+                           （`applyToMixture`）。試薬の順は固定しない（D-I10。教科書順は入試64件中3件）。 -->
+                    <button id="btn-sep-start" class="view-btn exp-quest-open"
+                            title="水面の帯を出して、混合物に瓶をかけられるようにします">🧪 分液を始める</button>
                     <h3>試薬をかける</h3>
                     <p id="exp-lede" class="exp-lede">瓶を選ぶと、キャンバスの分子にかけます。<b>効かない瓶も押せます</b> —— 効かなかった理由が返ります。</p>
                     <div id="exp-reagents-grid" class="rg-grid"></div>
@@ -563,6 +569,25 @@
                                 <span id="ws-practice-progress" class="ws-progress"></span>
                             </div>
                             <div class="ws-row" id="ws-practice-actions"></div>
+                        </div>
+                        <!-- 🧪 分液の帯（DESIGN_ion_layer.md I-1・§4-5）。
+                             ★ **層は「文字で示す」**（D-I2 の共通欄）—— PC でもスマホでも
+                               ここに「有機層: ① 安息香酸 ／ 水層: ② 安息香酸ナトリウム（水層）」が出る。
+                             ★ **スマホ縦は札の一覧＋タップで1件を拡大**（D-I2・ユーザー決定）。
+                               札は常に見えているので、消えるのは「構造どうしを同時に見比べる」ことだけ。
+                             ⚠ **`data-modes` を付けない**（`Q1` が `[data-modes]` は1つを固定している）。
+                             ⚠ 分液は**モードではない** ＝ 🧪 実験パレットの中のトグルで出入りする。 -->
+                        <div id="ws-sep" class="ws-pane hidden">
+                            <div class="ws-row">
+                                <span class="ws-sep-title">🧪 分液</span>
+                                <span class="ws-spacer"></span>
+                                <button id="btn-sep-all" class="view-btn ws-action hidden"
+                                        title="拡大をやめて、全部の成分を並べて表示します">⤢ 全体を見る</button>
+                                <button id="btn-sep-end" class="view-btn ws-action"
+                                        title="水面の帯を下ろします（塩になった印は消えません）">✕ 分液をやめる</button>
+                            </div>
+                            <div id="sep-cards" class="sep-cards"></div>
+                            <div id="sep-note" class="sep-note"></div>
                         </div>
                     </div>
                 </div>
