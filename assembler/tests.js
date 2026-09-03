@@ -13153,7 +13153,7 @@
         assert(g.userMolecule.atoms.length === 2, 'モード切替で分子が消えた(2)');
 
         // 学習を離れると反応機構モードが終了する
-        c.W.reactionPlayer.checkMode.checked = true;
+        // ⚠ vNNNN でスイッチ（#check-reaction-mode）は札ごと撤去した ＝ 立てる表示がもう無い
         c.W.reactionPlayer.enter(0);
         assert(c.W.reactionPlayer.active, '反応機構モードに入れない');
         g.setMode('free');
@@ -30003,16 +30003,10 @@
         // ② **新しい一覧の押しもの**から入る ＝ v1379 の約束と v1374 の退避が通る
         g.setMode('learn');
         g.setStudyOpen(true);
-        D.getElementById('reaction-box').open = true;
-        const item = [...D.querySelectorAll('#reaction-list button[data-rx-id]')]
-            .find(b => b.dataset.rxId === 'benzene_nitration');
-        assert(item, '一覧に benzene_nitration が無い');
-        item.click();
-        await c.tick(10);
+        // ⚠ 一覧は vNNNN で 📖 資料の4枚目へ移った（⚗️ の札ごと撤去）
+        const item = await rxPlayFromReference(c, 'benzene_nitration');
         assert(rp.active && rp.currentReaction.id === 'benzene_nitration',
             '一覧の押しものから始まらない（v1379 の回帰）');
-        assert(D.getElementById('check-reaction-mode').checked,
-            'スイッチの表示が追従しない（状態が2つに割れている）');
         assert(!D.getElementById('ws-reaction').classList.contains('hidden'), '帯が出ない');
         assert(D.getElementById('study-modal').classList.contains('hidden'), 'メニューが引っ込まない');
         assert(rp.ownsCanvas() && rp.canvasBorrowed && rp.savedPuzzleMolecule &&
@@ -30021,8 +30015,9 @@
         assert(!shown(), 'ビューア中も札が出たまま（v1409 の手当ての回帰）');
         assert(W.reactor.lastReaction,
             '一覧から機構を見にいくと直近の反応の記録が捨てられる（v1423 の回帰）');
-        // 選ばれている1件は一覧の印と `#select-reaction` の両方に出る（状態が1本）
-        assert(item.getAttribute('aria-current') === 'true', '選ばれている1件に印が付かない');
+        // 選ばれている1件は表の印と `#select-reaction` の両方に出る（状態が1本）
+        assert(item.closest('tr').getAttribute('aria-current') === 'true',
+            '選ばれている1件に表の上で印が付かない');
         assert(D.getElementById('select-reaction').value ===
             String(rp.reactions.findIndex(r => r.id === 'benzene_nitration')),
             '選択の実体（#select-reaction）が一覧の押しものと食い違う');
@@ -30038,67 +30033,89 @@
         c.reset();
     });
 
-    test('RX49: ★否定対照 — スイッチは反応を選ばない（人の代わりに先頭を始めない／出口としては生きている）', async (c) => {
+    test('RX49: ★否定対照 — 入口を開いただけでは反応を選ばない（人の代わりに先頭を始めない）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
         assert(rp && rp.reactions.length, 'reactionPlayer が初期化されていない');
-        const check = D.getElementById('check-reaction-mode');
         const strip = () => !D.getElementById('ws-reaction').classList.contains('hidden');
-        const studyOpen = () => !D.getElementById('study-modal').classList.contains('hidden');
-        const list = D.getElementById('reaction-list');
 
         /* ★ ユーザー実機報告（2026-08-26）「反応機構ビューアを選択すると、反応の選択をすっとばす」。
            実測（:8221・Playwright）では、スイッチを押した瞬間に active=true / ethene_br2 /
            帯=出る / メニュー=閉じる ＝ **14件の一覧を1件も見せずに先頭が始まっていた**。
            原因は `enter(parseInt(selectEl.value) || 0)` で、`#select-reaction` の初期値 "0" を
            「人が選んだ 1件目」として扱っていたこと。
-           ⚠ この検査を赤くする壊し方 ＝ change の checked 側で `enter(...)` を呼び直すこと。 */
 
-        // 人と同じ入口（📚 学習 → ⚗️ アコーディオン）。**まだ何も選んでいない**
+           ⚠⚠ **そのスイッチは vNNNN で撤去した**（ユーザー決定「消す方がすっきりすると思います」）。
+           ★★ **見張るものは消えていない** —— 症状の本体は「スイッチ」ではなく
+             **「入口を開いただけで、人の代わりに先頭を選ぶ」**ことで、それは
+             残った2つの入口（📖 資料の表 ／ `?open=mechanism`）でも同じように起こりうる。
+           ★ **この検査を赤くする壊し方**: `openMechanisms()` の末尾で `rp.enter(0)` を呼ぶ、
+             または `?open=mechanism` の受け口で id が無いときに `openById(先頭)` を呼ぶこと。 */
+
+        // ---- ① 📖 資料の表を開いただけでは始まらない（14件が見えているだけ） ----
         g.setMode('learn');
         g.setStudyOpen(true);
-        D.getElementById('reaction-box').open = true;
-        assert(!rp.active && check.checked === false && !strip(),
-            `開始前の状態が違う（active=${rp.active} / check=${check.checked} / 帯=${strip()}）`);
-        assert(list && list.querySelectorAll('button[data-rx-index]').length === rp.reactions.length,
-            '一覧の札がそろっていない（＝「1件しか無いから飛ばす」かどうかの区別がつかない）');
-
-        // ① スイッチを入れても**反応は始まらない**
-        check.checked = true;
-        check.dispatchEvent(new W.Event('change', { bubbles: true }));
-        assert(!rp.active, 'スイッチだけで反応が始まった（選択をすっとばしている）');
+        await W.referenceBook.openMechanisms();
+        await c.tick(20);
+        assert(!rp.active, '資料の表を開いただけで反応が始まった（選択をすっとばしている）');
         assert(rp.currentReaction === null || !rp.canvasBorrowed,
-            'スイッチだけでキャンバスを取り上げている');
-        assert(!strip(), 'スイッチだけで帯が出た（反応が決まっていないのに操作面が出る）');
-        assert(check.checked === false, 'スイッチが入ったまま（active=false なのに入って見える＝状態が2つに割れる）');
-        assert(studyOpen(), '学習モーダルが閉じた（一覧に戻れない＝報告そのものの症状）');
+            '表を開いただけでキャンバスを取り上げている');
+        assert(!strip(), '表を開いただけで帯が出た（反応が決まっていないのに操作面が出る）');
+        // ★ 代わりに**全件が読める**（＝「1件しか無いから飛ばした」ではないことを名前で示す）
+        const rows = [...D.querySelectorAll('#ref-body table.ref-mech-table tbody tr')];
+        assert(rows.length === rp.reactions.length,
+            `表が ${rows.length} 行（${rp.reactions.length} 件を期待）`);
+        rp.reactions.forEach(r => assert(rows.some(tr => tr.dataset.rxId === r.id),
+            `${r.name} が表に出ていない`));
+        // どの行にも「いま再生中」の印が付いていない（＝誰も選ばれていない）
+        assert(!rows.some(tr => tr.getAttribute('aria-current') === 'true'),
+            '何も選んでいないのに、いずれかの行が「再生中」になっている');
 
-        // ② 代わりに「一覧から選べ」と促し、その札が**一覧の中で見えている**
-        const hint = list.querySelector('#rx-pick-hint');
-        assert(hint && !hint.classList.contains('hidden'), '一覧へ促す案内が出ていない');
-        assert(hint.textContent.includes('一覧'), `案内が一覧を指していない（${hint.textContent}）`);
-        assert(list.firstChild === hint, '案内が一覧の先頭にいない（札の下だと選び終えるまで目に入らない）');
-        const hb = hint.getBoundingClientRect();
-        assert(hb.width > 0 && hb.height > 0, '案内が描画されていない');
-
-        // ③ そのうえで一覧から選べば、今までどおり始まる（§9 の入口は壊していない）
-        rxPickFromList(c, 'esterification');
-        assert(rp.active && rp.currentReaction.id === 'esterification',
-            `一覧から選んでも始まらない（${rp.currentReaction && rp.currentReaction.id}）`);
-        assert(check.checked === true, 'スイッチの表示が追従しない（§9）');
+        // ---- ② そのうえで押せば、**押した1件**が始まる（先頭ではない） ----
+        const want = rp.reactions[rp.reactions.length - 1];
+        await rxPlayFromReference(c, want.id);
+        assert(rp.active && rp.currentReaction.id === want.id,
+            `最後の1件を押したのに「${rp.currentReaction && rp.currentReaction.name}」が始まった`
+            + `（${want.name} を期待。人の代わりに先頭を選んでいないか）`);
         assert(strip(), '帯が出ない');
-        assert(hint.classList.contains('hidden'), '選んだのに促しが残っている');
-
-        // ④ ★出口としては生きている（スイッチを外すと止まり、退避が返る）
-        check.checked = false;
-        check.dispatchEvent(new W.Event('change', { bubbles: true }));
-        assert(!rp.active && !strip() && !rp.canvasBorrowed,
-            `スイッチで止まらない（active=${rp.active} / 帯=${strip()} / 借り=${rp.canvasBorrowed}）`);
-
+        assert(D.getElementById('select-reaction').value ===
+            String(rp.reactions.findIndex(r => r.id === want.id)),
+            '選択の実体（#select-reaction）が押した1件と食い違う');
+        rp.exit();
+        W.referenceBook.close();
         g.setStudyOpen(false);
+
+        /* ---- ③ `?open=mechanism`（**id なし**）でも始まらない ----
+           ⚠ ここが「もう1つの入口」。ハブ（ルート index.html）が張っているのがこの形で、
+             id を持たない ＝ **どれを見たいかまだ決まっていない**人が着地する。 */
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute; left:-9999px; top:0; width:1280px; height:800px; border:0;';
+        f.src = 'index.html?se=0&open=mechanism';
+        document.body.appendChild(f);
+        try {
+            for (let i = 0; i < 300 && !(f.contentWindow && f.contentWindow.appReady); i++) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            assert(f.contentWindow && f.contentWindow.appReady, '?open=mechanism でアプリが起動しない');
+            const W2 = f.contentWindow, D2 = f.contentDocument;
+            for (let i = 0; i < 40; i++) {
+                if (D2.querySelector('#ref-body table.ref-mech-table')) break;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            // 表は出る（＝ 行き先が死んでいない）
+            const rows2 = [...D2.querySelectorAll('#ref-body table.ref-mech-table tbody tr')];
+            assert(rows2.length === W2.reactionPlayer.reactions.length,
+                `?open=mechanism で機構の表が出ない（${rows2.length} 行）`);
+            // ★ そのうえで**何も始まっていない**
+            assert(!W2.reactionPlayer.active,
+                `?open=mechanism（id なし）で「${W2.reactionPlayer.currentReaction && W2.reactionPlayer.currentReaction.name}」が`
+                + '勝手に始まっている（人の代わりに先頭を選んでいる）');
+            assert(D2.getElementById('ws-reaction').classList.contains('hidden'),
+                '?open=mechanism（id なし）で作業帯が出ている');
+        } finally { f.remove(); }
+
         g.setMode('puzzle');
     });
-
     test('RX50: ★否定対照 — 予測の判定は「読める場所」に出る（14件で正解/不正解を撃ち分ける）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rp = W.reactionPlayer;
