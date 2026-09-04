@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1512">
+    <link rel="stylesheet" href="style.css?v=1513">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1512</div>
+            <div class="version">v1513</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -530,6 +530,14 @@
                              #arrows-group に出るので、操作だけをキャンバスの上に置く。
                              **id は1つも変えていない** ＝ tutorials.json の #btn-rx-next / #btn-rx-prev は無傷 -->
                         <div id="ws-reaction" class="ws-pane hidden">
+                            <!-- ⚠⚠ **選択の実体**（どの機構が選ばれているか）。vNNNN で
+                                 📚 学習の ⚗️ アコーディオンごと消えたので、**ビューア自身の帯へ移した**
+                                 （中身は reaction.js が組む。`display:none` なので面には出ない）。
+                                 ★ ここに置く理由: `?open=mechanism&id=` も 📖 資料の ▶ も
+                                    `pick()` / `openById()` からこの1本に合流する ＝ 状態を持つ場所が2つに割れない。
+                                 ⚠ **消さないこと。** 消すと `?open=mechanism&id=`（qa の飛び道具10件・
+                                    ハブの1本が使用中）と RX24 の入口が死ぬ -->
+                            <select id="select-reaction" style="display:none;" tabindex="-1" aria-hidden="true"></select>
                             <div class="ws-row">
                                 <div id="reaction-controls">
                                     <button id="btn-rx-restart" class="view-btn" title="最初から">🔄</button>
@@ -846,21 +854,23 @@
             必ず上に乗るように、Study は先頭側に置く。§9 の指定は「#stereo-modal より前」で、
             それより更に前に置いても条件を満たす ＝ 重なりの向きを一方通行に固定できる。
          ⚠ 中身は右パネルの [data-modes="learn"] から**そのまま移した**。
-            #learn-acc-quiz・#learn-acc-practice・#reaction-box の id と内部構造は無改変
-            （demos-stereo.json が #learn-acc-quiz>summary で開き、?open= が acc を開く）。 -->
+            #learn-acc-quiz・#learn-acc-practice の id と内部構造は無改変
+            （demos-stereo.json が #learn-acc-quiz>summary で開き、?open= が acc を開く）。
+         ⚠ **#reaction-box は vNNNN で撤去した**（機構は 📖 資料の4枚目へ移動）。 -->
     <div id="study-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 520px;">
             <h2 class="neon-text" style="font-size:20px; color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple);">📚 学習</h2>
             <!-- ⚠ 「練習を始めると、この画面は閉じてキャンバスに戻ります。…下の帯に出ます。」（49字）は
                  v1468 の削減で落とした（ux-density §3-a。学習系5画面すべてに出ていた） -->
             <div id="study-body" style="width:100%; text-align:left;">
-                <!-- 群の見出し（D3・DESIGN_entry_points.md §10-3）。4項目が並列に並んでいるだけだと
-                     ⚗️ 反応機構ビューアが「映像コンテンツ（見るだけ）」に読める、という指摘への手当て。
-                     ★ **`<details>` の数・id・並び順は1つも変えない**（#reaction-box は reactions.json が
-                        読めないとき reaction.js が丸ごと隠すので id を動かせない。#learn-acc-quiz は
+                <!-- 群の見出し（D3・DESIGN_entry_points.md §10-3）。もとは「4項目が並列に並んでいると
+                     ⚗️ 反応機構ビューアが『映像コンテンツ（見るだけ）』に読める」という指摘への手当て。
+                     ⚠ **その ⚗️ 自体が vNNNN で無くなった**（機構は 📖 資料の4枚目へ）。
+                        見出しは残る ——「手を動かす」（練習3つ）と「読む」（資料）の言い分けは、
+                        項目が3+1 になっても同じだけ要る。
+                     ★ **`<details>` の id と並び順は1つも変えない**（#learn-acc-quiz は
                         demos-stereo.json が `>summary` で開く。#learn-acc-narrowing の位置は EP4 が見ている）。
-                        足すのは**この見出しの div 2つだけ**で、語彙はクイズの中で既に使っている
-                        `quiz-group-head` を借りる ＝ 新しい仕掛けを作らない。
+                        語彙はクイズの中で既に使っている `quiz-group-head` を借りる ＝ 新しい仕掛けを作らない。
                      ⚠ 見出しは `<details>` の**外**（#study-body の直下）に置く。中に入れると
                         「開かないと群が読めない」＝ 言い分けたい相手に届かない。EP7 がこれを見張る -->
                 <div class="quiz-group-head">手を動かす<span>自分で描いたり答えたりする練習</span></div>
@@ -953,60 +963,20 @@
                             分子式から候補を全部つくり、実験カードを積んで減らしていきます。<b>積む順番で効きが変わります。</b></p>
                     </div>
                 </details>
-                <div class="quiz-group-head">登録された反応を見る<span>代表例の分子で、機構を再生します</span></div>
-                <!-- 反応機構ビューア（DESIGN_reaction_mechanism.md）。reactions.json が読めないときは
-                     reaction.js が #reaction-box ごと隠すため、details 自体をこの id にしている -->
-                <details id="reaction-box" class="learn-acc">
-                    <summary>⚗️ 反応機構ビューア</summary>
-                    <div class="learn-acc-body">
-                        <!-- 行き先の案内（D4・DESIGN_entry_points.md §10-4）。2つのことを言う:
-                             ① ここは**代表例の再生**である ⇒ 自分の分子を反応させる場所を名指しで教える。
-                                ★ 語は reactor.js の既存の注記（「あなたの分子そのものではなく**代表例の分子**で
-                                   機構を再生します」）にそろえる ＝ 同じ関係を2か所で違う言葉で説明しない
-                             ② **見るだけではない** ⇒ 🎯 予測（#btn-rx-predict）は反応を選んだあとの
-                                作業帯にしか出ないので、メニューからは存在が見えていない。
-                                ⚠ **ボタンは増やさない**（反応を選ばないと押せないので、前に出すと空振りする） -->
-                        <!-- ⚠ v1468 で**下にあった 108字の案内をここへ畳み込んで1本にした**（ux-density §2-⑩）。
-                             以前は同じアコーディオンの中に案内が2本並び、下の1本が
-                             「ステップ送り（⏮ ▶ ⏭）はキャンバスの下に出ます」「終わるときは、その帯の『やめる』」
-                             ＝ **出た瞬間に見える帯**を文で説明していた（さらに #study-modal が3度目を言っていた）。
-                             残したのは EP8 が見張る3語（⚗ 反応させる・調べる／代表例／🎯 予測）だけ -->
-                        <p id="rx-viewer-note" style="margin:0; font-size:12.5px; color:var(--text-muted); line-height:1.5;">
-                            登録済みの反応を、<b>代表例の分子</b>で再生します。いま描いている分子を反応させるのは、キャンバスの「<b>⚗ 反応させる・調べる</b>」です。主生成物を自分で組み立てて答え合わせする <b>🎯 予測</b> もできます。</p>
-                        <div class="toggle-container" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; background:rgba(0,0,0,0.2);">
-                            <span style="font-size:0.9rem; color:#fff;">反応機構モード</span>
-                            <label class="switch" style="position:relative; display:inline-block; width:50px; height:24px;">
-                                <input type="checkbox" id="check-reaction-mode" style="opacity:0; width:0; height:0;">
-                                <span class="slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.4s; border-radius:34px;"></span>
-                            </label>
-                        </div>
-                        <!-- ⚠ **一覧は「押して確定するもの」にする**（v1439・ユーザー実機報告
-                             「反応の種類が選べない、すぐ選択される」）。
-                             `<select>` は**候補を1つ動かした瞬間に `change` が飛ぶ** ―― 閉じた select の
-                             上下キー（実測: ↓ を1回で `enter()` まで走り、メニューが閉じて焦点も失う
-                             ＝ 2件目より先へ1件も進めない）や、iOS のホイールピッカー（回している途中で
-                             値が変わる）がそれ。v1379 で「選んだら始まる」を繋いだ結果、
-                             **たどるだけで始まる**ようになっていた。押しものなら「動かす」と「決める」が別。
-                             ⚠ **選択の実体（状態）は `#select-reaction` 1本のまま**にして面から下げるだけ。
-                                `?open=mechanism&id=` も回帰テスト（RX24/RX25）もここへ合流する
-                                ＝ 入口が増えても状態が2つに割れない -->
-                        <select id="select-reaction" style="display:none;" tabindex="-1" aria-hidden="true"></select>
-                        <!-- ⚠ ステップ送り（🔄⏮▶⏭）・ステップ表示・キャプション・生成物予測の3ボタンは
-                             **キャンバス上の作業帯へ移した**（DESIGN_ribbon_consolidation.md 第3段・§2-3）。
-                             巻矢印は本体 SVG の #arrows-group に出るので、操作をここに置いておくと
-                             モバイルでは「シートを開いて押す→閉じて見る」の往復になっていた。
-                             ここに残すのは**選ぶもの**（モードのスイッチと反応の選択）だけ -->
-                        <!-- ⚠ この 108字の案内は v1468 で **#rx-viewer-note（一覧より上）へ畳み込んだ**
-                             （ux-density §2-⑩・§3-a）。行き先の説明が2本に割れていたのが元の姿で、
-                             「ステップ送り・終わるときは帯のやめる」は**帯が出た瞬間に見える** ＝ 文で言う必要がない。
-                             ⚠ 案内が**一覧より上**にある条件（v1439）は #rx-viewer-note が引き継いでいる -->
-                        <div id="reaction-list"></div>
-                    </div>
-                </details>
+                <!-- ⚠⚠ **⚗️ 反応機構ビューアの札は vNNNN で外した**（ユーザー決定 2026-09-03
+                     「消す方がすっきりすると思います」）。**機能は 📖 資料（参考書）の4枚目
+                     「反応の道すじ（反応機構）」へ移っている** —— 14件の全体像を表で見て、
+                     各行の ▶ でその場から再生できる（DESIGN_reference_book.md §14）。
+                     ★ **残したもの**: `?open=mechanism[&id=]` の受け口（qa の飛び道具10件・
+                        ハブの1本が使用中）／`reactor.js` の「機構を見る」（11本）／再生器そのもの。
+                     ★ **選択の実体 `#select-reaction` は帯（#ws-reaction）へ移した** ——
+                        消すと上の受け口と RX24 が死ぬ。⚠ ここに戻さないこと -->
                 <!-- 📖 資料（参考書）。DESIGN_reference_book.md §5・DEVELOPMENT.md「B. 参考書化」。
-                     ⚠ **`<details>` は末尾に足す**。既存4つ（#learn-acc-quiz / #learn-acc-practice /
-                        #learn-acc-narrowing / #reaction-box）の id も並び順も1つも動かさない
-                        ＝ EP7 が見張っている不変条件はそのまま（数だけ 4→5・見出し 2→3 になる）。
+                     ⚠ **`<details>` は末尾に足す**。既存3つ（#learn-acc-quiz / #learn-acc-practice /
+                        #learn-acc-narrowing）の id も並び順も1つも動かさない
+                        ＝ EP7 が見張っている不変条件はそのまま。
+                     ⚠ vNNNN で #reaction-box が消えたので、**この 📖 資料が
+                        機構への唯一のメニュー入口**になった（EP7 が数と並びを見張り直している）。
                      ⚠ 入口をここに置くのは、参考書が「既定で開いていない・振り返るもの」だから
                         （DEVELOPMENT.md 原則2）。リボンにタイルは足さない —— 9枠でちょうど埋まっていて
                         10枠目は 320px で溢れる（DESIGN_ribbon_consolidation.md §1-1） -->
@@ -1840,7 +1810,7 @@
                         嘘の答えを出すことになります（主鎖を縦にして描き直すと判定します）。
                     </div>
                 </details>
-                <!-- ⚠ v1512: 「この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません
+                <!-- ⚠ v1513: 「この炭素は不斉炭素原子ではないので、R・S という区別そのものがありません
                      （同じ置換基があると、鏡に映しても重ね合わせられます）。」64字のうち、
                      **括弧の中＝理由のほう**をここへ畳んだ（ユーザー指摘「モーダル内の説明が多く字が小さい」）。
                      ★ **理由は消していない** —— それどころか、この理由は 2026-08-28 に入れた
@@ -1917,7 +1887,7 @@
                         <button id="btn-stereo-fit-reset" class="view-btn" style="margin:0; font-size:12.5px; padding:5px 10px;" title="鏡像の向きを、鏡に映しただけの向き（はじめの向き）に戻します">⟲ 鏡像の向きを戻す</button>
                     </div>
                 </div>
-                <!-- ⚠ v1512: 3つの並べ方の説明（各 130字前後）を `#stereo-3d-note` から**ここへ畳んだ**
+                <!-- ⚠ v1513: 3つの並べ方の説明（各 130字前後）を `#stereo-3d-note` から**ここへ畳んだ**
                      （ユーザー指摘「モーダル内の説明が多く字が小さい」）。★ **消していない** ——
                      どれも「なぜそう見えるのか」の説明で、必要な人は開けば読める。
                      ⚠ 本文を静的に持つのは、3つを1か所に並べておくため（画面に出るのは常に1つなので、
@@ -1980,7 +1950,7 @@
                 <p id="stereo-mol-note" style="font-size:13.5px; color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:8px 0 0;"></p>
             </div>
             <p id="stereo-caption" style="color:var(--text-secondary); line-height:1.6; text-align:left; white-space:pre-line; margin:0;"></p>
-            <!-- ⚠ v1512: キャプションは 215字あり、**モーダルに出ている文字の 54%** を1人で占めていた
+            <!-- ⚠ v1513: キャプションは 215字あり、**モーダルに出ている文字の 54%** を1人で占めていた
                  （実測 375×812・乳酸で 399字中 215字。ユーザー指摘「モーダル内の説明が多く字が小さい」）。
                  ★ 残したのは**図が読めなくなる1行だけ**（縦=奥・横=手前）で、残りはここへ畳む:
                    ・規約の言い回しの全文（フィッシャー投影の…）
@@ -2251,19 +2221,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1512"></script>
+    <script src="chemistry.js?v=1513"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1512"></script>
-    <script src="game.js?v=1512"></script>
-    <script src="reaction.js?v=1512"></script>
-    <script src="quiz.js?v=1512"></script>
-    <script src="stereo.js?v=1512"></script>
-    <script src="reactor.js?v=1512"></script>
-    <script src="narrowing.js?v=1512"></script>
-    <script src="learn.js?v=1512"></script>
-    <script src="tutorial.js?v=1512"></script>
-    <script src="rec.js?v=1512"></script>
+    <script src="deadend.js?v=1513"></script>
+    <script src="game.js?v=1513"></script>
+    <script src="reaction.js?v=1513"></script>
+    <script src="quiz.js?v=1513"></script>
+    <script src="stereo.js?v=1513"></script>
+    <script src="reactor.js?v=1513"></script>
+    <script src="narrowing.js?v=1513"></script>
+    <script src="learn.js?v=1513"></script>
+    <script src="tutorial.js?v=1513"></script>
+    <script src="rec.js?v=1513"></script>
 </body>
 </html>
