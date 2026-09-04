@@ -303,6 +303,10 @@
           "asAnswer": 0,
           "asTool": 43
         }
+      },
+      "link": {
+        "kind": "reference",
+        "label": "資料「アルカンの命名」で C1〜C10 を並べて見る"
       }
     },
     {
@@ -2635,6 +2639,10 @@
         "exam": {
           "asTool": 16
         }
+      },
+      "link": {
+        "kind": "reference",
+        "label": "資料「同じ分子式で、別の分子」を分子式ごとに並べて見る"
       }
     },
     {
