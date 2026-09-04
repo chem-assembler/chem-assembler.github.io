@@ -457,6 +457,20 @@ function slTrack(name, params) {
       case 'practice':  return { open: link.open, summon: summonKey(link), panel: link.panel,
                                  scope: link.scope, field: link.field, group: link.group };
       case 'isomer':    return { open: 'isomer', formula: link.formula };
+      /* ⚠ **`reference` は行き先しか渡さない**（2026-09-04。assembler の 📖 資料）。
+       *
+       * ★ **どのページに着地させるかは向こうが決める。** `linkHtml` が付ける
+       *   `?code=<知識項目のコード>` を assembler の `referenceBook.pageByCode` が
+       *   自分の `reference.json` の `codes` と突き合わせてページを選ぶ。
+       * ⚠ **ここでページ id を渡さないこと。** 渡すと「どの項目がどのページに載っているか」を
+       *   2か所で決めることになり、向こうがページを割ったり束ねたりした日に
+       *   **黙って古いページ（または存在しないページ）を指す**。
+       *   CLAUDE.md の「ratio が知ってよいのは URL の形だけ／どこへ着地させるかは相手が決める」
+       *   と同じ約束を、qa → assembler でも守る。
+       * ⚠ 知らない code を渡しても assembler は**既定のページ**を開く（前方互換）ので、
+       *   向こうがページを消しても入口は死なない。そのうえで
+       *   「その code を持つページが本当にあるか」は qa/tests.js の棚卸しが実データで見張る。 */
+      case 'reference': return { open: 'reference' };
     }
     return {};
   }

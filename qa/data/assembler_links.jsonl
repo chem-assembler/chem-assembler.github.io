@@ -2,7 +2,7 @@
 {"code":"org.ali.class-aliphatic","kind":"none","why":"脂肪族と芳香族の境界はベンゼン環の有無なので、片方の分子だけでは境界が見えない。ベンゼン環の構造は org.aro.benzene-structure の担当"}
 {"code":"org.ali.class-chain-ring","kind":"summon","label":"シクロヘキサンの環を組み立てる","name":"シクロヘキサン","note":"分類項目なので本来は鎖式との対比が要るが、環をもつことは画面ではっきり見えるので拾った"}
 {"code":"org.ali.class-saturated","kind":"none","why":"飽和と不飽和の区別は2つを並べて比べる項目で、1分子では境界が見えない。二重結合・三重結合そのものは org.ali.alkene-functional / org.ali.alkyne-functional の担当"}
-{"code":"org.ali.formula-alkane","kind":"none","why":"一般式 CnH2n+2 は炭素数を変えた複数の分子を並べて初めて見える規則で、1分子を組んでも n への依存は見えない"}
+{"code":"org.ali.formula-alkane","kind":"reference","label":"資料「アルカンの命名」で C1〜C10 を並べて見る","note":"kind:none だった理由（1分子を組んでも n への依存は見えない）を、assembler の 📖 資料が埋めた。ページは指定しない —— code だけ送り、どのページに着地させるかは向こうの reference.json の codes が決める（ion-equation ⇄ ratio と同じ約束）"}
 {"code":"org.ali.formula-alkene","kind":"none","why":"一般式 CnH2n は炭素数の異なる分子を並べて初めて見える規則で、1分子を組んでも見えない"}
 {"code":"org.ali.formula-alkyne","kind":"none","why":"一般式 CnH2n-2 は炭素数の異なる分子を並べて初めて見える規則で、1分子を組んでも見えない"}
 {"code":"org.ali.formula-cycloalkane","kind":"none","why":"シクロアルカンと鎖式アルケンが同じ一般式になることが要点で、その一致は2種類を並べないと見えない"}
@@ -51,7 +51,7 @@
 {"code":"org.ali.acetylene-benzene","kind":"none","why":"アセチレン3分子の三量化に対応する反応が reactor に無い。生成物のベンゼンの構造は org.aro.benzene-structure の担当"}
 {"code":"org.ali.silver-acetylide","kind":"none","why":"白色沈殿という色と沈殿の観察は assembler が表現しない"}
 {"code":"org.ali.acetic-vinyl","kind":"summon","label":"酢酸ビニルを組み立てる","name":"酢酸ビニル","note":"アセチレンへの酢酸の付加は reactor に無いので、生成物の形を見せる"}
-{"code":"org.ali.isomer-classification","kind":"none","why":"異性体の分類という枠組みで、個別の異性体は org.ali.iso-c4h10（構造異性体）・org.ali.cis-trans-def（シス−トランス）・org.ali.chirality-def（鏡像）の担当"}
+{"code":"org.ali.isomer-classification","kind":"reference","label":"資料「同じ分子式で、別の分子」を分子式ごとに並べて見る","note":"kind:none だった理由（枠組みなので1分子では見えない）を、assembler の 📖 資料が埋めた。同じ分子式の行が2つ以上並ぶこと自体が構造異性体の実物になっている。ページは指定せず code だけ送る"}
 {"code":"org.ali.iso-c4h10","kind":"isomer","label":"C₄H₁₀ の異性体を書き出す","formula":"C4H10"}
 {"code":"org.ali.iso-c5h12","kind":"isomer","label":"C₅H₁₂ の異性体を書き出す","formula":"C5H12"}
 {"code":"org.ali.iso-count","kind":"practice","label":"異性体の数え上げを練習する","open":"countquiz","note":"個数そのものを問う項目なので、書き出し（isomer）より数え上げの練習が合う"}
