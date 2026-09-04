@@ -1260,6 +1260,43 @@ function attachAcetyl(mol, targetId) {
 }
 
 /**
+ * ★ カルボキシ基のナトリウム塩 -COONa を取り付ける（コルベ・シュミット反応・I-2）。
+ *
+ * ⚠ `attachGroup` の `kind` に足さなかった理由: あちらは「アンカー1つ ＋ その枝」の形しか
+ *   置けない（枝はアンカーに直結する）。-COONa は **C → O → Na の2段**なので入らない。
+ * ★ 形は `attachAcetyl`（C → =O ＋ CH₃）と同じ流儀で、**かたまりごと重ならない向きを探す**。
+ * `dryRun=true` なら置かずに「置けるか」だけ返す（検出段階で実行できない候補を出さないため）。
+ */
+function attachCarboxylate(mol, targetId, dryRun = false) {
+    const MIN_CLEARANCE = bondStep(mol, targetId) * 0.65;
+    for (const spot of outwardCandidates(mol, targetId)) {
+        const cos = Math.cos(spot.angle), sin = Math.sin(spot.angle);
+        const oDouble = { x: spot.x + spot.step * Math.cos(spot.angle + Math.PI / 2),
+                          y: spot.y + spot.step * Math.sin(spot.angle + Math.PI / 2) };
+        const oSingle = { x: spot.x + spot.step * cos, y: spot.y + spot.step * sin };
+        const na = { x: spot.x + spot.step * 2 * cos, y: spot.y + spot.step * 2 * sin };
+        const points = [{ x: spot.x, y: spot.y }, oDouble, oSingle, na];
+        const hitsExisting = points.some(p => mol.atoms.some(o =>
+            o.id !== targetId && o.element !== 'H' && Math.hypot(o.x - p.x, o.y - p.y) < MIN_CLEARANCE));
+        const hitsSelf = points.some((p, i) => points.some((q, j) =>
+            j > i && Math.hypot(p.x - q.x, p.y - q.y) < MIN_CLEARANCE));
+        if (hitsExisting || hitsSelf) continue;
+        if (dryRun) return true;
+        const cAcid = mol.addAtom('C', spot.x, spot.y);
+        mol.addBond(targetId, cAcid.id, 1);
+        const oD = mol.addAtom('O', oDouble.x, oDouble.y);
+        mol.addBond(cAcid.id, oD.id, 2);
+        const oS = mol.addAtom('O', oSingle.x, oSingle.y);
+        mol.addBond(cAcid.id, oS.id, 1);
+        const naAtom = mol.addAtom('Na', na.x, na.y);
+        mol.addBond(oS.id, naAtom.id, 1);
+        return [cAcid.id, oD.id, oS.id, naAtom.id];
+    }
+    if (dryRun) return false;
+    throw noRoom('カルボキシ基のナトリウム塩を置く空間がありません');
+}
+
+/**
  * このアルコール性 -OH の酸化を候補に出してよいか（P12-8 反応判定の精査 第4弾）。
  *
  * 同じ分子に酸化されやすさの違う官能基があると、酸化の候補が同時に並んでしまい
@@ -2148,6 +2185,58 @@ function liberatableSaltSites(mol) {
         sites.push([a.id, o.id]);
     });
     return sites;
+}
+
+/**
+ * ★★ **フェノキシド（芳香環に直結した -ONa / -OK）の塩だけ**を集める
+ *   （DESIGN_ion_layer.md I-2・`liberate_co2` / `kolbe_schmidt` の入口）。
+ *
+ * ⚠⚠ **`acidKindOf` で絞ってはいけない**（設計書 §5-2 は「`acidKindOf` の分岐を再利用」と
+ *   書いているが、実測すると**成り立たない**）。`acidKindOf` の最後は「それ以外はフェノール」で、
+ *   **ナトリウムエトキシド（鎖の -ONa）も『フェノール』を返す**。
+ *   ＝ そのまま流用すると CO₂ がアルコキシドにも効き、しかも画面に
+ *   「弱いほうの酸（フェノール）が遊離して…」と**嘘の名前**が出る。
+ * ★ だから見るのは**環そのもの** —— O の向こうの炭素が芳香環に属するか（`aromaticAtomSet`）。
+ *   カルボン酸塩は「向こうの C」がカルボニル炭素で環に属さないので落ち、
+ *   スルホン酸塩は向こうが S なので落ちる ＝ **炭酸より弱い酸の塩だけ**が残る。
+ */
+function phenoxideSaltSites(mol) {
+    const arom = aromaticAtomSet(mol);
+    return liberatableSaltSites(mol).filter(([metalId, oId]) => {
+        const beyond = mol.getNeighbors(oId)
+            .find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
+        return !!beyond && beyond.atom.element === 'C' && arom.has(beyond.atom.id);
+    });
+}
+
+/**
+ * ★★ コルベ・シュミット反応の箇所（DESIGN_ion_layer.md I-2・系統樹の「12本の足りない辺」#8）。
+ *
+ * ナトリウムフェノキシド ＋ CO₂ →（高温・高圧）→ **サリチル酸ナトリウム**。
+ * 返すのは `[金属id, フェノキシドのOid, オルト位の環炭素id]`。
+ *
+ * ⚠ **オルト位に限る**（教科書がそう書く。実際に o 体が主生成物になるのは
+ *   Na⁺ が -O⁻ と CO₂ を隣り合わせに掴むため）。⚠ **パラ位は出さない** ——
+ *   高校では扱わないうえ、両方出すと「どちらでもよい」と読まれる。
+ * ★ オルトが2つあるときは**座標で1つに決める**（原子IDは乱数。C-2b の作法）。
+ *   フェノールの2つのオルトは等価なので、化学的にはどちらでも同じ。
+ */
+function kolbeSchmidtSites(mol) {
+    const arom = aromaticAtomSet(mol);
+    const out = [];
+    phenoxideSaltSites(mol).forEach(([metalId, oId]) => {
+        const anchor = mol.getNeighbors(oId)
+            .find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
+        if (!anchor) return;
+        const ortho = mol.getNeighbors(anchor.atom.id)
+            .filter(n => arom.has(n.atom.id) && n.atom.element === 'C')
+            .map(n => n.atom)
+            .filter(a => mol.getFreeValency(a.id) >= 1)
+            .filter(a => attachCarboxylate(mol, a.id, true))
+            .sort((p, q) => (q.x - p.x) || (p.y - q.y) || (p.id < q.id ? -1 : 1));
+        if (ortho.length) out.push([metalId, oId, ortho[0].id]);
+    });
+    return out;
 }
 
 /** その「酸性の -OH（もしくは -O-金属）」がどの酸のものか。文面の出し分けにだけ使う */
@@ -3354,6 +3443,8 @@ const RULE_PHASE = {
     neutralize_nahco3: { phase: 'aq', note: '' },
     amine_hcl: { phase: 'aq', note: 'salt-not-drawn' },
     liberate_weak_acid: { phase: 'ether', note: '' },
+    // ★ I-2: CO₂ で戻せるのはフェノールだけ。行き先は強酸の遊離と同じ有機層
+    liberate_co2: { phase: 'ether', note: '' },
     amine_liberate_naoh: { phase: 'ether', note: '' }
 };
 // 2本に共通の説明（どちらも同じものに効く。違うのは強さの既定と、ふつうどちらを使うか）
@@ -3415,6 +3506,44 @@ const REAGENTS = [
         miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。' +
             'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。' +
             '単糖（グルコースなど）は、これ以上切れる -O- のつながりを持たないので加水分解されません。切れるのは単糖どうしをつないだ二糖・多糖のグリコシド結合です。'
+    },
+    {
+        /* ★★ 二酸化炭素の瓶（DESIGN_ion_layer.md I-2・v1514）。
+         *   ⚠⚠ **瓶が1本増える**（24 → 25本）。
+         *
+         * ★ **希硫酸の隣に置く**（酸化剤2本・NaOH aq と Na を隣に置いたのと同じ理由）。
+         *   同じ「弱酸の遊離」でも、**希硫酸・塩酸は全部の塩から酸を追い出すのに、
+         *   CO₂ はフェノキシドからしか追い出せない** —— 酸の強さの序列
+         *   （カルボン酸 > 炭酸 > フェノール）が**瓶の棚で読める**位置。
+         *
+         * ⚠ **既存の瓶に相乗りできないか**（`DESIGN_reagent_palette.md` §10.5 規約1）を先に見た:
+         *   - `nahco3`（炭酸水素ナトリウム）… ⚠ **名前が嘘になる。** 入試の本文は
+         *     「二酸化炭素を吹き込む」で、NaHCO₃ 水溶液を加える操作ではない。
+         *     しかも NaHCO₃ は**逆向き**（酸を塩にする側）に既に使われている
+         *   - `h2so4_dil`/`hcl` … ⚠ こちらも名前が嘘になるうえ、**効く相手が違う**のが
+         *     この瓶の全部（強酸は全部の塩に効く／CO₂ はフェノキシドだけ）
+         *   ★ ＝ 規約1の③「既存のどの瓶の名前でも嘘になる」に当たるので1本足す。
+         *
+         * ⚠ **区分割り（§10.5 規約2）はしない。** `o2_pdcl2` の注記が
+         *   「CO₂ の瓶を足すときに区分割りを決めること」と申し送っているが、
+         *   ★ **`cl2_light`（v1511）が既に区分を割らずに 24本目を足している**（前例）。
+         *   ⚠ そして区分の切り方は「高校化学をどう教えるか」の判断で、
+         *   **反応レーンが片手間に決める話ではない**（規約2 自身がそう書いている）。
+         *   ★ 判断を統合側へ送る: **25本目でも割っていない。割るなら別レーンで。**
+         *
+         * ★ 入試64件のうち CO₂ 吹き込みは **7件**（慶大2019・鹿児島大2019・上智大2020・
+         *   信州大2020・青山学院大2021・大阪府大2021・福島大2022）＝ **51 → 58件**。 */
+        id: 'co2',
+        name: '二酸化炭素',
+        formula: 'CO₂',
+        kind: 'transform',
+        acts: 'ナトリウムフェノキシドのような、環に直結した -ONa です' +
+            '（水に吹き込むとフェノールが遊離し、高温・高圧では環にカルボキシ基が入ります）',
+        miss: '二酸化炭素は水に溶けて炭酸になりますが、**炭酸はカルボン酸より弱い酸**なので、' +
+            'カルボン酸のナトリウム塩からカルボン酸を追い出すことはできません。' +
+            '追い出せるのは炭酸より弱い酸 —— つまり**フェノール**だけです' +
+            '（酸の強さは カルボン酸 > 炭酸 > フェノール）。' +
+            'カルボン酸の塩から酸に戻したいときは、希硫酸か塩酸を使ってください。'
     },
     {
         id: 'naoh_aq',
@@ -6087,6 +6216,99 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ コルベ・シュミット反応（DESIGN_ion_layer.md I-2・DESIGN_organic_tree.md
+         *   「12本の足りない辺」#8・入試 32件）。
+         *   ナトリウムフェノキシド ＋ CO₂ →（高温・高圧）→ サリチル酸ナトリウム。
+         *
+         * ★ **瓶が無いことだけが理由で見送られていた辺**で、その瓶がこの段で揃った。
+         *   ⚠ 生成物に名前が付くことを先に実測した（`サリチル酸ナトリウム` は登録済み・
+         *   `compounds.json` の `sodium-salicylate`。（未登録）は0件）。
+         *
+         * ⚠⚠ **`harsh: true` が要る理由**（この段で新しく足した唯一の仕掛け）:
+         *   この反応は **同じ瓶・同じ基質**（ナトリウムフェノキシド）で `liberate_co2` と
+         *   ぶつかる。⚠ **分液漏斗の中は水溶液・常温**なので、そこで起こるのは遊離のほうだけ。
+         *   ★ `applyToMixture` は「1成分につき最初に当たった1本」を走らせるので、
+         *     **宣言の順に頼ると黙って入れ替わる**。だから
+         *     ① この反応を**わざと `liberate_co2` より前に宣言**し
+         *     ② `harsh` を見て `applyToMixture` が飛ばす
+         *     ＝ **順ではなく印が効いていること**が否定対照で確かめられる形にした。
+         *   ⚠ 瓶から押したときは今までどおり2択が出る（`renderConditionChoice` の
+         *     「できることが 2 通りあります」）。`condition` は付けない ——
+         *     v1511 の `alkali_fusion` / `hydrolysis_chlorobenzene` と同じで、
+         *     **条件は `label` と caption で言う**（2択の見出しに「条件で変わります」と
+         *     書くのは `condition` を持つ瓶だけ、という区別を崩さないため）。
+         *
+         * ⚠ **オルト位だけ**（`kolbeSchmidtSites` の注記）。⚠ 層の対応表には載せない
+         *   （分液の操作ではないので層を動かさない）。 */
+        id: 'kolbe_schmidt',
+        reagentId: 'co2',
+        harsh: true,
+        label: 'コルベ・シュミット反応（フェノキシド + CO₂・高温高圧）→ サリチル酸ナトリウム',
+        detect(mol) { return kolbeSchmidtSites(mol); },
+        apply(game, site) {
+            const [metalId, oId, orthoId] = site;
+            const mol = game.userMolecule;
+            const added = attachCarboxylate(mol, orthoId);   // 先に置く（置けなければ何も壊さず throw）
+            mol.removeAtom(metalId);                          // -ONa → -OH（自動水素が描く）
+            return {
+                caption: 'ナトリウムフェノキシドに二酸化炭素が反応して、' +
+                    '**サリチル酸ナトリウム**ができました（コルベ・シュミット反応）。' +
+                    '⚠ **常温で吹き込んでも起こりません** —— ' +
+                    '**高温・高圧**（およそ 125℃・5気圧）という条件が要ります。' +
+                    '常温で吹き込むだけなら、フェノールが遊離して戻るだけです（隣の行き先）。' +
+                    '入るのは -ONa の**となり（オルト位）**です。' +
+                    'ナトリウムイオンが -O⁻ と二酸化炭素を隣り合わせにつかまえるためで、' +
+                    'できたサリチル酸ナトリウムは -ONa が -OH に変わり、' +
+                    'オルト位に -COONa がついた形になります。' +
+                    'ここに希硫酸や塩酸を加えると弱酸の遊離でサリチル酸が取り出せ、' +
+                    'サリチル酸は無水酢酸でアセチルサリチル酸（アスピリン）に、' +
+                    'メタノールでサリチル酸メチル（消炎剤）になります。',
+                changed: [oId, orthoId, ...added]
+            };
+        }
+    },
+    {
+        /* ★★ 弱酸の遊離 その2: **CO₂ を吹き込む**（DESIGN_ion_layer.md I-2・v1514）。
+         *
+         * ⚠⚠ **上の `liberate_weak_acid` と同じ形にできない**のがこの反応の全部。
+         *   強酸（希硫酸・塩酸）は**どの塩からも**もとの酸を追い出せるが、
+         *   CO₂（＝ 水に溶けて炭酸）が追い出せるのは**炭酸より弱い酸だけ** ＝ フェノールだけ。
+         *   ★ **`neutralize_nahco3` のちょうど裏返し**: あちらは「炭酸より強い側」を塩にし、
+         *     こちらは「炭酸より弱い側」を塩から戻す。同じ序列を2方向から見せている。
+         *
+         * ⚠ 入口は `phenoxideSaltSites`（**環に直結した -ONa だけ**）。
+         *   ⚠⚠ 設計書 §5-2 は「`acidKindOf` の分岐を再利用」と書いていたが、**実測で使えない**
+         *   （`acidKindOf` はナトリウムエトキシドにも『フェノール』を返す。同関数の注記）。
+         *
+         * ★ 入試64件のうち CO₂ 吹き込みは 7件。⚠ **順序は固定しない**（D-I10）。
+         * ⚠ **できる炭酸水素ナトリウム NaHCO₃ は描かない**（`neutralize_naoh` が水を描かない
+         *   のと同じ流儀。画面の分子に無い分子は描かず、文面で言う）。 */
+        id: 'liberate_co2',
+        reagentId: 'co2',
+        label: '弱酸の遊離（フェノキシド + CO₂ を吹き込む）→ フェノール',
+        detect(mol) { return phenoxideSaltSites(mol); },
+        apply(game, site) {
+            const [metalId, oId] = site;
+            const mol = game.userMolecule;
+            const metal = mol.atoms.find(a => a.id === metalId);
+            const symbol = metal ? metal.element : 'Na';
+            mol.removeAtom(metalId); // 金属が外れると酸素に結合手が1つ空き、自動水素が -OH を描く
+            return {
+                caption: '二酸化炭素を吹き込んだので、フェノールが遊離してもとの形に戻りました' +
+                    `（-O${symbol} → -OH）。` +
+                    '水に溶けた二酸化炭素は炭酸 H₂CO₃ になり、これが' +
+                    '**フェノールより強い酸**なのでフェノールを塩から追い出します' +
+                    '（同時に炭酸水素ナトリウム NaHCO₃ ができますが、図には描いていません）。' +
+                    '⚠ **カルボン酸のナトリウム塩は、これでは戻せません** —— ' +
+                    '酸の強さは **カルボン酸 > 炭酸 > フェノール** で、' +
+                    '炭酸はカルボン酸より弱いからです。' +
+                    'この違いを使うと、いちど両方を水層へ移してから' +
+                    '**フェノールだけを有機層へ戻す**ことができます。',
+                changed: [oId]
+            };
+        }
+    },
+    {
         /* ★★ アミン ＋ 塩酸 → 塩（水層へ）。DESIGN_ion_layer.md I-1・D-I3。
          *
          * ⚠⚠ **構造を1原子も変えない。** アニリン塩酸塩 C₆H₅NH₃Cl は
@@ -7424,7 +7646,12 @@ class Reactor {
      */
     applyToMixture(reagent) {
         const g = this.game;
-        const rules = REACTION_RULES.filter(r => ruleUsesReagent(r, reagent.id) && !r.info);
+        /* ⚠⚠ **`harsh` の反応は分液漏斗の中では走らせない**（I-2）。
+         *   漏斗の中は**水溶液・常温**で、高温高圧を要る反応（コルベ・シュミット）は起こらない。
+         *   ★ ここを抜くと、CO₂ を吹き込んだときにフェノールが遊離せず
+         *     **サリチル酸ナトリウムに化ける**（否定対照 SEP8 がそれを見る）。 */
+        const rules = REACTION_RULES.filter(r =>
+            ruleUsesReagent(r, reagent.id) && !r.info && !r.harsh);
         if (!rules.length) { this.explainReagentMiss(reagent); return; }
         // 成分の顔ぶれは**先に**取る（apply が図を書き換えるので、途中で数え直さない）
         const parts = g.splitMolecules()
