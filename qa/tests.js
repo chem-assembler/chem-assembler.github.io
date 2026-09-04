@@ -365,9 +365,12 @@ function runDataTests(DATA) {
   t("飛び道具: link は kind と label を持ち、kind ごとの引数が揃っている", function () {
     // `summon` / `reaction` は**分子の指し方**が要る。ID（`summon`）でも表示名（`name`）でもよいが
      // どちらか一方は必ずある（無いと `?summon=` が空で飛び、押しても何も起きない）
+    // `reference` … 📖 資料（2026-09-04）。**必須の引数は無い**（label だけ）——
+    // 着地するページは assembler の `reference.json` の `codes` が決めるので、
+    // こちらは `?open=reference` と、`linkHtml` が必ず付ける `?code=` しか送らない
     var NEED = {
       summon: [], isomer: ["formula"], mechanism: ["id"],
-      reaction: ["reagent"], practice: ["open"], none: []
+      reaction: ["reagent"], practice: ["open"], none: [], reference: []
     };
     var POINTS_AT_MOLECULE = { summon: 1, reaction: 1 };
     // `practice` は行き先しだい。`?open=stereo` はキャンバスの分子を見る画面なので、
@@ -639,8 +642,8 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
       " → このテストの KNOWN から外す");
   });
 
-  t("飛び道具: kind は summon / isomer / mechanism / reaction / practice / none のいずれか", function () {
-    var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, practice: 1, none: 1 };
+  t("飛び道具: kind は summon / isomer / mechanism / reaction / practice / reference / none のいずれか", function () {
+    var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, practice: 1, reference: 1, none: 1 };
     DATA.patterns.forEach(function (p) {
       if (!p.link || !p.link.kind) return;   // kind 未導入のものは既存テストが見る
       assert(OK[p.link.kind], p.code + ": 未知の kind " + p.link.kind);
@@ -710,7 +713,7 @@ function quizVocabulary(src) {
   return val;
 }
 
-function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS, ASM_HTML) {
+function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS, ASM_HTML, REF_PAGES) {
   var results = [];
   var t = function (name, fn) {
     try { fn(); results.push({ name: name, ok: true }); }
@@ -737,9 +740,13 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
   //   `open` が「行き先」の軸だから。`narrowing` は assembler の `OPEN_TARGETS` の1値なので
   //   `naming` と同じ層に置く（DESIGN_organic_calc.md §3-1）
   var OPEN_HAS_PANEL = { narrowing: 1 };
+  // `reference` … 📖 資料（assembler の参考書。2026-09-04）。
+  // ⚠ **必須は label だけ**。ページ id を持たせない ＝ どのページに着地するかは
+  //   向こうの `reference.json` の `codes` が決める（app.js の linkQuery の注記）。
   var NEED = {
     summon: ["label", "name"], isomer: ["label", "formula"], mechanism: ["label", "id"],
-    reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"]
+    reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"],
+    reference: ["label"]
   };
 
   var rows = LINKS || [];
@@ -875,6 +882,37 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
         "★ " + code + " が命名リンクでなくなった → EXEMPT から外す");
       assert(!o.field, "★ " + code + " に分野が入った（" + EXEMPT[code] + " のはずだった）→ EXEMPT から外す");
     });
+  });
+
+  /* CF4: 📖 資料へのリンクが、向こうに実在するページに着くか（2026-09-04）。
+   *
+   * ★★ **突き合わせるのは code だけ**。こちらはページ id を持たない（app.js の linkQuery）ので、
+   *   壊れ方は「その code を `codes` に持つページが1枚も無い」の一択になる。
+   *   ⚠ そのとき assembler は**既定のページ（1枚目）を開く**（前方互換の約束）ので、
+   *   **画面はふつうに開いてしまい、誰も気づけない** —— 「アルカンの一般式」を頼んだのに
+   *   別のページが出る、という `?panel=` とまったく同じ壊れ方。だからここで鳴らす。
+   * ⚠ **`reference.json` を読めない環境（file:// 直開き等）ではスキップ**する。 */
+  t("棚卸し: 📖 資料へのリンクが、その code を持つページに実際に当たる", function () {
+    var refs = rows.filter(function (o) { return o.kind === "reference"; });
+    if (!REF_PAGES || !REF_PAGES.length) return;   // assembler/reference.json を読めない環境
+    var byRefCode = {};
+    REF_PAGES.forEach(function (p) {
+      (p.codes || []).forEach(function (c) { byRefCode[c] = p.id; });
+    });
+    assert(Object.keys(byRefCode).length > 0,
+      "assembler/reference.json のどのページにも codes が無い（相手が作りを変えた？ この検査を直す）");
+    refs.forEach(function (o) {
+      assert(byRefCode[o.code],
+        o.code + ": この code を codes に持つ資料のページが assembler に無い" +
+        "（着地は既定のページになり、画面は開くので気づけない）。" +
+        "いま codes を持つのは " + Object.keys(byRefCode).length + " 件");
+      // ページ id をこちらに持っていないこと（持つと2か所で同じことを決めることになる）
+      assert(!o.page && !o.id,
+        o.code + ": 資料のリンクにページ id を持たせている（着地先を決めるのは向こうの reference.json）");
+    });
+    // ★否定対照 —— 実在しない code なら、この検査が見つけること
+    assert(!byRefCode["org.__ghost__"],
+      "突き合わせが働いていない（存在しない code でもページが見つかると言っている）");
   });
 
   t("棚卸し: 見せないと決めた項目の why が具体的に書かれている", function () {
@@ -1814,6 +1852,38 @@ function runUiTests(doc, DATA) {
             assert(/[?&]summon=[^&]+/.test(href),
               molOpen[0].code + ": URL に ?summon= が無い（" + href + "）。" +
               "キャンバスが空のまま立体ビューを開くことになり、トーストだけで終わる");
+          } finally { a.kill(); }
+        });
+      });
+    }).then(function () {
+      /* ⚠ **📖 資料へのリンクは「行き先」と「code」の2つだけで成り立つ**（2026-09-04）。
+       *
+       * データ側（棚卸し）は kind と label しか見ない。URL を組み立てるのは
+       * **app.js の `linkQuery()` / `linkHtml()`** なので、`case 'reference'` を落とすと
+       * `?open=` が付かず、**押しても assembler がふつうに起動するだけ**になる
+       * ＝ 死んだ入口を配る。しかも画面はちゃんと開くので誰も気づけない
+       * （`?panel=` とまったく同じ壊れ方。CF3 の理由書きと同じ）。
+       * ★ `?code=` が落ちた場合も同じで、**既定のページ（1枚目）が開く**ので気づけない。
+       * ⚠ さらに **ページ id を URL に載せていないこと**まで見る ——
+       *   載せた瞬間、着地先を決める場所が qa と assembler の2か所になる。 */
+      var refs = DATA.patterns.filter(function (p) { return p.link && p.link.kind === "reference"; });
+      return ta("飛び道具: 📖 資料のリンクが ?open=reference と ?code= だけを載せている", function () {
+        assert(refs.length, "kind=reference の項目が1つも無い（テストの前提が崩れている）");
+        return openWith("&code=" + encodeURIComponent(refs[0].code)).then(function (a) {
+          try {
+            a.D.getElementById("btn-reveal").click();
+            var link = a.D.querySelector(".a-link");
+            assert(link, refs[0].code + ": 飛び道具のリンクが出ていない");
+            var href = link.getAttribute("href");
+            assert(href.indexOf("open=reference") > 0,
+              refs[0].code + ": URL に ?open=reference が無い（" + href + "）。" +
+              "押しても assembler がふつうに起動するだけになり、画面は開くので気づけない");
+            assert(href.indexOf("code=" + encodeURIComponent(refs[0].code)) > 0,
+              refs[0].code + ": URL に ?code= が無い（" + href + "）。" +
+              "どのページに着くかを決めているのは code なので、落ちると既定のページが開く");
+            assert(!/[?&](page|refpage)=/.test(href),
+              refs[0].code + ": URL にページ id を載せている（" + href + "）。" +
+              "着地先を決める場所は assembler の reference.json の codes だけにする");
           } finally { a.kill(); }
         });
       });

@@ -2,7 +2,7 @@
 {"code":"org.ali.class-aliphatic","kind":"none","why":"脂肪族と芳香族の境界はベンゼン環の有無なので、片方の分子だけでは境界が見えない。ベンゼン環の構造は org.aro.benzene-structure の担当"}
 {"code":"org.ali.class-chain-ring","kind":"summon","label":"シクロヘキサンの環を組み立てる","name":"シクロヘキサン","note":"分類項目なので本来は鎖式との対比が要るが、環をもつことは画面ではっきり見えるので拾った"}
 {"code":"org.ali.class-saturated","kind":"none","why":"飽和と不飽和の区別は2つを並べて比べる項目で、1分子では境界が見えない。二重結合・三重結合そのものは org.ali.alkene-functional / org.ali.alkyne-functional の担当"}
-{"code":"org.ali.formula-alkane","kind":"none","why":"一般式 CnH2n+2 は炭素数を変えた複数の分子を並べて初めて見える規則で、1分子を組んでも n への依存は見えない"}
+{"code":"org.ali.formula-alkane","kind":"reference","label":"資料「アルカンの命名」で C1〜C10 を並べて見る","note":"kind:none だった理由（1分子を組んでも n への依存は見えない）を、assembler の 📖 資料が埋めた。ページは指定しない —— code だけ送り、どのページに着地させるかは向こうの reference.json の codes が決める（ion-equation ⇄ ratio と同じ約束）"}
 {"code":"org.ali.formula-alkene","kind":"none","why":"一般式 CnH2n は炭素数の異なる分子を並べて初めて見える規則で、1分子を組んでも見えない"}
 {"code":"org.ali.formula-alkyne","kind":"none","why":"一般式 CnH2n-2 は炭素数の異なる分子を並べて初めて見える規則で、1分子を組んでも見えない"}
 {"code":"org.ali.formula-cycloalkane","kind":"none","why":"シクロアルカンと鎖式アルケンが同じ一般式になることが要点で、その一致は2種類を並べないと見えない"}
@@ -51,7 +51,7 @@
 {"code":"org.ali.acetylene-benzene","kind":"none","why":"アセチレン3分子の三量化に対応する反応が reactor に無い。生成物のベンゼンの構造は org.aro.benzene-structure の担当"}
 {"code":"org.ali.silver-acetylide","kind":"none","why":"白色沈殿という色と沈殿の観察は assembler が表現しない"}
 {"code":"org.ali.acetic-vinyl","kind":"summon","label":"酢酸ビニルを組み立てる","name":"酢酸ビニル","note":"アセチレンへの酢酸の付加は reactor に無いので、生成物の形を見せる"}
-{"code":"org.ali.isomer-classification","kind":"none","why":"異性体の分類という枠組みで、個別の異性体は org.ali.iso-c4h10（構造異性体）・org.ali.cis-trans-def（シス−トランス）・org.ali.chirality-def（鏡像）の担当"}
+{"code":"org.ali.isomer-classification","kind":"reference","label":"資料「同じ分子式で、別の分子」を分子式ごとに並べて見る","note":"kind:none だった理由（枠組みなので1分子では見えない）を、assembler の 📖 資料が埋めた。同じ分子式の行が2つ以上並ぶこと自体が構造異性体の実物になっている。ページは指定せず code だけ送る"}
 {"code":"org.ali.iso-c4h10","kind":"isomer","label":"C₄H₁₀ の異性体を書き出す","formula":"C4H10"}
 {"code":"org.ali.iso-c5h12","kind":"isomer","label":"C₅H₁₂ の異性体を書き出す","formula":"C5H12"}
 {"code":"org.ali.iso-count","kind":"practice","label":"異性体の数え上げを練習する","open":"countquiz","note":"個数そのものを問う項目なので、書き出し（isomer）より数え上げの練習が合う"}
@@ -163,7 +163,7 @@
 {"code":"org.phenol.acidity","kind":"summon","label":"フェノールを組み立てる","name":"フェノール","note":"液性（ごく弱い酸性）そのものは画面に出ない。−OH が環の炭素に直結していること（中性のアルコールとの違いの根拠）を見せる意図。none も候補で迷った"}
 {"code":"org.phenol.naoh","kind":"reaction","label":"フェノールを水酸化ナトリウムで中和して塩にする","name":"フェノール","reagent":"naoh_aq","note":"2026-08-06 に none から拾い直した（reactor に中和 neutralize_naoh が入った）。生成物のナトリウムフェノキシドはライブラリにも登録済み"}
 {"code":"org.phenol.weaker-than-carbonic","kind":"reaction","label":"フェノールが炭酸水素ナトリウムと反応しないことを確かめる","name":"フェノール","reagent":"nahco3","note":"★陰性が要点の項目。カルボン酸との区別が、同じ瓶の陽性（org.carbonyl.vs-carbonic）と陰性の対で見える"}
-{"code":"org.phenol.phenoxide-co2","kind":"none","why":"弱酸の遊離そのものは reactor に入ったが、遊離させる瓶が希硫酸しかない。この項目の要点は「フェノールは炭酸より弱い酸だから CO2 で追い出される」という強弱の順序で、強酸で遊離させても要点が見えない","note":"★見直し候補。CO2（または炭酸水）の瓶が入れば繋がる。nahco3 の瓶はあるが検出用（カルボン酸との区別）で、遊離させる側には使えない"}
+{"code": "org.phenol.phenoxide-co2", "kind": "reaction", "name": "ナトリウムフェノキシド（フェノールのナトリウム塩）", "reagent": "co2", "why": "v1514 で CO₂ の瓶（co2）と liberate_co2 が入り、繋がった。ナトリウムフェノキシドを呼び出して CO₂ を押すと2択が出て、遊離を押すとフェノールになる（実測）", "note": "⚠ 入試での実際の使われ方22件のほとんどはコルベ・シュミット（サリチル酸をつくる）で、本文の弱酸の遊離とは別の面。同じ瓶で両方できる"}
 {"code":"org.phenol.na-h2","kind":"reaction","label":"フェノールに金属ナトリウムを作用させる","name":"フェノール","reagent":"sodium_metal","note":"2026-08-08 に none から拾い直した（金属ナトリウムの瓶 sodium_metal が入った）。瓶の説明が「フェノールやカルボン酸の酸性の -OH でも同じように水素が出る」と書き分けているので、アルコールとの対比も画面で読める"}
 {"code":"org.phenol.fecl3","kind":"reaction","label":"フェノールに塩化鉄(III)を加える","name":"フェノール","reagent":"fecl3","note":"第3段の検出瓶。紫の呈色そのものは出ないが、環に直結した -OH が陽性の根拠として示される"}
 {"code":"org.phenol.bromination","kind":"none","why":"臭素による芳香環の置換に対応する試薬が無い（aromatic_halogenation は Cl 限定、br2_water は非芳香族の不飽和結合だけを見る）。2,4,6- の置換位置も白色沈殿も表現できない","note":"むしろ フェノール＋br2_water を押すと「ベンゼン環は脱色しない」という miss 文が出て、実際には反応するフェノールでは誤った説明になる。assembler レーンに伝える価値がある"}
