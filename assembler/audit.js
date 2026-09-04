@@ -252,8 +252,12 @@
                 attempts: 0, opened: 0, examples: 0, rowsTotal: 0, empty: 0,
                 rows: {},                         // ページ id → 生えた表の行のべ数
                 ids: pages.map(p => p.id),
-                // `stageTable` を持たないページは「行が0でも正しい」ので分けて持つ
-                tableIds: pages.filter(p => (p.blocks || []).some(b => b.kind === 'stageTable'))
+                /* 表を持たないページは「行が0でも正しい」ので分けて持つ。
+                 * ⚠ **ブロックの名前を書き並べない**（`stageTable` だけを名指ししていたら、
+                 *   v1513 で入った `mechanismTable` のページが黙って「0行のまま正しい」側に
+                 *   落ちた）。★ **「…Table で終わる種類のブロック」**で拾う ＝
+                 *   次に表の種類が増えても、監査は何も足さずに見張る。 */
+                tableIds: pages.filter(p => (p.blocks || []).some(b => /Table$/.test(b.kind || '')))
                     .map(p => p.id)
             }
         };
@@ -1264,7 +1268,9 @@
                     } else {
                         ops.push('refbook ' + pid);
                         await rb.open(pid);
-                        const rows = D.querySelectorAll('#ref-body table.ref-table tbody tr').length;
+                        /* ⚠ **表の class を名指ししない** —— `ref-table`（stages の表）と
+                         *   `ref-mech-table`（機構の表・v1513）の2種があり、まだ増えうる。 */
+                        const rows = D.querySelectorAll('#ref-body table tbody tr').length;
                         if (led) {
                             led.opened++;
                             led.rowsTotal += rows;
