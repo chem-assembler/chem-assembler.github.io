@@ -22,14 +22,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>一問一答（qa）回帰テスト <span class="version">v96</span></h1>
+<h1>一問一答（qa）回帰テスト <span class="version">v97</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="index.html?v=96"></iframe>
+<iframe id="app" src="index.html?v=97"></iframe>
 
-<script src="tests.js?v=96"></script>
+<script src="tests.js?v=97"></script>
 <script>
 (function () {
   var out = document.getElementById('results');
@@ -78,14 +78,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 
   // データと版のテスト → アプリの読み込みを待って UI テスト
   Promise.all([
-    fetch('questions.json?v=96').then(function (r) { return r.json(); }),
-    fetch('index.html?v=96').then(function (r) { return r.text(); }),
-    fetch('app.js?v=96').then(function (r) { return r.text(); }),
+    fetch('questions.json?v=97').then(function (r) { return r.json(); }),
+    fetch('index.html?v=97').then(function (r) { return r.text(); }),
+    fetch('app.js?v=97').then(function (r) { return r.text(); }),
     // 隣のアプリのデータ（飛び道具の指す先が実在するかを実データで検査するため）
     fetch('../assembler/compounds.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     fetch('../assembler/stages.json' + FRESH).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
     // 棚卸し表（283項目に「何を見せるか」を決めた正の表。JSONL なので1行ずつ読む）
-    fetch('data/assembler_links.jsonl?v=96').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/assembler_links.jsonl?v=97').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
       }).catch(function () { return []; }),
@@ -105,16 +105,22 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
     // 棚卸しの `panel` は**向こうの語彙**で、綴りが違っても assembler は黙って既定のタブを
     // 開く（受け口⑦は DOM に聞いて、無ければ何もしない）＝ 画面では気づけない壊れ方。
     // ⚠ **末尾に足す**（途中に挟むと下の res[N] が全部1つずれる）
-    fetch('../assembler/index.html' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; })
+    fetch('../assembler/index.html' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
+    // assembler の 📖 資料のページ一覧（2026-09-04）。棚卸しの `kind:"reference"` は
+    // **code だけを送り、着地するページは向こうの `codes` が決める**ので、
+    // 「その code を持つページが本当にあるか」は実データでしか確かめられない
+    // （無いと assembler は黙って既定のページを開く ＝ 画面では気づけない壊れ方）。
+    // ⚠ **末尾に足す**（途中に挟むと下の res[N] が全部1つずれる）
+    fetch('../assembler/reference.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; })
   ]).then(function (res) {
     var DATA = res[0], indexHtml = res[1], appJs = res[2], COMPOUNDS = res[3], STAGES = res[4], LINKS = res[5];
     var REACTOR_JS = res[6], QUIZ_JS = res[7], REACTIONS = res[8], USAGE_TEXT = res[9], LEDGER = res[10];
-    var ASM_HTML = res[11];
+    var ASM_HTML = res[11], REF_PAGES = res[12];
     section('データ（questions.json の構造と作問規約）', runDataTests(DATA));
     section('版の同期（キャッシュ事故の防止）', runVersionTests(indexHtml, appJs));
     section('飛び道具の指す先（assembler のライブラリと突き合わせ）', runLinkTargetTests(DATA, COMPOUNDS, STAGES));
     section('棚卸し表（283項目に何を見せるか・配信データとの一致）',
-      runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS, ASM_HTML));
+      runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS, QUIZ_JS, ASM_HTML, REF_PAGES));
     section('出題実績（どの大学でどう問われたか・著作権の門番）', runUsageTests(DATA, USAGE_TEXT));
     section('確度の一覧（CERTAINTY_LEDGER.md との一致）', runLedgerTests(DATA, LEDGER));
 
