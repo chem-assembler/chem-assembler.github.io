@@ -1208,7 +1208,14 @@
                          *     ① 瓶の節 …… ふつうの返し先（`reactor.reagentNoteEl`）
                          *     ② 分子モーダルの節 …… モーダルが開いていればそちらへ返る（v1494）
                          *     ③ ★ **キャンバスの字幕（トースト）** …… `info` ルール（解説だけの札）と
-                         *        「箇所を選んでください」はここにしか出ない（`onRuleClick` / `narrow`） */
+                         *        「箇所を選んでください」はここにしか出ない（`onRuleClick` / `narrow`）
+                         * ⚠ **③には取りこぼしが1つ残っている**（実測で残った・直していない）:
+                         *   **同じ文言の字幕が2回続く**と `toastAfter === toastBefore` になり、
+                         *   返っているのに「無反応」と数える。941回 押して 1 回出た程度なので、
+                         *   ★ **「無反応」が1桁のうちは、まずこれを疑うこと**（アプリの不具合と決めない）。
+                         *   ⚠ 直すなら「字幕が見えているか」ではなく **字幕を出した回数**を数える側
+                         *   （`showToast` を包む）に替える —— 見えているかで見ると、前の操作の字幕が
+                         *   残っているだけの回まで「答えが返った」に数えてしまう。 */
                         const mmNote = D.getElementById('mm-reagent-note');
                         const toastAfter = toastEl ? toastEl.textContent : '';
                         const answered = !!((note && note.textContent.trim()) ||
