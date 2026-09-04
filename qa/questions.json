@@ -8035,6 +8035,7 @@
       },
       "link": {
         "kind": "reaction",
+        "label": "ナトリウムフェノキシドに二酸化炭素を吹き込む",
         "summon": "sodium-phenoxide",
         "reagent": "co2"
       }
