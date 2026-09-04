@@ -34419,8 +34419,9 @@
             'reactor 側の ruleReagentIds が無い／文字列と配列を同じに扱えていない');
         // ★ v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23本
         // ★ v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24本（ユーザー指摘）
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 24,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの19本＋調べるもの5本＝24本）`);
+        // ★ vNNNN で二酸化炭素の瓶を足して 24 → 25本（DESIGN_ion_layer.md I-2・分液 51 → 58件）
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 25,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの20本＋調べるもの5本＝25本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -34526,8 +34527,12 @@
              *   `liberate_weak_acid` は瓶が希硫酸1本から**希硫酸＋塩酸の2本**になった
              *   （入試の遊離は塩酸45件・硫酸14件で、いちばん多い塩酸で引けなかった）。 */
             'neutralize_nahco3', 'amine_hcl', 'amine_liberate_naoh',
+            /* ★ vNNNN（分液レーン・DESIGN_ion_layer.md I-2）: 1本足して 42 → 43。
+             *   ⚠ **瓶を1本足した**（24 → 25本）。既存の瓶に相乗りできない理由は
+             *   `co2` の瓶の注記（NaHCO₃ も希硫酸も「二酸化炭素を吹き込む」の名前にならない）。 */
+            'liberate_co2',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 42, `瓶に紐づくルールが ${linked.length} 件（42件を期待）`);
+        assert(linked.length === 43, `瓶に紐づくルールが ${linked.length} 件（43件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -34540,11 +34545,12 @@
         //     v1428 で酸化剤を KMnO₄ / K₂Cr₂O₇ の2本に割って 21 → 22（§12-1・試薬名を知るため）
         //     v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23
         //     v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24
+        //     ★ vNNNN で二酸化炭素の瓶（CO₂）を足して 24 → 25
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 24, `瓶の札が ${drawn.length} 個（24個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 19 &&
+        assert(drawn.length === 25, `瓶の札が ${drawn.length} 個（25個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 20 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの19本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの20本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -35471,9 +35477,9 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶24本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶25本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶24本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶25本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -35487,7 +35493,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 24, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 25, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
@@ -50112,8 +50118,14 @@
          * ⚠ v1506 まで瓶は希硫酸1本だけで、**いちばん多い塩酸で引けなかった**。 */
         assert(W.ruleUsesReagent(rule, 'hcl') && W.ruleUsesReagent(rule, 'h2so4_dil'),
             `遊離の瓶が ${W.ruleReagentIds(rule).join('・')}（希硫酸と塩酸の両方であること）`);
-        // ⚠ 瓶は1本も増えていない（相乗り。D-I4）
-        assert(W.REAGENTS.length === 24, `瓶が ${W.REAGENTS.length} 本（v1511 の 24本のままであること）`);
+        /* ⚠ **この行が見ているのは「塩酸の遊離が瓶を足さずに済んだ」こと**（相乗り。D-I4）。
+         * ★ 数ではなく**顔ぶれ**で言う —— vNNNN で CO₂ の瓶が1本増えて数だけの検査が
+         *   意味を失った（数を書き換えるだけだと、次に瓶が増えたときも同じことが起きる）。 */
+        assert(!W.REAGENTS.some(r => /塩酸|hydrochloric/i.test(r.name) && r.id !== 'hcl'),
+            `★ 遊離のために「塩酸」の瓶が別に足されている（${W.REAGENTS.map(r => r.id).join('・')}）` +
+            ' ＝ D-I4 の「既存の塩化水素に相乗りする」に反している');
+        assert(W.ruleReagentIds(rule).every(id => W.REAGENTS.some(r => r.id === id)),
+            '遊離の reagentId に実在しない瓶が混じっている');
 
         // ---- 塩酸でも希硫酸でも、同じ塩から同じ酸が戻る
         const codes = {};
@@ -50279,6 +50291,101 @@
                 measured.filter(m => m.tag === mix.tag)
                     .map(m => `${m.w}px:${m.all.toFixed(1)}${m.focused ? '札' : '並'}`).join(' ') +
                 `（${flipOf(mix.tag)}）`).join('　');
+    });
+
+    /* ★★ SEP7: **CO₂ の瓶**（DESIGN_ion_layer.md I-2）。
+     *
+     * ★ この段の芯は **「炭酸より弱い酸だけが CO₂ で戻る」** の1点。
+     *   ⚠ `SEP3`（NaHCO₃）とちょうど裏返しで、**同じ序列を2方向から見せている**:
+     *     SEP3 … 炭酸より**強い**側だけが塩になる（カルボン酸○・フェノール✗）
+     *     SEP7 … 炭酸より**弱い**側だけが塩から戻る（フェノキシド○・カルボン酸塩✗）
+     * ⚠⚠ **数だけを数えない。** 効いた／効かない成分は**名前**で引く（発注の要件）。 */
+    test('SEP7: CO₂ はフェノキシドだけを戻し、カルボン酸の塩には効かない（酸の強さの裏返し）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, R = W.reactor;
+        const rule = W.REACTION_RULES.find(r => r.id === 'liberate_co2');
+        assert(rule, 'liberate_co2 が無い');
+        assert(W.ruleUsesReagent(rule, 'co2'), 'liberate_co2 が二酸化炭素の瓶に繋がっていない');
+        const bottle = W.REAGENTS.find(r => r.id === 'co2');
+        assert(bottle && bottle.kind === 'transform', 'CO₂ の瓶が無い／区分が transform でない');
+        assert(W.RULE_PHASE.liberate_co2 && W.RULE_PHASE.liberate_co2.phase === 'ether',
+            'liberate_co2 の行き先（有機層）が対応表に無い');
+
+        /* ---- ① 効く／効かないを**名前で**総当たり。
+         * ⚠ 否定対照は**別の性質を4つ**（同じ性質の対照を並べても誤りは1つも捕まらない）:
+         *   ⓐ 安息香酸ナトリウム … **炭酸より強い酸の塩**（この反応の分かれ目そのもの）
+         *   ⓑ ベンゼンスルホン酸ナトリウム … 向こうが S（もっと強い酸の塩）
+         *   ⓒ ★ ナトリウムエトキシド … **`acidKindOf` を流用すると通ってしまう**穴
+         *      （同関数は鎖の -ONa にも『フェノール』を返す。設計書 §5-2 の言う
+         *       「acidKindOf の分岐を再利用」が実測で成り立たなかった点）
+         *   ⓓ フェノール（塩でない） … 塩が無ければ戻すものも無い */
+        const want = [
+            ['ナトリウムフェノキシド（フェノールのナトリウム塩）', true, '★ 炭酸より弱い酸の塩'],
+            ['サリチル酸ナトリウム', false, 'カルボン酸の塩（-COONa）は炭酸では戻せない'],
+            ['安息香酸ナトリウム', false, '★ 炭酸より強い酸の塩 ＝ ここが分かれ目'],
+            ['ベンゼンスルホン酸ナトリウム', false, 'スルホン酸の塩はもっと強い酸の塩'],
+            ['ナトリウムエトキシド', false, '★ 鎖の -ONa はフェノキシドではない（acidKindOf の穴）'],
+            ['フェノール', false, '塩になっていない'],
+            ['ニトロベンゼン', false, '塩も酸性の -OH も無い']
+        ];
+        const lib = new Set(g.getCompoundLibrary().map(e => e.name));
+        want.forEach(([name]) => assert(lib.has(name), `題材「${name}」がライブラリに無い`));
+        let pos = 0, neg = 0;
+        want.forEach(([name, hit, why]) => {
+            sepSetup(c, [name]);
+            const n = rule.detect(g.userMolecule).length;
+            assert(hit ? n > 0 : n === 0,
+                `${name}: CO₂ の箇所が ${n} 件（${hit ? '効くはず' : '効かないはず'}／${why}）`);
+            if (hit) pos++; else neg++;
+        });
+        assert(pos >= 1 && neg >= 5, `陽性 ${pos} 件・陰性 ${neg} 件（空振りの緑よけ）`);
+
+        /* ---- ② ★★ 否定対照が**空振りしていない**ことの実証。
+         * ⚠ ①の陰性は「detect が全部落ちていても」緑になる。そこで
+         *   **同じ4件が強酸（希硫酸）では戻る**ことを見る ＝ 材料の側は生きている。 */
+        [['安息香酸ナトリウム', '安息香酸'],
+         ['ベンゼンスルホン酸ナトリウム', 'ベンゼンスルホン酸'],
+         ['ナトリウムエトキシド', 'エタノール'],
+         ['サリチル酸ナトリウム', 'サリチル酸']].forEach(([salt, acid]) => {
+            sepSetup(c, [salt]);
+            const strong = W.REACTION_RULES.find(r => r.id === 'liberate_weak_acid');
+            assert(strong.detect(g.userMolecule).length > 0,
+                `★ ${salt} が希硫酸でも戻らない ＝ 塩の判定そのものが落ちている（①の陰性が空振り）`);
+            assert(lib.has(acid), `対照の相手「${acid}」がライブラリに無い`);
+        });
+
+        /* ---- ③ 生成物が**名前で**引けること（正準コードがライブラリと一致する）。
+         * ⚠ 数や「変わった」ではなく**名前**で見る（別の分子になっても図は似る）。 */
+        sepSetup(c, ['ナトリウムフェノキシド（フェノールのナトリウム塩）']);
+        g.startSeparation();
+        g.setPartPhase(g.userMolecule.atoms.map(a => a.id), 'aq', '');
+        const res = R.applyToMixture(W.REAGENTS.find(r => r.id === 'co2'));
+        assert(res && res.hits.join(',') === 'ナトリウムフェノキシド（フェノールのナトリウム塩）',
+            `★ CO₂ が効いていない（効いた: ${(res && res.hits.join('・')) || 'なし'}）`);
+        const names = g.splitMolecules().map(p => g.lookupCompoundName(p));
+        assert(names.includes('フェノール'),
+            `★ CO₂ でフェノールに戻っていない（${names.join(' / ')}）`);
+        assert(g.phaseOfPart(sepPart(c, 'フェノール')) === 'ether',
+            '★ 遊離したフェノールが有機層へ戻っていない');
+
+        /* ---- ④ ★★ **入試の定番の1手**（CO₂ 吹き込み 7件の型）。
+         * 安息香酸ナトリウム ＋ ナトリウムフェノキシド の混合物に CO₂ を吹き込むと、
+         * **フェノールだけが有機層へ戻り、カルボン酸の塩は水層に残る。** */
+        c.reset();
+        sepSetup(c, ['安息香酸ナトリウム', 'ナトリウムフェノキシド（フェノールのナトリウム塩）']);
+        g.startSeparation();
+        g.setPartPhase(g.userMolecule.atoms.map(a => a.id), 'aq', '');
+        const res2 = R.applyToMixture(W.REAGENTS.find(r => r.id === 'co2'));
+        assert(res2.hits.join(',') === 'ナトリウムフェノキシド（フェノールのナトリウム塩）' &&
+            res2.misses.join(',') === '安息香酸ナトリウム',
+            `★ CO₂ が「フェノキシドだけ」になっていない（効いた: ${res2.hits.join('・') || 'なし'}／` +
+            `効かない: ${res2.misses.join('・') || 'なし'}）`);
+        assert(g.phaseOfPart(sepPart(c, 'フェノール')) === 'ether',
+            '★ フェノールが有機層へ戻っていない');
+        assert(g.phaseOfPart(sepPart(c, '安息香酸ナトリウム')) === 'aq',
+            '★ 安息香酸ナトリウムまで有機層へ出た');
+        c.reset();
+        return `CO₂ が効く ${pos} 件・効かない ${neg} 件／混合物ではフェノキシドだけ`;
     });
 
     // ===== 一部だけ流す（`?only=`）=====
