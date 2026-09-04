@@ -31956,16 +31956,37 @@
         const deep = links.filter(a => a.href.includes('?'));
         assert(deep.length >= 6, `深いリンクになっている単元行が少ない（${deep.length}本）`);
         const knownSeries = new Set(c.W.STAGES.map(s => s.series));
+        const knownQuests = new Set((c.W.QUESTS || []).map(q => q.id));
+        const seenOpen = new Set();
         deep.forEach(a => {
             const q = new URLSearchParams(a.href.split('?')[1]);
             const name = q.get('open');
             assert(c.W.OPEN_TARGETS && name in c.W.OPEN_TARGETS,
                 `ハブが知らない ?open=${name} を指している`);
+            seenOpen.add(name);
             const series = q.get('series');
             if (series) {
                 assert([...knownSeries].some(s => s.includes(series)),
                     `ハブの ?series=${series} に当たるシリーズがステージデータに無い`);
             }
+            /* ⚠ **課題の id も向こうの語彙**（vNNNN）。`series` とまったく同じ壊れ方をする ——
+             *   `startQuest` は知らない id に `{ok:false, reason:'unknown'}` を返して**黙って何もしない**
+             *   ので、綴りを間違えても**アプリはふつうに起動し、課題の帯だけが出ない**。
+             *   ★ いまハブに `?quest=` は1本も無いので、これは**将来のリンクのための門番**。 */
+            const quest = q.get('quest');
+            if (quest) {
+                assert(knownQuests.has(quest),
+                    `ハブの ?quest=${quest} に当たる課題が quests.json に無い（黙って帯が出ないだけになる）`);
+            }
+        });
+
+        /* ★★ **「作ったが誰も指していない受け口」を作らない**（vNNNN・DESIGN_review_pack3.md §1）。
+         * ⚠ レビューの実測: `?open=reference` と `?quest=` を指すリンクが**リポジトリに 0 本**だった。
+         *   受け口だけ増やして入口を作らないと、機能は在るのに誰にも届かない。
+         *   ★ ここで名指しで固定する ＝ ハブから消したら赤（数ではなく名前で引く）。 */
+        ['reference', 'experiment'].forEach(name => {
+            assert(seenOpen.has(name),
+                `ハブの単元表に ?open=${name} を指す行が無い（受け口はあるのに入口が無い状態に戻っている）`);
         });
     });
 
