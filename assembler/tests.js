@@ -50506,8 +50506,25 @@
             `★ CO₂ の瓶から出る行き先が違う（${opts.join('・') || 'なし'}）`);
         assert(!rule.condition && !W.REACTION_RULES.find(r => r.id === 'liberate_co2').condition,
             'CO₂ の2本に condition が付いている（条件は label と caption で言う取り決め）');
+
+        /* ---- ⑥ ★ **教科書の辺が2手でつながる**（DESIGN_organic_tree.md §2-3 (b)）。
+         * 木の表が言うのは「ナトリウムフェノキシド → サリチル酸」で、
+         * アプリはそこを **コルベ・シュミット → 弱酸の遊離** の2手で結ぶ。
+         * ⚠ 途中も終点も**名前で**引く（（未登録）を1件も作らないこと）。 */
         c.reset();
-        return 'サリチル酸ナトリウムを登録と同じ正準コードで生成／漏斗の中では遊離だけ';
+        sepSetup(c, ['ナトリウムフェノキシド（フェノールのナトリウム塩）']);
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const strong = W.REACTION_RULES.find(r => r.id === 'liberate_weak_acid');
+        const s3 = strong.detect(g.userMolecule);
+        assert(s3.length === 1, `2手目（弱酸の遊離）の箇所が ${s3.length} 件（1件のはず）`);
+        strong.apply(g, s3[0]);
+        g.updateDrawing();
+        const end = g.splitMolecules().map(p => g.lookupCompoundName(p));
+        assert(end.length === 1 && end[0] === 'サリチル酸',
+            `★ 2手でサリチル酸にならない（${end.join(' / ')}）`);
+        c.reset();
+        return 'サリチル酸ナトリウムを登録と同じ正準コードで生成／漏斗の中では遊離だけ／2手でサリチル酸';
     });
 
     // ===== 一部だけ流す（`?only=`）=====
