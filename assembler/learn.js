@@ -700,34 +700,76 @@ function ipHydrationEdges(mol) {
 }
 
 /**
- * ★★ 条件の語彙（2つの型）。⚠ **文言はここからしか出さない**（`IP_SCOPES` と同じ流儀）。
+ * ★★ 条件の語彙（3つの型）。⚠ **文言はここからしか出さない**（`IP_SCOPES` と同じ流儀）。
  *
- * `answerFormula` … 答えの分子式（重原子と水素の数）。
+ * `askFormula` … 答えの分子式（重原子と水素の数）／`srcFormula` … 条件に出てくる相手の分子式。
  *   ⚠ 答えの集合が**1つの分子式に収まる**ことが、この器を使える条件そのもの ——
  *   `grade()` は「分子式が違う → お題の式を言う」「分子式は合うが集合に無い → 対象外」で
  *   採点しており、答えの式が混ざると前者の断り文が嘘になる。
- *   ・脱水（答えはアルコール CnH(2n+2)O）・付加（答えはアルケン CnH(2n)）とも1つに収まる。
+ *   ・脱水（答えはアルコール CnH(2n+2)O）・付加／生成物（答えはアルケン CnH(2n)）とも1つに収まる。
+ *
+ * ★★ `from` が**辺をどちら向きに渡るか**を決める（§20-2 の1本の辺を、両側から読む）:
+ *   `'answer'` … 相手（`target`）は**生成物**。答えは「その相手になる」もの ＝ 候補ごとに辺を数える
+ *   `'target'` … 相手（`target`）は**出発物**。答えは「その相手から出る」もの ＝ 相手の辺を1回数える
+ *   ⚠ **ここを `pre.kind === 'dehydration' ? …` の三項で書かない**（型が3つになった時点で
+ *     黙って片方へ落ちる）。向きも辺の関数も、型そのものが名乗る。
  */
 const IP_COND_KINDS = {
-    /** 脱水して K になるアルコールを書き出す（K はアルケン） */
+    /** 脱水して K になるアルコールを書き出す（K はアルケン。相手＝生成物） */
     dehydration: {
-        tag: '脱水', verb: '脱水すると',
+        tag: '脱水', verb: '脱水すると', from: 'answer', edges: (m) => ipDehydrationEdges(m),
         askFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
+        label: (t) => `脱水 → ${t}`,
         title: (t) => `脱水すると ${t} になるアルコール`,
         note: (t) => `※ 濃硫酸で分子内脱水すると ${t} になるアルコールを、すべて書き出します（ほかの構造は対象外）。`,
         reject: (t) => `分子式は合っていますが、この回は「脱水すると ${t} になるアルコール」だけが対象です`,
         tip: (t) => `分子内脱水で ${t} ができるアルコールだけを書き出す回です`
     },
-    /** 水を付加して A になるアルケンを書き出す（A はアルコール） */
+    /** 水を付加して A になるアルケンを書き出す（A はアルコール。相手＝生成物） */
     hydration: {
-        tag: '水の付加', verb: '水を付加すると',
+        tag: '水の付加', verb: '水を付加すると', from: 'answer', edges: (m) => ipHydrationEdges(m),
         askFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
+        label: (t) => `水の付加 → ${t}`,
         title: (t) => `水を付加すると ${t} になるアルケン`,
         note: (t) => `※ 水を付加すると ${t} になるアルケンを、すべて書き出します（ほかの構造は対象外）。`,
         reject: (t) => `分子式は合っていますが、この回は「水を付加すると ${t} になるアルケン」だけが対象です`,
         tip: (t) => `水の付加で ${t} ができるアルケンだけを書き出す回です`
+    },
+    /**
+     * ★★ A を脱水するとできるアルケンを書き出す（A はアルコール。相手＝**出発物**）。v1516・§22。
+     *
+     * ユーザー原文（2026-09-03）:「**アルコールの分子内脱水は重要です／C5まで、アルコールと
+     * アルケンの対応表（反応系統樹）／左列の構造式と→がある状態で右列の構造式を書かせる**」
+     * ＝ 対応表を**左から右へ1行ずつ**問う形。上の2つと同じ辺を、出発物の側から読むだけ。
+     *
+     * ⚠⚠ **「主生成物だけを数える読み」と割れる回（答えが2種の4件）を、ここでは落とさない。**
+     *   §20-4 の逆向きでは落としたが、**割れ方の性質が違う**:
+     *   ・逆向き（「脱水して1-ブテンになるアルコール」）…… 割れているのは
+     *     「2-ブタノールは *1-ブテンになるアルコール* か」という**言葉の意味**で、
+     *     設問の「すべて」は集合の外側に掛かるから、**すべてと言っても決まらない**
+     *   ・順方向（「2-ブタノールを脱水すると」）…… 割れているのは
+     *     「主生成物だけ挙げるか、副生成物まで挙げるか」＝ **設問が数える範囲そのもの**。
+     *     ★ だから **note で「主生成物・副生成物の区別は問わない」と言えば決まる**
+     *       —— どのアルコールでも同じ断り文なので、**答えの数は1文字も漏れない**
+     *   ★ ここを落とすと、ユーザーが「重要」と名指しした**ザイツェフ則の4件が全部消える**。
+     */
+    products: {
+        tag: '脱水', verb: '脱水すると', from: 'target', edges: (m) => ipDehydrationEdges(m),
+        askFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
+        srcFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
+        label: (t) => `${t} を脱水`,
+        title: (t) => `${t} を脱水するとできるアルケン`,
+        // ⚠ 「主生成物・副生成物の区別は問いません」が**読みを決める1文**（上の前書き）。
+        //   後半のザイツェフ則は**条件つきの一般則**なので、どの回でも答えの数を漏らさない。
+        // ⚠⚠ **ここに「2種類できる回では」と数を書かない** ——「種類数を先に出さない」の約束
+        //   （`IH1`・v1489）に当たって赤くなる。実際に一度そう書いて `DH1` が止めた
+        note: (t) => `※ ${t} を濃硫酸で分子内脱水したときにできるアルケンを、すべて書き出します。` +
+            `主生成物・副生成物の区別は問いません（複数できる場合、ザイツェフ則では` +
+            `「水素の少ないほうの隣の炭素」から水素が取れたアルケンが主生成物です）。`,
+        reject: (t) => `分子式は合っていますが、この回は「${t} を脱水するとできるアルケン」だけが対象です`,
+        tip: (t) => `${t} の分子内脱水でできるアルケンだけを書き出す回です`
     }
 };
 
@@ -767,7 +809,38 @@ const IP_COND_PRESETS = [
     { id: 'hy-c4-2butanol', kind: 'hydration', carbons: 4, target: '2-ブタノール' },  // ★ ユーザーが挙げた例
     { id: 'hy-c5-2me2buol', kind: 'hydration', carbons: 5, target: '2-メチル-2-ブタノール' },
     { id: 'hy-c5-2pentol',  kind: 'hydration', carbons: 5, target: '2-ペンタノール' },
-    { id: 'hy-c5-3pentol',  kind: 'hydration', carbons: 5, target: '3-ペンタノール' }
+    { id: 'hy-c5-3pentol',  kind: 'hydration', carbons: 5, target: '3-ペンタノール' },
+    /* ── 型3: A を脱水するとできるアルケン（答えはアルケン）── v1516・§22
+     *
+     * ★ **C₁〜C₅ の鎖式飽和一価アルコール 16件のうち、脱水できる 14件が全部ここに居る**
+     *   （`DH3` が C₁〜C₅ を総当たりして毎回 数え直す）。
+     *
+     * ⚠⚠ **落としたのは 2件だけで、理由は「答えが0個」**（化学の読みではない）:
+     *   メタノール（β炭素そのものが無い）と 2,2-ジメチル-1-プロパノール（β炭素に水素が無い）。
+     *   ★ 教材としては良い落とし穴だが、**いまの器は「答え0個」を出せない**
+     *   —— `beginSession` は答えが1件以上を前提に、満点・「あと何種」・立体の段2の総数・
+     *   クリア記録を組み立てる。**(b)「できないを答えにする」は共通関数5本の改修**になるので採らず、
+     *   `ipSolveCondition` が null を返して**開かない**（＝ 足しても黙って通らない）ことで担保する。
+     *   見積りは DESIGN_isomer_practice.md §22-3。
+     *
+     * ⚠ **7件は、上の型2（水の付加）と答えの集合が完全に同じ**（辺が1本なので当然）。
+     *   問うている反応が違う（脱水 ↔ 水の付加）ので両方 残しているが、
+     *   **これは意図した重なり**であることを `DH5` が名指しで固定する（§22-4）。
+     */
+    { id: 'pr-c2-ethanol',   kind: 'products', carbons: 2, target: 'エタノール' },
+    { id: 'pr-c3-1propol',   kind: 'products', carbons: 3, target: '1-プロパノール' },
+    { id: 'pr-c3-2propol',   kind: 'products', carbons: 3, target: '2-プロパノール' },
+    { id: 'pr-c4-1butanol',  kind: 'products', carbons: 4, target: '1-ブタノール' },
+    { id: 'pr-c4-2butanol',  kind: 'products', carbons: 4, target: '2-ブタノール' },   // ★ ザイツェフ則が効く回
+    { id: 'pr-c4-2me1prol',  kind: 'products', carbons: 4, target: '2-メチル-1-プロパノール' },
+    { id: 'pr-c4-2me2prol',  kind: 'products', carbons: 4, target: '2-メチル-2-プロパノール' },
+    { id: 'pr-c5-1pentol',   kind: 'products', carbons: 5, target: '1-ペンタノール' },
+    { id: 'pr-c5-2pentol',   kind: 'products', carbons: 5, target: '2-ペンタノール' },  // ★ ザイツェフ則が効く回
+    { id: 'pr-c5-3pentol',   kind: 'products', carbons: 5, target: '3-ペンタノール' },
+    { id: 'pr-c5-2me1buol',  kind: 'products', carbons: 5, target: '2-メチル-1-ブタノール' },
+    { id: 'pr-c5-2me2buol',  kind: 'products', carbons: 5, target: '2-メチル-2-ブタノール' }, // ★ ザイツェフ則が効く回
+    { id: 'pr-c5-3me1buol',  kind: 'products', carbons: 5, target: '3-メチル-1-ブタノール' },
+    { id: 'pr-c5-3me2buol',  kind: 'products', carbons: 5, target: '3-メチル-2-ブタノール' }  // ★ ザイツェフ則が効く回
 ];
 
 /**
@@ -818,9 +891,22 @@ function ipSolveCondition(pre) {
     if (ask.overflow || src.overflow) return null;
     const target = src.isomers.find(m => iupacName(m) === pre.target);
     if (!target) return null;
-    const tc = canonicalCode(target);
-    const edges = pre.kind === 'dehydration' ? ipDehydrationEdges : ipHydrationEdges;
-    const answers = ask.isomers.filter(m => edges(m).some(e => e.code === tc));
+    /**
+     * ★ 辺をどちら向きに渡るかは**型が名乗る**（`from`）。⚠ 型が3つになったので、
+     *   ここに `kind === 'dehydration' ? …` の三項を残すと、新しい型が黙って片方へ落ちる。
+     */
+    let answers;
+    if (kind.from === 'target') {
+        // 相手が**出発物**（順方向）＝ 相手の辺を1回だけ数え、その先を答えにする
+        const codes = new Set(kind.edges(target).map(e => e.code));
+        answers = ask.isomers.filter(m => codes.has(canonicalCode(m)));
+    } else {
+        // 相手が**生成物**（逆方向）＝ 候補ごとに辺を数え、相手に届くものを答えにする
+        const tc = canonicalCode(target);
+        answers = ask.isomers.filter(m => kind.edges(m).some(e => e.code === tc));
+    }
+    // ⚠ **「答えが0個」はここで断る**（開かない）。器が満点・立体の段2・クリア記録を
+    //   1件以上あることを前提に組んでいるため（§22-3。脱水できない2件がここで落ちる）
     if (!answers.length) return null;
     return { answers, target, formula: ipFormulaLabel(af.heavy, af.h) };
 }
@@ -1908,7 +1994,10 @@ class IsomerPractice {
                 btn.dataset.ipCond = String(i);
                 btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
                     (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
-                btn.textContent = `${k.tag} → ${pre.target}${cleared ? ' ✓' : ''}`;
+                // ★ 表記は**型が決める**（`label`）—— 逆方向は「脱水 → 2-ブテン」（相手が生成物）、
+                //   順方向は「2-ブタノール を脱水」（相手が出発物）。⚠ ここで `→` を組み立てると
+                //   矢印の向きが型と食い違う（`DH1` が両方の表記を名指しで見張る）
+                btn.textContent = `${k.label(pre.target)}${cleared ? ' ✓' : ''}`;
                 btn.title = sc.tip + '（立体異性体の有無まで答えます）';
                 btn.addEventListener('click', () => this.startFromCondPreset(i));
                 cdGrid.appendChild(btn);
