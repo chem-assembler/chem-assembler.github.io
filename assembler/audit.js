@@ -512,7 +512,9 @@
             // 異性体列挙の不変条件（P9-3）: その化合物自身が必ず列挙結果に含まれること
             const heavy = entry.mol.atoms.filter(a => a.element !== 'H');
             // 重原子5個までに限定する（6個以上は不飽和な分子式で探索が重く、監査が長時間止まるため）
-            if (heavy.length >= 2 && heavy.length <= 5) {
+            // ★ 電荷を持つエントリは飛ばす（D-I13）。列挙器は電荷を知らず連結グラフしか作らないので、
+            //   対イオンの粒を持つ塩は「自分自身が含まれない」で必ず赤になる（設計書 §3-2 の実測）
+            if (heavy.length >= 2 && heavy.length <= 5 && !heavy.some(a => a.charge)) {
                 const isoIssues = [];
                 try {
                     const hCount = heavy.reduce((s, a) => s + entry.mol.getFreeValency(a.id), 0);

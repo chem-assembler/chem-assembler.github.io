@@ -50873,6 +50873,82 @@
         return 'ammonium / carboxylate_ion / diazonium が立ち、amine_hcl は塩に二度かからず、CH₃O⁻ は命名しない';
     });
 
+    // アニリン塩酸塩の target（データの形。x,y はベンゼン環＋N⁺＋Cl⁻ の粒）
+    const ionAnilineHClTarget = (dx = 0) => ({
+        atoms: [
+            { element: 'C', x: 440 + dx, y: 300 }, { element: 'C', x: 420 + dx, y: 334.64 },
+            { element: 'C', x: 380 + dx, y: 334.64 }, { element: 'C', x: 360 + dx, y: 300 },
+            { element: 'C', x: 380 + dx, y: 265.36 }, { element: 'C', x: 420 + dx, y: 265.36 },
+            { element: 'N', x: 482 + dx, y: 300, charge: 1 }, { element: 'Cl', x: 566 + dx, y: 300, charge: -1 }
+        ],
+        bonds: [
+            { atom1Index: 0, atom2Index: 1, type: 2 }, { atom1Index: 1, atom2Index: 2, type: 1 },
+            { atom1Index: 2, atom2Index: 3, type: 2 }, { atom1Index: 3, atom2Index: 4, type: 1 },
+            { atom1Index: 4, atom2Index: 5, type: 2 }, { atom1Index: 5, atom2Index: 0, type: 1 },
+            { atom1Index: 0, atom2Index: 6, type: 1 }
+        ]
+    });
+
+    test('ION4: 電荷は写し・描画・Undo を通り抜け、対イオンの粒は相方の成分に付く（見出しは塩で1つ）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        g.setMode('free');
+        // (1) データ → Molecule（createTargetFromData）が電荷を写す
+        const mol = g.createTargetFromData({ target: ionAnilineHClTarget() });
+        const nAtom = mol.atoms.find(a => a.element === 'N'), clAtom = mol.atoms.find(a => a.element === 'Cl');
+        assert(nAtom.charge === 1 && clAtom.charge === -1, '★ createTargetFromData が電荷を落とした');
+        assert(g.computeMolecularFormula(mol) === 'C₆H₈ClN', `分子式が ${g.computeMolecularFormula(mol)}`);
+        // (2) 描画: 形式電荷が + と − で1つずつ出る（機構ビューアと同じ `.svg-charge`）
+        g.userMolecule = mol;
+        g.updateDrawing();
+        const marks = [...D.querySelectorAll('#chem-svg .svg-charge')].map(t => t.textContent).sort();
+        assert(marks.join(',') === '+,−', `★ 電荷の印が ${JSON.stringify(marks)}（+ と − が1つずつのはず）`);
+        // 自動水素: N⁺ に 3 個・Cl⁻ に 0 個（画面の H の丸で数える）
+        const hs = mol.calculateHydrogens();
+        assert(hs.filter(h => h.parentId === nAtom.id).length === 3, '-NH₃⁺ の H が3個描かれない');
+        assert(hs.filter(h => h.parentId === clAtom.id).length === 0, '★ Cl⁻ の粒に H が描かれた（HCl の図）');
+        // (3) ★ 見せ方の単位: 粒は相方に付き、塩は成分1つ。見出しも1つ・Cl の見出しは出ない
+        const parts = g.splitMolecules();
+        assert(parts.length === 1 && parts[0].atoms.length === 8, `★ 塩が ${parts.length} 成分に割れている（粒が相方に付いていない）`);
+        assert(g.countMolecules() === 1, `countMolecules が ${g.countMolecules()}（塩は1つの物質）`);
+        const { marks: mk2 } = g.markedMolecules(null);
+        assert(mk2.size === 0, '塩1つなのに ①② の番号が振られた');
+        assert(g.captionForPart(parts[0], null) === '🔍 C₆H₈ClN', `見出しが ${g.captionForPart(parts[0], null)}（登録前は分子式 C₆H₈ClN のはず。C₆H₈N と Cl に割れてはいけない）`);
+        // (4) 同じ塩が2つ: それぞれの Cl⁻ が**いちばん近い**相方に付く（横取りしない）
+        const second = g.createTargetFromData({ target: ionAnilineHClTarget(300) });
+        second.atoms.forEach(a => g.userMolecule.atoms.push(a));
+        second.bonds.forEach(b => g.userMolecule.bonds.push(b));
+        const parts2 = g.splitMolecules();
+        assert(parts2.length === 2 && parts2.every(p => p.atoms.length === 8), `2つの塩が ${parts2.map(p => p.atoms.length).join('+')} に割れた`);
+        parts2.forEach(p => {
+            const n = p.atoms.find(a => a.element === 'N'), cl = p.atoms.find(a => a.element === 'Cl');
+            assert(Math.abs(cl.x - n.x) < 100, '★ Cl⁻ が遠いほうの塩に付いた（いちばん近い相方でない）');
+        });
+        // (5) ★ 否定対照: 電荷の無い Cl 原子（結合ゼロ）は今までどおり別の成分・相方の無い Cl⁻ も別の成分
+        g.userMolecule = g.createTargetFromData({ target: ionAnilineHClTarget() });
+        g.userMolecule.atoms.find(a => a.element === 'Cl').charge = 0;
+        assert(g.splitMolecules().length === 2, '★ 電荷の無い Cl 原子まで相方に付けた（粒の判定に電荷を見ていない）');
+        g.userMolecule = g.createTargetFromData({ target: ionAnilineHClTarget() });
+        g.userMolecule.atoms.find(a => a.element === 'N').charge = 0;
+        assert(g.splitMolecules().length === 2, '★ 逆符号の相方が居ないのに Cl⁻ を付けた');
+        // (6) Undo / Redo（serializeState → restoreState）を通っても電荷が残る
+        g.userMolecule = g.createTargetFromData({ target: ionAnilineHClTarget() });
+        g.updateDrawing();
+        g.saveState();
+        g.userMolecule.addAtom('C', 100, 100);
+        g.updateDrawing();
+        g.undo();
+        assert(g.userMolecule.atoms.find(a => a.element === 'N').charge === 1 &&
+            g.userMolecule.atoms.find(a => a.element === 'Cl').charge === -1, '★ Undo で電荷が消えた');
+        assert(D.querySelectorAll('#chem-svg .svg-charge').length === 2, 'Undo 後に電荷の印が描き直されない');
+        // (7) 配置の試算（moleculeWithCandidate）も電荷を写す ＝ 置く前の H の数が本物と同じ
+        const sim = W.moleculeWithCandidate(g.userMolecule, null, { x: 100, y: 100 }, 'C', null);
+        const simN = sim.atoms.find(a => a.element === 'N'), simCl = sim.atoms.find(a => a.element === 'Cl');
+        assert(sim.getFreeValency(simN.id) === 3 && sim.getFreeValency(simCl.id) === 0, '★ 配置の試算が電荷を落とした（Cl⁻ に H が生える）');
+        c.reset();
+        return '写し4経路・描画・Undo・粒の付け方（近いほう）と否定対照2つ';
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して

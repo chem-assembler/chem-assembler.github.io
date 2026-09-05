@@ -351,6 +351,8 @@ function moleculeWithCandidate(mol, parent, pt, element, adj) {
         const na = new Atom(a.id, a.element, a.x + dx, a.y + dy, a.isLocked);
         // ベンゼン印は価標（芳香環の交互二重結合）の読みに効くので写す
         if (a.benzeneAngle !== undefined) na.benzeneAngle = a.benzeneAngle;
+        // 電荷は自動水素の数に効く（-NH₃⁺ の H は3つ・Cl⁻ の粒は0）ので写す（I-3）
+        copyAtomMarks(na, a);
         sim.atoms.push(na);
     });
     mol.bonds.forEach(b => sim.bonds.push(new Bond(b.atomId1, b.atomId2, b.type)));
@@ -1495,11 +1497,9 @@ class Game {
         const addedAtoms = [];
         stage.target.atoms.forEach(atomData => {
             const a = m.addAtom(atomData.element, atomData.x, atomData.y);
-            // ハース面マーク（環の α/β）はデータに直接持つので復元する（P12-7 M2b）。
-            // 面は座標に現れないため haworthFace の値そのものを読む。
-            if (atomData.haworthFace === 1 || atomData.haworthFace === -1) {
-                a.haworthFace = atomData.haworthFace;
-            }
+            // ハース面マーク（環の α/β・P12-7 M2b）と電荷（I-3）はデータに直接持つので復元する。
+            // どちらも座標に現れない印。⚠ 印の一覧は `copyAtomMarks`（chemistry.js）1か所
+            copyAtomMarks(a, atomData);
             addedAtoms.push(a);
         });
         
@@ -2493,26 +2493,11 @@ class Game {
         this.updateDrawing();
     }
 
-    // 分子（連結成分）の個数を数える
+    // 分子の個数を数える。⚠ 数え方は `splitMolecules()` に任せる（I-3）——
+    // 対イオンの粒を相方に付ける規則（`attachCounterIons`）を2か所に書かない。
+    // 電荷の無い分子では連結成分の数そのもの（以前の BFS と同じ値）
     countMolecules() {
-        const seen = new Set();
-        let count = 0;
-        this.userMolecule.atoms.forEach(a => {
-            if (seen.has(a.id)) return;
-            count++;
-            const stack = [a.id];
-            seen.add(a.id);
-            while (stack.length) {
-                const id = stack.pop();
-                this.userMolecule.getNeighbors(id).forEach(n => {
-                    if (!seen.has(n.atom.id)) {
-                        seen.add(n.atom.id);
-                        stack.push(n.atom.id);
-                    }
-                });
-            }
-        });
-        return count;
+        return this.splitMolecules().length;
     }
 
     // 原子を削除し、分子が複数に分かれた場合は案内トーストを出す（P7-10）。
@@ -4003,7 +3988,45 @@ class Game {
                 });
             parts.push(part);
         }
-        return parts;
+        return this.attachCounterIons(parts);
+    }
+
+    /**
+     * ★ 対イオンの粒（結合ゼロで電荷を持つ Cl⁻・Na⁺ など。I-3・D-I5）を、**相方の成分に付けて1つの成分にする**。
+     *
+     * 塩は「陽イオン＋陰イオン」で1つの物質なので、見出し・名前引き・分子式・成分の数は
+     * 塩ごとに1つでなければならない。連結成分のままだと、アニリン塩酸塩は
+     * 「C₆H₈N（名前なし）」と「Cl（見出しなし）」に割れ、登録した名前が画面に一度も出ない
+     * （実測: `lookupCompoundName` は正準コードで引くので、粒を含めた分子でしか当たらない）。
+     *
+     * 付け方: 粒ごとに、**正味の電荷が逆符号で残っている**成分のうち**いちばん近いもの**へ入れる
+     * （同じ塩が2つ並んでいても、それぞれの Cl⁻ が自分の相方に付く）。相方が無い粒はそのまま残す。
+     * ⚠ 電荷の無い分子には触らない（粒の判定に電荷が要る）＝ 登録済み 1,150 件の成分の数は不変。
+     * ⚠ ここは**見せ方の単位**を決めるだけ。`chemistry.js` の連結成分（`componentOf` など）は変えない
+     */
+    attachCounterIons(parts) {
+        const isParticle = (p) => p.atoms.length === 1 && p.atoms[0].charge &&
+            MONATOMIC_ION_ELEMENTS.includes(p.atoms[0].element);
+        const particles = parts.filter(isParticle);
+        if (!particles.length) return parts;
+        const hosts = parts.filter(p => !isParticle(p));
+        const net = new Map(hosts.map(p => [p, p.atoms.reduce((s, a) => s + (a.charge || 0), 0)]));
+        const out = new Set(hosts);
+        particles.forEach(p => {
+            const ion = p.atoms[0];
+            let best = null, bestD = Infinity;
+            hosts.forEach(h => {
+                const q = net.get(h);
+                if (!q || Math.sign(q) === Math.sign(ion.charge)) return;
+                const d = Math.min(...h.atoms.map(a => Math.hypot(a.x - ion.x, a.y - ion.y)));
+                if (d < bestD) { bestD = d; best = h; }
+            });
+            if (!best) { out.add(p); return; }
+            best.atoms.push(ion);
+            net.set(best, net.get(best) + ion.charge);
+        });
+        // 元の並び（見つけた順）を保つ ＝ ①②の番号が粒の有無で入れ替わらない
+        return parts.filter(p => out.has(p));
     }
 
     /**
@@ -6001,6 +6024,8 @@ class Game {
         this.userMolecule.atoms.forEach(atom => {
             if (hidden.has(atom.id)) return;
             this.renderAtom(atom.id, atom.element, atom.x, atom.y, atom.isLocked, atom.isAsymmetricMarked, atom.haworthFace);
+            // 形式電荷（I-3）。機構ビューア（reaction.js）と同じ描き方 ＝ 描くのはここ1か所
+            if (atom.charge) this.renderCharge(atom);
         });
 
         // 4.5 縮約カードの描画（P9-2）
@@ -8216,6 +8241,7 @@ class Game {
         const mol = new Molecule();
         src.atoms.forEach(a => {
             const na = mol.addAtom(a.element, a.x, a.y);
+            copyAtomMarks(na, a);   // 面マークと電荷（I-3）を落とさない
             idMap.set(a.id, na.id);
         });
         src.bonds.forEach(b => mol.addBond(idMap.get(b.atomId1), idMap.get(b.atomId2), b.type));
@@ -8292,6 +8318,26 @@ class Game {
         // 出せたかどうかを返す（横断の帯が「まだ収録されていません」と正直に言うために要る・QB）。
         // ⚠ 既存の呼び出し元（🔤 呼出モーダル・作業帯の入力欄）は戻り値を見ていない ＝ 無害
         return true;
+    }
+
+    /**
+     * 形式電荷 (+/−) を原子ラベルの右上に描く。
+     * ★ もとは反応機構ビューア（reaction.js）にあったものを I-3 でここへ移した ——
+     *   作図キャンバスの分子も電荷を持つようになったので、描くのは1か所にする
+     *   （機構ビューアは `this.game.renderCharge` を呼ぶ）。
+     * 引数は `{x, y, charge}` を持つもの（原子でも、機構の座標だけの点でもよい）。
+     * 2価以上は `2+` のように数を添える。
+     */
+    renderCharge(atom) {
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', atom.x + 9);
+        text.setAttribute('y', atom.y - 5);
+        text.setAttribute('class', 'svg-charge');
+        text.setAttribute('data-charge', String(atom.charge));
+        text.style.fontSize = '11px';
+        const n = Math.abs(atom.charge);
+        text.textContent = (n > 1 ? String(n) : '') + (atom.charge > 0 ? '+' : '−');
+        this.atomsGroup.appendChild(text);
     }
 
     renderAtom(id, element, x, y, isLocked, isAsymmetricMarked = false, haworthFace = null) {
