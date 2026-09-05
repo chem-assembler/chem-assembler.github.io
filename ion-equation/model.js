@@ -170,6 +170,33 @@ const SPECIES = {
   "C":             { disp: "C",              name: "炭素原子",                         atoms: { C: 1 }, charge: 0 },
   "N":             { disp: "N",              name: "窒素原子",                         atoms: { N: 1 }, charge: 0 },
   "Cl":            { disp: "Cl",             name: "塩素原子",                         atoms: { Cl: 1 }, charge: 0 },
+  /* ---- 有機の酸・塩基（参照エントリ用。房・アニメは未実装）----
+     一問一答（/qa/）の4項目が「この物質が ion-equation に収録されること」を待っていた。
+     どれも「電荷を持つ有機の種と、その対イオン」が要るので、分子の骨格を描く道具
+     （assembler）ではなく反応式の側で見せる、と 2026-09-01 に行き先が決まった。
+
+     ⚠ ここは**結合の種類を持たない**。ジアゾニウムの N≡N⁺ も、原子の内訳（C6H5N2）と
+     電荷（+1）だけで書ける ＝ 三重結合のために新しい仕組みは要らなかった。 */
+  "C6H5NH2":       { disp: "C₆H₅NH₂",        name: "アニリン（弱塩基）",               atoms: { C: 6, H: 7, N: 1 }, charge: 0 },
+  "C6H5NH3+":      { disp: "C₆H₅NH₃⁺",       name: "アニリニウムイオン",               atoms: { C: 6, H: 8, N: 1 }, charge: 1 },
+  "C6H5NH3Cl":     { disp: "C₆H₅NH₃Cl",      name: "アニリン塩酸塩（塩化アニリニウム）", atoms: { C: 6, H: 8, N: 1, Cl: 1 }, charge: 0 },
+  "C6H5N2Cl":      { disp: "C₆H₅N₂Cl",       name: "塩化ベンゼンジアゾニウム",         atoms: { C: 6, H: 5, N: 2, Cl: 1 }, charge: 0 },
+  "C6H5N2+":       { disp: "C₆H₅N₂⁺",        name: "ベンゼンジアゾニウムイオン",       atoms: { C: 6, H: 5, N: 2 }, charge: 1 },
+  "C6H5OH":        { disp: "C₆H₅OH",         name: "フェノール（弱酸）",               atoms: { C: 6, H: 6, O: 1 }, charge: 0 },
+  /* アミノ酸（グリシン）。同じ分子が ＋ と − を両方もつ双性イオンは、
+     **電荷 0 の種**として持てる（正負が打ち消し合った合計が 0）。
+     どこに ＋ と − があるかは disp が示す ＝ 新しい仕組みは要らなかった。 */
+  "GlyH+":         { disp: "HOOCCH₂NH₃⁺",    name: "グリシンの陽イオン（強い酸性のとき）", atoms: { C: 2, H: 6, N: 1, O: 2 }, charge: 1 },
+  "Gly":           { disp: "⁻OOCCH₂NH₃⁺",    name: "グリシン（双性イオン）",           atoms: { C: 2, H: 5, N: 1, O: 2 }, charge: 0 },
+  "Gly-":          { disp: "⁻OOCCH₂NH₂",     name: "グリシンの陰イオン（強い塩基性のとき）", atoms: { C: 2, H: 4, N: 1, O: 2 }, charge: -1 },
+  "GlyHCl":        { disp: "HOOCCH₂NH₃Cl",   name: "グリシン塩酸塩",                   atoms: { C: 2, H: 6, N: 1, O: 2, Cl: 1 }, charge: 0 },
+  "GlyNa":         { disp: "NaOOCCH₂NH₂",    name: "グリシンナトリウム",               atoms: { C: 2, H: 4, N: 1, O: 2, Na: 1 }, charge: 0 },
+  /* 酸性アミノ酸（グルタミン酸）。側鎖にもカルボキシ基があるので段が1つ増える。
+     手放す順は α位のカルボキシ基 → 側鎖のカルボキシ基 → アンモニウム基 */
+  "Glu+":          { disp: "HOOCCH(NH₃⁺)CH₂CH₂COOH", name: "グルタミン酸の陽イオン",   atoms: { C: 5, H: 10, N: 1, O: 4 }, charge: 1 },
+  "Glu":           { disp: "⁻OOCCH(NH₃⁺)CH₂CH₂COOH", name: "グルタミン酸（双性イオン）", atoms: { C: 5, H: 9, N: 1, O: 4 }, charge: 0 },
+  "Glu-":          { disp: "⁻OOCCH(NH₃⁺)CH₂CH₂COO⁻", name: "グルタミン酸の1価の陰イオン", atoms: { C: 5, H: 8, N: 1, O: 4 }, charge: -1 },
+  "Glu^2-":        { disp: "⁻OOCCH(NH₂)CH₂CH₂COO⁻",  name: "グルタミン酸の2価の陰イオン", atoms: { C: 5, H: 7, N: 1, O: 4 }, charge: -2 },
 };
 
 /* C群（分子の組み換え）の分解表。イオンではなく**原子**にばらける。
@@ -370,6 +397,12 @@ const DISSOCIATION = {
   // 弱塩基の塩も強電解質
   "NH4Cl":      ["NH4+", "Cl-"],
   "(NH4)2SO4":  ["NH4+", "NH4+", "SO4^2-"],
+  /* 有機の酸・塩基の塩。アニリン塩酸塩は NH₄Cl と同じ形（弱塩基が H⁺ を受け取った陽イオン
+     ＋ 対イオン）、アミノ酸の塩酸塩・ナトリウム塩も同じく強電解質として完全に電離する。 */
+  "C6H5NH3Cl":  ["C6H5NH3+", "Cl-"],
+  "C6H5N2Cl":   ["C6H5N2+", "Cl-"],
+  "GlyHCl":     ["GlyH+", "Cl-"],
+  "GlyNa":      ["Na+", "Gly-"],
   // ↑は電離表。数合わせビューでは NH₄Cl と同じく「NH₃ が H⁺ を受け取った姿」まで開く（下の PARTS）
 };
 
