@@ -1755,6 +1755,11 @@
                      ⚠ 押すとこの画面は閉じる（上の捕獲フェーズの一括処理）。まとめた結果は
                         キャンバスの上に出るので、閉じるのが正しい振る舞い -->
                 <button id="btn-condense" class="view-btn" style="font-size:12px; padding:6px 8px;" title="-COOH・-COO-（エステル）・-NO₂ などの官能基を、1つのカードにまとめて表示します（作図データは変わりません）">🔤 官能基をまとめる</button>
+                <!-- ⇄ 双性イオン形（DESIGN_ion_layer.md I-3・D-I7）。アミノ酸（塩基性の N と -COOH を持つ分子）にだけ出す。
+                     ★ 登録はしない（登録すると名前引きが「グリシン」と「グリシン（双性イオン）」に割れる）＝ 表示の切り替え。
+                     ⚠ 電荷を手で描く経路ではない（D-I14。どの N と O に置くかは機械が決める）。
+                     押すとこの画面は閉じる（上の捕獲フェーズの一括処理。結果はキャンバスの上に出る） -->
+                <button id="mm-btn-zwitterion" class="view-btn hidden" style="font-size:12px; padding:6px 8px;" title="アミノ酸の -COOH の H⁺ が -NH₂ に移った形（-COO⁻ と -NH₃⁺）で描き直します。もう一度押すと中性形に戻ります">⇄ 双性イオン形で見る</button>
                 <!-- R/S の受け皿（DESIGN_molecule_modal.md §6-3・第4段）。
                      別レーンの結論は **v570 で決着済み** ——「立体ビューの中心炭素ラベルの直下に出す」
                      （DESIGN_rs_descriptor.md §8）。したがってここは**1行の案内文**にする。

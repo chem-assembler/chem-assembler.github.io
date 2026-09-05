@@ -51011,6 +51011,63 @@
         return `${NAME}（${entry.id}）: 名前引き・見出し・分子式 C₆H₈ClN・印 +/−・変形5回で不変`;
     });
 
+    test('ION6: 双性イオン形は登録ではなく表示の切り替え（アミノ酸にだけ出る・名前は「（双性イオン形）」・Undo で戻る）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        g.setMode('free');
+        const btn = D.getElementById('mm-btn-zwitterion');
+        assert(btn, '#mm-btn-zwitterion が無い');
+        // ★ 否定対照: アミノ酸でないものにはボタンが出ない（塩基性の N と -COOH の両方が要る）
+        [['エタノール', 'どちらも無い'], ['酢酸', '-COOH だけ'], ['アニリン', 'アミンだけ'],
+         ['アセトアミド', 'アミドの N は塩基でない'], ['アニリン塩酸塩', '塩（粒を持つ）には出さない']
+        ].forEach(([name, why]) => {
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule(name);
+            g.openMoleculeModal();
+            assert(btn.classList.contains('hidden'), `★ ${name} に双性イオンのボタンが出た（${why}）`);
+            g.closeMoleculeModal();
+        });
+        // グリシン: 出る → 押す → N⁺ と O⁻、名前は「グリシン（双性イオン形）」、分子式は同じ
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('グリシン');
+        const neutralCode = W.canonicalCode(g.userMolecule);
+        g.openMoleculeModal();
+        assert(!btn.classList.contains('hidden'), 'グリシンに双性イオンのボタンが出ない');
+        assert(btn.textContent === '⇄ 双性イオン形で見る', `文言が「${btn.textContent}」`);
+        btn.click();   // 捕獲フェーズがモーダルを閉じ、トグルが図を書き換える
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'), '押したのにモーダルが閉じない');
+        const um = g.userMolecule;
+        const n = um.atoms.find(a => a.element === 'N');
+        const oMinus = um.atoms.filter(a => a.element === 'O' && a.charge === -1);
+        assert(n.charge === 1 && oMinus.length === 1, `★ 電荷が置かれていない（N ${n.charge} / O⁻ ${oMinus.length} 個）`);
+        assert(um.getFreeValency(n.id) === 3 && um.getFreeValency(oMinus[0].id) === 0, '-NH₃⁺ に H 3・-COO⁻ に H 0 でない');
+        assert(g.computeMolecularFormula(um) === 'C₂H₅NO₂', `分子式が ${g.computeMolecularFormula(um)}（中性形と同じ C₂H₅NO₂ のはず）`);
+        assert(W.canonicalCode(um) !== neutralCode, '正準コードが中性形のまま');
+        assert(g.lookupCompoundName(um) === 'グリシン（双性イオン形）', `名前が「${g.lookupCompoundName(um)}」`);
+        assert(g.computeCompoundLabel().name === 'グリシン（双性イオン形）', '右パネルの名前が違う');
+        const marks = [...D.querySelectorAll('#chem-svg .svg-charge')].map(t => t.textContent).sort().join(',');
+        assert(marks === '+,−', `電荷の印が ${marks}`);
+        // ★ 登録していないことの確認: ライブラリに双性イオンのコードは無い（D-I7）
+        assert(!g._compoundCodeMap.get(W.canonicalCode(um)), '★ 双性イオンがライブラリに登録されている（D-I7 は表示の切り替え）');
+        // 戻す: 文言が変わり、押すと中性形（名前も「グリシン」に戻る）
+        g.openMoleculeModal();
+        assert(btn.textContent === '⇄ 中性形に戻す', `戻す向きの文言が「${btn.textContent}」`);
+        btn.click();
+        assert(!um.atoms.some(a => a.charge), '中性形に戻っていない');
+        assert(g.lookupCompoundName(g.userMolecule) === 'グリシン', `戻したのに名前が「${g.lookupCompoundName(g.userMolecule)}」`);
+        // Undo で双性イオン形に戻る（電荷は履歴を通る）
+        g.undo();
+        assert(g.userMolecule.atoms.find(a => a.element === 'N').charge === 1, 'Undo で双性イオン形に戻らない');
+        // アラニン（不斉炭素あり）でも名前が引ける
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('アラニン');
+        g.openMoleculeModal();
+        btn.click();
+        assert(/^アラニン.*（双性イオン形）$/.test(g.lookupCompoundName(g.userMolecule) || ''), `アラニンの双性イオン形の名前が「${g.lookupCompoundName(g.userMolecule)}」`);
+        c.reset();
+        return 'グリシン・アラニンで ⇄ が効き、5種の否定対照でボタンが出ない';
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して

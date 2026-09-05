@@ -4072,6 +4072,8 @@ class Game {
     lookupCompoundName(mol, opt) {
         this.getCompoundLibrary(); // コードMapの構築を保証
         const candidates = this._compoundCodeMap.get(canonicalCode(mol)) || [];
+        // ★ 双性イオン形は登録しない（D-I7）ので、当たらないときは電荷を外して引き直し「（双性イオン形）」を添える
+        if (!candidates.length && mol.atoms.some(a => a.charge)) return this.zwitterionName(mol, opt);
         const noStereo = !!(opt && opt.noStereo);
         //
         // ===== 立体を名前に出すかどうかは、**二段**で決める =====
@@ -8921,6 +8923,73 @@ class Game {
         if (modal) modal.classList.add('hidden');
     }
 
+    /* ===== ⇄ 双性イオン形（DESIGN_ion_layer.md I-3・D-I7） =====
+     *
+     * ★ **登録ではなく表示の切り替え。** 双性イオンを別エントリにすると、名前引きが
+     *   「グリシン」と「グリシン（双性イオン）」に割れ、クイズの土俵に同じ物質が2つ出る（D-I7）。
+     *   ＝ アミノ酸の図そのものに電荷を置き、名前は中性形の名前に「（双性イオン形）」を添えて引く
+     *   （`lookupCompoundName` の折り返し）。
+     * ⚠ **電荷を手で描く経路ではない**（D-I14）。どの N と O に置くかは機械が決める
+     *   （最初の塩基性アミンの N と最初の -COOH の単結合 O）。
+     * ⚠ 動かすのは電荷だけ。原子も結合も座標も1つも変えない ＝ 分子式は中性形と同じ（正しい）。
+     */
+
+    /** その成分を双性イオン形にできるか／中性形に戻せるか。できないなら null */
+    zwitterionPlan(part) {
+        if (!part || !part.atoms) return null;
+        const groups = findFunctionalGroups(part);
+        // 戻す向き: N⁺ と -COO⁻ を持ち、対イオンの粒は持たない（塩ではなく双性イオン）
+        const nPlus = groups.find(g => g.type === 'ammonium');
+        const cooMinus = groups.find(g => g.type === 'carboxylate_ion');
+        const particle = part.atoms.some(a => a.charge && MONATOMIC_ION_ELEMENTS.includes(a.element));
+        if (nPlus && cooMinus && !particle) return { to: 'neutral', nId: nPlus.atomIds[0], oId: cooMinus.atomIds[2] };
+        if (part.atoms.some(a => a.charge)) return null;   // 他の電荷を持つ図には触らない
+        // 進む向き: 塩基性のアミン（アミドの N は `findFunctionalGroups` が既に除いている）と -COOH
+        const amine = groups.find(g => ['amine1', 'amine2', 'amine3'].includes(g.type));
+        const cooh = groups.find(g => g.type === 'carboxyl');
+        if (amine && cooh) return { to: 'zwitterion', nId: amine.atomIds[0], oId: cooh.atomIds[2] };
+        return null;
+    }
+
+    /** モーダルで見ている分子を双性イオン形 ⇄ 中性形に切り替える（Undo で戻せる） */
+    toggleZwitterion() {
+        const part = this.moleculeModalPart();
+        const plan = this.zwitterionPlan(part);
+        if (!plan) return false;
+        const n = this.userMolecule.atoms.find(a => a.id === plan.nId);
+        const o = this.userMolecule.atoms.find(a => a.id === plan.oId);
+        if (!n || !o) return false;
+        this.saveState();
+        if (plan.to === 'zwitterion') { n.charge = 1; o.charge = -1; }
+        else { delete n.charge; delete o.charge; }
+        this.updateDrawing();
+        this.showToast(plan.to === 'zwitterion'
+            ? '-COOH の H⁺ が -NH₂ に移った双性イオン形で描きました（分子式は同じです）。'
+            : '中性形に戻しました。', 2500, 'success');
+        return true;
+    }
+
+    /**
+     * 双性イオン形の名前（`lookupCompoundName` の折り返し）。
+     * 電荷を外した写しで引き、当たれば「（双性イオン形）」を添える。当たらなければ null
+     */
+    zwitterionName(mol, opt) {
+        const plan = this.zwitterionPlan(mol);
+        if (!plan || plan.to !== 'neutral') return null;
+        const copy = new Molecule();
+        const map = new Map();
+        mol.atoms.forEach(a => {
+            const na = copyAtomMarks(new Atom(a.id, a.element, a.x, a.y, a.isLocked), a);
+            delete na.charge;
+            if (a.benzeneAngle !== undefined) na.benzeneAngle = a.benzeneAngle;
+            copy.atoms.push(na);
+            map.set(a.id, na.id);
+        });
+        mol.bonds.forEach(b => copy.bonds.push(copyBondExtras(new Bond(b.atomId1, b.atomId2, b.type), b)));
+        const base = this.lookupCompoundName(copy, opt);
+        return base ? `${base}（双性イオン形）` : null;
+    }
+
     /* ===== 実験モード（DESIGN_experiment_mode.md 第1段の「器」・D-E1「覆す」） =====
      *
      * ★ **芯はユーザー原文の最後の1行**:「可能な反応は必要な知識を調べる、
@@ -9413,6 +9482,13 @@ class Game {
         const tabsEl = document.getElementById('mm-tabs');
         // 🔢 のボタンは「いま出ているか」で文言が変わる（入口は2つ・状態は1つ）
         this.syncIupacNumberingButtons();
+        // ⇄ 双性イオン形（I-3・D-I7）: アミノ酸（塩基性の N ＋ -COOH）にだけ出し、向きで文言を変える
+        const zwBtn = document.getElementById('mm-btn-zwitterion');
+        if (zwBtn) {
+            const plan = this.zwitterionPlan(part);
+            zwBtn.classList.toggle('hidden', !plan);
+            if (plan) zwBtn.textContent = plan.to === 'neutral' ? '⇄ 中性形に戻す' : '⇄ 双性イオン形で見る';
+        }
         if (nameEl) nameEl.textContent = this.lookupCompoundName(part) || '（ライブラリに該当なし）';
         if (formulaEl) formulaEl.textContent = this.computeMolecularFormula(part);
         if (!tabsEl) return;
@@ -9845,6 +9921,9 @@ class Game {
             //    名指ししているので、そこから押した回だけは**押しが「選ぶ」を兼ねる**
             if (b) b.addEventListener('click', () => this.toggleIupacNumbering(id === 'mm-btn-iupac-numbering'));
         });
+        // ⇄ 双性イオン形（I-3・D-I7）。モーダルの一括処理が画面を閉じるので、ここは切り替えるだけ
+        const zwBtn = document.getElementById('mm-btn-zwitterion');
+        if (zwBtn) zwBtn.addEventListener('click', () => this.toggleZwitterion());
         // ⇅ 上下に裏返す（帯の札。DESIGN_sugar.md §1-2b 帰結3）。
         // ⚠ 入口は帯の1つだけ ＝ モーダルには置かない（§6-2a の実測で下は画面の外）
         const flipBtn = document.getElementById('btn-flip-updown');
