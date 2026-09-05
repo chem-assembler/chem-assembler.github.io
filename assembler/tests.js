@@ -17874,7 +17874,9 @@
             const heavy = m.atoms.filter(a => a.element !== 'H');
             const out = new W.Molecule();
             const map = new Map();
-            order.forEach(i => map.set(heavy[i].id, out.addAtom(heavy[i].element, heavy[i].x, heavy[i].y).id));
+            // 電荷（I-3）も写す。落とすとアニリン塩酸塩の N⁺ が N になり、WL の順位（ラベルに電荷を持つ）が
+            // 変わって同点の鎖の選び方まで変わる ＝ 「作成順で変わった」のではなく「別の分子と比べた」ことになる
+            order.forEach(i => map.set(heavy[i].id, W.copyAtomMarks(out.addAtom(heavy[i].element, heavy[i].x, heavy[i].y), heavy[i]).id));
             m.bonds.forEach(b => {
                 if (map.has(b.atomId1) && map.has(b.atomId2)) out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
             });
@@ -51063,7 +51065,9 @@
         g.summonMolecule('アラニン');
         g.openMoleculeModal();
         btn.click();
-        assert(/^アラニン.*（双性イオン形）$/.test(g.lookupCompoundName(g.userMolecule) || ''), `アラニンの双性イオン形の名前が「${g.lookupCompoundName(g.userMolecule)}」`);
+        // ⚠ 頭の D-/L- は「立体を名前に反映する」トグルの管轄（先に走った検査の状態で変わる）。
+        //    ここが見るのは**中性形の名前に「（双性イオン形）」が添わること**だけ
+        assert(/アラニン.*（双性イオン形）$/.test(g.lookupCompoundName(g.userMolecule) || ''), `アラニンの双性イオン形の名前が「${g.lookupCompoundName(g.userMolecule)}」`);
         c.reset();
         return 'グリシン・アラニンで ⇄ が効き、5種の否定対照でボタンが出ない';
     });
