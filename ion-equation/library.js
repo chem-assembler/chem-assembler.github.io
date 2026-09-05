@@ -179,6 +179,17 @@ function matchesQuery(rx, q) {
   return (rx.species || []).some((sp) => normSpecies(sp).includes(nq));
 }
 
+/* 一問一答（/qa/）の知識項目コード → その項目の要点が見える反応（純関数）。
+
+   ⚠ **相手（qa）は行き先を指定しない。** 送ってくるのは「自分が誰か」＝ 項目コードだけで、
+   どの反応に着地させるかはこちら（受け取る側）が決める —— ratio ⇄ ion と同じ約束で、
+   相手にこちらのページ構成を持たせない。対応は reactions.json の `qaCodes` に置く
+   （1つの項目に何本 当てるかは項目しだいなので、反応の側から名乗る形にしてある）。 */
+function reactionsForQaCode(reactions, code) {
+  if (!code) return [];
+  return (reactions || []).filter((rx) => (rx.qaCodes || []).includes(code)).map((rx) => rx.id);
+}
+
 /* ---- アプリをまたぐ辞書引き（項目31）----
    反応インデックスを ion-equation の中だけの索引で終わらせず、
    「この式で量的計算もできる」と隣のアプリ（比例式でみる化学計算）へつなぐ。
@@ -270,4 +281,5 @@ if (typeof window !== "undefined") {
   window.renderEquation = renderEquation;
   window.canonicalEquation = canonicalEquation;
   window.buildCrossAppIndex = buildCrossAppIndex;
+  window.reactionsForQaCode = reactionsForQaCode;
 }

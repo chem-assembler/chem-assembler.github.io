@@ -869,6 +869,180 @@
       "rules": [{ "find": ["H", "Cl"], "make": "HCl", "kind": "combine" }],
       "note": "水素と塩素から塩化水素ができる反応。H₂ 1個と Cl₂ 1個から HCl が2個できる（右辺の係数が2になるのは、H も Cl も1個ずつしか要らないため）。できた HCl を水にとかしたものが塩酸で、そこではじめて H⁺ と Cl⁻ に分かれる。気体どうしなので、量の計算では L のまま係数の比を使える。",
       "difficulty": 2
+    },
+    {
+      "id": "aniline-hcl",
+      "reactants": ["C6H5NH2", "HCl"],
+      "products": ["C6H5NH3Cl"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "C₆H₅NH₂ ＋ H⁺ → C₆H₅NH₃⁺（弱塩基は H⁺ を受け取る。Cl⁻ は傍観イオン）",
+      "classes": { "type": "中和", "saltType": "正塩", "redox": null },
+      "units": ["中和", "弱塩基", "正塩", "芳香族窒素化合物"],
+      "species": ["C6H5NH2", "HCl", "C6H5NH3Cl", "H+", "Cl-", "C6H5NH3+"],
+      "animationType": "aqueous",
+      "qaCodes": ["org.aroN.aniline-base"],
+      "related": [{ "id": "aniline-free-naoh", "label": "▸ この塩からアニリンに戻すには" }],
+      "note": "アニリンは弱塩基。窒素に非共有電子対が残っているので、アンモニアと同じく酸の H⁺ を受け取って陽イオンになる（OH⁻ を出すのではない）。水に溶けにくいアニリンが、イオンになると水によく溶けるのがこの反応の使いどころで、分液漏斗で塩基だけを水層へ移す操作はこの式そのもの。塩基としての強さはアンモニアより弱く、ベンゼン環が電子対を引き寄せているため。",
+      "difficulty": 3
+    },
+    {
+      "id": "aniline-free-naoh",
+      "reactants": ["C6H5NH3Cl", "NaOH"],
+      "products": ["C6H5NH2", "NaCl", "H2O"],
+      "coeffs": [1, 1, 1, 1, 1],
+      "netIonic": "C₆H₅NH₃⁺ ＋ OH⁻ → C₆H₅NH₂ ＋ H₂O（強い塩基が弱い塩基を追い出す）",
+      "classes": { "type": "弱酸弱塩基の遊離", "saltType": "正塩", "redox": null },
+      "units": ["弱塩基の遊離", "弱塩基", "正塩", "芳香族窒素化合物"],
+      "species": ["C6H5NH3Cl", "NaOH", "C6H5NH2", "NaCl", "H2O", "C6H5NH3+", "Cl-", "Na+", "OH-", "H+"],
+      "animationType": "aqueous",
+      "qaCodes": ["org.aroN.aniline-base"],
+      "ionic": { "reactants": ["C6H5NH3+", "OH-"], "products": ["C6H5NH2", "H2O"], "answer": [1, 1, 1, 1] },
+      "related": [{ "id": "aniline-hcl", "label": "▸ 塩をつくる側の式" }],
+      "note": "弱塩基の遊離。強塩基の OH⁻ がアニリニウムイオンから H⁺ を奪い、電離しないアニリンの分子に戻る。水に溶けていたアニリンが油状に分かれて出てくるので、水層に移した塩基をもう一度取り出す操作がこれにあたる。酢酸ナトリウムに塩酸を加えると酢酸に戻る反応（弱酸の遊離）と、強い側が弱い側を追い出すという点で同じ仲間。Na⁺ と Cl⁻ は傍観イオン。",
+      "difficulty": 3
+    },
+    {
+      "id": "diazonium-decomp",
+      "reactants": ["C6H5N2Cl", "H2O"],
+      "products": ["C6H5OH", "N2", "HCl"],
+      "coeffs": [1, 1, 1, 1, 1],
+      "netIonic": "C₆H₅N₂⁺ ＋ H₂O → C₆H₅OH ＋ N₂↑ ＋ H⁺（Cl⁻ は傍観イオン）",
+      "classes": { "type": "気体発生", "saltType": null, "redox": null },
+      "units": ["気体発生", "芳香族窒素化合物"],
+      "species": ["C6H5N2Cl", "H2O", "C6H5OH", "N2", "HCl", "C6H5N2+", "Cl-", "N", "H+"],
+      "animationType": "aqueous",
+      "qaCodes": ["org.aroN.diazonium-decomp"],
+      "ionic": { "reactants": ["C6H5N2+", "H2O"], "products": ["C6H5OH", "N2", "H+"], "answer": [1, 1, 1, 1, 1] },
+      "note": "塩化ベンゼンジアゾニウムは不安定で、5℃ を超えると水と反応して窒素を発生し、フェノールになる。だからジアゾ化もカップリングも氷で冷やしながら行う。ジアゾニウムイオンの ＋ は窒素2個のかたまりが背負っていて、そこが N₂ として抜けたあとに水の O が入る形。分解してもアニリンには戻らない（もとに戻る反応ではない）。Cl⁻ は最初から最後まで傍観イオンなので、イオン反応式では消える。",
+      "difficulty": 3
+    },
+    {
+      "id": "glycine-hcl",
+      "reactants": ["Gly", "HCl"],
+      "products": ["GlyHCl"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "⁻OOCCH₂NH₃⁺ ＋ H⁺ → HOOCCH₂NH₃⁺（−COO⁻ が H⁺ を受け取り、全体が陽イオンになる）",
+      "classes": { "type": "中和", "saltType": "正塩", "redox": null },
+      "units": ["中和", "アミノ酸", "両性", "正塩"],
+      "species": ["Gly", "HCl", "GlyHCl", "H+", "Cl-", "GlyH+"],
+      "animationType": "aqueous",
+      "qaCodes": ["org.bio.amino-acid-amphoteric"],
+      "related": [
+        { "id": "glycine-naoh", "label": "▸ 強塩基と塩をつくる側" },
+        { "id": "glycine-ionization1", "label": "▸ この陽イオンが H⁺ を手放す段" }
+      ],
+      "note": "アミノ酸が強酸と塩をつくる側。水溶液中のグリシンは −COO⁻ と −NH₃⁺ をあわせもつ双性イオンで、分子全体では電荷が 0。ここへ強酸を加えると、H⁺ を受け取るのは塩基としてはたらく −COO⁻ のほうで、−NH₃⁺ はもう H⁺ を持っているので変わらない。結果として分子全体が ＋1 の陽イオンになる。",
+      "difficulty": 3
+    },
+    {
+      "id": "glycine-naoh",
+      "reactants": ["Gly", "NaOH"],
+      "products": ["GlyNa", "H2O"],
+      "coeffs": [1, 1, 1, 1],
+      "netIonic": "⁻OOCCH₂NH₃⁺ ＋ OH⁻ → ⁻OOCCH₂NH₂ ＋ H₂O（−NH₃⁺ が H⁺ を手放し、全体が陰イオンになる）",
+      "classes": { "type": "中和", "saltType": "正塩", "redox": null },
+      "units": ["中和", "アミノ酸", "両性", "正塩"],
+      "species": ["Gly", "NaOH", "GlyNa", "H2O", "Na+", "OH-", "Gly-", "H+"],
+      "animationType": "aqueous",
+      "qaCodes": ["org.bio.amino-acid-amphoteric"],
+      "ionic": { "reactants": ["Gly", "OH-"], "products": ["Gly-", "H2O"], "answer": [1, 1, 1, 1] },
+      "related": [
+        { "id": "glycine-hcl", "label": "▸ 強酸と塩をつくる側" },
+        { "id": "glycine-ionization2", "label": "▸ この陰イオンができる段" }
+      ],
+      "note": "同じグリシンが、こんどは酸としてはたらく側。強塩基の OH⁻ が奪える H⁺ を持っているのは −NH₃⁺ のほうで、−COO⁻ はもう H⁺ を手放しているので変わらない。結果として分子全体が −1 の陰イオンになる。強酸とも強塩基とも塩をつくる、これがアミノ酸を両性の化合物と呼ぶ理由で、上の塩酸との反応と2本ならべて初めて見える。",
+      "difficulty": 3
+    },
+    {
+      "id": "glycine-ionization1",
+      "reactants": ["GlyH+"],
+      "products": ["Gly", "H+"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "HOOCCH₂NH₃⁺ ⇄ ⁻OOCCH₂NH₃⁺ ＋ H⁺（第1段。−COOH が H⁺ を手放す）",
+      "classes": { "type": "その他", "saltType": null, "redox": null },
+      "units": ["電離平衡", "アミノ酸", "両性"],
+      "species": ["GlyH+", "Gly", "H+"],
+      "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
+      "related": [
+        { "id": "glycine-ionization2", "label": "▸ 第2段（双性イオン → 陰イオン）" },
+        { "id": "glutamate-ionization1", "label": "▸ 三段になるアミノ酸（グルタミン酸）" }
+      ],
+      "note": "グリシンの電離平衡の第1段。強い酸性の水溶液では −COOH も −NH₃⁺ も H⁺ を持ったままで、分子全体は陽イオン。pH を上げていくと、まず手放しやすい −COOH のほうから H⁺ が外れて双性イオンになる。この段の電離定数が K₁ で、次の段の K₂ とあわせて、どの pH でどの形がいちばん多いかが決まる。グリシンのような中性アミノ酸は、この段と次の段の二段で終わる。",
+      "difficulty": 4
+    },
+    {
+      "id": "glycine-ionization2",
+      "reactants": ["Gly"],
+      "products": ["Gly-", "H+"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "⁻OOCCH₂NH₃⁺ ⇄ ⁻OOCCH₂NH₂ ＋ H⁺（第2段。−NH₃⁺ が H⁺ を手放す）",
+      "classes": { "type": "その他", "saltType": null, "redox": null },
+      "units": ["電離平衡", "アミノ酸", "両性"],
+      "species": ["Gly", "Gly-", "H+"],
+      "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
+      "related": [
+        { "id": "glycine-ionization1", "label": "▸ 第1段（陽イオン → 双性イオン）" },
+        { "id": "glutamate-ionization1", "label": "▸ 三段になるアミノ酸（グルタミン酸）" }
+      ],
+      "note": "グリシンの電離平衡の第2段。さらに pH を上げると、残っていた −NH₃⁺ からも H⁺ が外れて陰イオンになる。−COOH より −NH₃⁺ のほうが H⁺ を手放しにくいので、こちらが後の段になる。陽イオンと陰イオンの量がつり合って全体の電荷が平均で 0 になる pH が等電点で、二段のアミノ酸では K₁ と K₂ の両方から求める。",
+      "difficulty": 4
+    },
+    {
+      "id": "glutamate-ionization1",
+      "reactants": ["Glu+"],
+      "products": ["Glu", "H+"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "HOOCCH(NH₃⁺)CH₂CH₂COOH ⇄ ⁻OOCCH(NH₃⁺)CH₂CH₂COOH ＋ H⁺（第1段。α位の −COOH）",
+      "classes": { "type": "その他", "saltType": null, "redox": null },
+      "units": ["電離平衡", "アミノ酸", "両性"],
+      "species": ["Glu+", "Glu", "H+"],
+      "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
+      "related": [
+        { "id": "glutamate-ionization2", "label": "▸ 第2段（側鎖のカルボキシ基）" },
+        { "id": "glutamate-ionization3", "label": "▸ 第3段（アンモニウム基）" },
+        { "id": "glycine-ionization1", "label": "▸ 二段で終わるアミノ酸（グリシン）" }
+      ],
+      "note": "グルタミン酸の電離平衡の第1段。カルボキシ基が2つあり、まず手放しやすい α位（アミノ基と同じ炭素についているほう）の −COOH から H⁺ が外れる。ここまではグリシンと同じ形で、違いは側鎖にもう1つ −COOH が残っていること。それが次の段になるので、全部で三段になる。",
+      "difficulty": 5
+    },
+    {
+      "id": "glutamate-ionization2",
+      "reactants": ["Glu"],
+      "products": ["Glu-", "H+"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "⁻OOCCH(NH₃⁺)CH₂CH₂COOH ⇄ ⁻OOCCH(NH₃⁺)CH₂CH₂COO⁻ ＋ H⁺（第2段。側鎖の −COOH）",
+      "classes": { "type": "その他", "saltType": null, "redox": null },
+      "units": ["電離平衡", "アミノ酸", "両性"],
+      "species": ["Glu", "Glu-", "H+"],
+      "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
+      "related": [
+        { "id": "glutamate-ionization1", "label": "▸ 第1段（α位のカルボキシ基）" },
+        { "id": "glutamate-ionization3", "label": "▸ 第3段（アンモニウム基）" }
+      ],
+      "note": "グルタミン酸だけにある段。側鎖の −COOH から H⁺ が外れ、分子全体の電荷が 0 から −1 になる。同じカルボキシ基でも α位のものとは H⁺ の手放しやすさが違うので、まとめて外れず段が分かれて現れる。グリシンにはこの段が無いので、中性アミノ酸は二段・酸性アミノ酸は三段になる。",
+      "difficulty": 5
+    },
+    {
+      "id": "glutamate-ionization3",
+      "reactants": ["Glu-"],
+      "products": ["Glu^2-", "H+"],
+      "coeffs": [1, 1, 1],
+      "netIonic": "⁻OOCCH(NH₃⁺)CH₂CH₂COO⁻ ⇄ ⁻OOCCH(NH₂)CH₂CH₂COO⁻ ＋ H⁺（第3段。−NH₃⁺）",
+      "classes": { "type": "その他", "saltType": null, "redox": null },
+      "units": ["電離平衡", "アミノ酸", "両性"],
+      "species": ["Glu-", "Glu^2-", "H+"],
+      "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
+      "related": [
+        { "id": "glutamate-ionization1", "label": "▸ 第1段（α位のカルボキシ基）" },
+        { "id": "glutamate-ionization2", "label": "▸ 第2段（側鎖のカルボキシ基）" }
+      ],
+      "note": "グルタミン酸の電離平衡の第3段。最後に −NH₃⁺ から H⁺ が外れて2価の陰イオンになる。カルボキシ基のほうが先で、アンモニウム基が最後という順はグリシンと同じ。段が1つ増えたぶん、電荷が 0 になる形（双性イオン）は第1段と第2段のあいだにあり、等電点もそちら側に寄る。塩基性アミノ酸のリシンも段は三段だが、増えるのが側鎖のアミノ基なので順が入れ替わる。",
+      "difficulty": 5
     }
   ]
 }

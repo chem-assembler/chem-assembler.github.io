@@ -583,7 +583,13 @@ function slTrack(name, params) {
 
   function linkHtml(pattern) {
     if (!pattern.link || pattern.link.kind === 'none') return '';
-    var url = '../assembler/?from=qa&code=' + encodeURIComponent(pattern.code);
+    /* ★ 行き先はアプリごとに違う。`ion` だけ ion-equation の索引へ送る（2026-09-05）。
+       ⚠ 送るのは **項目コードだけ**で、どの反応に着地させるかは向こうの
+       `reactions.json` の `qaCodes` が決める（ratio ⇄ ion と同じ約束）。
+       ＝ こちらは相手のデータもページ構成も持たない。 */
+    var url = (pattern.link.kind === 'ion'
+      ? '../ion-equation/library.html?from=qa&code='
+      : '../assembler/?from=qa&code=') + encodeURIComponent(pattern.code);
     var q = linkQuery(pattern.link);
     Object.keys(q).forEach(function (k) {
       if (q[k]) url += '&' + k + '=' + encodeURIComponent(q[k]);
@@ -805,7 +811,7 @@ function slTrack(name, params) {
 
   // 相手を名指しできるのは**こちらが送った先だけ**。
   // 知らない `from` は名前を出さずに「戻ってきました」とだけ言う（勝手に相手を作らない）
-  var BACK_APP_NAME = { assembler: 'パズルでみる有機化学' };
+  var BACK_APP_NAME = { assembler: 'パズルでみる有機化学', ion: 'イオンでみる化学反応式' };
 
   function renderBackBand() {
     var box = $('back-band');
