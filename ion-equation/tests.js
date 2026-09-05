@@ -7790,7 +7790,12 @@ async function runReactionLibraryTests() {
     const qa = await res.json();
     const known = new Set((qa.patterns || []).map((p) => p.code));
     assert(known.size > 100, "一問一答の項目が読めていない（検査が空回りしている）: " + known.size);
-    for (const code of Object.keys(QA_WAITING)) {
+    // 待っていた4項目だけでなく、qaCodes に**書いたコード全部**を見る
+    // （想定表だけを見ると、綴り間違いで別のコードを名乗ったときに黙って通る）
+    const used = new Set(Object.keys(QA_WAITING));
+    data.reactions.forEach((rx) => (rx.qaCodes || []).forEach((c) => used.add(c)));
+    assert(used.size >= 4, "名乗っている項目コードが少なすぎる（検査が空回りしている）: " + used.size);
+    for (const code of used) {
       assert(known.has(code), "一問一答に無い項目コードを名乗っている: " + code +
         "（相手がコードを変えたか、綴り間違い）");
     }
