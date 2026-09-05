@@ -25,6 +25,7 @@
  * | CS  | 1〜5   | ★★ **「条件にある構造を書き出す」**（v1510・ユーザー原文 2026-09-03「書き出しを充実させ／一通りすべて書き出させる／条件にある構造を書き出す／に分けるイメージです」。設計は `DESIGN_isomer_practice.md` §20）。**書き出しの面が2種類に分かれた**ので、①（分子式＋分類で全部）と②（条件で1〜数個）が**画面から読み取れる**ことがまず要件。1 が本体（見出し2本・②が①の中に埋まっていない・13件を開いて答えを**名前で**突き合わせ・見出しと作業帯が条件そのものを名乗る）・**2 は否定対照**＝ 同じ分子式でも条件に合わない構造は `scope` で断られ、断り文が条件を名乗る（＋合う構造は `ok` ＝ ①が「何でも scope」の空振りでないこと）・**3 は在庫の門番**＝ C₂〜C₅ を総当たりして出題を作り直し集合ごと突き合わせる。⚠⚠ **落としているのは「ザイツェフ／マルコフニコフの主生成物だけを数えるか、副生成物まで数えるかで答えが変わるもの」11件だけで、答えの少なさではない**（ユーザー明言「答えが多くない書き出し問題は練習問題として有用」＝ `IP_MIN_ISOMERS` はこの型に掛けない。**答えが1種の回が4件 出荷されている**ことをここで固定する）・**4 は「立体異性体の有無」**＝ 13件すべてが `stereoAsked`（★ 段が「立体異性体がある回」にだけ出ると**段の有無が答えを漏らす**）で、**あり6件・なし7件を名指し**・**5 は陰性対照**＝ ②を足しても①の答えの数が1つも動かない（開く前後のスナップショット比較。`IP4` の既知値の表とは別の壊れ方＝キャッシュ汚染を見る）＋記録の鍵が①と衝突しない |
  * | CV  | 1〜4   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個）。**4 は分子が増えない反応まで広げた悉皆**（v1500）＝ 反応の前後で「重原子ごとの隣の原子 id ＋ 結合次数」を取り、変わったのに印が無い／変わっていないのに印がある を全 49 本で見る。⚠ **1 は分かれた成分しか見ないので、分子が増えない 35 本は無検査だった** —— 実測で4本の赤（ジエン重合の中央へ移った C=C 6個・加硫の相方2個・ヨードホルムの O 1個の渡し落とし／ビニロンの cA・cB の渡しすぎ）。名指しの許容は2件・変化なしが正しい `_info` 6本も名指しで固定 |
  * | TR  | 1〜8   | **系統樹のために足した反応**（`DESIGN_organic_tree.md` §2-3 (b)・`D-T10`）。設計レーンが「教科書の系統図にあってアプリに無い辺」を12本数え、そのうち**軽くて入試に出るもの**から足した。**奇数番が「起きる」・偶数番が否定対照**（起きてはいけない相手で1件も出ないこと＋門番を外せば材料はあると示すこと）。1〜2 は **酢酸2分子 → 無水酢酸**（`hydrolysis_anhydride` だけが有って**行きが無かった片道**を閉じた。二酸は分子内脱水へ譲る）。3〜4 は **ベンゼン → シクロヘキサン**（原子を1つも足さず環の6本を単結合にするだけ。⚠ 同じ瓶の `reduce_nitro` が「環は水素化されません」と書いているので、ニトロベンゼンでは出さない）。5〜6 は **ベンゼン＋プロペン → クメン**（クメン法の1段目。②③は -O-O- が描けないので caption で断る）。7〜8 は **アセチレン＋酢酸 → 酢酸ビニル**（**縮合ではなく付加**なので水が1分子も出ない ＝ 分子が2つになったら赤） |
+ * | DH  | 1〜5   | ★★ **「A を脱水するとできるアルケンを書き出す」**（v1516・ユーザー原文 2026-09-03「アルコールの分子内脱水は重要です／C5まで、アルコールとアルケンの対応表（反応系統樹）／左列の構造式と→がある状態で右列の構造式を書かせる」。設計は `DESIGN_isomer_practice.md` §22）。§20 の器に**3つ目の型**（`products` ＝ 相手が**出発物**）として乗せた形。1 が本体（14件を開いて答えを**名前で**・見出しと作業帯とボタンが順方向を名乗る・★ **note が「主生成物・副生成物の区別は問いません」と言い切る**＝ 順方向の割れは設問が数える範囲そのものなので、**言えば決まる**。逆方向（§20-4）で落とした割れとは性質が違う）・**2 は否定対照**＝ 辺の先でない構造は `scope`／**副生成物の 1-ブテンは `ok`**（主生成物だけに絞る破壊がここで赤くなる）／1-ブタノールの回では同じ 2-ブテンが `scope`（出発物ごとに辺を数えている証拠）・**3 は在庫の門番**＝ C₁〜C₅ の鎖式飽和一価アルコール**16件を総当たり**し、脱水できる14件が全部 出荷され**実際に開く**／⚠ **脱水できない2件（メタノール・2,2-ジメチル-1-プロパノール）は出荷に無く、`ipSolveCondition` が null を返す**（器が「答え0個」を組めないため。判断 (a)・見積りは §22-3）・4 が立体（14件すべて `stereoAsked`・**あり3件/なし11件を名指し**）・**5 は陰性対照**＝ ①の答えの数が動かない／記録の鍵が重ならない／★ **逆方向と答えが一致する7件を名指しで固定**（辺が1本なので当然に重なる＝意図した重なりであることの印。空振り検出つき） |
  * | D   | 1〜6   | 結合の伸縮・側鎖の向き |
  * | E   | 1〜4   | 反応機構ビューア（巻矢印・生成物予測） |
  * | EL  | 1〜3   | 元素の追加（I・K・N の文脈価数） |
@@ -49573,8 +49574,18 @@
             ['hy-c5-3pentol',  '水を付加すると 3-ペンタノール になるアルケン',  'C₅H₁₀',  ['2-ペンテン']]
         ];
         const btns = [...D.querySelectorAll('#ip-cond-presets button')];
-        assert(btns.length === WANT.length,
-            `②のお題が ${btns.length}件（${WANT.length}件を期待）`);
+        /**
+         * ⚠ **v1516 で3つ目の型（`products` ＝ A を脱水するとできるアルケン・§22）が入った。**
+         *   ここが見張るのは**相手が生成物の型（逆方向）13件**で、順方向14件は `DH1` が受け持つ。
+         * ★ ボタンと在庫の**数が一致する**ことはここで見る（片方だけ増えたら赤）。
+         */
+        assert(btns.length === ip.condPresets.length,
+            `②のボタンが ${btns.length}個・在庫が ${ip.condPresets.length}件（食い違っている）`);
+        const backward = ip.condPresets.filter(p => p.kind !== 'products');
+        assert(backward.length === WANT.length,
+            `②の逆方向のお題が ${backward.length}件（${WANT.length}件を期待）`);
+        assert(ip.condPresets.slice(0, WANT.length).every(p => p.kind !== 'products'),
+            '★ 逆方向13件が先頭に並んでいない（下の添字での突き合わせが別の回を見てしまう）');
         WANT.forEach(([id, headline, formula, names], i) => {
             assert(ip.condPresets[i].id === id,
                 `condPresets[${i}] が ${ip.condPresets[i].id}（${id} を期待 ＝ 並べ替えられている）`);
@@ -49669,7 +49680,9 @@
         const W = c.W, ip = W.isomerPractice;
         const inv = csRebuildInventory(W);
         const key = (x) => `${x.kind}/${x.carbons}/${x.target}`;
-        const got = ip.condPresets.map(key).sort();
+        // ⚠ v1516: 3つ目の型（`products`・順方向）の在庫は `DH3` が別に総当たりする。
+        //   ここは**相手が生成物の2型**だけを突き合わせる（混ぜると「読みが割れる」の線が測れない）
+        const got = ip.condPresets.filter(p => p.kind !== 'products').map(key).sort();
         const want = inv.ship.map(key).sort();
         assert(got.join('\n') === want.join('\n'),
             '★ 出荷している出題が、その場で作り直した在庫と食い違う。\n' +
@@ -49739,9 +49752,12 @@
                       'hy-c4-2butanol', 'hy-c5-2pentol', 'hy-c5-3pentol'];
         const WITHOUT = ['de-c2-ethene', 'de-c3-propene', 'de-c4-2mepro',
                          'hy-c2-ethanol', 'hy-c3-2propol', 'hy-c4-2me2prol', 'hy-c5-2me2buol'];
-        assert(WITH.length + WITHOUT.length === ip.condPresets.length,
-            `名指しの表が ${WITH.length + WITHOUT.length}件（${ip.condPresets.length}件を期待）`);
+        // ⚠ v1516: 順方向の型（`products`）の立体は `DH4` が同じやり方で見張る
+        const backward = ip.condPresets.filter(p => p.kind !== 'products');
+        assert(WITH.length + WITHOUT.length === backward.length,
+            `名指しの表が ${WITH.length + WITHOUT.length}件（${backward.length}件を期待）`);
         ip.condPresets.forEach((pre, i) => {
+            if (pre.kind === 'products') return;
             ip.startFromCondPreset(i);
             assert(ip.problem.stereoAsked === true, `${pre.id}: 立体の段が出ない`);
             assert(typeof ip.problem.stereoTotal === 'number',
@@ -50736,6 +50752,348 @@
             `★ 2手でサリチル酸にならない（${end.join(' / ')}）`);
         c.reset();
         return 'サリチル酸ナトリウムを登録と同じ正準コードで生成／漏斗の中では遊離だけ／2手でサリチル酸';
+    });
+
+    /* ============================================================================
+     * DH: ★★ 「A を脱水するとできるアルケンを書き出す」（v1516・ユーザー原文 2026-09-03）
+     *
+     * > アルコールの分子内脱水は重要です／C5まで、アルコールとアルケンの対応表（反応系統樹）
+     * > 左列の構造式と→がある状態で右列の構造式を書かせる
+     *
+     * ＝ 対応表を**左から右へ1行ずつ**問う形（発注書の「形式2」）。設計は
+     * DESIGN_isomer_practice.md §22。§20 の器（`IP_COND_KINDS`）に**3つ目の型**として乗る。
+     *
+     *   DH1 … 14件が開いて答えが**名前で**一致／見出し・作業帯・ボタンが順方向を名乗る／
+     *          ★ **note が「主生成物・副生成物の区別は問いません」と言い切る**（読みを決める1文）
+     *   DH2 … ★否定対照。同じ分子式でも辺の先でない構造は `scope`、辺の先なら `ok`。
+     *          ★ **副生成物（1-ブテン）が `ok`** ＝ 主生成物だけに絞る破壊がここで赤くなる
+     *   DH3 … 在庫の門番。C₁〜C₅ の鎖式飽和一価アルコール**16件を総当たり**して、
+     *          **脱水できる14件が全部 出荷され、実際に開く**こと／
+     *          **脱水できない2件が出荷に無く、`ipSolveCondition` が null を返す**こと
+     *   DH4 … 立体異性体の有無が答えの一部。14件すべて `stereoAsked`・あり3件/なし11件を名指し
+     *   DH5 … ★陰性対照。①の答えの数が動かない／記録の鍵が①とも②の逆方向とも衝突しない／
+     *          ★ **逆方向と答えが同じになる7件を名指しで固定**（意図した重なりであることの印）
+     * ========================================================================== */
+
+    /** C₁〜C₅ の鎖式飽和一価アルコールを総当たりして、脱水でできるアルケンを引く（DH3・DH5 が共有） */
+    const dhRebuild = (W) => {
+        const rows = [];
+        for (let n = 1; n <= 5; n++) {
+            const alcs = W.enumerateConstitutionalIsomers(Array(n).fill('C').concat(['O']), 2 * n + 2)
+                .isomers.filter(m => W.ipHydroxylOxygens(m).length === 1);
+            const alks = n >= 2
+                ? W.enumerateConstitutionalIsomers(Array(n).fill('C'), 2 * n).isomers : [];
+            const byCode = new Map(alks.map(m => [W.canonicalCode(m), W.iupacName(m)]));
+            alcs.forEach(a => {
+                const es = W.ipDehydrationEdges(a);
+                rows.push({
+                    carbons: n, alcohol: W.iupacName(a),
+                    products: es.map(e => byCode.get(e.code)).filter(Boolean).sort(),
+                    major: es.filter(e => e.major).map(e => byCode.get(e.code)).filter(Boolean).sort()
+                });
+            });
+        }
+        return rows;
+    };
+
+    test('DH1: 順方向の回 — 14件の答えが名前で一致し、note が「主生成物・副生成物を問わない」と言い切る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        assert(ip, 'isomerPractice が初期化されていない');
+        g.setMode('learn');
+        ip.renderList();
+
+        // [id, 見出し, 答えの分子式, 答え（名前）, ボタンの表記]
+        const WANT = [
+            ['pr-c2-ethanol',  'エタノール を脱水するとできるアルケン',            'C₂H₄',  ['エテン'], 'エタノール を脱水'],
+            ['pr-c3-1propol',  '1-プロパノール を脱水するとできるアルケン',        'C₃H₆',  ['プロペン'], '1-プロパノール を脱水'],
+            ['pr-c3-2propol',  '2-プロパノール を脱水するとできるアルケン',        'C₃H₆',  ['プロペン'], '2-プロパノール を脱水'],
+            ['pr-c4-1butanol', '1-ブタノール を脱水するとできるアルケン',          'C₄H₈',  ['1-ブテン'], '1-ブタノール を脱水'],
+            ['pr-c4-2butanol', '2-ブタノール を脱水するとできるアルケン',          'C₄H₈',  ['1-ブテン', '2-ブテン'], '2-ブタノール を脱水'],
+            ['pr-c4-2me1prol', '2-メチル-1-プロパノール を脱水するとできるアルケン', 'C₄H₈', ['2-メチルプロペン'], '2-メチル-1-プロパノール を脱水'],
+            ['pr-c4-2me2prol', '2-メチル-2-プロパノール を脱水するとできるアルケン', 'C₄H₈', ['2-メチルプロペン'], '2-メチル-2-プロパノール を脱水'],
+            ['pr-c5-1pentol',  '1-ペンタノール を脱水するとできるアルケン',        'C₅H₁₀', ['1-ペンテン'], '1-ペンタノール を脱水'],
+            ['pr-c5-2pentol',  '2-ペンタノール を脱水するとできるアルケン',        'C₅H₁₀', ['1-ペンテン', '2-ペンテン'], '2-ペンタノール を脱水'],
+            ['pr-c5-3pentol',  '3-ペンタノール を脱水するとできるアルケン',        'C₅H₁₀', ['2-ペンテン'], '3-ペンタノール を脱水'],
+            ['pr-c5-2me1buol', '2-メチル-1-ブタノール を脱水するとできるアルケン', 'C₅H₁₀', ['2-メチル-1-ブテン'], '2-メチル-1-ブタノール を脱水'],
+            ['pr-c5-2me2buol', '2-メチル-2-ブタノール を脱水するとできるアルケン', 'C₅H₁₀', ['2-メチル-1-ブテン', '2-メチル-2-ブテン'], '2-メチル-2-ブタノール を脱水'],
+            ['pr-c5-3me1buol', '3-メチル-1-ブタノール を脱水するとできるアルケン', 'C₅H₁₀', ['3-メチル-1-ブテン'], '3-メチル-1-ブタノール を脱水'],
+            ['pr-c5-3me2buol', '3-メチル-2-ブタノール を脱水するとできるアルケン', 'C₅H₁₀', ['2-メチル-2-ブテン', '3-メチル-1-ブテン'], '3-メチル-2-ブタノール を脱水']
+        ];
+        const pr = ip.condPresets.filter(p => p.kind === 'products');
+        assert(pr.length === WANT.length, `順方向のお題が ${pr.length}件（${WANT.length}件を期待）`);
+
+        WANT.forEach(([id, headline, formula, names, label], k) => {
+            const i = ip.condPresets.findIndex(p => p.id === id);
+            assert(i >= 0, `${id} が在庫に無い`);
+            assert(ip.condPresets[i] === pr[k], `${id} の並び順が変わっている（${k}番目のはず）`);
+            const btn = D.querySelector(`#ip-cond-presets button[data-ip-cond="${i}"]`);
+            assert(btn, `${id}: ボタンが出ていない`);
+            // ★ 押す前に何を書き出すか読める（矢印の向きが逆方向と取り違えられていないこと）
+            assert(btn.textContent.replace(/ ✓$/, '') === label,
+                `${id}: ボタンの表記が「${btn.textContent}」（「${label}」を期待）`);
+            btn.click();
+            assert(ip.active && ip.problem, `${id}: 練習が始まらない`);
+            assert(ip.problem.condId === id, `${id}: 開いたのが ${ip.problem.condId}`);
+            assert(ip.problem.formula === formula,
+                `${id}: 答えの分子式が ${ip.problem.formula}（${formula} を期待）`);
+            assert(ip.problem.stereoAsked === true,
+                `★ ${id}: 立体まで答える回になっていない（段の有無が答えを漏らす・§20-3）`);
+            const uniq = [...new Set([...ip.targets.values()].map(m => W.iupacName(m) || '(名称未登録)'))].sort();
+            assert(uniq.join(' / ') === names.slice().sort().join(' / '),
+                `${id}: 答えが [${uniq.join(', ')}]（[${names.join(', ')}] を期待）`);
+            assert(ip.problem.structures === names.length,
+                `${id}: 構造の数が ${ip.problem.structures}（${names.length} を期待）`);
+            const panel = D.getElementById('ip-body').textContent.replace(/\s+/g, ' ');
+            assert(panel.indexOf(headline) >= 0,
+                `${id}: 見出しが条件を名乗らない（${panel.slice(0, 90)}）`);
+            assert(ip.stripLiveHtml().indexOf(headline) >= 0,
+                `${id}: 作業帯が条件を名乗らない（${ip.stripLiveHtml()}）`);
+            /**
+             * ★★ **読みを決める1文**（§22-2）。順方向は「主生成物だけ挙げるか、副生成物まで挙げるか」
+             *   で答えの集合が割れる ——「すべて」だけでは決まらないので、**画面が言い切る**。
+             * ⚠ どの回でも同じ断り文なので、**答えの数は1文字も漏れない**（だから全14件に出す）。
+             */
+            assert(panel.indexOf('主生成物・副生成物の区別は問いません') >= 0,
+                `★ ${id}: 「主生成物・副生成物の区別は問いません」が画面に出ていない ＝ ` +
+                `ザイツェフ則の主生成物だけを書いた答案が「正しいのに減点」になる（§22-2）`);
+            assert(!/[0-9０-９]+\s*種/.test(panel), `${id}: 見出しが種類数を出している（${panel.slice(0, 90)}）`);
+            ip.stop();
+        });
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('DH2: ★否定対照 — 辺の先でない構造は「対象外」・副生成物の 1-ブテンは「正解」', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        g.setMode('learn');
+        const open = (id) => {
+            ip.stop();
+            const i = ip.condPresets.findIndex(p => p.id === id);
+            assert(i >= 0, `${id} が在庫に無い`);
+            ip.startFromCondPreset(i);
+            assert(ip.problem && ip.problem.condId === id, `前提: ${id} が開かない`);
+        };
+        // C₄H₈ の3種（すべて同じ分子式 ＝ 断られる理由が「式違い」ではなく「条件」であること）
+        // ⚠ **2-ブテンは ±120° に開いて描く**（メチルが2つとも上 ＝ シス）。この回は
+        //   `stereoAsked` なので、平らに描いた 2-ブテンは**シスともトランスとも決まらず**
+        //   正解の集合（シス・トランスに分けた2件）のどちらにも当たらない
+        const BUTENE1 = { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2], [2, 3]] };
+        const CIS_BUTENE2 = { atoms: ['C', 'C', 'C', 'C'], bonds: [[1, 2, 2], [0, 1], [2, 3]],
+            xy: [[-21, -36], [0, 0], [42, 0], [63, -36]] };
+        const ISOBUTENE = { atoms: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 2], [1, 2], [1, 3]] };
+
+        // ① 2-ブタノール（β水素が2か所）＝ 答えは 1-ブテン と 2-ブテン の2つ
+        open('pr-c4-2butanol');
+        ipSheet(c, [CIS_BUTENE2]);
+        assert(ip.grade().rows[0].status === 'ok', '前提: 2-ブテン（主生成物）が通らない');
+        ipSheet(c, [BUTENE1]);
+        /**
+         * ★★ ここが**主生成物だけに絞る破壊**の受け皿。ザイツェフ則の副生成物を落とすと、
+         *   1-ブテンが `scope`（対象外）になって赤くなる。
+         */
+        assert(ip.grade().rows[0].status === 'ok',
+            `★ 副生成物の 1-ブテンが status=${ip.grade().rows[0].status}（ok を期待）＝ ` +
+            `主生成物だけを数える読みに絞られている（§22-2 で採らないと決めた読み）`);
+        ipSheet(c, [ISOBUTENE]);
+        let row = ip.grade().rows[0];
+        assert(row.formula === ip.problem.formula, `前提: 分子式が一致しない（${row.formula}）`);
+        assert(row.status === 'scope',
+            `★ 2-メチルプロペンを描いて status=${row.status}（scope を期待 ＝ 何でも ok の空振り）`);
+        let said = ip.verdictOf(row);
+        assert(/2-ブタノール/.test(said) && /脱水/.test(said), `断り文が条件を名乗らない（${said}）`);
+        assert(!/開発ログ/.test(said), `正しく描けた生徒に不具合の顔を見せている（${said}）`);
+
+        // ② ★否定対照の対 —— 1-ブタノール（β水素は1か所）は 2-ブテンにならない
+        //    ⚠ ①と同じ分子式・同じ図なのに答えが変わる ＝ 出発物ごとに辺を数えている証拠
+        open('pr-c4-1butanol');
+        ipSheet(c, [BUTENE1]);
+        assert(ip.grade().rows[0].status === 'ok', '前提: 1-ブテンが通らない');
+        ipSheet(c, [CIS_BUTENE2]);
+        row = ip.grade().rows[0];
+        assert(row.status === 'scope',
+            `★ 1-ブタノールの回で 2-ブテンが status=${row.status}（scope を期待）＝ ` +
+            `辺を出発物ごとに数えていない（全部の C₄H₈ を通している）`);
+        assert(/1-ブタノール/.test(ip.verdictOf(row)), `断り文が条件を名乗らない（${ip.verdictOf(row)}）`);
+
+        ip.stop();
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('DH3: 在庫の門番 — C₁〜C₅ のアルコール16件を総当たりし、脱水できる14件が実際に開く', async (c) => {
+        const W = c.W, ip = W.isomerPractice;
+        const rows = dhRebuild(W);
+        assert(rows.length === 16,
+            `C₁〜C₅ の鎖式飽和一価アルコールが ${rows.length}件（16件を期待 ＝ 数え方が空振り）`);
+
+        const can = rows.filter(r => r.products.length);
+        const cannot = rows.filter(r => !r.products.length);
+        // ★ 脱水できない2件を**名指しで**（数だけだと入れ替わっても緑になる）
+        assert(cannot.map(r => r.alcohol).sort().join(' / ') === ['メタノール', '2,2-ジメチル-1-プロパノール'].sort().join(' / '),
+            `脱水できないアルコールの顔ぶれが変わった: ${cannot.map(r => r.alcohol).join(' / ')}`);
+
+        // ① 脱水できる14件が**全部** 出荷されている（1件でも欠けたら赤）
+        const got = ip.condPresets.filter(p => p.kind === 'products')
+            .map(p => `${p.carbons}/${p.target}`).sort();
+        const want = can.map(r => `${r.carbons}/${r.alcohol}`).sort();
+        assert(got.join('\n') === want.join('\n'),
+            '★ 出荷している順方向の出題が、その場で作り直した在庫と食い違う。\n' +
+            `  出荷: ${got.join(' / ')}\n  在庫: ${want.join(' / ')}`);
+
+        /**
+         * ② ★★ **「主生成物だけを数える読みと割れる4件」を落としていない**。
+         *   §20-4 の逆方向では落としたが、順方向は note が読みを決めるので落とさない（§22-2）。
+         *   ⚠ **在庫の表を突き合わせるだけでは守れない**（`CS3` が実測でそうなった）ので、
+         *     4件を**実際に開いて答えが2つ**あることまで見る。
+         */
+        const split = can.filter(r => r.products.join('|') !== r.major.join('|'));
+        assert(split.map(r => r.alcohol).sort().join(' / ') ===
+            ['2-ブタノール', '2-ペンタノール', '2-メチル-2-ブタノール', '3-メチル-2-ブタノール'].sort().join(' / '),
+            `ザイツェフ則が効く回の顔ぶれが変わった: ${split.map(r => r.alcohol).join(' / ')}`);
+        split.forEach(r => {
+            const i = ip.condPresets.findIndex(p => p.kind === 'products' && p.target === r.alcohol);
+            assert(i >= 0, `★ ザイツェフ則が効く「${r.alcohol}」が出荷から落ちている（§22-2）`);
+            ip.startFromCondPreset(i);
+            assert(ip.active && ip.problem && ip.problem.condId === ip.condPresets[i].id,
+                `★ 「${r.alcohol} を脱水」が押しても開かない`);
+            assert(ip.problem.structures === 2,
+                `${r.alcohol}: 構造の数が ${ip.problem.structures}（2を期待 ＝ 主生成物だけに絞られている）`);
+            ip.stop();
+        });
+        // ★ 答えが1種の回も10件そのまま出荷（`IP_MIN_ISOMERS` を掛けていない・§20-1）
+        const singles = can.filter(r => r.products.length === 1);
+        assert(singles.length === 10, `答えが1種の回が ${singles.length}件（10件を期待）`);
+        singles.forEach(r => {
+            const i = ip.condPresets.findIndex(p => p.kind === 'products' && p.target === r.alcohol);
+            ip.startFromCondPreset(i);
+            assert(ip.active && ip.problem.structures === 1,
+                `★ 答えが1種の「${r.alcohol}」が開かない ＝ 実行時に「答えが少ない」の門番が掛かっている`);
+            ip.stop();
+        });
+
+        /**
+         * ③ ★★ **「答え0個」の2件は、足しても開かない**（発注の判断 (a) を機械で担保する）。
+         *   ⚠ 器は満点・「あと何種」・立体の段2の総数・クリア記録を「答えが1件以上」で組んでいる。
+         *     (b)「できないを答えにする」を選ぶなら共通関数5本の改修が要る（見積りは §22-3）。
+         */
+        cannot.forEach(r => {
+            assert(!ip.condPresets.some(p => p.kind === 'products' && p.target === r.alcohol),
+                `★ 脱水できない「${r.alcohol}」が出荷に並んでいる（開いても答えが0個になる）`);
+            const solved = W.ipSolveCondition({ id: 'dh3-probe', kind: 'products', carbons: r.carbons, target: r.alcohol });
+            assert(solved === null,
+                `★ 脱水できない「${r.alcohol}」の回が組み立てられてしまう ＝ ` +
+                `在庫に足した瞬間に「答え0個の練習」が黙って開く（§22-3）`);
+        });
+    });
+
+    test('DH4: 立体異性体の有無が答えの一部 — 段は14件すべてに出る（有無が段から漏れない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, ip = W.isomerPractice;
+        g.setMode('learn');
+        // ★ 段を「立体異性体がある回」にだけ出すと、段の有無そのものが答えになる（§20-3）
+        const WITH = ['pr-c4-2butanol', 'pr-c5-2pentol', 'pr-c5-3pentol'];
+        const WITHOUT = ['pr-c2-ethanol', 'pr-c3-1propol', 'pr-c3-2propol', 'pr-c4-1butanol',
+            'pr-c4-2me1prol', 'pr-c4-2me2prol', 'pr-c5-1pentol', 'pr-c5-2me1buol',
+            'pr-c5-2me2buol', 'pr-c5-3me1buol', 'pr-c5-3me2buol'];
+        const pr = ip.condPresets.filter(p => p.kind === 'products');
+        assert(WITH.length + WITHOUT.length === pr.length,
+            `名指しの表が ${WITH.length + WITHOUT.length}件（${pr.length}件を期待）`);
+        ip.condPresets.forEach((pre, i) => {
+            if (pre.kind !== 'products') return;
+            ip.startFromCondPreset(i);
+            assert(ip.problem.stereoAsked === true, `${pre.id}: 立体の段が出ない`);
+            assert(typeof ip.problem.stereoTotal === 'number',
+                `${pre.id}: 立体込みの総数が数えられていない`);
+            const has = ip.problem.stereoTotal > ip.problem.structures;
+            const listed = WITH.includes(pre.id);
+            assert(has === listed,
+                `★ ${pre.id}: 立体異性体${has ? 'あり' : 'なし'}（表では${listed ? 'あり' : 'なし'}）` +
+                ` 構造 ${ip.problem.structures}種・立体込み ${ip.problem.stereoTotal}種`);
+            ip.stop();
+        });
+
+        // ★ ユーザーが名指しした「2-ブタノールの脱水」を数で固定（1-ブテン ＋ シス/トランス 2-ブテン）
+        const i2b = ip.condPresets.findIndex(p => p.id === 'pr-c4-2butanol');
+        ip.startFromCondPreset(i2b);
+        assert(ip.problem.structures === 2 && ip.problem.stereoTotal === 3,
+            `2-ブタノールの脱水: 構造 ${ip.problem.structures}／立体込み ${ip.problem.stereoTotal}（2／3 を期待）`);
+        assert(ip.targets.size === 3,
+            `答案の数が ${ip.targets.size}（3を期待 ＝ 1-ブテン・シス2-ブテン・トランス2-ブテン）`);
+        ip.stop();
+
+        // ★ 3-ペンタノールは構造1種でもシス/トランスがある（＝「1種だから立体は無い」の思い込みを外す回）
+        const i3p = ip.condPresets.findIndex(p => p.id === 'pr-c5-3pentol');
+        ip.startFromCondPreset(i3p);
+        assert(ip.problem.structures === 1 && ip.problem.stereoTotal === 2,
+            `3-ペンタノールの脱水: 構造 ${ip.problem.structures}／立体込み ${ip.problem.stereoTotal}（1／2 を期待）`);
+        ip.stop();
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
+    test('DH5: ★陰性対照 — ①の答えの数が動かず、記録の鍵も衝突しない（逆方向との重なりは名指しで固定）', async (c) => {
+        c.reset();
+        const W = c.W, ip = W.isomerPractice;
+        // ① 順方向を開いても①「一通りすべて」の答えの数が1つも動かない（列挙キャッシュの汚染）
+        const snap = () => ip.problems.map((p, i) => {
+            const d = ip.enumerate(i);
+            return `${i}:${d.formula}${p.skeleton ? '@' + p.skeleton : ''}=${d.isomers.length}`;
+        }).join(' | ');
+        const before = snap();
+        ip.condPresets.forEach((pre, i) => {
+            if (pre.kind !== 'products') return;
+            ip.startFromCondPreset(i); ip.stop();
+        });
+        const after = snap();
+        assert(before === after, `★ 順方向を開いたあとに①の答えの数が動いた\n  前: ${before}\n  後: ${after}`);
+        assert(before.length > 100 && /C₄H₁₀=2/.test(before), `スナップショットが空振り: ${before}`);
+
+        // ② 記録の鍵が**在庫のどれとも**重ならない（同じ分子式・同じ答えの回が並んでいるので要注意）
+        const tails = ip.condPresets.map(p => ip.clearKeyTail({ condId: p.id, stereoAsked: true }));
+        assert(new Set(tails).size === tails.length, '★ 条件の回どうしで記録の鍵が重なっている');
+        ip.condPresets.filter(p => p.kind === 'products').forEach(p => {
+            const tail = ip.clearKeyTail({ condId: p.id, stereoAsked: true });
+            assert(/^@cond-pr-/.test(tail), `${p.id}: 記録の鍵のしっぽが「${tail}」`);
+        });
+
+        /**
+         * ③ ★★ **逆方向（水の付加）と答えの集合が完全に同じになる7件**（§22-4）。
+         *   辺は1本なので「A を脱水すると K」と「K に水を付加すると A」は同じ辺 ＝
+         *   同じアルコール A について両方の回を出すと、**答えの顔ぶれが一致する**。
+         *   ⚠ これは事故ではなく**意図した重なり**（問うている反応が違う）。
+         *   ★ ここで名指ししておくと、あとで「片方を削る」判断をしたときに必ず赤くなる。
+         */
+        const nameSet = (id) => {
+            const i = ip.condPresets.findIndex(p => p.id === id);
+            ip.startFromCondPreset(i);
+            const s = [...new Set([...ip.targets.values()].map(m => W.iupacName(m)))].sort().join(' / ');
+            ip.stop();
+            return s;
+        };
+        const OVERLAP = [
+            ['pr-c2-ethanol',  'hy-c2-ethanol'],
+            ['pr-c3-2propol',  'hy-c3-2propol'],
+            ['pr-c4-2me2prol', 'hy-c4-2me2prol'],
+            ['pr-c4-2butanol', 'hy-c4-2butanol'],
+            ['pr-c5-2me2buol', 'hy-c5-2me2buol'],
+            ['pr-c5-2pentol',  'hy-c5-2pentol'],
+            ['pr-c5-3pentol',  'hy-c5-3pentol']
+        ];
+        OVERLAP.forEach(([a, b]) => {
+            const sa = nameSet(a), sb = nameSet(b);
+            assert(sa === sb && sa.length > 0,
+                `★ ${a} と ${b} の答えが食い違う（${sa} ／ ${sb}）＝ 同じ辺を両側から読めていない`);
+        });
+        // ★ 空振り検出 —— 重ならない組は**ちゃんと重ならない**（上の一致が「全部同じ」の空振りでない）
+        assert(nameSet('pr-c4-1butanol') !== nameSet('hy-c4-2butanol'),
+            '★ 1-ブタノールの脱水と 2-ブタノールへの付加が同じ答えになっている ＝ 比べ方が空振り');
     });
 
     // ===== 一部だけ流す（`?only=`）=====
