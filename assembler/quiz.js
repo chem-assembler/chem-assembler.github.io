@@ -1496,7 +1496,7 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense) {
     });
     if (showWedge) drawWedges(mol, hydrogens, bondsGroup);
     hydrogens.forEach(h => game.renderTargetAtom('H', h.x, h.y, atomsGroup));
-    mol.atoms.forEach(a => game.renderTargetAtom(a.element, a.x, a.y, atomsGroup));
+    mol.atoms.forEach(a => game.renderTargetAtom(a.element, a.x, a.y, atomsGroup, a.charge || 0));
     // 畳んだ鎖の「(CH₂)ₙ」を、結合の上に台紙つきで置く（線と重なって読めなくならないように）
     if (condensed) {
         const NS = 'http://www.w3.org/2000/svg';
@@ -2839,7 +2839,7 @@ class StereoQuiz {
             if (!a1 || !a2) return;
             this.game.renderTargetBond(a1.x + dx, a1.y + dy, a2.x + dx, a2.y + dy, b.type, false, ghost);
         });
-        heavyB.forEach(a => this.game.renderTargetAtom(a.element, a.x + dx, a.y + dy, ghost));
+        heavyB.forEach(a => this.game.renderTargetAtom(a.element, a.x + dx, a.y + dy, ghost, a.charge || 0));
         svgA.appendChild(ghost);
 
         // 一致/不一致の印（図Aの座標に描く。ゴーストが滑り込んだあとに現れる）

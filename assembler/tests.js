@@ -3966,6 +3966,8 @@
             const added = new Array(target.atoms.length);
             perm.forEach(origIdx => {
                 added[origIdx] = m.addAtom(target.atoms[origIdx].element, target.atoms[origIdx].x, target.atoms[origIdx].y);
+                // 電荷（I-3）も写す。落とすとアニリン塩酸塩の N⁺ が N になり、並べ替えで「不一致」に見える
+                c.W.copyAtomMarks(added[origIdx], target.atoms[origIdx]);
             });
             target.bonds.forEach(b => m.addBond(added[b.atom1Index].id, added[b.atom2Index].id, b.type));
             return m;
@@ -50750,7 +50752,7 @@
 
     // 電荷を持つ登録エントリの名簿（★ 名前で列挙。数では数えない）。
     // ⚠ ここに無いエントリが電荷を持ったら赤 ＝「既存データに電荷は 0 件」という設計の前提を守る
-    const ION_CHARGED_ENTRIES = [];
+    const ION_CHARGED_ENTRIES = ['アニリン塩酸塩'];
 
     // 原子と結合と電荷から分子を組む（EL3 の `mk` に電荷を足したもの）
     const ionMk = (W, els, bonds, charges = {}) => {
@@ -50913,7 +50915,8 @@
         assert(g.countMolecules() === 1, `countMolecules が ${g.countMolecules()}（塩は1つの物質）`);
         const { marks: mk2 } = g.markedMolecules(null);
         assert(mk2.size === 0, '塩1つなのに ①② の番号が振られた');
-        assert(g.captionForPart(parts[0], null) === '🔍 C₆H₈ClN', `見出しが ${g.captionForPart(parts[0], null)}（登録前は分子式 C₆H₈ClN のはず。C₆H₈N と Cl に割れてはいけない）`);
+        // 見出しは塩の名前（ION5 で登録済み）。⚠ 粒が付かないと「🔍 C₆H₈N」（陽イオンだけの分子式）になる
+        assert(g.captionForPart(parts[0], null) === '🔍 アニリン塩酸塩', `見出しが ${g.captionForPart(parts[0], null)}（アニリン塩酸塩 のはず。C₆H₈N と Cl に割れてはいけない）`);
         // (4) 同じ塩が2つ: それぞれの Cl⁻ が**いちばん近い**相方に付く（横取りしない）
         const second = g.createTargetFromData({ target: ionAnilineHClTarget(300) });
         second.atoms.forEach(a => g.userMolecule.atoms.push(a));
@@ -50947,6 +50950,65 @@
         assert(sim.getFreeValency(simN.id) === 3 && sim.getFreeValency(simCl.id) === 0, '★ 配置の試算が電荷を落とした（Cl⁻ に H が生える）');
         c.reset();
         return '写し4経路・描画・Undo・粒の付け方（近いほう）と否定対照2つ';
+    });
+
+    test('ION5: アニリン塩酸塩を登録した（N⁺ ＋ Cl⁻ の粒。名前で呼べて、見出し・分子式・図の印が正しい）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const NAME = 'アニリン塩酸塩';
+        const entry = W.COMPOUNDS.find(e => e.name === NAME);
+        assert(entry && entry.id === 'aniline-hydrochloride', `${NAME} が compounds.json に無い／id が違う`);
+        // 登録の約束: 系統名で名乗れるものは登録しない（`iupacName(mol) === null` を確かめてから）
+        const mol = g.createTargetFromData({ target: entry.target });
+        assert(W.iupacName(mol) === null, `iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+        assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), '価標が不正');
+        assert(g.computeMolecularFormula(mol) === 'C₆H₈ClN', `分子式が ${g.computeMolecularFormula(mol)}（教科書の C₆H₅NH₃Cl ＝ C₆H₈ClN のはず）`);
+        // (1) 名前で呼び出せて、キャンバスの見出しが塩の名前で1つ出る
+        g.setMode('free');
+        assert(g.summonMolecule(NAME), '名前で呼び出せない');
+        const parts = g.splitMolecules();
+        assert(parts.length === 1, `呼び出した塩が ${parts.length} 成分に割れている`);
+        assert(g.lookupCompoundName(parts[0]) === NAME, `見出しの名前が「${g.lookupCompoundName(parts[0])}」`);
+        assert(g.lookupCompoundName(g.userMolecule) === NAME, 'キャンバス全体でも名前が引けない');
+        const cap = g.captionForPart(parts[0], null);
+        assert(cap === `🔍 ${NAME}`, `見出しが「${cap}」`);
+        const label = g.computeCompoundLabel();
+        assert(label.name === NAME && label.formula === 'C₆H₈ClN', `右パネルの名前・分子式が ${label.name} / ${label.formula}`);
+        // 図: + と − の印が1つずつ・Cl⁻ に H が生えない・-NH₃⁺ に H が3つ
+        const marks = [...D.querySelectorAll('#chem-svg .svg-charge')].map(t => t.textContent).sort().join(',');
+        assert(marks === '+,−', `電荷の印が ${marks}`);
+        const um = g.userMolecule;
+        const hs = um.calculateHydrogens();
+        assert(hs.filter(h => h.parentId === um.atoms.find(a => a.element === 'N').id).length === 3, '-NH₃⁺ の H が 3 でない');
+        assert(hs.filter(h => h.parentId === um.atoms.find(a => a.element === 'Cl').id).length === 0, 'Cl⁻ に H が生えた');
+        // (2) ★ 中性のアニリンとは別物（名前引き・同型判定とも）。アニリンは今までどおり「アニリン」
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('アニリン');
+        assert(g.lookupCompoundName(g.userMolecule) === 'アニリン', 'アニリンの名前引きが変わった');
+        assert(!W.verifyMolecule(g.userMolecule, mol), '★ アニリンとアニリン塩酸塩を同型と言う');
+        assert(g.computeMolecularFormula(g.userMolecule) === 'C₆H₇N', 'アニリンの分子式が変わった');
+        // (3) 監査の変形（transformCompoundDepiction）が電荷を写す ＝ ライブラリ検査で正準コードが一致する
+        const lib = g.getCompoundLibrary().find(e => e.name === NAME);
+        for (let k = 0; k < 5; k++) {
+            const td = W.transformCompoundDepiction(entry.target, 2);
+            const tm = g.createTargetFromData({ target: td });
+            assert(W.canonicalCode(tm) === lib.code, `変形 ${k + 1} 回目で正準コードが変わった（電荷が落ちた）`);
+            assert(W.verifyMolecule(tm, lib.mol), `変形 ${k + 1} 回目で同型判定が外れた`);
+        }
+        // (4) お手本・クイズの図（renderTargetAtom）も電荷の印を出す
+        const grp = D.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.renderTargetAtom('N', 0, 0, grp, 1);
+        g.renderTargetAtom('Cl', 50, 0, grp, -1);
+        g.renderTargetAtom('C', 100, 0, grp, 0);
+        const tmarks = [...grp.querySelectorAll('.svg-charge')].map(t => t.textContent).sort().join(',');
+        assert(tmarks === '+,−', `お手本の図の電荷の印が ${tmarks}（中性の C には出ない・N⁺ と Cl⁻ に1つずつ）`);
+        // (5) クイズのライブラリにも分子式つきで載る（同じ分子式の「違う」相手は要らない）
+        const quiz = W.quiz;
+        quiz.buildLibrary();
+        const q = quiz.library.find(e => e.name === NAME);
+        assert(q && q.formula === 'C₆H₈ClN', `クイズのライブラリに無い／分子式が違う（${q && q.formula}）`);
+        c.reset();
+        return `${NAME}（${entry.id}）: 名前引き・見出し・分子式 C₆H₈ClN・印 +/−・変形5回で不変`;
     });
 
     // ===== 一部だけ流す（`?only=`）=====
