@@ -7335,7 +7335,7 @@ async function runReactionLibraryTests() {
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
     // 準備中はどれも**式はあるがステージが無い**だけ。エンジンはすべて実装ずみ
     //（C群は v40／部分電離は v165〜v167。v168 でレジストリの「未実装」宣言を実態に合わせた）
-    // vNNNN で有機の酸・塩基10本を参照エントリとして収録した（一問一答の4項目の行き先）。
+    // v200 で有機の酸・塩基10本を参照エントリとして収録した（一問一答の4項目の行き先）。
     // ビーカーで遊ぶには房（STRUCTURE）の作図がいるので、そこは別の仕事として分けてある
     const expected = [
       "aniline-free-naoh", "aniline-hcl", "diazonium-decomp", "gas-caco3-hcl",
