@@ -83,6 +83,7 @@
  * | ID  | 1〜11  | 1〜9 は**化合物 id と URL の受け口**（compounds / stages）。⚠ **10〜11 は別の話**（発注が接頭辞 `ID` を指定したが 1〜9 が使用済みだったため続き番号にした）＝ ★ **C₇H₁₄O₂ のエステル45種の名前**（ユーザー判断 D-C3・2026-09-01「名無し39件にも名前を足す」）。10 が **45件を1つずつ名指し**（件数では見ない。⚠ 名前を足しても**出題には入らない**ことも見る ＝ 45種 > 上限20）・**11 は同点主鎖の規則**＝ `iupacAlkylName`（アルキル基側）も `iupacName`（アルカン側）と同じく「置換基数が最多」を先に見る（1979 A-2.6(a)／2013 P-46.1(k)）。★ 2026-09-02 まで抜けていて **C₆ のアルキル基1つで名前が割れていた**（`1-イソプロピルプロピル` → 正しくは `1-エチル-2-メチルプロピル`）。それまでは誤ったほうを凍結していたが、直して架け替えた。★否定対照 = **C₃〜C₅ では起こりえない**（同点の最長鎖で枝の数が違うものが0件）＝ アルキル基の書き出し練習（`carbonCounts=[3,4,5]`）には届かない。影響範囲の名指しは `AK10`・接頭辞／エーテルへの波及は `AK11` |
  * | IH  | 1〜4   | 種類数を伏せた出題と分類つきのお題（v1489）。1 が「数を出さない4か所と、移った先（ヒント段1・答え合わせ）」・2 が分類つきのお題13件・3 は否定対照（「全部列挙してから捨てる」道では C₇H₁₄O₂ が1件も出せない）・**4 は引き金**＝ C₇ の4件が落ちる／通る理由が変わったら赤くする（2026-09-01 に一度引かれ、物差しを「名前が足りない」から「腕がペンチルを超える」へ架け替えた） |
  * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
+ * | ION | 1〜3   | ★ **電荷**（DESIGN_ion_layer.md I-3・§3-3）。電荷は `maxValencyOf` 1か所で価標に効く（D-I12）。1 が設計書 §3-3 の表そのもの（双性 ≠ 中性・-NH₃⁺ に H 3・Cl⁻ の粒に H 0・ジアゾニウム N⁺ の4本が通る）と**既存データに電荷が 0 件**であること（`ION_CHARGED_ENTRIES` に名前で列挙）。**否定対照は EL3(4)**＝電荷の無い C-N≡N は弾いたまま。2 が正準コードのラベル（N(4) と N⁺(4) が割れる・`verifyMolecule` も割れる・不斉判定が電荷を見る）。3 が官能基の型（ammonium / carboxylate_ion / diazonium）と `iupacName` の門番＝ CH₃O⁻ を「メタノール」と名乗らない・アニリン塩酸塩の N⁺ に `amine_hcl` が二度かからない |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜5   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜5 は「木しか作れない式」の枝刈りと C₇H₁₆ のお題**（v1485・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。3 が列挙器（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる）・5 が画面（お題として並ぶ・入力欄からも開く・9種に名前が付く。**否定対照は「重原子7個でも木でなければ断る」**＝ C₇H₁₄・C₆H₁₅N・C₆H₁₄S が数える前に断られる） |
  * | IW  | 1〜32 | 異性体の書き出しの答案用紙化（キャンバス＝答案・名前を伏せる門番）とヒント4段・スコア。
@@ -50736,6 +50737,140 @@
             `★ 2手でサリチル酸にならない（${end.join(' / ')}）`);
         c.reset();
         return 'サリチル酸ナトリウムを登録と同じ正準コードで生成／漏斗の中では遊離だけ／2手でサリチル酸';
+    });
+
+    /* ===== ION: 電荷（DESIGN_ion_layer.md I-3・§3-3）=====
+     *
+     * ★ 電荷は「原子の印 `charge`」で持ち、**`maxValencyOf` 1か所で価標に効く**（D-I12）。
+     *   `getFreeValency`（自動水素・分子式・正準コードのラベル）と `isValencyValid`（検証）が
+     *   両方そこを読むので、設計書 §3-3 の表が**いっぺんに**成り立つ。
+     * ⚠ 電荷を手で描く経路は無い（D-I14）。この帯は分子を Molecule で直に組む。
+     * ⚠ O–金属の塩は線1本のまま（D-I11）。電荷は N⁺・双性の O⁻・N≡N⁺ と対イオンの粒にだけ使う。
+     */
+
+    // 電荷を持つ登録エントリの名簿（★ 名前で列挙。数では数えない）。
+    // ⚠ ここに無いエントリが電荷を持ったら赤 ＝「既存データに電荷は 0 件」という設計の前提を守る
+    const ION_CHARGED_ENTRIES = [];
+
+    // 原子と結合と電荷から分子を組む（EL3 の `mk` に電荷を足したもの）
+    const ionMk = (W, els, bonds, charges = {}) => {
+        const m = new W.Molecule();
+        const ids = els.map((e, i) => {
+            const a = m.addAtom(e, 300 + i * 42, 300);
+            if (charges[i]) a.charge = charges[i];
+            return a.id;
+        });
+        bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t || 1));
+        return { m, ids };
+    };
+    const ionRing = [[0, 1, 2], [1, 2], [2, 3, 2], [3, 4], [4, 5, 2], [5, 0]];  // ベンゼン環 C0..C5
+
+    test('ION1: 電荷は maxValencyOf 1か所で価標に効く（設計書 §3-3 の表・既存データに電荷は 0 件）', async (c) => {
+        const W = c.W, g = c.game;
+        // (1) グリシン: 中性形と双性イオン（N⁺・O⁻）。同じ原子・同じ結合で電荷だけ違う
+        const glyBonds = [[0, 1], [0, 2], [1, 3, 2], [1, 4]];
+        const gly = ionMk(W, ['C', 'C', 'N', 'O', 'O'], glyBonds);
+        const zw = ionMk(W, ['C', 'C', 'N', 'O', 'O'], glyBonds, { 2: 1, 4: -1 });
+        assert(gly.m.getFreeValency(gly.ids[2]) === 2 && gly.m.getFreeValency(gly.ids[4]) === 1,
+            '中性グリシンの自動水素が変わった（N に 2・-OH に 1 のはず）');
+        assert(zw.m.getFreeValency(zw.ids[2]) === 3, `★ 双性イオンの N⁺ に自動水素が ${zw.m.getFreeValency(zw.ids[2])} 個（3 個のはず）`);
+        assert(zw.m.getFreeValency(zw.ids[4]) === 0, '★ 双性イオンの O⁻ に自動水素が生えている');
+        assert(zw.ids.every(id => W.isValencyValid(zw.m, id)), '双性イオンが価標超過と判定される');
+        assert(g.computeMolecularFormula(zw.m) === g.computeMolecularFormula(gly.m) &&
+            g.computeMolecularFormula(zw.m) === 'C₂H₅NO₂',
+            `双性イオンの分子式が中性形と違う（${g.computeMolecularFormula(zw.m)} / C₂H₅NO₂ のはず）`);
+        assert(W.canonicalCode(zw.m) !== W.canonicalCode(gly.m), '★ 双性イオンと中性形の正準コードが同じ（電荷が同値関係に効いていない）');
+        assert(!W.verifyMolecule(gly.m, zw.m), '★ 同型判定が双性イオンと中性形を同じと言う');
+
+        // (2) アニリン塩酸塩: N⁺ ＋ Cl⁻ の粒（結合ゼロ）。分子式は教科書の C₆H₅NH₃Cl ＝ C₆H₈ClN
+        const an = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'Cl'], [...ionRing, [0, 6]], { 6: 1, 7: -1 });
+        assert(an.m.getFreeValency(an.ids[6]) === 3, '-NH₃⁺ の自動水素が 3 個でない');
+        assert(an.m.getFreeValency(an.ids[7]) === 0, '★ Cl⁻ の粒に自動水素が生えている（HCl の図になる）');
+        assert(an.ids.every(id => W.isValencyValid(an.m, id)), 'アニリン塩酸塩が価標超過と判定される');
+        assert(g.computeMolecularFormula(an.m) === 'C₆H₈ClN', `アニリン塩酸塩の分子式が ${g.computeMolecularFormula(an.m)}（C₆H₈ClN のはず）`);
+        assert(W.canonicalCode(an.m).includes('/'), '粒が第2成分になっていない');
+
+        // (3) 塩化ベンゼンジアゾニウム: C-N⁺≡N ＋ Cl⁻。N⁺ は三重結合を含む4本 ＝ 電荷があるから通る
+        const dz = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'N', 'Cl'], [...ionRing, [0, 6], [6, 7, 3]], { 6: 1, 8: -1 });
+        assert(W.isValencyValid(dz.m, dz.ids[6]), '★ ジアゾニウムの N⁺（三重結合を含む4本）が通らない');
+        assert(dz.m.getFreeValency(dz.ids[6]) === 0 && dz.m.getFreeValency(dz.ids[7]) === 0, 'ジアゾニウムの N に自動水素が生えた');
+        assert(g.computeMolecularFormula(dz.m) === 'C₆H₅ClN₂', `塩化ベンゼンジアゾニウムの分子式が ${g.computeMolecularFormula(dz.m)}`);
+        // ★★ 否定対照（EL3(4) と同じ）: **電荷の無い** C-N≡N は今までどおり弾く
+        const dz0 = ionMk(W, ['N', 'N', 'C'], [[0, 1, 3], [0, 2]]);
+        assert(!W.isValencyValid(dz0.m, dz0.ids[0]), '★★ 電荷の無い C-N≡N が通ってしまう（EL3 の否定対照が崩れた）');
+
+        // (4) 粒の門番: 電荷を持つ Na⁺・Cl⁻ は価標 0 ＝ 結合を1本でも持てば落ちる（N-Cl の図を電荷で通さない）
+        const clBond = ionMk(W, ['C', 'Cl'], [[0, 1]], { 1: -1 });
+        assert(!W.isValencyValid(clBond.m, clBond.ids[1]), '★ 結合を持つ Cl⁻ が通ってしまう');
+        const na = ionMk(W, ['Na'], [], { 0: 1 });
+        assert(na.m.getFreeValency(na.ids[0]) === 0, '★ Na⁺ の粒に自動水素が生えている（NaH の図）');
+        // ⚠ 電荷の無い Na は今までどおり価標 1（-COONa を線1本で書く流儀。D-I11）
+        const na0 = ionMk(W, ['Na'], []);
+        assert(W.maxValencyOf(na0.m, na0.ids[0]) === 1, '電荷の無い Na の価標が 1 でなくなった（-COONa が書けない）');
+
+        // (5) ★★ 既存データに電荷を持つ原子が無い（＝ 登録済み 1,150 件のコード・分子式・自動水素は不変）。
+        //     ⚠ 数ではなく名前で見る。名簿に無いエントリが電荷を持てば赤
+        const charged = [];
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (e.target && e.target.atoms.some(a => a.charge)) charged.push(e.name);
+        });
+        const extra = charged.filter(n => !ION_CHARGED_ENTRIES.includes(n));
+        assert(extra.length === 0, `★ 名簿に無いエントリが電荷を持っている: ${extra.join(', ')}`);
+        ION_CHARGED_ENTRIES.forEach(n => assert(charged.includes(n), `名簿の「${n}」が電荷を持っていない（名簿が古い）`));
+        return `双性・アニリン塩酸塩・ジアゾニウムが §3-3 の表どおり／電荷つき登録 ${charged.length} 件（名簿どおり）`;
+    });
+
+    test('ION2: 正準コードのラベルは電荷を明示する（N(4) と N⁺(4) が割れる・不斉判定も電荷を見る）', async (c) => {
+        const W = c.W;
+        const q = [[0, 1], [0, 2], [0, 3], [0, 4]];
+        const n4 = ionMk(W, ['N', 'C', 'C', 'C', 'C'], q);
+        const n4p = ionMk(W, ['N', 'C', 'C', 'C', 'C'], q, { 0: 1 });
+        // 空き価標はどちらも 0 ＝ ラベルに電荷が無いと同じ `N0` になる（設計書 §3-3）
+        assert(n4.m.getFreeValency(n4.ids[0]) === 0 && n4p.m.getFreeValency(n4p.ids[0]) === 0, '前提: どちらも空き 0');
+        assert(W.heavyAtomLabel(n4.m, n4.m.atoms[0]) === 'N0', `中性 N(4) のラベルが ${W.heavyAtomLabel(n4.m, n4.m.atoms[0])}（N0 のはず。電荷が無ければ何も足さない）`);
+        assert(W.heavyAtomLabel(n4p.m, n4p.m.atoms[0]) === 'N0+', `N⁺(4) のラベルが ${W.heavyAtomLabel(n4p.m, n4p.m.atoms[0])}（N0+ のはず）`);
+        assert(W.canonicalCode(n4.m) !== W.canonicalCode(n4p.m), '★ 第四級アンモニウムを線で書いたものと N⁺(4) の正準コードが同じ');
+        assert(!W.verifyMolecule(n4.m, n4p.m), '★ 同型判定が N(4) と N⁺(4) を同じと言う（canonicalCode と食い違う）');
+        assert(W.verifyMolecule(n4p.m, ionMk(W, ['N', 'C', 'C', 'C', 'C'], q, { 0: 1 }).m), '同じ電荷どうしは同型のはず');
+        // 電荷 −1 のラベルと、2価の書き方
+        const o = ionMk(W, ['C', 'O'], [[0, 1]], { 1: -1 });
+        assert(W.heavyAtomLabel(o.m, o.m.atoms[1]) === 'O0-', `O⁻ のラベルが ${W.heavyAtomLabel(o.m, o.m.atoms[1])}（O0- のはず）`);
+        // 不斉判定（rootedFragmentCode）も同じラベルを読む: アラニンの双性イオンは不斉のまま
+        const ala = ionMk(W, ['C', 'C', 'N', 'O', 'O', 'C'], [[0, 1], [0, 2], [1, 3, 2], [1, 4], [0, 5]], { 2: 1, 4: -1 });
+        assert(ala.m.isAsymmetricCarbon(ala.ids[0]), 'アラニン双性イオンの不斉炭素を検出できない');
+        assert(W.rootedFragmentCode(ala.m, ala.ids[2], ala.ids[0]) === 'N3+[c0]()', `断片コードに電荷が無い: ${W.rootedFragmentCode(ala.m, ala.ids[2], ala.ids[0])}`);
+        // ⚠ 電荷の無い分子のラベルは今までどおり（元素＋空き価標だけ）
+        const et = ionMk(W, ['C', 'C', 'O'], [[0, 1], [1, 2]]);
+        assert(et.m.atoms.map(a => W.heavyAtomLabel(et.m, a)).join(',') === 'C3,C2,O1', '電荷の無い分子のラベルが変わった');
+        return 'N0 / N0+ / O0- が割れる。不斉判定の断片コードも電荷を持つ';
+    });
+
+    test('ION3: 官能基の型（ammonium・carboxylate_ion・diazonium）と iupacName の門番', async (c) => {
+        const W = c.W, g = c.game;
+        const types = m => W.findFunctionalGroups(m).map(x => x.type).sort().join(',');
+        const an = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'Cl'], [...ionRing, [0, 6]], { 6: 1, 7: -1 });
+        assert(types(an.m) === 'ammonium,aromatic', `アニリン塩酸塩の官能基が ${types(an.m)}（ammonium,aromatic のはず。amine1 と読むとアミンに塩酸をもう一度かけようとする）`);
+        const zw = ionMk(W, ['C', 'C', 'N', 'O', 'O'], [[0, 1], [0, 2], [1, 3, 2], [1, 4]], { 2: 1, 4: -1 });
+        assert(types(zw.m) === 'ammonium,carboxylate_ion', `双性イオンの官能基が ${types(zw.m)}`);
+        const dz = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'N', 'Cl'], [...ionRing, [0, 6], [6, 7, 3]], { 6: 1, 8: -1 });
+        assert(types(dz.m) === 'aromatic,diazonium', `ジアゾニウムの官能基が ${types(dz.m)}`);
+        // ⚠ 線1本の -COONa は今までどおり carboxylate（O–金属は電荷を使わない。D-I11）
+        const acna = ionMk(W, ['C', 'C', 'O', 'O', 'Na'], [[0, 1], [1, 2, 2], [1, 3], [3, 4]]);
+        assert(types(acna.m) === 'carboxylate', `酢酸ナトリウム（線1本）の官能基が ${types(acna.m)}`);
+        // 中性のアニリン・グリシンは不変
+        const an0 = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N'], [...ionRing, [0, 6]]);
+        assert(types(an0.m) === 'amine1,aromatic', `アニリンの官能基が変わった: ${types(an0.m)}`);
+        // ★ reactor の入口: アニリン塩酸塩の N⁺ に `amine_hcl` は二度かからない（塩基性アミンではない）
+        const hcl = W.REACTION_RULES.find(r => r.id === 'amine_hcl');
+        assert(hcl.detect(an.m).length === 0, '★ amine_hcl がアニリン塩酸塩の N⁺ を塩基性アミンとして拾った');
+        assert(hcl.detect(an0.m).length === 1, '前提: 中性のアニリンには 1 件');
+        // ★ iupacName の門番: 電荷を持つ分子には系統名を付けない。
+        //   否定対照 ＝ CH₃O⁻ は O⁻ の空き 0 を「-OH」と読めば「メタノール」になる。門番が無いとそう名乗る
+        const meo = ionMk(W, ['C', 'O'], [[0, 1]], { 1: -1 });
+        assert(W.iupacName(meo.m) === null, `★ メトキシド CH₃O⁻ に系統名「${W.iupacName(meo.m)}」が付いた`);
+        assert(W.iupacName(ionMk(W, ['C', 'O'], [[0, 1]]).m) === 'メタノール', '中性のメタノールが命名されない');
+        assert(g.lookupCompoundName(meo.m) === null, 'メトキシドがライブラリの名前に当たった');
+        return 'ammonium / carboxylate_ion / diazonium が立ち、amine_hcl は塩に二度かからず、CH₃O⁻ は命名しない';
     });
 
     // ===== 一部だけ流す（`?only=`）=====
