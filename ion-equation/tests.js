@@ -7329,13 +7329,20 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 54件が遊べ、2件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 54件が遊べ、12件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
-    // 準備中は5本とも**式はあるがステージが無い**だけ。エンジンはすべて実装ずみ
+    // 準備中はどれも**式はあるがステージが無い**だけ。エンジンはすべて実装ずみ
     //（C群は v40／部分電離は v165〜v167。v168 でレジストリの「未実装」宣言を実態に合わせた）
-    const expected = ["gas-caco3-hcl", "redox-al-h2so4"];
+    // vNNNN で有機の酸・塩基10本を参照エントリとして収録した（一問一答の4項目の行き先）。
+    // ビーカーで遊ぶには房（STRUCTURE）の作図がいるので、そこは別の仕事として分けてある
+    const expected = [
+      "aniline-free-naoh", "aniline-hcl", "diazonium-decomp", "gas-caco3-hcl",
+      "glutamate-ionization1", "glutamate-ionization2", "glutamate-ionization3",
+      "glycine-hcl", "glycine-ionization1", "glycine-ionization2", "glycine-naoh",
+      "redox-al-h2so4",
+    ];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
     assert(playable.length === 54, "遊べる反応が 54 件でない: " + playable.length);
@@ -9244,11 +9251,11 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」54件・「準備中」2件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」54件・「準備中」12件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
     assert(s.playLinks.length === 54, "「▶遊ぶ」が 54 件でない: " + s.playLinks.length);
-    assert(s.pendingCount === 2, "「準備中（参照のみ）」が 2 件でない: " + s.pendingCount);
+    assert(s.pendingCount === 12, "「準備中（参照のみ）」が 12 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと
     const files = s.playLinks.map((h) => String(h).split("?")[0]);
