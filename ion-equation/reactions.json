@@ -880,6 +880,7 @@
       "units": ["中和", "弱塩基", "正塩", "芳香族窒素化合物"],
       "species": ["C6H5NH2", "HCl", "C6H5NH3Cl", "H+", "Cl-", "C6H5NH3+"],
       "animationType": "aqueous",
+      "qaCodes": ["org.aroN.aniline-base"],
       "related": [{ "id": "aniline-free-naoh", "label": "▸ この塩からアニリンに戻すには" }],
       "note": "アニリンは弱塩基。窒素に非共有電子対が残っているので、アンモニアと同じく酸の H⁺ を受け取って陽イオンになる（OH⁻ を出すのではない）。水に溶けにくいアニリンが、イオンになると水によく溶けるのがこの反応の使いどころで、分液漏斗で塩基だけを水層へ移す操作はこの式そのもの。塩基としての強さはアンモニアより弱く、ベンゼン環が電子対を引き寄せているため。",
       "difficulty": 3
@@ -894,6 +895,7 @@
       "units": ["弱塩基の遊離", "弱塩基", "正塩", "芳香族窒素化合物"],
       "species": ["C6H5NH3Cl", "NaOH", "C6H5NH2", "NaCl", "H2O", "C6H5NH3+", "Cl-", "Na+", "OH-", "H+"],
       "animationType": "aqueous",
+      "qaCodes": ["org.aroN.aniline-base"],
       "ionic": { "reactants": ["C6H5NH3+", "OH-"], "products": ["C6H5NH2", "H2O"], "answer": [1, 1, 1, 1] },
       "related": [{ "id": "aniline-hcl", "label": "▸ 塩をつくる側の式" }],
       "note": "弱塩基の遊離。強塩基の OH⁻ がアニリニウムイオンから H⁺ を奪い、電離しないアニリンの分子に戻る。水に溶けていたアニリンが油状に分かれて出てくるので、水層に移した塩基をもう一度取り出す操作がこれにあたる。酢酸ナトリウムに塩酸を加えると酢酸に戻る反応（弱酸の遊離）と、強い側が弱い側を追い出すという点で同じ仲間。Na⁺ と Cl⁻ は傍観イオン。",
@@ -909,6 +911,7 @@
       "units": ["気体発生", "芳香族窒素化合物"],
       "species": ["C6H5N2Cl", "H2O", "C6H5OH", "N2", "HCl", "C6H5N2+", "Cl-", "N", "H+"],
       "animationType": "aqueous",
+      "qaCodes": ["org.aroN.diazonium-decomp"],
       "ionic": { "reactants": ["C6H5N2+", "H2O"], "products": ["C6H5OH", "N2", "H+"], "answer": [1, 1, 1, 1, 1] },
       "note": "塩化ベンゼンジアゾニウムは不安定で、5℃ を超えると水と反応して窒素を発生し、フェノールになる。だからジアゾ化もカップリングも氷で冷やしながら行う。ジアゾニウムイオンの ＋ は窒素2個のかたまりが背負っていて、そこが N₂ として抜けたあとに水の O が入る形。分解してもアニリンには戻らない（もとに戻る反応ではない）。Cl⁻ は最初から最後まで傍観イオンなので、イオン反応式では消える。",
       "difficulty": 3
@@ -923,6 +926,7 @@
       "units": ["中和", "アミノ酸", "両性", "正塩"],
       "species": ["Gly", "HCl", "GlyHCl", "H+", "Cl-", "GlyH+"],
       "animationType": "aqueous",
+      "qaCodes": ["org.bio.amino-acid-amphoteric"],
       "related": [
         { "id": "glycine-naoh", "label": "▸ 強塩基と塩をつくる側" },
         { "id": "glycine-ionization1", "label": "▸ この陽イオンが H⁺ を手放す段" }
@@ -940,6 +944,7 @@
       "units": ["中和", "アミノ酸", "両性", "正塩"],
       "species": ["Gly", "NaOH", "GlyNa", "H2O", "Na+", "OH-", "Gly-", "H+"],
       "animationType": "aqueous",
+      "qaCodes": ["org.bio.amino-acid-amphoteric"],
       "ionic": { "reactants": ["Gly", "OH-"], "products": ["Gly-", "H2O"], "answer": [1, 1, 1, 1] },
       "related": [
         { "id": "glycine-hcl", "label": "▸ 強酸と塩をつくる側" },
@@ -958,6 +963,7 @@
       "units": ["電離平衡", "アミノ酸", "両性"],
       "species": ["GlyH+", "Gly", "H+"],
       "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
       "related": [
         { "id": "glycine-ionization2", "label": "▸ 第2段（双性イオン → 陰イオン）" },
         { "id": "glutamate-ionization1", "label": "▸ 三段になるアミノ酸（グルタミン酸）" }
@@ -975,6 +981,7 @@
       "units": ["電離平衡", "アミノ酸", "両性"],
       "species": ["Gly", "Gly-", "H+"],
       "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
       "related": [
         { "id": "glycine-ionization1", "label": "▸ 第1段（陽イオン → 双性イオン）" },
         { "id": "glutamate-ionization1", "label": "▸ 三段になるアミノ酸（グルタミン酸）" }
@@ -992,6 +999,7 @@
       "units": ["電離平衡", "アミノ酸", "両性"],
       "species": ["Glu+", "Glu", "H+"],
       "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
       "related": [
         { "id": "glutamate-ionization2", "label": "▸ 第2段（側鎖のカルボキシ基）" },
         { "id": "glutamate-ionization3", "label": "▸ 第3段（アンモニウム基）" },
@@ -1010,6 +1018,7 @@
       "units": ["電離平衡", "アミノ酸", "両性"],
       "species": ["Glu", "Glu-", "H+"],
       "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
       "related": [
         { "id": "glutamate-ionization1", "label": "▸ 第1段（α位のカルボキシ基）" },
         { "id": "glutamate-ionization3", "label": "▸ 第3段（アンモニウム基）" }
@@ -1027,6 +1036,7 @@
       "units": ["電離平衡", "アミノ酸", "両性"],
       "species": ["Glu-", "Glu^2-", "H+"],
       "animationType": "weak-partial",
+      "qaCodes": ["org.bio.amino-acid-polyprotic"],
       "related": [
         { "id": "glutamate-ionization1", "label": "▸ 第1段（α位のカルボキシ基）" },
         { "id": "glutamate-ionization2", "label": "▸ 第2段（側鎖のカルボキシ基）" }
