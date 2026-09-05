@@ -26,6 +26,14 @@ let query = "";
 /* 隣のアプリ（比例式でみる化学計算）から ?from=<問題ID> で来たときの相手。
    { ratioId, ionId|null, no } を入れる。ionId が null なら「まだ収録されていない式」 */
 let from = null;
+/* 一問一答（/qa/）から ?from=qa&code=<知識項目コード> で来たときの相手。
+   { code, ids } を入れる（ids は reactions.json の qaCodes から引いた反応 id）。
+   ⚠ 相手が送ってくるのは「自分が誰か」だけで、行き先はこちらが決める。 */
+let qaFrom = null;
+/* qa から来たときは、その項目に当たる反応だけを出す（66件の中から自分で探させない）。
+   「✕ 絞り込みを解除」で外せる ＝ ふつうの絞り込みと同じ立場にする。帯のほうは残す
+   —— 来た道は絞り込みを外しても消してはいけない（戻れなくなる） */
+let qaOnly = false;
 
 function chip(label, active, onClick, extraClass) {
   const b = document.createElement("button");
@@ -37,7 +45,7 @@ function chip(label, active, onClick, extraClass) {
 
 /* いま何か絞り込みが掛かっているか（チップ・横断・検索語のどれか） */
 function anyFilter() {
-  return Object.values(sel).some((s) => s.size) || onlyCross || query !== "";
+  return Object.values(sel).some((s) => s.size) || onlyCross || qaOnly || query !== "";
 }
 
 /* 絞り込みを全部外す。「すべて表示」ボタンと、相手の反応へ飛ぶ jumpTo() が同じことをするので
@@ -46,6 +54,7 @@ function anyFilter() {
 function clearFilters() {
   Object.values(sel).forEach((s) => s.clear());
   onlyCross = false;
+  qaOnly = false;
   query = "";
   if (searchEl) searchEl.value = "";
 }
@@ -109,6 +118,7 @@ function matches(rx) {
   if (sel.difficulty.size && !sel.difficulty.has(rx.difficulty)) return false;
   if (sel.unit.size && !((rx.units || []).some((u) => sel.unit.has(u)))) return false;
   if (onlyCross && !cross[rx.id]) return false;
+  if (qaOnly && !(qaFrom && qaFrom.ids.includes(rx.id))) return false;
   if (!matchesQuery(rx, query)) return false;
   return true;
 }
@@ -234,6 +244,7 @@ searchEl.addEventListener("input", () => { query = searchEl.value.trim(); render
    同じ式の2問目以降（メタンの燃焼など）が引けない。式で照合すれば全問solvableになる。 */
 function resolveFrom() {
   const id = new URLSearchParams(location.search).get("from");
+  if (id === "qa") return null;   // 一問一答から来た印。ratio の問題 ID ではない
   if (!id || typeof ChemRatio === "undefined" || !ChemRatio.REACTIONS) return null;
   const idx = ChemRatio.REACTIONS.findIndex((p) => p.id === id);
   if (idx < 0) return null;
@@ -251,11 +262,35 @@ function resolveFrom() {
   return { ratioId: id, no: idx + 1, ionId: hit ? hit.id : null };
 }
 
+/* 一問一答（/qa/）から来たときの相手を解決する。
+   ⚠ 相手が送ってくるのは `?from=qa&code=<知識項目コード>` だけ。
+   その項目にどの反応を当てるかは reactions.json の `qaCodes` が決める（こちら側の知識）。 */
+function resolveQaFrom() {
+  const p = new URLSearchParams(location.search);
+  if ((p.get("from") || "") !== "qa") return null;
+  const code = (p.get("code") || "").trim();
+  if (!code) return null;
+  return { code, ids: reactionsForQaCode(lib ? lib.reactions : [], code) };
+}
+
 /* 来た道を示して戻れるようにする（横断が片道だと辞書引きの流れが途切れる）。
    収録されていない式なら、そう正直に言う（リンクは常に張られてくるので） */
 function renderFrom() {
   const box = document.getElementById("libFrom");
   if (!box) return;
+  if (qaFrom) {
+    box.hidden = false;
+    // 戻り先は相手の URL の形だけを知っていればよい（相手の項目表は持たない）
+    const back = '<a class="fromBack" href="../qa/?from=ion&code=' +
+      encodeURIComponent(qaFrom.code) + '">← 一問一答へ戻る</a>';
+    box.innerHTML = qaFrom.ids.length
+      ? '<span class="fromWhere">一問一答の<b>' + qaFrom.code +
+        '</b>から来ました。この項目に当たる反応式を<b>' + qaFrom.ids.length +
+        '件</b>だけ出しています</span>' + back
+      : '<span class="fromWhere fromMiss">一問一答の<b>' + qaFrom.code +
+        '</b>から来ましたが、<b>この項目に当たる反応式はまだ収録されていません</b>（下は索引の全体です）</span>' + back;
+    return;
+  }
   if (!from) { box.hidden = true; return; }
   box.hidden = false;
   const back = '<a class="fromBack" href="../ratio/stoich.html?r=' +
@@ -274,6 +309,8 @@ loadReactionLibrary().then((l) => {
     cross = buildCrossAppIndex(lib.reactions, ChemRatio.REACTIONS, ChemRatio.SUBSTANCES);
   }
   from = resolveFrom();
+  qaFrom = resolveQaFrom();
+  qaOnly = !!(qaFrom && qaFrom.ids.length);
   renderFrom();
   render();
   if (from && from.ionId) {
@@ -293,6 +330,9 @@ window.IonLibUI = {
     return {
       cross: Object.assign({}, cross),
       from: from && Object.assign({}, from),
+      qaFrom: qaFrom && { code: qaFrom.code, ids: qaFrom.ids.slice() },
+      qaOnly,
+      backLinks: [...document.querySelectorAll("#libFrom .fromBack")].map((a) => a.getAttribute("href")),
       onlyCross,
       query,
       selected: Object.fromEntries(Object.entries(sel).map(([k, s]) => [k, [...s]])),
