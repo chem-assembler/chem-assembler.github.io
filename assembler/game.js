@@ -5532,9 +5532,9 @@ class Game {
             this.renderTargetAtom(h.element, h.x, h.y);
         });
 
-        // ② 重原子
+        // ② 重原子（電荷の印つき。I-3）
         heavyAtoms.forEach(a => {
-            this.renderTargetAtom(a.element, a.x, a.y);
+            this.renderTargetAtom(a.element, a.x, a.y, undefined, a.charge || 0);
         });
 
         // ③ 畳んだ鎖の「(CH₂)ₙ」を、結合線の上に台紙つきで置く
@@ -5808,9 +5808,11 @@ class Game {
     }
 
     // 原子1個をミニ描画する（出力先グループを指定可能。既定はお手本モーダル。クイズ等からも流用）
-    renderTargetAtom(element, x, y, targetGroup = this.targetAtoms) {
+    // `charge` を渡すと形式電荷の印（+ / −）も添える（I-3。お手本・クイズ・ゴーストの図が同じ印を出す）
+    renderTargetAtom(element, x, y, targetGroup = this.targetAtoms, charge = 0) {
         const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        
+        if (charge) group.appendChild(this.chargeMarkNode(x, y, charge));
+
         const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         circle.setAttribute('cx', x);
         circle.setAttribute('cy', y);
@@ -8329,15 +8331,20 @@ class Game {
      * 2価以上は `2+` のように数を添える。
      */
     renderCharge(atom) {
+        this.atomsGroup.appendChild(this.chargeMarkNode(atom.x, atom.y, atom.charge));
+    }
+
+    /** 形式電荷の印そのもの（`<text class="svg-charge">`）。作図・お手本・クイズの図が共有する */
+    chargeMarkNode(x, y, charge) {
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', atom.x + 9);
-        text.setAttribute('y', atom.y - 5);
+        text.setAttribute('x', x + 9);
+        text.setAttribute('y', y - 5);
         text.setAttribute('class', 'svg-charge');
-        text.setAttribute('data-charge', String(atom.charge));
+        text.setAttribute('data-charge', String(charge));
         text.style.fontSize = '11px';
-        const n = Math.abs(atom.charge);
-        text.textContent = (n > 1 ? String(n) : '') + (atom.charge > 0 ? '+' : '−');
-        this.atomsGroup.appendChild(text);
+        const n = Math.abs(charge);
+        text.textContent = (n > 1 ? String(n) : '') + (charge > 0 ? '+' : '−');
+        return text;
     }
 
     renderAtom(id, element, x, y, isLocked, isAsymmetricMarked = false, haworthFace = null) {
