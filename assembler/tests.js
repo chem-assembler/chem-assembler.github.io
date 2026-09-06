@@ -7817,6 +7817,11 @@
         // (5) 新しい文脈が既存データに1件も当たらない（＝登録済みの分子の判定が変わらない）。
         //     ライブラリの N(4) はすべてニトロ型で、アンモニウム型は0件であること
         let nitro = 0, ammonium = 0;
+        /* ★ ジアゾニウム N⁺≡N は **電荷で通る**（`maxValencyOf` が 4 を返す）ので、
+         *   上の (4) の「文脈で許す」枠には入らない ＝ ここで別に数える。
+         *   ⚠ **数ではなく名前で持つ**（ION1 の `ION_CHARGED_ENTRIES` と同じ約束）。 */
+        const DIAZONIUM_ENTRIES = ['塩化ベンゼンジアゾニウム'];
+        const diazonium = [];
         [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
             if (!e.target) return;
             const m = c.game.createTargetFromData({ target: e.target });
@@ -7827,9 +7832,15 @@
                     nb.some(n => n.type === 1 && n.atom.element === 'O')) nitro++;
                 else if (nb.length === 4 && nb.every(n => n.type === 1 &&
                     (n.atom.element === 'C' || n.atom.element === 'H'))) ammonium++;
+                else if (a.charge === 1 && nb.length === 2 &&
+                    nb.some(n => n.type === 3 && n.atom.element === 'N')) diazonium.push(e.name);
                 else assert(false, `${e.name}: 分類できない N(4) がある`);
             });
         });
+        const dzExtra = diazonium.filter(n => !DIAZONIUM_ENTRIES.includes(n));
+        assert(dzExtra.length === 0, `★ 名簿に無いエントリがジアゾニウム型 N(4) を持っている: ${dzExtra.join(', ')}`);
+        DIAZONIUM_ENTRIES.forEach(n => assert(diazonium.includes(n),
+            `★ 名簿の「${n}」がジアゾニウム型 N(4) を持っていない（登録の図が壊れた／名簿が古い）`));
         // ⚠ **件数は決め打ちしない。** 当初は `nitro === 18` と書いてあったが、
         // 化合物ライブラリ第3弾（+143件・ベンゼン二置換体にニトロが多い）で 41 件になり落ちた。
         // **このテストが守りたいのは「新しい文脈が既存データに1件も当たらない」こと**で、
@@ -34447,8 +34458,9 @@
         // ★ v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23本
         // ★ v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24本（ユーザー指摘）
         // ★ v1514 で二酸化炭素の瓶を足して 24 → 25本（DESIGN_ion_layer.md I-2・分液 51 → 58件）
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 25,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの20本＋調べるもの5本＝25本）`);
+        // ★ ジアゾ化の瓶（NaNO₂＋HCl）を足して 25 → 26本（DESIGN_ion_layer.md I-4）
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 26,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの21本＋調べるもの5本＝26本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -34560,8 +34572,13 @@
             /* ★ v1514: コルベ・シュミット反応。⚠ **瓶は増やさない**（同じ CO₂ の瓶）。
              *   系統樹の「12本の足りない辺」#8（入試32件）が、瓶が揃ったことで埋まった。 */
             'liberate_co2', 'kolbe_schmidt',
+            /* ★ ジアゾ化（DESIGN_ion_layer.md I-4）: 1本足して 44 → 45。
+             *   ⚠ **瓶を1本足した**（25 → 26本）。既存の瓶に相乗りできない理由は
+             *   `nano2_hcl` の瓶の注記（塩酸に相乗りさせると「塩酸でジアゾ化できる」と
+             *   画面が言うことになる ＝ `amine_hcl` と行き先が正反対）。 */
+            'diazotization',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 44, `瓶に紐づくルールが ${linked.length} 件（44件を期待）`);
+        assert(linked.length === 45, `瓶に紐づくルールが ${linked.length} 件（45件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -34575,11 +34592,12 @@
         //     v1472 でワッカー法の瓶（O₂ ／ PdCl₂・CuCl₂）を足して 22 → 23
         //     v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24
         //     ★ v1514 で二酸化炭素の瓶（CO₂）を足して 24 → 25
+        //     ★ ジアゾ化の瓶（NaNO₂＋HCl）を足して 25 → 26（DESIGN_ion_layer.md I-4）
         const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
-        assert(drawn.length === 25, `瓶の札が ${drawn.length} 個（25個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 20 &&
+        assert(drawn.length === 26, `瓶の札が ${drawn.length} 個（26個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 21 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの20本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの21本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -35506,9 +35524,9 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶25本）', async (c) => {
+    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶26本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶25本を並べた状態のモーダルを測る
+        // iframe の幅を 320px に縮めて、瓶26本を並べた状態のモーダルを測る
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
@@ -35522,7 +35540,7 @@
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 25, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 26, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
             [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
@@ -50611,9 +50629,23 @@
         /* ⚠ **この行が見ているのは「塩酸の遊離が瓶を足さずに済んだ」こと**（相乗り。D-I4）。
          * ★ 数ではなく**顔ぶれ**で言う —— v1514 で CO₂ の瓶が1本増えて数だけの検査が
          *   意味を失った（数を書き換えるだけだと、次に瓶が増えたときも同じことが起きる）。 */
-        assert(!W.REAGENTS.some(r => /塩酸|hydrochloric/i.test(r.name) && r.id !== 'hcl'),
-            `★ 遊離のために「塩酸」の瓶が別に足されている（${W.REAGENTS.map(r => r.id).join('・')}）` +
+        /* ⚠⚠ **見方を直した**（I-4・ジアゾ化の瓶を足した日）。
+         *   ★ v1519 まで「名前に**塩酸を含む**瓶が hcl 以外にあれば赤」だったが、
+         *     `nano2_hcl`（**亜硝酸ナトリウム＋塩酸**）は「塩酸の瓶」ではなく
+         *     **その場で亜硝酸を作るための混合物**で、遊離とは何の関係も無い。
+         *     ⚠ 名前に文字が入っているだけで赤くなるのは**見方が粗すぎる**。
+         *   ★ 見たいのは「**塩酸そのものを名乗る瓶が2本ある**」ことなので、
+         *     ⚠ 混ぜものの名前（「◯◯＋塩酸」）と区別できるよう
+         *     **名前の頭**で見る（かっこ書きの別名は落とす）。
+         *   ★ そのうえで **遊離に使う瓶の顔ぶれ**も名前で確かめる（数では数えない）。 */
+        const bareName = (r) => r.name.replace(/[（(].*$/, '');
+        const hclBottles = W.REAGENTS.filter(r => /^(塩酸|塩化水素)/.test(bareName(r)));
+        assert(hclBottles.length === 1 && hclBottles[0].id === 'hcl',
+            `★ 塩酸そのものを名乗る瓶が ${hclBottles.map(r => `${r.id}(${r.name})`).join('・') || '無い'}` +
             ' ＝ D-I4 の「既存の塩化水素に相乗りする」に反している');
+        const libNames = W.ruleReagentIds(rule).map(id => (W.REAGENTS.find(r => r.id === id) || {}).name);
+        assert(libNames.sort().join('・') === ['塩化水素', '希硫酸'].sort().join('・'),
+            `★ 遊離に使う瓶の顔ぶれが ${libNames.join('・')}（塩化水素と希硫酸のはず）`);
         assert(W.ruleReagentIds(rule).every(id => W.REAGENTS.some(r => r.id === id)),
             '遊離の reagentId に実在しない瓶が混じっている');
 
@@ -51368,7 +51400,7 @@
 
     // 電荷を持つ登録エントリの名簿（★ 名前で列挙。数では数えない）。
     // ⚠ ここに無いエントリが電荷を持ったら赤 ＝「既存データに電荷は 0 件」という設計の前提を守る
-    const ION_CHARGED_ENTRIES = ['アニリン塩酸塩'];
+    const ION_CHARGED_ENTRIES = ['アニリン塩酸塩', '塩化ベンゼンジアゾニウム'];
 
     // 原子と結合と電荷から分子を組む（EL3 の `mk` に電荷を足したもの）
     const ionMk = (W, els, bonds, charges = {}) => {
@@ -51871,6 +51903,138 @@
             assert(got === want, `★ chargeSuperscript(${q}) が "${got}"（"${want}" のはず）`);
         });
         return `電荷の記号 ${cases.length} 通りが規則どおり`;
+    });
+
+    /* ===== DZ: ジアゾニウム（DESIGN_ion_layer.md I-4）=====
+     *
+     * ★★ **ユーザーが名指しした学習上の要点**（2026-09-06）:
+     *   「ベンゼンジアゾニウムでは、**どの N 原子の形式電荷が ＋ なのか**を
+     *    表示することに学習上の意義があります」
+     * ⚠⚠ したがってこの帯は「**＋ が環側の N に付いているか**」を、
+     *   **登録の図と、反応で作った図の両方で**見る。⚠ 添字ではなく
+     *   「**芳香族の炭素に結合しているほうの N**」で引く（原子IDは乱数・並びは当てにしない）。
+     */
+
+    // ★ 「環につながっているほうの N」と「末端の N」を**図から**引く（添字に頼らない）
+    const dzNitrogens = (W, mol) => {
+        const arom = new Set();
+        mol.atoms.forEach(a => { if (a.element === 'C') arom.add(a.id); });
+        const ns = mol.atoms.filter(a => a.element === 'N');
+        const ring = ns.find(n => mol.getNeighbors(n.id).some(x => x.atom.element === 'C' && arom.has(x.atom.id)));
+        const term = ns.find(n => n !== ring);
+        return { ring, term, all: ns };
+    };
+
+    test('DZ1: ジアゾ化の瓶とルール（アニリン → 塩化ベンゼンジアゾニウム・★ ＋ は環側の N）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        // (1) 瓶（26本目）。★ 氷冷の条件は `condition` の二択ではなく **label と札の文** で言う
+        const bottle = W.REAGENTS.find(r => r.id === 'nano2_hcl');
+        assert(bottle, 'nano2_hcl の瓶が無い');
+        assert(bottle.kind === 'transform', `nano2_hcl の区分が ${bottle.kind}`);
+        assert(/5℃|氷冷/.test(bottle.acts), `★ 瓶の札が氷冷（5℃以下）を言っていない: ${bottle.acts}`);
+        const rule = W.REACTION_RULES.find(r => r.id === 'diazotization');
+        assert(rule, 'diazotization のルールが無い');
+        assert(W.ruleUsesReagent(rule, 'nano2_hcl'), 'diazotization が nano2_hcl の瓶を使っていない');
+        assert(!rule.condition, '★ ジアゾ化に condition の二択が付いている（同時に通る2条件が無いので使わない）');
+        assert(/5℃|氷冷/.test(rule.label), `★ ルールの見出しが氷冷を言っていない: ${rule.label}`);
+        assert(rule.mechanismId === 'aniline_diazotization', `mechanismId が ${rule.mechanismId}`);
+
+        // (2) ★★ 反応で作った図 —— アニリンに瓶をかける
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('アニリン');
+        g.updateDrawing();
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, `アニリンでジアゾ化の箇所が ${sites.length} 件（1件のはず）`);
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        assert(/5℃|氷冷/.test(res.caption), '★ caption が氷冷（5℃以下）を言っていない');
+        assert(/環に直結|ベンゼン環に直結/.test(res.caption), '★ caption が「＋ は環側の N」を言っていない');
+        const made = g.splitMolecules();
+        assert(made.length === 1, `生成物が ${made.length} 成分に割れている（Cl⁻ の粒は相方に付くはず）`);
+        const prod = made[0];
+        // ★★ どの N が ＋ か（反応で作った図）
+        const rn = dzNitrogens(W, prod);
+        assert(rn.all.length === 2, `生成物の N が ${rn.all.length} 個`);
+        assert(rn.ring && rn.ring.charge === 1,
+            `★★ 環に直結したほうの N の電荷が ${rn.ring && rn.ring.charge}（+1 のはず ＝ 学習上の要点）`);
+        assert(rn.term && !rn.term.charge,
+            `★★ 末端の N に電荷が付いている（${rn.term && rn.term.charge}）＝ ＋ の位置が逆`);
+        assert(prod.getBond(rn.ring.id, rn.term.id).type === 3, '★ N≡N が三重結合になっていない');
+        assert(prod.getFreeValency(rn.ring.id) === 0 && prod.getFreeValency(rn.term.id) === 0,
+            '★ ジアゾニウムの N に自動水素が生えた（-N≡N は空き 0）');
+        const clP = prod.atoms.find(a => a.element === 'Cl');
+        assert(clP && clP.charge === -1, '★ Cl⁻ の粒が置かれていない');
+        assert(!prod.bonds.some(b => b.atomId1 === clP.id || b.atomId2 === clP.id),
+            '★★ Cl を線で結んでいる（N-クロロ体という別の分子の図になる）');
+        assert(g.computeMolecularFormula(prod) === 'C₆H₅ClN₂',
+            `生成物の分子式が ${g.computeMolecularFormula(prod)}（C₆H₅ClN₂ のはず）`);
+        // ★ 生成物に名前が付く（登録した ＝（未登録）にしない）
+        assert(g.lookupCompoundName(prod) === '塩化ベンゼンジアゾニウム',
+            `★ 反応で作ったジアゾニウム塩の名前が「${g.lookupCompoundName(prod)}」`);
+        assert(W.findFunctionalGroups(prod).some(x => x.type === 'diazonium'),
+            'ジアゾニオ基が官能基として立たない');
+
+        // (3) ★★ 図の印 —— ＋ の印が**環側の N のそば**に出る（末端ではない）
+        const plus = [...D.querySelectorAll('#chem-svg .svg-charge')].filter(t => t.getAttribute('data-charge') === '1');
+        assert(plus.length === 1, `＋ の印が ${plus.length} 個`);
+        assert(Math.abs(+plus[0].getAttribute('x') - (rn.ring.x + 9)) < 1 &&
+               Math.abs(+plus[0].getAttribute('y') - (rn.ring.y - 5)) < 1,
+            `★★ ＋ の印が環側の N のそばに無い（印 ${plus[0].getAttribute('x')},${plus[0].getAttribute('y')} ／ 環側 N ${rn.ring.x},${rn.ring.y} ／ 末端 N ${rn.term.x},${rn.term.y}）`);
+
+        // (4) ★★ 登録の図でも同じ —— 名前で呼び出したものの ＋ も環側
+        const entry = W.COMPOUNDS.find(e => e.name === '塩化ベンゼンジアゾニウム');
+        assert(entry && entry.id === 'benzenediazonium-chloride', '塩化ベンゼンジアゾニウムが compounds.json に無い');
+        const em = g.createTargetFromData({ target: entry.target });
+        assert(W.iupacName(em) === null, `★ iupacName が「${W.iupacName(em)}」と命名した（登録の要否を見直すこと）`);
+        assert(em.atoms.every(a => W.isValencyValid(em, a.id)), '登録の図の価標が不正');
+        const en = dzNitrogens(W, em);
+        assert(en.ring.charge === 1 && !en.term.charge,
+            '★★ 登録の図で ＋ が環側の N に付いていない');
+        // ★ 反応で作った図と登録の図が同じもの（正準コードで見る）
+        assert(W.canonicalCode(prod) === W.canonicalCode(em),
+            '★ 反応で作った図と登録の図の正準コードが違う');
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule('塩化ベンゼンジアゾニウム'), '名前で呼び出せない');
+        g.updateDrawing();
+        const sn = dzNitrogens(W, g.splitMolecules()[0]);
+        assert(sn.ring.charge === 1 && !sn.term.charge, '★★ 呼び出した図で ＋ が環側の N に付いていない');
+        const sPlus = [...D.querySelectorAll('#chem-svg .svg-charge')].filter(t => t.getAttribute('data-charge') === '1');
+        assert(sPlus.length === 1 && Math.abs(+sPlus[0].getAttribute('x') - (sn.ring.x + 9)) < 1,
+            '★★ 呼び出した図の ＋ の印が環側の N のそばに無い');
+        const lab = g.computeCompoundLabel();
+        assert(lab.name === '塩化ベンゼンジアゾニウム' && lab.formula === 'C₆H₅ClN₂',
+            `右パネルが ${lab.name} / ${lab.formula}`);
+
+        /* (5) ★★ 否定対照 —— **ジアゾ化してはいけないものに出ない**（4つとも別の外れ方） */
+        const noSite = (name, why) => {
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule(name);
+            g.updateDrawing();
+            assert(rule.detect(g.userMolecule).length === 0,
+                `★ ${name} にジアゾ化の箇所が出た（${why}）`);
+        };
+        noSite('メチルアミン', '脂肪族の1級アミンは塩として取り出せない');
+        noSite('アセトアミド', 'アミドの N は塩基でもアミンでもない');
+        noSite('ニトロベンゼン', '-NO₂ はアミンではない');
+        // ⚠ 二度は効かない（できたジアゾニウムはもうアミンではない）
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('塩化ベンゼンジアゾニウム');
+        g.updateDrawing();
+        assert(rule.detect(g.userMolecule).length === 0, '★ ジアゾニウム塩にもう一度ジアゾ化がかかる');
+        // ⚠ アニリン塩酸塩（N⁺）にも出ない ＝ 塩はアミンではない
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('アニリン塩酸塩');
+        g.updateDrawing();
+        assert(rule.detect(g.userMolecule).length === 0, '★ アニリン塩酸塩にジアゾ化がかかる（塩はアミンではない）');
+        // ★ 空振り検出: 同じ数え方でアニリンには必ず出る（上の 0 件が「detect が常に空」ではない）
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('アニリン');
+        g.updateDrawing();
+        assert(rule.detect(g.userMolecule).length === 1, '★ 空振り検出: アニリンに箇所が出ない ＝ 上の否定対照は無意味');
+        c.reset();
+        return '瓶26本目・アニリン → 塩化ベンゼンジアゾニウム（＋ は環側の N。登録と反応の両方で実測）／否定対照5つ';
     });
 
     // ===== 一部だけ流す（`?only=`）=====
