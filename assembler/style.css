@@ -3261,6 +3261,49 @@ b.em { font-weight: 700; color: var(--neon-blue); }
     border-radius: 8px;
     cursor: pointer;
 }
+/* アルコールと脱水生成物の対応表（第5ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   `.ref-table` は「stages.json の系列から作った表」の印で、`REF8`/`REF9`/`REF10` が
+   その前提（行数＝系列の件数・名称が STAGES に在る）で見張っている。
+   この表の元は列挙器（`enumerateConstitutionalIsomers`）なので、混ぜると物差しが噛み合わない */
+.ref-map-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-map-table th, .ref-map-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-map-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-map-table td.ref-group {
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-map-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 名称の列は**折り返す**。「2,2-ジメチル-1-プロパノール」を nowrap にすると
+   それだけで 14em を占め、資料ペイン（実測 271px）では生成物の列が器の外へ出る */
+.ref-map-table td.ref-map-from { white-space: normal; min-width: 6.5em; }
+.ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
+/* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
+.ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
+.ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
+.ref-map-table .ref-map-none { color: var(--text-secondary); }
+.ref-map-table .ref-map-why {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
 /* 例題（無料）。★ **新しい採点は作らない** —— 押すと既存のパズルのお題
    （stages.json の `target` 照合）へ渡すだけ（設計書 §5-2 の (b)） */
 .ref-example {
