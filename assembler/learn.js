@@ -69,7 +69,7 @@ function classifyMolecule(mol) {
 function copyMoleculeForThumbnail(src) {
     const copy = new Molecule();
     const map = new Map();
-    src.atoms.forEach(a => map.set(a.id, copy.addAtom(a.element, a.x, a.y).id));
+    src.atoms.forEach(a => map.set(a.id, copyAtomMarks(copy.addAtom(a.element, a.x, a.y), a).id));
     src.bonds.forEach(b => copy.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
     return copy;
 }
