@@ -987,6 +987,47 @@ function freeSpotAround(mol, atomId, reserved = [], prefer = null) {
 }
 
 /**
+ * ★★ 対イオンの粒（**結合を持たない**電荷つき原子）を、相方の原子のそばに置く（I-3・D-I5）。
+ *
+ * ⚠⚠ **線で結ばない。** N-Cl と線1本で書くと分子式が C₆H₆ClN ＝
+ *   **N-クロロアニリンという別の分子の図**になる（DESIGN_ion_layer.md §3-1 の実測）。
+ *   粒は `MONATOMIC_ION_ELEMENTS` で価標 0 なので、自動水素も生えず結合も持てない。
+ * ★ 置き場は**2マス離す**。1マスだと -NH₃⁺ の自動水素（H が3つ）と重なって読めない
+ *   ——登録済みの `aniline-hydrochloride` も N から2マスの位置に Cl⁻ を持っている。
+ *   ⚠ 2マス先が塞がっていたら1マスに落とす（置けたはずのものを置けなくしない）。
+ * 置き場がまったく無ければ null（呼び出し側が `noRoom` を投げる ＝ 図を壊さない）。
+ */
+function placeCounterIon(mol, nearId, element, charge) {
+    const near = mol.atoms.find(a => a.id === nearId);
+    const spot = near ? freeSpotAround(mol, nearId) : null;
+    if (!spot) return null;
+    const G = bondStep(mol, nearId);
+    const far = { x: near.x + (spot.x - near.x) * 2, y: near.y + (spot.y - near.y) * 2 };
+    const clear = (p) => !mol.atoms.some(o => o.element !== 'H' &&
+        Math.hypot(o.x - p.x, o.y - p.y) < G * 0.65);
+    const at = clear(far) ? far : spot;
+    const ion = mol.addAtom(element, at.x, at.y);
+    ion.charge = charge;
+    return ion;
+}
+
+/**
+ * ★ その原子と同じ成分に居る、結合を持たない対イオンの粒（電荷の符号で選ぶ）。
+ * ⚠ 連結成分では**別の成分**なので、探すのは分子全体から「いちばん近いもの」——
+ *   同じ塩が2つ並んでいても、それぞれの粒が自分の相方に付く
+ *   （`game.js` の `attachCounterIons` と**同じ決め方**。見せ方と外し方で規則を割らない）。
+ */
+function nearestCounterIon(mol, atomId, sign) {
+    const a = mol.atoms.find(x => x.id === atomId);
+    if (!a) return null;
+    const bonded = new Set();
+    mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+    return mol.atoms
+        .filter(x => !bonded.has(x.id) && Math.sign(x.charge || 0) === sign)
+        .sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y))[0] || null;
+}
+
+/**
  * C=O にした酸素が炭素鎖と一直線に並んでいたら、直交の空いた向きへ折る（検品レビュー C-7）。
  *
  * **酸化は酸素を置き直さない**——`-OH` の結合を二重にするだけなので、
@@ -2160,15 +2201,28 @@ function basicAmineNitrogens(mol) {
 }
 
 /**
- * ★ その原子の**成分が水層に居るか**（原子の印 `phase`。DESIGN_ion_layer.md §3-4）。
+ * ★★ **アンモニウム塩**の N を集める（`amine_liberate_naoh` の入口。I-3）。
  *
- * ⚠ **電荷は1文字も見ない。** アミンの塩は構造を変えずに印だけで表しているので、
- *   「塩になっているか」を図から読む道は無い ＝ **印がこのルールの入口そのもの**。
- * ⚠ 成分の中の1原子でも印を持てば水層（印は塩になった箇所に付く）。
+ * ⚠⚠ **v1517 まではここが「層の印」だった**（`phase === 'aq'`）。電荷が入って
+ *   `amine_hcl` が本物の塩を描くようになったので、**入口を図そのものに引き直した**
+ *   ＝ 印を付けずに呼び出した「アニリン塩酸塩」にも NaOH が効く
+ *   （設計書 §13-6 の申し送り。印は見せ方であって化学ではない）。
+ *
+ * ⚠⚠ **双性イオンは入らない。** 見分けるのは**成分の正味の電荷**:
+ *   アニリン塩酸塩の陽イオン側は +1（相方の Cl⁻ は結合を持たない別成分）だが、
+ *   双性イオンは -NH₃⁺ と -COO⁻ が同じ成分の中にあるので **0**。
+ *   ★ 双性イオンに NaOH をかけると -COO⁻ を持つ**陰イオン**になる ＝ 別の反応なので、
+ *     ここで一緒に拾わない（設計書 §13-6 の「両性」の申し送り）。
+ * ⚠ 電荷の無い N は `findFunctionalGroups` がアミンの枝へ回すので、そもそも来ない。
  */
-function inAqueousPhase(mol, atomId) {
-    const ids = componentOf(mol, atomId);
-    return mol.atoms.some(a => ids.has(a.id) && a.phase === 'aq');
+function ammoniumSaltNitrogens(mol) {
+    return findFunctionalGroups(mol)
+        .filter(g => g.type === 'ammonium')
+        .filter(g => {
+            const ids = componentOf(mol, g.atomIds[0]);
+            return mol.atoms.reduce((s, a) => s + (ids.has(a.id) ? (a.charge || 0) : 0), 0) > 0;
+        })
+        .map(g => [g.atomIds[0]]);
 }
 
 function liberatableSaltSites(mol) {
@@ -3436,12 +3490,13 @@ const OXIDANT_REAGENT_IDS = ['kmno4', 'k2cr2o7'];
  *   ——「どの層へ移るか」は反応の中身ではなく**分液という見方**の話なので、
  *   `usually`（ふつうはこの試薬）と同じく `apply` の外で足す（§12-1 の約束と同じ流儀）。
  * ⚠ ここに載っていない反応は層を動かさない ＝ **中性の成分は残る**（これが分液の芯）。
- * ★ `note` は見出しに添える断り。`amine_hcl` は**構造を1原子も変えない**ので、
- *   変えていないことを画面で言う（D-I3。嘘を画面に出さない）。 */
+ * ★ `note` は見出しに添える一言。⚠ **v1517 まで `amine_hcl` は `salt-not-drawn`**
+ *   （「塩の形はまだ描きません」）だったが、I-3 で本物の塩を描くようになったので
+ *   **その断りは嘘になった**。いまは「塩になって水層へ」と、起きたことをそのまま言う。 */
 const RULE_PHASE = {
     neutralize_naoh: { phase: 'aq', note: '' },
     neutralize_nahco3: { phase: 'aq', note: '' },
-    amine_hcl: { phase: 'aq', note: 'salt-not-drawn' },
+    amine_hcl: { phase: 'aq', note: 'salt' },
     liberate_weak_acid: { phase: 'ether', note: '' },
     // ★ I-2: CO₂ で戻せるのはフェノールだけ。行き先は強酸の遊離と同じ有機層
     liberate_co2: { phase: 'ether', note: '' },
@@ -5462,8 +5517,14 @@ const REACTION_RULES = [
          * ★ **教科書 本文 p.188**・入試47件（⚠ 上限値）・ニトロベンゼンもアニリンも登録済み。
          *
          * ★ **1段で直接アミンにする**（§10.3-b の原則）。教科書は
-         *   「スズ＋塩酸 → アニリン塩酸塩 → NaOH で遊離」の**2段**で書くが、
-         *   塩の段はイオン（§10.6 の壁）。⚠ **塩の段は caption で補う**。
+         *   「スズ＋塩酸 → アニリン塩酸塩 → NaOH で遊離」の**2段**で書く。
+         *   ⚠⚠ **v1517 まで、塩の段は「イオンだから描けない」（§10.6 の壁）が理由で
+         *     caption の言葉だけで補っていた。その壁はもう無い**（電荷が入り、
+         *     `amine_hcl` が本物のアニリン塩酸塩を描く）。
+         *   ★ それでもこの反応を1段のままにするのは**別の理由** ——
+         *     還元は H₂ ＋ 触媒でも起こり、そちらには塩の段が無いから
+         *     （§10.3-b「1段で行き先へ」）。⚠ 教科書の2段を**画面でたどれる**ことは
+         *     caption で案内する（できたアニリンに塩化水素の瓶をかければ実際に描ける）。
          *
          * ⚠ **対象は芳香環に直結した -NO₂ だけ**。ニトロアルカンの還元も化学としては
          *   起こるが、教科書が扱うのは芳香族だけ（§4-1 の線）。
@@ -5494,6 +5555,8 @@ const REACTION_RULES = [
                     '実験室では**スズ Sn と濃塩酸**を使い、いったん**アニリン塩酸塩**（塩）ができます。' +
                     'これに水酸化ナトリウム水溶液を加えると、弱塩基のアニリンが遊離します。' +
                     'ここでは塩の段をとばして、遊離したアミンを直接描いています。' +
+                    'その**塩の段は、できたアニリンに塩化水素（塩酸）の瓶をかけると実際に描けます**' +
+                    '（-NH₃⁺ と Cl⁻ の形。水酸化ナトリウムでまたここへ戻ります）。' +
                     '工業的には水素と触媒で還元します。' +
                     '⚠ このとき**ベンゼン環は水素化されません** —— 環は安定（芳香族性）で、' +
                     'ニトロ基のほうがずっと還元されやすいためです。',
@@ -6029,7 +6092,7 @@ const REACTION_RULES = [
             return {
                 caption: `${kind.name}が水酸化ナトリウムと中和して、ナトリウム塩になりました。` +
                     '酸性の -OH の水素が Na に置き換わった形です。' +
-                    '（このアプリは電荷を持たないので、塩は線1本の共有結合として書いています。' +
+                    '（酸素と金属の塩は、このアプリでは線1本で書くことにしています。' +
                     '実際は -O⁻ と Na⁺ のイオン結合です。）' +
                     '塩になると水に溶けやすくなります。' + kind.rank +
                     'できた塩に強い酸（希硫酸・塩酸）を加えると、もとの酸が遊離して戻ってきます。',
@@ -6069,7 +6132,7 @@ const REACTION_RULES = [
                     '（二酸化炭素 CO₂ が発生します。図には描いていません）。' +
                     '炭酸より強い酸だけが NaHCO₃ から CO₂ を追い出せるので、' +
                     '**この反応が起こること自体が「炭酸より強い酸」の証拠**です。' +
-                    '（このアプリは電荷を持たないので、塩は線1本の共有結合として書いています。' +
+                    '（酸素と金属の塩は、このアプリでは線1本で書くことにしています。' +
                     '実際は -O⁻ と Na⁺ のイオン結合です。）' +
                     '塩になると水に溶けやすくなります。' + kind.rank,
                 changed: [oId, na.id]
@@ -6100,7 +6163,7 @@ const REACTION_RULES = [
             const na = mol.addAtom('Na', spot.x, spot.y);
             mol.addBond(oId, na.id, 1);
             const kind = isAlcohol ? null : acidKindOf(mol, oId, anchorId);
-            const salt = '（このアプリは電荷を持たないので、線1本の共有結合として書いています。' +
+            const salt = '（酸素と金属の塩は、このアプリでは線1本で書くことにしています。' +
                 '実際は -O⁻ と Na⁺ のイオン結合です。）';
             return {
                 caption: (isAlcohol
@@ -6309,55 +6372,72 @@ const REACTION_RULES = [
         }
     },
     {
-        /* ★★ アミン ＋ 塩酸 → 塩（水層へ）。DESIGN_ion_layer.md I-1・D-I3。
+        /* ★★ アミン ＋ 塩酸 → 塩（水層へ）。DESIGN_ion_layer.md I-1 → **I-3 で本物の塩に**。
          *
-         * ⚠⚠ **構造を1原子も変えない。** アニリン塩酸塩 C₆H₅NH₃Cl は
-         *   **いまのモデルでは描けない**（線1本で N-Cl と書くと `isValencyValid` は通るが、
-         *   分子式 C₆H₆ClN ＝ **N-クロロアニリンという別の分子の図**になる。設計書 §3-1 の実測）。
-         *   ★ だから第1段では**層の印だけ**を付け、**画面で「塩の形はまだ描きません」と断る**
-         *     （見出しの `PHASE_CAPTIONS['aq:salt-not-drawn']`）。⚠ 嘘を画面に出さないため。
-         *   ★ 「原理的に無理」ではなく「**まだ**」と書く —— 電荷が入れば（I-3）
-         *     同じルールが本物の塩を描く。
-         * ★ 入試64件のうち **アミンが水層へ移るのは 46件**。
-         *   ＝ アニリン塩酸塩を*描けなくても*、この操作は 46件で要る（設計書 §4-2）。
-         * ⚠ この反応は `CV4_NO_CHANGE_RULES` に名指しで載る（構造を変えないのが仕様）。 */
+         * ⚠⚠ **v1517 まで「構造を1原子も変えない」反応だった**（層の印だけを付け、
+         *   画面で「塩の形はまだ描きません」と断っていた。D-I3）。
+         *   ★ **電荷が入った（I-3）ので、その「まだ」を果たすのがこのルール**:
+         *     N に +1（`chargedValency` で価標4本 ＝ 自動水素が -NH₃⁺ を描く）と
+         *     **結合を持たない Cl⁻ の粒**（`placeCounterIon`）を置く。
+         *   ⚠ **線で結ばない** —— N-Cl と書くと分子式 C₆H₆ClN ＝ N-クロロアニリンという
+         *     別の分子の図になる（設計書 §3-1 の実測）。粒のままなら C₆H₈ClN で
+         *     **登録済みのアニリン塩酸塩と正準コードが一致する**（SEP4 が実測で押さえる）。
+         * ★ 入試64件のうち **アミンが水層へ移るのは 46件**（設計書 §4-2）。
+         * ⚠ **detect に層の印は要らなくなった** —— 塩になった N は
+         *   `findFunctionalGroups` の `ammonium` へ回り、アミンの枝から抜けるので、
+         *   同じ瓶を二度押しても二度は効かない（ION3 が押さえている）。 */
         id: 'amine_hcl',
         reagentId: 'hcl',
         label: '塩をつくる（アミン + 塩酸）→ 水層へ',
-        detect(mol) {
-            // すでに水層に居るアミンは対象外（同じ操作を二度「効いた」と言わない）
-            return basicAmineNitrogens(mol).filter(([nId]) => !inAqueousPhase(mol, nId));
-        },
+        detect(mol) { return basicAmineNitrogens(mol); },
         apply(game, site) {
+            const mol = game.userMolecule;
+            const nId = site[0];
+            const n = mol.atoms.find(a => a.id === nId);
+            if (!n) throw new Error('アミンの N が見つかりません');
+            // 先に粒を置く（置けなければ何も壊さずに throw ＝ kolbe_schmidt と同じ順）
+            const cl = placeCounterIon(mol, nId, 'Cl', -1);
+            if (!cl) throw noRoom('塩化物イオンを置く空間がありません');
+            n.charge = 1;   // N⁺ は価標4本 ＝ 自動水素が H を1つ増やして -NH₃⁺ になる
             return {
                 caption: 'アミンは塩基なので、塩酸と塩をつくって水に溶けます（水層へ移りました）。' +
+                    'N の非共有電子対が H⁺ を受け取って **-NH₃⁺** になり、' +
+                    '塩化物イオン Cl⁻ と塩をつくります（アニリンなら**アニリン塩酸塩** C₆H₅NH₃Cl）。' +
+                    '⚠ **Cl⁻ は線で結ばずに粒として描いています** —— ' +
+                    'N と Cl を線1本で結ぶと N-クロロアニリンという別の分子の図になるためで、' +
+                    'イオンどうしが引き合っているだけの結びつき（イオン結合）を線では書きません。' +
                     'この性質で、中性の物質やフェノール類から分けられます。' +
-                    '⚠ **塩の形はまだ描きません** —— アニリン塩酸塩 C₆H₅NH₃Cl は ' +
-                    'N が4本の手を使う形で、いまのこのアプリの書き方（線1本の塩）では' +
-                    '別の分子の図になってしまうためです。図はもとのままで、**層だけが変わっています**。' +
                     'なお、この塩に水酸化ナトリウムを加えるともとのアミンが遊離して有機層へ戻ります。',
-                changed: []
+                changed: [nId, cl.id]
             };
         }
     },
     {
-        /* ★ アミンの塩 ＋ NaOH → アミンが遊離して有機層へ（I-1）。上の逆向き。
-         * ⚠ **構造を1原子も変えない**（上と同じ理由）。動くのは層の印だけ。
-         * ★ **detect が読むのは層の印**（`phase === 'aq'`）＝ 印がこのルールの入口そのもの。
-         *   ⚠ だから「塩酸をかけていないアニリン」には効かない（否定対照 SEP4）。 */
+        /* ★ アミンの塩 ＋ NaOH → アミンが遊離して有機層へ（I-1 → I-3）。上のちょうど逆向き。
+         * ⚠⚠ **入口を層の印から図そのものへ引き直した**（`ammoniumSaltNitrogens`）。
+         *   ＝ 分液の面を開かずに「アニリン塩酸塩」を呼び出しただけでも NaOH が効く。
+         * ⚠ **双性イオンには効かない**（成分の正味の電荷が 0。同関数の注記・否定対照 SEP4）。 */
         id: 'amine_liberate_naoh',
         reagentId: 'naoh_aq',
         label: 'アミンの遊離（塩 + NaOH）→ 有機層へ',
-        detect(mol) {
-            return basicAmineNitrogens(mol).filter(([nId]) => inAqueousPhase(mol, nId));
-        },
+        detect(mol) { return ammoniumSaltNitrogens(mol); },
         apply(game, site) {
+            const mol = game.userMolecule;
+            const nId = site[0];
+            const n = mol.atoms.find(a => a.id === nId);
+            if (!n) throw new Error('アンモニウム型の N が見つかりません');
+            const ion = nearestCounterIon(mol, nId, -1);   // 相方の粒（Cl⁻ など）
+            const symbol = ion ? ion.element : null;
+            if (ion) mol.removeAtom(ion.id);
+            delete n.charge;   // N が中性に戻り、自動水素が H を1つ減らして -NH₂ を描く
             return {
                 caption: '水酸化ナトリウムを加えたので、アミンの塩から**もとのアミンが遊離**して' +
-                    '有機層（エーテル層）へ戻りました。' +
+                    '有機層（エーテル層）へ戻りました（-NH₃⁺ → **-NH₂**）。' +
                     '「強い塩基は弱い塩基をその塩から追い出す」——弱酸の遊離とちょうど対になる操作です。' +
-                    '⚠ ここでも**塩の形は描いていない**ので、図はもとのままで層だけが変わっています。',
-                changed: []
+                    (symbol ? `対イオンの ${symbol}⁻ は、ナトリウムイオンと塩（この場合は Na${symbol}）` +
+                        'になって水層に残るので、図から外しました。' : '') +
+                    'できた水も図には描いていません。',
+                changed: [nId]
             };
         }
     },
@@ -7721,7 +7801,14 @@ class Reactor {
         const alive = partIds.concat(site.filter(x => typeof x === 'string'))
             .find(id => g.userMolecule.atoms.some(a => a.id === id));
         if (!alive) return;
-        g.setPartPhase([...g.moleculeAtomIdsOf(alive)], to.phase, to.note);
+        /* ⚠⚠ **成分は「見せ方の単位」で取る**（`splitMolecules` ＝ 対イオンの粒を相方に
+         *   付けたもの。I-3 の `attachCounterIons`）。連結成分（`moleculeAtomIdsOf`）で取ると、
+         *   アニリン塩酸塩に印を付けたとき **Cl⁻ の粒だけが有機層に取り残される**
+         *   （粒は結合を持たないので連結成分に入らない。否定対照 SEP4）。 */
+        const part = (g.splitMolecules ? g.splitMolecules() : [])
+            .find(p => p.atoms.some(a => a.id === alive));
+        const ids = part ? part.atoms.map(a => a.id) : [...g.moleculeAtomIdsOf(alive)];
+        g.setPartPhase(ids, to.phase, to.note);
     }
 
     /**
