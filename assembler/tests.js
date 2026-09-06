@@ -51542,6 +51542,49 @@
         return 'アニリンは登録で・他3種は折り返しで「◯◯塩酸塩」／否定対照3つ';
     });
 
+    test('ION8: 画面の断りが電荷の段と食い違っていない（「このアプリは電荷を持たない」は嘘になった）', async (c) => {
+        /* ⚠⚠ **「まだ」と書いた約束を果たしたら、断りのほうを直す** —— この検査は
+         *   そのための見張り。v1517 で電荷が入るまで、3本の反応の caption が
+         *   「**このアプリは電荷を持たないので**、塩は線1本の共有結合として書いています」と
+         *   名乗っていた。⚠ 電荷が入ったいま、これは**画面に出す嘘**である。
+         * ★ 線1本で書き続けること自体は変えていない（D-I11。O–金属の塩は線のまま）——
+         *   変わったのは**理由**で、「持てない」ではなく「**そう書くことにしている**」。
+         * ⚠ 文言そのものではなく **caption を実際に走らせて**見る（文字列の置き場所が
+         *   変わっても効くように）。 */
+        c.reset();
+        const g = c.game, W = c.W;
+        const runCaption = (ruleId, name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule(name);
+            g.updateDrawing();
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} が無い`);
+            const s = rule.detect(g.userMolecule);
+            assert(s.length, `${name} で ${ruleId} の箇所が出ない`);
+            const res = rule.apply(g, s[0]);
+            return (res && res.caption) || '';
+        };
+        // ① 塩を線で書く3本 —— 「電荷を持たない（持てない）」とは言わない
+        [['neutralize_naoh', '酢酸'], ['neutralize_nahco3', '酢酸'], ['react_sodium', 'エタノール']]
+            .forEach(([id, name]) => {
+                const cap = runCaption(id, name);
+                assert(!/電荷を持たない|電荷が持てない|電荷を扱えない/.test(cap),
+                    `★ ${id} の caption が「電荷を持たない」と名乗っている（v1517 で電荷は入った）: ${cap}`);
+                // ★ ただし「実際はイオン結合」という中身は落とさない（教える点はここ）
+                assert(/イオン結合/.test(cap), `${id} の caption から「イオン結合」の説明が消えた: ${cap}`);
+            });
+        /* ② ★ ニトロの還元 —— 塩の段を**とばしている**ことは今までどおり言い、
+         *   ⚠ その塩が**いまは実際に描ける**ことまで案内する（申し送りで名指しされた caption）。 */
+        const nitro = runCaption('reduce_nitro', 'ニトロベンゼン');
+        assert(/アニリン塩酸塩/.test(nitro) && /塩の段をとばして/.test(nitro),
+            `reduce_nitro の caption から塩の段の説明が消えた: ${nitro}`);
+        assert(/塩化水素|塩酸/.test(nitro) && /描けます/.test(nitro),
+            `★ reduce_nitro の caption が「その塩は瓶で描ける」と案内していない: ${nitro}`);
+        c.reset();
+        return '塩を線で書く3本＋ニトロの還元の caption が電荷の段と揃っている';
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
