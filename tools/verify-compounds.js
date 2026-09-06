@@ -49,7 +49,8 @@ function buildMolecule(target) {
     const m = new W.Molecule();
     const ids = target.atoms.map(a => {
         const atom = m.addAtom(a.element, a.x, a.y);
-        if (a.haworthFace === 1 || a.haworthFace === -1) atom.haworthFace = a.haworthFace;
+        // 面マークと電荷（I-3）。写す印の一覧は chemistry.js の copyAtomMarks 1か所
+        W.copyAtomMarks(atom, a);
         return atom.id;
     });
     target.bonds.forEach(b => m.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));

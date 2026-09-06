@@ -43,6 +43,20 @@ class Atom {
     }
 }
 
+/**
+ * ★ 分子を**写す**とき（`addAtom(a.element, x, y)` で組み直すとき）に落としてはいけない原子の印。
+ *   面マーク `haworthFace`（座標に現れない環の立体）と電荷 `charge`（I-3。価標・正準コード・分子式に効く）。
+ * ⚠ 写しの経路は 29 か所ある（DESIGN_ion_layer.md §3-6）。全部に `charge` を1行ずつ足すと、
+ *   次に印を1つ増やしたときに同じ 29 か所を回ることになるので、**印の一覧はここ1か所**にする。
+ *   `Object.assign` で全プロパティを写す経路（`restoreState`・`splitMolecules`）はこれを要らない。
+ */
+function copyAtomMarks(dst, src) {
+    if (!src) return dst;
+    if (src.haworthFace === 1 || src.haworthFace === -1) dst.haworthFace = src.haworthFace;
+    if (src.charge) dst.charge = src.charge;
+    return dst;
+}
+
 class Bond {
     constructor(atomId1, atomId2, type = 1) {
         // IDの小さい方を常に atomId1 にして一意にする
@@ -445,14 +459,42 @@ class Molecule {
 // **ここに元素を足したら、異性体列挙の足切り（enumerateConstitutionalIsomers）も一緒に見直すこと**
 const CONTEXTUAL_VALENCY_ELEMENTS = ['S', 'N'];
 
+/**
+ * ★ 結合を持たず「粒」としてだけ現れる対イオン（DESIGN_ion_layer.md §3-3・D-I5）。
+ * 電荷を持てば価標 0 ＝ 自動水素が生えず（NaH・HCl の図にならない）、結合も許さない。
+ * ⚠ 電荷の無い Na・K は今までどおり価標 1（-COONa を線1本で書く流儀。D-I11）。
+ */
+const MONATOMIC_ION_ELEMENTS = ['Na', 'K', 'Cl', 'Br', 'I'];
+
+/**
+ * ★ 電荷つきの原子が取れる価標の上限（D-I12。**電荷はここ1か所で価標に効く**）。
+ *   N⁺ → 4（アンモニウム・ジアゾニウム）／O⁻ → 1（双性イオンの -COO⁻）／
+ *   C⁺・C⁻ → 3（カルボカチオン・カルボアニオン。機構データと同じ数え方）／
+ *   Na⁺・K⁺・Cl⁻ → 0（粒）。
+ * `getFreeValency`（自動水素・分子式・正準コードのラベル）と `isValencyValid`（検証）の
+ * 両方が `maxValencyOf` を読むので、双性イオンの N⁺ に H が3つ生え、
+ * ジアゾニウム C-N⁺≡N の4本が検証を通り、Cl⁻ の粒に H が生えない —— が**同時に**成り立つ。
+ * ⚠ 電荷の無い原子はこの関数を通らない ＝ 登録済み 1,150 件の値は 1 つも変わらない
+ *   （`tools/dump-canonical.js` の前後 diff が 0 行であることで確かめた）。
+ */
+function chargedValency(element, base, charge) {
+    if (MONATOMIC_ION_ELEMENTS.includes(element)) return 0;
+    if (element === 'C') return Math.max(0, base - Math.abs(charge));
+    return Math.max(0, base + charge);
+}
+
 function maxValencyOf(mol, atomId) {
     const atom = mol.atoms.find(a => a.id === atomId);
     if (!atom) return 0;
-    const base = VALENCIES[atom.element] || 0;
-    if (atom.element !== 'S') return base;
-    const hasSulfonylOxygen = mol.getNeighbors(atomId)
-        .some(n => n.type === 2 && n.atom.element === 'O');
-    return hasSulfonylOxygen ? 6 : 2;
+    let base = VALENCIES[atom.element] || 0;
+    if (atom.element === 'S') {
+        const hasSulfonylOxygen = mol.getNeighbors(atomId)
+            .some(n => n.type === 2 && n.atom.element === 'O');
+        base = hasSulfonylOxygen ? 6 : 2;
+    }
+    // ★ 電荷（I-3）。無いときはここを通らない ＝ 既存の値は不変
+    if (atom.charge) return chargedValency(atom.element, base, atom.charge);
+    return base;
 }
 
 function isValencyValid(mol, atomId) {
@@ -460,6 +502,9 @@ function isValencyValid(mol, atomId) {
     if (!atom) return true;
     const max = maxValencyOf(mol, atomId);
     const used = mol.getUsedValency(atomId);
+    // ★ 電荷つきの原子はここで決まる（I-3）: N⁺ の4本（三重結合を含むジアゾニウム C-N⁺≡N も）は
+    //   `maxValencyOf` が 4 を返すので通り、Cl⁻・Na⁺ の粒は上限 0 なので結合を1本でも持てば落ちる。
+    //   ⚠ 電荷の無い C-N≡N は下の特例に当たらないので今までどおり弾く（EL3 の否定対照）
     if (used <= max) return true;
     // 窒素が4本になってよい「文脈」はいまのところ2つ。硫黄の 6↔2（maxValencyOf）と同じ考え方で、
     // **パターンで見分けて許す**。ここを「N は常に4価」にしてはいけない——
@@ -1422,7 +1467,11 @@ function findFunctionalGroups(mol) {
                 // -C(=O)-O- : 先のOが末端ならカルボキシ基、C-O-Cならエステル結合
                 const o = singleO[0].atom;
                 const oBeyond = heavyNb(o.id).filter(n => n.atom.id !== a.id);
-                if (oBeyond.length === 0) {
+                if (oBeyond.length === 0 && o.charge < 0) {
+                    // -C(=O)-O⁻ ＝ カルボン酸イオン（双性イオンの片側。I-3）。
+                    // ⚠ 線1本の -COONa（下の carboxylate）とは別の型。O–金属の塩は今までどおり線で書く（D-I11）
+                    groups.push({ type: 'carboxylate_ion', label: 'カルボン酸イオン（-COO⁻）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
+                } else if (oBeyond.length === 0) {
                     groups.push({ type: 'carboxyl', label: 'カルボキシ基（カルボン酸）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
                 } else if (oBeyond.length === 1 &&
                            (oBeyond[0].atom.element === 'Na' || oBeyond[0].atom.element === 'K')) {
@@ -1543,6 +1592,19 @@ function findFunctionalGroups(mol) {
             //   ニトリル  … C≡N は炭素側で nitrile として拾う。ここは単結合だけを見るので入らない
             //   アミド    … 隣の炭素が =O を持つ N。amide が既に立っているので二重に数えない
             //   アンモニウム … 結合4本（isValencyValid の N(4) 特例）。塩であってアミンではない
+            // ★ 電荷を持つ N（I-3）。塩であってアミンではないので、下のアミンの枝には入れない
+            //   （入れると `basicAmineNitrogens` がアニリン塩酸塩の N⁺ に塩酸をもう一度かけようとする）
+            if (a.charge > 0) {
+                const triple = nb.find(n => n.type === 3 && n.atom.element === 'N');
+                if (triple && nb.length === 2) {
+                    // ジアゾニウム -N⁺≡N（C-N⁺≡N）。末端 N は空き 0 で何も立てない
+                    groups.push({ type: 'diazonium', label: 'ジアゾニオ基（-N₂⁺）', atomIds: [a.id, triple.atom.id] });
+                } else if (nb.every(n => n.type === 1 && n.atom.element === 'C')) {
+                    // アンモニウム型 -NH₃⁺ / -NR₃H⁺（アニリン塩酸塩・双性イオンの N）
+                    groups.push({ type: 'ammonium', label: 'アンモニウム型の N（-NH₃⁺ など）', atomIds: [a.id] });
+                }
+                return;
+            }
             if (nb.length === 0 || !nb.every(n => n.type === 1)) return;
             // N についてよい重原子は炭素だけ。N-N・N-O・N-S・N-X は findOutOfScopeMotifs の担当
             if (!nb.every(n => n.atom.element === 'C')) return;
@@ -1788,6 +1850,10 @@ function verifyMolecule(userMol, targetMol) {
         const uAtom = userHeavyAtoms.find(a => a.id === uId);
         const tAtom = targetHeavyAtoms.find(a => a.id === tId);
         if (uAtom.element !== tAtom.element) return false;
+        // 1b. 電荷が一致するか（I-3）。同値関係は canonicalCode と同一でなければならず、
+        //     あちらはラベルに電荷を持つ（`heavyAtomLabel`）。ここを見ないと
+        //     「コードは違うのに同型判定は同じ」という食い違いが第四級アンモニウム N(4) と N⁺(4) で起こる
+        if ((uAtom.charge || 0) !== (tAtom.charge || 0)) return false;
 
         // 2. 必要な水素の数が一致するか（これにより、不飽和度や不対電子対が一致するか確認できる）
         if (getUserHCount(uId) !== getTargetHCount(tId)) return false;
@@ -1912,11 +1978,25 @@ function getDoubleBondGeometry(mol) {
  *
  * 返り値: { heavy, index: Map<atomId, 番号>, labels: string[], adj: [{j, t}][] }
  */
+/**
+ * 正準コードの原子ラベル ＝ 「元素＋空き価標（＋電荷）」（I-3・D-I12）。
+ * `buildHeavyGraph` と `rootedFragmentCode` の**2か所がこれを読む**（別々に書くと片方だけ直る日が来る）。
+ * ★ 電荷は空き価標だけでは区別できない —— 中性で線4本の N（第四級アンモニウムを線で書いたもの）と
+ *   N⁺(4) はどちらも空き 0 なので、電荷を明示しないと同じ `N0` になる。
+ * ⚠ 電荷の無い原子には何も足さない ＝ **公開済みのコードは1文字も変わらない**
+ *   （`tools/dump-canonical.js` の前後 diff で確かめる）。
+ */
+function heavyAtomLabel(mol, atom) {
+    const q = atom.charge || 0;
+    const qs = q ? (q > 0 ? '+' : '-') + (Math.abs(q) > 1 ? Math.abs(q) : '') : '';
+    return `${atom.element}${mol.getFreeValency(atom.id)}${qs}`;
+}
+
 function buildHeavyGraph(mol) {
     const heavy = mol.atoms.filter(a => a.element !== 'H');
     const arKeys = findAromaticBondKeys(mol);
     const index = new Map(heavy.map((a, i) => [a.id, i]));
-    const labels = heavy.map(a => `${a.element}${mol.getFreeValency(a.id)}`);
+    const labels = heavy.map(a => heavyAtomLabel(mol, a));
     const adj = heavy.map(() => []);
     mol.bonds.forEach(b => {
         if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
@@ -2157,10 +2237,7 @@ function rootedFragmentCode(mol, rootId, excludeId) {
         });
     }
     const index = new Map(fragIds.map((id, i) => [id, i]));
-    const labels = fragIds.map(id => {
-        const a = mol.atoms.find(at => at.id === id);
-        return `${a.element}${mol.getFreeValency(id)}`;
-    });
+    const labels = fragIds.map(id => heavyAtomLabel(mol, mol.atoms.find(at => at.id === id)));
     const adj = fragIds.map(() => []);
     mol.bonds.forEach(b => {
         if (!index.has(b.atomId1) || !index.has(b.atomId2)) return;
@@ -4051,6 +4128,9 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
 function iupacNameDetail(mol) {
     const heavy = mol.atoms.filter(a => a.element !== 'H');
     if (!heavy.length) return null;
+    // ★ 電荷を持つ分子には系統名を付けない（I-3 の門番）。空き価標が電荷で変わるので、
+    //   O⁻ を「-OH」と読んでアルコキシドをアルコールと名乗ってしまう
+    if (heavy.some(a => a.charge)) return null;
     if (heavy.some(a => a.element !== 'C' && a.element !== 'O' && !IUPAC_HALOGEN[a.element])) return null; // C/O/ハロゲンのみ
     const carbons = heavy.filter(a => a.element === 'C');
     if (!carbons.length) return null;
@@ -5859,6 +5939,10 @@ if (typeof window !== 'undefined') {
     window.findAromaticBondKeys = findAromaticBondKeys;
     window.isValencyValid = isValencyValid;
     window.maxValencyOf = maxValencyOf;
+    // ★ 電荷（I-3）。ラベルの作り方と、写すときの印の一覧
+    window.heavyAtomLabel = heavyAtomLabel;
+    window.copyAtomMarks = copyAtomMarks;
+    window.MONATOMIC_ION_ELEMENTS = MONATOMIC_ION_ELEMENTS;
     window.layoutMolecule = layoutMolecule;
     window.findAnyCycle = findAnyCycle;
     window.findLongestCarbonChain = findLongestCarbonChain;
