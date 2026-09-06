@@ -35296,6 +35296,11 @@
              *   **5℃以下でも水はある**（ジアゾ化はもともと水溶液）という事実と
              *   画面が食い違う。★ 分かれ目は温度であって試薬ではない（§4-1）。 */
             'diazonium_decompose',
+            /* ★ 同じ段でジアゾカップリングを足して 17 件。
+             * ⚠ **これも意図して瓶を持たせていない** —— 相手のナトリウムフェノキシドは
+             *   **画面で作れる**（フェノール ＋ NaOH）ので、キャンバスに呼び出す形にした
+             *   （`alkylate_arene_propene`・`acetalization_pva` と同じ）。 */
+            'diazo_coupling',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
         assert(now.length === expected.length,
@@ -45802,7 +45807,14 @@
         alkylate_arene_propene: ['ベンゼン', 'プロペン（プロピレン）'],
         /* ★ アセチレン＋酢酸 → 酢酸ビニル（系統樹レーン v1501）。こちらも**付加**なので
          *   水は出ず、`CV_MUST_SPLIT` には入れない。 */
-        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸']
+        add_carboxylic_acid_alkyne: ['アセチレン（エチン）', '酢酸'],
+        /* ★ ジアゾカップリング（I-4）。⚠ **この検査が自分で見つけて名指しした** ——
+         *   足した瞬間に CV1/CV4 が「題材が無いルールの一覧が宣言と違う
+         *   （実際: diazo_coupling ／ 宣言: なし）」で赤くなった ＝ 設計どおりの動き。
+         * ⚠ 相手のナトリウムフェノキシドが要るので1分子の走査では拾えない。
+         * ⚠ **`CV_MUST_SPLIT` には入れない** —— 外れる Na⁺ と Cl⁻ は
+         *   `apply` の中で図から消すので、反応の前後で分子の数はむしろ **2 → 1 に減る**。 */
+        diazo_coupling: ['塩化ベンゼンジアゾニウム', 'ナトリウムフェノキシド']
         /* ⚠⚠ **`amine_liberate_naoh` はここから外れた**（v1510 で入り、電荷の段で不要になった）。
          *   detect が「層の印」から**図そのもの**（アンモニウム塩の N）に変わったので、
          *   ライブラリの走査が**登録済みのアニリン塩酸塩**を自分で拾う
@@ -52103,6 +52115,86 @@
             '★ 電荷を外した C-N≡N（塩ではない図）にまで加熱分解がかかる');
         c.reset();
         return '瓶なし・塩化ベンゼンジアゾニウム → フェノール（N₂ は描かない）／否定対照4つ';
+    });
+
+    test('DZ3: ジアゾカップリング（ジアゾニウム塩 + ナトリウムフェノキシド → p-ヒドロキシアゾベンゼン）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const rule = W.REACTION_RULES.find(r => r.id === 'diazo_coupling');
+        assert(rule, 'diazo_coupling のルールが無い');
+        assert(!rule.reagentId, '★ カップリングに瓶が付いている（相手はキャンバスに呼び出す）');
+        assert(rule.mechanismId === 'diazo_coupling',
+            `★ 既存の機構ビューアにつながっていない（mechanismId ${rule.mechanismId}）`);
+        assert(W.reactionPlayer.reactions.some(m => m.id === 'diazo_coupling'),
+            'reactions.json に diazo_coupling の機構が無い');
+
+        // (1) 2分子を並べる: 塩化ベンゼンジアゾニウム ＋ ナトリウムフェノキシド
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('塩化ベンゼンジアゾニウム');
+        g.summonMolecule('ナトリウムフェノキシド');
+        g.updateDrawing();
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, `カップリングの箇所が ${sites.length} 件（1件のはず）`);
+        /* ★★ **パラ位であること**を図から確かめる（添字ではなく「-O⁻ の付け根から環を
+         *   3つ歩いた炭素」で引く）。⚠ オルトに入ると別の化合物になる */
+        const um = g.userMolecule;
+        const [, , metalId, oId, paraId] = sites[0];
+        const anchor = um.getNeighbors(oId).find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
+        const ringIds = new Set([...W.componentOf(um, anchor.atom.id)]);
+        const step = new Map([[anchor.atom.id, 0]]);
+        const q = [anchor.atom.id];
+        while (q.length) {
+            const cur = q.shift();
+            um.getNeighbors(cur).forEach(n => {
+                if (!ringIds.has(n.atom.id) || step.has(n.atom.id) || n.atom.element !== 'C') return;
+                step.set(n.atom.id, step.get(cur) + 1);
+                q.push(n.atom.id);
+            });
+        }
+        assert(step.get(paraId) === 3,
+            `★★ つなぐ先が -O⁻ の付け根から ${step.get(paraId)} 歩の炭素（パラ位 ＝ 3 歩のはず）`);
+
+        // (2) 反応させる
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const parts = g.splitMolecules();
+        assert(parts.length === 1, `生成物が ${parts.length} 成分（Na⁺ も Cl⁻ も図から外すはず）`);
+        const prod = parts[0];
+        assert(g.lookupCompoundName(prod) === 'p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）',
+            `★ カップリングの生成物が「${g.lookupCompoundName(prod)}」`);
+        assert(g.computeMolecularFormula(prod) === 'C₁₂H₁₀N₂O',
+            `生成物の分子式が ${g.computeMolecularFormula(prod)}（C₁₂H₁₀N₂O のはず）`);
+        // ★★ ＋ の電荷が消え、N≡N が N=N になる（アゾ化合物は中性）
+        assert(!prod.atoms.some(a => a.charge), '★★ 生成物に電荷が残っている（アゾ化合物は中性）');
+        const ns = prod.atoms.filter(a => a.element === 'N');
+        assert(ns.length === 2 && prod.getBond(ns[0].id, ns[1].id).type === 2,
+            '★★ N≡N が N=N（アゾ基）になっていない');
+        assert(!prod.atoms.some(a => a.element === 'Na' || a.element === 'Cl'),
+            '★ Na か Cl が図に残っている');
+        assert(/橙赤色|アゾ染料/.test(res.caption), '★ caption が色／アゾ染料を言っていない');
+        assert(/パラ位|対角/.test(res.caption), '★ caption がパラ位で結びつくことを言っていない');
+
+        /* (3) ★★ 否定対照 —— 4つとも別の外れ方 */
+        const noSite = (names, why) => {
+            g.userMolecule = new W.Molecule();
+            names.forEach(n => g.summonMolecule(n));
+            g.updateDrawing();
+            assert(rule.detect(g.userMolecule).length === 0, `★ ${names.join(' + ')} に箇所が出た（${why}）`);
+        };
+        noSite(['塩化ベンゼンジアゾニウム'], '相手のフェノキシドが居ない');
+        noSite(['ナトリウムフェノキシド'], 'ジアゾニウム塩が居ない');
+        noSite(['塩化ベンゼンジアゾニウム', 'フェノール'], 'フェノールのままでは反応しない（塩にする）');
+        noSite(['アニリン', 'ナトリウムフェノキシド'], 'ジアゾ化する前のアミンは相手にならない');
+        // ★ 空振り検出: 同じ数え方で本物の組には必ず1件出る
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('塩化ベンゼンジアゾニウム');
+        g.summonMolecule('ナトリウムフェノキシド');
+        g.updateDrawing();
+        assert(rule.detect(g.userMolecule).length === 1,
+            '★ 空振り検出: 本物の組で箇所が出ない ＝ 上の否定対照は無意味');
+        c.reset();
+        return 'パラ位でつながり N=N の中性アゾ化合物になる（既存機構 diazo_coupling に接続）／否定対照4つ';
     });
 
     // ===== 一部だけ流す（`?only=`）=====

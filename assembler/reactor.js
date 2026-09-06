@@ -2331,6 +2331,53 @@ function kolbeSchmidtSites(mol) {
     return out;
 }
 
+/**
+ * ★★ ジアゾカップリングの箇所（DESIGN_ion_layer.md I-4・既存機構 `diazo_coupling`）。
+ *
+ * ジアゾニウム塩 ＋ ナトリウムフェノキシド → **p-ヒドロキシアゾベンゼン**（橙赤色のアゾ染料）。
+ * 返すのは `[環側のN⁺, 末端のN, 金属id, フェノキシドのOid, パラ位の環炭素id]`。
+ *
+ * ⚠ **パラ位に限る**（機構データの desc がそう書いている:「フェノキシドの O⁻ が
+ *   電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります」）。
+ *   ★ `kolbeSchmidtSites` が**オルトに限る**のとちょうど裏返しで、
+ *   どちらも「教科書がそう書く1つだけを出す」——両方出すと「どちらでもよい」と読まれる。
+ * ⚠ **別の分子どうしでなければ出さない**（`componentOf` で見る）。
+ */
+function diazoCouplingSites(mol) {
+    const arom = aromaticAtomSet(mol);
+    const out = [];
+    const diazo = diazoniumSites(mol);
+    if (!diazo.length) return out;
+    phenoxideSaltSites(mol).forEach(([metalId, oId]) => {
+        const anchor = mol.getNeighbors(oId)
+            .find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
+        if (!anchor) return;
+        const ringSet = new Set([...componentOf(mol, anchor.atom.id)]
+            .filter(id => arom.has(id)));
+        // 環を一周して -O⁻ の付け根からの距離を測る（1=オルト・3=パラ）
+        const dist = new Map([[anchor.atom.id, 0]]);
+        const queue = [anchor.atom.id];
+        while (queue.length) {
+            const cur = queue.shift();
+            mol.getNeighbors(cur).forEach(n => {
+                if (!ringSet.has(n.atom.id) || dist.has(n.atom.id)) return;
+                dist.set(n.atom.id, dist.get(cur) + 1);
+                queue.push(n.atom.id);
+            });
+        }
+        const para = [...dist.keys()].filter(id => dist.get(id) === 3);
+        if (para.length !== 1) return;                       // ⚠ 六員環でなければ出さない
+        const paraId = para[0];
+        if (mol.getFreeValency(paraId) < 1) return;          // パラ位が塞がっていたら出さない
+        const phenoxide = componentOf(mol, oId);
+        diazo.forEach(([nId, n2Id]) => {
+            if (phenoxide.has(nId)) return;                  // ⚠ 別分子どうしのみ
+            out.push([nId, n2Id, metalId, oId, paraId]);
+        });
+    });
+    return out;
+}
+
 /** その「酸性の -OH（もしくは -O-金属）」がどの酸のものか。文面の出し分けにだけ使う */
 function acidKindOf(mol, oId, anchorId) {
     const anchor = mol.atoms.find(x => x.id === anchorId);
@@ -6592,6 +6639,62 @@ const REACTION_RULES = [
                     (symbol ? `。対イオンの ${symbol}⁻ は塩化水素になって水に溶けるので、` +
                         'こちらも図から外しました' : '') + '）。',
                 changed: [ringId, o.id]
+            };
+        }
+    },
+    {
+        /* ★★ ジアゾカップリング（I-4）。ジアゾニウム塩 ＋ ナトリウムフェノキシド
+         *   → **p-ヒドロキシアゾベンゼン**（橙赤色。アゾ染料の代表例）。
+         *
+         * ★ **既存の機構ビューア `diazo_coupling` に `mechanismId` でつなぐ**
+         *   （設計書 §5-2 の I-4 の指定どおり）。巻矢印はもう描いてある。
+         * ⚠ **瓶を持たせない**（相手はキャンバスに呼び出す。`alkylate_arene_propene`・
+         *   `acetalization_pva` と同じ形）。★ フェノキシドは
+         *   「フェノールを NaOH 水溶液に溶かしたもの」＝ **画面で作れる**
+         *   （フェノール ＋ NaOH → ナトリウムフェノキシド）。
+         *
+         * ⚠ **パラ位に限る**（機構データの desc がそう書く）。`kolbe_schmidt` が
+         *   オルトに限るのとちょうど裏返し。
+         * ⚠ Na⁺ と Cl⁻ は NaCl になって水に残るので、どちらも図から外す。
+         * ★ N≡N は **N=N になる**（三重 → 二重）。⚠ 電荷はここで消える
+         *   —— アゾ化合物は中性で、これが「色が着く」形。 */
+        id: 'diazo_coupling',
+        mechanismId: 'diazo_coupling',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②環と窒素がつながる
+        label: 'ジアゾカップリング（ジアゾニウム塩 + ナトリウムフェノキシド）→ アゾ染料',
+        detect(mol) { return diazoCouplingSites(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [nId, n2Id, metalId, oId, paraId] = site;
+            const n = mol.atoms.find(a => a.id === nId);
+            const bond = mol.getBond(nId, n2Id);
+            if (!n || !bond || bond.type !== 3) throw new Error('ジアゾニオ基が見つかりません');
+            /* ⚠⚠ **置き場を先に確かめる**（途中で失敗して「Na だけ外れた図」を残さない）。
+             *   Na は動かす側にいるが、このあと外れるので衝突判定から除く（ignoreIds）。 */
+            const movingIds = [...componentOf(mol, oId)].filter(id => id !== metalId);
+            const plan = planAttachment(mol, n2Id, paraId, movingIds, [metalId]);
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
+            const ion = nearestCounterIon(mol, nId, -1);
+            const symbol = ion ? ion.element : null;
+            const metal = mol.atoms.find(a => a.id === metalId);
+            const metalSymbol = metal ? metal.element : 'Na';
+            if (ion) mol.removeAtom(ion.id);
+            mol.removeAtom(metalId);   // 金属が外れると酸素に結合手が空き、自動水素が -OH を描く
+            applyAttachment(mol, movingIds, plan);
+            mol.addBond(n2Id, paraId, 1);
+            bond.type = 2;             // N≡N → N=N
+            delete n.charge;           // ★ アゾ化合物は中性（＋ はここで消える）
+            return {
+                caption: '氷冷したジアゾニウム塩の水溶液に**ナトリウムフェノキシド**を加えると、' +
+                    '**橙赤色**の **p-ヒドロキシアゾベンゼン**ができました（ジアゾカップリング）。' +
+                    'アゾ染料をつくる代表的な反応です。' +
+                    '⚠ 結びつくのは **-O⁻ の対角（パラ位）の炭素**です —— ' +
+                    'O⁻ が電子を環に押し出すので、その位置がいちばん反応しやすくなります。' +
+                    '⚠ **N≡N が N=N（アゾ基）に変わり、＋ の電荷は消えます** —— ' +
+                    'この長くつながった二重結合の並びが色のもとです。' +
+                    `外れた ${metalSymbol}⁺ と ${symbol || 'Cl'}⁻ は塩（${metalSymbol}${symbol || 'Cl'}）` +
+                    'になって水に残るので、図から外しました。',
+                changed: [nId, n2Id, paraId, oId]
             };
         }
     },
