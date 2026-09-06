@@ -605,7 +605,7 @@ function subMolecule(mol, ids) {
     mol.atoms.forEach(a => {
         if (!want.has(a.id)) return;
         const na = out.addAtom(a.element, a.x, a.y);
-        if (a.haworthFace === 1 || a.haworthFace === -1) na.haworthFace = a.haworthFace;
+        copyAtomMarks(na, a);   // 面マークと電荷（I-3）
         map.set(a.id, na.id);
     });
     mol.bonds.forEach(b => {
@@ -1091,7 +1091,7 @@ function aromaticSiteClass(mol, siteId) {
     const probe = new Molecule();
     const map = new Map();
     mol.atoms.forEach(a => {
-        if (comp.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
+        if (comp.has(a.id)) map.set(a.id, copyAtomMarks(probe.addAtom(a.element, a.x, a.y), a).id);
     });
     mol.bonds.forEach(b => {
         if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
@@ -1901,7 +1901,7 @@ function sideChainProductKey(mol, benzylId, branch) {
     const probe = new Molecule();
     const map = new Map();
     mol.atoms.forEach(a => {
-        if (comp.has(a.id) && !drop.has(a.id)) map.set(a.id, probe.addAtom(a.element, a.x, a.y).id);
+        if (comp.has(a.id) && !drop.has(a.id)) map.set(a.id, copyAtomMarks(probe.addAtom(a.element, a.x, a.y), a).id);
     });
     mol.bonds.forEach(b => {
         if (map.has(b.atomId1) && map.has(b.atomId2)) probe.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
@@ -2893,7 +2893,7 @@ function componentCode(mol, atomId) {
     const sub = new Molecule();
     const map = new Map();
     mol.atoms.filter(a => ids.has(a.id)).forEach(a => {
-        map.set(a.id, sub.addAtom(a.element, a.x, a.y).id);
+        map.set(a.id, copyAtomMarks(sub.addAtom(a.element, a.x, a.y), a).id);
     });
     mol.bonds.forEach(b => {
         if (map.has(b.atomId1) && map.has(b.atomId2)) {
@@ -6526,6 +6526,7 @@ function copyMoleculeInto(dest, src, ids, dx) {
     src.atoms.forEach(a => {
         if (ids && !ids.has(a.id)) return;
         const na = dest.addAtom(a.element, a.x + dx, a.y);
+        copyAtomMarks(na, a);   // 電荷（I-3）を落とさない
         map.set(a.id, na.id);
         added.add(na.id);
     });
@@ -6794,7 +6795,7 @@ function isRegisteredCompound(mol, name) {
     const t = registeredTarget(name);
     if (!t || typeof canonicalStereoCode !== 'function') return false;
     const ref = new Molecule();
-    const ids = t.atoms.map(a => ref.addAtom(a.element, a.x, a.y).id);
+    const ids = t.atoms.map(a => copyAtomMarks(ref.addAtom(a.element, a.x, a.y), a).id);
     t.bonds.forEach(b => ref.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
     const code = m => canonicalStereoCode(m, {
         atomParity: { ...readAtomParityFromFischer(m), ...readRingParityFromHaworth(m) }
@@ -8259,7 +8260,7 @@ class Reactor {
             const part = new Molecule();
             const map = new Map();
             this.game.userMolecule.atoms.forEach(a => {
-                if (ids.has(a.id)) map.set(a.id, part.addAtom(a.element, a.x, a.y).id);
+                if (ids.has(a.id)) map.set(a.id, copyAtomMarks(part.addAtom(a.element, a.x, a.y), a).id);
             });
             this.game.userMolecule.bonds.forEach(b => {
                 if (map.has(b.atomId1) && map.has(b.atomId2)) {
@@ -8513,7 +8514,7 @@ class Reactor {
     // スナップショットから一時的な Molecule を作る（中間状態の自動水素を計算するため）
     molFromSnapshot(snap) {
         const m = new Molecule();
-        snap.atoms.forEach(a => m.atoms.push(new Atom(a.id, a.element, a.x, a.y)));
+        snap.atoms.forEach(a => m.atoms.push(copyAtomMarks(new Atom(a.id, a.element, a.x, a.y), a)));
         snap.bonds.forEach(b => m.bonds.push(new Bond(b.atomId1, b.atomId2, b.type)));
         return m;
     }

@@ -555,7 +555,7 @@ class ReactionPlayer {
         // 原子（電荷・ラジカル付き）
         state.atoms.forEach((a, i) => {
             this.game.renderAtom(`rx_${i}`, a.element, a.x, a.y, false);
-            if (a.charge) this.renderCharge(a);
+            if (a.charge) this.game.renderCharge(a);
             if (a.radical) this.renderRadical(a);
         });
     }
@@ -570,16 +570,8 @@ class ReactionPlayer {
         this.game.atomsGroup.appendChild(dot);
     }
 
-    // 形式電荷 (+/−) を原子ラベルの右上に描画
-    renderCharge(atom) {
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', atom.x + 9);
-        text.setAttribute('y', atom.y - 5);
-        text.setAttribute('class', 'svg-charge');
-        text.style.fontSize = '11px';
-        text.textContent = atom.charge > 0 ? '+' : '−';
-        this.game.atomsGroup.appendChild(text);
-    }
+    // 形式電荷 (+/−) の描画は I-3 で `Game#renderCharge` へ移した（作図キャンバスの分子も
+    // 電荷を持つようになったので、描くのは1か所）。ここからは `this.game.renderCharge` を呼ぶ
 
     clearArrows() {
         this.arrowsGroup.innerHTML = '';
@@ -742,7 +734,7 @@ class ReactionPlayer {
             this.game.renderAtom(`rx_${i}`, a.element, p.x, p.y, false);
             // 電荷・ラジカルは遷移の前半はfrom側、後半はto側を表示する
             const src = (t < 0.5 ? from.atoms[i] : to.atoms[i]);
-            if (src.charge) this.renderCharge({ x: p.x, y: p.y, charge: src.charge });
+            if (src.charge) this.game.renderCharge({ x: p.x, y: p.y, charge: src.charge });
             if (src.radical) this.renderRadical({ x: p.x, y: p.y });
         });
     }
@@ -811,7 +803,7 @@ class ReactionPlayer {
             if (!e) return null;
             const src = this.game.createTargetFromData({ target: e.target });
             const map = new Map();
-            src.atoms.forEach(a => map.set(a.id, m.addAtom(a.element, a.x, a.y + dy).id));
+            src.atoms.forEach(a => map.set(a.id, copyAtomMarks(m.addAtom(a.element, a.x, a.y + dy), a).id));
             src.bonds.forEach(b => m.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
             dy += 260; // 相手の分子と重ならない間隔（エステル化は2分子を並べる）
         }
