@@ -46975,7 +46975,7 @@
                   `REF12`（機構の表を持つページだけを見る）の**すき間**に、
                   表を1枚も持たないページを置いて全部の物差しから逃げられる。
                ⚠ 種類が増えたらここに足すこと ＝ **逃げ道は必ず1行の追加として残る。** */
-            const TABLE_KINDS = ['stageTable', 'mechanismTable'];
+            const TABLE_KINDS = ['stageTable', 'mechanismTable', 'dehydrationTable'];
             assert((p.blocks || []).some(b => TABLE_KINDS.includes(b.kind)),
                 `${p.id}: 表のブロック（${TABLE_KINDS.join(' / ')}）が1つも無い`
                 + '（資料は表が本体。表を持たないページは、行を機械で組む約束の外へ出てしまう）');
