@@ -370,7 +370,7 @@ function runDataTests(DATA) {
     // こちらは `?open=reference` と、`linkHtml` が必ず付ける `?code=` しか送らない
     var NEED = {
       summon: [], isomer: ["formula"], mechanism: ["id"],
-      reaction: ["reagent"], practice: ["open"], none: [], reference: []
+      reaction: ["reagent"], practice: ["open"], none: [], reference: [], ion: []
     };
     var POINTS_AT_MOLECULE = { summon: 1, reaction: 1 };
     // `practice` は行き先しだい。`?open=stereo` はキャンバスの分子を見る画面なので、
@@ -643,7 +643,7 @@ function runLinkTargetTests(DATA, COMPOUNDS, STAGES) {
   });
 
   t("飛び道具: kind は summon / isomer / mechanism / reaction / practice / reference / none のいずれか", function () {
-    var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, practice: 1, reference: 1, none: 1 };
+    var OK = { summon: 1, isomer: 1, mechanism: 1, reaction: 1, practice: 1, reference: 1, ion: 1, none: 1 };
     DATA.patterns.forEach(function (p) {
       if (!p.link || !p.link.kind) return;   // kind 未導入のものは既存テストが見る
       assert(OK[p.link.kind], p.code + ": 未知の kind " + p.link.kind);
@@ -746,7 +746,7 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
   var NEED = {
     summon: ["label", "name"], isomer: ["label", "formula"], mechanism: ["label", "id"],
     reaction: ["label", "name", "reagent"], practice: ["label", "open"], none: ["why"],
-    reference: ["label"]
+    reference: ["label"], ion: ["label"]
   };
 
   var rows = LINKS || [];

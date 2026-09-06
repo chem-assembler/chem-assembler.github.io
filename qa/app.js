@@ -583,7 +583,13 @@ function slTrack(name, params) {
 
   function linkHtml(pattern) {
     if (!pattern.link || pattern.link.kind === 'none') return '';
-    var url = '../assembler/?from=qa&code=' + encodeURIComponent(pattern.code);
+    /* ★ 行き先はアプリごとに違う。`ion` だけ ion-equation の索引へ送る（2026-09-05）。
+       ⚠ 送るのは **項目コードだけ**で、どの反応に着地させるかは向こうの
+       `reactions.json` の `qaCodes` が決める（ratio ⇄ ion と同じ約束）。
+       ＝ こちらは相手のデータもページ構成も持たない。 */
+    var url = (pattern.link.kind === 'ion'
+      ? '../ion-equation/library.html?from=qa&code='
+      : '../assembler/?from=qa&code=') + encodeURIComponent(pattern.code);
     var q = linkQuery(pattern.link);
     Object.keys(q).forEach(function (k) {
       if (q[k]) url += '&' + k + '=' + encodeURIComponent(q[k]);
@@ -805,7 +811,7 @@ function slTrack(name, params) {
 
   // 相手を名指しできるのは**こちらが送った先だけ**。
   // 知らない `from` は名前を出さずに「戻ってきました」とだけ言う（勝手に相手を作らない）
-  var BACK_APP_NAME = { assembler: 'パズルでみる有機化学' };
+  var BACK_APP_NAME = { assembler: 'パズルでみる有機化学', ion: 'イオンでみる化学反応式' };
 
   function renderBackBand() {
     var box = $('back-band');
@@ -933,7 +939,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=97')
+  fetch('data/exam_usage.jsonl?v=98')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -948,7 +954,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=97')
+  fetch('questions.json?v=98')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
