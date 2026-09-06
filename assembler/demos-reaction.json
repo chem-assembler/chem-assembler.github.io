@@ -3097,5 +3097,77 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-separation-co2",
+    "title": "V143: 二酸化炭素ひとつで分ける（反応シリーズ㉕・分液）",
+    "summary": "⭐ **V141 の裏返し**——**V141 は「炭酸より強い酸だけが NaHCO₃ で釣り上がる」、この回は「炭酸より弱い酸だけが CO₂ で追い出される」**。**同じ物差しの反対側。**⚠ **入試にこの型がある**（信州大 2020「水層に二酸化炭素を吹き込んでフェノールを遊離させる」）。**試薬は NaHCO₃ とは限らない**という実例。⭐ **手順**: 安息香酸 ＋ フェノール → NaOH で**どちらも**水層へ → CO₂ で**フェノールだけ**有機層へ戻る（安息香酸ナトリウムは残る）。⚠ **瓶は `.rg-bottle[data-reagent=\"co2\"]`**。⚠ **「塩」は かなで「えん」**（漢字だと シオ）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "安息香酸とフェノール",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "安息香酸"
+          },
+          {
+            "type": "summon",
+            "name": "フェノール"
+          },
+          {
+            "type": "frame",
+            "width": 800
+          },
+          {
+            "type": "wait",
+            "ms": 1200
+          }
+        ]
+      },
+      {
+        "caption": "分液を始める",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-sep-start"
+          },
+          {
+            "type": "wait",
+            "ms": 900
+          }
+        ]
+      },
+      {
+        "caption": "NaOH → どちらも水層へ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".rg-bottle[data-reagent=\"naoh_aq\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 4400
+          }
+        ]
+      },
+      {
+        "caption": "CO₂ → 炭酸より弱いフェノールだけ戻る",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".rg-bottle[data-reagent=\"co2\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 26500
+          }
+        ]
+      }
+    ]
   }
 ]
