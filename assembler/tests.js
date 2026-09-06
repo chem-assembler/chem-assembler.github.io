@@ -46980,7 +46980,7 @@
                   `REF12`（機構の表を持つページだけを見る）の**すき間**に、
                   表を1枚も持たないページを置いて全部の物差しから逃げられる。
                ⚠ 種類が増えたらここに足すこと ＝ **逃げ道は必ず1行の追加として残る。** */
-            const TABLE_KINDS = ['stageTable', 'mechanismTable'];
+            const TABLE_KINDS = ['stageTable', 'mechanismTable', 'dehydrationTable'];
             assert((p.blocks || []).some(b => TABLE_KINDS.includes(b.kind)),
                 `${p.id}: 表のブロック（${TABLE_KINDS.join(' / ')}）が1つも無い`
                 + '（資料は表が本体。表を持たないページは、行を機械で組む約束の外へ出てしまう）');
@@ -48346,6 +48346,224 @@
                     `?open=mechanism&id=${id} で、いま見ている1件に表の上で印が付かない`);
             } finally { f.remove(); }
         }
+    });
+
+    /* ===== REF15/REF16: 資料の5枚目 ＝ アルコールと脱水生成物の対応表（v1518） =====
+     *
+     * ★ ユーザー原文（2026-09-06）「C5H12Oのアルコールの脱水生成物との対応表（反応系統樹）に
+     *   2,2-ジメチル-1-プロパノール は載せたいです（俯瞰できるようにしたい）」
+     *   ＝ **書き出しの在庫から落とした2件を、表には載せる。**
+     *
+     * ⚠ この2件（メタノール／2,2-ジメチル-1-プロパノール）は `IP_COND_PRESETS` に**居ない**
+     *   （§22-3。答えが0個だと器が組めない）。⚠⚠ **だから「在庫に在るか」で表を検算できない** ——
+     *   検算は**列挙器と `ipDehydrationEdges` に直接あてる**。
+     */
+
+    // 資料の対応表を開いて、行を [分子式, アルコール, アルケンの欄] に読み下す。
+    // ⚠ rowspan の分子式セルは前の行から引き継ぐ（画面に出ている姿のまま数える）
+    async function refMapRows(c) {
+        const W = c.W, D = c.D;
+        const pages = await W.referenceBook.load();
+        const page = pages.find(p => (p.blocks || []).some(b => b.kind === 'dehydrationTable'));
+        assert(page, 'reference.json に対応表（dehydrationTable）を持つページが無い');
+        assert(await W.referenceBook.open(page.id), `${page.id}: 開けない`);
+        await new Promise(r => setTimeout(r, 250));
+        const trs = [...D.querySelectorAll('#ref-body table.ref-map-table tbody tr')];
+        let formula = '';
+        return { page, trs, rows: trs.map(tr => {
+            const tds = [...tr.children];
+            if (tds[0].classList.contains('ref-group')) {
+                formula = tds[0].firstChild.textContent.trim();
+                tds.shift();
+            }
+            return {
+                formula,
+                name: tds[0].textContent.trim(),
+                to: tds[1].textContent.trim(),
+                blocked: tr.classList.contains('ref-map-blocked'),
+                major: [...tds[1].querySelectorAll('.ref-map-major')].map(s => s.textContent.trim())
+            };
+        }) };
+    }
+
+    test('REF15: 対応表は C₁〜C₅ のアルコール全件 —— 脱水できない行も載り、行は ipDehydrationEdges そのもの', async (c) => {
+        const W = c.W;
+        assert(typeof W.refDehydrationMap === 'function', 'refDehydrationMap が公開されていない');
+
+        /* ★★ 期待は**この検査が自分で数え直す**（画面の値も learn.js の値も見ずに、
+           列挙器と `ipDehydrationEdges` から組み直す）。⚠ 件数も名前も検査に書き写さない。 */
+        const nMax = W.REF_DEHYD_MAX_CARBONS;
+        assert(nMax >= 5, `REF_DEHYD_MAX_CARBONS が ${nMax}（C₅ まで載る前提が崩れている）`);
+        const want = [];
+        for (let n = 1; n <= nMax; n++) {
+            const alkName = new Map();
+            if (n >= 2) {
+                const alk = W.enumerateConstitutionalIsomers(Array(n).fill('C'), 2 * n);
+                assert(!alk.overflow, `C${n}H${2 * n} の列挙があふれた`);
+                alk.isomers.forEach(m => alkName.set(W.canonicalCode(m), W.iupacName(m)));
+            }
+            const res = W.enumerateConstitutionalIsomers(Array(n).fill('C').concat(['O']), 2 * n + 2);
+            assert(!res.overflow, `C${n}H${2 * n + 2}O の列挙があふれた`);
+            res.isomers.forEach(m => {
+                // -OH をちょうど1つ持つもの（エーテルを外す）。判定は出題側と同じ1本
+                const oh = m.atoms.filter(a => {
+                    if (a.element !== 'O') return false;
+                    const nb = m.getNeighbors(a.id).filter(x => x.atom.element !== 'H');
+                    return nb.length === 1 && nb[0].type === 1 && nb[0].atom.element === 'C';
+                });
+                if (oh.length !== 1) return;
+                const e = W.ipDehydrationEdges(m);
+                want.push({
+                    name: W.iupacName(m),
+                    products: e.map(x => alkName.get(x.code)).sort(),
+                    majors: e.filter(x => x.major).map(x => alkName.get(x.code)).sort()
+                });
+            });
+        }
+        assert(want.length >= 16,
+            `C₁〜C${nMax} のアルコールが ${want.length} 件しか数えられない（16件そろっている前提が崩れた）`);
+
+        const { rows } = await refMapRows(c);
+        assert(rows.length === want.length,
+            `表が ${rows.length} 行で、列挙器が返す C₁〜C${nMax} のアルコール ${want.length} 件と合わない`);
+
+        // ① 並びも中身も列挙器そのもの（＝ 資料が2つ目の並び順を持っていない）
+        want.forEach((w, i) => {
+            assert(rows[i].name === w.name,
+                `${i + 1} 行目が「${rows[i].name}」（列挙器の順なら「${w.name}」）`);
+            if (w.products.length) {
+                w.products.forEach(p => assert(rows[i].to.includes(p),
+                    `${w.name} の行に生成物「${p}」が出ていない（画面: ${rows[i].to}）`));
+            }
+        });
+
+        /* ② ★★ ユーザーの指摘そのもの ——
+           **辺が0本のアルコールが表に載っていて、「脱水できない」と書いてある。**
+           ⚠ 空欄でも省略でもないこと（空欄は「調べていない」と読める）。 */
+        const wantBlocked = want.filter(w => !w.products.length).map(w => w.name);
+        assert(wantBlocked.length >= 2,
+            `脱水できないアルコールが ${wantBlocked.length} 件しか無い（C₁ と C₅ に1件ずつ在る前提が崩れた）`);
+        wantBlocked.forEach(nm => {
+            const r = rows.find(x => x.name === nm);
+            assert(r, `脱水できない「${nm}」の行が表に無い（出題から外した2件を、表からも外している）`);
+            assert(r.blocked && /脱水できない/.test(r.to),
+                `${nm} の行に「脱水できない」と書いていない（画面: 「${r.to}」）`);
+            assert(r.to.replace(/脱水できない/, '').trim().length >= 5,
+                `${nm} の行に、脱水できない理由が書いていない`);
+        });
+        // ⚠ blocked の印が付く行と、辺が0本の行が **1件もずれない**
+        //   ＝ `blocked` が2つ目の脱水規則に育ったらここで赤くなる
+        const shownBlocked = rows.filter(r => r.blocked).map(r => r.name).sort();
+        assert(shownBlocked.join(',') === wantBlocked.slice().sort().join(','),
+            `「脱水できない」の印が付く行（${shownBlocked.join('・')}）が、`
+            + `ipDehydrationEdges が0本を返す行（${wantBlocked.join('・')}）と食い違う`);
+
+        /* ③ ★ 2件は**理由が別**（β炭素が無い／β炭素に水素が無い）。
+           同じ文が2つ並ぶなら、片方は理由になっていない */
+        const reasons = new Set(rows.filter(r => r.blocked).map(r => r.to.replace(/脱水できない/, '').trim()));
+        assert(reasons.size === shownBlocked.length,
+            `脱水できない ${shownBlocked.length} 件の理由が ${reasons.size} 種類しかない`
+            + '（2件は「隣に炭素が無い」と「隣の炭素に水素が無い」で理由が別）');
+
+        /* ④ ★ 「（主）」は**2つできる行にだけ**付き、ザイツェフの主生成物と一致する。
+           ⚠ 1つしかできない行に付けると「副もあるはず」と読めて、無いものを探させる */
+        let sawMany = 0;
+        want.forEach(w => {
+            const r = rows.find(x => x.name === w.name);
+            if (w.products.length >= 2) {
+                sawMany++;
+                assert(r.major.length === w.majors.length,
+                    `${w.name}: 「（主）」が ${r.major.length} 個（ザイツェフの主生成物は ${w.majors.length} 個）`);
+                w.majors.forEach(m => assert(r.major.some(x => x.startsWith(m)),
+                    `${w.name}: 主生成物 ${m} に「（主）」が付いていない（画面: ${r.to}）`));
+            } else {
+                assert(r.major.length === 0,
+                    `${w.name}: できるアルケンが1つなのに「（主）」が付いている`);
+            }
+        });
+        assert(sawMany >= 4,
+            `2つできる行が ${sawMany} 件しかない（ザイツェフ則が効く回が消えている）`);
+        W.referenceBook.close();
+        c.reset();
+    });
+
+    test('REF16: ★否定対照 — 対応表は「C₅ の行だけ」に絞れず、床（結合28px）も守る', async (c) => {
+        const W = c.W, D = c.D;
+        const { page, rows } = await refMapRows(c);
+        const full = rows.length;
+
+        /* ① ★★ 行を選ぶ引数を渡しても絞れない（原則1・`REF3` と同じ形の否定対照）。
+           ⚠ `carbons` は **learn.js の定数**で、`reference.json` から渡せない */
+        const block = (page.blocks || []).find(b => b.kind === 'dehydrationTable');
+        const sneaky = W.referenceBook.renderDehydrationTable(Object.assign({}, block,
+            { carbons: 5, maxCarbons: 5, only: 'メタノール', name: 'メタノール', row: 0, limit: 1, blocked: false }));
+        assert(sneaky.querySelectorAll('tbody tr').length === full,
+            `行を指す引数（carbons / only / row / limit / blocked）で表が ${sneaky.querySelectorAll('tbody tr').length} 行に絞れてしまう`);
+        // ⚠ **表にボタンを置かない**（stages の表と同じ約束 —— 説明が「N問の一覧」に化ける）
+        assert(D.querySelectorAll('#ref-body table.ref-map-table button').length === 0,
+            '対応表の行にボタンが付いている（表は「説明」であって「N問の一覧」ではない）');
+
+        /* ② ★★ 床（§12-1「資料が見せている分子」）。⚠ この表が見せているのは
+           **stages でも compounds でもなく列挙器が組んだ分子**なので、`referenceShownStages` の
+           物差しが届かない ＝ ここで塞ぐ。★ 最悪ケースは名前で選ばず `requiredViewWidth` で選ぶ。
+           ⚠ **`summonMolecule` は使えない** —— 列挙器が組んだ分子はライブラリに居ないものがある。
+              分子そのものをキャンバスへ置いて、実際の縮尺を測る。 */
+        await withViewport(1200, 800, async (W2, D2, vname) => {
+            assert(await W2.referenceBook.open(page.id), `${vname}: ${page.id} を開けない`);
+            await new Promise(r => setTimeout(r, 250));
+            const pane = D2.getElementById('reference-pane');
+            assert(!pane.classList.contains('hidden') && W2.getComputedStyle(pane).position !== 'fixed',
+                `${vname}: 1200px で資料が分割になっていない（この検査の前提）`);
+            // ⚠ 表の行を1つも間引かない（狭くしても中身を切らない・2026-09-02 ユーザー決定）
+            const trs = [...D2.querySelectorAll('#ref-body table.ref-map-table tbody tr')];
+            assert(trs.length === full && trs.filter(t => t.getClientRects().length > 0).length === full,
+                `${vname}: 対応表が ${trs.filter(t => t.getClientRects().length > 0).length}/${trs.length} 行しか見えない（${full} 行あるべき）`);
+            // 入らないぶんは横スクロールで見せる（切らない）
+            assert(W2.getComputedStyle(D2.querySelector('#ref-body .ref-table-wrap')).overflowX === 'auto',
+                `${vname}: 対応表が横にスクロールできない`);
+
+            // 表が見せている分子ぜんぶ（左のアルコールと右のアルケン）。⚠ 名前を焼き込まない
+            const shown = [];
+            for (let n = 1; n <= W2.REF_DEHYD_MAX_CARBONS; n++) {
+                [[Array(n).fill('C').concat(['O']), 2 * n + 2], [Array(n).fill('C'), 2 * n]].forEach(([heavy, h]) => {
+                    const res = W2.enumerateConstitutionalIsomers(heavy, h);
+                    if (res.overflow) return;
+                    res.isomers.forEach(m => shown.push({ name: W2.iupacName(m), target: m }));
+                });
+            }
+            assert(shown.length >= 30, `${vname}: 対応表が見せる分子が ${shown.length} 件しか集まらない`);
+            /* ⚠ `widestNarrowest` が返すのは **名前と視野だけ**（分子は返さない）ので、
+               測るには一覧から引き直す。★ 選ぶのはあくまで機械（名前を検査に書かない） */
+            const pick = (r) => {
+                const e = shown.find(x => x.name === r.name);
+                assert(e, `${vname}: 機械で選んだ「${r.name}」を一覧から引き直せない`);
+                return { name: r.name, v: r.v, target: e.target };
+            };
+            const wn = widestNarrowest(shown);
+            const worst = pick(wn.worst), easiest = pick(wn.easiest);
+            const measure = async (e) => {
+                W2.game.userMolecule = e.target;
+                W2.game.updateDrawing();
+                await new Promise(r => setTimeout(r, 120));
+                W2.game.fitCanvasToMolecule(W2.game.userMolecule);
+                await new Promise(r => setTimeout(r, 150));
+                return W2.game.screenPxPerGrid();
+            };
+            const pxWorst = await measure(worst), pxEasy = await measure(easiest);
+            assert(pxWorst >= 28,
+                `${vname}: 対応表が見せる分子のうち最大の「${worst.name}」（視野 ${Math.round(worst.v)}）が `
+                + `結合 ${pxWorst.toFixed(1)}px ＝ 床の 28px を割る`);
+            /* ★ 物差しそのものの検算（`REF4` と同じ）—— 視野を食う側が実際に小さく出ていること。
+               ⚠ 逆なら「床を守れている」のではなく requiredViewWidth が壊れている */
+            assert(pxWorst <= pxEasy,
+                `${vname}: 視野を食うはずの「${worst.name}」(${pxWorst.toFixed(1)}px) が`
+                + `「${easiest.name}」(${pxEasy.toFixed(1)}px) より大きく出ている`
+                + '＝ requiredViewWidth が画面の縮尺と別の順に並んでいる');
+            W2.game.userMolecule = new W2.Molecule();
+            W2.game.updateDrawing();
+        });
+        W.referenceBook.close();
+        c.reset();
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====

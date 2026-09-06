@@ -6028,6 +6028,95 @@ function refMechanisms() {
     return (rp && Array.isArray(rp.reactions)) ? rp.reactions : [];
 }
 
+/* ============================================================================
+ * ★★ 第5ページ ＝ アルコールと脱水生成物の対応表（v1518・ユーザー原文 2026-09-06）
+ *
+ * > **C5H12Oのアルコールの脱水生成物との対応表（反応系統樹）に 2,2-ジメチル-1-プロパノール は
+ * >   載せたいです（俯瞰できるようにしたい）**
+ *
+ * ⚠⚠ **「出題から外す」と「表から外す」は別**という指摘。
+ *   §22-3 で出題（`IP_COND_PRESETS` の型3）から落としたのは **答えが0個だと器が組めない**からで、
+ *   **脱水できないことが教材として無価値だからではない。**
+ *   ★ 表は器の制約を受けない ＝ **16件ぜんぶ載る**（脱水できる14件＋できない2件）。
+ *
+ * ★★ **範囲は C₁〜C₅**（C₅ だけにしない）。理由は行数でも画面でもなく**中身**:
+ *   ⚠ **脱水できない2件は C₁ と C₅ に1つずつ居る**（メタノール／2,2-ジメチル-1-プロパノール）。
+ *   C₅ だけの表にするとメタノールが消え、**「例外が1件だけの変わり者」**に見える。
+ *   ★ 2件そろって初めて「β炭素が無い」「β炭素に水素が無い」の**2通りの理由**として並ぶ。
+ *
+ * ★ 行の出どころは**書き出し練習とまったく同じ2本**:
+ *   `enumerateConstitutionalIsomers`（並びもそのまま）＋ `ipDehydrationEdges`。
+ *   ⚠ **資料のための3本目の規則を書かない** —— 書いた瞬間、表と練習が別々の化学を持つ。
+ *   ★ 生成物の名前も `iupacName`（お題の相手を引くのと同じ道）。
+ * ========================================================================== */
+
+/* ★ 表に載せる炭素数の上限。⚠ **`reference.json` から渡させない**（`refMechanisms` が
+   引数を1つも持たないのと同じ守り）—— 渡せると「C₅ の行だけ」の表が作れてしまう。
+   ★ 常に C₁ から数え上げるので、**範囲で行を選ぶことが構造上できない**（原則1）。 */
+const REF_DEHYD_MAX_CARBONS = 5;
+
+/* -OH をちょうど1つ持つ（＝ 鎖式一価アルコール）か。
+   ⚠ 判定は `ipHydroxylOxygens` の1本を借りる（エーテル・フェノールを外すのと同じ物差し） */
+function refIsMonoAlcohol(mol) {
+    return ipHydroxylOxygens(mol).length === 1;
+}
+
+/**
+ * ★★ アルコール → 分子内脱水でできるアルケン の対応を **C₁〜C₅ ぜんぶ** 返す。
+ * 返り値 `[{ carbons, formula, name, products:[{name, major}], blocked }]`。
+ *
+ * `blocked` は**脱水できない行だけ**に付く `{ betaCount, betaMaxH, reason }`。
+ * ⚠ **`blocked` は「もう1つの脱水規則」ではない** —— `ipDehydrationEdges` が
+ *   0本を返した行に対してだけ、その関数が見ているのと**同じ2つの材料**
+ *   （β炭素の数・β炭素の水素の数）を読み直して、**なぜ0本なのか**を言うだけ。
+ *   ★ `REF15` が「`blocked` が付く行と、辺が0本の行が、1件ずれもなく同じ」を毎回 確かめる
+ *      ＝ ここが2つ目の規則に育ったらその場で赤くなる。
+ */
+function refDehydrationMap() {
+    const out = [];
+    if (typeof enumerateConstitutionalIsomers !== 'function') return out;
+    for (let n = 1; n <= REF_DEHYD_MAX_CARBONS; n++) {
+        // 生成物（アルケン）の名前を引く辞書。⚠ 名前は `iupacName` の1本だけから出す
+        const nameOf = new Map();
+        if (n >= 2) {
+            const alk = ipCondEnumerate(Array(n).fill('C'), 2 * n);
+            if (!alk.overflow) alk.isomers.forEach(m => nameOf.set(canonicalCode(m), iupacName(m)));
+        }
+        const res = ipCondEnumerate(Array(n).fill('C').concat(['O']), 2 * n + 2);
+        if (res.overflow) continue;
+        // ⚠ 並べ替えない —— 列挙器が返す順そのまま ＝ **書き出し練習が答えを並べる順と同じ**
+        res.isomers.forEach(mol => {
+            if (!refIsMonoAlcohol(mol)) return;
+            const edges = ipDehydrationEdges(mol);
+            const row = {
+                carbons: n,
+                formula: refFormulaFromStructure(mol),
+                name: iupacName(mol),
+                products: edges.map(e => ({ name: nameOf.get(e.code) || '', major: e.major })),
+                blocked: null
+            };
+            if (!edges.length) {
+                const o = ipHydroxylOxygens(mol)[0];
+                const alpha = o ? mol.getNeighbors(o.id).find(x => x.atom.element === 'C') : null;
+                const betas = alpha
+                    ? mol.getNeighbors(alpha.atom.id).filter(b =>
+                        b.atom.id !== o.id && b.atom.element === 'C' && b.type === 1)
+                    : [];
+                const hs = betas.map(b => ipImplicitH(mol, b.atom.id));
+                row.blocked = {
+                    betaCount: betas.length,
+                    betaMaxH: hs.length ? Math.max(...hs) : 0,
+                    reason: betas.length === 0
+                        ? '−OH が付いた炭素の隣に、炭素がない'
+                        : '−OH が付いた炭素の隣の炭素に、水素がない'
+                };
+            }
+            out.push(row);
+        });
+    }
+    return out;
+}
+
 class ReferenceBook {
     constructor() {
         this.pages = null;      // reference.json の中身（開くまで読まない）
@@ -6161,8 +6250,106 @@ class ReferenceBook {
         }
         if (b.kind === 'stageTable') return this.renderStageTable(b);
         if (b.kind === 'mechanismTable') return this.renderMechanismTable(b);
+        if (b.kind === 'dehydrationTable') return this.renderDehydrationTable(b);
         if (b.kind === 'example') return this.renderExample(b);
         return null;
+    }
+
+    /* ★★ アルコールと脱水生成物の対応表（第5ページ）。
+     *
+     * ⚠ **`block` から読むのは見出しの文字（`caption`）だけ。** 炭素数も件数も受け取らない ＝
+     *   「C₅ の行だけ」の表を作る口が構造上ない（原則1・`REF15` の否定対照）。
+     *
+     * ★ 列は3つ。**分子式でまとめる**（`grouped` と同じ rowspan・⚠ 行は1つも減らない）:
+     *   分子式 ／ アルコール ／ 分子内脱水でできるアルケン
+     *   ⚠ **class は `.ref-map-table`**（`.ref-table` にしない）——
+     *     `REF8`/`REF9`/`REF10` は `table.ref-table` を「stages.json の系列から作った表」として
+     *     見ており、この表の元は列挙器なので、同じ class に入れると物差しが噛み合わない。
+     *
+     * ★ **「脱水できない」を空欄にしない。** 空欄は「調べていない」と読めるので、
+     *   できない旨とその理由（β炭素が無い／β炭素に水素が無い）を**行の中に書く**。
+     *   ⚠ これがユーザーの指摘の中身そのもの（出題から外した2件を、表では見せる）。
+     */
+    renderDehydrationTable(block) {
+        const rows = refDehydrationMap();
+        const wrap = document.createElement('div');
+        wrap.className = 'ref-table-wrap';
+        if (block.caption) {
+            const cap = document.createElement('div');
+            cap.className = 'ref-cap';
+            const nb = rows.filter(r => r.blocked).length;
+            cap.textContent = block.caption + '（' + rows.length + '行'
+                + (nb ? '・うち脱水できないもの ' + nb + '行' : '') + '）';
+            wrap.appendChild(cap);
+        }
+        const t = document.createElement('table');
+        t.className = 'ref-map-table';
+        const thead = document.createElement('thead');
+        const htr = document.createElement('tr');
+        ['分子式', 'アルコール', '分子内脱水でできるアルケン'].forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            htr.appendChild(th);
+        });
+        thead.appendChild(htr);
+        t.appendChild(thead);
+
+        const tb = document.createElement('tbody');
+        let i = 0;
+        while (i < rows.length) {
+            const key = rows[i].formula;
+            let j = i;
+            while (j < rows.length && rows[j].formula === key) j++;
+            for (let k = i; k < j; k++) {
+                const r = rows[k];
+                const tr = document.createElement('tr');
+                if (r.blocked) tr.className = 'ref-map-blocked';
+                if (k === i) {
+                    const td = document.createElement('td');
+                    td.className = 'ref-group ref-formula';
+                    td.rowSpan = j - i;
+                    td.appendChild(document.createTextNode(refSubscript(key)));
+                    const n = document.createElement('span');
+                    n.textContent = (j - i) + ' 件';
+                    td.appendChild(n);
+                    tr.appendChild(td);
+                }
+                const tdName = document.createElement('td');
+                tdName.className = 'ref-map-from';
+                tdName.textContent = r.name;
+                tr.appendChild(tdName);
+
+                const tdTo = document.createElement('td');
+                tdTo.className = 'ref-map-to';
+                if (r.blocked) {
+                    const b = document.createElement('b');
+                    b.className = 'ref-map-none';
+                    b.textContent = '脱水できない';
+                    tdTo.appendChild(b);
+                    const why = document.createElement('span');
+                    why.className = 'ref-map-why';
+                    why.textContent = r.blocked.reason;
+                    tdTo.appendChild(why);
+                } else {
+                    /* ⚠ 「（主）」は**2つ以上できる行にだけ**付ける。1つしかできない行に付けると
+                       「主があるなら副もあるはず」と読めて、無いものを探させることになる */
+                    const many = r.products.length >= 2;
+                    r.products.forEach((p, idx) => {
+                        if (idx) tdTo.appendChild(document.createTextNode('／'));
+                        const s = document.createElement('span');
+                        if (many && p.major) s.className = 'ref-map-major';
+                        s.textContent = p.name + (many && p.major ? '（主）' : '');
+                        tdTo.appendChild(s);
+                    });
+                }
+                tr.appendChild(tdTo);
+                tb.appendChild(tr);
+            }
+            i = j;
+        }
+        t.appendChild(tb);
+        wrap.appendChild(t);
+        return wrap;
     }
 
     /* ★★ 反応機構の表（第4ページ）。**登録済みの機構を1件残らず**、型でまとめて出す。
@@ -6513,6 +6700,10 @@ if (typeof window !== 'undefined') {
     // 反応機構の表（第4ページ）の出どころ。`REF12` が「表の14件が reactions.json そのもの」
     // ＝ 資料が2つ目の一覧を持っていないことを、この口から確かめる
     window.refMechanisms = refMechanisms;
+    // アルコールと脱水生成物の対応表（第5ページ）。`REF15` が「表の行が、書き出し練習が使うのと
+    // 同じ `ipDehydrationEdges` そのもの」＝ 資料が2つ目の脱水規則を持っていないことを、この口から確かめる
+    window.refDehydrationMap = refDehydrationMap;
+    window.REF_DEHYD_MAX_CARBONS = REF_DEHYD_MAX_CARBONS;
     window.REF_TABLE_VARIANTS = REF_TABLE_VARIANTS;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
