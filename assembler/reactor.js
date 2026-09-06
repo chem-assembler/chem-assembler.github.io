@@ -6549,6 +6549,53 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ ジアゾニウム塩の加熱分解（I-4）。ジアゾニウム塩 ＋ 水 → **フェノール ＋ N₂ ＋ HCl**。
+         *
+         * ⚠⚠ **瓶を持たせない**（RG5 の名簿に載る）。★ 理由は
+         *   `dehydration_anhydride`・`ring_opening_polymerization` と**同じ** ——
+         *   教科書がここで名指しするのは試薬ではなく**操作（温める）**だからで、
+         *   「水の瓶」を作ると**5℃以下でも水はある**という事実と画面が食い違う
+         *   （ジアゾ化はもともと水溶液で行う）。★ 分かれ目は温度であって試薬ではない。
+         *   ⚠ 資料に無い試薬を名乗らせない（§4-1）。
+         *
+         * ★ これが `diazotization` の caption で言った「温めると壊れる」の**実物**。
+         *   氷冷が要点であることが、2本のルールの対で画面に出る。
+         *
+         * ⚠ 図としては「-N₂⁺ が -OH に置き換わる」。⚠ 抜けた N₂ と、対イオンから
+         *   できる HCl は**描かない**（気体・水に溶けたものは今までどおり図に出さない流儀）。 */
+        id: 'diazonium_decompose',
+        label: '加熱（ジアゾニウム塩 + 水）→ フェノール（N₂ が発生）',
+        detect(mol) { return diazoniumSites(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [nId, n2Id] = site;
+            const n = mol.atoms.find(a => a.id === nId);
+            const ring = n && mol.getNeighbors(nId).find(x => x.atom.element === 'C');
+            if (!ring) throw new Error('ジアゾニオ基が環につながっていません');
+            const ringId = ring.atom.id;
+            const ion = nearestCounterIon(mol, nId, -1);
+            const symbol = ion ? ion.element : null;
+            // ★ -OH は**抜けた N の位置**に置く（置き場を探す必要がない ＝ 空間で失敗しない）
+            const { x, y } = n;
+            mol.removeAtom(n2Id);
+            mol.removeAtom(nId);
+            if (ion) mol.removeAtom(ion.id);
+            const o = mol.addAtom('O', x, y);
+            mol.addBond(ringId, o.id, 1);   // 酸素に結合手が1つ空き、自動水素が -OH を描く
+            return {
+                caption: 'ジアゾニウム塩の水溶液を**温める**と分解して、' +
+                    '**窒素 N₂ が発生**し、**フェノール**ができます（-N₂⁺ → **-OH**）。' +
+                    '⚠ これが、ジアゾ化を **5℃以下に氷冷しながら**行う理由です —— ' +
+                    '温度が上がると、せっかくできたジアゾニウム塩がこうして壊れてしまいます。' +
+                    '窒素が抜けていくので、この反応は逆向きには戻りません' +
+                    '（発生する N₂ は図に描いていません' +
+                    (symbol ? `。対イオンの ${symbol}⁻ は塩化水素になって水に溶けるので、` +
+                        'こちらも図から外しました' : '') + '）。',
+                changed: [ringId, o.id]
+            };
+        }
+    },
+    {
         /* ★ アミンの塩 ＋ NaOH → アミンが遊離して有機層へ（I-1 → I-3）。上のちょうど逆向き。
          * ⚠⚠ **入口を層の印から図そのものへ引き直した**（`ammoniumSaltNitrogens`）。
          *   ＝ 分液の面を開かずに「アニリン塩酸塩」を呼び出しただけでも NaOH が効く。

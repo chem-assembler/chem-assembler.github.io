@@ -35290,6 +35290,12 @@
             'condensation_glycoside',
             'condensation_polymerization', 'cyclize_glucose_alpha', 'cyclize_glucose_beta',
             'dehydration_anhydride', 'dehydration_anhydride_inter',
+            /* ★ I-4（ジアゾニウム塩の加熱分解）を足して 16 件。
+             * ⚠ **これも意図して瓶を持たせていない** —— 教科書がここで名指しするのは
+             *   試薬ではなく**操作（温める）**で、「水の瓶」を作ると
+             *   **5℃以下でも水はある**（ジアゾ化はもともと水溶液）という事実と
+             *   画面が食い違う。★ 分かれ目は温度であって試薬ではない（§4-1）。 */
+            'diazonium_decompose',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
         assert(now.length === expected.length,
@@ -52035,6 +52041,68 @@
         assert(rule.detect(g.userMolecule).length === 1, '★ 空振り検出: アニリンに箇所が出ない ＝ 上の否定対照は無意味');
         c.reset();
         return '瓶26本目・アニリン → 塩化ベンゼンジアゾニウム（＋ は環側の N。登録と反応の両方で実測）／否定対照5つ';
+    });
+
+    test('DZ2: 加熱分解（ジアゾニウム塩 → フェノール ＋ N₂）。★ 瓶を持たない・氷冷の理由が対で出る', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const rule = W.REACTION_RULES.find(r => r.id === 'diazonium_decompose');
+        assert(rule, 'diazonium_decompose が無い');
+        // ★ 瓶を持たない（RG5 の名簿に載る側）。⚠ 「水の瓶」を作らない
+        assert(!rule.reagentId, '★ 加熱分解に瓶が付いている（分かれ目は温度であって試薬ではない）');
+        assert(!rule.info, 'diazonium_decompose が解説専用になっている');
+        assert(/加熱|温め/.test(rule.label), `見出しが加熱を言っていない: ${rule.label}`);
+
+        // (1) 呼び出した塩化ベンゼンジアゾニウムを温める → フェノール
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('塩化ベンゼンジアゾニウム');
+        g.updateDrawing();
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length === 1, `ジアゾニウム塩で加熱分解の箇所が ${sites.length} 件`);
+        /* ★ 箇所の並びは `[環側の N⁺, 末端の N]`。⚠ **図から引いて確かめる**
+         *   —— 逆に並べると、この先の apply が末端の N の位置に -OH を置く */
+        const before = dzNitrogens(W, g.userMolecule);
+        assert(sites[0][0] === before.ring.id && sites[0][1] === before.term.id,
+            '★★ diazoniumSites が返す順が [環側の N⁺, 末端の N] になっていない');
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const parts = g.splitMolecules();
+        assert(parts.length === 1, `分解後が ${parts.length} 成分（N₂ も Cl⁻ も図から外すはず）`);
+        assert(g.lookupCompoundName(parts[0]) === 'フェノール',
+            `★ 分解の生成物が「${g.lookupCompoundName(parts[0])}」（フェノールのはず）`);
+        assert(g.computeMolecularFormula(parts[0]) === 'C₆H₆O',
+            `分解の生成物の分子式が ${g.computeMolecularFormula(parts[0])}`);
+        assert(!parts[0].atoms.some(a => a.element === 'N' || a.element === 'Cl'),
+            '★ 分解後に N か Cl が残っている');
+        assert(!parts[0].atoms.some(a => a.charge), '★ 分解後に電荷が残っている（フェノールは中性）');
+        // ★★ 氷冷の理由が対で出る（ジアゾ化の caption と分解の caption が同じことを言う）
+        assert(/5℃|氷冷/.test(res.caption), `★ 分解の caption が氷冷の理由を言っていない: ${res.caption}`);
+        assert(/窒素|N₂/.test(res.caption), '★ 分解の caption が窒素の発生を言っていない');
+
+        /* (2) ★★ 否定対照 —— **ジアゾニウムでないものに出ない**（3つとも別の外れ方） */
+        const noSite = (name, why) => {
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule(name);
+            g.updateDrawing();
+            assert(rule.detect(g.userMolecule).length === 0, `★ ${name} に加熱分解の箇所が出た（${why}）`);
+        };
+        noSite('アニリン', 'ジアゾ化する前のアミンには効かない');
+        noSite('アニリン塩酸塩', 'アンモニウム塩はジアゾニウム塩ではない');
+        noSite('アゾベンゼン', 'アゾ基 -N=N- はジアゾニオ基ではない');
+        /* (c) ★ 対イオンの粒を消すと出ない ＝ **成分の正味の電荷が ＋** を見ている
+         *   …のではなく、粒を消しても陽イオンのままなので**出る**。⚠ ここは
+         *   「電荷を外した図」で見る（正味 0 になった -N≡N は塩ではない） */
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('塩化ベンゼンジアゾニウム');
+        g.updateDrawing();
+        assert(rule.detect(g.userMolecule).length === 1, '★ 空振り検出: 下ごしらえで箇所が出ない');
+        const nPlus = dzNitrogens(W, g.userMolecule).ring;
+        delete nPlus.charge;
+        assert(rule.detect(g.userMolecule).length === 0,
+            '★ 電荷を外した C-N≡N（塩ではない図）にまで加熱分解がかかる');
+        c.reset();
+        return '瓶なし・塩化ベンゼンジアゾニウム → フェノール（N₂ は描かない）／否定対照4つ';
     });
 
     // ===== 一部だけ流す（`?only=`）=====
