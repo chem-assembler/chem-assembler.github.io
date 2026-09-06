@@ -2945,5 +2945,81 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-separation-funnel",
+    "title": "V141: 3つ混ざったものを順に釣り上げる（反応シリーズ㉓）",
+    "summary": "**仮**（wait は収録して引き直す）。⭐ **芯は酸の強さの順**——**炭酸より強い安息香酸は NaHCO₃ で、弱いフェノールは NaOH で、中性のトルエンは最後まで残る。**⭐⭐ **v1512 の「層」で初めて画にできた題材**（入試64大問の定番）。⚠ **瓶は `.rg-bottle[data-reagent=\"nahco3\"]` の形で押せる。実験タブへ切り替える必要はない**（実測）。⚠⚠ **「塩」は かなで「えん」と書く**（漢字だと シオ と読まれる・READINGS.md の既知）。⭐ **層の帯は画面下の作業帯（`#ws-sep`）に出る**ので、**分子と帯を1つの 9:16 に収めるには帯の y を時刻で動かす**（V136・V140 と同じ手）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "安息香酸・フェノール・トルエンの混合物",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "安息香酸"
+          },
+          {
+            "type": "summon",
+            "name": "フェノール"
+          },
+          {
+            "type": "summon",
+            "name": "トルエン"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 3180
+          }
+        ]
+      },
+      {
+        "caption": "分液を始める",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-sep-start"
+          },
+          {
+            "type": "wait",
+            "ms": 4070
+          }
+        ]
+      },
+      {
+        "caption": "NaHCO₃ → 炭酸より強い酸だけ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".rg-bottle[data-reagent=\"nahco3\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 15700
+          }
+        ]
+      },
+      {
+        "caption": "NaOH → フェノールも",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".rg-bottle[data-reagent=\"naoh_aq\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 14500
+          }
+        ]
+      }
+    ]
   }
 ]
