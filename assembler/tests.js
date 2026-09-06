@@ -51468,6 +51468,80 @@
         return 'グリシン・アラニンで ⇄ が効き、5種の否定対照でボタンが出ない';
     });
 
+    test('ION7: アミンの塩の名前は登録ではなく折り返しで組む（（未登録）を 176 件出さない）', async (c) => {
+        /* ★★ **実測から出た検査**（`amine_hcl` が本物の塩を描くようになった段）。
+         * ⚠ ライブラリの**塩基性アミン 177 件**に塩酸をかけて生成物の正準コードを引き直すと、
+         *   名前が付くのは **1 件だけ**（登録済みのアニリン塩酸塩）＝ 残り 176 件が
+         *   「🔍 CH₆ClN」のような**分子式だけの見出し**に落ちる。
+         * ★ 答えは D-I7（双性イオン形）と同じ ——「**登録を増やさず、名前を組む**」。 */
+        c.reset();
+        const g = c.game, W = c.W;
+        const hcl = W.REACTION_RULES.find(r => r.id === 'amine_hcl');
+        assert(hcl, 'amine_hcl が無い');
+        const saltName = (name) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule(name);
+            g.updateDrawing();
+            const s = hcl.detect(g.userMolecule);
+            assert(s.length, `${name} で amine_hcl の箇所が出ない`);
+            hcl.apply(g, s[0]);
+            g.updateDrawing();
+            const part = g.splitMolecules()[0];
+            return { name: g.lookupCompoundName(part), formula: g.computeMolecularFormula(part) };
+        };
+
+        // ① 登録済みのものは**折り返しではなく登録**で当たる（名前が二重に化粧されない）
+        const ani = saltName('アニリン');
+        assert(ani.name === 'アニリン塩酸塩',
+            `★ アニリンの塩の名前が「${ani.name}」（登録の「アニリン塩酸塩」で当たること）`);
+
+        // ② 登録の無いアミンでも「（もとの名前）塩酸塩」で名乗れる（＝（未登録）にしない）
+        [['メチルアミン', 'CH₆ClN'], ['トリメチルアミン', 'C₃H₁₀ClN'], ['p-トルイジン', 'C₇H₁₀ClN']]
+            .forEach(([name, formula]) => {
+                const got = saltName(name);
+                assert(got.name === `${name}塩酸塩`,
+                    `★ ${name} の塩の名前が「${got.name}」（「${name}塩酸塩」のはず）`);
+                assert(got.formula === formula,
+                    `${name} の塩の分子式が ${got.formula}（${formula} のはず）`);
+            });
+
+        /* ③ ★★ 否定対照 —— **名乗れないものに名前を作らない**（3つとも別の外れ方） */
+        // (a) 対イオンの粒を消すと、ただの陽イオン ＝ 塩ではないので名乗らない
+        const cl = g.userMolecule.atoms.find(a => a.element === 'Cl');
+        assert(cl, '③(a) の下ごしらえ: Cl⁻ の粒が居ない');
+        g.userMolecule.removeAtom(cl.id);
+        g.updateDrawing();
+        assert(g.lookupCompoundName(g.splitMolecules()[0]) === null,
+            '★ 粒を消した陽イオンだけの図に「塩酸塩」の名前が付いている');
+        /* (b) ★ **相方が Cl⁻ でなければ「塩酸塩」と名乗らない**（粒を Br⁻ に差し替える）。
+         *   ⚠ 臭化物イオンの塩は臭化水素酸塩であって塩酸塩ではない ＝
+         *     ここを見ないと、対イオンが増えた日に**間違った名前**を黙って配る。 */
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('メチルアミン');
+        g.updateDrawing();
+        const s2 = hcl.detect(g.userMolecule);
+        hcl.apply(g, s2[0]);
+        const swap = g.userMolecule.atoms.find(a => a.element === 'Cl');
+        assert(swap, '③(b) の下ごしらえ: Cl⁻ の粒が居ない');
+        swap.element = 'Br';
+        g.updateDrawing();
+        assert(!/塩酸塩/.test(g.lookupCompoundName(g.splitMolecules()[0]) || ''),
+            `★ 相方が Br⁻ なのに「${g.lookupCompoundName(g.splitMolecules()[0])}」と名乗っている`);
+        // (c) 双性イオンは「塩酸塩」ではなく「（双性イオン形）」のまま（折り返しが横取りしない）
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('グリシン');
+        g.updateDrawing();
+        const plan = g.zwitterionPlan(g.splitMolecules()[0]);
+        g.userMolecule.atoms.find(a => a.id === plan.nId).charge = 1;
+        g.userMolecule.atoms.find(a => a.id === plan.oId).charge = -1;
+        g.updateDrawing();
+        assert(g.lookupCompoundName(g.userMolecule) === 'グリシン（双性イオン形）',
+            `★ 双性イオンの名前が「${g.lookupCompoundName(g.userMolecule)}」（アミンの塩の折り返しが横取りしている）`);
+        c.reset();
+        return 'アニリンは登録で・他3種は折り返しで「◯◯塩酸塩」／否定対照3つ';
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
