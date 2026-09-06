@@ -3021,5 +3021,81 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-separation-amine",
+    "title": "V142: 塩基が混ざったら（反応シリーズ㉔・分液）",
+    "summary": "⭐ **V141（酸を釣り上げる）との対**——**こんどは塩基**。**アニリンは塩酸で塩になって水層へ。フェノール（酸）もトルエン（中性）も動かない。**⭐⭐ **見せ場は2手目**——**水酸化ナトリウムを入れると、アニリンは有機層へ戻り、フェノールが水層へ移る ＝ 入れかわる。****「次の試薬を入れる前に層を分ける」理由が、そのまま画になる。**⚠⚠ **これは実測で見つけた**——**最初は4成分（アニリン・安息香酸・フェノール・トルエン）に塩酸 → NaHCO₃ → NaOH を続けて掛けたが、結末の①が「アニリン」に戻っていた**。**アプリが `amine_liberate_naoh` を正しく効かせていた**（＝1つの器で続けて掛けると前の段が戻る）。⭐ **そこを隠さず、この回の芯にした。**⚠ **瓶は `.rg-bottle[data-reagent=\"hcl\"]` の形で押す。**⚠ **「塩」「塩基」は かなで「えん」「えんき」…ではなく、**「塩」だけ かな**（「塩基」は漢字で エンキ と正しく読む・実測）。",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "アニリン・フェノール・トルエンの混合物",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "アニリン"
+          },
+          {
+            "type": "summon",
+            "name": "フェノール"
+          },
+          {
+            "type": "summon",
+            "name": "トルエン"
+          },
+          {
+            "type": "frame",
+            "width": 900
+          },
+          {
+            "type": "wait",
+            "ms": 1200
+          }
+        ]
+      },
+      {
+        "caption": "分液を始める",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-sep-start"
+          },
+          {
+            "type": "wait",
+            "ms": 1500
+          }
+        ]
+      },
+      {
+        "caption": "塩酸 → 塩基だけ水層へ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".rg-bottle[data-reagent=\"hcl\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 14700
+          }
+        ]
+      },
+      {
+        "caption": "NaOH → 入れかわる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".rg-bottle[data-reagent=\"naoh_aq\"]"
+          },
+          {
+            "type": "wait",
+            "ms": 22000
+          }
+        ]
+      }
+    ]
   }
 ]
