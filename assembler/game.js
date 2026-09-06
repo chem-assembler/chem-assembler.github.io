@@ -155,16 +155,17 @@ const LABEL_CHIP_HEIGHT = 34;
  *   `chemistry.js` の正準コード・同型判定・分子式・連結成分・列挙のどれにも触れない
  *   （印は `buildHeavyGraph` が読まない。設計書 §3-4）。
  * ★ 既定は `'ether'`（＝ **印が無い ＝ 有機層**）。`'aq'` だけを明示的に持つ。
- * ⚠ 見出しの文言は**ここ1か所**。`amine_hcl` は構造を1原子も変えないので、
- *   「塩の形はまだ描きません」と**画面で断る**（D-I3。嘘を画面に出さないため）。
- *   ★ 「原理的に無理」ではなく「**まだ**」と書く（`chem-ion-in-assembler` の取り決め）。 */
+ * ⚠ 見出しの文言は**ここ1か所**。
+ * ⚠⚠ **v1517 まで `amine_hcl` の断りは「塩の形はまだ描きません」だった**（D-I3）。
+ *   電荷が入って（I-3）**本物の塩を描くようになったので、その断りは嘘になり、消した**
+ *   ——「まだ」と書いた約束を果たした側の後始末。いまは起きたことをそのまま言う。 */
 const PHASE_AQ = 'aq';
 const PHASE_ETHER = 'ether';
 const PHASE_LAYER_NAMES = { [PHASE_AQ]: '水層', [PHASE_ETHER]: '有機層（エーテル層）' };
 const PHASE_CAPTIONS = {
     [PHASE_AQ]: '（水層）',
-    // `amine_hcl` の印（構造を変えないので、変えていないことを見出しで言う）
-    'aq:salt-not-drawn': '（塩酸塩として水層に。塩の形はまだ描きません）',
+    // `amine_hcl` の印（塩になったから水に溶けた、という順序を見出しでも言う）
+    'aq:salt': '（塩になって水層へ）',
     // 印は `aq` なのに帯の中に居ない ＝ 手でドラッグして層の外へ出した（D-I8）
     'aq:outside': '（水層のはずが層の外に出ています）'
 };
@@ -4072,8 +4073,11 @@ class Game {
     lookupCompoundName(mol, opt) {
         this.getCompoundLibrary(); // コードMapの構築を保証
         const candidates = this._compoundCodeMap.get(canonicalCode(mol)) || [];
-        // ★ 双性イオン形は登録しない（D-I7）ので、当たらないときは電荷を外して引き直し「（双性イオン形）」を添える
-        if (!candidates.length && mol.atoms.some(a => a.charge)) return this.zwitterionName(mol, opt);
+        /* ★ 電荷を持つ図で登録に当たらないときの折り返しが2つ（どちらも**登録を増やさない**）:
+         *   ① アミンの塩 →「（もとのアミン）塩酸塩」 ② 双性イオン形 →「（双性イオン形）」 */
+        if (!candidates.length && mol.atoms.some(a => a.charge)) {
+            return this.ammoniumSaltName(mol, opt) || this.zwitterionName(mol, opt);
+        }
         const noStereo = !!(opt && opt.noStereo);
         //
         // ===== 立体を名前に出すかどうかは、**二段**で決める =====
@@ -8967,6 +8971,45 @@ class Game {
             ? '-COOH の H⁺ が -NH₂ に移った双性イオン形で描きました（分子式は同じです）。'
             : '中性形に戻しました。', 2500, 'success');
         return true;
+    }
+
+    /**
+     * ★★ アミンの塩の名前（`lookupCompoundName` の折り返し。⇄ 双性イオン形と**同じ流儀**）。
+     *
+     * ⚠⚠ **なぜ要るか（実測）**: `amine_hcl` が本物の塩を描くようになった段で、
+     *   ライブラリの**塩基性アミン 177 件**に塩酸をかけて生成物の正準コードを引き直すと、
+     *   名前が付いたのは **1 件だけ**（アニリン塩酸塩 ＝ 唯一の登録済みの塩）。
+     *   残り **176 件が「（未登録）」** になり、メチルアミンに塩酸をかけただけで
+     *   見出しが「🔍 CH₆ClN」に落ちる。
+     * ★ **登録を176件足すのではなく、名前のほうを組む**（D-I7 で双性イオンに出した答えと同じ）。
+     *   登録すると同じ物質がクイズの土俵に2つ出るうえ、名前は機械で組める形をしている。
+     * ⚠ **いま作れる塩は塩酸塩だけ**（`amine_hcl` が置くのは Cl⁻）。他の陰イオンなら null
+     *   ＝ 名乗れないものに名前を作らない。
+     * ⚠ 電荷はアンモニウムの N⁺ と粒の2つだけ、という形に限る（双性イオン ＋ 酸のような
+     *   3つ以上の電荷を持つ図はここでは名乗らない ＝ 別の段の仕事）。
+     */
+    ammoniumSaltName(mol, opt) {
+        const charged = mol.atoms.filter(a => a.charge);
+        if (charged.length !== 2) return null;
+        const bonded = new Set();
+        mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+        const particle = charged.find(a => !bonded.has(a.id));
+        if (!particle || particle.element !== 'Cl' || particle.charge !== -1) return null;
+        const nPlus = charged.find(a => a.id !== particle.id);
+        if (!nPlus || nPlus.element !== 'N' || nPlus.charge !== 1) return null;
+        if (!findFunctionalGroups(mol).some(g => g.type === 'ammonium' && g.atomIds[0] === nPlus.id)) return null;
+        // 粒を落として電荷を外した写し ＝ もとのアミン。当たればその名前に「塩酸塩」を添える
+        const copy = new Molecule();
+        mol.atoms.forEach(a => {
+            if (a.id === particle.id) return;
+            const na = copyAtomMarks(new Atom(a.id, a.element, a.x, a.y, a.isLocked), a);
+            delete na.charge;
+            if (a.benzeneAngle !== undefined) na.benzeneAngle = a.benzeneAngle;
+            copy.atoms.push(na);
+        });
+        mol.bonds.forEach(b => copy.bonds.push(copyBondExtras(new Bond(b.atomId1, b.atomId2, b.type), b)));
+        const base = this.lookupCompoundName(copy, opt);
+        return base ? `${base}塩酸塩` : null;
     }
 
     /**
