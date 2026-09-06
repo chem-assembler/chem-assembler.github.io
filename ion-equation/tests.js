@@ -7329,13 +7329,20 @@ async function runReactionLibraryTests() {
     }
   });
 
-  await t("遊べるかは導出で決まる: 54件が遊べ、2件が準備中（内訳を固定）", () => {
+  await t("遊べるかは導出で決まる: 54件が遊べ、12件が準備中（内訳を固定）", () => {
     const idx = stageIndex(STAGES, REDOX_STAGES);
     const pending = data.reactions.filter((rx) => !resolvePlayback(rx, idx).playable).map((r) => r.id).sort();
     const playable = data.reactions.filter((rx) => resolvePlayback(rx, idx).playable);
-    // 準備中は5本とも**式はあるがステージが無い**だけ。エンジンはすべて実装ずみ
+    // 準備中はどれも**式はあるがステージが無い**だけ。エンジンはすべて実装ずみ
     //（C群は v40／部分電離は v165〜v167。v168 でレジストリの「未実装」宣言を実態に合わせた）
-    const expected = ["gas-caco3-hcl", "redox-al-h2so4"];
+    // v200 で有機の酸・塩基10本を参照エントリとして収録した（一問一答の4項目の行き先）。
+    // ビーカーで遊ぶには房（STRUCTURE）の作図がいるので、そこは別の仕事として分けてある
+    const expected = [
+      "aniline-free-naoh", "aniline-hcl", "diazonium-decomp", "gas-caco3-hcl",
+      "glutamate-ionization1", "glutamate-ionization2", "glutamate-ionization3",
+      "glycine-hcl", "glycine-ionization1", "glycine-ionization2", "glycine-naoh",
+      "redox-al-h2so4",
+    ];
     assert(JSON.stringify(pending) === JSON.stringify(expected),
       "準備中の内訳が変わった: " + pending.join(",") + "（想定 " + expected.join(",") + "）");
     assert(playable.length === 54, "遊べる反応が 54 件でない: " + playable.length);
@@ -7735,6 +7742,62 @@ async function runReactionLibraryTests() {
       const p = ChemRatio.REACTIONS.find((x) => x.id === ratioId);
       assert(ionByKey.get(keyOfRatio(p)) === ionId,
         ionId + " → " + ratioId + " → " + ionByKey.get(keyOfRatio(p)) + " で往復が閉じない");
+    }
+  });
+
+  /* ---- 一問一答（/qa/）→ 反応インデックス の受け口 ----
+     CLAUDE.md:「アプリ横断の整合性検査は ion-equation の test.html に置く
+     （両方のデータが揃うのはそこだけ）」。ここは ratio との突き合わせと同じ立場。
+
+     ⚠ 送り手（qa）は「自分が誰か」＝ 知識項目のコードだけを送り、
+     **どの反応に着地させるかはこちらが決める**（ratio ⇄ ion と同じ約束）。
+     その対応は reactions.json の qaCodes にあり、qa 側は反応 id を1つも持たない。 */
+  const QA_WAITING = {
+    "org.aroN.aniline-base": 2,
+    "org.aroN.diazonium-decomp": 1,
+    "org.bio.amino-acid-amphoteric": 2,
+    "org.bio.amino-acid-polyprotic": 5,
+  };
+
+  await t("QA: 待っていた4項目に反応式が当たり、qaCodes からちょうどそれが引ける", () => {
+    assert(typeof reactionsForQaCode === "function", "library.js の reactionsForQaCode が無い");
+    for (const [code, n] of Object.entries(QA_WAITING)) {
+      const ids = reactionsForQaCode(data.reactions, code);
+      assert(ids.length === n,
+        code + ": 当たる反応が " + ids.length + " 本（想定 " + n + "）: " + ids.join(","));
+      // 数だけを数えない。引けた1本ずつが本当にそのコードを名乗っていること
+      for (const id of ids) {
+        const rx = data.reactions.find((r) => r.id === id);
+        assert(rx, code + ": 実在しない反応 " + id + " が返った");
+        assert((rx.qaCodes || []).includes(code), id + ": qaCodes に " + code + " が無いのに引けた");
+      }
+    }
+    // 知らないコード・空のコードでは何も返さない（黙って全件を出さない）
+    assert(reactionsForQaCode(data.reactions, "org.no.such.item").length === 0,
+      "知らないコードで反応が引けてしまう");
+    assert(reactionsForQaCode(data.reactions, "").length === 0, "空のコードで反応が引けてしまう");
+    // 顔ぶれが増えたら想定も直す（黙って対応が増えると、qa 側の棚卸しと食い違う）
+    const all = new Set();
+    data.reactions.forEach((rx) => (rx.qaCodes || []).forEach((c) => all.add(c)));
+    assert(JSON.stringify([...all].sort()) === JSON.stringify(Object.keys(QA_WAITING).sort()),
+      "qaCodes の顔ぶれが変わった: " + [...all].sort().join(","));
+  });
+
+  await t("QA: qaCodes に書いた項目コードが、一問一答に実在する", async () => {
+    // 相手のデータを直接読んで突き合わせる。ここでしか両方が揃わない
+    const res = await fetch("../qa/questions.json", { cache: "no-store" });
+    assert(res.ok, "../qa/questions.json を読めない: " + res.status);
+    const qa = await res.json();
+    const known = new Set((qa.patterns || []).map((p) => p.code));
+    assert(known.size > 100, "一問一答の項目が読めていない（検査が空回りしている）: " + known.size);
+    // 待っていた4項目だけでなく、qaCodes に**書いたコード全部**を見る
+    // （想定表だけを見ると、綴り間違いで別のコードを名乗ったときに黙って通る）
+    const used = new Set(Object.keys(QA_WAITING));
+    data.reactions.forEach((rx) => (rx.qaCodes || []).forEach((c) => used.add(c)));
+    assert(used.size >= 4, "名乗っている項目コードが少なすぎる（検査が空回りしている）: " + used.size);
+    for (const code of used) {
+      assert(known.has(code), "一問一答に無い項目コードを名乗っている: " + code +
+        "（相手がコードを変えたか、綴り間違い）");
     }
   });
 
@@ -9244,11 +9307,11 @@ async function runLibraryUITests(iframe) {
   /* Phase 3。遊べるかどうかを導出に切り替えても、**画面に出る内訳が変わっていない**ことを
      DOM で実測する。ロジックのテスト（resolvePlayback）は同じ関数を呼び直すだけなので、
      配線を間違えても気づけない ＝ ここは組み上がった行を数える。 */
-  await t("LIB: 「▶遊ぶ」54件・「準備中」2件が実際に出ていて、行き先が全部そろっている", async () => {
+  await t("LIB: 「▶遊ぶ」54件・「準備中」12件が実際に出ていて、行き先が全部そろっている", async () => {
     const s = state();
     assert(s.rows === s.total, "全件表示になっていない: " + s.rows + "/" + s.total);
     assert(s.playLinks.length === 54, "「▶遊ぶ」が 54 件でない: " + s.playLinks.length);
-    assert(s.pendingCount === 2, "「準備中（参照のみ）」が 2 件でない: " + s.pendingCount);
+    assert(s.pendingCount === 12, "「準備中（参照のみ）」が 12 件でない: " + s.pendingCount);
     assert(s.playLinks.length + s.pendingCount === s.total, "遊べる＋準備中が全件にならない");
     // 行き先は2画面だけ。空リンクや undefined が混ざっていないこと
     const files = s.playLinks.map((h) => String(h).split("?")[0]);
@@ -9262,6 +9325,62 @@ async function runLibraryUITests(iframe) {
       const list = file === "redox.html" ? REDOX_STAGES : STAGES;
       assert(list.some((st) => st.id === id), "行き先 " + h + " のステージが実在しない");
     }
+  });
+
+  /* 一問一答（/qa/）から来たときの着地。?from=qa&code=<知識項目コード> だけを受け取り、
+     どの反応を出すかはこちらの qaCodes が決める。**帯は絞り込みを外しても残す**
+     —— 来た道が消えると戻れなくなる（片道リンクと同じことになる）。 */
+  const openQa = async (code) => {
+    const { f, win: w } = await openProbeFrame(
+      "library.html?from=qa&code=" + encodeURIComponent(code),
+      (x) => x.IonLibUI && x.IonLibUI.state().total > 0,
+      "position:fixed;left:-9999px;top:0;border:0;width:900px;height:800px");
+    assert(w, "library.html?from=qa が起動しない");
+    return { w, d: f.contentDocument, cleanup: () => f.remove() };
+  };
+
+  await t("LIB: 一問一答から来ると、その項目に当たる反応だけが出て、来た道の帯から戻れる", async () => {
+    const p = await openQa("org.bio.amino-acid-polyprotic");
+    const s = p.w.IonLibUI.state();
+    assert(s.qaFrom && s.qaFrom.code === "org.bio.amino-acid-polyprotic", "qa から来たことを覚えていない");
+    assert(s.qaOnly, "項目での絞り込みが掛かっていない");
+    assert(s.rows === 5, "電離平衡の5本だけにならない: " + s.rows + "/" + s.total);
+    // 出ている行が本当にその5本か（数だけの検査にしない）
+    const shown = [...p.d.querySelectorAll("#libList .rxnRow")].map((li) => li.id.replace(/^rxn-/, "")).sort();
+    assert(shown.join(",") === [
+      "glutamate-ionization1", "glutamate-ionization2", "glutamate-ionization3",
+      "glycine-ionization1", "glycine-ionization2",
+    ].join(","), "出ている反応が想定と違う: " + shown.join(","));
+    // 戻り道。相手には「自分が誰か」と、返してもらう項目コードだけを渡す
+    assert(s.backLinks.length === 1, "来た道の帯に戻るリンクが1本出ていない: " + s.backLinks.length);
+    assert(s.backLinks[0] === "../qa/?from=ion&code=org.bio.amino-acid-polyprotic",
+      "戻り先が想定と違う: " + s.backLinks[0]);
+    // 絞り込みは外せるが、帯（戻り道）は残る
+    p.d.querySelector(".filterChip.clearAll").click();
+    const s2 = p.w.IonLibUI.state();
+    assert(s2.rows === s2.total, "全件に戻らない: " + s2.rows + "/" + s2.total);
+    assert(s2.backLinks.length === 1, "絞り込みを外したら戻り道まで消えた");
+    p.cleanup();
+  });
+
+  await t("LIB: 収録していない項目から来たら、そう言って索引の全体を出す（黙って0件にしない）", async () => {
+    const p = await openQa("org.bio.ninhydrin");
+    const s = p.w.IonLibUI.state();
+    assert(s.qaFrom && s.qaFrom.ids.length === 0, "当たる反応が無いはずの項目で反応が引けた");
+    assert(!s.qaOnly, "当たる反応が0本なのに絞り込んで空の画面にしている");
+    assert(s.rows === s.total, "索引の全体が出ていない: " + s.rows + "/" + s.total);
+    assert(/まだ収録されていません/.test(p.d.getElementById("libFrom").textContent),
+      "収録していないことを画面が言っていない: " + p.d.getElementById("libFrom").textContent);
+    assert(s.backLinks[0] === "../qa/?from=ion&code=org.bio.ninhydrin", "戻り先が想定と違う: " + s.backLinks[0]);
+    p.cleanup();
+  });
+
+  await t("LIB: ratio からの ?from= と取り違えない（from=qa をステージ番号として読まない）", async () => {
+    const p = await openQa("org.aroN.aniline-base");
+    const s = p.w.IonLibUI.state();
+    assert(!s.from, "from=qa を ratio の問題 ID として解決してしまっている: " + JSON.stringify(s.from));
+    assert(s.rows === 2, "アニリンの2本にならない: " + s.rows);
+    p.cleanup();
   });
 
   return results;
