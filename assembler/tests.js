@@ -51803,6 +51803,76 @@
         return '塩を線で書く3本＋ニトロの還元の caption が電荷の段と揃っている';
     });
 
+    test('ION9: 分子式は正味の電荷が 0 でないときだけ右肩に ⁺／⁻ を出す（D-I6・2026-09-06 決定）', async (c) => {
+        /* ★ ユーザー決定「電荷はつけましょう」。⚠ **塩も双性イオンも正味 0** なので
+         *   いまの画面は1文字も変わらない —— 出番は §13-5 で実測した
+         *   「呼び出した塩の Cl⁻ の粒を消す」1通りだけ。そこで C₆H₈N と書いていたのは
+         *   **陽イオンを中性の式で書いていた**（正味 +1）。
+         * ⚠ 写しが `tools/dump-canonical.js formulaOf` にある（そちらの列も同じ形）。 */
+        const W = c.W, g = c.game;
+        const f = (mol) => g.computeMolecularFormula(mol);
+
+        // (1) ★★ 正味 0 のものは今までどおり（＝ 既存の表示が変わらないことの担保）
+        const an = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'Cl'], [...ionRing, [0, 6]], { 6: 1, 7: -1 });
+        assert(f(an.m) === 'C₆H₈ClN', `アニリン塩酸塩の分子式に記号が付いた: ${f(an.m)}（C₆H₈ClN のはず）`);
+        const zw = ionMk(W, ['C', 'C', 'N', 'O', 'O'], [[0, 1], [0, 2], [1, 3, 2], [1, 4]], { 2: 1, 4: -1 });
+        assert(f(zw.m) === 'C₂H₅NO₂', `双性イオンの分子式に記号が付いた: ${f(zw.m)}`);
+        const dz = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'N', 'Cl'], [...ionRing, [0, 6], [6, 7, 3]], { 6: 1, 8: -1 });
+        assert(f(dz.m) === 'C₆H₅ClN₂', `塩化ベンゼンジアゾニウムの分子式に記号が付いた: ${f(dz.m)}`);
+        const neutral = ionMk(W, ['C', 'C', 'O'], [[0, 1], [1, 2]]);
+        assert(f(neutral.m) === 'C₂H₆O', `電荷の無い分子の分子式が変わった: ${f(neutral.m)}`);
+
+        // (2) ★ 正味が 0 でないとき —— 粒を消したアニリニウムと、粒だけ
+        const cat = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N'], [...ionRing, [0, 6]], { 6: 1 });
+        assert(f(cat.m) === 'C₆H₈N⁺', `★ アニリニウム（Cl⁻ を消した形）の分子式が ${f(cat.m)}（C₆H₈N⁺ のはず）`);
+        const dzCat = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'N'], [...ionRing, [0, 6], [6, 7, 3]], { 6: 1 });
+        assert(f(dzCat.m) === 'C₆H₅N₂⁺', `★ ベンゼンジアゾニウムイオンの分子式が ${f(dzCat.m)}（C₆H₅N₂⁺ のはず）`);
+        const cl = ionMk(W, ['Cl'], [], { 0: -1 });
+        assert(f(cl.m) === 'Cl⁻', `★ Cl⁻ の粒だけの分子式が ${f(cl.m)}（Cl⁻ のはず）`);
+        const carboxylate = ionMk(W, ['C', 'C', 'O', 'O'], [[0, 1], [1, 2, 2], [1, 3]], { 3: -1 });
+        assert(f(carboxylate.m) === 'C₂H₃O₂⁻', `★ 酢酸イオンの分子式が ${f(carboxylate.m)}（C₂H₃O₂⁻ のはず）`);
+
+        // (3) ★ 大きさは 2 以上のときだけ書く（Ca²⁺ の作法。⚠ 1 は省く）
+        const two = ionMk(W, ['N', 'N'], [], { 0: 1, 1: 1 });
+        assert(f(two.m) === 'H₈N₂²⁺', `★ 正味 +2 の分子式が ${f(two.m)}（H₈N₂²⁺ のはず ＝ 2 を書き 1 は省く）`);
+        const twoMinus = ionMk(W, ['O', 'O'], [], { 0: -1, 1: -1 });
+        assert(f(twoMinus.m) === 'H₂O₂²⁻', `★ 正味 -2 の分子式が ${f(twoMinus.m)}`);
+        assert(!/¹/.test(f(cat.m)) && !/¹/.test(f(cl.m)), '★ 大きさ 1 が書かれている（イオン式の作法に反する）');
+
+        // (4) ★★ 実際の画面の経路でも同じ —— 呼び出した塩から Cl⁻ の粒を消す（§13-5 の実測の再現）
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.summonMolecule('アニリン塩酸塩');
+        assert(g.computeMolecularFormula() === 'C₆H₈ClN',
+            `呼び出した塩の分子式が ${g.computeMolecularFormula()}`);
+        const clAtom = g.userMolecule.atoms.find(a => a.element === 'Cl');
+        assert(clAtom && clAtom.charge === -1, '呼び出した塩に Cl⁻ の粒が無い');
+        g.userMolecule.removeAtom(clAtom.id);
+        g.updateDrawing();
+        assert(g.computeMolecularFormula() === 'C₆H₈N⁺',
+            `★★ 粒を消したあとの分子式が ${g.computeMolecularFormula()}（C₆H₈N⁺ のはず ＝ 陽イオンを中性の式で書かない）`);
+        c.reset();
+
+        // ⚠ 写し（`tools/dump-canonical.js formulaOf`）の規則の一致は ION10 で見る
+        return '正味 0 は不変（塩・双性・ジアゾニウム）／正味 ±1・±2 だけ右肩に記号';
+    });
+
+    test('ION10: 分子式の写し（tools/dump-canonical.js）が game.js と同じ規則で電荷を書く', async (c) => {
+        /* ⚠ 写しが2か所ある（`computeMolecularFormula` と `dump-canonical.js formulaOf`）。
+         *   ★ dump-canonical は **土台を触る人の物差し**なので、記号の規則がずれると
+         *   「前後 diff 0 行」の意味が変わる。⚠ 添字だけは素の数字（diff で読むため）。
+         *   ここでは **game 側の規則そのもの**（`Game.chargeSuperscript`）を見る。 */
+        const g = c.game, Game = g.constructor;
+        assert(typeof Game.chargeSuperscript === 'function', '★ Game.chargeSuperscript が無い（写しの共通規則が消えた）');
+        const cases = [[0, ''], [1, '⁺'], [-1, '⁻'], [2, '²⁺'], [-2, '²⁻'], [3, '³⁺'], [12, '¹²⁺']];
+        cases.forEach(([q, want]) => {
+            const got = Game.chargeSuperscript(q);
+            assert(got === want, `★ chargeSuperscript(${q}) が "${got}"（"${want}" のはず）`);
+        });
+        return `電荷の記号 ${cases.length} 通りが規則どおり`;
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
