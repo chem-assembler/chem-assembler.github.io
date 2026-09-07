@@ -61,7 +61,12 @@
   </p>
 
   <h2 class="portalHead">やりたいことから入る</h2>
-  <div id="roleCards" class="roleCards"></div>
+  <!-- 【B3-2】札は**単元の順**に束ねて並べる（DESIGN_battery_electrolysis.md §11）。
+       グリッドは単元ごとの .roleCards に移したので、ここは束の入れ物にする -->
+  <p class="portalNote">
+    教科書の単元の順に並べています。単元の中は学ぶ順（酸化還元なら 部品 → 組み立て → 応用）。
+  </p>
+  <div id="roleCards" class="roleUnits"></div>
 
   <!-- 【R】系列から入る。番号だけが並ぶ帯では「いま何の仲間を練習しているか」が見えないので、
        ここで**番号とステージ名を並べて**仲間ごとにまとめる。設計は DESIGN_stage_series.md -->

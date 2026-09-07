@@ -13,9 +13,11 @@ const MODE_INFO = {
   ion:       { href: "index.html",     label: "イオン反応", param: "rxn" },
   redox:     { href: "redox.html",     label: "酸化還元",   param: "rxn" },
   condition: { href: "condition.html", label: "液性",       param: "s" },
-  // ⚠ battery.js は URL パラメータを見ていない（app.js の ?rxn=・condition.js の ?s= に当たるものが無い）。
-  // 直接リンクは別レーンの領分なので、当面はモードのページへ送り、番号は札で示す
-  cell:      { href: "battery.html",   label: "電池",       param: null },
+  /* B3-2（2026-09-07）で電池と電気分解を2枚に割り、cell.js に ?s= の受け口を足したので、
+     どちらもステージを名指しできるようになった（それまでは param: null で、
+     「開いたあと帯の番号を押してください」という但し書きを添えていた）。 */
+  cell:      { href: "battery.html",       label: "電池",     param: "s" },
+  elyz:      { href: "electrolysis.html",  label: "電気分解", param: "s" },
 };
 
 /* 【R】難度の札。⚠ **redox.js の ORGANIC_TAG と1文字も違えないこと。**
@@ -23,40 +25,91 @@ const MODE_INFO = {
    **両者が一致することを回帰テストが見張る**（片方だけ直したら赤くなる）。 */
 const ORGANIC_TAG = "有機（発展）";
 
-/* 名指しできないモードにだけ添える案内。行き先が「ステージ」でなく「モード」になる理由を出す */
-const MODE_HINT = {
-  cell: "電池モードはステージを直接ひらけません。開いたあと、帯の番号を押してください。",
-};
+/* 名指しできないモードにだけ添える案内。行き先が「ステージ」でなく「モード」になる理由を出す。
+   ⚠ **いまは空**。B3-2 で電池・電気分解にも ?s= の受け口ができ、名指しできないモードが
+   1つも無くなった。表そのものは残す（次に名指しできないモードが来たときの置き場所）。 */
+const MODE_HINT = {};
 
-/* やりたいことから入るカード。単元横断で「このアプリの役割」を3つ＋2つに畳んで見せる */
-const ROLES = [
-  { icon: "⚗️", title: "中和と弱酸の遊離の仕組み",
-    body: "水の中でイオンがどう組み変わるかを見ながら、反応式の係数を自分で決める。",
-    href: "index.html", cta: "イオン反応モードへ" },
-  { icon: "🎓", title: "酸化還元反応の組み立て",
-    body: "半反応式を部品として、e⁻ の数をそろえて足し合わせ、化学反応式まで筆算で戻す。",
-    href: "redox.html", cta: "酸化還元モードへ" },
-  { icon: "🧪", title: "無機の沈殿と錯イオン形成",
-    body: "溶けない組み合わせは沈殿に、配位子が囲めば錯イオンに。枠の形で状態を見分ける。",
-    href: "index.html?rxn=complex-cu-nh3", cta: "沈殿・錯イオンのステージへ" },
-  { icon: "🔋", title: "電池・電気分解をつくる",
-    body: "2枚の金属板をつなぐと、どちらが溶けるか。e⁻ が導線を流れるようすを見ながら、電池の式を組み立てる。",
-    href: "battery.html", cta: "電池モードへ" },
-  { icon: "⚗️", title: "酸化剤と還元剤を自分で選ぶ",
-    body: "選んだ組み合わせが反応するかどうかを、順位表から確かめる。反応しないときは理由が出る。",
-    href: "redox.html?free=1", cta: "自由に組み合わせるへ" },
-  { icon: "🔢", title: "酸化数を決める",
-    body: "K₂Cr₂O₇ の Cr をいきなり考えない。まずイオンに分け、そのイオンの中で「合計＝電荷」から出す。",
-    href: "oxidation.html", cta: "酸化数モードへ" },
-  { icon: "⚡", title: "半反応式を組む",
-    body: "反応の前と後だけを与える。H₂O・H⁺・e⁻ を自分で入れて式にする。手順は2通り選べる。",
-    href: "halfreaction.html", cta: "半反応式モードへ" },
-  { icon: "⚖️", title: "液性で書き換える（酸性 ⇄ 塩基性）",
-    body: "同じ酸化還元でも液性で式が変わる。両辺に OH⁻ を足して導けることを確かめる。",
-    href: "condition.html", cta: "液性モードへ", sub: true },
-  { icon: "🔎", title: "反応インデックス（辞書引き）",
-    body: "物質名や分類から反応をさがし、その場でシミュレーターを開く。",
-    href: "library.html", cta: "反応インデックスへ", sub: true },
+/* ================================================================================
+   やりたいことから入るカード（DESIGN_battery_electrolysis.md §11）
+
+   ★ **単元の順に並べる**（2026-09-07・ユーザーの決定）。
+   以前は9枚が思いついた順に平らに並んでいて、「いま自分がやっている単元のものはどれか」が
+   カードの並びからは読めなかった。3つの単元に束ね、単元の中は学ぶ順に置く。
+
+   ★ ③（酸化還元）の中は **部品 → 組み立て → 応用**。
+     部品 … 酸化数・半反応式・液性（式そのものを作れるようにする道具）
+     組み立て … 組み立てモード・自分で選ぶ（部品を組んで1本の式にする）
+     応用 … 電池・電気分解（組んだ式を装置の中で動かす）
+
+   ★ **中和は①と②の両方に出す**（ユーザーの決定「両方にあってもよい」）。
+     ただし同じ札を2枚並べない —— 着目点が違うことを札の題と文で言い分ける。
+     ユーザーの言葉:「BaSO4 は出題の仕方による／Ba(OH)2 と H2SO4 の中和に着目するなら酸塩基／
+     BaSO4 の生成に着目するなら沈殿」。同じ反応が2つの単元に出るのは、
+     下の「単元から入る」（CURRICULUM ＝ 重なる分類）がもともとやっていることで、
+     ここでもそれを見せる、というだけ。 */
+const ROLE_UNITS = [
+  {
+    id: "ru-coeff", name: "① 化学反応式の係数合わせ",
+    note: "「何と何ができるか」が分かっている反応で、個数がちょうど合う比をさがす。",
+    roles: [
+      { icon: "🧪", title: "無機の沈殿と錯イオン形成",
+        body: "溶けない組み合わせは沈殿に、配位子が囲めば錯イオンに。枠の形で状態を見分ける。",
+        href: "index.html?rxn=complex-cu-nh3", cta: "沈殿・錯イオンのステージへ" },
+      /* ②にもある中和。**こちらは「BaSO₄ ができること」に着目した面**なので、
+         行き先も硫酸 × 水酸化バリウム（s8）のステージそのものにする */
+      { icon: "⚗️", title: "中和で沈殿ができる式",
+        body: "硫酸と水酸化バリウム。中和と沈殿が同時に起きるので、BaSO₄ ができることに着目すると係数合わせの問題になる。同じ反応を「中和の仕組み」として見るなら②へ。",
+        href: "index.html?rxn=s8", cta: "硫酸 × 水酸化バリウムへ" },
+    ],
+  },
+  {
+    id: "ru-acidbase", name: "② 酸と塩基",
+    note: "H⁺ と OH⁻ が結びついて水になる。弱酸は分子のまま溶け、必要なぶんだけ電離して補う。",
+    roles: [
+      { icon: "⚗️", title: "中和と弱酸の遊離の仕組み",
+        body: "水の中でイオンがどう組み変わるかを見ながら、反応式の係数を自分で決める。",
+        href: "index.html", cta: "イオン反応モードへ" },
+    ],
+  },
+  {
+    id: "ru-redox", name: "③ 酸化還元",
+    note: "e⁻ の受け渡し。部品（酸化数・半反応式・液性）→ 組み立て → 応用（電池・電気分解）の順。",
+    roles: [
+      { icon: "🔢", title: "酸化数を決める",
+        body: "K₂Cr₂O₇ の Cr をいきなり考えない。まずイオンに分け、そのイオンの中で「合計＝電荷」から出す。",
+        href: "oxidation.html", cta: "酸化数モードへ" },
+      { icon: "⚡", title: "半反応式を組む",
+        body: "反応の前と後だけを与える。H₂O・H⁺・e⁻ を自分で入れて式にする。手順は2通り選べる。",
+        href: "halfreaction.html", cta: "半反応式モードへ" },
+      { icon: "⚖️", title: "液性で書き換える（酸性 ⇄ 塩基性）",
+        body: "同じ酸化還元でも液性で式が変わる。両辺に OH⁻ を足して導けることを確かめる。",
+        href: "condition.html", cta: "液性モードへ" },
+      { icon: "🎓", title: "酸化還元反応の組み立て",
+        body: "半反応式を部品として、e⁻ の数をそろえて足し合わせ、化学反応式まで筆算で戻す。",
+        href: "redox.html", cta: "酸化還元モードへ" },
+      { icon: "⚗️", title: "酸化剤と還元剤を自分で選ぶ",
+        body: "選んだ組み合わせが反応するかどうかを、順位表から確かめる。反応しないときは理由が出る。",
+        href: "redox.html?free=1", cta: "自由に組み合わせるへ" },
+      { icon: "🔋", title: "電池をつくる",
+        body: "2枚の金属板をつなぐと、どちらが溶けるか。e⁻ が導線を流れるようすを見ながら、電池の式を組み立てる。",
+        href: "battery.html", cta: "電池モードへ" },
+      /* B3-2 で電池から割り出した面。**電池と対にして応用の最後に置く**
+         （e⁻ を取り出す ⇄ e⁻ を押し込む） */
+      { icon: "⚡", title: "電気分解をする",
+        body: "電極に来たイオンが、そのまま反応するとはかぎらない。まず何が反応するかを選び、順位表で確かめてから式を組み立てる。",
+        href: "electrolysis.html", cta: "電気分解モードへ" },
+    ],
+  },
+  {
+    id: "ru-find", name: "単元をまたいで使う",
+    note: "",
+    roles: [
+      { icon: "🔎", title: "反応インデックス（辞書引き）",
+        body: "物質名や分類から反応をさがし、その場でシミュレーターを開く。",
+        href: "library.html", cta: "反応インデックスへ", sub: true },
+    ],
+  },
 ];
 
 function el(tag, cls, text) {
@@ -68,14 +121,23 @@ function el(tag, cls, text) {
 
 function buildRoles() {
   const wrap = document.getElementById("roleCards");
-  for (const r of ROLES) {
-    const a = document.createElement("a");
-    a.className = "roleCard" + (r.sub ? " sub" : "");
-    a.href = r.href;
-    const h = el("div", "roleHead");
-    h.append(el("span", "roleIcon", r.icon), el("span", "roleTitle", r.title));
-    a.append(h, el("p", "roleBody", r.body), el("span", "roleCta", r.cta + " →"));
-    wrap.appendChild(a);
+  for (const u of ROLE_UNITS) {
+    const sec = el("section", "roleUnit");
+    sec.id = u.id;
+    sec.appendChild(el("h3", "roleUnitName", u.name));
+    if (u.note) sec.appendChild(el("p", "roleUnitNote", u.note));
+    const grid = el("div", "roleCards");
+    for (const r of u.roles) {
+      const a = document.createElement("a");
+      a.className = "roleCard" + (r.sub ? " sub" : "");
+      a.href = r.href;
+      const h = el("div", "roleHead");
+      h.append(el("span", "roleIcon", r.icon), el("span", "roleTitle", r.title));
+      a.append(h, el("p", "roleBody", r.body), el("span", "roleCta", r.cta + " →"));
+      grid.appendChild(a);
+    }
+    sec.appendChild(grid);
+    wrap.appendChild(sec);
   }
 }
 
@@ -190,6 +252,13 @@ window.Portal = {
     const links = [...document.querySelectorAll(".stageChip")].map((a) => a.getAttribute("href"));
     return {
       roles: document.querySelectorAll(".roleCard").length,
+      /* 単元ごとの束（§11）。並びと中身が単元順になっていることを回帰テストが見る */
+      roleUnits: [...document.querySelectorAll(".roleUnit")].map((s) => ({
+        id: s.id,
+        name: (s.querySelector(".roleUnitName") || {}).textContent || "",
+        titles: [...s.querySelectorAll(".roleTitle")].map((t) => t.textContent),
+        hrefs: [...s.querySelectorAll(".roleCard")].map((a) => a.getAttribute("href")),
+      })),
       subjects: document.querySelectorAll(".subject").length,
       units: document.querySelectorAll(".unitBox").length,
       chips: links.length,
