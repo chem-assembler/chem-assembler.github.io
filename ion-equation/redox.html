@@ -161,27 +161,31 @@
     </section>
 
 
-    <!-- 瓶から化学反応式を組み立てる段（v180・DESIGN_redox.md）。
+    <!-- はじめに入れたものから化学反応式を組み立てる段（v180・DESIGN_redox.md）。
          bottles を持ち、かつ既存の筆算（molecularEq）を持たないステージにだけ出る。
          ③（イオン反応式）が最簡整数比まで片づいたら現れる。
-         **左辺は組み立てない ＝ 瓶がそのまま左辺**。ここが「左辺のイオンどうしを組んで
-         HI を作ってしまう」つまずきの分かれ目なので、罠の選択肢もわざと出す -->
+         **左辺は組み立てない ＝ はじめに入れたものがそのまま左辺**。ここが「左辺のイオンどうしを
+         組んで HI を作ってしまう」つまずきの分かれ目なので、罠の選択肢もわざと出す -->
     <section class="step" id="stepBottles" hidden>
-      <!-- ★ 2026-08-28・ユーザーの指示「イオン反応式 → 化学反応式 のプロセスを
-           より実際の筆算に寄せましょう／瓶システムは不正解時やヘルプ・解説に回してよい」。
-           問うのは**紙の上でやる手つき**（両辺に、式に出てこないイオンを足す）。
-           ⚠ 瓶の「どこから来た？」は消さずに、外したときに開くヘルプへ移した -->
-      <div class="stepHead"><span class="stepNo">4</span>両辺に、式に出てこないイオンを足す</div>
+      <!-- ★ 2026-09-07・ユーザーの指示「④ どこから来たの が先／両辺に加えるイオンの数を
+           考える が後／連れてきたのは → もともと何だった？」。
+           v194 は出どころ当てをヘルプ（<details>）へ落として順番が逆だった。**戻す。**
+           ⚠ 問いの形はユーザーの言葉そのまま「MnO₄⁻ はもともと何だった？」——
+           こう聞けば、容器を指す語（瓶・試薬）が1つも要らなくなる。 -->
+      <div class="stepHead"><span class="stepNo">4</span>もともと何だった？ — 左辺のイオンの出どころをたどる</div>
       <div id="bottleRack"></div>
-      <div id="addIonRows"></div>
-      <details id="bottleWhy">
-        <summary>どこから来たの？ —— ビーカーに入れた瓶で確かめる</summary>
+      <div id="bottleWhy">
         <div id="bottleQuiz"></div>
         <div id="bottleMsg"></div>
-      </details>
-      <div id="addIonMsg"></div>
+      </div>
+      <!-- 「後」の側。出どころがそろってから現れる（この画面の唯一の順序の表し方） -->
+      <div id="addIonWrap" hidden>
+        <div class="stepSubHead">つぎに — 両辺に加えるイオンの数を考える</div>
+        <div id="addIonRows"></div>
+        <div id="addIonMsg"></div>
+      </div>
       <div id="bottleTail" hidden>
-        <div class="stepHead"><span class="stepNo">5</span>水を蒸発させる — 残ったイオンが対で塩に戻る</div>
+        <div class="stepHead"><span class="stepNo">5</span>化学反応式の左辺 — 係数をすべて書く</div>
         <div id="bottleCounts"></div>
         <div id="bottlePool"></div>
         <!-- 【D】全体の倍率は**例外**（右辺の係数に 1/2 が出たときだけの措置）。
