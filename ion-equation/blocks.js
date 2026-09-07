@@ -31,7 +31,8 @@ function ibDefaultLook(sp) {
    そろっているのは事実なので、赤にすると「積み替えろ」と読まれる。直し方は「割る」。 */
 const IB_TONE = {
   simplest:  { line: "#2e8b57", text: "そろった", kind: "ok" },
-  reducible: { line: "#d19a2e", text: "そろっているが、割れる", kind: "info" },
+  // ⚠ 札は右の狭い場所に出るので2行に折る（1行で書くとはみ出す）
+  reducible: { line: "#d19a2e", text: "そろった\n（割れる）", kind: "info" },
   short:     { line: "#c0392b", text: "", kind: "ng" },
   empty:     { line: "#b7c3cd", text: "", kind: "info" },
   invalid:   { line: "#b7c3cd", text: "", kind: "info" },
@@ -76,7 +77,7 @@ function ionBlocksCreate(opts) {
   function draw() {
     if (!svg) return null;
     const s = check();
-    const need = Math.max(3, s.cTotal, s.aTotal);
+    const need = Math.max(2, s.cTotal, s.aTotal);   // 最低2段ぶんは場所を取る（1段だと図が潰れる）
     const shown = Math.min(need, maxUnits);
     const cut = need > maxUnits;
     const padTop = 24, padBottom = 34;
@@ -84,9 +85,12 @@ function ionBlocksCreate(opts) {
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.innerHTML = "";
     const baseY = H - padBottom;
-    const colW = Math.min(120, (W - 60) / 2);
-    const cx0 = W / 2 - 10 - colW, ax0 = W / 2 + 10;
-    const lineX0 = 6, lineX1 = W - 6;
+    /* 右側に札の場所（gutter）を空ける。⚠ ここを空けないと「あと N」「そろった」が
+       ブロックの上に重なって読めない（最初の版がそうなっていた）。 */
+    const gutter = 62, gap = 16, colW = (W - 6 - gutter - gap) / 2;
+    const cx0 = 6, ax0 = cx0 + colW + gap;
+    const lineX0 = 6, lineX1 = ax0 + colW + 6;
+    const tagX = lineX1 + 4;
     const yOf = (units) => baseY - units * unitPx;
 
     // 底辺（ここからそろえて積む、の「ここ」）
@@ -167,11 +171,13 @@ function ionBlocksCreate(opts) {
     };
     if (s.balanced && s.cTotal > 0) {
       drawTop(s.cTotal, tone.line, "none");
-      const cap = ibMk("text", {
-        x: W / 2, y: Math.max(11, yOf(Math.min(s.cTotal, maxUnits)) - 6), "text-anchor": "middle",
-        "font-size": 12, "font-weight": "bold", fill: tone.line,
-      }, svg);
-      cap.textContent = tone.text;
+      tone.text.split("\n").forEach((line, i) => {
+        const cap = ibMk("text", {
+          x: tagX, y: Math.max(12, yOf(Math.min(s.cTotal, maxUnits))) + 4 + i * 13,
+          "text-anchor": "start", "font-size": 11, "font-weight": "bold", fill: tone.line,
+        }, svg);
+        cap.textContent = line;
+      });
     } else if (s.kind === "short") {
       // そろっていないとき ＝ 線が2本に割れる。差のぶんを帯で塗って「あと N」と書く
       drawTop(s.cTotal, "#c0392b", "6 4");
@@ -183,8 +189,8 @@ function ionBlocksCreate(opts) {
           fill: "#c0392b", opacity: 0.12,
         }, svg);
         const g = ibMk("text", {
-          x: W / 2, y: yOf(lo) - (hi - lo) * unitPx / 2 + 5, "text-anchor": "middle",
-          "font-size": 12, "font-weight": "bold", fill: "#c0392b",
+          x: tagX, y: yOf(lo) - (hi - lo) * unitPx / 2 + 4, "text-anchor": "start",
+          "font-size": 11, "font-weight": "bold", fill: "#c0392b",
         }, svg);
         g.textContent = `あと ${Math.abs(s.diff)}`;
       }
