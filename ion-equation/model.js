@@ -4220,8 +4220,11 @@ function ionBlockChoices(list) {
 
 /* 陽イオン cn 個・陰イオン an 個を積んだときの三値判定。
    返り値の形は DESIGN_ion_blocks.md §3。**message まで返す**のは、
-   同じ言い回しを2か所（イオン反応モード・酸化還元⑥）で書き分けないため。 */
-function ionBlockCheck(cationSp, anionSp, cn, an) {
+   同じ言い回しを2か所（イオン反応モード・酸化還元⑥）で書き分けないため。
+
+   第5引数 formulaSp は組成式の上書き。SALT_FORMULA に無い対（Al³⁺＋3OH⁻ など）で、
+   呼び出し側がステージの生成物を渡すためのもの。**渡さなければ表から引く。** */
+function ionBlockCheck(cationSp, anionSp, cn, an, formulaSp) {
   const cHeight = ionBlockRole(cationSp) === "cation" ? ionBlockHeight(cationSp) : 0;
   const aHeight = ionBlockRole(anionSp) === "anion" ? ionBlockHeight(anionSp) : 0;
   const base = {
@@ -4235,7 +4238,7 @@ function ionBlockCheck(cationSp, anionSp, cn, an) {
   if (!cHeight || !aHeight) return base;
 
   const unit = saltUnit(cationSp, anionSp);
-  const formula = SALT_FORMULA[cationSp + "|" + anionSp] || null;
+  const formula = formulaSp || SALT_FORMULA[cationSp + "|" + anionSp] || null;
   const cTotal = base.cn * cHeight, aTotal = base.an * aHeight;
   const lcm = unit.cn * cHeight;   // ＝ unit.an * aHeight ＝ 電荷の最小公倍数
   const cd = SPECIES[cationSp].disp, ad = SPECIES[anionSp].disp;
