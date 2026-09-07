@@ -2444,7 +2444,7 @@ const REDOX_STAGES = [
   {
     id: "rs3", title: "過マンガン酸カリウム × シュウ酸（溶液中）",
     ox: "oxalate_ox", red: "MnO4_red", answer: [5, 2], mode: "solution",
-    /* 【G】v187 で化学反応式まで組めるようにした。**H⁺ が2本の瓶から出る**初めての例:
+    /* 【G】v187 で化学反応式まで組めるようにした。**H⁺ が2つの物質から出る**初めての例:
          16 H⁺ ＝ H₂C₂O₄ 5本ぶんの 10個 ＋ H₂SO₄ 3本ぶんの 6個
        ユーザーの言葉「シュウ酸は弱酸なので硫酸を加える必要がある」がここで数になる ——
        シュウ酸だけでは 10個 しか出ず、6個 足りないから強酸を足す。
@@ -3155,7 +3155,7 @@ function partnersFor(reagentId, condition) {
    S-2: 液性（硫酸酸性）を、組み合わせごとに扱う（§15-4）
    ================================================================================ */
 
-/* 「弱酸なので足りないぶんを強酸で補う」は、v187 で rs3（瓶を選ぶ段・explainBottleOwner）が
+/* 「弱酸なので足りないぶんを強酸で補う」は、v187 で rs3（出どころを選ぶ段・explainBottleOwner）が
    先に言っている。同じことを2通りの言葉で教えないよう、**文はここ1本にまとめて両方から呼ぶ**。
    物質名は SPECIES の disp から作るので、試薬が増えても文がずれない。 */
 function weakAcidSupplyText(weakSp, strongSp) {
@@ -4028,14 +4028,21 @@ function calcSheetRows(stage, a, b) {
 
    埋める欄:
      ox / red の行 … **行まるごと**（倍率が1でも、かけ算をした行でも）
-     sum の行      … ×1 の行から**そのまま降りてくる**項（mult === 1）だけ ＝ ①-B の carve-out。
-                     ⚠ both（両方の式に出る H₂O など）は縦の足し算が要るので問う側に残す
+     sum の行      … **1つも埋めない**（下の「①-B の撤回」）
 
-   ⚠⚠ **これで「上の行から降ろすだけ」の欄が増えることは分かっている**（発注書 §6-2 が
-   v183 の却下理由として測ったのと同じ形）。実測: 問う 40欄のうち、**本当に足し算が要るのは
-   6欄**（both の項）で、**34欄は真上の行の数をそのまま下ろすだけ**。
-   ⚠ 数は tests.js の「SUM ONLY:」が固定している。**この形はユーザーの指示なので変えない**が、
-   もう一度組み直すときはこの数を根拠に話すこと。
+   ★ **①-B（v195）の撤回**（2026-09-07・ユーザーの指示「③ 係数は1も含めてすべて入力させる」）。
+   v195 は合計行のうち「×1 の行からそのまま降りてくる項」を最初から埋めて灰色にしていた
+   （`ORDER_coeff_2026-08-20.md` §6-11・案 ①-B）。**その carve-out を外し、合計行は
+   係数 1 の項も含めて全部が入力欄**になる。
+
+   ⚠ 撤回の根拠は、ユーザーの指示が上位であることに加えて、
+   `ORDER_halfreaction_2026-08-22.md` §5 が先に書き当てていた衝突そのもの:
+   「**塞ぐには redox.html の①そのものを入力面にするしかないが、それは v195 の ①-B と
+   正面から衝突する（①が入力面になると 87欄を埋める根拠が消える）**」。
+   2026-09-07 に段2（旧①）が倍率の入力面になったので、**埋める根拠のほうが消えた。**
+
+   ⚠ 上2行（×a・×b の行）が印なのは 2026-08-28 の指示「合計した係数のみ入れる」のまま。
+   しかも段2 でその2行を自分で書いたばかりなので、印である根拠はむしろ強くなった。
 
    ⚠ 埋めた欄は「入力済み」として扱う（呼び出し側が vals に入れて checkCalcSheet に渡す）。
    **判定の意味は変えない** —— 空欄＝「まだ入れていない」と 0 の区別（分岐C）はそのまま。 */
@@ -4046,13 +4053,14 @@ function calcGivenSlots(stage, a, b) {
   return {
     ox: whole("ox"),
     red: whole("red"),
-    sum: rows.sum.reduce((acc, t, i) => (t.from !== "both" && t.mult === 1 ? acc.concat(i) : acc), []),
+    // ★ ①-B の撤回（2026-09-07）。合計行は係数 1 の項も含めて全部を問う
+    sum: [],
   };
 }
 
-/* 人に問う欄の数（＝ 掛け算をした側の欄）。
-   ⚠ **0 になる回がある**（倍率が 1:1 ＝ r1・r3）。その回は③を入力面にしない
-   —— 開いても問うものが無い画面を出さないため。 */
+/* 人に問う欄の数（＝ 合計の行の欄）。
+   ⚠ ①-B を撤回したので**実データでは常に 1 以上**になった（合計行は必ず項がある）。
+   0 の分岐は「問うものが無い画面を出さない」ための保険として残す。 */
 function calcAskCount(stage, a, b) {
   const rows = calcSheetRows(stage, a, b);
   const given = calcGivenSlots(stage, a, b);
@@ -4065,9 +4073,8 @@ function calcGivenNote(stage, a, b) {
   const given = calcGivenSlots(stage, a, b);
   if (!given) return null;
   if (!given.ox.length && !given.red.length && !given.sum.length) return null;
-  return "灰色の数字はもう書いてあるぶん —— かけ算をした上の2行" +
-    (given.sum.length ? "と、①のまま降りてくる項" : "") +
-    "。自分で書くのは、いちばん下の合計の行だけ。";
+  return "灰色の数字は、上の段で自分が書き込んだ倍率のぶん —— かけ算をした2行。" +
+    "自分で書くのは、いちばん下の合計の行だけ。係数 1 の項もふくめて全部書く。";
 }
 
 /* 入れた係数の判定。**答えの数は言わない** —— どこから降りてくる数かまで。
@@ -4291,27 +4298,27 @@ function explainSpectatorPick(stage, a, b, sp) {
 
 
 /* ================================================================================
-   瓶から化学反応式を組み立てる（v180・DESIGN_redox.md「瓶から化学反応式を組み立てる」）
+   はじめに入れたものから化学反応式を組み立てる（v180・DESIGN_redox.md の同名の節）
 
    イオン反応式の次の一歩を「両辺に傍観イオンを足す」ではなく、
-   **ビーカーに実際に入れた瓶から出発する**形で表す。
+   **ビーカーに実際に入れた物質から出発する**形で表す。
 
      ビーカーに入れたもの  【KMnO₄】【FeSO₄】【H₂SO₄】
            ↓ 溶ける       K⁺ MnO₄⁻ ／ Fe²⁺ SO₄²⁻ ／ H⁺ SO₄²⁻
            ↓ 反応         5Fe²⁺ ＋ MnO₄⁻ ＋ 8H⁺ → 5Fe³⁺ ＋ Mn²⁺ ＋ 4H₂O
            ↓ 水を蒸発     2KMnO₄ ＋ 10FeSO₄ ＋ 8H₂SO₄ → 5Fe₂(SO₄)₃ ＋ 2MnSO₄ ＋ K₂SO₄ ＋ 8H₂O
 
-   **左辺は組み立てない ＝ 瓶がそのまま左辺**。だから KMnO₄ ＋ KI で HI は作りようがない
-   （HI という瓶を入れていない）。ここが2つのつまずきの分かれ目:
-     ・なぜ硫酸イオンを「加える」のか → 加えていない。H₂SO₄ の瓶を入れたから H⁺ について来た
+   **左辺は組み立てない ＝ はじめに入れたものがそのまま左辺**。だから KMnO₄ ＋ KI で HI は
+   作りようがない（HI を入れていない）。ここが2つのつまずきの分かれ目:
+     ・なぜ硫酸イオンを「加える」のか → 加えていない。H₂SO₄ を入れたから H⁺ について来た
      ・左辺のイオンどうしを組んでしまう → 出自が別なので組めない（互いを連れてきていない）
 
    ステージが持つのは `bottles: ["KMnO4", "FeSO4", "H2SO4"]` の1本だけで、
    本数・傍観イオン・右辺の塩・全体の倍率は**すべてここから導く**（対応表を手で書かない）。
    ================================================================================ */
 
-/* 瓶が水に入って出すもの。電離表に無いもの（金属板・有機分子）は**それ自身1個**として扱う。
-   これで Zn や C₂H₅OH も「瓶」の枠にそのまま乗る（別の分岐を作らない）。 */
+/* 入れた物質が水に入って出すもの。電離表に無いもの（金属板・有機分子）は**それ自身1個**として扱う。
+   これで Zn や C₂H₅OH も同じ枠にそのまま乗る（別の分岐を作らない）。 */
 function bottlePartsOf(sp) {
   return DISSOCIATION[sp] || [sp];
 }
@@ -4344,7 +4351,7 @@ const SALT_FORMULA = {
   "Zn^2+|Cl-":    "ZnCl2",
   "Cu^2+|NO3-":   "Cu(NO3)2",
   "Ag+|NO3-":     "AgNO3",
-  // 価数＝高さのブロック（DESIGN_ion_blocks.md）が組ませる対。瓶の段では使わない
+  // 価数＝高さのブロック（DESIGN_ion_blocks.md）が組ませる対。④⑤の導出では使わない
   // （Ba を含む REDOX_STAGES が無いので bottlePlan の結果は変わらない）が、
   // 表に置けば上の機械検査（原子数の突き合わせ）がそのまま効く
   "Ba^2+|SO4^2-": "BaSO4",
@@ -4476,7 +4483,7 @@ function bottleStepOf(stage) {
   return (stage && stage.bottles && !stage.molecularEq) ? stage.bottles : null;
 }
 
-/* 瓶からの組み立て一式。倍率 a・b は③で決まったものをそのまま使い、
+/* はじめに入れたものからの組み立て一式。倍率 a・b は③で決まったものをそのまま使い、
    scale は「イオン反応式の全体を何倍するか」。 */
 function bottlePlan(stage, a, b, scale) {
   const list = stage && stage.bottles;
@@ -4486,19 +4493,19 @@ function bottlePlan(stage, a, b, scale) {
   const need = ionic.left.filter((t) => t.sp !== "e-").map((t) => ({ sp: t.sp, n: t.n * s }));
   const nOf = (terms, sp) => (terms.find((t) => t.sp === sp) || { n: 0 }).n;
 
-  /* --- ① 左辺のイオンを、それを出せる瓶に割り当てる ---
+  /* --- ① 左辺のイオンを、それを出せる物質に割り当てる ---
 
      v182 までは「ちょうど1本が担当する」ことを要求していた。v187 で
-     **1つのイオンを複数の瓶が担当する**形まで広げた（【G】・rs3 シュウ酸）。
+     **1つのイオンを複数の物質が担当する**形まで広げた（【G】・rs3 シュウ酸）。
        5 C₂O₄²⁻ ＋ 2 MnO₄⁻ ＋ 16 H⁺ → …
        H⁺ 16個は H₂C₂O₄（5本ぶんで 10個）と H₂SO₄（3本ぶんで 6個）の**両方**から出る。
      これは硝酸の二役（1本が複数のイオンを担当する）とは向きが逆で、別ものの一般化。
 
      決め方は2段。**連立方程式にしない**（「割り算で本数が出る」という見え方を保つため）:
-       段1 … そのイオンを出せる瓶が1本しかないものを先に決める（C₂O₄²⁻ → H₂C₂O₄ 5本）
-       段2 … 出どころが複数のイオンは、段1で決まった瓶が連れてくるぶんを**引いて**、
+       段1 … そのイオンを出せる物質が1つしかないものを先に決める（C₂O₄²⁻ → H₂C₂O₄ 5つ）
+       段2 … 出どころが複数のイオンは、段1で決まった物質が連れてくるぶんを**引いて**、
               残りを残った1本が出す（16 − 10 ＝ 6 → H₂SO₄ 3本）
-     残った瓶が1本に決まらないときだけデータの不備とする。 */
+     残った物質が1つに決まらないときだけデータの不備とする。 */
   const per = {}, sources = {}, dataError = [];
   for (const sp of list) {
     per[sp] = {};
@@ -4506,7 +4513,7 @@ function bottlePlan(stage, a, b, scale) {
   }
   for (const t of need) {
     sources[t.sp] = list.filter((sp) => per[sp][t.sp]);
-    if (!sources[t.sp].length) dataError.push(`${t.sp} を出す瓶が無い`);
+    if (!sources[t.sp].length) dataError.push(`${t.sp} を出す物質が無い`);
   }
   // owners は「単独の出どころ」だけを持つ（④の選択肢と説明が使う）。
   // 複数から来るイオンは owners に載せず、multi に内訳を持たせる
@@ -4534,7 +4541,7 @@ function bottlePlan(stage, a, b, scale) {
     }
     if (rest > 0) {
       if (undecided.length !== 1) {
-        dataError.push(`${t.sp} の残り ${rest}個 を出す瓶が決まらない（未決 ${undecided.length} 本）`);
+        dataError.push(`${t.sp} の残り ${rest}個 を出す物質が決まらない（未決 ${undecided.length} 件）`);
         continue;
       }
       const sp = undecided[0];
@@ -4547,13 +4554,13 @@ function bottlePlan(stage, a, b, scale) {
     multi[t.sp] = { need: t.n, parts };
   }
 
-  // --- ② 瓶ごとの姿にまとめる ---
+  // --- ② 入れた物質ごとの姿にまとめる ---
   const bottles = list.map((sp) => {
     const n = count[sp] || 0;
     const mine = need.filter((t) => contrib[sp][t.sp] > 0);
     return {
       sp, parts: bottlePartsOf(sp), per: per[sp], n, dissolves: bottleDissolves(sp),
-      // covers の need は「この瓶が担当するぶん」。単独なら全量、分担なら自分の受け持ちぶん
+      // covers の need は「この物質が担当するぶん」。単独なら全量、分担なら自分の受け持ちぶん
       covers: mine.map((t) => ({
         sp: t.sp, need: contrib[sp][t.sp], per: per[sp][t.sp],
         total: t.n, shared: sources[t.sp].length > 1,
@@ -4566,7 +4573,7 @@ function bottlePlan(stage, a, b, scale) {
     };
   });
 
-  // --- ③ 蒸発後に残るものを集める（イオン反応式の右辺 ＋ 全部の瓶の傍観ぶん）---
+  // --- ③ 蒸発後に残るものを集める（イオン反応式の右辺 ＋ 入れた物質すべての傍観ぶん）---
   //     並びは「右辺 → 傍観」の順に作る。この順がそのまま化学反応式の並びになる
   const pool = {};
   const addPool = (sp, k) => { if (k > 0) pool[sp] = (pool[sp] || 0) + k; };
@@ -4648,7 +4655,7 @@ function minBottleScale(stage, a, b) {
 }
 
 /* ================================================================================
-   ⑤の数入力（v182・B）— 「どのイオンを何個加えるか」を**瓶の本数**で入力させる
+   ⑤の数入力（v182・B → 2026-09-07 で「左辺の係数」に言い直し）
 
    v181 の⑤は「全体を ×N」のステッパー1つで、本数の割り算は**画面が答えを表示していた**。
    ユーザーの指摘「どのイオンを何個加えるか、というところを入力することに意味があります
@@ -4659,7 +4666,7 @@ function minBottleScale(stage, a, b) {
    ④で言ったことを⑤が取り消す。本数を決めれば、ついて来るイオンの数は掛け算で決まる。
    ================================================================================ */
 
-/* ⑤で数を聞く行。**瓶の並びそのまま**で、答え（本数）と、その根拠になる割り算を持つ。
+/* ⑤で数を聞く行。**入れた物質の並びそのまま**で、答え（左辺の係数）と、その根拠の割り算を持つ。
    値は全部 bottlePlan から取る ＝ 導出を二重に書かない。 */
 function bottleCountRows(stage, a, b, scale) {
   const plan = bottlePlan(stage, a, b, scale);
@@ -4681,38 +4688,38 @@ function explainBottleCount(stage, a, b, scale, sp, n) {
     return { ok: false, kind: "none", answer: row.answer, reason: "" };
   }
   // 担当しているイオンごとに「この本数だと何個出るか」を突き合わせる。
-  // covers が空の瓶（起こらないはずだが）は本数そのものを比べる
+  // covers が空の物質（起こらないはずだが）は係数そのものを比べる
   const bad = row.covers.find((c) => c.per * n !== c.need);
   if (bad) {
     const got = bad.per * n;
     return {
       ok: false, kind: got < bad.need ? "few" : "many", answer: row.answer,
-      reason: `${D(sp)} が ${n}本 だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
+      reason: `${D(sp)} の係数が ${n} だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
         // **答えの本数は言わない**（1本ぶんが何個かまでを言い、割り算は学習者の仕事）
-        // 【G】分担しているイオン（rs3 の H⁺）は「全体の何個のうち、この瓶が何個」まで言う
+        // 【G】分担しているイオン（rs3 の H⁺）は「全体の何個のうち、こちらが何個」まで言う
         (bad.shared
-          ? `イオン反応式には ${bad.total}個 要り、そのうち ${bad.need}個 がこの瓶のぶん`
+          ? `イオン反応式には ${bad.total}個 要り、そのうち ${bad.need}個 がこちらのぶん`
           : `イオン反応式には ${bad.need}個 要る`) +
-        (bad.per > 1 ? `（${D(sp)} 1本からは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
+        (bad.per > 1 ? `（${D(sp)} 1つからは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
     };
   }
   if (n !== row.answer) {
     return {
       ok: false, kind: "many", answer: row.answer,
-      reason: `${D(sp)} は ${row.answer}本 でちょうど足りる。`,
+      reason: `${D(sp)} は 係数 ${row.answer} でちょうど足りる。`,
     };
   }
   const riders = row.riders.filter((r) => r.n > 0);
   let msg = row.covers.map((c) =>
-    `${D(c.sp)} が ${c.need}個 要る ÷ ${D(sp)} 1本ぶんの ${c.per}個 ＝ ${row.answer}本。`).join("");
+    `${D(c.sp)} が ${c.need}個 要る ÷ ${D(sp)} 1つぶんの ${c.per}個 ＝ 係数 ${row.answer}。`).join("");
   if (riders.length) {
     msg += `一緒に ${riders.map((r) => `${D(r.sp)} が ${r.n}個`).join("・")} ついて来る` +
-      `（加えたのではなく、瓶が連れてきた）。`;
+      `（加えたのではなく、もとの物質が連れてきた）。`;
   }
   /* 【3】v194・発注書 §6-7 の 3。**出した本数がそのまま左辺の係数**だと、
      入れたその場で言う（下の完成式まで待たない）。要望4「化学反応式の係数も自分で
      入力するように」は、実は**もうここで入力し終えている** —— それが伝わっていなかった。 */
-  msg += `この ${row.answer} が、化学反応式の左辺で ${D(sp)} に付く係数になる。`;
+  msg += `この ${row.answer} が、そのまま化学反応式の左辺の係数。`;
   return { ok: true, kind: "ok", answer: row.answer, reason: msg };
 }
 
@@ -4747,13 +4754,13 @@ function bottleLeftCoeffText(stage, a, b, scale) {
   if (!rows || !rows.length) return null;
   const D = (x) => SPECIES[x].disp;
   return {
-    left: "⑤であなたが入れた本数が、そのまま化学反応式の左辺の係数: " +
-      rows.map((r) => `${D(r.sp)} ${r.bottles}本 → ${r.coeff} ${D(r.sp)}`).join(" ／ "),
-    right: "右辺の係数は、残ったイオンが対になった時点で決まる ＝ 数えるところが無いので、入力欄も置かない。",
+    left: "⑤であなたが書いた係数が、そのまま化学反応式の左辺: " +
+      rows.map((r) => `${r.coeff} ${D(r.sp)}`).join(" ＋ "),
+    right: "右辺の係数は、⑥で組み上げた化学種を何回くり返せたか ＝ そのまま入る。",
   };
 }
 
-/* 瓶が連れてきた傍観イオンの合計。**筆算の「両辺に N 個足す」の N と同じ数**になり、
+/* もとの物質が連れてきた傍観イオンの合計。**筆算の「両辺に N 個足す」の N と同じ数**になり、
    ここが2つの作り方の橋になる（DESIGN_redox.md の B）。
    反応に使われず、蒸発後にそのまま残るイオンだけを数える。 */
 function bottleRiderTotals(stage, a, b, scale) {
@@ -4770,17 +4777,17 @@ function bottleRiderTotals(stage, a, b, scale) {
    【②】④を「実際の筆算」に寄せる（2026-08-28・ユーザーの指示）
 
    > **イオン反応式 → 化学反応式 のプロセスをより実際の筆算に寄せましょう。**
-   > **瓶システムを採用しましたが、これは不正解時やヘルプ・解説に回してよいかもしれません**
+   > **いまの仕組みは不正解時やヘルプ・解説に回してよいかもしれません**
 
    紙の上の手順は「イオン反応式の**両辺に、式に出てこないイオンを必要なだけ足す**
    → 陽イオンと陰イオンを組み直して化学式にする → 係数を整える」。
    ⚠ これまでの④は「H⁺ 8個 を連れてきたのは？」＝ **出どころ当て**で、筆算ではなかった。
 
-   ★ **問うのは「両辺に何個ずつ足すか」**にする。⚠ **瓶は消さない** ——
+   ★ **問うのは「両辺に何個ずつ足すか」**にする。⚠ **出どころ当ては消さない** ——
    出どころ当ては④のヘルプ（外したときに開く「どこから来たの？」）へ移す。
 
    ⚠ **数を作り直さない。**`bottleRiderTotals` と同じ数を、同じ導出（bottlePlan の rider）から出す
-   —— 「両辺に足す N 個」と「瓶がついて来させた N 個」が**同じ数**であることが、
+   —— 「両辺に足す N 個」と「もとの物質がついて来させた N 個」が**同じ数**であることが、
    2つの言い方の橋そのもの（DESIGN_redox.md の B・発注書 §2-6 の「落ちている一文」）。 */
 function spectatorAddRows(stage, a, b, scale) {
   const plan = bottlePlan(stage, a, b, scale);
@@ -4791,7 +4798,7 @@ function spectatorAddRows(stage, a, b, scale) {
       if (r.n <= 0) continue;
       if (!acc[r.sp]) { acc[r.sp] = { sp: r.sp, n: 0, partners: [] }; order.push(r.sp); }
       acc[r.sp].n += r.n;
-      // 相手（この瓶が覆っている左辺のイオン）。⚠ **足す個数は書かない**（それが問い）
+      // 相手（この物質が覆っている左辺のイオン）。⚠ **足す個数は書かない**（それが問い）
       for (const c of B.covers) acc[r.sp].partners.push({ sp: c.sp, n: c.need });
     }
   }
@@ -4856,7 +4863,7 @@ function bottleScaleAdvice(stage, a, b, scale) {
   };
 }
 
-/* ④「どの瓶が連れてきた？」の選択肢。**罠も導出する** ——
+/* ④「もともと何だった？」の選択肢。**罠も導出する** ——
    左辺にいる反対符号のイオンを「◯◯ と組む」として並べる。
    これが KMnO₄ ＋ KI で H⁺ と I⁻ を組んで HI を作ってしまう、あのつまずきそのもの。 */
 function bottleOwnerChoices(stage, a, b) {
@@ -4909,7 +4916,7 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
         `${D(ionSp)} を連れてきたのは ${bringers(ionSp)}、` +
         `${D(choice.sp)} を連れてきたのは ${bringers(choice.sp)}。` +
         `イオン反応式の左辺は、水の中でばらけたあとの姿です。` +
-        `ここに並ぶイオンどうしを組み直しても、瓶に入れた物質にはなりません。`,
+        `ここに並ぶイオンどうしを組み直しても、はじめに入れた物質にはなりません。`,
     };
   }
   /* 【G】出どころが2本ある H⁺（rs3）。**「両方から」が正解**で、
@@ -4924,7 +4931,7 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
           ok: true, kind: "ok-shared",
           /* 弱酸の1行は自由モード（S-2）でも出るので、**文は1か所（weakAcidSupplyText）**に置いて
              両方から呼ぶ。同じことを2通りの言葉で教えないため（§15-4） */
-          reason: `そのとおり。${D(ionSp)} ${m.need}個 は1本の瓶では足りません —— ` +
+          reason: `そのとおり。${D(ionSp)} ${m.need}個 は1つの物質では足りません —— ` +
             m.parts.map((x) => `${D(x.sp)} が ${x.n}個`).join("、") + `。` +
             weakAcidSupplyText(src[0], src[src.length - 1]),
         };
@@ -4940,7 +4947,7 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
       ok: false, kind: "not-enough",
       reason: `${D(choice.sp)} は ${D(ionSp)} を出しますが、${mine}個 だけ。` +
         `イオン反応式には ${m.need}個 要るので ${m.need - mine}個 足りません。` +
-        `${D(ionSp)} はもう1本の瓶からも来ています。`,
+        `${D(ionSp)} はもう1つの物質からも来ています。`,
     };
   }
   if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
