@@ -3057,6 +3057,115 @@ function runModelTests() {
     assert(!/[0-9]/.test(heads), "段の見出しに数が出ている: " + heads);
   });
 
+  /* ---- 価数＝ブロックの高さ（DESIGN_ion_blocks.md・2026-09-07）---- */
+
+  t("BLOCKS: 高さは SPECIES の電荷の絶対値そのもの（価数表を別に持たない）", () => {
+    for (const [sp, s] of Object.entries(SPECIES)) {
+      assert(ionBlockHeight(sp) === Math.abs(s.charge), sp + ": 高さが電荷と食い違う");
+      const role = ionBlockRole(sp);
+      if (s.charge > 0) assert(role === "cation", sp);
+      else if (s.charge < 0) assert(role === "anion", sp);
+      else assert(role === null, sp + ": 電荷 0 なのに列に置ける（H₂O や析出金属を組ませてはいけない）");
+    }
+    assert(ionBlockHeight("そんな種は無い") === 0, "未知の種が高さを持つ");
+    // 一覧の振り分けでも、電荷 0 は落ちる
+    const c = ionBlockChoices(["Fe^3+", "SO4^2-", "H2O", "Cu", "OH-"]);
+    assert(c.cations.join() === "Fe^3+", JSON.stringify(c));
+    assert(c.anions.join() === "SO4^2-,OH-", JSON.stringify(c));
+  });
+
+  t("BLOCKS: 最簡の組は saltUnit から出て、SALT_FORMULA の原子数と一致する", () => {
+    for (const key of Object.keys(SALT_FORMULA)) {
+      const [c, a] = key.split("|");
+      const u = saltUnit(c, a);
+      assert(u, key + ": saltUnit が引けない");
+      // ★ 手で個数を書くと Fe(SO₄) のような釣り合わない塩が黙って通る。原子数で突き合わせる
+      const L = tallyTerms([{ sp: c, n: u.cn }, { sp: a, n: u.an }]);
+      const R = tallyTerms([{ sp: SALT_FORMULA[key], n: 1 }]);
+      assert(JSON.stringify(sortObjKeys(L.atoms)) === JSON.stringify(sortObjKeys(R.atoms)),
+        key + ": " + SALT_FORMULA[key] + " の原子数が " + u.cn + "×" + c + " ＋ " + u.an + "×" + a + " と合わない");
+      assert(L.charge === 0 && R.charge === 0, key + ": 塩が中性でない");
+      // その個数で積めば「そろった（最簡）」になり、組成式まで返る
+      const r = ionBlockCheck(c, a, u.cn, u.an);
+      assert(r.kind === "simplest" && r.ok, key + ": 最簡の組が simplest にならない — " + r.kind);
+      assert(r.formula === SALT_FORMULA[key], key + ": 組成式が引けない");
+      assert(r.times === 1, key + ": times が 1 でない");
+    }
+  });
+
+  t("BLOCKS: 判定は三値（そろわない／そろったが最簡でない／そろった）", () => {
+    // ★ 発注書の例そのもの（Fe³⁺ と SO₄²⁻）
+    assert(ionBlockCheck("Fe^3+", "SO4^2-", 1, 1).kind === "short", "1個ずつが short でない");
+    const red = ionBlockCheck("Fe^3+", "SO4^2-", 4, 6);
+    assert(red.kind === "reducible" && red.balanced && !red.ok, "4:6 が reducible でない — " + red.kind);
+    assert(red.times === 2 && red.cTotal === 12 && red.aTotal === 12, JSON.stringify(red));
+    // ⚠ 「そろっていない」と言ってはいけない（積み替えでは直らないので、言うと迷子になる）
+    assert(!red.message.includes("そろっていない"), "最簡でないのを「そろっていない」と言っている");
+    assert(red.message.includes("2 : 3"), "どこまで割ればよいかを言っていない: " + red.message);
+    const ok = ionBlockCheck("Fe^3+", "SO4^2-", 2, 3);
+    assert(ok.kind === "simplest" && ok.ok && ok.formula === "Fe2(SO4)3", JSON.stringify(ok));
+    // 空・電荷 0 の混入
+    assert(ionBlockCheck("Ba^2+", "SO4^2-", 0, 0).kind === "empty");
+    assert(ionBlockCheck("H2O", "SO4^2-", 1, 1).kind === "invalid", "電荷 0 を組ませている");
+    assert(ionBlockCheck("SO4^2-", "Ba^2+", 1, 1).kind === "invalid", "陽陰を取り違えても通ってしまう");
+  });
+
+  t("BLOCKS: 総当たりで、三値が高さの計算と食い違わない", () => {
+    const cats = Object.keys(SPECIES).filter((sp) => ionBlockRole(sp) === "cation");
+    const ans = Object.keys(SPECIES).filter((sp) => ionBlockRole(sp) === "anion");
+    assert(cats.length >= 8 && ans.length >= 6, "総当たりの母数が少なすぎる");
+    let short = 0, red = 0, simp = 0;
+    for (const c of cats) for (const a of ans) {
+      const u = saltUnit(c, a);
+      for (let cn = 0; cn <= 6; cn++) for (let an = 0; an <= 6; an++) {
+        const r = ionBlockCheck(c, a, cn, an);
+        const ct = cn * Math.abs(SPECIES[c].charge), at = an * Math.abs(SPECIES[a].charge);
+        assert(r.cTotal === ct && r.aTotal === at, c + "|" + a + " " + cn + "/" + an);
+        if (cn === 0 && an === 0) { assert(r.kind === "empty"); continue; }
+        if (ct !== at) { assert(r.kind === "short", c + "|" + a); short++; continue; }
+        // そろっているなら、必ず最簡の組の整数倍になっている（＝積み替えではなく割り算で直る）
+        const k = cn / u.cn;
+        assert(Number.isInteger(k) && k >= 1 && an === k * u.an,
+          c + "|" + a + ": そろっているのに最簡の整数倍でない " + cn + "/" + an);
+        assert(r.times === k, c + "|" + a + ": times が倍率と違う");
+        assert(r.kind === (k === 1 ? "simplest" : "reducible"), c + "|" + a + " " + cn + "/" + an);
+        if (k === 1) simp++; else red++;
+      }
+    }
+    // 三値のどれもが実際に起きる（判定が片寄って死んでいないこと）
+    assert(short > 0 && red > 0 && simp > 0, `三値が出そろわない ${short}/${red}/${simp}`);
+  });
+
+  t("BLOCKS: 出す条件は式の形で決まる（ステージ id を並べて見張らない）", () => {
+    const hits = STAGES.filter((st) => ionBlockPairOf(st));
+    // Ag⁺＋Cl⁻ ／ Ba²⁺＋SO₄²⁻ ／ Cu²⁺＋2OH⁻ ／ Al³⁺＋3OH⁻ ／ Zn²⁺＋2OH⁻
+    assert(hits.length >= 5, "拾えるステージが少なすぎる: " + hits.map((s) => s.id).join(","));
+    assert(hits.some((s) => s.id === "s5"), "Ba²⁺＋SO₄²⁻ が拾えない（発注の1例）");
+    for (const st of hits) {
+      const p = ionBlockPairOf(st);
+      assert(SPECIES[p.cation].charge > 0 && SPECIES[p.anion].charge < 0, st.id);
+      assert(SPECIES[p.product].charge === 0, st.id + ": 生成物が中性でない");
+      // ★ 模範係数どおりに積めば「そろった（最簡）」になる ＝ ブロックと係数が同じ数を指す
+      const eq = st.ionic;
+      const r = ionBlockCheck(p.cation, p.anion, eq.answer[p.ci], eq.answer[p.ai]);
+      assert(r.kind === "simplest", st.id + ": 模範係数で simplest にならない — " + r.kind + " " + r.message);
+      // 生成物の原子数とも合う（組成式を手で書いていないことの裏取り）
+      const L = tallyTerms([{ sp: p.cation, n: r.unit.cn }, { sp: p.anion, n: r.unit.an }]);
+      const R = tallyTerms([{ sp: p.product, n: 1 }]);
+      assert(JSON.stringify(sortObjKeys(L.atoms)) === JSON.stringify(sortObjKeys(R.atoms)),
+        st.id + ": 高さがそろう組が生成物の組成と合わない");
+    }
+    // 中和（H⁺＋OH⁻→H₂O）は形としては拾えるが、画面では中和の模式図と二重にしない。
+    // ⚠ その振り分けは app.js（protonSchema の有無）が持つので、ここで拾えること自体は正しい
+    assert(hits.every((st) => !protonSchema(st)), "ブロックと中和の模式図が同時に出るステージがある");
+    // 形が違えば拾わない
+    assert(!ionBlockPairOf({ ionic: { reactants: ["H2O", "SO4^2-"], products: ["Na2SO4"], answer: [1, 1, 1] } }),
+      "電荷 0 の項を混ぜても拾ってしまう");
+    assert(!ionBlockPairOf({ ionic: { reactants: ["Ba^2+", "SO4^2-"], products: ["Ba^2+"], answer: [1, 1, 1] } }),
+      "生成物が中性でなくても拾ってしまう");
+    assert(!ionBlockPairOf(STAGES[0]), "ionic を持たないステージを拾ってしまう");
+  });
+
   t("compareSides: 電荷の不一致を検出する", () => {
     const cmp = compareSides([{ sp: "H+", n: 1 }], [{ sp: "H+", n: 1 }, { sp: "H+", n: 1 }]);
     assert(!cmp.balanced);
