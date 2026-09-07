@@ -1949,3 +1949,78 @@ main.timelineMain {
 }
 .hbProc button.active { background: #3b82c4; border-color: #3b82c4; color: #fff; }
 .hbOxLink { display: inline-block; margin-top: 4px; font-size: 12px; color: #2f5b7a; }
+
+/* ================================================================================
+   電気分解「まず、何が反応する？」の段（electrolysis.html / electrolysis.js）
+   DESIGN_battery_electrolysis.md §9
+
+   ★ 順位表は**開いて確かめる**もの。だから既定は閉じていて、開く釦は
+   酸化還元モードの「梯子の全体を見る」と同じ .ladderToggle / .ladderFull を使い回す
+   （同じ役目のものを2通りの見た目にしない）。ここで足すのは中身の行だけ。
+   ★ 320px で成立させる（釦は縦に折り返す・押し所は 44px を割らない）。 */
+.whatLeadLine { font-size: 13.5px; color: #23303b; line-height: 1.8; margin: 2px 0 4px; }
+.whatLeadNote { font-size: 12px; color: #6c7a88; line-height: 1.7; margin: 0 0 8px; }
+.whatSp {
+  display: inline-block; padding: 1px 7px; margin: 0 1px;
+  font-weight: bold; font-size: 14px;
+  border: 1px solid #cdd8e2; border-radius: 6px; background: #f4f8fb; color: #23303b;
+}
+/* 水だけ色を変える。**割り込んでくるのは水**、がこの段の芯なので、そこだけ目に入るように */
+.whatSp.whatWater { border-color: #9dc7e0; background: #eaf5fb; color: #1f4f6d; }
+
+.whatRow { margin: 8px 0 10px; }
+.whatRowHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-bottom: 5px; }
+.whatSide { font-size: 14px; color: #23303b; }
+.whatSideSub { font-size: 12px; color: #6c7a88; }
+.whatBtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.whatBtn {
+  min-height: 44px; min-width: 64px; padding: 6px 14px;
+  font-size: 15px; font-weight: bold;
+  border: 1px solid #b6c4d2; border-radius: 10px;
+  background: #fff; color: #23303b; cursor: pointer;
+}
+.whatBtn:hover { background: #f2f7fb; }
+.whatBtn.picked { border-width: 2px; }
+.whatBtn.ok { border-color: #4f9d76; background: #f0f9f4; color: #1f6b46; }
+.whatBtn.ng { border-color: #c0603c; background: #fdf3ef; color: #8f3f22; }
+
+.whatWhyLine {
+  font-size: 12.5px; line-height: 1.75; margin: 6px 0;
+  padding: 7px 10px; border-radius: 8px; border-left: 4px solid #b6c4d2; background: #f7f9fb;
+}
+.whatWhyLine.ok { border-left-color: #4f9d76; background: #f1f9f4; color: #235c41; }
+.whatWhyLine.ng { border-left-color: #c0603c; background: #fdf4f0; color: #7d3a20; }
+
+/* 順位表の1行。左に段の番号（反応しない段は ×）、右に顔ぶれ・見出し・ひとこと */
+.prFull { margin-top: 8px; }
+.prSec + .prSec { margin-top: 14px; }
+.prRow {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 6px 8px; border-radius: 8px; border: 1px solid transparent;
+}
+.prRow + .prRow { margin-top: 3px; }
+/* いまの液にいる段だけ枠を出す ＝ 「表のどこを読めばよいか」が見える */
+.prRow.here { border-color: #cdd8e2; background: #fff; }
+.prRow.chosen { border-color: #4f9d76; background: #f3faf6; }
+.prTier {
+  flex: 0 0 auto; width: 22px; height: 22px; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: bold; border-radius: 50%;
+  background: #dbe4ec; color: #46525e;
+}
+.prRow.chosen .prTier { background: #4f9d76; color: #fff; }
+.prRow.dead .prTier { background: #ece1dc; color: #8f3f22; }
+.prBody { flex: 1 1 auto; min-width: 0; }
+.prMembers { font-size: 14px; color: #9aa7b4; }
+/* 液にいるものだけ濃く。**表そのものは全部見せる**（見せないと確かめられない） */
+.prSp.in { color: #23303b; font-weight: bold; }
+.prLabel { font-size: 12px; color: #46525e; margin-top: 1px; }
+.prNote { font-size: 11.5px; color: #6c7a88; line-height: 1.6; margin-top: 1px; }
+
+/* 足し合わせに打ち消えなかったものが残る回の断り（e5・§9-4）。
+   **黙って出さない**ための枠なので、筆算の下で目に入る濃さにする */
+.sumNote {
+  margin-top: 10px; padding: 8px 11px;
+  font-size: 12px; line-height: 1.75; color: #46525e;
+  border-left: 4px solid #9dc7e0; border-radius: 8px; background: #f4f9fc;
+}
