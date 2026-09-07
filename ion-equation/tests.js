@@ -3582,6 +3582,32 @@ async function runUITests(iframe) {
       "最簡に直しても助言が残る: " + doc.getElementById("schematicMsg").textContent);
   });
 
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-3）——
+     「係数を1つ入れた段階でイオンのグラフィックを表示」。
+     v201 までは左辺が全部そろうまで1粒も描かれず、案内文だけが出ていた。 */
+  await t("UI: 数合わせ - 係数を1つ入れた時点で粒が出る（動きはそろってから）", async () => {
+    stageBtn(1).click();   // H₂SO₄ × NaOH（左辺2項）
+    const parts = () => doc.querySelectorAll("#recombine .rpart").length;
+    // 何も入れていないうちは粒ゼロ。案内は「1つ入れると」と言う
+    assert(parts() === 0, "係数ゼロなのに粒が出ている");
+    assert(doc.querySelector("#recombine text").textContent.includes("1つ入れる"),
+      "案内が「全部そろえろ」のまま: " + doc.querySelector("#recombine text").textContent);
+    // ★ 1つだけ入れた時点で、そのぶんの粒が出る
+    ups()[0].click();      // H₂SO₄ = 1 → H⁺×2, SO₄²⁻×1
+    assert(parts() === 3, "係数を1つ入れても粒が出ない: " + parts());
+    // ⚠ 動き（組み変え）はまだ押させない
+    assert(recombineBtn().disabled, "左辺が半端なのに組み変えが押せる");
+    assert(doc.getElementById("recombineMsg").textContent.includes("NaOH"),
+      "足りない項を名指ししない: " + doc.getElementById("recombineMsg").textContent);
+    // フックから直接呼んでも走らない（釦を無効にしただけで済ませない）
+    win.IonEq.recombine(); adv(10000);
+    assert(!state().recombine, "半端な係数で組み変えが走った: " + JSON.stringify(state().recombine));
+    // 左辺がそろえば押せる
+    ups()[1].click(); ups()[1].click();   // NaOH = 2
+    assert(!recombineBtn().disabled, "左辺がそろっても組み変えが押せない");
+    assert(parts() === 3 + 2 * 2, "そろえたぶんの粒が出ない: " + parts());
+  });
+
   await t("UI: 数合わせ - 左辺のみで試すと「できた数」を教える", async () => {
     stageBtn(1).click(); // ステージ2にリセット
     ups()[0].click(); ups()[1].click(); ups()[1].click(); // 左辺 1,2
