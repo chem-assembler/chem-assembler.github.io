@@ -4756,7 +4756,7 @@ function bottleLeftCoeffText(stage, a, b, scale) {
   return {
     left: "⑤であなたが書いた係数が、そのまま化学反応式の左辺: " +
       rows.map((r) => `${r.coeff} ${D(r.sp)}`).join(" ＋ "),
-    right: "右辺の係数は、残ったイオンが対になった時点で決まる ＝ 数えるところが無いので、入力欄も置かない。",
+    right: "右辺の係数は、⑥で組み上げた化学種を何回くり返せたか ＝ そのまま入る。",
   };
 }
 

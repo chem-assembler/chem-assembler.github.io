@@ -1966,6 +1966,22 @@ main.timelineMain {
    イオンの一覧から選んで積む列。⚠ 既存の係数ステッパー（.stepper）を置き換えるものではなく、
    いまは**併置**して「同じ数を2つの見え方で指している」ことを見せている。 */
 #blocksWrap { margin-top: 10px; }
+/* ⑥（酸化還元）で使うときの器。図・一覧・判定文・釦を1枚にまとめる */
+#saltStep #blocksWrap {
+  border: 1px solid #dbe3ea; border-radius: 10px; background: #fbfdff;
+  padding: 8px 10px 10px;
+}
+#saltStep #saltBlocks { width: 100%; max-width: 360px; height: auto; display: block; }
+#saltActions { margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.saltGo {
+  min-height: 38px; padding: 0 14px;
+  font-size: 14px; font-weight: bold; color: #1f5138;
+  background: #e6f4ec; border: 1px solid #86bda0; border-radius: 8px; cursor: pointer;
+}
+.saltGo:hover:not(:disabled) { background: #d8ecdf; }
+.saltGo:disabled { color: #a9b6bf; background: #f1f4f6; border-color: #d8dfe4; cursor: default; }
+#saltMade { margin-top: 10px; }
+#saltMade:empty { display: none; }
 #ionBlocks { width: 100%; max-width: 360px; display: block; }
 .ibRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
 .ibRowLabel { font-size: 12px; color: #7b8794; min-width: 4.5em; }

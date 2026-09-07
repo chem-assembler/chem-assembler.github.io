@@ -187,15 +187,29 @@
       <div id="bottleTail" hidden>
         <div class="stepHead"><span class="stepNo">5</span>化学反応式の左辺 — 係数をすべて書く</div>
         <div id="bottleCounts"></div>
-        <div id="bottlePool"></div>
-        <!-- 【D】全体の倍率は**例外**（右辺の係数に 1/2 が出たときだけの措置）。
-             常設のステッパーをやめ、半端が実際に出たときにだけこの箱が現れる -->
-        <div id="bottleScaleBox" hidden></div>
-        <!-- 【3】v194・発注書 §6-7 の 3。⑤で入れた本数が、そのまま下の式の左辺の係数
-             だと言う行。**式の真上**に置くのが仕事なので、横送り枠（.sheetScroll）の
-             外に出しておく（中に入れると長い文が枠の max-content を押し広げる） -->
-        <div id="bottleLeftMap"></div>
-        <div class="sheetScroll"><div id="bottleSheet"></div></div>
+        <!-- ★ ⑥（2026-09-07・ユーザーの指示「右辺で余ったイオン同士を組み合わせる／
+             イオンの一覧から陽イオンと陰イオンを選んで並べ・高さがそろえば１つの化学種」）。
+             部品は同じ日の別レーンが入れた「価数＝高さのブロック」（DESIGN_ion_blocks.md）。
+             ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ -->
+        <div id="saltStep" hidden>
+          <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせる — 高さがそろえば1つの化学種</div>
+          <div id="bottlePool"></div>
+          <div id="blocksWrap">
+            <svg id="saltBlocks" viewBox="0 0 360 200" role="img" aria-label="陽イオンと陰イオンを価数の高さで積み上げる図"></svg>
+            <div id="saltPalette"></div>
+            <div id="saltMsg"></div>
+            <div id="saltActions"></div>
+          </div>
+          <div id="saltMade"></div>
+          <!-- 【D】全体の倍率は**例外**（右辺の係数に 1/2 が出たときだけの措置）。
+               常設のステッパーをやめ、**組めなくなったときにだけ**この箱が現れる -->
+          <div id="bottleScaleBox" hidden></div>
+          <!-- 【3】v194・発注書 §6-7 の 3。⑤で書いた係数が、そのまま下の式の左辺
+               だと言う行。**式の真上**に置くのが仕事なので、横送り枠（.sheetScroll）の
+               外に出しておく（中に入れると長い文が枠の max-content を押し広げる） -->
+          <div id="bottleLeftMap"></div>
+          <div class="sheetScroll"><div id="bottleSheet"></div></div>
+        </div>
         <div id="bottleTailMsg"></div>
       </div>
     </section>
@@ -205,6 +219,8 @@
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
 <script src="model.js?v=201"></script>
 <script src="schematic.js?v=201"></script>
+<!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
+<script src="blocks.js?v=201"></script>
 <script src="header-ui.js?v=201"></script>
 <script src="redox.js?v=201"></script>
 </body>
