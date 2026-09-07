@@ -275,6 +275,9 @@ const MODES = [
   { id: "index",     href: "index.html",         label: "イオン反応モード",      group: "play" },
   { id: "redox",     href: "redox.html",         label: "酸化還元モード",        group: "play" },
   { id: "battery",   href: "battery.html",       label: "🔋 電池をつくる",       group: "play" },
+  /* B3-2（2026-09-07）: 電気分解を別のページに割った。**帯はこの表からしか作られない**ので、
+     入口を増やすときに直すのはここ1行でよい（DESIGN §8-2） */
+  { id: "elyz",      href: "electrolysis.html",  label: "⚡ 電気分解をする",     group: "play" },
   { id: "free",      href: "redox.html?free=1",  label: "⚗ 自由に組み合わせる",  group: "tool" },
   { id: "oxnum",     href: "oxidation.html",     label: "🔢 酸化数を決める",     group: "tool" },
   { id: "halfbuild", href: "halfreaction.html",  label: "⚡ 半反応式を組む",     group: "tool" },
@@ -1627,6 +1630,20 @@ const HALF_REACTIONS = {
      梯子から答えてしまう。梯子は「載っている対に半反応式があること」しか要求しない。 */
   "Cl_ox":     { disp: "2Cl⁻ → Cl₂ ＋ 2e⁻", kind: "oxidation", couple: "Cl2/Cl-",
                  left: [{ sp: "Cl-", n: 2 }], right: [{ sp: "Cl2", n: 1 }, { sp: "e-", n: 2 }] },
+
+  /* 電気分解で「水が割り込む」ときの2本（B3-2・§9-4）。**これも梯子には載せない**
+     （Cl_ox と同じ理由。電源が押し込む反応なので、強さ比べでは決まらない）。
+
+     H2O_red は §3-3 が「第2弾」として宿題にしていたもの。
+     Na⁺ のようにイオン化傾向の大きい金属のイオンは水溶液中で還元されないので、
+     **代わりに水が e⁻ を受け取る** ＝ 陰極から H₂ が出て、まわりが塩基性になる。
+     OH_ox はその裏で、塩基性の液の陽極。OH⁻ が酸化されて O₂ になる。 */
+  "H2O_red":   { disp: "2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻", kind: "reduction", couple: "H2O/H2",
+                 left: [{ sp: "H2O", n: 2 }, { sp: "e-", n: 2 }],
+                 right: [{ sp: "H2", n: 1 }, { sp: "OH-", n: 2 }] },
+  "OH_ox":     { disp: "4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻", kind: "oxidation", couple: "O2/OH-",
+                 left: [{ sp: "OH-", n: 4 }],
+                 right: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 2 }, { sp: "e-", n: 4 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -3451,7 +3468,153 @@ const ELECTROLYSIS_STAGES = [
     intro: "希硫酸に白金電極をひたして電源につなぐ。硫酸は電流を通すために入れるだけで、" +
       "変化するのは水。陰極から水素、陽極から酸素が出る。",
   },
+  /* ---- B3-2（§9-4）で足した4件。**4通りが全部出る**ように選んである ----
+     軸は「溶けているイオンがそのまま反応するか／しないか」（析出とはかぎらない。
+     e2 の H⁺ は気体になる）。e1 する×する・e2/e4 する×しない・e3/e6 しない×する・
+     e5 しない×しない。anode / cathode は electrolysisPick の結果と一致することを
+     回帰テストが見張っているので、ここは「読むための1行」であって二重の原理データではない。 */
+  {
+    id: "e3", kind: "electrolysis", title: "塩化ナトリウム水溶液の電気分解",
+    solution: "NaCl", electrode: "C",
+    anode: "Cl_ox",      // 陽極（酸化）: 2Cl⁻ → Cl₂ ＋ 2e⁻
+    cathode: "H2O_red",  // 陰極（還元）: 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻（Na⁺ は還元されない）
+    intro: "液の中には Na⁺ と Cl⁻ がいる。陽極では Cl⁻ がそのまま酸化されるが、" +
+      "陰極の Na⁺ は水溶液の中では還元されない。では陰極では何が反応する？",
+  },
+  {
+    id: "e4", kind: "electrolysis", title: "硫酸銅(Ⅱ)水溶液の電気分解",
+    solution: "CuSO4", electrode: "Pt",
+    anode: "H2O_ox",     // 陽極（酸化）: 2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻（SO₄²⁻ は酸化されない）
+    cathode: "Cu_red",   // 陰極（還元）: Cu²⁺ ＋ 2e⁻ → Cu
+    intro: "こんどは逆。陰極の Cu²⁺ はそのまま還元されて銅が析出するが、" +
+      "陽極の SO₄²⁻ は酸化されない。では陽極では何が反応する？",
+  },
+  {
+    id: "e5", kind: "electrolysis", title: "硫酸ナトリウム水溶液の電気分解",
+    solution: "Na2SO4", electrode: "Pt",
+    anode: "H2O_ox",     // 陽極（酸化）: 2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻
+    cathode: "H2O_red",  // 陰極（還元）: 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻
+    intro: "Na⁺ も SO₄²⁻ も、水溶液の中では反応しない。両極とも反応するのは水のほう。" +
+      "硫酸ナトリウムは電流を通すために入れてあるだけ。",
+    /* 足し合わせると H⁺ と OH⁻ が残る（§9-4）。**誤差ではなく実際に起きること**なので、
+       黙って出さずにここで断る。データに持つのは、画面が文を手書きしないため。 */
+    sumNote: "陽極で H⁺、陰極で OH⁻ ができるので、足し合わせた式には両方が残る。" +
+      "これは書き間違いではなく、実際に陽極のまわりは酸性に、陰極のまわりは塩基性になる。" +
+      "かき混ぜて H⁺ と OH⁻ が結びつけば水に戻り、教科書の 2H₂O → 2H₂ ＋ O₂ になる。",
+  },
+  {
+    id: "e6", kind: "electrolysis", title: "水酸化ナトリウム水溶液の電気分解",
+    solution: "NaOH", electrode: "Pt",
+    anode: "OH_ox",      // 陽極（酸化）: 4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻
+    cathode: "H2O_red",  // 陰極（還元）: 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻
+    intro: "Na⁺ は還元されないので、陰極で反応するのは水。陽極には酸化される OH⁻ がいる。" +
+      "足し合わせると、希硫酸のときとまったく同じ「水の電気分解」になる。",
+  },
 ];
+
+/* ================================================================================
+   B3-2: 電気分解で「何が反応するか」の順位表（§9-3。2026-09-07）
+
+   ユーザーの言葉:「電気分解はまず、何が反応するか　を考えさせるものをつくる」
+                 「反応する物質の優先順位を確認できるように」
+
+   ★ **順位を暗記させる表ではない。** 選んでから開いて確かめる表
+   （酸化還元モードの「梯子の全体を見る」と同じ流儀。DESIGN §9-2）。
+
+   ★ **「反応しない」の表現は half を持たないこと1つだけ。** 真偽値を別に持たない
+   ——持つと、式を足したのに「反応しない」の札が残る、が黙って起こる。
+
+   並びは上ほど「その極で先に反応する」。**水を必ず表の途中に置く**のが肝で、
+   水より下にいるイオン（Na⁺ や SO₄²⁻）は「水に負ける ＝ 水溶液では反応しない」と読める。
+   ================================================================================ */
+const ELECTRODE_PRIORITY = {
+  /* 陰極（還元が起きる極）。上ほど還元されやすい */
+  cathode: [
+    { id: "noble-cation", label: "イオン化傾向が H₂ より小さい金属のイオン",
+      members: ["Ag+", "Cu^2+"], half: { "Ag+": "Ag_red", "Cu^2+": "Cu_red" },
+      note: "そのまま e⁻ を受け取って、金属が電極に析出する" },
+    { id: "acid-h", label: "酸の H⁺",
+      members: ["H+"], half: { "H+": "H_red" },
+      note: "液が酸性なら H⁺ が e⁻ を受け取って水素が出る" },
+    { id: "water-red", label: "水 H₂O",
+      members: ["H2O"], half: { "H2O": "H2O_red" },
+      note: "水はいつでもそこにいる。上の相手がいなければ水が還元されて水素が出る" },
+    { id: "active-cation", label: "イオン化傾向が大きい金属のイオン（K〜Al）",
+      members: ["K+", "Ca^2+", "Na+", "Mg^2+", "Al^3+"], half: null,
+      note: "水より還元されにくいので、水溶液の中では析出しない（融解塩なら析出する）" },
+  ],
+  /* 陽極（酸化が起きる極）。上ほど酸化されやすい */
+  anode: [
+    { id: "halide", label: "ハロゲン化物イオン（Cl⁻・I⁻）",
+      members: ["Cl-", "I-"], half: { "Cl-": "Cl_ox", "I-": "I_ox" },
+      note: "そのまま e⁻ をうばわれて、塩素・ヨウ素になる" },
+    { id: "hydroxide", label: "OH⁻",
+      members: ["OH-"], half: { "OH-": "OH_ox" },
+      note: "液が塩基性なら OH⁻ が酸化されて酸素が出る" },
+    { id: "water-ox", label: "水 H₂O",
+      members: ["H2O"], half: { "H2O": "H2O_ox" },
+      note: "上の相手がいなければ水が酸化されて酸素が出る" },
+    { id: "oxo-anion", label: "酸素を多く持つ陰イオン（SO₄²⁻・NO₃⁻・PO₄³⁻）",
+      members: ["SO4^2-", "NO3-", "PO4^3-"], half: null,
+      note: "water より酸化されにくいので、水溶液の中では変化しない" },
+  ],
+};
+
+/* その極に居合わせる顔ぶれ（溶けているイオン ＋ **必ず水**）。
+   水を足すのがこの段の肝で、これが無いと「イオンが2種しかいない」ように見える。
+   ⚠ 電極そのものが反応する系（電解精錬）を足すときは、ここに電極の金属を混ぜる（§10-2）。 */
+function electrolysisCandidates(kind, solution) {
+  const want = kind === "cathode" ? 1 : -1;
+  const ions = [...new Set(DISSOCIATION[solution] || [])]
+    .filter((sp) => SPECIES[sp] && Math.sign(SPECIES[sp].charge) === want);
+  return ions.concat(["H2O"]);
+}
+
+/* 順位表の段（上から順）。知らない極を渡したら空 */
+function electrodePriority(kind) { return ELECTRODE_PRIORITY[kind] || []; }
+
+/* 種がどの段にいるか（載っていなければ null）。表に載っていない種は判定に使わない
+   ＝「黙って水にする」ことをしない（載せ忘れはテストで赤くなる）。 */
+function priorityTierOf(kind, sp) {
+  const i = electrodePriority(kind).findIndex((tr) => tr.members.includes(sp));
+  return i < 0 ? null : i + 1;
+}
+
+/* その極で実際に反応するものを決める（§9-3）。純ロジック・DOM 非依存。
+   返り値:
+     sp     … 反応する種（決まらなければ null）
+     half   … その半反応式の id
+     tier   … 表の何段目で決まったか（1 が最上段）
+     rows   … **順位表をそのまま描くためのデータ**。段ごとに
+              { tier, id, label, note, reacts, present[], chosen }
+              present は「いまの溶液にいる顔ぶれ」、chosen は採用した種
+     passed … 表に載ってはいるが、採用した段より下にいて反応しなかった種
+              （「Na⁺ は水より下だから反応しない」の1行に使う） */
+function electrolysisPick(kind, solution) {
+  const cands = electrolysisCandidates(kind, solution);
+  const rows = electrodePriority(kind).map((tr, i) => ({
+    tier: i + 1, id: tr.id, label: tr.label, note: tr.note || "",
+    reacts: !!tr.half,
+    present: tr.members.filter((m) => cands.includes(m)),
+    chosen: null,
+  }));
+  const hit = rows.find((r) => r.reacts && r.present.length);
+  if (!hit) return { sp: null, half: null, tier: null, rows, passed: [], candidates: cands };
+  const tr = electrodePriority(kind)[hit.tier - 1];
+  hit.chosen = hit.present[0];
+  const passed = rows.filter((r) => r.tier > hit.tier)
+    .reduce((out, r) => out.concat(r.present.map((sp) => ({ sp, tier: r.tier, reacts: r.reacts }))), []);
+  return { sp: hit.chosen, half: tr.half[hit.chosen], tier: hit.tier, rows, passed, candidates: cands };
+}
+
+/* ステージ → 両極の判定をまとめて引く（画面はこれ1本を呼ぶ） */
+function electrolysisPicks(stage) {
+  if (!stage || !stage.solution) return null;
+  return {
+    cathode: electrolysisPick("cathode", stage.solution),
+    anode: electrolysisPick("anode", stage.solution),
+  };
+}
 
 /* 電気分解ステージ → REDOX_STAGES と同じ形（ox / red / answer）。
    **陽極が ox・陰極が red** で固定（電気分解では役が入れ替わらない）。 */
@@ -3462,9 +3625,17 @@ function electrolysisStageOf(stage) {
   return Object.assign({}, st, { id: "electrolysis:" + stage.id, title: stage.title });
 }
 
-/* 電池と電気分解をひとつづきに並べたステージ表（画面はこの並びで出す）。
-   1〜2 が電池、3〜4 が電気分解。**続けて遊ぶと用語の違いが body に入る**のが狙い。 */
+/* 電池と電気分解を通しで並べたステージ表。
+   **B3-2（2026-09-07）でページを2枚に割った**ので、画面はこの並びのまま出さない
+   ——`cellStagesOfKind` でその画面のぶんだけを引く。ここを残してあるのは
+   「電池と電気分解は同じ枠でできている」ことの根であって、画面の並びではない。 */
 const CELL_STAGES = BATTERY_STAGES.concat(ELECTROLYSIS_STAGES);
+
+/* その画面（battery.html / electrolysis.html）が出すステージだけを引く。
+   ページ側は body の data-cell-kind で名乗るだけでよい（DESIGN §8-1）。 */
+function cellStagesOfKind(kind) {
+  return CELL_STAGES.filter((s) => s.kind === (kind === "electrolysis" ? "electrolysis" : "battery"));
+}
 
 /* ---- 科目・単元ツリー（入り口ページ portal.html が使う）----
    「いま自分がどの科目のどの単元をやっているのか」から入れるようにするための表。
@@ -3562,7 +3733,9 @@ const STAGE_SERIES = [
     note: "イオンにならない反応。分子が原子までほどけて組み替わる（燃焼・化合）" },
   { id: "sr-redox", name: "酸化還元", modes: ["redox", "condition"], tags: [],
     note: "e⁻ の受け渡し。半反応式を部品として、e⁻ の数をそろえて足し合わせる" },
-  { id: "sr-cell", name: "電池・電気分解", modes: ["cell"], tags: [],
+  /* B3-2 でページを2枚に割ったので modes も2つ。**系列は割らない**
+     （「酸化と還元を2か所に引き離す」という仲間分けは1つのままが正しい）。 */
+  { id: "sr-cell", name: "電池・電気分解", modes: ["cell", "elyz"], tags: [],
     note: "酸化と還元を2か所に引き離す。電池は e⁻ を取り出し、電気分解は e⁻ を押し込む" },
 ];
 
@@ -3587,7 +3760,10 @@ function allStagesInOrder() {
   push("ion", STAGES);
   push("redox", REDOX_STAGES);
   push("condition", CONDITION_STAGES);
-  push("cell", CELL_STAGES);
+  /* B3-2: 画面が2枚に割れたので、番号もページごとに1から振り直す
+     （帯の番号と一致させるのがこの関数の約束なので、ここで割らないと嘘になる）。 */
+  push("cell", BATTERY_STAGES);
+  push("elyz", ELECTROLYSIS_STAGES);
   return out;
 }
 
