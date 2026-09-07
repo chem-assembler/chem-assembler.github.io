@@ -2225,6 +2225,44 @@ function ammoniumSaltNitrogens(mol) {
         .map(g => [g.atomIds[0]]);
 }
 
+/**
+ * ★★ **ジアゾ化できる N** を集める（`diazotization` の入口。DESIGN_ion_layer.md I-4）。
+ *
+ * ⚠ **芳香環に直結した1級アミンだけ**。教科書がジアゾ化を扱うのはここだけで、
+ *   脂肪族の1級アミンから作ったジアゾニウムは**その場で分解してしまう**ため
+ *   （＝ 塩として取り出せない）、画面に出すと「取り出せるもの」に見えてしまう。
+ *   ★ `reduce_nitro` が「芳香環に直結した -NO₂ だけ」に絞ったのと**同じ線**（§4-1）。
+ * ⚠ アミド N は除く（`basicAmineNitrogens` と同じ門番）。
+ */
+function aromaticPrimaryAmineNitrogens(mol) {
+    const arom = aromaticAtomSet(mol);
+    return findFunctionalGroups(mol)
+        .filter(g => g.type === 'amine1' && !isAmideNitrogen(mol, g.atomIds[0]))
+        .filter(g => mol.getNeighbors(g.atomIds[0])
+            .some(n => n.atom.element === 'C' && arom.has(n.atom.id)))
+        .map(g => [g.atomIds[0]]);
+}
+
+/**
+ * ★★ **ジアゾニウム塩**の箇所を集める（加熱分解とカップリングの入口。I-4）。
+ *
+ * 返すのは `[環につながっている N⁺, 末端の N]`。
+ * ★ **どちらの N が ＋ か**は `findFunctionalGroups` の `diazonium` が既に決めている
+ *   （`atomIds[0]` が電荷を持つほう ＝ 環側）。**ここで数え直さない**
+ *   ＝「どの N が ＋ か」の定義を2か所に置かない。
+ * ⚠ `ammoniumSaltNitrogens` と同じく、**成分の正味の電荷が ＋** のものだけ
+ *   （相方の Cl⁻ は結合を持たない別成分なので +1 になる）。
+ */
+function diazoniumSites(mol) {
+    return findFunctionalGroups(mol)
+        .filter(g => g.type === 'diazonium')
+        .filter(g => {
+            const ids = componentOf(mol, g.atomIds[0]);
+            return mol.atoms.reduce((s, a) => s + (ids.has(a.id) ? (a.charge || 0) : 0), 0) > 0;
+        })
+        .map(g => [g.atomIds[0], g.atomIds[1]]);
+}
+
 function liberatableSaltSites(mol) {
     const sites = [];
     mol.atoms.forEach(a => {
@@ -2289,6 +2327,53 @@ function kolbeSchmidtSites(mol) {
             .filter(a => attachCarboxylate(mol, a.id, true))
             .sort((p, q) => (q.x - p.x) || (p.y - q.y) || (p.id < q.id ? -1 : 1));
         if (ortho.length) out.push([metalId, oId, ortho[0].id]);
+    });
+    return out;
+}
+
+/**
+ * ★★ ジアゾカップリングの箇所（DESIGN_ion_layer.md I-4・既存機構 `diazo_coupling`）。
+ *
+ * ジアゾニウム塩 ＋ ナトリウムフェノキシド → **p-ヒドロキシアゾベンゼン**（橙赤色のアゾ染料）。
+ * 返すのは `[環側のN⁺, 末端のN, 金属id, フェノキシドのOid, パラ位の環炭素id]`。
+ *
+ * ⚠ **パラ位に限る**（機構データの desc がそう書いている:「フェノキシドの O⁻ が
+ *   電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります」）。
+ *   ★ `kolbeSchmidtSites` が**オルトに限る**のとちょうど裏返しで、
+ *   どちらも「教科書がそう書く1つだけを出す」——両方出すと「どちらでもよい」と読まれる。
+ * ⚠ **別の分子どうしでなければ出さない**（`componentOf` で見る）。
+ */
+function diazoCouplingSites(mol) {
+    const arom = aromaticAtomSet(mol);
+    const out = [];
+    const diazo = diazoniumSites(mol);
+    if (!diazo.length) return out;
+    phenoxideSaltSites(mol).forEach(([metalId, oId]) => {
+        const anchor = mol.getNeighbors(oId)
+            .find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
+        if (!anchor) return;
+        const ringSet = new Set([...componentOf(mol, anchor.atom.id)]
+            .filter(id => arom.has(id)));
+        // 環を一周して -O⁻ の付け根からの距離を測る（1=オルト・3=パラ）
+        const dist = new Map([[anchor.atom.id, 0]]);
+        const queue = [anchor.atom.id];
+        while (queue.length) {
+            const cur = queue.shift();
+            mol.getNeighbors(cur).forEach(n => {
+                if (!ringSet.has(n.atom.id) || dist.has(n.atom.id)) return;
+                dist.set(n.atom.id, dist.get(cur) + 1);
+                queue.push(n.atom.id);
+            });
+        }
+        const para = [...dist.keys()].filter(id => dist.get(id) === 3);
+        if (para.length !== 1) return;                       // ⚠ 六員環でなければ出さない
+        const paraId = para[0];
+        if (mol.getFreeValency(paraId) < 1) return;          // パラ位が塞がっていたら出さない
+        const phenoxide = componentOf(mol, oId);
+        diazo.forEach(([nId, n2Id]) => {
+            if (phenoxide.has(nId)) return;                  // ⚠ 別分子どうしのみ
+            out.push([nId, n2Id, metalId, oId, paraId]);
+        });
     });
     return out;
 }
@@ -3599,6 +3684,43 @@ const REAGENTS = [
             '追い出せるのは炭酸より弱い酸 —— つまり**フェノール**だけです' +
             '（酸の強さは カルボン酸 > 炭酸 > フェノール）。' +
             'カルボン酸の塩から酸に戻したいときは、希硫酸か塩酸を使ってください。'
+    },
+    {
+        /* ★★ 亜硝酸ナトリウム＋塩酸の瓶（DESIGN_ion_layer.md I-4・ジアゾ化）。
+         *   ⚠⚠ **瓶が1本増える**（25 → 26本）。
+         *
+         * ⚠ **既存の瓶に相乗りできないか**（`DESIGN_reagent_palette.md` §10.5 規約1）を先に見た:
+         *   - `hcl`（塩化水素・塩酸）… ⚠ **効く相手が正反対になる。** 塩酸だけを
+         *     アニリンにかけたらできるのは**アニリン塩酸塩**（`amine_hcl`）で、
+         *     ジアゾニウムではない。同じ瓶に両方を載せると、**塩酸を選んだのに
+         *     ジアゾ化の選択肢が出る**＝ 画面が「塩酸でジアゾ化できる」と言うことになる
+         *   - `nahco3`・`naoh_aq` … 亜硝酸とは別の試薬。名前が嘘になる
+         *   ★ ＝ 規約1の③「既存のどの瓶の名前でも嘘になる」に当たるので1本足す。
+         *
+         * ★ **塩酸（`hcl`）の隣ではなく、CO₂ の隣（＝ 芳香族の窒素まわりの入口）に置く。**
+         *   ⚠ ここは「亜硝酸を**その場で作って使う**」試薬で、瓶の名前がそのまま
+         *   実験操作（NaNO₂ 水溶液に塩酸を加える）になっている。
+         *
+         * ⚠⚠ **条件（5℃以下・氷冷）は `condition` の2択にしない。**
+         *   ★ `condition` を使うのは「**2つの条件が同時に通る分子がある**」ときだけ
+         *     （v1511 の前例。エタノールの分子内脱水／分子間脱水がそれ）。
+         *   ジアゾ化は5℃以下でしか意味を持たない（温めると次の
+         *   `diazonium_decompose` が起こってしまう）ので、**選ばせる二択がない**。
+         *   ★ 代わりに **`label` と caption で「氷冷しながら」と言う**。
+         *
+         * ⚠ **区分割り（§10.5 規約2）はしない** —— `co2`（25本目）と同じ判断。
+         *   26本目でも割っていない。割るなら別レーンで。 */
+        id: 'nano2_hcl',
+        name: '亜硝酸ナトリウム＋塩酸',
+        formula: 'NaNO₂ + HCl',
+        kind: 'transform',
+        acts: 'アニリンのように、ベンゼン環に直結した -NH₂ です' +
+            '（**5℃以下に氷冷しながら**加えると、ジアゾニウム塩ができます）',
+        miss: '亜硝酸と塩酸から生じる試薬は、**芳香族の1級アミン**をジアゾニウム塩に変えます。' +
+            'いまの分子には、ベンゼン環に直結したアミノ基がありません。' +
+            'なお**脂肪族の1級アミン**でも同じ反応自体は起こりますが、' +
+            'できたジアゾニウムがその場で分解して窒素を出してしまうため、' +
+            '塩として取り出すことはできません（だから教科書は芳香族だけを扱います）。'
     },
     {
         id: 'naoh_aq',
@@ -6409,6 +6531,170 @@ const REACTION_RULES = [
                     'この性質で、中性の物質やフェノール類から分けられます。' +
                     'なお、この塩に水酸化ナトリウムを加えるともとのアミンが遊離して有機層へ戻ります。',
                 changed: [nId, cl.id]
+            };
+        }
+    },
+    {
+        /* ★★ ジアゾ化（DESIGN_ion_layer.md I-4）。アニリン ＋ NaNO₂/HCl（氷冷）
+         *   → **塩化ベンゼンジアゾニウム**。
+         *
+         * ★★ **ユーザーが名指しした学習上の要点**（2026-09-06）:
+         *   「ベンゼンジアゾニウムでは、**どの N 原子の形式電荷が ＋ なのか**を
+         *    表示することに学習上の意義があります」
+         *   ＝ **＋ が付くのは環に直結したほうの N**（末端ではない）。
+         *   ⚠ この置き方は `findFunctionalGroups` の `diazonium` の読み方
+         *   （`atomIds[0]` が電荷を持つほう）と**同じ向き**でなければならない
+         *   —— 逆に置くと、次に `diazoniumSites` が引けなくなる（DZ2 が見張る）。
+         *
+         * ★ 形: C-N⁺≡N。N⁺ は `chargedValency` で価標 4 本なので
+         *   「環へ1本 ＋ 三重結合3本」でちょうど埋まり、**自動水素は生えない**。
+         *   末端 N は中性で3本 ＝ こちらも空き 0。
+         * ⚠ **Cl⁻ は粒として置く**（`placeCounterIon`。D-I5・`amine_hcl` と同じ流儀）。
+         *   線で結ぶと N-Cl ＝ 別の分子の図になる。
+         * ⚠ 機構ビューアの `aniline_diazotization` は Cl⁻ を省いているが、
+         *   **こちらは描く**（分子式が教科書の C₆H₅N₂Cl と一致するため。§5-1 の前例どおり
+         *   「粒を描くか省くかは物質ごとに選べる」）。
+         *
+         * ⚠ **氷冷（5℃以下）は `condition` の二択にしない**（瓶の注記に理由）。
+         *   `label` と caption で言う。 */
+        id: 'diazotization',
+        reagentId: 'nano2_hcl',
+        mechanismId: 'aniline_diazotization',
+        label: 'ジアゾ化（芳香族アミン + NaNO₂/HCl・氷冷 5℃以下）→ ジアゾニウム塩',
+        detect(mol) { return aromaticPrimaryAmineNitrogens(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const nId = site[0];
+            const n = mol.atoms.find(a => a.id === nId);
+            if (!n) throw new Error('芳香族アミンの N が見つかりません');
+            // ★ 末端の N は **C→N の向きにまっすぐ**伸ばす（-N≡N は直線）。
+            //   向きを指定しないと `freeSpotAround` は一直線の位置を後ろへ送るので折れる
+            const ring = mol.getNeighbors(nId).find(x => x.atom.element === 'C');
+            const prefer = ring ? Math.atan2(n.y - ring.atom.y, n.x - ring.atom.x) : null;
+            const spot = freeSpotAround(mol, nId, [], prefer);
+            if (!spot) throw noRoom('末端の窒素を置く空間がありません');
+            // ⚠ **置き場を2つとも先に確かめる**（途中で失敗して N⁺ だけの図を残さない）
+            const n2 = mol.addAtom('N', spot.x, spot.y);
+            const cl = placeCounterIon(mol, nId, 'Cl', -1);
+            if (!cl) { mol.removeAtom(n2.id); throw noRoom('塩化物イオンを置く空間がありません'); }
+            mol.addBond(nId, n2.id, 3);
+            n.charge = 1;   // ★ ＋ は**環側**の N（学習上の要点）
+            return {
+                caption: 'アニリンのような**芳香族の1級アミン**に、亜硝酸ナトリウムと塩酸を' +
+                    '**氷冷しながら（5℃以下）**加えると、**ジアゾニウム塩**ができます（ジアゾ化）。' +
+                    '-NH₂ の N がそのまま残り、そこへ窒素がもう1つ結びついて **-N≡N** になります。' +
+                    '⚠ **＋ の電荷を持つのは、ベンゼン環に直結したほうの N** です' +
+                    '（末端の N ではありません）—— 図の印を見てください。' +
+                    'できたものは**塩化ベンゼンジアゾニウム** C₆H₅N₂Cl で、' +
+                    'Cl⁻ は線で結ばずに粒として描いています（イオン結合は線で書きません）。' +
+                    '⚠ **5℃以下に保つのが要点**です。温めるとこのジアゾニウム塩は' +
+                    '分解して窒素を発生し、フェノールに変わってしまいます。' +
+                    'なお**脂肪族の1級アミン**では、できたジアゾニウムがその場で分解するため' +
+                    '塩として取り出せません（だからこの反応は芳香族だけで扱います）。',
+                changed: [nId, n2.id, cl.id]
+            };
+        }
+    },
+    {
+        /* ★★ ジアゾニウム塩の加熱分解（I-4）。ジアゾニウム塩 ＋ 水 → **フェノール ＋ N₂ ＋ HCl**。
+         *
+         * ⚠⚠ **瓶を持たせない**（RG5 の名簿に載る）。★ 理由は
+         *   `dehydration_anhydride`・`ring_opening_polymerization` と**同じ** ——
+         *   教科書がここで名指しするのは試薬ではなく**操作（温める）**だからで、
+         *   「水の瓶」を作ると**5℃以下でも水はある**という事実と画面が食い違う
+         *   （ジアゾ化はもともと水溶液で行う）。★ 分かれ目は温度であって試薬ではない。
+         *   ⚠ 資料に無い試薬を名乗らせない（§4-1）。
+         *
+         * ★ これが `diazotization` の caption で言った「温めると壊れる」の**実物**。
+         *   氷冷が要点であることが、2本のルールの対で画面に出る。
+         *
+         * ⚠ 図としては「-N₂⁺ が -OH に置き換わる」。⚠ 抜けた N₂ と、対イオンから
+         *   できる HCl は**描かない**（気体・水に溶けたものは今までどおり図に出さない流儀）。 */
+        id: 'diazonium_decompose',
+        label: '加熱（ジアゾニウム塩 + 水）→ フェノール（N₂ が発生）',
+        detect(mol) { return diazoniumSites(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [nId, n2Id] = site;
+            const n = mol.atoms.find(a => a.id === nId);
+            const ring = n && mol.getNeighbors(nId).find(x => x.atom.element === 'C');
+            if (!ring) throw new Error('ジアゾニオ基が環につながっていません');
+            const ringId = ring.atom.id;
+            const ion = nearestCounterIon(mol, nId, -1);
+            const symbol = ion ? ion.element : null;
+            // ★ -OH は**抜けた N の位置**に置く（置き場を探す必要がない ＝ 空間で失敗しない）
+            const { x, y } = n;
+            mol.removeAtom(n2Id);
+            mol.removeAtom(nId);
+            if (ion) mol.removeAtom(ion.id);
+            const o = mol.addAtom('O', x, y);
+            mol.addBond(ringId, o.id, 1);   // 酸素に結合手が1つ空き、自動水素が -OH を描く
+            return {
+                caption: 'ジアゾニウム塩の水溶液を**温める**と分解して、' +
+                    '**窒素 N₂ が発生**し、**フェノール**ができます（-N₂⁺ → **-OH**）。' +
+                    '⚠ これが、ジアゾ化を **5℃以下に氷冷しながら**行う理由です —— ' +
+                    '温度が上がると、せっかくできたジアゾニウム塩がこうして壊れてしまいます。' +
+                    '窒素が抜けていくので、この反応は逆向きには戻りません' +
+                    '（発生する N₂ は図に描いていません' +
+                    (symbol ? `。対イオンの ${symbol}⁻ は塩化水素になって水に溶けるので、` +
+                        'こちらも図から外しました' : '') + '）。',
+                changed: [ringId, o.id]
+            };
+        }
+    },
+    {
+        /* ★★ ジアゾカップリング（I-4）。ジアゾニウム塩 ＋ ナトリウムフェノキシド
+         *   → **p-ヒドロキシアゾベンゼン**（橙赤色。アゾ染料の代表例）。
+         *
+         * ★ **既存の機構ビューア `diazo_coupling` に `mechanismId` でつなぐ**
+         *   （設計書 §5-2 の I-4 の指定どおり）。巻矢印はもう描いてある。
+         * ⚠ **瓶を持たせない**（相手はキャンバスに呼び出す。`alkylate_arene_propene`・
+         *   `acetalization_pva` と同じ形）。★ フェノキシドは
+         *   「フェノールを NaOH 水溶液に溶かしたもの」＝ **画面で作れる**
+         *   （フェノール ＋ NaOH → ナトリウムフェノキシド）。
+         *
+         * ⚠ **パラ位に限る**（機構データの desc がそう書く）。`kolbe_schmidt` が
+         *   オルトに限るのとちょうど裏返し。
+         * ⚠ Na⁺ と Cl⁻ は NaCl になって水に残るので、どちらも図から外す。
+         * ★ N≡N は **N=N になる**（三重 → 二重）。⚠ 電荷はここで消える
+         *   —— アゾ化合物は中性で、これが「色が着く」形。 */
+        id: 'diazo_coupling',
+        mechanismId: 'diazo_coupling',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②環と窒素がつながる
+        label: 'ジアゾカップリング（ジアゾニウム塩 + ナトリウムフェノキシド）→ アゾ染料',
+        detect(mol) { return diazoCouplingSites(mol); },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [nId, n2Id, metalId, oId, paraId] = site;
+            const n = mol.atoms.find(a => a.id === nId);
+            const bond = mol.getBond(nId, n2Id);
+            if (!n || !bond || bond.type !== 3) throw new Error('ジアゾニオ基が見つかりません');
+            /* ⚠⚠ **置き場を先に確かめる**（途中で失敗して「Na だけ外れた図」を残さない）。
+             *   Na は動かす側にいるが、このあと外れるので衝突判定から除く（ignoreIds）。 */
+            const movingIds = [...componentOf(mol, oId)].filter(id => id !== metalId);
+            const plan = planAttachment(mol, n2Id, paraId, movingIds, [metalId]);
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
+            const ion = nearestCounterIon(mol, nId, -1);
+            const symbol = ion ? ion.element : null;
+            const metal = mol.atoms.find(a => a.id === metalId);
+            const metalSymbol = metal ? metal.element : 'Na';
+            if (ion) mol.removeAtom(ion.id);
+            mol.removeAtom(metalId);   // 金属が外れると酸素に結合手が空き、自動水素が -OH を描く
+            applyAttachment(mol, movingIds, plan);
+            mol.addBond(n2Id, paraId, 1);
+            bond.type = 2;             // N≡N → N=N
+            delete n.charge;           // ★ アゾ化合物は中性（＋ はここで消える）
+            return {
+                caption: '氷冷したジアゾニウム塩の水溶液に**ナトリウムフェノキシド**を加えると、' +
+                    '**橙赤色**の **p-ヒドロキシアゾベンゼン**ができました（ジアゾカップリング）。' +
+                    'アゾ染料をつくる代表的な反応です。' +
+                    '⚠ 結びつくのは **-O⁻ の対角（パラ位）の炭素**です —— ' +
+                    'O⁻ が電子を環に押し出すので、その位置がいちばん反応しやすくなります。' +
+                    '⚠ **N≡N が N=N（アゾ基）に変わり、＋ の電荷は消えます** —— ' +
+                    'この長くつながった二重結合の並びが色のもとです。' +
+                    `外れた ${metalSymbol}⁺ と ${symbol || 'Cl'}⁻ は塩（${metalSymbol}${symbol || 'Cl'}）` +
+                    'になって水に残るので、図から外しました。',
+                changed: [nId, n2Id, paraId, oId]
             };
         }
     },

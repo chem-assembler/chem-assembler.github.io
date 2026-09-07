@@ -62,19 +62,26 @@ function stereoArgs(entry, ids) {
 }
 
 // 分子式（Hill 順・自動水素込み）。`game.js computeMolecularFormula` の写し
+// ★ 正味の電荷が 0 でないときだけ右肩の記号を添える（D-I6・2026-09-06 ユーザー決定）。
+//   ⚠ 添字は素の数字のまま（この列は diff で読むためのもの）だが、**電荷の記号は付ける**
+//   ＝ 次に土台を触る人がこの列を物差しにできるように、game.js と同じ規則を写す
 function formulaOf(mol) {
     const counts = {};
     let hCount = 0;
+    let charge = 0;
     mol.atoms.forEach(a => {
         counts[a.element] = (counts[a.element] || 0) + 1;
         hCount += mol.getFreeValency(a.id);
+        charge += a.charge || 0;
     });
     if (hCount > 0) counts.H = (counts.H || 0) + hCount;
     const order = [];
     if (counts.C) order.push('C');
     if (counts.H) order.push('H');
     Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
-    return order.map(e => counts[e] === 1 ? e : e + counts[e]).join('');
+    const sup = (n) => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]).join('');
+    const q = charge ? (Math.abs(charge) > 1 ? sup(Math.abs(charge)) : '') + (charge > 0 ? '⁺' : '⁻') : '';
+    return order.map(e => counts[e] === 1 ? e : e + counts[e]).join('') + q;
 }
 
 // 原子ごとの「元素＋空き価標（＋電荷）」。並びはデータの原子順
