@@ -1575,6 +1575,19 @@ window.BatteryEq = {
    **BatteryEq は消さない**（既存のテスト・監査・動画の台本がこの名前で書かれている）。 */
 window.CellEq = window.BatteryEq;
 
+/* ?s=<ステージid> で名指しして開く（condition.html と同じ約束の名前にそろえた）。
+   B3-2 まで、この2モードだけがステージを名指しできず、ポータルの系列索引は
+   「開いたあと帯の番号を押してください」という但し書きを添えていた。
+   ⚠ 知らない id は黙って無視して先頭から始める ＝ URL を書き間違えても行き止まりにしない。
+   ⚠ **ページをまたいだ id は拾わない**（battery.html?s=e1 は先頭の b1 が開く）。
+     PAGE_STAGES しか見ないので、そこは自然にそうなる。 */
+(() => {
+  const id = new URLSearchParams(location.search).get("s");
+  if (!id) return;
+  const i = PAGE_STAGES.findIndex((s) => s.id === id);
+  if (i >= 0) stageIdx = i;
+})();
+
 initStage();
 requestAnimationFrame(frame);
 
