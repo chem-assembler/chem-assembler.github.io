@@ -2115,7 +2115,11 @@ function buildBottleCountRows(force) {
   const D = (sp) => SPECIES[sp].disp;
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = "イオン反応式に並ぶ数だけそろえるには、瓶を何本ずつ入れればよい？";
+  /* ★ 2026-09-07・ユーザーの指示「⑤ 不要／左辺の係数をすべて入力させる」。
+     数は1つも変わらない（v194 の bottleLeftMap が既に「入れた数 ＝ 左辺の係数」と
+     言っていた）。**遠回りな言い換えを消して、最初から係数として書かせる。** */
+  cap.textContent = "化学反応式の左辺に並ぶのは、はじめに入れた物質そのもの。" +
+    "上のイオン反応式に並ぶ数がそろうように、係数をすべて書こう。";
   bottleCountEl.appendChild(cap);
   for (const r of rows) {
     const box = document.createElement("div");
@@ -2129,21 +2133,20 @@ function buildBottleCountRows(force) {
     inp.id = "bc_" + r.sp.replace(/[^A-Za-z0-9]/g, "_");
     inp.value = Number.isInteger(bottleCounts[r.sp]) ? String(bottleCounts[r.sp]) : "";
     const label = document.createElement("label");
-    label.className = "pickLabel bcLabel";
+    label.className = "pickLabel bcLabel bcFormula";
     label.htmlFor = inp.id;
-    label.textContent = `${D(r.sp)} を`;
-    const unit = document.createElement("span");
-    unit.className = "bcUnit";
-    unit.textContent = "本";
+    /* ★ 書く場所そのものを式にする ——〔 2 〕KMnO₄。
+       欄の左に係数、右に化学式（紙に書く並びと同じ）。 */
+    label.textContent = D(r.sp);
     const field = document.createElement("div");
-    field.className = "bcField";
-    field.append(label, inp, unit);
-    // 手がかり: **要る個数**と**1本ぶんの内訳**まで。割り算の答えは出さない
+    field.className = "bcField bcCoeffField";
+    field.append(inp, label);
+    // 手がかり: **要る個数**と**1つぶんの内訳**まで。割り算の答えは出さない
     const hint = document.createElement("div");
     hint.className = "bcHead";
     hint.textContent =
       r.covers.map((c) => `${D(c.sp)} が ${c.need}個 要る`).join("・") +
-      ` ／ ${D(r.sp)} 1本が出すのは ${bottlePartsText(r.sp)}`;
+      ` ／ ${D(r.sp)} 1つが出すのは ${bottlePartsText(r.sp)}`;
     const note = document.createElement("div");
     note.className = "pickNote bcNote";
     inp.oninput = () => {
@@ -2245,7 +2248,7 @@ function refreshBottleResult() {
   if (!allDone) {
     bottleSheetEl.innerHTML = "";
     if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
-    bottleTailMsgEl.textContent = `あと ${rows.length - done} 本ぶん。イオン反応式に並ぶ数からわり算で出せる。`;
+    bottleTailMsgEl.textContent = `あと ${rows.length - done} つ。イオン反応式に並ぶ数からわり算で出せる。`;
     bottleTailMsgEl.className = "footNote";
     return;
   }
@@ -2305,7 +2308,7 @@ function refreshBottleResult() {
     renderTerms(o.left, plan.left, [], null, (t) => ({
       readOnly: true,
       value: String(Number.isInteger(bottleCounts[t.sp]) ? bottleCounts[t.sp] : t.n),
-      title: `⑤で ${D(t.sp)} を ${t.n}本 と入れた ＝ 左辺の係数`,
+      title: `⑤であなたが書いた係数 ${t.n}（${D(t.sp)}）`,
     }));
     renderTerms(o.right, plan.right, []);
     o.row.classList.add("doneRow");

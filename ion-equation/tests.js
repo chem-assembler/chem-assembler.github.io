@@ -2296,7 +2296,7 @@ function runModelTests() {
     assert(!many.ok && many.kind === "many", "多すぎる本数を通した: " + JSON.stringify(many));
     // 正解 → 割り算の筋道と、**ついて来た**傍観イオンを言う（「加えた」とは言わない）
     const ok = explainBottleCount(rs1, 5, 1, 2, "H2SO4", 8);
-    assert(ok.ok && ok.reason.includes("16個 要る") && ok.reason.includes("＝ 8本"),
+    assert(ok.ok && ok.reason.includes("16個 要る") && ok.reason.includes("＝ 係数 8"),
       "正解の筋道が出ない: " + ok.reason);
     assert(ok.reason.includes("SO₄²⁻ が 8個 ついて来る") && ok.reason.includes("加えたのではなく"),
       "ついて来たと言っていない: " + ok.reason);
@@ -2490,9 +2490,9 @@ function runModelTests() {
     assert(trap.reason.includes("H₂C₂O₄ と H₂SO₄") && trap.reason.includes("KMnO₄"),
       "罠の文面の出どころが違う: " + trap.reason);
     assert(!/KMnO4|H2SO4|H2C2O4/.test(trap.reason), "種の記号が生のまま出ている: " + trap.reason);
-    // ⑤の手がかりは「全体の何個のうち、この瓶が何個」まで言う
+    // ⑤の手がかりは「全体の何個のうち、こちらが何個」まで言う
     const few = explainBottleCount(rs3, 5, 2, 1, "H2SO4", 2);
-    assert(few.reason.includes("16個 要り") && few.reason.includes("6個 がこの瓶のぶん"),
+    assert(few.reason.includes("16個 要り") && few.reason.includes("6個 がこちらのぶん"),
       "分担ぶんを言わない: " + few.reason);
   });
 
@@ -2812,7 +2812,7 @@ function runModelTests() {
       right += bottlePlan(st, a, b, scale).right.length;
       // 言葉の側も、対応をそのまま並べている
       const txt = bottleLeftCoeffText(st, a, b, scale);
-      assert(txt.left.includes("左辺の係数"), st.id + ": 左辺の対応を言っていない: " + txt.left);
+      assert(txt.left.includes("そのまま化学反応式の左辺"), st.id + ": 左辺の対応を言っていない: " + txt.left);
       assert(/入力欄も置かない/.test(txt.right), st.id + ": 右辺に入力欄を置かない理由を言っていない");
     }
     // 発注書 §2-3 の実測を数で固定する（左辺11欄・右辺14項）
@@ -2824,12 +2824,12 @@ function runModelTests() {
     const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
     const scale = minBottleScale(rs1, 5, 1);
     const ok = explainBottleCount(rs1, 5, 1, scale, "KMnO4", 2);
-    assert(ok.ok && ok.reason.includes("左辺で KMnO₄ に付く係数"),
+    assert(ok.ok && ok.reason.includes("そのまま化学反応式の左辺の係数"),
       "正解のときに左辺の係数だと言わない: " + ok.reason);
-    // ⚠ 外しているあいだは言わない（答えの本数が漏れる）
+    // ⚠ 外しているあいだは言わない（答えの係数が漏れる）
     const ng = explainBottleCount(rs1, 5, 1, scale, "KMnO4", 3);
-    assert(!ng.ok && !ng.reason.includes("左辺で"), "外しても左辺の話をしている: " + ng.reason);
-    assert(!ng.reason.includes("2本"), "外したときに答えの本数を言っている: " + ng.reason);
+    assert(!ng.ok && !ng.reason.includes("そのまま化学反応式の左辺"), "外しても左辺の話をしている: " + ng.reason);
+    assert(!ng.reason.includes("係数 2"), "外したときに答えの係数を言っている: " + ng.reason);
   });
 
   /* 【F】ユーザーの指示「ステージ８－１２は化学基礎でなく、有機（発展）なので区別する」。
@@ -5332,7 +5332,7 @@ async function runUITests(iframe) {
     put("KMnO4", 1); put("FeSO4", 5); put("H2SO4", 4);
     qd.querySelector("#bottleScaleBox .bsGo").click();
     const map = qd.getElementById("bottleLeftMap");
-    assert(map.textContent.includes("左辺の係数"), "狭い画面で左辺の対応が出ない");
+    assert(map.textContent.includes("そのまま化学反応式の左辺"), "狭い画面で左辺の対応が出ない");
     assert(map.scrollWidth <= map.clientWidth + 1,
       `左辺の対応の行がはみ出す（${map.scrollWidth} > ${map.clientWidth}）`);
     assert(map.getBoundingClientRect().right <= q.w + 1,
@@ -7428,7 +7428,7 @@ async function runRedoxUITests(iframe) {
     const counts = txtB("bottleCounts");
     // 手がかりは「要る個数」と「1本ぶんの内訳」まで
     assert(counts.includes("H⁺ が 8個 要る"), "必要な H⁺ の数が出ない: " + counts);
-    assert(counts.includes("H₂SO₄ 1本が出すのは 2 H⁺ ＋ SO₄²⁻"), "1本ぶんの内訳が出ない: " + counts);
+    assert(counts.includes("H₂SO₄ 1つが出すのは 2 H⁺ ＋ SO₄²⁻"), "1つぶんの内訳が出ない: " + counts);
     // **答えの本数は出ていない**（v181 は「8 ÷ 2 = H₂SO₄ 4本」と表示していた）
     assert(!/本数|4本|5本|1本が出す.*＝/.test(counts.replace("H₂SO₄ 1本が出すのは 2 H⁺ ＋ SO₄²⁻", "")),
       "答えの本数が画面に出ている: " + counts);
@@ -7438,18 +7438,18 @@ async function runRedoxUITests(iframe) {
     assert($$("#bottleCounts .bottleCountInput").every((i) => i.value === ""), "入力欄が最初から埋まっている");
     // そろうまで、蒸発のあとも化学反応式も出さない（答えが先に見えない）
     assert(doc.getElementById("bottlePool").hidden, "入力前から蒸発後のイオンが出ている");
-    assert(txtB("bottleTailMsg").includes("あと 3 本ぶん"), "残りを言わない: " + txtB("bottleTailMsg"));
+    assert(txtB("bottleTailMsg").includes("あと 3 つ"), "残りを言わない: " + txtB("bottleTailMsg"));
     // 外した本数 → 「その本数だと何個になるか」と「何個要るか」を言う。答えは言わない
     putB("H2SO4", 2);
     const ng = cnoteB("H2SO4");
     assert(ng.includes("2×2＝4個") && ng.includes("8個 要る"), "外したときの説明が出ない: " + ng);
-    assert(!/＝ 4本|4本 でちょうど/.test(ng), "答えの本数を言ってしまっている: " + ng);
+    assert(!/＝ 係数 4|係数 4 でちょうど/.test(ng), "答えの係数を言ってしまっている: " + ng);
     assert(cinB("H2SO4").parentElement.parentElement.querySelector(".bcNote").classList.contains("ngcell"),
       "誤りの色にならない");
     // 正解 → 割り算の筋道と、**ついて来た**傍観イオンを言う
     putB("H2SO4", 4);
     const ok = cnoteB("H2SO4");
-    assert(ok.includes("＝ 4本") && ok.includes("SO₄²⁻ が 4個 ついて来る") && ok.includes("加えたのではなく"),
+    assert(ok.includes("＝ 係数 4") && ok.includes("SO₄²⁻ が 4個 ついて来る") && ok.includes("加えたのではなく"),
       "正解の筋道が出ない: " + ok);
     putB("KMnO4", 1);
     putB("FeSO4", 5);
@@ -7518,15 +7518,15 @@ async function runRedoxUITests(iframe) {
     setupRs1B();
     putB("KMnO4", 1); putB("FeSO4", 5); putB("H2SO4", 4);
     // ① 入れたその場で「この数が左辺の係数」と言う（完成式まで待たせない）
-    assert(cnoteB("KMnO4").includes("この 1 が、化学反応式の左辺で KMnO₄ に付く係数になる"),
-      "入れた場所で左辺の係数だと言わない: " + cnoteB("KMnO4"));
+    assert(cnoteB("KMnO4").includes("この 1 が、そのまま化学反応式の左辺の係数"),
+      "書いた場所で左辺の係数だと言わない: " + cnoteB("KMnO4"));
     doc.querySelector("#bottleScaleBox .bsGo").click();   // 半端が出るので ×2（1/5/4 → 2/10/8）
-    // ② 完成した式の**真上**に、本数と係数の対応が並ぶ
+    // ② 完成した式の**真上**に、自分が書いた係数がそのまま並ぶ
     const map = txtB("bottleLeftMap");
-    assert(map.includes("⑤であなたが入れた本数が、そのまま化学反応式の左辺の係数"),
+    assert(map.includes("⑤であなたが書いた係数が、そのまま化学反応式の左辺"),
       "左辺の対応の見出しが出ない: " + map);
-    for (const s of ["KMnO₄ 2本 → 2 KMnO₄", "FeSO₄ 10本 → 10 FeSO₄", "H₂SO₄ 8本 → 8 H₂SO₄"]) {
-      assert(map.includes(s), "本数と係数の対応が出ない（" + s + "）: " + map);
+    for (const s of ["2 KMnO₄", "10 FeSO₄", "8 H₂SO₄"]) {
+      assert(map.includes(s), "書いた係数が左辺に並ばない（" + s + "）: " + map);
     }
     // ③ 対応の行は式の上（＝ 目が本数から係数へ流れる並び）
     const pos = doc.getElementById("bottleLeftMap")
@@ -7555,7 +7555,7 @@ async function runRedoxUITests(iframe) {
     passAddB("r3", 1, 1, 1);   // 【②】④を通す
     putB("Zn", 1); putB("HCl", 2);
     const map3 = txtB("bottleLeftMap");
-    assert(map3.includes("Zn 1本 → 1 Zn"), "1本のときの対応が言葉で出ない: " + map3);
+    assert(map3.includes("1 Zn"), "係数 1 のときの対応が言葉で出ない: " + map3);
     const mol3 = txtB("bottleSheet");
     assert(mol3.includes("Zn＋2 HCl") || mol3.includes("Zn ＋ 2 HCl"), "r3 の左辺が想定と違う: " + mol3);
     assert(!/1\s*Zn/.test(mol3), "完成した式に「1 Zn」と書いている: " + mol3);
