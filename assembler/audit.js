@@ -1193,11 +1193,12 @@
                         }
                         const lastAfter = (W.reactor && W.reactor.lastReaction) || null;
                         const changed = !!(lastAfter && lastAfter !== lastBefore);
-                        /* ⚠ **答えの返り先は3つある。** 1つしか見ないと「返っているのに
+                        /* ⚠ **答えの返り先は2つある。** 1つしか見ないと「返っているのに
                          *   返っていない」と読む ＝ **監査の物差しのほうが壊れる**（実測で2回踏んだ）:
                          *     ① 瓶の節 …… ふつうの返し先（`reactor.reagentNoteEl`）
-                         *     ② 分子モーダルの節 …… モーダルが開いていればそちらへ返る（v1494）
-                         *     ③ ★ **キャンバスの字幕（トースト）** …… `info` ルール（解説だけの札）と
+                         *     ⛔ 分子モーダルの節（`#mm-reagent-note`）は **vNNNN で消えた**
+                         *        （D-E2 の決着。瓶の面が実験タブ1つになったので返し先も1つ）
+                         *     ② ★ **キャンバスの字幕（トースト）** …… `info` ルール（解説だけの札）と
                          *        「箇所を選んでください」はここにしか出ない（`onRuleClick` / `narrow`）
                          * ⚠ **③には取りこぼしが1つ残っている**（実測で残った・直していない）:
                          *   **同じ文言の字幕が2回続く**と `toastAfter === toastBefore` になり、
@@ -1206,10 +1207,8 @@
                          *   ⚠ 直すなら「字幕が見えているか」ではなく **字幕を出した回数**を数える側
                          *   （`showToast` を包む）に替える —— 見えているかで見ると、前の操作の字幕が
                          *   残っているだけの回まで「答えが返った」に数えてしまう。 */
-                        const mmNote = D.getElementById('mm-reagent-note');
                         const toastAfter = toastEl ? toastEl.textContent : '';
                         const answered = !!((note && note.textContent.trim()) ||
-                            (mmNote && mmNote.textContent.trim()) ||
                             (toastAfter && toastAfter !== toastBefore));
                         if (led) {
                             led.pressed++;

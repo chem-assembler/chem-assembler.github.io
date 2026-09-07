@@ -29519,11 +29519,11 @@
 
         // ④ 試薬の空振りから出る札も**同じ作りで同じ動き**（入口が2つでも約束は1つ）
         partnerSetup(c, '酢酸');
-        const reagentBtn = D.querySelector('#mm-reagents-grid button[data-reagent="h2so4_conc"]');
+        const reagentBtn = D.querySelector('#exp-reagents-grid button[data-reagent="h2so4_conc"]');
         if (reagentBtn) {
             reagentBtn.click();
             await c.tick(20);
-            const miss = [...D.querySelectorAll('#mm-reagent-note button')];
+            const miss = [...D.querySelectorAll('#exp-reagent-note button')];
             assert(miss.length === 0 || miss.every(b => b.dataset.partner),
                 '試薬の空振りから出る札が反応カードと別の作りになっている');
         }
@@ -29943,13 +29943,13 @@
         const nb = D.querySelector('.rg-bottle[data-reagent="nahco3"]');
         assert(nb, '炭酸水素ナトリウムの瓶が無い');
         nb.click();
-        let res = D.getElementById('mm-reagent-note').textContent;
+        let res = D.getElementById('exp-reagent-note').textContent;
         assert(res.includes('陰性'),
             `ケトンを見ているのに、隣のカルボン酸で陽性になる（${res.slice(0, 40)}）`);
         // ★陰性対照 —— 酸を見れば陽性（「常に陰性」で緑になっていない）
         scopeSetup(c, [酸, ケトン], 0);
         D.querySelector('.rg-bottle[data-reagent="nahco3"]').click();
-        res = D.getElementById('mm-reagent-note').textContent;
+        res = D.getElementById('exp-reagent-note').textContent;
         assert(res.includes('陽性'), `カルボン酸を見ているのに陰性（${res.slice(0, 40)}）`);
 
         D.getElementById('btn-molecule-modal-close').click();
@@ -30513,7 +30513,7 @@
         c.reset();
         const g = c.game, W = c.W, D = c.D;
         const toast = D.getElementById('canvas-toast');
-        const noteEl = () => D.getElementById('mm-reagent-note');
+        const noteEl = () => D.getElementById('exp-reagent-note');
         // 「記号としての `*`」が残っていないか。太字になっていれば消えている
         const raw = (el) => (el && el.textContent || '').includes('*');
         const bolds = (el) => (el ? el.querySelectorAll('b.em').length : 0);
@@ -32309,16 +32309,18 @@
      *   実際にやってみる・自分の知識を確認するのが目的」。
      *   ＝ **引く**（分子 → できる反応）の隣に **試す**（試薬 → 起こること）を1つ足す。
      *
-     * ⚠⚠ **第1段は *足す* だけ**（D-E2 ＝ 何をモーダルから消すかはユーザー判断待ち）。
+     * ⚠⚠ **vNNNN で D-E2 が決着した**（ユーザー決定 2026-09-07「試薬パレットは移動したので、
+     *   分子の詳細モーダルからは削除してよいのでは？」）＝ **瓶の面は実験タブ1つだけ**になった。
      *   ★ したがって固定すべき不変条件は3つあり、**3つ目がいちばん大事**:
      *     ① 実験のパレットから試薬をかけると**反応が実際に起きる**（EX3）
      *     ② 効かない分子には**理由が返る**（罰ではない・EX4）
-     *     ③ ⚠ **モーダル側の既存の道が1本も欠けていない**（EX2・EX4 の否定対照）
+     *     ③ ⚠ **消えたのは面であって瓶ではない** ＝ 実験パレットが `REAGENTS` を
+     *        **1本も落とさずに**持っている（EX2）。⚠ 数を書き写さず `W.REAGENTS` から取る
      *
      * ⚠ **在庫の数（瓶23本・ルール49本…）をこのファイルに書かない**
      *   （DESIGN_review_pack1.md §8-2 —— 3本の設計書で既に食い違っていた）。
      *   数は必ず `W.REAGENTS` から取る。 */
-    test('EX2: 🧪 実験タブでパレットが持ち替わり、モーダルの瓶は1本も減らない', async (c) => {
+    test('EX2: 🧪 実験タブでパレットが持ち替わり、瓶は1本残らず実験パレットにある', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const tabs = [...D.querySelectorAll('#palette-tabs .palette-tab')];
         assert(tabs.length === 2, `パレットのタブが2つでない（${tabs.length}）`);
@@ -32346,9 +32348,17 @@
         const want = W.REAGENTS.map(r => r.id);
         assert(ids('#exp-reagents-grid').join(',') === want.join(','),
             `実験パレットの瓶が REAGENTS と一致しない（${ids('#exp-reagents-grid').length} / ${want.length}）`);
-        // ★★ 否定対照（いちばん大事）: **モーダルの瓶を1本も消していない**（D-E2 は未決）
-        assert(ids('#mm-reagents-grid').join(',') === want.join(','),
-            '分子モーダルの瓶が減っている（第1段は *足す* だけのはず）');
+        /* ★★ ここがいちばん大事（vNNNN・D-E2 の決着）: **瓶の面は1つだけ**になった。
+         *   ⚠ 「モーダルの瓶が減っていない」を見張っていた行を**消さずに裏返した** ——
+         *      あの行の仕事は「瓶が黙って減らないこと」で、いまも要る。
+         *      違うのは**どこで数えるか**だけなので、数える先を実験パレットに移し、
+         *      **モーダル側には節ごと無いこと**を別に見る。 */
+        assert(!D.getElementById('mm-reagents-grid') && !D.getElementById('mm-reagents'),
+            '分子モーダルに試薬の節が残っている（D-E2 は「消す」で決着した）');
+        assert(!D.getElementById('mm-reagent-note'),
+            '分子モーダルに試薬の答えを返す欄が残っている（返し先は #exp-reagent-note ただ1つ）');
+        assert(W.reactor.reagentNoteEl === D.getElementById('exp-reagent-note'),
+            '瓶の答えの返し先が実験パレットになっていない');
 
         // ⚠ 🧩パズル・📚学習 へ移ったら作図の道具に戻る（戻さないと原子ボタンが1つも無い画面になる）
         g.setMode('puzzle');
@@ -32391,11 +32401,11 @@
         const b = D.querySelector('#exp-reagents-grid [data-reagent="h2so4_conc"]');
         assert(b, '実験パレットに濃硫酸の瓶が無い');
         b.click();
-        // ⚠ 答えは**押した瓶のすぐ下**（実験の面）に返る。モーダルの節には書かない
+        // ⚠ 答えは**押した瓶のすぐ下**（実験の面）に返る。
+        //   ★ vNNNN からは返し先が1つしか無い（分子モーダルの節を消した ＝ D-E2 の決着）ので、
+        //     「裏の面へ逃げていないか」は EX2 が「節ごと無い」を見る側で固定している
         const note = D.getElementById('exp-reagent-note');
         assert(note.textContent.trim(), '実験パレットで瓶を押しても答えが返らない');
-        assert(!D.getElementById('mm-reagent-note').textContent.trim(),
-            '実験の面で押したのに、答えが分子モーダルの節（裏の面）へ返っている');
 
         // ★★ D-E3（ユーザー決定「伏せない」）: 条件の2択は**行き先を書いたまま**出す。
         //    ⚠ 設計書 exp §3-4 の「行き先を落とす」は決定で廃止された節
@@ -32448,8 +32458,8 @@
         // ★★ 否定対照: モーダル側の道は1本も欠けていない
         g.openMoleculeModal();
         assert(!D.getElementById('molecule-modal').classList.contains('hidden'), 'モーダルが開かない');
-        D.querySelector('#mm-reagents-grid [data-reagent="br2_water"]').click();
-        assert(D.getElementById('mm-reagent-note').textContent.includes('効くのは'),
+        D.querySelector('#exp-reagents-grid [data-reagent="br2_water"]').click();
+        assert(D.getElementById('exp-reagent-note').textContent.includes('効くのは'),
             'モーダルの瓶を押しても、モーダルの節に答えが返らない（返し先が実験の面へ逃げている）');
         assert(!D.getElementById('molecule-modal').classList.contains('hidden'),
             '効かない瓶でモーダルが閉じた（MM8 の不変条件）');
@@ -32562,9 +32572,8 @@
     /* ===== ⚠ EQ は「実験の面が見えている」前提を**自分で作る**（v1504・実測で直した） =====
      *
      * ★ **何に依存していたか**: `#molecule-modal` が開いたままかどうか。
-     *   `reactor.reagentNoteEl`（reactor.js）は **「分子モーダルが開いていれば必ず
-     *   `#mm-reagent-note`」** という不変条件を持つ。これは仕様として正しい
-     *   （モーダルの中の瓶を押したのに答えが裏のパレットへ出る、を作らないため）。
+     *   v1504〜v1521 の `reactor.reagentNoteEl` は **「分子モーダルが開いていれば必ず
+     *   モーダル側の節（`#mm-reagent-note`）へ返す」** という振り分けを持っていた。
      *   ところが試薬まわりの下ごしらえ `setupReagent()` は `openMoleculeModal()` を呼ぶだけで
      *   閉じないので、**モーダルを開けたまま去るテスト**（実測では RX52）の直後に EQ が走ると、
      *   実験パレットの瓶を押した答えが全部モーダル側へ返る ＝ `#exp-reagent-note` に
@@ -32575,6 +32584,13 @@
      *   `?only=RX,EQ` / `?only=CV,RG,EQ,PM,RX,GC` で EQ4〜EQ7 が落ち、`?only=EQ` 単独と
      *   全走では通っていた ＝ 全走では間に挟まる別のテストがたまたまモーダルを閉じていた。
      *
+     * ⭐ **vNNNN でこの依存そのものが消えた** —— 分子モーダルの瓶の節を消した（D-E2 の決着）ので
+     *   返し先が `#exp-reagent-note` の1つになり、振り分けが無くなった。
+     * ⚠ **それでもこの下ごしらえは残す。** 理由は返し先ではなく**箇所の絞り込み**のほう ——
+     *   モーダルが開いていると `siteFilter()` が「いま見ている分子」で絞るので、
+     *   前のテストが開けたままにした分子に引きずられる。★ 状態依存を1つ消しただけで、
+     *   「前提は自分で作る」という約束は変わっていない。
+     *
      * ⚠ **先に走る側に後始末を足す方向では直さない**。それだと「いまの並び」でしか
      *   成り立たず、次にモーダルを開けたまま去るテストが足された日にまた黙って落ちる。
      *   ⚠ `?only=` の絞り込み側（順序を変える等）で辻褄を合わせるのはもっと悪い ——
@@ -32584,7 +32600,7 @@
         if (g.closeMoleculeModal) g.closeMoleculeModal();
         const modal = D.getElementById('molecule-modal');
         assert(modal && modal.classList.contains('hidden'),
-            'EQ の前提を作れない（分子モーダルが閉じない）＝ 瓶の答えが #mm-reagent-note へ逃げる');
+            'EQ の前提を作れない（分子モーダルが閉じない）＝ 箇所の絞り込みが前のテストの分子に引きずられる');
     }
 
     test('EQ2: quests.json が1行1問の規約を守り、12問すべてライブラリから引ける', async (c) => {
@@ -32852,7 +32868,7 @@
             '課題を始めていないのに「名称から呼び出す」の段が畳まれている');
         const 瓶 = (sel) => [...D.querySelectorAll(`${sel} .rg-bottle`)].map(b => b.dataset.reagent).join(',');
         const 全部 = W.REAGENTS.map(r => r.id).join(',');
-        assert(瓶('#mm-reagents-grid') === 全部, '分子モーダルの瓶が減っている');
+        assert(瓶('#exp-reagents-grid') === 全部, '分子モーダルの瓶が減っている');
         assert(瓶('#exp-reagents-grid') === 全部, '実験パレットの瓶が減っている');
 
         // ② 課題の最中でも、瓶の空振りは今までどおり理由を返す（罰にしない・EX4 と同じ道）
@@ -34568,12 +34584,19 @@
     });
 
     /* ===== 試薬パレット 第1段（DESIGN_reagent_palette.md §5 第1段・瓶3本） =====
-       置き場所は分子モーダルの「⚗ 反応」節の中（DESIGN_molecule_modal.md §6-1）。
+       ⚠ **置き場所は vNNNN で移った** —— 分子モーダルの「⚗ 反応」節の中
+       （`DESIGN_reagent_palette.md` §6・`DESIGN_molecule_modal.md` §6-1）から、
+       **左パレットの「🧪 実験」タブ ただ1つ**へ（D-E2 の決着。ユーザー決定 2026-09-07）。
        固定したいのは**「入口が2つでも中身は1つ」**（RG4）と、**空振りが履歴を汚さない**（RG3）の2つ。
+       ★ RG4 の言い方は変わらない —— 入口が1つになっても「瓶 → detect → execute の道は
+       自動案内と同じ1本」という中身の話は同じ。
        瓶は新しい化学も新しい実行経路も持たないので、ここが守られているかぎり
        瓶を増やしても既存の反応の挙動は変わらない。 */
 
-    // モーダルを開いて、名前のついた分子を並べた状態にする（試薬テスト共通の下ごしらえ）
+    /* モーダルを開いて、名前のついた分子を並べた状態にする（試薬テスト共通の下ごしらえ）。
+       ⚠ **瓶がモーダルの外へ出た後も `openMoleculeModal()` は残す。** 瓶を押すためではなく、
+          `siteFilter()` の「いま見ている分子で絞る」を**これまでと同じ状態**に保つため
+          （外すと箇所の数が変わるテストが出る）。 */
     function setupReagent(c, names) {
         const g = c.game;
         c.reset();
@@ -34584,8 +34607,8 @@
         g.openMoleculeModal();
         return g.userMolecule;
     }
-    const bottle = (c, id) => c.D.querySelector(`#mm-reagents-grid [data-reagent="${id}"]`);
-    const noteButtons = (c) => [...c.D.querySelectorAll('#mm-reagent-note button')];
+    const bottle = (c, id) => c.D.querySelector(`#exp-reagents-grid [data-reagent="${id}"]`);
+    const noteButtons = (c) => [...c.D.querySelectorAll('#exp-reagent-note button')];
 
     test('RG1: reagentId が REAGENTS に実在し・瓶の id は重複せず・死んだ瓶が無い（第3段）', async (c) => {
         const W = c.W;
@@ -34738,7 +34761,7 @@
         //     v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24
         //     ★ v1514 で二酸化炭素の瓶（CO₂）を足して 24 → 25
         //     ★ ジアゾ化の瓶（NaNO₂＋HCl）を足して 25 → 26（DESIGN_ion_layer.md I-4）
-        const drawn = [...c.D.querySelectorAll('#mm-reagents-grid .rg-bottle')];
+        const drawn = [...c.D.querySelectorAll('#exp-reagents-grid .rg-bottle')];
         assert(drawn.length === 26, `瓶の札が ${drawn.length} 個（26個を期待）`);
         assert(REAGENTS.filter(r => r.kind === 'transform').length === 21 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
@@ -34748,7 +34771,7 @@
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
             `瓶 ${r.id} の kind が ${r.kind}（transform / detect のどちらかであること）`));
         const kinds = [...new Set(REAGENTS.map(r => r.kind))];
-        const heads = [...c.D.querySelectorAll('#mm-reagents-grid .rg-group')];
+        const heads = [...c.D.querySelectorAll('#exp-reagents-grid .rg-group')];
         assert(heads.length === kinds.length,
             `区分の見出しが ${heads.length} 個（kind の種類 ${kinds.length} 個と一致すること）`);
     });
@@ -34820,7 +34843,7 @@
         const CC = W.canonicalCode;
         const rg = W.REAGENTS.find(r => r.id === 'h2so4_conc');
         const modal = () => D.getElementById('molecule-modal');
-        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+        const noteText = () => D.getElementById('exp-reagent-note').textContent || '';
 
         /* (1) エタノール**1分子**。ここが直したところ ——
            通る detect は分子内脱水の1つだけなので、v1422 までは「行き先が1つだから訊かない」で
@@ -34938,7 +34961,7 @@
         const CC = W.canonicalCode;
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
         const toastEl = D.getElementById('canvas-toast');
-        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+        const noteText = () => D.getElementById('exp-reagent-note').textContent || '';
         const entryOf = (name) => {
             const e = source.find(x => x.name === name && x.target);
             assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
@@ -35153,7 +35176,7 @@
         const cards = () => [...D.querySelectorAll('#reaction-actions button[data-rule]')]
             .map(b => ({ text: b.textContent, rule: b.dataset.rule }));
         const oxCards = () => cards().filter(x => /酸化/.test(x.text));
-        const noteText = () => D.getElementById('mm-reagent-note').textContent || '';
+        const noteText = () => D.getElementById('exp-reagent-note').textContent || '';
         const toastEl = D.getElementById('canvas-toast');
 
         /* ---- (1) 2-メチル-2-プロパノール1つ … 実行できる酸化が0件で、⚠ の解説だけが残る ---- */
@@ -35298,7 +35321,7 @@
         assert(g.history.length === beforeHistory,
             `空振りなのに Undo 履歴が ${beforeHistory} → ${g.history.length} に伸びた`);
         // 叱らずに「効くのはこれ」を返す（§4.2 ②③）
-        const note = D.getElementById('mm-reagent-note').textContent;
+        const note = D.getElementById('exp-reagent-note').textContent;
         assert(note.includes('C=C'), `臭素水の空振りに「効く相手」の説明が無い: ${note.slice(0, 60)}`);
         assert(!/間違い|誤り/.test(note), `空振りの説明が叱っている: ${note.slice(0, 60)}`);
 
@@ -35309,7 +35332,7 @@
         const hints = noteButtons(c).map(b => b.textContent);
         assert(hints.length > 0 && hints.some(t => t.includes('呼び出す')),
             `相手が足りない失敗で呼び出し案内が出ない: ${
-                D.getElementById('mm-reagent-note').textContent.slice(0, 80)}`);
+                D.getElementById('exp-reagent-note').textContent.slice(0, 80)}`);
         c.reset();
     });
 
@@ -35354,32 +35377,44 @@
         c.reset();
     });
 
-    test('MM8: 効かない瓶を押しても分子は1原子も変わらず、モーダルも閉じない（§5-3）', async (c) => {
+    test('MM8: 効かない瓶を押しても分子は1原子も変わらず、理由が実験パレットに残る（§5-3）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const modal = D.getElementById('molecule-modal');
-        // 効く瓶（反応が進む）は閉じる・効かない瓶（説明だけ）は開いたまま。
-        // 閉じてしまうと「効きません」の説明が出た瞬間に消える（DESIGN_molecule_modal.md §5-3）
+        /* ⚠ **vNNNN で前提が変わった**（D-E2 の決着）。
+         *   v1521 まで: 瓶は分子モーダルの中にあり、見張っていたのは
+         *   「効かない瓶を押してもモーダルが閉じない」＝ **説明が出た瞬間に消えない**こと。
+         *   ★ **守りたかったのは「モーダルが開いていること」ではなく「理由が読めること」。**
+         *   瓶が実験パレットへ移った以上、理由が残る先は `#exp-reagent-note` なので、
+         *   ⚠ **同じ約束を、新しい面で測り直す**（検査を消さない）。
+         *   ⚠ 「効く瓶はモーダルを閉じる」ほうは**実際には起こらなくなった** ——
+         *     瓶を押せる面（実験パレット）とモーダルは同時に見えないため。
+         *     ★ それでも `runReagentHit` の `closeMoleculeModal()` は残してある
+         *       （分液など、別の道から瓶が押される日への保険）ので、下の②で一度だけ確かめる。 */
         setupReagent(c, ['エタン']);
+        D.getElementById('btn-molecule-modal-close').click();
+        g.setPalette('exp');
         const before = W.canonicalCode(g.userMolecule);
         ['br2_water', 'kmno4', 'k2cr2o7', 'h2so4_conc'].forEach(id => {
             bottle(c, id).click();
-            assert(!modal.classList.contains('hidden'),
-                `効かない瓶「${id}」を押したらモーダルが閉じた（説明が読めない）`);
             assert(W.canonicalCode(g.userMolecule) === before,
                 `効かない瓶「${id}」で分子が変わった`);
-            assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
+            const note = D.getElementById('exp-reagent-note');
+            assert(note && note.textContent.trim().length > 0,
                 `効かない瓶「${id}」を押しても何も返らない（詰まりになる）`);
+            // ★ 理由は**消えずに残る**（読み終わる前に消えたら、閉じるのと同じこと）
+            assert(note.offsetParent !== null,
+                `効かない瓶「${id}」の理由が画面に出ていない（実験パレットが隠れている）`);
         });
-        // 効く瓶は従来どおり閉じてキャンバスへ返す（箇所選択・モーフィングがそこで起きる）。
-        // ⚠ v1428 から**1級アルコールは条件を訊く**（穏やかに／激しく）ので、
+        // ② 効く瓶は反応が進む。⚠ v1428 から**1級アルコールは条件を訊く**（穏やかに／激しく）ので、
         //    「押したら即実行」を見るここは 2級アルコール（行き先が1つ）で見る
-        setupReagent(c, ['2-プロパノール']);
+        setupReagent(c, ['2-プロパノール']);   // ← モーダルを開けたまま押して、閉じることまで見る
         bottle(c, 'kmno4').click();
         assert(modal.classList.contains('hidden'),
             '反応が進む瓶を押してもモーダルが開いたまま（モーフィングも前後比較も見えない）');
         assert(g.userMolecule.atoms.some(a => a.element === 'O' &&
             g.userMolecule.getNeighbors(a.id).some(n => n.type === 2)),
             '酸化剤の瓶からケトンができていない');
+        g.setPalette('draw');
         c.reset();
     });
 
@@ -35561,7 +35596,7 @@
         const lib = new Set(g.getCompoundLibrary().map(e => e.name));
         assert(lib.has('2-メチル-2-プロパノール'), 'ライブラリに「2-メチル-2-プロパノール」が無い');
         const modal = D.getElementById('molecule-modal');
-        const noteEl = D.getElementById('mm-reagent-note');
+        const noteEl = D.getElementById('exp-reagent-note');
         const toast = D.getElementById('canvas-toast');
         // 3級アルコール × 酸化剤 ＝ oxidize_tertiary_info が1件だけ当たる（§4.2 ③・§7.5）
         setupReagent(c, ['2-メチル-2-プロパノール']);
@@ -35595,7 +35630,7 @@
     test('RG7: 呈色・検出の陽性/陰性が構造どおりに出る（§5 第3段）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const lib = new Set(g.getCompoundLibrary().map(e => e.name));
-        const noteEl = D.getElementById('mm-reagent-note');
+        const noteEl = D.getElementById('exp-reagent-note');
         // [瓶, 分子, 期待, なぜその組み合わせを見るのか]
         const cases = [
             ['ag_ammonia', 'アセトアルデヒド', true, '-CHO がある'],
@@ -35661,7 +35696,7 @@
                     `${name} × ${rg.name}: 検出なのに Undo 履歴が ${beforeHistory} → ${g.history.length} に伸びた`);
                 assert(!modal.classList.contains('hidden'),
                     `${name} × ${rg.name}: 検出でモーダルが閉じた（陽性/陰性の文が読めない）`);
-                assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
+                assert(D.getElementById('exp-reagent-note').textContent.trim().length > 0,
                     `${name} × ${rg.name}: 押しても何も返らない`);
                 checked++;
             });
@@ -35680,49 +35715,76 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルが横にあふれず、32px 未満のタップ標的が0件（瓶26本）', async (c) => {
+    test('MM9: 320px でモーダルも実験パレットも横にあふれず、32px 未満のタップ標的が0件（瓶26本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
-        // iframe の幅を 320px に縮めて、瓶26本を並べた状態のモーダルを測る
+        /* ⚠ **vNNNN で測る面が2つに分かれた** —— 瓶が分子モーダルから実験パレットへ移ったので
+         *   （D-E2 の決着）、「瓶を並べたモーダル」という測り方はもう存在しない。
+         *   ★ **測るのをやめない**: モーダル（瓶が抜けた後）と実験パレット（瓶が入った先）の
+         *     **両方**を同じ物差しで測る。片方だけにすると、移した先で 320px が崩れても黙る。 */
         const el = W.frameElement;
         assert(el, 'テスト用 iframe が取れない（幅を変えられない）');
         const w0 = el.style.width;
         el.style.width = '320px';
         await c.tick(250);
-        setupReagent(c, ['エタノール']);
-        await c.tick(150);
-        const content = D.querySelector('#molecule-modal .modal-content');
-        const grid = D.getElementById('mm-reagents-grid');
-        const bottles = [...grid.querySelectorAll('.rg-bottle')];
         const report = [];
         try {
             assert(W.innerWidth <= 360, `iframe が 320px に縮んでいない（${W.innerWidth}px）`);
-            assert(bottles.length === 26, `320px で瓶が ${bottles.length} 本しか描かれていない`);
-            // (1) 横あふれ 0 件（モーダル・格子・body のどれでも）
-            [['modal-content', content], ['rg-grid', grid], ['body', D.body]].forEach(([n, e]) => {
+
+            // ---- ① 分子モーダル（瓶が抜けた後）----
+            setupReagent(c, ['エタノール']);
+            await c.tick(150);
+            const content = D.querySelector('#molecule-modal .modal-content');
+            assert(!D.getElementById('mm-reagents-grid'),
+                'モーダルにまだ瓶の格子がある（D-E2 は「消す」で決着した）');
+            [['modal-content', content], ['body', D.body]].forEach(([n, e]) => {
                 if (e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
             });
-            assert(report.length === 0, `320px で横にあふれている: ${report.join(' / ')}`);
-            // (2) 32px 未満のタップ標的 0 件（瓶は 44px の床。§7.4）
             const small = [...D.querySelectorAll('#molecule-modal button')]
                 .filter(b => b.offsetParent !== null)
                 .map(b => ({ b, h: b.getBoundingClientRect().height }))
                 .filter(x => x.h > 0 && x.h < 32);
             assert(small.length === 0,
-                `32px 未満の標的が ${small.length} 件: ${small.map(x => `${x.b.id || x.b.className}=${Math.round(x.h)}`).join(', ')}`);
-            // (3) 瓶そのものは 44px 以上（**空振りの緑を避ける**: 数えた対象があったことを主張）
+                `モーダルに 32px 未満の標的が ${small.length} 件: ${small.map(x => `${x.b.id || x.b.className}=${Math.round(x.h)}`).join(', ')}`);
+            D.getElementById('btn-molecule-modal-close').click();
+            await c.tick(80);
+
+            // ---- ② 実験パレット（瓶が入った先）----
+            g.setMode('free');
+            g.setPalette('exp');
+            await c.tick(150);
+            const grid = D.getElementById('exp-reagents-grid');
+            const bottles = [...grid.querySelectorAll('.rg-bottle')];
+            assert(bottles.length === 26, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            /* ⚠ **格子そのものは横スクロールしてよい**（style.css の「実験モードの帯」）——
+             *   縦画面では `#exp-reagents-grid` を **2段の横スクロール**にするのが設計
+             *   （`DESIGN_experiment_mode.md` §5-3。26本を1列に並べると 2,070px になるため）。
+             *   ★ **あふれてはいけないのは、その外側**（帯ごと流れると、答えの欄が
+             *     瓶と一緒に画面の外へ出ていき RG3「押した瓶のすぐ下に残す」が崩れる）。 */
+            [['left-panel', D.getElementById('left-panel')],
+             ['exp-panel', D.getElementById('exp-panel')], ['body', D.body]]
+                .forEach(([n, e]) => {
+                    if (e && e.scrollWidth > e.clientWidth + 1) report.push(`${n}: ${e.scrollWidth}>${e.clientWidth}`);
+                });
+            assert(report.length === 0, `320px で横にあふれている: ${report.join(' / ')}`);
+            // 帯は**ちょうど2段**（§5-3 の約束。1段だと 2,070px・3段だとキャンバスが削られる）
+            const rows = new Set(bottles.map(b => Math.round(b.getBoundingClientRect().top)));
+            assert(rows.size === 2, `瓶の帯が ${rows.size} 段（2段を期待）`);
+            // 瓶そのものは 44px 以上（**空振りの緑を避ける**: 数えた対象があったことを主張）
             const heights = bottles.map(b => b.getBoundingClientRect().height);
             assert(Math.min(...heights) >= 44,
                 `瓶の最小の高さが ${Math.min(...heights).toFixed(1)}px（44px 以上を期待）`);
             assert(bottles.every(b => b.getBoundingClientRect().width >= 60),
-                '320px で瓶の幅が 60px を割っている（2列に収まっていない可能性）');
-            // (4) **否定対照**: 同じ数え方で、わざと広げた格子は必ずあふれる
-            const wasMin = grid.style.gridTemplateColumns;
-            grid.style.gridTemplateColumns = 'repeat(20, 200px)';
+                '320px で瓶の幅が 60px を割っている');
+            // **否定対照**: 同じ数え方で、1段に変えれば段数が1と数えられる
+            const wasRows = grid.style.gridTemplateRows;
+            grid.style.gridTemplateRows = 'repeat(1, auto)';
             await c.tick(60);
-            assert(grid.scrollWidth > grid.clientWidth + 1,
-                '否定対照が働いていない: 20列×200px にしても横あふれとして数えられない');
-            grid.style.gridTemplateColumns = wasMin;
+            assert(new Set([...grid.querySelectorAll('.rg-bottle')]
+                .map(b => Math.round(b.getBoundingClientRect().top))).size === 1,
+                '否定対照が働いていない: 1段に変えても段数の数え方が 1 にならない');
+            grid.style.gridTemplateRows = wasRows;
         } finally {
+            g.setPalette('draw');
             el.style.width = w0;
             await c.tick(250);
             c.reset();
@@ -37904,12 +37966,18 @@
             assert(a.W.game.userMolecule.atoms.length === 4, '?summon= が効いていない');
         } finally { a.kill(); }
 
-        // ③ `?reagent=<瓶id>` … 分子が出たうえで**その瓶が選ばれた状態**になる
+        /* ③ `?reagent=<瓶id>` … 分子が出たうえで**その瓶が選ばれた状態**になる。
+         *   ⚠ **vNNNN で開く面が変わった**（D-E2 の決着）—— 瓶は分子モーダルから
+         *   左パレットの「🧪 実験」タブへ移ったので、モーダルを開くと**印を付けた瓶を
+         *   自分で隠す**ことになる。★ 見張る中身は同じ「**選ばれたことが見える**」で、
+         *   見る先が「モーダルが開く」→「実験タブに持ち替わる」に替わっただけ。 */
         a = await openApp('?summon=' + encodeURIComponent('フェノール') + '&reagent=br2_water');
         try {
             assert(a.W.game.userMolecule.atoms.length === 7, '?summon= が効いていない');
-            assert(!a.D.getElementById('molecule-modal').classList.contains('hidden'),
-                '?reagent= で分子モーダルが開かない（選ばれたことが見えない）');
+            assert(a.D.getElementById('left-panel').dataset.palette === 'exp',
+                '?reagent=<瓶> で実験パレットに持ち替わらない（印を付けた瓶が画面に出ない）');
+            assert(a.D.getElementById('molecule-modal').classList.contains('hidden'),
+                '?reagent=<瓶> で分子モーダルが開いている（瓶を自分で隠すことになる）');
             assert(picked(a.D).includes('br2_water'),
                 `瓶が選ばれていない（選ばれているのは ${JSON.stringify(picked(a.D))}）`);
         } finally { a.kill(); }
@@ -38169,7 +38237,7 @@
         const before = CC(g.userMolecule);
         bottle(c, 'br2_water').click();
         assert(CC(g.userMolecule) === before, 'ベンゼンに臭素水が効いてしまっている');
-        const note = D.getElementById('mm-reagent-note').textContent;
+        const note = D.getElementById('exp-reagent-note').textContent;
         assert(note.includes('フェノールとアニリンは例外'),
             `空振りの文面が「フェノール・アニリンは例外」を書き分けていない: ${note.slice(0, 120)}`);
         assert(!/ベンゼン環は付加ではなく置換なので、この条件では脱色しません/.test(note),
@@ -38465,7 +38533,7 @@
         const before = CC(g.userMolecule);
         bottle(c, 'kmno4').click();
         assert(CC(g.userMolecule) === before, 'エタンに酸化剤が効いてしまっている');
-        assert(D.getElementById('mm-reagent-note').textContent.trim().length > 0,
+        assert(D.getElementById('exp-reagent-note').textContent.trim().length > 0,
             'エタン × 酸化剤で何も返らない');
         c.reset();
     });
@@ -38572,7 +38640,7 @@
         ['hbr', 'hcl', 'hi'].forEach(id => {
             bottle(c, id).click();
             assert(CC(g.userMolecule) === before, `エタンに ${id} が効いてしまっている`);
-            assert(D.getElementById('mm-reagent-note').textContent.includes('マルコフニコフ'),
+            assert(D.getElementById('exp-reagent-note').textContent.includes('マルコフニコフ'),
                 `${id} の空振りで規則の説明が返らない`);
         });
         c.reset();
@@ -38664,7 +38732,7 @@
         const before = CC(g.userMolecule);
         bottle(c, 'naoh_aq').click();
         assert(CC(g.userMolecule) === before, 'エタノールが NaOH で中和されてしまっている');
-        assert(D.getElementById('mm-reagent-note').textContent.includes('アルコールの -OH は中和されません'),
+        assert(D.getElementById('exp-reagent-note').textContent.includes('アルコールの -OH は中和されません'),
             '空振りで「アルコールの -OH は中和されない」が返らない（陰性で説明できることを書く・§9.2）');
         c.reset();
     });
@@ -38817,7 +38885,7 @@
         const before = CC(g.userMolecule);
         bottle(c, 'o2_pdcl2').click();
         assert(CC(g.userMolecule) === before, 'プロペンにワッカー法が効いてしまっている');
-        assert(D.getElementById('mm-reagent-note').textContent.includes('エチレン'),
+        assert(D.getElementById('exp-reagent-note').textContent.includes('エチレン'),
             'プロペン × ワッカー法の空振りで理由が返らない');
         c.reset();
     });
@@ -48908,7 +48976,7 @@
     test('KT3: 銀鏡・フェーリングの説明文が「-CHO だけ」と言い切っていない（画面と化学の食い違い）', async (c) => {
         c.reset();
         const D = c.D, W = c.W;
-        const noteEl = D.getElementById('mm-reagent-note');
+        const noteEl = D.getElementById('exp-reagent-note');
         // ★ 陰性の説明は**ふつうのケトンで**読む（陽性の分子では出ない）
         [['ag_ammonia', 'アセトン'], ['fehling', 'アセトン']].forEach(([id, name]) => {
             setupReagent(c, [name]);
@@ -49135,7 +49203,7 @@
     test('AC3: 画面 —— 塩素の瓶が2本並び、押すと箇所選びに入り、caption が混合物を必ず言う', async (c) => {
         c.reset();
         const D = c.D, W = c.W, g = c.game;
-        const noteEl = D.getElementById('mm-reagent-note');
+        const noteEl = D.getElementById('exp-reagent-note');
         // ★ 2本の瓶が**隣り合って**いる（同じ Cl₂ で行き先が違うことを棚で比べさせる）
         const ids = W.REAGENTS.map(r => r.id);
         assert(ids.includes('cl2_light'), '「塩素・光」の瓶が無い');
