@@ -941,7 +941,7 @@ function termSpan(term, changes, cancel, slot) {
     if (slot.title) coef.title = slot.title;
   } else if (slot && slot.readOnly) {
     /* 【3】v194 —— **人が別のところで出した数**を、係数の場所に置いて印を付ける
-       （⑤で入れた瓶の本数 ＝ 化学反応式の左辺の係数）。
+       （⑤で書いた係数 ＝ 化学反応式の左辺の係数）。
        ⚠ 書き方は今までどおり（n＝1 なら数字を書かない）。ここで「1 Zn」と書き始めると
        完成した化学反応式の見た目が化学の書き方から外れる。**印と言葉で結ぶ**だけにする。 */
     coef.classList.add("fromYou");
@@ -1423,10 +1423,10 @@ function molStep() {
 function updateSheetTail() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
   const balanced = chk.give !== undefined && chk.give === chk.take;
-  // 【C′】③の係数は筆算の中で自分で書く（v193）。書き終わるまで④⑤（瓶の段）は出さない
+  // 【C′】③の係数は筆算の中で自分で書く（v193）。書き終わるまで④⑤⑥は出さない
   // ＝ ④の問い「H⁺ 8個 を連れてきたのは？」に係数が入っているので、下から答えが漏れる
   updateCalcInput(chk);
-  // 瓶の段（④⑤）は筆算とは別立て。**呼び出しはここ1か所だけ**にする
+  // ④⑤⑥は筆算とは別立て。**呼び出しはここ1か所だけ**にする
   updateBottleStep();
   revealStep(stepCalcEl, balanced);
   if (!balanced) {
@@ -1539,7 +1539,7 @@ function lockSheetWidth(step) {
    ・**空欄は「0」ではなく「まだ入れていない」**。0 が正解の欄は筆算に存在しない
      （combineHalves が n>0 の項だけを返す。実データ182欄で確認済み）ので、
      空欄に赤は出さず「あと N つ」とだけ言う。判定は model.js の checkCalcSheet。
-   ・⚠ 書き終わるまで**④⑤（瓶の段）は出さない**。④の問い「H⁺ 8個 を連れてきたのは？」に
+   ・⚠ 書き終わるまで**④⑤⑥は出さない**。④の問い「H⁺ 8個 はもともと何だった？」に
      係数がそのまま入っているので、出したままだと下から答えが漏れる（v183 の否定対照）。
    ・⚠ 行き止まりを作らないため「答えを見る」で降りられる（v183 の「筆算を見る」の後継）。
 
@@ -1836,14 +1836,14 @@ function updateMolRow(step) {
   o.note.appendChild(tag);
 }
 
-/* ---- 瓶から化学反応式を組み立てる（段④⑤・v180）----
-   DESIGN_redox.md「瓶から化学反応式を組み立てる」。
+/* ---- はじめに入れたものから化学反応式を組み立てる（段④⑤⑥・v180）----
+   DESIGN_redox.md「はじめに入れたものから化学反応式を組み立てる」。
 
    既存の筆算（`molecularEq` の④⑤）は「イオン反応式の両辺に傍観イオンを何個足すか」を解かせる。
    その言い方だと **SO₄²⁻ が天から降ってくる**ように見え、申し立てにあった
    「なぜ硫酸イオンを加えるのか分かっていない」がそのまま残る。
-   この段は逆から入る —— **ビーカーに入れた瓶がそのまま左辺**で、SO₄²⁻ は加えるものではなく
-   H₂SO₄ の瓶が H⁺ と一緒に連れてきたもの。
+   この段は逆から入る —— **はじめに入れた物質がそのまま左辺**で、SO₄²⁻ は加えるものではなく
+   H₂SO₄ が H⁺ と一緒に連れてきたもの。
 
    もう1つのつまずき（左辺のイオンどうしを組んで HI を作る）は、選択肢に
    「◯◯ と組む」を混ぜて**わざと出せるようにし**、選ばれたら理由を言う。
@@ -1872,10 +1872,10 @@ let addIonKey = null;
    右辺の係数に 1/2 が出たときだけ、案内の釦から 1 以外になる */
 let bottleScale = 1;
 /* 【②】④で人が入れる「両辺に足す傍観イオンの個数」（傍観イオン → 個数。未入力は持たない）。
-   ★ これが紙の上の手つきそのもの。⑤（瓶を何本）はこのあと。 */
+   ★ これが紙の上の手つきそのもの。⑤（左辺の係数）はこのあと。 */
 let bottleAdd = {};
 let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:KMnO4" / "ion:H+"）
-let bottleCounts = {};      // 瓶 → 入れた本数（⑤の数入力。未入力は持たない）
+let bottleCounts = {};      // 物質 → 左辺の係数（⑤の数入力。未入力は持たない）
 let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
 
 /* 選択肢の鍵。"bottle:KMnO4" / "ion:H+" のほか、
@@ -1891,13 +1891,13 @@ function bottleRows() {
   const st = stage();
   return bottleStepOf(st) ? bottleOwnerChoices(st, mult[0], mult[1]) : null;
 }
-/* 正解かどうかは**鍵の一致**で見る（単独の瓶も「両方から」も同じ形で扱える） */
+/* 正解かどうかは**鍵の一致**で見る（1つの物質も「両方から」も同じ形で扱える） */
 function bottleRowOk(r) { return bottlePick[r.ion] === r.answerKey; }
 function bottleAnsweredOk(rows) {
   return (rows || []).filter(bottleRowOk).length;
 }
 
-/* 瓶1本が水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
+/* 物質1つが水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
 function bottlePartsText(sp) {
   if (!DISSOCIATION[sp]) return "水にとけてイオンに分かれない";
   const per = {};
@@ -2092,7 +2092,7 @@ function refreshBottleTail() {
 
    v181 は「全体を ×N」のステッパー1つで、**本数の割り算は画面が答えを表示していた**。
    ユーザーの指摘「どのイオンを何個加えるか、というところを入力することに意味があります」に
-   合わせ、**瓶ごとの本数を学習者に入れさせる**。本数が決まればついて来るイオンの数は
+   合わせ、**左辺の係数を学習者に書かせる**。係数が決まればついて来るイオンの数は
    掛け算で決まる ＝ それがそのまま「どのイオンが何個」の答えになる。
 
    **「両辺に何個足すか」とは聞かない。** ④で「SO₄²⁻ は H₂SO₄ が連れてきた」と言った直後に
