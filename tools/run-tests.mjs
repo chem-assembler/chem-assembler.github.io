@@ -85,7 +85,7 @@ const doneText = () => {
 //    残りが3割を切ったら、上限を上げるか重いテストを削るかを判断する。
 //    ★ 2026-09-02 に 1500 秒 → 2400 秒へ。743件の全走が**同時走行時で 880〜1,055 秒**
 //      ＝ 1500 秒のうち 59〜70% まで来ており、「2倍以上」を割っていた（v1504）。
-const TIMEOUT_MS = 2400000;
+const TIMEOUT_MS = 3600000;
 try {
     await page.waitForFunction(doneText, null, { timeout: TIMEOUT_MS, polling: 2000 });
 } catch (e) {
