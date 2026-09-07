@@ -32,6 +32,8 @@ const PAGES = [
     ['/ion-equation/library.html', 'ion-equation/library.html'],
     ['/ion-equation/redox.html', 'ion-equation/redox.html'],
     ['/ion-equation/battery.html', 'ion-equation/battery.html'],
+    // 2026-09-07: 電池と電気分解を2枚に割った（DESIGN_battery_electrolysis.md §8）
+    ['/ion-equation/electrolysis.html', 'ion-equation/electrolysis.html'],
     ['/ion-equation/condition.html', 'ion-equation/condition.html'],
     ['/qa/', 'qa/index.html'],
     // ⚠ 2026-09-02: `/muki/` は入口（3つの遊び方の一覧）になり、スネークは snake.html へ移った。

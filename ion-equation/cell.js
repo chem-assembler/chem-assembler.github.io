@@ -1,5 +1,15 @@
 "use strict";
-/* battery.js — 電池モード（DESIGN_battery_electrolysis.md）。
+/* cell.js — 電池モードと電気分解モードの共通エンジン（DESIGN_battery_electrolysis.md）。
+
+   ⚠ **もとの名前は battery.js。** B3-2（2026-09-07）で入口を2枚に割ったときに改名した。
+   割ったのはページ（battery.html / electrolysis.html）だけで、**このファイルは割らない**:
+   電気分解専用のコードは drawElectrolysisCell と drawPowerSupply の2つ（約70行）しかなく、
+   残りはモードに依らない部品なので、2つに割ると 1,400 行が複製になる。
+   「物理は同じで名前だけが違う」（§3-3）はこの設計の核なので、そこを2本に写さない。
+     ・どちらのページかは <body data-cell-kind="battery|electrolysis"> だけで決まる（§8-1）
+     ・出すステージは cellStagesOfKind（model.js）が返すぶんだけ
+     ・電気分解のページだけが持つ「まず何が反応するか」の段は electrolysis.js（§9）。
+       このファイルは window.CellPreStep という口を1つ開けているだけで、中身を知らない
 
    操作の核は「どちらの板が溶けるかの予想」と「倍率合わせ」。
    判定は個数だけ（model.js の negativeOf / halvesForPair / checkRedoxMultipliers）で行い、
@@ -16,6 +26,12 @@
 (() => {
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+
+/* このページはどちらか（§8-1）。名乗らないページは今までどおり電池。
+   ★ ここから先、ステージ表は CELL_STAGES ではなく PAGE_STAGES を見る
+   ＝ 帯の番号もページごとに1から振り直される（model.js の allStagesInOrder と同じ約束）。 */
+const PAGE_KIND   = document.body.dataset.cellKind === "electrolysis" ? "electrolysis" : "battery";
+const PAGE_STAGES = cellStagesOfKind(PAGE_KIND);
 
 const cellSvg      = document.getElementById("cell");
 const paletteEl    = document.getElementById("palette");
@@ -84,7 +100,7 @@ let roleLog = {};
 /* いま遊んでいるステージ。b2（choose）は板が固定でないので、
    選んだ2枚を metals として差し込んだ形にして model.js に渡す
    （model 側は「metals を持つステージ」しか知らなくてよい）。 */
-function rawStage() { return CELL_STAGES[stageIdx]; }
+function rawStage() { return PAGE_STAGES[stageIdx]; }
 /* 板を左右どちらに立てるか（M）。1回ぶんごとに resetRound がふり直す。
    ⚠ **b1 のように板が決まっているステージだけ**。b2 は生徒が「左の板／右の板」を
    自分で選ぶので、選んだ側を勝手に入れ替えたら操作が嘘になる */
@@ -604,7 +620,10 @@ function spawnProducts(side, i, baseY) {
         spawn("gas", t.sp, plateFaceX(i), y, { tx: bx, ty: CELL.liquid.y + 16 });
         flash(plateFaceX(i), y, "#8fb8c8");
         gasUp++;
-      } else if (SPECIES[t.sp].charge === 0) {
+      /* ⚠ 「電荷が 0 なら析出」ではない（B3-2 で直した）。OH_ox の右辺には H₂O がいて、
+         電荷 0 だからと析出にすると**水が電極にこびりつく絵**になる。
+         板として置けるかは model.js の isPlateable が決める（単体で・気体でないもの）。 */
+      } else if (isPlateable(t.sp)) {
         const dy = CELL.liquid.y + CELL.liquid.h - 26 - deposited * 25;
         spawn("dep", t.sp, plateFaceX(i), dy);
         flash(plateFaceX(i), dy, "#7fb08a");
@@ -813,7 +832,9 @@ function buildSumSheet() {
   head.className = "cSpan stepHead inSheet";
   const no = document.createElement("span");
   no.className = "stepNo";
-  no.textContent = "3";
+  /* 段の番号はページが決める（電池は 3・電気分解は「何が反応するか」がある ぶん 4）。
+     ここに数字を書くと、段を1つ増やしたときに黙ってずれる。 */
+  no.textContent = calcSheetEl.dataset.stepNo || "3";
   head.append(no, document.createTextNode("足し合わせて e⁻ を消す — 両極の式を縦に足す"));
   calcSheetEl.appendChild(head);
 
@@ -843,6 +864,18 @@ function buildSumSheet() {
   renderTermsInto(rowI.right, ionic.right, 1, false);
   rowI.arrow.textContent = "→";
   rowI.note.textContent = "全体の反応";
+
+  /* 足し合わせに「打ち消えなかったもの」が残る回の断り（§9-4 の e5）。
+     combineHalves は同じ種しか打ち消さないので、陽極でできた H⁺ と陰極でできた OH⁻ は
+     式に両方残る。**これは誤差ではなく実際に起きること**なので、黙って出さずにここで言う。
+     文はステージが持つ（画面が手書きしない）。 */
+  if (rawStage().sumNote) {
+    const note = document.createElement("div");
+    note.className = "cSpan sumNote";
+    note.id = "sumNote";
+    note.textContent = rawStage().sumNote;
+    calcSheetEl.appendChild(note);
+  }
 
   if (!isElyz()) {
     // 電池式（教科書表記）。負極を左・正極を右に置き、電解液を縦棒で挟む
@@ -1278,11 +1311,30 @@ function revealStep(el, show) {
   }
 }
 
+/* ================================================================================
+   「先に済ませる段」の口（§9-5）
+
+   電気分解のページだけが、図より前に「まず、何が反応するか」の段を1つ持つ。
+   その段の中身は electrolysis.js にあり、**このファイルは中身を知らない**。
+   知っているのは次の2つだけ:
+     ok()     … その段が済んだか（済むまで式の段を出さない）
+     reason() … 済んでいないときに ▶ の下へ出す1行
+   口が無いページ（電池）は今までどおり ＝ **battery.html の挙動は1文字も変わらない**。 */
+function preStepOk() {
+  const p = window.CellPreStep;
+  return !p || typeof p.ok !== "function" || !!p.ok();
+}
+function preStepReason() {
+  const p = window.CellPreStep;
+  if (!p || typeof p.ok !== "function" || p.ok()) return null;
+  return (typeof p.reason === "function" && p.reason()) || null;
+}
+
 function refreshSteps() {
   /* 段2（半反応式）は**予想を宣言してから**。式が答えそのものなので先に出さない。
      電気分解には予想の段が無い（どちらの極で何が起きるかは電源が決めるので
-     当てさせる余地がない）ので、はじめから出す。 */
-  revealStep(stepHalvesEl, ready() && (isElyz() || guess !== null));
+     当てさせる余地がない）——代わりに「何が反応するか」の段を先に済ませる。 */
+  revealStep(stepHalvesEl, ready() && (isElyz() ? preStepOk() : guess !== null));
 }
 
 /* ---- 釦 ---- */
@@ -1313,6 +1365,9 @@ function buildToolbar() {
 /* 再生できない理由（順序どおりに1つだけ返す）。null なら押せる。
    **画面と title と検査の3つがここ1か所から出る**ので、食い違いようがない。 */
 function playBlockReason() {
+  // 「先に済ませる段」がある回は、そこがいちばん最初の関門（§9-5）
+  const pre = preStepReason();
+  if (pre) return pre;
   if (!isElyz()) {                   // 電気分解には予想の段が無い（板も選ばせない）
     const ms = metalsOf();
     if (!ms[0] && !ms[1]) return "まず板を2枚選ぼう。上の金属を押すと板が入る。";
@@ -1340,11 +1395,11 @@ function updateToolbar() {
 }
 
 /* ---- ステージ ---- */
-function stageLabel(i) { return `ステージ${i + 1}：${CELL_STAGES[i].title}`; }
+function stageLabel(i) { return `ステージ${i + 1}：${PAGE_STAGES[i].title}`; }
 
 function buildStageNav() {
   stageNavEl.innerHTML = "";
-  CELL_STAGES.forEach((st, i) => {
+  PAGE_STAGES.forEach((st, i) => {
     const b = document.createElement("button");
     b.textContent = String(i + 1);
     b.className = i === stageIdx ? "active" : "";
@@ -1390,6 +1445,11 @@ function resetRound() {
   // まだ何も起きていないので、応答の枠ごと空にする（空の枠に 💡 だけが出るのを避ける）
   msgEl.className = "";
   msgEl.textContent = "";
+  /* 「先に済ませる段」を持つページに、盤面が白紙に戻ったことを伝える（§9-5）。
+     ⚠ updateToolbar より**前**に呼ぶ ＝ 相手が答えを捨ててから釦の可否を決める。 */
+  if (window.CellPreStep && typeof window.CellPreStep.onReset === "function") {
+    window.CellPreStep.onReset(rawStage());
+  }
   updateToolbar();
 }
 
@@ -1402,6 +1462,12 @@ function initStage() {
 /* テスト・監査用フック（redox / condition と同じ流儀）。
    advance(ms) で時間を決定論的に進めるので、待ち時間やタイマーに依存せず検査できる。 */
 window.BatteryEq = {
+  /* electrolysis.js（「先に済ませる段」）が答えを受け取ったあとに呼ぶ。
+     段の出し入れと釦の可否をやり直すだけで、盤面には触らない。 */
+  refreshGate() { refreshSteps(); updateToolbar(); },
+  /* このページが出しているステージの id（帯の並びと同じ順） */
+  pageStages: () => PAGE_STAGES.map((s) => s.id),
+  pageKind: () => PAGE_KIND,
   advance(ms) {
     let remaining = ms;
     while (remaining > 0) {
@@ -1415,7 +1481,7 @@ window.BatteryEq = {
   play() { isElyz() ? playElyz() : play(); },
   /* b2 の電極パレット用（第4歩）。画面のタップと同じ道を通す */
   goStage(id) {
-    const i = CELL_STAGES.findIndex((s) => s.id === id);
+    const i = PAGE_STAGES.findIndex((s) => s.id === id);
     if (i < 0) return false;
     stageIdx = i; initStage(); return true;
   },
@@ -1504,6 +1570,23 @@ window.BatteryEq = {
     svgText: [...cellSvg.querySelectorAll("text")].map((t) => t.textContent).join(" "),
   }),
 };
+
+/* ファイル名が cell.js になったので、こちらの名前でも呼べるようにしておく。
+   **BatteryEq は消さない**（既存のテスト・監査・動画の台本がこの名前で書かれている）。 */
+window.CellEq = window.BatteryEq;
+
+/* ?s=<ステージid> で名指しして開く（condition.html と同じ約束の名前にそろえた）。
+   B3-2 まで、この2モードだけがステージを名指しできず、ポータルの系列索引は
+   「開いたあと帯の番号を押してください」という但し書きを添えていた。
+   ⚠ 知らない id は黙って無視して先頭から始める ＝ URL を書き間違えても行き止まりにしない。
+   ⚠ **ページをまたいだ id は拾わない**（battery.html?s=e1 は先頭の b1 が開く）。
+     PAGE_STAGES しか見ないので、そこは自然にそうなる。 */
+(() => {
+  const id = new URLSearchParams(location.search).get("s");
+  if (!id) return;
+  const i = PAGE_STAGES.findIndex((s) => s.id === id);
+  if (i >= 0) stageIdx = i;
+})();
 
 initStage();
 requestAnimationFrame(frame);

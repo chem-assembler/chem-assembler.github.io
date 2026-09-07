@@ -28,44 +28,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>イオンでみる化学反応式 - 電池</title>
+<title>イオンでみる化学反応式 - 電気分解</title>
 <link rel="stylesheet" href="style.css?v=200">
 </head>
 <!-- どちらのモードのページかを名乗る（DESIGN_battery_electrolysis.md §8-1）。
-     cell.js はこれだけを見てステージ表を絞る。電気分解は electrolysis.html のほう。 -->
-<body data-cell-kind="battery">
+     cell.js はこれだけを見てステージ表を絞る。電池は battery.html のほう。
+     描画・アニメ・倍率合わせは cell.js が共通で持ち、このページだけの段（何が反応するか）が
+     electrolysis.js。「物理は同じで名前だけが違う」を2本のコードに写さないための作り。 -->
+<body data-cell-kind="electrolysis">
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」）。
        redox / condition と同じ3段構成にそろえてあるので、ヘッダーの高さも同じ -->
 
-  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="電池">電池をつくる</span></h1>
+  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="電気分解">電気分解をする</span></h1>
   <div class="version">v200</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
   </div>
-  <div class="hscroll"><nav class="modeBar strip" data-mode="battery"></nav></div>
+  <div class="hscroll"><nav class="modeBar strip" data-mode="elyz"></nav></div>
 </header>
 <main class="timelineMain">
   <div id="stageTitle"></div>
-  <!-- 手で解く順番をそのまま上から下へ並べる（redox / condition と同じ縦スクロール式）。
-       DESIGN_battery_electrolysis.md §2 の学習ループの順:
-         ① どちらが溶けるか予想 → ② つないでみる（発見）→ ③ 倍率合わせ → ④ 足し合わせ
-       **半反応式を先に見せない**のがこのモードの肝。段1で式を出すと
-       「負極 Zn → Zn²⁺ ＋ 2e⁻」が答えそのものになり、予想する意味が消える -->
+  <!-- 電気分解は「まず、何が反応するか」から始める（DESIGN_battery_electrolysis.md §9）。
+       **電極に来たイオンが、そのまま反応するとはかぎらない**——Na⁺ は析出せず水が還元され、
+       SO₄²⁻ は酸化されず水が酸化される。ここが最初の関門なので、図より前に置き、
+       答えるまで下の段を出さない（式を先に見せると、それが答えそのものになる）。
+         ① 何が反応する？ → ② 電源につなぐ → ③ 倍率合わせ → ④ 足し合わせ
+       電池（battery.html）は①が無く、代わりに「どちらの板が溶けるか」の予想が入る -->
   <div id="timeline">
+    <section class="step" id="stepWhat">
+      <div class="stepHead"><span class="stepNo">1</span>まず、何が反応する？ — 両極で e⁻ をやりとりする相手を選ぶ</div>
+      <!-- 液に溶けているイオンと、**必ずそこにいる水**を並べる区画。中身は electrolysis.js が作る -->
+      <div id="whatLead"></div>
+      <div id="whatPick"></div>
+      <!-- 選んだあとの判定と、▸ で開く順位表。**順位は暗記させず、選んでから確かめる** -->
+      <div id="whatWhy"></div>
+    </section>
+
     <section class="step" id="stepPredict">
-      <div class="stepHead"><span class="stepNo">1</span><span id="predictHead">どちらの板が溶ける？ — 板をタップして予想しよう</span></div>
-      <!-- 電極パレット（b2 の「電極を選ぶ」課題でだけ出る）。
-           どちらが負極かはデータではなく negativeOf が決めるので、ここは金属を選ぶだけ -->
+      <div class="stepHead"><span class="stepNo">2</span><span id="predictHead">電源につなぐと、両極で何が起きる？</span></div>
+      <!-- 電極パレットと「発見」の帯は電池だけのもの。ここでは cell.js が常に隠す
+           （電気分解では電極を選ばせない・§3-3）が、DOM の形は battery.html とそろえておく -->
       <div id="palette" hidden></div>
       <div id="discovery" hidden></div>
-      <!-- 上端を −14 から始めるのは、導線のいちばん上に置く「電流」の札が
-           y=0 で切れていたため（第5歩で発見）。図そのものの座標は変えていない -->
-      <!-- 下端を 354 から 368 へ広げたのは、役の札（負極(−)/正極(+)）を帯つきで
-           大きく出すため（v184・J）。図そのものの座標は変えていない -->
-      <svg id="cell" viewBox="0 -14 480 368" role="img" aria-label="2枚の金属板を電解液にひたし、導線でつないだ電池の図"></svg>
+      <svg id="cell" viewBox="0 -14 480 368" role="img" aria-label="電源につないだ2本の電極を、電解液にひたした電気分解の図"></svg>
       <div id="predictMsg"></div>
       <div id="toolbar"></div>
       <div id="ionCounts"></div>
@@ -73,16 +81,16 @@
     </section>
 
     <section class="step" id="stepHalves" hidden>
-      <div class="stepHead"><span class="stepNo">2</span>両極の半反応式 — 式はこのまま。倍率だけ決める</div>
+      <div class="stepHead"><span class="stepNo">3</span>両極の半反応式 — 式はこのまま。倍率だけ決める</div>
       <div class="sheetScroll"><div id="halfSheet"></div></div>
       <div id="eTally"></div>
-      <!-- 両極の式を足し合わせて全体のイオン反応式にする釦（v185・K）。
-           e⁻ の数がそろってから押せる。押せないあいだは理由を書いた札を出す -->
       <div id="sumBar"></div>
     </section>
 
     <section class="step" id="stepSum" hidden>
-      <div class="sheetScroll"><div id="calcSheet"></div></div>
+      <!-- 段の番号はページが決める（cell.js は data-step-no を読むだけ）。
+           電池は段が3つなので 3、電気分解は「何が反応するか」がある ぶん 4 -->
+      <div class="sheetScroll"><div id="calcSheet" data-step-no="4"></div></div>
     </section>
 
     <div id="clearBanner" hidden></div>
@@ -93,5 +101,6 @@
 <script src="schematic.js?v=200"></script>
 <script src="header-ui.js?v=200"></script>
 <script src="cell.js?v=200"></script>
+<script src="electrolysis.js?v=200"></script>
 </body>
 </html>
