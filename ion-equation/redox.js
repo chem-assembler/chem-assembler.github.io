@@ -1859,15 +1859,13 @@ const bottleSheetEl = document.getElementById("bottleSheet");
 const bottleLeftMapEl = document.getElementById("bottleLeftMap");
 const bottleTailMsgEl = document.getElementById("bottleTailMsg");
 const bottleScaleBoxEl = document.getElementById("bottleScaleBox");
-/* 【②】④の本体（両辺に足す個数）と、ヘルプへ移した瓶の出どころ当て */
+/* ④の2つの部分。★ 2026-09-07 に順番を戻した ——
+   「もともと何だった？」（#bottleWhy）が**先**、「両辺に加えるイオンの数」（#addIonWrap）が**後**。 */
 const addIonRowsEl = document.getElementById("addIonRows");
 const addIonMsgEl = document.getElementById("addIonMsg");
+const addIonWrapEl = document.getElementById("addIonWrap");
 const bottleWhyEl = document.getElementById("bottleWhy");
 let addIonKey = null;
-/* ⚠ 自分で閉じた人には、外しても開き直さない（打つたびに開くと邪魔になる） */
-if (bottleWhyEl) bottleWhyEl.addEventListener("toggle", () => {
-  if (!bottleWhyEl.open) bottleWhyEl.dataset.userClosed = "1";
-});
 
 /* ⑤で「イオン反応式の全体を何倍するか」。**常設の入力ではない**（v182・【D】）——
    右辺の係数に 1/2 が出たときだけ、案内の釦から 1 以外になる */
@@ -1975,7 +1973,8 @@ function buildAddIonRows(force) {
   }
 }
 
-/* ④が片づいたか。⚠ **瓶の出どころ当ては条件にしない**（ヘルプへ移した） */
+/* ④の後半（両辺に加えるイオンの数）が片づいたか。
+   ⚠ 前半（もともと何だった？）は別に見る ＝ 2つそろって⑤が出る */
 function addIonDone() {
   const rows = spectatorAddRows(stage(), mult[0], mult[1], bottleScale);
   if (!rows) return false;
@@ -1986,7 +1985,7 @@ function buildBottleRack(st) {
   bottleRackEl.innerHTML = "";
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = `ビーカーに入れたのはこの ${st.bottles.length} 本だけ。` +
+  cap.textContent = `はじめに入れたのは、この ${st.bottles.length} つだけ。` +
     "溶けてばらばらになったイオンが、上のイオン反応式に並んでいる。";
   const shelf = document.createElement("div");
   shelf.className = "bottleShelf";
@@ -2015,7 +2014,9 @@ function buildBottleQuiz(rows) {
     const label = document.createElement("label");
     label.className = "pickLabel";
     label.htmlFor = sel.id;
-    label.textContent = `${SPECIES[r.ion].disp} ${r.n}個 を連れてきたのは？`;
+    /* ★ ユーザーの言葉そのまま（2026-09-07）。「連れてきたのは？」は容器を前提にした
+       言い方だった。「もともと何だった？」に変えると、容器を指す語がまるごと要らなくなる。 */
+    label.textContent = `${SPECIES[r.ion].disp} ${r.n}個 はもともと何だった？`;
     const none = document.createElement("option");
     none.value = "";
     none.textContent = "（選ぶ）";
@@ -2023,7 +2024,7 @@ function buildBottleQuiz(rows) {
     for (const o of r.options) {
       const op = document.createElement("option");
       op.value = bottleKeyOf(o);
-      op.textContent = o.kind === "bottle" ? SPECIES[o.sp].disp + " の瓶"
+      op.textContent = o.kind === "bottle" ? SPECIES[o.sp].disp
         : o.kind === "bottles" ? o.sps.map((x) => SPECIES[x].disp).join(" と ") + " の両方"
         : SPECIES[o.sp].disp + " と組む";
       sel.appendChild(op);
@@ -2048,18 +2049,22 @@ function buildBottleQuiz(rows) {
 function refreshBottleTail() {
   const rows = bottleRows();
   if (!rows) return;
-  // --- ヘルプ側（瓶の出どころ当て）の判定文。⚠ ここは⑤の門ではなくなった ---
+  /* --- ④の前半「もともと何だった？」---
+     ★ 2026-09-07 にふたたび門にした（ユーザー「どこから来たの が先」）。
+     選択肢は有限で必ず正解が選べるので、行き止まりにはならない。 */
   const okN = bottleAnsweredOk(rows);
   const quizDone = okN === rows.length;
   const yet = rows.find((r) => !bottleRowOk(r));
   bottleMsgEl.textContent = quizDone
-    ? "どのイオンにも、連れてきた瓶がある。左辺に書くのはイオンではなく、この瓶そのもの。"
-    : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、どれかの瓶が連れてきたはず。`;
+    ? "どのイオンにも、もとの物質がある。左辺に書くのはイオンではなく、そのもとの物質そのもの。"
+    : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
   bottleMsgEl.className = quizDone ? "okcell" : "";
+  if (addIonWrapEl) addIonWrapEl.hidden = !quizDone;
+  if (!quizDone) { bottleTailEl.hidden = true; return; }
 
-  // --- ④の本体（両辺に足す個数）---
+  // --- ④の後半（両辺に加えるイオンの数）---
   const add = spectatorAddRows(stage(), mult[0], mult[1], bottleScale) || [];
-  let done = 0, wrong = 0;
+  let done = 0;
   for (const r of add) {
     const inp = document.getElementById(addIonId(r.sp));
     if (!inp) continue;
@@ -2068,14 +2073,11 @@ function refreshBottleTail() {
     note.textContent = ex ? ex.reason : "";
     note.className = "pickNote bcNote" + (ex && ex.kind !== "none" ? (ex.ok ? " okcell" : " ngcell") : "");
     inp.classList.toggle("ng", !!(ex && ex.kind === "wrong"));
-    if (ex && ex.ok) done++; else if (ex && ex.kind === "wrong") wrong++;
+    if (ex && ex.ok) done++;
     const want = Number.isInteger(bottleAdd[r.sp]) ? String(bottleAdd[r.sp]) : "";
     if (document.activeElement !== inp && inp.value !== want) inp.value = want;
   }
   const allDone = done === add.length && add.length > 0;
-  /* ★ 外したら瓶のヘルプを開く（ユーザーの指示「不正解時やヘルプ・解説に回してよい」）。
-     ⚠ **自分で閉じた人にはもう開かない** —— 打つたびに開き直すと邪魔になる */
-  if (bottleWhyEl && wrong > 0 && !bottleWhyEl.dataset.userClosed) bottleWhyEl.open = true;
   addIonMsgEl.textContent = allDone
     ? "両辺に足した。ここから先は、陽イオンと陰イオンを組み直して化学式にするだけ。"
     : `あと ${add.length - done} 種類。式の左辺と右辺を見て、相手のいないイオンを探す。`;

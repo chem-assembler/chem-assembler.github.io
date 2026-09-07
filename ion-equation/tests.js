@@ -7352,49 +7352,59 @@ async function runRedoxUITests(iframe) {
     const n3 = noteB(hSel);
     assert(n3.includes("SO₄²⁻") && n3.includes("反応しない"), "ついて来る傍観イオンを言わない: " + n3);
     assert(hSel.parentElement.querySelector(".bottleNote").classList.contains("okcell"), "正解の色にならない");
-    // 【②】2026-08-28 —— **瓶の出どころ当ては⑤の門ではなくなった**（ヘルプへ移った）。
-    // 3つそろえても、④の「両辺に足す個数」を通さないかぎり⑤は出ない
+    /* ★ 2026-09-07 —— 出どころ当てはふたたび④の**前半**（門）になった。
+       ユーザー「どこから来たの が先／両辺に加えるイオンの数を考える が後」。 */
     assert(doc.getElementById("bottleTail").hidden, "1つ答えただけで⑤が出る");
+    assert(doc.getElementById("addIonWrap").hidden, "1つ答えただけで後半（個数）が出ている");
     assert(txtB("bottleMsg").includes("あと 2 個"), "残りの数を言わない: " + txtB("bottleMsg"));
     pickB(s[0], "bottle:FeSO4");
     pickB(s[1], "bottle:KMnO4");
+    // 3つそろうと**後半**が現れる。⑤はまだ出ない（個数を通していない）
+    assert(!doc.getElementById("addIonWrap").hidden, "出どころがそろっても後半が出ない");
     assert(doc.getElementById("bottleTail").hidden,
-      "瓶の出どころ当てだけで⑤が出た（④の筆算を飛ばせている）");
-    // ④を通すと⑤が出る
+      "出どころ当てだけで⑤が出た（④の後半を飛ばせている）");
+    // ④の後半を通すと⑤が出る
     passAddB("rs1", 5, 1, 1);
     assert(!doc.getElementById("bottleTail").hidden, "④を通しても⑤が出ない");
-    // ★ 否定対照: 瓶の出どころ当てを白紙に戻しても⑤は残る（もう門ではない）
+    // ★ 否定対照: 前半を白紙に戻すと後半も⑤も引っ込む（＝「先」が門になっている）
     pickB(s[0], "");
-    assert(!doc.getElementById("bottleTail").hidden, "ヘルプを白紙に戻すと⑤が消えた（まだ門になっている）");
+    assert(doc.getElementById("addIonWrap").hidden, "前半を崩しても後半が出たまま");
+    assert(doc.getElementById("bottleTail").hidden, "前半を崩しても⑤が出たまま（順序が効いていない）");
   });
 
-  /* 【②】2026-08-28 —— ④は「両辺に、式に出てこないイオンを何個ずつ足すか」になった。
-     瓶の出どころ当ては**外したときに開くヘルプ**（<details>）へ移した（消していない）。 */
-  await t("REDOX: ④は筆算の手つき（両辺に足す個数）／瓶の出どころ当てはヘルプへ", async () => {
+  /* ★ 2026-09-07 —— ④は「もともと何だった？」が**先**、
+     「両辺に加えるイオンの数」が**後**（ユーザーの指示）。
+     v194 は逆で、出どころ当てを <details> のヘルプへ落としていた。 */
+  await t("REDOX: ④は「もともと何だった？」が先・両辺に加える個数が後", async () => {
     openB("rs1");
     let g = 0;
     while (state().mult[0] < 5 && g++ < 10) bumpB(0);
     passCalc();
-    // ① 見出しが筆算の言い方になっている（「どの瓶が連れてきた？」ではない）
+    // ① 見出しがユーザーの言葉そのもの（容器を指す語は1つも無い）
     const head = doc.querySelector("#stepBottles .stepHead").textContent;
-    assert(head.includes("両辺に") && !head.includes("どの瓶"), "④の見出しが筆算になっていない: " + head);
-    // ② 問うのは傍観イオンの種類ぶん（rs1 は K⁺ と SO₄²⁻）
+    assert(head.includes("もともと何だった"), "④の見出しが「もともと何だった？」でない: " + head);
+    assert(!/瓶|試薬/.test(head), "容器を指す語が見出しに残っている: " + head);
+    // ② 前半（出どころ）は畳まれていない ＝ ④の本体の先頭に出ている
+    const why = doc.getElementById("bottleWhy");
+    assert(why && why.tagName !== "DETAILS", "出どころ当てがまだヘルプ（details）のまま");
+    assert(!why.hidden && why.contains(doc.getElementById("bottleQuiz")), "出どころ当てが④の先頭に出ていない");
+    assert(doc.getElementById("addIonWrap").hidden, "先に答えるべき前半を飛ばして後半が出ている");
+    // ③ 前半を通すと後半が現れる
+    const s = selsB();
+    pickB(s[0], "bottle:FeSO4"); pickB(s[1], "bottle:KMnO4"); pickB(s[2], "bottle:H2SO4");
+    assert(!doc.getElementById("addIonWrap").hidden, "前半を通しても後半が出ない");
+    // ④ 問うのは傍観イオンの種類ぶん（rs1 は K⁺ と SO₄²⁻）
     const ins = $$("#addIonRows input");
     assert(ins.length === 2, "④の入力欄が2つでない: " + ins.length);
     assert(ins.every((i) => i.value === ""), "④の欄が最初から埋まっている");
-    // ③ ヘルプは閉じて始まる（＝ 出どころ当てが主役ではない）
-    const why = doc.getElementById("bottleWhy");
-    assert(why && !why.open, "瓶のヘルプが最初から開いている");
-    assert(why.contains(doc.getElementById("bottleQuiz")), "瓶の出どころ当てがヘルプの中に入っていない");
-    // ④ 手がかりは「相手のいないイオン」まで。⚠ 答えの数は出ていない
+    // ⑤ 手がかりは「相手のいないイオン」まで。⚠ 答えの数は出ていない
     const hint = txtB("addIonRows");
     assert(hint.includes("相手がいないのは Fe²⁺ 5個・H⁺ 8個"), "相手を言わない: " + hint);
     assert(!/9\s*個/.test(hint), "答えの個数が出ている: " + hint);
-    // ⑤ ★否定対照: 外すと理由を言い、⑤は出ず、瓶のヘルプがその場で開く
+    // ⑥ ★否定対照: 外すと理由を言い、⑤は出ない
     putAddB("SO4^2-", 5);
     assert(anoteB("SO4^2-").includes("足りない"), "少ないと言わない: " + anoteB("SO4^2-"));
     assert(!/9/.test(anoteB("SO4^2-")), "採点の文が答えを漏らしている: " + anoteB("SO4^2-"));
-    assert(why.open, "外したのに瓶のヘルプが開かない（ヘルプに回した意味が無い）");
     assert(doc.getElementById("bottleTail").hidden, "外したまま⑤が出ている");
     putAddB("SO4^2-", 12);
     assert(anoteB("SO4^2-").includes("多い"), "多いと言わない: " + anoteB("SO4^2-"));
