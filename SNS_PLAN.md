@@ -407,6 +407,30 @@ X 13セッション・キーイベント0 ／ TikTok 2セッション・0。
 
 **入れた回**: V128（作り直し・2026-09-07）／V144（新規・2026-09-07）。
 
+### 完成品の置き場所（2026-09-07 追加）
+
+ユーザー: **「vertical ではなく、オリジナルの方を差し替えるようにしてください、修正時は常に上書きでよいです」**。
+
+- ⭐ **正は「タイトルそのもの」の名前**: `video-scripts/out/<title>.mp4`
+  （例: `V128 発泡スチロールを一から作ってみた（高分子④）.mp4`）。
+  **`tools/videos.js` の `mp4Path()` が見るのはこれ**で、**命名の規則は `tools/record/mux.mjs` が持っている**
+- ⚠ **`<ID>-vertical.mp4` は中間ファイル。** `render.mjs` の出力先で、**ユーザーが投稿に使うのはこちらではない**
+- ⛔ **撮り直したら `<ID>-vertical.mp4` を作って終わりにしない。**
+  **必ずタイトル名のほうへ上書きコピーする**（**消さない・退避しない・常に上書き**）
+- ⚠ **これを忘れると、台帳は「完成」と言うのに中身が古いまま**になる。
+  **実際に V128 で起きた**——2026-09-07 に音ずれを直したのに、**タイトル名のほうは 09-01 の版のまま**だった（ユーザー指摘）
+
+**やり方**（`safeName` は `tools/videos.js` と同じ規則）:
+
+```
+node -e "const fs=require('fs'),path=require('path');
+const safe=s=>s.replace(/[\\/:*?\"<>|]/g,'').replace(/\s+/g,' ').trim().replace(/[.\s]+$/,'');
+for(const id of process.argv.slice(1)){const m=JSON.parse(fs.readFileSync('video-scripts/meta/'+id+'.json','utf8'));
+fs.copyFileSync('video-scripts/out/'+id+'-vertical.mp4','video-scripts/out/'+safe(m.title)+'.mp4');}" V128
+```
+
+⭐ **`node tools/videos.js` で「不整合はありません」が出れば、台帳と実体が合っている。**
+
 ### 在庫の点検（2026-09-01 実施）
 
 | | |
