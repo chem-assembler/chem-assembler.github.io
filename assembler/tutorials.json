@@ -13,6 +13,7 @@
         },
         "actions": [
           { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
           { "type": "click", "x": 420, "y": 294 }
         ]
       },
@@ -51,6 +52,7 @@
         "caption": "まずエタン（C-C）を作ります。",
         "actions": [
           { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
           { "type": "click", "x": 420, "y": 294 },
           { "type": "click", "x": 462, "y": 294 }
         ]
@@ -144,6 +146,7 @@
         "caption": "炭素を3つ並べてプロパンを作ります。",
         "actions": [
           { "type": "button", "selector": "#btn-tool-select" },
+          { "type": "button", "selector": ".atom-btn.atom-c" },
           { "type": "click", "x": 420, "y": 294 },
           { "type": "click", "x": 462, "y": 294 },
           { "type": "click", "x": 504, "y": 294 }
