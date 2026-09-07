@@ -146,6 +146,7 @@
  * | PK  | 1      | 「同じ？違う？」2択の答え合わせがボタンに残る（4択だけ直っていた取りこぼし） |
  * | PT  | 1〜3   | 縦持ちのタブレット（手持ちレイアウトを縦向き 1126px まで広げた・v1000） |
  * | PW  | 1〜5   | 置けなかったクリックの理由（遠すぎ／近すぎ／空きなし／上限／取られた・v1110） |
+ * | PU  | 1〜3   | ★★ **高分子の分子式を「(繰り返し単位)ₙ」で出す**（v1522・ユーザー原文 2026-09-07「分子式は R を含めるよりも (c8H8)n としたほうがよいように感じます」・発注書 video-scripts/ORDER_polymer_formula_2026-09-07.md）。⚠ **式そのものは正しかった** —— `C₃₂H₃₂R₂` という書き方が**教科書にも入試にも出てこない**のが問題。単位は「でき上がった鎖の周期」から読む（`chemistry.js polymerRepeatUnit`。重合したときの単量体を覚える案は、**名前から呼び出した高分子11件と、重合の後で反応させた鎖に効かない**ので採らなかった）。1 が本体（反応で作る6通り＋登録済み11件を**式で名指し**。⭐ **共重合も通る** ＝ 周期から見ればナイロン66 は「二酸＋二アルコールの対」で1周期になり、教科書の 〔NH(CH₂)₆NHCO(CH₂)₄CO〕ₙ と同じ切り方になる）・**2 が否定対照**＝ 加硫（R が4つ ＝ 2本の鎖を1単位では書けない）・分子が2つ以上あるとき・R が1つだけの図は**総和のまま**（★ ただし分子ごとに引けば単位で出る）・**3 も否定対照**＝ 単位の読み取りは表示だけで、正準コードも原子数も自動水素も1文字も動かない（「切って比べる」ときの仮の分子が本体に漏れていない） |
  * | PY  | 1      | 高分子（擬似元素 R を含む図）の扱い — 出題プールから外す／図は残す |
  * | Q   | 0〜1   | モードの構成（🧪自由が標準） |
  * | QB  | 1〜4   | アプリ横断の往復リンク（qa ⇄ assembler の「来た道」の帯） |
@@ -25971,6 +25972,148 @@
         c.reset();
     });
 
+    /* ===== PU1〜PU3: 高分子の分子式を「(繰り返し単位)ₙ」で出す =====
+     *
+     * 発注は video-scripts/ORDER_polymer_formula_2026-09-07.md（ユーザー原文
+     * 「分子式は R を含めるよりも (c8H8)n としたほうがよいように感じます」）。
+     * **式そのものは正しかった** —— 問題は `C₃₂H₃₂R₂` という書き方が
+     * **教科書にも入試にも出てこない**こと。高校化学は高分子を必ず単位 × n で書く。
+     *
+     * ★ **単位は「でき上がった鎖の周期」から読む**（`chemistry.js polymerRepeatUnit`）。
+     *   重合したときの単量体を覚える案は採らなかった（名前から呼び出した高分子と、
+     *   重合の後で反応させた鎖に効かないため。理由の全文は関数の注記）。
+     *
+     * ⚠ **PU2 が否定対照**（加硫は総和のまま）・**PU3 が土台の不変**。 */
+    test('PU1: 重合の生成物と登録済みの高分子が (繰り返し単位)ₙ で出る（収録8本の題材で実測）', async (c) => {
+        const g = c.game, W = c.W;
+        const F = (mol) => g.computeMolecularFormula(mol);
+
+        /* ---- ① 反応で作った鎖（動画で実際に映った題材）----
+         * 期待値は発注書 §1 の表そのもの。左が v1521 までの表示・右が教科書の書き方。 */
+        const add = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        const alk = W.REACTION_RULES.find(r => r.id === 'alkyne_polymerization');
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const 反応で作る = [
+            // [単量体, 個数, ルール, 期待する式, 収録で出ていた総和]
+            ['スチレン', 4, add, '(C₈H₈)ₙ', 'C₃₂H₃₂R₂'],          // V128
+            ['エチレン', 4, add, '(C₂H₄)ₙ', 'C₈H₁₆R₂'],           // V120 と同じ形
+            ['塩化ビニル', 3, add, '(C₂H₃Cl)ₙ', 'C₆H₉Cl₃R₂'],     // V120
+            ['アセチレン（エチン）', 4, alk, '(C₂H₂)ₙ', 'C₈H₈R₂'], // V139
+            ['アセチレン（エチン）', 3, alk, '(C₂H₂)ₙ', 'C₆H₆R₂'], // V139（3個の回）
+            ['イソプレン', 4, dien, '(C₅H₈)ₙ', 'C₂₀H₃₂R₂']        // V130 の加硫前
+        ];
+        反応で作る.forEach(([単量体, n, rule, 期待, 総和]) => {
+            if (!g.resolveCompound(単量体)) return;   // 未登録なら黙って飛ばす（在庫は別の帯が見る）
+            const mol = polySetup(c, new Array(n).fill(単量体));
+            const sites = rule.detect(mol);
+            assert(sites.length > 0, `${単量体}×${n}: ${rule.id} の候補が出ない`);
+            rule.apply(g, sites[0]);
+            g.updateDrawing();
+            const f = F(g.userMolecule);
+            assert(f === 期待, `${単量体}×${n} の分子式が ${f}（${期待} を期待。v1521 は ${総和}）`);
+            // ★ **総和が消えたわけではない**（単位 × n で総和に戻せることを数で確かめる）
+            const rep = W.polymerRepeatUnit(g.userMolecule);
+            assert(rep && rep.n === n, `${単量体}×${n}: 単位の数が ${rep && rep.n}（${n} を期待）`);
+        });
+
+        /* ---- ② 名前から呼び出した高分子（登録済み11件）----
+         * ★ ここが「単量体を覚えておく」案では届かなかった面。`compounds.json` の
+         *   `formula` は `[CH2-CH2]n` と**すでに単位の形**なのに、画面の分子式だけ総和だった。 */
+        const 登録済み = [
+            ['ポリエチレン', '(C₂H₄)ₙ'],
+            ['ポリプロピレン', '(C₃H₆)ₙ'],
+            ['ポリ塩化ビニル', '(C₂H₃Cl)ₙ'],
+            ['ポリアクリロニトリル', '(C₃H₃N)ₙ'],
+            ['ポリ酢酸ビニル', '(C₄H₆O₂)ₙ'],
+            ['ポリビニルアルコール', '(C₂H₄O)ₙ'],
+            ['ポリアセチレン', '(C₂H₂)ₙ'],
+            ['ナイロン6', '(C₆H₁₁NO)ₙ'],
+            // ⭐ **共重合も通る**。発注書は「単位が2種類だから当てはめるな」と断っていたが、
+            //   周期を見つける側から見れば「二酸＋二アルコールの対」で1周期になり、
+            //   教科書の 〔NH(CH₂)₆NHCO(CH₂)₄CO〕ₙ とまったく同じ切り方になる
+            ['ナイロン66', '(C₁₂H₂₂N₂O₂)ₙ'],
+            ['ポリエチレンテレフタラート', '(C₁₀H₈O₄)ₙ'],
+            // ⚠ ビニロンは登録図が**1単位ぶん**（アセタール環が骨格をまたぐので周期は取れない）。
+            //   両端の R が「この先も続く」と言っている以上、描かれた1単位が単位そのもの
+            ['ビニロン', '(C₇H₁₂O₃)ₙ']
+        ];
+        登録済み.forEach(([名前, 期待]) => {
+            const mol = polySetup(c, [名前]);
+            const f = F(mol);
+            assert(f === 期待, `${名前} の分子式が ${f}（${期待} を期待）`);
+        });
+        c.reset();
+    });
+
+    test('PU2: ★否定対照 — 単位に割れないものは総和のまま — 加硫・分子2つ・R が1つ', async (c) => {
+        const g = c.game, W = c.W;
+        const F = (mol) => g.computeMolecularFormula(mol);
+
+        /* ---- ① ★ 加硫（発注書 §3 の注意1）----
+         * 2本の鎖が S で橋渡しされた形で、**繰り返し単位1つでは書けない**。
+         * R が4つあることで落ちる（`polymerRepeatUnit` は R がちょうど2つの鎖だけを見る）。 */
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        const mol = vulcChains(c, 'イソプレン', 2, 2);
+        // 加硫の前は**鎖が2本**なのでキャンバス全体では総和。1本ずつ見れば単位で出る
+        assert(!/\)ₙ/.test(F(mol)), `加硫の前（鎖2本）が ${F(mol)}（総和のままを期待）`);
+        g.splitMolecules().filter(p => p.atoms.some(a => a.element === 'R')).forEach(p => {
+            assert(F(p) === '(C₅H₈)ₙ', `加硫前の鎖1本が ${F(p)}（(C₅H₈)ₙ を期待）`);
+        });
+        const sites = vul.detect(mol);
+        assert(sites.length > 0, '加硫の候補が出ない');
+        vul.apply(g, sites[0]); g.updateDrawing();
+        const f1 = F(g.userMolecule);
+        assert(/R₄/.test(f1) && /S₂/.test(f1) && !/\)ₙ/.test(f1),
+            `加硫の生成物が ${f1}（R₄ と S₂ を含む総和のままを期待）`);
+        assert(W.polymerRepeatUnit(g.userMolecule) === null,
+            '加硫の生成物から繰り返し単位が取れてしまった（2本の鎖を1単位で書くことになる）');
+
+        /* ---- ② 分子が2つ以上あるとき（総和は総和のまま）---- */
+        polySetup(c, new Array(4).fill('エチレン'));
+        const add = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        add.apply(g, add.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        assert(F(g.userMolecule) === '(C₂H₄)ₙ', '重合直後が単位で出ない（前提が崩れている）');
+        assert(g.summonMolecule('ベンゼン'), 'ベンゼンが呼べない');
+        g.updateDrawing();
+        const f2 = F(g.userMolecule);
+        assert(!/\)ₙ/.test(f2) && /R₂/.test(f2),
+            `もう1分子を並べたら ${f2}（キャンバス全体の総和に戻ることを期待）`);
+        // ★ **分子ごとに見れば単位で出る**（右パネルのチップは分子ごとに引く）
+        const 鎖 = g.splitMolecules().find(p => p.atoms.some(a => a.element === 'R'));
+        assert(F(鎖) === '(C₂H₄)ₙ', `分子ごとに見ても単位で出ない（${F(鎖)}）`);
+
+        /* ---- ③ R が1つだけの図（アルキル基の練習）は今までどおり---- */
+        polySetup(c, ['アルキルベンゼンスルホン酸ナトリウム']);
+        const f3 = F(g.userMolecule);
+        assert(f3 === 'C₆H₄NaO₃RS', `R が1つの図が ${f3}（C₆H₄NaO₃RS を期待）`);
+        c.reset();
+    });
+
+    test('PU3: ★否定対照 — 単位の切り出しは表示だけ — 正準コードも自動水素も1文字も動かない', async (c) => {
+        const g = c.game, W = c.W;
+        /* ★ `polymerRepeatUnit` は**読み取るだけ**で分子を1原子も書き換えない。
+         *   「切って比べる」ときに作る仮の分子が本体に漏れていないことを、
+         *   呼ぶ前後の正準コード・原子数・結合数で固定する。 */
+        ['ポリエチレン', 'ナイロン66', 'ポリエチレンテレフタラート', 'ビニロン'].forEach(名前 => {
+            const mol = polySetup(c, [名前]);
+            const before = { code: W.canonicalCode(mol), a: mol.atoms.length, b: mol.bonds.length,
+                h: mol.atoms.reduce((s, x) => s + mol.getFreeValency(x.id), 0) };
+            for (let k = 0; k < 3; k++) W.polymerRepeatUnit(mol);   // 何度呼んでも同じ
+            const after = { code: W.canonicalCode(mol), a: mol.atoms.length, b: mol.bonds.length,
+                h: mol.atoms.reduce((s, x) => s + mol.getFreeValency(x.id), 0) };
+            assert(JSON.stringify(before) === JSON.stringify(after),
+                `${名前}: 単位を読んだら分子が変わった（${JSON.stringify(before)} → ${JSON.stringify(after)}）`);
+        });
+        // ★ 高分子でない分子の分子式は1文字も変わらない（R を持たない図は素通り）
+        [['ベンゼン', 'C₆H₆'], ['酢酸', 'C₂H₄O₂'], ['エタノール', 'C₂H₆O']].forEach(([名前, 期待]) => {
+            const mol = polySetup(c, [名前]);
+            assert(g.computeMolecularFormula(mol) === 期待,
+                `${名前} の分子式が ${g.computeMolecularFormula(mol)}（${期待} を期待）`);
+        });
+        c.reset();
+    });
+
     /* ★ VL1 / VL2: **加硫の橋の置き場所**（v1484・動画レーン V130 の収録映像から出た要望2件）。
      *
      * **症状（実測）**: 台本どおり「イソプレン×2 → 1,4-付加重合 → ×2 → 1,4-付加重合 → 加硫」を
@@ -45439,7 +45582,10 @@
         const parts = g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H') && p.atoms.length > 3);
         assert(parts.length === 1, `鎖が1本になっていない（${parts.length} 分子）`);
         const f = g.computeMolecularFormula(parts[0]);
-        assert(/N₄/.test(f) && /R₂/.test(f), `ポリアミドの鎖になっていない（${f}）`);
+        // ★ v1522 から高分子の分子式は「(繰り返し単位)ₙ」で出る（総和の `…N₄…R₂` ではない）。
+        //   ナイロン66 の繰り返し単位 -[NH(CH₂)₆NHCO(CH₂)₄CO]- ＝ C₁₂H₂₂N₂O₂ を名指しで見る
+        //   ＝ 「N₄ と R₂ が入っている」より**強い**検査（単位まで合っていないと通らない）
+        assert(f === '(C₁₂H₂₂N₂O₂)ₙ', `ポリアミドの鎖になっていない（${f}）`);
         const toast = c.D.getElementById('canvas-toast').textContent;
         assert(/ナイロン66/.test(toast), `結果の説明がナイロン66に触れていない（${toast.slice(0, 60)}）`);
         c.reset();
