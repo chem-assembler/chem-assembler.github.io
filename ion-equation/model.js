@@ -4694,32 +4694,32 @@ function explainBottleCount(stage, a, b, scale, sp, n) {
     const got = bad.per * n;
     return {
       ok: false, kind: got < bad.need ? "few" : "many", answer: row.answer,
-      reason: `${D(sp)} が ${n}本 だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
+      reason: `${D(sp)} の係数が ${n} だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
         // **答えの本数は言わない**（1本ぶんが何個かまでを言い、割り算は学習者の仕事）
         // 【G】分担しているイオン（rs3 の H⁺）は「全体の何個のうち、この瓶が何個」まで言う
         (bad.shared
-          ? `イオン反応式には ${bad.total}個 要り、そのうち ${bad.need}個 がこの瓶のぶん`
+          ? `イオン反応式には ${bad.total}個 要り、そのうち ${bad.need}個 がこちらのぶん`
           : `イオン反応式には ${bad.need}個 要る`) +
-        (bad.per > 1 ? `（${D(sp)} 1本からは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
+        (bad.per > 1 ? `（${D(sp)} 1つからは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
     };
   }
   if (n !== row.answer) {
     return {
       ok: false, kind: "many", answer: row.answer,
-      reason: `${D(sp)} は ${row.answer}本 でちょうど足りる。`,
+      reason: `${D(sp)} は 係数 ${row.answer} でちょうど足りる。`,
     };
   }
   const riders = row.riders.filter((r) => r.n > 0);
   let msg = row.covers.map((c) =>
-    `${D(c.sp)} が ${c.need}個 要る ÷ ${D(sp)} 1本ぶんの ${c.per}個 ＝ ${row.answer}本。`).join("");
+    `${D(c.sp)} が ${c.need}個 要る ÷ ${D(sp)} 1つぶんの ${c.per}個 ＝ 係数 ${row.answer}。`).join("");
   if (riders.length) {
     msg += `一緒に ${riders.map((r) => `${D(r.sp)} が ${r.n}個`).join("・")} ついて来る` +
-      `（加えたのではなく、瓶が連れてきた）。`;
+      `（加えたのではなく、もとの物質が連れてきた）。`;
   }
   /* 【3】v194・発注書 §6-7 の 3。**出した本数がそのまま左辺の係数**だと、
      入れたその場で言う（下の完成式まで待たない）。要望4「化学反応式の係数も自分で
      入力するように」は、実は**もうここで入力し終えている** —— それが伝わっていなかった。 */
-  msg += `この ${row.answer} が、化学反応式の左辺で ${D(sp)} に付く係数になる。`;
+  msg += `この ${row.answer} が、そのまま化学反応式の左辺の係数。`;
   return { ok: true, kind: "ok", answer: row.answer, reason: msg };
 }
 
@@ -4754,8 +4754,8 @@ function bottleLeftCoeffText(stage, a, b, scale) {
   if (!rows || !rows.length) return null;
   const D = (x) => SPECIES[x].disp;
   return {
-    left: "⑤であなたが入れた本数が、そのまま化学反応式の左辺の係数: " +
-      rows.map((r) => `${D(r.sp)} ${r.bottles}本 → ${r.coeff} ${D(r.sp)}`).join(" ／ "),
+    left: "⑤であなたが書いた係数が、そのまま化学反応式の左辺: " +
+      rows.map((r) => `${r.coeff} ${D(r.sp)}`).join(" ＋ "),
     right: "右辺の係数は、残ったイオンが対になった時点で決まる ＝ 数えるところが無いので、入力欄も置かない。",
   };
 }

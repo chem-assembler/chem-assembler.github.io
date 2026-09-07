@@ -1556,6 +1556,9 @@ main.timelineMain {
 .bcField { display: flex; align-items: center; gap: 6px; margin: 3px 0 2px; flex-wrap: wrap; }
 .bcLabel { font-size: 13.5px; }
 .bcUnit { font-size: 13px; color: #46525e; }
+/* ⑤は「何本」ではなく**左辺の係数**を書く欄になった（2026-09-07）。
+   欄の右に化学式を置き、〔 2 〕KMnO₄ と、紙に書く並びのまま読めるようにする */
+.bcCoeffField .bcFormula { font-size: 17px; font-weight: bold; color: #23303b; }
 .bottleCountInput {
   width: 68px;
   min-height: 40px;
