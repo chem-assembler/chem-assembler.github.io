@@ -7355,13 +7355,16 @@ class Reactor {
         this._hintCache = null;
         // 試薬パレット（DESIGN_reagent_palette.md 第1段）。瓶の札と、瓶を押した結果を返す欄。
         // 瓶は3本とも**いつでも押せる**ので、作図のたびに組み直す必要がない ＝ ここで一度だけ描く
-        // ⚠ **瓶の一覧は2か所に出る**（v1494・DESIGN_experiment_mode.md 第1段）:
-        //    ① 分子モーダルの中（従来どおり。1つも消していない ＝ D-E2 は未決）
-        //    ② 左パレットの「🧪 実験」タブ（新）
-        //    ★ 描くのは**同じ1つの `REAGENTS` から同じ1つの関数**で（`renderReagents`）、
-        //      瓶の札を書き写さない。押した先も `onReagentClick` の1本 ＝ 入口が2つでも中身は1つ
-        //      （`DESIGN_reagent_palette.md` RG4 と同じ考え方）
-        this.reagentGridIds = ['mm-reagents-grid', 'exp-reagents-grid'];
+        // ★ **瓶の面は1つだけ**（vNNNN・D-E2 の決着。ユーザー決定 2026-09-07
+        //   「試薬パレットは移動したので、分子の詳細モーダルからは削除してよいのでは？」）。
+        //   v1494〜v1521 は分子モーダル（`#mm-reagents-grid`）と実験タブの**2か所**に出していた。
+        //   ⚠ **消したのは面であって瓶ではない**（`REAGENTS` は1行も変えていない）。
+        //   ★ 理由: 瓶は「キャンバスの分子にかける」道具なのに、全画面のモーダルが分子を隠す。
+        //     `DESIGN_experiment_mode.md` §5-3 がフロート案を退けたのと**同じ理由**が
+        //     モーダルにも当てはまっていた。
+        //   ⚠ **配列のまま残す**（要素1つでも）。第2の面を足したくなったらここに1語足すだけで、
+        //     `renderReagents` の書き方（1つの `REAGENTS` から1つの関数で描く）は変わらない
+        this.reagentGridIds = ['exp-reagents-grid'];
         this.renderReagents();
         // ↩ 反応前に戻す（v1409）。帯（#ws-free）の中に置いた1つだけの出口
         this.undoBtn = document.getElementById('btn-rx-undo');
@@ -7805,21 +7808,14 @@ class Reactor {
      *   押した瓶のすぐ下に出て・読み終わるまで残るのが約束（`RG3` / `RG11` / `MM8`）で、
      *   裏の面へ返すと**押したのに何も起きていないように見える**。
      *
-     * ⚠ **分子モーダルが開いていれば必ずモーダル側**（＝ 従来どおり `#mm-reagent-note`）。
-     *   モーダルの中の瓶を押したのに答えが裏のパレットへ行く、を作らないため。
-     *   ★ この一行が、瓶に触れる既存の緑のテスト 22件をそのまま緑に保つ不変条件でもある。
+     * ★ **vNNNN から返し先は1つ**（`#exp-reagent-note`）。分子モーダルの瓶の節を消したので、
+     *   「瓶を押せる面」も1つしかない ＝ 振り分けるものが無くなった（D-E2 の決着）。
+     * ⚠ v1494〜v1521 は「モーダルが開いていればモーダル側・そうでなければ実験タブ側」と
+     *   **押した面を見て振り分けていた**。面が2つあるあいだは必要な振り分けだったが、
+     *   1つになった以上は残しておくと**存在しない DOM を指す分岐**が残るだけになる。
      */
     get reagentNoteEl() {
-        const modal = document.getElementById('molecule-modal');
-        const modalOpen = !!modal && !modal.classList.contains('hidden');
-        if (!modalOpen) {
-            const panel = document.getElementById('left-panel');
-            if (panel && panel.dataset.palette === 'exp') {
-                const note = document.getElementById('exp-reagent-note');
-                if (note) return note;
-            }
-        }
-        return document.getElementById('mm-reagent-note');
+        return document.getElementById('exp-reagent-note');
     }
 
     /**
@@ -7829,11 +7825,11 @@ class Reactor {
      * 格子を2つに割らないのは、320px で列数が変わったときに区分ごとに折り返しがずれると
      * 「同じ大きさの札が並ぶ」という読み方が崩れるから。
      *
-     * ⚠ **同じ札を2か所に描く**（分子モーダルの中と、左パレットの「🧪 実験」タブ）。
-     *   ★ 描くのは1つの関数・1つの `REAGENTS` なので、瓶を増やすと両方に同時に出る
+     * ★ **描き先は `reagentGridIds`**（vNNNN からは左パレットの「🧪 実験」タブ1つ）。
+     *   1つの関数・1つの `REAGENTS` から描くので、面を増やしても瓶の札を書き写さずに済む
      */
     renderReagents() {
-        (this.reagentGridIds || ['mm-reagents-grid'])
+        (this.reagentGridIds || ['exp-reagents-grid'])
             .forEach(id => this.renderReagentsInto(document.getElementById(id)));
     }
 
@@ -7909,8 +7905,21 @@ class Reactor {
         }
         this.selectedReagentId = bottle ? bottle.id : null;
         this.selectedRuleId = ruleId;
-        // 瓶と自動案内はどちらも分子モーダルの中にある。開かないと「選ばれた」が見えない
-        this.game.openMoleculeModal();
+        /* ★ **選んだものが見える面を開く**（vNNNN・D-E2 の決着で面が2つに分かれた）。
+         *   v1521 まで「瓶と自動案内はどちらも分子モーダルの中」だったので無条件に開いていたが、
+         *   ⚠ 瓶は左パレットの「🧪 実験」タブへ移った ＝ モーダルを開くと**印を付けた瓶を
+         *     自分で隠す**ことになる（`?reagent=br2_water` が黙って空振りに見える）。
+         *   - ルールを名指しされた（`?reagent=open_glucopyranose` のような瓶を持たないルール）
+         *     … 自動案内のボタン列は分子モーダルの中なので、従来どおり開く
+         *   - 瓶を名指しされた … 実験パレットへ持ち替える（🧪自由 のときだけ。
+         *     パズル・学習ではタブそのものが出ないので、触らずに従来の道へ落とす） */
+        if (ruleId || !bottle) {
+            this.game.openMoleculeModal();
+        } else if (this.game.currentMode === 'free' && this.game.setPalette) {
+            this.game.setPalette('exp');
+        } else {
+            this.game.openMoleculeModal();
+        }
         this.markSelectedReagent();
         return { reagentId: this.selectedReagentId, ruleId: this.selectedRuleId };
     }
@@ -8191,7 +8200,7 @@ class Reactor {
      *
      * ⚠ **`info` の解説は瓶の節に返す**（同書 §7.5 の未決に対する第2段の決定）。
      * v703 では `onRuleClick` に渡していたので**トーストで数秒だけ出て消えていた**が、
-     * 空振り（0件）の説明は `#mm-reagent-note` に残る ——「効かない」という同じ答えが
+     * 空振り（0件）の説明は瓶の節（`#exp-reagent-note`）に残る ——「効かない」という同じ答えが
      * 2か所に割れていた。瓶から来た答えは**押した瓶のすぐ下に、消えずに**返すのが正しい
      * （自動案内の ⚠ ボタンは押すとモーダルを閉じてキャンバスへ返る流れなので、
      * そちらは従来どおりトーストのまま）。
@@ -8713,7 +8722,7 @@ class Reactor {
     /**
      * 「**効くが、ふつうはそちらを使わない**」ときに結果へ添える一言（同書 §12-3・v1428）。
      *
-     * ⚠ **`miss` とは別の棚**。`miss` は「効かない」で、瓶の節（`#mm-reagent-note`）に
+     * ⚠ **`miss` とは別の棚**。`miss` は「効かない」で、瓶の節（`#exp-reagent-note`）に
      *   反応が起きなかったときだけ出る。こちらは**図が変わったうえで**トーストの結果に続けて出る。
      *   場所も言い方も別にしておかないと、「進まない」と「ふつうは使わない」が混ざって読まれる。
      *
