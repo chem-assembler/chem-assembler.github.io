@@ -3697,12 +3697,19 @@ class Game {
     // ===== 化合物名判定・分子式表示（P7-6） =====
 
     // 分子式を計算する（自動水素を含む。表記はHill方式: C→H→他はアルファベット順）
+    // ★ 正味の電荷が 0 でないときだけ右肩に ⁺／⁻ を添える（D-I6・2026-09-06 ユーザー決定）。
+    //   大きさは 2 以上のときだけ書く（Ca²⁺ の作法。1 は省く）。
+    //   ⚠ 塩（アニリン塩酸塩）も双性イオンも**正味 0** なので表示は変わらない。
+    //   出番は「ユーザーが対イオンの粒を消したとき」だけ（DESIGN_ion_layer.md §13-5 の実測）。
+    //   ⚠ 写しが `tools/dump-canonical.js formulaOf` にある（同じ形にすること）
     computeMolecularFormula(mol = this.userMolecule) {
         const counts = {};
         let hCount = 0;
+        let charge = 0;
         mol.atoms.forEach(a => {
             counts[a.element] = (counts[a.element] || 0) + 1;
             hCount += mol.getFreeValency(a.id);
+            charge += a.charge || 0;
         });
         if (hCount > 0) counts['H'] = (counts['H'] || 0) + hCount;
 
@@ -3712,7 +3719,17 @@ class Game {
         Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
 
         const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
-        return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('');
+        return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('') +
+               Game.chargeSuperscript(charge);
+    }
+
+    // 正味の電荷を右肩の記号にする（0 なら空文字）。`computeMolecularFormula` と
+    // `tools/dump-canonical.js` が同じ規則を使う
+    static chargeSuperscript(charge) {
+        if (!charge) return '';
+        const sup = (n) => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[+d]).join('');
+        const n = Math.abs(charge);
+        return (n > 1 ? sup(n) : '') + (charge > 0 ? '⁺' : '⁻');
     }
 
     // 名称判定ライブラリ（ステージ＋compounds.json）を検証用Molecule付きで遅延構築する。
