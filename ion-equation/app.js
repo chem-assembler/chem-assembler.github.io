@@ -1888,6 +1888,15 @@ function buildEqModeSwitch(stage) {
     return;
   }
   eqModeEl.hidden = false;
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-6）——
+     ユーザーは2回とも「化学反応式を完成させよう／分子反応式／イオン反応式」と**並べて**書いた。
+     実機で見比べて**切り替えのまま**にした（並べると同じ反応の係数パズルが画面に2つ並び、
+     この整理がやめようとしていることを作り直すことになる。理由は §6-6 の4点）。
+     ただし「釦が2つあるだけで何の2択か書いていない」のは事実なので、見出しを1つ足す。 */
+  const lead = document.createElement("span");
+  lead.className = "eqModeLead";
+  lead.textContent = "同じ反応の2つの書き方：";
+  eqModeEl.appendChild(lead);
   const mk2 = (mode, label) => {
     const b = document.createElement("button");
     b.className = "eqModeBtn" + (eqMode === mode ? " on" : "");

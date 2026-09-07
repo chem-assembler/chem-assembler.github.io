@@ -800,7 +800,9 @@ main.timelineMain {
 #eqMsg { margin: 6px 0 4px; font-size: 13px; min-height: 18px; }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。どちらも書けるように行き来させる */
-#eqMode { display: flex; gap: 4px; margin-bottom: 6px; }
+#eqMode { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
+/* 何の2択かを言う見出し（DESIGN_ionic_two_step.md §6-6）。押せる見た目にしない */
+.eqModeLead { font-size: 11px; color: #6b7680; }
 .eqModeBtn {
   font-size: 12px;
   padding: 3px 12px;

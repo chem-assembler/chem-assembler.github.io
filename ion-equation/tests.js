@@ -4451,6 +4451,10 @@ async function runUITests(iframe) {
     // primary:"ionic" なので既定はイオン反応式
     assert(state().eqMode === "ionic", "既定がイオン反応式でない: " + state().eqMode);
     assert(terms().join() === "Al³⁺,OH⁻,Al(OH)₃", "イオン式の項が違う: " + terms().join());
+    /* ★ 2026-09-07（§6-6）: 並べずに切り替えのままにしたぶん、
+       **何の2択かを字で言う**（釦が2つ並ぶだけでは同じ反応の2つの姿だと読めない） */
+    assert((doc.querySelector("#eqMode .eqModeLead") || {}).textContent === "同じ反応の2つの書き方：",
+      "切り替えの見出しが無い: " + doc.getElementById("eqMode").textContent);
     assert(doc.getElementById("recombineWrap").hidden, "イオン式のとき数合わせが出てしまう");
     [1, 3, 1].forEach((v, k) => setCoeff(k, v));
     assert(state().coeffOk, "イオン式の模範が正解にならない");
