@@ -185,8 +185,9 @@ function verdictText(s, got, want) {
     return `${name} も同じ段（${gotRow.label}）だが、このステージでは ${disp(want.sp)} の式で組み立てている。`;
   }
   if (!gotRow.reacts) {
-    return `ちがう。${name} は「${gotRow.label}」の段で、水より下 ＝ 水溶液の中では${s.verb}されない。` +
-      `${gotRow.note}。だから ${sideName(s)} で反応するのは ${disp(want.sp)} のほう。`;
+    // 「水より下」と「反応しない」を2回言わない（段の位置 → その意味 → 結論 の順で1回ずつ）
+    return `ちがう。${name} は「${gotRow.label}」の段で、水より下。${gotRow.note}。` +
+      `だから ${sideName(s)} で反応するのは ${disp(want.sp)} のほう。`;
   }
   return `ちがう。${name} は「${gotRow.label}」の段で、${disp(want.sp)}（${wantRow.label}）より下。` +
     `上にいるほうが先に${s.verb}されるので、${name} の出番はない。`;

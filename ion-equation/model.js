@@ -3536,7 +3536,7 @@ const ELECTRODE_PRIORITY = {
     { id: "acid-h", label: "酸の H⁺",
       members: ["H+"], half: { "H+": "H_red" },
       note: "液が酸性なら H⁺ が e⁻ を受け取って水素が出る" },
-    { id: "water-red", label: "水 H₂O",
+    { id: "water-red", label: "水",
       members: ["H2O"], half: { "H2O": "H2O_red" },
       note: "水はいつでもそこにいる。上の相手がいなければ水が還元されて水素が出る" },
     { id: "active-cation", label: "イオン化傾向が大きい金属のイオン（K〜Al）",
@@ -3545,18 +3545,18 @@ const ELECTRODE_PRIORITY = {
   ],
   /* 陽極（酸化が起きる極）。上ほど酸化されやすい */
   anode: [
-    { id: "halide", label: "ハロゲン化物イオン（Cl⁻・I⁻）",
+    { id: "halide", label: "ハロゲン化物イオン",
       members: ["Cl-", "I-"], half: { "Cl-": "Cl_ox", "I-": "I_ox" },
       note: "そのまま e⁻ をうばわれて、塩素・ヨウ素になる" },
-    { id: "hydroxide", label: "OH⁻",
+    { id: "hydroxide", label: "水酸化物イオン",
       members: ["OH-"], half: { "OH-": "OH_ox" },
       note: "液が塩基性なら OH⁻ が酸化されて酸素が出る" },
-    { id: "water-ox", label: "水 H₂O",
+    { id: "water-ox", label: "水",
       members: ["H2O"], half: { "H2O": "H2O_ox" },
       note: "上の相手がいなければ水が酸化されて酸素が出る" },
-    { id: "oxo-anion", label: "酸素を多く持つ陰イオン（SO₄²⁻・NO₃⁻・PO₄³⁻）",
+    { id: "oxo-anion", label: "酸素を多く持つ陰イオン",
       members: ["SO4^2-", "NO3-", "PO4^3-"], half: null,
-      note: "water より酸化されにくいので、水溶液の中では変化しない" },
+      note: "水より酸化されにくいので、水溶液の中では変化しない" },
   ],
 };
 
