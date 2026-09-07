@@ -309,18 +309,33 @@ function makeParticleEl(p) {
         "stroke-width": 1.5,
       }, g);
     }
+    /* ★ 2026-09-08（§7-7・ユーザー指摘「単原子イオンでは、化学式の右上の電荷と、
+       イオンの円につく電荷がかぶっています」）—— **同じ電荷を2回書かない。**
+
+       枠の中に電荷を持つ構成イオンが**1つしかない**なら、外枠のバッジはその電荷そのもの
+       （ほかは中性なので和＝その1個）。[Cu(NH₃)₄]²⁺ は中心 Cu²⁺ の右肩と外枠のバッジが
+       どちらも 2+ で、同じ大きさの「2+」が2回出ていた。NH₄⁺（H⁺ と ＋）・[Ag(NH₃)₂]⁺ も同じ。
+       ⚠ **判定は「電荷を持つ構成イオンが1個か」。「外枠と同じ数字か」ではない** ——
+       [Al(OH)₄]⁻ は外枠の −1 と OH⁻ の −1 が数として一致するので、数で見ると
+       OH の電荷だけが消えて「中性の OH が4個」という嘘の絵になる。
+       2つ以上が電荷を持つときの外枠は**和**で、個々の電荷は外枠から復元できないから全部書く。 */
+    const charged = L.slots.filter((s) => SPECIES[s.sp].charge !== 0);
+    const soleCharged = spec.charge !== 0 && charged.length === 1 ? charged[0] : null;
     for (const slot of L.slots) {
       const cs = STYLE[slot.sp] || MOLECULE_STYLE;
       mk("circle", { cx: slot.x, cy: slot.y, r: slot.r, fill: cs.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
-      const d = SPECIES[slot.sp].disp;
+      const d = slot === soleCharged ? stripCharge(SPECIES[slot.sp].disp) : SPECIES[slot.sp].disp;
       const t = mk("text", {
         x: slot.x, y: slot.y + 3.5, "text-anchor": "middle",
         "font-size": d.length > 3 ? 8.5 : 10.5,
         fill: cs.darkText ? "#3a4a55" : "#fff", "font-weight": "bold",
       }, g);
-      t.textContent = d;   // 構成イオンは電荷つきで読ませる（外枠にバッジが無い位置なので重複しない）
+      t.textContent = d;   // 構成イオンは「何イオンか」を読ませる（上の1件だけ右肩を外枠に譲る）
     }
-    if (spec.charge !== 0) addChargeBadge(g, L.r * 0.78, spec.charge, "#e08a3c");
+    // 外枠のバッジは**全体**の電荷。陽イオン＝暖色・陰イオン＝寒色で、枠の色と合わせる
+    if (spec.charge !== 0) {
+      addChargeBadge(g, L.r * 0.78, spec.charge, spec.charge > 0 ? "#e08a3c" : "#4d78d8");
+    }
     return g;
   }
   const struct = STRUCTURE[p.sp];

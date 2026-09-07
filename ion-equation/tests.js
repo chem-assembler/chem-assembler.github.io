@@ -4442,6 +4442,56 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "再溶解が完了しない");
   });
 
+  /* ★ 2026-09-08（DESIGN_ionic_two_step.md §7-7・ユーザー指摘
+     「単原子イオンでは、化学式の右上の電荷と、イオンの円につく電荷がかぶっています」）。
+
+     枠つきの粒は、**電荷を持つ構成イオンが1つだけ**なら外枠のバッジがその電荷そのものなので、
+     右肩の電荷を外す。2つ以上あるときの外枠は**和**で、個々の電荷は復元できないから全部残す。
+     ⚠ この検査は**両方向**の否定対照になっている ——
+     直しを外せば①②が落ち、「外枠と同じ数字か」で判定する取り違えをすれば③が落ちる。 */
+  await t("UI: 枠つきの粒 - 同じ電荷を2回書かない（構成イオンの右肩と外枠のバッジ）", async () => {
+    const texts = (sp) => {
+      for (const g of doc.querySelectorAll("#beaker .particle")) {
+        const ti = g.querySelector("title");
+        if (ti && ti.textContent.indexOf(SPECIES[sp].disp + "（") === 0) {
+          return [...g.querySelectorAll("text")].map((e) => e.textContent);
+        }
+      }
+      return null;
+    };
+    const count = (a, v) => a.filter((x) => x === v).length;
+    // ① [Cu(NH₃)₄]²⁺ … 電荷を持つのは中心の Cu だけ。右肩を外し、外枠の 2+ ひとつにする
+    const j = STAGES.findIndex((st) => st.id === "cu-nh3-step2");
+    stageBtn(j).click();
+    addBtn(0).click();
+    for (let k = 0; k < 4; k++) addBtn(1).click();
+    adv(5000); reactBtn().click(); adv(25000);
+    const cu = texts("Cu(NH3)4^2+");
+    assert(cu, "錯イオンの粒が見つからない");
+    assert(count(cu, "Cu") === 1 && count(cu, "Cu²⁺") === 0, "中心の右肩が残っている: " + JSON.stringify(cu));
+    assert(count(cu, "2+") === 1, "外枠のバッジが1つでない: " + JSON.stringify(cu));
+    // ② NH₄⁺ … H⁺ と ＋ の二重。ユーザーが「単原子イオン」と言ったのはこの形
+    const w = STAGES.findIndex((st) => st.id === "weak-base-nh3-hcl");
+    stageBtn(w).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(5000); reactBtn().click(); adv(20000);
+    const nh4 = texts("NH4+");
+    assert(nh4, "NH₄⁺ の粒が見つからない");
+    assert(count(nh4, "H") === 1 && count(nh4, "H⁺") === 0, "H⁺ の右肩が残っている: " + JSON.stringify(nh4));
+    assert(count(nh4, "+") === 1, "外枠のバッジが1つでない: " + JSON.stringify(nh4));
+    // ③ 否定対照: [Al(OH)₄]⁻ は Al³⁺ と OH⁻ の**両方**が電荷を持つ。
+    //    外枠の − は和（+3 と 4×−1）で、ここを外すと「中性の OH が4個」という嘘の絵になる
+    const a = STAGES.findIndex((st) => st.id === "amphoteric-al-step2");
+    stageBtn(a).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(5000); reactBtn().click(); adv(25000);
+    const al = texts("Al(OH)4^-");
+    assert(al, "[Al(OH)₄]⁻ の粒が見つからない");
+    assert(count(al, "Al³⁺") === 1, "電荷が2種あるのに中心の右肩まで外している: " + JSON.stringify(al));
+    assert(count(al, "OH⁻") === 4, "OH⁻ の右肩まで外している（外枠の数字との一致で判定した？）: " + JSON.stringify(al));
+    assert(count(al, "−") === 1, "外枠のバッジが1つでない: " + JSON.stringify(al));
+  });
+
   await t("UI: 分子反応式 ⇄ イオン反応式 を切り替えられる（電荷の行も出る）", async () => {
     const i = STAGES.findIndex((st) => st.id === "amphoteric-al-step1");
     stageBtn(i).click();
@@ -4685,8 +4735,13 @@ async function runUITests(iframe) {
     assert(cx.querySelector("ellipse"), "錯イオンが〇枠で描かれていない");
     assert(!cx.querySelector("rect"), "錯イオンが□枠になっている");
     const cxLabels = [...cx.querySelectorAll("text")].map((t) => t.textContent);
-    assert(cxLabels.includes("Cu²⁺") && cxLabels.filter((l) => l === "NH₃").length === 4,
-      "錯イオンの中に Cu²⁺ と NH₃×4 が描かれていない: " + cxLabels.join(","));
+    /* ⚠ 中心の名札は **Cu**（右肩の ²⁺ は付かない）。2026-09-08・§7-7 —— 電荷を持つ構成イオンが
+       中心1つだけなので、電荷は外枠のバッジ 2+ が1回だけ言う（前は「Cu²⁺」と「2+」で二重だった）。
+       この検査が見ているのは「枠の中に構成イオンが描かれているか」で、そこは変わっていない。 */
+    assert(cxLabels.includes("Cu") && cxLabels.filter((l) => l === "NH₃").length === 4,
+      "錯イオンの中に Cu と NH₃×4 が描かれていない: " + cxLabels.join(","));
+    assert(cxLabels.includes("2+") && !cxLabels.includes("Cu²⁺"),
+      "電荷が二重に出ている（外枠のバッジ 2+ ひとつのはず）: " + cxLabels.join(","));
   });
 
   await t("UI: 分子反応 - 2CH₄+2O₂ でも1分子ずつ反応し、分子を食い散らかさない", async () => {
