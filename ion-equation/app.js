@@ -1719,8 +1719,25 @@ function evaluateReactionInner() {
   if (leftover.length === 0 && madeCount > 0) {
     reactionDone = true;
     const names = stage.reactants.map((sp) => SPECIES[sp].disp).join(" : ");
-    const ratio = stage.reactants.map((sp) => addedCount[sp] || 0).join(" : ");
-    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。この比が係数のヒント。${stage.doneNote}`, "ok");
+    const ns = stage.reactants.map((sp) => addedCount[sp] || 0);
+    const ratio = ns.join(" : ");
+    /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-4）—— ユーザー指示
+       「左がわの模式図／最小公倍数でないときに、インストラクションが必要／
+        酸と塩基の比はあっているが、もっと簡単な整数比にできる」。
+
+       2個ずつ入れて反応させると、ここは緑の成功として「投入した数は 2 : 2。
+       **この比が係数のヒント**」と返していた。勧められたとおり 2:2:2:2 と入れると、
+       右のパネルが 💡 で「2 で割れる」と止める ＝ **自分で誘導して自分で止めていた。**
+       その一手（画面の個数 → 式の係数）をここで言い足す。
+
+       ⚠ 色は緑のまま。ちょうど反応しきったのは事実で、実験としては成功している。
+       橙や赤にすると「2個ずつ入れたのが間違い」に読める。 */
+    const adv = stage.reactants.length >= 2
+      ? simplestRatioAdvice(ns, stage.reactants.map((sp) => SPECIES[sp].disp)) : null;
+    const hint = adv
+      ? `比は合っている。ただし係数は最も簡単な整数比で書くので、そのまま写さない —— ${adv.text}`
+      : "この比が係数のヒント。";
+    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。${hint}${stage.doneNote}`, "ok");
     updateAddedFormula();
     maybeClear();
   } else if (leftover.length > 0) {
