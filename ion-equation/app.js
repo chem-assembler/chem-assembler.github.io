@@ -1909,7 +1909,11 @@ function onCoeffChange() {
   } else if (coeffs.some((c) => c === 0)) {
     setStatusMsg(eqMsgEl, "すべての係数を入れよう（？の場所）", "info");
   } else {
-    setStatusMsg(eqMsgEl, res.reason, "ng");
+    /* ★ 2026-09-07 ユーザー決定「オレンジです」——
+       **つり合ってはいるが最簡整数比でない**（`res.gcd`）は、比そのものは合っているので
+       ✗（赤・間違い）ではなく 💡（橙・あと一歩）で出す。
+       ⚠ ここを赤のままにすると、同じ状態にブロック側の 💡 と2つの顔が並ぶ。 */
+    setStatusMsg(eqMsgEl, res.reason, res.gcd ? "info" : "ng");
   }
   maybeClear();
 }
@@ -2077,7 +2081,9 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
     const react = [...schema.acceptors, ...schema.donors].sort((x, y) => x.i - y.i);
     const adv = simplestRatioAdvice(react.map((t) => coeffs[t.i]),
       react.map((t) => SPECIES[t.sp].disp));
-    if (adv) setStatusMsg(m, `つり合ってはいるけれど、${adv.text}`, "ng");
+    // ★ 2026-09-07 ユーザー決定「オレンジです」——「比は合っているが、もっと簡単にできる」は
+    //    間違いではないので ✗（赤）にしない。ブロック側の 💡 と顔をそろえる
+    if (adv) setStatusMsg(m, `つり合ってはいるけれど、${adv.text}`, "info");
     else setStatusMsg(m, `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`, "ok");
   } else if (bal.hLeft > 0 && stage.saltGoal && saltKindOf(stage.saltGoal) === "酸性塩") {
     setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまる。この課題はそれでよい（あまった H⁺ が酸性塩 ${SPECIES[stage.saltGoal.label].disp} の H になる）。`, "ok");
