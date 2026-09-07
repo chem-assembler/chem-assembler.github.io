@@ -1975,6 +1975,11 @@ main.timelineMain {
 /* ブロックは押すと1つ減る（一覧の「−」と同じことが、図の中でもできる） */
 .ibBlock { cursor: pointer; }
 .ibBlock:hover rect { filter: brightness(1.08); }
+/* 「＋」のゴースト＝次の1つを置く場所。押すと積む（DESIGN_ionic_two_step.md §6-5）。
+   イオン反応モードでは一覧の釦を出さないので、積む操作はここで完結する */
+.ibAdd { cursor: pointer; }
+.ibAdd:hover rect { stroke: #7ba4c6; }
+.ibAdd:hover text { fill: #4d7f9f; }
 
 /* ================================================================================
    電気分解「まず、何が反応する？」の段（electrolysis.html / electrolysis.js）

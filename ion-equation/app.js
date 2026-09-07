@@ -2051,8 +2051,15 @@ function buildIonBlocks() {
   blocksHeadEl.textContent =
     `価数を高さにしてそろえる（${SPECIES[pair.cation].disp} ${ionBlockHeight(pair.cation)}価 と ` +
     `${SPECIES[pair.anion].disp} ${ionBlockHeight(pair.anion)}価）`;
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-5）—— **一覧（paletteEl）を渡さない。**
+     イオン反応モードでは選べる種が片側1つずつしかないので、あの一覧は
+     「押すと1増える釦」＝ 上のステッパーの複製でしかなく、
+     図の下にもう1列の釦が並ぶ見た目そのものが「入力が2つある」の正体だった。
+     積む・減らすは図を直接押して行う（blocks.js の .ibAdd / .ibBlock）。
+     ⚠ 一覧の仕組みは blocks.js に残す —— 酸化還元の⑥では**イオンを選ぶ**ことに意味がある。 */
+  if (blocksPaletteEl) blocksPaletteEl.innerHTML = "";
   ionBlocksInst = IonBlocks.create({
-    svg: blocksSvgEl, paletteEl: blocksPaletteEl, msgEl: blocksMsgEl,
+    svg: blocksSvgEl, msgEl: blocksMsgEl,
     look: schematicLook,
     cations: [pair.cation], anions: [pair.anion],
     cation: pair.cation, anion: pair.anion,
