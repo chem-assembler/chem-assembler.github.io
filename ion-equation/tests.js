@@ -5505,19 +5505,51 @@ async function runUITests(iframe) {
     assert(blocks().state().an === 5, "図のブロックを押しても減らない");
   });
 
-  await t("UI-BLOCKS: 一覧のボタンで選んで積める（フックと画面が同じ数を指す）", async () => {
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-5）—— ステッパーとブロックの畳み方。
+     イオン反応モードでは選べる種が片側1つずつしかないので、一覧の釦は
+     上のステッパーの複製でしかない。**一覧は出さず、図を直接押して積む。** */
+  await t("UI-BLOCKS: イオン反応モードでは一覧を出さず、図の「＋」で積む", async () => {
     goStage("s5");
     ionicBtn().click();
+    assert(!doc.querySelector("#blocksPalette .ibPick"), "一覧の釦が残っている（ステッパーと二重）");
+    assert(!doc.querySelector("#blocksPalette .ibMinus"), "「戻す」の釦が残っている");
     blocks().set({ cn: 0, an: 0 });
-    const pick = (side) => doc.querySelector(`#blocksPalette .ibPick[data-ib-side="${side}"]`);
-    pick("cation").click(); pick("anion").click();
+    const svg = doc.getElementById("ionBlocks");
+    const ghost = (side) => svg.querySelector(`.ibAdd[data-ib-side="${side}"]`);
+    const coeff = (i) => {
+      const v = $$("#equation .term")[i].querySelector(".coeff").textContent;
+      return v === "？" ? 0 : +v;
+    };
+    assert(ghost("cation") && ghost("anion"), "空の列に置き場所（＋）が出ない");
+    ghost("cation").dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    ghost("anion").dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
     const s = blocks().state();
     assert(s.cn === 1 && s.an === 1 && s.kind === "simplest", JSON.stringify(s));
     assert(s.formula === "BaSO4", "組成式が引けない: " + s.formula);
+    // ★ 図で積むと係数にも入る（畳んでも双方向は保つ）
+    assert(coeff(0) === 1 && coeff(1) === 1, `係数が追随しない ${coeff(0)}/${coeff(1)}`);
+    // 積んである上にも置き場所が出る（2つめ以降も図だけで積める）
+    assert(ghost("cation"), "積んだあとに置き場所が消える");
+    ghost("cation").dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    assert(blocks().state().cn === 2, "2つめが積めない: " + blocks().state().cn);
+  });
+
+  /* ⚠ 一覧の仕組みそのものは blocks.js に残す —— 酸化還元の⑥では
+     「余ったイオンから**選んで**組む」ので、選択肢が複数ある。部品として生きていることを見張る。 */
+  await t("UI-BLOCKS: 一覧は paletteEl を渡したときだけ出る（部品としては生きている）", async () => {
+    const host = doc.createElement("div");
+    const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+    doc.body.append(host, svg);
+    const b = win.IonBlocks.create({ svg, paletteEl: host, choices: ["Ba^2+", "SO4^2-"] });
+    const pick = (side) => host.querySelector(`.ibPick[data-ib-side="${side}"]`);
+    pick("cation").click(); pick("anion").click();
+    const s = b.state();
+    assert(s.cn === 1 && s.an === 1 && s.kind === "simplest", JSON.stringify(s));
+    assert(s.formula === "BaSO4", "組成式が引けない: " + s.formula);
     // 「− 1つ戻す」は積んでいないと押せない
-    blocks().set({ cn: 0 });
-    const minus = doc.querySelector('#blocksPalette .ibMinus[data-ib-side="cation"]');
-    assert(minus.disabled, "0 個なのに「戻す」が押せる");
+    b.set({ cn: 0 });
+    assert(host.querySelector('.ibMinus[data-ib-side="cation"]').disabled, "0 個なのに「戻す」が押せる");
+    b.destroy(); host.remove(); svg.remove();
   });
 
   return results;

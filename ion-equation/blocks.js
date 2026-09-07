@@ -77,10 +77,15 @@ function ionBlocksCreate(opts) {
   function draw() {
     if (!svg) return null;
     const s = check();
-    const need = Math.max(2, s.cTotal, s.aTotal);   // 最低2段ぶんは場所を取る（1段だと図が潰れる）
+    /* 最低2段ぶんは場所を取る（1段だと図が潰れる）。
+       ⚠ 空の列に出す「＋」のゴーストは価数ぶんの高さがあるので、そのぶんも数に入れる
+       （入れないと 3価の Al³⁺ のゴーストが枠から出る）。 */
+    const need = Math.max(2, s.cTotal, s.aTotal, s.cHeight, s.aHeight);
     const shown = Math.min(need, maxUnits);
     const cut = need > maxUnits;
-    const padTop = 24, padBottom = 34;
+    // 積んである上に出す「＋」の帯のぶん、天井を空ける（GHOST_H ＋ すき間）
+    const GHOST_H = 20;
+    const padTop = 24 + GHOST_H + 4, padBottom = 34;
     const H = padTop + shown * unitPx + padBottom;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.innerHTML = "";
@@ -106,17 +111,46 @@ function ionBlocksCreate(opts) {
         "font-size": 11, fill: "#7b8794",
       }, svg);
       t.textContent = sp ? `${label}　高さ ${side === "cation" ? s.cTotal : s.aTotal}` : label;
-      if (!sp || n <= 0) {
-        // 空の列は「ここに置く」と分かる点線の枠を1段ぶん置く（何もないと図が読めない）
+      const per0 = sp ? ionBlockHeight(sp) : 1;
+      const cl0 = sp ? look(sp) : null;
+      /* 次の1つを置く場所（点線のゴースト）。**押すと1つ積む。**
+         ★ 2026-09-07（DESIGN_ionic_two_step.md §6-5）—— イオン反応モードでは
+         一覧の釦（＋Ba²⁺）を出さないので、**積む操作は図の中で完結させる**。
+         ブロックを押せば減る（下の click）のと対になっていて、
+         ユーザーの言う「高さ合わせをする」が図の上でできる。 */
+      const drawGhost = (units) => {
+        if (!sp || units >= maxUnits) return;
+        // 空の列は価数ぶんの枠（＝これ1つでどれだけ高いかが分かる）。
+        // 積んである上は細い帯（ブロックと同じ高さで置くと、積んだのか置き場所なのか紛れる）
+        const first = units === 0;
+        const h = first ? Math.min(per0, shown) * unitPx : GHOST_H;
+        const yTop = first ? yOf(Math.min(per0, shown)) : yOf(units) - h - 4;
+        const g = ibMk("g", { class: "ibAdd", role: "button", tabindex: "0" }, svg);
+        g.setAttribute("data-ib-side", side);
         ibMk("rect", {
-          x: x0, y: yOf(1), width: colW, height: unitPx, rx: 8,
+          x: x0, y: yTop, width: colW, height: h, rx: 8,
           fill: "none", stroke: "#c8d2da", "stroke-width": 1.5, "stroke-dasharray": "5 4",
-        }, svg);
+        }, g);
         const e = ibMk("text", {
-          x: x0 + colW / 2, y: yOf(1) + unitPx / 2 + 4, "text-anchor": "middle",
-          "font-size": 11, fill: "#b7c3cd",
-        }, svg);
-        e.textContent = sp ? "＋で積む" : "選ぶ";
+          x: x0 + colW / 2, y: yTop + h / 2 + 4, "text-anchor": "middle",
+          "font-size": 11, fill: "#9fb0bd",
+        }, g);
+        e.textContent = first ? `＋ ${cl0.label}` : "＋";
+        g.addEventListener("click", () => inst.add(side, 1));
+      };
+      if (!sp || n <= 0) {
+        if (!sp) {
+          // 種が決まっていない列は押しても意味がない（選ぶのは一覧の仕事）
+          ibMk("rect", {
+            x: x0, y: yOf(1), width: colW, height: unitPx, rx: 8,
+            fill: "none", stroke: "#c8d2da", "stroke-width": 1.5, "stroke-dasharray": "5 4",
+          }, svg);
+          const e = ibMk("text", {
+            x: x0 + colW / 2, y: yOf(1) + unitPx / 2 + 4, "text-anchor": "middle",
+            "font-size": 11, fill: "#b7c3cd",
+          }, svg);
+          e.textContent = "選ぶ";
+        } else drawGhost(0);
         return;
       }
       const cl = look(sp);
@@ -155,6 +189,7 @@ function ionBlocksCreate(opts) {
         g.addEventListener("click", () => inst.remove(side, 1));
         units += per;
       }
+      drawGhost(units);   // 積んである上に「もう1つ置く」場所を出す
     };
     drawColumn("cation", st.cation, st.cn, cx0);
     drawColumn("anion", st.anion, st.an, ax0);
