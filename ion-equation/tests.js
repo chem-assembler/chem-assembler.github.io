@@ -3563,6 +3563,19 @@ async function runUITests(iframe) {
     assert(msg.includes("1H₂SO₄"), "割った先を物質名つきで示さない: " + msg);
     assert(doc.getElementById("eqMsg").textContent.includes("1 : 2 : 1 : 2"),
       "反応式側の助言に割った先が無い: " + doc.getElementById("eqMsg").textContent);
+    /* ★ 2026-09-07 ユーザー決定「オレンジです」——**比は合っているので赤にしない**。
+       ⚠ 否定対照つき: つり合っていないときは今までどおり赤（ng）であること。
+       ここを見張らないと、区別が消えて「全部オレンジ」になっても誰も気づけない */
+    const eqCls = doc.getElementById("eqMsg").className;
+    const scCls = doc.getElementById("schematicMsg").className;
+    assert(/\binfo\b/.test(eqCls) && !/\bng\b/.test(eqCls),
+      "最簡でないだけなのに反応式の助言が赤い: " + eqCls);
+    assert(/\binfo\b/.test(scCls) && !/\bng\b/.test(scCls),
+      "最簡でないだけなのに模式図の助言が赤い: " + scCls);
+    setCoeff(0, 3);   // ★ 否定対照: つり合いを崩すと赤に戻る
+    assert(/\bng\b/.test(doc.getElementById("eqMsg").className),
+      "つり合っていないのに赤くない ＝ 上の検査が無意味: " + doc.getElementById("eqMsg").className);
+    [2, 4, 2, 4].forEach((v, i) => setCoeff(i, v));
     // 最簡に直せば「ぴったり」に戻る
     [1, 2, 1, 2].forEach((v, i) => setCoeff(i, v));
     assert(doc.getElementById("schematicMsg").textContent.includes("ぴったり"),
