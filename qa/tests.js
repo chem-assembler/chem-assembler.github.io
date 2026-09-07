@@ -1087,7 +1087,21 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   ⚠ ★見直し候補7件はこの3本でも1件も繋がらない（org.phenol.phenoxide-co2 は CO₂ の瓶待ちで、
     //   足したのは Cl₂ の瓶なので別物。ただしフェノキシドへの行きが2本増えたので、
     //   CO₂ の瓶が入れば一気に繋がる位置に来た）。
-    var KNOWN_BOTTLES = 25, KNOWN_RULES = 61, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    // ★ 2026-09-07（v1520）: ジアゾニウムが入った。亜硝酸ナトリウム＋塩酸の試薬を1本、
+    //   実行ルールを3本（ジアゾ化／ジアゾニウム塩の加熱分解／ジアゾカップリング）。
+    //   瓶 25→26・ルール 61→64。
+    //   ★見直し候補は**残り2件**（4件は 2026-09-06 に `kind:"ion"` へ移した）で、
+    //   **今回も1件も繋がらない** —— 1件ずつ突き合わせた結果:
+    //     - `org.aro.c8h10-isomers` … 異性体列挙器の上限。反応とは無関係
+    //     - `org.carbonyl.lactone` … 分子内エステル化待ち。足したのは N₂ まわりで別物
+    //   ⚠⚠ **ただし別の宿題が動いた**（この検査の担当外なので、ここでは直さない）:
+    //   `org.aroN.aniline-base` / `org.aroN.diazonium-decomp` の2件は 2026-09-01 に
+    //   「ion-equation に収録されるのを待つ」として `kind:"ion"` へ移したが、
+    //   **assembler が対イオンを持てるようになり、ジアゾニウム塩も本物の塩として描けるようになった**
+    //   ＝ **assembler へ戻す道が開いた**。★ とくに `diazonium-decomp` は
+    //   「行き先が2つある（フェノール／アゾ化合物）」という積み残しがあるので、
+    //   行き先を決める作業と一緒に見直すこと。
+    var KNOWN_BOTTLES = 26, KNOWN_RULES = 64, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
