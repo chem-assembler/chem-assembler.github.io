@@ -97,6 +97,15 @@
       <div id="schematicAdd"></div>
       <div id="schematicMsg"></div>
     </div>
+    <!-- 価数＝高さのブロック（DESIGN_ion_blocks.md）。
+         ⚠ 上の係数ステッパーを置き換えるものではなく**併置**している。
+         同じ数を「＋/−の数」と「積んだ高さ」の2つの見え方で指していることを見せるため。 -->
+    <div id="blocksWrap" hidden>
+      <div class="schematicHead" id="blocksHead">価数を高さにしてそろえる</div>
+      <svg id="ionBlocks" viewBox="0 0 340 150" role="img" aria-label="価数を高さにしたブロック"></svg>
+      <div id="blocksPalette"></div>
+      <div id="blocksMsg"></div>
+    </div>
     <div id="recombineWrap">
       <div class="recombineHead">粒で見る数合わせ<button id="recombineBtn">⇄ 組み変える</button></div>
       <svg id="recombine" viewBox="0 0 300 30"></svg>
@@ -111,6 +120,7 @@
 <script src="library.js?v=200"></script>
 <script src="model.js?v=200"></script>
 <script src="schematic.js?v=200"></script>
+<script src="blocks.js?v=vNNNN"></script>
 <script src="header-ui.js?v=200"></script>
 <script src="app.js?v=200"></script>
 </body>

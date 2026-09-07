@@ -30,6 +30,13 @@ const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
 const addedFormulaEl = document.getElementById("addedFormula");
+const blocksWrapEl = document.getElementById("blocksWrap");
+const blocksHeadEl = document.getElementById("blocksHead");
+const blocksSvgEl = document.getElementById("ionBlocks");
+const blocksPaletteEl = document.getElementById("blocksPalette");
+const blocksMsgEl = document.getElementById("blocksMsg");
+/* 価数＝高さのブロック（blocks.js）。ステージとモードが変わったときだけ作り直す */
+let ionBlocksInst = null, ionBlocksKey = null;
 
 /* ステージ見出しの詳細（ステージ名・単元札）を開いているか。既定は閉じ＝目標1行だけ。
    ステージを移るたびに作り直すので、開閉の状態はここに預ける */
@@ -1879,6 +1886,7 @@ function onCoeffChange() {
   coeffs.forEach((c, i) => { coeffEls[i].textContent = c === 0 ? "？" : String(c); });
   renderTally();
   buildSchematic();
+  buildIonBlocks();
   // 数合わせビューは「イオンを組み替えて分子の生成物をつくる」見方なので、
   // 傍観イオンを省いたイオン反応式のときは出さない
   const ionicNow = eqMode === "ionic" && STAGES[stageIdx].ionic;
@@ -1990,6 +1998,57 @@ function buildSchematic() {
   updateSchematicMsg(schema, bal, accDisp, prodDisp);
 }
 
+
+/* ---- 価数＝高さのブロック（DESIGN_ion_blocks.md・2026-09-07）----
+
+   ⚠ **出す条件をステージ id で見張らない**（次にステージが増えたとき守られない）。
+   `ionBlockPairOf` が「イオン反応式が 陽イオン ＋ 陰イオン → 中性の1種」の形だと言い、
+   いまイオン反応式を書いていて、**中和の模式図が出ていない**ときだけ出す
+   （1つのステージに2つの図を並べない ＝ bottleStepOf が molecularEq を避けるのと同じ決め）。
+
+   ★ ブロックと係数は**双方向**。ステッパーを動かせば積み替わり、積めば係数が入る。
+   同じ数を2つの見え方で指していることが分かるのが、この版で見せたいこと。 */
+function buildIonBlocks() {
+  if (!blocksWrapEl || typeof IonBlocks === "undefined") return;
+  const stage = STAGES[stageIdx];
+  const pair = eqMode === "ionic" ? ionBlockPairOf(stage) : null;
+  const on = !!pair && !protonSchema(stage);
+  blocksWrapEl.hidden = !on;
+  if (!on) {
+    if (ionBlocksInst) { ionBlocksInst.destroy(); ionBlocksInst = null; ionBlocksKey = null; }
+    return;
+  }
+  // 生成物（右辺）の係数はブロックが持たない（下の onChange の断りを見よ）
+  const key = stage.id + "|" + eqMode;
+  if (key === ionBlocksKey && ionBlocksInst) {
+    // ステッパー → ブロック。同じ数なら onChange は起きない（往復しない）
+    ionBlocksInst.set({ cn: coeffs[pair.ci], an: coeffs[pair.ai] });
+    return;
+  }
+  if (ionBlocksInst) ionBlocksInst.destroy();
+  ionBlocksKey = key;
+  blocksHeadEl.textContent =
+    `価数を高さにしてそろえる（${SPECIES[pair.cation].disp} ${ionBlockHeight(pair.cation)}価 と ` +
+    `${SPECIES[pair.anion].disp} ${ionBlockHeight(pair.anion)}価）`;
+  ionBlocksInst = IonBlocks.create({
+    svg: blocksSvgEl, paletteEl: blocksPaletteEl, msgEl: blocksMsgEl,
+    look: schematicLook,
+    cations: [pair.cation], anions: [pair.anion],
+    cation: pair.cation, anion: pair.anion,
+    formula: pair.product,
+    cn: coeffs[pair.ci] || 0, an: coeffs[pair.ai] || 0,
+    onChange: (s) => {
+      /* ブロック → ステッパー。⚠ **生成物（右辺）の係数には触らない。**
+         ブロックが指しているのは左辺の2つだけで、右辺まで自動で置くと
+         「＋を押したら2になった」という取り違えが起きる（実際に回帰テストが落ちた）。
+         何個できるかは、そろった数を見て人が置く。 */
+      const cn = Math.min(9, s.cn), an = Math.min(9, s.an);
+      if (coeffs[pair.ci] === cn && coeffs[pair.ai] === an) return;
+      coeffs[pair.ci] = cn; coeffs[pair.ai] = an;
+      onCoeffChange();
+    },
+  });
+}
 
 /* 「＋ ブロックを足す」ボタン列。パズル操作をこの模式図の中で完結させる */
 function buildSchematicAdders(schema) {
@@ -2729,6 +2788,7 @@ function initStage() {
   dspTweens = [];
   buildDisplace();
   buildSchematic();
+  buildIonBlocks();
   buildRecombine();
   netionEl.hidden = true;
   clearEl.hidden = true;
