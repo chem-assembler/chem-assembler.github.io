@@ -2264,15 +2264,25 @@ function buildRecombine() {
   lastRecombine = null;
   stripTweens = [];
   recombineMsgEl.textContent = "";
+  // 文を消すときは見た目（💡 の枠）も一緒に落とす。残すと空の帯だけが出る
+  recombineMsgEl.classList.remove("msgBox", "ok", "ng", "info");
   recombineBtn.textContent = "⇄ 組み変える";
-  if (coeffs.slice(0, nL).some((c) => c === 0)) {
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-3）——
+     **係数を1つ入れた時点で、入っているぶんの粒を描く。**
+     v201 までは左辺が全部そろうまで1粒も出さず、案内文だけを出していた。
+     「何個あるか」は静止の図で見せ、「組み変わる」は動きで見せる、と分けたので、
+     図のほうは待たない。未入力の列は見出しが「？」のまま残る＝**あと何が要るかが図で分かる**。
+     ⚠ 釦（動き）は左辺がそろうまで押させない。半端な係数で走らせると
+     simulateFormation が「0 個できた」を返し、足りないのか間違いなのか読めなくなる。 */
+  const missing = coeffs.slice(0, nL).filter((c) => c === 0).length;
+  if (missing === nL) {
     recombineBtn.disabled = true;
     recombineSvg.setAttribute("viewBox", "0 0 360 30");
     const t = mk("text", { x: 180, y: 19, "text-anchor": "middle", "font-size": 12, fill: "#8a94a0" }, recombineSvg);
-    t.textContent = "左辺の係数を入れると組み変えを試せる（右辺はあとからでもよい）";
+    t.textContent = "左辺の係数を1つ入れると、そのぶんのイオンがここに出る";
     return;
   }
-  recombineBtn.disabled = false;
+  recombineBtn.disabled = missing > 0;
   const sim = simulateFormation(stage, coeffs.slice(0, nL));
 
   const R = 13, GAP = 4, PAD = 5, ROWGAP = 8, LABELH = 26, SEP = 30, MARGIN = 8;
@@ -2396,7 +2406,13 @@ function buildRecombine() {
       });
     }
   });
-  recombineState = { leftParticles, formPlan, rightCols, sim, done: false };
+  recombineState = { leftParticles, formPlan, rightCols, sim, done: false, ready: missing === 0 };
+  /* 半端な係数のときは「何が足りないか」を名指しする。
+     図はもう出ているので、ここで言うのは**動かすために足りないもの**だけ */
+  if (missing > 0) {
+    const yet = eq.reactants.filter((sp, i) => coeffs[i] === 0).map((sp) => SPECIES[sp].disp).join("・");
+    setStatusMsg(recombineMsgEl, `${yet} の係数を入れると組み変えを試せる（右辺はあとからでもよい）。`, "info");
+  }
 }
 
 /* 弧を描いて飛ぶ（2次ベジェ。制御点を中点の上に持ち上げる） */
@@ -2436,7 +2452,8 @@ function stepStripTweens(dt) {
 }
 
 function animateRecombine() {
-  if (!recombineState || recombineState.done) return;
+  // ready＝左辺の係数がそろっている。図（静止）は半端でも出るが、動きはそろってから
+  if (!recombineState || recombineState.done || !recombineState.ready) return;
   recombineState.done = true;
   recombineBtn.textContent = "↺ 並べ直す";
   const plan = recombineState.formPlan;
