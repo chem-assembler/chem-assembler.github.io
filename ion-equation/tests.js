@@ -5191,6 +5191,98 @@ async function runUITests(iframe) {
     }
   });
 
+  /* ---- 価数＝高さのブロック（blocks.js・DESIGN_ion_blocks.md・2026-09-07）----
+     ★ この部品は**あとで酸化還元の⑥からも呼ばれる**ので、
+     ここで見張るのは「イオン反応モードの画面」ではなく**部品のフックそのもの**。 */
+
+  const ionicBtn = () => $$("#eqMode .eqModeBtn").find((b) => b.textContent.includes("イオン反応式"));
+  const molBtn = () => $$("#eqMode .eqModeBtn").find((b) => b.textContent.includes("分子反応式"));
+  const goStage = (id) => stageBtn(STAGES.findIndex((s) => s.id === id)).click();
+  const blocks = () => win.IonBlocks.last();
+  const blocksHidden = () => doc.getElementById("blocksWrap").hidden;
+
+  await t("UI-BLOCKS: イオン反応式のときだけ出る（分子反応式・中和では出さない）", async () => {
+    goStage("s5");
+    assert(blocksHidden(), "s5 の分子反応式でブロックが出ている");
+    ionicBtn().click();
+    assert(!blocksHidden(), "s5 のイオン反応式でブロックが出ない");
+    const s = blocks().state();
+    assert(s.cation === "Ba^2+" && s.anion === "SO4^2-", JSON.stringify(s));
+    assert(s.cHeight === 2 && s.aHeight === 2, "高さが価数と合わない: " + JSON.stringify(s));
+    molBtn().click();
+    assert(blocksHidden(), "分子反応式へ戻してもブロックが残る");
+    // ⚠ 中和のステージ（H⁺＋OH⁻→H₂O）では、既にある中和の模式図と二重にしない
+    stageBtn(0).click();
+    assert(blocksHidden(), "中和のステージでブロックと模式図が二重に出ている");
+  });
+
+  await t("UI-BLOCKS: 積むと係数が入り、係数を動かすと積み替わる（双方向・往復しない）", async () => {
+    goStage("amphoteric-al-step1");
+    assert(!blocksHidden(), "既定がイオン反応式のステージでブロックが出ない");
+    const b = blocks();
+    b.set({ cn: 0, an: 0 });
+    const coeff = (i) => {
+      const v = $$("#equation .term")[i].querySelector(".coeff").textContent;
+      return v === "？" ? 0 : +v;
+    };
+    // ブロック → 係数
+    b.add("cation", 1); b.add("anion", 3);
+    assert(coeff(0) === 1 && coeff(1) === 3, `係数が追随しない ${coeff(0)}/${coeff(1)}`);
+    // ★ 生成物（右辺）の係数には触らない —— 触ると「＋を押したら2になった」が起きる
+    assert(coeff(2) === 0, "ブロックが生成物の係数まで置いている: " + coeff(2));
+    // 係数 → ブロック
+    setCoeff(1, 6);
+    assert(blocks().state().an === 6, "係数を動かしてもブロックが積み替わらない");
+    // 往復していない（同じ数のまま安定する）
+    setCoeff(1, 6);
+    assert(coeff(1) === 6 && blocks().state().an === 6, "係数とブロックが往復して数が動いた");
+  });
+
+  await t("UI-BLOCKS: 三値が図に出る（線が2本＝そろわない／1本＝そろった）", async () => {
+    goStage("amphoteric-al-step1");
+    const b = blocks();
+    const svg = doc.getElementById("ionBlocks");
+    // ⚠ 素の <line> を数えない（ブロックの中の仕切り線と底辺まで数えてしまう）
+    const tops = () => svg.querySelectorAll(".ibTop").length;
+    const texts = () => [...svg.querySelectorAll("text")].map((e) => e.textContent).join(" ");
+    b.set({ cn: 1, an: 2 });
+    assert(b.state().kind === "short", b.state().kind);
+    assert(tops() === 2, "そろっていないのに天井の線が1本: " + tops());
+    assert(texts().includes("あと 1"), "足りない高さを図に出していない: " + texts());
+    b.set({ cn: 1, an: 3 });
+    assert(b.state().kind === "simplest", b.state().kind);
+    assert(tops() === 1, "そろったのに天井の線が2本: " + tops());
+    assert(texts().includes("そろった"), texts());
+    // ⚠ 最簡でないときも線は1本（そろっているのは事実）。文だけが「割れる」と言う
+    b.set({ cn: 2, an: 6 });
+    const r = b.state();
+    assert(r.kind === "reducible" && r.times === 2, JSON.stringify(r));
+    assert(tops() === 1, "そろっているのに線が2本に割れている");
+    assert(!r.message.includes("そろっていない"), "最簡でないのを「そろっていない」と言う: " + r.message);
+    assert(r.message.includes("1 : 3"), "どこまで割るかを言っていない: " + r.message);
+    // 判定文は SVG の読み上げにも載る（色だけに頼らない）
+    assert(svg.getAttribute("aria-label") === r.message, "aria-label に判定文が載っていない");
+    // 図の中のブロックを押すと1つ減る（一覧の「−」と同じことが図でもできる）
+    const blk = svg.querySelector('.ibBlock[data-ib-side="anion"]');
+    blk.dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    assert(blocks().state().an === 5, "図のブロックを押しても減らない");
+  });
+
+  await t("UI-BLOCKS: 一覧のボタンで選んで積める（フックと画面が同じ数を指す）", async () => {
+    goStage("s5");
+    ionicBtn().click();
+    blocks().set({ cn: 0, an: 0 });
+    const pick = (side) => doc.querySelector(`#blocksPalette .ibPick[data-ib-side="${side}"]`);
+    pick("cation").click(); pick("anion").click();
+    const s = blocks().state();
+    assert(s.cn === 1 && s.an === 1 && s.kind === "simplest", JSON.stringify(s));
+    assert(s.formula === "BaSO4", "組成式が引けない: " + s.formula);
+    // 「− 1つ戻す」は積んでいないと押せない
+    blocks().set({ cn: 0 });
+    const minus = doc.querySelector('#blocksPalette .ibMinus[data-ib-side="cation"]');
+    assert(minus.disabled, "0 個なのに「戻す」が押せる");
+  });
+
   return results;
 }
 
