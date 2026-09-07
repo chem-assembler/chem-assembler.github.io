@@ -2546,15 +2546,45 @@ recombineBtn.onclick = () => {
 
 /* ---- 進行 ---- */
 
+/* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-2）—— **クリアの条件は係数だけ。**
+
+   v201 までは `reactionDone && coeffOk` ＝ ビーカーで正しい比を投入して反応させ、
+   なおかつ同じ比を係数にも入れないと進めなかった。ユーザーの申し立ては
+   「左の係数合わせと右の係数合わせで内容がかぶっている／右のコンテンツをメインにし、
+   正解後にアニメーションで確認というオプションの位置づけに」。
+
+   ⚠ **ビーカーを取り上げるのではない。** ＋ボタンも ⚡反応させる もそのまま残る。
+   変わったのは「どちらが本体か」だけで、実験は**正解のあとに確かめる道**になった。
+   自分で先に実験した人には、その事実を帯の文で認める（reactionDone の分岐）。 */
 function maybeClear() {
-  if (cleared || !reactionDone || !coeffOk) return;
-  cleared = true;
+  if (!coeffOk) return;
+  if (!cleared) {
+    cleared = true;
+    slTrack("stage_clear", { app: "ion-equation", stage: String(stageIdx + 1) });
+  }
+  buildClearBanner();
+}
+
+/* クリアの帯。**反応させたかどうかで中身が変わる**ので、
+   実験が終わったあと（evaluateReaction → maybeClear）にも組み直される */
+function buildClearBanner() {
   clearEl.hidden = false;
   clearEl.innerHTML = "";
-  slTrack("stage_clear", { app: "ion-equation", stage: String(stageIdx + 1) });
   const t = document.createElement("div");
-  t.textContent = "クリア！ ビーカーの実験と反応式が両方そろった。";
+  t.textContent = reactionDone
+    ? "クリア！ 反応式が完成し、ビーカーの実験ともそろった。"
+    : "クリア！ 反応式が完成した。水の中で本当にそうなるか、ビーカーで確かめよう。";
   clearEl.appendChild(t);
+  // 正解後のオプション ——「確かめる」を1押しで走らせる。
+  // 入れる数は sampleInputs（模範の投入数）から導く＝ここに数を書かない
+  if (!reactionDone) {
+    const c = document.createElement("button");
+    c.id = "confirmBtn";
+    c.className = "confirm";
+    c.textContent = "▶ ビーカーで確かめる";
+    c.onclick = () => runConfirm(c);
+    clearEl.appendChild(c);
+  }
   if (stageIdx < STAGES.length - 1) {
     const b = document.createElement("button");
     b.textContent = "次のステージへ →";
@@ -2565,6 +2595,25 @@ function maybeClear() {
     d.textContent = "全ステージクリア！おつかれさま。";
     clearEl.appendChild(d);
   }
+}
+
+/* 「▶ ビーカーで確かめる」—— 正解のあとに実験を1押しで走らせる（§6-2 のオプション）。
+
+   ⚠ **入れる数を書かない。** `sampleInputs(stage)` が模範の投入数を持っている
+   （加水分解・電離は per 個、ほかは左辺の係数）。ここに数を書くと、
+   データを直したとき「確かめたのに反応しきらない」画面になる。
+   ⚠ 自分で先に入れてある人のぶんは足りないぶんだけ足す（入れ直さない）。 */
+function runConfirm(btn) {
+  const stage = STAGES[stageIdx];
+  const need = sampleInputs(stage);
+  stage.reactants.forEach((sp, i) => {
+    for (let k = addedCount[sp] || 0; k < (need[i] || 0); k++) addMolecule(sp);
+  });
+  if (btn) { btn.disabled = true; btn.textContent = "▶ 確かめ中…"; }
+  // 落ちて電離しきってから反応させる（schedule は advance() で決定論的に進む＝テストできる）
+  schedule(0.9, () => doReact());
+  // 携帯の縦並びでは帯とビーカーが離れているので、見る場所まで運ぶ
+  try { beakerSvg.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { /* 古い実装でも無視 */ }
 }
 
 /* 見出し名。番号はデータに持たず**並び順から作る**

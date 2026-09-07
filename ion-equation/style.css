@@ -938,12 +938,17 @@ main.timelineMain {
 }
 #clearBanner button {
   margin-top: 6px;
+  margin-right: 6px;
   border: none; border-radius: 8px;
   padding: 8px 16px;
   background: #e08a3c; color: #fff;
   font-size: 15px; font-weight: bold;
   cursor: pointer;
 }
+/* 「▶ ビーカーで確かめる」は**次へ進む釦と別の仕事**（正解後のオプション）なので、
+   同じ橙で並べると押し間違える。ビーカー側の「⚡反応させる」と同じ系統の青にする */
+#clearBanner button.confirm { background: #46647e; }
+#clearBanner button.confirm:disabled { background: #9aa6b1; cursor: default; }
 
 /* ---- スマホ（縦持ち）: 指で押しやすいタップ標的にする ---- */
 @media (max-width: 560px) {

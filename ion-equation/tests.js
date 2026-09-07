@@ -3404,6 +3404,35 @@ async function runUITests(iframe) {
     assert(!doc.getElementById("clearBanner").hidden, "クリアバナーが出ない");
   });
 
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-2）—— **クリアの条件は係数だけ。**
+     v201 までは reactionDone && coeffOk ＝ 同じ比を左（ビーカー）と右（係数）で
+     2回決めないと進めなかった。実験は「正解のあとに確かめる」オプションに降りた。 */
+  await t("UI: ビーカーに触れなくても係数だけでクリアし、確かめる釦で実験が走る", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s4");
+    stageBtn(i).click();
+    assert(Object.keys(state().added).length === 0, "初期状態でビーカーに何か入っている");
+    eqOf(STAGES[i], state().eqMode).answer.forEach((v, k) => setCoeff(k, v));
+    let s = state();
+    assert(s.coeffOk && s.cleared, "係数だけでクリアにならない: " + JSON.stringify(s));
+    assert(!s.reactionDone, "実験していないのに反応済みになっている");
+    const banner = doc.getElementById("clearBanner");
+    assert(banner.textContent.includes("ビーカーで確かめよう"), "確かめる誘いが無い: " + banner.textContent);
+    // ★ 正解後のオプション: 1押しで模範どおり入れて反応させる（数は sampleInputs から導く）
+    const confirm = doc.getElementById("confirmBtn");
+    assert(confirm, "「確かめる」釦が出ない");
+    confirm.click();
+    adv(20000);
+    s = state();
+    assert(s.reactionDone, "確かめる釦で反応しきらない: " + JSON.stringify(s));
+    assert(s.added["AgNO3"] === 1 && s.added["NaCl"] === 1, "模範の投入数と違う: " + JSON.stringify(s.added));
+    assert(doc.getElementById("clearBanner").textContent.includes("実験ともそろった"),
+      "確かめたあとの帯が変わらない: " + doc.getElementById("clearBanner").textContent);
+    assert(!doc.getElementById("confirmBtn"), "確かめ終わっても釦が残っている");
+    // ⚠ ビーカーの ＋ボタンと ⚡反応させる は取り上げない（本体が移っただけ）
+    assert(doc.querySelectorAll("#toolbar .add").length === 2 && doc.querySelector("#toolbar .react"),
+      "ビーカーの操作が消えている");
+  });
+
   await t("UI: 本質の1行 - 燃焼は「原子の組み替え」・s8 は結びなし・通常は傍観イオンに触れる（S-6）", async () => {
     const netion = () => doc.getElementById("netion");
     const solve = (i) => {
