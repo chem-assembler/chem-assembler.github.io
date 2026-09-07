@@ -3595,6 +3595,9 @@ function electrolysisPick(kind, solution) {
   const rows = electrodePriority(kind).map((tr, i) => ({
     tier: i + 1, id: tr.id, label: tr.label, note: tr.note || "",
     reacts: !!tr.half,
+    /* members は段の顔ぶれ全部（表は**全部見せる**。見せないと確かめられない）、
+       present はそのうち「いまの液にいる」ぶん。画面はこの2つの差で濃さを変える。 */
+    members: tr.members.slice(),
     present: tr.members.filter((m) => cands.includes(m)),
     chosen: null,
   }));

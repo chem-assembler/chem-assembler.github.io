@@ -1610,9 +1610,11 @@ function runModelTests() {
       "自由組み立ての試薬に Cl_ox が混ざっている");
   });
 
-  t("B3 電気分解: 両ステージで倍率が導け、原子・電荷が保存する", () => {
-    assert(ELECTROLYSIS_STAGES.length === 2, "電気分解のステージ数が2でない");
-    const want = { e1: "1:1", e2: "1:2" };            // [陽極 ×a, 陰極 ×b]
+  t("B3 電気分解: 全ステージで倍率が導け、原子・電荷が保存する", () => {
+    /* B3-2（2026-09-07）で 2 → 6 件。4通り（陽イオン・陰イオンがそのまま反応する／しない）が
+       全部出るように選んである。件数そのものの検査は B3-2 の節で 4通りごと見張る。 */
+    assert(ELECTROLYSIS_STAGES.length === 6, "電気分解のステージ数が6でない");
+    const want = { e1: "1:1", e2: "1:2", e3: "1:1", e4: "1:2", e5: "1:2", e6: "1:2" };  // [陽極 ×a, 陰極 ×b]
     for (const st of ELECTROLYSIS_STAGES) {
       assert(HALF_REACTIONS[st.anode].kind === "oxidation", st.id + ": 陽極が酸化の式でない");
       assert(HALF_REACTIONS[st.cathode].kind === "reduction", st.id + ": 陰極が還元の式でない");
@@ -1640,10 +1642,11 @@ function runModelTests() {
     }
     // 具体値で固定: Cu²⁺ ＋ 2Cl⁻ → Cu ＋ Cl₂ ／ 2H₂O → O₂ ＋ 2H₂
     const fmt = (t2) => t2.map((x) => (x.n > 1 ? x.n : "") + x.sp).sort().join("+");
-    const e1 = electrolysisStageOf(ELECTROLYSIS_STAGES[0]);
+    const byId = (id) => ELECTROLYSIS_STAGES.find((s) => s.id === id);
+    const e1 = electrolysisStageOf(byId("e1"));
     const c1 = combineHalves(e1, 1, 1);
     assert(fmt(c1.left) === "2Cl-+Cu^2+" && fmt(c1.right) === "Cl2+Cu", "e1: " + fmt(c1.left) + "→" + fmt(c1.right));
-    const e2 = electrolysisStageOf(ELECTROLYSIS_STAGES[1]);
+    const e2 = electrolysisStageOf(byId("e2"));
     const c2 = combineHalves(e2, 1, 2);
     // H⁺ は両辺で 4個ずつ打ち消える（水の電気分解の見どころ）
     assert(fmt(c2.left) === "2H2O" && fmt(c2.right) === "2H2+O2", "e2: " + fmt(c2.left) + "→" + fmt(c2.right));
@@ -1664,7 +1667,7 @@ function runModelTests() {
     assert(electrodeTerms("なにか").ox === "負極(−)", "未知のモードで落ちる");
   });
 
-  t("B3 ステージ表: 電池2つ・電気分解2つが並び、id も種別も重複しない", () => {
+  t("B3 ステージ表: 電池2つ・電気分解6つが並び、id も種別も重複しない", () => {
     assert(CELL_STAGES.length === BATTERY_STAGES.length + ELECTROLYSIS_STAGES.length,
       "ステージ表の数が合わない: " + CELL_STAGES.length);
     const ids = CELL_STAGES.map((s) => s.id);
@@ -1679,6 +1682,146 @@ function runModelTests() {
     }
     // 電気分解では電極を選ばせない（§3-3）
     for (const s of ELECTROLYSIS_STAGES) assert(!s.choose, s.id + ": 電気分解で電極を選ばせている");
+  });
+
+  /* ================================================================================
+     B3-2: 電気分解「何が反応するか」の順位表（DESIGN_battery_electrolysis.md §9。2026-09-07）
+     ================================================================================ */
+
+  t("B3-2 順位表: 表そのものが健全（段の id・顔ぶれ・half がそろい、水が途中にいる）", () => {
+    for (const kind of ["cathode", "anode"]) {
+      const tiers = electrodePriority(kind);
+      assert(tiers.length >= 3, kind + ": 段が少なすぎる");
+      const ids = new Set(), seen = new Set();
+      for (const tr of tiers) {
+        assert(tr.id && !ids.has(tr.id), kind + ": 段の id が空か重複: " + tr.id);
+        ids.add(tr.id);
+        assert(tr.label && tr.note, tr.id + ": 見出しかひとことが無い");
+        assert(tr.members.length, tr.id + ": 顔ぶれが空");
+        for (const sp of tr.members) {
+          assert(SPECIES[sp], tr.id + ": SPECIES に無い種 " + sp);
+          assert(!seen.has(sp), "同じ種が2つの段に出ている: " + sp);
+          seen.add(sp);
+          // 符号が極と合っていること（陰極は陽イオン、陽極は陰イオン。水はどちらにも出る）
+          const c = SPECIES[sp].charge;
+          const ok = sp === "H2O" ? c === 0 : (kind === "cathode" ? c > 0 : c < 0);
+          assert(ok, tr.id + ": " + sp + " の電荷(" + c + ")が " + kind + " に合わない");
+        }
+        /* ★ 「反応しない」の表現は half を持たないこと1つだけ。
+           half を持つなら、顔ぶれ全員ぶんの半反応式が実在して向きも合っていること。 */
+        if (tr.half) {
+          for (const sp of tr.members) {
+            const id = tr.half[sp];
+            assert(id && HALF_REACTIONS[id], tr.id + ": " + sp + " の半反応式が無い");
+            const want = kind === "cathode" ? "reduction" : "oxidation";
+            assert(HALF_REACTIONS[id].kind === want, id + ": 向きが " + kind + " に合わない");
+            // その種が式の左辺にいる（＝実際に消費されるもの）こと
+            assert(HALF_REACTIONS[id].left.some((x) => x.sp === sp), id + ": " + sp + " が左辺にいない");
+          }
+        }
+      }
+      /* ★ **水が表の途中にいる**のがこの表の芯（上に反応するもの・下に反応しないもの）。
+         水が最下段だと「水溶液では反応しない」が言えなくなる。 */
+      const water = tiers.findIndex((tr) => tr.members.includes("H2O"));
+      assert(water > 0, kind + ": 水が最上段にいる（それでは順位を比べる意味がない）");
+      assert(water < tiers.length - 1, kind + ": 水より下の段が無い（反応しないものを言えない）");
+      // 反応しない段は水より下にだけある（上にあると走査が飛ばしてしまい、表と判定が食い違う）
+      tiers.forEach((tr, i) => {
+        if (!tr.half) assert(i > water, tr.id + ": 反応しない段が水より上にいる");
+      });
+    }
+  });
+
+  t("B3-2 判定: 全ステージで、順位表から導いた式が宣言どおりになる", () => {
+    for (const st of ELECTROLYSIS_STAGES) {
+      const p = electrolysisPicks(st);
+      assert(p, st.id + ": 判定できない");
+      assert(p.cathode.half === st.cathode,
+        st.id + ": 陰極が導出と食い違う " + p.cathode.half + " / " + st.cathode);
+      assert(p.anode.half === st.anode,
+        st.id + ": 陽極が導出と食い違う " + p.anode.half + " / " + st.anode);
+      /* ★ **液のイオンが全部 表に載っている**こと。載っていないと、そのイオンは
+         判定で黙って無視され、「水が反応する」が理由なしに出てしまう。 */
+      for (const sp of new Set(DISSOCIATION[st.solution] || [])) {
+        const kind = SPECIES[sp].charge > 0 ? "cathode" : "anode";
+        assert(priorityTierOf(kind, sp) !== null,
+          st.id + ": " + sp + " が " + kind + " の順位表に載っていない");
+      }
+      // 候補には必ず水が混ざる（この段の肝）
+      for (const kind of ["cathode", "anode"]) {
+        assert(electrolysisCandidates(kind, st.solution).includes("H2O"),
+          st.id + ": " + kind + " の候補に水がいない");
+      }
+    }
+  });
+
+  t("B3-2 収録: 「そのまま反応する／しない」の4通りが全部そろっている", () => {
+    const seen = {};
+    for (const st of ELECTROLYSIS_STAGES) {
+      const p = electrolysisPicks(st);
+      const key = (p.cathode.sp === "H2O" ? "陰極:水" : "陰極:イオン") + "／" +
+                  (p.anode.sp === "H2O" ? "陽極:水" : "陽極:イオン");
+      (seen[key] = seen[key] || []).push(st.id);
+    }
+    assert(Object.keys(seen).length === 4,
+      "4通りそろっていない: " + JSON.stringify(seen));
+    // 各型の代表（収録を入れ替えたら、ここで気づける）
+    assert(seen["陰極:イオン／陽極:イオン"].includes("e1"), "する×する が e1 でない");
+    assert(seen["陰極:水／陽極:イオン"].includes("e3"), "しない×する が e3 でない");
+    assert(seen["陰極:イオン／陽極:水"].includes("e4"), "する×しない が e4 でない");
+    assert(seen["陰極:水／陽極:水"].includes("e5"), "しない×しない が e5 でない");
+  });
+
+  t("B3-2 電気分解の式は梯子に載せない（自由組み立てが勝手に答えない）", () => {
+    /* Cl_ox と同じ理由（§3-3 の修正2）。電源が押し込む反応なので、
+       酸化還元の強さ比べで起きるかどうかが決まらない。 */
+    for (const id of ["H2O_red", "OH_ox"]) {
+      const hr = HALF_REACTIONS[id];
+      assert(hr, id + " が無い");
+      assert(compareSides(hr.left, hr.right).balanced, id + " がつり合わない");
+      assert(REDOX_LADDER_ACID[hr.couple] === undefined, hr.couple + " が梯子に載っている");
+      assert(rankOfHalf(id) === null, id + ": 順位を持ってしまっている");
+      assert(!REAGENTS.some((r) => Object.values(r.half || {}).includes(id)),
+        "自由組み立ての試薬に " + id + " が混ざっている");
+    }
+    // 水の還元は塩基性の書き方（右辺に OH⁻）。液性の導出と食い違わないこと
+    assert(conditionOfHalf(HALF_REACTIONS["H2O_red"]) === "basic", "H2O_red の液性の導出が合わない");
+    assert(conditionOfHalf(HALF_REACTIONS["OH_ox"]) === "basic", "OH_ox の液性の導出が合わない");
+  });
+
+  t("B3-2 sumNote: 打ち消えない種が残る回にだけ、その断りを持っている", () => {
+    for (const st of ELECTROLYSIS_STAGES) {
+      const n = electrolysisStageOf(st);
+      const c = combineHalves(n, n.answer[0], n.answer[1]);
+      const both = [...c.left, ...c.right].map((x) => x.sp);
+      // H⁺ と OH⁻ が同時に残る回＝陽極が酸性に・陰極が塩基性になる回
+      const split = both.includes("H+") && both.includes("OH-");
+      assert(!!st.sumNote === split,
+        st.id + ": 断りの有無が式と合わない（残り: " + both.join(",") + "）");
+      if (split) assert(/酸性|塩基性/.test(st.sumNote), st.id + ": 断りの中身が薄い");
+    }
+    // いまそれに当たるのは e5（Na₂SO₄）だけ
+    assert(ELECTROLYSIS_STAGES.filter((s) => s.sumNote).map((s) => s.id).join() === "e5",
+      "断りを持つステージが e5 だけでない");
+  });
+
+  t("B3-2 ページ分け: cellStagesOfKind が電池2件・電気分解6件を返し、番号が1から振り直される", () => {
+    assert(cellStagesOfKind("battery").map((s) => s.id).join() === "b1,b2",
+      "電池のページ: " + cellStagesOfKind("battery").map((s) => s.id).join());
+    assert(cellStagesOfKind("electrolysis").map((s) => s.id).join() === "e1,e2,e3,e4,e5,e6",
+      "電気分解のページ: " + cellStagesOfKind("electrolysis").map((s) => s.id).join());
+    // 知らない名前は電池あつかい（ページが名乗り忘れても行き止まりにしない）
+    assert(cellStagesOfKind("").length === BATTERY_STAGES.length, "名乗りが無いときの既定が電池でない");
+    // 通し番号はページごとに1から（allStagesInOrder が cell と elyz に割れている）
+    const all = allStagesInOrder();
+    const cell = all.filter((s) => s.mode === "cell"), elyz = all.filter((s) => s.mode === "elyz");
+    assert(cell.map((s) => s.no).join() === "1,2", "電池の番号: " + cell.map((s) => s.no).join());
+    assert(elyz.map((s) => s.no).join() === "1,2,3,4,5,6", "電気分解の番号: " + elyz.map((s) => s.no).join());
+    assert(cell.length + elyz.length === CELL_STAGES.length, "割ったら件数が変わった");
+    // モードの表にも入口が2つ（帯はここからしか作られない）
+    const hrefs = MODES.map((m) => m.href);
+    assert(hrefs.includes("battery.html") && hrefs.includes("electrolysis.html"),
+      "MODES に入口が2つそろっていない: " + hrefs.join(","));
   });
 
   t("B3 序列は参照であって複製でない: 梯子を動かすと負極の判定も動く", () => {
@@ -1768,7 +1911,7 @@ function runModelTests() {
   /* ---- 系列（ステージの仲間分け）【R】DESIGN_stage_series.md ----
      ⚠ ここは**1件でも漏れたら赤**にする。系列は「重ならない分け方」なので、
      取りこぼしたステージが黙ってどこにも出なくなるのがいちばん怖い事故。 */
-  t("系列: 全 62 ステージがちょうど1つの系列に入り、取りこぼしが1件も無い", () => {
+  t("系列: 全 66 ステージがちょうど1つの系列に入り、取りこぼしが1件も無い", () => {
     const r = stagesBySeries();
     const expected = STAGES.length + REDOX_STAGES.length + CONDITION_STAGES.length + CELL_STAGES.length;
     assert(r.total === expected, "並べたステージ数が合わない: " + r.total + " / " + expected);
@@ -1811,8 +1954,8 @@ function runModelTests() {
     }
   });
 
-  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元18・電池4）", () => {
-    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 18, "sr-cell": 4 };
+  t("系列: 内訳が想定どおり（酸塩基19・沈殿14・分子7・酸化還元18・電池と電気分解8）", () => {
+    const want = { "sr-acid-base": 19, "sr-precipitate": 14, "sr-molecule": 7, "sr-redox": 18, "sr-cell": 8 };
     for (const g of stagesBySeries().groups) {
       assert(g.stages.length === want[g.series.id],
         g.series.id + " の件数が変わった: " + g.stages.length + "（想定 " + want[g.series.id] + "）");
@@ -8060,15 +8203,21 @@ async function runBatteryUITests(iframe) {
     assert(/そろっている/.test(note.textContent) && /必要がない/.test(note.textContent),
       "そろえる必要がないと言っていない: " + note.textContent);
     assert(note.textContent.includes("2個ずつ"), "1単位あたりの e⁻ の数を言っていない: " + note.textContent);
-    // 倍率が要る回では出さない（水の電気分解は 1:2）
+    /* 倍率が要る回では出さない。
+       ⚠ B3-2 でページを割るまでは「水の電気分解（1:2）」を借りていたが、
+       このページにはもう電気分解が無い。**同じ 1:2 の回**として b2 の Mg×Ag を使う
+       （Ag⁺ ＋ e⁻ → Ag は 1個しか受け取らないので 1:2 になる）。 */
     const go = (label) => {
       const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === label);
       if (!b) throw new Error(label + " のステージ釦が無い");
       b.click();
     };
-    go("水の電気分解（希硫酸）");
+    go("電極を選ぶ");
+    doc.querySelector('.palMetal[data-metal="Mg"]').click();
+    doc.querySelector('.palMetal[data-metal="Ag"]').click();
+    tap("Mg");
     win.BatteryEq.setMult(1, 2);
-    assert(state().answer.join(":") === "1:2", "水の電気分解が 1:2 でない");
+    assert(state().answer.join(":") === "1:2", "Mg×Ag が 1:2 でない: " + state().answer.join(":"));
     assert(!doc.getElementById("tallyNote"),
       "倍率が要る回で「そろえる必要がない」と言っている: " +
       (doc.getElementById("tallyNote") || {}).textContent);
@@ -8134,32 +8283,6 @@ async function runBatteryUITests(iframe) {
     assert(state().sumShown, "足し合わせが出ない");
     win.BatteryEq.setMult(1, 2);
     assert(!state().sumShown, "倍率を変えても前の足し合わせが残っている");
-  });
-
-  await t("BATTERY K: 電気分解でも同じ釦で足し合わせられる（1:2 の水の電気分解）", async () => {
-    /* ステージの切り替えは下の goStage と同じことをするが、あちらは
-       このテストより後で宣言されるので（const の巻き上げなし）ここでは自前で押す */
-    const go = (label) => {
-      const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === label);
-      if (!b) throw new Error(label + " のステージ釦が無い");
-      b.click();
-    };
-    go("水の電気分解（希硫酸）");
-    put11();
-    let s = state();
-    assert(s.sumBtn.there && s.sumBtn.disabled, "1:1 では足せないはず: " + s.sumBtn.why);
-    win.BatteryEq.setMult(1, 2);
-    s = state();
-    assert(!s.sumBtn.disabled, "1:2 にしても足せない: " + s.sumBtn.why);
-    doc.getElementById("sumBtn").click();
-    s = state();
-    assert(s.sumShown, "電気分解で足し合わせの段が出ない");
-    assert(s.ionic.includes("2H₂O") && s.ionic.includes("O₂") && s.ionic.includes("2H₂"),
-      "全体の反応が 2H₂O → O₂ ＋ 2H₂ でない: " + s.ionic);
-    assert(!s.ionic.includes("H⁺"), "打ち消えるはずの H⁺ が残っている: " + s.ionic);
-    // 電池式は電池だけのもの（用語が混ざらないことの確認は既存テストと同じ約束）
-    assert(!s.cellShown, "電気分解で電池式を出している: " + s.cellShown);
-    go("ダニエル電池");
   });
 
   await t("BATTERY: 予想する前は盤面に粒を1つも置かない（並べた時点で答えになる）", async () => {
@@ -8413,111 +8536,6 @@ async function runBatteryUITests(iframe) {
     assert(s.msg.includes("選び直") || s.msg.includes("試して"), "行き止まりで終わっている: " + s.msg);
   });
 
-  /* ---- 電気分解 e1・e2（実装の刻み5）---- */
-
-  const goStage = (label) => {
-    const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === label);
-    if (!b) throw new Error(label + " のステージ釦が無い");
-    b.click();
-  };
-
-  await t("ELYZ: 電気分解では電源マークが出て、呼び名が陰極・陽極になる", async () => {
-    goStage("塩化銅(Ⅱ)水溶液の電気分解");
-    const s = state();
-    assert(s.kind === "electrolysis", "電気分解モードになっていない: " + s.kind);
-    assert(s.powerShown, "電源のマークが出ていない（e⁻ が動く理由が画にない）");
-    // 用語の出し分け。**ここを混ぜると生徒がいちばん混乱する**ので DOM で固定する
-    assert(s.terms.ox === "陽極" && s.terms.red === "陰極", "呼び名: " + s.terms.ox + "/" + s.terms.red);
-    assert(s.halfTags.join() === "陽極・酸化,陰極・還元", "式の札: " + s.halfTags.join());
-    assert(!/負極|正極/.test(s.svgText), "図に負極・正極が混ざっている: " + s.svgText);
-    assert(!/負極|正極/.test(s.halfTags.join() + s.eTally), "式や数え上げに負極・正極が混ざっている");
-    assert(/陽極/.test(s.svgText) && /陰極/.test(s.svgText), "図に陰極・陽極が出ていない: " + s.svgText);
-    // 酸化・還元の向きは両モードで同じ、という手すりを画に添えている
-    assert(s.svgText.includes("酸化") && s.svgText.includes("還元"), "極に酸化・還元を添えていない");
-    /* 電気分解には予想の段が無い（電極を選ばせない・§3-3）ので、
-       あとは倍率を置くだけで遊べる。倍率が「？」のうちは押せない（L） */
-    assert(s.playDisabled && s.playHint.includes("倍率"),
-      "倍率が未定なのに再生できる: " + s.playHint);
-    win.BatteryEq.setMult(1, 1);
-    assert(!state().playDisabled, "倍率を置いても再生できない");
-    assert(s.halvesShown, "電気分解で半反応式が出ていない");
-    assert(!doc.querySelector(".plateGroup"), "電気分解なのに電極がタップできる");
-    assert(!doc.querySelector(".palMetal"), "電気分解でパレットが出ている");
-    // 電位・起電力は出さない（§6）
-    assert(!/\d+\s*V|電位|起電力/.test(s.svgText + s.predictMsg), "電位を口にしている");
-  });
-
-  await t("ELYZ e1: 塩化銅(Ⅱ)水溶液 — 陰極に Cu、陽極に Cl₂ が出てクリア", async () => {
-    goStage("塩化銅(Ⅱ)水溶液の電気分解");
-    let s = state();
-    assert(s.halves.join() === "Cl_ox,Cu_red", "引かれた式が違う: " + s.halves.join());
-    assert(s.answer.join(":") === "1:1", "倍率が 1:1 でない: " + s.answer.join(":"));
-    put11();
-    s = state();
-    // 陽極には 2Cl⁻ が、陰極には Cu²⁺ が1個ならぶ（式の左辺そのまま）
-    assert(s.counts.atom === 2 && s.counts.wait === 1, "盤面の並び: " + JSON.stringify(s.counts));
-    doc.getElementById("playBtn").click();
-    adv(40000);
-    s = state();
-    assert(s.phase === "done" && s.cleared, "クリアにならない: " + s.msg);
-    assert(s.deposited === 1, "陰極に Cu が1個析出しない: " + s.deposited);
-    assert(s.gas["Cl2"] === 1, "陽極から Cl₂ が1個出ない: " + JSON.stringify(s.gas));
-    assert(s.poolE === 0 && s.waiting === 0, "e⁻ か待ちが残っている");
-    assert(s.ionic.includes("2Cl⁻＋Cu²⁺") && s.ionic.includes("Cl₂＋Cu"),
-      "全体の反応が違う: " + s.ionic);
-    // 電池式は電池のもの。電気分解では出さない
-    assert(!s.cellShown, "電気分解で電池式を出している: " + s.cellShown);
-    assert(doc.getElementById("termNote"), "用語の読み物（負極と陽極のちがい）が無い");
-    assert(!doc.getElementById("cellNotation"), "電気分解で電池式の枠が出ている");
-  });
-
-  await t("ELYZ e2: 水の電気分解 — 倍率 1:2 でないと合わず、2H₂O → O₂ ＋ 2H₂ になる", async () => {
-    goStage("水の電気分解（希硫酸）");
-    let s = state();
-    assert(s.halves.join() === "H2O_ox,H_red", "引かれた式が違う: " + s.halves.join());
-    assert(s.answer.join(":") === "1:2", "倍率が 1:2 でない: " + s.answer.join(":"));
-    // 自分で置いた 1:1 では 4 対 2 でそろわない（ここが操作）
-    put11();
-    s = state();
-    assert(s.mult.join() === "1,1" && s.eTally.includes("そろっていない"), "1:1 でそろってしまう: " + s.eTally);
-    assert(s.eTally.includes("4個") && s.eTally.includes("2個"), "e⁻ の数を出していない: " + s.eTally);
-    doc.getElementById("playBtn").click();
-    adv(40000);
-    s = state();
-    assert(s.phase === "done" && !s.cleared, "1:1 でクリアになってしまう");
-    win.BatteryEq.setMult(1, 2);
-    assert(state().eTally.includes("そろった"), "1:2 でもそろわない: " + state().eTally);
-    doc.getElementById("playBtn").click();
-    adv(40000);
-    s = state();
-    assert(s.cleared, "1:2 でクリアにならない: " + s.msg);
-    // 陰極から H₂ が2個、陽極から O₂ が1個。金属は析出しない
-    assert(s.gas["H2"] === 2 && s.gas["O2"] === 1, "気体の数: " + JSON.stringify(s.gas));
-    assert(s.deposited === 0, "気体を析出として数えている: " + s.deposited);
-    // H⁺ は両辺で打ち消えて、水だけが分解した式になる
-    assert(s.ionic.includes("2H₂O") && s.ionic.includes("O₂") && s.ionic.includes("2H₂"),
-      "全体の反応が 2H₂O → O₂ ＋ 2H₂ でない: " + s.ionic);
-    assert(!s.ionic.includes("H⁺"), "打ち消えるはずの H⁺ が残っている: " + s.ionic);
-  });
-
-  await t("ELYZ: 電池と電気分解を行き来しても、用語が混ざらない", async () => {
-    goStage("ダニエル電池");
-    tap("Zn");
-    let s = state();
-    assert(s.halfTags.join() === "負極(−)・酸化,正極(+)・還元", "電池の札: " + s.halfTags.join());
-    assert(!/陰極|陽極/.test(s.svgText + s.eTally), "電池の画面に陰極・陽極が出ている");
-    assert(!s.powerShown, "電池の画面に電源のマークが出ている");
-    goStage("水の電気分解（希硫酸）");
-    s = state();
-    assert(s.halfTags.join() === "陽極・酸化,陰極・還元", "電気分解の札: " + s.halfTags.join());
-    assert(!/負極|正極/.test(s.svgText + s.eTally), "電気分解の画面に負極・正極が出ている");
-    goStage("ダニエル電池");
-    s = state();
-    assert(s.kind === "battery" && !s.powerShown && s.playDisabled,
-      "電池に戻れていない: " + JSON.stringify([s.kind, s.powerShown, s.playDisabled]));
-    assert(s.guess === null && !s.halvesShown, "電池が初期状態に戻っていない");
-  });
-
   await t("BATTERY b2: b1（ダニエル電池）に戻っても壊れない", async () => {
     goB2();
     palBtn("Mg").click();
@@ -8578,6 +8596,333 @@ async function runBatteryUITests(iframe) {
     assert(s.cleared && s.guessTries === 2, "言い直してもクリアできない: " + s.msg);
     assert(doc.getElementById("clearBanner").textContent.includes("言い直して"),
       "クリアの帯が言い直しに触れていない");
+  });
+
+  /* ★ B3-2（2026-09-07）: ページを電池と電気分解に割った（DESIGN §8）。
+     このページに残るのは電池だけ ＝ **帯に電気分解のステージが混ざらない**。
+     用語の対の片側（電池の画面に陰極・陽極が1文字も無い）もここで見る
+     ——もう片側は runElectrolysisUITests。 */
+  await t("BATTERY: このページは電池だけ（帯は b1・b2 の2つ・陰極／陽極が1文字も出ない）", async () => {
+    const labels = [...doc.querySelectorAll("#stageNav button")].map((b) => b.dataset.label);
+    assert(labels.length === BATTERY_STAGES.length,
+      "帯のステージ数が電池のぶんと違う: " + labels.join(" / "));
+    assert(labels.join(",") === BATTERY_STAGES.map((s) => s.title).join(","),
+      "帯の中身が電池のステージと違う: " + labels.join(" / "));
+    assert(win.BatteryEq.pageKind() === "battery", "ページの名乗りが電池でない");
+    assert(win.BatteryEq.pageStages().join() === "b1,b2", "出しているステージ: " + win.BatteryEq.pageStages().join());
+    // 電気分解のステージは名指ししても開かない（?s= も goStage も PAGE_STAGES しか見ない）
+    assert(win.BatteryEq.goStage("e1") === false, "電池のページで電気分解のステージが開けてしまう");
+    goB1();
+    tap("Zn");
+    const s = state();
+    assert(!/陰極|陽極/.test(s.svgText + s.eTally + s.predictMsg + s.msg),
+      "電池の画面に陰極・陽極が出ている: " + s.svgText);
+    assert(s.halfTags.join() === "負極(−)・酸化,正極(+)・還元", "電池の札: " + s.halfTags.join());
+    assert(!s.powerShown, "電池の画面に電源のマークが出ている");
+    // 「先に済ませる段」の口はこのページには無い（電池の挙動は1文字も変わらない）
+    assert(!win.CellPreStep, "電池のページに段1の口ができている");
+  });
+
+  return results;
+}
+
+/* ---- 電気分解モードの UI テスト（electrolysis.html を iframe で駆動）----
+   B3-2（2026-09-07）でページを割ったので、電池（battery.html）とは別の iframe を駆動する。
+   ⚠ **「電池と電気分解を行き来する」テストはページをまたげなくなった。**
+   代わりに、それぞれの画面に相手の呼び名が1文字も出ていないことを両側から見る
+   （用語が混ざるのがこのモードのいちばんのつまずきなので、検査は落とさない）。 */
+
+async function runElectrolysisUITests(iframe) {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const doc = iframe.contentDocument;
+  const win = iframe.contentWindow;
+  const state = () => win.BatteryEq.state();
+  const what = () => win.ElyzWhat.state();
+  const adv = (ms) => win.BatteryEq.advance(ms);
+  const put11 = () => win.BatteryEq.setMult(1, 1);
+  /* 段1（何が反応する？）を正解で済ませる。**model から引き直した答え**を押すので、
+     ここが画面の答えを写しているのではないこと自体も検査になる。 */
+  const answerWhat = () => {
+    const a = what().answer;
+    win.ElyzWhat.pick("cathode", a.cathode);
+    win.ElyzWhat.pick("anode", a.anode);
+  };
+
+  /* ---- 電気分解 e1・e2（実装の刻み5）---- */
+
+  const goStage = (label) => {
+    const b = [...doc.querySelectorAll("#stageNav button")].find((x) => x.dataset.label === label);
+    if (!b) throw new Error(label + " のステージ釦が無い");
+    b.click();
+  };
+
+  await t("ELYZ: 電気分解では電源マークが出て、呼び名が陰極・陽極になる", async () => {
+    goStage("塩化銅(Ⅱ)水溶液の電気分解");
+    let s = state();
+    assert(s.kind === "electrolysis", "電気分解モードになっていない: " + s.kind);
+    assert(s.powerShown, "電源のマークが出ていない（e⁻ が動く理由が画にない）");
+    // 用語の出し分け。**ここを混ぜると生徒がいちばん混乱する**ので DOM で固定する
+    assert(s.terms.ox === "陽極" && s.terms.red === "陰極", "呼び名: " + s.terms.ox + "/" + s.terms.red);
+    assert(s.halfTags.join() === "陽極・酸化,陰極・還元", "式の札: " + s.halfTags.join());
+    assert(!/負極|正極/.test(s.svgText), "図に負極・正極が混ざっている: " + s.svgText);
+    assert(!/負極|正極/.test(s.halfTags.join() + s.eTally), "式や数え上げに負極・正極が混ざっている");
+    assert(/陽極/.test(s.svgText) && /陰極/.test(s.svgText), "図に陰極・陽極が出ていない: " + s.svgText);
+    // 酸化・還元の向きは両モードで同じ、という手すりを画に添えている
+    assert(s.svgText.includes("酸化") && s.svgText.includes("還元"), "極に酸化・還元を添えていない");
+    /* 電気分解には予想の段が無い（電極を選ばせない・§3-3）。
+       ★ B3-2 から、最初の関門は「何が反応するか」の段（§9）。それが済むまで
+          半反応式の段が出ない ＝ **式が答えそのものなので先に見せない**（電池の予想と同じ理屈）。 */
+    assert(s.playDisabled && s.playHint.includes("何が反応する"),
+      "段1を済ませる前に再生できる／理由が出ていない: " + s.playHint);
+    assert(!s.halvesShown, "段1を済ませる前に半反応式が出ている");
+    answerWhat();
+    s = state();
+    assert(s.halvesShown, "段1を済ませても半反応式が出ない");
+    // ここではじめて「倍率が『？』のうちは押せない」（L）に進む
+    assert(s.playDisabled && s.playHint.includes("倍率"),
+      "倍率が未定なのに再生できる: " + s.playHint);
+    win.BatteryEq.setMult(1, 1);
+    assert(!state().playDisabled, "倍率を置いても再生できない");
+    assert(!doc.querySelector(".plateGroup"), "電気分解なのに電極がタップできる");
+    assert(!doc.querySelector(".palMetal"), "電気分解でパレットが出ている");
+    // 電位・起電力は出さない（§6）
+    assert(!/\d+\s*V|電位|起電力/.test(s.svgText + s.predictMsg), "電位を口にしている");
+  });
+
+  await t("ELYZ e1: 塩化銅(Ⅱ)水溶液 — 陰極に Cu、陽極に Cl₂ が出てクリア", async () => {
+    goStage("塩化銅(Ⅱ)水溶液の電気分解");
+    let s = state();
+    assert(s.halves.join() === "Cl_ox,Cu_red", "引かれた式が違う: " + s.halves.join());
+    assert(s.answer.join(":") === "1:1", "倍率が 1:1 でない: " + s.answer.join(":"));
+    answerWhat();   // 段1（何が反応する？）を済ませてから倍率へ
+    put11();
+    s = state();
+    // 陽極には 2Cl⁻ が、陰極には Cu²⁺ が1個ならぶ（式の左辺そのまま）
+    assert(s.counts.atom === 2 && s.counts.wait === 1, "盤面の並び: " + JSON.stringify(s.counts));
+    doc.getElementById("playBtn").click();
+    adv(40000);
+    s = state();
+    assert(s.phase === "done" && s.cleared, "クリアにならない: " + s.msg);
+    assert(s.deposited === 1, "陰極に Cu が1個析出しない: " + s.deposited);
+    assert(s.gas["Cl2"] === 1, "陽極から Cl₂ が1個出ない: " + JSON.stringify(s.gas));
+    assert(s.poolE === 0 && s.waiting === 0, "e⁻ か待ちが残っている");
+    assert(s.ionic.includes("2Cl⁻＋Cu²⁺") && s.ionic.includes("Cl₂＋Cu"),
+      "全体の反応が違う: " + s.ionic);
+    // 電池式は電池のもの。電気分解では出さない
+    assert(!s.cellShown, "電気分解で電池式を出している: " + s.cellShown);
+    assert(doc.getElementById("termNote"), "用語の読み物（負極と陽極のちがい）が無い");
+    assert(!doc.getElementById("cellNotation"), "電気分解で電池式の枠が出ている");
+  });
+
+  await t("ELYZ e2: 水の電気分解 — 倍率 1:2 でないと合わず、2H₂O → O₂ ＋ 2H₂ になる", async () => {
+    goStage("水の電気分解（希硫酸）");
+    let s = state();
+    assert(s.halves.join() === "H2O_ox,H_red", "引かれた式が違う: " + s.halves.join());
+    assert(s.answer.join(":") === "1:2", "倍率が 1:2 でない: " + s.answer.join(":"));
+    // 自分で置いた 1:1 では 4 対 2 でそろわない（ここが操作）
+    answerWhat();
+    put11();
+    s = state();
+    assert(s.mult.join() === "1,1" && s.eTally.includes("そろっていない"), "1:1 でそろってしまう: " + s.eTally);
+    assert(s.eTally.includes("4個") && s.eTally.includes("2個"), "e⁻ の数を出していない: " + s.eTally);
+    doc.getElementById("playBtn").click();
+    adv(40000);
+    s = state();
+    assert(s.phase === "done" && !s.cleared, "1:1 でクリアになってしまう");
+    win.BatteryEq.setMult(1, 2);
+    assert(state().eTally.includes("そろった"), "1:2 でもそろわない: " + state().eTally);
+    doc.getElementById("playBtn").click();
+    adv(40000);
+    s = state();
+    assert(s.cleared, "1:2 でクリアにならない: " + s.msg);
+    // 陰極から H₂ が2個、陽極から O₂ が1個。金属は析出しない
+    assert(s.gas["H2"] === 2 && s.gas["O2"] === 1, "気体の数: " + JSON.stringify(s.gas));
+    assert(s.deposited === 0, "気体を析出として数えている: " + s.deposited);
+    // H⁺ は両辺で打ち消えて、水だけが分解した式になる
+    assert(s.ionic.includes("2H₂O") && s.ionic.includes("O₂") && s.ionic.includes("2H₂"),
+      "全体の反応が 2H₂O → O₂ ＋ 2H₂ でない: " + s.ionic);
+    assert(!s.ionic.includes("H⁺"), "打ち消えるはずの H⁺ が残っている: " + s.ionic);
+  });
+
+  /* B3-2: ページを割ったので「行き来しても混ざらない」は片方のページでは検査できない。
+     ⚠ **検査は落とさない**（用語が混ざるのがこのモードのいちばんのつまずき）。
+     ここでは「電気分解のページには負極・正極が1文字も無い」を全ステージで見る。
+     裏（電池のページに陰極・陽極が無い）は runBatteryUITests 側に対の1本を置いた。 */
+  await t("ELYZ: 全ステージで、画面のどこにも負極・正極が出ない（用語が混ざらない）", async () => {
+    for (const st of ELECTROLYSIS_STAGES) {
+      goStage(st.title);
+      const s = state();
+      assert(s.kind === "electrolysis", st.id + ": 電気分解になっていない: " + s.kind);
+      assert(s.powerShown, st.id + ": 電源のマークが出ていない");
+      assert(!/負極|正極/.test(s.svgText + s.eTally + s.predictMsg + s.msg),
+        st.id + ": 画面に負極・正極が混ざっている: " + s.svgText);
+      answerWhat();
+      assert(state().halfTags.join() === "陽極・酸化,陰極・還元",
+        st.id + ": 式の札: " + state().halfTags.join());
+      // 電極は選ばせない（§3-3）。板もパレットもこのページには無い
+      assert(!doc.querySelector(".plateGroup") && !doc.querySelector(".palMetal"),
+        st.id + ": 電極を選ばせる UI が出ている");
+    }
+  });
+
+  /* ★ 収録の芯（§9-4）。**4通りが全部そろっている**ことを画面から見る。
+     「そのまま反応する」の判定は electrolysisPick に委ねて、画面側で条件を書き写さない。 */
+  await t("ELYZ: 陽イオン・陰イオンが「そのまま反応する／しない」の4通りが全部そろう", async () => {
+    const seen = new Set();
+    for (const st of ELECTROLYSIS_STAGES) {
+      goStage(st.title);
+      const w = what();
+      assert(w.stageId === st.id, st.id + ": 段1が追随していない: " + w.stageId);
+      const key = (w.answer.cathode === "H2O" ? "陰極:水" : "陰極:イオン") + "／" +
+                  (w.answer.anode === "H2O" ? "陽極:水" : "陽極:イオン");
+      seen.add(key);
+    }
+    assert(seen.size === 4, "4通りそろっていない: " + [...seen].join(" / "));
+  });
+
+  /* ★ 段1そのもの（§9）。順位は暗記させず、**選んでから開いて確かめる**。 */
+  await t("ELYZ 段1: 液のイオンと水が候補に並び、外すと理由が出て、表は押すまで開かない", async () => {
+    goStage("塩化ナトリウム水溶液の電気分解");        // e3: Na⁺ は還元されない
+    let w = what();
+    assert(w.solution === "NaCl", "ステージが違う: " + w.solution);
+    // 候補は「その極の符号に合うイオン ＋ 必ず水」。**反応しないものも並ぶ**
+    assert(w.buttons.cathode.join() === "Na+,H2O", "陰極の候補: " + w.buttons.cathode.join());
+    assert(w.buttons.anode.join() === "Cl-,H2O", "陽極の候補: " + w.buttons.anode.join());
+    assert(w.lead.includes("H₂O") && w.lead.includes("いつでもそこにいる"),
+      "水がいつでもいることを言っていない: " + w.lead);
+    // 表は押すまで開かない（既定は閉じたまま）
+    assert(!w.tableOpen, "順位表がはじめから開いている");
+    assert(!doc.querySelector("#prFull:not([hidden])"), "順位表の中身が最初から見えている");
+    // 外す（Na⁺ を選ぶ）→ 理由が出る。**表の段の上下だけで言い切る**
+    win.ElyzWhat.pick("cathode", "Na+");
+    w = what();
+    const why = w.why.find((x) => x.side === "cathode");
+    assert(why && !why.ok, "外したのに当たり扱い: " + JSON.stringify(w.why));
+    assert(/水より下|水溶液の中では還元されない/.test(why.text), "理由が順位で語られていない: " + why.text);
+    assert(!win.BatteryEq.state().halvesShown, "外したまま半反応式が出ている");
+    // 表を開いて確かめられる
+    assert(win.ElyzWhat.toggleTable() === true, "順位表が開かない");
+    assert(doc.querySelector("#prFull:not([hidden])"), "開いたのに中身が見えない");
+    const rows = what().rows.cathode;
+    assert(rows.length === ELECTRODE_PRIORITY.cathode.length, "陰極の表の段数: " + rows.length);
+    // いまの液にいる段だけ色がつき、反応しない段には × が付く
+    assert(rows.filter((r) => r.here).map((r) => r.id).sort().join() === "active-cation,water-red",
+      "液にいる段の印: " + rows.filter((r) => r.here).map((r) => r.id).join());
+    assert(rows.find((r) => r.id === "active-cation").dead, "K〜Al の段が「反応しない」になっていない");
+    assert(rows.find((r) => r.id === "water-red").chosen, "採用した段に印が付いていない");
+    // 選び直せば当たりになり、段が開く
+    win.ElyzWhat.pick("cathode", "H2O");
+    win.ElyzWhat.pick("anode", "Cl-");
+    assert(what().ok, "正解を選んでも済んだことにならない");
+    assert(win.BatteryEq.state().halvesShown, "正解を選んでも半反応式が出ない");
+  });
+
+  /* ★ **画面が答えを持っていない**ことの検査。段1で正解として受け取る種が、
+     model.js の electrolysisPick を独立に引いた結果と全ステージで一致する。 */
+  await t("ELYZ 段1: 正解も引かれる半反応式も、順位表から導いたものと全ステージで一致する", async () => {
+    for (const st of ELECTROLYSIS_STAGES) {
+      goStage(st.title);
+      const w = what();
+      const want = electrolysisPicks(st);
+      assert(w.answer.cathode === want.cathode.sp && w.answer.anode === want.anode.sp,
+        st.id + ": 段1の正解が導出と違う " + JSON.stringify(w.answer));
+      assert(w.halves.cathode === st.cathode && w.halves.anode === st.anode,
+        st.id + ": 段1が引く式がステージの宣言と違う " + JSON.stringify(w.halves));
+      answerWhat();
+      // 段2以降が引く式とも一致（＝段1と本編が同じ式を見ている）
+      assert(win.BatteryEq.state().halves.join() === st.anode + "," + st.cathode,
+        st.id + ": 段2の式が段1と食い違う: " + win.BatteryEq.state().halves.join());
+    }
+  });
+
+  /* ★ e5（Na₂SO₄）だけ足し合わせに H⁺ と OH⁻ が残る（§9-4）。
+     **黙って出さない**——断りが画面に出ていることを見る。 */
+  await t("ELYZ e5: 打ち消えなかった H⁺・OH⁻ が残る回は、その理由を画面に出す", async () => {
+    goStage("硫酸ナトリウム水溶液の電気分解");
+    answerWhat();
+    win.BatteryEq.setMult(1, 2);
+    doc.getElementById("playBtn").click();
+    adv(60000);
+    const s = state();
+    assert(s.cleared, "クリアにならない: " + s.msg);
+    assert(s.ionic.includes("H⁺") && s.ionic.includes("OH⁻"), "H⁺ と OH⁻ が残っていない: " + s.ionic);
+    const note = doc.getElementById("sumNote");
+    assert(note, "残った理由の断りが出ていない");
+    assert(/書き間違いではなく|酸性|塩基性/.test(note.textContent), "断りの中身: " + note.textContent);
+    // 気体は陰極から H₂ が2個、陽極から O₂ が1個。金属は析出しない
+    assert(s.gas["H2"] === 2 && s.gas["O2"] === 1, "気体の数: " + JSON.stringify(s.gas));
+    assert(s.deposited === 0, "析出していないはずのものが析出した: " + s.deposited);
+  });
+
+  /* ★ e6（NaOH）。OH_ox の右辺には H₂O がいる ——
+     「電荷0なら析出」で描くと**水が電極にこびりつく**ので、そこを見張る（cell.js の isPlateable）。 */
+  await t("ELYZ e6: 水酸化ナトリウム水溶液 — 陽極は OH⁻。水を析出として描かない", async () => {
+    goStage("水酸化ナトリウム水溶液の電気分解");
+    let s = state();
+    assert(s.halves.join() === "OH_ox,H2O_red", "引かれた式が違う: " + s.halves.join());
+    answerWhat();
+    win.BatteryEq.setMult(1, 2);
+    doc.getElementById("playBtn").click();
+    adv(60000);
+    s = state();
+    assert(s.cleared, "クリアにならない: " + s.msg);
+    assert(s.deposited === 0, "水を析出として描いている: " + s.deposited);
+    assert(s.gas["H2"] === 2 && s.gas["O2"] === 1, "気体の数: " + JSON.stringify(s.gas));
+    // 希硫酸（e2）とまったく同じ「水の電気分解」に落ちるのが見どころ
+    assert(s.ionic.includes("2H₂O") && s.ionic.includes("O₂") && s.ionic.includes("2H₂"),
+      "全体の反応が 2H₂O → O₂ ＋ 2H₂ でない: " + s.ionic);
+    assert(!s.ionic.includes("OH⁻"), "打ち消えるはずの OH⁻ が残っている: " + s.ionic);
+  });
+
+  /* K（足し合わせの釦）は電池と共通の部品。**電気分解でも同じ釦で足せる**ことを、
+     ページを割ったあともここで見張る（もとは runBatteryUITests にあったテスト）。 */
+  await t("ELYZ K: 電気分解でも同じ釦で足し合わせられる（1:2 の水の電気分解）", async () => {
+    goStage("水の電気分解（希硫酸）");
+    answerWhat();
+    put11();
+    let s = state();
+    assert(s.sumBtn.there && s.sumBtn.disabled, "1:1 では足せないはず: " + s.sumBtn.why);
+    win.BatteryEq.setMult(1, 2);
+    s = state();
+    assert(!s.sumBtn.disabled, "1:2 にしても足せない: " + s.sumBtn.why);
+    doc.getElementById("sumBtn").click();
+    s = state();
+    assert(s.sumShown, "電気分解で足し合わせの段が出ない");
+    assert(s.ionic.includes("2H₂O") && s.ionic.includes("O₂") && s.ionic.includes("2H₂"),
+      "全体の反応が 2H₂O → O₂ ＋ 2H₂ でない: " + s.ionic);
+    assert(!s.ionic.includes("H⁺"), "打ち消えるはずの H⁺ が残っている: " + s.ionic);
+    // 電池式は電池だけのもの
+    assert(!s.cellShown, "電気分解で電池式を出している: " + s.cellShown);
+    // 段の番号はページが決める（電気分解は「何が反応する？」がある ぶん 4）
+    const no = doc.querySelector("#calcSheet .stepNo");
+    assert(no && no.textContent === "4", "足し合わせの段の番号が 4 でない: " + (no || {}).textContent);
+    // 打ち消えなかったものが無い回では、断りを出さない
+    assert(!doc.getElementById("sumNote"), "残りものが無いのに断りが出ている");
+  });
+
+  /* ★ ?s= で名指しして開ける（ポータルの系列索引がここへ直接送る）。
+     知らない id は先頭に落ちる ＝ 書き間違えても行き止まりにしない。 */
+  await t("ELYZ: ?s= でステージを名指しして開ける（知らない id は先頭）", async () => {
+    const open = (q) => new Promise((r) => {
+      const f = document.createElement("iframe");
+      f.style.cssText = "width:400px;height:300px;position:absolute;left:-9999px";
+      f.src = "electrolysis.html?v=200" + q;
+      f.onload = () => setTimeout(() => r(f), 60);
+      document.body.appendChild(f);
+    });
+    const f1 = await open("&s=e4");
+    assert(f1.contentWindow.BatteryEq.state().stageId === "e4",
+      "?s=e4 で開かない: " + f1.contentWindow.BatteryEq.state().stageId);
+    f1.remove();
+    const f2 = await open("&s=b1");   // 電池のステージ id は、このページでは知らない id
+    assert(f2.contentWindow.BatteryEq.state().stageId === "e1",
+      "知らない id で行き止まりになる: " + f2.contentWindow.BatteryEq.state().stageId);
+    f2.remove();
   });
 
   return results;
@@ -9439,6 +9784,38 @@ async function runPortalUITests(iframe) {
     }
   });
 
+  /* ★ B3-2（2026-09-07）: 役割カードを**単元の順**に束ねた（DESIGN §11）。
+     ユーザーの決定は「化学反応式の係数合わせ／酸塩基／酸化還元」の順で、
+     ③ の中は 部品 → 組み立て → 応用。**中和は①と②の両方に出す**が、同じ札は2枚並べない。 */
+  await t("PORTAL: 役割カードが単元の順に束ねられ、③の中が 部品→組み立て→応用 で並ぶ", async () => {
+    const us = win.Portal.state().roleUnits;
+    assert(us.length === 4, "単元の束が4つでない: " + us.length);
+    assert(us.map((u) => u.id).join() === "ru-coeff,ru-acidbase,ru-redox,ru-find",
+      "束の並びが単元の順でない: " + us.map((u) => u.id).join());
+    assert(/①/.test(us[0].name) && /②/.test(us[1].name) && /③/.test(us[2].name),
+      "単元に番号が付いていない: " + us.map((u) => u.name).join(" / "));
+    // ③ の並び（部品3 → 組み立て2 → 応用2）。電池と電気分解が最後に対で並ぶ
+    const redox = us.find((u) => u.id === "ru-redox");
+    assert(redox.hrefs.join() ===
+      "oxidation.html,halfreaction.html,condition.html,redox.html,redox.html?free=1,battery.html,electrolysis.html",
+      "③ の並びが 部品→組み立て→応用 でない: " + redox.hrefs.join());
+    /* ★ 中和は①と②の両方に出す（ユーザー決定）。ただし**同じ札を2枚並べない** ——
+       題も行き先も違い、①のほうは「沈殿ができる」ことに着目していると分かる書き分け。 */
+    const coeff = us.find((u) => u.id === "ru-coeff");
+    const acid = us.find((u) => u.id === "ru-acidbase");
+    const dup = coeff.titles.filter((x) => acid.titles.includes(x));
+    assert(dup.length === 0, "①と②に同じ題の札が並んでいる: " + dup.join(","));
+    assert(coeff.titles.some((x) => x.includes("中和")) && acid.titles.some((x) => x.includes("中和")),
+      "中和が①と②の両方に出ていない: " + coeff.titles.join("/") + " ｜ " + acid.titles.join("/"));
+    // ①の中和の行き先は、硫酸 × 水酸化バリウム（中和と沈殿が同時に起きる回）そのもの
+    const i = coeff.titles.findIndex((x) => x.includes("中和"));
+    assert(coeff.hrefs[i] === "index.html?rxn=s8", "①の中和の行き先: " + coeff.hrefs[i]);
+    assert(STAGES.some((x) => x.id === "s8"), "s8 が実在しない");
+    // 束の外に札が落ちていない（roleCards の合計＝全札）
+    const inUnits = us.reduce((a, u) => a + u.hrefs.length, 0);
+    assert(inUnits === win.Portal.state().roles, "束に入っていない札がある: " + inUnits);
+  });
+
   /* 単元アンカー。ハブ（ルート index.html）の単元表は portal.html#<単元id> で着地する。
      **相手が持つのは単元の id だけ**で、どのステージへ送るかはこのページの内部知識にしてある。
      単元を足したのにアンカーが無い（＝ハブからの着地が静かに効かなくなる）を機械で止める。 */
@@ -9474,7 +9851,7 @@ async function runPortalUITests(iframe) {
 
   /* ---- 【R】系列の索引（DESIGN_stage_series.md）----
      ⚠ 索引のページは新設していない。この入り口ページに区画を1つ足しただけ。 */
-  await t("PORTAL: 系列の索引に 62 ステージ全部が出て、取りこぼしの区画が出ていない", async () => {
+  await t("PORTAL: 系列の索引に 66 ステージ全部が出て、取りこぼしの区画が出ていない", async () => {
     const s = win.Portal.seriesState();
     assert(s.boxes === STAGE_SERIES.length, "系列の区画の数が合わない: " + s.boxes);
     const expected = STAGES.length + REDOX_STAGES.length + CONDITION_STAGES.length + CELL_STAGES.length;
@@ -9490,10 +9867,14 @@ async function runPortalUITests(iframe) {
         g.series.id + ": 画面の件数がモデルと違う " + shown.count + " / " + g.stages.length);
       assert(shown.name === g.series.name, g.series.id + ": 系列名が違う " + shown.name);
     }
-    // 行き先が実在するステージであること（電池だけはモードのページまで＝案内を必ず添える）
-    const lists = { "index.html": STAGES, "redox.html": REDOX_STAGES, "condition.html": CONDITION_STAGES };
+    /* 行き先が実在するステージであること。
+       ⚠ B3-2（2026-09-07）で電池と電気分解にも ?s= の受け口ができたので、
+       **名指しできないモードが1つも無くなった**（以前は battery.html だけ素通ししていた）。 */
+    const lists = {
+      "index.html": STAGES, "redox.html": REDOX_STAGES, "condition.html": CONDITION_STAGES,
+      "battery.html": BATTERY_STAGES, "electrolysis.html": ELECTROLYSIS_STAGES,
+    };
     for (const c of s.chips) {
-      if (c.href === "battery.html") continue;
       const m = /^([\w.]+)\?(rxn|s)=(.+)$/.exec(c.href);
       assert(m, "系列のリンクの形が想定外: " + c.href);
       const list = lists[m[1]];
@@ -9501,7 +9882,9 @@ async function runPortalUITests(iframe) {
       assert(list.some((x) => x.id === decodeURIComponent(m[3])), "存在しないステージ: " + c.href);
     }
     const cell = s.groups.find((g) => g.id === "sr-cell");
-    assert(cell.hints === 1, "ステージを名指しできないモードに案内が添えられていない");
+    assert(cell.count === BATTERY_STAGES.length + ELECTROLYSIS_STAGES.length,
+      "電池・電気分解の系列の件数: " + cell.count);
+    assert(cell.hints === 0, "名指しできるようになったのに案内が残っている: " + cell.hints);
   });
 
   /* ⚠ **番号を変えていないこと**の直接の担保。
@@ -9514,6 +9897,7 @@ async function runPortalUITests(iframe) {
       { id: "appRedox", label: "酸化還元" },
       { id: "appCond", label: "液性" },
       { id: "appBattery", label: "電池" },
+      { id: "appElyz", label: "電気分解" },
     ];
     let checked = 0;
     for (const m of modes) {
@@ -9542,7 +9926,7 @@ async function runPortalUITests(iframe) {
         checked++;
       });
     }
-    assert(checked === 62, "突き合わせた件数が 62 でない: " + checked);
+    assert(checked === 66, "突き合わせた件数が 66 でない: " + checked);
   });
 
   /* 系列（区画）と難度（札）は別の軸。両方が同時に見えること。
@@ -9609,7 +9993,7 @@ async function runPortalUITests(iframe) {
   await t("MODE-NAV: どのページからも全モードへ行ける（自分以外・帯は1段のまま）", async () => {
     const pages = {
       app: "index", appRedox: "redox", appCond: "condition",
-      appBattery: "battery", appPortal: "portal", appLib: "library",
+      appBattery: "battery", appElyz: "elyz", appPortal: "portal", appLib: "library",
       appOx: "oxnum", appHalf: "halfbuild",
     };
     const seen = new Set();
@@ -9680,6 +10064,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
   const iframeP = document.getElementById("appPortal");
   const iframeL = document.getElementById("appLib");
   const iframeB = document.getElementById("appBattery");
+  const iframeE = document.getElementById("appElyz");   // B3-2: 電気分解を別ページに割った
   const iframeO = document.getElementById("appOx");
   const iframeH = document.getElementById("appHalf");
   const startUI = () => {
@@ -9688,6 +10073,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
       iframeC.contentWindow && iframeC.contentWindow.ConditionEq &&
       iframeP.contentWindow && iframeP.contentWindow.Portal &&
       iframeB.contentWindow && iframeB.contentWindow.BatteryEq &&
+      iframeE.contentWindow && iframeE.contentWindow.BatteryEq && iframeE.contentWindow.ElyzWhat &&
       iframeL.contentWindow && iframeL.contentWindow.IonLibUI &&
       iframeO.contentWindow && iframeO.contentWindow.OxNum &&
       iframeH.contentWindow && iframeH.contentWindow.HalfBuild &&
@@ -9699,6 +10085,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
           runPortalUITests(iframeP).then((rs4) =>
             runLibraryUITests(iframeL).then((rs5) =>
               runBatteryUITests(iframeB).then((rs6) =>
+              runElectrolysisUITests(iframeE).then((rs9) =>
               runOxNumUITests(iframeO).then((rs7) =>
               runHalfBuildUITests(iframeH).then((rs8) => {
                 const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
@@ -9709,13 +10096,14 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
                 const pOk = render(uiEl, rs4, "UI(入り口)");
                 const lOk = render(uiEl, rs5, "UI(索引)");
                 const bOk = render(uiEl, rs6, "UI(電池)");
+                const eOk = render(uiEl, rs9, "UI(電気分解)");
                 const oOk = render(uiEl, rs7, "UI(酸化数)");
                 const hOk = render(uiEl, rs8, "UI(半反応式)");
                 const total = document.getElementById("total");
-                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk && oOk && hOk;
+                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk && eOk && oOk && hOk;
                 total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
                 total.className = allOk ? "pass" : "fail";
-              })))))))));
+              }))))))))));
   };
   startUI();
 }
