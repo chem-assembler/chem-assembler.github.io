@@ -165,6 +165,7 @@ function ionBlocksCreate(opts) {
     const drawTop = (units, color, dash) => {
       if (units <= 0 || units > maxUnits) return;
       ibMk("line", {
+        class: "ibTop",   // ⚠ 回帰テストが「線が1本か2本か」を数える印。消さない
         x1: lineX0, y1: yOf(units), x2: lineX1, y2: yOf(units),
         stroke: color, "stroke-width": 2, "stroke-dasharray": dash,
       }, svg);
