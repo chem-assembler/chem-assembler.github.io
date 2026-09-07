@@ -664,6 +664,14 @@ main.timelineMain {
   padding: 0 2px;
 }
 .fcoefIn.ng { border-color: #d08b8b; background: #fdf3f3; }
+/* 段2（旧①）の倍率を書き込む欄（×〔 〕）。式の係数がその場で書き換わる（2026-09-07） */
+.multIn { width: 48px; margin: 0 2px; }
+/* 段1 の答え＝「比」。そろったときだけ出て、次の段で書き込む数を名指しする */
+.ratioLine {
+  margin-top: 6px; padding: 5px 8px;
+  background: #eef6f0; border-left: 3px solid #6aa88a; border-radius: 4px;
+  font-size: 13px; color: #2f5645; line-height: 1.5;
+}
 .fcoefIn::-webkit-outer-spin-button, .fcoefIn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .fcoefIn { -moz-appearance: textfield; appearance: textfield; }
 /* 入力欄そのものには斜線を引かない（打ち消される e⁻ の欄も、数は読めないと困る） */
