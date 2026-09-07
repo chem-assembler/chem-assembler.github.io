@@ -1949,3 +1949,24 @@ main.timelineMain {
 }
 .hbProc button.active { background: #3b82c4; border-color: #3b82c4; color: #fff; }
 .hbOxLink { display: inline-block; margin-top: 4px; font-size: 12px; color: #2f5b7a; }
+
+/* ---- 価数＝高さのブロック（blocks.js・DESIGN_ion_blocks.md・2026-09-07）----
+   イオンの一覧から選んで積む列。⚠ 既存の係数ステッパー（.stepper）を置き換えるものではなく、
+   いまは**併置**して「同じ数を2つの見え方で指している」ことを見せている。 */
+#blocksWrap { margin-top: 10px; }
+#ionBlocks { width: 100%; max-width: 360px; display: block; }
+.ibRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.ibRowLabel { font-size: 12px; color: #7b8794; min-width: 4.5em; }
+.ibPick, .ibMinus {
+  min-height: 32px; padding: 3px 10px;
+  font-size: 13px; font-weight: bold;
+  border: 1px solid #b6c4d2; border-radius: 999px;
+  background: #fff; color: #46525e; cursor: pointer;
+}
+.ibPick.on { border-color: #3b82c4; background: #eaf3fa; color: #24567e; }
+.ibPick:hover, .ibMinus:hover:not(:disabled) { filter: brightness(0.97); }
+.ibMinus { color: #8d6b3b; border-color: #d9c39a; }
+.ibMinus:disabled { color: #c3cdd6; border-color: #e3e9ee; cursor: default; }
+/* ブロックは押すと1つ減る（一覧の「−」と同じことが、図の中でもできる） */
+.ibBlock { cursor: pointer; }
+.ibBlock:hover rect { filter: brightness(1.08); }
