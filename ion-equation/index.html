@@ -45,12 +45,12 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="style.css?v=201">
+<link rel="stylesheet" href="style.css?v=vNNNN">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v201</div>
+  <div class="version">vNNNN</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -101,7 +101,10 @@
     </div>
     <!-- 価数＝高さのブロック（DESIGN_ion_blocks.md）。
          ⚠ 上の係数ステッパーを置き換えるものではなく**併置**している。
-         同じ数を「＋/−の数」と「積んだ高さ」の2つの見え方で指していることを見せるため。 -->
+         同じ数を「＋/−の数」と「積んだ高さ」の2つの見え方で指していることを見せるため。
+         ★ 2026-09-07（DESIGN_ionic_two_step.md §6-5）: 入力は上のステッパーが唯一で、
+         こちらは「触れる図」。積む・減らすは図を直接押す（blocks.js の .ibAdd / .ibBlock）。
+         #blocksPalette はイオン反応モードでは空のまま（一覧は酸化還元⑥のための仕組み）。 -->
     <div id="blocksWrap" hidden>
       <div class="schematicHead" id="blocksHead">価数を高さにしてそろえる</div>
       <svg id="ionBlocks" viewBox="0 0 340 150" role="img" aria-label="価数を高さにしたブロック"></svg>
@@ -119,11 +122,11 @@
   </section>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="library.js?v=201"></script>
-<script src="model.js?v=201"></script>
-<script src="schematic.js?v=201"></script>
-<script src="blocks.js?v=201"></script>
-<script src="header-ui.js?v=201"></script>
-<script src="app.js?v=201"></script>
+<script src="library.js?v=vNNNN"></script>
+<script src="model.js?v=vNNNN"></script>
+<script src="schematic.js?v=vNNNN"></script>
+<script src="blocks.js?v=vNNNN"></script>
+<script src="header-ui.js?v=vNNNN"></script>
+<script src="app.js?v=vNNNN"></script>
 </body>
 </html>
