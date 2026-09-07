@@ -3701,8 +3701,32 @@ class Game {
     //   大きさは 2 以上のときだけ書く（Ca²⁺ の作法。1 は省く）。
     //   ⚠ 塩（アニリン塩酸塩）も双性イオンも**正味 0** なので表示は変わらない。
     //   出番は「ユーザーが対イオンの粒を消したとき」だけ（DESIGN_ion_layer.md §13-5 の実測）。
-    //   ⚠ 写しが `tools/dump-canonical.js formulaOf` にある（同じ形にすること）
+    //   ⚠ 写しが `tools/dump-canonical.js formulaOf` にある（同じ形にすること）。
+    //   ⚠ ただし**高分子の「(繰り返し単位)ₙ」だけは写さない**（v1522。あちらは差分を読む物差しで、
+    //     畳むと「原子が増減したか」が読めなくなる。理由はあちらの注記）
     computeMolecularFormula(mol = this.userMolecule) {
+        const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+        const hill = (counts) => {
+            const order = [];
+            if (counts['C']) order.push('C');
+            if (counts['H']) order.push('H');
+            Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
+            return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('');
+        };
+
+        /* ★ 高分子（両端を R で止めた鎖）は「(繰り返し単位)ₙ」で書く（v1522・ユーザー要望
+         *   「分子式は R を含めるよりも (C8H8)n としたほうがよい」）。
+         *   総和の `C₃₂H₃₂R₂` は式としては正しいが、**高校化学は必ず単位 × n で書く**ので
+         *   教科書のどこにも出てこない形だった（video-scripts/ORDER_polymer_formula_2026-09-07.md）。
+         * ⚠ 単位が取れないもの（加硫ゴム＝ R が4つ・キャンバスに分子が2つ以上）は
+         *   `polymerRepeatUnit` が null を返し、**これまでどおり総和**に落ちる。
+         * ⚠ 画面にいくつ並んでいるか（n の実数）は式に混ぜない。混ぜると「n は具体的な数」
+         *   という誤解になる。数は分子モーダルの1行（`#mm-poly-note`）で断る */
+        if (typeof polymerRepeatUnit === 'function') {
+            const rep = polymerRepeatUnit(mol);
+            if (rep) return '(' + hill(rep.counts) + ')ₙ';
+        }
+
         const counts = {};
         let hCount = 0;
         let charge = 0;
@@ -3713,14 +3737,7 @@ class Game {
         });
         if (hCount > 0) counts['H'] = (counts['H'] || 0) + hCount;
 
-        const order = [];
-        if (counts['C']) order.push('C');
-        if (counts['H']) order.push('H');
-        Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
-
-        const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
-        return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('') +
-               Game.chargeSuperscript(charge);
+        return hill(counts) + Game.chargeSuperscript(charge);
     }
 
     // 正味の電荷を右肩の記号にする（0 なら空文字）。`computeMolecularFormula` と
