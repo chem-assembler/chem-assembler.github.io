@@ -3404,6 +3404,35 @@ async function runUITests(iframe) {
     assert(!doc.getElementById("clearBanner").hidden, "クリアバナーが出ない");
   });
 
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-2）—— **クリアの条件は係数だけ。**
+     v201 までは reactionDone && coeffOk ＝ 同じ比を左（ビーカー）と右（係数）で
+     2回決めないと進めなかった。実験は「正解のあとに確かめる」オプションに降りた。 */
+  await t("UI: ビーカーに触れなくても係数だけでクリアし、確かめる釦で実験が走る", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s4");
+    stageBtn(i).click();
+    assert(Object.keys(state().added).length === 0, "初期状態でビーカーに何か入っている");
+    eqOf(STAGES[i], state().eqMode).answer.forEach((v, k) => setCoeff(k, v));
+    let s = state();
+    assert(s.coeffOk && s.cleared, "係数だけでクリアにならない: " + JSON.stringify(s));
+    assert(!s.reactionDone, "実験していないのに反応済みになっている");
+    const banner = doc.getElementById("clearBanner");
+    assert(banner.textContent.includes("ビーカーで確かめよう"), "確かめる誘いが無い: " + banner.textContent);
+    // ★ 正解後のオプション: 1押しで模範どおり入れて反応させる（数は sampleInputs から導く）
+    const confirm = doc.getElementById("confirmBtn");
+    assert(confirm, "「確かめる」釦が出ない");
+    confirm.click();
+    adv(20000);
+    s = state();
+    assert(s.reactionDone, "確かめる釦で反応しきらない: " + JSON.stringify(s));
+    assert(s.added["AgNO3"] === 1 && s.added["NaCl"] === 1, "模範の投入数と違う: " + JSON.stringify(s.added));
+    assert(doc.getElementById("clearBanner").textContent.includes("実験ともそろった"),
+      "確かめたあとの帯が変わらない: " + doc.getElementById("clearBanner").textContent);
+    assert(!doc.getElementById("confirmBtn"), "確かめ終わっても釦が残っている");
+    // ⚠ ビーカーの ＋ボタンと ⚡反応させる は取り上げない（本体が移っただけ）
+    assert(doc.querySelectorAll("#toolbar .add").length === 2 && doc.querySelector("#toolbar .react"),
+      "ビーカーの操作が消えている");
+  });
+
   await t("UI: 本質の1行 - 燃焼は「原子の組み替え」・s8 は結びなし・通常は傍観イオンに触れる（S-6）", async () => {
     const netion = () => doc.getElementById("netion");
     const solve = (i) => {
@@ -3484,6 +3513,32 @@ async function runUITests(iframe) {
     adv(3000); reactBtn().click(); adv(8000);
     assert(state().reactionDone, "反応完了しない");
     assert(el.classList.contains("matched"), "ちょうど反応で matched にならない");
+  });
+
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-4）—— ユーザー指示
+     「左がわの模式図／最小公倍数でないときに、インストラクションが必要／
+      酸と塩基の比はあっているが、もっと簡単な整数比にできる」。
+     ビーカーは 2:2 を緑の成功で返したうえ「この比が係数のヒント」と写すよう勧めていた
+     ＝ 勧めたとおり入れると右のパネルが 💡 で止める（自分で誘導して自分で止める）。 */
+  await t("UI: ビーカー - 最簡でない比で反応しきったら、係数にする前に割ることを言う", async () => {
+    const msg = () => doc.getElementById("msg");
+    // 2 : 2（比は合っているが最簡でない）
+    stageBtn(0).click();
+    addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    assert(state().reactionDone, "2:2 で反応しきらない");
+    let txt = msg().textContent;
+    assert(msg().classList.contains("ok"), "実験は成功なのに緑でない: " + msg().className);
+    assert(txt.includes("比は合っている"), "比が合っていることを認めていない: " + txt);
+    assert(txt.includes("2 : 2 → 1 : 1"), "どこまで割るかを言っていない: " + txt);
+    assert(!txt.includes("この比が係数のヒント"), "そのまま写すよう勧めたまま: " + txt);
+    // ★ 否定対照: 1 : 1（最簡）なら従来どおり「この比が係数のヒント」
+    stageBtn(0).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    txt = msg().textContent;
+    assert(txt.includes("この比が係数のヒント"), "最簡なのにヒントを出さない: " + txt);
+    assert(!txt.includes("割って"), "最簡なのに割れと言う: " + txt);
   });
 
   await t("UI: ブロック模式図 - 係数ぶんのブロックと H₂O が並び、余りに印がつく", async () => {
@@ -3580,6 +3635,32 @@ async function runUITests(iframe) {
     [1, 2, 1, 2].forEach((v, i) => setCoeff(i, v));
     assert(doc.getElementById("schematicMsg").textContent.includes("ぴったり"),
       "最簡に直しても助言が残る: " + doc.getElementById("schematicMsg").textContent);
+  });
+
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-3）——
+     「係数を1つ入れた段階でイオンのグラフィックを表示」。
+     v201 までは左辺が全部そろうまで1粒も描かれず、案内文だけが出ていた。 */
+  await t("UI: 数合わせ - 係数を1つ入れた時点で粒が出る（動きはそろってから）", async () => {
+    stageBtn(1).click();   // H₂SO₄ × NaOH（左辺2項）
+    const parts = () => doc.querySelectorAll("#recombine .rpart").length;
+    // 何も入れていないうちは粒ゼロ。案内は「1つ入れると」と言う
+    assert(parts() === 0, "係数ゼロなのに粒が出ている");
+    assert(doc.querySelector("#recombine text").textContent.includes("1つ入れる"),
+      "案内が「全部そろえろ」のまま: " + doc.querySelector("#recombine text").textContent);
+    // ★ 1つだけ入れた時点で、そのぶんの粒が出る
+    ups()[0].click();      // H₂SO₄ = 1 → H⁺×2, SO₄²⁻×1
+    assert(parts() === 3, "係数を1つ入れても粒が出ない: " + parts());
+    // ⚠ 動き（組み変え）はまだ押させない
+    assert(recombineBtn().disabled, "左辺が半端なのに組み変えが押せる");
+    assert(doc.getElementById("recombineMsg").textContent.includes("NaOH"),
+      "足りない項を名指ししない: " + doc.getElementById("recombineMsg").textContent);
+    // フックから直接呼んでも走らない（釦を無効にしただけで済ませない）
+    win.IonEq.recombine(); adv(10000);
+    assert(!state().recombine, "半端な係数で組み変えが走った: " + JSON.stringify(state().recombine));
+    // 左辺がそろえば押せる
+    ups()[1].click(); ups()[1].click();   // NaOH = 2
+    assert(!recombineBtn().disabled, "左辺がそろっても組み変えが押せない");
+    assert(parts() === 3 + 2 * 2, "そろえたぶんの粒が出ない: " + parts());
   });
 
   await t("UI: 数合わせ - 左辺のみで試すと「できた数」を教える", async () => {
@@ -4370,6 +4451,10 @@ async function runUITests(iframe) {
     // primary:"ionic" なので既定はイオン反応式
     assert(state().eqMode === "ionic", "既定がイオン反応式でない: " + state().eqMode);
     assert(terms().join() === "Al³⁺,OH⁻,Al(OH)₃", "イオン式の項が違う: " + terms().join());
+    /* ★ 2026-09-07（§6-6）: 並べずに切り替えのままにしたぶん、
+       **何の2択かを字で言う**（釦が2つ並ぶだけでは同じ反応の2つの姿だと読めない） */
+    assert((doc.querySelector("#eqMode .eqModeLead") || {}).textContent === "同じ反応の2つの書き方：",
+      "切り替えの見出しが無い: " + doc.getElementById("eqMode").textContent);
     assert(doc.getElementById("recombineWrap").hidden, "イオン式のとき数合わせが出てしまう");
     [1, 3, 1].forEach((v, k) => setCoeff(k, v));
     assert(state().coeffOk, "イオン式の模範が正解にならない");
@@ -5424,19 +5509,51 @@ async function runUITests(iframe) {
     assert(blocks().state().an === 5, "図のブロックを押しても減らない");
   });
 
-  await t("UI-BLOCKS: 一覧のボタンで選んで積める（フックと画面が同じ数を指す）", async () => {
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-5）—— ステッパーとブロックの畳み方。
+     イオン反応モードでは選べる種が片側1つずつしかないので、一覧の釦は
+     上のステッパーの複製でしかない。**一覧は出さず、図を直接押して積む。** */
+  await t("UI-BLOCKS: イオン反応モードでは一覧を出さず、図の「＋」で積む", async () => {
     goStage("s5");
     ionicBtn().click();
+    assert(!doc.querySelector("#blocksPalette .ibPick"), "一覧の釦が残っている（ステッパーと二重）");
+    assert(!doc.querySelector("#blocksPalette .ibMinus"), "「戻す」の釦が残っている");
     blocks().set({ cn: 0, an: 0 });
-    const pick = (side) => doc.querySelector(`#blocksPalette .ibPick[data-ib-side="${side}"]`);
-    pick("cation").click(); pick("anion").click();
+    const svg = doc.getElementById("ionBlocks");
+    const ghost = (side) => svg.querySelector(`.ibAdd[data-ib-side="${side}"]`);
+    const coeff = (i) => {
+      const v = $$("#equation .term")[i].querySelector(".coeff").textContent;
+      return v === "？" ? 0 : +v;
+    };
+    assert(ghost("cation") && ghost("anion"), "空の列に置き場所（＋）が出ない");
+    ghost("cation").dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    ghost("anion").dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
     const s = blocks().state();
     assert(s.cn === 1 && s.an === 1 && s.kind === "simplest", JSON.stringify(s));
     assert(s.formula === "BaSO4", "組成式が引けない: " + s.formula);
+    // ★ 図で積むと係数にも入る（畳んでも双方向は保つ）
+    assert(coeff(0) === 1 && coeff(1) === 1, `係数が追随しない ${coeff(0)}/${coeff(1)}`);
+    // 積んである上にも置き場所が出る（2つめ以降も図だけで積める）
+    assert(ghost("cation"), "積んだあとに置き場所が消える");
+    ghost("cation").dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
+    assert(blocks().state().cn === 2, "2つめが積めない: " + blocks().state().cn);
+  });
+
+  /* ⚠ 一覧の仕組みそのものは blocks.js に残す —— 酸化還元の⑥では
+     「余ったイオンから**選んで**組む」ので、選択肢が複数ある。部品として生きていることを見張る。 */
+  await t("UI-BLOCKS: 一覧は paletteEl を渡したときだけ出る（部品としては生きている）", async () => {
+    const host = doc.createElement("div");
+    const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+    doc.body.append(host, svg);
+    const b = win.IonBlocks.create({ svg, paletteEl: host, choices: ["Ba^2+", "SO4^2-"] });
+    const pick = (side) => host.querySelector(`.ibPick[data-ib-side="${side}"]`);
+    pick("cation").click(); pick("anion").click();
+    const s = b.state();
+    assert(s.cn === 1 && s.an === 1 && s.kind === "simplest", JSON.stringify(s));
+    assert(s.formula === "BaSO4", "組成式が引けない: " + s.formula);
     // 「− 1つ戻す」は積んでいないと押せない
-    blocks().set({ cn: 0 });
-    const minus = doc.querySelector('#blocksPalette .ibMinus[data-ib-side="cation"]');
-    assert(minus.disabled, "0 個なのに「戻す」が押せる");
+    b.set({ cn: 0 });
+    assert(host.querySelector('.ibMinus[data-ib-side="cation"]').disabled, "0 個なのに「戻す」が押せる");
+    b.destroy(); host.remove(); svg.remove();
   });
 
   return results;

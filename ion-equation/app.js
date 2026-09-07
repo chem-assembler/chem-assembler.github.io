@@ -1719,8 +1719,25 @@ function evaluateReactionInner() {
   if (leftover.length === 0 && madeCount > 0) {
     reactionDone = true;
     const names = stage.reactants.map((sp) => SPECIES[sp].disp).join(" : ");
-    const ratio = stage.reactants.map((sp) => addedCount[sp] || 0).join(" : ");
-    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。この比が係数のヒント。${stage.doneNote}`, "ok");
+    const ns = stage.reactants.map((sp) => addedCount[sp] || 0);
+    const ratio = ns.join(" : ");
+    /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-4）—— ユーザー指示
+       「左がわの模式図／最小公倍数でないときに、インストラクションが必要／
+        酸と塩基の比はあっているが、もっと簡単な整数比にできる」。
+
+       2個ずつ入れて反応させると、ここは緑の成功として「投入した数は 2 : 2。
+       **この比が係数のヒント**」と返していた。勧められたとおり 2:2:2:2 と入れると、
+       右のパネルが 💡 で「2 で割れる」と止める ＝ **自分で誘導して自分で止めていた。**
+       その一手（画面の個数 → 式の係数）をここで言い足す。
+
+       ⚠ 色は緑のまま。ちょうど反応しきったのは事実で、実験としては成功している。
+       橙や赤にすると「2個ずつ入れたのが間違い」に読める。 */
+    const adv = stage.reactants.length >= 2
+      ? simplestRatioAdvice(ns, stage.reactants.map((sp) => SPECIES[sp].disp)) : null;
+    const hint = adv
+      ? `比は合っている。ただし係数は最も簡単な整数比で書くので、そのまま写さない —— ${adv.text}`
+      : "この比が係数のヒント。";
+    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。${hint}${stage.doneNote}`, "ok");
     updateAddedFormula();
     maybeClear();
   } else if (leftover.length > 0) {
@@ -1871,6 +1888,15 @@ function buildEqModeSwitch(stage) {
     return;
   }
   eqModeEl.hidden = false;
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-6）——
+     ユーザーは2回とも「化学反応式を完成させよう／分子反応式／イオン反応式」と**並べて**書いた。
+     実機で見比べて**切り替えのまま**にした（並べると同じ反応の係数パズルが画面に2つ並び、
+     この整理がやめようとしていることを作り直すことになる。理由は §6-6 の4点）。
+     ただし「釦が2つあるだけで何の2択か書いていない」のは事実なので、見出しを1つ足す。 */
+  const lead = document.createElement("span");
+  lead.className = "eqModeLead";
+  lead.textContent = "同じ反応の2つの書き方：";
+  eqModeEl.appendChild(lead);
   const mk2 = (mode, label) => {
     const b = document.createElement("button");
     b.className = "eqModeBtn" + (eqMode === mode ? " on" : "");
@@ -2034,8 +2060,15 @@ function buildIonBlocks() {
   blocksHeadEl.textContent =
     `価数を高さにしてそろえる（${SPECIES[pair.cation].disp} ${ionBlockHeight(pair.cation)}価 と ` +
     `${SPECIES[pair.anion].disp} ${ionBlockHeight(pair.anion)}価）`;
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-5）—— **一覧（paletteEl）を渡さない。**
+     イオン反応モードでは選べる種が片側1つずつしかないので、あの一覧は
+     「押すと1増える釦」＝ 上のステッパーの複製でしかなく、
+     図の下にもう1列の釦が並ぶ見た目そのものが「入力が2つある」の正体だった。
+     積む・減らすは図を直接押して行う（blocks.js の .ibAdd / .ibBlock）。
+     ⚠ 一覧の仕組みは blocks.js に残す —— 酸化還元の⑥では**イオンを選ぶ**ことに意味がある。 */
+  if (blocksPaletteEl) blocksPaletteEl.innerHTML = "";
   ionBlocksInst = IonBlocks.create({
-    svg: blocksSvgEl, paletteEl: blocksPaletteEl, msgEl: blocksMsgEl,
+    svg: blocksSvgEl, msgEl: blocksMsgEl,
     look: schematicLook,
     cations: [pair.cation], anions: [pair.anion],
     cation: pair.cation, anion: pair.anion,
@@ -2264,15 +2297,25 @@ function buildRecombine() {
   lastRecombine = null;
   stripTweens = [];
   recombineMsgEl.textContent = "";
+  // 文を消すときは見た目（💡 の枠）も一緒に落とす。残すと空の帯だけが出る
+  recombineMsgEl.classList.remove("msgBox", "ok", "ng", "info");
   recombineBtn.textContent = "⇄ 組み変える";
-  if (coeffs.slice(0, nL).some((c) => c === 0)) {
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-3）——
+     **係数を1つ入れた時点で、入っているぶんの粒を描く。**
+     v201 までは左辺が全部そろうまで1粒も出さず、案内文だけを出していた。
+     「何個あるか」は静止の図で見せ、「組み変わる」は動きで見せる、と分けたので、
+     図のほうは待たない。未入力の列は見出しが「？」のまま残る＝**あと何が要るかが図で分かる**。
+     ⚠ 釦（動き）は左辺がそろうまで押させない。半端な係数で走らせると
+     simulateFormation が「0 個できた」を返し、足りないのか間違いなのか読めなくなる。 */
+  const missing = coeffs.slice(0, nL).filter((c) => c === 0).length;
+  if (missing === nL) {
     recombineBtn.disabled = true;
     recombineSvg.setAttribute("viewBox", "0 0 360 30");
     const t = mk("text", { x: 180, y: 19, "text-anchor": "middle", "font-size": 12, fill: "#8a94a0" }, recombineSvg);
-    t.textContent = "左辺の係数を入れると組み変えを試せる（右辺はあとからでもよい）";
+    t.textContent = "左辺の係数を1つ入れると、そのぶんのイオンがここに出る";
     return;
   }
-  recombineBtn.disabled = false;
+  recombineBtn.disabled = missing > 0;
   const sim = simulateFormation(stage, coeffs.slice(0, nL));
 
   const R = 13, GAP = 4, PAD = 5, ROWGAP = 8, LABELH = 26, SEP = 30, MARGIN = 8;
@@ -2396,7 +2439,13 @@ function buildRecombine() {
       });
     }
   });
-  recombineState = { leftParticles, formPlan, rightCols, sim, done: false };
+  recombineState = { leftParticles, formPlan, rightCols, sim, done: false, ready: missing === 0 };
+  /* 半端な係数のときは「何が足りないか」を名指しする。
+     図はもう出ているので、ここで言うのは**動かすために足りないもの**だけ */
+  if (missing > 0) {
+    const yet = eq.reactants.filter((sp, i) => coeffs[i] === 0).map((sp) => SPECIES[sp].disp).join("・");
+    setStatusMsg(recombineMsgEl, `${yet} の係数を入れると組み変えを試せる（右辺はあとからでもよい）。`, "info");
+  }
 }
 
 /* 弧を描いて飛ぶ（2次ベジェ。制御点を中点の上に持ち上げる） */
@@ -2436,7 +2485,8 @@ function stepStripTweens(dt) {
 }
 
 function animateRecombine() {
-  if (!recombineState || recombineState.done) return;
+  // ready＝左辺の係数がそろっている。図（静止）は半端でも出るが、動きはそろってから
+  if (!recombineState || recombineState.done || !recombineState.ready) return;
   recombineState.done = true;
   recombineBtn.textContent = "↺ 並べ直す";
   const plan = recombineState.formPlan;
@@ -2529,15 +2579,45 @@ recombineBtn.onclick = () => {
 
 /* ---- 進行 ---- */
 
+/* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-2）—— **クリアの条件は係数だけ。**
+
+   v201 までは `reactionDone && coeffOk` ＝ ビーカーで正しい比を投入して反応させ、
+   なおかつ同じ比を係数にも入れないと進めなかった。ユーザーの申し立ては
+   「左の係数合わせと右の係数合わせで内容がかぶっている／右のコンテンツをメインにし、
+   正解後にアニメーションで確認というオプションの位置づけに」。
+
+   ⚠ **ビーカーを取り上げるのではない。** ＋ボタンも ⚡反応させる もそのまま残る。
+   変わったのは「どちらが本体か」だけで、実験は**正解のあとに確かめる道**になった。
+   自分で先に実験した人には、その事実を帯の文で認める（reactionDone の分岐）。 */
 function maybeClear() {
-  if (cleared || !reactionDone || !coeffOk) return;
-  cleared = true;
+  if (!coeffOk) return;
+  if (!cleared) {
+    cleared = true;
+    slTrack("stage_clear", { app: "ion-equation", stage: String(stageIdx + 1) });
+  }
+  buildClearBanner();
+}
+
+/* クリアの帯。**反応させたかどうかで中身が変わる**ので、
+   実験が終わったあと（evaluateReaction → maybeClear）にも組み直される */
+function buildClearBanner() {
   clearEl.hidden = false;
   clearEl.innerHTML = "";
-  slTrack("stage_clear", { app: "ion-equation", stage: String(stageIdx + 1) });
   const t = document.createElement("div");
-  t.textContent = "クリア！ ビーカーの実験と反応式が両方そろった。";
+  t.textContent = reactionDone
+    ? "クリア！ 反応式が完成し、ビーカーの実験ともそろった。"
+    : "クリア！ 反応式が完成した。水の中で本当にそうなるか、ビーカーで確かめよう。";
   clearEl.appendChild(t);
+  // 正解後のオプション ——「確かめる」を1押しで走らせる。
+  // 入れる数は sampleInputs（模範の投入数）から導く＝ここに数を書かない
+  if (!reactionDone) {
+    const c = document.createElement("button");
+    c.id = "confirmBtn";
+    c.className = "confirm";
+    c.textContent = "▶ ビーカーで確かめる";
+    c.onclick = () => runConfirm(c);
+    clearEl.appendChild(c);
+  }
   if (stageIdx < STAGES.length - 1) {
     const b = document.createElement("button");
     b.textContent = "次のステージへ →";
@@ -2548,6 +2628,25 @@ function maybeClear() {
     d.textContent = "全ステージクリア！おつかれさま。";
     clearEl.appendChild(d);
   }
+}
+
+/* 「▶ ビーカーで確かめる」—— 正解のあとに実験を1押しで走らせる（§6-2 のオプション）。
+
+   ⚠ **入れる数を書かない。** `sampleInputs(stage)` が模範の投入数を持っている
+   （加水分解・電離は per 個、ほかは左辺の係数）。ここに数を書くと、
+   データを直したとき「確かめたのに反応しきらない」画面になる。
+   ⚠ 自分で先に入れてある人のぶんは足りないぶんだけ足す（入れ直さない）。 */
+function runConfirm(btn) {
+  const stage = STAGES[stageIdx];
+  const need = sampleInputs(stage);
+  stage.reactants.forEach((sp, i) => {
+    for (let k = addedCount[sp] || 0; k < (need[i] || 0); k++) addMolecule(sp);
+  });
+  if (btn) { btn.disabled = true; btn.textContent = "▶ 確かめ中…"; }
+  // 落ちて電離しきってから反応させる（schedule は advance() で決定論的に進む＝テストできる）
+  schedule(0.9, () => doReact());
+  // 携帯の縦並びでは帯とビーカーが離れているので、見る場所まで運ぶ
+  try { beakerSvg.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { /* 古い実装でも無視 */ }
 }
 
 /* 見出し名。番号はデータに持たず**並び順から作る**

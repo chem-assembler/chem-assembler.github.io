@@ -800,7 +800,9 @@ main.timelineMain {
 #eqMsg { margin: 6px 0 4px; font-size: 13px; min-height: 18px; }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。どちらも書けるように行き来させる */
-#eqMode { display: flex; gap: 4px; margin-bottom: 6px; }
+#eqMode { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
+/* 何の2択かを言う見出し（DESIGN_ionic_two_step.md §6-6）。押せる見た目にしない */
+.eqModeLead { font-size: 11px; color: #6b7680; }
 .eqModeBtn {
   font-size: 12px;
   padding: 3px 12px;
@@ -938,12 +940,17 @@ main.timelineMain {
 }
 #clearBanner button {
   margin-top: 6px;
+  margin-right: 6px;
   border: none; border-radius: 8px;
   padding: 8px 16px;
   background: #e08a3c; color: #fff;
   font-size: 15px; font-weight: bold;
   cursor: pointer;
 }
+/* 「▶ ビーカーで確かめる」は**次へ進む釦と別の仕事**（正解後のオプション）なので、
+   同じ橙で並べると押し間違える。ビーカー側の「⚡反応させる」と同じ系統の青にする */
+#clearBanner button.confirm { background: #46647e; }
+#clearBanner button.confirm:disabled { background: #9aa6b1; cursor: default; }
 
 /* ---- スマホ（縦持ち）: 指で押しやすいタップ標的にする ---- */
 @media (max-width: 560px) {
@@ -1970,6 +1977,11 @@ main.timelineMain {
 /* ブロックは押すと1つ減る（一覧の「−」と同じことが、図の中でもできる） */
 .ibBlock { cursor: pointer; }
 .ibBlock:hover rect { filter: brightness(1.08); }
+/* 「＋」のゴースト＝次の1つを置く場所。押すと積む（DESIGN_ionic_two_step.md §6-5）。
+   イオン反応モードでは一覧の釦を出さないので、積む操作はここで完結する */
+.ibAdd { cursor: pointer; }
+.ibAdd:hover rect { stroke: #7ba4c6; }
+.ibAdd:hover text { fill: #4d7f9f; }
 
 /* ================================================================================
    電気分解「まず、何が反応する？」の段（electrolysis.html / electrolysis.js）
