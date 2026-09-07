@@ -4165,6 +4165,11 @@ const SALT_FORMULA = {
   "Zn^2+|Cl-":    "ZnCl2",
   "Cu^2+|NO3-":   "Cu(NO3)2",
   "Ag+|NO3-":     "AgNO3",
+  // 価数＝高さのブロック（DESIGN_ion_blocks.md）が組ませる対。瓶の段では使わない
+  // （Ba を含む REDOX_STAGES が無いので bottlePlan の結果は変わらない）が、
+  // 表に置けば上の機械検査（原子数の突き合わせ）がそのまま効く
+  "Ba^2+|SO4^2-": "BaSO4",
+  "Ag+|Cl-":      "AgCl",
 };
 
 function saltOf(cationSp, anionSp) {
@@ -4172,6 +4177,118 @@ function saltOf(cationSp, anionSp) {
   const sp = SALT_FORMULA[cationSp + "|" + anionSp];
   if (!u || !sp) return null;
   return { cation: cationSp, anion: anionSp, cn: u.cn, an: u.an, sp };
+}
+
+/* ================================================================================
+   価数＝ブロックの高さ（DESIGN_ion_blocks.md・2026-09-07）
+
+   陽イオンと陰イオンを積み上げて、**総高さがそろえば中性の1化学種**になる。
+   高さは `SPECIES[sp].charge` の絶対値そのもの ＝ 価数表を別に持たない。
+
+   ★ 判定は**三値**。「そろっていない」「そろったが最簡でない」「そろった」を言い分ける。
+     二値にすると、そろっているのに × と言われた人が**積み替えようとする**が、
+     やることは積み替えではなく「割る」なので、何をしても直らない。
+
+   ⚠ 判定に使うのは個数（cn・an）と価数だけ。座標・ピクセルは見た目専用で、
+     ここには一切入れない（blocks.js が持つ）。
+   ================================================================================ */
+
+/* 種 → ブロックの高さ（＝価数）。イオンでないもの（H₂O・CO₂・析出した金属）は 0 */
+function ionBlockHeight(sp) {
+  const s = SPECIES[sp];
+  return s ? Math.abs(s.charge) : 0;
+}
+
+/* 種 → どちらの列に置けるか。電荷 0 のものは組ませない（＝ null） */
+function ionBlockRole(sp) {
+  const s = SPECIES[sp];
+  if (!s || !s.charge) return null;
+  return s.charge > 0 ? "cation" : "anion";
+}
+
+/* 種の一覧を2つの列に振り分ける（電荷 0 と未知の種は落とす）。
+   「イオンの一覧から陽イオンと陰イオンを選ぶ」の一覧を、呼び出し側が手で分けなくて済むように */
+function ionBlockChoices(list) {
+  const cations = [], anions = [];
+  for (const sp of list || []) {
+    const r = ionBlockRole(sp);
+    if (r === "cation") cations.push(sp);
+    else if (r === "anion") anions.push(sp);
+  }
+  return { cations, anions };
+}
+
+/* 陽イオン cn 個・陰イオン an 個を積んだときの三値判定。
+   返り値の形は DESIGN_ion_blocks.md §3。**message まで返す**のは、
+   同じ言い回しを2か所（イオン反応モード・酸化還元⑥）で書き分けないため。
+
+   第5引数 formulaSp は組成式の上書き。SALT_FORMULA に無い対（Al³⁺＋3OH⁻ など）で、
+   呼び出し側がステージの生成物を渡すためのもの。**渡さなければ表から引く。** */
+function ionBlockCheck(cationSp, anionSp, cn, an, formulaSp) {
+  const cHeight = ionBlockRole(cationSp) === "cation" ? ionBlockHeight(cationSp) : 0;
+  const aHeight = ionBlockRole(anionSp) === "anion" ? ionBlockHeight(anionSp) : 0;
+  const base = {
+    kind: "invalid", ok: false, balanced: false,
+    cation: cationSp || null, anion: anionSp || null,
+    cn: cn | 0, an: an | 0,
+    cHeight, aHeight, cTotal: 0, aTotal: 0, diff: 0,
+    unit: null, times: null, formula: null,
+    message: "陽イオンと陰イオンを1つずつ選ぼう。",
+  };
+  if (!cHeight || !aHeight) return base;
+
+  const unit = saltUnit(cationSp, anionSp);
+  const formula = formulaSp || SALT_FORMULA[cationSp + "|" + anionSp] || null;
+  const cTotal = base.cn * cHeight, aTotal = base.an * aHeight;
+  const lcm = unit.cn * cHeight;   // ＝ unit.an * aHeight ＝ 電荷の最小公倍数
+  const cd = SPECIES[cationSp].disp, ad = SPECIES[anionSp].disp;
+  const r = Object.assign(base, { cTotal, aTotal, diff: cTotal - aTotal, unit, formula });
+
+  if (cTotal === 0 && aTotal === 0) {
+    r.kind = "empty";
+    r.message = `${cd}（${cHeight}価）と ${ad}（${aHeight}価）を積んで、高さをそろえよう。`;
+    return r;
+  }
+  if (cTotal !== aTotal) {
+    r.kind = "short";
+    const lowName = cTotal < aTotal ? `${cd} の側` : `${ad} の側`;
+    r.message = `まだそろっていない（${cd} 側 ${cTotal} ／ ${ad} 側 ${aTotal}）。` +
+      `${lowName}があと ${Math.abs(r.diff)} ぶん低い。`;
+    return r;
+  }
+
+  r.balanced = true;
+  r.times = cTotal / lcm;
+  if (r.times > 1) {
+    // ★ ここを「違う」と言わない。そろっているのは事実で、直し方は「割る」
+    r.kind = "reducible";
+    r.message = `高さはそろっています。でも、もっと簡単な整数比にできます —— ` +
+      `${r.cn} : ${r.an} は ${r.times} で割れて ${unit.cn} : ${unit.an}` +
+      `（${unit.cn}${cd} と ${unit.an}${ad}）。`;
+    return r;
+  }
+  r.kind = "simplest";
+  r.ok = true;
+  const made = formula ? (SPECIES[formula] ? SPECIES[formula].disp : formula) : null;
+  r.message = `そろった！ ${unit.cn}${cd} と ${unit.an}${ad} で` +
+    (made ? ` ${made} が1つできる。` : "、電荷が打ち消し合って中性の1つになる。");
+  return r;
+}
+
+/* ステージのイオン反応式が「陽イオン ＋ 陰イオン → 中性の1種」の形か。
+   ⚠ ステージ id を並べて見張るのではなく**式の形で見る**（次に増えたときに守られるため）。
+   Ag⁺＋Cl⁻→AgCl・Ba²⁺＋SO₄²⁻→BaSO₄・Al³⁺＋3OH⁻→Al(OH)₃ がこの形。 */
+function ionBlockPairOf(stage) {
+  const eq = stage && stage.ionic;
+  if (!eq || eq.reactants.length !== 2 || eq.products.length !== 1) return null;
+  const [x, y] = eq.reactants;
+  const cation = ionBlockRole(x) === "cation" ? x : ionBlockRole(y) === "cation" ? y : null;
+  const anion  = ionBlockRole(x) === "anion"  ? x : ionBlockRole(y) === "anion"  ? y : null;
+  if (!cation || !anion) return null;
+  const product = eq.products[0];
+  if (!SPECIES[product] || SPECIES[product].charge !== 0) return null;
+  // 反応式の中でどちらが何番目の項か（係数と行き来するのに要る）
+  return { cation, anion, product, ci: eq.reactants.indexOf(cation), ai: eq.reactants.indexOf(anion) };
 }
 
 /* この段を画面に出すか。**既存の筆算（molecularEq）を持つステージには出さない**
