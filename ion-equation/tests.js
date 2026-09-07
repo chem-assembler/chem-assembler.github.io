@@ -3515,6 +3515,32 @@ async function runUITests(iframe) {
     assert(el.classList.contains("matched"), "ちょうど反応で matched にならない");
   });
 
+  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-4）—— ユーザー指示
+     「左がわの模式図／最小公倍数でないときに、インストラクションが必要／
+      酸と塩基の比はあっているが、もっと簡単な整数比にできる」。
+     ビーカーは 2:2 を緑の成功で返したうえ「この比が係数のヒント」と写すよう勧めていた
+     ＝ 勧めたとおり入れると右のパネルが 💡 で止める（自分で誘導して自分で止める）。 */
+  await t("UI: ビーカー - 最簡でない比で反応しきったら、係数にする前に割ることを言う", async () => {
+    const msg = () => doc.getElementById("msg");
+    // 2 : 2（比は合っているが最簡でない）
+    stageBtn(0).click();
+    addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    assert(state().reactionDone, "2:2 で反応しきらない");
+    let txt = msg().textContent;
+    assert(msg().classList.contains("ok"), "実験は成功なのに緑でない: " + msg().className);
+    assert(txt.includes("比は合っている"), "比が合っていることを認めていない: " + txt);
+    assert(txt.includes("2 : 2 → 1 : 1"), "どこまで割るかを言っていない: " + txt);
+    assert(!txt.includes("この比が係数のヒント"), "そのまま写すよう勧めたまま: " + txt);
+    // ★ 否定対照: 1 : 1（最簡）なら従来どおり「この比が係数のヒント」
+    stageBtn(0).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    txt = msg().textContent;
+    assert(txt.includes("この比が係数のヒント"), "最簡なのにヒントを出さない: " + txt);
+    assert(!txt.includes("割って"), "最簡なのに割れと言う: " + txt);
+  });
+
   await t("UI: ブロック模式図 - 係数ぶんのブロックと H₂O が並び、余りに印がつく", async () => {
     stageBtn(1).click();   // H₂SO₄ × NaOH（2価の酸 vs 1価の塩基）
     const wrap = doc.getElementById("schematicWrap");
