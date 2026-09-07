@@ -52197,6 +52197,49 @@
         return 'パラ位でつながり N=N の中性アゾ化合物になる（既存機構 diazo_coupling に接続）／否定対照4つ';
     });
 
+    // ===== N2: 台本が「炭素が選ばれている」ことを前提にしていた（ユーザー報告 2026-09-07）=====
+    //
+    // 症状: ❓ヘルプ →「結合の次数変更と切断」を再生すると、
+    //       台本が「まずエタン（C-C）を作ります」と言いながら **O-O が置かれる**。
+    // 原因: `bond-edit`・`place-atom`・`bond-stretch` の1手目が `#btn-tool-select`
+    //       （道具＝Select/Move）しか押しておらず、**元素パレットに触っていない**。
+    //       既定は炭素なので初回は通るが、**一度でも O を使った人が開くと O で作図が始まる**。
+    //       ⚠ N1 は既定のまま再生していたので、この穴を一度も踏んでいない。
+    // 直し: 3本の台本の1手目に `.atom-btn.atom-c` を足した（`tutorials.json` のデータだけ）。
+    // ★ この検査は「先に別の元素を選んでから再生する」＝ ユーザーが踏んだ順路そのもの。
+
+    test('N2: 別の元素を選んだあとでも、台本は炭素で作図を始める', async (c) => {
+        c.reset();
+        const tp = c.W.tutorialPlayer;
+        assert(tp, 'tutorialPlayer が初期化されていない');
+        for (let i = 0; i < 30 && tp.tutorials.length === 0; i++) await c.tick(100);
+
+        // ★ 人がやることと同じ順路: 元素パレットで酸素を選んでから ❓ヘルプ を開く
+        const oBtn = c.D.querySelector('.atom-btn.atom-o');
+        assert(oBtn, '酸素のボタンが無い');
+        oBtn.click();
+        assert(c.game.selectedAtomType === 'O',
+            `酸素を選べていない（いま ${c.game.selectedAtomType}）＝ この検査の前提が崩れている`);
+
+        await tp.play('bond-edit', { fast: true });
+        assert(tp.lastResult && tp.lastResult.formula === 'C₂H₂',
+            `酸素を選んだあとの bond-edit の結末が ${tp.lastResult && tp.lastResult.formula}`
+            + '（C₂H₂＝アセチレンを期待。O で作図が始まっている）');
+
+        c.D.querySelector('.atom-btn.atom-o').click();
+        await tp.play('place-atom', { fast: true });
+        assert(tp.lastResult && tp.lastResult.name.includes('エタノール'),
+            `酸素を選んだあとの place-atom の結末が「${tp.lastResult && tp.lastResult.name}」（エタノールを期待）`);
+
+        c.D.querySelector('.atom-btn.atom-o').click();
+        await tp.play('bond-stretch', { fast: true });
+        assert(tp.lastResult && tp.lastResult.formula === 'C₃H₈',
+            `酸素を選んだあとの bond-stretch の結末が ${tp.lastResult && tp.lastResult.formula}（C₃H₈＝プロパンを期待）`);
+
+        c.reset();
+        return '酸素を選んだ状態から3本とも炭素で始まる（エタン／エタノール／プロパン）';
+    });
+
     // ===== 一部だけ流す（`?only=`）=====
     //
     // **なぜ要るか**: 全走は 450 件超・5分超。このリポジトリは否定対照が必須（直しを外して
