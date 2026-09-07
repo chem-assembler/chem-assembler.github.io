@@ -3234,7 +3234,7 @@ const IONIZATION_SERIES = ionizationSeriesFromLadder();
 
 /* ================================================================================
    B3-1: 電池モードのモデル（DESIGN_battery_electrolysis.md §3。実装の刻み 1）
-   すべて DOM 非依存の純ロジック。画面は battery.html / battery.js。
+   すべて DOM 非依存の純ロジック。画面は battery.html / cell.js（B3-2 で battery.js から改名）。
 
    ★ イオン化傾向の序列は新設しない ★
    設計書 §3-1 は IONIZATION_SERIES を新設する前提で書かれているが、それは古い記述で、
