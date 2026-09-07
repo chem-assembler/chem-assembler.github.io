@@ -112,13 +112,12 @@
       <div id="cleaveMsg"></div>
     </section>
 
-    <section class="step" id="step1">
-      <div class="stepHead"><span class="stepNo">1</span>半反応式 — 部品はこの2本（式はこのまま。倍率だけ決める）</div>
-      <div class="sheetScroll"><div id="halfSheet"></div></div>
-    </section>
-
+    <!-- ★ 2026-09-07・ユーザーの指示「②と①の順番を入れ替える」。
+         **先に比率を決め、あとで半反応式に倍率を書き込む** ＝ 紙の上の手順そのもの。
+         ⚠ id は動かさない（`step2` が1番目・`step1` が2番目に出る）。
+         入れ替えるのは並びと画面に出る番号だけで、外から名指ししている口は変えない。 -->
     <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">2</span>e⁻ の数を合わせる — 出す数と受け取る数がそろうまで</div>
+      <div class="stepHead"><span class="stepNo">1</span>どの比率でやりとりさせるか — 出す e⁻ と受け取る e⁻ がそろう比を見つける</div>
       <div id="toolbar"></div>
       <div class="labRow">
         <div class="labCol">
@@ -141,6 +140,16 @@
         </div>
       </div>
       <div id="msg"></div>
+    </section>
+
+    <section class="step" id="step1">
+      <!-- ★ 「①では，半反応式を何倍にするか入力させる／数値を入力すると半反応式の
+           係数をリアルタイムで変化させる」（2026-09-07）。旧①は「式はこのまま」で、
+           ±ステッパーを押しても式が動かなかった。ここが「筆算に寄せる」の核心 ——
+           紙の上で式の右に ×5 と書いて係数を書き換える手つきを、そのまま画面にする -->
+      <div class="stepHead"><span class="stepNo">2</span>半反応式を何倍にするか書き込む — 数を入れると係数が変わる</div>
+      <div class="sheetScroll"><div id="halfSheet"></div></div>
+      <div id="multMsg"></div>
     </section>
 
     <!-- ③〜⑤ は1枚の筆算。→ の位置がそろうよう同じグリッドに置き、段ごとに現れる -->

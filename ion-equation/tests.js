@@ -5456,7 +5456,20 @@ async function runRedoxUITests(iframe) {
   const $$ = (sel) => [...doc.querySelectorAll(sel)];
   const stageBtn = (i) => $$("#stageNav button")[i];
   const playBtn = () => doc.getElementById("playBtn");
-  const upBtns = () => $$(".halfRow .stepper button").filter((b) => b.textContent === "＋");
+  /* 段2（旧①）の倍率は ±ステッパーから**数値入力**に変わった（2026-09-07・筆算に寄せる）。
+     「＋を1回押す」という呼び出し側の書き方をそのまま生かすため、
+     入力欄を1つ上げ下げする小さな押しものを返す（呼び出し側は 30か所以上ある）。 */
+  const multIn = (idx) => doc.getElementById("mult" + idx);
+  const bumpMult = (idx, d) => {
+    const el = multIn(idx);
+    if (!el) return;
+    const v = (parseInt(el.value, 10) || 1) + d;
+    if (v < 1 || v > 9) return;
+    el.value = String(v);
+    el.dispatchEvent(new win.Event("input", { bubbles: true }));
+  };
+  const upBtns = () => [0, 1].map((i) => ({ click: () => bumpMult(i, 1) }));
+  const downBtns = () => [0, 1].map((i) => ({ click: () => bumpMult(i, -1) }));
   const adv = (ms) => win.RedoxEq.advance(ms);
   const state = () => win.RedoxEq.state();
   /* ③の係数は筆算の中で自分で書く段（v193）。書き終わるまで④⑤は出ないので、
@@ -5622,6 +5635,43 @@ async function runRedoxUITests(iframe) {
     assert(state().mult[0] === 3, "ブロッククリックで減らせない: " + JSON.stringify(state().mult));
   });
 
+  /* ★ 筆算に寄せる（2026-09-07）—— ①と②を入れ替え、倍率を**数値入力**にして
+     半反応式の係数をその場で書き換える。ここが「紙の上の手つき」そのもの。 */
+  await t("REDOX: 段の並び - 比率（旧②）が先、半反応式に倍率を書き込む（旧①）が後", async () => {
+    stageBtn(0).click();
+    const secs = [...doc.querySelectorAll("#timeline > section")]
+      .map((s) => s.id + ":" + (s.querySelector(".stepNo") || {}).textContent);
+    const i2 = secs.indexOf("step2:1"), i1 = secs.indexOf("step1:2");
+    assert(i2 >= 0, "比率の段が『1』として出ていない: " + secs.join(" / "));
+    assert(i1 >= 0, "倍率を書き込む段が『2』として出ていない: " + secs.join(" / "));
+    assert(i2 < i1, "並びが入れ替わっていない: " + secs.join(" / "));
+    // ⚠ id は動かしていない（外から名指ししている口を変えない）
+    assert(doc.getElementById("step1") && doc.getElementById("step2"), "id が動いている");
+  });
+
+  await t("REDOX: 段2 - 倍率の数値入力で半反応式の係数がその場で変わる", async () => {
+    const idx = REDOX_STAGES.findIndex((s) => s.id === "rs1");
+    stageBtn(idx).click();
+    const half = () => (doc.getElementById("halfSheet").textContent || "").replace(/\s+/g, " ");
+    assert(multIn(0) && multIn(0).value === "1", "倍率の入力欄が 1 で始まらない");
+    assert(!half().includes("5 Fe"), "×1 なのに係数が付いている: " + half());
+    // 数を書き込む → その場で式の係数が書き換わる（＝紙の上で ×5 と書く手つき）
+    multIn(0).focus();
+    bumpMult(0, 4);
+    assert(state().mult[0] === 5, "書き込んだ数が倍率にならない: " + state().mult.join());
+    assert(half().includes("5 Fe"), "係数がリアルタイムで変わらない: " + half());
+    // 打っているあいだに行を作り直さない（焦点が飛ぶと数字が打てない）
+    assert(doc.activeElement === multIn(0), "入力のたびに焦点が飛んでいる");
+    // 段1 は「比」を名指しする ＝ 段2 で書き込む数の正体
+    const tally = (doc.getElementById("eTally").textContent || "").replace(/\s+/g, " ");
+    assert(tally.includes("還元剤 : 酸化剤 ＝ 5 : 1"), "そろっても比を言わない: " + tally);
+    // 段2 の判定文は「書いた数で式がどう変わったか」を言う
+    const mm = doc.getElementById("multMsg").textContent;
+    assert(mm.includes("×5・×1") && mm.includes("書き換わ"), "段2 の判定文が出ない: " + mm);
+    bumpMult(0, -4);
+    assert(state().mult[0] === 1 && !half().includes("5 Fe"), "戻しても係数が戻らない: " + half());
+  });
+
   await t("REDOX: ブロック模式図 - どの倍率でもブロックが重ならず枠内に収まる", async () => {
     const svg = doc.getElementById("schematic");
     const setM = (idx, v) => {
@@ -5701,8 +5751,11 @@ async function runRedoxUITests(iframe) {
       "還元剤の行ラベルが役割名でない: " + rowText("rowSumOx"));
     assert(rowText("rowSumRed").includes("【酸化剤】") && rowText("rowSumRed").includes("×2 還元される式"),
       "酸化剤の行ラベルが役割名でない: " + rowText("rowSumRed"));
-    assert(!doc.getElementById("halfOx").textContent.includes("3 Cu"),
-      "ステップ1の半反応式まで倍数化されている: " + doc.getElementById("halfOx").textContent);
+    /* ★ 2026-09-07・逆にした。「数値を入力すると半反応式の係数をリアルタイムで変化させる」
+       （ユーザーの指示）ので、段2 の半反応式も倍数化されているのが正しい姿。
+       ⚠ 以前はここが「倍数化されていないこと」を見張っていた（式はこのまま、の設計）。 */
+    assert(doc.getElementById("halfOx").textContent.includes("3 Cu"),
+      "段2 の半反応式に倍率が書き込まれていない: " + doc.getElementById("halfOx").textContent);
     const ionic = rowText("rowIonic");
     assert(ionic.includes("H⁺") && ionic.includes("NO₃⁻") && ionic.includes("イオン反応式"),
       "イオン反応式の行が組み立たない: " + ionic);
@@ -6358,7 +6411,12 @@ async function runRedoxUITests(iframe) {
     assert(/Fe/.test(oxRow) && /e⁻/.test(oxRow), "段1の酸化側が Fe²⁺→Fe³⁺ になっていない: " + oxRow);
     assert(/Mn/.test(redRow) && /H₂O/.test(redRow), "段1の還元側が MnO₄⁻ の式になっていない: " + redRow);
     // 模範倍率（5:1）まで上げてクリアできる ＝ 段1以降が収録ステージと同じに動く
-    const up = [...p.doc.querySelectorAll(".halfRow .stepper button")].filter((b) => b.textContent === "＋");
+    // 段2 の倍率は数値入力（2026-09-07）。＋を押す代わりに欄を1つ上げる
+    const up = [0, 1].map((i) => ({ click: () => {
+      const el = p.doc.getElementById("mult" + i);
+      el.value = String((parseInt(el.value, 10) || 1) + 1);
+      el.dispatchEvent(new p.win.Event("input", { bubbles: true }));
+    } }));
     for (let k = 1; k < rs1.answer[0]; k++) up[0].click();
     p.win.RedoxEq.advance(0);
     p.doc.getElementById("playBtn").click();
@@ -6783,7 +6841,12 @@ async function runRedoxUITests(iframe) {
     const s = p.st();
     assert(String(s.answer) === "3,2", "導いた倍率が 3:2 でない: " + s.answer);
     // 3:2 まで上げてクリアできる（板は無し＝溶液中。MnO₂ は溶液の中に現れる）
-    const up = [...p.doc.querySelectorAll(".halfRow .stepper button")].filter((b) => b.textContent === "＋");
+    // 段2 の倍率は数値入力（2026-09-07）。＋を押す代わりに欄を1つ上げる
+    const up = [0, 1].map((i) => ({ click: () => {
+      const el = p.doc.getElementById("mult" + i);
+      el.value = String((parseInt(el.value, 10) || 1) + 1);
+      el.dispatchEvent(new p.win.Event("input", { bubbles: true }));
+    } }));
     for (let k = 1; k < 3; k++) up[0].click();
     for (let k = 1; k < 2; k++) up[1].click();
     p.win.RedoxEq.advance(0);
@@ -7195,10 +7258,7 @@ async function runRedoxUITests(iframe) {
     bumpB(0);
     assert(state().mult[0] === 6, "倍率が上がらない");
     let g = 0;
-    while (state().mult[0] > 5 && g++ < 5) {
-      const bs = [...doc.querySelectorAll(".halfRow .stepper button")].filter((b) => b.textContent === "−");
-      bs[0].click();
-    }
+    while (state().mult[0] > 5 && g++ < 5) downBtns()[0].click();
     assert(ccAll().length === 2, "倍率を戻しても入力欄が作り直されない: " + ccAll().length);
     assert(ccAll().every((i) => i.value === ""), "倍率を戻したのに前の答えが残っている");
   });

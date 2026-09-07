@@ -1102,32 +1102,51 @@ function revealStep(el, show) {
   }
 }
 
-function buildHalfRow(o, hr, idx, tag) {
+/* ---- 段2（旧①）: 半反応式を何倍にするか **書き込む** ----
+   ★ 2026-09-07・ユーザーの指示「①では，半反応式を何倍にするか入力させる／
+   数値を入力すると半反応式の係数をリアルタイムで変化させる」。
+
+   v197 までは ±ステッパーで、しかも**式は元のまま**だった（「式はこのまま。倍率だけ決める」）。
+   紙の上では、式の右に ×5 と書いたらその場で係数を書き換える。**その手つきを画面にする。**
+   ⚠ 打つたびに行を作り直すと焦点が飛ぶので、作り直すのは行の骨組みだけ（buildHalfRow）で、
+   打っているあいだは式のセルと入力欄の値だけを塗り替える（refreshHalfRows）。 */
+function multInputId(idx) { return "mult" + idx; }
+
+/* 倍率をかけた項（＝画面に出る係数）。段2 も③の上2行も同じ数を見る */
+function multTerms(terms, k) { return terms.map((t) => ({ sp: t.sp, n: t.n * k })); }
+
+function renderHalfFormula(o, hr, idx) {
+  o.left.className = "cLeft halfFormula";
+  o.right.className = "cRight halfFormula";
   const changes = oxChangeOfHalf(hr);
+  renderTerms(o.left, multTerms(hr.left, mult[idx]), changes);
+  renderTerms(o.right, multTerms(hr.right, mult[idx]), changes);
+  o.arrow.textContent = "→";
+}
+
+function buildHalfRow(o, hr, idx, tag) {
   o.mark.innerHTML = "";
   const times = document.createElement("span");
   times.textContent = "×";
-  const down = document.createElement("button");
-  down.textContent = "−";
-  const num = document.createElement("span");
-  num.className = "coeff";
-  num.textContent = String(mult[idx]);
-  const up = document.createElement("button");
-  up.textContent = "＋";
-  down.onclick = () => { if (mult[idx] > 1) { mult[idx]--; onMultChange(); } };
-  up.onclick = () => { if (mult[idx] < 9) { mult[idx]++; onMultChange(); } };
-  const stepper = document.createElement("span");
-  stepper.className = "stepper";
-  stepper.append(down, num, up);
+  const inp = document.createElement("input");
+  inp.type = "number";
+  inp.min = "1";
+  inp.max = "9";
+  inp.inputMode = "numeric";
+  inp.className = "fcoefIn multIn";
+  inp.id = multInputId(idx);
+  inp.value = String(mult[idx]);
+  inp.setAttribute("aria-label", (idx === 0 ? "還元剤" : "酸化剤") + "の式を何倍するか");
+  inp.oninput = () => {
+    const v = parseInt(inp.value, 10);
+    // 空欄は「まだ書いている途中」＝ 前の数を保つ（0 に落とすと式が消える）
+    if (Number.isInteger(v) && v >= 1 && v <= 9 && v !== mult[idx]) { mult[idx] = v; onMultChange(); }
+  };
   const paren = document.createElement("span");
   paren.className = "paren";
   paren.textContent = ")";
-  o.mark.append(times, stepper, paren);
-  o.left.className = "cLeft halfFormula";
-  o.right.className = "cRight halfFormula";
-  renderTerms(o.left, hr.left, changes);
-  renderTerms(o.right, hr.right, changes);
-  o.arrow.textContent = "→";
+  o.mark.append(times, inp, paren);
+  renderHalfFormula(o, hr, idx);
   o.note.innerHTML = "";
   const kind = document.createElement("span");
   kind.className = "kindTag " + (idx === 0 ? "ox" : "red");
@@ -1140,9 +1159,38 @@ function buildHalfRow(o, hr, idx, tag) {
   o.note.append(kind, solo);
 }
 
+/* 式のセルと入力欄の値だけを塗り替える（行は作り直さない ＝ 焦点が飛ばない） */
+function refreshHalfRows() {
+  renderHalfFormula(SHEET.ox, oxHR(), 0);
+  renderHalfFormula(SHEET.red, redHR(), 1);
+  for (const idx of [0, 1]) {
+    const inp = document.getElementById(multInputId(idx));
+    if (inp && document.activeElement !== inp && inp.value !== String(mult[idx])) inp.value = String(mult[idx]);
+  }
+  updateMultMsg();
+}
+
+/* 段2 の判定文。**書き込んだ数で式がどう変わったか**を言う（e⁻ の数合わせは段1 の仕事） */
+const multMsgEl = document.getElementById("multMsg");
+function updateMultMsg() {
+  if (!multMsgEl) return;
+  const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
+  const a = mult[0], b = mult[1];
+  const wrote = `×${a}・×${b} と書いた。` +
+    (a > 1 || b > 1 ? "書いた数だけ、式の係数がその場で書き換わっている。" : "");
+  if (chk.give !== chk.take) {
+    setStatusMsg(multMsgEl, wrote +
+      `いまは e⁻ が ${chk.give}個 と ${chk.take}個 でそろわない ＝ このままでは足せない。`, "ng");
+  } else if (!chk.ok) {
+    setStatusMsg(multMsgEl, wrote + "e⁻ はそろったが、まだ簡単にできる比になっている。", "ng");
+  } else {
+    setStatusMsg(multMsgEl, wrote +
+      `e⁻ はどちらも ${chk.give}個 ＝ 縦に足すと消える。下の筆算へ。`, "ok");
+  }
+}
+
 function onMultChange() {
-  buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
-  buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
+  refreshHalfRows();
   // 倍率が変わればイオン反応式も変わる＝足すべき傍観イオンの数も変わるので、④行目は白紙に戻す
   added = 0;
   addSp = "";            // 【2′】種類の選択も白紙に（前に見た答えを持ち越さない）
@@ -1175,7 +1223,11 @@ function updateETally() {
   eTallyEl.innerHTML =
     `出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
     `受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
-    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>`;
+    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>` +
+    /* ★ 段1 の答えは「比」。そろったところで**比そのものを名指しする**（2026-09-07）——
+       この数が、そのまま段2 で式に書き込む倍率になる。 */
+    (ok ? `<div class="ratioLine">やりとりの比 ＝ <strong>還元剤 : 酸化剤 ＝ ${a} : ${b}</strong>` +
+      `　この比が、そのまま次の段で式に書き込む倍率になる。</div>` : "");
 }
 
 /* ---- e⁻ の受け渡しのブロック模式図 ----
@@ -3154,6 +3206,7 @@ function initStage() {
   }
   buildHalfRow(SHEET.ox, oxHR(), 0, "還元剤");
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
+  updateMultMsg();
   layoutLab();
   updateETally();
   buildRedoxSchematic();
