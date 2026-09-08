@@ -223,6 +223,43 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
 .embed button:hover{filter:brightness(1.1)}
 .embed iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
 .embed .alt{display:inline-block;margin-top:10px;margin-left:14px;color:var(--accent);font-size:13px}
+/* ★★ 2カラム（設計書 §19-1・ユーザー承認）——「検索から飛んできたけど自分が欲しい情報が
+   どこにあるかわからない」を避けるための目次。⚠ **狭い面では上の折りたたみに落とす**（同じ markup）。
+   ⚠ markup は learn.js の renderToc が組んだもの ＝ 面A側に2本目の目次を持たない（§19-6） */
+.ref-layout{display:block}
+.ref-toc{margin:22px 0 8px}
+.ref-toc details{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.ref-toc summary{padding:11px 14px;font-size:13.5px;color:var(--dim);cursor:pointer}
+.ref-toc ul{list-style:none;margin:0;padding:0 14px 12px}
+.ref-toc li{margin:0 0 7px}
+.ref-toc a{font-size:13.5px;color:var(--fg);text-decoration:none;line-height:1.6}
+.ref-toc a:hover{color:var(--accent)}
+.ref-toc a[aria-current="true"]{color:var(--accent);font-weight:700}
+@media (min-width:1000px){
+  .ref-layout{display:grid;grid-template-columns:224px minmax(0,1fr);gap:32px;align-items:start}
+  .ref-toc{position:sticky;top:14px;margin:26px 0 0}
+  .ref-toc summary{display:none}
+  .ref-toc details{background:none;border:0;border-left:1px solid var(--line);border-radius:0}
+  .ref-toc ul{padding:0 0 0 14px}
+}
+/* 節。★ 追従ヘッダーは無いが、アンカーで着地したとき見出しが窓の上端に貼り付かないよう余白を置く */
+.ref-scope .ref-sec{scroll-margin-top:18px;margin:38px 0 12px}
+.ref-scope .ref-sec-h{font-size:19px;color:var(--fg);padding-bottom:8px}
+.ref-scope .ref-sec-lead{font-size:14px;color:var(--dim)}
+.ref-scope .ref-list{font-size:15px}
+.ref-scope .ref-figure{margin:0 0 22px}
+.ref-scope .ref-figure-cap{font-size:13px}
+.ref-scope .ref-rx{margin:0 0 22px;padding:14px 16px}
+.ref-scope .ref-rx-eq{font-size:16.5px}
+.ref-scope .ref-hand-table{font-size:14px}
+.ref-scope .ref-callout{margin:0 0 22px;padding:12px 16px}
+.ref-scope .ref-callout-text{font-size:14.5px}
+/* 用語の索引（★ 機械で組む・§19-7） */
+.terms{list-style:none;padding:0;margin:0 0 26px}
+.terms li{border-bottom:1px solid var(--line);padding:9px 2px;font-size:14.5px}
+.terms a{color:var(--fg);text-decoration:none}
+.terms a:hover{color:var(--accent)}
+.terms span{display:block;font-size:12.5px;color:var(--dim);margin-top:2px}
 /* 前後・索引へ */
 nav.seq{display:flex;flex-wrap:wrap;gap:14px;margin:34px 0;font-size:14px}
 nav.seq a{color:var(--accent);text-decoration:none}
@@ -283,6 +320,33 @@ document.addEventListener('click', function (e) {
 });
 </script>`;
 
+/* ★ 目次の器（§19-6）。⚠ **中身は `learn.js` の `renderToc` が組んだもの**で、ここは2つだけやる:
+ *   ① 広い画面では `<details>` を開く（閉じていると中身が描かれないので、追従の目次にならない）
+ *   ② いま読んでいる節を光らせる
+ * ⚠ どちらも**見え方**の話。★ 目次の行そのものは1行もここで作らない。 */
+const TOC_JS = `<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length || !window.IntersectionObserver) return;
+  var seen = {};
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { seen[e.target.id] = e.isIntersecting; });
+    var cur = null;
+    secs.forEach(function (s) { if (seen[s.id] && !cur) cur = s.id; });
+    for (var k in links) links[k].setAttribute('aria-current', k === cur ? 'true' : 'false');
+  }, { rootMargin: '0px 0px -70% 0px' });
+  secs.forEach(function (s) { io.observe(s); });
+})();
+</script>`;
+
 function embedBox(label, lead, src, alt) {
     return `<div class="embed"><b>${esc(label)}</b><p>${esc(lead)}</p>`
         + `<button type="button" data-embed="${amp(src)}" data-embed-title="${esc(label)}">${esc(label)}</button>`
@@ -293,7 +357,7 @@ function embedBox(label, lead, src, alt) {
 /* ============================================================================
  * 1ページ
  * ========================================================================== */
-function referencePage(p, blocksHtml, prev, next) {
+function referencePage(p, blocksHtml, tocHtml, prev, next) {
     const utm = `&utm_source=reference&utm_medium=internal&utm_campaign=${p.id}`;
     const crumb = `<a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a>`;
 
@@ -310,8 +374,11 @@ function referencePage(p, blocksHtml, prev, next) {
 <p class="lede">${esc(p.summary)}</p>
 <div><span class="unit-label">${esc(p.unitLabel)}</span><span class="unit-label">${esc(p.group)}</span></div>
 ${video}
+<div class="ref-layout">
+${tocHtml || ''}
 <div class="ref-scope">
 ${blocksHtml.join('\n')}
+</div>
 </div>
 
 <h2>解けるか試す</h2>
@@ -323,10 +390,57 @@ ${embedBox('▶ アプリの中で開く', 'このページを資料ペインに
 
 <nav class="seq">${prev ? `<a href="/reference/${prev.id}/">← ${esc(prev.title)}</a>` : ''}
 <a href="/reference/">参考書の目次</a>
+<a href="/reference/terms/">用語から引く</a>
 ${next ? `<a href="/reference/${next.id}/">${esc(next.title)} →</a>` : ''}</nav>
-${EMBED_JS}`;
+${EMBED_JS}
+${tocHtml ? TOC_JS : ''}`;
 
     return { crumb, body, utm };
+}
+
+/* ============================================================================
+ * ★★ 用語の索引（設計書 §19-7）
+ *
+ * ★ ユーザーの要件は「**ページを増やさずに、節へ引けること**」——
+ *   「マルコフニコフ則」「ヨードホルム反応」で調べに来た人を、ページの真ん中へ着地させる。
+ *
+ * ⚠ **手で並べない。** 見出し語の出どころは2つだけで、どちらも `:::section` の中にある:
+ *   ① 節の `title`（全部・自動）
+ *   ② 節の `terms:`（任意の並び。★ **索引という別の台帳を作らない** ＝ 節に書く）
+ *
+ * ⚠ `qa/questions.json` の316コードからは引いていない —— **用語の欄が無い**ため（§19-7）。
+ * ⚠ 並びは `localeCompare('ja')`。**読みを持っていないので漢字はコードポイント順**に落ちる。
+ * ========================================================================== */
+function collectTerms(pages) {
+    const rows = [];
+    pages.forEach(p => (p.blocks || []).forEach(b => {
+        if (b.kind !== 'section') return;
+        const where = { pageId: p.id, pageTitle: p.title, group: p.group, anchor: b.anchor, section: b.title };
+        rows.push({ term: b.title, ...where });
+        (b.terms || []).forEach(t => rows.push({ term: t, ...where }));
+    }));
+    rows.sort((a, b) => a.term.localeCompare(b.term, 'ja') || a.pageId.localeCompare(b.pageId));
+    return rows;
+}
+
+function termsPage(pages) {
+    const rows = collectTerms(pages);
+    const body = `<h1>用語から引く</h1>
+<p class="lede">参考書のどのページのどの節に、その言葉が出てくるか。
+節の見出しと、節が扱う用語から<b>機械で作った索引</b>です（${rows.length}件）。
+押すとページの途中 —— その言葉を説明している節 —— に直接着地します。</p>
+<ul class="terms">${rows.map(r =>
+        `<li><a href="/reference/${r.pageId}/#ref-sec-${r.anchor}">${esc(r.term)}`
+        + `<span>${esc(r.pageTitle)} ／ ${esc(r.section)}</span></a></li>`).join('\n')}</ul>
+<nav class="seq"><a href="/reference/">参考書の目次</a></nav>`;
+    return page({
+        title: '用語から引く ｜ 化学の参考書',
+        desc: `有機化学の用語から、参考書の該当する節へ直接飛べる索引（${rows.length}件）。`
+            + '節の見出しと各節が扱う用語から機械で作っています。',
+        canonical: `${ORIGIN}/reference/terms/`,
+        crumb: '<a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a> ／ 用語',
+        body, css: '',
+    });
 }
 
 /* ★ 索引は `unit` → `group` の2階層（R-3）。⚠ **並びは ORDER.txt のまま**（順を発明しない） */
@@ -343,6 +457,7 @@ function indexPage(pages) {
 <p class="lede">1つの分子を見ているだけでは規則にならないことを、<b>並べて</b>読むページです。
 どの表もアプリの出題データからその場で組んだもので、抜けも重複もありません。
 読んだあとは、同じ画面で一問一答を解いたり、分子を組んだりできます。</p>
+<nav class="seq"><a href="/reference/terms/">用語から引く（マルコフニコフ則・置換反応…）</a></nav>
 ${units.map(u => `<h2>${esc(u.label)}</h2>\n` + u.groups.map(g =>
         `<h3>${esc(g.name)}</h3>\n<ul class="idx">` + g.pages.map(p =>
             `<li><a href="/reference/${p.id}/"><b>${esc(p.title)}</b><span>${esc(p.summary)}</span></a></li>`
@@ -416,7 +531,16 @@ for (const p of pages) {
             if (el.className) String(el.className).split(/\s+/).forEach((c) => { if (c.indexOf('ref-') === 0) classes.add(c); });
             out.push(el.outerHTML);
         }
-        return { html: out, classes: [...classes], leftovers };
+        /* ★★ 目次も **アプリに組ませる**（`renderToc`）。⚠ ここで組むと、`:::section` を足したとき
+           面Aの目次だけ古くなる（表を2か所で組まないのと同じ理由・設計書 §19-6）。 */
+        const toc = book.renderToc(page);
+        if (toc) {
+            toc.querySelectorAll('[class]').forEach((n) => {
+                String(n.className).split(/\s+/).forEach((c) => { if (c.indexOf('ref-') === 0) classes.add(c); });
+            });
+            String(toc.className).split(/\s+/).forEach((c) => { if (c.indexOf('ref-') === 0) classes.add(c); });
+        }
+        return { html: out, toc: toc ? toc.outerHTML : '', classes: [...classes], leftovers };
     }, p);
 
     if (r.error) { console.error(`❌ ${p.id}: ${r.error}`); await browser.close(); process.exit(1); }
@@ -431,8 +555,9 @@ for (const p of pages) {
         await browser.close();
         process.exit(1);
     }
-    baked.push({ p, html: r.html, classes: r.classes });
-    console.log(`  ${p.id.padEnd(22)} ${r.html.length} ブロック / class ${r.classes.length} 種`);
+    baked.push({ p, html: r.html, toc: r.toc, classes: r.classes });
+    console.log(`  ${p.id.padEnd(22)} ${r.html.length} ブロック / class ${r.classes.length} 種`
+        + (r.toc ? ` / 目次 ${(r.toc.match(/<li>/g) || []).length} 節` : ''));
 }
 await browser.close();
 
@@ -449,8 +574,9 @@ try {
 
 const files = new Map();
 files.set(path.join(OUT, 'index.html'), indexPage(pages));
-baked.forEach(({ p, html }, i) => {
-    const { crumb, body } = referencePage(p, html, pages[i - 1] || null, pages[i + 1] || null);
+files.set(path.join(OUT, 'terms', 'index.html'), termsPage(pages));
+baked.forEach(({ p, html, toc }, i) => {
+    const { crumb, body } = referencePage(p, html, toc, pages[i - 1] || null, pages[i + 1] || null);
     files.set(path.join(OUT, p.id, 'index.html'), page({
         title: `${p.title} ｜ 化学の参考書`,
         desc: p.summary,
