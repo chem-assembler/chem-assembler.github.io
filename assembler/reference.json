@@ -1,5 +1,5 @@
 [
-{"id":"alkane","unit":"aliphatic","unitLabel":"脂肪族炭化水素","group":"アルカン","title":"アルカン —— 単結合だけでできた炭化水素","summary":"正四面体がつながった形、炭素が増えると沸点と状態がどう動くか、たった1つの反応（置換反応）、そしてメタンの製法まで。アルカンについて引きに来ることを1ページにまとめました。","codes":["org.ali.alkane-shape","org.ali.alkane-rotation","org.ali.alkane-state","org.ali.alkane-bp","org.ali.alkane-branch-bp","org.ali.alkane-solubility","org.ali.alkane-substitution","org.ali.alkane-chlorination","org.ali.alkane-combustion","org.ali.methane-props","org.ali.methane-prep"],"source":["slides:有機の基本2-2「アルカンの性質」（14枚）"],"singleSource":true,
+{"id":"alkane","unit":"aliphatic","unitLabel":"脂肪族炭化水素","group":"アルカン","title":"アルカン —— 単結合だけでできた炭化水素","summary":"正四面体がつながった形、炭素が増えると沸点と状態がどう動くか、たった1つの反応（置換反応）、そしてメタンの製法まで。アルカンについて引きに来ることを1ページにまとめました。","codes":["org.ali.alkane-shape","org.ali.alkane-rotation","org.ali.alkane-state","org.ali.alkane-bp","org.ali.alkane-branch-bp","org.ali.alkane-solubility","org.ali.alkane-substitution","org.ali.alkane-combustion","org.ali.methane-props","org.ali.methane-prep"],"source":["slides:有機の基本2-2「アルカンの性質」（14枚）"],"singleSource":true,
 "why":"アルカンについて調べに来る人は、形・沸点・反応・メタンのどれか1つを探して来る。それらは別々の知識ではなく、すべて「単結合だけでできていて、電荷のかたよりが無い」という1つの事実から出ている —— だから1ページに並べた。並べて初めて、常温で反応しにくいことと燃料に使えることと水に溶けないことが同じ理由だと読める。1つずつ別のページに割ると、その「1つの理由」が52ページのどこにも書かれないことになる。行の出どころはユーザー自身の講義スライド（有機の基本2-2「アルカンの性質」）で、どの本の表も見ていない。",
 "blocks":[
 {"kind":"text","text":"アルカンは、炭素と水素だけでできていて、<b>炭素どうしが単結合だけでつながっている</b>分子です。二重結合も三重結合も環も無いので、炭素に付ける手はぜんぶ水素で埋まります ＝ <b>飽和</b>しています。ここから先の性質は、ほとんどすべて「単結合だけ」「電荷のかたよりが無い」の2つから出てきます。"},
@@ -27,7 +27,7 @@
 {"kind":"text","text":"アルカンは常温では反応性が低いのですが、<b>ハロゲンの単体と混ぜて光を当てる</b>と反応します。メタンと塩素なら、メタンの水素1個と塩素分子の塩素1個が<b>入れ替わって</b>、クロロメタンと塩化水素ができます。"},
 {"kind":"figure","src":"alkane-substitution.png","alt":"メタンの水素1個と塩素分子の塩素原子が入れ替わり、クロロメタンと塩化水素ができることを構造式と矢印で示した図","caption":"入れ替わっているのは、メタンの H 1個と、塩素分子の Cl 1個。"},
 {"kind":"reaction","left":"CH₄ ＋ Cl₂","over":"光","right":"CH₃Cl ＋ HCl","level":"★★★","note":"できるのはクロロメタン CH₃Cl と塩化水素 HCl。<b>アルカンの反応は置換反応</b>、と覚えてしまってかまいません。"},
-{"kind":"text","text":"このように、分子の中の原子（原子団）が他の原子（原子団）と<b>置き換わる</b>反応を<b>置換反応</b>、入ってきた原子（原子団）を<b>置換基</b>、できた物質をもとの分子の<b>置換体</b>といいます。"},
+{"kind":"text","text":"このように、分子の中の原子（原子団）が他の原子（原子団）と<b>置き換わる</b>反応を<b>置換反応</b>、入ってきた原子（原子団）を<b>置換基</b>、できた物質をもとの分子の<b>置換体</b>といいます。電子対がどう動いてこの入れ替わりが起きるのかは、別ページの「反応の道すじ（反応機構）」で巻矢印のアニメとして1段ずつ追えます。"},
 {"kind":"text","text":"条件を整えると、置換は1回では止まりません。<b>水素が4個あるので、4回まで続けて起こります。</b>"},
 {"kind":"figure","src":"alkane-chlorination-chain.png","alt":"メタンが光と塩素で順にクロロメタン、ジクロロメタン、トリクロロメタン、テトラクロロメタンへ変わっていく連続置換の図","caption":"塩素が1個入るたびに Cl₂ が1分子ずつ使われます。"},
 {"kind":"list","ordered":true,"items":["CH₃Cl <b>クロロメタン</b>（塩素1個）","CH₂Cl₂ <b>ジクロロメタン</b>（2個）","CHCl₃ <b>トリクロロメタン</b>（3個。クロロホルムのこと）","CCl₄ <b>テトラクロロメタン</b>（4個）"]},

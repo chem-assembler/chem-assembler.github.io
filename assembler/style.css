@@ -3422,10 +3422,10 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 }
 .ref-rx-side { white-space: nowrap; }
 /* 矢印の上下に条件（試薬・温度・触媒）。★ 空なら高さも取らない */
-.ref-rx-arrow { display: inline-flex; flex-direction: column; align-items: center; min-width: 4.5em; }
+.ref-rx-arrow { display: inline-flex; flex-direction: column; align-items: center; min-width: 3.4em; }
 .ref-rx-over, .ref-rx-under { font-size: 10.5px; color: var(--neon-cyan, #7ef); line-height: 1.3; white-space: nowrap; }
 .ref-rx-over:empty, .ref-rx-under:empty { display: none; }
-.ref-rx-bar { font-size: 17px; line-height: 1; color: var(--text-secondary); }
+.ref-rx-bar { font-size: 22px; line-height: 1.05; color: var(--text-secondary); }
 
 /* ★ 手で書く表（機械が行を作れないもの）。
    ⚠ **`.ref-table` とは別の class** —— あちらは「stages.json の系列から作った表」の物差し

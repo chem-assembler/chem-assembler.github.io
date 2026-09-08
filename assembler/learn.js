@@ -6398,7 +6398,7 @@ class ReferenceBook {
         over.textContent = block.over || '';
         const bar = document.createElement('span');
         bar.className = 'ref-rx-bar';
-        bar.textContent = '⟶';
+        bar.textContent = '→';
         const under = document.createElement('span');
         under.className = 'ref-rx-under';
         under.textContent = block.under || '';

@@ -84,6 +84,43 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
 .embed button:hover{filter:brightness(1.1)}
 .embed iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
 .embed .alt{display:inline-block;margin-top:10px;margin-left:14px;color:var(--accent);font-size:13px}
+/* ★★ 2カラム（設計書 §19-1・ユーザー承認）——「検索から飛んできたけど自分が欲しい情報が
+   どこにあるかわからない」を避けるための目次。⚠ **狭い面では上の折りたたみに落とす**（同じ markup）。
+   ⚠ markup は learn.js の renderToc が組んだもの ＝ 面A側に2本目の目次を持たない（§19-6） */
+.ref-layout{display:block}
+.ref-toc{margin:22px 0 8px}
+.ref-toc details{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.ref-toc summary{padding:11px 14px;font-size:13.5px;color:var(--dim);cursor:pointer}
+.ref-toc ul{list-style:none;margin:0;padding:0 14px 12px}
+.ref-toc li{margin:0 0 7px}
+.ref-toc a{font-size:13.5px;color:var(--fg);text-decoration:none;line-height:1.6}
+.ref-toc a:hover{color:var(--accent)}
+.ref-toc a[aria-current="true"]{color:var(--accent);font-weight:700}
+@media (min-width:1000px){
+  .ref-layout{display:grid;grid-template-columns:224px minmax(0,1fr);gap:32px;align-items:start}
+  .ref-toc{position:sticky;top:14px;margin:26px 0 0}
+  .ref-toc summary{display:none}
+  .ref-toc details{background:none;border:0;border-left:1px solid var(--line);border-radius:0}
+  .ref-toc ul{padding:0 0 0 14px}
+}
+/* 節。★ 追従ヘッダーは無いが、アンカーで着地したとき見出しが窓の上端に貼り付かないよう余白を置く */
+.ref-scope .ref-sec{scroll-margin-top:18px;margin:38px 0 12px}
+.ref-scope .ref-sec-h{font-size:19px;color:var(--fg);padding-bottom:8px}
+.ref-scope .ref-sec-lead{font-size:14px;color:var(--dim)}
+.ref-scope .ref-list{font-size:15px}
+.ref-scope .ref-figure{margin:0 0 22px}
+.ref-scope .ref-figure-cap{font-size:13px}
+.ref-scope .ref-rx{margin:0 0 22px;padding:14px 16px}
+.ref-scope .ref-rx-eq{font-size:16.5px}
+.ref-scope .ref-hand-table{font-size:14px}
+.ref-scope .ref-callout{margin:0 0 22px;padding:12px 16px}
+.ref-scope .ref-callout-text{font-size:14.5px}
+/* 用語の索引（★ 機械で組む・§19-7） */
+.terms{list-style:none;padding:0;margin:0 0 26px}
+.terms li{border-bottom:1px solid var(--line);padding:9px 2px;font-size:14.5px}
+.terms a{color:var(--fg);text-decoration:none}
+.terms a:hover{color:var(--accent)}
+.terms span{display:block;font-size:12.5px;color:var(--dim);margin-top:2px}
 /* 前後・索引へ */
 nav.seq{display:flex;flex-wrap:wrap;gap:14px;margin:34px 0;font-size:14px}
 nav.seq a{color:var(--accent);text-decoration:none}
@@ -262,7 +299,111 @@ footer a{color:inherit}
     border-radius: 8px;
     cursor: pointer;
 }
-.ref-note { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 8px 0 0; }</style>
+.ref-note { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 8px 0 0; }
+/* ============================================================================
+ * ★★ 器を広げたぶん（2026-09-09・設計書 §19）
+ *
+ * ⚠ **面A（`/reference/`）はこの規則を `tools/gen-reference-pages.mjs` が切り出して埋める**
+ *   （書き写さない・§17-3 ③）。★ 焼いた HTML に出てくる `.ref-*` の class に規則が1つも
+ *   無ければ生成器が赤くなるので、**ここに書き忘れると気づける**。
+ * ========================================================================== */
+
+/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる */
+.ref-sec { margin: 22px 0 10px; scroll-margin-top: 12px; }
+.ref-sec-h {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: #e0b0ff;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+/* ★ 「この節で分かること」1行。⚠ 本文と同じ見た目にしない（着地した人が最初に読む文なので） */
+.ref-sec-lead { margin: 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+/* ★ 節の目次。**markup は面Aと同じ**（`<nav class="ref-toc"><details>`）で、
+   狭いこのペインでは「上の折りたたみ」、面Aの広い画面では左に固定される（CSS だけの違い） */
+.ref-toc { margin: 0 0 14px; }
+.ref-toc details {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-toc summary { padding: 7px 10px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.ref-toc ul { list-style: none; margin: 0; padding: 0 10px 8px; }
+.ref-toc li { margin: 0 0 4px; }
+.ref-toc a { font-size: 12.5px; color: #e0b0ff; text-decoration: none; line-height: 1.6; }
+/* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
+.ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
+.ref-list li { margin: 0 0 5px; }
+/* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
+   参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
+.ref-figure { margin: 0 0 14px; }
+.ref-figure-img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    /* ⚠ スライドは白地なので、暗い器の上にそのまま置くと図が浮く。地を白にして囲む */
+    background: #fff;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+}
+.ref-figure-cap { font-size: 11.5px; color: var(--text-muted); margin: 5px 0 0; line-height: 1.6; }
+/* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
+.ref-rx {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+/* ⚠ **記号だけを出さない**（言葉を添える。ユーザー指示・§18-3） */
+.ref-rx-level { font-size: 11.5px; margin-bottom: 6px; letter-spacing: 0.04em; }
+.ref-rx-lv1 { color: #ffd166; }
+.ref-rx-lv2 { color: var(--text-secondary); }
+.ref-rx-lv3 { color: var(--text-muted); }
+/* ⚠ 折り返しを許す（狭いペインで式が横に溢れると、右辺が読めない） */
+.ref-rx-eq {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+.ref-rx-side { white-space: nowrap; }
+/* 矢印の上下に条件（試薬・温度・触媒）。★ 空なら高さも取らない */
+.ref-rx-arrow { display: inline-flex; flex-direction: column; align-items: center; min-width: 3.4em; }
+.ref-rx-over, .ref-rx-under { font-size: 10.5px; color: var(--neon-cyan, #7ef); line-height: 1.3; white-space: nowrap; }
+.ref-rx-over:empty, .ref-rx-under:empty { display: none; }
+.ref-rx-bar { font-size: 22px; line-height: 1.05; color: var(--text-secondary); }
+/* ★ 手で書く表（機械が行を作れないもの）。
+   ⚠ **`.ref-table` とは別の class** —— あちらは「stages.json の系列から作った表」の物差し
+      （`REF8`/`REF9`/`REF10`）が掛かっている（`.ref-map-table` と同じ判断） */
+.ref-hand-table { width: 100%; border-collapse: collapse; font-size: 12.5px; line-height: 1.6; }
+.ref-hand-table th, .ref-hand-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-hand-table th { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); font-weight: 600; white-space: nowrap; }
+/* 注意の囲み。⚠ 札の言葉は learn.js の `REF_TONE_WORDS`（記号だけにしない） */
+.ref-callout {
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border-left: 3px solid var(--border-color);
+    border-radius: 0 8px 8px 0;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
+.ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+.ref-callout-caution { border-left-color: #ffd166; }
+.ref-callout-caution .ref-callout-tag { color: #ffd166; }
+.ref-callout-memorize { border-left-color: var(--neon-purple); }
+.ref-callout-memorize .ref-callout-tag { color: #e0b0ff; }
+.ref-callout-skip { border-left-color: var(--text-muted); }</style>
 </head>
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
@@ -270,6 +411,8 @@ footer a{color:inherit}
 <h1>アルコールを脱水するとどのアルケンになるか</h1>
 <p class="lede">炭素1〜5個のアルコール16種と、分子内脱水でできるアルケンの対応表。行き先が重なる組、2つできる組（ザイツェフ則）、脱水できない2つが一望できます。</p>
 <div><span class="unit-label">アルコールとカルボニル化合物</span><span class="unit-label">アルコールの反応</span></div>
+
+<div class="ref-layout">
 
 <div class="ref-scope">
 <p class="ref-p">アルコールに濃硫酸を加えて熱すると、<b>−OH と、その隣の炭素についている水素 H</b> がまとめて水 H₂O として抜け、抜けたあとの2つの炭素のあいだに二重結合ができます。分子1つの中だけで起きるので<b>分子内脱水</b>といい、できるのは<b>アルケン</b>です。</p>
@@ -280,6 +423,7 @@ footer a{color:inherit}
 <p class="ref-p">最後に、<b>脱水できない行が2つ</b>あります。理由は同じではありません。メタノールは −OH が付いた炭素の<b>隣に炭素がない</b>ので、二重結合を作る相手がいません。2,2-ジメチル-1-プロパノールは隣に炭素はありますが、その炭素の手は3本ともメチル基でふさがっていて<b>水素が1つもない</b>ので、抜くものがありません。<b>「アルコールなら脱水できる」ではなく、隣の炭素に水素があるかどうかで決まる</b> —— この2行が、そのことを言っています。</p>
 <p class="ref-p">逆向き（アルケンに水を付加してアルコールを作る）も、この表をそのまま右から左へ読めば見えます。ただし逆向きにはマルコフニコフ則という別の向きの規則があり、<b>この表の矢印を逆にたどっただけでは主生成物が言えない</b>ことに注意してください。書き出しの練習には、両方の向きの回が用意してあります。</p>
 </div>
+</div>
 
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（4問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.alcohol.dehydration,org.alcohol.zaitsev,org.ali.ethanol-dehydration,org.ali.ethylene-prep&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（4問・測定モード）">▶ 一問一答で解く（4問・測定モード）</button><a class="alt" href="/qa/?codes=org.alcohol.dehydration,org.alcohol.zaitsev,org.ali.ethanol-dehydration,org.ali.ethylene-prep&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
@@ -289,6 +433,7 @@ footer a{color:inherit}
 
 <nav class="seq"><a href="/reference/reaction-mechanisms/">← 反応の道すじ（反応機構）</a>
 <a href="/reference/">参考書の目次</a>
+<a href="/reference/terms/">用語から引く</a>
 </nav>
 <script>
 document.addEventListener('click', function (e) {
@@ -302,6 +447,7 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
+
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
