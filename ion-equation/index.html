@@ -45,12 +45,12 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="style.css?v=204">
+<link rel="stylesheet" href="style.css?v=vNNNN">
 </head>
 <body>
 <header>
   <h1>イオンでみる化学反応式</h1>
-  <div class="version">v204</div>
+  <div class="version">vNNNN</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -63,21 +63,23 @@
          一度開けば app.js が localStorage（ioneq_howto）で覚える -->
     <details class="howto" id="howto">
       <summary>❓ 遊び方（4ステップ）</summary>
-      <!-- ★ 2026-09-07（DESIGN_ionic_two_step.md §6-2）: 本体は反応式の係数。
-           ビーカーの実験は「正解のあとに確かめる」オプションに降りたので、順番もそのとおりに書く -->
+      <!-- ★ 2026-09-08（DESIGN_ionic_two_step.md §7）: 数合わせは右の「粒で見る数合わせ」の仕事。
+           ビーカーは**数える場ではなく、水の中のようすを見て確かめる場**になった。
+           ⚠ 順番はそのまま遊ぶ順（係数 → 粒 → 自動再生 → 別の比） -->
       <ol>
         <li><b>係数を入れる</b>：反応式の＋/−で係数を入れる。左右の原子（イオン反応式では電荷も）がそろえばクリア。</li>
-        <li><b>粒で数える</b>：係数を1つ入れると、その数ぶんのイオンが「粒で見る数合わせ」に出る。何が何個あるかを見ながら決められる。</li>
-        <li><b>確かめる</b>：正解したら「▶ ビーカーで確かめる」。水の中で本当に組み変わるようすを見る。</li>
-        <li><b>自分で試す</b>：ビーカーの＋ボタンで好きな数だけ入れて「⚡反応させる」もできる。イオンをドラッグして相手に重ねれば1組だけ結びつく。ちょうど反応しきる個数の比が、そのまま係数の比。</li>
+        <li><b>粒で数える</b>：係数を1つ入れると、その数ぶんのイオンが「粒で見る数合わせ」に出る。<b>数を合わせるのはここ</b>。何が何個あるかを見ながら決められる。</li>
+        <li><b>ビーカーで見る</b>：正解すると、その係数どおりの量でビーカーが<b>自動で再生される</b>。見るのは個数ではなく<b>水の中のようす</b> —— 沈殿するのか、電離したまま溶けているのか、気体になって出ていくのか。「▶ もう一度再生」で何度でも見られる。</li>
+        <li><b>別の比を試す</b>（任意）：ビーカーの「⚗ 別の係数比を試す」を開くと、＋ボタンで好きな数だけ入れて「⚡反応させる」ができる。イオンをドラッグして相手に重ねれば1組だけ結びつく。</li>
       </ol>
     </details>
     <div id="stageTitle"></div>
     <!-- 比予想クイズ（任意）。既定は閉じ。開けば「先に比を言い切ってから試す」遊び方になる。
          中身は app.js がステージから組み立てる（反応物が2種以上のステージだけ出る） -->
     <details class="ratioQuiz" id="ratioQuiz" hidden></details>
+    <!-- ⚠ ドラッグの案内はここから「⚗ 別の係数比を試す」の中へ移した（§7-4）。
+         既定の顔に出す案内は「数を合わせる場所」ではなく「見るところ」に絞る -->
     <div id="toolbar"></div>
-    <div class="hint">💡 <b>イオンをドラッグ</b>して相手に重ねると、1組だけ反応させられる。「⚡反応させる」は一度に全部。</div>
     <div id="addedFormula" class="addedFormula" aria-label="投入した反応物の数"></div>
     <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="ビーカーの中のイオン"></svg>
     <div id="ionCounts"></div>
@@ -122,11 +124,11 @@
   </section>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="library.js?v=204"></script>
-<script src="model.js?v=204"></script>
-<script src="schematic.js?v=204"></script>
-<script src="blocks.js?v=204"></script>
-<script src="header-ui.js?v=204"></script>
-<script src="app.js?v=204"></script>
+<script src="library.js?v=vNNNN"></script>
+<script src="model.js?v=vNNNN"></script>
+<script src="schematic.js?v=vNNNN"></script>
+<script src="blocks.js?v=vNNNN"></script>
+<script src="header-ui.js?v=vNNNN"></script>
+<script src="app.js?v=vNNNN"></script>
 </body>
 </html>

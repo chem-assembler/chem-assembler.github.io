@@ -167,6 +167,13 @@ let coeffOk = false;
 let eqMode = "molecular";
 let reactionDone = false;
 let cleared = false;
+/* ★ 2026-09-08・§7-3 —— 係数が合った瞬間の自動再生は**ステージにつき1回だけ**。
+   autoPlayed は「もう自動で走らせたか」（釦の名も これで変わる）、
+   playedFromCoeffs は「いまビーカーにある姿が係数どおりか」＝ 結びの言い方を分けるための印。 */
+let autoPlayed = false;
+let autoPlayQueued = false;
+let playedFromCoeffs = false;
+let freeTryOpen = false;
 let particleLayer = null;
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -309,18 +316,33 @@ function makeParticleEl(p) {
         "stroke-width": 1.5,
       }, g);
     }
+    /* ★ 2026-09-08（§7-7・ユーザー指摘「単原子イオンでは、化学式の右上の電荷と、
+       イオンの円につく電荷がかぶっています」）—— **同じ電荷を2回書かない。**
+
+       枠の中に電荷を持つ構成イオンが**1つしかない**なら、外枠のバッジはその電荷そのもの
+       （ほかは中性なので和＝その1個）。[Cu(NH₃)₄]²⁺ は中心 Cu²⁺ の右肩と外枠のバッジが
+       どちらも 2+ で、同じ大きさの「2+」が2回出ていた。NH₄⁺（H⁺ と ＋）・[Ag(NH₃)₂]⁺ も同じ。
+       ⚠ **判定は「電荷を持つ構成イオンが1個か」。「外枠と同じ数字か」ではない** ——
+       [Al(OH)₄]⁻ は外枠の −1 と OH⁻ の −1 が数として一致するので、数で見ると
+       OH の電荷だけが消えて「中性の OH が4個」という嘘の絵になる。
+       2つ以上が電荷を持つときの外枠は**和**で、個々の電荷は外枠から復元できないから全部書く。 */
+    const charged = L.slots.filter((s) => SPECIES[s.sp].charge !== 0);
+    const soleCharged = spec.charge !== 0 && charged.length === 1 ? charged[0] : null;
     for (const slot of L.slots) {
       const cs = STYLE[slot.sp] || MOLECULE_STYLE;
       mk("circle", { cx: slot.x, cy: slot.y, r: slot.r, fill: cs.color, stroke: "rgba(0,0,0,.25)", "stroke-width": 1 }, g);
-      const d = SPECIES[slot.sp].disp;
+      const d = slot === soleCharged ? stripCharge(SPECIES[slot.sp].disp) : SPECIES[slot.sp].disp;
       const t = mk("text", {
         x: slot.x, y: slot.y + 3.5, "text-anchor": "middle",
         "font-size": d.length > 3 ? 8.5 : 10.5,
         fill: cs.darkText ? "#3a4a55" : "#fff", "font-weight": "bold",
       }, g);
-      t.textContent = d;   // 構成イオンは電荷つきで読ませる（外枠にバッジが無い位置なので重複しない）
+      t.textContent = d;   // 構成イオンは「何イオンか」を読ませる（上の1件だけ右肩を外枠に譲る）
     }
-    if (spec.charge !== 0) addChargeBadge(g, L.r * 0.78, spec.charge, "#e08a3c");
+    // 外枠のバッジは**全体**の電荷。陽イオン＝暖色・陰イオン＝寒色で、枠の色と合わせる
+    if (spec.charge !== 0) {
+      addChargeBadge(g, L.r * 0.78, spec.charge, spec.charge > 0 ? "#e08a3c" : "#4d78d8");
+    }
     return g;
   }
   const struct = STRUCTURE[p.sp];
@@ -1732,12 +1754,25 @@ function evaluateReactionInner() {
 
        ⚠ 色は緑のまま。ちょうど反応しきったのは事実で、実験としては成功している。
        橙や赤にすると「2個ずつ入れたのが間違い」に読める。 */
-    const adv = stage.reactants.length >= 2
+    /* ★ 2026-09-08（§7-5）—— **係数がもう決まっている画面では、数の話をしない。**
+       「投入した数は 1 : 1。この比が係数のヒント」は、ビーカーが数える場だったころの結び。
+       係数を合わせ終えた人に向かって「係数のヒント」と言うのは、もう終わった仕事の案内で、
+       しかも「ビーカーで数を決める」という古い目的をまだ名乗っている。
+       ⚠ 数の話（比・最簡整数比の言い足し）は `!coeffOk` のときだけ ＝
+       「⚗ 別の係数比を試す」で自分で入れて確かめている人には、これまでどおり効く。 */
+    const adv = (!coeffOk && stage.reactants.length >= 2)
       ? simplestRatioAdvice(ns, stage.reactants.map((sp) => SPECIES[sp].disp)) : null;
-    const hint = adv
-      ? `比は合っている。ただし係数は最も簡単な整数比で書くので、そのまま写さない —— ${adv.text}`
-      : "この比が係数のヒント。";
-    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。${hint}${stage.doneNote}`, "ok");
+    if (coeffOk) {
+      const lead = playedFromCoeffs
+        ? "係数どおりに入れたら、ちょうど反応しきった。"
+        : "ちょうど反応しきった。";
+      setMsg(`${lead}${observationText()}${stage.doneNote}`, "ok");
+    } else {
+      const hint = adv
+        ? `比は合っている。ただし係数は最も簡単な整数比で書くので、そのまま写さない —— ${adv.text}`
+        : "この比が係数のヒント。";
+      setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。${hint}${stage.doneNote}`, "ok");
+    }
     updateAddedFormula();
     maybeClear();
   } else if (leftover.length > 0) {
@@ -1788,6 +1823,70 @@ function updateAddedFormula() {
   addedFormulaEl.classList.toggle("matched", reactionDone && !partial);
 }
 
+/* ★ 2026-09-08（§7-5）—— 粒が**いまどの状態にいるか**。
+   ⚠ `p.mode` からは決めない。mode は演出の途中で目まぐるしく変わる
+   （落下中・集合中・待機中）ので、同じ物質が瞬間によって別の札に飛ぶ。
+   種そのものが持つ性質（水に溶けるか・気体になって逃げるか・電離しているか）で決める。 */
+const OBS_STATES = {
+  solid:    { key: "solid",    label: "沈殿（水に溶けない）" },
+  ion:      { key: "ion",      label: "溶けている（イオン）" },
+  // ⚠ 水をここに入れるので「溶けている」とは言わない（水が水に溶けている、と読める）
+  molecule: { key: "molecule", label: "分子のまま（電離していない）" },
+  gas:      { key: "gas",      label: "気体（空気中へ）" },
+  // 気体の空間（C群の燃焼）には「溶けている」が無いので、ひとまとめにして水の話をしない
+  gasPhase: { key: "gasPhase", label: "気体（分子）" },
+};
+const OBS_ORDER = ["solid", "gas", "ion", "molecule", "gasPhase"];
+
+function speciesState(sp) {
+  if (isGasStage()) return "gasPhase";
+  if (SOLID_SPECIES.has(sp)) return "solid";
+  if (BUBBLE_SPECIES.has(sp)) return "gas";
+  return (SPECIES[sp] && SPECIES[sp].charge) ? "ion" : "molecule";
+}
+
+/* 反応のあとの結び —— **水の中で何が起きたか**を、いま画面にある粒から1文で作る（§7-5）。
+
+   ⚠ **ステージごとに文を手で書かない。** 40 ステージぶん書くと、ルールを1つ直したとき
+   （沈殿が溶ける・気体が変わる）文だけが黙って古くなる。**見えているものから言う。**
+   ⚠ 気体の空間（C群の燃焼）では「水の中」と言わない。溶けるも沈殿も無い。
+   ⚠ 数を言わない。数える場はもうここではない（イオンの整列がその仕事を持つ）。
+
+   ⚠⚠ **物質の名前を書かない。** 実測（40 ステージ全走・2026-09-08）で、名前を並べると
+   そのあとに続く `stage.doneNote` と**ほぼ逐語で重なった**:
+     s4 「AgCl は水に溶けず、沈殿して底にたまる」＋ doneNote「AgCl は水に溶けないので沈殿として底に積もる」
+     s6 「CO₂ は気体になり、水面から出ていく」   ＋ doneNote「CO₂ は泡になって空気中へ逃げる」
+   名前は `#ionCounts` の札がすでに状態ごとに出している ＝ ここの仕事は
+   **どの現象が起きたか**（沈殿・気体・中和・溶けたまま）を1文にすることだけ。 */
+function observationText() {
+  const counts = {};
+  for (const p of particles) {
+    if (p.mode === "fall") continue;
+    counts[p.sp] = (counts[p.sp] || 0) + 1;
+  }
+  const by = { solid: [], gas: [], ion: [], molecule: [], gasPhase: [] };
+  for (const sp of Object.keys(counts)) by[speciesState(sp)].push(sp);
+  // 水面を抜けたぶんは粒として残っていないが、「気体になって出た」は起きた事実
+  const gasKey = isGasStage() ? "gasPhase" : "gas";
+  for (const sp of Object.keys(escaped)) if (!by[gasKey].includes(sp)) by[gasKey].push(sp);
+  if (isGasStage()) {
+    if (!by.gasPhase.length) return "";
+    return " ここは水の中ではないので、溶けるも沈殿も起きない —— 原子が組み替わって、別の分子になっただけ。";
+  }
+  const parts = [];
+  if (by.solid.length) parts.push("水に溶けないものができて沈殿し、底にたまる");
+  if (by.gas.length) parts.push("気体ができて、泡になり水面から出ていく");
+  // 水は「溶けている分子」ではなく**この反応でできたもの**なので別立てで言う
+  if (by.molecule.includes("H2O")) parts.push("H⁺ と OH⁻ は結びついて水になり、イオンではなくなる");
+  if (by.molecule.some((sp) => sp !== "H2O")) parts.push("電離しない分子のまま溶けているものもある");
+  /* ⚠ ここで「傍観イオン」と名づけない。名づけは右のパネル（本質の1行）と
+     ステージの doneNote がすでにやっていて、3か所で同じ語を言うと文が渋滞する。 */
+  parts.push(by.ion.length
+    ? "残りはイオンのまま、ばらばらになって溶けている"
+    : "イオンのまま溶けているものは残らない");
+  return ` 水の中では、${parts.join("。")}。`;
+}
+
 function refreshHUD() {
   const counts = {};
   for (const p of particles) {
@@ -1795,13 +1894,28 @@ function refreshHUD() {
     counts[p.sp] = (counts[p.sp] || 0) + 1;
   }
   ionCountsEl.innerHTML = "";
+  /* ★ 札を**状態で束ねる**（§7-5）。図の粒を数えなくても、
+     どの物質がどの状態にいるかが札の並びだけで読める。 */
+  const boxes = {};
+  const boxFor = (key) => {
+    if (boxes[key]) return boxes[key];
+    const box = document.createElement("div");
+    box.className = "chipGroup " + key;
+    box.dataset.state = key;
+    const lab = document.createElement("span");
+    lab.className = "chipGroupLabel";
+    lab.textContent = OBS_STATES[key].label;
+    box.appendChild(lab);
+    boxes[key] = box;
+    return box;
+  };
   const addChip = (sp) => {
     const chip = document.createElement("span");
     chip.className = "chip";
     const st = STYLE[sp];
     if (st) chip.style.borderColor = st.color;
     chip.textContent = `${SPECIES[sp].disp} ×${counts[sp]}`;
-    ionCountsEl.appendChild(chip);
+    boxFor(speciesState(sp)).appendChild(chip);
   };
   for (const sp of CHIP_ORDER) {
     if (counts[sp]) addChip(sp);
@@ -1810,12 +1924,14 @@ function refreshHUD() {
   for (const sp of Object.keys(counts)) {
     if (!CHIP_ORDER.includes(sp)) addChip(sp);
   }
+  // 水面を抜けて出ていったぶんは、ビーカーの中にはもう無い（点線の札で「気体」の束へ）
   for (const sp of Object.keys(escaped)) {
     const chip = document.createElement("span");
     chip.className = "chip escaped";
-    chip.textContent = `${SPECIES[sp].disp}↑ ×${escaped[sp]}（空気中へ）`;
-    ionCountsEl.appendChild(chip);
+    chip.textContent = `${SPECIES[sp].disp}↑ ×${escaped[sp]}`;
+    boxFor(isGasStage() ? "gasPhase" : "gas").appendChild(chip);
   }
+  for (const key of OBS_ORDER) if (boxes[key]) ionCountsEl.appendChild(boxes[key]);
 }
 
 /* ---- 反応式パネル ---- */
@@ -2588,14 +2704,32 @@ recombineBtn.onclick = () => {
 
    ⚠ **ビーカーを取り上げるのではない。** ＋ボタンも ⚡反応させる もそのまま残る。
    変わったのは「どちらが本体か」だけで、実験は**正解のあとに確かめる道**になった。
-   自分で先に実験した人には、その事実を帯の文で認める（reactionDone の分岐）。 */
+   自分で先に実験した人には、その事実を帯の文で認める（reactionDone の分岐）。
+
+   ★ 2026-09-08（§7-3）—— **係数が合った瞬間に、係数どおりの姿を自動で再生する。**
+   ここは `onCoeffChange()` と `evaluateReaction()` の両方が通る一本道なので、自動再生の
+   引き金もここに1つだけ置く（分岐ごとに置くと必ずどれか抜ける）。 */
 function maybeClear() {
-  if (!coeffOk) return;
+  if (!coeffOk) { refreshPlayBtn(); return; }
   if (!cleared) {
     cleared = true;
     slTrack("stage_clear", { app: "ion-equation", stage: String(stageIdx + 1) });
   }
   buildClearBanner();
+  refreshPlayBtn();
+  /* ⚠ **すでに実験した人（reactionDone）の画面は勝手に消さない。**
+     自動再生はビーカーを空にしてから入れ直すので、自分で並べた姿が消える。
+     「自動が親切」より「勝手に消さない」を採り、釦だけ出す（§7-3）。
+     ⚠ 自動再生の中の doReact() → evaluateReaction() がここへ戻ってくるので、
+     **予約した時点で** `autoPlayQueued` を立てて二重起動を止める
+     （`autoPlayed` は釦の名を決める印なので、実際に走ってから立てる）。 */
+  if (!autoPlayed && !autoPlayQueued && !reactionDone) {
+    autoPlayQueued = true;
+    // ⚠ 予約は取り消せない（events から抜く口が無い）ので、**発火した側で** まだ有効かを見る。
+    // 予約と発火のあいだに人が「▶ 再生」や「確かめる」を押していたら、ここは何もしない
+    // （押さないと、せっかく走らせた再生が 0.35 秒後に頭から巻き戻される）
+    schedule(0.35, () => { if (autoPlayQueued) playCoeffAnimation(); });
+  }
 }
 
 /* クリアの帯。**反応させたかどうかで中身が変わる**ので、
@@ -2608,14 +2742,15 @@ function buildClearBanner() {
     ? "クリア！ 反応式が完成し、ビーカーの実験ともそろった。"
     : "クリア！ 反応式が完成した。水の中で本当にそうなるか、ビーカーで確かめよう。";
   clearEl.appendChild(t);
-  // 正解後のオプション ——「確かめる」を1押しで走らせる。
-  // 入れる数は sampleInputs（模範の投入数）から導く＝ここに数を書かない
+  /* 帯からもビーカーへ入れる（★ 呼ぶ先は再生の釦と**同じ** playCoeffAnimation）。
+     ⚠ ふつうは自動再生が先に走るので、この釦が出るのは
+     「自分で先に実験してあって自動再生を見送った」場合だけになる（§7-3）。 */
   if (!reactionDone) {
     const c = document.createElement("button");
     c.id = "confirmBtn";
     c.className = "confirm";
     c.textContent = "▶ ビーカーで確かめる";
-    c.onclick = () => runConfirm(c);
+    c.onclick = () => playCoeffAnimation();
     clearEl.appendChild(c);
   }
   if (stageIdx < STAGES.length - 1) {
@@ -2628,25 +2763,6 @@ function buildClearBanner() {
     d.textContent = "全ステージクリア！おつかれさま。";
     clearEl.appendChild(d);
   }
-}
-
-/* 「▶ ビーカーで確かめる」—— 正解のあとに実験を1押しで走らせる（§6-2 のオプション）。
-
-   ⚠ **入れる数を書かない。** `sampleInputs(stage)` が模範の投入数を持っている
-   （加水分解・電離は per 個、ほかは左辺の係数）。ここに数を書くと、
-   データを直したとき「確かめたのに反応しきらない」画面になる。
-   ⚠ 自分で先に入れてある人のぶんは足りないぶんだけ足す（入れ直さない）。 */
-function runConfirm(btn) {
-  const stage = STAGES[stageIdx];
-  const need = sampleInputs(stage);
-  stage.reactants.forEach((sp, i) => {
-    for (let k = addedCount[sp] || 0; k < (need[i] || 0); k++) addMolecule(sp);
-  });
-  if (btn) { btn.disabled = true; btn.textContent = "▶ 確かめ中…"; }
-  // 落ちて電離しきってから反応させる（schedule は advance() で決定論的に進む＝テストできる）
-  schedule(0.9, () => doReact());
-  // 携帯の縦並びでは帯とビーカーが離れているので、見る場所まで運ぶ
-  try { beakerSvg.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { /* 古い実装でも無視 */ }
 }
 
 /* 見出し名。番号はデータに持たず**並び順から作る**
@@ -2670,25 +2786,58 @@ function buildStageNav() {
   });
 }
 
+/* ★ 2026-09-08（§7-3・§7-4）—— 既定の顔は「▶ 再生」と「↺ やり直す」の2つだけ。
+   ＋ボタンと ⚡反応させる は**取り上げず**、「⚗ 別の係数比を試す」に畳む。
+   ユーザーの言葉は「オプションで、別な係数比を試すことも可能」＝ 残すが既定ではない。
+
+   ⚠ **セレクタは変えない**（`#toolbar .add` / `#toolbar .react`）。畳んだ `<details>` の中でも
+   `click()` は届くので、これらで書かれた既存の回帰テストは意味を保ったまま動く。 */
 function buildToolbar() {
   toolbarEl.innerHTML = "";
   const stage = STAGES[stageIdx];
+  const play = document.createElement("button");
+  play.id = "playBtn";
+  play.className = "play";
+  play.onclick = () => playCoeffAnimation();
+  const reset = document.createElement("button");
+  reset.className = "reset";
+  reset.textContent = "↺ やり直す";
+  reset.onclick = () => initStage();
+  toolbarEl.append(play, reset);
+
+  const free = document.createElement("details");
+  free.className = "freeTry";
+  free.id = "freeTry";
+  free.open = freeTryOpen;
+  free.addEventListener("toggle", () => {
+    freeTryOpen = free.open;
+    try { localStorage.setItem("ioneq_freetry", free.open ? "open" : "closed"); } catch (e) { /* 無視 */ }
+  });
+  const sum = document.createElement("summary");
+  sum.textContent = "⚗ 別の係数比を試す（自分で入れて反応させる）";
+  free.appendChild(sum);
+  const row = document.createElement("div");
+  row.className = "freeRow";
   for (const sp of stage.reactants) {
     const b = document.createElement("button");
     b.className = "add";
     b.textContent = "＋ " + SPECIES[sp].disp;
     b.onclick = () => addMolecule(sp);
-    toolbarEl.appendChild(b);
+    row.appendChild(b);
   }
   const react = document.createElement("button");
   react.className = "react";
   react.textContent = "⚡ 反応させる";
   react.onclick = doReact;
-  const reset = document.createElement("button");
-  reset.className = "reset";
-  reset.textContent = "↺ やり直す";
-  reset.onclick = () => initStage();
-  toolbarEl.append(react, reset);
+  row.appendChild(react);
+  free.appendChild(row);
+  const tip = document.createElement("div");
+  tip.className = "hint freeHint";
+  tip.innerHTML = "💡 <b>イオンをドラッグ</b>して相手に重ねると、1組だけ反応させられる。" +
+    "「⚡ 反応させる」は一度に全部。ちょうど反応しきる個数の比が、そのまま係数の比。";
+  free.appendChild(tip);
+  toolbarEl.appendChild(free);
+  refreshPlayBtn();
 }
 
 /* ---- 比予想クイズ ----
@@ -2842,7 +2991,10 @@ function stageGoalText(stage) {
   return `ちょうど中和して 塩 ${SPECIES[salt].disp} をつくる`;
 }
 
-function initStage() {
+/* ビーカーだけを初期状態に戻す（★ 係数・クリア状態には触らない）。
+   2026-09-08・§7-3 —— 自動再生と「▶ もう一度再生」がここを呼ぶ。
+   `initStage()` との違いは**右のパネル（係数・図・クリアの帯）を作り直さないこと**だけ。 */
+function resetBeaker() {
   for (const p of particles) if (p.el) p.el.remove();
   particles = [];
   groups = [];
@@ -2861,10 +3013,65 @@ function initStage() {
   sequenceRunning = 0;
   reactionZone = null;
   reactionDone = false;
-  coeffOk = false;
-  cleared = false;
+  playedFromCoeffs = false;
   drawBeakerStatic();
   particleLayer = mk("g", {});
+  const stage = STAGES[stageIdx];
+  // 加水分解・電離は、人に数を並べさせずアプリが置く（prefillPartial のコメントを見よ）
+  const prefill = partialRule(stage);
+  if (prefill) prefillPartial(stage);
+  setMsg(prefill ? stage.intro + partialPrefillNote(stage, prefill) : stage.intro);
+  refreshHUD();
+  updateAddedFormula();
+}
+
+/* 係数どおりの姿を再生する（§7-2・§7-3。ユーザー指示「その係数に合わせたアニメーションが
+   自動的に再生される、もう一度再生するボタンを用意する」）。
+
+   ⚠ **入れる数をここに書かない。** クリアの条件は「原子と電荷がつり合い、かつ最簡整数比」
+   ＝ 正解した時点で入れるべき数は一意に決まるので、`sampleInputs(stage)` から**導く**
+   （分子式の左辺の係数。加水分解・電離は per）。ここに数を書くと、データを直したとき
+   「係数は合っているのに反応しきらない」画面が黙ってできる。
+   ⚠ **入力欄の数をそのまま使えない** —— イオン反応式で解いたステージは項が違う
+   （s5 は分子 1:1:1:2 / イオン 1:1:1 で、ビーカーに入れるのは分子のほう）。
+
+   ★ 途中まで自分で入れてある状態の上に足さず、**ビーカーを空にしてから**始める。
+   足し算で始めると、いま見えている姿が「係数どおり」なのかが読めなくなる。 */
+function playCoeffAnimation() {
+  const stage = STAGES[stageIdx];
+  resetBeaker();
+  const need = sampleInputs(stage);
+  // 加水分解・電離は resetBeaker がすでに per 個置いている（二重に置かない）
+  if (!partialRule(stage)) {
+    stage.reactants.forEach((sp, i) => {
+      for (let k = 0; k < (need[i] || 0); k++) addMolecule(sp);
+    });
+  }
+  autoPlayed = true;
+  autoPlayQueued = false;
+  playedFromCoeffs = true;
+  refreshPlayBtn();
+  if (cleared) buildClearBanner();
+  // 落ちて電離しきってから反応させる（schedule は advance() で決定論的に進む＝テストできる）
+  schedule(0.9, () => doReact());
+  // 携帯の縦並びでは右のパネルとビーカーが離れているので、見る場所まで運ぶ
+  try { beakerSvg.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { /* 古い実装でも無視 */ }
+}
+
+/* 再生の釦は「係数が正解か」と「もう再生したか」で顔が変わるので、作り直さず書き換える */
+function refreshPlayBtn() {
+  const b = document.getElementById("playBtn");
+  if (!b) return;
+  b.disabled = !coeffOk;
+  b.textContent = autoPlayed ? "▶ もう一度再生" : "▶ 係数どおりに再生";
+  b.title = coeffOk ? "係数どおりに入れて反応させる" : "係数が正解になると再生できる";
+}
+
+function initStage() {
+  coeffOk = false;
+  cleared = false;
+  autoPlayed = false;
+  autoPlayQueued = false;
   buildStageNav();
   buildToolbar();
   buildRatioQuiz();
@@ -2897,12 +3104,8 @@ function initStage() {
   buildRecombine();
   netionEl.hidden = true;
   clearEl.hidden = true;
-  // 加水分解・電離は、人に数を並べさせずアプリが置く（prefillPartial のコメントを見よ）
-  const prefill = partialRule(stage);
-  if (prefill) prefillPartial(stage);
-  setMsg(prefill ? stage.intro + partialPrefillNote(stage, prefill) : stage.intro);
-  refreshHUD();
-  updateAddedFormula();
+  resetBeaker();
+  refreshPlayBtn();
 }
 
 /* テスト・監査用フック（UI からは使わない）。
@@ -2922,6 +3125,9 @@ window.IonEq = {
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
     return {
       counts, made: madeCount, reactionDone, coeffOk, cleared, stageIdx, eqMode,
+      // §7-3 の自動再生。autoPlayed は「もう走らせたか」、playedFromCoeffs は
+      // 「いまビーカーにある姿が係数どおりか」（結びの言い方がこれで変わる）
+      autoPlayed, autoPlayQueued, playedFromCoeffs,
       // 段取り演出の途中か（予約された動きが残っているか）。監査が「静止＝おしまい」と
       // 誤って判断しないための手がかり
       busy: sequenceRunning > 0 || events.length > 0,
@@ -2965,6 +3171,8 @@ window.IonEq = {
    初見の画面がビーカーではなく説明で埋まる。開けばこの先ずっと覚えている。 */
 /* 比予想クイズの開閉を覚える。遊び方パネルと同じで、一度開いた人には開いたまま出す */
 try { ratioQuizOpen = localStorage.getItem("ioneq_ratioquiz") === "open"; } catch (e) { /* file:// 等で不可でも無視 */ }
+/* 「⚗ 別の係数比を試す」の開閉も覚える（§7-4）。既定は閉じ */
+try { freeTryOpen = localStorage.getItem("ioneq_freetry") === "open"; } catch (e) { /* file:// 等で不可でも無視 */ }
 
 const howtoEl = document.getElementById("howto");
 if (howtoEl) {

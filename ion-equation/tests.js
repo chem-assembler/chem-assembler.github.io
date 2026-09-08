@@ -3376,33 +3376,155 @@ async function runUITests(iframe) {
     assert(!doc.getElementById("clearBanner").hidden, "クリアバナーが出ない");
   });
 
-  /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-2）—— **クリアの条件は係数だけ。**
-     v201 までは reactionDone && coeffOk ＝ 同じ比を左（ビーカー）と右（係数）で
-     2回決めないと進めなかった。実験は「正解のあとに確かめる」オプションに降りた。 */
-  await t("UI: ビーカーに触れなくても係数だけでクリアし、確かめる釦で実験が走る", async () => {
+  /* ★ 2026-09-08（DESIGN_ionic_two_step.md §7-3）—— **係数が合った瞬間に自動で再生する。**
+
+     ⚠ この検査は v202 の「ビーカーに触れなくても係数だけでクリアし、**確かめる釦**で実験が走る」
+     を置き換えたもの。§6-2 では人が「▶ ビーカーで確かめる」を押して初めて実験が走ったが、
+     ユーザー指示「係数合わせが正解したときに、その係数に合わせたアニメーションが
+     自動的に再生される」で、押さなくても走るようになった。
+     ★ 残したもの: 係数だけでクリアすること・模範の投入数が sampleInputs から導かれること・
+     ＋ボタンと ⚡反応させる が取り上げられていないこと（この3つは意味が変わっていない）。 */
+  await t("UI: 係数が合うと、その係数どおりの姿がビーカーで自動再生される（§7-3）", async () => {
     const i = STAGES.findIndex((st) => st.id === "s4");
     stageBtn(i).click();
     assert(Object.keys(state().added).length === 0, "初期状態でビーカーに何か入っている");
     eqOf(STAGES[i], state().eqMode).answer.forEach((v, k) => setCoeff(k, v));
     let s = state();
     assert(s.coeffOk && s.cleared, "係数だけでクリアにならない: " + JSON.stringify(s));
-    assert(!s.reactionDone, "実験していないのに反応済みになっている");
-    const banner = doc.getElementById("clearBanner");
-    assert(banner.textContent.includes("ビーカーで確かめよう"), "確かめる誘いが無い: " + banner.textContent);
-    // ★ 正解後のオプション: 1押しで模範どおり入れて反応させる（数は sampleInputs から導く）
-    const confirm = doc.getElementById("confirmBtn");
-    assert(confirm, "「確かめる」釦が出ない");
-    confirm.click();
+    assert(!s.reactionDone, "係数を入れた瞬間に反応済みになっている（再生は少し待ってから）");
+    assert(s.autoPlayQueued && !s.autoPlayed, "自動再生が予約されない: " + JSON.stringify(s));
+    // ★ 人は何も押していない。時間を進めるだけで走る
     adv(20000);
     s = state();
-    assert(s.reactionDone, "確かめる釦で反応しきらない: " + JSON.stringify(s));
-    assert(s.added["AgNO3"] === 1 && s.added["NaCl"] === 1, "模範の投入数と違う: " + JSON.stringify(s.added));
+    assert(s.autoPlayed && s.playedFromCoeffs, "自動で再生されない: " + JSON.stringify(s));
+    assert(s.reactionDone, "自動再生で反応しきらない: " + JSON.stringify(s));
+    // 入れた数は sampleInputs（模範の投入数）から導く ＝ テストにも数を書き写さない
+    const need = sampleInputs(STAGES[i]);
+    STAGES[i].reactants.forEach((sp, k) => {
+      assert(s.added[sp] === need[k], `模範の投入数と違う（${sp}）: ` + JSON.stringify(s.added));
+    });
     assert(doc.getElementById("clearBanner").textContent.includes("実験ともそろった"),
-      "確かめたあとの帯が変わらない: " + doc.getElementById("clearBanner").textContent);
-    assert(!doc.getElementById("confirmBtn"), "確かめ終わっても釦が残っている");
-    // ⚠ ビーカーの ＋ボタンと ⚡反応させる は取り上げない（本体が移っただけ）
+      "自動再生のあとの帯が変わらない: " + doc.getElementById("clearBanner").textContent);
+    // 釦は「もう一度再生」に変わり、押せる
+    const play = doc.getElementById("playBtn");
+    assert(play && !play.disabled && play.textContent.includes("もう一度"),
+      "もう一度再生の釦が出ない: " + (play && play.textContent + "/" + play.disabled));
+    // ⚠ ビーカーの ＋ボタンと ⚡反応させる は取り上げない（畳んだだけ）
     assert(doc.querySelectorAll("#toolbar .add").length === 2 && doc.querySelector("#toolbar .react"),
       "ビーカーの操作が消えている");
+  });
+
+  /* ★ 否定対照（§7-3）—— **自分で先に実験した人の画面は勝手に消さない。**
+     自動再生はビーカーを空にしてから入れ直すので、走らせると自分で並べた姿が消える。
+     「自動が親切」より「勝手に消さない」を採った、という決めをここで押さえる。 */
+  await t("UI: すでに実験してあるときは自動再生しない（勝手に消さない・§7-3）", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s4");
+    stageBtn(i).click();
+    // 先に自分で 2 : 2 を入れて反応させる（模範の 1 : 1 とはわざと違う比）
+    addBtn(0).click(); addBtn(0).click(); addBtn(1).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    let s = state();
+    assert(s.reactionDone && s.added["AgNO3"] === 2, "先の実験が成立していない: " + JSON.stringify(s));
+    // ここで係数を正解にする
+    eqOf(STAGES[i], state().eqMode).answer.forEach((v, k) => setCoeff(k, v));
+    adv(20000);
+    s = state();
+    assert(s.coeffOk && s.cleared, "係数が正解にならない: " + JSON.stringify(s));
+    assert(!s.autoPlayed && !s.autoPlayQueued, "自分の実験を消して自動再生した: " + JSON.stringify(s));
+    assert(s.added["AgNO3"] === 2, "自分で入れた 2 個が消えている: " + JSON.stringify(s.added));
+    // ★ 見送っても「再生する道」は塞がない ＝ 釦は押せる
+    const play = doc.getElementById("playBtn");
+    assert(play && !play.disabled, "見送ったのに再生の釦が押せない");
+    play.click(); adv(20000);
+    s = state();
+    assert(s.autoPlayed && s.added["AgNO3"] === 1,
+      "釦で係数どおりに入れ直せない: " + JSON.stringify(s.added));
+  });
+
+  /* ★ 2026-09-08（§7-4）—— ＋ボタンと ⚡反応させる は**取り上げず、畳む**。
+     ユーザーの言葉は「オプションで、別な係数比を試すことも可能」＝ 残すが既定の顔ではない。 */
+  await t("UI: ＋と⚡は「別の係数比を試す」に畳まれる（既定は閉じ・押せば効く・§7-4）", async () => {
+    stageBtn(0).click();
+    const free = doc.getElementById("freeTry");
+    assert(free && free.tagName === "DETAILS", "畳む器が無い");
+    assert(!free.open, "既定で開いている（既定の顔は再生とやり直しの2つだけ）");
+    // ⚠ 否定対照: 畳んだ中にあることを確かめる（#toolbar 直下に残っていたら畳めていない）
+    assert(free.querySelectorAll(".add").length === 2 && free.querySelector(".react"),
+      "＋と⚡が畳んだ中に入っていない");
+    // ★ 取り上げてはいない ＝ 閉じたままでも click() は届く（既存の回帰テスト 100 か所以上の前提）
+    addBtn(0).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    assert(state().reactionDone, "畳んだ中の釦が効かない: " + JSON.stringify(state()));
+    // 既定の顔にあるのは「再生」と「やり直す」だけ
+    const top = [...doc.querySelectorAll("#toolbar > button")];
+    assert(top.length === 2, "既定の顔の釦が2つでない: " + top.map((b) => b.textContent).join("/"));
+  });
+
+  /* ★ 2026-09-08（§7-5）—— **係数が決まった画面では、数の話をしない。**
+     「投入した数は 1 : 1。この比が係数のヒント」はビーカーが数える場だったころの結び。
+     いまのビーカーの仕事は「水の中で何が起きたか」を見せること。 */
+  await t("UI: 反応の結びが「水の中で何が起きたか」になる（沈殿・気体・中和・§7-5）", async () => {
+    const msg = () => doc.getElementById("msg").textContent;
+    const run = (id) => {
+      const i = STAGES.findIndex((st) => st.id === id);
+      stageBtn(i).click();
+      eqOf(STAGES[i], state().eqMode).answer.forEach((v, k) => setCoeff(k, v));
+      adv(30000);
+      assert(state().reactionDone, id + ": 自動再生で反応しきらない");
+      return msg();
+    };
+    // 沈殿するステージ
+    let txt = run("s4");
+    assert(txt.includes("沈殿"), "s4: 沈殿すると言わない: " + txt);
+    assert(txt.includes("イオンのまま"), "s4: 溶けたまま残ると言わない: " + txt);
+    assert(!txt.includes("係数のヒント"), "s4: 係数が決まった画面で数の話をしている: " + txt);
+    assert(!/投入した数/.test(txt), "s4: 投入数を言っている: " + txt);
+    // 気体が出るステージ
+    txt = run("s6");
+    assert(txt.includes("気体") && txt.includes("水面"), "s6: 気体が出ると言わない: " + txt);
+    // 中和だけのステージ（水ができ、傍観イオンが溶けたまま残る）
+    txt = run("s1");
+    assert(txt.includes("水になり"), "s1: 中和して水になると言わない: " + txt);
+    assert(!txt.includes("沈殿") && !txt.includes("気体"), "s1: 起きていないことを言う: " + txt);
+    // ⚠ 気体の空間（燃焼）では「水の中」と言わない
+    txt = run("combustion-h2-o2");
+    // ⚠ 「水の中では」で見ると「水の中ではない」に当たる。**溶ける・沈殿を言っていないこと**で見る
+    assert(txt.includes("水の中ではない"), "燃焼で水の中でないと断らない: " + txt);
+    assert(!/溶けている|沈殿して/.test(txt), "燃焼で溶ける・沈殿の話をしている: " + txt);
+    assert(txt.includes("組み替わって"), "燃焼で原子の組み替えと言わない: " + txt);
+    /* ★ 否定対照: 「⚗ 別の係数比を試す」で自分で入れて確かめる道では、
+       これまでどおり**数の話**が出る（係数がまだ決まっていないので、比がヒントになる） */
+    stageBtn(0).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(4000); reactBtn().click(); adv(12000);
+    assert(msg().includes("この比が係数のヒント"),
+      "係数未定のときに比のヒントが消えている: " + msg());
+  });
+
+  /* ★ 2026-09-08（§7-5）—— 札を**状態で束ねる**。
+     図の粒を数えなくても、どの物質がどの状態にいるかが並びだけで読める。 */
+  await t("UI: 粒の札が「沈殿／気体／溶けている」に束ねられる（§7-5）", async () => {
+    const groups = () => [...doc.querySelectorAll("#ionCounts .chipGroup")]
+      .map((g) => g.dataset.state);
+    const chipsIn = (st) => [...doc.querySelectorAll(`#ionCounts .chipGroup.${st} .chip`)]
+      .map((c) => c.textContent);
+    const run = (id) => {
+      const i = STAGES.findIndex((st) => st.id === id);
+      stageBtn(i).click();
+      eqOf(STAGES[i], state().eqMode).answer.forEach((v, k) => setCoeff(k, v));
+      adv(30000);
+    };
+    run("s4");
+    assert(groups().includes("solid"), "s4: 沈殿の束が無い: " + groups().join(","));
+    assert(chipsIn("solid").some((c) => c.startsWith("AgCl")), "s4: AgCl が沈殿の束にいない: " + chipsIn("solid"));
+    assert(chipsIn("ion").length === 2, "s4: 溶けているイオンが2種でない: " + chipsIn("ion"));
+    // ⚠ 否定対照: 沈殿しないステージには沈殿の束が出ない
+    run("s1");
+    assert(!groups().includes("solid"), "s1: 沈殿していないのに沈殿の束が出る: " + groups().join(","));
+    assert(groups().includes("ion") && groups().includes("molecule"),
+      "s1: 傍観イオンと水の束が出ない: " + groups().join(","));
+    run("s6");
+    assert(chipsIn("gas").some((c) => c.includes("CO₂")), "s6: CO₂ が気体の束にいない: " + chipsIn("gas"));
   });
 
   await t("UI: 本質の1行 - 燃焼は「原子の組み替え」・s8 は結びなし・通常は傍観イオンに触れる（S-6）", async () => {
@@ -4414,6 +4536,56 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "再溶解が完了しない");
   });
 
+  /* ★ 2026-09-08（DESIGN_ionic_two_step.md §7-7・ユーザー指摘
+     「単原子イオンでは、化学式の右上の電荷と、イオンの円につく電荷がかぶっています」）。
+
+     枠つきの粒は、**電荷を持つ構成イオンが1つだけ**なら外枠のバッジがその電荷そのものなので、
+     右肩の電荷を外す。2つ以上あるときの外枠は**和**で、個々の電荷は復元できないから全部残す。
+     ⚠ この検査は**両方向**の否定対照になっている ——
+     直しを外せば①②が落ち、「外枠と同じ数字か」で判定する取り違えをすれば③が落ちる。 */
+  await t("UI: 枠つきの粒 - 同じ電荷を2回書かない（構成イオンの右肩と外枠のバッジ）", async () => {
+    const texts = (sp) => {
+      for (const g of doc.querySelectorAll("#beaker .particle")) {
+        const ti = g.querySelector("title");
+        if (ti && ti.textContent.indexOf(SPECIES[sp].disp + "（") === 0) {
+          return [...g.querySelectorAll("text")].map((e) => e.textContent);
+        }
+      }
+      return null;
+    };
+    const count = (a, v) => a.filter((x) => x === v).length;
+    // ① [Cu(NH₃)₄]²⁺ … 電荷を持つのは中心の Cu だけ。右肩を外し、外枠の 2+ ひとつにする
+    const j = STAGES.findIndex((st) => st.id === "cu-nh3-step2");
+    stageBtn(j).click();
+    addBtn(0).click();
+    for (let k = 0; k < 4; k++) addBtn(1).click();
+    adv(5000); reactBtn().click(); adv(25000);
+    const cu = texts("Cu(NH3)4^2+");
+    assert(cu, "錯イオンの粒が見つからない");
+    assert(count(cu, "Cu") === 1 && count(cu, "Cu²⁺") === 0, "中心の右肩が残っている: " + JSON.stringify(cu));
+    assert(count(cu, "2+") === 1, "外枠のバッジが1つでない: " + JSON.stringify(cu));
+    // ② NH₄⁺ … H⁺ と ＋ の二重。ユーザーが「単原子イオン」と言ったのはこの形
+    const w = STAGES.findIndex((st) => st.id === "weak-base-nh3-hcl");
+    stageBtn(w).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(5000); reactBtn().click(); adv(20000);
+    const nh4 = texts("NH4+");
+    assert(nh4, "NH₄⁺ の粒が見つからない");
+    assert(count(nh4, "H") === 1 && count(nh4, "H⁺") === 0, "H⁺ の右肩が残っている: " + JSON.stringify(nh4));
+    assert(count(nh4, "+") === 1, "外枠のバッジが1つでない: " + JSON.stringify(nh4));
+    // ③ 否定対照: [Al(OH)₄]⁻ は Al³⁺ と OH⁻ の**両方**が電荷を持つ。
+    //    外枠の − は和（+3 と 4×−1）で、ここを外すと「中性の OH が4個」という嘘の絵になる
+    const a = STAGES.findIndex((st) => st.id === "amphoteric-al-step2");
+    stageBtn(a).click();
+    addBtn(0).click(); addBtn(1).click();
+    adv(5000); reactBtn().click(); adv(25000);
+    const al = texts("Al(OH)4^-");
+    assert(al, "[Al(OH)₄]⁻ の粒が見つからない");
+    assert(count(al, "Al³⁺") === 1, "電荷が2種あるのに中心の右肩まで外している: " + JSON.stringify(al));
+    assert(count(al, "OH⁻") === 4, "OH⁻ の右肩まで外している（外枠の数字との一致で判定した？）: " + JSON.stringify(al));
+    assert(count(al, "−") === 1, "外枠のバッジが1つでない: " + JSON.stringify(al));
+  });
+
   await t("UI: 分子反応式 ⇄ イオン反応式 を切り替えられる（電荷の行も出る）", async () => {
     const i = STAGES.findIndex((st) => st.id === "amphoteric-al-step1");
     stageBtn(i).click();
@@ -4657,8 +4829,13 @@ async function runUITests(iframe) {
     assert(cx.querySelector("ellipse"), "錯イオンが〇枠で描かれていない");
     assert(!cx.querySelector("rect"), "錯イオンが□枠になっている");
     const cxLabels = [...cx.querySelectorAll("text")].map((t) => t.textContent);
-    assert(cxLabels.includes("Cu²⁺") && cxLabels.filter((l) => l === "NH₃").length === 4,
-      "錯イオンの中に Cu²⁺ と NH₃×4 が描かれていない: " + cxLabels.join(","));
+    /* ⚠ 中心の名札は **Cu**（右肩の ²⁺ は付かない）。2026-09-08・§7-7 —— 電荷を持つ構成イオンが
+       中心1つだけなので、電荷は外枠のバッジ 2+ が1回だけ言う（前は「Cu²⁺」と「2+」で二重だった）。
+       この検査が見ているのは「枠の中に構成イオンが描かれているか」で、そこは変わっていない。 */
+    assert(cxLabels.includes("Cu") && cxLabels.filter((l) => l === "NH₃").length === 4,
+      "錯イオンの中に Cu と NH₃×4 が描かれていない: " + cxLabels.join(","));
+    assert(cxLabels.includes("2+") && !cxLabels.includes("Cu²⁺"),
+      "電荷が二重に出ている（外枠のバッジ 2+ ひとつのはず）: " + cxLabels.join(","));
   });
 
   await t("UI: 分子反応 - 2CH₄+2O₂ でも1分子ずつ反応し、分子を食い散らかさない", async () => {
