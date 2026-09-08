@@ -850,13 +850,19 @@ function slTrack(name, params) {
   // ⚠ `target="_top"` は **iframe に埋められているときのため**（参考書は /qa/ を埋め込む）。
   //    枠の中だけが参考書の索引に変わると、参考書の中に参考書が入って読めなくなる。
   var BACK_APP_URL = { reference: '../reference/' };
+  // こちらが**送り出している**相手（帯の言い方を分けるため。下の renderBackBand の注記）
+  var BACK_APP_SENT = { assembler: true, ion: true };
 
   function renderBackBand() {
     var box = $('back-band');
     if (!box) return;
     if (!backFrom) { box.classList.add('hidden'); box.innerHTML = ''; return; }
     var who = BACK_APP_NAME[backFrom.app];
-    var lead = who ? esc(who) + 'から戻りました' : '外部リンクから来ました';
+    /* ⚠ **「戻りました」と言ってよいのは、こちらが送り出した相手だけ**（assembler / ion）。
+       ★ 参考書はこちらが送っていない ＝ 向こうから**来た**ので、言い方を分ける
+       （「参考書から戻りました」は、押した覚えのない人に嘘をつくことになる）。 */
+    var lead = who ? esc(who) + (BACK_APP_SENT[backFrom.app] ? 'から戻りました' : 'から来ました')
+      : '外部リンクから来ました';
     box.classList.remove('hidden');
     var url = BACK_APP_URL[backFrom.app];
     // 戻り道（往復）。⚠ **`_top`** ＝ 埋め込まれていても、枠ではなくタブごと相手へ戻す
