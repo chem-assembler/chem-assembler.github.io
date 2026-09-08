@@ -204,6 +204,10 @@ button{font-family:inherit}
 /* 指された項目が無いとき。黙って単元一覧を出すのではなく、そう見える色で言う */
 .back-band .bb-where.bb-miss{color:var(--bad)}
 .back-band b{color:var(--ink)}
+/* 戻り道（CLAUDE.md「アプリ横断のリンクは往復にする」）。
+   ⚠ 参考書は /qa/ を iframe で埋めるので、リンクは target="_top"（app.js 側） */
+.back-band .bb-back{flex:0 0 auto;color:var(--accent);text-decoration:none;white-space:nowrap;font-weight:700}
+.back-band .bb-back:hover{text-decoration:underline}
 
 /* ---- 複数選択（測定モード） ---- */
 .opts{display:flex;flex-direction:column;gap:10px;margin-top:18px}

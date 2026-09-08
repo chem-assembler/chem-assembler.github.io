@@ -628,8 +628,10 @@ main.timelineMain {
 }
 .rowTag.strong { background: #dbe8f4; color: #2f5b7a; font-weight: bold; }
 .rowTag.ng { background: #fbeae7; color: #a33a2c; }
-#rowMol.doneRow .cLeft, #rowMol.doneRow .cRight { background: #eef7ee; border-radius: 6px; padding: 2px 6px; }
-#roleWrap[hidden] { display: none; }
+/* 完成した化学反応式の行。★ 2026-09-08: `#rowMol`（筆算の⑤行）で名指ししていたが、
+   その行を畳んで #stepBottles の `#rowBottleMol` 1本にしたので、**クラスで拾う**。
+   ⚠ これまで⑥の完成式にはこの色が付いていなかった（同じ「完成」なのに見た目が違った）。 */
+.doneRow .cLeft, .doneRow .cRight { background: #eef7ee; border-radius: 6px; padding: 2px 6px; }
 .kindTag {
   font-size: 12px;
   font-weight: bold;
@@ -664,6 +666,14 @@ main.timelineMain {
   padding: 0 2px;
 }
 .fcoefIn.ng { border-color: #d08b8b; background: #fdf3f3; }
+/* 段2（旧①）の倍率を書き込む欄（×〔 〕）。式の係数がその場で書き換わる（2026-09-07） */
+.multIn { width: 48px; margin: 0 2px; }
+/* 段1 の答え＝「比」。そろったときだけ出て、次の段で書き込む数を名指しする */
+.ratioLine {
+  margin-top: 6px; padding: 5px 8px;
+  background: #eef6f0; border-left: 3px solid #6aa88a; border-radius: 4px;
+  font-size: 13px; color: #2f5645; line-height: 1.5;
+}
 .fcoefIn::-webkit-outer-spin-button, .fcoefIn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .fcoefIn { -moz-appearance: textfield; appearance: textfield; }
 /* 入力欄そのものには斜線を引かない（打ち消される e⁻ の欄も、数は読めないと困る） */
@@ -762,15 +772,19 @@ main.timelineMain {
 #equation .term { display: inline-flex; align-items: center; gap: 4px; }
 #equation .formula { font-weight: bold; }
 
-/* イオン反応式→化学反応式の図（済んだ酸化還元 ＋ 残ったイオンの組み換え） */
-#roleWrap {
-  margin: 4px 0 2px;
+/* ⚠ 2026-09-08: ここに「イオン反応式→化学反応式の図」（#roleWrap / #molFigure）の飾りがあった。
+   図そのものを降ろした（⑥のブロックと役割が重なる）ので、飾りも一緒に降ろす。
+   経緯は DESIGN_redox.md「筆算の④⑤を畳む」。
+
+   ⑥の頭に置く「硝酸の二役」の1行（#acidRoleNote）は、同じ暖色の箱で受け継ぐ */
+#acidRoleNote {
+  margin: 4px 0 6px;
   padding: 6px 8px;
   background: #fdf7f2;
   border: 1px solid #ecdccd;
   border-radius: 8px;
 }
-#molFigure { width: 100%; height: auto; display: block; }
+#acidRoleNote[hidden] { display: none; }
 .cLeft .formula, .cRight .formula { font-weight: bold; }
 .stepper {
   display: inline-flex;
@@ -1501,8 +1515,8 @@ main.timelineMain {
   .palMetal { font-size: 14px; }
 }
 
-/* ---- 瓶から化学反応式を組み立てる段（v180・DESIGN_redox.md）----
-   瓶棚・割り当てクイズ・蒸発後のプール。数字も判断も持たない見た目だけの定義 */
+/* ---- はじめに入れたものから化学反応式を組み立てる段（v180・DESIGN_redox.md）----
+   入れたものの棚・出どころ当て・蒸発後のプール。数字も判断も持たない見た目だけの定義 */
 #stepBottles .stepHead + #bottleRack { margin-top: 2px; }
 .bottleCap { font-size: 12.5px; color: #5a6570; line-height: 1.6; margin-bottom: 6px; }
 .bottleShelf { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
@@ -1555,6 +1569,9 @@ main.timelineMain {
 .bcField { display: flex; align-items: center; gap: 6px; margin: 3px 0 2px; flex-wrap: wrap; }
 .bcLabel { font-size: 13.5px; }
 .bcUnit { font-size: 13px; color: #46525e; }
+/* ⑤は「何本」ではなく**左辺の係数**を書く欄になった（2026-09-07）。
+   欄の右に化学式を置き、〔 2 〕KMnO₄ と、紙に書く並びのまま読めるようにする */
+.bcCoeffField .bcFormula { font-size: 17px; font-weight: bold; color: #23303b; }
 .bottleCountInput {
   width: 68px;
   min-height: 40px;
@@ -1567,16 +1584,17 @@ main.timelineMain {
   background: #fff;
 }
 .bcNote { line-height: 1.6; }
-/* 【②】④を筆算に寄せた（2026-08-28）。問うのは「両辺に何個ずつ足すか」で、
-   瓶の「どこから来た？」は**外したときに開くヘルプ**へ移した（消してはいない） */
+/* 【②】④を筆算に寄せた（2026-08-28）。問うのは「両辺に何個ずつ足すか」。
+   ★ 2026-09-07 に順番を戻した ——「もともと何だった？」が先、個数が後。
+   #bottleWhy はヘルプ（<details>）ではなく、④の本体の先頭に出る箱になった */
 .addIonRow { border-left-color: #b7cfe4; }
-#bottleWhy { margin: 8px 0 2px; border: 1px dashed #cfd9e3; border-radius: 8px; background: #fafcfe; }
-#bottleWhy > summary {
-  cursor: pointer; padding: 8px 11px; min-height: 32px; box-sizing: border-box;
-  font-size: 12.5px; font-weight: bold; color: #46525e;
+#bottleWhy { margin: 2px 0 10px; }
+/* 1つの段の中の「つぎに」。段そのものを増やさずに「先／後」を示す */
+.stepSubHead {
+  margin: 14px 0 6px; padding: 5px 9px;
+  font-size: 13px; font-weight: bold; color: #46525e;
+  background: #f1f5f9; border-left: 3px solid #a8bccd; border-radius: 4px;
 }
-#bottleWhy[open] > summary { border-bottom: 1px dashed #cfd9e3; }
-#bottleWhy > div { padding: 0 11px 9px; }
 /* 【3】v194・発注書 §6-7 の 3 —— ⑤で入れた本数が、そのまま化学反応式の左辺の係数。
    言葉（#bottleLeftMap）・位置（式の真上）・印（.fcoef.fromYou）の3つで同じものだと示す。
    ⚠ 右辺には印を付けない（自由度がゼロで、人が出した数ではないため）。 */
@@ -1601,21 +1619,10 @@ main.timelineMain {
   border-radius: 4px 4px 0 0;
   padding: 0 2px;
 }
-/* 【2′】v194 — ④行で「両辺に足すイオンの種類」を選ぶ。指で押せる 36px の床
-   （tools/check-mobile.mjs の検査4）と、iOS の自動ズームを避ける 16px */
-.addSpPick {
-  min-height: 36px;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 2px 6px;
-  color: #23303b;
-  background: #fff;
-  border: 1px solid #b6c4d2;
-  border-radius: 6px;
-  max-width: 100%;
-}
-.addSpPick.okpick { border-color: #7fae7f; background: #f3faf3; }
-.addSpPick.ngpick { border-color: #d08b8b; background: #fdf3f3; }
+/* ⚠ 2026-09-08: ここに .addSpPick（④行で「両辺に足すイオンの種類」を選ぶ欄）の飾りがあった。
+   ④の実装を1本に畳んだので、種類を選ぶ欄そのものが無くなった
+   ——④後半は**全種類**を同じ形で問う（DESIGN_redox.md「筆算の④⑤を畳む」）。
+   ④前半の `<select>`（#bottleQuiz）は .bottleRow 側の飾りを使う。 */
 /* 【D】倍率の案内。**半端が出たときだけ**現れるので、ふだんは1ピクセルも使わない */
 .bsBox { margin: 8px 0 6px; padding: 8px 10px; border-radius: 8px; }
 .bsBox[hidden] { display: none; }
@@ -1961,6 +1968,22 @@ main.timelineMain {
    イオンの一覧から選んで積む列。⚠ 既存の係数ステッパー（.stepper）を置き換えるものではなく、
    いまは**併置**して「同じ数を2つの見え方で指している」ことを見せている。 */
 #blocksWrap { margin-top: 10px; }
+/* ⑥（酸化還元）で使うときの器。図・一覧・判定文・釦を1枚にまとめる */
+#saltStep #blocksWrap {
+  border: 1px solid #dbe3ea; border-radius: 10px; background: #fbfdff;
+  padding: 8px 10px 10px;
+}
+#saltStep #saltBlocks { width: 100%; max-width: 360px; height: auto; display: block; }
+#saltActions { margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.saltGo {
+  min-height: 38px; padding: 0 14px;
+  font-size: 14px; font-weight: bold; color: #1f5138;
+  background: #e6f4ec; border: 1px solid #86bda0; border-radius: 8px; cursor: pointer;
+}
+.saltGo:hover:not(:disabled) { background: #d8ecdf; }
+.saltGo:disabled { color: #a9b6bf; background: #f1f4f6; border-color: #d8dfe4; cursor: default; }
+#saltMade { margin-top: 10px; }
+#saltMade:empty { display: none; }
 #ionBlocks { width: 100%; max-width: 360px; display: block; }
 .ibRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
 .ibRowLabel { font-size: 12px; color: #7b8794; min-width: 4.5em; }
