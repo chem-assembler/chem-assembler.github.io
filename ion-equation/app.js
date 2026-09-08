@@ -1754,12 +1754,25 @@ function evaluateReactionInner() {
 
        ⚠ 色は緑のまま。ちょうど反応しきったのは事実で、実験としては成功している。
        橙や赤にすると「2個ずつ入れたのが間違い」に読める。 */
-    const adv = stage.reactants.length >= 2
+    /* ★ 2026-09-08（§7-5）—— **係数がもう決まっている画面では、数の話をしない。**
+       「投入した数は 1 : 1。この比が係数のヒント」は、ビーカーが数える場だったころの結び。
+       係数を合わせ終えた人に向かって「係数のヒント」と言うのは、もう終わった仕事の案内で、
+       しかも「ビーカーで数を決める」という古い目的をまだ名乗っている。
+       ⚠ 数の話（比・最簡整数比の言い足し）は `!coeffOk` のときだけ ＝
+       「⚗ 別の係数比を試す」で自分で入れて確かめている人には、これまでどおり効く。 */
+    const adv = (!coeffOk && stage.reactants.length >= 2)
       ? simplestRatioAdvice(ns, stage.reactants.map((sp) => SPECIES[sp].disp)) : null;
-    const hint = adv
-      ? `比は合っている。ただし係数は最も簡単な整数比で書くので、そのまま写さない —— ${adv.text}`
-      : "この比が係数のヒント。";
-    setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。${hint}${stage.doneNote}`, "ok");
+    if (coeffOk) {
+      const lead = playedFromCoeffs
+        ? "係数どおりに入れたら、ちょうど反応しきった。"
+        : "ちょうど反応しきった。";
+      setMsg(`${lead}${observationText()}${stage.doneNote}`, "ok");
+    } else {
+      const hint = adv
+        ? `比は合っている。ただし係数は最も簡単な整数比で書くので、そのまま写さない —— ${adv.text}`
+        : "この比が係数のヒント。";
+      setMsg(`ちょうど反応しきった！ 投入した数は ${names} ＝ ${ratio}。${hint}${stage.doneNote}`, "ok");
+    }
     updateAddedFormula();
     maybeClear();
   } else if (leftover.length > 0) {
@@ -1810,6 +1823,70 @@ function updateAddedFormula() {
   addedFormulaEl.classList.toggle("matched", reactionDone && !partial);
 }
 
+/* ★ 2026-09-08（§7-5）—— 粒が**いまどの状態にいるか**。
+   ⚠ `p.mode` からは決めない。mode は演出の途中で目まぐるしく変わる
+   （落下中・集合中・待機中）ので、同じ物質が瞬間によって別の札に飛ぶ。
+   種そのものが持つ性質（水に溶けるか・気体になって逃げるか・電離しているか）で決める。 */
+const OBS_STATES = {
+  solid:    { key: "solid",    label: "沈殿（水に溶けない）" },
+  ion:      { key: "ion",      label: "溶けている（イオン）" },
+  // ⚠ 水をここに入れるので「溶けている」とは言わない（水が水に溶けている、と読める）
+  molecule: { key: "molecule", label: "分子のまま（電離していない）" },
+  gas:      { key: "gas",      label: "気体（空気中へ）" },
+  // 気体の空間（C群の燃焼）には「溶けている」が無いので、ひとまとめにして水の話をしない
+  gasPhase: { key: "gasPhase", label: "気体（分子）" },
+};
+const OBS_ORDER = ["solid", "gas", "ion", "molecule", "gasPhase"];
+
+function speciesState(sp) {
+  if (isGasStage()) return "gasPhase";
+  if (SOLID_SPECIES.has(sp)) return "solid";
+  if (BUBBLE_SPECIES.has(sp)) return "gas";
+  return (SPECIES[sp] && SPECIES[sp].charge) ? "ion" : "molecule";
+}
+
+/* 反応のあとの結び —— **水の中で何が起きたか**を、いま画面にある粒から1文で作る（§7-5）。
+
+   ⚠ **ステージごとに文を手で書かない。** 40 ステージぶん書くと、ルールを1つ直したとき
+   （沈殿が溶ける・気体が変わる）文だけが黙って古くなる。**見えているものから言う。**
+   ⚠ 気体の空間（C群の燃焼）では「水の中」と言わない。溶けるも沈殿も無い。
+   ⚠ 数を言わない。数える場はもうここではない（イオンの整列がその仕事を持つ）。
+
+   ⚠⚠ **物質の名前を書かない。** 実測（40 ステージ全走・2026-09-08）で、名前を並べると
+   そのあとに続く `stage.doneNote` と**ほぼ逐語で重なった**:
+     s4 「AgCl は水に溶けず、沈殿して底にたまる」＋ doneNote「AgCl は水に溶けないので沈殿として底に積もる」
+     s6 「CO₂ は気体になり、水面から出ていく」   ＋ doneNote「CO₂ は泡になって空気中へ逃げる」
+   名前は `#ionCounts` の札がすでに状態ごとに出している ＝ ここの仕事は
+   **どの現象が起きたか**（沈殿・気体・中和・溶けたまま）を1文にすることだけ。 */
+function observationText() {
+  const counts = {};
+  for (const p of particles) {
+    if (p.mode === "fall") continue;
+    counts[p.sp] = (counts[p.sp] || 0) + 1;
+  }
+  const by = { solid: [], gas: [], ion: [], molecule: [], gasPhase: [] };
+  for (const sp of Object.keys(counts)) by[speciesState(sp)].push(sp);
+  // 水面を抜けたぶんは粒として残っていないが、「気体になって出た」は起きた事実
+  const gasKey = isGasStage() ? "gasPhase" : "gas";
+  for (const sp of Object.keys(escaped)) if (!by[gasKey].includes(sp)) by[gasKey].push(sp);
+  if (isGasStage()) {
+    if (!by.gasPhase.length) return "";
+    return " ここは水の中ではないので、溶けるも沈殿も起きない —— 原子が組み替わって、別の分子になっただけ。";
+  }
+  const parts = [];
+  if (by.solid.length) parts.push("水に溶けないものができて沈殿し、底にたまる");
+  if (by.gas.length) parts.push("気体ができて、泡になり水面から出ていく");
+  // 水は「溶けている分子」ではなく**この反応でできたもの**なので別立てで言う
+  if (by.molecule.includes("H2O")) parts.push("H⁺ と OH⁻ は結びついて水になり、イオンではなくなる");
+  if (by.molecule.some((sp) => sp !== "H2O")) parts.push("電離しない分子のまま溶けているものもある");
+  /* ⚠ ここで「傍観イオン」と名づけない。名づけは右のパネル（本質の1行）と
+     ステージの doneNote がすでにやっていて、3か所で同じ語を言うと文が渋滞する。 */
+  parts.push(by.ion.length
+    ? "残りはイオンのまま、ばらばらになって溶けている"
+    : "イオンのまま溶けているものは残らない");
+  return ` 水の中では、${parts.join("。")}。`;
+}
+
 function refreshHUD() {
   const counts = {};
   for (const p of particles) {
@@ -1817,13 +1894,28 @@ function refreshHUD() {
     counts[p.sp] = (counts[p.sp] || 0) + 1;
   }
   ionCountsEl.innerHTML = "";
+  /* ★ 札を**状態で束ねる**（§7-5）。図の粒を数えなくても、
+     どの物質がどの状態にいるかが札の並びだけで読める。 */
+  const boxes = {};
+  const boxFor = (key) => {
+    if (boxes[key]) return boxes[key];
+    const box = document.createElement("div");
+    box.className = "chipGroup " + key;
+    box.dataset.state = key;
+    const lab = document.createElement("span");
+    lab.className = "chipGroupLabel";
+    lab.textContent = OBS_STATES[key].label;
+    box.appendChild(lab);
+    boxes[key] = box;
+    return box;
+  };
   const addChip = (sp) => {
     const chip = document.createElement("span");
     chip.className = "chip";
     const st = STYLE[sp];
     if (st) chip.style.borderColor = st.color;
     chip.textContent = `${SPECIES[sp].disp} ×${counts[sp]}`;
-    ionCountsEl.appendChild(chip);
+    boxFor(speciesState(sp)).appendChild(chip);
   };
   for (const sp of CHIP_ORDER) {
     if (counts[sp]) addChip(sp);
@@ -1832,12 +1924,14 @@ function refreshHUD() {
   for (const sp of Object.keys(counts)) {
     if (!CHIP_ORDER.includes(sp)) addChip(sp);
   }
+  // 水面を抜けて出ていったぶんは、ビーカーの中にはもう無い（点線の札で「気体」の束へ）
   for (const sp of Object.keys(escaped)) {
     const chip = document.createElement("span");
     chip.className = "chip escaped";
-    chip.textContent = `${SPECIES[sp].disp}↑ ×${escaped[sp]}（空気中へ）`;
-    ionCountsEl.appendChild(chip);
+    chip.textContent = `${SPECIES[sp].disp}↑ ×${escaped[sp]}`;
+    boxFor(isGasStage() ? "gasPhase" : "gas").appendChild(chip);
   }
+  for (const key of OBS_ORDER) if (boxes[key]) ionCountsEl.appendChild(boxes[key]);
 }
 
 /* ---- 反応式パネル ---- */
