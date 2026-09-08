@@ -4,6 +4,7 @@ unit: alcohol
 unitLabel: アルコールとカルボニル化合物
 group: アルコールの反応
 title: アルコールを脱水するとどのアルケンになるか
+summary: 炭素1〜5個のアルコール16種と、分子内脱水でできるアルケンの対応表。行き先が重なる組、2つできる組（ザイツェフ則）、脱水できない2つが一望できます。
 codes:
   - org.alcohol.dehydration
   - org.alcohol.zaitsev
