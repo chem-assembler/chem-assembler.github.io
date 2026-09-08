@@ -628,8 +628,10 @@ main.timelineMain {
 }
 .rowTag.strong { background: #dbe8f4; color: #2f5b7a; font-weight: bold; }
 .rowTag.ng { background: #fbeae7; color: #a33a2c; }
-#rowMol.doneRow .cLeft, #rowMol.doneRow .cRight { background: #eef7ee; border-radius: 6px; padding: 2px 6px; }
-#roleWrap[hidden] { display: none; }
+/* 完成した化学反応式の行。★ 2026-09-08: `#rowMol`（筆算の⑤行）で名指ししていたが、
+   その行を畳んで #stepBottles の `#rowBottleMol` 1本にしたので、**クラスで拾う**。
+   ⚠ これまで⑥の完成式にはこの色が付いていなかった（同じ「完成」なのに見た目が違った）。 */
+.doneRow .cLeft, .doneRow .cRight { background: #eef7ee; border-radius: 6px; padding: 2px 6px; }
 .kindTag {
   font-size: 12px;
   font-weight: bold;
@@ -770,15 +772,19 @@ main.timelineMain {
 #equation .term { display: inline-flex; align-items: center; gap: 4px; }
 #equation .formula { font-weight: bold; }
 
-/* イオン反応式→化学反応式の図（済んだ酸化還元 ＋ 残ったイオンの組み換え） */
-#roleWrap {
-  margin: 4px 0 2px;
+/* ⚠ 2026-09-08: ここに「イオン反応式→化学反応式の図」（#roleWrap / #molFigure）の飾りがあった。
+   図そのものを降ろした（⑥のブロックと役割が重なる）ので、飾りも一緒に降ろす。
+   経緯は DESIGN_redox.md「筆算の④⑤を畳む」。
+
+   ⑥の頭に置く「硝酸の二役」の1行（#acidRoleNote）は、同じ暖色の箱で受け継ぐ */
+#acidRoleNote {
+  margin: 4px 0 6px;
   padding: 6px 8px;
   background: #fdf7f2;
   border: 1px solid #ecdccd;
   border-radius: 8px;
 }
-#molFigure { width: 100%; height: auto; display: block; }
+#acidRoleNote[hidden] { display: none; }
 .cLeft .formula, .cRight .formula { font-weight: bold; }
 .stepper {
   display: inline-flex;
@@ -1613,21 +1619,10 @@ main.timelineMain {
   border-radius: 4px 4px 0 0;
   padding: 0 2px;
 }
-/* 【2′】v194 — ④行で「両辺に足すイオンの種類」を選ぶ。指で押せる 36px の床
-   （tools/check-mobile.mjs の検査4）と、iOS の自動ズームを避ける 16px */
-.addSpPick {
-  min-height: 36px;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 2px 6px;
-  color: #23303b;
-  background: #fff;
-  border: 1px solid #b6c4d2;
-  border-radius: 6px;
-  max-width: 100%;
-}
-.addSpPick.okpick { border-color: #7fae7f; background: #f3faf3; }
-.addSpPick.ngpick { border-color: #d08b8b; background: #fdf3f3; }
+/* ⚠ 2026-09-08: ここに .addSpPick（④行で「両辺に足すイオンの種類」を選ぶ欄）の飾りがあった。
+   ④の実装を1本に畳んだので、種類を選ぶ欄そのものが無くなった
+   ——④後半は**全種類**を同じ形で問う（DESIGN_redox.md「筆算の④⑤を畳む」）。
+   ④前半の `<select>`（#bottleQuiz）は .bottleRow 側の飾りを使う。 */
 /* 【D】倍率の案内。**半端が出たときだけ**現れるので、ふだんは1ピクセルも使わない */
 .bsBox { margin: 8px 0 6px; padding: 8px 10px; border-radius: 8px; }
 .bsBox[hidden] { display: none; }
