@@ -9338,7 +9338,7 @@ async function runElectrolysisUITests(iframe) {
     const open = (q) => new Promise((r) => {
       const f = document.createElement("iframe");
       f.style.cssText = "width:400px;height:300px;position:absolute;left:-9999px";
-      f.src = "electrolysis.html?v=200" + q;
+      f.src = "electrolysis.html?nocache=" + Date.now() + q;
       f.onload = () => setTimeout(() => r(f), 60);
       document.body.appendChild(f);
     });

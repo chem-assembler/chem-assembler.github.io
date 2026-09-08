@@ -1638,7 +1638,7 @@ function runUiTests(doc, DATA) {
       return new Promise(function (res, rej) {
         var f = doc.createElement("iframe");
         f.style.cssText = "position:absolute; left:-9999px; width:960px; height:640px;";
-        f.src = "index.html?v=46" + query;
+        f.src = "index.html?nocache=" + Date.now() + query;
         doc.body.appendChild(f);
         var tries = 0;
         (function poll() {

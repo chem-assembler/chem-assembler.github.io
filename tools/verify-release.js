@@ -452,6 +452,28 @@ textFiles.forEach(rel => {
 //     実質その教科書の発展欄の目次。**.md は規則5の対象外**なので誰も気づけなかった
 //   どちらも `_解析/workbook/`（リポジトリの外）へ移した。**戻ってこないようにここで見張る。**
 //
+/* 規則11. `.js` の中に **ページの版を手で書いた `◯◯.html?v=<数字>`** が無いか（2026-09-09）
+ *
+ * ⚠⚠ **`.js` は版の検査の死角だった。** 規則3〜6 は `.html` しか読まない。
+ * 発見のきっかけ: `ion-equation/tests.js` が iframe を `electrolysis.html` を `?v=200` で開いていた
+ * （実際の版は **v204**）。同じ形を全リポジトリで探したら、さらに2件出た ——
+ * `qa/tests.js` は `index.html` を `?v=46`（★ **実際は v100。54版ぶん取り残されていた**）、
+ * `muki/tests.js` は `separation.html` を `?v=30`。
+ *
+ * ★ **ページの版は html 側が持つもの**なので、.js に書き写した時点で必ず古くなる。
+ * ⚠ **`.json?v=` は別物**（データのキャッシュバスターで、qa の回帰テストが別に見張っている）。
+ * ここで捕まえるのは **html を数字の版つきで読んでいる行だけ**。
+ * ★ 直し方は `?nocache=' + Date.now()`（テストは常に最新を読むのが正しい）。 */
+textFiles.filter(rel => rel.endsWith('.js') && !rel.startsWith('tools/record/'))
+    .forEach(rel => {
+        const abs = path.join(ROOT, rel);
+        if (!fs.existsSync(abs)) return;
+        [...fs.readFileSync(abs, 'utf8').matchAll(/([\w./-]+\.html)\?v=(\d+)/g)].forEach(m => {
+            problems.push(`${rel}: ${m[1]}?v=${m[2]} —— .js にページの版を書き写しています`
+                + `（版は html 側が持つので必ず古くなる。?nocache= と時刻に置き換えること）`);
+        });
+    });
+
 // 出すのは**区分の語だけ**（本文 / 発展欄 / 見あたらない / プロセス / 基本 / 発展 / 未登場）。
 // これは判定結果であって、相手の中身ではない。
 const SOURCE_LEAK = [
