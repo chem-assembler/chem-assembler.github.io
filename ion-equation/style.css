@@ -392,6 +392,38 @@ main {
 #toolbar .react { background: #e08a3c; }
 #toolbar .reset { background: #8a94a0; }
 
+/* ---- 2026-09-08（DESIGN_ionic_two_step.md §7-4）——
+   既定の顔は「▶ 再生」と「↺ やり直す」の2つだけ。＋ボタンと ⚡反応させる は
+   取り上げず `<details class="freeTry">` に畳む（ユーザー「オプションで、別な係数比を
+   試すことも可能」）。⚠ セレクタ `#toolbar .add` / `.react` は変えていないので、
+   これらで書かれた回帰テストは畳んだままでも意味を保つ。 */
+#toolbar .play { background: #2f8f6b; }
+#toolbar .freeTry {
+  flex: 1 0 100%;
+  margin-top: 2px;
+  border: 1px solid #d9dfe5;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+#toolbar .freeTry > summary {
+  cursor: pointer;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: #5c6672;
+  list-style: none;
+}
+#toolbar .freeTry > summary::-webkit-details-marker { display: none; }
+#toolbar .freeTry > summary::before { content: "▸ "; color: #97a1ac; }
+#toolbar .freeTry[open] > summary::before { content: "▾ "; }
+#toolbar .freeTry .freeRow {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 0 10px 8px;
+}
+#toolbar .freeTry .freeHint {
+  padding: 0 10px 9px;
+  font-size: 12.5px; line-height: 1.55; color: #6b7480;
+}
+
 /* ビーカー上の「投入した反応物の数」表示。反応式の係数（左辺）と同じ見た目にして対応づける */
 .addedFormula {
   text-align: center;
@@ -468,6 +500,28 @@ main {
   font-size: 13px;
 }
 .chip.escaped { border-style: dashed; color: #7a8590; }
+
+/* ---- 2026-09-08（§7-5）—— 札を「状態」で束ねる。
+   図の粒を数えなくても、**どの物質がどの状態にいるか**が並びだけで読める。
+   ⚠ 見出しは束の左に置く（上に積むと 320px で3行ぶん背が伸びてビーカーが押し出される）。 */
+.chipGroup {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 2px;
+  margin: 3px 0;
+  padding: 2px 0 2px 8px;
+  border-left: 4px solid #ccd;
+}
+.chipGroupLabel {
+  font-size: 11.5px; font-weight: bold; color: #6b7480;
+  margin-right: 6px;
+}
+.chipGroup.solid { border-left-color: #8d6e4a; }
+.chipGroup.solid .chipGroupLabel { color: #7a5b39; }
+.chipGroup.gas { border-left-color: #5aa7c8; }
+.chipGroup.gas .chipGroupLabel { color: #3f7f9c; }
+.chipGroup.ion { border-left-color: #7f9bc4; }
+.chipGroup.molecule { border-left-color: #a3a9b0; }
+.chipGroup.gasPhase { border-left-color: #5aa7c8; }
 
 /* ---- 酸化還元モード ---- */
 .modeTag {
