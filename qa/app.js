@@ -747,6 +747,12 @@ function slTrack(name, params) {
       startConfirmSession(left);
       return;
     }
+    // ★ 範囲の回（参考書から `?codes=` で来た）は**同じ範囲をもう一度**。
+    // ⚠ `startSession` に落とすと `unitId` が null なので**0問の回**になる（白紙）
+    if (session.scope === 'codes') {
+      startCodesSession(session.queue.map(function (it) { return it.pattern; }), session.mode);
+      return;
+    }
     startSession(session.unitId, session.mode, session.scope, session.lv);
   });
   $('btn-map').addEventListener('click', function () { renderMap(); show('view-map'); });
@@ -800,18 +806,50 @@ function slTrack(name, params) {
   // 進捗は ○× を押さないかぎり動かないので、戻ってきただけで記録は汚れない。
   var backFrom = null;   // { app, code, found } … 帯に出す「来た道」
 
+  // ---------- 範囲を指定して解く（`?codes=` ・v100） ----------
+  // ★ 参考書（面A `/reference/`）が **1ページぶんの知識コードをまとめて**送ってくる受け口。
+  //   設計は `DESIGN_reference_book.md` §17-4。ユーザー決定「**一問一答は実際に試せる
+  //   （解ける）形で埋める。読み物として答えを並べるのではなく、その場で解けること**」。
+  //
+  // ⚠ **既存の `?code=` では足りなかった**: あちらは **1件・めくり（flip）固定**で、
+  //   ページの持ちコード（2〜10件）をまとめて解く口が無い。
+  //
+  // ⚠⚠ **こちらが受け取るのは「相手が自分の持ちコードを名乗った」ことだけ。**
+  //   ★ **何を出すか・どう出すか・どこへ戻すかを決めるのはこちら**（ion-equation ⇄ ratio と
+  //     同じ約束）—— 相手は参考書のページ構成もこちらの項目表も持たない。
+  //   ⚠ 知らないコードは**黙って落とす**（前方互換。相手が先に語彙を配っても止まらない）。
+  var CODES_MAX = 40;                       // 1回に受ける上限（URL 経由の暴発を止めるだけ）
+  var STUDY_MODES = { flip: 1, choice: 1 };
+
   function readBackParams() {
     var params;
     try { params = new URLSearchParams(window.location.search); } catch (e) { return null; }
+    var app = (params.get('from') || '').trim().toLowerCase();
+    // ★ `codes=` が先。両方あれば `codes=` を採る（範囲のほうが情報が多い）
+    var many = (params.get('codes') || '').split(',')
+      .map(function (s) { return s.trim(); }).filter(Boolean).slice(0, CODES_MAX);
+    if (many.length) {
+      var mode = (params.get('mode') || '').trim().toLowerCase();
+      return {
+        app: app, code: many[0], codes: many, found: false,
+        // ⚠ 知らない mode は既定へ落とす（綴りを間違えたリンクで白紙にしない）
+        mode: STUDY_MODES[mode] ? mode : 'choice'
+      };
+    }
     var code = (params.get('code') || '').trim();
     if (!code) return null;
-    var app = (params.get('from') || '').trim().toLowerCase();
     return { app: app, code: code, found: false };
   }
 
   // 相手を名指しできるのは**こちらが送った先だけ**。
   // 知らない `from` は名前を出さずに「戻ってきました」とだけ言う（勝手に相手を作らない）
-  var BACK_APP_NAME = { assembler: 'パズルでみる有機化学', ion: 'イオンでみる化学反応式' };
+  var BACK_APP_NAME = { assembler: 'パズルでみる有機化学', ion: 'イオンでみる化学反応式', reference: '参考書' };
+  // 戻り道を持てる相手だけ（CLAUDE.md「アプリ横断のリンクは往復にする」）。
+  // ⚠ **知っているのは入口の URL だけ**で、相手のページ id は持たない
+  //    —— どのページへ着地させるかは相手（参考書の索引）が決める。
+  // ⚠ `target="_top"` は **iframe に埋められているときのため**（参考書は /qa/ を埋め込む）。
+  //    枠の中だけが参考書の索引に変わると、参考書の中に参考書が入って読めなくなる。
+  var BACK_APP_URL = { reference: '../reference/' };
 
   function renderBackBand() {
     var box = $('back-band');
@@ -820,15 +858,24 @@ function slTrack(name, params) {
     var who = BACK_APP_NAME[backFrom.app];
     var lead = who ? esc(who) + 'から戻りました' : '外部リンクから来ました';
     box.classList.remove('hidden');
+    var url = BACK_APP_URL[backFrom.app];
+    // 戻り道（往復）。⚠ **`_top`** ＝ 埋め込まれていても、枠ではなくタブごと相手へ戻す
+    var back = (url && who)
+      ? ' <a class="bb-back" href="' + url + '" target="_top">' + esc(who) + 'へ戻る</a>'
+      : '';
     // 続きへ戻せたときは**どこへ戻したかを言う**。黙って続きが出ると、
     // 「1問だけの回」との区別が付かず、直ったことが利用者に見えない
     box.innerHTML = backFrom.resumed
       ? '<span class="bb-where">' + lead + '（' + backFrom.resumed.at + ' / ' +
-        backFrom.resumed.of + ' の続きから）</span>'
+        backFrom.resumed.of + ' の続きから）</span>' + back
+      // ★ 範囲で来たときは**何件を出しているか**を言う（送られた件数と食い違っても黙らない）
+      : (backFrom.found && backFrom.codes)
+      ? '<span class="bb-where">' + lead + '（このページの ' + backFrom.picked +
+        ' / ' + backFrom.codes.length + ' 項目）</span>' + back
       : backFrom.found
-      ? '<span class="bb-where">' + lead + '</span>'
+      ? '<span class="bb-where">' + lead + '</span>' + back
       : '<span class="bb-where bb-miss">' + lead +
-        'が、指定された項目（<b>' + esc(backFrom.code) + '</b>）は見つかりませんでした。単元の一覧を出しています</span>';
+        'が、指定された項目（<b>' + esc(backFrom.code) + '</b>）は見つかりませんでした。単元の一覧を出しています</span>' + back;
   }
 
   // ---------- 演習の続き（往復で state を落とさない・ユーザー申し立て 2026-08-28） ----------
@@ -910,9 +957,36 @@ function slTrack(name, params) {
   // `?code=` で来たときの着地。見つからなければ**ホームのまま**にして帯で理由を言う
   //（黙って白紙にしない）。控えがあれば**演習の続き**へ、無ければ従来どおり
   // 1項目だけのめくり回（scope は 'one' ＝ やめると単元一覧へ戻る）
+  // ★ 範囲（`?codes=`）で来たときの回。**送られた順のまま**出す
+  //   （参考書の本文が説明した順に並ぶ。⚠ 何を出すかを決めているのは下の絞り込みで、
+  //     こちらが持っていないコードは黙って落ちる）。
+  // ⚠ 混ぜない —— 他のセッションが混ぜるのは「毎回おなじ先頭10問」を避けるためで、
+  //   ここは**そのページのぶんを全部**出すので、混ぜても得るものが無い。
+  function startCodesSession(patterns, mode) {
+    session = {
+      unitId: null, mode: mode, scope: 'codes', lv: null,
+      queue: patterns.map(function (p) { return { pattern: p, variant: pickVariant(p, mode) }; }),
+      idx: 0, right: 0, wrong: 0
+    };
+    show('view-study');
+    renderStudy();
+  }
+
   function landOnCode() {
     backFrom = readBackParams();
     if (!backFrom) return false;
+    if (backFrom.codes) {
+      var byCode = {};
+      DATA.patterns.forEach(function (q) { byCode[q.code] = q; });
+      var picked = backFrom.codes.map(function (c) { return byCode[c]; }).filter(Boolean);
+      backFrom.picked = picked.length;
+      // 1件も引けなければ**ホームのまま**にして帯で理由を言う（黙って白紙にしない）
+      if (!picked.length) { renderBackBand(); return false; }
+      backFrom.found = true;
+      renderBackBand();
+      startCodesSession(picked, backFrom.mode);
+      return true;
+    }
     var p = DATA.patterns.filter(function (q) { return q.code === backFrom.code; })[0];
     if (!p) { renderBackBand(); return false; }
     backFrom.found = true;
@@ -939,7 +1013,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=99')
+  fetch('data/exam_usage.jsonl?v=100')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -954,7 +1028,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=99')
+  fetch('questions.json?v=100')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
