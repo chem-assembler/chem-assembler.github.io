@@ -48883,10 +48883,11 @@
             const a = now.split('\n'), b = want.split('\n');
             let at = -1;
             for (let i = 0; i < Math.max(a.length, b.length); i++) if (a[i] !== b[i]) { at = i; break; }
+            const cut = s => (s === undefined ? '(行が無い)' : s.length > 70 ? s.slice(0, 70) + '…' : s);
             assert(false, 'reference.json が reference-src/*.md から生成したものと違う（生成物を手で直したか、直して生成し忘れたか）\n'
-                + `    最初に食い違う行: ${at + 1}（現物 ${a.length}行 / 原稿から ${b.length}行）\n`
-                + `    現物  : ${(a[at] || '(行が無い)').slice(0, 120)}\n`
-                + `    原稿  : ${(b[at] || '(行が無い)').slice(0, 120)}\n`
+                + `    最初に食い違う行: ${at + 1}（現物 ${a.length - 1}行 / 原稿から ${b.length - 1}行）\n`
+                + `    現物  : ${cut(a[at])}\n`
+                + `    原稿  : ${cut(b[at])}\n`
                 + '    ★ 直すのは reference-src/<id>.md のほう。そのあと node tools/gen-reference.mjs');
         }
 
