@@ -30,6 +30,10 @@ const PRIVATE = [
     { re: /^tools\//, why: '制作の道具' },
     { re: /^docs\//, why: '内部文書' },
     { re: /^\.claude\//, why: 'セッションの設定' },
+    // ★ 参考書の**原稿**（正）。生成物 assembler/reference.json と 公開ページ /reference/（面A）が
+    //   配信されるもので、原稿はその材料。⚠ `---` の前書きを持つ .md は Jekyll が
+    //   `.html` に変換して出すので、外さないと同じ本文が2つの URL で公開される
+    { re: /^reference-src\//, why: '参考書の原稿（正）。配信されるのは生成物のほう' },
     { re: /^[^/]+\.md$/, why: '設計書・開発方針（ルートの .md）' },
 ];
 
