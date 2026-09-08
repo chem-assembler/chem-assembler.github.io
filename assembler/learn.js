@@ -6055,6 +6055,43 @@ function refMechanisms() {
    ★ 常に C₁ から数え上げるので、**範囲で行を選ぶことが構造上できない**（原則1）。 */
 const REF_DEHYD_MAX_CARBONS = 5;
 
+/* ============================================================================
+ * ★★ 器を広げたぶんの決めごと（2026-09-09・設計書 §19）
+ *
+ * ⚠ **書式の側（`tools/reference-md.js`）にも同じ値がある。**
+ *   ★ あちらは node とブラウザ（`REF17`）が読む「原稿を読む」側、こちらは「描く」側で、
+ *     **アプリ本体は tools/ を読まない**（配信されないディレクトリなので読めない）。
+ *   ★ **食い違いは `REF19` が機械で見張る**（`ReferenceMd.LEVELS` などと突き合わせる）。
+ * ========================================================================== */
+
+/* 節の id の接頭辞。⚠ **素の anchor を id にしない** —— 資料ペインはアプリの DOM の中なので
+   `id="list"` のような綴りが game.js / index.html の id と衝突しうる（§19-2）。
+   ★ 面Aも同じ綴りにして、**綴りを2つ持たない**。 */
+const REF_ANCHOR_PREFIX = 'ref-sec-';
+
+/* 図の置き場所。★ **ルート絶対**（面A `/reference/<id>/` と 面B `/assembler/` の両方から
+   同じ URL で読める）。⚠ `_config.yml` の exclude に掛からない場所であること（§19-4）。 */
+const REF_IMG_DIR = '/reference-img/';
+
+/* ★★ 重要度の印。⚠⚠ **`★★★` が基本**（取り違えると52ページに波及する・§18-3）。
+   ★ **画面に記号だけを出さない**（ユーザー指示）ので、言葉を必ず添える。 */
+const REF_LEVELS = ['★★★', '★★☆', '★☆☆'];
+const REF_LEVEL_WORDS = {
+    '★★★': '必ず覚える',
+    '★★☆': '余裕があれば',
+    '★☆☆': '参考'
+};
+
+/* 注意の囲みの札。⚠ こちらも記号だけにしない */
+const REF_TONE_WORDS = {
+    caution: '⚠ 勘違いしやすい',
+    memorize: '丸暗記でよい',
+    skip: '覚えなくてよい'
+};
+
+/* 手で書く表のセルの区切り */
+const REF_CELL_SEP = '|';
+
 /* -OH をちょうど1つ持つ（＝ 鎖式一価アルコール）か。
    ⚠ 判定は `ipHydroxylOxygens` の1本を借りる（エーテル・フェノールを外すのと同じ物差し） */
 function refIsMonoAlcohol(mol) {
@@ -6234,6 +6271,10 @@ class ReferenceBook {
         const h = document.createElement('h3');
         h.textContent = page.title;
         body.appendChild(h);
+        /* ★ 節の目次（§19-6）。⚠ 節が無いページでは `renderToc` が null を返す ＝ 何も置かない。
+           ★ 狭いペインでは CSS が「上の折りたたみ」にする（markup は面Aと同じ1本）。 */
+        const toc = this.renderToc(page);
+        if (toc) body.appendChild(toc);
         (page.blocks || []).forEach(b => {
             const el = this.renderBlock(b);
             if (el) body.appendChild(el);
@@ -6248,11 +6289,225 @@ class ReferenceBook {
             p.innerHTML = b.text;   // 強調（<b>・<sub>）だけを含む自分たちの文
             return p;
         }
+        if (b.kind === 'section') return this.renderSection(b);
+        if (b.kind === 'list') return this.renderList(b);
+        if (b.kind === 'figure') return this.renderFigure(b);
+        if (b.kind === 'reaction') return this.renderReaction(b);
+        if (b.kind === 'table') return this.renderPlainTable(b);
+        if (b.kind === 'callout') return this.renderCallout(b);
         if (b.kind === 'stageTable') return this.renderStageTable(b);
         if (b.kind === 'mechanismTable') return this.renderMechanismTable(b);
         if (b.kind === 'dehydrationTable') return this.renderDehydrationTable(b);
         if (b.kind === 'example') return this.renderExample(b);
         return null;
+    }
+
+    /* ★★ 節の見出し（設計書 §19）。
+     *
+     * ⚠ **id は `ref-sec-` を付ける**（素の `anchor` にしない）——
+     *   資料ペインは**アプリの DOM の中**なので、`id="list"` のような素の綴りは
+     *   `game.js` / `index.html` が持つ id と衝突しうる。衝突しても画面は「それらしく」出て、
+     *   `getElementById` が別のものを掴む形で黙って壊れる。
+     * ★ **面Aも同じ綴り**（`/reference/alkane/#ref-sec-substitution`）＝ 綴りを2つ持たない（§19-2）。
+     *
+     * ★ `lead`（この節で分かること）は**必須**。検索から節へ直接着地した人が最初に読む1行で、
+     *   「見出しだけ在って何の節か分からない」を作らないためのもの。
+     */
+    renderSection(block) {
+        const sec = document.createElement('section');
+        sec.className = 'ref-sec';
+        sec.id = REF_ANCHOR_PREFIX + block.anchor;
+        const h = document.createElement('h4');
+        h.className = 'ref-sec-h';
+        h.textContent = block.title;
+        sec.appendChild(h);
+        const lead = document.createElement('p');
+        lead.className = 'ref-sec-lead';
+        lead.innerHTML = block.lead;
+        sec.appendChild(lead);
+        return sec;
+    }
+
+    /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
+    renderList(block) {
+        const el = document.createElement(block.ordered ? 'ol' : 'ul');
+        el.className = 'ref-list';
+        (block.items || []).forEach(t => {
+            const li = document.createElement('li');
+            li.innerHTML = t;
+            el.appendChild(li);
+        });
+        return el;
+    }
+
+    /* ★★ 図（スライド由来の構造式）。
+     *
+     * ⚠ **`block.src` はファイル名だけ**（書式が `/` も `..` も弾く）。
+     *   ★ **`/reference-img/` を付けるのはここ1か所** ＝ 面A（`/reference/<id>/`）と
+     *     面B（`/assembler/`）で**同じ URL** になる（相対にすると面Bが `/assembler/reference-img/` を探す）。
+     * ⚠ ルート絶対なので、**リポジトリのルートを配信していること**が前提（開発も本番も同じ）。
+     *
+     * ★ `alt` は画像が出ない人が読む文。⚠ `caption` と同じ文にしない
+     *   （caption は図の外に出るので、両方同じだと読み上げが二重になる）。
+     */
+    renderFigure(block) {
+        const fig = document.createElement('figure');
+        fig.className = 'ref-figure';
+        const img = document.createElement('img');
+        img.className = 'ref-figure-img';
+        img.src = REF_IMG_DIR + block.src;
+        img.alt = block.alt;
+        img.loading = 'lazy';
+        fig.appendChild(img);
+        const cap = document.createElement('figcaption');
+        cap.className = 'ref-figure-cap';
+        cap.innerHTML = block.caption;
+        fig.appendChild(cap);
+        return fig;
+    }
+
+    /* ★★ 化学反応式（設計書 §19-5）。**文字だけで組む** —— 画像に頼らない。
+     *
+     * ⚠ **画像＋下に文字**にしなかったのは、**式を2か所で持つことになる**から
+     *   （画像を差し替えて文字を直し忘れても、画像の中は機械で読めない）。
+     * ★ 検索にかかり、読み上げも通り、直すのは1か所で済む。
+     *
+     * ★★ **重要度の印は記号だけにしない**（ユーザー指示・§18-3）——
+     *   `REF_LEVEL_WORDS` が言葉を添える。⚠⚠ **`★★★` が基本**（逆に取らないこと）。
+     */
+    renderReaction(block) {
+        const box = document.createElement('div');
+        box.className = 'ref-rx';
+
+        const lv = document.createElement('div');
+        lv.className = 'ref-rx-level ref-rx-lv' + (REF_LEVELS.indexOf(block.level) + 1);
+        lv.textContent = block.level + ' ' + (REF_LEVEL_WORDS[block.level] || '');
+        box.appendChild(lv);
+
+        const eq = document.createElement('div');
+        eq.className = 'ref-rx-eq';
+        const left = document.createElement('span');
+        left.className = 'ref-rx-side';
+        left.textContent = block.left;
+        eq.appendChild(left);
+
+        const ar = document.createElement('span');
+        ar.className = 'ref-rx-arrow';
+        const over = document.createElement('span');
+        over.className = 'ref-rx-over';
+        over.textContent = block.over || '';
+        const bar = document.createElement('span');
+        bar.className = 'ref-rx-bar';
+        bar.textContent = '→';
+        const under = document.createElement('span');
+        under.className = 'ref-rx-under';
+        under.textContent = block.under || '';
+        ar.appendChild(over); ar.appendChild(bar); ar.appendChild(under);
+        eq.appendChild(ar);
+
+        const right = document.createElement('span');
+        right.className = 'ref-rx-side';
+        right.textContent = block.right;
+        eq.appendChild(right);
+        box.appendChild(eq);
+
+        if (block.note) {
+            const n = document.createElement('p');
+            n.className = 'ref-note';
+            n.innerHTML = block.note;
+            box.appendChild(n);
+        }
+        return box;
+    }
+
+    /* ★ 手で書く表（機械が行を作れないもの）。
+     *
+     * ⚠ **class は `.ref-hand-table`**。`.ref-table` に混ぜない ——
+     *   あちらは「`stages.json` の系列から作った表」の物差し（`REF8`/`REF9`/`REF10`）が
+     *   掛かっているので、手で書いた行を入れると噛み合わなくなる（`.ref-map-table` と同じ判断）。
+     * ⚠ セルの数が head と合わない行は**書式のほうで止まる**（それらしく1列ずれた表を出さない）。
+     */
+    renderPlainTable(block) {
+        const wrap = document.createElement('div');
+        wrap.className = 'ref-table-wrap';
+        if (block.caption) {
+            const cap = document.createElement('div');
+            cap.className = 'ref-cap';
+            cap.innerHTML = block.caption + '（' + block.rows.length + '行）';
+            wrap.appendChild(cap);
+        }
+        const t = document.createElement('table');
+        t.className = 'ref-hand-table';
+        const thead = document.createElement('thead');
+        const htr = document.createElement('tr');
+        block.head.forEach(h => {
+            const th = document.createElement('th');
+            th.innerHTML = h;
+            htr.appendChild(th);
+        });
+        thead.appendChild(htr);
+        t.appendChild(thead);
+        const tb = document.createElement('tbody');
+        block.rows.forEach(row => {
+            const tr = document.createElement('tr');
+            row.split(REF_CELL_SEP).forEach(cell => {
+                const td = document.createElement('td');
+                td.innerHTML = cell.trim();
+                tr.appendChild(td);
+            });
+            tb.appendChild(tr);
+        });
+        t.appendChild(tb);
+        wrap.appendChild(t);
+        return wrap;
+    }
+
+    /* 注意の囲み。⚠ **記号だけにしない**（言葉が札に出る） */
+    renderCallout(block) {
+        const box = document.createElement('div');
+        box.className = 'ref-callout ref-callout-' + block.tone;
+        const b = document.createElement('b');
+        b.className = 'ref-callout-tag';
+        b.textContent = REF_TONE_WORDS[block.tone] || '';
+        box.appendChild(b);
+        const p = document.createElement('p');
+        p.className = 'ref-callout-text';
+        p.innerHTML = block.text;
+        box.appendChild(p);
+        return box;
+    }
+
+    /* ★★ 節の目次（設計書 §19-6）。
+     *
+     * ⚠ **面Aの生成器はこれを呼んで焼く** ＝ 目次を組む式が2本にならない。
+     *   （生成器側に書くと、`:::section` を足したときに面Aの目次だけ古くなる）
+     * ★ markup は面Aと面Bで**同じ**（`<details>`）。**見え方の違いは CSS だけ**
+     *   —— 広い面では左に固定、狭い面（資料ペイン 340px）では上の折りたたみ。
+     * ⚠ 節が1つも無いページでは **null を返す**（空の目次を置かない）。
+     */
+    renderToc(page) {
+        const secs = (page.blocks || []).filter(b => b.kind === 'section');
+        if (!secs.length) return null;
+        const nav = document.createElement('nav');
+        nav.className = 'ref-toc';
+        nav.setAttribute('aria-label', 'このページの目次');
+        const det = document.createElement('details');
+        const sum = document.createElement('summary');
+        sum.textContent = 'このページの中身（' + secs.length + '節）';
+        det.appendChild(sum);
+        const ul = document.createElement('ul');
+        secs.forEach(s => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = '#' + REF_ANCHOR_PREFIX + s.anchor;
+            a.textContent = s.title;
+            a.dataset.refAnchor = s.anchor;
+            li.appendChild(a);
+            ul.appendChild(li);
+        });
+        det.appendChild(ul);
+        nav.appendChild(det);
+        return nav;
     }
 
     /* ★★ アルコールと脱水生成物の対応表（第5ページ）。
@@ -6705,6 +6960,15 @@ if (typeof window !== 'undefined') {
     window.refDehydrationMap = refDehydrationMap;
     window.REF_DEHYD_MAX_CARBONS = REF_DEHYD_MAX_CARBONS;
     window.REF_TABLE_VARIANTS = REF_TABLE_VARIANTS;
+    /* ★ 器を広げたぶんの決めごと（§19）。`REF19` が **書式の側（tools/reference-md.js）と
+       突き合わせて**、印の向き・図の置き場所・節の id の綴りが2つに割れていないことを見る。
+       ⚠ アプリ本体は tools/ を読めない（配信されない）ので、値は両側に在る ＝ 機械で縛る */
+    window.REF_ANCHOR_PREFIX = REF_ANCHOR_PREFIX;
+    window.REF_IMG_DIR = REF_IMG_DIR;
+    window.REF_LEVELS = REF_LEVELS;
+    window.REF_LEVEL_WORDS = REF_LEVEL_WORDS;
+    window.REF_TONE_WORDS = REF_TONE_WORDS;
+    window.REF_CELL_SEP = REF_CELL_SEP;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;

@@ -171,7 +171,7 @@
  * | R   | 2〜15  | レイアウト・モバイル（レビュー由来。**R1 は欠番**） |
  * | RB  | 1〜17  | リボン統合 |
  * | RC  | 1〜4   | 試薬まわりの反応（往復・酸化剤・付加） |
- * | REF | 1〜7   | 📖 資料（参考書）第1ページ（DESIGN_reference_book.md）。⚠ 接頭辞が `RB` でないのは **`RB` を「リボン統合」が既に使っている**ため。1 索引→ページが開く（既定は閉）・2 表はシリーズの行が**全部**出て C の数は分子式から作る・**3 は否定対照**＝「いま要る1行だけ」を出す実装が入り込んでいない（例題中も減らない／描画器に行を絞る口が無い／1行だけの表を混ぜると検査が気づく）・4 は 375 で分割せずタブ（キャンバスが 1px も減らない）／1280 で分割しても結合 28px の床を保つ・5 は reference.json に**行データが無い**（表は stages.json から機械で作る＝著作権 §1-2）・6 は例題が**既存ステージの採点**を使う（資料側に採点を持たない）・**7 は否定対照つき**＝ `?open=reference&code=` で開き、`?rec=` では開かない |
+ * | REF | 1〜19  | 📖 資料（参考書）（DESIGN_reference_book.md）。⚠ 接頭辞が `RB` でないのは **`RB` を「リボン統合」が既に使っている**ため。1 索引→ページが開く（既定は閉）・2 表はシリーズの行が**全部**出て C の数は分子式から作る・**3 は否定対照**＝「いま要る1行だけ」を出す実装が入り込んでいない（例題中も減らない／描画器に行を絞る口が無い／1行だけの表を混ぜると検査が気づく）・4 は 375 で分割せずタブ（キャンバスが 1px も減らない）／1280 で分割しても結合 28px の床を保つ・5 は reference.json に**行データが無い**（表は stages.json から機械で作る＝著作権 §1-2）・6 は例題が**既存ステージの採点**を使う（資料側に採点を持たない）・**7 は否定対照つき**＝ `?open=reference&code=` で開き、`?rec=` では開かない。**8〜16 は2〜5枚目**（系列の表・図から計算した列・機構の表・脱水の対応表）・**17 は本文の正が `reference-src/*.md`**（生成物と1バイト一致）・**18 は面A `/reference/`**（焼いたものと原稿・ハブからのリンク）・**19 は広げた器**（節のアンカーと目次が1対1・用語の索引の行き先が実在する節・図が面A/面Bの同じ URL から返る・**★★★ が基本の向き**を言葉のほうから見る・描く側と書式で決めごとが割れていない） |
  * | RF  | 1〜3   | 整形モードと名称呼び出しの再現性 |
  * | RG  | 1〜11  | 試薬の瓶（REAGENTS） |
  * | RM  | 1〜4   | **反応の印と箇所選び**（v1500・定期レビュー pack2 の発注書 A ＋ 動画レーンの実測 v1494）。**1 はジエンの 1,4-付加重合で「中央へ移った C=C の炭素」が画面で光る**（caption が要点だと言っている当の原子。⚠ 題材はイソプレン —— ブタジエンだと重原子14個が全部「変わった原子」になり、「全部に印を付ける実装ではない」の否定対照が立たない）。**2 はポリ酢酸ビニルのけん化**＝ 箇所が2つ以上あるとき札を押しただけでは図が変わらず**箇所選び**に入る（＝ 動画レーンの「押しても動かない」は仕様）・そのとき必ず字幕で言う・押す→選ぶを3回でポリビニルアルコールに着地する。**3 は単糖2つの縮合**＝ detect は空ではなく**2件**（マルトース 1→4／トレハロース 1→1）で、押す炭素の隣（C・O・O ならアノマー炭素→トレハロース／C・C・O なら4位→マルトース）でどちらになるかが決まる。**4 は RM2 が注記で避けていた「アセチル基の側で開く」道**＝ 焦点は原子ID 1個なので、けん化で**タップした炭素が酢酸ナトリウムの側へ移り**、`siteFilter` の focus 絞り込みが残りのエステルを設計どおり落としていた（実測 detect 2件 → 通過 0件）。直したのは `game.refocusToMainFragment()`（変化した側の**大きいほうの破片**へ焦点を移す）で、否定対照は「焦点を名前で確かめる」と「傍観者のトルエンに飛ばない・1原子も変わらない」 |
@@ -46944,7 +46944,12 @@
         assert(!pane.classList.contains('hidden'), '索引を押しても資料ペインが開かない');
         assert(D.getElementById('study-modal').classList.contains('hidden'),
             '資料を開いても 📚 学習 が開いたまま（モーダルが資料に重なる）');
-        assert(/アルカンの命名/.test(D.querySelector('#ref-body h3').textContent), 'ページの見出しが出ていない');
+        /* ⚠ **ページの名前を検査に書き写さない**（v1525）。索引の1番目は `reference.json` の
+           1番目（＝ `ORDER.txt` の1行目）なので、ページを1枚足すたびに検査を直すのは筋が悪い
+           —— 実際、6枚目を足したときにここだけ赤くなった。★ 物差しは原稿の側に置く。 */
+        const first = (await refPagesJson())[0];
+        assert(D.querySelector('#ref-body h3').textContent.indexOf(first.title) >= 0,
+            `ページの見出しが出ていない（索引の1番目は「${first.title}」のはず）`);
 
         W.referenceBook.close();
         assert(pane.classList.contains('hidden'), '✕ で閉じられない');
@@ -47226,7 +47231,17 @@
             `reference.json が「1ブロック1行」の形でない（${lines.length}行 / 期待 ${wantLines}行・${pages.length}ページ）。` +
             'JSON.parse → JSON.stringify で書き戻していないか（生成は node tools/gen-reference.mjs）');
 
+        /* ⚠⚠ **`rows` だけ扱いを分けた**（v1525・設計書 §19-3）。
+           ★ ここが見張っているのは**著作権の守り**（手打ちの表が構造上存在できなければ転写事故は起きない）で、
+             それは「行を手で書くな」ではなく「**出どころの言えない行を書くな**」が本体。
+           ⚠ 素材がユーザー自身の講義スライドに変わり（§18）、**機械が行を作れない表**が要るようになった
+             （物質カード・常温での状態・構造異性体の数 —— どれも stages.json にも compounds.json にも無い）。
+           ★ 開けた穴は1つだけ: **`:::table` の中の `rows` に限る**。
+             ⚠ **代わりに `source` を必須**にして「その行がどこから来たか」を書かせる
+               （書けないなら、それはどこかから持ってきている ＝ 前書きの `why` と同じ考え・§1-2）。
+           ⚠ **他のブロックの `rows` は今までどおり赤**（`stageTable` に行を持たせる逃げ道は塞がっている）。 */
         const BANNED = ['name', 'formula', 'atoms', 'bonds', 'target', 'rows'];
+        const HAND_TABLE = 'table';
         pages.forEach(p => {
             assert(p.id && p.title && p.unitLabel && p.group, `${p.id}: 見出しの欄が欠けている`);
             // ★ 「この表を作った理由」を1行で書けること（§1-2 の運用ルール）を機械で見る
@@ -47246,21 +47261,28 @@
                   `REF12`（機構の表を持つページだけを見る）の**すき間**に、
                   表を1枚も持たないページを置いて全部の物差しから逃げられる。
                ⚠ 種類が増えたらここに足すこと ＝ **逃げ道は必ず1行の追加として残る。** */
-            const TABLE_KINDS = ['stageTable', 'mechanismTable', 'dehydrationTable'];
+            const TABLE_KINDS = ['stageTable', 'mechanismTable', 'dehydrationTable', HAND_TABLE];
             assert((p.blocks || []).some(b => TABLE_KINDS.includes(b.kind)),
                 `${p.id}: 表のブロック（${TABLE_KINDS.join(' / ')}）が1つも無い`
                 + '（資料は表が本体。表を持たないページは、行を機械で組む約束の外へ出てしまう）');
             // ★ 行データを1つも持たないこと（持てば「写す」余地がその場でできる）
-            const scan = (o, path) => {
-                if (Array.isArray(o)) return o.forEach((v, i) => scan(v, `${path}[${i}]`));
+            const scan = (o, path, kind) => {
+                if (Array.isArray(o)) return o.forEach((v, i) => scan(v, `${path}[${i}]`, kind));
                 if (o && typeof o === 'object') Object.keys(o).forEach(k => {
-                    assert(!BANNED.includes(k),
+                    /* ★ 手で書く表の `rows` だけは通す。⚠ **通す条件は「出どころが書いてあること」** */
+                    const handRows = (k === 'rows' && kind === HAND_TABLE);
+                    assert(!BANNED.includes(k) || handRows,
                         `${p.id}: reference.json に行データの欄 "${k}" がある（${path}）。` +
-                        '表の行は stages.json から機械で作る約束（手打ちの表を作らない）');
-                    scan(o[k], `${path}.${k}`);
+                        '表の行は stages.json から機械で作る約束（手打ちの表は :::table だけ）');
+                    if (handRows) {
+                        assert(typeof o.source === 'string' && o.source.length >= 8,
+                            `${p.id}: :::table が source（この行がどこから来たか）を持っていない（${path}）。` +
+                            '手で書く表はここだけ「行データを持たない」の外へ出るので、出どころを必ず書く');
+                    }
+                    scan(o[k], `${path}.${k}`, kind);
                 });
             };
-            scan(p.blocks || [], 'blocks');
+            (p.blocks || []).forEach((b, i) => scan(b, `blocks[${i}]`, b.kind));
         });
     });
 
@@ -49078,6 +49100,178 @@
            **原稿に1件入れて焼いて実測してある**（設計書 §17-9 の positive control）。
            ⚠ ここに「1件も無いこと」を書き足さない —— 動画が1本できた日に、
              直っているのに赤くなる検査になる。 */
+    });
+
+    /* ===== REF19: 広げた器（見出し・箇条書き・図・反応式・手で書く表・注意書き）・v1525 =====
+     *
+     * ★ 設計は `DESIGN_reference_book.md` §19。発端はユーザーの申し立て
+     *   「**参考書の中身は全面的に修正したい／化学学習者が参照する参考書になっていない**」。
+     *
+     * ⚠ **`:::` の種類そのものは `REF17` ③ が見ている**（`renderBlock.toString()` から拾って
+     *   書式と突き合わせる仕掛けにそのまま乗った ＝ ここに一覧を書き写さない）。
+     *   ★ こちらが見るのは、**その種類が実際に使えているか**の6つ:
+     *     ① 節のアンカーが一意で、目次と本文が1対1
+     *     ② 用語の索引の行き先が、実在する節を指す
+     *     ③ 図が実在し、**面Aと面Bで同じ URL** から画像として返る
+     *     ④ 重要度の印が3値で、**★★★ が基本の向き**（⚠ 逆に入れたら赤）
+     *     ⑤ 面Aの目次が **learn.js の renderToc から焼いたもの**（面A側に2本目を持たない）
+     *     ⑥ **描く側（learn.js）と書式（tools/reference-md.js）の決めごとが割れていない**
+     */
+    test('REF19: 節・目次・用語索引・図・反応式の印が、原稿とアプリの1本から出ている', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        assert(RM, 'ReferenceMd が居ない（test.html が ../tools/reference-md.js を読み込んでいるか）');
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`);
+            return await res.text();
+        };
+        const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
+        const flat = (s) => String(s).replace(/\s+/g, ' ').trim();
+
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        const book = W.referenceBook;
+        await book.load();
+
+        /* ── ⑥ 決めごとが2つに割れていないこと ──
+           ⚠ **アプリ本体は tools/ を読めない**（配信されないディレクトリ）ので、
+             印の3値も、図の置き場所も、節の id の接頭辞も**両側に在る**。
+           ★ 割れたら黙って壊れる（印が出ない・図が 404・目次のリンクが空振り）ので機械で縛る。 */
+        assert(W.REF_LEVELS && W.REF_LEVELS.join('/') === RM.LEVELS.join('/'),
+            `重要度の印が learn.js（${(W.REF_LEVELS || []).join('/')}）と書式（${RM.LEVELS.join('/')}）で違う`);
+        assert(W.REF_TONE_WORDS && Object.keys(W.REF_TONE_WORDS).sort().join('/') === RM.TONES.slice().sort().join('/'),
+            '注意の囲みの種類が learn.js と書式で違う');
+        assert(W.REF_CELL_SEP === RM.CELL_SEP, '手で書く表のセルの区切りが learn.js と書式で違う');
+        assert(W.REF_IMG_DIR === RM.FIGURE_DIR,
+            `図の置き場所が learn.js（${W.REF_IMG_DIR}）と書式（${RM.FIGURE_DIR}）で違う`);
+        assert(W.REF_ANCHOR_PREFIX === 'ref-sec-',
+            '節の id の接頭辞が変わっている（面Aの URL・用語の索引の行き先が全部ずれる）');
+
+        /* ── ④ ★★★ が基本の向きであること ──
+           ⚠⚠ **統合レーンが一度これを逆に取った**（設計書 §18-3）。数の多い側が基本。
+           ★ **記号ではなく言葉のほうから見る** —— 記号の並びだけ見ていると、
+             `REF_LEVEL_WORDS` を入れ替えても緑のままになる。 */
+        const words = W.REF_LEVEL_WORDS || {};
+        assert(Object.keys(words).length === 3, '重要度の印に言葉が3つ付いていない');
+        Object.keys(words).forEach(k => assert(W.REF_LEVELS.indexOf(k) >= 0, `印「${k}」は3値のどれでもない`));
+        assert(/必ず/.test(words['★★★']),
+            `★★★ の言葉が「${words['★★★']}」になっている（★★★ は**基本＝必ず覚える**側。逆に入れると52ページに波及する）`);
+        assert(/参考|余裕/.test(words['★☆☆']) && !/必ず/.test(words['★☆☆']),
+            `★☆☆ の言葉が「${words['★☆☆']}」になっている（★☆☆ は重要度の低い側）`);
+        /* ★ 画面には**記号だけを出さない**（ユーザー指示）＝ 言葉が付いて出ること */
+        const rxBlocks = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => { if (b.kind === 'reaction') rxBlocks.push({ p, b }); }));
+        assert(rxBlocks.length >= 1, '反応式のブロックが1つも無い（器を足した意味が確かめられない）');
+        rxBlocks.forEach(({ p, b }) => {
+            assert(W.REF_LEVELS.indexOf(b.level) >= 0, `${p.id}: 反応式の印「${b.level}」が3値のどれでもない`);
+            const el = book.renderBlock(b);
+            const lv = el.querySelector('.ref-rx-level');
+            assert(lv && lv.textContent.indexOf(b.level) >= 0 && lv.textContent.indexOf(words[b.level]) >= 0,
+                `${p.id}: 反応式の印に言葉が添えられていない（記号だけを出さない・「${lv && lv.textContent}」）`);
+            // 左辺・右辺が両方出ていること（矢印だけの式にならない）
+            assert(flat(el.textContent).indexOf(flat(b.left)) >= 0 && flat(el.textContent).indexOf(flat(b.right)) >= 0,
+                `${p.id}: 反応式の左辺か右辺が出ていない`);
+        });
+
+        /* ── ① 節のアンカーが一意で、目次と本文が1対1 ── */
+        let nSec = 0;
+        for (const p of pages) {
+            const secs = (p.blocks || []).filter(b => b.kind === 'section');
+            const toc = book.renderToc(p);
+            if (!secs.length) { assert(!toc, `${p.id}: 節が無いのに目次が出ている`); continue; }
+            nSec += secs.length;
+            const seen = new Set();
+            secs.forEach(s => {
+                assert(!seen.has(s.anchor), `${p.id}: 節のアンカー「${s.anchor}」が2回出てくる（# で飛ぶ先が定まらない）`);
+                seen.add(s.anchor);
+                const el = book.renderBlock(s);
+                assert(el.id === W.REF_ANCHOR_PREFIX + s.anchor, `${p.id}: 節の id が ${el.id} になっている`);
+                assert(flat(el.textContent).indexOf(flat(s.lead)) >= 0,
+                    `${p.id}: 節「${s.title}」に「この節で分かること」が出ていない`);
+            });
+            assert(toc, `${p.id}: 節が ${secs.length} 個あるのに目次が組めない`);
+            const links = [...toc.querySelectorAll('a')];
+            assert(links.length === secs.length,
+                `${p.id}: 目次が ${links.length} 行で、節の ${secs.length} 個と合わない`);
+            links.forEach((a, i) => {
+                assert(a.getAttribute('href') === '#' + W.REF_ANCHOR_PREFIX + secs[i].anchor,
+                    `${p.id}: 目次の ${i + 1} 行目の行き先が本文の節と違う`);
+                assert(flat(a.textContent) === flat(secs[i].title),
+                    `${p.id}: 目次の ${i + 1} 行目の文字が節の見出しと違う`);
+            });
+        }
+        assert(nSec >= 1, '節（:::section）が1つも無い');
+
+        /* ── ③ 図が実在し、面Aと面Bで**同じ URL** から画像として返る ──
+           ⚠ `src` は原稿ではファイル名だけ。URL を組むのは `learn.js` の1か所なので、
+             **ここで組み直さず、実際に描かせたものの `src` を見る**（2本目の組み立てを作らない）。 */
+        const figs = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => { if (b.kind === 'figure') figs.push({ p, b }); }));
+        assert(figs.length >= 1, '図（:::figure）が1つも無い');
+        for (const { p, b } of figs) {
+            const img = book.renderBlock(b).querySelector('img');
+            assert(img, `${p.id}: :::figure に img が無い`);
+            const url = img.getAttribute('src');
+            assert(url === W.REF_IMG_DIR + b.src,
+                `${p.id}: 図の URL が ${url}（原稿は「${b.src}」）—— 組んでいるのは learn.js の1か所のはず`);
+            assert(url.charAt(0) === '/',
+                `${p.id}: 図の URL が相対（${url}）＝ 面Aと面Bで別の場所を探すことになる`);
+            assert(img.getAttribute('alt') && img.getAttribute('alt').length >= 6,
+                `${p.id}: 図に alt が無い（画像が出ない人に何も伝わらない）`);
+            const res = await fetch('..' + url + FRESH());
+            assert(res.ok, `${p.id}: 図が読めない（${url}・HTTP ${res.status}）`
+                + '。reference-img/ に在るか、_config.yml で除外していないか');
+            assert(/^image\//.test(res.headers.get('content-type') || ''),
+                `${p.id}: ${url} が画像として返ってこない（${res.headers.get('content-type')}）`);
+        }
+
+        /* ── ⑤ 面Aの目次は **renderToc から焼いたもの** ──
+           ★ `REF18` ① と同じ手（焼いたものと、その場でアプリに組ませたものを突き合わせる）。 */
+        for (const p of pages) {
+            const doc = parse(await grab(`../reference/${p.id}/index.html`, `参考書のページ ${p.id}`));
+            const live = book.renderToc(p);
+            const baked = doc.querySelector('.ref-toc');
+            if (!live) { assert(!baked, `/reference/${p.id}/: 節が無いのに目次が焼かれている`); continue; }
+            assert(baked, `/reference/${p.id}/: 目次が焼かれていない（節が ${(p.blocks || []).filter(b => b.kind === 'section').length} 個ある）`);
+            const got = [...baked.querySelectorAll('a')].map(a => a.getAttribute('href') + '|' + flat(a.textContent));
+            const want = [...live.querySelectorAll('a')].map(a => a.getAttribute('href') + '|' + flat(a.textContent));
+            assert(got.join('\n') === want.join('\n'),
+                `/reference/${p.id}/: 焼いた目次が、いまアプリが組む目次と違う（焼き直し忘れ？）\n`
+                + `    焼いたもの: ${got.join(' / ').slice(0, 120)}\n`
+                + `    アプリから: ${want.join(' / ').slice(0, 120)}`);
+            /* 焼いた本文の側に、その id の節が実在すること（目次が空振りしない） */
+            got.forEach(g => {
+                const id = g.split('|')[0].slice(1);
+                assert(doc.getElementById(id), `/reference/${p.id}/: 目次が指す #${id} が本文に無い`);
+            });
+        }
+
+        /* ── ② 用語の索引の行き先が、実在する節を指す ──
+           ⚠ 索引は**機械で組む**（§19-7）ので、ここでは「行き先が生きているか」だけを見る。
+             ★ 何行あるべきかは書かない（節と terms が増えれば増える）。 */
+        const terms = parse(await grab('../reference/terms/index.html', '用語の索引'));
+        const rows = [...terms.querySelectorAll('.terms a[href]')];
+        assert(rows.length >= nSec,
+            `用語の索引が ${rows.length} 行で、節の数（${nSec}）より少ない（節の見出しは全部載る約束）`);
+        const anchorsOf = new Map(pages.map(p => [p.id,
+            new Set((p.blocks || []).filter(b => b.kind === 'section').map(b => W.REF_ANCHOR_PREFIX + b.anchor))]));
+        rows.forEach(a => {
+            const m = a.getAttribute('href').match(/^\/reference\/([a-z0-9-]+)\/#(.+)$/);
+            assert(m, `用語の索引の行き先が節を指していない（${a.getAttribute('href')}）`);
+            const set = anchorsOf.get(m[1]);
+            assert(set, `用語の索引がページ「${m[1]}」を指しているが、そんなページは無い`);
+            assert(set.has(m[2]),
+                `用語「${flat(a.textContent).slice(0, 20)}」の行き先 #${m[2]} が ${m[1]} に無い`
+                + '（節を消したか、アンカーを変えて焼き直し忘れたか）');
+        });
+        /* ★ 節の見出しは1つ残らず索引に出ている（＝ 索引が「一部だけ」にならない） */
+        const listed = new Set(rows.map(a => a.getAttribute('href')));
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'section') return;
+            assert(listed.has(`/reference/${p.id}/#${W.REF_ANCHOR_PREFIX}${b.anchor}`),
+                `節「${b.title}」（${p.id}）が用語の索引に出ていない`);
+        }));
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====

@@ -37,16 +37,52 @@
     var PAGE_OPTIONAL_KEYS = ['video'];
     var VIDEO_ID_RE = /^[A-Za-z0-9_-]{6,20}$/;
 
-    /* `:::` の囲み。**`learn.js` の `renderBlock` が実際に描ける4種だけ**。
-       ⚠ 5つ目を足すときは learn.js と**両方**直す（`REF17` が突き合わせて赤くする）。
-       order … JSON のキーの並び / req … 必須 / list … 配列でもよい / prose … 本文の記法が効く */
+    /* `:::` の囲み。**`learn.js` の `renderBlock` が実際に描ける種類だけ**。
+       ⚠ 足すときは learn.js と**両方**直す（`REF17` ③ が突き合わせて赤くする）。
+       order … JSON のキーの並び / req … 必須 / list … 配列でもよい / prose … 本文の記法が効く
+       bool … true / false だけ（`ordered`） / enum … 決まった語だけ（`level` / `tone`）
+
+       ★ 上の6つは 2026-09-09（設計書 §19）に足したもの。**発端はユーザーの申し立て**
+         「参考書の中身は全面的に修正したい／化学学習者が参照する参考書になっていない」——
+         ⚠ それまで書けたのは**段落と、機械が組む4つの表／例題だけ**で、
+         **見出し・箇条書き・図・化学反応式・手で書く表が1つも書けなかった。** */
+    var LEVELS = ['★★★', '★★☆', '★☆☆'];
+    var TONES = ['caution', 'memorize', 'skip'];
     var BLOCK_SPECS = {
+        /* 節の見出し。`anchor` が `id="ref-sec-<anchor>"` になり、目次と用語の索引の行き先になる。
+           ⚠ `lead`（この節で分かること）は**必須** —— 検索から着地した人が最初に読む1行なので、
+              「見出しだけ在って何の節か分からない」を作らない（設計書 §19-1） */
+        section: { order: ['anchor', 'title', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'] },
+        /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
+        list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'] },
+        /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。
+           `/reference-img/` を付けるのは learn.js の1か所（面A・面Bで同じ URL になる） */
+        figure: { order: ['src', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
+        /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
+           `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒） */
+        reaction: { order: ['left', 'over', 'under', 'right', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], enum: { level: LEVELS } },
+        /* ★★ 手で書く表（機械が行を作れないもの）。セルは ` | ` で切る。
+           ⚠⚠ **`source` は必須。** `REF5` は「行データの欄（`rows` ほか）を持たない」を
+              **著作権の守り**として掛けている（手打ちの表が構造上存在できなければ転写事故は起きない）。
+           ★ ここだけ穴を開けるので、**代わりに「その行がどこから来たか」を書かせる** ——
+             書けないなら、それはどこかから持ってきている（前書きの `why` と同じ考え・§1-2）。 */
+        table: { order: ['caption', 'source', 'head', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
+        /* 注意の囲み。⚠ `tone` は3つだけ（勘違いしやすい／丸暗記でよい／覚えなくてよい） */
+        callout: { order: ['tone', 'text'], req: ['tone', 'text'], list: [], prose: ['text'], enum: { tone: TONES } },
+
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
         dehydrationTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
         example: { order: ['stageId', 'lead', 'note'], req: ['stageId', 'lead', 'note'], list: [], prose: ['lead', 'note'] }
     };
     var KINDS = Object.keys(BLOCK_SPECS);
+
+    /* 図のファイル名。⚠ **名前だけ**（`/` も `..` も許さない）。置き場所を .md 側から動かせない形にする */
+    var FIGURE_SRC_RE = /^[a-z0-9][a-z0-9-]*\.png$/;
+    /* 節のアンカー。⚠ URL の `#` の後ろに出るので、英小文字・数字・ハイフンだけ */
+    var ANCHOR_RE = /^[a-z0-9][a-z0-9-]*$/;
+    /* 手で書く表のセルの区切り */
+    var CELL_SEP = '|';
 
     /* 前書きのうち「読者に見える文字列」ではないもの ＝ 記法を通さず、素のままであること
        （`unitLabel` / `group` / `title` は `textContent` と `escapeRefText` で出るので、
@@ -224,23 +260,76 @@
         if (!spec) fail(where, '「:::' + kind + '」は描けない種類です（書けるのは ' + KINDS.join(' / ') + '）');
         var kv = parseKV(inner, where + ' の :::' + kind).map;
         var block = { kind: kind };
+        var enums = spec.enum || {}, bools = spec.bool || [];
         spec.order.forEach(function (k) {
             if (!Object.prototype.hasOwnProperty.call(kv, k)) {
                 if (spec.req.indexOf(k) >= 0) fail(where, ':::' + kind + ' に「' + k + '」がありません');
                 return;
             }
-            var v = kv[k];
+            var v = kv[k], at = where + ' の ' + k;
+            /* ★ 記法を通すかどうかは `prose` で決まる。**配列の要素にも通す** ——
+               通さないと `items:` と `rows:` の中で強調も下付きも書けない（設計書 §19-3 ②） */
+            var conv = spec.prose.indexOf(k) >= 0 ? inline : plain;
             if (Array.isArray(v)) {
                 if (spec.list.indexOf(k) < 0) fail(where, ':::' + kind + ' の「' + k + '」は1行の値です');
-                block[k] = v.map(function (s) { return plain(s, where + ' の ' + k); });
+                block[k] = v.map(function (s) { return conv(s, at); });
+            } else if (bools.indexOf(k) >= 0) {
+                if (v !== 'true' && v !== 'false') fail(where, ':::' + kind + ' の「' + k + '」は true か false です（いまは「' + v + '」）');
+                block[k] = (v === 'true');
+            } else if (enums[k]) {
+                /* ⚠ **綴り違いを黙って通さない。** `★★` や `Caution` はここで止まる ——
+                   通すと「印が付いているのに何も出ない」ページが混ざる */
+                if (enums[k].indexOf(v) < 0) fail(where, ':::' + kind + ' の「' + k + '」は ' + enums[k].join(' / ') + ' のどれかです（いまは「' + v + '」）');
+                block[k] = v;
             } else {
-                block[k] = spec.prose.indexOf(k) >= 0 ? inline(v, where + ' の ' + k) : plain(v, where + ' の ' + k);
+                /* ⚠ `series` のように **1行でも並びでもよい**キーがある（既存の3ページがそう書いている）ので、
+                   「並びでしか書けない」は `listOnly` に挙げたものだけに掛ける */
+                if ((spec.listOnly || []).indexOf(k) >= 0) fail(where, ':::' + kind + ' の「' + k + '」は「  - 値」の並びで書きます（1件でも）');
+                block[k] = conv(v, at);
             }
         });
         Object.keys(kv).forEach(function (k) {
             if (spec.order.indexOf(k) < 0) fail(where, ':::' + kind + ' に知らないキー「' + k + '」があります（書けるのは ' + spec.order.join(' / ') + '）');
         });
+        checkBlock(block, where);
         return block;
+    }
+
+    /* 種類ごとの決めごと（形が通ったあとに見るもの） */
+    function checkBlock(b, where) {
+        if (b.kind === 'section') {
+            if (!ANCHOR_RE.test(b.anchor)) {
+                fail(where, ':::section の anchor は英小文字・数字・ハイフンで書きます（URL の # の後ろに出ます。いまは「' + b.anchor + '」）');
+            }
+        }
+        if (b.kind === 'figure') {
+            /* ⚠ **パスを書かせない。** 置き場所（reference-img/）を .md 側から動かせると、
+               面Aと面Bで別の場所を指す図ができる（設計書 §19-4） */
+            if (!FIGURE_SRC_RE.test(b.src)) {
+                fail(where, ':::figure の src は reference-img/ の中のファイル名だけを書きます'
+                    + '（英小文字・数字・ハイフン ＋ .png。パスや .. は書けません。いまは「' + b.src + '」）');
+            }
+            /* ⚠ `alt` は**画像が出ない人が読む文**。空でも「図」でもなく、中身を言うこと */
+            if (b.alt.length < 6) fail(where, ':::figure の alt（画像が出ないときに読まれる文）が短すぎます: 「' + b.alt + '」');
+        }
+        if (b.kind === 'table') {
+            /* ⚠ 行の出どころ。★ 短い語（「スライド」）で済ませられないよう長さを見る */
+            if (b.source.length < 8) {
+                fail(where, ':::table の source（この行がどこから来たか）が短すぎます: 「' + b.source + '」'
+                    + '\n    ★ 手で書く表はここだけ REF5 の「行データを持たない」の外に出るので、出どころを必ず書きます');
+            }
+            /* ⚠ 列の数がそろっていない表は、画面では「1列ずれた表」として**それらしく出てしまう** */
+            var n = b.head.length;
+            if (n < 2) fail(where, ':::table の head は2列以上です');
+            b.rows.forEach(function (row, i) {
+                var cells = row.split(CELL_SEP);
+                if (cells.length !== n) {
+                    fail(where, ':::table の ' + (i + 1) + ' 行目のセルが ' + cells.length + ' 個で、head の ' + n + ' 列と違います'
+                        + '（セルは「 | 」で区切ります）\n    → ' + row.slice(0, 80));
+                }
+            });
+        }
+        if (b.kind === 'list' && !b.items.length) fail(where, ':::list の items が空です');
     }
 
     /* ===== 書き出し =========================================================== */
@@ -287,6 +376,10 @@
         PAGE_OPTIONAL_KEYS: PAGE_OPTIONAL_KEYS,
         BLOCK_SPECS: BLOCK_SPECS,
         KINDS: KINDS,
+        LEVELS: LEVELS,
+        TONES: TONES,
+        CELL_SEP: CELL_SEP,
+        FIGURE_DIR: '/reference-img/',
         parsePage: parsePage,
         serialize: serialize,
         expectedLineCount: expectedLineCount,
