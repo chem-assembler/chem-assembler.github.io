@@ -167,6 +167,12 @@ let coeffOk = false;
 let eqMode = "molecular";
 let reactionDone = false;
 let cleared = false;
+/* ★ 2026-09-08・§7-3 —— 係数が合った瞬間の自動再生は**ステージにつき1回だけ**。
+   autoPlayed は「もう自動で走らせたか」（釦の名も これで変わる）、
+   playedFromCoeffs は「いまビーカーにある姿が係数どおりか」＝ 結びの言い方を分けるための印。 */
+let autoPlayed = false;
+let playedFromCoeffs = false;
+let freeTryOpen = false;
 let particleLayer = null;
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -2685,25 +2691,58 @@ function buildStageNav() {
   });
 }
 
+/* ★ 2026-09-08（§7-3・§7-4）—— 既定の顔は「▶ 再生」と「↺ やり直す」の2つだけ。
+   ＋ボタンと ⚡反応させる は**取り上げず**、「⚗ 別の係数比を試す」に畳む。
+   ユーザーの言葉は「オプションで、別な係数比を試すことも可能」＝ 残すが既定ではない。
+
+   ⚠ **セレクタは変えない**（`#toolbar .add` / `#toolbar .react`）。畳んだ `<details>` の中でも
+   `click()` は届くので、これらで書かれた既存の回帰テストは意味を保ったまま動く。 */
 function buildToolbar() {
   toolbarEl.innerHTML = "";
   const stage = STAGES[stageIdx];
+  const play = document.createElement("button");
+  play.id = "playBtn";
+  play.className = "play";
+  play.onclick = () => playCoeffAnimation();
+  const reset = document.createElement("button");
+  reset.className = "reset";
+  reset.textContent = "↺ やり直す";
+  reset.onclick = () => initStage();
+  toolbarEl.append(play, reset);
+
+  const free = document.createElement("details");
+  free.className = "freeTry";
+  free.id = "freeTry";
+  free.open = freeTryOpen;
+  free.addEventListener("toggle", () => {
+    freeTryOpen = free.open;
+    try { localStorage.setItem("ioneq_freetry", free.open ? "open" : "closed"); } catch (e) { /* 無視 */ }
+  });
+  const sum = document.createElement("summary");
+  sum.textContent = "⚗ 別の係数比を試す（自分で入れて反応させる）";
+  free.appendChild(sum);
+  const row = document.createElement("div");
+  row.className = "freeRow";
   for (const sp of stage.reactants) {
     const b = document.createElement("button");
     b.className = "add";
     b.textContent = "＋ " + SPECIES[sp].disp;
     b.onclick = () => addMolecule(sp);
-    toolbarEl.appendChild(b);
+    row.appendChild(b);
   }
   const react = document.createElement("button");
   react.className = "react";
   react.textContent = "⚡ 反応させる";
   react.onclick = doReact;
-  const reset = document.createElement("button");
-  reset.className = "reset";
-  reset.textContent = "↺ やり直す";
-  reset.onclick = () => initStage();
-  toolbarEl.append(react, reset);
+  row.appendChild(react);
+  free.appendChild(row);
+  const tip = document.createElement("div");
+  tip.className = "hint freeHint";
+  tip.innerHTML = "💡 <b>イオンをドラッグ</b>して相手に重ねると、1組だけ反応させられる。" +
+    "「⚡ 反応させる」は一度に全部。ちょうど反応しきる個数の比が、そのまま係数の比。";
+  free.appendChild(tip);
+  toolbarEl.appendChild(free);
+  refreshPlayBtn();
 }
 
 /* ---- 比予想クイズ ----
@@ -2857,7 +2896,10 @@ function stageGoalText(stage) {
   return `ちょうど中和して 塩 ${SPECIES[salt].disp} をつくる`;
 }
 
-function initStage() {
+/* ビーカーだけを初期状態に戻す（★ 係数・クリア状態には触らない）。
+   2026-09-08・§7-3 —— 自動再生と「▶ もう一度再生」がここを呼ぶ。
+   `initStage()` との違いは**右のパネル（係数・図・クリアの帯）を作り直さないこと**だけ。 */
+function resetBeaker() {
   for (const p of particles) if (p.el) p.el.remove();
   particles = [];
   groups = [];
@@ -2876,10 +2918,63 @@ function initStage() {
   sequenceRunning = 0;
   reactionZone = null;
   reactionDone = false;
-  coeffOk = false;
-  cleared = false;
+  playedFromCoeffs = false;
   drawBeakerStatic();
   particleLayer = mk("g", {});
+  const stage = STAGES[stageIdx];
+  // 加水分解・電離は、人に数を並べさせずアプリが置く（prefillPartial のコメントを見よ）
+  const prefill = partialRule(stage);
+  if (prefill) prefillPartial(stage);
+  setMsg(prefill ? stage.intro + partialPrefillNote(stage, prefill) : stage.intro);
+  refreshHUD();
+  updateAddedFormula();
+}
+
+/* 係数どおりの姿を再生する（§7-2・§7-3。ユーザー指示「その係数に合わせたアニメーションが
+   自動的に再生される、もう一度再生するボタンを用意する」）。
+
+   ⚠ **入れる数をここに書かない。** クリアの条件は「原子と電荷がつり合い、かつ最簡整数比」
+   ＝ 正解した時点で入れるべき数は一意に決まるので、`sampleInputs(stage)` から**導く**
+   （分子式の左辺の係数。加水分解・電離は per）。ここに数を書くと、データを直したとき
+   「係数は合っているのに反応しきらない」画面が黙ってできる。
+   ⚠ **入力欄の数をそのまま使えない** —— イオン反応式で解いたステージは項が違う
+   （s5 は分子 1:1:1:2 / イオン 1:1:1 で、ビーカーに入れるのは分子のほう）。
+
+   ★ 途中まで自分で入れてある状態の上に足さず、**ビーカーを空にしてから**始める。
+   足し算で始めると、いま見えている姿が「係数どおり」なのかが読めなくなる。 */
+function playCoeffAnimation() {
+  const stage = STAGES[stageIdx];
+  resetBeaker();
+  const need = sampleInputs(stage);
+  // 加水分解・電離は resetBeaker がすでに per 個置いている（二重に置かない）
+  if (!partialRule(stage)) {
+    stage.reactants.forEach((sp, i) => {
+      for (let k = 0; k < (need[i] || 0); k++) addMolecule(sp);
+    });
+  }
+  autoPlayed = true;
+  playedFromCoeffs = true;
+  refreshPlayBtn();
+  buildClearBanner();
+  // 落ちて電離しきってから反応させる（schedule は advance() で決定論的に進む＝テストできる）
+  schedule(0.9, () => doReact());
+  // 携帯の縦並びでは右のパネルとビーカーが離れているので、見る場所まで運ぶ
+  try { beakerSvg.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { /* 古い実装でも無視 */ }
+}
+
+/* 再生の釦は「係数が正解か」と「もう再生したか」で顔が変わるので、作り直さず書き換える */
+function refreshPlayBtn() {
+  const b = document.getElementById("playBtn");
+  if (!b) return;
+  b.disabled = !coeffOk;
+  b.textContent = autoPlayed ? "▶ もう一度再生" : "▶ 係数どおりに再生";
+  b.title = coeffOk ? "係数どおりに入れて反応させる" : "係数が正解になると再生できる";
+}
+
+function initStage() {
+  coeffOk = false;
+  cleared = false;
+  autoPlayed = false;
   buildStageNav();
   buildToolbar();
   buildRatioQuiz();
@@ -2912,12 +3007,8 @@ function initStage() {
   buildRecombine();
   netionEl.hidden = true;
   clearEl.hidden = true;
-  // 加水分解・電離は、人に数を並べさせずアプリが置く（prefillPartial のコメントを見よ）
-  const prefill = partialRule(stage);
-  if (prefill) prefillPartial(stage);
-  setMsg(prefill ? stage.intro + partialPrefillNote(stage, prefill) : stage.intro);
-  refreshHUD();
-  updateAddedFormula();
+  resetBeaker();
+  refreshPlayBtn();
 }
 
 /* テスト・監査用フック（UI からは使わない）。
