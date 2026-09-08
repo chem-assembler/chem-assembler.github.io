@@ -3344,6 +3344,117 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 }
 .ref-index-btn span { display: block; font-size: 11.5px; color: var(--text-muted); }
 
+/* ============================================================================
+ * ★★ 器を広げたぶん（2026-09-09・設計書 §19）
+ *
+ * ⚠ **面A（`/reference/`）はこの規則を `tools/gen-reference-pages.mjs` が切り出して埋める**
+ *   （書き写さない・§17-3 ③）。★ 焼いた HTML に出てくる `.ref-*` の class に規則が1つも
+ *   無ければ生成器が赤くなるので、**ここに書き忘れると気づける**。
+ * ========================================================================== */
+
+/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる */
+.ref-sec { margin: 22px 0 10px; scroll-margin-top: 12px; }
+.ref-sec-h {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: #e0b0ff;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+/* ★ 「この節で分かること」1行。⚠ 本文と同じ見た目にしない（着地した人が最初に読む文なので） */
+.ref-sec-lead { margin: 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+
+/* ★ 節の目次。**markup は面Aと同じ**（`<nav class="ref-toc"><details>`）で、
+   狭いこのペインでは「上の折りたたみ」、面Aの広い画面では左に固定される（CSS だけの違い） */
+.ref-toc { margin: 0 0 14px; }
+.ref-toc details {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-toc summary { padding: 7px 10px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.ref-toc ul { list-style: none; margin: 0; padding: 0 10px 8px; }
+.ref-toc li { margin: 0 0 4px; }
+.ref-toc a { font-size: 12.5px; color: #e0b0ff; text-decoration: none; line-height: 1.6; }
+
+/* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
+.ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
+.ref-list li { margin: 0 0 5px; }
+
+/* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
+   参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
+.ref-figure { margin: 0 0 14px; }
+.ref-figure-img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    /* ⚠ スライドは白地なので、暗い器の上にそのまま置くと図が浮く。地を白にして囲む */
+    background: #fff;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+}
+.ref-figure-cap { font-size: 11.5px; color: var(--text-muted); margin: 5px 0 0; line-height: 1.6; }
+
+/* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
+.ref-rx {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+/* ⚠ **記号だけを出さない**（言葉を添える。ユーザー指示・§18-3） */
+.ref-rx-level { font-size: 11.5px; margin-bottom: 6px; letter-spacing: 0.04em; }
+.ref-rx-lv1 { color: #ffd166; }
+.ref-rx-lv2 { color: var(--text-secondary); }
+.ref-rx-lv3 { color: var(--text-muted); }
+/* ⚠ 折り返しを許す（狭いペインで式が横に溢れると、右辺が読めない） */
+.ref-rx-eq {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+.ref-rx-side { white-space: nowrap; }
+/* 矢印の上下に条件（試薬・温度・触媒）。★ 空なら高さも取らない */
+.ref-rx-arrow { display: inline-flex; flex-direction: column; align-items: center; min-width: 4.5em; }
+.ref-rx-over, .ref-rx-under { font-size: 10.5px; color: var(--neon-cyan, #7ef); line-height: 1.3; white-space: nowrap; }
+.ref-rx-over:empty, .ref-rx-under:empty { display: none; }
+.ref-rx-bar { font-size: 17px; line-height: 1; color: var(--text-secondary); }
+
+/* ★ 手で書く表（機械が行を作れないもの）。
+   ⚠ **`.ref-table` とは別の class** —— あちらは「stages.json の系列から作った表」の物差し
+      （`REF8`/`REF9`/`REF10`）が掛かっている（`.ref-map-table` と同じ判断） */
+.ref-hand-table { width: 100%; border-collapse: collapse; font-size: 12.5px; line-height: 1.6; }
+.ref-hand-table th, .ref-hand-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-hand-table th { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); font-weight: 600; white-space: nowrap; }
+
+/* 注意の囲み。⚠ 札の言葉は learn.js の `REF_TONE_WORDS`（記号だけにしない） */
+.ref-callout {
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border-left: 3px solid var(--border-color);
+    border-radius: 0 8px 8px 0;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
+.ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+.ref-callout-caution { border-left-color: #ffd166; }
+.ref-callout-caution .ref-callout-tag { color: #ffd166; }
+.ref-callout-memorize { border-left-color: var(--neon-purple); }
+.ref-callout-memorize .ref-callout-tag { color: #e0b0ff; }
+.ref-callout-skip { border-left-color: var(--text-muted); }
+
 /* 手持ちレイアウトではヘッダーが 44px（`header { height: 44px }` と同じブロックの条件を使う）。
    ⚠ **条件は §スマホ対応の見出しにある3行のどれか**（`PT1` が写し間違いを見張っている）。
       `(max-width: 899px)` 単独で書いたら PT1 が「よそもの」として赤くした（実発生）。
