@@ -171,6 +171,7 @@ let cleared = false;
    autoPlayed は「もう自動で走らせたか」（釦の名も これで変わる）、
    playedFromCoeffs は「いまビーカーにある姿が係数どおりか」＝ 結びの言い方を分けるための印。 */
 let autoPlayed = false;
+let autoPlayQueued = false;
 let playedFromCoeffs = false;
 let freeTryOpen = false;
 let particleLayer = null;
@@ -2609,14 +2610,32 @@ recombineBtn.onclick = () => {
 
    ⚠ **ビーカーを取り上げるのではない。** ＋ボタンも ⚡反応させる もそのまま残る。
    変わったのは「どちらが本体か」だけで、実験は**正解のあとに確かめる道**になった。
-   自分で先に実験した人には、その事実を帯の文で認める（reactionDone の分岐）。 */
+   自分で先に実験した人には、その事実を帯の文で認める（reactionDone の分岐）。
+
+   ★ 2026-09-08（§7-3）—— **係数が合った瞬間に、係数どおりの姿を自動で再生する。**
+   ここは `onCoeffChange()` と `evaluateReaction()` の両方が通る一本道なので、自動再生の
+   引き金もここに1つだけ置く（分岐ごとに置くと必ずどれか抜ける）。 */
 function maybeClear() {
-  if (!coeffOk) return;
+  if (!coeffOk) { refreshPlayBtn(); return; }
   if (!cleared) {
     cleared = true;
     slTrack("stage_clear", { app: "ion-equation", stage: String(stageIdx + 1) });
   }
   buildClearBanner();
+  refreshPlayBtn();
+  /* ⚠ **すでに実験した人（reactionDone）の画面は勝手に消さない。**
+     自動再生はビーカーを空にしてから入れ直すので、自分で並べた姿が消える。
+     「自動が親切」より「勝手に消さない」を採り、釦だけ出す（§7-3）。
+     ⚠ 自動再生の中の doReact() → evaluateReaction() がここへ戻ってくるので、
+     **予約した時点で** `autoPlayQueued` を立てて二重起動を止める
+     （`autoPlayed` は釦の名を決める印なので、実際に走ってから立てる）。 */
+  if (!autoPlayed && !autoPlayQueued && !reactionDone) {
+    autoPlayQueued = true;
+    // ⚠ 予約は取り消せない（events から抜く口が無い）ので、**発火した側で** まだ有効かを見る。
+    // 予約と発火のあいだに人が「▶ 再生」や「確かめる」を押していたら、ここは何もしない
+    // （押さないと、せっかく走らせた再生が 0.35 秒後に頭から巻き戻される）
+    schedule(0.35, () => { if (autoPlayQueued) playCoeffAnimation(); });
+  }
 }
 
 /* クリアの帯。**反応させたかどうかで中身が変わる**ので、
@@ -2629,14 +2648,15 @@ function buildClearBanner() {
     ? "クリア！ 反応式が完成し、ビーカーの実験ともそろった。"
     : "クリア！ 反応式が完成した。水の中で本当にそうなるか、ビーカーで確かめよう。";
   clearEl.appendChild(t);
-  // 正解後のオプション ——「確かめる」を1押しで走らせる。
-  // 入れる数は sampleInputs（模範の投入数）から導く＝ここに数を書かない
+  /* 帯からもビーカーへ入れる（★ 呼ぶ先は再生の釦と**同じ** playCoeffAnimation）。
+     ⚠ ふつうは自動再生が先に走るので、この釦が出るのは
+     「自分で先に実験してあって自動再生を見送った」場合だけになる（§7-3）。 */
   if (!reactionDone) {
     const c = document.createElement("button");
     c.id = "confirmBtn";
     c.className = "confirm";
     c.textContent = "▶ ビーカーで確かめる";
-    c.onclick = () => runConfirm(c);
+    c.onclick = () => playCoeffAnimation();
     clearEl.appendChild(c);
   }
   if (stageIdx < STAGES.length - 1) {
@@ -2649,25 +2669,6 @@ function buildClearBanner() {
     d.textContent = "全ステージクリア！おつかれさま。";
     clearEl.appendChild(d);
   }
-}
-
-/* 「▶ ビーカーで確かめる」—— 正解のあとに実験を1押しで走らせる（§6-2 のオプション）。
-
-   ⚠ **入れる数を書かない。** `sampleInputs(stage)` が模範の投入数を持っている
-   （加水分解・電離は per 個、ほかは左辺の係数）。ここに数を書くと、
-   データを直したとき「確かめたのに反応しきらない」画面になる。
-   ⚠ 自分で先に入れてある人のぶんは足りないぶんだけ足す（入れ直さない）。 */
-function runConfirm(btn) {
-  const stage = STAGES[stageIdx];
-  const need = sampleInputs(stage);
-  stage.reactants.forEach((sp, i) => {
-    for (let k = addedCount[sp] || 0; k < (need[i] || 0); k++) addMolecule(sp);
-  });
-  if (btn) { btn.disabled = true; btn.textContent = "▶ 確かめ中…"; }
-  // 落ちて電離しきってから反応させる（schedule は advance() で決定論的に進む＝テストできる）
-  schedule(0.9, () => doReact());
-  // 携帯の縦並びでは帯とビーカーが離れているので、見る場所まで運ぶ
-  try { beakerSvg.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) { /* 古い実装でも無視 */ }
 }
 
 /* 見出し名。番号はデータに持たず**並び順から作る**
@@ -2953,9 +2954,10 @@ function playCoeffAnimation() {
     });
   }
   autoPlayed = true;
+  autoPlayQueued = false;
   playedFromCoeffs = true;
   refreshPlayBtn();
-  buildClearBanner();
+  if (cleared) buildClearBanner();
   // 落ちて電離しきってから反応させる（schedule は advance() で決定論的に進む＝テストできる）
   schedule(0.9, () => doReact());
   // 携帯の縦並びでは右のパネルとビーカーが離れているので、見る場所まで運ぶ
@@ -2975,6 +2977,7 @@ function initStage() {
   coeffOk = false;
   cleared = false;
   autoPlayed = false;
+  autoPlayQueued = false;
   buildStageNav();
   buildToolbar();
   buildRatioQuiz();
@@ -3028,6 +3031,9 @@ window.IonEq = {
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
     return {
       counts, made: madeCount, reactionDone, coeffOk, cleared, stageIdx, eqMode,
+      // §7-3 の自動再生。autoPlayed は「もう走らせたか」、playedFromCoeffs は
+      // 「いまビーカーにある姿が係数どおりか」（結びの言い方がこれで変わる）
+      autoPlayed, autoPlayQueued, playedFromCoeffs,
       // 段取り演出の途中か（予約された動きが残っているか）。監査が「静止＝おしまい」と
       // 誤って判断しないための手がかり
       busy: sequenceRunning > 0 || events.length > 0,
@@ -3071,6 +3077,8 @@ window.IonEq = {
    初見の画面がビーカーではなく説明で埋まる。開けばこの先ずっと覚えている。 */
 /* 比予想クイズの開閉を覚える。遊び方パネルと同じで、一度開いた人には開いたまま出す */
 try { ratioQuizOpen = localStorage.getItem("ioneq_ratioquiz") === "open"; } catch (e) { /* file:// 等で不可でも無視 */ }
+/* 「⚗ 別の係数比を試す」の開閉も覚える（§7-4）。既定は閉じ */
+try { freeTryOpen = localStorage.getItem("ioneq_freetry") === "open"; } catch (e) { /* file:// 等で不可でも無視 */ }
 
 const howtoEl = document.getElementById("howto");
 if (howtoEl) {
