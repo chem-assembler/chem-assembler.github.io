@@ -22,10 +22,20 @@
 
     /* ===== 書式の定義（ここが唯一の台帳） ===================================== */
 
-    /* ページの前書き。**JSON のキーの並びはここが決める**（.md に書く順は自由）。 */
-    var PAGE_KEYS = ['id', 'unit', 'unitLabel', 'group', 'title', 'codes', 'source', 'singleSource', 'why'];
+    /* ページの前書き。**JSON のキーの並びはここが決める**（.md に書く順は自由）。
+       ★ `summary` / `video` は面A（`/reference/` の公開ページ・§17）のために足したもの。 */
+    var PAGE_KEYS = ['id', 'unit', 'unitLabel', 'group', 'title', 'summary', 'codes', 'source', 'singleSource', 'video', 'why'];
     var PAGE_LIST_KEYS = ['codes', 'source'];      // `key:` ＋ `  - 値` で書く
     var PAGE_BOOL_KEYS = ['singleSource'];
+
+    /* ⚠ **任意でよいのは「まだ実体が無いもの」だけ**（設計書 §17-2）。
+       `video` … 解説動画は 2026-09-08 時点で **0本**。⚠ 値は **YouTube の動画ID**
+                 （`video-scripts/` の台本 id ではない —— 埋め込むには配信先の id が要るので、
+                   台本 id を許すと「埋め込めない値が書式上は通る」ことになる）。
+       ⚠ `summary` は**必須**にした。5枚とも いま書けるし、
+          **検索結果に出る文を機械が勝手に決めると、ユーザーが校正できない**（§16 の目的と逆向き）。 */
+    var PAGE_OPTIONAL_KEYS = ['video'];
+    var VIDEO_ID_RE = /^[A-Za-z0-9_-]{6,20}$/;
 
     /* `:::` の囲み。**`learn.js` の `renderBlock` が実際に描ける4種だけ**。
        ⚠ 5つ目を足すときは learn.js と**両方**直す（`REF17` が突き合わせて赤くする）。
@@ -41,7 +51,7 @@
     /* 前書きのうち「読者に見える文字列」ではないもの ＝ 記法を通さず、素のままであること
        （`unitLabel` / `group` / `title` は `textContent` と `escapeRefText` で出るので、
          ここにタグを書くとタグが**そのまま画面に出る**。だから素であることを機械で見る） */
-    var PAGE_PLAIN_KEYS = ['id', 'unit', 'unitLabel', 'group', 'title', 'why'];
+    var PAGE_PLAIN_KEYS = ['id', 'unit', 'unitLabel', 'group', 'title', 'summary', 'video', 'why'];
 
     /* ⚠ **エスケープ記法は用意していない**（§16-2(2)）。
        本文に出せない ASCII はこの5文字だけで、全角の `＊` と波ダッシュ `〜`（U+301C）は今までどおり使える。
@@ -127,7 +137,13 @@
         var fm = parseKV(lines.slice(1, end), where + ' の前書き').map;
         var page = {};
         PAGE_KEYS.forEach(function (k) {
-            if (!Object.prototype.hasOwnProperty.call(fm, k)) fail(where, '前書きに「' + k + '」がありません');
+            if (!Object.prototype.hasOwnProperty.call(fm, k)) {
+                /* ★ 任意のキーは**書かなければキーごと出さない**（`null` や空文字を置かない）——
+                   面Aは「キーが在るか」だけで枠を出すかを決めるので、
+                   空文字が入ると「枠は出すが中身が空」という第3の状態ができてしまう */
+                if (PAGE_OPTIONAL_KEYS.indexOf(k) >= 0) return;
+                fail(where, '前書きに「' + k + '」がありません');
+            }
             var v = fm[k];
             if (PAGE_LIST_KEYS.indexOf(k) >= 0) {
                 if (!Array.isArray(v)) fail(where, '前書きの「' + k + '」は「  - 値」の並びで書きます（1件でも）');
@@ -145,6 +161,16 @@
         });
         if (!/^[a-z0-9][a-z0-9-]*$/.test(page.id)) fail(where, 'id は英小文字・数字・ハイフンで書きます（いまは「' + page.id + '」）');
         if (page.why.length < 20) fail(where, 'why（この表を作った理由）が短すぎます。書けないなら、その表はどこかから持ってきています（設計書 §1-2）');
+        /* ★ `summary` は **検索結果に出る文**（`<meta name="description">`・索引のカード・OGP）。
+           ⚠ 長さを見るのは体裁のためではない —— 短すぎると何のページか伝わらず、
+              長すぎると**途中で切られて意味が変わる**（検索結果は 120 字前後で切られる）。 */
+        if (page.summary.length < 30 || page.summary.length > 140) {
+            fail(where, 'summary（検索結果に出る1〜2文）は 30〜140 字で書きます（いまは ' + page.summary.length + ' 字）'
+                + '\n    → ' + page.summary.slice(0, 60));
+        }
+        if (Object.prototype.hasOwnProperty.call(page, 'video') && !VIDEO_ID_RE.test(page.video)) {
+            fail(where, 'video は YouTube の動画ID を書きます（英数字と - _ だけ。いまは「' + page.video + '」）');
+        }
 
         page.blocks = parseBody(lines.slice(end + 1), where);
         return page;
@@ -231,7 +257,8 @@
     function serialize(pages) {
         var out = ['['];
         pages.forEach(function (p, pi) {
-            var head = PAGE_KEYS.filter(function (k) { return k !== 'why'; })
+            // ★ 書かれなかった任意のキーは**キーごと出さない**（parsePage の注記どおり）
+            var head = PAGE_KEYS.filter(function (k) { return k !== 'why' && Object.prototype.hasOwnProperty.call(p, k); })
                 .map(function (k) { return JSON.stringify(k) + ':' + JSON.stringify(p[k]); }).join(',');
             out.push('{' + head + ',');
             out.push('"why":' + JSON.stringify(p.why) + ',');
@@ -257,6 +284,7 @@
 
     return {
         PAGE_KEYS: PAGE_KEYS,
+        PAGE_OPTIONAL_KEYS: PAGE_OPTIONAL_KEYS,
         BLOCK_SPECS: BLOCK_SPECS,
         KINDS: KINDS,
         parsePage: parsePage,

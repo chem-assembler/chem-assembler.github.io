@@ -4,6 +4,7 @@ unit: aliphatic
 unitLabel: 脂肪族炭化水素
 group: アルカン
 title: アルカンの命名
+summary: 直鎖アルカン10種の名称・分子式・炭素数を1つの表に並べ、一般式 CnH2n+2 がどこから出てくるのかを読み取ります。組んで確かめる例題つき。
 codes:
   - org.ali.alkane-names
   - org.ali.formula-alkane

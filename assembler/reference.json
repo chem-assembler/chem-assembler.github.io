@@ -1,5 +1,5 @@
 [
-{"id":"alkane-naming","unit":"aliphatic","unitLabel":"脂肪族炭化水素","group":"アルカン","title":"アルカンの命名","codes":["org.ali.alkane-names","org.ali.formula-alkane"],"source":["stages:アルカン（直鎖）"],"singleSource":false,
+{"id":"alkane-naming","unit":"aliphatic","unitLabel":"脂肪族炭化水素","group":"アルカン","title":"アルカンの命名","summary":"直鎖アルカン10種の名称・分子式・炭素数を1つの表に並べ、一般式 CnH2n+2 がどこから出てくるのかを読み取ります。組んで確かめる例題つき。","codes":["org.ali.alkane-names","org.ali.formula-alkane"],"source":["stages:アルカン（直鎖）"],"singleSource":false,
 "why":"C が1つ増えるたびに名前と分子式がどう動くかは、10行を縦に並べて初めて「規則」の形で見える —— 1行では見えないから表にした。行の中身は assembler が既に持っている出題順（stages.json の系列「アルカン（直鎖）」10件）から機械で組んでおり、どの本の表も見ていない。",
 "blocks":[
 {"kind":"text","text":"直鎖のアルカンは、炭素を1列につないで、余った手をぜんぶ水素でうめただけの分子です。つなぎ方に選択の余地がないので、<b>名前は炭素の数だけで決まります</b>。"},
@@ -9,7 +9,7 @@
 {"kind":"text","text":"この表が決めているのは、枝のない1列のつなぎ方の名前だけです。枝分かれがあると、同じ分子式でも別の分子になります（C₄H₁₀ はブタンと 2-メチルプロパンの2つ）。"},
 {"kind":"example","stageId":"hexane","lead":"ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素を6個つないでヘキサンを組みます。","note":"組み上がりの判定は、いつものパズルと同じお題（アルカン（直鎖）の6問目）がそのまま受け持ちます。"}
 ]},
-{"id":"alkane-isomers","unit":"aliphatic","unitLabel":"脂肪族炭化水素","group":"異性体・命名","title":"同じ分子式で、別の分子","codes":["org.ali.isomer-classification","org.ali.iso-c4h10","org.ali.iso-c5h12","org.ali.iso-count","org.ali.name-mainchain","org.ali.name-numbering"],"source":["stages:異性体をつくる（枝分かれアルカン）"],"singleSource":false,
+{"id":"alkane-isomers","unit":"aliphatic","unitLabel":"脂肪族炭化水素","group":"異性体・命名","title":"同じ分子式で、別の分子","summary":"炭素4〜7個の枝分かれアルカン15種を分子式ごとにまとめた表。同じ分子式の行が並ぶことが構造異性体そのもので、総数が2・3・5・9と増える様子が見えます。","codes":["org.ali.isomer-classification","org.ali.iso-c4h10","org.ali.iso-c5h12","org.ali.iso-count","org.ali.name-mainchain","org.ali.name-numbering"],"source":["stages:異性体をつくる（枝分かれアルカン）"],"singleSource":false,
 "why":"分子式が同じ行が2つ以上並ぶことそのものが「構造異性体」の実物で、C4 から C7 までのあいだに枝分かれが 1→2→4→8 と増えていく増え方は、15件を分子式ごとにまとめて縦に見て初めて規則の形になる —— 1行だけ出すと「2-メチルブタンという分子がある」で終わって規則にならない。行は assembler が既に持っている出題順（stages.json の系列「異性体をつくる（枝分かれアルカン）」15件）から機械で組み、分子式も主鎖の長さもお題の図から計算しているので、どの本の表も見ていない。",
 "blocks":[
 {"kind":"text","text":"炭素が4個以上になると、1列につなぐほかに<b>枝分かれ</b>のつなぎ方ができます。原子の種類と数（＝分子式）は同じなのに、つながり方が違う別の分子になる —— これが<b>構造異性体</b>です。"},
@@ -19,7 +19,7 @@
 {"kind":"text","text":"いちばん右の列（主鎖の炭素の数）も一緒に見てください。<b>同じ分子式でも主鎖の長さが違う</b>ことがあります。C₅H₁₂ では 2-メチルブタンの主鎖が4本（母体はブタン）、2,2-ジメチルプロパンの主鎖は3本（母体はプロパン）。<b>名前の後半が変わるのは、主鎖の長さが変わるから</b>です。"},
 {"kind":"example","stageId":"2-methylbutane","lead":"ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素4個の鎖に炭素1個の枝を付けて 2-メチルブタン を組みます。","note":"組み上がりの判定は、いつものパズルと同じお題（異性体をつくる（枝分かれアルカン）の2問目）がそのまま受け持ちます。"}
 ]},
-{"id":"functional-groups","unit":"alcohol","unitLabel":"アルコールとカルボニル化合物","group":"官能基","title":"官能基のかたちと名前","codes":["org.alcohol.hydroxy","org.alcohol.class","org.alcohol.formula","org.alcohol.ether-props","org.alcohol.oxidation","org.carbonyl.formyl","org.carbonyl.ketone-def","org.carbonyl.formula-isomer"],"source":["stages:アルコールとエーテル","stages:アルデヒドとケトン"],"singleSource":false,
+{"id":"functional-groups","unit":"alcohol","unitLabel":"アルコールとカルボニル化合物","group":"官能基","title":"官能基のかたちと名前","summary":"アルコール・エーテル・アルデヒド・ケトン11種を分子式と官能基つきで一覧に。名前の語尾と図のかたちの対応、1級と2級で酸化の行き先が変わることが読み取れます。","codes":["org.alcohol.hydroxy","org.alcohol.class","org.alcohol.formula","org.alcohol.ether-props","org.alcohol.oxidation","org.carbonyl.formyl","org.carbonyl.ketone-def","org.carbonyl.formula-isomer"],"source":["stages:アルコールとエーテル","stages:アルデヒドとケトン"],"singleSource":false,
 "why":"「名前の語尾」と「図の中のかたち」が1対1で対応していることは、11件を1つの表に並べて初めて対応表の形になる —— 1件だけ見ても「エタノールには -OH がある」で終わる。さらにアルコールと、それを酸化した相手（メタノール↔ホルムアルデヒド・エタノール↔アセトアルデヒド・2-プロパノール↔アセトン）を同じ表に入れているので、1級と2級で行き先が変わることが行どうしの対比として見える。qa の単元をまたぐ（alcohol と carbonyl）のはそのためで、片方だけの表にするとこの対比が消える。行は stages.json の2系列（アルコールとエーテル8件・アルデヒドとケトン3件）から機械で組み、分子式も官能基もお題の図から計算しているので、どの本の表も見ていない。",
 "blocks":[
 {"kind":"text","text":"有機化合物は、炭素と水素でできた骨格に、はたらきを決める部分がくっついた形をしています。この部分を<b>官能基</b>といい、<b>名前の語尾も、示す性質も、官能基で決まります</b>。"},
@@ -29,7 +29,7 @@
 {"kind":"text","text":"その行き先も、同じ表の中にあります。メタノール→ホルムアルデヒド、エタノール→アセトアルデヒド（どちらも1級）、2-プロパノール→アセトン（2級）。名前の語尾も見てください —— <b>-オール</b>なら −OH、<b>〜エーテル</b>なら −O−、<b>〜アルデヒド</b>なら −CHO。ケトンの代表であるアセトンは慣用名ですが、規則どおりに呼べば 2-プロパノンで、語尾は <b>-オン</b> です。"},
 {"kind":"example","stageId":"2-propanol","lead":"ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素3個の真ん中の炭素に −OH を付けて 2-プロパノール を組みます。","note":"組み上がりの判定は、いつものパズルと同じお題（アルコールとエーテルの4問目）がそのまま受け持ちます。"}
 ]},
-{"id":"reaction-mechanisms","unit":"reaction","unitLabel":"有機反応","group":"反応機構","title":"反応の道すじ（反応機構）","codes":["org.ali.alkane-chlorination","org.ali.alkene-br2","org.ali.alkene-h2o","org.carbonyl.acetaldehyde-prep","org.carbonyl.ester-water-origin","org.aro.halogenation","org.aro.nitration","org.aro.sulfonation","org.aroN.diazotization","org.aroN.coupling"],"source":["reactions:all"],"singleSource":false,
+{"id":"reaction-mechanisms","unit":"reaction","unitLabel":"有機反応","group":"反応機構","title":"反応の道すじ（反応機構）","summary":"付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。","codes":["org.ali.alkane-chlorination","org.ali.alkene-br2","org.ali.alkene-h2o","org.carbonyl.acetaldehyde-prep","org.carbonyl.ester-water-origin","org.aro.halogenation","org.aro.nitration","org.aro.sulfonation","org.aroN.diazotization","org.aroN.coupling"],"source":["reactions:all"],"singleSource":false,
 "why":"反応式は「何ができるか」しか言わないので、付加・置換・脱離・縮合といった型のちがいは生成物だけを見ても付かない。登録済みの14件を型でまとめて縦に並べて初めて、型が何種類あって、どれが何段の中間体を経るのかが一望できる —— 1件だけ開くと「エステル化はこう動く」で終わって、型の地図にならない。行は reaction.js が起動時に読んでいる reactions.json の14件をそのまま並べたもので、型も名前も説明も段数もその1件から機械で取っており、どの本の表も見ていない。",
 "blocks":[
 {"kind":"text","text":"反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。"},
@@ -40,7 +40,7 @@
 {"kind":"text","text":"<b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。"},
 {"kind":"text","text":"いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの「<b>⚗ 反応させる・調べる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。"}
 ]},
-{"id":"alcohol-dehydration","unit":"alcohol","unitLabel":"アルコールとカルボニル化合物","group":"アルコールの反応","title":"アルコールを脱水するとどのアルケンになるか","codes":["org.alcohol.dehydration","org.alcohol.zaitsev","org.ali.ethanol-dehydration","org.ali.ethylene-prep"],"source":["alcohols:CnH2n+2O (n=1..5)"],"singleSource":false,
+{"id":"alcohol-dehydration","unit":"alcohol","unitLabel":"アルコールとカルボニル化合物","group":"アルコールの反応","title":"アルコールを脱水するとどのアルケンになるか","summary":"炭素1〜5個のアルコール16種と、分子内脱水でできるアルケンの対応表。行き先が重なる組、2つできる組（ザイツェフ則）、脱水できない2つが一望できます。","codes":["org.alcohol.dehydration","org.alcohol.zaitsev","org.ali.ethanol-dehydration","org.ali.ethylene-prep"],"source":["alcohols:CnH2n+2O (n=1..5)"],"singleSource":false,
 "why":"アルコールと、それを分子内脱水してできるアルケンの対応は、1件ずつ見ると「エタノールからエテンができる」で終わってしまい、規則の形にならない。C1 から C5 までのアルコール16件を縦に並べて初めて、(1) 別々のアルコールが同じアルケンに行き着くことがある（1-プロパノールと2-プロパノールはどちらもプロペン）、(2) −OH の隣に炭素が2種類あるアルコールは2つのアルケンを作り分ける、(3) 脱水できないアルコールが2つある、の3つが同時に見える。とくに (3) は、脱水できる行だけを並べた表からは絶対に見えない —— 書き出しの練習からは「答えが0個になるので器が組めない」という理由で外してあるが、それは出題の都合であって、俯瞰の表から外す理由にはならない。行は書き出し練習とまったく同じ2本（列挙器 enumerateConstitutionalIsomers が返す C1〜C5 のアルコールを、返ってきた順のまま／生成物は ipDehydrationEdges）から機械で組んでおり、どの本の表も見ていない。",
 "blocks":[
 {"kind":"text","text":"アルコールに濃硫酸を加えて熱すると、<b>−OH と、その隣の炭素についている水素 H</b> がまとめて水 H₂O として抜け、抜けたあとの2つの炭素のあいだに二重結合ができます。分子1つの中だけで起きるので<b>分子内脱水</b>といい、できるのは<b>アルケン</b>です。"},
