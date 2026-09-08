@@ -1929,8 +1929,9 @@ function runUiTests(doc, DATA) {
               "複数選択の選択肢と採点ボタンが出ていない＝その場で解ける形になっていない");
             var bb = a.D.getElementById("back-band");
             assert(bb && !bb.classList.contains("hidden"), "来た道の帯が出ない（片道になっている）");
-            assert(bb.textContent.indexOf("参考書") >= 0,
-              "帯が相手の名前を言っていない（" + bb.textContent.trim() + "）");
+            assert(bb.textContent.indexOf("参考書から来ました") >= 0,
+              "帯が「参考書から来ました」と言っていない（" + bb.textContent.trim() + "）。" +
+              "⚠ 「戻りました」はこちらが送り出した相手（assembler / ion）だけの言い方");
             // 往復（CLAUDE.md）。⚠ 埋め込まれているので `_top` でタブごと戻す
             var back = a.D.querySelector("#back-band .bb-back");
             assert(back && back.getAttribute("href") === "../reference/",
