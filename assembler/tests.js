@@ -32220,10 +32220,28 @@
          * ⚠ レビューの実測: `?open=reference` と `?quest=` を指すリンクが**リポジトリに 0 本**だった。
          *   受け口だけ増やして入口を作らないと、機能は在るのに誰にも届かない。
          *   ★ ここで名指しで固定する ＝ ハブから消したら赤（数ではなく名前で引く）。 */
-        ['reference', 'experiment'].forEach(name => {
+        ['experiment'].forEach(name => {
             assert(seenOpen.has(name),
                 `ハブの単元表に ?open=${name} を指す行が無い（受け口はあるのに入口が無い状態に戻っている）`);
         });
+
+        /* ★ `reference` だけは道が1本増えた（v1524・面A の新設）。
+         *
+         * ハブの単元表は `?open=reference`（アプリの中の資料ペイン＝面B）ではなく
+         * **`/reference/`（URL を持つ読み物＝面A）**を指すようになった。
+         * ⚠ 入口が減ったわけではない —— 面Aの各ページが `?open=reference` を指しているので、
+         * **ハブ → /reference/ → ?open=reference** と2手でつながる。
+         * ★ そこで「ハブの表に1本あるか」ではなく、**この鎖が切れていないか**を見る。
+         * ⚠ 鎖のどちらが切れても赤になるので、見張りとしては前より強い。 */
+        const toFaceA = [...hub.querySelectorAll('a[href*="/reference/"]')];
+        assert(toFaceA.length >= 1,
+            'ハブから /reference/（参考書の面A）へのリンクが1本も無い'
+            + '（★ /isomers/ 13枚が孤立してインデックスされなかったのと同じ形）');
+        const faceA = await fetch('../reference/alkane-naming/', { cache: 'no-cache' });
+        assert(faceA.ok, '面A の1枚目（/reference/alkane-naming/）が読めない');
+        assert((await faceA.text()).includes('open=reference'),
+            '面A のページが ?open=reference を指していない'
+            + '（ハブ → 面A → 面B の鎖が切れた ＝ 資料ペインへの入口が無い）');
     });
 
     /* ===== EX1: 絞り込みモードの受け口（DESIGN_paid_workbook.md「効く順 ①」・D-W11） =====
