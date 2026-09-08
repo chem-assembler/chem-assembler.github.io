@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=203">
+<link rel="stylesheet" href="style.css?v=vNNNN">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v203</div>
+  <div class="version">vNNNN</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -193,6 +193,11 @@
              ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ -->
         <div id="saltStep" hidden>
           <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせる — 高さがそろえば1つの化学種</div>
+          <!-- ★ 硝酸の二役（rn1・rn2）を1行で言う場所（2026-09-08・レーン rx-sheet）。
+               v203 まではここに相当する説明が筆算⑤の下の図（#molFigure）にあったが、
+               図は⑥のブロックと役割が重なるので降ろし、**文だけ**残した。
+               中身は model.js の acidRoleText が bottlePlan から導く（該当しない反応では空） -->
+          <div id="acidRoleNote" hidden></div>
           <div id="bottlePool"></div>
           <div id="blocksWrap">
             <svg id="saltBlocks" viewBox="0 0 360 200" role="img" aria-label="陽イオンと陰イオンを価数の高さで積み上げる図"></svg>
@@ -217,11 +222,11 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=203"></script>
-<script src="schematic.js?v=203"></script>
+<script src="model.js?v=vNNNN"></script>
+<script src="schematic.js?v=vNNNN"></script>
 <!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
-<script src="blocks.js?v=203"></script>
-<script src="header-ui.js?v=203"></script>
-<script src="redox.js?v=203"></script>
+<script src="blocks.js?v=vNNNN"></script>
+<script src="header-ui.js?v=vNNNN"></script>
+<script src="redox.js?v=vNNNN"></script>
 </body>
 </html>
