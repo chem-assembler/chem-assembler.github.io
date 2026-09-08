@@ -48,6 +48,20 @@ const PAGES = [
     ['/privacy.html', 'privacy.html'],
 ];
 
+/* 参考書の面A（`tools/gen-reference-pages.mjs` が生成）も走査で拾う。
+   ⚠ **枚数はこれから 52 グループぶんまで増える**（PAGES_52.md）ので、
+   手で足す方式にすると、原稿を1枚足すたびに sitemap への追記を忘れる。
+   ★ 並びは `reference-src/ORDER.txt` が正だが、sitemap の順は検索側には意味がないので
+     ディレクトリ名でそろえる（＝ 生成のたびに順が揺れない）。 */
+const referenceDir = path.join(ROOT, 'reference');
+if (fs.existsSync(referenceDir)) {
+    PAGES.push(['/reference/', 'reference/index.html']);
+    fs.readdirSync(referenceDir, { withFileTypes: true })
+        .filter(d => d.isDirectory())
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(d => PAGES.push([`/reference/${d.name}/`, `reference/${d.name}/index.html`]));
+}
+
 /* 異性体ページ（`tools/gen-isomer-pages.mjs` が生成）は**枚数が増えるので走査で拾う**。
    PAGES に手で足す方式だと、分子式を追加したときに sitemap への追記を忘れる。 */
 const isomerDir = path.join(ROOT, 'isomers');
