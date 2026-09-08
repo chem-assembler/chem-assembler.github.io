@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末と開発用の駆動を計測から外す。
+     (1) **localhost / 127.0.0.1 / *.local / file:// は無条件で止める**。ここが一番の穴だった:
+         GA4 の (direct) 1,394 セッションのうち **1,366（98%）がホスト名 localhost** ＝ ボットではなく
+         自分たちの回帰テストと開発だった（2026-08-12 に判明）。(2) の印は localStorage ＝
+         **オリジンごと**なので、本番で押しても localhost 側には一切効かない。だから印より先に見る
+     (2) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
+         IP での内部トラフィック除外は、リレーだと出口が変わり携帯回線だと他人と共有するため
+         この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す
+     (3) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
+         **回帰テストがキーイベントまで GA4 へ送っていた**（(direct) に古い版つきの URL が実データとして
+         記録されていた）。iframe の src を1つずつ直す手もあるが、tests.js が動的に作る iframe が
+         20か所以上あって取りこぼす。**読み込まれた側で気づく**ほうが確実。
+         top が別オリジンなら参照で例外になるので、外部サイトへの正当な埋め込みは止めない -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+<meta name="robots" content="noai, noimageai">
+<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
+<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SchoolLenz">
+<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
+<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>/* ★ この5つは面Aの器だけの色（表と例題の色は assembler/style.css の :root から
+   切り出したものが下に続く ＝ アプリと同じ色で出る） */
+:root{--bg:#0a0c10;--panel:#0f141c;--line:rgba(255,255,255,.10);--fg:#f5f6fa;--dim:#a0a8c0;--accent:#00f2fe}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Sans JP",system-ui,sans-serif;line-height:1.8}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px}
+header{border-bottom:1px solid var(--line);padding:10px 0;font-size:13px}
+header a{color:var(--dim);text-decoration:none}
+header a:hover{color:var(--accent)}
+h1{font-size:clamp(21px,4.6vw,31px);margin:26px 0 10px;line-height:1.45}
+h2{font-size:17px;margin:36px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:15px;margin:26px 0 8px;color:var(--dim)}
+.lede{color:var(--dim);margin:0 0 20px;font-size:15px}
+.unit-label{display:inline-block;font-size:12px;color:var(--dim);border:1px solid var(--line);
+border-radius:999px;padding:2px 11px;margin:0 6px 6px 0}
+/* 索引 */
+.idx{list-style:none;padding:0;margin:0 0 26px;display:grid;gap:12px}
+.idx li{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.idx a{display:block;padding:14px 16px;text-decoration:none;color:var(--fg)}
+.idx a:hover{border-color:var(--accent)}
+.idx b{display:block;font-size:16px;margin-bottom:5px}
+.idx span{display:block;font-size:13px;color:var(--dim);line-height:1.7}
+/* 本文（表と例題の規則は assembler/style.css から切り出したものが下に続く） */
+.ref-scope{font-size:15.5px}
+.ref-scope .ref-p{font-size:15.5px;line-height:1.95}
+/* ⚠ 表は**器の幅いっぱいに引き伸ばさない**（ペインは 340px なので 100% でよいが、
+   860px の読み物では「C の数」の列が 250px になって数字と名称が離れる） */
+.ref-scope .ref-table{font-size:14px;width:auto}
+.ref-scope .ref-mech-table,.ref-scope .ref-map-table{font-size:14px}
+.ref-scope .ref-cap{font-size:13px;margin-bottom:8px}
+.ref-scope .ref-table-wrap{margin-bottom:26px}
+.ref-scope .ref-example{font-size:14.5px}
+.ref-scope .ref-example h4{font-size:15px}
+.ref-scope .ref-note{font-size:13px}
+.ref-scope a.ref-try,.ref-scope a.ref-mech-play{display:inline-block;text-decoration:none}
+/* 埋め込み（★ 押してから読み込む。置いただけで相手の page_view が飛ばないように） */
+.embed{margin:26px 0;padding:18px;background:var(--panel);border:1px solid var(--accent);border-radius:12px}
+.embed b{display:block;font-size:15px;margin-bottom:4px}
+.embed p{margin:0;color:var(--dim);font-size:13.5px}
+.embed button{margin-top:12px;background:var(--accent);color:#06202a;font-weight:700;font-size:14px;
+border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
+.embed button:hover{filter:brightness(1.1)}
+.embed iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
+.embed .alt{display:inline-block;margin-top:10px;margin-left:14px;color:var(--accent);font-size:13px}
+/* 前後・索引へ */
+nav.seq{display:flex;flex-wrap:wrap;gap:14px;margin:34px 0;font-size:14px}
+nav.seq a{color:var(--accent);text-decoration:none}
+footer{border-top:1px solid var(--line);margin-top:36px;padding:16px 0 44px;color:var(--dim);font-size:12px}
+footer a{color:inherit}
+:root{--border-color:rgba(255, 255, 255, 0.08);--font-main:'Noto Sans JP', sans-serif;--neon-purple:#9b59b6;--text-muted:#606880;--text-primary:#f5f6fa;--text-secondary:#a0a8c0}
+.ref-p {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+/* 表そのもの。⚠ **10行そろって初めて規則が見える**ので、絞り込みも折りたたみも付けない
+   （DEVELOPMENT.md「参照は全体像で行う。部分を切り出して渡さない」） */
+.ref-table-wrap { overflow-x: auto; margin: 0 0 12px; }
+.ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-table th, .ref-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    white-space: nowrap;
+}
+.ref-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-table td.ref-c { text-align: right; color: var(--text-muted); }
+/* 分子式でまとめた群の見出し（第2ページ）。⚠ **行は1つも減らない** ——
+   左の1列を rowspan で共有するだけで、隠しても畳んでもいない（`REF4` が見えている行数で見張る） */
+.ref-table td.ref-group {
+    vertical-align: top;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* 官能基の列（第3ページ）。⚠ ここだけ折り返す —— 「1級アルコール×2」のような長い語が
+   nowrap のままだと表が横に伸びて、狭い画面で横スクロールしないと名称の列が読めない */
+.ref-table td.ref-fg { white-space: normal; min-width: 7.5em; }
+/* ⚠ ここは **--font-code を使わない**。装飾等幅では C が ⊏ に見えて読み取りづらい
+   （実機 375px で確認）。資料は読み物なので本文と同じ字で出す */
+.ref-table td.ref-formula { letter-spacing: 0.02em; }
+.ref-cap { font-size: 11.5px; color: var(--text-muted); margin: 0 0 6px; }
+/* 反応機構の表（第4ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   stages の表は「行に ▶ を置かない」（説明と練習の層を混ぜない・設計書 §10-2）が
+   機構の表は1行が読み物そのものなので ▶ を置く。class を分けておくと
+   `REF6`/`REF10` の「`table.ref-table` の中にボタンが無い」がそのまま生き続ける */
+.ref-mech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-mech-table th, .ref-mech-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-mech-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ref-mech-table td.ref-group {
+    vertical-align: top;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-mech-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 型の列も**折り返す**。「芳香族置換反応」を nowrap にすると、それだけで
+   資料ペイン（実測 271px）の3分の1を食う */
+.ref-mech-table td.ref-group { white-space: normal; width: 4.5em; }
+/* 反応名・1行説明・段数・▶ を1つの欄に入れる（どれも reactions.json の1件から）。
+   ⚠⚠ **4列にしない。** 実測（1280px・ペイン 320px・器 271px）で
+      「型 / 反応 / 段数 / ▶」は表が **426px** になり、**▶ が器の右外**（+155px）に出て
+      横スクロールしないと押せなかった ＝ **押すものが見えない** */
+.ref-mech-table td.ref-mech-name { white-space: normal; }
+.ref-mech-table td.ref-mech-name b { color: var(--text-primary); }
+.ref-mech-name .ref-mech-desc {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+.ref-mech-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+.ref-mech-steps { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+.ref-mech-play {
+    min-height: 32px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    font-family: var(--font-main);
+    font-size: 12.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+/* アルコールと脱水生成物の対応表（第5ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   `.ref-table` は「stages.json の系列から作った表」の印で、`REF8`/`REF9`/`REF10` が
+   その前提（行数＝系列の件数・名称が STAGES に在る）で見張っている。
+   この表の元は列挙器（`enumerateConstitutionalIsomers`）なので、混ぜると物差しが噛み合わない */
+.ref-map-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-map-table th, .ref-map-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-map-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-map-table td.ref-group {
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-map-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 名称の列は**折り返す**。「2,2-ジメチル-1-プロパノール」を nowrap にすると
+   それだけで 14em を占め、資料ペイン（実測 271px）では生成物の列が器の外へ出る */
+.ref-map-table td.ref-map-from { white-space: normal; min-width: 6.5em; }
+.ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
+/* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
+.ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
+.ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
+.ref-map-table .ref-map-none { color: var(--text-secondary); }
+.ref-map-table .ref-map-why {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+/* 例題（無料）。★ **新しい採点は作らない** —— 押すと既存のパズルのお題
+   （stages.json の `target` 照合）へ渡すだけ（設計書 §5-2 の (b)） */
+.ref-example {
+    border: 1px solid var(--neon-purple);
+    border-radius: 10px;
+    padding: 12px;
+    background: rgba(155, 89, 182, 0.10);
+}
+.ref-example h4 { margin: 0 0 8px; font-size: 13px; color: #e0b0ff; }
+.ref-try {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    font-family: var(--font-main);
+    font-size: 13.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.ref-note { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 8px 0 0; }</style>
+</head>
+<body>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<main class="wrap">
+<h1>反応の道すじ（反応機構）</h1>
+<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
+<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+
+<div class="ref-scope">
+<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
+<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
+<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
+<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
+<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
+<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの「<b>⚗ 反応させる・調べる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+</div>
+
+<h2>解けるか試す</h2>
+<div class="embed"><b>▶ 一問一答で解く（10問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.carbonyl.acetaldehyde-prep,org.carbonyl.ester-water-origin,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（10問・測定モード）">▶ 一問一答で解く（10問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.carbonyl.acetaldehyde-prep,org.carbonyl.ester-water-origin,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+
+<h2>読みながら組む</h2>
+<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
+
+<nav class="seq"><a href="/reference/functional-groups/">← 官能基のかたちと名前</a>
+<a href="/reference/">参考書の目次</a>
+<a href="/reference/alcohol-dehydration/">アルコールを脱水するとどのアルケンになるか →</a></nav>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
+  if (!b) return;
+  var f = document.createElement('iframe');
+  f.src = b.getAttribute('data-embed');
+  f.setAttribute('loading', 'lazy');
+  f.setAttribute('title', b.getAttribute('data-embed-title') || '');
+  b.parentNode.appendChild(f);
+  b.remove();
+});
+</script>
+</main>
+<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
+Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+</body>
+</html>

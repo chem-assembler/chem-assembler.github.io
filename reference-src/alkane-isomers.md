@@ -4,6 +4,7 @@ unit: aliphatic
 unitLabel: 脂肪族炭化水素
 group: 異性体・命名
 title: 同じ分子式で、別の分子
+summary: 炭素4〜7個の枝分かれアルカン15種を分子式ごとにまとめた表。同じ分子式の行が並ぶことが構造異性体そのもので、総数が2・3・5・9と増える様子が見えます。
 codes:
   - org.ali.isomer-classification
   - org.ali.iso-c4h10

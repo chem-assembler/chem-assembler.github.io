@@ -48920,6 +48920,148 @@
         assert(nCodes >= pages.length, 'codes が1件も無いページがある');
     });
 
+    /* ===== REF18: 面A ＝ /reference/ の公開ページ（v1524） =====
+     *
+     * ★ 設計は `DESIGN_reference_book.md` §17。発注書は
+     *   `ORDER_reference_faceA_2026-09-08.md`（R-1〜R-6）。
+     *
+     * ★★ **面Aは `tools/gen-reference-pages.mjs` が焼いた生成物**で、
+     *   本文は `reference.json`（＝ `REF17` が原稿と1バイト一致を見ている）から、
+     *   **表と例題は `learn.js` の `renderBlock` から**来る。
+     *
+     * ⚠⚠ **この検査の芯は「表を2か所で組んでいないこと」を*実測で*示すこと。**
+     *   ★ 焼いた HTML のブロックと、**その場でアプリに組ませたブロック**を突き合わせる ＝
+     *     `stages.json` を直して焼き直し忘れれば、ここが赤くなる。
+     *   ⚠ 比べるのは `textContent`（押しものはリンクに置き換わっているが、**文字は同じ**）。
+     *     段落だけは `innerHTML` で見る（`<b>` が落ちても文字は変わらないため）。
+     *
+     * ⚠ **playwright の要る `--check`（1バイト一致）はここでは走らない**（ブラウザだから）。
+     *   ★ こちらは**毎回の全走に必ず乗る軽いほう**で、発注書 §6 の①〜⑤を見る。
+     */
+    test('REF18: /reference/ は原稿とアプリから焼いたもの（手で直すと赤・ハブから届く）', async (c) => {
+        const W = c.W;
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`
+                + '。リポジトリのルートを配信しているか確かめること');
+            return await res.text();
+        };
+        const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
+        const flat = (s) => String(s).replace(/\s+/g, ' ').trim();
+
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        const book = W.referenceBook;
+        assert(book && typeof book.renderBlock === 'function', 'referenceBook が居ない');
+        await book.load();   // pageByCode は読み込み後でないと引けない
+
+        /* ── ② ⚠⚠ ハブから1本以上リンクが張ってあるか（`/isomers/` の轍） ──
+           ★ サイトマップに載っていても、**内部リンクが無いページはインデックスされない**
+             （2026-09-07 の実測。/isomers/ 13枚が1枚も入らなかった）。 */
+        const hub = parse(await grab('../index.html', '化学レンズのハブ'));
+        const hubLinks = [...hub.querySelectorAll('a[href]')]
+            .map(a => a.getAttribute('href')).filter(h => /(^|\/)reference\/$|\/reference\/[a-z0-9-]+\/$/.test(h));
+        assert(hubLinks.length >= 1,
+            'ルートのハブ（index.html）から /reference/ へのリンクが1本も無い'
+            + '（サイトマップに載せてもインデックスされない —— /isomers/ 13枚で実証済み）');
+
+        /* ── ③ 索引の並び ＝ reference.json を unit → group でまとめたもの ──
+           ⚠ `REF17` が「reference.json の並び ＝ ORDER.txt」を見ているので、
+             ここは reference.json を物差しにすれば **原稿の並びを見ていることになる**
+             （物差しを2本にしない）。 */
+        const wantIndex = [];
+        {
+            const units = [];
+            pages.forEach(p => {
+                let u = units.find(x => x.unit === p.unit);
+                if (!u) { u = { unit: p.unit, groups: [] }; units.push(u); }
+                let g = u.groups.find(x => x.name === p.group);
+                if (!g) { g = { name: p.group, ids: [] }; u.groups.push(g); }
+                g.ids.push(p.id);
+            });
+            units.forEach(u => u.groups.forEach(g => g.ids.forEach(id => wantIndex.push(id))));
+        }
+        const idx = parse(await grab('../reference/index.html', '参考書の索引'));
+        const gotIndex = [...idx.querySelectorAll('.idx a[href]')]
+            .map(a => (a.getAttribute('href').match(/\/reference\/([a-z0-9-]+)\//) || [])[1]);
+        assert(gotIndex.join(',') === wantIndex.join(','),
+            '索引の並びが原稿（ORDER.txt → reference.json）と違う\n'
+            + `    原稿から: ${wantIndex.join(', ')}\n`
+            + `    索引    : ${gotIndex.join(', ')}\n`
+            + '    ★ 直したら node tools/gen-reference-pages.mjs で焼き直すこと');
+
+        for (const p of pages) {
+            const where = `/reference/${p.id}/`;
+            const doc = parse(await grab(`../reference/${p.id}/index.html`, `参考書のページ ${p.id}`));
+
+            // 題と要約（検索結果に出る文）が原稿のものであること
+            assert(flat(doc.querySelector('h1').textContent) === flat(p.title),
+                `${where}: 見出しが原稿の title と違う`);
+            assert(doc.querySelector('meta[name="description"]').getAttribute('content') === p.summary,
+                `${where}: meta description が原稿の summary と違う`);
+
+            /* ── ① ★★ 本文・表・例題が「アプリに組ませたもの」と一致するか ──
+               ⚠ ここが「表を2か所で組んでいない」ことの実測。 */
+            const got = [...doc.querySelectorAll('.ref-scope > *')];
+            assert(got.length === p.blocks.length,
+                `${where}: ブロックの数が ${got.length} で、原稿の ${p.blocks.length} と違う（焼き直し忘れ？）`);
+            p.blocks.forEach((b, i) => {
+                const live = book.renderBlock(b);
+                assert(live, `${where}: learn.js が「${b.kind}」を描けない`);
+                if (b.kind === 'text') {
+                    assert(flat(got[i].innerHTML) === flat(b.text),
+                        `${where} の ${i + 1} 番目の段落が原稿と違う（生成物を手で直したか、直して焼き忘れたか）\n`
+                        + `    焼いたもの: ${flat(got[i].innerHTML).slice(0, 80)}\n`
+                        + `    原稿から  : ${flat(b.text).slice(0, 80)}`);
+                    return;
+                }
+                assert(flat(got[i].textContent) === flat(live.textContent),
+                    `${where} の ${i + 1} 番目（:::${b.kind}）が、いまアプリが組む中身と違う\n`
+                    + `    焼いたもの: ${flat(got[i].textContent).slice(0, 90)}\n`
+                    + `    アプリから: ${flat(live.textContent).slice(0, 90)}\n`
+                    + '    ★ stages.json / reactions.json を直したら node tools/gen-reference-pages.mjs で焼き直すこと');
+            });
+
+            // ⚠ 静的なページに、押しても何も起きないボタンを残さない
+            assert(!doc.querySelector('.ref-scope button'),
+                `${where}: 本文に <button> が残っている（静的なページでは押しても何も起きない）`);
+
+            /* ── ④ 埋め込みの行き先が、原稿の codes そのものであること ──
+               ⚠ URL を手で書き換えても赤（`REF17` ④ は「qa に実在するか」で、こちらは「原稿と同じか」）。 */
+            const embeds = [...doc.querySelectorAll('[data-embed]')].map(e => e.getAttribute('data-embed'));
+            const qaSrc = embeds.filter(u => u.indexOf('/qa/') === 0)[0];
+            assert(qaSrc, `${where}: 一問一答の埋め込みが無い`);
+            const sent = decodeURIComponent((qaSrc.match(/[?&]codes=([^&]+)/) || [])[1] || '').split(',');
+            assert(sent.join(',') === p.codes.join(','),
+                `${where}: 一問一答へ送るコードが原稿と違う\n    送っている: ${sent.join(', ')}\n    原稿      : ${p.codes.join(', ')}`);
+            assert(/[?&]mode=choice(&|$)/.test(qaSrc),
+                `${where}: 一問一答が測定モードで開かない（めくりは自己申告なので「解ける形」にならない）`);
+            const appSrc = embeds.filter(u => u.indexOf('/assembler/') === 0)[0];
+            assert(appSrc && appSrc.indexOf('code=' + encodeURIComponent(p.codes[0])) > 0,
+                `${where}: アプリの埋め込みが先頭コードを載せていない（着地するページを決めているのは code）`);
+            // ★ その先頭コードが、ほんとうにこのページへ戻ること（決めているのは pageByCode 1か所）
+            const back = book.pageByCode(p.codes[0]);
+            assert(back && back.id === p.id,
+                `${where}: 先頭コード「${p.codes[0]}」が別のページ（${back && back.id}）へ着地する`);
+
+            /* ── ⑤ 動画は `video:` が在るページだけ ── */
+            const frames = doc.body.innerHTML.match(/youtube[^"']*/g) || [];
+            if (p.video) {
+                assert(frames.some(f => f.indexOf(p.video) >= 0),
+                    `${where}: video: ${p.video} と書いてあるのに動画の枠が出ていない`);
+            } else {
+                assert(!frames.length,
+                    `${where}: video: が無いのに動画の枠が出ている（${frames[0]}）`);
+            }
+        }
+
+        /* ⚠ **いまは5枚とも `video:` を持たない**（解説動画は0本）＝ ⑤ は「枠が出ない」側しか
+           毎回は走らない。★ 出る側（`video:` を書いたら枠が出る）は
+           **原稿に1件入れて焼いて実測してある**（設計書 §17-9 の positive control）。
+           ⚠ ここに「1件も無いこと」を書き足さない —— 動画が1本できた日に、
+             直っているのに赤くなる検査になる。 */
+    });
+
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
      *
      * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。

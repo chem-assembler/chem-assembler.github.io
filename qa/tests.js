@@ -1901,6 +1901,72 @@ function runUiTests(doc, DATA) {
           } finally { a.kill(); }
         });
       });
+    }).then(function () {
+      /* ---- 範囲を指定して解く（`?codes=` ・v100） ----
+       *
+       * ★ 参考書の面A（`/reference/`）が **1ページぶんの知識コードをまとめて**送ってくる受け口。
+       *   設計は `DESIGN_reference_book.md` §17-4。ユーザー決定
+       *   「**一問一答は実際に試せる（解ける）形で埋める**」。
+       *
+       * ⚠⚠ **壊す手が動くのはこちら**（app.js）なので、こちらの緑で鳴るようにしておく ——
+       *   相手（参考書）は焼いた静的ページなので、受け口を外しても相手側は無傷に見える。
+       * ⚠ 見るのは4つ: ①まとめて解ける ②測定モードで来る ③知らないコードは黙って落とす
+       *   ④1件も引けなければ白紙にせず帯が理由を言う。 */
+      var many = DATA.patterns.slice(0, 3).map(function (p) { return p.code; });
+      return ta("範囲: ?codes= で来ると、その項目だけの回になる（参考書の埋め込み）", function () {
+        return openWith("&codes=" + many.map(encodeURIComponent).join(",") + "&from=reference").then(function (a) {
+          try {
+            assert(!a.D.getElementById("view-study").classList.contains("hidden"),
+              "?codes= で演習画面に着地しない（参考書の埋め込みが単元一覧に落ちる）");
+            assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/" + many.length,
+              many.length + " 項目の回になっていない（" + a.D.getElementById("q-of").textContent + "）");
+            var bf = a.W.QaEngine.backFrom();
+            assert(bf && bf.codes && bf.codes.length === many.length && bf.picked === many.length,
+              "受け取った件数が合わない（" + (bf && bf.picked) + " / " + many.length + "）");
+            // ★ 既定は**測定モード**（解ける形。めくりは自己申告なので「解く」にあたらない）
+            assert(bf.mode === "choice", "既定が測定モードでない（" + bf.mode + "）");
+            assert(a.D.querySelector("#card-host #opts .opt") && a.D.getElementById("btn-grade"),
+              "複数選択の選択肢と採点ボタンが出ていない＝その場で解ける形になっていない");
+            var bb = a.D.getElementById("back-band");
+            assert(bb && !bb.classList.contains("hidden"), "来た道の帯が出ない（片道になっている）");
+            assert(bb.textContent.indexOf("参考書から来ました") >= 0,
+              "帯が「参考書から来ました」と言っていない（" + bb.textContent.trim() + "）。" +
+              "⚠ 「戻りました」はこちらが送り出した相手（assembler / ion）だけの言い方");
+            // 往復（CLAUDE.md）。⚠ 埋め込まれているので `_top` でタブごと戻す
+            var back = a.D.querySelector("#back-band .bb-back");
+            assert(back && back.getAttribute("href") === "../reference/",
+              "参考書への戻り道が無い（片道になっている）");
+            assert(back.getAttribute("target") === "_top",
+              "戻り道が _top でない（iframe の中だけが参考書に変わって、参考書の中に参考書が入る）");
+          } finally { a.kill(); }
+        });
+      });
+    }).then(function () {
+      var mixed = DATA.patterns[0].code + ",org.no.such.item";
+      return ta("範囲: 知らないコードは黙って落とし、引けたぶんで解ける", function () {
+        return openWith("&codes=" + encodeURIComponent(DATA.patterns[0].code) + ",org.no.such.item&from=reference")
+          .then(function (a) {
+            try {
+              assert(!a.D.getElementById("view-study").classList.contains("hidden"),
+                "1件でも引ければ解ける回になるはず（" + mixed + "）");
+              assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
+                "引けた1件だけの回になっていない（" + a.D.getElementById("q-of").textContent + "）");
+              var bb = a.D.getElementById("back-band");
+              assert(/1\s*\/\s*2/.test(bb.textContent),
+                "帯が「2件のうち1件」を言っていない（" + bb.textContent.trim() + "）");
+            } finally { a.kill(); }
+          });
+      });
+    }).then(function () {
+      return ta("範囲: 1件も引けなければ白紙にせず、帯が理由を言う", function () {
+        return openWith("&codes=org.no.such.item,org.no.such.other&from=reference").then(function (a) {
+          try {
+            assert(!a.D.getElementById("view-home").classList.contains("hidden"),
+              "1件も引けないのに単元一覧を出していない（どこにも居ない状態になる）");
+            assert(a.D.querySelector("#back-band .bb-miss"), "見つからなかった見た目になっていない");
+          } finally { a.kill(); }
+        });
+      });
     }).then(function () { resolve(results); });
   });
 }
