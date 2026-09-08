@@ -1719,11 +1719,12 @@ node tools/verify-release.js assembler  … 版・化け・BOM・死にリンク
 | **C** | `reference.json` を `JSON.parse` → `JSON.stringify(a,null,2)` で書き戻す | ★ `REF5`「1ブロック1行でない（… 行 / 期待 … 行）」＋ `REF17` |
 | **D** | `ORDER.txt` の並びを入れ替えて生成し忘れる | ★ `REF17`「索引の順が原稿（ORDER.txt）と違う」 |
 | **E** | `codes` に実在しないコード（`org.ali.zzz`）を1件足す | ★ `REF17`「qa の 316 項目に無い」 |
-| **F** | `:::` の `kind` を `learn.js` が描けない名前（`foobarTable`）にする | ★ 生成器が赤（`renderBlock` から拾った4種に無い）＋ `REF5`「表のブロックが1つも無い」 |
+| **F** | `:::` の `kind` を `learn.js` が描けない名前（`foobarTable`）にする | ★ `--check` **と** `REF17` の両方が赤「『:::foobarTable』は描けない種類です（書けるのは stageTable / mechanismTable / dehydrationTable / example）」 |
 | **G** | 本文に生 HTML（`<i>強調</i>`）を書く | ★ 生成器が赤（変換のあとに `<` が残る） |
 | **H** | `**` の閉じを1つ落とす | ★ 生成器が赤（変換のあとに `*` が残る） |
-| **I** | 前書きから `why` を消す | ★ 生成器が赤（必須キー）＋ `REF5` |
+| **I** | 前書きから `why` を消す | ★ 生成器が赤「前書きに『why』がありません」 |
 | **J** | `.md` を1枚足して `ORDER.txt` に書かない | ★ `gen-reference.mjs --check` が赤（⚠ **ブラウザからは見えない**。§16-5 の役割分担） |
+| **K** | `ORDER.txt` に id を足して `.md` を置かない | ★ 同上（**逆向きも同じ1本で止まる**） |
 
 ### 16-9. ⚠ 発注書の指定のうち、現物と違っていたもの
 
