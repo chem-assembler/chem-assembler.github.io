@@ -47195,11 +47195,18 @@
         const pages = JSON.parse(text);
         assert(Array.isArray(pages) && pages.length >= 1, 'reference.json がページの配列でない');
 
-        // 1行1ページ・末尾追記（CLAUDE.md の作法。行数 = 件数 + 2）
+        /* ★ **1ブロック1行**（v1523 で「1ページ1行」から変えた。設計書 §16-4）。
+           ⚠ 変えた理由は `git diff` の読みやすさだけ ——
+              1ページ1行だと1文字直すたびに 2,048 字の行が丸ごと差分になっていた。
+           ★ 期待行数は **2 + Σ(4 + ブロック数)**（ページの頭・why・blocks の開き・ブロック・閉じ）。
+           ⚠ ここが見張るのは今までどおり「**書き戻されていないか**」で、
+              `JSON.parse` → `JSON.stringify` で書き戻すと行数が合わずに赤くなる。
+           ★★ 「原稿と食い違っていないか」はこの検査ではなく `REF17`（1バイト一致）の仕事。 */
         const lines = text.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
-        assert(lines.length === pages.length + 2,
-            `reference.json が「1行1ページ」でない（${lines.length}行 / ${pages.length}件・期待 ${pages.length + 2}行）。` +
-            'JSON.parse → JSON.stringify で書き戻していないか');
+        const wantLines = 2 + pages.reduce((n, p) => n + 4 + ((p.blocks || []).length), 0);
+        assert(lines.length === wantLines,
+            `reference.json が「1ブロック1行」の形でない（${lines.length}行 / 期待 ${wantLines}行・${pages.length}ページ）。` +
+            'JSON.parse → JSON.stringify で書き戻していないか（生成は node tools/gen-reference.mjs）');
 
         const BANNED = ['name', 'formula', 'atoms', 'bonds', 'target', 'rows'];
         pages.forEach(p => {
@@ -48813,6 +48820,104 @@
         });
         W.referenceBook.close();
         c.reset();
+    });
+
+    /* ===== REF17: 本文の正は reference-src/*.md（reference.json は生成物・v1523） =====
+     *
+     * ★ ユーザーの申し立て（2026-09-08）「**json だとこちらで校正ができないので、校正手順を
+     *   考えてください**」への答え。設計は `DESIGN_reference_book.md` §16。
+     *
+     * ★★ **この1本が守るのは「生成物を手で直せない」こと。**
+     *   ⚠ 向きは2つあり、どちらも同じ赤で捕まる:
+     *     ① `reference.json` を手で直した（原稿と食い違う）
+     *     ② `.md` を直して**生成し忘れた**（同じく食い違う）
+     *
+     * ⚠ 書式の実装は `tools/reference-md.js` の**1本だけ**を使う（test.html が読み込んでいる）。
+     *   ★ ここで parser を書き直すと、生成器とテストが別の書式を信じて
+     *     「緑なのに壊れている」が作れる ＝ **物差しを2本にしない。**
+     *
+     * ⚠⚠ **「原稿が余っている（.md を足して ORDER.txt に書いていない）」はここでは見えない**
+     *   —— HTTP でディレクトリの一覧が取れないため。★ そちらは
+     *   `node tools/gen-reference.mjs --check`（`verify-release.js` の規則10）が見る。
+     *   ★ `ORDER.txt` を突き合わせているのは、この穴を半分埋めるため。
+     */
+    test('REF17: reference.json は reference-src/*.md から生成したものと1バイト一致（手で直すと赤）', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        assert(RM, 'ReferenceMd が居ない（test.html が ../tools/reference-md.js を読み込んでいるか）');
+
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`
+                + '。リポジトリのルートを配信しているか確かめること');
+            return await res.text();
+        };
+
+        // ① 索引の順は ORDER.txt が決める
+        const order = RM.normalize(await grab('../reference-src/ORDER.txt', '参考書の原稿の並び'))
+            .split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'));
+        assert(order.length >= 1, 'reference-src/ORDER.txt が空');
+
+        const jsonText = await grab('reference.json', 'reference.json');
+        const pages = JSON.parse(jsonText);
+        assert(order.length === pages.length && order.every((id, i) => pages[i].id === id),
+            '索引の順が原稿（reference-src/ORDER.txt）と違う\n'
+            + `    ORDER.txt      : ${order.join(', ')}\n`
+            + `    reference.json : ${pages.map(p => p.id).join(', ')}\n`
+            + '    ★ 並べ替えたら node tools/gen-reference.mjs を走らせること');
+
+        // ② ★★ 原稿から組み直して**1バイト一致**（改行の別は見ない ＝ core.autocrlf の話なので）
+        const built = [];
+        for (const id of order) {
+            const md = await grab(`../reference-src/${id}.md`, `原稿 ${id}.md`);
+            let page;
+            try { page = RM.parsePage(md, `reference-src/${id}.md`); }
+            catch (e) { assert(false, '原稿が書式どおりでない —— ' + e.message); }
+            assert(page.id === id, `reference-src/${id}.md: 前書きの id が「${page.id}」でファイル名と違う`);
+            built.push(page);
+        }
+        const want = RM.normalize(RM.serialize(built));
+        const now = RM.normalize(jsonText);
+        if (want !== now) {
+            const a = now.split('\n'), b = want.split('\n');
+            let at = -1;
+            for (let i = 0; i < Math.max(a.length, b.length); i++) if (a[i] !== b[i]) { at = i; break; }
+            const cut = s => (s === undefined ? '(行が無い)' : s.length > 70 ? s.slice(0, 70) + '…' : s);
+            assert(false, 'reference.json が reference-src/*.md から生成したものと違う（生成物を手で直したか、直して生成し忘れたか）\n'
+                + `    最初に食い違う行: ${at + 1}（現物 ${a.length - 1}行 / 原稿から ${b.length - 1}行）\n`
+                + `    現物  : ${cut(a[at])}\n`
+                + `    原稿  : ${cut(b[at])}\n`
+                + '    ★ 直すのは reference-src/<id>.md のほう。そのあと node tools/gen-reference.mjs');
+        }
+
+        // ③ `:::` の種類は **learn.js が実際に描けるもの**（一覧を手で書かない）
+        const src = String(W.ReferenceBook.prototype.renderBlock);
+        const drawn = new Set([...src.matchAll(/kind\s*===\s*['"]([A-Za-z][A-Za-z0-9]*)['"]/g)].map(m => m[1]));
+        assert(drawn.size >= 2, 'learn.js の renderBlock から kind を拾えない（作りが変わった？ この検査を直す）');
+        drawn.delete('text');   // 段落は `:::` の囲みではないので、書式側の一覧には出ない
+        const spec = new Set(RM.KINDS);
+        [...drawn].forEach(k => assert(spec.has(k),
+            `learn.js は「${k}」を描けるのに、書式（tools/reference-md.js）が知らない`));
+        [...spec].forEach(k => assert(drawn.has(k),
+            `書式（tools/reference-md.js）が「${k}」を許しているのに、learn.js の renderBlock は描けない`));
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            assert(b.kind === 'text' || drawn.has(b.kind),
+                `${p.id}: 描けない種類のブロック「${b.kind}」がある`);
+        }));
+
+        // ④ `codes` は qa の知識項目に**実在する**（⚠ v1522 まで「配列で1件以上」しか見ていなかった）
+        const q = JSON.parse(await grab('../qa/questions.json', 'qa の questions.json'));
+        const known = new Set((q.patterns || []).map(p => p.code));
+        assert(known.size >= 300, `qa の知識項目が ${known.size} 件しか読めない（相手の作りが変わった？）`);
+        let nCodes = 0;
+        pages.forEach(p => (p.codes || []).forEach(code => {
+            nCodes++;
+            assert(known.has(code),
+                `${p.id}: codes の「${code}」が qa の知識項目（${known.size}件）に無い`
+                + '（資料と一問一答の着地は codes だけで決まるので、綴りが違うと黙って行き止まりになる）');
+        }));
+        assert(nCodes >= pages.length, 'codes が1件も無いページがある');
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
