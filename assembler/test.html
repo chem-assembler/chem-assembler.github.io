@@ -46,6 +46,13 @@
         <p class="frame-note">※テスト実行中はiframe内のアプリ状態が変化します。実行後は最終テストの状態のまま残ります。</p>
     </div>
     <ul id="results"></ul>
+    <!-- 参考書の本文の書式（reference-src/*.md）の parser。**REF17 が使う**。
+         ★ 生成器（tools/gen-reference.mjs）と**同じ1本**を読み込むことに意味がある ——
+           テスト側に parser を書き写すと、生成器とテストが別の書式を信じて
+           「緑なのに壊れている」が作れる。
+         ⚠ tools/ は _config.yml で Jekyll から外してあるので、これは**開発時だけ**読める。
+           REF17 は reference-src/*.md も読むので、どのみち作業ツリーでしか走らない検査。 -->
+    <script src="../tools/reference-md.js?v=1523"></script>
     <script src="tests.js?v=1523"></script>
 </body>
 </html>
