@@ -18,6 +18,13 @@ exclude:
   - docs/
   - "*.md"          # ルートの設計書・開発方針はすべて（DESIGN_* だけで18本ある）
   - .claude/
+  # 参考書の**原稿**（正）。生成物は assembler/reference.json、公開ページは /reference/（面A）。
+  # ⚠ `"*.md"` はルート直下しか外さないので、下の階層の .md は**配信される**。
+  #   しかも `---` の前書きを持つ .md は Jekyll が**ページ**とみなして `.html` に変換して出すため、
+  #   ここを外さないと `/reference-src/<id>.html` が勝手に生える（原稿の二重公開）。
+  # ★ 原稿を `/reference/` に置かなかったのも同じ理由（DESIGN_reference_book.md §16-1）——
+  #   そこは面Aの URL なので、Jekyll が作る .html と次のレーンが置く .html が正面衝突する。
+  - reference-src/
 
 # ⚠ **`include:` で「exclude したディレクトリの中の1ファイル」を戻すことはできない**
 #    （2026-08-04 に実測）。`include: [tools/devices.html]` を書いて push し、
