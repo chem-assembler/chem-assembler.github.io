@@ -2165,6 +2165,194 @@ function canonicalCode(mol) {
 }
 
 /**
+ * 「両端を R で止めた鎖」＝重合でできた高分子から、**繰り返し単位**を読み取る（v1522・P12-8）。
+ *
+ * ★ **なぜ要るか**: 分子式が `C₃₂H₃₂R₂` と出ていた。式そのものは正しいが、
+ *   **高校化学は高分子を必ず「繰り返し単位 × n」で書く**（`(C₈H₈)ₙ`）ので、
+ *   教科書ともユーザーの期待とも形が違っていた（video-scripts/ORDER_polymer_formula_2026-09-07.md）。
+ *
+ * ★ **単位の決め方は「でき上がった鎖から周期を見つける」**（発注書の案 (b)）。
+ *   案 (a)（重合したときの単量体を覚えておく）を採らなかった理由:
+ *   - **名前から呼び出した高分子に効かない**。`compounds.json` の高分子8件は
+ *     ステージ側と同じ「R で止めた鎖」として登録してあり、単量体の記憶はどこにも無い。
+ *     この8件こそ `[CH2-CH2]n` という**繰り返し単位の形で登録されている**のに、
+ *     画面の分子式だけ総和で出るという食い違いが起きていた
+ *   - **反応で後から変えた鎖に効かない**（PVA → アセタール化＝ビニロン）。
+ *     単量体の記憶は「重合した瞬間」で止まるので、その後の変化を追えない
+ *   - **周期を見つける側は「見つからなければ総和に落ちる」**ので、
+ *     間違った単位を出す危険が構造的に無い（発注書 §3 の注意2「割り切れないときは当てはめない」）
+ *
+ * ★ **周期の確かめ方は「切って比べる」**。骨格を p 原子ごとに切り、
+ *   切り口を R で塞いでから `canonicalCode` で k 個のかけらを見比べる。
+ *   同じなら周期 p。**環が切り口をまたいでいると連結成分が k 個に割れない**ので、
+ *   その p は自動的に落ちる（PET のベンゼン環・ビニロンのアセタール環がこれで守られる）。
+ *
+ * ⚠ **周期は 2 以上から探す**。ポリエチレンの骨格は -CH₂-CH₂-CH₂- で
+ *   **最小周期は CH₂（p=1）**だが、教科書は `(C₂H₄)ₙ` と書く。
+ *   高校で扱う高分子はすべて骨格2原子以上の単量体から来るので、p=1 は探さない。
+ *
+ * ⚠ **当てはめないもの**（総和のまま。発注書 §3）:
+ *   - **加硫ゴム**（R が4つ ＝ 2本の鎖が S で橋渡しされた形。単位1つでは書けない）
+ *   - キャンバスに分子が2つ以上あるとき（総和は総和のまま）
+ *   - 電荷を帯びた鎖・明示の H を持つ鎖
+ *
+ * ⭐ **共重合（ナイロン66・PET）も自然に通る**。発注書は「単位が2種類だから当てはめるな」と
+ *   断っていたが、**周期を見つける側から見ると「二酸＋二アルコールの対」で1周期**であり、
+ *   それは教科書の 〔NH(CH₂)₆NHCO(CH₂)₄CO〕ₙ とまったく同じ切り方になる。
+ *
+ * @param {Molecule} mol 判定する分子（連結成分1つぶんを渡す）
+ * @returns {null|{n:number, counts:Object, backbone:number}} n は画面にある単位の数、
+ *   counts は繰り返し単位の元素数（自動水素を H に数え込む。R は含めない）
+ */
+function polymerRepeatUnit(mol) {
+    if (!mol || !Array.isArray(mol.atoms) || mol.atoms.length === 0) return null;
+    // 明示の H・電荷付きは対象外（周期の判定が水素の数え方に引きずられる）
+    if (mol.atoms.some(a => a.element === 'H' || a.charge)) return null;
+
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    const nb = new Map(mol.atoms.map(a => [a.id, []]));
+    mol.bonds.forEach(b => {
+        if (!nb.has(b.atomId1) || !nb.has(b.atomId2)) return;
+        nb.get(b.atomId1).push({ id: b.atomId2, type: b.type });
+        nb.get(b.atomId2).push({ id: b.atomId1, type: b.type });
+    });
+    const bondKey = (a, b) => (a < b ? a + '_' + b : b + '_' + a);
+
+    // ① 連結成分は1つだけ（分子が2つ以上あるときは総和のまま）
+    const seen = new Set([mol.atoms[0].id]);
+    const stack = [mol.atoms[0].id];
+    while (stack.length) {
+        nb.get(stack.pop()).forEach(e => {
+            if (!seen.has(e.id)) { seen.add(e.id); stack.push(e.id); }
+        });
+    }
+    if (seen.size !== mol.atoms.length) return null;
+
+    // ② 端の R がちょうど2つ（どちらも単結合1本だけ）。加硫（R×4）はここで落ちる
+    const rs = mol.atoms.filter(a => a.element === 'R');
+    if (rs.length !== 2) return null;
+    if (rs.some(r => nb.get(r.id).length !== 1 || nb.get(r.id)[0].type !== 1)) return null;
+    const rIds = new Set(rs.map(r => r.id));
+    const anchors = rs.map(r => nb.get(r.id)[0].id);
+    if (anchors.some(id => rIds.has(id))) return null; // R-R は鎖ではない
+
+    // ③ 端どうしの最短路（R は通らない）＝ 骨格
+    const prev = new Map([[anchors[0], null]]);
+    const queue = [anchors[0]];
+    for (let qi = 0; qi < queue.length && !prev.has(anchors[1]); qi++) {
+        nb.get(queue[qi]).forEach(e => {
+            if (rIds.has(e.id) || prev.has(e.id)) return;
+            prev.set(e.id, queue[qi]);
+            queue.push(e.id);
+        });
+    }
+    if (!prev.has(anchors[1])) return null;
+    const path = [];
+    for (let cur = anchors[1]; cur != null; cur = prev.get(cur)) path.push(cur);
+    path.reverse(); // path[0] = anchors[0] … path[m-1] = anchors[1]
+    const m = path.length;
+
+    const bodyIds = mol.atoms.filter(a => !rIds.has(a.id)).map(a => a.id);
+
+    // ④ 周期 p を小さい順に試す（p ≥ 2。ポリエチレンの CH₂ 単位を避けるため）
+    const periods = [];
+    for (let p = 2; p <= m; p++) if (m % p === 0) periods.push(p);
+    if (m < 2) periods.push(m); // R-CH₂-R のような1原子の鎖（実用上は出てこない受け皿）
+
+    for (const p of periods) {
+        const k = m / p;
+        // 切る結合（単位の境目）。単結合でなければこの p は不採用
+        const cuts = new Set();
+        let ok = true;
+        for (let j = 1; j < k; j++) {
+            const b = mol.bonds.find(x => {
+                const key = bondKey(x.atomId1, x.atomId2);
+                return key === bondKey(path[j * p - 1], path[j * p]);
+            });
+            if (!b || b.type !== 1) { ok = false; break; }
+            cuts.add(bondKey(b.atomId1, b.atomId2));
+        }
+        if (!ok) continue;
+
+        // 切ったあと、ちょうど k 個のかけらに割れるか（環が境目をまたいでいると割れない）
+        const part = new Map();
+        let parts = 0;
+        for (const id of bodyIds) {
+            if (part.has(id)) continue;
+            const st = [id];
+            part.set(id, parts);
+            while (st.length) {
+                const cur = st.pop();
+                nb.get(cur).forEach(e => {
+                    if (rIds.has(e.id) || part.has(e.id)) return;
+                    if (cuts.has(bondKey(cur, e.id))) return;
+                    part.set(e.id, parts);
+                    st.push(e.id);
+                });
+            }
+            parts++;
+        }
+        if (parts !== k) continue;
+        // 各かけらが骨格を p 原子ずつ持つ（j 番目の単位が j 番目のかけらに揃う）
+        ok = true;
+        for (let j = 0; j < k && ok; j++) {
+            const pid = part.get(path[j * p]);
+            for (let i = 0; i < p; i++) if (part.get(path[j * p + i]) !== pid) ok = false;
+        }
+        if (!ok) continue;
+
+        // ⑤ 切り口を R で塞いで、かけらどうしを正準コードで見比べる
+        const caps = new Map(); // かけらの原子 → 足す R の数
+        const bump = (id) => caps.set(id, (caps.get(id) || 0) + 1);
+        anchors.forEach(bump); // もともと R が付いていた両端
+        mol.bonds.forEach(b => {
+            if (!cuts.has(bondKey(b.atomId1, b.atomId2))) return;
+            bump(b.atomId1); bump(b.atomId2);
+        });
+        const codes = [];
+        for (let j = 0; j < k; j++) {
+            const ids = bodyIds.filter(id => part.get(id) === j);
+            const f = new Molecule();
+            const map = new Map();
+            ids.forEach(id => {
+                const a = byId.get(id);
+                map.set(id, copyAtomMarks(f.addAtom(a.element, a.x, a.y), a).id);
+            });
+            mol.bonds.forEach(b => {
+                if (!map.has(b.atomId1) || !map.has(b.atomId2)) return;
+                if (cuts.has(bondKey(b.atomId1, b.atomId2))) return;
+                f.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type);
+            });
+            ids.forEach(id => {
+                for (let c = 0; c < (caps.get(id) || 0); c++) {
+                    f.addBond(map.get(id), f.addAtom('R', 0, 0).id, 1);
+                }
+            });
+            codes.push(canonicalCode(f));
+        }
+        if (codes.some(c => c !== codes[0])) continue;
+
+        // ⑥ 単位の元素数 ＝ 鎖ぜんたい（R を除く）÷ k。割り切れなければ採らない
+        const counts = {};
+        let hCount = 0;
+        bodyIds.forEach(id => {
+            const a = byId.get(id);
+            counts[a.element] = (counts[a.element] || 0) + 1;
+            hCount += mol.getFreeValency(id);
+        });
+        if (hCount > 0) counts.H = (counts.H || 0) + hCount;
+        let clean = true;
+        Object.keys(counts).forEach(e => {
+            if (counts[e] % k !== 0) clean = false;
+            counts[e] = counts[e] / k;
+        });
+        if (!clean) continue;
+        return { n: k, counts, backbone: p };
+    }
+    return null;
+}
+
+/**
  * 中心原子から見た1本の枝を、**中心から数えた階層（シェル）ごとの組成**として返す。
  * 「なぜこの炭素が不斉なのか」を1原子ずつ辿って納得するための道具（P12-8。ユーザー要望）。
  *
@@ -5872,6 +6060,7 @@ if (typeof window !== 'undefined') {
     window.describeStructure = describeStructure;
     window.longestCarbonChain = longestCarbonChain;
     window.canonicalCode = canonicalCode;
+    window.polymerRepeatUnit = polymerRepeatUnit;
     window.canonicalStereoCode = canonicalStereoCode;
     window.computeAtomParity = computeAtomParity;
     window.mirrorStereo = mirrorStereo;

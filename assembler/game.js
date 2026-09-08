@@ -3701,8 +3701,35 @@ class Game {
     //   大きさは 2 以上のときだけ書く（Ca²⁺ の作法。1 は省く）。
     //   ⚠ 塩（アニリン塩酸塩）も双性イオンも**正味 0** なので表示は変わらない。
     //   出番は「ユーザーが対イオンの粒を消したとき」だけ（DESIGN_ion_layer.md §13-5 の実測）。
-    //   ⚠ 写しが `tools/dump-canonical.js formulaOf` にある（同じ形にすること）
+    //   ⚠ 写しが `tools/dump-canonical.js formulaOf` にある（同じ形にすること）。
+    //   ⚠ ただし**高分子の「(繰り返し単位)ₙ」だけは写さない**（v1522。あちらは差分を読む物差しで、
+    //     畳むと「原子が増減したか」が読めなくなる。理由はあちらの注記）
     computeMolecularFormula(mol = this.userMolecule) {
+        const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+        const hill = (counts) => {
+            const order = [];
+            if (counts['C']) order.push('C');
+            if (counts['H']) order.push('H');
+            Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
+            return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('');
+        };
+
+        /* ★ 高分子（両端を R で止めた鎖）は「(繰り返し単位)ₙ」で書く（v1522・ユーザー要望
+         *   「分子式は R を含めるよりも (C8H8)n としたほうがよい」）。
+         *   総和の `C₃₂H₃₂R₂` は式としては正しいが、**高校化学は必ず単位 × n で書く**ので
+         *   教科書のどこにも出てこない形だった（video-scripts/ORDER_polymer_formula_2026-09-07.md）。
+         * ⚠ 単位が取れないもの（加硫ゴム＝ R が4つ・キャンバスに分子が2つ以上）は
+         *   `polymerRepeatUnit` が null を返し、**これまでどおり総和**に落ちる。
+         * ⚠ 画面にいくつ並んでいるか（n の実数）は**式に混ぜない**（発注書 §3 の注意4 への答え）。
+         *   混ぜると「n は具体的な数」という誤解になる。n は「たくさん」であって、
+         *   画面に何個描いたかとは無関係。★ 数そのものは `polymerRepeatUnit()` が `n` で返しており、
+         *   必要になった面で言葉として断ればよい（いまはどこにも出していない。
+         *   `DESIGN_reaction_execution.md` §27-5・§27-6 で「畳む／展開する」と一緒に決める） */
+        if (typeof polymerRepeatUnit === 'function') {
+            const rep = polymerRepeatUnit(mol);
+            if (rep) return '(' + hill(rep.counts) + ')ₙ';
+        }
+
         const counts = {};
         let hCount = 0;
         let charge = 0;
@@ -3713,14 +3740,7 @@ class Game {
         });
         if (hCount > 0) counts['H'] = (counts['H'] || 0) + hCount;
 
-        const order = [];
-        if (counts['C']) order.push('C');
-        if (counts['H']) order.push('H');
-        Object.keys(counts).filter(e => e !== 'C' && e !== 'H').sort().forEach(e => order.push(e));
-
-        const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
-        return order.map(e => counts[e] === 1 ? e : e + sub(counts[e])).join('') +
-               Game.chargeSuperscript(charge);
+        return hill(counts) + Game.chargeSuperscript(charge);
     }
 
     // 正味の電荷を右肩の記号にする（0 なら空文字）。`computeMolecularFormula` と
@@ -10011,13 +10031,12 @@ class Game {
         // **すべてキャンバスの上**で起きるので、全画面のモーダルが乗ったままだと1つも見えない。
         // 「🎯 反応させる分子を選ぶ」も同じで、選ぶ相手はキャンバスにいる。
         //
-        // ⚠ **試薬の瓶（#mm-reagents）だけはこの一括処理から外す**（第3段・
-        // `DESIGN_reagent_palette.md` §4.3 と `DESIGN_molecule_modal.md` §5-3）。
-        // 瓶は押しても反応が起きるとは限らず、**空振りのときは分子が1原子も変わらない**ので
-        // 閉じる理由がない（閉じてしまうと「効きません」の説明が出た瞬間に消える）。
-        // 条件を選ぶ画面も同じ節の中に出るため、節ごと除外する。
-        // **閉じるかどうかは reactor.runReagentHit が反応が進むときだけ自分で決める**
-        // ⚠ **「＋ ◯◯ を呼び出す → 反応」の札もこの一括処理から外す**（v1420）。
+        // ⛔ **試薬の瓶（#mm-reagents）の除外は v1522 で消した** —— 瓶の節そのものを
+        // 分子モーダルから削除したため（D-E2 の決着。ユーザー決定 2026-09-07）。
+        // ⚠ 除外していた理由（「空振りのときは分子が1原子も変わらないので閉じる理由がない」）は
+        //   いまも正しいが、**守る相手は実験タブの瓶**であり、そちらはモーダルの外にあるので
+        //   この一括処理がそもそも届かない ＝ 除外の行は**存在しない節を指す**だけになっていた。
+        // ⚠ **「＋ ◯◯ を呼び出す → 反応」の札はこの一括処理から外す**（v1420）。
         // この札は**途中で止まることがある**（相手を呼び出せない・呼べても箇所が生えない）。
         // 一律に閉じると、止まった理由を出した画面ごと消えて
         // 「押したのに何も起きない」＝ 直そうとしていた症状そのものに戻る。
@@ -10030,7 +10049,7 @@ class Game {
         //    ＝ 行き止まりを知らせる道そのものが行き止まりになる（実測で起きた）
         modal.addEventListener('click', (e) => {
             const btn = e.target.closest && e.target.closest('button');
-            if (!btn || btn === close || btn.closest('#mm-tabs') || btn.closest('#mm-reagents') ||
+            if (!btn || btn === close || btn.closest('#mm-tabs') ||
                 btn.closest('#rx-deadend') || btn.dataset.partner) return;
             this.closeMoleculeModal();
         }, true);

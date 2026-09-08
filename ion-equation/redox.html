@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=202">
+<link rel="stylesheet" href="style.css?v=204">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v202</div>
+  <div class="version">v204</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -112,13 +112,12 @@
       <div id="cleaveMsg"></div>
     </section>
 
-    <section class="step" id="step1">
-      <div class="stepHead"><span class="stepNo">1</span>半反応式 — 部品はこの2本（式はこのまま。倍率だけ決める）</div>
-      <div class="sheetScroll"><div id="halfSheet"></div></div>
-    </section>
-
+    <!-- ★ 2026-09-07・ユーザーの指示「②と①の順番を入れ替える」。
+         **先に比率を決め、あとで半反応式に倍率を書き込む** ＝ 紙の上の手順そのもの。
+         ⚠ id は動かさない（`step2` が1番目・`step1` が2番目に出る）。
+         入れ替えるのは並びと画面に出る番号だけで、外から名指ししている口は変えない。 -->
     <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">2</span>e⁻ の数を合わせる — 出す数と受け取る数がそろうまで</div>
+      <div class="stepHead"><span class="stepNo">1</span>どの比率でやりとりさせるか — 出す e⁻ と受け取る e⁻ がそろう比を見つける</div>
       <div id="toolbar"></div>
       <div class="labRow">
         <div class="labCol">
@@ -143,6 +142,16 @@
       <div id="msg"></div>
     </section>
 
+    <section class="step" id="step1">
+      <!-- ★ 「①では，半反応式を何倍にするか入力させる／数値を入力すると半反応式の
+           係数をリアルタイムで変化させる」（2026-09-07）。旧①は「式はこのまま」で、
+           ±ステッパーを押しても式が動かなかった。ここが「筆算に寄せる」の核心 ——
+           紙の上で式の右に ×5 と書いて係数を書き換える手つきを、そのまま画面にする -->
+      <div class="stepHead"><span class="stepNo">2</span>半反応式を何倍にするか書き込む — 数を入れると係数が変わる</div>
+      <div class="sheetScroll"><div id="halfSheet"></div></div>
+      <div id="multMsg"></div>
+    </section>
+
     <!-- ③〜⑤ は1枚の筆算。→ の位置がそろうよう同じグリッドに置き、段ごとに現れる -->
     <section class="step" id="stepCalc" hidden>
       <!-- 【C′】③の係数は筆算の中で自分で書く（v193）。3行とも空欄で出て、人が埋める。
@@ -152,37 +161,60 @@
     </section>
 
 
-    <!-- 瓶から化学反応式を組み立てる段（v180・DESIGN_redox.md）。
+    <!-- はじめに入れたものから化学反応式を組み立てる段（v180・DESIGN_redox.md）。
          bottles を持ち、かつ既存の筆算（molecularEq）を持たないステージにだけ出る。
          ③（イオン反応式）が最簡整数比まで片づいたら現れる。
-         **左辺は組み立てない ＝ 瓶がそのまま左辺**。ここが「左辺のイオンどうしを組んで
-         HI を作ってしまう」つまずきの分かれ目なので、罠の選択肢もわざと出す -->
+         **左辺は組み立てない ＝ はじめに入れたものがそのまま左辺**。ここが「左辺のイオンどうしを
+         組んで HI を作ってしまう」つまずきの分かれ目なので、罠の選択肢もわざと出す -->
     <section class="step" id="stepBottles" hidden>
-      <!-- ★ 2026-08-28・ユーザーの指示「イオン反応式 → 化学反応式 のプロセスを
-           より実際の筆算に寄せましょう／瓶システムは不正解時やヘルプ・解説に回してよい」。
-           問うのは**紙の上でやる手つき**（両辺に、式に出てこないイオンを足す）。
-           ⚠ 瓶の「どこから来た？」は消さずに、外したときに開くヘルプへ移した -->
-      <div class="stepHead"><span class="stepNo">4</span>両辺に、式に出てこないイオンを足す</div>
+      <!-- ★ 2026-09-07・ユーザーの指示「④ どこから来たの が先／両辺に加えるイオンの数を
+           考える が後／連れてきたのは → もともと何だった？」。
+           v194 は出どころ当てをヘルプ（<details>）へ落として順番が逆だった。**戻す。**
+           ⚠ 問いの形はユーザーの言葉そのまま「MnO₄⁻ はもともと何だった？」——
+           こう聞けば、容器を指す語が1つも要らなくなる。 -->
+      <div class="stepHead"><span class="stepNo">4</span>もともと何だった？ — 左辺のイオンの出どころをたどる</div>
       <div id="bottleRack"></div>
-      <div id="addIonRows"></div>
-      <details id="bottleWhy">
-        <summary>どこから来たの？ —— ビーカーに入れた瓶で確かめる</summary>
+      <div id="bottleWhy">
         <div id="bottleQuiz"></div>
         <div id="bottleMsg"></div>
-      </details>
-      <div id="addIonMsg"></div>
+      </div>
+      <!-- 「後」の側。出どころがそろってから現れる（この画面の唯一の順序の表し方） -->
+      <div id="addIonWrap" hidden>
+        <div class="stepSubHead">つぎに — 両辺に加えるイオンの数を考える</div>
+        <div id="addIonRows"></div>
+        <div id="addIonMsg"></div>
+      </div>
       <div id="bottleTail" hidden>
-        <div class="stepHead"><span class="stepNo">5</span>水を蒸発させる — 残ったイオンが対で塩に戻る</div>
+        <div class="stepHead"><span class="stepNo">5</span>化学反応式の左辺 — 係数をすべて書く</div>
         <div id="bottleCounts"></div>
-        <div id="bottlePool"></div>
-        <!-- 【D】全体の倍率は**例外**（右辺の係数に 1/2 が出たときだけの措置）。
-             常設のステッパーをやめ、半端が実際に出たときにだけこの箱が現れる -->
-        <div id="bottleScaleBox" hidden></div>
-        <!-- 【3】v194・発注書 §6-7 の 3。⑤で入れた本数が、そのまま下の式の左辺の係数
-             だと言う行。**式の真上**に置くのが仕事なので、横送り枠（.sheetScroll）の
-             外に出しておく（中に入れると長い文が枠の max-content を押し広げる） -->
-        <div id="bottleLeftMap"></div>
-        <div class="sheetScroll"><div id="bottleSheet"></div></div>
+        <!-- ★ ⑥（2026-09-07・ユーザーの指示「右辺で余ったイオン同士を組み合わせる／
+             イオンの一覧から陽イオンと陰イオンを選んで並べ・高さがそろえば１つの化学種」）。
+             部品は同じ日の別レーンが入れた「価数＝高さのブロック」（DESIGN_ion_blocks.md）。
+             ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ -->
+        <div id="saltStep" hidden>
+          <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせる — 高さがそろえば1つの化学種</div>
+          <!-- ★ 硝酸の二役（rn1・rn2）を1行で言う場所（2026-09-08・レーン rx-sheet）。
+               v203 まではここに相当する説明が筆算⑤の下の図（#molFigure）にあったが、
+               図は⑥のブロックと役割が重なるので降ろし、**文だけ**残した。
+               中身は model.js の acidRoleText が bottlePlan から導く（該当しない反応では空） -->
+          <div id="acidRoleNote" hidden></div>
+          <div id="bottlePool"></div>
+          <div id="blocksWrap">
+            <svg id="saltBlocks" viewBox="0 0 360 200" role="img" aria-label="陽イオンと陰イオンを価数の高さで積み上げる図"></svg>
+            <div id="saltPalette"></div>
+            <div id="saltMsg"></div>
+            <div id="saltActions"></div>
+          </div>
+          <div id="saltMade"></div>
+          <!-- 【D】全体の倍率は**例外**（右辺の係数に 1/2 が出たときだけの措置）。
+               常設のステッパーをやめ、**組めなくなったときにだけ**この箱が現れる -->
+          <div id="bottleScaleBox" hidden></div>
+          <!-- 【3】v194・発注書 §6-7 の 3。⑤で書いた係数が、そのまま下の式の左辺
+               だと言う行。**式の真上**に置くのが仕事なので、横送り枠（.sheetScroll）の
+               外に出しておく（中に入れると長い文が枠の max-content を押し広げる） -->
+          <div id="bottleLeftMap"></div>
+          <div class="sheetScroll"><div id="bottleSheet"></div></div>
+        </div>
         <div id="bottleTailMsg"></div>
       </div>
     </section>
@@ -190,9 +222,11 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=202"></script>
-<script src="schematic.js?v=202"></script>
-<script src="header-ui.js?v=202"></script>
-<script src="redox.js?v=202"></script>
+<script src="model.js?v=204"></script>
+<script src="schematic.js?v=204"></script>
+<!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
+<script src="blocks.js?v=204"></script>
+<script src="header-ui.js?v=204"></script>
+<script src="redox.js?v=204"></script>
 </body>
 </html>

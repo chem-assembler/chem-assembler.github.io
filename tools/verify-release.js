@@ -20,6 +20,8 @@
  *   7. UTF-8 の BOM が付いていないか
  *   8. **これから push するコミットで、触ったアプリの版が上がっているか**（規則5の死角を塞ぐ）
  *   9. **傍用問題集・教科書の中身が公開物に混ざっていないか**（著作権。入試問題とは扱いが違う）
+ *  10. **参考書の生成物（assembler/reference.json）が原稿（reference-src/*.md）と一致しているか**
+ *      （正は .md。ブラウザの `REF17` では見えない「原稿の足し忘れ・余り」をここで塞ぐ）
  *
  * 終了コード 0 = 合格、1 = 問題あり
  *
@@ -471,6 +473,33 @@ textFiles.filter(rel => rel.startsWith('qa/') && !rel.startsWith('qa/tools/') &&
                 + '（セミナー・教科書は参考値まで。材料は _解析/workbook/ に置く）');
         });
     });
+
+// ---------------------------------------------------------------
+// 10. 参考書の本文 —— 生成物（assembler/reference.json）が原稿（reference-src/*.md）と一致しているか
+// ---------------------------------------------------------------
+// ★★ **正は `reference-src/<id>.md`。`assembler/reference.json` は生成物**
+// （`DESIGN_reference_book.md` §16。ユーザーの申し立て「json だとこちらで校正ができない」）。
+//
+// ⚠ **ブラウザ側の `REF17` では届かない穴が1つある**: HTTP ではディレクトリの一覧が取れないので、
+//   **「.md を足したのに ORDER.txt に書いていない」「原稿が余っている」が見えない。**
+//   ★ ここは node なのでディレクトリが読める ＝ **その穴を塞ぐのはこちらの仕事。**
+//
+// ⚠ 別プロセスで走らせる（生成器は ESM で、この検査は CommonJS のため）。
+//   ★ node が居ないことはありえない（この検査自体が node）。
+{
+    const genAbs = path.join(ROOT, 'tools', 'gen-reference.mjs');
+    const srcDir = path.join(ROOT, 'reference-src');
+    if (fs.existsSync(genAbs) && fs.existsSync(srcDir)) {
+        try {
+            execSync(`"${process.execPath}" "${genAbs}" --check`, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+        } catch (e) {
+            const out = ((e.stdout || '') + (e.stderr || '')).trim().split('\n').map(s => s.trim()).filter(Boolean);
+            problems.push('参考書の本文: assembler/reference.json が reference-src/*.md と一致しません'
+                + '（reference.json は生成物です。原稿を直してから `node tools/gen-reference.mjs`）'
+                + (out.length ? '\n    ' + out.join('\n    ') : ''));
+        }
+    }
+}
 
 function walk(dir, acc = []) {
     fs.readdirSync(dir, { withFileTypes: true }).forEach(e => {

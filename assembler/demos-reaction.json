@@ -3258,5 +3258,59 @@
         ]
       }
     ]
+  },
+  {
+    "id": "reaction-peptide-bond",
+    "title": "V146: タンパク質のつなぎ目を作ってみた（高分子⑨・ペプチド結合）",
+    "summary": "⭐⭐ **タンパク質の群も動画が0本だった**（→ video-scripts/MAP_video_qa.md。9項目で0本）。**グリシン2つに「アミド化（カルボン酸＋アミン, -H2O）」を掛けると、結末が「① グリシルグリシン（ジペプチド） ＋ ② 水」になる**——**脱水縮合で水が外に出るところまで画になる。**",
+    "sns": true,
+    "steps": [
+      {
+        "caption": "グリシンを2つ",
+        "actions": [
+          {
+            "type": "button",
+            "selector": ".mode-tab[data-mode=\"free\"]"
+          },
+          {
+            "type": "summon",
+            "name": "グリシン"
+          },
+          {
+            "type": "summon",
+            "name": "グリシン"
+          },
+          {
+            "type": "frame",
+            "width": 620
+          },
+          {
+            "type": "wait",
+            "ms": 6700
+          }
+        ]
+      },
+      {
+        "caption": "アミド化 — 水が1つとれてつながる",
+        "actions": [
+          {
+            "type": "button",
+            "selector": "#btn-molecule-modal"
+          },
+          {
+            "type": "reactionButton",
+            "contains": "アミド化"
+          },
+          {
+            "type": "frame",
+            "width": 520
+          },
+          {
+            "type": "wait",
+            "ms": 28000
+          }
+        ]
+      }
+    ]
   }
 ]

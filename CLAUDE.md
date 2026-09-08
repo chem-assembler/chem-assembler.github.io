@@ -36,6 +36,7 @@ test.html / audit.html の見出し）。リンク切れとキャッシュ事故
 | quiz.js | 同じ/違うクイズ・命名クイズ |
 | stereo.js | 立体対照ビュー（sp3炭素のくさび図） |
 | stages.json / compounds.json / reactions.json | 問題データ / 名称ライブラリ / 反応機構データ |
+| reference.json | ⚠ **生成物**。参考書の本文の正は `reference-src/*.md`（下の重要ルールを見ること） |
 | test.html + tests.js | 回帰テスト（実アプリをiframeで駆動。コミット前に全合格必須） |
 | audit.html + audit.js | 夜間自動監査（全化合物の自動作図検査＋ランダム操作ファズ）。無人実行用 |
 
@@ -63,6 +64,17 @@ test.html / audit.html の見出し）。リンク切れとキャッシュ事故
     ```
     node -e "const f='assembler/compounds.json',fs=require('fs');const a=JSON.parse(fs.readFileSync(f,'utf8'));fs.writeFileSync(f,'[\r\n'+a.map(e=>JSON.stringify(e)).join(',\r\n')+'\r\n]\r\n','utf8')"
     ```
+- ⚠⚠ **`assembler/reference.json` は生成物。手で編集しない**（2026-09-08 から）。
+  **参考書の本文の正は `reference-src/<id>.md`**（1ページ1ファイル・索引の順は `reference-src/ORDER.txt`）。
+  - **直す → `node tools/gen-reference.mjs`**（`--check` で「最新か」だけ見られる）。
+    ⚠ **JSON を直しても、生成のたびに上書きされる。** その前に **`REF17`**（原稿から生成し直して1バイト一致）と
+    **`verify-release.js` の規則10** が赤で止める
+  - **書式は3つだけ**: 前書き（`---` の囲み・`キー: 値`）／**1段落 = 1行**の本文（強調は `**`、
+    一般式の下付きだけ `~`、下付きの Unicode `C₄H₁₀` はそのまま）／`:::stageTable` などの囲み。
+    ⚠ **生 HTML は書けない**（変換のあとに `* ~ < > &` が残ると生成器が赤）
+  - **なぜ**: ユーザーが本文を自分で校正するから。移行前は **5ページ＝5行・1行 2,048 字**で、
+    **「てにをは」を1つ直すと 2,048 字の行が丸ごと差分**になっていた
+  - 詳細と校正の手順は **`DESIGN_reference_book.md` §16**
 - **コミット前に `node tools/verify-release.js` を通す**（版番号の一括更新・化け・BOM・死にリンクを機械検査。下の2項目を人の記憶に頼らないための道具）
   - 全アプリを一度に見るので、**別セッションが他のアプリを作業中だとそちらの版未更新で落ちる**。自分の担当だけ見るときは `node tools/verify-release.js assembler` のようにアプリ名で絞る（化け・BOM の検査はリポジトリ全体のまま）
   - **コミットしたあと、push する前にもう一度走らせる**（規則8）。規則5は作業ツリーしか見ないので、
