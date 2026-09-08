@@ -47226,7 +47226,17 @@
             `reference.json が「1ブロック1行」の形でない（${lines.length}行 / 期待 ${wantLines}行・${pages.length}ページ）。` +
             'JSON.parse → JSON.stringify で書き戻していないか（生成は node tools/gen-reference.mjs）');
 
+        /* ⚠⚠ **`rows` だけ扱いを分けた**（v1525・設計書 §19-3）。
+           ★ ここが見張っているのは**著作権の守り**（手打ちの表が構造上存在できなければ転写事故は起きない）で、
+             それは「行を手で書くな」ではなく「**出どころの言えない行を書くな**」が本体。
+           ⚠ 素材がユーザー自身の講義スライドに変わり（§18）、**機械が行を作れない表**が要るようになった
+             （物質カード・常温での状態・構造異性体の数 —— どれも stages.json にも compounds.json にも無い）。
+           ★ 開けた穴は1つだけ: **`:::table` の中の `rows` に限る**。
+             ⚠ **代わりに `source` を必須**にして「その行がどこから来たか」を書かせる
+               （書けないなら、それはどこかから持ってきている ＝ 前書きの `why` と同じ考え・§1-2）。
+           ⚠ **他のブロックの `rows` は今までどおり赤**（`stageTable` に行を持たせる逃げ道は塞がっている）。 */
         const BANNED = ['name', 'formula', 'atoms', 'bonds', 'target', 'rows'];
+        const HAND_TABLE = 'table';
         pages.forEach(p => {
             assert(p.id && p.title && p.unitLabel && p.group, `${p.id}: 見出しの欄が欠けている`);
             // ★ 「この表を作った理由」を1行で書けること（§1-2 の運用ルール）を機械で見る
@@ -47246,21 +47256,28 @@
                   `REF12`（機構の表を持つページだけを見る）の**すき間**に、
                   表を1枚も持たないページを置いて全部の物差しから逃げられる。
                ⚠ 種類が増えたらここに足すこと ＝ **逃げ道は必ず1行の追加として残る。** */
-            const TABLE_KINDS = ['stageTable', 'mechanismTable', 'dehydrationTable'];
+            const TABLE_KINDS = ['stageTable', 'mechanismTable', 'dehydrationTable', HAND_TABLE];
             assert((p.blocks || []).some(b => TABLE_KINDS.includes(b.kind)),
                 `${p.id}: 表のブロック（${TABLE_KINDS.join(' / ')}）が1つも無い`
                 + '（資料は表が本体。表を持たないページは、行を機械で組む約束の外へ出てしまう）');
             // ★ 行データを1つも持たないこと（持てば「写す」余地がその場でできる）
-            const scan = (o, path) => {
-                if (Array.isArray(o)) return o.forEach((v, i) => scan(v, `${path}[${i}]`));
+            const scan = (o, path, kind) => {
+                if (Array.isArray(o)) return o.forEach((v, i) => scan(v, `${path}[${i}]`, kind));
                 if (o && typeof o === 'object') Object.keys(o).forEach(k => {
-                    assert(!BANNED.includes(k),
+                    /* ★ 手で書く表の `rows` だけは通す。⚠ **通す条件は「出どころが書いてあること」** */
+                    const handRows = (k === 'rows' && kind === HAND_TABLE);
+                    assert(!BANNED.includes(k) || handRows,
                         `${p.id}: reference.json に行データの欄 "${k}" がある（${path}）。` +
-                        '表の行は stages.json から機械で作る約束（手打ちの表を作らない）');
-                    scan(o[k], `${path}.${k}`);
+                        '表の行は stages.json から機械で作る約束（手打ちの表は :::table だけ）');
+                    if (handRows) {
+                        assert(typeof o.source === 'string' && o.source.length >= 8,
+                            `${p.id}: :::table が source（この行がどこから来たか）を持っていない（${path}）。` +
+                            '手で書く表はここだけ「行データを持たない」の外へ出るので、出どころを必ず書く');
+                    }
+                    scan(o[k], `${path}.${k}`, kind);
                 });
             };
-            scan(p.blocks || [], 'blocks');
+            (p.blocks || []).forEach((b, i) => scan(b, `blocks[${i}]`, b.kind));
         });
     });
 

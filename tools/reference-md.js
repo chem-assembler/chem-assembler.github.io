@@ -54,15 +54,19 @@
               「見出しだけ在って何の節か分からない」を作らない（設計書 §19-1） */
         section: { order: ['anchor', 'title', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'] },
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
-        list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], prose: ['items'], bool: ['ordered'] },
+        list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。
            `/reference-img/` を付けるのは learn.js の1か所（面A・面Bで同じ URL になる） */
         figure: { order: ['src', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒） */
         reaction: { order: ['left', 'over', 'under', 'right', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], enum: { level: LEVELS } },
-        /* 手で書く表（機械が行を作れないもの）。セルは ` | ` で切る */
-        table: { order: ['caption', 'head', 'rows'], req: ['head', 'rows'], list: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
+        /* ★★ 手で書く表（機械が行を作れないもの）。セルは ` | ` で切る。
+           ⚠⚠ **`source` は必須。** `REF5` は「行データの欄（`rows` ほか）を持たない」を
+              **著作権の守り**として掛けている（手打ちの表が構造上存在できなければ転写事故は起きない）。
+           ★ ここだけ穴を開けるので、**代わりに「その行がどこから来たか」を書かせる** ——
+             書けないなら、それはどこかから持ってきている（前書きの `why` と同じ考え・§1-2）。 */
+        table: { order: ['caption', 'source', 'head', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
         /* 注意の囲み。⚠ `tone` は3つだけ（勘違いしやすい／丸暗記でよい／覚えなくてよい） */
         callout: { order: ['tone', 'text'], req: ['tone', 'text'], list: [], prose: ['text'], enum: { tone: TONES } },
 
@@ -278,7 +282,9 @@
                 if (enums[k].indexOf(v) < 0) fail(where, ':::' + kind + ' の「' + k + '」は ' + enums[k].join(' / ') + ' のどれかです（いまは「' + v + '」）');
                 block[k] = v;
             } else {
-                if (spec.list.indexOf(k) >= 0) fail(where, ':::' + kind + ' の「' + k + '」は「  - 値」の並びで書きます（1件でも）');
+                /* ⚠ `series` のように **1行でも並びでもよい**キーがある（既存の3ページがそう書いている）ので、
+                   「並びでしか書けない」は `listOnly` に挙げたものだけに掛ける */
+                if ((spec.listOnly || []).indexOf(k) >= 0) fail(where, ':::' + kind + ' の「' + k + '」は「  - 値」の並びで書きます（1件でも）');
                 block[k] = conv(v, at);
             }
         });
@@ -307,6 +313,11 @@
             if (b.alt.length < 6) fail(where, ':::figure の alt（画像が出ないときに読まれる文）が短すぎます: 「' + b.alt + '」');
         }
         if (b.kind === 'table') {
+            /* ⚠ 行の出どころ。★ 短い語（「スライド」）で済ませられないよう長さを見る */
+            if (b.source.length < 8) {
+                fail(where, ':::table の source（この行がどこから来たか）が短すぎます: 「' + b.source + '」'
+                    + '\n    ★ 手で書く表はここだけ REF5 の「行データを持たない」の外に出るので、出どころを必ず書きます');
+            }
             /* ⚠ 列の数がそろっていない表は、画面では「1列ずれた表」として**それらしく出てしまう** */
             var n = b.head.length;
             if (n < 2) fail(where, ':::table の head は2列以上です');
