@@ -4,6 +4,7 @@ unit: reaction
 unitLabel: 有機反応
 group: 反応機構
 title: 反応の道すじ（反応機構）
+summary: 付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。
 codes:
   - org.ali.alkane-chlorination
   - org.ali.alkene-br2
