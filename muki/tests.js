@@ -2586,7 +2586,7 @@
         }
         var f = document.createElement('iframe');
         f.id = 'sepapp';
-        f.src = 'separation.html?v=30';
+        f.src = 'separation.html?nocache=' + Date.now();
         f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
         f.style.height = '812px';
         document.body.appendChild(f);
