@@ -392,6 +392,38 @@ main {
 #toolbar .react { background: #e08a3c; }
 #toolbar .reset { background: #8a94a0; }
 
+/* ---- 2026-09-08（DESIGN_ionic_two_step.md §7-4）——
+   既定の顔は「▶ 再生」と「↺ やり直す」の2つだけ。＋ボタンと ⚡反応させる は
+   取り上げず `<details class="freeTry">` に畳む（ユーザー「オプションで、別な係数比を
+   試すことも可能」）。⚠ セレクタ `#toolbar .add` / `.react` は変えていないので、
+   これらで書かれた回帰テストは畳んだままでも意味を保つ。 */
+#toolbar .play { background: #2f8f6b; }
+#toolbar .freeTry {
+  flex: 1 0 100%;
+  margin-top: 2px;
+  border: 1px solid #d9dfe5;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+#toolbar .freeTry > summary {
+  cursor: pointer;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: #5c6672;
+  list-style: none;
+}
+#toolbar .freeTry > summary::-webkit-details-marker { display: none; }
+#toolbar .freeTry > summary::before { content: "▸ "; color: #97a1ac; }
+#toolbar .freeTry[open] > summary::before { content: "▾ "; }
+#toolbar .freeTry .freeRow {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 0 10px 8px;
+}
+#toolbar .freeTry .freeHint {
+  padding: 0 10px 9px;
+  font-size: 12.5px; line-height: 1.55; color: #6b7480;
+}
+
 /* ビーカー上の「投入した反応物の数」表示。反応式の係数（左辺）と同じ見た目にして対応づける */
 .addedFormula {
   text-align: center;
