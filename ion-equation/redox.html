@@ -193,6 +193,11 @@
              ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ -->
         <div id="saltStep" hidden>
           <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせる — 高さがそろえば1つの化学種</div>
+          <!-- ★ 硝酸の二役（rn1・rn2）を1行で言う場所（2026-09-08・レーン rx-sheet）。
+               v203 まではここに相当する説明が筆算⑤の下の図（#molFigure）にあったが、
+               図は⑥のブロックと役割が重なるので降ろし、**文だけ**残した。
+               中身は model.js の acidRoleText が bottlePlan から導く（該当しない反応では空） -->
+          <div id="acidRoleNote" hidden></div>
           <div id="bottlePool"></div>
           <div id="blocksWrap">
             <svg id="saltBlocks" viewBox="0 0 360 200" role="img" aria-label="陽イオンと陰イオンを価数の高さで積み上げる図"></svg>
