@@ -4496,30 +4496,42 @@ function explainBottleCount(stage, a, b, scale, sp, n) {
   if (!Number.isInteger(n) || n < 1) {
     return { ok: false, kind: "none", answer: row.answer, reason: "" };
   }
-  // 担当しているイオンごとに「この本数だと何個出るか」を突き合わせる。
-  // covers が空の物質（起こらないはずだが）は係数そのものを比べる
-  const bad = row.covers.find((c) => c.per * n !== c.need);
-  if (bad) {
-    const got = bad.per * n;
+  /* 担当しているイオンごとに「この本数だと何個出るか」を突き合わせる。
+     ⚠⚠ 見るのは **got >= need**（等号ではない）。2026-09-08 まで `!==` で見ていたので、
+     **硝酸の二役（rn1・rn2）では正解を弾いた** —— HNO₃ 8個 は NO₃⁻ を 8個 出すが、
+     反応するのは 2個 だけ。等号で見ると「8 だと NO₃⁻ が 8個。2個 要る」と言って
+     正しい係数 8 を通さない。⑤に着けなくなるので、ここは大小で見る。 */
+  const short = row.covers.find((c) => c.per * n < c.need);
+  if (short) {
     return {
-      ok: false, kind: got < bad.need ? "few" : "many", answer: row.answer,
-      reason: `${D(sp)} の係数が ${n} だと ${D(bad.sp)} は ${bad.per}×${n}＝${got}個。` +
+      ok: false, kind: "few", answer: row.answer,
+      reason: `${D(sp)} の係数が ${n} だと ${D(short.sp)} は ${short.per}×${n}＝${short.per * n}個。` +
         // **答えの本数は言わない**（1本ぶんが何個かまでを言い、割り算は学習者の仕事）
         // 【G】分担しているイオン（rs3 の H⁺）は「全体の何個のうち、こちらが何個」まで言う
-        (bad.shared
-          ? `イオン反応式には ${bad.total}個 要り、そのうち ${bad.need}個 がこちらのぶん`
-          : `イオン反応式には ${bad.need}個 要る`) +
-        (bad.per > 1 ? `（${D(sp)} 1つからは ${D(bad.sp)} が ${bad.per}個 出る）` : "") + "。",
+        (short.shared
+          ? `イオン反応式には ${short.total}個 要り、そのうち ${short.need}個 がこちらのぶん`
+          : `イオン反応式には ${short.need}個 要る`) +
+        (short.per > 1 ? `（${D(sp)} 1つからは ${D(short.sp)} が ${short.per}個 出る）` : "") + "。",
     };
   }
+  /* どの担当ぶんも足りているのに答えより多い ＝ 入れすぎ。
+     「何本ぶん要るか」を決めているイオン（＝ ÷ の答えがいちばん大きいもの）で言う。 */
+  const binds = row.covers.filter((c) => Math.ceil(c.need / c.per) === row.answer);
   if (n !== row.answer) {
+    const c = binds[0] || row.covers[0];
     return {
       ok: false, kind: "many", answer: row.answer,
-      reason: `${D(sp)} は 係数 ${row.answer} でちょうど足りる。`,
+      reason: c
+        ? `${D(sp)} の係数が ${n} だと ${D(c.sp)} は ${c.per}×${n}＝${c.per * n}個。` +
+          `イオン反応式に要るのは ${c.need}個 で、余ったぶんは行き場がない。`
+        : `${D(sp)} は、この係数では多すぎる。`,
     };
   }
   const riders = row.riders.filter((r) => r.n > 0);
-  let msg = row.covers.map((c) =>
+  /* ⚠ 割り算を言うのは**本数を決めているイオンだけ**。二役の HNO₃ で NO₃⁻ まで言うと
+     「NO₃⁻ が 2個 要る ÷ 1個 ＝ 係数 8」という、合わない割り算を書くことになる。
+     連れてきただけのぶんは、下の riders の行が受け持つ。 */
+  let msg = (binds.length ? binds : row.covers).map((c) =>
     `${D(c.sp)} が ${c.need}個 要る ÷ ${D(sp)} 1つぶんの ${c.per}個 ＝ 係数 ${row.answer}。`).join("");
   if (riders.length) {
     msg += `一緒に ${riders.map((r) => `${D(r.sp)} が ${r.n}個`).join("・")} ついて来る` +
