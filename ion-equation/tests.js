@@ -480,91 +480,90 @@ function runModelTests() {
       "N の酸化数が想定と違う");
   });
 
-  t("筆算で化学反応式に戻す: 傍観イオンの必要数が左右で一致し、模範の係数を導ける", () => {
-    for (const id of ["rn1", "rn2"]) {
-      const st = REDOX_STAGES.find((s) => s.id === id);
+  /* ★ 2026-09-08（レーン rx-sheet・DESIGN_redox.md「筆算の④⑤を畳む」）。
+     ここには molecularizeStep（筆算の④⑤）を叩く2本のテストがあった。あの段を消したので、
+     **模範解答そのものの検算**だけをここに残す（導出が模範を再現することは
+     「BOTTLE: はじめに入れたものからの導出が、手で書いた molecularEq 5本の模範係数を再現する」が見る）。
+     ⚠ このテストが赤くなったら、**改修で模範係数が動いた**ということ。 */
+  t("分子反応式の模範係数5本: 原子・電荷が保存し、最簡整数比で、2倍は通らない", () => {
+    const cases = [
+      { id: "ro1", answer: [3, 1, 4, 3, 1, 1, 7] },
+      { id: "ro2", answer: [3, 1, 4, 3, 1, 1, 4] },
+      { id: "ro3", answer: [3, 1, 4, 3, 1, 1, 7] },
+      { id: "rn1", answer: [3, 8, 3, 2, 4] },
+      { id: "rn2", answer: [1, 4, 1, 2, 2] },
+    ];
+    for (const c of cases) {
+      const st = REDOX_STAGES.find((s) => s.id === c.id);
       const me = st.molecularEq;
-      assert(me && me.spectator && me.join, id + ": 傍観イオンの定義が無い");
-      const [a, b] = st.answer;
-      // まだ足していない状態: 左辺の H⁺ も右辺の Cu²⁺ も相手がいない
-      const zero = molecularizeStep(st, a, b, 0);
-      assert(zero.consistent,
-        id + ": 左右で必要な傍観イオンの数が食い違う: " + JSON.stringify([zero.left.need, zero.right.need]));
-      assert(!zero.ok && zero.reason.includes("足りない"), id + ": 0個で完成扱い");
-      assert(zero.left.free.some((f) => f.sp === "H+") && zero.right.free.some((f) => f.sp === "Cu^2+"),
-        id + ": あぶれるイオンを拾えていない: " + JSON.stringify([zero.left.free, zero.right.free]));
-      // ぴったり足すと化学反応式が完成し、模範係数と一致する
-      const need = zero.need;
-      const done = molecularizeStep(st, a, b, need);
-      assert(done.ok, id + ": 必要数を足しても完成しない: " + done.reason);
-      assert(done.verified, id + ": 導いた式が検算（原子・電荷・最簡比）を通らない");
-      assert(String(done.coeffs) === String(me.answer),
-        id + ": 導いた係数が模範と違う: " + done.coeffs + " / " + me.answer);
-      // 多すぎると、相手のいない傍観イオンが両辺に残る
-      const over = molecularizeStep(st, a, b, need + 1);
-      assert(!over.ok && over.reason.includes("多い"), id + ": 多すぎを通した");
-      assert(over.left.free.some((f) => f.sp === me.spectator), id + ": あまった傍観イオンが残らない");
-      // 酸の係数は「還元されるぶん＋塩に入る傍観ぶん」（データの自己整合）
-      assert(me.answer[me.acid] === me.answer[me.reduced] + me.answer[me.salt] * me.spectatorPerSalt,
-        id + ": 酸の係数が 還元ぶん＋傍観ぶん になっていない");
-      assert(need === me.answer[me.salt] * me.spectatorPerSalt,
-        id + ": 足す傍観イオンの数が塩に入るぶんと合わない: " + need);
-    }
-    // 2倍は最簡でないので検算を通さない
-    for (const id of ["rn1", "rn2"]) {
-      const st = REDOX_STAGES.find((s) => s.id === id);
-      const t2 = checkMolecularEq(st, st.molecularEq.answer.map((n) => n * 2));
-      assert(!t2.ok && t2.gcd === 2, id + ": 2倍を通した");
-    }
-    // molecularEq を持たない反応にはこの段が無い
-    assert(molecularizeStep(REDOX_STAGES[0], 1, 1, 0) === null, "molecularEq 無しで筆算の段が出る");
-    assert(!checkMolecularEq(REDOX_STAGES[0], [1, 1]).ok, "molecularEq 無しで正解になる");
-  });
-
-  t("有機酸化の分子反応式: K⁺・SO₄²⁻ を戻すと教科書の式を導ける（ro1〜ro3）", () => {
-    for (const id of ["ro1", "ro2", "ro3"]) {
-      const st = REDOX_STAGES.find((s) => s.id === id);
-      const me = st.molecularEq;
-      assert(me && me.spectator === "SO4^2-" && me.fixed && me.join, id + ": molecularEq の定義が無い");
+      assert(me && me.reactants && me.products && me.answer, c.id + ": molecularEq の定義が無い");
+      /* ⚠ **数を手で書いてある唯一の場所がここ。**改修で係数が動いていないことを
+         人が目で読める形にするために、あえて上の表に写してある（導出からは取らない）。 */
+      assert(String(me.answer) === String(c.answer),
+        c.id + ": 模範係数が動いている " + me.answer + " → 期待 " + c.answer);
       // 原子・電荷の保存を模範係数で独立に数え直す（K・S・O は間違えやすい）
       const nL = me.reactants.length;
       const L = me.reactants.map((sp, i) => ({ sp, n: me.answer[i] }));
       const R = me.products.map((sp, i) => ({ sp, n: me.answer[nL + i] }));
-      assert(compareSides(L, R).balanced, id + ": 模範係数で原子か電荷が保存しない");
-      assert(gcdAll(me.answer) === 1, id + ": 模範係数が最簡整数比でない");
-      const [a, b] = st.answer;
-      // まだ足していない状態: 左右の必要数が一致し、4個（=H₂SO₄ の係数）
-      const zero = molecularizeStep(st, a, b, 0);
-      assert(zero.consistent,
-        id + ": 左右で必要な傍観イオンの数が食い違う: " + JSON.stringify([zero.left.need, zero.right.need]));
-      assert(zero.need === 4, id + ": 足す SO₄²⁻ は4個のはず: " + zero.need);
-      assert(!zero.ok && zero.reason.includes("足りない"), id + ": 0個で完成扱い");
-      // K₂Cr₂O₇ は SO₄²⁻ を足す前から組めている（K⁺ は fixed の2個で足りる）
-      assert(zero.left.terms.some((x) => x.sp === "K2Cr2O7"),
-        id + ": K₂Cr₂O₇ が組めていない: " + JSON.stringify(zero.left.terms));
-      // あぶれるイオン: 左辺 H⁺、右辺 Cr³⁺（→Cr₂(SO₄)₃）と K⁺（→K₂SO₄）
-      assert(zero.left.free.some((f) => f.sp === "H+"), id + ": 左辺の H⁺ があぶれない");
-      assert(zero.right.free.some((f) => f.sp === "Cr^3+") && zero.right.free.some((f) => f.sp === "K+"),
-        id + ": 右辺の Cr³⁺・K⁺ があぶれない: " + JSON.stringify(zero.right.free));
-      // ぴったり4個で完成し、係数が模範と一致・並びも登録順にそろう
-      const done = molecularizeStep(st, a, b, 4);
-      assert(done.ok, id + ": 4個で完成しない: " + done.reason);
-      assert(done.verified, id + ": 導いた式が検算（原子・電荷・最簡比）を通らない");
-      assert(String(done.coeffs) === String(me.answer),
-        id + ": 導いた係数が模範と違う: " + done.coeffs + " / " + me.answer);
-      assert(done.left.terms.map((x) => x.sp).join() === me.reactants.join() &&
-             done.right.terms.map((x) => x.sp).join() === me.products.join(),
-        id + ": 完成形の並びが登録順でない: " + JSON.stringify(done.right.terms));
-      // 多すぎると SO₄²⁻ が両辺に残る
-      const over = molecularizeStep(st, a, b, 5);
-      assert(!over.ok && over.reason.includes("多い"), id + ": 多すぎを通した");
-      assert(over.left.free.some((f) => f.sp === "SO4^2-") && over.right.free.some((f) => f.sp === "SO4^2-"),
-        id + ": あまった SO₄²⁻ が両辺に残らない");
-      // 2倍は最簡でないので検算を通さない
+      assert(compareSides(L, R).balanced, c.id + ": 模範係数で原子か電荷が保存しない");
+      assert(gcdAll(me.answer) === 1, c.id + ": 模範係数が最簡整数比でない");
+      assert(checkMolecularEq(st, me.answer).ok, c.id + ": 模範係数が検算を通らない");
+      // 2倍は最簡でないので通さない
       const dbl = checkMolecularEq(st, me.answer.map((n) => n * 2));
-      assert(!dbl.ok && dbl.gcd === 2, id + ": 2倍を通した");
+      assert(!dbl.ok && dbl.gcd === 2, c.id + ": 2倍を通した");
     }
-    // rn 系（従来形の join）が一般化後も同じ結果を返すことは上のテストが担保する
+    // 硝酸の二役: 酸の係数は「還元されるぶん ＋ 塩に入るぶん」（データの自己整合）
+    for (const id of ["rn1", "rn2"]) {
+      const me = REDOX_STAGES.find((s) => s.id === id).molecularEq;
+      assert(me.answer[me.acid] === me.answer[me.reduced] + me.answer[me.salt] * me.spectatorPerSalt,
+        id + ": 酸の係数が 還元ぶん＋傍観ぶん になっていない");
+    }
+    // molecularEq を持たないステージは検算そのものが立たない（黙って正解にしない）
+    assert(!checkMolecularEq(REDOX_STAGES[0], [1, 1]).ok, "molecularEq 無しで正解になる");
+  });
+
+  /* ★★ ユーザーの決定（2026-09-08）:
+       > **きまっている　きまっていない　　は区別がつきません**
+       > **どちらも同じ扱いです**
+     K⁺（K₂Cr₂O₇ が連れてくる・数が決まっている）と SO₄²⁻（H₂SO₄ の本数で決まる）を
+     **同じ形で問う**。片方だけを「探さなくてよい」とする作りに戻っていないことを見張る。
+     ⚠ データにその区別を書ける口（spectator / fixed / fixedNote / join）は消した。
+     消した口が生き返ったら、ここが赤くなる。 */
+  t("④は K⁺ も SO₄²⁻ も同じ形で問う（片方だけを「決まっている」と特別扱いしない）", () => {
+    for (const st of REDOX_STAGES) {
+      const me = st.molecularEq;
+      if (!me) continue;
+      for (const k of ["spectator", "fixed", "fixedNote", "join"]) {
+        assert(me[k] === undefined,
+          st.id + `: molecularEq.${k} が復活している（「探すのは1種類だけ」の名残）`);
+      }
+    }
+    // ro1: K⁺ と SO₄²⁻ が**同じ形の行**として並び、どちらも数を答えさせる
+    const ro1 = REDOX_STAGES.find((s) => s.id === "ro1");
+    const rows = spectatorAddRows(ro1, 3, 1, 1);
+    const byId = {};
+    for (const r of rows) byId[r.sp] = r;
+    assert(rows.length === 2 && byId["K+"] && byId["SO4^2-"],
+      "ro1 の④に K⁺・SO₄²⁻ の2行が並ばない: " + JSON.stringify(rows.map((r) => r.sp)));
+    assert(byId["K+"].n === 2 && byId["SO4^2-"].n === 4,
+      "ro1 の④の答えが違う: " + JSON.stringify(rows.map((r) => [r.sp, r.n])));
+    // 行の形（持ち物）が同じ ＝ 片方だけに断り書きが付いていない
+    assert(JSON.stringify(Object.keys(byId["K+"]).sort()) === JSON.stringify(Object.keys(byId["SO4^2-"]).sort()),
+      "K⁺ と SO₄²⁻ で行の形が違う: " + Object.keys(byId["K+"]) + " / " + Object.keys(byId["SO4^2-"]));
+    for (const sp of ["K+", "SO4^2-"]) {
+      const none = explainSpectatorAdd(ro1, 3, 1, 1, sp, undefined);
+      const ok = explainSpectatorAdd(ro1, 3, 1, 1, sp, byId[sp].n);
+      assert(none && !none.ok && ok && ok.ok, sp + ": 採点が両方の答え方を返さない");
+      // ⚠ 問いの文が答えの数を配っていない
+      assert(!new RegExp("両辺に .* を " + byId[sp].n + "個").test(none.reason),
+        sp + ": 問いの文に答えの数が入っている: " + none.reason);
+      assert(!/探すのは|数が決まって|連れてきたぶん。数を/.test(none.reason),
+        sp + ": 片方だけの断り書きが出ている: " + none.reason);
+    }
+    // ④前半（もともと何だった？）も、左辺のイオンぜんぶを同じ形で聞く
+    const owner = bottleOwnerChoices(ro1, 3, 1);
+    assert(owner.length === 3 && owner.every((r) => r.options.length >= 3 && r.answerKey),
+      "ro1 の④前半が左辺のイオン3つを同じ形で聞いていない: " + JSON.stringify(owner.map((r) => r.ion)));
   });
 
   t("溶液中の酸化還元: 半反応式が定義され、combineHalves でイオン反応式がつり合う", () => {
@@ -2317,19 +2316,35 @@ function runModelTests() {
     const per = {};
     for (const B of p.bottles) for (const r of B.riders) per[B.sp] = (per[B.sp] || 0) + (r.sp === "SO4^2-" ? r.n : 0);
     assert(per.FeSO4 === 10 && per.H2SO4 === 8 && !per.KMnO4, "SO₄²⁻ の内訳が違う: " + JSON.stringify(per));
-    // **筆算を持つ5本では、この合計が molecularizeStep の need と一致する**
-    // （もとの物質の言い方と筆算の言い方が同じ数に着地することの機械検査）
+    /* ★ 2026-09-08: ここは molecularizeStep（筆算の④⑤）の need と突き合わせていた。
+       あの段を消したので、**模範係数から独立に数え直す**形に置き換えた ——
+         ついて来た数 ＝ （模範の左辺が出すそのイオンの総数）−（イオン反応式が使うぶん）
+       模範係数と電離表と combineHalves しか使わないので、bottlePlan の数え方とは別の道。
+       ⚠ ここが赤くなったら、④で聞く個数が模範の式と食い違っている。 */
     let checked = 0;
     for (const st of REDOX_STAGES.filter((s) => s.molecularEq && s.bottles)) {
+      const me = st.molecularEq;
       const [a, b] = st.answer;
       const s = minBottleScale(st, a, b);
-      const need = molecularizeStep(st, a, b, 0).need;
-      const t = bottleRiderTotals(st, a, b, s).find((x) => x.sp === st.molecularEq.spectator);
-      assert(t && t.n === need * s,
-        st.id + ": ついて来た数と筆算の足す数が違う " + (t && t.n) + " / " + need * s);
+      const ionic = combineHalves(st, a, b);
+      const usedOf = (sp) => (ionic.left.find((t) => t.sp === sp) || { n: 0 }).n * s;
+      // 模範の左辺（＝入れた物質）が水に入って出すイオンを、係数どおりに数える
+      const out = {};
+      me.reactants.forEach((sp, i) => {
+        for (const p2 of (DISSOCIATION[sp] || [])) out[p2] = (out[p2] || 0) + me.answer[i];
+      });
+      const totals = bottleRiderTotals(st, a, b, s);
+      for (const t of totals) {
+        assert(out[t.sp] - usedOf(t.sp) === t.n,
+          `${st.id}: ${t.sp} のついて来た数が模範と違う ${t.n} / ${out[t.sp] - usedOf(t.sp)}`);
+      }
+      // 反応に使われず残るイオンを取りこぼしていない（数えた種の顔ぶれも合う）
+      const want = Object.keys(out).filter((sp) => out[sp] - usedOf(sp) > 0).sort();
+      assert(String(totals.map((t) => t.sp).sort()) === String(want),
+        `${st.id}: ④に並ぶイオンの顔ぶれが模範と違う ${totals.map((t) => t.sp).sort()} / ${want}`);
       checked++;
     }
-    assert(checked === 5, "照合できた筆算のステージが5本でない: " + checked);
+    assert(checked === 5, "照合できた模範つきのステージが5本でない: " + checked);
   });
 
   /* ================================================================================
@@ -2355,7 +2370,7 @@ function runModelTests() {
         checked++;
       }
     }
-    assert(checked === 8, "見た組が8でない（bottles を持つ4ステージ × ×1/×2）: " + checked);
+    assert(checked === 18, "見た組が18でない（bottles を持つ9ステージ × ×1/×2）: " + checked);
     // ★ rs1 は ×2 にすると 1/9 → 2/18。18 は紙の筆算で書く「両辺に SO₄²⁻ を18個ずつ」と同じ数
     const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
     assert(spectatorAddRows(rs1, 5, 1, 2).find((r) => r.sp === "SO4^2-").n === 18,
@@ -2384,10 +2399,13 @@ function runModelTests() {
         if (r.partners.length === 1 && r.partners[0].n === r.n) exact++;
       }
     }
-    assert(cases === 35, "見た組み合わせが35でない: " + cases);
+    // ★ 2026-09-08: 4ステージ → 9ステージ（15行 × 5通り）
+    assert(cases === 75, "見た組み合わせが75でない: " + cases);
     /* ⚠ 3件（r3 の Cl⁻・rs1 の K⁺・rs3 の K⁺）は、1価どうしが1対1で組むので
-       相手の個数がそのまま答えになる。⚠ **rs2 の K⁺ は違う**（相手は Cr₂O₇²⁻ 1個 で答えは 2）
-       —— そこが「2価のイオンには K⁺ が2個要る」の見せ場。数が動いたら見直すこと */
+       相手の個数がそのまま答えになる。⚠ **rs2・ro1〜ro3 の K⁺ は違う**
+       （相手は Cr₂O₇²⁻ 1個 で答えは 2）—— そこが「2価のイオンには K⁺ が2個要る」の見せ場。
+       ⚠ **rn1・rn2 の NO₃⁻ も違う**（相手は H⁺ 8個／4個 で答えは 6／2）＝ 硝酸の二役。
+       数が動いたら見直すこと */
     assert(exact === 3, "相手の個数がそのまま答えになる回が3でない: " + exact);
   });
 
@@ -2411,18 +2429,27 @@ function runModelTests() {
     assert(bottlePlan(rs1, 5, 1, 2).ok, "×2 で組めない");
   });
 
-  t("BOTTLE: ④⑤の段は、既存の筆算（molecularEq）を持つステージには出さない", () => {
+  /* ★ 2026-09-08: 除外条件 `&& !stage.molecularEq` を外した（DESIGN_redox.md「筆算の④⑤を畳む」）。
+     ④⑤の実装が2本あり、v203 の作り直しが片方にしか入らなかったので、筆算側を消して
+     **9ステージ全部をここに通す**。「1画面に2つの作り方を並べない」という決めは変えていない。 */
+  t("BOTTLE: ④⑤⑥の段は bottles を持つ9ステージ全部に出る（金属樹・ヨードホルムには出さない）", () => {
     for (const st of REDOX_STAGES) {
       const shown = !!bottleStepOf(st);
-      const expect = !!st.bottles && !st.molecularEq;
-      assert(shown === expect, st.id + ": ④⑤の段の出し方が想定と違う");
+      assert(shown === !!st.bottles, st.id + ": ④⑤の段の出し方が想定と違う");
     }
     /* 【A】金属樹（r1・r2・r4）には出さない。ユーザーの指示
        「金属樹では通常イオン反応式で済ませるので④ではこの機能は不要です」
        「ステージ１，２，４は化学反応式が要らない」。
        r3（亜鉛×塩酸）は金属樹でも電池でもなく気体発生なので残す。 */
     const shown = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id).join();
-    assert(shown === "r3,rs1,rs2,rs3", "④⑤の段が出るステージが想定と違う: " + shown);
+    assert(shown === "r3,rs1,rs2,rs3,ro1,ro2,ro3,rn1,rn2", "④⑤の段が出るステージが想定と違う: " + shown);
+    // 筆算を持つ5本もここを通る ＝ 実装が2本に割れていない
+    for (const id of ["ro1", "ro2", "ro3", "rn1", "rn2"]) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      assert(bottleStepOf(st), id + ": 模範つきのステージが④⑤の段から締め出されている");
+      assert(bottlePlan(st, st.answer[0], st.answer[1], minBottleScale(st, st.answer[0], st.answer[1])).ok,
+        id + ": 導出が完成しない");
+    }
     for (const id of ["r1", "r2", "r4"]) {
       const st = REDOX_STAGES.find((s) => s.id === id);
       assert(!st.bottles, id + "（金属樹）がbottles を持ったままになっている");
@@ -2727,75 +2754,13 @@ function runModelTests() {
   });
 
   /* ================================================================================
-     【2′】④行で「両辺に足すイオンの**種類**」を人が選ぶ（v194・発注書 §6-7）。
-     ⚠ いちばん見張りたいのは **選択肢が答えを配っていないこと**。
-       正解1つだけを並べたら選ぶ意味が無く、罠が消えたら「1つしかないから正解」になる。
-     ================================================================================ */
-
-  t("ADDSP: 選ぶ種類は導出で決まり、データの模範（me.spectator）と一致する", () => {
-    const withEq = REDOX_STAGES.filter((s) => s.molecularEq);
-    assert(withEq.length === 5, "筆算の家系が5件でない: " + withEq.length);
-    for (const st of withEq) {
-      const [a, b] = st.answer;
-      const ch = spectatorChoices(st, a, b);
-      assert(ch, st.id + ": 選択肢が作れない");
-      assert(ch.answer === st.molecularEq.spectator,
-        `${st.id}: 導いた正解 ${ch.answer} が模範 ${st.molecularEq.spectator} と食い違う`);
-    }
-  });
-
-  t("ADDSP: 選択肢が答えを配っていない（正解1つ ＋ 罠が必ずある・全5ステージ）", () => {
-    for (const st of REDOX_STAGES.filter((s) => s.molecularEq)) {
-      const [a, b] = st.answer;
-      const ch = spectatorChoices(st, a, b);
-      const ok = ch.options.filter((o) => o.ok);
-      assert(ok.length === 1, `${st.id}: 正解の選択肢が1つでない: ` + ok.map((o) => o.sp).join());
-      // ⚠ ここが「答えを配らない」の本体。罠が0なら、選ぶ作業が消える
-      const traps = ch.options.filter((o) => !o.ok);
-      assert(traps.length >= 2, `${st.id}: 罠の選択肢が2つ未満（答えを配っている）: ` + ch.options.length);
-      // 罠は思いつきではなく導出 ＝ join.ion（相手を待って分子・塩になる側）
-      for (const tr of traps) {
-        assert(ch.joined.includes(tr.sp), `${st.id}: ${tr.sp} が join.ion 由来でない罠になっている`);
-      }
-      // 外したときも黙って弾かない（理由を必ず返す）
-      for (const o of ch.options) {
-        const ex = explainSpectatorPick(st, a, b, o.sp);
-        assert(ex && ex.ok === o.ok, `${st.id}/${o.sp}: 判定が選択肢の ok と食い違う`);
-        assert(ex.reason && ex.reason.length > 10, `${st.id}/${o.sp}: 理由が無い`);
-        // ⚠ **足す個数は言わない**（それは同じ行のステッパーが受け持つ別の問い）
-        const need = molecularizeStep(st, a, b, 0).need;
-        assert(!ex.reason.includes(`${need} 個ずつ`), `${st.id}/${o.sp}: 足す数まで言ってしまっている: ` + ex.reason);
-      }
-      // まだ選んでいない ＝ 正解の名前をどこにも書かない
-      const none = explainSpectatorPick(st, a, b, "");
-      assert(!none.ok && none.kind === "none", st.id + ": 未選択が none にならない");
-      assert(!none.reason.includes(SPECIES[ch.answer].disp),
-        st.id + ": 選ぶ前の案内が答えを書いている: " + none.reason);
-    }
-  });
-
-  /* ⚠ 分かれ目は「イオン反応式に出ているか」ではない。rn1 の NO₃⁻ は左辺に出ているのに
-     正解 ＝ 硝酸の二役そのもの。ここを「式に出ていないもの」で切ると rn1・rn2 が壊れる。 */
-  t("ADDSP: rn1 の NO₃⁻ は式に出ているのに正解（「出ているか」では分けられない）", () => {
-    const rn1 = REDOX_STAGES.find((s) => s.id === "rn1");
-    const ch = spectatorChoices(rn1, 3, 2);
-    const no3 = ch.options.find((o) => o.sp === "NO3-");
-    const h = ch.options.find((o) => o.sp === "H+");
-    assert(no3 && no3.ok && no3.inIonic > 0, "NO₃⁻ が「式に出ている正解」になっていない: " + JSON.stringify(no3));
-    assert(h && !h.ok && h.inIonic > 0, "H⁺ が「式に出ている罠」になっていない: " + JSON.stringify(h));
-    // 罠の理由は「組まれる側」で説明する（「式に出ている」では NO₃⁻ と区別できない）
-    const ex = explainSpectatorPick(rn1, 3, 2, "H+");
-    assert(ex.reason.includes("HNO₃"), "H⁺ が何になる側かを言わない: " + ex.reason);
-  });
-
-  /* ================================================================================
      【3】⑤の本数 ＝ 化学反応式の左辺の係数（v194・発注書 §6-7 の 3）
      ================================================================================ */
 
-  t("LEFTC: ⑤で入れる本数と、化学反応式の左辺の係数は同じ数（bottles を持つ4ステージ全部）", () => {
+  t("LEFTC: ⑤で入れる本数と、化学反応式の左辺の係数は同じ数（bottles を持つ9ステージ全部）", () => {
     const bottled = REDOX_STAGES.filter((s) => bottleStepOf(s));
-    assert(bottled.map((s) => s.id).join() === "r3,rs1,rs2,rs3",
-      "bottles を持つステージが4件でない: " + bottled.map((s) => s.id).join());
+    assert(bottled.map((s) => s.id).join() === "r3,rs1,rs2,rs3,ro1,ro2,ro3,rn1,rn2",
+      "bottles を持つステージが9件でない: " + bottled.map((s) => s.id).join());
     let left = 0, right = 0;
     for (const st of bottled) {
       const [a, b] = st.answer;
@@ -2815,9 +2780,11 @@ function runModelTests() {
       assert(txt.left.includes("そのまま化学反応式の左辺"), st.id + ": 左辺の対応を言っていない: " + txt.left);
       assert(/⑥で組み上げた化学種/.test(txt.right), st.id + ": 右辺の係数がどこから来るか言っていない");
     }
-    // 発注書 §2-3 の実測を数で固定する（左辺11欄・右辺14項）
-    assert(left === 11, "左辺の欄が11でない: " + left);
-    assert(right === 14, "右辺の項が14でない: " + right);
+    /* 発注書 §2-3 の実測を数で固定する。
+       ★ 2026-09-08 に 4ステージ → 9ステージ（筆算の家系5本を畳んだ）ので、
+       左辺 11欄 → 24欄・右辺 14項 → 32項 に増えた。**入力させる欄が増えたぶんそのもの。** */
+    assert(left === 24, "左辺の欄が24でない: " + left);
+    assert(right === 32, "右辺の項が32でない: " + right);
   });
 
   t("LEFTC: ⑤の各行が、その場で「この数が左辺の係数」と言う", () => {
