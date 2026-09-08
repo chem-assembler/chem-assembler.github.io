@@ -4,6 +4,7 @@ unit: alcohol
 unitLabel: アルコールとカルボニル化合物
 group: 官能基
 title: 官能基のかたちと名前
+summary: アルコール・エーテル・アルデヒド・ケトン11種を分子式と官能基つきで一覧に。名前の語尾と図のかたちの対応、1級と2級で酸化の行き先が変わることが読み取れます。
 codes:
   - org.alcohol.hydroxy
   - org.alcohol.class
