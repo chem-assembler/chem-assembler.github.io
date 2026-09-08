@@ -3832,8 +3832,10 @@ function checkRedoxMultipliers(stage, a, b) {
   return { ok: true, give, take };
 }
 
-/* 分子反応式（化学反応式）の検算。筆算の⑤行目が正しく導けたかを、
-   原子・電荷の保存と最簡整数比で確かめる（molecularizeStep から呼ぶ）。 */
+/* 分子反応式（化学反応式）の検算。原子・電荷の保存と最簡整数比で確かめる。
+   ★ 2026-09-08: 呼び出し元だった molecularizeStep（筆算の④⑤）は消したが、
+   **模範解答（molecularEq.answer）の独立な検算としてそのまま残す** ——
+   ④⑤⑥の導出が模範を再現することを見るテストの、相方になっている。 */
 function checkMolecularEq(stage, coeffs) {
   const me = stage && stage.molecularEq;
   if (!me) return { ok: false, reason: "この反応には分子反応式が登録されていない" };
@@ -4667,7 +4669,8 @@ function acidRoleText(stage, a, b, scale) {
   return null;
 }
 
-/* 【②】④の採点。⚠ **答えの数は言わない**（molecularizeStep の言い方に合わせる）。
+/* 【②】④の採点。⚠ **答えの数は言わない**（言うのは「相手のイオンが何個か」まで。
+   それはイオン反応式に書いてある）。
    ⚠ 空欄（undefined）は「まだ入れていない」。0 は「足さない」と答えたことにする。 */
 function explainSpectatorAdd(stage, a, b, scale, sp, got) {
   const rows = spectatorAddRows(stage, a, b, scale);
