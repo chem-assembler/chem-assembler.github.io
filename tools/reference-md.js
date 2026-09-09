@@ -313,23 +313,28 @@
             fail(where, 'video は YouTube の動画ID を書きます（英数字と - _ だけ。いまは「' + page.video + '」）');
         }
 
-        page.blocks = parseBody(lines.slice(end + 1), where);
+        page.blocks = parseBody(lines.slice(end + 1), where, end + 1);
         /* ⚠ **JSON には出さない**（`serialize` は PAGE_KEYS ＋ why ＋ blocks しか書かない）。
            ★ 生成器と `REF20` が「書いたメモが消えていないこと」をここから数える */
         page.memos = memos;
         return page;
     }
 
-    /* 本文 ＝ 空行で区切られたかたまり。かたまりは「1行の段落」か「::: の囲み」のどちらか */
-    function parseBody(lines, where) {
-        var blocks = [], chunk = [];
+    /* 本文 ＝ 空行で区切られたかたまり。かたまりは「1行の段落」か「::: の囲み」のどちらか
+     *
+     * ★★ **赤に行番号を付ける**（§20-11）。⚠ **`offset` は本文の1行目がファイルの何行目か。**
+     *   ⚠⚠ 原稿は 300 行あるので、「どこが悪いか」だけ言われても**探すのはユーザーの仕事**になる。
+     *   ★ 著者メモの報告（`reference-src/alkane.md:169`）と**同じ書き方**にそろえた。 */
+    function parseBody(lines, where, offset) {
+        var blocks = [], chunk = [], at = 0;
         var flush = function () {
             if (!chunk.length) return;
-            blocks.push(parseChunk(chunk, where));
+            blocks.push(parseChunk(chunk, where + ':' + ((offset || 0) + at + 1)));
             chunk = [];
         };
         for (var i = 0; i < lines.length; i++) {
             if (lines[i].trim() === '') { if (chunk.length && !isOpenFence(chunk)) flush(); else if (chunk.length) chunk.push(lines[i]); continue; }
+            if (!chunk.length) at = i;
             chunk.push(lines[i]);
         }
         flush();
