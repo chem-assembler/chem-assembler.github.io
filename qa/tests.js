@@ -1838,6 +1838,240 @@ function runUiTests(doc, DATA) {
             } finally { a.kill(); clearResume(); }
           });
         });
+      }).then(function () {
+        /* ---- 測定モードの往復（ユーザー申し立て 2026-09-09）----
+         *
+         * ⚠ 申し立て:「qa から assembler に飛んだ時、もどってくるともう一度問題を解くことになる」。
+         * ★ **測定モードの飛び道具は「採点したあと」の画面にしか出ない**ので、
+         *   採点済みが復元されないと**押した人は必ず解き直しになる**（v102 で実測・再現した）。
+         *   上の QW6 はめくり（flip）だけを見ていて、**測定（choice）は素通りだった**
+         *   ＝ 片側だけ直っている状態が3週間残った。両方を並べて置く。
+         *
+         * ⚠ 解き直しは手間だけの問題ではない。2回目にうっかり外すと markResult が
+         *   box を 1 に落とすので、**習得マップの緑が点いたり消えたりする**
+         *   （同時に出たもう1件の申し立て「正解しても緑になるときとそうでないときがある」）。
+         */
+        // いま出ている問題の pattern / variant を引く。**コードは __reportContext から取る**
+        // （問題文で引くと、同じ文面の variant を持つ別項目に当たりうる）
+        function curChoice(a) {
+          var code = String(a.W.__reportContext().locus).split("（")[0].trim();
+          var p = DATA.patterns.filter(function (x) { return x.code === code; })[0];
+          if (!p) return null;
+          var qt = a.D.querySelector(".q-text").textContent;
+          var v = (p.variants || []).filter(function (x) { return x.q === qt; })[0];
+          return v ? { p: p, v: v } : null;
+        }
+        function gradeCorrect(a) {
+          var f = curChoice(a);
+          assert(f, "いまの測定モードの問題を引き当てられない");
+          Array.prototype.forEach.call(a.D.querySelectorAll("#opts input[type=checkbox]"), function (b) {
+            if (f.v.correct.indexOf(+b.value) >= 0 && !b.checked) b.click();
+          });
+          a.D.getElementById("btn-grade").click();
+          return f;
+        }
+        // 測定モードの回を始め、飛び道具のある問題まで進んで**採点し**、そのリンクを押す
+        function walkChoiceToLinkAndClick(a) {
+          var KEY = a.W.QaEngine.STORE_KEY;
+          var saved = a.W.localStorage.getItem(KEY);
+          try {
+            var start = a.D.querySelector('#unit-list button[data-unit="carbonyl"][data-mode="choice"]');
+            assert(start, "カルボニルの単元カードに測定モードのボタンが無い");
+            start.click();
+            var f = null;
+            for (var i = 0; i < 12; i++) {
+              f = curChoice(a);
+              if (f && f.p.link && f.p.link.kind !== "none") break;
+              gradeCorrect(a);
+              var nx = a.D.getElementById("btn-next");
+              if (!nx) { f = null; break; }
+              nx.click();
+            }
+            assert(f && f.p.link && f.p.link.kind !== "none",
+              "測定モードの回に飛び道具のある問題が1つも出なかった（回が短すぎる）");
+            var qof = a.D.getElementById("q-of").textContent.replace(/\s/g, "");
+            gradeCorrect(a);
+            var link = a.D.querySelector("#choice-foot a.a-link");
+            assert(link, "測定モードで採点しても飛び道具が出ない（テストの前提が崩れている）");
+            var order = Array.prototype.map.call(a.D.querySelectorAll("#opts .opt"),
+              function (l) { return +l.getAttribute("data-i"); });
+            var chosenText = Array.prototype.map.call(a.D.querySelectorAll("#opts input:checked"),
+              function (b) { return b.parentNode.textContent.trim(); });
+            a.D.addEventListener("click", function (e) { e.preventDefault(); }, true);
+            link.click();
+            return { code: f.p.code, qof: qof, order: order, chosenText: chosenText };
+          } finally {
+            // ⚠ 進めるのに採点するので学習記録が動く。人の記録を汚さないよう戻す
+            if (saved === null) a.W.localStorage.removeItem(KEY);
+            else a.W.localStorage.setItem(KEY, saved);
+          }
+        }
+
+        var ctrip = null;
+        return ta("QW9: 測定モードで採点したあと往復すると、採点済みの画面に戻る", function () {
+          clearResume();
+          return openWith("").then(function (a) {
+            try { ctrip = walkChoiceToLinkAndClick(a); } finally { a.kill(); }
+            var snap = JSON.parse(sessionStorage.getItem(RESUME_KEY) || "null");
+            assert(snap, "測定モードで飛び道具を押しても控えが残っていない");
+            assert(snap.graded === true,
+              "控えが「採点済み」を持っていない（開いたか閉じたかしか控えていない）");
+            assert(snap.chosen && snap.chosen.length,
+              "控えが「何を選んだか」を持っていない（戻ると選択が消える）");
+            assert(snap.order && snap.order.length,
+              "控えが「選択肢の並び」を持っていない（混ぜ直されて自分の答えが動く）");
+            return openWith("&code=" + encodeURIComponent(ctrip.code) + "&from=assembler").then(function (b) {
+              try {
+                var qof = b.D.getElementById("q-of").textContent.replace(/\s/g, "");
+                assert(qof === ctrip.qof,
+                  "戻ったら回の位置が変わった（出るとき " + ctrip.qof + " → 戻って " + qof + "）");
+                assert(b.D.querySelectorAll("#opts .opt.locked").length,
+                  "採点済みが復元されていない ＝ もう一度解かされる（申し立ての症状そのもの）");
+                assert(b.D.getElementById("btn-next"),
+                  "「つぎへ」が無い（採点後の画面に戻っていない）");
+                assert(!b.D.getElementById("btn-grade"),
+                  "「採点する」がまだ出ている（未回答の画面に戻している）");
+                assert(b.D.querySelector("#choice-foot a.a-link"),
+                  "押した飛び道具がもう画面に無い（往復の入口が消える）");
+              } finally { b.kill(); clearResume(); }
+            });
+          });
+        }).then(function () {
+          return ta("QW9b: 復元しても「自分が選んだもの」が同じ選択肢を指す（並びごと控える）", function () {
+            /* ★ 選択肢は毎回 shuffle される。**添字だけ控えると、混ぜ直された並びの
+             *   同じ位置＝別の選択肢**を選んだことにされる。
+             * ⚠ 実物の往復では並びがたまたま一致してしまうことがあるので、
+             *   ここは**わざと逆順の並び**を控えに入れて、混ぜ直しでは再現しない形にする。 */
+            var p = DATA.patterns.filter(function (x) {
+              return (x.variants || []).some(function (v) {
+                return v.mode === "choice" && v.options && v.options.length >= 4 && v.correct.length;
+              });
+            })[0];
+            assert(p, "選択肢4つ以上の測定モードの項目が無い（テストの前提が崩れている）");
+            var v = p.variants.filter(function (x) { return x.mode === "choice"; })[0];
+            var vi = p.variants.indexOf(v);
+            var order = v.options.map(function (_o, i) { return i; }).reverse();
+            var chosen = [v.correct[0]];
+            var other = DATA.patterns.filter(function (x) { return x.code !== p.code; })[0];
+            sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+              code: p.code, unitId: p.unit, mode: "choice", scope: "daily", lv: null,
+              idx: 0, right: 0, wrong: 0,
+              queue: [[p.code, vi], [other.code, 0]],
+              order: order, chosen: chosen, graded: true
+            }));
+            return openWith("&code=" + encodeURIComponent(p.code) + "&from=assembler").then(function (a) {
+              try {
+                var shown = Array.prototype.map.call(a.D.querySelectorAll("#opts .opt"),
+                  function (l) { return +l.getAttribute("data-i"); });
+                assert(shown.join(",") === order.join(","),
+                  "控えた並びで出ていない（" + shown.join(",") + " ≠ " + order.join(",") +
+                  "）＝ 戻ってきた画面が出て行ったときと違う並びになる");
+                var checked = Array.prototype.map.call(a.D.querySelectorAll("#opts input:checked"),
+                  function (b) { return b.parentNode.textContent.trim(); });
+                assert(checked.length === chosen.length,
+                  "選んだ数が違う（" + checked.length + " ≠ " + chosen.length + "）");
+                assert(checked[0] === v.options[chosen[0]].trim(),
+                  "復元した選択が別の選択肢を指している（「" + checked[0] + "」≠「" +
+                  v.options[chosen[0]] + "」）＝ 自分の答えが勝手に書き換わる");
+                assert(a.D.querySelectorAll("#opts .opt.locked").length,
+                  "採点済みが復元されていない");
+              } finally { a.kill(); clearResume(); }
+            });
+          });
+        }).then(function () {
+          return ta("QW9c: 並びが噛み合わない古い控えは黙って混ぜ直す（白紙にしない）", function () {
+            // ⚠ 否定対照。選択肢を増減させた後に古い控えが残っても、
+            //   控えた並びを無理に使って**無い選択肢**を指したり落ちたりしてはいけない
+            var p = DATA.patterns.filter(function (x) {
+              return (x.variants || []).some(function (v) { return v.mode === "choice" && v.options; });
+            })[0];
+            var v = p.variants.filter(function (x) { return x.mode === "choice"; })[0];
+            var other = DATA.patterns.filter(function (x) { return x.code !== p.code; })[0];
+            sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+              code: p.code, unitId: p.unit, mode: "choice", scope: "daily", lv: null,
+              idx: 0, right: 0, wrong: 0,
+              queue: [[p.code, p.variants.indexOf(v)], [other.code, 0]],
+              order: [0, 0, 99], chosen: [999], graded: true      // 壊れた控え
+            }));
+            return openWith("&code=" + encodeURIComponent(p.code) + "&from=assembler").then(function (a) {
+              try {
+                var shown = Array.prototype.map.call(a.D.querySelectorAll("#opts .opt"),
+                  function (l) { return +l.getAttribute("data-i"); });
+                assert(shown.length === v.options.length,
+                  "壊れた控えで選択肢の数が変わった（" + shown.length + " ≠ " + v.options.length + "）");
+                assert(shown.slice().sort(function (x, y) { return x - y; }).join(",") ===
+                  v.options.map(function (_o, i) { return i; }).join(","),
+                  "壊れた控えを使ってしまい、選択肢が重複／欠落した（" + shown.join(",") + "）");
+                assert(!a.D.querySelectorAll("#opts input:checked").length,
+                  "無い選択肢を選んだことにしている");
+              } finally { a.kill(); clearResume(); }
+            });
+          });
+        }).then(function () {
+          return ta("QW10: 往復を2回しても、その項目の記録は1回しか動かない", function () {
+            /* ★★ **記録の数を数える。**
+             *
+             * ⚠ `markResult` は正解で box を1つ上げ、**誤答で box を 1 に落とす**。
+             *   同じ解答が2回数えられると box が上下し、**習得マップの緑が点いたり消えたりする**
+             *   （ユーザー申し立て「正解しても緑になるときとそうでないときがある」）。
+             *
+             * ★ **戻る道は1つではない。** QW9 の復元で解き直しは無くなるが、
+             *   ブラウザの戻る・帯のリンクをもう一度押す・タブの復元では
+             *   **同じ控えがもう一度使われる**。v103 で実測すると
+             *   seen 1→2・box 1→2・cRight 1→2 と、1回の解答が2回数えられた。
+             *   だから復元だけに頼らず、記録そのものを冪等にしてある。 */
+            clearResume();
+            var KEY = null, saved = null, code = null;
+            function recOf(a, c) {
+              var pr = {};
+              try { pr = JSON.parse(a.W.localStorage.getItem(KEY)) || {}; } catch (e) {}
+              return pr[c] || { seen: 0, box: 0, cRight: 0, right: 0, wrong: 0 };
+            }
+            return openWith("").then(function (a) {
+              KEY = a.W.QaEngine.STORE_KEY;
+              saved = a.W.localStorage.getItem(KEY);
+              try { code = walkChoiceToLinkAndClick(a).code; } finally { a.kill(); }
+              // 1回目の帰還 —— 復元された採点済みから「つぎへ」＝ ここで1回だけ記録される
+              return openWith("&code=" + encodeURIComponent(code) + "&from=assembler").then(function (b) {
+                var before, n1;
+                try {
+                  before = recOf(b, code);
+                  var nx = b.D.getElementById("btn-next");
+                  assert(nx, "採点済みが復元されていない（QW9 と同じ症状）");
+                  nx.click();
+                  n1 = recOf(b, code);
+                } finally { b.kill(); }
+                assert(n1.seen === before.seen + 1,
+                  "1回目の帰還で記録が1回ぶん増えていない（seen " + before.seen + " → " + n1.seen + "）");
+                var snap = JSON.parse(sessionStorage.getItem(RESUME_KEY) || "null");
+                assert(snap && snap.marked && snap.marked.indexOf(code) >= 0,
+                  "控えが「もう記録した」を覚えていない ＝ 次に戻ったときにまた数える");
+                // 2回目の帰還（ブラウザの戻る等で同じ控えがもう一度使われる）＝ 増えてはいけない
+                return openWith("&code=" + encodeURIComponent(code) + "&from=assembler").then(function (c) {
+                  var n2;
+                  try {
+                    var nx2 = c.D.getElementById("btn-next");
+                    assert(nx2, "2回目の帰還で採点済みが復元されていない");
+                    nx2.click();
+                    n2 = recOf(c, code);
+                  } finally { c.kill(); }
+                  assert(n2.seen === n1.seen && n2.box === n1.box && n2.cRight === n1.cRight,
+                    "往復をもう一度したら記録がまた動いた（seen " + n1.seen + "→" + n2.seen +
+                    " / box " + n1.box + "→" + n2.box + " / cRight " + n1.cRight + "→" + n2.cRight +
+                    "）＝ 1回の解答が2回数えられ、定着の緑が点いたり消えたりする");
+                });
+              });
+            }).then(function (r) {
+              if (saved === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
+              clearResume();
+              return r;
+            }, function (e) {
+              if (KEY) { if (saved === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved); }
+              clearResume();
+              throw e;
+            });
+          });
+        });
       });
     }).then(function () {
       // ⚠ **確度は答えより先に目に入る位置に無いと意味がない**（2026-08-12）。
