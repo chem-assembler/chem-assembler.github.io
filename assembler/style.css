@@ -3352,14 +3352,29 @@ b.em { font-weight: 700; color: var(--neon-blue); }
  *   無ければ生成器が赤くなるので、**ここに書き忘れると気づける**。
  * ========================================================================== */
 
-/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる */
-.ref-sec { margin: 22px 0 10px; scroll-margin-top: 12px; }
+/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる
+ *
+ * ★★ **章の切れ目は「見出しの下の線」ではなく「節の上の線＋大きな余白」**（2026-09-10・ref-read レーン）。
+ *   ⚠ **面Aと面Bで同じ決めごと**にしてある —— 面Aは `gen-reference-pages.mjs` の
+ *     `.ref-scope .ref-sec` / `.ref-sec-h` がこれを上書きするが、**上書きしているのは寸法だけ**で、
+ *     ①節の上に線 ②見出しは本文の約1.35倍 ③最初の節には線を引かない、の3つは共通。
+ *   ⚠ **なぜ直したか**（ユーザーの申し立て「わかりにくいというか、とっかかりにくい」）:
+ *     前は **見出し 14px / 本文 13px ＝ 1.08倍**で、下線も `--border-color`（白の 8%）。
+ *     ★ 資料ペインは1ページ **5,594px ＝ 6.8画面ぶん**あり、**そのあいだ切れ目が見えなかった。** */
+.ref-sec {
+    margin: 36px 0 10px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+    scroll-margin-top: 12px;
+}
+/* ⚠ 1つ目の節の上には線を引かない（ページの頭に意味の無い区切りが出る） */
+.ref-sec:first-child { margin-top: 2px; padding-top: 0; border-top: 0; }
 .ref-sec-h {
-    margin: 0 0 4px;
-    font-size: 14px;
+    margin: 0 0 5px;
+    /* ★ 本文 13px の 1.35倍。⚠ 面Aは 23px / 本文 17px ＝ 同じ 1.35倍（器が違うので px は違う） */
+    font-size: 17.5px;
+    line-height: 1.45;
     color: #e0b0ff;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 5px;
 }
 /* ★ 「この節で分かること」1行。⚠ 本文と同じ見た目にしない（着地した人が最初に読む文なので） */
 .ref-sec-lead { margin: 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }

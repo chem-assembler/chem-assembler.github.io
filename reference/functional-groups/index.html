@@ -124,10 +124,17 @@ box-shadow:inset 3px 0 0 var(--accent)}
 }
 /* 節。★ 追従ヘッダーは無いが、アンカーで着地したとき見出しが窓の上端に貼り付かないよう余白を置く。
    ★★ **見出しを本文から立たせる**（設計書 §20-2）—— 前は本文と同じ色・同じ太さで、
-      7画面ぶん同じ見た目が続いていた（「とっかかりにくい」の実体）。 */
+      7画面ぶん同じ見た目が続いていた（「とっかかりにくい」の実体）。
+   ⚠⚠ **決めごとは面Aと面Bで1つ**（assembler/style.css の .ref-sec にも同じ注記がある）:
+      ⚠ この注記は SHELL_CSS（テンプレートリテラル）の中なので**バッククォートを書けない**。
+      ① 章の切れ目は**節の上の線**（見出しの下の線ではない）
+      ② 見出しは**本文の約1.35倍**（面A 23/17 ・面B 17.5/13）
+      ③ **最初の節には線を引かない**
+      ★ ここで上書きしているのは**寸法だけ** —— 読み欄 680px と資料ペイン 340px で
+        同じ px を使うと、片方が必ず外れる。 */
 .ref-scope .ref-sec{scroll-margin-top:18px;margin:52px 0 16px;padding-top:22px;border-top:2px solid var(--line)}
 .ref-scope .ref-sec:first-child{margin-top:8px;padding-top:0;border-top:0}
-.ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);border-bottom:0;padding-bottom:0;margin-bottom:6px}
+.ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);margin-bottom:6px}
 .ref-scope .ref-sec-lead{font-size:14.5px;color:var(--dim)}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
@@ -332,14 +339,29 @@ footer a:hover{color:var(--brand)}
  *   無ければ生成器が赤くなるので、**ここに書き忘れると気づける**。
  * ========================================================================== */
 
-/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる */
-.ref-sec { margin: 22px 0 10px; scroll-margin-top: 12px; }
+/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる
+ *
+ * ★★ **章の切れ目は「見出しの下の線」ではなく「節の上の線＋大きな余白」**（2026-09-10・ref-read レーン）。
+ *   ⚠ **面Aと面Bで同じ決めごと**にしてある —— 面Aは `gen-reference-pages.mjs` の
+ *     `.ref-scope .ref-sec` / `.ref-sec-h` がこれを上書きするが、**上書きしているのは寸法だけ**で、
+ *     ①節の上に線 ②見出しは本文の約1.35倍 ③最初の節には線を引かない、の3つは共通。
+ *   ⚠ **なぜ直したか**（ユーザーの申し立て「わかりにくいというか、とっかかりにくい」）:
+ *     前は **見出し 14px / 本文 13px ＝ 1.08倍**で、下線も `--border-color`（白の 8%）。
+ *     ★ 資料ペインは1ページ **5,594px ＝ 6.8画面ぶん**あり、**そのあいだ切れ目が見えなかった。** */
+.ref-sec {
+    margin: 36px 0 10px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+    scroll-margin-top: 12px;
+}
+/* ⚠ 1つ目の節の上には線を引かない（ページの頭に意味の無い区切りが出る） */
+.ref-sec:first-child { margin-top: 2px; padding-top: 0; border-top: 0; }
 .ref-sec-h {
-    margin: 0 0 4px;
-    font-size: 14px;
+    margin: 0 0 5px;
+    /* ★ 本文 13px の 1.35倍。⚠ 面Aは 23px / 本文 17px ＝ 同じ 1.35倍（器が違うので px は違う） */
+    font-size: 17.5px;
+    line-height: 1.45;
     color: #e0b0ff;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 5px;
 }
 /* ★ 「この節で分かること」1行。⚠ 本文と同じ見た目にしない（着地した人が最初に読む文なので） */
 .ref-sec-lead { margin: 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
