@@ -47,6 +47,13 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Sans JP",system-ui,sans-serif;line-height:1.85}
 .wrap{max-width:984px;margin:0 auto;padding:0 16px}
+/* ★★ **1カラムのときも読み欄を広げすぎない**（2026-09-10・実測）。
+   ⚠ 984px の器をそのまま使うと、**800〜999px の窓で1行 45〜56字**になっていた
+     （実測: 768px → 43.3字 ／ 900px → 51.1字 ／ 999px → 56.0字）
+     ＝ タブレット横と小さいノートPCがちょうどここに落ちる。
+   ★ 712 = 読み欄 680 + 左右の余白 16×2 ＝ **どの幅でも 40字を超えない**。
+   ⚠ 1000px 以上は2カラムなので触らない（あちらは grid が 680px に決めている）。 */
+@media (max-width:999px){main.wrap{max-width:712px}}
 /* ★ 帯だけは暗いまま（ブランドの手がかり） */
 header{background:var(--band);padding:11px 0;font-size:13px;color:#a8b0c4}
 header a{color:#a8b0c4;text-decoration:none}
@@ -67,8 +74,9 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
-     ＝ 「読みにくい」の主因は行長ではない。★ 大きさ（15.5px）と行送りを上げ、
-       字数を保つために器のほうを広げた（17px / 680px ＝ 1行 40.0 字）。 */
+     ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
+       字数を保つために器のほうを広げた（17px / 680px ＝ 1行 40.0 字）。
+   ⚠ **行送りの倍率は 1.95 のまま変えていない**（実寸は 30.2 → 33.2px。字が大きくなったぶん）。 */
 .ref-scope{font-size:17px}
 .ref-scope .ref-p{font-size:17px;line-height:1.95;margin:0 0 20px}
 /* ⚠ 表は**器の幅いっぱいに引き伸ばさない**（ペインは 340px なので 100% でよいが、
@@ -99,9 +107,22 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
    ⚠ 実際、.ref-toc details などの器の指定は**焼いた版でずっと効いていなかった**
      （広い画面でも資料ペインの小さなカードのまま出ていた。2026-09-09 に実測して判明）。 */
 .ref-layout{display:block}
-.ref-layout .ref-toc{margin:22px 0 10px}
-.ref-layout .ref-toc details{background:var(--panel);border:1px solid var(--line);border-radius:12px}
+/* ★★ 狭い面では**畳んだ目次を上に貼り付ける**（2026-09-10）。
+   ⚠ 貼り付けないと、375px 幅で **9,477px ＝ 11.6画面**を読むあいだ、
+     現在地の手がかりがページの先頭に置いてきぼりになる（＝ 見に行けない ＝ 無いのと同じ）。
+   ★ 地を敷いて左右いっぱいに伸ばす（本文が札の脇から透けない） */
+.ref-layout .ref-toc{position:sticky;top:0;z-index:5;margin:22px -16px 10px;padding:6px 16px 8px;
+background:var(--bg)}
+.ref-layout .ref-toc details{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+max-height:calc(100vh - 28px);overflow:auto;box-shadow:0 1px 3px rgba(32,36,43,.07)}
 .ref-layout .ref-toc summary{padding:12px 14px;font-size:14px;color:var(--fg);cursor:pointer;font-weight:700}
+/* ★ 畳んだ目次の札に出す現在地（TOC_JS が入れる。⚠ 広い面では summary ごと隠れる）。
+   ⚠ **1行に留める** —— 節名には長いものがあり、折り返させると札の高さが
+     スクロールのたびに変わって下の本文が飛ぶ（実測して1行に決めた。札は 88px で固定） */
+.ref-layout .ref-toc summary .ref-toc-now{display:block;margin-top:3px;font-weight:400;
+font-size:12.5px;color:var(--accent);line-height:1.5;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ref-layout .ref-toc summary .ref-toc-now:empty{display:none}
 .ref-layout .ref-toc ul{list-style:none;margin:0;padding:0 14px 12px}
 .ref-layout .ref-toc li{margin:0 0 2px}
 .ref-layout .ref-toc a{display:block;padding:6px 9px;border-radius:6px;font-size:13.5px;color:var(--dim);
@@ -112,9 +133,12 @@ text-decoration:none;line-height:1.65}
 box-shadow:inset 3px 0 0 var(--accent)}
 @media (min-width:1000px){
   .ref-layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:40px;align-items:start}
-  .ref-layout .ref-toc{position:sticky;top:16px;margin:0;max-height:calc(100vh - 32px);overflow:auto}
+  /* ⚠ 広い面では**目次が独立した1列**なので、狭い面の「貼り付いた札」の飾りを全部戻す */
+  .ref-layout .ref-toc{position:sticky;top:16px;margin:0;padding:0;background:none;
+  max-height:calc(100vh - 32px);overflow:auto}
   .ref-layout .ref-toc summary{display:none}
-  .ref-layout .ref-toc details{background:none;border:0;border-left:1px solid var(--line);border-radius:0}
+  .ref-layout .ref-toc details{background:none;border:0;border-left:1px solid var(--line);border-radius:0;
+  max-height:none;overflow:visible;box-shadow:none}
   .ref-layout .ref-toc ul{padding:2px 0 2px 8px}
   /* ★ 題・要約・小見出しも読み欄にそろえる。⚠ 前は本文 572px に対して題が 828px あり、
      **左端が2つある**状態だった（画面の中で目の帰る位置が定まらない） */
@@ -578,6 +602,10 @@ document.addEventListener('click', function (e) {
   if (!secs.length) return;
   var box = document.querySelector('.ref-toc');
   var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
   var update = function () {
     /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
     var line = Math.min(180, window.innerHeight * 0.3);
@@ -588,6 +616,9 @@ document.addEventListener('click', function (e) {
     if (cur === last) return;
     last = cur;
     for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
     /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
        （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
     var a = links[cur.id];
