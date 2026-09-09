@@ -372,7 +372,7 @@ function slTrack(name, params) {
     // 同 box 帯のなかでの並びは軽くシャッフル
     queue = shuffle(queue);
 
-    session = { unitId: unitId, mode: mode, scope: scope, lv: lv, queue: queue, idx: 0, right: 0, wrong: 0 };
+    session = { unitId: unitId, mode: mode, scope: scope, lv: lv, queue: queue, idx: 0, right: 0, wrong: 0, marked: {} };
     show('view-study');
     renderStudy();
   }
@@ -386,7 +386,7 @@ function slTrack(name, params) {
     });
     session = {
       unitId: null, mode: 'choice', scope: 'confirm', lv: null,
-      queue: queue, idx: 0, right: 0, wrong: 0
+      queue: queue, idx: 0, right: 0, wrong: 0, marked: {}
     };
     show('view-study');
     renderStudy();
@@ -756,10 +756,27 @@ function slTrack(name, params) {
   }
 
   // **mode を渡す**（測定モードの成績だけが定着の認定に効く）。
-  // session.mode をここで読むので、呼び出し側に mode を書き足す必要はない
+  // session.mode をここで読むので、呼び出し側に mode を書き足す必要はない。
+  //
+  // ⚠⚠ **同じ項目を1つの回で二度記録しない**（2026-09-09）。
+  //   `markResult` は正解で `box` を1つ上げ、**誤答で `box` を 1 に落とす**。
+  //   同じ問題がもう一度出て、そのたびに走ると **box が上下する**
+  //   ＝ 習得マップの緑が点いたり消えたりする
+  //   （ユーザー申し立て「正解しても緑になるときとそうでないときがある」）。
+  //
+  // ★ **戻る道は1つではない。** 上の「採点済みを復元する」で解き直しは無くなるが、
+  //   ブラウザの戻る・帯のリンクをもう一度押す・タブの復元でも同じ控えがもう一度使われる。
+  //   実測（v103）: 往復して「つぎへ」→ もう一度同じ URL で戻って「つぎへ」で
+  //   **seen 1→2・box 1→2・cRight 1→2**。1回の解答が2回数えられていた。
+  //   だから復元だけに頼らず、**記録そのものを冪等にする**。
   function advance(pid, ok) {
-    markResult(pid, ok, session.mode);
-    if (ok) session.right++; else session.wrong++;
+    if (!session.marked) session.marked = {};
+    if (!session.marked[pid]) {
+      session.marked[pid] = 1;
+      markResult(pid, ok, session.mode);
+      if (ok) session.right++; else session.wrong++;
+      noteMarked(pid);        // ★ 控えにも書き足す（往復のあいだに忘れないように）
+    }
     session.idx++;
     renderStudy();
   }
@@ -979,9 +996,31 @@ function slTrack(name, params) {
           function (l) { return +l.getAttribute('data-i'); }),
         chosen: Array.prototype.map.call(document.querySelectorAll('#opts input:checked'),
           function (b) { return +b.value; }),
-        graded: !!document.querySelector('#choice-foot .answer')
+        graded: !!document.querySelector('#choice-foot .answer'),
+        // ★ **もう記録した項目**（advance の冪等化の芯）。これを控えに持って行かないと、
+        //   往復のあいだに「もう数えた」ことが消え、二度目の記録で box が上下する
+        marked: Object.keys(session.marked || {})
       }));
     } catch (e) { /* 保存できなくても往復そのものは壊さない */ }
+  }
+
+  /* ★ 記録した項目を**控えにも書き足す**（2026-09-09）。
+   *
+   * ⚠ 控えを書くのは飛び道具を押した瞬間だけなので、そのあと「つぎへ」で記録しても
+   *   控えは古いまま残る。**控えは往復のたびに読み直される**ので、ここを更新しないと
+   *   「もう記録した」ことが往復のあいだに消え、戻ってもう一度「つぎへ」を押すと
+   *   同じ解答が2回数えられる（実測で再現した経路）。
+   * ⚠ 控えが無い／読めないときは**何もしない**（記録の冪等化はセッション内で効いている）。 */
+  function noteMarked(pid) {
+    try {
+      var raw = sessionStorage.getItem(RESUME_KEY);
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (!s) return;
+      if (!Array.isArray(s.marked)) s.marked = [];
+      if (s.marked.indexOf(pid) < 0) s.marked.push(pid);
+      sessionStorage.setItem(RESUME_KEY, JSON.stringify(s));
+    } catch (e) { /* 控えを更新できなくても本体は止めない */ }
   }
 
   // 控えを実際のセッションに戻す。**少しでも噛み合わなければ何もしない**（false を返して
@@ -1001,9 +1040,12 @@ function slTrack(name, params) {
       queue.push({ pattern: p, variant: v });
     }
     if (!queue[s.idx] || queue[s.idx].pattern.code !== code) return false;
+    // ★ **もう記録した項目**を控えから戻す（advance がこれを見て二度目を止める）
+    var marked = {};
+    (Array.isArray(s.marked) ? s.marked : []).forEach(function (c) { marked[c] = 1; });
     session = {
       unitId: s.unitId, mode: s.mode, scope: s.scope, lv: s.lv,
-      queue: queue, idx: s.idx, right: s.right, wrong: s.wrong
+      queue: queue, idx: s.idx, right: s.right, wrong: s.wrong, marked: marked
     };
     /* ★ **両モードとも「出て行ったときの画面」に戻す**（2026-09-09）。
      * ⚠ 以前は `s.mode === 'flip'` の中でだけ「こたえを開き直す」をしていて、
@@ -1044,7 +1086,7 @@ function slTrack(name, params) {
     session = {
       unitId: null, mode: mode, scope: 'codes', lv: null,
       queue: patterns.map(function (p) { return { pattern: p, variant: pickVariant(p, mode) }; }),
-      idx: 0, right: 0, wrong: 0
+      idx: 0, right: 0, wrong: 0, marked: {}
     };
     show('view-study');
     renderStudy();
@@ -1076,7 +1118,7 @@ function slTrack(name, params) {
     renderBackBand();
     session = {
       unitId: p.unit, mode: 'flip', scope: 'one', lv: null,
-      queue: [{ pattern: p, variant: pickVariant(p, 'flip') }], idx: 0, right: 0, wrong: 0
+      queue: [{ pattern: p, variant: pickVariant(p, 'flip') }], idx: 0, right: 0, wrong: 0, marked: {}
     };
     show('view-study');
     renderStudy();
@@ -1091,7 +1133,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=103')
+  fetch('data/exam_usage.jsonl?v=104')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -1106,7 +1148,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=103')
+  fetch('questions.json?v=104')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {

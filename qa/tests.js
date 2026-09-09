@@ -2007,6 +2007,70 @@ function runUiTests(doc, DATA) {
               } finally { a.kill(); clearResume(); }
             });
           });
+        }).then(function () {
+          return ta("QW10: 往復を2回しても、その項目の記録は1回しか動かない", function () {
+            /* ★★ **記録の数を数える。**
+             *
+             * ⚠ `markResult` は正解で box を1つ上げ、**誤答で box を 1 に落とす**。
+             *   同じ解答が2回数えられると box が上下し、**習得マップの緑が点いたり消えたりする**
+             *   （ユーザー申し立て「正解しても緑になるときとそうでないときがある」）。
+             *
+             * ★ **戻る道は1つではない。** QW9 の復元で解き直しは無くなるが、
+             *   ブラウザの戻る・帯のリンクをもう一度押す・タブの復元では
+             *   **同じ控えがもう一度使われる**。v103 で実測すると
+             *   seen 1→2・box 1→2・cRight 1→2 と、1回の解答が2回数えられた。
+             *   だから復元だけに頼らず、記録そのものを冪等にしてある。 */
+            clearResume();
+            var KEY = null, saved = null, code = null;
+            function recOf(a, c) {
+              var pr = {};
+              try { pr = JSON.parse(a.W.localStorage.getItem(KEY)) || {}; } catch (e) {}
+              return pr[c] || { seen: 0, box: 0, cRight: 0, right: 0, wrong: 0 };
+            }
+            return openWith("").then(function (a) {
+              KEY = a.W.QaEngine.STORE_KEY;
+              saved = a.W.localStorage.getItem(KEY);
+              try { code = walkChoiceToLinkAndClick(a).code; } finally { a.kill(); }
+              // 1回目の帰還 —— 復元された採点済みから「つぎへ」＝ ここで1回だけ記録される
+              return openWith("&code=" + encodeURIComponent(code) + "&from=assembler").then(function (b) {
+                var before, n1;
+                try {
+                  before = recOf(b, code);
+                  var nx = b.D.getElementById("btn-next");
+                  assert(nx, "採点済みが復元されていない（QW9 と同じ症状）");
+                  nx.click();
+                  n1 = recOf(b, code);
+                } finally { b.kill(); }
+                assert(n1.seen === before.seen + 1,
+                  "1回目の帰還で記録が1回ぶん増えていない（seen " + before.seen + " → " + n1.seen + "）");
+                var snap = JSON.parse(sessionStorage.getItem(RESUME_KEY) || "null");
+                assert(snap && snap.marked && snap.marked.indexOf(code) >= 0,
+                  "控えが「もう記録した」を覚えていない ＝ 次に戻ったときにまた数える");
+                // 2回目の帰還（ブラウザの戻る等で同じ控えがもう一度使われる）＝ 増えてはいけない
+                return openWith("&code=" + encodeURIComponent(code) + "&from=assembler").then(function (c) {
+                  var n2;
+                  try {
+                    var nx2 = c.D.getElementById("btn-next");
+                    assert(nx2, "2回目の帰還で採点済みが復元されていない");
+                    nx2.click();
+                    n2 = recOf(c, code);
+                  } finally { c.kill(); }
+                  assert(n2.seen === n1.seen && n2.box === n1.box && n2.cRight === n1.cRight,
+                    "往復をもう一度したら記録がまた動いた（seen " + n1.seen + "→" + n2.seen +
+                    " / box " + n1.box + "→" + n2.box + " / cRight " + n1.cRight + "→" + n2.cRight +
+                    "）＝ 1回の解答が2回数えられ、定着の緑が点いたり消えたりする");
+                });
+              });
+            }).then(function (r) {
+              if (saved === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
+              clearResume();
+              return r;
+            }, function (e) {
+              if (KEY) { if (saved === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved); }
+              clearResume();
+              throw e;
+            });
+          });
         });
       });
     }).then(function () {
