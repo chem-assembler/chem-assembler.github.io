@@ -47362,6 +47362,17 @@
            ⚠ **他のブロックの `rows` は今までどおり赤**（`stageTable` に行を持たせる逃げ道は塞がっている）。 */
         const BANNED = ['name', 'formula', 'atoms', 'bonds', 'target', 'rows'];
         const HAND_TABLE = 'table';
+        /* ⚠⚠ **2つ目の穴: `:::link` の `formula`**（v1528・設計書 §20-7）。
+           ★ 守りの本体は「**出どころの言えない行を書くな**」（上の `rows` と同じ読み）。
+           ⚠ `formula` を禁じているのは「**分子式の表を写す**」ことを構造上できなくするためだが、
+             `:::link` の `formula` は**表の行ではなく、受け口 `?open=isomer&formula=` の引数**
+             —— `:::example` の `stageId`（禁じていない）と同じ「どの練習を開くか」の指し示し。
+           ⚠ **名前を変えて逃げない**（§19-9b の5番の教訓）。URL の欄名が `formula` なので、
+             別名にすると「検査の字面を避けただけ」になり、しかも何の値か読めなくなる。
+           ★★ **代わりの縛りは `REF21`**: その式で**実際に書き出し練習が始まること**を確かめる
+             ＝ 事実の転写ではなく、**生きている行き先**であることを機械で示す
+             （`rows` に `source` を必須にしたのと同じ考え）。 */
+        const LINK_ARG = 'link';
         pages.forEach(p => {
             assert(p.id && p.title && p.unitLabel && p.group, `${p.id}: 見出しの欄が欠けている`);
             // ★ 「この表を作った理由」を1行で書けること（§1-2 の運用ルール）を機械で見る
@@ -47391,7 +47402,9 @@
                 if (o && typeof o === 'object') Object.keys(o).forEach(k => {
                     /* ★ 手で書く表の `rows` だけは通す。⚠ **通す条件は「出どころが書いてあること」** */
                     const handRows = (k === 'rows' && kind === HAND_TABLE);
-                    assert(!BANNED.includes(k) || handRows,
+                    /* ★ 練習の行き先を名指しする引数（`REF21` が「その式で練習が始まる」ことを見る） */
+                    const linkArg = (k === 'formula' && kind === LINK_ARG);
+                    assert(!BANNED.includes(k) || handRows || linkArg,
                         `${p.id}: reference.json に行データの欄 "${k}" がある（${path}）。` +
                         '表の行は stages.json から機械で作る約束（手打ちの表は :::table だけ）');
                     if (handRows) {
@@ -49032,7 +49045,9 @@
         for (const id of order) {
             const md = await grab(`../reference-src/${id}.md`, `原稿 ${id}.md`);
             let page;
-            try { page = RM.parsePage(md, `reference-src/${id}.md`); }
+            /* ★ 第3引数は**いま在るページの id の全部**（＝ ORDER.txt）。`:::link` の行き先が
+               在るかは**読むときに**決まる（§20-7）ので、渡さないと在るページ宛まで「準備中」になる */
+            try { page = RM.parsePage(md, `reference-src/${id}.md`, { pages: order }); }
             catch (e) { assert(false, '原稿が書式どおりでない —— ' + e.message); }
             assert(page.id === id, `reference-src/${id}.md: 前書きの id が「${page.id}」でファイル名と違う`);
             built.push(page);
@@ -49495,6 +49510,128 @@
         red(':::callout\ntone: caution\ntext: あ。\n', '閉じていない囲み');
         red('::: 1つめ。\nもう1行。\n:::\n', '型の無い囲みに2行');
         red('# ページの題\n', '本文の h1');
+    });
+
+    /* ===== REF21: :::link ―― まだ無いページを指せる（v1528） =====
+     *
+     * ★ 発端はユーザーが原稿に書いた注文6件（`//一般式・同族体へのリンク` ほか）。
+     *   設計は `DESIGN_reference_book.md` §20-7。
+     *
+     * ⚠⚠ **急所は「行き先がまだ無いページでもよい」こと。** 52ページの計画のうち
+     *   書けているのは6枚しかないので、⛔ ふつうのリンクにすると **404 が並ぶ**。
+     *
+     * ★ ここが見るのは5つ:
+     *   ① **まだ無いページ宛は `<a>` にならない**（押せない・「準備中」と言葉で出る）
+     *   ② **在るページ宛は `<a href="/reference/<id>/">`**（面Aでそのまま使える綴り）
+     *   ③ ⚠⚠ **`open:` は `game.js` の `OPEN_TARGETS` に実在する**（新しい URL の形を発明していない）
+     *   ④ ⚠ **`<button>` を作らない** —— 面Aの生成器は知らない押しものを見つけると止まる
+     *   ⑤ **行き先の綴り違いが「準備中」に化けない**（`PLANNED.txt` に登録した id だけが許される）
+     */
+    test('REF21: :::link は まだ無いページを「準備中」で指せ、綴り違いは赤になる', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`);
+            return await res.text();
+        };
+
+        assert(RM.KINDS.indexOf('link') >= 0, '書式が :::link を知らない');
+
+        /* ── ① まだ無いページ宛（`soon` は生成のときに焼き込まれている） ── */
+        const soon = book.renderBlock({ kind: 'link', to: 'zzz-not-a-page-yet', soon: true, text: 'まだ無いページへの案内' });
+        assert(soon, ':::link が描けていない');
+        assert(!soon.querySelector('a'), '⚠⚠ まだ無いページ宛が <a> になっている ＝ 押すと 404 が出る');
+        assert(soon.textContent.indexOf(W.REF_LINK_SOON) >= 0,
+            `まだ無いページ宛に「${W.REF_LINK_SOON}」の言葉が出ていない（淡いだけだと壊れたリンクに見える）: ${soon.textContent}`);
+
+        /* ── ② 在るページ宛 ── */
+        const live = book.pages[book.pages.length - 1];
+        const el = book.renderBlock({ kind: 'link', to: live.id, text: '在るページへの案内' });
+        const a = el.querySelector('a');
+        assert(a, `在るページ（${live.id}）宛が <a> になっていない`);
+        assert(a.getAttribute('href') === '/reference/' + live.id + '/',
+            `面Aの綴りと違う href: ${a.getAttribute('href')}（/reference/<id>/ であること）`);
+        assert(!el.querySelector('button'), '④ :::link が <button> を作っている（面Aの生成器が止まる）');
+
+        /* ── ③ ⚠⚠ `open:` は実在する行き先だけ（新しい URL の形を発明しない） ── */
+        const targets = W.OPEN_TARGETS;
+        assert(targets && Object.keys(targets).length >= 10,
+            'game.js の OPEN_TARGETS が読めない（作りが変わった？ この検査を直す）');
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        let nLink = 0, nOpen = 0;
+        const formulas = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'link') return;
+            nLink++;
+            assert(('to' in b) !== ('open' in b), `${p.id}: :::link が to と open を両方持つ／どちらも持たない`);
+            if (!b.open) return;
+            nOpen++;
+            assert(Object.prototype.hasOwnProperty.call(targets, b.open),
+                `${p.id}: :::link の行き先「open: ${b.open}」は game.js の OPEN_TARGETS に無い`
+                + `（書けるのは ${Object.keys(targets).join(' / ')}）`);
+            /* `formula` は受け口②（?open=isomer&formula=）専用。⚠ 下付きの Unicode は受け口が読めない */
+            if (b.formula) {
+                assert(b.open === 'isomer', `${p.id}: formula は open: isomer と一緒に使うものです（いまは ${b.open}）`);
+                assert(/^[A-Za-z0-9]+$/.test(b.formula), `${p.id}: formula「${b.formula}」が素の英数字でない`);
+                formulas.push({ id: p.id, formula: b.formula });
+            }
+        }));
+
+        /* ⚠⚠ **`REF5` に開けた2つ目の穴の埋め合わせ**（設計書 §20-7）。
+           ★ `formula` を通す条件は「**生きている行き先であること**」——
+             その式で**実際に書き出し練習が始まる**ことをその場で確かめる。
+           ⚠ 始まらない式（重原子8個・不飽和の式）は受け口が黙って何もしないので、
+             **押しても何も起きないリンク**になる。★ それを緑のまま置かない。 */
+        const ip = W.isomerPractice;
+        assert(ip, 'isomerPractice が居ない（書き出し練習の受け口が読めない）');
+        const wasMode = W.game.mode;
+        W.game.setMode('learn');
+        try {
+            formulas.forEach(({ id, formula }) => {
+                ip.startFromFormula(formula);
+                assert(ip.active && ip.problem && ip.problem.total >= 2,
+                    `${id}: :::link の formula「${formula}」で書き出し練習が始まらない`
+                    + '（押しても何も起きないリンクになる。受け口が受ける式かどうかは IS5 の線）');
+                ip.stop();
+            });
+        } finally {
+            ip.stop();
+            W.game.setMode(wasMode);
+        }
+        assert(nLink >= 6, `本文の :::link が ${nLink} 件しか無い（原稿の注文は6件あった）`);
+        assert(nOpen >= 1, 'アプリへ飛ぶ :::link が1件も無い');
+
+        /* ── ⑤ 綴り違いが「準備中」に化けない ──
+           ★ 行き先として書いてよいのは「在るページ」＋「PLANNED.txt に登録したもの」だけ。
+           ⚠ この照合が無いと、`to: alcohl` が永久に準備中で居座る（黙って壊れる型）。 */
+        const planned = new Map();
+        RM.normalize(await grab('../reference-src/PLANNED.txt', 'まだ無いページの表')).split('\n').forEach(line => {
+            const s = line.trim();
+            if (!s || s.startsWith('#')) return;
+            const m = /^([a-z0-9][a-z0-9-]*)\s+(\S.*)$/.exec(s);
+            assert(m, `reference-src/PLANNED.txt は「id␣␣表示名」の形で書きます → ${s}`);
+            planned.set(m[1], m[2]);
+        });
+        const livePages = new Set(pages.map(p => p.id));
+        planned.forEach((label, id) => assert(!livePages.has(id),
+            `reference-src/PLANNED.txt の「${id}」はもう書けている（この行を消すこと）`));
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'link' || !b.to) return;
+            assert(livePages.has(b.to) || planned.has(b.to),
+                `${p.id}: :::link の行き先「${b.to}」が、在るページにも PLANNED.txt にも無い（綴り違い？）`);
+            /* ★★ 焼き込まれた `soon` が**現物と食い違っていない** ——
+               ⚠ ここが緑のまま食い違うと、在るページ宛が「準備中」で居座る（実際に起きた） */
+            assert(!!b.soon === !livePages.has(b.to),
+                `${p.id}: :::link「${b.to}」の soon が現物と違う`
+                + `（soon=${!!b.soon} / ページは${livePages.has(b.to) ? '在る' : '無い'}）`
+                + '。★ node tools/gen-reference.mjs で焼き直すこと');
+        }));
+        assert(planned.size >= 1, 'PLANNED.txt が空（まだ無いページ宛のリンクを1本も試していない）');
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====

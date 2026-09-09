@@ -6095,6 +6095,14 @@ const REF_TONE_WORDS = {
 /* 手で書く表のセルの区切り */
 const REF_CELL_SEP = '|';
 
+/* ★★ リンクの行き先（§20-7）。★ どちらも**ルート絶対**にして、面A（`/reference/<id>/`）と
+   面B（`/assembler/`）で綴りを1つに保つ（図の `REF_IMG_DIR` と同じ理由）。 */
+const REF_PAGE_DIR = '/reference/';
+const REF_APP_DIR = '/assembler/';
+/* ⚠ **まだ書いていないページ宛のリンクに付ける言葉。** 淡くするだけにしない ——
+   淡いだけだと「押しても何も起きない壊れたリンク」に見える（`REF21` がこの語を見張る）。 */
+const REF_LINK_SOON = '準備中';
+
 /* -OH をちょうど1つ持つ（＝ 鎖式一価アルコール）か。
    ⚠ 判定は `ipHydroxylOxygens` の1本を借りる（エーテル・フェノールを外すのと同じ物差し） */
 function refIsMonoAlcohol(mol) {
@@ -6299,6 +6307,7 @@ class ReferenceBook {
         if (b.kind === 'reaction') return this.renderReaction(b);
         if (b.kind === 'table') return this.renderPlainTable(b);
         if (b.kind === 'callout') return this.renderCallout(b);
+        if (b.kind === 'link') return this.renderLink(b);
         if (b.kind === 'stageTable') return this.renderStageTable(b);
         if (b.kind === 'mechanismTable') return this.renderMechanismTable(b);
         if (b.kind === 'dehydrationTable') return this.renderDehydrationTable(b);
@@ -6492,6 +6501,70 @@ class ReferenceBook {
         p.className = 'ref-callout-text';
         p.innerHTML = block.text;
         box.appendChild(p);
+        return box;
+    }
+
+    /* ★★ ページどうし・ページからアプリへのリンク（設計書 §20-7）。
+     *
+     * ⚠⚠ **急所は「まだ無いページを指せること」。** 52ページの計画のうち書けているのは6枚で、
+     *   本文はもう「一般式・同族体」「分子間力・沸点」を名指ししたがる。
+     *   ⛔ ふつうのリンクにすると **404 が並ぶ**。★ だから **まだ無い行き先は押せない「準備中」**にする。
+     *
+     * ⚠⚠ **「在るかどうか」をここで調べない**（`this.pages` を見ない）。
+     *   ★ 面Aの生成器は `ReferenceBook` を**ページを読み込まずに**使って焼くので、
+     *     ここで調べると**焼いたものだけ全部「準備中」**になる（実測。`REF18` が捕まえた）。
+     *   ★★ 判定は生成のときに済ませて `soon` として焼き込んである（設計書 §20-7）＝
+     *     **この関数はブロックだけを見て描く。**
+     * ★ ページを1枚書いて生成し直せば `soon` が消える ＝ **そのページ宛のリンクは黙って生きる。**
+     * ⚠ 綴り違いが永久に「準備中」で居座らないよう、**書いてよい行き先は
+     *   `reference-src/PLANNED.txt` に登録させる**（見るのは `gen-reference.mjs` と `REF21`）。
+     *
+     * ⚠⚠ **`<button>` を作らない。** 面Aの生成器（`gen-reference-pages.mjs`）は
+     *   知らない押しものを見つけると止まる（静的なページに死んだボタンを残さないため）。
+     *   ★ `<a href>` なら **面Aはそのまま使え**、面Bは下の click で横取りする。
+     * ★ href は**ルート絶対**（`/reference/<id>/`・`/assembler/?open=…`）＝ 面A・面Bで同じ綴り。
+     * ⚠ **新しい URL の形を発明していない** —— `?open=` は `game.js` の `OPEN_TARGETS`、
+     *   `formula` は受け口②（`REF21` が両方を突き合わせる）。
+     */
+    renderLink(block) {
+        const box = document.createElement('p');
+        box.className = 'ref-link-row';
+
+        /* まだ書いていないページ ＝ 押せない。⚠ 淡くするだけでなく**言葉で言う**
+           （淡いだけだと「押しても何も起きないリンク」に見える） */
+        if (block.soon) {
+            const span = document.createElement('span');
+            span.className = 'ref-link ref-link-soon';
+            span.innerHTML = block.text;
+            const badge = document.createElement('b');
+            badge.className = 'ref-link-badge';
+            badge.textContent = REF_LINK_SOON;
+            span.appendChild(badge);
+            box.appendChild(span);
+            return box;
+        }
+
+        const a = document.createElement('a');
+        a.className = 'ref-link';
+        let search = null;
+        if (block.to) {
+            a.href = REF_PAGE_DIR + block.to + '/';
+        } else {
+            search = '?open=' + encodeURIComponent(block.open)
+                + (block.formula ? '&formula=' + encodeURIComponent(block.formula) : '');
+            a.href = REF_APP_DIR + search;
+        }
+        a.innerHTML = block.text;
+
+        /* ★ 面Bはアプリの中なので、**外へ出ずにその場で開く**（設計書 §5-1 の「同一ページ内なので
+           URL を組み立てて自分自身へ遷移させない」）。⚠ href は残す ＝ 別タブで開くことも、
+           面Aとして焼かれることもできる。★ 焼くときに listener は消える（outerHTML に出ない）。 */
+        a.addEventListener('click', (e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;   // 別タブ・別窓は邪魔しない
+            if (block.to) { e.preventDefault(); this.open(block.to); return; }
+            if (typeof window.applyOpenParam === 'function') { e.preventDefault(); window.applyOpenParam(search); }
+        });
+        box.appendChild(a);
         return box;
     }
 
@@ -6987,6 +7060,11 @@ if (typeof window !== 'undefined') {
     window.REF_LEVEL_WORDS = REF_LEVEL_WORDS;
     window.REF_TONE_WORDS = REF_TONE_WORDS;
     window.REF_CELL_SEP = REF_CELL_SEP;
+    /* ★ リンクの決めごと（§20-7）。`REF21` が「まだ無いページ宛は押せず、言葉で断っている」ことと、
+       「`open:` の行き先が `OPEN_TARGETS` に実在する」ことを、この口から見る */
+    window.REF_PAGE_DIR = REF_PAGE_DIR;
+    window.REF_APP_DIR = REF_APP_DIR;
+    window.REF_LINK_SOON = REF_LINK_SOON;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;

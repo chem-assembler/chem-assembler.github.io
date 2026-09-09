@@ -3471,6 +3471,25 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 .ref-callout-note { border-left-color: var(--text-secondary); }
 .ref-callout-note .ref-callout-tag { color: var(--text-muted); }
 
+/* ★★ ページどうし・アプリへのリンク（§20-7）。
+   ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
+      押せるものと同じ見た目にしない —— 淡くしたうえで「準備中」の札を必ず添える
+      （札を出すのは learn.js。ここは見た目だけ）。 */
+.ref-link-row { margin: 0 0 12px; }
+.ref-link {
+    display: inline-block;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+a.ref-link { color: #e0b0ff; text-decoration: none; }
+a.ref-link:hover { border-color: var(--neon-purple); background: rgba(224, 176, 255, 0.08); }
+a.ref-link::before { content: '→ '; }
+.ref-link-soon { color: var(--text-muted); border-style: dashed; cursor: default; }
+.ref-link-badge { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+
 /* 手持ちレイアウトではヘッダーが 44px（`header { height: 44px }` と同じブロックの条件を使う）。
    ⚠ **条件は §スマホ対応の見出しにある3行のどれか**（`PT1` が写し間違いを見張っている）。
       `(max-width: 899px)` 単独で書いたら PT1 が「よそもの」として赤くした（実発生）。

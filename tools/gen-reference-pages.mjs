@@ -56,7 +56,9 @@ function readPages() {
     const extra = files.filter(id => ids.indexOf(id) < 0);
     if (missing.length) throw new Error(`ORDER.txt にあるのに原稿が無い: ${missing.join(', ')}`);
     if (extra.length) throw new Error(`原稿があるのに ORDER.txt に無い: ${extra.join(', ')}`);
-    const pages = ids.map(id => RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), `reference-src/${id}.md`));
+    /* ⚠ 第3引数は**いま在るページの id の全部**（＝ ORDER.txt）。`:::link` の行き先が在るかは
+       **読むときに**決まる（設計書 §20-7）—— 渡さないと在るページ宛まで「準備中」で焼かれる。 */
+    const pages = ids.map(id => RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), `reference-src/${id}.md`, { pages: ids }));
     /* ⚠ **1つのコードが2ページに出てこないこと**（設計書 §17-5）。
        ★ アプリの埋め込みは `?open=reference&code=<先頭コード>` で、
          **どのページを開くかを決めるのは `ReferenceBook.pageByCode`**（1か所）。

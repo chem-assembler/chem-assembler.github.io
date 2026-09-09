@@ -418,7 +418,25 @@ footer a{color:inherit}
 /* ★ 補足。**型を書かない `::: … :::` の既定**（§20-4）。⚠ いちばん静かな見せ方にする ——
    「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
 .ref-callout-note { border-left-color: var(--text-secondary); }
-.ref-callout-note .ref-callout-tag { color: var(--text-muted); }</style>
+.ref-callout-note .ref-callout-tag { color: var(--text-muted); }
+/* ★★ ページどうし・アプリへのリンク（§20-7）。
+   ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
+      押せるものと同じ見た目にしない —— 淡くしたうえで「準備中」の札を必ず添える
+      （札を出すのは learn.js。ここは見た目だけ）。 */
+.ref-link-row { margin: 0 0 12px; }
+.ref-link {
+    display: inline-block;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+a.ref-link { color: #e0b0ff; text-decoration: none; }
+a.ref-link:hover { border-color: var(--neon-purple); background: rgba(224, 176, 255, 0.08); }
+a.ref-link::before { content: '→ '; }
+.ref-link-soon { color: var(--text-muted); border-style: dashed; cursor: default; }
+.ref-link-badge { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); }</style>
 </head>
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>

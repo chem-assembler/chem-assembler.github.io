@@ -77,6 +77,19 @@
         table: { order: ['caption', 'source', 'head', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
         /* 注意の囲み。⚠ `tone` は3つだけ（勘違いしやすい／丸暗記でよい／覚えなくてよい） */
         callout: { order: ['tone', 'text'], req: ['tone', 'text'], list: [], prose: ['text'], enum: { tone: TONES } },
+        /* ★★ ページどうし・ページからアプリへのリンク（設計書 §20-7）。
+           ⚠⚠ **行き先が「まだ無いページ」でもよい**のがこの器の急所 ——
+              52ページの計画のうち書けているのは6枚で、本文はもう書けていないページを名指ししたがる。
+           ★ 書けるのは2通りで、**どちらか片方だけ**（`checkBlock` が見る）:
+             `to:`   … 参考書のページ id。**実在すればリンク、まだ無ければ「準備中」**
+                       （⚠ 決めるのは `learn.js` が持っているページ一覧 ＝ ページを書いた日に
+                         黙って生きる。`.md` 側に「準備中」と書かせない）
+             `open:` … アプリの行き先。⚠⚠ **新しい URL の形を発明しない** ——
+                       値は `game.js` の `OPEN_TARGETS` の名前そのもの（`REF21` が突き合わせる）。
+                       `formula:` は受け口② `?open=isomer&formula=` のためだけの添えもの。
+           ⚠ **行き先が実在するかはここでは見ない**（このファイルは node とブラウザで共有していて、
+              ディレクトリも `game.js` も読めない）。★ 見るのは `gen-reference.mjs` と `REF21`。 */
+        link: { order: ['to', 'open', 'formula', 'text'], req: ['text'], list: [], prose: ['text'] },
 
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
@@ -103,6 +116,18 @@
     var FORBIDDEN = /[<>&*~]/;
 
     /* ===== 小道具 ============================================================= */
+
+    /* ★★ いま在るページの id の一覧（`parsePage` の `opts.pages`）。設計書 §20-7。
+     *
+     * ⚠⚠ **なぜ「描くとき」ではなく「読むとき」に決めるのか。**
+     *   ★ 面Aの生成器は `ReferenceBook` を**ページを読み込まずに**使って焼く
+     *     （`renderBlock` を呼ぶだけで `load()` は通らない）ので、**描く側は
+     *     「そのページが在るか」を知らない** —— 実測で、在るページ宛のリンクが
+     *     焼いたものだけ「準備中」になった（`REF18` が捕まえた）。
+     *   ★★ だから **`soon`（まだ無い）を生成物に焼き込み**、`renderBlock` は
+     *     ブロックだけを見て描ける純粋な関数に保つ。
+     * ⚠ 一覧を渡さずに `to:` のリンクを読むと**その場で赤**（黙って全部「準備中」にしない）。 */
+    var CTX = null;
 
     function fail(where, msg) { throw new Error(where + ': ' + msg); }
 
@@ -225,8 +250,9 @@
      * @param {string} text  ファイルの中身（改行は CRLF / LF どちらでもよい）
      * @param {string} where エラーに出す名前（ふつうはファイル名）
      */
-    function parsePage(text, where) {
+    function parsePage(text, where, opts) {
         where = where || '(reference-src)';
+        CTX = (opts && opts.pages) ? opts.pages.slice() : null;
         var raw = String(text).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
         /* ★★ 著者メモ（`//` から行末まで）を先に抜く。⚠ **画面には出さないが、捨てもしない** ——
            `page.memos` に行番号ごと残し、生成器が「まだ片付いていないメモが N 件」と数えて出す（§20-2）。
@@ -454,6 +480,46 @@
             });
         }
         if (b.kind === 'list' && !b.items.length) fail(where, ':::list の items が空です');
+        if (b.kind === 'link') {
+            /* ⚠ **どちらか片方だけ。** 両方書くと「ページへ飛ぶのかアプリへ飛ぶのか」が
+               リンク1本で2通りになり、画面では**片方が黙って無視される**形で出る */
+            var has = ['to', 'open'].filter(function (k) { return Object.prototype.hasOwnProperty.call(b, k); });
+            if (has.length !== 1) {
+                fail(where, ':::link は「to:（参考書のページ id）」か「open:（アプリの行き先）」の'
+                    + (has.length ? 'どちらか片方だけを書きます（いまは両方あります）' : 'どちらかが要ります')
+                    + '\n    ★ 直し方: 参考書の別のページへ飛ぶなら「to: alkane-naming」、'
+                    + 'アプリで試させるなら「open: isomer」のように書きます');
+            }
+            if (b.to && !ANCHOR_RE.test(b.to)) {
+                fail(where, ':::link の to は参考書のページ id です（英小文字・数字・ハイフン。いまは「' + b.to + '」）');
+            }
+            if (b.open && !ANCHOR_RE.test(b.open)) {
+                fail(where, ':::link の open はアプリの行き先の名前です（英小文字・数字。いまは「' + b.open + '」）');
+            }
+            if (Object.prototype.hasOwnProperty.call(b, 'formula')) {
+                if (!b.open) fail(where, ':::link の formula は open: と一緒に書きます（受け口 ?open=isomer&formula= のためのものです）');
+                /* ⚠ 下付きの Unicode（C₅H₁₂）は受け口が読めない —— `startFromFormula` は素の ASCII */
+                if (!/^[A-Za-z0-9]+$/.test(b.formula)) {
+                    fail(where, ':::link の formula は素の英数字で書きます（C5H12。下付きの C₅H₁₂ はアプリが読めません。いまは「' + b.formula + '」）');
+                }
+            }
+            /* ★★ まだ書いていないページ宛か（＝ 押せない「準備中」にするか）を**ここで決めて焼き込む**。
+               ⚠ `soon` は**書く欄ではない**（`spec.order` に無いので、原稿に書いたら「知らないキー」で赤）。
+               ★ ページを1枚書いて生成し直せば、そのページ宛の `soon` は自動で消える ＝ 黙って生きる。 */
+            if (b.to) {
+                if (!CTX) {
+                    fail(where, ':::link の行き先を判定できません（parsePage に、いま在るページの一覧 opts.pages が渡っていない）'
+                        + '\n    ★ 渡さないと在るページ宛まで「準備中」になるので、黙って続けません');
+                }
+                if (CTX.indexOf(b.to) < 0) b.soon = true;
+            }
+            /* ⚠ `text` は**押す文そのもの**。「こちら」だけのリンクを作らせない
+               （読み上げでも検索でも、行き先が分からない文になる） */
+            if (b.text.replace(/<\/?(b|sub)>/g, '').length < 6) {
+                fail(where, ':::link の text（押す文）が短すぎます: 「' + b.text + '」'
+                    + '\n    ★ 何のページ／何の練習へ行くのかが、その文だけで分かるように書きます');
+            }
+        }
     }
 
     /* ===== 書き出し =========================================================== */
