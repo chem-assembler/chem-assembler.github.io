@@ -462,7 +462,17 @@ document.addEventListener('click', function (e) {
 /* ★ 目次の器（§19-6）。⚠ **中身は `learn.js` の `renderToc` が組んだもの**で、ここは2つだけやる:
  *   ① 広い画面では `<details>` を開く（閉じていると中身が描かれないので、追従の目次にならない）
  *   ② いま読んでいる節を光らせる
- * ⚠ どちらも**見え方**の話。★ 目次の行そのものは1行もここで作らない。 */
+ * ⚠ どちらも**見え方**の話。★ 目次の行そのものは1行もここで作らない。
+ *
+ * ⚠⚠ **②は「節が画面に見えているか」で決めてはいけない**（2026-09-10・実測して判明）。
+ *   ★ 前の版は `IntersectionObserver` に `rootMargin:'0px 0px -70% 0px'` を与え、
+ *     **画面の上30%の帯に *いま重なっている* 節**を現在地にしていた。
+ *   ⚠ ところが `.ref-sec` は**見出しだけの数十pxの箱**なので、帯を通り抜けた瞬間に
+ *     どの節も重ならなくなる ＝ **`cur` が null に落ちて印が全部消える。**
+ *   ★ 実測（アルカン・1280×900）: y=1200 で1件点灯 → **y=2600 と y=4200 では 6件とも false**
+ *     ＝ **7,000px のうち印が出ているのは見出しが帯を通る一瞬だけだった。**
+ *   ★★ 正しい問いは「**どの節を通り過ぎたか**」＝ **帯の線より上に来た最後の節**。
+ *      節の高さに依らないので、見出しが1行でも図が10枚でも同じように効く。 */
 const TOC_JS = `<script>
 (function () {
   var d = document.querySelector('.ref-toc details');
@@ -474,15 +484,36 @@ const TOC_JS = `<script>
   var links = {};
   [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
   var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
-  if (!secs.length || !window.IntersectionObserver) return;
-  var seen = {};
-  var io = new IntersectionObserver(function (es) {
-    es.forEach(function (e) { seen[e.target.id] = e.isIntersecting; });
-    var cur = null;
-    secs.forEach(function (s) { if (seen[s.id] && !cur) cur = s.id; });
-    for (var k in links) links[k].setAttribute('aria-current', k === cur ? 'true' : 'false');
-  }, { rootMargin: '0px 0px -70% 0px' });
-  secs.forEach(function (s) { io.observe(s); });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
 })();
 </script>`;
 
