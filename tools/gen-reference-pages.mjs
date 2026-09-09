@@ -276,10 +276,17 @@ box-shadow:inset 3px 0 0 var(--accent)}
 }
 /* 節。★ 追従ヘッダーは無いが、アンカーで着地したとき見出しが窓の上端に貼り付かないよう余白を置く。
    ★★ **見出しを本文から立たせる**（設計書 §20-2）—— 前は本文と同じ色・同じ太さで、
-      7画面ぶん同じ見た目が続いていた（「とっかかりにくい」の実体）。 */
+      7画面ぶん同じ見た目が続いていた（「とっかかりにくい」の実体）。
+   ⚠⚠ **決めごとは面Aと面Bで1つ**（assembler/style.css の .ref-sec にも同じ注記がある）:
+      ⚠ この注記は SHELL_CSS（テンプレートリテラル）の中なので**バッククォートを書けない**。
+      ① 章の切れ目は**節の上の線**（見出しの下の線ではない）
+      ② 見出しは**本文の約1.35倍**（面A 23/17 ・面B 17.5/13）
+      ③ **最初の節には線を引かない**
+      ★ ここで上書きしているのは**寸法だけ** —— 読み欄 680px と資料ペイン 340px で
+        同じ px を使うと、片方が必ず外れる。 */
 .ref-scope .ref-sec{scroll-margin-top:18px;margin:52px 0 16px;padding-top:22px;border-top:2px solid var(--line)}
 .ref-scope .ref-sec:first-child{margin-top:8px;padding-top:0;border-top:0}
-.ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);border-bottom:0;padding-bottom:0;margin-bottom:6px}
+.ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);margin-bottom:6px}
 .ref-scope .ref-sec-lead{font-size:14.5px;color:var(--dim)}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
