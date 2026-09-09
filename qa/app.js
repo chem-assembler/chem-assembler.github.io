@@ -372,7 +372,7 @@ function slTrack(name, params) {
     // 同 box 帯のなかでの並びは軽くシャッフル
     queue = shuffle(queue);
 
-    session = { unitId: unitId, mode: mode, scope: scope, lv: lv, queue: queue, idx: 0, right: 0, wrong: 0 };
+    session = { unitId: unitId, mode: mode, scope: scope, lv: lv, queue: queue, idx: 0, right: 0, wrong: 0, marked: {} };
     show('view-study');
     renderStudy();
   }
@@ -386,11 +386,15 @@ function slTrack(name, params) {
     });
     session = {
       unitId: null, mode: 'choice', scope: 'confirm', lv: null,
-      queue: queue, idx: 0, right: 0, wrong: 0
+      queue: queue, idx: 0, right: 0, wrong: 0, marked: {}
     };
     show('view-study');
     renderStudy();
   }
+
+  // 復元中の1問だけに効く控え（`renderStudy` が**1度だけ食べる**）。
+  // ⚠ セッションに持たせない —— 持たせると、次の問題へ進んでも同じ復元が効いてしまう
+  var pendingRestore = null;
 
   function renderStudy() {
     var s = session;
@@ -399,8 +403,9 @@ function slTrack(name, params) {
     $('q-of').textContent = (s.idx + 1) + ' / ' + s.queue.length;
     $('pbar-fill').style.width = Math.round((s.idx / s.queue.length) * 100) + '%';
 
-    if (s.mode === 'flip') renderFlip(item);
-    else renderChoice(item);
+    var restore = pendingRestore; pendingRestore = null;
+    if (s.mode === 'flip') renderFlip(item, restore);
+    else renderChoice(item, restore);
   }
 
   var DIFF_NAMES = { 1: '生存', 2: '標準', 3: '受験標準', 4: '難関' };
@@ -600,7 +605,7 @@ function slTrack(name, params) {
   }
 
   // ---- 暗記モード（めくり） ----
-  function renderFlip(item) {
+  function renderFlip(item, restore) {
     var p = item.pattern, v = item.variant;
     var host = $('card-host');
     host.innerHTML =
@@ -630,15 +635,39 @@ function slTrack(name, params) {
       $('btn-good-q').addEventListener('click', function () { advance(p.code, true); });
       $('btn-again-q').addEventListener('click', function () { advance(p.code, false); });
     });
+    // 往復から戻ってきたときは**こたえを開いた状態**に戻す（押した飛び道具は
+    // こたえ欄にしか無いので、閉じて返すと押したものが画面から消える）
+    if (restore && restore.revealed) $('btn-reveal').click();
+  }
+
+  // 控えた並びが「いまの選択肢の並べ替え」として成立するときだけ使う。
+  // ⚠ 成立しなければ **null を返して混ぜ直す** —— データを直した後の古い控えで
+  //   白紙にしたり、無い選択肢を指したりしないため
+  function usableOrder(order, v) {
+    if (!Array.isArray(order) || order.length !== v.options.length) return null;
+    var seen = {};
+    for (var i = 0; i < order.length; i++) {
+      var k = order[i];
+      if (typeof k !== 'number' || k < 0 || k >= v.options.length || seen[k]) return null;
+      seen[k] = 1;
+    }
+    return order;
   }
 
   // ---- 測定モード（複数選択） ----
-  function renderChoice(item) {
+  function renderChoice(item, restore) {
     var p = item.pattern, v = item.variant;
     var host = $('card-host');
     // 選択肢の表示順をランダム化（正解の位置の偏り・位置の丸暗記を防ぐ）。
     // value/data-i は元インデックスのまま持たせるので、採点ロジックは表示順に依存しない。
-    var order = shuffle(v.options.map(function (_o, i) { return i; }));
+    //
+    // ⚠ **往復から戻ったときは控えた並びをそのまま使う**（2026-09-09）。
+    //   毎回混ぜ直すと、戻ってきた画面が**出て行ったときと別の並び**になる。
+    //   控えているのが「何番目を選んだか」だけなら、その番号が別の選択肢を指してしまう
+    //   ＝ 自分の答えが勝手に書き換わる。だから**選択肢の並びそのもの**を控えて復元する
+    //   （選んだものは元インデックスで控えるので、並びと合わせて初めて元の画面に戻る）
+    var order = (restore && usableOrder(restore.order, v)) ||
+      shuffle(v.options.map(function (_o, i) { return i; }));
     var opts = order.map(function (i) {
       return '<label class="opt" data-i="' + i + '">' +
         '<input type="checkbox" value="' + i + '"><span>' + esc(v.options[i]) + '</span></label>';
@@ -662,6 +691,33 @@ function slTrack(name, params) {
     $('btn-grade').addEventListener('click', function () {
       gradeChoice(p, v, boxes);
     });
+
+    /* ⚠⚠ **採点済みを復元する**（2026-09-09・ユーザー申し立て
+     *   「qa から assembler に飛んだ時、もどってくるともう一度問題を解くことになる」）。
+     *
+     * ★ **測定モードの飛び道具は「採点したあと」の画面にしか出ない。**
+     *   ＝ ここを復元しないと、押して出て行った人は**必ず解き直しになる**（実測で再現）。
+     *   めくりモードは `revealed` で同じことをしていたのに、測定モードだけ
+     *   `s.mode === 'flip'` の条件に阻まれて何も戻していなかった。
+     *
+     * ⚠ 解き直しは手間だけの問題ではない: 2回目にうっかり外すと `markResult` が
+     *   `box` を 1 に落とすので、**習得マップの緑が点いたり消えたりする**
+     *   （「正解しても緑になるときとそうでないときがある」のもう1件と同じ根）。 */
+    if (restore && restore.chosen && restore.chosen.length) {
+      var picked = restore.chosen.filter(function (i) {
+        return typeof i === 'number' && i >= 0 && i < v.options.length;
+      });
+      picked.forEach(function (i) {
+        var b = host.querySelector('#opts input[value="' + i + '"]');
+        if (b) b.checked = true;
+      });
+      if (picked.length) {
+        $('btn-grade').disabled = false;
+        // 採点まで済ませていたなら**採点し直して同じ画面にする**。
+        // 判定を別に控えて再現するのではなく `gradeChoice` を通す ＝ 正誤の付け方を2か所に書かない
+        if (restore.graded) gradeChoice(p, v, boxes);
+      }
+    }
   }
 
   function gradeChoice(p, v, boxes) {
@@ -700,10 +756,27 @@ function slTrack(name, params) {
   }
 
   // **mode を渡す**（測定モードの成績だけが定着の認定に効く）。
-  // session.mode をここで読むので、呼び出し側に mode を書き足す必要はない
+  // session.mode をここで読むので、呼び出し側に mode を書き足す必要はない。
+  //
+  // ⚠⚠ **同じ項目を1つの回で二度記録しない**（2026-09-09）。
+  //   `markResult` は正解で `box` を1つ上げ、**誤答で `box` を 1 に落とす**。
+  //   同じ問題がもう一度出て、そのたびに走ると **box が上下する**
+  //   ＝ 習得マップの緑が点いたり消えたりする
+  //   （ユーザー申し立て「正解しても緑になるときとそうでないときがある」）。
+  //
+  // ★ **戻る道は1つではない。** 上の「採点済みを復元する」で解き直しは無くなるが、
+  //   ブラウザの戻る・帯のリンクをもう一度押す・タブの復元でも同じ控えがもう一度使われる。
+  //   実測（v103）: 往復して「つぎへ」→ もう一度同じ URL で戻って「つぎへ」で
+  //   **seen 1→2・box 1→2・cRight 1→2**。1回の解答が2回数えられていた。
+  //   だから復元だけに頼らず、**記録そのものを冪等にする**。
   function advance(pid, ok) {
-    markResult(pid, ok, session.mode);
-    if (ok) session.right++; else session.wrong++;
+    if (!session.marked) session.marked = {};
+    if (!session.marked[pid]) {
+      session.marked[pid] = 1;
+      markResult(pid, ok, session.mode);
+      if (ok) session.right++; else session.wrong++;
+      noteMarked(pid);        // ★ 控えにも書き足す（往復のあいだに忘れないように）
+    }
     session.idx++;
     renderStudy();
   }
@@ -911,9 +984,43 @@ function slTrack(name, params) {
           return [it.pattern.code, (it.pattern.variants || []).indexOf(it.variant)];
         }),
         // めくりは**こたえを開いた状態でしか飛び道具が出ない**ので、開き直して返す
-        revealed: !!document.querySelector('#card-host .answer')
+        revealed: !!document.querySelector('#card-host .answer'),
+        /* ⚠ **測定モードは「開いたか」だけでは足りない**（2026-09-09）。
+         *   要るのは「**何を選んだか**」と「**採点済みか**」の2つで、
+         *   どちらも欠けると戻ってきた人は解き直しになる。
+         * ★ 選んだものは**元インデックス**で控え、**表示の並びも一緒に控える**。
+         *   選択肢は毎回混ぜているので、並びを控えないと復元した画面が別の並びになり、
+         *   「自分が選んだもの」の位置が動いて見える（添字だけを控えるのが最悪で、
+         *   混ぜ直された並びの同じ位置＝**別の選択肢**を選んだことにされる）。 */
+        order: Array.prototype.map.call(document.querySelectorAll('#opts .opt'),
+          function (l) { return +l.getAttribute('data-i'); }),
+        chosen: Array.prototype.map.call(document.querySelectorAll('#opts input:checked'),
+          function (b) { return +b.value; }),
+        graded: !!document.querySelector('#choice-foot .answer'),
+        // ★ **もう記録した項目**（advance の冪等化の芯）。これを控えに持って行かないと、
+        //   往復のあいだに「もう数えた」ことが消え、二度目の記録で box が上下する
+        marked: Object.keys(session.marked || {})
       }));
     } catch (e) { /* 保存できなくても往復そのものは壊さない */ }
+  }
+
+  /* ★ 記録した項目を**控えにも書き足す**（2026-09-09）。
+   *
+   * ⚠ 控えを書くのは飛び道具を押した瞬間だけなので、そのあと「つぎへ」で記録しても
+   *   控えは古いまま残る。**控えは往復のたびに読み直される**ので、ここを更新しないと
+   *   「もう記録した」ことが往復のあいだに消え、戻ってもう一度「つぎへ」を押すと
+   *   同じ解答が2回数えられる（実測で再現した経路）。
+   * ⚠ 控えが無い／読めないときは**何もしない**（記録の冪等化はセッション内で効いている）。 */
+  function noteMarked(pid) {
+    try {
+      var raw = sessionStorage.getItem(RESUME_KEY);
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (!s) return;
+      if (!Array.isArray(s.marked)) s.marked = [];
+      if (s.marked.indexOf(pid) < 0) s.marked.push(pid);
+      sessionStorage.setItem(RESUME_KEY, JSON.stringify(s));
+    } catch (e) { /* 控えを更新できなくても本体は止めない */ }
   }
 
   // 控えを実際のセッションに戻す。**少しでも噛み合わなければ何もしない**（false を返して
@@ -933,16 +1040,23 @@ function slTrack(name, params) {
       queue.push({ pattern: p, variant: v });
     }
     if (!queue[s.idx] || queue[s.idx].pattern.code !== code) return false;
+    // ★ **もう記録した項目**を控えから戻す（advance がこれを見て二度目を止める）
+    var marked = {};
+    (Array.isArray(s.marked) ? s.marked : []).forEach(function (c) { marked[c] = 1; });
     session = {
       unitId: s.unitId, mode: s.mode, scope: s.scope, lv: s.lv,
-      queue: queue, idx: s.idx, right: s.right, wrong: s.wrong
+      queue: queue, idx: s.idx, right: s.right, wrong: s.wrong, marked: marked
+    };
+    /* ★ **両モードとも「出て行ったときの画面」に戻す**（2026-09-09）。
+     * ⚠ 以前は `s.mode === 'flip'` の中でだけ「こたえを開き直す」をしていて、
+     *   **測定モードは何も戻していなかった** ＝ 採点済みが消え、必ず解き直しになった。
+     *   復元の中身は `renderChoice` / `renderFlip` が持つ（画面の組み立ては1か所）。 */
+    pendingRestore = {
+      revealed: !!s.revealed,
+      order: s.order, chosen: s.chosen, graded: !!s.graded
     };
     show('view-study');
     renderStudy();
-    if (s.revealed && s.mode === 'flip') {
-      var rb = $('btn-reveal');
-      if (rb) rb.click();
-    }
     return true;
   }
 
@@ -972,7 +1086,7 @@ function slTrack(name, params) {
     session = {
       unitId: null, mode: mode, scope: 'codes', lv: null,
       queue: patterns.map(function (p) { return { pattern: p, variant: pickVariant(p, mode) }; }),
-      idx: 0, right: 0, wrong: 0
+      idx: 0, right: 0, wrong: 0, marked: {}
     };
     show('view-study');
     renderStudy();
@@ -1004,7 +1118,7 @@ function slTrack(name, params) {
     renderBackBand();
     session = {
       unitId: p.unit, mode: 'flip', scope: 'one', lv: null,
-      queue: [{ pattern: p, variant: pickVariant(p, 'flip') }], idx: 0, right: 0, wrong: 0
+      queue: [{ pattern: p, variant: pickVariant(p, 'flip') }], idx: 0, right: 0, wrong: 0, marked: {}
     };
     show('view-study');
     renderStudy();
@@ -1019,7 +1133,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=102')
+  fetch('data/exam_usage.jsonl?v=104')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -1034,7 +1148,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=102')
+  fetch('questions.json?v=104')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {
