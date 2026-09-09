@@ -49394,6 +49394,109 @@
         }));
     });
 
+    /* ===== REF20: ユーザーが自然に書いた形を受け取る（v1528） =====
+     *
+     * ★ 発端は実測 —— **ユーザーが `reference-src/alkane.md` を自分で校正したら、生成器が赤くなった。**
+     *   ⚠⚠ これは「書き方を間違えた」案件ではない。**原稿の書式はユーザーが校正できることだけの
+     *      ために在る**ので、受け取れなかった生成器のほうを直す（設計は §20）。
+     *
+     * ★ ここが見るのは5つ:
+     *   ① **書き方が違っても、出るものが同じ**（2字下げの並び ＝ 列0の並び ＝ 空行を挟んだ並び／
+     *      キーを行ごとに書く ＝ 1行に詰めて書く）
+     *   ② **著者メモ（`//`）は画面に出ないが、消えてもいない**（数えられる・本文に混ざらない）
+     *   ③ **型を書かない `::: … :::` の既定**が、描く側（learn.js）に言葉を持っている
+     *   ④ **小見出しは節ではない**（id を持たず、目次に出ない）＝ アンカーの綴りが1つのまま
+     *   ⑤ ⚠⚠ **赤くなるとき、ユーザーが自分で直せる文言になっている**
+     *      （「直し方」か、書ける語の一覧が必ず出る）
+     */
+    test('REF20: 原稿は「書き方の違い」を受け取り、著者メモは消えず、赤は直し方まで言う', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        assert(RM, 'ReferenceMd が居ない（test.html が ../tools/reference-md.js を読み込んでいるか）');
+
+        /* 前書きは毎回同じものを使う（見るのは本文の書き方の違いだけ） */
+        const FM = [
+            '---', 'id: t', 'unit: aliphatic', 'unitLabel: 脂肪族炭化水素', 'group: アルカン',
+            'title: 見本', 'summary: 書き方の違いを受け取れるかどうかを確かめるためだけの見本のページです。中身に意味はありません。',
+            'codes:', '  - org.ali.alkane-shape', 'source:', '  - slides:見本', 'singleSource: true',
+            'why: 書き方の違いで結果が変わらないことを機械で見るための見本で、画面には出さない。', '---', ''
+        ].join('\n');
+        const build = (body) => RM.parsePage(FM + body, '(REF20)');
+        const same = (a, b, what) => assert(JSON.stringify(a.blocks) === JSON.stringify(b.blocks),
+            `${what}: 書き方を変えると出るものが変わる\n    A: ${JSON.stringify(a.blocks)}\n    B: ${JSON.stringify(b.blocks)}`);
+
+        /* ── ① 書き方が違っても同じもの ── */
+        const indented = build(':::section\nanchor: a\ntitle: 題\nlead: この節で分かること。\nterms:\n  - 用語1\n  - 用語2\n:::\n');
+        const flush = build(':::section\nanchor: a\ntitle: 題\nlead: この節で分かること。\nterms:\n- 用語1\n- 用語2\n:::\n');
+        const blank = build(':::section\nanchor: a\ntitle: 題\nlead: この節で分かること。\nterms:\n\n- 用語1\n- 用語2\n:::\n');
+        const packed = build(':::section anchor: a title: 題 lead: この節で分かること。 terms:\n\n- 用語1\n- 用語2\n:::\n');
+        same(indented, flush, '箇条書きの字下げ（2字下げ ⇄ 列0）');
+        same(indented, blank, '箇条書きの前の空行');
+        same(indented, packed, '囲みの見出しを1行に詰める');
+        assert(indented.blocks[0].terms.join('/') === '用語1/用語2', '並びが2件で読めていない');
+
+        /* 同じ行で閉じる囲み（`… :::`）も、行を分けたものと同じ */
+        same(build(':::callout\ntone: caution\ntext: 気をつける。\n:::\n'),
+            build(':::callout tone: caution text: 気をつける。 :::\n'),
+            '囲みを同じ行で閉じる');
+
+        /* ⚠ **切れ目は「書けるキー＋空白」だけ** —— 知らない語や2回目の語は値の一部で通る */
+        const keep = build(':::table\ncaption: 見本\nsource: slides:見本 s1「表」（手で組んでいる）\nhead:\n- 左\n- 右\nrows:\n- あ | い\n:::\n');
+        assert(keep.blocks[0].source.indexOf('slides:見本') === 0,
+            `「slides:」で切れている（切れ目にしてよいのは書けるキー＋空白だけ）: ${keep.blocks[0].source}`);
+
+        /* ── ② 著者メモ ── */
+        const memo = build('//あとで図を入れる\n\n本文の段落。\n\n:::list\nitems:\n- 項目 //ここに補足\n:::\n');
+        assert(memo.memos.length === 2, `著者メモが ${memo.memos.length} 件しか拾えていない（2件のはず）`);
+        assert(memo.memos[0].text === 'あとで図を入れる' && typeof memo.memos[0].line === 'number',
+            '著者メモに中身と行番号が残っていない（消えたのか出していないのかが区別できなくなる）');
+        const dump = JSON.stringify(memo.blocks);
+        assert(dump.indexOf('//') < 0 && dump.indexOf('あとで図を入れる') < 0 && dump.indexOf('ここに補足') < 0,
+            `著者メモが本文に混ざっている: ${dump}`);
+        assert(JSON.stringify(RM.serialize([memo])).indexOf('memos') < 0,
+            '著者メモが reference.json に書き出されている（画面に出るものではない）');
+        /* ★ いま在る原稿にも、メモが本文へ漏れていないこと（実データ側の確かめ） */
+        const live = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
+        live.forEach(p => (p.blocks || []).forEach(b => assert(JSON.stringify(b).indexOf('//') < 0,
+            `${p.id}: 本文に「//」が残っている（著者メモが画面に出る）: ${JSON.stringify(b).slice(0, 80)}`)));
+
+        /* ── ③ 型を書かない囲みの既定 ── */
+        const bare = build('::: ちょっと囲みたい文。 :::\n');
+        assert(bare.blocks[0].kind === RM.DEFAULT_FENCE.kind && bare.blocks[0].tone === RM.DEFAULT_FENCE.tone,
+            `型の無い囲みの行き先が既定と違う: ${JSON.stringify(bare.blocks[0])}`);
+        assert(RM.TONES.indexOf(RM.DEFAULT_FENCE.tone) >= 0, '型の無い囲みの既定 tone が、書ける tone の中に無い');
+        assert(W.REF_TONE_WORDS[RM.DEFAULT_FENCE.tone],
+            `型の無い囲みの既定 tone「${RM.DEFAULT_FENCE.tone}」に、learn.js が言葉を持っていない（札が空で出る）`);
+        const bareEl = W.referenceBook.renderBlock(bare.blocks[0]);
+        assert(bareEl && bareEl.textContent.indexOf('ちょっと囲みたい文。') >= 0, '型の無い囲みが描けていない');
+
+        /* ── ④ 小見出しは節ではない ── */
+        const head = build('## 小見出し\n\n段落。\n\n:::heading\ntitle: もう1つ\n:::\n');
+        assert(head.blocks[0].kind === 'heading' && head.blocks[0].title === '小見出し',
+            `「## 」が小見出しになっていない: ${JSON.stringify(head.blocks[0])}`);
+        assert(head.blocks[2].kind === 'heading', ':::heading が小見出しになっていない');
+        const hEl = W.referenceBook.renderBlock(head.blocks[0]);
+        assert(hEl && !hEl.id, `小見出しが id を持っている（${hEl && hEl.id}）＝ アンカーの綴りが2種類になる`);
+        assert(!W.referenceBook.renderToc(head), '小見出しだけのページに目次が出ている（目次の行き先は節だけ）');
+
+        /* ── ⑤ ⚠⚠ 赤は「直し方」まで言うこと ──
+           ★ ここが無いと、「受けない」と決めた形が **読めない赤**のまま残る。 */
+        const red = (body, what) => {
+            let msg = null;
+            try { build(body); } catch (e) { msg = e.message; }
+            assert(msg, `${what}: 通ってしまう（赤くならない）`);
+            assert(/直し方|書けるのは|のどれかです|だけを書きます|1行だけ|要ります/.test(msg),
+                `${what}: 赤のメッセージに直し方が無い —— 「${msg}」`);
+            return msg;
+        };
+        red(':::section\nanchor: a\ntitle: 題\nlead: これ。\nterms:\n:::\n', '並びの中身が空');
+        red(':::section\nanchor: a\ntitle: 題\nlead: これ。\nzzz: よそもの\n:::\n', '知らないキー');
+        red(':::section\nanchor: a\ntitle: 題\nlead: これ。\nただの文\n:::\n', '囲みの中の素の文');
+        red(':::callout\ntone: caution\ntext: あ。\n', '閉じていない囲み');
+        red('::: 1つめ。\nもう1行。\n:::\n', '型の無い囲みに2行');
+        red('# ページの題\n', '本文の h1');
+    });
+
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
      *
      * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。

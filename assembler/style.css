@@ -3377,6 +3377,18 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 .ref-toc li { margin: 0 0 4px; }
 .ref-toc a { font-size: 12.5px; color: #e0b0ff; text-decoration: none; line-height: 1.6; }
 
+/* ★ 節の下の小見出し（§20-5）。⚠ **節（`.ref-sec-h`）より一段小さく**、地の色も持たない ——
+   目次に出ないもの（＝ 検索の着地点ではないもの）が、節と同じ強さで並ばないようにする */
+.ref-h5 {
+    margin: 16px 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--border-color);
+    padding-left: 8px;
+}
+
 /* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
 .ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
 .ref-list li { margin: 0 0 5px; }
@@ -3454,6 +3466,10 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 .ref-callout-memorize { border-left-color: var(--neon-purple); }
 .ref-callout-memorize .ref-callout-tag { color: #e0b0ff; }
 .ref-callout-skip { border-left-color: var(--text-muted); }
+/* ★ 補足。**型を書かない `::: … :::` の既定**（§20-4）。⚠ いちばん静かな見せ方にする ——
+   「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
+.ref-callout-note { border-left-color: var(--text-secondary); }
+.ref-callout-note .ref-callout-tag { color: var(--text-muted); }
 
 /* 手持ちレイアウトではヘッダーが 44px（`header { height: 44px }` と同じブロックの条件を使う）。
    ⚠ **条件は §スマホ対応の見出しにある3行のどれか**（`PT1` が写し間違いを見張っている）。

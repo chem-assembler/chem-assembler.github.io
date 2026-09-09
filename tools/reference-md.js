@@ -47,12 +47,20 @@
          ⚠ それまで書けたのは**段落と、機械が組む4つの表／例題だけ**で、
          **見出し・箇条書き・図・化学反応式・手で書く表が1つも書けなかった。** */
     var LEVELS = ['★★★', '★★☆', '★☆☆'];
-    var TONES = ['caution', 'memorize', 'skip'];
+    /* ⚠ `note`（補足）は **型を書かない `::: … :::` の行き先**（§20-4）。
+       ★ ユーザーは「ちょっと囲みたい」だけのことがあり、そのたびに tone を選ばせない。 */
+    var TONES = ['caution', 'memorize', 'skip', 'note'];
+    /* 型を書かなかった囲みの既定。⚠ **2か所に書かない**（learn.js は tone の語だけを持つ） */
+    var DEFAULT_FENCE = { kind: 'callout', tone: 'note' };
     var BLOCK_SPECS = {
         /* 節の見出し。`anchor` が `id="ref-sec-<anchor>"` になり、目次と用語の索引の行き先になる。
            ⚠ `lead`（この節で分かること）は**必須** —— 検索から着地した人が最初に読む1行なので、
               「見出しだけ在って何の節か分からない」を作らない（設計書 §19-1） */
         section: { order: ['anchor', 'title', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'] },
+        /* ★ 節の下の小見出し（§20-5）。**本文では `## タイトル` と書ける**（`:::heading` と同じもの）。
+           ⚠ **アンカーは持たない** —— 綴りは `#ref-sec-<anchor>` の1つだけ、という §19-2 の決めを
+              増やさないため。★ だから**目次（`renderToc`）にも出さない**（目次の行き先は節だけ）。 */
+        heading: { order: ['title'], req: ['title'], list: [], prose: ['title'] },
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
         list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。
@@ -122,36 +130,91 @@
         return s;
     }
 
+    /* ★★ 1行に詰めて書かれたキーを切り分ける（§20-3）。
+     *
+     * ⚠ **切れ目にしてよいのは「その囲みで書けるキー」＋「まだ出ていない」ものだけ。**
+     *   ★ 知らない語（`slides:` `s4:`）も、2回目の語も、**値の一部として素通しする** ——
+     *     そうしないと `title: 反応の見分けかた: 3つの型` のような値で切れてしまう。
+     * ⚠ キーと認めるのは `キー:` の直後が **空白か行末**のときだけ（`stages:アルカン` は切らない）。
+     *
+     * 返り値 `{ lead, parts }` … `lead` は最初のキーより前にある文字（ふつうは空）。
+     */
+    function splitPacked(text, allowed, used) {
+        var re = /(^|\s)([A-Za-z][A-Za-z0-9]*):(?=\s|$)/g;
+        var cuts = [], m;
+        while ((m = re.exec(text))) {
+            var key = m[2];
+            if (allowed.indexOf(key) < 0 || used[key]) continue;
+            used[key] = true;
+            var at = m.index + m[1].length;
+            cuts.push({ key: key, at: at, from: at + key.length + 1 });
+        }
+        return {
+            lead: (cuts.length ? text.slice(0, cuts[0].at) : text).trim(),
+            parts: cuts.map(function (c, k) {
+                return { key: c.key, value: text.slice(c.from, k + 1 < cuts.length ? cuts[k + 1].at : text.length).trim() };
+            })
+        };
+    }
+
+    /* 「キー: 値」の形でない行を、**直し方まで**言って止める（§20-6） */
+    function kvLineFail(where, line, allowed, used) {
+        var m = /^\s*([A-Za-z][A-Za-z0-9]*):/.exec(line);
+        if (m && used[m[1]]) {
+            fail(where, 'キー「' + m[1] + '」が2回出てきます（同じ囲みの中で1回だけ書きます）\n    → ' + line.trim().slice(0, 60));
+        }
+        if (m) {
+            fail(where, '知らないキー「' + m[1] + '」があります（ここに書けるのは ' + allowed.join(' / ') + '）'
+                + '\n    → ' + line.trim().slice(0, 60));
+        }
+        fail(where, '「キー: 値」の形でない行があります'
+            + '\n    → ' + line.trim().slice(0, 60)
+            + '\n    ★ 直し方: 行のあたまに「' + allowed[0] + ': 」のようにキーを書きます。'
+            + '並びを書くなら次の行から「- 値」を1行ずつ。'
+            + '\n      （囲みの外に書きたい文なら、囲み（:::）の前か後ろの空行のあとに置きます）');
+    }
+
     /* 「キー: 値」だけの小さな文法。**前書きと `:::` の中で同じものを使う**（覚えることを1つにする）:
          key: 値
          key: true / false
          key:
-           - 値
-           - 値 */
-    function parseKV(lines, where) {
-        var out = {}, order = [], i = 0;
-        while (i < lines.length) {
-            var line = lines[i];
-            if (line.trim() === '') { i++; continue; }
-            var m = /^([A-Za-z][A-Za-z0-9]*):(.*)$/.exec(line);
-            if (!m) fail(where, '「キー: 値」の形でない行があります\n    → ' + line.slice(0, 60));
-            var key = m[1], val = m[2].trim();
-            if (Object.prototype.hasOwnProperty.call(out, key)) fail(where, 'キー「' + key + '」が2回出てきます');
-            if (val === '') {
-                var items = [];
-                i++;
-                while (i < lines.length && /^\s*-\s+\S/.test(lines[i])) {
-                    items.push(lines[i].replace(/^\s*-\s+/, '').trim());
-                    i++;
-                }
-                if (!items.length) fail(where, '「' + key + ':」の後に値も「- 」の行もありません');
-                out[key] = items;
-            } else {
-                out[key] = val;
-                i++;
-            }
+         - 値                ← ★ 字下げは要らない（2字下げでもよい）。★ 空行が挟まってもよい
+         - 値
+       ★ **1行に詰めて書いてもよい**（`anchor: formula title: 一般式`）。切れ目の決め方は splitPacked。 */
+    function parseKV(lines, where, allowed) {
+        var out = {}, order = [], used = {}, curList = null;
+        var put = function (key, val) {
             order.push(key);
+            if (val === '') { out[key] = []; curList = key; }
+            else { out[key] = val; curList = null; }
+        };
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.trim() === '') continue;               // ★ 空行は読み飛ばす（並びの前後に入ってよい）
+            var im = /^\s*-\s+(\S[\s\S]*)$/.exec(line);
+            var seg;
+            if (im) {
+                if (!curList) {
+                    fail(where, '「- 」で始まる行の前に、それが何の並びかを言うキーがありません'
+                        + '\n    → ' + line.trim().slice(0, 60)
+                        + '\n    ★ 直し方: 並びの前の行に「' + allowed[0] + ':」のようにキーだけを書きます');
+                }
+                seg = splitPacked(im[1], allowed, used);
+                if (seg.lead) out[curList].push(seg.lead);
+                else if (!seg.parts.length) fail(where, '「- 」だけの行があります');
+            } else {
+                seg = splitPacked(line.trim(), allowed, used);
+                if (!seg.parts.length || seg.lead) kvLineFail(where, line, allowed, used);
+            }
+            seg.parts.forEach(function (p) { put(p.key, p.value); });
         }
+        order.forEach(function (k) {
+            if (Array.isArray(out[k]) && !out[k].length) {
+                fail(where, '「' + k + ':」の後に値がありません'
+                    + '\n    ★ 直し方: 1行の値なら「' + k + ': ここに値」、'
+                    + '並びなら次の行から「- 値」を1行ずつ書きます');
+            }
+        });
         return { map: out, order: order };
     }
 
@@ -164,13 +227,24 @@
      */
     function parsePage(text, where) {
         where = where || '(reference-src)';
-        var lines = String(text).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
+        var raw = String(text).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
+        /* ★★ 著者メモ（`//` から行末まで）を先に抜く。⚠ **画面には出さないが、捨てもしない** ——
+           `page.memos` に行番号ごと残し、生成器が「まだ片付いていないメモが N 件」と数えて出す（§20-2）。
+           ⚠ `serialize` は PAGE_KEYS しか書かないので、**reference.json には入らない**。 */
+        var memos = [];
+        var lines = raw.map(function (line, n) {
+            var m = /(^|\s)\/\/(.*)$/.exec(line);
+            if (!m) return line;
+            var body = m[2].trim();
+            if (body) memos.push({ line: n + 1, text: body });
+            return line.slice(0, m.index + m[1].length).replace(/\s+$/, '');
+        });
         if (lines[0] !== '---') fail(where, '1行目が「---」ではありません（前書きが要ります）');
         var end = -1;
         for (var i = 1; i < lines.length; i++) if (lines[i] === '---') { end = i; break; }
         if (end < 0) fail(where, '前書きの終わりの「---」がありません');
 
-        var fm = parseKV(lines.slice(1, end), where + ' の前書き').map;
+        var fm = parseKV(lines.slice(1, end), where + ' の前書き', PAGE_KEYS).map;
         var page = {};
         PAGE_KEYS.forEach(function (k) {
             if (!Object.prototype.hasOwnProperty.call(fm, k)) {
@@ -209,6 +283,9 @@
         }
 
         page.blocks = parseBody(lines.slice(end + 1), where);
+        /* ⚠ **JSON には出さない**（`serialize` は PAGE_KEYS ＋ why ＋ blocks しか書かない）。
+           ★ 生成器と `REF20` が「書いたメモが消えていないこと」をここから数える */
+        page.memos = memos;
         return page;
     }
 
@@ -229,24 +306,37 @@
         return blocks;
     }
 
-    /* `:::` を開いたまま閉じていないかたまりか（囲みの中の空行を段落の切れ目と誤らないため） */
+    /* 囲みの終わりの印。★ **`:::` だけの行**でも、**行末に付いた `:::`** でもよい（§20-3） */
+    function fenceCloses(line) { return line.trim() === ':::' || /:::\s*$/.test(line); }
+
+    /* 1行目の `:::種類` を剥がして、囲みの中身の行だけにする。
+       ★ 1行目の残りは「中身の1行目」として扱う ＝ **キーを詰めて書いてよい**。 */
+    function fenceBody(chunk) {
+        return [String(chunk[0]).replace(/^:::([A-Za-z][A-Za-z0-9]*)?[ \t]*/, '')].concat(chunk.slice(1));
+    }
+
+    /* `:::` を開いたまま閉じていないかたまりか（囲みの中の空行を段落の切れ目と誤らないため）。
+       ⚠ **1行の中で開いて閉じる囲み**（`::: …文… :::`）を「開きっぱなし」と読まないこと ——
+          読むと、そこから下の本文がぜんぶ囲みに吸い込まれる。 */
     function isOpenFence(chunk) {
         if (!/^:::/.test(chunk[0])) return false;
-        for (var i = 1; i < chunk.length; i++) if (chunk[i].trim() === ':::') return false;
+        var body = fenceBody(chunk);
+        for (var i = 0; i < body.length; i++) if (fenceCloses(body[i])) return false;
         return true;
     }
 
     function parseChunk(chunk, where) {
-        if (/^:::/.test(chunk[0])) {
-            var m = /^:::([A-Za-z][A-Za-z0-9]*)\s*$/.exec(chunk[0]);
-            if (!m) fail(where, '囲みの1行目は「:::種類」だけを書きます\n    → ' + chunk[0].slice(0, 60));
-            var kind = m[1], close = -1;
-            for (var i = 1; i < chunk.length; i++) if (chunk[i].trim() === ':::') { close = i; break; }
-            if (close < 0) fail(where, ':::' + kind + ' の囲みが「:::」で閉じていません');
-            for (var j = close + 1; j < chunk.length; j++) {
-                if (chunk[j].trim() !== '') fail(where, ':::' + kind + ' の囲みの後には空行が要ります\n    → ' + chunk[j].slice(0, 60));
+        if (/^:::/.test(chunk[0])) return parseFence(chunk, where);
+        /* ★ 小見出し（§20-5）。⚠ `#` 1つは書けない —— ページの題は前書きの `title:` が持つ */
+        var hm = /^\s*(#+)\s+(\S[\s\S]*)$/.exec(chunk[0]);
+        if (hm) {
+            if (chunk.length > 1) fail(where, '小見出しは1行で書きます\n    → ' + chunk[0].slice(0, 60));
+            if (hm[1] === '#') {
+                fail(where, 'ページの題は前書きの「title:」が持つので、本文に「# 」は書けません'
+                    + '\n    → ' + chunk[0].slice(0, 60)
+                    + '\n    ★ 直し方: 節にするなら :::section、節の下の小見出しなら「## 」を使います');
             }
-            return buildBlock(kind, chunk.slice(1, close), where);
+            return { kind: 'heading', title: inline(hm[2].trim(), where + ' の小見出し') };
         }
         if (chunk.length > 1) {
             fail(where, '段落のあいだには空行が要ります（1段落 = 1行。段落の途中で改行しない）'
@@ -255,10 +345,44 @@
         return { kind: 'text', text: inline(chunk[0].trim(), where + ' の段落') };
     }
 
+    /* `:::` の囲み1つ。★ 受ける形は3つ:
+         :::種類            … 次の行から「キー: 値」、`:::` で閉じる
+         :::種類 キー: 値 キー: 値 [:::]   … ★ 1行に詰めて書く（§20-3）
+         ::: 囲みたい文 :::  … ★ **型を書かない**（既定の見せ方＝補足の囲み・§20-4）           */
+    function parseFence(chunk, where) {
+        var kindM = /^:::([A-Za-z][A-Za-z0-9]*)?/.exec(chunk[0]);
+        var kind = kindM[1] || null;
+        var body = fenceBody(chunk), inner = [], closed = false, i = 0;
+        for (; i < body.length; i++) {
+            if (body[i].trim() === ':::') { i++; closed = true; break; }
+            if (/:::\s*$/.test(body[i])) { inner.push(body[i].replace(/:::\s*$/, '')); i++; closed = true; break; }
+            inner.push(body[i]);
+        }
+        if (!closed) {
+            fail(where, ':::' + (kind || '') + ' の囲みが「:::」で閉じていません'
+                + '\n    ★ 直し方: 囲みの終わりに「:::」だけの行を置くか、同じ行の末尾に「:::」を書きます');
+        }
+        for (; i < body.length; i++) {
+            if (body[i].trim() !== '') fail(where, '囲みの後には空行が要ります\n    → ' + body[i].slice(0, 60));
+        }
+        if (kind) return buildBlock(kind, inner, where);
+
+        /* ★ 型の無い囲み。**中身は自由文**（「ちょっと囲みたい」だけ、を受ける） */
+        var txt = inner.map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+        if (!txt.length) fail(where, '「:::」だけの囲みに中身がありません（囲みたい文を同じ行に書きます）');
+        if (txt.length > 1) {
+            fail(where, '型を書かない「:::」の囲みに書けるのは1つの文だけです（いまは ' + txt.length + ' 行）'
+                + '\n    ★ 直し方: 文を1つにするか、種類を書きます（例: :::callout tone: caution text: …）');
+        }
+        var b = { kind: DEFAULT_FENCE.kind, tone: DEFAULT_FENCE.tone, text: inline(txt[0], where + ' の ::: の囲み') };
+        checkBlock(b, where);
+        return b;
+    }
+
     function buildBlock(kind, inner, where) {
         var spec = BLOCK_SPECS[kind];
         if (!spec) fail(where, '「:::' + kind + '」は描けない種類です（書けるのは ' + KINDS.join(' / ') + '）');
-        var kv = parseKV(inner, where + ' の :::' + kind).map;
+        var kv = parseKV(inner, where + ' の :::' + kind, spec.order).map;
         var block = { kind: kind };
         var enums = spec.enum || {}, bools = spec.bool || [];
         spec.order.forEach(function (k) {
@@ -378,6 +502,7 @@
         KINDS: KINDS,
         LEVELS: LEVELS,
         TONES: TONES,
+        DEFAULT_FENCE: DEFAULT_FENCE,
         CELL_SEP: CELL_SEP,
         FIGURE_DIR: '/reference-img/',
         parsePage: parsePage,
