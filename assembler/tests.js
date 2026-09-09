@@ -49643,6 +49643,56 @@
         assert(planned.size >= 1, 'PLANNED.txt が空（まだ無いページ宛のリンクを1本も試していない）');
     });
 
+    /* ===== REF22: 手で書く表の列ごとの寄せ（v1528） =====
+     *
+     * ★ ユーザーのメモ「異性体の数は右揃え、その他は中央ぞろえ」への答え（設計書 §20-9）。
+     *
+     * ⚠⚠ ここが見張るのは「寄っているか」ではなく **「1列ずれていないか」** ——
+     *   数の合わない `align` を黙って詰めると、画面には**それらしく寄った表**が出て、
+     *   ⛔ 間違っていることが目で分からない（列の数が合わない `rows` を止めるのと同じ理由）。
+     * ★ **綴りは1組だけ**（`left`/`center`/`right`）。書式が唯一の台帳で、
+     *   `learn.js` は値をそのまま `style.textAlign` に渡す ＝ **一覧を2か所に持たない。**
+     */
+    test('REF22: :::table の align は列の数だけ・書ける語だけ（1列ずれた寄せを出さない）', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+        assert(Array.isArray(RM.ALIGNS) && RM.ALIGNS.length === 3, '書式が align の語を持っていない');
+
+        const pages = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
+        let seen = 0;
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'table' || !b.align) return;
+            seen++;
+            const cols = b.align.split(W.REF_CELL_SEP).map(s => s.trim());
+            assert(cols.length === b.head.length,
+                `${p.id}: :::table の align が ${cols.length} 個で、head の ${b.head.length} 列と違う`
+                + '（1列ずれた寄せは、画面ではそれらしく出てしまう）');
+            cols.forEach(v => assert(RM.ALIGNS.indexOf(v) >= 0,
+                `${p.id}: :::table の align に書けない語「${v}」（書けるのは ${RM.ALIGNS.join(' / ')}）`));
+            /* ★ 描いたものにも実際に載っていること（＝ 書式だけ通って画面が変わらない、を作らない） */
+            const t = book.renderBlock(b).querySelector('table');
+            const th = [...t.querySelectorAll('thead th')];
+            assert(th.length === cols.length, `${p.id}: 描いた表の列が ${th.length} で align の ${cols.length} と違う`);
+            th.forEach((cell, i) => assert(cell.style.textAlign === cols[i],
+                `${p.id}: ${i + 1}列目の見出しが「${cell.style.textAlign || '(指定なし)'}」で、原稿の「${cols[i]}」と違う`));
+            [...t.querySelectorAll('tbody tr')].forEach((tr, r) => {
+                [...tr.children].forEach((cell, i) => assert(cell.style.textAlign === cols[i],
+                    `${p.id}: ${r + 1}行 ${i + 1}列目が「${cell.style.textAlign || '(指定なし)'}」で、原稿の「${cols[i]}」と違う`));
+            });
+        }));
+        assert(seen >= 1, ':::table の align を使っているページが1枚も無い（この検査が空回りしている）');
+
+        /* ★ 書かない表は**今までどおり**（既定の見え方を .md 側にも learn.js 側にも写していない） */
+        const plain = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）',
+            head: ['左', '右'], rows: ['あ | い']
+        }).querySelector('table');
+        [...plain.querySelectorAll('th, td')].forEach(cell => assert(!cell.style.textAlign,
+            `align を書かない表に寄せが付いている（${cell.style.textAlign}）＝ 既定が2か所に書かれている`));
+    });
+
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
      *
      * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。

@@ -6465,11 +6465,18 @@ class ReferenceBook {
         }
         const t = document.createElement('table');
         t.className = 'ref-hand-table';
+        /* ★ 列ごとの寄せ（設計書 §20-9。原稿の `align: center | … | right`）。
+           ⚠ **書かれていなければ何も足さない** —— 既定の見え方は style.css の持ちもので、
+              「既定はこれ」をここに書き写すと決めごとが2か所になる。
+           ⚠ 数が head と合わない align は**書式のほうで止まる**（1列ずれた寄せを出さない）。 */
+        const align = (block.align || '').split(REF_CELL_SEP).map(s => s.trim());
+        const setAlign = (cell, i) => { if (align[i]) cell.style.textAlign = align[i]; };
         const thead = document.createElement('thead');
         const htr = document.createElement('tr');
-        block.head.forEach(h => {
+        block.head.forEach((h, i) => {
             const th = document.createElement('th');
             th.innerHTML = h;
+            setAlign(th, i);
             htr.appendChild(th);
         });
         thead.appendChild(htr);
@@ -6477,9 +6484,10 @@ class ReferenceBook {
         const tb = document.createElement('tbody');
         block.rows.forEach(row => {
             const tr = document.createElement('tr');
-            row.split(REF_CELL_SEP).forEach(cell => {
+            row.split(REF_CELL_SEP).forEach((cell, i) => {
                 const td = document.createElement('td');
                 td.innerHTML = cell.trim();
+                setAlign(td, i);
                 tr.appendChild(td);
             });
             tb.appendChild(tr);
