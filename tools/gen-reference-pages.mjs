@@ -384,7 +384,15 @@ const LIGHT_CSS = `
  *
  * ⚠ **名簿は手で書くが、`LIGHT_OVERRIDE` は「載せただけ」では通らない** ——
  *   LIGHT_CSS にその class が出てこなければ赤（＝ 名簿だけ増やして直し忘れる、を塞ぐ）。
+ *
+ * ⚠⚠ **「出てくる」は *丸ごと* で見ること**（2026-09-10・否定対照で見つけた穴）。
+ *   ★ 前は `light.indexOf('.' + c)` の**部分一致**だったので、
+ *     **`.ref-rx` の読み替えを丸ごと消しても `.ref-rx-lv1` が居るせいで緑のまま**だった。
+ *   ⚠ 同じ形の取りこぼしが `.ref-table`（→ `.ref-table-wrap`）・
+ *     `.ref-callout`（→ `.ref-callout-caution`）・`.ref-try`（→ 無し）にもある。
  */
+/** LIGHT_CSS がその class を**丸ごと**触っているか（`.ref-rx` が `.ref-rx-lv1` に釣られない） */
+const touches = (light, c) => new RegExp('\\.' + c + '(?![A-Za-z0-9_-])').test(light);
 const DARK_ASSUMING = /rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0?\.\d+\s*\)|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0?\.\d+\s*\)|#e0b0ff|#ffd166|#7ef\b|#fff\b|#ffffff\b/i;
 
 function checkLightCoverage(extracted, light) {
@@ -397,7 +405,7 @@ function checkLightCoverage(extracted, light) {
         /* その規則が実際に飾っている class（セレクタに出てくる ref- の class すべて） */
         const cls = [...new Set([...r.selector.matchAll(/\.(ref-[A-Za-z0-9_-]+)/g)].map(m => m[1]))];
         const ok = cls.some(c => LIGHT_KEEP[c]
-            || (LIGHT_OVERRIDE.indexOf(c) >= 0 && light.indexOf('.' + c) >= 0));
+            || (LIGHT_OVERRIDE.indexOf(c) >= 0 && touches(light, c)));
         if (!ok) {
             const listedButUntouched = cls.filter(c => LIGHT_OVERRIDE.indexOf(c) >= 0);
             bad.push(`  ${r.selector.trim()} … ${hit[0]}`
