@@ -93,6 +93,68 @@ function checkLinks(pages, planned) {
     }));
 }
 
+/* ★★ 図のファイル（`reference-img/`）を見る（設計書 §20-10）。⚠⚠ **ここでしか見られない** ——
+ *   `:::link` の行き先と同じで、**ディレクトリを読めるのは node 側だけ**（§16-5 の役割分担）。
+ *   ブラウザ側の `REF19` ④ は「本文が名指しした図が HTTP で取れるか」を見る ＝ 向きが逆。
+ *
+ * ★ 見るのは3つ:
+ *   ① 名指しした図が `reference-img/` に在る（★ `REF19` ④ より**早く**止まる。生成の前）
+ *   ② ⚠⚠ **どのページからも参照されていない図が残っていない** —— 実際に1枚あった
+ *      （`alkane-formula-derivation.png`。焼いたのに本文から名指ししないまま置かれていた）。
+ *      ⚠ **図は一度置くと履歴に残る**（§19-4）ので、使わないものが黙って増えるのがいちばん困る。
+ *   ③ ★★ **平たすぎる図が無い** —— 本文の幅に入れたときの高さが床を下回らないこと。
+ *
+ * ⚠⚠ ③ の 10:1 は「measured されて決まった値」ではない（§12-5 の戒め）。**線の引き方はこう**:
+ *   ・実際に読めなかったのが **14:1**（連続置換の帯・572px 幅で高さ 41px。橙の添え字が 7px 相当）
+ *   ・割ったあとに残ったいちばん平たい図が **7.7:1**（同・74px）
+ *   ★ ＝ **落としたものより上、残したものより下**に引いた1本。図が増えたら引き直してよい。
+ */
+const IMG_DIR = path.join(ROOT, 'reference-img');
+const BODY_WIDTH = 572;   // 面A（/reference/<id>/）の本文の幅。面B（資料ペイン）はもっと狭い
+const MAX_ASPECT = 10;    // 幅 ÷ 高さ。10:1 ＝ 572px 幅で高さ 57px
+
+/** PNG の IHDR から幅と高さを取る。⚠ 画像ライブラリを足さない（16バイト読むだけで済む） */
+function pngSize(file) {
+    const b = readFileSync(file);
+    if (b.length < 24 || b.readUInt32BE(0) !== 0x89504e47) return null;   // PNG でなければ測らない
+    return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+}
+
+function checkFigures(pages) {
+    const used = new Map();   // ファイル名 → それを名指ししているページ
+    pages.forEach(p => (p.blocks || []).forEach(b => {
+        if (b.kind === 'figure' && b.src && !used.has(b.src)) used.set(b.src, p.id);
+    }));
+    const onDisk = existsSync(IMG_DIR) ? readdirSync(IMG_DIR).filter(f => !f.startsWith('.')) : [];
+
+    [...used.keys()].forEach(src => {
+        if (onDisk.indexOf(src) < 0) {
+            throw new Error(`reference-src/${used.get(src)}.md: :::figure の「${src}」が reference-img/ にありません\n`
+                + `   いま在る図: ${onDisk.length ? onDisk.join(' / ') : '(なし)'}\n`
+                + '   ★ 綴りが合っているなら、その図をまだ焼いていません（reference-img/ に置いてください）');
+        }
+    });
+
+    const orphans = onDisk.filter(f => !used.has(f));
+    if (orphans.length) {
+        throw new Error(`reference-img/ に、どのページからも参照されていない図が ${orphans.length} 枚あります → ${orphans.join(' / ')}\n`
+            + '   ★ 直し方は2通り: 使うなら本文の :::figure の src に書きます。使わないなら消してください\n'
+            + '   ⚠ 図は一度置くと履歴に残るので、使わないものを置いたままにしません');
+    }
+
+    onDisk.forEach(f => {
+        const size = pngSize(path.join(IMG_DIR, f));
+        if (!size || !size.h) return;                       // PNG 以外は測らない
+        const aspect = size.w / size.h;
+        if (aspect <= MAX_ASPECT) return;
+        const shown = Math.round(BODY_WIDTH * size.h / size.w);
+        throw new Error(`reference-img/${f} が平たすぎます（${size.w}x${size.h} ＝ ${aspect.toFixed(1)}:1）\n`
+            + `   本文の幅 ${BODY_WIDTH}px に入れると高さ ${shown}px にしかならず、図に添えた小さい字が読めません\n`
+            + `   ★ 直し方: スライドの横一列をそのまま帯で切らずに、2枚以上に割って焼き直してください`
+            + `（床は ${MAX_ASPECT}:1 ＝ 高さ ${Math.round(BODY_WIDTH / MAX_ASPECT)}px）`);
+    });
+}
+
 /* ★★ 著者メモ（`//` で始まる行）を数えて見せる（設計書 §20-2）。
  *
  * ⚠ **黙って捨てないための口。** メモは画面に出さないので、出さないことと消えたことが
@@ -112,6 +174,7 @@ function main() {
     try {
         pages = buildPages();
         checkLinks(pages, readPlanned());
+        checkFigures(pages);
     } catch (e) {
         console.log('❌ ' + e.message);
         process.exit(1);
