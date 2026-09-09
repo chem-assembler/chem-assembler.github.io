@@ -6086,7 +6086,10 @@ const REF_LEVEL_WORDS = {
 const REF_TONE_WORDS = {
     caution: '⚠ 勘違いしやすい',
     memorize: '丸暗記でよい',
-    skip: '覚えなくてよい'
+    skip: '覚えなくてよい',
+    /* ★ `note`（補足）は **型を書かない `::: … :::` の行き先**（§20-4）——
+       「ちょっと囲みたい」だけのときに tone を選ばせないための既定。 */
+    note: '補足'
 };
 
 /* 手で書く表のセルの区切り */
@@ -6290,6 +6293,7 @@ class ReferenceBook {
             return p;
         }
         if (b.kind === 'section') return this.renderSection(b);
+        if (b.kind === 'heading') return this.renderHeading(b);
         if (b.kind === 'list') return this.renderList(b);
         if (b.kind === 'figure') return this.renderFigure(b);
         if (b.kind === 'reaction') return this.renderReaction(b);
@@ -6326,6 +6330,20 @@ class ReferenceBook {
         lead.innerHTML = block.lead;
         sec.appendChild(lead);
         return sec;
+    }
+
+    /* ★ 節の下の小見出し（設計書 §20-5。原稿では `## タイトル`／`:::heading`）。
+     *
+     * ⚠ **id を持たない。** 節（`:::section`）のアンカーは `#ref-sec-<anchor>` の1つだけ、という
+     *   §19-2 の決めを増やさないため —— 綴りが2種類になると、面Aの URL と用語の索引の
+     *   行き先が2通りになる。★ だから **目次（`renderToc`）にも出さない**（目次の行き先は節だけ）。
+     * ★ 節が「検索から着地する単位」で、小見出しは「節の中の区切り」。役が違う。
+     */
+    renderHeading(block) {
+        const h = document.createElement('h5');
+        h.className = 'ref-h5';
+        h.innerHTML = block.title;
+        return h;
     }
 
     /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */

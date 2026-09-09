@@ -48,6 +48,20 @@ function buildPages() {
     });
 }
 
+/* ★★ 著者メモ（`//` で始まる行）を数えて見せる（設計書 §20-2）。
+ *
+ * ⚠ **黙って捨てないための口。** メモは画面に出さないので、出さないことと消えたことが
+ *   ユーザーから区別できない ＝ **数と場所を毎回言う**。
+ * ★ 生成は止めない（メモは「まだ片付いていない注文」であって、書式の誤りではない）。
+ */
+function reportMemos(pages) {
+    const all = [];
+    pages.forEach(p => (p.memos || []).forEach(m => all.push({ id: p.id, ...m })));
+    if (!all.length) return;
+    console.log(`📝 まだ片付いていない著者メモ ${all.length} 件（画面には出しません）`);
+    all.forEach(m => console.log(`   reference-src/${m.id}.md:${m.line}  ${m.text}`));
+}
+
 function main() {
     let pages;
     try {
@@ -57,6 +71,7 @@ function main() {
         process.exit(1);
     }
     const text = RM.serialize(pages);
+    reportMemos(pages);
 
     const now = existsSync(OUT) ? readFileSync(OUT, 'utf8') : null;
     const same = now !== null && RM.normalize(now) === RM.normalize(text);
