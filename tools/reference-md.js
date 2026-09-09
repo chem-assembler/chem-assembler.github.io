@@ -50,6 +50,9 @@
     /* ⚠ `note`（補足）は **型を書かない `::: … :::` の行き先**（§20-4）。
        ★ ユーザーは「ちょっと囲みたい」だけのことがあり、そのたびに tone を選ばせない。 */
     var TONES = ['caution', 'memorize', 'skip', 'note'];
+    /* ★ 表の列ごとの寄せ（§20-9）。⚠ **綴りは1組だけ**（日本語の「右」も受けると、
+       同じことを2通りで書ける ＝ どちらが正かが原稿ごとに割れる）。★ 赤が3語を必ず並べる。 */
+    var ALIGNS = ['left', 'center', 'right'];
     /* 型を書かなかった囲みの既定。⚠ **2か所に書かない**（learn.js は tone の語だけを持つ） */
     var DEFAULT_FENCE = { kind: 'callout', tone: 'note' };
     var BLOCK_SPECS = {
@@ -74,7 +77,9 @@
               **著作権の守り**として掛けている（手打ちの表が構造上存在できなければ転写事故は起きない）。
            ★ ここだけ穴を開けるので、**代わりに「その行がどこから来たか」を書かせる** ——
              書けないなら、それはどこかから持ってきている（前書きの `why` と同じ考え・§1-2）。 */
-        table: { order: ['caption', 'source', 'head', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
+        /* ★ `align` は**列ごとの寄せ**（§20-9）。⚠ セルと同じ ` | ` で区切って**1行**で書く
+           ＝ head と縦に見比べられる。書かなければ今までどおりの見え方（既定を .md 側に写さない）。 */
+        table: { order: ['caption', 'source', 'head', 'align', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
         /* 注意の囲み。⚠ `tone` は3つだけ（勘違いしやすい／丸暗記でよい／覚えなくてよい） */
         callout: { order: ['tone', 'text'], req: ['tone', 'text'], list: [], prose: ['text'], enum: { tone: TONES } },
         /* ★★ ページどうし・ページからアプリへのリンク（設計書 §20-7）。
@@ -489,6 +494,21 @@
             /* ⚠ 列の数がそろっていない表は、画面では「1列ずれた表」として**それらしく出てしまう** */
             var n = b.head.length;
             if (n < 2) fail(where, ':::table の head は2列以上です');
+            /* ★ 列ごとの寄せ（§20-9）。⚠ **head と同じ数だけ**書く ——
+               足りない・多いのを黙って詰めると、**1列ずれた寄せ**として それらしく出てしまう */
+            if (Object.prototype.hasOwnProperty.call(b, 'align')) {
+                var cols = b.align.split(CELL_SEP).map(function (s) { return s.trim(); });
+                if (cols.length !== n) {
+                    fail(where, ':::table の align が ' + cols.length + ' 個で、head の ' + n + ' 列と違います'
+                        + '（セルと同じ「 | 」で区切って、列の数だけ書きます）\n    → ' + b.align);
+                }
+                cols.forEach(function (v) {
+                    if (ALIGNS.indexOf(v) < 0) {
+                        fail(where, ':::table の align に書けるのは ' + ALIGNS.join(' / ') + ' です（いまは「' + v + '」）'
+                            + '\n    → ' + b.align);
+                    }
+                });
+            }
             b.rows.forEach(function (row, i) {
                 var cells = row.split(CELL_SEP);
                 if (cells.length !== n) {
@@ -586,6 +606,7 @@
         KINDS: KINDS,
         LEVELS: LEVELS,
         TONES: TONES,
+        ALIGNS: ALIGNS,
         DEFAULT_FENCE: DEFAULT_FENCE,
         CELL_SEP: CELL_SEP,
         FIGURE_DIR: '/reference-img/',

@@ -102,7 +102,9 @@ head:
 - 名称
 - 分子式
 - 常温での状態
-- 構造異性体 rows:　//異性体の数は右揃え、その他は中央ぞろえ
+- 構造異性体
+align: center | center | center | center | right
+rows:
 - 1 | メタン | CH₄ | 気体 | 1
 - 2 | エタン | C₂H₆ | 気体 | 1
 - 3 | プロパン | C₃H₈ | 気体 | 1
