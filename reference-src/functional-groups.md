@@ -123,13 +123,13 @@ terms:
 
 :::figure
 src: nitro-from-nitric.png
-alt: 硝酸 HNO3 の構造式と電子式。H−O−N と並び、N から O へ二重結合と、矢印で書いた配位結合が1本ずつ伸びている
+alt: 硝酸 HNO₃ の構造式と電子式。H−O−N と並び、N から O へ二重結合と、矢印で書いた配位結合が1本ずつ伸びている
 caption: **硝酸 HNO₃** から −OH を取り去った残りが**ニトロ基 −NO₂** です。N から O へ伸びる矢印が配位結合。
 :::
 
 :::figure
 src: sulfo-from-sulfuric.png
-alt: 硫酸 H2SO4 の構造式と電子式。中心の S から O へ矢印で書いた配位結合が2本、H−O− が2本伸びている
+alt: 硫酸 H₂SO₄ の構造式と電子式。中心の S から O へ矢印で書いた配位結合が2本、H−O− が2本伸びている
 caption: **硫酸 H₂SO₄** から −OH を1つ取り去った残りが**スルホ基 −SO₃H** です。
 :::
 
