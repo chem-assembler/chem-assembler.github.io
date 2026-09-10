@@ -4759,6 +4759,7 @@ function bottleOwnerChoices(stage, a, b) {
   const plan = bottlePlan(stage, a, b, 1);
   if (!plan || plan.dataError) return null;
   const left = plan.ionic.left.filter((t) => t.sp !== "e-");
+  const D = (sp) => SPECIES[sp].disp;
   return left.map((t) => {
     const src = plan.sources[t.sp] || [];
     const shared = src.length > 1;
@@ -4772,8 +4773,17 @@ function bottleOwnerChoices(stage, a, b) {
       if (o.sp === t.sp) continue;
       if (SPECIES[t.sp].charge * SPECIES[o.sp].charge < 0) options.push({ kind: "ion", sp: o.sp });
     }
+    /* ★ 2026-09-11・ユーザーの決定「B3 イオンでないものは聞かなくてよい」。
+       左辺にはイオンでない項も並ぶ（r3 の Zn・ro1〜ro3 の CH₃CH₂OH など・rn1 rn2 の Cu）。
+       これらは水の中でばらけていない ＝ **はじめに入れた物質そのもの**なので、
+       「もともと何だった？」の答えが自分自身になる ＝ 問いになっていない。
+       ⚠ **柱そのものは消さない。** 柱はイオン反応式の左辺の項で、⑤の係数の欄は
+       その真下に置く（＝ 筆算の縦の対応）。消すと式が1項欠ける。
+       消すのは**問い**だけ ＝ `ask: false`。 */
+    const ask = SPECIES[t.sp].charge !== 0;
     return {
-      ion: t.sp, n: t.n, options, shared,
+      ion: t.sp, n: t.n, options, shared, ask,
+      selfNote: ask ? null : `${D(t.sp)} はイオンではない —— はじめに入れたものが、そのまま式に出ている。`,
       answer: shared ? null : plan.owners[t.sp],
       answerKey: shared ? "bottles:" + src.join("+") : "bottle:" + plan.owners[t.sp],
     };

@@ -1627,6 +1627,16 @@ main.timelineMain {
 .bslot.ok { border-style: solid; border-color: #7fae8f; background: #f2faf5; }
 .bslot.ng { border-style: solid; border-color: #d09a8a; background: #fdf5f3; }
 .bslotPh { color: #a8b4c0; font-size: 17px; }
+/* ★ 2026-09-11・「イオンでないものは聞かなくてよい」。
+   柱は式の項として残す（⑤の係数の欄がこの真下に来る）が、問いではないので
+   受け皿を置かず、色を落として**答える場所ではない**ことを形で言う */
+.bpill.noask { background: #f4f7fa; border-color: #ccd6e0; color: #5a6570; cursor: default; }
+.bself {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 44px; min-width: 104px; padding: 4px 6px;
+  font-size: 12.5px; color: #7c8792;
+}
+.bwSelfNote .bwNoteText { color: #5a6570; }
 .bchip {
   display: inline-flex; align-items: center; gap: 2px;
   font-size: 14.5px; font-weight: bold; color: #23303b;

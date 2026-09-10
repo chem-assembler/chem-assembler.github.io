@@ -3339,7 +3339,14 @@ function bqSlotIdOf(sp) { return "bq_" + String(sp).replace(/[^A-Za-z0-9]/g, "_"
 function placeOwnerIn(doc, ion, key) {
     const id = bqSlotIdOf(ion);
     const slot = () => doc.getElementById(id);
-    if (!slot()) throw new Error("その柱が出ていない: " + ion);
+    if (!slot()) {
+        /* ★ 2026-09-11・「イオンでないものは聞かなくてよい」。イオンでない柱
+           （r3 の Zn・ro1 の CH₃CH₂OH・rn1 の Cu）には受け皿が無い ＝ 置くものが無い。
+           ⚠ **柱そのものは残っている**（式の項であり、⑤の係数の欄がその真下に来る）。
+           柱ごと消えていたらそれは本物の不具合なので、確かめてから黙って戻る。 */
+        if (doc.querySelector('#bottleCols .bpill[data-ion="' + ion + '"]')) return;
+        throw new Error("その柱が出ていない: " + ion);
+    }
     // 置いてある札はいったん戻す（選び直しの道そのもの）
     for (let g = 0; g < 8; g++) {
         const x = slot().querySelector(".bchipX");
@@ -5546,7 +5553,10 @@ async function runUITests(iframe) {
     d.getElementById("calcSkip").click();
     assert(!d.getElementById("stepBottles").hidden, "狭い画面で rn1 の④の段が出ない");
     const sels = [...d.querySelectorAll("#bottleCols .bslot")];
-    assert(sels.length === 3, "rn1 の④の柱が3本でない: " + sels.length);
+    /* ⚠ 2026-09-11: 柱は3本のまま、受け皿は2つ（Cu はイオンでないので聞かない） */
+    assert(d.querySelectorAll("#bottleCols .bpill").length === 3,
+      "rn1 の柱が3本でない: " + d.querySelectorAll("#bottleCols .bpill").length);
+    assert(sels.length === 2, "rn1 の④の受け皿が2つでない: " + sels.length);
     const wrap = d.getElementById("calcSheetWrap");
     assert(wrap.scrollWidth - wrap.clientWidth === 0,
       `③の筆算がはみ出す（実幅 ${wrap.scrollWidth} / 見える幅 ${wrap.clientWidth}）`);
@@ -7278,9 +7288,63 @@ async function runRedoxUITests(iframe) {
      ⚠ **模範は手で書かない** —— bottleOwnerChoices の answerKey をそのまま使う */
   const passOwnerB = (id, a, b) => {
     const rows = bottleOwnerChoices(REDOX_STAGES.find((s) => s.id === id), a, b) || [];
-    for (const r of rows) pickB(r.ion, r.answerKey);
+    // ⚠ 2026-09-11: イオンでない柱は聞かないので置くものが無い（pickB は黙って戻る）
+    for (const r of rows) if (r.ask) pickB(r.ion, r.answerKey);
     return rows;
   };
+
+  /* ★ 2026-09-11・ユーザーの決定「B3 イオンでないものは聞かなくてよい」。
+
+     ④前半は「もともと何だった？」だが、左辺にはイオンでない項も並ぶ
+     （r3 の Zn・ro1〜ro3 の CH₃CH₂OH など・rn1 rn2 の Cu）。
+     これらは水の中でばらけていないので、答えが**自分自身**になる ＝ 問いになっていない。
+     指示文も「イオン反応式に残っているイオン」としか言っていなかった。
+
+     ⚠⚠ **柱そのものは消さない。** 柱はイオン反応式の左辺の項で、⑤の係数の欄は
+     その真下に来る（筆算の縦の対応）。消すと式が1項欠け、列も崩れる。
+     この検査は**両方**を見る ——「柱は左辺の項ぶん」と「受け皿はイオンの柱にだけ」。
+     ⚠ **柱が0本／受け皿が0個になる段が無いこと**も見る（聞くことが無い段は作らない）。 */
+  await t("BOTTLE 柱: イオンでない項は聞かない（柱は残す・9ステージ悉皆）", async () => {
+    const ids = ["r3", "rs1", "rs2", "rs3", "ro1", "ro2", "ro3", "rn1", "rn2"];
+    let dropped = 0;
+    for (const id of ids) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      const [a, b] = st.answer;
+      openB(id);
+      let g = 0;
+      while (state().mult[0] < a && g++ < 12) bumpB(0);
+      while (state().mult[1] < b && g++ < 12) bumpB(1);
+      passCalc();
+      assert(!doc.getElementById("stepBottles").hidden, id + ": ④の段が出ない");
+      const rows = bottleOwnerChoices(st, a, b) || [];
+      const asks = rows.filter((r) => r.ask);
+      dropped += rows.length - asks.length;
+      // ① 柱は左辺の項ぶん（イオンでないものも並ぶ）
+      assert($$("#bottleCols .bpill").length === rows.length,
+        `${id}: 柱が左辺の項の数と違う: ${$$("#bottleCols .bpill").length} / ${rows.length}`);
+      // ② 受け皿はイオンの柱にだけ
+      assert(selsB().length === asks.length,
+        `${id}: 受け皿の数が聞く柱の数と違う: ${selsB().length} / ${asks.length}`);
+      assert(asks.length >= 1, id + ": 聞く柱が0本になった（答える口が無い段ができている）");
+      for (const r of rows) {
+        const slot = doc.getElementById(bqSlotIdOf(r.ion));
+        assert(!!slot === r.ask,
+          `${id}: ${SPECIES[r.ion].disp} の受け皿の有無が ask（${r.ask}）と食い違う`);
+        // ③ イオンでない柱には「なぜ聞かないか」が1行出る（文は model.js の selfNote）
+        if (!r.ask) {
+          assert(SPECIES[r.ion].charge === 0, id + ": 電荷を持つのに聞いていない: " + r.ion);
+          assert(noteB(r.ion).includes("イオンではない"),
+            `${id}: ${SPECIES[r.ion].disp} に「なぜ聞かないか」の行が出ない: ` + noteB(r.ion));
+        }
+      }
+      // ④ 聞く柱だけ埋めれば④後半へ進める（イオンでない柱が門をふさいでいない）
+      passOwnerB(id, a, b);
+      assert(!doc.getElementById("addIonWrap").hidden,
+        id + ": イオンの柱を全部当てても④後半が出ない（聞かない柱が門をふさいでいる）");
+    }
+    // 9ステージで実際に外れた柱の数（r3 の Zn・ro1〜ro3 の有機物・rn1 rn2 の Cu ＝ 6本）
+    assert(dropped === 6, "聞かなくなった柱の数が想定と違う: " + dropped);
+  });
 
   /* ★★ この改修の合否そのもの（2026-09-08・レーン rx-sheet）。
      v203 で④⑤を作り直したとき、**実装が2本あって片方しか直らなかった**。
@@ -7308,8 +7372,13 @@ async function runRedoxUITests(iframe) {
 
       // ① ④前半 —— 左辺のイオンぜんぶに「もともと何だった？」がある
       const owners = passOwnerB(id, a, b);
-      assert(selsB().length === owners.length && owners.length >= 2,
-        `${id}: ④前半の柱が左辺のイオンぶん出ない（${selsB().length} / ${owners.length}）`);
+      /* ⚠ 2026-09-11: 受け皿が出るのは**イオンの柱だけ**（「B3 イオンでないものは
+         聞かなくてよい」）。柱そのものが左辺の項ぶん出ることは別の検査で見る。 */
+      const asks = owners.filter((r) => r.ask);
+      assert($$("#bottleCols .bpill").length === owners.length,
+        `${id}: 柱が左辺の項ぶん出ない（${$$("#bottleCols .bpill").length} / ${owners.length}）`);
+      assert(selsB().length === asks.length && asks.length >= 2,
+        `${id}: ④前半の受け皿がイオンの柱ぶん出ない（${selsB().length} / ${asks.length}）`);
       assert(!doc.getElementById("addIonWrap").hidden, id + ": ④前半を当てても後半が出ない");
 
       // ② ④後半 —— 足すイオンが**全種類**。ro 系は K⁺ と SO₄²⁻ の両方が並ぶ
@@ -7435,8 +7504,13 @@ async function runRedoxUITests(iframe) {
       for (const c of counts) {
         const owner = owners.find((r) => holds(r.answerKey, c.sp));
         assert(owner, `${id}: ${c.sp} が担当する柱を見つけられない`);
+        /* ⚠ 2026-09-11: 柱の位置は**柱そのもの**（.bpill）で測る。
+           イオンでない柱には受け皿（bq_*）が無くなったので、受け皿では測れない。
+           そもそも列の見出しは柱なので、こちらのほうが正しい物差し。 */
         const inp = cinB(c.sp).getBoundingClientRect();
-        const pil = doc.getElementById(bqSlotIdOf(owner.ion)).getBoundingClientRect();
+        const pillEl = doc.querySelector('#bottleCols .bpill[data-ion="' + owner.ion + '"]');
+        assert(pillEl, `${id}: ${owner.ion} の柱が出ていない`);
+        const pil = pillEl.getBoundingClientRect();
         assert(inp.right > pil.left && inp.left < pil.right,
           `${id}: ${c.sp} の係数の欄が ${owner.ion} の列からずれている ` +
           `(欄 ${Math.round(inp.left)}〜${Math.round(inp.right)} / 柱 ${Math.round(pil.left)}〜${Math.round(pil.right)})`);
@@ -8016,9 +8090,10 @@ async function runRedoxUITests(iframe) {
     passCalc();   // r3 は 1:1 なので開いた瞬間に③が出る。書く段を降りてから④を見る
     assert(!doc.getElementById("stepBottles").hidden, "r3 で④⑤の段が出ない");
     assert(txtB("bottleRack").includes("水にとけてイオンに分かれない"), "板が電離しないと言っていない");
-    pickB("Zn", "bottle:HCl");
-    assert(noteB("Zn").includes("Zn は出しません"), "誤りの説明が出ない: " + noteB("Zn"));
-    pickB("Zn", "bottle:Zn");
+    /* ⚠ 2026-09-11: 誤りの説明は **H⁺ の柱**で見る。Zn はイオンでないので聞かなくなった
+       （「B3 イオンでないものは聞かなくてよい」）。板が電離しないことは上の棚の文が言う。 */
+    pickB("H+", "bottle:Zn");
+    assert(noteB("H+").includes("H⁺ は出しません"), "誤りの説明が出ない: " + noteB("H+"));
     pickB("H+", "bottle:HCl");
     passAddB("r3", 1, 1, 1);   // 【②】④（両辺に足す Cl⁻）を通す
     // ⑤の数入力（v182）。板（Zn）も「1本」として同じ入力に乗る
@@ -8045,7 +8120,11 @@ async function runRedoxUITests(iframe) {
     while (state().mult[1] < 2 && g++ < 10) bumpB(1);
     passCalc();   // ③の係数を自分で書く段を降りる（v193）
     assert(!doc.getElementById("stepBottles").hidden, "rn1 で④⑤の段が出ない（畳んだ先に届いていない）");
-    assert(selsB().length === 3, "rn1 の④の柱が3本でない: " + selsB().length);
+    /* ⚠ 2026-09-11: rn1 の柱は3本（Cu ＋ NO₃⁻ ＋ H⁺）のままだが、**聞くのは2本**
+       —— Cu はイオンではないので受け皿を置かない（「B3 イオンでないものは聞かなくてよい」）。
+       ★ 柱が3本あることも一緒に見張る（柱を消すと式が1項欠け、⑤の列も崩れる）。 */
+    assert($$("#bottleCols .bpill").length === 3, "rn1 の柱が3本でない: " + $$("#bottleCols .bpill").length);
+    assert(selsB().length === 2, "rn1 の④の受け皿が2つでない: " + selsB().length);
     openB("ri1");
     assert(doc.getElementById("stepBottles").hidden, "bottles を持たない ri1 で④⑤の段が出ている");
   });
