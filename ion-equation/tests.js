@@ -7216,6 +7216,83 @@ async function runRedoxUITests(iframe) {
     openB("r1");
   });
 
+  /* ★★ この改修の合否そのもの（2026-09-10・レーン rx-hissan2）。
+     ユーザーの申し立ては3通あるが、集約すると1つ ——
+     **答えるとき、根拠のイオン反応式が目に入っていない**。
+       ・「イオン反応式の下に筆算形式で…最後の係数も筆算の中に入れる」
+       ・「直前のイオン反応式との対応がわかりづらい」
+       ・「正解した後に、改めてイオン反応式を出すように／上下が離れるとわかりづらい」
+     そこで見張るのは3つ:
+       ① 柱が**イオン反応式の左辺の項そのもの**（数も文字も combineHalves から取る）
+       ② ④前半・④後半・⑤が**1枚の筆算（#bottleWork）の中**にある ＝ 3つに割れていない
+       ③ ★ 位置 —— 係数の欄が担当した柱と**同じ列**にあり、
+          どの段の欄も**すぐ上の柱から 200px 以内**（柱をもう一度出す行が効いている）
+     ⚠ 模範の数は1つも手で書かない。③の px は見た目の検査なので、
+       iframe の幅（960px）が変わると動く ＝ しきい値はゆるく取る。 */
+  await t("BOTTLE 筆算: ④⑤が1枚になり、答えの欄が柱（イオン反応式の左辺）の真下に来る", async () => {
+    const id = "ro1";
+    const st = REDOX_STAGES.find((x) => x.id === id);
+    const [a, b] = st.answer;
+    openB(id);
+    let g = 0;
+    while (state().mult[0] < a && g++ < 12) bumpB(0);
+    while (state().mult[1] < b && g++ < 12) bumpB(1);
+    passCalc();
+    // ① 柱 ＝ イオン反応式の左辺の項（e⁻ を除く）。並びも表記も式のまま
+    const left = combineHalves(st, a, b).left.filter((x) => x.sp !== "e-");
+    const pills = $$("#bottleCols .bpill");
+    assert(pills.length === left.length,
+      "柱の数が左辺の項の数と違う: " + pills.length + " / " + left.length);
+    left.forEach((x, i) => {
+      const want = (x.n > 1 ? x.n + " " : "") + SPECIES[x.sp].disp;
+      assert(pills[i].textContent === want, `柱 ${i} が式の項と違う: ${pills[i].textContent} / ${want}`);
+    });
+    // ② 3つの入力が同じ1枚の中にある
+    passOwnerB(id, a, b);
+    passAddB(id, a, b, 1);
+    for (const c of bottleCountRows(st, a, b, 1)) putB(c.sp, c.answer);
+    const work = doc.getElementById("bottleWork");
+    for (const sel of ["#bottleCols .bslot", "#addIonRows input", "#bottleCounts input"]) {
+      assert(work.querySelector(sel), sel + " が1枚の筆算の中に無い（段が割れている）");
+    }
+    // ③-a 係数の欄は、その物質が担当した柱と**同じ列**（横に重なっている）
+    const owners = bottleOwnerChoices(st, a, b);
+    const holds = (key, sp) =>
+      key === "bottle:" + sp || (key.startsWith("bottles:") && key.slice(8).split("+").includes(sp));
+    let checkedCols = 0;
+    for (const c of bottleCountRows(st, a, b, 1)) {
+      const owner = owners.find((r) => holds(r.answerKey, c.sp));
+      assert(owner, c.sp + " が担当する柱を見つけられない");
+      const inp = cinB(c.sp).getBoundingClientRect();
+      const pil = doc.getElementById(bqSlotIdOf(owner.ion)).getBoundingClientRect();
+      assert(inp.right > pil.left && inp.left < pil.right,
+        `${c.sp} の係数の欄が ${owner.ion} の列からずれている ` +
+        `(欄 ${Math.round(inp.left)}〜${Math.round(inp.right)} / 柱 ${Math.round(pil.left)}〜${Math.round(pil.right)})`);
+      checkedCols++;
+    }
+    assert(checkedCols === st.bottles.length, "列を見た物質が入れた数と合わない: " + checkedCols);
+    // ③-b どの段の欄も、すぐ上の柱から離れていない（★ 申し立ての本体）
+    const nearestPillar = (el) => {
+      const y = el.getBoundingClientRect().top;
+      let best = null;
+      for (const h of $$("#bottleWork .bcolHead")) {
+        const bt = h.getBoundingClientRect().bottom;
+        if (bt <= y + 1 && (best === null || bt > best)) best = bt;
+      }
+      return best === null ? Infinity : y - best;
+    };
+    const spots = [
+      ["④前半（札を置く）", doc.querySelector("#bottleCols .bslot")],
+      ["④後半（両辺に加える）", doc.querySelector("#addIonRows input")],
+      ["⑤（左辺の係数）", doc.querySelector("#bottleCounts input")],
+    ];
+    for (const [what, el] of spots) {
+      const d = nearestPillar(el);
+      assert(d >= 0 && d < 200, `${what}の欄が柱から離れている: ${Math.round(d)}px`);
+    }
+    openB("r1");
+  });
+
   /* 【C′】③の係数を筆算の中で自分で書く段（v193・分岐 A-2 ＋ B-1）。
      いちばん見張りたいのは **「写すだけ」になっていないこと** ＝ 3行とも空欄で始まり、
      ①の素の式からも筆算からも答えが読めないこと。
