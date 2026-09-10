@@ -7304,6 +7304,87 @@ async function runRedoxUITests(iframe) {
      その真下に来る（筆算の縦の対応）。消すと式が1項欠け、列も崩れる。
      この検査は**両方**を見る ——「柱は左辺の項ぶん」と「受け皿はイオンの柱にだけ」。
      ⚠ **柱が0本／受け皿が0個になる段が無いこと**も見る（聞くことが無い段は作らない）。 */
+  /* ★ 2026-09-11・ユーザーの指示:
+       > B2 消してよいです。必ず元の物質を選ばせることで学べます
+       > ただし、注意事項として、正解後の一番下に解説を追加します。
+       > アプリ上では起こりませんが、自分で紙に解くと起こる事故です
+
+     ④前半の「◯◯ と組む」（左辺のイオンどうしを組む）という罠は消した。
+     代わりに **正解のあと、筆算の一番下に1度だけ**注意を出す。
+
+     ⚠ **答える前には出さない**（先に出すと、④前半の答えを先に配ってしまう）。
+     ⚠⚠ **相手はステージごとに違う。実際に数えた結果、3通りある**:
+       ・出どころが1つも重ならない組がある（rs1 rs2 rs3 ro1 ro2 ro3）… 罠の文
+       ・全部の組が同じ物質から来ている（rn1 rn2 の H⁺ と NO₃⁻ ＝ どちらも HNO₃）…
+         「組むと合ってしまうが、それは組んだからではない」に言い換わる
+       ・組む相手がいない（r3 は左辺のイオンが H⁺ だけ）… 注意そのものを出さない
+     ⚠ 文は model.js（bottleTrapNote）が導き、その本体は explainBottleOwner から借りる
+       ＝ 同じことを2か所に書かない。ここでは**画面に出ている文と model の文が一致する**ことを見る。 */
+  await t("BOTTLE 注意: 紙で起こる事故の注意は、正解のあとに一番下へ1度だけ（9ステージ悉皆）", async () => {
+    const ids = ["r3", "rs1", "rs2", "rs3", "ro1", "ro2", "ro3", "rn1", "rn2"];
+    const trapEl = () => doc.getElementById("bottleTrap");
+    let withNote = 0, kinds = {};
+    for (const id of ids) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      const [a, b] = st.answer;
+      openB(id);
+      let g = 0;
+      while (state().mult[0] < a && g++ < 12) bumpB(0);
+      while (state().mult[1] < b && g++ < 12) bumpB(1);
+      passCalc();
+      // ① 答える前は出ていない
+      assert(trapEl().hidden, id + ": 答える前から注意が出ている（④前半の答えを先に配っている）");
+      const note = bottleTrapNote(st, a, b);
+      // ② 正解すると出る（注意がある段だけ）
+      passOwnerB(id, a, b);
+      assert(trapEl().hidden === !note,
+        id + ": 注意の出方が model の判断（" + (note ? note.kind : "なし") + "）と食い違う");
+      if (!note) continue;
+      withNote++;
+      kinds[note.kind] = (kinds[note.kind] || 0) + 1;
+      const shown = trapEl().textContent;
+      assert(shown.includes(note.text), id + ": 画面の文が model の文と違う: " + shown);
+      assert(shown.includes(note.head), id + ": 見出しが出ない: " + shown);
+      // ③ 一番下 ＝ ⑤の欄より下（⑤が出ている段では位置で確かめられる）
+      const inp = doc.querySelector("#bottleCounts input");
+      if (inp) {
+        assert(trapEl().getBoundingClientRect().top >= inp.getBoundingClientRect().bottom - 1,
+          id + ": 注意が⑤の欄より上に出ている（一番下ではない）");
+      }
+      // ④ 名指しした2つは、どちらも左辺に並んでいるイオン
+      const left = combineHalves(st, a, b).left.map((x) => x.sp);
+      for (const sp of note.pair) {
+        assert(left.includes(sp), `${id}: 注意が左辺に無いものを名指ししている: ${sp}`);
+        assert(shown.includes(SPECIES[sp].disp), `${id}: 名指しした ${sp} が文に出ていない`);
+      }
+      // ⑤ 「アプリでは起きない」ことを言う／答えの数を漏らさない
+      assert(/紙/.test(shown), id + ": 紙で起こる話だと言っていない: " + shown);
+    }
+    // 実測の内訳（r3 だけ注意が無い ＝ 左辺のイオンが H⁺ だけで組む相手がいない）
+    assert(withNote === 8, "注意が出た段が8本でない: " + withNote);
+    assert(kinds.trap === 6 && kinds["same-source"] === 2,
+      "注意の型の内訳が違う: " + JSON.stringify(kinds));
+    assert(!bottleTrapNote(REDOX_STAGES.find((s) => s.id === "r3"), 1, 1),
+      "r3（組む相手がいない）にも注意が出ている");
+    /* ⚠⚠ 2026-09-11 に見つけた誤り（この改修で直したもの）——
+       explainBottleOwner の kind:"ion" は**無条件に**「互いを連れてきていません」と
+       言っていた。rn1・rn2 の H⁺ と NO₃⁻ は**どちらも HNO₃**なので、
+       「H⁺ を連れてきたのは HNO₃、NO₃⁻ を連れてきたのは HNO₃」と続けながら
+       「互いを連れてきていません」と言う、自分で矛盾する文になっていた。 */
+    const rn1 = REDOX_STAGES.find((s) => s.id === "rn1");
+    const ex = explainBottleOwner(rn1, 3, 2, "H+", { kind: "ion", sp: "NO3-" });
+    assert(ex && ex.kind === "same-source",
+      "rn1 の H⁺ と NO₃⁻（同じ HNO₃ から来る）を別々の出どころだと言っている: " + JSON.stringify(ex));
+    assert(!ex.reason.includes("互いを連れてきていません"),
+      "同じ物質から来ているのに「互いを連れてきていません」と言う: " + ex.reason);
+    assert(ex.reason.includes("HNO₃"), "どの物質が連れてきたか言わない: " + ex.reason);
+    // 出どころが本当に別々なら、今までどおり「互いを連れてきていません」
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const ex2 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "ion", sp: "MnO4-" });
+    assert(ex2 && ex2.reason.includes("互いを連れてきていません"),
+      "出どころが別々なのに言わなくなった: " + JSON.stringify(ex2));
+  });
+
   await t("BOTTLE 柱: イオンでない項は聞かない（柱は残す・9ステージ悉皆）", async () => {
     const ids = ["r3", "rs1", "rs2", "rs3", "ro1", "ro2", "ro3", "rn1", "rn2"];
     let dropped = 0;
@@ -7751,7 +7832,7 @@ async function runRedoxUITests(iframe) {
     assert(doc.querySelectorAll("#stageNav button.organic").length === 5, "帯の印が5個から変わった");
   });
 
-  await t("REDOX: ④⑤の段 - 左辺のイオンどうしを組もうとすると「互いを連れてきていません」と言う", async () => {
+  await t("REDOX: ④⑤の段 - 出どころ当ての判定（誤り・正解・順序の門）と、消えた罠", async () => {
     openB("rs1");
     // e⁻ がそろうまでは段そのものが出ない（イオン反応式が決まっていないのでもとの物質も決まらない）
     assert(doc.getElementById("stepBottles").hidden, "e⁻ が合う前から④⑤の段が出ている");
@@ -7767,17 +7848,21 @@ async function runRedoxUITests(iframe) {
     }
     const s = selsB();
     assert(s.length === 3, "左辺のイオンぶんの受け皿が出ない: " + s.length);
-    /* ★ 2026-09-10・筆算1枚化。罠（「◯◯ と組む」）は**選択肢の言葉ではなく置き方**になった
-       —— 別の柱をタップして、その柱の下へ置く。ユーザーの指摘
-       「もともと何だった？に対してイオンと組み合わせる、は違和感」に合わせ、
-       選択肢の一覧から「◯◯ と組む」という言い回しごと消したうえで、**やれること自体は残す**。 */
-    assert(doc.querySelector('#bottleCols .bpill[data-ion="MnO4-"]'),
-      "左辺のイオンの札（柱）が押せる形で出ていない ＝ 罠に一度も入れない");
-    // ① 左辺のイオンどうしを組む → 出自が別だと言う
-    pickB("H+", "ion:MnO4-");
+    /* ★ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで学べます」。
+       v206〜v207 は、柱を選んでから**別の柱をタップする**と「◯◯ と組む」を置いたことに
+       なっていた（罠）。⚠ **その道が消えたこと**をここで見張る。
+       罠の中身は「正解のあとの注意」（#bottleTrap）へ移った ＝ 下の別の検査が見る。 */
+    doc.querySelector('#bottleCols .bpill[data-ion="H+"]').click();      // H⁺ の柱を選ぶ
+    doc.querySelector('#bottleCols .bpill[data-ion="MnO4-"]').click();   // 別の柱をタップ
+    assert(!doc.getElementById(bqSlotIdOf("H+")).querySelector(".bchip"),
+      "柱を別の柱の下に置けてしまう（「◯◯ と組む」の罠が残っている）");
+    assert(doc.getElementById(bqSlotIdOf("MnO4-")).classList.contains("active"),
+      "別の柱をタップしても、その柱が選ばれるだけの動きになっていない");
+    // ① そのイオンを出さない物質を置く → 出自が別だと言う
+    pickB("H+", "bottle:KMnO4");
     const n1 = noteB("H+");
-    assert(n1.includes("互いを連れてきていません"), "出自の説明が出ない: " + n1);
-    assert(n1.includes("H₂SO₄") && n1.includes("KMnO₄"), "どちらが連れてきたかを言わない: " + n1);
+    assert(n1.includes("H⁺ は出しません"), "誤りの説明が出ない: " + n1);
+    assert(n1.includes("KMnO₄"), "どの物質の話か言わない: " + n1);
     assert(doc.getElementById("bqn_H_").classList.contains("ngcell"), "誤りの色にならない");
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ② そのイオンをそのイオンを出さない物質

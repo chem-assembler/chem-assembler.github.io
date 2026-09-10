@@ -1718,6 +1718,8 @@ const bottleRackEl = document.getElementById("bottleRack");
 const bottleQuizEl = document.getElementById("bottleQuiz");
 const bottleMsgEl = document.getElementById("bottleMsg");
 const bottleTailEl = document.getElementById("bottleTail");
+/* ★ 正解のあとに1度だけ出す「紙で解くと起こる事故」の注意（2026-09-11） */
+const bottleTrapEl = document.getElementById("bottleTrap");
 const bottleCountEl = document.getElementById("bottleCounts");
 const bottlePoolEl = document.getElementById("bottlePool");
 const bottleSheetEl = document.getElementById("bottleSheet");
@@ -1763,7 +1765,11 @@ const bottleCountNotesEl = document.getElementById("bottleCountNotes");
    列がそろっているので、echo の札の真下がそのまま次に書く欄になる。 */
 const BROW = { eq: 1, tag: 1, ion: 2, arrow: 3, slot: 4, note: 5, rack: 6, msg: 7,
   addEcho: 8, addHead: 9, add: 10, addMsg: 11,
-  coefEcho: 12, coefHead: 13, coefCap: 14, coef: 15 };
+  coefEcho: 12, coefHead: 13, coefCap: 14, coef: 15,
+  /* ★ 「紙で解くと起こる事故」の注意は**筆算のいちばん下**（2026-09-11・ユーザーの指示
+     「正解後の一番下に解説を追加します」）。⑤の係数は縦に積まれることがあるので、
+     その最大ぶんを空けた先に置く（buildBottleCountRows が行番号を押し下げる） */
+  trap: 40 };
 
 /* いま札を置こうとしている柱（イオンの種）。null なら「まだ選んでいない」 */
 let bottleSlotActive = null;
@@ -1777,12 +1783,15 @@ let bottleScale = 1;
 /* 【②】④で人が入れる「両辺に足す傍観イオンの個数」（傍観イオン → 個数。未入力は持たない）。
    ★ これが紙の上の手つきそのもの。⑤（左辺の係数）はこのあと。 */
 let bottleAdd = {};
-let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:KMnO4" / "ion:H+"）
+let bottlePick = {};        // 左辺のイオン → 置いた札（"bottle:KMnO4" / "bottles:A+B"）
 let bottleCounts = {};      // 物質 → 左辺の係数（⑤の数入力。未入力は持たない）
 let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
 
-/* 答えの鍵。"bottle:KMnO4" / "ion:H+" のほか、
-   【G】出どころが2本あるイオンのための "bottles:H2C2O4+H2SO4" を持つ。
+/* 答えの鍵。"bottle:KMnO4" と、【G】出どころが2本あるイオンのための
+   "bottles:H2C2O4+H2SO4" の2つ。
+   ⚠ 2026-09-11: 画面が作る鍵から "ion:◯◯"（＝「◯◯ と組む」）が消えた。
+   読むほう（model.js の explainBottleOwner）はその形をまだ受け取る —— 正解のあとの
+   注意（bottleTrapNote）が、そこから文を借りているため。
    ⚠ 2026-09-10: 札を置く形にしたので、鍵を**作る**のは keyOfPlaced のほうへ移った
    （`<select>` の option 値を作る bottleKeyOf は要らなくなった）。読むほうはそのまま。 */
 function bottleChoiceOf(key) {
@@ -1839,11 +1848,10 @@ function placedListOf(ion) {
   const c = bottleChoiceOf(bottlePick[ion] || "");
   if (!c) return [];
   if (c.kind === "bottles") return c.sps.map((sp) => ({ kind: "bottle", sp }));
-  return [{ kind: c.kind, sp: c.sp }];
+  return [{ kind: "bottle", sp: c.sp }];
 }
 function keyOfPlaced(list) {
   if (!list.length) return "";
-  if (list[0].kind === "ion") return "ion:" + list[0].sp;
   if (list.length === 1) return "bottle:" + list[0].sp;
   /* 【G】「両方から」（rs3 の H⁺）。⚠ 並びは**入れた物質の並び順**にそろえる
      —— model.js の answerKey が stage.bottles の順で作られているため */
@@ -1853,15 +1861,13 @@ function keyOfPlaced(list) {
 }
 
 /* 札を置く。★ 1つの柱に2枚置ける（＝「両方から」がそのまま表せる）。
-   イオンの札（柱そのもの）を置いたときは、それ1枚に置き換える
-   ——「◯◯ と組む」＝ 物質ではないので、物質と混ぜても意味がない */
-function placeBottleCard(ion, kind, sp) {
-  let list = placedListOf(ion);
-  if (kind === "ion") list = [{ kind: "ion", sp }];
-  else {
-    list = list.filter((x) => x.kind === "bottle");
-    if (!list.some((x) => x.sp === sp)) list.push({ kind: "bottle", sp });
-  }
+   ⚠ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで学べます」。
+   置けるのは**はじめに入れた物質の札だけ**になった。柱そのものを別の柱の下に置く道
+   （＝「◯◯ と組む」の罠）はここから消えている。その事故は**正解のあとの注意**
+   （model.js の bottleTrapNote）へ移した。 */
+function placeBottleCard(ion, sp) {
+  const list = placedListOf(ion);
+  if (!list.some((x) => x.sp === sp)) list.push({ kind: "bottle", sp });
   bottlePick[ion] = keyOfPlaced(list);
   bottleSlotActive = ion;
   redrawBottleWork();
@@ -1950,13 +1956,15 @@ function buildBottleCols(rows, force) {
     /* イオンでない柱は問いではないので、押しても何も起きない
        （柱は式の項として残す。⑤の係数の欄はこの真下に来る） */
     if (!r.ask) pill.disabled = true;
-    /* 柱をタップ ＝ この柱に置く（自分の柱を選ぶ）。
-       ⚠ **別の柱を選んでいるときは「◯◯ と組む」を置いたことになる** ——
-       「左辺のイオンどうしを組んで HI を作る」つまずきは、選択肢の言葉ではなく
-       **この置き方**で表す（ユーザー: もともと何だった？に対して「イオンと組み合わせる」は違和感）。 */
+    /* 柱をタップ ＝ **その柱を選ぶだけ**。
+       ⚠ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで
+       学べます」。v206〜v207 は、別の柱を選んでいるときに柱をタップすると
+       「◯◯ と組む」を置いたことになっていた（罠）。その道をここで閉じ、
+       「左辺のイオンどうしを組む」事故は**正解のあとの注意**として1度だけ言う。 */
     pill.onclick = () => {
-      if (bottleSlotActive && bottleSlotActive !== r.ion) placeBottleCard(bottleSlotActive, "ion", r.ion);
-      else { bottleSlotActive = r.ion; buildBottleCols(rows, true); refreshBottleTail(); }
+      bottleSlotActive = r.ion;
+      buildBottleCols(rows, true);
+      refreshBottleTail();
     };
     head.appendChild(pill);
     // --- ↓
@@ -1999,7 +2007,7 @@ function buildBottleCols(rows, force) {
     }
     for (const p of placed) {
       const chip = document.createElement("span");
-      chip.className = "bchip" + (p.kind === "ion" ? " ionChip" : "");
+      chip.className = "bchip";
       chip.dataset.sp = p.sp;
       const nm = document.createElement("span");
       nm.className = "bchipName";
@@ -2232,7 +2240,7 @@ function buildBottleRack(st) {
     card.onclick = () => {
       const list = bottleRows();
       if (!list || !list.length) return;
-      placeBottleCard(bottleTargetIon(list), "bottle", sp);
+      placeBottleCard(bottleTargetIon(list), sp);
     };
     shelf.appendChild(card);
   }
@@ -2243,6 +2251,25 @@ function buildBottleRack(st) {
     ? `いま置く先は ${SPECIES[t].disp} の下。`
     : "置く先を決めたいときは、先に上のイオンをタップ。";
   bottleRackEl.append(cap, shelf, where);
+}
+
+/* 「紙で解くと起こる事故」の注意。④前半を当て終えたときだけ、筆算の一番下に出す。
+   ⚠ 出す・出さないの判断だけがここの仕事で、**文は model.js**（bottleTrapNote）。
+   ⚠ ステージによっては注意そのものが無い（r3 は左辺のイオンが H⁺ だけで、組む相手がいない）。 */
+function drawBottleTrap(show) {
+  if (!bottleTrapEl) return;
+  const note = show ? bottleTrapNote(stage(), mult[0], mult[1]) : null;
+  bottleTrapEl.hidden = !note;
+  bottleTrapEl.innerHTML = "";
+  if (!note) return;
+  bottleTrapEl.style.gridRow = String(BROW.trap);
+  const head = document.createElement("span");
+  head.className = "btrapHead";
+  head.textContent = "⚠ " + note.head;
+  const txt = document.createElement("span");
+  txt.className = "btrapText";
+  txt.textContent = note.text;
+  bottleTrapEl.append(head, txt);
 }
 
 function refreshBottleTail() {
@@ -2262,6 +2289,12 @@ function refreshBottleTail() {
     ? "どのイオンにも、もとの物質がある。左辺に書くのはイオンではなく、そのもとの物質そのもの。"
     : `あと ${asks.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
   bottleMsgEl.className = quizDone ? "okcell" : "";
+  /* ★ 2026-09-11・ユーザーの指示「注意事項として、正解後の一番下に解説を追加します。
+     アプリ上では起こりませんが、自分で紙に解くと起こる事故です」。
+     ⚠ **答える前には出さない**（④前半を当て終えてから）。
+     ⚠ 文は model.js の bottleTrapNote が導く —— 相手はステージごとに違い、
+     rn1・rn2（H⁺ と NO₃⁻ が同じ HNO₃ から来る）は言い方そのものが変わる。 */
+  drawBottleTrap(quizDone);
   if (addIonWrapEl) addIonWrapEl.hidden = !quizDone;
   if (!quizDone) {
     bottleTailEl.hidden = true;
