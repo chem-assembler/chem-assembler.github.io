@@ -133,6 +133,12 @@ text-decoration:none;line-height:1.65}
 box-shadow:inset 3px 0 0 var(--accent)}
 @media (min-width:1000px){
   .ref-layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:40px;align-items:start}
+  /* ⚠⚠ **節（:::section）が1つも無いページには目次そのものが出ない**（＝ .ref-toc が居ない）。
+     ★ そのとき本文が**1列目（232px）に落ちて**、右の 680px が丸ごと空く ——
+       実測: alkane-naming の本文が幅 232px、貼った図が 232px（読めない大きさ）。
+     ⚠ 6ページ中4ページが節を持たないので、**空くほうが普通**の状態だった。
+     ★ 直し方は1行 —— 本文は**いつも2列目**に置く（目次が居なくても列は動かない）。 */
+  .ref-layout>.ref-scope{grid-column:2}
   /* ⚠ 広い面では**目次が独立した1列**なので、狭い面の「貼り付いた札」の飾りを全部戻す */
   .ref-layout .ref-toc{position:sticky;top:16px;margin:0;padding:0;background:none;
   max-height:calc(100vh - 32px);overflow:auto}
