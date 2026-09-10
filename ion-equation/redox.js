@@ -255,7 +255,15 @@ function makeParticleEl(p) {
   const st = RSTYLE[p.sp] || { color: "#8a8f98", r: 16 };
   const g = mk("g", { class: "particle" }, particleLayer);
   mk("circle", { r: p.r, fill: colorOf(p.sp), stroke: "rgba(0,0,0,.25)", "stroke-width": 1.5 }, g);
-  const disp = SPECIES[p.sp].disp;
+  /* ★ 2026-09-11・ユーザー指摘「酸化還元ページすべてイオンが二重になってます／
+     直したのはイオン反応のページのようです」。
+     右肩に電荷のバッジを描く粒は、**名札のほうから右肩の電荷を外す**（MnO₄⁻ と − の二重）。
+     ⚠ ビーカー（app.js）は v41 からこうしていたが、`stripCharge` が app.js の中にあり
+     こちらから呼べなかった。関数は model.js へ移した（同じ規則を2本書かない）。
+     ⚠ 判定は**バッジを描くのと同じ条件**にそろえる。e⁻ はバッジを描かないので、
+     名札の側で「e⁻」と1回だけ言う（外すと電荷がどこにも出なくなる）。 */
+  const badge = SPECIES[p.sp].charge !== 0 && p.sp !== "e-";
+  const disp = badge ? stripCharge(SPECIES[p.sp].disp) : SPECIES[p.sp].disp;
   const oxAt = oxAtomFor(p.sp);
   const label = mk("text", {
     y: oxAt ? -1.5 : (p.sp === "e-" ? 3 : 4.5), "text-anchor": "middle",
@@ -289,7 +297,7 @@ function makeParticleEl(p) {
     label.textContent = disp;
   }
   const c = SPECIES[p.sp].charge;
-  if (c !== 0 && p.sp !== "e-") {
+  if (badge) {
     const btxt = (Math.abs(c) > 1 ? String(Math.abs(c)) : "") + (c > 0 ? "+" : "−");
     const bx = p.r * 0.85, by = -p.r * 0.85;
     mk("circle", { cx: bx, cy: by, r: 8, fill: "#fff", stroke: st.color, "stroke-width": 1.5 }, g);
@@ -396,13 +404,69 @@ function expandTerms(terms) {
   return out;
 }
 
+/* ---- e⁻ の置き場所 ----
+   ★ 2026-09-11・ユーザー指摘「Al板に展開される e⁻ の位置が重なる」。
+   r4（アルミニウム × 銅(Ⅱ)イオン・2:3）は Al が e⁻ を3個ずつ出すので、板の上に **6個**
+   たまる。旧実装は「原子の y のまわりに ±spread で置く」だけで、席を決めていなかった:
+     ・原子が1個のときの spread は 9px。e⁻ の半径は 8（直径16）なので **必ず重なる**
+       （r1・r2・r3・rn2 は e⁻ 2個でも中心間 9px ＝ 7px 食い込んでいた）
+     ・原子が2個以上だと**隣の原子のかたまりと端どうしがぶつかる**（r4 は実測 **2px**）
+   数え物なのに何個あるか読めない。そこで **先に全部ぶんの席を作ってから配る**形にした。
+
+   ★ 席は「縦に等間隔・入りきらなければ列を足す」。並びは原子の順どおり
+   （i 番目の原子の e⁻ は席 i×eN 〜 の連番）なので、**どの原子が何個置いたかは
+   今までどおり位置で読める**。列は左へ伸ばす —— 板の右は析出した金属（depositPos）の場所。 */
+const E_PITCH = 18;   // e⁻ の直径 16 ＋ すきま 2。これより詰めない（＝重ならない下限）
+
+/* 中心 (cx,cy)・上下 ±half の帯に、total 個の席を作って k 番目を返す。
+   1列に入らないぶんは colDir の向きへ列を足す。 */
+function stackSlot(k, total, cx, cy, half, colDir) {
+  const span = half * 2;
+  const maxPerCol = Math.max(1, Math.floor(span / E_PITCH) + 1);
+  const cols = Math.max(1, Math.ceil(Math.max(total, k + 1) / maxPerCol));
+  const perCol = Math.ceil(Math.max(total, k + 1) / cols);
+  const step = perCol > 1 ? Math.min(E_PITCH + 2, span / (perCol - 1)) : 0;
+  const col = Math.floor(k / perCol), row = k % perCol;
+  return {
+    x: cx + colDir * col * E_PITCH,
+    y: cy - step * (perCol - 1) / 2 + row * step,
+  };
+}
+
+/* この試行で板／通り道に置かれる e⁻ の総数。席の間隔を決めるのに、
+   1個目を置く前から総数が要る（layoutLab が数える） */
+let eSlotTotal = 0;
+
 function poolSlotPos(k) {
-  // 溶液モードは板が無い。左右のあいだの「通り道」に上から並べる
-  if (isSolution()) {
-    const per = 10, col = Math.floor(k / per), row = k % per;
-    return { x: SOL_LANE_X + col * 15, y: WATER.y + 26 + row * 18 };
-  }
-  return { x: PLATE.x + 13, y: PLATE.y + PLATE.h - 14 - k * 18 };
+  // 溶液モードは板が無い。還元剤の列と酸化剤の列のあいだ（通り道）に並べる
+  if (isSolution()) return stackSlot(k, eSlotTotal, SOL_LANE_X, WATER.y + WATER.h / 2 - 20, 100, -1);
+  /* 金属モードでここへ来るのは**還元単体**（板の上に酸化される原子が無く、
+     e⁻ が導線の向こうから来ている絵）だけ。寄り添う原子が無いので板の中央に集める。
+     ふつうの試行で置く e⁻ は、原子のそばに残す plateESlot のほう。 */
+  return stackSlot(k, eSlotTotal, PLATE.x + PLATE.w / 2, PLATE.y + PLATE.h / 2, 100, -1);
+}
+
+/* 板の上で、1個の原子が置いていった j 番目の e⁻ の席。
+   ★ 2つのことを同時に満たす:
+     ・**原子のいた高さに残す**（どの原子が何個置いたかを位置で読ませる。v145 からの決め）
+     ・**重ならない**（E_PITCH 未満に詰めない）
+   両立のしかたは「1つの原子の持ち分の高さ（＝原子どうしの間隔）に入るぶんだけ縦に積み、
+   あふれたぶんは**左へ列を足す**」。板の右は析出した金属の場所なので左へ伸ばす。
+   ⚠ 原子が1個のときは上下に隣が居ないので、板の高さいっぱいを持ち分にしてよい
+   （ここを 0 のまま使うと r1・r2・r3・rn2 の e⁻ 2個が 9px で重なっていた）。 */
+function plateESlot(atom, j, eN, nAtoms) {
+  const budget = nAtoms > 1 ? plateStep : PLATE.h - 52;
+  const rows = Math.max(1, Math.min(eN, Math.floor(budget / E_PITCH)));
+  const cols = Math.ceil(eN / rows);
+  const row = j % rows, col = Math.floor(j / rows);
+  /* ⚠ 列は**板の中心にそろえて左右へ開く**（片側だけに伸ばさない）。
+     板は 26px しかないので2列で 36px は必ずはみ出すが、中心にそろえれば
+     左右に 8px ずつで済み、「板の上にたまっている」ように見える。
+     片側だけに伸ばすと、e⁻ が丸ごと板の外に居ることになる（実機で確認）。 */
+  return {
+    x: PLATE.x + PLATE.w / 2 + (col - (cols - 1) / 2) * E_PITCH,
+    y: atom.y + (row - (rows - 1) / 2) * E_PITCH,
+  };
 }
 function depositPos(d) {
   return { x: PLATE.x + PLATE.w + 10, y: PLATE.y + PLATE.h - 16 - d * 26 };
@@ -449,6 +513,9 @@ function layoutLab() {
   }
   // 還元単体: e⁻ をあらかじめストック（電池なら導線の向こうから来るぶん）
   const need = electronsOf(redHR());
+  /* 席の間隔を決めるのに、**1個目を置く前に総数**が要る（poolSlotPos）。
+     還元単体はここで全部並べるぶん、それ以外は「酸化される原子の数 × 1個が出す e⁻」。 */
+  eSlotTotal = soloMode === "red" ? need * b : nOx * electronsOf(oxHR());
   if (soloMode === "red") {
     for (let k = 0; k < need * b; k++) {
       const pos = poolSlotPos(poolTotal++);
@@ -529,7 +596,6 @@ function oxidizeAtom(atom) {
   // 置いていかれた e⁻ は**原子が元いた場所にそのまま留まる**（共通プールへ飛ばさない）。
   // どの原子が何個置いていったかが位置で分かり、余った e⁻ もその場に残る。
   // 溶液モードは板が無いので、左右のあいだの通り道へ**右向きに**渡していく
-  const spread = Math.min(17, Math.max(9, plateStep / 2));
   for (let j = 0; j < eN; j++) {
     if (isSolution()) {
       // 同じ点から出すと重なって何個出たのか分からない。縦に少しずらして出す
@@ -537,7 +603,11 @@ function oxidizeAtom(atom) {
       const slot = poolSlotPos(poolTotal++);
       e.tx = slot.x; e.ty = slot.y;
     } else {
-      const e = spawnParticle("e-", PLATE.x + PLATE.w / 2, atom.y + (j - (eN - 1) / 2) * spread, "pool");
+      /* ⚠ 2026-09-11: ここで「原子の y ± spread」と自分で座標を作っていたのが
+         **重なりの原因**（原子1個なら 9px しか開かず・隣の原子とは 2px）。
+         原子のそばに残すことは変えず、席の作り方を plateESlot に預けた。 */
+      const slot = plateESlot(atom, j, eN, mult[0]);
+      const e = spawnParticle("e-", slot.x, slot.y, "pool");
       poolE.push(e);
       poolTotal++;
     }
@@ -1653,6 +1723,8 @@ const bottleRackEl = document.getElementById("bottleRack");
 const bottleQuizEl = document.getElementById("bottleQuiz");
 const bottleMsgEl = document.getElementById("bottleMsg");
 const bottleTailEl = document.getElementById("bottleTail");
+/* ★ 正解のあとに1度だけ出す「紙で解くと起こる事故」の注意（2026-09-11） */
+const bottleTrapEl = document.getElementById("bottleTrap");
 const bottleCountEl = document.getElementById("bottleCounts");
 const bottlePoolEl = document.getElementById("bottlePool");
 const bottleSheetEl = document.getElementById("bottleSheet");
@@ -1699,6 +1771,10 @@ const bottleCountNotesEl = document.getElementById("bottleCountNotes");
 const BROW = { eq: 1, tag: 1, ion: 2, arrow: 3, slot: 4, note: 5, rack: 6, msg: 7,
   addEcho: 8, addHead: 9, add: 10, addMsg: 11,
   coefEcho: 12, coefHead: 13, coefCap: 14, coef: 15 };
+/* ★ 「紙で解くと起こる事故」の注意は**筆算のいちばん下**（2026-09-11・ユーザーの指示
+   「正解後の一番下に解説を追加します」）。⑤の係数は縦に積まれることがあり、
+   行数が回ごとに変わるので、**番号は BROW に持たせず**その場で数える
+   （bottleLastGridRow）。大きな数で決め打つと、空の行のぶん row-gap が積もる */
 
 /* いま札を置こうとしている柱（イオンの種）。null なら「まだ選んでいない」 */
 let bottleSlotActive = null;
@@ -1712,12 +1788,15 @@ let bottleScale = 1;
 /* 【②】④で人が入れる「両辺に足す傍観イオンの個数」（傍観イオン → 個数。未入力は持たない）。
    ★ これが紙の上の手つきそのもの。⑤（左辺の係数）はこのあと。 */
 let bottleAdd = {};
-let bottlePick = {};        // 左辺のイオン → 選んだ答え（"bottle:KMnO4" / "ion:H+"）
+let bottlePick = {};        // 左辺のイオン → 置いた札（"bottle:KMnO4" / "bottles:A+B"）
 let bottleCounts = {};      // 物質 → 左辺の係数（⑤の数入力。未入力は持たない）
 let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
 
-/* 答えの鍵。"bottle:KMnO4" / "ion:H+" のほか、
-   【G】出どころが2本あるイオンのための "bottles:H2C2O4+H2SO4" を持つ。
+/* 答えの鍵。"bottle:KMnO4" と、【G】出どころが2本あるイオンのための
+   "bottles:H2C2O4+H2SO4" の2つ。
+   ⚠ 2026-09-11: 画面が作る鍵から "ion:◯◯"（＝「◯◯ と組む」）が消えた。
+   読むほう（model.js の explainBottleOwner）はその形をまだ受け取る —— 正解のあとの
+   注意（bottleTrapNote）が、そこから文を借りているため。
    ⚠ 2026-09-10: 札を置く形にしたので、鍵を**作る**のは keyOfPlaced のほうへ移った
    （`<select>` の option 値を作る bottleKeyOf は要らなくなった）。読むほうはそのまま。 */
 function bottleChoiceOf(key) {
@@ -1732,8 +1811,12 @@ function bottleRows() {
 }
 /* 正解かどうかは**鍵の一致**で見る（1つの物質も「両方から」も同じ形で扱える） */
 function bottleRowOk(r) { return bottlePick[r.ion] === r.answerKey; }
+/* ★ 2026-09-11・ユーザーの決定「B3 イオンでないものは聞かなくてよい」。
+   イオンでない柱（r3 の Zn・ro1 の CH₃CH₂OH・rn1 の Cu …）は**問いにしない**。
+   柱そのものは残す（式の項であり、⑤の係数の欄がその真下に来る）。 */
+function bottleAskRows(rows) { return (rows || []).filter((r) => r.ask); }
 function bottleAnsweredOk(rows) {
-  return (rows || []).filter(bottleRowOk).length;
+  return bottleAskRows(rows).filter(bottleRowOk).length;
 }
 
 /* 物質1つが水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
@@ -1770,11 +1853,10 @@ function placedListOf(ion) {
   const c = bottleChoiceOf(bottlePick[ion] || "");
   if (!c) return [];
   if (c.kind === "bottles") return c.sps.map((sp) => ({ kind: "bottle", sp }));
-  return [{ kind: c.kind, sp: c.sp }];
+  return [{ kind: "bottle", sp: c.sp }];
 }
 function keyOfPlaced(list) {
   if (!list.length) return "";
-  if (list[0].kind === "ion") return "ion:" + list[0].sp;
   if (list.length === 1) return "bottle:" + list[0].sp;
   /* 【G】「両方から」（rs3 の H⁺）。⚠ 並びは**入れた物質の並び順**にそろえる
      —— model.js の answerKey が stage.bottles の順で作られているため */
@@ -1784,15 +1866,13 @@ function keyOfPlaced(list) {
 }
 
 /* 札を置く。★ 1つの柱に2枚置ける（＝「両方から」がそのまま表せる）。
-   イオンの札（柱そのもの）を置いたときは、それ1枚に置き換える
-   ——「◯◯ と組む」＝ 物質ではないので、物質と混ぜても意味がない */
-function placeBottleCard(ion, kind, sp) {
-  let list = placedListOf(ion);
-  if (kind === "ion") list = [{ kind: "ion", sp }];
-  else {
-    list = list.filter((x) => x.kind === "bottle");
-    if (!list.some((x) => x.sp === sp)) list.push({ kind: "bottle", sp });
-  }
+   ⚠ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで学べます」。
+   置けるのは**はじめに入れた物質の札だけ**になった。柱そのものを別の柱の下に置く道
+   （＝「◯◯ と組む」の罠）はここから消えている。その事故は**正解のあとの注意**
+   （model.js の bottleTrapNote）へ移した。 */
+function placeBottleCard(ion, sp) {
+  const list = placedListOf(ion);
+  if (!list.some((x) => x.sp === sp)) list.push({ kind: "bottle", sp });
   bottlePick[ion] = keyOfPlaced(list);
   bottleSlotActive = ion;
   redrawBottleWork();
@@ -1812,9 +1892,10 @@ function redrawBottleWork() {
 /* 札をタップしたときの行き先。柱を選んでいなければ、**まだ当たっていない左の柱**へ入れる
    （1タップで置ける道を残す。狙って置きたい人は柱を先にタップする） */
 function bottleTargetIon(rows) {
-  if (bottleSlotActive && rows.some((r) => r.ion === bottleSlotActive)) return bottleSlotActive;
-  const yet = rows.find((r) => !bottleRowOk(r));
-  return yet ? yet.ion : rows[0].ion;
+  const asks = bottleAskRows(rows);
+  if (bottleSlotActive && asks.some((r) => r.ion === bottleSlotActive)) return bottleSlotActive;
+  const yet = asks.find((r) => !bottleRowOk(r));
+  return yet ? yet.ion : (asks[0] || rows[0]).ion;
 }
 
 function buildBottleCols(rows, force) {
@@ -1870,21 +1951,41 @@ function buildBottleCols(rows, force) {
     }
     const pill = document.createElement("button");
     pill.type = "button";
-    pill.className = "bpill" + (ok ? " done" : "") + (bottleSlotActive === r.ion ? " here" : "");
+    pill.className = "bpill" + (ok ? " done" : "") + (bottleSlotActive === r.ion ? " here" : "") +
+      (r.ask ? "" : " noask");
     pill.dataset.ion = r.ion;
     pill.textContent = (r.n > 1 ? r.n + " " : "") + SPECIES[r.ion].disp;
-    pill.setAttribute("aria-label", `${SPECIES[r.ion].disp} ${r.n}個 はもともと何だった？`);
-    /* 柱をタップ ＝ この柱に置く（自分の柱を選ぶ）。
-       ⚠ **別の柱を選んでいるときは「◯◯ と組む」を置いたことになる** ——
-       「左辺のイオンどうしを組んで HI を作る」つまずきは、選択肢の言葉ではなく
-       **この置き方**で表す（ユーザー: もともと何だった？に対して「イオンと組み合わせる」は違和感）。 */
+    pill.setAttribute("aria-label", r.ask
+      ? `${SPECIES[r.ion].disp} ${r.n}個 はもともと何だった？`
+      : `${SPECIES[r.ion].disp} ${r.n}個 — ${r.selfNote}`);
+    /* イオンでない柱は問いではないので、押しても何も起きない
+       （柱は式の項として残す。⑤の係数の欄はこの真下に来る） */
+    if (!r.ask) pill.disabled = true;
+    /* 柱をタップ ＝ **その柱を選ぶだけ**。
+       ⚠ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで
+       学べます」。v206〜v207 は、別の柱を選んでいるときに柱をタップすると
+       「◯◯ と組む」を置いたことになっていた（罠）。その道をここで閉じ、
+       「左辺のイオンどうしを組む」事故は**正解のあとの注意**として1度だけ言う。 */
     pill.onclick = () => {
-      if (bottleSlotActive && bottleSlotActive !== r.ion) placeBottleCard(bottleSlotActive, "ion", r.ion);
-      else { bottleSlotActive = r.ion; buildBottleCols(rows, true); refreshBottleTail(); }
+      bottleSlotActive = r.ion;
+      buildBottleCols(rows, true);
+      refreshBottleTail();
     };
     head.appendChild(pill);
     // --- ↓
     cell(col, "bcolArrow", BROW.arrow, i + 1).textContent = "↓";
+    /* --- イオンでない柱は、置く場所を作らない（＝ 聞かない）。
+       代わりに「そのまま」と1語だけ置いて、列が下（⑤の係数）まで続いていることを見せる。
+       ⚠ 文は model.js が持つ（selfNote）。画面は置くだけ。 */
+    if (!r.ask) {
+      const self = cell(col, "bcolSlot", BROW.slot, i + 1);
+      const s = document.createElement("span");
+      s.className = "bself";
+      s.textContent = "そのまま";
+      s.title = r.selfNote;
+      self.appendChild(s);
+      return;
+    }
     // --- 札を置くところ
     const slotCell = cell(col, "bcolSlot", BROW.slot, i + 1);
     const slot = document.createElement("div");
@@ -1911,7 +2012,7 @@ function buildBottleCols(rows, force) {
     }
     for (const p of placed) {
       const chip = document.createElement("span");
-      chip.className = "bchip" + (p.kind === "ion" ? " ionChip" : "");
+      chip.className = "bchip";
       chip.dataset.sp = p.sp;
       const nm = document.createElement("span");
       nm.className = "bchipName";
@@ -1991,6 +2092,22 @@ function renderBottleNotes(rows) {
   bottleQuizEl.innerHTML = "";
   bottleQuizEl.style.gridRow = String(BROW.note);
   for (const r of rows) {
+    /* イオンでない柱は聞いていないので、判定ではなく**なぜ聞かないか**を1行だけ置く
+       （文は model.js の selfNote。同じことを2か所に書かない） */
+    if (!r.ask) {
+      const line = document.createElement("div");
+      line.className = "bwNote pickNote bottleNote bwSelfNote";
+      line.id = "bqn_" + bottleIdOf(r.ion);
+      const who = document.createElement("span");
+      who.className = "bwNoteIon";
+      who.textContent = SPECIES[r.ion].disp;
+      const txt = document.createElement("span");
+      txt.className = "bwNoteText";
+      txt.textContent = r.selfNote;
+      line.append(who, txt);
+      bottleQuizEl.appendChild(line);
+      continue;
+    }
     const c = bottleChoiceOf(bottlePick[r.ion] || "");
     const ex = c && explainBottleOwner(stage(), mult[0], mult[1], r.ion, c);
     if (!ex) continue;
@@ -2128,7 +2245,7 @@ function buildBottleRack(st) {
     card.onclick = () => {
       const list = bottleRows();
       if (!list || !list.length) return;
-      placeBottleCard(bottleTargetIon(list), "bottle", sp);
+      placeBottleCard(bottleTargetIon(list), sp);
     };
     shelf.appendChild(card);
   }
@@ -2141,26 +2258,68 @@ function buildBottleRack(st) {
   bottleRackEl.append(cap, shelf, where);
 }
 
+/* 「紙で解くと起こる事故」の注意。④前半を当て終えたときだけ、筆算の一番下に出す。
+   ⚠ 出す・出さないの判断だけがここの仕事で、**文は model.js**（bottleTrapNote）。
+   ⚠ ステージによっては注意そのものが無い（r3 は左辺のイオンが H⁺ だけで、組む相手がいない）。 */
+/* いま筆算に出ている行のいちばん下の番号。⑤の係数は縦に積まれることがあるので、
+   数えるのではなく**書かれている grid-row を読む**（積み方を2か所で決めない） */
+function bottleLastGridRow() {
+  let max = BROW.msg;
+  for (const el of bottleWorkEl.querySelectorAll("[style]")) {
+    if (el === bottleTrapEl || el.closest("[hidden]")) continue;
+    const v = parseInt(el.style.gridRow, 10);
+    if (Number.isFinite(v) && v > max) max = v;
+  }
+  return max;
+}
+
+function drawBottleTrap(show) {
+  if (!bottleTrapEl) return;
+  const note = show ? bottleTrapNote(stage(), mult[0], mult[1]) : null;
+  bottleTrapEl.hidden = !note;
+  bottleTrapEl.innerHTML = "";
+  if (!note) return;
+  /* ⚠ 行番号は**決め打ちにしない**。BROW.trap を大きな数（40）に固定すると、
+     空の行が 20 以上できて row-gap（2px）がそのぶん積もり、⑤との間に
+     50px 以上の空白が開いた（実測）。いま出ている行を読んで、その次に置く。 */
+  bottleTrapEl.style.gridRow = String(bottleLastGridRow() + 1);
+  const head = document.createElement("span");
+  head.className = "btrapHead";
+  head.textContent = "⚠ " + note.head;
+  const txt = document.createElement("span");
+  txt.className = "btrapText";
+  txt.textContent = note.text;
+  bottleTrapEl.append(head, txt);
+}
+
 function refreshBottleTail() {
   const rows = bottleRows();
   if (!rows) return;
   /* --- ④の前半「もともと何だった？」---
      ★ 2026-09-07 にふたたび門にした（ユーザー「どこから来たの が先」）。
      選択肢は有限で必ず正解が選べるので、行き止まりにはならない。 */
+  /* ⚠ 数えるのは**問いになっている柱だけ**（イオンでない柱は聞いていない・2026-09-11） */
+  const asks = bottleAskRows(rows);
   const okN = bottleAnsweredOk(rows);
-  const quizDone = okN === rows.length;
-  const yet = rows.find((r) => !bottleRowOk(r));
+  const quizDone = okN === asks.length;
+  const yet = asks.find((r) => !bottleRowOk(r));
   renderBottleNotes(rows);
   bottleMsgEl.style.gridRow = String(BROW.msg);
   bottleMsgEl.textContent = quizDone
     ? "どのイオンにも、もとの物質がある。左辺に書くのはイオンではなく、そのもとの物質そのもの。"
-    : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
+    : `あと ${asks.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
   bottleMsgEl.className = quizDone ? "okcell" : "";
+  /* ★ 2026-09-11・ユーザーの指示「注意事項として、正解後の一番下に解説を追加します。
+     アプリ上では起こりませんが、自分で紙に解くと起こる事故です」。
+     ⚠ **答える前には出さない**（④前半を当て終えてから）。
+     ⚠ 文は model.js の bottleTrapNote が導く —— 相手はステージごとに違い、
+     rn1・rn2（H⁺ と NO₃⁻ が同じ HNO₃ から来る）は言い方そのものが変わる。 */
   if (addIonWrapEl) addIonWrapEl.hidden = !quizDone;
   if (!quizDone) {
     bottleTailEl.hidden = true;
     bottleTailMsgEl.textContent = "";
     if (saltStepEl) saltStepEl.hidden = true;
+    drawBottleTrap(false);
     return;
   }
 
@@ -2194,6 +2353,9 @@ function refreshBottleTail() {
     bottleTailMsgEl.textContent = "";
     if (saltStepEl) saltStepEl.hidden = true;
   }
+  /* ★ 注意は**いちばん最後**に置く（＝ 筆算の一番下）。⚠ ここで呼ぶ理由:
+     いま実際に何行あるかを DOM から読むため（先に呼ぶと、あとから増えた⑤の行に追い越される） */
+  drawBottleTrap(true);
 }
 
 /* ⑤ 水を蒸発させる（v182 で作り直した・DESIGN_redox.md「実機レビュー」B・D）。
@@ -3407,6 +3569,10 @@ window.RedoxEq = {
       molCoeffs: mplan ? [...mplan.coeffs] : [],
       mult: [...mult],
       poolE: poolE.length,
+      /* ★ 2026-09-11: 落ち着いた e⁻ の座標。ユーザー指摘「Al板に展開される e⁻ の位置が
+         重なる」を**距離で**見張るために開けた口（`poolE` は席に着いた e⁻ だけを持つ。
+         飛んでいる最中の粒は入らない ＝ 演出の一瞬のすれ違いを不合格にしない）。 */
+      poolPts: poolE.map((p) => ({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), r: p.r })),
       waiting: units.filter((u) => u.waiting).length,
       deposited,
       escaped: Object.assign({}, escaped),

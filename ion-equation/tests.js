@@ -3339,7 +3339,14 @@ function bqSlotIdOf(sp) { return "bq_" + String(sp).replace(/[^A-Za-z0-9]/g, "_"
 function placeOwnerIn(doc, ion, key) {
     const id = bqSlotIdOf(ion);
     const slot = () => doc.getElementById(id);
-    if (!slot()) throw new Error("その柱が出ていない: " + ion);
+    if (!slot()) {
+        /* ★ 2026-09-11・「イオンでないものは聞かなくてよい」。イオンでない柱
+           （r3 の Zn・ro1 の CH₃CH₂OH・rn1 の Cu）には受け皿が無い ＝ 置くものが無い。
+           ⚠ **柱そのものは残っている**（式の項であり、⑤の係数の欄がその真下に来る）。
+           柱ごと消えていたらそれは本物の不具合なので、確かめてから黙って戻る。 */
+        if (doc.querySelector('#bottleCols .bpill[data-ion="' + ion + '"]')) return;
+        throw new Error("その柱が出ていない: " + ion);
+    }
     // 置いてある札はいったん戻す（選び直しの道そのもの）
     for (let g = 0; g < 8; g++) {
         const x = slot().querySelector(".bchipX");
@@ -5059,6 +5066,92 @@ async function runUITests(iframe) {
     }
   });
 
+  /* ★ 2026-09-11・ユーザー指摘「酸化還元ページすべてイオンが二重になってます／
+     直したのはイオン反応のページのようです」。
+
+     ビーカー（app.js）は v41 から `stripCharge` で名札の右肩の電荷を落としていたのに、
+     **その関数が app.js の中にあった**ので redox.js からは呼べず、
+     酸化還元の粒だけが `MnO₄⁻` と `−` を同時に出していた。
+     ＝ **同じ不具合が、別のページで 3日後に出た。** 関数は model.js へ移した。
+
+     ⚠ だからこの検査は**ページを名指ししない**。丸を持つ葉の `<g>`（＝ 粒1つ）を
+     どのページでも同じ物差しで見る:
+       ・電荷のバッジ（`+` `−` `2+` …）はちょうど1つ
+       ・そのとき、名札の側に残っている右肩の電荷は **0本**
+     ⚠⚠ ただし **2本以上**残っているのは正しい —— app.js の枠つきの粒
+     （`[Al(OH)₄]⁻` は Al³⁺ と OH⁻×4）では外枠のバッジが**和**で、
+     個々の電荷は外枠から復元できない（DESIGN_ionic_two_step.md §7-7）。
+     **1本だけ残っているのが「二重」。**
+     ★ 既存の「UI: 枠つきの粒 - 同じ電荷を2回書かない」とは役割が違う ——
+     あちらは枠の**中のどれを**外すかを名指しで見る。ここは**どのページにも1件も無い**を見る。 */
+  await t("CHARGE: どのページでも、粒の電荷を2回書かない（名札の右肩とバッジ）", async () => {
+    const isBadge = (s) => /^\d?[+−]$/.test(s);
+    const bad = [], seen = new Set();
+    const scan = (d, tag) => {
+      for (const g of d.querySelectorAll("svg g")) {
+        if (g.querySelector("g")) continue;                   // 葉の g だけ ＝ 粒1つぶん
+        if (!g.querySelector("circle, ellipse")) continue;     // 丸を持つもの ＝ 粒
+        const texts = [...g.querySelectorAll("text")].map((e) => e.textContent);
+        const badges = texts.filter(isBadge);
+        if (!badges.length) continue;                          // バッジが無ければ二重になりようがない
+        const supers = texts.filter((s) => !isBadge(s) && /[⁺⁻]$/.test(s));
+        const key = texts.join("|");
+        seen.add(key);
+        if (badges.length !== 1) bad.push(tag + " " + key + "（バッジが " + badges.length + " 個）");
+        else if (supers.length === 1) bad.push(tag + " " + key + "（名札の右肩とバッジで電荷が2回）");
+      }
+    };
+    // ① 酸化還元 —— 全ステージを最後まで走らせる（粒が出るのは演出のあと）
+    {
+      const p = await openAt("redox.html", 900, 900);
+      assert(p.win.RedoxEq, "redox.html: RedoxEq が現れない");
+      const n = p.doc.querySelectorAll("#stageNav button").length;
+      assert(n >= 12, "酸化還元のステージが少なすぎる（駆動できていない）: " + n);
+      for (let i = 0; i < n; i++) {
+        p.doc.querySelectorAll("#stageNav button")[i].click();
+        const b = p.doc.getElementById("playBtn");
+        if (b) b.click();
+        p.win.RedoxEq.advance(30000);
+        scan(p.doc, "redox.html#" + i);
+      }
+      p.cleanup();
+    }
+    // ② イオン反応 —— 投入して反応させる（枠つきの粒もここで出る）
+    {
+      const p = await openAt("index.html", 900, 900);
+      assert(p.win.IonEq, "index.html: IonEq が現れない");
+      const n = p.doc.querySelectorAll("#stageNav button").length;
+      assert(n >= 20, "イオン反応のステージが少なすぎる（駆動できていない）: " + n);
+      for (let i = 0; i < n; i++) {
+        p.doc.querySelectorAll("#stageNav button")[i].click();
+        p.doc.querySelectorAll("#toolbar .add").forEach((b) => b.click());
+        p.win.IonEq.advance(4000);
+        const r = p.doc.querySelector("#toolbar .react");
+        if (r) r.click();
+        p.win.IonEq.advance(25000);
+        scan(p.doc, "index.html#" + i);
+      }
+      p.cleanup();
+    }
+    /* ③ 残りのページ —— いまは電荷バッジを描いていない（cell.js・schematic.js・
+       condition.js・blocks.js は名札だけ）。**描き始めたらここで捕まる**ように、
+       同じ物差しを通しておく（「別のページで出た」を二度やらないための網）。 */
+    for (const page of ["oxidation.html", "halfreaction.html", "electrolysis.html",
+                        "battery.html", "condition.html", "library.html", "portal.html"]) {
+      const p = await openAt(page, 900, 900);
+      scan(p.doc, page + "@load");
+      const btns = p.doc.querySelectorAll("#stageNav button");
+      for (let i = 0; i < btns.length; i++) {
+        p.doc.querySelectorAll("#stageNav button")[i].click();
+        scan(p.doc, page + "#" + i);
+      }
+      p.cleanup();
+    }
+    // 空振り（粒を1つも拾えていないのに緑）を防ぐ床
+    assert(seen.size >= 20, "電荷バッジ付きの粒を拾えていない（検査が空振りしている）: " + seen.size + " 種");
+    assert(!bad.length, "電荷が2回出ている粒が " + bad.length + " 件: " + bad.slice(0, 6).join(" / "));
+  });
+
   await t("HEADER: 続きがある側だけに印が出て、開いたステージは必ず帯の中に見えている", async () => {
     const p = await openAt("index.html", 375);
     const nav = p.doc.getElementById("stageNav");
@@ -5460,7 +5553,10 @@ async function runUITests(iframe) {
     d.getElementById("calcSkip").click();
     assert(!d.getElementById("stepBottles").hidden, "狭い画面で rn1 の④の段が出ない");
     const sels = [...d.querySelectorAll("#bottleCols .bslot")];
-    assert(sels.length === 3, "rn1 の④の柱が3本でない: " + sels.length);
+    /* ⚠ 2026-09-11: 柱は3本のまま、受け皿は2つ（Cu はイオンでないので聞かない） */
+    assert(d.querySelectorAll("#bottleCols .bpill").length === 3,
+      "rn1 の柱が3本でない: " + d.querySelectorAll("#bottleCols .bpill").length);
+    assert(sels.length === 2, "rn1 の④の受け皿が2つでない: " + sels.length);
     const wrap = d.getElementById("calcSheetWrap");
     assert(wrap.scrollWidth - wrap.clientWidth === 0,
       `③の筆算がはみ出す（実幅 ${wrap.scrollWidth} / 見える幅 ${wrap.clientWidth}）`);
@@ -6210,17 +6306,81 @@ async function runRedoxUITests(iframe) {
     assert(colorBefore !== colorAfter && colorAfter === "#eaf5fc", "溶液の色が紫→無色に戻らない: " + colorBefore + "→" + colorAfter);
   });
 
+  /* ★ 2026-09-11・ユーザー指摘「Al板に展開される e⁻ の位置が重なる（以前に指摘しているはず）」。
+
+     r4（アルミニウム × 銅(Ⅱ)イオン・2:3）は Al が e⁻ を3個ずつ出すので、板の上に **6個**
+     たまる。旧実装は席を作らず「原子の y ± spread」で置いていたので、実測で
+       ・r1 r2 r3 rn2（e⁻ 2個）… 中心間 **9px**（直径16 ＝ 7px 食い込む）
+       ・r4（e⁻ 6個）      … 隣の原子のかたまりと **2px**
+     ＝ **数え物なのに何個あるか読めない。**
+
+     ⚠ 見るのは **落ち着いた e⁻ だけ**（`state().poolPts` ＝ 席に着いたもの）。
+     飛んでいる最中のすれ違いまで禁じると、演出のほうを壊すことになる。
+     ⚠ 倍率は**模範と最大（9:9）の両方**で見る —— 重なりは数が増えたときに出る。 */
+  await t("REDOX: 席に着いた e⁻ が重ならない（全ステージ・模範倍率と最大倍率）", async () => {
+    const setMult = (idx, v) => {
+      const el = multIn(idx);
+      if (!el) return;
+      el.value = String(v);
+      el.dispatchEvent(new win.Event("input", { bubbles: true }));
+    };
+    const worstOf = (pts) => {
+      let min = Infinity, pair = null;
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) - (pts[i].r + pts[j].r);
+          if (d < min) { min = d; pair = [pts[i], pts[j]]; }
+        }
+      }
+      return { min, pair };
+    };
+    let maxSeen = 0, checked = 0;
+    for (const [ma, mb] of [[0, 0], [9, 9]]) {
+      for (let i = 0; i < REDOX_STAGES.length; i++) {
+        const st = REDOX_STAGES[i];
+        const a = ma || st.answer[0], b = mb || st.answer[1];
+        stageBtn(i).click();
+        setMult(0, a); setMult(1, b);
+        playBtn().click();
+        // e⁻ は出ては消えるので、いちばん多い瞬間を逃さないよう途中も見る
+        for (let k = 0; k < 10; k++) {
+          adv(1400);
+          const pts = state().poolPts;
+          maxSeen = Math.max(maxSeen, pts.length);
+          const tag = st.id + "（倍率 " + a + ":" + b + "・席の e⁻ " + pts.length + "個）";
+          if (pts.length > 1) {
+            checked++;
+            const w = worstOf(pts);
+            assert(w.min >= -0.01,
+              tag + ": e⁻ が重なっている（食い込み " + (-w.min).toFixed(1) + "px）" + JSON.stringify(w.pair));
+          }
+          // 席を増やしすぎてビーカーの外へ出ていないこと
+          for (const p of pts) {
+            assert(p.x - p.r >= 45 && p.x + p.r <= 435 && p.y - p.r >= 118 && p.y + p.r <= 400,
+              tag + ": e⁻ がビーカーの外に出ている " + JSON.stringify(p));
+          }
+        }
+      }
+    }
+    assert(checked >= 40, "e⁻ が2個以上そろった場面を十分に見ていない: " + checked);
+    assert(maxSeen >= 27, "e⁻ がいちばん多い場面（r4 の倍率9 ＝ 27個）に届いていない: " + maxSeen);
+  });
+
   /* 溶液モードの対向整列（v145）。漂わせていたころは、どの粒が e⁻ を出して
      どの粒が受け取ったのかが混雑にまぎれて追えなかった。
      「還元剤は左列にそろう・酸化剤は右列にそろう・e⁻ は右へしか動かない」を固定する。 */
   await t("REDOX: 溶液モードは還元剤が左列・酸化剤が右列に対向整列し、e⁻ は右へ渡る（rs1）", async () => {
+    /* ⚠ 2026-09-11: 粒の名札からは**右肩の電荷が外れた**（電荷は丸バッジの側が言う。
+       ビーカーと同じ規則にそろえた）。呼び出し側は化学式のまま書けるように、
+       ここで `stripCharge` を通してから突き合わせる。 */
     const posOf = (label) => {
       adv(50);   // 静止している粒にも transform を書かせる
+      const want = stripCharge(label);
       return $$("#beaker .particle").map((e) => {
         const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
         const tx = e.querySelector("text");
         return m && tx ? { t: tx.textContent, x: +m[1], y: +m[2] } : null;
-      }).filter((p) => p && p.t === label);
+      }).filter((p) => p && p.t === want);
     };
     const rs1 = REDOX_STAGES.findIndex((s) => s.id === "rs1");
     stageBtn(rs1).click();
@@ -7128,9 +7288,144 @@ async function runRedoxUITests(iframe) {
      ⚠ **模範は手で書かない** —— bottleOwnerChoices の answerKey をそのまま使う */
   const passOwnerB = (id, a, b) => {
     const rows = bottleOwnerChoices(REDOX_STAGES.find((s) => s.id === id), a, b) || [];
-    for (const r of rows) pickB(r.ion, r.answerKey);
+    // ⚠ 2026-09-11: イオンでない柱は聞かないので置くものが無い（pickB は黙って戻る）
+    for (const r of rows) if (r.ask) pickB(r.ion, r.answerKey);
     return rows;
   };
+
+  /* ★ 2026-09-11・ユーザーの決定「B3 イオンでないものは聞かなくてよい」。
+
+     ④前半は「もともと何だった？」だが、左辺にはイオンでない項も並ぶ
+     （r3 の Zn・ro1〜ro3 の CH₃CH₂OH など・rn1 rn2 の Cu）。
+     これらは水の中でばらけていないので、答えが**自分自身**になる ＝ 問いになっていない。
+     指示文も「イオン反応式に残っているイオン」としか言っていなかった。
+
+     ⚠⚠ **柱そのものは消さない。** 柱はイオン反応式の左辺の項で、⑤の係数の欄は
+     その真下に来る（筆算の縦の対応）。消すと式が1項欠け、列も崩れる。
+     この検査は**両方**を見る ——「柱は左辺の項ぶん」と「受け皿はイオンの柱にだけ」。
+     ⚠ **柱が0本／受け皿が0個になる段が無いこと**も見る（聞くことが無い段は作らない）。 */
+  /* ★ 2026-09-11・ユーザーの指示:
+       > B2 消してよいです。必ず元の物質を選ばせることで学べます
+       > ただし、注意事項として、正解後の一番下に解説を追加します。
+       > アプリ上では起こりませんが、自分で紙に解くと起こる事故です
+
+     ④前半の「◯◯ と組む」（左辺のイオンどうしを組む）という罠は消した。
+     代わりに **正解のあと、筆算の一番下に1度だけ**注意を出す。
+
+     ⚠ **答える前には出さない**（先に出すと、④前半の答えを先に配ってしまう）。
+     ⚠⚠ **相手はステージごとに違う。実際に数えた結果、3通りある**:
+       ・出どころが1つも重ならない組がある（rs1 rs2 rs3 ro1 ro2 ro3）… 罠の文
+       ・全部の組が同じ物質から来ている（rn1 rn2 の H⁺ と NO₃⁻ ＝ どちらも HNO₃）…
+         「組むと合ってしまうが、それは組んだからではない」に言い換わる
+       ・組む相手がいない（r3 は左辺のイオンが H⁺ だけ）… 注意そのものを出さない
+     ⚠ 文は model.js（bottleTrapNote）が導き、その本体は explainBottleOwner から借りる
+       ＝ 同じことを2か所に書かない。ここでは**画面に出ている文と model の文が一致する**ことを見る。 */
+  await t("BOTTLE 注意: 紙で起こる事故の注意は、正解のあとに一番下へ1度だけ（9ステージ悉皆）", async () => {
+    const ids = ["r3", "rs1", "rs2", "rs3", "ro1", "ro2", "ro3", "rn1", "rn2"];
+    const trapEl = () => doc.getElementById("bottleTrap");
+    let withNote = 0, kinds = {};
+    for (const id of ids) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      const [a, b] = st.answer;
+      openB(id);
+      let g = 0;
+      while (state().mult[0] < a && g++ < 12) bumpB(0);
+      while (state().mult[1] < b && g++ < 12) bumpB(1);
+      passCalc();
+      // ① 答える前は出ていない
+      assert(trapEl().hidden, id + ": 答える前から注意が出ている（④前半の答えを先に配っている）");
+      const note = bottleTrapNote(st, a, b);
+      // ② 正解すると出る（注意がある段だけ）
+      passOwnerB(id, a, b);
+      assert(trapEl().hidden === !note,
+        id + ": 注意の出方が model の判断（" + (note ? note.kind : "なし") + "）と食い違う");
+      if (!note) continue;
+      withNote++;
+      kinds[note.kind] = (kinds[note.kind] || 0) + 1;
+      const shown = trapEl().textContent;
+      assert(shown.includes(note.text), id + ": 画面の文が model の文と違う: " + shown);
+      assert(shown.includes(note.head), id + ": 見出しが出ない: " + shown);
+      // ③ 一番下 ＝ ⑤の欄より下（⑤が出ている段では位置で確かめられる）
+      const inp = doc.querySelector("#bottleCounts input");
+      if (inp) {
+        assert(trapEl().getBoundingClientRect().top >= inp.getBoundingClientRect().bottom - 1,
+          id + ": 注意が⑤の欄より上に出ている（一番下ではない）");
+      }
+      // ④ 名指しした2つは、どちらも左辺に並んでいるイオン
+      const left = combineHalves(st, a, b).left.map((x) => x.sp);
+      for (const sp of note.pair) {
+        assert(left.includes(sp), `${id}: 注意が左辺に無いものを名指ししている: ${sp}`);
+        assert(shown.includes(SPECIES[sp].disp), `${id}: 名指しした ${sp} が文に出ていない`);
+      }
+      // ⑤ 「アプリでは起きない」ことを言う／答えの数を漏らさない
+      assert(/紙/.test(shown), id + ": 紙で起こる話だと言っていない: " + shown);
+    }
+    // 実測の内訳（r3 だけ注意が無い ＝ 左辺のイオンが H⁺ だけで組む相手がいない）
+    assert(withNote === 8, "注意が出た段が8本でない: " + withNote);
+    assert(kinds.trap === 6 && kinds["same-source"] === 2,
+      "注意の型の内訳が違う: " + JSON.stringify(kinds));
+    assert(!bottleTrapNote(REDOX_STAGES.find((s) => s.id === "r3"), 1, 1),
+      "r3（組む相手がいない）にも注意が出ている");
+    /* ⚠⚠ 2026-09-11 に見つけた誤り（この改修で直したもの）——
+       explainBottleOwner の kind:"ion" は**無条件に**「互いを連れてきていません」と
+       言っていた。rn1・rn2 の H⁺ と NO₃⁻ は**どちらも HNO₃**なので、
+       「H⁺ を連れてきたのは HNO₃、NO₃⁻ を連れてきたのは HNO₃」と続けながら
+       「互いを連れてきていません」と言う、自分で矛盾する文になっていた。 */
+    const rn1 = REDOX_STAGES.find((s) => s.id === "rn1");
+    const ex = explainBottleOwner(rn1, 3, 2, "H+", { kind: "ion", sp: "NO3-" });
+    assert(ex && ex.kind === "same-source",
+      "rn1 の H⁺ と NO₃⁻（同じ HNO₃ から来る）を別々の出どころだと言っている: " + JSON.stringify(ex));
+    assert(!ex.reason.includes("互いを連れてきていません"),
+      "同じ物質から来ているのに「互いを連れてきていません」と言う: " + ex.reason);
+    assert(ex.reason.includes("HNO₃"), "どの物質が連れてきたか言わない: " + ex.reason);
+    // 出どころが本当に別々なら、今までどおり「互いを連れてきていません」
+    const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
+    const ex2 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "ion", sp: "MnO4-" });
+    assert(ex2 && ex2.reason.includes("互いを連れてきていません"),
+      "出どころが別々なのに言わなくなった: " + JSON.stringify(ex2));
+  });
+
+  await t("BOTTLE 柱: イオンでない項は聞かない（柱は残す・9ステージ悉皆）", async () => {
+    const ids = ["r3", "rs1", "rs2", "rs3", "ro1", "ro2", "ro3", "rn1", "rn2"];
+    let dropped = 0;
+    for (const id of ids) {
+      const st = REDOX_STAGES.find((s) => s.id === id);
+      const [a, b] = st.answer;
+      openB(id);
+      let g = 0;
+      while (state().mult[0] < a && g++ < 12) bumpB(0);
+      while (state().mult[1] < b && g++ < 12) bumpB(1);
+      passCalc();
+      assert(!doc.getElementById("stepBottles").hidden, id + ": ④の段が出ない");
+      const rows = bottleOwnerChoices(st, a, b) || [];
+      const asks = rows.filter((r) => r.ask);
+      dropped += rows.length - asks.length;
+      // ① 柱は左辺の項ぶん（イオンでないものも並ぶ）
+      assert($$("#bottleCols .bpill").length === rows.length,
+        `${id}: 柱が左辺の項の数と違う: ${$$("#bottleCols .bpill").length} / ${rows.length}`);
+      // ② 受け皿はイオンの柱にだけ
+      assert(selsB().length === asks.length,
+        `${id}: 受け皿の数が聞く柱の数と違う: ${selsB().length} / ${asks.length}`);
+      assert(asks.length >= 1, id + ": 聞く柱が0本になった（答える口が無い段ができている）");
+      for (const r of rows) {
+        const slot = doc.getElementById(bqSlotIdOf(r.ion));
+        assert(!!slot === r.ask,
+          `${id}: ${SPECIES[r.ion].disp} の受け皿の有無が ask（${r.ask}）と食い違う`);
+        // ③ イオンでない柱には「なぜ聞かないか」が1行出る（文は model.js の selfNote）
+        if (!r.ask) {
+          assert(SPECIES[r.ion].charge === 0, id + ": 電荷を持つのに聞いていない: " + r.ion);
+          assert(noteB(r.ion).includes("イオンではない"),
+            `${id}: ${SPECIES[r.ion].disp} に「なぜ聞かないか」の行が出ない: ` + noteB(r.ion));
+        }
+      }
+      // ④ 聞く柱だけ埋めれば④後半へ進める（イオンでない柱が門をふさいでいない）
+      passOwnerB(id, a, b);
+      assert(!doc.getElementById("addIonWrap").hidden,
+        id + ": イオンの柱を全部当てても④後半が出ない（聞かない柱が門をふさいでいる）");
+    }
+    // 9ステージで実際に外れた柱の数（r3 の Zn・ro1〜ro3 の有機物・rn1 rn2 の Cu ＝ 6本）
+    assert(dropped === 6, "聞かなくなった柱の数が想定と違う: " + dropped);
+  });
 
   /* ★★ この改修の合否そのもの（2026-09-08・レーン rx-sheet）。
      v203 で④⑤を作り直したとき、**実装が2本あって片方しか直らなかった**。
@@ -7158,8 +7453,13 @@ async function runRedoxUITests(iframe) {
 
       // ① ④前半 —— 左辺のイオンぜんぶに「もともと何だった？」がある
       const owners = passOwnerB(id, a, b);
-      assert(selsB().length === owners.length && owners.length >= 2,
-        `${id}: ④前半の柱が左辺のイオンぶん出ない（${selsB().length} / ${owners.length}）`);
+      /* ⚠ 2026-09-11: 受け皿が出るのは**イオンの柱だけ**（「B3 イオンでないものは
+         聞かなくてよい」）。柱そのものが左辺の項ぶん出ることは別の検査で見る。 */
+      const asks = owners.filter((r) => r.ask);
+      assert($$("#bottleCols .bpill").length === owners.length,
+        `${id}: 柱が左辺の項ぶん出ない（${$$("#bottleCols .bpill").length} / ${owners.length}）`);
+      assert(selsB().length === asks.length && asks.length >= 2,
+        `${id}: ④前半の受け皿がイオンの柱ぶん出ない（${selsB().length} / ${asks.length}）`);
       assert(!doc.getElementById("addIonWrap").hidden, id + ": ④前半を当てても後半が出ない");
 
       // ② ④後半 —— 足すイオンが**全種類**。ro 系は K⁺ と SO₄²⁻ の両方が並ぶ
@@ -7285,8 +7585,13 @@ async function runRedoxUITests(iframe) {
       for (const c of counts) {
         const owner = owners.find((r) => holds(r.answerKey, c.sp));
         assert(owner, `${id}: ${c.sp} が担当する柱を見つけられない`);
+        /* ⚠ 2026-09-11: 柱の位置は**柱そのもの**（.bpill）で測る。
+           イオンでない柱には受け皿（bq_*）が無くなったので、受け皿では測れない。
+           そもそも列の見出しは柱なので、こちらのほうが正しい物差し。 */
         const inp = cinB(c.sp).getBoundingClientRect();
-        const pil = doc.getElementById(bqSlotIdOf(owner.ion)).getBoundingClientRect();
+        const pillEl = doc.querySelector('#bottleCols .bpill[data-ion="' + owner.ion + '"]');
+        assert(pillEl, `${id}: ${owner.ion} の柱が出ていない`);
+        const pil = pillEl.getBoundingClientRect();
         assert(inp.right > pil.left && inp.left < pil.right,
           `${id}: ${c.sp} の係数の欄が ${owner.ion} の列からずれている ` +
           `(欄 ${Math.round(inp.left)}〜${Math.round(inp.right)} / 柱 ${Math.round(pil.left)}〜${Math.round(pil.right)})`);
@@ -7527,7 +7832,7 @@ async function runRedoxUITests(iframe) {
     assert(doc.querySelectorAll("#stageNav button.organic").length === 5, "帯の印が5個から変わった");
   });
 
-  await t("REDOX: ④⑤の段 - 左辺のイオンどうしを組もうとすると「互いを連れてきていません」と言う", async () => {
+  await t("REDOX: ④⑤の段 - 出どころ当ての判定（誤り・正解・順序の門）と、消えた罠", async () => {
     openB("rs1");
     // e⁻ がそろうまでは段そのものが出ない（イオン反応式が決まっていないのでもとの物質も決まらない）
     assert(doc.getElementById("stepBottles").hidden, "e⁻ が合う前から④⑤の段が出ている");
@@ -7543,17 +7848,21 @@ async function runRedoxUITests(iframe) {
     }
     const s = selsB();
     assert(s.length === 3, "左辺のイオンぶんの受け皿が出ない: " + s.length);
-    /* ★ 2026-09-10・筆算1枚化。罠（「◯◯ と組む」）は**選択肢の言葉ではなく置き方**になった
-       —— 別の柱をタップして、その柱の下へ置く。ユーザーの指摘
-       「もともと何だった？に対してイオンと組み合わせる、は違和感」に合わせ、
-       選択肢の一覧から「◯◯ と組む」という言い回しごと消したうえで、**やれること自体は残す**。 */
-    assert(doc.querySelector('#bottleCols .bpill[data-ion="MnO4-"]'),
-      "左辺のイオンの札（柱）が押せる形で出ていない ＝ 罠に一度も入れない");
-    // ① 左辺のイオンどうしを組む → 出自が別だと言う
-    pickB("H+", "ion:MnO4-");
+    /* ★ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで学べます」。
+       v206〜v207 は、柱を選んでから**別の柱をタップする**と「◯◯ と組む」を置いたことに
+       なっていた（罠）。⚠ **その道が消えたこと**をここで見張る。
+       罠の中身は「正解のあとの注意」（#bottleTrap）へ移った ＝ 下の別の検査が見る。 */
+    doc.querySelector('#bottleCols .bpill[data-ion="H+"]').click();      // H⁺ の柱を選ぶ
+    doc.querySelector('#bottleCols .bpill[data-ion="MnO4-"]').click();   // 別の柱をタップ
+    assert(!doc.getElementById(bqSlotIdOf("H+")).querySelector(".bchip"),
+      "柱を別の柱の下に置けてしまう（「◯◯ と組む」の罠が残っている）");
+    assert(doc.getElementById(bqSlotIdOf("MnO4-")).classList.contains("active"),
+      "別の柱をタップしても、その柱が選ばれるだけの動きになっていない");
+    // ① そのイオンを出さない物質を置く → 出自が別だと言う
+    pickB("H+", "bottle:KMnO4");
     const n1 = noteB("H+");
-    assert(n1.includes("互いを連れてきていません"), "出自の説明が出ない: " + n1);
-    assert(n1.includes("H₂SO₄") && n1.includes("KMnO₄"), "どちらが連れてきたかを言わない: " + n1);
+    assert(n1.includes("H⁺ は出しません"), "誤りの説明が出ない: " + n1);
+    assert(n1.includes("KMnO₄"), "どの物質の話か言わない: " + n1);
     assert(doc.getElementById("bqn_H_").classList.contains("ngcell"), "誤りの色にならない");
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ② そのイオンをそのイオンを出さない物質
@@ -7866,9 +8175,10 @@ async function runRedoxUITests(iframe) {
     passCalc();   // r3 は 1:1 なので開いた瞬間に③が出る。書く段を降りてから④を見る
     assert(!doc.getElementById("stepBottles").hidden, "r3 で④⑤の段が出ない");
     assert(txtB("bottleRack").includes("水にとけてイオンに分かれない"), "板が電離しないと言っていない");
-    pickB("Zn", "bottle:HCl");
-    assert(noteB("Zn").includes("Zn は出しません"), "誤りの説明が出ない: " + noteB("Zn"));
-    pickB("Zn", "bottle:Zn");
+    /* ⚠ 2026-09-11: 誤りの説明は **H⁺ の柱**で見る。Zn はイオンでないので聞かなくなった
+       （「B3 イオンでないものは聞かなくてよい」）。板が電離しないことは上の棚の文が言う。 */
+    pickB("H+", "bottle:Zn");
+    assert(noteB("H+").includes("H⁺ は出しません"), "誤りの説明が出ない: " + noteB("H+"));
     pickB("H+", "bottle:HCl");
     passAddB("r3", 1, 1, 1);   // 【②】④（両辺に足す Cl⁻）を通す
     // ⑤の数入力（v182）。板（Zn）も「1本」として同じ入力に乗る
@@ -7895,7 +8205,11 @@ async function runRedoxUITests(iframe) {
     while (state().mult[1] < 2 && g++ < 10) bumpB(1);
     passCalc();   // ③の係数を自分で書く段を降りる（v193）
     assert(!doc.getElementById("stepBottles").hidden, "rn1 で④⑤の段が出ない（畳んだ先に届いていない）");
-    assert(selsB().length === 3, "rn1 の④の柱が3本でない: " + selsB().length);
+    /* ⚠ 2026-09-11: rn1 の柱は3本（Cu ＋ NO₃⁻ ＋ H⁺）のままだが、**聞くのは2本**
+       —— Cu はイオンではないので受け皿を置かない（「B3 イオンでないものは聞かなくてよい」）。
+       ★ 柱が3本あることも一緒に見張る（柱を消すと式が1項欠け、⑤の列も崩れる）。 */
+    assert($$("#bottleCols .bpill").length === 3, "rn1 の柱が3本でない: " + $$("#bottleCols .bpill").length);
+    assert(selsB().length === 2, "rn1 の④の受け皿が2つでない: " + selsB().length);
     openB("ri1");
     assert(doc.getElementById("stepBottles").hidden, "bottles を持たない ri1 で④⑤の段が出ている");
   });

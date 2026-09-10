@@ -199,6 +199,21 @@ const SPECIES = {
   "Glu^2-":        { disp: "⁻OOCCH(NH₂)CH₂CH₂COO⁻",  name: "グルタミン酸の2価の陰イオン", atoms: { C: 5, H: 7, N: 1, O: 4 }, charge: -2 },
 };
 
+/* 式の末尾の電荷（右肩の ⁺ ⁻ ²⁺ など）を外す。下付きの ₄ などは式の一部なので残す。
+   ★ 粒を「円＋右肩の丸バッジ」で描く画面は、バッジのほうで電荷を言う。
+   名札に `disp` をそのまま書くと**同じ電荷が2回**出る（Na⁺ と ＋）ので、名札からは外す。
+
+   ⚠ **ここ（model.js）に置くのは、これが `SPECIES[].disp` の書き方の規則だから。**
+   `disp` を持っているのは model.js で、外し方は「その文字列の末尾がどこまで電荷か」
+   という表記の話 ＝ 画面の都合ではない。そして**電荷バッジを描く画面は1つではない**
+   （app.js のビーカー・redox.js の酸化還元）。
+   ⚠⚠ 2026-09-11: これを app.js の中に置いていたせいで、**redox.js から使えず、
+   酸化還元の粒だけが電荷を二重に出していた**（ユーザー指摘「酸化還元ページすべて
+   イオンが二重になってます」）。同じ関数を2本書くのではなく、共有の model.js へ移した。 */
+function stripCharge(disp) {
+  return String(disp).replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+$/u, "");
+}
+
 /* C群（分子の組み換え）の分解表。イオンではなく**原子**にばらける。
    燃焼・化合・分解では「原子は増えも減りもしない」ことが最も直接に見える。 */
 const ATOMIZATION = {
@@ -4744,6 +4759,7 @@ function bottleOwnerChoices(stage, a, b) {
   const plan = bottlePlan(stage, a, b, 1);
   if (!plan || plan.dataError) return null;
   const left = plan.ionic.left.filter((t) => t.sp !== "e-");
+  const D = (sp) => SPECIES[sp].disp;
   return left.map((t) => {
     const src = plan.sources[t.sp] || [];
     const shared = src.length > 1;
@@ -4757,8 +4773,17 @@ function bottleOwnerChoices(stage, a, b) {
       if (o.sp === t.sp) continue;
       if (SPECIES[t.sp].charge * SPECIES[o.sp].charge < 0) options.push({ kind: "ion", sp: o.sp });
     }
+    /* ★ 2026-09-11・ユーザーの決定「B3 イオンでないものは聞かなくてよい」。
+       左辺にはイオンでない項も並ぶ（r3 の Zn・ro1〜ro3 の CH₃CH₂OH など・rn1 rn2 の Cu）。
+       これらは水の中でばらけていない ＝ **はじめに入れた物質そのもの**なので、
+       「もともと何だった？」の答えが自分自身になる ＝ 問いになっていない。
+       ⚠ **柱そのものは消さない。** 柱はイオン反応式の左辺の項で、⑤の係数の欄は
+       その真下に置く（＝ 筆算の縦の対応）。消すと式が1項欠ける。
+       消すのは**問い**だけ ＝ `ask: false`。 */
+    const ask = SPECIES[t.sp].charge !== 0;
     return {
-      ion: t.sp, n: t.n, options, shared,
+      ion: t.sp, n: t.n, options, shared, ask,
+      selfNote: ask ? null : `${D(t.sp)} はイオンではない —— はじめに入れたものが、そのまま式に出ている。`,
       answer: shared ? null : plan.owners[t.sp],
       answerKey: shared ? "bottles:" + src.join("+") : "bottle:" + plan.owners[t.sp],
     };
@@ -4784,6 +4809,21 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
   if (choice && choice.kind === "ion") {
     // 出どころは1本とはかぎらない（rs3 の H⁺）ので、どちらの場合も並べて言う
     const bringers = (sp) => (plan.sources[sp] || []).map(nameOf).join(" と ");
+    /* ⚠⚠ 2026-09-11 に見つけた誤り —— ここは**無条件に**「互いを連れてきていません」と
+       言っていた。rn1・rn2 の H⁺ と NO₃⁻ は**どちらも HNO₃ が連れてきている**ので、
+       そのままだと「H⁺ を連れてきたのは HNO₃、NO₃⁻ を連れてきたのは HNO₃」と続けながら
+       「互いを連れてきていません」と言う、自分で矛盾する文になっていた
+       （rs3 の H⁺ と C₂O₄²⁻ も H₂C₂O₄ を共有する）。出どころが重なる組は別に言う。 */
+    const share = (plan.sources[ionSp] || []).filter((s) => (plan.sources[choice.sp] || []).includes(s));
+    if (share.length) {
+      const both = share.map(nameOf).join(" と ");
+      return {
+        ok: false, kind: "same-source",
+        reason: `${D(ionSp)} と ${D(choice.sp)} は、どちらも ${both} が連れてきています。` +
+          `組み直すと ${both} に戻りますが、それは「もともと1つの物質だった」からで、` +
+          `イオンを組み合わせて作れるからではありません。`,
+      };
+    }
     return {
       ok: false, kind: "not-together",
       reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていません。` +
@@ -4842,6 +4882,62 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
       `ビーカーの中にはいる —— 水を蒸発させるとここから出てくる。`;
   }
   return { ok: true, kind: "ok", reason: msg };
+}
+
+/* ★ 2026-09-11・ユーザーの指示（原文が一次資料）:
+     > B2 消してよいです。必ず元の物質を選ばせることで学べます
+     > ただし、注意事項として、正解後の一番下に解説を追加します。
+     > アプリ上では起こりませんが、自分で紙に解くと起こる事故です
+
+   事故の中身 ＝ **イオン反応式の左辺に並ぶイオンどうしをその場で組んで、
+   実際には入れていない物質を書いてしまう**。
+   v206〜v207 はこれを④の中の「選べる罠」として置いていた（別の柱を柱の下に置く道）。
+   その道は消し、**正解のあとに1度だけ言う注意**へ移した。
+
+   ⚠⚠ **どの2つを組むと嘘になるかはステージごとに違う。実際に数えた:**
+     ・rs1 rs2 rs3 ro1 ro2 ro3 … 出どころが1つも重ならない組がある（H⁺ と酸化剤の陰イオン）
+     ・rn1 rn2 … H⁺ と NO₃⁻ は**どちらも HNO₃**。組んでも入れた物質そのものになる
+       ＝ ここでは「入れていない物質を作る」が起きない。言い方を変える
+     ・r3 … 左辺のイオンは H⁺ だけ（Zn はイオンではない）＝ 組む相手がいないので出さない
+   ⚠ 文の本体は explainBottleOwner から取る —— 同じことを2か所に書かない。 */
+function bottleTrapNote(stage, a, b) {
+  const plan = bottlePlan(stage, a, b, 1);
+  if (!plan || plan.dataError) return null;
+  const D = (sp) => SPECIES[sp].disp;
+  const ions = plan.ionic.left.filter((t) => t.sp !== "e-" && SPECIES[t.sp].charge !== 0);
+  const cats = ions.filter((t) => SPECIES[t.sp].charge > 0);
+  const ans = ions.filter((t) => SPECIES[t.sp].charge < 0);
+  if (!cats.length || !ans.length) return null;   // 組む相手がいない（r3）
+  const srcOf = (sp) => plan.sources[sp] || [];
+  const apart = [], shared = [];
+  for (const c of cats) {
+    for (const n of ans) {
+      const same = srcOf(c.sp).some((s) => srcOf(n.sp).includes(s));
+      (same ? shared : apart).push([c.sp, n.sp]);
+    }
+  }
+  const head = "紙に自分で書くときの注意";
+  if (apart.length) {
+    /* 起こりやすいのは**酸を作ってしまう**形（H⁺ と組む）。無ければ最初の組 */
+    const pick = apart.find((p) => p[0] === "H+") || apart[0];
+    const ex = explainBottleOwner(stage, a, b, pick[0], { kind: "ion", sp: pick[1] });
+    return {
+      kind: "trap", head, pair: pick,
+      text: `この画面では起きません（置けるのは、はじめに入れた物質の札だけ）。` +
+        `でも紙に自分で書くと、${D(pick[0])} と ${D(pick[1])} をその場で組んで、` +
+        `入れていない物質を書いてしまうことがあります。` + (ex ? ex.reason : ""),
+    };
+  }
+  const p = shared[0];
+  const both = srcOf(p[0]).filter((s) => srcOf(p[1]).includes(s)).map(D).join(" と ");
+  return {
+    kind: "same-source", head, pair: p,
+    text: `紙に自分で書くとき、左辺に並ぶイオンをその場で組んで物質にしないでください。` +
+      `この段の ${D(p[0])} と ${D(p[1])} は、どちらも ${both} が連れてきています。` +
+      `だから組み直すと ${both} に戻って、たまたま合ってしまいます —— ` +
+      `合うのは「もともと1つの物質だった」からで、組んだからではありません。` +
+      `出どころが別々のときに同じ手つきをすると、入れていない物質ができてしまいます。`,
+  };
 }
 
 /* ---- 液性の切り替え（酸性条件 ⇄ 塩基性条件）----
