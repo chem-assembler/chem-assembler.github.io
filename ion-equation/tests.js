@@ -5059,6 +5059,92 @@ async function runUITests(iframe) {
     }
   });
 
+  /* ★ 2026-09-11・ユーザー指摘「酸化還元ページすべてイオンが二重になってます／
+     直したのはイオン反応のページのようです」。
+
+     ビーカー（app.js）は v41 から `stripCharge` で名札の右肩の電荷を落としていたのに、
+     **その関数が app.js の中にあった**ので redox.js からは呼べず、
+     酸化還元の粒だけが `MnO₄⁻` と `−` を同時に出していた。
+     ＝ **同じ不具合が、別のページで 3日後に出た。** 関数は model.js へ移した。
+
+     ⚠ だからこの検査は**ページを名指ししない**。丸を持つ葉の `<g>`（＝ 粒1つ）を
+     どのページでも同じ物差しで見る:
+       ・電荷のバッジ（`+` `−` `2+` …）はちょうど1つ
+       ・そのとき、名札の側に残っている右肩の電荷は **0本**
+     ⚠⚠ ただし **2本以上**残っているのは正しい —— app.js の枠つきの粒
+     （`[Al(OH)₄]⁻` は Al³⁺ と OH⁻×4）では外枠のバッジが**和**で、
+     個々の電荷は外枠から復元できない（DESIGN_ionic_two_step.md §7-7）。
+     **1本だけ残っているのが「二重」。**
+     ★ 既存の「UI: 枠つきの粒 - 同じ電荷を2回書かない」とは役割が違う ——
+     あちらは枠の**中のどれを**外すかを名指しで見る。ここは**どのページにも1件も無い**を見る。 */
+  await t("CHARGE: どのページでも、粒の電荷を2回書かない（名札の右肩とバッジ）", async () => {
+    const isBadge = (s) => /^\d?[+−]$/.test(s);
+    const bad = [], seen = new Set();
+    const scan = (d, tag) => {
+      for (const g of d.querySelectorAll("svg g")) {
+        if (g.querySelector("g")) continue;                   // 葉の g だけ ＝ 粒1つぶん
+        if (!g.querySelector("circle, ellipse")) continue;     // 丸を持つもの ＝ 粒
+        const texts = [...g.querySelectorAll("text")].map((e) => e.textContent);
+        const badges = texts.filter(isBadge);
+        if (!badges.length) continue;                          // バッジが無ければ二重になりようがない
+        const supers = texts.filter((s) => !isBadge(s) && /[⁺⁻]$/.test(s));
+        const key = texts.join("|");
+        seen.add(key);
+        if (badges.length !== 1) bad.push(tag + " " + key + "（バッジが " + badges.length + " 個）");
+        else if (supers.length === 1) bad.push(tag + " " + key + "（名札の右肩とバッジで電荷が2回）");
+      }
+    };
+    // ① 酸化還元 —— 全ステージを最後まで走らせる（粒が出るのは演出のあと）
+    {
+      const p = await openAt("redox.html", 900, 900);
+      assert(p.win.RedoxEq, "redox.html: RedoxEq が現れない");
+      const n = p.doc.querySelectorAll("#stageNav button").length;
+      assert(n >= 12, "酸化還元のステージが少なすぎる（駆動できていない）: " + n);
+      for (let i = 0; i < n; i++) {
+        p.doc.querySelectorAll("#stageNav button")[i].click();
+        const b = p.doc.getElementById("playBtn");
+        if (b) b.click();
+        p.win.RedoxEq.advance(30000);
+        scan(p.doc, "redox.html#" + i);
+      }
+      p.cleanup();
+    }
+    // ② イオン反応 —— 投入して反応させる（枠つきの粒もここで出る）
+    {
+      const p = await openAt("index.html", 900, 900);
+      assert(p.win.IonEq, "index.html: IonEq が現れない");
+      const n = p.doc.querySelectorAll("#stageNav button").length;
+      assert(n >= 20, "イオン反応のステージが少なすぎる（駆動できていない）: " + n);
+      for (let i = 0; i < n; i++) {
+        p.doc.querySelectorAll("#stageNav button")[i].click();
+        p.doc.querySelectorAll("#toolbar .add").forEach((b) => b.click());
+        p.win.IonEq.advance(4000);
+        const r = p.doc.querySelector("#toolbar .react");
+        if (r) r.click();
+        p.win.IonEq.advance(25000);
+        scan(p.doc, "index.html#" + i);
+      }
+      p.cleanup();
+    }
+    /* ③ 残りのページ —— いまは電荷バッジを描いていない（cell.js・schematic.js・
+       condition.js・blocks.js は名札だけ）。**描き始めたらここで捕まる**ように、
+       同じ物差しを通しておく（「別のページで出た」を二度やらないための網）。 */
+    for (const page of ["oxidation.html", "halfreaction.html", "electrolysis.html",
+                        "battery.html", "condition.html", "library.html", "portal.html"]) {
+      const p = await openAt(page, 900, 900);
+      scan(p.doc, page + "@load");
+      const btns = p.doc.querySelectorAll("#stageNav button");
+      for (let i = 0; i < btns.length; i++) {
+        p.doc.querySelectorAll("#stageNav button")[i].click();
+        scan(p.doc, page + "#" + i);
+      }
+      p.cleanup();
+    }
+    // 空振り（粒を1つも拾えていないのに緑）を防ぐ床
+    assert(seen.size >= 20, "電荷バッジ付きの粒を拾えていない（検査が空振りしている）: " + seen.size + " 種");
+    assert(!bad.length, "電荷が2回出ている粒が " + bad.length + " 件: " + bad.slice(0, 6).join(" / "));
+  });
+
   await t("HEADER: 続きがある側だけに印が出て、開いたステージは必ず帯の中に見えている", async () => {
     const p = await openAt("index.html", 375);
     const nav = p.doc.getElementById("stageNav");
@@ -6214,13 +6300,17 @@ async function runRedoxUITests(iframe) {
      どの粒が受け取ったのかが混雑にまぎれて追えなかった。
      「還元剤は左列にそろう・酸化剤は右列にそろう・e⁻ は右へしか動かない」を固定する。 */
   await t("REDOX: 溶液モードは還元剤が左列・酸化剤が右列に対向整列し、e⁻ は右へ渡る（rs1）", async () => {
+    /* ⚠ 2026-09-11: 粒の名札からは**右肩の電荷が外れた**（電荷は丸バッジの側が言う。
+       ビーカーと同じ規則にそろえた）。呼び出し側は化学式のまま書けるように、
+       ここで `stripCharge` を通してから突き合わせる。 */
     const posOf = (label) => {
       adv(50);   // 静止している粒にも transform を書かせる
+      const want = stripCharge(label);
       return $$("#beaker .particle").map((e) => {
         const m = /translate\(([-\d.]+),([-\d.]+)\)/.exec(e.getAttribute("transform") || "");
         const tx = e.querySelector("text");
         return m && tx ? { t: tx.textContent, x: +m[1], y: +m[2] } : null;
-      }).filter((p) => p && p.t === label);
+      }).filter((p) => p && p.t === want);
     };
     const rs1 = REDOX_STAGES.findIndex((s) => s.id === "rs1");
     stageBtn(rs1).click();
