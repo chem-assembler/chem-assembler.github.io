@@ -6296,6 +6296,66 @@ async function runRedoxUITests(iframe) {
     assert(colorBefore !== colorAfter && colorAfter === "#eaf5fc", "溶液の色が紫→無色に戻らない: " + colorBefore + "→" + colorAfter);
   });
 
+  /* ★ 2026-09-11・ユーザー指摘「Al板に展開される e⁻ の位置が重なる（以前に指摘しているはず）」。
+
+     r4（アルミニウム × 銅(Ⅱ)イオン・2:3）は Al が e⁻ を3個ずつ出すので、板の上に **6個**
+     たまる。旧実装は席を作らず「原子の y ± spread」で置いていたので、実測で
+       ・r1 r2 r3 rn2（e⁻ 2個）… 中心間 **9px**（直径16 ＝ 7px 食い込む）
+       ・r4（e⁻ 6個）      … 隣の原子のかたまりと **2px**
+     ＝ **数え物なのに何個あるか読めない。**
+
+     ⚠ 見るのは **落ち着いた e⁻ だけ**（`state().poolPts` ＝ 席に着いたもの）。
+     飛んでいる最中のすれ違いまで禁じると、演出のほうを壊すことになる。
+     ⚠ 倍率は**模範と最大（9:9）の両方**で見る —— 重なりは数が増えたときに出る。 */
+  await t("REDOX: 席に着いた e⁻ が重ならない（全ステージ・模範倍率と最大倍率）", async () => {
+    const setMult = (idx, v) => {
+      const el = multIn(idx);
+      if (!el) return;
+      el.value = String(v);
+      el.dispatchEvent(new win.Event("input", { bubbles: true }));
+    };
+    const worstOf = (pts) => {
+      let min = Infinity, pair = null;
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) - (pts[i].r + pts[j].r);
+          if (d < min) { min = d; pair = [pts[i], pts[j]]; }
+        }
+      }
+      return { min, pair };
+    };
+    let maxSeen = 0, checked = 0;
+    for (const [ma, mb] of [[0, 0], [9, 9]]) {
+      for (let i = 0; i < REDOX_STAGES.length; i++) {
+        const st = REDOX_STAGES[i];
+        const a = ma || st.answer[0], b = mb || st.answer[1];
+        stageBtn(i).click();
+        setMult(0, a); setMult(1, b);
+        playBtn().click();
+        // e⁻ は出ては消えるので、いちばん多い瞬間を逃さないよう途中も見る
+        for (let k = 0; k < 10; k++) {
+          adv(1400);
+          const pts = state().poolPts;
+          maxSeen = Math.max(maxSeen, pts.length);
+          const tag = st.id + "（倍率 " + a + ":" + b + "・席の e⁻ " + pts.length + "個）";
+          if (pts.length > 1) {
+            checked++;
+            const w = worstOf(pts);
+            assert(w.min >= -0.01,
+              tag + ": e⁻ が重なっている（食い込み " + (-w.min).toFixed(1) + "px）" + JSON.stringify(w.pair));
+          }
+          // 席を増やしすぎてビーカーの外へ出ていないこと
+          for (const p of pts) {
+            assert(p.x - p.r >= 45 && p.x + p.r <= 435 && p.y - p.r >= 118 && p.y + p.r <= 400,
+              tag + ": e⁻ がビーカーの外に出ている " + JSON.stringify(p));
+          }
+        }
+      }
+    }
+    assert(checked >= 40, "e⁻ が2個以上そろった場面を十分に見ていない: " + checked);
+    assert(maxSeen >= 27, "e⁻ がいちばん多い場面（r4 の倍率9 ＝ 27個）に届いていない: " + maxSeen);
+  });
+
   /* 溶液モードの対向整列（v145）。漂わせていたころは、どの粒が e⁻ を出して
      どの粒が受け取ったのかが混雑にまぎれて追えなかった。
      「還元剤は左列にそろう・酸化剤は右列にそろう・e⁻ は右へしか動かない」を固定する。 */

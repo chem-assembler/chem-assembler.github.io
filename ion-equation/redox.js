@@ -404,13 +404,64 @@ function expandTerms(terms) {
   return out;
 }
 
+/* ---- e⁻ の置き場所 ----
+   ★ 2026-09-11・ユーザー指摘「Al板に展開される e⁻ の位置が重なる」。
+   r4（アルミニウム × 銅(Ⅱ)イオン・2:3）は Al が e⁻ を3個ずつ出すので、板の上に **6個**
+   たまる。旧実装は「原子の y のまわりに ±spread で置く」だけで、席を決めていなかった:
+     ・原子が1個のときの spread は 9px。e⁻ の半径は 8（直径16）なので **必ず重なる**
+       （r1・r2・r3・rn2 は e⁻ 2個でも中心間 9px ＝ 7px 食い込んでいた）
+     ・原子が2個以上だと**隣の原子のかたまりと端どうしがぶつかる**（r4 は実測 **2px**）
+   数え物なのに何個あるか読めない。そこで **先に全部ぶんの席を作ってから配る**形にした。
+
+   ★ 席は「縦に等間隔・入りきらなければ列を足す」。並びは原子の順どおり
+   （i 番目の原子の e⁻ は席 i×eN 〜 の連番）なので、**どの原子が何個置いたかは
+   今までどおり位置で読める**。列は左へ伸ばす —— 板の右は析出した金属（depositPos）の場所。 */
+const E_PITCH = 18;   // e⁻ の直径 16 ＋ すきま 2。これより詰めない（＝重ならない下限）
+
+/* 中心 (cx,cy)・上下 ±half の帯に、total 個の席を作って k 番目を返す。
+   1列に入らないぶんは colDir の向きへ列を足す。 */
+function stackSlot(k, total, cx, cy, half, colDir) {
+  const span = half * 2;
+  const maxPerCol = Math.max(1, Math.floor(span / E_PITCH) + 1);
+  const cols = Math.max(1, Math.ceil(Math.max(total, k + 1) / maxPerCol));
+  const perCol = Math.ceil(Math.max(total, k + 1) / cols);
+  const step = perCol > 1 ? Math.min(E_PITCH + 2, span / (perCol - 1)) : 0;
+  const col = Math.floor(k / perCol), row = k % perCol;
+  return {
+    x: cx + colDir * col * E_PITCH,
+    y: cy - step * (perCol - 1) / 2 + row * step,
+  };
+}
+
+/* この試行で板／通り道に置かれる e⁻ の総数。席の間隔を決めるのに、
+   1個目を置く前から総数が要る（layoutLab が数える） */
+let eSlotTotal = 0;
+
 function poolSlotPos(k) {
-  // 溶液モードは板が無い。左右のあいだの「通り道」に上から並べる
-  if (isSolution()) {
-    const per = 10, col = Math.floor(k / per), row = k % per;
-    return { x: SOL_LANE_X + col * 15, y: WATER.y + 26 + row * 18 };
-  }
-  return { x: PLATE.x + 13, y: PLATE.y + PLATE.h - 14 - k * 18 };
+  // 溶液モードは板が無い。還元剤の列と酸化剤の列のあいだ（通り道）に並べる
+  if (isSolution()) return stackSlot(k, eSlotTotal, SOL_LANE_X, WATER.y + WATER.h / 2 - 20, 100, -1);
+  /* 金属モードでここへ来るのは**還元単体**（板の上に酸化される原子が無く、
+     e⁻ が導線の向こうから来ている絵）だけ。寄り添う原子が無いので板の中央に集める。
+     ふつうの試行で置く e⁻ は、原子のそばに残す plateESlot のほう。 */
+  return stackSlot(k, eSlotTotal, PLATE.x + PLATE.w / 2, PLATE.y + PLATE.h / 2, 100, -1);
+}
+
+/* 板の上で、1個の原子が置いていった j 番目の e⁻ の席。
+   ★ 2つのことを同時に満たす:
+     ・**原子のいた高さに残す**（どの原子が何個置いたかを位置で読ませる。v145 からの決め）
+     ・**重ならない**（E_PITCH 未満に詰めない）
+   両立のしかたは「1つの原子の持ち分の高さ（＝原子どうしの間隔）に入るぶんだけ縦に積み、
+   あふれたぶんは**左へ列を足す**」。板の右は析出した金属の場所なので左へ伸ばす。
+   ⚠ 原子が1個のときは上下に隣が居ないので、板の高さいっぱいを持ち分にしてよい
+   （ここを 0 のまま使うと r1・r2・r3・rn2 の e⁻ 2個が 9px で重なっていた）。 */
+function plateESlot(atom, j, eN, nAtoms) {
+  const budget = nAtoms > 1 ? plateStep : PLATE.h - 52;
+  const rows = Math.max(1, Math.min(eN, Math.floor(budget / E_PITCH)));
+  const row = j % rows, col = Math.floor(j / rows);
+  return {
+    x: PLATE.x + PLATE.w / 2 - col * E_PITCH,
+    y: atom.y + (row - (rows - 1) / 2) * E_PITCH,
+  };
 }
 function depositPos(d) {
   return { x: PLATE.x + PLATE.w + 10, y: PLATE.y + PLATE.h - 16 - d * 26 };
@@ -457,6 +508,9 @@ function layoutLab() {
   }
   // 還元単体: e⁻ をあらかじめストック（電池なら導線の向こうから来るぶん）
   const need = electronsOf(redHR());
+  /* 席の間隔を決めるのに、**1個目を置く前に総数**が要る（poolSlotPos）。
+     還元単体はここで全部並べるぶん、それ以外は「酸化される原子の数 × 1個が出す e⁻」。 */
+  eSlotTotal = soloMode === "red" ? need * b : nOx * electronsOf(oxHR());
   if (soloMode === "red") {
     for (let k = 0; k < need * b; k++) {
       const pos = poolSlotPos(poolTotal++);
@@ -537,7 +591,6 @@ function oxidizeAtom(atom) {
   // 置いていかれた e⁻ は**原子が元いた場所にそのまま留まる**（共通プールへ飛ばさない）。
   // どの原子が何個置いていったかが位置で分かり、余った e⁻ もその場に残る。
   // 溶液モードは板が無いので、左右のあいだの通り道へ**右向きに**渡していく
-  const spread = Math.min(17, Math.max(9, plateStep / 2));
   for (let j = 0; j < eN; j++) {
     if (isSolution()) {
       // 同じ点から出すと重なって何個出たのか分からない。縦に少しずらして出す
@@ -545,7 +598,11 @@ function oxidizeAtom(atom) {
       const slot = poolSlotPos(poolTotal++);
       e.tx = slot.x; e.ty = slot.y;
     } else {
-      const e = spawnParticle("e-", PLATE.x + PLATE.w / 2, atom.y + (j - (eN - 1) / 2) * spread, "pool");
+      /* ⚠ 2026-09-11: ここで「原子の y ± spread」と自分で座標を作っていたのが
+         **重なりの原因**（原子1個なら 9px しか開かず・隣の原子とは 2px）。
+         原子のそばに残すことは変えず、席の作り方を plateESlot に預けた。 */
+      const slot = plateESlot(atom, j, eN, mult[0]);
+      const e = spawnParticle("e-", slot.x, slot.y, "pool");
       poolE.push(e);
       poolTotal++;
     }
@@ -3415,6 +3472,10 @@ window.RedoxEq = {
       molCoeffs: mplan ? [...mplan.coeffs] : [],
       mult: [...mult],
       poolE: poolE.length,
+      /* ★ 2026-09-11: 落ち着いた e⁻ の座標。ユーザー指摘「Al板に展開される e⁻ の位置が
+         重なる」を**距離で**見張るために開けた口（`poolE` は席に着いた e⁻ だけを持つ。
+         飛んでいる最中の粒は入らない ＝ 演出の一瞬のすれ違いを不合格にしない）。 */
+      poolPts: poolE.map((p) => ({ x: +p.x.toFixed(2), y: +p.y.toFixed(2), r: p.r })),
       waiting: units.filter((u) => u.waiting).length,
       deposited,
       escaped: Object.assign({}, escaped),
