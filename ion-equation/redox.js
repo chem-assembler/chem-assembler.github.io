@@ -1797,8 +1797,12 @@ function bottleRows() {
 }
 /* 正解かどうかは**鍵の一致**で見る（1つの物質も「両方から」も同じ形で扱える） */
 function bottleRowOk(r) { return bottlePick[r.ion] === r.answerKey; }
+/* ★ 2026-09-11・ユーザーの決定「B3 イオンでないものは聞かなくてよい」。
+   イオンでない柱（r3 の Zn・ro1 の CH₃CH₂OH・rn1 の Cu …）は**問いにしない**。
+   柱そのものは残す（式の項であり、⑤の係数の欄がその真下に来る）。 */
+function bottleAskRows(rows) { return (rows || []).filter((r) => r.ask); }
 function bottleAnsweredOk(rows) {
-  return (rows || []).filter(bottleRowOk).length;
+  return bottleAskRows(rows).filter(bottleRowOk).length;
 }
 
 /* 物質1つが水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
@@ -1877,9 +1881,10 @@ function redrawBottleWork() {
 /* 札をタップしたときの行き先。柱を選んでいなければ、**まだ当たっていない左の柱**へ入れる
    （1タップで置ける道を残す。狙って置きたい人は柱を先にタップする） */
 function bottleTargetIon(rows) {
-  if (bottleSlotActive && rows.some((r) => r.ion === bottleSlotActive)) return bottleSlotActive;
-  const yet = rows.find((r) => !bottleRowOk(r));
-  return yet ? yet.ion : rows[0].ion;
+  const asks = bottleAskRows(rows);
+  if (bottleSlotActive && asks.some((r) => r.ion === bottleSlotActive)) return bottleSlotActive;
+  const yet = asks.find((r) => !bottleRowOk(r));
+  return yet ? yet.ion : (asks[0] || rows[0]).ion;
 }
 
 function buildBottleCols(rows, force) {
@@ -1935,10 +1940,16 @@ function buildBottleCols(rows, force) {
     }
     const pill = document.createElement("button");
     pill.type = "button";
-    pill.className = "bpill" + (ok ? " done" : "") + (bottleSlotActive === r.ion ? " here" : "");
+    pill.className = "bpill" + (ok ? " done" : "") + (bottleSlotActive === r.ion ? " here" : "") +
+      (r.ask ? "" : " noask");
     pill.dataset.ion = r.ion;
     pill.textContent = (r.n > 1 ? r.n + " " : "") + SPECIES[r.ion].disp;
-    pill.setAttribute("aria-label", `${SPECIES[r.ion].disp} ${r.n}個 はもともと何だった？`);
+    pill.setAttribute("aria-label", r.ask
+      ? `${SPECIES[r.ion].disp} ${r.n}個 はもともと何だった？`
+      : `${SPECIES[r.ion].disp} ${r.n}個 — ${r.selfNote}`);
+    /* イオンでない柱は問いではないので、押しても何も起きない
+       （柱は式の項として残す。⑤の係数の欄はこの真下に来る） */
+    if (!r.ask) pill.disabled = true;
     /* 柱をタップ ＝ この柱に置く（自分の柱を選ぶ）。
        ⚠ **別の柱を選んでいるときは「◯◯ と組む」を置いたことになる** ——
        「左辺のイオンどうしを組んで HI を作る」つまずきは、選択肢の言葉ではなく
@@ -1950,6 +1961,18 @@ function buildBottleCols(rows, force) {
     head.appendChild(pill);
     // --- ↓
     cell(col, "bcolArrow", BROW.arrow, i + 1).textContent = "↓";
+    /* --- イオンでない柱は、置く場所を作らない（＝ 聞かない）。
+       代わりに「そのまま」と1語だけ置いて、列が下（⑤の係数）まで続いていることを見せる。
+       ⚠ 文は model.js が持つ（selfNote）。画面は置くだけ。 */
+    if (!r.ask) {
+      const self = cell(col, "bcolSlot", BROW.slot, i + 1);
+      const s = document.createElement("span");
+      s.className = "bself";
+      s.textContent = "そのまま";
+      s.title = r.selfNote;
+      self.appendChild(s);
+      return;
+    }
     // --- 札を置くところ
     const slotCell = cell(col, "bcolSlot", BROW.slot, i + 1);
     const slot = document.createElement("div");
@@ -2056,6 +2079,22 @@ function renderBottleNotes(rows) {
   bottleQuizEl.innerHTML = "";
   bottleQuizEl.style.gridRow = String(BROW.note);
   for (const r of rows) {
+    /* イオンでない柱は聞いていないので、判定ではなく**なぜ聞かないか**を1行だけ置く
+       （文は model.js の selfNote。同じことを2か所に書かない） */
+    if (!r.ask) {
+      const line = document.createElement("div");
+      line.className = "bwNote pickNote bottleNote bwSelfNote";
+      line.id = "bqn_" + bottleIdOf(r.ion);
+      const who = document.createElement("span");
+      who.className = "bwNoteIon";
+      who.textContent = SPECIES[r.ion].disp;
+      const txt = document.createElement("span");
+      txt.className = "bwNoteText";
+      txt.textContent = r.selfNote;
+      line.append(who, txt);
+      bottleQuizEl.appendChild(line);
+      continue;
+    }
     const c = bottleChoiceOf(bottlePick[r.ion] || "");
     const ex = c && explainBottleOwner(stage(), mult[0], mult[1], r.ion, c);
     if (!ex) continue;
@@ -2212,14 +2251,16 @@ function refreshBottleTail() {
   /* --- ④の前半「もともと何だった？」---
      ★ 2026-09-07 にふたたび門にした（ユーザー「どこから来たの が先」）。
      選択肢は有限で必ず正解が選べるので、行き止まりにはならない。 */
+  /* ⚠ 数えるのは**問いになっている柱だけ**（イオンでない柱は聞いていない・2026-09-11） */
+  const asks = bottleAskRows(rows);
   const okN = bottleAnsweredOk(rows);
-  const quizDone = okN === rows.length;
-  const yet = rows.find((r) => !bottleRowOk(r));
+  const quizDone = okN === asks.length;
+  const yet = asks.find((r) => !bottleRowOk(r));
   renderBottleNotes(rows);
   bottleMsgEl.style.gridRow = String(BROW.msg);
   bottleMsgEl.textContent = quizDone
     ? "どのイオンにも、もとの物質がある。左辺に書くのはイオンではなく、そのもとの物質そのもの。"
-    : `あと ${rows.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
+    : `あと ${asks.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
   bottleMsgEl.className = quizDone ? "okcell" : "";
   if (addIonWrapEl) addIonWrapEl.hidden = !quizDone;
   if (!quizDone) {
