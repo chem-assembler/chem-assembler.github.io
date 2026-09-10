@@ -99,9 +99,40 @@
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
         dehydrationTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
-        example: { order: ['stageId', 'lead', 'note'], req: ['stageId', 'lead', 'note'], list: [], prose: ['lead', 'note'] }
+        example: { order: ['stageId', 'lead', 'note'], req: ['stageId', 'lead', 'note'], list: [], prose: ['lead', 'note'] },
+
+        /* ★★ 例題 —— **読者が自分で解く**もの（2026-09-10・設計書 §22）。発端はユーザーの申し立て
+           「例題も用意する必要があります／qa とは別に例題を用意したい／スライドの練習問題などが使えます」。
+
+           ⚠⚠ **`:::example` と役が違う。** あちらは「▶ 組んでみる」＝ **既存のパズルのお題を開く器**で、
+              採点も正誤もクリアの記録も `stages.json` の `target` 照合が受け持つ（learn.js の `renderExample`）。
+              ★ こちらは **紙に書いて、あとから解答を開いて見比べる** ＝ 判定を1つも持たない。
+           ★ **綴りを `exercise` にした理由**（設計書 §22-2）:
+             ① `example` とキーが1つも重ならない（あちら stageId / lead / note）＝
+                取り違えたら「知らないキー」でその場で赤くなり、下の CONFUSABLE が相手の名前まで言う。
+             ② `practice` は §19-11 が「**有料の練習問題の層**」に予約している名前なので使わない
+                （こちらは参考書の中＝無料の層）。
+
+           ⚠⚠ **`source` は必須。** `:::table` に穴を開けたときと同じ理由 ——
+              `REF5` の守りの本体は「行を手で書くな」ではなく「**出どころの言えない行を書くな**」（§19-10）。
+           ⚠ **`source` は画面に出さない**（`:::table` の `source` と同じ。画面に出典を書かない・
+              REFBOOK_STYLE §2-6）。★ 原稿の中の欄。
+
+           ★ 図は問い側（`promptSrc`）と解答側（`answerSrc`）の両方に置ける ——
+             「構造式を書け」は解答が図、「命名せよ」は問いが図で、**素材に両方がある**。 */
+        exercise: {
+            order: ['source', 'prompt', 'promptSrc', 'promptAlt', 'answer', 'answerSrc', 'answerAlt'],
+            req: ['source', 'prompt', 'answer'], list: [], prose: ['prompt', 'answer']
+        }
     };
     var KINDS = Object.keys(BLOCK_SPECS);
+
+    /* ★ 取り違えやすい組。⚠ **綴りが似ている**（`:::example` ／ `:::exercise`）ので、
+       **相手のキーを書いたら、その場で相手の名前と役を言う** —— 黙って片方に寄せない。 */
+    var CONFUSABLE = {
+        example: { pair: 'exercise', role: '読者が自分で解く例題（解答は開いて見る）' },
+        exercise: { pair: 'example', role: 'パズルのお題を開いて「▶ 組んでみる」例題' }
+    };
 
     /* 図のファイル名。⚠ **名前だけ**（`/` も `..` も許さない）。置き場所を .md 側から動かせない形にする */
     var FIGURE_SRC_RE = /^[a-z0-9][a-z0-9-]*\.png$/;
@@ -467,7 +498,14 @@
             }
         });
         Object.keys(kv).forEach(function (k) {
-            if (spec.order.indexOf(k) < 0) fail(where, ':::' + kind + ' に知らないキー「' + k + '」があります（書けるのは ' + spec.order.join(' / ') + '）');
+            if (spec.order.indexOf(k) >= 0) return;
+            /* ★ `:::example` ↔ `:::exercise` の取り違えは、**相手の名前と役まで言う**（§22-2） */
+            var c = CONFUSABLE[kind];
+            var hint = (c && BLOCK_SPECS[c.pair].order.indexOf(k) >= 0)
+                ? '\n    ★ 「' + k + '」は :::' + c.pair + ' のキーです（' + CONFUSABLE[c.pair].role + '）。'
+                + 'この囲みを :::' + c.pair + ' に書き替えるか、キーを ' + spec.order.join(' / ') + ' から選んでください'
+                : '';
+            fail(where, ':::' + kind + ' に知らないキー「' + k + '」があります（書けるのは ' + spec.order.join(' / ') + '）' + hint);
         });
         checkBlock(block, where);
         return block;
@@ -528,6 +566,46 @@
             });
         }
         if (b.kind === 'list' && !b.items.length) fail(where, ':::list の items が空です');
+        if (b.kind === 'exercise') {
+            /* ⚠⚠ **出どころ。**`:::table` の `source` と同じ扱い（§19-10 の「出どころの言えない行を書くな」）。
+               ★ 短い語（「スライド」）で済ませられないよう長さを見る。⚠ 画面には出さない欄。 */
+            if (b.source.length < 8) {
+                fail(where, ':::exercise の source（この問いがどこから来たか）が短すぎます: 「' + b.source + '」'
+                    + '\n    ★ どのスライドの何番の練習かまで書きます'
+                    + '（例: slides:有機の基本2-3「アルカンの命名法」練習1(1)）'
+                    + '\n    ⚠ この欄は画面には出しません（画面に出典は書かない）');
+            }
+            var bare = function (s) { return String(s).replace(/<\/?(b|sub)>/g, ''); };
+            if (bare(b.prompt).length < 6) fail(where, ':::exercise の prompt（問題文）が短すぎます: 「' + b.prompt + '」');
+            if (bare(b.answer).length < 4) fail(where, ':::exercise の answer（解答）が短すぎます: 「' + b.answer + '」');
+            /* ★ 図は問い側と解答側の2つ。⚠ **`…Src` と `…Alt` は必ず対で書く** ——
+               片方だけだと「画像が出ないと何も読めない図」か「使われない alt」になる。 */
+            [['promptSrc', 'promptAlt', '問い'], ['answerSrc', 'answerAlt', '解答']].forEach(function (p) {
+                var hasSrc = Object.prototype.hasOwnProperty.call(b, p[0]);
+                var hasAlt = Object.prototype.hasOwnProperty.call(b, p[1]);
+                if (hasSrc !== hasAlt) {
+                    fail(where, ':::exercise の ' + p[2] + 'の図は「' + p[0] + '」と「' + p[1] + '」を対で書きます'
+                        + '（いまは ' + (hasSrc ? p[0] : p[1]) + ' だけ）'
+                        + '\n    ★ ' + p[1] + ' は画像が出ない人が読む文です');
+                }
+                if (!hasSrc) return;
+                if (!FIGURE_SRC_RE.test(b[p[0]])) {
+                    fail(where, ':::exercise の ' + p[0] + ' は reference-img/ の中のファイル名だけを書きます'
+                        + '（英小文字・数字・ハイフン ＋ .png。パスや .. は書けません。いまは「' + b[p[0]] + '」）');
+                }
+                if (b[p[1]].length < 6) {
+                    fail(where, ':::exercise の ' + p[1] + '（画像が出ないときに読まれる文）が短すぎます: 「' + b[p[1]] + '」'
+                        + '\n    ★ 直し方: 「図」ではなく、何が描いてあるかを1文で書きます'
+                        + '（例: 2,3-ジメチルブタンの構造式。主鎖の炭素に1から4の番号を振った図）');
+                }
+            });
+            /* ⚠⚠ **解答が問いの中に混ざっていないこと。** 解答は開いて見るものなので、
+               問題文に答えを書いてしまうと、器の意味が無くなる（ページを開いた瞬間に見える）。 */
+            if (bare(b.answer).length >= 4 && bare(b.prompt).indexOf(bare(b.answer)) >= 0) {
+                fail(where, ':::exercise の prompt（問題文）の中に answer（解答）がそのまま入っています'
+                    + '\n    ★ 解答は「解答を見る」を押して初めて出るものなので、問題文には書きません');
+            }
+        }
         if (b.kind === 'link') {
             /* ⚠ **どちらか片方だけ。** 両方書くと「ページへ飛ぶのかアプリへ飛ぶのか」が
                リンク1本で2通りになり、画面では**片方が黙って無視される**形で出る */
