@@ -1698,6 +1698,10 @@ main.timelineMain {
     background: #fff; border: 1px solid #e2e9f0; border-radius: 8px;
   }
   .bcolArrow { transform: rotate(-90deg); }
+  /* 柱をもう一度出す行は、狭い面では**1行に横並び**（縦に3段積むと段が離れる） */
+  .bwEchoWrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 2px; }
+  .bwEchoCell { padding-top: 0; }
+  .bwEchoTag { flex-basis: 100%; padding-left: 0; }
   .bcolRest { display: none; }   /* 右辺は上の1行版が持っている */
   .bcolTag { display: none; }
   .bwCoef { margin: 0 0 6px; }
