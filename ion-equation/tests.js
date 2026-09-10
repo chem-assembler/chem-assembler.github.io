@@ -3326,6 +3326,41 @@ async function openProbeFrame(src, ready, style) {
     return { f: null, win: null };
 }
 
+/* ★ 2026-09-10・④⑤を1枚の筆算にまとめた（DESIGN_redox.md「筆算1枚にまとめる」）。
+   ④前半の答えは `<select>` ではなく **柱の下に置く札**になったので、駆動もその道を通す。
+
+   ⚠ **人と同じ道でしか置かない。** 柱（.bpill）をタップ → 札（#bottleRack の .bottleCard）を
+   タップ。「両方から」（rs3 の H⁺）は札を2枚。罠（「◯◯ と組む」）は**別の柱をタップ**する
+   ＝ 選択肢の言葉ではなく置き方で表す形になったので、テストも柱を叩く。
+   ⚠ 置くたびに柱と棚は作り直されるので、**節点は毎回引き直す**。
+   redox.html を駆動する検査が2つの関数（runUITests / runRedoxUITests）に分かれているので、
+   ここ（どちらからも見えるところ）に1つだけ置く。 */
+function bqSlotIdOf(sp) { return "bq_" + String(sp).replace(/[^A-Za-z0-9]/g, "_"); }
+function placeOwnerIn(doc, ion, key) {
+    const id = bqSlotIdOf(ion);
+    const slot = () => doc.getElementById(id);
+    if (!slot()) throw new Error("その柱が出ていない: " + ion);
+    // 置いてある札はいったん戻す（選び直しの道そのもの）
+    for (let g = 0; g < 8; g++) {
+        const x = slot().querySelector(".bchipX");
+        if (!x) break;
+        x.click();
+    }
+    if (!key) return;
+    slot().click();
+    const i = key.indexOf(":");
+    const kind = key.slice(0, i), rest = key.slice(i + 1);
+    const sps = kind === "bottles" ? rest.split("+") : [rest];
+    for (const sp of sps) {
+        const sel = kind === "ion"
+            ? '#bottleCols .bpill[data-ion="' + sp + '"]'
+            : '#bottleRack .bottleCard[data-key="bottle:' + sp + '"]';
+        const card = doc.querySelector(sel);
+        if (!card) throw new Error("その札が出ていない: " + sp + "（" + kind + "）");
+        card.click();
+    }
+}
+
 /* ---- UI テスト（iframe 内の実アプリを駆動） ---- */
 
 async function runUITests(iframe) {
@@ -5424,22 +5459,30 @@ async function runUITests(iframe) {
     const d = p.doc, w = p.win;
     d.getElementById("calcSkip").click();
     assert(!d.getElementById("stepBottles").hidden, "狭い画面で rn1 の④の段が出ない");
-    const sels = [...d.querySelectorAll("#bottleQuiz select")];
-    assert(sels.length === 3, "rn1 の④の選択欄が3つでない: " + sels.length);
+    const sels = [...d.querySelectorAll("#bottleCols .bslot")];
+    assert(sels.length === 3, "rn1 の④の柱が3本でない: " + sels.length);
     const wrap = d.getElementById("calcSheetWrap");
     assert(wrap.scrollWidth - wrap.clientWidth === 0,
       `③の筆算がはみ出す（実幅 ${wrap.scrollWidth} / 見える幅 ${wrap.clientWidth}）`);
+    /* ★ 筆算は横に広がる。**狭い画面では柱を縦に積む**（style.css の @media 560px）ので、
+       ここが「横送りに落ちていないこと」の見張りになる */
+    const bw = d.querySelector(".bworkScroll");
+    assert(bw.scrollWidth - bw.clientWidth === 0,
+      `④⑤の筆算がはみ出す（実幅 ${bw.scrollWidth} / 見える幅 ${bw.clientWidth}）`);
     for (const sel of sels) {
       const rs = sel.getBoundingClientRect();
       // 指で押せる大きさ（tools/check-mobile.mjs の検査4は 32px 未満を警告）
-      assert(rs.height >= 32, "④の選択欄が小さすぎる: " + Math.round(rs.height) + "px");
-      assert(rs.right <= p.w + 1, "④の選択欄が画面の外に出ている: " + Math.round(rs.right));
+      assert(rs.height >= 32, "④の受け皿が小さすぎる: " + Math.round(rs.height) + "px");
+      assert(rs.right <= p.w + 1, "④の受け皿が画面の外に出ている: " + Math.round(rs.right));
+    }
+    for (const card of d.querySelectorAll("#bottleRack .bottleCard")) {
+      const rc = card.getBoundingClientRect();
+      assert(rc.height >= 32, "札が小さすぎる: " + Math.round(rc.height) + "px");
+      assert(rc.right <= p.w + 1, "札が画面の外に出ている: " + Math.round(rc.right));
     }
     // 出どころを当てると④後半（両辺に足す個数）が現れる。そこも画面に収まる
-    const setSel = (el, v) => { el.value = v; el.dispatchEvent(new w.Event("change", { bubbles: true })); };
     for (const r of bottleOwnerChoices(REDOX_STAGES.find((s) => s.id === "rn1"), 3, 2)) {
-      const el = d.getElementById("bq_" + r.ion.replace(/[^A-Za-z0-9]/g, "_"));
-      if (el) setSel(el, r.answerKey);
+      placeOwnerIn(d, r.ion, r.answerKey);
     }
     assert(!d.getElementById("addIonWrap").hidden, "狭い画面で④の後半が出ない");
     for (const inp of d.querySelectorAll("#addIonRows input")) {
@@ -5453,9 +5496,9 @@ async function runUITests(iframe) {
     const q = await openRedoxCalc(320, 568, "rs1", 5, 1);
     const qd = q.doc, qw = q.win;
     qd.getElementById("calcSkip").click();
-    const set = (el, v) => { el.value = v; el.dispatchEvent(new qw.Event("change", { bubbles: true })); };
-    const qsels = [...qd.querySelectorAll("#bottleQuiz select")];
-    set(qsels[0], "bottle:FeSO4"); set(qsels[1], "bottle:KMnO4"); set(qsels[2], "bottle:H2SO4");
+    for (const r of bottleOwnerChoices(REDOX_STAGES.find((s2) => s2.id === "rs1"), 5, 1)) {
+      placeOwnerIn(qd, r.ion, r.answerKey);
+    }
     const put = (sp, n) => {
       const e = qd.getElementById("bc_" + sp);
       e.value = String(n);
@@ -7005,10 +7048,20 @@ async function runRedoxUITests(iframe) {
   /* ---- はじめに入れたものから化学反応式を組み立てる段（v180）---- */
   const openB = (id) => stageBtn(REDOX_STAGES.findIndex((s) => s.id === id)).click();
   const bumpB = (i) => doc.querySelectorAll("#schematicAdd button")[i].click();
-  const selsB = () => $$("#bottleQuiz select");
-  const pickB = (sel, v) => { sel.value = v; sel.dispatchEvent(new win.Event("change", { bubbles: true })); };
-  const noteB = (sel) => sel.parentElement.querySelector(".bottleNote").textContent;
+  const selsB = () => $$("#bottleCols .bslot");
+  /* ★ 2026-09-10・筆算1枚化。④前半は `<select>` ではなく**札を置く**形になった。
+     ⚠ **人と同じ道でしか置かない**（柱をタップ → 札をタップ。「両方から」は札を2枚）。
+     置き直しは、置いてある札の ✕ で戻してから置く ＝ 画面に出ている道そのもの。 */
+  const pickB = (ion, key) => placeOwnerIn(doc, ion, key);
+  const noteB = (ion) => {
+    const n = doc.getElementById("bqn_" + ion.replace(/[^A-Za-z0-9]/g, "_"));
+    return n ? n.textContent : "";
+  };
   const txtB = (id) => (doc.getElementById(id).textContent || "").replace(/\s+/g, " ").trim();
+  const noteTextOf = (id) => {
+    const n = doc.getElementById(id);
+    return n ? n.textContent : "";
+  };
   /* ⑤の数入力（v182）。物質 → 入力欄。値を入れて input を撃つ（実際の打鍵と同じ道） */
   const cinB = (sp) => doc.getElementById("bc_" + sp.replace(/[^A-Za-z0-9]/g, "_"));
   const putB = (sp, n) => {
@@ -7017,7 +7070,9 @@ async function runRedoxUITests(iframe) {
     i.value = String(n);
     i.dispatchEvent(new win.Event("input", { bubbles: true }));
   };
-  const cnoteB = (sp) => cinB(sp).parentElement.parentElement.querySelector(".bcNote").textContent;
+  /* ⚠ 2026-09-10: 判定文と手がかりは**筆算の全幅の行**（#bottleCountNotes / .bwAddNotes）へ
+     移った —— 列は狭く、長い文が1文字ずつ縦に折れるため。id で引く */
+  const cnoteB = (sp) => noteTextOf("bcn_" + sp.replace(/[^A-Za-z0-9]/g, "_"));
   /* 【②】④の本体（両辺に足す個数）。⚠ **模範の数は手で書かず spectatorAddRows から取る**。
      ここを通らないと⑤は出ない（出どころ当てはヘルプへ移った） */
   const ainB = (sp) => doc.getElementById("ai_" + sp.replace(/[^A-Za-z0-9]/g, "_"));
@@ -7027,7 +7082,7 @@ async function runRedoxUITests(iframe) {
     i.value = String(n);
     i.dispatchEvent(new win.Event("input", { bubbles: true }));
   };
-  const anoteB = (sp) => ainB(sp).parentElement.parentElement.querySelector(".bcNote").textContent;
+  const anoteB = (sp) => noteTextOf("ain_" + sp.replace(/[^A-Za-z0-9]/g, "_"));
   const passAddB = (id, a, b, scale) => {
     const st = REDOX_STAGES.find((s) => s.id === id);
     const rows = spectatorAddRows(st, a, b, scale || 1) || [];
@@ -7042,12 +7097,11 @@ async function runRedoxUITests(iframe) {
     let g = 0;
     while (state().mult[0] < 5 && g++ < 10) bumpB(0);
     passCalc();   // ③の係数を自分で書く段を降りる（④⑤は書き終わるまで出ない・v193）
-    const s = selsB();
-    pickB(s[0], "bottle:FeSO4");
-    pickB(s[1], "bottle:KMnO4");
-    pickB(s[2], "bottle:H2SO4");
+    pickB("Fe^2+", "bottle:FeSO4");
+    pickB("MnO4-", "bottle:KMnO4");
+    pickB("H+", "bottle:H2SO4");
     passAddB("rs1", 5, 1, 1);   // 【②】④の本体を通す（ここを通らないと⑤が出ない）
-    return s;
+    return selsB();
   };
   /* ⑥ 右辺のイオンをブロックで組み切る（2026-09-07）。
      ⚠ 模範の組は手で書かない —— bottlePlan の salts をそのまま積む。
@@ -7074,10 +7128,7 @@ async function runRedoxUITests(iframe) {
      ⚠ **模範は手で書かない** —— bottleOwnerChoices の answerKey をそのまま使う */
   const passOwnerB = (id, a, b) => {
     const rows = bottleOwnerChoices(REDOX_STAGES.find((s) => s.id === id), a, b) || [];
-    for (const r of rows) {
-      const sel = doc.getElementById("bq_" + r.ion.replace(/[^A-Za-z0-9]/g, "_"));
-      if (sel) pickB(sel, r.answerKey);
-    }
+    for (const r of rows) pickB(r.ion, r.answerKey);
     return rows;
   };
 
@@ -7108,7 +7159,7 @@ async function runRedoxUITests(iframe) {
       // ① ④前半 —— 左辺のイオンぜんぶに「もともと何だった？」がある
       const owners = passOwnerB(id, a, b);
       assert(selsB().length === owners.length && owners.length >= 2,
-        `${id}: ④前半の行が左辺のイオンぶん出ない（${selsB().length} / ${owners.length}）`);
+        `${id}: ④前半の柱が左辺のイオンぶん出ない（${selsB().length} / ${owners.length}）`);
       assert(!doc.getElementById("addIonWrap").hidden, id + ": ④前半を当てても後半が出ない");
 
       // ② ④後半 —— 足すイオンが**全種類**。ro 系は K⁺ と SO₄²⁻ の両方が並ぶ
@@ -7162,6 +7213,108 @@ async function runRedoxUITests(iframe) {
       checked++;
     }
     assert(checked === 5, "通したステージが5本でない: " + checked);
+    openB("r1");
+  });
+
+  /* ★★ この改修の合否そのもの（2026-09-10・レーン rx-hissan2）。
+     ユーザーの申し立ては3通あるが、集約すると1つ ——
+     **答えるとき、根拠のイオン反応式が目に入っていない**。
+       ・「イオン反応式の下に筆算形式で…最後の係数も筆算の中に入れる」
+       ・「直前のイオン反応式との対応がわかりづらい」
+       ・「正解した後に、改めてイオン反応式を出すように／上下が離れるとわかりづらい」
+     そこで見張るのは3つ:
+       ① 柱が**イオン反応式の左辺の項そのもの**（数も文字も combineHalves から取る）
+       ② ④前半・④後半・⑤が**1枚の筆算（#bottleWork）の中**にある ＝ 3つに割れていない
+       ③ ★ 位置 —— 係数の欄が担当した柱と**同じ列**にあり、
+          どの段の欄も**すぐ上の柱から 200px 以内**（柱をもう一度出す行が効いている）
+     ⚠ 模範の数は1つも手で書かない。③の px は見た目の検査なので、
+       iframe の幅（960px）が変わると動く ＝ しきい値はゆるく取る。 */
+  await t("BOTTLE 筆算: ④⑤が1枚になり、答えの欄が柱（イオン反応式の左辺）の真下に来る（9ステージ悉皆）", async () => {
+    /* ⚠ **ro1 だけでは足りない**。列を決めるところ（bottleColOf）は
+       「1つの物質が2つの柱を担当する」（rn1・rn2 の HNO₃）と
+       「1つの柱を2つの物質が担当する」（rs3 の H⁺）で形が変わるので、
+       ④⑤⑥を持つ9ステージ全部を通す。 */
+    const ids = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id);
+    assert(ids.length === 9, "④⑤の段を持つステージが9本でない: " + ids.join());
+    const holds = (key, sp) =>
+      key === "bottle:" + sp || (key.startsWith("bottles:") && key.slice(8).split("+").includes(sp));
+    const nearestPillar = (el) => {
+      const y = el.getBoundingClientRect().top;
+      let best = null;
+      for (const h of $$("#bottleWork .bcolHead")) {
+        const bt = h.getBoundingClientRect().bottom;
+        if (bt <= y + 1 && (best === null || bt > best)) best = bt;
+      }
+      return best === null ? Infinity : y - best;
+    };
+    let checkedStages = 0, checkedCols = 0, worst = 0;
+    for (const id of ids) {
+      const st = REDOX_STAGES.find((x) => x.id === id);
+      const [a, b] = st.answer;
+      /* ⚠ ここは**倍率1のまま**で通す。全体の倍率（bottleScale）は⑥で組めなくなったときに
+         だけ案内から上がる例外（v182・【D】）で、④⑤の入力欄はいつも倍率1の数を待っている。
+         minBottleScale を使うと rs1（最小2）で④後半が埋まらず⑤が出ない。 */
+      const scale = 1;
+      openB(id);
+      let g = 0;
+      while (state().mult[0] < a && g++ < 12) bumpB(0);
+      while (state().mult[1] < b && g++ < 12) bumpB(1);
+      passCalc();
+      assert(!doc.getElementById("stepBottles").hidden, id + ": ④の段が出ない");
+      // ① 柱 ＝ イオン反応式の左辺の項（e⁻ を除く）。並びも表記も式のまま
+      const left = combineHalves(st, a, b).left.filter((x) => x.sp !== "e-");
+      const pills = $$("#bottleCols .bpill");
+      assert(pills.length === left.length,
+        `${id}: 柱の数が左辺の項の数と違う: ${pills.length} / ${left.length}`);
+      left.forEach((x, i) => {
+        const want = (x.n > 1 ? x.n + " " : "") + SPECIES[x.sp].disp;
+        assert(pills[i].textContent === want,
+          `${id}: 柱 ${i} が式の項と違う: ${pills[i].textContent} / ${want}`);
+      });
+      // ② 3つの入力が同じ1枚の中にある
+      passOwnerB(id, a, b);
+      passAddB(id, a, b, scale);
+      const counts = bottleCountRows(st, a, b, scale);
+      for (const c of counts) putB(c.sp, c.answer);
+      const work = doc.getElementById("bottleWork");
+      for (const sel of ["#bottleCols .bslot", "#addIonRows input", "#bottleCounts input"]) {
+        assert(work.querySelector(sel), `${id}: ${sel} が1枚の筆算の中に無い（段が割れている）`);
+      }
+      // ③-a 係数の欄は、その物質が担当した柱と**同じ列**（横に重なっている）
+      const owners = bottleOwnerChoices(st, a, b);
+      for (const c of counts) {
+        const owner = owners.find((r) => holds(r.answerKey, c.sp));
+        assert(owner, `${id}: ${c.sp} が担当する柱を見つけられない`);
+        const inp = cinB(c.sp).getBoundingClientRect();
+        const pil = doc.getElementById(bqSlotIdOf(owner.ion)).getBoundingClientRect();
+        assert(inp.right > pil.left && inp.left < pil.right,
+          `${id}: ${c.sp} の係数の欄が ${owner.ion} の列からずれている ` +
+          `(欄 ${Math.round(inp.left)}〜${Math.round(inp.right)} / 柱 ${Math.round(pil.left)}〜${Math.round(pil.right)})`);
+        checkedCols++;
+      }
+      assert(counts.length === st.bottles.length,
+        `${id}: 列を見た物質が入れた数と合わない: ${counts.length} / ${st.bottles.length}`);
+      // ③-b どの段の欄も、すぐ上の柱から離れていない（★ 申し立ての本体）
+      const spots = [
+        ["④前半（札を置く）", doc.querySelector("#bottleCols .bslot")],
+        ["④後半（両辺に加える）", doc.querySelector("#addIonRows input")],
+        ["⑤（左辺の係数）", doc.querySelector("#bottleCounts input")],
+      ];
+      for (const [what, el] of spots) {
+        const d = nearestPillar(el);
+        assert(d >= 0 && d < 200, `${id}: ${what}の欄が柱から離れている: ${Math.round(d)}px`);
+        if (d > worst) worst = d;
+      }
+      checkedStages++;
+    }
+    /* ⚠ 悉皆の検査は「対象を絞って全部通った」がいちばん悪い形なので、
+       見た係数の欄の本数まで、入れた物質の合計と突き合わせる */
+    assert(checkedStages === 9, "通したステージが9本でない: " + checkedStages);
+    const want = REDOX_STAGES.filter((s) => bottleStepOf(s))
+      .reduce((n, s) => n + s.bottles.length, 0);
+    assert(checkedCols === want,
+      `列を見た係数の欄が入れた物質の合計と合わない: ${checkedCols} / ${want}`);
+    assert(worst < 200, "柱からいちばん離れた欄が 200px を超えた: " + Math.round(worst));
     openB("r1");
   });
 
@@ -7389,33 +7542,36 @@ async function runRedoxUITests(iframe) {
       assert(rack.includes(s), "入れたものの棚に " + s + " が出ない: " + rack);
     }
     const s = selsB();
-    assert(s.length === 3, "左辺のイオンぶんの欄が出ない: " + s.length);
-    const hSel = s[2];
-    // **罠が選択肢にある**（黙って隠さない）
-    assert([...hSel.options].some((o) => o.value === "ion:MnO4-"), "左辺のイオンと組む選択肢が無い");
+    assert(s.length === 3, "左辺のイオンぶんの受け皿が出ない: " + s.length);
+    /* ★ 2026-09-10・筆算1枚化。罠（「◯◯ と組む」）は**選択肢の言葉ではなく置き方**になった
+       —— 別の柱をタップして、その柱の下へ置く。ユーザーの指摘
+       「もともと何だった？に対してイオンと組み合わせる、は違和感」に合わせ、
+       選択肢の一覧から「◯◯ と組む」という言い回しごと消したうえで、**やれること自体は残す**。 */
+    assert(doc.querySelector('#bottleCols .bpill[data-ion="MnO4-"]'),
+      "左辺のイオンの札（柱）が押せる形で出ていない ＝ 罠に一度も入れない");
     // ① 左辺のイオンどうしを組む → 出自が別だと言う
-    pickB(hSel, "ion:MnO4-");
-    const n1 = noteB(hSel);
+    pickB("H+", "ion:MnO4-");
+    const n1 = noteB("H+");
     assert(n1.includes("互いを連れてきていません"), "出自の説明が出ない: " + n1);
     assert(n1.includes("H₂SO₄") && n1.includes("KMnO₄"), "どちらが連れてきたかを言わない: " + n1);
-    assert(hSel.parentElement.querySelector(".bottleNote").classList.contains("ngcell"), "誤りの色にならない");
+    assert(doc.getElementById("bqn_H_").classList.contains("ngcell"), "誤りの色にならない");
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ② そのイオンをそのイオンを出さない物質
-    pickB(hSel, "bottle:FeSO4");
-    assert(noteB(hSel).includes("H⁺ は出しません"), "そのイオンを出さない物質の説明が出ない: " + noteB(hSel));
+    pickB("H+", "bottle:FeSO4");
+    assert(noteB("H+").includes("H⁺ は出しません"), "そのイオンを出さない物質の説明が出ない: " + noteB("H+"));
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ③ 正解 → 一緒に来る傍観イオンまで言う（「なぜ SO₄²⁻ が居るのか」の答え）
-    pickB(hSel, "bottle:H2SO4");
-    const n3 = noteB(hSel);
+    pickB("H+", "bottle:H2SO4");
+    const n3 = noteB("H+");
     assert(n3.includes("SO₄²⁻") && n3.includes("反応しない"), "ついて来る傍観イオンを言わない: " + n3);
-    assert(hSel.parentElement.querySelector(".bottleNote").classList.contains("okcell"), "正解の色にならない");
+    assert(doc.getElementById("bqn_H_").classList.contains("okcell"), "正解の色にならない");
     /* ★ 2026-09-07 —— 出どころ当てはふたたび④の**前半**（門）になった。
        ユーザー「どこから来たの が先／両辺に加えるイオンの数を考える が後」。 */
     assert(doc.getElementById("bottleTail").hidden, "1つ答えただけで⑤が出る");
     assert(doc.getElementById("addIonWrap").hidden, "1つ答えただけで後半（個数）が出ている");
     assert(txtB("bottleMsg").includes("あと 2 個"), "残りの数を言わない: " + txtB("bottleMsg"));
-    pickB(s[0], "bottle:FeSO4");
-    pickB(s[1], "bottle:KMnO4");
+    pickB("Fe^2+", "bottle:FeSO4");
+    pickB("MnO4-", "bottle:KMnO4");
     // 3つそろうと**後半**が現れる。⑤はまだ出ない（個数を通していない）
     assert(!doc.getElementById("addIonWrap").hidden, "出どころがそろっても後半が出ない");
     assert(doc.getElementById("bottleTail").hidden,
@@ -7424,7 +7580,7 @@ async function runRedoxUITests(iframe) {
     passAddB("rs1", 5, 1, 1);
     assert(!doc.getElementById("bottleTail").hidden, "④を通しても⑤が出ない");
     // ★ 否定対照: 前半を白紙に戻すと後半も⑤も引っ込む（＝「先」が門になっている）
-    pickB(s[0], "");
+    pickB("Fe^2+", "");
     assert(doc.getElementById("addIonWrap").hidden, "前半を崩しても後半が出たまま");
     assert(doc.getElementById("bottleTail").hidden, "前半を崩しても⑤が出たまま（順序が効いていない）");
   });
@@ -7442,14 +7598,15 @@ async function runRedoxUITests(iframe) {
     assert(head.includes("もともと何だった"), "④の見出しが「もともと何だった？」でない: " + head);
     // ⚠ 容器を指す語は文字コードで書く（この字を ion-equation/ の中に1つも残さないため）
     assert(!/\u74f6|\u8a66\u85ac/.test(head), "容器を指す語が見出しに残っている: " + head);
-    // ② 前半（出どころ）は畳まれていない ＝ ④の本体の先頭に出ている
-    const why = doc.getElementById("bottleWhy");
-    assert(why && why.tagName !== "DETAILS", "出どころ当てがまだヘルプ（details）のまま");
-    assert(!why.hidden && why.contains(doc.getElementById("bottleQuiz")), "出どころ当てが④の先頭に出ていない");
+    /* ② 前半（出どころ）は畳まれていない ＝ ④の本体の先頭に出ている。
+       ★ 2026-09-10: 置き場所は**柱の真下**になった（#bottleCols の中） */
+    const cols = doc.getElementById("bottleCols");
+    assert(cols && cols.querySelectorAll(".bslot").length === 3,
+      "出どころを置く受け皿が柱の下に出ていない");
+    assert(!doc.querySelector("#stepBottles details"), "出どころ当てがまだヘルプ（details）のまま");
     assert(doc.getElementById("addIonWrap").hidden, "先に答えるべき前半を飛ばして後半が出ている");
     // ③ 前半を通すと後半が現れる
-    const s = selsB();
-    pickB(s[0], "bottle:FeSO4"); pickB(s[1], "bottle:KMnO4"); pickB(s[2], "bottle:H2SO4");
+    pickB("Fe^2+", "bottle:FeSO4"); pickB("MnO4-", "bottle:KMnO4"); pickB("H+", "bottle:H2SO4");
     assert(!doc.getElementById("addIonWrap").hidden, "前半を通しても後半が出ない");
     // ④ 問うのは傍観イオンの種類ぶん（rs1 は K⁺ と SO₄²⁻）
     const ins = $$("#addIonRows input");
@@ -7485,7 +7642,9 @@ async function runRedoxUITests(iframe) {
      答えの本数はどこにも出ていないこと（＝写して埋められないこと）まで見張る */
   await t("REDOX: ④⑤の段⑤ - 本数を自分で入れる。答えは画面に出ておらず、外すと何個になるかを言う", async () => {
     setupRs1B();
-    const counts = txtB("bottleCounts");
+    /* ⚠ 2026-09-10: 手がかりは筆算の全幅の行（#bottleCountNotes）へ移った。
+       ⑤の欄そのものと合わせて見る（＝人が画面で読める範囲は変わっていない） */
+    const counts = txtB("bottleCounts") + " " + txtB("bottleCountNotes");
     // 手がかりは「要る個数」と「1本ぶんの内訳」まで
     assert(counts.includes("H⁺ が 8個 要る"), "必要な H⁺ の数が出ない: " + counts);
     assert(counts.includes("H₂SO₄ 1つが出すのは 2 H⁺ ＋ SO₄²⁻"), "1つぶんの内訳が出ない: " + counts);
@@ -7504,8 +7663,7 @@ async function runRedoxUITests(iframe) {
     const ng = cnoteB("H2SO4");
     assert(ng.includes("2×2＝4個") && ng.includes("8個 要る"), "外したときの説明が出ない: " + ng);
     assert(!/＝ 係数 4|係数 4 でちょうど/.test(ng), "答えの係数を言ってしまっている: " + ng);
-    assert(cinB("H2SO4").parentElement.parentElement.querySelector(".bcNote").classList.contains("ngcell"),
-      "誤りの色にならない");
+    assert(doc.getElementById("bcn_H2SO4").classList.contains("ngcell"), "誤りの色にならない");
     // 正解 → 割り算の筋道と、**ついて来た**傍観イオンを言う
     putB("H2SO4", 4);
     const ok = cnoteB("H2SO4");
@@ -7561,11 +7719,10 @@ async function runRedoxUITests(iframe) {
     let g = 0;
     while (state().mult[0] < 6 && g++ < 10) bumpB(0);
     passCalc();   // ③の係数を自分で書く段を降りる（v193）
-    const s = selsB();
-    assert(s.length === 3, "rs2 の欄が3つでない: " + s.length);
-    pickB(s[0], "bottle:FeSO4");
-    pickB(s[1], "bottle:K2Cr2O7");
-    pickB(s[2], "bottle:H2SO4");
+    assert(selsB().length === 3, "rs2 の受け皿が3つでない: " + selsB().length);
+    pickB("Fe^2+", "bottle:FeSO4");
+    pickB("Cr2O7^2-", "bottle:K2Cr2O7");
+    pickB("H+", "bottle:H2SO4");
     passAddB("rs2", 6, 1, 1);   // 【②】④を通す
     putB("K2Cr2O7", 1); putB("FeSO4", 6); putB("H2SO4", 7);
     assert(passSaltB("rs2", 6, 1, 1) === 3, "rs2 の右辺を組み切れない");
@@ -7617,9 +7774,8 @@ async function runRedoxUITests(iframe) {
     // ⑥ 係数が 1 の回（r3 の Zn 1本）は、式の書き方を崩さない（「1 Zn」とは書かない）
     openB("r3");
     passCalc();
-    const s3 = selsB();
-    pickB(s3[0], "bottle:Zn");
-    pickB(s3[1], "bottle:HCl");
+    pickB("Zn", "bottle:Zn");
+    pickB("H+", "bottle:HCl");
     passAddB("r3", 1, 1, 1);   // 【②】④を通す
     putB("Zn", 1); putB("HCl", 2);
     assert(passSaltB("r3", 1, 1, 1) === 1, "r3 の右辺（ZnCl₂）が組めない");
@@ -7710,11 +7866,10 @@ async function runRedoxUITests(iframe) {
     passCalc();   // r3 は 1:1 なので開いた瞬間に③が出る。書く段を降りてから④を見る
     assert(!doc.getElementById("stepBottles").hidden, "r3 で④⑤の段が出ない");
     assert(txtB("bottleRack").includes("水にとけてイオンに分かれない"), "板が電離しないと言っていない");
-    const s = selsB();
-    pickB(s[0], "bottle:HCl");
-    assert(noteB(s[0]).includes("Zn は出しません"), "誤りの説明が出ない: " + noteB(s[0]));
-    pickB(s[0], "bottle:Zn");
-    pickB(s[1], "bottle:HCl");
+    pickB("Zn", "bottle:HCl");
+    assert(noteB("Zn").includes("Zn は出しません"), "誤りの説明が出ない: " + noteB("Zn"));
+    pickB("Zn", "bottle:Zn");
+    pickB("H+", "bottle:HCl");
     passAddB("r3", 1, 1, 1);   // 【②】④（両辺に足す Cl⁻）を通す
     // ⑤の数入力（v182）。板（Zn）も「1本」として同じ入力に乗る
     putB("Zn", 1);
@@ -7728,7 +7883,7 @@ async function runRedoxUITests(iframe) {
     assert(doc.getElementById("stepBottles").hidden, "e⁻ が合わなくなっても④⑤の段が残る");
     openB("r3");
     passCalc();
-    assert(selsB().every((x) => x.value === ""), "ステージを開き直しても答えが残っている");
+    assert(selsB().every((x) => !x.dataset.key), "ステージを開き直しても答えが残っている");
     // 【②】④で足した個数も白紙に戻る
     assert([...doc.querySelectorAll("#addIonRows input")].every((x) => x.value === ""),
       "ステージを開き直しても④で足した個数が残っている");
@@ -7740,7 +7895,7 @@ async function runRedoxUITests(iframe) {
     while (state().mult[1] < 2 && g++ < 10) bumpB(1);
     passCalc();   // ③の係数を自分で書く段を降りる（v193）
     assert(!doc.getElementById("stepBottles").hidden, "rn1 で④⑤の段が出ない（畳んだ先に届いていない）");
-    assert(selsB().length === 3, "rn1 の④が3行でない: " + selsB().length);
+    assert(selsB().length === 3, "rn1 の④の柱が3本でない: " + selsB().length);
     openB("ri1");
     assert(doc.getElementById("stepBottles").hidden, "bottles を持たない ri1 で④⑤の段が出ている");
   });

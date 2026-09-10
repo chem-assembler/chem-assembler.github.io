@@ -1569,20 +1569,166 @@ main.timelineMain {
   .palMetal { font-size: 14px; }
 }
 
+/* ================================================================================
+   ★★ ④⑤を1枚の筆算にまとめる（2026-09-10・ユーザーの指示）
+
+   > イオン反応式の下に筆算形式で K+ と SO42- の入力欄を入れる、最後の係数も筆算の中に入れる
+   > **もともと何だったか、を正解した後に、改めてイオン反応式を出すようにしてください、
+   >   上下が離れるとわかりづらいです**
+
+   ★ **イオン反応式の左辺の項が列の見出し（柱）**で、その柱の下に
+   ［↓］［札を置くところ］［判定文］［札の棚］［両辺に加える］［左辺の係数］が積まれる。
+   ＝ どの段を答えているときも、根拠のイオン反応式が同じ枠の中の真上にある
+   （式を刷り直すのでも、画面の上に貼り付けるのでもない）。
+
+   行（grid-row）は redox.js の BROW が持つ。ここは見た目だけ。
+   ⚠ **狭い画面では柱を横に並べられない**ので display:block に落とし、
+   「イオン反応式を1行 → イオンごとの塊」に組み替える（下の @media）。 */
+#bottleWork {
+  display: grid;
+  grid-template-columns: repeat(var(--bcols, 3), max-content) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+  min-width: max-content;
+  padding: 8px 10px 10px;
+  background: #fbfdff;
+  border: 1px solid #d6e0ea;
+  border-radius: 10px;
+}
+/* 段の器はグリッドに溶かす（中の行が親の列にそろうため） */
+#bottleCols, #bottleTail, #bottleCounts, #addIonWrap, .bwEchoWrap { display: contents; }
+#bottleTail[hidden], #addIonWrap[hidden] { display: none; }
+.bcol { display: contents; }
+/* 柱 —— イオン反応式の左辺の項。★ ユーザーの言う「マーカー」はこの札の色 */
+.bcolHead { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding-bottom: 2px; }
+.bwSep { color: #7c8792; font-size: 15px; }
+.bpill {
+  font-size: 16px; font-weight: bold; color: #2a3540;
+  background: #fff3d4; border: 1.5px solid #e0bd6e; border-radius: 7px;
+  padding: 5px 9px; min-height: 36px; cursor: pointer;
+}
+.bpill.here { background: #ffe6a8; border-color: #c8912c; box-shadow: 0 0 0 2px #f3dca7; }
+.bpill.done { background: #e8f5ec; border-color: #9fc7ab; color: #2f6b45; }
+.bcolArrow { text-align: center; color: #7c8792; font-size: 15px; line-height: 1.2; }
+.bcolSlot { padding-bottom: 2px; }
+.bcolRest { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding-left: 4px; }
+.bwEqSide { white-space: nowrap; }
+.bwEqArrow { color: #5a6570; }
+/* 札を置くところ。空のときは破線の受け皿（何をする場所かが形で分かる） */
+.bslot {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px;
+  min-height: 44px; min-width: 104px;
+  padding: 4px 6px;
+  border: 2px dashed #b9c8d6; border-radius: 9px; background: #fff;
+  cursor: pointer;
+}
+.bslot.active { border-color: #c8912c; border-style: solid; background: #fffaf0; }
+.bslot.ok { border-style: solid; border-color: #7fae8f; background: #f2faf5; }
+.bslot.ng { border-style: solid; border-color: #d09a8a; background: #fdf5f3; }
+.bslotPh { color: #a8b4c0; font-size: 17px; }
+.bchip {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 14.5px; font-weight: bold; color: #23303b;
+  background: linear-gradient(#fbfdff, #eef4f9);
+  border: 1.5px solid #c3d2df; border-radius: 6px; padding: 3px 3px 3px 7px;
+}
+.bchip.ionChip { background: #fdf3ee; border-color: #e0b6a2; }
+.bchipX {
+  border: 0; background: transparent; color: #8a949e; cursor: pointer;
+  font-size: 11px; line-height: 1; padding: 5px 4px; min-height: 24px;
+}
+/* 判定文・手がかりは**全幅の行**に積む（列は狭く、長い文が1文字ずつ縦に折れるため）。
+   どの柱・どの物質の話かは、行の頭の札が言う */
+#bottleEq, #bottleQuiz, #bottleRack, #bottleMsg, #bottleCountNotes,
+#addIonRows, #addIonMsg, #addIonWrap > .stepSubHead,
+#bottleTail > .stepHead, #bottleCounts > .bottleCap { grid-column: 1 / -1; width: 0; min-width: 100%; }
+.bwRowTag { grid-column: 1 / -1; }
+/* 柱の行が何なのかを名指しする（「直前のイオン反応式との対応がわかりづらい」への答えの半分）。
+   残りの半分は**位置**（答えが柱の真下にしか置けない）が言う */
+.bwRowTag { font-size: 11.5px; color: #5a6570; padding-bottom: 2px; }
+.bwRowTag b { color: #2f5b7a; }
+/* ★ 柱をもう一度出す行（echo）。押せないので、色を落として「見出しの控え」に見せる。
+   ⚠ 右の欄に置く札は列の外（1fr の列）なので、グリッドの幅を押し広げない */
+.bwEchoCell { padding-top: 6px; }
+.bpill.echo {
+  display: inline-block;
+  font-size: 14.5px; font-weight: bold; color: #46525e;
+  background: #f4f7fa; border: 1px dashed #b9c8d6; border-radius: 7px;
+  padding: 3px 8px; min-height: 0; cursor: default;
+}
+.bwEchoTag { grid-column: auto; font-size: 11px; color: #7c8792; white-space: nowrap; padding-left: 6px; }
+.bwNote { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; margin: 1px 0; }
+.bwNoteIon {
+  flex: none; font-size: 11.5px; font-weight: bold; color: #46525e;
+  background: #eef3f8; border: 1px solid #d6e0ea; border-radius: 4px; padding: 1px 5px;
+}
+.bwNoteText { flex: 1 1 auto; min-width: 0; }
+.bwNote .bcHead { flex: 1 1 240px; min-width: 0; }
+/* ④後半 —— 筆算の1行として横に並べる（ユーザーの絵の最下段）。
+   ⚠ 柱の列にはそろえられない（1種が2つの物質から来る・1つの物質が2列にまたがる） */
+.bwAddLine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 4px; }
+.bwAddLead { font-size: 13px; color: #46525e; }
+.bwAddItem { display: inline-flex; align-items: center; gap: 5px; }
+.bwAddIon { font-size: 15px; font-weight: bold; color: #23303b; }
+.bwAddNotes { display: block; }
+#bottleTail > .stepHead.inWork { margin: 10px 0 2px; }
+.bwCoef { margin: 0; padding-left: 0; border-left: 0; }
+/* 広い画面では柱の行がイオン反応式そのものなので、1行版は出さない */
+#bottleEq { display: none; }
+
+/* ---- 狭い画面（iPad の縦・スマホ）----
+   ⚠ 柱を横に並べると必ず横送りになり、**打っている欄と柱が同時に見えない**
+   ＝ この改修の目的（上下が離れない）が狭い面でだけ壊れる。
+   そこで組み方を変える: **イオン反応式を1行で先に出し、そのあとイオンごとの塊**にする。
+   ★ 塊の中では、イオンのすぐ下に札の受け皿がある ＝ 対応はむしろ近くなる
+   （③の筆算が 560px で折り返すのと同じ判断。そろえた効果がとっくに無い所では、そろえない）。 */
+@media (max-width: 560px) {
+  #bottleWork { display: block; min-width: 0; padding: 8px; }
+  .bworkScroll { overflow-x: visible; width: auto; }
+  #bottleEq {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+    font-size: 15px; line-height: 1.9;
+    padding: 5px 7px; margin-bottom: 8px;
+    background: #fff; border: 1px solid #d6e0ea; border-radius: 8px;
+  }
+  .bcol {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin: 0 0 6px; padding: 5px 6px;
+    background: #fff; border: 1px solid #e2e9f0; border-radius: 8px;
+  }
+  .bcolArrow { transform: rotate(-90deg); }
+  /* 柱をもう一度出す行は、狭い面では**1行に横並び**（縦に3段積むと段が離れる） */
+  .bwEchoWrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 2px; }
+  .bwEchoCell { padding-top: 0; }
+  .bwEchoTag { flex-basis: 100%; padding-left: 0; }
+  .bcolRest { display: none; }   /* 右辺は上の1行版が持っている */
+  .bcolTag { display: none; }
+  .bwCoef { margin: 0 0 6px; }
+  .bslot { min-width: 92px; }
+}
+
 /* ---- はじめに入れたものから化学反応式を組み立てる段（v180・DESIGN_redox.md）----
    入れたものの棚・出どころ当て・蒸発後のプール。数字も判断も持たない見た目だけの定義 */
 #stepBottles .stepHead + #bottleRack { margin-top: 2px; }
 .bottleCap { font-size: 12.5px; color: #5a6570; line-height: 1.6; margin-bottom: 6px; }
-.bottleShelf { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.bottleShelf { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+/* 札は**押せる**（タップで柱の下に置く）。押せる見た目にし、指の床 44px を満たす */
 .bottleCard {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
   border: 1.5px solid #c3d2df;
   border-radius: 6px 6px 4px 4px;
   background: linear-gradient(#fbfdff, #eef4f9);
   padding: 6px 10px 7px;
   min-width: 96px;
+  min-height: 44px;
+  text-align: left;
+  cursor: pointer;
 }
+.bottleCard:hover { border-color: #9db4c8; background: linear-gradient(#fff, #e6eef6); }
 .bottleName { font-size: 15px; font-weight: bold; color: #2a3540; }
 .bottleParts { font-size: 11.5px; color: #5a6570; margin-top: 2px; }
+.bottleWhere { font-size: 11.5px; color: #7c8792; margin-bottom: 0; }
 .bottleRow { margin-bottom: 10px; }
 .bottleNote { line-height: 1.6; }
 #bottleMsg { font-size: 12.5px; line-height: 1.6; margin: 2px 0 4px; }
@@ -1640,9 +1786,9 @@ main.timelineMain {
 .bcNote { line-height: 1.6; }
 /* 【②】④を筆算に寄せた（2026-08-28）。問うのは「両辺に何個ずつ足すか」。
    ★ 2026-09-07 に順番を戻した ——「もともと何だった？」が先、個数が後。
-   #bottleWhy はヘルプ（<details>）ではなく、④の本体の先頭に出る箱になった */
+   ⚠ 2026-09-10: #bottleWhy（出どころ当てを包んでいた箱）は消えた ——
+   出どころは**柱の真下**に置く形になり、包む箱が要らなくなった（上の #bottleWork を見ること） */
 .addIonRow { border-left-color: #b7cfe4; }
-#bottleWhy { margin: 2px 0 10px; }
 /* 1つの段の中の「つぎに」。段そのものを増やさずに「先／後」を示す */
 .stepSubHead {
   margin: 14px 0 6px; padding: 5px 9px;
