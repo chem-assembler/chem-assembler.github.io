@@ -48377,9 +48377,15 @@
             assert(want, 'org.alcohol.hydroxy を持つページが reference.json に無い');
             assert(D.querySelector('#ref-body h3').textContent.trim() === want.title,
                 `code で指したページが開いていない（${D.querySelector('#ref-body h3').textContent}）`);
-            // 表が1枚だけ ＝ 2本の道が両方走って二重に描いていない
-            assert(D.querySelectorAll('#ref-body table.ref-table').length === 1,
-                '資料が二重に描かれている（OPEN_TARGETS と learn.js の両方が開いた）');
+            /* 二重に描いていないこと。⚠⚠ **ページの中身で数えない**（v1533 で直した）——
+               前は `table.ref-table` を1枚と数えていたが、それは
+               「このページが stages.json の表を1枚だけ持っている」という**中身の事情**で、
+               ページの持ちものが変われば（`functional-groups` は手で書く表になった）
+               検査のほうが赤くなる。★ 症状は「**題が2つ出る**」なので、そちらを数える。 */
+            assert(D.querySelectorAll('#ref-body h3').length === 1,
+                `資料が二重に描かれている（OPEN_TARGETS と learn.js の両方が開いた・題が ${D.querySelectorAll('#ref-body h3').length} 個）`);
+            assert(D.querySelectorAll('#ref-body table').length >= 1,
+                '資料に表が1つも出ていない（どのページも表を1つ以上持つ約束・REF5）');
         } finally { f.remove(); }
 
         // ② ★否定対照: 収録中（?rec=）は開かない —— 受け口が増えても台本の1手目を汚さない
@@ -49998,6 +50004,156 @@
             ':::exercise に :::example のキーを書いた', ':::example');
         red(':::example\nstageId: hexane\nlead: 見本の1行です。\nnote: 見本の1行です。\nprompt: 見本\n:::\n',
             ':::example に :::exercise のキーを書いた', ':::exercise');
+    });
+
+    /* ===== REF24: 発展の印・穴あきテンプレート ○○・ぶら下げ（v1533） =====
+     *
+     * ★ 発端はユーザーの注文2件（`REFBOOK_STYLE.md` §10・§11）:
+     *   「発展内容の線引き（枠で囲う、線を引く、）などを提案してください」
+     *   「（○○ は）もつ　他に代替表現があれば採用を検討します」
+     *
+     * ★ ここが見るのは7つ:
+     *   ① ⚠⚠ **決めごとが2つに割れていない**（印の語・ぶら下げの印・空欄の class）——
+     *     アプリ本体は `tools/` を読めないので値は両側に在る（`REF19` ⑥ と同じ構図）
+     *   ② ★ **語尾の「（発展）」を受け取って印に直す**（赤にしない・捨てない）。
+     *     ⚠ **題からは消えている**（残ると「同じことを2か所で言う」形になる）
+     *   ③ ★★ **節に付けると目次にも印が出る**。⚠ ただし **`<a>` の外**
+     *     （中に入れると `REF19` の「目次の文字 ＝ 節の題」が壊れる ＝ 印が題を汚す）
+     *   ④ **印は記号ではなく言葉**（`level` と同じ約束）＋ 意味の1文が付いている
+     *   ⑤ ⚠⚠ **`○○` は文字を残したまま器になる** —— 面Aの本文に `○○` の2字が
+     *     生きていること（下線だけの空欄にすると本文が0字になり、検索も読み上げも落ちる）
+     *   ⑥ ⚠⚠ **ぶら下げの補足で `<ol>` の番号が飛ばない** —— 別の `<li>` にすると
+     *     見た目の番号を消しても勘定は進み、**次の段が黙って +1 される**
+     *   ⑦ **実データで実際に使われている**（器を足しただけで終わっていない）
+     */
+    test('REF24: 発展の印は範囲の外だけを言い、○○ は字を残し、ぶら下げで番号が飛ばない', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`);
+            return await res.text();
+        };
+        const flat = (s) => String(s).replace(/\s+/g, ' ').trim();
+
+        /* ── ① 決めごとが2つに割れていない ── */
+        assert(W.REF_ADVANCED_WORD === RM.ADVANCED_WORD,
+            `発展の印の語が learn.js（${W.REF_ADVANCED_WORD}）と書式（${RM.ADVANCED_WORD}）で違う`);
+        assert(W.REF_HANG_MARK === RM.HANG_MARK,
+            'ぶら下げの印が learn.js と書式で違う（原稿の字下げが補足として読まれなくなる）');
+        assert(typeof RM.BLANK_CLASS === 'string' && RM.BLANK_CLASS,
+            '穴あきテンプレートの class を書式が持っていない');
+
+        /* ── ② 語尾の「（発展）」を受け取って印に直し、題からは消す ── */
+        const FM = [
+            '---', 'id: t', 'unit: aliphatic', 'unitLabel: 脂肪族炭化水素', 'group: アルカン',
+            'title: 見本', 'summary: 発展の印と穴あきテンプレートを確かめるためだけの見本のページです。中身に意味はありません。',
+            'codes:', '  - org.ali.alkane-shape', 'source:', '  - slides:見本', 'singleSource: true',
+            'why: 発展の印の書式を機械で見るための見本で、画面には出さない。', '---', ''
+        ].join('\n');
+        const parse = (body) => RM.parsePage(FM + body, '(REF24)').blocks;
+
+        const h = parse('## 枝分かれすると沸点が下がる（発展）\n')[0];
+        assert(h.kind === 'heading' && h.advanced === true,
+            '小見出しの語尾の「（発展）」が印になっていない（赤にせず受け取る約束）');
+        assert(h.title.indexOf(RM.ADVANCED_WORD) < 0,
+            `題に「${RM.ADVANCED_WORD}」が残っている（印と題の2か所で同じことを言っている）→ ${h.title}`);
+
+        const s = parse(':::section\nanchor: a\ntitle: 電子対はどう動いているのか（発展）\nlead: この節で分かること。\n:::\n')[0];
+        assert(s.kind === 'section' && s.advanced === true, '節の語尾の「（発展）」が印になっていない');
+        assert(s.title.indexOf(RM.ADVANCED_WORD) < 0, '節の題に「発展」が残っている');
+        /* ★ 明示的に書いた印も同じ形になる（＝ 保存される形は1つだけ） */
+        const s2 = parse(':::section\nanchor: a\ntitle: 電子対はどう動いているのか\nadvanced: true\nlead: この節で分かること。\n:::\n')[0];
+        assert(JSON.stringify(s) === JSON.stringify(s2),
+            '語尾で書いた発展と advanced: true で書いた発展が、別の形で保存されている');
+
+        /* ── ④ 印は言葉で、意味の1文が付いている ── */
+        const secEl = book.renderBlock(s);
+        const tag = secEl.querySelector('.ref-adv-tag');
+        assert(tag, '発展の節に印の札が出ていない');
+        assert(flat(tag.textContent) === RM.ADVANCED_WORD,
+            `印が記号だけになっている（「${flat(tag.textContent)}」）`);
+        assert((tag.getAttribute('title') || '').length >= 10,
+            '発展の印に意味の1文が付いていない（印だけだと「覚えなくてよい」と読まれる）');
+        /* ⚠ 印が「暗記の要否」を言い始めていないこと ＝ 覚える範囲の線引き（本文）と喧嘩しない */
+        assert(!/覚えなくて|不要|捨て/.test(RM.ADVANCED_WORD + (tag.getAttribute('title') || '').split('。')[0]),
+            '発展の印が「覚えなくてよい」と言っている（重要度は本文の持ちもの・REFBOOK_STYLE §10-3）');
+        assert(!book.renderBlock(parse(':::section\nanchor: a\ntitle: ふつうの節\nlead: この節で分かること。\n:::\n')[0])
+            .querySelector('.ref-adv-tag'), '印を書いていない節にも札が出ている');
+
+        /* ── ⑤ ○○ は字を残したまま器になる ── */
+        const p = parse('主鎖の炭素数が4なら「○○ブタン」、5なら「○○ペンタン」と決まります。\n')[0];
+        assert(p.kind === 'text' && p.text.indexOf('class="' + RM.BLANK_CLASS + '"') >= 0,
+            '○○ が空欄の器になっていない');
+        const pEl = book.renderBlock(p);
+        assert(pEl.querySelectorAll('.' + RM.BLANK_CLASS).length === 2, '○○ の器が2つ出ていない');
+        assert(pEl.textContent.indexOf('○○ブタン') >= 0,
+            '○○ の字が消えている（下線だけの空欄にすると、声にも検索にも残らない）');
+
+        /* ── ⑥ ぶら下げで <ol> の番号が飛ばない ── */
+        const li = parse([':::list', 'ordered: true', 'items:',
+            '- 主鎖を探して末尾に置く。',
+            '　主鎖の炭素数が4なら「○○ブタン」、5なら「○○ペンタン」',
+            '- 側鎖を探して前に置く。', ':::', ''].join('\n'))[0];
+        assert(li.kind === 'list' && li.items.length === 3, 'ぶら下げの行が項目として読まれていない');
+        assert(li.items[1].charAt(0) === RM.HANG_MARK, 'ぶら下げの印が付いていない');
+        const ol = book.renderBlock(li);
+        assert(ol.tagName === 'OL', '番号つきの箇条書きが <ol> になっていない');
+        assert(ol.children.length === 2,
+            `ぶら下げが別の <li> になっている（${ol.children.length} 個）＝ <ol> の勘定が進んで手順の番号がずれる`);
+        assert(ol.children[0].querySelector('.ref-li-hang'), 'ぶら下げが1つ前の項目の中に入っていない');
+        assert(ol.children[0].querySelector('.ref-li-hang').textContent.charAt(0) !== RM.HANG_MARK,
+            'ぶら下げの印が画面にそのまま出ている');
+
+        /* ── ⑦ 実データで使われていて、⑤ が面Aにも焼けている ── */
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        const advSecs = [];
+        let blanks = 0;
+        pages.forEach(pg => (pg.blocks || []).forEach(b => {
+            if ((b.kind === 'section' || b.kind === 'heading') && b.advanced) advSecs.push({ pg, b });
+            Object.keys(b).forEach(k => {
+                const v = b[k];
+                const t = Array.isArray(v) ? v.join('') : (typeof v === 'string' ? v : '');
+                blanks += (t.match(new RegExp('class="' + RM.BLANK_CLASS + '"', 'g')) || []).length;
+            });
+        }));
+        assert(advSecs.length >= 1, '発展の印が実データで1つも使われていない（器を足しただけになっている）');
+        assert(blanks >= 1, '穴あきテンプレート ○○ が実データで1つも使われていない');
+
+        /* ── ③ 節の印は目次にも出る。⚠ ただし <a> の外 ── */
+        const advPageIds = [...new Set(advSecs.filter(x => x.b.kind === 'section').map(x => x.pg.id))];
+        assert(advPageIds.length >= 1, '発展の「節」が実データに無い（目次の印が確かめられない）');
+        for (const id of advPageIds) {
+            const pg = pages.find(x => x.id === id);
+            const toc = book.renderToc(pg);
+            const want = (pg.blocks || []).filter(b => b.kind === 'section' && b.advanced).length;
+            assert(toc.querySelectorAll('.ref-adv-tag').length === want,
+                `${id}: 目次の発展の印が ${toc.querySelectorAll('.ref-adv-tag').length} 個で、節の ${want} 個と合わない`);
+            assert(toc.querySelectorAll('a .ref-adv-tag').length === 0,
+                `${id}: 目次の印が <a> の中に入っている（目次の文字が「題＋発展」になり、節の題と食い違う）`);
+            /* 焼いた面Aでも同じこと（焼き直し忘れを捕まえる） */
+            const doc = new DOMParser().parseFromString(await grab(`../reference/${id}/index.html`, `参考書のページ ${id}`), 'text/html');
+            assert(doc.querySelectorAll('.ref-toc .ref-adv-tag').length === want,
+                `/reference/${id}/: 焼いた目次に発展の印が ${doc.querySelectorAll('.ref-toc .ref-adv-tag').length} 個（原稿は ${want} 個）`);
+            assert(doc.querySelectorAll('.ref-sec-advanced').length >= 1,
+                `/reference/${id}/: 焼いた本文に発展の節の印（class）が無い`);
+        }
+        /* ○○ の字が面Aの本文に生きている（検索でも読み上げでも残る） */
+        const blankPage = pages.find(pg => (pg.blocks || []).some(b =>
+            typeof b.text === 'string' && b.text.indexOf('class="' + RM.BLANK_CLASS + '"') >= 0)
+            || (pg.blocks || []).some(b => Array.isArray(b.items)
+                && b.items.some(t => t.indexOf('class="' + RM.BLANK_CLASS + '"') >= 0)));
+        assert(blankPage, '○○ を含むページが見つからない');
+        const bdoc = new DOMParser().parseFromString(
+            await grab(`../reference/${blankPage.id}/index.html`, `参考書のページ ${blankPage.id}`), 'text/html');
+        assert(bdoc.querySelectorAll('.' + RM.BLANK_CLASS).length >= 1,
+            `/reference/${blankPage.id}/: 焼いたページに ○○ の器が無い（焼き直し忘れ？）`);
+        assert((bdoc.body.textContent || '').indexOf('○○') >= 0,
+            `/reference/${blankPage.id}/: 焼いた本文から ○○ の字が消えている`);
+        assert(true, `発展の印 ${advSecs.length} 件・○○ ${blanks} 件`);
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====

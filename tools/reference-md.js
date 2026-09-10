@@ -758,6 +758,7 @@
         ALIGNS: ALIGNS,
         ADVANCED_WORD: ADVANCED_WORD,
         BLANK_CLASS: BLANK_CLASS,
+        HANG_MARK: HANG_MARK,
         DEFAULT_FENCE: DEFAULT_FENCE,
         CELL_SEP: CELL_SEP,
         FIGURE_DIR: '/reference-img/',
