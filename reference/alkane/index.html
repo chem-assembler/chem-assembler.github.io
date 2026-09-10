@@ -426,9 +426,59 @@ footer a:hover{color:var(--brand)}
     border-left: 3px solid var(--border-color);
     padding-left: 8px;
 }
+/* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節・小見出し・目次の3か所に同じ札**が出る。
+   ⚠⚠ **注意（黄）・丸暗記（紫）・反応式の重要度（★★★）と見分けが付くこと**が要る ——
+     どれも「大事さ」の話だが、この札だけは**大事さを言っていない**（範囲の外か内か、だけ）。
+   ★ だから色を1つ空けた（緑）。⚠ 面Aは明るい地なので `gen-reference-pages.mjs` の
+     LIGHT_CSS で読み替える（`#7fd6a4` は白地で 1.9:1 ＝ 読めない）。
+   ★ 地を持たず**縁だけ**にしてあるのは、囲み（callout）と同じ強さに見せないため。 */
+.ref-adv-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #7fd6a4;
+    border: 1px solid #7fd6a4;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+/* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
+.ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
+   ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
+   ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
+.ref-sec-advanced { border-top-color: #7fd6a4; }
+.ref-h5-advanced { border-left-color: #7fd6a4; }
+/* ★★ 穴あきテンプレートの `○○`（設計書 §23-2）。**名前の作り方を「型」で見せるための空欄。**
+   ⚠⚠ **文字を消して下線だけにしない。** 理由は3つ:
+     ① 「まるまるブタン」と**声に出せる**（本人の書きぶりは「そのまま声に出せる短い文字列」・§8-4）
+     ② **検索にかかる**（面Aで「○○ブタン」を本文検索できる。下線だけだと本文0字）
+     ③ **字数を暗示しない**（`____` は長さで「何文字入るか」を勝手に言ってしまう）
+   ★ 代わりに「ここは空欄」を**薄い地と点線の下線**で言う。⚠ 文字色は本文のまま（AA を割らない）。 */
+.ref-blank {
+    padding: 0 2px;
+    border-radius: 3px 3px 0 0;
+    background: rgba(255, 255, 255, 0.07);
+    border-bottom: 2px dotted var(--text-muted);
+    letter-spacing: 0.06em;
+}
 /* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
 .ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
 .ref-list li { margin: 0 0 5px; }
+/* ★★ ぶら下げの補足（設計書 §23-3）。**項目の中**に入るので、番号の右の文字列と縦がそろう。
+   ⚠ 本文と同じ見た目にしない（補足だと分かること）が、AA は割らない（`--text-secondary` は 8.3:1）。 */
+.ref-li-hang {
+    margin: 4px 0 2px;
+    padding-left: 0.8em;
+    border-left: 2px solid var(--border-color);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+}
 /* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
    参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
 .ref-figure { margin: 0 0 14px; }
@@ -614,6 +664,15 @@ a.ref-link::before { content: '→ '; }
      左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
    ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
      地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+/* ★★ 発展の印（§23）。⚠ 暗い地の #7fd6a4 は明るい地で 1.9:1 ＝ 読めない。
+   ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
+     見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
+.ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+.ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
+.ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
+   （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}</style>
@@ -651,7 +710,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">アルカンの常温での状態</h5>
 <p class="ref-p">アルカンは<b>無極性分子</b>なので、分子どうしを引きつけているのは弱いファンデルワールス力だけです。ファンデルワールス力は<b>分子量が大きくなるほど引きつけ合う力は強くなる</b>ので、蒸発しにくくなり、沸点が高くなります。だから <b>C₁〜C₄ は気体、C₅〜C₁₇ は液体、C₁₈ 以上は固体</b>です。液体と固体の境界についてはほとんど問われることはありませんが、ブタン C₄H₁₀ やペンタン C₅H₁₂ はよく登場するので気体と液体の境界はしっかりと覚えるようにしましょう。</p>
 <p class="ref-link-row"><span class="ref-link ref-link-soon">分子間力そのものと、沸点との関係をまとめて見る<b class="ref-link-badge">準備中</b></span></p>
-<h5 class="ref-h5">枝分かれすると沸点が下がる（発展）</h5>
+<h5 class="ref-h5 ref-h5-advanced">枝分かれすると沸点が下がる<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">同じ分子式のアルカン同士で比較すると、<b>枝分かれが多いほど沸点は低く</b>なります。枝分かれすると分子の形が球に近づき、<b>分子どうしが触れ合う面積が減って</b>引きつけ合う力が弱くなるためです。</p>
 <p class="ref-link-row"><span class="ref-link ref-link-soon">同じ炭素数でもアルコールの沸点がずっと高いのはなぜか<b class="ref-link-badge">準備中</b></span></p>
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=isomer&amp;formula=C5H12">ペンタン C₅H₁₂ の異性体3つを自分で書き出してみる（沸点が違うのはこの3つ）</a></p>
@@ -663,10 +722,11 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=practice">書き出し練習をひらく（分子式から異性体を全部たどる）</a></p>
 <section class="ref-sec" id="ref-sec-substitution"><h4 class="ref-sec-h">アルカンの反応 —— 置換反応</h4><p class="ref-sec-lead">アルカンが常温付近で起こす反応はこれ1つです。光を当てて、ハロゲンと水素を入れ替えます。</p></section>
 <p class="ref-p">アルカンは常温では反応性が低いのですが、<b>ハロゲンの単体と混ぜて光を当てる</b>と反応します。メタンと塩素なら、メタンの水素1個と塩素分子の塩素1個が<b>入れ替わって</b>、クロロメタンと塩化水素ができます。</p>
+<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text"><b>「反応しにくい」と「反応しない」は違います。</b> アルカンは常温では反応性が低いだけで、光を当てればハロゲンと置換反応を起こし、高温では燃焼します。「アルカンは安定だから何も起きない」と覚えると、この節の2つの反応が抜けます。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-substitution.png" alt="メタンの水素1個と塩素分子の塩素原子が入れ替わり、クロロメタンと塩化水素ができることを構造式と矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">入れ替わっているのは、メタンの H 1個と、塩素分子の Cl 1個。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ Cl₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₃Cl ＋ HCl</span></div><p class="ref-note">原子が入れ替わるので置換反応といいます。<b>アルカンの反応は置換反応</b>、と覚えてしまってかまいません。</p></div>
 <p class="ref-p">このように、分子の中の原子（原子団）が他の原子（原子団）と<b>置き換わる</b>反応を<b>置換反応</b>、入ってきた原子（原子団）を<b>置換基</b>、できた物質をもとの分子の<b>置換体</b>といいます。</p>
-<h5 class="ref-h5">電子対はどう動いているのか（発展）</h5>
+<h5 class="ref-h5 ref-h5-advanced">電子対はどう動いているのか<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">電子対がどう動いてこの入れ替わりが起きるのかは、別ページの「反応の道すじ（反応機構）」で巻矢印のアニメとして1段ずつ追えます。</p>
 <p class="ref-p">条件を整えると、置換は1回では止まりません。メタン CH₄ には<b>水素が4個あるので、4回まで続けて起こります。</b></p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-chlorination-chain-1.png" alt="メタンが光と塩素でクロロメタンに変わり、続けてジクロロメタンに変わることを2本の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">前半。塩素が1個入るたびに、Cl₂ が1分子ずつ使われます。</figcaption></figure>
@@ -692,7 +752,7 @@ a.ref-link::before { content: '→ '; }
 <h2>読みながら組む</h2>
 <div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-shape" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-shape" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq">
+<nav class="seq"><a href="/reference/functional-groups/">← 官能基 —— 性質を決めるパーツ</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
 <a href="/reference/alkane-naming/">アルカンの命名 →</a></nav>

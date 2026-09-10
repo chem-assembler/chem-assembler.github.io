@@ -28,13 +28,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>官能基のかたちと名前 ｜ 化学の参考書</title>
-<meta name="description" content="アルコール・エーテル・アルデヒド・ケトン11種を分子式と官能基つきで一覧に。名前の語尾と図のかたちの対応、1級と2級で酸化の行き先が変わることが読み取れます。">
+<title>官能基 —— 性質を決めるパーツ ｜ 化学の参考書</title>
+<meta name="description" content="官能基とは何か、代表的な15種の名前と構造、そして「いつ覚えるか」。同じ −OH でも隣が変わればアルコールとフェノールに分かれることまで1枚にまとめました。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/functional-groups/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="官能基のかたちと名前 ｜ 化学の参考書">
-<meta property="og:description" content="アルコール・エーテル・アルデヒド・ケトン11種を分子式と官能基つきで一覧に。名前の語尾と図のかたちの対応、1級と2級で酸化の行き先が変わることが読み取れます。">
+<meta property="og:title" content="官能基 —— 性質を決めるパーツ ｜ 化学の参考書">
+<meta property="og:description" content="官能基とは何か、代表的な15種の名前と構造、そして「いつ覚えるか」。同じ −OH でも隣が変わればアルコールとフェノールに分かれることまで1枚にまとめました。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/functional-groups/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -426,9 +426,59 @@ footer a:hover{color:var(--brand)}
     border-left: 3px solid var(--border-color);
     padding-left: 8px;
 }
+/* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節・小見出し・目次の3か所に同じ札**が出る。
+   ⚠⚠ **注意（黄）・丸暗記（紫）・反応式の重要度（★★★）と見分けが付くこと**が要る ——
+     どれも「大事さ」の話だが、この札だけは**大事さを言っていない**（範囲の外か内か、だけ）。
+   ★ だから色を1つ空けた（緑）。⚠ 面Aは明るい地なので `gen-reference-pages.mjs` の
+     LIGHT_CSS で読み替える（`#7fd6a4` は白地で 1.9:1 ＝ 読めない）。
+   ★ 地を持たず**縁だけ**にしてあるのは、囲み（callout）と同じ強さに見せないため。 */
+.ref-adv-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #7fd6a4;
+    border: 1px solid #7fd6a4;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+/* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
+.ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
+   ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
+   ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
+.ref-sec-advanced { border-top-color: #7fd6a4; }
+.ref-h5-advanced { border-left-color: #7fd6a4; }
+/* ★★ 穴あきテンプレートの `○○`（設計書 §23-2）。**名前の作り方を「型」で見せるための空欄。**
+   ⚠⚠ **文字を消して下線だけにしない。** 理由は3つ:
+     ① 「まるまるブタン」と**声に出せる**（本人の書きぶりは「そのまま声に出せる短い文字列」・§8-4）
+     ② **検索にかかる**（面Aで「○○ブタン」を本文検索できる。下線だけだと本文0字）
+     ③ **字数を暗示しない**（`____` は長さで「何文字入るか」を勝手に言ってしまう）
+   ★ 代わりに「ここは空欄」を**薄い地と点線の下線**で言う。⚠ 文字色は本文のまま（AA を割らない）。 */
+.ref-blank {
+    padding: 0 2px;
+    border-radius: 3px 3px 0 0;
+    background: rgba(255, 255, 255, 0.07);
+    border-bottom: 2px dotted var(--text-muted);
+    letter-spacing: 0.06em;
+}
 /* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
 .ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
 .ref-list li { margin: 0 0 5px; }
+/* ★★ ぶら下げの補足（設計書 §23-3）。**項目の中**に入るので、番号の右の文字列と縦がそろう。
+   ⚠ 本文と同じ見た目にしない（補足だと分かること）が、AA は割らない（`--text-secondary` は 8.3:1）。 */
+.ref-li-hang {
+    margin: 4px 0 2px;
+    padding-left: 0.8em;
+    border-left: 2px solid var(--border-color);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+}
 /* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
    参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
 .ref-figure { margin: 0 0 14px; }
@@ -614,6 +664,15 @@ a.ref-link::before { content: '→ '; }
      左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
    ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
      地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+/* ★★ 発展の印（§23）。⚠ 暗い地の #7fd6a4 は明るい地で 1.9:1 ＝ 読めない。
+   ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
+     見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
+.ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+.ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
+.ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
+   （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}</style>
@@ -621,32 +680,47 @@ a.ref-link::before { content: '→ '; }
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
 <main class="wrap">
-<h1>官能基のかたちと名前</h1>
-<p class="lede">アルコール・エーテル・アルデヒド・ケトン11種を分子式と官能基つきで一覧に。名前の語尾と図のかたちの対応、1級と2級で酸化の行き先が変わることが読み取れます。</p>
-<div><span class="unit-label">アルコールとカルボニル化合物</span><span class="unit-label">官能基</span></div>
+<h1>官能基 —— 性質を決めるパーツ</h1>
+<p class="lede">官能基とは何か、代表的な15種の名前と構造、そして「いつ覚えるか」。同じ −OH でも隣が変わればアルコールとフェノールに分かれることまで1枚にまとめました。</p>
+<div><span class="unit-label">有機化合物の基本</span><span class="unit-label">官能基</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-what" data-ref-anchor="what">官能基とは何か</a></li><li><a href="#ref-sec-list" data-ref-anchor="list">代表的な官能基</a></li><li><a href="#ref-sec-neighbor" data-ref-anchor="neighbor">同じ官能基でも、隣が変われば別のグループ</a></li><li><a href="#ref-sec-nitro-sulfo" data-ref-anchor="nitro-sulfo">ニトロ基とスルホ基は、硝酸と硫酸から来ている</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">有機化合物は、炭素と水素でできた骨格に、はたらきを決める部分がくっついた形をしています。この部分を<b>官能基</b>といい、<b>名前の語尾も、示す性質も、官能基で決まります</b>。</p>
-<p class="ref-p">同じ酸素1個でも、<b>−OH</b>（ヒドロキシ基）を持てばアルコール、炭素にはさまれた <b>C−O−C</b>（エーテル結合）ならエーテルです。表の分子式の列を見ると、エタノールとジメチルエーテルはどちらも C₂H₆O。<b>分子式が同じでも、官能基が違えば別の物質</b>です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">アルコール・エーテルとカルボニル化合物（11行）</div><table class="ref-table" data-ref-series="アルコールとエーテル / アルデヒドとケトン"><thead><tr><th>名称</th><th>分子式</th><th>官能基</th></tr></thead><tbody><tr><td>メタノール</td><td class="ref-formula">CH₄O</td><td class="ref-fg">ヒドロキシ基（メタノール型）</td></tr><tr><td>エタノール</td><td class="ref-formula">C₂H₆O</td><td class="ref-fg">1級アルコール</td></tr><tr><td>1-プロパノール</td><td class="ref-formula">C₃H₈O</td><td class="ref-fg">1級アルコール</td></tr><tr><td>2-プロパノール</td><td class="ref-formula">C₃H₈O</td><td class="ref-fg">2級アルコール</td></tr><tr><td>エチレングリコール</td><td class="ref-formula">C₂H₆O₂</td><td class="ref-fg">1級アルコール×2</td></tr><tr><td>グリセリン</td><td class="ref-formula">C₃H₈O₃</td><td class="ref-fg">1級アルコール×2、2級アルコール</td></tr><tr><td>ジメチルエーテル</td><td class="ref-formula">C₂H₆O</td><td class="ref-fg">エーテル結合</td></tr><tr><td>ジエチルエーテル</td><td class="ref-formula">C₄H₁₀O</td><td class="ref-fg">エーテル結合</td></tr><tr><td>ホルムアルデヒド</td><td class="ref-formula">CH₂O</td><td class="ref-fg">アルデヒド基</td></tr><tr><td>アセトアルデヒド</td><td class="ref-formula">C₂H₄O</td><td class="ref-fg">アルデヒド基</td></tr><tr><td>アセトン</td><td class="ref-formula">C₃H₆O</td><td class="ref-fg">ケトン（カルボニル基）</td></tr></tbody></table></div>
-<p class="ref-p">官能基の列で、アルコールが「1級」「2級」に分かれていることに注目してください。これは <b>−OH が付いた炭素に、ほかの炭素が何個結合しているか</b>の違いです（メタノールは0個なので別に出ています）。この級の違いが、<b>酸化したときの行き先</b>を決めます —— 1級アルコールを酸化すると −CHO（アルデヒド）、2級アルコールを酸化すると両側を炭素にはさまれた C=O（ケトン）になります。</p>
-<p class="ref-p">その行き先も、同じ表の中にあります。メタノール→ホルムアルデヒド、エタノール→アセトアルデヒド（どちらも1級）、2-プロパノール→アセトン（2級）。名前の語尾も見てください —— <b>-オール</b>なら −OH、<b>〜エーテル</b>なら −O−、<b>〜アルデヒド</b>なら −CHO。ケトンの代表であるアセトンは慣用名ですが、規則どおりに呼べば 2-プロパノンで、語尾は <b>-オン</b> です。</p>
-<div class="ref-example"><h4>例題：2-プロパノール をつくる</h4><p class="ref-p" style="margin: 0px;">ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素3個の真ん中の炭素に −OH を付けて 2-プロパノール を組みます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.alcohol.hydroxy&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=functional-groups">▶ 2-プロパノールを組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（アルコールとエーテルの4問目）がそのまま受け持ちます。</p></div>
+<p class="ref-p">有機化合物の特徴的な構造（パーツ）を<b>官能基</b>といいます。有機化合物の性質の大部分は官能基によって決まるため、分類や命名も官能基をもとに行われます。</p>
+<section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">官能基とは何か</h4><p class="ref-sec-lead">骨格が違っても、同じ官能基を持っていれば同じ性質を示します。だから官能基で分類します。</p></section>
+<p class="ref-p">例えば、エタノールとジメチルエーテルはどちらも同じ分子式 C₂H₆O をもちますが、その性質は大きく異なります。エタノールはヒドロキシ基 −OH をもつためアルコールに分類され、水に溶けやすい液体であるのに対し、ジメチルエーテルはエーテル結合 −O− をもつためエーテルに分類され、水に溶けにくい気体です。</p>
+<p class="ref-p">逆に、骨格が違っても同じ官能基をもっていれば、同じはたらきをします。酢酸 CH₃COOH とギ酸 HCOOH は炭素の数が違いますが、どちらもカルボキシ基 −COOH を1個もつので、どちらも1価の弱酸（カルボン酸）です。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/functional-group-carboxy.png" alt="酢酸とギ酸の構造式。どちらもカルボキシ基の部分が水色で囲まれ、その端の H 原子に「このH原子がH+となって電離する」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">骨格（左の部分）は違っても、青く囲んだ<b>カルボキシ基</b>が同じなら、同じ「1価の弱酸」としてはたらきます。</figcaption></figure>
+<section class="ref-sec" id="ref-sec-list"><h4 class="ref-sec-h">代表的な官能基</h4><p class="ref-sec-lead">名前・構造・その官能基をもつ化合物グループの対応。いつ覚えるかも表の中に書いてあります。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">代表的な官能基（15行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">官能基</th><th style="text-align: center;">構造</th><th style="text-align: left;">もっている化合物</th><th style="text-align: left;">いつ覚えるか</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ヒドロキシ基</b></td><td style="text-align: center;">−OH</td><td style="text-align: left;">アルコール（R−OH）・フェノール類</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>エーテル結合</b></td><td style="text-align: center;">−O−</td><td style="text-align: left;">エーテル（R−O−R′）</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>カルボニル基</b>（ケトン基）</td><td style="text-align: center;">−CO−</td><td style="text-align: left;">ケトン（R−CO−R′）</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>ホルミル基</b>（アルデヒド基）</td><td style="text-align: center;">−CHO</td><td style="text-align: left;">アルデヒド（R−CHO）</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>カルボキシ基</b></td><td style="text-align: center;">−COOH</td><td style="text-align: left;">カルボン酸（R−COOH）</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>エステル結合</b></td><td style="text-align: center;">−COO−</td><td style="text-align: left;">エステル（R−COO−R′）</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>アミノ基</b></td><td style="text-align: center;">−NH₂</td><td style="text-align: left;">アミン（R−NH₂）・アミノ酸</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>ニトロ基</b></td><td style="text-align: center;">−NO₂</td><td style="text-align: left;">ニトロ化合物（R−NO₂）</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;"><b>スルホ基</b></td><td style="text-align: center;">−SO₃H</td><td style="text-align: left;">スルホン酸（R−SO₃H）</td><td style="text-align: left;"><b>いま</b></td></tr><tr><td style="text-align: left;">アミド結合</td><td style="text-align: center;">−CONH−</td><td style="text-align: left;">アミド・タンパク質</td><td style="text-align: left;">芳香族アミン／タンパク質の単元で</td></tr><tr><td style="text-align: left;">ビニル基</td><td style="text-align: center;">CH₂=CH−</td><td style="text-align: left;">塩化ビニル・酢酸ビニル</td><td style="text-align: left;">高分子の単元で</td></tr><tr><td style="text-align: left;">フェニル基</td><td style="text-align: center;">C₆H₅−</td><td style="text-align: left;">フェノール・アニリン</td><td style="text-align: left;">芳香族の単元で</td></tr><tr><td style="text-align: left;">アセチル基</td><td style="text-align: center;">CH₃CO−</td><td style="text-align: left;">アセチルサリチル酸・アセトアニリド</td><td style="text-align: left;">芳香族の単元で</td></tr><tr><td style="text-align: left;">メチレン基</td><td style="text-align: center;">−CH₂−</td><td style="text-align: left;">アルカンの鎖の中</td><td style="text-align: left;">名前が出てきたときに</td></tr><tr><td style="text-align: left;">ジアゾニウム基</td><td style="text-align: center;">−N₂⁺</td><td style="text-align: left;">塩化ベンゼンジアゾニウム</td><td style="text-align: left;">芳香族アミンの単元で</td></tr></tbody></table></div>
+<p class="ref-p"><b>表の上から9つ（太字の行）は、いますべて暗記してください。</b>残りの6つは、その名前が出てくる単元まで覚えなくて構いません —— ただし<b>「そういう名前の基がある」ことだけ</b>は、ここで見ておいてください。名前を知らないと、出てきたときに調べようがないからです。</p>
+<p class="ref-p">原子の結合の手の数（原子価）を意識して、省略のない構造式を書けるようにしてください。結合の手の数は、C原子4本、O原子2本、H原子1本、N原子3本です。結合の手の数が合っていない構造式はよくある間違いです。特に初学者は、構造式を書くときに毎回すべての原子の手の数を確認するようにしましょう。</p>
+<section class="ref-sec" id="ref-sec-neighbor"><h4 class="ref-sec-h">同じ官能基でも、隣が変われば別のグループ</h4><p class="ref-sec-lead">ヒドロキシ基 −OH は、付いている炭素がベンゼン環かどうかで、フェノール類とアルコールに分かれます。</p></section>
+<p class="ref-p">ヒドロキシ基 −OH の場合は、結合しているC原子が、ベンゼン環（フェノール類）か、その他（アルコール）か、で性質も分類も変わります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/functional-group-alcohol-phenol.png" alt="ヒドロキシ基をもつ化合物グループの図。上が R−O−H でアルコール、下が六角形のベンゼン環に −O−H が付いたフェノール" loading="lazy"><figcaption class="ref-figure-cap">同じ −OH でも、付いている相手が<b>ベンゼン環かどうか</b>で、アルコールとフェノール類に分かれます。</figcaption></figure>
+<section class="ref-sec ref-sec-advanced" id="ref-sec-nitro-sulfo"><h4 class="ref-sec-h">ニトロ基とスルホ基は、硝酸と硫酸から来ている<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">構造には配位結合が含まれるので、そこは発展内容です。まずは −NO₂ と −SO₃H の形だけ覚えれば十分です。</p></section>
+<p class="ref-p">ニトロ基 −NO₂ とスルホ基については、配位結合を含むので発展内容になります。まずは省略した −NO₂ と −SO₃H を覚えていれば十分です。硝酸から OH をとった構造がニトロ基、硫酸から OH をとった構造がスルホ基であることを理解し、知識の関連付けをすると暗記が楽になります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nitro-from-nitric.png" alt="硝酸 HNO3 の構造式と電子式。H−O−N と並び、N から O へ二重結合と、矢印で書いた配位結合が1本ずつ伸びている" loading="lazy"><figcaption class="ref-figure-cap"><b>硝酸 HNO₃</b> から −OH を取り去った残りが<b>ニトロ基 −NO₂</b> です。N から O へ伸びる矢印が配位結合。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/sulfo-from-sulfuric.png" alt="硫酸 H2SO4 の構造式と電子式。中心の S から O へ矢印で書いた配位結合が2本、H−O− が2本伸びている" loading="lazy"><figcaption class="ref-figure-cap"><b>硫酸 H₂SO₄</b> から −OH を1つ取り去った残りが<b>スルホ基 −SO₃H</b> です。</figcaption></figure>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">硝酸・硫酸そのものの構造（オキソ酸と配位結合）を無機のページで見る<b class="ref-link-badge">準備中</b></span></p>
+<h5 class="ref-h5">例題</h5>
+<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の官能基の構造を書け。(8)(9) は官能基内の価標を省略してよい。<b>(1) ホルミル基　(2) ヒドロキシ基　(3) エーテル結合　(4) エステル結合　(5) カルボニル基　(6) カルボキシ基　(7) アミノ基　(8) ニトロ基　(9) スルホ基</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>結合の手の数（C は4本、O は2本、N は3本、H は1本）が合っているかを、1つずつ数えて確かめてください。ヒドロキシ基を −OH、カルボキシ基を −COOH、アミノ基を −NH₂ と1行で書く書き方もよく使います。</p><img class="ref-figure-img" src="/reference-img/functional-groups-ex1-answer.png" alt="官能基9種の構造式。ホルミル基・ヒドロキシ基・エーテル結合・エステル結合・カルボニル基・カルボキシ基・アミノ基・ニトロ基・スルホ基が、結合の手（価標）つきで9個並んでいる。" loading="lazy"></div></details></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">アルコール・エーテル・アルデヒド・ケトンの11種を、分子式と官能基つきで並べた表はこちら</a></p>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.alcohol.hydroxy,org.alcohol.class,org.alcohol.formula,org.alcohol.ether-props,org.alcohol.oxidation,org.carbonyl.formyl,org.carbonyl.ketone-def,org.carbonyl.formula-isomer&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.alcohol.hydroxy,org.alcohol.class,org.alcohol.formula,org.alcohol.ether-props,org.alcohol.oxidation,org.carbonyl.formyl,org.carbonyl.ketone-def,org.carbonyl.formula-isomer&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（5問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.alcohol.hydroxy,org.carbonyl.formyl,org.carbonyl.ketone-def,org.carbonyl.carboxy,org.carbonyl.ester-bond&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（5問・測定モード）">▶ 一問一答で解く（5問・測定モード）</button><a class="alt" href="/qa/?codes=org.alcohol.hydroxy,org.carbonyl.formyl,org.carbonyl.ketone-def,org.carbonyl.carboxy,org.carbonyl.ester-bond&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
 <h2>読みながら組む</h2>
 <div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.alcohol.hydroxy" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.alcohol.hydroxy" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/alkane-isomers/">← 同じ分子式で、別の分子</a>
+<nav class="seq">
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/reaction-mechanisms/">反応の道すじ（反応機構） →</a></nav>
+<a href="/reference/alkane/">アルカン —— 単結合だけでできた炭化水素 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -659,7 +733,56 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
