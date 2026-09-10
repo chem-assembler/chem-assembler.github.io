@@ -426,9 +426,59 @@ footer a:hover{color:var(--brand)}
     border-left: 3px solid var(--border-color);
     padding-left: 8px;
 }
+/* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節・小見出し・目次の3か所に同じ札**が出る。
+   ⚠⚠ **注意（黄）・丸暗記（紫）・反応式の重要度（★★★）と見分けが付くこと**が要る ——
+     どれも「大事さ」の話だが、この札だけは**大事さを言っていない**（範囲の外か内か、だけ）。
+   ★ だから色を1つ空けた（緑）。⚠ 面Aは明るい地なので `gen-reference-pages.mjs` の
+     LIGHT_CSS で読み替える（`#7fd6a4` は白地で 1.9:1 ＝ 読めない）。
+   ★ 地を持たず**縁だけ**にしてあるのは、囲み（callout）と同じ強さに見せないため。 */
+.ref-adv-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #7fd6a4;
+    border: 1px solid #7fd6a4;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+/* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
+.ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
+   ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
+   ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
+.ref-sec-advanced { border-top-color: #7fd6a4; }
+.ref-h5-advanced { border-left-color: #7fd6a4; }
+/* ★★ 穴あきテンプレートの `○○`（設計書 §23-2）。**名前の作り方を「型」で見せるための空欄。**
+   ⚠⚠ **文字を消して下線だけにしない。** 理由は3つ:
+     ① 「まるまるブタン」と**声に出せる**（本人の書きぶりは「そのまま声に出せる短い文字列」・§8-4）
+     ② **検索にかかる**（面Aで「○○ブタン」を本文検索できる。下線だけだと本文0字）
+     ③ **字数を暗示しない**（`____` は長さで「何文字入るか」を勝手に言ってしまう）
+   ★ 代わりに「ここは空欄」を**薄い地と点線の下線**で言う。⚠ 文字色は本文のまま（AA を割らない）。 */
+.ref-blank {
+    padding: 0 2px;
+    border-radius: 3px 3px 0 0;
+    background: rgba(255, 255, 255, 0.07);
+    border-bottom: 2px dotted var(--text-muted);
+    letter-spacing: 0.06em;
+}
 /* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
 .ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
 .ref-list li { margin: 0 0 5px; }
+/* ★★ ぶら下げの補足（設計書 §23-3）。**項目の中**に入るので、番号の右の文字列と縦がそろう。
+   ⚠ 本文と同じ見た目にしない（補足だと分かること）が、AA は割らない（`--text-secondary` は 8.3:1）。 */
+.ref-li-hang {
+    margin: 4px 0 2px;
+    padding-left: 0.8em;
+    border-left: 2px solid var(--border-color);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+}
 /* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
    参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
 .ref-figure { margin: 0 0 14px; }
@@ -614,6 +664,15 @@ a.ref-link::before { content: '→ '; }
      左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
    ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
      地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+/* ★★ 発展の印（§23）。⚠ 暗い地の #7fd6a4 は明るい地で 1.9:1 ＝ 読めない。
+   ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
+     見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
+.ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+.ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
+.ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
+   （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}</style>
@@ -626,19 +685,29 @@ a.ref-link::before { content: '→ '; }
 <div><span class="unit-label">脂肪族炭化水素</span><span class="unit-label">異性体・命名</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（2節）</summary><ul><li><a href="#ref-sec-what" data-ref-anchor="what">つなぎ方が違えば、別の分子</a></li><li><a href="#ref-sec-count" data-ref-anchor="count">異性体はいくつあるか</a></li></ul></details></nav>
 <div class="ref-scope">
+<p class="ref-p">炭素が4個以上のアルカンには、同じ分子式でも別の構造の分子（異性体）が存在します。</p>
+<section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">つなぎ方が違えば、別の分子</h4><p class="ref-sec-lead">原子の種類と数が同じでも、つながり方が違えば別の物質です。これが構造異性体です。</p></section>
 <p class="ref-p">炭素が4個以上になると、1列につなぐほかに<b>枝分かれ</b>のつなぎ方ができます。原子の種類と数（＝分子式）は同じなのに、つながり方が違う別の分子になる —— これが<b>構造異性体</b>です。</p>
-<p class="ref-p">枝分かれした分子の名前は、<b>いちばん長い炭素の鎖（主鎖）の名前</b>を後ろに置き、その前に<b>枝の位置の番号と枝の名前</b>を付けて作ります。番号は主鎖の端から数え、<b>名前に出てくる数字ができるだけ小さくなる側</b>から数えます。同じ枝が2つなら「ジ」、3つなら「トリ」を付けます。</p>
+<p class="ref-p">いちばん小さい例が C₄H₁₀ です。炭素4個を全部1列に使えば直鎖の<b>ブタン</b>、3個を1列にして残りの1個を枝（メチル基）にすれば <b>2-メチルプロパン</b>。この2つで打ち止めで、3つ目はありません。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-isomers-c4-straight.png" alt="ブタンの構造式。炭素4個が横一直線に並び、それぞれの炭素から結合の手が上下左右に出ている（水素原子は省略してある）" loading="lazy"><figcaption class="ref-figure-cap">炭素4個を全部主鎖に使った形 ＝ <b>ブタン</b>。水素を省いて結合の手だけを書いてあります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-isomers-c4-branch.png" alt="2-メチルプロパンの構造式。炭素3個が横一直線に並んで左から1・2・3の番号が振ってあり、2番の炭素から下へ炭素1個が伸びている（水素原子は省略してある）" loading="lazy"><figcaption class="ref-figure-cap">主鎖を3個にして、残りの1個を枝にした形 ＝ <b>2-メチルプロパン</b>。枝を主鎖の<b>端</b>（1番か3番）に付けると主鎖が伸びてブタンに戻ってしまうので、付けられるのは両端以外の炭素だけです。</figcaption></figure>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkane-naming/">「2-メチルプロパン」という名前の作り方（主鎖の選び方・番号の振り方）は「アルカンの命名」で</a></p>
+<section class="ref-sec" id="ref-sec-count"><h4 class="ref-sec-h">異性体はいくつあるか</h4><p class="ref-sec-lead">C₄ から C₇ まで 2・3・5・9。この4つは覚えてしまいましょう。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">枝分かれしたアルカン C4〜C7（15行）</div><table class="ref-table" data-ref-series="異性体をつくる（枝分かれアルカン）"><thead><tr><th>分子式</th><th>名称</th><th>主鎖の C の数</th></tr></thead><tbody><tr><td class="ref-group ref-formula" rowspan="1">C₄H₁₀<span>1 件</span></td><td>2-メチルプロパン</td><td class="ref-c">3</td></tr><tr><td class="ref-group ref-formula" rowspan="2">C₅H₁₂<span>2 件</span></td><td>2-メチルブタン</td><td class="ref-c">4</td></tr><tr><td>2,2-ジメチルプロパン</td><td class="ref-c">3</td></tr><tr><td class="ref-group ref-formula" rowspan="4">C₆H₁₄<span>4 件</span></td><td>2-メチルペンタン</td><td class="ref-c">5</td></tr><tr><td>3-メチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,2-ジメチルブタン</td><td class="ref-c">4</td></tr><tr><td>2,3-ジメチルブタン</td><td class="ref-c">4</td></tr><tr><td class="ref-group ref-formula" rowspan="8">C₇H₁₆<span>8 件</span></td><td>2-メチルヘキサン</td><td class="ref-c">6</td></tr><tr><td>3-メチルヘキサン</td><td class="ref-c">6</td></tr><tr><td>2,2-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,3-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>3,3-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,4-ジメチルペンタン</td><td class="ref-c">5</td></tr><tr><td>3-エチルペンタン</td><td class="ref-c">5</td></tr><tr><td>2,2,3-トリメチルブタン</td><td class="ref-c">4</td></tr></tbody></table></div>
 <p class="ref-p">分子式ごとの件数を縦に読むと、枝分かれは C₄ で1つ、C₅ で2つ、C₆ で4つ、C₇ で8つ。ここに枝のない直鎖（「アルカンの命名」の表にある分）を1つずつ足すと、構造異性体の総数は <b>2・3・5・9</b> になります。炭素が1個増えるたびに増え方が急になっていくのは、1行ずつでは見えず、並べて初めて見えます。</p>
+<p class="ref-p"><b>C₄=2・C₅=3・C₆=5・C₇=9 の4つは暗記してください。</b>自分で数え上げた答えが合っているかを、その場で確かめられます。C₈ 以降（18・35・75…）は覚えなくても困ることはありません。</p>
 <p class="ref-p">いちばん右の列（主鎖の炭素の数）も一緒に見てください。<b>同じ分子式でも主鎖の長さが違う</b>ことがあります。C₅H₁₂ では 2-メチルブタンの主鎖が4本（母体はブタン）、2,2-ジメチルプロパンの主鎖は3本（母体はプロパン）。<b>名前の後半が変わるのは、主鎖の長さが変わるから</b>です。</p>
 <div class="ref-example"><h4>例題：2-メチルブタン をつくる</h4><p class="ref-p" style="margin: 0px;">ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素4個の鎖に炭素1個の枝を付けて 2-メチルブタン を組みます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.ali.isomer-classification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=alkane-isomers">▶ 2-メチルブタンを組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（異性体をつくる（枝分かれアルカン）の2問目）がそのまま受け持ちます。</p></div>
+<h5 class="ref-h5">例題</h5>
+<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q"><b>ペンタン C₅H₁₂ の構造異性体をすべて書き出し、名称を書け。</b>主鎖の炭素数が多いものから順に、主鎖を横一直線にして書くと、重複ともれを防げます。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>3種類</b>です。主鎖5個（<b>ペンタン</b>）、主鎖4個に枝1個（<b>2-メチルブタン</b>）、主鎖3個に枝2個（<b>2,2-ジメチルプロパン</b>）。枝を主鎖の端に付けると主鎖が伸びてしまうので、付けられるのは両端以外の炭素だけ —— そう考えると数え落としが減ります。</p><img class="ref-figure-img" src="/reference-img/alkane-isomers-ex1-answer.png" alt="ペンタンの構造異性体3つの構造式。左が炭素5個の直鎖でペンタン、中央が炭素4個の鎖の2番目の炭素から下へ炭素1個が伸びた2-メチルブタン、右が炭素3個の鎖の真ん中の炭素から上下へ炭素1個ずつが伸びた2,2-ジメチルプロパン。" loading="lazy"></div></details></div>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（6問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.isomer-classification,org.ali.iso-c4h10,org.ali.iso-c5h12,org.ali.iso-count,org.ali.name-mainchain,org.ali.name-numbering&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（6問・測定モード）">▶ 一問一答で解く（6問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.isomer-classification,org.ali.iso-c4h10,org.ali.iso-c5h12,org.ali.iso-count,org.ali.name-mainchain,org.ali.name-numbering&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（4問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.isomer-classification,org.ali.iso-c4h10,org.ali.iso-c5h12,org.ali.iso-count&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（4問・測定モード）">▶ 一問一答で解く（4問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.isomer-classification,org.ali.iso-c4h10,org.ali.iso-c5h12,org.ali.iso-count&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
 <h2>読みながら組む</h2>
 <div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.isomer-classification" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.isomer-classification" target="_blank" rel="noopener">別のタブで開く</a></div>
@@ -646,7 +715,7 @@ a.ref-link::before { content: '→ '; }
 <nav class="seq"><a href="/reference/alkane-naming/">← アルカンの命名</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/functional-groups/">官能基のかたちと名前 →</a></nav>
+<a href="/reference/reaction-mechanisms/">反応の道すじ（反応機構） →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -659,7 +728,56 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

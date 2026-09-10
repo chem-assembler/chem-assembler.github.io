@@ -438,7 +438,10 @@ const LIGHT_CSS = `
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
-/* ★ 穴あきテンプレートの `○○`（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする */
+.ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
+.ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
+   （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
 .ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}

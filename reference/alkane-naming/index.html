@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>アルカンの命名 ｜ 化学の参考書</title>
-<meta name="description" content="直鎖アルカン10種の名称・分子式・炭素数を1つの表に並べ、一般式 CnH2n+2 がどこから出てくるのかを読み取ります。組んで確かめる例題つき。">
+<meta name="description" content="直鎖アルカン10種の名称と、枝分かれしたアルカンを「何が」「何個」「どこに」で名づける手順。2,3-ジメチルペンタンを最後まで追う具体例と、紙に書く例題2つつき。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/alkane-naming/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="アルカンの命名 ｜ 化学の参考書">
-<meta property="og:description" content="直鎖アルカン10種の名称・分子式・炭素数を1つの表に並べ、一般式 CnH2n+2 がどこから出てくるのかを読み取ります。組んで確かめる例題つき。">
+<meta property="og:description" content="直鎖アルカン10種の名称と、枝分かれしたアルカンを「何が」「何個」「どこに」で名づける手順。2,3-ジメチルペンタンを最後まで追う具体例と、紙に書く例題2つつき。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/alkane-naming/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -426,9 +426,59 @@ footer a:hover{color:var(--brand)}
     border-left: 3px solid var(--border-color);
     padding-left: 8px;
 }
+/* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節・小見出し・目次の3か所に同じ札**が出る。
+   ⚠⚠ **注意（黄）・丸暗記（紫）・反応式の重要度（★★★）と見分けが付くこと**が要る ——
+     どれも「大事さ」の話だが、この札だけは**大事さを言っていない**（範囲の外か内か、だけ）。
+   ★ だから色を1つ空けた（緑）。⚠ 面Aは明るい地なので `gen-reference-pages.mjs` の
+     LIGHT_CSS で読み替える（`#7fd6a4` は白地で 1.9:1 ＝ 読めない）。
+   ★ 地を持たず**縁だけ**にしてあるのは、囲み（callout）と同じ強さに見せないため。 */
+.ref-adv-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #7fd6a4;
+    border: 1px solid #7fd6a4;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+/* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
+.ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
+   ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
+   ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
+.ref-sec-advanced { border-top-color: #7fd6a4; }
+.ref-h5-advanced { border-left-color: #7fd6a4; }
+/* ★★ 穴あきテンプレートの `○○`（設計書 §23-2）。**名前の作り方を「型」で見せるための空欄。**
+   ⚠⚠ **文字を消して下線だけにしない。** 理由は3つ:
+     ① 「まるまるブタン」と**声に出せる**（本人の書きぶりは「そのまま声に出せる短い文字列」・§8-4）
+     ② **検索にかかる**（面Aで「○○ブタン」を本文検索できる。下線だけだと本文0字）
+     ③ **字数を暗示しない**（`____` は長さで「何文字入るか」を勝手に言ってしまう）
+   ★ 代わりに「ここは空欄」を**薄い地と点線の下線**で言う。⚠ 文字色は本文のまま（AA を割らない）。 */
+.ref-blank {
+    padding: 0 2px;
+    border-radius: 3px 3px 0 0;
+    background: rgba(255, 255, 255, 0.07);
+    border-bottom: 2px dotted var(--text-muted);
+    letter-spacing: 0.06em;
+}
 /* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
 .ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
 .ref-list li { margin: 0 0 5px; }
+/* ★★ ぶら下げの補足（設計書 §23-3）。**項目の中**に入るので、番号の右の文字列と縦がそろう。
+   ⚠ 本文と同じ見た目にしない（補足だと分かること）が、AA は割らない（`--text-secondary` は 8.3:1）。 */
+.ref-li-hang {
+    margin: 4px 0 2px;
+    padding-left: 0.8em;
+    border-left: 2px solid var(--border-color);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+}
 /* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
    参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
 .ref-figure { margin: 0 0 14px; }
@@ -614,6 +664,15 @@ a.ref-link::before { content: '→ '; }
      左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
    ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
      地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+/* ★★ 発展の印（§23）。⚠ 暗い地の #7fd6a4 は明るい地で 1.9:1 ＝ 読めない。
+   ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
+     見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
+.ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+.ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
+.ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
+   （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}</style>
@@ -622,26 +681,52 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
 <main class="wrap">
 <h1>アルカンの命名</h1>
-<p class="lede">直鎖アルカン10種の名称・分子式・炭素数を1つの表に並べ、一般式 CnH2n+2 がどこから出てくるのかを読み取ります。組んで確かめる例題つき。</p>
+<p class="lede">直鎖アルカン10種の名称と、枝分かれしたアルカンを「何が」「何個」「どこに」で名づける手順。2,3-ジメチルペンタンを最後まで追う具体例と、紙に書く例題2つつき。</p>
 <div><span class="unit-label">脂肪族炭化水素</span><span class="unit-label">アルカン</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（2節）</summary><ul><li><a href="#ref-sec-straight" data-ref-anchor="straight">枝分かれの無いアルカンの名前</a></li><li><a href="#ref-sec-branched" data-ref-anchor="branched">枝分かれしたアルカンの名前</a></li></ul></details></nav>
 <div class="ref-scope">
 <p class="ref-p">直鎖のアルカンは、炭素を1列につないで、余った手をぜんぶ水素でうめただけの分子です。つなぎ方に選択の余地がないので、<b>名前は炭素の数だけで決まります</b>。</p>
+<section class="ref-sec" id="ref-sec-straight"><h4 class="ref-sec-h">枝分かれの無いアルカンの名前</h4><p class="ref-sec-lead">炭素の数だけで名前が決まります。ヘキサンまでは確実に覚えましょう。</p></section>
 <p class="ref-p">C1〜C4 の語幹（メタ・エタ・プロパ・ブタ）は数と関係のない古い呼び名ですが、C5 からは数を表す語幹（ペンタ=5・ヘキサ=6・ヘプタ=7・オクタ=8・ノナ=9・デカ=10）がそのまま名前になります。語尾はどれも <b>-ane（〜アン）</b>で、これが「飽和」の印です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">直鎖アルカン C1〜C10（10行）</div><table class="ref-table" data-ref-series="アルカン（直鎖）"><thead><tr><th>C の数</th><th>名称</th><th>分子式</th></tr></thead><tbody><tr><td class="ref-c">1</td><td>メタン</td><td class="ref-formula">CH₄</td></tr><tr><td class="ref-c">2</td><td>エタン</td><td class="ref-formula">C₂H₆</td></tr><tr><td class="ref-c">3</td><td>プロパン</td><td class="ref-formula">C₃H₈</td></tr><tr><td class="ref-c">4</td><td>ブタン</td><td class="ref-formula">C₄H₁₀</td></tr><tr><td class="ref-c">5</td><td>ペンタン</td><td class="ref-formula">C₅H₁₂</td></tr><tr><td class="ref-c">6</td><td>ヘキサン</td><td class="ref-formula">C₆H₁₄</td></tr><tr><td class="ref-c">7</td><td>ヘプタン</td><td class="ref-formula">C₇H₁₆</td></tr><tr><td class="ref-c">8</td><td>オクタン</td><td class="ref-formula">C₈H₁₈</td></tr><tr><td class="ref-c">9</td><td>ノナン</td><td class="ref-formula">C₉H₂₀</td></tr><tr><td class="ref-c">10</td><td>デカン</td><td class="ref-formula">C₁₀H₂₂</td></tr></tbody></table></div>
+<p class="ref-p">枝分かれがない（直鎖の）アルカンの名称は表の通りです。ヘキサンまでは確実に覚えましょう。</p>
 <p class="ref-p">分子式を縦に読むと、C が1つ増えるたびに H がちょうど2つ増えています ＝ <b>CH₂ が1つずつ伸びている</b>だけ。だから炭素が n 個なら水素は 2n+2 個で、一般式は <b>C<sub>n</sub>H<sub>2n+2</sub></b> になります。</p>
 <p class="ref-p">この表が決めているのは、枝のない1列のつなぎ方の名前だけです。枝分かれがあると、同じ分子式でも別の分子になります（C₄H₁₀ はブタンと 2-メチルプロパンの2つ）。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">同じ分子式で何種類の分子ができるか（構造異性体の数え方）は「同じ分子式で、別の分子」で</a></p>
 <div class="ref-example"><h4>例題：ヘキサン をつくる</h4><p class="ref-p" style="margin: 0px;">ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素を6個つないでヘキサンを組みます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.ali.alkane-names&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=alkane-naming">▶ ヘキサンを組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（アルカン（直鎖）の6問目）がそのまま受け持ちます。</p></div>
-<p class="ref-p">枝分かれのある名前は、いちばん長い鎖（主鎖）と同じ炭素数のアルカンを基準にして、「何が」「何個」「どこに」付いているかを読み取ります。ここからは紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物の構造式を書け。<b>2,3-ジメチルブタン</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>基準は<b>ブタン</b>なので、まず炭素を4個つないで主鎖にします。そこへ<b>メチル基</b>を2個、端から数えて2番目と3番目の炭素に1つずつ付けます。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex1-answer.png" alt="2,3-ジメチルブタンの構造式。CH3−CH−CH−CH3 の主鎖に端から1・2・3・4の番号が振ってあり、2番目と3番目の CH の上にメチル基 CH3 が1つずつ付いている。" loading="lazy"></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物を命名せよ。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-prompt.png" alt="構造式。左から CH3−CH−C−CH3 と並び、CH の上にメチル基 CH3 が1つ、C の上にメチル基 CH3 が1つ、C の下に CH3−CH2 が1つ付いている。番号は振っていない。" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>2,3,3-トリメチルペンタン</b>。いちばん長い鎖は炭素5個なので基準はペンタンで、メチル基が3個、端から2・3・3番目の炭素に付いています。主鎖は左右にまっすぐ並んでいる4個ではなく、右下へ折れて5個つながるほうです。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-answer.png" alt="同じ構造式に主鎖の番号を振った図。左端の CH3 が1、CH が2、C が3、そこから下へ折れた CH2 が4、その先の CH3 が5で、炭素5個の主鎖が右下へ折れている。" loading="lazy"></div></details></div>
+<section class="ref-sec" id="ref-sec-branched"><h4 class="ref-sec-h">枝分かれしたアルカンの名前</h4><p class="ref-sec-lead">主鎖と同じ炭素数のアルカンを基準に、「何が」「何個」「どこに」を読み取って、後ろから順に組み立てます。</p></section>
+<p class="ref-p">枝分かれのある名前は、いちばん長い鎖（主鎖）と同じ炭素数のアルカンを基準にして、「何が」「何個」「どこに」付いているかを読み取ります。</p>
+<p class="ref-p">枝分かれがあるアルカンの名称は以下の手順で<b>後ろから順に</b>決めます。</p>
+<ol class="ref-list"><li>一番長い鎖（主鎖）を探し、炭素の数を数えて対応するアルカンの名称を末尾に置く。<div class="ref-li-hang">主鎖の炭素数が4なら「<span class="ref-blank">○○</span>ブタン」、5なら「<span class="ref-blank">○○</span>ペンタン」</div></li><li>主鎖に付いている枝（側鎖）を探し、アルキル基の種類と数を数えアルカンの名称の前に置く。<div class="ref-li-hang">数はギリシャ語の接頭辞（1：モノ、2：ジ、3：トリ、4：テトラ）を使って表します。</div><div class="ref-li-hang">アルキル基の名称は、対応する炭素数のアルカンの名称の語尾を <b>-yl（イル）</b>に変化させます。</div><div class="ref-li-hang">メチル基が1個付いたブタンなら「<span class="ref-blank">○○</span>メチルブタン」（「モノ」は省略します）、メチル基が2個付いたペンタンなら「<span class="ref-blank">○○</span>ジメチルペンタン」となります。</div></li><li>側鎖が主鎖のどの炭素原子に付いているか（端から数えて何番目の炭素原子に付いているか）を調べ数字で表す。<div class="ref-li-hang">主鎖の端から2番目の炭素原子にメチル基が1個付いたブタンなら「2-メチルブタン」、主鎖の端から2番目と3番目の炭素原子に1個ずつメチル基が付いたペンタンなら「2,3-ジメチルペンタン」となります。</div></li></ol>
+<div class="ref-table-wrap"><div class="ref-cap">数を表す接頭辞（10行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: right;">数</th><th style="text-align: center;">接頭辞</th><th style="text-align: left;">同じ語幹をもつ言葉</th></tr></thead><tbody><tr><td style="text-align: right;">1</td><td style="text-align: center;">モノ</td><td style="text-align: left;">モノレール、モノトーン、モノローグ</td></tr><tr><td style="text-align: right;">2</td><td style="text-align: center;">ジ</td><td style="text-align: left;">ジレンマ</td></tr><tr><td style="text-align: right;">3</td><td style="text-align: center;">トリ</td><td style="text-align: left;">トリレンマ、トライアングル、トライアスロン、トライデント</td></tr><tr><td style="text-align: right;">4</td><td style="text-align: center;">テトラ</td><td style="text-align: left;">テトラポッド（消波ブロック）、テトラパック</td></tr><tr><td style="text-align: right;">5</td><td style="text-align: center;">ペンタ</td><td style="text-align: left;">ペンタゴン、ペンタグラム</td></tr><tr><td style="text-align: right;">6</td><td style="text-align: center;">ヘキサ</td><td style="text-align: left;">ヘキサゴン、ヘキサグラム</td></tr><tr><td style="text-align: right;">7</td><td style="text-align: center;">ヘプタ</td><td style="text-align: left;">ヘプタスロン（陸上7種競技）</td></tr><tr><td style="text-align: right;">8</td><td style="text-align: center;">オクタ</td><td style="text-align: left;">オクトパス、オクトーバー、オクタグラム</td></tr><tr><td style="text-align: right;">9</td><td style="text-align: center;">ノナ</td><td style="text-align: left;">ノーベンバー</td></tr><tr><td style="text-align: right;">10</td><td style="text-align: center;">デカ</td><td style="text-align: left;">デカスロン（陸上10種競技）、ディセンバー</td></tr></tbody></table></div>
+<p class="ref-p">高校で出てくる名前に実際に現れるのは<b>ジ（2）・トリ（3）・テトラ（4）まで</b>がほとんどです。5以上はこの表を引けば十分で、覚えていなくて困ることはありません。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkane/">アルキル基（メチル基・エチル基…）そのものの説明は「アルカン」のページに</a></p>
+<h5 class="ref-h5">具体例1</h5>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-example-chain.png" alt="2,3-ジメチルペンタンの構造式。CH3−CH−CH−CH2−CH3 が横一直線に並び、2番目と3番目の CH の上にメチル基 CH3 が1つずつ付いていて、主鎖の下にオレンジの矢印が引いてある" loading="lazy"><figcaption class="ref-figure-cap">今回の分子です。オレンジの矢印が主鎖（いちばん長い炭素の鎖）で、<b>構造式を書くときは主鎖を横一直線に書きます</b>。</figcaption></figure>
+<p class="ref-p">1. まず最も長い炭素鎖（主鎖）を見つけます。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-wrong-chain.png" alt="同じ分子を、横に並んだ炭素4個のほうを主鎖と取り違えて描いた構造式。その4個に端から4・3・2・1の番号が振ってある" loading="lazy"><figcaption class="ref-figure-cap">主鎖を取り違えた図。この4個を主鎖にすると「2-エチル-3-メチルブタン」になってしまいます。<b>いちばん長い鎖は、紙の上でまっすぐ並んでいるとは限りません。</b></figcaption></figure>
+<p class="ref-p">主鎖の炭素数は5なので、この分子の名称は「<span class="ref-blank">○○</span>ペンタン」になります。分子式はC₇H₁₆でヘプタンの構造異性体ですが、名称は主鎖に着目して「ペンタンを基準にどこがどう違うか」で表します。</p>
+<p class="ref-p">2. 次に主鎖に付いている枝（側鎖）を調べます。</p>
+<p class="ref-p">この分子の側鎖はメチル基 −CH₃ が2個ですので、名称は「<span class="ref-blank">○○</span>ジメチルペンタン」です。</p>
+<p class="ref-p">3. 最後に側鎖の位置を調べます。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-numbered.png" alt="同じ分子に主鎖の番号を振った構造式。左端の CH3 が1、その右の CH が2、次の CH が3、そこから上へ折れた CH2 が4、その先の CH3 が5" loading="lazy"><figcaption class="ref-figure-cap">主鎖に端から番号を振ります。4と5が上へ折れているのは、主鎖がそこで曲がっているからです。</figcaption></figure>
+<p class="ref-p">2個のメチル基は主鎖の「2番目と3番目の炭素原子」に付いていますので、この分子の名称は「2,3-ジメチルペンタン」になります。</p>
+<h5 class="ref-h5">注意</h5>
+<p class="ref-p">主鎖の番号は「名称の数字が小さくなるように振る」というルールがあります。この図のように振ってしまうと「3,4-ジメチルペンタン」となってしまいますが、それはだめですよ、ということです。数字の振り方を1つに決めることにより、構造式と名称を1:1で対応させることができます。</p>
+<h5 class="ref-h5">置換基が2種類以上ある場合</h5>
+<p class="ref-p">置換基が2種類以上ある場合は、続けて書き並べて名称にします。</p>
+<p class="ref-p">この分子は主鎖の炭素数が6で、2,3番の炭素原子にメチル基が2個、3番の炭素原子にエチル基が1個付いているので「3-エチル-2,3-ジメチルヘキサン」になります。メチル基（methyl）とエチル基（ethyl）を書く順番はアルファベット順ですが、この順番については覚えなくても困ることはないと思います。一般に「名称→構造式」よりも「構造式→名称」の方が難しいです。複雑な分子については「名称→構造式」がわかれば十分でしょう。</p>
+<h5 class="ref-h5">例題</h5>
+<p class="ref-p">ここからは紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物の構造式を書け。<b>2,3-ジメチルブタン</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>基準は<b>ブタン</b>なので、まず炭素を4個つないで主鎖にします。そこへ<b>メチル基</b>を2個、端から数えて2番目と3番目の炭素に1つずつ付けます。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex1-answer.png" alt="2,3-ジメチルブタンの構造式。CH₃−CH−CH−CH₃ の主鎖に端から1・2・3・4の番号が振ってあり、2番目と3番目の CH の上にメチル基 CH₃ が1つずつ付いている。" loading="lazy"></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化合物を命名せよ。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-prompt.png" alt="構造式。左から CH₃−CH−C−CH₃ と並び、CH の上にメチル基 CH₃ が1つ、C の上にメチル基 CH₃ が1つ、C の下に CH₃−CH₂ が1つ付いている。番号は振っていない。" loading="lazy"><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>2,3,3-トリメチルペンタン</b>。いちばん長い鎖は炭素5個なので基準はペンタンで、メチル基が3個、端から2・3・3番目の炭素に付いています。主鎖は左右にまっすぐ並んでいる4個ではなく、右下へ折れて5個つながるほうです。</p><img class="ref-figure-img" src="/reference-img/alkane-naming-ex2-answer.png" alt="同じ構造式に主鎖の番号を振った図。左端の CH₃ が1、CH が2、C が3、そこから下へ折れた CH₂ が4、その先の CH₃ が5で、炭素5個の主鎖が右下へ折れている。" loading="lazy"></div></details></div>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（2問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-names,org.ali.formula-alkane&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（2問・測定モード）">▶ 一問一答で解く（2問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-names,org.ali.formula-alkane&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（5問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-names,org.ali.formula-alkane,org.ali.name-mainchain,org.ali.name-numbering,org.ali.name-substituent-order&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（5問・測定モード）">▶ 一問一答で解く（5問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-names,org.ali.formula-alkane,org.ali.name-mainchain,org.ali.name-numbering,org.ali.name-substituent-order&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
 <h2>読みながら組む</h2>
 <div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-names" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-names" target="_blank" rel="noopener">別のタブで開く</a></div>
@@ -662,7 +747,56 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
