@@ -206,7 +206,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "シクロヘキサンの環を組み立てる",
+        "label": "シクロヘキサンの環を見る",
         "summon": "cyclohexane"
       },
       "evidence": {
@@ -624,7 +624,7 @@
       "knowledge": "メタンは正四面体形で、結合角は約109.5°。",
       "link": {
         "kind": "summon",
-        "label": "メタンを組み立てる",
+        "label": "メタンの4本の C−H を見る",
         "summon": "methane"
       },
       "variants": [
@@ -1178,7 +1178,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "シクロプロパンの環を組み立てる",
+        "label": "シクロプロパンの三員環を見る",
         "summon": "cyclopropane"
       },
       "evidence": {
@@ -1254,7 +1254,7 @@
       "knowledge": "エチレンは二重結合まわりの6原子が同一平面上・結合角約120°。",
       "link": {
         "kind": "summon",
-        "label": "エチレンを組み立てる",
+        "label": "エチレンの二重結合まわりを見る",
         "summon": "ethylene"
       },
       "variants": [
@@ -2143,7 +2143,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "アセチレンを組み立てる",
+        "label": "アセチレンの直線形を見る",
         "summon": "acetylene"
       },
       "evidence": {
@@ -2383,7 +2383,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ビニルアルコール（エノール型）を組み立てる",
+        "label": "ビニルアルコール（エノール型）の C=C と −OH を見る",
         "summon": "vinyl-alcohol"
       },
       "evidence": {
@@ -2584,7 +2584,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "酢酸ビニルを組み立てる",
+        "label": "酢酸ビニルのエステル結合を見る",
         "summon": "vinyl-acetate"
       },
       "evidence": {
@@ -2832,7 +2832,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "シス-2-ブテンを組み立てる",
+        "label": "シス-2-ブテンのシス形を確かめる",
         "summon": "cis-2-butene"
       },
       "evidence": {
@@ -3279,7 +3279,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "エタノールを組んでヒドロキシ基を見る",
+        "label": "エタノールのヒドロキシ基を見る",
         "summon": "ethanol"
       },
       "evidence": {
@@ -3422,7 +3422,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "2-メチル-2-プロパノールを組んで級を数える",
+        "label": "2-メチル-2-プロパノールの級を数える",
         "summon": "2-methyl-2-propanol"
       },
       "evidence": {
@@ -3472,7 +3472,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "グリセリンを組んでヒドロキシ基の数を数える",
+        "label": "グリセリンのヒドロキシ基の数を数える",
         "summon": "glycerol"
       },
       "evidence": {
@@ -3524,7 +3524,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "エチレングリコールを組み立てる",
+        "label": "エチレングリコールの2つのヒドロキシ基を数える",
         "summon": "ethylene-glycol"
       },
       "evidence": {
@@ -3573,7 +3573,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ジメチルエーテルを組んで O−H が無いことを見る",
+        "label": "ジメチルエーテルに O−H が無いことを見る",
         "summon": "dimethyl-ether"
       },
       "evidence": {
@@ -4087,7 +4087,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ジエチルエーテルを組んで O−H が無いことを見る",
+        "label": "ジエチルエーテルに O−H が無いことを見る",
         "summon": "diethyl-ether"
       },
       "evidence": {
@@ -4140,7 +4140,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "エチルメチルエーテルを組んで2つのアルキル基を見る",
+        "label": "エチルメチルエーテルの2つのアルキル基を見る",
         "summon": "ethylmethyl-ether"
       },
       "evidence": {
@@ -4897,7 +4897,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "アセトアルデヒドを組んでホルミル基を見る",
+        "label": "アセトアルデヒドのホルミル基を見る",
         "summon": "acetaldehyde"
       },
       "evidence": {
@@ -4944,7 +4944,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "アセトンを組んでカルボニル基の両側を見る",
+        "label": "アセトンのカルボニル基の両側を見る",
         "summon": "acetone"
       },
       "evidence": {
@@ -5580,7 +5580,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "酢酸を組んでカルボキシ基を見る",
+        "label": "酢酸のカルボキシ基を見る",
         "summon": "acetic-acid"
       },
       "evidence": {
@@ -5630,7 +5630,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ステアリン酸を組んで高級脂肪酸の大きさを見る",
+        "label": "ステアリン酸で高級脂肪酸の大きさを見る",
         "summon": "stearic-acid"
       },
       "evidence": {
@@ -5866,7 +5866,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ギ酸を組んで最も簡単なカルボン酸を見る",
+        "label": "ギ酸で最も簡単なカルボン酸を見る",
         "summon": "formic-acid"
       },
       "evidence": {
@@ -6004,7 +6004,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "シュウ酸を組んでカルボキシ基2個を数える",
+        "label": "シュウ酸のカルボキシ基2個を数える",
         "summon": "oxalic-acid"
       },
       "evidence": {
@@ -6030,7 +6030,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "マレイン酸を組んでシス形を確かめる",
+        "label": "マレイン酸のシス形を確かめる",
         "summon": "maleic-acid"
       },
       "knowledge": "マレイン酸とフマル酸はブテン二酸のシス-トランス異性体で、シス形がマレイン酸、トランス形がフマル酸。",
@@ -6239,7 +6239,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "乳酸を組んで不斉炭素原子を見つける",
+        "label": "乳酸の不斉炭素原子を見つける",
         "summon": "lactic-acid"
       },
       "knowledge": "乳酸 CH₃CH(OH)COOH はヒドロキシ基とカルボキシ基を合わせもち、不斉炭素原子が1つあるため鏡像異性体が存在する。",
@@ -6309,7 +6309,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "酢酸エチルを組んでエステル結合を見る",
+        "label": "酢酸エチルのエステル結合を見る",
         "summon": "ethyl-acetate"
       },
       "evidence": {
@@ -6659,7 +6659,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ニトログリセリンを組んで硝酸エステルを見る",
+        "label": "ニトログリセリンで硝酸エステルを見る",
         "summon": "nitroglycerin"
       },
       "evidence": {
@@ -6723,7 +6723,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ベンゼンを組み立てる",
+        "label": "ベンゼンの正六角形を見る",
         "summon": "benzene"
       },
       "knowledge": "ベンゼン C₆H₆ は炭素原子6個が正六角形に並んだ平面分子。結合角は約120°。",
@@ -7204,7 +7204,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ベンゼンスルホン酸を組み立てる",
+        "label": "ベンゼンスルホン酸のスルホ基を見る",
         "summon": "benzenesulfonic-acid"
       },
       "evidence": {
@@ -7252,7 +7252,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "シクロヘキサンを組み立てる",
+        "label": "水素が付加したシクロヘキサンを見る",
         "summon": "cyclohexane"
       },
       "evidence": {
@@ -7300,7 +7300,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ヘキサクロロシクロヘキサンを組み立てる",
+        "label": "ヘキサクロロシクロヘキサンの6個の塩素を見る",
         "summon": "hexachlorocyclohexane"
       },
       "evidence": {
@@ -7346,7 +7346,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "トルエンを組み立てる",
+        "label": "トルエンのメチル基を見る",
         "summon": "toluene"
       },
       "evidence": {
@@ -7434,7 +7434,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "p-ジクロロベンゼンを組み立てて位置関係を見る",
+        "label": "p-ジクロロベンゼンで位置関係を見る",
         "summon": "p-dichlorobenzene"
       },
       "evidence": {
@@ -7460,7 +7460,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "スチレンを組み立てる",
+        "label": "スチレンのビニル基を見る",
         "summon": "styrene"
       },
       "knowledge": "スチレン C₆H₅CH=CH₂ はベンゼン環にビニル基が付いた化合物。C=C の部分で付加重合してポリスチレンになる。",
@@ -7506,7 +7506,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ナフタレンを組み立てる",
+        "label": "ナフタレンの縮合した2つの環を見る",
         "summon": "naphthalene"
       },
       "knowledge": "ナフタレン C₁₀H₈ はベンゼン環2個が1辺を共有して縮合した化合物。昇華しやすい無色の板状結晶で、防虫剤に使う。",
@@ -7581,7 +7581,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "安息香酸を組み立てる",
+        "label": "酸化でできた安息香酸を見る",
         "summon": "benzoic-acid"
       },
       "evidence": {
@@ -7634,7 +7634,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "テレフタル酸を組み立てる",
+        "label": "テレフタル酸の2つのカルボキシ基の位置を見る",
         "summon": "terephthalic-acid"
       },
       "evidence": {
@@ -7686,7 +7686,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "無水フタル酸を組み立てる",
+        "label": "無水フタル酸の酸無水物の部分を見る",
         "summon": "phthalic-anhydride"
       },
       "evidence": {
@@ -7792,7 +7792,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "o-クレゾールを組み立てる",
+        "label": "o-クレゾールのメチル基とヒドロキシ基を見る",
         "summon": "o-cresol"
       },
       "evidence": {
@@ -7878,7 +7878,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "フェノールを組み立てる",
+        "label": "フェノールのヒドロキシ基を見る",
         "summon": "phenol"
       },
       "evidence": {
@@ -8459,7 +8459,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "アニリンを組み立てる",
+        "label": "アニリンのアミノ基を見る",
         "summon": "aniline"
       },
       "evidence": {
@@ -8899,7 +8899,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "アゾベンゼンを組み立てる",
+        "label": "アゾベンゼンのアゾ基を見る",
         "summon": "azobenzene"
       },
       "evidence": {
@@ -8946,7 +8946,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "安息香酸を組み立てる",
+        "label": "安息香酸のカルボキシ基を見る",
         "summon": "benzoic-acid"
       },
       "evidence": {
@@ -9000,7 +9000,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "サリチル酸を組み立てる",
+        "label": "サリチル酸の2つの官能基の位置を見る",
         "summon": "salicylic-acid"
       },
       "evidence": {
@@ -9250,7 +9250,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "油脂（トリステアリン）を組み立てる",
+        "label": "油脂（トリステアリン）の3つのエステル結合を見る",
         "summon": "tristearin"
       },
       "evidence": {
@@ -9301,7 +9301,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "オレイン酸を組み立てる",
+        "label": "オレイン酸の二重結合を見る",
         "summon": "oleic-acid"
       },
       "evidence": {
@@ -9635,7 +9635,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "セッケン分子を組み立てる",
+        "label": "セッケン分子の疎水性の部分と親水性の部分を見る",
         "summon": "sodium-stearate"
       },
       "evidence": {
@@ -9865,7 +9865,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "合成洗剤の分子を組み立てる",
+        "label": "合成洗剤の分子の親水性の部分を見る",
         "summon": "sodium-alkylbenzenesulfonate"
       },
       "evidence": {
@@ -10092,7 +10092,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "グルコースの鎖状構造を組み立てる",
+        "label": "グルコースの鎖状構造を見る",
         "summon": "d-glucose"
       },
       "evidence": {
@@ -10257,7 +10257,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "フルクトースを組み立てる",
+        "label": "フルクトースのカルボニル基を見る",
         "summon": "d-fructose"
       },
       "evidence": {
@@ -10412,7 +10412,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "マルトースを組み立てる",
+        "label": "マルトースのグルコース2分子を見る",
         "summon": "maltose"
       },
       "evidence": {
@@ -10466,7 +10466,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "スクロースを組み立てる",
+        "label": "スクロースのグリコシド結合の位置を見る",
         "summon": "sucrose"
       },
       "evidence": {
@@ -10566,7 +10566,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ラクトースを組み立てる",
+        "label": "ラクトースの構成単糖を見る",
         "summon": "lactose"
       },
       "evidence": {
@@ -11051,7 +11051,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "α-アミノ酸の形を組み立てる",
+        "label": "α-アミノ酸の形（アラニン）を見る",
         "summon": "alanine"
       },
       "evidence": {
@@ -12022,7 +12022,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "デオキシリボースを組み立てる",
+        "label": "デオキシリボースを見る",
         "summon": "deoxyribose"
       },
       "evidence": {
@@ -12277,7 +12277,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ε-カプロラクタムの環を組み立てる",
+        "label": "ε-カプロラクタムの環を見る",
         "summon": "epsilon-caprolactam"
       },
       "evidence": {
@@ -12939,7 +12939,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ポリアセチレンの鎖を組み立てる",
+        "label": "ポリアセチレンの鎖を見る",
         "summon": "polyacetylene"
       },
       "evidence": {
@@ -13128,7 +13128,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ε-カプロラクタムを組み立てる",
+        "label": "ε-カプロラクタムのアミド結合を見る",
         "summon": "epsilon-caprolactam"
       },
       "evidence": {
@@ -13179,7 +13179,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ナイロン66 の繰り返し単位を組み立てる",
+        "label": "ナイロン66 の繰り返し単位のアミド結合を見る",
         "summon": "nylon-66"
       },
       "evidence": {
@@ -13331,7 +13331,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "ポリビニルアルコールの鎖を組み立てる",
+        "label": "ポリビニルアルコールの鎖のヒドロキシ基を見る",
         "summon": "polyvinyl-alcohol"
       },
       "evidence": {
@@ -14628,7 +14628,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "o-ニトロフェノールを組み立てて、隣り合う2つの置換基を見る",
+        "label": "o-ニトロフェノールの隣り合う2つの置換基を見る",
         "summon": "o-nitrophenol"
       },
       "evidence": {
@@ -14681,7 +14681,7 @@
       ],
       "link": {
         "kind": "summon",
-        "label": "アニソール（フェノールのメチルエーテル）を組み立てる",
+        "label": "アニソール（フェノールのメチルエーテル）の −OCH₃ を見る",
         "summon": "anisole"
       },
       "evidence": {
