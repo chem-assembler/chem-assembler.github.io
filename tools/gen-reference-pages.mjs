@@ -287,6 +287,12 @@ text-decoration:none;line-height:1.65}
 box-shadow:inset 3px 0 0 var(--accent)}
 @media (min-width:1000px){
   .ref-layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:40px;align-items:start}
+  /* ⚠⚠ **節（:::section）が1つも無いページには目次そのものが出ない**（＝ .ref-toc が居ない）。
+     ★ そのとき本文が**1列目（232px）に落ちて**、右の 680px が丸ごと空く ——
+       実測: alkane-naming の本文が幅 232px、貼った図が 232px（読めない大きさ）。
+     ⚠ 6ページ中4ページが節を持たないので、**空くほうが普通**の状態だった。
+     ★ 直し方は1行 —— 本文は**いつも2列目**に置く（目次が居なくても列は動かない）。 */
+  .ref-layout>.ref-scope{grid-column:2}
   /* ⚠ 広い面では**目次が独立した1列**なので、狭い面の「貼り付いた札」の飾りを全部戻す */
   .ref-layout .ref-toc{position:sticky;top:16px;margin:0;padding:0;background:none;
   max-height:calc(100vh - 32px);overflow:auto}
@@ -322,6 +328,14 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-hand-table{font-size:15px}
 .ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
 .ref-scope .ref-callout-text{font-size:15.5px}
+/* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
+   13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
+   ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
+.ref-scope .ref-exercise{margin:0 0 24px;padding:14px 18px}
+.ref-scope .ref-ex-tag{font-size:12.5px}
+.ref-scope .ref-ex-q{font-size:16px}
+.ref-scope .ref-ex-a{font-size:15.5px}
+.ref-scope .ref-ex-open{font-size:14px;padding:6px 13px;min-height:32px}
 /* 用語の索引（★ 機械で組む・§19-7） */
 .terms{list-style:none;padding:0;margin:0 0 26px}
 .terms li{border-bottom:1px solid var(--line);padding:10px 2px;font-size:15px}
@@ -359,6 +373,9 @@ const LIGHT_OVERRIDE = [
     /* ⚠ `:::link`（ref-format レーン）と 明るい地（ref-read レーン）が別々に育ったので、
        取り込みのときに初めてぶつかった。**この検査が捕まえた**（下の LIGHT_CSS で読み替えた）。 */
     'ref-link',
+    /* ★ 例題（`:::exercise`・§22）。⚠ 器の地が `rgba(255,255,255,.03)`・左の帯が `#7ef`・
+       「解答を見る」の札の地が `rgba(0,0,0,.25)` ＝ **3つとも明るい地では効かない**。 */
+    'ref-exercise', 'ref-ex-open',
 ];
 /* ★ 明るい地でも**そのままでよい**もの（⚠ 1件ずつ理由を書く。書けないなら読み替える側） */
 const LIGHT_KEEP = {
@@ -408,6 +425,16 @@ const LIGHT_CSS = `
    ★ 同じ「押せる札」の .ref-try と同じ色に寄せる（読者から見て同じ種類のものなので） */
 .ref-scope a.ref-link{color:#5f3585}
 .ref-scope a.ref-link:hover{border-color:#7c4dab;background:#f3ecfa}
+/* 例題（:::exercise・§22）。⚠ 暗い地では「白の薄敷き＋水色の帯」だったが、
+   明るい地では敷きが効かない（#f5f3ef の上に rgba(255,255,255,.03) ＝ 見た目が変わらない）。
+   ★ 読み替えの向きは .ref-rx と同じ ＝ 紙（--panel）を敷いて罫線で囲む。
+   ⚠ 左の帯は --accent（#0d6c78）で残す —— border-color の一括指定は
+     左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
+   ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
+     地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+.ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
+.ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
+.ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
 `.trim();
 
 /* ★★ **読み替え漏れを機械で見る。**
