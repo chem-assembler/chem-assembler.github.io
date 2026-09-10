@@ -1637,20 +1637,29 @@ main.timelineMain {
   font-size: 12.5px; color: #7c8792;
 }
 .bwSelfNote .bwNoteText { color: #5a6570; }
+/* ★ 2026-09-11・「紙に自分で書くと起こる事故」の注意。筆算のいちばん下に1度だけ。
+   ⚠ 判定の色（緑・赤）を使わない —— 正解のあとに出る**読みもの**であって、
+   いま答えたことの合否ではない */
+#bottleTrap {
+  margin-top: 10px; padding: 8px 10px; line-height: 1.65;
+  font-size: 12.5px; color: #46525e;
+  background: #fbf7ee; border: 1px solid #e3d6b8; border-left: 4px solid #d8b968; border-radius: 6px;
+}
+.btrapHead { display: block; font-weight: bold; color: #7a5f1e; margin-bottom: 2px; }
+.btrapText { display: block; }
 .bchip {
   display: inline-flex; align-items: center; gap: 2px;
   font-size: 14.5px; font-weight: bold; color: #23303b;
   background: linear-gradient(#fbfdff, #eef4f9);
   border: 1.5px solid #c3d2df; border-radius: 6px; padding: 3px 3px 3px 7px;
 }
-.bchip.ionChip { background: #fdf3ee; border-color: #e0b6a2; }
 .bchipX {
   border: 0; background: transparent; color: #8a949e; cursor: pointer;
   font-size: 11px; line-height: 1; padding: 5px 4px; min-height: 24px;
 }
 /* 判定文・手がかりは**全幅の行**に積む（列は狭く、長い文が1文字ずつ縦に折れるため）。
    どの柱・どの物質の話かは、行の頭の札が言う */
-#bottleEq, #bottleQuiz, #bottleRack, #bottleMsg, #bottleCountNotes,
+#bottleTrap, #bottleEq, #bottleQuiz, #bottleRack, #bottleMsg, #bottleCountNotes,
 #addIonRows, #addIonMsg, #addIonWrap > .stepSubHead,
 #bottleTail > .stepHead, #bottleCounts > .bottleCap { grid-column: 1 / -1; width: 0; min-width: 100%; }
 .bwRowTag { grid-column: 1 / -1; }
