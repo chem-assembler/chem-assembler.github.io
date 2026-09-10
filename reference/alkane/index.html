@@ -401,6 +401,17 @@ footer a:hover{color:var(--brand)}
 .ref-toc ul { list-style: none; margin: 0; padding: 0 10px 8px; }
 .ref-toc li { margin: 0 0 4px; }
 .ref-toc a { font-size: 12.5px; color: #e0b0ff; text-decoration: none; line-height: 1.6; }
+/* ★ 節の下の小見出し（§20-5）。⚠ **節（`.ref-sec-h`）より一段小さく**、地の色も持たない ——
+   目次に出ないもの（＝ 検索の着地点ではないもの）が、節と同じ強さで並ばないようにする */
+.ref-h5 {
+    margin: 16px 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--border-color);
+    padding-left: 8px;
+}
 /* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
 .ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
 .ref-list li { margin: 0 0 5px; }
@@ -474,6 +485,28 @@ footer a:hover{color:var(--brand)}
 .ref-callout-memorize { border-left-color: var(--neon-purple); }
 .ref-callout-memorize .ref-callout-tag { color: #e0b0ff; }
 .ref-callout-skip { border-left-color: var(--text-muted); }
+/* ★ 補足。**型を書かない `::: … :::` の既定**（§20-4）。⚠ いちばん静かな見せ方にする ——
+   「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
+.ref-callout-note { border-left-color: var(--text-secondary); }
+.ref-callout-note .ref-callout-tag { color: var(--text-muted); }
+/* ★★ ページどうし・アプリへのリンク（§20-7）。
+   ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
+      押せるものと同じ見た目にしない —— 淡くしたうえで「準備中」の札を必ず添える
+      （札を出すのは learn.js。ここは見た目だけ）。 */
+.ref-link-row { margin: 0 0 12px; }
+.ref-link {
+    display: inline-block;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+a.ref-link { color: #e0b0ff; text-decoration: none; }
+a.ref-link:hover { border-color: var(--neon-purple); background: rgba(224, 176, 255, 0.08); }
+a.ref-link::before { content: '→ '; }
+.ref-link-soon { color: var(--text-muted); border-style: dashed; cursor: default; }
+.ref-link-badge { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); }
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -511,7 +544,11 @@ footer a:hover{color:var(--brand)}
 .ref-scope .ref-example{background:#f3ecfa;border-color:#7c4dab}
 .ref-scope .ref-example h4{color:#5f3585}
 .ref-scope a.ref-try,.ref-scope a.ref-mech-play{color:#5f3585;background:var(--panel);border-color:#7c4dab}
-.ref-scope a.ref-try:hover,.ref-scope a.ref-mech-play:hover{background:#f3ecfa}</style>
+.ref-scope a.ref-try:hover,.ref-scope a.ref-mech-play:hover{background:#f3ecfa}
+/* ページどうし・アプリへのリンク。⚠ 暗い地の #e0b0ff は明るい地で 1.9:1 ＝ 読めない。
+   ★ 同じ「押せる札」の .ref-try と同じ色に寄せる（読者から見て同じ種類のものなので） */
+.ref-scope a.ref-link{color:#5f3585}
+.ref-scope a.ref-link:hover{border-color:#7c4dab;background:#f3ecfa}</style>
 </head>
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
@@ -521,48 +558,63 @@ footer a:hover{color:var(--brand)}
 <div><span class="unit-label">脂肪族炭化水素</span><span class="unit-label">アルカン</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-structure" data-ref-anchor="structure">どんな形をしているか</a></li><li><a href="#ref-sec-formula" data-ref-anchor="formula">一般式 CnH2n+2 はどこから出てくるか</a></li><li><a href="#ref-sec-list" data-ref-anchor="list">主なアルカンと、常温での姿</a></li><li><a href="#ref-sec-alkyl" data-ref-anchor="alkyl">アルキル基 —— アルカンから水素を1つ取ったもの</a></li><li><a href="#ref-sec-substitution" data-ref-anchor="substitution">アルカンの反応 —— 置換反応</a></li><li><a href="#ref-sec-methane" data-ref-anchor="methane">メタン CH₄</a></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-structure" data-ref-anchor="structure">どんな形をしているか</a></li><li><a href="#ref-sec-formula" data-ref-anchor="formula">アルカンの一般式は CnH2n+2</a></li><li><a href="#ref-sec-list" data-ref-anchor="list">主なアルカンと、常温での姿</a></li><li><a href="#ref-sec-alkyl" data-ref-anchor="alkyl">アルキル基 —— アルカンから水素を1つ取ったもの</a></li><li><a href="#ref-sec-substitution" data-ref-anchor="substitution">アルカンの反応 —— 置換反応</a></li><li><a href="#ref-sec-methane" data-ref-anchor="methane">メタン CH₄</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">アルカンは、炭素と水素だけでできていて、<b>炭素どうしが単結合だけでつながっている</b>分子です。二重結合も三重結合も環も無いので、炭素に付ける手はぜんぶ水素で埋まります ＝ <b>飽和</b>しています。ここから先の性質は、ほとんどすべて「単結合だけ」「電荷のかたよりが無い」の2つから出てきます。</p>
+<p class="ref-p">アルカンは、<b>炭素どうしが単結合だけでつながっている</b>炭化水素です。二重結合も三重結合も環も無いので、炭素に付ける手はぜんぶ水素で埋まって（＝ <b>飽和して</b>）います。</p>
 <section class="ref-sec" id="ref-sec-structure"><h4 class="ref-sec-h">どんな形をしているか</h4><p class="ref-sec-lead">メタンの正四面体が繰り返しつながった形で、炭素どうしの単結合は自由に回転できます。</p></section>
-<p class="ref-p">いちばん小さいアルカンであるメタン CH₄ は、炭素を中心にした<b>正四面体</b>の形をしています。平面の十字ではありません。炭素のまわりにある<b>4組の電子対が、負の電荷でたがいに反発して、いちばん遠い位置に散る</b>ためで、結合角は <b>約109.5°</b> になります。</p>
-<p class="ref-p">アルカンは、この正四面体が繰り返しつながった形です。そして<b>炭素間の単結合は自由に回転できる</b>ので、同じ分子でも見え方はいくらでも変わります。紙の上で折れ線に見えるか一直線に見えるかは、<b>構造の違いではありません</b>。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-structure.png" alt="メタンの正四面体構造（結合角109.5度）、炭素のまわりの4組の電子対、エタンの炭素間単結合が回転できることを示した図" loading="lazy"><figcaption class="ref-figure-cap">左からメタンの正四面体、電子対が反発して正四面体になること、エタンの単結合が回転できること。</figcaption></figure>
-<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text"><b>「反応しにくい」と「反応しない」は違います。</b> アルカンは常温では反応性が低いだけで、光を当てればハロゲンと置換反応を起こし、高温では燃焼します。「アルカンは安定だから何も起きない」と覚えると、下の2つの反応が抜けます。</p></div>
-<section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">一般式 CnH2n+2 はどこから出てくるか</h4><p class="ref-sec-lead">覚える式ではなく、メチレン基 −CH₂− を1つずつ足していく操作から出てくる式です。</p></section>
-<p class="ref-p">枝分かれの無い直鎖のアルカンは、<b>メチレン基 −CH₂− がいくつかと、両端の水素2個</b>でできています。メチレン基が n 個なら水素は 2n 個、これに両端の2個を足して 2n+2 個 ＝ <b>C<sub>n</sub>H<sub>2n+2</sub></b> です。</p>
-<p class="ref-p">枝分かれのあるアルカンも同じ式になります。<b>鎖を伸ばすときも、枝分かれをつくるときも、足しているのはメチレン基1つ</b>だからです。この2つの操作だけで、どんなアルカンの構造も作れます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-formula-derivation.png" alt="直鎖アルカンがメチレン基と両端の水素2個からできていること、鎖を伸ばす操作と枝分かれをつくる操作のどちらもメチレン基を1つ足すだけであることを示した図" loading="lazy"><figcaption class="ref-figure-cap">鎖を伸ばしても、枝分かれをつくっても、足しているのはメチレン基 −CH₂− 1つ。だから一般式は変わりません。</figcaption></figure>
-<p class="ref-p">こうして炭素の数だけが違い、同じ一般式で表される化合物のならびを<b>同族体</b>といいます。名前の付け方（メタン・エタン・プロパン…と、枝分かれのある場合の番号の振り方）は、別ページの「アルカンの命名」にまとめてあります。</p>
+<p class="ref-p">いちばん小さいアルカンであるメタン CH₄ は、炭素を中心にした<b>正四面体</b>の形をしています。炭素のまわりにある<b>4組の電子対が、負の電荷でたがいに反発して、いちばん遠い位置に散る</b>ためで、結合角は <b>約109.5°</b> になります。</p>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">電子対の反発で分子の形が決まるしくみ（VSEPR）をもう少し詳しく<b class="ref-link-badge">準備中</b></span></p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-tetrahedron.png" alt="メタンの正四面体構造。中心の炭素から4本の結合が伸び、手前に出る結合を塗ったくさび、奥へ向かう結合を破線のくさびで描き、結合角109.5度を書き込んだ図" loading="lazy"><figcaption class="ref-figure-cap">紙の上では、手前に出る結合を塗ったくさび、奥へ向かう結合を破線のくさびで描き分けます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-pair.png" alt="メタンの電子式。炭素のまわりの4組の共有電子対が、負の電荷でたがいに反発するので正四面体になることを示した図" loading="lazy"><figcaption class="ref-figure-cap">4組の電子対がたがいに反発して、いちばん遠い位置に散った結果が正四面体です。</figcaption></figure>
+<p class="ref-p">アルカンは、この正四面体が繰り返しつながった形です。<b>炭素間の単結合は自由に回転できる</b>ので、同じ分子でも変形することができ見え方は一定ではありません。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ethane-rotation.png" alt="エタンの構造式。2個の炭素をつなぐ単結合のまわりで、片側の炭素についた水素が回せることを回転の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">エタンの炭素間の単結合。矢印のように回しても、別の分子になったわけではありません。</figcaption></figure>
+<section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">アルカンの一般式は CnH2n+2</h4><p class="ref-sec-lead">丸暗記もよいが、図形的に導けるようにしよう。</p></section>
+<p class="ref-p">枝分かれの無い直鎖のアルカンは、いくつかの<b>メチレン基 −CH₂− と、両端の水素2個</b>でできています。C原子の数を n 個とすると、水素原子はメチレン基の部分に 2n 個、両端の2個あるので合計 2n+2 個になります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-methylene-chain.png" alt="直鎖アルカンの構造式。3個のメチレン基を1つずつ縦長の枠で囲み、両端の水素原子2個を丸で囲んで示した図" loading="lazy"><figcaption class="ref-figure-cap">縦の枠がメチレン基 −CH₂−、両端の丸が水素です。枠が n 個なら水素は 2n 個、これに両端の2個が足されます。</figcaption></figure>
+<p class="ref-p">どんな構造のアルカンも「<b>鎖を伸ばす」、「枝分かれをつくる」、の2つの操作だけでつくることができますが、いずれの場合もメチレン基 −CH₂− を足している</b>ので、アルカンの分子式（一般式）は必ず <b>C<sub>n</sub>H<sub>2n+2</sub></b>になります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-chain-branch.png" alt="前の図の直鎖アルカンにメチレン基を1個足して鎖を伸ばした構造式と、同じくメチレン基を1個足して枝分かれをつくった構造式を、2本の矢印で並べた図" loading="lazy"><figcaption class="ref-figure-cap">上が鎖を伸ばした形、下が枝分かれをつくった形。どちらも足したのはメチレン基 −CH₂− 1個です。</figcaption></figure>
+<p class="ref-p">この一般式の n に n=1 を代入すれば炭素数1のアルカンであるメタンの分子式 CH₄ が、n=3 を代入すれば炭素数3のアルカンであるプロパンの分子式 C₃H₈ が得られます。</p>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">一般式とは何か、同族体とはどういう仲間かを最初から<b class="ref-link-badge">準備中</b></span></p>
 <section class="ref-sec" id="ref-sec-list"><h4 class="ref-sec-h">主なアルカンと、常温での姿</h4><p class="ref-sec-lead">炭素が増えるほど沸点が上がり、気体 → 液体 → 固体と姿が変わります。分かれ目は C₄／C₅ と C₁₇／C₁₈ です。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">炭素数1〜10のアルカン（10行）</div><table class="ref-hand-table"><thead><tr><th>n</th><th>名称</th><th>分子式</th><th>常温での状態</th><th>構造異性体</th></tr></thead><tbody><tr><td>1</td><td>メタン</td><td>CH₄</td><td>気体</td><td>1</td></tr><tr><td>2</td><td>エタン</td><td>C₂H₆</td><td>気体</td><td>1</td></tr><tr><td>3</td><td>プロパン</td><td>C₃H₈</td><td>気体</td><td>1</td></tr><tr><td>4</td><td>ブタン</td><td>C₄H₁₀</td><td>気体</td><td>2</td></tr><tr><td>5</td><td>ペンタン</td><td>C₅H₁₂</td><td>液体</td><td>3</td></tr><tr><td>6</td><td>ヘキサン</td><td>C₆H₁₄</td><td>液体</td><td>5</td></tr><tr><td>7</td><td>ヘプタン</td><td>C₇H₁₆</td><td>液体</td><td>9</td></tr><tr><td>8</td><td>オクタン</td><td>C₈H₁₈</td><td>液体</td><td>18</td></tr><tr><td>9</td><td>ノナン</td><td>C₉H₂₀</td><td>液体</td><td>35</td></tr><tr><td>10</td><td>デカン</td><td>C₁₀H₂₂</td><td>液体</td><td>75</td></tr></tbody></table></div>
-<p class="ref-p">アルカンは<b>無極性分子</b>なので、分子どうしを引きつけているのは弱いファンデルワールス力だけです。それでも<b>分子量が大きくなるほど引きつけ合う力は強くなる</b>ので、蒸発しにくくなり、沸点が上がります。だから <b>C₁〜C₄ は気体、C₅〜C₁₇ は液体、C₁₈ 以上は固体</b>です。</p>
-<p class="ref-p">同じ分子式でも、<b>枝分かれが多いほど沸点は低く</b>なります。枝分かれすると分子の形が球に近づき、<b>分子どうしが触れ合う面積が減って</b>引きつけ合う力が弱くなるためです。</p>
+<div class="ref-table-wrap"><div class="ref-cap">炭素数1〜10のアルカン（10行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">n</th><th style="text-align: center;">名称</th><th style="text-align: center;">分子式</th><th style="text-align: center;">常温での状態</th><th style="text-align: right;">構造異性体</th></tr></thead><tbody><tr><td style="text-align: center;">1</td><td style="text-align: center;">メタン</td><td style="text-align: center;">CH₄</td><td style="text-align: center;">気体</td><td style="text-align: right;">1</td></tr><tr><td style="text-align: center;">2</td><td style="text-align: center;">エタン</td><td style="text-align: center;">C₂H₆</td><td style="text-align: center;">気体</td><td style="text-align: right;">1</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: center;">プロパン</td><td style="text-align: center;">C₃H₈</td><td style="text-align: center;">気体</td><td style="text-align: right;">1</td></tr><tr><td style="text-align: center;">4</td><td style="text-align: center;">ブタン</td><td style="text-align: center;">C₄H₁₀</td><td style="text-align: center;">気体</td><td style="text-align: right;">2</td></tr><tr><td style="text-align: center;">5</td><td style="text-align: center;">ペンタン</td><td style="text-align: center;">C₅H₁₂</td><td style="text-align: center;">液体</td><td style="text-align: right;">3</td></tr><tr><td style="text-align: center;">6</td><td style="text-align: center;">ヘキサン</td><td style="text-align: center;">C₆H₁₄</td><td style="text-align: center;">液体</td><td style="text-align: right;">5</td></tr><tr><td style="text-align: center;">7</td><td style="text-align: center;">ヘプタン</td><td style="text-align: center;">C₇H₁₆</td><td style="text-align: center;">液体</td><td style="text-align: right;">9</td></tr><tr><td style="text-align: center;">8</td><td style="text-align: center;">オクタン</td><td style="text-align: center;">C₈H₁₈</td><td style="text-align: center;">液体</td><td style="text-align: right;">18</td></tr><tr><td style="text-align: center;">9</td><td style="text-align: center;">ノナン</td><td style="text-align: center;">C₉H₂₀</td><td style="text-align: center;">液体</td><td style="text-align: right;">35</td></tr><tr><td style="text-align: center;">10</td><td style="text-align: center;">デカン</td><td style="text-align: center;">C₁₀H₂₂</td><td style="text-align: center;">液体</td><td style="text-align: right;">75</td></tr></tbody></table></div>
+<p class="ref-p">よく登場する<b>ヘキサン</b> C₆H₁₄ <b>まで</b>の名称は必ず暗記してください。ヘプタン C₇H₁₆ 以降の名前を覚えていなくて困ることは、ほとんどありません。</p>
+<div class="ref-callout ref-callout-note"><b class="ref-callout-tag">補足</b><p class="ref-callout-text">メタン CH₄ からブタン C₄H₁₀ までは慣用名（ニックネーム）ですが、ペンタン以降は数字を表すギリシャ語の接頭辞の語尾を -ane に変化させたものです。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkane-naming/">ギリシャ語の接頭辞（ジ・トリ・テトラ…）を実際に使う場面は「アルカンの命名」で</a></p>
+<h5 class="ref-h5">アルカンの常温での状態</h5>
+<p class="ref-p">アルカンは<b>無極性分子</b>なので、分子どうしを引きつけているのは弱いファンデルワールス力だけです。ファンデルワールス力は<b>分子量が大きくなるほど引きつけ合う力は強くなる</b>ので、蒸発しにくくなり、沸点が高くなります。だから <b>C₁〜C₄ は気体、C₅〜C₁₇ は液体、C₁₈ 以上は固体</b>です。液体と固体の境界についてはほとんど問われることはありませんが、ブタン C₄H₁₀ やペンタン C₅H₁₂ はよく登場するので気体と液体の境界はしっかりと覚えるようにしましょう。</p>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">分子間力そのものと、沸点との関係をまとめて見る<b class="ref-link-badge">準備中</b></span></p>
+<h5 class="ref-h5">枝分かれすると沸点が下がる（発展）</h5>
+<p class="ref-p">同じ分子式のアルカン同士で比較すると、<b>枝分かれが多いほど沸点は低く</b>なります。枝分かれすると分子の形が球に近づき、<b>分子どうしが触れ合う面積が減って</b>引きつけ合う力が弱くなるためです。</p>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">同じ炭素数でもアルコールの沸点がずっと高いのはなぜか<b class="ref-link-badge">準備中</b></span></p>
+<p class="ref-link-row"><a class="ref-link" href="/assembler/?open=isomer&amp;formula=C5H12">ペンタン C₅H₁₂ の異性体3つを自分で書き出してみる（沸点が違うのはこの3つ）</a></p>
 <p class="ref-p">無極性であることは、水への溶けかたにもそのまま出ます。<b>アルカンは水に溶けにくく、水より密度が小さい</b>ので、水と混ぜると上に分かれます。</p>
-<div class="ref-callout ref-callout-skip"><b class="ref-callout-tag">覚えなくてよい</b><p class="ref-callout-text">名称は暗記しますが、<b>入試で頻繁に出るのはヘキサン（C₆）まで</b>です。オクタン以降の名前を覚えていなくて困ることは、ほとんどありません。</p></div>
 <section class="ref-sec" id="ref-sec-alkyl"><h4 class="ref-sec-h">アルキル基 —— アルカンから水素を1つ取ったもの</h4><p class="ref-sec-lead">枝の名前はここから来ます。語尾の -ane を -yl に変えるだけです。</p></section>
 <p class="ref-p">アルカン C<sub>n</sub>H<sub>2n+2</sub> から水素原子を1個取り去った原子団を<b>アルキル基 −C<sub>n</sub>H<sub>2n+1</sub></b> といいます。分子ではなく、分子の一部（パーツ）です。名前は、もとのアルカンの語尾 <b>-ane を -yl（イル）に変える</b>だけです。</p>
 <ul class="ref-list"><li>メタン CH₄ → <b>メチル基</b> −CH₃</li><li>エタン C₂H₆ → <b>エチル基</b> −C₂H₅</li><li>プロパン C₃H₈ → <b>プロピル基</b> −C₃H₇（2種類）</li><li>ブタン C₄H₁₀ → <b>ブチル基</b> −C₄H₉（4種類）</li><li>ペンタン C₅H₁₂ → <b>ペンチル基</b> −C₅H₁₁（8種類）</li></ul>
 <p class="ref-p">炭素が3個以上になると、<b>どの水素を取ったか</b>で違う基になります。プロピル基が2種類あるのはそのためで、枝分かれしたアルカンの名前が何通りにもなる理由もここにあります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/assembler/?open=practice">書き出し練習をひらく（分子式から異性体を全部たどる）</a></p>
 <section class="ref-sec" id="ref-sec-substitution"><h4 class="ref-sec-h">アルカンの反応 —— 置換反応</h4><p class="ref-sec-lead">アルカンが常温付近で起こす反応はこれ1つです。光を当てて、ハロゲンと水素を入れ替えます。</p></section>
 <p class="ref-p">アルカンは常温では反応性が低いのですが、<b>ハロゲンの単体と混ぜて光を当てる</b>と反応します。メタンと塩素なら、メタンの水素1個と塩素分子の塩素1個が<b>入れ替わって</b>、クロロメタンと塩化水素ができます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-substitution.png" alt="メタンの水素1個と塩素分子の塩素原子が入れ替わり、クロロメタンと塩化水素ができることを構造式と矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">入れ替わっているのは、メタンの H 1個と、塩素分子の Cl 1個。</figcaption></figure>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ Cl₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₃Cl ＋ HCl</span></div><p class="ref-note">できるのはクロロメタン CH₃Cl と塩化水素 HCl。<b>アルカンの反応は置換反応</b>、と覚えてしまってかまいません。</p></div>
-<p class="ref-p">このように、分子の中の原子（原子団）が他の原子（原子団）と<b>置き換わる</b>反応を<b>置換反応</b>、入ってきた原子（原子団）を<b>置換基</b>、できた物質をもとの分子の<b>置換体</b>といいます。電子対がどう動いてこの入れ替わりが起きるのかは、別ページの「反応の道すじ（反応機構）」で巻矢印のアニメとして1段ずつ追えます。</p>
-<p class="ref-p">条件を整えると、置換は1回では止まりません。<b>水素が4個あるので、4回まで続けて起こります。</b></p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-chlorination-chain.png" alt="メタンが光と塩素で順にクロロメタン、ジクロロメタン、トリクロロメタン、テトラクロロメタンへ変わっていく連続置換の図" loading="lazy"><figcaption class="ref-figure-cap">塩素が1個入るたびに Cl₂ が1分子ずつ使われます。</figcaption></figure>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ Cl₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₃Cl ＋ HCl</span></div><p class="ref-note">原子が入れ替わるので置換反応といいます。<b>アルカンの反応は置換反応</b>、と覚えてしまってかまいません。</p></div>
+<p class="ref-p">このように、分子の中の原子（原子団）が他の原子（原子団）と<b>置き換わる</b>反応を<b>置換反応</b>、入ってきた原子（原子団）を<b>置換基</b>、できた物質をもとの分子の<b>置換体</b>といいます。</p>
+<h5 class="ref-h5">電子対はどう動いているのか（発展）</h5>
+<p class="ref-p">電子対がどう動いてこの入れ替わりが起きるのかは、別ページの「反応の道すじ（反応機構）」で巻矢印のアニメとして1段ずつ追えます。</p>
+<p class="ref-p">条件を整えると、置換は1回では止まりません。メタン CH₄ には<b>水素が4個あるので、4回まで続けて起こります。</b></p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-chlorination-chain-1.png" alt="メタンが光と塩素でクロロメタンに変わり、続けてジクロロメタンに変わることを2本の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">前半。塩素が1個入るたびに、Cl₂ が1分子ずつ使われます。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-chlorination-chain-2.png" alt="ジクロロメタンが光と塩素でトリクロロメタンに変わり、続けてテトラクロロメタンに変わることを2本の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap">後半。前半の終わり（ジクロロメタン）から続きます。水素が無くなる4回目で止まります。</figcaption></figure>
 <ol class="ref-list"><li>CH₃Cl <b>クロロメタン</b>（塩素1個）</li><li>CH₂Cl₂ <b>ジクロロメタン</b>（2個）</li><li>CHCl₃ <b>トリクロロメタン</b>（3個。クロロホルムのこと）</li><li>CCl₄ <b>テトラクロロメタン</b>（4個）</li></ol>
 <p class="ref-p">置換体の名前は、<b>入った塩素の数を表す接頭辞（ジ・トリ・テトラ）＋ クロロ ＋ もとのアルカンの名前</b>です。係数は、<b>塩素を1個入れるのに Cl₂ が1分子要る</b>ことから決まります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ 3Cl₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CHCl₃ ＋ 3HCl</span></div><p class="ref-note">塩素を3個入れたいので Cl₂ が3分子、外れた水素3個は HCl になって出ていきます。</p></div>
 <p class="ref-p">もう1つ、アルカンが起こす反応が<b>燃焼</b>です。高温ではアルカンは還元剤としてはたらき、多量の熱を出して燃えます。<b>燃料に使われるのはこのため</b>です。完全燃焼すれば、生成物は二酸化炭素と水だけになります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ 2O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">完全燃焼</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ 2H₂O</span></div><p class="ref-note">炭素は CO₂ へ、水素は H₂O へ。他のアルカンでも、係数を合わせるだけで同じ形の式になります。</p></div>
-<section class="ref-sec" id="ref-sec-methane"><h4 class="ref-sec-h">メタン CH₄</h4><p class="ref-sec-lead">いちばん小さいアルカン。無色無臭で水に溶けにくく、実験室では酢酸ナトリウムと水酸化ナトリウムを加熱してつくります。</p></section>
-<p class="ref-p">メタンは無色無臭の気体で、天然ガスの主成分です。C−H 結合には極性がありますが、<b>正四面体なので分子全体では打ち消し合い</b>、分子としては無極性になります。無極性だから水に溶けにくく、水に溶けにくいから<b>水上置換</b>で集められます。</p>
+<section class="ref-sec" id="ref-sec-methane"><h4 class="ref-sec-h">メタン CH₄</h4><p class="ref-sec-lead">いちばん小さいアルカン。無色無臭の気体で水に溶けにくく、実験室では酢酸ナトリウムと水酸化ナトリウムを加熱してつくります。</p></section>
+<p class="ref-p">メタンは無色無臭の気体で、天然ガスの主成分です。C−H 結合には極性がありますが、<b>正四面体なので分子全体では打ち消し合い</b>、分子としては無極性になります。無極性だから水に溶けにくく<b>水上置換</b>で捕集します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/methane-electron-dot.png" alt="メタンの電子式と、結合の極性δ+δ−を書き込んだ構造式。結合の極性が分子全体で打ち消されて無極性になることを示している" loading="lazy"><figcaption class="ref-figure-cap">結合1本ずつには極性がありますが、正四面体なので分子全体では打ち消されます。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">メタンの性質（8行）</div><table class="ref-hand-table"><thead><tr><th>項目</th><th>メタン</th></tr></thead><tbody><tr><td>化学式</td><td>CH₄</td></tr><tr><td>色</td><td>無色</td></tr><tr><td>臭い</td><td>無臭</td></tr><tr><td>分子量</td><td>16</td></tr><tr><td>水への溶解</td><td>溶けにくい（無極性分子のため）</td></tr><tr><td>捕集法</td><td><b>水上置換</b></td></tr><tr><td>水溶液の酸・塩基性</td><td>−</td></tr><tr><td>酸化剤・還元剤</td><td>−（ただし高温では<b>還元剤</b>としてはたらき燃焼する）</td></tr></tbody></table></div>
 <p class="ref-p">実験室では、<b>酢酸ナトリウムと水酸化ナトリウムの混合物を加熱して</b>つくります。どちらも固体なので、加熱が要ります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₃COONa ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₄↑ ＋ Na₂CO₃</span></div><p class="ref-note">固体どうしの反応なので加熱します。出てきたメタンは水上置換で集めます。</p></div>
-<div class="ref-callout ref-callout-memorize"><b class="ref-callout-tag">丸暗記でよい</b><p class="ref-callout-text">この製法の反応式は、<b>組み立てて出すのではなく丸暗記</b>でかまいません。左辺の2つと右辺の2つを、そのまま覚えてしまうのがいちばん速いところです。</p></div>
+<div class="ref-callout ref-callout-memorize"><b class="ref-callout-tag">丸暗記でよい</b><p class="ref-callout-text">この反応式は<b>丸暗記</b>でかまいません。係数はすべて 1 なので、反応物を暗記すればメタン CH₄ ができたあまりが炭酸ナトリウム Na₂CO₃ です。</p></div>
 </div>
 </div>
 
