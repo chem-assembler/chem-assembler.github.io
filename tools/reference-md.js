@@ -47,12 +47,23 @@
          ⚠ それまで書けたのは**段落と、機械が組む4つの表／例題だけ**で、
          **見出し・箇条書き・図・化学反応式・手で書く表が1つも書けなかった。** */
     var LEVELS = ['★★★', '★★☆', '★☆☆'];
-    var TONES = ['caution', 'memorize', 'skip'];
+    /* ⚠ `note`（補足）は **型を書かない `::: … :::` の行き先**（§20-4）。
+       ★ ユーザーは「ちょっと囲みたい」だけのことがあり、そのたびに tone を選ばせない。 */
+    var TONES = ['caution', 'memorize', 'skip', 'note'];
+    /* ★ 表の列ごとの寄せ（§20-9）。⚠ **綴りは1組だけ**（日本語の「右」も受けると、
+       同じことを2通りで書ける ＝ どちらが正かが原稿ごとに割れる）。★ 赤が3語を必ず並べる。 */
+    var ALIGNS = ['left', 'center', 'right'];
+    /* 型を書かなかった囲みの既定。⚠ **2か所に書かない**（learn.js は tone の語だけを持つ） */
+    var DEFAULT_FENCE = { kind: 'callout', tone: 'note' };
     var BLOCK_SPECS = {
         /* 節の見出し。`anchor` が `id="ref-sec-<anchor>"` になり、目次と用語の索引の行き先になる。
            ⚠ `lead`（この節で分かること）は**必須** —— 検索から着地した人が最初に読む1行なので、
               「見出しだけ在って何の節か分からない」を作らない（設計書 §19-1） */
         section: { order: ['anchor', 'title', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'] },
+        /* ★ 節の下の小見出し（§20-5）。**本文では `## タイトル` と書ける**（`:::heading` と同じもの）。
+           ⚠ **アンカーは持たない** —— 綴りは `#ref-sec-<anchor>` の1つだけ、という §19-2 の決めを
+              増やさないため。★ だから**目次（`renderToc`）にも出さない**（目次の行き先は節だけ）。 */
+        heading: { order: ['title'], req: ['title'], list: [], prose: ['title'] },
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
         list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。
@@ -66,9 +77,24 @@
               **著作権の守り**として掛けている（手打ちの表が構造上存在できなければ転写事故は起きない）。
            ★ ここだけ穴を開けるので、**代わりに「その行がどこから来たか」を書かせる** ——
              書けないなら、それはどこかから持ってきている（前書きの `why` と同じ考え・§1-2）。 */
-        table: { order: ['caption', 'source', 'head', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
+        /* ★ `align` は**列ごとの寄せ**（§20-9）。⚠ セルと同じ ` | ` で区切って**1行**で書く
+           ＝ head と縦に見比べられる。書かなければ今までどおりの見え方（既定を .md 側に写さない）。 */
+        table: { order: ['caption', 'source', 'head', 'align', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
         /* 注意の囲み。⚠ `tone` は3つだけ（勘違いしやすい／丸暗記でよい／覚えなくてよい） */
         callout: { order: ['tone', 'text'], req: ['tone', 'text'], list: [], prose: ['text'], enum: { tone: TONES } },
+        /* ★★ ページどうし・ページからアプリへのリンク（設計書 §20-7）。
+           ⚠⚠ **行き先が「まだ無いページ」でもよい**のがこの器の急所 ——
+              52ページの計画のうち書けているのは6枚で、本文はもう書けていないページを名指ししたがる。
+           ★ 書けるのは2通りで、**どちらか片方だけ**（`checkBlock` が見る）:
+             `to:`   … 参考書のページ id。**実在すればリンク、まだ無ければ「準備中」**
+                       （⚠ 決めるのは `learn.js` が持っているページ一覧 ＝ ページを書いた日に
+                         黙って生きる。`.md` 側に「準備中」と書かせない）
+             `open:` … アプリの行き先。⚠⚠ **新しい URL の形を発明しない** ——
+                       値は `game.js` の `OPEN_TARGETS` の名前そのもの（`REF21` が突き合わせる）。
+                       `formula:` は受け口② `?open=isomer&formula=` のためだけの添えもの。
+           ⚠ **行き先が実在するかはここでは見ない**（このファイルは node とブラウザで共有していて、
+              ディレクトリも `game.js` も読めない）。★ 見るのは `gen-reference.mjs` と `REF21`。 */
+        link: { order: ['to', 'open', 'formula', 'text'], req: ['text'], list: [], prose: ['text'] },
 
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
@@ -96,6 +122,18 @@
 
     /* ===== 小道具 ============================================================= */
 
+    /* ★★ いま在るページの id の一覧（`parsePage` の `opts.pages`）。設計書 §20-7。
+     *
+     * ⚠⚠ **なぜ「描くとき」ではなく「読むとき」に決めるのか。**
+     *   ★ 面Aの生成器は `ReferenceBook` を**ページを読み込まずに**使って焼く
+     *     （`renderBlock` を呼ぶだけで `load()` は通らない）ので、**描く側は
+     *     「そのページが在るか」を知らない** —— 実測で、在るページ宛のリンクが
+     *     焼いたものだけ「準備中」になった（`REF18` が捕まえた）。
+     *   ★★ だから **`soon`（まだ無い）を生成物に焼き込み**、`renderBlock` は
+     *     ブロックだけを見て描ける純粋な関数に保つ。
+     * ⚠ 一覧を渡さずに `to:` のリンクを読むと**その場で赤**（黙って全部「準備中」にしない）。 */
+    var CTX = null;
+
     function fail(where, msg) { throw new Error(where + ': ' + msg); }
 
     /* 本文の記法 → HTML。**変換したあとに `* ~ < > &` が残っていたら赤**
@@ -122,36 +160,91 @@
         return s;
     }
 
+    /* ★★ 1行に詰めて書かれたキーを切り分ける（§20-3）。
+     *
+     * ⚠ **切れ目にしてよいのは「その囲みで書けるキー」＋「まだ出ていない」ものだけ。**
+     *   ★ 知らない語（`slides:` `s4:`）も、2回目の語も、**値の一部として素通しする** ——
+     *     そうしないと `title: 反応の見分けかた: 3つの型` のような値で切れてしまう。
+     * ⚠ キーと認めるのは `キー:` の直後が **空白か行末**のときだけ（`stages:アルカン` は切らない）。
+     *
+     * 返り値 `{ lead, parts }` … `lead` は最初のキーより前にある文字（ふつうは空）。
+     */
+    function splitPacked(text, allowed, used) {
+        var re = /(^|\s)([A-Za-z][A-Za-z0-9]*):(?=\s|$)/g;
+        var cuts = [], m;
+        while ((m = re.exec(text))) {
+            var key = m[2];
+            if (allowed.indexOf(key) < 0 || used[key]) continue;
+            used[key] = true;
+            var at = m.index + m[1].length;
+            cuts.push({ key: key, at: at, from: at + key.length + 1 });
+        }
+        return {
+            lead: (cuts.length ? text.slice(0, cuts[0].at) : text).trim(),
+            parts: cuts.map(function (c, k) {
+                return { key: c.key, value: text.slice(c.from, k + 1 < cuts.length ? cuts[k + 1].at : text.length).trim() };
+            })
+        };
+    }
+
+    /* 「キー: 値」の形でない行を、**直し方まで**言って止める（§20-6） */
+    function kvLineFail(where, line, allowed, used) {
+        var m = /^\s*([A-Za-z][A-Za-z0-9]*):/.exec(line);
+        if (m && used[m[1]]) {
+            fail(where, 'キー「' + m[1] + '」が2回出てきます（同じ囲みの中で1回だけ書きます）\n    → ' + line.trim().slice(0, 60));
+        }
+        if (m) {
+            fail(where, '知らないキー「' + m[1] + '」があります（ここに書けるのは ' + allowed.join(' / ') + '）'
+                + '\n    → ' + line.trim().slice(0, 60));
+        }
+        fail(where, '「キー: 値」の形でない行があります'
+            + '\n    → ' + line.trim().slice(0, 60)
+            + '\n    ★ 直し方: 行のあたまに「' + allowed[0] + ': 」のようにキーを書きます。'
+            + '並びを書くなら次の行から「- 値」を1行ずつ。'
+            + '\n      （囲みの外に書きたい文なら、囲み（:::）の前か後ろの空行のあとに置きます）');
+    }
+
     /* 「キー: 値」だけの小さな文法。**前書きと `:::` の中で同じものを使う**（覚えることを1つにする）:
          key: 値
          key: true / false
          key:
-           - 値
-           - 値 */
-    function parseKV(lines, where) {
-        var out = {}, order = [], i = 0;
-        while (i < lines.length) {
-            var line = lines[i];
-            if (line.trim() === '') { i++; continue; }
-            var m = /^([A-Za-z][A-Za-z0-9]*):(.*)$/.exec(line);
-            if (!m) fail(where, '「キー: 値」の形でない行があります\n    → ' + line.slice(0, 60));
-            var key = m[1], val = m[2].trim();
-            if (Object.prototype.hasOwnProperty.call(out, key)) fail(where, 'キー「' + key + '」が2回出てきます');
-            if (val === '') {
-                var items = [];
-                i++;
-                while (i < lines.length && /^\s*-\s+\S/.test(lines[i])) {
-                    items.push(lines[i].replace(/^\s*-\s+/, '').trim());
-                    i++;
-                }
-                if (!items.length) fail(where, '「' + key + ':」の後に値も「- 」の行もありません');
-                out[key] = items;
-            } else {
-                out[key] = val;
-                i++;
-            }
+         - 値                ← ★ 字下げは要らない（2字下げでもよい）。★ 空行が挟まってもよい
+         - 値
+       ★ **1行に詰めて書いてもよい**（`anchor: formula title: 一般式`）。切れ目の決め方は splitPacked。 */
+    function parseKV(lines, where, allowed) {
+        var out = {}, order = [], used = {}, curList = null;
+        var put = function (key, val) {
             order.push(key);
+            if (val === '') { out[key] = []; curList = key; }
+            else { out[key] = val; curList = null; }
+        };
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.trim() === '') continue;               // ★ 空行は読み飛ばす（並びの前後に入ってよい）
+            var im = /^\s*-\s+(\S[\s\S]*)$/.exec(line);
+            var seg;
+            if (im) {
+                if (!curList) {
+                    fail(where, '「- 」で始まる行の前に、それが何の並びかを言うキーがありません'
+                        + '\n    → ' + line.trim().slice(0, 60)
+                        + '\n    ★ 直し方: 並びの前の行に「' + allowed[0] + ':」のようにキーだけを書きます');
+                }
+                seg = splitPacked(im[1], allowed, used);
+                if (seg.lead) out[curList].push(seg.lead);
+                else if (!seg.parts.length) fail(where, '「- 」だけの行があります');
+            } else {
+                seg = splitPacked(line.trim(), allowed, used);
+                if (!seg.parts.length || seg.lead) kvLineFail(where, line, allowed, used);
+            }
+            seg.parts.forEach(function (p) { put(p.key, p.value); });
         }
+        order.forEach(function (k) {
+            if (Array.isArray(out[k]) && !out[k].length) {
+                fail(where, '「' + k + ':」の後に値がありません'
+                    + '\n    ★ 直し方: 1行の値なら「' + k + ': ここに値」、'
+                    + '並びなら次の行から「- 値」を1行ずつ書きます');
+            }
+        });
         return { map: out, order: order };
     }
 
@@ -162,15 +255,27 @@
      * @param {string} text  ファイルの中身（改行は CRLF / LF どちらでもよい）
      * @param {string} where エラーに出す名前（ふつうはファイル名）
      */
-    function parsePage(text, where) {
+    function parsePage(text, where, opts) {
         where = where || '(reference-src)';
-        var lines = String(text).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
+        CTX = (opts && opts.pages) ? opts.pages.slice() : null;
+        var raw = String(text).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').split('\n');
+        /* ★★ 著者メモ（`//` から行末まで）を先に抜く。⚠ **画面には出さないが、捨てもしない** ——
+           `page.memos` に行番号ごと残し、生成器が「まだ片付いていないメモが N 件」と数えて出す（§20-2）。
+           ⚠ `serialize` は PAGE_KEYS しか書かないので、**reference.json には入らない**。 */
+        var memos = [];
+        var lines = raw.map(function (line, n) {
+            var m = /(^|\s)\/\/(.*)$/.exec(line);
+            if (!m) return line;
+            var body = m[2].trim();
+            if (body) memos.push({ line: n + 1, text: body });
+            return line.slice(0, m.index + m[1].length).replace(/\s+$/, '');
+        });
         if (lines[0] !== '---') fail(where, '1行目が「---」ではありません（前書きが要ります）');
         var end = -1;
         for (var i = 1; i < lines.length; i++) if (lines[i] === '---') { end = i; break; }
         if (end < 0) fail(where, '前書きの終わりの「---」がありません');
 
-        var fm = parseKV(lines.slice(1, end), where + ' の前書き').map;
+        var fm = parseKV(lines.slice(1, end), where + ' の前書き', PAGE_KEYS).map;
         var page = {};
         PAGE_KEYS.forEach(function (k) {
             if (!Object.prototype.hasOwnProperty.call(fm, k)) {
@@ -208,20 +313,28 @@
             fail(where, 'video は YouTube の動画ID を書きます（英数字と - _ だけ。いまは「' + page.video + '」）');
         }
 
-        page.blocks = parseBody(lines.slice(end + 1), where);
+        page.blocks = parseBody(lines.slice(end + 1), where, end + 1);
+        /* ⚠ **JSON には出さない**（`serialize` は PAGE_KEYS ＋ why ＋ blocks しか書かない）。
+           ★ 生成器と `REF20` が「書いたメモが消えていないこと」をここから数える */
+        page.memos = memos;
         return page;
     }
 
-    /* 本文 ＝ 空行で区切られたかたまり。かたまりは「1行の段落」か「::: の囲み」のどちらか */
-    function parseBody(lines, where) {
-        var blocks = [], chunk = [];
+    /* 本文 ＝ 空行で区切られたかたまり。かたまりは「1行の段落」か「::: の囲み」のどちらか
+     *
+     * ★★ **赤に行番号を付ける**（§20-11）。⚠ **`offset` は本文の1行目がファイルの何行目か。**
+     *   ⚠⚠ 原稿は 300 行あるので、「どこが悪いか」だけ言われても**探すのはユーザーの仕事**になる。
+     *   ★ 著者メモの報告（`reference-src/alkane.md:169`）と**同じ書き方**にそろえた。 */
+    function parseBody(lines, where, offset) {
+        var blocks = [], chunk = [], at = 0;
         var flush = function () {
             if (!chunk.length) return;
-            blocks.push(parseChunk(chunk, where));
+            blocks.push(parseChunk(chunk, where + ':' + ((offset || 0) + at + 1)));
             chunk = [];
         };
         for (var i = 0; i < lines.length; i++) {
             if (lines[i].trim() === '') { if (chunk.length && !isOpenFence(chunk)) flush(); else if (chunk.length) chunk.push(lines[i]); continue; }
+            if (!chunk.length) at = i;
             chunk.push(lines[i]);
         }
         flush();
@@ -229,36 +342,101 @@
         return blocks;
     }
 
-    /* `:::` を開いたまま閉じていないかたまりか（囲みの中の空行を段落の切れ目と誤らないため） */
+    /* 囲みの終わりの印。★ **`:::` だけの行**でも、**行末に付いた `:::`** でもよい（§20-3） */
+    function fenceCloses(line) { return line.trim() === ':::' || /:::\s*$/.test(line); }
+
+    /* 1行目の `:::種類` を剥がして、囲みの中身の行だけにする。
+       ★ 1行目の残りは「中身の1行目」として扱う ＝ **キーを詰めて書いてよい**。 */
+    function fenceBody(chunk) {
+        return [String(chunk[0]).replace(/^:::([A-Za-z][A-Za-z0-9]*)?[ \t]*/, '')].concat(chunk.slice(1));
+    }
+
+    /* `:::` を開いたまま閉じていないかたまりか（囲みの中の空行を段落の切れ目と誤らないため）。
+       ⚠ **1行の中で開いて閉じる囲み**（`::: …文… :::`）を「開きっぱなし」と読まないこと ——
+          読むと、そこから下の本文がぜんぶ囲みに吸い込まれる。 */
     function isOpenFence(chunk) {
         if (!/^:::/.test(chunk[0])) return false;
-        for (var i = 1; i < chunk.length; i++) if (chunk[i].trim() === ':::') return false;
+        var body = fenceBody(chunk);
+        for (var i = 0; i < body.length; i++) if (fenceCloses(body[i])) return false;
         return true;
     }
 
     function parseChunk(chunk, where) {
-        if (/^:::/.test(chunk[0])) {
-            var m = /^:::([A-Za-z][A-Za-z0-9]*)\s*$/.exec(chunk[0]);
-            if (!m) fail(where, '囲みの1行目は「:::種類」だけを書きます\n    → ' + chunk[0].slice(0, 60));
-            var kind = m[1], close = -1;
-            for (var i = 1; i < chunk.length; i++) if (chunk[i].trim() === ':::') { close = i; break; }
-            if (close < 0) fail(where, ':::' + kind + ' の囲みが「:::」で閉じていません');
-            for (var j = close + 1; j < chunk.length; j++) {
-                if (chunk[j].trim() !== '') fail(where, ':::' + kind + ' の囲みの後には空行が要ります\n    → ' + chunk[j].slice(0, 60));
+        if (/^:::/.test(chunk[0])) return parseFence(chunk, where);
+        /* ★ 小見出し（§20-5）。⚠ `#` 1つは書けない —— ページの題は前書きの `title:` が持つ */
+        var hm = /^\s*(#+)\s+(\S[\s\S]*)$/.exec(chunk[0]);
+        if (hm) {
+            if (chunk.length > 1) fail(where, '小見出しは1行で書きます\n    → ' + chunk[0].slice(0, 60));
+            if (hm[1] === '#') {
+                fail(where, 'ページの題は前書きの「title:」が持つので、本文に「# 」は書けません'
+                    + '\n    → ' + chunk[0].slice(0, 60)
+                    + '\n    ★ 直し方: 節にするなら :::section、節の下の小見出しなら「## 」を使います');
             }
-            return buildBlock(kind, chunk.slice(1, close), where);
+            return { kind: 'heading', title: inline(hm[2].trim(), where + ' の小見出し') };
         }
         if (chunk.length > 1) {
             fail(where, '段落のあいだには空行が要ります（1段落 = 1行。段落の途中で改行しない）'
                 + '\n    → ' + chunk[0].slice(0, 40) + ' ／ ' + chunk[1].slice(0, 40));
         }
-        return { kind: 'text', text: inline(chunk[0].trim(), where + ' の段落') };
+        var text = inline(chunk[0].trim(), where + ' の段落');
+        /* ★★ 見出しのつもりで書いた素の1行を、**黙って段落にしない**（設計書 §20-8）。
+         *
+         * ⚠⚠ 実際に起きた —— ユーザーが `アルカンの常温での状態` と1行だけ書き、
+         *   それが**本文の段落として画面に出た**（赤にならないので気づけない）。
+         * ★ 線は**実測で引いた**: 6ページ 45 段落のうち、句点を1つも持たないものは
+         *   **その1行だけ**で、次に短い段落は 55 字。⚠ だから 30 字で切っても
+         *   ふつうの段落には当たらない（当たったら句点を1つ足せば通る）。
+         * ★ ⚠ **拾って勝手に見出しにしない** —— どちらのつもりだったかは書いた人しか知らない。
+         *   **読める言葉で断って、直し方を2通り見せる。** */
+        var bare = text.replace(/<\/?(b|sub)>/g, '');
+        if (bare.length <= 30 && !/[。！？]/.test(bare)) {
+            fail(where, '句点で終わらない短い1行があります（見出しのつもりですか？）'
+                + '\n    → ' + bare
+                + '\n    ★ 直し方は2通り: 見出しにするなら行のあたまに「## 」を付けます。'
+                + '\n      本文の段落のつもりなら、文として書いて「。」で終えてください。'
+                + '\n      （節の見出しにするなら :::section。そちらは目次に出ます）');
+        }
+        return { kind: 'text', text: text };
+    }
+
+    /* `:::` の囲み1つ。★ 受ける形は3つ:
+         :::種類            … 次の行から「キー: 値」、`:::` で閉じる
+         :::種類 キー: 値 キー: 値 [:::]   … ★ 1行に詰めて書く（§20-3）
+         ::: 囲みたい文 :::  … ★ **型を書かない**（既定の見せ方＝補足の囲み・§20-4）           */
+    function parseFence(chunk, where) {
+        var kindM = /^:::([A-Za-z][A-Za-z0-9]*)?/.exec(chunk[0]);
+        var kind = kindM[1] || null;
+        var body = fenceBody(chunk), inner = [], closed = false, i = 0;
+        for (; i < body.length; i++) {
+            if (body[i].trim() === ':::') { i++; closed = true; break; }
+            if (/:::\s*$/.test(body[i])) { inner.push(body[i].replace(/:::\s*$/, '')); i++; closed = true; break; }
+            inner.push(body[i]);
+        }
+        if (!closed) {
+            fail(where, ':::' + (kind || '') + ' の囲みが「:::」で閉じていません'
+                + '\n    ★ 直し方: 囲みの終わりに「:::」だけの行を置くか、同じ行の末尾に「:::」を書きます');
+        }
+        for (; i < body.length; i++) {
+            if (body[i].trim() !== '') fail(where, '囲みの後には空行が要ります\n    → ' + body[i].slice(0, 60));
+        }
+        if (kind) return buildBlock(kind, inner, where);
+
+        /* ★ 型の無い囲み。**中身は自由文**（「ちょっと囲みたい」だけ、を受ける） */
+        var txt = inner.map(function (s) { return s.trim(); }).filter(function (s) { return s; });
+        if (!txt.length) fail(where, '「:::」だけの囲みに中身がありません（囲みたい文を同じ行に書きます）');
+        if (txt.length > 1) {
+            fail(where, '型を書かない「:::」の囲みに書けるのは1つの文だけです（いまは ' + txt.length + ' 行）'
+                + '\n    ★ 直し方: 文を1つにするか、種類を書きます（例: :::callout tone: caution text: …）');
+        }
+        var b = { kind: DEFAULT_FENCE.kind, tone: DEFAULT_FENCE.tone, text: inline(txt[0], where + ' の ::: の囲み') };
+        checkBlock(b, where);
+        return b;
     }
 
     function buildBlock(kind, inner, where) {
         var spec = BLOCK_SPECS[kind];
         if (!spec) fail(where, '「:::' + kind + '」は描けない種類です（書けるのは ' + KINDS.join(' / ') + '）');
-        var kv = parseKV(inner, where + ' の :::' + kind).map;
+        var kv = parseKV(inner, where + ' の :::' + kind, spec.order).map;
         var block = { kind: kind };
         var enums = spec.enum || {}, bools = spec.bool || [];
         spec.order.forEach(function (k) {
@@ -310,7 +488,12 @@
                     + '（英小文字・数字・ハイフン ＋ .png。パスや .. は書けません。いまは「' + b.src + '」）');
             }
             /* ⚠ `alt` は**画像が出ない人が読む文**。空でも「図」でもなく、中身を言うこと */
-            if (b.alt.length < 6) fail(where, ':::figure の alt（画像が出ないときに読まれる文）が短すぎます: 「' + b.alt + '」');
+            if (b.alt.length < 6) {
+                fail(where, ':::figure の alt（画像が出ないときに読まれる文）が短すぎます: 「' + b.alt + '」'
+                    + '\n    ★ 直し方: 「図」ではなく、何が描いてあるかを1文で書きます'
+                    + '（例: メタンの正四面体構造。手前の結合をくさび、奥の結合を破線で描いた図）'
+                    + '\n    ⚠ caption と同じ文にしないこと（caption は図の外に出るので、読み上げが二重になります）');
+            }
         }
         if (b.kind === 'table') {
             /* ⚠ 行の出どころ。★ 短い語（「スライド」）で済ませられないよう長さを見る */
@@ -321,6 +504,21 @@
             /* ⚠ 列の数がそろっていない表は、画面では「1列ずれた表」として**それらしく出てしまう** */
             var n = b.head.length;
             if (n < 2) fail(where, ':::table の head は2列以上です');
+            /* ★ 列ごとの寄せ（§20-9）。⚠ **head と同じ数だけ**書く ——
+               足りない・多いのを黙って詰めると、**1列ずれた寄せ**として それらしく出てしまう */
+            if (Object.prototype.hasOwnProperty.call(b, 'align')) {
+                var cols = b.align.split(CELL_SEP).map(function (s) { return s.trim(); });
+                if (cols.length !== n) {
+                    fail(where, ':::table の align が ' + cols.length + ' 個で、head の ' + n + ' 列と違います'
+                        + '（セルと同じ「 | 」で区切って、列の数だけ書きます）\n    → ' + b.align);
+                }
+                cols.forEach(function (v) {
+                    if (ALIGNS.indexOf(v) < 0) {
+                        fail(where, ':::table の align に書けるのは ' + ALIGNS.join(' / ') + ' です（いまは「' + v + '」）'
+                            + '\n    → ' + b.align);
+                    }
+                });
+            }
             b.rows.forEach(function (row, i) {
                 var cells = row.split(CELL_SEP);
                 if (cells.length !== n) {
@@ -330,6 +528,46 @@
             });
         }
         if (b.kind === 'list' && !b.items.length) fail(where, ':::list の items が空です');
+        if (b.kind === 'link') {
+            /* ⚠ **どちらか片方だけ。** 両方書くと「ページへ飛ぶのかアプリへ飛ぶのか」が
+               リンク1本で2通りになり、画面では**片方が黙って無視される**形で出る */
+            var has = ['to', 'open'].filter(function (k) { return Object.prototype.hasOwnProperty.call(b, k); });
+            if (has.length !== 1) {
+                fail(where, ':::link は「to:（参考書のページ id）」か「open:（アプリの行き先）」の'
+                    + (has.length ? 'どちらか片方だけを書きます（いまは両方あります）' : 'どちらかが要ります')
+                    + '\n    ★ 直し方: 参考書の別のページへ飛ぶなら「to: alkane-naming」、'
+                    + 'アプリで試させるなら「open: isomer」のように書きます');
+            }
+            if (b.to && !ANCHOR_RE.test(b.to)) {
+                fail(where, ':::link の to は参考書のページ id です（英小文字・数字・ハイフン。いまは「' + b.to + '」）');
+            }
+            if (b.open && !ANCHOR_RE.test(b.open)) {
+                fail(where, ':::link の open はアプリの行き先の名前です（英小文字・数字。いまは「' + b.open + '」）');
+            }
+            if (Object.prototype.hasOwnProperty.call(b, 'formula')) {
+                if (!b.open) fail(where, ':::link の formula は open: と一緒に書きます（受け口 ?open=isomer&formula= のためのものです）');
+                /* ⚠ 下付きの Unicode（C₅H₁₂）は受け口が読めない —— `startFromFormula` は素の ASCII */
+                if (!/^[A-Za-z0-9]+$/.test(b.formula)) {
+                    fail(where, ':::link の formula は素の英数字で書きます（C5H12。下付きの C₅H₁₂ はアプリが読めません。いまは「' + b.formula + '」）');
+                }
+            }
+            /* ★★ まだ書いていないページ宛か（＝ 押せない「準備中」にするか）を**ここで決めて焼き込む**。
+               ⚠ `soon` は**書く欄ではない**（`spec.order` に無いので、原稿に書いたら「知らないキー」で赤）。
+               ★ ページを1枚書いて生成し直せば、そのページ宛の `soon` は自動で消える ＝ 黙って生きる。 */
+            if (b.to) {
+                if (!CTX) {
+                    fail(where, ':::link の行き先を判定できません（parsePage に、いま在るページの一覧 opts.pages が渡っていない）'
+                        + '\n    ★ 渡さないと在るページ宛まで「準備中」になるので、黙って続けません');
+                }
+                if (CTX.indexOf(b.to) < 0) b.soon = true;
+            }
+            /* ⚠ `text` は**押す文そのもの**。「こちら」だけのリンクを作らせない
+               （読み上げでも検索でも、行き先が分からない文になる） */
+            if (b.text.replace(/<\/?(b|sub)>/g, '').length < 6) {
+                fail(where, ':::link の text（押す文）が短すぎます: 「' + b.text + '」'
+                    + '\n    ★ 何のページ／何の練習へ行くのかが、その文だけで分かるように書きます');
+            }
+        }
     }
 
     /* ===== 書き出し =========================================================== */
@@ -378,6 +616,8 @@
         KINDS: KINDS,
         LEVELS: LEVELS,
         TONES: TONES,
+        ALIGNS: ALIGNS,
+        DEFAULT_FENCE: DEFAULT_FENCE,
         CELL_SEP: CELL_SEP,
         FIGURE_DIR: '/reference-img/',
         parsePage: parsePage,

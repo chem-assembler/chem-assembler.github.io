@@ -56,7 +56,9 @@ function readPages() {
     const extra = files.filter(id => ids.indexOf(id) < 0);
     if (missing.length) throw new Error(`ORDER.txt にあるのに原稿が無い: ${missing.join(', ')}`);
     if (extra.length) throw new Error(`原稿があるのに ORDER.txt に無い: ${extra.join(', ')}`);
-    const pages = ids.map(id => RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), `reference-src/${id}.md`));
+    /* ⚠ 第3引数は**いま在るページの id の全部**（＝ ORDER.txt）。`:::link` の行き先が在るかは
+       **読むときに**決まる（設計書 §20-7）—— 渡さないと在るページ宛まで「準備中」で焼かれる。 */
+    const pages = ids.map(id => RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), `reference-src/${id}.md`, { pages: ids }));
     /* ⚠ **1つのコードが2ページに出てこないこと**（設計書 §17-5）。
        ★ アプリの埋め込みは `?open=reference&code=<先頭コード>` で、
          **どのページを開くかを決めるのは `ReferenceBook.pageByCode`**（1か所）。
@@ -354,6 +356,9 @@ const LIGHT_OVERRIDE = [
     'ref-example', 'ref-sec-h', 'ref-toc', 'ref-rx', 'ref-rx-lv1',
     'ref-hand-table', 'ref-callout', 'ref-callout-caution', 'ref-callout-memorize',
     'ref-rx-over', 'ref-rx-under',
+    /* ⚠ `:::link`（ref-format レーン）と 明るい地（ref-read レーン）が別々に育ったので、
+       取り込みのときに初めてぶつかった。**この検査が捕まえた**（下の LIGHT_CSS で読み替えた）。 */
+    'ref-link',
 ];
 /* ★ 明るい地でも**そのままでよい**もの（⚠ 1件ずつ理由を書く。書けないなら読み替える側） */
 const LIGHT_KEEP = {
@@ -399,6 +404,10 @@ const LIGHT_CSS = `
 .ref-scope .ref-example h4{color:#5f3585}
 .ref-scope a.ref-try,.ref-scope a.ref-mech-play{color:#5f3585;background:var(--panel);border-color:#7c4dab}
 .ref-scope a.ref-try:hover,.ref-scope a.ref-mech-play:hover{background:#f3ecfa}
+/* ページどうし・アプリへのリンク。⚠ 暗い地の #e0b0ff は明るい地で 1.9:1 ＝ 読めない。
+   ★ 同じ「押せる札」の .ref-try と同じ色に寄せる（読者から見て同じ種類のものなので） */
+.ref-scope a.ref-link{color:#5f3585}
+.ref-scope a.ref-link:hover{border-color:#7c4dab;background:#f3ecfa}
 `.trim();
 
 /* ★★ **読み替え漏れを機械で見る。**

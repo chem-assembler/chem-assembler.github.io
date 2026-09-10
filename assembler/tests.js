@@ -47362,6 +47362,17 @@
            ⚠ **他のブロックの `rows` は今までどおり赤**（`stageTable` に行を持たせる逃げ道は塞がっている）。 */
         const BANNED = ['name', 'formula', 'atoms', 'bonds', 'target', 'rows'];
         const HAND_TABLE = 'table';
+        /* ⚠⚠ **2つ目の穴: `:::link` の `formula`**（v1528・設計書 §20-7）。
+           ★ 守りの本体は「**出どころの言えない行を書くな**」（上の `rows` と同じ読み）。
+           ⚠ `formula` を禁じているのは「**分子式の表を写す**」ことを構造上できなくするためだが、
+             `:::link` の `formula` は**表の行ではなく、受け口 `?open=isomer&formula=` の引数**
+             —— `:::example` の `stageId`（禁じていない）と同じ「どの練習を開くか」の指し示し。
+           ⚠ **名前を変えて逃げない**（§19-9b の5番の教訓）。URL の欄名が `formula` なので、
+             別名にすると「検査の字面を避けただけ」になり、しかも何の値か読めなくなる。
+           ★★ **代わりの縛りは `REF21`**: その式で**実際に書き出し練習が始まること**を確かめる
+             ＝ 事実の転写ではなく、**生きている行き先**であることを機械で示す
+             （`rows` に `source` を必須にしたのと同じ考え）。 */
+        const LINK_ARG = 'link';
         pages.forEach(p => {
             assert(p.id && p.title && p.unitLabel && p.group, `${p.id}: 見出しの欄が欠けている`);
             // ★ 「この表を作った理由」を1行で書けること（§1-2 の運用ルール）を機械で見る
@@ -47391,7 +47402,9 @@
                 if (o && typeof o === 'object') Object.keys(o).forEach(k => {
                     /* ★ 手で書く表の `rows` だけは通す。⚠ **通す条件は「出どころが書いてあること」** */
                     const handRows = (k === 'rows' && kind === HAND_TABLE);
-                    assert(!BANNED.includes(k) || handRows,
+                    /* ★ 練習の行き先を名指しする引数（`REF21` が「その式で練習が始まる」ことを見る） */
+                    const linkArg = (k === 'formula' && kind === LINK_ARG);
+                    assert(!BANNED.includes(k) || handRows || linkArg,
                         `${p.id}: reference.json に行データの欄 "${k}" がある（${path}）。` +
                         '表の行は stages.json から機械で作る約束（手打ちの表は :::table だけ）');
                     if (handRows) {
@@ -49032,7 +49045,9 @@
         for (const id of order) {
             const md = await grab(`../reference-src/${id}.md`, `原稿 ${id}.md`);
             let page;
-            try { page = RM.parsePage(md, `reference-src/${id}.md`); }
+            /* ★ 第3引数は**いま在るページの id の全部**（＝ ORDER.txt）。`:::link` の行き先が
+               在るかは**読むときに**決まる（§20-7）ので、渡さないと在るページ宛まで「準備中」になる */
+            try { page = RM.parsePage(md, `reference-src/${id}.md`, { pages: order }); }
             catch (e) { assert(false, '原稿が書式どおりでない —— ' + e.message); }
             assert(page.id === id, `reference-src/${id}.md: 前書きの id が「${page.id}」でファイル名と違う`);
             built.push(page);
@@ -49392,6 +49407,310 @@
             assert(listed.has(`/reference/${p.id}/#${W.REF_ANCHOR_PREFIX}${b.anchor}`),
                 `節「${b.title}」（${p.id}）が用語の索引に出ていない`);
         }));
+    });
+
+    /* ===== REF20: ユーザーが自然に書いた形を受け取る（v1528） =====
+     *
+     * ★ 発端は実測 —— **ユーザーが `reference-src/alkane.md` を自分で校正したら、生成器が赤くなった。**
+     *   ⚠⚠ これは「書き方を間違えた」案件ではない。**原稿の書式はユーザーが校正できることだけの
+     *      ために在る**ので、受け取れなかった生成器のほうを直す（設計は §20）。
+     *
+     * ★ ここが見るのは6つ:
+     *   ① **書き方が違っても、出るものが同じ**（2字下げの並び ＝ 列0の並び ＝ 空行を挟んだ並び／
+     *      キーを行ごとに書く ＝ 1行に詰めて書く）
+     *   ② **著者メモ（`//`）は画面に出ないが、消えてもいない**（数えられる・本文に混ざらない）
+     *   ③ **型を書かない `::: … :::` の既定**が、描く側（learn.js）に言葉を持っている
+     *   ④ **小見出しは節ではない**（id を持たず、目次に出ない）＝ アンカーの綴りが1つのまま
+     *   ⑤ ⚠⚠ **赤くなるとき、ユーザーが自分で直せる文言になっている**
+     *      （「直し方」か、書ける語の一覧が必ず出る）
+     *   ⑥ ⚠⚠ **赤が「どの行か」も言い、その行番号がずれていない**（§20-11）
+     */
+    test('REF20: 原稿は「書き方の違い」を受け取り、著者メモは消えず、赤は直し方まで言う', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        assert(RM, 'ReferenceMd が居ない（test.html が ../tools/reference-md.js を読み込んでいるか）');
+
+        /* 前書きは毎回同じものを使う（見るのは本文の書き方の違いだけ） */
+        const FM = [
+            '---', 'id: t', 'unit: aliphatic', 'unitLabel: 脂肪族炭化水素', 'group: アルカン',
+            'title: 見本', 'summary: 書き方の違いを受け取れるかどうかを確かめるためだけの見本のページです。中身に意味はありません。',
+            'codes:', '  - org.ali.alkane-shape', 'source:', '  - slides:見本', 'singleSource: true',
+            'why: 書き方の違いで結果が変わらないことを機械で見るための見本で、画面には出さない。', '---', ''
+        ].join('\n');
+        const build = (body) => RM.parsePage(FM + body, '(REF20)');
+        const same = (a, b, what) => assert(JSON.stringify(a.blocks) === JSON.stringify(b.blocks),
+            `${what}: 書き方を変えると出るものが変わる\n    A: ${JSON.stringify(a.blocks)}\n    B: ${JSON.stringify(b.blocks)}`);
+
+        /* ── ① 書き方が違っても同じもの ── */
+        const indented = build(':::section\nanchor: a\ntitle: 題\nlead: この節で分かること。\nterms:\n  - 用語1\n  - 用語2\n:::\n');
+        const flush = build(':::section\nanchor: a\ntitle: 題\nlead: この節で分かること。\nterms:\n- 用語1\n- 用語2\n:::\n');
+        const blank = build(':::section\nanchor: a\ntitle: 題\nlead: この節で分かること。\nterms:\n\n- 用語1\n- 用語2\n:::\n');
+        const packed = build(':::section anchor: a title: 題 lead: この節で分かること。 terms:\n\n- 用語1\n- 用語2\n:::\n');
+        same(indented, flush, '箇条書きの字下げ（2字下げ ⇄ 列0）');
+        same(indented, blank, '箇条書きの前の空行');
+        same(indented, packed, '囲みの見出しを1行に詰める');
+        assert(indented.blocks[0].terms.join('/') === '用語1/用語2', '並びが2件で読めていない');
+
+        /* 同じ行で閉じる囲み（`… :::`）も、行を分けたものと同じ */
+        same(build(':::callout\ntone: caution\ntext: 気をつける。\n:::\n'),
+            build(':::callout tone: caution text: 気をつける。 :::\n'),
+            '囲みを同じ行で閉じる');
+
+        /* ⚠ **切れ目は「書けるキー＋空白」だけ** —— 知らない語や2回目の語は値の一部で通る */
+        const keep = build(':::table\ncaption: 見本\nsource: slides:見本 s1「表」（手で組んでいる）\nhead:\n- 左\n- 右\nrows:\n- あ | い\n:::\n');
+        assert(keep.blocks[0].source.indexOf('slides:見本') === 0,
+            `「slides:」で切れている（切れ目にしてよいのは書けるキー＋空白だけ）: ${keep.blocks[0].source}`);
+
+        /* ── ② 著者メモ ── */
+        const memo = build('//あとで図を入れる\n\n本文の段落。\n\n:::list\nitems:\n- 項目 //ここに補足\n:::\n');
+        assert(memo.memos.length === 2, `著者メモが ${memo.memos.length} 件しか拾えていない（2件のはず）`);
+        assert(memo.memos[0].text === 'あとで図を入れる' && typeof memo.memos[0].line === 'number',
+            '著者メモに中身と行番号が残っていない（消えたのか出していないのかが区別できなくなる）');
+        const dump = JSON.stringify(memo.blocks);
+        assert(dump.indexOf('//') < 0 && dump.indexOf('あとで図を入れる') < 0 && dump.indexOf('ここに補足') < 0,
+            `著者メモが本文に混ざっている: ${dump}`);
+        assert(JSON.stringify(RM.serialize([memo])).indexOf('memos') < 0,
+            '著者メモが reference.json に書き出されている（画面に出るものではない）');
+        /* ★ いま在る原稿にも、メモが本文へ漏れていないこと（実データ側の確かめ） */
+        const live = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
+        live.forEach(p => (p.blocks || []).forEach(b => assert(JSON.stringify(b).indexOf('//') < 0,
+            `${p.id}: 本文に「//」が残っている（著者メモが画面に出る）: ${JSON.stringify(b).slice(0, 80)}`)));
+
+        /* ── ③ 型を書かない囲みの既定 ── */
+        const bare = build('::: ちょっと囲みたい文。 :::\n');
+        assert(bare.blocks[0].kind === RM.DEFAULT_FENCE.kind && bare.blocks[0].tone === RM.DEFAULT_FENCE.tone,
+            `型の無い囲みの行き先が既定と違う: ${JSON.stringify(bare.blocks[0])}`);
+        assert(RM.TONES.indexOf(RM.DEFAULT_FENCE.tone) >= 0, '型の無い囲みの既定 tone が、書ける tone の中に無い');
+        assert(W.REF_TONE_WORDS[RM.DEFAULT_FENCE.tone],
+            `型の無い囲みの既定 tone「${RM.DEFAULT_FENCE.tone}」に、learn.js が言葉を持っていない（札が空で出る）`);
+        const bareEl = W.referenceBook.renderBlock(bare.blocks[0]);
+        assert(bareEl && bareEl.textContent.indexOf('ちょっと囲みたい文。') >= 0, '型の無い囲みが描けていない');
+
+        /* ── ④ 小見出しは節ではない ── */
+        const head = build('## 小見出し\n\n段落。\n\n:::heading\ntitle: もう1つ\n:::\n');
+        assert(head.blocks[0].kind === 'heading' && head.blocks[0].title === '小見出し',
+            `「## 」が小見出しになっていない: ${JSON.stringify(head.blocks[0])}`);
+        assert(head.blocks[2].kind === 'heading', ':::heading が小見出しになっていない');
+        const hEl = W.referenceBook.renderBlock(head.blocks[0]);
+        assert(hEl && !hEl.id, `小見出しが id を持っている（${hEl && hEl.id}）＝ アンカーの綴りが2種類になる`);
+        assert(!W.referenceBook.renderToc(head), '小見出しだけのページに目次が出ている（目次の行き先は節だけ）');
+
+        /* ── ⑤ ⚠⚠ 赤は「直し方」まで言うこと ──
+           ★ ここが無いと、「受けない」と決めた形が **読めない赤**のまま残る。 */
+        const red = (body, what) => {
+            let msg = null;
+            try { build(body); } catch (e) { msg = e.message; }
+            assert(msg, `${what}: 通ってしまう（赤くならない）`);
+            assert(/直し方|書けるのは|のどれかです|だけを書きます|1行だけ|要ります/.test(msg),
+                `${what}: 赤のメッセージに直し方が無い —— 「${msg}」`);
+            return msg;
+        };
+        red(':::section\nanchor: a\ntitle: 題\nlead: これ。\nterms:\n:::\n', '並びの中身が空');
+        red(':::section\nanchor: a\ntitle: 題\nlead: これ。\nzzz: よそもの\n:::\n', '知らないキー');
+        red(':::section\nanchor: a\ntitle: 題\nlead: これ。\nただの文\n:::\n', '囲みの中の素の文');
+        red(':::callout\ntone: caution\ntext: あ。\n', '閉じていない囲み');
+        red('::: 1つめ。\nもう1行。\n:::\n', '型の無い囲みに2行');
+        red('# ページの題\n', '本文の h1');
+        /* ⚠ 図の alt は「画像が出ない人が読む文」。★ 「図」で済ませたときに**何を書くか**まで言うこと */
+        red(':::figure\nsrc: alkane-substitution.png\nalt: 図\ncaption: 説明の文です。\n:::\n', '図の alt が短い');
+        /* ⚠⚠ 実際に起きた形 —— 見出しのつもりの素の1行が、**赤にならずに段落として画面に出た**。
+           ★ 実測で線を引いた（6ページ45段落のうち句点なしはその1行だけ・次に短い段落は55字）。
+           ⚠ **拾って勝手に見出しにしない**（どちらのつもりかは書いた人しか知らない）＝ 断って直し方を見せる。 */
+        const bareMsg = red('アルカンの常温での状態\n', '句点で終わらない短い1行（見出しのつもり）');
+        assert(bareMsg.indexOf('## ') >= 0 && bareMsg.indexOf('。') >= 0,
+            `見出しか段落かの直し方が2通りとも出ていない —— 「${bareMsg}」`);
+        /* ★ ふつうの段落は当たらないこと（＝ この線が本文を邪魔していない） */
+        build('アルカンは、炭素どうしが単結合だけでつながっている炭化水素です。\n');
+        build('短い。\n');   // 句点があれば長さは見ない
+
+        /* ── ⑥ ⚠⚠ 赤は「どの行か」も言うこと（§20-11） ──
+           ★ 原稿は 300 行ある。**どこが悪いかだけ言われても、探すのはユーザーの仕事**になる。
+           ⚠⚠ 見るのは「行番号が出るか」ではなく **「その行番号が本当にその行か」** ——
+              ずれた行番号は、無いより悪い（別の行を直しに行かせる）。 */
+        const lineOf = (body, needle) => (FM + body).split('\n').findIndex(l => l.indexOf(needle) >= 0) + 1;
+        const spaced = '段落です。ここは通ります。\n\nもう1つ置いて、前に何行あっても数え直せることを見ます。\n\nアルカンの常温での状態\n';
+        const posMsg = red(spaced, '行番号を言う（前に段落を挟んだとき）');
+        const want = lineOf(spaced, 'アルカンの常温での状態');
+        assert(new RegExp(':' + want + '(?!\\d)').test(posMsg),
+            `赤が「${want} 行目」と言っていない（言えないと 300 行から探すのはユーザーの仕事になる） —— 「${posMsg}」`);
+        /* 囲みの中の赤は、**囲みの1行目**（`:::種類` の行）を指す ＝ 直しに行く先が1つに決まる */
+        const fenceBody = '段落です。ここは通ります。\n\n:::section\nanchor: a\ntitle: 題\nlead: これ。\nzzz: よそもの\n:::\n';
+        const fenceMsg = red(fenceBody, '囲みの中の知らないキー');
+        const fenceWant = lineOf(fenceBody, ':::section');
+        assert(new RegExp(':' + fenceWant + '(?!\\d)').test(fenceMsg),
+            `囲みの赤が「${fenceWant} 行目」（:::section の行）を指していない —— 「${fenceMsg}」`);
+    });
+
+    /* ===== REF21: :::link ―― まだ無いページを指せる（v1528） =====
+     *
+     * ★ 発端はユーザーが原稿に書いた注文6件（`//一般式・同族体へのリンク` ほか）。
+     *   設計は `DESIGN_reference_book.md` §20-7。
+     *
+     * ⚠⚠ **急所は「行き先がまだ無いページでもよい」こと。** 52ページの計画のうち
+     *   書けているのは6枚しかないので、⛔ ふつうのリンクにすると **404 が並ぶ**。
+     *
+     * ★ ここが見るのは5つ:
+     *   ① **まだ無いページ宛は `<a>` にならない**（押せない・「準備中」と言葉で出る）
+     *   ② **在るページ宛は `<a href="/reference/<id>/">`**（面Aでそのまま使える綴り）
+     *   ③ ⚠⚠ **`open:` は `game.js` の `OPEN_TARGETS` に実在する**（新しい URL の形を発明していない）
+     *   ④ ⚠ **`<button>` を作らない** —— 面Aの生成器は知らない押しものを見つけると止まる
+     *   ⑤ **行き先の綴り違いが「準備中」に化けない**（`PLANNED.txt` に登録した id だけが許される）
+     */
+    test('REF21: :::link は まだ無いページを「準備中」で指せ、綴り違いは赤になる', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`);
+            return await res.text();
+        };
+
+        assert(RM.KINDS.indexOf('link') >= 0, '書式が :::link を知らない');
+
+        /* ── ① まだ無いページ宛（`soon` は生成のときに焼き込まれている） ── */
+        const soon = book.renderBlock({ kind: 'link', to: 'zzz-not-a-page-yet', soon: true, text: 'まだ無いページへの案内' });
+        assert(soon, ':::link が描けていない');
+        assert(!soon.querySelector('a'), '⚠⚠ まだ無いページ宛が <a> になっている ＝ 押すと 404 が出る');
+        assert(soon.textContent.indexOf(W.REF_LINK_SOON) >= 0,
+            `まだ無いページ宛に「${W.REF_LINK_SOON}」の言葉が出ていない（淡いだけだと壊れたリンクに見える）: ${soon.textContent}`);
+
+        /* ── ② 在るページ宛 ── */
+        const live = book.pages[book.pages.length - 1];
+        const el = book.renderBlock({ kind: 'link', to: live.id, text: '在るページへの案内' });
+        const a = el.querySelector('a');
+        assert(a, `在るページ（${live.id}）宛が <a> になっていない`);
+        assert(a.getAttribute('href') === '/reference/' + live.id + '/',
+            `面Aの綴りと違う href: ${a.getAttribute('href')}（/reference/<id>/ であること）`);
+        assert(!el.querySelector('button'), '④ :::link が <button> を作っている（面Aの生成器が止まる）');
+
+        /* ── ③ ⚠⚠ `open:` は実在する行き先だけ（新しい URL の形を発明しない） ── */
+        const targets = W.OPEN_TARGETS;
+        assert(targets && Object.keys(targets).length >= 10,
+            'game.js の OPEN_TARGETS が読めない（作りが変わった？ この検査を直す）');
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        let nLink = 0, nOpen = 0;
+        const formulas = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'link') return;
+            nLink++;
+            assert(('to' in b) !== ('open' in b), `${p.id}: :::link が to と open を両方持つ／どちらも持たない`);
+            if (!b.open) return;
+            nOpen++;
+            assert(Object.prototype.hasOwnProperty.call(targets, b.open),
+                `${p.id}: :::link の行き先「open: ${b.open}」は game.js の OPEN_TARGETS に無い`
+                + `（書けるのは ${Object.keys(targets).join(' / ')}）`);
+            /* `formula` は受け口②（?open=isomer&formula=）専用。⚠ 下付きの Unicode は受け口が読めない */
+            if (b.formula) {
+                assert(b.open === 'isomer', `${p.id}: formula は open: isomer と一緒に使うものです（いまは ${b.open}）`);
+                assert(/^[A-Za-z0-9]+$/.test(b.formula), `${p.id}: formula「${b.formula}」が素の英数字でない`);
+                formulas.push({ id: p.id, formula: b.formula });
+            }
+        }));
+
+        /* ⚠⚠ **`REF5` に開けた2つ目の穴の埋め合わせ**（設計書 §20-7）。
+           ★ `formula` を通す条件は「**生きている行き先であること**」——
+             その式で**実際に書き出し練習が始まる**ことをその場で確かめる。
+           ⚠ 始まらない式（重原子8個・不飽和の式）は受け口が黙って何もしないので、
+             **押しても何も起きないリンク**になる。★ それを緑のまま置かない。 */
+        const ip = W.isomerPractice;
+        assert(ip, 'isomerPractice が居ない（書き出し練習の受け口が読めない）');
+        const wasMode = W.game.mode;
+        W.game.setMode('learn');
+        try {
+            formulas.forEach(({ id, formula }) => {
+                ip.startFromFormula(formula);
+                assert(ip.active && ip.problem && ip.problem.total >= 2,
+                    `${id}: :::link の formula「${formula}」で書き出し練習が始まらない`
+                    + '（押しても何も起きないリンクになる。受け口が受ける式かどうかは IS5 の線）');
+                ip.stop();
+            });
+        } finally {
+            ip.stop();
+            W.game.setMode(wasMode);
+        }
+        assert(nLink >= 6, `本文の :::link が ${nLink} 件しか無い（原稿の注文は6件あった）`);
+        assert(nOpen >= 1, 'アプリへ飛ぶ :::link が1件も無い');
+
+        /* ── ⑤ 綴り違いが「準備中」に化けない ──
+           ★ 行き先として書いてよいのは「在るページ」＋「PLANNED.txt に登録したもの」だけ。
+           ⚠ この照合が無いと、`to: alcohl` が永久に準備中で居座る（黙って壊れる型）。 */
+        const planned = new Map();
+        RM.normalize(await grab('../reference-src/PLANNED.txt', 'まだ無いページの表')).split('\n').forEach(line => {
+            const s = line.trim();
+            if (!s || s.startsWith('#')) return;
+            const m = /^([a-z0-9][a-z0-9-]*)\s+(\S.*)$/.exec(s);
+            assert(m, `reference-src/PLANNED.txt は「id␣␣表示名」の形で書きます → ${s}`);
+            planned.set(m[1], m[2]);
+        });
+        const livePages = new Set(pages.map(p => p.id));
+        planned.forEach((label, id) => assert(!livePages.has(id),
+            `reference-src/PLANNED.txt の「${id}」はもう書けている（この行を消すこと）`));
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'link' || !b.to) return;
+            assert(livePages.has(b.to) || planned.has(b.to),
+                `${p.id}: :::link の行き先「${b.to}」が、在るページにも PLANNED.txt にも無い（綴り違い？）`);
+            /* ★★ 焼き込まれた `soon` が**現物と食い違っていない** ——
+               ⚠ ここが緑のまま食い違うと、在るページ宛が「準備中」で居座る（実際に起きた） */
+            assert(!!b.soon === !livePages.has(b.to),
+                `${p.id}: :::link「${b.to}」の soon が現物と違う`
+                + `（soon=${!!b.soon} / ページは${livePages.has(b.to) ? '在る' : '無い'}）`
+                + '。★ node tools/gen-reference.mjs で焼き直すこと');
+        }));
+        assert(planned.size >= 1, 'PLANNED.txt が空（まだ無いページ宛のリンクを1本も試していない）');
+    });
+
+    /* ===== REF22: 手で書く表の列ごとの寄せ（v1528） =====
+     *
+     * ★ ユーザーのメモ「異性体の数は右揃え、その他は中央ぞろえ」への答え（設計書 §20-9）。
+     *
+     * ⚠⚠ ここが見張るのは「寄っているか」ではなく **「1列ずれていないか」** ——
+     *   数の合わない `align` を黙って詰めると、画面には**それらしく寄った表**が出て、
+     *   ⛔ 間違っていることが目で分からない（列の数が合わない `rows` を止めるのと同じ理由）。
+     * ★ **綴りは1組だけ**（`left`/`center`/`right`）。書式が唯一の台帳で、
+     *   `learn.js` は値をそのまま `style.textAlign` に渡す ＝ **一覧を2か所に持たない。**
+     */
+    test('REF22: :::table の align は列の数だけ・書ける語だけ（1列ずれた寄せを出さない）', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+        assert(Array.isArray(RM.ALIGNS) && RM.ALIGNS.length === 3, '書式が align の語を持っていない');
+
+        const pages = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
+        let seen = 0;
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'table' || !b.align) return;
+            seen++;
+            const cols = b.align.split(W.REF_CELL_SEP).map(s => s.trim());
+            assert(cols.length === b.head.length,
+                `${p.id}: :::table の align が ${cols.length} 個で、head の ${b.head.length} 列と違う`
+                + '（1列ずれた寄せは、画面ではそれらしく出てしまう）');
+            cols.forEach(v => assert(RM.ALIGNS.indexOf(v) >= 0,
+                `${p.id}: :::table の align に書けない語「${v}」（書けるのは ${RM.ALIGNS.join(' / ')}）`));
+            /* ★ 描いたものにも実際に載っていること（＝ 書式だけ通って画面が変わらない、を作らない） */
+            const t = book.renderBlock(b).querySelector('table');
+            const th = [...t.querySelectorAll('thead th')];
+            assert(th.length === cols.length, `${p.id}: 描いた表の列が ${th.length} で align の ${cols.length} と違う`);
+            th.forEach((cell, i) => assert(cell.style.textAlign === cols[i],
+                `${p.id}: ${i + 1}列目の見出しが「${cell.style.textAlign || '(指定なし)'}」で、原稿の「${cols[i]}」と違う`));
+            [...t.querySelectorAll('tbody tr')].forEach((tr, r) => {
+                [...tr.children].forEach((cell, i) => assert(cell.style.textAlign === cols[i],
+                    `${p.id}: ${r + 1}行 ${i + 1}列目が「${cell.style.textAlign || '(指定なし)'}」で、原稿の「${cols[i]}」と違う`));
+            });
+        }));
+        assert(seen >= 1, ':::table の align を使っているページが1枚も無い（この検査が空回りしている）');
+
+        /* ★ 書かない表は**今までどおり**（既定の見え方を .md 側にも learn.js 側にも写していない） */
+        const plain = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）',
+            head: ['左', '右'], rows: ['あ | い']
+        }).querySelector('table');
+        [...plain.querySelectorAll('th, td')].forEach(cell => assert(!cell.style.textAlign,
+            `align を書かない表に寄せが付いている（${cell.style.textAlign}）＝ 既定が2か所に書かれている`));
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
