@@ -411,6 +411,16 @@ const LIGHT_CSS = `
    ★ 同じ「押せる札」の .ref-try と同じ色に寄せる（読者から見て同じ種類のものなので） */
 .ref-scope a.ref-link{color:#5f3585}
 .ref-scope a.ref-link:hover{border-color:#7c4dab;background:#f3ecfa}
+/* 例題（:::exercise・§22）。⚠ 暗い地では「白の薄敷き＋水色の帯」だったが、
+   明るい地では敷きが効かない（#f5f3ef の上に rgba(255,255,255,.03) ＝ 見た目が変わらない）。
+   ★ 読み替えの向きは .ref-rx と同じ ＝ 紙（--panel）を敷いて罫線で囲む。
+   ⚠ 左の帯は --neon-cyan（上の :root で #0d6c78 に読み替え済み）を使うので、
+     ここでは地と罫線だけを直す ＝ 色の値を2か所に書かない。
+   ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
+     地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+.ref-scope .ref-exercise{background:var(--panel);border-color:var(--line)}
+.ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
+.ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
 `.trim();
 
 /* ★★ **読み替え漏れを機械で見る。**
