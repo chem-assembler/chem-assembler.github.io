@@ -14324,6 +14324,57 @@
       }
     },
     {
+      "code": "org.carbonyl.formate-ester",
+      "unit": "carbonyl",
+      "group": "エステル",
+      "difficulty": 4,
+      "tags": [
+        "性質",
+        "検出",
+        "異性体"
+      ],
+      "req": [
+        "org.carbonyl.formic-reducing",
+        "org.carbonyl.ester-bond"
+      ],
+      "knowledge": "ギ酸エステル HCOO−R はホルミル基の形をもつので、エステルでも還元性を示す。",
+      "variants": [
+        {
+          "mode": "flip",
+          "q": "エステルなのに銀鏡反応を示すものは？",
+          "a": "ギ酸エステル（ギ酸メチルなど）。HCOO− の H−C=O がホルミル基にあたる",
+          "supplement": "分子式から異性体を書き出すときは、ギ酸エステルを最初から候補に入れる。"
+        },
+        {
+          "mode": "choice",
+          "q": "ギ酸エステルについて正しいものをすべて選べ。",
+          "options": [
+            "ギ酸メチル HCOOCH₃ は銀鏡反応を示す",
+            "HCOO− の C=O には水素原子が直接ついている",
+            "ギ酸メチルを加水分解するとギ酸とメタノールが生じる",
+            "エステル結合をもつ化合物は還元性を示さない",
+            "ギ酸エステルの還元性はエステル結合そのものによる",
+            "ギ酸エステルは加水分解してからでないと銀鏡反応を示さない"
+          ],
+          "correct": [
+            0,
+            1,
+            2
+          ],
+          "supplement": "エステルだから還元性なし、で候補から外すと解答欄が埋まらない。HCOO− の形を探す。"
+        }
+      ],
+      "link": {
+        "kind": "summon",
+        "label": "ギ酸メチルの中のホルミル基を確かめる",
+        "summon": "methyl-formate"
+      },
+      "evidence": {
+        "textbook": "見あたらない",
+        "seminar": "未登場"
+      }
+    },
+    {
       "code": "org.bio.glycoside",
       "unit": "bio",
       "group": "二糖類",
