@@ -255,7 +255,15 @@ function makeParticleEl(p) {
   const st = RSTYLE[p.sp] || { color: "#8a8f98", r: 16 };
   const g = mk("g", { class: "particle" }, particleLayer);
   mk("circle", { r: p.r, fill: colorOf(p.sp), stroke: "rgba(0,0,0,.25)", "stroke-width": 1.5 }, g);
-  const disp = SPECIES[p.sp].disp;
+  /* ★ 2026-09-11・ユーザー指摘「酸化還元ページすべてイオンが二重になってます／
+     直したのはイオン反応のページのようです」。
+     右肩に電荷のバッジを描く粒は、**名札のほうから右肩の電荷を外す**（MnO₄⁻ と − の二重）。
+     ⚠ ビーカー（app.js）は v41 からこうしていたが、`stripCharge` が app.js の中にあり
+     こちらから呼べなかった。関数は model.js へ移した（同じ規則を2本書かない）。
+     ⚠ 判定は**バッジを描くのと同じ条件**にそろえる。e⁻ はバッジを描かないので、
+     名札の側で「e⁻」と1回だけ言う（外すと電荷がどこにも出なくなる）。 */
+  const badge = SPECIES[p.sp].charge !== 0 && p.sp !== "e-";
+  const disp = badge ? stripCharge(SPECIES[p.sp].disp) : SPECIES[p.sp].disp;
   const oxAt = oxAtomFor(p.sp);
   const label = mk("text", {
     y: oxAt ? -1.5 : (p.sp === "e-" ? 3 : 4.5), "text-anchor": "middle",
@@ -289,7 +297,7 @@ function makeParticleEl(p) {
     label.textContent = disp;
   }
   const c = SPECIES[p.sp].charge;
-  if (c !== 0 && p.sp !== "e-") {
+  if (badge) {
     const btxt = (Math.abs(c) > 1 ? String(Math.abs(c)) : "") + (c > 0 ? "+" : "−");
     const bx = p.r * 0.85, by = -p.r * 0.85;
     mk("circle", { cx: bx, cy: by, r: 8, fill: "#fff", stroke: st.color, "stroke-width": 1.5 }, g);
