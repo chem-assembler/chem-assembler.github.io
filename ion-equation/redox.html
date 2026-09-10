@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=205">
+<link rel="stylesheet" href="style.css?v=206">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v205</div>
+  <div class="version">v206</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -172,25 +172,47 @@
            v194 は出どころ当てをヘルプ（<details>）へ落として順番が逆だった。**戻す。**
            ⚠ 問いの形はユーザーの言葉そのまま「MnO₄⁻ はもともと何だった？」——
            こう聞けば、容器を指す語が1つも要らなくなる。 -->
-      <div class="stepHead"><span class="stepNo">4</span>もともと何だった？ — 左辺のイオンの出どころをたどる</div>
-      <div id="bottleRack"></div>
-      <div id="bottleWhy">
+      <div class="stepHead"><span class="stepNo">4</span>もともと何だった？ — イオンの下に、もとの物質を置く</div>
+      <!-- ★★ 2026-09-10・ユーザーの指示（原文が仕様の一次資料）:
+           > ここを筆算に寄せたい／イオン反応式の下に筆算形式で K+ と SO42- の入力欄を入れる、
+           > 最後の係数も筆算の中に入れる
+           > 筆算のイオン反応式の左辺のイオンをマーカーし、その下に、イオンがもともと何だったの
+           > カードをドラッグさせる
+           > もともと何だったか、を正解した後に、改めてイオン反応式を出すようにしてください、
+           > 上下が離れるとわかりづらいです
+           ★ 3つに分かれていた入力（④前半・④後半・⑤）を**1枚の筆算**にまとめた。
+           **イオン反応式の左辺の項が「柱」**で、その柱の下に答えが縦に積まれる ＝
+           どの段を答えているときも、根拠のイオン反応式が同じ枠の中の真上にある。
+           ⚠ 段の順（もともと何だった → 両辺に加える → 係数）は変えていない。
+           ⚠ id は動かさない（#bottleQuiz / #addIonRows / #bottleCounts …）。
+              変えたのは置き場所と見せ方だけで、外から名指ししている口は残す。 -->
+      <div class="sheetScroll bworkScroll"><div id="bottleWork">
+        <!-- 狭い画面では柱が縦に積まれる（＝横に並べられない）ので、
+             イオン反応式そのものを1行で先に出す。広い画面では柱の行がこれを兼ねるので出さない -->
+        <div id="bottleEq"></div>
+        <div id="bottleCols"></div>
         <div id="bottleQuiz"></div>
+        <div id="bottleRack"></div>
         <div id="bottleMsg"></div>
-      </div>
-      <!-- 「後」の側。出どころがそろってから現れる（この画面の唯一の順序の表し方） -->
-      <div id="addIonWrap" hidden>
-        <div class="stepSubHead">つぎに — 両辺に加えるイオンの数を考える</div>
-        <div id="addIonRows"></div>
-        <div id="addIonMsg"></div>
-      </div>
-      <div id="bottleTail" hidden>
-        <div class="stepHead"><span class="stepNo">5</span>化学反応式の左辺 — 係数をすべて書く</div>
-        <div id="bottleCounts"></div>
+        <!-- 「後」の側。出どころがそろってから現れる（この画面の唯一の順序の表し方）。
+             ★ 同じ筆算の中の1行になったので、柱（イオン反応式）から離れない -->
+        <div id="addIonWrap" hidden>
+          <div class="stepSubHead">つぎに — 両辺に加えるイオンの数を考える</div>
+          <div id="addIonRows"></div>
+          <div id="addIonMsg"></div>
+        </div>
+        <!-- ⑤も同じ筆算の中。係数の欄が、担当したイオンの柱の真下に来る -->
+        <div id="bottleTail" hidden>
+          <div class="stepHead inWork"><span class="stepNo">5</span>化学反応式の左辺 — 係数をすべて書く</div>
+          <div id="bottleCounts"></div>
+          <div id="bottleCountNotes"></div>
+        </div>
+      </div></div>
         <!-- ★ ⑥（2026-09-07・ユーザーの指示「右辺で余ったイオン同士を組み合わせる／
              イオンの一覧から陽イオンと陰イオンを選んで並べ・高さがそろえば１つの化学種」）。
              部品は同じ日の別レーンが入れた「価数＝高さのブロック」（DESIGN_ion_blocks.md）。
-             ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ -->
+             ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ。
+             ⚠ 筆算のグリッドの**外**に置く（横送り枠の中に SVG を入れない） -->
         <div id="saltStep" hidden>
           <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせる — 高さがそろえば1つの化学種</div>
           <!-- ★ 硝酸の二役（rn1・rn2）を1行で言う場所（2026-09-08・レーン rx-sheet）。
@@ -215,18 +237,17 @@
           <div id="bottleLeftMap"></div>
           <div class="sheetScroll"><div id="bottleSheet"></div></div>
         </div>
-        <div id="bottleTailMsg"></div>
-      </div>
+      <div id="bottleTailMsg"></div>
     </section>
     <div id="clearBanner" hidden></div>
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=205"></script>
-<script src="schematic.js?v=205"></script>
+<script src="model.js?v=206"></script>
+<script src="schematic.js?v=206"></script>
 <!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
-<script src="blocks.js?v=205"></script>
-<script src="header-ui.js?v=205"></script>
-<script src="redox.js?v=205"></script>
+<script src="blocks.js?v=206"></script>
+<script src="header-ui.js?v=206"></script>
+<script src="redox.js?v=206"></script>
 </body>
 </html>
