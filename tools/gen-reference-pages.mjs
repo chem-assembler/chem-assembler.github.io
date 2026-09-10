@@ -376,6 +376,8 @@ const LIGHT_OVERRIDE = [
     /* ★ 例題（`:::exercise`・§22）。⚠ 器の地が `rgba(255,255,255,.03)`・左の帯が `#7ef`・
        「解答を見る」の札の地が `rgba(0,0,0,.25)` ＝ **3つとも明るい地では効かない**。 */
     'ref-exercise', 'ref-ex-open',
+    /* ★ 穴あきテンプレートの `○○`（§23-2）。⚠ 薄敷きが `rgba(255,255,255,.07)` ＝ 明るい地では効かない */
+    'ref-blank',
 ];
 /* ★ 明るい地でも**そのままでよい**もの（⚠ 1件ずつ理由を書く。書けないなら読み替える側） */
 const LIGHT_KEEP = {
@@ -432,6 +434,12 @@ const LIGHT_CSS = `
      左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
    ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
      地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+/* ★★ 発展の印（§23）。⚠ 暗い地の #7fd6a4 は明るい地で 1.9:1 ＝ 読めない。
+   ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
+     見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
+.ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 穴あきテンプレートの `○○`（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}

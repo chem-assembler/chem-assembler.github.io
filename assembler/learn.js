@@ -6092,6 +6092,29 @@ const REF_TONE_WORDS = {
     note: '補足'
 };
 
+/* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節と小見出しに付く1語。**
+   ⚠⚠ **これは重要度の印ではない。** 言っているのは「高校の教科書の本文の外側にある」ことだけで、
+     **覚える／覚えなくてよい**は今までどおり本文の文が言う（REFBOOK_STYLE §8-5）。
+   ★ だから `:::reaction` の `level`（★★★ ＝ 必ず覚える）と役が重ならない ＝ 同じことを2か所で決めない。
+   ⚠ 書式（`tools/reference-md.js` の `ADVANCED_WORD`）と割れないよう `REF24` が突き合わせる。 */
+const REF_ADVANCED_WORD = '発展';
+
+/* 発展の印の札を1つ作る。★ **記号だけにしない**（`level` と同じ約束）。
+   ⚠ 節の目次では `<a>` の**外**に置く —— `REF19` が「目次の文字 ＝ 節の題」で見ているので、
+     中に入れると目次の文字が「題＋発展」になって節と食い違う。 */
+function refAdvancedTag() {
+    const t = document.createElement('b');
+    t.className = 'ref-adv-tag';
+    t.textContent = REF_ADVANCED_WORD;
+    /* ⚠ 印だけでは「覚えなくてよい」と読まれかねないので、意味を1文で添える（読み上げにも出る） */
+    t.title = '高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。';
+    return t;
+}
+
+/* ★ ぶら下げの補足の印（設計書 §23-3）。**行頭の全角スペース1つ。**
+   ⚠ 書式（`tools/reference-md.js` の `HANG_MARK`）と割れないよう `REF24` が突き合わせる */
+const REF_HANG_MARK = '　';
+
 /* 手で書く表のセルの区切り */
 const REF_CELL_SEP = '|';
 
@@ -6392,11 +6415,12 @@ class ReferenceBook {
      */
     renderSection(block) {
         const sec = document.createElement('section');
-        sec.className = 'ref-sec';
+        sec.className = 'ref-sec' + (block.advanced ? ' ref-sec-advanced' : '');
         sec.id = REF_ANCHOR_PREFIX + block.anchor;
         const h = document.createElement('h4');
         h.className = 'ref-sec-h';
         h.textContent = block.title;
+        if (block.advanced) h.appendChild(refAdvancedTag());
         sec.appendChild(h);
         const lead = document.createElement('p');
         lead.className = 'ref-sec-lead';
@@ -6414,19 +6438,35 @@ class ReferenceBook {
      */
     renderHeading(block) {
         const h = document.createElement('h5');
-        h.className = 'ref-h5';
+        h.className = 'ref-h5' + (block.advanced ? ' ref-h5-advanced' : '');
         h.innerHTML = block.title;
+        if (block.advanced) h.appendChild(refAdvancedTag());
         return h;
     }
 
-    /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
+    /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用）。
+     *
+     * ★★ **行頭が全角スペースの項目は「ぶら下げの補足」**（設計書 §23-3）——
+     *   1つ前の項目の**中**に入れる。⚠⚠ **別の `<li>` にしない** ——
+     *   `<ol>` の中では `list-style: none` にしても番号の勘定は進むので、
+     *   次の段が 2 ではなく 3 になる（＝ 手順の番号が黙ってずれる）。
+     * ★ 中に入れれば、番号の右の文字列と縦がそろう ＝ そのまま「ぶら下げ」になる。 */
     renderList(block) {
         const el = document.createElement(block.ordered ? 'ol' : 'ul');
         el.className = 'ref-list';
+        let last = null;
         (block.items || []).forEach(t => {
+            if (t.charAt(0) === REF_HANG_MARK && last) {
+                const note = document.createElement('div');
+                note.className = 'ref-li-hang';
+                note.innerHTML = t.slice(1);
+                last.appendChild(note);
+                return;
+            }
             const li = document.createElement('li');
-            li.innerHTML = t;
+            li.innerHTML = t.charAt(0) === REF_HANG_MARK ? t.slice(1) : t;
             el.appendChild(li);
+            last = li;
         });
         return el;
     }
@@ -6666,6 +6706,9 @@ class ReferenceBook {
             a.textContent = s.title;
             a.dataset.refAnchor = s.anchor;
             li.appendChild(a);
+            /* ★★ 発展の節は**目次にも同じ印**を出す（語尾に「（発展）」と書いていた頃は
+               目次と連動していなかった）。⚠ 印は `<a>` の外（`REF19` の突き合わせを壊さない） */
+            if (s.advanced) li.appendChild(refAdvancedTag());
             ul.appendChild(li);
         });
         det.appendChild(ul);
@@ -7131,6 +7174,8 @@ if (typeof window !== 'undefined') {
     window.REF_LEVELS = REF_LEVELS;
     window.REF_LEVEL_WORDS = REF_LEVEL_WORDS;
     window.REF_TONE_WORDS = REF_TONE_WORDS;
+    window.REF_ADVANCED_WORD = REF_ADVANCED_WORD;
+    window.REF_HANG_MARK = REF_HANG_MARK;
     window.REF_CELL_SEP = REF_CELL_SEP;
     /* ★ リンクの決めごと（§20-7）。`REF21` が「まだ無いページ宛は押せず、言葉で断っている」ことと、
        「`open:` の行き先が `OPEN_TARGETS` に実在する」ことを、この口から見る */
