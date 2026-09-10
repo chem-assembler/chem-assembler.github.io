@@ -7229,49 +7229,15 @@ async function runRedoxUITests(iframe) {
           どの段の欄も**すぐ上の柱から 200px 以内**（柱をもう一度出す行が効いている）
      ⚠ 模範の数は1つも手で書かない。③の px は見た目の検査なので、
        iframe の幅（960px）が変わると動く ＝ しきい値はゆるく取る。 */
-  await t("BOTTLE 筆算: ④⑤が1枚になり、答えの欄が柱（イオン反応式の左辺）の真下に来る", async () => {
-    const id = "ro1";
-    const st = REDOX_STAGES.find((x) => x.id === id);
-    const [a, b] = st.answer;
-    openB(id);
-    let g = 0;
-    while (state().mult[0] < a && g++ < 12) bumpB(0);
-    while (state().mult[1] < b && g++ < 12) bumpB(1);
-    passCalc();
-    // ① 柱 ＝ イオン反応式の左辺の項（e⁻ を除く）。並びも表記も式のまま
-    const left = combineHalves(st, a, b).left.filter((x) => x.sp !== "e-");
-    const pills = $$("#bottleCols .bpill");
-    assert(pills.length === left.length,
-      "柱の数が左辺の項の数と違う: " + pills.length + " / " + left.length);
-    left.forEach((x, i) => {
-      const want = (x.n > 1 ? x.n + " " : "") + SPECIES[x.sp].disp;
-      assert(pills[i].textContent === want, `柱 ${i} が式の項と違う: ${pills[i].textContent} / ${want}`);
-    });
-    // ② 3つの入力が同じ1枚の中にある
-    passOwnerB(id, a, b);
-    passAddB(id, a, b, 1);
-    for (const c of bottleCountRows(st, a, b, 1)) putB(c.sp, c.answer);
-    const work = doc.getElementById("bottleWork");
-    for (const sel of ["#bottleCols .bslot", "#addIonRows input", "#bottleCounts input"]) {
-      assert(work.querySelector(sel), sel + " が1枚の筆算の中に無い（段が割れている）");
-    }
-    // ③-a 係数の欄は、その物質が担当した柱と**同じ列**（横に重なっている）
-    const owners = bottleOwnerChoices(st, a, b);
+  await t("BOTTLE 筆算: ④⑤が1枚になり、答えの欄が柱（イオン反応式の左辺）の真下に来る（9ステージ悉皆）", async () => {
+    /* ⚠ **ro1 だけでは足りない**。列を決めるところ（bottleColOf）は
+       「1つの物質が2つの柱を担当する」（rn1・rn2 の HNO₃）と
+       「1つの柱を2つの物質が担当する」（rs3 の H⁺）で形が変わるので、
+       ④⑤⑥を持つ9ステージ全部を通す。 */
+    const ids = REDOX_STAGES.filter((s) => bottleStepOf(s)).map((s) => s.id);
+    assert(ids.length === 9, "④⑤の段を持つステージが9本でない: " + ids.join());
     const holds = (key, sp) =>
       key === "bottle:" + sp || (key.startsWith("bottles:") && key.slice(8).split("+").includes(sp));
-    let checkedCols = 0;
-    for (const c of bottleCountRows(st, a, b, 1)) {
-      const owner = owners.find((r) => holds(r.answerKey, c.sp));
-      assert(owner, c.sp + " が担当する柱を見つけられない");
-      const inp = cinB(c.sp).getBoundingClientRect();
-      const pil = doc.getElementById(bqSlotIdOf(owner.ion)).getBoundingClientRect();
-      assert(inp.right > pil.left && inp.left < pil.right,
-        `${c.sp} の係数の欄が ${owner.ion} の列からずれている ` +
-        `(欄 ${Math.round(inp.left)}〜${Math.round(inp.right)} / 柱 ${Math.round(pil.left)}〜${Math.round(pil.right)})`);
-      checkedCols++;
-    }
-    assert(checkedCols === st.bottles.length, "列を見た物質が入れた数と合わない: " + checkedCols);
-    // ③-b どの段の欄も、すぐ上の柱から離れていない（★ 申し立ての本体）
     const nearestPillar = (el) => {
       const y = el.getBoundingClientRect().top;
       let best = null;
@@ -7281,15 +7247,74 @@ async function runRedoxUITests(iframe) {
       }
       return best === null ? Infinity : y - best;
     };
-    const spots = [
-      ["④前半（札を置く）", doc.querySelector("#bottleCols .bslot")],
-      ["④後半（両辺に加える）", doc.querySelector("#addIonRows input")],
-      ["⑤（左辺の係数）", doc.querySelector("#bottleCounts input")],
-    ];
-    for (const [what, el] of spots) {
-      const d = nearestPillar(el);
-      assert(d >= 0 && d < 200, `${what}の欄が柱から離れている: ${Math.round(d)}px`);
+    let checkedStages = 0, checkedCols = 0, worst = 0;
+    for (const id of ids) {
+      const st = REDOX_STAGES.find((x) => x.id === id);
+      const [a, b] = st.answer;
+      /* ⚠ ここは**倍率1のまま**で通す。全体の倍率（bottleScale）は⑥で組めなくなったときに
+         だけ案内から上がる例外（v182・【D】）で、④⑤の入力欄はいつも倍率1の数を待っている。
+         minBottleScale を使うと rs1（最小2）で④後半が埋まらず⑤が出ない。 */
+      const scale = 1;
+      openB(id);
+      let g = 0;
+      while (state().mult[0] < a && g++ < 12) bumpB(0);
+      while (state().mult[1] < b && g++ < 12) bumpB(1);
+      passCalc();
+      assert(!doc.getElementById("stepBottles").hidden, id + ": ④の段が出ない");
+      // ① 柱 ＝ イオン反応式の左辺の項（e⁻ を除く）。並びも表記も式のまま
+      const left = combineHalves(st, a, b).left.filter((x) => x.sp !== "e-");
+      const pills = $$("#bottleCols .bpill");
+      assert(pills.length === left.length,
+        `${id}: 柱の数が左辺の項の数と違う: ${pills.length} / ${left.length}`);
+      left.forEach((x, i) => {
+        const want = (x.n > 1 ? x.n + " " : "") + SPECIES[x.sp].disp;
+        assert(pills[i].textContent === want,
+          `${id}: 柱 ${i} が式の項と違う: ${pills[i].textContent} / ${want}`);
+      });
+      // ② 3つの入力が同じ1枚の中にある
+      passOwnerB(id, a, b);
+      passAddB(id, a, b, scale);
+      const counts = bottleCountRows(st, a, b, scale);
+      for (const c of counts) putB(c.sp, c.answer);
+      const work = doc.getElementById("bottleWork");
+      for (const sel of ["#bottleCols .bslot", "#addIonRows input", "#bottleCounts input"]) {
+        assert(work.querySelector(sel), `${id}: ${sel} が1枚の筆算の中に無い（段が割れている）`);
+      }
+      // ③-a 係数の欄は、その物質が担当した柱と**同じ列**（横に重なっている）
+      const owners = bottleOwnerChoices(st, a, b);
+      for (const c of counts) {
+        const owner = owners.find((r) => holds(r.answerKey, c.sp));
+        assert(owner, `${id}: ${c.sp} が担当する柱を見つけられない`);
+        const inp = cinB(c.sp).getBoundingClientRect();
+        const pil = doc.getElementById(bqSlotIdOf(owner.ion)).getBoundingClientRect();
+        assert(inp.right > pil.left && inp.left < pil.right,
+          `${id}: ${c.sp} の係数の欄が ${owner.ion} の列からずれている ` +
+          `(欄 ${Math.round(inp.left)}〜${Math.round(inp.right)} / 柱 ${Math.round(pil.left)}〜${Math.round(pil.right)})`);
+        checkedCols++;
+      }
+      assert(counts.length === st.bottles.length,
+        `${id}: 列を見た物質が入れた数と合わない: ${counts.length} / ${st.bottles.length}`);
+      // ③-b どの段の欄も、すぐ上の柱から離れていない（★ 申し立ての本体）
+      const spots = [
+        ["④前半（札を置く）", doc.querySelector("#bottleCols .bslot")],
+        ["④後半（両辺に加える）", doc.querySelector("#addIonRows input")],
+        ["⑤（左辺の係数）", doc.querySelector("#bottleCounts input")],
+      ];
+      for (const [what, el] of spots) {
+        const d = nearestPillar(el);
+        assert(d >= 0 && d < 200, `${id}: ${what}の欄が柱から離れている: ${Math.round(d)}px`);
+        if (d > worst) worst = d;
+      }
+      checkedStages++;
     }
+    /* ⚠ 悉皆の検査は「対象を絞って全部通った」がいちばん悪い形なので、
+       見た係数の欄の本数まで、入れた物質の合計と突き合わせる */
+    assert(checkedStages === 9, "通したステージが9本でない: " + checkedStages);
+    const want = REDOX_STAGES.filter((s) => bottleStepOf(s))
+      .reduce((n, s) => n + s.bottles.length, 0);
+    assert(checkedCols === want,
+      `列を見た係数の欄が入れた物質の合計と合わない: ${checkedCols} / ${want}`);
+    assert(worst < 200, "柱からいちばん離れた欄が 200px を超えた: " + Math.round(worst));
     openB("r1");
   });
 
