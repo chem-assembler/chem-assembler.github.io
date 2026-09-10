@@ -1823,6 +1823,8 @@ function buildBottleCols(rows, force) {
     rows.map((r) => bottlePick[r.ion] || "-").join("|");
   if (!force && bottleWorkKey === key) return;
   bottleWorkKey = key;
+  // 1行版は下で並べ直すので、消される前にいったん外へ逃がす
+  if (bottleEqEl && bottleEqEl.parentElement === bottleColsEl) bottleWorkEl.appendChild(bottleEqEl);
   bottleColsEl.innerHTML = "";
   const plan = bottlePlan(stage(), mult[0], mult[1], 1);
   const ionic = plan ? plan.ionic : null;
@@ -1936,11 +1938,15 @@ function buildBottleCols(rows, force) {
     rt.className = "bwEqSide";
     renderTerms(rt, ionic.right.filter((t) => t.sp !== "e-"), []);
     rest.append(ar, rt);
-    const tag = cell(bottleColsEl, "bwRowTag", BROW.eq, 0);
-    tag.innerHTML = "";
+    /* ⚠ 見出しは**いちばん上**（狭い画面は grid ではなく素の並びになるので、DOM の順が効く） */
+    const tag = cell(bottleColsEl, "bwRowTag", BROW.tag, 0);
     const b = document.createElement("b");
     b.textContent = "③で出したイオン反応式";
     tag.append(b, document.createTextNode(" — 左辺の項が、そのまま下の欄の見出しになる"));
+    bottleColsEl.insertBefore(tag, bottleColsEl.firstChild);
+    /* 狭い画面用の1行版は、見出しのすぐ下に置く（広い画面では display:none）。
+       ⚠ 素の並びが効くのは狭い画面だけなので、**DOM を動かして**順を作る */
+    if (bottleEqEl) bottleColsEl.insertBefore(bottleEqEl, tag.nextSibling);
   }
 }
 
