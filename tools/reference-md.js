@@ -134,6 +134,19 @@
         exercise: { pair: 'example', role: 'パズルのお題を開いて「▶ 組んでみる」例題' }
     };
 
+    /* 相手のキーを書いていたら、**相手の名前と役まで**言う一文（そうでなければ空）。
+       ⚠⚠ **知らないキーで止まる場所は2つある**（行を読む `kvLineFail` と、読み終えたあとの照合）。
+         ★ 実測: `stageId` を `:::exercise` に書くと**先に `kvLineFail` が止める**ので、
+           照合の側にだけ添えていたこの一文は**一度も出ていなかった**（REF23 の否定対照で判明）。
+         ⚠ だから**一文は1か所で作り、両方から呼ぶ。** */
+    function confusableHint(kind, key) {
+        var c = kind && CONFUSABLE[kind];
+        if (!c || BLOCK_SPECS[c.pair].order.indexOf(key) < 0) return '';
+        return '\n    ★ 「' + key + '」は :::' + c.pair + ' のキーです（' + CONFUSABLE[c.pair].role + '）。'
+            + 'この囲みを :::' + c.pair + ' に書き替えるか、'
+            + 'キーを ' + BLOCK_SPECS[kind].order.join(' / ') + ' から選んでください';
+    }
+
     /* 図のファイル名。⚠ **名前だけ**（`/` も `..` も許さない）。置き場所を .md 側から動かせない形にする */
     var FIGURE_SRC_RE = /^[a-z0-9][a-z0-9-]*\.png$/;
     /* 節のアンカー。⚠ URL の `#` の後ろに出るので、英小文字・数字・ハイフンだけ */
@@ -219,13 +232,14 @@
     }
 
     /* 「キー: 値」の形でない行を、**直し方まで**言って止める（§20-6） */
-    function kvLineFail(where, line, allowed, used) {
+    function kvLineFail(where, line, allowed, used, kind) {
         var m = /^\s*([A-Za-z][A-Za-z0-9]*):/.exec(line);
         if (m && used[m[1]]) {
             fail(where, 'キー「' + m[1] + '」が2回出てきます（同じ囲みの中で1回だけ書きます）\n    → ' + line.trim().slice(0, 60));
         }
         if (m) {
             fail(where, '知らないキー「' + m[1] + '」があります（ここに書けるのは ' + allowed.join(' / ') + '）'
+                + confusableHint(kind, m[1])
                 + '\n    → ' + line.trim().slice(0, 60));
         }
         fail(where, '「キー: 値」の形でない行があります'
@@ -242,7 +256,7 @@
          - 値                ← ★ 字下げは要らない（2字下げでもよい）。★ 空行が挟まってもよい
          - 値
        ★ **1行に詰めて書いてもよい**（`anchor: formula title: 一般式`）。切れ目の決め方は splitPacked。 */
-    function parseKV(lines, where, allowed) {
+    function parseKV(lines, where, allowed, kind) {
         var out = {}, order = [], used = {}, curList = null;
         var put = function (key, val) {
             order.push(key);
@@ -265,7 +279,7 @@
                 else if (!seg.parts.length) fail(where, '「- 」だけの行があります');
             } else {
                 seg = splitPacked(line.trim(), allowed, used);
-                if (!seg.parts.length || seg.lead) kvLineFail(where, line, allowed, used);
+                if (!seg.parts.length || seg.lead) kvLineFail(where, line, allowed, used, kind);
             }
             seg.parts.forEach(function (p) { put(p.key, p.value); });
         }
@@ -467,7 +481,7 @@
     function buildBlock(kind, inner, where) {
         var spec = BLOCK_SPECS[kind];
         if (!spec) fail(where, '「:::' + kind + '」は描けない種類です（書けるのは ' + KINDS.join(' / ') + '）');
-        var kv = parseKV(inner, where + ' の :::' + kind, spec.order).map;
+        var kv = parseKV(inner, where + ' の :::' + kind, spec.order, kind).map;
         var block = { kind: kind };
         var enums = spec.enum || {}, bools = spec.bool || [];
         spec.order.forEach(function (k) {
@@ -499,13 +513,10 @@
         });
         Object.keys(kv).forEach(function (k) {
             if (spec.order.indexOf(k) >= 0) return;
-            /* ★ `:::example` ↔ `:::exercise` の取り違えは、**相手の名前と役まで言う**（§22-2） */
-            var c = CONFUSABLE[kind];
-            var hint = (c && BLOCK_SPECS[c.pair].order.indexOf(k) >= 0)
-                ? '\n    ★ 「' + k + '」は :::' + c.pair + ' のキーです（' + CONFUSABLE[c.pair].role + '）。'
-                + 'この囲みを :::' + c.pair + ' に書き替えるか、キーを ' + spec.order.join(' / ') + ' から選んでください'
-                : '';
-            fail(where, ':::' + kind + ' に知らないキー「' + k + '」があります（書けるのは ' + spec.order.join(' / ') + '）' + hint);
+            /* ★ `:::example` ↔ `:::exercise` の取り違えは、**相手の名前と役まで言う**（§22-2）。
+               ⚠ 一文は `confusableHint` の1か所で作る（行を読む側 `kvLineFail` と同じもの） */
+            fail(where, ':::' + kind + ' に知らないキー「' + k + '」があります（書けるのは ' + spec.order.join(' / ') + '）'
+                + confusableHint(kind, k));
         });
         checkBlock(block, where);
         return block;
