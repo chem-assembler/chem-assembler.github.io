@@ -50,6 +50,29 @@
     /* ⚠ `note`（補足）は **型を書かない `::: … :::` の行き先**（§20-4）。
        ★ ユーザーは「ちょっと囲みたい」だけのことがあり、そのたびに tone を選ばせない。 */
     var TONES = ['caution', 'memorize', 'skip', 'note'];
+    /* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節と小見出しに `advanced: true` を足す**。
+       ⚠⚠ **意味は「範囲の外」だけ。重要度も暗記の要否も言わない** ——
+         覚える範囲の線引きは今までどおり**本文の文**が持つ（REFBOOK_STYLE §8-5・本人の最大の特徴）。
+       ★ だから `:::reaction` の `level`（重要度）とも喧嘩しない ＝ **同じことを2か所で決めない**。
+       ⚠ 語尾に「（発展）」と書くやり方は**受けない**（下の checkBlock が直し方まで言って止める）。
+         ★ 理由は2つ: ① 目次に出るのは節の `title` なので、語尾に書くと目次の文字まで変わる
+         ② 同じことを2通りで書けると、どちらが正かが原稿ごとに割れる（`align` の3語と同じ理由）。 */
+    /* ★ 穴あきテンプレート `○○` に付く class。⚠ **learn.js は class 名を持たない**
+       （器は書式の側が焼き込む1か所だけ）。見た目は style.css / LIGHT_CSS が持つ。 */
+    var BLANK_CLASS = 'ref-blank';
+    /* ★ ぶら下げの補足の印（設計書 §23-3）。**行頭の全角スペース1つ**。
+       ⚠ ユーザーが書いた字下げそのものなので、原稿を見たときに見た目が変わらない。 */
+    var HANG_MARK = '　';
+    var ADVANCED_WORD = '発展';
+    var ADVANCED_SUFFIX_RE = /[（(]\s*発展\s*[)）]\s*$/;
+    /* ★★ 語尾の「（発展）」は**受け取って `advanced: true` に直す**（黙って捨てない・§20 の思想）。
+       ⚠ ユーザーは実際にそう書いた（`## 枝分かれすると沸点が下がる（発展）`）ので、
+         赤にするのではなく**同じ意味の1つの形へ寄せる** —— 保存される形は `advanced` の1つだけ。
+       ★ 直したことは `--tidy` の一覧に出る（勝手に揃えたものは見せる・§1）。 */
+    function foldAdvanced(title) {
+        if (!ADVANCED_SUFFIX_RE.test(title)) return null;
+        return String(title).replace(ADVANCED_SUFFIX_RE, '').replace(/\s+$/, '');
+    }
     /* ★ 表の列ごとの寄せ（§20-9）。⚠ **綴りは1組だけ**（日本語の「右」も受けると、
        同じことを2通りで書ける ＝ どちらが正かが原稿ごとに割れる）。★ 赤が3語を必ず並べる。 */
     var ALIGNS = ['left', 'center', 'right'];
@@ -59,13 +82,13 @@
         /* 節の見出し。`anchor` が `id="ref-sec-<anchor>"` になり、目次と用語の索引の行き先になる。
            ⚠ `lead`（この節で分かること）は**必須** —— 検索から着地した人が最初に読む1行なので、
               「見出しだけ在って何の節か分からない」を作らない（設計書 §19-1） */
-        section: { order: ['anchor', 'title', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'] },
+        section: { order: ['anchor', 'title', 'advanced', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'], bool: ['advanced'] },
         /* ★ 節の下の小見出し（§20-5）。**本文では `## タイトル` と書ける**（`:::heading` と同じもの）。
            ⚠ **アンカーは持たない** —— 綴りは `#ref-sec-<anchor>` の1つだけ、という §19-2 の決めを
               増やさないため。★ だから**目次（`renderToc`）にも出さない**（目次の行き先は節だけ）。 */
-        heading: { order: ['title'], req: ['title'], list: [], prose: ['title'] },
+        heading: { order: ['title', 'advanced'], req: ['title'], list: [], prose: ['title'], bool: ['advanced'] },
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
-        list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'] },
+        list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'], hang: ['items'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。
            `/reference-img/` を付けるのは learn.js の1か所（面A・面Bで同じ URL になる） */
         figure: { order: ['src', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
@@ -185,8 +208,16 @@
     function inline(s, where) {
         var h = String(s)
             .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
-            .replace(/~([^~]+)~/g, '<sub>$1</sub>');
-        var bare = h.replace(/<\/?b>/g, '').replace(/<\/?sub>/g, '');
+            .replace(/~([^~]+)~/g, '<sub>$1</sub>')
+            /* ★★ 穴あきテンプレートの `○○`（設計書 §23-2・REFBOOK_STYLE §11）。
+               ⚠⚠ **新しい記法を作っていない** —— ユーザーが②稿で自分から6回書いた形
+                 （「主鎖の炭素数が4なら『○○ブタン』」）を、**そのまま器にした**。
+               ★ 覚えることが増えず、原稿の見た目も変わらない（§20 の思想）。
+               ⚠ **文字は残す**（下線だけの空欄にしない）—— 「まるまるブタン」と声に出せること、
+                 検索に「○○ブタン」でかかること、字数を暗示しないこと、の3つが理由（§23-2）。 */
+            .replace(/○{2,}/g, function (m) { return '<span class="' + BLANK_CLASS + '">' + m + '</span>'; });
+        var bare = h.replace(/<\/?b>/g, '').replace(/<\/?sub>/g, '')
+            .replace(new RegExp('<span class="' + BLANK_CLASS + '">|<\\/span>', 'g'), '');
         if (FORBIDDEN.test(bare)) {
             fail(where, '本文に使えない文字が残っています「' + bare.match(FORBIDDEN)[0] + '」'
                 + '（強調は ** で挟む・下付きは ~ で挟む。生の HTML と、素の * ~ < > & は書けません）'
@@ -256,7 +287,7 @@
          - 値                ← ★ 字下げは要らない（2字下げでもよい）。★ 空行が挟まってもよい
          - 値
        ★ **1行に詰めて書いてもよい**（`anchor: formula title: 一般式`）。切れ目の決め方は splitPacked。 */
-    function parseKV(lines, where, allowed, kind) {
+    function parseKV(lines, where, allowed, kind, hang) {
         var out = {}, order = [], used = {}, curList = null;
         var put = function (key, val) {
             order.push(key);
@@ -277,6 +308,16 @@
                 seg = splitPacked(im[1], allowed, used);
                 if (seg.lead) out[curList].push(seg.lead);
                 else if (!seg.parts.length) fail(where, '「- 」だけの行があります');
+            } else if (curList && (hang || []).indexOf(curList) >= 0
+                && /^[ \t　]/.test(line) && out[curList].length) {
+                /* ★★ ぶら下げの補足（設計書 §23-3・REFBOOK_STYLE §2-3）。
+                   ⚠⚠ **ユーザーは全角スペースで字下げして書く** —— ②稿の命名の手順が実際にそうで、
+                     その行は「1つ前の段の下にぶら下がる補足」だった（穴あきテンプレートの置き場所）。
+                   ★ **記法を増やさず、字下げをそのまま受ける。** 印は行頭の全角スペース1つに正規化して
+                     持ち回り、描くときに**1つ前の項目の中**へ入れる（番号は増えない）。
+                   ⚠ 受けるのは `hang` に挙げた並びだけ（`terms` や `rows` の字下げは今までどおり赤）。 */
+                out[curList].push(HANG_MARK + line.trim());
+                continue;
             } else {
                 seg = splitPacked(line.trim(), allowed, used);
                 if (!seg.parts.length || seg.lead) kvLineFail(where, line, allowed, used, kind);
@@ -417,7 +458,11 @@
                     + '\n    → ' + chunk[0].slice(0, 60)
                     + '\n    ★ 直し方: 節にするなら :::section、節の下の小見出しなら「## 」を使います');
             }
-            return { kind: 'heading', title: inline(hm[2].trim(), where + ' の小見出し') };
+            var ht = hm[2].trim(), hadv = foldAdvanced(ht);
+            if (hadv !== null) ht = hadv;
+            var hb = { kind: 'heading', title: inline(ht, where + ' の小見出し') };
+            if (hadv !== null) hb.advanced = true;
+            return hb;
         }
         if (chunk.length > 1) {
             fail(where, '段落のあいだには空行が要ります（1段落 = 1行。段落の途中で改行しない）'
@@ -481,7 +526,12 @@
     function buildBlock(kind, inner, where) {
         var spec = BLOCK_SPECS[kind];
         if (!spec) fail(where, '「:::' + kind + '」は描けない種類です（書けるのは ' + KINDS.join(' / ') + '）');
-        var kv = parseKV(inner, where + ' の :::' + kind, spec.order, kind).map;
+        var kv = parseKV(inner, where + ' の :::' + kind, spec.order, kind, spec.hang).map;
+        /* ★ 題の語尾の「（発展）」を印へ寄せる（節と小見出しだけ）。⚠ 両方書いてあっても矛盾しない */
+        if ((kind === 'section' || kind === 'heading') && typeof kv.title === 'string') {
+            var folded = foldAdvanced(kv.title);
+            if (folded !== null) { kv.title = folded; kv.advanced = 'true'; }
+        }
         var block = { kind: kind };
         var enums = spec.enum || {}, bools = spec.bool || [];
         spec.order.forEach(function (k) {
@@ -706,6 +756,9 @@
         LEVELS: LEVELS,
         TONES: TONES,
         ALIGNS: ALIGNS,
+        ADVANCED_WORD: ADVANCED_WORD,
+        BLANK_CLASS: BLANK_CLASS,
+        HANG_MARK: HANG_MARK,
         DEFAULT_FENCE: DEFAULT_FENCE,
         CELL_SEP: CELL_SEP,
         FIGURE_DIR: '/reference-img/',

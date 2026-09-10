@@ -24,7 +24,13 @@ const SRC = path.join(ROOT, 'reference-src');
 const OUT = path.join(ROOT, 'assembler', 'reference.json');
 const RM = require('./reference-md.js');
 
-const CHECK = process.argv.slice(2).includes('--check');
+const ARGS = process.argv.slice(2);
+const CHECK = ARGS.includes('--check');
+/* ★★ 表記を揃えて**原稿を書き戻す**（REFBOOK_STYLE.md §3）。⚠ 揃えた所は1件ずつ画面に出す。
+   `node tools/gen-reference.mjs --tidy [ページのid …]` … id を書けばその原稿だけ */
+const TIDY = ARGS.includes('--tidy');
+const TIDY_ONLY = ARGS.filter(a => !a.startsWith('--'));
+const RT = require('./reference-tidy.js');
 
 /** 原稿を読んで並べる。★ 並び（＝索引に出る順）を決めるのは ORDER.txt だけ */
 function buildPages() {
@@ -180,7 +186,43 @@ function reportMemos(pages) {
     all.forEach(m => console.log(`   reference-src/${m.id}.md:${m.line}  ${m.text}`));
 }
 
+/* ★★ 表記を揃えて原稿を書き戻す（REFBOOK_STYLE.md §3）。
+ *
+ * ⚠⚠ **黙って揃えない。** 直した所を**1件ずつ**（ファイル・行・規則・前・後）出す ——
+ *   §1 の「勝手に揃えたものは、必ず一覧で見せる」がこの道具の存在理由そのもの。
+ * ⚠ 揃えるのは**元に戻せる表記**だけ（`tools/reference-tidy.js` の頭に線が書いてある）。
+ * ★ 生成（`reference.json`）はしない —— 揃えてから、あらためて生成し直す。
+ */
+function runTidy() {
+    const files = readdirSync(SRC).filter(f => f.endsWith('.md'))
+        .filter(f => !TIDY_ONLY.length || TIDY_ONLY.includes(f.replace(/\.md$/, '')));
+    if (!files.length) {
+        console.log('❌ 揃える原稿がありません（reference-src/ に .md が無いか、指定した id が違う）');
+        process.exit(1);
+    }
+    let total = 0;
+    files.forEach(f => {
+        const p = path.join(SRC, f);
+        const res = RT.tidy(readFileSync(p, 'utf8'));
+        if (!res.changes.length) return;
+        total += res.changes.length;
+        writeFileSync(p, res.text, 'utf8');
+        console.log(`\n📄 reference-src/${f} … ${res.changes.length} か所`);
+        res.changes.forEach(c => {
+            console.log(`   ${c.line}行  [${c.rule}]`);
+            console.log(`      前: ${c.before.trim().slice(0, 100)}`);
+            console.log(`      後: ${c.after.trim().slice(0, 100)}`);
+        });
+    });
+    console.log(total
+        ? `\n✅ ${files.length} 枚を見て ${total} か所そろえました（★ この一覧が「勝手に揃えたもの」の全部です）`
+        : `✅ ${files.length} 枚とも、そろえる所はありませんでした`);
+    console.log('   ⚠ 揃えたあとは `node tools/gen-reference.mjs` で生成し直してください');
+    process.exit(0);
+}
+
 function main() {
+    if (TIDY) runTidy();
     let pages;
     try {
         pages = buildPages();
