@@ -322,6 +322,14 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-hand-table{font-size:15px}
 .ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
 .ref-scope .ref-callout-text{font-size:15.5px}
+/* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
+   13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
+   ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
+.ref-scope .ref-exercise{margin:0 0 24px;padding:14px 18px}
+.ref-scope .ref-ex-tag{font-size:12.5px}
+.ref-scope .ref-ex-q{font-size:16px}
+.ref-scope .ref-ex-a{font-size:15.5px}
+.ref-scope .ref-ex-open{font-size:14px;padding:6px 13px;min-height:32px}
 /* 用語の索引（★ 機械で組む・§19-7） */
 .terms{list-style:none;padding:0;margin:0 0 26px}
 .terms li{border-bottom:1px solid var(--line);padding:10px 2px;font-size:15px}
@@ -414,11 +422,11 @@ const LIGHT_CSS = `
 /* 例題（:::exercise・§22）。⚠ 暗い地では「白の薄敷き＋水色の帯」だったが、
    明るい地では敷きが効かない（#f5f3ef の上に rgba(255,255,255,.03) ＝ 見た目が変わらない）。
    ★ 読み替えの向きは .ref-rx と同じ ＝ 紙（--panel）を敷いて罫線で囲む。
-   ⚠ 左の帯は --neon-cyan（上の :root で #0d6c78 に読み替え済み）を使うので、
-     ここでは地と罫線だけを直す ＝ 色の値を2か所に書かない。
+   ⚠ 左の帯は --accent（#0d6c78）で残す —— border-color の一括指定は
+     左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
    ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
      地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
-.ref-scope .ref-exercise{background:var(--panel);border-color:var(--line)}
+.ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
 `.trim();
