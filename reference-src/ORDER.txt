@@ -1,6 +1,7 @@
+functional-groups
 alkane
 alkane-naming
 alkane-isomers
-functional-groups
 reaction-mechanisms
+alcohol-oxidation-map
 alcohol-dehydration
