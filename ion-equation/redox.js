@@ -457,9 +457,14 @@ function poolSlotPos(k) {
 function plateESlot(atom, j, eN, nAtoms) {
   const budget = nAtoms > 1 ? plateStep : PLATE.h - 52;
   const rows = Math.max(1, Math.min(eN, Math.floor(budget / E_PITCH)));
+  const cols = Math.ceil(eN / rows);
   const row = j % rows, col = Math.floor(j / rows);
+  /* ⚠ 列は**板の中心にそろえて左右へ開く**（片側だけに伸ばさない）。
+     板は 26px しかないので2列で 36px は必ずはみ出すが、中心にそろえれば
+     左右に 8px ずつで済み、「板の上にたまっている」ように見える。
+     片側だけに伸ばすと、e⁻ が丸ごと板の外に居ることになる（実機で確認）。 */
   return {
-    x: PLATE.x + PLATE.w / 2 - col * E_PITCH,
+    x: PLATE.x + PLATE.w / 2 + (col - (cols - 1) / 2) * E_PITCH,
     y: atom.y + (row - (rows - 1) / 2) * E_PITCH,
   };
 }
@@ -1765,11 +1770,11 @@ const bottleCountNotesEl = document.getElementById("bottleCountNotes");
    列がそろっているので、echo の札の真下がそのまま次に書く欄になる。 */
 const BROW = { eq: 1, tag: 1, ion: 2, arrow: 3, slot: 4, note: 5, rack: 6, msg: 7,
   addEcho: 8, addHead: 9, add: 10, addMsg: 11,
-  coefEcho: 12, coefHead: 13, coefCap: 14, coef: 15,
-  /* ★ 「紙で解くと起こる事故」の注意は**筆算のいちばん下**（2026-09-11・ユーザーの指示
-     「正解後の一番下に解説を追加します」）。⑤の係数は縦に積まれることがあるので、
-     その最大ぶんを空けた先に置く（buildBottleCountRows が行番号を押し下げる） */
-  trap: 40 };
+  coefEcho: 12, coefHead: 13, coefCap: 14, coef: 15 };
+/* ★ 「紙で解くと起こる事故」の注意は**筆算のいちばん下**（2026-09-11・ユーザーの指示
+   「正解後の一番下に解説を追加します」）。⑤の係数は縦に積まれることがあり、
+   行数が回ごとに変わるので、**番号は BROW に持たせず**その場で数える
+   （bottleLastGridRow）。大きな数で決め打つと、空の行のぶん row-gap が積もる */
 
 /* いま札を置こうとしている柱（イオンの種）。null なら「まだ選んでいない」 */
 let bottleSlotActive = null;
@@ -2256,13 +2261,28 @@ function buildBottleRack(st) {
 /* 「紙で解くと起こる事故」の注意。④前半を当て終えたときだけ、筆算の一番下に出す。
    ⚠ 出す・出さないの判断だけがここの仕事で、**文は model.js**（bottleTrapNote）。
    ⚠ ステージによっては注意そのものが無い（r3 は左辺のイオンが H⁺ だけで、組む相手がいない）。 */
+/* いま筆算に出ている行のいちばん下の番号。⑤の係数は縦に積まれることがあるので、
+   数えるのではなく**書かれている grid-row を読む**（積み方を2か所で決めない） */
+function bottleLastGridRow() {
+  let max = BROW.msg;
+  for (const el of bottleWorkEl.querySelectorAll("[style]")) {
+    if (el === bottleTrapEl || el.closest("[hidden]")) continue;
+    const v = parseInt(el.style.gridRow, 10);
+    if (Number.isFinite(v) && v > max) max = v;
+  }
+  return max;
+}
+
 function drawBottleTrap(show) {
   if (!bottleTrapEl) return;
   const note = show ? bottleTrapNote(stage(), mult[0], mult[1]) : null;
   bottleTrapEl.hidden = !note;
   bottleTrapEl.innerHTML = "";
   if (!note) return;
-  bottleTrapEl.style.gridRow = String(BROW.trap);
+  /* ⚠ 行番号は**決め打ちにしない**。BROW.trap を大きな数（40）に固定すると、
+     空の行が 20 以上できて row-gap（2px）がそのぶん積もり、⑤との間に
+     50px 以上の空白が開いた（実測）。いま出ている行を読んで、その次に置く。 */
+  bottleTrapEl.style.gridRow = String(bottleLastGridRow() + 1);
   const head = document.createElement("span");
   head.className = "btrapHead";
   head.textContent = "⚠ " + note.head;
@@ -2294,12 +2314,12 @@ function refreshBottleTail() {
      ⚠ **答える前には出さない**（④前半を当て終えてから）。
      ⚠ 文は model.js の bottleTrapNote が導く —— 相手はステージごとに違い、
      rn1・rn2（H⁺ と NO₃⁻ が同じ HNO₃ から来る）は言い方そのものが変わる。 */
-  drawBottleTrap(quizDone);
   if (addIonWrapEl) addIonWrapEl.hidden = !quizDone;
   if (!quizDone) {
     bottleTailEl.hidden = true;
     bottleTailMsgEl.textContent = "";
     if (saltStepEl) saltStepEl.hidden = true;
+    drawBottleTrap(false);
     return;
   }
 
@@ -2333,6 +2353,9 @@ function refreshBottleTail() {
     bottleTailMsgEl.textContent = "";
     if (saltStepEl) saltStepEl.hidden = true;
   }
+  /* ★ 注意は**いちばん最後**に置く（＝ 筆算の一番下）。⚠ ここで呼ぶ理由:
+     いま実際に何行あるかを DOM から読むため（先に呼ぶと、あとから増えた⑤の行に追い越される） */
+  drawBottleTrap(true);
 }
 
 /* ⑤ 水を蒸発させる（v182 で作り直した・DESIGN_redox.md「実機レビュー」B・D）。
