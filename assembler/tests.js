@@ -49843,6 +49843,163 @@
         });
     });
 
+    /* ===== REF23: 例題（:::exercise）―― 読者が自分で解く（v1531） =====
+     *
+     * ★ 発端はユーザーの申し立て「例題も用意する必要があります／qa とは別に例題を用意したい／
+     *   スライドの練習問題などが使えます」。設計は `DESIGN_reference_book.md` §22。
+     *
+     * ⚠⚠ **`:::example`（▶ 組んでみる）とは別もの。** あちらは既存のパズルのお題を開く器で、
+     *   採点も正誤もクリアの記録も `stages.json` の `target` 照合が受け持つ。
+     *   ★ こちらは**紙に書いて、解答を開いて見比べる**だけで、**判定を1つも持たない。**
+     *
+     * ★ ここが見るのは6つ:
+     *   ① ⚠⚠ **解答がページを開いた瞬間に見えない**（閉じた `<details>` の中・焼いた面Aでも同じ）
+     *   ② ⚠⚠ **出どころ（`source`）を名乗っている**。⚠ ただし**画面には出さない**
+     *     （`REF5` の守りの本体は「行を手で書くな」ではなく「出どころの言えない行を書くな」・§19-10）
+     *   ③ **判定も押しものも持たない**（`button` / `a` / `input` を作らない ＝ 面Aの生成器が止まらない）
+     *   ④ ⚠ **`:::example` と取り違えたら、相手の名前と役まで言う**（綴りが似ているため）
+     *   ⑤ **図は問い側・解答側の両方に置けて、`…Src` と `…Alt` が対**・実在して画像として返る
+     *   ⑥ ⚠⚠ **図の欄の台帳（`tools/gen-reference.mjs` の `FIGURE_KEYS`）が書式と食い違っていない**
+     *     —— 足し忘れると「参照されていない図」で生成が止まる（＝ 器を増やした人が気づけない）
+     */
+    test('REF23: 例題は解答を閉じたまま置き、出どころを名乗り、:::example と取り違えたら相手の名前を言う', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`);
+            return await res.text();
+        };
+        const flat = (s) => String(s).replace(/\s+/g, ' ').trim();
+        const bare = (s) => flat(String(s).replace(/<\/?(b|sub)>/g, ''));
+
+        assert(RM.KINDS.indexOf('exercise') >= 0, '書式が :::exercise を知らない');
+        /* ★ 名前で紛れないこと ＝ **キーが1つも重ならない**（重なると取り違えても赤くならない） */
+        const shared = RM.BLOCK_SPECS.example.order.filter(k => RM.BLOCK_SPECS.exercise.order.indexOf(k) >= 0);
+        assert(!shared.length,
+            `:::example と :::exercise が同じキー（${shared.join(' / ')}）を持っている ＝ 取り違えても書式が黙って通す`);
+
+        /* ── 原稿から焼いた本物を見る ── */
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        await book.load();
+        const ex = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => { if (b.kind === 'exercise') ex.push({ p, b }); }));
+        assert(ex.length >= 1, '例題（:::exercise）が1枚のページにも無い（この検査が空回りしている）');
+
+        for (const { p, b } of ex) {
+            /* ② 出どころを名乗る。⚠ 画面には出さない */
+            assert(b.source && b.source.length >= 8, `${p.id}: 例題が出どころ（source）を名乗っていない`);
+            const el = book.renderBlock(b);
+            assert(el, `${p.id}: 例題が描けていない（renderBlock が null）`);
+            assert(el.textContent.indexOf(b.source) < 0,
+                `${p.id}: 例題の source が画面に出ている（出典は原稿の中の欄で、画面には書かない）`);
+
+            /* ① 解答は閉じた <details> の中 */
+            const det = el.querySelector('details');
+            assert(det, `${p.id}: 例題の解答が <details> に入っていない（開いた瞬間に答えが見える）`);
+            assert(!det.hasAttribute('open') && det.open === false,
+                `${p.id}: 例題の解答が最初から開いている`);
+            const sum = det.querySelector('summary');
+            assert(sum && sum.textContent.indexOf(W.REF_EXERCISE_OPEN) >= 0,
+                `${p.id}: 解答を開く札に「${W.REF_EXERCISE_OPEN}」の言葉が無い（何を押すのか分からない）`);
+            assert(el.textContent.indexOf(W.REF_EXERCISE_TAG) >= 0,
+                `${p.id}: 例題の札（${W.REF_EXERCISE_TAG}）が出ていない`);
+
+            /* ★ 問題文の側に解答が漏れていない（閉じた中にだけ在る） */
+            const q = el.querySelector('.ref-ex-q');
+            assert(q && bare(q.textContent).indexOf(bare(b.answer)) < 0,
+                `${p.id}: 問題文の中に解答がそのまま出ている`);
+
+            /* ③ 判定も押しものも持たない */
+            ['button', 'a', 'input', 'select'].forEach(t => assert(!el.querySelector(t),
+                `${p.id}: 例題が「${t}」を作っている —— 例題は紙に書いて見比べるもので、`
+                + '採点は :::example（パズルのお題）の役。⚠ 面Aの生成器は知らない押しものを見つけると止まる'));
+
+            /* ⑤ 図は問い側・解答側とも、綴りが1か所（learn.js）で組まれ、実在して画像として返る */
+            for (const [srcKey, altKey] of [['promptSrc', 'promptAlt'], ['answerSrc', 'answerAlt']]) {
+                if (!b[srcKey]) { assert(!b[altKey], `${p.id}: ${altKey} だけあって ${srcKey} が無い`); continue; }
+                assert(b[altKey] && b[altKey].length >= 6, `${p.id}: ${srcKey} に alt（${altKey}）が付いていない`);
+                const img = [...el.querySelectorAll('img')].find(i => i.getAttribute('src').indexOf(b[srcKey]) >= 0);
+                assert(img, `${p.id}: ${srcKey}「${b[srcKey]}」が描かれていない`);
+                const url = img.getAttribute('src');
+                assert(url === W.REF_IMG_DIR + b[srcKey],
+                    `${p.id}: 例題の図の URL が ${url}（原稿は「${b[srcKey]}」）—— 組んでいるのは learn.js の1か所のはず`);
+                assert(url.charAt(0) === '/', `${p.id}: 例題の図の URL が相対（${url}）＝ 面Aと面Bで別の場所を探す`);
+                assert(img.getAttribute('alt') === b[altKey], `${p.id}: 例題の図の alt が原稿と違う`);
+                const res = await fetch('..' + url + FRESH());
+                assert(res.ok, `${p.id}: 例題の図が読めない（${url}・HTTP ${res.status}）`);
+                assert(/^image\//.test(res.headers.get('content-type') || ''),
+                    `${p.id}: ${url} が画像として返ってこない（${res.headers.get('content-type')}）`);
+            }
+        }
+
+        /* ── ① 焼いた面Aでも解答が閉じている（焼き直し忘れ・器の取り違えを捕まえる）── */
+        const withEx = [...new Set(ex.map(e => e.p.id))];
+        for (const id of withEx) {
+            const doc = new DOMParser().parseFromString(await grab(`../reference/${id}/index.html`, `参考書のページ ${id}`), 'text/html');
+            const dets = [...doc.querySelectorAll('.ref-exercise details')];
+            const want = ex.filter(e => e.p.id === id).length;
+            assert(dets.length === want,
+                `/reference/${id}/: 焼いた例題が ${dets.length} 件で、原稿の ${want} 件と違う（焼き直し忘れ？）`);
+            dets.forEach(d => assert(!d.hasAttribute('open'),
+                `/reference/${id}/: 焼いた例題の解答が開いた状態で置かれている`));
+        }
+
+        /* ── ⑥ 図の欄の台帳（gen-reference.mjs）が書式と食い違っていない ──
+           ⚠ アプリは tools/ を読めないが、**テストは読める**（`REF17` が同じ手を使っている）。 */
+        const gen = await grab('../tools/gen-reference.mjs', 'tools/gen-reference.mjs');
+        const ledger = /const FIGURE_KEYS\s*=\s*\{([\s\S]*?)\};/.exec(gen);
+        assert(ledger, 'tools/gen-reference.mjs に FIGURE_KEYS の台帳が見つからない（作りが変わった？ この検査を直す）');
+        Object.keys(RM.BLOCK_SPECS).forEach(kind => {
+            RM.BLOCK_SPECS[kind].order.forEach(k => {
+                if (!/^src$|Src$/.test(k)) return;
+                assert(new RegExp(kind + "\\s*:\\s*\\[[^\\]]*'" + k + "'").test(ledger[1]),
+                    `書式の :::${kind} は図の欄「${k}」を持っているのに、`
+                    + 'tools/gen-reference.mjs の FIGURE_KEYS に載っていない'
+                    + '（載せないと、その図が「どのページからも参照されていない」と判定されて生成が止まる）');
+            });
+        });
+
+        /* ── ③④ 書式が赤くする側（★ 直し方まで言うこと）── */
+        const FM = [
+            '---', 'id: t', 'unit: aliphatic', 'unitLabel: 脂肪族炭化水素', 'group: アルカン',
+            'title: 見本', 'summary: 例題の器を確かめるためだけの見本のページです。中身に意味はありません。',
+            'codes:', '  - org.ali.alkane-shape', 'source:', '  - slides:見本', 'singleSource: true',
+            'why: 例題の書式を機械で見るための見本で、画面には出さない。', '---', ''
+        ].join('\n');
+        const OK = [
+            ':::exercise',
+            'source: slides:有機の基本2-3「アルカンの命名法」s9「練習1」(1)',
+            'prompt: 次の化合物の構造式を書け。2,3-ジメチルブタン',
+            'answer: 主鎖はブタンで、2番目と3番目にメチル基が付きます。',
+            ':::', ''
+        ].join('\n');
+        assert(RM.parsePage(FM + OK, '(REF23)').blocks[0].kind === 'exercise', '素の例題が通らない');
+
+        const red = (body, what, word) => {
+            let msg = '';
+            try { RM.parsePage(FM + body, '(REF23)'); } catch (e) { msg = e.message; }
+            assert(msg, `${what}: 赤くならない`);
+            assert(msg.indexOf(word) >= 0, `${what}: 赤の文言に「${word}」が無い（直し方が読めない）\n    → ${msg}`);
+        };
+        red(OK.replace(/^source:.*$/m, 'source: スライド'), 'source が短い（出どころが言えていない）', '練習');
+        red(OK.replace(/^source:.*$/m, ''), 'source が無い', 'source');
+        red(OK.replace(/^answer:.*$/m, 'answer: 次の化合物の構造式を書け。2,3-ジメチルブタン'),
+            '解答が問題文にそのまま入っている', '解答は「' + W.REF_EXERCISE_OPEN + '」');
+        red(OK.replace(':::\n', 'promptSrc: alkane-naming-ex2-prompt.png\n:::\n'),
+            '図の src だけあって alt が無い', 'promptAlt');
+        red(OK.replace(':::\n', 'answerSrc: ../reference-img/x.png\nanswerAlt: 図の説明の文です。\n:::\n'),
+            '図の src にパスを書いた', 'ファイル名だけ');
+        /* ④ 取り違え ＝ 相手の名前と役まで言う（両向き） */
+        red(OK.replace(':::\n', 'stageId: hexane\n:::\n'),
+            ':::exercise に :::example のキーを書いた', ':::example');
+        red(':::example\nstageId: hexane\nlead: 見本の1行です。\nnote: 見本の1行です。\nprompt: 見本\n:::\n',
+            ':::example に :::exercise のキーを書いた', ':::exercise');
+    });
+
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
      *
      * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。

@@ -120,16 +120,25 @@ function pngSize(file) {
     return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
 }
 
+/* ★★ 図を名指しできる欄の台帳。⚠ **`:::figure` の `src` だけではない** ——
+ *   `:::exercise`（例題・設計書 §22）は**問い側と解答側**の2つに図を置ける。
+ * ⚠⚠ 新しい器に図の欄を足したら、**ここにも足す**。足し忘れると
+ *   「どのページからも参照されていない図」で生成が止まる（＝ 黙っては壊れないが、
+ *   その図を消すまで生成が通らない）。★ `REF23` がこの台帳と原稿の食い違いを見張る。 */
+const FIGURE_KEYS = { figure: ['src'], exercise: ['promptSrc', 'answerSrc'] };
+
 function checkFigures(pages) {
-    const used = new Map();   // ファイル名 → それを名指ししているページ
+    const used = new Map();   // ファイル名 → { ページ, 器の名前 }
     pages.forEach(p => (p.blocks || []).forEach(b => {
-        if (b.kind === 'figure' && b.src && !used.has(b.src)) used.set(b.src, p.id);
+        (FIGURE_KEYS[b.kind] || []).forEach(k => {
+            if (b[k] && !used.has(b[k])) used.set(b[k], { id: p.id, kind: b.kind });
+        });
     }));
     const onDisk = existsSync(IMG_DIR) ? readdirSync(IMG_DIR).filter(f => !f.startsWith('.')) : [];
 
     [...used.keys()].forEach(src => {
         if (onDisk.indexOf(src) < 0) {
-            throw new Error(`reference-src/${used.get(src)}.md: :::figure の「${src}」が reference-img/ にありません\n`
+            throw new Error(`reference-src/${used.get(src).id}.md: :::${used.get(src).kind} の「${src}」が reference-img/ にありません\n`
                 + `   いま在る図: ${onDisk.length ? onDisk.join(' / ') : '(なし)'}\n`
                 + '   ★ 綴りが合っているなら、その図をまだ焼いていません（reference-img/ に置いてください）');
         }
@@ -138,7 +147,9 @@ function checkFigures(pages) {
     const orphans = onDisk.filter(f => !used.has(f));
     if (orphans.length) {
         throw new Error(`reference-img/ に、どのページからも参照されていない図が ${orphans.length} 枚あります → ${orphans.join(' / ')}\n`
-            + '   ★ 直し方は2通り: 使うなら本文の :::figure の src に書きます。使わないなら消してください\n'
+            + '   ★ 直し方は2通り: 使うなら本文で名指しします'
+            + `（${Object.entries(FIGURE_KEYS).map(([k, v]) => ':::' + k + ' の ' + v.join(' / ')).join('、')}）。`
+            + '使わないなら消してください\n'
             + '   ⚠ 図は一度置くと履歴に残るので、使わないものを置いたままにしません');
     }
 

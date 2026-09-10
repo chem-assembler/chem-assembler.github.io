@@ -6103,6 +6103,26 @@ const REF_APP_DIR = '/assembler/';
    淡いだけだと「押しても何も起きない壊れたリンク」に見える（`REF21` がこの語を見張る）。 */
 const REF_LINK_SOON = '準備中';
 
+/* ★★ 例題（`:::exercise`・設計書 §22）—— **読者が自分で解く**もの。
+   ⚠⚠ **解答はページを開いた瞬間に見えてはいけない**（ユーザー指示）ので、`<details>` に入れる。
+      ★ `<details>` は素の HTML なので **JS を1行も要らない** ＝ 面A（静的に焼いたページ）でも
+        面B（アプリの中）でも、同じ markup が同じように開く（`:::link` と同じ考え）。
+   ⚠ `<button>` にしないのも同じ理由 —— 面Aの生成器は知らない押しものを見つけると止まる（§20-7）。 */
+const REF_EXERCISE_TAG = '例題';
+const REF_EXERCISE_OPEN = '解答を見る';
+
+/* 例題に添える図。★ **`:::figure` と同じ class を使う**（`.ref-figure-img`）——
+   「スライドから焼いた図は貼った紙」という見せ方を2通りに増やさない（REFBOOK_STYLE §2-5）。
+   ⚠ `/reference-img/` を付けるのは `renderFigure` とここの2か所だが、**綴りは同じ定数**。 */
+function refExerciseImage(src, alt) {
+    const img = document.createElement('img');
+    img.className = 'ref-figure-img';
+    img.src = REF_IMG_DIR + src;
+    img.alt = alt;
+    img.loading = 'lazy';
+    return img;
+}
+
 /* -OH をちょうど1つ持つ（＝ 鎖式一価アルコール）か。
    ⚠ 判定は `ipHydroxylOxygens` の1本を借りる（エーテル・フェノールを外すのと同じ物差し） */
 function refIsMonoAlcohol(mol) {
@@ -6312,7 +6332,51 @@ class ReferenceBook {
         if (b.kind === 'mechanismTable') return this.renderMechanismTable(b);
         if (b.kind === 'dehydrationTable') return this.renderDehydrationTable(b);
         if (b.kind === 'example') return this.renderExample(b);
+        if (b.kind === 'exercise') return this.renderExercise(b);
         return null;
+    }
+
+    /* ★★ 例題（設計書 §22）—— **読者が自分で解き、解答を開いて見比べる**。
+     *
+     * ⚠⚠ **`renderExample`（▶ 組んでみる）とは役が違う。** あちらは既存のパズルのお題を開く器で、
+     *   採点は `stages.json` の `target` 照合が受け持つ。★ **こちらは判定を1つも持たない** ——
+     *   紙に書いて、解答と見比べるだけ。⚠ ここに採点を足さないこと（足すなら別の設計が要る）。
+     *
+     * ⚠⚠ **解答は閉じた `<details>` の中**（ページを開いた瞬間に答えが見えない）。
+     *   ★ 素の HTML なので JS が要らず、面A（焼いた静的ページ）でもそのまま開く。
+     * ⚠ **`source`（出どころ）は描かない** —— 原稿の中の欄で、画面には出さない（`:::table` と同じ）。
+     * ★ 図は `.ref-figure-img` を借りる ＝ **スライド由来の図は「貼った紙」**という見せ方を1つに保つ。
+     */
+    renderExercise(block) {
+        const box = document.createElement('div');
+        box.className = 'ref-exercise';
+
+        const tag = document.createElement('b');
+        tag.className = 'ref-ex-tag';
+        tag.textContent = REF_EXERCISE_TAG;
+        box.appendChild(tag);
+
+        const q = document.createElement('p');
+        q.className = 'ref-ex-q';
+        q.innerHTML = block.prompt;
+        box.appendChild(q);
+        if (block.promptSrc) box.appendChild(refExerciseImage(block.promptSrc, block.promptAlt));
+
+        const det = document.createElement('details');
+        det.className = 'ref-ex-answer';
+        const sum = document.createElement('summary');
+        sum.className = 'ref-ex-open';
+        sum.textContent = REF_EXERCISE_OPEN;
+        det.appendChild(sum);
+        const ans = document.createElement('div');
+        ans.className = 'ref-ex-a';
+        const at = document.createElement('p');
+        at.innerHTML = block.answer;
+        ans.appendChild(at);
+        if (block.answerSrc) ans.appendChild(refExerciseImage(block.answerSrc, block.answerAlt));
+        det.appendChild(ans);
+        box.appendChild(det);
+        return box;
     }
 
     /* ★★ 節の見出し（設計書 §19）。
@@ -7073,6 +7137,9 @@ if (typeof window !== 'undefined') {
     window.REF_PAGE_DIR = REF_PAGE_DIR;
     window.REF_APP_DIR = REF_APP_DIR;
     window.REF_LINK_SOON = REF_LINK_SOON;
+    /* ★ 例題の決めごと（§22）。`REF23` が「解答が閉じている」「札の言葉が在る」ことを、この口から見る */
+    window.REF_EXERCISE_TAG = REF_EXERCISE_TAG;
+    window.REF_EXERCISE_OPEN = REF_EXERCISE_OPEN;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;
