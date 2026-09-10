@@ -243,11 +243,9 @@ function drawBeakerStatic() {
 
 /* ---- 粒子 ---- */
 
-/* 式の末尾の電荷（右肩の ⁺ ⁻ ²⁺ など）を外す。下付きの ₄ などは式の一部なので残す。
-   電荷は丸バッジで示すため、円内の表示と二重にならないようにする */
-function stripCharge(disp) {
-  return disp.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+$/u, "");
-}
+/* ⚠ `stripCharge`（式の末尾の電荷を外す）は **model.js へ移した**（2026-09-11）。
+   電荷バッジを描く画面は app.js だけではなく、redox.js にも同じ規則が要るため。
+   ここに置いていた間、酸化還元の粒は電荷を二重に出していた。 */
 
 function addChargeBadge(g, r, charge, strokeColor) {
   const btxt = (Math.abs(charge) > 1 ? String(Math.abs(charge)) : "") + (charge > 0 ? "+" : "−");
