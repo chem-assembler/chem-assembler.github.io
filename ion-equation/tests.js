@@ -3380,7 +3380,7 @@ async function runUITests(iframe) {
   const win = iframe.contentWindow;
   const doc = iframe.contentDocument;
   const $$ = (sel) => [...doc.querySelectorAll(sel)];
-  const ups = () => $$("#equation .stepper button").filter((b) => b.textContent === "＋");
+  const ups = () => $$(".eqRow .stepper button").filter((b) => b.textContent === "＋");
   const stageBtn = (i) => $$("#stageNav button")[i];
   const addBtn = (i) => $$("#toolbar .add")[i];
   const reactBtn = () => doc.querySelector("#toolbar .react");
@@ -3389,7 +3389,7 @@ async function runUITests(iframe) {
   const state = () => win.IonEq.state();
   /* i 番目の項の係数を v にそろえる（＋/− を必要な回数だけ押す） */
   const setCoeff = (i, v) => {
-    const term = $$("#equation .term")[i];
+    const term = $$(".eqRow .term")[i];
     const btn = [...term.querySelectorAll("button")];
     const cur = () => (term.querySelector(".coeff").textContent === "？" ? 0 : +term.querySelector(".coeff").textContent);
     while (cur() > v) btn[0].click();
@@ -3781,7 +3781,9 @@ async function runUITests(iframe) {
     const parts = () => doc.querySelectorAll("#recombine .rpart").length;
     // 何も入れていないうちは粒ゼロ。案内は「1つ入れると」と言う
     assert(parts() === 0, "係数ゼロなのに粒が出ている");
-    assert(doc.querySelector("#recombine text").textContent.includes("1つ入れる"),
+    // ⚠ 2026-09-11: 案内から操作の言葉（入れる）を外したので「1つ入れる」では見張れない。
+    //    見るのは「1つ決まればそのぶんが並ぶ」と言っていること＝全部そろうまで待たない約束
+    assert(/1つ/.test(doc.querySelector("#recombine text").textContent),
       "案内が「全部そろえろ」のまま: " + doc.querySelector("#recombine text").textContent);
     // ★ 1つだけ入れた時点で、そのぶんの粒が出る
     ups()[0].click();      // H₂SO₄ = 1 → H⁺×2, SO₄²⁻×1
@@ -3929,15 +3931,25 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
-  await t("UI: 全ステージに目標バナーが出る（沈殿・気体・中和・酸性塩で文言が変わる）", async () => {
+  await t("UI: 全ステージの目的が「〜しよう」の声掛けで、入れるものから書き起こされる", async () => {
     const goalOf = (i) => { stageBtn(i).click(); return doc.querySelector("#stageTitle .goal").textContent; };
+    /* ★ 2026-09-11: 目的の文は**先生が口で言う声掛け**にそろえた（ユーザー指示）。
+       ⚠ 見張るのは3つ:
+         ①必ず「〜しよう」で終わること（「〜をつくる」という機能の説明に戻ったら落ちる）
+         ②入れるものの名前から書き起こされていること（何と何を反応させる回かが一目で分かる）
+         ③画面の部品の名前や操作の言葉が混ざっていないこと
+       以前は 🎯 が付いていることだけを見ていたが、絵文字の有無は文の質を何も保証しない。 */
     for (let i = 0; i < STAGES.length; i++) {
       const g = goalOf(i);
-      assert(g && g.includes("🎯"), STAGES[i].id + ": 目標バナーが無い: " + g);
+      assert(g && /[よろ]う$/.test(g.trim()), STAGES[i].id + ": 目的が「〜しよう」の声掛けでない: " + g);
+      const first = SPECIES[STAGES[i].reactants[0]].disp;
+      assert(g.includes(first), STAGES[i].id + ": 目的が入れるもの（" + first + "）から書き起こされていない: " + g);
+      assert(!/ボタン|押|入力|クリック|タップ|パネル|画面|欄/.test(g),
+        STAGES[i].id + ": 目的に画面の操作の言葉が混ざっている: " + g);
     }
     assert(goalOf(0).includes("中和") && goalOf(0).includes("NaCl"), "s1 は中和して NaCl のはず: " + goalOf(0));
     assert(goalOf(3).includes("沈殿") && goalOf(3).includes("AgCl"), "s4 は沈殿 AgCl のはず: " + goalOf(3));
-    assert(goalOf(5).includes("気体") && goalOf(5).includes("CO₂"), "s6 は気体 CO₂ のはず: " + goalOf(5));
+    assert(goalOf(5).includes("発生") && goalOf(5).includes("CO₂"), "s6 は CO₂ の発生のはず: " + goalOf(5));
     const s11 = STAGES.findIndex((st) => st.id === "s11");
     assert(goalOf(s11).includes("酸性塩") && goalOf(s11).includes("NaHSO₄"), "s11 は酸性塩 NaHSO₄ のはず: " + goalOf(s11));
     assert(doc.querySelector("#stageTitle .goal.acid"), "酸性塩ステージの目標が acid スタイルでない");
@@ -3968,6 +3980,88 @@ async function runUITests(iframe) {
     assert(!doc.querySelector("#stageTitle .stageHead").open, "閉じ直したのに開いて戻る");
   });
 
+  /* ---- 左辺と右辺を2段に割る（2026-09-11・ユーザー指示）----
+     ⚠ **これが「2段に割った」の合否そのもの。**係数を1回でまとめて聞いていた形に戻ると落ちる。
+     見張るのは3つ:
+       ①反応式の段が2つあり、左辺の項は上の段・右辺の項は下の段にいること
+       ②矢印は左辺の段の末尾にあること（「ここまでが左辺」が字で分かる）
+       ③2つの段のあいだに、イオンの図（高さ合わせ・組み替え）が入っていること
+         ＝ 左辺 → 図 → 右辺 の順。図を下へ落として2段を隣り合わせたら落ちる */
+  /* ---- 液面から出た気体は消えずに浮かんだまま残る（2026-09-11・ユーザー指示）----
+     ★ 「気体の SO₂ が一瞬で消えるので、空中でフロートするように」。
+     ⚠ 同時に**数え方は変えない** —— 水の中の数（counts）には入らず、逃げた数（escaped）に入る。
+     ここを取り違えると反応の判定まで巻き添えになるので、両方を1つの検査で押さえる。 */
+  await t("UI: 出ていった気体は液面の上に浮かんだまま残る（数え方は変えない）", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s10");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click();   // Na₂SO₃×1, HCl×2
+    adv(3000); reactBtn().click(); adv(20000);
+    const s = state();
+    assert(s.escaped["SO2"] === 1, "SO₂ が逃げた数に入らない: " + JSON.stringify(s.escaped));
+    assert(!s.counts["SO2"], "浮かべたせいで水の中の数に SO₂ が残っている: " + JSON.stringify(s.counts));
+    // 絵は残っている。しかも**水面より上**にいる（消えていたころは要素ごと無くなっていた）
+    const g = [...doc.querySelectorAll("#beaker g")]
+      .filter((e) => e.textContent.includes("SO₂") && e.getAttribute("transform"));
+    assert(g.length === 1, "浮かんでいる SO₂ の絵が1つでない: " + g.length);
+    const y = parseFloat(g[0].getAttribute("transform").split(",")[1]);
+    assert(y < 145, "SO₂ が水面（y=145）より上にいない: y=" + y);
+    assert(y > 75, "SO₂ がガラスの外（y=75 より上）へ出ている: y=" + y);
+  });
+
+  /* ---- 原子の数の確認表は、イオンで確かめる回では出さない（2026-09-11・ユーザー指示）----
+     ★ 「イオンで確認しているので冗長。プロパンの燃焼などの場合は別途検討」。
+     ⚠ 全部消すと、**イオンが1つも出てこない気体どうしの回**（燃焼・合成の7件）で
+     左右を突き合わせる場が無くなる。そこだけ残す、という線をここで固定する。 */
+  await t("UI: 原子の数の確認表は気体どうしの回にだけ残る（イオンで確かめる回には出さない）", async () => {
+    const tally = () => doc.getElementById("tally");
+    let shown = 0, hidden = 0;
+    for (let i = 0; i < STAGES.length; i++) {
+      stageBtn(i).click();
+      const gas = STAGES[i].phase === "gas";
+      assert(tally().hidden === !gas,
+        STAGES[i].id + ": 原子の数の表の出し方が違う（気体どうし=" + gas + " / hidden=" + tally().hidden + "）");
+      if (gas) shown++; else hidden++;
+    }
+    // 否定対照: どちらかが0件なら、この検査は何も見張っていない
+    assert(shown === 7, "表を残す回が7件でない: " + shown);
+    assert(hidden === STAGES.length - 7, "表を消す回の数が合わない: " + hidden);
+    // 残した回では、係数を入れると実際に原子の行が出る
+    const c3h8 = STAGES.findIndex((st) => st.id === "combustion-c3h8-o2");
+    stageBtn(c3h8).click();
+    [1, 5, 3, 4].forEach((v, k) => setCoeff(k, v));
+    const rows = [...tally().querySelectorAll("tr")].map((r) => r.textContent);
+    assert(rows.some((r) => r.startsWith("C")) && rows.some((r) => r.startsWith("H")),
+      "燃焼の回で原子の行が出ない: " + rows.join("/"));
+  });
+
+  await t("UI: 係数を左辺と右辺の2段に分け、あいだにイオンの図をはさむ", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s10");
+    stageBtn(i).click();
+    const left = doc.getElementById("equation"), right = doc.getElementById("equationProd");
+    assert(left && right, "反応式の段が2つない");
+    const f = (box) => [...box.querySelectorAll(".formula")].map((e) => e.textContent).join();
+    assert(f(left) === "Na₂SO₃,HCl", "左の段に左辺の項が並んでいない: " + f(left));
+    assert(f(right) === "NaCl,H₂O,SO₂", "右の段に右辺の項が並んでいない: " + f(right));
+    // ② 矢印は左辺の段の末尾
+    const arrow = left.querySelector(".arrow");
+    assert(arrow, "矢印が左辺の段にない");
+    assert(left.lastElementChild === arrow, "矢印が左辺の段の末尾にない");
+    assert(!right.querySelector(".arrow"), "右辺の段にも矢印が出ている");
+    // ③ あいだにイオンの図がある（DOM の順で 左辺 < 図 < 右辺）
+    const pos = (el) => [...doc.getElementById("eqPane").children].indexOf(el);
+    const sch = doc.getElementById("schematicWrap"), rec = doc.getElementById("recombineWrap");
+    assert(!sch.hidden, "s10 で高さ合わせの図が出ない");
+    assert(pos(left) < pos(sch) && pos(sch) < pos(right),
+      "高さ合わせの図が左辺と右辺のあいだにない（" + pos(left) + "/" + pos(sch) + "/" + pos(right) + "）");
+    assert(pos(left) < pos(rec) && pos(rec) < pos(right),
+      "組み替えの図が左辺と右辺のあいだにない（" + pos(left) + "/" + pos(rec) + "/" + pos(right) + "）");
+    // 係数は2つの段にまたがって1つの配列のまま（左辺を入れれば図が動く）
+    setCoeff(0, 1); setCoeff(1, 2);
+    assert(!doc.getElementById("recombineBtn").disabled, "左辺がそろっても組み替えが押せない");
+    [2, 1, 1].forEach((v, k) => setCoeff(2 + k, v));
+    assert(state().coeffOk, "2段に分けたら模範解答が正解にならない");
+  });
+
   await t("UI: 判定メッセージが成功・過不足・案内で色分けされる（色だけに頼らない）", async () => {
     const cls = (id) => doc.getElementById(id).className;
     const mark = (id) => win.getComputedStyle(doc.getElementById(id), "::before").content;
@@ -3975,7 +4069,10 @@ async function runUITests(iframe) {
     stageBtn(0).click();
     // まだ何も判定していない ＝ 案内
     assert(/\binfo\b/.test(cls("msg")), "ステージの案内が info でない: " + cls("msg"));
-    assert(/\binfo\b/.test(cls("eqMsg")), "係数の案内が info でない: " + cls("eqMsg"));
+    /* ★ 2026-09-11: 係数の帯に残すのは**判定の1行だけ**にした（何をするかは見出しが言う）。
+       だからまだ何も決めていないうちは、文も枠も出ない。**空の帯を残さない**ことをここで見張る。 */
+    assert(cls("eqMsg") === "" && txt("eqMsg") === "",
+      "まだ判定していないのに係数の帯が出ている: 「" + cls("eqMsg") + "」／「" + txt("eqMsg") + "」");
     // 過不足（HCl 2個 : NaOH 1個）＝ 失敗
     addBtn(0).click(); addBtn(0).click(); addBtn(1).click();
     adv(4000); reactBtn().click(); adv(12000);
@@ -3994,7 +4091,9 @@ async function runUITests(iframe) {
     assert(/\bok\b/.test(cls("msg")), "ちょうど反応しきったのに ok でない: " + cls("msg") + " / " + txt("msg"));
     // **色だけに頼らない**: 記号が消えていないこと（CSS を色だけに戻したらここで落ちる）
     assert(/[✓✗💡]/.test(mark("msg")), "成功・失敗の記号が出ていない: " + mark("msg"));
+    // 係数の帯は**判定が出てから**記号を持つ（空のときは枠ごと出ない＝上で確かめた）
     stageBtn(0).click();
+    setCoeff(0, 2); setCoeff(1, 1); setCoeff(2, 1); setCoeff(3, 1);
     assert(/[✓✗💡]/.test(mark("eqMsg")), "係数メッセージの記号が出ていない: " + mark("eqMsg"));
   });
 
@@ -4168,7 +4267,7 @@ async function runUITests(iframe) {
       { id: "s15", naoh: 2, hLeft: 1, na: 2, water: 2, kind: "酸性塩", salt: "Na₂HPO₄" },
       // 3段目は完全中和なので saltGoal を持たず、バナーは全ステージ共通の
       // 「ちょうど中和して…をつくる」になる（正塩であることは単元タグと doneNote が言う）
-      { id: "s16", naoh: 3, hLeft: 0, na: 3, water: 3, kind: "ちょうど中和して", salt: "Na₃PO₄" },
+      { id: "s16", naoh: 3, hLeft: 0, na: 3, water: 3, kind: "ちょうど中和させて", salt: "Na₃PO₄" },
     ];
     for (const e of expect) {
       const i = STAGES.findIndex((st) => st.id === e.id);
@@ -4362,7 +4461,7 @@ async function runUITests(iframe) {
     s = state();
     assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
     const goal = doc.querySelector("#stageTitle .goal").textContent;
-    assert(goal.includes("電離度"), "目標バナーが電離度になっていない: " + goal);
+    assert(goal.includes("電離"), "目的が電離のはなしになっていない: " + goal);
   });
 
   /* ---- 画面の個数と、式の係数（ORDER_review_2026-08-18 の O・v185）----
@@ -4545,8 +4644,8 @@ async function runUITests(iframe) {
     stageBtn(i).click();
     // 水は溶媒なので投入ボタンには出ない（式には現れる）
     assert($$("#toolbar .add").length === 2, "投入ボタンが2つでない（水が出ている？）");
-    assert($$("#equation .formula").map((e) => e.textContent).join() === "Cu²⁺,NH₃,H₂O,Cu(OH)₂,NH₄⁺",
-      "イオン反応式の項が違う: " + $$("#equation .formula").map((e) => e.textContent).join());
+    assert($$(".eqRow .formula").map((e) => e.textContent).join() === "Cu²⁺,NH₃,H₂O,Cu(OH)₂,NH₄⁺",
+      "イオン反応式の項が違う: " + $$(".eqRow .formula").map((e) => e.textContent).join());
     addBtn(0).click(); addBtn(1).click(); addBtn(1).click();   // CuSO₄×1, NH₃×2
     adv(5000);
     let s = state();
@@ -4631,9 +4730,8 @@ async function runUITests(iframe) {
   await t("UI: 分子反応式 ⇄ イオン反応式 を切り替えられる（電荷の行も出る）", async () => {
     const i = STAGES.findIndex((st) => st.id === "amphoteric-al-step1");
     stageBtn(i).click();
-    const terms = () => $$("#equation .formula").map((e) => e.textContent);
+    const terms = () => $$(".eqRow .formula").map((e) => e.textContent);
     const modeBtns = () => $$(".eqModeBtn");
-    const tallyRows = () => $$("#tally tr").map((r) => r.textContent);
     // primary:"ionic" なので既定はイオン反応式
     assert(state().eqMode === "ionic", "既定がイオン反応式でない: " + state().eqMode);
     assert(terms().join() === "Al³⁺,OH⁻,Al(OH)₃", "イオン式の項が違う: " + terms().join());
@@ -4644,7 +4742,10 @@ async function runUITests(iframe) {
     assert(doc.getElementById("recombineWrap").hidden, "イオン式のとき数合わせが出てしまう");
     [1, 3, 1].forEach((v, k) => setCoeff(k, v));
     assert(state().coeffOk, "イオン式の模範が正解にならない");
-    assert(tallyRows().some((r) => r.startsWith("電荷")), "電荷の行が出ない: " + tallyRows().join("/"));
+    /* ⚠ 2026-09-11: 原子の数の確認表は、イオンで確かめる回では出さないことにした
+       （残すのは気体どうしの回だけ）。電荷を見ていることはモデルの検査が受け持つ。
+       ここでは「表が出ていないこと」だけを見る。 */
+    assert(doc.getElementById("tally").hidden, "イオンで確かめる回なのに原子の数の表が出ている");
     // 分子反応式へ切り替えると項も係数もそちらになる
     modeBtns()[0].click();
     assert(state().eqMode === "molecular", "切り替わらない");
@@ -4653,7 +4754,8 @@ async function runUITests(iframe) {
     assert(!state().coeffOk, "切り替えたのに係数が持ち越されている");
     [1, 3, 1, 3].forEach((v, k) => setCoeff(k, v));
     assert(state().coeffOk, "分子式の模範が正解にならない");
-    assert(!tallyRows().some((r) => r.startsWith("電荷")), "分子式で電荷の行が出てしまう");
+    assert(doc.getElementById("tally").hidden,
+      "分子反応式に切り替えても、イオンで確かめる回なのに原子の数の表が出ている");
     // 切り替えボタンは ionic を持つステージにだけ出る
     stageBtn(0).click();
     assert(doc.getElementById("eqMode").hidden, "ionic の無いステージに切り替えが出る");
@@ -4961,8 +5063,10 @@ async function runUITests(iframe) {
     assert(!s.counts["C"] && !s.counts["H"] && !s.counts["O"],
       "簡易モードなのに原子へほどけている: " + JSON.stringify(s.counts));
     assert(s.reactionDone, "反応完了にならない");
-    assert(doc.querySelector("#stageTitle .goal").textContent.includes("分子を組み替えて"),
-      "目標文が簡易モード用になっていない");
+    /* ⚠ 2026-09-11 まではここで目的の文に「分子を組み替えて」と書いてあることを見ていたが、
+       目的の文は声掛けに書き直して作り分けをやめた。簡易モードかどうかは判定そのものを見る */
+    assert(state().simpleGas,
+      "C₃H₈ が簡易モード（分子のまま組み替え）になっていない");
   });
 
   await t("UI: 弱酸の遊離 - 塩酸が酢酸を追い出し、酢酸は分子のまま残る", async () => {
@@ -5453,11 +5557,14 @@ async function runUITests(iframe) {
           where + ": 札が2行に収まっていない（" + Math.round(r.height) + "px ／ 上限 " + Math.round(cap) + "px）");
         assert(p.doc.documentElement.scrollWidth <= p.w + 1,
           where + ": ページが横にはみ出した（" + p.doc.documentElement.scrollWidth + " > " + p.w + "）");
-        // 押し出しの実害を直接見る: いちばん狭い画面でもビーカーの頭は1画面目に残る
+        /* 押し出しの実害を直接見る: いちばん狭い画面でも**左辺の係数**は1画面目に残る。
+           ⚠ 2026-09-11 まではここでビーカーの頭を見ていたが、
+           スマホは1カラムでビーカーが一番下という並びになったので、あれはもう成り立たない。
+           見張るべき「1画面目に残っていてほしいもの」は、主役になった反応式の左辺のほう。 */
         if (p.h <= 568) {
-          const top = p.doc.getElementById("beaker").getBoundingClientRect().top;
+          const top = p.doc.getElementById("equation").getBoundingClientRect().top;
           assert(top < p.h,
-            where + ": 札を大きくしたせいでビーカーが1画面目から押し出された（頭が " +
+            where + ": 札を大きくしたせいで左辺の係数が1画面目から押し出された（頭が " +
             Math.round(top) + "px ／ 画面の高さ " + p.h + "px）");
         }
       }
@@ -5675,7 +5782,7 @@ async function runUITests(iframe) {
     const b = blocks();
     b.set({ cn: 0, an: 0 });
     const coeff = (i) => {
-      const v = $$("#equation .term")[i].querySelector(".coeff").textContent;
+      const v = $$(".eqRow .term")[i].querySelector(".coeff").textContent;
       return v === "？" ? 0 : +v;
     };
     // ブロック → 係数
@@ -5733,7 +5840,7 @@ async function runUITests(iframe) {
     const svg = doc.getElementById("ionBlocks");
     const ghost = (side) => svg.querySelector(`.ibAdd[data-ib-side="${side}"]`);
     const coeff = (i) => {
-      const v = $$("#equation .term")[i].querySelector(".coeff").textContent;
+      const v = $$(".eqRow .term")[i].querySelector(".coeff").textContent;
       return v === "？" ? 0 : +v;
     };
     assert(ghost("cation") && ghost("anion"), "空の列に置き場所（＋）が出ない");

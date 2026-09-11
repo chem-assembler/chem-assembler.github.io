@@ -127,10 +127,13 @@ main {
   flex-wrap: wrap;
   align-items: flex-start;
 }
-#labPane { flex: 1 1 460px; max-width: 580px; }
+/* ★ 2026-09-11: 反応式が主・ビーカーが従。
+   反応式の列を先に、広く取る（左辺の係数・高さ合わせ・組み替え・右辺の係数がここに積まれる）。
+   狭い画面では折り返して1カラムになり、DOM の順どおりビーカーが一番下に来る。 */
+#labPane { flex: 1 1 420px; max-width: 520px; }
 #eqPane {
-  flex: 1 1 360px;
-  max-width: 520px;
+  flex: 1 1 480px;
+  max-width: 620px;
   background: #fff;
   border-radius: 10px;
   padding: 14px 18px 18px;
@@ -831,7 +834,9 @@ main.timelineMain {
 #eqMsg.msgBox, #schematicMsg.msgBox { padding: 5px 9px; border-radius: 4px; }
 
 /* 反応式パネル（イオン反応モード） */
-#equation {
+/* ★ 2026-09-11: 左辺の段（#equation）と右辺の段（#equationProd）で同じ見た目を使う。
+   .eqRow が両方に付く（id で書くともう一方に当たらない） */
+.eqRow {
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -840,10 +845,10 @@ main.timelineMain {
   padding: 8px;
   border-radius: 8px;
 }
-#equation.balanced { background: #eef7ee; }
-#equation .arrow, #equation .plus { font-size: 18px; margin: 0 2px; }
-#equation .term { display: inline-flex; align-items: center; gap: 4px; }
-#equation .formula { font-weight: bold; }
+.eqRow.balanced { background: #eef7ee; }
+.eqRow .arrow, .eqRow .plus { font-size: 18px; margin: 0 2px; }
+.eqRow .term { display: inline-flex; align-items: center; gap: 4px; }
+.eqRow .formula { font-weight: bold; }
 
 /* ⚠ 2026-09-08: ここに「イオン反応式→化学反応式の図」（#roleWrap / #molFigure）の飾りがあった。
    図そのものを降ろした（⑥のブロックと役割が重なる）ので、飾りも一緒に降ろす。
@@ -1061,11 +1066,11 @@ main.timelineMain {
   /* 係数ステッパーの＋/−は小さいと押し間違えるので拡大 */
   .stepper button { width: 40px; height: 42px; font-size: 19px; }
   .coeff { min-width: 1.5em; font-size: 20px; }
-  #equation { font-size: 19px; gap: 8px 6px; }
+  .eqRow { font-size: 19px; gap: 8px 6px; }
   /* 筆算は横に長い。狭い画面では文字を詰め、はみ出すぶんは横スクロールで見せる */
   #calcSheet, #halfSheet { font-size: 15px; column-gap: 5px; }
   .cNote { font-size: 10px; }
-  /* 数合わせの「組み変える」ボタンも押しやすく */
+  /* 「組み替える」ボタンも押しやすく */
   .recombineHead button { padding: 9px 14px; min-height: 40px; }
   .modeLink { padding: 6px 12px; }
   .hint { font-size: 13px; }
@@ -1906,10 +1911,18 @@ main.timelineMain {
    既存の規則はいじらず、あとから足した規則で上書きしている（.goal と同じ詳細度で後ろにあるので勝つ）。
    色は触らない —— .goal.acid（酸性塩の暖色）を巻き添えで潰さないため。 */
 :root {
-  --now-size: 16px;
+  /* ★ 2026-09-11: 16px → 18px。「目的をここで大きく見せる」（ユーザー指示）。
+     ⚠ この数は酸化還元の SVG の見出しも nowLabelPx() から読むので、片方だけ変えられない。
+     ⚠ 狭い画面では 16px に戻す（下のメディアクエリ）。320px で 18px にすると、
+        長い目的（錯イオンの回）が3行になって、そのぶん下が押し出される */
+  --now-size: 18px;
   --now-weight: 700;
   --now-line: 1.4;
 }
+/* ⚠ この上書きは :root の定義より**後ろ**に置くこと。
+   スマホ用のメディアクエリはこのファイルの前のほうにあるので、そちらに書くと
+   後から来る :root の 18px に負けて効かない（実測で踏んだ）。 */
+@media (max-width: 560px) { :root { --now-size: 16px; } }
 .nowLabel {
   font-size: var(--now-size);
   font-weight: var(--now-weight);
