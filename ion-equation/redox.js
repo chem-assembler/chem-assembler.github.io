@@ -2038,7 +2038,7 @@ function buildBottleCols(rows, force) {
     const tag = cell(bottleColsEl, "bwRowTag", BROW.tag, 0);
     const b = document.createElement("b");
     b.textContent = "③で出したイオン反応式";
-    tag.append(b, document.createTextNode(" — 左辺の項が、そのまま下の欄の見出しになる"));
+    tag.appendChild(b);
     bottleColsEl.insertBefore(tag, bottleColsEl.firstChild);
     /* 狭い画面用の1行版は、見出しのすぐ下に置く（広い画面では display:none）。
        ⚠ 素の並びが効くのは狭い画面だけなので、**DOM を動かして**順を作る */
@@ -2141,8 +2141,7 @@ function buildAddIonRows(force) {
   addIonMsgEl.style.gridRow = String(BROW.addMsg);
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = "イオン反応式には、相手のいないイオンが並んでいる。" +
-    "両辺に同じだけ足して、化学式に組めるようにする。";
+  cap.textContent = "相手のいないイオンに、両辺で同じだけ相手を足す";
   /* ★ 筆算の1行として横に並べる（ユーザーの絵の最下段 ＋ K⁺〔 〕個 ＋ SO₄²⁻〔 〕個）。
      ⚠ この行は列にそろえられない —— 足すイオンは種でまとめた数で、
      1種が2つの物質から来ること（rs1 の SO₄²⁻）も、1つの物質が2列にまたがること
@@ -2221,8 +2220,7 @@ function buildBottleRack(st) {
   const rows = bottleRows() || [];
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = `はじめに入れたのは、この ${st.bottles.length} つだけ。` +
-    "札をタップして、上のイオンの下に置こう（イオンをタップしてから札でもよい）。";
+  cap.textContent = "札をタップして、上のイオンの下に置こう";
   const shelf = document.createElement("div");
   shelf.className = "bottleShelf";
   for (const sp of st.bottles) {
@@ -2248,8 +2246,8 @@ function buildBottleRack(st) {
   where.className = "bottleCap bottleWhere";
   const t = bottleSlotActive && rows.some((r) => r.ion === bottleSlotActive) ? bottleSlotActive : null;
   where.textContent = t
-    ? `いま置く先は ${SPECIES[t].disp} の下。`
-    : "置く先を決めたいときは、先に上のイオンをタップ。";
+    ? `いま置く先は ${SPECIES[t].disp} の下`
+    : "上のイオンをタップすると、置く先が決まる";
   bottleRackEl.append(cap, shelf, where);
 }
 
@@ -2301,8 +2299,8 @@ function refreshBottleTail() {
   renderBottleNotes(rows);
   bottleMsgEl.style.gridRow = String(BROW.msg);
   bottleMsgEl.textContent = quizDone
-    ? "どのイオンにも、もとの物質がある。左辺に書くのはイオンではなく、そのもとの物質そのもの。"
-    : `あと ${asks.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
+    ? "左辺に書くのはイオンではなく、そのもとの物質"
+    : `あと ${asks.length - okN} 個`;
   bottleMsgEl.className = quizDone ? "okcell" : "";
   /* ★ 2026-09-11・ユーザーの指示「注意事項として、正解後の一番下に解説を追加します。
      アプリ上では起こりませんが、自分で紙に解くと起こる事故です」。
@@ -2338,8 +2336,8 @@ function refreshBottleTail() {
   }
   const allDone = done === add.length && add.length > 0;
   addIonMsgEl.textContent = allDone
-    ? "両辺に足した。ここから先は、陽イオンと陰イオンを組み直して化学式にするだけ。"
-    : `あと ${add.length - done} 種類。式の左辺と右辺を見て、相手のいないイオンを探す。`;
+    ? "両辺に足せた"
+    : `あと ${add.length - done} 種類`;
   addIonMsgEl.className = allDone ? "okcell" : "";
 
   bottleTailEl.hidden = !allDone;
@@ -2392,8 +2390,7 @@ function buildBottleCountRows(force) {
   /* ★ 2026-09-07・ユーザーの指示「⑤ 不要／左辺の係数をすべて入力させる」。
      数は1つも変わらない（v194 の bottleLeftMap が既に「入れた数 ＝ 左辺の係数」と
      言っていた）。**遠回りな言い換えを消して、最初から係数として書かせる。** */
-  cap.textContent = "化学反応式の左辺に並ぶのは、はじめに入れた物質そのもの。" +
-    "上のイオン反応式に並ぶ数がそろうように、係数をすべて書こう。";
+  cap.textContent = "上のイオン反応式に並ぶ数がそろうように、係数を書こう";
   bottleCountEl.appendChild(cap);
   /* ★ 係数の欄は、**その物質が担当したイオンの柱の真下**に置く（＝筆算の縦の対応）。
      ⚠ 対応は1対1ではない —— 1つの物質が2つの柱を担当することも（rn1 の HNO₃）、
@@ -2557,7 +2554,7 @@ function refreshBottleResult() {
   if (!allDone) {
     bottleSheetEl.innerHTML = "";
     if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
-    bottleTailMsgEl.textContent = `あと ${rows.length - done} つ。イオン反応式に並ぶ数からわり算で出せる。`;
+    bottleTailMsgEl.textContent = `あと ${rows.length - done} つ`;
     bottleTailMsgEl.className = "footNote";
     return;
   }
@@ -2604,7 +2601,7 @@ function refreshBottleResult() {
     renderTerms(o.left, plan.left, [], null, (t) => ({
       readOnly: true,
       value: String(Number.isInteger(bottleCounts[t.sp]) ? bottleCounts[t.sp] : t.n),
-      title: `⑤であなたが書いた係数 ${t.n}（${D(t.sp)}）`,
+      title: `⑤で書いた係数 ${t.n}（${D(t.sp)}）`,
     }));
     renderTerms(o.right, plan.right, []);
     o.row.classList.add("doneRow");
@@ -2621,7 +2618,7 @@ function refreshBottleResult() {
   // 組めないときの本文は倍率の箱が持つので、ここでは繰り返さない
   bottleTailMsgEl.textContent = allPaired
     ? plan.reason
-    : (restIons.length ? "右辺のイオンをぜんぶ組み合わせると、化学反応式が完成する。" : plan.reason);
+    : (restIons.length ? "右辺のイオンをぜんぶ組み合わせよう" : plan.reason);
   bottleTailMsgEl.className = "footNote " + (allPaired ? "okcell" : "");
 }
 
@@ -2731,13 +2728,12 @@ function drawSaltPool(plan, rem) {
   if (riders.length) {
     line("bottleRiderSum",
       "もとの物質が連れてきて、反応しなかったイオン: " +
-      riders.map((r) => `${D(r.sp)} ${r.n}個`).join("・") +
-      "（加えたのではなく、ついて来た）");
+      riders.map((r) => `${D(r.sp)} ${r.n}個`).join("・"));
   }
   const left = plan.cations.concat(plan.anions).filter((t) => rem[t.sp] > 0);
   line("bottleCap", left.length
-    ? "水を蒸発させると、溶けていたイオンが残る。組み合わせて化学式にしよう:"
-    : "残っているイオンはもう無い。");
+    ? "残っているイオンを組み合わせて化学式にしよう:"
+    : "残っているイオンはもう無い");
   if (left.length) line("bottlePoolLine", left.map((t) => `${D(t.sp)} ${rem[t.sp]}個`).join("　"));
   if (plan.neutral.length) {
     line("bottleSalt muted",
@@ -2753,7 +2749,7 @@ function drawSaltMade() {
   if (!saltMade.length) return;
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = "組み上げたもの（くり返した回数が、そのまま右辺の係数）:";
+  cap.textContent = "組み上げたもの:";
   saltMadeEl.appendChild(cap);
   for (const s of saltMade) {
     const d = document.createElement("div");
@@ -2789,7 +2785,7 @@ function drawSaltActions(plan) {
   if (units < 1) {
     const why = document.createElement("span");
     why.className = "footNote ngcell";
-    why.textContent = "この組はもう作れない（残っているイオンが足りない）。";
+    why.textContent = "残っているイオンが足りない";
     saltActionsEl.appendChild(why);
   }
 }
