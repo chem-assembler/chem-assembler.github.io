@@ -462,9 +462,38 @@ const CONTEXTUAL_VALENCY_ELEMENTS = ['S', 'N'];
 /**
  * ★ 結合を持たず「粒」としてだけ現れる対イオン（DESIGN_ion_layer.md §3-3・D-I5）。
  * 電荷を持てば価標 0 ＝ 自動水素が生えず（NaH・HCl の図にならない）、結合も許さない。
- * ⚠ 電荷の無い Na・K は今までどおり価標 1（-COONa を線1本で書く流儀。D-I11）。
+ * ⚠ 電荷の無い Na・K は価標 1 のまま（手で -COONa を組んだ古い図が壊れないように）。
  */
 const MONATOMIC_ION_ELEMENTS = ['Na', 'K', 'Cl', 'Br', 'I'];
+
+/** 塩の相方になれる金属（Na⁺・K⁺）。⚠ Cl⁻ 側の探し方は `nearestCounterIon` が持つ */
+const SALT_METAL_ELEMENTS = ['Na', 'K'];
+
+/**
+ * ★★ **O–金属の塩は電離した形で描く**（v1538・2026-09-12 のユーザー判断で D-I11 を見直した）。
+ *
+ * -COO⁻ / -O⁻ / -SO₃⁻ の相方の金属イオン（**結合を持たない Na⁺・K⁺ の粒**）を返す。
+ * 見つからなければ null ＝ 相方のいない陰イオン（双性イオンの -COO⁻ 側など）。
+ *
+ * **なぜ電離で描くか**: 分液の水層は「水に溶けている」場面で、塩はそこで電離している。
+ * アニリン塩酸塩は -NH₃⁺ と Cl⁻ を離して描いていたのに、安息香酸ナトリウムだけが
+ * -COO と Na を線でつないだままで、**同じ水層の塩の描き方が食い違っていた**。
+ * ⚠ 線で結ぶと -O-Na は共有結合の図になる（Cl⁻ を線で結ぶと N-クロロアニリンに
+ * なるのと同じ理屈）。イオンどうしが引き合っているだけの結びつきは線では書かない。
+ *
+ * ⚠ 相方は**いちばん近いもの**で決める（`reactor.js` の `nearestCounterIon`・
+ * `game.js` の `attachCounterIons` と同じ決め方 ＝ 見せ方と外し方で規則を割らない）。
+ * 原子IDは乱数なので順序には頼れない。
+ */
+function saltCounterMetal(mol, oId) {
+    const o = mol.atoms.find(a => a.id === oId);
+    if (!o || !(o.charge < 0)) return null;
+    const bonded = new Set();
+    mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+    return mol.atoms
+        .filter(x => !bonded.has(x.id) && x.charge > 0 && SALT_METAL_ELEMENTS.includes(x.element))
+        .sort((p, q) => Math.hypot(p.x - o.x, p.y - o.y) - Math.hypot(q.x - o.x, q.y - o.y))[0] || null;
+}
 
 /**
  * ★ 電荷つきの原子が取れる価標の上限（D-I12。**電荷はここ1か所で価標に効く**）。
@@ -1468,25 +1497,25 @@ function findFunctionalGroups(mol) {
                 const o = singleO[0].atom;
                 const oBeyond = heavyNb(o.id).filter(n => n.atom.id !== a.id);
                 if (oBeyond.length === 0 && o.charge < 0) {
-                    // -C(=O)-O⁻ ＝ カルボン酸イオン（双性イオンの片側。I-3）。
-                    // ⚠ 線1本の -COONa（下の carboxylate）とは別の型。O–金属の塩は今までどおり線で書く（D-I11）
-                    groups.push({ type: 'carboxylate_ion', label: 'カルボン酸イオン（-COO⁻）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
+                    /* -C(=O)-O⁻ ＝ カルボン酸イオン。★ 近くに相方の Na⁺・K⁺ の粒があれば
+                     * **カルボン酸の塩**（けん化の生成物。脂肪酸ナトリウムなら石けん）、
+                     * 無ければ裸のカルボン酸イオン（双性イオンの片側。I-3）。
+                     * ⚠ v1538 まで塩は -COO-Na と線1本で書いていた（D-I11）。水層の塩が
+                     *   電離して見えないのを直すため、電離した形へそろえた（`saltCounterMetal`）。
+                     * ⚠ **K も見る**（DESIGN_compound_coverage.md §9.6-8。酢酸カリウム・
+                     *   フタル酸水素カリウムが「官能基にあてはまらない」で落ちていた） */
+                    const metal = saltCounterMetal(mol, o.id);
+                    if (metal) {
+                        groups.push({
+                            type: 'carboxylate',
+                            label: `カルボン酸の塩（-COO⁻ ${metal.element}⁺）`,
+                            atomIds: [a.id, doubleO[0].atom.id, o.id, metal.id]
+                        });
+                    } else {
+                        groups.push({ type: 'carboxylate_ion', label: 'カルボン酸イオン（-COO⁻）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
+                    }
                 } else if (oBeyond.length === 0) {
                     groups.push({ type: 'carboxyl', label: 'カルボキシ基（カルボン酸）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
-                } else if (oBeyond.length === 1 &&
-                           (oBeyond[0].atom.element === 'Na' || oBeyond[0].atom.element === 'K')) {
-                    // -C(=O)-O-Na / -C(=O)-O-K ＝ カルボン酸の塩
-                    // （けん化の生成物。脂肪酸ナトリウムなら石けん）。
-                    // **K を見落としていた**（DESIGN_compound_coverage.md §9.6-8）——
-                    // すぐ下の sulfonate は Na/K の両方を見ているのに、ここだけ Na だけだったので、
-                    // 酢酸カリウム・フタル酸水素カリウムが「官能基にあてはまらない」で範囲外に落ちていた。
-                    // K は KOH でのけん化とフタル酸水素カリウムのために足した元素（§6-1）
-                    const metal = oBeyond[0].atom.element;
-                    groups.push({
-                        type: 'carboxylate',
-                        label: `カルボン酸の塩（-COO${metal}）`,
-                        atomIds: [a.id, doubleO[0].atom.id, o.id, oBeyond[0].atom.id]
-                    });
                 } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'C') {
                     groups.push({ type: 'ester', label: 'エステル結合', atomIds: [a.id, doubleO[0].atom.id, o.id] });
                 }
@@ -1533,10 +1562,12 @@ function findFunctionalGroups(mol) {
             if (dblO.length >= 2 && sglO.length >= 1) {
                 const beyond = heavyNb(sglO[0].atom.id).filter(n => n.atom.id !== a.id);
                 const ids = [a.id, ...dblO.map(n => n.atom.id), sglO[0].atom.id];
-                if (beyond.length === 1 && (beyond[0].atom.element === 'Na' || beyond[0].atom.element === 'K')) {
-                    // 見出しの元素は実物に合わせる（-SO₃Na / -SO₃K）。carboxylate と同じ書き方
-                    groups.push({ type: 'sulfonate', label: `スルホン酸の塩（-SO₃${beyond[0].atom.element}）`, atomIds: [...ids, beyond[0].atom.id] });
-                } else if (beyond.length === 0) {
+                // ★ 塩は電離した形（-SO₃⁻ ＋ Na⁺ の粒）。carboxylate と同じ読み方
+                const metal = beyond.length === 0 ? saltCounterMetal(mol, sglO[0].atom.id) : null;
+                if (metal) {
+                    // 見出しの元素は実物に合わせる（-SO₃⁻ Na⁺ / -SO₃⁻ K⁺）
+                    groups.push({ type: 'sulfonate', label: `スルホン酸の塩（-SO₃⁻ ${metal.element}⁺）`, atomIds: [...ids, metal.id] });
+                } else if (beyond.length === 0 && !(sglO[0].atom.charge < 0)) {
                     groups.push({ type: 'sulfo', label: 'スルホ基（スルホン酸）', atomIds: ids });
                 }
             }
@@ -2844,7 +2875,7 @@ function assignDLDescriptor(mol) {
 
     const atomOf = id => mol.atoms.find(a => a.id === id);
     const heavyNbrs = id => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
-    // カルボキシ基の炭素（-COOH / -COO-Na）。**エステルは除く**——単結合の O の先が
+    // カルボキシ基の炭素（-COOH / -COO⁻）。**エステルは除く**——単結合の O の先が
     // 炭素につながっていたらエステルで、鎖の頭にはならない
     // （油脂のモノグリセリドを糖のように読んで L体 と言い出す事故を防ぐ）
     const isCarboxylC = id => {
@@ -2854,9 +2885,9 @@ function assignDLDescriptor(mol) {
         if (!os.some(n => n.type === 2)) return false;
         const single = os.filter(n => n.type === 1);
         if (!single.length) return false;
-        // 塩になっていても「カルボキシ基」として読む（-COONa / -COOK。§9.6-8 で K を足した）
-        return single.some(n => heavyNbrs(n.atom.id)
-            .every(m => m.atom.id === id || m.atom.element === 'Na' || m.atom.element === 'K'));
+        // 塩になっていても「カルボキシ基」として読む（-COO⁻ Na⁺。§9.6-8 で K を足した）。
+        // ⚠ v1538 で塩を電離形にしたので、金属は結合をたどっても出てこない（粒になった）
+        return single.some(n => heavyNbrs(n.atom.id).every(m => m.atom.id === id));
     };
     // アルデヒド／ケトンのカルボニル炭素（=O をもち、**単結合の O をもたない**）。
     // エステル・カルボン酸はここに入らない
@@ -3546,11 +3577,11 @@ function describeStructure(mol) {
         const sglOs = ns.filter(x => x.atom.element === 'O' && x.type === 1);
         const hasOH = sglOs.some(x => mol.getFreeValency(x.atom.id) >= 1);
         const hasOR = sglOs.some(x => mol.getNeighbors(x.atom.id).filter(y => y.atom.element === 'C').length === 2);
-        const salt = sglOs.map(x => mol.getNeighbors(x.atom.id).find(y => y.atom.element === 'Na' || y.atom.element === 'K'))
-                          .find(y => y);
+        // ★ 塩は電離した形（-COO⁻ ＋ 金属イオンの粒）で持つ（v1538）。線をたどらず相方を探す
+        const salt = sglOs.map(x => saltCounterMetal(mol, x.atom.id)).find(y => y);
         if (hasOH) cooh++;
         else if (hasOR) ester++;
-        else if (salt) saltMetals.set(salt.atom.element, (saltMetals.get(salt.atom.element) || 0) + 1);
+        else if (salt) saltMetals.set(salt.element, (saltMetals.get(salt.element) || 0) + 1);
         else if (ns.some(x => x.atom.element === 'N' && x.type === 1)) amide++;
         else if (mol.getFreeValency(c.id) >= 1) cho++;
         else if (ns.filter(x => x.atom.element === 'C').length === 2) ketone++;
@@ -3572,7 +3603,7 @@ function describeStructure(mol) {
 
     if (cooh) points.push(`カルボキシ基 -COOH ×${cooh}`);
     if (ester) points.push(`エステル結合 -COO- ×${ester}`);
-    saltMetals.forEach((n, metal) => points.push(`カルボン酸の塩 -COO${metal} ×${n}`));
+    saltMetals.forEach((n, metal) => points.push(`カルボン酸の塩 -COO⁻ ${metal}⁺ ×${n}`));
     // N が置換されたアミド（N,N-ジメチルホルムアミドなど21件）も含むので -CO-NH- とは書けない
     if (amide) points.push(`アミド結合 -CO-N< ×${amide}`);
     if (cho) points.push(`アルデヒド基 -CHO ×${cho}`);
@@ -6132,6 +6163,8 @@ if (typeof window !== 'undefined') {
     window.heavyAtomLabel = heavyAtomLabel;
     window.copyAtomMarks = copyAtomMarks;
     window.MONATOMIC_ION_ELEMENTS = MONATOMIC_ION_ELEMENTS;
+    window.SALT_METAL_ELEMENTS = SALT_METAL_ELEMENTS;
+    window.saltCounterMetal = saltCounterMetal;   // -COO⁻ / -O⁻ / -SO₃⁻ の相方の金属イオン
     window.layoutMolecule = layoutMolecule;
     window.findAnyCycle = findAnyCycle;
     window.findLongestCarbonChain = findLongestCarbonChain;
