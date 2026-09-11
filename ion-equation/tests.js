@@ -5572,6 +5572,49 @@ async function runUITests(iframe) {
     }
   });
 
+  /* ---- 字の大きさは1か所（--fs-u）で決まる（v211）----
+     ユーザーの指示は「全体的にフォントサイズを上げたい」＋**1か所の変数で上がる形**。
+     style.css の font-size はぜんぶ `calc(N * var(--fs-u))` で書き、`--fs-u` の既定は 1px。
+     ページごとに `--fs-u` を上げると、そのページの字だけがまとめて大きくなる。
+
+     ここが無いと**次に困る人が生の px を書き足す**（前に `--now-size` で実際に起きた:
+     18px にしたあと 560px 以下だけ 16px に戻す個別の規則が増えた）。見張るのは3つ:
+       ① style.css に生の px の font-size が1つも残っていないこと（コメントと 0 は別）
+       ② 既定が 1px ＝ **酸化還元以外のページはいままでと同じ値**であること
+       ③ 酸化還元だけ大きく、しかも 320px でページが横に伸びないこと */
+  await t("FS-U: 字の大きさが1か所（--fs-u）で決まり、320px で横に伸びない", async () => {
+    // ① 生の px が残っていないか（コメントの中は数えない）
+    const css = await (await fetch("style.css")).text();
+    const bare = [];
+    css.replace(/\/\*[\s\S]*?\*\//g, "").split(/\n/).forEach((line, i) => {
+      const m = line.match(/font-size:\s*[0-9]*\.?[0-9]+px/);
+      if (m) bare.push((i + 1) + "行目あたり: " + m[0]);
+    });
+    assert(bare.length === 0,
+      "style.css に生の px の font-size が残っている（--fs-u で書くこと）: " + bare.slice(0, 5).join(" / "));
+
+    const px = (w, sel) => parseFloat(w.getComputedStyle(w.document.querySelector(sel)).fontSize);
+    const a = await openAt("index.html", 320, 800);
+    const b = await openAt("redox.html", 320, 800);
+    // ② 既定は 1px（＝ 他のページの見た目は1文字も変わらない）
+    assert(a.win.getComputedStyle(a.doc.body).getPropertyValue("--fs-u").trim() === "1px",
+      "既定の --fs-u が 1px でない（他のページの字まで動く）");
+    // ⚠ 320px では狭い面用の規則が効く（見出しは 19px ではなく 17px）。
+    //   絶対値を書くとそこを見落とすので、**同じ幅の2ページを比べる**
+    assert(px(a.win, "header h1") === 17, "index の見出しが狭い面の 17px でない: " + px(a.win, "header h1"));
+    // ③ 酸化還元だけ大きい。⚠ 個別の px を積むのではなく変数で上がっていること
+    const u = parseFloat(b.win.getComputedStyle(b.doc.body).getPropertyValue("--fs-u"));
+    assert(u > 1, "酸化還元の --fs-u が上がっていない: " + u);
+    assert(Math.abs(px(b.win, "header h1") - 17 * u) < 0.5,
+      "酸化還元の見出しが --fs-u ぶん大きくなっていない（" + px(b.win, "header h1") + "px ／ 期待 " + (17 * u) + "px）");
+    assert(px(b.win, "#step2 .stepHead") > px(a.win, ".hint"),
+      "酸化還元の段の見出しが index の本文より大きくない");
+    // 320px でページ本体が横に伸びない（横送り枠の中で送るのは設計どおり）
+    assert(b.doc.documentElement.scrollWidth <= 321,
+      "320px で酸化還元のページが横に伸びた（" + b.doc.documentElement.scrollWidth + "px）");
+    a.cleanup(); b.cleanup();
+  });
+
   /* ---- ③の筆算を作業面にしたときの幅（v193・分岐 A-2）----
      ⚠ **これが A-2 の合否そのもの。**工事前の実測（発注書 §6-3）は
      320px で筆算の実幅 544px・枠の見える幅 256px ＝ **はみ出し 288px**、
