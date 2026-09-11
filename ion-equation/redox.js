@@ -1139,7 +1139,7 @@ function buildSheetSkeleton() {
   SHEET.red = sheetRow(halfSheetEl, "halfRed", "halfRow");
 
   calcSheetEl.innerHTML = "";
-  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "足し合わせて e⁻ を消す — 倍率をかけた2本を縦に足す");
+  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "2本の式を縦に足して e⁻ を消そう");
   // 【①-B】灰色の数字が何なのかを、筆算の**すぐ上**で言う（v195）
   SHEET.calcGivenNote = sheetSpan(calcSheetEl, "calcGivenNote", "footNote givenNote");
   SHEET.sumOx  = sheetRow(calcSheetEl, "rowSumOx");
@@ -3047,7 +3047,7 @@ function updatePickFold() {
      ここは戻る道の名前だけでよい */
   pickHeadTextEl.textContent = foldable
     ? "別の組み合わせを試す"
-    : "2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる";
+    : "2つの物質を選んで、反応するか確かめよう";
 }
 if (pickToggleEl) {
   pickToggleEl.onclick = () => { pickOpened = !pickOpened; updatePickFold(); };
