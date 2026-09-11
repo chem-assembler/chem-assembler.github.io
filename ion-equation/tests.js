@@ -6043,9 +6043,11 @@ async function runRedoxUITests(iframe) {
     // 3個出す側は2個受け取る側より背が高い（＝価数が高さで見える）
     const h = rects();
     assert(h[0] > h[1], "e⁻ 3個のブロックが 2個より高くない: " + JSON.stringify(h));
-    /* ★ 2026-09-11・ユーザーの指摘 (4)「リアルタイムに酸化剤・還元剤のどちらが
-       余っているか or 足りないか、を端的に示す」。**どちらの側か**を名指しする */
-    assert(msg().includes("還元剤が余っている"), "1:1 でどちらが余っているか言わない: " + msg());
+    /* ★ v211・ユーザーの原文。**薬品の名指しをやめ、e⁻ の過不足だけを言う**。
+       Al は 3個出し、Cu²⁺ は 2個しか受け取れないので ×1・×1 では e⁻ が1個あまる。
+       ⚠「あまってる」はユーザーの原文のまま（「あまっている」に直さない） */
+    assert(msg() === "e⁻ が1個あまってる", "e⁻ の過不足を言っていない: " + msg());
+    assert(!/剤が余って/.test(msg()), "薬品を名指しする古い文が残っている: " + msg());
     // 席の空き（点線の輪）が余りの側に出る
     const dashed = [...svg.querySelectorAll(".schBlock circle")]
       .filter((c) => c.getAttribute("stroke-dasharray") !== "none");
