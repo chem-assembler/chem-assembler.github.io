@@ -415,6 +415,47 @@ function removeParticle(p) {
   if (p.el) p.el.remove();
 }
 
+/* ---- 液面から出た気体（2026-09-11・ユーザー指示）----
+   「気体の SO₂ が一瞬で消えるので、空中でフロートするように」。
+   泡が水面に届いた瞬間に粒を消していたので、**何が出ていったのかを見る間が無かった**。
+   水の上の空間にそのまま浮かべて残す。
+
+   ⚠ 粒は particles から外す。IonEq.state().counts は「水の中にあるもの」の数で、
+   ここに気体を混ぜると反応の判定も既存の検査も全部ずれる。**絵だけ**を別の列で持つ。
+   置き場所はガラスの内側・液面の上（drawBeakerStatic のガラスは y=75 から、水面は WATER.y）。 */
+let gasFloats = [];
+const GAS_AIR = { top: 88, bottom: WATER.y - 6, x: 60, w: 360 };
+
+function floatOutGas(p) {
+  const el = p.el;
+  p.el = null;              // ここで消させない（絵は浮かべたまま残す）
+  removeParticle(p);
+  if (!el) return;
+  const r = p.hr || p.r || 14;
+  gasFloats.push({
+    el, r,
+    x: Math.min(Math.max(p.x, GAS_AIR.x + r), GAS_AIR.x + GAS_AIR.w - r),
+    y: GAS_AIR.bottom - r,
+    // 1個ずつ左右へ振り分けると、続けて出てきたときに重ならない
+    vx: (gasFloats.length % 2 ? 1 : -1) * 16, vy: -20,
+  });
+}
+
+/* ガラスの内側・液面の上の帯の中をゆっくり行き来する（壁で向きを変えるだけ） */
+function stepGasFloats(dt) {
+  for (const f of gasFloats) {
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    const lo = GAS_AIR.x + f.r, hi = GAS_AIR.x + GAS_AIR.w - f.r;
+    if (f.x < lo) { f.x = lo; f.vx = Math.abs(f.vx); }
+    if (f.x > hi) { f.x = hi; f.vx = -Math.abs(f.vx); }
+    const up = GAS_AIR.top + f.r, down = GAS_AIR.bottom - f.r;
+    if (f.y < up) { f.y = up; f.vy = Math.abs(f.vy); }
+    if (f.y > down) { f.y = down; f.vy = -Math.abs(f.vy); }
+    f.el.setAttribute("transform", `translate(${f.x.toFixed(1)},${f.y.toFixed(1)})`);
+  }
+}
+
 function splash(x, y) {
   const c = mk("circle", { cx: x, cy: y, r: 14, fill: "none", stroke: "#79b8d8", "stroke-width": 2.5, class: "splash" }, particleLayer);
   setTimeout(() => c.remove(), 500);
@@ -827,7 +868,7 @@ function step(dt, now) {
       if (p.y <= WATER.y + p.r) {
         splash(p.x, WATER.y + 4);
         escaped[p.sp] = (escaped[p.sp] || 0) + 1;
-        removeParticle(p);
+        floatOutGas(p);
         refreshHUD();
       }
     } else if (p.mode === "sink") {
@@ -890,6 +931,7 @@ function step(dt, now) {
     }
   }
   separateParticles();
+  stepGasFloats(dt);
   updateTransforms(now);
   stepStripTweens(dt);
 }
@@ -3048,6 +3090,8 @@ function resetBeaker() {
   for (const p of particles) if (p.el) p.el.remove();
   particles = [];
   groups = [];
+  // 浮いていた気体の絵は drawBeakerStatic が SVG ごと消すので、列を空にするだけでよい
+  gasFloats = [];
   escaped = {};
   addedCount = {};
   producedCount = {};

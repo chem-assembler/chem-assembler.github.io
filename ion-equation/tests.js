@@ -3987,6 +3987,27 @@ async function runUITests(iframe) {
        ②矢印は左辺の段の末尾にあること（「ここまでが左辺」が字で分かる）
        ③2つの段のあいだに、イオンの図（高さ合わせ・組み替え）が入っていること
          ＝ 左辺 → 図 → 右辺 の順。図を下へ落として2段を隣り合わせたら落ちる */
+  /* ---- 液面から出た気体は消えずに浮かんだまま残る（2026-09-11・ユーザー指示）----
+     ★ 「気体の SO₂ が一瞬で消えるので、空中でフロートするように」。
+     ⚠ 同時に**数え方は変えない** —— 水の中の数（counts）には入らず、逃げた数（escaped）に入る。
+     ここを取り違えると反応の判定まで巻き添えになるので、両方を1つの検査で押さえる。 */
+  await t("UI: 出ていった気体は液面の上に浮かんだまま残る（数え方は変えない）", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s10");
+    stageBtn(i).click();
+    addBtn(0).click(); addBtn(1).click(); addBtn(1).click();   // Na₂SO₃×1, HCl×2
+    adv(3000); reactBtn().click(); adv(20000);
+    const s = state();
+    assert(s.escaped["SO2"] === 1, "SO₂ が逃げた数に入らない: " + JSON.stringify(s.escaped));
+    assert(!s.counts["SO2"], "浮かべたせいで水の中の数に SO₂ が残っている: " + JSON.stringify(s.counts));
+    // 絵は残っている。しかも**水面より上**にいる（消えていたころは要素ごと無くなっていた）
+    const g = [...doc.querySelectorAll("#beaker g")]
+      .filter((e) => e.textContent.includes("SO₂") && e.getAttribute("transform"));
+    assert(g.length === 1, "浮かんでいる SO₂ の絵が1つでない: " + g.length);
+    const y = parseFloat(g[0].getAttribute("transform").split(",")[1]);
+    assert(y < 145, "SO₂ が水面（y=145）より上にいない: y=" + y);
+    assert(y > 75, "SO₂ がガラスの外（y=75 より上）へ出ている: y=" + y);
+  });
+
   /* ---- 原子の数の確認表は、イオンで確かめる回では出さない（2026-09-11・ユーザー指示）----
      ★ 「イオンで確認しているので冗長。プロパンの燃焼などの場合は別途検討」。
      ⚠ 全部消すと、**イオンが1つも出てこない気体どうしの回**（燃焼・合成の7件）で
