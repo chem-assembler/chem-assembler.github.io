@@ -6,14 +6,11 @@ group: アルデヒド
 title: アルデヒドの性質
 summary: 鎖の端にカルボニル基があるのがアルデヒドです。一般式 CₙH₂ₙO がどこから出てくるか、3つの慣用名、還元性とその検出（銀鏡反応・フェーリング液の還元）、ホルムアルデヒドとアセトアルデヒドの製法までを1枚にまとめました。
 codes:
-  - org.carbonyl.formyl
-  - org.carbonyl.formula-isomer
   - org.carbonyl.aldehyde-oxidation
   - org.carbonyl.silver-mirror
   - org.carbonyl.fehling
   - org.carbonyl.formaldehyde
   - org.carbonyl.formaldehyde-prep
-  - org.carbonyl.acetaldehyde-prep
   - org.carbonyl.reduction
 source:
   - slides:有機の基本3-3「アルデヒドの性質」s2〜s7・s9〜s12・s15〜s21
@@ -197,6 +194,8 @@ text: 還元性を示さないほうのカルボニル化合物（ケトン）�
 to: functional-groups
 text: ホルミル基・カルボニル基など、官能基そのものの一覧はこちら
 :::
+
+//⚠ codes から3つ外しました。org.carbonyl.formyl は functional-groups が、org.carbonyl.formula-isomer は alcohol-oxidation-map が、org.carbonyl.acetaldehyde-prep は reaction-mechanisms が既に挙げており、同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。3つとも本文ではこのページが扱っているので、統合のときに移すかどうか決めてください。
 
 //カルボン酸のページ（別のレーンが作成中）ができたら、「さらに酸化されるとカルボン酸になります」のところからリンクを張ってください。id が分からないのでこのレーンでは張っていません。
 

@@ -6,10 +6,8 @@ group: エーテル
 title: エーテルの性質
 summary: 2つの炭化水素基が酸素をはさんでつながったのがエーテルです。アルコールと同じ一般式なのに性質がまるで違う理由、慣用名の付け方、金属ナトリウムによる判別、そして C₄H₁₀O のエーテルが3種類しかないことの数え方をまとめました。
 codes:
-  - org.alcohol.ether-props
   - org.alcohol.ether-naming
   - org.alcohol.ether-diethyl
-  - org.alcohol.formula
   - org.alcohol.na
 source:
   - slides:有機の基本3-2「エーテルの性質」s2〜s6・s9〜s12
@@ -204,6 +202,8 @@ answerAlt: C4H10O のエーテル3種類の構造式。1-メトキシプロパ�
 to: functional-groups
 text: エーテル結合・ヒドロキシ基など、官能基そのものの一覧はこちら
 :::
+
+//⚠ codes から2つ外しました。org.alcohol.ether-props と org.alcohol.formula は alcohol-oxidation-map が既に挙げており、同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。org.alcohol.ether-props（エーテルは安定・ナトリウムと反応しない・水素結合をつくらないので沸点が低い・引火しやすい）の本来の置き場所はこのページだと考えています。統合のときに移すかどうか決めてください。
 
 //A〜D（アルコール4種）の解答図は、alcohol のページの例題で使っている alcohol-butanol-table.png がそのまま使えます。:::exercise は answerSrc を1つしか持てないので、ここではエーテル側の図だけを付け、アルコール側は文で書いてあります。②で図を2枚出したいという注文が来たら、器のほうを直す話になります。
 
