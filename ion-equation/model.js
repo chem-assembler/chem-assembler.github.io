@@ -3943,19 +3943,19 @@ function checkIonicCoeffs(stage, a, b, coeffs) {
   const D = (sp) => SPECIES[sp].disp;
   if (filled < want.length) {
     return { ok: false, kind: "partial", filled, total: want.length, wrong: [],
-      reason: `あと ${want.length - filled} つ。①の式に ×${a}・×${b} をかけて足すと、それぞれ何個になる？` };
+      reason: `あと ${want.length - filled} つ` };
   }
   const wrong = [];
   for (let i = 0; i < want.length; i++) if (got[i] !== want[i]) wrong.push(i);
   if (!wrong.length) {
     return { ok: true, kind: "ok", filled, total: want.length, wrong: [],
-      reason: `そのとおり。①の2本に ×${a}・×${b} をかけて足すと、e⁻ が両辺で同じ数になって消える。` };
+      reason: `e⁻ が両辺で同じ数になって消えた` };
   }
   // よくある外し方: 全体が同じ倍率になっている（＝最簡比まで詰めていない／倍率をかけ違えた）
   const k = got[0] / want[0];
   if (Number.isInteger(k) && k > 1 && want.every((w, i) => got[i] === w * k)) {
     return { ok: false, kind: "scaled", k, filled, total: want.length, wrong,
-      reason: `形は合っているが、ぜんぶが ${k} 倍になっている。両辺を ${k} で割った形が答え。` };
+      reason: `ぜんぶが ${k} 倍になっている。${k} で割ろう` };
   }
   const t = rows.terms[wrong[0]];
   const where = t.from === "both"
@@ -4097,15 +4097,14 @@ function checkCalcSheet(stage, a, b, vals) {
           ? "上の2行の同じ種を、縦に足した数"
           : `上の【${t.from === "ox" ? "還元剤" : "酸化剤"}】の行（×${t.mult}）から、そのまま降りてくる数`;
     return { ok: false, kind: "wrong", filled, total, rest, wrong,
-      reason: `${bad.length}つ違う。たとえば ${D(t.sp)} —— ここは ${where}。` +
-        (rest > 0 ? `（空いている欄が あと ${rest} つ）` : "") };
+      reason: `${bad.length}つ違う。たとえば ${D(t.sp)} は ${where}` };
   }
   if (rest > 0) {
     return { ok: false, kind: "partial", filled, total, rest, wrong,
-      reason: `あと ${rest} つ。どの欄から埋めてもよい —— ①の2本に ×${a}・×${b} をかけて、縦に足す。` };
+      reason: `あと ${rest} つ。どの欄から埋めてもよい` };
   }
   return { ok: true, kind: "ok", filled, total, rest, wrong,
-    reason: `そのとおり。×${a}・×${b} をかけて縦に足すと、e⁻ が両辺で同じ数になって消える。` };
+    reason: `e⁻ が両辺で同じ数になって消えた` };
 }
 
 /* 【削除】molecularizeStep / spectatorChoices / explainSpectatorPick（2026-09-08・レーン rx-sheet）
@@ -4816,18 +4815,15 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
       const both = share.map(nameOf).join(" と ");
       return {
         ok: false, kind: "same-source",
-        reason: `${D(ionSp)} と ${D(choice.sp)} は、どちらも ${both} が連れてきています。` +
-          `組み直すと ${both} に戻りますが、それは「もともと1つの物質だった」からで、` +
-          `イオンを組み合わせて作れるからではありません。`,
+        reason: `${D(ionSp)} と ${D(choice.sp)} は、どちらも ${both} が連れてきている。` +
+          `組み直しても ${both} に戻るだけ`,
       };
     }
     return {
       ok: false, kind: "not-together",
-      reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていません。` +
+      reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていない。` +
         `${D(ionSp)} を連れてきたのは ${bringers(ionSp)}、` +
-        `${D(choice.sp)} を連れてきたのは ${bringers(choice.sp)}。` +
-        `イオン反応式の左辺は、水の中でばらけたあとの姿です。` +
-        `ここに並ぶイオンどうしを組み直しても、はじめに入れた物質にはなりません。`,
+        `${D(choice.sp)} を連れてきたのは ${bringers(choice.sp)}`,
     };
   }
   /* 【G】出どころが2本ある H⁺（rs3）。**「両方から」が正解**で、
@@ -4842,41 +4838,39 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
           ok: true, kind: "ok-shared",
           /* 弱酸の1行は自由モード（S-2）でも出るので、**文は1か所（weakAcidSupplyText）**に置いて
              両方から呼ぶ。同じことを2通りの言葉で教えないため（§15-4） */
-          reason: `そのとおり。${D(ionSp)} ${m.need}個 は1つの物質では足りません —— ` +
+          reason: `${D(ionSp)} ${m.need}個 は1つの物質では足りない。` +
             m.parts.map((x) => `${D(x.sp)} が ${x.n}個`).join("、") + `。` +
             weakAcidSupplyText(src[0], src[src.length - 1]),
         };
       }
-      return { ok: false, kind: "wrong-bottle", reason: "その組み合わせでは足りません。" };
+      return { ok: false, kind: "wrong-bottle", reason: "その組み合わせでは足りない" };
     }
-    if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
+    if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいない" };
     if (!src.includes(choice.sp)) {
-      return { ok: false, kind: "wrong-bottle", reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出しません。` };
+      return { ok: false, kind: "wrong-bottle", reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出さない` };
     }
     const mine = share(choice.sp);
     return {
       ok: false, kind: "not-enough",
-      reason: `${D(choice.sp)} は ${D(ionSp)} を出しますが、${mine}個 だけ。` +
-        `イオン反応式には ${m.need}個 要るので ${m.need - mine}個 足りません。` +
-        `${D(ionSp)} はもう1つの物質からも来ています。`,
+      reason: `${D(choice.sp)} が出す ${D(ionSp)} は ${mine}個 だけ。` +
+        `イオン反応式には ${m.need}個 要るので ${m.need - mine}個 足りない`,
     };
   }
-  if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
+  if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいない" };
   if (choice.sp !== owner) {
     return {
       ok: false, kind: "wrong-bottle",
-      reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出しません。`,
+      reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出さない`,
     };
   }
   const B = plan.bottles.find((x) => x.sp === owner);
   const riders = B.riders.filter((r) => r.n > 0);
   const perN = B.per[ionSp];
-  let msg = `そのとおり。${dissolveText(owner)}`;
+  let msg = dissolveText(owner);
   if (bottleDissolves(owner) && perN > 1) msg += `（${D(owner)} 1本につき ${D(ionSp)} が ${perN}個）`;
   msg += "。";
   if (riders.length) {
-    msg += `一緒に来た ${riders.map((r) => D(r.sp)).join(" と ")} は反応しないが、` +
-      `ビーカーの中にはいる —— 水を蒸発させるとここから出てくる。`;
+    msg += `一緒に来た ${riders.map((r) => D(r.sp)).join(" と ")} は反応せずに残る`;
   }
   return { ok: true, kind: "ok", reason: msg };
 }

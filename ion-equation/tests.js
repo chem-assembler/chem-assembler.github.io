@@ -2253,18 +2253,18 @@ function runModelTests() {
     // ① 左辺のイオンどうしを組む → 出自が別だと言う（申し立ての本体）
     const bad1 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "ion", sp: "MnO4-" });
     assert(!bad1.ok && bad1.kind === "not-together", "罠を通した: " + JSON.stringify(bad1));
-    assert(bad1.reason.includes("互いを連れてきていません"), "理由の言い方が違う: " + bad1.reason);
+    assert(bad1.reason.includes("互いを連れてきていない"), "理由の言い方が違う: " + bad1.reason);
     assert(bad1.reason.includes("H₂SO₄") && bad1.reason.includes("KMnO₄"),
       "どちらが連れてきたかを言っていない: " + bad1.reason);
     // ② そのイオンをそのイオンを出さない物質 → 何を出すのかを言う
     const bad2 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "bottle", sp: "FeSO4" });
     assert(!bad2.ok && bad2.kind === "wrong-bottle", "そのイオンを出さない物質を通した");
-    assert(bad2.reason.includes("Fe²⁺") && bad2.reason.includes("H⁺ は出しません"),
+    assert(bad2.reason.includes("Fe²⁺") && bad2.reason.includes("H⁺ は出さない"),
       "何を出すのかを言っていない: " + bad2.reason);
     // ③ 正解 → 一緒に来る傍観イオンまで言う（ここが「なぜ SO₄²⁻ が居るのか」の答え）
     const good = explainBottleOwner(rs1, 5, 1, "H+", { kind: "bottle", sp: "H2SO4" });
     assert(good.ok && good.reason.includes("SO₄²⁻"), "一緒に来る傍観イオンを言わない: " + good.reason);
-    assert(good.reason.includes("反応しない"), "傍観だと言っていない: " + good.reason);
+    assert(good.reason.includes("反応せずに残る"), "傍観だと言っていない: " + good.reason);
     // 未選択も黙らない
     assert(!explainBottleOwner(rs1, 5, 1, "H+", null).ok, "未選択を正解にした");
   });
@@ -2501,7 +2501,7 @@ function runModelTests() {
     // 片方だけ → **何個足りないか**を言う（これが「なぜ硫酸を加えるのか」の答え）
     const one = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottle", sp: "H2C2O4" });
     assert(!one.ok && one.kind === "not-enough", "片方だけを正解にした: " + JSON.stringify(one));
-    assert(one.reason.includes("10個 だけ") && one.reason.includes("6個 足りません"),
+    assert(one.reason.includes("10個 だけ") && one.reason.includes("6個 足りない"),
       "足りない数を言わない: " + one.reason);
     // 両方 → 弱酸だから強酸を足す、と言い切る
     const both = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottles", sps: ["H2C2O4", "H2SO4"] });
@@ -7381,21 +7381,21 @@ async function runRedoxUITests(iframe) {
     assert(!bottleTrapNote(REDOX_STAGES.find((s) => s.id === "r3"), 1, 1),
       "r3（組む相手がいない）にも注意が出ている");
     /* ⚠⚠ 2026-09-11 に見つけた誤り（この改修で直したもの）——
-       explainBottleOwner の kind:"ion" は**無条件に**「互いを連れてきていません」と
+       explainBottleOwner の kind:"ion" は**無条件に**「互いを連れてきていない」と
        言っていた。rn1・rn2 の H⁺ と NO₃⁻ は**どちらも HNO₃**なので、
        「H⁺ を連れてきたのは HNO₃、NO₃⁻ を連れてきたのは HNO₃」と続けながら
-       「互いを連れてきていません」と言う、自分で矛盾する文になっていた。 */
+       「互いを連れてきていない」と言う、自分で矛盾する文になっていた。 */
     const rn1 = REDOX_STAGES.find((s) => s.id === "rn1");
     const ex = explainBottleOwner(rn1, 3, 2, "H+", { kind: "ion", sp: "NO3-" });
     assert(ex && ex.kind === "same-source",
       "rn1 の H⁺ と NO₃⁻（同じ HNO₃ から来る）を別々の出どころだと言っている: " + JSON.stringify(ex));
-    assert(!ex.reason.includes("互いを連れてきていません"),
-      "同じ物質から来ているのに「互いを連れてきていません」と言う: " + ex.reason);
+    assert(!ex.reason.includes("互いを連れてきていない"),
+      "同じ物質から来ているのに「互いを連れてきていない」と言う: " + ex.reason);
     assert(ex.reason.includes("HNO₃"), "どの物質が連れてきたか言わない: " + ex.reason);
-    // 出どころが本当に別々なら、今までどおり「互いを連れてきていません」
+    // 出どころが本当に別々なら、今までどおり「互いを連れてきていない」
     const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
     const ex2 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "ion", sp: "MnO4-" });
-    assert(ex2 && ex2.reason.includes("互いを連れてきていません"),
+    assert(ex2 && ex2.reason.includes("互いを連れてきていない"),
       "出どころが別々なのに言わなくなった: " + JSON.stringify(ex2));
   });
 
@@ -7875,18 +7875,18 @@ async function runRedoxUITests(iframe) {
     // ① そのイオンを出さない物質を置く → 出自が別だと言う
     pickB("H+", "bottle:KMnO4");
     const n1 = noteB("H+");
-    assert(n1.includes("H⁺ は出しません"), "誤りの説明が出ない: " + n1);
+    assert(n1.includes("H⁺ は出さない"), "誤りの説明が出ない: " + n1);
     assert(n1.includes("KMnO₄"), "どの物質の話か言わない: " + n1);
     assert(doc.getElementById("bqn_H_").classList.contains("ngcell"), "誤りの色にならない");
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ② そのイオンをそのイオンを出さない物質
     pickB("H+", "bottle:FeSO4");
-    assert(noteB("H+").includes("H⁺ は出しません"), "そのイオンを出さない物質の説明が出ない: " + noteB("H+"));
+    assert(noteB("H+").includes("H⁺ は出さない"), "そのイオンを出さない物質の説明が出ない: " + noteB("H+"));
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ③ 正解 → 一緒に来る傍観イオンまで言う（「なぜ SO₄²⁻ が居るのか」の答え）
     pickB("H+", "bottle:H2SO4");
     const n3 = noteB("H+");
-    assert(n3.includes("SO₄²⁻") && n3.includes("反応しない"), "ついて来る傍観イオンを言わない: " + n3);
+    assert(n3.includes("SO₄²⁻") && n3.includes("反応せずに残る"), "ついて来る傍観イオンを言わない: " + n3);
     assert(doc.getElementById("bqn_H_").classList.contains("okcell"), "正解の色にならない");
     /* ★ 2026-09-07 —— 出どころ当てはふたたび④の**前半**（門）になった。
        ユーザー「どこから来たの が先／両辺に加えるイオンの数を考える が後」。 */
@@ -8200,7 +8200,7 @@ async function runRedoxUITests(iframe) {
     /* ⚠ 2026-09-11: 誤りの説明は **H⁺ の柱**で見る。Zn はイオンでないので聞かなくなった
        （「B3 イオンでないものは聞かなくてよい」）。板が電離しないことは上の棚の文が言う。 */
     pickB("H+", "bottle:Zn");
-    assert(noteB("H+").includes("H⁺ は出しません"), "誤りの説明が出ない: " + noteB("H+"));
+    assert(noteB("H+").includes("H⁺ は出さない"), "誤りの説明が出ない: " + noteB("H+"));
     pickB("H+", "bottle:HCl");
     passAddB("r3", 1, 1, 1);   // 【②】④（両辺に足す Cl⁻）を通す
     // ⑤の数入力（v182）。板（Zn）も「1本」として同じ入力に乗る
