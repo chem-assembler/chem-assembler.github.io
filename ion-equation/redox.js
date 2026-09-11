@@ -16,7 +16,10 @@ const stepCalcEl  = document.getElementById("stepCalc");
 const stepCleaveEl = document.getElementById("stepCleave");
 const cleaveSheetEl = document.getElementById("cleaveSheet");
 const cleaveMsgEl = document.getElementById("cleaveMsg");
-const eTallyEl    = document.getElementById("eTally");
+/* ⚠ 2026-09-11: #eTally（「出す e⁻: 1×5 ＝ 5個 ／ 受け取る e⁻: 5×1 ＝ 5個」と
+   「やりとりの比 ＝ 還元剤 : 酸化剤 ＝ 5 : 1」）は消した。ユーザーの指摘 (4)
+   「冗長、MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する、とだけ示せばよい」——
+   掛け算の式も「比」という語も出さない。中身は #schematicMsg の1行が引き継ぐ。 */
 const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
@@ -556,7 +559,7 @@ function layoutLab() {
 
 function play() {
   if (phase !== "idle") {
-    setMsg("「↺ やり直す」か倍率の変更でリセットしてから、もう一度押そう。", "ng");
+    setMsg("↺ やり直すと、もう一度見られる", "ng");
     return;
   }
   phase = "running";
@@ -567,8 +570,7 @@ function play() {
     atoms.forEach((atom, i) => schedule(i * 0.9, () => oxidizeAtom(atom)));
     schedule(atoms.length * 0.9 + 1.6, () => {
       phase = "done";
-      setMsg(`還元剤の半反応（酸化される側）: ${SPECIES[oxMetal()].disp} ${atoms.length}個が e⁻ を合計 ${electronsOf(oxHR()) * atoms.length}個 板に置き、` +
-        `${SPECIES[oxIonSp()].disp} になって溶け出した。この e⁻ を受け取るのが酸化剤。`);
+      setMsg(`${SPECIES[oxMetal()].disp} ${atoms.length}個が e⁻ を ${electronsOf(oxHR()) * atoms.length}個 出した`);
     });
     return;
   }
@@ -773,8 +775,7 @@ function finishRun() {
   phase = "done";
   if (soloMode === "red") {
     const b = mult[1];
-    setMsg(`酸化剤の半反応（還元される側）: 用意した e⁻ ${electronsOf(redHR()) * b}個を受け取って反応した。` +
-      `電池では、この e⁻ が導線の向こう（還元剤がある極）からやって来る。`);
+    setMsg(`e⁻ を ${electronsOf(redHR()) * b}個 受け取って反応した`);
     refreshHUD();
     return;
   }
@@ -783,17 +784,19 @@ function finishRun() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
   if (leftoverE > 0) {
     poolE.forEach((e) => e.el.classList.add("leftoverE"));
-    setMsg(`e⁻ が ${leftoverE} 個、板の上に余った！ 電子は水中に残れない。受け取る側（酸化剤）の倍率を増やそう。`, "ng");
+    /* ★ 2026-09-11: 正解も不正解も**1行**。褒めない・解説を足さない・
+       「次の段で係数になる」と先回りしない（ユーザーの指摘・[[ui-text-density]]） */
+    setMsg(`e⁻ が ${leftoverE}個 余った。酸化剤を増やそう`, "ng");
   } else if (waiting > 0) {
-    setMsg(`e⁻ が足りず、イオンが ${waiting} 組待ちぼうけ。還元剤の倍率を増やすか、酸化剤を減らそう。`, "ng");
+    setMsg(`e⁻ が足りず、イオンが ${waiting}組 余った。還元剤を増やそう`, "ng");
   } else {
     runExact = true;
     if (chk.ok) {
       cleared = true;
-      setMsg(`ぴったり！ e⁻ を ${chk.give} 個渡して受け取った。倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`, "ok");
+      setMsg(`e⁻ を ${chk.give}個 渡して、ちょうど受け取った`, "ok");
       showClear();
     } else {
-      setMsg(`反応はぴったり終わったが、${chk.reason}。`, "ng");
+      setMsg(chk.reason, "ng");
     }
   }
   updateSheetTail();
@@ -804,7 +807,7 @@ function showClear() {
   clearEl.hidden = false;
   clearEl.innerHTML = "";
   const t = document.createElement("div");
-  t.textContent = "クリア！ 半反応式の足し合わせが完成した。";
+  t.textContent = "半反応式の足し合わせができた";
   clearEl.appendChild(t);
   if (stageIdx < REDOX_STAGES.length - 1) {
     const b = document.createElement("button");
@@ -813,7 +816,7 @@ function showClear() {
     clearEl.appendChild(b);
   } else {
     const d = document.createElement("div");
-    d.textContent = "酸化還元ステージを全クリア！";
+    d.textContent = "酸化還元のステージはこれで最後";
     clearEl.appendChild(d);
   }
 }
@@ -1136,7 +1139,7 @@ function buildSheetSkeleton() {
   SHEET.red = sheetRow(halfSheetEl, "halfRed", "halfRow");
 
   calcSheetEl.innerHTML = "";
-  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "足し合わせて e⁻ を消す — 倍率をかけた2本を縦に足す");
+  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "2本の式を縦に足して e⁻ を消そう");
   // 【①-B】灰色の数字が何なのかを、筆算の**すぐ上**で言う（v195）
   SHEET.calcGivenNote = sheetSpan(calcSheetEl, "calcGivenNote", "footNote givenNote");
   SHEET.sumOx  = sheetRow(calcSheetEl, "rowSumOx");
@@ -1237,17 +1240,15 @@ const multMsgEl = document.getElementById("multMsg");
 function updateMultMsg() {
   if (!multMsgEl) return;
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
-  const a = mult[0], b = mult[1];
-  const wrote = `×${a}・×${b} と書いた。` +
-    (a > 1 || b > 1 ? "書いた数だけ、式の係数がその場で書き換わっている。" : "");
+  /* ⚠ 2026-09-11: 「×5・×1 と書いた。書いた数だけ、式の係数がその場で書き換わっている。」を
+     やめた。**書いた数も書き換わった係数も、すぐ上の式に出ている** ——
+     操作した結果を文で報告しない（ユーザーが名指しした癖のひとつ）。 */
   if (chk.give !== chk.take) {
-    setStatusMsg(multMsgEl, wrote +
-      `いまは e⁻ が ${chk.give}個 と ${chk.take}個 でそろわない ＝ このままでは足せない。`, "ng");
+    setStatusMsg(multMsgEl, `e⁻ が ${chk.give}個 と ${chk.take}個 でそろわない`, "ng");
   } else if (!chk.ok) {
-    setStatusMsg(multMsgEl, wrote + "e⁻ はそろったが、まだ簡単にできる比になっている。", "ng");
+    setStatusMsg(multMsgEl, "もっと少ない数でできる", "ng");
   } else {
-    setStatusMsg(multMsgEl, wrote +
-      `e⁻ はどちらも ${chk.give}個 ＝ 縦に足すと消える。下の筆算へ。`, "ok");
+    setStatusMsg(multMsgEl, `e⁻ はどちらも ${chk.give}個。縦に足すと消える`, "ok");
   }
 }
 
@@ -1270,27 +1271,14 @@ function onMultChange() {
   soloMode = null;
   clearEl.hidden = true;
   layoutLab();
-  setMsg("倍率を変えた。ビーカーの配置も変わった。「▶ 反応を見る」で確かめよう。");
-  updateETally();
+  /* ⚠ 2026-09-11・ユーザーの指摘 (3)「倍率を変えた。ビーカーの配置も変わった。
+     『▶ 反応を見る』で確かめよう。＝ 冗長・AIっぽい、カット」。
+     操作した結果は画面がそう見えているので、文で報告しない。釦の使い方も案内しない。
+     ⚠ 前の再生の結果（クリア・余りの指摘）は残さず消す ＝ 空にする */
+  setMsg("");
   buildRedoxSchematic();
   updateCleaveStep();
   updateSheetTail();
-}
-
-function updateETally() {
-  const a = mult[0], b = mult[1];
-  const givePer = electronsOf(oxHR()), takePer = electronsOf(redHR());
-  const give = givePer * a, take = takePer * b;
-  const ok = give === take;
-  // 粒の絵は模式図が受け持つので、ここは式のかたちの数だけを残す
-  eTallyEl.innerHTML =
-    `出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
-    `受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
-    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>` +
-    /* ★ 段1 の答えは「比」。そろったところで**比そのものを名指しする**（2026-09-07）——
-       この数が、そのまま段2 で式に書き込む倍率になる。 */
-    (ok ? `<div class="ratioLine">やりとりの比 ＝ <strong>還元剤 : 酸化剤 ＝ ${a} : ${b}</strong>` +
-      `　この比が、そのまま次の段で式に書き込む倍率になる。</div>` : "");
 }
 
 /* ---- e⁻ の受け渡しのブロック模式図 ----
@@ -1301,7 +1289,9 @@ function updateETally() {
 
 const schematicWrap = document.getElementById("schematicWrap");
 const schematicSvg = document.getElementById("schematic");
-const schematicHeadEl = document.getElementById("schematicHead");
+/* ⚠ 2026-09-11: #schematicHead（「e⁻ の受け渡し（模式図）— 1個ずつ出す ×
+   5個ずつ受け取る」）は消した。ユーザーの指摘 (3)「冗長、AIっぽい、カット」——
+   見れば分かる注記（模式図）と、掛け算の言い換えしか言っていなかった。 */
 const schematicMsgEl = document.getElementById("schematicMsg");
 const schematicAddEl = document.getElementById("schematicAdd");
 
@@ -1346,26 +1336,31 @@ function buildRedoxSchematic() {
   add(SPECIES[halfCore(ox)[0].sp].disp + "（還元剤）", 0, "schAdd acc");
   add(SPECIES[halfCore(red)[0].sp].disp + "（酸化剤）", 1, "schAdd don");
 
+  /* ★ 2026-09-11・ユーザーの指摘 (4)。この行は「そろった瞬間だけ出る判定文」ではなく、
+     **ずっと出ていて、いまどちらが余っているかをそのつど言う表示**。
+     そろったときに言うことは「何個と何個でちょうど反応するか」だけ ——
+     掛け算の式（1×5 ＝ 5個）も「比」という語も、次の段の使いみちも出さない。 */
+  /* 「○個と○個でちょうど反応する」。酸化剤を先に置く（ユーザーの原文の並び） */
+  const pairText = (a, b) => {
+    const o = { d: SPECIES[halfCore(red)[0].sp].disp, n: halfCore(red)[0].n * b };
+    const r = { d: SPECIES[halfCore(ox)[0].sp].disp, n: halfCore(ox)[0].n * a };
+    return `${o.d} ${o.n}個と ${r.d} ${r.n}個`;
+  };
   const give = c.leftTotal, take = c.rightTotal;
   if (give === take) {
-    // e⁻ がそろっていても最簡整数比とは限らない。割り切れるなら割り方まで示す
+    // e⁻ がそろっていても最簡整数比とは限らない。割り切れるなら「もっと少なくできる」と言う
     const adv = simplestRatioAdvice([mult[0], mult[1]]);
     if (adv) {
       setStatusMsg(schematicMsgEl,
-        `e⁻ の数は合っているけれど、同じ組み合わせを ${adv.gcd} 回くり返しているだけ。` +
-        `どちらも ${adv.gcd} で割って ×${mult[0]}・×${mult[1]} → ×${adv.to[0]}・×${adv.to[1]} に直そう` +
-        `（e⁻ ${give}個 → ${give / adv.gcd}個 でも同じ反応）。`, "ng");
+        `もっと少ない数でできる。${pairText(adv.to[0], adv.to[1])}でちょうど反応する`, "ng");
     } else {
-      setStatusMsg(schematicMsgEl,
-        `ぴったり！ 還元剤が出す e⁻ ${give} 個 ＝ 酸化剤が受け取れる ${take} 個。` +
-        `この倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`, "ok");
+      setStatusMsg(schematicMsgEl, `${pairText(mult[0], mult[1])}でちょうど反応する`, "ok");
     }
   } else if (give > take) {
-    setStatusMsg(schematicMsgEl, `e⁻ が ${give - take} 個 あまっている（受け取る席が足りない）。酸化剤のブロックを足そう。`, "ng");
+    setStatusMsg(schematicMsgEl, `還元剤が余っている。e⁻ が ${give - take}個 あまる`, "ng");
   } else {
-    setStatusMsg(schematicMsgEl, `e⁻ の席が ${take - give} 個 空いている（出す e⁻ が足りない）。還元剤のブロックを足そう。`, "ng");
+    setStatusMsg(schematicMsgEl, `酸化剤が余っている。e⁻ の席が ${take - give}個 あまる`, "ng");
   }
-  schematicHeadEl.textContent = `e⁻ の受け渡し（模式図）— ${givePer}個ずつ出す × ${takePer}個ずつ受け取る`;
   drawAcidSource();
 }
 
@@ -1467,9 +1462,8 @@ function drawAcidSource() {
   }
   acidSrcSvg.setAttribute("viewBox", `0 0 ${W} ${capY + 22}`);
   acidSrcMsgEl.textContent = p.extra > 0
-    ? `必要な H⁺ は ${p.needH}個。でも酸化剤の ${sD} が連れてくる H⁺ は ${p.withOxidant}個だけ。` +
-      `残り ${p.extra}個は ${acidD} をもう ${p.extra}個 足して出す — その ${sD} は反応せず、④で両辺に足す傍観イオンになる。`
-    : `必要な H⁺ ${p.needH}個は、酸化剤の ${sD} が連れてきたぶんでちょうど足りている。`;
+    ? `H⁺ が ${p.needH}個 要るので、${acidD} を ${p.extra}個 足す`
+    : `H⁺ ${p.needH}個は、酸化剤の ${sD} が連れてきたぶんで足りている`;
 }
 
 /* ---- 筆算は③（イオン反応式）で終わり ----
@@ -1566,8 +1560,8 @@ function givenTitle(rowKey) {
      残っているのは、上の段で自分が書き込んだ倍率のぶん（×a・×b の2行）だけ。 */
   const k = rowKey === "ox" ? mult[0] : mult[1];
   return k === 1
-    ? "上の段で ×1 と書いたので、式はそのまま"
-    : `上の段で ×${k} と書いたぶん（かけ算まではもう書いてあります）`;
+    ? "×1 なので、式はそのまま"
+    : `上の段で書いた ×${k} のぶん`;
 }
 
 /* 1つの行ぶんの入力欄の作り方を返す。offset は「左辺の項数」＝右辺の添字の起点。
@@ -2043,7 +2037,7 @@ function buildBottleCols(rows, force) {
     const tag = cell(bottleColsEl, "bwRowTag", BROW.tag, 0);
     const b = document.createElement("b");
     b.textContent = "③で出したイオン反応式";
-    tag.append(b, document.createTextNode(" — 左辺の項が、そのまま下の欄の見出しになる"));
+    tag.appendChild(b);
     bottleColsEl.insertBefore(tag, bottleColsEl.firstChild);
     /* 狭い画面用の1行版は、見出しのすぐ下に置く（広い画面では display:none）。
        ⚠ 素の並びが効くのは狭い画面だけなので、**DOM を動かして**順を作る */
@@ -2146,8 +2140,7 @@ function buildAddIonRows(force) {
   addIonMsgEl.style.gridRow = String(BROW.addMsg);
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = "イオン反応式には、相手のいないイオンが並んでいる。" +
-    "両辺に同じだけ足して、化学式に組めるようにする。";
+  cap.textContent = "相手のいないイオンに、両辺で同じだけ相手を足す";
   /* ★ 筆算の1行として横に並べる（ユーザーの絵の最下段 ＋ K⁺〔 〕個 ＋ SO₄²⁻〔 〕個）。
      ⚠ この行は列にそろえられない —— 足すイオンは種でまとめた数で、
      1種が2つの物質から来ること（rs1 の SO₄²⁻）も、1つの物質が2列にまたがること
@@ -2226,8 +2219,7 @@ function buildBottleRack(st) {
   const rows = bottleRows() || [];
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = `はじめに入れたのは、この ${st.bottles.length} つだけ。` +
-    "札をタップして、上のイオンの下に置こう（イオンをタップしてから札でもよい）。";
+  cap.textContent = "札をタップして、上のイオンの下に置こう";
   const shelf = document.createElement("div");
   shelf.className = "bottleShelf";
   for (const sp of st.bottles) {
@@ -2253,8 +2245,8 @@ function buildBottleRack(st) {
   where.className = "bottleCap bottleWhere";
   const t = bottleSlotActive && rows.some((r) => r.ion === bottleSlotActive) ? bottleSlotActive : null;
   where.textContent = t
-    ? `いま置く先は ${SPECIES[t].disp} の下。`
-    : "置く先を決めたいときは、先に上のイオンをタップ。";
+    ? `いま置く先は ${SPECIES[t].disp} の下`
+    : "上のイオンをタップすると、置く先が決まる";
   bottleRackEl.append(cap, shelf, where);
 }
 
@@ -2306,8 +2298,8 @@ function refreshBottleTail() {
   renderBottleNotes(rows);
   bottleMsgEl.style.gridRow = String(BROW.msg);
   bottleMsgEl.textContent = quizDone
-    ? "どのイオンにも、もとの物質がある。左辺に書くのはイオンではなく、そのもとの物質そのもの。"
-    : `あと ${asks.length - okN} 個。${SPECIES[yet.ion].disp} も、はじめに入れたもののどれかから出てきたはず。`;
+    ? "左辺に書くのはイオンではなく、そのもとの物質"
+    : `あと ${asks.length - okN} 個`;
   bottleMsgEl.className = quizDone ? "okcell" : "";
   /* ★ 2026-09-11・ユーザーの指示「注意事項として、正解後の一番下に解説を追加します。
      アプリ上では起こりませんが、自分で紙に解くと起こる事故です」。
@@ -2343,8 +2335,8 @@ function refreshBottleTail() {
   }
   const allDone = done === add.length && add.length > 0;
   addIonMsgEl.textContent = allDone
-    ? "両辺に足した。ここから先は、陽イオンと陰イオンを組み直して化学式にするだけ。"
-    : `あと ${add.length - done} 種類。式の左辺と右辺を見て、相手のいないイオンを探す。`;
+    ? "両辺に足せた"
+    : `あと ${add.length - done} 種類`;
   addIonMsgEl.className = allDone ? "okcell" : "";
 
   bottleTailEl.hidden = !allDone;
@@ -2397,8 +2389,7 @@ function buildBottleCountRows(force) {
   /* ★ 2026-09-07・ユーザーの指示「⑤ 不要／左辺の係数をすべて入力させる」。
      数は1つも変わらない（v194 の bottleLeftMap が既に「入れた数 ＝ 左辺の係数」と
      言っていた）。**遠回りな言い換えを消して、最初から係数として書かせる。** */
-  cap.textContent = "化学反応式の左辺に並ぶのは、はじめに入れた物質そのもの。" +
-    "上のイオン反応式に並ぶ数がそろうように、係数をすべて書こう。";
+  cap.textContent = "上のイオン反応式に並ぶ数がそろうように、係数を書こう";
   bottleCountEl.appendChild(cap);
   /* ★ 係数の欄は、**その物質が担当したイオンの柱の真下**に置く（＝筆算の縦の対応）。
      ⚠ 対応は1対1ではない —— 1つの物質が2つの柱を担当することも（rn1 の HNO₃）、
@@ -2562,7 +2553,7 @@ function refreshBottleResult() {
   if (!allDone) {
     bottleSheetEl.innerHTML = "";
     if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
-    bottleTailMsgEl.textContent = `あと ${rows.length - done} つ。イオン反応式に並ぶ数からわり算で出せる。`;
+    bottleTailMsgEl.textContent = `あと ${rows.length - done} つ`;
     bottleTailMsgEl.className = "footNote";
     return;
   }
@@ -2609,7 +2600,7 @@ function refreshBottleResult() {
     renderTerms(o.left, plan.left, [], null, (t) => ({
       readOnly: true,
       value: String(Number.isInteger(bottleCounts[t.sp]) ? bottleCounts[t.sp] : t.n),
-      title: `⑤であなたが書いた係数 ${t.n}（${D(t.sp)}）`,
+      title: `⑤で書いた係数 ${t.n}（${D(t.sp)}）`,
     }));
     renderTerms(o.right, plan.right, []);
     o.row.classList.add("doneRow");
@@ -2626,7 +2617,7 @@ function refreshBottleResult() {
   // 組めないときの本文は倍率の箱が持つので、ここでは繰り返さない
   bottleTailMsgEl.textContent = allPaired
     ? plan.reason
-    : (restIons.length ? "右辺のイオンをぜんぶ組み合わせると、化学反応式が完成する。" : plan.reason);
+    : (restIons.length ? "右辺のイオンをぜんぶ組み合わせよう" : plan.reason);
   bottleTailMsgEl.className = "footNote " + (allPaired ? "okcell" : "");
 }
 
@@ -2736,13 +2727,12 @@ function drawSaltPool(plan, rem) {
   if (riders.length) {
     line("bottleRiderSum",
       "もとの物質が連れてきて、反応しなかったイオン: " +
-      riders.map((r) => `${D(r.sp)} ${r.n}個`).join("・") +
-      "（加えたのではなく、ついて来た）");
+      riders.map((r) => `${D(r.sp)} ${r.n}個`).join("・"));
   }
   const left = plan.cations.concat(plan.anions).filter((t) => rem[t.sp] > 0);
   line("bottleCap", left.length
-    ? "水を蒸発させると、溶けていたイオンが残る。組み合わせて化学式にしよう:"
-    : "残っているイオンはもう無い。");
+    ? "残っているイオンを組み合わせて化学式にしよう:"
+    : "残っているイオンはもう無い");
   if (left.length) line("bottlePoolLine", left.map((t) => `${D(t.sp)} ${rem[t.sp]}個`).join("　"));
   if (plan.neutral.length) {
     line("bottleSalt muted",
@@ -2758,7 +2748,7 @@ function drawSaltMade() {
   if (!saltMade.length) return;
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = "組み上げたもの（くり返した回数が、そのまま右辺の係数）:";
+  cap.textContent = "組み上げたもの:";
   saltMadeEl.appendChild(cap);
   for (const s of saltMade) {
     const d = document.createElement("div");
@@ -2794,7 +2784,7 @@ function drawSaltActions(plan) {
   if (units < 1) {
     const why = document.createElement("span");
     why.className = "footNote ngcell";
-    why.textContent = "この組はもう作れない（残っているイオンが足りない）。";
+    why.textContent = "残っているイオンが足りない";
     saltActionsEl.appendChild(why);
   }
 }
@@ -3050,7 +3040,7 @@ function updatePickFold() {
      ここは戻る道の名前だけでよい */
   pickHeadTextEl.textContent = foldable
     ? "別の組み合わせを試す"
-    : "2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる";
+    : "2つの物質を選んで、反応するか確かめよう";
 }
 if (pickToggleEl) {
   pickToggleEl.onclick = () => { pickOpened = !pickOpened; updatePickFold(); };
@@ -3535,7 +3525,6 @@ function initStage() {
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   updateMultMsg();
   layoutLab();
-  updateETally();
   buildRedoxSchematic();
   updateCleaveStep();
   updateSheetTail();

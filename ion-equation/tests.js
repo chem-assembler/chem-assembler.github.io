@@ -2253,18 +2253,18 @@ function runModelTests() {
     // ① 左辺のイオンどうしを組む → 出自が別だと言う（申し立ての本体）
     const bad1 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "ion", sp: "MnO4-" });
     assert(!bad1.ok && bad1.kind === "not-together", "罠を通した: " + JSON.stringify(bad1));
-    assert(bad1.reason.includes("互いを連れてきていません"), "理由の言い方が違う: " + bad1.reason);
+    assert(bad1.reason.includes("互いを連れてきていない"), "理由の言い方が違う: " + bad1.reason);
     assert(bad1.reason.includes("H₂SO₄") && bad1.reason.includes("KMnO₄"),
       "どちらが連れてきたかを言っていない: " + bad1.reason);
     // ② そのイオンをそのイオンを出さない物質 → 何を出すのかを言う
     const bad2 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "bottle", sp: "FeSO4" });
     assert(!bad2.ok && bad2.kind === "wrong-bottle", "そのイオンを出さない物質を通した");
-    assert(bad2.reason.includes("Fe²⁺") && bad2.reason.includes("H⁺ は出しません"),
+    assert(bad2.reason.includes("Fe²⁺") && bad2.reason.includes("H⁺ は出さない"),
       "何を出すのかを言っていない: " + bad2.reason);
     // ③ 正解 → 一緒に来る傍観イオンまで言う（ここが「なぜ SO₄²⁻ が居るのか」の答え）
     const good = explainBottleOwner(rs1, 5, 1, "H+", { kind: "bottle", sp: "H2SO4" });
     assert(good.ok && good.reason.includes("SO₄²⁻"), "一緒に来る傍観イオンを言わない: " + good.reason);
-    assert(good.reason.includes("反応しない"), "傍観だと言っていない: " + good.reason);
+    assert(good.reason.includes("反応せずに残る"), "傍観だと言っていない: " + good.reason);
     // 未選択も黙らない
     assert(!explainBottleOwner(rs1, 5, 1, "H+", null).ok, "未選択を正解にした");
   });
@@ -2501,7 +2501,7 @@ function runModelTests() {
     // 片方だけ → **何個足りないか**を言う（これが「なぜ硫酸を加えるのか」の答え）
     const one = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottle", sp: "H2C2O4" });
     assert(!one.ok && one.kind === "not-enough", "片方だけを正解にした: " + JSON.stringify(one));
-    assert(one.reason.includes("10個 だけ") && one.reason.includes("6個 足りません"),
+    assert(one.reason.includes("10個 だけ") && one.reason.includes("6個 足りない"),
       "足りない数を言わない: " + one.reason);
     // 両方 → 弱酸だから強酸を足す、と言い切る
     const both = explainBottleOwner(rs3, 5, 2, "H+", { kind: "bottles", sps: ["H2C2O4", "H2SO4"] });
@@ -5936,7 +5936,9 @@ async function runRedoxUITests(iframe) {
     // 3個出す側は2個受け取る側より背が高い（＝価数が高さで見える）
     const h = rects();
     assert(h[0] > h[1], "e⁻ 3個のブロックが 2個より高くない: " + JSON.stringify(h));
-    assert(msg().includes("あまっている"), "1:1 で e⁻ が余ると言わない: " + msg());
+    /* ★ 2026-09-11・ユーザーの指摘 (4)「リアルタイムに酸化剤・還元剤のどちらが
+       余っているか or 足りないか、を端的に示す」。**どちらの側か**を名指しする */
+    assert(msg().includes("還元剤が余っている"), "1:1 でどちらが余っているか言わない: " + msg());
     // 席の空き（点線の輪）が余りの側に出る
     const dashed = [...svg.querySelectorAll(".schBlock circle")]
       .filter((c) => c.getAttribute("stroke-dasharray") !== "none");
@@ -5944,13 +5946,17 @@ async function runRedoxUITests(iframe) {
     addBtns()[0].click();                       // 還元剤 ×2
     addBtns()[1].click(); addBtns()[1].click(); // 酸化剤 ×3
     assert(state().mult[0] === 2 && state().mult[1] === 3, "＋ボタンで倍率が動かない: " + JSON.stringify(state().mult));
-    assert(msg().includes("ぴったり"), "2:3 でそろわない: " + msg());
+    /* ★ そろったときに言うのは「何個と何個でちょうど反応するか」だけ。
+       ⛔ 掛け算の式（3×2 ＝ 6個）も「比」という語も出さない（ユーザーの指摘 (4)） */
+    assert(msg().includes("Cu²⁺ 3個と Al 2個でちょうど反応する"), "2:3 でそろわない: " + msg());
+    assert(!/[×比]/.test(msg()), "そろった文に掛け算か「比」が残っている: " + msg());
     assert(blocks().length === 5, "2+3 ブロックにならない: " + blocks().length);
     assert(svg.querySelectorAll("polygon").length === 6, "e⁻ 6個ぶんの矢印が出ない");
-    // 最小公倍数でない正解には「何で割るか」を助言する
+    // 最小公倍数でない正解には「もっと少ない数でできる」と、その数を示す
     addBtns()[0].click(); addBtns()[0].click();                          // ×4
     addBtns()[1].click(); addBtns()[1].click(); addBtns()[1].click();    // ×6
-    assert(msg().includes("×2・×3"), "4:6 に割り方の助言が出ない: " + msg());
+    assert(msg().includes("もっと少ない数でできる") && msg().includes("Cu²⁺ 3個と Al 2個"),
+      "4:6 に「もっと少なくできる」と目標の個数が出ない: " + msg());
     // ブロックのクリックで倍率を1つ減らせる
     blocks()[0].dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
     assert(state().mult[0] === 3, "ブロッククリックで減らせない: " + JSON.stringify(state().mult));
@@ -5983,12 +5989,17 @@ async function runRedoxUITests(iframe) {
     assert(half().includes("5 Fe"), "係数がリアルタイムで変わらない: " + half());
     // 打っているあいだに行を作り直さない（焦点が飛ぶと数字が打てない）
     assert(doc.activeElement === multIn(0), "入力のたびに焦点が飛んでいる");
-    // 段1 は「比」を名指しする ＝ 段2 で書き込む数の正体
-    const tally = (doc.getElementById("eTally").textContent || "").replace(/\s+/g, " ");
-    assert(tally.includes("還元剤 : 酸化剤 ＝ 5 : 1"), "そろっても比を言わない: " + tally);
-    // 段2 の判定文は「書いた数で式がどう変わったか」を言う
+    /* ★ 2026-09-11・ユーザーの指摘 (4)。段1 が言うのは**物質名と個数だけ**。
+       ⚠ #eTally（掛け算の式と「やりとりの比」）は消した ＝ 残っていたら不合格 */
+    assert(!doc.getElementById("eTally"), "掛け算と比の行（#eTally）が残っている");
+    const sm = (doc.getElementById("schematicMsg").textContent || "").replace(/\s+/g, " ");
+    assert(sm.includes("MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する"), "そろっても個数を言わない: " + sm);
+    /* ★ 2026-09-11: 段2 の判定文は「e⁻ がそろったか」だけを言う。
+       ⛔ 「×5・×1 と書いた」＝ 操作した結果を文で報告する型（すぐ上の式に出ている） */
     const mm = doc.getElementById("multMsg").textContent;
-    assert(mm.includes("×5・×1") && mm.includes("書き換わ"), "段2 の判定文が出ない: " + mm);
+    assert(mm.includes("e⁻ はどちらも 5個"), "段2 の判定文が出ない: " + mm);
+    assert(!mm.includes("書き換わ") && !mm.includes("×5・×1"),
+      "操作した結果を文で報告したまま: " + mm);
     bumpMult(0, -4);
     assert(state().mult[0] === 1 && !half().includes("5 Fe"), "戻しても係数が戻らない: " + half());
   });
@@ -6119,7 +6130,10 @@ async function runRedoxUITests(iframe) {
     // H⁺ と NO₃⁻ が対で並ぶ（必要な H⁺ の数だけ）
     assert($$("#acidSource circle").length === 8, "H⁺4個ぶんの対にならない: " + $$("#acidSource circle").length);
     const msg = doc.getElementById("acidSourceMsg").textContent;
-    assert(msg.includes("必要な H⁺ は 4個") && msg.includes("残り 2個"), "不足の説明が出ない: " + msg);
+    /* ★ 2026-09-11: 内訳は図が色で見せている（酸化剤と来たぶん／足したぶん）。
+       文は「いくつ要って、いくつ足すか」の1行だけ（ユーザーの指摘） */
+    assert(msg.includes("H⁺ が 4個 要る") && msg.includes("HNO₃ を 2個 足す"),
+      "不足の説明が出ない: " + msg);
     /* 追加ぶんの数は、④で両辺に足すイオンの数と一致する。
        ★ 2026-09-08: 筆算の④（spectatorNeed）が無くなったので、
        **④の段が実際に問う数**（spectatorAddRows）と突き合わせる。
@@ -6132,7 +6146,7 @@ async function runRedoxUITests(iframe) {
     // 希硝酸なら 1個につき4個要るので、追加ぶんが増える
     stageBtn(REDOX_STAGES.findIndex((s) => s.id === "rn1")).click();
     setM(0, 3); setM(1, 2);
-    assert(doc.getElementById("acidSourceMsg").textContent.includes("残り 6個"),
+    assert(doc.getElementById("acidSourceMsg").textContent.includes("HNO₃ を 6個 足す"),
       "rn1 の追加ぶんが6個でない: " + doc.getElementById("acidSourceMsg").textContent);
     assert(addN("rn1", 3, 2) === 6, "④の答えと食い違う: " + addN("rn1", 3, 2));
     stageBtn(0).click();
@@ -7367,21 +7381,21 @@ async function runRedoxUITests(iframe) {
     assert(!bottleTrapNote(REDOX_STAGES.find((s) => s.id === "r3"), 1, 1),
       "r3（組む相手がいない）にも注意が出ている");
     /* ⚠⚠ 2026-09-11 に見つけた誤り（この改修で直したもの）——
-       explainBottleOwner の kind:"ion" は**無条件に**「互いを連れてきていません」と
+       explainBottleOwner の kind:"ion" は**無条件に**「互いを連れてきていない」と
        言っていた。rn1・rn2 の H⁺ と NO₃⁻ は**どちらも HNO₃**なので、
        「H⁺ を連れてきたのは HNO₃、NO₃⁻ を連れてきたのは HNO₃」と続けながら
-       「互いを連れてきていません」と言う、自分で矛盾する文になっていた。 */
+       「互いを連れてきていない」と言う、自分で矛盾する文になっていた。 */
     const rn1 = REDOX_STAGES.find((s) => s.id === "rn1");
     const ex = explainBottleOwner(rn1, 3, 2, "H+", { kind: "ion", sp: "NO3-" });
     assert(ex && ex.kind === "same-source",
       "rn1 の H⁺ と NO₃⁻（同じ HNO₃ から来る）を別々の出どころだと言っている: " + JSON.stringify(ex));
-    assert(!ex.reason.includes("互いを連れてきていません"),
-      "同じ物質から来ているのに「互いを連れてきていません」と言う: " + ex.reason);
+    assert(!ex.reason.includes("互いを連れてきていない"),
+      "同じ物質から来ているのに「互いを連れてきていない」と言う: " + ex.reason);
     assert(ex.reason.includes("HNO₃"), "どの物質が連れてきたか言わない: " + ex.reason);
-    // 出どころが本当に別々なら、今までどおり「互いを連れてきていません」
+    // 出どころが本当に別々なら、今までどおり「互いを連れてきていない」
     const rs1 = REDOX_STAGES.find((s) => s.id === "rs1");
     const ex2 = explainBottleOwner(rs1, 5, 1, "H+", { kind: "ion", sp: "MnO4-" });
-    assert(ex2 && ex2.reason.includes("互いを連れてきていません"),
+    assert(ex2 && ex2.reason.includes("互いを連れてきていない"),
       "出どころが別々なのに言わなくなった: " + JSON.stringify(ex2));
   });
 
@@ -7861,18 +7875,18 @@ async function runRedoxUITests(iframe) {
     // ① そのイオンを出さない物質を置く → 出自が別だと言う
     pickB("H+", "bottle:KMnO4");
     const n1 = noteB("H+");
-    assert(n1.includes("H⁺ は出しません"), "誤りの説明が出ない: " + n1);
+    assert(n1.includes("H⁺ は出さない"), "誤りの説明が出ない: " + n1);
     assert(n1.includes("KMnO₄"), "どの物質の話か言わない: " + n1);
     assert(doc.getElementById("bqn_H_").classList.contains("ngcell"), "誤りの色にならない");
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ② そのイオンをそのイオンを出さない物質
     pickB("H+", "bottle:FeSO4");
-    assert(noteB("H+").includes("H⁺ は出しません"), "そのイオンを出さない物質の説明が出ない: " + noteB("H+"));
+    assert(noteB("H+").includes("H⁺ は出さない"), "そのイオンを出さない物質の説明が出ない: " + noteB("H+"));
     assert(doc.getElementById("bottleTail").hidden, "誤ったまま⑤が出ている");
     // ③ 正解 → 一緒に来る傍観イオンまで言う（「なぜ SO₄²⁻ が居るのか」の答え）
     pickB("H+", "bottle:H2SO4");
     const n3 = noteB("H+");
-    assert(n3.includes("SO₄²⁻") && n3.includes("反応しない"), "ついて来る傍観イオンを言わない: " + n3);
+    assert(n3.includes("SO₄²⁻") && n3.includes("反応せずに残る"), "ついて来る傍観イオンを言わない: " + n3);
     assert(doc.getElementById("bqn_H_").classList.contains("okcell"), "正解の色にならない");
     /* ★ 2026-09-07 —— 出どころ当てはふたたび④の**前半**（門）になった。
        ユーザー「どこから来たの が先／両辺に加えるイオンの数を考える が後」。 */
@@ -7935,7 +7949,9 @@ async function runRedoxUITests(iframe) {
     // ⑥ 正解 → ⑤が出る
     putAddB("K+", 1); putAddB("SO4^2-", 9);
     assert(!doc.getElementById("bottleTail").hidden, "正しく足しても⑤が出ない");
-    assert(txtB("addIonMsg").includes("組み直して"), "次にやることを言わない: " + txtB("addIonMsg"));
+    /* ★ 2026-09-11: 正解のときは**1行**。次にやることは、すぐ下に現れる⑤の
+       見出しが言う ＝ ここで先回りして説明しない（ユーザーの指摘） */
+    assert(txtB("addIonMsg") === "両辺に足せた", "④後半の正解文が1行でない: " + txtB("addIonMsg"));
     /* ⑦ ★ ×2 にすると、④で足した個数も一緒に倍になる（1/9 → 2/18）。
        18 は紙の筆算で書く「両辺に SO₄²⁻ を18個ずつ足す」と同じ数 */
     putB("KMnO4", 1); putB("FeSO4", 5); putB("H2SO4", 4);
@@ -8013,7 +8029,10 @@ async function runRedoxUITests(iframe) {
       "左辺がもとの物質の姿で出ない: " + sheet);
     assert(sheet.includes("5 Fe₂(SO₄)₃") && sheet.includes("2 MnSO₄") && sheet.includes("K₂SO₄") && sheet.includes("8 H₂O"),
       "右辺の塩が出ない: " + sheet);
-    assert(txtB("bottleTailMsg").includes("ぴったり"), "完成と言わない: " + txtB("bottleTailMsg"));
+    /* ★ 2026-09-11: 完成の合図は「ぴったり」の褒め言葉ではなく、**できあがった式そのもの**。
+       ⛔ 褒めの定型は出さない（ユーザーの指摘） */
+    assert(txtB("bottleTailMsg").includes("→") && !txtB("bottleTailMsg").includes("ぴったり"),
+      "完成した式が出ない（または褒め言葉が残っている）: " + txtB("bottleTailMsg"));
     // 蒸発後のプール。**筆算の「両辺に18個足す」と同じ 18 を「ついて来た」で出す**
     const pool = txtB("bottlePool");
     assert(pool.includes("もとの物質が連れてきて、反応しなかったイオン") && pool.includes("SO₄²⁻ 18個"),
@@ -8149,7 +8168,10 @@ async function runRedoxUITests(iframe) {
     const sheet = txtB("bottleSheet");
     assert(sheet.includes("5 Fe₂(SO₄)₃") && sheet.includes("2 MnSO₄") && sheet.includes("K₂SO₄"),
       "右辺の係数が組んだ回数になっていない: " + sheet);
-    assert(txtB("bottleTailMsg").includes("ぴったり"), "完成と言わない: " + txtB("bottleTailMsg"));
+    /* ★ 2026-09-11: 完成の合図は「ぴったり」の褒め言葉ではなく、**できあがった式そのもの**。
+       ⛔ 褒めの定型は出さない（ユーザーの指摘） */
+    assert(txtB("bottleTailMsg").includes("→") && !txtB("bottleTailMsg").includes("ぴったり"),
+      "完成した式が出ない（または褒め言葉が残っている）: " + txtB("bottleTailMsg"));
     // ⚠ 導出（bottlePlan）の模範と、人が組んだ結果が一致する
     const plan = bottlePlan(REDOX_STAGES.find((s) => s.id === "rs1"), 5, 1, 2);
     for (const s of plan.salts) {
@@ -8178,7 +8200,7 @@ async function runRedoxUITests(iframe) {
     /* ⚠ 2026-09-11: 誤りの説明は **H⁺ の柱**で見る。Zn はイオンでないので聞かなくなった
        （「B3 イオンでないものは聞かなくてよい」）。板が電離しないことは上の棚の文が言う。 */
     pickB("H+", "bottle:Zn");
-    assert(noteB("H+").includes("H⁺ は出しません"), "誤りの説明が出ない: " + noteB("H+"));
+    assert(noteB("H+").includes("H⁺ は出さない"), "誤りの説明が出ない: " + noteB("H+"));
     pickB("H+", "bottle:HCl");
     passAddB("r3", 1, 1, 1);   // 【②】④（両辺に足す Cl⁻）を通す
     // ⑤の数入力（v182）。板（Zn）も「1本」として同じ入力に乗る

@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=208">
+<link rel="stylesheet" href="style.css?v=209">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v208</div>
+  <div class="version">v209</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -57,7 +57,7 @@
            出しっぱなしだと画面の上 375px が「自由に組み合わせる」のままで、
            ステージを選んでも何も起きていないように見える（DESIGN_redox_matching.md §4-1 追記）。
            消さずにたたむのは「行き止まりを作らない」を守るため -->
-      <div class="stepHead"><span class="stepNo">0</span><span id="pickHeadText">2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる</span><button id="pickToggle" class="pickToggle" type="button" hidden>▸ ひらく</button></div>
+      <div class="stepHead"><span class="stepNo">0</span><span id="pickHeadText">2つの物質を選んで、反応するか確かめよう</span><button id="pickToggle" class="pickToggle" type="button" hidden>▸ ひらく</button></div>
       <div id="pickBody">
       <div class="pickGrid">
         <!-- ⚠ 欄の見出しに**役の名前を書かない**（v192・ユーザーの実機レビュー 2026-08-20）。
@@ -107,7 +107,7 @@
 
     <!-- ヨードホルム反応のように、半反応式の前に「切り離す」段がある反応だけ出る -->
     <section class="step" id="stepCleave" hidden>
-      <div class="stepHead"><span class="stepNo">0</span>まずメチル基を切り離す — ここは酸化還元ではない</div>
+      <div class="stepHead"><span class="stepNo">0</span>まずメチル基を切り離そう</div>
       <div class="sheetScroll"><div id="cleaveSheet"></div></div>
       <div id="cleaveMsg"></div>
     </section>
@@ -117,16 +117,18 @@
          ⚠ id は動かさない（`step2` が1番目・`step1` が2番目に出る）。
          入れ替えるのは並びと画面に出る番号だけで、外から名指ししている口は変えない。 -->
     <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">1</span>どの比率でやりとりさせるか — 出す e⁻ と受け取る e⁻ がそろう比を見つける</div>
-      <div id="toolbar"></div>
+      <!-- ★ 2026-09-11・ユーザーの指摘（rx-message-spec.md (1)）。
+           見出しは**やることを1行**で言う。「比を見つける」という言い方はやめた ——
+           画面でしているのは数の調整で、「比」は結果の呼び名にすぎない -->
+      <div class="stepHead"><span class="stepNo">1</span>酸化剤と還元剤の数を調整してやりとりする e⁻ の数を合わせよう</div>
+      <!-- ★ (5)「左右を入れ替える（式がメイン、図が従属）／スマホであれば上下に」。
+           やりとりの数を数える面（＝式の側）を先に、ビーカーの絵を後に置く。
+           .labRow は flex-wrap なので、狭い面では自然にこの順で縦に積まれる -->
       <div class="labRow">
-        <div class="labCol">
-          <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
-          <div id="ionCounts"></div>
-        </div>
-        <div class="labCol">
+        <div class="labCol labMain">
           <div id="schematicWrap">
-            <div class="schematicHead" id="schematicHead">e⁻ の受け渡し（模式図）</div>
+            <!-- ⚠ 見出し「e⁻ の受け渡し（模式図）— …個ずつ出す × …個ずつ受け取る」は
+                 (3) で切った（見れば分かる注記＋掛け算の説明） -->
             <svg id="schematic" viewBox="0 0 460 150" role="img" aria-label="還元剤が出す e⁻ と酸化剤が受け取る e⁻ のブロック模式図"></svg>
             <div id="schematicAdd"></div>
             <div id="schematicMsg"></div>
@@ -136,7 +138,16 @@
             <svg id="acidSource" viewBox="0 0 460 150" role="img" aria-label="必要な H⁺ が、用意した硝酸のどこから来るのかを示す図"></svg>
             <div id="acidSourceMsg"></div>
           </div>
-          <div id="eTally"></div>
+        </div>
+        <div class="labCol labSub">
+          <!-- ★ (2)「このボタンは図の中に含める（独立した行で出すと、これが次の作業の
+               本体に見える）」。▶ は**この絵を動かす釦**なので、絵と同じ枠に入れる。
+               ⚠ id は #toolbar のまま（外から名指ししている口を変えない） -->
+          <div class="beakerBox">
+            <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
+            <div id="toolbar"></div>
+          </div>
+          <div id="ionCounts"></div>
         </div>
       </div>
       <div id="msg"></div>
@@ -147,7 +158,7 @@
            係数をリアルタイムで変化させる」（2026-09-07）。旧①は「式はこのまま」で、
            ±ステッパーを押しても式が動かなかった。ここが「筆算に寄せる」の核心 ——
            紙の上で式の右に ×5 と書いて係数を書き換える手つきを、そのまま画面にする -->
-      <div class="stepHead"><span class="stepNo">2</span>半反応式を何倍にするか書き込む — 数を入れると係数が変わる</div>
+      <div class="stepHead"><span class="stepNo">2</span>半反応式を何倍にするか書き込もう</div>
       <div class="sheetScroll"><div id="halfSheet"></div></div>
       <div id="multMsg"></div>
     </section>
@@ -172,7 +183,7 @@
            v194 は出どころ当てをヘルプ（<details>）へ落として順番が逆だった。**戻す。**
            ⚠ 問いの形はユーザーの言葉そのまま「MnO₄⁻ はもともと何だった？」——
            こう聞けば、容器を指す語が1つも要らなくなる。 -->
-      <div class="stepHead"><span class="stepNo">4</span>もともと何だった？ — イオンの下に、もとの物質を置く</div>
+      <div class="stepHead"><span class="stepNo">4</span>左辺のイオンがもともと何だったか考えよう</div>
       <!-- ★★ 2026-09-10・ユーザーの指示（原文が仕様の一次資料）:
            > ここを筆算に寄せたい／イオン反応式の下に筆算形式で K+ と SO42- の入力欄を入れる、
            > 最後の係数も筆算の中に入れる
@@ -197,13 +208,13 @@
         <!-- 「後」の側。出どころがそろってから現れる（この画面の唯一の順序の表し方）。
              ★ 同じ筆算の中の1行になったので、柱（イオン反応式）から離れない -->
         <div id="addIonWrap" hidden>
-          <div class="stepSubHead">つぎに — 両辺に加えるイオンの数を考える</div>
+          <div class="stepSubHead">両辺に加えるイオンの数を考えよう</div>
           <div id="addIonRows"></div>
           <div id="addIonMsg"></div>
         </div>
         <!-- ⑤も同じ筆算の中。係数の欄が、担当したイオンの柱の真下に来る -->
         <div id="bottleTail" hidden>
-          <div class="stepHead inWork"><span class="stepNo">5</span>化学反応式の左辺 — 係数をすべて書く</div>
+          <div class="stepHead inWork"><span class="stepNo">5</span>化学反応式の左辺の係数をすべて書こう</div>
           <div id="bottleCounts"></div>
           <div id="bottleCountNotes"></div>
         </div>
@@ -220,7 +231,7 @@
              ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ。
              ⚠ 筆算のグリッドの**外**に置く（横送り枠の中に SVG を入れない） -->
         <div id="saltStep" hidden>
-          <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせる — 高さがそろえば1つの化学種</div>
+          <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせよう</div>
           <!-- ★ 硝酸の二役（rn1・rn2）を1行で言う場所（2026-09-08・レーン rx-sheet）。
                v203 まではここに相当する説明が筆算⑤の下の図（#molFigure）にあったが、
                図は⑥のブロックと役割が重なるので降ろし、**文だけ**残した。
@@ -249,11 +260,11 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=208"></script>
-<script src="schematic.js?v=208"></script>
+<script src="model.js?v=209"></script>
+<script src="schematic.js?v=209"></script>
 <!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
-<script src="blocks.js?v=208"></script>
-<script src="header-ui.js?v=208"></script>
-<script src="redox.js?v=208"></script>
+<script src="blocks.js?v=209"></script>
+<script src="header-ui.js?v=209"></script>
+<script src="redox.js?v=209"></script>
 </body>
 </html>
