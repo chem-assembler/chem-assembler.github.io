@@ -201,6 +201,9 @@ function useSimpleGas() {
   const stage = STAGES[stageIdx];
   if (stage.animMode) return stage.animMode === "simple";
   const nL = stage.reactants.length;
+  // ⚠ 反応物が1種のステージ（加水分解・電離）や、係数を持たないステージでは
+  //    下の数え方が成り立たない。最後の nL >= 2 では遅い（先に SPECIES[undefined] を触る）
+  if (nL < 2 || !stage.answer) return false;
   const atomsOf = (sp) => Object.values(SPECIES[sp].atoms).reduce((a, b) => a + b, 0);
   const top = atomsOf(stage.reactants[0]);
   const bottom = atomsOf(stage.reactants[1]) * Math.ceil(stage.answer[1] / stage.answer[0]);
@@ -2959,44 +2962,64 @@ function updateRatioQuiz() {
   el.className = "rqMsg " + (ok ? "ok" : "ng");
 }
 
-/* ステージの「目標」文をステージ種別から自動生成する（全ステージを「目標の○をつくる」枠に統一）。
-   酸性塩→saltGoal、沈殿→その沈殿、気体→その気体、それ以外→中和して正塩。 */
+/* ステージの「目的」文をステージ種別から自動生成する。
+   ★ 2026-09-11: 先生が口で言うとおりの声掛けにする。
+   「〈入れるもの〉を反応させて〈できるもの〉を〈どうする〉」の形にそろえ、
+   何をしている画面かの説明や、画面の部品の名前は出さない。
+   ⚠ ステージは40件あるので、s10 でしか通らない文を書かない（すべてデータから組む）。 */
+function goalReagentsText(stage) {
+  return stage.reactants.map((sp) => SPECIES[sp].disp).join(" と ");
+}
 function stageGoalText(stage) {
-  if (stage.saltGoal) return `${saltKindOf(stage.saltGoal)} ${SPECIES[stage.saltGoal.label].disp} をつくる`;
+  const reagents = goalReagentsText(stage);
+  if (stage.saltGoal) {
+    return `${reagents} を反応させて ${saltKindOf(stage.saltGoal)} ${SPECIES[stage.saltGoal.label].disp} をつくろう`;
+  }
   // 加水分解・電離は「つくる」課題ではない（平衡でごく一部しか進まない）。
-  // 目標は、加水分解なら液性の確認、電離なら**何個に何個が分かれるか**そのもの
+  // 目的は、加水分解なら液性の確認、電離なら**何個に何個が分かれるか**そのもの
   const hyd = partialRule(stage);
   if (hyd) {
     const marker = hyd.make.find((sp) => sp === "OH-" || sp === "H+");
     const liquid = marker === "OH-" ? "塩基性" : "酸性";
+    // ⚠ 名前は**水にとかすもの**（塩・分子）で言う。hyd.find[0] は水の中で変わるイオンの
+    //    ほうなので、そちらを言うと「酢酸イオンを水にとかして」という言い方になってしまう
     if (partialWording(hyd).ionize) {
-      return `${SPECIES[hyd.find[0]].disp} のうち何個が電離するかを確かめる（電離度）`;
+      return `${reagents} を水にとかして、何個に1個が電離するかを見よう`;
     }
-    return `加水分解で ${SPECIES[marker].disp} が生じることを確かめる（${liquid}）`;
+    // ⚠ 何が生じるか（OH⁻ か H⁺ か）は書かない。それはこれから見つけるところ。
+    //    320px で2行に収まらなくなる、という都合ともここは一致する
+    return `${reagents} の加水分解で ${liquid}になることを確かめよう`;
   }
   const precip = stage.rules.find((r) => r.kind === "precipitate");
-  // 錯イオンは沈殿より優先（沈殿を経て溶かすステージは「溶かす」が目標）
+  // 錯イオンは沈殿より優先（沈殿を経て溶かすステージも、行き先は錯イオン）。
+  // ⚠ 沈殿を経るかどうかは文に足さない —— 320px で2行に収まらなくなる（NOW の検査が見張る）。
+  //   まとめ版と分割版は入れるものが違う（AlCl₃ から／Al(OH)₃ から）ので、それで見分けられる
   const complexRule = stage.rules.find((r) => r.kind === "complex");
   if (complexRule) {
     const c = Array.isArray(complexRule.make) ? complexRule.make[0] : complexRule.make;
-    return (precip ? "沈殿を溶かして " : "") + `錯イオン ${SPECIES[c].disp} をつくる`;
+    return `${reagents} を反応させて 錯イオン ${SPECIES[c].disp} をつくろう`;
   }
   if (precip) {
     const p = Array.isArray(precip.make) ? precip.make[0] : precip.make;
-    return `沈殿 ${SPECIES[p].disp}↓ をつくる`;
+    return `${reagents} を反応させて ${SPECIES[p].disp} を沈殿させよう`;
   }
   const gasRule = stage.rules.find((r) => r.kind === "gas");
   if (gasRule) {
     const makes = Array.isArray(gasRule.make) ? gasRule.make : [gasRule.make];
     const gas = makes.find((sp) => BUBBLE_SPECIES.has(sp)) || makes[0];
-    return `気体 ${SPECIES[gas].disp}↑ を発生させる`;
+    return `${reagents} を反応させて ${SPECIES[gas].disp} を発生させよう`;
   }
   if (stage.phase === "gas") {
-    const how = useSimpleGas() ? "分子を組み替えて" : "原子を組み替えて";
-    return `${how} ${stage.products.map((sp) => SPECIES[sp].disp).join("・")} をつくる`;
+    const made = stage.products.map((sp) => SPECIES[sp].disp).join(" と ");
+    // 酸素と反応させる回は「燃やす」と言うのが自然（合成の回は「反応させる」のまま）
+    const fuel = stage.reactants.filter((sp) => sp !== "O2");
+    if (fuel.length < stage.reactants.length) {
+      return `${fuel.map((sp) => SPECIES[sp].disp).join(" と ")} を ${SPECIES["O2"].disp} で燃やして ${made} をつくろう`;
+    }
+    return `${reagents} を反応させて ${made} をつくろう`;
   }
   const salt = stage.products.find((sp) => sp !== "H2O");
-  return `ちょうど中和して 塩 ${SPECIES[salt].disp} をつくる`;
+  return `${reagents} をちょうど中和させて 塩 ${SPECIES[salt].disp} をつくろう`;
 }
 
 /* ビーカーだけを初期状態に戻す（★ 係数・クリア状態には触らない）。
@@ -3094,7 +3117,7 @@ function initStage() {
      （ステージ番号はヘッダーの帯が現在地を示しているので重ねて出さない）。 */
   stageTitleEl.innerHTML =
     `<details class="stageHead"${stageHeadOpen ? " open" : ""}>` +
-    `<summary><span class="goal nowLabel nowBanner${stage.saltGoal ? " acid" : ""}">🎯 ${stageGoalText(stage)}</span></summary>` +
+    `<summary><span class="goal nowLabel nowBanner${stage.saltGoal ? " acid" : ""}">${stageGoalText(stage)}</span></summary>` +
     `<div class="stageMore"><div class="stageName">${stageLabel(stageIdx)}</div>${tagsHtml}</div>` +
     `</details>`;
   const headEl = stageTitleEl.querySelector(".stageHead");
@@ -3133,6 +3156,8 @@ window.IonEq = {
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
     return {
       counts, made: madeCount, reactionDone, coeffOk, cleared, stageIdx, eqMode,
+      // 分子のまま組み替える簡易モードか（目的の文からは読めなくなったので、判定そのものを渡す）
+      simpleGas: useSimpleGas(),
       // §7-3 の自動再生。autoPlayed は「もう走らせたか」、playedFromCoeffs は
       // 「いまビーカーにある姿が係数どおりか」（結びの言い方がこれで変わる）
       autoPlayed, autoPlayQueued, playedFromCoeffs,
