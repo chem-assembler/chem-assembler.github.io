@@ -47016,17 +47016,46 @@
 
     /**
      * ★ 資料ページが**実際に表へ出している**分子（＝ 床を守る範囲。2026-09-03 ユーザー決定）。
-     * `reference.json` の `source: "stages:<系列>"` から系列を引き、その系列の stages を返す。
+     * **`:::stageTable` の `series`** から系列を引き、その系列の stages を返す。
      * ⚠ ページを足せば物差しも自動で伸びる。**検査に系列名も件数も書かない。**
+     *
+     * ⚠⚠ **前書きの `source: "stages:<系列>"` は見ない**（v1535 で変えた）。
+     *   ★ `source` は「このページが参照している repo のデータ」で、**表に出した系列とは限らない**
+     *     —— `:::example` の `stageId` を1件使うだけのページも、出どころとして系列を名乗る。
+     *   ⚠ 実際にそうなった: `fat` は `stages:油脂と脂肪酸` を名乗るが表は1行も出しておらず、
+     *     **読者が表で見もしないステアリン酸**（炭素18個）で `REF4` が赤くなった。
+     *   ★★ この関数の前書きがずっと「**実際に表へ出している**分子」と言っていたので、
+     *     **言っているとおりのものを返すようにした** ＝ 物差しを緩めたのではなく、合わせた。
+     * ★ 例題で組ませる分子のほうは、下の `referenceExampleStages` が別の線で見る（`REF4` の②）。
      */
     async function referenceShownStages(W) {
         const pages = await W.referenceBook.load();
         const series = new Set();
-        pages.forEach(p => (p.source || []).forEach(s => {
-            const m = /^stages:(.+)$/.exec(s);
-            if (m) series.add(m[1]);
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'stageTable') return;
+            (Array.isArray(b.series) ? b.series : [b.series]).forEach(s => series.add(s));
         }));
         return W.STAGES.filter(s => series.has(s.series));
+    }
+
+    /**
+     * ★★ 資料ページが**例題として組ませる**分子（`:::example` の `stageId`・v1535）。
+     *
+     * ⚠ 表に出す分子とは別の線で見る（`REF4` の②）—— 例題は「▶ 組んでみる」の1件で、
+     *   **ページごとに代表1つ**（`REF6`）。★ 床を割ってもよいが、⚠ **逃げ道が塞がっていないこと**
+     *   （拡大で床を越えられる）まで確かめる ＝ `REF4b` が在庫の最大に当てているのと同じ線。
+     * ⚠ 知らない stageId は**その場で赤**（黙って0件にして空振りさせない）。
+     */
+    async function referenceExampleStages(W) {
+        const pages = await W.referenceBook.load();
+        const out = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'example') return;
+            const st = (W.STAGES || []).find(s => s.id === b.stageId);
+            assert(st, `${p.id}: :::example の stageId「${b.stageId}」が stages.json に無い`);
+            if (!out.some(s => s.id === st.id)) out.push(st);
+        }));
+        return out;
     }
 
     // 在庫ぜんぶ（stages + compounds）。`getCompoundLibrary()` と同じ2つの出どころを見る
@@ -47272,6 +47301,43 @@
                 `${name}: 要る視野が広いほうの「${worst.name}」（視野${Math.round(worst.v)}・${pxWorst.toFixed(1)}px）が、` +
                 `狭いほうの「${easiest.name}」（視野${Math.round(easiest.v)}・${pxEasiest.toFixed(1)}px）より大きく出ている ` +
                 '＝ requiredViewWidth が画面の縮尺と別の順に並んでいる（最悪ケースの選抜が当てにならない）');
+
+            /* ── ② ★★ 例題（`:::example`）で組ませる分子（v1535 で足した） ──
+             *
+             * ⚠⚠ **ここは今まで1件も測っていなかった。** 物差しは前書きの `source` を見ていて、
+             *   「表に出した系列」と「例題で1件だけ触らせる分子」を区別できていなかった。
+             * ★ 分けた結果、**測る対象はむしろ増えている**（表を持たないページの例題も見る）。
+             * ★ 線は `REF4b` と同じ: **床を割ってもよいが、逃げ道が塞がっていないこと。**
+             *   ⚠ ステアリン酸（炭素18個・要る視野996）は、資料を1pxも出さなくても床に載らない
+             *     ——「折り返しよりもスクロール、拡大縮小でユーザーが対応」（§12-1）の範囲。
+             * ⚠ **名前を検査に書かない**（原稿が例題を差し替えれば、物差しは黙って追随する）。 */
+            const examples = await referenceExampleStages(W);
+            assert(examples.length >= 3,
+                `${name}: 資料ページの例題が ${examples.length} 件しか引けない（:::example が読めていない）`);
+            const svg = W.game.svg;
+            const box = svg.getBoundingClientRect();
+            const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+            let 床を割った = 0;
+            for (const st of examples) {
+                const px = await summonAndMeasure(W, st.name);
+                if (px >= FLOOR) continue;
+                床を割った++;
+                /* 逃げ道 —— ⚠ viewBox を直に書き換えず、**ユーザーが触るのと同じ入口**で回す */
+                for (let i = 0; i < 60 && W.game.screenPxPerGrid() < FLOOR; i++) {
+                    svg.dispatchEvent(new W.WheelEvent('wheel',
+                        { deltaY: -100, ctrlKey: true, clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
+                }
+                const zoomed = W.game.screenPxPerGrid();
+                assert(zoomed >= FLOOR,
+                    `${name}: 例題で組ませる「${st.name}」が ${px.toFixed(1)}px で床（${FLOOR}px）を割り、` +
+                    `⚠ Ctrl+ホイールで拡大しても ${zoomed.toFixed(1)}px までしか上がらない ＝ 逃げ道が塞がっている。` +
+                    '★ 資料ページを足したときは、例題に大物を選んでいないかを見ること');
+            }
+            /* ★ 否定対照 —— **床を割る例題が1件も無くなったら、この②は何も見張っていない。**
+               ⚠ 落ちたら前提が変わっている（例題から大物が消えた）ので、この検査を畳んでよいか判断すること */
+            assert(床を割った >= 1,
+                `${name}: 例題 ${examples.length} 件がすべて床（${FLOOR}px）の上に居る ＝ ②の逃げ道の検査が空回りしている。` +
+                '★ 前提が変わっているので DESIGN_reference_book.md §12 を読み直すこと');
         });
     });
 
