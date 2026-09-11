@@ -7946,7 +7946,9 @@ async function runRedoxUITests(iframe) {
     // ⑥ 正解 → ⑤が出る
     putAddB("K+", 1); putAddB("SO4^2-", 9);
     assert(!doc.getElementById("bottleTail").hidden, "正しく足しても⑤が出ない");
-    assert(txtB("addIonMsg").includes("組み直して"), "次にやることを言わない: " + txtB("addIonMsg"));
+    /* ★ 2026-09-11: 正解のときは**1行**。次にやることは、すぐ下に現れる⑤の
+       見出しが言う ＝ ここで先回りして説明しない（ユーザーの指摘） */
+    assert(txtB("addIonMsg") === "両辺に足せた", "④後半の正解文が1行でない: " + txtB("addIonMsg"));
     /* ⑦ ★ ×2 にすると、④で足した個数も一緒に倍になる（1/9 → 2/18）。
        18 は紙の筆算で書く「両辺に SO₄²⁻ を18個ずつ足す」と同じ数 */
     putB("KMnO4", 1); putB("FeSO4", 5); putB("H2SO4", 4);
