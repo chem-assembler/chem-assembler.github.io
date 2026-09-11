@@ -599,7 +599,7 @@ function markQuizChoices(buttons, isRight, picked) {
         b.disabled = true;
         // **色に意味を持たせてよいのはここだけ**（答え合わせのあと）。
         // 出題中の3択は同じ色にする ＝ 色が1つだけ違えば、図を読む前に
-        // 「これが特別だ」と読まれてしまう（v1537・立体異性体クイズの装飾色を外した理由）。
+        // 「これが特別だ」と読まれてしまう（v1538・立体異性体クイズの装飾色を外した理由）。
         // `quiz-choice-*` は `!important` で `.primary-btn` の色に勝つ
         b.classList.remove('quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
         if (isRight(b)) {

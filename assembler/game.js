@@ -4012,11 +4012,10 @@ class Game {
     /** 「いま描いている分子」の名前と分子式を組み立てる（表示先を1つも知らない純粋な計算） */
     computeCompoundLabel() {
         if (this.userMolecule.atoms.length === 0) return { name: '—', formula: '—' };
-        const formula = this.computeMolecularFormula();
 
         // 生成物予測モード中は名称を伏せる（答えのヒントになりすぎるため）
         if (window.reactionPlayer && window.reactionPlayer.prediction) {
-            return { name: '？？？（予測中）', formula };
+            return { name: '？？？（予測中）', formula: this.computeMolecularFormula() };
         }
 
         // 複数の分子があるときは分子ごとに名前を出す（反応の副生成物や、名称呼び出しで
@@ -4027,13 +4026,34 @@ class Game {
         // 番号の付け方は markedMolecules に集約してあるので、図とずれない
         const { parts, marks } = this.markedMolecules(null);
         const names = parts.map(m => this.lookupCompoundName(m));
-        const name = parts.length === 1
-            ? (names[0] || '（ライブラリに該当なし）')
-            : parts.map((p, i) => {
-                const mark = marks.get(p);
-                return (mark ? mark + ' ' : '') + (names[i] || '（該当なし）');
-            }).join(' ＋ ');
-        return { name, formula };
+        if (parts.length === 1) {
+            return { name: names[0] || '（ライブラリに該当なし）', formula: this.computeMolecularFormula() };
+        }
+        const name = parts.map((p, i) => {
+            const mark = marks.get(p);
+            return (mark ? mark + ' ' : '') + (names[i] || '（該当なし）');
+        }).join(' ＋ ');
+        /* ⚠⚠ 分子が2つ以上あるとき、**画面に出すのは `formulas`（分子ごと）のほう**
+         *   （v1538・ユーザー検品 2026-09-12）。
+         *   分子式は1分子の原子の数え上げなので、別々の2分子を足した式は
+         *   **どの物質の分子式でもない**。マルトースとセロビオースを並べると
+         *   **C₂₄H₄₄O₂₂** が画面に出ていたが、見せたいのは「**どちらも C₁₂H₂₂O₁₁** ＝
+         *   同じ分子式なのに別物」のほうで、合算はその芯をつぶしていた
+         *   （ジペプチド ＋ 水が C₄H₁₀N₂O₄ になるのも同じ。脱水縮合で水が1つ出たことが読めない）。
+         * ★ 出し先は2つ: 図の見出し（`captionForPart`）が分子ごとの式を添え、
+         *   左下の札（`syncMobileNameChip`）は**式を出さない**（同じ式が画面に2度出るため）。
+         * ⚠ `formula`（合算）は**隠しの控え `#compound-formula` の口だけに残す**。
+         *   台本（`demos-*.json` の `expect.formula`）が合算で書かれており、
+         *   あちらは動画レーンの持ちもので、こちらからは直せない。
+         *   ⛔ **画面に出す用にこの値を読まないこと。** 読むなら `formulas`。 */
+        const formulas = parts.map(p => {
+            const mark = marks.get(p);
+            return (mark ? mark + ' ' : '') + this.computeMolecularFormula(p);
+        });
+        // ⚠ 見出しが出ないほど小さい成分がある（水1つなど）と、式が図に付かない。
+        //   そのときは札のほうが分子ごとの式を出す ＝ どちらにも出ない状態を作らない
+        const onCanvas = parts.every(p => marks.has(p));
+        return { name, formula: this.computeMolecularFormula(), formulas, formulasOnCanvas: onCanvas };
     }
 
     // キャンバス左下の化合物名チップ（P11-M3c。第4段から PC でも出す）を組み直す。
@@ -4042,12 +4062,22 @@ class Game {
     syncMobileNameChip() {
         const chip = document.getElementById('mobile-name-chip');
         if (!chip) return;
-        const { name, formula } = this.compoundLabel || { name: '', formula: '' };
+        const { name, formula, formulas, formulasOnCanvas } =
+            this.compoundLabel || { name: '', formula: '' };
         if (this.currentMode === 'learn' || this.userMolecule.atoms.length === 0) {
             chip.textContent = '';
             return;
         }
         const hasName = name && name !== '—' && !name.startsWith('（ライブラリに該当なし）');
+        // ⚠⚠ 分子が2つ以上あるときは札に分子式を載せない（v1538）。
+        //   合算した式（`formula`）は**どの物質の分子式でもない**ので出せず、
+        //   分子ごとの式は図の見出しに付いているので、ここに並べると同じ式が画面に2度出る
+        if (formulas && formulas.length >= 2) {
+            const list = formulas.join(' ＋ ');
+            if (!hasName) { chip.textContent = list; return; }
+            chip.textContent = formulasOnCanvas ? name : `${name}　${list}`;
+            return;
+        }
         chip.textContent = hasName ? `${name}　${formula}` : formula;
     }
 
@@ -6249,10 +6279,19 @@ class Game {
      */
     captionForPart(part, mark) {
         if (this.worksheetActive()) return mark || moleculeMark(0);
-        const name = this.lookupCompoundName(part) || this.computeMolecularFormula(part);
+        const formula = this.computeMolecularFormula(part);
+        const name = this.lookupCompoundName(part);
+        /* ★ 番号が振られている ＝ キャンバスに分子が2つ以上ある（v1538・ユーザー検品 2026-09-12）。
+         *   そのときは**名前のうしろに分子式も添える**。分子式は1分子ごとのものなので、
+         *   分子が並んでいるときこそ「どれがどの式か」が言えていないといけない
+         *   ——マルトースとセロビオースを並べる回は「**どちらも C₁₂H₂₂O₁₁**」が芯なのに、
+         *   式が図に付いていなかった（画面には合算した C₂₄H₄₄O₂₂ だけが出ていた）。
+         * ⚠ 1分子のときは今までどおり名前だけ（左下の札が名前と分子式を両方出している）。
+         * ⚠ 名前が引けないときは今までどおり分子式そのものが見出しになる（二重には出さない）。 */
+        const head = name ? (mark ? `${name} ${formula}` : name) : formula;
         // ★ 分液の面を開いているあいだは、どの層に居るかを見出しに添える（I-1・§4-5 #4）。
         //   ⚠ 文言は `phaseSuffix()` ただ1つ ＝ 帯の札と図の見出しが同じ字を出す
-        return `🔍 ${mark ? mark + ' ' : ''}${name}${this.phaseSuffix(part)}`.trim();
+        return `🔍 ${mark ? mark + ' ' : ''}${head}${this.phaseSuffix(part)}`.trim();
     }
 
     /**
