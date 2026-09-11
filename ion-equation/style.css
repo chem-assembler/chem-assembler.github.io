@@ -592,18 +592,20 @@ main.timelineMain {
 /* 筆算グリッドの中に置く段見出し（③④⑤）。行をまたぐので上に余白を取る */
 .stepHead.inSheet { margin: 10px 0 4px; }
 .stepHead.inSheet[hidden] { display: none; }
-/* ステップ2は「やりとりの数」と「ビーカーの絵」を横に並べ、狭い画面では縦に折る。
-   ★ 2026-09-11・ユーザーの指摘「左右を入れ替える（式がメイン、図が従属）／
-   スマホであれば左右でなく上下に並べたほうがよい」。
-   .labMain（数を合わせる面）を左＝先に、.labSub（絵）を右＝後に置く。 */
-.labRow { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
-.labCol { flex: 1 1 320px; min-width: 0; }
-/* 絵の側は主役ではないので、面積を取りすぎないようにする（広い面でだけ効く） */
-@media (min-width: 860px) { .labMain { flex: 1.15 1 360px; } .labSub { flex: 1 1 320px; } }
-/* ⚠ 折り返し任せだと 720〜860px で中途半端に横に並ぶ。上下に積むと決めた幅で確実に積む */
-/* ⚠ 縦積みでは flex-basis が**高さ**になる。`flex: 1 1 320px` のままだと
-   上の段が 320px の高さに引き伸ばされ、下の絵とのあいだに空白ができる（375px で実測） */
-@media (max-width: 860px) { .labRow { flex-direction: column; } .labCol { flex: 0 0 auto; width: 100%; } }
+/* ステップ2は「やりとりの数（.labMain）」→「ビーカーの絵（.labSub）」の順に**縦1本**。
+   ★ 2026-09-11・ユーザーの決定（v211）:「どの画面でも1カラムにする」。
+   広い面で左右に割ると、式の側が半分の幅しか使えないうえ、左が短い回は
+   右のビーカーの横に空白が残る（1280px で実測）。縦1本なら横幅を全部使えるので、
+   式も図も大きく出せる ＝ 字を上げたい話（--fs-u）と相性がよい。
+   ⚠ 縦積みでは flex-basis が**高さ**になる。`flex: 1 1 320px` のままだと
+   上の段が 320px の高さに引き伸ばされ、下の絵とのあいだに空白ができる（375px で実測）。 */
+.labRow { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+.labCol { flex: 0 0 auto; width: 100%; min-width: 0; }
+/* ⚠ 1カラムでは、図が幅いっぱいまで伸びる。ビーカー（viewBox 480×430）を 980px 幅に
+   引き伸ばすと**高さが 880px** になり、下の段まで一画面に入らない（縦横比は保たれるので
+   幅を抑えるしかない）。図は主役ではないので、読みやすい大きさで頭打ちにする。 */
+#schematicWrap, #acidSourceWrap { max-width: 620px; }
+.labSub { max-width: 560px; }
 /* ★ 「▶ 反応を見る」「↺ やり直す」は**この絵を動かす釦**なので、絵と同じ枠に入れる
    （独立した行に置くと、これが次の作業の本体に見える ＝ ユーザーの指摘 (2)） */
 .beakerBox {
