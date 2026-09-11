@@ -11953,6 +11953,11 @@ function setupQuizShortcuts() {
  * - `summon=<id または名称>` … 先に分子を呼び出す（`open=stereo` `open=isomer` は分子が要る）。
  *   **`open` が無くても効く**。id は compounds.json の不変 id（DEVELOPMENT.md §7-1）
  * - `formula=<分子式>` … `open=isomer` と組で「異性体の**書き出し**」を始める（例 `C4H10`）
+ * - `cls=<分類>` … `formula=` に添えると「**分子式と分類で絞る回**」を始める
+ *   （例 `?open=isomer&formula=C4H8O2&cls=ester`）。値は `learn.js` の `fgPresets[].cls`
+ *   （ketone / aldehyde / ester / acid）。⚠⚠ **式だけでは届かない回がある**から要る ——
+ *   C₄H₈O₂ の構造異性体は 122種で、書き出し練習の上限20種を超えて画面が断る。
+ *   分類で絞ると4種になり、参考書の「エステルの異性体を書き出す」が生きたリンクになる
  * - `reagent=<瓶id または反応ルールid>` … summon した分子に対し試薬を選んだ状態にする。
  *   **`open` が無くても効く**
  * - `id=<機構id>` … `open=mechanism` と組で、登録済み14件のうち1つを開く
@@ -12152,7 +12157,15 @@ function applyOpenParam(search) {
         window.game.setStudyOpen(true);
         const acc = document.getElementById('learn-acc-practice');
         if (acc) acc.open = true;
-        window.isomerPractice.startFromFormula(formula);
+        /* ★★ `cls=` を添えると「分子式と分類で絞る回」（v1535・設計書 §25）。
+           ⚠⚠ **式だけの道と分けた。** `startFromFormula` は全異性体を数えるので、
+             C₄H₈O₂（122種）も C₃H₆O₂（34種）も上限20種を超えて**断られる**
+             ＝ 参考書の「エステルの異性体を書き出す」が押しても何も起きないリンクになっていた。
+           ⚠ 知らない分類は `startFromFgFormula` がトーストで断る（黙って無視しない）。
+             ★ 原稿の綴り違いは、そこまで行く前に `REF21` が赤にする。 */
+        const cls = (params.get('cls') || '').trim();
+        if (cls) window.isomerPractice.startFromFgFormula(formula, cls);
+        else window.isomerPractice.startFromFormula(formula);
         return name;
     }
 
