@@ -5,12 +5,6 @@ unitLabel: 有機化合物の基本
 group: 官能基
 title: 官能基 —— 性質を決めるパーツ
 summary: 官能基とは何か、代表的な15種の名前と構造、そして「いつ覚えるか」。同じ −OH でも隣が変わればアルコールとフェノールに分かれることまで1枚にまとめました。
-codes:
-  - org.alcohol.hydroxy
-  - org.carbonyl.formyl
-  - org.carbonyl.ketone-def
-  - org.carbonyl.carboxy
-  - org.carbonyl.ester-bond
 source:
   - slides:有機の基本1-1「有機化合物の特徴」s3〜s7
 singleSource: true
