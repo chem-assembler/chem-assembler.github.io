@@ -8026,7 +8026,10 @@ async function runRedoxUITests(iframe) {
       "左辺がもとの物質の姿で出ない: " + sheet);
     assert(sheet.includes("5 Fe₂(SO₄)₃") && sheet.includes("2 MnSO₄") && sheet.includes("K₂SO₄") && sheet.includes("8 H₂O"),
       "右辺の塩が出ない: " + sheet);
-    assert(txtB("bottleTailMsg").includes("ぴったり"), "完成と言わない: " + txtB("bottleTailMsg"));
+    /* ★ 2026-09-11: 完成の合図は「ぴったり」の褒め言葉ではなく、**できあがった式そのもの**。
+       ⛔ 褒めの定型は出さない（ユーザーの指摘） */
+    assert(txtB("bottleTailMsg").includes("→") && !txtB("bottleTailMsg").includes("ぴったり"),
+      "完成した式が出ない（または褒め言葉が残っている）: " + txtB("bottleTailMsg"));
     // 蒸発後のプール。**筆算の「両辺に18個足す」と同じ 18 を「ついて来た」で出す**
     const pool = txtB("bottlePool");
     assert(pool.includes("もとの物質が連れてきて、反応しなかったイオン") && pool.includes("SO₄²⁻ 18個"),
@@ -8162,7 +8165,10 @@ async function runRedoxUITests(iframe) {
     const sheet = txtB("bottleSheet");
     assert(sheet.includes("5 Fe₂(SO₄)₃") && sheet.includes("2 MnSO₄") && sheet.includes("K₂SO₄"),
       "右辺の係数が組んだ回数になっていない: " + sheet);
-    assert(txtB("bottleTailMsg").includes("ぴったり"), "完成と言わない: " + txtB("bottleTailMsg"));
+    /* ★ 2026-09-11: 完成の合図は「ぴったり」の褒め言葉ではなく、**できあがった式そのもの**。
+       ⛔ 褒めの定型は出さない（ユーザーの指摘） */
+    assert(txtB("bottleTailMsg").includes("→") && !txtB("bottleTailMsg").includes("ぴったり"),
+      "完成した式が出ない（または褒め言葉が残っている）: " + txtB("bottleTailMsg"));
     // ⚠ 導出（bottlePlan）の模範と、人が組んだ結果が一致する
     const plan = bottlePlan(REDOX_STAGES.find((s) => s.id === "rs1"), 5, 1, 2);
     for (const s of plan.salts) {

@@ -3840,8 +3840,7 @@ function checkRedoxMultipliers(stage, a, b) {
     // e⁻ の数だけ見ていると気づけないので、割る数と割った先まで示す
     return {
       ok: false, gcd: g, give, take,
-      reason: `e⁻ の数は合っているけれど、倍率がどちらも ${g} で割り切れる。` +
-        `×${a}・×${b} → ×${a / g}・×${b / g} に直そう（e⁻ ${give}個 → ${give / g}個 でも成り立つ）`,
+      reason: `倍率がどちらも ${g} で割り切れる。×${a / g}・×${b / g} に直そう`,
     };
   }
   return { ok: true, give, take };
@@ -4461,14 +4460,14 @@ function bottlePlanReason(res) {
     });
     // **どの倍率にすればよいかは言わない**（minBottleScale を呼ぶと答えそのものになる）。
     // 言うのは「何が何個ずつ要るか」までで、そこから倍率を決めるのが学習者の仕事
-    return parts.join("／") + "。イオン反応式の全体の倍率を変えると、あまりを消せる。";
+    return parts.join("／") + "。全体の倍率を変えると、あまりが消える";
   }
   if (!res.balanced) return "左右で原子か電荷が合っていない（データの不備）";
   if (!res.simplest) {
-    return `つり合っているけれど、係数がすべて ${res.gcd} で割り切れる。全体を ×${res.scale / res.gcd} に戻そう。`;
+    return `係数がすべて ${res.gcd} で割り切れる。全体を ×${res.scale / res.gcd} に戻そう`;
   }
   const say = (t) => (t.n > 1 ? t.n + " " : "") + D(t.sp);
-  return `ぴったり。${res.left.map(say).join(" ＋ ")} → ${res.right.map(say).join(" ＋ ")}`;
+  return `${res.left.map(say).join(" ＋ ")} → ${res.right.map(say).join(" ＋ ")}`;
 }
 
 /* 成立する最小の倍率。1 から順に試す（lcm を組み立てるより、条件を1か所にまとめられる）。 */
@@ -4675,8 +4674,8 @@ function acidRoleText(stage, a, b, scale) {
           (salt ? `右辺で ${D(salt.cation)} と組んで ${D(salt.sp)} になる。` : `右辺に残る。`) +
           (other.length
             ? `${D(B.sp)} は「${D(r.sp)} として e⁻ を受け取る役」と` +
-              `「${other.map((c) => D(c.sp)).join("・")} を出す役」を兼ねている —— ` +
-              `だから e⁻ をそろえただけでは ${D(B.sp)} の係数は決まらない。`
+              `「${other.map((c) => D(c.sp)).join("・")} を出す役」を兼ねている。` +
+              `e⁻ をそろえただけでは ${D(B.sp)} の係数は決まらない`
             : ""),
       };
     }
@@ -4699,25 +4698,23 @@ function explainSpectatorAdd(stage, a, b, scale, sp, got) {
      ⚠⚠ **すでに並んでいる個数は言わない。**rn2 は「すでに 2個・足すのも 2個」なので、
      数を書くと答えそのものになる（否定対照テストが赤くする）。数はイオン反応式に書いてある。 */
   const dual = row.already > 0
-    ? `${D(sp)} はイオン反応式にもう並んでいる（e⁻ を受け取って姿を変えるぶん）。` +
-      `そのぶんは足さなくてよい。`
+    ? `${D(sp)} はイオン反応式にもう並んでいる。そのぶんは足さなくてよい`
     : "";
   if (!Number.isInteger(got)) {
     return { kind: "none", ok: false,
-      reason: `両辺に ${D(sp)} を何個ずつ足すか。相手がいないのは ${who}。` + dual };
+      reason: `相手がいないのは ${who}` + (dual ? "。" + dual : "") };
   }
-  if (got < 0) return { kind: "wrong", ok: false, reason: `個数は 0 以上。` };
+  if (got < 0) return { kind: "wrong", ok: false, reason: `個数は 0 以上` };
   if (got < row.n) {
     return { kind: "wrong", ok: false,
-      reason: `足りない。${who} が相手のいないまま残る ＝ イオンのままで化学式にならない。` + dual };
+      reason: `足りない。${who} が相手のいないまま残る` + (dual ? "。" + dual : "") };
   }
   if (got > row.n) {
     return { kind: "wrong", ok: false,
-      reason: `多い。相手のいない ${D(sp)} が両辺に残ってしまう` +
-        `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。` + dual };
+      reason: `多い。相手のいない ${D(sp)} が両辺に残る` + (dual ? "。" + dual : "") };
   }
   return { kind: "ok", ok: true,
-    reason: `${D(sp)} がそろった。${who} が、これで化学式に組める。` };
+    reason: `${D(sp)} がそろった` };
 }
 
 /* 【D】全体の倍率は**例外**（DESIGN_redox.md の D）。
@@ -4734,7 +4731,7 @@ function bottleScaleAdvice(stage, a, b, scale) {
     if (scale > 1) {
       return {
         kind: "revert", to: 1, from: scale,
-        reason: `いまは式の全体を ×${scale} にしている。半端が出ていないなら ×1 のままでよい。`,
+        reason: `いまは式の全体を ×${scale} にしている。半端が出ていないなら ×1 でよい`,
       };
     }
     return null;
@@ -4748,7 +4745,7 @@ function bottleScaleAdvice(stage, a, b, scale) {
     total: odd.total, per: odd.per, units,
     reason: `${D(odd.sp)} が ${odd.total}個。${D(odd.to)} は ${D(odd.sp)} を ${odd.per}個ずつ使うので、` +
       `${D(odd.to)} が ${unitsText}個 ＝ 係数に 1/2 が出てしまう。` +
-      `こういうときだけ、式の全体を倍にして整数にそろえる。`,
+      `こういうときだけ、式の全体を倍にして整数にそろえる`,
   };
 }
 
