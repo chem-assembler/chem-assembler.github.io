@@ -6,6 +6,7 @@ group: ケトン
 title: ケトンの性質
 summary: カルボニル基の両側が炭素なのがケトンです。アルデヒドと同じ一般式 CₙH₂ₙO をもちながら還元性を示さないこと、ヨードホルム反応を示す構造（アセチル基）、アセトンの3つのつくり方を1枚にまとめました。
 codes:
+  - org.carbonyl.ketone-def
   - org.carbonyl.ketone-no-reduce
   - org.carbonyl.iodoform-carbonyl
   - org.alcohol.iodoform

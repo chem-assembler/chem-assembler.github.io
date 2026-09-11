@@ -6,6 +6,7 @@ group: カルボン酸
 title: カルボン酸
 summary: カルボキシ基 −COOH をもつ化合物のまとめ。価数・脂肪酸・ヒドロキシ酸という分け方から、二量体・弱酸の遊離・酸無水物まで。ギ酸とシュウ酸の「還元性」が別のものであることも1か所で見比べられます。
 codes:
+  - org.carbonyl.carboxy
   - org.carbonyl.fatty-acid
   - org.carbonyl.acidity
   - org.carbonyl.vs-carbonic
