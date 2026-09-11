@@ -1,3 +1,23 @@
+/* ---- 字の大きさの「1単位」（--fs-u・2026-09-11・v211）----
+
+   ★ ユーザーの指示は「全体的にフォントサイズを上げたい」で、**1か所の変数で上がる形**。
+   このファイルの font-size はぜんぶ生の px だったので、そのままでは親から大きくできない
+   （px は継承の影響を受けない ＝ body に font-size を置いても子には効かない）。
+
+   そこで **px の 1 を変数にした**。`font-size: 13.5px` を
+   `font-size: calc(13.5 * var(--fs-u))` と書き、`--fs-u` の既定を `1px` にしてある。
+     ・既定の 1px では**どのページもいままでと同じ値**（＝ 他のページは1文字も変わらない）
+     ・ページ単位で `--fs-u` を上げれば、そのページの字だけが**まとめて**大きくなる
+   ⚠ 数字を書き換えるのは `--fs-u` の1か所だけ。個別の px を積み増さないこと。
+
+   ⚠ `--now-size`（「いま何をする画面か」の札）はここに巻き込まない。
+   あちらは schematic.js の nowLabelPx() が **JS で数を読む**ので、
+   calc() に変えると parseFloat が NaN になり、SVG の見出しだけ別の大きさになる。 */
+:root { --fs-u: 1px; }
+/* 酸化還元ページだけ 1割増し。⚠ 320px で溢れないことを実測してから上げること
+   （模式図・筆算・ビーカーの札まで全部が連動して大きくなる） */
+body.redoxPage { --fs-u: 1.1px; }
+
 * { box-sizing: border-box; }
 body {
   margin: 0;
@@ -17,8 +37,8 @@ header {
   flex-wrap: wrap;
   position: relative;
 }
-header h1 { font-size: 19px; margin: 0; }
-.version { font-size: 12px; opacity: .8; }
+header h1 { font-size: calc(19 * var(--fs-u)); margin: 0; }
+.version { font-size: calc(12 * var(--fs-u)); opacity: .8; }
 
 /* ---- ヘッダーの横スクロールする帯（docs/review_others.md 項目3） ----
    ステージは index で30個あり、折り返して並べると 375px 幅ではそれだけで5段（実測 200px）、
@@ -47,7 +67,7 @@ header h1 { font-size: 19px; margin: 0; }
   position: absolute; top: 0; bottom: 0;
   width: 26px;
   display: flex; align-items: center;
-  font-size: 21px; line-height: 1; color: #ffcf5c;
+  font-size: calc(21 * var(--fs-u)); line-height: 1; color: #ffcf5c;
   opacity: 0; transition: opacity .18s;
   pointer-events: none;
 }
@@ -75,7 +95,7 @@ header h1 { font-size: 19px; margin: 0; }
 }
 .navCount {
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   opacity: .85;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -84,7 +104,7 @@ header h1 { font-size: 19px; margin: 0; }
   width: 34px; height: 34px;
   border: none; border-radius: 50%;
   background: #4a7dab; color: #fff;
-  font-weight: bold; font-size: 15px;
+  font-weight: bold; font-size: calc(15 * var(--fs-u));
   cursor: pointer;
 }
 #stageNav button.active { background: #ffcf5c; color: #4a3a10; }
@@ -101,11 +121,11 @@ header h1 { font-size: 19px; margin: 0; }
   border: 1px solid rgba(255, 255, 255, .45);
   border-radius: 17px;
   background: #35709f; color: #fff;
-  font-family: inherit; font-size: 12.5px; font-weight: bold; line-height: 1;
+  font-family: inherit; font-size: calc(12.5 * var(--fs-u)); font-weight: bold; line-height: 1;
   white-space: nowrap; cursor: pointer;
 }
 .navList:hover { background: #4a7dab; }
-.navListIcon { font-size: 13px; }
+.navListIcon { font-size: calc(13 * var(--fs-u)); }
 
 /* モード切り替えのリンク群。ひとまとまりの帯にして、1本だけ別行に取り残さない */
 .modeBar { gap: 8px; }
@@ -139,7 +159,7 @@ main {
   padding: 14px 18px 18px;
   box-shadow: 0 2px 8px rgba(30, 60, 90, .1);
 }
-#eqPane h2 { font-size: 16px; margin: 0 0 10px; }
+#eqPane h2 { font-size: calc(16 * var(--fs-u)); margin: 0 0 10px; }
 
 .howto {
   background: #eef4fb;
@@ -147,7 +167,7 @@ main {
   border-radius: 8px;
   padding: 6px 12px;
   margin-bottom: 10px;
-  font-size: 13.5px;
+  font-size: calc(13.5 * var(--fs-u));
   line-height: 1.6;
 }
 .howto summary {
@@ -180,7 +200,7 @@ main {
   border-radius: 8px;
   padding: 5px 12px;
   margin-bottom: 6px;
-  font-size: 13.5px;
+  font-size: calc(13.5 * var(--fs-u));
   line-height: 1.6;
 }
 .ratioQuiz summary {
@@ -200,27 +220,27 @@ main {
 .rqStep {
   min-width: 32px; min-height: 32px;
   border: 1px solid #e0c199; border-radius: 6px;
-  background: #fff; color: #a4622a; font-size: 15px; cursor: pointer;
+  background: #fff; color: #a4622a; font-size: calc(15 * var(--fs-u)); cursor: pointer;
 }
-.rqNum { min-width: 20px; text-align: center; font-weight: bold; font-size: 16px; color: #7a4a1c; }
+.rqNum { min-width: 20px; text-align: center; font-weight: bold; font-size: calc(16 * var(--fs-u)); color: #7a4a1c; }
 .rqName { color: #4a4a4a; }
 .rqGo {
   margin-top: 9px; min-height: 32px; padding: 4px 14px;
   border: none; border-radius: 6px;
   background: #d98a3c; color: #fff; font-weight: bold; cursor: pointer;
 }
-.rqMsg { margin-top: 7px; font-size: 12.5px; color: #6b5340; }
+.rqMsg { margin-top: 7px; font-size: calc(12.5 * var(--fs-u)); color: #6b5340; }
 .rqMsg.ok { color: #1f7a4d; font-weight: bold; }
 .rqMsg.ng { color: #a3462e; }
 
-#stageTitle { font-size: 16px; margin-bottom: 8px; }
+#stageTitle { font-size: calc(16 * var(--fs-u)); margin-bottom: 8px; }
 /* 【F】化学基礎の範囲ではない段の札（有機・発展）。見出しの隣・帯の番号・「☰ 一覧」の
    3か所に同じ印を出す（帯だけを見ているときにも区別がつくように） */
 .levelTag {
   display: inline-block;
   margin-left: 8px;
   padding: 2px 8px;
-  font-size: 11.5px;
+  font-size: calc(11.5 * var(--fs-u));
   font-weight: bold;
   border-radius: 999px;
   vertical-align: 2px;
@@ -242,15 +262,15 @@ main {
   min-height: 32px;
 }
 .stageHead summary::-webkit-details-marker { display: none; }
-.stageHead summary::before { content: "▸"; color: #8a94a0; font-size: 12px; }
+.stageHead summary::before { content: "▸"; color: #8a94a0; font-size: calc(12 * var(--fs-u)); }
 .stageHead[open] summary::before { content: "▾"; }
 /* summary の中では札の上マージンを消す（flex の行の中で浮いて見えるため） */
 .stageHead summary .goal { margin-top: 0; }
 .stageMore { margin-top: 6px; }
-.stageName { font-size: 14px; font-weight: bold; color: #46525e; }
+.stageName { font-size: calc(14 * var(--fs-u)); font-weight: bold; color: #46525e; }
 .goal {
   margin-top: 4px;
-  font-size: 14px;
+  font-size: calc(14 * var(--fs-u));
   color: #235c7d;
   background: #e9f3fa;
   border: 1px solid #b7d6ea;
@@ -264,7 +284,7 @@ main {
   background: #fff3e6;
   border-color: #f0c89a;
 }
-.tags { margin-top: 5px; font-size: 11px; }
+.tags { margin-top: 5px; font-size: calc(11 * var(--fs-u)); }
 .tags .lead { color: #8a94a0; margin-right: 4px; }
 .tag {
   display: inline-block;
@@ -285,19 +305,19 @@ main {
 #libSearch {
   width: 100%;
   padding: 10px 12px;
-  font-size: 15px;
+  font-size: calc(15 * var(--fs-u));
   border: 1px solid #c4cdd6;
   border-radius: 8px;
 }
 #libFilters { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 12px; }
 .filterGroup { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
-.filterLead { font-size: 12px; color: #8a94a0; margin-right: 2px; }
+.filterLead { font-size: calc(12 * var(--fs-u)); color: #8a94a0; margin-right: 2px; }
 .filterChip {
   border: 1px solid #c4cdd6;
   background: #fff;
   border-radius: 14px;
   padding: 4px 12px;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   cursor: pointer;
   color: #46525e;
   min-height: 32px;
@@ -314,7 +334,7 @@ main {
 }
 .filterChip.clearAll:hover { background: #f7e6cd; }
 .filterChip.acid.on { background: #b5480f; border-color: #b5480f; }
-#libCount { font-size: 13px; color: #5a6570; margin: 6px 2px; }
+#libCount { font-size: calc(13 * var(--fs-u)); color: #5a6570; margin: 6px 2px; }
 #libList { list-style: none; margin: 0; padding: 0; }
 .rxnRow {
   background: #fff;
@@ -324,13 +344,13 @@ main {
   margin-bottom: 10px;
   box-shadow: 0 1px 4px rgba(30, 60, 90, .06);
 }
-.rxnEq { font-size: 18px; font-weight: bold; color: #23303b; margin-bottom: 6px; }
+.rxnEq { font-size: calc(18 * var(--fs-u)); font-weight: bold; color: #23303b; margin-bottom: 6px; }
 /* 係数だけアクセント色。色はステッパーの係数（.coeff）と同じにして、
    索引で見た数字と、遊ぶ画面で自分が入れる数字が同じものだと分かるようにする */
 .rxnEq .rxnCoeff { color: #c2503c; }
 .rxnMeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
 .rxnBadge {
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   background: #eef1f4;
   border: 1px solid #d5dce2;
   border-radius: 10px;
@@ -341,13 +361,13 @@ main {
 .rxnBadge.redox { background: #eef7ee; border-color: #a9d3b4; color: #2e6b43; }
 .rxnBadge.diff { background: #fbf6e8; border-color: #ecd9a6; color: #9a7b1f; }
 .rxnBadge.pending { background: #f3f4f6; color: #8a94a0; border-style: dashed; }
-.rxnNet { font-size: 13px; color: #46525e; margin-left: 4px; }
-.rxnNote { font-size: 13px; color: #5a6570; line-height: 1.5; margin: 4px 0; }
+.rxnNet { font-size: calc(13 * var(--fs-u)); color: #46525e; margin-left: 4px; }
+.rxnNote { font-size: calc(13 * var(--fs-u)); color: #5a6570; line-height: 1.5; margin: 4px 0; }
 
 /* 分割版⇄まとめ版の行き来 */
 .rxnLinks { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin: 4px 0 2px; }
 .rxnLink {
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--fs-u));
   color: #3d6b8f;
   background: none;
   border: none;
@@ -374,7 +394,7 @@ main {
   background: #3b82c4;
   color: #fff;
   text-decoration: none;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   font-weight: bold;
   padding: 6px 14px;
   border-radius: 8px;
@@ -386,7 +406,7 @@ main {
 #toolbar button {
   border: none; border-radius: 8px;
   padding: 8px 14px;
-  font-size: 15px; font-weight: bold;
+  font-size: calc(15 * var(--fs-u)); font-weight: bold;
   color: #fff; cursor: pointer;
   box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
@@ -411,7 +431,7 @@ main {
 #toolbar .freeTry > summary {
   cursor: pointer;
   padding: 7px 10px;
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--fs-u));
   color: #5c6672;
   list-style: none;
 }
@@ -424,13 +444,13 @@ main {
 }
 #toolbar .freeTry .freeHint {
   padding: 0 10px 9px;
-  font-size: 12.5px; line-height: 1.55; color: #6b7480;
+  font-size: calc(12.5 * var(--fs-u)); line-height: 1.55; color: #6b7480;
 }
 
 /* ビーカー上の「投入した反応物の数」表示。反応式の係数（左辺）と同じ見た目にして対応づける */
 .addedFormula {
   text-align: center;
-  font-size: 25px;
+  font-size: calc(25 * var(--fs-u));
   font-weight: bold;
   margin: 2px 0 8px;
   min-height: 32px;
@@ -444,7 +464,7 @@ main {
 .addedFormula .plus {
   color: #5a6570;
   margin: 0 10px;
-  font-size: 21px;
+  font-size: calc(21 * var(--fs-u));
 }
 /* ちょうど反応しきったら緑にして「この個数比が係数」と気づかせる */
 .addedFormula.matched { color: #2e8b57; }
@@ -476,7 +496,7 @@ main {
 
 .hint {
   margin: 4px 0 8px;
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--fs-u));
   color: #5a6570;
   line-height: 1.4;
 }
@@ -500,7 +520,7 @@ main {
   border: 2px solid #ccd;
   margin: 2px;
   font-weight: bold;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
 }
 .chip.escaped { border-style: dashed; color: #7a8590; }
 
@@ -515,7 +535,7 @@ main {
   border-left: 4px solid #ccd;
 }
 .chipGroupLabel {
-  font-size: 11.5px; font-weight: bold; color: #6b7480;
+  font-size: calc(11.5 * var(--fs-u)); font-weight: bold; color: #6b7480;
   margin-right: 6px;
 }
 .chipGroup.solid { border-left-color: #8d6e4a; }
@@ -528,7 +548,7 @@ main {
 
 /* ---- 酸化還元モード ---- */
 .modeTag {
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   background: #4a7dab;
   padding: 2px 8px;
   border-radius: 10px;
@@ -537,7 +557,7 @@ main {
 }
 .modeLink {
   color: #fff;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   white-space: nowrap;
   text-decoration: none;
   border: 1px solid rgba(255, 255, 255, .5);
@@ -576,7 +596,7 @@ main.timelineMain {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: calc(13.5 * var(--fs-u));
   font-weight: bold;
   color: #46525e;
   margin-bottom: 8px;
@@ -586,24 +606,26 @@ main.timelineMain {
   width: 22px; height: 22px;
   border-radius: 50%;
   background: #4a7dab; color: #fff;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   display: inline-flex; align-items: center; justify-content: center;
 }
 /* 筆算グリッドの中に置く段見出し（③④⑤）。行をまたぐので上に余白を取る */
 .stepHead.inSheet { margin: 10px 0 4px; }
 .stepHead.inSheet[hidden] { display: none; }
-/* ステップ2は「やりとりの数」と「ビーカーの絵」を横に並べ、狭い画面では縦に折る。
-   ★ 2026-09-11・ユーザーの指摘「左右を入れ替える（式がメイン、図が従属）／
-   スマホであれば左右でなく上下に並べたほうがよい」。
-   .labMain（数を合わせる面）を左＝先に、.labSub（絵）を右＝後に置く。 */
-.labRow { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
-.labCol { flex: 1 1 320px; min-width: 0; }
-/* 絵の側は主役ではないので、面積を取りすぎないようにする（広い面でだけ効く） */
-@media (min-width: 860px) { .labMain { flex: 1.15 1 360px; } .labSub { flex: 1 1 320px; } }
-/* ⚠ 折り返し任せだと 720〜860px で中途半端に横に並ぶ。上下に積むと決めた幅で確実に積む */
-/* ⚠ 縦積みでは flex-basis が**高さ**になる。`flex: 1 1 320px` のままだと
-   上の段が 320px の高さに引き伸ばされ、下の絵とのあいだに空白ができる（375px で実測） */
-@media (max-width: 860px) { .labRow { flex-direction: column; } .labCol { flex: 0 0 auto; width: 100%; } }
+/* ステップ2は「やりとりの数（.labMain）」→「ビーカーの絵（.labSub）」の順に**縦1本**。
+   ★ 2026-09-11・ユーザーの決定（v211）:「どの画面でも1カラムにする」。
+   広い面で左右に割ると、式の側が半分の幅しか使えないうえ、左が短い回は
+   右のビーカーの横に空白が残る（1280px で実測）。縦1本なら横幅を全部使えるので、
+   式も図も大きく出せる ＝ 字を上げたい話（--fs-u）と相性がよい。
+   ⚠ 縦積みでは flex-basis が**高さ**になる。`flex: 1 1 320px` のままだと
+   上の段が 320px の高さに引き伸ばされ、下の絵とのあいだに空白ができる（375px で実測）。 */
+.labRow { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+.labCol { flex: 0 0 auto; width: 100%; min-width: 0; }
+/* ⚠ 1カラムでは、図が幅いっぱいまで伸びる。ビーカー（viewBox 480×430）を 980px 幅に
+   引き伸ばすと**高さが 880px** になり、下の段まで一画面に入らない（縦横比は保たれるので
+   幅を抑えるしかない）。図は主役ではないので、読みやすい大きさで頭打ちにする。 */
+#schematicWrap, #acidSourceWrap { max-width: 620px; }
+.labSub { max-width: 560px; }
 /* ★ 「▶ 反応を見る」「↺ やり直す」は**この絵を動かす釦**なので、絵と同じ枠に入れる
    （独立した行に置くと、これが次の作業の本体に見える ＝ ユーザーの指摘 (2)） */
 .beakerBox {
@@ -613,7 +635,8 @@ main.timelineMain {
   padding: 8px 8px 10px;
 }
 .beakerBox #beaker { border: none; border-radius: 0; background: none; }
-.beakerBox #toolbar { margin: 6px 0 0; }
+/* ★ v211: 釦は絵の**上**（ユーザーの指示）。下に敷いていた余白を上へ付け替える */
+.beakerBox #toolbar { margin: 0 0 8px; }
 
 /* 筆算シート。→ の位置がそろうように1枚のグリッドに並べる。
    列は［符号｜左辺｜→｜右辺｜注記］。
@@ -627,7 +650,7 @@ main.timelineMain {
   align-items: center;
   column-gap: 6px;
   row-gap: 4px;
-  font-size: 16px;
+  font-size: calc(16 * var(--fs-u));
   /* 式の行は折り返さず1行で見せる（筆算なので → の位置がそろっていることが大事）。
      注記の行まで max-content に数えると横幅が文章ぶん伸びてしまうので、
      .cSpan は幅0＋min-width:100% で「グリッドを広げないが行いっぱいに敷く」ようにする */
@@ -636,7 +659,7 @@ main.timelineMain {
 .calcRow { display: contents; }
 .calcRow[hidden] { display: none; }
 .cMark { text-align: right; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
-.cMark .paren { color: #7c8792; font-size: 20px; }
+.cMark .paren { color: #7c8792; font-size: calc(20 * var(--fs-u)); }
 .cLeft { text-align: right; justify-self: end; }
 .cArrow { text-align: center; color: #5a6570; }
 .cRight { text-align: left; justify-self: start; }
@@ -645,7 +668,7 @@ main.timelineMain {
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  font-size: 11px;
+  font-size: calc(11 * var(--fs-u));
 }
 .cSpan { grid-column: 1 / -1; width: 0; min-width: 100%; }
 .cRule { grid-column: 1 / -1; border-top: 2px solid #8a949e; margin: 2px 0; }
@@ -686,14 +709,14 @@ main.timelineMain {
   #calcSheet .halfFormula { flex-wrap: wrap; row-gap: 16px; }
   #calcSheet .cSpan { width: auto; min-width: 0; }
 }
-.footNote { font-size: 12.5px; line-height: 1.5; color: #5a6570; padding: 0 2px 2px; }
+.footNote { font-size: calc(12.5 * var(--fs-u)); line-height: 1.5; color: #5a6570; padding: 0 2px 2px; }
 /* ページ末尾の控えめな1行。GA4 が入っている全ページからポリシーへ到達できるようにする（D-1）。
    ヘッダーには足さない（v126-v128 で詰めた高さを崩さないため） */
-.pageFoot { margin: 18px 0 8px; text-align: center; font-size: 11.5px; color: #9aa4ae; }
+.pageFoot { margin: 18px 0 8px; text-align: center; font-size: calc(11.5 * var(--fs-u)); color: #9aa4ae; }
 .pageFoot a { color: inherit; }
-.muted { color: #9aa4ae; font-size: 13px; }
+.muted { color: #9aa4ae; font-size: calc(13 * var(--fs-u)); }
 .rowTag {
-  font-size: 11px;
+  font-size: calc(11 * var(--fs-u));
   color: #5a6570;
   background: #eef2f6;
   border-radius: 5px;
@@ -709,7 +732,7 @@ main.timelineMain {
    ⚠ これまで⑥の完成式にはこの色が付いていなかった（同じ「完成」なのに見た目が違った）。 */
 .doneRow .cLeft, .doneRow .cRight { background: #eef7ee; border-radius: 6px; padding: 2px 6px; }
 .kindTag {
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   font-weight: bold;
   color: #fff;
   padding: 2px 8px;
@@ -736,7 +759,7 @@ main.timelineMain {
    iOS が勝手に拡大しない 16px を満たす。数字の増減つまみは幅を食うので消す */
 .fcoefIn {
   width: 44px; min-height: 36px;
-  font-size: 16px; font-weight: bold; text-align: center;
+  font-size: calc(16 * var(--fs-u)); font-weight: bold; text-align: center;
   color: #23303b; background: #fff;
   border: 1px solid #b6c4d2; border-radius: 6px;
   padding: 0 2px;
@@ -748,7 +771,7 @@ main.timelineMain {
 .ratioLine {
   margin-top: 6px; padding: 5px 8px;
   background: #eef6f0; border-left: 3px solid #6aa88a; border-radius: 4px;
-  font-size: 13px; color: #2f5645; line-height: 1.5;
+  font-size: calc(13 * var(--fs-u)); color: #2f5645; line-height: 1.5;
 }
 .fcoefIn::-webkit-outer-spin-button, .fcoefIn::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .fcoefIn { -moz-appearance: textfield; appearance: textfield; }
@@ -764,7 +787,7 @@ main.timelineMain {
   left: 50%;
   transform: translateX(-50%);
   margin-top: 2px;
-  font-size: 10px;
+  font-size: calc(10 * var(--fs-u));
   font-weight: bold;
   border: 1px solid;
   border-radius: 4px;
@@ -782,7 +805,7 @@ main.timelineMain {
   background: #3b82c4;
   color: #fff;
   padding: 3px 9px;
-  font-size: 11px;
+  font-size: calc(11 * var(--fs-u));
   font-weight: bold;
   cursor: pointer;
   white-space: nowrap;
@@ -798,7 +821,7 @@ main.timelineMain {
   border-left: 4px solid #f2c14e;
   border-radius: 4px;
   line-height: 1.7;
-  font-size: 13.5px;
+  font-size: calc(13.5 * var(--fs-u));
 }
 .cancel { text-decoration: line-through; color: #c0392b; opacity: .7; }
 .particle.waiting { animation: blink 1s infinite; }
@@ -837,7 +860,7 @@ main.timelineMain {
 /* ★ 2026-09-11: 左辺の段（#equation）と右辺の段（#equationProd）で同じ見た目を使う。
    .eqRow が両方に付く（id で書くともう一方に当たらない） */
 .eqRow {
-  font-size: 20px;
+  font-size: calc(20 * var(--fs-u));
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -846,7 +869,7 @@ main.timelineMain {
   border-radius: 8px;
 }
 .eqRow.balanced { background: #eef7ee; }
-.eqRow .arrow, .eqRow .plus { font-size: 18px; margin: 0 2px; }
+.eqRow .arrow, .eqRow .plus { font-size: calc(18 * var(--fs-u)); margin: 0 2px; }
 .eqRow .term { display: inline-flex; align-items: center; gap: 4px; }
 .eqRow .formula { font-weight: bold; }
 
@@ -876,7 +899,7 @@ main.timelineMain {
   border: none;
   background: #edf1f5;
   width: 30px; height: 32px;
-  font-size: 15px;
+  font-size: calc(15 * var(--fs-u));
   cursor: pointer;
 }
 .stepper button:hover { background: #dbe4ec; }
@@ -885,18 +908,18 @@ main.timelineMain {
   min-width: 1.4em;
   text-align: center;
   font-weight: bold;
-  font-size: 18px;
+  font-size: calc(18 * var(--fs-u));
   color: #c2503c;
 }
 /* 文字色は .msgBox 側（成功・失敗・案内）が決める。ここに書くと id が強くて当たらない */
-#eqMsg { margin: 6px 0 4px; font-size: 13px; min-height: 18px; }
+#eqMsg { margin: 6px 0 4px; font-size: calc(13 * var(--fs-u)); min-height: 18px; }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。どちらも書けるように行き来させる */
 #eqMode { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 6px; }
 /* 何の2択かを言う見出し（DESIGN_ionic_two_step.md §6-6）。押せる見た目にしない */
-.eqModeLead { font-size: 11px; color: #6b7680; }
+.eqModeLead { font-size: calc(11 * var(--fs-u)); color: #6b7680; }
 .eqModeBtn {
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   padding: 3px 12px;
   border-radius: 999px;
   border: 1px solid #cdd7e0;
@@ -908,7 +931,7 @@ main.timelineMain {
 .eqModeBtn.on { background: #46647e; border-color: #46647e; color: #fff; font-weight: bold; }
 /* 分子反応式が書けない反応で、切り替えの代わりに出す但し書き。
    ボタンではないので押せる見た目にしない（#eqMode は flex なので折り返しを許す） */
-.eqModeNote { font-size: 11px; color: #6b7680; line-height: 1.5; }
+.eqModeNote { font-size: calc(11 * var(--fs-u)); color: #6b7680; line-height: 1.5; }
 
 /* やりとりの数（模式図）: ビーカーが「状態」を、ここが「量の関係」を受け持つ */
 #schematicWrap {
@@ -918,10 +941,10 @@ main.timelineMain {
   border: 1px solid #ece2d2;
   border-radius: 8px;
 }
-.schematicHead { font-size: 13px; font-weight: bold; color: #46525e; margin-bottom: 4px; }
+.schematicHead { font-size: calc(13 * var(--fs-u)); font-weight: bold; color: #46525e; margin-bottom: 4px; }
 #schematic { width: 100%; height: auto; display: block; }
 /* 文字色は .msgBox 側（成功・失敗・案内）が決める */
-#schematicMsg { font-size: 13px; min-height: 18px; margin-top: 4px; line-height: 1.5; }
+#schematicMsg { font-size: calc(13 * var(--fs-u)); min-height: 18px; margin-top: 4px; line-height: 1.5; }
 
 /* 置き換えビュー（弱酸の遊離）。模式図と同じ枠だが、こちらは係数と連動しない読み物 */
 #displaceWrap {
@@ -932,10 +955,10 @@ main.timelineMain {
   border-radius: 8px;
 }
 #displace { width: 100%; height: auto; display: block; }
-#displaceMsg { font-size: 13px; color: #46525e; min-height: 34px; margin-top: 4px; line-height: 1.5; }
+#displaceMsg { font-size: calc(13 * var(--fs-u)); color: #46525e; min-height: 34px; margin-top: 4px; line-height: 1.5; }
 #displaceBtn {
   margin-left: 8px;
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   padding: 2px 12px;
   border-radius: 999px;
   border: 1px solid #d9944a;
@@ -952,7 +975,7 @@ main.timelineMain {
 .schBlock:hover rect { filter: brightness(1.06); }
 #schematicAdd { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .schAdd {
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   font-weight: bold;
   padding: 4px 10px;
   border-radius: 999px;
@@ -973,7 +996,7 @@ main.timelineMain {
   border-radius: 8px;
 }
 .recombineHead {
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   font-weight: bold;
   color: #46525e;
   display: flex;
@@ -987,7 +1010,7 @@ main.timelineMain {
   background: #3b82c4;
   color: #fff;
   padding: 5px 12px;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   font-weight: bold;
   cursor: pointer;
   min-height: 32px;
@@ -1001,9 +1024,9 @@ main.timelineMain {
 #recombine rect.madeBox { stroke: #6a93b8; stroke-dasharray: none; }
 #recombine text.badLabel { fill: #c0392b; }
 #recombine text.goodLabel { fill: #2e8b57; }
-#recombineMsg { font-size: 13px; color: #46525e; min-height: 18px; margin-top: 4px; line-height: 1.5; }
+#recombineMsg { font-size: calc(13 * var(--fs-u)); color: #46525e; min-height: 18px; margin-top: 4px; line-height: 1.5; }
 
-#tally { border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+#tally { border-collapse: collapse; margin-top: 8px; font-size: calc(14 * var(--fs-u)); }
 #tally td, #tally th {
   border: 1px solid #cdd6de;
   padding: 3px 12px;
@@ -1036,7 +1059,7 @@ main.timelineMain {
   border: none; border-radius: 8px;
   padding: 8px 16px;
   background: #e08a3c; color: #fff;
-  font-size: 15px; font-weight: bold;
+  font-size: calc(15 * var(--fs-u)); font-weight: bold;
   cursor: pointer;
 }
 /* 「▶ ビーカーで確かめる」は**次へ進む釦と別の仕事**（正解後のオプション）なので、
@@ -1053,27 +1076,27 @@ main.timelineMain {
   /* 版番号だけのために1段（16px）使うのはもったいないので、右上へ逃がす。
      h1 は同じぶん右を空けて、文字が版番号の下に潜らないようにする */
   .version { position: absolute; top: 6px; right: 12px; }
-  header h1 { font-size: 17px; padding-right: 34px; }
+  header h1 { font-size: calc(17 * var(--fs-u)); padding-right: 34px; }
   #eqPane { padding: 12px 12px 16px; }
   /* 投入・反応・やり直しボタンは高さ44px以上に */
   #toolbar { gap: 6px; }
   #toolbar button { padding: 11px 14px; min-height: 44px; }
   /* ステージ番号の丸 */
-  #stageNav button { width: 40px; height: 40px; font-size: 16px; }
+  #stageNav button { width: 40px; height: 40px; font-size: calc(16 * var(--fs-u)); }
   /* 一覧の釦も丸と同じ高さにそろえる（同じ行に並ぶので凸凹に見えないように） */
   .navList { min-height: 40px; border-radius: 20px; }
   .modeBar { gap: 6px; }
   /* 係数ステッパーの＋/−は小さいと押し間違えるので拡大 */
-  .stepper button { width: 40px; height: 42px; font-size: 19px; }
-  .coeff { min-width: 1.5em; font-size: 20px; }
-  .eqRow { font-size: 19px; gap: 8px 6px; }
+  .stepper button { width: 40px; height: 42px; font-size: calc(19 * var(--fs-u)); }
+  .coeff { min-width: 1.5em; font-size: calc(20 * var(--fs-u)); }
+  .eqRow { font-size: calc(19 * var(--fs-u)); gap: 8px 6px; }
   /* 筆算は横に長い。狭い画面では文字を詰め、はみ出すぶんは横スクロールで見せる */
-  #calcSheet, #halfSheet { font-size: 15px; column-gap: 5px; }
-  .cNote { font-size: 10px; }
+  #calcSheet, #halfSheet { font-size: calc(15 * var(--fs-u)); column-gap: 5px; }
+  .cNote { font-size: calc(10 * var(--fs-u)); }
   /* 「組み替える」ボタンも押しやすく */
   .recombineHead button { padding: 9px 14px; min-height: 40px; }
   .modeLink { padding: 6px 12px; }
-  .hint { font-size: 13px; }
+  .hint { font-size: calc(13 * var(--fs-u)); }
 }
 
 /* ---- スマホ（横持ち）: ヘッダーを1段に畳む ----
@@ -1100,10 +1123,10 @@ main.timelineMain {
   /* 見た目だけ畳む。中身のテキストは DOM に残るので読み上げは今までどおり */
   header h1 { font-size: 0; margin: 0; padding: 0; flex: 0 0 auto; }
   /* いま何モードにいるかの札だけは残す（畳んだ題名の代わりの目印になる） */
-  header h1 .modeTag { font-size: 11.5px; margin-left: 0; }
+  header h1 .modeTag { font-size: calc(11.5 * var(--fs-u)); margin-left: 0; }
   /* ステージの帯を持たないページ（反応インデックス・単元の入り口）は段に余裕があるので、
      題名をそのまま出す。畳むのは「帯2本と場所を取り合うページ」だけでよい */
-  header:not(:has(.stageBar)) h1 { font-size: 14px; }
+  header:not(:has(.stageBar)) h1 { font-size: calc(14 * var(--fs-u)); }
   /* 版番号は1段しかない横持ちでは幅のほうが惜しい。縦持ちでは今までどおり出る */
   .version { display: none; }
   /* 段を1本にすると2つの帯が横幅を取り合う。ステージを主・モードを従として配分を決め打ちする
@@ -1141,7 +1164,7 @@ main.timelineMain {
    （題名の実測は 171px ＝ 実機より 16px 狭い）。文字数で決めているのはそのため。 */
 @media (max-width: 500px) and (orientation: portrait) {
   .modeTag[data-short] { font-size: 0; margin-left: 6px; padding: 2px 6px; }
-  .modeTag[data-short]::after { content: attr(data-short); font-size: 11px; }
+  .modeTag[data-short]::after { content: attr(data-short); font-size: calc(11 * var(--fs-u)); }
   /* 段の数は 3 のまま（縦持ちではステージの帯とモードの帯を横に並べる余裕がない）。
      代わりに上下の余白と行間をもう一度詰めて、札の折り返しを直したぶんに上乗せする */
   header { padding: 5px 12px; gap: 5px; }
@@ -1182,13 +1205,13 @@ main.timelineMain {
   background: #275d8c;
   color: #fff;
 }
-.sheetTitle { font-size: 13.5px; font-weight: bold; }
+.sheetTitle { font-size: calc(13.5 * var(--fs-u)); font-weight: bold; }
 .sheetClose {
   margin-left: auto;
   min-width: 34px; min-height: 34px;
   border: none; border-radius: 8px;
   background: rgba(255, 255, 255, .16); color: #fff;
-  font-size: 15px; cursor: pointer;
+  font-size: calc(15 * var(--fs-u)); cursor: pointer;
 }
 .sheetClose:hover { background: rgba(255, 255, 255, .3); }
 .sheetList { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 6px; }
@@ -1205,7 +1228,7 @@ main.timelineMain {
   background: transparent;
   color: inherit;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: calc(13.5 * var(--fs-u));
   line-height: 1.45;
   text-align: left;
   cursor: pointer;
@@ -1219,7 +1242,7 @@ main.timelineMain {
   width: 26px; height: 26px;
   border-radius: 50%;
   background: #4a7dab; color: #fff;
-  font-size: 12.5px; font-weight: bold;
+  font-size: calc(12.5 * var(--fs-u)); font-weight: bold;
 }
 .sheetRow.active .sheetNo { background: #e0a52c; color: #4a3a10; }
 .sheetName { flex: 1 1 auto; min-width: 0; }
@@ -1238,7 +1261,7 @@ main.timelineMain {
   border-radius: 8px;
 }
 #acidSource { width: 100%; height: auto; display: block; }
-#acidSourceMsg { font-size: 12.5px; color: #46525e; margin-top: 4px; line-height: 1.5; }
+#acidSourceMsg { font-size: calc(12.5 * var(--fs-u)); color: #46525e; margin-top: 4px; line-height: 1.5; }
 
 /* 液性で書き換えるモード（condition.html）の中和の図 */
 #neutralWrap {
@@ -1252,15 +1275,15 @@ main.timelineMain {
 
 /* ---- 単元から入る入り口ページ（portal.html） ---- */
 .portalMain { display: block; max-width: 900px; margin: 0 auto; padding: 16px 16px 40px; }
-.portalLead { font-size: 14.5px; line-height: 1.8; color: #46525e; margin: 4px 0 18px; }
+.portalLead { font-size: calc(14.5 * var(--fs-u)); line-height: 1.8; color: #46525e; margin: 4px 0 18px; }
 .portalHead {
-  font-size: 15px;
+  font-size: calc(15 * var(--fs-u));
   margin: 22px 0 10px;
   padding-left: 10px;
   border-left: 4px solid #275d8c;
   color: #23303b;
 }
-.portalNote { font-size: 12.5px; color: #7d8a91; margin: -4px 0 10px; }
+.portalNote { font-size: calc(12.5 * var(--fs-u)); color: #7d8a91; margin: -4px 0 10px; }
 .roleCards { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
 .roleCard {
   display: flex;
@@ -1277,14 +1300,14 @@ main.timelineMain {
 .roleCard:hover { border-color: #a9c6de; box-shadow: 0 3px 12px rgba(30, 60, 90, .12); }
 .roleCard.sub { background: #f8fafc; }
 .roleHead { display: flex; align-items: center; gap: 8px; }
-.roleIcon { font-size: 22px; }
-.roleTitle { font-weight: bold; font-size: 15px; color: #23303b; }
-.roleBody { font-size: 13px; line-height: 1.65; color: #5a6570; margin: 0; }
-.roleCta { font-size: 12.5px; font-weight: bold; color: #3b82c4; margin-top: auto; }
+.roleIcon { font-size: calc(22 * var(--fs-u)); }
+.roleTitle { font-weight: bold; font-size: calc(15 * var(--fs-u)); color: #23303b; }
+.roleBody { font-size: calc(13 * var(--fs-u)); line-height: 1.65; color: #5a6570; margin: 0; }
+.roleCta { font-size: calc(12.5 * var(--fs-u)); font-weight: bold; color: #3b82c4; margin-top: auto; }
 
 .subject { margin-bottom: 18px; }
 .subjectName {
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   color: #fff;
   background: #4a7dab;
   border-radius: 12px;
@@ -1308,9 +1331,9 @@ main.timelineMain {
   box-shadow: 0 0 0 3px rgba(39, 93, 140, .13);
 }
 .unitHead { display: flex; align-items: baseline; gap: 8px; }
-.unitName { font-weight: bold; font-size: 14.5px; color: #23303b; }
-.unitCount { font-size: 11.5px; color: #8a94a0; }
-.unitNote { font-size: 12.5px; color: #5a6570; margin: 3px 0 7px; line-height: 1.6; }
+.unitName { font-weight: bold; font-size: calc(14.5 * var(--fs-u)); color: #23303b; }
+.unitCount { font-size: calc(11.5 * var(--fs-u)); color: #8a94a0; }
+.unitNote { font-size: calc(12.5 * var(--fs-u)); color: #5a6570; margin: 3px 0 7px; line-height: 1.6; }
 .stageChips { display: flex; flex-wrap: wrap; gap: 6px; }
 .stageChip {
   display: inline-flex;
@@ -1322,19 +1345,19 @@ main.timelineMain {
   border: 1px solid #d5dce2;
   border-radius: 14px;
   padding: 4px 12px;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   text-decoration: none;
   color: #2a3540;
   background: #fbfcfd;
 }
 .stageChip:hover { background: #eef4fa; border-color: #a9c6de; }
-.chipMode { font-size: 10.5px; color: #fff; background: #8a94a0; border-radius: 8px; padding: 1px 6px; }
+.chipMode { font-size: calc(10.5 * var(--fs-u)); color: #fff; background: #8a94a0; border-radius: 8px; padding: 1px 6px; }
 .stageChip.mode-ion .chipMode { background: #3b82c4; }
 .stageChip.mode-redox .chipMode { background: #c0603c; }
 .stageChip.mode-condition .chipMode { background: #2e8b57; }
 @media (max-width: 560px) {
   .portalMain { padding: 12px 12px 32px; }
-  .stageChip { font-size: 12.5px; padding: 5px 11px; }
+  .stageChip { font-size: calc(12.5 * var(--fs-u)); padding: 5px 11px; }
 }
 
 /* アプリ横断（反応インデックス → 比例式でみる化学計算） */
@@ -1343,8 +1366,8 @@ main.timelineMain {
 .filterChip.cross.on { background: #6a72c9; border-color: #6a72c9; }
 
 /* ヨードホルム反応の「切れる」段（酸化還元ではない） */
-#stepCleave .stepNo { background: #b58a2b; font-size: 11px; }
-#cleaveMsg { font-size: 12.5px; color: #46525e; margin-top: 6px; line-height: 1.6; }
+#stepCleave .stepNo { background: #b58a2b; font-size: calc(11 * var(--fs-u)); }
+#cleaveMsg { font-size: calc(12.5 * var(--fs-u)); color: #46525e; margin-top: 6px; line-height: 1.6; }
 .cleaveRest { margin-top: 4px; color: #8d5a25; }
 .cleaveOverall { margin-top: 3px; font-weight: bold; color: #23303b; }
 
@@ -1355,7 +1378,7 @@ main.timelineMain {
   background: #fdf3e8;
   border-left: 4px solid #d9944a;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   line-height: 1.65;
   color: #6b4a2a;
 }
@@ -1365,14 +1388,14 @@ main.timelineMain {
    **縦積みが既定**。Gemini のスケッチは3カラムだが 320px では成立しないので横に並べない。
    選ぶ道具は素の <select>（自作ドロップダウンにしない）＝モバイルで最も壊れにくく、
    「押せるものが 32px 未満にならない」という既存の制約にもそのまま乗る。 */
-#stepPick .stepNo { background: #4f8f6a; font-size: 11px; }
+#stepPick .stepNo { background: #4f8f6a; font-size: calc(11 * var(--fs-u)); }
 /* たたんだ段0 を開き直す釦（v182）。見出しの行に相乗りするので**段は太らない**。
    押せるものの床（32px）は満たす */
 .pickToggle {
   margin-left: auto;
   min-height: 32px;
   padding: 4px 10px;
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   font-weight: bold;
   color: #35604a;
   background: #eaf5ef;
@@ -1386,10 +1409,10 @@ main.timelineMain {
 #pickHeadText { line-height: 1.4; min-width: 0; }
 .pickGrid { display: flex; flex-direction: column; gap: 10px; }
 .pickRow { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.pickLabel { font-size: 12.5px; font-weight: bold; color: #46525e; }
+.pickLabel { font-size: calc(12.5 * var(--fs-u)); font-weight: bold; color: #46525e; }
 .pickRow select {
   width: 100%;
-  font-size: 15px;
+  font-size: calc(15 * var(--fs-u));
   min-height: 40px;
   padding: 6px 8px;
   border: 1px solid #b6c4d2;
@@ -1397,7 +1420,7 @@ main.timelineMain {
   background: #fff;
   color: #23303b;
 }
-.pickNote { font-size: 11.5px; color: #6c7a88; line-height: 1.55; }
+.pickNote { font-size: calc(11.5 * var(--fs-u)); color: #6c7a88; line-height: 1.55; }
 .pickNote:empty { display: none; }
 /* ---- 液性の選択（M6-D）----
    320px でも収まるよう札は短く、入りきらなければ折り返す。
@@ -1411,7 +1434,7 @@ main.timelineMain {
   display: flex; align-items: center; gap: 7px;
   min-height: 40px; padding: 4px 12px;
   border: 1px solid #b6c4d2; border-radius: 8px; background: #fff;
-  font-size: 14px; color: #23303b; cursor: pointer;
+  font-size: calc(14 * var(--fs-u)); color: #23303b; cursor: pointer;
 }
 .condOpt input { position: absolute; width: 0; height: 0; opacity: 0; margin: 0; }
 .condOpt .dot {
@@ -1427,24 +1450,24 @@ main.timelineMain {
   display: inline-flex; align-items: center; min-height: 34px;
   margin-top: 5px; padding: 4px 10px;
   border: 1px solid #b6c4d2; border-radius: 8px;
-  color: #35608a; font-size: 12px; text-decoration: none;
+  color: #35608a; font-size: calc(12 * var(--fs-u)); text-decoration: none;
 }
 .condLink:hover { background: #eef4fb; }
 .pickActions { margin-top: 10px; }
 .pickActions button {
   border: none; border-radius: 8px;
   padding: 10px 16px;
-  font-size: 15px; font-weight: bold;
+  font-size: calc(15 * var(--fs-u)); font-weight: bold;
   color: #fff; cursor: pointer;
   min-height: 44px;
   background: #e08a3c;
   box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
 .pickActions button:active { transform: translateY(1px); }
-#pickMsg { margin-top: 10px; padding: 8px 11px; border-radius: 4px; line-height: 1.6; font-size: 13px; }
+#pickMsg { margin-top: 10px; padding: 8px 11px; border-radius: 4px; line-height: 1.6; font-size: calc(13 * var(--fs-u)); }
 #pickMsg:empty { display: none; }
 /* 「どうすれば進むか」の一行。押した操作が無駄にならないよう必ず添える（§4-3） */
-.pickFix { margin-top: 6px; font-size: 12.5px; color: #46525e; }
+.pickFix { margin-top: 6px; font-size: calc(12.5 * var(--fs-u)); color: #46525e; }
 .pickFix::before { content: "→ "; color: #4a7dab; font-weight: bold; }
 
 /* ---- 収録ステージへの橋（M6-E・§3-3）----
@@ -1454,12 +1477,12 @@ main.timelineMain {
    ここは行数を増やさないよう見出し1行＋行き先ぶんだけに絞る。 */
 #pickBridge { margin-top: 8px; }
 #pickBridge[hidden] { display: none; }
-.bridgeHead { font-size: 11.5px; color: #6c7a88; margin-bottom: 4px; }
+.bridgeHead { font-size: calc(11.5 * var(--fs-u)); color: #6c7a88; margin-bottom: 4px; }
 .bridgeLink {
   display: block; width: 100%; text-align: left;
   min-height: 34px; margin-top: 4px; padding: 5px 10px;
   border: 1px solid #b6c4d2; border-radius: 8px; background: #fff;
-  color: #35608a; font-size: 12.5px; line-height: 1.5; cursor: pointer;
+  color: #35608a; font-size: calc(12.5 * var(--fs-u)); line-height: 1.5; cursor: pointer;
 }
 .bridgeLink:hover { background: #eef4fb; }
 
@@ -1468,30 +1491,30 @@ main.timelineMain {
    必ず上下に分けて出す。**順位の数値は絶対に画面に出さない**（電位の暗記にすり替わる）。 */
 #pickWhy { margin-top: 10px; }
 #pickWhy[hidden] { display: none; }
-.whyHead { font-size: 12px; color: #6c7a88; margin-bottom: 4px; }
+.whyHead { font-size: calc(12 * var(--fs-u)); color: #6c7a88; margin-bottom: 4px; }
 .ladderPair { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
 .ladderPair .lrow {
   display: flex; align-items: center; gap: 8px;
   background: #f2f6fa; border-left: 4px solid #b6c4d2;
   border-radius: 4px; padding: 4px 9px;
-  font-size: 15px; color: #23303b;
+  font-size: calc(15 * var(--fs-u)); color: #23303b;
 }
 .ladderPair .lrow.top { border-left-color: #4a7dab; font-weight: bold; }
-.ladderPair .lrow .lnote { font-size: 11px; color: #6c7a88; font-weight: normal; }
+.ladderPair .lrow .lnote { font-size: calc(11 * var(--fs-u)); color: #6c7a88; font-weight: normal; }
 .ladderToggle {
   background: none; border: 1px solid #b6c4d2; border-radius: 8px;
-  color: #35608a; font-size: 12.5px; cursor: pointer;
+  color: #35608a; font-size: calc(12.5 * var(--fs-u)); cursor: pointer;
   padding: 6px 12px; min-height: 32px;
 }
 .ladderToggle:hover { background: #eef4fb; }
 .ladderFull { margin-top: 8px; border: 1px solid #dbe4ec; border-radius: 8px; padding: 9px 11px; background: #fbfdff; }
 .ladderFull[hidden] { display: none; }
-.ladderBand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 15px; color: #23303b; }
+.ladderBand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: calc(15 * var(--fs-u)); color: #23303b; }
 .ladderBand .sep { color: #9aa7b4; }
 .ladderBand .metal { font-weight: bold; }
 /* 金属の列に挟まっているだけのもの。うすい字＝「覚える対象ではない」を見た目で言う */
-.ladderBand .other { color: #8d9aa7; font-size: 13px; }
-.ladderCap { font-size: 11.5px; color: #6c7a88; margin: 2px 0 6px; line-height: 1.5; }
+.ladderBand .other { color: #8d9aa7; font-size: calc(13 * var(--fs-u)); }
+.ladderCap { font-size: calc(11.5 * var(--fs-u)); color: #6c7a88; margin: 2px 0 6px; line-height: 1.5; }
 /* 行が3本になった（v192）ので、次の見出しの前だけ空ける。
    詰まっていると「覚えた列」と「アプリが使う列」が1つのかたまりに見える */
 .ladderBand + .ladderCap { margin-top: 11px; }
@@ -1499,11 +1522,11 @@ main.timelineMain {
    うしろに敷いた帯で「この行だけ別もの」と分かるようにする（太字とあわせて2つで示す） */
 .ladderBand[data-band="series"] { background: #eef5fb; border-radius: 6px; padding: 4px 7px; }
 .ladderCut { border: 0; border-top: 1px dashed #b6c4d2; margin: 9px 0; }
-.ladderNote { font-size: 12px; color: #46525e; line-height: 1.65; margin-top: 8px; }
+.ladderNote { font-size: calc(12 * var(--fs-u)); color: #46525e; line-height: 1.65; margin-top: 8px; }
 .ladderNote strong { color: #23303b; }
 
 @media (max-width: 500px) {
-  .pickRow select { min-height: 44px; font-size: 16px; }  /* iOS の自動ズームを避ける 16px */
+  .pickRow select { min-height: 44px; font-size: calc(16 * var(--fs-u)); }  /* iOS の自動ズームを避ける 16px */
   .ladderToggle { min-height: 40px; }
   .bridgeLink { min-height: 40px; }
 }
@@ -1516,7 +1539,7 @@ main.timelineMain {
   background: #eef4fb; border: 1px solid #cfe0f0;
   border-left: 4px solid #4a7dab;
   border-radius: 6px; padding: 6px 10px;
-  font-size: 12.5px; color: #35608a;
+  font-size: calc(12.5 * var(--fs-u)); color: #35608a;
 }
 #libFrom .fromWhere b { color: #275d8c; }
 #libFrom .fromWhere.fromMiss { color: #8c5a10; }
@@ -1548,7 +1571,7 @@ main.timelineMain {
 .plateGroup:focus-visible .plateBody { stroke: #3b82c4; stroke-width: 4; }
 /* いま選んでいる板。色だけに頼らず、枠を太くして違いを出す */
 .plateGroup.chosen .plateBody { stroke: #e0a52c; stroke-width: 5; }
-#predictMsg { margin: 8px 0 6px; font-size: 13.5px; line-height: 1.6; }
+#predictMsg { margin: 8px 0 6px; font-size: calc(13.5 * var(--fs-u)); line-height: 1.6; }
 #predictMsg:empty { display: none; }
 #msg:empty { display: none; }
 /* e⁻ とイオンの粒（battery.js が作る）。redox の .particle と同じ見た目の約束にそろえる */
@@ -1558,8 +1581,8 @@ main.timelineMain {
 /* 電池式（教科書表記）。足し合わせの下に1行だけ置く */
 .cellNotation { margin-top: 10px; padding: 8px 10px; background: #f4f8fb;
   border: 1px solid #cfdce8; border-radius: 8px; }
-.cellCap { font-size: 11.5px; color: #7d8a97; margin-bottom: 3px; }
-.cellVal { font-size: 16px; font-weight: bold; color: #23303b; overflow-x: auto; white-space: nowrap; }
+.cellCap { font-size: calc(11.5 * var(--fs-u)); color: #7d8a97; margin-bottom: 3px; }
+.cellVal { font-size: calc(16 * var(--fs-u)); font-weight: bold; color: #23303b; overflow-x: auto; white-space: nowrap; }
 #separatorNote { margin-top: 10px; }
 
 /* ---- 電極パレット（b2「電極を選ぶ」）----
@@ -1571,26 +1594,26 @@ main.timelineMain {
   min-width: 84px; min-height: 46px; padding: 4px 8px; border: 2px dashed #b7c3cd;
   border-radius: 9px; background: #fbfdff; color: #46525e; cursor: pointer; }
 .palSlot.filled { border-style: solid; border-color: #7d8ea0; background: #fff; }
-.palSlotCap { font-size: 10.5px; color: #8a97a3; }
-.palSlotVal { font-size: 17px; font-weight: bold; color: #23303b; }
-.palAnd { font-size: 13px; color: #7d8a97; }
+.palSlotCap { font-size: calc(10.5 * var(--fs-u)); color: #8a97a3; }
+.palSlotVal { font-size: calc(17 * var(--fs-u)); font-weight: bold; color: #23303b; }
+.palAnd { font-size: calc(13 * var(--fs-u)); color: #7d8a97; }
 .palRow { display: flex; gap: 6px; justify-content: center; }
-.palMetal { flex: 1 1 0; min-width: 0; min-height: 44px; font-size: 15px; font-weight: bold;
+.palMetal { flex: 1 1 0; min-width: 0; min-height: 44px; font-size: calc(15 * var(--fs-u)); font-weight: bold;
   color: #fff; background: var(--pm, #9aa4ae); border: 2px solid #46525e; border-radius: 8px;
   cursor: pointer; padding: 4px 2px; }
 .palMetal.used { box-shadow: inset 0 0 0 2px #fff; }
 /* 正極側で起きることを収録していない組み合わせは、そもそも選ばせない（設計 §0） */
 .palMetal:disabled { background: #e3e7ea; color: #a7b0b8; border-color: #cbd3d9; cursor: not-allowed; }
-.palHint { margin-top: 6px; font-size: 12px; line-height: 1.55; color: #6d7a86; }
+.palHint { margin-top: 6px; font-size: calc(12 * var(--fs-u)); line-height: 1.55; color: #6d7a86; }
 /* 「同じ金属でも役は相手で決まる」に気づいた記録。ここが b2 の当たり */
 #discovery { margin: 0 0 10px; padding: 8px 10px; background: #fff8e6;
-  border: 1px solid #e6d3a3; border-radius: 8px; font-size: 12.5px; line-height: 1.6; color: #5b4c2a; }
+  border: 1px solid #e6d3a3; border-radius: 8px; font-size: calc(12.5 * var(--fs-u)); line-height: 1.6; color: #5b4c2a; }
 #discovery .rNeg { color: #2f6bb0; }
 #discovery .rPos { color: #a8492c; }
-.clearNudge { margin-top: 4px; font-size: 12.5px; line-height: 1.55; opacity: .9; }
+.clearNudge { margin-top: 4px; font-size: calc(12.5 * var(--fs-u)); line-height: 1.55; opacity: .9; }
 @media (max-width: 359px) {
   .palSlot { min-width: 70px; }
-  .palMetal { font-size: 14px; }
+  .palMetal { font-size: calc(14 * var(--fs-u)); }
 }
 
 /* ================================================================================
@@ -1626,15 +1649,15 @@ main.timelineMain {
 .bcol { display: contents; }
 /* 柱 —— イオン反応式の左辺の項。★ ユーザーの言う「マーカー」はこの札の色 */
 .bcolHead { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding-bottom: 2px; }
-.bwSep { color: #7c8792; font-size: 15px; }
+.bwSep { color: #7c8792; font-size: calc(15 * var(--fs-u)); }
 .bpill {
-  font-size: 16px; font-weight: bold; color: #2a3540;
+  font-size: calc(16 * var(--fs-u)); font-weight: bold; color: #2a3540;
   background: #fff3d4; border: 1.5px solid #e0bd6e; border-radius: 7px;
   padding: 5px 9px; min-height: 36px; cursor: pointer;
 }
 .bpill.here { background: #ffe6a8; border-color: #c8912c; box-shadow: 0 0 0 2px #f3dca7; }
 .bpill.done { background: #e8f5ec; border-color: #9fc7ab; color: #2f6b45; }
-.bcolArrow { text-align: center; color: #7c8792; font-size: 15px; line-height: 1.2; }
+.bcolArrow { text-align: center; color: #7c8792; font-size: calc(15 * var(--fs-u)); line-height: 1.2; }
 .bcolSlot { padding-bottom: 2px; }
 .bcolRest { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding-left: 4px; }
 .bwEqSide { white-space: nowrap; }
@@ -1650,7 +1673,7 @@ main.timelineMain {
 .bslot.active { border-color: #c8912c; border-style: solid; background: #fffaf0; }
 .bslot.ok { border-style: solid; border-color: #7fae8f; background: #f2faf5; }
 .bslot.ng { border-style: solid; border-color: #d09a8a; background: #fdf5f3; }
-.bslotPh { color: #a8b4c0; font-size: 17px; }
+.bslotPh { color: #a8b4c0; font-size: calc(17 * var(--fs-u)); }
 /* ★ 2026-09-11・「イオンでないものは聞かなくてよい」。
    柱は式の項として残す（⑤の係数の欄がこの真下に来る）が、問いではないので
    受け皿を置かず、色を落として**答える場所ではない**ことを形で言う */
@@ -1658,7 +1681,7 @@ main.timelineMain {
 .bself {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; min-width: 104px; padding: 4px 6px;
-  font-size: 12.5px; color: #7c8792;
+  font-size: calc(12.5 * var(--fs-u)); color: #7c8792;
 }
 .bwSelfNote .bwNoteText { color: #5a6570; }
 /* ★ 2026-09-11・「紙に自分で書くと起こる事故」の注意。筆算のいちばん下に1度だけ。
@@ -1666,20 +1689,20 @@ main.timelineMain {
    いま答えたことの合否ではない */
 #bottleTrap {
   margin-top: 10px; padding: 8px 10px; line-height: 1.65;
-  font-size: 12.5px; color: #46525e;
+  font-size: calc(12.5 * var(--fs-u)); color: #46525e;
   background: #fbf7ee; border: 1px solid #e3d6b8; border-left: 4px solid #d8b968; border-radius: 6px;
 }
 .btrapHead { display: block; font-weight: bold; color: #7a5f1e; margin-bottom: 2px; }
 .btrapText { display: block; }
 .bchip {
   display: inline-flex; align-items: center; gap: 2px;
-  font-size: 14.5px; font-weight: bold; color: #23303b;
+  font-size: calc(14.5 * var(--fs-u)); font-weight: bold; color: #23303b;
   background: linear-gradient(#fbfdff, #eef4f9);
   border: 1.5px solid #c3d2df; border-radius: 6px; padding: 3px 3px 3px 7px;
 }
 .bchipX {
   border: 0; background: transparent; color: #8a949e; cursor: pointer;
-  font-size: 11px; line-height: 1; padding: 5px 4px; min-height: 24px;
+  font-size: calc(11 * var(--fs-u)); line-height: 1; padding: 5px 4px; min-height: 24px;
 }
 /* 判定文・手がかりは**全幅の行**に積む（列は狭く、長い文が1文字ずつ縦に折れるため）。
    どの柱・どの物質の話かは、行の頭の札が言う */
@@ -1689,21 +1712,21 @@ main.timelineMain {
 .bwRowTag { grid-column: 1 / -1; }
 /* 柱の行が何なのかを名指しする（「直前のイオン反応式との対応がわかりづらい」への答えの半分）。
    残りの半分は**位置**（答えが柱の真下にしか置けない）が言う */
-.bwRowTag { font-size: 11.5px; color: #5a6570; padding-bottom: 2px; }
+.bwRowTag { font-size: calc(11.5 * var(--fs-u)); color: #5a6570; padding-bottom: 2px; }
 .bwRowTag b { color: #2f5b7a; }
 /* ★ 柱をもう一度出す行（echo）。押せないので、色を落として「見出しの控え」に見せる。
    ⚠ 右の欄に置く札は列の外（1fr の列）なので、グリッドの幅を押し広げない */
 .bwEchoCell { padding-top: 6px; }
 .bpill.echo {
   display: inline-block;
-  font-size: 14.5px; font-weight: bold; color: #46525e;
+  font-size: calc(14.5 * var(--fs-u)); font-weight: bold; color: #46525e;
   background: #f4f7fa; border: 1px dashed #b9c8d6; border-radius: 7px;
   padding: 3px 8px; min-height: 0; cursor: default;
 }
-.bwEchoTag { grid-column: auto; font-size: 11px; color: #7c8792; white-space: nowrap; padding-left: 6px; }
+.bwEchoTag { grid-column: auto; font-size: calc(11 * var(--fs-u)); color: #7c8792; white-space: nowrap; padding-left: 6px; }
 .bwNote { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; margin: 1px 0; }
 .bwNoteIon {
-  flex: none; font-size: 11.5px; font-weight: bold; color: #46525e;
+  flex: none; font-size: calc(11.5 * var(--fs-u)); font-weight: bold; color: #46525e;
   background: #eef3f8; border: 1px solid #d6e0ea; border-radius: 4px; padding: 1px 5px;
 }
 .bwNoteText { flex: 1 1 auto; min-width: 0; }
@@ -1711,9 +1734,9 @@ main.timelineMain {
 /* ④後半 —— 筆算の1行として横に並べる（ユーザーの絵の最下段）。
    ⚠ 柱の列にはそろえられない（1種が2つの物質から来る・1つの物質が2列にまたがる） */
 .bwAddLine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 4px; }
-.bwAddLead { font-size: 13px; color: #46525e; }
+.bwAddLead { font-size: calc(13 * var(--fs-u)); color: #46525e; }
 .bwAddItem { display: inline-flex; align-items: center; gap: 5px; }
-.bwAddIon { font-size: 15px; font-weight: bold; color: #23303b; }
+.bwAddIon { font-size: calc(15 * var(--fs-u)); font-weight: bold; color: #23303b; }
 .bwAddNotes { display: block; }
 #bottleTail > .stepHead.inWork { margin: 10px 0 2px; }
 .bwCoef { margin: 0; padding-left: 0; border-left: 0; }
@@ -1731,7 +1754,7 @@ main.timelineMain {
   .bworkScroll { overflow-x: visible; width: auto; }
   #bottleEq {
     display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
-    font-size: 15px; line-height: 1.9;
+    font-size: calc(15 * var(--fs-u)); line-height: 1.9;
     padding: 5px 7px; margin-bottom: 8px;
     background: #fff; border: 1px solid #d6e0ea; border-radius: 8px;
   }
@@ -1754,7 +1777,7 @@ main.timelineMain {
 /* ---- はじめに入れたものから化学反応式を組み立てる段（v180・DESIGN_redox.md）----
    入れたものの棚・出どころ当て・蒸発後のプール。数字も判断も持たない見た目だけの定義 */
 #stepBottles .stepHead + #bottleRack { margin-top: 2px; }
-.bottleCap { font-size: 12.5px; color: #5a6570; line-height: 1.6; margin-bottom: 6px; }
+.bottleCap { font-size: calc(12.5 * var(--fs-u)); color: #5a6570; line-height: 1.6; margin-bottom: 6px; }
 .bottleShelf { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
 /* 札は**押せる**（タップで柱の下に置く）。押せる見た目にし、指の床 44px を満たす */
 .bottleCard {
@@ -1769,12 +1792,12 @@ main.timelineMain {
   cursor: pointer;
 }
 .bottleCard:hover { border-color: #9db4c8; background: linear-gradient(#fff, #e6eef6); }
-.bottleName { font-size: 15px; font-weight: bold; color: #2a3540; }
-.bottleParts { font-size: 11.5px; color: #5a6570; margin-top: 2px; }
-.bottleWhere { font-size: 11.5px; color: #7c8792; margin-bottom: 0; }
+.bottleName { font-size: calc(15 * var(--fs-u)); font-weight: bold; color: #2a3540; }
+.bottleParts { font-size: calc(11.5 * var(--fs-u)); color: #5a6570; margin-top: 2px; }
+.bottleWhere { font-size: calc(11.5 * var(--fs-u)); color: #7c8792; margin-bottom: 0; }
 .bottleRow { margin-bottom: 10px; }
 .bottleNote { line-height: 1.6; }
-#bottleMsg { font-size: 12.5px; line-height: 1.6; margin: 2px 0 4px; }
+#bottleMsg { font-size: calc(12.5 * var(--fs-u)); line-height: 1.6; margin: 2px 0 4px; }
 /* 【C′】③の係数は筆算の中で書く（v193）。判定文と「答えを見る」は合計行のすぐ下、
    筆算と同じ枠の中（.cSpan の帯）に置く。v182 の畳んだ入力欄（#ionicGuess）と
    その .ig* 一式は、筆算そのものが作業面になったので取り払った。
@@ -1790,7 +1813,7 @@ main.timelineMain {
   min-width: 44px; min-height: 36px; line-height: 36px;
   margin-right: 4px;
   padding: 0 2px;
-  font-size: 16px; font-weight: bold; text-align: center;
+  font-size: calc(16 * var(--fs-u)); font-weight: bold; text-align: center;
   color: #8d99a5; background: #eef1f4;
   border-radius: 6px;
 }
@@ -1800,25 +1823,25 @@ main.timelineMain {
 .givenNote { color: #6b7783; padding-bottom: 6px; }
 .igSkip {
   min-height: 32px; padding: 4px 10px;
-  font-size: 12px; color: #46525e;
+  font-size: calc(12 * var(--fs-u)); color: #46525e;
   background: #f2f5f8; border: 1px solid #cfd9e3; border-radius: 8px; cursor: pointer;
 }
 .bottleScaleRow { display: flex; align-items: center; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
 .bottleCountRow { margin: 0 0 10px; padding-left: 8px; border-left: 3px solid #dbe4ec; }
-.bcHead { font-size: 12px; color: #5a6570; line-height: 1.55; }
-.bcCalc { font-size: 13.5px; font-weight: bold; color: #2f5b7a; line-height: 1.5; }
-.bcRider { font-size: 12px; color: #8d5a25; line-height: 1.55; }
+.bcHead { font-size: calc(12 * var(--fs-u)); color: #5a6570; line-height: 1.55; }
+.bcCalc { font-size: calc(13.5 * var(--fs-u)); font-weight: bold; color: #2f5b7a; line-height: 1.5; }
+.bcRider { font-size: calc(12 * var(--fs-u)); color: #8d5a25; line-height: 1.55; }
 /* ⑤の数入力（v182・B）。指で押せる 40px の床を満たし、iOS の自動ズームを避ける 16px */
 .bcField { display: flex; align-items: center; gap: 6px; margin: 3px 0 2px; flex-wrap: wrap; }
-.bcLabel { font-size: 13.5px; }
-.bcUnit { font-size: 13px; color: #46525e; }
+.bcLabel { font-size: calc(13.5 * var(--fs-u)); }
+.bcUnit { font-size: calc(13 * var(--fs-u)); color: #46525e; }
 /* ⑤は「何本」ではなく**左辺の係数**を書く欄になった（2026-09-07）。
    欄の右に化学式を置き、〔 2 〕KMnO₄ と、紙に書く並びのまま読めるようにする */
-.bcCoeffField .bcFormula { font-size: 17px; font-weight: bold; color: #23303b; }
+.bcCoeffField .bcFormula { font-size: calc(17 * var(--fs-u)); font-weight: bold; color: #23303b; }
 .bottleCountInput {
   width: 68px;
   min-height: 40px;
-  font-size: 16px;
+  font-size: calc(16 * var(--fs-u));
   font-weight: bold;
   text-align: center;
   color: #23303b;
@@ -1835,7 +1858,7 @@ main.timelineMain {
 /* 1つの段の中の「つぎに」。段そのものを増やさずに「先／後」を示す */
 .stepSubHead {
   margin: 14px 0 6px; padding: 5px 9px;
-  font-size: 13px; font-weight: bold; color: #46525e;
+  font-size: calc(13 * var(--fs-u)); font-weight: bold; color: #46525e;
   background: #f1f5f9; border-left: 3px solid #a8bccd; border-radius: 4px;
 }
 /* 【3】v194・発注書 §6-7 の 3 —— ⑤で入れた本数が、そのまま化学反応式の左辺の係数。
@@ -1845,7 +1868,7 @@ main.timelineMain {
 .blmLeft {
   margin: 8px 0 2px;
   padding: 6px 9px;
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--fs-u));
   font-weight: bold;
   line-height: 1.65;
   color: #2f5b7a;
@@ -1853,7 +1876,7 @@ main.timelineMain {
   border: 1px solid #a8c8e2;
   border-radius: 8px;
 }
-.blmRight { font-size: 11.5px; line-height: 1.6; color: #7c8792; padding: 0 3px 4px; }
+.blmRight { font-size: calc(11.5 * var(--fs-u)); line-height: 1.6; color: #7c8792; padding: 0 3px 4px; }
 /* 人が別の場所で出した数を、係数の位置に置いたときの印。数字が無いとき（係数 1）は
    何も描かない ＝ 完成した化学反応式の書き方（1 は書かない）を崩さない */
 .fcoef.fromYou:not(:empty) {
@@ -1871,13 +1894,13 @@ main.timelineMain {
 .bsBox[hidden] { display: none; }
 .bsBox.half { background: #fdf1e6; border: 1px solid #e0b183; }
 .bsBox.revert { background: #f2f5f8; border: 1px solid #cfd9e3; }
-.bsHead { font-size: 12.5px; font-weight: bold; color: #8d5a25; margin-bottom: 3px; }
-.bsWhy { font-size: 12.5px; color: #46525e; line-height: 1.65; }
+.bsHead { font-size: calc(12.5 * var(--fs-u)); font-weight: bold; color: #8d5a25; margin-bottom: 3px; }
+.bsWhy { font-size: calc(12.5 * var(--fs-u)); color: #46525e; line-height: 1.65; }
 .bsGo {
   margin-top: 6px;
   min-height: 36px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   font-weight: bold;
   color: #fff;
   background: #c47a2c;
@@ -1886,11 +1909,11 @@ main.timelineMain {
   cursor: pointer;
 }
 .bsBox.revert .bsGo { background: #6d7a88; }
-.bottleRiderSum { font-size: 12.5px; color: #8d5a25; line-height: 1.65; margin-bottom: 6px; }
+.bottleRiderSum { font-size: calc(12.5 * var(--fs-u)); color: #8d5a25; line-height: 1.65; margin-bottom: 6px; }
 #bottlePool { margin: 10px 0 8px; }
 #bottlePool[hidden] { display: none; }
-.bottlePoolLine { font-size: 14px; color: #2a3540; line-height: 1.7; margin-bottom: 4px; }
-.bottleSalt { font-size: 13px; color: #46525e; line-height: 1.7; }
+.bottlePoolLine { font-size: calc(14 * var(--fs-u)); color: #2a3540; line-height: 1.7; margin-bottom: 4px; }
+.bottleSalt { font-size: calc(13 * var(--fs-u)); color: #46525e; line-height: 1.7; }
 .bottleSalt.muted { color: #7c8792; }
 #bottleTailMsg { margin-top: 6px; }
 
@@ -1949,7 +1972,7 @@ main.timelineMain {
    **同じかたまりの中に・小さく・目立たない色で**置く。ここを大きくすると
    打ち消したい数のほうが読まれなくなる。緑（.matched）にも染めない。 */
 .addedNote {
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   font-weight: normal;
   color: #7c8792;
   line-height: 1.4;
@@ -1976,7 +1999,7 @@ main.timelineMain {
 .toolbarHint {
   flex: 1 0 100%;
   margin-top: 2px;
-  font-size: 12.5px;
+  font-size: calc(12.5 * var(--fs-u));
   line-height: 1.55;
   color: #8d5a25;
 }
@@ -1988,8 +2011,8 @@ main.timelineMain {
    .cSpan（行いっぱい・グリッドを広げない）に移して、常に左端で読めるようにする */
 .halfCap { display: flex; align-items: baseline; gap: 8px; margin: 8px 0 1px; }
 #halfSheet .halfCap:first-child { margin-top: 0; }
-.halfCap .kindTag { font-size: 13px; }
-.halfWhy { font-size: 11.5px; color: #6d7a86; }
+.halfCap .kindTag { font-size: calc(13 * var(--fs-u)); }
+.halfWhy { font-size: calc(11.5 * var(--fs-u)); color: #6d7a86; }
 
 /* ---- 足し合わせの釦（v186・電池モードの K）----
    両極の式を縦に足して e⁻ を消す操作を、生徒の手に渡すための釦。
@@ -1998,7 +2021,7 @@ main.timelineMain {
 #sumBar button {
   border: none; border-radius: 8px;
   padding: 8px 14px;
-  font-size: 15px; font-weight: bold;
+  font-size: calc(15 * var(--fs-u)); font-weight: bold;
   color: #fff; cursor: pointer; background: #4a7dab;
   box-shadow: 0 1px 3px rgba(0,0,0,.2);
   min-height: 40px;
@@ -2008,13 +2031,13 @@ main.timelineMain {
   background: #d5dbe1; color: #8a97a3; cursor: not-allowed; box-shadow: none;
 }
 #sumBar button:disabled:active { transform: none; }
-.sumWhy { flex: 1 1 100%; font-size: 12.5px; line-height: 1.55; color: #6d7a86; }
+.sumWhy { flex: 1 1 100%; font-size: calc(12.5 * var(--fs-u)); line-height: 1.55; color: #6d7a86; }
 
 /* ---- 倍率が未定（v186・電池モードの L）----
    ダニエル電池は 1:1 なので、1 から始めると**最初から正解の状態で始まる**。
    「？」から置かせて、そろえる必要がないことも自分で確かめてもらう */
 .coeff.unset { color: #b07d2b; }
-.tallyNote { display: block; margin-top: 4px; font-size: 12px; line-height: 1.6; color: #6d7a86; }
+.tallyNote { display: block; margin-top: 4px; font-size: calc(12 * var(--fs-u)); line-height: 1.6; color: #6d7a86; }
 
 /* ---- 系列の索引（portal.html「系列から入る」）【R】DESIGN_stage_series.md ----
    単元の区画（.unitBox / .stageChip）と**別のクラス**にしてある。見た目はそろえるが、
@@ -2030,9 +2053,9 @@ main.timelineMain {
 }
 .seriesBox.landed { border-color: #275d8c; box-shadow: 0 0 0 3px rgba(39, 93, 140, .13); }
 .seriesHead { display: flex; align-items: baseline; gap: 8px; }
-.seriesName { font-weight: bold; font-size: 14.5px; color: #23303b; }
-.seriesCount { font-size: 11.5px; color: #8a94a0; }
-.seriesNote { font-size: 12.5px; color: #5a6570; margin: 3px 0 7px; line-height: 1.6; }
+.seriesName { font-weight: bold; font-size: calc(14.5 * var(--fs-u)); color: #23303b; }
+.seriesCount { font-size: calc(11.5 * var(--fs-u)); color: #8a94a0; }
+.seriesNote { font-size: calc(12.5 * var(--fs-u)); color: #5a6570; margin: 3px 0 7px; line-height: 1.6; }
 .seriesChips { display: flex; flex-wrap: wrap; gap: 6px; }
 .seriesChip {
   display: inline-flex;
@@ -2042,7 +2065,7 @@ main.timelineMain {
   border: 1px solid #d5dce2;
   border-radius: 14px;
   padding: 4px 12px 4px 6px;
-  font-size: 13px;
+  font-size: calc(13 * var(--fs-u));
   text-decoration: none;
   color: #2a3540;
   background: #fbfcfd;
@@ -2053,7 +2076,7 @@ main.timelineMain {
   min-width: 22px;
   text-align: center;
   font-weight: bold;
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   color: #46525e;
   background: #eef2f6;
   border-radius: 10px;
@@ -2067,7 +2090,7 @@ main.timelineMain {
 .seriesChip.mode-cell .chipMode { background: #8a6bbf; }
 /* 難度の札（系列とは直交する軸）。酸化還元モードの帯の「有機」の印と同じ色づかいにそろえる */
 .seriesChip .chipLevel {
-  font-size: 10.5px;
+  font-size: calc(10.5 * var(--fs-u));
   color: #6b4a1f;
   background: #fdf1e6;
   border: 1px solid #e0b183;
@@ -2076,7 +2099,7 @@ main.timelineMain {
 }
 /* ステージを名指しできないモード（電池）にだけ添える案内 */
 .seriesHint {
-  font-size: 12px;
+  font-size: calc(12 * var(--fs-u));
   color: #8a6b3d;
   background: #fdf7ec;
   border-radius: 8px;
@@ -2087,12 +2110,12 @@ main.timelineMain {
 /* どこにも入らなかったステージ。**隠さずに目立たせる**（黙って消えるのがいちばん怖い） */
 .seriesUnclassified { border-color: #c0603c; background: #fdf2ee; }
 @media (max-width: 560px) {
-  .seriesChip { font-size: 12.5px; padding: 5px 11px 5px 6px; }
+  .seriesChip { font-size: calc(12.5 * var(--fs-u)); padding: 5px 11px 5px 6px; }
 }
 /* 覚えなくてよい参考（S-2・DESIGN_redox_matching.md §15-4）。note（必修の但し書き）と
    同じ見た目にすると見分けがつかないので、行を分けてうすくする。
    ⚠ 色だけに頼らない —— 文そのものが「参考」で始まり「覚えなくてよい」と言っている */
-.pickTip { display: block; margin-top: 3px; color: #8a93a0; font-size: 11px; line-height: 1.5; }
+.pickTip { display: block; margin-top: 3px; color: #8a93a0; font-size: calc(11 * var(--fs-u)); line-height: 1.5; }
 
 /* ================================================================================
    【練習Y】酸化数を決めるモード（oxidation.html）。
@@ -2102,9 +2125,9 @@ main.timelineMain {
    規則で決まった値は入力欄と同じ大きさの**印**（.oxGiven）に置く ＝ ①-B と同じ流儀で、
    打てる場所が「自分で考える1つ」だけになる。 */
 .oxNoSplit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 2px 0 4px; }
-.oxBigFormula { font-size: 19px; font-weight: bold; color: #23303b; }
+.oxBigFormula { font-size: calc(19 * var(--fs-u)); font-weight: bold; color: #23303b; }
 .oxRole {
-  font-size: 11px; font-weight: bold; color: #5a6570;
+  font-size: calc(11 * var(--fs-u)); font-weight: bold; color: #5a6570;
   background: #eef1f4; border-radius: 999px; padding: 2px 9px;
 }
 /* 「分けないと解けない」回の一文だけ強める（ふつうの回はうすいままにする） */
@@ -2120,21 +2143,21 @@ main.timelineMain {
 .oxPartHead { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 6px; }
 .oxRows { display: grid; grid-template-columns: max-content max-content max-content minmax(0, 1fr); align-items: center; column-gap: 8px; row-gap: 5px; }
 .oxRow { display: contents; }
-.oxEl { font-size: 17px; font-weight: bold; color: #23303b; }
-.oxCount { font-size: 12.5px; color: #5a6570; }
-.oxWhy { font-size: 12px; color: #6b7783; line-height: 1.5; }
+.oxEl { font-size: calc(17 * var(--fs-u)); font-weight: bold; color: #23303b; }
+.oxCount { font-size: calc(12.5 * var(--fs-u)); color: #5a6570; }
+.oxWhy { font-size: calc(12 * var(--fs-u)); color: #6b7783; line-height: 1.5; }
 /* 規則で決まったぶんの印。⚠ 押せる見た目にしない（.fcoef.fgiven と同じ考え方） */
 .oxGiven {
   display: inline-block; box-sizing: border-box;
   min-width: 52px; min-height: 36px; line-height: 36px;
-  font-size: 16px; font-weight: bold; text-align: center;
+  font-size: calc(16 * var(--fs-u)); font-weight: bold; text-align: center;
   color: #8d99a5; background: #eef1f4; border-radius: 6px;
 }
 /* 酸化数の入力欄。⚠ **マイナスが打てること**が要件なので増減つまみは残さず、
    指で押せる 36px の床（tools/check-mobile.mjs の検査4）と 16px の字を満たす */
 .oxIn {
   width: 62px; min-height: 36px;
-  font-size: 16px; font-weight: bold; text-align: center;
+  font-size: calc(16 * var(--fs-u)); font-weight: bold; text-align: center;
   color: #23303b; background: #fff;
   border: 1px solid #b6c4d2; border-radius: 6px; padding: 0 2px;
 }
@@ -2144,18 +2167,18 @@ main.timelineMain {
 /* 検算の行。**答えは書かない** —— いま合計がいくつで、めざす合計がいくつか、だけ */
 .oxCheckLine {
   margin-top: 7px; padding-top: 6px; border-top: 1px dashed #dbe4ec;
-  font-size: 13px; line-height: 1.6; color: #46525e;
+  font-size: calc(13 * var(--fs-u)); line-height: 1.6; color: #46525e;
 }
 /* ⚠ .okcell / .ngcell はこの規則より**前**にあるので、同じ強さでは負ける ——
    色を付け直さないと、検算の行は太くなるだけで緑にも赤にもならない
    （段1に検算の行を足したときに気づいた。段2の行も同じ状態だった） */
 .oxCheckLine.okcell { color: #2e8b57; }
 .oxCheckLine.ngcell { color: #c0392b; }
-.oxVirtLine { margin: 8px 0 6px; font-size: 17px; padding-bottom: 0; }
+.oxVirtLine { margin: 8px 0 6px; font-size: calc(17 * var(--fs-u)); padding-bottom: 0; }
 .oxVirtIon { color: #8a4a1f; }
 /* ⚠ 仮の分け方の断り。**目立たせる** —— 実在の電離（段1）と取り違えると害になるため */
 .oxCaveat {
-  font-size: 12.5px; line-height: 1.7; color: #8a4a1f;
+  font-size: calc(12.5 * var(--fs-u)); line-height: 1.7; color: #8a4a1f;
   background: #fdf3ea; border: 1px solid #e6c9a8; border-radius: 8px; padding: 8px 11px;
 }
 /* まだ来ていない段。★ **枠は出したまま**うすくする（隠して足止めしない）。
@@ -2178,7 +2201,7 @@ main.timelineMain {
    ⚠ **本物の上付きにはしない** —— 字を小さくすると押せなくなる。
    大きさは保ったまま **半行ぶん（0.5em ＝ 16px の半分 ＝ 8px）持ち上げる**だけにする。
    ⚠ 下付き（PO₄ の ₄）は disp が持っている素の文字なので、持ち上げても消えない。 */
-.oxSplitN { font-size: 19px; font-weight: bold; color: #8d99a5; }
+.oxSplitN { font-size: calc(19 * var(--fs-u)); font-weight: bold; color: #8d99a5; }
 .oxChgIn {
   width: 56px; min-height: 44px;   /* ⚠ 押し所は 44px を割らない（上付きは小さくなりがち） */
   margin-left: 2px;
@@ -2208,12 +2231,12 @@ main.timelineMain {
 .hbProc { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
 .hbProc button {
   min-height: 32px; padding: 4px 12px;
-  font-size: 12.5px; font-weight: bold;
+  font-size: calc(12.5 * var(--fs-u)); font-weight: bold;
   border: 1px solid #b6c4d2; border-radius: 999px;
   background: #fff; color: #46525e; cursor: pointer;
 }
 .hbProc button.active { background: #3b82c4; border-color: #3b82c4; color: #fff; }
-.hbOxLink { display: inline-block; margin-top: 4px; font-size: 12px; color: #2f5b7a; }
+.hbOxLink { display: inline-block; margin-top: 4px; font-size: calc(12 * var(--fs-u)); color: #2f5b7a; }
 
 /* ---- 価数＝高さのブロック（blocks.js・DESIGN_ion_blocks.md・2026-09-07）----
    イオンの一覧から選んで積む列。⚠ 既存の係数ステッパー（.stepper）を置き換えるものではなく、
@@ -2228,7 +2251,7 @@ main.timelineMain {
 #saltActions { margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .saltGo {
   min-height: 38px; padding: 0 14px;
-  font-size: 14px; font-weight: bold; color: #1f5138;
+  font-size: calc(14 * var(--fs-u)); font-weight: bold; color: #1f5138;
   background: #e6f4ec; border: 1px solid #86bda0; border-radius: 8px; cursor: pointer;
 }
 .saltGo:hover:not(:disabled) { background: #d8ecdf; }
@@ -2237,10 +2260,10 @@ main.timelineMain {
 #saltMade:empty { display: none; }
 #ionBlocks { width: 100%; max-width: 360px; display: block; }
 .ibRow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
-.ibRowLabel { font-size: 12px; color: #7b8794; min-width: 4.5em; }
+.ibRowLabel { font-size: calc(12 * var(--fs-u)); color: #7b8794; min-width: 4.5em; }
 .ibPick, .ibMinus {
   min-height: 32px; padding: 3px 10px;
-  font-size: 13px; font-weight: bold;
+  font-size: calc(13 * var(--fs-u)); font-weight: bold;
   border: 1px solid #b6c4d2; border-radius: 999px;
   background: #fff; color: #46525e; cursor: pointer;
 }
@@ -2265,11 +2288,11 @@ main.timelineMain {
    酸化還元モードの「梯子の全体を見る」と同じ .ladderToggle / .ladderFull を使い回す
    （同じ役目のものを2通りの見た目にしない）。ここで足すのは中身の行だけ。
    ★ 320px で成立させる（釦は縦に折り返す・押し所は 44px を割らない）。 */
-.whatLeadLine { font-size: 13.5px; color: #23303b; line-height: 1.8; margin: 2px 0 4px; }
-.whatLeadNote { font-size: 12px; color: #6c7a88; line-height: 1.7; margin: 0 0 8px; }
+.whatLeadLine { font-size: calc(13.5 * var(--fs-u)); color: #23303b; line-height: 1.8; margin: 2px 0 4px; }
+.whatLeadNote { font-size: calc(12 * var(--fs-u)); color: #6c7a88; line-height: 1.7; margin: 0 0 8px; }
 .whatSp {
   display: inline-block; padding: 1px 7px; margin: 0 1px;
-  font-weight: bold; font-size: 14px;
+  font-weight: bold; font-size: calc(14 * var(--fs-u));
   border: 1px solid #cdd8e2; border-radius: 6px; background: #f4f8fb; color: #23303b;
 }
 /* 水だけ色を変える。**割り込んでくるのは水**、がこの段の芯なので、そこだけ目に入るように */
@@ -2277,12 +2300,12 @@ main.timelineMain {
 
 .whatRow { margin: 8px 0 10px; }
 .whatRowHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin-bottom: 5px; }
-.whatSide { font-size: 14px; color: #23303b; }
-.whatSideSub { font-size: 12px; color: #6c7a88; }
+.whatSide { font-size: calc(14 * var(--fs-u)); color: #23303b; }
+.whatSideSub { font-size: calc(12 * var(--fs-u)); color: #6c7a88; }
 .whatBtns { display: flex; flex-wrap: wrap; gap: 8px; }
 .whatBtn {
   min-height: 44px; min-width: 64px; padding: 6px 14px;
-  font-size: 15px; font-weight: bold;
+  font-size: calc(15 * var(--fs-u)); font-weight: bold;
   border: 1px solid #b6c4d2; border-radius: 10px;
   background: #fff; color: #23303b; cursor: pointer;
 }
@@ -2292,7 +2315,7 @@ main.timelineMain {
 .whatBtn.ng { border-color: #c0603c; background: #fdf3ef; color: #8f3f22; }
 
 .whatWhyLine {
-  font-size: 12.5px; line-height: 1.75; margin: 6px 0;
+  font-size: calc(12.5 * var(--fs-u)); line-height: 1.75; margin: 6px 0;
   padding: 7px 10px; border-radius: 8px; border-left: 4px solid #b6c4d2; background: #f7f9fb;
 }
 .whatWhyLine.ok { border-left-color: #4f9d76; background: #f1f9f4; color: #235c41; }
@@ -2312,23 +2335,23 @@ main.timelineMain {
 .prTier {
   flex: 0 0 auto; width: 22px; height: 22px; margin-top: 1px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: bold; border-radius: 50%;
+  font-size: calc(12 * var(--fs-u)); font-weight: bold; border-radius: 50%;
   background: #dbe4ec; color: #46525e;
 }
 .prRow.chosen .prTier { background: #4f9d76; color: #fff; }
 .prRow.dead .prTier { background: #ece1dc; color: #8f3f22; }
 .prBody { flex: 1 1 auto; min-width: 0; }
-.prMembers { font-size: 14px; color: #9aa7b4; }
+.prMembers { font-size: calc(14 * var(--fs-u)); color: #9aa7b4; }
 /* 液にいるものだけ濃く。**表そのものは全部見せる**（見せないと確かめられない） */
 .prSp.in { color: #23303b; font-weight: bold; }
-.prLabel { font-size: 12px; color: #46525e; margin-top: 1px; }
-.prNote { font-size: 11.5px; color: #6c7a88; line-height: 1.6; margin-top: 1px; }
+.prLabel { font-size: calc(12 * var(--fs-u)); color: #46525e; margin-top: 1px; }
+.prNote { font-size: calc(11.5 * var(--fs-u)); color: #6c7a88; line-height: 1.6; margin-top: 1px; }
 
 /* 足し合わせに打ち消えなかったものが残る回の断り（e5・§9-4）。
    **黙って出さない**ための枠なので、筆算の下で目に入る濃さにする */
 .sumNote {
   margin-top: 10px; padding: 8px 11px;
-  font-size: 12px; line-height: 1.75; color: #46525e;
+  font-size: calc(12 * var(--fs-u)); line-height: 1.75; color: #46525e;
   border-left: 4px solid #9dc7e0; border-radius: 8px; background: #f4f9fc;
 }
 
@@ -2338,7 +2361,7 @@ main.timelineMain {
    同じ大きさにすると、2つの索引が同じ重みに見えて どちらを読めばよいか分からなくなる。 */
 .roleUnits { display: flex; flex-direction: column; gap: 18px; }
 .roleUnitName {
-  font-size: 14px; font-weight: bold; color: #46525e;
+  font-size: calc(14 * var(--fs-u)); font-weight: bold; color: #46525e;
   margin: 0 0 2px; padding-left: 9px; border-left: 4px solid #a9c6de;
 }
-.roleUnitNote { font-size: 12px; color: #7d8a91; line-height: 1.7; margin: 0 0 8px; padding-left: 13px; }
+.roleUnitNote { font-size: calc(12 * var(--fs-u)); color: #7d8a91; line-height: 1.7; margin: 0 0 8px; padding-left: 13px; }
