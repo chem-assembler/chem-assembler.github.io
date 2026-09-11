@@ -49184,21 +49184,26 @@
 
             /* ── ① ★★ 本文・表・例題が「アプリに組ませたもの」と一致するか ──
                ⚠ ここが「表を2か所で組んでいない」ことの実測。 */
+            /* ⚠⚠ **比べる相手は `renderBlocks`**（v1534・設計書 §24）——
+               発展の節はアプリ側で `<details>` にひとまとめにされるので、
+               **原稿のブロックと上端の要素が1対1ではなくなった**。
+               ★ 「焼いたもの ＝ いまアプリが並べたもの」という物差しは変えていない。
+               ⚠ ブロックが1つも落ちていないこと（畳んだ中身も含めた勘定）は `REF25` ③ が見る。 */
             const got = [...doc.querySelectorAll('.ref-scope > *')];
-            assert(got.length === p.blocks.length,
-                `${where}: ブロックの数が ${got.length} で、原稿の ${p.blocks.length} と違う（焼き直し忘れ？）`);
-            p.blocks.forEach((b, i) => {
-                const live = book.renderBlock(b);
-                assert(live, `${where}: learn.js が「${b.kind}」を描けない`);
-                if (b.kind === 'text') {
-                    assert(flat(got[i].innerHTML) === flat(b.text),
+            const built = book.renderBlocks(p);
+            assert(!built.unknown.length, `${where}: learn.js が「${built.unknown.join('・')}」を描けない`);
+            assert(got.length === built.els.length,
+                `${where}: 上端の要素が ${got.length} 個で、アプリが並べた ${built.els.length} 個と違う（焼き直し忘れ？）`);
+            built.els.forEach((live, i) => {
+                if (live.className === 'ref-p') {
+                    assert(flat(got[i].innerHTML) === flat(live.innerHTML),
                         `${where} の ${i + 1} 番目の段落が原稿と違う（生成物を手で直したか、直して焼き忘れたか）\n`
                         + `    焼いたもの: ${flat(got[i].innerHTML).slice(0, 80)}\n`
-                        + `    原稿から  : ${flat(b.text).slice(0, 80)}`);
+                        + `    原稿から  : ${flat(live.innerHTML).slice(0, 80)}`);
                     return;
                 }
                 assert(flat(got[i].textContent) === flat(live.textContent),
-                    `${where} の ${i + 1} 番目（:::${b.kind}）が、いまアプリが組む中身と違う\n`
+                    `${where} の ${i + 1} 番目（${live.tagName.toLowerCase()}.${live.className}）が、いまアプリが組む中身と違う\n`
                     + `    焼いたもの: ${flat(got[i].textContent).slice(0, 90)}\n`
                     + `    アプリから: ${flat(live.textContent).slice(0, 90)}\n`
                     + '    ★ stages.json / reactions.json を直したら node tools/gen-reference-pages.mjs で焼き直すこと');
@@ -50154,6 +50159,140 @@
         assert((bdoc.body.textContent || '').indexOf('○○') >= 0,
             `/reference/${blankPage.id}/: 焼いた本文から ○○ の字が消えている`);
         assert(true, `発展の印 ${advSecs.length} 件・○○ ${blanks} 件`);
+    });
+
+    /* ===== REF25: 発展は畳んで置く（設計書 §24・v1534） =====
+     *
+     * > 初学者のニーズと発展レベルのニーズを同時に満たしたい。
+     * > 初学者がとっかかりにくくなるのは避けたいし、事典的に網羅もしたい（ユーザー）
+     *
+     * ★★ **網羅する量は1文字も減らさない。減るのは最初に画面へ出る量だけ。**
+     *    ⚠ だからこのテストがいちばん見るのは「**畳んだ中身が本当に在るか**」——
+     *      折りたたみを入れたつもりで本文を落としていたら、参考書としては最悪の壊れ方をする
+     *      （画面はきれいなまま、引きに来た人だけが見つけられない）。
+     *
+     * 見るもの:
+     *   ① **器は `<details>`**（JS 無しで開け閉めできる ＝ 焼いた面Aでも効く）。既定は**閉じ**
+     *   ② ⚠ **畳んでも「発展の札・題・この節で分かること1行」が見える** ——
+     *     読むかどうかを1行で決められることが、畳んでよい条件（`lead` が summary の外に出たら赤）
+     *   ③ ⚠⚠ **中身が1ブロックも落ちていない** —— 畳む前（`renderBlock` を素で並べた数）と
+     *     畳んだあと（外に出た数＋中に入った数）が**同じ**であること
+     *   ④ **どこで畳み終わるか** —— 次の節と、発展でない小見出しで閉じる
+     *     （⚠ これが無いと `functional-groups` の `## 例題` が発展の中に吸い込まれる）
+     *   ⑤ **アンカーは `<details>` が持つ** ＝ 目次・用語の索引の行き先（`#ref-sec-<anchor>`）が変わらない
+     *   ⑥ **焼いた面Aにも同じ markup があり、退避の JS が埋まっている**
+     *     （⚠ 面Aの JS は `learn.js` から切り出したもの ＝ 書き写していないこと）
+     *   ⑦ ⚠⚠ **発展の「小見出し」は畳まない** —— 小見出しには「どこまでが発展か」が
+     *     器で言えないので、畳むと ★★★（必ず覚える）の反応式まで隠れる（`alkane` の実例）
+     */
+    test('REF25: 発展は閉じた <details> で出し、畳んだ中身は1ブロックも落ちない', async (c) => {
+        const W = c.W;
+        const book = W.referenceBook;
+        assert(book, 'referenceBook が居ない');
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const pages = book.pages && book.pages.length ? book.pages : (await book.load(), book.pages);
+        /* ⚠ 畳むのは**節だけ**（小見出しの発展は印のままにした・設計書 §24-2）——
+           小見出しには「どこまでが発展か」が器で言えない（`alkane.md` の実例）。 */
+        const advOf = (pg) => (pg.blocks || []).filter(b => b.kind === 'section' && b.advanced);
+        const withAdv = pages.filter(pg => advOf(pg).length);
+        assert(withAdv.length >= 1, '発展の印が実データに1つも無い（折りたたみを確かめられない）');
+
+        let folds = 0, inside = 0;
+        for (const pg of withAdv) {
+            const built = book.renderBlocks(pg);
+            assert(!built.unknown.length, `${pg.id}: 描けないブロック（${built.unknown.join('・')}）`);
+
+            /* ── ③ 中身が落ちていない ── */
+            const flat = (pg.blocks || []).filter(b => book.renderBlock(b)).length;
+            const dets = built.els.filter(el => el.tagName === 'DETAILS');
+            const packed = dets.reduce((n, d) => n + d.querySelector('.ref-adv-body').children.length, 0);
+            assert(built.els.length + packed === flat,
+                `${pg.id}: 畳む前 ${flat} ブロックが、畳んだあと 外 ${built.els.length} ＋ 中 ${packed} になっている`
+                + '（＝ 折りたたみで本文が落ちている／増えている）');
+            assert(dets.length === advOf(pg).length,
+                `${pg.id}: 発展 ${advOf(pg).length} 件に対して折りたたみが ${dets.length} 個`);
+            folds += dets.length; inside += packed;
+
+            for (const d of dets) {
+                /* ── ① 既定は閉じ ── */
+                assert(!d.open, `${pg.id}: 発展の折りたたみが最初から開いている`);
+                assert(d.classList.contains('ref-adv'), `${pg.id}: 折りたたみに ref-adv が付いていない`);
+                const sum = d.querySelector('summary');
+                assert(sum && sum.parentNode === d, `${pg.id}: <summary> が折りたたみの直下に無い`);
+                /* ── ② 畳んだままで見えるもの ── */
+                assert(sum.querySelector('.ref-adv-tag'), `${pg.id}: 畳んだ札に「発展」の印が無い`);
+                const head = sum.querySelector('.ref-sec-h');
+                assert(head && (head.textContent || '').replace(W.REF_ADVANCED_WORD, '').trim().length >= 2,
+                    `${pg.id}: 畳んだ札に節の題が無い`);
+                assert(d.querySelector('.ref-adv-body').children.length >= 1,
+                    `${pg.id}: 中身の無い折りたたみがある（開いても何も出ない）`);
+                /* ── ⑤ 節のアンカーは details が持つ ── */
+                assert(d.id.indexOf('ref-sec-') === 0, `${pg.id}: 折りたたみの id が節の綴りでない（${d.id}）`);
+                assert(!d.querySelector('[id]'), `${pg.id}: 折りたたみの中にもう1つ id がある（行き先が2通りになる）`);
+                /* ⚠ 「この節で分かること」1行も**畳んだまま**見える */
+                assert(sum.querySelector('.ref-sec-lead'),
+                    `${pg.id}: 節の折りたたみに lead が無い（開くかどうかを1行で決められない）`);
+            }
+        }
+        assert(folds >= 1 && inside >= 1, `折りたたみ ${folds} 個／中身 ${inside} ブロック`);
+
+        /* ── ⑦ ⚠⚠ **発展の「小見出し」は畳まない**（設計書 §24-2）──
+           ★ `alkane.md` の `## 電子対はどう動いているのか（発展）` は寄り道が1段落だけで、
+             そのあとに ★★★（必ず覚える）の反応式が続く。畳むと**必ず覚える式が既定で隠れる**。 */
+        const alk = pages.find(pg => pg.id === 'alkane');
+        assert(alk, 'alkane が無い');
+        const advHeads = (alk.blocks || []).filter(b => b.kind === 'heading' && b.advanced);
+        assert(advHeads.length >= 1, 'alkane に発展の小見出しが無い（否定対照が立たない）');
+        const alkEls = book.renderBlocks(alk).els;
+        assert(alkEls.filter(el => el.tagName === 'DETAILS').length === 0,
+            'alkane に折りたたみができている（このページの発展は小見出しだけ ＝ 畳まない約束）');
+        assert(alkEls.some(el => el.tagName === 'H5' && el.classList.contains('ref-h5-advanced')),
+            '発展の小見出しが印つきで本文に出ていない');
+        assert(alkEls.some(el => el.classList && el.classList.contains('ref-rx')
+            && (el.textContent || '').indexOf('必ず覚える') >= 0),
+            '★★★（必ず覚える）の反応式が折りたたみの外に出ていない');
+
+        /* ── ④ どこで畳み終わるか（実データの functional-groups で見る） ── */
+        const fg = pages.find(pg => pg.id === 'functional-groups');
+        assert(fg, 'functional-groups が無い');
+        const fgEls = book.renderBlocks(fg).els;
+        const det = fgEls.find(el => el.tagName === 'DETAILS');
+        assert(det, 'functional-groups に折りたたみが無い');
+        assert((det.querySelector('.ref-adv-body').textContent || '').indexOf('例題') < 0,
+            '発展でない小見出し「例題」が発展の中に吸い込まれている（ページ全体のものが寄り道の中に入る）');
+        assert(fgEls.some(el => el.tagName === 'H5' && (el.textContent || '').indexOf('例題') >= 0),
+            '「例題」の小見出しが折りたたみの外に出ていない');
+
+        /* ── ⑥ 焼いた面A ── */
+        const res = await fetch(`../reference/${fg.id}/index.html` + FRESH());
+        assert(res.ok, `/reference/${fg.id}/ が読めない（HTTP ${res.status}）`);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const baked = doc.querySelectorAll('details.ref-adv');
+        assert(baked.length === advOf(fg).length,
+            `/reference/${fg.id}/: 焼いた折りたたみが ${baked.length} 個（原稿は ${advOf(fg).length} 件・焼き直し忘れ？）`);
+        assert(!baked[0].hasAttribute('open'), `/reference/${fg.id}/: 焼いた折りたたみが開いたままになっている`);
+        assert(baked[0].id === 'ref-sec-' + advOf(fg)[0].anchor,
+            `/reference/${fg.id}/: 焼いた折りたたみのアンカーが変わっている（${baked[0].id}）`);
+        assert((baked[0].querySelector('.ref-adv-body').textContent || '').length >= 50,
+            `/reference/${fg.id}/: 焼いた折りたたみの中身が空に近い（本文が落ちている）`);
+        /* ⚠ 退避の JS は learn.js から**切り出した**もの ＝ 書き写していないこと。
+           ★ 切り出しが外れると面Aだけ「検索で開かない・印刷で出ない」に戻る（画面では分からない）。 */
+        assert(html.indexOf('function refAdvSetup(root)') >= 0 && html.indexOf('refAdvSetup(document);') >= 0,
+            `/reference/${fg.id}/: 退避の JS（refAdvSetup）が埋まっていない`);
+        const src = await (await fetch('learn.js' + FRESH())).text();
+        const cut = src.replace(/\r\n/g, '\n').match(/^function refAdvSetup\(root\) \{[\s\S]*?^\}/m);
+        assert(cut, 'learn.js から refAdvSetup を切り出せない（字下げか名前が変わった？）');
+        assert(html.replace(/\r\n/g, '\n').indexOf(cut[0]) >= 0,
+            '焼いた面Aの refAdvSetup が learn.js と1バイト違う（書き写しになっている＝いつか割れる）');
+
+        /* ⚠ **印刷で開く決めごと**が両面にあること（紙には「開く」操作が無い） */
+        assert(html.indexOf('.ref-adv::details-content{content-visibility:visible}') >= 0,
+            `/reference/${fg.id}/: 印刷で発展を開く規則が焼かれていない`);
+        const css = await (await fetch('style.css' + FRESH())).text();
+        assert(css.indexOf('.ref-adv::details-content') >= 0,
+            'assembler/style.css に印刷で発展を開く規則が無い');
+        assert(true, `折りたたみ ${folds} 個・中に ${inside} ブロック（面Aにも ${baked.length} 個）`);
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
