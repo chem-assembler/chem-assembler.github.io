@@ -3929,15 +3929,25 @@ async function runUITests(iframe) {
     assert(s.reactionDone, "反応完了にならない");
   });
 
-  await t("UI: 全ステージに目標バナーが出る（沈殿・気体・中和・酸性塩で文言が変わる）", async () => {
+  await t("UI: 全ステージの目的が「〜しよう」の声掛けで、入れるものから書き起こされる", async () => {
     const goalOf = (i) => { stageBtn(i).click(); return doc.querySelector("#stageTitle .goal").textContent; };
+    /* ★ 2026-09-11: 目的の文は**先生が口で言う声掛け**にそろえた（ユーザー指示）。
+       ⚠ 見張るのは3つ:
+         ①必ず「〜しよう」で終わること（「〜をつくる」という機能の説明に戻ったら落ちる）
+         ②入れるものの名前から書き起こされていること（何と何を反応させる回かが一目で分かる）
+         ③画面の部品の名前や操作の言葉が混ざっていないこと
+       以前は 🎯 が付いていることだけを見ていたが、絵文字の有無は文の質を何も保証しない。 */
     for (let i = 0; i < STAGES.length; i++) {
       const g = goalOf(i);
-      assert(g && g.includes("🎯"), STAGES[i].id + ": 目標バナーが無い: " + g);
+      assert(g && /[よろ]う$/.test(g.trim()), STAGES[i].id + ": 目的が「〜しよう」の声掛けでない: " + g);
+      const first = SPECIES[STAGES[i].reactants[0]].disp;
+      assert(g.includes(first), STAGES[i].id + ": 目的が入れるもの（" + first + "）から書き起こされていない: " + g);
+      assert(!/ボタン|押|入力|クリック|タップ|パネル|画面|欄/.test(g),
+        STAGES[i].id + ": 目的に画面の操作の言葉が混ざっている: " + g);
     }
     assert(goalOf(0).includes("中和") && goalOf(0).includes("NaCl"), "s1 は中和して NaCl のはず: " + goalOf(0));
     assert(goalOf(3).includes("沈殿") && goalOf(3).includes("AgCl"), "s4 は沈殿 AgCl のはず: " + goalOf(3));
-    assert(goalOf(5).includes("気体") && goalOf(5).includes("CO₂"), "s6 は気体 CO₂ のはず: " + goalOf(5));
+    assert(goalOf(5).includes("発生") && goalOf(5).includes("CO₂"), "s6 は CO₂ の発生のはず: " + goalOf(5));
     const s11 = STAGES.findIndex((st) => st.id === "s11");
     assert(goalOf(s11).includes("酸性塩") && goalOf(s11).includes("NaHSO₄"), "s11 は酸性塩 NaHSO₄ のはず: " + goalOf(s11));
     assert(doc.querySelector("#stageTitle .goal.acid"), "酸性塩ステージの目標が acid スタイルでない");
@@ -4203,7 +4213,7 @@ async function runUITests(iframe) {
       { id: "s15", naoh: 2, hLeft: 1, na: 2, water: 2, kind: "酸性塩", salt: "Na₂HPO₄" },
       // 3段目は完全中和なので saltGoal を持たず、バナーは全ステージ共通の
       // 「ちょうど中和して…をつくる」になる（正塩であることは単元タグと doneNote が言う）
-      { id: "s16", naoh: 3, hLeft: 0, na: 3, water: 3, kind: "ちょうど中和して", salt: "Na₃PO₄" },
+      { id: "s16", naoh: 3, hLeft: 0, na: 3, water: 3, kind: "ちょうど中和させて", salt: "Na₃PO₄" },
     ];
     for (const e of expect) {
       const i = STAGES.findIndex((st) => st.id === e.id);
@@ -4397,7 +4407,7 @@ async function runUITests(iframe) {
     s = state();
     assert(s.coeffOk && s.cleared, "係数クリアにならない: coeffOk=" + s.coeffOk + " cleared=" + s.cleared);
     const goal = doc.querySelector("#stageTitle .goal").textContent;
-    assert(goal.includes("電離度"), "目標バナーが電離度になっていない: " + goal);
+    assert(goal.includes("電離"), "目的が電離のはなしになっていない: " + goal);
   });
 
   /* ---- 画面の個数と、式の係数（ORDER_review_2026-08-18 の O・v185）----
@@ -4996,8 +5006,10 @@ async function runUITests(iframe) {
     assert(!s.counts["C"] && !s.counts["H"] && !s.counts["O"],
       "簡易モードなのに原子へほどけている: " + JSON.stringify(s.counts));
     assert(s.reactionDone, "反応完了にならない");
-    assert(doc.querySelector("#stageTitle .goal").textContent.includes("分子を組み替えて"),
-      "目標文が簡易モード用になっていない");
+    /* ⚠ 2026-09-11 まではここで目的の文に「分子を組み替えて」と書いてあることを見ていたが、
+       目的の文は声掛けに書き直して作り分けをやめた。簡易モードかどうかは判定そのものを見る */
+    assert(state().simpleGas,
+      "C₃H₈ が簡易モード（分子のまま組み替え）になっていない");
   });
 
   await t("UI: 弱酸の遊離 - 塩酸が酢酸を追い出し、酢酸は分子のまま残る", async () => {
