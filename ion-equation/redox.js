@@ -1147,7 +1147,7 @@ function buildSheetSkeleton() {
   SHEET.red = sheetRow(halfSheetEl, "halfRed", "halfRow");
 
   calcSheetEl.innerHTML = "";
-  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "2本の式を縦に足して e⁻ を消そう");
+  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "半反応式を足し合わせてイオン反応式をつくろう");
   // 【①-B】灰色の数字が何なのかを、筆算の**すぐ上**で言う（v195）
   SHEET.calcGivenNote = sheetSpan(calcSheetEl, "calcGivenNote", "footNote givenNote");
   SHEET.sumOx  = sheetRow(calcSheetEl, "rowSumOx");
@@ -1622,7 +1622,10 @@ function refreshCalcInput() {
   }
 }
 
-/* 判定文と「答えを見る」。書き終わったあとは何も出さない（筆算だけが残る） */
+/* 判定文と「答えを見る」。書き終わったら、その場でしか言えないことを1行だけ残す。
+   ★ 2026-09-11・ユーザーの指示「ここで係数を入力させる／正解後に、e⁻ は必ず消える、と説明」。
+   ⚠ 褒めも解説も足さない（[[ui-text-density]]）。**両辺の e⁻ がいつでも打ち消し合う**という、
+   この段を通った直後にしか言えない一般則だけを置く。 */
 function updateCalcMsg(res) {
   const note = SHEET.calcGivenNote;
   if (note) {
@@ -1633,7 +1636,16 @@ function updateCalcMsg(res) {
   }
   const box = SHEET.calcMsg;
   if (!box) return;
-  if (!calcPending()) { box.hidden = true; box.innerHTML = ""; return; }
+  if (!calcPending()) {
+    box.hidden = false;
+    box.innerHTML = "";
+    const done = document.createElement("span");
+    done.className = "calcMsgText";
+    done.id = "calcDoneNote";
+    done.textContent = "e⁻ は必ず消える";
+    box.append(done);
+    return;
+  }
   const r = res || checkCalcSheet(stage(), mult[0], mult[1], calcVals);
   box.hidden = false;
   let msg = document.getElementById("calcMsgText");
