@@ -7682,6 +7682,48 @@ async function runRedoxUITests(iframe) {
     openB("r1");
   });
 
+  /* ★★ ビーカーは「確かめの段」であって関門ではない（v211・ユーザーの指示）----
+     > ビーカーは一番下で、改めて係数と量的関係の確認と、どの物質がどういう状態で
+     > 存在しているか、どう反応するかを明らかにする、という位置付け／課題としては
+     > オプション扱い
+     ⛔「▶ 反応を見る」を押さないと次へ行けない、という形にしない。
+     上の BOTTLE UI も ▶ を押さずに解いているが、**それは主目的ではない**ので、
+     押していないことが検査の本文になっていない（誰かが関門を足しても、
+     あちらは ▶ を押す1行を足せば通ってしまう）。ここで名指しして見張る。
+     見るのは2つ:
+       ① ▶ を一度も押さなくても ②③④⑤⑥ が全部出て、化学反応式まで組み上がる
+       ② 組み上がったら**そこで終われる**（「次のステージへ」が出る）。
+          v210 までは終わりの帯が再生の中だけにあり、紙と同じ手順で解いた人が
+          終われなかった */
+  await t("BEAKER: ▶ を一度も押さずに最後まで解け、そこで終われる（ビーカーは関門ではない）", async () => {
+    const id = "ro1";
+    const st = REDOX_STAGES.find((s) => s.id === id);
+    const [a, b] = st.answer;
+    const scale = minBottleScale(st, a, b);
+    openB(id);
+    let g = 0;
+    while (state().mult[0] < a && g++ < 12) bumpB(0);
+    while (state().mult[1] < b && g++ < 12) bumpB(1);
+    passCalc();
+    passOwnerB(id, a, b);
+    passAddB(id, a, b, scale);
+    for (const c of bottleCountRows(st, a, b, scale)) putB(c.sp, c.answer);
+    passSaltB(id, a, b, scale);
+    // ① ▶ を押していない（phase は idle のまま）のに、最後まで出ている
+    const s = state();
+    assert(s.phase === "idle", "▶ を押していないのに再生が走っている: " + s.phase);
+    assert(!s.cleared, "▶ を押していないのに再生のクリア扱いになっている");
+    assert(s.molOk, "▶ を押さないと化学反応式が出ない ＝ ビーカーが関門になっている");
+    // ② そこで終われる
+    const banner = doc.getElementById("clearBanner");
+    assert(!banner.hidden, "最後まで解いても終わりの帯が出ない（ビーカーが関門になっている）");
+    assert(banner.textContent.includes("化学反応式ができた"),
+      "終わりの帯が行き着いた先を言っていない: " + banner.textContent);
+    assert([...banner.querySelectorAll("button")].some((x) => /次のステージ/.test(x.textContent)),
+      "終わりの帯に「次のステージへ」が無い");
+    openB("r1");
+  });
+
   /* ★★ この改修の合否そのもの（2026-09-10・レーン rx-hissan2）。
      ユーザーの申し立ては3通あるが、集約すると1つ ——
      **答えるとき、根拠のイオン反応式が目に入っていない**。

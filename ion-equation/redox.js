@@ -805,11 +805,17 @@ function finishRun() {
   refreshHUD();
 }
 
+/* 化学反応式（⑥の行き着く先）が画面に出ているか。
+   ⚠ 出どころは1つだけ（#rowBottleMol）。ここを二重に導出しない */
+function molShown() { return !!(bottleSheetEl && bottleSheetEl.querySelector("#rowBottleMol")); }
+
 function showClear() {
   clearEl.hidden = false;
   clearEl.innerHTML = "";
   const t = document.createElement("div");
-  t.textContent = "半反応式の足し合わせができた";
+  /* どこまで行き着いたかで呼び名が変わる。⑥のあるステージで化学反応式まで
+     組み上げたなら、そちらが最後（半反応式の足し合わせはその途中） */
+  t.textContent = molShown() ? "化学反応式ができた" : "半反応式の足し合わせができた";
   clearEl.appendChild(t);
   if (stageIdx < REDOX_STAGES.length - 1) {
     const b = document.createElement("button");
@@ -2626,6 +2632,16 @@ function refreshBottleResult() {
     ? plan.reason
     : (restIons.length ? "右辺のイオンをぜんぶ組み合わせよう" : plan.reason);
   bottleTailMsgEl.className = "footNote " + (allPaired ? "okcell" : "");
+  /* ★ v211・ユーザーの指示「ビーカーは課題としてはオプション」。
+     化学反応式まで組み上げたら、**ビーカーを一度も動かしていなくても**ここで終わる。
+     v210 までは「次のステージへ」がビーカーの再生の中だけにあり、
+     紙と同じ手順で最後まで解いた人が終われなかった。
+     ⚠ `cleared`（＝ビーカーで実際に反応しきったか）は動かさない。あれは
+     再生の結果そのものを見ている口で、別のことを言っている。
+     ⚠ 帯が出ているあいだは描き直さない（「次のステージへ」から焦点が飛ぶ）。 */
+  if (allPaired && clearEl.hidden) showClear();
+  // 組み直しで式が崩れたら帯も引っ込める。⚠ ビーカーで出した帯（cleared）は残す
+  else if (!allPaired && !cleared && !clearEl.hidden) clearEl.hidden = true;
 }
 
 /* ================================================================================
