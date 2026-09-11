@@ -315,6 +315,15 @@ function setStatusMsg(el, text, kind) {
   el.textContent = text;
 }
 
+/* まだ何も言うことが無い状態に戻す。
+   ⚠ 文だけ消すと、記号（✓/✗/💡）と枠の付いた**空の帯**が残る。
+   見た目（msgBox と3つの色）も一緒に落とすこと。 */
+function clearStatusMsg(el) {
+  if (!el) return;
+  el.classList.remove("msgBox", "ok", "ng", "info");
+  el.textContent = "";
+}
+
 /* ---- 「いま何をする画面か」を示す札の大きさ（2026-08-19・v185）----
    大きさそのものは style.css の `--now-size` が持つ（.nowLabel と同じ1か所）。
    HTML の札は class を付けるだけで済むが、**SVG は行送りを自分で計算している**ので
