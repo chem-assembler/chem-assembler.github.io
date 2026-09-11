@@ -12,17 +12,13 @@ codes:
   - org.ali.alkene-addition
   - org.ali.alkene-h2
   - org.ali.alkene-h2-catalyst
-  - org.ali.alkene-h2o
   - org.ali.alkene-hx
-  - org.ali.alkene-br2
   - org.ali.markovnikov
   - org.ali.alkene-oxidation
   - org.ali.ozonolysis-reconstruct
   - org.ali.unsatur-detection
   - org.ali.addition-polymer
   - org.ali.vinyl-group
-  - org.ali.ethylene-prep
-  - org.ali.ethanol-dehydration
   - org.ali.vinylchloride-prep
 source:
   - slides:有機の基本2-7「アルケンの性質」（27枚）
@@ -397,3 +393,5 @@ answer: 3種類です。**1-ブテン** CH₂=CHCH₂CH₃、**2-ブテン** CH�
 to: alkyne
 text: 三重結合をもつアルキンは、アルケンとよく似た反応をします
 :::
+
+// ⚠ codes から4つ外しました（統合レーン 2026-09-11）。org.ali.alkene-h2o と org.ali.alkene-br2 は reaction-mechanisms が、org.ali.ethylene-prep と org.ali.ethanol-dehydration は alcohol-dehydration が既に挙げており、同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。⚠ 4つとも qa の台帳ではグループ「アルケン」＝ このページの group と同じなので、本来の置き場所はこちらだと考えています。⛔ alcohol-dehydration.md はユーザー本人の作業中なので統合レーンでは触っていません。移すかどうか決めてください。
