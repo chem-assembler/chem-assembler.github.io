@@ -58,8 +58,12 @@
   <div class="hscroll"><nav class="modeBar strip" data-mode="index"></nav></div>
 </header>
 <main>
-  <section id="labPane">
-    <!-- 既定は「閉じ」。開いていると初見の画面が説明で埋まり、ビーカーが下へ押し出される。
+  <!-- ★ 2026-09-11: 左が反応式、右がビーカー。
+       反応式が主で、アニメーションはそれを確かめる従。スマホでは1カラムになり、
+       DOM の順がそのまま縦の順になるのでビーカーは一番下に来る。
+       左の列は上から ①目的 ②左辺の係数 ③高さ合わせ ④組み替え ⑤右辺の係数 の5つ。 -->
+  <section id="eqPane">
+    <!-- 既定は「閉じ」。開いていると初見の画面が説明で埋まる。
          一度開けば app.js が localStorage（ioneq_howto）で覚える -->
     <details class="howto" id="howto">
       <summary>❓ 遊び方（4ステップ）</summary>
@@ -73,23 +77,12 @@
         <li><b>別の比を試す</b>（任意）：ビーカーの「⚗ 別の係数比を試す」を開くと、＋ボタンで好きな数だけ入れて「⚡反応させる」ができる。イオンをドラッグして相手に重ねれば1組だけ結びつく。</li>
       </ol>
     </details>
+    <!-- ① 目的 -->
     <div id="stageTitle"></div>
-    <!-- 比予想クイズ（任意）。既定は閉じ。開けば「先に比を言い切ってから試す」遊び方になる。
-         中身は app.js がステージから組み立てる（反応物が2種以上のステージだけ出る） -->
-    <details class="ratioQuiz" id="ratioQuiz" hidden></details>
-    <!-- ⚠ ドラッグの案内はここから「⚗ 別の係数比を試す」の中へ移した（§7-4）。
-         既定の顔に出す案内は「数を合わせる場所」ではなく「見るところ」に絞る -->
-    <div id="toolbar"></div>
-    <div id="addedFormula" class="addedFormula" aria-label="投入した反応物の数"></div>
-    <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="ビーカーの中のイオン"></svg>
-    <div id="ionCounts"></div>
-    <div id="msg"></div>
-  </section>
-  <section id="eqPane">
+    <!-- ② 反応式の左辺の係数 -->
     <h2>化学反応式を完成させよう</h2>
     <div id="eqMode" hidden></div>
     <div id="equation"></div>
-    <div id="eqMsg"></div>
     <div id="displaceWrap" hidden>
       <div class="schematicHead">中和の座を奪う（弱酸の遊離）<button id="displaceBtn">▶</button></div>
       <svg id="displace" viewBox="0 0 460 236" role="img" aria-label="強い酸が弱い酸を追い出す模式図"></svg>
@@ -118,9 +111,22 @@
       <svg id="recombine" viewBox="0 0 300 30"></svg>
       <div id="recombineMsg"></div>
     </div>
+    <div id="eqMsg"></div>
     <table id="tally"></table>
     <div id="netion" hidden></div>
     <div id="clearBanner" hidden></div>
+  </section>
+  <section id="labPane">
+    <!-- 比予想クイズ（任意）。既定は閉じ。開けば「先に比を言い切ってから試す」遊び方になる。
+         中身は app.js がステージから組み立てる（反応物が2種以上のステージだけ出る） -->
+    <details class="ratioQuiz" id="ratioQuiz" hidden></details>
+    <!-- ⚠ ドラッグの案内はここから「⚗ 別の係数比を試す」の中へ移した（§7-4）。
+         既定の顔に出す案内は「数を合わせる場所」ではなく「見るところ」に絞る -->
+    <div id="toolbar"></div>
+    <div id="addedFormula" class="addedFormula" aria-label="投入した反応物の数"></div>
+    <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="ビーカーの中のイオン"></svg>
+    <div id="ionCounts"></div>
+    <div id="msg"></div>
   </section>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>

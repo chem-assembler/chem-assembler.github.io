@@ -127,10 +127,13 @@ main {
   flex-wrap: wrap;
   align-items: flex-start;
 }
-#labPane { flex: 1 1 460px; max-width: 580px; }
+/* ★ 2026-09-11: 反応式が主・ビーカーが従。
+   反応式の列を先に、広く取る（左辺の係数・高さ合わせ・組み替え・右辺の係数がここに積まれる）。
+   狭い画面では折り返して1カラムになり、DOM の順どおりビーカーが一番下に来る。 */
+#labPane { flex: 1 1 420px; max-width: 520px; }
 #eqPane {
-  flex: 1 1 360px;
-  max-width: 520px;
+  flex: 1 1 480px;
+  max-width: 620px;
   background: #fff;
   border-radius: 10px;
   padding: 14px 18px 18px;
