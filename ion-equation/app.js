@@ -21,6 +21,8 @@ const toolbarEl   = document.getElementById("toolbar");
 const ionCountsEl = document.getElementById("ionCounts");
 const msgEl       = document.getElementById("msg");
 const equationEl  = document.getElementById("equation");
+// 右辺の段（②と⑤のあいだに「高さ合わせ」「組み替え」がはさまるので箱を2つ持つ）
+const equationProdEl = document.getElementById("equationProd");
 const eqModeEl    = document.getElementById("eqMode");
 const recombineWrapEl = document.getElementById("recombineWrap");
 const eqMsgEl     = document.getElementById("eqMsg");
@@ -1942,18 +1944,20 @@ function buildEquationUI() {
   coeffEls = [];
   coeffOk = false;
   equationEl.classList.remove("balanced");
+  equationProdEl.classList.remove("balanced");
   equationEl.innerHTML = "";
+  equationProdEl.innerHTML = "";
   buildEqModeSwitch(stage);
+  /* ★ 2026-09-11: 左辺と右辺を別々の段に分けて置く。
+     間に「高さ合わせ」と「組み替え」がはさまるので、1つの箱には収まらない。
+     どちらの箱も class="eqRow" を持ち、項の並びは DOM の順＝左辺→右辺のまま。 */
+  const nL = eq.reactants.length;
   terms.forEach((sp, i) => {
-    if (i === eq.reactants.length) {
-      const a = document.createElement("span");
-      // 加水分解は平衡（ごく一部しか進まない）。片矢印で書くと「全部が変わる」に見える
-      a.className = "arrow"; a.textContent = partialRule(stage) ? "⇄" : "→";
-      equationEl.appendChild(a);
-    } else if (i > 0) {
+    const box = i < nL ? equationEl : equationProdEl;
+    if (i > 0 && i !== nL) {
       const pl = document.createElement("span");
       pl.className = "plus"; pl.textContent = "＋";
-      equationEl.appendChild(pl);
+      box.appendChild(pl);
     }
     const term = document.createElement("span");
     term.className = "term";
@@ -1971,9 +1975,14 @@ function buildEquationUI() {
     const f = document.createElement("span");
     f.className = "formula"; f.textContent = SPECIES[sp].disp;
     term.append(stepper, f);
-    equationEl.appendChild(term);
+    box.appendChild(term);
     coeffEls.push(num);
   });
+  // 矢印は左辺の段の末尾に置く（「ここまでが左辺」を字で示す）。
+  // 加水分解は平衡（ごく一部しか進まない）。片矢印で書くと「全部が変わる」に見える
+  const arrow = document.createElement("span");
+  arrow.className = "arrow"; arrow.textContent = partialRule(stage) ? "⇄" : "→";
+  equationEl.appendChild(arrow);
   /* 加水分解・電離は、ビーカーの個数（誇張した per 個）と式の係数が食い違う唯一の型。
      係数を入れる**その瞬間**に「画面の数ではない」と言い添える（台帳の O）。
      何を入れるかは言わない —— 答えではなく決め方だけを示す。 */
@@ -2036,6 +2045,7 @@ function onCoeffChange() {
   const res = checkStageCoeffs(stage, coeffs, eqMode);
   coeffOk = res.ok;
   equationEl.classList.toggle("balanced", coeffOk);
+  equationProdEl.classList.toggle("balanced", coeffOk);
   netionEl.hidden = !coeffOk;
   if (coeffOk) {
     // 見出しと結びはステージの性質で出し分ける（レビュー S-6）。

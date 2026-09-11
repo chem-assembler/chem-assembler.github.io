@@ -815,7 +815,9 @@ main.timelineMain {
 #eqMsg.msgBox, #schematicMsg.msgBox { padding: 5px 9px; border-radius: 4px; }
 
 /* 反応式パネル（イオン反応モード） */
-#equation {
+/* ★ 2026-09-11: 左辺の段（#equation）と右辺の段（#equationProd）で同じ見た目を使う。
+   .eqRow が両方に付く（id で書くともう一方に当たらない） */
+.eqRow {
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -824,10 +826,10 @@ main.timelineMain {
   padding: 8px;
   border-radius: 8px;
 }
-#equation.balanced { background: #eef7ee; }
-#equation .arrow, #equation .plus { font-size: 18px; margin: 0 2px; }
-#equation .term { display: inline-flex; align-items: center; gap: 4px; }
-#equation .formula { font-weight: bold; }
+.eqRow.balanced { background: #eef7ee; }
+.eqRow .arrow, .eqRow .plus { font-size: 18px; margin: 0 2px; }
+.eqRow .term { display: inline-flex; align-items: center; gap: 4px; }
+.eqRow .formula { font-weight: bold; }
 
 /* ⚠ 2026-09-08: ここに「イオン反応式→化学反応式の図」（#roleWrap / #molFigure）の飾りがあった。
    図そのものを降ろした（⑥のブロックと役割が重なる）ので、飾りも一緒に降ろす。
@@ -1045,7 +1047,7 @@ main.timelineMain {
   /* 係数ステッパーの＋/−は小さいと押し間違えるので拡大 */
   .stepper button { width: 40px; height: 42px; font-size: 19px; }
   .coeff { min-width: 1.5em; font-size: 20px; }
-  #equation { font-size: 19px; gap: 8px 6px; }
+  .eqRow { font-size: 19px; gap: 8px 6px; }
   /* 筆算は横に長い。狭い画面では文字を詰め、はみ出すぶんは横スクロールで見せる */
   #calcSheet, #halfSheet { font-size: 15px; column-gap: 5px; }
   .cNote { font-size: 10px; }

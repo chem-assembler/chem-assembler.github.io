@@ -3380,7 +3380,7 @@ async function runUITests(iframe) {
   const win = iframe.contentWindow;
   const doc = iframe.contentDocument;
   const $$ = (sel) => [...doc.querySelectorAll(sel)];
-  const ups = () => $$("#equation .stepper button").filter((b) => b.textContent === "＋");
+  const ups = () => $$(".eqRow .stepper button").filter((b) => b.textContent === "＋");
   const stageBtn = (i) => $$("#stageNav button")[i];
   const addBtn = (i) => $$("#toolbar .add")[i];
   const reactBtn = () => doc.querySelector("#toolbar .react");
@@ -3389,7 +3389,7 @@ async function runUITests(iframe) {
   const state = () => win.IonEq.state();
   /* i 番目の項の係数を v にそろえる（＋/− を必要な回数だけ押す） */
   const setCoeff = (i, v) => {
-    const term = $$("#equation .term")[i];
+    const term = $$(".eqRow .term")[i];
     const btn = [...term.querySelectorAll("button")];
     const cur = () => (term.querySelector(".coeff").textContent === "？" ? 0 : +term.querySelector(".coeff").textContent);
     while (cur() > v) btn[0].click();
@@ -3966,6 +3966,41 @@ async function runUITests(iframe) {
     await tick();
     stageBtn(0).click();
     assert(!doc.querySelector("#stageTitle .stageHead").open, "閉じ直したのに開いて戻る");
+  });
+
+  /* ---- 左辺と右辺を2段に割る（2026-09-11・ユーザー指示）----
+     ⚠ **これが「2段に割った」の合否そのもの。**係数を1回でまとめて聞いていた形に戻ると落ちる。
+     見張るのは3つ:
+       ①反応式の段が2つあり、左辺の項は上の段・右辺の項は下の段にいること
+       ②矢印は左辺の段の末尾にあること（「ここまでが左辺」が字で分かる）
+       ③2つの段のあいだに、イオンの図（高さ合わせ・組み替え）が入っていること
+         ＝ 左辺 → 図 → 右辺 の順。図を下へ落として2段を隣り合わせたら落ちる */
+  await t("UI: 係数を左辺と右辺の2段に分け、あいだにイオンの図をはさむ", async () => {
+    const i = STAGES.findIndex((st) => st.id === "s10");
+    stageBtn(i).click();
+    const left = doc.getElementById("equation"), right = doc.getElementById("equationProd");
+    assert(left && right, "反応式の段が2つない");
+    const f = (box) => [...box.querySelectorAll(".formula")].map((e) => e.textContent).join();
+    assert(f(left) === "Na₂SO₃,HCl", "左の段に左辺の項が並んでいない: " + f(left));
+    assert(f(right) === "NaCl,H₂O,SO₂", "右の段に右辺の項が並んでいない: " + f(right));
+    // ② 矢印は左辺の段の末尾
+    const arrow = left.querySelector(".arrow");
+    assert(arrow, "矢印が左辺の段にない");
+    assert(left.lastElementChild === arrow, "矢印が左辺の段の末尾にない");
+    assert(!right.querySelector(".arrow"), "右辺の段にも矢印が出ている");
+    // ③ あいだにイオンの図がある（DOM の順で 左辺 < 図 < 右辺）
+    const pos = (el) => [...doc.getElementById("eqPane").children].indexOf(el);
+    const sch = doc.getElementById("schematicWrap"), rec = doc.getElementById("recombineWrap");
+    assert(!sch.hidden, "s10 で高さ合わせの図が出ない");
+    assert(pos(left) < pos(sch) && pos(sch) < pos(right),
+      "高さ合わせの図が左辺と右辺のあいだにない（" + pos(left) + "/" + pos(sch) + "/" + pos(right) + "）");
+    assert(pos(left) < pos(rec) && pos(rec) < pos(right),
+      "組み替えの図が左辺と右辺のあいだにない（" + pos(left) + "/" + pos(rec) + "/" + pos(right) + "）");
+    // 係数は2つの段にまたがって1つの配列のまま（左辺を入れれば図が動く）
+    setCoeff(0, 1); setCoeff(1, 2);
+    assert(!doc.getElementById("recombineBtn").disabled, "左辺がそろっても組み替えが押せない");
+    [2, 1, 1].forEach((v, k) => setCoeff(2 + k, v));
+    assert(state().coeffOk, "2段に分けたら模範解答が正解にならない");
   });
 
   await t("UI: 判定メッセージが成功・過不足・案内で色分けされる（色だけに頼らない）", async () => {
@@ -4545,8 +4580,8 @@ async function runUITests(iframe) {
     stageBtn(i).click();
     // 水は溶媒なので投入ボタンには出ない（式には現れる）
     assert($$("#toolbar .add").length === 2, "投入ボタンが2つでない（水が出ている？）");
-    assert($$("#equation .formula").map((e) => e.textContent).join() === "Cu²⁺,NH₃,H₂O,Cu(OH)₂,NH₄⁺",
-      "イオン反応式の項が違う: " + $$("#equation .formula").map((e) => e.textContent).join());
+    assert($$(".eqRow .formula").map((e) => e.textContent).join() === "Cu²⁺,NH₃,H₂O,Cu(OH)₂,NH₄⁺",
+      "イオン反応式の項が違う: " + $$(".eqRow .formula").map((e) => e.textContent).join());
     addBtn(0).click(); addBtn(1).click(); addBtn(1).click();   // CuSO₄×1, NH₃×2
     adv(5000);
     let s = state();
@@ -4631,7 +4666,7 @@ async function runUITests(iframe) {
   await t("UI: 分子反応式 ⇄ イオン反応式 を切り替えられる（電荷の行も出る）", async () => {
     const i = STAGES.findIndex((st) => st.id === "amphoteric-al-step1");
     stageBtn(i).click();
-    const terms = () => $$("#equation .formula").map((e) => e.textContent);
+    const terms = () => $$(".eqRow .formula").map((e) => e.textContent);
     const modeBtns = () => $$(".eqModeBtn");
     const tallyRows = () => $$("#tally tr").map((r) => r.textContent);
     // primary:"ionic" なので既定はイオン反応式
@@ -5453,11 +5488,14 @@ async function runUITests(iframe) {
           where + ": 札が2行に収まっていない（" + Math.round(r.height) + "px ／ 上限 " + Math.round(cap) + "px）");
         assert(p.doc.documentElement.scrollWidth <= p.w + 1,
           where + ": ページが横にはみ出した（" + p.doc.documentElement.scrollWidth + " > " + p.w + "）");
-        // 押し出しの実害を直接見る: いちばん狭い画面でもビーカーの頭は1画面目に残る
+        /* 押し出しの実害を直接見る: いちばん狭い画面でも**左辺の係数**は1画面目に残る。
+           ⚠ 2026-09-11 まではここでビーカーの頭を見ていたが、
+           スマホは1カラムでビーカーが一番下という並びになったので、あれはもう成り立たない。
+           見張るべき「1画面目に残っていてほしいもの」は、主役になった反応式の左辺のほう。 */
         if (p.h <= 568) {
-          const top = p.doc.getElementById("beaker").getBoundingClientRect().top;
+          const top = p.doc.getElementById("equation").getBoundingClientRect().top;
           assert(top < p.h,
-            where + ": 札を大きくしたせいでビーカーが1画面目から押し出された（頭が " +
+            where + ": 札を大きくしたせいで左辺の係数が1画面目から押し出された（頭が " +
             Math.round(top) + "px ／ 画面の高さ " + p.h + "px）");
         }
       }
@@ -5675,7 +5713,7 @@ async function runUITests(iframe) {
     const b = blocks();
     b.set({ cn: 0, an: 0 });
     const coeff = (i) => {
-      const v = $$("#equation .term")[i].querySelector(".coeff").textContent;
+      const v = $$(".eqRow .term")[i].querySelector(".coeff").textContent;
       return v === "？" ? 0 : +v;
     };
     // ブロック → 係数
@@ -5733,7 +5771,7 @@ async function runUITests(iframe) {
     const svg = doc.getElementById("ionBlocks");
     const ghost = (side) => svg.querySelector(`.ibAdd[data-ib-side="${side}"]`);
     const coeff = (i) => {
-      const v = $$("#equation .term")[i].querySelector(".coeff").textContent;
+      const v = $$(".eqRow .term")[i].querySelector(".coeff").textContent;
       return v === "？" ? 0 : +v;
     };
     assert(ghost("cation") && ghost("anion"), "空の列に置き場所（＋）が出ない");
