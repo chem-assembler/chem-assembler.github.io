@@ -209,6 +209,13 @@ answer: 示すのは **(1) と (5) と (8)** です。(1) アセトアルデヒ�
 :::
 
 :::link
+open: isomer
+formula: C5H10O
+cls: ketone
+text: 分子式 C₅H₁₀O のケトンをアプリで書き出してみる（3種）
+:::
+
+:::link
 to: alcohol
 text: アルコールの級・沸点・命名など、酸化される前の側の性質はこちら
 :::

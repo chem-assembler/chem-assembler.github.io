@@ -2030,24 +2030,45 @@ class IsomerPractice {
      * ⚠ 断り方は既存の道と同じ「トーストで理由を言う」。**黙って何も起きないを作らない**
      */
     startFromFgPreset(index) {
-        const g = this.game;
         const pre = this.fgPresets[index];
-        if (!pre) return;
-        const parsed = this.parseFormula(pre.formula);
-        const sc = IP_SCOPES['fg:' + pre.cls];
-        if (!parsed || !sc) { g.showToast('このお題を開けませんでした。'); return; }
-        const seed = enumerateFunctionalGroupIsomers(parsed.heavy, parsed.h, pre.cls);
+        if (!pre) return false;
+        return this.startFromFgFormula(pre.formula, pre.cls);
+    }
+
+    /**
+     * ★★ 「分子式 ＋ 分類」で1回ぶんを開く（v1535・参考書の `:::link` の `cls:` から呼ばれる）。
+     *
+     * ⚠⚠ **一覧のボタン（`startFromFgPreset`）と同じ道**にした。前は一覧の添字からしか開けず、
+     *   ⛔ 参考書のリンクは `startFromFormula`（式だけ）しか呼べなかった ——
+     *   そちらは **C₄H₈O₂ の122種**を数えて上限20種で断る ＝ **押しても何も起きないリンク**になる。
+     *   ★ ここを式と分類の2引数で開く口にしたので、**在庫の16件と同じ回へ本文から直に飛べる。**
+     * ⚠ 一覧に無い組み合わせ（例 C₈H₁₆O のケトン）でも、数えて線の内側に入れば開く ——
+     *   **在庫の表を参照しない**（一覧は「押しやすい入口」であって、開ける回の台帳ではない）。
+     * ★ 返り値は開けたかどうか。⚠ 断るときは今までどおり**理由をトーストで言う**。
+     */
+    startFromFgFormula(formula, cls) {
+        const g = this.game;
+        const parsed = this.parseFormula(formula);
+        const sc = IP_SCOPES['fg:' + cls];
+        if (!parsed || !sc) {
+            /* ⚠ **黙って何も起きないを作らない。** 分類の綴り違いはここに来る
+               （`REF21` が原稿の側で赤くするので、ここへ来るのは手で URL を打った人だけ） */
+            g.showToast('このお題を開けませんでした（分子式か分類の指定が読めません）。', 6000);
+            return false;
+        }
+        const seed = enumerateFunctionalGroupIsomers(parsed.heavy, parsed.h, cls);
         if (!seed.applicable || seed.overflow || seed.isomers.length < IP_MIN_ISOMERS ||
             seed.isomers.length > IP_MAX_ISOMERS) {
             g.showToast(
                 `${ipFormulaLabel(parsed.heavy, parsed.h)} の${sc.tag}は、いまの練習では扱えません` +
                 `（数え上げが上限を超えたか、書き出すには多すぎます）。`, 6000);
-            return;
+            return false;
         }
         this.beginSession({
             index: -1, elements: parsed.heavy, hCount: parsed.h,
-            formula: g.computeMolecularFormula(seed.isomers[0]), fgClass: pre.cls
+            formula: g.computeMolecularFormula(seed.isomers[0]), fgClass: cls
         }, seed.isomers);
+        return true;
     }
 
     /**
@@ -6810,8 +6831,11 @@ class ReferenceBook {
         if (block.to) {
             a.href = REF_PAGE_DIR + block.to + '/';
         } else {
+            /* ⚠ 並びは受け口の綴りに合わせる（`?open=isomer&formula=C4H8O2&cls=ester`）。
+               ★ `cls` は `formula` の添えもの（書式の側が「対で書く」を見張っている） */
             search = '?open=' + encodeURIComponent(block.open)
-                + (block.formula ? '&formula=' + encodeURIComponent(block.formula) : '');
+                + (block.formula ? '&formula=' + encodeURIComponent(block.formula) : '')
+                + (block.cls ? '&cls=' + encodeURIComponent(block.cls) : '');
             a.href = REF_APP_DIR + search;
         }
         a.innerHTML = block.text;
@@ -7342,6 +7366,11 @@ if (typeof window !== 'undefined') {
     //   （書き写すと、上限を変えたときに検査だけが古い線を見張り続ける）
     window.IP_MAX_ISOMERS = IP_MAX_ISOMERS;
     window.IP_MIN_ISOMERS = IP_MIN_ISOMERS;
+    /* ★★ 出題の「範囲」の台帳（v1535 で `REF21` から見るようにした）。⚠ **分類の綴りをここ1つに保つ**
+       —— 参考書の `:::link` の `cls:` が名乗れるのは `fg:` で始まる鍵の後ろ半分だけで、
+       `REF21` が「原稿に書いた分類が実在し、その式でその回が実際に始まる」ことをこの口から見る。
+       ⚠ 検査に分類名を書き写さない（増やしたら検査も黙って追随する） */
+    window.IP_SCOPES = IP_SCOPES;
     // ★★ 「条件にある構造を書き出す」の部品（v1510）。⚠ 出しているのは**関係を作る側**で、
     //   出題を選ぶ側（`ipSolveCondition`）も一緒に出す ＝ `CS3` が在庫を総当たりで作り直せる。
     //   検査が自前で辺を数え直すと、規則が2か所になって「検査だけが古い」日が来る

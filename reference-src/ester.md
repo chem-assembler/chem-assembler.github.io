@@ -206,7 +206,8 @@ text: アルコールを酸化するとどうなるかの対応表はこちら
 :::link
 open: isomer
 formula: C4H8O2
-text: 分子式 C₄H₈O₂ の異性体をアプリで書き出してみる
+cls: ester
+text: 分子式 C₄H₈O₂ のエステルをアプリで書き出してみる（4種）
 :::
 
 :::section
