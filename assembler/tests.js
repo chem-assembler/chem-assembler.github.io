@@ -49276,6 +49276,14 @@
         };
         const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
         const flat = (s) => String(s).replace(/\s+/g, ' ').trim();
+        /* ★★ **原稿の記法が効く欄（`prose`）は、生成物の中では HTML になっている。**
+           ⚠⚠ `lead` も `title` も `prose` なので、`**強調**` は `<b>`、`~n~` は `<sub>` に化ける。
+             ★ 画面に出るのは中の文字だけなので、**突き合わせる前にタグを外す。**
+           ⚠ 外さないと「強調か下付きを1つでも書いた節」がその場で赤くなる —— 実測で
+             `alkene` の節「アルケンとは」の lead（`一般式は C~n~H~2n~。…`）が当たった。
+             ⛔ ここを原稿側で直す（記法をやめる）のは逆向き ＝ 書式が `prose` と決めた欄で
+             記法を使えなくすることになる。 */
+        const bare = (s) => flat(String(s).replace(/<[^>]+>/g, ''));
 
         const pages = JSON.parse(await grab('reference.json', 'reference.json'));
         const book = W.referenceBook;
@@ -49334,8 +49342,8 @@
                 seen.add(s.anchor);
                 const el = book.renderBlock(s);
                 assert(el.id === W.REF_ANCHOR_PREFIX + s.anchor, `${p.id}: 節の id が ${el.id} になっている`);
-                assert(flat(el.textContent).indexOf(flat(s.lead)) >= 0,
-                    `${p.id}: 節「${s.title}」に「この節で分かること」が出ていない`);
+                assert(flat(el.textContent).indexOf(bare(s.lead)) >= 0,
+                    `${p.id}: 節「${bare(s.title)}」に「この節で分かること」が出ていない`);
             });
             assert(toc, `${p.id}: 節が ${secs.length} 個あるのに目次が組めない`);
             const links = [...toc.querySelectorAll('a')];
@@ -49344,7 +49352,7 @@
             links.forEach((a, i) => {
                 assert(a.getAttribute('href') === '#' + W.REF_ANCHOR_PREFIX + secs[i].anchor,
                     `${p.id}: 目次の ${i + 1} 行目の行き先が本文の節と違う`);
-                assert(flat(a.textContent) === flat(secs[i].title),
+                assert(flat(a.textContent) === bare(secs[i].title),
                     `${p.id}: 目次の ${i + 1} 行目の文字が節の見出しと違う`);
             });
         }
@@ -49561,12 +49569,16 @@
      * ⚠⚠ **急所は「行き先がまだ無いページでもよい」こと。** 52ページの計画のうち
      *   書けているのは6枚しかないので、⛔ ふつうのリンクにすると **404 が並ぶ**。
      *
-     * ★ ここが見るのは5つ:
+     * ★ ここが見るのは6つ:
      *   ① **まだ無いページ宛は `<a>` にならない**（押せない・「準備中」と言葉で出る）
      *   ② **在るページ宛は `<a href="/reference/<id>/">`**（面Aでそのまま使える綴り）
      *   ③ ⚠⚠ **`open:` は `game.js` の `OPEN_TARGETS` に実在する**（新しい URL の形を発明していない）
      *   ④ ⚠ **`<button>` を作らない** —— 面Aの生成器は知らない押しものを見つけると止まる
      *   ⑤ **行き先の綴り違いが「準備中」に化けない**（`PLANNED.txt` に登録した id だけが許される）
+     *   ⑥ ★★ **`cls:`（書き出しの分類）は実在し、その式でその回が実際に始まる**（v1535・§20-12）。
+     *      ⚠ 綴りの台帳は `learn.js` の `IP_SCOPES` で、**検査に分類名を書き写さない**。
+     *      ⚠⚠ 否定対照つき —— **分類を外すと同じ式では開けない**ことまで見る
+     *        （そうでないと `cls` が何の役にも立っていないのに緑になる）
      */
     test('REF21: :::link は まだ無いページを「準備中」で指せ、綴り違いは赤になる', async (c) => {
         const W = c.W;
@@ -49604,6 +49616,14 @@
         assert(targets && Object.keys(targets).length >= 10,
             'game.js の OPEN_TARGETS が読めない（作りが変わった？ この検査を直す）');
         const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        /* ★★ 書き出しの「分類」の綴りは **`learn.js` の `IP_SCOPES`** が唯一の台帳（v1535）。
+           ⚠ **検査に分類名を書き写さない** —— 書き写すと、分類を増やした日に検査だけが古い一覧を見張る。 */
+        const scopes = W.IP_SCOPES;
+        assert(scopes && Object.keys(scopes).length >= 4,
+            'learn.js の IP_SCOPES が読めない（作りが変わった？ この検査を直す）');
+        const FG = Object.keys(scopes).filter(k => k.indexOf('fg:') === 0).map(k => k.slice(3));
+        assert(FG.length >= 4, `書き出しの分類が ${FG.length} 種しか読めない（IP_SCOPES の 'fg:' の鍵）`);
+
         let nLink = 0, nOpen = 0;
         const formulas = [];
         pages.forEach(p => (p.blocks || []).forEach(b => {
@@ -49619,7 +49639,16 @@
             if (b.formula) {
                 assert(b.open === 'isomer', `${p.id}: formula は open: isomer と一緒に使うものです（いまは ${b.open}）`);
                 assert(/^[A-Za-z0-9]+$/.test(b.formula), `${p.id}: formula「${b.formula}」が素の英数字でない`);
-                formulas.push({ id: p.id, formula: b.formula });
+                formulas.push({ id: p.id, formula: b.formula, cls: b.cls || null });
+            }
+            /* ★★ `cls`（分類で絞る回・§20-12）。⚠ **`formula` の添えもの**で、単独では立たない。
+               ⚠⚠ **綴り違いをここで止める** —— 通すと「押しても何も起きないリンク」が
+                  緑のまま残る（`formula` を通す条件とまったく同じ読み）。 */
+            if (Object.prototype.hasOwnProperty.call(b, 'cls')) {
+                assert(b.formula, `${p.id}: :::link の cls は formula と一緒に書くものです（分類だけでは式が決まらない）`);
+                assert(FG.indexOf(b.cls) >= 0,
+                    `${p.id}: :::link の分類「cls: ${b.cls}」は書き出し練習に無い`
+                    + `（書けるのは ${FG.join(' / ')}。learn.js の IP_SCOPES の 'fg:' の鍵）`);
             }
         }));
 
@@ -49633,13 +49662,40 @@
         const wasMode = W.game.mode;
         W.game.setMode('learn');
         try {
-            formulas.forEach(({ id, formula }) => {
-                ip.startFromFormula(formula);
+            formulas.forEach(({ id, formula, cls }) => {
+                /* ★ 分類つきのリンクは**分類つきの道**で確かめる（v1535）。
+                   ⚠⚠ 式だけで試すと**通ってしまう組み合わせと、断られる組み合わせが混ざる**
+                     —— C₄H₈O₂ は全体で122種あって式だけの道は断るが、
+                        エステルに絞れば4種で開く ＝ **画面が実際にたどる道で見る。** */
+                if (cls) ip.startFromFgFormula(formula, cls);
+                else ip.startFromFormula(formula);
                 assert(ip.active && ip.problem && ip.problem.total >= 2,
-                    `${id}: :::link の formula「${formula}」で書き出し練習が始まらない`
+                    `${id}: :::link の formula「${formula}」${cls ? `・分類「${cls}」` : ''}で書き出し練習が始まらない`
                     + '（押しても何も起きないリンクになる。受け口が受ける式かどうかは IS5 の線）');
+                /* ⚠ 開いた回が**その分類の回**であること（式だけの回に落ちていない）。
+                   ★ 鍵が分かれていないと「ケトンだけ描いて C₆H₁₂O 全体の ✓ が付く」が起きる（§11-4） */
+                if (cls) {
+                    assert(ip.problem.fgClass === cls,
+                        `${id}: 分類「${cls}」を頼んだのに、開いた回の分類が「${ip.problem.fgClass || '(指定なし)'}」`);
+                }
                 ip.stop();
             });
+            /* ★★ 否定対照 —— 分類を外すと、同じ式では**開けない**こと。
+               ⚠ これが無いと「cls を足したから開いた」のか「もともと開いた」のかが分からない
+                 ＝ この欄が何の役にも立っていない可能性に気づけない。 */
+            const withCls = formulas.filter(f => f.cls);
+            if (withCls.length) {
+                let 式だけで開けた = 0;
+                withCls.forEach(({ formula }) => {
+                    ip.startFromFormula(formula);
+                    if (ip.active) 式だけで開けた++;
+                    ip.stop();
+                });
+                assert(式だけで開けた < withCls.length,
+                    `否定対照が働いていない: 分類つきの ${withCls.length} 件は、分類を外しても全部開けた`
+                    + '（cls を足した理由＝「式だけでは上限20種を超えて断られる回がある」が消えている。'
+                    + '★ 消えているなら DESIGN_reference_book.md §20-12 を測り直すこと）');
+            }
         } finally {
             ip.stop();
             W.game.setMode(wasMode);
