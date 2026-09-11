@@ -16443,8 +16443,14 @@
             assert(W.ipUnsaturation(p.elements, p.hCount) >= 2,
                 `不飽和度 ${W.ipUnsaturation(p.elements, p.hCount)} のお題が「じっくり練習する回」に入っている`);
         });
-        // 定番の側に不飽和度2以上が紛れていない（＝ 群分けが本当に効いている）
-        [...D.querySelectorAll('#ip-body > div > button[data-ip-problem]')].forEach(b => {
+        /* 定番の側に不飽和度2以上が紛れていない（＝ 群分けが本当に効いている）。
+           ⚠⚠ v1536 まで `#ip-body > div > button` で数えていたが、①を束に分けた（見出し ＋ グリッド）
+              ので**1段深くなり、この検査は0個を回して黙って通る**ようになっていた。
+              ★ 束の id を並べず「じっくり・立体の枠の**外**にあるお題ボタン」で引く。 */
+        const outside = [...D.querySelectorAll('#ip-body button[data-ip-problem]')]
+            .filter(b => !b.closest('#ip-training-problems') && !b.closest('#ip-stereo-problems'));
+        assert(outside.length >= 10, `定番の群のお題が ${outside.length}件（数え方が空振りしている）`);
+        outside.forEach(b => {
             const p = ip.problems[+b.dataset.ipProblem];
             assert(W.ipUnsaturation(p.elements, p.hCount) < 2,
                 `不飽和度2以上のお題（${b.textContent}）が定番の群に残っている`);
@@ -16472,6 +16478,88 @@
         assert(!/鎖式・13種/.test(toasts[0]) && !/環式・12種/.test(toasts[0]),
             `断り文が行き先の種類数まで出している（${toasts[0]}）`);
 
+        g.setMode('puzzle');
+    });
+
+    /* ===== IW33: 書き出し練習の**束**（v1536） =====
+     *
+     * ★ ユーザー指摘（2026-09-11）「**問題が系列ごとになっていないので、見づらい**」。
+     *   ① は17件が見出し1つ無しで1枚に並び（アルカン・アルケン・シクロアルカン・
+     *   アルコール・エーテルが混ざり、炭素数の順でもない）、② も27件が見出し無しだった。
+     *
+     * ⚠ **見出しの文言そのものは見ない**（言い回しは変わる）。見るのは
+     *   「**束の中身が、その束の言うグループと合っているか**」＝ 見出しが嘘をつかないこと。
+     */
+    test('IW33: ①は化合物のグループ・②は反応の型で束ねてあり、束の中は炭素数の順', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.renderList();
+
+        // ① 束が3本そろい、**どれにも入らないお題（その他）は無い**
+        assert(!D.getElementById('ip-group-other'),
+            'どの束にも入らないお題がある（見出しが言えないものを黙って並べている）');
+        const dou = (p) => W.ipUnsaturation(p.elements, p.hCount);
+        const hetero = (p) => p.elements.filter(el => el !== 'C').join(',');
+        const WANT = {
+            'ip-group-alkane': (p) => dou(p) === 0 && !hetero(p),
+            'ip-group-alcohol-ether': (p) => dou(p) === 0 && hetero(p) === 'O',
+            'ip-group-alkene-cyclo': (p) => dou(p) === 1 && !hetero(p)
+        };
+        let counted = 0;
+        for (const [id, ok] of Object.entries(WANT)) {
+            const wrap = D.getElementById(id);
+            assert(wrap, `束「${id}」が画面に無い`);
+            assert(wrap.querySelector('h4.ip-group-head'),
+                `束「${id}」に見出しが無い（束ねたのに何の練習か言っていない）`);
+            const idx = [...wrap.querySelectorAll('button[data-ip-problem]')].map(b => +b.dataset.ipProblem);
+            assert(idx.length >= 3, `束「${id}」が ${idx.length}件（束ねる意味が無い）`);
+            counted += idx.length;
+            // ⓐ 中身が見出しの言うグループと合っている
+            idx.forEach(i => assert(ok(ip.problems[i]),
+                `束「${id}」に、そのグループでないお題が入っている（添字 ${i}）`));
+            // ⓑ 中は**炭素数の順**。同じ分子式は「全部 → 鎖式 → 環式」
+            const SK = { none: 0, chain: 1, ring: 2 };
+            const key = (i) => {
+                const p = ip.problems[i];
+                const s = SK[p.skeleton || 'none'];
+                assert(s !== undefined, `知らない骨格の型「${p.skeleton}」（並び順を決められない）`);
+                return p.elements.filter(el => el === 'C').length * 10 + s;
+            };
+            idx.forEach((i, k) => { if (k) assert(key(idx[k - 1]) <= key(i),
+                `束「${id}」が炭素数の順に並んでいない（${ip.problems[idx[k - 1]].hCount} → ${ip.problems[i].hCount}）`); });
+        }
+        // ⓒ 漏れが無い（立体の回・じっくりの回を除いた全部が、どれかの束に入っている）
+        const want = ip.problems.filter(p => !p.stereoAsked && dou(p) < 2).length;
+        assert(counted === want, `束に入ったお題が ${counted}件で、①のお題 ${want}件と合わない`);
+
+        // ② 反応の型ごとに束ねてある（型の一覧は `IP_COND_KINDS` から引く ＝ ここに書き写さない）
+        const cond = D.getElementById('ip-cond-presets');
+        assert(cond, '②の枠が無い');
+        const condHeads = [...cond.querySelectorAll('h4.ip-group-head')];
+        const kinds = [...new Set(ip.condPresets.map(p => p.kind))];
+        assert(condHeads.length === kinds.length,
+            `②の束の見出しが ${condHeads.length}本（反応の型は ${kinds.length}種）`);
+        condHeads.forEach(h => assert(h.textContent.trim().length >= 10,
+            `②の束の見出しが短すぎる（${h.textContent}）`));
+        /* ★ 束ごとに、中のお題が**同じ型**であること。⚠ 添字は**元の並びのまま**
+             （`startFromCondPreset(i)` が `condPresets[i]` を引くので、詰め直すと別の回が開く）。 */
+        let seen = 0;
+        condHeads.forEach(h => {
+            const grid = h.nextElementSibling;
+            const idx = [...grid.querySelectorAll('button[data-ip-cond]')].map(b => +b.dataset.ipCond);
+            assert(idx.length >= 1, `②の束「${h.textContent}」が空`);
+            const kind = ip.condPresets[idx[0]].kind;
+            idx.forEach(i => assert(ip.condPresets[i].kind === kind,
+                `②の束「${h.textContent}」に別の型（${ip.condPresets[i].kind}）が混ざっている`));
+            seen += idx.length;
+        });
+        assert(seen === ip.condPresets.length, `②のお題が ${seen}件で、在庫 ${ip.condPresets.length}件と合わない`);
+
+        // ⚠ 束の見出しで①②の見出し（`h3.ip-section-head`）を増やしていない（`CS1` が2本と数える）
+        assert(D.querySelectorAll('#ip-body h3.ip-section-head').length === 2,
+            '束の見出しが①②と同じ層（h3.ip-section-head）になっている');
         g.setMode('puzzle');
     });
 

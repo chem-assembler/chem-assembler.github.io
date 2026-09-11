@@ -718,6 +718,12 @@ const IP_COND_KINDS = {
     /** 脱水して K になるアルコールを書き出す（K はアルケン。相手＝生成物） */
     dehydration: {
         tag: '脱水', verb: '脱水すると', from: 'answer', edges: (m) => ipDehydrationEdges(m),
+        /* ★ 束の見出し（v1536・ユーザー指摘「問題が系列ごとになっていないので、見づらい」）。
+           ⚠ ②も 27件が見出し1つ無しで並んでいた。⚠ 型が3つあることは
+             **ボタンの文字（`脱水 → エテン` ／ `エタノール を脱水`）だけでは読み取れない**
+             —— 矢印の向きが逆になるので、束の見出しで「何を書き出す回か」を言う。
+           ⚠ 文言は `IP_COND_KINDS` からしか出さない（この箱の他の欄と同じ流儀）。 */
+        groupHead: '脱水するとこのアルケンになるアルコールを書き出す回:',
         askFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
         label: (t) => `脱水 → ${t}`,
@@ -729,6 +735,7 @@ const IP_COND_KINDS = {
     /** 水を付加して A になるアルケンを書き出す（A はアルコール。相手＝生成物） */
     hydration: {
         tag: '水の付加', verb: '水を付加すると', from: 'answer', edges: (m) => ipHydrationEdges(m),
+        groupHead: '水を付加するとこのアルコールになるアルケンを書き出す回:',
         askFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
         label: (t) => `水の付加 → ${t}`,
@@ -757,6 +764,7 @@ const IP_COND_KINDS = {
      */
     products: {
         tag: '脱水', verb: '脱水すると', from: 'target', edges: (m) => ipDehydrationEdges(m),
+        groupHead: 'このアルコールを脱水するとできるアルケンを書き出す回:',
         askFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
         label: (t) => `${t} を脱水`,
@@ -918,6 +926,50 @@ function ipSolveCondition(pre) {
 //   「知識項目 → 大問」の逆引きで、**分子式ごと・書き出し設問ごとの件数は持っていない**。
 //   だから画面の文言でも回数を名乗らない（何が正解に並ぶかだけを言う）
 const IP_TRAINING_DOU = 2;
+
+/**
+ * ★★ ①「一通りすべて書き出す」の**束**（v1536・ユーザー指摘 2026-09-11「問題が系列ごとに
+ * なっていないので、見づらい」）。
+ *
+ * ⚠ それまで 17件が**見出し1つ無しで**1枚のグリッドに並んでいた。アルカン・アルケン・
+ *   シクロアルカン・アルコール・エーテルが混ざり、炭素数の順にもなっていない。
+ *
+ * ★ 束ね方は**化合物のグループ**。分けているのは**不飽和度と、炭素以外の原子の並び**だけで、
+ *   どちらも分子式そのものから出る ＝ お題を1件足しても、束の割り当てを手で足さなくてよい:
+ *     不飽和度0・炭素だけ …… アルカン CₙH₂ₙ₊₂（枝分かれだけで分かれる）
+ *     不飽和度0・O が1つ …… アルコールとエーテル CₙH₂ₙ₊₂O
+ *     不飽和度1・炭素だけ …… アルケンとシクロアルカン CₙH₂ₙ
+ *   ⚠ 不飽和度2以上は今までどおり別の群（`IP_TRAINING_DOU`）。
+ *
+ * ⚠ **どの束にも入らないお題は、束ねずに `その他` へ落とす**（黙って隣の束に混ぜない）。
+ *   ★ そこへ落ちること自体を `IW33` が赤にする ＝ 見出しが嘘をつく前に止まる。
+ *
+ * ⚠ 見出しは `<h4>`。**説明文ではなく見出し**なので `UX1`（操作の案内の字数）は数えない側
+ *   —— 同じ理由で `<h3 class="ip-section-head">`（①②）も数えられていない。
+ *   ⚠ ただし `CS1` は `h3.ip-section-head` を2本と数えるので、**束の見出しを h3 にしない**。
+ */
+const IP_BASIC_GROUPS = [
+    {
+        id: 'ip-group-alkane',
+        head: 'アルカンの回（枝分かれの違いだけで分かれます）:',
+        match: (dou, hetero) => dou === 0 && !hetero.length
+    },
+    {
+        id: 'ip-group-alcohol-ether',
+        head: 'アルコール・エーテルの回（同じ分子式に −OH と −O− が混じります）:',
+        match: (dou, hetero) => dou === 0 && hetero.join(',') === 'O'
+    },
+    {
+        /* ⚠ 同じ分子式が3つ並ぶ理由（C₄H₈・C₅H₁₀）を、ここで言い切る ——
+           式だけの回は鎖式と環式を合わせて、（鎖式）（環式）の回は片方だけを書き出す。
+           ★ ユーザー指摘「3つ並ぶ意味が読めない」に対する答えはこの1行で、
+             ボタン側の名乗り（`C₄H₈（鎖式）`）と合わせて読めるようにしてある。 */
+        id: 'ip-group-alkene-cyclo',
+        head: 'アルケン・シクロアルカンの回（鎖式と環式を合わせた回と、片方だけの回があります）:',
+        match: (dou, hetero) => dou === 1 && !hetero.length
+    }
+];
+
 const IP_HSTEP = 46; // 標準レイアウトの結合長（横方向）
 // 不飽和度（環＋π結合の本数）= (2C + 2 + N − H − X)/2。O・S は骨格の自由度を増やさないので数に入らない。
 // **列挙する前に費用を見積もれる唯一の材料**（DEVELOPMENT.md §7-1d）
@@ -1814,13 +1866,56 @@ class IsomerPractice {
             btn.addEventListener('click', () => this.start(i));
             return btn;
         };
-        const basic = makeGrid(), training = makeGrid(), stereo = makeGrid();
+        /* ★ 束の見出し（v1536）。⚠ `<h4>` —— 説明文ではなく見出し（`IP_BASIC_GROUPS` の前書き）。
+           ★ 見た目は下の「じっくり練習する回」などの札とそろえる（同じ層のものは同じ顔で並べる）。 */
+        const makeGroupHead = (text) => {
+            const h = document.createElement('h4');
+            h.className = 'ip-group-head';
+            h.style.cssText = 'font-size:12.5px; font-weight:normal; color:var(--text-secondary); ' +
+                'margin:0 0 4px; line-height:1.5;';
+            h.textContent = text;
+            return h;
+        };
+        /* ★ 束を1つ置く（見出し ＋ グリッド）。⚠ 空の束は**枠ごと出さない** */
+        const appendGroup = (id, head, items) => {
+            if (!items.length) return;
+            const wrap = document.createElement('div');
+            wrap.id = id;
+            wrap.style.cssText = 'margin-top:8px;';
+            wrap.appendChild(makeGroupHead(head));
+            const grid = makeGrid();
+            items.forEach(({ p, i }) => grid.appendChild(makeButton(p, i)));
+            wrap.appendChild(grid);
+            this.body.appendChild(wrap);
+        };
+
+        /* ★★ ①のお題を**化合物のグループ**で束ね、束の中は**炭素数の順**に並べる（v1536）。
+           ⚠ **`this.problems` の並びは動かさない**（回帰テストが添字で開く・前書きの警告）——
+             並べ替えるのは**描くときだけ**。
+           ★ 同じ分子式が3つ（全部／鎖式／環式）あるときの順は「全部 → 鎖式 → 環式」。 */
+        const SKEL_ORDER = { '': 0, chain: 1, ring: 2 };
+        const basicItems = [], orphans = [];
+        const training = makeGrid(), stereo = makeGrid();
         this.problems.forEach((p, i) => {
             if (p.stereoAsked) { stereo.appendChild(makeButton(p, i)); return; }
             const dou = ipUnsaturation(p.elements, p.hCount);
-            (dou >= IP_TRAINING_DOU ? training : basic).appendChild(makeButton(p, i));
+            if (dou >= IP_TRAINING_DOU) { training.appendChild(makeButton(p, i)); return; }
+            // ⚠ 炭素以外を**並びごと**渡す（`['O']` か空。`['N']` や `['O','O']` は
+            //    どの束にも入らない ＝ 見出しが嘘をつくより「その他」へ落とす）
+            const hetero = p.elements.filter(el => el !== 'C');
+            const g = IP_BASIC_GROUPS.find(x => x.match(dou, hetero));
+            (g ? basicItems : orphans).push({ p, i, group: g && g.id });
         });
-        this.body.appendChild(basic);
+        const carbons = (p) => p.elements.filter(el => el === 'C').length;
+        IP_BASIC_GROUPS.forEach(g => {
+            const items = basicItems.filter(x => x.group === g.id).sort((a, b) =>
+                carbons(a.p) - carbons(b.p)
+                || SKEL_ORDER[a.p.skeleton || ''] - SKEL_ORDER[b.p.skeleton || '']);
+            appendGroup(g.id, g.head, items);
+        });
+        /* ⚠ どの束にも入らなかったお題（＝ 見出しが嘘になる組み合わせ）。
+           ★ **黙って隣の束に混ぜない**。`IW33` がここが空であることを見張る */
+        appendGroup('ip-group-other', 'そのほかの回:', orphans);
         if (training.children.length) {
             const wrap = document.createElement('div');
             wrap.id = 'ip-training-problems';
@@ -1980,29 +2075,47 @@ class IsomerPractice {
             this.body.appendChild(makeSection('ip-head-cond', '② 条件にある構造を書き出す'));
             const cdWrap = document.createElement('div');
             cdWrap.id = 'ip-cond-presets';
-            const cdGrid = document.createElement('div');
-            cdGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:6px;';
+            /* ★★ 反応の型ごとに束ねる（v1536）。⚠ 27件が見出し1つ無しで並んでいた。
+               ★ 束の順は **`condPresets` に出てくる順**（脱水 → 水の付加 → 脱水の順方向）——
+                 型の一覧をここに書き写さない ＝ 型が増えても束が黙って落ちない。
+               ⚠ 添字 `i` は**元の並びのまま**渡す（`startFromCondPreset(i)` が引く鍵）。 */
+            const cdKinds = [];
             this.condPresets.forEach((pre, i) => {
-                const sc = IP_SCOPES['cond:' + pre.id];
-                const k = IP_COND_KINDS[pre.kind];
-                const af = k.askFormula(pre.carbons);
-                // ★ 記録の鍵は `<答えの分子式>@cond-<id>@stereo`（`clearKeyTail` が組む1か所）
-                const cleared = this.isCleared(ipFormulaLabel(af.heavy, af.h),
-                    { condId: pre.id, stereoAsked: true });
-                const btn = document.createElement('button');
-                btn.className = 'view-btn';
-                btn.dataset.ipCond = String(i);
-                btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
-                    (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
-                // ★ 表記は**型が決める**（`label`）—— 逆方向は「脱水 → 2-ブテン」（相手が生成物）、
-                //   順方向は「2-ブタノール を脱水」（相手が出発物）。⚠ ここで `→` を組み立てると
-                //   矢印の向きが型と食い違う（`DH1` が両方の表記を名指しで見張る）
-                btn.textContent = `${k.label(pre.target)}${cleared ? ' ✓' : ''}`;
-                btn.title = sc.tip + '（立体異性体の有無まで答えます）';
-                btn.addEventListener('click', () => this.startFromCondPreset(i));
-                cdGrid.appendChild(btn);
+                let g = cdKinds.find(x => x.kind === pre.kind);
+                if (!g) cdKinds.push(g = { kind: pre.kind, items: [] });
+                g.items.push({ pre, i });
             });
-            cdWrap.appendChild(cdGrid);
+            cdKinds.forEach(g => {
+                const head = document.createElement('h4');
+                head.className = 'ip-group-head';
+                head.style.cssText = 'font-size:12.5px; font-weight:normal; color:var(--text-secondary); ' +
+                    'margin:8px 0 4px; line-height:1.5;';
+                head.textContent = IP_COND_KINDS[g.kind].groupHead;
+                cdWrap.appendChild(head);
+                const cdGrid = document.createElement('div');
+                cdGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:6px;';
+                cdWrap.appendChild(cdGrid);
+                g.items.forEach(({ pre, i }) => {
+                    const sc = IP_SCOPES['cond:' + pre.id];
+                    const k = IP_COND_KINDS[pre.kind];
+                    const af = k.askFormula(pre.carbons);
+                    // ★ 記録の鍵は `<答えの分子式>@cond-<id>@stereo`（`clearKeyTail` が組む1か所）
+                    const cleared = this.isCleared(ipFormulaLabel(af.heavy, af.h),
+                        { condId: pre.id, stereoAsked: true });
+                    const btn = document.createElement('button');
+                    btn.className = 'view-btn';
+                    btn.dataset.ipCond = String(i);
+                    btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                        (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+                    // ★ 表記は**型が決める**（`label`）—— 逆方向は「脱水 → 2-ブテン」（相手が生成物）、
+                    //   順方向は「2-ブタノール を脱水」（相手が出発物）。⚠ ここで `→` を組み立てると
+                    //   矢印の向きが型と食い違う（`DH1` が両方の表記を名指しで見張る）
+                    btn.textContent = `${k.label(pre.target)}${cleared ? ' ✓' : ''}`;
+                    btn.title = sc.tip + '（立体異性体の有無まで答えます）';
+                    btn.addEventListener('click', () => this.startFromCondPreset(i));
+                    cdGrid.appendChild(btn);
+                });
+            });
             this.body.appendChild(cdWrap);
         }
     }
