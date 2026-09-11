@@ -16,7 +16,10 @@ const stepCalcEl  = document.getElementById("stepCalc");
 const stepCleaveEl = document.getElementById("stepCleave");
 const cleaveSheetEl = document.getElementById("cleaveSheet");
 const cleaveMsgEl = document.getElementById("cleaveMsg");
-const eTallyEl    = document.getElementById("eTally");
+/* ⚠ 2026-09-11: #eTally（「出す e⁻: 1×5 ＝ 5個 ／ 受け取る e⁻: 5×1 ＝ 5個」と
+   「やりとりの比 ＝ 還元剤 : 酸化剤 ＝ 5 : 1」）は消した。ユーザーの指摘 (4)
+   「冗長、MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する、とだけ示せばよい」——
+   掛け算の式も「比」という語も出さない。中身は #schematicMsg の1行が引き継ぐ。 */
 const clearEl     = document.getElementById("clearBanner");
 const stageNavEl  = document.getElementById("stageNav");
 const stageTitleEl = document.getElementById("stageTitle");
@@ -1270,27 +1273,14 @@ function onMultChange() {
   soloMode = null;
   clearEl.hidden = true;
   layoutLab();
-  setMsg("倍率を変えた。ビーカーの配置も変わった。「▶ 反応を見る」で確かめよう。");
-  updateETally();
+  /* ⚠ 2026-09-11・ユーザーの指摘 (3)「倍率を変えた。ビーカーの配置も変わった。
+     『▶ 反応を見る』で確かめよう。＝ 冗長・AIっぽい、カット」。
+     操作した結果は画面がそう見えているので、文で報告しない。釦の使い方も案内しない。
+     ⚠ 前の再生の結果（クリア・余りの指摘）は残さず消す ＝ 空にする */
+  setMsg("");
   buildRedoxSchematic();
   updateCleaveStep();
   updateSheetTail();
-}
-
-function updateETally() {
-  const a = mult[0], b = mult[1];
-  const givePer = electronsOf(oxHR()), takePer = electronsOf(redHR());
-  const give = givePer * a, take = takePer * b;
-  const ok = give === take;
-  // 粒の絵は模式図が受け持つので、ここは式のかたちの数だけを残す
-  eTallyEl.innerHTML =
-    `出す e⁻: ${givePer}×${a} ＝ <strong>${give}個</strong>　／　` +
-    `受け取る e⁻: ${takePer}×${b} ＝ <strong>${take}個</strong> ` +
-    `<span class="${ok ? "okcell" : "ngcell"}">${ok ? "そろった（足せる）" : "そろっていない"}</span>` +
-    /* ★ 段1 の答えは「比」。そろったところで**比そのものを名指しする**（2026-09-07）——
-       この数が、そのまま段2 で式に書き込む倍率になる。 */
-    (ok ? `<div class="ratioLine">やりとりの比 ＝ <strong>還元剤 : 酸化剤 ＝ ${a} : ${b}</strong>` +
-      `　この比が、そのまま次の段で式に書き込む倍率になる。</div>` : "");
 }
 
 /* ---- e⁻ の受け渡しのブロック模式図 ----
@@ -1301,7 +1291,9 @@ function updateETally() {
 
 const schematicWrap = document.getElementById("schematicWrap");
 const schematicSvg = document.getElementById("schematic");
-const schematicHeadEl = document.getElementById("schematicHead");
+/* ⚠ 2026-09-11: #schematicHead（「e⁻ の受け渡し（模式図）— 1個ずつ出す ×
+   5個ずつ受け取る」）は消した。ユーザーの指摘 (3)「冗長、AIっぽい、カット」——
+   見れば分かる注記（模式図）と、掛け算の言い換えしか言っていなかった。 */
 const schematicMsgEl = document.getElementById("schematicMsg");
 const schematicAddEl = document.getElementById("schematicAdd");
 
@@ -1346,26 +1338,31 @@ function buildRedoxSchematic() {
   add(SPECIES[halfCore(ox)[0].sp].disp + "（還元剤）", 0, "schAdd acc");
   add(SPECIES[halfCore(red)[0].sp].disp + "（酸化剤）", 1, "schAdd don");
 
+  /* ★ 2026-09-11・ユーザーの指摘 (4)。この行は「そろった瞬間だけ出る判定文」ではなく、
+     **ずっと出ていて、いまどちらが余っているかをそのつど言う表示**。
+     そろったときに言うことは「何個と何個でちょうど反応するか」だけ ——
+     掛け算の式（1×5 ＝ 5個）も「比」という語も、次の段の使いみちも出さない。 */
+  /* 「○個と○個でちょうど反応する」。酸化剤を先に置く（ユーザーの原文の並び） */
+  const pairText = (a, b) => {
+    const o = { d: SPECIES[halfCore(red)[0].sp].disp, n: halfCore(red)[0].n * b };
+    const r = { d: SPECIES[halfCore(ox)[0].sp].disp, n: halfCore(ox)[0].n * a };
+    return `${o.d} ${o.n}個と ${r.d} ${r.n}個`;
+  };
   const give = c.leftTotal, take = c.rightTotal;
   if (give === take) {
-    // e⁻ がそろっていても最簡整数比とは限らない。割り切れるなら割り方まで示す
+    // e⁻ がそろっていても最簡整数比とは限らない。割り切れるなら「もっと少なくできる」と言う
     const adv = simplestRatioAdvice([mult[0], mult[1]]);
     if (adv) {
       setStatusMsg(schematicMsgEl,
-        `e⁻ の数は合っているけれど、同じ組み合わせを ${adv.gcd} 回くり返しているだけ。` +
-        `どちらも ${adv.gcd} で割って ×${mult[0]}・×${mult[1]} → ×${adv.to[0]}・×${adv.to[1]} に直そう` +
-        `（e⁻ ${give}個 → ${give / adv.gcd}個 でも同じ反応）。`, "ng");
+        `もっと少ない数でできる。${pairText(adv.to[0], adv.to[1])}でちょうど反応する`, "ng");
     } else {
-      setStatusMsg(schematicMsgEl,
-        `ぴったり！ 還元剤が出す e⁻ ${give} 個 ＝ 酸化剤が受け取れる ${take} 個。` +
-        `この倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`, "ok");
+      setStatusMsg(schematicMsgEl, `${pairText(mult[0], mult[1])}でちょうど反応する`, "ok");
     }
   } else if (give > take) {
-    setStatusMsg(schematicMsgEl, `e⁻ が ${give - take} 個 あまっている（受け取る席が足りない）。酸化剤のブロックを足そう。`, "ng");
+    setStatusMsg(schematicMsgEl, `還元剤が余っている。e⁻ が ${give - take}個 あまる`, "ng");
   } else {
-    setStatusMsg(schematicMsgEl, `e⁻ の席が ${take - give} 個 空いている（出す e⁻ が足りない）。還元剤のブロックを足そう。`, "ng");
+    setStatusMsg(schematicMsgEl, `酸化剤が余っている。e⁻ の席が ${take - give}個 あまる`, "ng");
   }
-  schematicHeadEl.textContent = `e⁻ の受け渡し（模式図）— ${givePer}個ずつ出す × ${takePer}個ずつ受け取る`;
   drawAcidSource();
 }
 
@@ -3535,7 +3532,6 @@ function initStage() {
   buildHalfRow(SHEET.red, redHR(), 1, "酸化剤");
   updateMultMsg();
   layoutLab();
-  updateETally();
   buildRedoxSchematic();
   updateCleaveStep();
   updateSheetTail();
