@@ -613,7 +613,8 @@ main.timelineMain {
   padding: 8px 8px 10px;
 }
 .beakerBox #beaker { border: none; border-radius: 0; background: none; }
-.beakerBox #toolbar { margin: 6px 0 0; }
+/* ★ v211: 釦は絵の**上**（ユーザーの指示）。下に敷いていた余白を上へ付け替える */
+.beakerBox #toolbar { margin: 0 0 8px; }
 
 /* 筆算シート。→ の位置がそろうように1枚のグリッドに並べる。
    列は［符号｜左辺｜→｜右辺｜注記］。
