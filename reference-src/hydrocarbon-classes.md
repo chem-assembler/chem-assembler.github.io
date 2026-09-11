@@ -10,7 +10,6 @@ codes:
   - org.ali.class-aliphatic
   - org.ali.class-chain-ring
   - org.ali.class-saturated
-  - org.ali.formula-alkane
   - org.ali.formula-alkene
   - org.ali.formula-alkyne
   - org.ali.formula-cycloalkane
@@ -197,3 +196,5 @@ text: アルキン（三重結合を1個もつ炭化水素）はこちら
 to: cycloalkane
 text: シクロアルカン（環を1個もつ炭化水素）はこちら
 :::
+
+// ⚠ codes から org.ali.formula-alkane を外しました（統合レーン 2026-09-11）。alkane-naming が既に挙げているためで、同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。⚠ qa の台帳ではグループ「分類・一般式」＝ このページの group と同じなので、本来の置き場所はこちらだと考えています。既存ページの着地先を黙って動かさないため、今回はこちらを外しました。

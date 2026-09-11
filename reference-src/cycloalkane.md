@@ -8,7 +8,6 @@ summary: 一般式はアルケンとまったく同じ。性質はアルカン�
 codes:
   - org.ali.cyclo-props
   - org.ali.cyclo-strain
-  - org.ali.formula-cycloalkane
 source:
   - slides:有機の基本2-2「アルカンの性質」s8「シクロアルカンの性質」
   - slides:有機の基本2-12「シクロアルカンの書き出し」（15枚）
@@ -189,3 +188,5 @@ answer: 構造異性体は10種類、立体異性体まで含めると13種類�
 to: alkane-isomers
 text: 構造異性体と立体異性体の分け方はこちら
 :::
+
+// ⚠ codes から org.ali.formula-cycloalkane を外しました（統合レーン 2026-09-11）。hydrocarbon-classes が既に挙げているためで、同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。★ qa の台帳ではグループ「分類・一般式」なので、一般式6つを1枚で引き受ける hydrocarbon-classes に置くほうが合うと判断しました（一般式は hydrocarbon-classes、シクロアルカンの性質はこちら、の線）。
