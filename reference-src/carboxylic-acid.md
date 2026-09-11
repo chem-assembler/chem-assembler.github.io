@@ -311,6 +311,13 @@ note: C に O が二重結合で1本、−OH が1本。この2つが同じ炭素
 :::
 
 :::link
+open: isomer
+formula: C5H10O2
+cls: acid
+text: 分子式 C₅H₁₀O₂ のカルボン酸をアプリで書き出してみる（4種）
+:::
+
+:::link
 to: functional-groups
 text: カルボキシ基をふくむ官能基15種の一覧はこちら
 :::

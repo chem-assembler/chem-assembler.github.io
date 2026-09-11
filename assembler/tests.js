@@ -49575,7 +49575,7 @@
      *   ③ ⚠⚠ **`open:` は `game.js` の `OPEN_TARGETS` に実在する**（新しい URL の形を発明していない）
      *   ④ ⚠ **`<button>` を作らない** —— 面Aの生成器は知らない押しものを見つけると止まる
      *   ⑤ **行き先の綴り違いが「準備中」に化けない**（`PLANNED.txt` に登録した id だけが許される）
-     *   ⑥ ★★ **`cls:`（書き出しの分類）は実在し、その式でその回が実際に始まる**（v1535・§20-12）。
+     *   ⑥ ★★ **`cls:`（書き出しの分類）は実在し、その式でその回が実際に始まる**（v1535・§25）。
      *      ⚠ 綴りの台帳は `learn.js` の `IP_SCOPES` で、**検査に分類名を書き写さない**。
      *      ⚠⚠ 否定対照つき —— **分類を外すと同じ式では開けない**ことまで見る
      *        （そうでないと `cls` が何の役にも立っていないのに緑になる）
@@ -49603,6 +49603,10 @@
             `まだ無いページ宛に「${W.REF_LINK_SOON}」の言葉が出ていない（淡いだけだと壊れたリンクに見える）: ${soon.textContent}`);
 
         /* ── ② 在るページ宛 ── */
+        /* ⚠ **自分で読み込む。** 前は先に走る `REF17` が読んでいるのに頼っていて、
+           `--only=REF21` で流すと `book.pages` が null のまま落ちた（実測）＝
+           **否定対照を素早く見る道具が、この検査にだけ効かない**状態だった。 */
+        await book.load();
         const live = book.pages[book.pages.length - 1];
         const el = book.renderBlock({ kind: 'link', to: live.id, text: '在るページへの案内' });
         const a = el.querySelector('a');
@@ -49641,7 +49645,7 @@
                 assert(/^[A-Za-z0-9]+$/.test(b.formula), `${p.id}: formula「${b.formula}」が素の英数字でない`);
                 formulas.push({ id: p.id, formula: b.formula, cls: b.cls || null });
             }
-            /* ★★ `cls`（分類で絞る回・§20-12）。⚠ **`formula` の添えもの**で、単独では立たない。
+            /* ★★ `cls`（分類で絞る回・§25）。⚠ **`formula` の添えもの**で、単独では立たない。
                ⚠⚠ **綴り違いをここで止める** —— 通すと「押しても何も起きないリンク」が
                   緑のまま残る（`formula` を通す条件とまったく同じ読み）。 */
             if (Object.prototype.hasOwnProperty.call(b, 'cls')) {
@@ -49694,7 +49698,7 @@
                 assert(式だけで開けた < withCls.length,
                     `否定対照が働いていない: 分類つきの ${withCls.length} 件は、分類を外しても全部開けた`
                     + '（cls を足した理由＝「式だけでは上限20種を超えて断られる回がある」が消えている。'
-                    + '★ 消えているなら DESIGN_reference_book.md §20-12 を測り直すこと）');
+                    + '★ 消えているなら DESIGN_reference_book.md §25 を測り直すこと）');
             }
         } finally {
             ip.stop();

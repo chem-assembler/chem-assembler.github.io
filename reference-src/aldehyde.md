@@ -200,6 +200,13 @@ answer: 酸化剤と還元剤の半反応式を組み合わせ、塩基性条件
 :::
 
 :::link
+open: isomer
+formula: C5H10O
+cls: aldehyde
+text: 分子式 C₅H₁₀O のアルデヒドをアプリで書き出してみる（4種）
+:::
+
+:::link
 to: ketone
 text: 還元性を示さないほうのカルボニル化合物（ケトン）と、ヨードホルム反応はこちら
 :::
