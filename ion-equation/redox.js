@@ -1462,9 +1462,8 @@ function drawAcidSource() {
   }
   acidSrcSvg.setAttribute("viewBox", `0 0 ${W} ${capY + 22}`);
   acidSrcMsgEl.textContent = p.extra > 0
-    ? `必要な H⁺ は ${p.needH}個。でも酸化剤の ${sD} が連れてくる H⁺ は ${p.withOxidant}個だけ。` +
-      `残り ${p.extra}個は ${acidD} をもう ${p.extra}個 足して出す — その ${sD} は反応せず、④で両辺に足す傍観イオンになる。`
-    : `必要な H⁺ ${p.needH}個は、酸化剤の ${sD} が連れてきたぶんでちょうど足りている。`;
+    ? `H⁺ が ${p.needH}個 要るので、${acidD} を ${p.extra}個 足す`
+    : `H⁺ ${p.needH}個は、酸化剤の ${sD} が連れてきたぶんで足りている`;
 }
 
 /* ---- 筆算は③（イオン反応式）で終わり ----
@@ -1561,8 +1560,8 @@ function givenTitle(rowKey) {
      残っているのは、上の段で自分が書き込んだ倍率のぶん（×a・×b の2行）だけ。 */
   const k = rowKey === "ox" ? mult[0] : mult[1];
   return k === 1
-    ? "上の段で ×1 と書いたので、式はそのまま"
-    : `上の段で ×${k} と書いたぶん（かけ算まではもう書いてあります）`;
+    ? "×1 なので、式はそのまま"
+    : `上の段で書いた ×${k} のぶん`;
 }
 
 /* 1つの行ぶんの入力欄の作り方を返す。offset は「左辺の項数」＝右辺の添字の起点。
