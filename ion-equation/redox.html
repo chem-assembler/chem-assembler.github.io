@@ -57,7 +57,7 @@
            出しっぱなしだと画面の上 375px が「自由に組み合わせる」のままで、
            ステージを選んでも何も起きていないように見える（DESIGN_redox_matching.md §4-1 追記）。
            消さずにたたむのは「行き止まりを作らない」を守るため -->
-      <div class="stepHead"><span class="stepNo">0</span><span id="pickHeadText">2つの物質を選ぶ — 組み合わせて、反応するかどうかを確かめる</span><button id="pickToggle" class="pickToggle" type="button" hidden>▸ ひらく</button></div>
+      <div class="stepHead"><span class="stepNo">0</span><span id="pickHeadText">2つの物質を選んで、反応するか確かめよう</span><button id="pickToggle" class="pickToggle" type="button" hidden>▸ ひらく</button></div>
       <div id="pickBody">
       <div class="pickGrid">
         <!-- ⚠ 欄の見出しに**役の名前を書かない**（v192・ユーザーの実機レビュー 2026-08-20）。
@@ -107,7 +107,7 @@
 
     <!-- ヨードホルム反応のように、半反応式の前に「切り離す」段がある反応だけ出る -->
     <section class="step" id="stepCleave" hidden>
-      <div class="stepHead"><span class="stepNo">0</span>まずメチル基を切り離す — ここは酸化還元ではない</div>
+      <div class="stepHead"><span class="stepNo">0</span>まずメチル基を切り離そう</div>
       <div class="sheetScroll"><div id="cleaveSheet"></div></div>
       <div id="cleaveMsg"></div>
     </section>
@@ -158,7 +158,7 @@
            係数をリアルタイムで変化させる」（2026-09-07）。旧①は「式はこのまま」で、
            ±ステッパーを押しても式が動かなかった。ここが「筆算に寄せる」の核心 ——
            紙の上で式の右に ×5 と書いて係数を書き換える手つきを、そのまま画面にする -->
-      <div class="stepHead"><span class="stepNo">2</span>半反応式を何倍にするか書き込む — 数を入れると係数が変わる</div>
+      <div class="stepHead"><span class="stepNo">2</span>半反応式を何倍にするか書き込もう</div>
       <div class="sheetScroll"><div id="halfSheet"></div></div>
       <div id="multMsg"></div>
     </section>
@@ -183,7 +183,7 @@
            v194 は出どころ当てをヘルプ（<details>）へ落として順番が逆だった。**戻す。**
            ⚠ 問いの形はユーザーの言葉そのまま「MnO₄⁻ はもともと何だった？」——
            こう聞けば、容器を指す語が1つも要らなくなる。 -->
-      <div class="stepHead"><span class="stepNo">4</span>もともと何だった？ — イオンの下に、もとの物質を置く</div>
+      <div class="stepHead"><span class="stepNo">4</span>左辺のイオンがもともと何だったか考えよう</div>
       <!-- ★★ 2026-09-10・ユーザーの指示（原文が仕様の一次資料）:
            > ここを筆算に寄せたい／イオン反応式の下に筆算形式で K+ と SO42- の入力欄を入れる、
            > 最後の係数も筆算の中に入れる
@@ -208,13 +208,13 @@
         <!-- 「後」の側。出どころがそろってから現れる（この画面の唯一の順序の表し方）。
              ★ 同じ筆算の中の1行になったので、柱（イオン反応式）から離れない -->
         <div id="addIonWrap" hidden>
-          <div class="stepSubHead">つぎに — 両辺に加えるイオンの数を考える</div>
+          <div class="stepSubHead">両辺に加えるイオンの数を考えよう</div>
           <div id="addIonRows"></div>
           <div id="addIonMsg"></div>
         </div>
         <!-- ⑤も同じ筆算の中。係数の欄が、担当したイオンの柱の真下に来る -->
         <div id="bottleTail" hidden>
-          <div class="stepHead inWork"><span class="stepNo">5</span>化学反応式の左辺 — 係数をすべて書く</div>
+          <div class="stepHead inWork"><span class="stepNo">5</span>化学反応式の左辺の係数をすべて書こう</div>
           <div id="bottleCounts"></div>
           <div id="bottleCountNotes"></div>
         </div>
@@ -231,7 +231,7 @@
              ⚠ 作り直さない —— model.js の ionBlock* ＋ blocks.js の IonBlocks を呼ぶだけ。
              ⚠ 筆算のグリッドの**外**に置く（横送り枠の中に SVG を入れない） -->
         <div id="saltStep" hidden>
-          <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせる — 高さがそろえば1つの化学種</div>
+          <div class="stepHead"><span class="stepNo">6</span>右辺で余ったイオンを組み合わせよう</div>
           <!-- ★ 硝酸の二役（rn1・rn2）を1行で言う場所（2026-09-08・レーン rx-sheet）。
                v203 まではここに相当する説明が筆算⑤の下の図（#molFigure）にあったが、
                図は⑥のブロックと役割が重なるので降ろし、**文だけ**残した。
