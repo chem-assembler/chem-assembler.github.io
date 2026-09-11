@@ -21,6 +21,8 @@ const toolbarEl   = document.getElementById("toolbar");
 const ionCountsEl = document.getElementById("ionCounts");
 const msgEl       = document.getElementById("msg");
 const equationEl  = document.getElementById("equation");
+// 右辺の段（②と⑤のあいだに「高さ合わせ」「組み替え」がはさまるので箱を2つ持つ）
+const equationProdEl = document.getElementById("equationProd");
 const eqModeEl    = document.getElementById("eqMode");
 const recombineWrapEl = document.getElementById("recombineWrap");
 const eqMsgEl     = document.getElementById("eqMsg");
@@ -199,6 +201,9 @@ function useSimpleGas() {
   const stage = STAGES[stageIdx];
   if (stage.animMode) return stage.animMode === "simple";
   const nL = stage.reactants.length;
+  // ⚠ 反応物が1種のステージ（加水分解・電離）や、係数を持たないステージでは
+  //    下の数え方が成り立たない。最後の nL >= 2 では遅い（先に SPECIES[undefined] を触る）
+  if (nL < 2 || !stage.answer) return false;
   const atomsOf = (sp) => Object.values(SPECIES[sp].atoms).reduce((a, b) => a + b, 0);
   const top = atomsOf(stage.reactants[0]);
   const bottom = atomsOf(stage.reactants[1]) * Math.ceil(stage.answer[1] / stage.answer[0]);
@@ -408,6 +413,47 @@ function removeParticle(p) {
   p.dead = true;
   particles = particles.filter((o) => o !== p);
   if (p.el) p.el.remove();
+}
+
+/* ---- 液面から出た気体（2026-09-11・ユーザー指示）----
+   「気体の SO₂ が一瞬で消えるので、空中でフロートするように」。
+   泡が水面に届いた瞬間に粒を消していたので、**何が出ていったのかを見る間が無かった**。
+   水の上の空間にそのまま浮かべて残す。
+
+   ⚠ 粒は particles から外す。IonEq.state().counts は「水の中にあるもの」の数で、
+   ここに気体を混ぜると反応の判定も既存の検査も全部ずれる。**絵だけ**を別の列で持つ。
+   置き場所はガラスの内側・液面の上（drawBeakerStatic のガラスは y=75 から、水面は WATER.y）。 */
+let gasFloats = [];
+const GAS_AIR = { top: 88, bottom: WATER.y - 6, x: 60, w: 360 };
+
+function floatOutGas(p) {
+  const el = p.el;
+  p.el = null;              // ここで消させない（絵は浮かべたまま残す）
+  removeParticle(p);
+  if (!el) return;
+  const r = p.hr || p.r || 14;
+  gasFloats.push({
+    el, r,
+    x: Math.min(Math.max(p.x, GAS_AIR.x + r), GAS_AIR.x + GAS_AIR.w - r),
+    y: GAS_AIR.bottom - r,
+    // 1個ずつ左右へ振り分けると、続けて出てきたときに重ならない
+    vx: (gasFloats.length % 2 ? 1 : -1) * 16, vy: -20,
+  });
+}
+
+/* ガラスの内側・液面の上の帯の中をゆっくり行き来する（壁で向きを変えるだけ） */
+function stepGasFloats(dt) {
+  for (const f of gasFloats) {
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    const lo = GAS_AIR.x + f.r, hi = GAS_AIR.x + GAS_AIR.w - f.r;
+    if (f.x < lo) { f.x = lo; f.vx = Math.abs(f.vx); }
+    if (f.x > hi) { f.x = hi; f.vx = -Math.abs(f.vx); }
+    const up = GAS_AIR.top + f.r, down = GAS_AIR.bottom - f.r;
+    if (f.y < up) { f.y = up; f.vy = Math.abs(f.vy); }
+    if (f.y > down) { f.y = down; f.vy = -Math.abs(f.vy); }
+    f.el.setAttribute("transform", `translate(${f.x.toFixed(1)},${f.y.toFixed(1)})`);
+  }
 }
 
 function splash(x, y) {
@@ -822,7 +868,7 @@ function step(dt, now) {
       if (p.y <= WATER.y + p.r) {
         splash(p.x, WATER.y + 4);
         escaped[p.sp] = (escaped[p.sp] || 0) + 1;
-        removeParticle(p);
+        floatOutGas(p);
         refreshHUD();
       }
     } else if (p.mode === "sink") {
@@ -885,6 +931,7 @@ function step(dt, now) {
     }
   }
   separateParticles();
+  stepGasFloats(dt);
   updateTransforms(now);
   stepStripTweens(dt);
 }
@@ -1942,18 +1989,20 @@ function buildEquationUI() {
   coeffEls = [];
   coeffOk = false;
   equationEl.classList.remove("balanced");
+  equationProdEl.classList.remove("balanced");
   equationEl.innerHTML = "";
+  equationProdEl.innerHTML = "";
   buildEqModeSwitch(stage);
+  /* ★ 2026-09-11: 左辺と右辺を別々の段に分けて置く。
+     間に「高さ合わせ」と「組み替え」がはさまるので、1つの箱には収まらない。
+     どちらの箱も class="eqRow" を持ち、項の並びは DOM の順＝左辺→右辺のまま。 */
+  const nL = eq.reactants.length;
   terms.forEach((sp, i) => {
-    if (i === eq.reactants.length) {
-      const a = document.createElement("span");
-      // 加水分解は平衡（ごく一部しか進まない）。片矢印で書くと「全部が変わる」に見える
-      a.className = "arrow"; a.textContent = partialRule(stage) ? "⇄" : "→";
-      equationEl.appendChild(a);
-    } else if (i > 0) {
+    const box = i < nL ? equationEl : equationProdEl;
+    if (i > 0 && i !== nL) {
       const pl = document.createElement("span");
       pl.className = "plus"; pl.textContent = "＋";
-      equationEl.appendChild(pl);
+      box.appendChild(pl);
     }
     const term = document.createElement("span");
     term.className = "term";
@@ -1971,17 +2020,24 @@ function buildEquationUI() {
     const f = document.createElement("span");
     f.className = "formula"; f.textContent = SPECIES[sp].disp;
     term.append(stepper, f);
-    equationEl.appendChild(term);
+    box.appendChild(term);
     coeffEls.push(num);
   });
-  /* 加水分解・電離は、ビーカーの個数（誇張した per 個）と式の係数が食い違う唯一の型。
-     係数を入れる**その瞬間**に「画面の数ではない」と言い添える（台帳の O）。
-     何を入れるかは言わない —— 答えではなく決め方だけを示す。 */
-  const countNote = partialRule(stage)
-    ? "（ビーカーに置いた個数ではなく、左右がつり合う数を入れる）" : "";
-  setStatusMsg(eqMsgEl, eqMode === "ionic"
-    ? "＋/− を押して係数を入れよう（イオン反応式では電荷もそろえる）" + countNote
-    : "＋/− を押して係数を入れよう" + countNote, "info");
+  // 矢印は左辺の段の末尾に置く（「ここまでが左辺」を字で示す）。
+  // 加水分解は平衡（ごく一部しか進まない）。片矢印で書くと「全部が変わる」に見える
+  const arrow = document.createElement("span");
+  arrow.className = "arrow"; arrow.textContent = partialRule(stage) ? "⇄" : "→";
+  equationEl.appendChild(arrow);
+  /* ★ 2026-09-11: ここにあった「＋/− を押して係数を入れよう」は落とした。
+     何をするかは見出し（「左辺の係数を決めよう」）が言っており、
+     押し方の説明は先生が口で言うことではない。
+     ⚠ この帯に残すのは**判定の1行だけ** —— つり合った（緑）か、合っていない（赤・橙）か。
+     イオン反応式の電荷は、合っていないときに checkStageCoeffs がその場で名指しする。
+     ⚠ ただし加水分解・電離だけは例外。ビーカーの個数（誇張した per 個）と式の係数が
+     食い違う唯一の型で、§4-2 が「3か所で切り離す・弱めてはいけない」と決めた1つがここ。 */
+  const partial = partialRule(stage);
+  if (partial) setStatusMsg(eqMsgEl, "ビーカーに置いた個数ではなく、左右がつり合う数を書こう。", "info");
+  else clearStatusMsg(eqMsgEl);
 }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。
@@ -2036,6 +2092,7 @@ function onCoeffChange() {
   const res = checkStageCoeffs(stage, coeffs, eqMode);
   coeffOk = res.ok;
   equationEl.classList.toggle("balanced", coeffOk);
+  equationProdEl.classList.toggle("balanced", coeffOk);
   netionEl.hidden = !coeffOk;
   if (coeffOk) {
     // 見出しと結びはステージの性質で出し分ける（レビュー S-6）。
@@ -2047,7 +2104,9 @@ function onCoeffChange() {
     netionEl.innerHTML = `${head}: <strong>${stage.netIon}</strong>${tail}`;
     setStatusMsg(eqMsgEl, "つり合った！最も簡単な整数比になっている。", "ok");
   } else if (coeffs.some((c) => c === 0)) {
-    setStatusMsg(eqMsgEl, "すべての係数を入れよう（？の場所）", "info");
+    // まだ決まっていない項がある ＝ 判定するものが無い。何も言わない
+    // （「すべての係数を入れよう」は？の場所を指さすだけで、化学を1つも足していなかった）
+    clearStatusMsg(eqMsgEl);
   } else {
     /* ★ 2026-09-07 ユーザー決定「オレンジです」——
        **つり合ってはいるが最簡整数比でない**（`res.gcd`）は、比そのものは合っているので
@@ -2061,11 +2120,18 @@ function onCoeffChange() {
 function renderTally() {
   const stage = STAGES[stageIdx];
   tallyEl.innerHTML = "";
+  /* ★ 2026-09-11（ユーザー指示）: 原子の数の確認表は、イオンで数を確かめる回では冗長。
+     ⚠ 残すのは**気体どうしの回（燃焼・合成）の7件**だけ。あそこはイオンが1つも出てこないので、
+     左右を突き合わせる場がほかに無い（プロパンの燃焼 1:5:3:4 はこの表が頼り）。
+     電荷が合っているかは、合っていないときに checkStageCoeffs がその場で名指しする。 */
+  const checkedByIons = stage.phase !== "gas";
+  tallyEl.hidden = checkedByIons;
+  if (checkedByIons) return;
   if (coeffs.every((c) => c === 0)) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 4;
-    td.textContent = "係数を入れると左右の原子の数がここに出る";
+    td.textContent = "左辺と右辺の原子の数をここで見くらべられる";
     tr.appendChild(td);
     tallyEl.appendChild(tr);
     return;
@@ -2120,7 +2186,15 @@ function buildSchematic() {
 
   const accDisp = SPECIES[schema.accSp].disp;
   const prodDisp = schema.product.map((sp) => SPECIES[sp].disp).join(" ＋ ");
-  schematicHeadEl.textContent = `${accDisp} と H⁺ を組み合わせよう（模式図）`;
+  /* ★ 2026-09-11: 見出しは「何をする図か」ではなく、**化学で何をするか**を言う。
+     受け皿の側に陽イオンが乗っているとき（塩・塩基）は、H⁺ がその席を取る反応なので
+     「Na₂SO₃ の Na⁺ を H⁺ と置き換えよう」と言う。
+     ⚠ NH₃ のように陽イオンを持たない受け皿もあるので、そのときは結びつきのほうで言う。 */
+  const acc1 = schema.acceptors.length === 1 ? schema.acceptors[0] : null;
+  const cations = acc1 ? [...new Set(acc1.core)] : [];
+  schematicHeadEl.textContent = cations.length
+    ? `${SPECIES[acc1.sp].disp} の ${cations.map((sp) => SPECIES[sp].disp).join("・")} を H⁺ と置き換えよう`
+    : `${accDisp} に H⁺ をくっつけよう`;
 
   const bal = protonBalance(schema, coeffs);
   const unit = (t) => ({
@@ -2221,7 +2295,7 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
   const stage = STAGES[stageIdx];
   const m = schematicMsgEl;
   if (bal.hTotal === 0 && bal.accTotal === 0) {
-    setStatusMsg(m, `「＋」でブロックを足すと、H⁺ と ${accDisp} が並ぶ。同じ数にそろえよう。`, "info");
+    setStatusMsg(m, `H⁺ と ${accDisp} が余さず組める数にそろえよう。`, "info");
   } else if (bal.hLeft === 0 && bal.accLeft === 0) {
     // つり合っていても最簡整数比とは限らない。割り切れるなら「どう割るか」まで具体的に言う
     // 並びは反応式と同じ順にする（図の左右の順ではなく、式を直すときの順）
@@ -2231,16 +2305,16 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
     // ★ 2026-09-07 ユーザー決定「オレンジです」——「比は合っているが、もっと簡単にできる」は
     //    間違いではないので ✗（赤）にしない。ブロック側の 💡 と顔をそろえる
     if (adv) setStatusMsg(m, `つり合ってはいるけれど、${adv.text}`, "info");
-    else setStatusMsg(m, `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`, "ok");
+    else setStatusMsg(m, `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。この数がそのまま係数になる。`, "ok");
   } else if (bal.hLeft > 0 && stage.saltGoal && saltKindOf(stage.saltGoal) === "酸性塩") {
     setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまる。この課題はそれでよい（あまった H⁺ が酸性塩 ${SPECIES[stage.saltGoal.label].disp} の H になる）。`, "ok");
   } else if (bal.accLeft > 0 && stage.saltGoal && saltKindOf(stage.saltGoal) === "塩基性塩") {
     // 酸性塩の裏返し。ここが無いと、塩基性塩の課題で**正解の状態を「塩基が多い」と叱る**
     setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまる。この課題はそれでよい（あまった ${accDisp} が塩基性塩 ${SPECIES[stage.saltGoal.label].disp} の OH になる）。`, "ok");
   } else if (bal.hLeft > 0) {
-    setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまっている（酸が多い）。${accDisp} のブロックを足そう。`, "ng");
+    setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまっている（酸が多い）。${accDisp} を増やそう。`, "ng");
   } else {
-    setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまっている（塩基が多い）。H⁺ のブロックを足そう。`, "ng");
+    setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまっている（塩基が多い）。H⁺ を増やそう。`, "ng");
   }
 }
 
@@ -2413,7 +2487,7 @@ function buildRecombine() {
   recombineMsgEl.textContent = "";
   // 文を消すときは見た目（💡 の枠）も一緒に落とす。残すと空の帯だけが出る
   recombineMsgEl.classList.remove("msgBox", "ok", "ng", "info");
-  recombineBtn.textContent = "⇄ 組み変える";
+  recombineBtn.textContent = "⇄ 組み替える";
   /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-3）——
      **係数を1つ入れた時点で、入っているぶんの粒を描く。**
      v201 までは左辺が全部そろうまで1粒も出さず、案内文だけを出していた。
@@ -2426,7 +2500,7 @@ function buildRecombine() {
     recombineBtn.disabled = true;
     recombineSvg.setAttribute("viewBox", "0 0 360 30");
     const t = mk("text", { x: 180, y: 19, "text-anchor": "middle", "font-size": 12, fill: "#8a94a0" }, recombineSvg);
-    t.textContent = "左辺の係数を1つ入れると、そのぶんのイオンがここに出る";
+    t.textContent = "左辺の係数が1つ決まれば、そのぶんのイオンがここに並ぶ";
     return;
   }
   recombineBtn.disabled = missing > 0;
@@ -2558,7 +2632,7 @@ function buildRecombine() {
      図はもう出ているので、ここで言うのは**動かすために足りないもの**だけ */
   if (missing > 0) {
     const yet = eq.reactants.filter((sp, i) => coeffs[i] === 0).map((sp) => SPECIES[sp].disp).join("・");
-    setStatusMsg(recombineMsgEl, `${yet} の係数を入れると組み変えを試せる（右辺はあとからでもよい）。`, "info");
+    setStatusMsg(recombineMsgEl, `${yet} の係数が決まれば、組み替えを試せる。`, "info");
   }
 }
 
@@ -2949,44 +3023,64 @@ function updateRatioQuiz() {
   el.className = "rqMsg " + (ok ? "ok" : "ng");
 }
 
-/* ステージの「目標」文をステージ種別から自動生成する（全ステージを「目標の○をつくる」枠に統一）。
-   酸性塩→saltGoal、沈殿→その沈殿、気体→その気体、それ以外→中和して正塩。 */
+/* ステージの「目的」文をステージ種別から自動生成する。
+   ★ 2026-09-11: 先生が口で言うとおりの声掛けにする。
+   「〈入れるもの〉を反応させて〈できるもの〉を〈どうする〉」の形にそろえ、
+   何をしている画面かの説明や、画面の部品の名前は出さない。
+   ⚠ ステージは40件あるので、s10 でしか通らない文を書かない（すべてデータから組む）。 */
+function goalReagentsText(stage) {
+  return stage.reactants.map((sp) => SPECIES[sp].disp).join(" と ");
+}
 function stageGoalText(stage) {
-  if (stage.saltGoal) return `${saltKindOf(stage.saltGoal)} ${SPECIES[stage.saltGoal.label].disp} をつくる`;
+  const reagents = goalReagentsText(stage);
+  if (stage.saltGoal) {
+    return `${reagents} を反応させて ${saltKindOf(stage.saltGoal)} ${SPECIES[stage.saltGoal.label].disp} をつくろう`;
+  }
   // 加水分解・電離は「つくる」課題ではない（平衡でごく一部しか進まない）。
-  // 目標は、加水分解なら液性の確認、電離なら**何個に何個が分かれるか**そのもの
+  // 目的は、加水分解なら液性の確認、電離なら**何個に何個が分かれるか**そのもの
   const hyd = partialRule(stage);
   if (hyd) {
     const marker = hyd.make.find((sp) => sp === "OH-" || sp === "H+");
     const liquid = marker === "OH-" ? "塩基性" : "酸性";
+    // ⚠ 名前は**水にとかすもの**（塩・分子）で言う。hyd.find[0] は水の中で変わるイオンの
+    //    ほうなので、そちらを言うと「酢酸イオンを水にとかして」という言い方になってしまう
     if (partialWording(hyd).ionize) {
-      return `${SPECIES[hyd.find[0]].disp} のうち何個が電離するかを確かめる（電離度）`;
+      return `${reagents} を水にとかして、何個に1個が電離するかを見よう`;
     }
-    return `加水分解で ${SPECIES[marker].disp} が生じることを確かめる（${liquid}）`;
+    // ⚠ 何が生じるか（OH⁻ か H⁺ か）は書かない。それはこれから見つけるところ。
+    //    320px で2行に収まらなくなる、という都合ともここは一致する
+    return `${reagents} の加水分解で ${liquid}になることを確かめよう`;
   }
   const precip = stage.rules.find((r) => r.kind === "precipitate");
-  // 錯イオンは沈殿より優先（沈殿を経て溶かすステージは「溶かす」が目標）
+  // 錯イオンは沈殿より優先（沈殿を経て溶かすステージも、行き先は錯イオン）。
+  // ⚠ 沈殿を経るかどうかは文に足さない —— 320px で2行に収まらなくなる（NOW の検査が見張る）。
+  //   まとめ版と分割版は入れるものが違う（AlCl₃ から／Al(OH)₃ から）ので、それで見分けられる
   const complexRule = stage.rules.find((r) => r.kind === "complex");
   if (complexRule) {
     const c = Array.isArray(complexRule.make) ? complexRule.make[0] : complexRule.make;
-    return (precip ? "沈殿を溶かして " : "") + `錯イオン ${SPECIES[c].disp} をつくる`;
+    return `${reagents} を反応させて 錯イオン ${SPECIES[c].disp} をつくろう`;
   }
   if (precip) {
     const p = Array.isArray(precip.make) ? precip.make[0] : precip.make;
-    return `沈殿 ${SPECIES[p].disp}↓ をつくる`;
+    return `${reagents} を反応させて ${SPECIES[p].disp} を沈殿させよう`;
   }
   const gasRule = stage.rules.find((r) => r.kind === "gas");
   if (gasRule) {
     const makes = Array.isArray(gasRule.make) ? gasRule.make : [gasRule.make];
     const gas = makes.find((sp) => BUBBLE_SPECIES.has(sp)) || makes[0];
-    return `気体 ${SPECIES[gas].disp}↑ を発生させる`;
+    return `${reagents} を反応させて ${SPECIES[gas].disp} を発生させよう`;
   }
   if (stage.phase === "gas") {
-    const how = useSimpleGas() ? "分子を組み替えて" : "原子を組み替えて";
-    return `${how} ${stage.products.map((sp) => SPECIES[sp].disp).join("・")} をつくる`;
+    const made = stage.products.map((sp) => SPECIES[sp].disp).join(" と ");
+    // 酸素と反応させる回は「燃やす」と言うのが自然（合成の回は「反応させる」のまま）
+    const fuel = stage.reactants.filter((sp) => sp !== "O2");
+    if (fuel.length < stage.reactants.length) {
+      return `${fuel.map((sp) => SPECIES[sp].disp).join(" と ")} を ${SPECIES["O2"].disp} で燃やして ${made} をつくろう`;
+    }
+    return `${reagents} を反応させて ${made} をつくろう`;
   }
   const salt = stage.products.find((sp) => sp !== "H2O");
-  return `ちょうど中和して 塩 ${SPECIES[salt].disp} をつくる`;
+  return `${reagents} をちょうど中和させて 塩 ${SPECIES[salt].disp} をつくろう`;
 }
 
 /* ビーカーだけを初期状態に戻す（★ 係数・クリア状態には触らない）。
@@ -2996,6 +3090,8 @@ function resetBeaker() {
   for (const p of particles) if (p.el) p.el.remove();
   particles = [];
   groups = [];
+  // 浮いていた気体の絵は drawBeakerStatic が SVG ごと消すので、列を空にするだけでよい
+  gasFloats = [];
   escaped = {};
   addedCount = {};
   producedCount = {};
@@ -3084,7 +3180,7 @@ function initStage() {
      （ステージ番号はヘッダーの帯が現在地を示しているので重ねて出さない）。 */
   stageTitleEl.innerHTML =
     `<details class="stageHead"${stageHeadOpen ? " open" : ""}>` +
-    `<summary><span class="goal nowLabel nowBanner${stage.saltGoal ? " acid" : ""}">🎯 ${stageGoalText(stage)}</span></summary>` +
+    `<summary><span class="goal nowLabel nowBanner${stage.saltGoal ? " acid" : ""}">${stageGoalText(stage)}</span></summary>` +
     `<div class="stageMore"><div class="stageName">${stageLabel(stageIdx)}</div>${tagsHtml}</div>` +
     `</details>`;
   const headEl = stageTitleEl.querySelector(".stageHead");
@@ -3123,6 +3219,8 @@ window.IonEq = {
     for (const p of particles) counts[p.sp] = (counts[p.sp] || 0) + 1;
     return {
       counts, made: madeCount, reactionDone, coeffOk, cleared, stageIdx, eqMode,
+      // 分子のまま組み替える簡易モードか（目的の文からは読めなくなったので、判定そのものを渡す）
+      simpleGas: useSimpleGas(),
       // §7-3 の自動再生。autoPlayed は「もう走らせたか」、playedFromCoeffs は
       // 「いまビーカーにある姿が係数どおりか」（結びの言い方がこれで変わる）
       autoPlayed, autoPlayQueued, playedFromCoeffs,
