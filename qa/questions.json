@@ -4396,7 +4396,7 @@
       "code": "org.anal.detect-s",
       "unit": "anal",
       "group": "元素の確認（定性）",
-      "difficulty": 3,
+      "difficulty": 2,
       "tags": [
         "検出"
       ],
