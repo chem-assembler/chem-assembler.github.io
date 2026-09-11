@@ -2078,11 +2078,18 @@ function onCoeffChange() {
 function renderTally() {
   const stage = STAGES[stageIdx];
   tallyEl.innerHTML = "";
+  /* ★ 2026-09-11（ユーザー指示）: 原子の数の確認表は、イオンで数を確かめる回では冗長。
+     ⚠ 残すのは**気体どうしの回（燃焼・合成）の7件**だけ。あそこはイオンが1つも出てこないので、
+     左右を突き合わせる場がほかに無い（プロパンの燃焼 1:5:3:4 はこの表が頼り）。
+     電荷が合っているかは、合っていないときに checkStageCoeffs がその場で名指しする。 */
+  const checkedByIons = stage.phase !== "gas";
+  tallyEl.hidden = checkedByIons;
+  if (checkedByIons) return;
   if (coeffs.every((c) => c === 0)) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 4;
-    td.textContent = "係数を入れると左右の原子の数がここに出る";
+    td.textContent = "左辺と右辺の原子の数をここで見くらべられる";
     tr.appendChild(td);
     tallyEl.appendChild(tr);
     return;

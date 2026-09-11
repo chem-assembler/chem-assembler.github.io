@@ -3987,6 +3987,32 @@ async function runUITests(iframe) {
        ②矢印は左辺の段の末尾にあること（「ここまでが左辺」が字で分かる）
        ③2つの段のあいだに、イオンの図（高さ合わせ・組み替え）が入っていること
          ＝ 左辺 → 図 → 右辺 の順。図を下へ落として2段を隣り合わせたら落ちる */
+  /* ---- 原子の数の確認表は、イオンで確かめる回では出さない（2026-09-11・ユーザー指示）----
+     ★ 「イオンで確認しているので冗長。プロパンの燃焼などの場合は別途検討」。
+     ⚠ 全部消すと、**イオンが1つも出てこない気体どうしの回**（燃焼・合成の7件）で
+     左右を突き合わせる場が無くなる。そこだけ残す、という線をここで固定する。 */
+  await t("UI: 原子の数の確認表は気体どうしの回にだけ残る（イオンで確かめる回には出さない）", async () => {
+    const tally = () => doc.getElementById("tally");
+    let shown = 0, hidden = 0;
+    for (let i = 0; i < STAGES.length; i++) {
+      stageBtn(i).click();
+      const gas = STAGES[i].phase === "gas";
+      assert(tally().hidden === !gas,
+        STAGES[i].id + ": 原子の数の表の出し方が違う（気体どうし=" + gas + " / hidden=" + tally().hidden + "）");
+      if (gas) shown++; else hidden++;
+    }
+    // 否定対照: どちらかが0件なら、この検査は何も見張っていない
+    assert(shown === 7, "表を残す回が7件でない: " + shown);
+    assert(hidden === STAGES.length - 7, "表を消す回の数が合わない: " + hidden);
+    // 残した回では、係数を入れると実際に原子の行が出る
+    const c3h8 = STAGES.findIndex((st) => st.id === "combustion-c3h8-o2");
+    stageBtn(c3h8).click();
+    [1, 5, 3, 4].forEach((v, k) => setCoeff(k, v));
+    const rows = [...tally().querySelectorAll("tr")].map((r) => r.textContent);
+    assert(rows.some((r) => r.startsWith("C")) && rows.some((r) => r.startsWith("H")),
+      "燃焼の回で原子の行が出ない: " + rows.join("/"));
+  });
+
   await t("UI: 係数を左辺と右辺の2段に分け、あいだにイオンの図をはさむ", async () => {
     const i = STAGES.findIndex((st) => st.id === "s10");
     stageBtn(i).click();
@@ -4685,7 +4711,6 @@ async function runUITests(iframe) {
     stageBtn(i).click();
     const terms = () => $$(".eqRow .formula").map((e) => e.textContent);
     const modeBtns = () => $$(".eqModeBtn");
-    const tallyRows = () => $$("#tally tr").map((r) => r.textContent);
     // primary:"ionic" なので既定はイオン反応式
     assert(state().eqMode === "ionic", "既定がイオン反応式でない: " + state().eqMode);
     assert(terms().join() === "Al³⁺,OH⁻,Al(OH)₃", "イオン式の項が違う: " + terms().join());
@@ -4696,7 +4721,10 @@ async function runUITests(iframe) {
     assert(doc.getElementById("recombineWrap").hidden, "イオン式のとき数合わせが出てしまう");
     [1, 3, 1].forEach((v, k) => setCoeff(k, v));
     assert(state().coeffOk, "イオン式の模範が正解にならない");
-    assert(tallyRows().some((r) => r.startsWith("電荷")), "電荷の行が出ない: " + tallyRows().join("/"));
+    /* ⚠ 2026-09-11: 原子の数の確認表は、イオンで確かめる回では出さないことにした
+       （残すのは気体どうしの回だけ）。電荷を見ていることはモデルの検査が受け持つ。
+       ここでは「表が出ていないこと」だけを見る。 */
+    assert(doc.getElementById("tally").hidden, "イオンで確かめる回なのに原子の数の表が出ている");
     // 分子反応式へ切り替えると項も係数もそちらになる
     modeBtns()[0].click();
     assert(state().eqMode === "molecular", "切り替わらない");
@@ -4705,7 +4733,8 @@ async function runUITests(iframe) {
     assert(!state().coeffOk, "切り替えたのに係数が持ち越されている");
     [1, 3, 1, 3].forEach((v, k) => setCoeff(k, v));
     assert(state().coeffOk, "分子式の模範が正解にならない");
-    assert(!tallyRows().some((r) => r.startsWith("電荷")), "分子式で電荷の行が出てしまう");
+    assert(doc.getElementById("tally").hidden,
+      "分子反応式に切り替えても、イオンで確かめる回なのに原子の数の表が出ている");
     // 切り替えボタンは ionic を持つステージにだけ出る
     stageBtn(0).click();
     assert(doc.getElementById("eqMode").hidden, "ionic の無いステージに切り替えが出る");
