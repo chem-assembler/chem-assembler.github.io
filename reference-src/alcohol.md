@@ -6,10 +6,7 @@ group: アルコール（総論・性質）
 title: アルコールの性質
 summary: 炭化水素基にヒドロキシ基が結合した化合物がアルコールです。一般式 CₙH₂ₙ₊₂O がどこから出てくるか、級と価数の数え方、沸点が並ぶ順とその理由、語尾 -オールの付け方までを1枚にまとめました。
 codes:
-  - org.alcohol.hydroxy
-  - org.alcohol.formula
   - org.alcohol.solubility
-  - org.alcohol.class
   - org.alcohol.valence
   - org.alcohol.polyol
   - org.alcohol.bp
@@ -207,6 +204,8 @@ text: アルコールに濃硫酸を加えて熱したとき、どのアルケ�
 to: functional-groups
 text: ヒドロキシ基そのものの位置づけ（同じ −OH でもベンゼン環に付けばフェノール類）はこちら
 :::
+
+//⚠ codes から3つ外しました。org.alcohol.hydroxy は functional-groups が、org.alcohol.formula と org.alcohol.class は alcohol-oxidation-map が既に挙げており、gen-reference-pages.mjs は同じコードが2ページに在ると赤になります（アプリの埋め込みが先頭コードでページを引くため）。ただしこの3つの本来の置き場所はこのページだと考えています。統合のときに alcohol-oxidation-map 側から org.alcohol.formula と org.alcohol.class をこちらへ移すかどうか、決めてください。
 
 //アルコールの反応（金属ナトリウム・分子内脱水／分子間脱水・酸化・ヨードホルム反応）は、この総論のページには入れず、既存の alcohol-oxidation-map / alcohol-dehydration と、新しい ketone のページへリンクで渡してあります。52グループの #8「アルコールの反応」を1枚で引き受けるページを別に立てるかどうかは、まだ決まっていません。
 

@@ -6,7 +6,6 @@ group: ケトン
 title: ケトンの性質
 summary: カルボニル基の両側が炭素なのがケトンです。アルデヒドと同じ一般式 CₙH₂ₙO をもちながら還元性を示さないこと、ヨードホルム反応を示す構造（アセチル基）、アセトンの3つのつくり方を1枚にまとめました。
 codes:
-  - org.carbonyl.ketone-def
   - org.carbonyl.ketone-no-reduce
   - org.carbonyl.iodoform-carbonyl
   - org.alcohol.iodoform
@@ -199,6 +198,8 @@ text: アルコールの級・沸点・命名など、酸化される前の側�
 to: functional-groups
 text: カルボニル基・アセチル基など、官能基そのものの一覧はこちら
 :::
+
+//⚠ codes から org.carbonyl.ketone-def を外しました。functional-groups が既に挙げており、同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。ケトンの定義そのものは本文の冒頭で扱っているので、統合のときに移すかどうか決めてください。
 
 //ヨードホルム反応の半反応式のつくり方（切り離されたメチル基を CH₃⁺ と考える・カルボニル化合物は6価、アルコールは8価の還元剤としてはたらく）は、s8〜s13 に4枚ぶんあります。分量が多いので第1周では入れていません。入れるなら独立した節にして advanced: true を付けるのが合うと考えています。
 
