@@ -6130,7 +6130,10 @@ async function runRedoxUITests(iframe) {
     // H⁺ と NO₃⁻ が対で並ぶ（必要な H⁺ の数だけ）
     assert($$("#acidSource circle").length === 8, "H⁺4個ぶんの対にならない: " + $$("#acidSource circle").length);
     const msg = doc.getElementById("acidSourceMsg").textContent;
-    assert(msg.includes("必要な H⁺ は 4個") && msg.includes("残り 2個"), "不足の説明が出ない: " + msg);
+    /* ★ 2026-09-11: 内訳は図が色で見せている（酸化剤と来たぶん／足したぶん）。
+       文は「いくつ要って、いくつ足すか」の1行だけ（ユーザーの指摘） */
+    assert(msg.includes("H⁺ が 4個 要る") && msg.includes("HNO₃ を 2個 足す"),
+      "不足の説明が出ない: " + msg);
     /* 追加ぶんの数は、④で両辺に足すイオンの数と一致する。
        ★ 2026-09-08: 筆算の④（spectatorNeed）が無くなったので、
        **④の段が実際に問う数**（spectatorAddRows）と突き合わせる。
@@ -6143,7 +6146,7 @@ async function runRedoxUITests(iframe) {
     // 希硝酸なら 1個につき4個要るので、追加ぶんが増える
     stageBtn(REDOX_STAGES.findIndex((s) => s.id === "rn1")).click();
     setM(0, 3); setM(1, 2);
-    assert(doc.getElementById("acidSourceMsg").textContent.includes("残り 6個"),
+    assert(doc.getElementById("acidSourceMsg").textContent.includes("HNO₃ を 6個 足す"),
       "rn1 の追加ぶんが6個でない: " + doc.getElementById("acidSourceMsg").textContent);
     assert(addN("rn1", 3, 2) === 6, "④の答えと食い違う: " + addN("rn1", 3, 2));
     stageBtn(0).click();
