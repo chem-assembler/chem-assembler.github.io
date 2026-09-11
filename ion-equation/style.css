@@ -1051,7 +1051,7 @@ main.timelineMain {
   /* 筆算は横に長い。狭い画面では文字を詰め、はみ出すぶんは横スクロールで見せる */
   #calcSheet, #halfSheet { font-size: 15px; column-gap: 5px; }
   .cNote { font-size: 10px; }
-  /* 数合わせの「組み変える」ボタンも押しやすく */
+  /* 「組み替える」ボタンも押しやすく */
   .recombineHead button { padding: 9px 14px; min-height: 40px; }
   .modeLink { padding: 6px 12px; }
   .hint { font-size: 13px; }
