@@ -2541,6 +2541,17 @@ class StereoQuiz {
         buildCompoundLibrary(this.game).forEach(e => {
             const info = readStereoOf(e.mol);
             if (!info) return;
+            /* ⚠⚠ **対イオンの粒を持つ塩は出題しない**（v1538）。
+             *   塩を電離した形（-COO⁻ ＋ Na⁺）で描くようにしたので、図が**非連結**になった。
+             *   `stereoIsomorphismCompare` は「重ね合わせは1分子どうしの比較にだけ使う
+             *   （非連結だと成分の対応づけが別問題になる）」と明記して null を返すので、
+             *   **「回して重ねる」が作れない問題**が出る（実測: オレイン酸ナトリウムで
+             *   180°回転の出題が作れず OV1 が 5回中3回落ちた）。
+             * ★ 立体の話は粒の位置とは関係が無いので、落としても学習上の穴は開かない
+             *   （乳酸ナトリウムも同じ不斉炭素を乳酸そのもので出題できる）。 */
+            const bonded = new Set();
+            e.mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+            if (e.mol.atoms.some(a => a.charge && !bonded.has(a.id))) return;
             // 「図を回す」出題の資格: **図が分子の立体を語り尽くしているか**（ST26）。
             // 不斉炭素がすべて図から読めていて、環の中に不斉炭素が無いこと。
             // ビニロンはアセタール環の2中心がハース形でないためライブラリの向きでは読めず

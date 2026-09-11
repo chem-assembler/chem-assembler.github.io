@@ -22552,6 +22552,21 @@
         const rmsAfter = Math.sqrt(sumAfter / rot), rmsBefore = Math.sqrt(sumBefore / rot);
         assert(rmsAfter < 2 && rmsBefore > 50,
             `RMS が期待の形にならない（回す ${rmsAfter.toFixed(1)}px / 回さない ${rmsBefore.toFixed(1)}px）`);
+
+        /* ⚠⚠ **非連結の図（対イオンの粒を持つ塩）は出題プールに入れない**（v1538）。
+         *   `stereoIsomorphismCompare` は非連結だと null を返すので、入れると
+         *   「回して重ねる」が作れない問題が混ざり、上の assert が**たまにだけ**落ちる
+         *   （実測: オレイン酸ナトリウムで 5回中3回。出題が乱択なので再現しない日がある）。
+         * ⚠ 否定対照も一緒に見る ＝ 連結な図は今までどおり入っている */
+        const loose = q.pool.filter(e => {
+            const bonded = new Set();
+            e.mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+            return e.mol.atoms.some(a => a.charge && !bonded.has(a.id));
+        });
+        assert(loose.length === 0,
+            `非連結の図が出題プールに残っている: ${loose.map(e => e.name).join('・')}`);
+        assert(q.pool.some(e => e.name === '乳酸'), '否定対照: 乳酸がプールから消えた');
+        assert(q.pool.length >= 50, `出題プールが ${q.pool.length} 件まで減った`);
     });
 
     test('OV2: 回してよい角度は「回して読み直しても立体が変わらない」角度だけ（鏡映は使わない）', async (c) => {
