@@ -378,6 +378,10 @@ const LIGHT_OVERRIDE = [
     'ref-exercise', 'ref-ex-open',
     /* ★ 穴あきテンプレートの `○○`（§23-2）。⚠ 薄敷きが `rgba(255,255,255,.07)` ＝ 明るい地では効かない */
     'ref-blank',
+    /* ★ 発展の印（§23）。⚠ 緑 `#7fd6a4` は明るい地で 1.9:1 ＝ 読めない。
+       ⚠⚠ **読み替えは前からあったのに名簿には無かった** —— `DARK_ASSUMING` が
+         `#7fd6a4` を知らず、検査が素通りしていたため（上の注記）。 */
+    'ref-adv-tag', 'ref-sec-advanced', 'ref-h5-advanced',
 ];
 /* ★ 明るい地でも**そのままでよい**もの（⚠ 1件ずつ理由を書く。書けないなら読み替える側） */
 const LIGHT_KEEP = {
@@ -464,7 +468,17 @@ const LIGHT_CSS = `
  */
 /** LIGHT_CSS がその class を**丸ごと**触っているか（`.ref-rx` が `.ref-rx-lv1` に釣られない） */
 const touches = (light, c) => new RegExp('\\.' + c + '(?![A-Za-z0-9_-])').test(light);
-const DARK_ASSUMING = /rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0?\.\d+\s*\)|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0?\.\d+\s*\)|#e0b0ff|#ffd166|#7ef\b|#fff\b|#ffffff\b/i;
+/* ⚠⚠ **薄敷きは「白か黒」だけではない**（2026-09-11・adv-fold レーン）。
+ *   ★ 前は `rgba(255,255,255,…)` と `rgba(0,0,0,…)` しか見ていなかったので、
+ *     **色の付いた薄敷き**（`.ref-example` の紫 `rgba(155,89,182,.10)`・
+ *     `a.ref-link:hover` の `rgba(224,176,255,.08)`）が検査を素通りしていた。
+ *   ⚠ 色付きの薄敷きが明るい地で壊れる形は、いちばん見つけにくい
+ *     —— **消えるのではなく、ほとんど変わらない**（画面は「それらしく」見える）。
+ *   ★ そこで **透け（小数の α）を持つ `rgba()` を全部**見る。
+ * ⚠ 明るいパステルの `#7fd6a4`（発展の印の緑）も足した。**白地で 1.9:1 ＝ 読めない**のに、
+ *   名簿にも無く literal も知られていなかったので、**読み替えが1つも検査されていなかった**
+ *   （実際には LIGHT_CSS が読み替えてあったので画面は正しい ＝ 黙って外しても誰も気づけない状態）。 */
+const DARK_ASSUMING = /rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0?\.\d+\s*\)|#e0b0ff|#ffd166|#7fd6a4|#7ef\b|#fff\b|#ffffff\b/i;
 
 function checkLightCoverage(extracted, light) {
     const bad = [];
