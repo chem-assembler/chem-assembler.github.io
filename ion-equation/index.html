@@ -79,10 +79,13 @@
     </details>
     <!-- ① 目的 -->
     <div id="stageTitle"></div>
-    <!-- ② 反応式の左辺の係数 -->
-    <h2>化学反応式を完成させよう</h2>
+    <!-- ② 反応式の左辺の係数。
+         ⚠ 左辺と右辺を1回でまとめて聞かず、③④をはさんで2段に割る。
+         左辺の数が決まってはじめてイオンの高さ合わせ・組み替えが見られ、
+         そこで見えた個数がそのまま右辺の係数になる、という順に並べるため。 -->
+    <h2>左辺の係数を決めよう</h2>
     <div id="eqMode" hidden></div>
-    <div id="equation"></div>
+    <div id="equation" class="eqRow"></div>
     <div id="displaceWrap" hidden>
       <div class="schematicHead">中和の座を奪う（弱酸の遊離）<button id="displaceBtn">▶</button></div>
       <svg id="displace" viewBox="0 0 460 236" role="img" aria-label="強い酸が弱い酸を追い出す模式図"></svg>
@@ -111,6 +114,9 @@
       <svg id="recombine" viewBox="0 0 300 30"></svg>
       <div id="recombineMsg"></div>
     </div>
+    <!-- ⑤ 反応式の右辺の係数 -->
+    <h2 id="eqHeadProd">右辺の係数を決めよう</h2>
+    <div id="equationProd" class="eqRow"></div>
     <div id="eqMsg"></div>
     <table id="tally"></table>
     <div id="netion" hidden></div>
