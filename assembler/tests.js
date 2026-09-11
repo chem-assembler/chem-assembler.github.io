@@ -2202,16 +2202,58 @@
             assert(!sq.buttons[k].style.background,
                 `${k} に inline の装飾色が残っている（CSS クラスへ移したはず）`);
         });
-        assert(D.getElementById('btn-sq-diastereomer').classList.contains('sq-btn-diastereomer'),
-            '装飾色のクラスが付いていない');
+        // ★ v1537: 装飾色そのものを外した（SQ_COLOR が見張る）。ここでは
+        //   「答え合わせの3色が付く」ことだけを見る
 
-        // 次の問題に進むと塗り分けが消えて、装飾色に戻る
+        // 次の問題に進むと塗り分けが消える
         sq.nextQuestion();
         order.forEach(k => {
             const cls = [...sq.buttons[k].classList].filter(x => x.startsWith('quiz-choice'));
             assert(cls.length === 0, `次の問題に進んでも ${k} に ${cls.join(' ')} が残っている`);
             assert(!sq.buttons[k].disabled, `次の問題に進んでも ${k} が無効のまま`);
         });
+    });
+
+    test('SQ_COLOR: 立体異性体クイズは出題中の3択を同じ色にする（色で答えを名指ししない）', async (c) => {
+        // 2026-09-12・ユーザー検品「V136 最初から『別な立体異性体』がオレンジに
+        // ハイライトされています」。出題直後から**誤答の1つだけが違う色**で、
+        // 正解は緑になる「鏡像異性体」のほう ＝ 図を読む前に目がオレンジへ行く。
+        // 3択のうち1つだけ色が違えば「これが特別だ」と読まれるので、
+        // **出題中は3つとも同じ色**でなければならない。
+        c.reset();
+        const sq = c.W.stereoQuiz, D = c.D, W = c.W;
+        sq.open();
+        const order = ['same', 'enantiomer', 'diastereomer'];
+        const bgOf = (k) => W.getComputedStyle(sq.buttons[k]).backgroundColor;
+        const bgs = order.map(bgOf);
+        assert(new Set(bgs).size === 1,
+            `出題中の3択の色が揃っていない: ${order.map((k, i) => `${k}=${bgs[i]}`).join(' / ')}`);
+
+        // ⚠ 否定対照: 1つだけオレンジに戻したら、上の検査が赤くなること。
+        //   ⚠ ボタンには `transition: 0.2s` が掛かっていて、色を変えた直後の
+        //     `getComputedStyle` は**変える前の色**を返す（実測）。待ってから読む
+        sq.buttons.diastereomer.style.background = 'rgb(255, 165, 2)';
+        await new Promise(r => setTimeout(r, 300));
+        const broken = order.map(bgOf);
+        assert(new Set(broken).size > 1,
+            '否定対照が効いていない（1つだけ色を変えても検査が通ってしまう）');
+        sq.buttons.diastereomer.style.background = '';
+        await new Promise(r => setTimeout(r, 300));
+
+        // 装飾色のクラスは HTML からも消えている（戻すと上の検査が赤くなる）
+        ['btn-sq-enantiomer', 'btn-sq-diastereomer'].forEach(id => {
+            const cls = [...D.getElementById(id).classList].filter(x => x.startsWith('sq-btn-'));
+            assert(cls.length === 0, `${id} に装飾色のクラス ${cls.join(' ')} が残っている`);
+        });
+
+        // ⚠ 答え合わせのあとの塗り分けは残っている（緑／赤／沈めるの3色）
+        const rel = sq.current.rel;
+        sq.answer(order.find(k => k !== rel));
+        assert(sq.buttons[rel].classList.contains('quiz-choice-right'),
+            '出題中の色を揃えたら、正解の緑まで消えた');
+        await new Promise(r => setTimeout(r, 300));
+        assert(W.getComputedStyle(sq.buttons[rel]).backgroundColor !== bgs[0],
+            '正解の色が出題中と同じまま（答え合わせが見えない）');
     });
 
     test('F5c: 総数当てに高分子を出題しない（切り出した一部を1分子と数えない）', async (c) => {

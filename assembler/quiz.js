@@ -597,12 +597,10 @@ function clearQuizChoiceMarks(buttons) {
 function markQuizChoices(buttons, isRight, picked) {
     [...buttons].forEach(b => {
         b.disabled = true;
-        // **選択肢そのものに装飾色が付いている場合がある**（立体異性体クイズは
-        // 鏡像異性体＝青・別の立体異性体＝オレンジ）。答え合わせでは「押したもの」と
-        // 「正解」だけが色の意味を持つべきなので、`quiz-choice-*` が装飾色に勝つように
-        // CSS 側を書いてある（装飾色は `.sq-btn-*` クラスで、こちらは `!important`）。
-        // 勝たせないと、**押していないオレンジのボタンが画面でいちばん目立ち、
-        // そちらを選んだように見える**（2026-08-09 のユーザー検品で実際に誤読された）
+        // **色に意味を持たせてよいのはここだけ**（答え合わせのあと）。
+        // 出題中の3択は同じ色にする ＝ 色が1つだけ違えば、図を読む前に
+        // 「これが特別だ」と読まれてしまう（v1537・立体異性体クイズの装飾色を外した理由）。
+        // `quiz-choice-*` は `!important` で `.primary-btn` の色に勝つ
         b.classList.remove('quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
         if (isRight(b)) {
             b.classList.add('quiz-choice-right');
