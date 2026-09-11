@@ -6,9 +6,11 @@ group: エステル
 title: エステル
 summary: エステル結合 −COO− をもつ化合物のまとめ。一般式と命名、エステル化・加水分解・けん化の3本の反応、ギ酸エステルの還元性、そして「加水分解してから条件を読む」構造決定の手順まで。
 codes:
+  - org.carbonyl.ester-bond
   - org.carbonyl.ester-naming
   - org.carbonyl.ethyl-acetate
   - org.carbonyl.esterification
+  - org.carbonyl.ester-water-origin
   - org.carbonyl.ester-hydrolysis
   - org.carbonyl.saponification
   - org.carbonyl.formate-ester

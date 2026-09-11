@@ -47445,7 +47445,11 @@
             // ★ 「この表を作った理由」を1行で書けること（§1-2 の運用ルール）を機械で見る
             assert(typeof p.why === 'string' && p.why.length >= 20, `${p.id}: why（この表を作った理由）が空か短すぎる`);
             assert(Array.isArray(p.source) && p.source.length >= 1, `${p.id}: source（参照する repo データ）が無い`);
-            assert(Array.isArray(p.codes) && p.codes.length >= 1, `${p.id}: codes（qa の知識コード）が無い`);
+            /* ★★ `codes` は**任意**（v1536・設計書 §26）。⚠ ただし「在るのに空」は作らない ——
+               単元をまたぐ横断のページは知識項目を1件も抱えないので**キーごと持たない**。
+               ⚠ 空配列を許すと「一問一答の箱は出るが 0問」という第3の状態ができる。 */
+            assert(!('codes' in p) || (Array.isArray(p.codes) && p.codes.length >= 1),
+                `${p.id}: codes が空（持たないなら前書きから codes ごと外す）`);
             assert(typeof p.singleSource === 'boolean', `${p.id}: singleSource が真偽値でない`);
             // 参照先が実在すること（stages:<series>）
             p.source.forEach(s => {
@@ -48433,7 +48437,11 @@
             } catch (e) { f.remove(); throw e; }
         };
 
-        // ① 3枚目の知識コードで、3枚目が開く（開く道が2本あってもページを決める場所は1つ）
+        /* ① 知識コードで、そのコードを抱えるページが開く（開く道が2本あってもページを決める場所は1つ）。
+           ⚠ **どのページが開くかをここに書かない** —— 下で `pages.find` に引かせて突き合わせる。
+             `org.alcohol.hydroxy`（アルコールの官能基はヒドロキシ基）は v1536 で
+             官能基の一覧からアルコールのページへ移した（設計書 §26）が、
+             この検査は「コードの持ち主が開く」を見ているので**書き換えずに通る**。 */
         let f = await openWith('?se=0&open=reference&code=org.alcohol.hydroxy');
         try {
             const D = f.contentDocument;
@@ -48459,6 +48467,23 @@
         try {
             assert(f.contentDocument.getElementById('reference-pane').classList.contains('hidden'),
                 '?rec= が付いているのに資料が開いた（新しい受け口が収録の約束を破っている）');
+        } finally { f.remove(); }
+
+        /* ③ ★★ 知識コードを1つも持たないページ（横断のページ・§26）も、**アプリの中では読める**。
+           ⚠ 消えたのは「一問一答で解く」「アプリの中で開く」の**箱**だけで、本文ではない。
+             ★ 面Bの索引はページ id で並ぶので、`codes` の有無に関わらず全ページが出る。 */
+        f = await openWith('?se=0&open=reference');
+        try {
+            const D = f.contentDocument, book = f.contentWindow.referenceBook;
+            const bare = book.pages.filter(p => !(p.codes || []).length);
+            assert(bare.length >= 1, '知識コードを持たないページが1枚も無い（この検査が空振りしている）');
+            for (const p of bare) {
+                assert(await book.open(p.id), `${p.id} が資料ペインで開かない`);
+                assert(D.querySelector('#ref-body h3').textContent.trim() === p.title,
+                    `${p.id} を開いたのに題が「${D.querySelector('#ref-body h3').textContent}」`);
+                assert(D.querySelectorAll('#ref-body table').length >= 1,
+                    `${p.id} の表が出ていない（codes を外したら本文まで消えた）`);
+            }
         } finally { f.remove(); }
     });
 
@@ -49165,7 +49190,15 @@
                 `${p.id}: codes の「${code}」が qa の知識項目（${known.size}件）に無い`
                 + '（資料と一問一答の着地は codes だけで決まるので、綴りが違うと黙って行き止まりになる）');
         }));
-        assert(nCodes >= pages.length, 'codes が1件も無いページがある');
+        /* ⚠ v1536 まで `nCodes >= pages.length`（合計が枚数以上）で「1件も無いページ」を見たつもりでいたが、
+           **合計で見るので 0件のページ1枚は他のページの多さに隠れる** ＝ もともと空振りしていた。
+           ★ `codes` が任意になった（設計書 §26）いま、見るべきは「**持たないページが増えていないか**」。
+             横断のページは1枚だけで、増えるときは設計の判断が要る ＝ 名指しで固定する。 */
+        const noCodes = pages.filter(p => !(p.codes || []).length).map(p => p.id);
+        assert(noCodes.join(',') === 'functional-groups',
+            `知識項目を持たないページが「${noCodes.join('・') || '（無し）'}」`
+            + '（持たなくてよいのは単元をまたぐ横断のページだけ・§26。増やすなら設計書に理由を残すこと）');
+        assert(nCodes >= pages.length - noCodes.length, 'codes が1件も無いページがある');
     });
 
     /* ===== REF18: 面A ＝ /reference/ の公開ページ（v1524） =====
@@ -49283,19 +49316,28 @@
                ⚠ URL を手で書き換えても赤（`REF17` ④ は「qa に実在するか」で、こちらは「原稿と同じか」）。 */
             const embeds = [...doc.querySelectorAll('[data-embed]')].map(e => e.getAttribute('data-embed'));
             const qaSrc = embeds.filter(u => u.indexOf('/qa/') === 0)[0];
-            assert(qaSrc, `${where}: 一問一答の埋め込みが無い`);
-            const sent = decodeURIComponent((qaSrc.match(/[?&]codes=([^&]+)/) || [])[1] || '').split(',');
-            assert(sent.join(',') === p.codes.join(','),
-                `${where}: 一問一答へ送るコードが原稿と違う\n    送っている: ${sent.join(', ')}\n    原稿      : ${p.codes.join(', ')}`);
-            assert(/[?&]mode=choice(&|$)/.test(qaSrc),
-                `${where}: 一問一答が測定モードで開かない（めくりは自己申告なので「解ける形」にならない）`);
             const appSrc = embeds.filter(u => u.indexOf('/assembler/') === 0)[0];
-            assert(appSrc && appSrc.indexOf('code=' + encodeURIComponent(p.codes[0])) > 0,
-                `${where}: アプリの埋め込みが先頭コードを載せていない（着地するページを決めているのは code）`);
-            // ★ その先頭コードが、ほんとうにこのページへ戻ること（決めているのは pageByCode 1か所）
-            const back = book.pageByCode(p.codes[0]);
-            assert(back && back.id === p.id,
-                `${where}: 先頭コード「${p.codes[0]}」が別のページ（${back && back.id}）へ着地する`);
+            /* ★★ `codes` を持たないページ（横断のページ・§26）は、**箱そのものを出さない**
+               （`video` と同じ扱い）。⚠ 「0問」と書いた箱や、押しても別のページへ着地する箱を残さない。 */
+            if (!(p.codes || []).length) {
+                assert(!qaSrc, `${where}: 知識項目を持たないのに一問一答の箱が出ている（${qaSrc}）`);
+                assert(!appSrc, `${where}: 知識項目を持たないのにアプリの箱が出ている（着地先を名乗れない・${appSrc}）`);
+                assert(!/解けるか試す|読みながら組む/.test(doc.body.textContent),
+                    `${where}: 箱は消えたのに見出しだけ残っている（空の枠を作らない）`);
+            } else {
+                assert(qaSrc, `${where}: 一問一答の埋め込みが無い`);
+                const sent = decodeURIComponent((qaSrc.match(/[?&]codes=([^&]+)/) || [])[1] || '').split(',');
+                assert(sent.join(',') === p.codes.join(','),
+                    `${where}: 一問一答へ送るコードが原稿と違う\n    送っている: ${sent.join(', ')}\n    原稿      : ${p.codes.join(', ')}`);
+                assert(/[?&]mode=choice(&|$)/.test(qaSrc),
+                    `${where}: 一問一答が測定モードで開かない（めくりは自己申告なので「解ける形」にならない）`);
+                assert(appSrc && appSrc.indexOf('code=' + encodeURIComponent(p.codes[0])) > 0,
+                    `${where}: アプリの埋め込みが先頭コードを載せていない（着地するページを決めているのは code）`);
+                // ★ その先頭コードが、ほんとうにこのページへ戻ること（決めているのは pageByCode 1か所）
+                const back = book.pageByCode(p.codes[0]);
+                assert(back && back.id === p.id,
+                    `${where}: 先頭コード「${p.codes[0]}」が別のページ（${back && back.id}）へ着地する`);
+            }
 
             /* ── ⑤ 動画は `video:` が在るページだけ ── */
             const frames = doc.body.innerHTML.match(/youtube[^"']*/g) || [];

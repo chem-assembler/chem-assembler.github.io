@@ -6,11 +6,13 @@ group: アルデヒド
 title: アルデヒドの性質
 summary: 鎖の端にカルボニル基があるのがアルデヒドです。一般式 CₙH₂ₙO がどこから出てくるか、3つの慣用名、還元性とその検出（銀鏡反応・フェーリング液の還元）、ホルムアルデヒドとアセトアルデヒドの製法までを1枚にまとめました。
 codes:
+  - org.carbonyl.formyl
   - org.carbonyl.aldehyde-oxidation
   - org.carbonyl.silver-mirror
   - org.carbonyl.fehling
   - org.carbonyl.formaldehyde
   - org.carbonyl.formaldehyde-prep
+  - org.carbonyl.acetaldehyde-prep
   - org.carbonyl.reduction
 source:
   - slides:有機の基本3-3「アルデヒドの性質」s2〜s7・s9〜s12・s15〜s21

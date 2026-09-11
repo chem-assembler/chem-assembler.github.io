@@ -6,6 +6,7 @@ group: アルコール（総論・性質）
 title: アルコールの性質
 summary: 炭化水素基にヒドロキシ基が結合した化合物がアルコールです。一般式 CₙH₂ₙ₊₂O がどこから出てくるか、級と価数の数え方、沸点が並ぶ順とその理由、語尾 -オールの付け方までを1枚にまとめました。
 codes:
+  - org.alcohol.hydroxy
   - org.alcohol.solubility
   - org.alcohol.valence
   - org.alcohol.polyol

@@ -690,8 +690,15 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
             `https://www.youtube-nocookie.com/embed/${p.video}`, true)
         : '';
 
-    const qaSrc = `/qa/?codes=${p.codes.map(encodeURIComponent).join(',')}&mode=choice&from=reference`;
-    const appSrc = `/assembler/?open=reference&code=${encodeURIComponent(p.codes[0])}`;
+    /* ★★ `codes` を持たないページ（＝ 単元をまたぐ横断のページ・設計書 §26）は、
+       **一問一答の箱も「アプリの中で開く」の箱も出さない**。
+       ⚠ どちらの行き先も `codes` から組む —— 一問一答は出題する知識項目の並び、
+         アプリは着地するページを決める先頭コード。持たないページでは
+         **押しても何も起きない箱**か**別のページへ着地する箱**にしかならない。
+       ⚠ **「0問」と書いた箱を出さない**（`video` と同じ扱い。枠そのものを出さない）。 */
+    const codes = p.codes || [];
+    const qaSrc = codes.length ? `/qa/?codes=${codes.map(encodeURIComponent).join(',')}&mode=choice&from=reference` : '';
+    const appSrc = codes.length ? `/assembler/?open=reference&code=${encodeURIComponent(codes[0])}` : '';
 
     const body = `<h1>${esc(p.title)}</h1>
 <p class="lede">${esc(p.summary)}</p>
@@ -703,14 +710,14 @@ ${tocHtml || ''}
 ${blocksHtml.join('\n')}
 </div>
 </div>
-
+${codes.length ? `
 <h2>解けるか試す</h2>
-${embedBox(`▶ 一問一答で解く（${p.codes.length}問・測定モード）`,
-        'このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。', qaSrc, true)}
+${embedBox(`▶ 一問一答で解く（${codes.length}問・測定モード）`,
+            'このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。', qaSrc, true)}
 
 <h2>読みながら組む</h2>
 ${embedBox('▶ アプリの中で開く', 'このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。', appSrc, true)}
-
+` : ''}
 <nav class="seq">${prev ? `<a href="/reference/${prev.id}/">← ${esc(prev.title)}</a>` : ''}
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
@@ -831,6 +838,14 @@ for (const p of pages) {
            ここで `renderBlock` を1つずつ呼ぶと**面Aだけ古い並びで焼かれる**（§24）。 */
         const built = book.renderBlocks(page);
         if (built.unknown.length) return { error: `描けないブロック「${built.unknown.join('・')}」` };
+        /* ⚠⚠ 「▶ 組んでみる」（`:::example`）の行き先は**そのページの先頭コード**なので、
+           `codes` を持たないページには置けない —— 着地先を名乗れず、別のページへ飛ぶ。
+           ★ 横断のページ（設計書 §26）は特定の1分子に着地しないので、そもそも例題を持たない。 */
+        if (!(page.codes || []).length
+            && built.els.some((el) => el.matches('.ref-try') || el.querySelector('.ref-try'))) {
+            return { error: '`codes` の無いページに :::example（▶ 組んでみる）があります'
+                + '（着地先を名乗れません。例題は知識項目をもつページへ置いてください）' };
+        }
         for (const el of built.els) {
             /* ★ 押しもの → リンク。**静的なページに、押しても何も起きないボタンを残さない** */
             el.querySelectorAll('button').forEach((btn) => {
@@ -841,7 +856,8 @@ for (const p of pages) {
                         + '&utm_source=reference&utm_medium=internal&utm_campaign=' + page.id;
                 } else if (btn.classList.contains('ref-try')) {
                     /* ⚠ ステージを名指しする受け口は無いので、**そのページの面B**へ渡す
-                       （着いた先に同じ「▶ 組んでみる」が在り、そこで採点まで進める） */
+                       （着いた先に同じ「▶ 組んでみる」が在り、そこで採点まで進める）。
+                       ⚠ `codes` が無いページはこの手前で赤くしてある */
                     a.href = '/assembler/?open=reference&code=' + encodeURIComponent(page.codes[0])
                         + '&utm_source=reference&utm_medium=internal&utm_campaign=' + page.id;
                 } else {
