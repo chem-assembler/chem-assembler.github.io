@@ -6111,6 +6111,74 @@ function refAdvancedTag() {
     return t;
 }
 
+/* ★★ 発展の折りたたみの**退避**（設計書 §24）。
+ *
+ * ★ 開け閉めそのものは `<details>` が素でやる（JS は1行も要らない）。ここで足すのは、
+ *   **素の `<details>` では届かない3つ**だけ ＝ ページ内検索・アンカー着地・印刷。
+ *
+ * ⚠⚠ **この関数は `tools/gen-reference-pages.mjs` が丸ごと切り出して面Aに埋める**（書き写さない）。
+ *   ★ だから **learn.js の他のものを1つも参照しない**（参照した瞬間、面Aで `undefined` になる）。
+ *   ⚠ 切り出しは「行頭の `function refAdvSetup(`」から「行頭の `}`」まで ＝ **字下げを変えないこと**。
+ */
+function refAdvSetup(root) {
+    var scope = root || document;
+    if (!scope.querySelectorAll || !scope.querySelectorAll('details.ref-adv').length) return;
+
+    /* ── ① ページ内検索 ──────────────────────────────────────────────
+       ★ 新しいブラウザは**閉じた `<details>` の中まで検索して、見つけたら自分で開く**
+         （`hidden="until-found"` と同じ仕掛け。Chrome 131 / Firefox 139 / Safari 18.4 あたり）。
+       ⚠⚠ **持っていないブラウザでは、発展を開いたまま出す。**
+         ★ 逆（畳んだまま出す）にすると**本文がページ内検索から消える** ＝
+           「事典的に網羅して、引きに来た人が見つけられる」という参考書の目的そのものが壊れる。
+         ★ 開いたまま出しても失うのは初期状態の静けさだけで、畳めることは変わらない
+           ＝ **退避の向きは「見えるほうへ倒す」。**
+       ★ 見分けは `::details-content` の有無 —— 自動で開く仕掛けと同じ版で入った疑似要素。 */
+    var native = false;
+    try { native = !!(window.CSS && CSS.supports && CSS.supports('selector(::details-content)')); } catch (e) { native = false; }
+    if (!native) {
+        Array.prototype.forEach.call(scope.querySelectorAll('details.ref-adv'), function (d) { d.open = true; });
+    }
+
+    /* ── ② 目次・用語の索引から飛んだら開く ────────────────────────────
+       ★ 新しいブラウザは `:target` で自分から開くので、これも古い版のための退避。
+       ⚠ 面B（アプリの資料ペイン）は URL の hash が動かないので、**目次の押しそのもの**も見る。 */
+    var openAt = function (id) {
+        var el = id ? document.getElementById(id) : null;
+        var d = el && el.closest ? el.closest('details.ref-adv') : null;
+        if (d && !d.open) { d.open = true; el.scrollIntoView(); }
+    };
+    if (!scope.__refAdvWired) {
+        scope.__refAdvWired = true;
+        scope.addEventListener('click', function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('.ref-toc a[href^="#"]') : null;
+            if (a) openAt(a.getAttribute('href').slice(1));
+        });
+    }
+    if (!refAdvSetup.wiredWindow) {
+        refAdvSetup.wiredWindow = true;
+        var fromHash = function () {
+            try { openAt(decodeURIComponent((location.hash || '').slice(1))); } catch (e) { /* 壊れた hash は無視 */ }
+        };
+        window.addEventListener('hashchange', fromHash);
+        /* ── ③ 印刷は開いた状態で出す ────────────────────────────────
+           ★ 新しいブラウザは `@media print` の `::details-content` だけで開く（JS を通らない）。
+           ⚠ 古い版のためにここでも開き、**刷り終わったら元に戻す**（画面の状態を変えない）。 */
+        var before = null;
+        window.addEventListener('beforeprint', function () {
+            var all = document.querySelectorAll('details.ref-adv');
+            before = Array.prototype.map.call(all, function (d) { return d.open; });
+            Array.prototype.forEach.call(all, function (d) { d.open = true; });
+        });
+        window.addEventListener('afterprint', function () {
+            if (!before) return;
+            Array.prototype.forEach.call(document.querySelectorAll('details.ref-adv'),
+                function (d, i) { d.open = !!before[i]; });
+            before = null;
+        });
+        fromHash();
+    }
+}
+
 /* ★ ぶら下げの補足の印（設計書 §23-3）。**行頭の全角スペース1つ。**
    ⚠ 書式（`tools/reference-md.js` の `HANG_MARK`）と割れないよう `REF24` が突き合わせる */
 const REF_HANG_MARK = '　';
@@ -6329,11 +6397,82 @@ class ReferenceBook {
            ★ 狭いペインでは CSS が「上の折りたたみ」にする（markup は面Aと同じ1本）。 */
         const toc = this.renderToc(page);
         if (toc) body.appendChild(toc);
-        (page.blocks || []).forEach(b => {
-            const el = this.renderBlock(b);
-            if (el) body.appendChild(el);
-        });
+        this.renderBlocks(page).els.forEach(el => body.appendChild(el));
+        /* ★ 発展の折りたたみの**退避**（§24）。⚠ 面Aは焼いた `ADV_JS` が同じことをする */
+        refAdvSetup(body);
         body.scrollTop = 0;
+    }
+
+    /* ★★ ページの本文を「上に並べる要素の配列」にする（設計書 §24）。
+     *
+     * ⚠⚠ **面Aの生成器もこれを呼ぶ** ＝ 並べ方の式が2本にならない（`renderToc` と同じ理由）。
+     *   前は生成器が `renderBlock` を1つずつ呼んで並べていたので、**ここでまとめ方を変えると
+     *   面Aだけ古い並びのまま焼かれる**（表を2か所で組まないのと同じ話）。
+     *
+     * ★★ **発展（`advanced`）の「節」は、そこから下をひとかたまりにして
+     *   閉じた `<details>` に入れる。** ユーザーの要件は
+     *   「初学者がとっかかりにくくなるのは避けたい／事典的な網羅は減らさない」——
+     *   ★ **減らすのは画面に出る量だけで、中身は1文字も減らさない。**
+     *
+     * ⚠ **どこで畳み終わるか**（＝ かたまりの終わり）は2つ:
+     *   ① 次の `:::section`（発展でもそうでなくても。節は「検索の着地点」なので必ず外に出す）
+     *   ② **発展でない `## 小見出し`** —— 「範囲の中へ戻った」印。
+     *     ⚠ これが無いと、`functional-groups.md` の `## 例題` が発展の中に吸い込まれる
+     *       （例題はページ全体のもので、ニトロ基の話の続きではない）。
+     * ★ 逆に **発展の小見出しは吸い込んでよい**（発展の節の中の区切り）。
+     *
+     * ⚠⚠ **発展の「小見出し」は畳まない**（2026-09-11・実データを見て決めた）。
+     *   ★ 畳むには「どこまでか」が器で言えることが要るが、**小見出しにはそれが無い。**
+     *     実測: `alkane.md` の `## 電子対はどう動いているのか（発展）` は**寄り道が1段落だけ**で、
+     *     そのあとに**置換の連鎖の図2枚と ★★★（必ず覚える）の反応式2本**が、
+     *     新しい見出しを挟まずに続く。⚠ 見出しから次の節まで畳むと、
+     *     **必ず覚える反応式が既定で隠れる** ＝ 網羅を減らしたのと同じことになる。
+     *   ★ 小見出しの発展は今までどおり**印（緑の札＋左の線）だけ**で示す。
+     *
+     * ★ 返すのは `{ els, unknown }`。⚠ **知らない `kind` は投げずに `unknown` で返す** ——
+     *   アプリ（面B）は残りを描いて読める状態を保ち、生成器（面A）はそこで赤く止まる。
+     */
+    renderBlocks(page) {
+        const els = [];
+        const unknown = [];
+        let fold = null;   // いま開いている `<details>` の中身（無ければ null）
+        const closes = (b) => b.kind === 'section' || (b.kind === 'heading' && !b.advanced);
+        (page.blocks || []).forEach(b => {
+            if (fold && closes(b)) fold = null;
+            const starts = b.kind === 'section' && b.advanced;
+            if (starts) {
+                const det = this.renderAdvancedFold(b);
+                els.push(det.wrap);
+                fold = det.body;
+                return;
+            }
+            const el = this.renderBlock(b);
+            if (!el) { unknown.push(b.kind); return; }
+            if (fold) fold.appendChild(el); else els.push(el);
+        });
+        return { els, unknown };
+    }
+
+    /* 発展のかたまりの器。★ **閉じていても「発展の札・題・この節で分かること1行」は見える** ——
+       ⚠ 読むかどうかを1行で決められることが、畳むことの条件（畳んで「何の節か分からない」に
+         してしまうと、事典として引けなくなる）。
+       ★ `<details>` は素の HTML なので **JS が1行も要らない**（`:::exercise` の解答隠しと同じ作り）＝
+         焼いた面Aでも、アプリの面Bでも、同じ markup が同じように効く。 */
+    renderAdvancedFold(block) {
+        const det = document.createElement('details');
+        /* ⚠ **id と `.ref-sec-advanced` は `<details>` 側が持つ** ——
+           目次・用語の索引の行き先（`#ref-sec-<anchor>`）を変えないため。
+           ★ `:target` が `<details>` に当たるので、新しいブラウザは着地だけで開く。 */
+        det.className = 'ref-adv ref-sec ref-sec-advanced';
+        det.id = REF_ANCHOR_PREFIX + block.anchor;
+        const sum = document.createElement('summary');
+        sum.className = 'ref-adv-sum';
+        sum.appendChild(this.renderSectionHead(block));
+        det.appendChild(sum);
+        const body = document.createElement('div');
+        body.className = 'ref-adv-body';
+        det.appendChild(body);
+        return { wrap: det, body };
     }
 
     renderBlock(b) {
@@ -6417,16 +6556,25 @@ class ReferenceBook {
         const sec = document.createElement('section');
         sec.className = 'ref-sec' + (block.advanced ? ' ref-sec-advanced' : '');
         sec.id = REF_ANCHOR_PREFIX + block.anchor;
+        sec.appendChild(this.renderSectionHead(block));
+        return sec;
+    }
+
+    /* 節の頭（題＋発展の札＋この節で分かること1行）。
+       ★ **器から切り離してある**のは、発展の節では同じ頭が `<summary>` の中に入るから（§24）——
+         畳んでも開いても、見えるものが1文字も変わらないようにするため。 */
+    renderSectionHead(block) {
+        const frag = document.createDocumentFragment();
         const h = document.createElement('h4');
         h.className = 'ref-sec-h';
         h.textContent = block.title;
         if (block.advanced) h.appendChild(refAdvancedTag());
-        sec.appendChild(h);
+        frag.appendChild(h);
         const lead = document.createElement('p');
         lead.className = 'ref-sec-lead';
         lead.innerHTML = block.lead;
-        sec.appendChild(lead);
-        return sec;
+        frag.appendChild(lead);
+        return frag;
     }
 
     /* ★ 節の下の小見出し（設計書 §20-5。原稿では `## タイトル`／`:::heading`）。
