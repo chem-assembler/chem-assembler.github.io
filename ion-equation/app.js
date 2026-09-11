@@ -2133,7 +2133,15 @@ function buildSchematic() {
 
   const accDisp = SPECIES[schema.accSp].disp;
   const prodDisp = schema.product.map((sp) => SPECIES[sp].disp).join(" ＋ ");
-  schematicHeadEl.textContent = `${accDisp} と H⁺ を組み合わせよう（模式図）`;
+  /* ★ 2026-09-11: 見出しは「何をする図か」ではなく、**化学で何をするか**を言う。
+     受け皿の側に陽イオンが乗っているとき（塩・塩基）は、H⁺ がその席を取る反応なので
+     「Na₂SO₃ の Na⁺ を H⁺ と置き換えよう」と言う。
+     ⚠ NH₃ のように陽イオンを持たない受け皿もあるので、そのときは結びつきのほうで言う。 */
+  const acc1 = schema.acceptors.length === 1 ? schema.acceptors[0] : null;
+  const cations = acc1 ? [...new Set(acc1.core)] : [];
+  schematicHeadEl.textContent = cations.length
+    ? `${SPECIES[acc1.sp].disp} の ${cations.map((sp) => SPECIES[sp].disp).join("・")} を H⁺ と置き換えよう`
+    : `${accDisp} に H⁺ をくっつけよう`;
 
   const bal = protonBalance(schema, coeffs);
   const unit = (t) => ({
@@ -2234,7 +2242,7 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
   const stage = STAGES[stageIdx];
   const m = schematicMsgEl;
   if (bal.hTotal === 0 && bal.accTotal === 0) {
-    setStatusMsg(m, `「＋」でブロックを足すと、H⁺ と ${accDisp} が並ぶ。同じ数にそろえよう。`, "info");
+    setStatusMsg(m, `H⁺ と ${accDisp} が余さず組める数にそろえよう。`, "info");
   } else if (bal.hLeft === 0 && bal.accLeft === 0) {
     // つり合っていても最簡整数比とは限らない。割り切れるなら「どう割るか」まで具体的に言う
     // 並びは反応式と同じ順にする（図の左右の順ではなく、式を直すときの順）
@@ -2244,16 +2252,16 @@ function updateSchematicMsg(schema, bal, accDisp, prodDisp) {
     // ★ 2026-09-07 ユーザー決定「オレンジです」——「比は合っているが、もっと簡単にできる」は
     //    間違いではないので ✗（赤）にしない。ブロック側の 💡 と顔をそろえる
     if (adv) setStatusMsg(m, `つり合ってはいるけれど、${adv.text}`, "info");
-    else setStatusMsg(m, `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。このブロックの数が係数。`, "ok");
+    else setStatusMsg(m, `ぴったり！ H⁺ ${bal.hTotal} 個 と ${accDisp} ${bal.accTotal} 個 が余さず組んで ${prodDisp} ${bal.pairs} 個。この数がそのまま係数になる。`, "ok");
   } else if (bal.hLeft > 0 && stage.saltGoal && saltKindOf(stage.saltGoal) === "酸性塩") {
     setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまる。この課題はそれでよい（あまった H⁺ が酸性塩 ${SPECIES[stage.saltGoal.label].disp} の H になる）。`, "ok");
   } else if (bal.accLeft > 0 && stage.saltGoal && saltKindOf(stage.saltGoal) === "塩基性塩") {
     // 酸性塩の裏返し。ここが無いと、塩基性塩の課題で**正解の状態を「塩基が多い」と叱る**
     setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまる。この課題はそれでよい（あまった ${accDisp} が塩基性塩 ${SPECIES[stage.saltGoal.label].disp} の OH になる）。`, "ok");
   } else if (bal.hLeft > 0) {
-    setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまっている（酸が多い）。${accDisp} のブロックを足そう。`, "ng");
+    setStatusMsg(m, `H⁺ が ${bal.hLeft} 個 あまっている（酸が多い）。${accDisp} を増やそう。`, "ng");
   } else {
-    setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまっている（塩基が多い）。H⁺ のブロックを足そう。`, "ng");
+    setStatusMsg(m, `${accDisp} が ${bal.accLeft} 個 あまっている（塩基が多い）。H⁺ を増やそう。`, "ng");
   }
 }
 
