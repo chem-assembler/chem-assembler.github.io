@@ -2429,37 +2429,37 @@ const REDOX_STAGES = [
     id: "r1", title: "亜鉛 × 銅(Ⅱ)イオン",
     ox: "Zn_ox", red: "Cu_red", answer: [1, 1],
     // bottles を持たない ＝ 金属樹はイオン反応式で済ませる（上の★）
-    intro: "硫酸銅水溶液に亜鉛板を入れると、板に赤い銅が付き、亜鉛が溶けていく。電子の動きを見よう。",
+    intro: "硫酸銅水溶液に亜鉛板を入れると、板に赤い銅が付く",
   },
   {
     id: "r2", title: "銅 × 銀イオン（銀樹）",
     ox: "Cu_ox", red: "Ag_red", answer: [1, 2],
     // bottles を持たない（金属樹）
-    intro: "硝酸銀水溶液に銅線を入れると銀樹が育つ。Cu は e⁻ を2個出すが、Ag⁺ は1個ずつしか受け取れない。",
+    intro: "硝酸銀水溶液に銅線を入れると銀樹が育つ",
   },
   {
     id: "r3", title: "亜鉛 × 塩酸（水素発生）",
     ox: "Zn_ox", red: "H_red", answer: [1, 1],
     bottles: ["Zn", "HCl"],
-    intro: "亜鉛に塩酸を注ぐと H₂ の泡が出る。e⁻ を受け取るのは H⁺ が2個で1組。",
+    intro: "亜鉛に塩酸を注ぐと H₂ の泡が出る",
   },
   {
     id: "r4", title: "アルミニウム × 銅(Ⅱ)イオン（2:3）",
     ox: "Al_ox", red: "Cu_red", answer: [2, 3],
     // bottles を持たない（金属樹）
-    intro: "Al は e⁻ を3個出し、Cu²⁺ は2個ずつ受け取る。3と2の最小公倍数、e⁻ 6個でそろえよう。",
+    intro: "硫酸銅水溶液にアルミニウム板を入れると、板に赤い銅が付く",
   },
   {
     id: "rs1", title: "過マンガン酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "MnO4_red", answer: [5, 1], mode: "solution",
     bottles: ["KMnO4", "FeSO4", "H2SO4"],
-    intro: "板は無し。溶液中で Fe²⁺ が e⁻ を出して Fe³⁺ に、MnO₄⁻ が H⁺ と e⁻ を受け取って Mn²⁺ になる。赤紫が消えるまで。",
+    intro: "硫酸酸性の過マンガン酸カリウムに Fe²⁺ を加えると、赤紫が消える",
   },
   {
     id: "rs2", title: "二クロム酸カリウム × 鉄(Ⅱ)（溶液中）",
     ox: "Fe2_ox", red: "Cr2O7_red", answer: [6, 1], mode: "solution",
     bottles: ["K2Cr2O7", "FeSO4", "H2SO4"],
-    intro: "Cr₂O₇²⁻ は Cr が2個で e⁻ を6個受け取る。Fe²⁺ を何個そろえる？ 橙色が緑色に変わる。",
+    intro: "二クロム酸カリウムに Fe²⁺ を加えると、橙色が緑色に変わる",
   },
   {
     id: "rs3", title: "過マンガン酸カリウム × シュウ酸（溶液中）",
@@ -2474,7 +2474,7 @@ const REDOX_STAGES = [
        イオン反応式でも H₂C₂O₄ 分子のまま書くのが通例。現行の C₂O₄²⁻ 形でも保存は成立して
        誤りではないため、ここでは**呼称だけ**「シュウ酸イオン」に正した。
        提示形を H₂C₂O₄ にそろえるかは独立タスクとして別途判断する。 */
-    intro: "シュウ酸イオン C₂O₄²⁻ は e⁻ を2個出して CO₂ の泡になる。MnO₄⁻ は5個受け取る。e⁻ 10個でそろえよう。紫が消え、泡が出る。",
+    intro: "過マンガン酸カリウムにシュウ酸を加えると、紫が消えて泡が出る",
   },
   /* 有機の酸化還元。無機と同じく「e⁻ を出す／受け取る」で書けることを見せる。
      アルコールの酸化は「水素が取れる」と習うが、正体は**官能基のついた炭素1個の酸化数が
@@ -2498,7 +2498,7 @@ const REDOX_STAGES = [
       products: ["CH3CHO", "Cr2(SO4)3", "K2SO4", "H2O"],
       answer: [3, 1, 4, 3, 1, 1, 7],
     },
-    intro: "二クロム酸カリウムの酸性溶液にエタノールを加えると、橙色が緑色に変わる。OH のついた炭素だけが −1 から +1 に上がる。倍率をそろえたら、仕上げに傍観イオン（K⁺・SO₄²⁻）を戻して完全な化学反応式へ。",
+    intro: "二クロム酸カリウムの酸性溶液にエタノールを加えると、橙色が緑色に変わる",
   },
   {
     id: "ro2", title: "エタノールの酸化②（アセトアルデヒド → 酢酸）",
@@ -2509,7 +2509,7 @@ const REDOX_STAGES = [
       products: ["CH3COOH", "Cr2(SO4)3", "K2SO4", "H2O"],
       answer: [3, 1, 4, 3, 1, 1, 4],
     },
-    intro: "酸化はもう一段進む。同じ炭素が +1 から +3 へ。水が1個必要なのは、増える O をどこかから持ってこないといけないから。仕上げは①と同じく、傍観イオンを戻して化学反応式に。",
+    intro: "アセトアルデヒドはもう一段酸化されて酢酸になる",
   },
   {
     id: "ro3", title: "2-プロパノールの酸化（→ アセトン。ここで止まる）",
@@ -2520,7 +2520,7 @@ const REDOX_STAGES = [
       products: ["CH3COCH3", "Cr2(SO4)3", "K2SO4", "H2O"],
       answer: [3, 1, 4, 3, 1, 1, 7],
     },
-    intro: "第2級アルコールは 0 から +2 に上がってケトンになり、そこで止まる。その炭素にはもう H が残っていないから。ここでも傍観イオンを戻せば化学反応式が完成する。",
+    intro: "第2級アルコールはケトンになり、そこで止まる",
   },
   /* ヨードホルム反応。ご指示の見方: **反応物のメチル基を切断して CH₃⁺ を生じさせ、それを
      半反応式とする**。アルコールから入る場合は2段階で、まず ro1 でカルボニル化合物にしてから。
@@ -2529,13 +2529,13 @@ const REDOX_STAGES = [
     id: "ri1", title: "ヨードホルム反応（アセトンから）",
     ox: "iodoform_ox", red: "I2_red", answer: [1, 2], mode: "solution",
     cleavage: "acetone",
-    intro: "先にメチル基を CH₃⁺ として切り離す（上の段）。その炭素は −2 で、CHI₃ では +2。Δ は +4 なので e⁻ は4個。I₂ は何個要る？",
+    intro: "アセトンにヨウ素と塩基を加えると、黄色い沈殿が落ちる",
   },
   {
     id: "ri2", title: "ヨードホルム反応（エタノール → アセトアルデヒドから）",
     ox: "iodoform_ox", red: "I2_red", answer: [1, 2], mode: "solution",
     cleavage: "acetald",
-    intro: "エタノールは、まず ro1 でアセトアルデヒドにしてからこの段に入る。切り出す CH₃⁺ は同じなので、半反応式もアセトンとまったく同じ。",
+    intro: "エタノールは、まずアセトアルデヒドにしてからこの段に入る",
   },
   {
     /* 銅は水素よりイオン化傾向が小さいので、塩酸や希硫酸には溶けない（ステージ3の亜鉛と対照）。
@@ -2553,7 +2553,7 @@ const REDOX_STAGES = [
       reactants: ["Cu", "HNO3"], products: ["Cu(NO3)2", "NO", "H2O"], answer: [3, 8, 3, 2, 4],
       acid: 1, reduced: 3, salt: 2, spectatorPerSalt: 2,
     },
-    intro: "銅は塩酸には溶けないのに、希硝酸には溶ける。溶かしているのは H⁺ ではなく NO₃⁻ のほう。Cu は e⁻ を2個出し、NO₃⁻ は3個受け取る。何個ずつそろえる？",
+    intro: "銅は塩酸には溶けないのに、希硝酸には溶ける",
   },
   {
     id: "rn2", title: "銅 × 濃硝酸（赤褐色の NO₂ が発生）",
@@ -2563,7 +2563,7 @@ const REDOX_STAGES = [
       reactants: ["Cu", "HNO3"], products: ["Cu(NO3)2", "NO2", "H2O"], answer: [1, 4, 1, 2, 2],
       acid: 1, reduced: 3, salt: 2, spectatorPerSalt: 2,
     },
-    intro: "同じ銅と硝酸でも、濃いと赤褐色の NO₂ が出る。濃硝酸では NO₃⁻ が受け取る e⁻ は1個だけ。倍率はどうなる？",
+    intro: "同じ銅と硝酸でも、濃いと赤褐色の NO₂ が出る",
   },
 ];
 
@@ -3840,8 +3840,7 @@ function checkRedoxMultipliers(stage, a, b) {
     // e⁻ の数だけ見ていると気づけないので、割る数と割った先まで示す
     return {
       ok: false, gcd: g, give, take,
-      reason: `e⁻ の数は合っているけれど、倍率がどちらも ${g} で割り切れる。` +
-        `×${a}・×${b} → ×${a / g}・×${b / g} に直そう（e⁻ ${give}個 → ${give / g}個 でも成り立つ）`,
+      reason: `倍率がどちらも ${g} で割り切れる。×${a / g}・×${b / g} に直そう`,
     };
   }
   return { ok: true, give, take };
@@ -3944,19 +3943,19 @@ function checkIonicCoeffs(stage, a, b, coeffs) {
   const D = (sp) => SPECIES[sp].disp;
   if (filled < want.length) {
     return { ok: false, kind: "partial", filled, total: want.length, wrong: [],
-      reason: `あと ${want.length - filled} つ。①の式に ×${a}・×${b} をかけて足すと、それぞれ何個になる？` };
+      reason: `あと ${want.length - filled} つ` };
   }
   const wrong = [];
   for (let i = 0; i < want.length; i++) if (got[i] !== want[i]) wrong.push(i);
   if (!wrong.length) {
     return { ok: true, kind: "ok", filled, total: want.length, wrong: [],
-      reason: `そのとおり。①の2本に ×${a}・×${b} をかけて足すと、e⁻ が両辺で同じ数になって消える。` };
+      reason: `e⁻ が両辺で同じ数になって消えた` };
   }
   // よくある外し方: 全体が同じ倍率になっている（＝最簡比まで詰めていない／倍率をかけ違えた）
   const k = got[0] / want[0];
   if (Number.isInteger(k) && k > 1 && want.every((w, i) => got[i] === w * k)) {
     return { ok: false, kind: "scaled", k, filled, total: want.length, wrong,
-      reason: `形は合っているが、ぜんぶが ${k} 倍になっている。両辺を ${k} で割った形が答え。` };
+      reason: `ぜんぶが ${k} 倍になっている。${k} で割ろう` };
   }
   const t = rows.terms[wrong[0]];
   const where = t.from === "both"
@@ -4098,15 +4097,14 @@ function checkCalcSheet(stage, a, b, vals) {
           ? "上の2行の同じ種を、縦に足した数"
           : `上の【${t.from === "ox" ? "還元剤" : "酸化剤"}】の行（×${t.mult}）から、そのまま降りてくる数`;
     return { ok: false, kind: "wrong", filled, total, rest, wrong,
-      reason: `${bad.length}つ違う。たとえば ${D(t.sp)} —— ここは ${where}。` +
-        (rest > 0 ? `（空いている欄が あと ${rest} つ）` : "") };
+      reason: `${bad.length}つ違う。たとえば ${D(t.sp)} は ${where}` };
   }
   if (rest > 0) {
     return { ok: false, kind: "partial", filled, total, rest, wrong,
-      reason: `あと ${rest} つ。どの欄から埋めてもよい —— ①の2本に ×${a}・×${b} をかけて、縦に足す。` };
+      reason: `あと ${rest} つ。どの欄から埋めてもよい` };
   }
   return { ok: true, kind: "ok", filled, total, rest, wrong,
-    reason: `そのとおり。×${a}・×${b} をかけて縦に足すと、e⁻ が両辺で同じ数になって消える。` };
+    reason: `e⁻ が両辺で同じ数になって消えた` };
 }
 
 /* 【削除】molecularizeStep / spectatorChoices / explainSpectatorPick（2026-09-08・レーン rx-sheet）
@@ -4461,14 +4459,14 @@ function bottlePlanReason(res) {
     });
     // **どの倍率にすればよいかは言わない**（minBottleScale を呼ぶと答えそのものになる）。
     // 言うのは「何が何個ずつ要るか」までで、そこから倍率を決めるのが学習者の仕事
-    return parts.join("／") + "。イオン反応式の全体の倍率を変えると、あまりを消せる。";
+    return parts.join("／") + "。全体の倍率を変えると、あまりが消える";
   }
   if (!res.balanced) return "左右で原子か電荷が合っていない（データの不備）";
   if (!res.simplest) {
-    return `つり合っているけれど、係数がすべて ${res.gcd} で割り切れる。全体を ×${res.scale / res.gcd} に戻そう。`;
+    return `係数がすべて ${res.gcd} で割り切れる。全体を ×${res.scale / res.gcd} に戻そう`;
   }
   const say = (t) => (t.n > 1 ? t.n + " " : "") + D(t.sp);
-  return `ぴったり。${res.left.map(say).join(" ＋ ")} → ${res.right.map(say).join(" ＋ ")}`;
+  return `${res.left.map(say).join(" ＋ ")} → ${res.right.map(say).join(" ＋ ")}`;
 }
 
 /* 成立する最小の倍率。1 から順に試す（lcm を組み立てるより、条件を1か所にまとめられる）。 */
@@ -4675,8 +4673,8 @@ function acidRoleText(stage, a, b, scale) {
           (salt ? `右辺で ${D(salt.cation)} と組んで ${D(salt.sp)} になる。` : `右辺に残る。`) +
           (other.length
             ? `${D(B.sp)} は「${D(r.sp)} として e⁻ を受け取る役」と` +
-              `「${other.map((c) => D(c.sp)).join("・")} を出す役」を兼ねている —— ` +
-              `だから e⁻ をそろえただけでは ${D(B.sp)} の係数は決まらない。`
+              `「${other.map((c) => D(c.sp)).join("・")} を出す役」を兼ねている。` +
+              `e⁻ をそろえただけでは ${D(B.sp)} の係数は決まらない`
             : ""),
       };
     }
@@ -4699,25 +4697,23 @@ function explainSpectatorAdd(stage, a, b, scale, sp, got) {
      ⚠⚠ **すでに並んでいる個数は言わない。**rn2 は「すでに 2個・足すのも 2個」なので、
      数を書くと答えそのものになる（否定対照テストが赤くする）。数はイオン反応式に書いてある。 */
   const dual = row.already > 0
-    ? `${D(sp)} はイオン反応式にもう並んでいる（e⁻ を受け取って姿を変えるぶん）。` +
-      `そのぶんは足さなくてよい。`
+    ? `${D(sp)} はイオン反応式にもう並んでいる。そのぶんは足さなくてよい`
     : "";
   if (!Number.isInteger(got)) {
     return { kind: "none", ok: false,
-      reason: `両辺に ${D(sp)} を何個ずつ足すか。相手がいないのは ${who}。` + dual };
+      reason: `相手がいないのは ${who}` + (dual ? "。" + dual : "") };
   }
-  if (got < 0) return { kind: "wrong", ok: false, reason: `個数は 0 以上。` };
+  if (got < 0) return { kind: "wrong", ok: false, reason: `個数は 0 以上` };
   if (got < row.n) {
     return { kind: "wrong", ok: false,
-      reason: `足りない。${who} が相手のいないまま残る ＝ イオンのままで化学式にならない。` + dual };
+      reason: `足りない。${who} が相手のいないまま残る` + (dual ? "。" + dual : "") };
   }
   if (got > row.n) {
     return { kind: "wrong", ok: false,
-      reason: `多い。相手のいない ${D(sp)} が両辺に残ってしまう` +
-        `（両辺に同じだけ残るなら、はじめから足さないのと同じ）。` + dual };
+      reason: `多い。相手のいない ${D(sp)} が両辺に残る` + (dual ? "。" + dual : "") };
   }
   return { kind: "ok", ok: true,
-    reason: `${D(sp)} がそろった。${who} が、これで化学式に組める。` };
+    reason: `${D(sp)} がそろった` };
 }
 
 /* 【D】全体の倍率は**例外**（DESIGN_redox.md の D）。
@@ -4734,7 +4730,7 @@ function bottleScaleAdvice(stage, a, b, scale) {
     if (scale > 1) {
       return {
         kind: "revert", to: 1, from: scale,
-        reason: `いまは式の全体を ×${scale} にしている。半端が出ていないなら ×1 のままでよい。`,
+        reason: `いまは式の全体を ×${scale} にしている。半端が出ていないなら ×1 でよい`,
       };
     }
     return null;
@@ -4748,7 +4744,7 @@ function bottleScaleAdvice(stage, a, b, scale) {
     total: odd.total, per: odd.per, units,
     reason: `${D(odd.sp)} が ${odd.total}個。${D(odd.to)} は ${D(odd.sp)} を ${odd.per}個ずつ使うので、` +
       `${D(odd.to)} が ${unitsText}個 ＝ 係数に 1/2 が出てしまう。` +
-      `こういうときだけ、式の全体を倍にして整数にそろえる。`,
+      `こういうときだけ、式の全体を倍にして整数にそろえる`,
   };
 }
 
@@ -4819,18 +4815,15 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
       const both = share.map(nameOf).join(" と ");
       return {
         ok: false, kind: "same-source",
-        reason: `${D(ionSp)} と ${D(choice.sp)} は、どちらも ${both} が連れてきています。` +
-          `組み直すと ${both} に戻りますが、それは「もともと1つの物質だった」からで、` +
-          `イオンを組み合わせて作れるからではありません。`,
+        reason: `${D(ionSp)} と ${D(choice.sp)} は、どちらも ${both} が連れてきている。` +
+          `組み直しても ${both} に戻るだけ`,
       };
     }
     return {
       ok: false, kind: "not-together",
-      reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていません。` +
+      reason: `${D(ionSp)} と ${D(choice.sp)} は互いを連れてきていない。` +
         `${D(ionSp)} を連れてきたのは ${bringers(ionSp)}、` +
-        `${D(choice.sp)} を連れてきたのは ${bringers(choice.sp)}。` +
-        `イオン反応式の左辺は、水の中でばらけたあとの姿です。` +
-        `ここに並ぶイオンどうしを組み直しても、はじめに入れた物質にはなりません。`,
+        `${D(choice.sp)} を連れてきたのは ${bringers(choice.sp)}`,
     };
   }
   /* 【G】出どころが2本ある H⁺（rs3）。**「両方から」が正解**で、
@@ -4845,41 +4838,39 @@ function explainBottleOwner(stage, a, b, ionSp, choice) {
           ok: true, kind: "ok-shared",
           /* 弱酸の1行は自由モード（S-2）でも出るので、**文は1か所（weakAcidSupplyText）**に置いて
              両方から呼ぶ。同じことを2通りの言葉で教えないため（§15-4） */
-          reason: `そのとおり。${D(ionSp)} ${m.need}個 は1つの物質では足りません —— ` +
+          reason: `${D(ionSp)} ${m.need}個 は1つの物質では足りない。` +
             m.parts.map((x) => `${D(x.sp)} が ${x.n}個`).join("、") + `。` +
             weakAcidSupplyText(src[0], src[src.length - 1]),
         };
       }
-      return { ok: false, kind: "wrong-bottle", reason: "その組み合わせでは足りません。" };
+      return { ok: false, kind: "wrong-bottle", reason: "その組み合わせでは足りない" };
     }
-    if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
+    if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいない" };
     if (!src.includes(choice.sp)) {
-      return { ok: false, kind: "wrong-bottle", reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出しません。` };
+      return { ok: false, kind: "wrong-bottle", reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出さない` };
     }
     const mine = share(choice.sp);
     return {
       ok: false, kind: "not-enough",
-      reason: `${D(choice.sp)} は ${D(ionSp)} を出しますが、${mine}個 だけ。` +
-        `イオン反応式には ${m.need}個 要るので ${m.need - mine}個 足りません。` +
-        `${D(ionSp)} はもう1つの物質からも来ています。`,
+      reason: `${D(choice.sp)} が出す ${D(ionSp)} は ${mine}個 だけ。` +
+        `イオン反応式には ${m.need}個 要るので ${m.need - mine}個 足りない`,
     };
   }
-  if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいません。" };
+  if (!choice || choice.kind !== "bottle") return { ok: false, kind: "none", reason: "まだ選んでいない" };
   if (choice.sp !== owner) {
     return {
       ok: false, kind: "wrong-bottle",
-      reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出しません。`,
+      reason: `${dissolveText(choice.sp)}。${D(ionSp)} は出さない`,
     };
   }
   const B = plan.bottles.find((x) => x.sp === owner);
   const riders = B.riders.filter((r) => r.n > 0);
   const perN = B.per[ionSp];
-  let msg = `そのとおり。${dissolveText(owner)}`;
+  let msg = dissolveText(owner);
   if (bottleDissolves(owner) && perN > 1) msg += `（${D(owner)} 1本につき ${D(ionSp)} が ${perN}個）`;
   msg += "。";
   if (riders.length) {
-    msg += `一緒に来た ${riders.map((r) => D(r.sp)).join(" と ")} は反応しないが、` +
-      `ビーカーの中にはいる —— 水を蒸発させるとここから出てくる。`;
+    msg += `一緒に来た ${riders.map((r) => D(r.sp)).join(" と ")} は反応せずに残る`;
   }
   return { ok: true, kind: "ok", reason: msg };
 }
