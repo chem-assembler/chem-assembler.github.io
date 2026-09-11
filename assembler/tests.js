@@ -1990,6 +1990,69 @@
         assert(formulaEl() === 'C₂H₅N', `アジリジンの分子式が「${formulaEl()}」`);
     });
 
+    test('MF_PARTS: 分子が2つ以上あるときは分子式を合算しない（分子ごとに出す）', async (c) => {
+        // 2026-09-12・ユーザー検品「2分子あるときに、分子式を合算している
+        // → 別々でないと意味が薄い」。マルトースとセロビオースを並べると
+        // **C₂₄H₄₄O₂₂** が出ていた。分子式は1分子の原子の数え上げなので、
+        // 別々の2分子を足した式は**どの物質の分子式でもない**。
+        // しかもこの2つは「**どちらも C₁₂H₂₂O₁₁** ＝ 同じ分子式なのに別物」が要点で、
+        // 合算はそれを画面から消していた。
+        c.reset();
+        const g = c.game, D = c.D;
+        g.setMode('free');
+        assert(g.summonMolecule('マルトース（麦芽糖）'), 'マルトースを呼び出せない');
+        assert(g.summonMolecule('セロビオース'), 'セロビオースを呼び出せない');
+        g.updateDrawing();
+
+        const formulas = g.compoundLabel.formulas;
+        assert(formulas && formulas.length === 2,
+            `分子ごとの分子式が組み立てられていない（${JSON.stringify(formulas)}）`);
+        assert(formulas.every(f => f.includes('C₁₂H₂₂O₁₁')),
+            `分子ごとの式が C₁₂H₂₂O₁₁ でない（${formulas.join(' / ')}）`);
+
+        // ★ 図の見出しに分子ごとの式が付く（①②で対応が取れる）
+        const caps = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍'));
+        assert(caps.length === 2, `見出しが ${caps.length} 本（2本を期待）`);
+        assert(caps.some(t => t.includes('マルトース') && t.includes('C₁₂H₂₂O₁₁')),
+            `① の見出しに分子式が無い（${caps.join(' / ')}）`);
+        assert(caps.some(t => t.includes('セロビオース') && t.includes('C₁₂H₂₂O₁₁')),
+            `② の見出しに分子式が無い（${caps.join(' / ')}）`);
+        // ⚠⚠ 左下の札からは式を外してある。合算した C₂₄H₄₄O₂₂ は
+        //   どの物質の分子式でもないので出せず、分子ごとの式は見出しにあるので
+        //   ここに並べると同じ式が画面に2度出る
+        const chip = D.getElementById('mobile-name-chip').textContent;
+        assert(!chip.includes('C₁₂H₂₂O₁₁') && !chip.includes('C₂₄H₄₄O₂₂'),
+            `左下の札に分子式が残っている（「${chip}」）`);
+
+        // ⚠ 否定対照: 1分子のときは今までどおり（見出しは名前だけ・札は名前＋分子式）
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('マルトース（麦芽糖）'), 'マルトース単体を呼び出せない');
+        g.updateDrawing();
+        assert(!g.compoundLabel.formulas, '1分子なのに分子ごとの式が組まれている');
+        assert(D.getElementById('compound-formula').textContent === 'C₁₂H₂₂O₁₁',
+            `1分子の分子式が「${D.getElementById('compound-formula').textContent}」`);
+        const solo = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍'));
+        assert(solo.length === 1 && !solo[0].includes('C₁₂H₂₂O₁₁'),
+            `1分子の見出しに分子式が付いた（${solo.join(' / ')}）`);
+        assert(D.getElementById('mobile-name-chip').textContent.includes('C₁₂H₂₂O₁₁'),
+            '1分子のとき左下の札から分子式が消えた');
+
+        // ⚠ 見出しが出ないほど小さい成分（水1つ）があるときは、札のほうが式を出す。
+        //   どちらにも出ない状態を作らない（脱水縮合で水が1つ出たことが読めなくなる）
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('グリシルグリシン（ジペプチド）'), 'ジペプチドを呼び出せない');
+        assert(g.summonMolecule('水'), '水を呼び出せない');
+        g.updateDrawing();
+        const chip2 = D.getElementById('mobile-name-chip').textContent;
+        assert(chip2.includes('C₄H₈N₂O₃') && chip2.includes('H₂O'),
+            `水の式が画面のどこにも出ていない（札は「${chip2}」）`);
+        assert(!chip2.includes('C₄H₁₀N₂O₄'), `合算した式が札に出ている（「${chip2}」）`);
+    });
+
     test('F3: シス/トランスの判定と命名区別（P8-1）', async (c) => {
         c.reset();
         const nameEl = () => c.D.getElementById('compound-name').textContent;
@@ -13628,7 +13691,10 @@
         assert(labels.length === 2, `図の見出しが ${labels.length} 個（2個を期待）`);
         assert(labels.some(s => s.includes('①')) && labels.some(s => s.includes('②')),
             `見出しの番号が①②になっていない（${labels.join(' / ')}）`);
-        labels.forEach(s => assert(!/\b[ABC]\b/.test(s), '元素記号とぶつかる A/B/C を使っている'));
+        // ⚠ 見るのは**番号の位置だけ**（🔍 の直後）。v1538 で見出しに分子式が付いたので、
+        //   行全体を見ると `C₂H₄O₂` の C が「元素記号とぶつかる A/B/C」に引っかかる
+        labels.forEach(s => assert(!/^🔍 *[ABC][  ]/.test(s),
+            `元素記号とぶつかる A/B/C を番号に使っている（${s}）`));
         const panel = D.getElementById('compound-name').textContent;
         assert(/①/.test(panel) && /②/.test(panel), `右パネルに番号が反映されていない（${panel}）`);
         // 図の見出しは各分子の下にある
