@@ -793,7 +793,9 @@ function finishRun() {
     runExact = true;
     if (chk.ok) {
       cleared = true;
-      setMsg(`e⁻ を ${chk.give}個 渡して、ちょうど受け取った`, "ok");
+      /* ★ v211・ユーザーの原文どおり。渡した e⁻ の数は、すぐ上の模式図と札に
+         出ているので数えられる。ここで言うことは「これで反応が終わった」だけ */
+      setMsg("過不足なく反応した", "ok");
       showClear();
     } else {
       setMsg(chk.reason, "ng");
@@ -1356,10 +1358,15 @@ function buildRedoxSchematic() {
     } else {
       setStatusMsg(schematicMsgEl, `${pairText(mult[0], mult[1])}でちょうど反応する`, "ok");
     }
+  /* ★ v211・ユーザーの原文どおり。**どちらの薬品が余っているかを言うのをやめ、
+     e⁻ の過不足だけを言う**。「還元剤が余っている」と言われても、次に足すのは
+     酸化剤のほうなので、読んだ人は一度ひっくり返して考えることになる。
+     e⁻ の数で言えば、足りなければ足す・あまれば減らす、で向きが直に決まる。
+     ⚠「あまってる」はユーザーの原文。話し言葉の調子のまま採る（「あまっている」にしない） */
   } else if (give > take) {
-    setStatusMsg(schematicMsgEl, `還元剤が余っている。e⁻ が ${give - take}個 あまる`, "ng");
+    setStatusMsg(schematicMsgEl, `e⁻ が${give - take}個あまってる`, "ng");
   } else {
-    setStatusMsg(schematicMsgEl, `酸化剤が余っている。e⁻ の席が ${take - give}個 あまる`, "ng");
+    setStatusMsg(schematicMsgEl, `e⁻ が${take - give}個足りない`, "ng");
   }
   drawAcidSource();
 }
