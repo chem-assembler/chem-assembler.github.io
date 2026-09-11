@@ -3484,3 +3484,52 @@ node tools/gen-reference.mjs --tidy [ページのid …]
 - ★ 否定対照つき: **床を割る例題が1件も無くなったら②は空回りしている**ので、そのとき赤くなる。
 
 ⚠ ＝ 分けた結果、**測る対象はむしろ増えている**（表を持たないページの例題も見るようになった）。
+
+---
+
+## §26 ⓵ 知識コードの持ち主 —— **判断待ちの13件**（2026-09-11・ref-land レーン）
+
+⚠⚠ **知識コードはページをまたいで持てない**（`gen-reference-pages.mjs` の `readPages`）。
+★ アプリの埋め込みは `?open=reference&code=<コード>` で着地先を決めるので、
+同じコードが2ページに在ると**先頭コードが自分のページへ戻らなくなる**。
+
+★ 11枚を取り込むとき、**合計18件**がぶつかった。⚠ どれも「新しいページのほうを外す」で通したが、
+**本文ではその新しいページが正面から扱っている**ものが多い。⓵ **持ち主を決めるのはユーザー。**
+
+### 26-1. ★ 機械が出せる signal —— qa の台帳の group
+
+★ `qa/data/codes_index.md` は各コードに**グループ名**を持ち、参考書のページも前書きに `group` を持つ。
+**この2つが一致するページ**が、いちばん素直な持ち主。⚠ ただし一致しないコードもある
+（`カルボニル化合物（総論）` に当たる参考書のページが無い）ので、**機械には決めきれない。**
+
+### 26-2. ⓵ 判断待ちの一覧
+
+| コード | qa の group | いまの持ち主 | ★ 案 | 備考 |
+|---|---|---|---|---|
+| `org.alcohol.hydroxy` | アルコール（総論・性質） | functional-groups | ⚠ **据え置き** | signal は `alcohol` を指すが、⛔ 移すと官能基のページが自分の主題（15種の官能基）のコードを失う |
+| `org.carbonyl.formyl` | カルボニル化合物（総論） | functional-groups | ⚠ **据え置き** | 同上 |
+| `org.carbonyl.ketone-def` | カルボニル化合物（総論） | functional-groups | ⚠ **据え置き** | 同上 |
+| `org.carbonyl.carboxy` | カルボン酸（総論・性質） | functional-groups | ⚠ **据え置き** | 同上 |
+| `org.carbonyl.ester-bond` | エステル | functional-groups | ⚠ **据え置き** | 同上 |
+| `org.carbonyl.acetaldehyde-prep` | アルデヒド | reaction-mechanisms | ★★ **`aldehyde` へ移す** | signal 一致。機構のページは「14件の一覧」で、物質1つの知識の着地先には向かない |
+| `org.carbonyl.ester-water-origin` | エステル | reaction-mechanisms | ★★ **`ester` へ移す** | signal 一致。同上 |
+| `org.ali.alkene-h2o` | アルケン | reaction-mechanisms | ★★ **`alkene` へ移す** | signal 一致 |
+| `org.ali.alkene-br2` | アルケン | reaction-mechanisms | ★★ **`alkene` へ移す** | signal 一致 |
+| `org.ali.formula-alkane` | 分類・一般式 | alkane-naming | ★ **`hydrocarbon-classes` へ移す** | signal 一致（`alkane-naming` の group は「アルカン」） |
+| `org.alcohol.formula` | アルコール（総論・性質） | alcohol-oxidation-map | ★ **`alcohol` へ移す** | ⛔ 相手のページはユーザー本人の作業中なので統合レーンでは触っていない |
+| `org.alcohol.class` | アルコール（総論・性質） | alcohol-oxidation-map | ★ **`alcohol` へ移す** | ⛔ 同上 |
+| `org.alcohol.ether-props` | エーテル | alcohol-oxidation-map | ★ **`ether` へ移す** | ⛔ 同上 |
+| `org.carbonyl.formula-isomer` | カルボニル化合物（総論） | alcohol-oxidation-map | ⚠ **要判断** | ⛔ 同上。アルデヒドとケトンの**両方**が本文で扱う（どちらに置いても片方が欠ける） |
+| `org.ali.ethylene-prep` | アルケン | alcohol-dehydration | ★ **`alkene` へ移す** | ⛔ 同上 |
+| `org.ali.ethanol-dehydration` | アルケン | alcohol-dehydration | ⚠ **要判断** | ⛔ 同上。⚠ 内容は「エタノール＋濃硫酸の160〜170℃と130〜140℃」で、**脱水のページの主題そのもの**。signal（アルケン）と食い違う |
+
+★ **すでに動かして決着したもの**（判断待ちではない）:
+`org.ali.formula-cycloalkane` … 新しいページどうし（hydrocarbon-classes ↔ cycloalkane）の衝突だったので、
+qa の group「分類・一般式」に合わせて **`hydrocarbon-classes`** が持つ形にした。
+
+### 26-3. ⚠ 移すときの手順
+
+1. 相手のページの `codes:` から1行消し、新しいページの `codes:` に1行足す
+2. `node tools/gen-reference.mjs`（⚠ 重なっていると `readPages` が止まるので、**必ず両方**を同時に）
+3. `node tools/gen-reference-pages.mjs --port=<ポート>` で面Aを焼き直す
+4. ⚠ `REF17` ④ が「コードが qa に実在するか」を見るので、**綴りを写し間違えるとその場で赤**になる
