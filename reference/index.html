@@ -166,6 +166,16 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-sec:first-child{margin-top:8px;padding-top:0;border-top:0}
 .ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);margin-bottom:6px}
 .ref-scope .ref-sec-lead{font-size:14.5px;color:var(--dim)}
+/* ★★ 発展の折りたたみ（設計書 §24）。⚠⚠ **セレクタを .ref-scope から始める** ——
+   assembler/style.css の切り出しは素の .ref-adv なので、
+   上の .ref-scope .ref-sec（0,2,0）に負けて**上線と 52px の余白が残る**（.ref-toc と同じ踏み方・上の注記）。
+   ★ ここで上書きするのは**寸法だけ**（色は LIGHT_CSS ＝ 明るい地への読み替え側）。 */
+.ref-scope .ref-adv{margin:52px 0 22px;padding-top:0;border-top:0;border-left-width:4px;scroll-margin-top:18px}
+.ref-scope .ref-adv:first-child{margin-top:8px}
+.ref-scope .ref-adv-sum{padding:16px 20px}
+.ref-scope .ref-adv-body{padding:0 20px 8px}
+/* ⚠ 畳んだ札の中では題を一段小さく（開くと本文が続くので、節そのものと同じ強さにしない） */
+.ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:13.5px}
