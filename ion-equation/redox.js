@@ -793,7 +793,9 @@ function finishRun() {
     runExact = true;
     if (chk.ok) {
       cleared = true;
-      setMsg(`e⁻ を ${chk.give}個 渡して、ちょうど受け取った`, "ok");
+      /* ★ v211・ユーザーの原文どおり。渡した e⁻ の数は、すぐ上の模式図と札に
+         出ているので数えられる。ここで言うことは「これで反応が終わった」だけ */
+      setMsg("過不足なく反応した", "ok");
       showClear();
     } else {
       setMsg(chk.reason, "ng");
@@ -803,11 +805,17 @@ function finishRun() {
   refreshHUD();
 }
 
+/* 化学反応式（⑥の行き着く先）が画面に出ているか。
+   ⚠ 出どころは1つだけ（#rowBottleMol）。ここを二重に導出しない */
+function molShown() { return !!(bottleSheetEl && bottleSheetEl.querySelector("#rowBottleMol")); }
+
 function showClear() {
   clearEl.hidden = false;
   clearEl.innerHTML = "";
   const t = document.createElement("div");
-  t.textContent = "半反応式の足し合わせができた";
+  /* どこまで行き着いたかで呼び名が変わる。⑥のあるステージで化学反応式まで
+     組み上げたなら、そちらが最後（半反応式の足し合わせはその途中） */
+  t.textContent = molShown() ? "化学反応式ができた" : "半反応式の足し合わせができた";
   clearEl.appendChild(t);
   if (stageIdx < REDOX_STAGES.length - 1) {
     const b = document.createElement("button");
@@ -1139,7 +1147,7 @@ function buildSheetSkeleton() {
   SHEET.red = sheetRow(halfSheetEl, "halfRed", "halfRow");
 
   calcSheetEl.innerHTML = "";
-  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "2本の式を縦に足して e⁻ を消そう");
+  SHEET.head3 = sheetStepHead(calcSheetEl, "head3", 3, "半反応式を足し合わせてイオン反応式をつくろう");
   // 【①-B】灰色の数字が何なのかを、筆算の**すぐ上**で言う（v195）
   SHEET.calcGivenNote = sheetSpan(calcSheetEl, "calcGivenNote", "footNote givenNote");
   SHEET.sumOx  = sheetRow(calcSheetEl, "rowSumOx");
@@ -1356,10 +1364,15 @@ function buildRedoxSchematic() {
     } else {
       setStatusMsg(schematicMsgEl, `${pairText(mult[0], mult[1])}でちょうど反応する`, "ok");
     }
+  /* ★ v211・ユーザーの原文どおり。**どちらの薬品が余っているかを言うのをやめ、
+     e⁻ の過不足だけを言う**。「還元剤が余っている」と言われても、次に足すのは
+     酸化剤のほうなので、読んだ人は一度ひっくり返して考えることになる。
+     e⁻ の数で言えば、足りなければ足す・あまれば減らす、で向きが直に決まる。
+     ⚠「あまってる」はユーザーの原文。話し言葉の調子のまま採る（「あまっている」にしない） */
   } else if (give > take) {
-    setStatusMsg(schematicMsgEl, `還元剤が余っている。e⁻ が ${give - take}個 あまる`, "ng");
+    setStatusMsg(schematicMsgEl, `e⁻ が${give - take}個あまってる`, "ng");
   } else {
-    setStatusMsg(schematicMsgEl, `酸化剤が余っている。e⁻ の席が ${take - give}個 あまる`, "ng");
+    setStatusMsg(schematicMsgEl, `e⁻ が${take - give}個足りない`, "ng");
   }
   drawAcidSource();
 }
@@ -1609,7 +1622,10 @@ function refreshCalcInput() {
   }
 }
 
-/* 判定文と「答えを見る」。書き終わったあとは何も出さない（筆算だけが残る） */
+/* 判定文と「答えを見る」。書き終わったら、その場でしか言えないことを1行だけ残す。
+   ★ 2026-09-11・ユーザーの指示「ここで係数を入力させる／正解後に、e⁻ は必ず消える、と説明」。
+   ⚠ 褒めも解説も足さない（[[ui-text-density]]）。**両辺の e⁻ がいつでも打ち消し合う**という、
+   この段を通った直後にしか言えない一般則だけを置く。 */
 function updateCalcMsg(res) {
   const note = SHEET.calcGivenNote;
   if (note) {
@@ -1620,7 +1636,16 @@ function updateCalcMsg(res) {
   }
   const box = SHEET.calcMsg;
   if (!box) return;
-  if (!calcPending()) { box.hidden = true; box.innerHTML = ""; return; }
+  if (!calcPending()) {
+    box.hidden = false;
+    box.innerHTML = "";
+    const done = document.createElement("span");
+    done.className = "calcMsgText";
+    done.id = "calcDoneNote";
+    done.textContent = "e⁻ は必ず消える";
+    box.append(done);
+    return;
+  }
   const r = res || checkCalcSheet(stage(), mult[0], mult[1], calcVals);
   box.hidden = false;
   let msg = document.getElementById("calcMsgText");
@@ -2619,6 +2644,16 @@ function refreshBottleResult() {
     ? plan.reason
     : (restIons.length ? "右辺のイオンをぜんぶ組み合わせよう" : plan.reason);
   bottleTailMsgEl.className = "footNote " + (allPaired ? "okcell" : "");
+  /* ★ v211・ユーザーの指示「ビーカーは課題としてはオプション」。
+     化学反応式まで組み上げたら、**ビーカーを一度も動かしていなくても**ここで終わる。
+     v210 までは「次のステージへ」がビーカーの再生の中だけにあり、
+     紙と同じ手順で最後まで解いた人が終われなかった。
+     ⚠ `cleared`（＝ビーカーで実際に反応しきったか）は動かさない。あれは
+     再生の結果そのものを見ている口で、別のことを言っている。
+     ⚠ 帯が出ているあいだは描き直さない（「次のステージへ」から焦点が飛ぶ）。 */
+  if (allPaired && clearEl.hidden) showClear();
+  // 組み直しで式が崩れたら帯も引っ込める。⚠ ビーカーで出した帯（cleared）は残す
+  else if (!allPaired && !cleared && !clearEl.hidden) clearEl.hidden = true;
 }
 
 /* ================================================================================
