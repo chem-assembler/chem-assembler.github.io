@@ -3420,13 +3420,14 @@ node tools/gen-reference.mjs --tidy [ページのid …]
 
 ### 25-2. ★★ 行き先はもう在った（作ったのは配線だけ）
 
-★ アプリの書き出し練習には **「分子式と分類で絞る回」が 16 件**ある（`learn.js` の `fgPresets`）。
+★ アプリの書き出し練習には **「分子式と分類で絞る回」が 15 件**ある（`learn.js` の `fgPresets`）。
+⚠ 発注書は「実測16件」と書いていたが、**並べてある一覧も15行**で、数え違いだった（実測）。
 その中に **C₄H₈O₂（エステル）＝ 4種**が居る。⚠ **新しい出題も新しい画面も作っていない。**
 
 | 直したもの | 何をしたか |
 |---|---|
 | `tools/reference-md.js` | `:::link` に **`cls:`** を足した（`to` / `open` / `formula` / **`cls`** / `text`）。⚠ **`formula` と対**でしか書けない（分類だけでは式が決まらない） |
-| `assembler/learn.js` | `startFromFgFormula(formula, cls)` を新設。★ 一覧のボタン（`startFromFgPreset`）は**これに委ねる** ＝ 道が2本にならない。⚠ **在庫の16件を参照しない**（一覧は押しやすい入口であって、開ける回の台帳ではない） |
+| `assembler/learn.js` | `startFromFgFormula(formula, cls)` を新設。★ 一覧のボタン（`startFromFgPreset`）は**これに委ねる** ＝ 道が2本にならない。⚠ **在庫の15件を参照しない**（一覧は押しやすい入口であって、開ける回の台帳ではない） |
 | `assembler/game.js` | 受け口② を `?open=isomer&formula=<式>&cls=<分類>` に広げた。⚠ `cls` が無ければ今までどおり（前方互換） |
 | `assembler/learn.js`（`renderLink`） | `&cls=` を URL に足した。★ 面Aの `<a href>` と面Bの click が同じ文字列を使う |
 
