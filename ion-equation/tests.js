@@ -5994,9 +5994,12 @@ async function runRedoxUITests(iframe) {
     assert(!doc.getElementById("eTally"), "掛け算と比の行（#eTally）が残っている");
     const sm = (doc.getElementById("schematicMsg").textContent || "").replace(/\s+/g, " ");
     assert(sm.includes("MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する"), "そろっても個数を言わない: " + sm);
-    // 段2 の判定文は「書いた数で式がどう変わったか」を言う
+    /* ★ 2026-09-11: 段2 の判定文は「e⁻ がそろったか」だけを言う。
+       ⛔ 「×5・×1 と書いた」＝ 操作した結果を文で報告する型（すぐ上の式に出ている） */
     const mm = doc.getElementById("multMsg").textContent;
-    assert(mm.includes("×5・×1") && mm.includes("書き換わ"), "段2 の判定文が出ない: " + mm);
+    assert(mm.includes("e⁻ はどちらも 5個"), "段2 の判定文が出ない: " + mm);
+    assert(!mm.includes("書き換わ") && !mm.includes("×5・×1"),
+      "操作した結果を文で報告したまま: " + mm);
     bumpMult(0, -4);
     assert(state().mult[0] === 1 && !half().includes("5 Fe"), "戻しても係数が戻らない: " + half());
   });

@@ -559,7 +559,7 @@ function layoutLab() {
 
 function play() {
   if (phase !== "idle") {
-    setMsg("「↺ やり直す」か倍率の変更でリセットしてから、もう一度押そう。", "ng");
+    setMsg("↺ やり直すと、もう一度見られる", "ng");
     return;
   }
   phase = "running";
@@ -570,8 +570,7 @@ function play() {
     atoms.forEach((atom, i) => schedule(i * 0.9, () => oxidizeAtom(atom)));
     schedule(atoms.length * 0.9 + 1.6, () => {
       phase = "done";
-      setMsg(`還元剤の半反応（酸化される側）: ${SPECIES[oxMetal()].disp} ${atoms.length}個が e⁻ を合計 ${electronsOf(oxHR()) * atoms.length}個 板に置き、` +
-        `${SPECIES[oxIonSp()].disp} になって溶け出した。この e⁻ を受け取るのが酸化剤。`);
+      setMsg(`${SPECIES[oxMetal()].disp} ${atoms.length}個が e⁻ を ${electronsOf(oxHR()) * atoms.length}個 出した`);
     });
     return;
   }
@@ -776,8 +775,7 @@ function finishRun() {
   phase = "done";
   if (soloMode === "red") {
     const b = mult[1];
-    setMsg(`酸化剤の半反応（還元される側）: 用意した e⁻ ${electronsOf(redHR()) * b}個を受け取って反応した。` +
-      `電池では、この e⁻ が導線の向こう（還元剤がある極）からやって来る。`);
+    setMsg(`e⁻ を ${electronsOf(redHR()) * b}個 受け取って反応した`);
     refreshHUD();
     return;
   }
@@ -786,17 +784,19 @@ function finishRun() {
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
   if (leftoverE > 0) {
     poolE.forEach((e) => e.el.classList.add("leftoverE"));
-    setMsg(`e⁻ が ${leftoverE} 個、板の上に余った！ 電子は水中に残れない。受け取る側（酸化剤）の倍率を増やそう。`, "ng");
+    /* ★ 2026-09-11: 正解も不正解も**1行**。褒めない・解説を足さない・
+       「次の段で係数になる」と先回りしない（ユーザーの指摘・[[ui-text-density]]） */
+    setMsg(`e⁻ が ${leftoverE}個 余った。酸化剤を増やそう`, "ng");
   } else if (waiting > 0) {
-    setMsg(`e⁻ が足りず、イオンが ${waiting} 組待ちぼうけ。還元剤の倍率を増やすか、酸化剤を減らそう。`, "ng");
+    setMsg(`e⁻ が足りず、イオンが ${waiting}組 余った。還元剤を増やそう`, "ng");
   } else {
     runExact = true;
     if (chk.ok) {
       cleared = true;
-      setMsg(`ぴったり！ e⁻ を ${chk.give} 個渡して受け取った。倍率 ×${mult[0]}・×${mult[1]} がそのまま係数になる。`, "ok");
+      setMsg(`e⁻ を ${chk.give}個 渡して、ちょうど受け取った`, "ok");
       showClear();
     } else {
-      setMsg(`反応はぴったり終わったが、${chk.reason}。`, "ng");
+      setMsg(chk.reason, "ng");
     }
   }
   updateSheetTail();
@@ -807,7 +807,7 @@ function showClear() {
   clearEl.hidden = false;
   clearEl.innerHTML = "";
   const t = document.createElement("div");
-  t.textContent = "クリア！ 半反応式の足し合わせが完成した。";
+  t.textContent = "半反応式の足し合わせができた";
   clearEl.appendChild(t);
   if (stageIdx < REDOX_STAGES.length - 1) {
     const b = document.createElement("button");
@@ -816,7 +816,7 @@ function showClear() {
     clearEl.appendChild(b);
   } else {
     const d = document.createElement("div");
-    d.textContent = "酸化還元ステージを全クリア！";
+    d.textContent = "酸化還元のステージはこれで最後";
     clearEl.appendChild(d);
   }
 }
@@ -1240,17 +1240,15 @@ const multMsgEl = document.getElementById("multMsg");
 function updateMultMsg() {
   if (!multMsgEl) return;
   const chk = checkRedoxMultipliers(stage(), mult[0], mult[1]);
-  const a = mult[0], b = mult[1];
-  const wrote = `×${a}・×${b} と書いた。` +
-    (a > 1 || b > 1 ? "書いた数だけ、式の係数がその場で書き換わっている。" : "");
+  /* ⚠ 2026-09-11: 「×5・×1 と書いた。書いた数だけ、式の係数がその場で書き換わっている。」を
+     やめた。**書いた数も書き換わった係数も、すぐ上の式に出ている** ——
+     操作した結果を文で報告しない（ユーザーが名指しした癖のひとつ）。 */
   if (chk.give !== chk.take) {
-    setStatusMsg(multMsgEl, wrote +
-      `いまは e⁻ が ${chk.give}個 と ${chk.take}個 でそろわない ＝ このままでは足せない。`, "ng");
+    setStatusMsg(multMsgEl, `e⁻ が ${chk.give}個 と ${chk.take}個 でそろわない`, "ng");
   } else if (!chk.ok) {
-    setStatusMsg(multMsgEl, wrote + "e⁻ はそろったが、まだ簡単にできる比になっている。", "ng");
+    setStatusMsg(multMsgEl, "もっと少ない数でできる", "ng");
   } else {
-    setStatusMsg(multMsgEl, wrote +
-      `e⁻ はどちらも ${chk.give}個 ＝ 縦に足すと消える。下の筆算へ。`, "ok");
+    setStatusMsg(multMsgEl, `e⁻ はどちらも ${chk.give}個。縦に足すと消える`, "ok");
   }
 }
 
