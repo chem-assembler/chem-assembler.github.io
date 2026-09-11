@@ -4022,7 +4022,10 @@ async function runUITests(iframe) {
     stageBtn(0).click();
     // まだ何も判定していない ＝ 案内
     assert(/\binfo\b/.test(cls("msg")), "ステージの案内が info でない: " + cls("msg"));
-    assert(/\binfo\b/.test(cls("eqMsg")), "係数の案内が info でない: " + cls("eqMsg"));
+    /* ★ 2026-09-11: 係数の帯に残すのは**判定の1行だけ**にした（何をするかは見出しが言う）。
+       だからまだ何も決めていないうちは、文も枠も出ない。**空の帯を残さない**ことをここで見張る。 */
+    assert(cls("eqMsg") === "" && txt("eqMsg") === "",
+      "まだ判定していないのに係数の帯が出ている: 「" + cls("eqMsg") + "」／「" + txt("eqMsg") + "」");
     // 過不足（HCl 2個 : NaOH 1個）＝ 失敗
     addBtn(0).click(); addBtn(0).click(); addBtn(1).click();
     adv(4000); reactBtn().click(); adv(12000);
@@ -4041,7 +4044,9 @@ async function runUITests(iframe) {
     assert(/\bok\b/.test(cls("msg")), "ちょうど反応しきったのに ok でない: " + cls("msg") + " / " + txt("msg"));
     // **色だけに頼らない**: 記号が消えていないこと（CSS を色だけに戻したらここで落ちる）
     assert(/[✓✗💡]/.test(mark("msg")), "成功・失敗の記号が出ていない: " + mark("msg"));
+    // 係数の帯は**判定が出てから**記号を持つ（空のときは枠ごと出ない＝上で確かめた）
     stageBtn(0).click();
+    setCoeff(0, 2); setCoeff(1, 1); setCoeff(2, 1); setCoeff(3, 1);
     assert(/[✓✗💡]/.test(mark("eqMsg")), "係数メッセージの記号が出ていない: " + mark("eqMsg"));
   });
 

@@ -1986,14 +1986,16 @@ function buildEquationUI() {
   const arrow = document.createElement("span");
   arrow.className = "arrow"; arrow.textContent = partialRule(stage) ? "⇄" : "→";
   equationEl.appendChild(arrow);
-  /* 加水分解・電離は、ビーカーの個数（誇張した per 個）と式の係数が食い違う唯一の型。
-     係数を入れる**その瞬間**に「画面の数ではない」と言い添える（台帳の O）。
-     何を入れるかは言わない —— 答えではなく決め方だけを示す。 */
-  const countNote = partialRule(stage)
-    ? "（ビーカーに置いた個数ではなく、左右がつり合う数を入れる）" : "";
-  setStatusMsg(eqMsgEl, eqMode === "ionic"
-    ? "＋/− を押して係数を入れよう（イオン反応式では電荷もそろえる）" + countNote
-    : "＋/− を押して係数を入れよう" + countNote, "info");
+  /* ★ 2026-09-11: ここにあった「＋/− を押して係数を入れよう」は落とした。
+     何をするかは見出し（「左辺の係数を決めよう」）が言っており、
+     押し方の説明は先生が口で言うことではない。
+     ⚠ この帯に残すのは**判定の1行だけ** —— つり合った（緑）か、合っていない（赤・橙）か。
+     イオン反応式の電荷は、合っていないときに checkStageCoeffs がその場で名指しする。
+     ⚠ ただし加水分解・電離だけは例外。ビーカーの個数（誇張した per 個）と式の係数が
+     食い違う唯一の型で、§4-2 が「3か所で切り離す・弱めてはいけない」と決めた1つがここ。 */
+  const partial = partialRule(stage);
+  if (partial) setStatusMsg(eqMsgEl, "ビーカーに置いた個数ではなく、左右がつり合う数を書こう。", "info");
+  else clearStatusMsg(eqMsgEl);
 }
 
 /* 分子反応式 ⇄ イオン反応式 の切り替え。
@@ -2060,7 +2062,9 @@ function onCoeffChange() {
     netionEl.innerHTML = `${head}: <strong>${stage.netIon}</strong>${tail}`;
     setStatusMsg(eqMsgEl, "つり合った！最も簡単な整数比になっている。", "ok");
   } else if (coeffs.some((c) => c === 0)) {
-    setStatusMsg(eqMsgEl, "すべての係数を入れよう（？の場所）", "info");
+    // まだ決まっていない項がある ＝ 判定するものが無い。何も言わない
+    // （「すべての係数を入れよう」は？の場所を指さすだけで、化学を1つも足していなかった）
+    clearStatusMsg(eqMsgEl);
   } else {
     /* ★ 2026-09-07 ユーザー決定「オレンジです」——
        **つり合ってはいるが最簡整数比でない**（`res.gcd`）は、比そのものは合っているので
