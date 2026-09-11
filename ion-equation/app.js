@@ -2434,7 +2434,7 @@ function buildRecombine() {
   recombineMsgEl.textContent = "";
   // 文を消すときは見た目（💡 の枠）も一緒に落とす。残すと空の帯だけが出る
   recombineMsgEl.classList.remove("msgBox", "ok", "ng", "info");
-  recombineBtn.textContent = "⇄ 組み変える";
+  recombineBtn.textContent = "⇄ 組み替える";
   /* ★ 2026-09-07（DESIGN_ionic_two_step.md §6-3）——
      **係数を1つ入れた時点で、入っているぶんの粒を描く。**
      v201 までは左辺が全部そろうまで1粒も出さず、案内文だけを出していた。
@@ -2447,7 +2447,7 @@ function buildRecombine() {
     recombineBtn.disabled = true;
     recombineSvg.setAttribute("viewBox", "0 0 360 30");
     const t = mk("text", { x: 180, y: 19, "text-anchor": "middle", "font-size": 12, fill: "#8a94a0" }, recombineSvg);
-    t.textContent = "左辺の係数を1つ入れると、そのぶんのイオンがここに出る";
+    t.textContent = "左辺の係数が1つ決まれば、そのぶんのイオンがここに並ぶ";
     return;
   }
   recombineBtn.disabled = missing > 0;
@@ -2579,7 +2579,7 @@ function buildRecombine() {
      図はもう出ているので、ここで言うのは**動かすために足りないもの**だけ */
   if (missing > 0) {
     const yet = eq.reactants.filter((sp, i) => coeffs[i] === 0).map((sp) => SPECIES[sp].disp).join("・");
-    setStatusMsg(recombineMsgEl, `${yet} の係数を入れると組み変えを試せる（右辺はあとからでもよい）。`, "info");
+    setStatusMsg(recombineMsgEl, `${yet} の係数が決まれば、組み替えを試せる。`, "info");
   }
 }
 

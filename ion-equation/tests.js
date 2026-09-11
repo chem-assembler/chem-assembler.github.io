@@ -3781,7 +3781,9 @@ async function runUITests(iframe) {
     const parts = () => doc.querySelectorAll("#recombine .rpart").length;
     // 何も入れていないうちは粒ゼロ。案内は「1つ入れると」と言う
     assert(parts() === 0, "係数ゼロなのに粒が出ている");
-    assert(doc.querySelector("#recombine text").textContent.includes("1つ入れる"),
+    // ⚠ 2026-09-11: 案内から操作の言葉（入れる）を外したので「1つ入れる」では見張れない。
+    //    見るのは「1つ決まればそのぶんが並ぶ」と言っていること＝全部そろうまで待たない約束
+    assert(/1つ/.test(doc.querySelector("#recombine text").textContent),
       "案内が「全部そろえろ」のまま: " + doc.querySelector("#recombine text").textContent);
     // ★ 1つだけ入れた時点で、そのぶんの粒が出る
     ups()[0].click();      // H₂SO₄ = 1 → H⁺×2, SO₄²⁻×1
