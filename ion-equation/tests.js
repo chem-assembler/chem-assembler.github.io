@@ -5936,7 +5936,9 @@ async function runRedoxUITests(iframe) {
     // 3個出す側は2個受け取る側より背が高い（＝価数が高さで見える）
     const h = rects();
     assert(h[0] > h[1], "e⁻ 3個のブロックが 2個より高くない: " + JSON.stringify(h));
-    assert(msg().includes("あまっている"), "1:1 で e⁻ が余ると言わない: " + msg());
+    /* ★ 2026-09-11・ユーザーの指摘 (4)「リアルタイムに酸化剤・還元剤のどちらが
+       余っているか or 足りないか、を端的に示す」。**どちらの側か**を名指しする */
+    assert(msg().includes("還元剤が余っている"), "1:1 でどちらが余っているか言わない: " + msg());
     // 席の空き（点線の輪）が余りの側に出る
     const dashed = [...svg.querySelectorAll(".schBlock circle")]
       .filter((c) => c.getAttribute("stroke-dasharray") !== "none");
@@ -5944,13 +5946,17 @@ async function runRedoxUITests(iframe) {
     addBtns()[0].click();                       // 還元剤 ×2
     addBtns()[1].click(); addBtns()[1].click(); // 酸化剤 ×3
     assert(state().mult[0] === 2 && state().mult[1] === 3, "＋ボタンで倍率が動かない: " + JSON.stringify(state().mult));
-    assert(msg().includes("ぴったり"), "2:3 でそろわない: " + msg());
+    /* ★ そろったときに言うのは「何個と何個でちょうど反応するか」だけ。
+       ⛔ 掛け算の式（3×2 ＝ 6個）も「比」という語も出さない（ユーザーの指摘 (4)） */
+    assert(msg().includes("Cu²⁺ 3個と Al 2個でちょうど反応する"), "2:3 でそろわない: " + msg());
+    assert(!/[×比]/.test(msg()), "そろった文に掛け算か「比」が残っている: " + msg());
     assert(blocks().length === 5, "2+3 ブロックにならない: " + blocks().length);
     assert(svg.querySelectorAll("polygon").length === 6, "e⁻ 6個ぶんの矢印が出ない");
-    // 最小公倍数でない正解には「何で割るか」を助言する
+    // 最小公倍数でない正解には「もっと少ない数でできる」と、その数を示す
     addBtns()[0].click(); addBtns()[0].click();                          // ×4
     addBtns()[1].click(); addBtns()[1].click(); addBtns()[1].click();    // ×6
-    assert(msg().includes("×2・×3"), "4:6 に割り方の助言が出ない: " + msg());
+    assert(msg().includes("もっと少ない数でできる") && msg().includes("Cu²⁺ 3個と Al 2個"),
+      "4:6 に「もっと少なくできる」と目標の個数が出ない: " + msg());
     // ブロックのクリックで倍率を1つ減らせる
     blocks()[0].dispatchEvent(new win.MouseEvent("click", { bubbles: true }));
     assert(state().mult[0] === 3, "ブロッククリックで減らせない: " + JSON.stringify(state().mult));
@@ -5983,9 +5989,11 @@ async function runRedoxUITests(iframe) {
     assert(half().includes("5 Fe"), "係数がリアルタイムで変わらない: " + half());
     // 打っているあいだに行を作り直さない（焦点が飛ぶと数字が打てない）
     assert(doc.activeElement === multIn(0), "入力のたびに焦点が飛んでいる");
-    // 段1 は「比」を名指しする ＝ 段2 で書き込む数の正体
-    const tally = (doc.getElementById("eTally").textContent || "").replace(/\s+/g, " ");
-    assert(tally.includes("還元剤 : 酸化剤 ＝ 5 : 1"), "そろっても比を言わない: " + tally);
+    /* ★ 2026-09-11・ユーザーの指摘 (4)。段1 が言うのは**物質名と個数だけ**。
+       ⚠ #eTally（掛け算の式と「やりとりの比」）は消した ＝ 残っていたら不合格 */
+    assert(!doc.getElementById("eTally"), "掛け算と比の行（#eTally）が残っている");
+    const sm = (doc.getElementById("schematicMsg").textContent || "").replace(/\s+/g, " ");
+    assert(sm.includes("MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する"), "そろっても個数を言わない: " + sm);
     // 段2 の判定文は「書いた数で式がどう変わったか」を言う
     const mm = doc.getElementById("multMsg").textContent;
     assert(mm.includes("×5・×1") && mm.includes("書き換わ"), "段2 の判定文が出ない: " + mm);

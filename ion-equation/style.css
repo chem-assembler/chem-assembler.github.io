@@ -589,9 +589,28 @@ main.timelineMain {
 /* 筆算グリッドの中に置く段見出し（③④⑤）。行をまたぐので上に余白を取る */
 .stepHead.inSheet { margin: 10px 0 4px; }
 .stepHead.inSheet[hidden] { display: none; }
-/* ステップ2はビーカーと模式図を横に並べ、狭い画面では縦に折る */
+/* ステップ2は「やりとりの数」と「ビーカーの絵」を横に並べ、狭い画面では縦に折る。
+   ★ 2026-09-11・ユーザーの指摘「左右を入れ替える（式がメイン、図が従属）／
+   スマホであれば左右でなく上下に並べたほうがよい」。
+   .labMain（数を合わせる面）を左＝先に、.labSub（絵）を右＝後に置く。 */
 .labRow { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
 .labCol { flex: 1 1 320px; min-width: 0; }
+/* 絵の側は主役ではないので、面積を取りすぎないようにする（広い面でだけ効く） */
+@media (min-width: 860px) { .labMain { flex: 1.15 1 360px; } .labSub { flex: 1 1 320px; } }
+/* ⚠ 折り返し任せだと 720〜860px で中途半端に横に並ぶ。上下に積むと決めた幅で確実に積む */
+/* ⚠ 縦積みでは flex-basis が**高さ**になる。`flex: 1 1 320px` のままだと
+   上の段が 320px の高さに引き伸ばされ、下の絵とのあいだに空白ができる（375px で実測） */
+@media (max-width: 860px) { .labRow { flex-direction: column; } .labCol { flex: 0 0 auto; width: 100%; } }
+/* ★ 「▶ 反応を見る」「↺ やり直す」は**この絵を動かす釦**なので、絵と同じ枠に入れる
+   （独立した行に置くと、これが次の作業の本体に見える ＝ ユーザーの指摘 (2)） */
+.beakerBox {
+  background: #fff;
+  border: 1px solid #e4eaef;
+  border-radius: 10px;
+  padding: 8px 8px 10px;
+}
+.beakerBox #beaker { border: none; border-radius: 0; background: none; }
+.beakerBox #toolbar { margin: 6px 0 0; }
 
 /* 筆算シート。→ の位置がそろうように1枚のグリッドに並べる。
    列は［符号｜左辺｜→｜右辺｜注記］。

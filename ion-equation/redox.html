@@ -29,14 +29,14 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=208">
+<link rel="stylesheet" href="style.css?v=209">
 </head>
 <body>
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v208</div>
+  <div class="version">v209</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -117,16 +117,18 @@
          ⚠ id は動かさない（`step2` が1番目・`step1` が2番目に出る）。
          入れ替えるのは並びと画面に出る番号だけで、外から名指ししている口は変えない。 -->
     <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">1</span>どの比率でやりとりさせるか — 出す e⁻ と受け取る e⁻ がそろう比を見つける</div>
-      <div id="toolbar"></div>
+      <!-- ★ 2026-09-11・ユーザーの指摘（rx-message-spec.md (1)）。
+           見出しは**やることを1行**で言う。「比を見つける」という言い方はやめた ——
+           画面でしているのは数の調整で、「比」は結果の呼び名にすぎない -->
+      <div class="stepHead"><span class="stepNo">1</span>酸化剤と還元剤の数を調整してやりとりする e⁻ の数を合わせよう</div>
+      <!-- ★ (5)「左右を入れ替える（式がメイン、図が従属）／スマホであれば上下に」。
+           やりとりの数を数える面（＝式の側）を先に、ビーカーの絵を後に置く。
+           .labRow は flex-wrap なので、狭い面では自然にこの順で縦に積まれる -->
       <div class="labRow">
-        <div class="labCol">
-          <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
-          <div id="ionCounts"></div>
-        </div>
-        <div class="labCol">
+        <div class="labCol labMain">
           <div id="schematicWrap">
-            <div class="schematicHead" id="schematicHead">e⁻ の受け渡し（模式図）</div>
+            <!-- ⚠ 見出し「e⁻ の受け渡し（模式図）— …個ずつ出す × …個ずつ受け取る」は
+                 (3) で切った（見れば分かる注記＋掛け算の説明） -->
             <svg id="schematic" viewBox="0 0 460 150" role="img" aria-label="還元剤が出す e⁻ と酸化剤が受け取る e⁻ のブロック模式図"></svg>
             <div id="schematicAdd"></div>
             <div id="schematicMsg"></div>
@@ -136,7 +138,16 @@
             <svg id="acidSource" viewBox="0 0 460 150" role="img" aria-label="必要な H⁺ が、用意した硝酸のどこから来るのかを示す図"></svg>
             <div id="acidSourceMsg"></div>
           </div>
-          <div id="eTally"></div>
+        </div>
+        <div class="labCol labSub">
+          <!-- ★ (2)「このボタンは図の中に含める（独立した行で出すと、これが次の作業の
+               本体に見える）」。▶ は**この絵を動かす釦**なので、絵と同じ枠に入れる。
+               ⚠ id は #toolbar のまま（外から名指ししている口を変えない） -->
+          <div class="beakerBox">
+            <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
+            <div id="toolbar"></div>
+          </div>
+          <div id="ionCounts"></div>
         </div>
       </div>
       <div id="msg"></div>
@@ -249,11 +260,11 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=208"></script>
-<script src="schematic.js?v=208"></script>
+<script src="model.js?v=209"></script>
+<script src="schematic.js?v=209"></script>
 <!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
-<script src="blocks.js?v=208"></script>
-<script src="header-ui.js?v=208"></script>
-<script src="redox.js?v=208"></script>
+<script src="blocks.js?v=209"></script>
+<script src="header-ui.js?v=209"></script>
+<script src="redox.js?v=209"></script>
 </body>
 </html>
