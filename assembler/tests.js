@@ -47661,8 +47661,16 @@
         /* ★ **材料が無いから0件、ではない**: 尿素にはアミド結合が2つ実在する
          *   （門番が落としているのであって、アミド結合の数え方が壊れているのではない）。 */
         const urea = trSetup(c, ['尿素']);
-        assert(W.findFunctionalGroups(urea).filter(g => g.type === 'amide').length === 2,
-            '尿素のアミド結合が2つない（材料が無いだけ、になっている）');
+        /* ⚠ **官能基の検出は尿素を「アミド結合 1 件」として返す**（N が2つあっても
+         *   カルボニル炭素は1つなので1件にまとまる）。★ ここで見たいのは
+         *   「材料が無いから0件ではない」ことなので、**1件あること**を固定する。 */
+        assert(W.findFunctionalGroups(urea).filter(g => g.type === 'amide').length === 1,
+            '尿素にアミド結合が無い（材料が無いだけ、になっている）');
+        // ★ 落としているのは**窒素が2つ**という構造（門番の理由そのもの）
+        const ureaAmide = W.findFunctionalGroups(urea).find(g => g.type === 'amide');
+        assert(urea.getNeighbors(ureaAmide.atomIds[0])
+            .filter(n => n.atom.element === 'N').length === 2,
+            '尿素のカルボニル炭素に窒素が2つない（門番の理由が変わっている）');
         c.reset();
     });
 
@@ -47706,6 +47714,11 @@
         // ---- ④ できた鎖は**加硫できる**（2本作れば架橋の箇所が出る）
         const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
         assert(vul.detect(mol).length === 0, '鎖1本で加硫の箇所が出ている（架橋は2本のあいだ）');
+        /* ⚠ **1本目を上へ退かしてから2本目を作る。** 退かさないと2本が同じ帯に重なって
+         *   並び、硫黄の席（橋の 1/3 と 2/3 の点）が鎖の原子で塞がれる ＝
+         *   **化学ではなく置き場の都合**で 0 件になる（実機でもそこは
+         *   `stackChainsForBridge` が apply の中で寄せて直す領分）。 */
+        mol.atoms.forEach(a => { a.y -= 400; });
         ['スチレン', '1,3-ブタジエン', 'スチレン', '1,3-ブタジエン'].forEach(n => g.summonMolecule(n));
         g.updateDrawing();
         const s2 = rule.detect(mol);
