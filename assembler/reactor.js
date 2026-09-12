@@ -6842,6 +6842,21 @@ const RX_SECTION_LAST = 'いま起きた反応';
 const RX_UNDO_POINTER = '↩ 反応前に戻す は画面下の帯にあります（この画面を閉じても押せます）。';
 
 /* ==========================================================================
+ * ★ **簡易版であることを、その場で言う**（v1540）。
+ *
+ * ⓵ ユーザーの決め:「**嘘でいいので、結合が切れて、別な原子と手を結びなおすようにしますか、
+ *   ただし本当は…というスタンスで、反応機構を用意する**」
+ *
+ * ⚠⚠ **だから文言は2種類に分ける。** 実測すると、反応ルール **64本のうち機構を持つのは13本だけ**。
+ *   機構の無い 51本で「本当は違う」とだけ言うと、**行き先の無い約束**になる
+ *   ＝「では本当はどうなのか」を確かめる先が画面のどこにも無い。
+ * ⚠ 文は**先生の声掛け**にする。⛔ 実装の経緯や機能の説明は書かない。
+ * ========================================================================== */
+const RX_MORPH_NOTE = 'アニメーションは、どの手が切れてどの手とつながるかだけを見せた図です。';
+const RX_MORPH_NOTE_MECH = RX_MORPH_NOTE +
+    '本当はどう動くのか、下の「⚗ この反応の機構を見る」で見てみよう。';
+
+/* ==========================================================================
  * ★★ 行きと帰りの対（`DESIGN_sugar.md` §4-8b (d) 問い①）
  *
  * ユーザーの決めた設計:
@@ -7360,6 +7375,80 @@ function applyOpenRing(game, site) {
     };
 }
 
+/* ==========================================================================
+ * ★★ 握手のつなぎ替え（v1540・ユーザー発注 2026-09-12）
+ *
+ * **ユーザーの言葉**（そのまま）:
+ * > **価標を中心で割り、切れた手を旋回させて別な原子の手とつなぐ**
+ * > **握手していた → 離した → べつな人と握手した**
+ *
+ * ★★ **この描き方の芯**: **価標を中点で割ると、半分ずつが「その原子の手」になる。**
+ *   → **どの瞬間も、原子の手の数＝原子価が変わらない。**
+ *   ⛔ 手が宙に浮いた別物になったり、結合本数が一瞬おかしくなったりしない。
+ *   ⚠ **手は必ずどちらかの原子に生えたまま**（`handshakeHandsAt` がその1点を担保し、
+ *     テスト RX4b がすべての t で数える）。
+ *
+ * ⓵ **以前のやり方**（v1539 まで）: 切れる結合を `1−t` でフェードアウトし、
+ *   できる結合を `t` でフェードインしていた ＝ **結合ごと消えて別の場所に現れる**ので、
+ *   どこが切れてどこがつながったのかが読めなかった（ユーザー申し立て）。
+ *
+ * ★ **三段の割り方**（下の窓は 0→1 の進み具合。実測して決めた。DESIGN_reaction_execution.md §28-4）:
+ *   ① 握手していた   0.00–0.14 … 反応前のまま静止
+ *   ② 離した         0.14–0.42 … 価標が中点で割れ、半分ずつがそれぞれの原子に残って縮む
+ *      （宙）        0.42–0.48 … ⚠ **どこにも向いていない時間。短く。**
+ *      ⓘ 長いほど分かりやすいが、長いほど「切れてから漂ってつながる」という誤解が強くなる。
+ *        その誤解は置換の立体反転やマルコフニコフ則を説明できなくするので、あとで剥がすのが高い。
+ *   ③ 旋回           0.48–0.86 … 手が別の原子の方へ回る（原子の移動もここ）
+ *      握手した      0.86–1.00 … 半分どうしが伸びて合流する
+ * ========================================================================== */
+const HS_HOLD_END  = 0.14;
+const HS_PART_END  = 0.42;
+const HS_FLOAT_END = 0.48;
+const HS_SWING_END = 0.86;
+/** 反応の再生時間（ms）。⚠ 3段に割ったので v1539 の 800ms では①②が読めない（実測） */
+const HS_DURATION  = 1500;
+/** 結合の変化を含まない段（並ぶだけ・折りたたむだけ）は今までどおりの尺で動かす */
+const HS_PLAIN_DURATION = 800;
+/* ★ 離したときに手が引く長さ（座標の単位。標準の結合は 40）。
+ * ⚠ **割合で引かない**（実測）—— 原子の丸で両端 10 ずつ隠れるので、40 の結合で目に見える線は
+ *   半分あたり 10 しかない。6割も引くと**線が消えて印の丸だけ**になり、「手」に見えなくなった。
+ * ⚠ 0 にはしない ＝ 手は必ず残る（消えたら「価標が半分ずつ残る」という芯が崩れる）。 */
+const HS_PULL = 5;
+/** 原子ラベルを避ける縮み（game.renderBond の offsetStart と同じ値。ずらすと線が丸にめり込む） */
+const HS_INSET = 10;
+/** 離しても必ず残す、目に見える手の長さ */
+const HS_MIN_HAND = 4;
+/** 多重結合の平行線の位置と太さ（⚠ game.renderBond と同じ値。変えるとモーフィングだけ線がずれる） */
+const HS_LANE_OFF = { 1: [0], 2: [-5, 5], 3: [-6.5, 0, 6.5] };
+const HS_LANE_W   = { 1: [3], 2: [2.5, 2.5], 3: [1.8, 2.5, 1.8] };
+/** 地の線の色（game.renderBond の strokeColor と同じ） */
+const HS_INK  = [255, 255, 255, 0.4];
+/* ★ **新しい色を作らない。**前後比較（`renderCompare`）で色の約束はもう決まっている:
+ *   切れた側＝オレンジ（--neon-orange）／できた側＝シアン（--neon-blue）。
+ *   ⚠ 離れた手の先をオレンジ、握手した所をシアンにすると、
+ *     「🔍 反応の前後を見る」を開いたときの図と**同じ色が同じ意味**になる。 */
+const HS_ORANGE = [255, 165, 2, 0.95];   // --neon-orange #ffa502
+const HS_CYAN   = [0, 242, 254, 0.95];   // --neon-blue   #00f2fe
+
+const hsClamp = v => Math.max(0, Math.min(1, v));
+const hsSmooth = v => v * v * (3 - 2 * v);
+/** a→b の窓で 0→1 になめらかに進む */
+const hsEase = (t, a, b) => hsSmooth(hsClamp((t - a) / (b - a)));
+const hsLerp = (a, b, u) => a + (b - a) * u;
+/** 角度の補間は必ず近い方まわり（⚠ 素の線形補間だと 350°→10° で長い方を1周する） */
+const hsLerpAngle = (a, b, u) => {
+    let d = b - a;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return a + d * u;
+};
+const hsAngleGap = (a, b) => Math.abs(hsLerpAngle(a, b, 1) - a);
+const hsMix = (c1, c2, u) => [
+    hsLerp(c1[0], c2[0], u), hsLerp(c1[1], c2[1], u),
+    hsLerp(c1[2], c2[2], u), hsLerp(c1[3], c2[3], u)];
+const hsRgba = c =>
+    `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${Math.round(c[3] * 1000) / 1000})`;
+
 class Reactor {
     constructor(game) {
         this.game = game;
@@ -7702,6 +7791,13 @@ class Reactor {
             cmp.textContent = `🔍 反応の前後を見る（${this.lastReaction.label}）`;
             cmp.addEventListener('click', () => this.openCompare());
             lastSec.appendChild(cmp);
+            /* ★ **見せた図が簡易版であることを、その場で言う**（v1540）。
+             * ⚠ 機構の在る反応だけが「本当はどう動くか」を約束できる（`RX_MORPH_NOTE_MECH`）。 */
+            const note = document.createElement('div');
+            note.className = 'rx-morph-note';
+            note.style.cssText = 'font-size:11px; line-height:1.6; color:var(--text-secondary);';
+            note.textContent = this.lastReaction.mechanismId ? RX_MORPH_NOTE_MECH : RX_MORPH_NOTE;
+            lastSec.appendChild(note);
             // 機構が登録されている反応なら、機構ビューアへジャンプするボタンも出す
             if (this.lastReaction.mechanismId) {
                 lastSec.appendChild(this.makeMechanismButton());
@@ -8996,10 +9092,10 @@ class Reactor {
         this.game.syncCanvasModeBadge();
         const gen = p.gen;
         if (this._morphGen !== gen) return false;
-        const smoothstep = t => t * t * (3 - 2 * t);
+        const tm = this.morphTiming(p.mid, p.after, HS_PLAIN_DURATION);
         animateFramesLoop(
-            800,
-            t => { if (this._morphGen === gen) this.renderMorphFrame(p.mid, p.after, smoothstep(t)); },
+            tm.dur,
+            t => { if (this._morphGen === gen) this.renderMorphFrame(p.mid, p.after, tm.warp(t)); },
             () => this._morphSkip || this._morphGen !== gen
         ).then(() => {
             if (this._morphGen !== gen) return;
@@ -9008,6 +9104,20 @@ class Reactor {
             p.highlight();
         });
         return true;
+    }
+
+    /**
+     * ★ その段の**尺と時間の進め方**を決める。
+     * - 結合が変わる段 … 握手のつなぎ替えを3段（握手していた→離した→握手した）で見せるので
+     *   **尺を伸ばし**、時間は**素のまま**渡す（easing は段ごとに `handshakeHandsAt` が持っている）。
+     * - 変わらない段（並ぶだけ・折りたたむだけ） … v1539 までと同じ尺・同じ smoothstep。
+     */
+    morphTiming(before, after, base) {
+        const smoothstep = t => t * t * (3 - 2 * t);
+        if (!before || !after || !this.handshakeHasChange(before, after)) {
+            return { dur: base, warp: smoothstep };
+        }
+        return { dur: Math.round(base * HS_DURATION / HS_PLAIN_DURATION), warp: t => t };
     }
 
     animateExecution(before, after, result, morphStages = null) {
@@ -9054,7 +9164,6 @@ class Reactor {
         this._morphing = true;
         this._morphSkip = false;
         this.renderMorphFrame(before, after, 0); // 先に反応前を描き、生成物→反応物のちらつきを防ぐ
-        const smoothstep = t => t * t * (3 - 2 * t);
         // 変化が大きい反応（環化・開環）は2段階に分けて見せる。前半＝最小限の変化（結合だけ／配置だけ）、
         // 後半＝残りの変化。中間で少し止めて、どこが変わったか目で追えるようにする（P12-7 M2f）
         // 2つの分子が結びつく反応は「①並ぶ → ②結合ができる」の2段で見せる（C-1。2026-08-01 ユーザー要望
@@ -9064,14 +9173,16 @@ class Reactor {
         if (morphStages === 'joinFirst') {
             const joinMid = this.buildMidSnapshot(before, after, 'moveFirst');
             const stop = () => this._morphSkip || this._morphGen !== gen;
-            animateFramesLoop(450,
-                t => { if (this._morphGen === gen) this.renderMorphFrame(before, joinMid, smoothstep(t)); },
+            const t1 = this.morphTiming(before, joinMid, 450);
+            const t2 = this.morphTiming(joinMid, after, 400);
+            animateFramesLoop(t1.dur,
+                t => { if (this._morphGen === gen) this.renderMorphFrame(before, joinMid, t1.warp(t)); },
                 stop
             ).then(() => {
                 if (this._morphGen !== gen) return null;
                 if (this._morphSkip) return null;
-                return animateFramesLoop(400,
-                    t => { if (this._morphGen === gen) this.renderMorphFrame(joinMid, after, smoothstep(t)); },
+                return animateFramesLoop(t2.dur,
+                    t => { if (this._morphGen === gen) this.renderMorphFrame(joinMid, after, t2.warp(t)); },
                     stop);
             }).then(() => {
                 if (this._morphGen !== gen) return;
@@ -9085,9 +9196,10 @@ class Reactor {
         if (mid) {
             // 第1段階だけ再生し、**中間状態で止める**（自動水素つきで静止表示）。
             // 続きはユーザーのクリックで進める＝じっくり観察できる（P12-7 M2f。ユーザー要望）
+            const tm1 = this.morphTiming(before, mid, 700);
             animateFramesLoop(
-                700,
-                t => { if (this._morphGen === gen) this.renderMorphFrame(before, mid, smoothstep(t)); },
+                tm1.dur,
+                t => { if (this._morphGen === gen) this.renderMorphFrame(before, mid, tm1.warp(t)); },
                 () => this._morphSkip || this._morphGen !== gen
             ).then(() => {
                 if (this._morphGen !== gen) return;
@@ -9113,9 +9225,10 @@ class Reactor {
             });
             return;
         }
+        const tmain = this.morphTiming(before, after, HS_PLAIN_DURATION);
         animateFramesLoop(
-            800,
-            t => { if (this._morphGen === gen) this.renderMorphFrame(before, after, smoothstep(t)); },
+            tmain.dur,
+            t => { if (this._morphGen === gen) this.renderMorphFrame(before, after, tmain.warp(t)); },
             () => this._morphSkip || this._morphGen !== gen
         ).then(() => {
             if (this._morphGen !== gen) return; // 別の描画に上書きされた（多重反応・中断）
@@ -9158,7 +9271,6 @@ class Reactor {
         const gen = ++this._morphGen;
         this._morphing = true;
         this._morphSkip = false;
-        const smoothstep = t => t * t * (3 - 2 * t);
         const stop = () => this._morphSkip || this._morphGen !== gen;
         const shots = [before, ...stages];
         this.renderMorphFrame(shots[0], shots[1], 0);  // 先に反応前を描く（ちらつき防止）
@@ -9168,13 +9280,15 @@ class Reactor {
             }
             const from = shots[k], to = shots[k + 1];
             const mid = this.buildMidSnapshot(from, to, 'moveFirst');
-            return animateFramesLoop(450,
-                t => { if (this._morphGen === gen) this.renderMorphFrame(from, mid, smoothstep(t)); },
+            const s1 = this.morphTiming(from, mid, 450);
+            const s2 = this.morphTiming(mid, to, 400);
+            return animateFramesLoop(s1.dur,
+                t => { if (this._morphGen === gen) this.renderMorphFrame(from, mid, s1.warp(t)); },
                 stop
             ).then(() => {
                 if (this._morphGen !== gen || this._morphSkip) return null;
-                return animateFramesLoop(400,
-                    t => { if (this._morphGen === gen) this.renderMorphFrame(mid, to, smoothstep(t)); },
+                return animateFramesLoop(s2.dur,
+                    t => { if (this._morphGen === gen) this.renderMorphFrame(mid, to, s2.warp(t)); },
                     stop);
             }).then(() => run(k + 1));
         };
@@ -9303,11 +9417,276 @@ class Reactor {
         return !wasPicking;
     }
 
+    /* ======================================================================
+     * ★★ 握手のつなぎ替え —— 設計図（DOM非依存の純関数）
+     *
+     * **1本の価標を中点で割り、半分ずつを「その原子の手」として持つ。**
+     * 手は `{ atomId, from, to }` の3つ組だけでできている:
+     *   - `from` … 反応前にどの原子のどの線につながっていたか（無ければ「何も無い所から伸びる手」）
+     *   - `to`   … 反応後にどの原子のどの線につながるか（無ければ「つなぐ相手がいないまま消える手」）
+     * ⚠ `atomId` は最初から最後まで変わらない ＝ **手はその原子から離れない。**
+     * ⚠ 手の一覧は t に依らない ＝ **本数はどの瞬間も同じ。**
+     * ====================================================================== */
+    handshakePlan(before, after) {
+        if (this._hsFrom === before && this._hsTo === after && this._hsPlan) return this._hsPlan;
+        const bpos = new Map(before.atoms.map(a => [a.id, a]));
+        const apos = new Map(after.atoms.map(a => [a.id, a]));
+        const ang = (p, q) => Math.atan2(q.y - p.y, q.x - p.x);
+        const keyOf = b => b.atomId1 < b.atomId2
+            ? `${b.atomId1}\u0000${b.atomId2}` : `${b.atomId2}\u0000${b.atomId1}`;
+        const bB = new Map(), aB = new Map();
+        before.bonds.forEach(b => { if (bpos.has(b.atomId1) && bpos.has(b.atomId2)) bB.set(keyOf(b), b); });
+        after.bonds.forEach(b => { if (apos.has(b.atomId1) && apos.has(b.atomId2)) aB.set(keyOf(b), b); });
+
+        const pairs = [];
+        new Set([...bB.keys(), ...aB.keys()]).forEach(k => {
+            const fb = bB.get(k), tb = aB.get(k), ref = fb || tb;
+            pairs.push({ k, id1: ref.atomId1, id2: ref.atomId2, n0: fb ? fb.type : 0, n1: tb ? tb.type : 0 });
+        });
+        pairs.sort((p, q) => (p.k < q.k ? -1 : p.k > q.k ? 1 : 0)); // ⚠ 手の順番を Set の走査順に頼らない
+
+        /* ★ **二重結合のどちらの線が離れるか**を決めるための材料。
+         *   原子ごとに「新しくできる結合の向き」と「切れる結合の向き」を集めておく。 */
+        const push = (m, id, v) => { if (!m.has(id)) m.set(id, []); m.get(id).push(v); };
+        const gainedDirs = new Map(), lostDirs = new Map();
+        pairs.forEach(p => {
+            if (p.n1 > p.n0 && apos.has(p.id1) && apos.has(p.id2)) {
+                push(gainedDirs, p.id1, ang(apos.get(p.id1), apos.get(p.id2)));
+                push(gainedDirs, p.id2, ang(apos.get(p.id2), apos.get(p.id1)));
+            }
+            if (p.n0 > p.n1 && bpos.has(p.id1) && bpos.has(p.id2)) {
+                push(lostDirs, p.id1, ang(bpos.get(p.id1), bpos.get(p.id2)));
+                push(lostDirs, p.id2, ang(bpos.get(p.id2), bpos.get(p.id1)));
+            }
+        });
+        /* ★★ **決めごと**: 離れるのは「**新しい手が伸びていく側にある線**」。
+         *   ⓘ エテン＋Br₂ なら Br は2つとも同じ側に付くので、その側の線が割れる
+         *     ＝ 旋回がいちばん短くて済み、手が原子や他の線を横切らない。
+         *   ⚠ 目印になる向きが1つも無いとき（水素化のように相手が自動水素で図に無いとき）は
+         *     ＋側と決め打つ ＝ **同じ反応はいつも同じ線が割れる**（見るたびに違うと読めない）。 */
+        const sideOf = (p, dirs) => {
+            const P1 = bpos.get(p.id1) || apos.get(p.id1), P2 = bpos.get(p.id2) || apos.get(p.id2);
+            if (!P1 || !P2) return 1;
+            const L = Math.hypot(P2.x - P1.x, P2.y - P1.y) || 1;
+            const nx = -(P2.y - P1.y) / L, ny = (P2.x - P1.x) / L; // ＋オフセットが向く向き
+            let s = 0;
+            [p.id1, p.id2].forEach(id =>
+                (dirs.get(id) || []).forEach(a => { s += Math.cos(a) * nx + Math.sin(a) * ny; }));
+            return s >= 0 ? 1 : -1;
+        };
+        const pickLanes = (offs, count, side) => {
+            const idx = offs.map((o, i) => i)
+                .sort((a, b) => (offs[b] * side) - (offs[a] * side) || a - b);
+            return new Set(idx.slice(0, count));
+        };
+
+        const hands = [];
+        let laneSeq = 0;
+        pairs.forEach(p => {
+            const k = Math.min(p.n0, p.n1);
+            const off0 = HS_LANE_OFF[p.n0] || [], w0 = HS_LANE_W[p.n0] || [];
+            const off1 = HS_LANE_OFF[p.n1] || [], w1 = HS_LANE_W[p.n1] || [];
+            const broken = pickLanes(off0, p.n0 - k, sideOf(p, gainedDirs));
+            const formed = pickLanes(off1, p.n1 - k, sideOf(p, lostDirs));
+            const keptB = off0.map((o, i) => i).filter(i => !broken.has(i));
+            const keptA = off1.map((o, i) => i).filter(i => !formed.has(i));
+            /* 半分ずつの記述。`off` は**その原子から見た**符号にする
+             * （相手側は法線が反転するので符号も反転する ＝ 世界座標では同じ側に乗る） */
+            const side1 = self => (self === p.id1 ? 1 : -1);
+            const end = (laneId, self, other, off, w, atAfter) => ({
+                laneId, other, off: off * side1(self), w, atAfter
+            });
+            const lane = (i, j) => {
+                const id = `L${laneSeq++}`;
+                const f = i === null ? null : { i, off: off0[i], w: w0[i] };
+                const g = j === null ? null : { j, off: off1[j], w: w1[j] };
+                [p.id1, p.id2].forEach(self => {
+                    const other = self === p.id1 ? p.id2 : p.id1;
+                    hands.push({
+                        atomId: self,
+                        holds: !!(f && g), // ⚠ 保たれる線は最後まで握ったまま（離さない）
+                        from: f ? end(id, self, other, f.off, f.w, false) : null,
+                        to: g ? end(id, self, other, g.off, g.w, true) : null
+                    });
+                });
+            };
+            keptB.forEach((i, n) => lane(i, keptA[n]));                 // 保つ線
+            [...broken].sort((a, b) => a - b).forEach(i => lane(i, null)); // 割れる線
+            [...formed].sort((a, b) => a - b).forEach(j => lane(null, j)); // できる線
+        });
+
+        /* ★★ **手の対応づけ**（設計の芯）。原子ごとに「失った手」と「得た手」を突き合わせ、
+         *   **同じ1本の手**として扱う ＝ それが旋回する手になる。
+         * ⚠ **決めごと: 角度がいちばん近いものどうしを組む**（小さい方から順に確定する）。
+         *   ⓘ 理由 ——「同じ手が向きを変えた」と読ませたいので、**回り幅が小さいほどよい**。
+         *     順番で組むと、手が原子を突き抜けたり互いに交差したりして
+         *     「別の手にすり替わった」ように見える。 */
+        const byAtom = new Map();
+        hands.forEach(h => { if (!byAtom.has(h.atomId)) byAtom.set(h.atomId, []); byAtom.get(h.atomId).push(h); });
+        const angOf = (self, other, atAfter) => {
+            const P = (atAfter ? apos : bpos).get(self), Q = (atAfter ? apos : bpos).get(other);
+            return P && Q ? ang(P, Q) : 0;
+        };
+        byAtom.forEach((list, self) => {
+            const losts = list.filter(h => h.from && !h.to);
+            const gains = list.filter(h => !h.from && h.to);
+            if (!losts.length || !gains.length) return;
+            const cand = [];
+            losts.forEach((L, li) => gains.forEach((G, gi) => cand.push({
+                li, gi, d: hsAngleGap(angOf(self, L.from.other, false), angOf(self, G.to.other, true))
+            })));
+            cand.sort((a, b) => a.d - b.d || a.li - b.li || a.gi - b.gi);
+            const usedL = new Set(), usedG = new Set();
+            cand.forEach(c => {
+                if (usedL.has(c.li) || usedG.has(c.gi)) return;
+                usedL.add(c.li); usedG.add(c.gi);
+                losts[c.li].to = gains[c.gi].to;   // 失った手が、得た手の行き先へ旋回する
+                gains[c.gi].merged = true;
+            });
+        });
+        const plan = { hands: hands.filter(h => !h.merged), pairs };
+        this._hsFrom = before; this._hsTo = after; this._hsPlan = plan;
+        return plan;
+    }
+
+    /** before→after に「結合の変わり目」があるか（無い段は今までどおりの動かし方でよい）。
+     * ⚠ 4重以上の価標は平行線の置き方を知らない ＝ **その回は丸ごと v1539 の描き方に落とす**
+     *   （半分に割れないレーンを混ぜると、そこだけ線が消える） */
+    handshakeHasChange(before, after) {
+        const pairs = this.handshakePlan(before, after).pairs;
+        if (pairs.some(p => p.n0 > 3 || p.n1 > 3)) return false;
+        return pairs.some(p => p.n0 !== p.n1);
+    }
+
+    /**
+     * ★★ 時刻 t（0→1）の手の一覧。⚠ **返す手の本数と `atomId` は t に依らない。**
+     * 各手は `{ atomId, ax, ay, angle, len, off, ... }` と、実際に描く線分 `x1,y1 → x2,y2`。
+     * `x1,y1` は必ずその原子の縁（＝ 根元は原子から離れない）。
+     */
+    handshakeHandsAt(before, after, t) {
+        const plan = this.handshakePlan(before, after);
+        const tt = hsClamp(t);
+        const posT = hsEase(tt, HS_FLOAT_END, HS_SWING_END);
+        const partT = hsEase(tt, HS_HOLD_END, HS_PART_END);
+        const swingT = posT;
+        const joinT = hsEase(tt, HS_SWING_END, 1);
+        const openT = partT * (1 - joinT); // 1 ＝ 完全に離している
+        const bpos = new Map(before.atoms.map(a => [a.id, a]));
+        const apos = new Map(after.atoms.map(a => [a.id, a]));
+        const at = id => {
+            const b = bpos.get(id), a = apos.get(id);
+            if (b && a) return { x: hsLerp(b.x, a.x, posT), y: hsLerp(b.y, a.y, posT) };
+            return b || a || null;
+        };
+        const pos = new Map();
+        new Set([...bpos.keys(), ...apos.keys()]).forEach(id => pos.set(id, at(id)));
+        const out = [];
+        plan.hands.forEach((h, i) => {
+            const P = pos.get(h.atomId);
+            if (!P) return;
+            const Qf = h.from ? pos.get(h.from.other) : null;
+            const Qt = h.to ? pos.get(h.to.other) : null;
+            const geo = (Q) => Q
+                ? { a: Math.atan2(Q.y - P.y, Q.x - P.x), half: Math.hypot(Q.x - P.x, Q.y - P.y) / 2 }
+                : null;
+            const gf = geo(Qf), gt = geo(Qt);
+            // 片側しか無い手は「長さ0の手」を相手に見立てる ＝ 生える／消える が同じ式で書ける
+            const aFrom = gf ? gf.a : (gt ? gt.a : 0);
+            const aTo = gt ? gt.a : aFrom;
+            const hFrom = gf ? gf.half : HS_INSET;
+            const hTo = gt ? gt.half : HS_INSET;
+            const angle = hsLerpAngle(aFrom, aTo, swingT);
+            const base = hsLerp(hFrom, hTo, swingT);
+            const open = h.holds ? 0 : openT;
+            // 離したときに残す長さ。⚠ 原子の縁（HS_INSET）より必ず長い ＝ 手が消えてなくならない
+            const free = Math.max(HS_INSET + HS_MIN_HAND, base - HS_PULL);
+            const len = Math.max(HS_INSET, hsLerp(base, free, open));
+            /* ⚠ オフセットは**旋回で**動かす（離すときには動かさない）。
+             *   離した瞬間に中央へ寄せると、二重結合のどちらの線が割れたのかが見えなくなる（実測）。 */
+            const off = hsLerp(h.from ? h.from.off : 0, h.to ? h.to.off : 0, swingT);
+            const w = hsLerp(h.from ? h.from.w : (h.to ? h.to.w : 3), h.to ? h.to.w : (h.from ? h.from.w : 3), swingT);
+            // 生える手は旋回のあいだに現れ、相手のいない手は旋回のあいだに消える
+            const alpha = !h.from ? swingT : (!h.to ? 1 - swingT : 1);
+            const ux = Math.cos(angle), uy = Math.sin(angle);
+            const nx = -uy, ny = ux;
+            out.push({
+                index: i, atomId: h.atomId, holds: !!h.holds,
+                fromOther: h.from ? h.from.other : null, toOther: h.to ? h.to.other : null,
+                laneFrom: h.from ? h.from.laneId : null, laneTo: h.to ? h.to.laneId : null,
+                ax: P.x, ay: P.y, angle, len, off, width: w, alpha,
+                open, joinT, swingT, newborn: !h.from, orphan: !h.to,
+                x1: P.x + ux * HS_INSET + nx * off, y1: P.y + uy * HS_INSET + ny * off,
+                x2: P.x + ux * len + nx * off, y2: P.y + uy * len + ny * off
+            });
+        });
+        return out;
+    }
+
+    /**
+     * 手の一覧を「描く線分」に畳む。握ったまま（＝ 中点で割れていない）の2本は
+     * **1本の線に戻してから描く**（半分ずつ描くと中点に継ぎ目が見えるため）。
+     * 色は前後比較と同じ約束 —— 離れた手＝オレンジ、握手した所＝シアン。
+     */
+    handshakeSegments(before, after, t, atomAlpha) {
+        const hands = this.handshakeHandsAt(before, after, t);
+        const segs = [], marks = [];
+        /* ★ **まだ握っている2本は1本に戻してから描く。**
+         * ⚠ 半分ずつ描くと**中点に継ぎ目の点が出る**（実測: ①の静止中、二重結合の割れる側の
+         *   まん中に薄い丸が見えていた ＝ 丸い線端どうしが重なっていた）。
+         *   ⓘ「握手していた」の段は反応前の図そのものでなければならないので、ここは1本に戻す。 */
+        const mergeKey = h => (h.open <= 1e-6 && h.laneFrom) ? h.laneFrom : null;
+        const joinable = new Map();
+        hands.forEach(h => {
+            const k = mergeKey(h);
+            if (!k) return;
+            if (!joinable.has(k)) joinable.set(k, []);
+            joinable.get(k).push(h);
+        });
+        const done = new Set();
+        const tint = (h) => {
+            const hot = h.newborn ? HS_CYAN : HS_ORANGE;
+            if (h.joinT <= 0) return hsMix(HS_INK, hot, h.open);
+            const met = hsMix(hot, HS_CYAN, Math.min(1, h.joinT * 2.5)); // 触れた瞬間シアンへ
+            return hsMix(met, HS_INK, hsClamp((h.joinT - 0.5) / 0.5));   // 握り終えたら地の色へ
+        };
+        hands.forEach(h => {
+            const fade = (atomAlpha && atomAlpha.get(h.atomId) !== undefined) ? atomAlpha.get(h.atomId) : 1;
+            const alpha = Math.min(h.alpha, fade);
+            if (alpha <= 0.001 || h.len <= HS_INSET + 0.01) return;
+            const k = mergeKey(h);
+            if (k && joinable.get(k) && joinable.get(k).length === 2) {
+                if (done.has(k)) return;
+                done.add(k);
+                const o = joinable.get(k).find(x => x !== h) || h;
+                segs.push({ x1: h.x1, y1: h.y1, x2: o.x1, y2: o.y1, width: h.width,
+                    stroke: hsRgba(HS_INK), opacity: Math.min(alpha,
+                        (atomAlpha && atomAlpha.get(o.atomId) !== undefined) ? atomAlpha.get(o.atomId) : 1) });
+                return;
+            }
+            const col = tint(h);
+            segs.push({ x1: h.x1, y1: h.y1, x2: h.x2, y2: h.y2, width: h.width,
+                stroke: hsRgba(col), opacity: alpha });
+            /* ★ **切れた手の先の印**（ユーザー「マーカーをつけてもよいかもしれません」）。
+             *   ⚠ 線と同じ色にする ＝ 新しい色を1つも増やさない。 */
+            if (h.open > 0.12) {
+                marks.push({ x: h.x2, y: h.y2, r: 2.6,
+                    fill: hsRgba([col[0], col[1], col[2], 1]), opacity: alpha * Math.min(1, h.open * 1.6) });
+            }
+        });
+        return { segs, marks };
+    }
+
     // before/after を t(0→1) で補間した描画データを返す純関数。原子はID対応で照合し、
     // 共通原子は座標を線形補間、脱離原子はフェードアウト、付加原子はフェードイン、
-    // 結合は次数変化をクロスフェード・生成/消滅をフェードで表す（DOM非依存＝テスト可能）
+    // 結合は **握手のつなぎ替え**（価標を中点で割って旋回させる）で表す（DOM非依存＝テスト可能）。
+    // ⚠ t=0 と t=1 では**まるごとの結合**を返す（＝ 反応前後の図そのもの。RX4 が見ている）。
     interpolateMorph(before, after, t, override) {
-        const lerp = (a, b) => a + (b - a) * t;
+        /* ★ **握手のつなぎ替えを使う条件**: 端点（t=0 / t=1）でないこと・結合が変わること・
+         *   `override`（紙のフリップ）でないこと。⚠ どれかを外れたら v1539 までの描き方に落ちる
+         *   ＝ 並ぶだけの段や糖のフリップの見え方は1ドットも変えていない。 */
+        const useHS = t > 0 && t < 1 && !override && this.handshakeHasChange(before, after);
+        const ease = useHS ? hsEase(t, HS_FLOAT_END, HS_SWING_END) : t;
+        const lerp = (a, b) => a + (b - a) * ease;
         const clamp = o => Math.max(0, Math.min(1, o));
         const afterById = new Map(after.atoms.map(a => [a.id, a]));
         const beforeById = new Map(before.atoms.map(a => [a.id, a]));
@@ -9315,11 +9694,16 @@ class Reactor {
         before.atoms.forEach(a => {
             const af = afterById.get(a.id);
             if (af) atoms.push({ id: a.id, element: a.element, x: lerp(a.x, af.x), y: lerp(a.y, af.y), opacity: 1 });
-            else atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(1 - t) }); // 脱離
+            else atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(1 - ease) }); // 脱離
         });
         after.atoms.forEach(a => {
-            if (!beforeById.has(a.id)) atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(t) }); // 付加
+            if (!beforeById.has(a.id)) atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(ease) }); // 付加
         });
+        if (useHS) {
+            const alphaById = new Map(atoms.map(a => [a.id, a.opacity]));
+            const { segs, marks } = this.handshakeSegments(before, after, t, alphaById);
+            return { atoms, bonds: [], lanes: segs, marks };
+        }
         /* ★ `override` … その原子だけ位置を差し替える（`DESIGN_sugar.md` §4-9f の紙の回転）。
          * ⚠ **結合の端点を組む前に当てる**（あとから当てると線だけ取り残される）。 */
         if (override) atoms.forEach(a => {
@@ -9343,7 +9727,7 @@ class Reactor {
             } else if (fb) push(fb.type, 1 - t); // 切れる結合はフェードアウト
             else push(tb.type, t);               // 生じる結合はフェードイン
         });
-        return { atoms, bonds };
+        return { atoms, bonds, lanes: [], marks: [] };
     }
 
     // 補間1フレームを実キャンバス（atomsGroup/bondsGroup）に描く。自動水素は省略（完了時に通常描画で出る）
@@ -9352,6 +9736,28 @@ class Reactor {
         g.atomsGroup.innerHTML = '';
         g.bondsGroup.innerHTML = '';
         const frame = this.interpolateMorph(before, after, t, override);
+        const NS = 'http://www.w3.org/2000/svg';
+        (frame.lanes || []).forEach(s => {
+            const line = document.createElementNS(NS, 'line');
+            line.setAttribute('x1', s.x1); line.setAttribute('y1', s.y1);
+            line.setAttribute('x2', s.x2); line.setAttribute('y2', s.y2);
+            line.setAttribute('stroke', s.stroke);
+            line.setAttribute('stroke-width', String(s.width));
+            line.setAttribute('stroke-linecap', 'round');
+            line.setAttribute('opacity', String(s.opacity));
+            line.setAttribute('class', 'svg-bond-ink');
+            line.setAttribute('pointer-events', 'none');
+            g.bondsGroup.appendChild(line);
+        });
+        (frame.marks || []).forEach(m => {
+            const dot = document.createElementNS(NS, 'circle');
+            dot.setAttribute('cx', m.x); dot.setAttribute('cy', m.y);
+            dot.setAttribute('r', String(m.r));
+            dot.setAttribute('fill', m.fill);
+            dot.setAttribute('opacity', String(m.opacity));
+            dot.setAttribute('pointer-events', 'none');
+            g.bondsGroup.appendChild(dot);
+        });
         frame.bonds.forEach(bd => {
             const start = g.bondsGroup.childElementCount;
             g.renderBond(bd.x1, bd.y1, bd.x2, bd.y2, bd.type, false);
@@ -9703,6 +10109,12 @@ if (typeof window !== 'undefined') {
     window.RX_SECTION_LAST = RX_SECTION_LAST;
     window.RX_UNDO_POINTER = RX_UNDO_POINTER;
     window.RX_SCOPE_NOTE = RX_SCOPE_NOTE;       // RX43（「いま見ている分子」の断り）が読む
+    window.RX_MORPH_NOTE = RX_MORPH_NOTE;       // RX4c（簡易版の但し書き）が読む
+    window.RX_MORPH_NOTE_MECH = RX_MORPH_NOTE_MECH;
+    window.HS_PHASES = {                        // RX4b（握手のつなぎ替え）が読む
+        holdEnd: HS_HOLD_END, partEnd: HS_PART_END, floatEnd: HS_FLOAT_END,
+        swingEnd: HS_SWING_END, duration: HS_DURATION, inset: HS_INSET
+    };
     window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
     window.noRoom = noRoom;
 }
