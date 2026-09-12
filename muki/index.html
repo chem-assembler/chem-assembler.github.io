@@ -23,7 +23,7 @@
        （`ga4-bot-traffic` と同じ「自分で作った偽の数字」になる）。
      ============================================================ -->
 <script>
-window.MUKI_OPEN_TARGETS = { snake: 'snake.html', separation: 'separation.html', tree: 'tree.html' };
+window.MUKI_OPEN_TARGETS = { snake: 'snake.html', separation: 'separation.html', akinator: 'akinator.html', tree: 'tree.html' };
 (function () {
     try {
         var q = new URLSearchParams(location.search);
@@ -69,7 +69,7 @@ window.MUKI_OPEN_TARGETS = { snake: 'snake.html', separation: 'separation.html',
          ★ 検索に出る名前もここで変わる。**スネークの名前は snake.html が引き継いだ**ので、
            「イオンスネーク」で検索して来る人は消えない（sitemap にも両方載せた） -->
     <title>色でみる無機化学 — SchoolLenz</title>
-    <meta name="description" content="金属イオンを、色と沈殿で見分ける学習アプリ。沈殿の色を覚えるミニゲーム「イオンスネーク」、1種類のイオンを言い当てる実験、混ざったイオンを手順を組んで分けきる系統分離の3つ。無料・広告なし・ログイン不要。">
+    <meta name="description" content="金属イオンを、色と沈殿で見分ける学習アプリ。沈殿の色を覚えるミニゲーム「イオンスネーク」、1種類のイオンを言い当てる実験、30 種類から1つを絞り込むアキネーター、混ざったイオンを手順を組んで分けきる系統分離の4つ。無料・広告なし・ログイン不要。">
     <link rel="canonical" href="https://chem.schoollenz.com/muki/">
     <!-- シェアされたときのカード。画像は化学レンズ共通（brand/og-chem.png）。
          **絶対URLで書くこと** — SNS のクローラは相対パスを解決しない -->
@@ -83,18 +83,18 @@ window.MUKI_OPEN_TARGETS = { snake: 'snake.html', separation: 'separation.html',
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="stylesheet" href="home.css?v=31">
+    <link rel="stylesheet" href="home.css?v=33">
 </head>
 <body>
 <div id="home">
     <div class="topbar">
         <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
-        <span class="version">v31</span>
+        <span class="version">v33</span>
     </div>
 
     <h1>色でみる無機化学</h1>
-    <p class="lead">金属イオンを、<strong>色と沈殿</strong>で見分けます。遊び方が3つあります。</p>
-    <!-- ⚠ 3つは難しさが違う（色を覚える → 1種類を言い当てる → 全部を分けきる）ので、
+    <p class="lead">金属イオンを、<strong>色と沈殿</strong>で見分けます。遊び方が4つあります。</p>
+    <!-- ⚠ 4つは難しさが違う（色を覚える → 1種類を言い当てる → 30から絞り込む → 全部を分けきる）ので、
          **対等には並べず、やさしい順に置く**。★ ただし縛りはしない —— どれも直に押せる。
          ⚠⚠ ここに解き筋を書かないこと（型A・型B の画面と同じ縛り）。
             書いてよいのは「何をする画面か」と「どれくらい重いか」だけ -->
@@ -116,8 +116,15 @@ window.MUKI_OPEN_TARGETS = { snake: 'snake.html', separation: 'separation.html',
             </a>
         </li>
         <li>
+            <a class="mode aki" id="link-aki" href="akinator.html">
+                <span class="step">3</span><span class="name">🔮 かくれた物質をつきとめる</span>
+                <span class="sub">沈殿と金属イオン 30 種類から1つをかくします。質問をえらんで、はい・いいえで絞り込みます。</span>
+                <span class="tag">30 から1つを絞り込む</span>
+            </a>
+        </li>
+        <li>
             <a class="mode tree" id="link-tree" href="tree.html">
-                <span class="step">3</span><span class="name">🌳 すべてのイオンを分ける</span>
+                <span class="step">4</span><span class="name">🌳 すべてのイオンを分ける</span>
                 <span class="sub">混ざったイオンを、手順を組み立てて1つずつ分けきります。組んだ手順はそのまま走ります。</span>
                 <span class="tag">系統分離</span>
             </a>
