@@ -9,8 +9,6 @@ codes:
   - org.ali.alkane-chlorination
   - org.ali.alkene-br2
   - org.ali.alkene-h2o
-  - org.carbonyl.acetaldehyde-prep
-  - org.carbonyl.ester-water-origin
   - org.aro.halogenation
   - org.aro.nitration
   - org.aro.sulfonation

@@ -597,12 +597,10 @@ function clearQuizChoiceMarks(buttons) {
 function markQuizChoices(buttons, isRight, picked) {
     [...buttons].forEach(b => {
         b.disabled = true;
-        // **選択肢そのものに装飾色が付いている場合がある**（立体異性体クイズは
-        // 鏡像異性体＝青・別の立体異性体＝オレンジ）。答え合わせでは「押したもの」と
-        // 「正解」だけが色の意味を持つべきなので、`quiz-choice-*` が装飾色に勝つように
-        // CSS 側を書いてある（装飾色は `.sq-btn-*` クラスで、こちらは `!important`）。
-        // 勝たせないと、**押していないオレンジのボタンが画面でいちばん目立ち、
-        // そちらを選んだように見える**（2026-08-09 のユーザー検品で実際に誤読された）
+        // **色に意味を持たせてよいのはここだけ**（答え合わせのあと）。
+        // 出題中の3択は同じ色にする ＝ 色が1つだけ違えば、図を読む前に
+        // 「これが特別だ」と読まれてしまう（v1538・立体異性体クイズの装飾色を外した理由）。
+        // `quiz-choice-*` は `!important` で `.primary-btn` の色に勝つ
         b.classList.remove('quiz-choice-right', 'quiz-choice-wrong', 'quiz-choice-muted', 'quiz-choice-picked');
         if (isRight(b)) {
             b.classList.add('quiz-choice-right');
@@ -2543,6 +2541,17 @@ class StereoQuiz {
         buildCompoundLibrary(this.game).forEach(e => {
             const info = readStereoOf(e.mol);
             if (!info) return;
+            /* ⚠⚠ **対イオンの粒を持つ塩は出題しない**（v1538）。
+             *   塩を電離した形（-COO⁻ ＋ Na⁺）で描くようにしたので、図が**非連結**になった。
+             *   `stereoIsomorphismCompare` は「重ね合わせは1分子どうしの比較にだけ使う
+             *   （非連結だと成分の対応づけが別問題になる）」と明記して null を返すので、
+             *   **「回して重ねる」が作れない問題**が出る（実測: オレイン酸ナトリウムで
+             *   180°回転の出題が作れず OV1 が 5回中3回落ちた）。
+             * ★ 立体の話は粒の位置とは関係が無いので、落としても学習上の穴は開かない
+             *   （乳酸ナトリウムも同じ不斉炭素を乳酸そのもので出題できる）。 */
+            const bonded = new Set();
+            e.mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+            if (e.mol.atoms.some(a => a.charge && !bonded.has(a.id))) return;
             // 「図を回す」出題の資格: **図が分子の立体を語り尽くしているか**（ST26）。
             // 不斉炭素がすべて図から読めていて、環の中に不斉炭素が無いこと。
             // ビニロンはアセタール環の2中心がハース形でないためライブラリの向きでは読めず

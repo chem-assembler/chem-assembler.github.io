@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末と開発用の駆動を計測から外す。
+     (1) **localhost / 127.0.0.1 / *.local / file:// は無条件で止める**。ここが一番の穴だった:
+         GA4 の (direct) 1,394 セッションのうち **1,366（98%）がホスト名 localhost** ＝ ボットではなく
+         自分たちの回帰テストと開発だった（2026-08-12 に判明）。(2) の印は localStorage ＝
+         **オリジンごと**なので、本番で押しても localhost 側には一切効かない。だから印より先に見る
+     (2) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
+         IP での内部トラフィック除外は、リレーだと出口が変わり携帯回線だと他人と共有するため
+         この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す
+     (3) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
+         **回帰テストがキーイベントまで GA4 へ送っていた**（(direct) に古い版つきの URL が実データとして
+         記録されていた）。iframe の src を1つずつ直す手もあるが、tests.js が動的に作る iframe が
+         20か所以上あって取りこぼす。**読み込まれた側で気づく**ほうが確実。
+         top が別オリジンなら参照で例外になるので、外部サイトへの正当な埋め込みは止めない -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+<meta name="robots" content="noai, noimageai">
+<title>エステル ｜ 化学の参考書</title>
+<meta name="description" content="エステル結合 −COO− をもつ化合物のまとめ。一般式と命名、エステル化・加水分解・けん化の3本の反応、ギ酸エステルの還元性、そして「加水分解してから条件を読む」構造決定の手順まで。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/ester/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SchoolLenz">
+<meta property="og:title" content="エステル ｜ 化学の参考書">
+<meta property="og:description" content="エステル結合 −COO− をもつ化合物のまとめ。一般式と命名、エステル化・加水分解・けん化の3本の反応、ギ酸エステルの還元性、そして「加水分解してから条件を読む」構造決定の手順まで。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/ester/">
+<meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>/* ★ 面Aの器の色。⚠ 表・例題・図の色は assembler/style.css から切り出したものが下に続き、
+   そのあとの LIGHT_CSS が**明るい地へ読み替える**（読み替えの漏れは checkLightCoverage が赤にする） */
+:root{--bg:#f5f3ef;--panel:#fff;--line:#dcd7cd;--fg:#20242b;--dim:#59616c;
+--accent:#0d6c78;--brand:#00f2fe;--band:#0f141c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Sans JP",system-ui,sans-serif;line-height:1.85}
+.wrap{max-width:984px;margin:0 auto;padding:0 16px}
+/* ★★ **1カラムのときも読み欄を広げすぎない**（2026-09-10・実測）。
+   ⚠ 984px の器をそのまま使うと、**800〜999px の窓で1行 45〜56字**になっていた
+     （実測: 768px → 43.3字 ／ 900px → 51.1字 ／ 999px → 56.0字）
+     ＝ タブレット横と小さいノートPCがちょうどここに落ちる。
+   ★ 712 = 読み欄 680 + 左右の余白 16×2 ＝ **どの幅でも 40字を超えない**。
+   ⚠ 1000px 以上は2カラムなので触らない（あちらは grid が 680px に決めている）。 */
+@media (max-width:999px){main.wrap{max-width:712px}}
+/* ★ 帯だけは暗いまま（ブランドの手がかり） */
+header{background:var(--band);padding:11px 0;font-size:13px;color:#a8b0c4}
+header a{color:#a8b0c4;text-decoration:none}
+header a:hover{color:var(--brand)}
+h1{font-size:clamp(22px,4.4vw,32px);margin:30px 0 10px;line-height:1.45;letter-spacing:.01em}
+h2{font-size:19px;margin:44px 0 14px;padding-bottom:7px;border-bottom:2px solid var(--line)}
+h3{font-size:16px;margin:28px 0 8px;color:var(--dim)}
+.lede{color:var(--dim);margin:0 0 22px;font-size:15.5px;line-height:1.85}
+.unit-label{display:inline-block;font-size:12px;color:var(--dim);background:#eae6de;border:1px solid var(--line);
+border-radius:999px;padding:3px 12px;margin:0 6px 6px 0}
+/* 索引 */
+.idx{list-style:none;padding:0;margin:0 0 26px;display:grid;gap:12px}
+.idx li{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+box-shadow:0 1px 2px rgba(32,36,43,.05)}
+.idx a{display:block;padding:15px 17px;text-decoration:none;color:var(--fg)}
+.idx a:hover{border-color:var(--accent)}
+.idx b{display:block;font-size:16.5px;margin-bottom:5px}
+.idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
+   ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
+     ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
+       字数を保つために器のほうを広げた（17px / 680px ＝ 1行 40.0 字）。
+   ⚠ **行送りの倍率は 1.95 のまま変えていない**（実寸は 30.2 → 33.2px。字が大きくなったぶん）。 */
+.ref-scope{font-size:17px}
+.ref-scope .ref-p{font-size:17px;line-height:1.95;margin:0 0 20px}
+/* ⚠ 表は**器の幅いっぱいに引き伸ばさない**（ペインは 340px なので 100% でよいが、
+   広い読み物では「C の数」の列が 250px になって数字と名称が離れる） */
+.ref-scope .ref-table{font-size:15px;width:auto}
+.ref-scope .ref-mech-table,.ref-scope .ref-map-table{font-size:15px}
+.ref-scope .ref-cap{font-size:13.5px;margin-bottom:8px}
+.ref-scope .ref-table-wrap{margin-bottom:28px}
+.ref-scope .ref-example{font-size:15.5px}
+.ref-scope .ref-example h4{font-size:16px}
+.ref-scope .ref-note{font-size:13.5px}
+.ref-scope a.ref-try,.ref-scope a.ref-mech-play{display:inline-block;text-decoration:none}
+/* 埋め込み（★ 押してから読み込む。置いただけで相手の page_view が飛ばないように） */
+.embed{margin:26px 0;padding:18px;background:var(--panel);border:1px solid var(--accent);border-radius:12px}
+.embed b{display:block;font-size:15.5px;margin-bottom:4px}
+.embed p{margin:0;color:var(--dim);font-size:14px}
+.embed button{margin-top:12px;background:var(--accent);color:#fff;font-weight:700;font-size:14.5px;
+border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
+.embed button:hover{filter:brightness(1.12)}
+.embed iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
+.embed .alt{display:inline-block;margin-top:10px;margin-left:14px;color:var(--accent);font-size:13.5px}
+/* ★★ 2カラム（設計書 §19-1・ユーザー承認）——「検索から飛んできたけど自分が欲しい情報が
+   どこにあるかわからない」を避けるための目次。⚠ **狭い面では上の折りたたみに落とす**（同じ markup）。
+   ⚠ markup は learn.js の renderToc が組んだもの ＝ 面A側に2本目の目次を持たない（§19-6） */
+/* ⚠⚠ セレクタは**全部 .ref-layout から始める**（.ref-toc … 単独では効かない）。
+   ★ 面Aの CSS は「器（ここ）→ assembler/style.css の切り出し → 明るい地への読み替え」の順に
+     並ぶので、**同じ強さのセレクタは切り出しのほうが勝つ**。
+   ⚠ 実際、.ref-toc details などの器の指定は**焼いた版でずっと効いていなかった**
+     （広い画面でも資料ペインの小さなカードのまま出ていた。2026-09-09 に実測して判明）。 */
+.ref-layout{display:block}
+/* ★★ 狭い面では**畳んだ目次を上に貼り付ける**（2026-09-10）。
+   ⚠ 貼り付けないと、375px 幅で **9,477px ＝ 11.6画面**を読むあいだ、
+     現在地の手がかりがページの先頭に置いてきぼりになる（＝ 見に行けない ＝ 無いのと同じ）。
+   ★ 地を敷いて左右いっぱいに伸ばす（本文が札の脇から透けない） */
+.ref-layout .ref-toc{position:sticky;top:0;z-index:5;margin:22px -16px 10px;padding:6px 16px 8px;
+background:var(--bg)}
+.ref-layout .ref-toc details{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+max-height:calc(100vh - 28px);overflow:auto;box-shadow:0 1px 3px rgba(32,36,43,.07)}
+.ref-layout .ref-toc summary{padding:12px 14px;font-size:14px;color:var(--fg);cursor:pointer;font-weight:700}
+/* ★ 畳んだ目次の札に出す現在地（TOC_JS が入れる。⚠ 広い面では summary ごと隠れる）。
+   ⚠ **1行に留める** —— 節名には長いものがあり、折り返させると札の高さが
+     スクロールのたびに変わって下の本文が飛ぶ（実測して1行に決めた。札は 88px で固定） */
+.ref-layout .ref-toc summary .ref-toc-now{display:block;margin-top:3px;font-weight:400;
+font-size:12.5px;color:var(--accent);line-height:1.5;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ref-layout .ref-toc summary .ref-toc-now:empty{display:none}
+.ref-layout .ref-toc ul{list-style:none;margin:0;padding:0 14px 12px}
+.ref-layout .ref-toc li{margin:0 0 2px}
+.ref-layout .ref-toc a{display:block;padding:6px 9px;border-radius:6px;font-size:13.5px;color:var(--dim);
+text-decoration:none;line-height:1.65}
+.ref-layout .ref-toc a:hover{color:var(--accent);background:#eae6de}
+/* ★★ いま読んでいる節（設計書 §20-3）。⚠ 色だけに頼らず、**太さと左の線**も足す */
+.ref-layout .ref-toc a[aria-current="true"]{color:var(--fg);font-weight:700;background:#e6efef;
+box-shadow:inset 3px 0 0 var(--accent)}
+@media (min-width:1000px){
+  .ref-layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:40px;align-items:start}
+  /* ⚠⚠ **節（:::section）が1つも無いページには目次そのものが出ない**（＝ .ref-toc が居ない）。
+     ★ そのとき本文が**1列目（232px）に落ちて**、右の 680px が丸ごと空く ——
+       実測: alkane-naming の本文が幅 232px、貼った図が 232px（読めない大きさ）。
+     ⚠ 6ページ中4ページが節を持たないので、**空くほうが普通**の状態だった。
+     ★ 直し方は1行 —— 本文は**いつも2列目**に置く（目次が居なくても列は動かない）。 */
+  .ref-layout>.ref-scope{grid-column:2}
+  /* ⚠ 広い面では**目次が独立した1列**なので、狭い面の「貼り付いた札」の飾りを全部戻す */
+  .ref-layout .ref-toc{position:sticky;top:16px;margin:0;padding:0;background:none;
+  max-height:calc(100vh - 32px);overflow:auto}
+  .ref-layout .ref-toc summary{display:none}
+  .ref-layout .ref-toc details{background:none;border:0;border-left:1px solid var(--line);border-radius:0;
+  max-height:none;overflow:visible;box-shadow:none}
+  .ref-layout .ref-toc ul{padding:2px 0 2px 8px}
+  /* ★ 題・要約・小見出しも読み欄にそろえる。⚠ 前は本文 572px に対して題が 828px あり、
+     **左端が2つある**状態だった（画面の中で目の帰る位置が定まらない） */
+  main.wrap>h1,main.wrap>h2,main.wrap>.lede,main.wrap>.embed,main.wrap>nav.seq,
+  main.wrap>div:not(.ref-layout){margin-left:272px;max-width:680px}
+  main.wrap>h1{margin-left:272px}
+}
+/* 節。★ 追従ヘッダーは無いが、アンカーで着地したとき見出しが窓の上端に貼り付かないよう余白を置く。
+   ★★ **見出しを本文から立たせる**（設計書 §20-2）—— 前は本文と同じ色・同じ太さで、
+      7画面ぶん同じ見た目が続いていた（「とっかかりにくい」の実体）。
+   ⚠⚠ **決めごとは面Aと面Bで1つ**（assembler/style.css の .ref-sec にも同じ注記がある）:
+      ⚠ この注記は SHELL_CSS（テンプレートリテラル）の中なので**バッククォートを書けない**。
+      ① 章の切れ目は**節の上の線**（見出しの下の線ではない）
+      ② 見出しは**本文の約1.35倍**（面A 23/17 ・面B 17.5/13）
+      ③ **最初の節には線を引かない**
+      ★ ここで上書きしているのは**寸法だけ** —— 読み欄 680px と資料ペイン 340px で
+        同じ px を使うと、片方が必ず外れる。 */
+.ref-scope .ref-sec{scroll-margin-top:18px;margin:52px 0 16px;padding-top:22px;border-top:2px solid var(--line)}
+.ref-scope .ref-sec:first-child{margin-top:8px;padding-top:0;border-top:0}
+.ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);margin-bottom:6px}
+.ref-scope .ref-sec-lead{font-size:14.5px;color:var(--dim)}
+/* ★★ 発展の折りたたみ（設計書 §24）。⚠⚠ **セレクタを .ref-scope から始める** ——
+   assembler/style.css の切り出しは素の .ref-adv なので、
+   上の .ref-scope .ref-sec（0,2,0）に負けて**上線と 52px の余白が残る**（.ref-toc と同じ踏み方・上の注記）。
+   ★ ここで上書きするのは**寸法だけ**（色は LIGHT_CSS ＝ 明るい地への読み替え側）。 */
+.ref-scope .ref-adv{margin:52px 0 22px;padding-top:0;border-top:0;border-left-width:4px;scroll-margin-top:18px}
+.ref-scope .ref-adv:first-child{margin-top:8px}
+.ref-scope .ref-adv-sum{padding:16px 20px}
+.ref-scope .ref-adv-body{padding:0 20px 8px}
+/* ⚠ 畳んだ札の中では題を一段小さく（開くと本文が続くので、節そのものと同じ強さにしない） */
+.ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
+.ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
+.ref-scope .ref-figure{margin:0 0 24px}
+.ref-scope .ref-figure-cap{font-size:13.5px}
+.ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
+.ref-scope .ref-rx-eq{font-size:17.5px}
+.ref-scope .ref-hand-table{font-size:15px}
+.ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-callout-text{font-size:15.5px}
+/* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
+   13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
+   ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
+.ref-scope .ref-exercise{margin:0 0 24px;padding:14px 18px}
+.ref-scope .ref-ex-tag{font-size:12.5px}
+.ref-scope .ref-ex-q{font-size:16px}
+.ref-scope .ref-ex-a{font-size:15.5px}
+.ref-scope .ref-ex-open{font-size:14px;padding:6px 13px;min-height:32px}
+/* 用語の索引（★ 機械で組む・§19-7） */
+.terms{list-style:none;padding:0;margin:0 0 26px}
+.terms li{border-bottom:1px solid var(--line);padding:10px 2px;font-size:15px}
+.terms a{color:var(--fg);text-decoration:none}
+.terms a:hover{color:var(--accent)}
+.terms span{display:block;font-size:13px;color:var(--dim);margin-top:2px}
+/* 前後・索引へ */
+nav.seq{display:flex;flex-wrap:wrap;gap:16px;margin:36px 0;font-size:14.5px}
+nav.seq a{color:var(--accent);text-decoration:none}
+nav.seq a:hover{text-decoration:underline}
+footer{background:var(--band);color:#a8b0c4;margin-top:44px;padding:18px 0 46px;font-size:12.5px;line-height:1.8}
+footer a{color:#a8b0c4}
+footer a:hover{color:var(--brand)}
+:root{--border-color:rgba(255, 255, 255, 0.08);--font-main:'Noto Sans JP', sans-serif;--neon-purple:#9b59b6;--text-muted:#7a84a2;--text-primary:#f5f6fa;--text-secondary:#a0a8c0}
+.ref-p {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+/* 表そのもの。⚠ **10行そろって初めて規則が見える**ので、絞り込みも折りたたみも付けない
+   （DEVELOPMENT.md「参照は全体像で行う。部分を切り出して渡さない」） */
+.ref-table-wrap { overflow-x: auto; margin: 0 0 12px; }
+.ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-table th, .ref-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    white-space: nowrap;
+}
+.ref-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-table td.ref-c { text-align: right; color: var(--text-muted); }
+/* 分子式でまとめた群の見出し（第2ページ）。⚠ **行は1つも減らない** ——
+   左の1列を rowspan で共有するだけで、隠しても畳んでもいない（`REF4` が見えている行数で見張る） */
+.ref-table td.ref-group {
+    vertical-align: top;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* 官能基の列（第3ページ）。⚠ ここだけ折り返す —— 「1級アルコール×2」のような長い語が
+   nowrap のままだと表が横に伸びて、狭い画面で横スクロールしないと名称の列が読めない */
+.ref-table td.ref-fg { white-space: normal; min-width: 7.5em; }
+/* ⚠ ここは **--font-code を使わない**。装飾等幅では C が ⊏ に見えて読み取りづらい
+   （実機 375px で確認）。資料は読み物なので本文と同じ字で出す */
+.ref-table td.ref-formula { letter-spacing: 0.02em; }
+.ref-cap { font-size: 11.5px; color: var(--text-muted); margin: 0 0 6px; }
+/* 反応機構の表（第4ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   stages の表は「行に ▶ を置かない」（説明と練習の層を混ぜない・設計書 §10-2）が
+   機構の表は1行が読み物そのものなので ▶ を置く。class を分けておくと
+   `REF6`/`REF10` の「`table.ref-table` の中にボタンが無い」がそのまま生き続ける */
+.ref-mech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-mech-table th, .ref-mech-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-mech-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ref-mech-table td.ref-group {
+    vertical-align: top;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-mech-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 型の列も**折り返す**。「芳香族置換反応」を nowrap にすると、それだけで
+   資料ペイン（実測 271px）の3分の1を食う */
+.ref-mech-table td.ref-group { white-space: normal; width: 4.5em; }
+/* 反応名・1行説明・段数・▶ を1つの欄に入れる（どれも reactions.json の1件から）。
+   ⚠⚠ **4列にしない。** 実測（1280px・ペイン 320px・器 271px）で
+      「型 / 反応 / 段数 / ▶」は表が **426px** になり、**▶ が器の右外**（+155px）に出て
+      横スクロールしないと押せなかった ＝ **押すものが見えない** */
+.ref-mech-table td.ref-mech-name { white-space: normal; }
+.ref-mech-table td.ref-mech-name b { color: var(--text-primary); }
+.ref-mech-name .ref-mech-desc {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+.ref-mech-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+.ref-mech-steps { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+.ref-mech-play {
+    min-height: 32px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    font-family: var(--font-main);
+    font-size: 12.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+/* アルコールと脱水生成物の対応表（第5ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   `.ref-table` は「stages.json の系列から作った表」の印で、`REF8`/`REF9`/`REF10` が
+   その前提（行数＝系列の件数・名称が STAGES に在る）で見張っている。
+   この表の元は列挙器（`enumerateConstitutionalIsomers`）なので、混ぜると物差しが噛み合わない */
+.ref-map-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-map-table th, .ref-map-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-map-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-map-table td.ref-group {
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-map-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 名称の列は**折り返す**。「2,2-ジメチル-1-プロパノール」を nowrap にすると
+   それだけで 14em を占め、資料ペイン（実測 271px）では生成物の列が器の外へ出る */
+.ref-map-table td.ref-map-from { white-space: normal; min-width: 6.5em; }
+.ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
+/* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
+.ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
+.ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
+.ref-map-table .ref-map-none { color: var(--text-secondary); }
+.ref-map-table .ref-map-why {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+/* 例題（無料）。★ **新しい採点は作らない** —— 押すと既存のパズルのお題
+   （stages.json の `target` 照合）へ渡すだけ（設計書 §5-2 の (b)） */
+.ref-example {
+    border: 1px solid var(--neon-purple);
+    border-radius: 10px;
+    padding: 12px;
+    background: rgba(155, 89, 182, 0.10);
+}
+.ref-example h4 { margin: 0 0 8px; font-size: 13px; color: #e0b0ff; }
+.ref-try {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    font-family: var(--font-main);
+    font-size: 13.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.ref-note { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 8px 0 0; }
+/* ============================================================================
+ * ★★ 器を広げたぶん（2026-09-09・設計書 §19）
+ *
+ * ⚠ **面A（`/reference/`）はこの規則を `tools/gen-reference-pages.mjs` が切り出して埋める**
+ *   （書き写さない・§17-3 ③）。★ 焼いた HTML に出てくる `.ref-*` の class に規則が1つも
+ *   無ければ生成器が赤くなるので、**ここに書き忘れると気づける**。
+ * ========================================================================== */
+
+/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる
+ *
+ * ★★ **章の切れ目は「見出しの下の線」ではなく「節の上の線＋大きな余白」**（2026-09-10・ref-read レーン）。
+ *   ⚠ **面Aと面Bで同じ決めごと**にしてある —— 面Aは `gen-reference-pages.mjs` の
+ *     `.ref-scope .ref-sec` / `.ref-sec-h` がこれを上書きするが、**上書きしているのは寸法だけ**で、
+ *     ①節の上に線 ②見出しは本文の約1.35倍 ③最初の節には線を引かない、の3つは共通。
+ *   ⚠ **なぜ直したか**（ユーザーの申し立て「わかりにくいというか、とっかかりにくい」）:
+ *     前は **見出し 14px / 本文 13px ＝ 1.08倍**で、下線も `--border-color`（白の 8%）。
+ *     ★ 資料ペインは1ページ **5,594px ＝ 6.8画面ぶん**あり、**そのあいだ切れ目が見えなかった。** */
+.ref-sec {
+    margin: 36px 0 10px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+    scroll-margin-top: 12px;
+}
+/* ⚠ 1つ目の節の上には線を引かない（ページの頭に意味の無い区切りが出る） */
+.ref-sec:first-child { margin-top: 2px; padding-top: 0; border-top: 0; }
+.ref-sec-h {
+    margin: 0 0 5px;
+    /* ★ 本文 13px の 1.35倍。⚠ 面Aは 23px / 本文 17px ＝ 同じ 1.35倍（器が違うので px は違う） */
+    font-size: 17.5px;
+    line-height: 1.45;
+    color: #e0b0ff;
+}
+/* ★ 「この節で分かること」1行。⚠ 本文と同じ見た目にしない（着地した人が最初に読む文なので） */
+.ref-sec-lead { margin: 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+/* ★ 節の目次。**markup は面Aと同じ**（`<nav class="ref-toc"><details>`）で、
+   狭いこのペインでは「上の折りたたみ」、面Aの広い画面では左に固定される（CSS だけの違い） */
+.ref-toc { margin: 0 0 14px; }
+.ref-toc details {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-toc summary { padding: 7px 10px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.ref-toc ul { list-style: none; margin: 0; padding: 0 10px 8px; }
+.ref-toc li { margin: 0 0 4px; }
+.ref-toc a { font-size: 12.5px; color: #e0b0ff; text-decoration: none; line-height: 1.6; }
+/* ★ 節の下の小見出し（§20-5）。⚠ **節（`.ref-sec-h`）より一段小さく**、地の色も持たない ——
+   目次に出ないもの（＝ 検索の着地点ではないもの）が、節と同じ強さで並ばないようにする */
+.ref-h5 {
+    margin: 16px 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--border-color);
+    padding-left: 8px;
+}
+/* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節・小見出し・目次の3か所に同じ札**が出る。
+   ⚠⚠ **注意（黄）・丸暗記（紫）・反応式の重要度（★★★）と見分けが付くこと**が要る ——
+     どれも「大事さ」の話だが、この札だけは**大事さを言っていない**（範囲の外か内か、だけ）。
+   ★ だから色を1つ空けた（緑）。⚠ 面Aは明るい地なので `gen-reference-pages.mjs` の
+     LIGHT_CSS で読み替える（`#7fd6a4` は白地で 1.9:1 ＝ 読めない）。
+   ★ 地を持たず**縁だけ**にしてあるのは、囲み（callout）と同じ強さに見せないため。 */
+.ref-adv-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #7fd6a4;
+    border: 1px solid #7fd6a4;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+/* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
+.ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
+   ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
+   ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
+.ref-sec-advanced { border-top-color: #7fd6a4; }
+.ref-h5-advanced { border-left-color: #7fd6a4; }
+/* ============================================================================
+ * ★★ 発展は**畳んで置く**（設計書 §24・2026-09-11）
+ *
+ * > 初学者のニーズと発展レベルのニーズを同時に満たしたい。
+ * > 初学者がとっかかりにくくなるのは避けたいし、事典的に網羅もしたい（ユーザー）
+ *
+ * ★★ **網羅する量は1文字も減らさない。減らすのは最初に画面へ出る量だけ。**
+ * ⚠ 器は `<details>`（`:::exercise` の解答隠しと同じ）＝ **JS が要らない**ので、
+ *   焼いた面A（`/reference/<id>/`）でもアプリの面Bでも同じ markup が同じように効く。
+ * ⚠ 面Aは `tools/gen-reference-pages.mjs` がここを切り出し、
+ *   **寸法は SHELL_CSS・色は LIGHT_CSS** が上書きする（明るい地では緑が 1.9:1 で読めない）。
+ *
+ * ★ 畳んでも開いても、**左の帯と地色で「ここは発展」が見えている**こと ——
+ *   閉じた札が本文と同じ地だと、ただの見出しに見えて「開くと続きがある」と読めない。
+ *
+ * ⚠⚠ **畳むのは `:::section` だけ。`## 小見出し` の発展は畳まない**（設計書 §24-2）——
+ *   小見出しには「どこまでが発展か」が器で言えない。`alkane.md` の
+ *   「電子対はどう動いているのか（発展）」は**寄り道が1段落だけ**で、そのあとに
+ *   **★★★（必ず覚える）の反応式**が続く ＝ 次の節まで畳むと必ず覚える式が既定で隠れる。
+ * ========================================================================== */
+.ref-adv {
+    margin: 36px 0 14px;
+    /* ⚠ 節の上線（`.ref-sec`）は使わない —— 層の印は**左の帯と地**に持たせる
+       （線と帯と地が全部出ると、発展だけ3重に飾られて本文より強く見える） */
+    border-top: 0;
+    padding-top: 0;
+    border-left: 3px solid #7fd6a4;
+    border-radius: 0 10px 10px 0;
+    /* ★★ **暗い地では「沈める」**（明るい地の面Aは逆に「緑の紙を敷く」）。
+       ⚠⚠ **緑の薄敷きは実測で赤になった**（2026-09-11・check-contrast）——
+         rgba(127,214,164,.07) を敷くと資料ペインの地が #15181f → #1c2528 に明るくなり、
+         中に入る添え物の字（`--text-muted` #7a84a2）が **4.78:1 → 4.22:1** で AA を割った。
+       ★ `--text-muted` は「4.5 を満たす中でいちばん暗い側」で選んである（:root の注記）ので、
+         **この地の上には、いまより明るい敷きを置く余地がほとんど無い**（上限は約 +40% の輝度）。
+       ★ だから**逆へ倒した** —— 沈めると中の字は全部 4.78 → 5.04 に上がる。
+         緑の手がかりは**左の帯・▶ の印・「発展」の札**が持つので、地まで緑にする必要はない。 */
+    background: rgba(0, 0, 0, 0.25);
+    scroll-margin-top: 12px;
+}
+.ref-adv-sum {
+    padding: 11px 12px;
+    cursor: pointer;
+    /* ⚠ 既定の三角を消して自前の ▶ / ▼ に替える（`.ref-ex-open` と同じ理由：
+         ブラウザごとに位置が違い、題の1行目とそろわない） */
+    list-style: none;
+}
+.ref-adv-sum::-webkit-details-marker { display: none; }
+.ref-adv-sum > .ref-sec-h { margin-top: 0; }
+.ref-adv-sum > .ref-sec-h::before {
+    content: '▶ ';
+    color: #7fd6a4;
+    font-size: 0.8em;
+    vertical-align: 0.1em;
+}
+.ref-adv[open] > .ref-adv-sum > .ref-sec-h::before { content: '▼ '; }
+.ref-adv-body { padding: 2px 12px 6px; }
+/* ⚠ 畳んだ中の最後の余白が二重にならないように */
+.ref-adv-body > *:last-child { margin-bottom: 0; }
+/* ★★ 穴あきテンプレートの `○○`（設計書 §23-2）。**名前の作り方を「型」で見せるための空欄。**
+   ⚠⚠ **文字を消して下線だけにしない。** 理由は3つ:
+     ① 「まるまるブタン」と**声に出せる**（本人の書きぶりは「そのまま声に出せる短い文字列」・§8-4）
+     ② **検索にかかる**（面Aで「○○ブタン」を本文検索できる。下線だけだと本文0字）
+     ③ **字数を暗示しない**（`____` は長さで「何文字入るか」を勝手に言ってしまう）
+   ★ 代わりに「ここは空欄」を**薄い地と点線の下線**で言う。⚠ 文字色は本文のまま（AA を割らない）。 */
+.ref-blank {
+    padding: 0 2px;
+    border-radius: 3px 3px 0 0;
+    background: rgba(255, 255, 255, 0.07);
+    border-bottom: 2px dotted var(--text-muted);
+    letter-spacing: 0.06em;
+}
+/* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
+.ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
+.ref-list li { margin: 0 0 5px; }
+/* ★★ ぶら下げの補足（設計書 §23-3）。**項目の中**に入るので、番号の右の文字列と縦がそろう。
+   ⚠ 本文と同じ見た目にしない（補足だと分かること）が、AA は割らない（`--text-secondary` は 8.3:1）。 */
+.ref-li-hang {
+    margin: 4px 0 2px;
+    padding-left: 0.8em;
+    border-left: 2px solid var(--border-color);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+}
+/* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
+   参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
+.ref-figure { margin: 0 0 14px; }
+.ref-figure-img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    /* ⚠ スライドは白地なので、暗い器の上にそのまま置くと図が浮く。地を白にして囲む */
+    background: #fff;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+}
+.ref-figure-cap { font-size: 11.5px; color: var(--text-muted); margin: 5px 0 0; line-height: 1.6; }
+/* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
+.ref-rx {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+/* ⚠ **記号だけを出さない**（言葉を添える。ユーザー指示・§18-3） */
+.ref-rx-level { font-size: 11.5px; margin-bottom: 6px; letter-spacing: 0.04em; }
+.ref-rx-lv1 { color: #ffd166; }
+.ref-rx-lv2 { color: var(--text-secondary); }
+.ref-rx-lv3 { color: var(--text-muted); }
+/* ⚠ 折り返しを許す（狭いペインで式が横に溢れると、右辺が読めない） */
+.ref-rx-eq {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+.ref-rx-side { white-space: nowrap; }
+/* 矢印の上下に条件（試薬・温度・触媒）。★ 空なら高さも取らない */
+.ref-rx-arrow { display: inline-flex; flex-direction: column; align-items: center; min-width: 3.4em; }
+.ref-rx-over, .ref-rx-under { font-size: 10.5px; color: var(--neon-cyan, #7ef); line-height: 1.3; white-space: nowrap; }
+.ref-rx-over:empty, .ref-rx-under:empty { display: none; }
+.ref-rx-bar { font-size: 22px; line-height: 1.05; color: var(--text-secondary); }
+/* ★ 手で書く表（機械が行を作れないもの）。
+   ⚠ **`.ref-table` とは別の class** —— あちらは「stages.json の系列から作った表」の物差し
+      （`REF8`/`REF9`/`REF10`）が掛かっている（`.ref-map-table` と同じ判断） */
+.ref-hand-table { width: 100%; border-collapse: collapse; font-size: 12.5px; line-height: 1.6; }
+.ref-hand-table th, .ref-hand-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-hand-table th { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); font-weight: 600; white-space: nowrap; }
+/* 注意の囲み。⚠ 札の言葉は learn.js の `REF_TONE_WORDS`（記号だけにしない） */
+.ref-callout {
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border-left: 3px solid var(--border-color);
+    border-radius: 0 8px 8px 0;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
+.ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+.ref-callout-caution { border-left-color: #ffd166; }
+.ref-callout-caution .ref-callout-tag { color: #ffd166; }
+.ref-callout-memorize { border-left-color: var(--neon-purple); }
+.ref-callout-memorize .ref-callout-tag { color: #e0b0ff; }
+.ref-callout-skip { border-left-color: var(--text-muted); }
+/* ★ 補足。**型を書かない `::: … :::` の既定**（§20-4）。⚠ いちばん静かな見せ方にする ——
+   「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
+.ref-callout-note { border-left-color: var(--text-secondary); }
+.ref-callout-note .ref-callout-tag { color: var(--text-muted); }
+/* ★★ ページどうし・アプリへのリンク（§20-7）。
+   ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
+      押せるものと同じ見た目にしない —— 淡くしたうえで「準備中」の札を必ず添える
+      （札を出すのは learn.js。ここは見た目だけ）。 */
+.ref-link-row { margin: 0 0 12px; }
+.ref-link {
+    display: inline-block;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+a.ref-link { color: #e0b0ff; text-decoration: none; }
+a.ref-link:hover { border-color: var(--neon-purple); background: rgba(224, 176, 255, 0.08); }
+a.ref-link::before { content: '→ '; }
+.ref-link-soon { color: var(--text-muted); border-style: dashed; cursor: default; }
+.ref-link-badge { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+/* ★★ 例題（`:::exercise`・設計書 §22）—— **読者が自分で解く**もの。
+   ⚠⚠ `.ref-example`（▶ 組んでみる）とは別もの。あちらは紫の器で「パズルのお題を開く」、
+      こちらは水色の帯で「紙に書いて、解答を開いて見比べる」。★ 色を分けたのは、
+      同じページに両方が並ぶから（どちらを押すと画面が変わるのかが見て分かること）。
+   ⚠ **添え物の色（`--text-secondary` / `--text-muted`）を使わない** ——
+      面Bのそれらは AA（4.5:1）を割っている（§21-9 の2）。例題は読んで解くものなので、
+      本文と同じ `--text-primary` で通す（大きさと太さで段を付ける）。 */
+.ref-exercise {
+    margin: 0 0 14px;
+    padding: 11px 12px;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-cyan, #7ef);
+    border-radius: 0 10px 10px 0;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-ex-tag { display: block; font-size: 11.5px; letter-spacing: 0.04em; margin-bottom: 4px; color: var(--text-primary); }
+.ref-ex-q { margin: 0; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
+/* ⚠ 例題の図は**原寸より大きくしない**。スライドの構造式は素の大きさが 310px 前後なので、
+   読み欄いっぱい（面Aで 680px）に引き伸ばすと2倍に拡大されて、紙に書いた図に見えなくなる。
+   ★ 狭い面（資料ペイン 320px）では今までどおり幅いっぱいに縮む。 */
+.ref-exercise .ref-figure-img { margin-top: 8px; max-width: 430px; }
+/* ⚠⚠ **解答は閉じたまま置く**（ページを開いた瞬間に答えが見えない）。
+   ★ `<details>` の既定が閉じ ＝ **JS を1行も使わない**ので、面A（焼いた静的ページ）でも効く。
+   ⚠ 既定の三角（`list-style`／`::-webkit-details-marker`）を消して、自前の ▶ / ▼ に替える
+      —— ブラウザごとに位置が違い、札の枠から はみ出して見えるため。 */
+.ref-ex-answer { margin-top: 10px; }
+.ref-ex-open {
+    display: inline-block;
+    min-height: 28px;
+    padding: 4px 11px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--color-bg, rgba(0, 0, 0, 0.25));
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    list-style: none;
+}
+.ref-ex-open::-webkit-details-marker { display: none; }
+.ref-ex-open::before { content: '▶ '; }
+.ref-ex-answer[open] .ref-ex-open::before { content: '▼ '; }
+.ref-ex-a { margin-top: 9px; font-size: 12.5px; line-height: 1.75; color: var(--text-primary); }
+.ref-ex-a p { margin: 0; }
+/* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
+:root{
+  --text-primary:#20242b;   /* 本文 */
+  --text-secondary:#4e5765; /* 表の見出し・節の1行 */
+  --text-muted:#636b78;     /* 添え物（⚠ #6a7280 だと図の説明が 4.37:1 で 4.5 に届かなかった） */
+  --border-color:#d5d0c7;   /* 罫線（⚠ 前は rgba(255,255,255,.08) ＝ 明るい地では消える） */
+  --neon-purple:#7c4dab;
+  /* ⚠ この2つは assembler/style.css の :root に**無い**（予備つきで使われている）ので、
+     ここで定義すると予備を上書きできる ＝ 規則そのものを書き直さずに読み替えられる */
+  --neon-cyan:#0d6c78;      /* .ref-rx-over / .ref-map-major（前は予備の #7ef ＝ 白地で 1.5:1） */
+  --color-bg:#fff;          /* .ref-try / .ref-mech-play の地（前は予備の rgba(0,0,0,.35)） */
+}
+/* ── ② 「白の薄敷き」を明るい地の敷きへ ── */
+.ref-scope .ref-table th,.ref-scope .ref-mech-table th,.ref-scope .ref-map-table th,
+.ref-scope .ref-hand-table th{background:#e9e5dd;color:#3b4351}
+.ref-scope .ref-table td.ref-group,.ref-scope .ref-mech-table td.ref-group,
+.ref-scope .ref-map-table td.ref-group{background:#f0ece4;color:var(--fg)}
+.ref-scope .ref-map-table tr.ref-map-blocked td{background:#efedea}
+.ref-scope .ref-rx{background:var(--panel);border-color:var(--line)}
+.ref-scope .ref-hand-table td{background:var(--panel)}
+.ref-scope .ref-callout{background:#f0ece4;border-radius:0 8px 8px 0}
+/* ── ③ 3つの調子が**見て区別できる**こと（明るい地では前の色は効かない）── */
+.ref-scope .ref-callout-caution{background:#fdf4e0;border-left-color:#c07a00}
+.ref-scope .ref-callout-caution .ref-callout-tag{color:#8a5600}
+.ref-scope .ref-callout-memorize{background:#f3ecfa;border-left-color:#7c4dab}
+.ref-scope .ref-callout-memorize .ref-callout-tag{color:#5f3585}
+.ref-scope .ref-callout-skip{background:#eeece8;border-left-color:#9aa0a8}
+.ref-scope .ref-callout-tag{font-size:12.5px;font-weight:700;letter-spacing:.03em}
+/* ── ④ 明るい地で読めなくなる文字色 ── */
+.ref-scope .ref-sec-h{color:var(--fg)}
+.ref-toc a{color:var(--dim)}
+.ref-scope .ref-rx-lv1{color:#8a5600;font-weight:700}
+/* 矢印の上下の条件（試薬・温度・触媒）。⚠ 予備の #7ef は白地で 1.5:1 ＝ 読めない */
+.ref-scope .ref-rx-over,.ref-scope .ref-rx-under{color:#0d6c78}
+.ref-scope .ref-example{background:#f3ecfa;border-color:#7c4dab}
+.ref-scope .ref-example h4{color:#5f3585}
+.ref-scope a.ref-try,.ref-scope a.ref-mech-play{color:#5f3585;background:var(--panel);border-color:#7c4dab}
+.ref-scope a.ref-try:hover,.ref-scope a.ref-mech-play:hover{background:#f3ecfa}
+/* ページどうし・アプリへのリンク。⚠ 暗い地の #e0b0ff は明るい地で 1.9:1 ＝ 読めない。
+   ★ 同じ「押せる札」の .ref-try と同じ色に寄せる（読者から見て同じ種類のものなので） */
+.ref-scope a.ref-link{color:#5f3585}
+.ref-scope a.ref-link:hover{border-color:#7c4dab;background:#f3ecfa}
+/* 例題（:::exercise・§22）。⚠ 暗い地では「白の薄敷き＋水色の帯」だったが、
+   明るい地では敷きが効かない（#f5f3ef の上に rgba(255,255,255,.03) ＝ 見た目が変わらない）。
+   ★ 読み替えの向きは .ref-rx と同じ ＝ 紙（--panel）を敷いて罫線で囲む。
+   ⚠ 左の帯は --accent（#0d6c78）で残す —— border-color の一括指定は
+     左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
+   ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
+     地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+/* ★★ 発展の印（§23）。⚠ 暗い地の #7fd6a4 は明るい地で 1.9:1 ＝ 読めない。
+   ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
+     見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
+.ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+.ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
+.ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
+   明るい地でそれをやると「灰色の面」になって、注意（橙）・丸暗記（紫）と同じ強さの囲みに見える。
+   ★ 明るい地では逆に**緑寄りの紙を敷く**（#ebf2ec）—— 本文の地 #f5f3ef と紙 #fff の
+     どちらとも見分けが付き、添え物の字（#59616c）で 5.50:1・発展の緑（#2e6b45）で 5.58:1（AA）。
+   ⚠ 向きが逆なのは**要件が違うから** —— 暗い地は添え物の字（--text-muted）の余地がほとんど無く、
+     ペインの地より明るい敷きを置けない（assembler/style.css の .ref-adv の注記に実測がある）。
+   ⚠ ここは LIGHT_CSS（テンプレートリテラル）の中なので、コメントにバッククォートを書けない。 */
+.ref-scope .ref-adv{background:#ebf2ec;border-left-color:#2e6b45}
+.ref-scope .ref-adv-sum>.ref-sec-h::before{color:#2e6b45}
+/* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
+   （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
+.ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
+.ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
+.ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
+/* ★★ **印刷は開いた状態で出す**（§24）。
+   ⚠ @media は assembler/style.css から切り出されない（器の話）ので、面Aぶんはここに書く。
+   ⚠⚠ **SHELL_CSS ではなくここ（いちばん後ろ）に置く。** @media は強さを足さないので、
+     SHELL に書くと ▶ の打ち消し（.ref-adv-sum>.ref-sec-h::before）が
+     **切り出しの同じ強さの規則に負けて効かない**（.ref-toc details と同じ踏み方・上の注記）。
+   ★ 疑似要素 ::details-content を持たない版は refAdvSetup の beforeprint が開く。 */
+@media print{
+  .ref-adv::details-content{content-visibility:visible}
+  .ref-adv{break-inside:avoid-page}
+  /* 紙の上では ▶ が「まだ閉じている」と読めてしまうので消す（中身は出ている） */
+  .ref-scope .ref-adv-sum>.ref-sec-h::before{content:''}
+  .ref-layout .ref-toc{position:static;max-height:none}
+}</style>
+</head>
+<body>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<main class="wrap">
+<h1>エステル</h1>
+<p class="lede">エステル結合 −COO− をもつ化合物のまとめ。一般式と命名、エステル化・加水分解・けん化の3本の反応、ギ酸エステルの還元性、そして「加水分解してから条件を読む」構造決定の手順まで。</p>
+<div><span class="unit-label">カルボン酸とエステル</span><span class="unit-label">エステル</span></div>
+
+<div class="ref-layout">
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-props" data-ref-anchor="props">エステルの性質</a></li><li><a href="#ref-sec-naming" data-ref-anchor="naming">エステルの命名</a></li><li><a href="#ref-sec-reaction" data-ref-anchor="reaction">エステル化・加水分解・けん化</a></li><li><a href="#ref-sec-structure" data-ref-anchor="structure">エステルの構造決定</a></li><li><a href="#ref-sec-advanced" data-ref-anchor="advanced">2価のエステル・環状エステル・無機のエステル</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
+<div class="ref-scope">
+<p class="ref-p">カルボン酸とアルコールから水がとれて縮合した化合物を<b>エステル</b>といい、そのときできる −COO− の結合を<b>エステル結合</b>といいます。</p>
+<section class="ref-sec" id="ref-sec-props"><h4 class="ref-sec-h">エステルの性質</h4><p class="ref-sec-lead">カルボン酸と同じ一般式をもち、果実のような芳香がある無極性の液体です。</p></section>
+<p class="ref-p">鎖式で不飽和結合をもたないエステルの一般式は <b>C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub></b> です。n = 3 を代入すると C₃H₆O₂ ＝ 酢酸メチル CH₃COOCH₃ の分子式が得られます。</p>
+<p class="ref-p">カルボン酸も同じ一般式 C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> をもつので、<b>同じ分子式のエステルとカルボン酸は互いに構造異性体</b>です。分子式 C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> を見たら、カルボン酸とエステルの両方を候補に入れてください。</p>
+<p class="ref-p">エステルは<b>果実のような芳香</b>をもつ液体です。実際に果実の香りの成分として含まれています。酢酸エチル CH₃COOC₂H₅ は無色の液体で、溶媒や香料に使われます。</p>
+<p class="ref-p">エステルは無極性分子なので分子間力が弱く、<b>沸点が低い</b>です。同じ理由でほとんど水に溶けないと考えてよく、炭素数の少ないエステルだけがある程度水に溶けます。</p>
+<p class="ref-p">カルボン酸は加水分解を起こしませんが、<b>エステルは加水分解してアルコールとカルボン酸にもどります</b>。この違いが構造決定の出発点になります。</p>
+<h5 class="ref-h5">なぜカルボン酸とエステルの一般式が同じになるのか</h5>
+<p class="ref-p">どちらも<b>カルボニル化合物 C<sub>n</sub>H<sub>2n</sub>O に O 原子を1個入れた構造</b>をしています。入れる場所が違うだけです。</p>
+<ol class="ref-list"><li>カルボニル基と H 原子の間に O 原子を入れる → <b>カルボン酸</b>になる。<div class="ref-li-hang">アルデヒド R−CHO の C と H の間に O が入って R−COOH</div></li><li>カルボニル基と C 原子の間に O 原子を入れる → <b>エステル</b>になる。<div class="ref-li-hang">アルデヒド R−CHO の C と R の間に O が入って R′−COO−R</div></li></ol>
+<p class="ref-p">どちらも C<sub>n</sub>H<sub>2n</sub>O に O が1個増えただけなので、一般式は C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> になります。</p>
+<p class="ref-p">別の数え方もできます。エステルは2つのアルキル基 −C<sub>a</sub>H<sub>2a+1</sub> と −C<sub>b</sub>H<sub>2b+1</sub> がエステル結合でつながった形なので、分子式は C<sub>a+b+1</sub>H<sub>2(a+b+1)</sub>O<sub>2</sub> となり、n = a＋b＋1 と置けば C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> になります。<b>この導出を覚える必要はありません。</b>一般式そのものは覚えてください。</p>
+<section class="ref-sec" id="ref-sec-naming"><h4 class="ref-sec-h">エステルの命名</h4><p class="ref-sec-lead">「カルボン酸の名前」＋「アルコールから来たアルキル基の名前」をつなぐだけです。</p></section>
+<p class="ref-p">エステルの名称は「<b>（カルボン酸の名称）＋（カルボン酸の H 原子を置換したアルキル基の名称）</b>」です。カルボン酸の名前を慣用名で覚えているので、エステルの名前も慣用名でよいです。</p>
+<ol class="ref-list"><li>エステル結合 −COO− の<b>左側（C=O のある側）</b>がカルボン酸から来た部分。その名前を前に置く。<div class="ref-li-hang">カルボン酸が酢酸なら「<b>酢酸</b><span class="ref-blank">○○</span>」、ギ酸なら「<b>ギ酸</b><span class="ref-blank">○○</span>」</div></li><li>エステル結合の<b>右側（O から炭素へ伸びる側）</b>がアルコールから来た部分。そのアルキル基の名前を後ろに置く。<div class="ref-li-hang">メタノール由来なら「<span class="ref-blank">○○</span><b>メチル</b>」、エタノール由来なら「<span class="ref-blank">○○</span><b>エチル</b>」</div></li></ol>
+<p class="ref-p">酢酸とエタノールからできるエステルなら、前が「酢酸」、後ろが「エチル」で、<b>酢酸エチル</b>になります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ester-naming.png" alt="ギ酸メチルと酢酸エチルの構造式。カルボン酸から来た部分が青、アルコールから来たアルキル基が緑で塗り分けられ、下にメタン酸メチル（ギ酸メチル）・エタン酸エチル（酢酸エチル）と書かれている" loading="lazy"><figcaption class="ref-figure-cap"><b>青がカルボン酸から来た部分、緑がアルコールから来た部分</b>です。名前も青・緑の順に読みます。</figcaption></figure>
+<p class="ref-p"><b>エステルの名前は、構造式を見て言えるようにしてください。</b>構造決定の答案では、名前ではなく構造式で答えることが多いので、逆向き（名前から構造式）も書けるようにしておくと安全です。</p>
+<section class="ref-sec" id="ref-sec-reaction"><h4 class="ref-sec-h">エステル化・加水分解・けん化</h4><p class="ref-sec-lead">同じ反応を右へ進めるか左へ進めるか、そして左へ進めて止める方法。3本で1組です。</p></section>
+<p class="ref-p">カルボン酸 R−COOH とアルコール R′−OH の混合物に、触媒として少量の<b>濃硫酸</b>を加えて加熱すると、脱水縮合してエステルが生じます。これを<b>エステル化</b>といいます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−COOH ＋ R′−OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">R−COO−R′ ＋ H₂O</span></div><p class="ref-note">触媒としてはたらくのは水素イオン H⁺ です。濃硫酸を使うのは、脱水作用で生じた水を取り除いて平衡を右へ寄せ、エステルの収率を上げるためです。</p></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/esterification.png" alt="カルボン酸とアルコールが脱水縮合してエステルと水になる反応の構造式。カルボン酸の OH とアルコールの H が橙色の枠で囲まれ、そこから矢印が右端の H₂O を指している" loading="lazy"><figcaption class="ref-figure-cap">とれるのは、<b>カルボン酸の −OH</b> と<b>アルコールの −H</b> です。向きを逆に覚えないでください。</figcaption></figure>
+<p class="ref-p"><b>「カルボン酸から OH、アルコールから H がとれる」は丸暗記してください。</b>反応の仕組みの上でそう決まっているもので、どちらの原子が水になったかを問う問題がよく登場します。</p>
+<p class="ref-p">逆向きに進めると<b>加水分解</b>です。エステルに希硫酸などの酸を触媒として水を加えると、カルボン酸とアルコールにもどります。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−COO−R′ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">希硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−COOH ＋ R′−OH</span></div><p class="ref-note">エステル化とまったく同じ反応を左向きに進めたものなので、可逆反応です。だから完全にはもどりきりません。</p></div>
+<p class="ref-p">エステルに<b>水酸化ナトリウム水溶液</b>を加えて加熱すると、カルボン酸の塩とアルコールに分かれます。これを<b>けん化</b>といいます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−COO−R′ ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−COONa ＋ R′−OH</span></div><p class="ref-note">生じたカルボン酸がその場で中和されて塩になるので、逆反応が起こりません。だから最後まで進みます。</p></div>
+<p class="ref-p"><b>「加水分解は可逆、けん化は最後まで進む」と覚えましょう。</b>同じ「エステルを切る」操作でも、酸を使うか塩基を使うかで結果が変わります。</p>
+<div class="ref-table-wrap"><div class="ref-cap">エステル結合をつくる／切る3本の反応（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">反応の名前</th><th style="text-align: left;">加えるもの</th><th style="text-align: left;">できるもの</th><th style="text-align: left;">逆にもどるか</th></tr></thead><tbody><tr><td style="text-align: left;">エステル化</td><td style="text-align: left;">カルボン酸とアルコールに濃硫酸を加えて加熱</td><td style="text-align: left;">エステル ＋ 水</td><td style="text-align: left;">もどる（可逆）。濃硫酸が水を取り除いて右へ寄せる</td></tr><tr><td style="text-align: left;">加水分解</td><td style="text-align: left;">エステルに水と希硫酸などの酸を加える</td><td style="text-align: left;">カルボン酸 ＋ アルコール</td><td style="text-align: left;">もどる（可逆）。だから完全には切れない</td></tr><tr><td style="text-align: left;">けん化</td><td style="text-align: left;">エステルに水酸化ナトリウム水溶液を加えて加熱</td><td style="text-align: left;">カルボン酸のナトリウム塩 ＋ アルコール</td><td style="text-align: left;">もどらない。塩になった時点で逆反応が起こらない</td></tr></tbody></table></div>
+<h5 class="ref-h5">ギ酸エステルは還元性を示す</h5>
+<p class="ref-p">ギ酸エステル <b>HCOO−R</b> は、エステルでありながら<b>銀鏡反応を示します</b>。HCOO− の H−C=O の部分が、そのままホルミル基のかたちになっているためです。</p>
+<p class="ref-p"><b>「還元性を示すのは、アルデヒドとギ酸とギ酸エステル」と覚えてください。</b>「エステルだから還元性は無い」として候補から外すと、構造決定で答えが出なくなります。分子式から異性体を書き出すときは、ギ酸エステルを最初から候補に入れてください。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">同じ理由で還元性を示すギ酸 HCOOH をカルボン酸のページで見る</a></p>
+<section class="ref-sec" id="ref-sec-structure"><h4 class="ref-sec-h">エステルの構造決定</h4><p class="ref-sec-lead">エステルはまず切る。切って出てきたアルコールとカルボン酸に、条件を当てていきます。</p></section>
+<p class="ref-p">エステルの構造決定は、<b>加水分解して2つに切ってから、それぞれについての条件を読む</b>のが基本の形です。条件はほとんどがアルコール側に付きます。</p>
+<ol class="ref-list"><li>分子式の<b>酸素の数</b>を見る。エステル結合1つが O 原子を2個使うので、O が2個ならエステル結合は1つです。<div class="ref-li-hang">O が2個なら「エステルかカルボン酸」、O が4個なら「エステル結合は多くても2つ」</div></li><li><b>加水分解して2つに分ける。</b>炭素数の和は、もとの分子の炭素数と等しくなります。<div class="ref-li-hang">炭素数5なら「カルボン酸1＋アルコール4」「2＋3」「3＋2」「4＋1」の4通り</div></li><li>出てきた<b>アルコール側</b>の条件を当てる。酸化の行き先（1級か2級か3級か）・脱水生成物・ヨードホルム反応・不斉炭素原子の有無。</li><li>出てきた<b>カルボン酸側</b>の条件を当てる。銀鏡反応が陽性ならギ酸、炭素数1ならギ酸。</li><li>決まった2つをエステル結合でつなぎ直して、<b>構造式</b>を書く。</li></ol>
+<p class="ref-p"><b>アルコールの性質と、アルキル基の書き出しができることが前提になります。</b>構造決定でつまずくときは、たいていエステルではなくアルコール側の知識が抜けています。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">アルコールを酸化するとどうなるかの対応表はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/assembler/?open=isomer&amp;formula=C4H8O2&amp;cls=ester">分子式 C₄H₈O₂ のエステルをアプリで書き出してみる（4種）</a></p>
+<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-advanced"><summary class="ref-adv-sum"><h4 class="ref-sec-h">2価のエステル・環状エステル・無機のエステル<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">エステル結合が2つあるとき、同じ分子の中で結ばれたとき、そして相手が無機の酸のとき。</p></summary><div class="ref-adv-body"><p class="ref-p">エステル結合1つが O 原子を2個使うので、<b>分子式の酸素の数から、エステル結合の数は多くてもその半分</b>と決まります。O が4個なら、エステル結合は多くても2つです。</p><p class="ref-p">2価以上のエステルを加水分解すると、<b>出てくるものの比は 1対1 とはかぎりません</b>。同じアルコールや同じ酸が2分子出てくることがあります。</p><p class="ref-p">鎖状の2価エステルは、<b>エステル結合の向きの組み合わせが3通り</b>あります。向きが違うと加水分解で出てくるものが変わるので、3通りとも書き出してから条件を当てます。</p><p class="ref-p">同じ分子の中にあるヒドロキシ基とカルボキシ基が脱水すると、環状のエステルができます。これを<b>ラクトン</b>といいます。ラクトンは加水分解しても分子が2つに分かれないので、<b>加水分解の前後で分子の数が変わりません</b>。</p><p class="ref-p">硝酸や硫酸などの無機の酸（オキソ酸）も、アルコールとエステルをつくります。グリセリンと硝酸のエステルが<b>ニトログリセリン</b>です。</p><p class="ref-p"><b>この節の内容を先に覚える必要はありません。</b>構造決定の問題文に「2価のエステル」「環状のエステル」と書いてあったときに、ここへ戻ってくれば十分です。</p></div></details>
+<h5 class="ref-h5">例題</h5>
+<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化学反応式を書け。<b>(1) 酢酸とエタノールに少量の濃硫酸を加え加熱した　(2) ギ酸と2-プロパノールに少量の濃硫酸を加え加熱した</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) CH₃COOH ＋ C₂H₅OH → CH₃COOC₂H₅ ＋ H₂O（酢酸エチル）　(2) HCOOH ＋ CH₃CH(OH)CH₃ → HCOOCH(CH₃)₂ ＋ H₂O（ギ酸イソプロピル）　どちらも<b>カルボン酸から −OH、アルコールから −H</b> がとれています。名前は「カルボン酸の名前＋アルキル基の名前」の順につなぎます。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式が C₆H₁₂O₂ である化合物 A がある。A を加水分解すると B と C が生じた。C を酸化すると B が得られた。<b>化合物 A の構造式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>A はエステルなので、加水分解するとカルボン酸 B とアルコール C に分かれます。「C を酸化すると B」ということは、C と B は炭素数が同じで、C は酸化されてカルボン酸になる<b>1級アルコール</b>です。炭素数の和が6で、2つが同数なので、どちらも炭素数3。つまり B はプロピオン酸 CH₃CH₂COOH、C は1-プロパノール CH₃CH₂CH₂OH です。よって A は<b>プロピオン酸プロピル CH₃CH₂COOCH₂CH₂CH₃</b> となります。2-プロパノールを酸化してもアセトン（ケトン）にしかならないので、C は1-プロパノールに決まります。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">分子式が C₅H₁₀O₂ である化合物 A、B がある。A は不斉炭素原子をもたないが、B は不斉炭素原子をもつ。A を加水分解すると C と D が、B を加水分解すると E と F がそれぞれ生じた。C に濃硫酸を加えて加熱すると沸点34℃の F の構造異性体が生じた。E にアンモニア性硝酸銀水溶液を加えて加熱すると X が析出した。F をヨウ素と水酸化ナトリウム水溶液とともに加熱すると Y の（ア）色沈殿が生じた。<b>A、B の構造式、X、Y の化学式、（ア）に当てはまる語句を答えよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>沸点34℃の物質はジエチルエーテル C₂H₅OC₂H₅ です。C を分子間脱水するとジエチルエーテルになるので、<b>C はエタノール C₂H₅OH</b>。F はジエチルエーテルの構造異性体なので分子式は C₄H₁₀O のアルコールで、さらにヨードホルム反応が陽性なので CH₃CH(OH)− をもち、<b>F は2-ブタノール CH₃CH(OH)C₂H₅</b> です。A は C₅H₁₀O₂ でアルコール側がエタノール（炭素数2）なので、カルボン酸 D は炭素数3のプロピオン酸。よって <b>A はプロピオン酸エチル CH₃CH₂COOC₂H₅</b>（不斉炭素原子なし）。B はアルコール側が2-ブタノール（炭素数4）なので、カルボン酸 E は炭素数1のギ酸 HCOOH で、銀鏡反応を示すことと合います。よって <b>B はギ酸 sec-ブチル HCOOCH(CH₃)C₂H₅</b>（O が付いた C に H・CH₃・C₂H₅ が付くので不斉炭素原子あり）。<b>X は Ag</b>、<b>Y は CHI₃</b>、（ア）は<b>黄</b>です。</p></div></details></div>
+<div class="ref-example"><h4>例題：酢酸エチル をつくる</h4><p class="ref-p" style="margin: 0px;">酢酸エチルを組んで、エステル結合 −COO− のかたちを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.carbonyl.ester-bond&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=ester">▶ 酢酸エチルを組んでみる</a><p class="ref-note">C=O の炭素から、もう1本 −O− が出て次の炭素へつながります。この O の向きが名前の前半と後半を分ける境目です。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">エステル結合をふくむ官能基15種の一覧はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/fat/">エステル結合を3つもつ化合物 —— 油脂のページへ</a></p>
+</div>
+</div>
+
+<h2>解けるか試す</h2>
+<div class="embed"><b>▶ 一問一答で解く（13問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.carbonyl.ester-bond,org.carbonyl.ester-naming,org.carbonyl.ethyl-acetate,org.carbonyl.esterification,org.carbonyl.ester-water-origin,org.carbonyl.ester-hydrolysis,org.carbonyl.saponification,org.carbonyl.formate-ester,org.carbonyl.ester-valence,org.carbonyl.polyester-hydrolysis,org.carbonyl.diester-arrangement,org.carbonyl.lactone,org.carbonyl.inorganic-ester&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（13問・測定モード）">▶ 一問一答で解く（13問・測定モード）</button><a class="alt" href="/qa/?codes=org.carbonyl.ester-bond,org.carbonyl.ester-naming,org.carbonyl.ethyl-acetate,org.carbonyl.esterification,org.carbonyl.ester-water-origin,org.carbonyl.ester-hydrolysis,org.carbonyl.saponification,org.carbonyl.formate-ester,org.carbonyl.ester-valence,org.carbonyl.polyester-hydrolysis,org.carbonyl.diester-arrangement,org.carbonyl.lactone,org.carbonyl.inorganic-ester&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+
+<h2>読みながら組む</h2>
+<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.carbonyl.ester-bond" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.carbonyl.ester-bond" target="_blank" rel="noopener">別のタブで開く</a></div>
+
+<nav class="seq"><a href="/reference/carboxylic-acid/">← カルボン酸</a>
+<a href="/reference/">参考書の目次</a>
+<a href="/reference/terms/">用語から引く</a>
+<a href="/reference/fat/">油脂 →</a></nav>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
+  if (!b) return;
+  var f = document.createElement('iframe');
+  f.src = b.getAttribute('data-embed');
+  f.setAttribute('loading', 'lazy');
+  f.setAttribute('title', b.getAttribute('data-embed-title') || '');
+  b.parentNode.appendChild(f);
+  b.remove();
+});
+</script>
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+<script>
+function refAdvSetup(root) {
+    var scope = root || document;
+    if (!scope.querySelectorAll || !scope.querySelectorAll('details.ref-adv').length) return;
+
+    /* ── ① ページ内検索 ──────────────────────────────────────────────
+       ★ 新しいブラウザは**閉じた `<details>` の中まで検索して、見つけたら自分で開く**
+         （`hidden="until-found"` と同じ仕掛け。Chrome 131 / Firefox 139 / Safari 18.4 あたり）。
+       ⚠⚠ **持っていないブラウザでは、発展を開いたまま出す。**
+         ★ 逆（畳んだまま出す）にすると**本文がページ内検索から消える** ＝
+           「事典的に網羅して、引きに来た人が見つけられる」という参考書の目的そのものが壊れる。
+         ★ 開いたまま出しても失うのは初期状態の静けさだけで、畳めることは変わらない
+           ＝ **退避の向きは「見えるほうへ倒す」。**
+       ★ 見分けは `::details-content` の有無 —— 自動で開く仕掛けと同じ版で入った疑似要素。 */
+    var native = false;
+    try { native = !!(window.CSS && CSS.supports && CSS.supports('selector(::details-content)')); } catch (e) { native = false; }
+    if (!native) {
+        Array.prototype.forEach.call(scope.querySelectorAll('details.ref-adv'), function (d) { d.open = true; });
+    }
+
+    /* ── ② 目次・用語の索引から飛んだら開く ────────────────────────────
+       ★ 新しいブラウザは `:target` で自分から開くので、これも古い版のための退避。
+       ⚠ 面B（アプリの資料ペイン）は URL の hash が動かないので、**目次の押しそのもの**も見る。 */
+    var openAt = function (id) {
+        var el = id ? document.getElementById(id) : null;
+        var d = el && el.closest ? el.closest('details.ref-adv') : null;
+        if (d && !d.open) { d.open = true; el.scrollIntoView(); }
+    };
+    if (!scope.__refAdvWired) {
+        scope.__refAdvWired = true;
+        scope.addEventListener('click', function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('.ref-toc a[href^="#"]') : null;
+            if (a) openAt(a.getAttribute('href').slice(1));
+        });
+    }
+    if (!refAdvSetup.wiredWindow) {
+        refAdvSetup.wiredWindow = true;
+        var fromHash = function () {
+            try { openAt(decodeURIComponent((location.hash || '').slice(1))); } catch (e) { /* 壊れた hash は無視 */ }
+        };
+        window.addEventListener('hashchange', fromHash);
+        /* ── ③ 印刷は開いた状態で出す ────────────────────────────────
+           ★ 新しいブラウザは `@media print` の `::details-content` だけで開く（JS を通らない）。
+           ⚠ 古い版のためにここでも開き、**刷り終わったら元に戻す**（画面の状態を変えない）。 */
+        var before = null;
+        window.addEventListener('beforeprint', function () {
+            var all = document.querySelectorAll('details.ref-adv');
+            before = Array.prototype.map.call(all, function (d) { return d.open; });
+            Array.prototype.forEach.call(all, function (d) { d.open = true; });
+        });
+        window.addEventListener('afterprint', function () {
+            if (!before) return;
+            Array.prototype.forEach.call(document.querySelectorAll('details.ref-adv'),
+                function (d, i) { d.open = !!before[i]; });
+            before = null;
+        });
+        fromHash();
+    }
+}
+refAdvSetup(document);
+</script>
+</main>
+<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
+Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+</body>
+</html>

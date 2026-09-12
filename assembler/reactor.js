@@ -818,7 +818,7 @@ function cleaveAcylOxygen(mol, cId, oId, opts = {}) {
 /**
  * エステルの C-O 結合を切る（アシル-酸素開裂）。O はアルコール側に残る。
  * asSalt=false … 切った先に -OH を付けてカルボン酸にする（加水分解）
- * asSalt=true  … -O-Na を付けてカルボン酸の塩にする（けん化）
+ * asSalt=true  … -COO⁻ ＋ Na⁺ にしてカルボン酸の塩にする（けん化）
  */
 function cleaveEster(game, site, asSalt) {
     const [cId, , oId] = site;
@@ -831,12 +831,10 @@ function cleaveEster(game, site, asSalt) {
             changed
         };
     }
-    // 塩にする: 生えた -OH の O にさらに Na を付ける（-COONa）。
+    // 塩にする: 生えた -OH を -COO⁻ にして、相方の Na⁺ を粒で置く。
     // Na の置き場が無いときは酸のままにせず、ここで止める（中途半端な図を残さないため）
-    const naSpot = freeSpotAround(mol, o.id, [{ x: spot.x, y: spot.y }]);
-    if (!naSpot) throw noRoom('ナトリウムを置く空間がありません');
-    const na = mol.addAtom('Na', naSpot.x, naSpot.y);
-    mol.addBond(o.id, na.id, 1);
+    const na = ionizeSalt(mol, o.id);
+    if (!na) throw noRoom('ナトリウムイオンを置く空間がありません');
     return {
         caption: 'けん化が起こりました。水酸化ナトリウムを使うので、できるのはカルボン酸ではなく' +
                  '**カルボン酸のナトリウム塩**です（油脂なら脂肪酸ナトリウム＝セッケンそのもの）。' +
@@ -1301,10 +1299,10 @@ function attachAcetyl(mol, targetId) {
 }
 
 /**
- * ★ カルボキシ基のナトリウム塩 -COONa を取り付ける（コルベ・シュミット反応・I-2）。
+ * ★ カルボキシ基のナトリウム塩 -COO⁻ Na⁺ を取り付ける（コルベ・シュミット反応・I-2）。
  *
  * ⚠ `attachGroup` の `kind` に足さなかった理由: あちらは「アンカー1つ ＋ その枝」の形しか
- *   置けない（枝はアンカーに直結する）。-COONa は **C → O → Na の2段**なので入らない。
+ *   置けない（枝はアンカーに直結する）。-COO⁻ は **C → O の2段 ＋ 離れた Na⁺ の粒**なので入らない。
  * ★ 形は `attachAcetyl`（C → =O ＋ CH₃）と同じ流儀で、**かたまりごと重ならない向きを探す**。
  * `dryRun=true` なら置かずに「置けるか」だけ返す（検出段階で実行できない候補を出さないため）。
  */
@@ -1329,8 +1327,10 @@ function attachCarboxylate(mol, targetId, dryRun = false) {
         mol.addBond(cAcid.id, oD.id, 2);
         const oS = mol.addAtom('O', oSingle.x, oSingle.y);
         mol.addBond(cAcid.id, oS.id, 1);
+        // ★ 塩は電離した形（v1538）。O に -1 を入れ、Na⁺ は**線で結ばず粒で**置く
+        oS.charge = -1;
         const naAtom = mol.addAtom('Na', na.x, na.y);
-        mol.addBond(oS.id, naAtom.id, 1);
+        naAtom.charge = 1;
         return [cAcid.id, oD.id, oS.id, naAtom.id];
     }
     if (dryRun) return false;
@@ -1528,7 +1528,7 @@ function isolatedBenzeneRings(mol) {
 /**
  * フェノールの工業的製法2本のための、置き換わる基を探す（v1511）。
  *
- * ★ どちらも **芳香環についた基が -ONa に置き換わる**という同じ形なので、
+ * ★ どちらも **芳香環についた基が -O⁻ Na⁺ に置き換わる**という同じ形なので、
  *   探すところと置き換えるところを1つにまとめる（同じ判定を2つ書かない）。
  *
  *   kind === 'sulfonate' … アルカリ融解。**-SO₃Na（ナトリウム塩）だけ**を探す
@@ -1575,17 +1575,18 @@ function phenoxidePrecursorSites(mol, kind) {
             if (sub.element === 'Cl') sites.push([sub.cId, sub.id]);
             return;
         }
-        // -SO₃Na … S に酸素が3つ、そのうち1つが Na を持っている（＝ 酸ではなく塩）
+        // -SO₃⁻ Na⁺ … S に酸素が3つ、そのうち1つが相方の金属イオンを持っている（＝ 酸ではなく塩）。
+        // ⚠ v1538 で塩を電離形にしたので、金属は結合をたどっても出てこない（`saltCounterMetal`）
         if (sub.element !== 'S') return;
         const around = mol.getNeighbors(sub.id).filter(x => x.atom.id !== sub.cId);
         if (around.length !== 3 || !around.every(x => x.atom.element === 'O')) return;
-        if (!around.some(x => mol.getNeighbors(x.atom.id).some(y => y.atom.element === 'Na'))) return;
+        if (!around.some(x => saltCounterMetal(mol, x.atom.id))) return;
         sites.push([sub.cId, sub.id]);
     });
     return sites;
 }
 
-/** 芳香環の炭素についた基（起点 leaveId から先）を外し、代わりに -ONa を付ける。 */
+/** 芳香環の炭素についた基（起点 leaveId から先）を外し、代わりに -O⁻ Na⁺ を付ける。 */
 function replaceWithPhenoxide(mol, cId, leaveId) {
     // 外す基の原子を集める（起点から、環へ戻らずに辿れる範囲）
     const drop = new Set([leaveId]);
@@ -1598,15 +1599,23 @@ function replaceWithPhenoxide(mol, cId, leaveId) {
             stack.push(n.atom.id);
         });
     }
+    /* ⚠⚠ 外す基が塩（-SO₃⁻ Na⁺）なら、**相方の金属イオンも一緒に外す**（v1538）。
+     *   粒は結合を持たないので、上の「結合をたどる」では拾えない ——
+     *   置き去りにすると Na⁺ が2つ残った図（実測: ベンゼンスルホン酸ナトリウムの
+     *   アルカリ融解が「ナトリウムフェノキシド ＋ （該当なし）」になった）。 */
+    [...drop].forEach(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        if (!a || !(a.charge < 0)) return;
+        const metal = saltCounterMetal(mol, id);
+        if (metal) drop.add(metal.id);
+    });
     drop.forEach(id => mol.removeAtom(id));
-    // 空いたところへ -O-Na（塩は線1本の共有結合で書く ＝ §10.6 の流儀。電荷モデルは持たない）
+    // 空いたところへ -O⁻ ＋ Na⁺（塩は電離した形で書く ＝ v1538 の流儀）
     const added = attachGroup(mol, cId, 'O');
-    if (!added) throw noRoom('-ONa を置く空間がありません');
+    if (!added) throw noRoom('-O⁻ を置く空間がありません');
     const oId = added[0];
-    const spot = freeSpotAround(mol, oId);
-    if (!spot) throw noRoom('ナトリウムを置く空間がありません');
-    const na = mol.addAtom('Na', spot.x, spot.y);
-    mol.addBond(oId, na.id, 1);
+    const na = ionizeSalt(mol, oId);
+    if (!na) throw noRoom('ナトリウムイオンを置く空間がありません');
     return [cId, oId, na.id];
 }
 
@@ -2146,7 +2155,7 @@ function neutralizableAcidSites(mol) {
     return sites.filter(([oId]) => mol.getFreeValency(oId) >= 1 && freeSpotAround(mol, oId));
 }
 
-/** 強酸で弱酸に戻せる塩（-COONa / -ONa / -SO₃Na と K 体）。返り値は `[金属のID, 酸素のID]` */
+/** 強酸で弱酸に戻せる塩（-COO⁻ / -O⁻ / -SO₃⁻ ＋ Na⁺・K⁺ の粒）。返り値は `[金属のID, 酸素のID]` */
 /**
  * 金属ナトリウムと反応する -OH を集める（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
  *
@@ -2263,24 +2272,56 @@ function diazoniumSites(mol) {
         .map(g => [g.atomIds[0], g.atomIds[1]]);
 }
 
+/**
+ * ★★ 酸に戻せる塩（-COO⁻ / -O⁻ / -SO₃⁻ ＋ 金属イオンの粒）を集める。
+ *   返すのは今までどおり `[金属id, 酸素id]`（`phenoxideSaltSites` 以下の読み手は変えない）。
+ *
+ * ⚠ v1538 まで「金属から結合を1本たどる」実装だった。塩を電離した形へそろえた
+ *   （`saltCounterMetal`）ので、たどる線が無くなり、**陰イオンの側から相方を探す**。
+ */
 function liberatableSaltSites(mol) {
     const sites = [];
-    mol.atoms.forEach(a => {
-        if (a.element !== 'Na' && a.element !== 'K') return;
-        const nb = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H');
-        if (nb.length !== 1 || nb[0].atom.element !== 'O' || nb[0].type !== 1) return;
-        const o = nb[0].atom;
+    mol.atoms.forEach(o => {
+        if (o.element !== 'O' || !(o.charge < 0)) return;
         // その酸素の向こうが C か S ＝ カルボン酸塩・フェノキシド・スルホン酸塩
-        const beyond = mol.getNeighbors(o.id)
-            .filter(n => n.atom.element !== 'H' && n.atom.id !== a.id);
+        const beyond = mol.getNeighbors(o.id).filter(n => n.atom.element !== 'H');
         if (beyond.length !== 1 || !['C', 'S'].includes(beyond[0].atom.element)) return;
-        sites.push([a.id, o.id]);
+        const metal = saltCounterMetal(mol, o.id);
+        if (metal) sites.push([metal.id, o.id]);
     });
     return sites;
 }
 
 /**
- * ★★ **フェノキシド（芳香環に直結した -ONa / -OK）の塩だけ**を集める
+ * ★★ 酸性の -OH（もしくは -O⁻）を**塩にする**（v1538。中和・金属Na・けん化などの出口ただ1つ）。
+ *
+ * 酸素に -1 を入れ、**結合を持たない金属イオンの粒**を相方として置く（`placeCounterIon`）。
+ * ⚠ **線で結ばない** —— -O-Na と書くと共有結合の図になる（Cl⁻ を線で結ぶと
+ *   N-クロロアニリンになるのと同じ理屈）。イオン結合は線では書かない。
+ * 置き場がまったく無ければ null（呼び出し側が `noRoom` を投げる ＝ 図を壊さない）。
+ */
+function ionizeSalt(mol, oId, element = 'Na') {
+    const o = mol.atoms.find(a => a.id === oId);
+    if (!o) return null;
+    const before = o.charge;
+    o.charge = -1;                       // 先に -1 を入れて価標を 1 にする（自動水素を消す）
+    const ion = placeCounterIon(mol, oId, element, 1);
+    if (!ion) { if (before === undefined) delete o.charge; else o.charge = before; return null; }
+    return ion;
+}
+
+/**
+ * ★★ 塩から金属イオンを外して酸に戻す（v1538。遊離のルール4本が通る出口ただ1つ）。
+ * 粒を消し、酸素の -1 を落とす ＝ 空いた価標に自動水素が入って -OH に戻る。
+ */
+function freeSaltAcid(mol, metalId, oId) {
+    mol.removeAtom(metalId);
+    const o = mol.atoms.find(a => a.id === oId);
+    if (o) delete o.charge;
+}
+
+/**
+ * ★★ **フェノキシド（芳香環に直結した -O⁻ Na⁺ / K⁺）の塩だけ**を集める
  *   （DESIGN_ion_layer.md I-2・`liberate_co2` / `kolbe_schmidt` の入口）。
  *
  * ⚠⚠ **`acidKindOf` で絞ってはいけない**（設計書 §5-2 は「`acidKindOf` の分岐を再利用」と
@@ -3677,7 +3718,7 @@ const REAGENTS = [
         name: '二酸化炭素',
         formula: 'CO₂',
         kind: 'transform',
-        acts: 'ナトリウムフェノキシドのような、環に直結した -ONa です' +
+        acts: 'ナトリウムフェノキシドのような、環に直結した -O⁻ の塩です' +
             '（水に吹き込むとフェノールが遊離し、高温・高圧では環にカルボキシ基が入ります）',
         miss: '二酸化炭素は水に溶けて炭酸になりますが、**炭酸はカルボン酸より弱い酸**なので、' +
             'カルボン酸のナトリウム塩からカルボン酸を追い出すことはできません。' +
@@ -4344,13 +4385,11 @@ const REACTION_RULES = [
                 oxidizedO = oh.atom.id;
             }
             const oSpot = freeSpotAround(mol, kId);
-            if (!oSpot) throw noRoom('-COONa を置く空間がありません');
+            if (!oSpot) throw noRoom('-COO⁻ を置く空間がありません');
             const o = mol.addAtom('O', oSpot.x, oSpot.y);
             mol.addBond(kId, o.id, 1);
-            const naSpot = freeSpotAround(mol, o.id, [oSpot]);
-            if (!naSpot) throw noRoom('ナトリウムを置く空間がありません');
-            const na = mol.addAtom('Na', naSpot.x, naSpot.y);
-            mol.addBond(o.id, na.id, 1);
+            const na = ionizeSalt(mol, o.id);
+            if (!na) throw noRoom('ナトリウムイオンを置く空間がありません');
             return {
                 caption: 'ヨードホルム反応が起こりました。ヨウ素 I₂ と水酸化ナトリウム水溶液を加えると、' +
                     '**黄色の沈殿 CHI₃（ヨードホルム）** ができます。特有のにおいがあり、目で見て分かるので物質の識別に使います。' +
@@ -6207,15 +6246,13 @@ const REACTION_RULES = [
             const [oId, anchorId] = site;
             const mol = game.userMolecule;
             const kind = acidKindOf(mol, oId, anchorId);
-            const spot = freeSpotAround(mol, oId);
-            if (!spot) throw noRoom('ナトリウムを置く空間がありません');
-            const na = mol.addAtom('Na', spot.x, spot.y);
-            mol.addBond(oId, na.id, 1);
+            const na = ionizeSalt(mol, oId);
+            if (!na) throw noRoom('ナトリウムイオンを置く空間がありません');
             return {
                 caption: `${kind.name}が水酸化ナトリウムと中和して、ナトリウム塩になりました。` +
-                    '酸性の -OH の水素が Na に置き換わった形です。' +
-                    '（酸素と金属の塩は、このアプリでは線1本で書くことにしています。' +
-                    '実際は -O⁻ と Na⁺ のイオン結合です。）' +
+                    '酸性の -OH の水素が取れて **-O⁻** になり、Na⁺ と塩をつくります。' +
+                    '⚠ **Na⁺ は線で結ばずに粒として描いています** —— ' +
+                    'イオンどうしが引き合っているだけの結びつき（イオン結合）を線では書きません。' +
                     '塩になると水に溶けやすくなります。' + kind.rank +
                     'できた塩に強い酸（希硫酸・塩酸）を加えると、もとの酸が遊離して戻ってきます。',
                 changed: [oId, na.id]
@@ -6245,17 +6282,15 @@ const REACTION_RULES = [
             const [oId, anchorId] = site;
             const mol = game.userMolecule;
             const kind = acidKindOf(mol, oId, anchorId);
-            const spot = freeSpotAround(mol, oId);
-            if (!spot) throw noRoom('ナトリウムを置く空間がありません');
-            const na = mol.addAtom('Na', spot.x, spot.y);
-            mol.addBond(oId, na.id, 1);
+            const na = ionizeSalt(mol, oId);
+            if (!na) throw noRoom('ナトリウムイオンを置く空間がありません');
             return {
                 caption: `${kind.name}が炭酸水素ナトリウムと中和して、ナトリウム塩になりました` +
                     '（二酸化炭素 CO₂ が発生します。図には描いていません）。' +
                     '炭酸より強い酸だけが NaHCO₃ から CO₂ を追い出せるので、' +
                     '**この反応が起こること自体が「炭酸より強い酸」の証拠**です。' +
-                    '（酸素と金属の塩は、このアプリでは線1本で書くことにしています。' +
-                    '実際は -O⁻ と Na⁺ のイオン結合です。）' +
+                    '酸性の -OH の水素が取れて **-O⁻** になり、Na⁺ と塩をつくります' +
+                    '（⚠ **Na⁺ は線で結ばずに粒**。イオン結合は線では書きません）。' +
                     '塩になると水に溶けやすくなります。' + kind.rank,
                 changed: [oId, na.id]
             };
@@ -6268,8 +6303,8 @@ const REACTION_RULES = [
          * Na が付いた時点で自動的に消える —— 上の `neutralize_naoh` が水を描かないのと同じ流儀で、
          * 「画面の分子に無い分子は描かない」を守っている（文面で H₂ の発生を言う）。
          *
-         * 塩・アルコキシドは線1本の共有結合として書く（v353・DESIGN_compound_coverage.md §6-2）。
-         * したがって**電荷モデルは要らない** —— 中和と同じ形なので新しい概念を持ち込まない。 */
+         * ★ 塩・アルコキシドは**電離した形**（-O⁻ ＋ Na⁺ の粒）で書く（v1538）。
+         * 中和と同じ形にそろえてある ＝ 同じ物質を2通りに描かない。 */
         id: 'react_sodium',
         reagentId: 'sodium_metal',
         label: 'ナトリウムとの反応（-OH + Na, H₂ 発生）',
@@ -6280,13 +6315,12 @@ const REACTION_RULES = [
             // アルコールか酸性の -OH かは**その酸素1つを見て**決める（全体を数えない）
             const isAlcohol = findFunctionalGroups(mol)
                 .some(g => ALCOHOL_TYPES.includes(g.type) && g.atomIds[0] === oId);
-            const spot = freeSpotAround(mol, oId);
-            if (!spot) throw noRoom('ナトリウムを置く空間がありません');
-            const na = mol.addAtom('Na', spot.x, spot.y);
-            mol.addBond(oId, na.id, 1);
+            // ⚠ `acidKindOf` は -OH のうちに読む（-O⁻ にすると空き価標が変わる）
             const kind = isAlcohol ? null : acidKindOf(mol, oId, anchorId);
-            const salt = '（酸素と金属の塩は、このアプリでは線1本で書くことにしています。' +
-                '実際は -O⁻ と Na⁺ のイオン結合です。）';
+            const na = ionizeSalt(mol, oId);
+            if (!na) throw noRoom('ナトリウムイオンを置く空間がありません');
+            const salt = '（できたものは **-O⁻ と Na⁺** のイオン結合で、' +
+                'イオンどうしが引き合っているだけなので線では結びません。図では Na⁺ を粒で描いています。）';
             return {
                 caption: (isAlcohol
                     ? 'アルコールの -OH の水素がナトリウムに置き換わり、水素が発生しました' +
@@ -6328,7 +6362,7 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             const changed = replaceWithPhenoxide(mol, site[0], site[1]);
             return {
-                caption: 'スルホ基のナトリウム塩 -SO₃Na が -ONa に置き換わり、' +
+                caption: 'スルホ基のナトリウム塩 -SO₃⁻ が -O⁻ に置き換わり、' +
                     'ナトリウムフェノキシドができました（アルカリ融解）。' +
                     '⚠ **水溶液では起こりません** —— 固体の水酸化ナトリウムと混ぜて' +
                     '**高温で融解**させる、という激しい条件が要ります。' +
@@ -6358,7 +6392,7 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             const changed = replaceWithPhenoxide(mol, site[0], site[1]);
             return {
-                caption: '環についた塩素が -ONa に置き換わり、ナトリウムフェノキシドができました。' +
+                caption: '環についた塩素が -O⁻ Na⁺ に置き換わり、ナトリウムフェノキシドができました。' +
                     '⚠ **常温の水酸化ナトリウム水溶液では起こりません** —— ' +
                     '**高温・高圧**（およそ 300℃・200気圧）という条件が要ります。' +
                     '環に直結したハロゲンは、鎖についたハロゲンより格段に外れにくいからです。' +
@@ -6389,10 +6423,10 @@ const REACTION_RULES = [
                 .find(n => n.atom.element !== 'H' && n.atom.id !== metalId);
             const kind = anchor ? acidKindOf(mol, oId, anchor.atom.id) : { name: '酸', rank: '' };
             const symbol = metal ? metal.element : 'Na';
-            mol.removeAtom(metalId); // 金属が外れると酸素に結合手が1つ空き、自動水素が -OH を描く
+            freeSaltAcid(mol, metalId, oId); // 粒が消えて -O⁻ の電荷も落ち、自動水素が -OH を描く
             return {
                 caption: `より強い酸を加えたので、弱いほうの酸（${kind.name}）が遊離してもとの形に戻りました` +
-                    `（-O${symbol} → -OH）。` +
+                    `（-O⁻ ${symbol}⁺ → -OH）。` +
                     '「強い酸は弱い酸をその塩から追い出す」という弱酸の遊離です。' +
                     '希硫酸や塩酸は硫酸イオン・塩化物イオンとして塩の側に残ります。' + kind.rank +
                     'けん化でできたカルボン酸の塩（セッケンを含む）も、この操作で酸に戻せます。',
@@ -6434,17 +6468,17 @@ const REACTION_RULES = [
             const [metalId, oId, orthoId] = site;
             const mol = game.userMolecule;
             const added = attachCarboxylate(mol, orthoId);   // 先に置く（置けなければ何も壊さず throw）
-            mol.removeAtom(metalId);                          // -ONa → -OH（自動水素が描く）
+            freeSaltAcid(mol, metalId, oId);                  // -O⁻ Na⁺ → -OH（自動水素が描く）
             return {
                 caption: 'ナトリウムフェノキシドに二酸化炭素が反応して、' +
                     '**サリチル酸ナトリウム**ができました（コルベ・シュミット反応）。' +
                     '⚠ **常温で吹き込んでも起こりません** —— ' +
                     '**高温・高圧**（およそ 125℃・5気圧）という条件が要ります。' +
                     '常温で吹き込むだけなら、フェノールが遊離して戻るだけです（隣の行き先）。' +
-                    '入るのは -ONa の**となり（オルト位）**です。' +
+                    '入るのは -O⁻ の**となり（オルト位）**です。' +
                     'ナトリウムイオンが -O⁻ と二酸化炭素を隣り合わせにつかまえるためで、' +
-                    'できたサリチル酸ナトリウムは -ONa が -OH に変わり、' +
-                    'オルト位に -COONa がついた形になります。' +
+                    'できたサリチル酸ナトリウムは -O⁻ が -OH に変わり、' +
+                    'オルト位に -COO⁻ Na⁺ がついた形になります。' +
                     'ここに希硫酸や塩酸を加えると弱酸の遊離でサリチル酸が取り出せ、' +
                     'サリチル酸は無水酢酸でアセチルサリチル酸（アスピリン）に、' +
                     'メタノールでサリチル酸メチル（消炎剤）になります。',
@@ -6477,10 +6511,10 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             const metal = mol.atoms.find(a => a.id === metalId);
             const symbol = metal ? metal.element : 'Na';
-            mol.removeAtom(metalId); // 金属が外れると酸素に結合手が1つ空き、自動水素が -OH を描く
+            freeSaltAcid(mol, metalId, oId); // 粒が消えて -O⁻ の電荷も落ち、自動水素が -OH を描く
             return {
                 caption: '二酸化炭素を吹き込んだので、フェノールが遊離してもとの形に戻りました' +
-                    `（-O${symbol} → -OH）。` +
+                    `（-O⁻ ${symbol}⁺ → -OH）。` +
                     '水に溶けた二酸化炭素は炭酸 H₂CO₃ になり、これが' +
                     '**フェノールより強い酸**なのでフェノールを塩から追い出します' +
                     '（同時に炭酸水素ナトリウム NaHCO₃ ができますが、図には描いていません）。' +
@@ -6679,7 +6713,7 @@ const REACTION_RULES = [
             const metal = mol.atoms.find(a => a.id === metalId);
             const metalSymbol = metal ? metal.element : 'Na';
             if (ion) mol.removeAtom(ion.id);
-            mol.removeAtom(metalId);   // 金属が外れると酸素に結合手が空き、自動水素が -OH を描く
+            freeSaltAcid(mol, metalId, oId);   // 粒が消えて -O⁻ の電荷も落ち、自動水素が -OH を描く
             applyAttachment(mol, movingIds, plan);
             mol.addBond(n2Id, paraId, 1);
             bond.type = 2;             // N≡N → N=N

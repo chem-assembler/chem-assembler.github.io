@@ -1990,6 +1990,69 @@
         assert(formulaEl() === 'C₂H₅N', `アジリジンの分子式が「${formulaEl()}」`);
     });
 
+    test('MF_PARTS: 分子が2つ以上あるときは分子式を合算しない（分子ごとに出す）', async (c) => {
+        // 2026-09-12・ユーザー検品「2分子あるときに、分子式を合算している
+        // → 別々でないと意味が薄い」。マルトースとセロビオースを並べると
+        // **C₂₄H₄₄O₂₂** が出ていた。分子式は1分子の原子の数え上げなので、
+        // 別々の2分子を足した式は**どの物質の分子式でもない**。
+        // しかもこの2つは「**どちらも C₁₂H₂₂O₁₁** ＝ 同じ分子式なのに別物」が要点で、
+        // 合算はそれを画面から消していた。
+        c.reset();
+        const g = c.game, D = c.D;
+        g.setMode('free');
+        assert(g.summonMolecule('マルトース（麦芽糖）'), 'マルトースを呼び出せない');
+        assert(g.summonMolecule('セロビオース'), 'セロビオースを呼び出せない');
+        g.updateDrawing();
+
+        const formulas = g.compoundLabel.formulas;
+        assert(formulas && formulas.length === 2,
+            `分子ごとの分子式が組み立てられていない（${JSON.stringify(formulas)}）`);
+        assert(formulas.every(f => f.includes('C₁₂H₂₂O₁₁')),
+            `分子ごとの式が C₁₂H₂₂O₁₁ でない（${formulas.join(' / ')}）`);
+
+        // ★ 図の見出しに分子ごとの式が付く（①②で対応が取れる）
+        const caps = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍'));
+        assert(caps.length === 2, `見出しが ${caps.length} 本（2本を期待）`);
+        assert(caps.some(t => t.includes('マルトース') && t.includes('C₁₂H₂₂O₁₁')),
+            `① の見出しに分子式が無い（${caps.join(' / ')}）`);
+        assert(caps.some(t => t.includes('セロビオース') && t.includes('C₁₂H₂₂O₁₁')),
+            `② の見出しに分子式が無い（${caps.join(' / ')}）`);
+        // ⚠⚠ 左下の札からは式を外してある。合算した C₂₄H₄₄O₂₂ は
+        //   どの物質の分子式でもないので出せず、分子ごとの式は見出しにあるので
+        //   ここに並べると同じ式が画面に2度出る
+        const chip = D.getElementById('mobile-name-chip').textContent;
+        assert(!chip.includes('C₁₂H₂₂O₁₁') && !chip.includes('C₂₄H₄₄O₂₂'),
+            `左下の札に分子式が残っている（「${chip}」）`);
+
+        // ⚠ 否定対照: 1分子のときは今までどおり（見出しは名前だけ・札は名前＋分子式）
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('マルトース（麦芽糖）'), 'マルトース単体を呼び出せない');
+        g.updateDrawing();
+        assert(!g.compoundLabel.formulas, '1分子なのに分子ごとの式が組まれている');
+        assert(D.getElementById('compound-formula').textContent === 'C₁₂H₂₂O₁₁',
+            `1分子の分子式が「${D.getElementById('compound-formula').textContent}」`);
+        const solo = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍'));
+        assert(solo.length === 1 && !solo[0].includes('C₁₂H₂₂O₁₁'),
+            `1分子の見出しに分子式が付いた（${solo.join(' / ')}）`);
+        assert(D.getElementById('mobile-name-chip').textContent.includes('C₁₂H₂₂O₁₁'),
+            '1分子のとき左下の札から分子式が消えた');
+
+        // ⚠ 見出しが出ないほど小さい成分（水1つ）があるときは、札のほうが式を出す。
+        //   どちらにも出ない状態を作らない（脱水縮合で水が1つ出たことが読めなくなる）
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('グリシルグリシン（ジペプチド）'), 'ジペプチドを呼び出せない');
+        assert(g.summonMolecule('水'), '水を呼び出せない');
+        g.updateDrawing();
+        const chip2 = D.getElementById('mobile-name-chip').textContent;
+        assert(chip2.includes('C₄H₈N₂O₃') && chip2.includes('H₂O'),
+            `水の式が画面のどこにも出ていない（札は「${chip2}」）`);
+        assert(!chip2.includes('C₄H₁₀N₂O₄'), `合算した式が札に出ている（「${chip2}」）`);
+    });
+
     test('F3: シス/トランスの判定と命名区別（P8-1）', async (c) => {
         c.reset();
         const nameEl = () => c.D.getElementById('compound-name').textContent;
@@ -2202,16 +2265,58 @@
             assert(!sq.buttons[k].style.background,
                 `${k} に inline の装飾色が残っている（CSS クラスへ移したはず）`);
         });
-        assert(D.getElementById('btn-sq-diastereomer').classList.contains('sq-btn-diastereomer'),
-            '装飾色のクラスが付いていない');
+        // ★ v1538: 装飾色そのものを外した（SQ_COLOR が見張る）。ここでは
+        //   「答え合わせの3色が付く」ことだけを見る
 
-        // 次の問題に進むと塗り分けが消えて、装飾色に戻る
+        // 次の問題に進むと塗り分けが消える
         sq.nextQuestion();
         order.forEach(k => {
             const cls = [...sq.buttons[k].classList].filter(x => x.startsWith('quiz-choice'));
             assert(cls.length === 0, `次の問題に進んでも ${k} に ${cls.join(' ')} が残っている`);
             assert(!sq.buttons[k].disabled, `次の問題に進んでも ${k} が無効のまま`);
         });
+    });
+
+    test('SQ_COLOR: 立体異性体クイズは出題中の3択を同じ色にする（色で答えを名指ししない）', async (c) => {
+        // 2026-09-12・ユーザー検品「V136 最初から『別な立体異性体』がオレンジに
+        // ハイライトされています」。出題直後から**誤答の1つだけが違う色**で、
+        // 正解は緑になる「鏡像異性体」のほう ＝ 図を読む前に目がオレンジへ行く。
+        // 3択のうち1つだけ色が違えば「これが特別だ」と読まれるので、
+        // **出題中は3つとも同じ色**でなければならない。
+        c.reset();
+        const sq = c.W.stereoQuiz, D = c.D, W = c.W;
+        sq.open();
+        const order = ['same', 'enantiomer', 'diastereomer'];
+        const bgOf = (k) => W.getComputedStyle(sq.buttons[k]).backgroundColor;
+        const bgs = order.map(bgOf);
+        assert(new Set(bgs).size === 1,
+            `出題中の3択の色が揃っていない: ${order.map((k, i) => `${k}=${bgs[i]}`).join(' / ')}`);
+
+        // ⚠ 否定対照: 1つだけオレンジに戻したら、上の検査が赤くなること。
+        //   ⚠ ボタンには `transition: 0.2s` が掛かっていて、色を変えた直後の
+        //     `getComputedStyle` は**変える前の色**を返す（実測）。待ってから読む
+        sq.buttons.diastereomer.style.background = 'rgb(255, 165, 2)';
+        await new Promise(r => setTimeout(r, 300));
+        const broken = order.map(bgOf);
+        assert(new Set(broken).size > 1,
+            '否定対照が効いていない（1つだけ色を変えても検査が通ってしまう）');
+        sq.buttons.diastereomer.style.background = '';
+        await new Promise(r => setTimeout(r, 300));
+
+        // 装飾色のクラスは HTML からも消えている（戻すと上の検査が赤くなる）
+        ['btn-sq-enantiomer', 'btn-sq-diastereomer'].forEach(id => {
+            const cls = [...D.getElementById(id).classList].filter(x => x.startsWith('sq-btn-'));
+            assert(cls.length === 0, `${id} に装飾色のクラス ${cls.join(' ')} が残っている`);
+        });
+
+        // ⚠ 答え合わせのあとの塗り分けは残っている（緑／赤／沈めるの3色）
+        const rel = sq.current.rel;
+        sq.answer(order.find(k => k !== rel));
+        assert(sq.buttons[rel].classList.contains('quiz-choice-right'),
+            '出題中の色を揃えたら、正解の緑まで消えた');
+        await new Promise(r => setTimeout(r, 300));
+        assert(W.getComputedStyle(sq.buttons[rel]).backgroundColor !== bgs[0],
+            '正解の色が出題中と同じまま（答え合わせが見えない）');
     });
 
     test('F5c: 総数当てに高分子を出題しない（切り出した一部を1分子と数えない）', async (c) => {
@@ -9864,15 +9969,24 @@
         const chloramine = build([['N', 400, 300], ['Cl', 442, 300]], [[0, 1, 1]]);
         assert(!typesOf(chloramine).has('halide'), 'N に付いた Cl を ハロゲン化物 として拾っている');
 
-        // (4) スルホン酸 -SO₃H とその塩 -SO₃Na
+        // (4) スルホン酸 -SO₃H とその塩 -SO₃⁻ Na⁺
         const mesylic = build(
             [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300]],
             [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
         assert(typesOf(mesylic).has('sulfo'), 'メタンスルホン酸が スルホ基 として分類されない');
+        // ⚠ 塩は**電離した形**（v1538）。-SO₃⁻ と Na⁺ を線で結ばない
         const mesylateNa = build(
+            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300], ['Na', 568, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
+        mesylateNa.atoms[4].charge = -1;
+        mesylateNa.atoms[5].charge = 1;
+        assert(typesOf(mesylateNa).has('sulfonate'), 'メタンスルホン酸ナトリウムが スルホン酸の塩 として分類されない');
+        // ⚠ 否定対照: 線で結んだ古い形は**もう塩として拾わない**（同じ物質に2つの形を持たない）
+        const mesylateBonded = build(
             [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300], ['Na', 526, 300]],
             [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1], [4, 5, 1]]);
-        assert(typesOf(mesylateNa).has('sulfonate'), 'メタンスルホン酸ナトリウムが スルホン酸の塩 として分類されない');
+        assert(!typesOf(mesylateBonded).has('sulfonate'),
+            '線1本で結んだ -SO₃Na を まだ スルホン酸の塩 として拾っている');
 
         // (5) 既存の分類が動いていないこと（アルデヒド・ケトン・カルボン酸・エステル）
         const acetaldehyde = build(
@@ -10135,17 +10249,17 @@
             assert(typesOf(mol).has('carboxylate'), `${nm} が カルボン酸の塩 として拾われない`);
             assert(W.findOutOfScopeMotifs(mol).length === 0,
                 `${nm} がまだ範囲外（${W.findOutOfScopeMotifs(mol).map(x => x.type).join('/')}）`);
-            assert(labelOf(mol, 'carboxylate').includes('COOK'),
-                `${nm} の見出しが「${labelOf(mol, 'carboxylate')}」（-COOK を期待）`);
+            assert(labelOf(mol, 'carboxylate').includes('K⁺'),
+                `${nm} の見出しが「${labelOf(mol, 'carboxylate')}」（-COO⁻ K⁺ を期待）`);
         });
         // フタル酸水素カリウムは「片方が塩・片方が酸」。両方とも出ていること
         const khp = fromLib('フタル酸水素カリウム');
         assert(typesOf(khp).has('carboxyl'), 'フタル酸水素カリウムの -COOH 側が出ていない');
 
-        // (2) 否定対照A: ナトリウム塩の見出しは -COONa のまま（元素を決め打ちに戻していない）
+        // (2) 否定対照A: ナトリウム塩の見出しは Na のまま（元素を決め打ちに戻していない）
         const acetateNa = fromLib('酢酸ナトリウム');
         assert(typesOf(acetateNa).has('carboxylate'), '酢酸ナトリウムが カルボン酸の塩 でなくなった');
-        assert(labelOf(acetateNa, 'carboxylate').includes('COONa'),
+        assert(labelOf(acetateNa, 'carboxylate').includes('Na⁺'),
             `酢酸ナトリウムの見出しが「${labelOf(acetateNa, 'carboxylate')}」`);
 
         // (3) 否定対照B: 「-C(=O)-O- の先が何であっても塩」にはしていない。
@@ -10163,14 +10277,20 @@
             '酢酸が カルボン酸の塩 に化けている');
         assert(typesOf(fromLib('酢酸メチル')).has('ester'), '酢酸メチルが エステル でなくなった');
 
-        // (4) スルホン酸の塩の見出しも実物の元素で出す（carboxylate と同じ書き方）
-        const sulfonate = (metal) => build(
-            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342],
-                ['O', 484, 300], [metal, 526, 300]],
-            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1], [4, 5, 1]]);
-        assert(labelOf(sulfonate('Na'), 'sulfonate').includes('SO₃Na'),
+        // (4) スルホン酸の塩の見出しも実物の元素で出す（carboxylate と同じ書き方）。
+        //     ⚠ 塩は**電離した形**（v1538）＝ -SO₃⁻ と金属イオンを線で結ばない
+        const sulfonate = (metal) => {
+            const m = build(
+                [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342],
+                    ['O', 484, 300], [metal, 568, 300]],
+                [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
+            m.atoms[4].charge = -1;
+            m.atoms[5].charge = 1;
+            return m;
+        };
+        assert(labelOf(sulfonate('Na'), 'sulfonate').includes('Na⁺'),
             `Na 塩の見出しが「${labelOf(sulfonate('Na'), 'sulfonate')}」`);
-        assert(labelOf(sulfonate('K'), 'sulfonate').includes('SO₃K'),
+        assert(labelOf(sulfonate('K'), 'sulfonate').includes('K⁺'),
             `K 塩の見出しが「${labelOf(sulfonate('K'), 'sulfonate')}」`);
     });
 
@@ -10341,11 +10461,11 @@
             `${gg}: ${say(gg)}`);
 
         // ---- (4) カルボン酸の塩をケトンと呼ばない（見出しは実物の元素で出す。CF2 と同じ規約）----
-        assert(hasPoint('酢酸ナトリウム', 'カルボン酸の塩 -COONa ×1'), `酢酸ナトリウム: ${say('酢酸ナトリウム')}`);
-        assert(hasPoint('酢酸カリウム', 'カルボン酸の塩 -COOK ×1'), `酢酸カリウム: ${say('酢酸カリウム')}`);
+        assert(hasPoint('酢酸ナトリウム', 'カルボン酸の塩 -COO⁻ Na⁺ ×1'), `酢酸ナトリウム: ${say('酢酸ナトリウム')}`);
+        assert(hasPoint('酢酸カリウム', 'カルボン酸の塩 -COO⁻ K⁺ ×1'), `酢酸カリウム: ${say('酢酸カリウム')}`);
         // フタル酸水素カリウムは -COOH と -COOK が1本ずつ。両方が別々に出ること
         const kp = 'フタル酸水素カリウム';
-        assert(hasPoint(kp, 'カルボキシ基 -COOH ×1') && hasPoint(kp, 'カルボン酸の塩 -COOK ×1'), `${kp}: ${say(kp)}`);
+        assert(hasPoint(kp, 'カルボキシ基 -COOH ×1') && hasPoint(kp, 'カルボン酸の塩 -COO⁻ K⁺ ×1'), `${kp}: ${say(kp)}`);
         ['パルミチン酸ナトリウム（セッケン）', '安息香酸ナトリウム', 'ギ酸ナトリウム'].forEach(nm => {
             assert(!hasPoint(nm, 'ケトンの C=O') && !hasPoint(nm, 'アルデヒド基'),
                 `${nm} がケトン／アルデヒドと出ている: ${say(nm)}`);
@@ -13586,7 +13706,10 @@
         assert(labels.length === 2, `図の見出しが ${labels.length} 個（2個を期待）`);
         assert(labels.some(s => s.includes('①')) && labels.some(s => s.includes('②')),
             `見出しの番号が①②になっていない（${labels.join(' / ')}）`);
-        labels.forEach(s => assert(!/\b[ABC]\b/.test(s), '元素記号とぶつかる A/B/C を使っている'));
+        // ⚠ 見るのは**番号の位置だけ**（🔍 の直後）。v1538 で見出しに分子式が付いたので、
+        //   行全体を見ると `C₂H₄O₂` の C が「元素記号とぶつかる A/B/C」に引っかかる
+        labels.forEach(s => assert(!/^🔍 *[ABC][  ]/.test(s),
+            `元素記号とぶつかる A/B/C を番号に使っている（${s}）`));
         const panel = D.getElementById('compound-name').textContent;
         assert(/①/.test(panel) && /②/.test(panel), `右パネルに番号が反映されていない（${panel}）`);
         // 図の見出しは各分子の下にある
@@ -16443,8 +16566,14 @@
             assert(W.ipUnsaturation(p.elements, p.hCount) >= 2,
                 `不飽和度 ${W.ipUnsaturation(p.elements, p.hCount)} のお題が「じっくり練習する回」に入っている`);
         });
-        // 定番の側に不飽和度2以上が紛れていない（＝ 群分けが本当に効いている）
-        [...D.querySelectorAll('#ip-body > div > button[data-ip-problem]')].forEach(b => {
+        /* 定番の側に不飽和度2以上が紛れていない（＝ 群分けが本当に効いている）。
+           ⚠⚠ v1536 まで `#ip-body > div > button` で数えていたが、①を束に分けた（見出し ＋ グリッド）
+              ので**1段深くなり、この検査は0個を回して黙って通る**ようになっていた。
+              ★ 束の id を並べず「じっくり・立体の枠の**外**にあるお題ボタン」で引く。 */
+        const outside = [...D.querySelectorAll('#ip-body button[data-ip-problem]')]
+            .filter(b => !b.closest('#ip-training-problems') && !b.closest('#ip-stereo-problems'));
+        assert(outside.length >= 10, `定番の群のお題が ${outside.length}件（数え方が空振りしている）`);
+        outside.forEach(b => {
             const p = ip.problems[+b.dataset.ipProblem];
             assert(W.ipUnsaturation(p.elements, p.hCount) < 2,
                 `不飽和度2以上のお題（${b.textContent}）が定番の群に残っている`);
@@ -16472,6 +16601,88 @@
         assert(!/鎖式・13種/.test(toasts[0]) && !/環式・12種/.test(toasts[0]),
             `断り文が行き先の種類数まで出している（${toasts[0]}）`);
 
+        g.setMode('puzzle');
+    });
+
+    /* ===== IW33: 書き出し練習の**束**（v1536） =====
+     *
+     * ★ ユーザー指摘（2026-09-11）「**問題が系列ごとになっていないので、見づらい**」。
+     *   ① は17件が見出し1つ無しで1枚に並び（アルカン・アルケン・シクロアルカン・
+     *   アルコール・エーテルが混ざり、炭素数の順でもない）、② も27件が見出し無しだった。
+     *
+     * ⚠ **見出しの文言そのものは見ない**（言い回しは変わる）。見るのは
+     *   「**束の中身が、その束の言うグループと合っているか**」＝ 見出しが嘘をつかないこと。
+     */
+    test('IW33: ①は化合物のグループ・②は反応の型で束ねてあり、束の中は炭素数の順', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
+        g.setMode('learn');
+        if (ip.active) ip.stop();
+        ip.renderList();
+
+        // ① 束が3本そろい、**どれにも入らないお題（その他）は無い**
+        assert(!D.getElementById('ip-group-other'),
+            'どの束にも入らないお題がある（見出しが言えないものを黙って並べている）');
+        const dou = (p) => W.ipUnsaturation(p.elements, p.hCount);
+        const hetero = (p) => p.elements.filter(el => el !== 'C').join(',');
+        const WANT = {
+            'ip-group-alkane': (p) => dou(p) === 0 && !hetero(p),
+            'ip-group-alcohol-ether': (p) => dou(p) === 0 && hetero(p) === 'O',
+            'ip-group-alkene-cyclo': (p) => dou(p) === 1 && !hetero(p)
+        };
+        let counted = 0;
+        for (const [id, ok] of Object.entries(WANT)) {
+            const wrap = D.getElementById(id);
+            assert(wrap, `束「${id}」が画面に無い`);
+            assert(wrap.querySelector('h4.ip-group-head'),
+                `束「${id}」に見出しが無い（束ねたのに何の練習か言っていない）`);
+            const idx = [...wrap.querySelectorAll('button[data-ip-problem]')].map(b => +b.dataset.ipProblem);
+            assert(idx.length >= 3, `束「${id}」が ${idx.length}件（束ねる意味が無い）`);
+            counted += idx.length;
+            // ⓐ 中身が見出しの言うグループと合っている
+            idx.forEach(i => assert(ok(ip.problems[i]),
+                `束「${id}」に、そのグループでないお題が入っている（添字 ${i}）`));
+            // ⓑ 中は**炭素数の順**。同じ分子式は「全部 → 鎖式 → 環式」
+            const SK = { none: 0, chain: 1, ring: 2 };
+            const key = (i) => {
+                const p = ip.problems[i];
+                const s = SK[p.skeleton || 'none'];
+                assert(s !== undefined, `知らない骨格の型「${p.skeleton}」（並び順を決められない）`);
+                return p.elements.filter(el => el === 'C').length * 10 + s;
+            };
+            idx.forEach((i, k) => { if (k) assert(key(idx[k - 1]) <= key(i),
+                `束「${id}」が炭素数の順に並んでいない（${ip.problems[idx[k - 1]].hCount} → ${ip.problems[i].hCount}）`); });
+        }
+        // ⓒ 漏れが無い（立体の回・じっくりの回を除いた全部が、どれかの束に入っている）
+        const want = ip.problems.filter(p => !p.stereoAsked && dou(p) < 2).length;
+        assert(counted === want, `束に入ったお題が ${counted}件で、①のお題 ${want}件と合わない`);
+
+        // ② 反応の型ごとに束ねてある（型の一覧は `IP_COND_KINDS` から引く ＝ ここに書き写さない）
+        const cond = D.getElementById('ip-cond-presets');
+        assert(cond, '②の枠が無い');
+        const condHeads = [...cond.querySelectorAll('h4.ip-group-head')];
+        const kinds = [...new Set(ip.condPresets.map(p => p.kind))];
+        assert(condHeads.length === kinds.length,
+            `②の束の見出しが ${condHeads.length}本（反応の型は ${kinds.length}種）`);
+        condHeads.forEach(h => assert(h.textContent.trim().length >= 10,
+            `②の束の見出しが短すぎる（${h.textContent}）`));
+        /* ★ 束ごとに、中のお題が**同じ型**であること。⚠ 添字は**元の並びのまま**
+             （`startFromCondPreset(i)` が `condPresets[i]` を引くので、詰め直すと別の回が開く）。 */
+        let seen = 0;
+        condHeads.forEach(h => {
+            const grid = h.nextElementSibling;
+            const idx = [...grid.querySelectorAll('button[data-ip-cond]')].map(b => +b.dataset.ipCond);
+            assert(idx.length >= 1, `②の束「${h.textContent}」が空`);
+            const kind = ip.condPresets[idx[0]].kind;
+            idx.forEach(i => assert(ip.condPresets[i].kind === kind,
+                `②の束「${h.textContent}」に別の型（${ip.condPresets[i].kind}）が混ざっている`));
+            seen += idx.length;
+        });
+        assert(seen === ip.condPresets.length, `②のお題が ${seen}件で、在庫 ${ip.condPresets.length}件と合わない`);
+
+        // ⚠ 束の見出しで①②の見出し（`h3.ip-section-head`）を増やしていない（`CS1` が2本と数える）
+        assert(D.querySelectorAll('#ip-body h3.ip-section-head').length === 2,
+            '束の見出しが①②と同じ層（h3.ip-section-head）になっている');
         g.setMode('puzzle');
     });
 
@@ -22429,6 +22640,21 @@
         const rmsAfter = Math.sqrt(sumAfter / rot), rmsBefore = Math.sqrt(sumBefore / rot);
         assert(rmsAfter < 2 && rmsBefore > 50,
             `RMS が期待の形にならない（回す ${rmsAfter.toFixed(1)}px / 回さない ${rmsBefore.toFixed(1)}px）`);
+
+        /* ⚠⚠ **非連結の図（対イオンの粒を持つ塩）は出題プールに入れない**（v1538）。
+         *   `stereoIsomorphismCompare` は非連結だと null を返すので、入れると
+         *   「回して重ねる」が作れない問題が混ざり、上の assert が**たまにだけ**落ちる
+         *   （実測: オレイン酸ナトリウムで 5回中3回。出題が乱択なので再現しない日がある）。
+         * ⚠ 否定対照も一緒に見る ＝ 連結な図は今までどおり入っている */
+        const loose = q.pool.filter(e => {
+            const bonded = new Set();
+            e.mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+            return e.mol.atoms.some(a => a.charge && !bonded.has(a.id));
+        });
+        assert(loose.length === 0,
+            `非連結の図が出題プールに残っている: ${loose.map(e => e.name).join('・')}`);
+        assert(q.pool.some(e => e.name === '乳酸'), '否定対照: 乳酸がプールから消えた');
+        assert(q.pool.length >= 50, `出題プールが ${q.pool.length} 件まで減った`);
     });
 
     test('OV2: 回してよい角度は「回して読み直しても立体が変わらない」角度だけ（鏡映は使わない）', async (c) => {
@@ -38510,7 +38736,10 @@
             const mol = new W.Molecule();
             [0, 1].forEach(i => {
                 const t = entryOf(name).target;
-                const ids = t.atoms.map(a => mol.addAtom(a.element, a.x + i * 320, a.y).id);
+                // ⚠ **電荷も写す**（v1538 で塩は -COO⁻ ＋ Na⁺ の形になった）。
+                //   写さないと塩が塩でなくなり、遊離の候補が 0 件になる
+                const ids = t.atoms.map(a =>
+                    W.copyAtomMarks(mol.addAtom(a.element, a.x + i * 320, a.y), a).id);
                 t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
             });
             return mol;
@@ -38848,7 +39077,10 @@
             const mol = new W.Molecule();
             [0, 1].forEach(i => {
                 const t = entryOf(name).target;
-                const ids = t.atoms.map(a => mol.addAtom(a.element, a.x + i * 320, a.y).id);
+                // ⚠ **電荷も写す**（v1538 で塩は -COO⁻ ＋ Na⁺ の形になった）。
+                //   写さないと塩が塩でなくなり、遊離の候補が 0 件になる
+                const ids = t.atoms.map(a =>
+                    W.copyAtomMarks(mol.addAtom(a.element, a.x + i * 320, a.y), a).id);
                 t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
             });
             return mol;
@@ -47016,17 +47248,46 @@
 
     /**
      * ★ 資料ページが**実際に表へ出している**分子（＝ 床を守る範囲。2026-09-03 ユーザー決定）。
-     * `reference.json` の `source: "stages:<系列>"` から系列を引き、その系列の stages を返す。
+     * **`:::stageTable` の `series`** から系列を引き、その系列の stages を返す。
      * ⚠ ページを足せば物差しも自動で伸びる。**検査に系列名も件数も書かない。**
+     *
+     * ⚠⚠ **前書きの `source: "stages:<系列>"` は見ない**（v1535 で変えた）。
+     *   ★ `source` は「このページが参照している repo のデータ」で、**表に出した系列とは限らない**
+     *     —— `:::example` の `stageId` を1件使うだけのページも、出どころとして系列を名乗る。
+     *   ⚠ 実際にそうなった: `fat` は `stages:油脂と脂肪酸` を名乗るが表は1行も出しておらず、
+     *     **読者が表で見もしないステアリン酸**（炭素18個）で `REF4` が赤くなった。
+     *   ★★ この関数の前書きがずっと「**実際に表へ出している**分子」と言っていたので、
+     *     **言っているとおりのものを返すようにした** ＝ 物差しを緩めたのではなく、合わせた。
+     * ★ 例題で組ませる分子のほうは、下の `referenceExampleStages` が別の線で見る（`REF4` の②）。
      */
     async function referenceShownStages(W) {
         const pages = await W.referenceBook.load();
         const series = new Set();
-        pages.forEach(p => (p.source || []).forEach(s => {
-            const m = /^stages:(.+)$/.exec(s);
-            if (m) series.add(m[1]);
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'stageTable') return;
+            (Array.isArray(b.series) ? b.series : [b.series]).forEach(s => series.add(s));
         }));
         return W.STAGES.filter(s => series.has(s.series));
+    }
+
+    /**
+     * ★★ 資料ページが**例題として組ませる**分子（`:::example` の `stageId`・v1535）。
+     *
+     * ⚠ 表に出す分子とは別の線で見る（`REF4` の②）—— 例題は「▶ 組んでみる」の1件で、
+     *   **ページごとに代表1つ**（`REF6`）。★ 床を割ってもよいが、⚠ **逃げ道が塞がっていないこと**
+     *   （拡大で床を越えられる）まで確かめる ＝ `REF4b` が在庫の最大に当てているのと同じ線。
+     * ⚠ 知らない stageId は**その場で赤**（黙って0件にして空振りさせない）。
+     */
+    async function referenceExampleStages(W) {
+        const pages = await W.referenceBook.load();
+        const out = [];
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'example') return;
+            const st = (W.STAGES || []).find(s => s.id === b.stageId);
+            assert(st, `${p.id}: :::example の stageId「${b.stageId}」が stages.json に無い`);
+            if (!out.some(s => s.id === st.id)) out.push(st);
+        }));
+        return out;
     }
 
     // 在庫ぜんぶ（stages + compounds）。`getCompoundLibrary()` と同じ2つの出どころを見る
@@ -47272,6 +47533,43 @@
                 `${name}: 要る視野が広いほうの「${worst.name}」（視野${Math.round(worst.v)}・${pxWorst.toFixed(1)}px）が、` +
                 `狭いほうの「${easiest.name}」（視野${Math.round(easiest.v)}・${pxEasiest.toFixed(1)}px）より大きく出ている ` +
                 '＝ requiredViewWidth が画面の縮尺と別の順に並んでいる（最悪ケースの選抜が当てにならない）');
+
+            /* ── ② ★★ 例題（`:::example`）で組ませる分子（v1535 で足した） ──
+             *
+             * ⚠⚠ **ここは今まで1件も測っていなかった。** 物差しは前書きの `source` を見ていて、
+             *   「表に出した系列」と「例題で1件だけ触らせる分子」を区別できていなかった。
+             * ★ 分けた結果、**測る対象はむしろ増えている**（表を持たないページの例題も見る）。
+             * ★ 線は `REF4b` と同じ: **床を割ってもよいが、逃げ道が塞がっていないこと。**
+             *   ⚠ ステアリン酸（炭素18個・要る視野996）は、資料を1pxも出さなくても床に載らない
+             *     ——「折り返しよりもスクロール、拡大縮小でユーザーが対応」（§12-1）の範囲。
+             * ⚠ **名前を検査に書かない**（原稿が例題を差し替えれば、物差しは黙って追随する）。 */
+            const examples = await referenceExampleStages(W);
+            assert(examples.length >= 3,
+                `${name}: 資料ページの例題が ${examples.length} 件しか引けない（:::example が読めていない）`);
+            const svg = W.game.svg;
+            const box = svg.getBoundingClientRect();
+            const cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+            let 床を割った = 0;
+            for (const st of examples) {
+                const px = await summonAndMeasure(W, st.name);
+                if (px >= FLOOR) continue;
+                床を割った++;
+                /* 逃げ道 —— ⚠ viewBox を直に書き換えず、**ユーザーが触るのと同じ入口**で回す */
+                for (let i = 0; i < 60 && W.game.screenPxPerGrid() < FLOOR; i++) {
+                    svg.dispatchEvent(new W.WheelEvent('wheel',
+                        { deltaY: -100, ctrlKey: true, clientX: cx, clientY: cy, bubbles: true, cancelable: true }));
+                }
+                const zoomed = W.game.screenPxPerGrid();
+                assert(zoomed >= FLOOR,
+                    `${name}: 例題で組ませる「${st.name}」が ${px.toFixed(1)}px で床（${FLOOR}px）を割り、` +
+                    `⚠ Ctrl+ホイールで拡大しても ${zoomed.toFixed(1)}px までしか上がらない ＝ 逃げ道が塞がっている。` +
+                    '★ 資料ページを足したときは、例題に大物を選んでいないかを見ること');
+            }
+            /* ★ 否定対照 —— **床を割る例題が1件も無くなったら、この②は何も見張っていない。**
+               ⚠ 落ちたら前提が変わっている（例題から大物が消えた）ので、この検査を畳んでよいか判断すること */
+            assert(床を割った >= 1,
+                `${name}: 例題 ${examples.length} 件がすべて床（${FLOOR}px）の上に居る ＝ ②の逃げ道の検査が空回りしている。` +
+                '★ 前提が変わっているので DESIGN_reference_book.md §12 を読み直すこと');
         });
     });
 
@@ -47379,7 +47677,11 @@
             // ★ 「この表を作った理由」を1行で書けること（§1-2 の運用ルール）を機械で見る
             assert(typeof p.why === 'string' && p.why.length >= 20, `${p.id}: why（この表を作った理由）が空か短すぎる`);
             assert(Array.isArray(p.source) && p.source.length >= 1, `${p.id}: source（参照する repo データ）が無い`);
-            assert(Array.isArray(p.codes) && p.codes.length >= 1, `${p.id}: codes（qa の知識コード）が無い`);
+            /* ★★ `codes` は**任意**（v1536・設計書 §26）。⚠ ただし「在るのに空」は作らない ——
+               単元をまたぐ横断のページは知識項目を1件も抱えないので**キーごと持たない**。
+               ⚠ 空配列を許すと「一問一答の箱は出るが 0問」という第3の状態ができる。 */
+            assert(!('codes' in p) || (Array.isArray(p.codes) && p.codes.length >= 1),
+                `${p.id}: codes が空（持たないなら前書きから codes ごと外す）`);
             assert(typeof p.singleSource === 'boolean', `${p.id}: singleSource が真偽値でない`);
             // 参照先が実在すること（stages:<series>）
             p.source.forEach(s => {
@@ -48367,7 +48669,11 @@
             } catch (e) { f.remove(); throw e; }
         };
 
-        // ① 3枚目の知識コードで、3枚目が開く（開く道が2本あってもページを決める場所は1つ）
+        /* ① 知識コードで、そのコードを抱えるページが開く（開く道が2本あってもページを決める場所は1つ）。
+           ⚠ **どのページが開くかをここに書かない** —— 下で `pages.find` に引かせて突き合わせる。
+             `org.alcohol.hydroxy`（アルコールの官能基はヒドロキシ基）は v1536 で
+             官能基の一覧からアルコールのページへ移した（設計書 §26）が、
+             この検査は「コードの持ち主が開く」を見ているので**書き換えずに通る**。 */
         let f = await openWith('?se=0&open=reference&code=org.alcohol.hydroxy');
         try {
             const D = f.contentDocument;
@@ -48393,6 +48699,23 @@
         try {
             assert(f.contentDocument.getElementById('reference-pane').classList.contains('hidden'),
                 '?rec= が付いているのに資料が開いた（新しい受け口が収録の約束を破っている）');
+        } finally { f.remove(); }
+
+        /* ③ ★★ 知識コードを1つも持たないページ（横断のページ・§26）も、**アプリの中では読める**。
+           ⚠ 消えたのは「一問一答で解く」「アプリの中で開く」の**箱**だけで、本文ではない。
+             ★ 面Bの索引はページ id で並ぶので、`codes` の有無に関わらず全ページが出る。 */
+        f = await openWith('?se=0&open=reference');
+        try {
+            const D = f.contentDocument, book = f.contentWindow.referenceBook;
+            const bare = book.pages.filter(p => !(p.codes || []).length);
+            assert(bare.length >= 1, '知識コードを持たないページが1枚も無い（この検査が空振りしている）');
+            for (const p of bare) {
+                assert(await book.open(p.id), `${p.id} が資料ペインで開かない`);
+                assert(D.querySelector('#ref-body h3').textContent.trim() === p.title,
+                    `${p.id} を開いたのに題が「${D.querySelector('#ref-body h3').textContent}」`);
+                assert(D.querySelectorAll('#ref-body table').length >= 1,
+                    `${p.id} の表が出ていない（codes を外したら本文まで消えた）`);
+            }
         } finally { f.remove(); }
     });
 
@@ -49099,7 +49422,15 @@
                 `${p.id}: codes の「${code}」が qa の知識項目（${known.size}件）に無い`
                 + '（資料と一問一答の着地は codes だけで決まるので、綴りが違うと黙って行き止まりになる）');
         }));
-        assert(nCodes >= pages.length, 'codes が1件も無いページがある');
+        /* ⚠ v1536 まで `nCodes >= pages.length`（合計が枚数以上）で「1件も無いページ」を見たつもりでいたが、
+           **合計で見るので 0件のページ1枚は他のページの多さに隠れる** ＝ もともと空振りしていた。
+           ★ `codes` が任意になった（設計書 §26）いま、見るべきは「**持たないページが増えていないか**」。
+             横断のページは1枚だけで、増えるときは設計の判断が要る ＝ 名指しで固定する。 */
+        const noCodes = pages.filter(p => !(p.codes || []).length).map(p => p.id);
+        assert(noCodes.join(',') === 'functional-groups',
+            `知識項目を持たないページが「${noCodes.join('・') || '（無し）'}」`
+            + '（持たなくてよいのは単元をまたぐ横断のページだけ・§26。増やすなら設計書に理由を残すこと）');
+        assert(nCodes >= pages.length - noCodes.length, 'codes が1件も無いページがある');
     });
 
     /* ===== REF18: 面A ＝ /reference/ の公開ページ（v1524） =====
@@ -49184,21 +49515,26 @@
 
             /* ── ① ★★ 本文・表・例題が「アプリに組ませたもの」と一致するか ──
                ⚠ ここが「表を2か所で組んでいない」ことの実測。 */
+            /* ⚠⚠ **比べる相手は `renderBlocks`**（v1534・設計書 §24）——
+               発展の節はアプリ側で `<details>` にひとまとめにされるので、
+               **原稿のブロックと上端の要素が1対1ではなくなった**。
+               ★ 「焼いたもの ＝ いまアプリが並べたもの」という物差しは変えていない。
+               ⚠ ブロックが1つも落ちていないこと（畳んだ中身も含めた勘定）は `REF25` ③ が見る。 */
             const got = [...doc.querySelectorAll('.ref-scope > *')];
-            assert(got.length === p.blocks.length,
-                `${where}: ブロックの数が ${got.length} で、原稿の ${p.blocks.length} と違う（焼き直し忘れ？）`);
-            p.blocks.forEach((b, i) => {
-                const live = book.renderBlock(b);
-                assert(live, `${where}: learn.js が「${b.kind}」を描けない`);
-                if (b.kind === 'text') {
-                    assert(flat(got[i].innerHTML) === flat(b.text),
+            const built = book.renderBlocks(p);
+            assert(!built.unknown.length, `${where}: learn.js が「${built.unknown.join('・')}」を描けない`);
+            assert(got.length === built.els.length,
+                `${where}: 上端の要素が ${got.length} 個で、アプリが並べた ${built.els.length} 個と違う（焼き直し忘れ？）`);
+            built.els.forEach((live, i) => {
+                if (live.className === 'ref-p') {
+                    assert(flat(got[i].innerHTML) === flat(live.innerHTML),
                         `${where} の ${i + 1} 番目の段落が原稿と違う（生成物を手で直したか、直して焼き忘れたか）\n`
                         + `    焼いたもの: ${flat(got[i].innerHTML).slice(0, 80)}\n`
-                        + `    原稿から  : ${flat(b.text).slice(0, 80)}`);
+                        + `    原稿から  : ${flat(live.innerHTML).slice(0, 80)}`);
                     return;
                 }
                 assert(flat(got[i].textContent) === flat(live.textContent),
-                    `${where} の ${i + 1} 番目（:::${b.kind}）が、いまアプリが組む中身と違う\n`
+                    `${where} の ${i + 1} 番目（${live.tagName.toLowerCase()}.${live.className}）が、いまアプリが組む中身と違う\n`
                     + `    焼いたもの: ${flat(got[i].textContent).slice(0, 90)}\n`
                     + `    アプリから: ${flat(live.textContent).slice(0, 90)}\n`
                     + '    ★ stages.json / reactions.json を直したら node tools/gen-reference-pages.mjs で焼き直すこと');
@@ -49212,19 +49548,28 @@
                ⚠ URL を手で書き換えても赤（`REF17` ④ は「qa に実在するか」で、こちらは「原稿と同じか」）。 */
             const embeds = [...doc.querySelectorAll('[data-embed]')].map(e => e.getAttribute('data-embed'));
             const qaSrc = embeds.filter(u => u.indexOf('/qa/') === 0)[0];
-            assert(qaSrc, `${where}: 一問一答の埋め込みが無い`);
-            const sent = decodeURIComponent((qaSrc.match(/[?&]codes=([^&]+)/) || [])[1] || '').split(',');
-            assert(sent.join(',') === p.codes.join(','),
-                `${where}: 一問一答へ送るコードが原稿と違う\n    送っている: ${sent.join(', ')}\n    原稿      : ${p.codes.join(', ')}`);
-            assert(/[?&]mode=choice(&|$)/.test(qaSrc),
-                `${where}: 一問一答が測定モードで開かない（めくりは自己申告なので「解ける形」にならない）`);
             const appSrc = embeds.filter(u => u.indexOf('/assembler/') === 0)[0];
-            assert(appSrc && appSrc.indexOf('code=' + encodeURIComponent(p.codes[0])) > 0,
-                `${where}: アプリの埋め込みが先頭コードを載せていない（着地するページを決めているのは code）`);
-            // ★ その先頭コードが、ほんとうにこのページへ戻ること（決めているのは pageByCode 1か所）
-            const back = book.pageByCode(p.codes[0]);
-            assert(back && back.id === p.id,
-                `${where}: 先頭コード「${p.codes[0]}」が別のページ（${back && back.id}）へ着地する`);
+            /* ★★ `codes` を持たないページ（横断のページ・§26）は、**箱そのものを出さない**
+               （`video` と同じ扱い）。⚠ 「0問」と書いた箱や、押しても別のページへ着地する箱を残さない。 */
+            if (!(p.codes || []).length) {
+                assert(!qaSrc, `${where}: 知識項目を持たないのに一問一答の箱が出ている（${qaSrc}）`);
+                assert(!appSrc, `${where}: 知識項目を持たないのにアプリの箱が出ている（着地先を名乗れない・${appSrc}）`);
+                assert(!/解けるか試す|読みながら組む/.test(doc.body.textContent),
+                    `${where}: 箱は消えたのに見出しだけ残っている（空の枠を作らない）`);
+            } else {
+                assert(qaSrc, `${where}: 一問一答の埋め込みが無い`);
+                const sent = decodeURIComponent((qaSrc.match(/[?&]codes=([^&]+)/) || [])[1] || '').split(',');
+                assert(sent.join(',') === p.codes.join(','),
+                    `${where}: 一問一答へ送るコードが原稿と違う\n    送っている: ${sent.join(', ')}\n    原稿      : ${p.codes.join(', ')}`);
+                assert(/[?&]mode=choice(&|$)/.test(qaSrc),
+                    `${where}: 一問一答が測定モードで開かない（めくりは自己申告なので「解ける形」にならない）`);
+                assert(appSrc && appSrc.indexOf('code=' + encodeURIComponent(p.codes[0])) > 0,
+                    `${where}: アプリの埋め込みが先頭コードを載せていない（着地するページを決めているのは code）`);
+                // ★ その先頭コードが、ほんとうにこのページへ戻ること（決めているのは pageByCode 1か所）
+                const back = book.pageByCode(p.codes[0]);
+                assert(back && back.id === p.id,
+                    `${where}: 先頭コード「${p.codes[0]}」が別のページ（${back && back.id}）へ着地する`);
+            }
 
             /* ── ⑤ 動画は `video:` が在るページだけ ── */
             const frames = doc.body.innerHTML.match(/youtube[^"']*/g) || [];
@@ -49271,6 +49616,14 @@
         };
         const parse = (html) => new DOMParser().parseFromString(html, 'text/html');
         const flat = (s) => String(s).replace(/\s+/g, ' ').trim();
+        /* ★★ **原稿の記法が効く欄（`prose`）は、生成物の中では HTML になっている。**
+           ⚠⚠ `lead` も `title` も `prose` なので、`**強調**` は `<b>`、`~n~` は `<sub>` に化ける。
+             ★ 画面に出るのは中の文字だけなので、**突き合わせる前にタグを外す。**
+           ⚠ 外さないと「強調か下付きを1つでも書いた節」がその場で赤くなる —— 実測で
+             `alkene` の節「アルケンとは」の lead（`一般式は C~n~H~2n~。…`）が当たった。
+             ⛔ ここを原稿側で直す（記法をやめる）のは逆向き ＝ 書式が `prose` と決めた欄で
+             記法を使えなくすることになる。 */
+        const bare = (s) => flat(String(s).replace(/<[^>]+>/g, ''));
 
         const pages = JSON.parse(await grab('reference.json', 'reference.json'));
         const book = W.referenceBook;
@@ -49329,8 +49682,8 @@
                 seen.add(s.anchor);
                 const el = book.renderBlock(s);
                 assert(el.id === W.REF_ANCHOR_PREFIX + s.anchor, `${p.id}: 節の id が ${el.id} になっている`);
-                assert(flat(el.textContent).indexOf(flat(s.lead)) >= 0,
-                    `${p.id}: 節「${s.title}」に「この節で分かること」が出ていない`);
+                assert(flat(el.textContent).indexOf(bare(s.lead)) >= 0,
+                    `${p.id}: 節「${bare(s.title)}」に「この節で分かること」が出ていない`);
             });
             assert(toc, `${p.id}: 節が ${secs.length} 個あるのに目次が組めない`);
             const links = [...toc.querySelectorAll('a')];
@@ -49339,7 +49692,7 @@
             links.forEach((a, i) => {
                 assert(a.getAttribute('href') === '#' + W.REF_ANCHOR_PREFIX + secs[i].anchor,
                     `${p.id}: 目次の ${i + 1} 行目の行き先が本文の節と違う`);
-                assert(flat(a.textContent) === flat(secs[i].title),
+                assert(flat(a.textContent) === bare(secs[i].title),
                     `${p.id}: 目次の ${i + 1} 行目の文字が節の見出しと違う`);
             });
         }
@@ -49556,12 +49909,16 @@
      * ⚠⚠ **急所は「行き先がまだ無いページでもよい」こと。** 52ページの計画のうち
      *   書けているのは6枚しかないので、⛔ ふつうのリンクにすると **404 が並ぶ**。
      *
-     * ★ ここが見るのは5つ:
+     * ★ ここが見るのは6つ:
      *   ① **まだ無いページ宛は `<a>` にならない**（押せない・「準備中」と言葉で出る）
      *   ② **在るページ宛は `<a href="/reference/<id>/">`**（面Aでそのまま使える綴り）
      *   ③ ⚠⚠ **`open:` は `game.js` の `OPEN_TARGETS` に実在する**（新しい URL の形を発明していない）
      *   ④ ⚠ **`<button>` を作らない** —— 面Aの生成器は知らない押しものを見つけると止まる
      *   ⑤ **行き先の綴り違いが「準備中」に化けない**（`PLANNED.txt` に登録した id だけが許される）
+     *   ⑥ ★★ **`cls:`（書き出しの分類）は実在し、その式でその回が実際に始まる**（v1535・§25）。
+     *      ⚠ 綴りの台帳は `learn.js` の `IP_SCOPES` で、**検査に分類名を書き写さない**。
+     *      ⚠⚠ 否定対照つき —— **分類を外すと同じ式では開けない**ことまで見る
+     *        （そうでないと `cls` が何の役にも立っていないのに緑になる）
      */
     test('REF21: :::link は まだ無いページを「準備中」で指せ、綴り違いは赤になる', async (c) => {
         const W = c.W;
@@ -49586,6 +49943,10 @@
             `まだ無いページ宛に「${W.REF_LINK_SOON}」の言葉が出ていない（淡いだけだと壊れたリンクに見える）: ${soon.textContent}`);
 
         /* ── ② 在るページ宛 ── */
+        /* ⚠ **自分で読み込む。** 前は先に走る `REF17` が読んでいるのに頼っていて、
+           `--only=REF21` で流すと `book.pages` が null のまま落ちた（実測）＝
+           **否定対照を素早く見る道具が、この検査にだけ効かない**状態だった。 */
+        await book.load();
         const live = book.pages[book.pages.length - 1];
         const el = book.renderBlock({ kind: 'link', to: live.id, text: '在るページへの案内' });
         const a = el.querySelector('a');
@@ -49599,6 +49960,14 @@
         assert(targets && Object.keys(targets).length >= 10,
             'game.js の OPEN_TARGETS が読めない（作りが変わった？ この検査を直す）');
         const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        /* ★★ 書き出しの「分類」の綴りは **`learn.js` の `IP_SCOPES`** が唯一の台帳（v1535）。
+           ⚠ **検査に分類名を書き写さない** —— 書き写すと、分類を増やした日に検査だけが古い一覧を見張る。 */
+        const scopes = W.IP_SCOPES;
+        assert(scopes && Object.keys(scopes).length >= 4,
+            'learn.js の IP_SCOPES が読めない（作りが変わった？ この検査を直す）');
+        const FG = Object.keys(scopes).filter(k => k.indexOf('fg:') === 0).map(k => k.slice(3));
+        assert(FG.length >= 4, `書き出しの分類が ${FG.length} 種しか読めない（IP_SCOPES の 'fg:' の鍵）`);
+
         let nLink = 0, nOpen = 0;
         const formulas = [];
         pages.forEach(p => (p.blocks || []).forEach(b => {
@@ -49614,7 +49983,16 @@
             if (b.formula) {
                 assert(b.open === 'isomer', `${p.id}: formula は open: isomer と一緒に使うものです（いまは ${b.open}）`);
                 assert(/^[A-Za-z0-9]+$/.test(b.formula), `${p.id}: formula「${b.formula}」が素の英数字でない`);
-                formulas.push({ id: p.id, formula: b.formula });
+                formulas.push({ id: p.id, formula: b.formula, cls: b.cls || null });
+            }
+            /* ★★ `cls`（分類で絞る回・§25）。⚠ **`formula` の添えもの**で、単独では立たない。
+               ⚠⚠ **綴り違いをここで止める** —— 通すと「押しても何も起きないリンク」が
+                  緑のまま残る（`formula` を通す条件とまったく同じ読み）。 */
+            if (Object.prototype.hasOwnProperty.call(b, 'cls')) {
+                assert(b.formula, `${p.id}: :::link の cls は formula と一緒に書くものです（分類だけでは式が決まらない）`);
+                assert(FG.indexOf(b.cls) >= 0,
+                    `${p.id}: :::link の分類「cls: ${b.cls}」は書き出し練習に無い`
+                    + `（書けるのは ${FG.join(' / ')}。learn.js の IP_SCOPES の 'fg:' の鍵）`);
             }
         }));
 
@@ -49628,13 +50006,40 @@
         const wasMode = W.game.mode;
         W.game.setMode('learn');
         try {
-            formulas.forEach(({ id, formula }) => {
-                ip.startFromFormula(formula);
+            formulas.forEach(({ id, formula, cls }) => {
+                /* ★ 分類つきのリンクは**分類つきの道**で確かめる（v1535）。
+                   ⚠⚠ 式だけで試すと**通ってしまう組み合わせと、断られる組み合わせが混ざる**
+                     —— C₄H₈O₂ は全体で122種あって式だけの道は断るが、
+                        エステルに絞れば4種で開く ＝ **画面が実際にたどる道で見る。** */
+                if (cls) ip.startFromFgFormula(formula, cls);
+                else ip.startFromFormula(formula);
                 assert(ip.active && ip.problem && ip.problem.total >= 2,
-                    `${id}: :::link の formula「${formula}」で書き出し練習が始まらない`
+                    `${id}: :::link の formula「${formula}」${cls ? `・分類「${cls}」` : ''}で書き出し練習が始まらない`
                     + '（押しても何も起きないリンクになる。受け口が受ける式かどうかは IS5 の線）');
+                /* ⚠ 開いた回が**その分類の回**であること（式だけの回に落ちていない）。
+                   ★ 鍵が分かれていないと「ケトンだけ描いて C₆H₁₂O 全体の ✓ が付く」が起きる（§11-4） */
+                if (cls) {
+                    assert(ip.problem.fgClass === cls,
+                        `${id}: 分類「${cls}」を頼んだのに、開いた回の分類が「${ip.problem.fgClass || '(指定なし)'}」`);
+                }
                 ip.stop();
             });
+            /* ★★ 否定対照 —— 分類を外すと、同じ式では**開けない**こと。
+               ⚠ これが無いと「cls を足したから開いた」のか「もともと開いた」のかが分からない
+                 ＝ この欄が何の役にも立っていない可能性に気づけない。 */
+            const withCls = formulas.filter(f => f.cls);
+            if (withCls.length) {
+                let 式だけで開けた = 0;
+                withCls.forEach(({ formula }) => {
+                    ip.startFromFormula(formula);
+                    if (ip.active) 式だけで開けた++;
+                    ip.stop();
+                });
+                assert(式だけで開けた < withCls.length,
+                    `否定対照が働いていない: 分類つきの ${withCls.length} 件は、分類を外しても全部開けた`
+                    + '（cls を足した理由＝「式だけでは上限20種を超えて断られる回がある」が消えている。'
+                    + '★ 消えているなら DESIGN_reference_book.md §25 を測り直すこと）');
+            }
         } finally {
             ip.stop();
             W.game.setMode(wasMode);
@@ -50154,6 +50559,140 @@
         assert((bdoc.body.textContent || '').indexOf('○○') >= 0,
             `/reference/${blankPage.id}/: 焼いた本文から ○○ の字が消えている`);
         assert(true, `発展の印 ${advSecs.length} 件・○○ ${blanks} 件`);
+    });
+
+    /* ===== REF25: 発展は畳んで置く（設計書 §24・v1534） =====
+     *
+     * > 初学者のニーズと発展レベルのニーズを同時に満たしたい。
+     * > 初学者がとっかかりにくくなるのは避けたいし、事典的に網羅もしたい（ユーザー）
+     *
+     * ★★ **網羅する量は1文字も減らさない。減るのは最初に画面へ出る量だけ。**
+     *    ⚠ だからこのテストがいちばん見るのは「**畳んだ中身が本当に在るか**」——
+     *      折りたたみを入れたつもりで本文を落としていたら、参考書としては最悪の壊れ方をする
+     *      （画面はきれいなまま、引きに来た人だけが見つけられない）。
+     *
+     * 見るもの:
+     *   ① **器は `<details>`**（JS 無しで開け閉めできる ＝ 焼いた面Aでも効く）。既定は**閉じ**
+     *   ② ⚠ **畳んでも「発展の札・題・この節で分かること1行」が見える** ——
+     *     読むかどうかを1行で決められることが、畳んでよい条件（`lead` が summary の外に出たら赤）
+     *   ③ ⚠⚠ **中身が1ブロックも落ちていない** —— 畳む前（`renderBlock` を素で並べた数）と
+     *     畳んだあと（外に出た数＋中に入った数）が**同じ**であること
+     *   ④ **どこで畳み終わるか** —— 次の節と、発展でない小見出しで閉じる
+     *     （⚠ これが無いと `functional-groups` の `## 例題` が発展の中に吸い込まれる）
+     *   ⑤ **アンカーは `<details>` が持つ** ＝ 目次・用語の索引の行き先（`#ref-sec-<anchor>`）が変わらない
+     *   ⑥ **焼いた面Aにも同じ markup があり、退避の JS が埋まっている**
+     *     （⚠ 面Aの JS は `learn.js` から切り出したもの ＝ 書き写していないこと）
+     *   ⑦ ⚠⚠ **発展の「小見出し」は畳まない** —— 小見出しには「どこまでが発展か」が
+     *     器で言えないので、畳むと ★★★（必ず覚える）の反応式まで隠れる（`alkane` の実例）
+     */
+    test('REF25: 発展は閉じた <details> で出し、畳んだ中身は1ブロックも落ちない', async (c) => {
+        const W = c.W;
+        const book = W.referenceBook;
+        assert(book, 'referenceBook が居ない');
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const pages = book.pages && book.pages.length ? book.pages : (await book.load(), book.pages);
+        /* ⚠ 畳むのは**節だけ**（小見出しの発展は印のままにした・設計書 §24-2）——
+           小見出しには「どこまでが発展か」が器で言えない（`alkane.md` の実例）。 */
+        const advOf = (pg) => (pg.blocks || []).filter(b => b.kind === 'section' && b.advanced);
+        const withAdv = pages.filter(pg => advOf(pg).length);
+        assert(withAdv.length >= 1, '発展の印が実データに1つも無い（折りたたみを確かめられない）');
+
+        let folds = 0, inside = 0;
+        for (const pg of withAdv) {
+            const built = book.renderBlocks(pg);
+            assert(!built.unknown.length, `${pg.id}: 描けないブロック（${built.unknown.join('・')}）`);
+
+            /* ── ③ 中身が落ちていない ── */
+            const flat = (pg.blocks || []).filter(b => book.renderBlock(b)).length;
+            const dets = built.els.filter(el => el.tagName === 'DETAILS');
+            const packed = dets.reduce((n, d) => n + d.querySelector('.ref-adv-body').children.length, 0);
+            assert(built.els.length + packed === flat,
+                `${pg.id}: 畳む前 ${flat} ブロックが、畳んだあと 外 ${built.els.length} ＋ 中 ${packed} になっている`
+                + '（＝ 折りたたみで本文が落ちている／増えている）');
+            assert(dets.length === advOf(pg).length,
+                `${pg.id}: 発展 ${advOf(pg).length} 件に対して折りたたみが ${dets.length} 個`);
+            folds += dets.length; inside += packed;
+
+            for (const d of dets) {
+                /* ── ① 既定は閉じ ── */
+                assert(!d.open, `${pg.id}: 発展の折りたたみが最初から開いている`);
+                assert(d.classList.contains('ref-adv'), `${pg.id}: 折りたたみに ref-adv が付いていない`);
+                const sum = d.querySelector('summary');
+                assert(sum && sum.parentNode === d, `${pg.id}: <summary> が折りたたみの直下に無い`);
+                /* ── ② 畳んだままで見えるもの ── */
+                assert(sum.querySelector('.ref-adv-tag'), `${pg.id}: 畳んだ札に「発展」の印が無い`);
+                const head = sum.querySelector('.ref-sec-h');
+                assert(head && (head.textContent || '').replace(W.REF_ADVANCED_WORD, '').trim().length >= 2,
+                    `${pg.id}: 畳んだ札に節の題が無い`);
+                assert(d.querySelector('.ref-adv-body').children.length >= 1,
+                    `${pg.id}: 中身の無い折りたたみがある（開いても何も出ない）`);
+                /* ── ⑤ 節のアンカーは details が持つ ── */
+                assert(d.id.indexOf('ref-sec-') === 0, `${pg.id}: 折りたたみの id が節の綴りでない（${d.id}）`);
+                assert(!d.querySelector('[id]'), `${pg.id}: 折りたたみの中にもう1つ id がある（行き先が2通りになる）`);
+                /* ⚠ 「この節で分かること」1行も**畳んだまま**見える */
+                assert(sum.querySelector('.ref-sec-lead'),
+                    `${pg.id}: 節の折りたたみに lead が無い（開くかどうかを1行で決められない）`);
+            }
+        }
+        assert(folds >= 1 && inside >= 1, `折りたたみ ${folds} 個／中身 ${inside} ブロック`);
+
+        /* ── ⑦ ⚠⚠ **発展の「小見出し」は畳まない**（設計書 §24-2）──
+           ★ `alkane.md` の `## 電子対はどう動いているのか（発展）` は寄り道が1段落だけで、
+             そのあとに ★★★（必ず覚える）の反応式が続く。畳むと**必ず覚える式が既定で隠れる**。 */
+        const alk = pages.find(pg => pg.id === 'alkane');
+        assert(alk, 'alkane が無い');
+        const advHeads = (alk.blocks || []).filter(b => b.kind === 'heading' && b.advanced);
+        assert(advHeads.length >= 1, 'alkane に発展の小見出しが無い（否定対照が立たない）');
+        const alkEls = book.renderBlocks(alk).els;
+        assert(alkEls.filter(el => el.tagName === 'DETAILS').length === 0,
+            'alkane に折りたたみができている（このページの発展は小見出しだけ ＝ 畳まない約束）');
+        assert(alkEls.some(el => el.tagName === 'H5' && el.classList.contains('ref-h5-advanced')),
+            '発展の小見出しが印つきで本文に出ていない');
+        assert(alkEls.some(el => el.classList && el.classList.contains('ref-rx')
+            && (el.textContent || '').indexOf('必ず覚える') >= 0),
+            '★★★（必ず覚える）の反応式が折りたたみの外に出ていない');
+
+        /* ── ④ どこで畳み終わるか（実データの functional-groups で見る） ── */
+        const fg = pages.find(pg => pg.id === 'functional-groups');
+        assert(fg, 'functional-groups が無い');
+        const fgEls = book.renderBlocks(fg).els;
+        const det = fgEls.find(el => el.tagName === 'DETAILS');
+        assert(det, 'functional-groups に折りたたみが無い');
+        assert((det.querySelector('.ref-adv-body').textContent || '').indexOf('例題') < 0,
+            '発展でない小見出し「例題」が発展の中に吸い込まれている（ページ全体のものが寄り道の中に入る）');
+        assert(fgEls.some(el => el.tagName === 'H5' && (el.textContent || '').indexOf('例題') >= 0),
+            '「例題」の小見出しが折りたたみの外に出ていない');
+
+        /* ── ⑥ 焼いた面A ── */
+        const res = await fetch(`../reference/${fg.id}/index.html` + FRESH());
+        assert(res.ok, `/reference/${fg.id}/ が読めない（HTTP ${res.status}）`);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const baked = doc.querySelectorAll('details.ref-adv');
+        assert(baked.length === advOf(fg).length,
+            `/reference/${fg.id}/: 焼いた折りたたみが ${baked.length} 個（原稿は ${advOf(fg).length} 件・焼き直し忘れ？）`);
+        assert(!baked[0].hasAttribute('open'), `/reference/${fg.id}/: 焼いた折りたたみが開いたままになっている`);
+        assert(baked[0].id === 'ref-sec-' + advOf(fg)[0].anchor,
+            `/reference/${fg.id}/: 焼いた折りたたみのアンカーが変わっている（${baked[0].id}）`);
+        assert((baked[0].querySelector('.ref-adv-body').textContent || '').length >= 50,
+            `/reference/${fg.id}/: 焼いた折りたたみの中身が空に近い（本文が落ちている）`);
+        /* ⚠ 退避の JS は learn.js から**切り出した**もの ＝ 書き写していないこと。
+           ★ 切り出しが外れると面Aだけ「検索で開かない・印刷で出ない」に戻る（画面では分からない）。 */
+        assert(html.indexOf('function refAdvSetup(root)') >= 0 && html.indexOf('refAdvSetup(document);') >= 0,
+            `/reference/${fg.id}/: 退避の JS（refAdvSetup）が埋まっていない`);
+        const src = await (await fetch('learn.js' + FRESH())).text();
+        const cut = src.replace(/\r\n/g, '\n').match(/^function refAdvSetup\(root\) \{[\s\S]*?^\}/m);
+        assert(cut, 'learn.js から refAdvSetup を切り出せない（字下げか名前が変わった？）');
+        assert(html.replace(/\r\n/g, '\n').indexOf(cut[0]) >= 0,
+            '焼いた面Aの refAdvSetup が learn.js と1バイト違う（書き写しになっている＝いつか割れる）');
+
+        /* ⚠ **印刷で開く決めごと**が両面にあること（紙には「開く」操作が無い） */
+        assert(html.indexOf('.ref-adv::details-content{content-visibility:visible}') >= 0,
+            `/reference/${fg.id}/: 印刷で発展を開く規則が焼かれていない`);
+        const css = await (await fetch('style.css' + FRESH())).text();
+        assert(css.indexOf('.ref-adv::details-content') >= 0,
+            'assembler/style.css に印刷で発展を開く規則が無い');
+        assert(true, `折りたたみ ${folds} 個・中に ${inside} ブロック（面Aにも ${baked.length} 個）`);
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
@@ -51876,6 +52415,61 @@
         return [...lists.entries()].map(([id, l]) => `${id}=${l.sort().join(',')}`).sort().join('|');
     };
 
+    test('SEP_IONIZED: 水層の塩はどれも電離した形で描く（アニリン塩酸塩とそろえる）', async (c) => {
+        /* 2026-09-12・ユーザー検品「V141 142 アニリン塩酸塩は電離しているが、
+         * ナトリウムフェノキシドは電離していない。水中に溶けた、なので
+         * この場面では電離したほうがよいと思う」。
+         * 実測では、同じ水層に居ながら
+         *   アニリン塩酸塩 … -NH₃⁺ と Cl⁻ が離れている（電離）
+         *   安息香酸ナトリウム … -COO と Na が線でつながったまま（未電離）
+         * と描き方が食い違っていた。★ 電離しているほうへそろえる。
+         * ⚠ 見るのは「結合が無い」ことと「電荷が付いている」ことの両方
+         *   （電荷だけ付けて線を残すと、価標の検証が落ちる）。 */
+        c.reset();
+        const g = c.game, W = c.W;
+        const bondsOf = (mol, id) => mol.bonds.filter(b => b.atomId1 === id || b.atomId2 === id).length;
+        const check = (name, metal) => {
+            const mol = g.summonMolecule(name) ? g.userMolecule : null;
+            assert(mol, `${name} を呼び出せない`);
+            const part = g.splitMolecules().find(p => g.lookupCompoundName(p) === name);
+            assert(part, `${name} の名前が引けない（登録と生成が食い違っている）`);
+            const m = part.atoms.find(a => a.element === metal);
+            assert(m, `${name} に ${metal} が無い`);
+            assert(bondsOf(part, m.id) === 0,
+                `${name}: ${metal} がまだ線でつながっている（水層の塩が電離していない）`);
+            assert(m.charge === 1, `${name}: ${metal} に ＋ が付いていない`);
+            const anion = part.atoms.find(a => a.element === 'O' && a.charge === -1);
+            assert(anion, `${name}: 相方の -O⁻ に − が付いていない`);
+            assert(part.atoms.every(a => W.isValencyValid(part, a.id)), `${name}: 価標が不正`);
+            // ★ 相方を引き直せる（この1本が liberate_weak_acid ほか4本の入口）
+            assert(W.saltCounterMetal(part, anion.id) &&
+                   W.saltCounterMetal(part, anion.id).element === metal,
+                `${name}: -O⁻ から相方の ${metal}⁺ を引けない`);
+        };
+        ['安息香酸ナトリウム', 'ナトリウムフェノキシド（フェノールのナトリウム塩）',
+            'ベンゼンスルホン酸ナトリウム', '酢酸カリウム'].forEach(n => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            check(n, n.includes('カリウム') ? 'K' : 'Na');
+        });
+
+        // ★ アニリン塩酸塩と同じ形になっている（そろえた先の相手）
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('アニリン塩酸塩'), 'アニリン塩酸塩を呼び出せない');
+        const cl = g.userMolecule.atoms.find(a => a.element === 'Cl');
+        assert(cl && cl.charge === -1 && bondsOf(g.userMolecule, cl.id) === 0,
+            'アニリン塩酸塩の Cl⁻ が粒でなくなった（そろえる先が動いた）');
+
+        // ⚠ 否定対照: 線1本でつないだ古い形に戻すと、この検査が赤くなる
+        const old = new W.Molecule();
+        const ids = ['C', 'C', 'O', 'O', 'Na'].map(e => old.addAtom(e, 0, 0).id);
+        [[0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1]].forEach(([i, j, t]) => old.addBond(ids[i], ids[j], t));
+        assert(bondsOf(old, ids[4]) !== 0, '否定対照が組めていない');
+        assert(!W.saltCounterMetal(old, ids[3]),
+            '線でつないだ -COONa から相方を引けてしまう（電離形と見分けが付かない）');
+    });
+
     test('SEP1: 層の印と水面の帯 —— 印が付いた成分だけが水層へ移り、見出しと札にそう出る', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;
@@ -52970,12 +53564,24 @@
      *   `getFreeValency`（自動水素・分子式・正準コードのラベル）と `isValencyValid`（検証）が
      *   両方そこを読むので、設計書 §3-3 の表が**いっぺんに**成り立つ。
      * ⚠ 電荷を手で描く経路は無い（D-I14）。この帯は分子を Molecule で直に組む。
-     * ⚠ O–金属の塩は線1本のまま（D-I11）。電荷は N⁺・双性の O⁻・N≡N⁺ と対イオンの粒にだけ使う。
+     * ★ O–金属の塩も**電離した形**（-COO⁻ / -O⁻ / -SO₃⁻ ＋ Na⁺・K⁺ の粒）にそろえた（v1538）。
+     *   D-I11「線1本のまま」を 2026-09-12 のユーザー判断で見直したもの ——
+     *   分液の水層でアニリン塩酸塩だけが電離して描かれ、安息香酸ナトリウムは
+     *   線でつながったままで、**同じ水層の塩の描き方が食い違っていた**。
      */
 
-    // 電荷を持つ登録エントリの名簿（★ 名前で列挙。数では数えない）。
-    // ⚠ ここに無いエントリが電荷を持ったら赤 ＝「既存データに電荷は 0 件」という設計の前提を守る
-    const ION_CHARGED_ENTRIES = ['アニリン塩酸塩', '塩化ベンゼンジアゾニウム'];
+    /* 電荷を持つ登録エントリの名簿（★ 名前で列挙。数では数えない）。
+     * ⚠ ここに無いエントリが電荷を持ったら赤 ＝ 電荷の付く場所を名簿1つで押さえる。
+     * ★ 18件の塩は v1538 で電離形になった（O–金属の線をやめた）。 */
+    const ION_CHARGED_ENTRIES = ['アニリン塩酸塩', '塩化ベンゼンジアゾニウム',
+        '酢酸ナトリウム', 'ギ酸ナトリウム', 'プロピオン酸ナトリウム', '安息香酸ナトリウム',
+        'サリチル酸ナトリウム', '乳酸ナトリウム', 'シュウ酸ナトリウム',
+        'パルミチン酸ナトリウム（セッケン）', 'ステアリン酸ナトリウム（セッケン）',
+        'オレイン酸ナトリウム（セッケン）', 'ラウリン酸ナトリウム（セッケン）',
+        'ミリスチン酸ナトリウム（セッケン）',
+        'ナトリウムフェノキシド（フェノールのナトリウム塩）', 'ナトリウムエトキシド',
+        'ベンゼンスルホン酸ナトリウム', 'アルキルベンゼンスルホン酸ナトリウム',
+        '酢酸カリウム', 'フタル酸水素カリウム'];
 
     // 原子と結合と電荷から分子を組む（EL3 の `mk` に電荷を足したもの）
     const ionMk = (W, els, bonds, charges = {}) => {
@@ -53029,9 +53635,9 @@
         assert(!W.isValencyValid(clBond.m, clBond.ids[1]), '★ 結合を持つ Cl⁻ が通ってしまう');
         const na = ionMk(W, ['Na'], [], { 0: 1 });
         assert(na.m.getFreeValency(na.ids[0]) === 0, '★ Na⁺ の粒に自動水素が生えている（NaH の図）');
-        // ⚠ 電荷の無い Na は今までどおり価標 1（-COONa を線1本で書く流儀。D-I11）
+        // ⚠ 電荷の無い Na は価標 1 のまま（手で組んだ古い -COONa の図を壊さない）
         const na0 = ionMk(W, ['Na'], []);
-        assert(W.maxValencyOf(na0.m, na0.ids[0]) === 1, '電荷の無い Na の価標が 1 でなくなった（-COONa が書けない）');
+        assert(W.maxValencyOf(na0.m, na0.ids[0]) === 1, '電荷の無い Na の価標が 1 でなくなった');
 
         // (5) ★★ 既存データに電荷を持つ原子が無い（＝ 登録済み 1,150 件のコード・分子式・自動水素は不変）。
         //     ⚠ 数ではなく名前で見る。名簿に無いエントリが電荷を持てば赤
@@ -53079,9 +53685,15 @@
         assert(types(zw.m) === 'ammonium,carboxylate_ion', `双性イオンの官能基が ${types(zw.m)}`);
         const dz = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'N', 'Cl'], [...ionRing, [0, 6], [6, 7, 3]], { 6: 1, 8: -1 });
         assert(types(dz.m) === 'aromatic,diazonium', `ジアゾニウムの官能基が ${types(dz.m)}`);
-        // ⚠ 線1本の -COONa は今までどおり carboxylate（O–金属は電荷を使わない。D-I11）
-        const acna = ionMk(W, ['C', 'C', 'O', 'O', 'Na'], [[0, 1], [1, 2, 2], [1, 3], [3, 4]]);
-        assert(types(acna.m) === 'carboxylate', `酢酸ナトリウム（線1本）の官能基が ${types(acna.m)}`);
+        /* ★ 酢酸ナトリウムは**電離した形**で carboxylate（v1538）。
+         *   ⚠ 相方の Na⁺ が無ければ carboxylate_ion（双性イオンの片側）にしかならない ＝
+         *   「塩」と「裸の陰イオン」を粒の有無で割る、が唯一の見分け方 */
+        const acna = ionMk(W, ['C', 'C', 'O', 'O', 'Na'], [[0, 1], [1, 2, 2], [1, 3]], { 3: -1, 4: 1 });
+        assert(types(acna.m) === 'carboxylate', `酢酸ナトリウム（電離形）の官能基が ${types(acna.m)}`);
+        // ⚠ 否定対照: 線で結んだ古い形は もう塩として拾わない（同じ物質に2つの形を持たない）
+        const acnaBonded = ionMk(W, ['C', 'C', 'O', 'O', 'Na'], [[0, 1], [1, 2, 2], [1, 3], [3, 4]]);
+        assert(types(acnaBonded.m) !== 'carboxylate',
+            '線1本で結んだ -COONa を まだ カルボン酸の塩 として拾っている');
         // 中性のアニリン・グリシンは不変
         const an0 = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N'], [...ionRing, [0, 6]]);
         assert(types(an0.m) === 'amine1,aromatic', `アニリンの官能基が変わった: ${types(an0.m)}`);
