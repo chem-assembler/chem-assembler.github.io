@@ -24,12 +24,13 @@
     // ⚠ 系統分離モード（型B・型A）の検査が丸ごと空振りしても気づけるように、
     //   その件数ぶんを含めた下限にしてある（2026-08-27 時点の実測は 303 件 → 型A を足して 405 件
     //   → レイアウトの追い込みで 457 件 → 沈殿側の枝と出題の生成で 524 件
-    //   → 第5属で 599 件 → **入口の整理（ME）で 629 件**）
+    //   → 第5属で 599 件 → **入口の整理（ME）で 629 件**
+    //   → **アキネーター（かくれた物質をつきとめる）で 712 件**（★ アキだけで 83 件））
     // ⚠ 下限は実測のすぐ下に置く。★ ゆるくすると、型A の画面の検査が丸ごと空振りしても
     //   「少ないけど全部通った」に見えてしまう（★ 型A の画面だけで 95 件ある）
     // ⚠ ME（入口と受け口）は**いちばん最後**に走るので、下限をゆるいままにすると
     //   「旧 `/muki/` の着地」の検査が丸ごと落ちても気づけない（実測 629 → 620 に上げた）
-    var MIN_CASES = 620;
+    var MIN_CASES = 705;
 
     function section(title, target) {
         var h = document.createElement('h2');
@@ -1843,6 +1844,294 @@
             var r = treeRecord('build', pA, { dirty: 2 });
             return r.mode === 'build' && r.ions.length === 6 && r.ops.length === 6 && r.dirty === 2;
         })());
+    }
+
+    // ===============================================================
+    // アキネーター「かくれた物質をつきとめる」（akinator-model.js ＋ デッキ）
+    //
+    // ⚠⚠ **向き**（DESIGN_akinator.md §0）: アプリは正体を隠して持っているだけで、
+    //   **質問を選ぶのは学習者**。★ ここが逆になると、設計がまるごと別物になる。
+    //
+    // ここで守っているのは4つ:
+    //   ① ★★ **模型がデッキを知らない**（候補集合が差し替えられる・2026-09-12 ユーザー決定）
+    //   ② ⚠⚠ **答えが必ず二値**（D-A2。「扱っていない」を第3の答えにしない）
+    //   ③ ★ **材料が既存のデータと食い違っていない**（沈殿は chemistry.js、
+    //        イオンと試薬と炎色は separation-model.js から写した ＝ 新しく調べたマスがほぼ無い）
+    //   ④ ★ **採点が「積んだ札だけ」を見る**（§6-2。訊かなかった札で最短を出さない）
+    // ===============================================================
+    section('アキ: 模型とデッキの読み込み');
+    var akiLoaded = ok('akinator-model.js が読み込めている',
+        typeof akiRegisterDeck === 'function' && typeof akiCheckDeck === 'function' &&
+        typeof akiAlive === 'function' && typeof akiGrade === 'function' &&
+        typeof akiScore === 'function' && typeof akiAudit === 'function' &&
+        typeof akiIdeal === 'function' && typeof akiLeastFrom === 'function');
+    var AKD = (typeof akiDeck === 'function') ? akiDeck('muki1') : null;
+    akiLoaded = ok('デッキ muki1（無機・第1段）が登録されている', !!AKD) && akiLoaded;
+
+    if (akiLoaded) {
+        var akiIds = akiCandIds(AKD);
+        var akiCards = akiCardIds(AKD);
+
+        // -----------------------------------------------------------
+        // ① ★★ 模型はデッキを知らない —— 候補集合は差し替えられる
+        //   ⚠ これが崩れると「化学基礎限定」「有機 223件」を足すのにページを増やすことになる。
+        //   ★ ここでその場ででっち上げたデッキを渡して、模型がそのまま動くことを見る。
+        // -----------------------------------------------------------
+        section('アキ: ★★ 候補集合が差し替えられる（模型がデッキを知らない）');
+        var fakeDeck = {
+            id: '__test__', name: 'テスト用', sub: '3件',
+            cands: [{ id: 'a', name: 'あ', jp: 'あ' }, { id: 'b', name: 'い', jp: 'い' }, { id: 'c', name: 'う', jp: 'う' }],
+            cards: [
+                { id: 'q1', row: 'ためし', tag: 'ためし', say: 'a ですか', mean: '', keys: [] },
+                { id: 'q2', row: 'ためし', tag: 'ためし', say: 'b ですか', mean: '', keys: [] }
+            ],
+            // ⚠ 表ではなく**計算**で答える。★ 模型はどちらか知らない（設計書 §8-5）
+            answer: function (cand, card) { return (card === 'q1') ? cand === 'a' : cand === 'b'; }
+        };
+        ok('でっち上げたデッキも約束を満たす（akiCheckDeck が何も返さない）',
+            akiCheckDeck(fakeDeck).length === 0);
+        ok('模型は、答えが表から来るか計算から来るかを知らない（3件のデッキで絞り込みが動く）',
+            akiAlive(fakeDeck, [{ card: 'q1', ans: false }, { card: 'q2', ans: false }]).join(',') === 'c');
+        ok('採点も、でっち上げたデッキでそのまま動く', (function () {
+            var h = [{ card: 'q1', ans: true }];
+            var g = akiGrade(fakeDeck, 'a', 'a', h);
+            return g.verdict === 'decided' && akiScore(fakeDeck, 'a', h, g.verdict, g).least === 1;
+        })());
+        ok('⚠ 模型のファイルに、候補の化学式が1つも焼き付いていない', (function () {
+            // ★ ソースは読めないので、**登録の口が開いていること**で代える:
+            //   デッキを登録すると、模型はそれを候補として扱う
+            akiRegisterDeck(fakeDeck);
+            var has = akiDeckIds().indexOf('__test__') >= 0;
+            delete AKI_DECKS['__test__'];
+            return has && akiDeckIds().indexOf('__test__') < 0 && akiDeckIds().indexOf('muki1') >= 0;
+        })());
+
+        // -----------------------------------------------------------
+        // ② ⚠⚠ 答えが必ず二値（D-A2）—— 30 × 69 を悉皆で見る
+        // -----------------------------------------------------------
+        section('アキ: 答えが必ず二値（D-A2）');
+        ok('デッキの作りが約束どおり（候補 × 札 の答えがすべて true / false）',
+            akiCheckDeck(AKD).length === 0);
+        ok('候補は 30 件（沈殿 21 ＋ 水溶液中のイオン 9）',
+            akiIds.length === 30 &&
+            AKD.cands.filter(function (c) { return c.kind === 'ppt'; }).length === 21 &&
+            AKD.cands.filter(function (c) { return c.kind === 'ion'; }).length === 9);
+        ok('札は 20 を超えるので分類（タグ）と検索が要る（§5-1）: ' + akiCards.length + ' 枚 / ' +
+            (function () { var r = []; AKD.cards.forEach(function (c) { if (r.indexOf(c.row) < 0) r.push(c.row); }); return r.length; })() + ' 行',
+            akiCards.length > 40);
+        ok('⚠ 「扱っていません」という第3の答えを作っていない', (function () {
+            var t = AKD.cards.map(function (c) { return c.say + (c.mean || ''); }).join('');
+            return t.indexOf('扱っていません') < 0 && t.indexOf('わかりません') < 0;
+        })());
+
+        // -----------------------------------------------------------
+        // ③ ★ 材料が既存のデータと食い違っていない
+        //   ⚠⚠ ここが本命の否定対照。★ 沈殿の色を1つ書き換えたら落ちる
+        // -----------------------------------------------------------
+        section('アキ: 沈殿 21件が chemistry.js と食い違っていない');
+        (function () {
+            var byF = {};
+            PRECIPITATES.forEach(function (p) { byF[p.formula] = p; });
+            var checked = 0, badColor = [], badAcid = [];
+            AKD.cands.filter(function (c) { return c.kind === 'ppt'; }).forEach(function (c) {
+                var p = byF[c.name];
+                if (!p) return;
+                checked++;
+                if (p.name.indexOf(c.color) < 0) badColor.push(c.name + ': ' + c.color + ' ≠ ' + p.name);
+                // ⚠ 硫化物だけ「酸性でも沈殿するか」を持つ（★ chemistry.js の ph がその判断）
+                if (c.parts.indexOf('S') >= 0 && c.sAcid !== (p.ph === 'ALL')) badAcid.push(c.name);
+            });
+            ok('chemistry.js の PRECIPITATES と突き合わせた沈殿が 19 件ある（実測 ' + checked + ' 件）',
+                checked === 19);
+            ok('沈殿の色が chemistry.js と一致する' + (badColor.length ? '（' + badColor.join(' / ') + '）' : ''),
+                badColor.length === 0);
+            ok('硫化物の「酸性でも沈殿するか」が chemistry.js の ph と一致する' +
+                (badAcid.length ? '（' + badAcid.join(' / ') + '）' : ''), badAcid.length === 0);
+            // ⚠ 残り2件は SEP_TABLE が沈殿として名指ししているもの
+            var seps = [];
+            Object.keys(SEP_TABLE).forEach(function (i) {
+                Object.keys(SEP_TABLE[i]).forEach(function (o) {
+                    var e = SEP_TABLE[i][o];
+                    if (e.f && seps.indexOf(e.f) < 0) seps.push(e.f);
+                });
+            });
+            ok('⚠ chemistry.js に無い 2件（Al(OH)₃・FeO(OH)）は SEP_TABLE が名指ししている',
+                AKD.cands.filter(function (c) {
+                    return c.kind === 'ppt' && !byF[c.name];
+                }).every(function (c) { return seps.indexOf(c.name) >= 0; }));
+        })();
+
+        section('アキ: イオン 9件が separation-model.js と食い違っていない');
+        (function () {
+            var ions = AKD.cands.filter(function (c) { return c.kind === 'ion'; });
+            ok('9件とも SEP_IONS の行を名指ししている（sep）',
+                ions.every(function (c) { return !!SEP_IONS[c.sep]; }) &&
+                ions.length === Object.keys(SEP_IONS).length);
+            ok('化学式が SEP_IONS と一致する',
+                ions.every(function (c) { return SEP_IONS[c.sep].name === c.name; }));
+            // ★ 炎色は SEP_IONS.flame から写した（⚠ Ba だけは候補にイオンが無いので、沈殿側で見る）
+            ok('炎色が SEP_IONS.flame と一致する',
+                ions.every(function (c) {
+                    var f = SEP_IONS[c.sep].flame;
+                    return c.flame === (f ? f.names[0] : null);
+                }));
+            // ⚠⚠ 試薬の札の答えが、SEP_TABLE の観察から導けるか（★ 写し間違いをここで止める）
+            var rgMap = {
+                'rg-hcl': function (o) { return !!o && o.k === 'ppt'; },
+                'rg-h2s': function (o) { return !!o && o.k === 'ppt'; },
+                'rg-nh3ex': function (o) { return !!o && o.k === 'pptGone'; },
+                'rg-naohex': function (o) { return !!o && o.k === 'pptGone'; },
+                'rg-noNh3': function (o) { return !!o && o.k === 'none'; }
+            };
+            var opOf = { 'rg-hcl': 'hcl', 'rg-h2s': 'h2s', 'rg-nh3ex': 'nh3', 'rg-naohex': 'naoh', 'rg-noNh3': 'nh3' };
+            var bad = [];
+            Object.keys(rgMap).forEach(function (q) {
+                ions.forEach(function (c) {
+                    var want = rgMap[q](sepObserve(c.sep, opOf[q]));
+                    if (AKD.answer(c.id, q) !== want) bad.push(c.name + '×' + q);
+                });
+            });
+            ok('試薬の札 5枚 × 9イオン ＝ 45 の答えが、SEP_TABLE の観察と一致する' +
+                (bad.length ? '（' + bad.join(' / ') + '）' : ''), bad.length === 0);
+            // ★ 沈殿は「水溶液中のイオン」ではないので、試薬の札にはすべて「いいえ」
+            ok('⚠ 試薬の札は、沈殿 21件にはすべて「いいえ」（嘘をつかずに二値にしている）',
+                AKD.cands.filter(function (c) { return c.kind === 'ppt'; }).every(function (c) {
+                    return Object.keys(rgMap).every(function (q) { return AKD.answer(c.id, q) === false; });
+                }));
+        })();
+
+        section('アキ: 式から計算する列（表を1マスも書かない・§3-1）');
+        ok('式量が化学式から出ている（AgCl 143.5／Ag₂S 248／PbSO₄ 303／Na⁺ 23）', (function () {
+            var m = {};
+            AKD.cands.forEach(function (c) { m[c.name] = c.mw; });
+            return m['AgCl'] === 143.5 && m['Ag₂S'] === 248 && m['PbSO₄'] === 303 && m['Na⁺'] === 23;
+        })());
+        ok('原子の数と元素の種類も化学式から出ている（Al(OH)₃ は 7 原子・3 種類）', (function () {
+            var c = AKD.cands.filter(function (x) { return x.name === 'Al(OH)₃'; })[0];
+            return c && c.atoms === 7 && c.kinds === 3;
+        })());
+        ok('⚠ 酸化銀 Ag₂O は水酸化物イオンを「ふくまない」（反応の由来で式を埋めていない）',
+            AKD.answer('Ag2O', 'an-OH') === false && AKD.answer('Ag2O', 'el-O') === true);
+
+        section('アキ: 色の名乗りと hex の整合');
+        (function () {
+            var bad = [];
+            Object.keys(AKD.colors).forEach(function (nm) {
+                var w = colorWordOf(nm), c = hexToHsl(AKD.colors[nm]);
+                if (!w || !c) { bad.push(nm + '（色の語が引けない）'); return; }
+                if (!w.test(c)) bad.push(nm + ' → ' + AKD.colors[nm] + '（' + w.why + ' のはず）');
+            });
+            ok('デッキの色が、名乗りどおりの色相・明度になっている' +
+                (bad.length ? '（' + bad.join(' / ') + '）' : ''), bad.length === 0);
+            // ★ 沈殿の色の札が、実際に使われている色をすべて覆っている
+            var used = {};
+            AKD.cands.forEach(function (c) { if (c.color) used[c.color] = 1; });
+            ok('沈殿に使われている色（' + Object.keys(used).join('・') + '）に、すべて札がある',
+                Object.keys(used).every(function (nm) { return !!akiCard(AKD, 'col-' + nm); }));
+        })();
+
+        // -----------------------------------------------------------
+        // ④ ★ 絞り込みと採点
+        // -----------------------------------------------------------
+        section('アキ: 30件すべてが当てられる（門番）');
+        (function () {
+            var a = akiAudit(AKD);
+            ok('配った札で、どの2件も見分けられる（割れない組 ' + a.unresolved.length + ' 組）',
+                a.unresolved.length === 0);
+            var n1 = 0, n2 = 0, over = 0;
+            akiIds.forEach(function (c) {
+                var n = a.byCand[c].n;
+                if (n === 1) n1++; else if (n === 2) n2++; else over++;
+            });
+            ok('理想の最短は 1手 ' + n1 + '件・2手 ' + n2 + '件・3手以上 ' + over + '件（★ 段に分ける意味が無いことの実測）',
+                n1 + n2 + over === 30 && over === 0);
+            ok('⚠ 押しても何も起きない札（情報量 0）を置いていない',
+                AKD.cards.every(function (q) { return akiBits(AKD, akiIds, q.id) > 0; }));
+            // ★ D-A6: CuS／PbS／Ag₂S は「色と液性だけ」なら割れない（＝ 難易度のつまみ）
+            var lookOnly = AKD.cards.filter(function (q) { return q.tag === '見た目'; })
+                .map(function (q) { return q.id; }).concat(['rg-sacid']);
+            var g3 = akiUnresolvedGroups(AKD, lookOnly);
+            ok('★ D-A6: 見た目と液性の札だけを配ると、CuS・PbS・Ag₂S が1つの群に残る', (function () {
+                return g3.some(function (g) {
+                    return g.length === 3 && ['CuS', 'PbS', 'Ag2S'].every(function (x) { return g.indexOf(x) >= 0; });
+                });
+            })());
+            ok('★ D-A6: その3つは潰さず、答え合わせで「濃硝酸 → 過剰のアンモニア水」を言う', (function () {
+                var t = AKD.afterNote('CuS') || '';
+                return t.indexOf('濃硝酸') >= 0 && t.indexOf('アンモニア') >= 0 && t.indexOf('深青') >= 0;
+            })());
+            ok('⚠ 否定対照 — 割れない組を「答えが無い」で誤魔化していない（全部の札なら3つとも割れる）',
+                akiSeparates(AKD, akiCards, 'CuS', 'PbS') &&
+                akiSeparates(AKD, akiCards, 'PbS', 'Ag2S') &&
+                akiSeparates(AKD, akiCards, 'CuS', 'Ag2S'));
+        })();
+
+        section('アキ: 採点（§6）');
+        (function () {
+            // 4区分（sepGrade と同じ）
+            var h = [{ card: 'is-ppt', ans: true }, { card: 'col-黒色', ans: true },
+                { card: 'rg-sacid', ans: true }, { card: 'el-Cu', ans: true }];
+            var g = akiGrade(AKD, 'CuS', 'CuS', h);
+            ok('decided: 質問が答えを決めていた', g.verdict === 'decided' && g.alive.length === 1);
+            var h2 = [{ card: 'is-ppt', ans: true }, { card: 'col-黒色', ans: true }];
+            ok('lucky: 当たったが、候補がまだ残っていた',
+                akiGrade(AKD, 'CuS', 'CuS', h2).verdict === 'lucky');
+            ok('unread: 答えとは矛盾しないが、別のほうだった',
+                akiGrade(AKD, 'CuS', 'PbS', h2).verdict === 'unread');
+            ok('missed: どの答えと食い違うかを名指しできる', (function () {
+                var r = akiGrade(AKD, 'CuS', 'AgCl', h2);
+                return r.verdict === 'missed' && r.conflicts.length > 0 && r.conflicts[0].card === 'col-黒色';
+            })());
+            // ★ 各手が何を消したか
+            ok('各手が何を消したかを数えている（1手目で 9 件のイオンが消える）',
+                g.steps[0].dropped.length === 9 &&
+                g.steps[0].dropped.every(function (c) { return akiCand(AKD, c).kind === 'ion'; }));
+            // ⚠⚠ §6-2: 探索の対象は**積んだ札だけ**
+            var sc = akiScore(AKD, 'CuS', h, g.verdict, g);
+            ok('積んだ4枚のうち、要ったのは 2枚（＝ むだが2枚あった）', sc.least === 2 && sc.moves === 4);
+            // ★ Ag₂O は「沈殿の色は褐色ですか」1枚で決まるが、**それを訊かなかった回**では
+            //   積んだ4枚から 2枚（銀をふくむ ＋ 白でも黒でもない）が要る。
+            //   ⚠ ここが崩れると「訊かなかった質問で最短だった」と言い出す ＝ 別の問題の採点になる
+            ok('⚠⚠ 否定対照 — 訊かなかった札は最短に入らない（積んだ4枚では 2手／全部の札なら 1手）',
+                akiLeastFrom(AKD, 'Ag2O', ['is-ppt', 'col-tint', 'el-O', 'el-Ag']).n === 2 &&
+                akiIdeal(AKD, 'Ag2O').n === 1);
+            ok('効きがゼロだった質問を数えている', (function () {
+                var hz = [{ card: 'is-ppt', ans: true }, { card: 'col-黒色', ans: true },
+                    { card: 'rg-hcl', ans: false }];
+                var gz = akiGrade(AKD, 'CuS', 'CuS', hz);
+                var scz = akiScore(AKD, 'CuS', hz, gz.verdict, gz);
+                return scz.zero.length === 1 && scz.zero[0] === 'rg-hcl';
+            })());
+            ok('「いちばん短い道」は、厳密に出せたかどうかを持っている（嘘をつかない・§6-3）',
+                akiIdeal(AKD, 'CuS').exact === true);
+            ok('記録は、鍵とデッキと正体と手数を持つ（⚠ 送信も保存もしない）', (function () {
+                var p2 = akiMakeProblem(AKD, { truth: 'CuS' });
+                var r = akiRecord(p2, { moves: 4 });
+                return r.deck === 'muki1' && r.truth === 'CuS' && r.moves === 4 &&
+                    r.key.indexOf(AKI_KEY_VERSION + '|') === 0;
+            })());
+            ok('鍵が型B・型A の鍵と混ざらない（版の頭文字が違う）',
+                AKI_KEY_VERSION.charAt(0) !== SEP_KEY_VERSION.charAt(0) &&
+                AKI_KEY_VERSION.charAt(0) !== TREE_KEY_VERSION.charAt(0));
+        })();
+
+        section('アキ: 文面の縛り');
+        (function () {
+            // ⛔ 出典（本の名前・ページ）を画面に出さない（教科書は1社しか読んでいない）
+            var txt = AKD.cards.map(function (c) { return c.say + (c.mean || ''); }).join('\n') +
+                akiIds.map(function (c) { return AKD.why(c, 'is-ppt') + AKD.why(c, 'fl-any'); }).join('\n') +
+                (AKD.afterNote('CuS') || '');
+            ok('⛔ 本の名前とページを画面の文に書いていない',
+                !/教科書|p\.\s*\d|新研究|セミナー|要点/.test(txt));
+            ok('⛔ 「教科書に載っている」と断定していない', txt.indexOf('教科書') < 0);
+            // ★ 答え合わせの一文が、30件 × 主な札で必ず出る（空文字を返さない）
+            var empty = [];
+            akiIds.forEach(function (c) {
+                akiCards.forEach(function (q) { if (!AKD.why(c, q)) empty.push(c + '×' + q); });
+            });
+            ok('答え合わせの一文が、30 × ' + akiCards.length + ' のすべてで出る' +
+                (empty.length ? '（空: ' + empty.slice(0, 3).join(' / ') + '）' : ''), empty.length === 0);
+        })();
     }
 
     // ---------------------------------------------------------------
@@ -3721,14 +4010,14 @@
     function runEntrySource(next) {
         section('ME1〜ME2: 入口の名乗りと、3つの面の行き来');
         if (!onHttp) { ok('ME: ソースを読み取れる（http で開いていない）', false); next(); return; }
-        var FILES = ['index.html', 'snake.html', 'separation.html', 'tree.html', 'test.html', 'tests.js'];
+        var FILES = ['index.html', 'snake.html', 'separation.html', 'akinator.html', 'tree.html', 'test.html', 'tests.js'];
         Promise.all(FILES.map(function (f) {
             return fetch(f, { cache: 'no-store' }).then(function (r) { return r.text(); });
         })).then(function (texts) {
             var src = {};
             FILES.forEach(function (f, i) { src[f] = texts[i]; });
             var dom = {};
-            ['index.html', 'snake.html', 'separation.html', 'tree.html'].forEach(function (f) {
+            ['index.html', 'snake.html', 'separation.html', 'akinator.html', 'tree.html'].forEach(function (f) {
                 dom[f] = new DOMParser().parseFromString(src[f], 'text/html');
             });
             var meta = function (f, sel, attr) {
@@ -3755,14 +4044,18 @@
             // --- ME2: 一覧が3つの面をすべて指し、順序が付いている ---
             var cards = [].slice.call(dom['index.html'].querySelectorAll('a.mode'));
             var hrefs = cards.map(function (a) { return a.getAttribute('href'); });
-            ok('ME2-1: ★ 入口が3つの面をすべて指している（' + hrefs.join(' / ') + '）',
-                cards.length === 3 && hrefs.indexOf('snake.html') >= 0 &&
-                hrefs.indexOf('separation.html') >= 0 && hrefs.indexOf('tree.html') >= 0);
+            // ⚠⚠ 2026-09-12: 面が4つになった（アキネーターを足した）。
+            //   ★ この検査は「全部の面を指しているか」を見るものなので、**面を足したらここを直す**
+            //     —— 直し忘れると、足した面が一覧から抜けても気づけない
+            ok('ME2-1: ★ 入口が4つの面をすべて指している（' + hrefs.join(' / ') + '）',
+                cards.length === 4 && hrefs.indexOf('snake.html') >= 0 &&
+                hrefs.indexOf('separation.html') >= 0 && hrefs.indexOf('akinator.html') >= 0 &&
+                hrefs.indexOf('tree.html') >= 0);
             // ⚠ 並びは「やさしい順」。★ 先頭がスネークなのは、旧 `/muki/` に着地していた
             //   人の期待にいちばん近いからでもある（DEVELOPMENT.md の罠4）
             ok('ME2-2: 一覧の先頭がスネーク（やさしい順・旧 `/muki/` の期待に近い順）',
                 hrefs[0] === 'snake.html');
-            ok('ME2-3: 3枚とも同じ形の札（片方だけ「おまけ」に見せていない）',
+            ok('ME2-3: 4枚とも同じ形の札（片方だけ「おまけ」に見せていない）',
                 cards.every(function (a) {
                     return a.querySelector('.name') && a.querySelector('.sub') && a.querySelector('.tag');
                 }));
@@ -3776,22 +4069,30 @@
                 var a = dom[f].querySelector(sel);
                 return a ? a.getAttribute('href') : null;
             };
-            ok('ME3-1: スネーク → 型B / 型A / 入口',
+            ok('ME3-1: スネーク → 型B / アキ / 型A / 入口',
                 link('snake.html', '#link-sep') === 'separation.html' &&
+                link('snake.html', '#link-aki') === 'akinator.html' &&
                 link('snake.html', '#link-tree') === 'tree.html' &&
                 !!dom['snake.html'].querySelector('.topbar a[href="index.html"]'));
-            ok('ME3-2: 型B → スネーク / 型A / 入口',
+            ok('ME3-2: 型B → スネーク / アキ / 型A / 入口',
                 link('separation.html', '#link-snake') === 'snake.html' &&
+                link('separation.html', '#link-aki') === 'akinator.html' &&
                 link('separation.html', '#link-tree') === 'tree.html' &&
                 !!dom['separation.html'].querySelector('.topbar a[href="index.html"]'));
-            ok('ME3-3: 型A → スネーク / 型B / 入口',
+            ok('ME3-3: 型A → スネーク / 型B / アキ / 入口',
                 link('tree.html', '#link-snake') === 'snake.html' &&
                 link('tree.html', '#link-sep') === 'separation.html' &&
+                link('tree.html', '#link-aki') === 'akinator.html' &&
                 !!dom['tree.html'].querySelector('.topbar a[href="index.html"]'));
+            ok('ME3-3b: アキ → スネーク / 型B / 型A / 入口',
+                link('akinator.html', '#link-snake') === 'snake.html' &&
+                link('akinator.html', '#link-sep') === 'separation.html' &&
+                link('akinator.html', '#link-tree') === 'tree.html' &&
+                !!dom['akinator.html'].querySelector('.topbar a[href="index.html"]'));
             // ⚠ 否定対照: 移したのに「🐍」の札が index.html を指したままになっていないか。
             //   ★ これは 404 にならず**一覧に着地する**ので、見た目では気づけない事故
             ok('ME3-4: ⚠ 否定対照 — 「イオンスネーク」の札が index.html を指していない',
-                ['separation.html', 'tree.html'].every(function (f) {
+                ['separation.html', 'akinator.html', 'tree.html'].every(function (f) {
                     return [].slice.call(dom[f].querySelectorAll('a')).every(function (a) {
                         return !(/イオンスネーク/.test(a.textContent) &&
                                  a.getAttribute('href') === 'index.html');
@@ -3831,14 +4132,15 @@
             var m = entry.match(/MUKI_OPEN_TARGETS\s*=\s*\{([^}]*)\}/);
             ok('ME6-0: 受け口の語彙をソースから読めた', !!m);
             var dests = m ? (m[1].match(/'([^']+\.html)'/g) || []).map(function (s) { return s.slice(1, -1); }) : [];
-            ok('ME6-1: 語彙が3つの面をすべて覆っている（' + dests.join(' / ') + '）',
-                dests.length === 3 && dests.indexOf('snake.html') >= 0 &&
-                dests.indexOf('separation.html') >= 0 && dests.indexOf('tree.html') >= 0);
+            ok('ME6-1: 語彙が4つの面をすべて覆っている（' + dests.join(' / ') + '）',
+                dests.length === 4 && dests.indexOf('snake.html') >= 0 &&
+                dests.indexOf('separation.html') >= 0 && dests.indexOf('akinator.html') >= 0 &&
+                dests.indexOf('tree.html') >= 0);
             return Promise.all(dests.map(function (d) {
                 return fetch(d, { cache: 'no-store', method: 'GET' }).then(function (r) { return r.ok; });
             })).then(function (oks) {
                 ok('ME6-2: 語彙の行き先がすべて実在する（改名の取り残しで 404 を作らない）',
-                    oks.length === 3 && oks.every(Boolean));
+                    oks.length === 4 && oks.every(Boolean));
             });
         }).catch(function (e) {
             ok('ME: 入口のソースを読み取れる（' + e + '）', false);
@@ -3881,6 +4183,7 @@
             ['', STAY, '素の `/muki/` は一覧のまま（★ 検索・ハブ・直打ちはここへ来る）'],
             ['?open=snake', 'snake.html', '?open=snake でスネーク'],
             ['?open=separation', 'separation.html', '?open=separation で型B'],
+            ['?open=akinator', 'akinator.html', '?open=akinator でアキネーター'],
             ['?open=tree', 'tree.html', '?open=tree で型A'],
             ['?utm_source=share&utm_medium=social&utm_campaign=muki_snake_result', 'snake.html',
              '★★ 旧 `/muki/` の共有 URL がスネークへ着地する（壊してはいけないもの）'],
@@ -3910,14 +4213,244 @@
         })();
     }
 
-    // スネークの UI テストが終わったら、型B → 型A → 入口の順に進んでから締める。
-    // ⚠ finish() を直に呼ばないこと（型B・型A・入口のテストが丸ごと空振りする）
+    // ===============================================================
+    // アキネーターの画面（akinator.html を iframe で実際に遊ぶ）
+    //
+    // ⚠ ここで測るのは「模型が正しいか」ではなく「画面が設計どおりに振る舞うか」:
+    //   ① ★ 候補 30 と札 69 が並び、**タグと検索で絞れる**（§5）
+    //   ② ★ 途中では何も言わない（§6-6。残りの候補数も、効いたかどうかも出さない）
+    //   ③ ★★ 候補の札は**学習者が自分で伏せる**。⚠ アプリは1つも伏せない
+    //   ④ 答えたときに初めて「各手が何を消したか」と割れない組の申し送りが出る
+    //   ⑤ スマホ幅（375px）で横に溢れない
+    //   ⑥ ★★ `?deck=` でデッキを差し替えられる（⚠ 知らない名前は既定のデッキ）
+    // ===============================================================
+    function runAkinatorUI(done) {
+        section('アキ の画面（akinator.html）', uiOut);
+        // 3つの面からの入口（⚠ 無いと URL を知っている人しかたどり着けない）
+        (function () {
+            var d0 = frame.contentDocument;
+            var a = d0 && d0.getElementById('link-aki');
+            ok('スネークの画面に、アキネーターへの入口がある', !!a, uiOut);
+            if (a) {
+                ok('入口のリンク先が akinator.html',
+                    (a.getAttribute('href') || '').indexOf('akinator.html') >= 0, uiOut);
+                ok('入口が指で押せる大きさ（' + Math.round(rectH(a)) + 'px ≧ ' + TAP_MIN + '）',
+                    rectH(a) >= TAP_MIN, uiOut);
+            }
+        })();
+        if (!onHttp) {
+            ok('akinator.html を iframe で開ける（file:// では不可）', false, uiOut);
+            done();
+            return;
+        }
+        var f = document.createElement('iframe');
+        f.id = 'akiapp';
+        f.src = 'akinator.html?nocache=' + Date.now();
+        f.style.width = '375px';        // ★ スマホ幅で測る（muki はスマホ前提）
+        f.style.height = '812px';
+        document.body.appendChild(f);
+
+        var tries = 0;
+        (function poll() {
+            var w = f.contentWindow, d = f.contentDocument;
+            var ready = !!(d && d.readyState === 'complete' && w && w.akiUI && w.akiUI.state.truth);
+            if (!ready) {
+                if (++tries > 120) { ok('akinator.html が起動した', false, uiOut); done(); return; }
+                setTimeout(poll, 50);
+                return;
+            }
+            try { drive(w, d); } catch (e) {
+                ok('アキ の画面を操作できた（' + e + '）', false, uiOut);
+            }
+            deckSwap(done);
+        })();
+
+        function drive(w, d) {
+            ok('akinator.html が起動した', true, uiOut);
+            ok('既定のデッキは muki1', w.akiUI.state.deck.id === 'muki1', uiOut);
+            ok('候補が 30 件並んでいる',
+                d.querySelectorAll('#cand-list .chip').length === 30, uiOut);
+            ok('札が 69 枚・10 行に畳まれて並んでいる（§5-2）',
+                d.querySelectorAll('#card-rows .q').length === 69 &&
+                d.querySelectorAll('#card-rows .qrow').length === 10, uiOut);
+            ok('タグと検索の両方がある（札が 40 を超えるので両方要る・§5-1）',
+                d.querySelectorAll('#tags .tag').length >= 4 && !!d.getElementById('q'), uiOut);
+
+            // ⚠ 導入に解き筋を書かない（★ 札の一覧は「解き筋」ではなく道具なので対象外）
+            (function () {
+                var zone = (d.querySelector('.lead') || {}).textContent || '';
+                var words = (typeof SPOILER_WORDS !== 'undefined') ? SPOILER_WORDS : [];
+                var hit = words.filter(function (x) { return zone.indexOf(x) >= 0; });
+                ok('導入の文に解き筋の語が無い' + (hit.length ? '（' + hit.join('・') + '）' : ''),
+                    hit.length === 0, uiOut);
+                ok('「1つ」をかくしたことを画面が言っている', zone.indexOf('1つ') >= 0, uiOut);
+            })();
+
+            // ① タグと検索
+            w.akiUI.setFilter('確認', '');
+            ok('タグ「確認」で炎色反応の 6 枚だけになる',
+                d.querySelectorAll('#card-rows .q').length === 6, uiOut);
+            w.akiUI.setFilter('', 'Cu');
+            (function () {
+                var n = d.querySelectorAll('#card-rows .q').length;
+                ok('検索「Cu」が化学式にも当たる（' + n + ' 枚。★ 和名だけに当てると引けない・§5-3）',
+                    n >= 2 && n < 69, uiOut);
+            })();
+            w.akiUI.setFilter('', '黄');
+            ok('検索「黄」で炎色の札が出る（色の語で引ける）', (function () {
+                var ids = [].slice.call(d.querySelectorAll('#card-rows .q'))
+                    .map(function (b) { return b.getAttribute('data-card'); });
+                return ids.indexOf('fl-Na') >= 0;
+            })(), uiOut);
+            w.akiUI.setFilter('', '__no_such_word__');
+            ok('⚠ 当たらない言葉では、空だと言う（黙って空にしない）',
+                d.querySelectorAll('#card-rows .q').length === 0 &&
+                d.getElementById('card-empty').className.indexOf('hidden') < 0, uiOut);
+            w.akiUI.setFilter('', '');
+
+            // ③ ★★ 候補は学習者が自分で伏せる（⚠ アプリは1つも伏せない）
+            w.akiUI.start({ truth: 'CuS' });
+            ok('★ 質問する前は、伏せられている候補が1つも無い（アプリは絞り込みを肩代わりしない）',
+                d.querySelectorAll('#cand-list .chip.off').length === 0, uiOut);
+            w.akiUI.ask('is-ppt');
+            ok('⚠⚠ 途中では候補を1つも伏せない（§6-6。答えるまで何も言わない）',
+                d.querySelectorAll('#cand-list .chip.off').length === 0 &&
+                d.getElementById('result').className.indexOf('hidden') >= 0, uiOut);
+            (function () {
+                // ⚠ 押すと候補が描き直されるので、**押すたびに引き直す**（古い節点は差し替わっている）
+                var chip = function () { return d.querySelector('#cand-list .chip[data-cand="Na+"]'); };
+                chip().click();
+                ok('★ 学習者が押すと伏せられる', chip().className.indexOf('off') >= 0, uiOut);
+                chip().click();
+                ok('★ もう一度押すと戻る（伏せ方が間違っていても、アプリは何も言わない）',
+                    chip().className.indexOf('off') < 0, uiOut);
+            })();
+
+            // ② 訊いた答えが積まれる
+            ok('1手目が「はい」で積まれている', (function () {
+                var li = d.querySelectorAll('#log li');
+                return li.length === 1 && li[0].textContent.indexOf('はい') >= 0;
+            })(), uiOut);
+            ok('訊いた札はもう押せない（二度訊きにならない）',
+                d.querySelector('#card-rows .q[data-card="is-ppt"]').disabled === true, uiOut);
+            w.akiUI.ask('col-黒色');
+            w.akiUI.ask('rg-sacid');
+            w.akiUI.ask('el-Cu');
+            ok('4手ぶんが順に積まれている（⚠ 上書きしない）',
+                d.querySelectorAll('#log li').length === 4, uiOut);
+
+            // ⑤ 指で押せる大きさ（⚠ **答える前に測る**。答えると質問の一覧を畳むので高さが 0 になる）
+            (function () {
+                var small = [].slice.call(d.querySelectorAll('#cand-list .chip, #card-rows .q, #tags .tag'))
+                    .filter(function (b) { return b.getBoundingClientRect().height < TAP_MIN; });
+                ok('候補・札・タグが指で押せる大きさ（' + TAP_MIN + 'px 以上）', small.length === 0, uiOut);
+            })();
+
+            // ④ 答え合わせ
+            w.akiUI.openAnswer();
+            ok('答えの選択肢に 30 件すべてが出る',
+                d.querySelectorAll('#answer-choices .chip[data-pick]').length === 30, uiOut);
+            d.querySelector('#answer-choices .chip[data-pick="CuS"]').click();
+            (function () {
+                var t = d.getElementById('result').textContent;
+                ok('当たったと言い、正体の名前と和名を出す',
+                    t.indexOf('当たりました') >= 0 && t.indexOf('CuS') >= 0 && t.indexOf('硫化銅') >= 0, uiOut);
+                ok('質問した数と、そのうち要った数が出る',
+                    t.indexOf('質問した数') >= 0 && t.indexOf('4手') >= 0 && t.indexOf('2手') >= 0, uiOut);
+                ok('★ 各手が何を消したかが、ここで初めて出る',
+                    t.indexOf('が消えました') >= 0, uiOut);
+                ok('★★ D-A6: 割れない組の申し送りが出る（濃硝酸 → 過剰のアンモニア水）',
+                    t.indexOf('濃硝酸') >= 0 && t.indexOf('深青') >= 0, uiOut);
+                ok('⛔ 本の名前とページを画面に出していない',
+                    !/教科書|p\.\s*\d|新研究/.test(t), uiOut);
+            })();
+
+            // ★ 答え合わせのあいだは、質問の一覧（69枚）を畳む
+            //   （⚠ 開いたままだと、答え合わせが画面の遥か下に置かれる）
+            ok('★ 答えたら質問の一覧を畳む',
+                d.getElementById('panel-cards').className.indexOf('hidden') >= 0, uiOut);
+
+            // ⑤ スマホ幅で横に溢れない
+            ok('375px で横スクロールが出ない（' + d.documentElement.scrollWidth + 'px ≦ ' +
+                d.documentElement.clientWidth + 'px）',
+                d.documentElement.scrollWidth <= d.documentElement.clientWidth + 1, uiOut);
+        }
+
+        // ⑥ ★★ `?deck=` でデッキを差し替えられる（⚠ 知らない名前は既定のデッキ）
+        function deckSwap(next2) {
+            var g = document.createElement('iframe');
+            g.style.cssText = 'position:absolute; left:-9999px; width:375px; height:600px;';
+            g.src = 'akinator.html?deck=__no_such_deck__&nocache=' + Date.now();
+            document.body.appendChild(g);
+            var n = 0;
+            (function poll2() {
+                var w2 = g.contentWindow, d2 = g.contentDocument;
+                if (!(d2 && d2.readyState === 'complete' && w2 && w2.akiUI && w2.akiUI.state.deck)) {
+                    if (++n > 120) { ok('?deck= の受け口を開けた', false, uiOut); g.remove(); next2(); return; }
+                    setTimeout(poll2, 50);
+                    return;
+                }
+                ok('⚠ 知らない ?deck= は既定のデッキで開く（エラーで止めない）',
+                    w2.akiUI.state.deck.id === 'muki1' &&
+                    d2.querySelectorAll('#cand-list .chip').length === 30, uiOut);
+                ok('★★ デッキの名前が画面に出る（どの札束で遊んでいるか分かる）',
+                    (d2.getElementById('deck-name').textContent || '').indexOf('無機') >= 0, uiOut);
+                g.remove();
+                next2();
+            })();
+        }
+    }
+
+    // アキネーターの画面が、設計書の縛りを文面の側でも守っているか（ソースを読んで見る）
+    function runAkinatorSource(next) {
+        section('アキ の縛り（akinator.js / akinator-model.js）');
+        if (!onHttp) { ok('ソースを読み取れる（http で開いていない）', false); next(); return; }
+        Promise.all([
+            fetch('akinator.js', { cache: 'no-store' }).then(function (r) { return r.text(); }),
+            fetch('akinator-model.js', { cache: 'no-store' }).then(function (r) { return r.text(); })
+        ]).then(function (srcs) {
+            var raw = srcs.join('\n');
+            // ⚠ **コメントを外してから見る**（型B と同じ理由）
+            var src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+            ok('コメントだけを外せている（中身は残っている）',
+                src.length > 0 && src.length < raw.length && src.indexOf('function akiGrade') >= 0);
+            // ⚠⚠ §0: アプリは質問を選ばない。★ 「次はこれを訊きなさい」を出さない
+            ok('⚠⚠ アプリが次の質問を勧めない（§0。本家アキネーターとは逆向き）',
+                src.indexOf('おすすめ') < 0 && src.indexOf('次はこの質問') < 0 &&
+                src.indexOf('bestCard') < 0 && src.indexOf('suggest') < 0);
+            // ★ 情報量は「答え合わせだけ」（§6-4）。⚠ 出題に使っていない
+            ok('★ 情報量（akiBits）を出題に使っていない（akiMakeProblem が呼んでいない）', (function () {
+                var i = src.indexOf('function akiMakeProblem');
+                if (i < 0) return false;
+                return src.slice(i, i + 900).indexOf('akiBits') < 0;
+            })());
+            // ⚠⚠ §6-2: 探索の対象は積んだ札だけ
+            ok('⚠⚠ 最短の探索は「積んだ札だけ」から取る（§6-2）',
+                /akiLeastFrom\(deck,\s*truth,\s*used\)/.test(src));
+            // ⛔ 出典を画面に出さない
+            ok('⛔ 本の名前とページを画面の文に書いていない', !/教科書 p|新研究 p/.test(src));
+            // ★★ 模型に候補の化学式が焼き付いていない（デッキを差し替えられる）
+            ok('★★ 模型のソースに候補の化学式が入っていない（候補集合が差し替えられる）', (function () {
+                var model = srcs[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
+                return !/Ag₂S|CuS|PbCl₂|Al\(OH\)₃|SEP_TABLE|PRECIPITATES/.test(model);
+            })());
+        }).catch(function (e) {
+            ok('ソースを読み取れる（' + e + '）', false);
+        }).then(next);
+    }
+
+    // スネークの UI テストが終わったら、型B → 型A → アキ → 入口の順に進んでから締める。
+    // ⚠ finish() を直に呼ばないこと（型B・型A・アキ・入口のテストが丸ごと空振りする）
     function endAll() {
         runSeparationSource(function () {
             runSeparationUI(function () {
                 runTreeSource(function () {
                     runTreeUI(function () {
-                        runEntrySource(function () { runEntryUI(finish); });
+                        runAkinatorSource(function () {
+                            runAkinatorUI(function () {
+                                runEntrySource(function () { runEntryUI(finish); });
+                            });
+                        });
                     });
                 });
             });

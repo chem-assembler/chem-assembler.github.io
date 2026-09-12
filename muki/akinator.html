@@ -27,7 +27,7 @@
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="stylesheet" href="akinator.css?v=32">
+    <link rel="stylesheet" href="akinator.css?v=33">
 </head>
 <body>
 <div id="aki-app">
@@ -37,7 +37,7 @@
         <a class="hubLink" id="link-snake" href="snake.html">🐍 イオンスネーク</a>
         <a class="hubLink" id="link-sep" href="separation.html">🧪 イオンをつきとめる</a>
         <a class="hubLink" id="link-tree" href="tree.html">🌳 すべてのイオンを分ける</a>
-        <span class="version">v32</span>
+        <span class="version">v33</span>
     </div>
 
     <h1>かくれた物質をつきとめる</h1>
@@ -46,8 +46,7 @@
          ② 答えは「はい」か「いいえ」しか返らないこと
          ⛔ 解き筋（どの質問から訊くか）を書かない -->
     <p class="lead">
-        下の候補のうち <strong>1つ</strong>をかくしました。質問には「はい」か「いいえ」だけで答えます。
-        つきとめてください。
+        下の候補のうち <strong>1つ</strong>をかくしました。質問には「はい」「いいえ」で答えます。
     </p>
 
     <section class="panel" id="panel-cands">
@@ -61,7 +60,7 @@
         <h2>質問する <span class="count" id="card-count"></span></h2>
         <div class="finder">
             <div id="tags" class="tags"></div>
-            <input id="q" type="search" placeholder="色・元素・式量・試薬でさがす（例: 黄、Cu、炎色）" autocomplete="off">
+            <input id="q" type="search" placeholder="さがす（例: 黄、Cu、炎色）" autocomplete="off">
         </div>
         <p class="note hidden" id="card-empty">その言葉にあてはまる質問はありません。</p>
         <div id="card-rows" class="rows"></div>
@@ -87,11 +86,11 @@
     </p>
 </div>
 
-<script src="akinator-model.js?v=32"></script>
+<script src="akinator-model.js?v=33"></script>
 <!-- ★★ デッキ。⚠ **模型のあとに読むこと**（読み込んだ順に AKI_DECKS へ登録される）。
      ★ デッキを足すときは、このファイルと同じ形の js を1枚足して、ここに1行足すだけ
        —— 模型も画面も触らない（`akinator.html?deck=<id>` で開く）。 -->
-<script src="akinator-deck-muki1.js?v=32"></script>
-<script src="akinator.js?v=32"></script>
+<script src="akinator-deck-muki1.js?v=33"></script>
+<script src="akinator.js?v=33"></script>
 </body>
 </html>

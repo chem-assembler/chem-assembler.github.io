@@ -180,13 +180,15 @@
     }
 
     function renderAll() {
-        $('deck-name').textContent = state.deck.name + '　' + state.deck.sub;
+        // ★ どの札束で遊んでいるか（⚠ 件数は見出しが言っているので、ここは名前だけ）
+        $('deck-name').textContent = state.deck.name;
         renderCands();
         renderTags();
         renderCards();
         renderLog();
+        $('panel-cards').className = 'panel';
         $('btn-answer').disabled = state.answered;
-        $('answer-choices').className = 'chips hidden';
+        $('answer-choices').className = 'answer hidden';
         $('result').className = 'result hidden';
         $('after').className = 'after hidden';
     }
@@ -201,6 +203,12 @@
         state.history.push({ card: cardId, ans: ans });
         renderCards();
         renderLog();
+        // ⚠ 質問の一覧が長い（69枚）ので、押しただけでは答えが画面の外にある。
+        //   ★ いま返ってきた答えのところへ連れて行く（⚠ 返した答え以外は何も見せない）
+        var last = $('log').lastElementChild;
+        if (last && last.scrollIntoView) {
+            try { last.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { last.scrollIntoView(); }
+        }
     }
 
     // ---------------------------------------------------------------
@@ -350,8 +358,14 @@
         $('answer-choices').className = 'answer hidden';
         $('btn-answer').disabled = true;
         $('after').className = 'after';
+        // ★ 答え合わせのあいだ、質問の一覧（69枚）は畳む。⚠ もう押せないし、
+        //   開いたままだと答え合わせが画面の遥か下に置かれる
+        $('panel-cards').className = 'panel hidden';
         renderCands();
         renderCards();
+        if (box.scrollIntoView) {
+            try { box.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) { box.scrollIntoView(); }
+        }
     }
 
     // ---------------------------------------------------------------
