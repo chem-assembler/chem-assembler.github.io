@@ -807,7 +807,7 @@ function finishRun() {
 
 /* 化学反応式（⑥の行き着く先）が画面に出ているか。
    ⚠ 出どころは1つだけ（#rowBottleMol）。ここを二重に導出しない */
-function molShown() { return !!(bottleSheetEl && bottleSheetEl.querySelector("#rowBottleMol")); }
+function molShown() { return molDone; }
 
 function showClear() {
   clearEl.hidden = false;
@@ -1263,15 +1263,19 @@ function updateMultMsg() {
 function onMultChange() {
   refreshHalfRows();
   // 倍率が変わればイオン反応式も変わる＝足すイオンの数も本数も変わるので、④⑤⑥は白紙に戻す
-  bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
+  bottleRightN = {};
+  bottleMol = {};
+  bottleDbl = {};
   saltKey = null;          // ⑥で組み上げたものも白紙に戻す（前の回の答えを持ち越さない）
   bottleAdd = {};
-  addIonKey = null;
-  bottleCountKey = null;
   bottleSlotActive = null;   // 筆算の「いま置く先」も白紙に戻す
-  bottleWorkKey = null;
+  ownerKey = null;
+  sheetKey = null;
+  doubleKey = null;
+  molDone = false;
+  placeSheet(5);
   calcVals = { ox: {}, red: {}, sum: {} };
   calcDone = false;
   calcKey = null;
@@ -1720,104 +1724,77 @@ function updateIonicRow(chk) {
   }
 }
 
-/* ---- はじめに入れたものから化学反応式を組み立てる（段④⑤⑥・v180）----
-   DESIGN_redox.md「はじめに入れたものから化学反応式を組み立てる」。
+/* ================================================================================
+   ④〜⑧ —— イオン反応式 → 化学反応式 の筆算（2026-09-12・ユーザーの指示で作り直し）
 
-   ★ 2026-09-08 から**9ステージ全部がここを通る**（`bottleStepOf` の除外条件を外した）。
-   v203 まではもう1本、筆算の中に④⑤があり（`molecularEq` を持つ ro1〜ro3・rn1・rn2）、
-   そちらは「イオン反応式の両辺に傍観イオンを何個足すか」だけを解かせていた。
-   ⚠ **実装が2本あると、片方だけ直る** —— v203 の作り直しが実際そうなった。だから畳んだ。
+   > **イオン反応式　→　化学反応式　を筆算にする**
+   > **筆算の式内でイオンを加える**
+   > **もともとなんだった、が解決した後に、イオン反応式を改めて表示し、筆算で化学反応式にする**
 
-   古い筆算の言い方だと **SO₄²⁻ が天から降ってくる**ように見え、申し立てにあった
-   「なぜ硫酸イオンを加えるのか分かっていない」がそのまま残る。
-   この段は逆から入る —— **はじめに入れた物質がそのまま左辺**で、SO₄²⁻ は加えるものではなく
-   H₂SO₄ が H⁺ と一緒に連れてきたもの。
+   ★ **筆算は「④の答え合わせ」ではなく、「イオン反応式 → 化学反応式」という変換そのもの。**
 
-   もう1つのつまずき（左辺のイオンどうしを組んで HI を作る）は、選択肢に
-   「◯◯ と組む」を混ぜて**わざと出せるようにし**、選ばれたら理由を言う。
-   化学の判断は全部 model.js（bottlePlan / explainBottleOwner）にあり、ここは見た目だけ。 */
+        5 Fe²⁺   ＋   MnO₄⁻   ＋   8 H⁺       ← ③で出したイオン反応式の左辺
+   ＋)    〔9〕SO₄²⁻       〔1〕K⁺              ← 式の中にイオンを足す
+   ────────────────────────────────────────
+       〔5〕FeSO₄ ＋〔1〕KMnO₄ ＋〔4〕H₂SO₄     ← 化学反応式の左辺
+
+   ⚠⚠ **足すイオンは1列に1つではない。**rs1 の SO₄²⁻ 9個 は `Fe²⁺` 5個 と `H⁺` 8個 の
+   **2本の柱にまたがる**（→ FeSO₄ 5個 と H₂SO₄ 4個。**5＋4＝9**）。
+   しかも **またぐ2本はとなり合っていない**（あいだに MnO₄⁻ の柱がある）ので、
+   グリッドの `span` ひとつでは組めない —— span はあいだの柱まで巻き込む。
+   ★ そこで **横棒は span・脚は柱の列そのもの**に置いた（どちらも同じグリッドの列なので
+   位置はぴたり合い、測って描く必要がない）。⑤の係数が当たった柱から順に、
+   脚に「その柱へ行く個数」が出る ＝ **9 ＝ 5 ＋ 4 が線の上で読める。**
+
+   段の並び（2026-09-11 ユーザー確定）:
+     ④ 「もともと何だった？」の1行だけ。★ **③と縦をそろえない**（中央ぞろえ・均等配置）
+     ⑤ 筆算。イオン反応式／省略されていたイオン／化学反応式の左辺。右辺はイオンのまま
+     ⑥ 右辺のイオンを組み合わせる（ブロック）。★ **分数のまま組み切る**
+     ⑦ ⑤の紙が下りてきて、右辺に化学式の係数を書く（1/2 もそのまま書く）
+     ⑧ ⚠ 分数が出た回だけ —— 全体を2倍して整数にそろえる
+
+   ⚠⚠ `bottleScale`（＝「先回りして倍率を上げる」）は**やめた**。
+   分数のまま完成させてから整数倍する ＝ 紙でやる手つきそのもので、なぜ倍にするのかが分かる。
+   ================================================================================ */
 
 const stepBottlesEl = document.getElementById("stepBottles");
+const ownerRowEl = document.getElementById("ownerRow");
 const bottleRackEl = document.getElementById("bottleRack");
 const bottleQuizEl = document.getElementById("bottleQuiz");
 const bottleMsgEl = document.getElementById("bottleMsg");
-const bottleTailEl = document.getElementById("bottleTail");
-/* ★ 正解のあとに1度だけ出す「紙で解くと起こる事故」の注意（2026-09-11） */
+/* 正解のあとに1度だけ出す「紙で解くと起こる事故」の注意（2026-09-11） */
 const bottleTrapEl = document.getElementById("bottleTrap");
-const bottleCountEl = document.getElementById("bottleCounts");
-const bottlePoolEl = document.getElementById("bottlePool");
-const bottleSheetEl = document.getElementById("bottleSheet");
-const bottleLeftMapEl = document.getElementById("bottleLeftMap");
-const bottleTailMsgEl = document.getElementById("bottleTailMsg");
-const bottleScaleBoxEl = document.getElementById("bottleScaleBox");
-/* ④の2つの部分。★ 2026-09-07 に順番を戻した ——
-   「もともと何だった？」（#bottleQuiz の柱）が**先**、「両辺に加えるイオンの数」（#addIonWrap）が**後**。 */
-const addIonRowsEl = document.getElementById("addIonRows");
-const addIonMsgEl = document.getElementById("addIonMsg");
-const addIonWrapEl = document.getElementById("addIonWrap");
-let addIonKey = null;
-
-/* ================================================================================
-   ★★ 筆算1枚にまとめる（2026-09-10・ユーザーの指示）
-
-   > ここを筆算に寄せたい／イオン反応式の下に筆算形式で K+ と SO42- の入力欄を入れる、
-   > 最後の係数も筆算の中に入れる
-   > 筆算のイオン反応式の左辺のイオンをマーカーし、その下に、イオンがもともと何だったのカードを置く
-   > **もともと何だったか、を正解した後に、改めてイオン反応式を出すようにしてください、
-   >   上下が離れるとわかりづらいです**
-
-   ★ 不満は最後の1行に集まる ＝ **答えるとき、根拠のイオン反応式がいつでも目に入っている**
-   ようにするのがこの改修の仕事。そこで**イオン反応式の左辺の項を「柱」にした1枚の筆算**にし、
-   ④前半（もともと何だった）・④後半（両辺に加える数）・⑤（左辺の係数）を、その柱の下に積む。
-   ＝ 式を何度も刷り直すのでも、画面の上に貼り付けるのでもなく、
-     **答えの置き場所そのものを式の真下にした**（DESIGN_redox.md「筆算1枚にまとめる」§2）。
-
-   ⚠ 化学の判断は1つも動かしていない（bottlePlan / bottleOwnerChoices / spectatorAddRows /
-     bottleCountRows / explain* はそのまま）。ここは置き場所と置き方だけを持つ。
-   ================================================================================ */
+const stepHissanEl = document.getElementById("stepHissan");
+const hissanSlot5El = document.getElementById("hissanSlot5");
+const hissanSheetEl = document.getElementById("hissanSheet");
 const bottleWorkEl = document.getElementById("bottleWork");
-const bottleEqEl = document.getElementById("bottleEq");
-const bottleColsEl = document.getElementById("bottleCols");
-const bottleCountNotesEl = document.getElementById("bottleCountNotes");
-
-/* 筆算の段（grid-row）を1か所で決める。柱（イオン反応式）が 2 行目にあり、
-   そこから下へ ↓ → 札 → 両辺に加える → 係数 と積まれる。
-   1 行目（eq）は狭い画面専用のイオン反応式1行（広い画面では出さない）。 */
-/* ★ addEcho / coefEcho ＝ **柱をもう一度出す行**。ユーザーの言葉そのまま:
-   「もともと何だったか、を正解した後に、改めてイオン反応式を出すようにしてください」。
-   ⚠ 刷り直すのは**式ぜんぶではなく柱だけ**（＋右にたたんだ全文）。
-   列がそろっているので、echo の札の真下がそのまま次に書く欄になる。 */
-const BROW = { eq: 1, tag: 1, ion: 2, arrow: 3, slot: 4, note: 5, rack: 6, msg: 7,
-  addEcho: 8, addHead: 9, add: 10, addMsg: 11,
-  coefEcho: 12, coefHead: 13, coefCap: 14, coef: 15 };
-/* ★ 「紙で解くと起こる事故」の注意は**筆算のいちばん下**（2026-09-11・ユーザーの指示
-   「正解後の一番下に解説を追加します」）。⑤の係数は縦に積まれることがあり、
-   行数が回ごとに変わるので、**番号は BROW に持たせず**その場で数える
-   （bottleLastGridRow）。大きな数で決め打つと、空の行のぶん row-gap が積もる */
+const hissanMsgEl = document.getElementById("hissanMsg");
+const stepRightEl = document.getElementById("stepRight");
+const hissanSlot7El = document.getElementById("hissanSlot7");
+const rightMsgEl = document.getElementById("rightMsg");
+const stepDoubleEl = document.getElementById("stepDouble");
+const doubleBoxEl = document.getElementById("doubleBox");
+const doubleMsgEl = document.getElementById("doubleMsg");
 
 /* いま札を置こうとしている柱（イオンの種）。null なら「まだ選んでいない」 */
 let bottleSlotActive = null;
-let bottleWorkKey = null;
+let bottlePick = {};        // ④ 左辺のイオン → 置いた札（"bottle:KMnO4" / "bottles:A+B"）
+let bottleAdd = {};         // ⑤ 両辺に足す傍観イオンの個数
+let bottleCounts = {};      // ⑤ 化学反応式の左辺の係数
+let bottleRightN = {};      // ⑤ 筆算の答えの行の右辺（イオンのまま）の係数
+let bottleMol = {};         // ⑦ 右辺の化学式の係数（分数もある → {num,den}）
+let bottleDbl = {};         // ⑧ 全体を2倍した係数
+let ownerKey = null;        // ④の作り直しの境目
+let sheetKey = null;        // ⑤⑦の作り直しの境目
+let molDone = false;        // 化学反応式まで書けたか（clear の帯と state() が見る）
 
 function bottleIdOf(sp) { return String(sp).replace(/[^A-Za-z0-9]/g, "_"); }
+function sheetNow() { return rxSheetRows(stage(), mult[0], mult[1]); }
+function rightUnitsNow() { return rxRightUnits(stage(), mult[0], mult[1]); }
+function doubleNow() { return rxDoubleRows(stage(), mult[0], mult[1]); }
 
-/* ⑤で「イオン反応式の全体を何倍するか」。**常設の入力ではない**（v182・【D】）——
-   右辺の係数に 1/2 が出たときだけ、案内の釦から 1 以外になる */
-let bottleScale = 1;
-/* 【②】④で人が入れる「両辺に足す傍観イオンの個数」（傍観イオン → 個数。未入力は持たない）。
-   ★ これが紙の上の手つきそのもの。⑤（左辺の係数）はこのあと。 */
-let bottleAdd = {};
-let bottlePick = {};        // 左辺のイオン → 置いた札（"bottle:KMnO4" / "bottles:A+B"）
-let bottleCounts = {};      // 物質 → 左辺の係数（⑤の数入力。未入力は持たない）
-let bottleCountKey = null;  // 入力欄を作り直した「ステージ／倍率／全体の倍率」の組
-
-/* 答えの鍵。"bottle:KMnO4" と、【G】出どころが2本あるイオンのための
-   "bottles:H2C2O4+H2SO4" の2つ。
-   ⚠ 2026-09-11: 画面が作る鍵から "ion:◯◯"（＝「◯◯ と組む」）が消えた。
-   読むほう（model.js の explainBottleOwner）はその形をまだ受け取る —— 正解のあとの
-   注意（bottleTrapNote）が、そこから文を借りているため。
-   ⚠ 2026-09-10: 札を置く形にしたので、鍵を**作る**のは keyOfPlaced のほうへ移った
-   （`<select>` の option 値を作る bottleKeyOf は要らなくなった）。読むほうはそのまま。 */
+/* 答えの鍵。"bottle:KMnO4" と、出どころが2本あるイオンのための "bottles:H2C2O4+H2SO4"。
+   ⚠ **model.js の answerKey とそのまま突き合わせる**ので勝手な形を作らない */
 function bottleChoiceOf(key) {
   const i = String(key || "").indexOf(":");
   if (i < 0) return null;
@@ -1828,14 +1805,15 @@ function bottleRows() {
   const st = stage();
   return bottleStepOf(st) ? bottleOwnerChoices(st, mult[0], mult[1]) : null;
 }
-/* 正解かどうかは**鍵の一致**で見る（1つの物質も「両方から」も同じ形で扱える） */
 function bottleRowOk(r) { return bottlePick[r.ion] === r.answerKey; }
-/* ★ 2026-09-11・ユーザーの決定「B3 イオンでないものは聞かなくてよい」。
-   イオンでない柱（r3 の Zn・ro1 の CH₃CH₂OH・rn1 の Cu …）は**問いにしない**。
-   柱そのものは残す（式の項であり、⑤の係数の欄がその真下に来る）。 */
+/* ★ イオンでない柱（r3 の Zn・ro1 の CH₃CH₂OH・rn1 の Cu …）は**問いにしない**。
+   柱そのものは残す（式の項であり、⑤の係数の欄がその真下に来る） */
 function bottleAskRows(rows) { return (rows || []).filter((r) => r.ask); }
-function bottleAnsweredOk(rows) {
-  return bottleAskRows(rows).filter(bottleRowOk).length;
+function bottleAnsweredOk(rows) { return bottleAskRows(rows).filter(bottleRowOk).length; }
+function ownerDone() {
+  const rows = bottleRows();
+  if (!rows) return false;
+  return bottleAnsweredOk(rows) === bottleAskRows(rows).length;
 }
 
 /* 物質1つが水に入って出すもの（「2 H⁺ ＋ SO₄²⁻」）。個数は電離表を数えて出す */
@@ -1850,24 +1828,27 @@ function updateBottleStep() {
   if (!stepBottlesEl) return;
   const st = stage();
   const chk = checkRedoxMultipliers(st, mult[0], mult[1]);
-  /* 【C′】③の係数を筆算の中で書いているあいだは、この段も出さない。
-     ④の問い（「H⁺ 8個 を連れてきたのは？」）に**係数がそのまま入っている**ので、
-     出したままにすると、これから書く答えが下から漏れる */
+  /* ③の係数を筆算の中で書いているあいだは、この段も出さない。
+     ④の問いに**係数がそのまま入っている**ので、出したままにすると答えが下から漏れる */
   const rows = (chk.ok && !calcPending()) ? bottleRows() : null;
   revealStep(stepBottlesEl, !!rows);
-  if (!rows) return;
-  buildBottleCols(rows, true);
+  if (!rows) {
+    revealStep(stepHissanEl, false);
+    revealStep(stepRightEl, false);
+    revealStep(stepDoubleEl, false);
+    if (saltStepEl) saltStepEl.hidden = true;
+    molDone = false;
+    return;
+  }
+  buildOwnerRow(rows, true);
   buildBottleRack(st);
-  buildAddIonRows();
-  refreshBottleTail();
+  refreshOwner();
 }
 
-/* ---- 柱（イオン反応式の左辺）と、その下のスロット ----
-   ★ ここが「筆算に寄せる」の本体。**式の項がそのまま列の見出し**になり、
-   答えはその真下にしか置けない ＝ 縦の対応が場所で言い切られる。 */
-
-/* 置いてある札の並び。キーの形は今までどおり（bottle: / bottles: / ion:）で、
-   ⚠ **model.js の answerKey とそのまま突き合わせる**ので勝手な形を作らない */
+/* ---- ④ 「もともと何だった？」だけの段 ----
+   ★ 2026-09-11 ユーザー確定「イオンは**中央ぞろえ・水平均等配置**（③と縦をそろえない）」。
+   ⚠ ここは筆算ではない ＝ 列にそろえる理由が無い。そろえると③の式の幅に引きずられて、
+   受け皿が画面の端に寄る。 */
 function placedListOf(ion) {
   const c = bottleChoiceOf(bottlePick[ion] || "");
   if (!c) return [];
@@ -1877,18 +1858,12 @@ function placedListOf(ion) {
 function keyOfPlaced(list) {
   if (!list.length) return "";
   if (list.length === 1) return "bottle:" + list[0].sp;
-  /* 【G】「両方から」（rs3 の H⁺）。⚠ 並びは**入れた物質の並び順**にそろえる
+  /* 出どころが2本あるイオン（rs3 の H⁺）。⚠ 並びは**入れた物質の並び順**にそろえる
      —— model.js の answerKey が stage.bottles の順で作られているため */
   const order = stage().bottles;
   const sps = list.map((x) => x.sp).sort((p, q) => order.indexOf(p) - order.indexOf(q));
   return "bottles:" + sps.join("+");
 }
-
-/* 札を置く。★ 1つの柱に2枚置ける（＝「両方から」がそのまま表せる）。
-   ⚠ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで学べます」。
-   置けるのは**はじめに入れた物質の札だけ**になった。柱そのものを別の柱の下に置く道
-   （＝「◯◯ と組む」の罠）はここから消えている。その事故は**正解のあとの注意**
-   （model.js の bottleTrapNote）へ移した。 */
 function placeBottleCard(ion, sp) {
   const list = placedListOf(ion);
   if (!list.some((x) => x.sp === sp)) list.push({ kind: "bottle", sp });
@@ -1901,15 +1876,12 @@ function unplaceBottleCard(ion, sp) {
   bottleSlotActive = ion;
   redrawBottleWork();
 }
-/* 置いたあとに描き直すもの。⚠ ④後半・⑤の入力欄は作り直さない（打っている最中に
-   焦点が飛ぶ）—— 作り直すのは柱と札の棚だけで、あとは中身の塗り替え */
 function redrawBottleWork() {
-  buildBottleCols(bottleRows(), true);
+  buildOwnerRow(bottleRows(), true);
   buildBottleRack(stage());
-  refreshBottleTail();
+  refreshOwner();
 }
-/* 札をタップしたときの行き先。柱を選んでいなければ、**まだ当たっていない左の柱**へ入れる
-   （1タップで置ける道を残す。狙って置きたい人は柱を先にタップする） */
+/* 札をタップしたときの行き先。柱を選んでいなければ、**まだ当たっていない左の柱**へ入れる */
 function bottleTargetIon(rows) {
   const asks = bottleAskRows(rows);
   if (bottleSlotActive && asks.some((r) => r.ion === bottleSlotActive)) return bottleSlotActive;
@@ -1917,57 +1889,25 @@ function bottleTargetIon(rows) {
   return yet ? yet.ion : (asks[0] || rows[0]).ion;
 }
 
-function buildBottleCols(rows, force) {
-  if (!bottleColsEl || !rows || !rows.length) return;
+function buildOwnerRow(rows, force) {
+  if (!ownerRowEl || !rows || !rows.length) return;
   const key = `${stage().id}/${mult[0]}/${mult[1]}/${bottleSlotActive}/` +
     rows.map((r) => bottlePick[r.ion] || "-").join("|");
-  if (!force && bottleWorkKey === key) return;
-  bottleWorkKey = key;
-  // 1行版は下で並べ直すので、消される前にいったん外へ逃がす
-  if (bottleEqEl && bottleEqEl.parentElement === bottleColsEl) bottleWorkEl.appendChild(bottleEqEl);
-  bottleColsEl.innerHTML = "";
-  const plan = bottlePlan(stage(), mult[0], mult[1], 1);
-  const ionic = plan ? plan.ionic : null;
-  bottleWorkEl.style.setProperty("--bcols", String(rows.length));
-  const cell = (parent, cls, row, col) => {
-    const d = document.createElement("div");
-    d.className = cls;
-    d.style.gridRow = String(row);
-    if (col) d.style.gridColumn = String(col);
-    parent.appendChild(d);
-    return d;
-  };
-
-  /* 狭い画面用のイオン反応式1行（柱を横に並べられないとき、式そのものが1度だけ出る） */
-  if (bottleEqEl && ionic) {
-    bottleEqEl.innerHTML = "";
-    bottleEqEl.style.gridRow = String(BROW.eq);
-    const l = document.createElement("span");
-    l.className = "bwEqSide";
-    renderTerms(l, ionic.left.filter((t) => t.sp !== "e-"), []);
-    const ar = document.createElement("span");
-    ar.className = "bwEqArrow";
-    ar.textContent = "→";
-    const r = document.createElement("span");
-    r.className = "bwEqSide";
-    renderTerms(r, ionic.right.filter((t) => t.sp !== "e-"), []);
-    bottleEqEl.append(l, ar, r);
-  }
-
+  if (!force && ownerKey === key) return;
+  ownerKey = key;
+  ownerRowEl.innerHTML = "";
   rows.forEach((r, i) => {
     const col = document.createElement("div");
-    col.className = "bcol";
-    bottleColsEl.appendChild(col);
-    const placed = placedListOf(r.ion);
-    const ok = bottleRowOk(r);
-    // --- 柱そのもの（イオン反応式の左辺の項）。★ ここに印を付ける ＝ ユーザーの言う「マーカー」
-    const head = cell(col, "bcolHead", BROW.ion, i + 1);
+    col.className = "ocol";
     if (i > 0) {
       const s = document.createElement("span");
-      s.className = "bwSep";
+      s.className = "bwSep osep";
       s.textContent = "＋";
-      head.appendChild(s);
+      ownerRowEl.appendChild(s);
     }
+    ownerRowEl.appendChild(col);
+    const placed = placedListOf(r.ion);
+    const ok = bottleRowOk(r);
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className = "bpill" + (ok ? " done" : "") + (bottleSlotActive === r.ion ? " here" : "") +
@@ -1977,36 +1917,21 @@ function buildBottleCols(rows, force) {
     pill.setAttribute("aria-label", r.ask
       ? `${SPECIES[r.ion].disp} ${r.n}個 はもともと何だった？`
       : `${SPECIES[r.ion].disp} ${r.n}個 — ${r.selfNote}`);
-    /* イオンでない柱は問いではないので、押しても何も起きない
-       （柱は式の項として残す。⑤の係数の欄はこの真下に来る） */
     if (!r.ask) pill.disabled = true;
-    /* 柱をタップ ＝ **その柱を選ぶだけ**。
-       ⚠ 2026-09-11・ユーザーの決定「B2 消してよいです。必ず元の物質を選ばせることで
-       学べます」。v206〜v207 は、別の柱を選んでいるときに柱をタップすると
-       「◯◯ と組む」を置いたことになっていた（罠）。その道をここで閉じ、
-       「左辺のイオンどうしを組む」事故は**正解のあとの注意**として1度だけ言う。 */
-    pill.onclick = () => {
-      bottleSlotActive = r.ion;
-      buildBottleCols(rows, true);
-      refreshBottleTail();
-    };
-    head.appendChild(pill);
-    // --- ↓
-    cell(col, "bcolArrow", BROW.arrow, i + 1).textContent = "↓";
-    /* --- イオンでない柱は、置く場所を作らない（＝ 聞かない）。
-       代わりに「そのまま」と1語だけ置いて、列が下（⑤の係数）まで続いていることを見せる。
-       ⚠ 文は model.js が持つ（selfNote）。画面は置くだけ。 */
+    pill.onclick = () => { bottleSlotActive = r.ion; buildOwnerRow(rows, true); refreshOwner(); };
+    col.appendChild(pill);
+    const ar = document.createElement("div");
+    ar.className = "bcolArrow";
+    ar.textContent = "↓";
+    col.appendChild(ar);
     if (!r.ask) {
-      const self = cell(col, "bcolSlot", BROW.slot, i + 1);
       const s = document.createElement("span");
       s.className = "bself";
       s.textContent = "そのまま";
       s.title = r.selfNote;
-      self.appendChild(s);
+      col.appendChild(s);
       return;
     }
-    // --- 札を置くところ
-    const slotCell = cell(col, "bcolSlot", BROW.slot, i + 1);
     const slot = document.createElement("div");
     slot.id = "bq_" + bottleIdOf(r.ion);
     slot.className = "bslot" + (bottleSlotActive === r.ion ? " active" : "") +
@@ -2019,8 +1944,8 @@ function buildBottleCols(rows, force) {
     slot.onclick = (ev) => {
       if (ev.target.closest(".bchipX")) return;
       bottleSlotActive = r.ion;
-      buildBottleCols(rows, true);
-      refreshBottleTail();
+      buildOwnerRow(rows, true);
+      refreshOwner();
     };
     slot.onkeydown = (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); slot.click(); } };
     if (!placed.length) {
@@ -2045,206 +1970,15 @@ function buildBottleCols(rows, force) {
       chip.append(nm, x);
       slot.appendChild(chip);
     }
-    slotCell.appendChild(slot);
+    col.appendChild(slot);
   });
-
-  // --- 右辺（柱の右に置く。両辺を見ないと④後半の「相手のいないイオン」が探せない）
-  if (ionic) {
-    const rest = cell(bottleColsEl, "bcolRest", BROW.ion, rows.length + 1);
-    const ar = document.createElement("span");
-    ar.className = "bwEqArrow";
-    ar.textContent = "→";
-    const rt = document.createElement("span");
-    rt.className = "bwEqSide";
-    renderTerms(rt, ionic.right.filter((t) => t.sp !== "e-"), []);
-    rest.append(ar, rt);
-    /* ⚠ 見出しは**いちばん上**（狭い画面は grid ではなく素の並びになるので、DOM の順が効く） */
-    const tag = cell(bottleColsEl, "bwRowTag", BROW.tag, 0);
-    const b = document.createElement("b");
-    b.textContent = "③で出したイオン反応式";
-    tag.appendChild(b);
-    bottleColsEl.insertBefore(tag, bottleColsEl.firstChild);
-    /* 狭い画面用の1行版は、見出しのすぐ下に置く（広い画面では display:none）。
-       ⚠ 素の並びが効くのは狭い画面だけなので、**DOM を動かして**順を作る */
-    if (bottleEqEl) bottleColsEl.insertBefore(bottleEqEl, tag.nextSibling);
-  }
 }
 
-/* ★★ 柱をもう一度出す行（ユーザー:「正解した後に、改めてイオン反応式を出すように」）。
-   ⚠ 出すのは**柱（左辺の項）だけ**で、式の全文は右の欄に小さくたたむ。
-   全文を3回刷ると画面が伸びて、かえって「離れる」ほうに戻るため。
-   ⚠ 押せない（`<span>`）—— 置き場所は上の柱1つに決まっている。 */
-function buildBottleEcho(parent, rows, rowIdx, label) {
-  const old = parent.querySelector(":scope > .bwEchoWrap");
-  if (old) old.remove();
-  const wrap = document.createElement("div");
-  wrap.className = "bwEchoWrap";
-  rows.forEach((r, i) => {
-    const c = document.createElement("div");
-    c.className = "bcolHead bwEchoCell";
-    c.style.gridRow = String(rowIdx);
-    c.style.gridColumn = String(i + 1);
-    if (i > 0) {
-      const s = document.createElement("span");
-      s.className = "bwSep";
-      s.textContent = "＋";
-      c.appendChild(s);
-    }
-    const p = document.createElement("span");
-    p.className = "bpill echo";
-    p.textContent = (r.n > 1 ? r.n + " " : "") + SPECIES[r.ion].disp;
-    c.appendChild(p);
-    wrap.appendChild(c);
-  });
-  const tag = document.createElement("div");
-  tag.className = "bwRowTag bwEchoTag";
-  tag.style.gridRow = String(rowIdx);
-  tag.style.gridColumn = String(rows.length + 1);
-  tag.textContent = label;
-  wrap.appendChild(tag);
-  parent.insertBefore(wrap, parent.firstChild);
-}
-
-/* 柱ごとの判定文。⚠ 列は狭いので**全幅の行**にまとめて積む（列の中に入れると
-   1文字ずつ縦に折れる）。どの柱の話かはイオンの札を先頭に付けて言う */
-function renderBottleNotes(rows) {
-  bottleQuizEl.innerHTML = "";
-  bottleQuizEl.style.gridRow = String(BROW.note);
-  for (const r of rows) {
-    /* イオンでない柱は聞いていないので、判定ではなく**なぜ聞かないか**を1行だけ置く
-       （文は model.js の selfNote。同じことを2か所に書かない） */
-    if (!r.ask) {
-      const line = document.createElement("div");
-      line.className = "bwNote pickNote bottleNote bwSelfNote";
-      line.id = "bqn_" + bottleIdOf(r.ion);
-      const who = document.createElement("span");
-      who.className = "bwNoteIon";
-      who.textContent = SPECIES[r.ion].disp;
-      const txt = document.createElement("span");
-      txt.className = "bwNoteText";
-      txt.textContent = r.selfNote;
-      line.append(who, txt);
-      bottleQuizEl.appendChild(line);
-      continue;
-    }
-    const c = bottleChoiceOf(bottlePick[r.ion] || "");
-    const ex = c && explainBottleOwner(stage(), mult[0], mult[1], r.ion, c);
-    if (!ex) continue;
-    const line = document.createElement("div");
-    line.className = "bwNote pickNote bottleNote " + (ex.ok ? "okcell" : "ngcell");
-    line.id = "bqn_" + bottleIdOf(r.ion);
-    const who = document.createElement("span");
-    who.className = "bwNoteIon";
-    who.textContent = SPECIES[r.ion].disp;
-    const txt = document.createElement("span");
-    txt.className = "bwNoteText";
-    txt.textContent = ex.reason;
-    line.append(who, txt);
-    bottleQuizEl.appendChild(line);
-  }
-}
-
-/* 【②】④の本体 —— 「両辺に、式に出てこないイオンを何個ずつ足すか」。
-   ⚠ **行を打つたびに作り直さない**（焦点が飛ぶ）。作り直すのは
-   「ステージ／倍率／全体の倍率」が変わったときだけ。 */
-function addIonId(sp) { return "ai_" + sp.replace(/[^A-Za-z0-9]/g, "_"); }
-
-function buildAddIonRows(force) {
-  if (!addIonRowsEl) return;
-  const key = `${stage().id}/${mult[0]}/${mult[1]}/${bottleScale}`;
-  if (!force && addIonKey === key) return;
-  addIonKey = key;
-  addIonRowsEl.innerHTML = "";
-  const rows = spectatorAddRows(stage(), mult[0], mult[1], bottleScale);
-  if (!rows) return;
-  /* ★ 4-a を当てたあと、**柱をもう一度出してから**この段に入る（ユーザーの指示） */
-  const cols = bottleRows() || [];
-  if (cols.length) buildBottleEcho(addIonWrapEl, cols, BROW.addEcho, "↑ もう一度、イオン反応式の左辺");
-  addIonWrapEl.querySelector(".stepSubHead").style.gridRow = String(BROW.addHead);
-  addIonRowsEl.style.gridRow = String(BROW.add);
-  addIonMsgEl.style.gridRow = String(BROW.addMsg);
-  const cap = document.createElement("div");
-  cap.className = "bottleCap";
-  cap.textContent = "相手のいないイオンに、両辺で同じだけ相手を足す";
-  /* ★ 筆算の1行として横に並べる（ユーザーの絵の最下段 ＋ K⁺〔 〕個 ＋ SO₄²⁻〔 〕個）。
-     ⚠ この行は列にそろえられない —— 足すイオンは種でまとめた数で、
-     1種が2つの物質から来ること（rs1 の SO₄²⁻）も、1つの物質が2列にまたがること
-     （rn1 の HNO₃）もあるため。柱の下ではなく、柱の並びの下に1行として置く。 */
-  const line = document.createElement("div");
-  line.className = "bwAddLine";
-  const lead = document.createElement("span");
-  lead.className = "bwAddLead";
-  lead.textContent = "両辺に";
-  line.appendChild(lead);
-  const notes = document.createElement("div");
-  notes.className = "bwAddNotes";
-  for (const r of rows) {
-    const item = document.createElement("span");
-    item.className = "bwAddItem";
-    const plus = document.createElement("span");
-    plus.className = "bwSep";
-    plus.textContent = "＋";
-    const inp = document.createElement("input");
-    inp.type = "number";
-    inp.min = "0";
-    inp.max = "99";
-    inp.inputMode = "numeric";
-    inp.className = "bottleCountInput";
-    inp.id = addIonId(r.sp);
-    inp.value = Number.isInteger(bottleAdd[r.sp]) ? String(bottleAdd[r.sp]) : "";
-    const label = document.createElement("label");
-    label.className = "pickLabel bcLabel bwAddIon";
-    label.htmlFor = inp.id;
-    label.textContent = SPECIES[r.sp].disp;
-    const unit = document.createElement("span");
-    unit.className = "bcUnit";
-    unit.textContent = "個ずつ";
-    item.append(plus, label, inp, unit);
-    const note = document.createElement("div");
-    note.className = "pickNote bcNote bwNote";
-    note.id = "ain_" + bottleIdOf(r.sp);
-    const who = document.createElement("span");
-    who.className = "bwNoteIon";
-    who.textContent = SPECIES[r.sp].disp;
-    const txt = document.createElement("span");
-    txt.className = "bwNoteText";
-    note.append(who, txt);
-    inp.oninput = () => {
-      const v = parseInt(inp.value, 10);
-      // ⚠ 0 は「足さない」という答え（誤答）。空欄は「まだ入れていない」
-      if (Number.isInteger(v) && v >= 0) bottleAdd[r.sp] = v;
-      else delete bottleAdd[r.sp];
-      refreshBottleTail();
-    };
-    line.appendChild(item);
-    notes.appendChild(note);
-  }
-  addIonRowsEl.append(cap, line, notes);
-}
-
-/* ④の後半（両辺に加えるイオンの数）が片づいたか。
-   ⚠ 前半（もともと何だった？）は別に見る ＝ 2つそろって⑤が出る */
-function addIonDone() {
-  const rows = spectatorAddRows(stage(), mult[0], mult[1], bottleScale);
-  if (!rows) return false;
-  return rows.every((r) => bottleAdd[r.sp] === r.n);
-}
-
-/* 札の棚。★ ユーザーの言葉は「カードをドラッグさせる」だが、**置き方はタップにした**。
-   理由は3つ:
-     (1) この家の流儀 —— 同じ画面の⑥（blocks.js の IonBlocks）も、イオンを **click** で
-         足し引きする。ドラッグはこのリポジトリのイオン側に1つも無い
-     (2) この画面は iPad でも使う（BUGNOTE_touch_ipad.md）。HTML のドラッグはタッチで
-         そもそも発火せず、Pointer で自前実装すると同じ轍（S2・S6 の型）に入る
-     (3) 縦の対応が本体で、置き方は手段 —— 「柱の下に札が並ぶ」形はタップでも同じに見える
-   ⚠ タップ2手（柱 → 札／札 → いちばん左の未回答）のどちらでも置ける。 */
+/* 札の棚。★ 置き方はタップ（この家の流儀。⑥のブロックも click で足し引きする。
+   iPad では HTML のドラッグがそもそも発火しない） */
 function buildBottleRack(st) {
   bottleRackEl.innerHTML = "";
-  bottleRackEl.style.gridRow = String(BROW.rack);
   const rows = bottleRows() || [];
-  const cap = document.createElement("div");
-  cap.className = "bottleCap";
-  cap.textContent = "札をタップして、上のイオンの下に置こう";
   const shelf = document.createElement("div");
   shelf.className = "bottleShelf";
   for (const sp of st.bottles) {
@@ -2271,35 +2005,18 @@ function buildBottleRack(st) {
   const t = bottleSlotActive && rows.some((r) => r.ion === bottleSlotActive) ? bottleSlotActive : null;
   where.textContent = t
     ? `いま置く先は ${SPECIES[t].disp} の下`
-    : "上のイオンをタップすると、置く先が決まる";
-  bottleRackEl.append(cap, shelf, where);
+    : "札をタップして、上のイオンの下に置こう";
+  bottleRackEl.append(shelf, where);
 }
 
-/* 「紙で解くと起こる事故」の注意。④前半を当て終えたときだけ、筆算の一番下に出す。
-   ⚠ 出す・出さないの判断だけがここの仕事で、**文は model.js**（bottleTrapNote）。
-   ⚠ ステージによっては注意そのものが無い（r3 は左辺のイオンが H⁺ だけで、組む相手がいない）。 */
-/* いま筆算に出ている行のいちばん下の番号。⑤の係数は縦に積まれることがあるので、
-   数えるのではなく**書かれている grid-row を読む**（積み方を2か所で決めない） */
-function bottleLastGridRow() {
-  let max = BROW.msg;
-  for (const el of bottleWorkEl.querySelectorAll("[style]")) {
-    if (el === bottleTrapEl || el.closest("[hidden]")) continue;
-    const v = parseInt(el.style.gridRow, 10);
-    if (Number.isFinite(v) && v > max) max = v;
-  }
-  return max;
-}
-
+/* 「紙で解くと起こる事故」の注意。④を当て終えたときだけ、④のいちばん下に1度だけ。
+   ⚠ 出す・出さないの判断だけがここの仕事で、**文は model.js**（bottleTrapNote）。 */
 function drawBottleTrap(show) {
   if (!bottleTrapEl) return;
   const note = show ? bottleTrapNote(stage(), mult[0], mult[1]) : null;
   bottleTrapEl.hidden = !note;
   bottleTrapEl.innerHTML = "";
   if (!note) return;
-  /* ⚠ 行番号は**決め打ちにしない**。BROW.trap を大きな数（40）に固定すると、
-     空の行が 20 以上できて row-gap（2px）がそのぶん積もり、⑤との間に
-     50px 以上の空白が開いた（実測）。いま出ている行を読んで、その次に置く。 */
-  bottleTrapEl.style.gridRow = String(bottleLastGridRow() + 1);
   const head = document.createElement("span");
   head.className = "btrapHead";
   head.textContent = "⚠ " + note.head;
@@ -2309,367 +2026,348 @@ function drawBottleTrap(show) {
   bottleTrapEl.append(head, txt);
 }
 
-function refreshBottleTail() {
+/* ④の判定。★ ユーザー確定「**正解したらすぐ⑤へ。判定文を出さない**」。
+   ⚠ 外したときだけ言う（黙って弾かない）。当たっているぶんには何も書かない。 */
+function refreshOwner() {
   const rows = bottleRows();
   if (!rows) return;
-  /* --- ④の前半「もともと何だった？」---
-     ★ 2026-09-07 にふたたび門にした（ユーザー「どこから来たの が先」）。
-     選択肢は有限で必ず正解が選べるので、行き止まりにはならない。 */
-  /* ⚠ 数えるのは**問いになっている柱だけ**（イオンでない柱は聞いていない・2026-09-11） */
   const asks = bottleAskRows(rows);
   const okN = bottleAnsweredOk(rows);
-  const quizDone = okN === asks.length;
-  const yet = asks.find((r) => !bottleRowOk(r));
-  renderBottleNotes(rows);
-  bottleMsgEl.style.gridRow = String(BROW.msg);
-  bottleMsgEl.textContent = quizDone
-    ? "左辺に書くのはイオンではなく、そのもとの物質"
-    : `あと ${asks.length - okN} 個`;
-  bottleMsgEl.className = quizDone ? "okcell" : "";
-  /* ★ 2026-09-11・ユーザーの指示「注意事項として、正解後の一番下に解説を追加します。
-     アプリ上では起こりませんが、自分で紙に解くと起こる事故です」。
-     ⚠ **答える前には出さない**（④前半を当て終えてから）。
-     ⚠ 文は model.js の bottleTrapNote が導く —— 相手はステージごとに違い、
-     rn1・rn2（H⁺ と NO₃⁻ が同じ HNO₃ から来る）は言い方そのものが変わる。 */
-  if (addIonWrapEl) addIonWrapEl.hidden = !quizDone;
-  if (!quizDone) {
-    bottleTailEl.hidden = true;
-    bottleTailMsgEl.textContent = "";
-    if (saltStepEl) saltStepEl.hidden = true;
-    drawBottleTrap(false);
-    return;
-  }
-
-  // --- ④の後半（両辺に加えるイオンの数）---
-  const add = spectatorAddRows(stage(), mult[0], mult[1], bottleScale) || [];
-  let done = 0;
-  for (const r of add) {
-    const inp = document.getElementById(addIonId(r.sp));
-    if (!inp) continue;
-    const ex = explainSpectatorAdd(stage(), mult[0], mult[1], bottleScale, r.sp, bottleAdd[r.sp]);
-    const note = document.getElementById("ain_" + bottleIdOf(r.sp));
-    if (note) {
-      note.querySelector(".bwNoteText").textContent = ex ? ex.reason : "";
-      note.className = "pickNote bcNote bwNote" +
-        (ex && ex.kind !== "none" ? (ex.ok ? " okcell" : " ngcell") : "");
-    }
-    inp.classList.toggle("ng", !!(ex && ex.kind === "wrong"));
-    if (ex && ex.ok) done++;
-    const want = Number.isInteger(bottleAdd[r.sp]) ? String(bottleAdd[r.sp]) : "";
-    if (document.activeElement !== inp && inp.value !== want) inp.value = want;
-  }
-  const allDone = done === add.length && add.length > 0;
-  addIonMsgEl.textContent = allDone
-    ? "両辺に足せた"
-    : `あと ${add.length - done} 種類`;
-  addIonMsgEl.className = allDone ? "okcell" : "";
-
-  bottleTailEl.hidden = !allDone;
-  if (allDone) drawBottleTail();
-  else {
-    bottleTailMsgEl.textContent = "";
-    if (saltStepEl) saltStepEl.hidden = true;
-  }
-  /* ★ 注意は**いちばん最後**に置く（＝ 筆算の一番下）。⚠ ここで呼ぶ理由:
-     いま実際に何行あるかを DOM から読むため（先に呼ぶと、あとから増えた⑤の行に追い越される） */
-  drawBottleTrap(true);
-}
-
-/* ⑤ 水を蒸発させる（v182 で作り直した・DESIGN_redox.md「実機レビュー」B・D）。
-
-   v181 は「全体を ×N」のステッパー1つで、**本数の割り算は画面が答えを表示していた**。
-   ユーザーの指摘「どのイオンを何個加えるか、というところを入力することに意味があります」に
-   合わせ、**左辺の係数を学習者に書かせる**。係数が決まればついて来るイオンの数は
-   掛け算で決まる ＝ それがそのまま「どのイオンが何個」の答えになる。
-
-   **「両辺に何個足すか」とは聞かない。** ④で「SO₄²⁻ は H₂SO₄ が連れてきた」と言った直後に
-   そう聞くと、④で言ったことを⑤が取り消してしまう（設計書 B）。
-   筆算の言い方との橋は、そろったあとに「合計 18個」を出すところで架ける。 */
-
-/* 入力欄を1文字打つたびに作り直すと焦点が飛ぶので、**行の作り直しは
-   「ステージ／倍率／全体の倍率」が変わったときだけ**。ふだんは中身だけ描き直す */
-function bottleCountKeyOf() {
-  return `${stage().id}/${mult[0]}/${mult[1]}/${bottleScale}`;
-}
-
-function buildBottleCountRows(force) {
-  const st = stage();
-  const key = bottleCountKeyOf();
-  if (!force && bottleCountKey === key) return;
-  bottleCountKey = key;
-  bottleCountEl.innerHTML = "";
-  if (bottleCountNotesEl) bottleCountNotesEl.innerHTML = "";
-  const rows = bottleCountRows(st, mult[0], mult[1], bottleScale);
-  if (!rows) return;
-  const D = (sp) => SPECIES[sp].disp;
-  // ⑤の見出しと本文も、同じ筆算のグリッドの中に段として置く
-  const head = bottleTailEl.querySelector(".stepHead");
-  if (head) head.style.gridRow = String(BROW.coefHead);
-  /* ★ ⑤に入る前にも、柱をもう一度出す（ユーザーの指示。④後半と同じ形） */
-  const cols0 = bottleRows() || [];
-  if (cols0.length) buildBottleEcho(bottleTailEl, cols0, BROW.coefEcho, "↑ もう一度、イオン反応式の左辺");
-  const cap = document.createElement("div");
-  cap.className = "bottleCap";
-  cap.style.gridRow = String(BROW.coefCap);
-  /* ★ 2026-09-07・ユーザーの指示「⑤ 不要／左辺の係数をすべて入力させる」。
-     数は1つも変わらない（v194 の bottleLeftMap が既に「入れた数 ＝ 左辺の係数」と
-     言っていた）。**遠回りな言い換えを消して、最初から係数として書かせる。** */
-  cap.textContent = "上のイオン反応式に並ぶ数がそろうように、係数を書こう";
-  bottleCountEl.appendChild(cap);
-  /* ★ 係数の欄は、**その物質が担当したイオンの柱の真下**に置く（＝筆算の縦の対応）。
-     ⚠ 対応は1対1ではない —— 1つの物質が2つの柱を担当することも（rn1 の HNO₃）、
-     1つの柱を2つの物質が担当することも（rs3 の H⁺）ある。前者は左端の柱に置き、
-     後者は同じ列に縦に積む（stack）。数と判定は1つも変えていない。 */
-  const cols = bottleRows() || [];
-  const used = {};
+  const done = okN === asks.length;
+  bottleQuizEl.innerHTML = "";
   for (const r of rows) {
-    const ci = bottleColOf(cols, r.sp);
-    const stack = used[ci] || 0;
-    used[ci] = stack + 1;
-    const box = document.createElement("div");
-    box.className = "bottleCountRow bwCoef";
-    box.style.gridRow = String(BROW.coef + stack);
-    box.style.gridColumn = String(ci + 1);
-    const inp = document.createElement("input");
-    inp.type = "number";
-    inp.min = "1";
-    inp.max = "99";
-    inp.inputMode = "numeric";
-    inp.className = "bottleCountInput";
-    inp.id = "bc_" + bottleIdOf(r.sp);
-    inp.value = Number.isInteger(bottleCounts[r.sp]) ? String(bottleCounts[r.sp]) : "";
-    const label = document.createElement("label");
-    label.className = "pickLabel bcLabel bcFormula";
-    label.htmlFor = inp.id;
-    /* ★ 書く場所そのものを式にする ——〔 2 〕KMnO₄。
-       欄の左に係数、右に化学式（紙に書く並びと同じ）。 */
-    label.textContent = D(r.sp);
-    const field = document.createElement("div");
-    field.className = "bcField bcCoeffField";
-    field.append(inp, label);
-    box.append(field);
-    bottleCountEl.appendChild(box);
-    /* 手がかりと判定文は**全幅の行**へ（列は狭く、長い文が1文字ずつ縦に折れるため）。
-       手がかりは **要る個数**と**1つぶんの内訳**まで。割り算の答えは出さない */
-    const note = document.createElement("div");
-    note.className = "pickNote bcNote bwNote";
-    note.id = "bcn_" + bottleIdOf(r.sp);
+    if (!r.ask || bottleRowOk(r)) continue;
+    const c = bottleChoiceOf(bottlePick[r.ion] || "");
+    const ex = c && explainBottleOwner(stage(), mult[0], mult[1], r.ion, c);
+    if (!ex) continue;
+    const lineEl = document.createElement("div");
+    lineEl.className = "bwNote pickNote bottleNote ngcell";
+    lineEl.id = "bqn_" + bottleIdOf(r.ion);
     const who = document.createElement("span");
     who.className = "bwNoteIon";
-    who.textContent = D(r.sp);
-    const hint = document.createElement("span");
-    hint.className = "bcHead";
-    hint.textContent =
-      r.covers.map((c) => `${D(c.sp)} が ${c.need}個 要る`).join("・") +
-      ` ／ ${D(r.sp)} 1つが出すのは ${bottlePartsText(r.sp)}`;
+    who.textContent = SPECIES[r.ion].disp;
     const txt = document.createElement("span");
     txt.className = "bwNoteText";
-    note.append(who, hint, txt);
-    if (bottleCountNotesEl) bottleCountNotesEl.appendChild(note);
-    inp.oninput = () => {
-      const v = parseInt(inp.value, 10);
-      if (Number.isInteger(v) && v >= 1) bottleCounts[r.sp] = v;
-      else delete bottleCounts[r.sp];
-      refreshBottleResult();
-    };
+    txt.textContent = ex.reason;
+    lineEl.append(who, txt);
+    bottleQuizEl.appendChild(lineEl);
   }
-  if (bottleCountNotesEl) {
-    bottleCountNotesEl.style.gridRow = String(BROW.coef + Math.max(1, ...Object.values(used)));
-  }
-}
-
-/* その物質が担当した左辺のイオンの列。⚠ 決めるのは model.js の answerKey（＝模範）で、
-   人が置いた札では決めない —— 置き直すたびに列が動くと、筆算が読めなくなる */
-function bottleColOf(cols, sp) {
-  for (let i = 0; i < cols.length; i++) {
-    const c = bottleChoiceOf(cols[i].answerKey);
-    if (!c) continue;
-    if (c.kind === "bottles" ? c.sps.includes(sp) : c.sp === sp) return i;
-  }
-  return 0;
-}
-
-/* 【D】倍率は例外なので、**半端が出たときだけ**この箱が現れる。
-   倍率を探させない（ステッパーを置くと「例外を常設する」に戻る）ので、釦は1つ。 */
-function drawBottleScaleBox() {
-  if (!bottleScaleBoxEl) return;
-  const adv = bottleScaleAdvice(stage(), mult[0], mult[1], bottleScale);
-  bottleScaleBoxEl.innerHTML = "";
-  bottleScaleBoxEl.hidden = !adv;
-  if (!adv) return;
-  bottleScaleBoxEl.className = adv.kind === "half" ? "bsBox half" : "bsBox revert";
-  if (adv.kind === "half") {
-    const head = document.createElement("div");
-    head.className = "bsHead";
-    head.textContent = "⚠ ここだけはめずらしい場合";
-    bottleScaleBoxEl.appendChild(head);
-  }
-  const why = document.createElement("div");
-  why.className = "bsWhy";
-  why.textContent = adv.reason;
-  const go = document.createElement("button");
-  go.type = "button";
-  go.className = "bsGo";
-  go.textContent = adv.kind === "half" ? `全体を ×${adv.to} にしてそろえる` : "×1 に戻す";
-  go.onclick = () => applyBottleScale(adv.to);
-  bottleScaleBoxEl.append(why, go);
-}
-
-/* 全体の倍率を変える。**入力ずみの本数も同じ倍率で掛ける** ——
-   学習者が自分で出した値が、そのまま倍になって見えるようにするため
-   （入力を白紙に戻すと「さっき数えたことは何だったのか」になる）。 */
-function applyBottleScale(to) {
-  if (!Number.isInteger(to) || to < 1 || to === bottleScale) return;
-  const k = to / bottleScale;
-  const next = {};
-  for (const sp of Object.keys(bottleCounts)) {
-    const v = bottleCounts[sp] * k;
-    if (Number.isInteger(v)) next[sp] = v;
-  }
-  bottleCounts = next;
-  // 【②】④で足したイオンの個数も同じ倍率で掛ける（自分で出した数がそのまま倍になる）
-  const nextAdd = {};
-  for (const sp of Object.keys(bottleAdd)) {
-    const v = bottleAdd[sp] * k;
-    if (Number.isInteger(v)) nextAdd[sp] = v;
-  }
-  bottleAdd = nextAdd;
-  bottleScale = to;
-  buildAddIonRows(true);
-  buildBottleCountRows(true);
-  refreshBottleTail();
-}
-
-function drawBottleTail() {
-  buildBottleCountRows(false);
-  refreshBottleResult();
-}
-
-/* 入力の中身だけを描き直す（行は作り直さないので焦点が飛ばない） */
-function refreshBottleResult() {
-  const st = stage();
-  const rows = bottleCountRows(st, mult[0], mult[1], bottleScale);
-  if (!rows) return;
-  const D = (sp) => SPECIES[sp].disp;
-  const line = (parent, cls, text) => {
-    const d = document.createElement("div");
-    d.className = cls;
-    d.textContent = text;
-    parent.appendChild(d);
-    return d;
-  };
-
-  // --- 入れた本数の判定と理由（黙って弾かない）---
-  let done = 0;
-  for (const r of rows) {
-    const note = document.getElementById("bcn_" + bottleIdOf(r.sp));
-    const ex = explainBottleCount(st, mult[0], mult[1], bottleScale, r.sp, bottleCounts[r.sp]);
-    if (note) {
-      note.querySelector(".bwNoteText").textContent = ex ? ex.reason : "";
-      note.className = "pickNote bcNote bwNote" +
-        (ex && ex.kind !== "none" ? (ex.ok ? " okcell" : " ngcell") : "");
-    }
-    if (ex && ex.ok) done++;
-  }
-  const allDone = done === rows.length;
-  // そろうまでは⑥も化学反応式も出さない（答えが先に見えてしまう）
-  if (saltStepEl) saltStepEl.hidden = !allDone;
-  if (bottleScaleBoxEl) bottleScaleBoxEl.hidden = true;
-  if (!allDone) {
-    bottleSheetEl.innerHTML = "";
-    if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
-    bottleTailMsgEl.textContent = `あと ${rows.length - done} つ`;
-    bottleTailMsgEl.className = "footNote";
+  bottleMsgEl.textContent = done ? "" : `あと ${asks.length - okN} 個`;
+  bottleMsgEl.className = "";
+  drawBottleTrap(done);
+  revealStep(stepHissanEl, done);
+  if (!done) {
+    if (saltStepEl) saltStepEl.hidden = true;
+    revealStep(stepRightEl, false);
+    revealStep(stepDoubleEl, false);
+    molDone = false;
     return;
   }
-
-  const plan = bottlePlan(st, mult[0], mult[1], bottleScale);
-
-  // --- ⑥ 右辺で余ったイオンを組み合わせる（ブロックで積む）---
-  drawSaltStep(plan);
-  /* ★ 硝酸の二役（rn1・rn2）。⑥の頭で1行だけ言う ——
-     「入れた HNO₃ のうち、姿を変えるのは一部だけ」が分かっていないと、
-     右辺に NO₃⁻ が 6個 も残っていることが不思議に見える。
-     ⚠ 文は model.js（acidRoleText）が持つ。ここは出す場所を決めるだけ。 */
-  if (acidRoleNoteEl) {
-    const role = acidRoleText(st, mult[0], mult[1], bottleScale);
-    acidRoleNoteEl.textContent = role ? role.text : "";
-    acidRoleNoteEl.className = "bottleCap acidRole";
-    acidRoleNoteEl.hidden = !role;
-  }
-  const rem = saltRemaining(plan);
-  const restIons = Object.keys(rem).filter((sp) => rem[sp] > 0);
-  const allPaired = plan.ok && restIons.length === 0;
-
-  // --- 完成した化学反応式（⑥を組み切ってから出す）---
-  bottleSheetEl.innerHTML = "";
-  if (bottleLeftMapEl) bottleLeftMapEl.innerHTML = "";
-  bottleSheetEl.parentElement.hidden = !allPaired;
-  if (allPaired) {
-    /* 【3】v194・発注書 §6-7 の 3 —— **⑤で入れた本数が、そのまま左辺の係数**。
-       いままでは同じ数が別の場所に別の姿で出るだけで、同じものだと分からなかった。
-       言葉（この行）＋ 位置（式の真上）＋ 印（.fromYou）の3つで結ぶ。 */
-    const map = bottleLeftCoeffText(st, mult[0], mult[1], bottleScale);
-    if (map && bottleLeftMapEl) {
-      line(bottleLeftMapEl, "blmLeft", map.left);
-      line(bottleLeftMapEl, "blmRight", map.right);
-    }
-    const o = sheetRow(bottleSheetEl, "rowBottleMol");
-    o.mark.textContent = "";
-    o.arrow.textContent = "→";
-    o.left.className = "cLeft halfFormula";
-    o.right.className = "cRight halfFormula";
-    /* 左辺の係数は**あなたが入れた本数そのもの**を書き込む（plan.left の n と同じ数だが、
-       出どころを人の入力側に取る ＝ 「同じもの」だと言い切れる形にする）。
-       ⚠ 右辺には slot を渡さない —— 自由度がゼロなので入力欄も印も置かない（§4-4 ④-A）。 */
-    renderTerms(o.left, plan.left, [], null, (t) => ({
-      readOnly: true,
-      value: String(Number.isInteger(bottleCounts[t.sp]) ? bottleCounts[t.sp] : t.n),
-      title: `⑤で書いた係数 ${t.n}（${D(t.sp)}）`,
-    }));
-    renderTerms(o.right, plan.right, []);
-    o.row.classList.add("doneRow");
-    o.note.innerHTML = "";
-    const tag = document.createElement("span");
-    tag.className = "rowTag strong";
-    tag.textContent = "化学反応式";
-    o.note.appendChild(tag);
-  }
-  /* 【D】倍率は例外。**組めなくなったときだけ**箱を出す
-     （⑥を開いた瞬間に出すと、試す前に答えを配ってしまう）。
-     ⚠ 倍にしたあと「×1 に戻す」を出す道（scale > 1）はそのまま残す。 */
-  if (saltStuck(plan, rem) || bottleScale > 1) drawBottleScaleBox();
-  // 組めないときの本文は倍率の箱が持つので、ここでは繰り返さない
-  bottleTailMsgEl.textContent = allPaired
-    ? plan.reason
-    : (restIons.length ? "右辺のイオンをぜんぶ組み合わせよう" : plan.reason);
-  bottleTailMsgEl.className = "footNote " + (allPaired ? "okcell" : "");
-  /* ★ v211・ユーザーの指示「ビーカーは課題としてはオプション」。
-     化学反応式まで組み上げたら、**ビーカーを一度も動かしていなくても**ここで終わる。
-     v210 までは「次のステージへ」がビーカーの再生の中だけにあり、
-     紙と同じ手順で最後まで解いた人が終われなかった。
-     ⚠ `cleared`（＝ビーカーで実際に反応しきったか）は動かさない。あれは
-     再生の結果そのものを見ている口で、別のことを言っている。
-     ⚠ 帯が出ているあいだは描き直さない（「次のステージへ」から焦点が飛ぶ）。 */
-  if (allPaired && clearEl.hidden) showClear();
-  // 組み直しで式が崩れたら帯も引っ込める。⚠ ビーカーで出した帯（cleared）は残す
-  else if (!allPaired && !cleared && !clearEl.hidden) clearEl.hidden = true;
+  buildSheet(false);
+  refreshSheet();
 }
 
 /* ================================================================================
-   ⑥ 右辺で余ったイオンを組み合わせる（2026-09-07・ユーザーの指示）
+   ⑤⑦ 筆算そのもの（1枚。⑥を済ませると⑦の位置へ**下りてくる** —— 描き直さない）
+
+   グリッドの列: 1 ＝ ＋) や罫線のための余白、2〜n+1 ＝ 柱、n+2 ＝ 右辺。
+   行は上から順に数える（BROW の決め打ちはやめた —— 足すイオンの数で行数が変わるため）。
+   ================================================================================ */
+function sheetCell(cls, row, col, span) {
+  const d = document.createElement("div");
+  d.className = cls;
+  d.style.gridRow = String(row);
+  if (col) d.style.gridColumn = span > 1 ? `${col} / ${col + span}` : String(col);
+  bottleWorkEl.appendChild(d);
+  return d;
+}
+
+/* ★★ 柱をまたぐ枝。⚠ またぐ柱はとなり合っているとは限らない（rs1 の SO₄²⁻）。
+   横棒は「またぐ範囲の列」に1枚ずつ置き、**脚は引き受ける柱の列だけ**に立てる。
+   列はグリッドが決めているので、座標を測らずに位置がそろう。
+   脚には「その柱へ行く個数」の席を空けておき、⑤がその柱で当たったときに数が入る
+   （＝ 9 ＝ 5 ＋ 4 が線の上で読める）。⚠ **先に埋めない** —— それは⑤の答えそのもの。 */
+function sheetBranch(row, addSp, cols) {
+  const min = Math.min(...cols), max = Math.max(...cols);
+  for (let c = min; c <= max; c++) {
+    const cell = sheetCell("bwSpanCell", row, c + 2);
+    if (max > min) {
+      const bar = document.createElement("i");
+      bar.className = "bwBarSeg" + (c === min ? " toRight" : c === max ? " toLeft" : "");
+      cell.appendChild(bar);
+    }
+    if (!cols.includes(c)) continue;
+    const leg = document.createElement("i");
+    leg.className = "bwLeg";
+    cell.appendChild(leg);
+    const num = document.createElement("span");
+    num.className = "bwLegN";
+    num.id = `legn_${bottleIdOf(addSp)}_${c}`;
+    cell.appendChild(num);
+  }
+}
+
+function coefBox(id, value, cls, oninput, opts) {
+  const inp = document.createElement("input");
+  inp.type = (opts && opts.text) ? "text" : "number";
+  if (!(opts && opts.text)) { inp.min = (opts && opts.min !== undefined) ? String(opts.min) : "1"; inp.max = "99"; }
+  inp.inputMode = "numeric";
+  inp.className = "bottleCountInput" + (cls ? " " + cls : "");
+  inp.id = id;
+  inp.value = value;
+  inp.oninput = oninput;
+  return inp;
+}
+
+/* 筆算を組み立てる。⚠ 1文字打つたびに作り直さない（焦点が飛ぶ）——
+   作り直すのは「ステージ／倍率／⑦の行が出ているか」が変わったときだけ */
+function sheetKeyOf() {
+  return `${stage().id}/${mult[0]}/${mult[1]}/${saltDone() ? "7" : "5"}`;
+}
+function buildSheet(force) {
+  const sh = sheetNow();
+  if (!sh || !bottleWorkEl) return;
+  const key = sheetKeyOf();
+  if (!force && sheetKey === key) return;
+  sheetKey = key;
+  bottleWorkEl.innerHTML = "";
+  const D = (sp) => SPECIES[sp].disp;
+  const n = sh.pillars.length;
+  bottleWorkEl.style.setProperty("--bcols", String(n));
+  let row = 1;
+
+  // --- 1行目: ③で出したイオン反応式（柱 ＋ 右辺）
+  const tag = sheetCell("bwRowTag", row, 1, n + 2);
+  const tb = document.createElement("b");
+  tb.textContent = "③で出したイオン反応式";
+  tag.appendChild(tb);
+  row++;
+  sh.pillars.forEach((p, i) => {
+    const c = sheetCell("bcolHead", row, i + 2);
+    if (i > 0) {
+      const s = document.createElement("span");
+      s.className = "bwSep";
+      s.textContent = "＋";
+      c.appendChild(s);
+    }
+    const pill = document.createElement("span");
+    pill.className = "bpill echo";
+    pill.dataset.ion = p.sp;
+    pill.textContent = (p.n > 1 ? p.n + " " : "") + D(p.sp);
+    c.appendChild(pill);
+  });
+  const rest = sheetCell("bcolRest", row, n + 2);
+  const ar0 = document.createElement("span");
+  ar0.className = "bwEqArrow";
+  ar0.textContent = "→";
+  const rt0 = document.createElement("span");
+  rt0.className = "bwEqSide";
+  renderTerms(rt0, sh.plan.ionic.right.filter((t) => t.sp !== "e-"), []);
+  rest.append(ar0, rt0);
+  row++;
+
+  // --- 足すイオン（1種につき「枝の行」＋「札の行」）
+  const addTop = row + 1;   // ＋) は足す行ぜんぶにかかる（1行目にだけ付けると1つめの話に見える）
+  sh.add.forEach((a, k) => {
+    const okN = bottleAdd[a.sp] === a.n;
+    sheetBranch(row, a.sp, a.cols);
+    row++;
+    if (k === sh.add.length - 1) {
+      const g = sheetCell("bwGutter", addTop, 1);
+      g.style.gridRow = `${addTop} / ${row + 1}`;
+      g.textContent = "＋)";
+    }
+    const min = Math.min(...a.cols), max = Math.max(...a.cols);
+    const cell = sheetCell("bwAddCell", row, min + 2, max - min + 1);
+    const inp = coefBox("ai_" + bottleIdOf(a.sp),
+      Number.isInteger(bottleAdd[a.sp]) ? String(bottleAdd[a.sp]) : "", "", () => {
+        const v = parseInt(inp.value, 10);
+        if (Number.isInteger(v) && v >= 0) bottleAdd[a.sp] = v; else delete bottleAdd[a.sp];
+        refreshSheet();
+      }, { min: 0 });
+    const lab = document.createElement("label");
+    lab.className = "pickLabel bcLabel bwAddIon";
+    lab.htmlFor = inp.id;
+    lab.textContent = D(a.sp);
+    cell.append(inp, lab);
+    // 右辺にも同じだけ足す（写しなので入力欄は置かない ＝ 自由度がゼロ）
+    const ech = sheetCell("bwAddEcho", row, n + 2);
+    ech.id = "aecho_" + bottleIdOf(a.sp);
+    ech.textContent = okN ? `${a.n} ${D(a.sp)}` : "";
+    row++;
+  });
+
+  // --- 罫線
+  sheetCell("bwRule", row, 1, n + 2);
+  row++;
+
+  // --- 合計の行: 化学反応式の左辺（係数を書く）／右辺はイオンのまま（係数を書く）
+  const used = {};
+  let prevCol = null;
+  for (const m of sh.leftMol) {
+    const ci = Math.min(...m.cols);
+    const stack = used[ci] || 0;
+    used[ci] = stack + 1;
+    const box = sheetCell("bwCoef", row + stack, ci + 2);
+    /* ＋ は列と列のすきまへ逃がす（柱の行と同じ作り。流れの中に置くと欄が右にずれる） */
+    if (prevCol !== null && ci !== prevCol) {
+      const s = document.createElement("span");
+      s.className = "bwSep";
+      s.textContent = "＋";
+      box.appendChild(s);
+    }
+    prevCol = ci;
+    const inp = coefBox("bc_" + bottleIdOf(m.sp),
+      Number.isInteger(bottleCounts[m.sp]) ? String(bottleCounts[m.sp]) : "", "", () => {
+        const v = parseInt(inp.value, 10);
+        if (Number.isInteger(v) && v >= 1) bottleCounts[m.sp] = v; else delete bottleCounts[m.sp];
+        refreshSheet();
+      });
+    const lab = document.createElement("label");
+    lab.className = "pickLabel bcLabel bcFormula";
+    lab.htmlFor = inp.id;
+    lab.textContent = D(m.sp);
+    box.append(inp, lab);
+  }
+  const deep = Math.max(1, ...Object.values(used));
+  const rcell = sheetCell("bcolRest bwSumRight", row, n + 2, 1);
+  rcell.style.gridRow = `${row} / ${row + deep}`;
+  const ar1 = document.createElement("span");
+  ar1.className = "bwEqArrow";
+  ar1.textContent = "→";
+  rcell.appendChild(ar1);
+  sh.rightIon.forEach((t, i) => {
+    if (i > 0) {
+      const s = document.createElement("span");
+      s.className = "bwSep";
+      s.textContent = "＋";
+      rcell.appendChild(s);
+    }
+    const inp = coefBox("br_" + bottleIdOf(t.sp),
+      Number.isInteger(bottleRightN[t.sp]) ? String(bottleRightN[t.sp]) : "", "", () => {
+        const v = parseInt(inp.value, 10);
+        if (Number.isInteger(v) && v >= 1) bottleRightN[t.sp] = v; else delete bottleRightN[t.sp];
+        refreshSheet();
+      });
+    const lab = document.createElement("label");
+    lab.className = "pickLabel bcLabel bcFormula";
+    lab.htmlFor = inp.id;
+    lab.textContent = D(t.sp);
+    const wrap = document.createElement("span");
+    wrap.className = "bwRightItem";
+    wrap.append(inp, lab);
+    rcell.appendChild(wrap);
+  });
+  row += deep;
+
+  // --- ⑦ 右辺を化学式に書き直す行（⑥を組み切ってから生える。★ 紙は同じ1枚） */
+  if (saltDone()) {
+    const ru = rightUnitsNow();
+    const m7 = sheetCell("bwMolRow", row, 1, n + 2);
+    m7.id = "molRow";
+    const lead = document.createElement("span");
+    lead.className = "bwMolLead";
+    lead.textContent = sh.leftMol.map((m) => `${m.n} ${D(m.sp)}`).join(" ＋ ");
+    const ar2 = document.createElement("span");
+    ar2.className = "bwEqArrow";
+    ar2.textContent = "→";
+    m7.append(lead, ar2);
+    (ru ? ru.rows : []).forEach((r, i) => {
+      if (i > 0) {
+        const s = document.createElement("span");
+        s.className = "bwSep";
+        s.textContent = "＋";
+        m7.appendChild(s);
+      }
+      const inp = coefBox("bm_" + bottleIdOf(r.sp), bottleMol[r.sp] || "", "bcWide", () => {
+        bottleMol[r.sp] = inp.value;
+        refreshMol();
+      }, { text: true });
+      inp.setAttribute("aria-label", D(r.sp) + " の係数");
+      const lab = document.createElement("label");
+      lab.className = "pickLabel bcLabel bcFormula";
+      lab.htmlFor = inp.id;
+      lab.textContent = D(r.sp);
+      const wrap = document.createElement("span");
+      wrap.className = "bwRightItem";
+      wrap.append(inp, lab);
+      m7.appendChild(wrap);
+    });
+    row++;
+  }
+}
+
+/* ⑤の判定。⚠ 判定文は**筆算の外**（下の1行）に置く —— 全幅の行を柱のあいだに挟むと、
+   柱と答えの欄が分断される（v207 の最大の原因） */
+function refreshSheet() {
+  const sh = sheetNow();
+  if (!sh) return;
+  const D = (sp) => SPECIES[sp].disp;
+  /* 言うのは1行だけ（★ 指示1行・判定1行）。⚠ **本当に外している行を先に**言う ——
+     まだ書いていない欄の手がかりを先に出すと、直すべき間違いが下に隠れる */
+  let wrong = null, hint = null, left = 0;
+  for (const a of sh.add) {
+    const inp = document.getElementById("ai_" + bottleIdOf(a.sp));
+    const ex = explainSpectatorAdd(stage(), mult[0], mult[1], 1, a.sp, bottleAdd[a.sp]);
+    const ok = bottleAdd[a.sp] === a.n;
+    if (inp) inp.classList.toggle("ng", !!(ex && ex.kind === "wrong"));
+    const ech = document.getElementById("aecho_" + bottleIdOf(a.sp));
+    if (ech) ech.textContent = ok ? `${a.n} ${D(a.sp)}` : "";
+    if (!ok) {
+      left++;
+      if (ex && ex.reason) { if (ex.kind === "wrong") wrong = wrong || ex.reason; else hint = hint || ex.reason; }
+    }
+    /* ★★ 枝の脚に「その柱へ行く個数」を入れる ＝ **9 ＝ 5 ＋ 4** が線の上で読める。
+       ⚠ その柱の係数が当たってから出す（先に出すと⑤の答えそのもの） */
+    for (const s of a.split) {
+      const el = document.getElementById(`legn_${bottleIdOf(a.sp)}_${s.col}`);
+      if (!el) continue;
+      const m = sh.leftMol.find((x) => x.sp === s.sp);
+      el.textContent = (ok && m && bottleCounts[m.sp] === m.n) ? String(s.n) : "";
+    }
+  }
+  for (const m of sh.leftMol) {
+    const inp = document.getElementById("bc_" + bottleIdOf(m.sp));
+    const ex = explainBottleCount(stage(), mult[0], mult[1], 1, m.sp, bottleCounts[m.sp]);
+    const ok = bottleCounts[m.sp] === m.n;
+    if (inp) inp.classList.toggle("ng", !!(ex && ex.kind && ex.kind !== "none" && !ex.ok));
+    if (!ok) {
+      left++;
+      if (ex && ex.reason) { if (ex.kind === "none") hint = hint || ex.reason; else wrong = wrong || ex.reason; }
+    }
+  }
+  for (const t of sh.rightIon) {
+    const inp = document.getElementById("br_" + bottleIdOf(t.sp));
+    const ok = bottleRightN[t.sp] === t.n;
+    if (inp) inp.classList.toggle("ng", !!(Number.isInteger(bottleRightN[t.sp]) && !ok));
+    if (!ok) left++;
+  }
+  const done = left === 0;
+  const say = wrong || hint || `あと ${left} つ`;
+  setStatusMsg(hissanMsgEl, done ? "両辺がそろった" : say, done ? "ok" : (wrong ? "ng" : ""));
+  if (saltStepEl) saltStepEl.hidden = !done;
+  if (done) drawSaltStep();
+  else {
+    revealStep(stepRightEl, false);
+    revealStep(stepDoubleEl, false);
+    placeSheet(5);
+    molDone = false;
+  }
+}
+
+/* ================================================================================
+   ⑥ 右辺のイオンを組み合わせる（2026-09-07・ユーザーの指示／2026-09-12 に分数対応）
 
    > 右辺で余ったイオン同士を組み合わせる／イオン結晶の組成式を作らせる要領／
-   > ②のようにブロックパズル的に数合わせさせるのがよさそう／
    > イオンの一覧から陽イオンと陰イオンを選んで並べ・高さがそろえば１つの化学種
 
-   ⚠ **部品は作らない。**同じ日の別レーンが入れた「価数＝高さのブロック」
-   （DESIGN_ion_blocks.md・model.js の ionBlock* ＋ blocks.js の IonBlocks）を呼ぶだけ。
-   判定は三値（そろわない／そろったが最簡でない／そろった）で、
-   **「そろったが最簡でない」は 💡 オレンジ**（✗ 赤にしない・ユーザー決定 2026-09-07）。
+   ⚠ **部品は作らない。**価数＝高さのブロック（DESIGN_ion_blocks.md・model.js の ionBlock*
+   ＋ blocks.js の IonBlocks）を呼ぶだけ。
 
-   ⚠ 1組できたら、**残りは同じ組でくり返す**（5Fe₂(SO₄)₃ を5回積ませない）。
-   くり返せる回数が、そのまま右辺の係数になる。
+   ★★ 2026-09-12・ユーザーの指示で**分数のまま組み切る**ようになった:
+   > 組み合わせを解決した時点で、下に係数 1/2 を表示させます
+   ⚠ **イオンカードは割れない。**枠（Fe₂(SO₄)₃）は満たされていて、
+   **くり返し回数のほうが 5/2 になる。**だから「先回りして全体を2倍する」案内は消えた。
    ================================================================================ */
 
 const saltStepEl = document.getElementById("saltStep");
@@ -2678,53 +2376,58 @@ const saltPaletteEl = document.getElementById("saltPalette");
 const saltMsgEl = document.getElementById("saltMsg");
 const saltActionsEl = document.getElementById("saltActions");
 const saltMadeEl = document.getElementById("saltMade");
+const bottlePoolEl = document.getElementById("bottlePool");
 /* ⑥の頭に出す「硝酸の二役」の1行（該当しない反応では hidden のまま） */
 const acidRoleNoteEl = document.getElementById("acidRoleNote");
-/* 組み上げた化学種（[{ cation, anion, cn, an, sp, n }]）。n はくり返した回数＝右辺の係数 */
+/* 組み上げた化学種（[{ cation, anion, cn, an, sp, f }]）。f はくり返した回数 ＝ 右辺の係数 */
 let saltMade = [];
-let saltKey = null;        // 作り直す境目（ステージ／倍率／全体の倍率）
+let saltKey = null;        // 作り直す境目（ステージ／倍率）
 let saltChoiceKey = null;  // 選べるイオンの顔ぶれ（変わったら部品を作り直す）
 let saltBlocks = null;
 
+function rnd6(x) { return Math.round(x * 1e6) / 1e6; }
+/* 端数のある個数を分数で言う（分母は 2 か 3 まで。それ以上はこの図法では出ない） */
+function numText(x) { return rxFracText(rxFrac(Math.round(x * 6), 6)); }
+
+function saltPoolNow() {
+  const sh = sheetNow();
+  return sh ? { cations: sh.plan.cations, anions: sh.plan.anions, neutral: sh.plan.neutral } : null;
+}
 /* まだ組んでいないイオンの数。**個数だけで決まる**（座標は見ない） */
-function saltRemaining(plan) {
+function saltRemaining() {
+  const p = saltPoolNow();
   const rem = {};
-  for (const t of plan.cations.concat(plan.anions)) rem[t.sp] = t.n;
+  if (!p) return rem;
+  for (const t of p.cations.concat(p.anions)) rem[t.sp] = t.n;
   for (const s of saltMade) {
-    rem[s.cation] = (rem[s.cation] || 0) - s.cn * s.n;
-    rem[s.anion] = (rem[s.anion] || 0) - s.an * s.n;
+    const k = s.f.num / s.f.den;
+    rem[s.cation] = rnd6((rem[s.cation] || 0) - s.cn * k);
+    rem[s.anion] = rnd6((rem[s.anion] || 0) - s.an * k);
   }
   return rem;
 }
-
-/* もう1組も作れないのに、イオンが残っている（＝ 係数に 1/2 が出る形）。
-   ここが rs1 の山場で、**この瞬間にはじめて**倍率の案内が出る */
-function saltStuck(plan, rem) {
-  const anion = plan.anions[0];
-  if (!anion) return false;
-  if (!Object.keys(rem).some((sp) => rem[sp] > 0)) return false;
-  for (const c of plan.cations) {
-    if (!(rem[c.sp] > 0)) continue;
-    const u = saltUnit(c.sp, anion.sp);
-    if (u && rem[c.sp] >= u.cn && rem[anion.sp] >= u.an) return false;   // まだ作れる
-  }
-  return true;
+function saltDone() {
+  const p = saltPoolNow();
+  if (!p) return false;
+  if (!p.cations.length) return false;
+  const rem = saltRemaining();
+  return Object.keys(rem).every((sp) => Math.abs(rem[sp]) < 1e-6);
 }
 
-function drawSaltStep(plan) {
+function drawSaltStep() {
   if (!saltStepEl || typeof IonBlocks === "undefined") return;
-  const key = `${stage().id}/${mult[0]}/${mult[1]}/${bottleScale}`;
+  const p = saltPoolNow();
+  if (!p) return;
+  const key = `${stage().id}/${mult[0]}/${mult[1]}`;
   if (saltKey !== key) {
     saltKey = key;
     saltMade = [];
     if (saltBlocks) { saltBlocks.destroy(); saltBlocks = null; }
     saltChoiceKey = null;
   }
-  const rem = saltRemaining(plan);
-  const cations = plan.cations.map((t) => t.sp).filter((sp) => rem[sp] > 0);
-  const anions = plan.anions.map((t) => t.sp).filter((sp) => rem[sp] > 0);
-  /* 選べる顔ぶれが変わったら部品を作り直す（IonBlocks は一覧を作るときに受け取る）。
-     ⚠ 変わっていないときは作り直さない —— 積んだ途中の高さが消える */
+  const rem = saltRemaining();
+  const cations = p.cations.map((t) => t.sp).filter((sp) => rem[sp] > 1e-6);
+  const anions = p.anions.map((t) => t.sp).filter((sp) => rem[sp] > 1e-6);
   const ck = cations.join("+") + "|" + anions.join("+");
   if (saltChoiceKey !== ck) {
     saltChoiceKey = ck;
@@ -2733,7 +2436,7 @@ function drawSaltStep(plan) {
       saltBlocks = IonBlocks.create({
         svg: saltBlocksSvg, paletteEl: saltPaletteEl, msgEl: saltMsgEl,
         cations, anions, look: redoxLook, width: 360,
-        onChange: () => drawSaltActions(plan),
+        onChange: () => drawSaltActions(),
       });
     } else {
       saltBlocksSvg.innerHTML = "";
@@ -2742,13 +2445,34 @@ function drawSaltStep(plan) {
       saltMsgEl.className = "";
     }
   }
-  drawSaltPool(plan, rem);
+  /* 組むものが無くなったら積み台ごと引っ込める（空の枠が画面に残らないように） */
+  const wrap = document.getElementById("blocksWrap");
+  if (wrap) wrap.hidden = !(cations.length && anions.length);
+  /* 硝酸の二役（rn1・rn2）。⑥の頭で1行だけ言う ——「入れた HNO₃ のうち、
+     姿を変えるのは一部だけ」が分かっていないと、右辺に NO₃⁻ が残るのが不思議に見える。
+     ⚠ 文は model.js（acidRoleText）が持つ。ここは出す場所を決めるだけ */
+  if (acidRoleNoteEl) {
+    const role = acidRoleText(stage(), mult[0], mult[1], 1);
+    acidRoleNoteEl.textContent = role ? role.text : "";
+    acidRoleNoteEl.className = "bottleCap acidRole";
+    acidRoleNoteEl.hidden = !role;
+  }
+  drawSaltPool(p, rem);
   drawSaltMade();
-  drawSaltActions(plan);
+  drawSaltActions();
+  // --- ⑦へ: 組み切ったら、**⑤で使った1枚がそのまま下りてくる**（描き直さない）
+  const done = saltDone();
+  revealStep(stepRightEl, done);
+  placeSheet(done ? 7 : 5);
+  if (done) { buildSheet(false); refreshMol(); }
+  else {
+    revealStep(stepDoubleEl, false);
+    molDone = false;
+  }
 }
 
 /* 右辺に何が残っているか。**組むほど減る**（作った塩は下の「できたもの」へ移る） */
-function drawSaltPool(plan, rem) {
+function drawSaltPool(p, rem) {
   const D = (sp) => SPECIES[sp].disp;
   bottlePoolEl.innerHTML = "";
   const line = (cls, text) => {
@@ -2757,22 +2481,15 @@ function drawSaltPool(plan, rem) {
     d.textContent = text;
     bottlePoolEl.appendChild(d);
   };
-  // ここが2つの作り方の橋（設計書 B）。同じ数を「足す」ではなく「ついて来た」で取りに行く
-  const riders = bottleRiderTotals(stage(), mult[0], mult[1], bottleScale) || [];
-  if (riders.length) {
-    line("bottleRiderSum",
-      "もとの物質が連れてきて、反応しなかったイオン: " +
-      riders.map((r) => `${D(r.sp)} ${r.n}個`).join("・"));
-  }
-  const left = plan.cations.concat(plan.anions).filter((t) => rem[t.sp] > 0);
+  const left = p.cations.concat(p.anions).filter((t) => rem[t.sp] > 1e-6);
   line("bottleCap", left.length
-    ? "残っているイオンを組み合わせて化学式にしよう:"
+    ? "残っているイオンを組み合わせて化学式にしよう"
     : "残っているイオンはもう無い");
-  if (left.length) line("bottlePoolLine", left.map((t) => `${D(t.sp)} ${rem[t.sp]}個`).join("　"));
-  if (plan.neutral.length) {
+  if (left.length) line("bottlePoolLine", left.map((t) => `${D(t.sp)} ${numText(rem[t.sp])}個`).join("　"));
+  if (p.neutral.length) {
     line("bottleSalt muted",
       "イオンでないものはそのまま右辺に残る: " +
-      plan.neutral.map((t) => D(t.sp) + " " + t.n + "個").join("・"));
+      p.neutral.map((t) => D(t.sp) + " " + t.n + "個").join("・"));
   }
 }
 
@@ -2783,45 +2500,188 @@ function drawSaltMade() {
   if (!saltMade.length) return;
   const cap = document.createElement("div");
   cap.className = "bottleCap";
-  cap.textContent = "組み上げたもの:";
+  cap.textContent = "組み上げたもの";
   saltMadeEl.appendChild(cap);
   for (const s of saltMade) {
     const d = document.createElement("div");
-    d.className = "bottleSalt okcell";
-    d.textContent = `${s.cn * s.n} ${D(s.cation)} ＋ ${s.an * s.n} ${D(s.anion)} → ` +
-      `${s.n > 1 ? s.n + " " : ""}${s.sp ? D(s.sp) : "中性の1種"}`;
+    d.className = "bottleSalt okcell" + (s.f.den !== 1 ? " hasFrac" : "");
+    const k = s.f.num / s.f.den;
+    d.textContent = `${numText(s.cn * k)} ${D(s.cation)} ＋ ${numText(s.an * k)} ${D(s.anion)} → ` +
+      `${rxFracText(s.f)} ${s.sp ? D(s.sp) : "中性の1種"}`;
     saltMadeEl.appendChild(d);
   }
 }
 
 /* そろったときだけ「作る」釦を出す。⚠ **最簡でないうちは出さない** ——
-   出すと「合っているが割れる」を通り抜けてしまう（三値にした意味が消える） */
-function drawSaltActions(plan) {
+   出すと「合っているが割れる」を通り抜けてしまう（三値にした意味が消える）。
+   ★ 2026-09-12: くり返せる回数は**分数になりうる**（Fe³⁺ 5個 を 2個ずつ使う枠 ＝ 5/2）。
+   ⚠ カードを割るのではない —— 枠は満たされていて、係数のほうが 1/2 になる。 */
+function drawSaltActions() {
   if (!saltActionsEl) return;
   saltActionsEl.innerHTML = "";
   const s = saltBlocks && saltBlocks.state();
   if (!s || s.kind !== "simplest") return;
-  const rem = saltRemaining(plan);
-  const units = Math.min(
-    Math.floor((rem[s.cation] || 0) / s.unit.cn),
-    Math.floor((rem[s.anion] || 0) / s.unit.an));
+  const rem = saltRemaining();
+  const f = rxFrac(Math.round(Math.min(
+    (rem[s.cation] || 0) / s.unit.cn,
+    (rem[s.anion] || 0) / s.unit.an) * 6), 6);
+  const times = f.num / f.den;
   const made = s.formula ? (SPECIES[s.formula] ? SPECIES[s.formula].disp : s.formula) : "この化学種";
   const b = document.createElement("button");
   b.type = "button";
   b.className = "saltGo";
-  b.textContent = units > 1 ? `${made} を作る（残りも同じ組で ${units}つ）` : `${made} を作る`;
-  b.disabled = units < 1;
+  b.textContent = times > 1 ? `${made} を作る（残りも同じ組で ${rxFracText(f)}つ）` : `${made} を作る`;
+  b.disabled = !(times > 0);
   b.onclick = () => {
-    saltMade.push({ cation: s.cation, anion: s.anion, cn: s.unit.cn, an: s.unit.an, sp: s.formula, n: units });
-    refreshBottleResult();
+    saltMade.push({ cation: s.cation, anion: s.anion, cn: s.unit.cn, an: s.unit.an, sp: s.formula, f });
+    drawSaltStep();
   };
   saltActionsEl.appendChild(b);
-  if (units < 1) {
+  if (!(times > 0)) {
     const why = document.createElement("span");
     why.className = "footNote ngcell";
     why.textContent = "残っているイオンが足りない";
     saltActionsEl.appendChild(why);
   }
+}
+
+/* ================================================================================
+   ⑦ 右辺を化学式で書く（⑤の紙が下りてきて、右辺が埋まる）
+
+   > ここであらためてイオン反応式から化学反応式への筆算を表示します。
+   > 右辺の係数のみ入力させます
+
+   ⚠ **筆算を新しく描き直さない。**#hissanSheet をそのまま⑦の位置へ移す
+   （「筆算」は同じ紙に書き足していくもの。2枚出すと比喩が壊れる）。
+   ================================================================================ */
+function placeSheet(where) {
+  const target = where === 7 ? hissanSlot7El : hissanSlot5El;
+  if (hissanSheetEl && target && hissanSheetEl.parentElement !== target) target.appendChild(hissanSheetEl);
+}
+
+function refreshMol() {
+  const ru = rightUnitsNow();
+  if (!ru) return;
+  let left = 0;
+  for (const r of ru.rows) {
+    const inp = document.getElementById("bm_" + bottleIdOf(r.sp));
+    const got = rxParseFrac(bottleMol[r.sp]);
+    const ok = !!(got && rxFracEq(got, r.f));
+    if (inp) inp.classList.toggle("ng", !!(got && !ok));
+    if (!ok) left++;
+  }
+  const done = left === 0;
+  if (!done) {
+    setStatusMsg(rightMsgEl, `あと ${left} つ`, "");
+    revealStep(stepDoubleEl, false);
+    molDone = false;
+    markMolRow(false);
+    return;
+  }
+  if (ru.hasFraction) {
+    /* ★ ユーザーの原文をそのまま使う段（⑧の入り口） */
+    setStatusMsg(rightMsgEl, "完成！でも反応式の係数に分数が出てしまった", "ok");
+    markMolRow(false);
+    molDone = false;
+    revealStep(stepDoubleEl, true);
+    buildDouble();
+    refreshDouble();
+    return;
+  }
+  setStatusMsg(rightMsgEl, "化学反応式が書けた", "ok");
+  markMolRow(true);
+  molDone = true;
+  revealStep(stepDoubleEl, false);
+  if (clearEl.hidden) showClear();
+}
+
+/* 書き終わった式の行に印を付ける。⚠ 「化学反応式が出ているか」の出どころは
+   `molDone` ただ1つ（molShown() と state() がそれを見る）＝ 二重に導出しない。
+   ここは見た目の印だけ。 */
+function markMolRow(on) {
+  for (const id of ["molRow", "dblRow"]) {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("doneRow", !!on && (id === "dblRow" ? !!doubleNow() : !doubleNow()));
+  }
+}
+
+/* ================================================================================
+   ⑧ 全体を整数倍する（⚠ **分数が出た回だけ**の段）
+
+   > ⑦で 1/2 で正解する →「完成！でも反応式の係数に分数が出てしまったから
+   >   反応式全体を整数倍しよう」で⑧ 1/2 を含む反応式を表示し、
+   >   その下に2倍した係数をすべて入力させる
+
+   ★ 9ステージを悉皆で回した実測では、ここへ来るのは `rs1` の1回だけ・倍率は 2 だけ。
+   ================================================================================ */
+let doubleKey = null;
+function buildDouble() {
+  if (!doubleBoxEl) return;
+  const d = doubleNow();
+  const sh = sheetNow();
+  if (!d || !sh) return;
+  const key = `${stage().id}/${mult[0]}/${mult[1]}`;
+  if (doubleKey === key) return;
+  doubleKey = key;
+  doubleBoxEl.innerHTML = "";
+  const D = (sp) => SPECIES[sp].disp;
+  // --- 上: いま書けた、分数を含む反応式（読むだけ）
+  const have = document.createElement("div");
+  have.className = "dblHave";
+  have.textContent = d.left.map((t) => `${t.was} ${D(t.sp)}`).join(" ＋ ") + " → " +
+    d.right.map((t) => `${rxFracText(t.f)} ${D(t.sp)}`).join(" ＋ ");
+  const cap = document.createElement("div");
+  cap.className = "bottleCap dblCap";
+  cap.textContent = `全体を ×${d.k} して、係数をぜんぶ整数にしよう`;
+  const row = document.createElement("div");
+  row.className = "dblRow";
+  row.id = "dblRow";
+  const put = (t, i, side) => {
+    if (i > 0) {
+      const s = document.createElement("span");
+      s.className = "bwSep";
+      s.textContent = "＋";
+      row.appendChild(s);
+    }
+    const inp = coefBox("bd_" + bottleIdOf(t.sp),
+      Number.isInteger(bottleDbl[t.sp]) ? String(bottleDbl[t.sp]) : "", "", () => {
+        const v = parseInt(inp.value, 10);
+        if (Number.isInteger(v) && v >= 1) bottleDbl[t.sp] = v; else delete bottleDbl[t.sp];
+        refreshDouble();
+      });
+    const lab = document.createElement("label");
+    lab.className = "pickLabel bcLabel bcFormula";
+    lab.htmlFor = inp.id;
+    lab.textContent = D(t.sp);
+    const wrap = document.createElement("span");
+    wrap.className = "bwRightItem";
+    wrap.append(inp, lab);
+    row.appendChild(wrap);
+  };
+  d.left.forEach((t, i) => put(t, i, "l"));
+  const ar = document.createElement("span");
+  ar.className = "bwEqArrow";
+  ar.textContent = "→";
+  row.appendChild(ar);
+  d.right.forEach((t, i) => put(t, i, "r"));
+  doubleBoxEl.append(have, cap, row);
+}
+
+function refreshDouble() {
+  const d = doubleNow();
+  if (!d) return;
+  let left = 0;
+  for (const t of d.left.concat(d.right)) {
+    const inp = document.getElementById("bd_" + bottleIdOf(t.sp));
+    const ok = bottleDbl[t.sp] === t.to;
+    if (inp) inp.classList.toggle("ng", !!(Number.isInteger(bottleDbl[t.sp]) && !ok));
+    if (!ok) left++;
+  }
+  const done = left === 0;
+  setStatusMsg(doubleMsgEl, done ? "係数がぜんぶ整数になった" : `あと ${left} つ`, done ? "ok" : "");
+  molDone = done;
+  markMolRow(done);
+  if (done && clearEl.hidden) showClear();
 }
 
 /* ---- 切断の段（ヨードホルム反応）----
@@ -3522,15 +3382,19 @@ function renderWhy(oxReagentId, redReagentId, res) {
 
 function initStage() {
   mult = [1, 1];
-  bottleScale = 1;
   bottlePick = {};
   bottleCounts = {};
+  bottleRightN = {};
+  bottleMol = {};
+  bottleDbl = {};
   saltKey = null;          // ⑥で組み上げたものも白紙に戻す（前の回の答えを持ち越さない）
   bottleAdd = {};
-  addIonKey = null;
-  bottleCountKey = null;
   bottleSlotActive = null;   // 筆算の「いま置く先」も白紙に戻す
-  bottleWorkKey = null;
+  ownerKey = null;
+  sheetKey = null;
+  doubleKey = null;
+  molDone = false;
+  placeSheet(5);
   calcVals = { ox: {}, red: {}, sum: {} };
   calcDone = false;
   calcKey = null;
@@ -3585,8 +3449,9 @@ window.RedoxEq = {
     /* 化学反応式（④⑤⑥の行き着く先）。⚠ 2026-09-08 まではここが筆算の④⑤
        （molecularizeStep）を見ていた。**画面に出ている式そのもの**を見るように変えた
        ＝ 「9ステージのどれでも同じ口で終わりを見られる」（DESIGN_redox.md）。 */
-    const molOk = !!(bottleSheetEl && bottleSheetEl.querySelector("#rowBottleMol"));
-    const mplan = molOk ? bottlePlan(stage(), mult[0], mult[1], bottleScale) : null;
+    const molOk = molDone;
+    const dbl = rxDoubleRows(stage(), mult[0], mult[1]);
+    const mplan = molOk ? bottlePlan(stage(), mult[0], mult[1], dbl ? dbl.k : 1) : null;
     return {
       phase, cleared, runExact, stageIdx, soloMode,
       molOk,
