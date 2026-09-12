@@ -12,6 +12,7 @@ codes:
   - org.alcohol.polyol
   - org.alcohol.bp
   - org.alcohol.naming
+  - org.alcohol.formula
 source:
   - slides:有機の基本3-1「アルコールの性質」s2〜s8・s19
 singleSource: true
@@ -81,6 +82,12 @@ caption: 丸で囲んだ炭素に、**ほかの炭素がいくつ結合してい
 具体例で数えてみます。2-ブタノール CH₃CH(OH)CH₂CH₃ では、−OH が付いているのは2番目の炭素です。この炭素には1番目の炭素と3番目の炭素の2個が結合しているので、**2級アルコール**です。
 
 級は**アルコールの性質を考えるうえで非常に重要な分類**です。酸化したときの行き先も、沸点の並ぶ順も、ヨードホルム反応を示すかどうかも、すべて級がからんできます。**級の数え方は必ず覚えて、その場で数えられるようにしてください。**
+
+:::example
+stageId: 2-propanol
+lead: ひとつ組んで、その場で数えてみましょう。炭素3個の真ん中の炭素に −OH を付けて **2-プロパノール** を組みます。−OH が付いた炭素のとなりに炭素が2個あるので、2級アルコールです。
+note: 組み上がりの判定は、いつものパズルと同じお題（アルコールとエーテルの4問目）がそのまま受け持ちます。
+:::
 
 :::link
 to: alcohol-oxidation-map
@@ -206,7 +213,7 @@ to: functional-groups
 text: ヒドロキシ基そのものの位置づけ（同じ −OH でもベンゼン環に付けばフェノール類）はこちら
 :::
 
-//⚠ codes から3つ外しました。org.alcohol.hydroxy は functional-groups が、org.alcohol.formula と org.alcohol.class は alcohol-oxidation-map が既に挙げており、gen-reference-pages.mjs は同じコードが2ページに在ると赤になります（アプリの埋め込みが先頭コードでページを引くため）。ただしこの3つの本来の置き場所はこのページだと考えています。統合のときに alcohol-oxidation-map 側から org.alcohol.formula と org.alcohol.class をこちらへ移すかどうか、決めてください。
+//⚠ codes から3つ外してあった件（org.alcohol.hydroxy / org.alcohol.formula / org.alcohol.class）。★ **org.alcohol.formula は 2026-09-12 にこのページへ移しました** —— alcohol-oxidation-map から11件の対応表が functional-groups へ出ていき、あちらの本文に「アルコールとエーテルの一般式 CₙH₂ₙ₊₂O・同じ炭素数なら構造異性体」を言う所が無くなったためです（ここは節「一般式は CₙH₂ₙ₊₂O」で言い切っています）。⚠ 残る2つはそのまま: org.alcohol.hydroxy は functional-groups が、org.alcohol.class は alcohol-oxidation-map が持っています（あちらは級の図と1行で酸化の行き先を決める側なので、級の定義をこちらへ寄せるかどうかはまだ決めていません）。⚠ 同じコードが2ページに在ると gen-reference-pages.mjs が赤になります（アプリの埋め込みが先頭コードでページを引くため）。
 
 //アルコールの反応（金属ナトリウム・分子内脱水／分子間脱水・酸化・ヨードホルム反応）は、この総論のページには入れず、既存の alcohol-oxidation-map / alcohol-dehydration と、新しい ketone のページへリンクで渡してあります。52グループの #8「アルコールの反応」を1枚で引き受けるページを別に立てるかどうかは、まだ決まっていません。
 
