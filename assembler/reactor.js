@@ -7687,6 +7687,70 @@ const REACTION_RULES = [
         apply(game, site) { return applyOpenRing(game, site); }
     },
     {
+        /* ★ ナトリウムフェノキシド ＋ ヨードメタン → アニソール ＋ NaI（v1541・参考書 aromatic.md の式1本）。
+         *   参考書: `C₆H₅ONa ＋ CH₃I → C₆H₅OCH₃ ＋ NaI`（発展。★「呈色しなくなる」「分子量が14増える」の2点で十分、と書く）。
+         * ★ **門番（相手）: ヨードメタン1分子だけ**（重原子が C と I の2個・単結合）。参考書が名指しするのは CH₃I だけで、
+         *   ヨードエタン・クロロメタンへ広げる根拠が本文に無い。
+         * ★ **門番（フェノキシドの側）: `phenoxideSaltSites`**（芳香環に直結した -O⁻ と金属の粒）。
+         *   ⚠ ナトリウムエトキシド（鎖の -O⁻）・カルボン酸塩・スルホン酸塩はそこで落ちる。
+         * ⚠ Na⁺ と I⁻ は NaI になって水に残るので、どちらも図から外す（`diazo_coupling` と同じ扱い）。
+         * ⚠ **瓶は持たせない** —— 相手は試薬ではなく**分子**で、CH₃ の炭素がそのまま生成物に入る
+         *   （アセタール化のホルムアルデヒドと同じ理由）。入口は `PARTNER_CANDIDATES` の札。
+         * ⚠ 札の名前に「酸化」「H₂O」「H₂」を書かない（燃焼の札の注記を見ること）。 */
+        id: 'williamson_ether',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②O と CH₃ がつながる
+        label: 'エーテル化: ナトリウムフェノキシド ＋ ヨードメタン → アニソール',
+        detect(mol) {
+            const phen = phenoxideSaltSites(mol);
+            if (!phen.length) return [];
+            const methyls = [];
+            mol.atoms.forEach(a => {
+                if (a.element !== 'I' || a.charge) return;
+                const heavy = [...componentOf(mol, a.id)]
+                    .map(id => mol.atoms.find(x => x.id === id))
+                    .filter(x => x && x.element !== 'H');
+                if (heavy.length !== 2) return;
+                const c = heavy.find(x => x.element === 'C');
+                const b = c && mol.getBond(a.id, c.id);
+                if (!c || c.charge || !b || b.type !== 1) return;
+                methyls.push([c.id, a.id]);
+            });
+            const out = [];
+            phen.forEach(([metalId, oId]) => {
+                const own = componentOf(mol, oId);
+                methyls.forEach(([cId, iId]) => {
+                    if (!own.has(cId)) out.push([oId, cId, metalId, iId]);   // 別分子どうしのみ
+                });
+            });
+            return out;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [oId, cId, metalId, iId] = site;
+            const o = mol.atoms.find(a => a.id === oId);
+            if (!o || !(o.charge < 0)) throw new Error('フェノキシドの -O⁻ が見つかりません');
+            // ⚠ **置き場を先に確かめる**（途中で失敗して「I だけ外れた図」を残さない）。
+            //    外れる I と Na は衝突判定から除く
+            const moving = [...componentOf(mol, cId)].filter(id => id !== iId);
+            const plan = planAttachment(mol, oId, cId, moving, [iId, metalId]);
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
+            mol.removeAtom(iId);
+            freeSaltAcid(mol, metalId, oId);     // 粒が消え、-O⁻ の電荷も落ちる
+            applyAttachment(mol, moving, plan);
+            mol.addBond(oId, cId, 1);
+            return {
+                caption: 'ナトリウムフェノキシドにヨードメタン CH₃I を作用させると、' +
+                    '**アニソール（メトキシベンゼン）C₆H₅OCH₃** ができました。' +
+                    '-O⁻ が CH₃ の炭素と結びつき、ヨウ素が I⁻ として外れます。' +
+                    '外れた Na⁺ と I⁻ は塩（NaI）になって水に残るので、図から外しました。' +
+                    '\n★ フェノールの -OH の H が CH₃ に置き換わった形なので、' +
+                    '**塩化鉄(III) 水溶液を加えても呈色しなくなり**、' +
+                    'フェノールと比べて**分子量が 14 増えます**（H 1個ぶんが CH₃ 1個ぶんになる）。',
+                changed: [oId, cId]
+            };
+        }
+    },
+    {
         /* ★ ナフタレンの空気酸化 → 無水フタル酸（v1541・参考書 aromatic.md）。
          * 門番と係数のずれは `naphthaleneUnits` の注記。
          * ★ **原子を作り直さず、壊れる環の炭素を使い回す**: 残る環の隣にあった2個が
@@ -7898,7 +7962,16 @@ const REACTION_RULES = [
  * PVA を呼び出して見ているとき「＋ ホルムアルデヒド を呼び出す → アセタール化」の札が立つ。
  * ★ 札は名前の一致では出ない —— `findPartnerHints` が**実際に並べて `detect` を回し**、
  *   箇所が2分子にまたがったときだけ出す（＝ 相手を足しても何も起きない分子では出ない）。 */
-const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール', 'ホルムアルデヒド'];
+/* ★ v1541: ヨードメタンを足した（`williamson_ether` の入口）。ナトリウムフェノキシドを見ているとき
+ *   「＋ ヨードメタン を呼び出す → アニソール」の札が立つ。⚠ ほかの分子では札は出ない
+ *   （`findPartnerHints` が実際に並べて `detect` を回すので、フェノキシド以外では箇所が出ない。
+ *    ライブラリ全 1,163 件に並べて確かめた）。
+ * ⚠⚠ **ここは登録名と1文字違わず一致させること。** `findPartnerHints` は
+ *   `library.find(e => e.name === name)` で**完全一致**で引くので、別名（括弧の前だけ）では
+ *   **黙って候補から落ちる**（エラーも出ない）。v1541 で `'ヨードメタン'` と書いて実際に踏んだ
+ *   （RXF23 が「札が出ない」で赤）。 */
+const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール', 'ホルムアルデヒド',
+    'ヨードメタン（ヨウ化メチル）'];
 
 // 畳んだ見出しの札と id（v1420）。**文言と id は1か所**——テストと実装が同じものを見る
 const PARTNER_HINTS_ID = 'partner-hints';
