@@ -1990,6 +1990,69 @@
         assert(formulaEl() === 'C₂H₅N', `アジリジンの分子式が「${formulaEl()}」`);
     });
 
+    test('MF_PARTS: 分子が2つ以上あるときは分子式を合算しない（分子ごとに出す）', async (c) => {
+        // 2026-09-12・ユーザー検品「2分子あるときに、分子式を合算している
+        // → 別々でないと意味が薄い」。マルトースとセロビオースを並べると
+        // **C₂₄H₄₄O₂₂** が出ていた。分子式は1分子の原子の数え上げなので、
+        // 別々の2分子を足した式は**どの物質の分子式でもない**。
+        // しかもこの2つは「**どちらも C₁₂H₂₂O₁₁** ＝ 同じ分子式なのに別物」が要点で、
+        // 合算はそれを画面から消していた。
+        c.reset();
+        const g = c.game, D = c.D;
+        g.setMode('free');
+        assert(g.summonMolecule('マルトース（麦芽糖）'), 'マルトースを呼び出せない');
+        assert(g.summonMolecule('セロビオース'), 'セロビオースを呼び出せない');
+        g.updateDrawing();
+
+        const formulas = g.compoundLabel.formulas;
+        assert(formulas && formulas.length === 2,
+            `分子ごとの分子式が組み立てられていない（${JSON.stringify(formulas)}）`);
+        assert(formulas.every(f => f.includes('C₁₂H₂₂O₁₁')),
+            `分子ごとの式が C₁₂H₂₂O₁₁ でない（${formulas.join(' / ')}）`);
+
+        // ★ 図の見出しに分子ごとの式が付く（①②で対応が取れる）
+        const caps = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍'));
+        assert(caps.length === 2, `見出しが ${caps.length} 本（2本を期待）`);
+        assert(caps.some(t => t.includes('マルトース') && t.includes('C₁₂H₂₂O₁₁')),
+            `① の見出しに分子式が無い（${caps.join(' / ')}）`);
+        assert(caps.some(t => t.includes('セロビオース') && t.includes('C₁₂H₂₂O₁₁')),
+            `② の見出しに分子式が無い（${caps.join(' / ')}）`);
+        // ⚠⚠ 左下の札からは式を外してある。合算した C₂₄H₄₄O₂₂ は
+        //   どの物質の分子式でもないので出せず、分子ごとの式は見出しにあるので
+        //   ここに並べると同じ式が画面に2度出る
+        const chip = D.getElementById('mobile-name-chip').textContent;
+        assert(!chip.includes('C₁₂H₂₂O₁₁') && !chip.includes('C₂₄H₄₄O₂₂'),
+            `左下の札に分子式が残っている（「${chip}」）`);
+
+        // ⚠ 否定対照: 1分子のときは今までどおり（見出しは名前だけ・札は名前＋分子式）
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('マルトース（麦芽糖）'), 'マルトース単体を呼び出せない');
+        g.updateDrawing();
+        assert(!g.compoundLabel.formulas, '1分子なのに分子ごとの式が組まれている');
+        assert(D.getElementById('compound-formula').textContent === 'C₁₂H₂₂O₁₁',
+            `1分子の分子式が「${D.getElementById('compound-formula').textContent}」`);
+        const solo = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍'));
+        assert(solo.length === 1 && !solo[0].includes('C₁₂H₂₂O₁₁'),
+            `1分子の見出しに分子式が付いた（${solo.join(' / ')}）`);
+        assert(D.getElementById('mobile-name-chip').textContent.includes('C₁₂H₂₂O₁₁'),
+            '1分子のとき左下の札から分子式が消えた');
+
+        // ⚠ 見出しが出ないほど小さい成分（水1つ）があるときは、札のほうが式を出す。
+        //   どちらにも出ない状態を作らない（脱水縮合で水が1つ出たことが読めなくなる）
+        g.userMolecule = new c.W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('グリシルグリシン（ジペプチド）'), 'ジペプチドを呼び出せない');
+        assert(g.summonMolecule('水'), '水を呼び出せない');
+        g.updateDrawing();
+        const chip2 = D.getElementById('mobile-name-chip').textContent;
+        assert(chip2.includes('C₄H₈N₂O₃') && chip2.includes('H₂O'),
+            `水の式が画面のどこにも出ていない（札は「${chip2}」）`);
+        assert(!chip2.includes('C₄H₁₀N₂O₄'), `合算した式が札に出ている（「${chip2}」）`);
+    });
+
     test('F3: シス/トランスの判定と命名区別（P8-1）', async (c) => {
         c.reset();
         const nameEl = () => c.D.getElementById('compound-name').textContent;
@@ -2202,16 +2265,58 @@
             assert(!sq.buttons[k].style.background,
                 `${k} に inline の装飾色が残っている（CSS クラスへ移したはず）`);
         });
-        assert(D.getElementById('btn-sq-diastereomer').classList.contains('sq-btn-diastereomer'),
-            '装飾色のクラスが付いていない');
+        // ★ v1538: 装飾色そのものを外した（SQ_COLOR が見張る）。ここでは
+        //   「答え合わせの3色が付く」ことだけを見る
 
-        // 次の問題に進むと塗り分けが消えて、装飾色に戻る
+        // 次の問題に進むと塗り分けが消える
         sq.nextQuestion();
         order.forEach(k => {
             const cls = [...sq.buttons[k].classList].filter(x => x.startsWith('quiz-choice'));
             assert(cls.length === 0, `次の問題に進んでも ${k} に ${cls.join(' ')} が残っている`);
             assert(!sq.buttons[k].disabled, `次の問題に進んでも ${k} が無効のまま`);
         });
+    });
+
+    test('SQ_COLOR: 立体異性体クイズは出題中の3択を同じ色にする（色で答えを名指ししない）', async (c) => {
+        // 2026-09-12・ユーザー検品「V136 最初から『別な立体異性体』がオレンジに
+        // ハイライトされています」。出題直後から**誤答の1つだけが違う色**で、
+        // 正解は緑になる「鏡像異性体」のほう ＝ 図を読む前に目がオレンジへ行く。
+        // 3択のうち1つだけ色が違えば「これが特別だ」と読まれるので、
+        // **出題中は3つとも同じ色**でなければならない。
+        c.reset();
+        const sq = c.W.stereoQuiz, D = c.D, W = c.W;
+        sq.open();
+        const order = ['same', 'enantiomer', 'diastereomer'];
+        const bgOf = (k) => W.getComputedStyle(sq.buttons[k]).backgroundColor;
+        const bgs = order.map(bgOf);
+        assert(new Set(bgs).size === 1,
+            `出題中の3択の色が揃っていない: ${order.map((k, i) => `${k}=${bgs[i]}`).join(' / ')}`);
+
+        // ⚠ 否定対照: 1つだけオレンジに戻したら、上の検査が赤くなること。
+        //   ⚠ ボタンには `transition: 0.2s` が掛かっていて、色を変えた直後の
+        //     `getComputedStyle` は**変える前の色**を返す（実測）。待ってから読む
+        sq.buttons.diastereomer.style.background = 'rgb(255, 165, 2)';
+        await new Promise(r => setTimeout(r, 300));
+        const broken = order.map(bgOf);
+        assert(new Set(broken).size > 1,
+            '否定対照が効いていない（1つだけ色を変えても検査が通ってしまう）');
+        sq.buttons.diastereomer.style.background = '';
+        await new Promise(r => setTimeout(r, 300));
+
+        // 装飾色のクラスは HTML からも消えている（戻すと上の検査が赤くなる）
+        ['btn-sq-enantiomer', 'btn-sq-diastereomer'].forEach(id => {
+            const cls = [...D.getElementById(id).classList].filter(x => x.startsWith('sq-btn-'));
+            assert(cls.length === 0, `${id} に装飾色のクラス ${cls.join(' ')} が残っている`);
+        });
+
+        // ⚠ 答え合わせのあとの塗り分けは残っている（緑／赤／沈めるの3色）
+        const rel = sq.current.rel;
+        sq.answer(order.find(k => k !== rel));
+        assert(sq.buttons[rel].classList.contains('quiz-choice-right'),
+            '出題中の色を揃えたら、正解の緑まで消えた');
+        await new Promise(r => setTimeout(r, 300));
+        assert(W.getComputedStyle(sq.buttons[rel]).backgroundColor !== bgs[0],
+            '正解の色が出題中と同じまま（答え合わせが見えない）');
     });
 
     test('F5c: 総数当てに高分子を出題しない（切り出した一部を1分子と数えない）', async (c) => {
@@ -9864,15 +9969,24 @@
         const chloramine = build([['N', 400, 300], ['Cl', 442, 300]], [[0, 1, 1]]);
         assert(!typesOf(chloramine).has('halide'), 'N に付いた Cl を ハロゲン化物 として拾っている');
 
-        // (4) スルホン酸 -SO₃H とその塩 -SO₃Na
+        // (4) スルホン酸 -SO₃H とその塩 -SO₃⁻ Na⁺
         const mesylic = build(
             [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300]],
             [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
         assert(typesOf(mesylic).has('sulfo'), 'メタンスルホン酸が スルホ基 として分類されない');
+        // ⚠ 塩は**電離した形**（v1538）。-SO₃⁻ と Na⁺ を線で結ばない
         const mesylateNa = build(
+            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300], ['Na', 568, 300]],
+            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
+        mesylateNa.atoms[4].charge = -1;
+        mesylateNa.atoms[5].charge = 1;
+        assert(typesOf(mesylateNa).has('sulfonate'), 'メタンスルホン酸ナトリウムが スルホン酸の塩 として分類されない');
+        // ⚠ 否定対照: 線で結んだ古い形は**もう塩として拾わない**（同じ物質に2つの形を持たない）
+        const mesylateBonded = build(
             [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342], ['O', 484, 300], ['Na', 526, 300]],
             [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1], [4, 5, 1]]);
-        assert(typesOf(mesylateNa).has('sulfonate'), 'メタンスルホン酸ナトリウムが スルホン酸の塩 として分類されない');
+        assert(!typesOf(mesylateBonded).has('sulfonate'),
+            '線1本で結んだ -SO₃Na を まだ スルホン酸の塩 として拾っている');
 
         // (5) 既存の分類が動いていないこと（アルデヒド・ケトン・カルボン酸・エステル）
         const acetaldehyde = build(
@@ -10135,17 +10249,17 @@
             assert(typesOf(mol).has('carboxylate'), `${nm} が カルボン酸の塩 として拾われない`);
             assert(W.findOutOfScopeMotifs(mol).length === 0,
                 `${nm} がまだ範囲外（${W.findOutOfScopeMotifs(mol).map(x => x.type).join('/')}）`);
-            assert(labelOf(mol, 'carboxylate').includes('COOK'),
-                `${nm} の見出しが「${labelOf(mol, 'carboxylate')}」（-COOK を期待）`);
+            assert(labelOf(mol, 'carboxylate').includes('K⁺'),
+                `${nm} の見出しが「${labelOf(mol, 'carboxylate')}」（-COO⁻ K⁺ を期待）`);
         });
         // フタル酸水素カリウムは「片方が塩・片方が酸」。両方とも出ていること
         const khp = fromLib('フタル酸水素カリウム');
         assert(typesOf(khp).has('carboxyl'), 'フタル酸水素カリウムの -COOH 側が出ていない');
 
-        // (2) 否定対照A: ナトリウム塩の見出しは -COONa のまま（元素を決め打ちに戻していない）
+        // (2) 否定対照A: ナトリウム塩の見出しは Na のまま（元素を決め打ちに戻していない）
         const acetateNa = fromLib('酢酸ナトリウム');
         assert(typesOf(acetateNa).has('carboxylate'), '酢酸ナトリウムが カルボン酸の塩 でなくなった');
-        assert(labelOf(acetateNa, 'carboxylate').includes('COONa'),
+        assert(labelOf(acetateNa, 'carboxylate').includes('Na⁺'),
             `酢酸ナトリウムの見出しが「${labelOf(acetateNa, 'carboxylate')}」`);
 
         // (3) 否定対照B: 「-C(=O)-O- の先が何であっても塩」にはしていない。
@@ -10163,14 +10277,20 @@
             '酢酸が カルボン酸の塩 に化けている');
         assert(typesOf(fromLib('酢酸メチル')).has('ester'), '酢酸メチルが エステル でなくなった');
 
-        // (4) スルホン酸の塩の見出しも実物の元素で出す（carboxylate と同じ書き方）
-        const sulfonate = (metal) => build(
-            [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342],
-                ['O', 484, 300], [metal, 526, 300]],
-            [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1], [4, 5, 1]]);
-        assert(labelOf(sulfonate('Na'), 'sulfonate').includes('SO₃Na'),
+        // (4) スルホン酸の塩の見出しも実物の元素で出す（carboxylate と同じ書き方）。
+        //     ⚠ 塩は**電離した形**（v1538）＝ -SO₃⁻ と金属イオンを線で結ばない
+        const sulfonate = (metal) => {
+            const m = build(
+                [['C', 400, 300], ['S', 442, 300], ['O', 442, 258], ['O', 442, 342],
+                    ['O', 484, 300], [metal, 568, 300]],
+                [[0, 1, 1], [1, 2, 2], [1, 3, 2], [1, 4, 1]]);
+            m.atoms[4].charge = -1;
+            m.atoms[5].charge = 1;
+            return m;
+        };
+        assert(labelOf(sulfonate('Na'), 'sulfonate').includes('Na⁺'),
             `Na 塩の見出しが「${labelOf(sulfonate('Na'), 'sulfonate')}」`);
-        assert(labelOf(sulfonate('K'), 'sulfonate').includes('SO₃K'),
+        assert(labelOf(sulfonate('K'), 'sulfonate').includes('K⁺'),
             `K 塩の見出しが「${labelOf(sulfonate('K'), 'sulfonate')}」`);
     });
 
@@ -10341,11 +10461,11 @@
             `${gg}: ${say(gg)}`);
 
         // ---- (4) カルボン酸の塩をケトンと呼ばない（見出しは実物の元素で出す。CF2 と同じ規約）----
-        assert(hasPoint('酢酸ナトリウム', 'カルボン酸の塩 -COONa ×1'), `酢酸ナトリウム: ${say('酢酸ナトリウム')}`);
-        assert(hasPoint('酢酸カリウム', 'カルボン酸の塩 -COOK ×1'), `酢酸カリウム: ${say('酢酸カリウム')}`);
+        assert(hasPoint('酢酸ナトリウム', 'カルボン酸の塩 -COO⁻ Na⁺ ×1'), `酢酸ナトリウム: ${say('酢酸ナトリウム')}`);
+        assert(hasPoint('酢酸カリウム', 'カルボン酸の塩 -COO⁻ K⁺ ×1'), `酢酸カリウム: ${say('酢酸カリウム')}`);
         // フタル酸水素カリウムは -COOH と -COOK が1本ずつ。両方が別々に出ること
         const kp = 'フタル酸水素カリウム';
-        assert(hasPoint(kp, 'カルボキシ基 -COOH ×1') && hasPoint(kp, 'カルボン酸の塩 -COOK ×1'), `${kp}: ${say(kp)}`);
+        assert(hasPoint(kp, 'カルボキシ基 -COOH ×1') && hasPoint(kp, 'カルボン酸の塩 -COO⁻ K⁺ ×1'), `${kp}: ${say(kp)}`);
         ['パルミチン酸ナトリウム（セッケン）', '安息香酸ナトリウム', 'ギ酸ナトリウム'].forEach(nm => {
             assert(!hasPoint(nm, 'ケトンの C=O') && !hasPoint(nm, 'アルデヒド基'),
                 `${nm} がケトン／アルデヒドと出ている: ${say(nm)}`);
@@ -13586,7 +13706,10 @@
         assert(labels.length === 2, `図の見出しが ${labels.length} 個（2個を期待）`);
         assert(labels.some(s => s.includes('①')) && labels.some(s => s.includes('②')),
             `見出しの番号が①②になっていない（${labels.join(' / ')}）`);
-        labels.forEach(s => assert(!/\b[ABC]\b/.test(s), '元素記号とぶつかる A/B/C を使っている'));
+        // ⚠ 見るのは**番号の位置だけ**（🔍 の直後）。v1538 で見出しに分子式が付いたので、
+        //   行全体を見ると `C₂H₄O₂` の C が「元素記号とぶつかる A/B/C」に引っかかる
+        labels.forEach(s => assert(!/^🔍 *[ABC][  ]/.test(s),
+            `元素記号とぶつかる A/B/C を番号に使っている（${s}）`));
         const panel = D.getElementById('compound-name').textContent;
         assert(/①/.test(panel) && /②/.test(panel), `右パネルに番号が反映されていない（${panel}）`);
         // 図の見出しは各分子の下にある
@@ -22517,6 +22640,21 @@
         const rmsAfter = Math.sqrt(sumAfter / rot), rmsBefore = Math.sqrt(sumBefore / rot);
         assert(rmsAfter < 2 && rmsBefore > 50,
             `RMS が期待の形にならない（回す ${rmsAfter.toFixed(1)}px / 回さない ${rmsBefore.toFixed(1)}px）`);
+
+        /* ⚠⚠ **非連結の図（対イオンの粒を持つ塩）は出題プールに入れない**（v1538）。
+         *   `stereoIsomorphismCompare` は非連結だと null を返すので、入れると
+         *   「回して重ねる」が作れない問題が混ざり、上の assert が**たまにだけ**落ちる
+         *   （実測: オレイン酸ナトリウムで 5回中3回。出題が乱択なので再現しない日がある）。
+         * ⚠ 否定対照も一緒に見る ＝ 連結な図は今までどおり入っている */
+        const loose = q.pool.filter(e => {
+            const bonded = new Set();
+            e.mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+            return e.mol.atoms.some(a => a.charge && !bonded.has(a.id));
+        });
+        assert(loose.length === 0,
+            `非連結の図が出題プールに残っている: ${loose.map(e => e.name).join('・')}`);
+        assert(q.pool.some(e => e.name === '乳酸'), '否定対照: 乳酸がプールから消えた');
+        assert(q.pool.length >= 50, `出題プールが ${q.pool.length} 件まで減った`);
     });
 
     test('OV2: 回してよい角度は「回して読み直しても立体が変わらない」角度だけ（鏡映は使わない）', async (c) => {
@@ -38598,7 +38736,10 @@
             const mol = new W.Molecule();
             [0, 1].forEach(i => {
                 const t = entryOf(name).target;
-                const ids = t.atoms.map(a => mol.addAtom(a.element, a.x + i * 320, a.y).id);
+                // ⚠ **電荷も写す**（v1538 で塩は -COO⁻ ＋ Na⁺ の形になった）。
+                //   写さないと塩が塩でなくなり、遊離の候補が 0 件になる
+                const ids = t.atoms.map(a =>
+                    W.copyAtomMarks(mol.addAtom(a.element, a.x + i * 320, a.y), a).id);
                 t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
             });
             return mol;
@@ -38936,7 +39077,10 @@
             const mol = new W.Molecule();
             [0, 1].forEach(i => {
                 const t = entryOf(name).target;
-                const ids = t.atoms.map(a => mol.addAtom(a.element, a.x + i * 320, a.y).id);
+                // ⚠ **電荷も写す**（v1538 で塩は -COO⁻ ＋ Na⁺ の形になった）。
+                //   写さないと塩が塩でなくなり、遊離の候補が 0 件になる
+                const ids = t.atoms.map(a =>
+                    W.copyAtomMarks(mol.addAtom(a.element, a.x + i * 320, a.y), a).id);
                 t.bonds.forEach(b => mol.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
             });
             return mol;
@@ -52271,6 +52415,61 @@
         return [...lists.entries()].map(([id, l]) => `${id}=${l.sort().join(',')}`).sort().join('|');
     };
 
+    test('SEP_IONIZED: 水層の塩はどれも電離した形で描く（アニリン塩酸塩とそろえる）', async (c) => {
+        /* 2026-09-12・ユーザー検品「V141 142 アニリン塩酸塩は電離しているが、
+         * ナトリウムフェノキシドは電離していない。水中に溶けた、なので
+         * この場面では電離したほうがよいと思う」。
+         * 実測では、同じ水層に居ながら
+         *   アニリン塩酸塩 … -NH₃⁺ と Cl⁻ が離れている（電離）
+         *   安息香酸ナトリウム … -COO と Na が線でつながったまま（未電離）
+         * と描き方が食い違っていた。★ 電離しているほうへそろえる。
+         * ⚠ 見るのは「結合が無い」ことと「電荷が付いている」ことの両方
+         *   （電荷だけ付けて線を残すと、価標の検証が落ちる）。 */
+        c.reset();
+        const g = c.game, W = c.W;
+        const bondsOf = (mol, id) => mol.bonds.filter(b => b.atomId1 === id || b.atomId2 === id).length;
+        const check = (name, metal) => {
+            const mol = g.summonMolecule(name) ? g.userMolecule : null;
+            assert(mol, `${name} を呼び出せない`);
+            const part = g.splitMolecules().find(p => g.lookupCompoundName(p) === name);
+            assert(part, `${name} の名前が引けない（登録と生成が食い違っている）`);
+            const m = part.atoms.find(a => a.element === metal);
+            assert(m, `${name} に ${metal} が無い`);
+            assert(bondsOf(part, m.id) === 0,
+                `${name}: ${metal} がまだ線でつながっている（水層の塩が電離していない）`);
+            assert(m.charge === 1, `${name}: ${metal} に ＋ が付いていない`);
+            const anion = part.atoms.find(a => a.element === 'O' && a.charge === -1);
+            assert(anion, `${name}: 相方の -O⁻ に − が付いていない`);
+            assert(part.atoms.every(a => W.isValencyValid(part, a.id)), `${name}: 価標が不正`);
+            // ★ 相方を引き直せる（この1本が liberate_weak_acid ほか4本の入口）
+            assert(W.saltCounterMetal(part, anion.id) &&
+                   W.saltCounterMetal(part, anion.id).element === metal,
+                `${name}: -O⁻ から相方の ${metal}⁺ を引けない`);
+        };
+        ['安息香酸ナトリウム', 'ナトリウムフェノキシド（フェノールのナトリウム塩）',
+            'ベンゼンスルホン酸ナトリウム', '酢酸カリウム'].forEach(n => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            check(n, n.includes('カリウム') ? 'K' : 'Na');
+        });
+
+        // ★ アニリン塩酸塩と同じ形になっている（そろえた先の相手）
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        assert(g.summonMolecule('アニリン塩酸塩'), 'アニリン塩酸塩を呼び出せない');
+        const cl = g.userMolecule.atoms.find(a => a.element === 'Cl');
+        assert(cl && cl.charge === -1 && bondsOf(g.userMolecule, cl.id) === 0,
+            'アニリン塩酸塩の Cl⁻ が粒でなくなった（そろえる先が動いた）');
+
+        // ⚠ 否定対照: 線1本でつないだ古い形に戻すと、この検査が赤くなる
+        const old = new W.Molecule();
+        const ids = ['C', 'C', 'O', 'O', 'Na'].map(e => old.addAtom(e, 0, 0).id);
+        [[0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1]].forEach(([i, j, t]) => old.addBond(ids[i], ids[j], t));
+        assert(bondsOf(old, ids[4]) !== 0, '否定対照が組めていない');
+        assert(!W.saltCounterMetal(old, ids[3]),
+            '線でつないだ -COONa から相方を引けてしまう（電離形と見分けが付かない）');
+    });
+
     test('SEP1: 層の印と水面の帯 —— 印が付いた成分だけが水層へ移り、見出しと札にそう出る', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D;
@@ -53365,12 +53564,24 @@
      *   `getFreeValency`（自動水素・分子式・正準コードのラベル）と `isValencyValid`（検証）が
      *   両方そこを読むので、設計書 §3-3 の表が**いっぺんに**成り立つ。
      * ⚠ 電荷を手で描く経路は無い（D-I14）。この帯は分子を Molecule で直に組む。
-     * ⚠ O–金属の塩は線1本のまま（D-I11）。電荷は N⁺・双性の O⁻・N≡N⁺ と対イオンの粒にだけ使う。
+     * ★ O–金属の塩も**電離した形**（-COO⁻ / -O⁻ / -SO₃⁻ ＋ Na⁺・K⁺ の粒）にそろえた（v1538）。
+     *   D-I11「線1本のまま」を 2026-09-12 のユーザー判断で見直したもの ——
+     *   分液の水層でアニリン塩酸塩だけが電離して描かれ、安息香酸ナトリウムは
+     *   線でつながったままで、**同じ水層の塩の描き方が食い違っていた**。
      */
 
-    // 電荷を持つ登録エントリの名簿（★ 名前で列挙。数では数えない）。
-    // ⚠ ここに無いエントリが電荷を持ったら赤 ＝「既存データに電荷は 0 件」という設計の前提を守る
-    const ION_CHARGED_ENTRIES = ['アニリン塩酸塩', '塩化ベンゼンジアゾニウム'];
+    /* 電荷を持つ登録エントリの名簿（★ 名前で列挙。数では数えない）。
+     * ⚠ ここに無いエントリが電荷を持ったら赤 ＝ 電荷の付く場所を名簿1つで押さえる。
+     * ★ 18件の塩は v1538 で電離形になった（O–金属の線をやめた）。 */
+    const ION_CHARGED_ENTRIES = ['アニリン塩酸塩', '塩化ベンゼンジアゾニウム',
+        '酢酸ナトリウム', 'ギ酸ナトリウム', 'プロピオン酸ナトリウム', '安息香酸ナトリウム',
+        'サリチル酸ナトリウム', '乳酸ナトリウム', 'シュウ酸ナトリウム',
+        'パルミチン酸ナトリウム（セッケン）', 'ステアリン酸ナトリウム（セッケン）',
+        'オレイン酸ナトリウム（セッケン）', 'ラウリン酸ナトリウム（セッケン）',
+        'ミリスチン酸ナトリウム（セッケン）',
+        'ナトリウムフェノキシド（フェノールのナトリウム塩）', 'ナトリウムエトキシド',
+        'ベンゼンスルホン酸ナトリウム', 'アルキルベンゼンスルホン酸ナトリウム',
+        '酢酸カリウム', 'フタル酸水素カリウム'];
 
     // 原子と結合と電荷から分子を組む（EL3 の `mk` に電荷を足したもの）
     const ionMk = (W, els, bonds, charges = {}) => {
@@ -53424,9 +53635,9 @@
         assert(!W.isValencyValid(clBond.m, clBond.ids[1]), '★ 結合を持つ Cl⁻ が通ってしまう');
         const na = ionMk(W, ['Na'], [], { 0: 1 });
         assert(na.m.getFreeValency(na.ids[0]) === 0, '★ Na⁺ の粒に自動水素が生えている（NaH の図）');
-        // ⚠ 電荷の無い Na は今までどおり価標 1（-COONa を線1本で書く流儀。D-I11）
+        // ⚠ 電荷の無い Na は価標 1 のまま（手で組んだ古い -COONa の図を壊さない）
         const na0 = ionMk(W, ['Na'], []);
-        assert(W.maxValencyOf(na0.m, na0.ids[0]) === 1, '電荷の無い Na の価標が 1 でなくなった（-COONa が書けない）');
+        assert(W.maxValencyOf(na0.m, na0.ids[0]) === 1, '電荷の無い Na の価標が 1 でなくなった');
 
         // (5) ★★ 既存データに電荷を持つ原子が無い（＝ 登録済み 1,150 件のコード・分子式・自動水素は不変）。
         //     ⚠ 数ではなく名前で見る。名簿に無いエントリが電荷を持てば赤
@@ -53474,9 +53685,15 @@
         assert(types(zw.m) === 'ammonium,carboxylate_ion', `双性イオンの官能基が ${types(zw.m)}`);
         const dz = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N', 'N', 'Cl'], [...ionRing, [0, 6], [6, 7, 3]], { 6: 1, 8: -1 });
         assert(types(dz.m) === 'aromatic,diazonium', `ジアゾニウムの官能基が ${types(dz.m)}`);
-        // ⚠ 線1本の -COONa は今までどおり carboxylate（O–金属は電荷を使わない。D-I11）
-        const acna = ionMk(W, ['C', 'C', 'O', 'O', 'Na'], [[0, 1], [1, 2, 2], [1, 3], [3, 4]]);
-        assert(types(acna.m) === 'carboxylate', `酢酸ナトリウム（線1本）の官能基が ${types(acna.m)}`);
+        /* ★ 酢酸ナトリウムは**電離した形**で carboxylate（v1538）。
+         *   ⚠ 相方の Na⁺ が無ければ carboxylate_ion（双性イオンの片側）にしかならない ＝
+         *   「塩」と「裸の陰イオン」を粒の有無で割る、が唯一の見分け方 */
+        const acna = ionMk(W, ['C', 'C', 'O', 'O', 'Na'], [[0, 1], [1, 2, 2], [1, 3]], { 3: -1, 4: 1 });
+        assert(types(acna.m) === 'carboxylate', `酢酸ナトリウム（電離形）の官能基が ${types(acna.m)}`);
+        // ⚠ 否定対照: 線で結んだ古い形は もう塩として拾わない（同じ物質に2つの形を持たない）
+        const acnaBonded = ionMk(W, ['C', 'C', 'O', 'O', 'Na'], [[0, 1], [1, 2, 2], [1, 3], [3, 4]]);
+        assert(types(acnaBonded.m) !== 'carboxylate',
+            '線1本で結んだ -COONa を まだ カルボン酸の塩 として拾っている');
         // 中性のアニリン・グリシンは不変
         const an0 = ionMk(W, ['C', 'C', 'C', 'C', 'C', 'C', 'N'], [...ionRing, [0, 6]]);
         assert(types(an0.m) === 'amine1,aromatic', `アニリンの官能基が変わった: ${types(an0.m)}`);
