@@ -300,6 +300,21 @@
     const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
     const near = (a, b, tol = 3) => Math.abs(a - b) <= tol;
 
+    /* ★ **反応の再生（モーフィング）が終わるまで待つ。**
+     *
+     * ⚠⚠ **尺を数字で書かない。** v1539 まで再生は 800ms だったので、待つ側は
+     *   `await c.tick(1400); // モーフィング 800ms ＋ 余裕` と書いてあった。
+     *   v1540 で「握手のつなぎ替え」を3段に割って 1500ms にしたとたん、
+     *   **その書き方をしていた7か所がいっせいに空振り**した（実測: RV3・RV11・RV12・RM1・RM2・RM4）。
+     *   ⓘ 待っているのは「終わったか」であって時間ではないので、**終わったかを見る**。
+     * ⚠ 2段階の反応は①の途中で**わざと止まる**（`_morphPause`）ので、そこで待つのをやめる
+     *   （止まっている先はユーザーのクリック待ち ＝ いくら待っても進まない）。 */
+    const 反応の再生を待つ = async (c, limit = 8000) => {
+        const rx = c.W.reactor;
+        for (let i = 0; i * 50 < limit && rx._morphing && !rx._morphPause; i++) await c.tick(50);
+        await c.tick(60); // 再生のあとの updateDrawing / ハイライトが乗る1コマぶん
+    };
+
     // ===== テストコンテキスト（iframe内のアプリを操作するヘルパー群） =====
     function makeCtx(frame) {
         const W = frame.contentWindow;
@@ -11840,6 +11855,196 @@
             '脱離原子のフェードが端点で不正');
         assert(r0.atoms.find(a => a.id === 'd').opacity === 0 && r1.atoms.find(a => a.id === 'd').opacity === 1,
             '付加原子のフェードが端点で不正');
+    });
+
+    /**
+     * ===== ★★ RX4b: 握手のつなぎ替え —— **手は原子から離れない・本数が変わらない**（v1540） =====
+     *
+     * ユーザーの発注の芯（原文）:
+     * > **価標を中心で割り、切れた手を旋回させて別な原子の手とつなぐ**
+     * > **握手していた → 離した → べつな人と握手した**
+     *
+     * ★★ **この描き方が優れている理由は1つだけ**:
+     *   価標を中点で割ると、半分ずつが「その原子の手」になるので、
+     *   **どの瞬間も、原子の手の数＝原子価が変わらない。**
+     * ⛔ 手が宙に浮いた別物になったり、結合本数が一瞬おかしくなったりしない。
+     *
+     * ⚠ ここで数えるのはその1点。**合成スナップショットと実際の反応の両方**で見る
+     *   （合成だけだと「実際の反応では成り立たない」に気づけない）。
+     */
+    test('RX4b: 握手のつなぎ替え — どの瞬間も手は原子に生えたまま・本数が変わらない（v1540）', async (c) => {
+        const W = c.W;
+        const rx = W.reactor;
+        const INSET = W.HS_PHASES.inset;
+        const TS = [];
+        for (let i = 0; i <= 40; i++) TS.push(i / 40);
+
+        /** 1つの before→after について、芯の4点を全部の t で数える */
+        const 手を数える = (before, after, 名) => {
+            const 本数 = TS.map(t => {
+                const hands = rx.handshakeHandsAt(before, after, t);
+                const m = new Map();
+                hands.forEach(h => {
+                    // ★ ① **根元は必ずその原子の上**（＝ 宙に浮いた線が1本も無い）
+                    const a = (t <= 0.5 ? before : after).atoms.find(x => x.id === h.atomId) ||
+                              before.atoms.find(x => x.id === h.atomId) ||
+                              after.atoms.find(x => x.id === h.atomId);
+                    assert(a, `${名}: t=${t} 手の持ち主（${h.atomId}）が図に居ない`);
+                    const d = Math.hypot(h.x1 - h.ax, h.y1 - h.ay);
+                    assert(Math.abs(d - Math.hypot(INSET, h.off)) < 0.02,
+                        `${名}: t=${t} 手の根元が原子から ${d.toFixed(2)} 離れている（原子の縁のはず）`);
+                    // ★ ② **手は必ず長さを持つ**（0 になると「手が消えた」＝ 価標が半分残らない）
+                    assert(h.len > INSET - 0.001,
+                        `${名}: t=${t} 手の長さが ${h.len.toFixed(2)}（原子の縁 ${INSET} を割っている）`);
+                    m.set(h.atomId, (m.get(h.atomId) || 0) + 1);
+                });
+                return m;
+            });
+            // ★ ③ **原子ごとの手の本数がどの t でも同じ**（＝ 途中で手が生えたり消えたりしない）
+            const 基準 = 本数[0];
+            本数.forEach((m, i) => {
+                assert(m.size === 基準.size,
+                    `${名}: t=${TS[i]} で手を持つ原子が ${m.size}個（t=0 は ${基準.size}個）`);
+                基準.forEach((n, id) => assert(m.get(id) === n,
+                    `${名}: t=${TS[i]} で原子 ${id} の手が ${m.get(id)}本（t=0 は ${n}本）`));
+            });
+            return 基準;
+        };
+
+        /** ★ ④ 端点では、手が**反応前／反応後の結合そのもの**を作る（＝ 嘘の図を挟まない） */
+        const 次数を数える = (before, after, t, snap, 名) => {
+            const hands = rx.handshakeHandsAt(before, after, t);
+            const 実 = new Map();
+            hands.forEach(h => {
+                const other = t === 0 ? h.fromOther : h.toOther;
+                if (!other) return;
+                const k = `${h.atomId}>${other}`;
+                実.set(k, (実.get(k) || 0) + 1);
+            });
+            const 期待 = new Map();
+            snap.bonds.forEach(b => {
+                期待.set(`${b.atomId1}>${b.atomId2}`, b.type);
+                期待.set(`${b.atomId2}>${b.atomId1}`, b.type);
+            });
+            期待.forEach((n, k) => assert(実.get(k) === n,
+                `${名}: t=${t} で ${k} の手が ${実.get(k)}本（結合次数 ${n} のはず）`));
+            assert(実.size === 期待.size,
+                `${名}: t=${t} の手の向き先が ${実.size}通り（結合は ${期待.size}通り）`);
+        };
+
+        // ---- ① 合成スナップショット: 二重結合が単結合になり、別の原子と結合ができる ----
+        //    ＝ エテン＋Br₂ と同じ形（★ 発注の例そのもの）
+        const before = {
+            atoms: [{ id: 'c1', element: 'C', x: 0, y: 0 }, { id: 'c2', element: 'C', x: 40, y: 0 },
+                    { id: 'x', element: 'Br', x: 0, y: -40 }, { id: 'y', element: 'Br', x: 40, y: -40 }],
+            bonds: [{ atomId1: 'c1', atomId2: 'c2', type: 2 }]
+        };
+        const after = {
+            atoms: before.atoms.map(a => ({ ...a })),
+            bonds: [{ atomId1: 'c1', atomId2: 'c2', type: 1 },
+                    { atomId1: 'c1', atomId2: 'x', type: 1 }, { atomId1: 'c2', atomId2: 'y', type: 1 }]
+        };
+        const 基準 = 手を数える(before, after, '合成（付加）');
+        // ★ 炭素の手は最初から最後まで2本（C=C の2本 → C-C と C-Br）＝ **原子価が変わらない**
+        assert(基準.get('c1') === 2 && 基準.get('c2') === 2,
+            `★ 炭素の手が ${基準.get('c1')}/${基準.get('c2')} 本（2本のはず。ここが崩れたら描き方の芯が壊れている）`);
+        assert(基準.get('x') === 1 && 基準.get('y') === 1, '★ 臭素の手が1本でない');
+        次数を数える(before, after, 0, before, '合成（付加）');
+        次数を数える(before, after, 1, after, '合成（付加）');
+
+        // ★ **切れた手は旋回して別の原子の手とつながる**（＝ 消えて別の場所に現れるのではない）。
+        //   c1 の「相手が変わる手」を追い、向きが C2 の方から Br の方へ**連続して**回ることを見る
+        const 旋回 = TS.map(t => rx.handshakeHandsAt(before, after, t)
+            .find(h => h.atomId === 'c1' && h.fromOther === 'c2' && h.toOther === 'x'));
+        assert(旋回.every(Boolean), '★ 「c2 の手 → Br の手」へつなぎ替わる手が見つからない');
+        const 角 = 旋回.map(h => h.angle);
+        assert(Math.abs(角[0] - 0) < 1e-6, `t=0 で手が C2 を向いていない（${角[0]}）`);
+        assert(Math.abs(角[角.length - 1] + Math.PI / 2) < 1e-6,
+            `t=1 で手が Br を向いていない（${角[角.length - 1]}）`);
+        let 最大跳び = 0;
+        for (let i = 1; i < 角.length; i++) 最大跳び = Math.max(最大跳び, Math.abs(角[i] - 角[i - 1]));
+        assert(最大跳び < 0.25, `★ 手の向きが1コマで ${最大跳び.toFixed(2)}rad 跳んだ（瞬間移動している）`);
+
+        // ⚠ **否定対照**: 二重結合のうち**割れるのは1本だけ**で、もう1本は最後まで握ったまま
+        const 握ったまま = rx.handshakeHandsAt(before, after, 0.5).filter(h => h.atomId === 'c1' && h.holds);
+        assert(握ったまま.length === 1,
+            `★ C=C の2本のうち握ったままの手が ${握ったまま.length}本（1本のはず＝ 全部いっぺんに離していない）`);
+
+        // ---- ② 実際の反応（エテン＋Br₂）でも同じことが成り立つ ----
+        c.reset();
+        const g = c.game;
+        g.setMode('free');
+        const input = c.D.getElementById('summon-input');
+        input.value = 'エテン';
+        input.dispatchEvent(new W.Event('change', { bubbles: true }));
+        const rule = W.REACTION_RULES.find(r => r.id === 'add_br2');
+        assert(rule, '下ごしらえ: add_br2 のルールが無い');
+        const sites = rule.detect(g.userMolecule);
+        assert(sites.length >= 1, '下ごしらえ: エテンに Br₂ 付加の箇所が無い');
+        W.reactor.execute(rule, sites[0]);
+        const L = W.reactor.lastReaction;
+        assert(L && L.before && L.after, '下ごしらえ: 前後のスナップショットが残っていない');
+        const 実基準 = 手を数える(L.before, L.after, '実機（エテン＋Br₂）');
+        次数を数える(L.before, L.after, 0, L.before, '実機（エテン＋Br₂）');
+        次数を数える(L.before, L.after, 1, L.after, '実機（エテン＋Br₂）');
+        // 炭素2つはどちらも「重原子への手2本」のまま（C=C → C-C ＋ C-Br）
+        const 炭素 = L.before.atoms.filter(a => a.element === 'C').map(a => a.id);
+        炭素.forEach(id => assert(実基準.get(id) === 2,
+            `★ 実機でも炭素の手は2本のはず（${id} は ${実基準.get(id)}本）`));
+        W.reactor.finalizeMorph();
+
+        // ---- ③ ★ 端点の図は反応前・反応後**そのもの**（RX4 の約束を壊していない） ----
+        const f0 = rx.interpolateMorph(L.before, L.after, 0);
+        const f1 = rx.interpolateMorph(L.before, L.after, 1);
+        assert(f0.bonds.length && !(f0.lanes || []).length, 't=0 が半分ずつの手で描かれている（反応前の図そのものでない）');
+        assert(f1.bonds.length && !(f1.lanes || []).length, 't=1 が半分ずつの手で描かれている（反応後の図そのものでない）');
+        const fm = rx.interpolateMorph(L.before, L.after, 0.5);
+        assert((fm.lanes || []).length && !fm.bonds.length, '途中のコマが半分ずつの手で描かれていない');
+
+        c.reset();
+    });
+
+    /**
+     * ===== RX4c: 「簡易版である」ことを、その場で・行き先のある形で言う（v1540） =====
+     *
+     * ⓵ ユーザーの決め:「**ただし本当は…というスタンスで、反応機構を用意する**」
+     * ⚠ ただし機構を持つルールは全体の一部しかない ＝ **機構の無い反応で「本当は違う」とだけ言うと、
+     *   行き先の無い約束になる**。だから文言を2種類に分けてある。
+     */
+    test('RX4c: 反応のあとの但し書きは、機構の有無で2種類に分かれる（v1540）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        const 断り = () => {
+            const el = D.querySelector('#reaction-actions .rx-morph-note');
+            return el ? el.textContent : null;
+        };
+        const 反応する = (name, ruleId) => {
+            const input = D.getElementById('summon-input');
+            input.value = name;
+            input.dispatchEvent(new W.Event('change', { bubbles: true }));
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `下ごしらえ: ${ruleId} が無い`);
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length >= 1, `下ごしらえ: ${name} に ${ruleId} の箇所が無い`);
+            W.reactor.execute(rule, sites[0]);
+            W.reactor.finalizeMorph();
+            g.openMoleculeModal(); // 但し書きは分子モーダルの「いま起きた反応」の節に出る
+        };
+        // ① 機構のある反応 → 「本当はどう動くか」の行き先を名指しする
+        反応する('エテン', 'add_br2');
+        assert(W.reactor.lastReaction.mechanismId, '下ごしらえ: add_br2 に機構が無い');
+        assert(断り() === W.RX_MORPH_NOTE_MECH, `機構ありの但し書きが違う: ${断り()}`);
+        assert([...D.querySelectorAll('#reaction-actions button')]
+            .some(b => /機構を見る/.test(b.textContent)), '★ 行き先（機構を見るボタン）が画面に無い');
+        // ② 機構の無い反応 → ⛔ 「本当は違う」とだけ言わない（行き先を名指ししない）
+        c.reset();
+        g.setMode('free');
+        反応する('エタノール', 'react_sodium');
+        assert(!W.reactor.lastReaction.mechanismId, '下ごしらえ: この反応に機構が付いてしまっている');
+        assert(断り() === W.RX_MORPH_NOTE, `機構なしの但し書きが違う: ${断り()}`);
+        assert(!/機構/.test(断り() || ''), '⛔ 機構の無い反応で機構を名指ししている（行き先の無い約束）');
+        c.reset();
     });
 
     test('RX5: モーフィングは表示のみ — 実行時に分子は即確定しアニメ中/後も不変（P12-5 第2弾）', async (c) => {
@@ -45742,7 +45947,7 @@
         const sites = rule.detect(g.userMolecule);
         assert(sites.length, '（前提）1-プロパノールで酸化の箇所が見つからない');
         W.reactor.execute(rule, sites[0], null);
-        await c.tick(1400);   // モーフィング 800ms ＋ 余裕
+        await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
     };
 
     test('RV3: 反応の印は、指す原子が図から消えたら一緒に消える（次の分子へ持ち越さない）', async (c) => {
@@ -46220,7 +46425,7 @@
             `（前提）置換される炭素が ${targetIds.length} 個（オルト2＋パラ1 ＝ 3個が正）`);
 
         W.reactor.execute(rule, site, null);
-        await c.tick(1400);   // モーフィング 800ms ＋ 余裕
+        await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
 
         const marks = [...D.getElementById('ui-group').querySelectorAll('[data-hl-atom]')]
             .map(el => el.getAttribute('data-hl-atom'));
@@ -46287,7 +46492,7 @@
             const sites = rule.detect(g.userMolecule);
             assert(sites.length, `（前提）${cs.names.join('+')} で ${cs.rule} の箇所が見つからない`);
             W.reactor.execute(rule, sites[0], null);
-            await c.tick(1400);
+            await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
 
             const mol = g.userMolecule;
             const marked = new Set([...D.getElementById('ui-group').querySelectorAll('[data-hl-atom]')]
@@ -48009,7 +48214,7 @@
         const sites = rule.detect(g.userMolecule);
         assert(sites.length, '（前提）1,3-ブタジエン3分子でジエンの重合の箇所が出ない');
         W.reactor.execute(rule, sites[0], null);
-        await c.tick(1400);
+        await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
 
         const mol = g.userMolecule;
         const marked = new Set([...D.getElementById('ui-group').querySelectorAll('[data-hl-atom]')]
@@ -48082,7 +48287,7 @@
         const ps = poly.detect(g.userMolecule);
         assert(ps.length, '（前提）酢酸ビニル3分子で付加重合の箇所が出ない');
         W.reactor.execute(poly, ps[0], null);
-        await c.tick(1400);
+        await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
 
         const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
         assert(sap, '（前提）saponification が無い');
@@ -48124,7 +48329,7 @@
                 // 残り1箇所なら `narrow` は素通りして即実行する
                 assert(!W.reactor.picking, '3 回目: 残り1箇所なのに箇所選びに入った');
             }
-            await c.tick(1400);
+            await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
             g.updateDrawing();
         }
         // ③ ★ 着地点 —— PVA と 酢酸ナトリウム3個
@@ -48189,7 +48394,7 @@
                 .find(a => a && a.element === 'C' && nbOf(a.id) === cs.nb);
             assert(target, `隣が ${cs.nb} の炭素がハイライトされていない（${cs.why}）`);
             W.reactor.handlePick(target);
-            await c.tick(1500);
+            await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
             g.updateDrawing();
             const shown = D.getElementById('compound-name').textContent;
             assert(shown.includes(cs.want),
@@ -51543,7 +51748,7 @@
         const ps = poly.detect(g.userMolecule);
         assert(ps.length, '（前提）酢酸ビニル3分子で付加重合の箇所が出ない');
         W.reactor.execute(poly, ps[0], null);
-        await c.tick(1400);
+        await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
         // ③ の材料 —— 反応に関わらない傍観者を1つ置く（焦点が飛ばないことを見る）
         g.summonMolecule('トルエン');
         g.updateDrawing();
@@ -51578,7 +51783,7 @@
                 assert(marks.length >= 2, `${n} 回目: ハイライトされた原子が ${marks.length} 個`);
                 W.reactor.handlePick(g.userMolecule.atoms.find(a => a.id === marks[0]));
             }
-            await c.tick(1400);
+            await 反応の再生を待つ(c); // ⚠ 尺を数字で書かない（v1540 で 800→1500ms）
             g.updateDrawing();
         }
         // ① 着地点
