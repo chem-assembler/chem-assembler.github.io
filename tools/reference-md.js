@@ -96,8 +96,12 @@
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
         list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'], hang: ['items'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。
-           `/reference-img/` を付けるのは learn.js の1か所（面A・面Bで同じ URL になる） */
-        figure: { order: ['src', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
+           `/reference-img/` を付けるのは learn.js の1か所（面A・面Bで同じ URL になる）。
+           ★★ `gen` は **その図をアプリの描画で焼くための指定**（`tools/gen-figure.mjs`）。
+              ⚠ 任意 —— スライドから切った図には無い。★ 書いてあれば「この図は何の分子か」を
+                原稿が名乗っていることになり、焼くたびに `iupacName` で突き合わせられる
+                ＝ `:::table` の `source`（行がどこから来たか）と同じ役目。 */
+        figure: { order: ['src', 'gen', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒） */
         reaction: { order: ['left', 'over', 'under', 'right', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], enum: { level: LEVELS } },
