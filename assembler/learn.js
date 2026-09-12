@@ -7077,14 +7077,18 @@ class ReferenceBook {
                     why.textContent = r.blocked.reason;
                     tdTo.appendChild(why);
                 } else {
-                    /* ⚠ 「（主）」は**2つ以上できる行にだけ**付ける。1つしかできない行に付けると
-                       「主があるなら副もあるはず」と読めて、無いものを探させることになる */
+                    /* ⚠ 「（主）」「（副）」は**2つ以上できる行にだけ**付ける。1つしかできない行に付けると
+                       「主があるなら副もあるはず」と読めて、無いものを探させることになる。
+                       ★★ **副にも印を付ける**（v1539・②稿の注文「主生成物だけでなく副生成物も
+                       網羅してください（矢印に区別をつける）」）—— 行そのものは前から
+                       **両方とも出していた**が、印が片方にしか無いと、印の無いほうが
+                       「調べていないもの」なのか「副生成物」なのかが読み取れなかった。 */
                     const many = r.products.length >= 2;
                     r.products.forEach((p, idx) => {
                         if (idx) tdTo.appendChild(document.createTextNode('／'));
                         const s = document.createElement('span');
-                        if (many && p.major) s.className = 'ref-map-major';
-                        s.textContent = p.name + (many && p.major ? '（主）' : '');
+                        if (many) s.className = p.major ? 'ref-map-major' : 'ref-map-minor';
+                        s.textContent = p.name + (many ? (p.major ? '（主）' : '（副）') : '');
                         tdTo.appendChild(s);
                     });
                 }

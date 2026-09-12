@@ -21,6 +21,8 @@ molecular-shape       分子の形と電子対の反発（VSEPR）
 intermolecular-force  分子間力と沸点
 soap                  セッケンと合成洗剤
 oxoacid               オキソ酸（硝酸・硫酸）の構造と配位結合〔無機〕
+zaitsev               ザイツェフ則 —— 脱水で2つできるとき、どちらが主に生じるか
+steric-hindrance      立体障害 —— 大きな原子団どうしがぶつかって不安定になること
 
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）

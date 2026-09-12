@@ -345,6 +345,8 @@ footer a:hover{color:var(--brand)}
 .ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
 /* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
 .ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 副生成物（同じ行に2つ以上できるときだけ）。⚠ 主より一段沈める ＝ どちらが主かは色の濃さでも読める */
+.ref-map-table .ref-map-minor { color: var(--text-muted); }
 /* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
 .ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
 .ref-map-table .ref-map-none { color: var(--text-secondary); }
