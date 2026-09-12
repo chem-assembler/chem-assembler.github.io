@@ -48593,8 +48593,20 @@
                 `${p.id}: 表が1枚ではない`);
             assert(D.querySelectorAll('#ref-body table.ref-table button').length === 0,
                 `${p.id}: 表の行にボタンが付いている（表は「説明」であって「N問の一覧」ではない）`);
-            assert(D.querySelectorAll('#ref-body .ref-try').length === 1,
-                `${p.id}: 例題のボタンが1つではない（例題は代表1つ）`);
+            /* ★ 例題は**代表1つ**。⚠⚠ ただし **`codes` を持たない横断のページは例題を持てない**
+               （v1536・ユーザー決定「官能基一覧は浮かせてもよい」）—— `:::example` の行き先は
+               **そのページの先頭コード**なので、0件のページに置くと着地先を名乗れず別のページへ飛ぶ。
+               ★ `gen-reference-pages.mjs` はそれを**赤で止める**ので、ここで「1つ在ること」を
+                 求めると**両方は満たせない**（2026-09-12・官能基の一覧に11件の表を移して実際にぶつかった）。
+               ⓵ だから見るのは「1つ**以下**」＋「codes を持つなら ちょうど1つ」の2段。
+               ⛔ 「0でも2でもよい」にはしない —— 表を N 問の一覧にしない、という原則1と4は変えない。 */
+            const tries = D.querySelectorAll('#ref-body .ref-try').length;
+            const hasCodes = (p.codes || []).length > 0;
+            assert(tries <= 1, `${p.id}: 例題のボタンが ${tries} 個ある（例題は代表1つ）`);
+            assert(hasCodes ? tries === 1 : tries === 0,
+                hasCodes
+                    ? `${p.id}: 表のページなのに例題のボタンが無い（表は全体・例題は代表1つ）`
+                    : `${p.id}: codes を持たない横断のページに例題がある（着地先を名乗れない・§26）`);
 
             // ★否定対照: 行を指す引数を渡しても絞れない（variant が増えても口が生えていない）
             const block = (p.blocks || []).find(b => b.kind === 'stageTable');
@@ -48602,6 +48614,10 @@
                 Object.assign({}, block, { stageId: 'hexane', row: 3, only: 'ヘキサン', limit: 1 }));
             assert(sneaky.querySelectorAll('tbody tr').length === full,
                 `${p.id}: 行を指す引数（stageId / row / only / limit）で表が絞れてしまう`);
+
+            /* ⚠ ここから下は**例題が在るページだけ**（横断のページは例題を持てない・上の2段）。
+               ★ 表そのものの検査（行数・並び・絞れないこと）は横断のページでも上で通している。 */
+            if (!hasCodes) continue;
 
             // 例題を始めても表は減らない（狭い画面では閉じる仕様なので開き直して中身を見る）
             const btn = D.getElementById('btn-ref-try');

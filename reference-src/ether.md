@@ -9,6 +9,7 @@ codes:
   - org.alcohol.ether-naming
   - org.alcohol.ether-diethyl
   - org.alcohol.na
+  - org.alcohol.ether-props
 source:
   - slides:有機の基本3-2「エーテルの性質」s2〜s6・s9〜s12
   - slides:有機の基本3-1「アルコールの性質」s18
@@ -203,7 +204,7 @@ to: functional-groups
 text: エーテル結合・ヒドロキシ基など、官能基そのものの一覧はこちら
 :::
 
-//⚠ codes から2つ外しました。org.alcohol.ether-props と org.alcohol.formula は alcohol-oxidation-map が既に挙げており、同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。org.alcohol.ether-props（エーテルは安定・ナトリウムと反応しない・水素結合をつくらないので沸点が低い・引火しやすい）の本来の置き場所はこのページだと考えています。統合のときに移すかどうか決めてください。
+//⚠ codes から2つ外してあった件。★ **org.alcohol.ether-props は 2026-09-12 にこのページへ移しました** —— alcohol-oxidation-map から11件の対応表が functional-groups へ出ていき、あちらにエーテルの話が1行も無くなったためです（エーテルは安定・ナトリウムと反応しない・水素結合をつくらないので沸点が低い・引火しやすい、はこのページの本文そのもの）。⚠ もう1つの org.alcohol.formula は alcohol.md へ移しました（一般式 CₙH₂ₙ₊₂O はこのページも言い切っていますが、アルコール側の総論に置くほうが引きに来る順に合うため）。⚠ 同じコードが2ページに在ると gen-reference-pages.mjs が赤になります。
 
 //A〜D（アルコール4種）の解答図は、alcohol のページの例題で使っている alcohol-butanol-table.png がそのまま使えます。:::exercise は answerSrc を1つしか持てないので、ここではエーテル側の図だけを付け、アルコール側は文で書いてあります。②で図を2枚出したいという注文が来たら、器のほうを直す話になります。
 
