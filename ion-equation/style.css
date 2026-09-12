@@ -1795,7 +1795,13 @@ main.timelineMain {
   .bwSpanCell { display: none; }
   .bwRule { margin: 6px 0; }
   .bcolHead, .bwAddCell, .bwCoef { display: inline-flex; margin: 2px 6px 2px 0; }
-  .bwGutter, .bwAddEcho { display: inline-block; margin-right: 6px; }
+  /* ＋ はグリッドのすきまへ逃がしていたが、縦並びではすきまが無いので流れの中へ戻す */
+  .bcolHead .bwSep, .bwCoef .bwSep { position: static; margin-right: 4px; }
+  /* ＋) は筆算の記号。縦に積んだ形では指すものが無いので出さない */
+  .bwGutter { display: none; }
+  /* 両辺に足したことは、縦並びでは位置で言えない。短い札で言う */
+  .bwAddEcho { display: inline-block; margin-right: 6px; }
+  .bwAddEcho:not(:empty)::before { content: "右辺にも "; color: #7c8792; }
   #ownerRow { justify-content: flex-start; }
   .bslot { min-width: 92px; }
 }
