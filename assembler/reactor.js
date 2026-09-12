@@ -4640,73 +4640,6 @@ const REACTION_RULES = [
         }
     },
     {
-        /* ★★ 完全燃焼（v1541）。参考書の式3本（メタン・エタノール・ベンゼン）を1本で埋める。
-         * 門番と置き場の理屈は `combustionComposition` / `combustionProductSpots` の注記。
-         *
-         * ★ **係数つきの式を caption に必ず出す。** 図（CO₂ が何個・H₂O が何個）と
-         *   式の係数が**同じ数**であることが、この反応を画面でやる意味そのもの
-         *   —— 元素分析はこの数を使って組成を逆算する。 */
-        id: 'combustion',
-        reagentId: 'o2_flame',
-        label: '完全燃焼（O₂・点火）→ CO₂ ＋ H₂O',
-        detect: (mol) => combustibleComponents(mol),
-        apply(game, site) {
-            const mol = game.userMolecule;
-            const comp = combustionComposition(mol, site);
-            if (!comp) throw new Error('燃焼の式が書けない分子です');
-            const spots = combustionProductSpots(mol, site, comp.co2 + comp.h2o);
-            if (!spots) throw noRoom('生成物を置く空間がありません');
-            const G = bondStep(mol, site[0]);
-            // 燃えた分子は跡形もなくなる ＝ もとの原子はすべて消える
-            site.forEach(id => mol.removeAtom(id));
-            const changed = [];
-            for (let i = 0; i < comp.co2; i++) {
-                const p = spots[i];
-                const c = mol.addAtom('C', p.x, p.y);
-                const oL = mol.addAtom('O', p.x - G, p.y);
-                const oR = mol.addAtom('O', p.x + G, p.y);
-                mol.addBond(oL.id, c.id, 2);
-                mol.addBond(c.id, oR.id, 2);
-                /* ⚠ **CO₂ には `fromReaction` を付けない。** この印は `parkAsWater` が
-                 *   置いた「脱離した水」を表すもので、CV1/CV4 の物差しは
-                 *   **その印の付いた成分を検査から外す**（印は変化点を指すもので
-                 *   生成物の目録ではない、という約束）。CO₂ は燃焼の主生成物なので、
-                 *   外してしまうと「変化が1つも起きなかった反応」に化ける。 */
-                [c, oL, oR].forEach(a => { changed.push(a.id); });
-            }
-            for (let i = 0; i < comp.h2o; i++) {
-                const p = spots[comp.co2 + i];
-                const o = mol.addAtom('O', p.x, p.y);
-                o.fromReaction = true;          // 自動水素で H₂O として描かれる
-                changed.push(o.id);
-            }
-            // ---- 係数を整数にそろえた式を作る（O₂ が半整数になるときだけ全体を2倍する）
-            const k = Number.isInteger(comp.o2) ? 1 : 2;
-            const sub = n => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
-            const co = n => (n === 1 ? '' : String(n));
-            const fuel = 'C' + (comp.c > 1 ? sub(comp.c) : '') +
-                'H' + (comp.h > 1 ? sub(comp.h) : '') +
-                (comp.o ? 'O' + (comp.o > 1 ? sub(comp.o) : '') : '');
-            const eq = `${co(k)}${fuel} ＋ ${co(comp.o2 * k)}O₂ → ` +
-                `${co(comp.co2 * k)}CO₂ ＋ ${co(comp.h2o * k)}H₂O`;
-            return {
-                caption: `完全燃焼しました。**${eq}** です。` +
-                    `炭素は1個残らず二酸化炭素に、水素は1個残らず水になります` +
-                    `（図に出ているのは**1分子ぶん**で、CO₂ が ${comp.co2} 個・H₂O が ${comp.h2o} 個です）。` +
-                    (k === 2
-                        ? `⚠ この分子は O₂ の係数が分数になるので、**式全体を2倍**して整数にそろえてあります。` +
-                          `式の ${comp.co2 * 2}CO₂・${comp.h2o * 2}H₂O が図の2倍になっているのはそのためです。`
-                        : '') +
-                    (comp.o ? `もとの分子が持っていた酸素 ${comp.o} 個も生成物の側に入るので、` +
-                        `必要な O₂ はそのぶん少なくなります。` : '') +
-                    'この「C の数 ＝ CO₂ の数」「H の数 ＝ H₂O の数の2倍」という対応が元素分析の土台で、' +
-                    '燃やして出てきた CO₂ と H₂O の質量から、もとの分子の C と H の数を逆算します。',
-                changed,
-                refit: true
-            };
-        }
-    },
-    {
         // 生成物が2つに分かれる（CHI₃ ＋ カルボン酸のナトリウム塩）。塩は -COO-Na を
         // 線1本で書く既存の流儀に乗せる（v353・イオンはモデルに持ち込まない）
         id: 'iodoform',
@@ -7430,6 +7363,78 @@ const REACTION_RULES = [
         morphStages: 'bondsFirst', // ①環の配置のまま開く → ②鎖状に整列する
         detect(mol) { return detectGlucopyranose(mol); },
         apply(game, site) { return applyOpenRing(game, site); }
+    },
+    {
+        /* ★★ 完全燃焼（v1541）。参考書の式3本（メタン・エタノール・ベンゼン）を1本で埋める。
+         * 門番と置き場の理屈は `combustionComposition` / `combustionProductSpots` の注記。
+         *
+         * ★ **係数つきの式を caption に必ず出す。** 図（CO₂ が何個・H₂O が何個）と
+         *   式の係数が**同じ数**であることが、この反応を画面でやる意味そのもの
+         *   —— 元素分析はこの数を使って組成を逆算する。 */
+        id: 'combustion',
+        reagentId: 'o2_flame',
+        /* ⚠ **札の名前に生成物を書かない。** 反応の一覧からボタンを**文字で**引いている
+         *   テストが4本あり、書き方を変えるたびに別のテストへ当たった（`→ CO₂ ＋ H₂O` は
+         *   L4・L6 の「H₂O」と RG10 の「H₂」に・`→ 二酸化炭素と水` は L6・RG14 の「**酸化**」に）。★ 生成物は caption が係数つきの式で言うので、札は条件だけを名乗ればよい。⚠ 一覧の並びも**この1本を末尾に置いた** ——
+         *   有機化合物はたいてい燃えるので、前のほうに置くと
+         *   **どの分子でも燃焼が先頭に並ぶ**（見たい反応が下へ押し出される）。 */
+        label: '完全燃焼（O₂・点火）',
+        detect: (mol) => combustibleComponents(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const comp = combustionComposition(mol, site);
+            if (!comp) throw new Error('燃焼の式が書けない分子です');
+            const spots = combustionProductSpots(mol, site, comp.co2 + comp.h2o);
+            if (!spots) throw noRoom('生成物を置く空間がありません');
+            const G = bondStep(mol, site[0]);
+            // 燃えた分子は跡形もなくなる ＝ もとの原子はすべて消える
+            site.forEach(id => mol.removeAtom(id));
+            const changed = [];
+            for (let i = 0; i < comp.co2; i++) {
+                const p = spots[i];
+                const c = mol.addAtom('C', p.x, p.y);
+                const oL = mol.addAtom('O', p.x - G, p.y);
+                const oR = mol.addAtom('O', p.x + G, p.y);
+                mol.addBond(oL.id, c.id, 2);
+                mol.addBond(c.id, oR.id, 2);
+                /* ⚠ **CO₂ には `fromReaction` を付けない。** この印は `parkAsWater` が
+                 *   置いた「脱離した水」を表すもので、CV1/CV4 の物差しは
+                 *   **その印の付いた成分を検査から外す**（印は変化点を指すもので
+                 *   生成物の目録ではない、という約束）。CO₂ は燃焼の主生成物なので、
+                 *   外してしまうと「変化が1つも起きなかった反応」に化ける。 */
+                [c, oL, oR].forEach(a => { changed.push(a.id); });
+            }
+            for (let i = 0; i < comp.h2o; i++) {
+                const p = spots[comp.co2 + i];
+                const o = mol.addAtom('O', p.x, p.y);
+                o.fromReaction = true;          // 自動水素で H₂O として描かれる
+                changed.push(o.id);
+            }
+            // ---- 係数を整数にそろえた式を作る（O₂ が半整数になるときだけ全体を2倍する）
+            const k = Number.isInteger(comp.o2) ? 1 : 2;
+            const sub = n => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+            const co = n => (n === 1 ? '' : String(n));
+            const fuel = 'C' + (comp.c > 1 ? sub(comp.c) : '') +
+                'H' + (comp.h > 1 ? sub(comp.h) : '') +
+                (comp.o ? 'O' + (comp.o > 1 ? sub(comp.o) : '') : '');
+            const eq = `${co(k)}${fuel} ＋ ${co(comp.o2 * k)}O₂ → ` +
+                `${co(comp.co2 * k)}CO₂ ＋ ${co(comp.h2o * k)}H₂O`;
+            return {
+                caption: `完全燃焼しました。**${eq}** です。` +
+                    `炭素は1個残らず二酸化炭素に、水素は1個残らず水になります` +
+                    `（図に出ているのは**1分子ぶん**で、CO₂ が ${comp.co2} 個・H₂O が ${comp.h2o} 個です）。` +
+                    (k === 2
+                        ? `⚠ この分子は O₂ の係数が分数になるので、**式全体を2倍**して整数にそろえてあります。` +
+                          `式の ${comp.co2 * 2}CO₂・${comp.h2o * 2}H₂O が図の2倍になっているのはそのためです。`
+                        : '') +
+                    (comp.o ? `もとの分子が持っていた酸素 ${comp.o} 個も生成物の側に入るので、` +
+                        `必要な O₂ はそのぶん少なくなります。` : '') +
+                    'この「C の数 ＝ CO₂ の数」「H の数 ＝ H₂O の数の2倍」という対応が元素分析の土台で、' +
+                    '燃やして出てきた CO₂ と H₂O の質量から、もとの分子の C と H の数を逆算します。',
+                changed,
+                refit: true
+            };
+        }
     }
 ];
 
