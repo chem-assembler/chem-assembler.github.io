@@ -184,6 +184,12 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-hand-table{font-size:15px}
 .ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
 .ref-scope .ref-callout-text{font-size:15.5px}
+/* よくある誤解（:::mistake・§28）。★ 面Aは読み欄 680px なので寸法だけ上げる（色は LIGHT_CSS） */
+.ref-scope .ref-mistake{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-mistake-tag{font-size:12.5px}
+.ref-scope .ref-mistake-wrong,.ref-scope .ref-mistake-right{font-size:15.5px;margin-bottom:6px}
+.ref-scope .ref-mistake-mark{font-size:16px}
+.ref-scope .ref-mistake-why{font-size:14.5px}
 /* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
    13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
    ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
@@ -205,7 +211,7 @@ nav.seq a:hover{text-decoration:underline}
 footer{background:var(--band);color:#a8b0c4;margin-top:44px;padding:18px 0 46px;font-size:12.5px;line-height:1.8}
 footer a{color:#a8b0c4}
 footer a:hover{color:var(--brand)}
-:root{--border-color:rgba(255, 255, 255, 0.08);--font-main:'Noto Sans JP', sans-serif;--neon-purple:#9b59b6;--text-muted:#7a84a2;--text-primary:#f5f6fa;--text-secondary:#a0a8c0}
+:root{--border-color:rgba(255, 255, 255, 0.08);--font-main:'Noto Sans JP', sans-serif;--neon-green:#2ecc71;--neon-purple:#9b59b6;--neon-red:#ff4757;--text-muted:#7a84a2;--text-primary:#f5f6fa;--text-secondary:#a0a8c0}
 .ref-p {
     font-size: 13px;
     line-height: 1.75;
@@ -345,6 +351,8 @@ footer a:hover{color:var(--brand)}
 .ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
 /* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
 .ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 副生成物（同じ行に2つ以上できるときだけ）。⚠ 主より一段沈める ＝ どちらが主かは色の濃さでも読める */
+.ref-map-table .ref-map-minor { color: var(--text-muted); }
 /* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
 .ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
 .ref-map-table .ref-map-none { color: var(--text-secondary); }
@@ -530,7 +538,13 @@ footer a:hover{color:var(--brand)}
 .ref-blank {
     padding: 0 2px;
     border-radius: 3px 3px 0 0;
-    background: rgba(255, 255, 255, 0.07);
+    /* ⚠⚠ **沈める**（明るくしない）。2026-09-12 に実測して直した ——
+       前は `rgba(255,255,255,.07)` で敷きを*持ち上げて*いたので、添え物の色の字が
+       載ったとき（ケトンのページの図の説明）に **4.35:1 で AA 割れ**していた。
+       ★ 沈めると同じ字で **5.05:1**。発展の折りたたみで一度通った道とまったく同じ
+       （`.ref-adv` の注記・`DESIGN_reference_book.md` §24-2）。
+       ⚠ 「穴」に見えることは点線の下線が受け持っているので、向きを変えても役は変わらない。 */
+    background: rgba(0, 0, 0, 0.25);
     border-bottom: 2px dotted var(--text-muted);
     letter-spacing: 0.06em;
 }
@@ -621,6 +635,38 @@ footer a:hover{color:var(--brand)}
    「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
 .ref-callout-note { border-left-color: var(--text-secondary); }
 .ref-callout-note .ref-callout-tag { color: var(--text-muted); }
+/* ★★ よくある誤解（`:::mistake`・設計書 §28）。⚠ 札の言葉は learn.js の `REF_MISTAKE_TAG`。
+   ⚠⚠ **急所は「誤りの行を本文と同じ字で出さない」こと** —— 同じ字で2行並べると、
+      どちらが正しいかを読まないと分からない ＝ この囲みを作った意味が消える。
+      ★ 印は3つ重ねる: ✗ の字（色だけに頼らない）・弱めた色・取り消し線。
+   ⚠⚠ **暗い地では敷きを沈める**（明るくしない）—— 発展の折りたたみで実測済み:
+      薄い敷きを *明るく* すると添え物の字が 4.78:1 → 4.22:1 で AA 割れ、
+      **沈めると 5.04:1 に上がる**（`DESIGN_reference_book.md` §24-2）。
+   ★ 左の帯は赤（`--neon-red`）—— 注意の黄・丸暗記の紫・例題の水色・発展の緑と
+      重ならない残りの1色で、「誤り」の意味にも合う。 */
+.ref-mistake {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-red);
+    border-radius: 0 10px 10px 0;
+    background: rgba(0, 0, 0, 0.22);
+}
+.ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
+/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+   （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
+.ref-mistake-wrong,
+.ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+.ref-mistake-wrong { color: var(--text-secondary); }
+.ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
+.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
+   足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
+.ref-mistake-right { color: var(--text-primary); }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
       押せるものと同じ見た目にしない —— 淡くしたうえで「準備中」の札を必ず添える
@@ -749,7 +795,27 @@ a.ref-link::before { content: '→ '; }
 .ref-scope .ref-adv-sum>.ref-sec-h::before{color:#2e6b45}
 /* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
    （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
-.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
+/* ⚠⚠ 字の色も読み替える（2026-09-12 実測）—— 敷きを沈めた（#e7e2d8）ぶん、
+   添え物の色（--text-muted:#636b78）のままでは **4.17:1 で AA 割れ**だった。
+   ★ 一段濃い #4e5765（--text-secondary と同じ値）にして 5.58:1。
+   ⚠ 「穴」に見えることは地と下線が受け持っているので、字を濃くしても役は変わらない。 */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478;color:#4e5765}
+/* ★★ よくある誤解（§28）。⚠ 暗い地では敷きを**沈めて**層を作っている（rgba(0,0,0,.22)）が、
+   明るい地でそれをやると灰色の面になる ＝ 発展の折りたたみとまったく同じ踏み方。
+   ★ 明るい地では**赤寄りの紙を敷く**（#faeceb）—— 本文の地 #f5f3ef とも紙 #fff とも
+     見分けが付き、本文 13.5:1・添え物 6.2:1・✗ の赤 6.1:1・✓ の緑 6.2:1（全部 AA）。
+   ⚠⚠ ✗ と ✓ の色は **var(--neon-red) / var(--neon-green) なので checkLightCoverage に映らない** ——
+     ここで読み替えないと、白地で 3.0:1 と 1.9:1 のまま黙って出る。
+   ⚠ 誤りの行の取り消し線は色ではないので、明るい地でもそのまま効く。 */
+/* ⚠ border-color は左の帯まで塗るので、**先に**書いて そのあと左だけ戻す（.ref-exercise と同じ順。
+   ⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにバッククォートを書けない） */
+.ref-scope .ref-mistake{background:#faeceb;border-color:#e3d2d0;border-left-color:#a62828}
+.ref-scope .ref-mistake-tag{color:#a62828;font-weight:700}
+.ref-scope .ref-mistake-wrong{color:#4e5765}
+.ref-scope .ref-mistake-wrong .ref-mistake-mark{color:#a62828}
+.ref-scope .ref-mistake-right{color:var(--fg)}
+.ref-scope .ref-mistake-right .ref-mistake-mark{color:#166534}
+.ref-scope .ref-mistake-why{color:#4e5765}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
@@ -777,13 +843,33 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-layout">
 
 <div class="ref-scope">
-<p class="ref-p">アルコールに濃硫酸を加えて熱すると、<b>−OH と、その隣の炭素についている水素 H</b> がまとめて水 H₂O として抜け、抜けたあとの2つの炭素のあいだに二重結合ができます。分子1つの中だけで起きるので<b>分子内脱水</b>といい、できるのは<b>アルケン</b>です。</p>
-<p class="ref-p">どの水素が抜けるかは、−OH が付いた炭素（α炭素）の<b>隣にどんな炭素がいるか</b>だけで決まります。隣の炭素が1種類しかなければアルケンは1つ、2種類あれば<b>2つのアルケンができます</b>。この2つは混じって出てくるので、どちらか一方だけができるわけではありません。</p>
-<div class="ref-table-wrap"><div class="ref-cap">C₁〜C₅ のアルコールと、分子内脱水でできるアルケン（16行・うち脱水できないもの 2行）</div><table class="ref-map-table"><thead><tr><th>分子式</th><th>アルコール</th><th>分子内脱水でできるアルケン</th></tr></thead><tbody><tr class="ref-map-blocked"><td class="ref-group ref-formula" rowspan="1">CH₄O<span>1 件</span></td><td class="ref-map-from">メタノール</td><td class="ref-map-to"><b class="ref-map-none">脱水できない</b><span class="ref-map-why">−OH が付いた炭素の隣に、炭素がない</span></td></tr><tr><td class="ref-group ref-formula" rowspan="1">C₂H₆O<span>1 件</span></td><td class="ref-map-from">エタノール</td><td class="ref-map-to"><span>エテン</span></td></tr><tr><td class="ref-group ref-formula" rowspan="2">C₃H₈O<span>2 件</span></td><td class="ref-map-from">2-プロパノール</td><td class="ref-map-to"><span>プロペン</span></td></tr><tr><td class="ref-map-from">1-プロパノール</td><td class="ref-map-to"><span>プロペン</span></td></tr><tr><td class="ref-group ref-formula" rowspan="4">C₄H₁₀O<span>4 件</span></td><td class="ref-map-from">2-メチル-2-プロパノール</td><td class="ref-map-to"><span>2-メチルプロペン</span></td></tr><tr><td class="ref-map-from">2-メチル-1-プロパノール</td><td class="ref-map-to"><span>2-メチルプロペン</span></td></tr><tr><td class="ref-map-from">2-ブタノール</td><td class="ref-map-to"><span>1-ブテン</span>／<span class="ref-map-major">2-ブテン（主）</span></td></tr><tr><td class="ref-map-from">1-ブタノール</td><td class="ref-map-to"><span>1-ブテン</span></td></tr><tr class="ref-map-blocked"><td class="ref-group ref-formula" rowspan="8">C₅H₁₂O<span>8 件</span></td><td class="ref-map-from">2,2-ジメチル-1-プロパノール</td><td class="ref-map-to"><b class="ref-map-none">脱水できない</b><span class="ref-map-why">−OH が付いた炭素の隣の炭素に、水素がない</span></td></tr><tr><td class="ref-map-from">2-メチル-2-ブタノール</td><td class="ref-map-to"><span>2-メチル-1-ブテン</span>／<span class="ref-map-major">2-メチル-2-ブテン（主）</span></td></tr><tr><td class="ref-map-from">3-メチル-2-ブタノール</td><td class="ref-map-to"><span>3-メチル-1-ブテン</span>／<span class="ref-map-major">2-メチル-2-ブテン（主）</span></td></tr><tr><td class="ref-map-from">3-メチル-1-ブタノール</td><td class="ref-map-to"><span>3-メチル-1-ブテン</span></td></tr><tr><td class="ref-map-from">2-メチル-1-ブタノール</td><td class="ref-map-to"><span>2-メチル-1-ブテン</span></td></tr><tr><td class="ref-map-from">2-ペンタノール</td><td class="ref-map-to"><span>1-ペンテン</span>／<span class="ref-map-major">2-ペンテン（主）</span></td></tr><tr><td class="ref-map-from">3-ペンタノール</td><td class="ref-map-to"><span>2-ペンテン</span></td></tr><tr><td class="ref-map-from">1-ペンタノール</td><td class="ref-map-to"><span>1-ペンテン</span></td></tr></tbody></table></div>
-<p class="ref-p">右の列を縦に読んでください。まず、<b>行き先が重なることがあります</b> —— 1-プロパノールと2-プロパノールはどちらもプロペン、2-メチル-2-ブタノールと3-メチル-2-ブタノールはどちらも 2-メチル-2-ブテン。<b>アルケンからアルコールを言い当てることは、いつでもできるとは限りません</b>。</p>
-<p class="ref-p">次に、<b>2つできる行</b>です。このとき多くできるほう（主生成物）は、<b>水素の少ないほうの隣の炭素から水素が抜けたアルケン</b>で、これを<b>ザイツェフ則</b>といいます。表では「（主）」を付けてあります。2-ブタノールなら 2-ブテンが主、1-ブテンが副。二重結合につながる炭素が多いアルケンほどできやすい、と覚えておけば向きを間違えません。</p>
-<p class="ref-p">最後に、<b>脱水できない行が2つ</b>あります。理由は同じではありません。メタノールは −OH が付いた炭素の<b>隣に炭素がない</b>ので、二重結合を作る相手がいません。2,2-ジメチル-1-プロパノールは隣に炭素はありますが、その炭素の手は3本ともメチル基でふさがっていて<b>水素が1つもない</b>ので、抜くものがありません。<b>「アルコールなら脱水できる」ではなく、隣の炭素に水素があるかどうかで決まる</b> —— この2行が、そのことを言っています。</p>
-<p class="ref-p">逆向き（アルケンに水を付加してアルコールを作る）も、この表をそのまま右から左へ読めば見えます。ただし逆向きにはマルコフニコフ則という別の向きの規則があり、<b>この表の矢印を逆にたどっただけでは主生成物が言えない</b>ことに注意してください。書き出しの練習には、両方の向きの回が用意してあります。</p>
+<p class="ref-p">アルコールに濃硫酸を加えて160〜170℃に熱すると、<b>−OH と、その隣の炭素についている水素 H</b> がまとめて水 H₂O として抜け（脱離）、抜けたあとの2つの炭素原子のあいだに二重結合ができます。分子1つの中だけで起きるので<b>分子内脱水</b>といい、できるのは<b>アルケン</b>です。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₂H₅OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">160〜170℃</span></span><span class="ref-rx-side">CH₂=CH₂ ＋ H₂O</span></div><p class="ref-note">エタノールの分子内脱水。−OH と隣の炭素の H が水として抜けて、エテン（エチレン）ができます。⚠ 130〜140℃だと分子2つのあいだで水が取れて、ジエチルエーテルになります。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">アルコールが起こす反応の全体（ナトリウムとの反応・脱水・酸化）は「アルコールの性質」で</a></p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-dehydration-2-propanol.png" alt="2-プロパノールの構造式。炭素3個が横一直線に並び、オレンジの帯が主鎖の上を通って左から C₁ C₂ C₃ と番号が振ってある。真ん中の C₂ の上にヒドロキシ基 OH が付き、両端の C₁ と C₃ には水素が3個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">2-プロパノール。−OH が付いているのは真ん中の C₂ で、その隣は左の C₁ と右の C₃ の2つです。</figcaption></figure>
+<p class="ref-p">図の2-プロパノールでは、H原子は左右どちらの炭素原子からも取れます。</p>
+<p class="ref-p">ただし、2-プロパノールが左右対称なので、どちらの場合も同じプロペンが生じます。</p>
+<p class="ref-p">2-ブタノールでは話が変わります。左の炭素から水素をとると1-ブテン、右の炭素から水素をとると2-ブテンが生じます。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-dehydration-2-butanol.png" alt="2-ブタノールの構造式。炭素4個が横一直線に並び、オレンジの帯が主鎖の上を通って左から C₁ C₂ C₃ C₄ と番号が振ってある。左から2番目の C₂ の上にヒドロキシ基 OH が付き、左端の C₁ には水素が3個、C₃ には水素が2個、右端の C₄ には水素が3個付いている" loading="lazy"><figcaption class="ref-figure-cap">2-ブタノール。−OH が付いた C₂ の隣は、左が C₁、右が C₃ で、<b>左右で形が違います</b>。</figcaption></figure>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₃CH(OH)CH₂CH₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">160〜170℃</span></span><span class="ref-rx-side">CH₂=CHCH₂CH₃ ＋ H₂O</span></div><p class="ref-note">左の炭素（C₁）から水素をとった場合。1-ブテンができます。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₃CH(OH)CH₂CH₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">160〜170℃</span></span><span class="ref-rx-side">CH₃CH=CHCH₃ ＋ H₂O</span></div><p class="ref-note">右の炭素（C₃）から水素をとった場合。2-ブテンができます。</p></div>
+<p class="ref-p">2-ブタノールを濃硫酸で分子内脱水させると、1-ブテンと2-ブテンの混合物が得られます。2-ブテンはシス-トランス異性体がありますので、立体異性体も区別すると1-ブテン、シス-2-ブテン、トランス-2-ブテンの3種類が得られます。</p>
+<p class="ref-p">1-ブテンと2-ブテンのうち優先的に生じるのは2-ブテンですが、それについては次のページをご覧ください。</p>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">2つできるときにどちらが多くできるか（ザイツェフ則）<b class="ref-link-badge">準備中</b></span></p>
+<p class="ref-p">シス-2-ブテンとトランス-2-ブテンでは、立体障害がある分シス-2-ブテンが不安定であり、トランス-2-ブテンの方が優先的に生じます。詳しくは次のページをご覧ください。</p>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">大きな原子団どうしがぶつかって不安定になること（立体障害）<b class="ref-link-badge">準備中</b></span></p>
+<p class="ref-p">メタノール CH₃OH からペンタノール C₅H₁₁OH までのアルコールと脱水生成物の対応をまとめると次のようになります。</p>
+<div class="ref-table-wrap"><div class="ref-cap">C₁〜C₅ のアルコールと、分子内脱水でできるアルケン（16行・うち脱水できないもの 2行）</div><table class="ref-map-table"><thead><tr><th>分子式</th><th>アルコール</th><th>分子内脱水でできるアルケン</th></tr></thead><tbody><tr class="ref-map-blocked"><td class="ref-group ref-formula" rowspan="1">CH₄O<span>1 件</span></td><td class="ref-map-from">メタノール</td><td class="ref-map-to"><b class="ref-map-none">脱水できない</b><span class="ref-map-why">−OH が付いた炭素の隣に、炭素がない</span></td></tr><tr><td class="ref-group ref-formula" rowspan="1">C₂H₆O<span>1 件</span></td><td class="ref-map-from">エタノール</td><td class="ref-map-to"><span>エテン</span></td></tr><tr><td class="ref-group ref-formula" rowspan="2">C₃H₈O<span>2 件</span></td><td class="ref-map-from">2-プロパノール</td><td class="ref-map-to"><span>プロペン</span></td></tr><tr><td class="ref-map-from">1-プロパノール</td><td class="ref-map-to"><span>プロペン</span></td></tr><tr><td class="ref-group ref-formula" rowspan="4">C₄H₁₀O<span>4 件</span></td><td class="ref-map-from">2-メチル-2-プロパノール</td><td class="ref-map-to"><span>2-メチルプロペン</span></td></tr><tr><td class="ref-map-from">2-メチル-1-プロパノール</td><td class="ref-map-to"><span>2-メチルプロペン</span></td></tr><tr><td class="ref-map-from">2-ブタノール</td><td class="ref-map-to"><span class="ref-map-minor">1-ブテン（副）</span>／<span class="ref-map-major">2-ブテン（主）</span></td></tr><tr><td class="ref-map-from">1-ブタノール</td><td class="ref-map-to"><span>1-ブテン</span></td></tr><tr class="ref-map-blocked"><td class="ref-group ref-formula" rowspan="8">C₅H₁₂O<span>8 件</span></td><td class="ref-map-from">2,2-ジメチル-1-プロパノール</td><td class="ref-map-to"><b class="ref-map-none">脱水できない</b><span class="ref-map-why">−OH が付いた炭素の隣の炭素に、水素がない</span></td></tr><tr><td class="ref-map-from">2-メチル-2-ブタノール</td><td class="ref-map-to"><span class="ref-map-minor">2-メチル-1-ブテン（副）</span>／<span class="ref-map-major">2-メチル-2-ブテン（主）</span></td></tr><tr><td class="ref-map-from">3-メチル-2-ブタノール</td><td class="ref-map-to"><span class="ref-map-minor">3-メチル-1-ブテン（副）</span>／<span class="ref-map-major">2-メチル-2-ブテン（主）</span></td></tr><tr><td class="ref-map-from">3-メチル-1-ブタノール</td><td class="ref-map-to"><span>3-メチル-1-ブテン</span></td></tr><tr><td class="ref-map-from">2-メチル-1-ブタノール</td><td class="ref-map-to"><span>2-メチル-1-ブテン</span></td></tr><tr><td class="ref-map-from">2-ペンタノール</td><td class="ref-map-to"><span class="ref-map-minor">1-ペンテン（副）</span>／<span class="ref-map-major">2-ペンテン（主）</span></td></tr><tr><td class="ref-map-from">3-ペンタノール</td><td class="ref-map-to"><span>2-ペンテン</span></td></tr><tr><td class="ref-map-from">1-ペンタノール</td><td class="ref-map-to"><span>1-ペンテン</span></td></tr></tbody></table></div>
+<p class="ref-p">アルコールとアルケンの対応が1:1でないことに注意しましょう。脱水反応によってあるアルケンを生じるアルコールは1種類とは限りません。脱水の逆反応である H₂O の付加反応についても同様です。したがってアルコールとアルケンの対応関係は複雑になります。複数の化合物が生じる場合、付加反応の主生成物はマルコフニコフ則、脱水反応の主生成物はザイツェフ則で決まります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">逆向き（アルケンに水を付加する）の主生成物を決めるマルコフニコフ則は「アルケン」で</a></p>
+<p class="ref-p">脱水・H₂O の付加によって<b>炭素骨格が変わらない</b>ことも注目すべき点です。ブタン C₄H₁₀ の構造異性体は2種類なので、炭素数4のアルコールとアルケンは2種類に分けて考えることができます。ペンタン C₅H₁₂ の構造異性体は3種類なので、炭素数5のアルコールとアルケンは3種類に分けて考えることができます。</p>
+<h5 class="ref-h5">脱水反応できないアルコール</h5>
+<p class="ref-p">メタノール CH₃OH は炭素原子が1個しかなく、「ヒドロキシ基 −OH がついた炭素の隣の炭素」が存在しないため脱水反応を起こしません。2,2-ジメチル-1-プロパノールは、「ヒドロキシ基 −OH がついた炭素の隣の炭素」に水素原子が1個もついていないため脱水反応を起こしません。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-dehydration-methanol.png" alt="メタノールの構造式。炭素1個にヒドロキシ基 OH が1つと水素が3個付いているだけで、隣に炭素がない" loading="lazy"><figcaption class="ref-figure-cap">メタノール CH₄O。−OH が付いた炭素の<b>隣に炭素がありません</b>。二重結合を作る相手がいないので脱水できません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-dehydration-neopentyl.png" alt="2,2-ジメチル-1-プロパノールの構造式。中心の炭素にメチル基 CH₃ が3個と、ヒドロキシ基 OH が付いた CH₂ が1個、合わせて4本の結合が出ている" loading="lazy"><figcaption class="ref-figure-cap">2,2-ジメチル-1-プロパノール C₅H₁₂O。−OH が付いた炭素の隣（中心の炭素）は、<b>4本の手がすべて炭素でふさがっていて水素が1個もありません</b>。抜くものがないので脱水できません。</figcaption></figure>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">第3級アルコールは酸化されないのだから、脱水もできない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">第3級アルコールは<b>脱水できます</b>。できないのは<b>メタノール</b>と<b>2,2-ジメチル-1-プロパノール</b>で、どちらも<b>第1級</b>です。</span></p><p class="ref-mistake-why">酸化と脱水を混同したものです。酸化で見るのは「<b>−OH が付いた炭素</b>に水素があるか」で、第3級はそこが炭素3本でふさがっているので酸化されません。脱水で見るのは「<b>その隣の炭素</b>に水素があるか」なので、級とは関係がありません。⚠ 級で言えるのは酸化のほうだけです。</p></div>
+<h5 class="ref-h5">例題</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">2-ブタノールを濃硫酸とともに160〜170℃に加熱した。<b>(1) 生じるアルケンを構造異性体として2つ書け。(2) そのうち主生成物はどちらか。(3) 主生成物には立体異性体が2つある。優先的に生じるのはどちらか。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>1-ブテン</b> CH₂=CHCH₂CH₃ と <b>2-ブテン</b> CH₃CH=CHCH₃。−OH が付いた C₂ の隣が C₁ と C₃ の2つあり、どちらから H が抜けるかで行き先が分かれます。(2) 主生成物は <b>2-ブテン</b>（ザイツェフ則）。(3) <b>トランス-2-ブテン</b>。シス形は立体障害があるぶん不安定です。</p></div></details></div>
 </div>
 </div>
 

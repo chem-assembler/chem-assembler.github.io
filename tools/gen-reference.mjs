@@ -186,6 +186,57 @@ function reportMemos(pages) {
     all.forEach(m => console.log(`   reference-src/${m.id}.md:${m.line}  ${m.text}`));
 }
 
+/* ★★ よくある誤解（`:::mistake`・設計書 §28）を見て、**一覧に抽出できる形か**を毎回確かめる。
+ *
+ * 発端はユーザーの申し立て「common mistakes のようなコーナーがあってもよいかもしれません／
+ * **あとで抽出して一覧にすると価値がある**と思います」。
+ *
+ * ★★ **出どころ（どのページのどの節か）は原稿に書かせない。**
+ *   ⚠ ページ id はファイル名、節は直前の `:::section` の `anchor` ＝ **もう分かっている。**
+ *     書かせると同じことを2か所に持つことになり、節を動かしたときに黙って古くなる
+ *     （`:::figure` の src にパスを書かせないのと同じ考え）。
+ * ⚠⚠ **ただし「もう分かっている」は、見出しの下に在るときだけ成り立つ。**
+ *   ★ だから **どの見出しにも属さない `:::mistake` は赤にする** —— 出どころの言えない誤解を作らない。
+ *   ⚠ 受けるのは `:::section`（アンカーを持つ ＝ `#ref-sec-<anchor>` で名指しできる）と
+ *     `:::heading`（`## …`。アンカーを持たないので題で指す）の**両方**。
+ *     ⓵ 実測: `alcohol-dehydration.md` は短いページなので `:::section` を1つも持たず、
+ *       `##` の小見出しだけで組んである。**節だけを受けると、このページに誤解を置けない。**
+ *   ⚠ これは書式（`tools/reference-md.js`）では見られない。あちらは囲みを1つずつ見るので
+ *     **前に何が在るかを知らない**（`:::link` の行き先と同じ役割分担・§16-5）。
+ *
+ * ★ 走るたびに ページ／見出しつきの一覧を出す ＝ **抽出できることが毎回その場で確かめられる**
+ *   （一覧を作る道具を別に置かない。置くと、置いたきり腐る）。
+ */
+function reportMistakes(pages) {
+    const all = [];
+    const bare = s => String(s).replace(/<\/?(b|sub)>/g, '');
+    pages.forEach(p => {
+        let at = null;   // 直前の見出し（節 or 小見出し）
+        (p.blocks || []).forEach(b => {
+            /* ⚠ 節は `#<anchor>` で名指しできる（一覧からその節へ飛べる）。
+               小見出しはアンカーを持たない（§20-5）ので、題でしか指せない。 */
+            if (b.kind === 'section') { at = p.id + '#' + b.anchor + '（' + bare(b.title) + '）'; return; }
+            if (b.kind === 'heading') { at = p.id + '「' + bare(b.title) + '」'; return; }
+            if (b.kind !== 'mistake') return;
+            if (!at) {
+                throw new Error(`reference-src/${p.id}.md: :::mistake が、どの見出しよりも前に置かれています\n`
+                    + `   → ${bare(b.wrong)}\n`
+                    + '   ★ 誤解の出どころ（どのページのどこか）は「直前の見出し」で決まるので、'
+                    + '見出しの外に置くと一覧に出どころが書けません\n'
+                    + '   ⚠ 直し方: その誤解が属する :::section か ## の小見出しの後ろへ動かします');
+            }
+            all.push({ where: at, wrong: b.wrong, right: b.right });
+        });
+    });
+    if (!all.length) return;
+    console.log(`⚠ よくある誤解 ${all.length} 件（出どころつきで抽出できます）`);
+    all.forEach(m => {
+        console.log(`   ${m.where}`);
+        console.log(`      ✗ ${bare(m.wrong)}`);
+        console.log(`      ✓ ${bare(m.right)}`);
+    });
+}
+
 /* ★★ 表記を揃えて原稿を書き戻す（REFBOOK_STYLE.md §3）。
  *
  * ⚠⚠ **黙って揃えない。** 直した所を**1件ずつ**（ファイル・行・規則・前・後）出す ——
@@ -228,6 +279,7 @@ function main() {
         pages = buildPages();
         checkLinks(pages, readPlanned());
         checkFigures(pages);
+        reportMistakes(pages);
     } catch (e) {
         console.log('❌ ' + e.message);
         process.exit(1);

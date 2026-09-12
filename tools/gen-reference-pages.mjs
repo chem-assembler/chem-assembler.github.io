@@ -340,6 +340,12 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-hand-table{font-size:15px}
 .ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
 .ref-scope .ref-callout-text{font-size:15.5px}
+/* よくある誤解（:::mistake・§28）。★ 面Aは読み欄 680px なので寸法だけ上げる（色は LIGHT_CSS） */
+.ref-scope .ref-mistake{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-mistake-tag{font-size:12.5px}
+.ref-scope .ref-mistake-wrong,.ref-scope .ref-mistake-right{font-size:15.5px;margin-bottom:6px}
+.ref-scope .ref-mistake-mark{font-size:16px}
+.ref-scope .ref-mistake-why{font-size:14.5px}
 /* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
    13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
    ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
@@ -381,6 +387,11 @@ const LIGHT_OVERRIDE = [
     'ref-table', 'ref-mech-table', 'ref-map-table', 'ref-mech-play', 'ref-try',
     'ref-example', 'ref-sec-h', 'ref-toc', 'ref-rx', 'ref-rx-lv1',
     'ref-hand-table', 'ref-callout', 'ref-callout-caution', 'ref-callout-memorize',
+    /* ★ よくある誤解（`:::mistake`・§28）。⚠ 器の地が `rgba(0,0,0,.22)` ＝ **暗い地で「沈めた」敷き**なので、
+       明るい地でそのまま出すと灰色の面になる（発展の折りたたみと同じ踏み方）。
+       ⚠⚠ 色の literal を持たない `--neon-red` / `--neon-green` は**この検査に映らない**ので、
+         ✗ と ✓ の色は下の LIGHT_CSS で**手で**読み替えてある（#ff4757 は白地で 3.0:1 ＝ AA 割れ）。 */
+    'ref-mistake',
     'ref-rx-over', 'ref-rx-under',
     /* ⚠ `:::link`（ref-format レーン）と 明るい地（ref-read レーン）が別々に育ったので、
        取り込みのときに初めてぶつかった。**この検査が捕まえた**（下の LIGHT_CSS で読み替えた）。 */
@@ -467,7 +478,27 @@ const LIGHT_CSS = `
 .ref-scope .ref-adv-sum>.ref-sec-h::before{color:#2e6b45}
 /* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
    （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
-.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
+/* ⚠⚠ 字の色も読み替える（2026-09-12 実測）—— 敷きを沈めた（#e7e2d8）ぶん、
+   添え物の色（--text-muted:#636b78）のままでは **4.17:1 で AA 割れ**だった。
+   ★ 一段濃い #4e5765（--text-secondary と同じ値）にして 5.58:1。
+   ⚠ 「穴」に見えることは地と下線が受け持っているので、字を濃くしても役は変わらない。 */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478;color:#4e5765}
+/* ★★ よくある誤解（§28）。⚠ 暗い地では敷きを**沈めて**層を作っている（rgba(0,0,0,.22)）が、
+   明るい地でそれをやると灰色の面になる ＝ 発展の折りたたみとまったく同じ踏み方。
+   ★ 明るい地では**赤寄りの紙を敷く**（#faeceb）—— 本文の地 #f5f3ef とも紙 #fff とも
+     見分けが付き、本文 13.5:1・添え物 6.2:1・✗ の赤 6.1:1・✓ の緑 6.2:1（全部 AA）。
+   ⚠⚠ ✗ と ✓ の色は **var(--neon-red) / var(--neon-green) なので checkLightCoverage に映らない** ——
+     ここで読み替えないと、白地で 3.0:1 と 1.9:1 のまま黙って出る。
+   ⚠ 誤りの行の取り消し線は色ではないので、明るい地でもそのまま効く。 */
+/* ⚠ border-color は左の帯まで塗るので、**先に**書いて そのあと左だけ戻す（.ref-exercise と同じ順。
+   ⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにバッククォートを書けない） */
+.ref-scope .ref-mistake{background:#faeceb;border-color:#e3d2d0;border-left-color:#a62828}
+.ref-scope .ref-mistake-tag{color:#a62828;font-weight:700}
+.ref-scope .ref-mistake-wrong{color:#4e5765}
+.ref-scope .ref-mistake-wrong .ref-mistake-mark{color:#a62828}
+.ref-scope .ref-mistake-right{color:var(--fg)}
+.ref-scope .ref-mistake-right .ref-mistake-mark{color:#166534}
+.ref-scope .ref-mistake-why{color:#4e5765}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}

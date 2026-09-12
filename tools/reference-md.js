@@ -96,8 +96,12 @@
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
         list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'], hang: ['items'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。
-           `/reference-img/` を付けるのは learn.js の1か所（面A・面Bで同じ URL になる） */
-        figure: { order: ['src', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
+           `/reference-img/` を付けるのは learn.js の1か所（面A・面Bで同じ URL になる）。
+           ★★ `gen` は **その図をアプリの描画で焼くための指定**（`tools/gen-figure.mjs`）。
+              ⚠ 任意 —— スライドから切った図には無い。★ 書いてあれば「この図は何の分子か」を
+                原稿が名乗っていることになり、焼くたびに `iupacName` で突き合わせられる
+                ＝ `:::table` の `source`（行がどこから来たか）と同じ役目。 */
+        figure: { order: ['src', 'gen', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒） */
         reaction: { order: ['left', 'over', 'under', 'right', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], enum: { level: LEVELS } },
@@ -111,6 +115,36 @@
         table: { order: ['caption', 'source', 'head', 'align', 'rows'], req: ['source', 'head', 'rows'], list: ['head', 'rows'], listOnly: ['head', 'rows'], prose: ['caption', 'head', 'rows'] },
         /* 注意の囲み。⚠ `tone` は3つだけ（勘違いしやすい／丸暗記でよい／覚えなくてよい） */
         callout: { order: ['tone', 'text'], req: ['tone', 'text'], list: [], prose: ['text'], enum: { tone: TONES } },
+        /* ★★ よくある誤解（2026-09-12・ユーザー承認）。発端はユーザーの申し立て
+           「common mistakes のようなコーナーがあってもよいかもしれません／
+             あとで抽出して一覧にすると価値があると思います」。
+
+           ⚠⚠ **`advanced: true`（発展の印）と役が違う。⛔ 混ぜない。**
+             発展 ＝ **範囲の外**（高校の教科書の本文に無い）。
+             誤解 ＝ **範囲の内で、多くの人が間違える**。★ だから誤解の囲みは畳まない
+             （畳むと、いちばん読ませたい人が開かない）。
+
+           ⚠⚠ **`:::callout` の `tone: caution`（⚠ 勘違いしやすい）とも役が違う。**
+             あちらは**注意を1つ言う**器で、文が1本しかない ＝ **何が正しいかしか書けない。**
+             ★ こちらは **誤り と 正しい形を並べて置く**器で、欄が2つあることが本体
+             （`wrong` を書かずに済ませられない ＝ **誤解のほうを言葉にさせる**）。
+
+           ★ 欄は3つ:
+             `wrong` … ⚠ **よくある誤り**（生徒が実際にそう思っている文をそのまま書く）
+             `right` … ★ **正しい形**
+             `why`   … ⓵ なぜそう間違えるか／どう見分けるか（任意）
+           ⚠⚠ **画面では `wrong` を本文と同じ字で出さない**（`learn.js` の `renderMistake`）——
+             ✗ の札と、沈めた色と、取り消し線で「これは誤り」が一瞬で分かること。
+             ★ **それがこの囲みを作る理由そのもの**（同じ字で並べると、どちらが正か読まないと分からない）。
+
+           ★★ **出どころ（どのページのどこか）は原稿に書かせない。**
+             ⚠ ページ id はファイル名、場所は直前の見出し（`:::section` の `anchor`、
+               節を持たない短いページなら `## …` の題）＝ **もう分かっている。**
+             書かせると同じことを2か所に持つことになり、節を動かしたときに黙って古くなる。
+             ★ 代わりに `gen-reference.mjs` が「`:::mistake` は見出しの下にあること」を見て、
+               走るたびに **ページ／見出しつきの一覧**を出す（＝ 抽出できる形であることが毎回確かめられる）。 */
+        mistake: { order: ['wrong', 'right', 'why'], req: ['wrong', 'right'], list: [], prose: ['wrong', 'right', 'why'] },
+
         /* ★★ ページどうし・ページからアプリへのリンク（設計書 §20-7）。
            ⚠⚠ **行き先が「まだ無いページ」でもよい**のがこの器の急所 ——
               52ページの計画のうち書けているのは6枚で、本文はもう書けていないページを名指ししたがる。
@@ -641,6 +675,31 @@
             });
         }
         if (b.kind === 'list' && !b.items.length) fail(where, ':::list の items が空です');
+        if (b.kind === 'mistake') {
+            var plain = function (s) { return String(s).replace(/<\/?(b|sub)>/g, '').trim(); };
+            /* ⚠ 「誤り」だけ・「正しい形」だけでは囲みにならない。★ 短い語で済ませられないよう長さを見る */
+            if (plain(b.wrong).length < 6) {
+                fail(where, ':::mistake の wrong（よくある誤り）が短すぎます: 「' + b.wrong + '」'
+                    + '\n    ★ 生徒が実際にそう思っている文をそのまま書きます'
+                    + '（例: 第3級アルコールは酸化されないから、脱水もできない）');
+            }
+            if (plain(b.right).length < 6) {
+                fail(where, ':::mistake の right（正しい形）が短すぎます: 「' + b.right + '」');
+            }
+            /* ⚠⚠ **同じ文を2つ並べない。** 誤りと正しい形が同じなら、囲みが何も言っていない */
+            if (plain(b.wrong) === plain(b.right)) {
+                fail(where, ':::mistake の wrong と right が同じ文です'
+                    + '\n    ★ この囲みは「誤り」と「正しい形」を**並べて置く**ためのものです'
+                    + '（1つのことを言うだけなら :::callout の tone: caution を使います）');
+            }
+            /* ⚠⚠ **発展の印と役が違う**（範囲の外／範囲の内）。⛔ 混ぜない、を機械で言う。
+               ★ 「発展」と書いてある誤解は、たいてい `advanced: true` を付けたい節の話 */
+            if (plain(b.wrong).indexOf(ADVANCED_WORD) >= 0 || plain(b.right).indexOf(ADVANCED_WORD) >= 0) {
+                fail(where, ':::mistake の中に「' + ADVANCED_WORD + '」と書いてあります'
+                    + '\n    ⚠ 発展（＝ 高校の教科書の本文の外側）と、よくある誤解（＝ 範囲の内で間違えやすい）は役が違います'
+                    + '\n    ★ 範囲の外の話なら、その節に advanced: true を付けてください');
+            }
+        }
         if (b.kind === 'exercise') {
             /* ⚠⚠ **出どころ。**`:::table` の `source` と同じ扱い（§19-10 の「出どころの言えない行を書くな」）。
                ★ 短い語（「スライド」）で済ませられないよう長さを見る。⚠ 画面には出さない欄。 */

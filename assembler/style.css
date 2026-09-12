@@ -3309,6 +3309,8 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 .ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
 /* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
 .ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 副生成物（同じ行に2つ以上できるときだけ）。⚠ 主より一段沈める ＝ どちらが主かは色の濃さでも読める */
+.ref-map-table .ref-map-minor { color: var(--text-muted); }
 /* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
 .ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
 .ref-map-table .ref-map-none { color: var(--text-secondary); }
@@ -3525,7 +3527,13 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 .ref-blank {
     padding: 0 2px;
     border-radius: 3px 3px 0 0;
-    background: rgba(255, 255, 255, 0.07);
+    /* ⚠⚠ **沈める**（明るくしない）。2026-09-12 に実測して直した ——
+       前は `rgba(255,255,255,.07)` で敷きを*持ち上げて*いたので、添え物の色の字が
+       載ったとき（ケトンのページの図の説明）に **4.35:1 で AA 割れ**していた。
+       ★ 沈めると同じ字で **5.05:1**。発展の折りたたみで一度通った道とまったく同じ
+       （`.ref-adv` の注記・`DESIGN_reference_book.md` §24-2）。
+       ⚠ 「穴」に見えることは点線の下線が受け持っているので、向きを変えても役は変わらない。 */
+    background: rgba(0, 0, 0, 0.25);
     border-bottom: 2px dotted var(--text-muted);
     letter-spacing: 0.06em;
 }
@@ -3621,6 +3629,39 @@ b.em { font-weight: 700; color: var(--neon-blue); }
    「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
 .ref-callout-note { border-left-color: var(--text-secondary); }
 .ref-callout-note .ref-callout-tag { color: var(--text-muted); }
+
+/* ★★ よくある誤解（`:::mistake`・設計書 §28）。⚠ 札の言葉は learn.js の `REF_MISTAKE_TAG`。
+   ⚠⚠ **急所は「誤りの行を本文と同じ字で出さない」こと** —— 同じ字で2行並べると、
+      どちらが正しいかを読まないと分からない ＝ この囲みを作った意味が消える。
+      ★ 印は3つ重ねる: ✗ の字（色だけに頼らない）・弱めた色・取り消し線。
+   ⚠⚠ **暗い地では敷きを沈める**（明るくしない）—— 発展の折りたたみで実測済み:
+      薄い敷きを *明るく* すると添え物の字が 4.78:1 → 4.22:1 で AA 割れ、
+      **沈めると 5.04:1 に上がる**（`DESIGN_reference_book.md` §24-2）。
+   ★ 左の帯は赤（`--neon-red`）—— 注意の黄・丸暗記の紫・例題の水色・発展の緑と
+      重ならない残りの1色で、「誤り」の意味にも合う。 */
+.ref-mistake {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-red);
+    border-radius: 0 10px 10px 0;
+    background: rgba(0, 0, 0, 0.22);
+}
+.ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
+/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+   （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
+.ref-mistake-wrong,
+.ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+.ref-mistake-wrong { color: var(--text-secondary); }
+.ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
+.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
+   足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
+.ref-mistake-right { color: var(--text-primary); }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
