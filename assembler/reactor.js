@@ -3165,6 +3165,101 @@ function stackChainsForBridge(mol, caId, cbId) {
     return false;
 }
 
+/* ==========================================================================
+ * 共重合（v1541・ユーザー決定 2026-09-12）
+ *
+ * > **共重合の反応全体を見たほうがよいと思います。**
+ * > **選択した分子、反応のために召喚した分子はすべてつながるようにすべきだと考えます。**
+ *
+ * ⚠⚠ **直す前の挙動**: スチレン2個＋ブタジエン2個を並べて付加重合を押すと、
+ *   エラーにもならず**スチレンだけが繋がってブタジエンが残った**（黙って別物ができる）。
+ *   原因は `addition_polymerization` の `detect` が正準コードでグループ分けし、
+ *   「同じ単量体が2つ以上」のグループだけを site にしていたこと。
+ *
+ * ★ **直す向きは「赤で止める」ではない**（ユーザー明言）。
+ *   **並んでいる単量体を全部つなぐ札を出す**。
+ *
+ * ⚠ **決めたことと理由**:
+ *   ① **並びは「画面に並べた順」**（交互でもブロックでもない）。
+ *      - 実際の共重合の並び（交互・ランダム・ブロック）は条件で変わり、**一通りに決まらない**。
+ *        どれか1つを勝手に選ぶと、画面が言えないことを言うことになる。
+ *      - 既存の重合3本が全部「並べた順」なので、流儀を1つに保てる。
+ *      - ★ **ユーザーが並べ替えれば思いどおりの並びになる** ＝ 決めるのを人に返せる。
+ *   ② **画面では「交互共重合体ができます」と断定しない**（ユーザー指示）。
+ *      caption は「並べた順につないだ」と、実際は一通りに決まらないことだけを言う。
+ *   ③ **SBR の実在の比（スチレン1：ブタジエン3 など）に寄せない。**
+ *      ⚠ 寄せるには根拠が要るが、**教科書も参考書も比を書いていない**（用途で変わる）。
+ *      ＝ 比は**並べた個数がそのまま**になる。
+ *   ④ **加硫と噛み合う**: ジエンの単位は 1,4-付加で中央に C=C が残るので、
+ *      できた共重合体はそのまま `vulcanization` の相手になる（SBR → 加硫ゴム）。
+ *
+ * ⚠ **homopolymer の3本は今までどおり**。単一種のときは既存の札が出る
+ *   （この札は「2種類以上あるとき」しか出ない）＝ 既存の見え方を1つも変えない。
+ * ========================================================================== */
+
+/**
+ * 共重合につなげる単位を集める。返り値は
+ *   ビニル系 … { kind:'vinyl', key, head, tail, comp, code, x, y }
+ *   共役ジエン … { kind:'diene', key, d:{c1..c4}, comp, code, x, y }
+ * ⚠ **同じ分子から2通り拾わない**: 共役ジエンは C=C を2本持つので
+ *   `vinylBonds` 側の「1分子に C=C が1本だけ」の門番で自動的に外れる。
+ */
+function copolymerUnits(mol) {
+    const units = [];
+    const vinyls = vinylBonds(mol);
+    vinyls.forEach(v => {
+        const comp = componentOf(mol, v.head);
+        if (vinyls.filter(w => comp.has(w.head)).length !== 1) return;
+        units.push({ kind: 'vinyl', key: v.head, head: v.head, tail: v.tail, comp });
+    });
+    conjugatedDienes(mol).forEach(d => {
+        units.push({ kind: 'diene', key: d.c1, d, comp: componentOf(mol, d.c1) });
+    });
+    units.forEach(u => {
+        const heavy = [...u.comp].map(id => mol.atoms.find(a => a.id === id))
+            .filter(a => a && a.element !== 'H');
+        u.x = heavy.reduce((s, a) => s + a.x, 0) / (heavy.length || 1);
+        u.y = heavy.reduce((s, a) => s + a.y, 0) / (heavy.length || 1);
+        u.code = componentCode(mol, u.key);
+        /* 鎖に入る側（in）と出る側（out）、それぞれの1つ内側（`inBack`／`back`）。
+         * ★ 内側の原子は**鎖が伸びる向き**を決めるのに要る（`chainDirection`・§14）。 */
+        if (u.kind === 'vinyl') { u.in = u.tail; u.inBack = u.head; u.out = u.head; u.back = u.tail; }
+        else { u.in = u.d.c1; u.inBack = u.d.c2; u.out = u.d.c4; u.back = u.d.c3; }
+    });
+    return units;
+}
+
+/**
+ * 「この鎖に入らなかった単量体」を数えて一言にする（v1541）。
+ *
+ * ⚠⚠ **ユーザー実機報告の芯**: スチレン2個＋ブタジエン2個で付加重合を押すと
+ *   **スチレンだけが繋がってブタジエンが黙って残った**。⛔ 赤で止めるのは違う
+ *   （2種類を別々に重合したい人もいる）ので、**残ったことをその場で言い、
+ *   全部つなぐ札の名前を教える**。
+ * ⚠ **反応を起こす前に呼ぶこと**（起こしたあとでは、使った単量体の C=C が
+ *   もう無いので「残り」と区別できない）。
+ */
+function leftoverMonomerNote(mol, siteIds) {
+    const used = new Set(siteIds);
+    const all = copolymerUnits(mol);
+    const rest = all.filter(u => !used.has(u.key) && !used.has(u.in) && !used.has(u.out));
+    if (!rest.length) return '';
+    const mixed = new Set(all.map(u => u.code)).size >= 2;
+    return `\n⚠ **この鎖に入らなかった単量体が ${rest.length} 個、画面に残っています。**` +
+        (mixed
+            ? '並べたものを全部つないで1本の鎖にするなら、' +
+              '「共重合（並べた単量体をすべてつなぐ）」のほうを選んでください。'
+            : 'つなぎたいときは、もう一度この反応を実行してください。');
+}
+
+/** 画面に並べた順（長いほうの軸で左→右／上→下）に単位を並べ替える */
+function sortCopolymerUnits(units) {
+    const xs = units.map(u => u.x), ys = units.map(u => u.y);
+    const spread = v => Math.max(...v) - Math.min(...v);
+    const byX = spread(xs) >= spread(ys);
+    return units.slice().sort((p, q) => (byX ? p.x - q.x : p.y - q.y));
+}
+
 /** その原子を含む分子（連結成分）の正準コード。同じ単量体かの判定に使う */
 function componentCode(mol, atomId) {
     const ids = componentOf(mol, atomId);
@@ -4987,6 +5082,8 @@ const REACTION_RULES = [
             const units = [];
             for (let i = 0; i < site.length; i += 2) units.push({ head: site[i], tail: site[i + 1] });
             if (units.length < 2) throw new Error('単量体が2つ以上必要です');
+            // ⚠ **反応を起こす前に数える**（起こしたあとでは「残り」と区別できない）
+            const leftover = leftoverMonomerNote(mol, site);
             // 二重結合を単結合に開く（これが付加重合の本体）
             units.forEach(u => {
                 const b = mol.getBond(u.head, u.tail);
@@ -5034,7 +5131,8 @@ const REACTION_RULES = [
                     '両端の R は「この先も同じ単位が続く」という印です（教科書では −[ ]ₙ− の角括弧で書きます）。' +
                     '付加重合では原子が1つも出入りしません（脱水などの副生成物が出ない）ので、' +
                     '単量体の分子式を n 倍したものが高分子の組成になります。' +
-                    '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。',
+                    '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。' +
+                    leftover,
                 changed: [...new Set([...changed, ...endIds])],
                 refit: true // 伸びた鎖の全体が見えるように視野を合わせる
             };
@@ -5136,6 +5234,8 @@ const REACTION_RULES = [
                 units.push({ c1: site[i], c2: site[i + 1], c3: site[i + 2], c4: site[i + 3] });
             }
             if (units.length < 2) throw new Error('共役ジエンが2つ以上必要です');
+            // ⚠ **反応を起こす前に数える**（v1541。理由は `leftoverMonomerNote` の注記）
+            const leftover = leftoverMonomerNote(mol, site);
             // 1,4-付加重合の本体: 両端の二重結合を開き、**中央に新しい二重結合ができる**。
             // これが「二重結合が移動する」という要点で、ゴムの弾性・加硫の土台になる
             units.forEach(u => {
@@ -5181,7 +5281,101 @@ const REACTION_RULES = [
                     `天然ゴムはイソプレンがシス形に繋がったもので、同じ形でトランスに繋がるとグタペルカという硬い樹脂になります。` +
                     `いまの図は直交作図なのでシス・トランスを示していません。左の「⇄ シス/トランス整形」で` +
                     `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。` +
-                    `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。`,
+                    `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。` +
+                    leftover,
+                changed: [...new Set([...changed, ...endIds])],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ★★ 共重合（v1541）。設計の判断と理由は `copolymerUnits` の上の注記にまとめてある。
+         * ⚠ **2種類以上あるときだけ出る**（単一種は既存の3本に譲る ＝ 札が二重にならない）。 */
+        id: 'copolymerization',
+        wholeCanvas: true,
+        label: '共重合（並べた単量体をすべてつなぐ）→ 2種類以上が1本の鎖に',
+        detect(mol) {
+            const units = copolymerUnits(mol);
+            if (units.length < 2) return [];
+            if (new Set(units.map(u => u.code)).size < 2) return [];
+            return [sortCopolymerUnits(units).map(u => u.key)];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const all = copolymerUnits(mol);
+            const units = site.map(key => all.find(u => u.key === key));
+            if (units.some(u => !u)) throw new Error('単量体が見つかりません');
+            if (units.length < 2) throw new Error('単量体が2つ以上必要です');
+            const changed = [];
+            /* ---- ① それぞれの単量体を「鎖の1単位」に開く。
+             *   ⚠ **開き方は種類ごとに違う**（ここが共重合の要点）:
+             *     ビニル系 … C=C が単結合になる（原子は出入りしない）
+             *     共役ジエン … 両端が単結合になり、**中央に二重結合が移る**（1,4-付加）
+             *   ★ ジエンの側に C=C が残るので、できた鎖はそのまま加硫できる。 */
+            units.forEach(u => {
+                if (u.kind === 'vinyl') {
+                    const b = mol.getBond(u.head, u.tail);
+                    if (!b) throw new Error('二重結合が見つかりません');
+                    b.type = 1;
+                } else {
+                    const b12 = mol.getBond(u.d.c1, u.d.c2);
+                    const b23 = mol.getBond(u.d.c2, u.d.c3);
+                    const b34 = mol.getBond(u.d.c3, u.d.c4);
+                    if (!b12 || !b23 || !b34) throw new Error('共役ジエンの結合が見つかりません');
+                    b12.type = 1; b34.type = 1; b23.type = 2;
+                    changed.push(u.d.c2, u.d.c3);   // 中央へ移った二重結合（CV4）
+                }
+            });
+            // 頭の置換基を主鎖と直交する向きへ立て直す（ビニル系だけ。付加重合と同じ）
+            units.forEach((u, i) => {
+                if (u.kind === 'vinyl') uprightChainSubstituent(mol, u.head, u.tail, i % 2 ? -1 : 1);
+            });
+            // ---- ② 並べた順につなぐ（まだ繋いでいない単量体は鎖の続き扱い＝§14）
+            const pending = new Set();
+            units.slice(1).forEach(u => u.comp.forEach(id => pending.add(id)));
+            let linkFrom = units[0].out;
+            let linkBack = units[0].back;
+            for (let i = 1; i < units.length; i++) {
+                const u = units[i];
+                const movingIds = [...componentOf(mol, u.in)];
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.in, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
+                if (!plan) throw noRoom('生成物を配置する空間がありません');
+                applyAttachment(mol, movingIds, plan);
+                mol.addBond(linkFrom, u.in, 1);
+                changed.push(linkFrom, u.in);
+                linkBack = u.back;
+                linkFrom = u.out;
+            }
+            const endIds = attachREnds(mol, [
+                [units[0].in, chainDirection(mol, units[0].inBack, units[0].in)],
+                [linkFrom, chainDirection(mol, linkBack, linkFrom)]
+            ]);
+            // ---- ③ 何が何個つながったかを数える（比を作らず、並べた個数をそのまま言う）
+            const kinds = new Map();
+            units.forEach(u => kinds.set(u.code, (kinds.get(u.code) || 0) + 1));
+            const n = units.length;
+            return {
+                /* ⚠⚠ **「交互共重合体ができます」と断定しない**（ユーザー指示 2026-09-12）。
+                 *   どの並びを選んでも本当にそうとは限らないので、画面が言えるのは
+                 *   **「いま並べた順につないだ」**ことだけ。 */
+                caption: `${kinds.size} 種類の単量体 ${n} 個が**共重合**しました。` +
+                    '2種類以上の単量体をいっしょに重合させることを共重合といい、' +
+                    'できた高分子（共重合体）は、どちらか一方だけの高分子とは違う性質になります。' +
+                    'スチレンと 1,3-ブタジエンの共重合体が SBR（スチレン-ブタジエンゴム）で、' +
+                    'ゴムの中で最も多く作られている合成ゴムです。' +
+                    '\n⚠ **つないだ順は、いま画面に並べた順そのものです。** ' +
+                    '実際の共重合では単量体がどの順に並ぶかは条件で決まり、' +
+                    '交互・ランダム・ブロックとさまざまで**一通りには決まりません**。' +
+                    '並べ替えてからもう一度実行すれば、別の並びの鎖ができます。' +
+                    '単量体の数の比も、いま並べた個数がそのまま出ているだけです' +
+                    '（実際の比は用途によって変えます）。' +
+                    (units.some(u => u.kind === 'diene')
+                        ? '\n★ 共役ジエンの単位では二重結合が中央へ移って鎖に残るので、' +
+                          'この鎖はそのまま硫黄で架橋できます（加硫）。'
+                        : '') +
+                    '両端の R は「この先も続く」印です。',
                 changed: [...new Set([...changed, ...endIds])],
                 refit: true
             };
