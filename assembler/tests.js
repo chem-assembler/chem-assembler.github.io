@@ -47786,6 +47786,135 @@
         c.reset();
     });
 
+    test('RXF9: ワッカー法がプロペンにも効く —— エチレンはアルデヒド・プロペンはケトン', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'wacker_oxidation');
+        assert(rule, 'wacker_oxidation が無い');
+        /* ⚠⚠ **もとはエチレン専用だった**（`ethyleneUnits`）。参考書は
+         *   2CH₂=CH-CH₃ ＋ O₂ → 2CH₃COCH₃ も書いているのに実測で0件だった。 */
+        [['エチレン（エテン）', 'アセトアルデヒド'], ['プロペン（プロピレン）', 'アセトン']]
+            .forEach(([from, to]) => {
+                const mol = trSetup(c, [from]);
+                const sites = rule.detect(mol);
+                assert(sites.length === 1, `${from} で箇所が ${sites.length} 件（1件を期待）`);
+                g.saveState();
+                rule.apply(g, sites[0]);
+                g.updateDrawing();
+                assert(trName(c) === to, `${from} から「${trName(c)}」（${to} を期待）`);
+            });
+        /* ★ **行き先が分かれる理由**（マルコフニコフ則）を caption が言う ——
+         *   同じ反応なのにアルデヒドとケトンに分かれるのがここの要点。 */
+        const p = trSetup(c, ['プロペン（プロピレン）']);
+        g.saveState();
+        const res = rule.apply(g, rule.detect(p)[0]);
+        assert(res.caption.includes('マルコフニコフ'), 'caption が行き先の分かれる理由を言っていない');
+        assert(res.caption.includes('アセトン'), 'caption がプロペンの生成物を名指ししていない');
+        c.reset();
+    });
+
+    test('RXF10: ★否定対照 — ワッカー法は炭素3個までの末端アルケンだけ（教科書が書いている2つ）', async (c) => {
+        c.reset();
+        const W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'wacker_oxidation');
+        assert(rule, 'wacker_oxidation が無い');
+        /* ⚠ **広げすぎていないこと**を固定する。教科書・参考書が式を書いているのは
+         *   エチレンとプロペンの2つだけで、それ以上に広げると画面が
+         *   「教科書に載っていないこと」を言い出す。 */
+        const negatives = [
+            [['1-ブテン'], '炭素4個（教科書が書いていない）'],
+            [['シス-2-ブテン'], '同上（しかも末端でない）'],
+            [['スチレン'], '炭化水素だが環がある'],
+            [['塩化ビニル'], 'ハロゲンを含む'],
+            [['アセチレン（エチン）'], '三重結合'],
+            [['1,3-ブタジエン'], 'C=C が2本'],
+            [['エタノール'], '多重結合が無い']
+        ];
+        const fired = [];
+        negatives.forEach(([names, why]) => {
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length, `材料が置けていない: ${names.join('＋')}`);
+            const n = rule.detect(mol).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `起きてはいけない相手で起きた: ${fired.join(' / ')}`);
+        // **空振りの緑を避ける**: 同じ数え方がプロペンでは1件拾う
+        assert(rule.detect(trSetup(c, ['プロペン（プロピレン）'])).length === 1,
+            '否定対照の数え方が壊れている（プロペンでも0件になる）');
+        // ★ 材料が無いから0件、ではない（1-ブテンにも C=C は実在する）
+        assert(W.findFunctionalGroups(trSetup(c, ['1-ブテン']))
+            .filter(g => g.type === 'cc_double').length === 1, '1-ブテンに C=C が無い（材料が無いだけ、になっている）');
+        c.reset();
+    });
+
+    test('RXF11: 縮合重合が AB型の単量体（ヒドロキシ酸）を扱える —— n 乳酸 → ポリ乳酸', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        assert(rule, 'condensation_polymerization が無い');
+        /* ⚠⚠ **実測で0件だった** —— 既存の門番は「2価の酸 ＋ 2価のアルコール」という
+         *   **対**しか見ないので、1分子で両方を持つ単量体が通らなかった。 */
+        const mol = trSetup(c, ['乳酸', '乳酸', '乳酸']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `乳酸3分子で箇所が ${sites.length} 件（1件を期待）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        // つないだのは2か所・水が3分子出る（2か所ぶん＋端の -OH を落とすぶん）＝ これが「縮合」
+        assert(res.caption.includes('ヒドロキシ酸'), 'caption が AB型だと言っていない');
+        assert(res.caption.includes('ポリ乳酸'), 'caption がポリ乳酸を名指ししていない');
+        assert(res.caption.includes('エステル結合が 2 か所'),
+            `つないだ箇所の数が合わない: ${res.caption.slice(0, 120)}`);
+        const parts = g.splitMolecules();
+        const waters = parts.filter(p => p.atoms.filter(a => a.element !== 'H').length === 1);
+        assert(waters.length === 3, `出た水が ${waters.length} 分子（3分子を期待）`);
+        assert(mol.atoms.filter(a => a.element === 'R').length === 2, '両端の R が2個ない');
+        // エステル結合が2つできている（アミドではない）
+        assert(W.findFunctionalGroups(mol).filter(x => x.type === 'ester').length === 2,
+            'エステル結合が2つできていない');
+        c.reset();
+    });
+
+    test('RXF12: ★否定対照 — AB型として扱うのは「-COOH と -OH をちょうど1つずつ」だけ', async (c) => {
+        c.reset();
+        const W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'condensation_polymerization');
+        assert(rule, 'condensation_polymerization が無い');
+        const negatives = [
+            [['乳酸'], '1分子では鎖にならない'],
+            [['乳酸', '酢酸'], '相手に -OH が無い'],
+            [['酢酸', '酢酸', '酢酸'], '-OH が無い'],
+            [['エタノール', 'エタノール', 'エタノール'], '-COOH が無い'],
+            /* ★★ **アミノ酸は入れない**（判断・v1541）。教科書はアミノ酸の縮合を
+             *   「ペプチド結合を1本ずつ作る」形で教えており、その道は `amidation` にある。
+             *   ここで一気に繋ぐ札を足すと、同じことをする入口が2つになる。 */
+            [['グリシン', 'グリシン', 'グリシン'], '⚠ アミノ酸は amidation の担当（入口を2つにしない）'],
+            [['アラニン', 'アラニン', 'アラニン'], '同上'],
+            [['サリチル酸', 'サリチル酸', 'サリチル酸'], 'フェノール性 -OH（アルコールではない）']
+        ];
+        const fired = [];
+        negatives.forEach(([names, why]) => {
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length, `材料が置けていない: ${names.join('＋')}`);
+            const n = rule.detect(mol).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `縮合重合が出てはいけない組で出た: ${fired.join(' / ')}`);
+        // **空振りの緑を避ける**: 乳酸3分子では1件拾い、対のほう（PET・ナイロン66）も今までどおり
+        assert(rule.detect(trSetup(c, ['乳酸', '乳酸', '乳酸'])).length === 1,
+            '否定対照の数え方が壊れている（乳酸3分子でも0件になる）');
+        assert(rule.detect(trSetup(c, ['アジピン酸', 'ヘキサメチレンジアミン',
+            'アジピン酸', 'ヘキサメチレンジアミン'])).length === 1,
+            'ナイロン66 の縮合重合が消えた（AB型を足したせいで対の道が壊れていないか）');
+        assert(rule.detect(trSetup(c, ['テレフタル酸', 'エチレングリコール',
+            'テレフタル酸', 'エチレングリコール'])).length === 1, 'PET の縮合重合が消えた');
+        // ★ 材料が無いから0件、ではない（グリシンには -COOH も -NH₂ も実在する）
+        const gly = trSetup(c, ['グリシン', 'グリシン', 'グリシン']);
+        assert(W.findFunctionalGroups(gly).filter(g => g.type === 'carboxyl').length === 3,
+            'グリシン3分子のカルボキシ基が3個ない（材料が無いだけ、になっている）');
+        c.reset();
+    });
+
     /* =====================================================================
      * REF: 📖 資料（参考書） —— DESIGN_reference_book.md / DEVELOPMENT.md「B. 参考書化」
      *

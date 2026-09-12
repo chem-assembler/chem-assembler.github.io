@@ -1827,10 +1827,19 @@ function alkeneCleavageClass(mol, site) {
 }
 
 /**
- * キャンバスの中のエチレン（C₂H₄）＝ **重原子が炭素2個だけで、C=C でつながった連結成分**。
- * 返り値は `[C, C]` の配列。⚠ ワッカー法が**エチレンだけ**を相手にするための門番。
+ * ワッカー法の適用箇所 `[酸素がつく炭素, 相方の炭素]`（v1541）。
+ *
+ * ⚠⚠ **もとは `ethyleneUnits`（＝ エチレンだけ）だった。** 参考書は
+ *   **2CH₂=CH-CH₃ ＋ O₂ → 2CH₃COCH₃**（プロペンからアセトン）も書いているのに、
+ *   実測でプロペンには1件も出なかった。
+ *
+ * ★ **広げるのはプロペンまで**（炭素3個の末端アルケン）。教科書・参考書が書いているのは
+ *   この2つだけで、それ以上に広げると画面が「教科書に載っていないこと」を言い出す。
+ * ★ **酸素がつくのは置換基の多いほうの炭素**（マルコフニコフ則）——
+ *   だからエチレンだけがアルデヒド（アセトアルデヒド）で、
+ *   プロペン以降はケトン（アセトン）になる。ここが問われる。
  */
-function ethyleneUnits(mol) {
+function wackerUnits(mol) {
     const seen = new Set();
     const out = [];
     mol.atoms.forEach(a => {
@@ -1838,11 +1847,19 @@ function ethyleneUnits(mol) {
         const comp = [...componentOf(mol, a.id)]
             .filter(id => (mol.atoms.find(x => x.id === id) || {}).element !== 'H');
         comp.forEach(id => seen.add(id));
-        if (comp.length !== 2) return;
+        if (comp.length < 2 || comp.length > 3) return;      // エチレンとプロペンだけ
         if (!comp.every(id => (mol.atoms.find(x => x.id === id) || {}).element === 'C')) return;
-        const bond = mol.getBond(comp[0], comp[1]);
-        if (!bond || bond.type !== 2) return;
-        out.push([comp[0], comp[1]]);
+        const pair = [];
+        comp.forEach(id => comp.forEach(jd => {
+            if (id >= jd) return;
+            const b = mol.getBond(id, jd);
+            if (b && b.type === 2) pair.push([id, jd]);
+        }));
+        if (pair.length !== 1) return;                       // C=C はちょうど1本
+        const heavyNb = id => mol.getNeighbors(id).filter(n => n.atom.element !== 'H').length;
+        const [p, q] = pair[0];
+        // 置換基の多いほう（＝ マルコフニコフ則で酸素がつく側）を先に置く
+        out.push(heavyNb(p) >= heavyNb(q) ? [p, q] : [q, p]);
     });
     return out;
 }
@@ -3476,6 +3493,50 @@ function condensationPolymerUnits(mol) {
     return { acids: as.sort(byX).slice(0, n), partners: ps.sort(byX).slice(0, n), kind };
 }
 
+/**
+ * **AB型の単量体**（1分子の中に -COOH と -OH を1つずつ持つ ＝ ヒドロキシ酸）が
+ * 2個以上並んでいるかを見る（v1541）。返り値は左から並べた単位の配列（無ければ null）。
+ *
+ * ⚠⚠ **参考書の「n 乳酸 → ポリ乳酸」がここで落ちていた。** 既存の
+ *   `condensationPolymerUnits` は「2価の酸 ＋ 2価のアルコール」という**対**しか見ないので、
+ *   1分子で両方を持つ単量体は実測で0件だった。
+ *
+ * ★ **アミノ酸（-COOH ＋ -NH₂）は入れない。** 教科書はアミノ酸の縮合を
+ *   「ペプチド結合を1本ずつ作る」形で教えており、その道は `amidation` に既にある。
+ *   ここで一気に繋ぐ札を足すと、同じことをする入口が2つになる。
+ *   ⚠ ヒドロキシ酸のほうは**どこにも道が無かった**ので足す。
+ */
+function hydroxyAcidUnits(mol) {
+    const groups = findFunctionalGroups(mol);
+    const seen = new Set();
+    const units = [];
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = componentOf(mol, a.id);
+        ids.forEach(i => seen.add(i));
+        const heavy = [...ids].map(i => mol.atoms.find(x => x.id === i))
+            .filter(x => x && x.element !== 'H');
+        if (heavy.length < 3) return;
+        const mine = groups.filter(g => ids.has(g.atomIds[0]));
+        const cx = mine.filter(g => g.type === 'carboxyl');
+        const al = mine.filter(g => ALCOHOL_TYPES.includes(g.type));
+        // ⚠ **ちょうど1つずつ**。2つ以上あるものは既存の「2価の単量体」の担当
+        if (cx.length !== 1 || al.length !== 1) return;
+        // ⚠ ほかの反応性の基（アミン・フェノール・アルデヒド…）が混ざるものは扱わない
+        if (mine.length !== 2) return;
+        units.push({
+            ids, acid: { c: cx[0].atomIds[0], oh: cx[0].atomIds[2] }, other: { x: al[0].atomIds[0] },
+            code: componentCode(mol, heavy[0].id),
+            x: Math.min(...heavy.map(h => h.x))
+        });
+    });
+    if (units.length < 2) return null;
+    // **同じ単量体だけ**（既存の縮合重合と同じ約束。違う種類の混合は共重合の話）
+    const same = units.filter(u => u.code === units[0].code);
+    if (same.length < 2) return null;
+    return same.sort((p, q) => p.x - q.x);
+}
+
 // 多重結合への付加の共通処理。elemA/elemB は付加する元素（null は水素＝自動水素に任せる）。
 // 片側だけに置換基が付く場合（HX・H₂O）はマルコフニコフ則で置換基の多い炭素側に付ける
 function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
@@ -4070,9 +4131,12 @@ const REAGENTS = [
         name: '酸素・PdCl₂/CuCl₂',
         formula: 'O₂',
         kind: 'transform',
-        acts: 'エチレンです（酸化されてアセトアルデヒドになります）',
-        miss: 'この瓶はエチレンからアセトアルデヒドを作る工業的製法のためのものです。' +
-            '高校で扱うのはエチレンの場合だけなので、ほかの分子では何も起こしません。'
+        // ⚠ v1541 でプロペン（→ アセトン）まで広げたので書き直した（規約1-2）
+        acts: 'エチレン（→ アセトアルデヒド）とプロペン（→ アセトン）です',
+        miss: 'この瓶はエチレンからアセトアルデヒドを、プロペンからアセトンを作る工業的製法のためのものです。' +
+            '教科書と参考書が式を書いているのはこの2つだけなので、ほかの分子では何も起こしません。' +
+            '同じ反応なのに行き先が変わるのは、**酸素が置換基の多いほうの炭素につく**ためです' +
+            '（エチレンはアルデヒド・プロペンはケトン）。'
     },
     {
         /* ★★ 燃焼の瓶（v1541）。⚠ **瓶が1本増える**（25 → 26本）。
@@ -5596,10 +5660,21 @@ const REACTION_RULES = [
         //    **4分子ちょうどでは出ない穴**——箇所が4分子ぜんぶを含むので focus に必ず当たる。
         //    出るのは「1本目を作ったあと、単量体を並べ直して2本目」のとき（PM13 で再現）
         wholeCanvas: true,
-        label: '縮合重合（2価の単量体を並べて）→ ポリエステル／ポリアミド',
+        label: '縮合重合（単量体を並べて）→ ポリエステル／ポリアミド',
         detect(mol) {
             const u = condensationPolymerUnits(mol);
-            if (!u) return [];
+            if (!u) {
+                /* ★ **AB型（ヒドロキシ酸）**（v1541）。1分子が -COOH と -OH を1つずつ持つので、
+                 *   鎖は A-A-A-A と同じ単位が続く。⓵ 参考書の「n 乳酸 → ポリ乳酸」がこれ。
+                 *   ⚠ 結合の作り方は対の場合と1つも違わない（`apply` は 3つ組しか見ない）。 */
+                const ab = hydroxyAcidUnits(mol);
+                if (!ab) return [];
+                const site = [];
+                for (let i = 0; i + 1 < ab.length; i++) {
+                    site.push(ab[i].acid.c, ab[i].acid.oh, ab[i + 1].other.x);
+                }
+                return [site];
+            }
             // 鎖の並びは 酸 → 相手 → 酸 → 相手 …（交互）。i 番目と i+1 番目を
             // 「右の基」と「左の基」で繋ぐと、画面の並びのまま鎖になる
             const chain = [];
@@ -5619,7 +5694,13 @@ const REACTION_RULES = [
             for (let i = 0; i < site.length; i += 3) {
                 links.push({ c: site[i], oh: site[i + 1], x: site[i + 2] });
             }
-            if (links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
+            /* ★ **AB型（ヒドロキシ酸）かどうかを先に見る**（v1541）。
+             *   AB型では「i 番目の相手（-OH）」と「i+1 番目の酸（-COOH）」が**同じ分子**にある。
+             *   ⚠ 対（2価の酸 ＋ 2価のアルコール）では必ず別の分子なので、これで見分けられる。 */
+            const ab = hydroxyAcidUnits(mol);
+            const isAB = !!ab && ab.some(u => u.acid.c === links[0].c);
+            if (!isAB && links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
+            if (links.length < 1) throw new Error('単量体が2個以上必要です');
             const changed = [];
             let chainIds = componentOf(mol, links[0].c);
             // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）。
@@ -5668,17 +5749,24 @@ const REACTION_RULES = [
                 [endOther.atomIds[0], outward(endOther.atomIds[0])]
             ]);
             const amide = AMINE_NH_TYPES.includes(endOther.type);
-            const n = (links.length + 1) / 2;
+            const n = isAB ? links.length + 1 : (links.length + 1) / 2;
             return {
-                caption: `2価カルボン酸 ${n} 個と2価${amide ? 'アミン' : 'アルコール'} ${n} 個が縮合重合して、` +
+                caption: (isAB
+                    ? `1分子の中に -COOH と -OH を1つずつ持つ単量体（ヒドロキシ酸）${n} 個が縮合重合して、`
+                    : `2価カルボン酸 ${n} 個と2価${amide ? 'アミン' : 'アルコール'} ${n} 個が縮合重合して、`) +
                     `${amide ? 'アミド' : 'エステル'}結合が ${links.length} か所できました。` +
                     `つなぐたびに水が1分子とれるのが「縮合」で、原子が1つも出入りしない付加重合との違いです` +
                     `（画面に出ている水 ${links.length + 1} 分子がその証拠です）。` +
-                    (amide
-                        ? 'アジピン酸とヘキサメチレンジアミンからできるのがナイロン66（ポリアミド）で、'
-                          + 'アミド結合 -CO-NH- はタンパク質のペプチド結合と同じつながり方です。'
-                        : 'テレフタル酸とエチレングリコールからできるのがポリエチレンテレフタラート'
-                          + '（PET・ポリエステル）で、エステル結合 -CO-O- でつながっています。') +
+                    (isAB
+                        ? '⚠ **単量体が1種類でも縮合重合はできます** —— 1分子の中に -COOH と -OH の'
+                          + '両方があるので、隣の分子の -OH と自分の -COOH でつながっていけるためです。'
+                          + '乳酸からできるのがポリ乳酸で、土の中の微生物に分解される'
+                          + '生分解性のポリエステルとして使われます。'
+                        : amide
+                            ? 'アジピン酸とヘキサメチレンジアミンからできるのがナイロン66（ポリアミド）で、'
+                              + 'アミド結合 -CO-NH- はタンパク質のペプチド結合と同じつながり方です。'
+                            : 'テレフタル酸とエチレングリコールからできるのがポリエチレンテレフタラート'
+                              + '（PET・ポリエステル）で、エステル結合 -CO-O- でつながっています。') +
                     '両端の R は「この先も同じ単位が続く」という印です' +
                     '（教科書では −[ ]ₙ− の角括弧で書きます）。',
                 changed: [...new Set([...changed, ...endIds])],
@@ -6121,25 +6209,34 @@ const REACTION_RULES = [
          *   教科書・入試が扱うのはエチレンの場合だけ（§4-1 の線）。 */
         id: 'wacker_oxidation',
         reagentId: 'o2_pdcl2',
-        label: 'ワッカー法（エチレン → アセトアルデヒド）',
-        detect(mol) { return ethyleneUnits(mol); },
+        // ⚠ v1541 でプロペン → アセトンまで広げたので、札の名前も書き直した
+        label: 'ワッカー法（エチレン → アセトアルデヒド／プロペン → アセトン）',
+        detect(mol) { return wackerUnits(mol); },
         apply(game, site) {
             const mol = game.userMolecule;
             const [c1, c2] = site;
             const spot = freeSpotAround(mol, c1);
             if (!spot) throw noRoom('カルボニルの酸素を置く空間がありません');
             const bond = mol.getBond(c1, c2);
-            if (!bond || bond.type !== 2) throw new Error('エチレンの C=C が見つかりません');
+            if (!bond || bond.type !== 2) throw new Error('C=C が見つかりません');
+            // 酸素がつく側に炭素の隣がいくつあるか ＝ できるのがアルデヒドかケトンかの分かれ目
+            const branched = mol.getNeighbors(c1).filter(n => n.atom.element !== 'H').length >= 2;
             bond.type = 1;
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(c1, o.id, 2);
             bendCarbonyl(mol, c1, o.id);
             return {
-                caption: 'エチレンが酸化されてアセトアルデヒドになりました。' +
+                caption: (branched
+                    ? 'プロペンが酸化されてアセトンになりました。'
+                    : 'エチレンが酸化されてアセトアルデヒドになりました。') +
                     '塩化パラジウム(II) と塩化銅(II) を触媒に、酸素で酸化します。' +
-                    '**炭素は2個のまま残り**、C=C の片方が C=O に変わるだけです' +
+                    '**炭素の数は変わらず**、C=C の片方が C=O に変わるだけです' +
                     '（切れて減る酸化開裂との違いはここです）。' +
-                    'アセトアルデヒドの工業的製法で、教科書には式が載っています' +
+                    '⚠ **酸素がつくのは置換基の多いほうの炭素**（マルコフニコフ則）なので、' +
+                    'エチレンからはアルデヒド（アセトアルデヒド）ができるのに、' +
+                    'プロペンからはケトン（アセトン）ができます —— ' +
+                    '同じ反応なのに行き先が変わるのはこのためです。' +
+                    'どちらも工業的製法で、教科書に式が載っています' +
                     '（「ワッカー法」という呼び名は参考書のものです）。',
                 changed: [c1, c2, o.id]
             };
