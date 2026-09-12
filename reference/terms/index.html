@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>用語から引く ｜ 化学の参考書</title>
-<meta name="description" content="有機化学の用語から、参考書の該当する節へ直接飛べる索引（304件）。節の見出しと各節が扱う用語から機械で作っています。">
+<meta name="description" content="有機化学の用語から、参考書の該当する節へ直接飛べる索引（319件）。節の見出しと各節が扱う用語から機械で作っています。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/terms/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="用語から引く ｜ 化学の参考書">
-<meta property="og:description" content="有機化学の用語から、参考書の該当する節へ直接飛べる索引（304件）。節の見出しと各節が扱う用語から機械で作っています。">
+<meta property="og:description" content="有機化学の用語から、参考書の該当する節へ直接飛べる索引（319件）。節の見出しと各節が扱う用語から機械で作っています。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/terms/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -184,6 +184,12 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-hand-table{font-size:15px}
 .ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
 .ref-scope .ref-callout-text{font-size:15.5px}
+/* よくある誤解（:::mistake・§28）。★ 面Aは読み欄 680px なので寸法だけ上げる（色は LIGHT_CSS） */
+.ref-scope .ref-mistake{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-mistake-tag{font-size:12.5px}
+.ref-scope .ref-mistake-wrong,.ref-scope .ref-mistake-right{font-size:15.5px;margin-bottom:6px}
+.ref-scope .ref-mistake-mark{font-size:16px}
+.ref-scope .ref-mistake-why{font-size:14.5px}
 /* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
    13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
    ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
@@ -212,15 +218,12 @@ footer a:hover{color:var(--brand)}
 <main class="wrap">
 <h1>用語から引く</h1>
 <p class="lede">参考書のどのページのどの節に、その言葉が出てくるか。
-節の見出しと、節が扱う用語から<b>機械で作った索引</b>です（304件）。
+節の見出しと、節が扱う用語から<b>機械で作った索引</b>です（319件）。
 押すとページの途中 —— その言葉を説明している節 —— に直接着地します。</p>
 <ul class="terms"><li><a href="/reference/alcohol/#ref-sec-class">1級アルコール<span>アルコールの性質 ／ アルコールの級と価数</span></a></li>
-<li><a href="/reference/alcohol-oxidation-map/#ref-sec-class">1級アルコール<span>アルコールを酸化するとどうなるか ／ アルコールの級 —— 酸化の行き先を決めるもの</span></a></li>
 <li><a href="/reference/ester/#ref-sec-advanced">2価のエステル・環状エステル・無機のエステル<span>エステル ／ 2価のエステル・環状エステル・無機のエステル</span></a></li>
 <li><a href="/reference/alcohol/#ref-sec-class">2級アルコール<span>アルコールの性質 ／ アルコールの級と価数</span></a></li>
-<li><a href="/reference/alcohol-oxidation-map/#ref-sec-class">2級アルコール<span>アルコールを酸化するとどうなるか ／ アルコールの級 —— 酸化の行き先を決めるもの</span></a></li>
 <li><a href="/reference/alcohol/#ref-sec-class">3級アルコール<span>アルコールの性質 ／ アルコールの級と価数</span></a></li>
-<li><a href="/reference/alcohol-oxidation-map/#ref-sec-class">3級アルコール<span>アルコールを酸化するとどうなるか ／ アルコールの級 —— 酸化の行き先を決めるもの</span></a></li>
 <li><a href="/reference/alkyne/#ref-sec-ethyne-reactions">3分子重合<span>アルキン —— 三重結合を1個もつ炭化水素 ／ エチンのその他の反応</span></a></li>
 <li><a href="/reference/hydrocarbon-classes/#ref-sec-classes">6つのグループと一般式<span>炭化水素の分類と一般式 ／ 6つのグループと一般式</span></a></li>
 <li><a href="/reference/alkyne/#ref-sec-ethyne">アセチリドイオン<span>アルキン —— 三重結合を1個もつ炭化水素 ／ エチン（アセチレン）</span></a></li>
@@ -250,14 +253,16 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/alcohol/#ref-sec-formula">アルコールの一般式は CₙH₂ₙ₊₂O<span>アルコールの性質 ／ アルコールの一般式は CₙH₂ₙ₊₂O</span></a></li>
 <li><a href="/reference/alcohol/#ref-sec-class">アルコールの価数<span>アルコールの性質 ／ アルコールの級と価数</span></a></li>
 <li><a href="/reference/alcohol/#ref-sec-class">アルコールの級<span>アルコールの性質 ／ アルコールの級と価数</span></a></li>
-<li><a href="/reference/alcohol-oxidation-map/#ref-sec-class">アルコールの級<span>アルコールを酸化するとどうなるか ／ アルコールの級 —— 酸化の行き先を決めるもの</span></a></li>
-<li><a href="/reference/alcohol-oxidation-map/#ref-sec-class">アルコールの級 —— 酸化の行き先を決めるもの<span>アルコールを酸化するとどうなるか ／ アルコールの級 —— 酸化の行き先を決めるもの</span></a></li>
 <li><a href="/reference/alcohol/#ref-sec-class">アルコールの級と価数<span>アルコールの性質 ／ アルコールの級と価数</span></a></li>
 <li><a href="/reference/alcohol/#ref-sec-naming">アルコールの命名<span>アルコールの性質 ／ アルコールの命名</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-summary">アルコール酸化のまとめ<span>アルコールを酸化するとどうなるか ／ アルコール酸化のまとめ</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-halfreaction">アルコール酸化の反応式<span>アルコールを酸化するとどうなるか ／ アルコール酸化の反応式</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-primary">アルデヒド<span>アルコールを酸化するとどうなるか ／ 第1級アルコールの酸化</span></a></li>
 <li><a href="/reference/aldehyde/#ref-sec-formula">アルデヒドとケトンの一般式は CₙH₂ₙO<span>アルデヒドの性質 ／ アルデヒドとケトンの一般式は CₙH₂ₙO</span></a></li>
 <li><a href="/reference/ketone/#ref-sec-distinguish">アルデヒドとの区別 —— 還元性がない<span>ケトンの性質 ／ アルデヒドとの区別 —— 還元性がない</span></a></li>
 <li><a href="/reference/aldehyde/#ref-sec-reduce">アルデヒドの還元性と、その検出<span>アルデヒドの性質 ／ アルデヒドの還元性と、その検出</span></a></li>
 <li><a href="/reference/aldehyde/#ref-sec-naming">アルデヒドの命名<span>アルデヒドの性質 ／ アルデヒドの命名</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-halfreaction">イオン反応式<span>アルコールを酸化するとどうなるか ／ アルコール酸化の反応式</span></a></li>
 <li><a href="/reference/alcohol-oxidation-map/#ref-sec-table">エーテル<span>アルコールを酸化するとどうなるか ／ 名前の語尾と、図のかたち</span></a></li>
 <li><a href="/reference/ether/#ref-sec-prep">エーテルのつくり方 —— アルコールの分子間脱水<span>エーテルの性質 ／ エーテルのつくり方 —— アルコールの分子間脱水</span></a></li>
 <li><a href="/reference/ether/#ref-sec-props">エーテルの性質<span>エーテルの性質 ／ エーテルの性質</span></a></li>
@@ -288,6 +293,7 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/aldehyde/#ref-sec-formula">カルボニル化合物<span>アルデヒドの性質 ／ アルデヒドとケトンの一般式は CₙH₂ₙO</span></a></li>
 <li><a href="/reference/ketone/#ref-sec-what">カルボニル化合物<span>ケトンの性質 ／ ケトンはどんな化合物か</span></a></li>
 <li><a href="/reference/functional-groups/#ref-sec-list">カルボニル基<span>官能基 —— 性質を決めるパーツ ／ 代表的な官能基</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-primary">カルボン酸<span>アルコールを酸化するとどうなるか ／ 第1級アルコールの酸化</span></a></li>
 <li><a href="/reference/carboxylic-acid/#ref-sec-class">カルボン酸<span>カルボン酸 ／ カルボン酸の分け方</span></a></li>
 <li><a href="/reference/carboxylic-acid/#ref-sec-props">カルボン酸の性質<span>カルボン酸 ／ カルボン酸の性質</span></a></li>
 <li><a href="/reference/carboxylic-acid/#ref-sec-class">カルボン酸の分け方<span>カルボン酸 ／ カルボン酸の分け方</span></a></li>
@@ -295,6 +301,7 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/ester/#ref-sec-naming">ギ酸メチル<span>エステル ／ エステルの命名</span></a></li>
 <li><a href="/reference/alcohol/#ref-sec-naming">グリセリン<span>アルコールの性質 ／ アルコールの命名</span></a></li>
 <li><a href="/reference/fat/#ref-sec-structure">グリセリン<span>油脂 ／ 油脂の構造</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-secondary">ケトン<span>アルコールを酸化するとどうなるか ／ 第2級アルコールの酸化</span></a></li>
 <li><a href="/reference/ketone/#ref-sec-naming">ケトンの命名<span>ケトンの性質 ／ ケトンの命名</span></a></li>
 <li><a href="/reference/ketone/#ref-sec-what">ケトンはどんな化合物か<span>ケトンの性質 ／ ケトンはどんな化合物か</span></a></li>
 <li><a href="/reference/alkyne/#ref-sec-ketoenol">ケト型<span>アルキン —— 三重結合を1個もつ炭化水素 ／ エチンに水を付加すると、アセトアルデヒドになる</span></a></li>
@@ -302,6 +309,7 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/fat/#ref-sec-reaction">けん化<span>油脂 ／ 油脂の加水分解とけん化</span></a></li>
 <li><a href="/reference/fat/#ref-sec-numbers">けん化価<span>油脂 ／ 油脂の分子量・けん化価・ヨウ素価</span></a></li>
 <li><a href="/reference/ether/#ref-sec-naming">ジエチルエーテル<span>エーテルの性質 ／ エーテルの命名</span></a></li>
+<li><a href="/reference/numeral-prefix/#ref-sec-where">ジカルボン酸<span>数を表す接頭辞 ／ どこで出てくるか</span></a></li>
 <li><a href="/reference/cycloalkane/#ref-sec-what">シクロアルカン<span>シクロアルカン —— 環を1個もつ飽和炭化水素 ／ 一般式はアルケンとまったく同じ</span></a></li>
 <li><a href="/reference/hydrocarbon-classes/#ref-sec-classes">シクロアルカン<span>炭化水素の分類と一般式 ／ 6つのグループと一般式</span></a></li>
 <li><a href="/reference/cycloalkane/#ref-sec-writeout">シクロアルカンの書き出し<span>シクロアルカン —— 環を1個もつ飽和炭化水素 ／ シクロアルカンの書き出し</span></a></li>
@@ -316,7 +324,10 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/functional-groups/#ref-sec-nitro-sulfo">スルホ基<span>官能基 —— 性質を決めるパーツ ／ ニトロ基とスルホ基は、硝酸と硫酸から来ている</span></a></li>
 <li><a href="/reference/fat/#ref-sec-reaction">セッケン<span>油脂 ／ 油脂の加水分解とけん化</span></a></li>
 <li><a href="/reference/alkane-isomers/#ref-sec-what">つなぎ方が違えば、別の分子<span>同じ分子式で、別の分子 ／ つなぎ方が違えば、別の分子</span></a></li>
+<li><a href="/reference/numeral-prefix/#ref-sec-where">テトラペプチド<span>数を表す接頭辞 ／ どこで出てくるか</span></a></li>
+<li><a href="/reference/numeral-prefix/#ref-sec-where">どこで出てくるか<span>数を表す接頭辞 ／ どこで出てくるか</span></a></li>
 <li><a href="/reference/alkene/#ref-sec-cistrans">トランス型<span>アルケン —— 二重結合を1個もつ炭化水素 ／ シス－トランス異性体</span></a></li>
+<li><a href="/reference/numeral-prefix/#ref-sec-where">トリグリセリド<span>数を表す接頭辞 ／ どこで出てくるか</span></a></li>
 <li><a href="/reference/alkane/#ref-sec-structure">どんな形をしているか<span>アルカン —— 単結合だけでできた炭化水素 ／ どんな形をしているか</span></a></li>
 <li><a href="/reference/hydrocarbon-classes/#ref-sec-why">なぜ水素の数が減るのか<span>炭化水素の分類と一般式 ／ なぜ水素の数が減るのか</span></a></li>
 <li><a href="/reference/ether/#ref-sec-distinguish">ナトリウムアルコキシド<span>エーテルの性質 ／ アルコールとの判別</span></a></li>
@@ -361,7 +372,6 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/alcohol/#ref-sec-formula">一般式<span>アルコールの性質 ／ アルコールの一般式は CₙH₂ₙ₊₂O</span></a></li>
 <li><a href="/reference/aldehyde/#ref-sec-formula">一般式<span>アルデヒドの性質 ／ アルデヒドとケトンの一般式は CₙH₂ₙO</span></a></li>
 <li><a href="/reference/alkane/#ref-sec-formula">一般式<span>アルカン —— 単結合だけでできた炭化水素 ／ アルカンの一般式は CnH2n+2</span></a></li>
-<li><a href="/reference/alkane-naming/#ref-sec-straight">一般式<span>アルカンの命名 ／ 枝分かれの無いアルカンの名前</span></a></li>
 <li><a href="/reference/carboxylic-acid/#ref-sec-props">一般式<span>カルボン酸 ／ カルボン酸の性質</span></a></li>
 <li><a href="/reference/ester/#ref-sec-props">一般式<span>エステル ／ エステルの性質</span></a></li>
 <li><a href="/reference/ether/#ref-sec-formula">一般式<span>エーテルの性質 ／ 一般式はアルコールと同じ CₙH₂ₙ₊₂O</span></a></li>
@@ -404,6 +414,7 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/ether/#ref-sec-formula">構造異性体<span>エーテルの性質 ／ 一般式はアルコールと同じ CₙH₂ₙ₊₂O</span></a></li>
 <li><a href="/reference/ketone/#ref-sec-what">構造異性体<span>ケトンの性質 ／ ケトンはどんな化合物か</span></a></li>
 <li><a href="/reference/alkane-isomers/#ref-sec-count">構造異性体の数<span>同じ分子式で、別の分子 ／ 異性体はいくつあるか</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-summary">構造決定<span>アルコールを酸化するとどうなるか ／ アルコール酸化のまとめ</span></a></li>
 <li><a href="/reference/ester/#ref-sec-structure">構造決定<span>エステル ／ エステルの構造決定</span></a></li>
 <li><a href="/reference/fat/#ref-sec-melting">硬化油<span>油脂 ／ 油脂の融点と分類</span></a></li>
 <li><a href="/reference/fat/#ref-sec-structure">高級脂肪酸<span>油脂 ／ 油脂の構造</span></a></li>
@@ -449,8 +460,16 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/alkane/#ref-sec-structure">正四面体<span>アルカン —— 単結合だけでできた炭化水素 ／ どんな形をしているか</span></a></li>
 <li><a href="/reference/alkane-naming/#ref-sec-branched">接頭辞<span>アルカンの命名 ／ 枝分かれしたアルカンの名前</span></a></li>
 <li><a href="/reference/hydrocarbon-classes/#ref-sec-suffix">接頭辞<span>炭化水素の分類と一般式 ／ 名前のつくり方 —— 語尾と語頭</span></a></li>
+<li><a href="/reference/numeral-prefix/#ref-sec-table">接頭辞<span>数を表す接頭辞 ／ 接頭辞の表</span></a></li>
+<li><a href="/reference/numeral-prefix/#ref-sec-table">接頭辞の表<span>数を表す接頭辞 ／ 接頭辞の表</span></a></li>
 <li><a href="/reference/alkane-naming/#ref-sec-branched">側鎖<span>アルカンの命名 ／ 枝分かれしたアルカンの名前</span></a></li>
 <li><a href="/reference/functional-groups/#ref-sec-list">代表的な官能基<span>官能基 —— 性質を決めるパーツ ／ 代表的な官能基</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-primary">第1級アルコール<span>アルコールを酸化するとどうなるか ／ 第1級アルコールの酸化</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-primary">第1級アルコールの酸化<span>アルコールを酸化するとどうなるか ／ 第1級アルコールの酸化</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-secondary">第2級アルコール<span>アルコールを酸化するとどうなるか ／ 第2級アルコールの酸化</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-secondary">第2級アルコールの酸化<span>アルコールを酸化するとどうなるか ／ 第2級アルコールの酸化</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-tertiary">第3級アルコール<span>アルコールを酸化するとどうなるか ／ 第3級アルコールの酸化</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-tertiary">第3級アルコールの酸化<span>アルコールを酸化するとどうなるか ／ 第3級アルコールの酸化</span></a></li>
 <li><a href="/reference/alkane/#ref-sec-structure">単結合の回転<span>アルカン —— 単結合だけでできた炭化水素 ／ どんな形をしているか</span></a></li>
 <li><a href="/reference/alkene/#ref-sec-polymer">単量体<span>アルケン —— 二重結合を1個もつ炭化水素 ／ 付加重合とビニル化合物</span></a></li>
 <li><a href="/reference/alkyne/#ref-sec-vinyl">単量体<span>アルキン —— 三重結合を1個もつ炭化水素 ／ エチンからビニル化合物をつくる</span></a></li>
@@ -471,9 +490,11 @@ footer a:hover{color:var(--brand)}
 <li><a href="/reference/alkane/#ref-sec-formula">同族体<span>アルカン —— 単結合だけでできた炭化水素 ／ アルカンの一般式は CnH2n+2</span></a></li>
 <li><a href="/reference/hydrocarbon-classes/#ref-sec-homolog">同族体<span>炭化水素の分類と一般式 ／ 一般式と同族体</span></a></li>
 <li><a href="/reference/alkene/#ref-sec-shape">二重結合のまわりの形<span>アルケン —— 二重結合を1個もつ炭化水素 ／ 二重結合のまわりの形</span></a></li>
+<li><a href="/reference/numeral-prefix/#ref-sec-where">二糖<span>数を表す接頭辞 ／ どこで出てくるか</span></a></li>
 <li><a href="/reference/carboxylic-acid/#ref-sec-props">二量体<span>カルボン酸 ／ カルボン酸の性質</span></a></li>
 <li><a href="/reference/carboxylic-acid/#ref-sec-list">乳酸<span>カルボン酸 ／ 主なカルボン酸</span></a></li>
 <li><a href="/reference/functional-groups/#ref-sec-nitro-sulfo">配位結合<span>官能基 —— 性質を決めるパーツ ／ ニトロ基とスルホ基は、硝酸と硫酸から来ている</span></a></li>
+<li><a href="/reference/alcohol-oxidation-map/#ref-sec-halfreaction">半反応式<span>アルコールを酸化するとどうなるか ／ アルコール酸化の反応式</span></a></li>
 <li><a href="/reference/carboxylic-acid/#ref-sec-list">氷酢酸<span>カルボン酸 ／ 主なカルボン酸</span></a></li>
 <li><a href="/reference/cycloalkane/#ref-sec-stereo">不斉炭素原子<span>シクロアルカン —— 環を1個もつ飽和炭化水素 ／ 環にもシス－トランス異性体がある</span></a></li>
 <li><a href="/reference/ester/#ref-sec-structure">不斉炭素原子<span>エステル ／ エステルの構造決定</span></a></li>

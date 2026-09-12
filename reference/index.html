@@ -184,6 +184,12 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-hand-table{font-size:15px}
 .ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
 .ref-scope .ref-callout-text{font-size:15.5px}
+/* よくある誤解（:::mistake・§28）。★ 面Aは読み欄 680px なので寸法だけ上げる（色は LIGHT_CSS） */
+.ref-scope .ref-mistake{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-mistake-tag{font-size:12.5px}
+.ref-scope .ref-mistake-wrong,.ref-scope .ref-mistake-right{font-size:15.5px;margin-bottom:6px}
+.ref-scope .ref-mistake-mark{font-size:16px}
+.ref-scope .ref-mistake-why{font-size:14.5px}
 /* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
    13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
    ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
@@ -218,6 +224,8 @@ footer a:hover{color:var(--brand)}
 <h2>有機化合物の基本</h2>
 <h3>官能基</h3>
 <ul class="idx"><li><a href="/reference/functional-groups/"><b>官能基 —— 性質を決めるパーツ</b><span>官能基とは何か、代表的な15種の名前と構造、そして「いつ覚えるか」。同じ −OH でも隣が変わればアルコールとフェノールに分かれることまで1枚にまとめました。</span></a></li></ul>
+<h3>命名</h3>
+<ul class="idx"><li><a href="/reference/numeral-prefix/"><b>数を表す接頭辞</b><span>モノ・ジ・トリ・テトラ…という数を表す接頭辞の表と、有機化学のどこで出てくるか。ジカルボン酸・二糖・トリグリセリド・テトラペプチドまで、同じ1つの表で読めます。</span></a></li></ul>
 <h2>脂肪族炭化水素</h2>
 <h3>分類・一般式</h3>
 <ul class="idx"><li><a href="/reference/hydrocarbon-classes/"><b>炭化水素の分類と一般式</b><span>炭化水素を6つのグループに分ける線の引き方と、それぞれの一般式。一般式は暗記しなくても、アルカンを基準に「二重結合で−2、三重結合で−4、環で−2」から組み立てられます。</span></a></li></ul>
@@ -237,7 +245,7 @@ footer a:hover{color:var(--brand)}
 <h3>エーテル</h3>
 <ul class="idx"><li><a href="/reference/ether/"><b>エーテルの性質</b><span>2つの炭化水素基が酸素をはさんでつながったのがエーテルです。アルコールと同じ一般式なのに性質がまるで違う理由、慣用名の付け方、金属ナトリウムによる判別、そして C₄H₁₀O のエーテルが3種類しかないことの数え方をまとめました。</span></a></li></ul>
 <h3>名前・かたち・酸化の行き先</h3>
-<ul class="idx"><li><a href="/reference/alcohol-oxidation-map/"><b>アルコールを酸化するとどうなるか</b><span>アルコール・エーテル・アルデヒド・ケトン11種を分子式と官能基つきで一覧に。名前の語尾と図のかたちの対応、1級と2級で酸化の行き先が変わることが読み取れます。</span></a></li></ul>
+<ul class="idx"><li><a href="/reference/alcohol-oxidation-map/"><b>アルコールを酸化するとどうなるか</b><span>第1級はアルデヒドを経てカルボン酸、第2級はケトン、第3級は酸化されない。級で行き先が変わるしくみと、問題文の「おだやかに酸化した」の読み方、半反応式の作り方まで。</span></a></li></ul>
 <h3>アルコールの反応</h3>
 <ul class="idx"><li><a href="/reference/alcohol-dehydration/"><b>アルコールを脱水するとどのアルケンになるか</b><span>炭素1〜5個のアルコール16種と、分子内脱水でできるアルケンの対応表。行き先が重なる組、2つできる組（ザイツェフ則）、脱水できない2つが一望できます。</span></a></li></ul>
 <h3>アルデヒド</h3>

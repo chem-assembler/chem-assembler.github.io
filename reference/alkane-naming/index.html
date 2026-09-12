@@ -184,6 +184,12 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-hand-table{font-size:15px}
 .ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
 .ref-scope .ref-callout-text{font-size:15.5px}
+/* よくある誤解（:::mistake・§28）。★ 面Aは読み欄 680px なので寸法だけ上げる（色は LIGHT_CSS） */
+.ref-scope .ref-mistake{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-mistake-tag{font-size:12.5px}
+.ref-scope .ref-mistake-wrong,.ref-scope .ref-mistake-right{font-size:15.5px;margin-bottom:6px}
+.ref-scope .ref-mistake-mark{font-size:16px}
+.ref-scope .ref-mistake-why{font-size:14.5px}
 /* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
    13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
    ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
@@ -205,7 +211,7 @@ nav.seq a:hover{text-decoration:underline}
 footer{background:var(--band);color:#a8b0c4;margin-top:44px;padding:18px 0 46px;font-size:12.5px;line-height:1.8}
 footer a{color:#a8b0c4}
 footer a:hover{color:var(--brand)}
-:root{--border-color:rgba(255, 255, 255, 0.08);--font-main:'Noto Sans JP', sans-serif;--neon-purple:#9b59b6;--text-muted:#7a84a2;--text-primary:#f5f6fa;--text-secondary:#a0a8c0}
+:root{--border-color:rgba(255, 255, 255, 0.08);--font-main:'Noto Sans JP', sans-serif;--neon-green:#2ecc71;--neon-purple:#9b59b6;--neon-red:#ff4757;--text-muted:#7a84a2;--text-primary:#f5f6fa;--text-secondary:#a0a8c0}
 .ref-p {
     font-size: 13px;
     line-height: 1.75;
@@ -345,6 +351,8 @@ footer a:hover{color:var(--brand)}
 .ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
 /* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
 .ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 副生成物（同じ行に2つ以上できるときだけ）。⚠ 主より一段沈める ＝ どちらが主かは色の濃さでも読める */
+.ref-map-table .ref-map-minor { color: var(--text-muted); }
 /* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
 .ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
 .ref-map-table .ref-map-none { color: var(--text-secondary); }
@@ -530,7 +538,13 @@ footer a:hover{color:var(--brand)}
 .ref-blank {
     padding: 0 2px;
     border-radius: 3px 3px 0 0;
-    background: rgba(255, 255, 255, 0.07);
+    /* ⚠⚠ **沈める**（明るくしない）。2026-09-12 に実測して直した ——
+       前は `rgba(255,255,255,.07)` で敷きを*持ち上げて*いたので、添え物の色の字が
+       載ったとき（ケトンのページの図の説明）に **4.35:1 で AA 割れ**していた。
+       ★ 沈めると同じ字で **5.05:1**。発展の折りたたみで一度通った道とまったく同じ
+       （`.ref-adv` の注記・`DESIGN_reference_book.md` §24-2）。
+       ⚠ 「穴」に見えることは点線の下線が受け持っているので、向きを変えても役は変わらない。 */
+    background: rgba(0, 0, 0, 0.25);
     border-bottom: 2px dotted var(--text-muted);
     letter-spacing: 0.06em;
 }
@@ -621,6 +635,38 @@ footer a:hover{color:var(--brand)}
    「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
 .ref-callout-note { border-left-color: var(--text-secondary); }
 .ref-callout-note .ref-callout-tag { color: var(--text-muted); }
+/* ★★ よくある誤解（`:::mistake`・設計書 §28）。⚠ 札の言葉は learn.js の `REF_MISTAKE_TAG`。
+   ⚠⚠ **急所は「誤りの行を本文と同じ字で出さない」こと** —— 同じ字で2行並べると、
+      どちらが正しいかを読まないと分からない ＝ この囲みを作った意味が消える。
+      ★ 印は3つ重ねる: ✗ の字（色だけに頼らない）・弱めた色・取り消し線。
+   ⚠⚠ **暗い地では敷きを沈める**（明るくしない）—— 発展の折りたたみで実測済み:
+      薄い敷きを *明るく* すると添え物の字が 4.78:1 → 4.22:1 で AA 割れ、
+      **沈めると 5.04:1 に上がる**（`DESIGN_reference_book.md` §24-2）。
+   ★ 左の帯は赤（`--neon-red`）—— 注意の黄・丸暗記の紫・例題の水色・発展の緑と
+      重ならない残りの1色で、「誤り」の意味にも合う。 */
+.ref-mistake {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-red);
+    border-radius: 0 10px 10px 0;
+    background: rgba(0, 0, 0, 0.22);
+}
+.ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
+/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+   （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
+.ref-mistake-wrong,
+.ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+.ref-mistake-wrong { color: var(--text-secondary); }
+.ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
+.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
+   足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
+.ref-mistake-right { color: var(--text-primary); }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
       押せるものと同じ見た目にしない —— 淡くしたうえで「準備中」の札を必ず添える
@@ -749,7 +795,27 @@ a.ref-link::before { content: '→ '; }
 .ref-scope .ref-adv-sum>.ref-sec-h::before{color:#2e6b45}
 /* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
    （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
-.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
+/* ⚠⚠ 字の色も読み替える（2026-09-12 実測）—— 敷きを沈めた（#e7e2d8）ぶん、
+   添え物の色（--text-muted:#636b78）のままでは **4.17:1 で AA 割れ**だった。
+   ★ 一段濃い #4e5765（--text-secondary と同じ値）にして 5.58:1。
+   ⚠ 「穴」に見えることは地と下線が受け持っているので、字を濃くしても役は変わらない。 */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478;color:#4e5765}
+/* ★★ よくある誤解（§28）。⚠ 暗い地では敷きを**沈めて**層を作っている（rgba(0,0,0,.22)）が、
+   明るい地でそれをやると灰色の面になる ＝ 発展の折りたたみとまったく同じ踏み方。
+   ★ 明るい地では**赤寄りの紙を敷く**（#faeceb）—— 本文の地 #f5f3ef とも紙 #fff とも
+     見分けが付き、本文 13.5:1・添え物 6.2:1・✗ の赤 6.1:1・✓ の緑 6.2:1（全部 AA）。
+   ⚠⚠ ✗ と ✓ の色は **var(--neon-red) / var(--neon-green) なので checkLightCoverage に映らない** ——
+     ここで読み替えないと、白地で 3.0:1 と 1.9:1 のまま黙って出る。
+   ⚠ 誤りの行の取り消し線は色ではないので、明るい地でもそのまま効く。 */
+/* ⚠ border-color は左の帯まで塗るので、**先に**書いて そのあと左だけ戻す（.ref-exercise と同じ順。
+   ⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにバッククォートを書けない） */
+.ref-scope .ref-mistake{background:#faeceb;border-color:#e3d2d0;border-left-color:#a62828}
+.ref-scope .ref-mistake-tag{color:#a62828;font-weight:700}
+.ref-scope .ref-mistake-wrong{color:#4e5765}
+.ref-scope .ref-mistake-wrong .ref-mistake-mark{color:#a62828}
+.ref-scope .ref-mistake-right{color:var(--fg)}
+.ref-scope .ref-mistake-right .ref-mistake-mark{color:#166534}
+.ref-scope .ref-mistake-why{color:#4e5765}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
@@ -777,21 +843,23 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（2節）</summary><ul><li><a href="#ref-sec-straight" data-ref-anchor="straight">枝分かれの無いアルカンの名前</a></li><li><a href="#ref-sec-branched" data-ref-anchor="branched">枝分かれしたアルカンの名前</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">直鎖のアルカンは、炭素を1列につないで、余った手をぜんぶ水素でうめただけの分子です。つなぎ方に選択の余地がないので、<b>名前は炭素の数だけで決まります</b>。</p>
+<p class="ref-p">直鎖のアルカンは、炭素を1列につないで、余った手をぜんぶ水素でうめた分子です。つなぎ方に選択の余地がないので、<b>名前は炭素の数だけで決まります</b>。</p>
 <section class="ref-sec" id="ref-sec-straight"><h4 class="ref-sec-h">枝分かれの無いアルカンの名前</h4><p class="ref-sec-lead">炭素の数だけで名前が決まります。ヘキサンまでは確実に覚えましょう。</p></section>
-<p class="ref-p">C1〜C4 の語幹（メタ・エタ・プロパ・ブタ）は数と関係のない古い呼び名ですが、C5 からは数を表す語幹（ペンタ=5・ヘキサ=6・ヘプタ=7・オクタ=8・ノナ=9・デカ=10）がそのまま名前になります。語尾はどれも <b>-ane（〜アン）</b>で、これが「飽和」の印です。</p>
+<p class="ref-p">C1〜C4 の語幹（メタ・エタ・プロパ・ブタ）は数と関係のない古い呼び名ですが、C5 からは数を表す接頭辞（ペンタ=5・ヘキサ=6・ヘプタ=7・オクタ=8・ノナ=9・デカ=10）がそのまま名前になります。語尾はどれも <b>-ane（〜アン）</b>で、これが「飽和」の印です。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/numeral-prefix/">モノ・ジ・トリ…という数を表す接頭辞そのものの説明は「数を表す接頭辞」で</a></p>
 <div class="ref-table-wrap"><div class="ref-cap">直鎖アルカン C1〜C10（10行）</div><table class="ref-table" data-ref-series="アルカン（直鎖）"><thead><tr><th>C の数</th><th>名称</th><th>分子式</th></tr></thead><tbody><tr><td class="ref-c">1</td><td>メタン</td><td class="ref-formula">CH₄</td></tr><tr><td class="ref-c">2</td><td>エタン</td><td class="ref-formula">C₂H₆</td></tr><tr><td class="ref-c">3</td><td>プロパン</td><td class="ref-formula">C₃H₈</td></tr><tr><td class="ref-c">4</td><td>ブタン</td><td class="ref-formula">C₄H₁₀</td></tr><tr><td class="ref-c">5</td><td>ペンタン</td><td class="ref-formula">C₅H₁₂</td></tr><tr><td class="ref-c">6</td><td>ヘキサン</td><td class="ref-formula">C₆H₁₄</td></tr><tr><td class="ref-c">7</td><td>ヘプタン</td><td class="ref-formula">C₇H₁₆</td></tr><tr><td class="ref-c">8</td><td>オクタン</td><td class="ref-formula">C₈H₁₈</td></tr><tr><td class="ref-c">9</td><td>ノナン</td><td class="ref-formula">C₉H₂₀</td></tr><tr><td class="ref-c">10</td><td>デカン</td><td class="ref-formula">C₁₀H₂₂</td></tr></tbody></table></div>
 <p class="ref-p">枝分かれがない（直鎖の）アルカンの名称は表の通りです。ヘキサンまでは確実に覚えましょう。</p>
-<p class="ref-p">分子式を縦に読むと、C が1つ増えるたびに H がちょうど2つ増えています ＝ <b>CH₂ が1つずつ伸びている</b>だけ。だから炭素が n 個なら水素は 2n+2 個で、一般式は <b>C<sub>n</sub>H<sub>2n+2</sub></b> になります。</p>
-<p class="ref-p">この表が決めているのは、枝のない1列のつなぎ方の名前だけです。枝分かれがあると、同じ分子式でも別の分子になります（C₄H₁₀ はブタンと 2-メチルプロパンの2つ）。</p>
+<p class="ref-p">名前と構造式を並べて見ておきましょう。炭素が1個ずつ増え、両端と途中の炭素が水素でうまっているだけで、どれも同じ形をしています。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-propane.png" alt="プロパンの構造式。炭素3個が横一直線に並び、左端と右端の炭素に水素が3個ずつ、真ん中の炭素に水素が2個ついている" loading="lazy"><figcaption class="ref-figure-cap">プロパン C₃H₈</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-butane.png" alt="ブタンの構造式。炭素4個が横一直線に並び、両端の炭素に水素が3個ずつ、間の2個の炭素に水素が2個ずつついている" loading="lazy"><figcaption class="ref-figure-cap">ブタン C₄H₁₀</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-hexane.png" alt="ヘキサンの構造式。炭素6個が横一直線に並び、両端の炭素に水素が3個ずつ、間の4個の炭素に水素が2個ずつついている" loading="lazy"><figcaption class="ref-figure-cap">ヘキサン C₆H₁₄。炭素が増えても、つなぎ方は1通りしかありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">同じ分子式で何種類の分子ができるか（構造異性体の数え方）は「同じ分子式で、別の分子」で</a></p>
 <div class="ref-example"><h4>例題：ヘキサン をつくる</h4><p class="ref-p" style="margin: 0px;">ひとつ作ってみましょう。<b>表を閉じてから</b>、炭素を6個つないでヘキサンを組みます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.ali.alkane-names&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=alkane-naming">▶ ヘキサンを組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（アルカン（直鎖）の6問目）がそのまま受け持ちます。</p></div>
 <section class="ref-sec" id="ref-sec-branched"><h4 class="ref-sec-h">枝分かれしたアルカンの名前</h4><p class="ref-sec-lead">主鎖と同じ炭素数のアルカンを基準に、「何が」「何個」「どこに」を読み取って、後ろから順に組み立てます。</p></section>
-<p class="ref-p">枝分かれのある名前は、いちばん長い鎖（主鎖）と同じ炭素数のアルカンを基準にして、「何が」「何個」「どこに」付いているかを読み取ります。</p>
 <p class="ref-p">枝分かれがあるアルカンの名称は以下の手順で<b>後ろから順に</b>決めます。</p>
 <ol class="ref-list"><li>一番長い鎖（主鎖）を探し、炭素の数を数えて対応するアルカンの名称を末尾に置く。<div class="ref-li-hang">主鎖の炭素数が4なら「<span class="ref-blank">○○</span>ブタン」、5なら「<span class="ref-blank">○○</span>ペンタン」</div></li><li>主鎖に付いている枝（側鎖）を探し、アルキル基の種類と数を数えアルカンの名称の前に置く。<div class="ref-li-hang">数はギリシャ語の接頭辞（1：モノ、2：ジ、3：トリ、4：テトラ）を使って表します。</div><div class="ref-li-hang">アルキル基の名称は、対応する炭素数のアルカンの名称の語尾を <b>-yl（イル）</b>に変化させます。</div><div class="ref-li-hang">メチル基が1個付いたブタンなら「<span class="ref-blank">○○</span>メチルブタン」（「モノ」は省略します）、メチル基が2個付いたペンタンなら「<span class="ref-blank">○○</span>ジメチルペンタン」となります。</div></li><li>側鎖が主鎖のどの炭素原子に付いているか（端から数えて何番目の炭素原子に付いているか）を調べ数字で表す。<div class="ref-li-hang">主鎖の端から2番目の炭素原子にメチル基が1個付いたブタンなら「2-メチルブタン」、主鎖の端から2番目と3番目の炭素原子に1個ずつメチル基が付いたペンタンなら「2,3-ジメチルペンタン」となります。</div></li></ol>
 <div class="ref-table-wrap"><div class="ref-cap">数を表す接頭辞（10行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: right;">数</th><th style="text-align: center;">接頭辞</th><th style="text-align: left;">同じ語幹をもつ言葉</th></tr></thead><tbody><tr><td style="text-align: right;">1</td><td style="text-align: center;">モノ</td><td style="text-align: left;">モノレール、モノトーン、モノローグ</td></tr><tr><td style="text-align: right;">2</td><td style="text-align: center;">ジ</td><td style="text-align: left;">ジレンマ</td></tr><tr><td style="text-align: right;">3</td><td style="text-align: center;">トリ</td><td style="text-align: left;">トリレンマ、トライアングル、トライアスロン、トライデント</td></tr><tr><td style="text-align: right;">4</td><td style="text-align: center;">テトラ</td><td style="text-align: left;">テトラポッド（消波ブロック）、テトラパック</td></tr><tr><td style="text-align: right;">5</td><td style="text-align: center;">ペンタ</td><td style="text-align: left;">ペンタゴン、ペンタグラム</td></tr><tr><td style="text-align: right;">6</td><td style="text-align: center;">ヘキサ</td><td style="text-align: left;">ヘキサゴン、ヘキサグラム</td></tr><tr><td style="text-align: right;">7</td><td style="text-align: center;">ヘプタ</td><td style="text-align: left;">ヘプタスロン（陸上7種競技）</td></tr><tr><td style="text-align: right;">8</td><td style="text-align: center;">オクタ</td><td style="text-align: left;">オクトパス、オクトーバー、オクタグラム</td></tr><tr><td style="text-align: right;">9</td><td style="text-align: center;">ノナ</td><td style="text-align: left;">ノーベンバー</td></tr><tr><td style="text-align: right;">10</td><td style="text-align: center;">デカ</td><td style="text-align: left;">デカスロン（陸上10種競技）、ディセンバー</td></tr></tbody></table></div>
-<p class="ref-p">高校で出てくる名前に実際に現れるのは<b>ジ（2）・トリ（3）・テトラ（4）まで</b>がほとんどです。5以上はこの表を引けば十分で、覚えていなくて困ることはありません。</p>
+<p class="ref-p">高校で出てくる名前に実際に現れるのは<b>ジ（2）・トリ（3）・テトラ（4）まで</b>がほとんどです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkane/">アルキル基（メチル基・エチル基…）そのものの説明は「アルカン」のページに</a></p>
 <h5 class="ref-h5">具体例1</h5>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-example-chain.png" alt="2,3-ジメチルペンタンの構造式。CH₃−CH−CH−CH₂−CH₃ が横一直線に並び、2番目と3番目の CH の上にメチル基 CH₃ が1つずつ付いていて、主鎖の下にオレンジの矢印が引いてある" loading="lazy"><figcaption class="ref-figure-cap">今回の分子です。オレンジの矢印が主鎖（いちばん長い炭素の鎖）で、<b>構造式を書くときは主鎖を横一直線に書きます</b>。</figcaption></figure>
@@ -804,9 +872,10 @@ a.ref-link::before { content: '→ '; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-numbered.png" alt="同じ分子に主鎖の番号を振った構造式。左端の CH₃ が1、その右の CH が2、次の CH が3、そこから上へ折れた CH₂ が4、その先の CH₃ が5" loading="lazy"><figcaption class="ref-figure-cap">主鎖に端から番号を振ります。4と5が上へ折れているのは、主鎖がそこで曲がっているからです。</figcaption></figure>
 <p class="ref-p">2個のメチル基は主鎖の「2番目と3番目の炭素原子」に付いていますので、この分子の名称は「2,3-ジメチルペンタン」になります。</p>
 <h5 class="ref-h5">注意</h5>
-<p class="ref-p">主鎖の番号は「名称の数字が小さくなるように振る」というルールがあります。この図のように振ってしまうと「3,4-ジメチルペンタン」となってしまいますが、それはだめですよ、ということです。数字の振り方を1つに決めることにより、構造式と名称を1:1で対応させることができます。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">主鎖はどちらの端から数えても同じ長さなのだから、番号は好きな向きに振ってよい</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">番号は「<b>名称の数字が小さくなるように</b>」振ります。さっきの分子なら <b>2,3-ジメチルペンタン</b>の1通りで、逆から振った「3,4-ジメチルペンタン」は名前として認められません。</span></p><p class="ref-mistake-why">向きを1つに決めておかないと、同じ構造式に2つの名前が付いてしまいます。⚠ 番号の向きを決めるのは、<b>構造式と名称を1:1で対応させる</b>ためです。</p></div>
 <h5 class="ref-h5">置換基が2種類以上ある場合</h5>
 <p class="ref-p">置換基が2種類以上ある場合は、続けて書き並べて名称にします。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alkane-naming-ethyl-dimethyl-hexane.png" alt="3-エチル-2,3-ジメチルヘキサンの構造式。炭素6個の主鎖が横一直線に並び、オレンジの帯が主鎖の上を通って左端から C₁ C₂ C₃ C₄ C₅ C₆ と番号が振ってある。C₂ と C₃ にメチル基 CH₃ が1個ずつ、C₃ にはさらにエチル基 CH₂CH₃ が1個付いている" loading="lazy"><figcaption class="ref-figure-cap">オレンジの帯が主鎖（炭素6個）で、番号は端から数えた位置です。枝は C₂ にメチル基、C₃ にメチル基とエチル基。</figcaption></figure>
 <p class="ref-p">この分子は主鎖の炭素数が6で、2,3番の炭素原子にメチル基が2個、3番の炭素原子にエチル基が1個付いているので「3-エチル-2,3-ジメチルヘキサン」になります。メチル基（methyl）とエチル基（ethyl）を書く順番はアルファベット順ですが、この順番については覚えなくても困ることはないと思います。一般に「名称→構造式」よりも「構造式→名称」の方が難しいです。複雑な分子については「名称→構造式」がわかれば十分でしょう。</p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">ここからは紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
@@ -824,7 +893,7 @@ a.ref-link::before { content: '→ '; }
 <nav class="seq"><a href="/reference/alkane/">← アルカン —— 単結合だけでできた炭化水素</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/alkane-isomers/">同じ分子式で、別の分子 →</a></nav>
+<a href="/reference/numeral-prefix/">数を表す接頭辞 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

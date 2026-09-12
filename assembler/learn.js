@@ -6336,6 +6336,14 @@ const REF_LINK_SOON = '準備中';
 const REF_EXERCISE_TAG = '例題';
 const REF_EXERCISE_OPEN = '解答を見る';
 
+/* ★★ よくある誤解（`:::mistake`・2026-09-12）。⚠ **記号だけにしない**（`level` / `tone` と同じ約束）。
+   ⚠⚠ **`REF_ADVANCED_WORD`（発展）と役が違う。⛔ 混ぜない** ——
+     発展 ＝ 範囲の外／誤解 ＝ 範囲の内で間違えやすい。★ だから**畳まない**
+     （発展の節は `<details>` に畳むが、誤解はいちばん読ませたい人が開かないので開いたまま置く）。 */
+const REF_MISTAKE_TAG = 'よくある誤解';
+const REF_MISTAKE_WRONG = '✗';
+const REF_MISTAKE_RIGHT = '✓';
+
 /* 例題に添える図。★ **`:::figure` と同じ class を使う**（`.ref-figure-img`）——
    「スライドから焼いた図は貼った紙」という見せ方を2通りに増やさない（REFBOOK_STYLE §2-5）。
    ⚠ `/reference-img/` を付けるのは `renderFigure` とここの2か所だが、**綴りは同じ定数**。 */
@@ -6623,6 +6631,7 @@ class ReferenceBook {
         if (b.kind === 'reaction') return this.renderReaction(b);
         if (b.kind === 'table') return this.renderPlainTable(b);
         if (b.kind === 'callout') return this.renderCallout(b);
+        if (b.kind === 'mistake') return this.renderMistake(b);
         if (b.kind === 'link') return this.renderLink(b);
         if (b.kind === 'stageTable') return this.renderStageTable(b);
         if (b.kind === 'mechanismTable') return this.renderMechanismTable(b);
@@ -6898,6 +6907,52 @@ class ReferenceBook {
         return box;
     }
 
+    /* ★★ よくある誤解（`:::mistake`・設計書 §28）—— **誤りと正しい形を並べて置く**。
+     *
+     * ⚠⚠ **急所は「誤りを本文と同じ字で出さない」こと。** 同じ字で2行並べると、
+     *   **どちらが正しいかを読まないと分からない** ＝ 囲みを作った意味が消える。
+     *   ★ だから誤りの行は ✗ の札・沈めた色・**取り消し線**の3つで印を付け、
+     *     正しい行は ✓ と本文と同じ強さで出す（見た瞬間に上が誤りだと分かること）。
+     * ⚠ 取り消し線だけに頼らない —— 色を見分けられない人にも ✗ / ✓ の字が残る。
+     *   ★ 読み上げにも残るよう、札は `aria-hidden` にせず素の文字で置く。
+     *
+     * ⚠⚠ **畳まない。**（発展の節は `<details>` に畳む。あちらは「読み飛ばしてよい」印だが、
+     *   こちらは**いちばん読ませたい人が開かない**ので開いたまま置く・§28-2）。
+     */
+    renderMistake(block) {
+        const box = document.createElement('div');
+        box.className = 'ref-mistake';
+
+        const tag = document.createElement('b');
+        tag.className = 'ref-mistake-tag';
+        tag.textContent = REF_MISTAKE_TAG;
+        box.appendChild(tag);
+
+        const row = (cls, mark, html) => {
+            const p = document.createElement('p');
+            p.className = 'ref-mistake-' + cls;
+            const m = document.createElement('b');
+            m.className = 'ref-mistake-mark';
+            m.textContent = mark;
+            p.appendChild(m);
+            const s = document.createElement('span');
+            s.className = 'ref-mistake-body';
+            s.innerHTML = html;
+            p.appendChild(s);
+            return p;
+        };
+        box.appendChild(row('wrong', REF_MISTAKE_WRONG, block.wrong));
+        box.appendChild(row('right', REF_MISTAKE_RIGHT, block.right));
+
+        if (block.why) {
+            const w = document.createElement('p');
+            w.className = 'ref-mistake-why';
+            w.innerHTML = block.why;
+            box.appendChild(w);
+        }
+        return box;
+    }
+
     /* ★★ ページどうし・ページからアプリへのリンク（設計書 §20-7）。
      *
      * ⚠⚠ **急所は「まだ無いページを指せること」。** 52ページの計画のうち書けているのは6枚で、
@@ -7077,14 +7132,18 @@ class ReferenceBook {
                     why.textContent = r.blocked.reason;
                     tdTo.appendChild(why);
                 } else {
-                    /* ⚠ 「（主）」は**2つ以上できる行にだけ**付ける。1つしかできない行に付けると
-                       「主があるなら副もあるはず」と読めて、無いものを探させることになる */
+                    /* ⚠ 「（主）」「（副）」は**2つ以上できる行にだけ**付ける。1つしかできない行に付けると
+                       「主があるなら副もあるはず」と読めて、無いものを探させることになる。
+                       ★★ **副にも印を付ける**（v1539・②稿の注文「主生成物だけでなく副生成物も
+                       網羅してください（矢印に区別をつける）」）—— 行そのものは前から
+                       **両方とも出していた**が、印が片方にしか無いと、印の無いほうが
+                       「調べていないもの」なのか「副生成物」なのかが読み取れなかった。 */
                     const many = r.products.length >= 2;
                     r.products.forEach((p, idx) => {
                         if (idx) tdTo.appendChild(document.createTextNode('／'));
                         const s = document.createElement('span');
-                        if (many && p.major) s.className = 'ref-map-major';
-                        s.textContent = p.name + (many && p.major ? '（主）' : '');
+                        if (many) s.className = p.major ? 'ref-map-major' : 'ref-map-minor';
+                        s.textContent = p.name + (many ? (p.major ? '（主）' : '（副）') : '');
                         tdTo.appendChild(s);
                     });
                 }
@@ -7470,6 +7529,11 @@ if (typeof window !== 'undefined') {
     /* ★ 例題の決めごと（§22）。`REF23` が「解答が閉じている」「札の言葉が在る」ことを、この口から見る */
     window.REF_EXERCISE_TAG = REF_EXERCISE_TAG;
     window.REF_EXERCISE_OPEN = REF_EXERCISE_OPEN;
+    /* ★ よくある誤解の決めごと（§28）。`REF26` が「誤りが本文と同じ字で出ていない」ことと、
+       「畳まれていない（発展と取り違えていない）」ことを、この口から見る */
+    window.REF_MISTAKE_TAG = REF_MISTAKE_TAG;
+    window.REF_MISTAKE_WRONG = REF_MISTAKE_WRONG;
+    window.REF_MISTAKE_RIGHT = REF_MISTAKE_RIGHT;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;
