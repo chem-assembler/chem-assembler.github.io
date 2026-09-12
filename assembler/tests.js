@@ -197,6 +197,7 @@
  *                  同じ物差しが赤くなる（＋残り数の表示が実際の残りと一致していること）・
  *                  4 は画面（入口は `#puzzle-modal` の中・押しものの床 32px・
  *                  **作業帯の段も高さも 1920/375/320px で1pxも増えない**） |
+ * | RXF | 1〜8   | ★★ **参考書の式を起こすために足した反応**（v1541・実測は `scratchpad/rxcov`）。参考書の本文にある 169 本の式を分類したところ、アプリの仕事である 150 本のうち 41 本が起こせなかった。⚠ **奇数が「起きる」・偶数が否定対照**（`TR` と同じ流儀）。1〜2 は **完全燃焼**（⚠⚠ **燃焼のルールが1本も無かった** ＝ 元素分析の節が立っているのに式を起こせなかった。門番は C・H・O だけで、塩と重合鎖の端 R も落とす＝「分子1個ぶんの式」が決まらないため。caption の係数つきの式と図の個数が合うことまで見る）。3〜4 は **塩素の付加**（⚠⚠ 参考書は「臭素 Br₂ や塩素 Cl₂ とすみやかに反応します」と書いているのに、塩素の瓶は2本とも置換だった。瓶は増やさず `cl2_light` に付けた。★ 光＝付加／鉄触媒＝置換 が瓶の分かれ方そのものであることを 4 が固定する）。5〜6 は **アミド結合の加水分解**（⚠⚠ 作る側 `amidation` だけの片道で、ジペプチド・アセトアニリド・ナイロン66 のどれにも0件だった。★ 尿素だけは「アミド結合はあるのに落とす」＝ できるカルバミン酸は単離できない）。7〜8 は **共重合**（★ ユーザー決定「選択した分子、反応のために召喚した分子はすべてつながるようにすべき」。⚠⚠ 直す前はスチレン2個＋ブタジエン2個で**スチレンだけが繋がってブタジエンが黙って残った**。⛔ 赤で止めず、全部つなぐ札を足し、単一種のときは出さない〈札を二重にしない〉。⚠ **画面で「交互共重合体ができます」と断定しないこと**を 7 が見張る ―― どの並びでも本当にそうとは限らないため。8 は残った単量体をその場で言うこと〈「黙って」の解消〉まで見る） |
  * | RX  | 1〜48  | 反応実行・前後比較・機構との連携（**46〜48 は「一覧はたどると決めるが別」**＝ v1439・
  *                  ユーザーの実機報告（2026-08-21）「反応機構ビューアー　反応の種類が選べない、
  *                  すぐ選択される」。一覧が `<select>` だったので**候補を動かした瞬間に `change` が飛び**、
@@ -46609,7 +46610,12 @@
          * ⚠ 相手のナトリウムフェノキシドが要るので1分子の走査では拾えない。
          * ⚠ **`CV_MUST_SPLIT` には入れない** —— 外れる Na⁺ と Cl⁻ は
          *   `apply` の中で図から消すので、反応の前後で分子の数はむしろ **2 → 1 に減る**。 */
-        diazo_coupling: ['塩化ベンゼンジアゾニウム', 'ナトリウムフェノキシド']
+        diazo_coupling: ['塩化ベンゼンジアゾニウム', 'ナトリウムフェノキシド'],
+        /* ★ 共重合（v1541・ユーザー決定「選択した分子、反応のために召喚した分子は
+         *   すべてつながるようにすべき」）。⚠ **2種類以上の単量体が要る**ので、
+         *   1分子ずつの走査では絶対に拾えない（`detect` が単一種を落としている）。
+         *   ★ SBR そのもの（スチレン＋1,3-ブタジエン）を題材にする。 */
+        copolymerization: ['スチレン', '1,3-ブタジエン', 'スチレン', '1,3-ブタジエン']
         /* ⚠⚠ **`amine_liberate_naoh` はここから外れた**（v1510 で入り、電荷の段で不要になった）。
          *   detect が「層の印」から**図そのもの**（アンモニウム塩の N）に変わったので、
          *   ライブラリの走査が**登録済みのアニリン塩酸塩**を自分で拾う
@@ -47657,6 +47663,126 @@
         const urea = trSetup(c, ['尿素']);
         assert(W.findFunctionalGroups(urea).filter(g => g.type === 'amide').length === 2,
             '尿素のアミド結合が2つない（材料が無いだけ、になっている）');
+        c.reset();
+    });
+
+    test('RXF7: 共重合 —— 並べた単量体が1つ残らず1本の鎖につながる（SBR）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'copolymerization');
+        assert(rule, 'copolymerization が REACTION_RULES に無い');
+        assert(rule.wholeCanvas, '共重合がキャンバス全体を対象にしていない（2本目の鎖が作れなくなる）');
+
+        // ---- ① スチレン2個＋ブタジエン2個 ＝ 4分子が**1分子**になる
+        const mol = trSetup(c, ['スチレン', '1,3-ブタジエン', 'スチレン', '1,3-ブタジエン']);
+        assert(g.splitMolecules().length === 4, '題材（4分子）が置けていない');
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `共重合の箇所が ${sites.length} 件（1件を期待）`);
+        assert(sites[0].length === 4, `箇所が単量体 ${sites[0].length} 個ぶん（4個＝全部を期待）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        assert(g.splitMolecules().length === 1,
+            `共重合したのに ${g.splitMolecules().length} 分子ある（★ 単量体が残っている ＝ ユーザー報告そのもの）`);
+
+        // ---- ② ジエンの単位は 1,4-付加 ＝ **中央に二重結合が残る**（加硫の土台）
+        const chainDouble = mol.bonds.filter(b => b.type === 2 &&
+            !W.findAromaticBondKeys(mol).has([b.atomId1, b.atomId2].sort().join('_')));
+        assert(chainDouble.length === 2,
+            `鎖に残った（芳香環でない）二重結合が ${chainDouble.length} 本（ジエン2個ぶん＝2本を期待）`);
+        assert(mol.atoms.filter(a => a.element === 'R').length === 2, '両端の R が2個ない');
+
+        /* ---- ③ ⚠⚠ **画面の言葉**（ユーザー指示 2026-09-12）。
+         *   ★ 「交互共重合体ができます」と**断定しない** ——
+         *     どの並びを選んでも本当にそうとは限らないため。
+         *   ★ 代わりに「並べた順につないだ」「一通りには決まらない」を必ず言う。 */
+        assert(!/交互共重合体ができます|交互に並び|交互共重合体になり/.test(res.caption),
+            `caption が並びを断定している: ${res.caption}`);
+        assert(res.caption.includes('並べた順'), 'caption が「並べた順」と言っていない');
+        assert(/一通りには決まりません/.test(res.caption),
+            'caption が「実際の並びは一通りに決まらない」と言っていない');
+        assert(res.caption.includes('SBR'), 'caption が SBR の名前を出していない');
+
+        // ---- ④ できた鎖は**加硫できる**（2本作れば架橋の箇所が出る）
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        assert(vul.detect(mol).length === 0, '鎖1本で加硫の箇所が出ている（架橋は2本のあいだ）');
+        ['スチレン', '1,3-ブタジエン', 'スチレン', '1,3-ブタジエン'].forEach(n => g.summonMolecule(n));
+        g.updateDrawing();
+        const s2 = rule.detect(mol);
+        assert(s2.length === 1, `2本目の共重合の箇所が ${s2.length} 件（1件を期待）`);
+        g.saveState();
+        rule.apply(g, s2[0]);
+        g.updateDrawing();
+        assert(g.splitMolecules().length === 2, `鎖が ${g.splitMolecules().length} 本（2本を期待）`);
+        assert(vul.detect(mol).length > 0, '2本の SBR のあいだに加硫の箇所が出ない');
+
+        // ---- ⑤ 3種類でも通る（アクリロニトリル＋ブタジエン＋スチレン ＝ ABS の骨格）
+        const abs = trSetup(c, ['アクリロニトリル', '1,3-ブタジエン', 'スチレン']);
+        const s3 = rule.detect(abs);
+        assert(s3.length === 1 && s3[0].length === 3, '3種類の単量体で共重合の箇所が出ない');
+        g.saveState();
+        rule.apply(g, s3[0]);
+        g.updateDrawing();
+        assert(g.splitMolecules().length === 1, '3種類のとき1本の鎖になっていない');
+        c.reset();
+    });
+
+    test('RXF8: ★否定対照 — 共重合の札は「2種類以上」のときだけ。単一種は今までどおり付加重合が出る', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'copolymerization');
+        const add = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        const dien = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        assert(rule && add && dien, '比べる3本のうちどれかが無い');
+        /* ⚠ **札が二重にならないこと**が要件 —— 単一種のときに共重合まで出ると、
+         *   同じことをする札が2つ並んで「どちらを押せばよいか」が読めなくなる。 */
+        const negatives = [
+            [['スチレン', 'スチレン', 'スチレン'], '同じ単量体だけ ＝ 付加重合の担当'],
+            [['1,3-ブタジエン', '1,3-ブタジエン'], '同じ共役ジエンだけ ＝ 1,4-付加重合の担当'],
+            [['スチレン'], '1個では鎖にならない'],
+            [['スチレン', 'エタン'], '相手が単量体でない'],
+            [['エタノール', '酢酸'], '多重結合が無い'],
+            [['ベンゼン', 'スチレン'], 'ベンゼンの環は単量体にならない']
+        ];
+        const fired = [];
+        negatives.forEach(([names, why]) => {
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length,
+                `否定対照の材料が置けていない: ${names.join('＋')}`);
+            const n = rule.detect(mol).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `共重合が出てはいけない組で出た: ${fired.join(' / ')}`);
+        // **空振りの緑を避ける**: 同じ数え方が、2種類そろえば1件拾う
+        assert(rule.detect(trSetup(c, ['スチレン', '1,3-ブタジエン'])).length === 1,
+            '否定対照の数え方が壊れている（スチレン＋ブタジエンでも0件になる）');
+        // 単一種では今までどおり既存の札が出る（共重合に取られていない）
+        assert(add.detect(trSetup(c, ['スチレン', 'スチレン', 'スチレン'])).length === 1,
+            'スチレン3個で付加重合の札が消えた（共重合に取られている）');
+        assert(dien.detect(trSetup(c, ['1,3-ブタジエン', '1,3-ブタジエン'])).length === 1,
+            'ブタジエン2個で 1,4-付加重合の札が消えた');
+
+        /* ---- ★★ **ユーザー実機報告そのものの再現**（2026-09-12）:
+         *   スチレン2個＋ブタジエン2個で付加重合を押すと、
+         *   **スチレンだけが繋がってブタジエンが黙って残る**。
+         *   ⛔ 赤で止めるのではなく（2種類を別々に重合したい人もいる）、
+         *   ★ **残ったことをその場で言い、全部つなぐ札の名前を教える**のが直し方。 */
+        const mixed = trSetup(c, ['スチレン', 'スチレン', '1,3-ブタジエン', '1,3-ブタジエン']);
+        const ms = add.detect(mixed);
+        assert(ms.length === 1, '混ぜたときに付加重合の箇所が出ない（題材が組めていない）');
+        g.saveState();
+        const res = add.apply(g, ms[0]);
+        g.updateDrawing();
+        assert(/この鎖に入らなかった単量体が 2 個/.test(res.caption),
+            `残った単量体のことを言っていない: ${res.caption.slice(-200)}`);
+        assert(res.caption.includes('共重合'),
+            '残ったときに「共重合」の札の名前を教えていない');
+        // ★ 残りが無いときは言わない（毎回出る注意書きにしない）
+        const pure = trSetup(c, ['スチレン', 'スチレン', 'スチレン']);
+        g.saveState();
+        const r2 = add.apply(g, add.detect(pure)[0]);
+        assert(!/この鎖に入らなかった単量体/.test(r2.caption),
+            `残りが無いのに注意書きが出ている: ${r2.caption.slice(-200)}`);
         c.reset();
     });
 
