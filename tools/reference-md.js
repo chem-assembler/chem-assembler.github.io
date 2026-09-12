@@ -33,8 +33,14 @@
                  （`video-scripts/` の台本 id ではない —— 埋め込むには配信先の id が要るので、
                    台本 id を許すと「埋め込めない値が書式上は通る」ことになる）。
        ⚠ `summary` は**必須**にした。5枚とも いま書けるし、
-          **検索結果に出る文を機械が勝手に決めると、ユーザーが校正できない**（§16 の目的と逆向き）。 */
-    var PAGE_OPTIONAL_KEYS = ['video'];
+          **検索結果に出る文を機械が勝手に決めると、ユーザーが校正できない**（§16 の目的と逆向き）。
+       ★★ `codes` … **単元をまたぐ横断のページは、知識項目をひとつも抱えない**（設計書 §26）。
+          官能基の一覧は「−OH はアルコール、−CHO はアルデヒド」と**行き先を指すページ**で、
+          −OH の性質そのものはアルコールのページが持つ ＝ 知識項目はそちらに属する。
+          ⚠ **空の配列は書かない**（`codes:` と書いて中身が無い形は上の `parseKV` が弾く）——
+            **キーごと書かない**。面Aは「キーが在るか」だけで枠を出すかを決めるので、
+            空配列を許すと「一問一答の箱は出るが 0問」という第3の状態ができる。 */
+    var PAGE_OPTIONAL_KEYS = ['video', 'codes'];
     var VIDEO_ID_RE = /^[A-Za-z0-9_-]{6,20}$/;
 
     /* `:::` の囲み。**`learn.js` の `renderBlock` が実際に描ける種類だけ**。
@@ -115,9 +121,17 @@
              `open:` … アプリの行き先。⚠⚠ **新しい URL の形を発明しない** ——
                        値は `game.js` の `OPEN_TARGETS` の名前そのもの（`REF21` が突き合わせる）。
                        `formula:` は受け口② `?open=isomer&formula=` のためだけの添えもの。
+             ★★ `cls:` … **分子式だけでなく「分類」でも絞る回**へ飛ばすための添えもの（§25）。
+                       ⚠⚠ **式を変えても届かない回がある**から要る —— 実測で
+                       **C₄H₈O₂ の構造異性体は122種**（C₃H₆O₂ でも34種）で、
+                       書き出し練習の上限20種を超えるので `formula:` だけでは画面が断る。
+                       ★ アプリにはもともと「分子式と分類で絞る回」が15件あり、
+                       その中に **C₄H₈O₂（エステル）4種**が居る ＝ **行き先はもう在った。**
+                       ⚠ 綴りは **`learn.js` の `fgPresets[].cls` そのもの**（ketone / aldehyde /
+                       ester / acid）。名前を2つにしないため、原稿も URL も同じ `cls` を使う。
            ⚠ **行き先が実在するかはここでは見ない**（このファイルは node とブラウザで共有していて、
               ディレクトリも `game.js` も読めない）。★ 見るのは `gen-reference.mjs` と `REF21`。 */
-        link: { order: ['to', 'open', 'formula', 'text'], req: ['text'], list: [], prose: ['text'] },
+        link: { order: ['to', 'open', 'formula', 'cls', 'text'], req: ['text'], list: [], prose: ['text'] },
 
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
@@ -688,6 +702,20 @@
                 /* ⚠ 下付きの Unicode（C₅H₁₂）は受け口が読めない —— `startFromFormula` は素の ASCII */
                 if (!/^[A-Za-z0-9]+$/.test(b.formula)) {
                     fail(where, ':::link の formula は素の英数字で書きます（C5H12。下付きの C₅H₁₂ はアプリが読めません。いまは「' + b.formula + '」）');
+                }
+            }
+            /* ★★ 分類で絞る回（§25）。⚠ **`formula` と対で書く** ——
+               分類だけでは何の式を書き出すのかが決まらず、受け口が何もできない。
+               ⚠ **どの分類が在るかはここでは見ない**（`open:` と同じ理由で `learn.js` が読めない）。
+                 ★ 綴り違いを止めるのは `REF21` ＝ **その分類でその式の練習が実際に始まること**を確かめる。 */
+            if (Object.prototype.hasOwnProperty.call(b, 'cls')) {
+                if (!b.formula) {
+                    fail(where, ':::link の cls（書き出しの分類）は formula: と一緒に書きます'
+                        + '\n    ★ 直し方: 「open: isomer」「formula: C4H8O2」「cls: ester」の3つをそろえて書きます'
+                        + '（分類だけでは、何の分子式を書き出す回なのかが決まりません）');
+                }
+                if (!ANCHOR_RE.test(b.cls)) {
+                    fail(where, ':::link の cls は書き出し練習の分類の名前です（英小文字・数字。いまは「' + b.cls + '」）');
                 }
             }
             /* ★★ まだ書いていないページ宛か（＝ 押せない「準備中」にするか）を**ここで決めて焼き込む**。

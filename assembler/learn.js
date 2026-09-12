@@ -718,6 +718,12 @@ const IP_COND_KINDS = {
     /** 脱水して K になるアルコールを書き出す（K はアルケン。相手＝生成物） */
     dehydration: {
         tag: '脱水', verb: '脱水すると', from: 'answer', edges: (m) => ipDehydrationEdges(m),
+        /* ★ 束の見出し（v1536・ユーザー指摘「問題が系列ごとになっていないので、見づらい」）。
+           ⚠ ②も 27件が見出し1つ無しで並んでいた。⚠ 型が3つあることは
+             **ボタンの文字（`脱水 → エテン` ／ `エタノール を脱水`）だけでは読み取れない**
+             —— 矢印の向きが逆になるので、束の見出しで「何を書き出す回か」を言う。
+           ⚠ 文言は `IP_COND_KINDS` からしか出さない（この箱の他の欄と同じ流儀）。 */
+        groupHead: '脱水するとこのアルケンになるアルコールを書き出す回:',
         askFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
         label: (t) => `脱水 → ${t}`,
@@ -729,6 +735,7 @@ const IP_COND_KINDS = {
     /** 水を付加して A になるアルケンを書き出す（A はアルコール。相手＝生成物） */
     hydration: {
         tag: '水の付加', verb: '水を付加すると', from: 'answer', edges: (m) => ipHydrationEdges(m),
+        groupHead: '水を付加するとこのアルコールになるアルケンを書き出す回:',
         askFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
         label: (t) => `水の付加 → ${t}`,
@@ -757,6 +764,7 @@ const IP_COND_KINDS = {
      */
     products: {
         tag: '脱水', verb: '脱水すると', from: 'target', edges: (m) => ipDehydrationEdges(m),
+        groupHead: 'このアルコールを脱水するとできるアルケンを書き出す回:',
         askFormula: (n) => ({ heavy: Array(n).fill('C'), h: 2 * n }),
         srcFormula: (n) => ({ heavy: Array(n).fill('C').concat(['O']), h: 2 * n + 2 }),
         label: (t) => `${t} を脱水`,
@@ -918,6 +926,50 @@ function ipSolveCondition(pre) {
 //   「知識項目 → 大問」の逆引きで、**分子式ごと・書き出し設問ごとの件数は持っていない**。
 //   だから画面の文言でも回数を名乗らない（何が正解に並ぶかだけを言う）
 const IP_TRAINING_DOU = 2;
+
+/**
+ * ★★ ①「一通りすべて書き出す」の**束**（v1536・ユーザー指摘 2026-09-11「問題が系列ごとに
+ * なっていないので、見づらい」）。
+ *
+ * ⚠ それまで 17件が**見出し1つ無しで**1枚のグリッドに並んでいた。アルカン・アルケン・
+ *   シクロアルカン・アルコール・エーテルが混ざり、炭素数の順にもなっていない。
+ *
+ * ★ 束ね方は**化合物のグループ**。分けているのは**不飽和度と、炭素以外の原子の並び**だけで、
+ *   どちらも分子式そのものから出る ＝ お題を1件足しても、束の割り当てを手で足さなくてよい:
+ *     不飽和度0・炭素だけ …… アルカン CₙH₂ₙ₊₂（枝分かれだけで分かれる）
+ *     不飽和度0・O が1つ …… アルコールとエーテル CₙH₂ₙ₊₂O
+ *     不飽和度1・炭素だけ …… アルケンとシクロアルカン CₙH₂ₙ
+ *   ⚠ 不飽和度2以上は今までどおり別の群（`IP_TRAINING_DOU`）。
+ *
+ * ⚠ **どの束にも入らないお題は、束ねずに `その他` へ落とす**（黙って隣の束に混ぜない）。
+ *   ★ そこへ落ちること自体を `IW33` が赤にする ＝ 見出しが嘘をつく前に止まる。
+ *
+ * ⚠ 見出しは `<h4>`。**説明文ではなく見出し**なので `UX1`（操作の案内の字数）は数えない側
+ *   —— 同じ理由で `<h3 class="ip-section-head">`（①②）も数えられていない。
+ *   ⚠ ただし `CS1` は `h3.ip-section-head` を2本と数えるので、**束の見出しを h3 にしない**。
+ */
+const IP_BASIC_GROUPS = [
+    {
+        id: 'ip-group-alkane',
+        head: 'アルカンの回（枝分かれの違いだけで分かれます）:',
+        match: (dou, hetero) => dou === 0 && !hetero.length
+    },
+    {
+        id: 'ip-group-alcohol-ether',
+        head: 'アルコール・エーテルの回（同じ分子式に −OH と −O− が混じります）:',
+        match: (dou, hetero) => dou === 0 && hetero.join(',') === 'O'
+    },
+    {
+        /* ⚠ 同じ分子式が3つ並ぶ理由（C₄H₈・C₅H₁₀）を、ここで言い切る ——
+           式だけの回は鎖式と環式を合わせて、（鎖式）（環式）の回は片方だけを書き出す。
+           ★ ユーザー指摘「3つ並ぶ意味が読めない」に対する答えはこの1行で、
+             ボタン側の名乗り（`C₄H₈（鎖式）`）と合わせて読めるようにしてある。 */
+        id: 'ip-group-alkene-cyclo',
+        head: 'アルケン・シクロアルカンの回（鎖式と環式を合わせた回と、片方だけの回があります）:',
+        match: (dou, hetero) => dou === 1 && !hetero.length
+    }
+];
+
 const IP_HSTEP = 46; // 標準レイアウトの結合長（横方向）
 // 不飽和度（環＋π結合の本数）= (2C + 2 + N − H − X)/2。O・S は骨格の自由度を増やさないので数に入らない。
 // **列挙する前に費用を見積もれる唯一の材料**（DEVELOPMENT.md §7-1d）
@@ -1814,13 +1866,56 @@ class IsomerPractice {
             btn.addEventListener('click', () => this.start(i));
             return btn;
         };
-        const basic = makeGrid(), training = makeGrid(), stereo = makeGrid();
+        /* ★ 束の見出し（v1536）。⚠ `<h4>` —— 説明文ではなく見出し（`IP_BASIC_GROUPS` の前書き）。
+           ★ 見た目は下の「じっくり練習する回」などの札とそろえる（同じ層のものは同じ顔で並べる）。 */
+        const makeGroupHead = (text) => {
+            const h = document.createElement('h4');
+            h.className = 'ip-group-head';
+            h.style.cssText = 'font-size:12.5px; font-weight:normal; color:var(--text-secondary); ' +
+                'margin:0 0 4px; line-height:1.5;';
+            h.textContent = text;
+            return h;
+        };
+        /* ★ 束を1つ置く（見出し ＋ グリッド）。⚠ 空の束は**枠ごと出さない** */
+        const appendGroup = (id, head, items) => {
+            if (!items.length) return;
+            const wrap = document.createElement('div');
+            wrap.id = id;
+            wrap.style.cssText = 'margin-top:8px;';
+            wrap.appendChild(makeGroupHead(head));
+            const grid = makeGrid();
+            items.forEach(({ p, i }) => grid.appendChild(makeButton(p, i)));
+            wrap.appendChild(grid);
+            this.body.appendChild(wrap);
+        };
+
+        /* ★★ ①のお題を**化合物のグループ**で束ね、束の中は**炭素数の順**に並べる（v1536）。
+           ⚠ **`this.problems` の並びは動かさない**（回帰テストが添字で開く・前書きの警告）——
+             並べ替えるのは**描くときだけ**。
+           ★ 同じ分子式が3つ（全部／鎖式／環式）あるときの順は「全部 → 鎖式 → 環式」。 */
+        const SKEL_ORDER = { '': 0, chain: 1, ring: 2 };
+        const basicItems = [], orphans = [];
+        const training = makeGrid(), stereo = makeGrid();
         this.problems.forEach((p, i) => {
             if (p.stereoAsked) { stereo.appendChild(makeButton(p, i)); return; }
             const dou = ipUnsaturation(p.elements, p.hCount);
-            (dou >= IP_TRAINING_DOU ? training : basic).appendChild(makeButton(p, i));
+            if (dou >= IP_TRAINING_DOU) { training.appendChild(makeButton(p, i)); return; }
+            // ⚠ 炭素以外を**並びごと**渡す（`['O']` か空。`['N']` や `['O','O']` は
+            //    どの束にも入らない ＝ 見出しが嘘をつくより「その他」へ落とす）
+            const hetero = p.elements.filter(el => el !== 'C');
+            const g = IP_BASIC_GROUPS.find(x => x.match(dou, hetero));
+            (g ? basicItems : orphans).push({ p, i, group: g && g.id });
         });
-        this.body.appendChild(basic);
+        const carbons = (p) => p.elements.filter(el => el === 'C').length;
+        IP_BASIC_GROUPS.forEach(g => {
+            const items = basicItems.filter(x => x.group === g.id).sort((a, b) =>
+                carbons(a.p) - carbons(b.p)
+                || SKEL_ORDER[a.p.skeleton || ''] - SKEL_ORDER[b.p.skeleton || '']);
+            appendGroup(g.id, g.head, items);
+        });
+        /* ⚠ どの束にも入らなかったお題（＝ 見出しが嘘になる組み合わせ）。
+           ★ **黙って隣の束に混ぜない**。`IW33` がここが空であることを見張る */
+        appendGroup('ip-group-other', 'そのほかの回:', orphans);
         if (training.children.length) {
             const wrap = document.createElement('div');
             wrap.id = 'ip-training-problems';
@@ -1980,29 +2075,47 @@ class IsomerPractice {
             this.body.appendChild(makeSection('ip-head-cond', '② 条件にある構造を書き出す'));
             const cdWrap = document.createElement('div');
             cdWrap.id = 'ip-cond-presets';
-            const cdGrid = document.createElement('div');
-            cdGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:6px;';
+            /* ★★ 反応の型ごとに束ねる（v1536）。⚠ 27件が見出し1つ無しで並んでいた。
+               ★ 束の順は **`condPresets` に出てくる順**（脱水 → 水の付加 → 脱水の順方向）——
+                 型の一覧をここに書き写さない ＝ 型が増えても束が黙って落ちない。
+               ⚠ 添字 `i` は**元の並びのまま**渡す（`startFromCondPreset(i)` が引く鍵）。 */
+            const cdKinds = [];
             this.condPresets.forEach((pre, i) => {
-                const sc = IP_SCOPES['cond:' + pre.id];
-                const k = IP_COND_KINDS[pre.kind];
-                const af = k.askFormula(pre.carbons);
-                // ★ 記録の鍵は `<答えの分子式>@cond-<id>@stereo`（`clearKeyTail` が組む1か所）
-                const cleared = this.isCleared(ipFormulaLabel(af.heavy, af.h),
-                    { condId: pre.id, stereoAsked: true });
-                const btn = document.createElement('button');
-                btn.className = 'view-btn';
-                btn.dataset.ipCond = String(i);
-                btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
-                    (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
-                // ★ 表記は**型が決める**（`label`）—— 逆方向は「脱水 → 2-ブテン」（相手が生成物）、
-                //   順方向は「2-ブタノール を脱水」（相手が出発物）。⚠ ここで `→` を組み立てると
-                //   矢印の向きが型と食い違う（`DH1` が両方の表記を名指しで見張る）
-                btn.textContent = `${k.label(pre.target)}${cleared ? ' ✓' : ''}`;
-                btn.title = sc.tip + '（立体異性体の有無まで答えます）';
-                btn.addEventListener('click', () => this.startFromCondPreset(i));
-                cdGrid.appendChild(btn);
+                let g = cdKinds.find(x => x.kind === pre.kind);
+                if (!g) cdKinds.push(g = { kind: pre.kind, items: [] });
+                g.items.push({ pre, i });
             });
-            cdWrap.appendChild(cdGrid);
+            cdKinds.forEach(g => {
+                const head = document.createElement('h4');
+                head.className = 'ip-group-head';
+                head.style.cssText = 'font-size:12.5px; font-weight:normal; color:var(--text-secondary); ' +
+                    'margin:8px 0 4px; line-height:1.5;';
+                head.textContent = IP_COND_KINDS[g.kind].groupHead;
+                cdWrap.appendChild(head);
+                const cdGrid = document.createElement('div');
+                cdGrid.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:6px;';
+                cdWrap.appendChild(cdGrid);
+                g.items.forEach(({ pre, i }) => {
+                    const sc = IP_SCOPES['cond:' + pre.id];
+                    const k = IP_COND_KINDS[pre.kind];
+                    const af = k.askFormula(pre.carbons);
+                    // ★ 記録の鍵は `<答えの分子式>@cond-<id>@stereo`（`clearKeyTail` が組む1か所）
+                    const cleared = this.isCleared(ipFormulaLabel(af.heavy, af.h),
+                        { condId: pre.id, stereoAsked: true });
+                    const btn = document.createElement('button');
+                    btn.className = 'view-btn';
+                    btn.dataset.ipCond = String(i);
+                    btn.style.cssText = 'font-size:12px; padding:7px 6px; text-align:center;' +
+                        (cleared ? ' border-color:var(--color-cyan); color:var(--color-cyan);' : '');
+                    // ★ 表記は**型が決める**（`label`）—— 逆方向は「脱水 → 2-ブテン」（相手が生成物）、
+                    //   順方向は「2-ブタノール を脱水」（相手が出発物）。⚠ ここで `→` を組み立てると
+                    //   矢印の向きが型と食い違う（`DH1` が両方の表記を名指しで見張る）
+                    btn.textContent = `${k.label(pre.target)}${cleared ? ' ✓' : ''}`;
+                    btn.title = sc.tip + '（立体異性体の有無まで答えます）';
+                    btn.addEventListener('click', () => this.startFromCondPreset(i));
+                    cdGrid.appendChild(btn);
+                });
+            });
             this.body.appendChild(cdWrap);
         }
     }
@@ -2030,24 +2143,45 @@ class IsomerPractice {
      * ⚠ 断り方は既存の道と同じ「トーストで理由を言う」。**黙って何も起きないを作らない**
      */
     startFromFgPreset(index) {
-        const g = this.game;
         const pre = this.fgPresets[index];
-        if (!pre) return;
-        const parsed = this.parseFormula(pre.formula);
-        const sc = IP_SCOPES['fg:' + pre.cls];
-        if (!parsed || !sc) { g.showToast('このお題を開けませんでした。'); return; }
-        const seed = enumerateFunctionalGroupIsomers(parsed.heavy, parsed.h, pre.cls);
+        if (!pre) return false;
+        return this.startFromFgFormula(pre.formula, pre.cls);
+    }
+
+    /**
+     * ★★ 「分子式 ＋ 分類」で1回ぶんを開く（v1535・参考書の `:::link` の `cls:` から呼ばれる）。
+     *
+     * ⚠⚠ **一覧のボタン（`startFromFgPreset`）と同じ道**にした。前は一覧の添字からしか開けず、
+     *   ⛔ 参考書のリンクは `startFromFormula`（式だけ）しか呼べなかった ——
+     *   そちらは **C₄H₈O₂ の122種**を数えて上限20種で断る ＝ **押しても何も起きないリンク**になる。
+     *   ★ ここを式と分類の2引数で開く口にしたので、**在庫の16件と同じ回へ本文から直に飛べる。**
+     * ⚠ 一覧に無い組み合わせ（例 C₈H₁₆O のケトン）でも、数えて線の内側に入れば開く ——
+     *   **在庫の表を参照しない**（一覧は「押しやすい入口」であって、開ける回の台帳ではない）。
+     * ★ 返り値は開けたかどうか。⚠ 断るときは今までどおり**理由をトーストで言う**。
+     */
+    startFromFgFormula(formula, cls) {
+        const g = this.game;
+        const parsed = this.parseFormula(formula);
+        const sc = IP_SCOPES['fg:' + cls];
+        if (!parsed || !sc) {
+            /* ⚠ **黙って何も起きないを作らない。** 分類の綴り違いはここに来る
+               （`REF21` が原稿の側で赤くするので、ここへ来るのは手で URL を打った人だけ） */
+            g.showToast('このお題を開けませんでした（分子式か分類の指定が読めません）。', 6000);
+            return false;
+        }
+        const seed = enumerateFunctionalGroupIsomers(parsed.heavy, parsed.h, cls);
         if (!seed.applicable || seed.overflow || seed.isomers.length < IP_MIN_ISOMERS ||
             seed.isomers.length > IP_MAX_ISOMERS) {
             g.showToast(
                 `${ipFormulaLabel(parsed.heavy, parsed.h)} の${sc.tag}は、いまの練習では扱えません` +
                 `（数え上げが上限を超えたか、書き出すには多すぎます）。`, 6000);
-            return;
+            return false;
         }
         this.beginSession({
             index: -1, elements: parsed.heavy, hCount: parsed.h,
-            formula: g.computeMolecularFormula(seed.isomers[0]), fgClass: pre.cls
+            formula: g.computeMolecularFormula(seed.isomers[0]), fgClass: cls
         }, seed.isomers);
+        return true;
     }
 
     /**
@@ -6111,6 +6245,74 @@ function refAdvancedTag() {
     return t;
 }
 
+/* ★★ 発展の折りたたみの**退避**（設計書 §24）。
+ *
+ * ★ 開け閉めそのものは `<details>` が素でやる（JS は1行も要らない）。ここで足すのは、
+ *   **素の `<details>` では届かない3つ**だけ ＝ ページ内検索・アンカー着地・印刷。
+ *
+ * ⚠⚠ **この関数は `tools/gen-reference-pages.mjs` が丸ごと切り出して面Aに埋める**（書き写さない）。
+ *   ★ だから **learn.js の他のものを1つも参照しない**（参照した瞬間、面Aで `undefined` になる）。
+ *   ⚠ 切り出しは「行頭の `function refAdvSetup(`」から「行頭の `}`」まで ＝ **字下げを変えないこと**。
+ */
+function refAdvSetup(root) {
+    var scope = root || document;
+    if (!scope.querySelectorAll || !scope.querySelectorAll('details.ref-adv').length) return;
+
+    /* ── ① ページ内検索 ──────────────────────────────────────────────
+       ★ 新しいブラウザは**閉じた `<details>` の中まで検索して、見つけたら自分で開く**
+         （`hidden="until-found"` と同じ仕掛け。Chrome 131 / Firefox 139 / Safari 18.4 あたり）。
+       ⚠⚠ **持っていないブラウザでは、発展を開いたまま出す。**
+         ★ 逆（畳んだまま出す）にすると**本文がページ内検索から消える** ＝
+           「事典的に網羅して、引きに来た人が見つけられる」という参考書の目的そのものが壊れる。
+         ★ 開いたまま出しても失うのは初期状態の静けさだけで、畳めることは変わらない
+           ＝ **退避の向きは「見えるほうへ倒す」。**
+       ★ 見分けは `::details-content` の有無 —— 自動で開く仕掛けと同じ版で入った疑似要素。 */
+    var native = false;
+    try { native = !!(window.CSS && CSS.supports && CSS.supports('selector(::details-content)')); } catch (e) { native = false; }
+    if (!native) {
+        Array.prototype.forEach.call(scope.querySelectorAll('details.ref-adv'), function (d) { d.open = true; });
+    }
+
+    /* ── ② 目次・用語の索引から飛んだら開く ────────────────────────────
+       ★ 新しいブラウザは `:target` で自分から開くので、これも古い版のための退避。
+       ⚠ 面B（アプリの資料ペイン）は URL の hash が動かないので、**目次の押しそのもの**も見る。 */
+    var openAt = function (id) {
+        var el = id ? document.getElementById(id) : null;
+        var d = el && el.closest ? el.closest('details.ref-adv') : null;
+        if (d && !d.open) { d.open = true; el.scrollIntoView(); }
+    };
+    if (!scope.__refAdvWired) {
+        scope.__refAdvWired = true;
+        scope.addEventListener('click', function (e) {
+            var a = e.target && e.target.closest ? e.target.closest('.ref-toc a[href^="#"]') : null;
+            if (a) openAt(a.getAttribute('href').slice(1));
+        });
+    }
+    if (!refAdvSetup.wiredWindow) {
+        refAdvSetup.wiredWindow = true;
+        var fromHash = function () {
+            try { openAt(decodeURIComponent((location.hash || '').slice(1))); } catch (e) { /* 壊れた hash は無視 */ }
+        };
+        window.addEventListener('hashchange', fromHash);
+        /* ── ③ 印刷は開いた状態で出す ────────────────────────────────
+           ★ 新しいブラウザは `@media print` の `::details-content` だけで開く（JS を通らない）。
+           ⚠ 古い版のためにここでも開き、**刷り終わったら元に戻す**（画面の状態を変えない）。 */
+        var before = null;
+        window.addEventListener('beforeprint', function () {
+            var all = document.querySelectorAll('details.ref-adv');
+            before = Array.prototype.map.call(all, function (d) { return d.open; });
+            Array.prototype.forEach.call(all, function (d) { d.open = true; });
+        });
+        window.addEventListener('afterprint', function () {
+            if (!before) return;
+            Array.prototype.forEach.call(document.querySelectorAll('details.ref-adv'),
+                function (d, i) { d.open = !!before[i]; });
+            before = null;
+        });
+        fromHash();
+    }
+}
+
 /* ★ ぶら下げの補足の印（設計書 §23-3）。**行頭の全角スペース1つ。**
    ⚠ 書式（`tools/reference-md.js` の `HANG_MARK`）と割れないよう `REF24` が突き合わせる */
 const REF_HANG_MARK = '　';
@@ -6329,11 +6531,82 @@ class ReferenceBook {
            ★ 狭いペインでは CSS が「上の折りたたみ」にする（markup は面Aと同じ1本）。 */
         const toc = this.renderToc(page);
         if (toc) body.appendChild(toc);
-        (page.blocks || []).forEach(b => {
-            const el = this.renderBlock(b);
-            if (el) body.appendChild(el);
-        });
+        this.renderBlocks(page).els.forEach(el => body.appendChild(el));
+        /* ★ 発展の折りたたみの**退避**（§24）。⚠ 面Aは焼いた `ADV_JS` が同じことをする */
+        refAdvSetup(body);
         body.scrollTop = 0;
+    }
+
+    /* ★★ ページの本文を「上に並べる要素の配列」にする（設計書 §24）。
+     *
+     * ⚠⚠ **面Aの生成器もこれを呼ぶ** ＝ 並べ方の式が2本にならない（`renderToc` と同じ理由）。
+     *   前は生成器が `renderBlock` を1つずつ呼んで並べていたので、**ここでまとめ方を変えると
+     *   面Aだけ古い並びのまま焼かれる**（表を2か所で組まないのと同じ話）。
+     *
+     * ★★ **発展（`advanced`）の「節」は、そこから下をひとかたまりにして
+     *   閉じた `<details>` に入れる。** ユーザーの要件は
+     *   「初学者がとっかかりにくくなるのは避けたい／事典的な網羅は減らさない」——
+     *   ★ **減らすのは画面に出る量だけで、中身は1文字も減らさない。**
+     *
+     * ⚠ **どこで畳み終わるか**（＝ かたまりの終わり）は2つ:
+     *   ① 次の `:::section`（発展でもそうでなくても。節は「検索の着地点」なので必ず外に出す）
+     *   ② **発展でない `## 小見出し`** —— 「範囲の中へ戻った」印。
+     *     ⚠ これが無いと、`functional-groups.md` の `## 例題` が発展の中に吸い込まれる
+     *       （例題はページ全体のもので、ニトロ基の話の続きではない）。
+     * ★ 逆に **発展の小見出しは吸い込んでよい**（発展の節の中の区切り）。
+     *
+     * ⚠⚠ **発展の「小見出し」は畳まない**（2026-09-11・実データを見て決めた）。
+     *   ★ 畳むには「どこまでか」が器で言えることが要るが、**小見出しにはそれが無い。**
+     *     実測: `alkane.md` の `## 電子対はどう動いているのか（発展）` は**寄り道が1段落だけ**で、
+     *     そのあとに**置換の連鎖の図2枚と ★★★（必ず覚える）の反応式2本**が、
+     *     新しい見出しを挟まずに続く。⚠ 見出しから次の節まで畳むと、
+     *     **必ず覚える反応式が既定で隠れる** ＝ 網羅を減らしたのと同じことになる。
+     *   ★ 小見出しの発展は今までどおり**印（緑の札＋左の線）だけ**で示す。
+     *
+     * ★ 返すのは `{ els, unknown }`。⚠ **知らない `kind` は投げずに `unknown` で返す** ——
+     *   アプリ（面B）は残りを描いて読める状態を保ち、生成器（面A）はそこで赤く止まる。
+     */
+    renderBlocks(page) {
+        const els = [];
+        const unknown = [];
+        let fold = null;   // いま開いている `<details>` の中身（無ければ null）
+        const closes = (b) => b.kind === 'section' || (b.kind === 'heading' && !b.advanced);
+        (page.blocks || []).forEach(b => {
+            if (fold && closes(b)) fold = null;
+            const starts = b.kind === 'section' && b.advanced;
+            if (starts) {
+                const det = this.renderAdvancedFold(b);
+                els.push(det.wrap);
+                fold = det.body;
+                return;
+            }
+            const el = this.renderBlock(b);
+            if (!el) { unknown.push(b.kind); return; }
+            if (fold) fold.appendChild(el); else els.push(el);
+        });
+        return { els, unknown };
+    }
+
+    /* 発展のかたまりの器。★ **閉じていても「発展の札・題・この節で分かること1行」は見える** ——
+       ⚠ 読むかどうかを1行で決められることが、畳むことの条件（畳んで「何の節か分からない」に
+         してしまうと、事典として引けなくなる）。
+       ★ `<details>` は素の HTML なので **JS が1行も要らない**（`:::exercise` の解答隠しと同じ作り）＝
+         焼いた面Aでも、アプリの面Bでも、同じ markup が同じように効く。 */
+    renderAdvancedFold(block) {
+        const det = document.createElement('details');
+        /* ⚠ **id と `.ref-sec-advanced` は `<details>` 側が持つ** ——
+           目次・用語の索引の行き先（`#ref-sec-<anchor>`）を変えないため。
+           ★ `:target` が `<details>` に当たるので、新しいブラウザは着地だけで開く。 */
+        det.className = 'ref-adv ref-sec ref-sec-advanced';
+        det.id = REF_ANCHOR_PREFIX + block.anchor;
+        const sum = document.createElement('summary');
+        sum.className = 'ref-adv-sum';
+        sum.appendChild(this.renderSectionHead(block));
+        det.appendChild(sum);
+        const body = document.createElement('div');
+        body.className = 'ref-adv-body';
+        det.appendChild(body);
+        return { wrap: det, body };
     }
 
     renderBlock(b) {
@@ -6417,16 +6690,25 @@ class ReferenceBook {
         const sec = document.createElement('section');
         sec.className = 'ref-sec' + (block.advanced ? ' ref-sec-advanced' : '');
         sec.id = REF_ANCHOR_PREFIX + block.anchor;
+        sec.appendChild(this.renderSectionHead(block));
+        return sec;
+    }
+
+    /* 節の頭（題＋発展の札＋この節で分かること1行）。
+       ★ **器から切り離してある**のは、発展の節では同じ頭が `<summary>` の中に入るから（§24）——
+         畳んでも開いても、見えるものが1文字も変わらないようにするため。 */
+    renderSectionHead(block) {
+        const frag = document.createDocumentFragment();
         const h = document.createElement('h4');
         h.className = 'ref-sec-h';
         h.textContent = block.title;
         if (block.advanced) h.appendChild(refAdvancedTag());
-        sec.appendChild(h);
+        frag.appendChild(h);
         const lead = document.createElement('p');
         lead.className = 'ref-sec-lead';
         lead.innerHTML = block.lead;
-        sec.appendChild(lead);
-        return sec;
+        frag.appendChild(lead);
+        return frag;
     }
 
     /* ★ 節の下の小見出し（設計書 §20-5。原稿では `## タイトル`／`:::heading`）。
@@ -6662,8 +6944,11 @@ class ReferenceBook {
         if (block.to) {
             a.href = REF_PAGE_DIR + block.to + '/';
         } else {
+            /* ⚠ 並びは受け口の綴りに合わせる（`?open=isomer&formula=C4H8O2&cls=ester`）。
+               ★ `cls` は `formula` の添えもの（書式の側が「対で書く」を見張っている） */
             search = '?open=' + encodeURIComponent(block.open)
-                + (block.formula ? '&formula=' + encodeURIComponent(block.formula) : '');
+                + (block.formula ? '&formula=' + encodeURIComponent(block.formula) : '')
+                + (block.cls ? '&cls=' + encodeURIComponent(block.cls) : '');
             a.href = REF_APP_DIR + search;
         }
         a.innerHTML = block.text;
@@ -7194,6 +7479,11 @@ if (typeof window !== 'undefined') {
     //   （書き写すと、上限を変えたときに検査だけが古い線を見張り続ける）
     window.IP_MAX_ISOMERS = IP_MAX_ISOMERS;
     window.IP_MIN_ISOMERS = IP_MIN_ISOMERS;
+    /* ★★ 出題の「範囲」の台帳（v1535 で `REF21` から見るようにした）。⚠ **分類の綴りをここ1つに保つ**
+       —— 参考書の `:::link` の `cls:` が名乗れるのは `fg:` で始まる鍵の後ろ半分だけで、
+       `REF21` が「原稿に書いた分類が実在し、その式でその回が実際に始まる」ことをこの口から見る。
+       ⚠ 検査に分類名を書き写さない（増やしたら検査も黙って追随する） */
+    window.IP_SCOPES = IP_SCOPES;
     // ★★ 「条件にある構造を書き出す」の部品（v1510）。⚠ 出しているのは**関係を作る側**で、
     //   出題を選ぶ側（`ipSolveCondition`）も一緒に出す ＝ `CS3` が在庫を総当たりで作り直せる。
     //   検査が自前で辺を数え直すと、規則が2か所になって「検査だけが古い」日が来る

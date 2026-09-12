@@ -18,7 +18,13 @@
 # 書き方: 「id␣␣表示名」。# で始まる行と空行は読み飛ばす。
 
 molecular-shape       分子の形と電子対の反発（VSEPR）
-general-formula       一般式と同族体
 intermolecular-force  分子間力と沸点
-alcohol               アルコール（総論・性質）
+soap                  セッケンと合成洗剤
 oxoacid               オキソ酸（硝酸・硫酸）の構造と配位結合〔無機〕
+
+# ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
+#   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
+#   general-formula … ⚠ 中身が hydrocarbon-classes の節「一般式と同族体」（#ref-sec-homolog）と
+#                     まるごと重なる。★ 1グループ＝1ページの決め（§19）に照らすと別ページにする
+#                     理由が無いので、計画から外して alkane.md のリンクを
+#                     `to: hydrocarbon-classes` へ向け直した（2026-09-11）

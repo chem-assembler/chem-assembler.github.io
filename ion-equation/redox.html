@@ -29,14 +29,16 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>イオンでみる化学反応式 - 酸化還元</title>
-<link rel="stylesheet" href="style.css?v=209">
+<link rel="stylesheet" href="style.css?v=211">
 </head>
-<body>
+<!-- redoxPage … このページだけ字を1割大きくする（style.css の --fs-u）。
+     class を持たないページは既定の 1px のままなので、何も変わらない -->
+<body class="redoxPage">
 <header>
   <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
        ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
   <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化還元">酸化還元（半反応式）</span></h1>
-  <div class="version">v209</div>
+  <div class="version">v211</div>
   <div class="stageBar">
     <span class="navCount" aria-hidden="true" hidden></span>
     <div class="hscroll"><nav id="stageNav" class="strip" aria-label="ステージを選ぶ"></nav></div>
@@ -119,11 +121,15 @@
     <section class="step" id="step2">
       <!-- ★ 2026-09-11・ユーザーの指摘（rx-message-spec.md (1)）。
            見出しは**やることを1行**で言う。「比を見つける」という言い方はやめた ——
-           画面でしているのは数の調整で、「比」は結果の呼び名にすぎない -->
-      <div class="stepHead"><span class="stepNo">1</span>酸化剤と還元剤の数を調整してやりとりする e⁻ の数を合わせよう</div>
+           画面でしているのは数の調整で、「比」は結果の呼び名にすぎない。
+           ★ v211・ユーザーの原文どおりに言い直した。「やりとりする e⁻」だと
+           **誰が出して誰が受け取るのか**が文から消える。そこが数を合わせる相手なので、
+           両方を名指しする（下の判定文が e⁻ の過不足だけを言うのと対になる） -->
+      <div class="stepHead"><span class="stepNo">1</span>酸化剤と還元剤の数を調整して、還元剤の出す e⁻ と酸化剤の受け取る e⁻ の数を合わせよう</div>
       <!-- ★ (5)「左右を入れ替える（式がメイン、図が従属）／スマホであれば上下に」。
            やりとりの数を数える面（＝式の側）を先に、ビーカーの絵を後に置く。
-           .labRow は flex-wrap なので、狭い面では自然にこの順で縦に積まれる -->
+           ★ v211・ユーザーの決定「どの画面でも1カラムにする」。.labRow は
+           どの幅でも縦積み（style.css）なので、この並びがそのまま上から下の順になる -->
       <div class="labRow">
         <div class="labCol labMain">
           <div id="schematicWrap">
@@ -142,10 +148,13 @@
         <div class="labCol labSub">
           <!-- ★ (2)「このボタンは図の中に含める（独立した行で出すと、これが次の作業の
                本体に見える）」。▶ は**この絵を動かす釦**なので、絵と同じ枠に入れる。
-               ⚠ id は #toolbar のまま（外から名指ししている口を変えない） -->
+               ⚠ id は #toolbar のまま（外から名指ししている口を変えない）。
+               ★ v211・ユーザーの指示で**絵の上**へ移した（v209 は絵の下）。
+               この段の最後のかたまりは「確かめの段」で、まず釦を押してから絵を見る ——
+               押す物が先、動くものが後、という順にする。枠の中であることは変えない -->
           <div class="beakerBox">
-            <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
             <div id="toolbar"></div>
+            <svg id="beaker" viewBox="0 0 480 430" role="img" aria-label="金属板と溶液中のイオン"></svg>
           </div>
           <div id="ionCounts"></div>
         </div>
@@ -158,7 +167,7 @@
            係数をリアルタイムで変化させる」（2026-09-07）。旧①は「式はこのまま」で、
            ±ステッパーを押しても式が動かなかった。ここが「筆算に寄せる」の核心 ——
            紙の上で式の右に ×5 と書いて係数を書き換える手つきを、そのまま画面にする -->
-      <div class="stepHead"><span class="stepNo">2</span>半反応式を何倍にするか書き込もう</div>
+      <div class="stepHead"><span class="stepNo">2</span>半反応式を整数倍して e⁻ の係数を揃えよう</div>
       <div class="sheetScroll"><div id="halfSheet"></div></div>
       <div id="multMsg"></div>
     </section>
@@ -260,11 +269,11 @@
   </div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
-<script src="model.js?v=209"></script>
-<script src="schematic.js?v=209"></script>
+<script src="model.js?v=211"></script>
+<script src="schematic.js?v=211"></script>
 <!-- ⑥ の「価数＝高さのブロック」（DESIGN_ion_blocks.md）。redox.js より前に読む -->
-<script src="blocks.js?v=209"></script>
-<script src="header-ui.js?v=209"></script>
-<script src="redox.js?v=209"></script>
+<script src="blocks.js?v=211"></script>
+<script src="header-ui.js?v=211"></script>
+<script src="redox.js?v=211"></script>
 </body>
 </html>

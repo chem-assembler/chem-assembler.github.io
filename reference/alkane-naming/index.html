@@ -166,6 +166,16 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-sec:first-child{margin-top:8px;padding-top:0;border-top:0}
 .ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);margin-bottom:6px}
 .ref-scope .ref-sec-lead{font-size:14.5px;color:var(--dim)}
+/* ★★ 発展の折りたたみ（設計書 §24）。⚠⚠ **セレクタを .ref-scope から始める** ——
+   assembler/style.css の切り出しは素の .ref-adv なので、
+   上の .ref-scope .ref-sec（0,2,0）に負けて**上線と 52px の余白が残る**（.ref-toc と同じ踏み方・上の注記）。
+   ★ ここで上書きするのは**寸法だけ**（色は LIGHT_CSS ＝ 明るい地への読み替え側）。 */
+.ref-scope .ref-adv{margin:52px 0 22px;padding-top:0;border-top:0;border-left-width:4px;scroll-margin-top:18px}
+.ref-scope .ref-adv:first-child{margin-top:8px}
+.ref-scope .ref-adv-sum{padding:16px 20px}
+.ref-scope .ref-adv-body{padding:0 20px 8px}
+/* ⚠ 畳んだ札の中では題を一段小さく（開くと本文が続くので、節そのものと同じ強さにしない） */
+.ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:13.5px}
@@ -453,6 +463,64 @@ footer a:hover{color:var(--brand)}
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
 .ref-sec-advanced { border-top-color: #7fd6a4; }
 .ref-h5-advanced { border-left-color: #7fd6a4; }
+/* ============================================================================
+ * ★★ 発展は**畳んで置く**（設計書 §24・2026-09-11）
+ *
+ * > 初学者のニーズと発展レベルのニーズを同時に満たしたい。
+ * > 初学者がとっかかりにくくなるのは避けたいし、事典的に網羅もしたい（ユーザー）
+ *
+ * ★★ **網羅する量は1文字も減らさない。減らすのは最初に画面へ出る量だけ。**
+ * ⚠ 器は `<details>`（`:::exercise` の解答隠しと同じ）＝ **JS が要らない**ので、
+ *   焼いた面A（`/reference/<id>/`）でもアプリの面Bでも同じ markup が同じように効く。
+ * ⚠ 面Aは `tools/gen-reference-pages.mjs` がここを切り出し、
+ *   **寸法は SHELL_CSS・色は LIGHT_CSS** が上書きする（明るい地では緑が 1.9:1 で読めない）。
+ *
+ * ★ 畳んでも開いても、**左の帯と地色で「ここは発展」が見えている**こと ——
+ *   閉じた札が本文と同じ地だと、ただの見出しに見えて「開くと続きがある」と読めない。
+ *
+ * ⚠⚠ **畳むのは `:::section` だけ。`## 小見出し` の発展は畳まない**（設計書 §24-2）——
+ *   小見出しには「どこまでが発展か」が器で言えない。`alkane.md` の
+ *   「電子対はどう動いているのか（発展）」は**寄り道が1段落だけ**で、そのあとに
+ *   **★★★（必ず覚える）の反応式**が続く ＝ 次の節まで畳むと必ず覚える式が既定で隠れる。
+ * ========================================================================== */
+.ref-adv {
+    margin: 36px 0 14px;
+    /* ⚠ 節の上線（`.ref-sec`）は使わない —— 層の印は**左の帯と地**に持たせる
+       （線と帯と地が全部出ると、発展だけ3重に飾られて本文より強く見える） */
+    border-top: 0;
+    padding-top: 0;
+    border-left: 3px solid #7fd6a4;
+    border-radius: 0 10px 10px 0;
+    /* ★★ **暗い地では「沈める」**（明るい地の面Aは逆に「緑の紙を敷く」）。
+       ⚠⚠ **緑の薄敷きは実測で赤になった**（2026-09-11・check-contrast）——
+         rgba(127,214,164,.07) を敷くと資料ペインの地が #15181f → #1c2528 に明るくなり、
+         中に入る添え物の字（`--text-muted` #7a84a2）が **4.78:1 → 4.22:1** で AA を割った。
+       ★ `--text-muted` は「4.5 を満たす中でいちばん暗い側」で選んである（:root の注記）ので、
+         **この地の上には、いまより明るい敷きを置く余地がほとんど無い**（上限は約 +40% の輝度）。
+       ★ だから**逆へ倒した** —— 沈めると中の字は全部 4.78 → 5.04 に上がる。
+         緑の手がかりは**左の帯・▶ の印・「発展」の札**が持つので、地まで緑にする必要はない。 */
+    background: rgba(0, 0, 0, 0.25);
+    scroll-margin-top: 12px;
+}
+.ref-adv-sum {
+    padding: 11px 12px;
+    cursor: pointer;
+    /* ⚠ 既定の三角を消して自前の ▶ / ▼ に替える（`.ref-ex-open` と同じ理由：
+         ブラウザごとに位置が違い、題の1行目とそろわない） */
+    list-style: none;
+}
+.ref-adv-sum::-webkit-details-marker { display: none; }
+.ref-adv-sum > .ref-sec-h { margin-top: 0; }
+.ref-adv-sum > .ref-sec-h::before {
+    content: '▶ ';
+    color: #7fd6a4;
+    font-size: 0.8em;
+    vertical-align: 0.1em;
+}
+.ref-adv[open] > .ref-adv-sum > .ref-sec-h::before { content: '▼ '; }
+.ref-adv-body { padding: 2px 12px 6px; }
+/* ⚠ 畳んだ中の最後の余白が二重にならないように */
+.ref-adv-body > *:last-child { margin-bottom: 0; }
 /* ★★ 穴あきテンプレートの `○○`（設計書 §23-2）。**名前の作り方を「型」で見せるための空欄。**
    ⚠⚠ **文字を消して下線だけにしない。** 理由は3つ:
      ① 「まるまるブタン」と**声に出せる**（本人の書きぶりは「そのまま声に出せる短い文字列」・§8-4）
@@ -670,12 +738,34 @@ a.ref-link::before { content: '→ '; }
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
+   明るい地でそれをやると「灰色の面」になって、注意（橙）・丸暗記（紫）と同じ強さの囲みに見える。
+   ★ 明るい地では逆に**緑寄りの紙を敷く**（#ebf2ec）—— 本文の地 #f5f3ef と紙 #fff の
+     どちらとも見分けが付き、添え物の字（#59616c）で 5.50:1・発展の緑（#2e6b45）で 5.58:1（AA）。
+   ⚠ 向きが逆なのは**要件が違うから** —— 暗い地は添え物の字（--text-muted）の余地がほとんど無く、
+     ペインの地より明るい敷きを置けない（assembler/style.css の .ref-adv の注記に実測がある）。
+   ⚠ ここは LIGHT_CSS（テンプレートリテラル）の中なので、コメントにバッククォートを書けない。 */
+.ref-scope .ref-adv{background:#ebf2ec;border-left-color:#2e6b45}
+.ref-scope .ref-adv-sum>.ref-sec-h::before{color:#2e6b45}
 /* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
    （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
 .ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
-.ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}</style>
+.ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
+/* ★★ **印刷は開いた状態で出す**（§24）。
+   ⚠ @media は assembler/style.css から切り出されない（器の話）ので、面Aぶんはここに書く。
+   ⚠⚠ **SHELL_CSS ではなくここ（いちばん後ろ）に置く。** @media は強さを足さないので、
+     SHELL に書くと ▶ の打ち消し（.ref-adv-sum>.ref-sec-h::before）が
+     **切り出しの同じ強さの規則に負けて効かない**（.ref-toc details と同じ踏み方・上の注記）。
+   ★ 疑似要素 ::details-content を持たない版は refAdvSetup の beforeprint が開く。 */
+@media print{
+  .ref-adv::details-content{content-visibility:visible}
+  .ref-adv{break-inside:avoid-page}
+  /* 紙の上では ▶ が「まだ閉じている」と読めてしまうので消す（中身は出ている） */
+  .ref-scope .ref-adv-sum>.ref-sec-h::before{content:''}
+  .ref-layout .ref-toc{position:static;max-height:none}
+}</style>
 </head>
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
@@ -797,6 +887,7 @@ document.addEventListener('click', function (e) {
   window.addEventListener('resize', onScroll, { passive: true });
 })();
 </script>
+
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>

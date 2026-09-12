@@ -13,10 +13,12 @@
  *    `stages.json` / `reactions.json` / 列挙器から その場で組む**。
  *    ここに2本目の実装を書くと、`stages.json` を直したとき**面Aだけ古くなる**。
  *    ⚠ **だからこのファイルは表の行を1行も作らない** —— ヘッドレスで本体を動かし、
- *    `ReferenceBook.renderBlock` が返した DOM をそのまま焼く（`gen-isomer-pages.mjs` と同じ手）。
+ *    `ReferenceBook.renderBlocks` が返した DOM をそのまま焼く（`gen-isomer-pages.mjs` と同じ手）。
+ *    ⚠ **並べ方も受け取る**（§24。発展の節を `<details>` にまとめるのは `learn.js` の仕事）。
  *
- * ⚠ **読むファイルは4つだけ**: `reference-src/*.md`（本文の正）・`reference-src/ORDER.txt`（並び）・
- *    `assembler/style.css`（見た目を**切り出す**）・`qa/index.html`（計測スニペットを**切り出す**）。
+ * ⚠ **読むファイルは5つだけ**: `reference-src/*.md`（本文の正）・`reference-src/ORDER.txt`（並び）・
+ *    `assembler/style.css`（見た目を**切り出す**）・`qa/index.html`（計測スニペットを**切り出す**）・
+ *    `assembler/learn.js`（発展の折りたたみの退避 `refAdvSetup` を**切り出す**・§24-3）。
  *    ★ `stages.json` も `reactions.json` も `compounds.json` も**開かない** ＝
  *      表を組む知識がこのファイルに1つも無いことが、依存の一覧から読める。
  *
@@ -320,6 +322,16 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-sec:first-child{margin-top:8px;padding-top:0;border-top:0}
 .ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);margin-bottom:6px}
 .ref-scope .ref-sec-lead{font-size:14.5px;color:var(--dim)}
+/* ★★ 発展の折りたたみ（設計書 §24）。⚠⚠ **セレクタを .ref-scope から始める** ——
+   assembler/style.css の切り出しは素の .ref-adv なので、
+   上の .ref-scope .ref-sec（0,2,0）に負けて**上線と 52px の余白が残る**（.ref-toc と同じ踏み方・上の注記）。
+   ★ ここで上書きするのは**寸法だけ**（色は LIGHT_CSS ＝ 明るい地への読み替え側）。 */
+.ref-scope .ref-adv{margin:52px 0 22px;padding-top:0;border-top:0;border-left-width:4px;scroll-margin-top:18px}
+.ref-scope .ref-adv:first-child{margin-top:8px}
+.ref-scope .ref-adv-sum{padding:16px 20px}
+.ref-scope .ref-adv-body{padding:0 20px 8px}
+/* ⚠ 畳んだ札の中では題を一段小さく（開くと本文が続くので、節そのものと同じ強さにしない） */
+.ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:13.5px}
@@ -378,6 +390,10 @@ const LIGHT_OVERRIDE = [
     'ref-exercise', 'ref-ex-open',
     /* ★ 穴あきテンプレートの `○○`（§23-2）。⚠ 薄敷きが `rgba(255,255,255,.07)` ＝ 明るい地では効かない */
     'ref-blank',
+    /* ★ 発展の印と折りたたみ（§23・§24）。⚠ 緑 `#7fd6a4` は明るい地で 1.9:1 ＝ 読めない。
+       ⚠⚠ **この4つは前から読み替えてあったのに、名簿には載っていなかった**（2026-09-11）——
+         `DARK_ASSUMING` が `#7fd6a4` を知らなかったので検査を素通りしていた（下で足した）。 */
+    'ref-adv-tag', 'ref-sec-advanced', 'ref-h5-advanced', 'ref-adv', 'ref-adv-sum',
 ];
 /* ★ 明るい地でも**そのままでよい**もの（⚠ 1件ずつ理由を書く。書けないなら読み替える側） */
 const LIGHT_KEEP = {
@@ -440,12 +456,34 @@ const LIGHT_CSS = `
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
+   明るい地でそれをやると「灰色の面」になって、注意（橙）・丸暗記（紫）と同じ強さの囲みに見える。
+   ★ 明るい地では逆に**緑寄りの紙を敷く**（#ebf2ec）—— 本文の地 #f5f3ef と紙 #fff の
+     どちらとも見分けが付き、添え物の字（#59616c）で 5.50:1・発展の緑（#2e6b45）で 5.58:1（AA）。
+   ⚠ 向きが逆なのは**要件が違うから** —— 暗い地は添え物の字（--text-muted）の余地がほとんど無く、
+     ペインの地より明るい敷きを置けない（assembler/style.css の .ref-adv の注記に実測がある）。
+   ⚠ ここは LIGHT_CSS（テンプレートリテラル）の中なので、コメントにバッククォートを書けない。 */
+.ref-scope .ref-adv{background:#ebf2ec;border-left-color:#2e6b45}
+.ref-scope .ref-adv-sum>.ref-sec-h::before{color:#2e6b45}
 /* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
    （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
 .ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478}
 .ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
 .ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
 .ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
+/* ★★ **印刷は開いた状態で出す**（§24）。
+   ⚠ @media は assembler/style.css から切り出されない（器の話）ので、面Aぶんはここに書く。
+   ⚠⚠ **SHELL_CSS ではなくここ（いちばん後ろ）に置く。** @media は強さを足さないので、
+     SHELL に書くと ▶ の打ち消し（.ref-adv-sum>.ref-sec-h::before）が
+     **切り出しの同じ強さの規則に負けて効かない**（.ref-toc details と同じ踏み方・上の注記）。
+   ★ 疑似要素 ::details-content を持たない版は refAdvSetup の beforeprint が開く。 */
+@media print{
+  .ref-adv::details-content{content-visibility:visible}
+  .ref-adv{break-inside:avoid-page}
+  /* 紙の上では ▶ が「まだ閉じている」と読めてしまうので消す（中身は出ている） */
+  .ref-scope .ref-adv-sum>.ref-sec-h::before{content:''}
+  .ref-layout .ref-toc{position:static;max-height:none}
+}
 `.trim();
 
 /* ★★ **読み替え漏れを機械で見る。**
@@ -464,7 +502,15 @@ const LIGHT_CSS = `
  */
 /** LIGHT_CSS がその class を**丸ごと**触っているか（`.ref-rx` が `.ref-rx-lv1` に釣られない） */
 const touches = (light, c) => new RegExp('\\.' + c + '(?![A-Za-z0-9_-])').test(light);
-const DARK_ASSUMING = /rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*0?\.\d+\s*\)|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0?\.\d+\s*\)|#e0b0ff|#ffd166|#7ef\b|#fff\b|#ffffff\b/i;
+/* ⚠⚠ **薄敷きは「白か黒」だけではない**（2026-09-11・adv-fold レーン）。
+ *   ★ 前は `rgba(255,255,255,…)` と `rgba(0,0,0,…)` しか見ていなかったので、
+ *     **色の付いた薄敷き**（`.ref-example` の紫 `rgba(155,89,182,.10)`・
+ *     発展の折りたたみの緑 `rgba(127,214,164,.07)`）が検査を素通りしていた。
+ *   ⚠ 色付きの薄敷きは「明るい地では効かない」のがいちばん分かりにくい形
+ *     —— **消えるのではなく、ほとんど変わらない**（画面は「それらしく」見える）。
+ *   ★ そこで **透け（小数の α）を持つ `rgba()` を全部**見る。
+ * ⚠ 明るいパステル（`#7fd6a4` ＝ 発展の緑）も足した。白地で 1.9:1 ＝ 読めない。 */
+const DARK_ASSUMING = /rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0?\.\d+\s*\)|#e0b0ff|#ffd166|#7fd6a4|#7ef\b|#fff\b|#ffffff\b/i;
 
 function checkLightCoverage(extracted, light) {
     const bad = [];
@@ -610,6 +656,20 @@ const TOC_JS = `<script>
 })();
 </script>`;
 
+/* ★★ 発展の折りたたみの**退避**（設計書 §24）。
+ *
+ * ⚠⚠ **中身は `assembler/learn.js` から切り出す**（書き写さない）——
+ *   CSS を `assembler/style.css` から切り出しているのと同じ理由で、
+ *   **書き写すと面Aと面Bで「検索で開くか」「印刷で開くか」の振る舞いが割れる**。
+ * ★ 面Bは `ReferenceBook.render` が `refAdvSetup(ref-body)` を呼ぶ。面Aはここで `document` を渡す。
+ */
+function advJs() {
+    const src = readFileSync(path.join(ROOT, 'assembler', 'learn.js'), 'utf8').replace(/\r\n/g, '\n');
+    const m = src.match(/^function refAdvSetup\(root\) \{[\s\S]*?^\}/m);
+    if (!m) throw new Error('assembler/learn.js から refAdvSetup を切り出せない（字下げか名前が変わった？）');
+    return '<script>\n' + m[0] + '\nrefAdvSetup(document);\n</script>';
+}
+
 function embedBox(label, lead, src, alt) {
     return `<div class="embed"><b>${esc(label)}</b><p>${esc(lead)}</p>`
         + `<button type="button" data-embed="${amp(src)}" data-embed-title="${esc(label)}">${esc(label)}</button>`
@@ -630,8 +690,15 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
             `https://www.youtube-nocookie.com/embed/${p.video}`, true)
         : '';
 
-    const qaSrc = `/qa/?codes=${p.codes.map(encodeURIComponent).join(',')}&mode=choice&from=reference`;
-    const appSrc = `/assembler/?open=reference&code=${encodeURIComponent(p.codes[0])}`;
+    /* ★★ `codes` を持たないページ（＝ 単元をまたぐ横断のページ・設計書 §26）は、
+       **一問一答の箱も「アプリの中で開く」の箱も出さない**。
+       ⚠ どちらの行き先も `codes` から組む —— 一問一答は出題する知識項目の並び、
+         アプリは着地するページを決める先頭コード。持たないページでは
+         **押しても何も起きない箱**か**別のページへ着地する箱**にしかならない。
+       ⚠ **「0問」と書いた箱を出さない**（`video` と同じ扱い。枠そのものを出さない）。 */
+    const codes = p.codes || [];
+    const qaSrc = codes.length ? `/qa/?codes=${codes.map(encodeURIComponent).join(',')}&mode=choice&from=reference` : '';
+    const appSrc = codes.length ? `/assembler/?open=reference&code=${encodeURIComponent(codes[0])}` : '';
 
     const body = `<h1>${esc(p.title)}</h1>
 <p class="lede">${esc(p.summary)}</p>
@@ -643,20 +710,21 @@ ${tocHtml || ''}
 ${blocksHtml.join('\n')}
 </div>
 </div>
-
+${codes.length ? `
 <h2>解けるか試す</h2>
-${embedBox(`▶ 一問一答で解く（${p.codes.length}問・測定モード）`,
-        'このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。', qaSrc, true)}
+${embedBox(`▶ 一問一答で解く（${codes.length}問・測定モード）`,
+            'このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。', qaSrc, true)}
 
 <h2>読みながら組む</h2>
 ${embedBox('▶ アプリの中で開く', 'このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。', appSrc, true)}
-
+` : ''}
 <nav class="seq">${prev ? `<a href="/reference/${prev.id}/">← ${esc(prev.title)}</a>` : ''}
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
 ${next ? `<a href="/reference/${next.id}/">${esc(next.title)} →</a>` : ''}</nav>
 ${EMBED_JS}
-${tocHtml ? TOC_JS : ''}`;
+${tocHtml ? TOC_JS : ''}
+${(p.blocks || []).some(b => b.kind === 'section' && b.advanced) ? advJs() : ''}`;
 
     return { crumb, body, utm };
 }
@@ -765,9 +833,20 @@ for (const p of pages) {
         const out = [];
         const classes = new Set();
         const leftovers = [];
-        for (const b of page.blocks) {
-            const el = book.renderBlock(b);
-            if (!el) return { error: `描けないブロック「${b.kind}」` };
+        /* ⚠⚠ **並べ方はアプリに決めさせる**（`renderBlocks`）——
+           発展の節を `<details>` にまとめるのはここではなく `learn.js` の仕事で、
+           ここで `renderBlock` を1つずつ呼ぶと**面Aだけ古い並びで焼かれる**（§24）。 */
+        const built = book.renderBlocks(page);
+        if (built.unknown.length) return { error: `描けないブロック「${built.unknown.join('・')}」` };
+        /* ⚠⚠ 「▶ 組んでみる」（`:::example`）の行き先は**そのページの先頭コード**なので、
+           `codes` を持たないページには置けない —— 着地先を名乗れず、別のページへ飛ぶ。
+           ★ 横断のページ（設計書 §26）は特定の1分子に着地しないので、そもそも例題を持たない。 */
+        if (!(page.codes || []).length
+            && built.els.some((el) => el.matches('.ref-try') || el.querySelector('.ref-try'))) {
+            return { error: '`codes` の無いページに :::example（▶ 組んでみる）があります'
+                + '（着地先を名乗れません。例題は知識項目をもつページへ置いてください）' };
+        }
+        for (const el of built.els) {
             /* ★ 押しもの → リンク。**静的なページに、押しても何も起きないボタンを残さない** */
             el.querySelectorAll('button').forEach((btn) => {
                 const a = document.createElement('a');
@@ -777,7 +856,8 @@ for (const p of pages) {
                         + '&utm_source=reference&utm_medium=internal&utm_campaign=' + page.id;
                 } else if (btn.classList.contains('ref-try')) {
                     /* ⚠ ステージを名指しする受け口は無いので、**そのページの面B**へ渡す
-                       （着いた先に同じ「▶ 組んでみる」が在り、そこで採点まで進める） */
+                       （着いた先に同じ「▶ 組んでみる」が在り、そこで採点まで進める）。
+                       ⚠ `codes` が無いページはこの手前で赤くしてある */
                     a.href = '/assembler/?open=reference&code=' + encodeURIComponent(page.codes[0])
                         + '&utm_source=reference&utm_medium=internal&utm_campaign=' + page.id;
                 } else {
