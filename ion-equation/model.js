@@ -4748,6 +4748,138 @@ function bottleScaleAdvice(stage, a, b, scale) {
   };
 }
 
+/* ================================================================================
+   ⑤〜⑧ の筆算（2026-09-12・ユーザーの指示）
+
+   > イオン反応式 → 化学反応式 を筆算にする／筆算の式内でイオンを加える
+   > 組み合わせを解決した時点で、下に係数 1/2 を表示させます
+   > ⑦で 1/2 で正解する →「完成！でも反応式の係数に分数が出てしまったから
+   >   反応式全体を整数倍しよう」で⑧ 1/2 を含む反応式を表示し、その下に2倍した係数をすべて入力させる
+
+   ⚠⚠ ここが `bottleScale`（＝「先回りして倍率を上げる」）を置き換える。
+   **分数のまま完成させてから、整数倍する** ＝ 紙でやる手つきそのもの。
+   ⚠ **イオンカードは割れない。**割れるのは**塩の側の数**（Fe₂(SO₄)₃ が 2.5個）——
+   画面では「枠は満たされていて、係数のほうが 1/2 になる」。
+
+   ★ 分数が出るのは 9ステージ中 `rs1` の1回だけ・出る分数は 1/2 だけ（実測・2026-09-12）。
+   ================================================================================ */
+
+/* 約分した分数。分母が 1 なら整数として扱う */
+function rxFrac(num, den) {
+  const s = den < 0 ? -1 : 1;
+  const n = Math.abs(num), d = Math.abs(den) || 1;
+  const g = gcd2(n, d) || 1;
+  return { num: s * (num < 0 ? -n : n) / g, den: d / g };
+}
+function rxFracText(f) { return f.den === 1 ? String(f.num) : `${f.num}/${f.den}`; }
+function rxFracEq(f, g) { return f.num * g.den === g.num * f.den; }
+/* 「5/2」「2.5」「5」のどれで書いても同じところに着く。⚠ 帯分数は受け取らない */
+function rxParseFrac(text) {
+  const s = String(text == null ? "" : text).trim().replace(/\s+/g, "");
+  if (!s) return null;
+  let m = /^(\d+)\/(\d+)$/.exec(s);
+  if (m) return +m[2] ? rxFrac(+m[1], +m[2]) : null;
+  m = /^(\d+)(?:\.(\d+))?$/.exec(s);
+  if (!m) return null;
+  if (!m[2]) return rxFrac(+m[1], 1);
+  const dec = m[2];
+  return rxFrac(+(m[1] + dec), Math.pow(10, dec.length));
+}
+
+/* ⑤の筆算の中身を1か所で作る。**数は1つも新しく作らない** —— すべて bottlePlan から取る。
+   返すもの:
+     pillars … 柱（イオン反応式の左辺の項）。④の受け皿もこの列に付く
+     add     … 両辺に足すイオン。★ **どの柱を引き受けるか**を cols（柱の添字）で持つ。
+               ⚠ 1つのイオンが**複数の柱にまたがる**（rs1 の SO₄²⁻ が Fe²⁺ と H⁺ の2本）
+     leftMol … 化学反応式の左辺（係数を書く欄）。柱の添字つき
+     rightIon… 筆算の答えの行の右辺。★ **イオンのまま**（塩にするのは⑥）
+     split   … 足すイオンが、柱ごとに何個ずつ分かれるか（rs1 なら 9 ＝ 5 ＋ 4）。
+               ⚠ **⑤に答えるまで画面に出さない**（出すと⑤の答えそのもの） */
+function rxSheetRows(stage, a, b) {
+  const plan = bottlePlan(stage, a, b, 1);
+  if (!plan || plan.dataError) return null;
+  const left = plan.ionic.left.filter((t) => t.sp !== "e-");
+  const pillars = left.map((t) => ({ sp: t.sp, n: t.n }));
+  const colOf = (sp) => pillars.findIndex((p) => p.sp === sp);
+
+  /* 化学反応式の左辺。柱は「その物質が担当したイオン」で決まる（模範で決める。
+     人が置いた札で決めると、置き直すたびに列が動いて筆算が読めなくなる） */
+  const leftMol = plan.bottles.filter((B) => B.n > 0).map((B) => {
+    const cols = B.covers.map((c) => colOf(c.sp)).filter((i) => i >= 0);
+    return { sp: B.sp, n: B.n, cols: cols.length ? cols : [0], covers: B.covers };
+  }).sort((x, y) => Math.min(...x.cols) - Math.min(...y.cols));
+
+  /* 両辺に足すイオン。★ 引き受ける柱は**その物質の covers 経由**で数える ＝
+     「SO₄²⁻ 9個 ＝ FeSO₄ の 5個 ＋ H₂SO₄ の 4個」が、そのまま split になる */
+  const add = [], seen = {};
+  for (const B of plan.bottles) {
+    for (const r of B.riders) {
+      if (r.n <= 0) continue;
+      if (seen[r.sp] === undefined) {
+        seen[r.sp] = add.length;
+        add.push({ sp: r.sp, n: 0, cols: [], split: [] });
+      }
+      const row = add[seen[r.sp]];
+      row.n += r.n;
+      /* この物質が連れてきたぶんは、**この物質が引き受けた柱**に着く。
+         ⚠ 自分自身は相手にしない（硝酸の二役 —— NO₃⁻ を連れてきた HNO₃ は、
+         柱としては H⁺ の相手をしている）。担当が2本残る形では左端にまとめる。 */
+      const at = B.covers.map((c) => (c.sp === r.sp ? -1 : colOf(c.sp))).filter((i) => i >= 0);
+      const home = at.length ? Math.min(...at) : 0;
+      const hit = row.split.find((x) => x.col === home);
+      if (hit) hit.n += r.n; else row.split.push({ col: home, n: r.n, sp: B.sp });
+    }
+  }
+  for (const row of add) {
+    row.split.sort((x, y) => x.col - y.col);
+    row.cols = row.split.map((x) => x.col);
+    if (!row.cols.length) { row.cols = [0]; row.split = [{ col: 0, n: row.n, sp: null }]; }
+  }
+
+  // 筆算の答えの行の右辺 ＝ 蒸発させる前の姿（イオンのまま）。plan.pool の並びをそのまま使う
+  const rightIon = Object.keys(plan.pool).map((sp) => ({ sp, n: plan.pool[sp] }));
+  return { plan, pillars, add, leftMol, rightIon };
+}
+
+/* ⑥⑦ 右辺を「分数を許して」組み切った姿。★ **カードは割らない** ——
+   枠（Fe₂(SO₄)₃）は満たされていて、**くり返し回数のほうが 5/2 になる**。
+   ⚠ 分数が出るのは rs1 だけ（実測）。他の8ステージはここも整数で返る。 */
+function rxRightUnits(stage, a, b) {
+  const plan = bottlePlan(stage, a, b, 1);
+  if (!plan || plan.dataError) return null;
+  if (plan.anions.length > 1) return null;
+  const anion = plan.anions[0] || null;
+  const units = [];
+  let used = 0;
+  for (const c of plan.cations) {
+    const u = anion && saltOf(c.sp, anion.sp);
+    if (!u) return null;
+    const f = rxFrac(c.n, u.cn);
+    units.push({ cation: c.sp, anion: anion.sp, cn: u.cn, an: u.an, sp: u.sp, f, cn0: c.n });
+    used += (f.num / f.den) * u.an;
+  }
+  if (anion && Math.abs(used - anion.n) > 1e-9) return null;
+  const rows = units.map((u) => ({ sp: u.sp, f: u.f, unit: u }))
+    .concat(plan.neutral.map((t) => ({ sp: t.sp, f: rxFrac(t.n, 1), unit: null })));
+  const fracs = rows.filter((r) => r.f.den !== 1);
+  return { units, rows, neutral: plan.neutral, anion, hasFraction: fracs.length > 0, fracs };
+}
+
+/* ⑧ 全体を整数倍した姿。★ 倍率は**分母の最小公倍数**で出す（rs1 では 2）。
+   ⚠ これは `bottleScale` の復活ではない —— ⑦で分数のまま完成させた**あと**にだけ現れる段。 */
+function rxDoubleRows(stage, a, b) {
+  const one = rxRightUnits(stage, a, b);
+  const sheet = rxSheetRows(stage, a, b);
+  if (!one || !sheet || !one.hasFraction) return null;
+  let k = 1;
+  for (const r of one.rows) k = k * r.f.den / gcd2(k, r.f.den);
+  return {
+    k,
+    left: sheet.leftMol.map((t) => ({ sp: t.sp, n: t.n, was: t.n, to: t.n * k })),
+    right: one.rows.map((r) => ({ sp: r.sp, f: r.f, to: r.f.num * k / r.f.den })),
+  };
+}
+
 /* ④「もともと何だった？」の選択肢。**罠も導出する** ——
    左辺にいる反対符号のイオンを「◯◯ と組む」として並べる。
    これが KMnO₄ ＋ KI で H⁺ と I⁻ を組んで HI を作ってしまう、あのつまずきそのもの。 */

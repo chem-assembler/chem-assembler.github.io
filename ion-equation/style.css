@@ -1617,38 +1617,59 @@ main.timelineMain {
 }
 
 /* ================================================================================
-   ★★ ④⑤を1枚の筆算にまとめる（2026-09-10・ユーザーの指示）
+   ★★ ④〜⑧ —— イオン反応式 → 化学反応式（2026-09-12・ユーザーの指示で作り直し）
 
-   > イオン反応式の下に筆算形式で K+ と SO42- の入力欄を入れる、最後の係数も筆算の中に入れる
-   > **もともと何だったか、を正解した後に、改めてイオン反応式を出すようにしてください、
-   >   上下が離れるとわかりづらいです**
+   > **イオン反応式　→　化学反応式　を筆算にする／筆算の式内でイオンを加える**
 
-   ★ **イオン反応式の左辺の項が列の見出し（柱）**で、その柱の下に
-   ［↓］［札を置くところ］［判定文］［札の棚］［両辺に加える］［左辺の係数］が積まれる。
-   ＝ どの段を答えているときも、根拠のイオン反応式が同じ枠の中の真上にある
-   （式を刷り直すのでも、画面の上に貼り付けるのでもない）。
+   ④は「もともと何だった？」の1行だけ（③と縦をそろえない）。⑤が筆算そのもので、
+   **イオン反応式の左辺の項が列の見出し（柱）**。⑥のあと、その1枚が⑦の位置へ下りる。
+   ================================================================================ */
+/* ---- ④ 「もともと何だった？」の1行 ----
+   ★ 2026-09-11 ユーザー確定「イオンは**中央ぞろえ・水平均等配置**（③と縦をそろえない）」。
+   ⚠ ここは筆算ではない ＝ 列にそろえる理由が無い。そろえると③の式の幅に引きずられて、
+   受け皿が画面の端に寄る。 */
+#ownerRow {
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  justify-content: space-around; gap: 6px 4px;
+  padding: 10px; background: #fbfdff; border: 1px solid #d6e0ea; border-radius: 10px;
+}
+.ocol { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.osep { align-self: center; }
 
-   行（grid-row）は redox.js の BROW が持つ。ここは見た目だけ。
-   ⚠ **狭い画面では柱を横に並べられない**ので display:block に落とし、
-   「イオン反応式を1行 → イオンごとの塊」に組み替える（下の @media）。 */
+/* ================================================================================
+   ⑤⑦ 筆算（1枚。⑥のあと⑦の位置へ下りる）
+
+   列: 1 ＝ ＋) や罫線のための余白／2〜n+1 ＝ 柱（イオン反応式の左辺の項）／n+2 ＝ 右辺。
+   行（grid-row）は redox.js が上から数えて付ける。ここは見た目だけ。
+
+   ★★ **足すイオンは1列に1つではない。**rs1 の SO₄²⁻ 9個 は Fe²⁺ と H⁺ の2本にまたがり、
+   しかも**その2本はとなり合っていない**（あいだに MnO₄⁻ の柱がある）。
+   grid の span ひとつではあいだの柱まで巻き込むので、
+   **横棒（.bwBarSeg）はまたぐ範囲の列に1枚ずつ・脚（.bwLeg）は引き受ける柱の列だけ**に置く。
+   列はグリッドが決めているので、座標を測らずに位置がそろう。
+   ⚠ 狭い画面では柱を横に並べられないので display:block に落とし、枝は出さない。 */
 #bottleWork {
   display: grid;
-  grid-template-columns: repeat(var(--bcols, 3), max-content) minmax(0, 1fr);
+  grid-template-columns: max-content repeat(var(--bcols, 3), max-content) minmax(0, 1fr);
   align-items: center;
   column-gap: 10px;
   row-gap: 2px;
-  min-width: max-content;
+  /* ⚠ min-width: max-content にしない —— 右辺は項が5つ並ぶことがあり、
+     そうすると 1280px でも横送りになる。柱の列は max-content のままなので、
+     はみ出すぶんは**右辺だけが折り返す** */
   padding: 8px 10px 10px;
   background: #fbfdff;
   border: 1px solid #d6e0ea;
   border-radius: 10px;
 }
-/* 段の器はグリッドに溶かす（中の行が親の列にそろうため） */
-#bottleCols, #bottleTail, #bottleCounts, #addIonWrap, .bwEchoWrap { display: contents; }
-#bottleTail[hidden], #addIonWrap[hidden] { display: none; }
-.bcol { display: contents; }
-/* 柱 —— イオン反応式の左辺の項。★ ユーザーの言う「マーカー」はこの札の色 */
-.bcolHead { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding-bottom: 2px; }
+/* 柱は列の**まん中**に置く。⚠ ＋ を流れの中に置くと、そのぶん柱が右にずれて
+   下の係数の欄と縦がそろわない（列そのものは合っているのに、目には合っていない）。
+   ＋ は列と列のすきま（column-gap）へ絶対位置で逃がす */
+.bcolHead {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  white-space: nowrap; padding-bottom: 2px;
+}
+.bcolHead .bwSep { position: absolute; left: -13px; }
 .bwSep { color: #7c8792; font-size: calc(15 * var(--fs-u)); }
 .bpill {
   font-size: calc(16 * var(--fs-u)); font-weight: bold; color: #2a3540;
@@ -1657,12 +1678,59 @@ main.timelineMain {
 }
 .bpill.here { background: #ffe6a8; border-color: #c8912c; box-shadow: 0 0 0 2px #f3dca7; }
 .bpill.done { background: #e8f5ec; border-color: #9fc7ab; color: #2f6b45; }
+/* 筆算の1行目に立つ柱は**読むだけ**（置き場所は④で決まっている） */
+.bpill.echo {
+  display: inline-block; cursor: default; min-height: 0;
+  font-size: calc(15 * var(--fs-u)); font-weight: bold; color: #2a3540;
+  background: #fff8e8; border: 1px solid #e0bd6e; border-radius: 7px; padding: 4px 8px;
+}
 .bcolArrow { text-align: center; color: #7c8792; font-size: calc(15 * var(--fs-u)); line-height: 1.2; }
-.bcolSlot { padding-bottom: 2px; }
-.bcolRest { display: flex; align-items: center; gap: 6px; white-space: nowrap; padding-left: 4px; }
+.bcolRest, .bwSumRight {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding-left: 4px;
+}
 .bwEqSide { white-space: nowrap; }
 .bwEqArrow { color: #5a6570; }
-/* 札を置くところ。空のときは破線の受け皿（何をする場所かが形で分かる） */
+.bwRightItem { display: inline-flex; align-items: center; gap: 4px; }
+/* ＋) と罫線 —— 紙の筆算そのもの */
+.bwGutter {
+  justify-self: end; white-space: nowrap;
+  font-size: calc(15 * var(--fs-u)); color: #46525e;
+}
+.bwRule { height: 0; border-top: 2px solid #7c8792; margin: 3px 0; }
+/* ★★ 柱をまたぐ枝 */
+.bwSpanCell { position: relative; height: 20px; }
+.bwBarSeg { position: absolute; bottom: 0; left: -5px; right: -5px; border-top: 2px solid #9db3c6; }
+.bwBarSeg.toRight { left: 50%; }
+.bwBarSeg.toLeft { right: 50%; }
+.bwLeg { position: absolute; top: 0; bottom: 0; left: 50%; border-left: 2px solid #9db3c6; }
+/* ★ 脚に入る数 ＝「その柱へ行く個数」。⑤がその柱で当たってから出る（9 ＝ 5 ＋ 4） */
+.bwLegN {
+  position: absolute; top: 1px; left: 50%; margin-left: 4px;
+  font-size: calc(12 * var(--fs-u)); font-weight: bold; color: #2f6b45; white-space: nowrap;
+}
+.bwAddCell { display: flex; align-items: center; gap: 5px; justify-self: center; }
+.bwAddIon { font-size: calc(15 * var(--fs-u)); font-weight: bold; color: #23303b; }
+.bwAddEcho {
+  font-size: calc(14 * var(--fs-u)); color: #46525e; white-space: nowrap; padding-left: 4px;
+}
+.bwCoef { position: relative; display: flex; align-items: center; gap: 5px; justify-self: center; }
+.bwCoef .bwSep { position: absolute; left: -13px; }
+.bcFormula { font-size: calc(16 * var(--fs-u)); font-weight: bold; color: #23303b; }
+/* ⑦で書き足す行（同じ紙の続き） */
+.bwMolRow {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  margin-top: 6px; padding-top: 6px; border-top: 1px dashed #c6d4e0;
+}
+.bwMolLead { font-size: calc(15 * var(--fs-u)); font-weight: bold; color: #46525e; }
+.bwMolRow.doneRow, .dblRow.doneRow { background: #f2faf5; border-radius: 8px; }
+.bcWide { width: 74px; }
+/* 筆算の中の欄は細くする —— 右辺は項が5つ並ぶことがあり、68px のままだと横送りになる */
+#bottleWork .bottleCountInput { width: 54px; min-height: 38px; }
+#bottleWork .bcWide { width: 66px; }
+#bottleWork .bcFormula { font-size: calc(15 * var(--fs-u)); }
+.bwSumRight, .bcolRest { gap: 4px; }
+.bottleCountInput.ng { border-color: #d09a8a; background: #fdf5f3; }
+/* 札を置くところ（④）。空のときは破線の受け皿（何をする場所かが形で分かる） */
 .bslot {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px;
   min-height: 44px; min-width: 104px;
@@ -1674,19 +1742,15 @@ main.timelineMain {
 .bslot.ok { border-style: solid; border-color: #7fae8f; background: #f2faf5; }
 .bslot.ng { border-style: solid; border-color: #d09a8a; background: #fdf5f3; }
 .bslotPh { color: #a8b4c0; font-size: calc(17 * var(--fs-u)); }
-/* ★ 2026-09-11・「イオンでないものは聞かなくてよい」。
-   柱は式の項として残す（⑤の係数の欄がこの真下に来る）が、問いではないので
-   受け皿を置かず、色を落として**答える場所ではない**ことを形で言う */
+/* イオンでない柱は問いではないので、受け皿を置かず色を落とす */
 .bpill.noask { background: #f4f7fa; border-color: #ccd6e0; color: #5a6570; cursor: default; }
 .bself {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; min-width: 104px; padding: 4px 6px;
   font-size: calc(12.5 * var(--fs-u)); color: #7c8792;
 }
-.bwSelfNote .bwNoteText { color: #5a6570; }
-/* ★ 2026-09-11・「紙に自分で書くと起こる事故」の注意。筆算のいちばん下に1度だけ。
-   ⚠ 判定の色（緑・赤）を使わない —— 正解のあとに出る**読みもの**であって、
-   いま答えたことの合否ではない */
+/* ★ 「紙に自分で書くと起こる事故」の注意。④のいちばん下に1度だけ。
+   ⚠ 判定の色（緑・赤）を使わない —— 正解のあとに出る**読みもの** */
 #bottleTrap {
   margin-top: 10px; padding: 8px 10px; line-height: 1.65;
   font-size: calc(12.5 * var(--fs-u)); color: #46525e;
@@ -1704,73 +1768,35 @@ main.timelineMain {
   border: 0; background: transparent; color: #8a949e; cursor: pointer;
   font-size: calc(11 * var(--fs-u)); line-height: 1; padding: 5px 4px; min-height: 24px;
 }
-/* 判定文・手がかりは**全幅の行**に積む（列は狭く、長い文が1文字ずつ縦に折れるため）。
-   どの柱・どの物質の話かは、行の頭の札が言う */
-#bottleTrap, #bottleEq, #bottleQuiz, #bottleRack, #bottleMsg, #bottleCountNotes,
-#addIonRows, #addIonMsg, #addIonWrap > .stepSubHead,
-#bottleTail > .stepHead, #bottleCounts > .bottleCap { grid-column: 1 / -1; width: 0; min-width: 100%; }
-.bwRowTag { grid-column: 1 / -1; }
-/* 柱の行が何なのかを名指しする（「直前のイオン反応式との対応がわかりづらい」への答えの半分）。
-   残りの半分は**位置**（答えが柱の真下にしか置けない）が言う */
-.bwRowTag { font-size: calc(11.5 * var(--fs-u)); color: #5a6570; padding-bottom: 2px; }
+.bwRowTag { grid-column: 1 / -1; font-size: calc(11.5 * var(--fs-u)); color: #5a6570; padding-bottom: 2px; }
 .bwRowTag b { color: #2f5b7a; }
-/* ★ 柱をもう一度出す行（echo）。押せないので、色を落として「見出しの控え」に見せる。
-   ⚠ 右の欄に置く札は列の外（1fr の列）なので、グリッドの幅を押し広げない */
-.bwEchoCell { padding-top: 6px; }
-.bpill.echo {
-  display: inline-block;
-  font-size: calc(14.5 * var(--fs-u)); font-weight: bold; color: #46525e;
-  background: #f4f7fa; border: 1px dashed #b9c8d6; border-radius: 7px;
-  padding: 3px 8px; min-height: 0; cursor: default;
-}
-.bwEchoTag { grid-column: auto; font-size: calc(11 * var(--fs-u)); color: #7c8792; white-space: nowrap; padding-left: 6px; }
+/* 判定文は筆算の**外**（下の1行）。⚠ 全幅の行を柱のあいだに挟むと柱と答えが分断される */
 .bwNote { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; margin: 1px 0; }
 .bwNoteIon {
   flex: none; font-size: calc(11.5 * var(--fs-u)); font-weight: bold; color: #46525e;
   background: #eef3f8; border: 1px solid #d6e0ea; border-radius: 4px; padding: 1px 5px;
 }
 .bwNoteText { flex: 1 1 auto; min-width: 0; }
-.bwNote .bcHead { flex: 1 1 240px; min-width: 0; }
-/* ④後半 —— 筆算の1行として横に並べる（ユーザーの絵の最下段）。
-   ⚠ 柱の列にはそろえられない（1種が2つの物質から来る・1つの物質が2列にまたがる） */
-.bwAddLine { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 4px; }
-.bwAddLead { font-size: calc(13 * var(--fs-u)); color: #46525e; }
-.bwAddItem { display: inline-flex; align-items: center; gap: 5px; }
-.bwAddIon { font-size: calc(15 * var(--fs-u)); font-weight: bold; color: #23303b; }
-.bwAddNotes { display: block; }
-#bottleTail > .stepHead.inWork { margin: 10px 0 2px; }
-.bwCoef { margin: 0; padding-left: 0; border-left: 0; }
-/* 広い画面では柱の行がイオン反応式そのものなので、1行版は出さない */
-#bottleEq { display: none; }
+/* ⑧ 全体を整数倍する段（分数が出た回だけ） */
+.dblHave {
+  font-size: calc(15 * var(--fs-u)); font-weight: bold; color: #46525e;
+  padding: 6px 9px; margin-bottom: 6px;
+  background: #fff; border: 1px solid #d6e0ea; border-radius: 8px;
+}
+.dblRow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 4px; }
 
 /* ---- 狭い画面（iPad の縦・スマホ）----
-   ⚠ 柱を横に並べると必ず横送りになり、**打っている欄と柱が同時に見えない**
-   ＝ この改修の目的（上下が離れない）が狭い面でだけ壊れる。
-   そこで組み方を変える: **イオン反応式を1行で先に出し、そのあとイオンごとの塊**にする。
-   ★ 塊の中では、イオンのすぐ下に札の受け皿がある ＝ 対応はむしろ近くなる
-   （③の筆算が 560px で折り返すのと同じ判断。そろえた効果がとっくに無い所では、そろえない）。 */
+   ⚠ 柱を横に並べると必ず横送りになり、**打っている欄と柱が同時に見えない**。
+   ★ 狭い面では筆算の利点はもともと出ていないので、そこで無理をしない ——
+   グリッドをほどいて素の縦並びにし、枝は出さない（縦並びでは意味を持たない）。 */
 @media (max-width: 560px) {
   #bottleWork { display: block; min-width: 0; padding: 8px; }
   .bworkScroll { overflow-x: visible; width: auto; }
-  #bottleEq {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
-    font-size: calc(15 * var(--fs-u)); line-height: 1.9;
-    padding: 5px 7px; margin-bottom: 8px;
-    background: #fff; border: 1px solid #d6e0ea; border-radius: 8px;
-  }
-  .bcol {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-    margin: 0 0 6px; padding: 5px 6px;
-    background: #fff; border: 1px solid #e2e9f0; border-radius: 8px;
-  }
-  .bcolArrow { transform: rotate(-90deg); }
-  /* 柱をもう一度出す行は、狭い面では**1行に横並び**（縦に3段積むと段が離れる） */
-  .bwEchoWrap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 2px; }
-  .bwEchoCell { padding-top: 0; }
-  .bwEchoTag { flex-basis: 100%; padding-left: 0; }
-  .bcolRest { display: none; }   /* 右辺は上の1行版が持っている */
-  .bcolTag { display: none; }
-  .bwCoef { margin: 0 0 6px; }
+  .bwSpanCell { display: none; }
+  .bwRule { margin: 6px 0; }
+  .bcolHead, .bwAddCell, .bwCoef { display: inline-flex; margin: 2px 6px 2px 0; }
+  .bwGutter, .bwAddEcho { display: inline-block; margin-right: 6px; }
+  #ownerRow { justify-content: flex-start; }
   .bslot { min-width: 92px; }
 }
 
@@ -2242,6 +2268,7 @@ main.timelineMain {
    イオンの一覧から選んで積む列。⚠ 既存の係数ステッパー（.stepper）を置き換えるものではなく、
    いまは**併置**して「同じ数を2つの見え方で指している」ことを見せている。 */
 #blocksWrap { margin-top: 10px; }
+#blocksWrap[hidden] { display: none; }
 /* ⑥（酸化還元）で使うときの器。図・一覧・判定文・釦を1枚にまとめる */
 #saltStep #blocksWrap {
   border: 1px solid #dbe3ea; border-radius: 10px; background: #fbfdff;
