@@ -1987,6 +1987,104 @@ function oxidationOutOfScope(mol) {
 }
 
 /* ==========================================================================
+ * 完全燃焼（v1541・参考書の式3本 ＝ メタン・エタノール・ベンゼン）
+ *
+ * ⚠⚠ **アプリには燃焼のルールが1本も無かった。** 元素分析の節が立っているのに、
+ *   そこに書かれている式を画面で起こす手段が無かった（v1540 の実測で発見）。
+ *
+ * ★ **なぜ「図を変える」ほうにしたか**（`_info` の案内で済ませなかった理由）:
+ *   燃焼は実際に起きる反応で、しかも**炭素骨格が跡形もなくなる**のがこの反応の要点。
+ *   「C は全部 CO₂ へ・H は全部 H₂O へ」が図で見えることが、元素分析（燃やして
+ *   CO₂ と H₂O の質量から組成を出す）の理屈そのものになる。
+ *
+ * ⚠ **門番は「C・H・O だけ」**。窒素・硫黄・ハロゲンを含むものを通すと、
+ *   この画面が扱わない生成物（NO₂・SO₂・HCl…）を黙って省いた式になる。
+ *   ★ 電荷を持つ粒（塩）と `R`（重合鎖の端）も落とす —— どちらも
+ *   **「分子1個ぶんの式」が決まらない**（DESIGN_reaction_execution.md の
+ *   「係数を書くなら分子が1個ぶんに決まっていること」）。
+ * ========================================================================== */
+
+// その連結成分が完全燃焼の式を書ける相手か（書けるなら組成を返す。書けなければ null）
+function combustionComposition(mol, ids) {
+    let c = 0, h = 0, o = 0;
+    for (const id of ids) {
+        const a = mol.atoms.find(x => x.id === id);
+        if (!a) return null;
+        if (a.charge) return null;                 // 塩の粒（分子1個ぶんが決まらない）
+        if (a.element === 'H') { h++; continue; }
+        if (a.element === 'C') c++;
+        else if (a.element === 'O') o++;
+        else return null;                          // N・S・ハロゲン・R・金属
+        h += mol.getFreeValency(id);               // 自動補完の水素
+    }
+    if (c < 1 || h % 2 !== 0) return null;
+    return { c, h, o, co2: c, h2o: h / 2, o2: c + h / 4 - o / 2 };
+}
+
+// 完全燃焼できる分子（連結成分）の一覧。site は成分の原子IDをそのまま並べたもの
+function combustibleComponents(mol) {
+    const seen = new Set();
+    const sites = [];
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = [...componentOf(mol, a.id)];
+        ids.forEach(id => seen.add(id));
+        if (combustionComposition(mol, ids)) sites.push(ids);
+    });
+    return sites;
+}
+
+/**
+ * 生成物（CO₂ と H₂O）を置く場所を決める。
+ *
+ * ★ **元の分子が居た場所を中心に格子で並べる**（`parkAsWater` と同じ考え方＝近くに置く）。
+ *   遠くに飛ばすと「この分子が燃えてこうなった」が読めない。
+ * ⚠ **他の分子に重ねない** —— 近い順に候補をずらして、空いている場所を探す。
+ * 返り値: [{x, y}]（前から CO₂ のぶん・続いて H₂O のぶん）。置けなければ null
+ */
+function combustionProductSpots(mol, ids, count) {
+    const own = new Set(ids);
+    const heavy = ids.map(id => mol.atoms.find(a => a.id === id)).filter(a => a && a.element !== 'H');
+    if (!heavy.length) return null;
+    const G = bondStep(mol, heavy[0].id);
+    const cx = heavy.reduce((s, a) => s + a.x, 0) / heavy.length;
+    const cy = heavy.reduce((s, a) => s + a.y, 0) / heavy.length;
+    const others = mol.atoms.filter(a => !own.has(a.id) && a.element !== 'H');
+    const cols = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / cols);
+    const cellW = G * 3.6, cellH = G * 2;          // CO₂ は横に3原子ぶん（O=C=O）
+    const layout = (ox, oy) => {
+        const spots = [];
+        for (let i = 0; i < count; i++) {
+            const r = Math.floor(i / cols), k = i % cols;
+            spots.push({
+                x: cx + ox + (k - (cols - 1) / 2) * cellW,
+                y: cy + oy + (r - (rows - 1) / 2) * cellH
+            });
+        }
+        return spots;
+    };
+    const clear = spots => spots.every(p =>
+        others.every(a => Math.hypot(a.x - p.x, a.y - p.y) >= G * 1.6 &&
+            Math.hypot(a.x - (p.x - G), a.y - p.y) >= G * 1.6 &&
+            Math.hypot(a.x - (p.x + G), a.y - p.y) >= G * 1.6));
+    const cands = [{ x: 0, y: 0, d: 0 }];
+    for (let i = -6; i <= 6; i++) {
+        for (let j = -6; j <= 6; j++) {
+            const d = Math.hypot(i, j);
+            if (d < 1 || d > 6) continue;
+            cands.push({ x: i * cellW, y: j * cellH, d });
+        }
+    }
+    cands.sort((p, q) => p.d - q.d);
+    for (const cand of cands) {
+        const spots = layout(cand.x, cand.y);
+        if (clear(spots)) return spots;
+    }
+    return null;
+}
+
+/* ==========================================================================
  * 分子内脱水 → 酸無水物（§10.11-D #3・入試 563大問中53件・教科書 本文 p.184／p.157）
  *
  * ⚠ **逆の `hydrolysis_anhydride` だけが有る片道だった**（§10.11-E が名指しした形の穴）。
@@ -3683,7 +3781,8 @@ const REAGENTS = [
         name: '希硫酸',
         formula: 'H₂SO₄ aq',
         kind: 'transform',
-        acts: 'エステルと酸無水物と二糖のグリコシド結合（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
+        // ⚠ v1541 でアミド結合（ペプチド結合）の加水分解を足したので、ここにも書き足す（規約1-2）
+        acts: 'エステルと酸無水物とアミド結合（ペプチド結合）と二糖のグリコシド結合（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
         miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。' +
             'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。' +
             '単糖（グルコースなど）は、これ以上切れる -O- のつながりを持たないので加水分解されません。切れるのは単糖どうしをつないだ二糖・多糖のグリコシド結合です。'
@@ -3836,10 +3935,16 @@ const REAGENTS = [
         name: '塩素・光',
         formula: 'Cl₂',
         kind: 'transform',
-        acts: 'アルカン（鎖状の飽和炭化水素）の水素です（光を当てると1つずつ塩素に置き換わります）',
+        /* ⚠ **v1541 で3つに増えた**（もとはアルカンの置換だけ）。規約1-2 のとおり、
+         *   ルールを足したら瓶の `acts`・`miss` も書き足す ——
+         *   もとの `miss` は「C=C をもつ分子では付加が起こるのでこの瓶では扱いません」と
+         *   書いてあり、付加を足したいま**そのままでは嘘になる**。 */
+        acts: 'アルカン（鎖状の飽和炭化水素）の水素（光を当てると1つずつ塩素に置き換わります）と、' +
+            'C=C・C≡C（付加）と、ベンゼン環（光を当てると 3Cl₂ が付加します）です',
         miss: 'アルカンは反応しにくい炭化水素ですが、光を当てると塩素と**置換**反応を起こします（付加ではありません）。' +
-            'ベンゼン環は光では置換されず、鉄を触媒にした「塩素・鉄触媒」の瓶を使います。' +
-            'C=C や C≡C をもつ分子では、置換より先に**付加**が起こるのでこの瓶では扱いません。'
+            '同じ塩素でも、C=C や C≡C があるとそちらへの**付加**が先に起こります。' +
+            'ベンゼン環は光を当てると 3Cl₂ が付加してヘキサクロロシクロヘキサンになり、' +
+            '鉄を触媒にすると付加ではなく**置換**（クロロベンゼン）になります ＝ 「塩素・鉄触媒」の瓶です。'
     },
     {
         id: 'mixed_acid',
@@ -3873,6 +3978,31 @@ const REAGENTS = [
         acts: 'エチレンです（酸化されてアセトアルデヒドになります）',
         miss: 'この瓶はエチレンからアセトアルデヒドを作る工業的製法のためのものです。' +
             '高校で扱うのはエチレンの場合だけなので、ほかの分子では何も起こしません。'
+    },
+    {
+        /* ★★ 燃焼の瓶（v1541）。⚠ **瓶が1本増える**（25 → 26本）。
+         *
+         * ⚠ **既存の瓶に相乗りできないか**（`DESIGN_reagent_palette.md` §10.5 規約1）を先に見た:
+         *   - `o2_pdcl2`（酸素・PdCl₂/CuCl₂）… ⚠ **名前が嘘になる。** あちらは
+         *     ワッカー法の触媒つきの瓶で、「触媒を入れずに火をつける」ことを名乗れない。
+         *     しかも**効く相手が正反対**（あちらはエチレンだけ／こちらは炭素を持つもの全部）
+         *   - 酸化剤（KMnO₄・K₂Cr₂O₇）… ⚠ 燃焼は酸化剤の水溶液でやる操作ではない
+         *   ★ ＝ 規約1の③「既存のどの瓶の名前でも嘘になる」に当たるので1本足す。
+         *
+         * ⚠ **区分割りはしない**（`cl2_light`（24本目）・`co2`（25本目）と同じ扱い）。
+         *   区分の切り方は「高校化学をどう教えるか」の判断で、反応レーンが決める話ではない。
+         *
+         * ★ **なぜ要るか**: 参考書の式で「燃焼」は3本（メタン・エタノール・ベンゼンの完全燃焼）
+         *   あるのに、**アプリには燃焼のルールが1本も無かった**（v1540 の実測）。
+         *   元素分析の節が立っているのに、その式を画面で起こせなかった。 */
+        id: 'o2_flame',
+        name: '酸素（点火）',
+        formula: 'O₂',
+        kind: 'transform',
+        acts: '炭素と水素（と酸素）だけでできた分子です。完全燃焼して二酸化炭素と水になります',
+        miss: '燃やせるのは C・H・O だけでできた分子です。' +
+            '窒素・硫黄・ハロゲンを含むものは、この画面では扱わない生成物（NO₂・SO₂・HCl など）ができるので断ります。' +
+            'また、塩や重合でできた鎖（両端の R）のように「分子1個ぶんの式」が決まらないものも燃やせません。'
     },
     {
         id: 'sulfur',
@@ -4347,6 +4477,73 @@ const REACTION_RULES = [
                 caption: (parts.join('\n') || 'この分子で酸化剤が働く形は、いまは図にしていません。') +
                     '\n酸化剤で図が変わるのは、1級・2級アルコール／アルデヒド／芳香環の側鎖／' +
                     '炭化水素の C=C（酸化開裂）の4つです。'
+            };
+        }
+    },
+    {
+        /* ★★ 完全燃焼（v1541）。参考書の式3本（メタン・エタノール・ベンゼン）を1本で埋める。
+         * 門番と置き場の理屈は `combustionComposition` / `combustionProductSpots` の注記。
+         *
+         * ★ **係数つきの式を caption に必ず出す。** 図（CO₂ が何個・H₂O が何個）と
+         *   式の係数が**同じ数**であることが、この反応を画面でやる意味そのもの
+         *   —— 元素分析はこの数を使って組成を逆算する。 */
+        id: 'combustion',
+        reagentId: 'o2_flame',
+        label: '完全燃焼（O₂・点火）→ CO₂ ＋ H₂O',
+        detect: (mol) => combustibleComponents(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const comp = combustionComposition(mol, site);
+            if (!comp) throw new Error('燃焼の式が書けない分子です');
+            const spots = combustionProductSpots(mol, site, comp.co2 + comp.h2o);
+            if (!spots) throw noRoom('生成物を置く空間がありません');
+            const G = bondStep(mol, site[0]);
+            // 燃えた分子は跡形もなくなる ＝ もとの原子はすべて消える
+            site.forEach(id => mol.removeAtom(id));
+            const changed = [];
+            for (let i = 0; i < comp.co2; i++) {
+                const p = spots[i];
+                const c = mol.addAtom('C', p.x, p.y);
+                const oL = mol.addAtom('O', p.x - G, p.y);
+                const oR = mol.addAtom('O', p.x + G, p.y);
+                mol.addBond(oL.id, c.id, 2);
+                mol.addBond(c.id, oR.id, 2);
+                /* ⚠ **CO₂ には `fromReaction` を付けない。** この印は `parkAsWater` が
+                 *   置いた「脱離した水」を表すもので、CV1/CV4 の物差しは
+                 *   **その印の付いた成分を検査から外す**（印は変化点を指すもので
+                 *   生成物の目録ではない、という約束）。CO₂ は燃焼の主生成物なので、
+                 *   外してしまうと「変化が1つも起きなかった反応」に化ける。 */
+                [c, oL, oR].forEach(a => { changed.push(a.id); });
+            }
+            for (let i = 0; i < comp.h2o; i++) {
+                const p = spots[comp.co2 + i];
+                const o = mol.addAtom('O', p.x, p.y);
+                o.fromReaction = true;          // 自動水素で H₂O として描かれる
+                changed.push(o.id);
+            }
+            // ---- 係数を整数にそろえた式を作る（O₂ が半整数になるときだけ全体を2倍する）
+            const k = Number.isInteger(comp.o2) ? 1 : 2;
+            const sub = n => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+            const co = n => (n === 1 ? '' : String(n));
+            const fuel = 'C' + (comp.c > 1 ? sub(comp.c) : '') +
+                'H' + (comp.h > 1 ? sub(comp.h) : '') +
+                (comp.o ? 'O' + (comp.o > 1 ? sub(comp.o) : '') : '');
+            const eq = `${co(k)}${fuel} ＋ ${co(comp.o2 * k)}O₂ → ` +
+                `${co(comp.co2 * k)}CO₂ ＋ ${co(comp.h2o * k)}H₂O`;
+            return {
+                caption: `完全燃焼しました。**${eq}** です。` +
+                    `炭素は1個残らず二酸化炭素に、水素は1個残らず水になります` +
+                    `（図に出ているのは**1分子ぶん**で、CO₂ が ${comp.co2} 個・H₂O が ${comp.h2o} 個です）。` +
+                    (k === 2
+                        ? `⚠ この分子は O₂ の係数が分数になるので、**式全体を2倍**して整数にそろえてあります。` +
+                          `式の ${comp.co2 * 2}CO₂・${comp.h2o * 2}H₂O が図の2倍になっているのはそのためです。`
+                        : '') +
+                    (comp.o ? `もとの分子が持っていた酸素 ${comp.o} 個も生成物の側に入るので、` +
+                        `必要な O₂ はそのぶん少なくなります。` : '') +
+                    'この「C の数 ＝ CO₂ の数」「H の数 ＝ H₂O の数の2倍」という対応が元素分析の土台で、' +
+                    '燃やして出てきた CO₂ と H₂O の質量から、もとの分子の C と H の数を逆算します。',
+                changed,
+                refit: true
             };
         }
     },
@@ -5335,6 +5532,35 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ 塩素の付加（v1541）。
+         * ⚠⚠ **参考書は「アルケンは臭素 Br₂ や塩素 Cl₂ とすみやかに反応します」と
+         *   書いているのに、アプリは塩素の付加を持っていなかった**（v1540 の実測）。
+         *   塩素の瓶は2本とも**置換**（`cl2_light` がアルカン・`cl2_fe` が芳香環）で、
+         *   `cl2_light` の `miss` は「C=C をもつ分子では付加が起こるのでこの瓶では扱いません」と
+         *   **自分で断っていた** ＝ 教科書が並べて書いている2つのうち片方だけが無かった。
+         *
+         * ⚠ **瓶は増やさない**（`DESIGN_reagent_palette.md` §10.5 規約1）。
+         *   ★ `cl2_light`（塩素・光）に**付ける**: 中身は Cl₂ そのもので、
+         *     光があっても C=C への付加は起こる（むしろ置換より速い）。
+         *   ⚠ 規約1-2 のとおり、瓶の `acts` と `miss` を書き換えてある
+         *     （「この瓶では扱いません」が嘘になるため）。
+         *
+         * ★ ここが `add_br2` と対になることで、同じ瓶の中で
+         *   **アルカン＝置換／アルケン＝付加**が並んで見える。 */
+        id: 'add_cl2',
+        label: '付加: Cl₂（塩素の付加）',
+        reagentId: 'cl2_light',
+        detect: multipleBondSites,
+        apply(game, site) {
+            return addAcrossMultipleBond(game, site, 'Cl', 'Cl',
+                '塩素 Cl₂ が付加しました。C=C や C≡C は臭素とも塩素ともすみやかに反応します。' +
+                'アルカンでは置換（水素が1つずつ置き換わる）しか起こらないのに、' +
+                '不飽和結合があると**付加のほうが先に起こる**のがこの2つの違いです。' +
+                'エチレンから 1,2-ジクロロエタンを作り、そこから塩化水素をとると塩化ビニルになります' +
+                '（ポリ塩化ビニルの原料）。');
+        }
+    },
+    {
         /* ⚠ **教材として逆を教えていた穴の埋め合わせ**（2026-08-06・qa の283項目棚卸し）。
          * 「臭素水 ＝ 不飽和結合の検出」で止めると、フェノール・アニリンの白色沈殿という
          * 高校の必修事項がアプリのどこからも出せない。付加（`add_br2`）と同じ瓶に置換を並べ、
@@ -5640,6 +5866,58 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ ベンゼン ＋ 3Cl₂ → ヘキサクロロシクロヘキサン（v1541・参考書の式1本）。
+         * ⓵ **生成物 `hexachlorocyclohexane` は登録済み**で、そこへ行く手段だけが無かった。
+         *
+         * ★ **門番は `hydrogenate_benzene_ring` と同じ形**（同じ「環への付加」なので、
+         *   線を2通り持たない）—— ①その分子が炭化水素だけ ②ふつうの C=C/C≡C が残っていない。
+         * ★ **一気に3つ付ける**のは省略ではなく教科書どおり（`bromination_activated_ring` と
+         *   同じ考え方）。途中の一付加体・二付加体は取り出せない。
+         * ⚠ **鉄触媒の置換（`aromatic_halogenation`）と同じ瓶にしない** ——
+         *   条件で行き先が正反対に分かれるのがこの反応の要点で、
+         *   瓶の名前（光／鉄触媒）がその条件そのものになっている。 */
+        id: 'add_cl2_benzene_ring',
+        reagentId: 'cl2_light',
+        label: '付加: Cl₂ ×3（光）→ ベンゼン環がヘキサクロロシクロヘキサンになる',
+        detect(mol) {
+            const multiples = multipleBondSites(mol);
+            return isolatedBenzeneRings(mol).filter(ring => {
+                const comp = componentOf(mol, ring[0]);
+                if (mol.atoms.some(a => comp.has(a.id) &&
+                    a.element !== 'C' && a.element !== 'H')) return false;
+                if (multiples.some(ids => ids.some(id => comp.has(id)))) return false;
+                // 置換基のある環（トルエンなど）は、6個の塩素を置く場所が足りない
+                return ring.every(id => mol.getNeighbors(id)
+                    .filter(n => n.atom.element !== 'H' && ring.includes(n.atom.id)).length === 2 &&
+                    mol.getFreeValency(id) >= 1);
+            });
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const ring = new Set(site);
+            const inside = mol.bonds.filter(b => ring.has(b.atomId1) && ring.has(b.atomId2));
+            if (inside.length !== 6) throw new Error('ベンゼン環の6本が見つかりません');
+            // ★ **先に塩素の置き場を全部ためす**（途中で場所が尽きて半端な図にしない）
+            if (!site.every(id => attachGroup(mol, id, 'Cl', true))) {
+                throw noRoom('環のまわりに塩素6個を置く空間がありません');
+            }
+            inside.forEach(b => { b.type = 1; });   // 環の6本が単結合になる ＝ 芳香族性が消える
+            const added = [];
+            site.forEach(id => { added.push(...attachGroup(mol, id, 'Cl')); });
+            return {
+                caption: 'ベンゼン環に塩素が付加して、ヘキサクロロシクロヘキサンになりました' +
+                    '（C₆H₆ ＋ 3Cl₂ → C₆H₆Cl₆）。**紫外線を当てる**のが条件です。' +
+                    '⚠ 同じ塩素でも、**鉄（塩化鉄(III)）を触媒にすると置換**が起こって' +
+                    'クロロベンゼン C₆H₅Cl になります —— 条件だけで行き先が付加と置換に分かれる、' +
+                    'ベンゼンの性質がいちばんよく出る一組です。' +
+                    '付加すると環の二重結合がすべて無くなるので、できるのは芳香族ではなく' +
+                    'シクロヘキサン環の化合物です。',
+                changed: [...site, ...added],
+                refit: true
+            };
+        }
+    },
+    {
         /* ★ ワッカー法（§10.11-D #27・§10.3-f C-3・v1472。ユーザーが「足す」と決めていた）。
          * ★ **教科書 本文 p.150 に式がある**（p.282 に再掲）・入試12〜13件。
          * ⚠ ただし**教科書に「ワッカー法」という名前は無い**（参考書が名づけている）ので、
@@ -5870,6 +6148,10 @@ const REACTION_RULES = [
          *
          * ⚠ **瓶は `cl2_light`（新設）。`cl2_fe` に相乗りさせていない**（瓶の注記を見ること）。 */
         id: 'chlorinate_alkane',
+        /* ★ 機構データ `methane_chlorination` は `reactions.json` に**前からあった**のに、
+         *   ここから名指ししていなかったので巻矢印で見られなかった（v1541 の実測で発見）。
+         *   ⛔ 新しい機構データは1件も書いていない ＝ 1行つないだだけ（13 → 14本）。 */
+        mechanismId: 'methane_chlorination',
         reagentId: 'cl2_light',
         label: 'アルカンの置換（Cl₂・光）→ 塩化アルキル',
         detect: (mol) => alkaneSubstitutionSites(mol),
@@ -6109,6 +6391,62 @@ const REACTION_RULES = [
         label: '加水分解（エステル + H₂O, 酸を触媒に加熱）',
         detect(mol) { return detectEsterLinkages(mol); },
         apply(game, site) { return cleaveEster(game, site, false); }
+    },
+    {
+        /* ★★ アミド結合の加水分解（v1541・参考書の式1本＝ポリペプチドの加水分解）。
+         *
+         * ⚠⚠ **アミド結合を切るルールが1本も無かった。** `amidation`（作る側）と
+         *   `acetylation_anhydride` は前からあるのに**帰りが無い片道**で、
+         *   実測でジペプチド・アセトアニリド・ナイロン66 のどれにも0件だった（v1540）。
+         *   ★ 1本足すと、参考書の「ポリペプチドの加水分解」だけでなく
+         *     アセトアニリド・ナイロンにも同じ札が出る。
+         *
+         * ★ **切り方は `cleaveAcylOxygen` に任せる**（CV1 の約束＝切る反応の印を1か所で決める）。
+         *   ⚠ 名前は「Oxygen」だが、やっているのは「アシル基から相手の重原子を外して
+         *   -OH を生やす」ことで、相手が O でも N でも1行も違わない。
+         *
+         * ★ **環状アミド（ラクタム）も通す。** カプロラクタム ＋ H₂O →
+         *   6-アミノヘキサン酸は、ナイロン6 の話でそのまま出てくる。
+         *   `cleaveAcylOxygen` が「切っても分子が分かれない」場合を既に扱っている。
+         *
+         * ⚠ **瓶は増やさない** —— エステルの加水分解と同じ希硫酸（`h2so4_dil`）。
+         *   規約1-2 のとおり瓶の `acts`・`miss` も書き足してある。 */
+        id: 'hydrolysis_amide',
+        reagentId: 'h2so4_dil',
+        label: '加水分解（アミド結合 + H₂O, 酸を触媒に加熱）',
+        detect(mol) {
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'amide')
+                /* ⚠ **尿素型（同じカルボニル炭素に N が2つ）は落とす**（実測で入っていた）。
+                 *   切ると**カルバミン酸 H₂N-COOH** ができるが、これは単離できず
+                 *   ただちに CO₂ ＋ NH₃ に分かれる ＝ 画面に描くと嘘の図になる。
+                 *   ★ 尿素そのものは「尿素樹脂の材料」として登録してあるので、
+                 *     ここを開けておくと必ず踏む。 */
+                .filter(g => mol.getNeighbors(g.atomIds[0])
+                    .filter(n => n.atom.element === 'N').length === 1)
+                .map(g => g.atomIds); // [カルボニルC, =O, N]
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [cId, , nId] = site;
+            const { changed } = cleaveAcylOxygen(mol, cId, nId);
+            const stillOne = componentOf(mol, cId).has(nId); // 環だった（分子が分かれていない）
+            return {
+                caption: 'アミド結合が加水分解されて、カルボン酸とアミンに分かれました。' +
+                    '水が1分子入って、C 側が -COOH に、N 側が -NH- に戻ります（アミド化の逆）。' +
+                    (stillOne
+                        ? '⚠ もとが**環状のアミド（ラクタム）**だったので、環が開いただけで分子の数は増えません。' +
+                          'カプロラクタムを開くと 6-アミノヘキサン酸になり、これがナイロン6 の繰り返し単位です。'
+                        : '') +
+                    'タンパク質を塩酸と煮ると、ペプチド結合がここで切れてアミノ酸に分かれます' +
+                    '（ポリペプチドの加水分解）。ナイロンのアミド結合・アセトアニリドのアミド結合も同じ形なので、' +
+                    'まったく同じ切れ方をします。' +
+                    '⚠ アミド結合はエステル結合より切れにくいので、酸（か塩基）を加えて**長く加熱**します。' +
+                    '体の中では、その仕事を消化酵素（ペプチダーゼ）がしています。',
+                changed,
+                refit: true
+            };
+        }
     },
     {
         /* グリコシド結合の加水分解（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。

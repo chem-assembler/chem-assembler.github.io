@@ -35197,8 +35197,11 @@
         // ★ v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24本（ユーザー指摘）
         // ★ v1514 で二酸化炭素の瓶を足して 24 → 25本（DESIGN_ion_layer.md I-2・分液 51 → 58件）
         // ★ ジアゾ化の瓶（NaNO₂＋HCl）を足して 25 → 26本（DESIGN_ion_layer.md I-4）
-        assert(Array.isArray(REAGENTS) && REAGENTS.length === 26,
-            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの21本＋調べるもの5本＝26本）`);
+        // ★ v1541 で燃焼の瓶（酸素（点火））を足して 26 → 27本
+        //   （⚠ **燃焼のルールが1本も無かった**＝ 参考書の式3本が起こせなかった。
+        //     `o2_pdcl2` はワッカー法の触媒つきの瓶なので名前が嘘になる）
+        assert(Array.isArray(REAGENTS) && REAGENTS.length === 27,
+            `REAGENTS が ${REAGENTS ? REAGENTS.length : 'なし'} 本（変えるもの22本＋調べるもの5本＝27本）`);
         assert(Array.isArray(TESTS) && TESTS.length === 5,
             `DETECTION_TESTS が ${TESTS ? TESTS.length : 'なし'} 件（第3段は5件）`);
         // (1) id の重複が無い（RX3 の mechanismId 検査と同じ機械検証）
@@ -47382,6 +47385,278 @@
         g.updateDrawing();
         assert(trName(c) === '塩化ビニル',
             `アセチレン＋HCl から「${trName(c)}」（塩化ビニル ＝ 前から通ることの確認）`);
+        c.reset();
+    });
+
+    /* =====================================================================
+     * RXF: 参考書の式を起こすために足した反応（v1541・`scratchpad/rxcov` の実測）
+     *
+     * ★ **出どころ**: 参考書の本文にある 169 本の式を実測で分類したところ、
+     *   アプリの仕事である 150 本のうち 41 本が起こせなかった。
+     *   ⚠ とくに **燃焼のルールが1本も無い**（式3本）・**塩素の付加が無い**（式2本。
+     *   参考書は「臭素 Br₂ や塩素 Cl₂ とすみやかに反応します」と書いている）・
+     *   **アミド結合を切るルールが1本も無い**（作る側だけある片道）の3つ。
+     * ⚠ **TR と同じ流儀**: 奇数番が「起きる」・偶数番が否定対照。
+     * ===================================================================== */
+
+    test('RXF1: 完全燃焼 —— メタン・エタノール・ベンゼンの3本の式が係数まで合う', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'combustion');
+        assert(rule, 'combustion が REACTION_RULES に無い');
+        assert(W.REAGENTS.some(r => r.id === 'o2_flame'), '酸素（点火）の瓶が無い');
+        assert(rule.reagentId === 'o2_flame', '燃焼が酸素の瓶にぶら下がっていない');
+
+        /* ★ 参考書の3本。**式（係数つき）と、図に出る分子の数**の両方を見る ——
+         *   この2つが一致していることが、この反応を画面でやる意味そのもの。 */
+        const cases = [
+            ['メタン', 'CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O', 1, 2],
+            ['エタノール', 'C₂H₆O ＋ 3O₂ → 2CO₂ ＋ 3H₂O', 2, 3],
+            ['ベンゼン', '2C₆H₆ ＋ 15O₂ → 12CO₂ ＋ 6H₂O', 6, 3]
+        ];
+        cases.forEach(([name, eq, nCO2, nH2O]) => {
+            const mol = trSetup(c, [name]);
+            const sites = rule.detect(mol);
+            assert(sites.length === 1, `${name} で箇所が ${sites.length} 件（1件を期待）`);
+            g.saveState();
+            const res = rule.apply(g, sites[0]);
+            g.updateDrawing();
+            assert(res.caption.includes(eq), `${name} の caption に式「${eq}」が無い: ${res.caption.slice(0, 120)}`);
+            // ---- 図のほう。**炭素骨格が跡形もなくなる**のがこの反応の要点
+            const parts = g.splitMolecules();
+            const co2 = parts.filter(p => p.atoms.length === 3 &&
+                p.atoms.filter(a => a.element === 'C').length === 1 &&
+                p.atoms.filter(a => a.element === 'O').length === 2);
+            const wat = parts.filter(p => p.atoms.length === 1 && p.atoms[0].element === 'O');
+            assert(co2.length === nCO2, `${name} → CO₂ が ${co2.length} 個（${nCO2} 個を期待）`);
+            assert(wat.length === nH2O, `${name} → H₂O が ${wat.length} 個（${nH2O} 個を期待）`);
+            assert(parts.length === nCO2 + nH2O,
+                `${name} → 生成物が ${parts.length} 分子（${nCO2 + nH2O} 分子を期待＝もとの分子が残っている）`);
+            // CO₂ は O=C=O（2本とも二重結合）
+            co2.forEach(p => assert(p.bonds.every(b => b.type === 2), 'CO₂ が O=C=O になっていない'));
+            // ---- 印は生成物ぜんぶ（脱離水は CV の物差しが除くので、ここでは CO₂ を名指しで見る）
+            assert(Array.isArray(res.changed) && res.changed.length === nCO2 * 3 + nH2O,
+                `${name} の印が ${(res.changed || []).length} 個（${nCO2 * 3 + nH2O} 個を期待）`);
+        });
+        c.reset();
+    });
+
+    test('RXF2: ★否定対照 — 燃やせるのは C・H・O だけの分子。ハロゲン・N・S・塩・鎖の端 R は断る', async (c) => {
+        c.reset();
+        const W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'combustion');
+        assert(rule, 'combustion が無い');
+        /* ⚠ **「起きる」だけを見ない。** 燃えないのではなく「この画面が描けない生成物
+         *   （NO₂・SO₂・HCl…）が出るので式を書かない」が理由なので、
+         *   ★ **材料（炭素）はあることを必ず添える**（0件が空振りでない証拠）。 */
+        const negatives = [
+            [['クロロメタン'], 'ハロゲン → HCl が出る'],
+            [['ブロモエタン（臭化エチル）'], '同上'],
+            [['アニリン'], '窒素 → NOx が出る'],
+            [['ニトロベンゼン'], '同上'],
+            [['グリシン'], '同上'],
+            [['p-トルエンスルホン酸'], '硫黄 → SO₂ が出る'],
+            [['酢酸ナトリウム'], '塩（分子1個ぶんの式が決まらない）'],
+            [['フェノール'], null]   // ★ これは燃える。下で「1件」を確かめる
+        ];
+        const fired = [];
+        negatives.slice(0, -1).forEach(([names, why]) => {
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length,
+                `否定対照の材料が置けていない: ${names.join('＋')}`);
+            assert(mol.atoms.some(a => a.element === 'C'),
+                `${names.join('＋')} に炭素が無い（材料が無いから0件、になっている）`);
+            const n = rule.detect(mol).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `燃やしてはいけない分子で札が出た: ${fired.join(' / ')}`);
+        // **空振りの緑を避ける**: 同じ数え方が、C・H・O だけの分子ではちゃんと1件拾う
+        assert(rule.detect(trSetup(c, ['フェノール'])).length === 1,
+            '否定対照の数え方が壊れている（フェノールでも0件になる）');
+        /* ★ **重合でできた鎖（両端が R）は燃やさない**（「分子1個ぶん」が決まらないため）。
+         *   ⚠ ここは名前で並べられないので、実際に重合させて作る。 */
+        const g = c.game;
+        const poly = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        const mol = trSetup(c, ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）']);
+        const ps = poly.detect(mol);
+        assert(ps.length === 1, 'エチレン3個で付加重合の箇所が出ない（題材が組めていない）');
+        g.saveState();
+        poly.apply(g, ps[0]);
+        g.updateDrawing();
+        assert(mol.atoms.some(a => a.element === 'R'), '重合の鎖に R が付いていない（題材が組めていない）');
+        assert(rule.detect(mol).length === 0, '両端が R の鎖に燃焼の札が出た（分子1個ぶんの式が決まらない）');
+        c.reset();
+    });
+
+    test('RXF3: 塩素の付加 —— エチレン → 1,2-ジクロロエタン／ベンゼン ＋ 3Cl₂ → C₆H₆Cl₆', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const add = W.REACTION_RULES.find(r => r.id === 'add_cl2');
+        const ring = W.REACTION_RULES.find(r => r.id === 'add_cl2_benzene_ring');
+        assert(add && ring, 'add_cl2 / add_cl2_benzene_ring が REACTION_RULES に無い');
+        // ★ **瓶は増やしていない**（既存の「塩素・光」に付けた）
+        assert(add.reagentId === 'cl2_light' && ring.reagentId === 'cl2_light',
+            '塩素の付加が既存の「塩素・光」の瓶にぶら下がっていない（瓶を増やしていないか）');
+
+        // ---- ① エチレン ＋ Cl₂ → 1,2-ジクロロエタン
+        const mol = trSetup(c, ['エチレン（エテン）']);
+        const s1 = add.detect(mol);
+        assert(s1.length === 1, `エチレンで塩素の付加が ${s1.length} 件（1件を期待）`);
+        g.saveState();
+        add.apply(g, s1[0]);
+        g.updateDrawing();
+        assert(trName(c) === '1,2-ジクロロエタン', `できたのは「${trName(c)}」（1,2-ジクロロエタンを期待）`);
+
+        // ---- ② アセチレン ＋ Cl₂（三重結合にも効く ＝ 臭素と同じ門番を使っている）
+        const ac = trSetup(c, ['アセチレン（エチン）']);
+        assert(add.detect(ac).length === 1, 'アセチレンで塩素の付加が出ない');
+
+        // ---- ③ ベンゼン ＋ 3Cl₂ → ヘキサクロロシクロヘキサン（**光**）
+        const bz = trSetup(c, ['ベンゼン']);
+        const s3 = ring.detect(bz);
+        assert(s3.length === 1, `ベンゼンで環への付加が ${s3.length} 件（1件を期待）`);
+        assert(s3[0].length === 6, `箇所の原子が ${s3[0].length} 個（環の6個を期待）`);
+        g.saveState();
+        const res = ring.apply(g, s3[0]);
+        g.updateDrawing();
+        assert(trName(c) === 'ヘキサクロロシクロヘキサン',
+            `できたのは「${trName(c)}」（ヘキサクロロシクロヘキサンを期待）`);
+        // 環の6本が全部単結合になっている ＝ 芳香族性が消えた
+        const ringSet = new Set(s3[0]);
+        assert(bz.bonds.filter(b => ringSet.has(b.atomId1) && ringSet.has(b.atomId2))
+            .every(b => b.type === 1), '環に二重結合が残っている（付加になっていない）');
+        assert(bz.atoms.filter(a => a.element === 'Cl').length === 6,
+            `塩素が ${bz.atoms.filter(a => a.element === 'Cl').length} 個（6個を期待）`);
+        assert(res.changed.length === 12, `印が ${res.changed.length} 個（環6個＋塩素6個を期待）`);
+        c.reset();
+    });
+
+    test('RXF4: ★否定対照 — 付加と置換は条件で分かれる。ベンゼンに「鎖の付加」は出ず、置換基つきの環に「環の付加」は出ない', async (c) => {
+        c.reset();
+        const W = c.W;
+        const add = W.REACTION_RULES.find(r => r.id === 'add_cl2');
+        const ring = W.REACTION_RULES.find(r => r.id === 'add_cl2_benzene_ring');
+        const sub = W.REACTION_RULES.find(r => r.id === 'aromatic_halogenation');
+        const alk = W.REACTION_RULES.find(r => r.id === 'chlorinate_alkane');
+        assert(add && ring && sub && alk, '比べる4本のうちどれかが無い');
+        /* ⚠ **行き先が条件で分かれる**のがこの一組の要点なので、
+         *   「出ない」だけでなく「**別の札が出る**」ところまで見る。 */
+        [['ベンゼン', add, 0, '芳香環はふつうの C=C ではない'],
+         ['トルエン', ring, 0, '置換基があると塩素6個を置けない'],
+         ['スチレン', ring, 0, '側鎖の C=C が先'],
+         ['フェノール', ring, 0, '炭化水素でない'],
+         ['ナフタレン', ring, 0, '孤立したベンゼン環でない'],
+         ['シクロヘキサン', ring, 0, '環に二重結合が無い'],
+         ['メタン', add, 0, '多重結合が無い'],
+         ['エチレン（エテン）', alk, 0, 'アルカンではない（付加が先）']
+        ].forEach(([name, rule, want, why]) => {
+            const mol = trSetup(c, [name]);
+            assert(c.game.splitMolecules().length === 1, `否定対照の材料が置けていない: ${name}`);
+            const n = rule.detect(mol).length;
+            assert(n === want, `${name} で ${rule.id} が ${n} 件（${want} 件を期待・${why}）`);
+        });
+        // **空振りの緑を避ける**: 同じベンゼンでも、鉄触媒の瓶なら置換が6箇所出る
+        const bz = trSetup(c, ['ベンゼン']);
+        assert(sub.detect(bz).length > 0,
+            'ベンゼンで鉄触媒の置換まで0件（材料が無いから0件、になっている）');
+        assert(ring.detect(bz).length === 1, 'ベンゼンで環への付加が出ない（数え方が壊れている）');
+        /* ★ **条件で行き先が分かれることが、瓶の分かれ方になっている**:
+         *   光（`cl2_light`）＝ 付加／鉄触媒（`cl2_fe`）＝ 置換。同じ瓶に混ぜていない。 */
+        assert(sub.reagentId === 'cl2_fe' && ring.reagentId === 'cl2_light',
+            '付加と置換が同じ瓶にぶら下がっている（条件の違いが画面から消える）');
+        c.reset();
+    });
+
+    test('RXF5: アミド結合の加水分解 —— ジペプチド → アミノ酸2つ。★ 片道だったアミド化に「帰り」ができた', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_amide');
+        assert(rule, 'hydrolysis_amide が REACTION_RULES に無い');
+        assert(rule.reagentId === 'h2so4_dil', 'アミドの加水分解が希硫酸の瓶にぶら下がっていない');
+
+        // ---- ① ジペプチド → グリシン2分子（参考書の「ポリペプチドの加水分解」）
+        const mol = trSetup(c, ['グリシルグリシン（ジペプチド）']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `ジペプチドで箇所が ${sites.length} 件（1件を期待）`);
+        g.saveState();
+        const res = rule.apply(g, sites[0]);
+        g.updateDrawing();
+        const shown = trName(c);
+        assert((shown.match(/グリシン/g) || []).length === 2,
+            `ジペプチドを切って「${shown}」（グリシン2分子を期待）`);
+        assert(g.splitMolecules().length === 2, '分子が2つに分かれていない');
+        // 印は切った両側に付く（CV1 の約束。酸の側だけでは画面でアミンが光らない）
+        const parts = g.splitMolecules();
+        parts.forEach((p, i) => assert(res.changed.some(id => p.atoms.some(a => a.id === id)),
+            `${i + 1} 個目の生成物に印が1つも付いていない`));
+
+        // ---- ② アセトアニリド → アニリン ＋ 酢酸（★ 同じ札が芳香族アミドにも効く）
+        const an = trSetup(c, ['アセトアニリド']);
+        assert(rule.detect(an).length === 1, 'アセトアニリドで箇所が出ない');
+        g.saveState();
+        rule.apply(g, rule.detect(an)[0]);
+        g.updateDrawing();
+        const s2 = trName(c);
+        assert(s2.includes('アニリン') && s2.includes('酢酸'),
+            `アセトアニリドを切って「${s2}」（アニリン＋酢酸を期待）`);
+
+        // ---- ③ ★ 環状アミド（ラクタム）は**分子が増えず環が開く**
+        const lac = trSetup(c, ['ε-カプロラクタム']);
+        assert(rule.detect(lac).length === 1, 'ε-カプロラクタムで箇所が出ない');
+        g.saveState();
+        const r3 = rule.apply(g, rule.detect(lac)[0]);
+        g.updateDrawing();
+        assert(g.splitMolecules().length === 1,
+            `ラクタムを開いて ${g.splitMolecules().length} 分子（1分子のまま を期待）`);
+        assert(r3.caption.includes('ラクタム'), 'ラクタムのときに環が開いたことを言っていない');
+
+        // ---- ④ 行きと帰りが閉じた（アミド化 → 加水分解 でグリシン2分子に戻る）
+        const amid = W.REACTION_RULES.find(r => r.id === 'amidation');
+        const two = trSetup(c, ['グリシン', 'グリシン']);
+        const as_ = amid.detect(two);
+        assert(as_.length > 0, 'グリシン2分子でアミド化の箇所が出ない');
+        g.saveState();
+        amid.apply(g, as_[0]);
+        g.updateDrawing();
+        const back = rule.detect(two);
+        assert(back.length === 1, `できたペプチドで加水分解の箇所が ${back.length} 件（1件を期待）`);
+        c.reset();
+    });
+
+    test('RXF6: ★否定対照 — 切るのはアミド結合だけ。エステル・アミン・尿素では起きない', async (c) => {
+        c.reset();
+        const W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_amide');
+        assert(rule, 'hydrolysis_amide が無い');
+        const negatives = [
+            [['酢酸エチル'], 'エステルは `hydrolysis_ester` の担当'],
+            [['アニリン'], 'アミド結合が無い（ただのアミン）'],
+            [['酢酸'], '同上'],
+            [['無水酢酸'], '酸無水物は `hydrolysis_anhydride` の担当'],
+            [['グリシン'], '-NH₂ と -COOH はあるが、結んでいない'],
+            [['アセトン'], 'カルボニルはあるが N が無い'],
+            /* ★★ **尿素だけは「アミド結合はあるのに落とす」**（v1541 の実測で入っていた）。
+             *   ⚠ 切ると**カルバミン酸 H₂N-COOH** ができるが、これは単離できず
+             *     ただちに CO₂ ＋ NH₃ に分かれる ＝ 画面に描くと嘘の図になる。 */
+            [['尿素'], '⚠ できるカルバミン酸は単離できない（尿素樹脂の材料として登録済みなので必ず踏む）']
+        ];
+        const fired = [];
+        negatives.forEach(([names, why]) => {
+            const mol = trSetup(c, names);
+            assert(c.game.splitMolecules().length === names.length,
+                `否定対照の材料が置けていない: ${names.join('＋')}`);
+            const n = rule.detect(mol).length;
+            if (n) fired.push(`${names.join('＋')} で ${n} 件（${why}）`);
+        });
+        assert(fired.length === 0, `切ってはいけない相手で切れた: ${fired.join(' / ')}`);
+        // **空振りの緑を避ける**: 同じ数え方がアセトアニリドでは1件拾う
+        assert(rule.detect(trSetup(c, ['アセトアニリド'])).length === 1,
+            '否定対照の数え方が壊れている（アセトアニリドでも0件になる）');
+        /* ★ **材料が無いから0件、ではない**: 尿素にはアミド結合が2つ実在する
+         *   （門番が落としているのであって、アミド結合の数え方が壊れているのではない）。 */
+        const urea = trSetup(c, ['尿素']);
+        assert(W.findFunctionalGroups(urea).filter(g => g.type === 'amide').length === 2,
+            '尿素のアミド結合が2つない（材料が無いだけ、になっている）');
         c.reset();
     });
 
