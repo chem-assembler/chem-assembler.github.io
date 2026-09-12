@@ -49426,8 +49426,17 @@
            **合計で見るので 0件のページ1枚は他のページの多さに隠れる** ＝ もともと空振りしていた。
            ★ `codes` が任意になった（設計書 §26）いま、見るべきは「**持たないページが増えていないか**」。
              横断のページは1枚だけで、増えるときは設計の判断が要る ＝ 名指しで固定する。 */
+        /* ★ 持たなくてよい2枚（どちらも**単元をまたぐ横断のページ**・§26）:
+             functional-groups … 「−OH はアルコール、−CHO はアルデヒド」と**行き先を指す**ページ。
+                                  −OH の性質そのものはアルコールのページが持つ。
+             numeral-prefix    … 数を表す接頭辞（ジ・トリ・テトラ…）だけを引き受けるページ（v1539）。
+                                  ⚠ 引きに来る先が命名・ジカルボン酸・二糖・トリグリセリド・
+                                    テトラペプチドと**5単元にまたがる**ので、どの単元にも属せない。
+                                  ⓵ qa 側にも接頭辞そのものの知識項目は無い（近いのは
+                                    org.ali.name-mainchain / name-substituent-order だが、
+                                    どちらも命名のページが先に挙げている ＝ 同じコードは2ページに置けない）。 */
         const noCodes = pages.filter(p => !(p.codes || []).length).map(p => p.id);
-        assert(noCodes.join(',') === 'functional-groups',
+        assert(noCodes.join(',') === 'functional-groups,numeral-prefix',
             `知識項目を持たないページが「${noCodes.join('・') || '（無し）'}」`
             + '（持たなくてよいのは単元をまたぐ横断のページだけ・§26。増やすなら設計書に理由を残すこと）');
         assert(nCodes >= pages.length - noCodes.length, 'codes が1件も無いページがある');
@@ -50693,6 +50702,146 @@
         assert(css.indexOf('.ref-adv::details-content') >= 0,
             'assembler/style.css に印刷で発展を開く規則が無い');
         assert(true, `折りたたみ ${folds} 個・中に ${inside} ブロック（面Aにも ${baked.length} 個）`);
+    });
+
+    /* ===== REF26: よくある誤解（`:::mistake`・設計書 §28・v1539） =====
+     *
+     * ★ 発端はユーザーの注文（`REFBOOK_STYLE.md`・2026-09-12）:
+     *   「common mistakes のようなコーナーがあってもよいかもしれません／
+     *     あとで抽出して一覧にすると価値があると思います」
+     *
+     * ★ ここが見るのは5つ:
+     *   ① ⚠⚠ **誤りの行を、本文と同じ字で出さない** —— この囲みを作った理由そのもの。
+     *     同じ字で2行並べると、**どちらが正しいかを読まないと分からない。**
+     *     ★ 印は3つ重ねる（✗ の字・弱めた色・取り消し線）＝ **色を見分けられない人にも残る。**
+     *   ② ⚠⚠ **発展と混ざらない** —— 発展＝範囲の外／誤解＝範囲の内で間違えやすい。
+     *     ★ だから **畳まない**（`<details>` にしない）し、本文に「発展」と書いたら書式が赤くする。
+     *   ③ **欄が2つあることが本体** —— `wrong` を書かずに済ませられない（＝ 誤解を言葉にさせる）。
+     *     ⚠ `wrong` と `right` が同じ文なら赤（囲みが何も言っていない）。
+     *   ④ ★★ **出どころ（どのページのどこか）が取れる** —— 原稿には書かせず、
+     *     **直前の見出し**（`:::section` か `## …`）から引く。⚠ 見出しの外に置いたら
+     *     `gen-reference.mjs` が赤にする。ここでは**実データで実際に引けること**を見る。
+     *   ⑤ **実データで使われていて、面Aにも焼けている**（器を足しただけで終わっていない）。
+     */
+    test('REF26: よくある誤解は誤りを本文と同じ字で出さず、発展と混ざらず、出どころが取れる', async (c) => {
+        const W = c.W, D = W.document;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`);
+            return await res.text();
+        };
+        const flat = (s) => String(s).replace(/\s+/g, ' ').trim();
+
+        /* ── 決めごとが2つに割れていない（札の語は learn.js が持つ・`REF19` ⑥ と同じ構図）── */
+        assert(RM.KINDS.indexOf('mistake') >= 0, '書式（tools/reference-md.js）が :::mistake を知らない');
+        assert(typeof W.REF_MISTAKE_TAG === 'string' && W.REF_MISTAKE_TAG.length >= 2,
+            'よくある誤解の札の言葉が learn.js に無い（記号だけにしない約束）');
+        assert(W.REF_MISTAKE_WRONG && W.REF_MISTAKE_RIGHT && W.REF_MISTAKE_WRONG !== W.REF_MISTAKE_RIGHT,
+            '誤り／正しい形の印が同じ字になっている（色だけで分けると、色を見分けられない人に届かない）');
+
+        const FM = [
+            '---', 'id: t', 'unit: alcohol', 'unitLabel: アルコールとカルボニル化合物', 'group: 見本',
+            'title: 見本', 'summary: よくある誤解の囲みを確かめるためだけの見本のページです。中身に意味はありません。',
+            'codes:', '  - org.alcohol.oxidation', 'source:', '  - slides:見本', 'singleSource: true',
+            'why: よくある誤解の書式を機械で見るための見本で、画面には出さない。', '---', ''
+        ].join('\n');
+        const parse = (body) => RM.parsePage(FM + body, '(REF26)').blocks;
+        const red = (body, why) => {
+            let threw = false;
+            try { parse(body); } catch (e) { threw = true; }
+            assert(threw, why);
+        };
+        const box = (wrong, right, why) => [':::mistake', 'wrong: ' + wrong, 'right: ' + right]
+            .concat(why ? ['why: ' + why] : []).concat([':::', '']).join('\n');
+
+        /* ── ③ 欄が2つあることが本体 ── */
+        red(':::mistake\nright: 第2級アルコールの酸化はケトンで止まります。\n:::\n',
+            'wrong（よくある誤り）を書かなくても通ってしまう（誤解を言葉にさせるための器なのに）');
+        red(box('第2級アルコールの酸化はケトンで止まります', '第2級アルコールの酸化はケトンで止まります'),
+            'wrong と right が同じ文でも通ってしまう（囲みが何も言っていない）');
+        red(box('短い', '第2級アルコールの酸化はケトンで止まります'),
+            'wrong が短い語だけでも通ってしまう');
+        /* ── ② 発展と混ざらない（書式の側で止める）── */
+        red(box('これは発展の内容なので覚えなくてよい', '第2級アルコールの酸化はケトンで止まります'),
+            '誤解の中に「発展」と書いても通ってしまう（範囲の外／範囲の内で役が違う）');
+
+        /* ── ① 誤りの行が本文と同じ字で出ていない ── */
+        const b = parse(box('第2級アルコールも、酸化を続ければカルボン酸になる',
+            '第2級アルコールの酸化は**ケトンで止まります**。',
+            '⚠ 先へ進むには C=O の炭素に水素が残っていることが要ります。'))[0];
+        assert(b.kind === 'mistake', ':::mistake が読まれていない');
+        const el = book.renderBlock(b);
+        assert(el, 'learn.js が :::mistake を描けない');
+        /* ── ② 畳まない（発展の折りたたみと取り違えない）── */
+        assert(el.tagName !== 'DETAILS' && !el.querySelector('details'),
+            'よくある誤解が折りたたみになっている（発展は畳むが、誤解はいちばん読ませたい人が開かない）');
+
+        const probe = D.createElement('div');
+        probe.style.position = 'absolute';
+        probe.style.left = '-9999px';
+        const bodyP = D.createElement('p');
+        bodyP.className = 'ref-p';
+        bodyP.textContent = '本文の字';
+        probe.appendChild(bodyP);
+        probe.appendChild(el);
+        D.body.appendChild(probe);
+        try {
+            const wrong = el.querySelector('.ref-mistake-wrong');
+            const right = el.querySelector('.ref-mistake-right');
+            assert(wrong && right, '誤りの行と正しい行がそろっていない');
+            assert(flat(wrong.textContent).indexOf(W.REF_MISTAKE_WRONG) === 0,
+                `誤りの行に「${W.REF_MISTAKE_WRONG}」の印が付いていない → ${flat(wrong.textContent).slice(0, 30)}`);
+            assert(flat(right.textContent).indexOf(W.REF_MISTAKE_RIGHT) === 0,
+                `正しい行に「${W.REF_MISTAKE_RIGHT}」の印が付いていない`);
+            const cBody = W.getComputedStyle(bodyP).color;
+            const cWrong = W.getComputedStyle(wrong).color;
+            const cRight = W.getComputedStyle(right).color;
+            assert(cWrong !== cBody,
+                `誤りの行が本文とまったく同じ字で出ている（${cWrong}）＝ どちらが正しいか読まないと分からない`);
+            assert(cRight === cBody,
+                `正しい行が本文と違う字で出ている（本文 ${cBody} / 正しい行 ${cRight}）＝ 正しいほうを弱めない`);
+            const deco = W.getComputedStyle(wrong.querySelector('.ref-mistake-body')).textDecorationLine;
+            assert(/line-through/.test(deco),
+                `誤りの文に取り消し線が効いていない（${deco}）＝ 色だけが手がかりになっている`);
+            /* ★ 強調（`**`）が生きている ＝ 行を丸ごと太字にしていない */
+            assert(right.querySelector('b'), '正しい行の強調（**）が消えている（行ごと太字にすると急所が読めない）');
+        } finally {
+            probe.remove();
+        }
+
+        /* ── ④⑤ 実データ: 使われていて、出どころが直前の見出しから引ける ── */
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        const found = [];
+        pages.forEach(pg => {
+            let at = null;
+            (pg.blocks || []).forEach(blk => {
+                if (blk.kind === 'section') { at = pg.id + '#' + blk.anchor; return; }
+                if (blk.kind === 'heading') { at = pg.id + '「' + blk.title + '」'; return; }
+                if (blk.kind !== 'mistake') return;
+                assert(at, `${pg.id}: よくある誤解が、どの見出しよりも前に置かれている（出どころが書けない）`);
+                found.push({ page: pg.id, at, wrong: blk.wrong });
+            });
+        });
+        assert(found.length >= 1, 'よくある誤解が実データで1件も使われていない（器を足しただけになっている）');
+
+        /* ⑤ 面Aにも焼けている（焼き直し忘れを捕まえる）*/
+        const id = found[0].page;
+        const doc = new DOMParser().parseFromString(
+            await grab(`../reference/${id}/index.html`, `参考書のページ ${id}`), 'text/html');
+        const want = pages.find(x => x.id === id).blocks.filter(x => x.kind === 'mistake').length;
+        assert(doc.querySelectorAll('.ref-mistake').length === want,
+            `/reference/${id}/: 焼いたページのよくある誤解が ${doc.querySelectorAll('.ref-mistake').length} 個（原稿は ${want} 件・焼き直し忘れ？）`);
+        assert((doc.body.textContent || '').indexOf(W.REF_MISTAKE_WRONG) >= 0
+            && (doc.body.textContent || '').indexOf(W.REF_MISTAKE_RIGHT) >= 0,
+            `/reference/${id}/: 焼いた本文から ✗ / ✓ の字が消えている（色だけの手がかりになっている）`);
+        /* ⚠ 明るい地への読み替えが焼かれていること（暗い地の敷き rgba(0,0,0,.22) は明るい地で灰色の面になる） */
+        assert(/\.ref-mistake\{[^}]*background:#/.test(doc.documentElement.outerHTML),
+            `/reference/${id}/: よくある誤解の明るい地への読み替えが焼かれていない`);
+        assert(true, `よくある誤解 ${found.length} 件（${found.map(m => m.at).join('・')}）`);
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
