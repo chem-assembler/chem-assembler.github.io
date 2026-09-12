@@ -1,4 +1,4 @@
-/* 色でみる無機化学 — 入口（3つの遊び方の一覧）
+/* 色でみる無機化学 — 入口（4つの遊び方の一覧）
  *
  * ⚠ style.css（イオンスネーク）は使えない。あちらは body に
  *   `height:100vh; overflow:hidden; display:flex; align-items:center` を敷いた
@@ -115,11 +115,13 @@ a.mode .tag {
     margin-top: 8px;
 }
 
-/* 色ごとに帯を変える（3つが並んだときに見分けられるように） */
+/* 色ごとに帯を変える（並んだときに見分けられるように） */
 a.mode.snake { border-left-color: #f1c40f; }
 a.mode.snake .step { background: #f1c40f; }
 a.mode.sep   { border-left-color: #16a085; }
 a.mode.sep   .step { background: #16a085; color: #04211c; }
+a.mode.aki   { border-left-color: #a569bd; }
+a.mode.aki   .step { background: #a569bd; color: #1b0b26; }
 a.mode.tree  { border-left-color: #5dade2; }
 a.mode.tree  .step { background: #5dade2; color: #06203a; }
 

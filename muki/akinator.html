@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。除外の作法は index.html と同じ（そちらに理由を書いた） -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noai, noimageai">
+    <title>かくれた物質をつきとめる｜色でみる無機化学 — SchoolLenz</title>
+    <meta name="description" content="沈殿と金属イオン 30 種類の中から1つをかくします。色・ふくむ元素・式量・試薬との反応を、はい／いいえで訊いて言い当てる絞り込みモードです。">
+    <link rel="canonical" href="https://chem.schoollenz.com/muki/akinator.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SchoolLenz">
+    <meta property="og:title" content="かくれた物質をつきとめる｜色でみる無機化学">
+    <meta property="og:description" content="沈殿と金属イオン 30 種類から1つをかくしました。色・元素・式量・試薬との反応を はい／いいえ で訊いて、つきとめてください。">
+    <meta property="og:url" content="https://chem.schoollenz.com/muki/akinator.html">
+    <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="akinator.css?v=33">
+</head>
+<body>
+<div id="aki-app">
+    <div class="topbar">
+        <a class="hubLink" href="../index.html">🏠 化学レンズ</a>
+        <a class="hubLink" href="index.html">◀ 色でみる無機化学</a>
+        <a class="hubLink" id="link-snake" href="snake.html">🐍 イオンスネーク</a>
+        <a class="hubLink" id="link-sep" href="separation.html">🧪 イオンをつきとめる</a>
+        <a class="hubLink" id="link-tree" href="tree.html">🌳 すべてのイオンを分ける</a>
+        <span class="version">v33</span>
+    </div>
+
+    <h1>かくれた物質をつきとめる</h1>
+    <!-- ⚠ 導入に書いてよいのは、**画面から読み取れないこと**だけ:
+         ① 下の候補のうち1つがかくれていること
+         ② 答えは「はい」か「いいえ」しか返らないこと
+         ⛔ 解き筋（どの質問から訊くか）を書かない -->
+    <p class="lead">
+        下の候補のうち <strong>1つ</strong>をかくしました。質問には「はい」「いいえ」で答えます。
+    </p>
+
+    <section class="panel" id="panel-cands">
+        <h2>候補 <span class="count" id="cand-count"></span> <span class="deck" id="deck-name"></span></h2>
+        <p class="note">消えたと思ったものは、押して伏せておけます。</p>
+        <div id="cand-list" class="chips"></div>
+        <button id="btn-new" class="secondary">べつの物質をかくす</button>
+    </section>
+
+    <section class="panel" id="panel-cards">
+        <h2>質問する <span class="count" id="card-count"></span></h2>
+        <div class="finder">
+            <div id="tags" class="tags"></div>
+            <input id="q" type="search" placeholder="さがす（例: 黄、Cu、炎色）" autocomplete="off">
+        </div>
+        <p class="note hidden" id="card-empty">その言葉にあてはまる質問はありません。</p>
+        <div id="card-rows" class="rows"></div>
+    </section>
+
+    <section class="panel" id="panel-log">
+        <h2>きいたこと <span id="log-count" class="count"></span></h2>
+        <p class="note" id="log-empty">まだ何も訊いていません。上の質問を押すと、答えがここに並びます。</p>
+        <ol id="log" class="log"></ol>
+    </section>
+
+    <section class="panel" id="panel-answer">
+        <button id="btn-answer" class="primary">答える</button>
+        <div id="answer-choices" class="answer hidden"></div>
+        <div id="result" class="result hidden"></div>
+        <div id="after" class="after hidden">
+            <button id="btn-again" class="secondary">つぎの物質へ</button>
+        </div>
+    </section>
+
+    <p class="foot">
+        <a href="../privacy.html">プライバシーポリシー</a>
+    </p>
+</div>
+
+<script src="akinator-model.js?v=33"></script>
+<!-- ★★ デッキ。⚠ **模型のあとに読むこと**（読み込んだ順に AKI_DECKS へ登録される）。
+     ★ デッキを足すときは、このファイルと同じ形の js を1枚足して、ここに1行足すだけ
+       —— 模型も画面も触らない（`akinator.html?deck=<id>` で開く）。 -->
+<script src="akinator-deck-muki1.js?v=33"></script>
+<script src="akinator.js?v=33"></script>
+</body>
+</html>

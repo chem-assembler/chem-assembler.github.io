@@ -157,6 +157,9 @@ const PAGES = [
     ['muki', '/muki/'],
     ['muki', '/muki/snake.html'],
     ['muki', '/muki/separation.html'],
+    // ⚠ 2026-09-12: 4つめの面（かくれた物質をつきとめる）。★ 候補 30 と札 69 が並ぶので、
+    //   ここが抜けると「スマホで横に溢れていないか」をいちばん測るべきページが測られない
+    ['muki', '/muki/akinator.html'],
     ['muki', '/muki/tree.html'],
     ['qa', '/qa/'],
     ['assembler', '/assembler/'],

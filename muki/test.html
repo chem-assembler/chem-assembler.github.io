@@ -24,7 +24,7 @@ iframe { width: 960px; max-width: 100%; height: 900px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>イオンスネーク（色でみる無機化学）回帰テスト <span class="version">v31</span></h1>
+<h1>イオンスネーク（色でみる無機化学）回帰テスト <span class="version">v33</span></h1>
 <h2 id="total">実行中…</h2>
 <p class="note">
   <strong>リポジトリのルートからローカルサーバーで開くこと</strong>（例:
@@ -40,12 +40,17 @@ iframe { width: 960px; max-width: 100%; height: 900px; border: 1px solid #ccc; b
 <!-- ⚠⚠ 2026-09-02: スネークは index.html から snake.html へ移った（入口の整理）。
      ★ ここの `?v=` は **verify-release.js の死角ではない**（.html なので見ている）が、
        tests.js の中にも `?v=` を埋めた iframe があり、そちらは死角。両方そろえること -->
-<iframe id="app" src="snake.html?v=31"></iframe>
-<script src="chemistry.js?v=31"></script>
+<iframe id="app" src="snake.html?v=33"></iframe>
+<script src="chemistry.js?v=33"></script>
 <!-- 系統分離モード（型B）の模型。⚠ DOM 非依存なので、このページで直に読んで検査できる -->
-<script src="separation-model.js?v=31"></script>
+<script src="separation-model.js?v=33"></script>
 <!-- 系統分離モード（型A）の模型。⚠ separation-model.js の後に読むこと（イオンと色を借りている） -->
-<script src="tree-model.js?v=31"></script>
-<script src="tests.js?v=31"></script>
+<script src="tree-model.js?v=33"></script>
+<!-- アキネーター（かくれた物質をつきとめる）の模型とデッキ。
+     ⚠ 模型 → デッキの順に読むこと（デッキは読み込まれた順に AKI_DECKS へ登録される）。
+     ★ どちらも DOM 非依存なので、このページで直に読んで検査できる -->
+<script src="akinator-model.js?v=33"></script>
+<script src="akinator-deck-muki1.js?v=33"></script>
+<script src="tests.js?v=33"></script>
 </body>
 </html>
