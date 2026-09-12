@@ -26352,8 +26352,12 @@
          *   ⚠ **アセタール化（ビニロン）には付けていない** —— あちらの箇所は PVA と
          *   ホルムアルデヒドに**またがる**ので、どちらを見ていても `focus` に必ず当たる
          *   （加硫と同じ理由）。★ ここに増えてよいのは「単量体を横に並べる」形の重合だけ。 */
+        /* ★ **共重合は v1541**（ユーザー決定「選択した分子、反応のために召喚した分子は
+         *   すべてつながるようにすべき」）。⚠ こちらも「単量体を横に並べる」形の重合なので、
+         *   いま見ている分子で絞ると**2本目の鎖が作れなくなる** ＝ 既存の4本と同じ理由。 */
         assert(flagged.join(',') === 'addition_polymerization,alkyne_polymerization,' +
-               'condensation_polymerization,diene_polymerization,ring_opening_polymerization',
+               'condensation_polymerization,copolymerization,diene_polymerization,' +
+               'ring_opening_polymerization',
             `wholeCanvas を持つルールが増えている（${flagged.join(',')}）`);
 
         // ---- ② v1429 の直しは生きている（見ている分子と無関係な反応は出ない） ----
@@ -35319,8 +35323,18 @@
              *   `nano2_hcl` の瓶の注記（塩酸に相乗りさせると「塩酸でジアゾ化できる」と
              *   画面が言うことになる ＝ `amine_hcl` と行き先が正反対）。 */
             'diazotization',
+            /* ★★ v1541（参考書の式を起こすレーン）: 4本足して 45 → 49。
+             *   ⚠ **瓶が増えたのは燃焼の1本だけ**（26 → 27本）。
+             *   ・`combustion` … 燃焼のルールが1本も無かった。`o2_pdcl2` はワッカー法の
+             *     触媒つきの瓶なので名前が嘘になる ＝ 規約1の③で1本足した
+             *   ・`add_cl2` / `add_cl2_benzene_ring` … **瓶は増やさず** `cl2_light`（塩素・光）に
+             *     相乗り。鉄触媒（`cl2_fe`）の置換とは分けたまま ＝ 条件で付加と置換に
+             *     分かれることが棚で読める
+             *   ・`hydrolysis_amide` … **瓶は増やさず** 希硫酸（`h2so4_dil`）に相乗り
+             *     （エステル・酸無水物・グリコシド結合と同じ「水が入って切れる」側） */
+            'combustion', 'add_cl2', 'add_cl2_benzene_ring', 'hydrolysis_amide',
             'saponification', 'vulcanization'].sort();
-        assert(linked.length === 45, `瓶に紐づくルールが ${linked.length} 件（45件を期待）`);
+        assert(linked.length === 49, `瓶に紐づくルールが ${linked.length} 件（49件を期待）`);
         assert(linked.join(',') === expected.join(','),
             `瓶に紐づくルールが設計と違う\n  いま: ${linked.join(', ')}\n  設計: ${expected.join(', ')}`);
         // (6) condition を持つのは「条件でしか割れない」4件だけ（§2.4・§12-2）。
@@ -35335,11 +35349,12 @@
         //     v1511 でアルカンの光塩素化の瓶（Cl₂・光）を足して 23 → 24
         //     ★ v1514 で二酸化炭素の瓶（CO₂）を足して 24 → 25
         //     ★ ジアゾ化の瓶（NaNO₂＋HCl）を足して 25 → 26（DESIGN_ion_layer.md I-4）
+        //     ★ v1541 で燃焼の瓶（酸素（点火））を足して 26 → 27
         const drawn = [...c.D.querySelectorAll('#exp-reagents-grid .rg-bottle')];
-        assert(drawn.length === 26, `瓶の札が ${drawn.length} 個（26個を期待）`);
-        assert(REAGENTS.filter(r => r.kind === 'transform').length === 21 &&
+        assert(drawn.length === 27, `瓶の札が ${drawn.length} 個（27個を期待）`);
+        assert(REAGENTS.filter(r => r.kind === 'transform').length === 22 &&
             REAGENTS.filter(r => r.kind === 'detect').length === 5,
-            '瓶の区分の内訳が「変えるもの21本・調べるもの5本」でない');
+            '瓶の区分の内訳が「変えるもの22本・調べるもの5本」でない');
         ids.forEach(id => assert(bottle(c, id), `瓶 ${id} の札が描かれていない`));
         // (8) kind は2値だけ。区分の見出しが kind ごとに1つ出ている（§3.2 の「変えるもの／調べるもの」）
         REAGENTS.forEach(r => assert(['transform', 'detect'].includes(r.kind),
@@ -36055,6 +36070,12 @@
              *   **画面で作れる**（フェノール ＋ NaOH）ので、キャンバスに呼び出す形にした
              *   （`alkylate_arene_propene`・`acetalization_pva` と同じ）。 */
             'diazo_coupling',
+            /* ★★ v1541（参考書の式を起こすレーン）で `copolymerization`（共重合）を
+             *   足して 18 件。⚠ **これも意図して瓶を持たせていない** —— 既存の重合4本と
+             *   同じで、「並べた単量体をまとめる」という操作でしかないため（§3.1 の「入れないもの」）。
+             *   ★ ユーザー決定「選択した分子、反応のために召喚した分子はすべてつながるように
+             *   すべき」に対する札で、入口は単量体をキャンバスに並べることそのもの。 */
+            'copolymerization',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
         assert(now.length === expected.length,
@@ -36289,7 +36310,7 @@
         c.reset();
     });
 
-    test('MM9: 320px でモーダルも実験パレットも横にあふれず、32px 未満のタップ標的が0件（瓶26本）', async (c) => {
+    test('MM9: 320px でモーダルも実験パレットも横にあふれず、32px 未満のタップ標的が0件（瓶27本）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         /* ⚠ **v1522 で測る面が2つに分かれた** —— 瓶が分子モーダルから実験パレットへ移ったので
          *   （D-E2 の決着）、「瓶を並べたモーダル」という測り方はもう存在しない。
@@ -36328,7 +36349,7 @@
             await c.tick(150);
             const grid = D.getElementById('exp-reagents-grid');
             const bottles = [...grid.querySelectorAll('.rg-bottle')];
-            assert(bottles.length === 26, `320px で瓶が ${bottles.length} 本しか描かれていない`);
+            assert(bottles.length === 27, `320px で瓶が ${bottles.length} 本しか描かれていない`);
             /* ⚠ **格子そのものは横スクロールしてよい**（style.css の「実験モードの帯」）——
              *   縦画面では `#exp-reagents-grid` を **2段の横スクロール**にするのが設計
              *   （`DESIGN_experiment_mode.md` §5-3。26本を1列に並べると 2,070px になるため）。
@@ -39397,7 +39418,7 @@
 
     /* ★ RC8: ワッカー法（§10.11-D #27・§10.3-f C-3・v1472。ユーザーが「足す」と決めていた）。
      * ★ 教科書 本文 p.150 に式がある。⚠ **図は素直 —— 炭素2個のまま、分子が消えない**。 */
-    test('RC8: エチレンがワッカー法でアセトアルデヒドになる（登録エントリと一致・否定対照つき）', async (c) => {
+    test('RC8: ワッカー法（エチレン → アセトアルデヒド／プロペン → アセトン。登録エントリと一致・否定対照つき）', async (c) => {
         const D = c.D, W = c.W, g = c.game;
         const CC = W.canonicalCode;
         const wac = W.REACTION_RULES.find(r => r.id === 'wacker_oxidation');
@@ -39418,18 +39439,23 @@
         };
         const codeOf = (names) => { setup(names); return CC(g.userMolecule); };
 
-        // ---- (1) 候補の数。⚠ **エチレンだけ**（教科書・入試が扱うのはこの場合だけ） ----
+        /* ---- (1) 候補の数。⚠⚠ **v1541 でプロペンまで広げた** ----
+         *   もとは `ethyleneUnits`（エチレン専用）で、参考書が書いている
+         *   2CH₂=CH-CH₃ ＋ O₂ → 2CH₃COCH₃ が実測で0件だった。
+         *   ★ 広げたのは**炭素3個まで**。教科書・参考書が式を書いているのはこの2つだけで、
+         *     それ以上に広げると画面が「教科書に載っていないこと」を言い出す。 */
         assert(wac.detect(setup(['エチレン（エテン）'])).length === 1, 'エチレンでワッカー法が出ない');
+        assert(wac.detect(setup(['プロペン（プロピレン）'])).length === 1, 'プロペンでワッカー法が出ない');
         assert(wac.detect(setup(['エチレン（エテン）', 'エチレン（エテン）'])).length === 2,
             'エチレン2つで2件にならない（成分ごとに数えていない）');
-        // **否定対照**: ほかのアルケン（末端でも）／アルキン／飽和／すでにカルボニル／
-        //   **炭素2個でも C=C でない**（エタン・アセチレン）
-        ['プロペン（プロピレン）', '1-ブテン', '2-ブテン', 'シクロヘキセン',
+        // **否定対照**: 炭素4個以上のアルケン／アルキン／飽和／すでにカルボニル／
+        //   **炭素2個でも C=C でない**（エタン）
+        ['1-ブテン', '2-ブテン', 'シクロヘキセン',
          'アセチレン（エチン）', 'エタン', 'アセトアルデヒド', 'ベンゼン',
          'エタノール'].forEach(n => {
             assert(g.resolveCompound(n), `${n} がライブラリに無い`);
             assert(wac.detect(setup([n])).length === 0,
-                `${n}: エチレン専用のはずのワッカー法が候補に出ている（${wac.detect(setup([n])).length} 件）`);
+                `${n}: 教科書が書いていない相手にワッカー法が出ている（${wac.detect(setup([n])).length} 件）`);
         });
 
         // ---- (2) 生成物が**登録エントリと同じ正準コード**になる ----
@@ -39447,7 +39473,21 @@
             // ⚠ 教科書に「ワッカー法」の名前は無いので、そう断る（§4-1）
             assert(/呼び名は参考書/.test(cap),
                 `教科書に名前が無いことを断っていない: ${cap.slice(-90)}`);
-            assert(/炭素は2個のまま/.test(cap), '「炭素が減らない」ことを言っていない');
+            assert(/炭素の数は変わらず/.test(cap), '「炭素が減らない」ことを言っていない');
+            assert(/マルコフニコフ/.test(cap), '行き先がアルデヒドとケトンに分かれる理由を言っていない');
+        }
+
+        /* ---- (2b) ★ プロペン → **アセトン**（登録エントリと同じ正準コード）。
+         *   同じ反応なのに行き先が変わるのは、酸素が**置換基の多いほうの炭素**につくため。 */
+        {
+            const mol = setup(['プロペン（プロピレン）']);
+            wac.apply(g, wac.detect(mol)[0]);
+            g.updateDrawing();
+            assert(CC(mol) === codeOf(['アセトン']),
+                `プロペン → アセトンにならない
+  実際: ${CC(mol)}
+  登録: ${codeOf(['アセトン'])}`);
+            assert(mol.atoms.filter(a => a.element === 'C').length === 3, '炭素が3個のまま残っていない');
         }
 
         // ---- (3) 瓶からも同じところへ着く ----
@@ -39460,13 +39500,13 @@
         }
         assert(CC(g.userMolecule) === codeOf(['アセトアルデヒド']),
             `瓶からエチレンを押してもアセトアルデヒドにならない: ${CC(g.userMolecule)}`);
-        // **否定対照**: プロペンでは空振りし、理由が返る
-        setupReagent(c, ['プロペン（プロピレン）']);
+        // **否定対照**: 1-ブテン（炭素4個）では空振りし、理由が返る
+        setupReagent(c, ['1-ブテン']);
         const before = CC(g.userMolecule);
         bottle(c, 'o2_pdcl2').click();
-        assert(CC(g.userMolecule) === before, 'プロペンにワッカー法が効いてしまっている');
+        assert(CC(g.userMolecule) === before, '1-ブテンにワッカー法が効いてしまっている');
         assert(D.getElementById('exp-reagent-note').textContent.includes('エチレン'),
-            'プロペン × ワッカー法の空振りで理由が返らない');
+            '1-ブテン × ワッカー法の空振りで理由が返らない');
         c.reset();
     });
 
@@ -52046,18 +52086,31 @@
                 `${i + 1} 段目（${done ? '全置換ずみ' : 'まだ水素あり'}）の caption の言い分けが逆: ${cap.slice(0, 200)}`);
         }
 
-        /* ④ ★否定対照 —— 鉄触媒の瓶とは行き先が違う。
-         *   ベンゼンに「塩素・光」は効かず、アルカンに「塩素・鉄触媒」も効かない。 */
+        /* ④ ★否定対照 —— 鉄触媒の瓶とは**行き先が違う**。
+         * ⚠⚠ **v1541 で「ベンゼンに塩素・光は効かない」ではなくなった。**
+         *   参考書どおり **3Cl₂ が付加してヘキサクロロシクロヘキサン C₆H₆Cl₆** になる
+         *   （`add_cl2_benzene_ring`）。★ 見どころは「効く／効かない」ではなく、
+         *   **同じ Cl₂ が条件（光／鉄触媒）で付加と置換に分かれる**ことのほう。
+         *   ⚠ だから2本の瓶を分けたまま置いている（RXF3・RXF4 も同じところを見ている）。 */
         setupReagent(c, ['ベンゼン']);
         bottle(c, 'cl2_light').click();
-        assert(noteEl.textContent.includes('鉄'),
-            `ベンゼンに「塩素・光」を掛けたのに、鉄触媒の瓶へ案内していない: ${noteEl.textContent.slice(0, 140)}`);
-        assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'),
-            '⚠ ベンゼンが「塩素・光」で塩素化された（環の置換に光は使わない）');
+        if (W.reactor.picking) {
+            const site = W.reactor.picking.sites[0];
+            const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
+            c.clickAt(atom.x, atom.y);
+        }
+        assert(AC_NAME(c) === 'ヘキサクロロシクロヘキサン',
+            `ベンゼン＋Cl₂/光 が ${AC_NAME(c)} になった（付加してヘキサクロロシクロヘキサンを期待）`);
+        assert(g.userMolecule.atoms.filter(a => a.element === 'Cl').length === 6,
+            '⚠ ベンゼンが1置換で止まった（環への付加は 3Cl₂ が一気に入る）');
+        assert(!g.userMolecule.bonds.some(b => b.type === 2),
+            '⚠ 環に二重結合が残っている ＝ 付加ではなく置換になっている');
+        // ★ アルカンに「塩素・鉄触媒」は今までどおり効かない（こちらは変えていない）
         setupReagent(c, ['プロパン']);
         bottle(c, 'cl2_fe').click();
         assert(!g.userMolecule.atoms.some(a => a.element === 'Cl'),
             '⚠ プロパンが「塩素・鉄触媒」で塩素化された（アルカンの置換に鉄触媒は使わない）');
+        assert(noteEl.textContent.length > 0, 'プロパン × 鉄触媒の空振りで理由が返らない');
         assert(noteEl.textContent.includes('光'),
             `アルカンに鉄触媒を掛けたのに、光の瓶へ案内していない: ${noteEl.textContent.slice(0, 140)}`);
         c.reset();
