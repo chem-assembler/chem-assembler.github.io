@@ -3493,6 +3493,93 @@ function condensationPolymerUnits(mol) {
     return { acids: as.sort(byX).slice(0, n), partners: ps.sort(byX).slice(0, n), kind };
 }
 
+/* ==========================================================================
+ * 脱ハロゲン化水素・アルキンの三量化・小さい環の開裂（v1541・参考書の式3本）
+ * ========================================================================== */
+
+const RX_HALOGENS = ['Cl', 'Br', 'I'];
+
+/**
+ * 脱ハロゲン化水素（−HX）ができる箇所 `[X のついた C, 水素のある隣の C, X]`。
+ *
+ * ⚠⚠ 参考書の **1,2-ジクロロエタン → 塩化ビニル**（PVC の原料を作る道）が
+ *   アプリで起こせなかった（v1540 の実測）。
+ * ★ 門番は「**その分子が炭化水素とハロゲンだけ**でできていること」。
+ *   -OH や -COOH が混ざるものは別の反応（脱水・エステル化）が先に来るので扱わない。
+ * ⚠ **同じ生成物になる向きは畳む** —— 1,2-ジクロロエタンは左右どちらの Cl を抜いても
+ *   塩化ビニルになるので、札が2枚出ると「違うものが2つできる」と読める。
+ *   畳み方は `sideChainOxidationSites` と同じ手口（**生成物の正準コード**で数える）。
+ */
+function dehydrohalogenationSites(mol) {
+    const out = [];
+    const seen = new Set();
+    /* ⚠⚠ **芳香環の炭素は外す**（実測で踏んだ）。クロロベンゼンで札が出て、
+     *   環の中に4本目の二重結合が入った**実在しない分子**ができていた。
+     *   ★ 芳香族の C-Cl は切れにくく、教科書は高温高圧の加水分解
+     *     （`hydrolysis_chlorobenzene`）でしか扱わない。 */
+    const aromatic = aromaticAtomSet(mol);
+    mol.bonds.forEach(bond => {
+        if (bond.type !== 1) return;
+        if (aromatic.has(bond.atomId1) || aromatic.has(bond.atomId2)) return;
+        const pair = [mol.atoms.find(x => x.id === bond.atomId1),
+            mol.atoms.find(x => x.id === bond.atomId2)];
+        if (pair.some(a => !a || a.element !== 'C')) return;
+        [[0, 1], [1, 0]].forEach(([i, j]) => {
+            const ca = pair[i], cb = pair[j];
+            if (mol.getFreeValency(cb.id) < 1) return;          // 抜ける水素が無い
+            const hal = mol.getNeighbors(ca.id)
+                .find(n => n.type === 1 && RX_HALOGENS.includes(n.atom.element));
+            if (!hal) return;
+            const comp = componentOf(mol, ca.id);
+            if (mol.atoms.some(x => comp.has(x.id) && x.element !== 'C' && x.element !== 'H' &&
+                !RX_HALOGENS.includes(x.element))) return;
+            // 「できる分子」を位相だけ組んで正準コードで畳む（同じ分子の中の等価な向きだけ）
+            const ids = [...comp].filter(id => id !== hal.atom.id);
+            const { mol: sub, map } = subMolecule(mol, ids);
+            const nb = sub.getBond(map.get(ca.id), map.get(cb.id));
+            if (!nb) return;
+            nb.type = 2;
+            const key = [...comp].sort().join(',') + '|' + canonicalCode(sub);
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push([ca.id, cb.id, hal.atom.id]);
+        });
+    });
+    return out;
+}
+
+/**
+ * 小さい環（三員環の炭素環）を開いて付加できる箇所 `[環の炭素A, 環の炭素B]`。
+ *
+ * ★ **対象はシクロプロパンだけ**（重原子が炭素3個の環）。教科書が「環に**ひずみ**があるので
+ *   小さい環は付加で開く」と書いているのはこの形で、置換基の付いた三員環まで広げると
+ *   **どの辺が切れるか**が一意に決まらない（できる分子も名前が付かない）。
+ * ⚠ どの辺を切っても同じものができるので、返すのは **1件だけ**。
+ */
+function strainedRingSites(mol) {
+    const out = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || seen.has(a.id)) return;
+        const comp = [...componentOf(mol, a.id)];
+        comp.forEach(id => seen.add(id));
+        const heavy = comp.map(id => mol.atoms.find(x => x.id === id))
+            .filter(x => x && x.element !== 'H');
+        if (heavy.length !== 3 || !heavy.every(x => x.element === 'C')) return;
+        // 3本とも単結合で環になっていること
+        const ring = [];
+        for (let i = 0; i < 3; i++) {
+            for (let j = i + 1; j < 3; j++) {
+                const b = mol.getBond(heavy[i].id, heavy[j].id);
+                if (b) ring.push(b);
+            }
+        }
+        if (ring.length !== 3 || ring.some(b => b.type !== 1)) return;
+        out.push([ring[0].atomId1, ring[0].atomId2]);
+    });
+    return out;
+}
+
 /**
  * **AB型の単量体**（1分子の中に -COOH と -OH を1つずつ持つ ＝ ヒドロキシ酸）が
  * 2個以上並んでいるかを見る（v1541）。返り値は左から並べた単位の配列（無ければ null）。
@@ -5136,6 +5223,77 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ 脱ハロゲン化水素（v1541・参考書の式1本）。
+         * 門番と畳み方は `dehydrohalogenationSites` の注記。
+         *
+         * ⚠ **瓶は持たせない。** 教科書はここで試薬を名指しせず、工業的には
+         *   「加熱して熱分解」、実験室では「水酸化ナトリウムの**アルコール溶液**」と
+         *   条件のほうが分かれる。⚠ `naoh_aq`（水溶液）に相乗りさせると
+         *   **瓶の名前が嘘になる**（水溶液では置換のほうが起こる）ので、
+         *   `amidation`・`dehydration_anhydride` と同じく札だけにする（§4-1）。
+         *
+         * ★ 抜けたハロゲンは**消さずに脇へ置く**（`parkAsWater` と同じ扱い）——
+         *   結合を失った Cl は自動水素で **HCl** として描かれるので、
+         *   「ハロゲン化水素がとれる」が画面にそのまま出る。 */
+        id: 'dehydrohalogenation',
+        label: '脱ハロゲン化水素（−HX）→ アルケン',
+        detect: (mol) => dehydrohalogenationSites(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [ca, cb, halId] = site;
+            const bond = mol.getBond(ca, cb);
+            if (!bond) throw new Error('C-C 結合が見つかりません');
+            const el = (mol.atoms.find(a => a.id === halId) || {}).element;
+            const hx = { Cl: '塩化水素 HCl', Br: '臭化水素 HBr', I: 'ヨウ化水素 HI' }[el] ||
+                'ハロゲン化水素';
+            mol.removeBond(ca, halId);
+            bond.type = 2;
+            parkAsWater(mol, halId);   // 結合を失ったハロゲンは自動水素で HX として描かれる
+            return {
+                caption: `ハロゲンと、隣の炭素についていた水素がいっしょにとれて、` +
+                    `**${hx}** が外れました（脱離反応）。残った2つの炭素のあいだに二重結合ができます。` +
+                    '1,2-ジクロロエタンからこの反応で塩化ビニルを作り、それを付加重合したものが' +
+                    'ポリ塩化ビニル（PVC）です。' +
+                    '⚠ **付加の逆向き**にあたる反応で、アルコールの分子内脱水（−H₂O）と' +
+                    '「隣り合う2つの炭素から、となりどうしの原子が1組とれて C=C ができる」形は同じです。',
+                changed: [ca, cb]
+            };
+        }
+    },
+    {
+        /* ★★ 小さい環の開裂付加（v1541・参考書の式1本 ＝ シクロプロパン ＋ Br₂）。
+         * 門番は `strainedRingSites`（重原子が炭素3個の環だけ）。
+         *
+         * ★ **瓶は `br2_water`**（付加と同じ瓶）。同じ臭素水が、
+         *   ふつうのシクロアルカンには効かず**三員環だけ開く**ところがこの反応の見どころ。 */
+        id: 'ring_opening_addition',
+        reagentId: 'br2_water',
+        label: '開環付加: Br₂（三員環のひずみ）→ 1,3-ジブロモプロパン',
+        detect: (mol) => strainedRingSites(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [ca, cb] = site;
+            // ★ 先に2つとも置けるか試す（途中で場所が尽きて半端な図にしない）
+            if (!attachGroup(mol, ca, 'Br', true) || !attachGroup(mol, cb, 'Br', true)) {
+                throw noRoom('臭素を置く空間がありません');
+            }
+            mol.removeBond(ca, cb);
+            const added = [...attachGroup(mol, ca, 'Br'), ...attachGroup(mol, cb, 'Br')];
+            // 登録の図（1,3-ジブロモプロパン）へ写して鎖をまっすぐにする
+            game.redrawProductsAsStandalone({ only: [...componentOf(mol, ca)] });
+            return {
+                caption: 'シクロプロパンの環が開いて、両端に臭素が付きました（開環付加）。' +
+                    '⚠ ふつうのシクロアルカン（シクロヘキサンなど）は**置換**しか起こさないのに、' +
+                    '**三員環は付加で開きます** —— 炭素の結合角が 60° まで押し曲げられていて' +
+                    '（本来は 109.5°）、環に**ひずみ**があるためです。' +
+                    'だからシクロプロパンは臭素水を脱色し、' +
+                    '「臭素水の脱色 ＝ 不飽和結合」という覚え方の例外になります。',
+                changed: [ca, cb, ...added],
+                refit: true
+            };
+        }
+    },
+    {
         /* アセチレンの付加重合（P12-8 の穴埋め・2026-08-07）。
          * ポリアセチレンの図は登録済み（compounds.json `polyacetylene`）なのに、
          * 反応実行モードからそこへ到達する手段が無かった。
@@ -5197,6 +5355,80 @@ const REACTION_RULES = [
                     'ヨウ素などを加えると金属に近い電気伝導性を示します（導電性高分子）。' +
                     '両端の R は「この先も同じ単位が続く」という印です。',
                 changed: [...new Set([...changed, ...endIds])],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ★★ アセチレンの三量化（v1541・参考書の式1本 ＝ 3C₂H₂ → C₆H₆）。
+         *
+         * ⚠⚠ `alkyne_polymerization`（鎖のポリアセチレン）は前からあったが、
+         *   **環になる道**が無かった（v1540 の実測）。★ 同じ材料が条件で
+         *   「鎖」と「環（ベンゼン）」に分かれるのが、この一組の見どころ。
+         *
+         * ★ **ちょうど3分子のときだけ出す。** 4分子以上並んでいるときに
+         *   「3つだけ選んで環にする」と、残りをどうするかが画面から読めない
+         *   （鎖のほうは何個でも繋がるので、そちらへ譲る）。
+         * ⚠ **瓶は持たせない** —— 教科書は「赤熱した鉄に触れさせる」と
+         *   **装置と温度**を書き、試薬を名指ししない（§4-1）。
+         * ⚠ **キャンバス全体が対象**（重合3本と同じ理由）。 */
+        id: 'alkyne_trimerization',
+        wholeCanvas: true,
+        label: '三量化（アセチレンを3分子並べて）→ ベンゼン',
+        detect(mol) {
+            const units = acetyleneUnits(mol);
+            if (units.length !== 3) return [];
+            units.sort((p, q) => p.x - q.x);
+            return [units.flatMap(u => [u.left, u.right])];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            if (site.length !== 6) throw new Error('アセチレンが3分子必要です');
+            const atoms = site.map(id => mol.atoms.find(a => a.id === id));
+            if (atoms.some(a => !a)) throw new Error('原子が見つかりません');
+            const own = new Set(site);
+            /* ★ 環の座標は**登録のベンゼンと同じ形**（半径 40・60°刻み）。
+             *   ⚠ 手で作図するときの直交の規約は変えていない ——
+             *   ここは「反応で置く生成物」なので、登録の図に合わせるのが筋（§14 と同じ考え方）。 */
+            const R = 40, S = 34.64;
+            const off = [[R, 0], [R / 2, S], [-R / 2, S], [-R, 0], [-R / 2, -S], [R / 2, -S]];
+            const cx = atoms.reduce((s, a) => s + a.x, 0) / 6;
+            const cy = atoms.reduce((s, a) => s + a.y, 0) / 6;
+            const others = mol.atoms.filter(a => !own.has(a.id) && a.element !== 'H');
+            const G = bondStep(mol, site[0]);
+            const fits = (dx, dy) => off.every(([ox, oy]) =>
+                others.every(o => Math.hypot(o.x - (cx + dx + ox), o.y - (cy + dy + oy)) >= G * 1.2));
+            let put = null;
+            const cands = [{ x: 0, y: 0, d: 0 }];
+            for (let i = -5; i <= 5; i++) {
+                for (let j = -5; j <= 5; j++) {
+                    const d = Math.hypot(i, j);
+                    if (d >= 1 && d <= 5) cands.push({ x: i * 2 * R, y: j * 2 * R, d });
+                }
+            }
+            cands.sort((p, q) => p.d - q.d);
+            for (const cand of cands) { if (fits(cand.x, cand.y)) { put = cand; break; } }
+            if (!put) throw noRoom('ベンゼン環を置く空間がありません');
+            atoms.forEach((a, i) => { a.x = cx + put.x + off[i][0]; a.y = cy + put.y + off[i][1]; });
+            // 三重結合が二重結合になり、空いた手で隣の分子とつながる ＝ 原子は1つも出入りしない
+            for (let i = 0; i < 6; i += 2) {
+                const b = mol.getBond(site[i], site[i + 1]);
+                if (!b || b.type !== 3) throw new Error('三重結合が見つかりません');
+                b.type = 2;
+            }
+            mol.addBond(site[1], site[2], 1);
+            mol.addBond(site[3], site[4], 1);
+            mol.addBond(site[5], site[0], 1);
+            return {
+                caption: 'アセチレン3分子が環になって、ベンゼンができました（3C₂H₂ → C₆H₆）。' +
+                    '**赤熱した鉄**に触れさせると起こります。' +
+                    '⚠ 原子は1つも出入りしません —— 三重結合が二重結合になり、' +
+                    '空いた手で隣の分子とつながって6員環が閉じるだけです。' +
+                    '★ 同じアセチレンでも、条件が違えば**鎖**のポリアセチレンになります' +
+                    '（並べて「付加重合」を選ぶとそちらが見られます）。' +
+                    '環が閉じると6個の電子が環全体に広がり、二重結合が3本あるのに' +
+                    '付加しにくい（＝ 芳香族の）性質が現れます。',
+                changed: [...site],
                 refit: true
             };
         }
