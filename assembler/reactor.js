@@ -2004,6 +2004,52 @@ function oxidationOutOfScope(mol) {
 }
 
 /* ==========================================================================
+ * ナフタレンの空気酸化 → 無水フタル酸（v1541・参考書 aromatic.md の式1本）
+ *
+ * ⚠⚠ **参考書の式は係数がずれている**: `C₁₀H₈ ＋ 4.5O₂ → 無水フタル酸 ＋ 2CO₂ ＋ H₂O`。
+ *   H が 8 ＝ 4（無水フタル酸）＋ 2（H₂O 1個）で合わない。**正しくは 2H₂O**
+ *   （O も 9 ＝ 3 ＋ 4 ＋ 2 で合う）。★ アプリは正しい係数で描き、原稿は直さない（別の便）。
+ *
+ * ★ **門番は「炭素10個が全部芳香族で、結合11本・縮合部2個」＝ ナフタレンそのもの**。
+ *   置換ナフタレン（2-メチルナフタレン・ナフトール）へ広げない —— どちらの環が壊れるかを
+ *   アプリが決めることになり、参考書が書いていない判断になる。
+ * ========================================================================== */
+function naphthaleneUnits(mol) {
+    const arom = aromaticAtomSet(mol);
+    const seen = new Set();
+    const out = [];
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id) || a.element === 'H') return;
+        const ids = [...componentOf(mol, a.id)];
+        ids.forEach(id => seen.add(id));
+        const heavy = ids.map(id => mol.atoms.find(x => x.id === id)).filter(x => x && x.element !== 'H');
+        if (heavy.length !== 10) return;
+        if (heavy.some(x => x.element !== 'C' || x.charge || !arom.has(x.id))) return;
+        const set = new Set(heavy.map(x => x.id));
+        if (mol.bonds.filter(b => set.has(b.atomId1) && set.has(b.atomId2)).length !== 11) return;
+        const fused = heavy.filter(x => mol.getNeighbors(x.id).filter(n => set.has(n.atom.id)).length === 3);
+        if (fused.length !== 2 || !mol.getBond(fused[0].id, fused[1].id)) return;
+        out.push(heavy.map(x => x.id));
+    });
+    return out;
+}
+
+/**
+ * 原子ごとの「隣の重原子 id と結合次数」の署名（CV4 の物差しと同じ取り方）。
+ * ★ **印（changed）を人が並べず、実際に変わった原子から決める**ために使う ——
+ *   環を組み直すと残る環のケクレ構造も入れ替わるので、手で数えると渡し落とす。
+ */
+function heavyBondSignature(mol, ids) {
+    const sig = new Map();
+    ids.forEach(id => {
+        if (!mol.atoms.some(a => a.id === id)) return;
+        sig.set(id, mol.getNeighbors(id).filter(n => n.atom.element !== 'H')
+            .map(n => `${n.atom.id}:${n.type}`).sort().join(','));
+    });
+    return sig;
+}
+
+/* ==========================================================================
  * 完全燃焼（v1541・参考書の式3本 ＝ メタン・エタノール・ベンゼン）
  *
  * ⚠⚠ **アプリには燃焼のルールが1本も無かった。** 元素分析の節が立っているのに、
@@ -7639,6 +7685,128 @@ const REACTION_RULES = [
         morphStages: 'bondsFirst', // ①環の配置のまま開く → ②鎖状に整列する
         detect(mol) { return detectGlucopyranose(mol); },
         apply(game, site) { return applyOpenRing(game, site); }
+    },
+    {
+        /* ★ ナフタレンの空気酸化 → 無水フタル酸（v1541・参考書 aromatic.md）。
+         * 門番と係数のずれは `naphthaleneUnits` の注記。
+         * ★ **原子を作り直さず、壊れる環の炭素を使い回す**: 残る環の隣にあった2個が
+         *   カルボニル炭素になり、奥の2個が CO₂ として出ていく ＝ 前後比較で
+         *   「どの炭素がどこへ行ったか」が追える。
+         * ⚠ **置き場は先に全部確かめる**（途中で失敗して環だけ壊れた図を残さない）。
+         * ⚠ 札の名前に「酸化」「H₂O」を書かない（燃焼の札の注記と同じ事故 ＝ 文字で引くテストに当たる）。 */
+        id: 'naphthalene_air_oxidation',
+        label: 'ナフタレン → 無水フタル酸（V₂O₅・空気）',
+        detect: (mol) => naphthaleneUnits(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const set = new Set(site);
+            const at = id => mol.atoms.find(a => a.id === id);
+            const ringNbr = id => mol.getNeighbors(id).filter(n => set.has(n.atom.id)).map(n => n.atom.id);
+            const fused = site.filter(id => ringNbr(id).length === 3);
+            if (fused.length !== 2) throw new Error('ナフタレンの縮合部が見つかりません');
+            const [fa, fb] = fused;
+            // 縮合部を通らずにたどると、それぞれの環が「4原子の道」になる（fa の隣 → … → fb の隣）
+            const walk = (start) => {
+                const path = [start];
+                let prev = fa, cur = start;
+                for (;;) {
+                    const next = ringNbr(cur).find(x => x !== prev && !fused.includes(x));
+                    if (!next) break;
+                    path.push(next); prev = cur; cur = next;
+                }
+                return path;
+            };
+            const rings = ringNbr(fa).filter(x => x !== fb).map(walk);
+            if (rings.length !== 2 || rings.some(r => r.length !== 4)) throw new Error('ナフタレンの環が見つかりません');
+            const cen = r => ({ x: r.reduce((s, id) => s + at(id).x, 0) / 4, y: r.reduce((s, id) => s + at(id).y, 0) / 4 });
+            // 壊すのは右の環（同じなら下）。⚠ **座標で決める**（原子IDは乱数）。化学的には等価
+            rings.sort((p, q) => (cen(p).x - cen(q).x) || (cen(p).y - cen(q).y));
+            const [keep, gone] = rings;
+            const [k1, k2, k3, k4] = keep;
+            const [p1, q1, q2, p2] = gone;      // p1 は fa の隣・p2 は fb の隣
+            const before = heavyBondSignature(mol, site);
+
+            // ---- 五員環（fa・p1・O・p2・fb）の座標 ＝ 縮合の結合を底辺にした正五角形
+            const A = at(fa), B = at(fb);
+            const L = Math.hypot(B.x - A.x, B.y - A.y) || bondStep(mol, fa);
+            const ex = (B.x - A.x) / L, ey = (B.y - A.y) / L;
+            const gc = cen(gone), mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+            let ux = -ey, uy = ex;
+            if ((gc.x - mx) * ux + (gc.y - my) * uy < 0) { ux = -ux; uy = -uy; }
+            const c108 = Math.cos(108 * Math.PI / 180), s108 = Math.sin(108 * Math.PI / 180);
+            const P1 = { x: A.x + L * (ex * c108 + ux * s108), y: A.y + L * (ey * c108 + uy * s108) };
+            const P2 = { x: B.x + L * (-ex * c108 + ux * s108), y: B.y + L * (-ey * c108 + uy * s108) };
+            const hgt = L * Math.sqrt(5 + 2 * Math.sqrt(5)) / 2;
+            const OB = { x: mx + ux * hgt, y: my + uy * hgt };
+            const pc = { x: (A.x + B.x + P1.x + P2.x + OB.x) / 5, y: (A.y + B.y + P1.y + P2.y + OB.y) / 5 };
+            const outward = P => {
+                const dx = P.x - pc.x, dy = P.y - pc.y, d = Math.hypot(dx, dy) || 1;
+                return { x: P.x + L * dx / d, y: P.y + L * dy / d };
+            };
+            const OC1 = outward(P1), OC2 = outward(P2);
+            const others = mol.atoms.filter(a => !set.has(a.id) && a.element !== 'H');
+            if ([P1, P2, OB, OC1, OC2].some(p => others.some(o => Math.hypot(o.x - p.x, o.y - p.y) < L * 0.8))) {
+                throw noRoom('無水フタル酸を置く空間がありません');
+            }
+            // ---- 仮置きして CO₂ と H₂O の置き場を探す（見つからなければ元に戻して断る）
+            const saved = [p1, p2].map(id => ({ id, x: at(id).x, y: at(id).y }));
+            Object.assign(at(p1), { x: P1.x, y: P1.y });
+            Object.assign(at(p2), { x: P2.x, y: P2.y });
+            const ob = mol.addAtom('O', OB.x, OB.y);
+            const oc1 = mol.addAtom('O', OC1.x, OC1.y);
+            const oc2 = mol.addAtom('O', OC2.x, OC2.y);
+            const spots = combustionProductSpots(mol, [q1, q2], 4);
+            if (!spots) {
+                [ob, oc1, oc2].forEach(o => mol.removeAtom(o.id));
+                saved.forEach(s => Object.assign(at(s.id), { x: s.x, y: s.y }));
+                throw noRoom('生成物を置く空間がありません');
+            }
+            // ---- ここから先は戻らない: 残る環のケクレ構造を組み直し、壊れる環を開く
+            const setType = (x, y, t) => {
+                const b = mol.getBond(x, y);
+                if (!b) throw new Error('環の結合が見つかりません');
+                b.type = t;
+            };
+            setType(fa, fb, 2); setType(fa, k1, 1); setType(k1, k2, 2);
+            setType(k2, k3, 1); setType(k3, k4, 2); setType(k4, fb, 1);
+            setType(fa, p1, 1); setType(fb, p2, 1);
+            mol.removeAtom(q1);
+            mol.removeAtom(q2);
+            mol.addBond(p1, ob.id, 1);
+            mol.addBond(p2, ob.id, 1);
+            mol.addBond(p1, oc1.id, 2);
+            mol.addBond(p2, oc2.id, 2);
+            const G = bondStep(mol, fa);
+            const made = [ob.id, oc1.id, oc2.id];
+            for (let i = 0; i < 2; i++) {
+                const p = spots[i];
+                const c = mol.addAtom('C', p.x, p.y);
+                const oL = mol.addAtom('O', p.x - G, p.y);
+                const oR = mol.addAtom('O', p.x + G, p.y);
+                mol.addBond(oL.id, c.id, 2);
+                mol.addBond(c.id, oR.id, 2);
+                made.push(c.id, oL.id, oR.id);      // ⚠ CO₂ に fromReaction は付けない（燃焼と同じ理由）
+            }
+            for (let i = 2; i < 4; i++) {
+                const o = mol.addAtom('O', spots[i].x, spots[i].y);
+                o.fromReaction = true;              // 自動水素で H₂O として描かれる
+                made.push(o.id);
+            }
+            const after = heavyBondSignature(mol, site);
+            const moved = site.filter(id => after.has(id) && after.get(id) !== before.get(id));
+            return {
+                caption: 'ナフタレンを、酸化バナジウム(V) **V₂O₅** を触媒にして空気中の酸素で酸化すると、' +
+                    '**片方の環が壊れて**無水フタル酸ができました。' +
+                    '**2C₁₀H₈ ＋ 9O₂ → 2C₈H₄O₃ ＋ 4CO₂ ＋ 4H₂O** です' +
+                    '（図に出ているのは**1分子ぶん**で、CO₂ が 2 個・H₂O が 2 個です）。' +
+                    '壊れた環の炭素4個のうち、残った環の隣にあった2個は **C=O** になって酸素でつながり' +
+                    '（酸無水物の五員環）、奥の2個は二酸化炭素になって出ていきます。' +
+                    '★ 同じ無水フタル酸は、o-キシレンを酸化してできるフタル酸を加熱しても得られます' +
+                    '（隣り合った2つの -COOH が分子内で脱水する）。',
+                changed: [...moved, ...made],
+                refit: true
+            };
+        }
     },
     {
         /* ★★ 完全燃焼（v1541）。参考書の式3本（メタン・エタノール・ベンゼン）を1本で埋める。
