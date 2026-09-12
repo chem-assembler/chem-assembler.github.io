@@ -2,6 +2,7 @@ functional-groups
 hydrocarbon-classes
 alkane
 alkane-naming
+numeral-prefix
 alkane-isomers
 alkene
 alkyne
