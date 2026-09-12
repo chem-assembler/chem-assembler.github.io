@@ -71,7 +71,7 @@
         '黄色': '#f1c40f',
         '赤紫色': '#b0409a',
         '橙赤色': '#e8590c',
-        '黄緑色': '#9acd32'
+        '黄緑色': '#80cc33'
     };
     // 沈殿の色を札にする順（★ 多いものから。⚠ 「褐色」と「赤褐色」は別の色として数える）
     var PPT_COLOR_ORDER = ['白色', '黒色', '褐色', '赤褐色', '青白色', '青緑色', '緑白色'];
@@ -114,16 +114,17 @@
     //   nh3ex  過剰のアンモニア水で溶ける      … Ag⁺・Cu²⁺・Zn²⁺
     //   naohex 過剰の水酸化ナトリウムで溶ける（両性）… Pb²⁺・Zn²⁺・Al³⁺
     //   noNh3  アンモニア水を加えても沈殿しない  … Ca²⁺・Na⁺・K⁺
+    //   ★ `sep` … `SEP_IONS` / `SEP_TABLE` のどの行から写したか（⚠ tests.js が突き合わせる鍵）
     var ION = [
-        { id: 'Ag+', f: 'Ag⁺', jp: '銀イオン', charge: 1, comp: { Ag: 1 }, rg: ['hcl', 'h2s', 'nh3ex'] },
-        { id: 'Pb2+', f: 'Pb²⁺', jp: '鉛(II)イオン', charge: 2, comp: { Pb: 1 }, rg: ['hcl', 'h2s', 'naohex'] },
-        { id: 'Cu2+', f: 'Cu²⁺', jp: '銅(II)イオン', charge: 2, comp: { Cu: 1 }, rg: ['h2s', 'nh3ex'] },
-        { id: 'Ca2+', f: 'Ca²⁺', jp: 'カルシウムイオン', charge: 2, comp: { Ca: 1 }, rg: ['noNh3'] },
-        { id: 'Na+', f: 'Na⁺', jp: 'ナトリウムイオン', charge: 1, comp: { Na: 1 }, rg: ['noNh3'] },
-        { id: 'K+', f: 'K⁺', jp: 'カリウムイオン', charge: 1, comp: { K: 1 }, rg: ['noNh3'] },
-        { id: 'Zn2+', f: 'Zn²⁺', jp: '亜鉛イオン', charge: 2, comp: { Zn: 1 }, rg: ['nh3ex', 'naohex'] },
-        { id: 'Al3+', f: 'Al³⁺', jp: 'アルミニウムイオン', charge: 3, comp: { Al: 1 }, rg: ['naohex'] },
-        { id: 'Fe3+', f: 'Fe³⁺', jp: '鉄(III)イオン', charge: 3, comp: { Fe: 1 }, rg: ['h2s'] }
+        { id: 'Ag+', sep: 'Ag', f: 'Ag⁺', jp: '銀イオン', charge: 1, comp: { Ag: 1 }, rg: ['hcl', 'h2s', 'nh3ex'] },
+        { id: 'Pb2+', sep: 'Pb', f: 'Pb²⁺', jp: '鉛(II)イオン', charge: 2, comp: { Pb: 1 }, rg: ['hcl', 'h2s', 'naohex'] },
+        { id: 'Cu2+', sep: 'Cu', f: 'Cu²⁺', jp: '銅(II)イオン', charge: 2, comp: { Cu: 1 }, rg: ['h2s', 'nh3ex'] },
+        { id: 'Ca2+', sep: 'Ca', f: 'Ca²⁺', jp: 'カルシウムイオン', charge: 2, comp: { Ca: 1 }, rg: ['noNh3'] },
+        { id: 'Na+', sep: 'Na', f: 'Na⁺', jp: 'ナトリウムイオン', charge: 1, comp: { Na: 1 }, rg: ['noNh3'] },
+        { id: 'K+', sep: 'K', f: 'K⁺', jp: 'カリウムイオン', charge: 1, comp: { K: 1 }, rg: ['noNh3'] },
+        { id: 'Zn2+', sep: 'Zn', f: 'Zn²⁺', jp: '亜鉛イオン', charge: 2, comp: { Zn: 1 }, rg: ['nh3ex', 'naohex'] },
+        { id: 'Al3+', sep: 'Al', f: 'Al³⁺', jp: 'アルミニウムイオン', charge: 3, comp: { Al: 1 }, rg: ['naohex'] },
+        { id: 'Fe3+', sep: 'Fe3', f: 'Fe³⁺', jp: '鉄(III)イオン', charge: 3, comp: { Fe: 1 }, rg: ['h2s'] }
     ];
 
     var CANDS = [];
@@ -136,7 +137,7 @@
     ION.forEach(function (i) {
         CANDS.push({
             id: i.id, name: i.f, jp: i.jp, kind: 'ion', color: null,
-            comp: i.comp, parts: [], sAcid: false, charge: i.charge, rg: i.rg
+            comp: i.comp, parts: [], sAcid: false, charge: i.charge, rg: i.rg, sep: i.sep
         });
     });
 
