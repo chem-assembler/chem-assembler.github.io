@@ -24,3 +24,4 @@ benzene
 benzene-substitution
 aromatic-homologs
 phenol
+phenol-reactions
