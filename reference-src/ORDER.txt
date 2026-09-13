@@ -28,6 +28,10 @@ phenol-reactions
 aniline
 aromatic-carboxylic-acid
 aromatic-separation
+polymer-basics
+plastic
+synthetic-fiber
+rubber
 element-detection
 elemental-analysis
 clue-order
