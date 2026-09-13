@@ -25,6 +25,39 @@ zaitsev               ザイツェフ則 —— 脱水で2つできるとき、�
 steric-hindrance      立体障害 —— 大きな原子団どうしがぶつかって不安定になること
 oxidation-number      有機化合物中の原子の酸化数の決め方
 
+# ── 芳香族以降の①ドラフト（2026-09-14 登録）。骨子は reference-outline/。⚠ 書いたレーンが自分の行を消す ──
+
+# 芳香族・フェノール・芳香族窒素（reference-outline/aromatic.md）
+benzene                   ベンゼン —— 環がひとつのまとまりになっている
+benzene-substitution      ベンゼンの置換反応
+aromatic-homologs         ベンゼンの同族体 —— 側鎖が付くと何が変わるか
+phenol                    フェノール類
+phenol-reactions          フェノール類の反応（検出・置換・製法）
+aniline                   アニリンとアゾ化合物
+aromatic-carboxylic-acid  芳香族カルボン酸とサリチル酸
+aromatic-separation       芳香族化合物の分離
+
+# 糖・アミノ酸・タンパク質（reference-outline/bio.md）。⓵ soap は上の行
+saccharide                糖類の分類と単糖類
+disaccharide              二糖類
+polysaccharide            多糖類（デンプンとセルロース）
+amino-acid                アミノ酸
+protein                   タンパク質
+enzyme                    酵素
+nucleic-acid              核酸
+
+# 合成高分子（reference-outline/poly.md）
+polymer-basics            高分子 —— 単量体がつながってできたもの
+plastic                   合成樹脂 —— 鎖状のプラスチックと、網目のプラスチック
+synthetic-fiber           合成繊維
+rubber                    ゴム
+
+# 元素分析・手がかり（reference-outline/anal.md）
+element-detection         元素の確認
+elemental-analysis        元素分析 —— 燃やした質量から分子式まで
+clue-order                手がかりを使う順番 —— 分類 → 数 → 物性
+clue-properties           見た目・におい・沸点から当たりを付ける
+
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
 #   general-formula … ⚠ 中身が hydrocarbon-classes の節「一般式と同族体」（#ref-sec-homolog）と
