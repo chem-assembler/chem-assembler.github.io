@@ -51080,6 +51080,23 @@
             `著者メモが本文に混ざっている: ${dump}`);
         assert(JSON.stringify(RM.serialize([memo])).indexOf('memos') < 0,
             '著者メモが reference.json に書き出されている（画面に出るものではない）');
+        /* ⚠ **句点の直後の `//` もメモ**（v1546。直前が空白のときだけメモだったので、②稿の `。//` が本文へ漏れかけた） */
+        const memoPara = (p) => p.blocks.filter(b => b.kind === 'text').map(b => b.text).join('|');
+        const memoTight = build('残す文です。//句点の直後のメモ\n');
+        assert(memoPara(memoTight) === '残す文です。' && memoTight.memos.length === 1 && memoTight.memos[0].text === '句点の直後のメモ',
+            `句点の直後の「//」がメモになっていない: 本文=${memoPara(memoTight)} メモ=${JSON.stringify(memoTight.memos)}`);
+        const memoSpaced = build('残す文です。 //空白を挟んだメモ\n');
+        assert(memoPara(memoSpaced) === '残す文です。' && memoSpaced.memos.length === 1 && memoSpaced.memos[0].text === '空白を挟んだメモ',
+            `空白を挟んだ「//」がメモでなくなった: 本文=${memoPara(memoSpaced)} メモ=${JSON.stringify(memoSpaced.memos)}`);
+        const memoHead = build('//行の先頭のメモ\n\n本文の段落。\n');
+        assert(memoHead.memos.length === 1 && memoHead.memos[0].text === '行の先頭のメモ' && memoPara(memoHead) === '本文の段落。',
+            `行の先頭の「//」がメモでなくなった: 本文=${memoPara(memoHead)} メモ=${JSON.stringify(memoHead.memos)}`);
+        /* 否定対照: URL の `://` はメモにしない（本文のまま残る） */
+        const memoUrl = build('出典は https://example.com/ です。\n');
+        assert(memoUrl.memos.length === 0 && memoPara(memoUrl) === '出典は https://example.com/ です。',
+            `URL の「://」がメモとして切られた: 本文=${memoPara(memoUrl)} メモ=${JSON.stringify(memoUrl.memos)}`);
+        assert(RM.parsePage(FM + 'file:///c/x です。\n', '(REF20)').memos.length === 0,
+            '「:///」（3本の斜線の URL）がメモとして切られた');
         /* ★ いま在る原稿にも、メモが本文へ漏れていないこと（実データ側の確かめ） */
         const live = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
         live.forEach(p => (p.blocks || []).forEach(b => assert(JSON.stringify(b).indexOf('//') < 0,
