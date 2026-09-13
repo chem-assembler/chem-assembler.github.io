@@ -26,3 +26,4 @@ polysaccharide
 amino-acid
 protein
 enzyme
+nucleic-acid
