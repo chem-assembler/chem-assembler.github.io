@@ -19,7 +19,7 @@ carboxylic-acid
 ester
 esterification
 fat
-reaction-mechanisms
+soap
 benzene
 benzene-substitution
 aromatic-homologs
@@ -28,6 +28,13 @@ phenol-reactions
 aniline
 aromatic-carboxylic-acid
 aromatic-separation
+saccharide
+disaccharide
+polysaccharide
+amino-acid
+protein
+enzyme
+nucleic-acid
 polymer-basics
 plastic
 synthetic-fiber
@@ -36,3 +43,4 @@ element-detection
 elemental-analysis
 clue-order
 clue-properties
+reaction-mechanisms

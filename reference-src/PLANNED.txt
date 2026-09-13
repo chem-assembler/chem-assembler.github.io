@@ -19,7 +19,6 @@
 
 molecular-shape       分子の形と電子対の反発（VSEPR）
 intermolecular-force  分子間力と沸点
-soap                  セッケンと合成洗剤
 oxoacid               オキソ酸（硝酸・硫酸）の構造と配位結合〔無機〕
 zaitsev               ザイツェフ則 —— 脱水で2つできるとき、どちらが主に生じるか
 steric-hindrance      立体障害 —— 大きな原子団どうしがぶつかって不安定になること
@@ -30,13 +29,6 @@ oxidation-number      有機化合物中の原子の酸化数の決め方
 # 芳香族・フェノール・芳香族窒素（reference-outline/aromatic.md）
 
 # 糖・アミノ酸・タンパク質（reference-outline/bio.md）。⓵ soap は上の行
-saccharide                糖類の分類と単糖類
-disaccharide              二糖類
-polysaccharide            多糖類（デンプンとセルロース）
-amino-acid                アミノ酸
-protein                   タンパク質
-enzyme                    酵素
-nucleic-acid              核酸
 
 # 合成高分子（reference-outline/poly.md）
 
