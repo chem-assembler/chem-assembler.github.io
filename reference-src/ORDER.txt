@@ -26,3 +26,4 @@ aromatic-homologs
 phenol
 phenol-reactions
 aniline
+aromatic-carboxylic-acid
