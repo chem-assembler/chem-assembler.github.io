@@ -12,7 +12,7 @@ codes:
   - org.aroN.methyl-salicylate
 source:
   - qa:芳香族窒素化合物/芳香族カルボン酸
-  - stages:benzoic-acid・salicylic-acid・acetylsalicylic-acid・methyl-salicylate
+  - stages:芳香族カルボン酸とエステル
   - compounds:安息香酸ナトリウム・サリチル酸ナトリウム
 singleSource: false
 why: 芳香族カルボン酸を引きに来る人が探すのは、ほとんどが「アセチルサリチル酸とサリチル酸メチルはどう違うか」で、これはサリチル酸が −OH と −COOH の両方をもち、どちらの基が反応したかで行き先が2つに分かれる、という1つのことから出ている。だから安息香酸は「環に直接 −COOH が付いたカルボン酸」として1節で済ませ、残りをサリチル酸の分岐に充てた。知識項目は4件と少ないが、合流先を探すと、側鎖の酸化（aromatic-homologs）に入れればそのページの主題が2つに割れ、分離（aromatic-separation）に入れれば主題が物質と操作の2つになるので、独立のページにした。芳香族には講義スライドが無いので、行の出どころは一問一答の知識項目台帳と反応式だけで、どの本の文も見ていない。①ドラフトなので推敲していない。
