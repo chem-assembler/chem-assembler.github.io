@@ -28,7 +28,6 @@ oxidation-number      有機化合物中の原子の酸化数の決め方
 # ── 芳香族以降の①ドラフト（2026-09-14 登録）。骨子は reference-outline/。⚠ 書いたレーンが自分の行を消す ──
 
 # 芳香族・フェノール・芳香族窒素（reference-outline/aromatic.md）
-benzene-substitution      ベンゼンの置換反応
 aromatic-homologs         ベンゼンの同族体 —— 側鎖が付くと何が変わるか
 phenol                    フェノール類
 phenol-reactions          フェノール類の反応（検出・置換・製法）
