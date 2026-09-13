@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>油脂 ｜ 化学の参考書</title>
-<meta name="description" content="グリセリンと高級脂肪酸3分子からできたエステルが油脂です。構成脂肪酸5種、融点が C=C の数で決まる理由、加水分解とけん化、そして「分子量＝脂肪酸3分子＋38」から始まるけん化価・ヨウ素価の計算まで。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/fat/">
+<title>糖類の分類と単糖類 ｜ 化学の参考書</title>
+<meta name="description" content="糖類は −OH をたくさんもち、ホルミル基かカルボニル基を1個もつ化合物です。単糖・二糖・多糖の分け方、グルコースの鎖状構造と環状構造（α形・β形）の平衡、還元性の出どころ、アルコール発酵までを1枚にしました。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/saccharide/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="油脂 ｜ 化学の参考書">
-<meta property="og:description" content="グリセリンと高級脂肪酸3分子からできたエステルが油脂です。構成脂肪酸5種、融点が C=C の数で決まる理由、加水分解とけん化、そして「分子量＝脂肪酸3分子＋38」から始まるけん化価・ヨウ素価の計算まで。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/fat/">
+<meta property="og:title" content="糖類の分類と単糖類 ｜ 化学の参考書">
+<meta property="og:description" content="糖類は −OH をたくさんもち、ホルミル基かカルボニル基を1個もつ化合物です。単糖・二糖・多糖の分け方、グルコースの鎖状構造と環状構造（α形・β形）の平衡、還元性の出どころ、アルコール発酵までを1枚にしました。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/saccharide/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -836,84 +836,81 @@ a.ref-link::before { content: '→ '; }
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
 <main class="wrap">
-<h1>油脂</h1>
-<p class="lede">グリセリンと高級脂肪酸3分子からできたエステルが油脂です。構成脂肪酸5種、融点が C=C の数で決まる理由、加水分解とけん化、そして「分子量＝脂肪酸3分子＋38」から始まるけん化価・ヨウ素価の計算まで。</p>
-<div><span class="unit-label">油脂・セッケン</span><span class="unit-label">油脂</span></div>
+<h1>糖類の分類と単糖類</h1>
+<p class="lede">糖類は −OH をたくさんもち、ホルミル基かカルボニル基を1個もつ化合物です。単糖・二糖・多糖の分け方、グルコースの鎖状構造と環状構造（α形・β形）の平衡、還元性の出どころ、アルコール発酵までを1枚にしました。</p>
+<div><span class="unit-label">糖・アミノ酸・タンパク質</span><span class="unit-label">糖類</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-structure" data-ref-anchor="structure">油脂の構造</a></li><li><a href="#ref-sec-melting" data-ref-anchor="melting">油脂の融点と分類</a></li><li><a href="#ref-sec-reaction" data-ref-anchor="reaction">油脂の加水分解とけん化</a></li><li><a href="#ref-sec-numbers" data-ref-anchor="numbers">油脂の分子量・けん化価・ヨウ素価</a></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（8節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">糖類とは何か</a></li><li><a href="#ref-sec-class" data-ref-anchor="class">単糖・二糖・多糖</a></li><li><a href="#ref-sec-monosaccharide" data-ref-anchor="monosaccharide">代表的な単糖</a></li><li><a href="#ref-sec-glucose-chain" data-ref-anchor="glucose-chain">グルコースの鎖状構造</a></li><li><a href="#ref-sec-ring" data-ref-anchor="ring">環状構造と α形・β形</a></li><li><a href="#ref-sec-equilibrium" data-ref-anchor="equilibrium">水溶液中の平衡と還元性</a></li><li><a href="#ref-sec-fructose" data-ref-anchor="fructose">フルクトースが還元性を示すわけ</a></li><li><a href="#ref-sec-fermentation" data-ref-anchor="fermentation">アルコール発酵</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">高級脂肪酸 R−COOH と、3価アルコールである1,2,3-プロパントリオール（<b>グリセリン</b>）CH₂OHCHOHCH₂OH がつくる3価のエステルを<b>油脂</b>といいます。</p>
-<section class="ref-sec" id="ref-sec-structure"><h4 class="ref-sec-h">油脂の構造</h4><p class="ref-sec-lead">グリセリン1分子に、高級脂肪酸3分子がエステル結合でつながっています。</p></section>
-<p class="ref-p">グリセリンは −OH を3個もつので、<b>3分子の脂肪酸と3か所でエステル結合をつくります</b>。つまり油脂は、エステル結合を3つもつ1個の分子です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-structure.png" alt="油脂の構造式を左向きと右向きの2通りで並べた図。どちらも中央に炭素3個のグリセリン骨格があり、そこから3本の −O−CO−R がのびている" loading="lazy"><figcaption class="ref-figure-cap">油脂の構造式は<b>どちらの向きに書いても構いません</b>。ただし示性式にするときは、左向きなら −OCO−、右向きなら −COO− と書き分けます。</figcaption></figure>
-<p class="ref-p"><b>エステル結合の示性式の向きは、書くときに毎回確かめてください。</b>−OCO− と −COO− は同じ結合ですが、左右どちらから読むかで並びが変わります。</p>
-<p class="ref-p">天然の油脂を構成する脂肪酸は、<b>炭素数16か18のものがほとんど</b>です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">油脂をつくる主な高級脂肪酸（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: center;">C=C の数</th></tr></thead><tbody><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>パルミチン酸</b></td><td style="text-align: left;">C₁₅H₃₁COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>ステアリン酸</b></td><td style="text-align: left;">C₁₇H₃₅COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>オレイン酸</b></td><td style="text-align: left;">C₁₇H₃₃COOH</td><td style="text-align: center;">1</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノール酸</b></td><td style="text-align: left;">C₁₇H₃₁COOH</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノレン酸</b></td><td style="text-align: left;">C₁₇H₂₉COOH</td><td style="text-align: center;">3</td></tr></tbody></table></div>
-<p class="ref-p"><b>この5つは名前と示性式を必ず暗記してください。</b>炭素数を1つずつ覚える必要はありません。<b>「基本的に18」と覚えて</b>、パルミチン酸だけが16、と付け足すのがいちばん軽い覚え方です。</p>
-<p class="ref-p">表を縦に見ると、<b>C=C が1個増えるごとに H 原子が2個減り、分子量が2小さくなります</b>。ステアリン酸 C₁₇H₃₅COOH（C=C は0個）から H を2個ずつ引いていけば、オレイン酸・リノール酸・リノレン酸の示性式がその場で出てきます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">高級脂肪酸・不飽和脂肪酸という呼び名の分け方はカルボン酸のページへ</a></p>
-<section class="ref-sec" id="ref-sec-melting"><h4 class="ref-sec-h">油脂の融点と分類</h4><p class="ref-sec-lead">C=C が多いほど脂肪酸が折れ線になり、融点が下がります。常温で固体なら脂肪、液体なら脂肪油です。</p></section>
-<p class="ref-p">分子間力が大きいほど融点は高くなります。同じ種類の分子どうしなら、分子量が大きいほど分子間力（分散力）が大きくなるためです。</p>
-<p class="ref-p">だから油脂では、まず「<b>炭素数が多い（分子量が大きい）ほど融点が高い</b>」が成り立ちます。</p>
-<p class="ref-p">もう1つ効くのが C=C の数です。油脂では「<b>C=C が多いほど融点が低い</b>」となります。C=C のところで脂肪酸が折れ線になり、分子どうしの接触面積が減って近づきにくくなるので、分子間力が小さくなるためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-chain-shape.png" alt="脂肪酸2本の模式図。左はまっすぐな折れ線が続く飽和脂肪酸、右は途中で大きく向きが変わる不飽和脂肪酸で、曲がっているところに「C=C（天然の油脂はすべてシス型）」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>飽和脂肪酸</b>はまっすぐ伸びるので重なりやすく、右の<b>不飽和脂肪酸</b>は C=C のところで折れるので重なりにくくなります。</figcaption></figure>
-<p class="ref-p">この理由の立て方は、アルコールの沸点が 1級・2級・3級 の順に低くなるのと同じです。<b>「かたちが複雑になると近づきにくくなる」という1本の理由</b>で両方を説明できます。</p>
-<p class="ref-p">常温で固体の油脂を<b>脂肪</b>、液体の油脂を<b>脂肪油</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-melting-state.png" alt="2本の縦棒グラフ。左は融点が高い油脂で、常温の線が融点より下にあり固体の領域に入る。右は融点が低い油脂で、常温の線が融点より上にあり液体の領域に入る" loading="lazy"><figcaption class="ref-figure-cap"><b>融点が常温のどちら側にあるか</b>で、脂肪（固体）と脂肪油（液体）が分かれます。</figcaption></figure>
-<p class="ref-p">一般的に、動物性の油脂は飽和脂肪酸が多いので<b>脂肪</b>、植物性の油脂は不飽和脂肪酸が多いので<b>脂肪油</b>になります。</p>
-<p class="ref-p">C=C を多くふくむ脂肪油は、空気中に放置すると酸化されて固まります。これを<b>乾性油</b>といい、インクや塗料に使われます。C=C が少なく空気中で固まらないものが<b>不乾性油</b>で、食用油がこれにあたります。その中間が半乾性油です。</p>
-<p class="ref-p">脂肪油に<b>ニッケル Ni を触媒として水素 H₂ を付加</b>し、C=C を減らして固めた油脂を<b>硬化油</b>といいます。マーガリンの原料です。</p>
-<p class="ref-p"><b>「乾性油は酸化されて固まる、硬化油は水素を付加して固める」の違いは覚えておきましょう。</b>どちらも「固まる」ですが、起きている反応が別です。</p>
-<section class="ref-sec" id="ref-sec-reaction"><h4 class="ref-sec-h">油脂の加水分解とけん化</h4><p class="ref-sec-lead">油脂はエステルなので、酸で加水分解でき、塩基でけん化できます。出てくるのはグリセリンと脂肪酸です。</p></section>
-<p class="ref-p">油脂に酸を加えて加水分解すると、<b>グリセリンと脂肪酸 R−COOH</b> が生じます。エステル結合が3つあるので、水は3分子必要です。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">油脂 ＋ 3H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">H⁺</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">グリセリン ＋ 3R−COOH</span></div><p class="ref-note">エステルの加水分解そのものです。グリセリン1分子に対して脂肪酸が3分子出てきます。</p></div>
-<p class="ref-p">油脂に水酸化ナトリウム水溶液 NaOH を加えて加熱すると、<b>けん化</b>（塩基を用いた加水分解）が起こり、グリセリンと<b>脂肪酸のナトリウム塩 R−COONa</b> が生じます。KOH を使っても同じです。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">油脂 ＋ 3NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">グリセリン ＋ 3R−COONa</span></div><p class="ref-note">実際の反応の仕組みとは違いますが、「加水分解したあと、出てきた脂肪酸が NaOH と中和した」と考えると反応式が書けます。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-saponification.png" alt="油脂に3NaOH を加えると、脂肪酸のナトリウム塩3分子とグリセリン1分子になる反応の構造式" loading="lazy"><figcaption class="ref-figure-cap">3か所のエステル結合が同時に切れるので、<b>NaOH は3分子</b>必要です。出てくるのは塩3分子とグリセリン1分子。</figcaption></figure>
-<p class="ref-p"><b>「油脂1molに NaOH は3mol」は必ず覚えてください。</b>この 1対3 が、次の節のけん化価の計算をそのまま決めます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">けん化の一般形（エステル1つぶんの反応式と、加水分解との違い）はこちら</a></p>
-<p class="ref-p">けん化で得られた脂肪酸のナトリウム塩が<b>セッケン</b>です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/soap/">セッケンと合成洗剤のページへ</a></p>
-<section class="ref-sec" id="ref-sec-numbers"><h4 class="ref-sec-h">油脂の分子量・けん化価・ヨウ素価</h4><p class="ref-sec-lead">「分子量＝構成脂肪酸3分子＋38」と「ステアリン酸だけの油脂は890」の2つで、ほとんどの計算が片づきます。</p></section>
-<p class="ref-p">油脂はグリセリンと脂肪酸3分子から水3分子がとれたものなので、分子量は次のようになります。</p>
-<p class="ref-p"><b>（油脂の分子量）＝（構成脂肪酸3分子の分子量）＋ 38</b> となります。38 は、グリセリンから3つの −OH を除いた C₃H₂ の分の式量です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-molar-mass-38.png" alt="油脂の構造式を2色で塗り分けた図。中央の縦に並んだ C 3個と H 2個の部分が橙色の枠で囲まれ「式量38」、左右の脂肪酸にあたる部分が緑色で塗られ「脂肪酸3分子と同じ」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">油脂を<b>縦に切り分ける</b>と、橙の部分が式量38、緑の部分が<b>脂肪酸3分子とちょうど同じ</b>になります。</figcaption></figure>
-<p class="ref-p">実際に代入してみます。分子量884の油脂が1種類の脂肪酸 A だけでできているとすると、A の分子量は (884 − 38) ÷ 3 = 282 です。飽和脂肪酸の一般式 C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> に n = 18 を入れるとステアリン酸 C₁₈H₃₆O₂ で分子量284なので、A はそれより2小さい ＝ <b>C=C を1個もつオレイン酸</b>と決まります。</p>
-<p class="ref-p"><b>「油脂の問題では、構成脂肪酸の炭素数はほとんどの場合18」と覚えてください。</b>方程式を立てるより、18で決め打ちして分子量を合わせにいくほうが速いです。合わなければ別の n を試します。</p>
-<p class="ref-p"><b>ステアリン酸だけからなる油脂の分子量890も、覚えておくと強い数値です。</b>890から何だけ小さいかを見れば、C=C の数がそのまま出ます（C=C が1個で2小さい）。少なくとも「油脂の分子量は900弱」という概数は覚えておいてください。</p>
-<h5 class="ref-h5">けん化価</h5>
-<p class="ref-p">油脂1gをけん化するのに必要な水酸化カリウム KOH の質量をミリグラムで表した値を<b>けん化価</b>といいます。</p>
-<p class="ref-p">油脂1molに対して KOH は3mol（式量56なので 56×3 ＝ 168 g）必要です。ここから比例式を1本立てれば、けん化価から油脂の分子量が求まります。</p>
-<p class="ref-p"><b>油脂1mol : KOH 3mol ＝（油脂の分子量）g : 168 g ＝ 1000 mg :（けん化価）mg</b></p>
-<p class="ref-p">けん化価190の油脂なら、(油脂の分子量) ÷ 168 ＝ 1000 ÷ 190 なので、分子量は 168 × 1000 ÷ 190 ＝ 884 となります。900弱という概数とも合っています。</p>
-<p class="ref-p"><b>単位をミリグラムにそろえるところだけ気をつけてください。</b>油脂の質量は1g ＝ 1000 mg、KOH はもともとミリグラムで与えられます。</p>
-<h5 class="ref-h5">ヨウ素価</h5>
-<p class="ref-p">油脂100gに付加するヨウ素 I₂ の質量をグラムで表した値を<b>ヨウ素価</b>といいます。</p>
-<p class="ref-p"><b>C=C 結合1個につき I₂ が1分子付加する</b>ので、ヨウ素価が大きいほど C=C が多い（不飽和度が高い）ことになります。</p>
-<p class="ref-p">I₂ の分子量は254です。分子量 M の油脂1分子に C=C が n 個あるとすると、油脂 M g に I₂ が 254n g 付加するので、油脂100gあたりでは 254n × 100 ÷ M g になります。</p>
-<p class="ref-p"><b>けん化価とヨウ素価は、どちらも定義を覚えてください。</b>「けん化価は KOH のミリグラム数、ヨウ素価は I₂ のグラム数」までが暗記で、そこから先の比例式は毎回その場で立てられます。<b>公式として覚える必要はありません。</b></p>
+<p class="ref-p">炭素・水素・酸素からなり、分子の中に<b>ヒドロキシ基 −OH をたくさん</b>もち、さらに<b>ホルミル基 −CHO かカルボニル基 C=O を1個</b>もつ化合物を<b>糖類</b>といいます。ご飯のデンプンも、砂糖のスクロースも、血液中のグルコースも糖類です。</p>
+<section class="ref-sec" id="ref-sec-definition"><h4 class="ref-sec-h">糖類とは何か</h4><p class="ref-sec-lead">多くの糖類は C<sub>m</sub>(H₂O)<sub>n</sub> の形の分子式に書けるので「炭水化物」とも呼ばれます。実際は多価アルコールにホルミル基かカルボニル基が付いた化合物です。</p></section>
+<p class="ref-p">グルコースの分子式は C₆H₁₂O₆ で、これは C₆(H₂O)₆ と書き直せます。このように多くの糖類の分子式が C<sub>m</sub>(H₂O)<sub>n</sub> の形になるので、糖類は<b>炭水化物</b>とも呼ばれます。</p>
+<p class="ref-p">実際の構造は、炭素の鎖に −OH がたくさん付き、1か所がホルミル基かカルボニル基になっている化合物です。<b>「−OH がたくさん ＋ C=O が1個」</b>と覚えておくと、構造式を見て糖だと気づけます。</p>
+<section class="ref-sec" id="ref-sec-class"><h4 class="ref-sec-h">単糖・二糖・多糖</h4><p class="ref-sec-lead">加水分解して、それ以上小さな糖にならないものが単糖です。単糖が2個つながったものが二糖、多数つながったものが多糖です。</p></section>
+<p class="ref-p">糖類は、<b>加水分解すると単糖が何個できるか</b>で3つに分けます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">糖類の分類（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">加水分解で生じる単糖</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">単糖</td><td style="text-align: left;">それ以上加水分解されない</td><td style="text-align: left;">グルコース・フルクトース・ガラクトース</td></tr><tr><td style="text-align: left;">二糖</td><td style="text-align: left;">2分子</td><td style="text-align: left;">マルトース・スクロース・ラクトース・セロビオース</td></tr><tr><td style="text-align: left;">多糖</td><td style="text-align: left;">多数</td><td style="text-align: left;">デンプン・セルロース・グリコーゲン</td></tr></tbody></table></div>
+<p class="ref-p"><b>この3つの分類と、それぞれの代表例の名前は暗記してください。</b>二糖と多糖の中身は、それぞれのページで扱います。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/disaccharide/">単糖が2個つながった二糖類のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">単糖が多数つながった多糖類（デンプンとセルロース）のページへ</a></p>
+<section class="ref-sec" id="ref-sec-monosaccharide"><h4 class="ref-sec-h">代表的な単糖</h4><p class="ref-sec-lead">グルコース・フルクトース・ガラクトースは、どれも分子式 C₆H₁₂O₆ の異性体です。</p></section>
+<p class="ref-p">炭素を6個もつ単糖を<b>六炭糖（ヘキソース）</b>といいます。代表的な3つはどれも分子式が C₆H₁₂O₆ で、たがいに<b>異性体</b>の関係にあります。</p>
+<p class="ref-p">鎖状構造でホルミル基 −CHO をもつ単糖を<b>アルドース</b>、カルボニル基 C=O を鎖の途中にもつ単糖を<b>ケトース</b>といいます。グルコースとガラクトースはアルドース、フルクトースはケトースです。</p>
+<div class="ref-table-wrap"><div class="ref-cap">代表的な単糖（六炭糖）（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">分類</th><th style="text-align: left;">特徴</th><th style="text-align: center;">還元性</th></tr></thead><tbody><tr><td style="text-align: left;">グルコース（ブドウ糖）</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">血液中に約0.1%ふくまれる。水溶液中で六員環をつくる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">フルクトース（果糖）</td><td style="text-align: left;">ケトース</td><td style="text-align: left;">糖の中でいちばん甘い。水溶液中で六員環と五員環の両方をとる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">ガラクトース</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">ラクトースの成分。グルコースと −OH の向きが1か所だけ違う</td><td style="text-align: center;">あり</td></tr></tbody></table></div>
+<p class="ref-p"><b>この3つの名前と分子式 C₆H₁₂O₆ は暗記してください。</b>−OH がどちらを向いているかまで覚える必要はありません。炭素を5個もつ五炭糖（リボース・デオキシリボース）は、核酸のページで出てくるまで覚えなくても構いません。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-fructose-chain.png" alt="D-フルクトースの鎖状構造式。炭素6個の鎖の2番目の炭素が C=O になっていて、残りの炭素に −OH が付いている" loading="lazy"><figcaption class="ref-figure-cap">フルクトースは<b>鎖の2番目の炭素が C=O</b> のケトースです。</figcaption></figure>
+<section class="ref-sec" id="ref-sec-glucose-chain"><h4 class="ref-sec-h">グルコースの鎖状構造</h4><p class="ref-sec-lead">鎖の一端がホルミル基、残りの5個の炭素に −OH が1個ずつ付いています。不斉炭素原子は4個です。</p></section>
+<p class="ref-p">グルコースの鎖状構造は、示性式で CH₂OH−CHOH−CHOH−CHOH−CHOH−CHO と書けます。<b>一端がホルミル基 −CHO</b> なので、グルコースはアルドースです。</p>
+<p class="ref-p">まん中の4つの CHOH の炭素には、H・OH と、左右の違う原子団が付いています。4つとも違うものが付いているので、<b>不斉炭素原子は4個</b>です。両端の CH₂OH と CHO の炭素は、同じ H を2個もつか二重結合をもつので不斉炭素原子ではありません。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-glucose-chain.png" alt="D-グルコースの鎖状構造式。炭素6個の鎖の一端がホルミル基 CHO、反対の端が CH2OH で、間の4個の炭素に OH が1個ずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">鎖の一端が<b>ホルミル基</b>。間の4個の炭素が不斉炭素原子です。</figcaption></figure>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkane-isomers/">不斉炭素原子と立体異性体の数え方は異性体のページへ</a></p>
+<section class="ref-sec" id="ref-sec-ring"><h4 class="ref-sec-h">環状構造と α形・β形</h4><p class="ref-sec-lead">1位の炭素と5位の炭素の −OH の酸素がつながると六員環になります。そのとき1位にできる −OH の向きで α形と β形に分かれます。</p></section>
+<p class="ref-p">グルコースの結晶や水溶液の大部分は、鎖状ではなく<b>六員環の環状構造</b>をとっています。鎖状構造の<b>5位の炭素に付いた −OH の酸素</b>が、<b>1位のホルミル基の炭素</b>と結合して環が閉じます。</p>
+<p class="ref-p">環が閉じると、1位の炭素に新しく −OH ができます。この −OH が環の下側を向いたものを<b>α-グルコース</b>、上側を向いたものを<b>β-グルコース</b>といいます（環を、酸素を右奥に置く向きで描いたとき）。</p>
+<p class="ref-p"><b>「α形とβ形の違いは、1位の −OH の向きだけ」</b>と覚えましょう。この1か所の違いが、多糖類ではデンプンとセルロースの違いになります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-alpha-glucose.png" alt="α-D-グルコースの環状構造式を直交で描いた図。酸素1個と炭素5個の六員環に、OH が4個と CH2OH が1個付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>α-グルコース</b>。酸素1個と炭素5個の六員環に、−OH が4個と −CH₂OH が1個付いています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-beta-glucose.png" alt="β-D-グルコースの環状構造式を直交で描いた図。原子のつながりは α-グルコースの図と同じ" loading="lazy"><figcaption class="ref-figure-cap"><b>β-グルコース</b>。原子のつながりは α形と同じで、違うのは1位の −OH の向きだけです。</figcaption></figure>
+<div class="ref-example"><h4>例題：β-D-グルコース（β-D-グルコピラノース） をつくる</h4><p class="ref-p" style="margin: 0px;">β-グルコースを組んで、六員環のどこに酸素が入るかを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.bio.saccharide-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=saccharide">▶ β-D-グルコース（β-D-グルコピラノース）を組んでみる</a><p class="ref-note">環の中の酸素は、もとは5位の炭素の −OH の酸素です。1位の炭素には −OH が付いています。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">α形がつながるとデンプン、β形がつながるとセルロースになる話は多糖類のページへ</a></p>
+<section class="ref-sec" id="ref-sec-equilibrium"><h4 class="ref-sec-h">水溶液中の平衡と還元性</h4><p class="ref-sec-lead">水溶液中では α形・鎖状構造・β形の3つが平衡になって共存しています。開いた鎖状構造のホルミル基が還元性を示します。</p></section>
+<p class="ref-p">α-グルコースの結晶を水に溶かすと、環の一部が開いて鎖状構造になり、それがまた閉じるときに β形にもなります。こうして水溶液中では<b>α形・鎖状構造・β形の3つが平衡の状態</b>で共存します。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">α-グルコース（環状）</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">鎖状構造（ホルミル基をもつ）</span></div><p class="ref-note">1位の炭素と環の酸素の間の結合が切れて環が開きます。水溶液中では左右に行き来しています。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">鎖状構造（ホルミル基をもつ）</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">β-グルコース（環状）</span></div><p class="ref-note">開いた鎖がもう一度閉じるとき、1位の −OH が反対を向くと β形になります。</p></div>
+<p class="ref-p"><b>「環状の結晶を水に溶かすと、一部が鎖状に開く」</b>と覚えましょう。鎖状構造はごくわずかですが、ここに<b>ホルミル基</b>が現れるので、グルコースの水溶液は<b>還元性</b>を示します。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₂OH(CHOH)₄CHO ＋ 2[Ag(NH₃)₂]⁺ ＋ 3OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₂OH(CHOH)₄COO⁻ ＋ 2Ag ＋ 4NH₃ ＋ 2H₂O</span></div><p class="ref-note">銀鏡反応。鎖状構造のホルミル基が酸化されて、銀が析出します。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₂OH(CHOH)₄CHO ＋ 2Cu²⁺ ＋ 5OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₂OH(CHOH)₄COO⁻ ＋ Cu₂O ＋ 3H₂O</span></div><p class="ref-note">フェーリング液の還元。酸化銅(I) Cu₂O の赤色沈殿ができます。</p></div>
+<p class="ref-p"><b>「グルコースは銀鏡反応もフェーリング液の還元も陽性」は必ず暗記してください。</b>イオン反応式そのものは、アルデヒドの式の R を糖の形に置き換えただけなので、丸暗記しなくても書けます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/aldehyde/">銀鏡反応・フェーリング液の還元の試薬と、アルデヒドの還元性はこちら</a></p>
+<section class="ref-sec" id="ref-sec-fructose"><h4 class="ref-sec-h">フルクトースが還元性を示すわけ</h4><p class="ref-sec-lead">フルクトースはホルミル基をもたないケトースですが、塩基性の水溶液中で一部がホルミル基をもつ形に変わるので、還元性を示します。</p></section>
+<p class="ref-p">フルクトースの鎖状構造には<b>ホルミル基がありません</b>。それでもフルクトースは、銀鏡反応もフェーリング液の還元も陽性です。</p>
+<p class="ref-p">これは、銀鏡反応やフェーリング液の反応が起こる<b>塩基性の水溶液中で、フルクトースの一部がホルミル基をもつ構造に変わる</b>ためです。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">フルクトースはケトースでホルミル基をもたないので、還元性を示さない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">フルクトースも<b>還元性を示します</b>。塩基性の水溶液中で、一部がホルミル基をもつ構造に変わるためです。</span></p><p class="ref-mistake-why">「還元性 ＝ ホルミル基」を逆向きに使って「ホルミル基が無い ＝ 還元性が無い」としてしまうためです。★ <b>単糖はすべて還元性を示す</b>、と覚えておけば迷いません。</p></div>
+<p class="ref-p"><b>「単糖はすべて還元性を示す」と覚えてください。</b>変わる仕組みの名前や途中の構造は、覚える必要はありません。</p>
+<section class="ref-sec" id="ref-sec-fermentation"><h4 class="ref-sec-h">アルコール発酵</h4><p class="ref-sec-lead">酵母のもつ酵素群チマーゼで、グルコースはエタノールと二酸化炭素に分解されます。</p></section>
+<p class="ref-p">グルコースやフルクトースなどの単糖に<b>酵母</b>を加えておくと、酵母がもつ酵素群<b>チマーゼ</b>のはたらきで、<b>エタノールと二酸化炭素</b>が生じます。これを<b>アルコール発酵</b>といいます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₁₂O₆</span><span class="ref-rx-arrow"><span class="ref-rx-over">チマーゼ</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2C₂H₅OH ＋ 2CO₂</span></div><p class="ref-note">係数の2と2は、左右で炭素6個・水素12個・酸素6個を合わせればその場で出てきます。</p></div>
+<p class="ref-p"><b>この反応式は暗記してください。</b>係数を忘れても、C₂H₅OH と CO₂ ができることさえ覚えていれば、原子の数を合わせて係数を出せます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/enzyme/">チマーゼなど、糖を分解する酵素の一覧は酵素のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">発酵で得られるエタノールの性質はアルコールのページへ</a></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">脂肪酸のアルキル基を R として、<b>(1) 油脂が加水分解する化学反応式　(2) NaOH を用いて油脂をけん化する化学反応式</b>を書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 油脂 ＋ 3H₂O → グリセリン ＋ 3R−COOH　(2) 油脂 ＋ 3NaOH → グリセリン ＋ 3R−COONa　どちらも<b>係数が 1、3、1、3</b> になります。エステル結合が3つあるので、水も NaOH も3分子必要です。構造式で書くときは、グリセリン側に3つの −OH が残り、脂肪酸側が3分子に分かれる形にします。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1種類の脂肪酸で構成された油脂 43.9 g をけん化するのに、水酸化カリウム 8.40 g が必要だった。KOH ＝ 56 とする。<b>(1) この油脂の分子量を求めよ。(2) この油脂を構成している脂肪酸の示性式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 油脂1mol に KOH は3mol なので、油脂の分子量を M として <b>M : 168 ＝ 43.9 : 8.40</b>。8.40 の20倍が168なので、M ＝ 43.9 × 20 ＝ <b>878</b>。(2) 脂肪酸の分子量は (878 − 38) ÷ 3 ＝ 280。ステアリン酸 C₁₈H₃₆O₂ の分子量は 284 なので、4小さい ＝ C=C が2個あることになり、<b>リノール酸 C₁₇H₃₁COOH</b> です。別解として、ステアリン酸だけからなる油脂の分子量890を覚えていれば、890 − 878 ＝ 12 ＝ 6×2 から油脂全体で C=C が6個、脂肪酸1本あたり2個、とすぐ出ます。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ある分子量884の油脂 4.42 g に付加するヨウ素は 3.81 g であった。I ＝ 127 とする。<b>(1) この油脂1分子にふくまれる C=C 結合の数を整数で求めよ。(2) この油脂を構成している脂肪酸がステアリン酸・オレイン酸・リノール酸・リノレン酸のいずれかであるとき、何種類の構造異性体が考えられるか。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 油脂 4.42 g の200倍が884 g なので、付加する I₂ も200倍で 3.81 × 200 ＝ 762 g。I₂ の分子量は254なので 762 ÷ 254 ＝ <b>3個</b>。ステアリン酸だけの油脂890との差から 890 − 884 ＝ 6 ＝ 3×2 と求めることもできます。(2) 3個の C=C を3本の脂肪酸 R¹・R²・R³ に割り振ります。組み合わせは (3,0,0)、(2,1,0)、(1,1,1) の3通りで、上下をひっくり返すと同じになるものを除きながら並べると <b>6種類</b>です。なお R¹ と R³ が違うとき、まん中の炭素が不斉炭素原子になるので、立体異性体まで数えると 6 ＋ 4 ＝ 10種類になります。</p></div></details></div>
-<div class="ref-example"><h4>例題：ステアリン酸 をつくる</h4><p class="ref-p" style="margin: 0px;">ステアリン酸を組んで、炭素数18の高級脂肪酸の長さを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.fat.structure&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=fat">▶ ステアリン酸を組んでみる</a><p class="ref-note">端のカルボキシ基までふくめて C が18個。この3本がグリセリンにつながると油脂になります。</p></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">けん化と加水分解の一般形（なぜけん化だけ最後まで進むのか）はこちら</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/ester/">エステル結合そのもの・命名・構造決定の手順はエステルのページへ</a></p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">グルコース C₆H₁₂O₆ の鎖状構造を示性式で書き、不斉炭素原子の数を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>CH₂OH−CHOH−CHOH−CHOH−CHOH−CHO。<b>不斉炭素原子は4個</b>です（両端の CH₂OH と CHO を除いた4つの CHOH の炭素）。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">グルコース 18.0 g を酵母で完全にアルコール発酵させたとき、生じるエタノールの質量と二酸化炭素の体積（標準状態）を求めよ。H ＝ 1、C ＝ 12、O ＝ 16 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>グルコースの分子量は180なので 0.100 mol。反応式の係数からエタノールも CO₂ も 0.200 mol。エタノール（分子量46）は <b>9.20 g</b>、CO₂ は 0.200 × 22.4 ＝ <b>4.48 L</b> です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">フルクトースは鎖状構造にホルミル基をもたないのに、フェーリング液を還元する。その理由を書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>フェーリング液の反応が起こる塩基性の水溶液中で、フルクトースの<b>一部がホルミル基をもつ構造に変わる</b>ためです。</p></div></details></div>
+<div class="ref-example"><h4>例題：D-グルコース（鎖状） をつくる</h4><p class="ref-p" style="margin: 0px;">グルコースの鎖状構造を組んで、ホルミル基と −OH の数を手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.bio.saccharide-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=saccharide">▶ D-グルコース（鎖状）を組んでみる</a><p class="ref-note">炭素6個のうち、一端がホルミル基、残り5個に −OH が1個ずつ付きます。</p></div>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（7問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.fat.structure,org.fat.fatty-acids,org.fat.solid-liquid,org.fat.hardening,org.fat.drying-oil,org.fat.saponification-value,org.fat.iodine-value&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（7問・測定モード）">▶ 一問一答で解く（7問・測定モード）</button><a class="alt" href="/qa/?codes=org.fat.structure,org.fat.fatty-acids,org.fat.solid-liquid,org.fat.hardening,org.fat.drying-oil,org.fat.saponification-value,org.fat.iodine-value&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.bio.saccharide-def,org.bio.saccharide-class,org.bio.monosaccharide,org.bio.glucose-structure,org.bio.glucose-ring,org.bio.glucose-reducing,org.bio.fructose,org.bio.alcohol-fermentation&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.bio.saccharide-def,org.bio.saccharide-class,org.bio.monosaccharide,org.bio.glucose-structure,org.bio.glucose-ring,org.bio.glucose-reducing,org.bio.fructose,org.bio.alcohol-fermentation&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
 <h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.fat.structure" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.fat.structure" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.bio.saccharide-def" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.bio.saccharide-def" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/esterification/">← エステル化とけん化</a>
+<nav class="seq"><a href="/reference/aromatic-separation/">← 芳香族化合物の分離</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/soap/">セッケンと合成洗剤 →</a></nav>
+<a href="/reference/disaccharide/">二糖類 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

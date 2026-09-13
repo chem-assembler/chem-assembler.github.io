@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>油脂 ｜ 化学の参考書</title>
-<meta name="description" content="グリセリンと高級脂肪酸3分子からできたエステルが油脂です。構成脂肪酸5種、融点が C=C の数で決まる理由、加水分解とけん化、そして「分子量＝脂肪酸3分子＋38」から始まるけん化価・ヨウ素価の計算まで。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/fat/">
+<title>元素の確認 ｜ 化学の参考書</title>
+<meta name="description" content="有機化合物に C・H・N・Cl・S が入っているかを調べる操作と、そのとき見える変化のまとめ。検出の反応はどれも無機で習った中和・水和・沈殿なので、反応式ごと並べて見比べられます。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/element-detection/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="油脂 ｜ 化学の参考書">
-<meta property="og:description" content="グリセリンと高級脂肪酸3分子からできたエステルが油脂です。構成脂肪酸5種、融点が C=C の数で決まる理由、加水分解とけん化、そして「分子量＝脂肪酸3分子＋38」から始まるけん化価・ヨウ素価の計算まで。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/fat/">
+<meta property="og:title" content="元素の確認 ｜ 化学の参考書">
+<meta property="og:description" content="有機化合物に C・H・N・Cl・S が入っているかを調べる操作と、そのとき見える変化のまとめ。検出の反応はどれも無機で習った中和・水和・沈殿なので、反応式ごと並べて見比べられます。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/element-detection/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -836,84 +836,72 @@ a.ref-link::before { content: '→ '; }
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
 <main class="wrap">
-<h1>油脂</h1>
-<p class="lede">グリセリンと高級脂肪酸3分子からできたエステルが油脂です。構成脂肪酸5種、融点が C=C の数で決まる理由、加水分解とけん化、そして「分子量＝脂肪酸3分子＋38」から始まるけん化価・ヨウ素価の計算まで。</p>
-<div><span class="unit-label">油脂・セッケン</span><span class="unit-label">油脂</span></div>
+<h1>元素の確認</h1>
+<p class="lede">有機化合物に C・H・N・Cl・S が入っているかを調べる操作と、そのとき見える変化のまとめ。検出の反応はどれも無機で習った中和・水和・沈殿なので、反応式ごと並べて見比べられます。</p>
+<div><span class="unit-label">元素の確認・元素分析</span><span class="unit-label">元素の確認（定性分析）</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-structure" data-ref-anchor="structure">油脂の構造</a></li><li><a href="#ref-sec-melting" data-ref-anchor="melting">油脂の融点と分類</a></li><li><a href="#ref-sec-reaction" data-ref-anchor="reaction">油脂の加水分解とけん化</a></li><li><a href="#ref-sec-numbers" data-ref-anchor="numbers">油脂の分子量・けん化価・ヨウ素価</a></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（7節）</summary><ul><li><a href="#ref-sec-qualitative" data-ref-anchor="qualitative">定性分析と定量分析</a></li><li><a href="#ref-sec-list" data-ref-anchor="list">5元素の確認法の一覧</a></li><li><a href="#ref-sec-carbon" data-ref-anchor="carbon">炭素の確認 —— 石灰水の白濁</a></li><li><a href="#ref-sec-hydrogen" data-ref-anchor="hydrogen">水素の確認 —— 硫酸銅(II)無水物の青変</a></li><li><a href="#ref-sec-nitrogen" data-ref-anchor="nitrogen">窒素の確認 —— アンモニアの白煙</a></li><li><a href="#ref-sec-chlorine-sulfur" data-ref-anchor="chlorine-sulfur">塩素・硫黄の確認</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">高級脂肪酸 R−COOH と、3価アルコールである1,2,3-プロパントリオール（<b>グリセリン</b>）CH₂OHCHOHCH₂OH がつくる3価のエステルを<b>油脂</b>といいます。</p>
-<section class="ref-sec" id="ref-sec-structure"><h4 class="ref-sec-h">油脂の構造</h4><p class="ref-sec-lead">グリセリン1分子に、高級脂肪酸3分子がエステル結合でつながっています。</p></section>
-<p class="ref-p">グリセリンは −OH を3個もつので、<b>3分子の脂肪酸と3か所でエステル結合をつくります</b>。つまり油脂は、エステル結合を3つもつ1個の分子です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-structure.png" alt="油脂の構造式を左向きと右向きの2通りで並べた図。どちらも中央に炭素3個のグリセリン骨格があり、そこから3本の −O−CO−R がのびている" loading="lazy"><figcaption class="ref-figure-cap">油脂の構造式は<b>どちらの向きに書いても構いません</b>。ただし示性式にするときは、左向きなら −OCO−、右向きなら −COO− と書き分けます。</figcaption></figure>
-<p class="ref-p"><b>エステル結合の示性式の向きは、書くときに毎回確かめてください。</b>−OCO− と −COO− は同じ結合ですが、左右どちらから読むかで並びが変わります。</p>
-<p class="ref-p">天然の油脂を構成する脂肪酸は、<b>炭素数16か18のものがほとんど</b>です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">油脂をつくる主な高級脂肪酸（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: center;">C=C の数</th></tr></thead><tbody><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>パルミチン酸</b></td><td style="text-align: left;">C₁₅H₃₁COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>ステアリン酸</b></td><td style="text-align: left;">C₁₇H₃₅COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>オレイン酸</b></td><td style="text-align: left;">C₁₇H₃₃COOH</td><td style="text-align: center;">1</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノール酸</b></td><td style="text-align: left;">C₁₇H₃₁COOH</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノレン酸</b></td><td style="text-align: left;">C₁₇H₂₉COOH</td><td style="text-align: center;">3</td></tr></tbody></table></div>
-<p class="ref-p"><b>この5つは名前と示性式を必ず暗記してください。</b>炭素数を1つずつ覚える必要はありません。<b>「基本的に18」と覚えて</b>、パルミチン酸だけが16、と付け足すのがいちばん軽い覚え方です。</p>
-<p class="ref-p">表を縦に見ると、<b>C=C が1個増えるごとに H 原子が2個減り、分子量が2小さくなります</b>。ステアリン酸 C₁₇H₃₅COOH（C=C は0個）から H を2個ずつ引いていけば、オレイン酸・リノール酸・リノレン酸の示性式がその場で出てきます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">高級脂肪酸・不飽和脂肪酸という呼び名の分け方はカルボン酸のページへ</a></p>
-<section class="ref-sec" id="ref-sec-melting"><h4 class="ref-sec-h">油脂の融点と分類</h4><p class="ref-sec-lead">C=C が多いほど脂肪酸が折れ線になり、融点が下がります。常温で固体なら脂肪、液体なら脂肪油です。</p></section>
-<p class="ref-p">分子間力が大きいほど融点は高くなります。同じ種類の分子どうしなら、分子量が大きいほど分子間力（分散力）が大きくなるためです。</p>
-<p class="ref-p">だから油脂では、まず「<b>炭素数が多い（分子量が大きい）ほど融点が高い</b>」が成り立ちます。</p>
-<p class="ref-p">もう1つ効くのが C=C の数です。油脂では「<b>C=C が多いほど融点が低い</b>」となります。C=C のところで脂肪酸が折れ線になり、分子どうしの接触面積が減って近づきにくくなるので、分子間力が小さくなるためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-chain-shape.png" alt="脂肪酸2本の模式図。左はまっすぐな折れ線が続く飽和脂肪酸、右は途中で大きく向きが変わる不飽和脂肪酸で、曲がっているところに「C=C（天然の油脂はすべてシス型）」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>飽和脂肪酸</b>はまっすぐ伸びるので重なりやすく、右の<b>不飽和脂肪酸</b>は C=C のところで折れるので重なりにくくなります。</figcaption></figure>
-<p class="ref-p">この理由の立て方は、アルコールの沸点が 1級・2級・3級 の順に低くなるのと同じです。<b>「かたちが複雑になると近づきにくくなる」という1本の理由</b>で両方を説明できます。</p>
-<p class="ref-p">常温で固体の油脂を<b>脂肪</b>、液体の油脂を<b>脂肪油</b>といいます。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-melting-state.png" alt="2本の縦棒グラフ。左は融点が高い油脂で、常温の線が融点より下にあり固体の領域に入る。右は融点が低い油脂で、常温の線が融点より上にあり液体の領域に入る" loading="lazy"><figcaption class="ref-figure-cap"><b>融点が常温のどちら側にあるか</b>で、脂肪（固体）と脂肪油（液体）が分かれます。</figcaption></figure>
-<p class="ref-p">一般的に、動物性の油脂は飽和脂肪酸が多いので<b>脂肪</b>、植物性の油脂は不飽和脂肪酸が多いので<b>脂肪油</b>になります。</p>
-<p class="ref-p">C=C を多くふくむ脂肪油は、空気中に放置すると酸化されて固まります。これを<b>乾性油</b>といい、インクや塗料に使われます。C=C が少なく空気中で固まらないものが<b>不乾性油</b>で、食用油がこれにあたります。その中間が半乾性油です。</p>
-<p class="ref-p">脂肪油に<b>ニッケル Ni を触媒として水素 H₂ を付加</b>し、C=C を減らして固めた油脂を<b>硬化油</b>といいます。マーガリンの原料です。</p>
-<p class="ref-p"><b>「乾性油は酸化されて固まる、硬化油は水素を付加して固める」の違いは覚えておきましょう。</b>どちらも「固まる」ですが、起きている反応が別です。</p>
-<section class="ref-sec" id="ref-sec-reaction"><h4 class="ref-sec-h">油脂の加水分解とけん化</h4><p class="ref-sec-lead">油脂はエステルなので、酸で加水分解でき、塩基でけん化できます。出てくるのはグリセリンと脂肪酸です。</p></section>
-<p class="ref-p">油脂に酸を加えて加水分解すると、<b>グリセリンと脂肪酸 R−COOH</b> が生じます。エステル結合が3つあるので、水は3分子必要です。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">油脂 ＋ 3H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">H⁺</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">グリセリン ＋ 3R−COOH</span></div><p class="ref-note">エステルの加水分解そのものです。グリセリン1分子に対して脂肪酸が3分子出てきます。</p></div>
-<p class="ref-p">油脂に水酸化ナトリウム水溶液 NaOH を加えて加熱すると、<b>けん化</b>（塩基を用いた加水分解）が起こり、グリセリンと<b>脂肪酸のナトリウム塩 R−COONa</b> が生じます。KOH を使っても同じです。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">油脂 ＋ 3NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">グリセリン ＋ 3R−COONa</span></div><p class="ref-note">実際の反応の仕組みとは違いますが、「加水分解したあと、出てきた脂肪酸が NaOH と中和した」と考えると反応式が書けます。</p></div>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-saponification.png" alt="油脂に3NaOH を加えると、脂肪酸のナトリウム塩3分子とグリセリン1分子になる反応の構造式" loading="lazy"><figcaption class="ref-figure-cap">3か所のエステル結合が同時に切れるので、<b>NaOH は3分子</b>必要です。出てくるのは塩3分子とグリセリン1分子。</figcaption></figure>
-<p class="ref-p"><b>「油脂1molに NaOH は3mol」は必ず覚えてください。</b>この 1対3 が、次の節のけん化価の計算をそのまま決めます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">けん化の一般形（エステル1つぶんの反応式と、加水分解との違い）はこちら</a></p>
-<p class="ref-p">けん化で得られた脂肪酸のナトリウム塩が<b>セッケン</b>です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/soap/">セッケンと合成洗剤のページへ</a></p>
-<section class="ref-sec" id="ref-sec-numbers"><h4 class="ref-sec-h">油脂の分子量・けん化価・ヨウ素価</h4><p class="ref-sec-lead">「分子量＝構成脂肪酸3分子＋38」と「ステアリン酸だけの油脂は890」の2つで、ほとんどの計算が片づきます。</p></section>
-<p class="ref-p">油脂はグリセリンと脂肪酸3分子から水3分子がとれたものなので、分子量は次のようになります。</p>
-<p class="ref-p"><b>（油脂の分子量）＝（構成脂肪酸3分子の分子量）＋ 38</b> となります。38 は、グリセリンから3つの −OH を除いた C₃H₂ の分の式量です。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-molar-mass-38.png" alt="油脂の構造式を2色で塗り分けた図。中央の縦に並んだ C 3個と H 2個の部分が橙色の枠で囲まれ「式量38」、左右の脂肪酸にあたる部分が緑色で塗られ「脂肪酸3分子と同じ」と注が付いている" loading="lazy"><figcaption class="ref-figure-cap">油脂を<b>縦に切り分ける</b>と、橙の部分が式量38、緑の部分が<b>脂肪酸3分子とちょうど同じ</b>になります。</figcaption></figure>
-<p class="ref-p">実際に代入してみます。分子量884の油脂が1種類の脂肪酸 A だけでできているとすると、A の分子量は (884 − 38) ÷ 3 = 282 です。飽和脂肪酸の一般式 C<sub>n</sub>H<sub>2n</sub>O<sub>2</sub> に n = 18 を入れるとステアリン酸 C₁₈H₃₆O₂ で分子量284なので、A はそれより2小さい ＝ <b>C=C を1個もつオレイン酸</b>と決まります。</p>
-<p class="ref-p"><b>「油脂の問題では、構成脂肪酸の炭素数はほとんどの場合18」と覚えてください。</b>方程式を立てるより、18で決め打ちして分子量を合わせにいくほうが速いです。合わなければ別の n を試します。</p>
-<p class="ref-p"><b>ステアリン酸だけからなる油脂の分子量890も、覚えておくと強い数値です。</b>890から何だけ小さいかを見れば、C=C の数がそのまま出ます（C=C が1個で2小さい）。少なくとも「油脂の分子量は900弱」という概数は覚えておいてください。</p>
-<h5 class="ref-h5">けん化価</h5>
-<p class="ref-p">油脂1gをけん化するのに必要な水酸化カリウム KOH の質量をミリグラムで表した値を<b>けん化価</b>といいます。</p>
-<p class="ref-p">油脂1molに対して KOH は3mol（式量56なので 56×3 ＝ 168 g）必要です。ここから比例式を1本立てれば、けん化価から油脂の分子量が求まります。</p>
-<p class="ref-p"><b>油脂1mol : KOH 3mol ＝（油脂の分子量）g : 168 g ＝ 1000 mg :（けん化価）mg</b></p>
-<p class="ref-p">けん化価190の油脂なら、(油脂の分子量) ÷ 168 ＝ 1000 ÷ 190 なので、分子量は 168 × 1000 ÷ 190 ＝ 884 となります。900弱という概数とも合っています。</p>
-<p class="ref-p"><b>単位をミリグラムにそろえるところだけ気をつけてください。</b>油脂の質量は1g ＝ 1000 mg、KOH はもともとミリグラムで与えられます。</p>
-<h5 class="ref-h5">ヨウ素価</h5>
-<p class="ref-p">油脂100gに付加するヨウ素 I₂ の質量をグラムで表した値を<b>ヨウ素価</b>といいます。</p>
-<p class="ref-p"><b>C=C 結合1個につき I₂ が1分子付加する</b>ので、ヨウ素価が大きいほど C=C が多い（不飽和度が高い）ことになります。</p>
-<p class="ref-p">I₂ の分子量は254です。分子量 M の油脂1分子に C=C が n 個あるとすると、油脂 M g に I₂ が 254n g 付加するので、油脂100gあたりでは 254n × 100 ÷ M g になります。</p>
-<p class="ref-p"><b>けん化価とヨウ素価は、どちらも定義を覚えてください。</b>「けん化価は KOH のミリグラム数、ヨウ素価は I₂ のグラム数」までが暗記で、そこから先の比例式は毎回その場で立てられます。<b>公式として覚える必要はありません。</b></p>
+<p class="ref-p">有機化合物をつくる元素は、C・H・O のほかに N・S・Cl などに限られます。このページでは、試料にどの元素が入っているかを調べる操作を、元素ごとに見ていきます。</p>
+<section class="ref-sec" id="ref-sec-qualitative"><h4 class="ref-sec-h">定性分析と定量分析</h4><p class="ref-sec-lead">「何が入っているか」を調べるのが定性分析、「どれだけ入っているか」を調べるのが定量分析です。</p></section>
+<p class="ref-p">試料に何が含まれているか、何という物質なのかを調べる分析を<b>定性分析</b>といいます。これに対して、何 g・何 mol といった量を調べる分析を<b>定量分析</b>といいます。</p>
+<p class="ref-p">このページは定性分析、次の「元素分析」のページが定量分析です。</p>
+<p class="ref-p">たとえばアミノ酸のシステインは、C・H・O に加えて N と S を含みます。このページの操作を順に当てていくと、5元素のうち Cl 以外の4つで変化が見えます（O だけは確認の操作がありません。下の節で扱います）。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/element-detection-cysteine.png" alt="システインの構造式。炭素3個の骨格に、アミノ基 −NH₂、カルボキシ基 −COOH、硫黄をふくむ −CH₂−SH が付いている" loading="lazy"><figcaption class="ref-figure-cap">システイン。C・H・O のほかに <b>N</b> と <b>S</b> を含むので、窒素と硫黄の確認で変化が見えます。</figcaption></figure>
+<p class="ref-p">調べる前に、試料は<b>純物質</b>にしておきます。混合物のままでは、どの物質の元素を見ているのかが決まらないためです。分けるには蒸留・再結晶・抽出（分液漏斗）・クロマトグラフィーを使います。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-separation/">抽出（分液漏斗）で混合物を分ける操作は芳香族化合物の分離のページへ</a></p>
+<section class="ref-sec" id="ref-sec-list"><h4 class="ref-sec-h">5元素の確認法の一覧</h4><p class="ref-sec-lead">元素ごとに「操作 → 生成物 → 確認方法」が1組になっています。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">成分元素の確認（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">元素</th><th style="text-align: left;">操作</th><th style="text-align: left;">生成物</th><th style="text-align: left;">確認方法</th></tr></thead><tbody><tr><td style="text-align: left;"><b>炭素 C</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: left;">CO₂</td><td style="text-align: left;">石灰水に通じると<b>白濁</b>する</td></tr><tr><td style="text-align: left;"><b>水素 H</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: left;">H₂O</td><td style="text-align: left;">白色の硫酸銅(II)無水物が<b>青色</b>になる（塩化コバルト紙が青から<b>赤</b>に変わる）</td></tr><tr><td style="text-align: left;"><b>窒素 N</b></td><td style="text-align: left;">NaOH を加えて加熱する</td><td style="text-align: left;">NH₃</td><td style="text-align: left;">濃塩酸を近づけると<b>白煙</b>が生じる／湿った<b>赤色リトマス紙が青変</b>する</td></tr><tr><td style="text-align: left;"><b>塩素 Cl</b></td><td style="text-align: left;">焼いた銅線につけて加熱する</td><td style="text-align: left;">CuCl₂</td><td style="text-align: left;"><b>青緑色</b>の炎色反応が見られる（バイルシュタイン反応）</td></tr><tr><td style="text-align: left;"><b>硫黄 S</b></td><td style="text-align: left;">金属 Na を加えて加熱・融解する</td><td style="text-align: left;">Na₂S</td><td style="text-align: left;">水に溶かして酢酸鉛(II)水溶液を加えると<b>黒色沈殿</b>が生じる</td></tr></tbody></table></div>
+<p class="ref-p"><b>この表の「操作」と「確認方法」は、5元素とも組にして必ず覚えてください。</b>反応そのものはどれも無機で習ったものなので、無機の知識と結び付けると覚える量が減ります。</p>
+<section class="ref-sec" id="ref-sec-carbon"><h4 class="ref-sec-h">炭素の確認 —— 石灰水の白濁</h4><p class="ref-sec-lead">完全燃焼で出た CO₂ を、石灰水との中和で見つけます。</p></section>
+<p class="ref-p">炭素を含む有機化合物を完全燃焼させると、二酸化炭素が発生します。この気体を石灰水に通じると、炭酸カルシウムの白色沈殿が生じて白濁します。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ca(OH)₂ ＋ CO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaCO₃↓ ＋ H₂O</span></div><p class="ref-note">酸性酸化物の CO₂ と、塩基の Ca(OH)₂ の中和です。白濁の正体は CaCO₃ の沈殿です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CaCO₃ ＋ CO₂ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Ca(HCO₃)₂</span></div><p class="ref-note">CO₂ を通じ続けると、沈殿が炭酸水素カルシウムになって溶け、無色にもどります。</p></div>
+<p class="ref-p">確認に使うのは「<b>一度白濁したか</b>」です。通じ続けて透明にもどっても、CO₂ が出たことに変わりはありません。</p>
+<section class="ref-sec" id="ref-sec-hydrogen"><h4 class="ref-sec-h">水素の確認 —— 硫酸銅(II)無水物の青変</h4><p class="ref-sec-lead">完全燃焼で出た H₂O を、白色の無水物が水和して青くなる変化で見つけます。</p></section>
+<p class="ref-p">水素を含む有機化合物を完全燃焼させると、水が発生します。白色の硫酸銅(II)無水物は少量の水と反応して、青色の硫酸銅(II)五水和物になります。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CuSO₄ ＋ 5H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuSO₄・5H₂O</span></div><p class="ref-note">白色の無水物が、青色の五水和物になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CuSO₄・5H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuSO₄ ＋ 5H₂O</span></div><p class="ref-note">逆向きの変化です。加熱すると水和水が抜けて白色にもどる、可逆な反応です。</p></div>
+<p class="ref-p">青色の塩化コバルト紙が赤色に変わることでも水を検出できます。高校化学ではあまり登場しないので、<b>塩化コバルト紙は覚えなくても構いません</b>。見て「水の検出だ」と分かれば十分です。</p>
+<section class="ref-sec" id="ref-sec-nitrogen"><h4 class="ref-sec-h">窒素の確認 —— アンモニアの白煙</h4><p class="ref-sec-lead">NaOH と加熱して出た NH₃ を、塩酸との白煙かリトマス紙で見つけます。</p></section>
+<p class="ref-p">窒素を含む有機化合物に水酸化ナトリウムを加えて加熱すると、有機化合物が分解されてアンモニアが発生します。濃塩酸をつけたガラス棒を近づけると、塩化アンモニウムの細かい結晶が白煙として見えます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₃ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NH₄Cl</span></div><p class="ref-note">塩基の NH₃ と酸の HCl の中和です。白煙は NH₄Cl の微粒子です。</p></div>
+<p class="ref-p">アンモニアは高校化学で扱う気体のうち、ただ1つの塩基性の気体です。そのため、湿らせた赤色リトマス紙を青く変えることでも確認できます。</p>
+<p class="ref-p">この方法で NH₃ が出るのは、アミノ基 −NH₂ のような形で N が入っているときです。ニトロ基 −NO₂ の N ではアンモニアが発生しません。<b>この区別は覚える必要はありません。</b></p>
+<section class="ref-sec" id="ref-sec-chlorine-sulfur"><h4 class="ref-sec-h">塩素・硫黄の確認</h4><p class="ref-sec-lead">塩素は銅線の炎色反応、硫黄は硫化鉛(II)の黒色沈殿で見つけます。</p></section>
+<p class="ref-p">塩素を含む有機化合物を、焼いた銅線につけて加熱すると、塩化銅(II)が生じて銅の<b>青緑色</b>の炎色反応が見られます。これを<b>バイルシュタイン反応</b>といいます。塩素の確認は無機化学では習わないので、<b>この組は丸暗記で構いません</b>。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">試料中の Cl ＋ Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over">焼いた銅線・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuCl₂</span></div><p class="ref-note">CuCl₂ は炎の中で気化しやすいので、Cu の炎色反応が見えます。銅線そのものを炎に入れても、この色は出ません。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">銅線の炎色反応で青緑色が見えたので、試料には塩素が入っている。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">青緑色が見えて分かるのは「ハロゲンが入っている」までです。臭素やヨウ素を含む化合物でも同じ色が出ます。</span></p><p class="ref-mistake-why">高校の問題では試料がふつう塩素化合物なので Cl と答えて済みますが、選択肢に Br や I が並んでいる問題では、この1歩で外れます。</p></div>
+<p class="ref-p">硫黄を含む有機化合物に金属ナトリウムを加えて加熱・融解すると、硫化ナトリウムが生じます。これを水に溶かして酢酸鉛(II)水溶液を加えると、硫化鉛(II)の黒色沈殿が生じます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Na₂S ＋ Pb(CH₃COO)₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">PbS↓ ＋ 2CH₃COONa</span></div><p class="ref-note">S²⁻ と Pb²⁺ の沈殿反応です。硫化物イオンは多くの金属イオンと黒色の沈殿をつくります。</p></div>
+<h5 class="ref-h5">酸素だけは確認の操作が無い</h5>
+<p class="ref-p">酸素には、上の4元素のような確認の操作がありません。燃焼に使う O₂ からも CO₂ や H₂O の O が来るので、生成物を見ても試料に O があったかどうかは分からないためです。</p>
+<p class="ref-p">★ 酸素は、次のページの元素分析で「<b>全体の質量から C と H を引いた残り</b>」として出します。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/elemental-analysis/">どれだけ入っているかを量る元素分析のページへ</a></p>
+<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">表の組は必ず、反応式は3本、ほかは読めれば十分です。</p></section>
+<p class="ref-p"><b>5元素の「操作」と「確認方法」の組は、必ず覚えてください。</b></p>
+<p class="ref-p">反応式は <b>Ca(OH)₂ ＋ CO₂</b>・<b>CuSO₄ ＋ 5H₂O</b>・<b>NH₃ ＋ HCl</b> の3本を書けるようにしましょう。どれも無機化学で一度書いた式です。</p>
+<p class="ref-p">炭酸水素カルシウムができる逆向きの式、硫化鉛(II)の沈殿の式は、問題文に操作が書いてあれば読み取れる程度で構いません。塩化コバルト紙、ニトロ基では NH₃ が出ないことは<b>覚えなくても構いません</b>。</p>
+<p class="ref-p">ただし「<b>青緑色の炎色反応はハロゲン全体で出る</b>」ことは覚えておきましょう。</p>
 <h5 class="ref-h5">例題</h5>
-<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">脂肪酸のアルキル基を R として、<b>(1) 油脂が加水分解する化学反応式　(2) NaOH を用いて油脂をけん化する化学反応式</b>を書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 油脂 ＋ 3H₂O → グリセリン ＋ 3R−COOH　(2) 油脂 ＋ 3NaOH → グリセリン ＋ 3R−COONa　どちらも<b>係数が 1、3、1、3</b> になります。エステル結合が3つあるので、水も NaOH も3分子必要です。構造式で書くときは、グリセリン側に3つの −OH が残り、脂肪酸側が3分子に分かれる形にします。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1種類の脂肪酸で構成された油脂 43.9 g をけん化するのに、水酸化カリウム 8.40 g が必要だった。KOH ＝ 56 とする。<b>(1) この油脂の分子量を求めよ。(2) この油脂を構成している脂肪酸の示性式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 油脂1mol に KOH は3mol なので、油脂の分子量を M として <b>M : 168 ＝ 43.9 : 8.40</b>。8.40 の20倍が168なので、M ＝ 43.9 × 20 ＝ <b>878</b>。(2) 脂肪酸の分子量は (878 − 38) ÷ 3 ＝ 280。ステアリン酸 C₁₈H₃₆O₂ の分子量は 284 なので、4小さい ＝ C=C が2個あることになり、<b>リノール酸 C₁₇H₃₁COOH</b> です。別解として、ステアリン酸だけからなる油脂の分子量890を覚えていれば、890 − 878 ＝ 12 ＝ 6×2 から油脂全体で C=C が6個、脂肪酸1本あたり2個、とすぐ出ます。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ある分子量884の油脂 4.42 g に付加するヨウ素は 3.81 g であった。I ＝ 127 とする。<b>(1) この油脂1分子にふくまれる C=C 結合の数を整数で求めよ。(2) この油脂を構成している脂肪酸がステアリン酸・オレイン酸・リノール酸・リノレン酸のいずれかであるとき、何種類の構造異性体が考えられるか。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 油脂 4.42 g の200倍が884 g なので、付加する I₂ も200倍で 3.81 × 200 ＝ 762 g。I₂ の分子量は254なので 762 ÷ 254 ＝ <b>3個</b>。ステアリン酸だけの油脂890との差から 890 − 884 ＝ 6 ＝ 3×2 と求めることもできます。(2) 3個の C=C を3本の脂肪酸 R¹・R²・R³ に割り振ります。組み合わせは (3,0,0)、(2,1,0)、(1,1,1) の3通りで、上下をひっくり返すと同じになるものを除きながら並べると <b>6種類</b>です。なお R¹ と R³ が違うとき、まん中の炭素が不斉炭素原子になるので、立体異性体まで数えると 6 ＋ 4 ＝ 10種類になります。</p></div></details></div>
-<div class="ref-example"><h4>例題：ステアリン酸 をつくる</h4><p class="ref-p" style="margin: 0px;">ステアリン酸を組んで、炭素数18の高級脂肪酸の長さを手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.fat.structure&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=fat">▶ ステアリン酸を組んでみる</a><p class="ref-note">端のカルボキシ基までふくめて C が18個。この3本がグリセリンにつながると油脂になります。</p></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">けん化と加水分解の一般形（なぜけん化だけ最後まで進むのか）はこちら</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/ester/">エステル結合そのもの・命名・構造決定の手順はエステルのページへ</a></p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の操作で存在が確認できる元素を、元素記号で答えよ。<b>(1) 完全燃焼して発生した気体を石灰水に通じると白濁した　(2) 完全燃焼して生じた液体を硫酸銅(II)無水物につけると青くなった　(3) 焼いた銅線の先につけて加熱すると青緑色の炎色反応を示した　(4) 金属ナトリウムと加熱・融解した生成物を水に溶かし、酢酸鉛(II)水溶液を加えると黒色沈殿を生じた　(5) 水酸化ナトリウムを加えて加熱し、発生した気体に濃塩酸をつけたガラス棒を近づけると白煙を生じた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) C　(2) H　(3) Cl（正確には「ハロゲン」まで）　(4) S　(5) N</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。<b>(1) 石灰水に二酸化炭素を吹き込むと白濁した　(2) (1) の液にさらに二酸化炭素を吹き込むと無色になった　(3) 硫酸銅(II)無水物に水を滴下すると青くなった　(4) 酢酸鉛(II)水溶液に硫化水素を吹き込むと黒色沈殿が生じた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Ca(OH)₂ ＋ CO₂ → CaCO₃ ＋ H₂O　(2) CaCO₃ ＋ CO₂ ＋ H₂O → Ca(HCO₃)₂　(3) CuSO₄ ＋ 5H₂O → CuSO₄・5H₂O　(4) Pb(CH₃COO)₂ ＋ H₂S → PbS ＋ 2CH₃COOH　(4) は硫化水素が弱酸なので、生じるのは酢酸です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ある有機化合物を完全燃焼させると CO₂ と H₂O を生じ、水酸化ナトリウムを加えて加熱すると NH₃ が発生した。この化合物に<b>必ず含まれている</b>と言える元素をすべて答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C・H・N の3つです。O は含まれているかどうか分かりません。燃焼で出た CO₂ と H₂O の O は、燃焼に使った O₂ からも来るためです。</p></div></details></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/clue-order/">検出の結果を構造決定の「分類」の手がかりとして使う順番のページへ</a></p>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（7問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.fat.structure,org.fat.fatty-acids,org.fat.solid-liquid,org.fat.hardening,org.fat.drying-oil,org.fat.saponification-value,org.fat.iodine-value&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（7問・測定モード）">▶ 一問一答で解く（7問・測定モード）</button><a class="alt" href="/qa/?codes=org.fat.structure,org.fat.fatty-acids,org.fat.solid-liquid,org.fat.hardening,org.fat.drying-oil,org.fat.saponification-value,org.fat.iodine-value&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（6問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.anal.qualitative-def,org.anal.detect-c,org.anal.detect-h,org.anal.detect-n,org.anal.detect-cl,org.anal.detect-s&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（6問・測定モード）">▶ 一問一答で解く（6問・測定モード）</button><a class="alt" href="/qa/?codes=org.anal.qualitative-def,org.anal.detect-c,org.anal.detect-h,org.anal.detect-n,org.anal.detect-cl,org.anal.detect-s&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
 <h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.fat.structure" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.fat.structure" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.anal.qualitative-def" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.anal.qualitative-def" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/esterification/">← エステル化とけん化</a>
+<nav class="seq"><a href="/reference/rubber/">← ゴム —— 主鎖に残った二重結合がすべてを決める</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/soap/">セッケンと合成洗剤 →</a></nav>
+<a href="/reference/elemental-analysis/">元素分析 —— 燃やした質量から分子式まで →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
