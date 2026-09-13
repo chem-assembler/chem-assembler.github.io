@@ -53,7 +53,6 @@ synthetic-fiber           合成繊維
 rubber                    ゴム
 
 # 元素分析・手がかり（reference-outline/anal.md）
-elemental-analysis        元素分析 —— 燃やした質量から分子式まで
 clue-order                手がかりを使う順番 —— 分類 → 数 → 物性
 clue-properties           見た目・におい・沸点から当たりを付ける
 
