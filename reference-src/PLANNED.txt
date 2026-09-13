@@ -47,7 +47,6 @@ enzyme                    酵素
 nucleic-acid              核酸
 
 # 合成高分子（reference-outline/poly.md）
-plastic                   合成樹脂 —— 鎖状のプラスチックと、網目のプラスチック
 synthetic-fiber           合成繊維
 rubber                    ゴム
 
