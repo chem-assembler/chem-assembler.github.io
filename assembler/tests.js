@@ -3163,6 +3163,9 @@
         'トリステアリン（油脂・ステアリン酸のグリセリド）'];
     // 上限で外れてはいけない芳香族（陰性対照）
     const QL_KEPT_AROMATIC = ['アントラセン', '2,4,6-トリニトロトルエン（TNT）', 'ピクリン酸'];
+    // 上限で外れてよい芳香族 ── 環の外に C₁₂ の鎖をもつ合成洗剤（参考書の反応式のために追記・2026-09-13）
+    // ⚠ 落ちるのは環のせいではなく鎖のせい ＝ 物差しが正しく働いている。名前で持つので、別の理由で落ちれば赤
+    const QL_DROPPED_AROMATIC_LONGCHAIN = ['ドデシルベンゼン', 'p-ドデシルベンゼンスルホン酸', 'p-ドデシルベンゼンスルホン酸ナトリウム'];
 
     /** その問題で画面に出た化合物の名前（4択なら5つ・2択なら2つ） */
     const quizShownNames = (q) =>
@@ -3205,8 +3208,9 @@
         assert(quiz.oversized.length === 10,
             `教科書レベルで外れるのが ${quiz.oversized.length} 件（10件を期待。発注書 §3-3 の実測）`);
         setQuizFilters(quiz, 'all', 'all', 'all');
-        assert(quiz.oversized.length === 18,
-            `すべてで外れるのが ${quiz.oversized.length} 件（18件を期待）`);
+        // 2026-09-13: 18 → 22。反応式のために鎖12の4件を足した（ドデシルベンゼン・同スルホン酸・同ナトリウム塩・1-ドデカノール）
+        assert(quiz.oversized.length === 22,
+            `すべてで外れるのが ${quiz.oversized.length} 件（22件を期待）`);
 
         // ④ ユーザーが名指しした3件が、**プールに居ないし、実際に出題もされない**
         setQuizFilters(quiz, 'all', 'all', 'all');
@@ -3313,8 +3317,11 @@
             const e = lib.find(x => x.name === nm);
             return e && c.W.findAromaticBondKeys(e.mol).size > 0;
         });
-        assert(droppedArom.length === 0,
-            `上限で芳香族が落ちている: ${droppedArom.join('・')}（ユーザーは「芳香族ならそこまで複雑ではない」と言っている）`);
+        const unexpectedArom = droppedArom.filter(nm => !QL_DROPPED_AROMATIC_LONGCHAIN.includes(nm));
+        assert(unexpectedArom.length === 0,
+            `上限で芳香族が落ちている: ${unexpectedArom.join('・')}（ユーザーは「芳香族ならそこまで複雑ではない」と言っている）`);
+        assert(QL_DROPPED_AROMATIC_LONGCHAIN.every(nm => droppedArom.includes(nm)),
+            '鎖12の合成洗剤が上限で落ちていない（名簿が古いか、鎖の物差しが変わった）');
 
         // ② 名指しの3件は残っていて、実際に出題プールに居る
         QL_KEPT_AROMATIC.forEach(nm => {
@@ -54976,7 +54983,9 @@
         'ミリスチン酸ナトリウム（セッケン）',
         'ナトリウムフェノキシド（フェノールのナトリウム塩）', 'ナトリウムエトキシド',
         'ベンゼンスルホン酸ナトリウム', 'アルキルベンゼンスルホン酸ナトリウム',
-        '酢酸カリウム', 'フタル酸水素カリウム'];
+        '酢酸カリウム', 'フタル酸水素カリウム',
+        // 参考書の反応式を再現するために追記（2026-09-13・合成洗剤と吸水性樹脂の単量体）
+        'p-ドデシルベンゼンスルホン酸ナトリウム', 'アクリル酸ナトリウム'];
 
     // 原子と結合と電荷から分子を組む（EL3 の `mk` に電荷を足したもの）
     const ionMk = (W, els, bonds, charges = {}) => {
