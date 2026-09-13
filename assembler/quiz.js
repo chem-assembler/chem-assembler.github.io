@@ -1453,12 +1453,18 @@ function drawDLReferenceMark(game, svgId, target, opts = {}) {
  * まったく違う絵になる**（畳む条件が「一直線」だから）。立体のクイズは向きを変えても
  * 一直線のままなので、そこでだけ畳む。
  */
-function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense) {
+function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) {
     const svg = document.getElementById(svgId);
     const bondsGroup = svg.querySelector('.quiz-bonds');
     const atomsGroup = svg.querySelector('.quiz-atoms');
     bondsGroup.innerHTML = '';
     atomsGroup.innerHTML = '';
+    // ★ 紙の図の型（v1549・参考書の図を焼く道具だけが渡す）。アプリの画面はここを通らない
+    if (paper) {
+        const pm = game.createTargetFromData({ target });
+        drawPaperMolecule(game, svg, pm, bondsGroup, atomsGroup, paper);
+        return pm;
+    }
 
     // 長い鎖は畳んで描く（レビュー項目25・第1段）。くさび図モードでは畳まない
     // （立体を見せる図なので中身を隠さない）。畳めるものが無ければ null で今までどおり
@@ -1515,6 +1521,131 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense) {
         });
     }
     return mol;
+}
+
+/**
+ * ★★ **紙の図の型**（v1549・参考書の図を焼く道具 `tools/gen-figure.mjs` だけが使う）。
+ *
+ * > 参考書に載せる図は教科書と同じものにする（ユーザー・2026-09-14）
+ *
+ * `renderMoleculeIntoSvg` の中の**見た目の切り替え**で、別の作図エンジンではない:
+ *   ・結合線は同じ `game.renderTargetBond`、電荷の印は同じ `game.chargeMarkNode`
+ *   ・原子団をまとめる判定は同じ `findCondensableGroups`（chemistry.js・キャンバスの縮約表示と同じ検出）
+ * 違うのは次の3つだけ:
+ *   ① 原子を丸で囲まない。**水素との結合だけを省いて元素記号へまとめる**（CH₃・OH・NH₂。左端は H₃C・HO）
+ *   ② 環の炭素は文字を書かない（骨格の頂点）。環の O・N は書く
+ *   ③ 原子団の既定: **−NO₂・−SO₃H は文字1つにまとめる**、**−COOH・−CHO は C=O を線で描く**（ユーザー決定）。
+ *      `opts.condense`（例 ['COOH','CHO']）でまとめる側へ、`opts.expand`（例 ['NO2']）で線で描く側へ上書きできる
+ * ⚠ エステル（COO・HCOO）は検出されても**まとめない**（重原子どうしの結合は線で描く原則）
+ */
+const PAPER_FONT = 15;
+const PAPER_DEFAULT_CONDENSE = ['NO2', 'SO3H'];
+const PAPER_GROUP_KEY = { 'NO₂': 'NO2', 'SO₃H': 'SO3H', 'COOH': 'COOH', 'CHO': 'CHO' };
+const PAPER_GROUP_REVERSED = { 'NO₂': 'O₂N', 'SO₃H': 'HO₃S', 'COOH': 'HOOC', 'CHO': 'OHC' };
+
+function paperLabelWidth(text) {
+    return [...text].reduce((w, ch) => w + ('₀₁₂₃₄₅₆₇₈₉'.includes(ch) ? 0.42 : 0.64) * PAPER_FONT, 0);
+}
+
+function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+    const want = new Set(PAPER_DEFAULT_CONDENSE);
+    ((opts && opts.condense) || []).forEach(k => want.add(k));
+    ((opts && opts.expand) || []).forEach(k => want.delete(k));
+
+    // 自動水素の数（描く水素と同じ計算 ＝ 電荷つきの -NH₃⁺ は 3・Cl⁻ は 0）
+    const hCount = new Map();
+    mol.calculateHydrogens().forEach(h => hCount.set(h.parentId, (hCount.get(h.parentId) || 0) + 1));
+    const ring = typeof _ringAtomIds === 'function' ? _ringAtomIds(mol) : new Set();
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+
+    // 原子団をまとめる（⚠ 検出は findCondensableGroups そのもの。ここで決めるのは「どれをまとめるか」だけ）
+    const hidden = new Set();
+    const groupAt = new Map();   // 根の原子 id → { label, anchorId }
+    (typeof findCondensableGroups === 'function' ? findCondensableGroups(mol) : []).forEach(gr => {
+        const key = PAPER_GROUP_KEY[gr.label];
+        if (!key || !want.has(key) || gr.anchorIds.length !== 1) return;
+        if (gr.memberIds.some(id => hidden.has(id) || groupAt.has(id))) return;   // 重なる検出は先勝ち
+        const rootId = gr.memberIds[0];
+        gr.memberIds.slice(1).forEach(id => hidden.add(id));
+        groupAt.set(rootId, { label: gr.label, anchorId: gr.anchorIds[0] });
+    });
+
+    // 各原子の文字（null ＝ 文字を書かない環の炭素）
+    const labels = new Map();
+    mol.atoms.forEach(a => {
+        if (hidden.has(a.id)) return;
+        const heavyNb = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H' && !hidden.has(n.atom.id));
+        const grp = groupAt.get(a.id);
+        let text;
+        if (grp) {
+            const anc = byId.get(grp.anchorId);
+            text = (anc && anc.x > a.x + 1) ? PAPER_GROUP_REVERSED[grp.label] : grp.label;
+        } else if (a.element === 'C' && ring.has(a.id) && !a.charge) {
+            text = null;
+        } else {
+            const n = hCount.get(a.id) || 0;
+            const hs = n ? 'H' + (n > 1 ? sub(n) : '') : '';
+            // 左端の原子（相手が右にだけある）は H を前に書く（H₃C−・HO−・H₂N−）
+            const leftEnd = heavyNb.length === 1 && heavyNb[0].atom.x > a.x + 1;
+            text = (leftEnd && hs) ? hs + a.element : a.element + hs;
+        }
+        labels.set(a.id, text);
+    });
+
+    const boxOf = (id) => {
+        const t = labels.get(id);
+        return t ? { hw: paperLabelWidth(t) / 2 + 1.5, hh: PAPER_FONT * 0.5 + 1 } : null;
+    };
+    // 結合線を文字の箱の縁で止める（⚠ renderTargetBond は両端を 10 ずつ詰めるので、そのぶん外へ伸ばして渡す）
+    const trimOf = (box, ux, uy) => {
+        if (!box) return 0;
+        const tx = Math.abs(ux) > 1e-9 ? box.hw / Math.abs(ux) : Infinity;
+        const ty = Math.abs(uy) > 1e-9 ? box.hh / Math.abs(uy) : Infinity;
+        return Math.min(tx, ty);
+    };
+    mol.bonds.forEach(b => {
+        if (hidden.has(b.atomId1) || hidden.has(b.atomId2)) return;
+        const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+        const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
+        if (len < 1e-6) return;
+        const ux = dx / len, uy = dy / len;
+        const t1 = trimOf(boxOf(a1.id), ux, uy), t2 = trimOf(boxOf(a2.id), ux, uy);
+        if (t1 + t2 >= len - 2) return;
+        game.renderTargetBond(a1.x + ux * (t1 - 10), a1.y + uy * (t1 - 10),
+            a2.x - ux * (t2 - 10), a2.y - uy * (t2 - 10), b.type, false, bondsGroup);
+    });
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    mol.atoms.forEach(a => {
+        if (hidden.has(a.id)) return;
+        const box = boxOf(a.id) || { hw: 0, hh: 0 };
+        minX = Math.min(minX, a.x - box.hw); maxX = Math.max(maxX, a.x + box.hw);
+        minY = Math.min(minY, a.y - box.hh); maxY = Math.max(maxY, a.y + box.hh);
+        const text = labels.get(a.id);
+        if (!text) return;
+        // ⚠ 文字と電荷の印は <g> に包む（丸の図の renderTargetAtom と同じ入れ子）。
+        //   `.quiz-atoms > text` を直に拾う後処理（参考書の図の `plain` が素の番号を消す）に電荷の印を巻き込ませない
+        const grp = document.createElementNS(NS, 'g');
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('x', a.x);
+        t.setAttribute('y', a.y + PAPER_FONT * 0.36);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('class', 'svg-atom-text svg-paper-label');
+        t.setAttribute('fill', `var(--color-${a.element.toLowerCase()})`);
+        t.style.fontSize = PAPER_FONT + 'px';
+        t.textContent = text;
+        grp.appendChild(t);
+        if (a.charge) {
+            const mark = game.chargeMarkNode(a.x + paperLabelWidth(text) / 2 - 7, a.y - 3, a.charge);
+            mark.style.fontSize = '14px';
+            grp.appendChild(mark);
+        }
+        atomsGroup.appendChild(grp);
+    });
+    const pad = 30;
+    svg.setAttribute('viewBox', `${minX - pad} ${minY - pad} ${(maxX - minX) + pad * 2} ${(maxY - minY) + pad * 2}`);
 }
 
 /**
