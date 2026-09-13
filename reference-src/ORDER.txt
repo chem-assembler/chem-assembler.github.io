@@ -20,6 +20,14 @@ ester
 esterification
 fat
 reaction-mechanisms
+benzene
+benzene-substitution
+aromatic-homologs
+phenol
+phenol-reactions
+aniline
+aromatic-carboxylic-acid
+aromatic-separation
 element-detection
 elemental-analysis
 clue-order
