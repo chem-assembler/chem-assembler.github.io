@@ -3997,11 +3997,17 @@ class IsomerPractice {
             ? { order: null, pos: new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }])) }
             : null) || ipNumberedLayout(mol) || ipStraightLayout(mol);
         let target, order = null, pos = null;
+        // ★ 電荷（v1538・I-3）は target へ渡す。⚠ 電荷の無い原子には鍵そのものを付けない
+        //   ＝ 電荷の無い分子の target は v1548 までと1文字も変わらない
+        const withCharge = (a, o) => (a.charge ? Object.assign(o, { charge: a.charge }) : o);
         if (layout) {
             pos = layout.pos; order = layout.order;
+            // ★ 塩の粒（Na⁺・Cl⁻）は鎖から結合でたどれない ＝ `pos` に座標が無い（v1549 まで
+            //   ここで落ちていた）。反対の電荷の原子の近くへ離して置く。1成分の分子は何もしない
+            if (typeof placeDetachedComponents === 'function') placeDetachedComponents(mol, pos, IP_HSTEP);
             const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
             target = {
-                atoms: mol.atoms.map(a => ({ element: a.element, x: pos.get(a.id).x, y: pos.get(a.id).y })),
+                atoms: mol.atoms.map(a => withCharge(a, { element: a.element, x: pos.get(a.id).x, y: pos.get(a.id).y })),
                 bonds: mol.bonds.map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
             };
         } else {
@@ -4012,7 +4018,7 @@ class IsomerPractice {
             const k = IP_HSTEP / 42;
             const idx = new Map(mol.atoms.map((a, i) => [a.id, i]));
             target = {
-                atoms: mol.atoms.map(a => ({ element: a.element, x: a.x * k, y: a.y * k })),
+                atoms: mol.atoms.map(a => withCharge(a, { element: a.element, x: a.x * k, y: a.y * k })),
                 bonds: mol.bonds.map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
             };
         }
