@@ -38,7 +38,6 @@ aromatic-carboxylic-acid  芳香族カルボン酸とサリチル酸
 aromatic-separation       芳香族化合物の分離
 
 # 糖・アミノ酸・タンパク質（reference-outline/bio.md）。⓵ soap は上の行
-disaccharide              二糖類
 polysaccharide            多糖類（デンプンとセルロース）
 amino-acid                アミノ酸
 protein                   タンパク質
