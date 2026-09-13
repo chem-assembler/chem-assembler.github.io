@@ -1827,10 +1827,19 @@ function alkeneCleavageClass(mol, site) {
 }
 
 /**
- * キャンバスの中のエチレン（C₂H₄）＝ **重原子が炭素2個だけで、C=C でつながった連結成分**。
- * 返り値は `[C, C]` の配列。⚠ ワッカー法が**エチレンだけ**を相手にするための門番。
+ * ワッカー法の適用箇所 `[酸素がつく炭素, 相方の炭素]`（v1541）。
+ *
+ * ⚠⚠ **もとは `ethyleneUnits`（＝ エチレンだけ）だった。** 参考書は
+ *   **2CH₂=CH-CH₃ ＋ O₂ → 2CH₃COCH₃**（プロペンからアセトン）も書いているのに、
+ *   実測でプロペンには1件も出なかった。
+ *
+ * ★ **広げるのはプロペンまで**（炭素3個の末端アルケン）。教科書・参考書が書いているのは
+ *   この2つだけで、それ以上に広げると画面が「教科書に載っていないこと」を言い出す。
+ * ★ **酸素がつくのは置換基の多いほうの炭素**（マルコフニコフ則）——
+ *   だからエチレンだけがアルデヒド（アセトアルデヒド）で、
+ *   プロペン以降はケトン（アセトン）になる。ここが問われる。
  */
-function ethyleneUnits(mol) {
+function wackerUnits(mol) {
     const seen = new Set();
     const out = [];
     mol.atoms.forEach(a => {
@@ -1838,11 +1847,19 @@ function ethyleneUnits(mol) {
         const comp = [...componentOf(mol, a.id)]
             .filter(id => (mol.atoms.find(x => x.id === id) || {}).element !== 'H');
         comp.forEach(id => seen.add(id));
-        if (comp.length !== 2) return;
+        if (comp.length < 2 || comp.length > 3) return;      // エチレンとプロペンだけ
         if (!comp.every(id => (mol.atoms.find(x => x.id === id) || {}).element === 'C')) return;
-        const bond = mol.getBond(comp[0], comp[1]);
-        if (!bond || bond.type !== 2) return;
-        out.push([comp[0], comp[1]]);
+        const pair = [];
+        comp.forEach(id => comp.forEach(jd => {
+            if (id >= jd) return;
+            const b = mol.getBond(id, jd);
+            if (b && b.type === 2) pair.push([id, jd]);
+        }));
+        if (pair.length !== 1) return;                       // C=C はちょうど1本
+        const heavyNb = id => mol.getNeighbors(id).filter(n => n.atom.element !== 'H').length;
+        const [p, q] = pair[0];
+        // 置換基の多いほう（＝ マルコフニコフ則で酸素がつく側）を先に置く
+        out.push(heavyNb(p) >= heavyNb(q) ? [p, q] : [q, p]);
     });
     return out;
 }
@@ -1984,6 +2001,150 @@ function oxidationOutOfScope(mol) {
         sites.push(s); kinds.add(cls);
     });
     return { sites, kinds };
+}
+
+/* ==========================================================================
+ * ナフタレンの空気酸化 → 無水フタル酸（v1541・参考書 aromatic.md の式1本）
+ *
+ * ⚠⚠ **参考書の式は係数がずれている**: `C₁₀H₈ ＋ 4.5O₂ → 無水フタル酸 ＋ 2CO₂ ＋ H₂O`。
+ *   H が 8 ＝ 4（無水フタル酸）＋ 2（H₂O 1個）で合わない。**正しくは 2H₂O**
+ *   （O も 9 ＝ 3 ＋ 4 ＋ 2 で合う）。★ アプリは正しい係数で描き、原稿は直さない（別の便）。
+ *
+ * ★ **門番は「炭素10個が全部芳香族で、結合11本・縮合部2個」＝ ナフタレンそのもの**。
+ *   置換ナフタレン（2-メチルナフタレン・ナフトール）へ広げない —— どちらの環が壊れるかを
+ *   アプリが決めることになり、参考書が書いていない判断になる。
+ * ========================================================================== */
+function naphthaleneUnits(mol) {
+    const arom = aromaticAtomSet(mol);
+    const seen = new Set();
+    const out = [];
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id) || a.element === 'H') return;
+        const ids = [...componentOf(mol, a.id)];
+        ids.forEach(id => seen.add(id));
+        const heavy = ids.map(id => mol.atoms.find(x => x.id === id)).filter(x => x && x.element !== 'H');
+        if (heavy.length !== 10) return;
+        if (heavy.some(x => x.element !== 'C' || x.charge || !arom.has(x.id))) return;
+        const set = new Set(heavy.map(x => x.id));
+        if (mol.bonds.filter(b => set.has(b.atomId1) && set.has(b.atomId2)).length !== 11) return;
+        const fused = heavy.filter(x => mol.getNeighbors(x.id).filter(n => set.has(n.atom.id)).length === 3);
+        if (fused.length !== 2 || !mol.getBond(fused[0].id, fused[1].id)) return;
+        out.push(heavy.map(x => x.id));
+    });
+    return out;
+}
+
+/**
+ * 原子ごとの「隣の重原子 id と結合次数」の署名（CV4 の物差しと同じ取り方）。
+ * ★ **印（changed）を人が並べず、実際に変わった原子から決める**ために使う ——
+ *   環を組み直すと残る環のケクレ構造も入れ替わるので、手で数えると渡し落とす。
+ */
+function heavyBondSignature(mol, ids) {
+    const sig = new Map();
+    ids.forEach(id => {
+        if (!mol.atoms.some(a => a.id === id)) return;
+        sig.set(id, mol.getNeighbors(id).filter(n => n.atom.element !== 'H')
+            .map(n => `${n.atom.id}:${n.type}`).sort().join(','));
+    });
+    return sig;
+}
+
+/* ==========================================================================
+ * 完全燃焼（v1541・参考書の式3本 ＝ メタン・エタノール・ベンゼン）
+ *
+ * ⚠⚠ **アプリには燃焼のルールが1本も無かった。** 元素分析の節が立っているのに、
+ *   そこに書かれている式を画面で起こす手段が無かった（v1540 の実測で発見）。
+ *
+ * ★ **なぜ「図を変える」ほうにしたか**（`_info` の案内で済ませなかった理由）:
+ *   燃焼は実際に起きる反応で、しかも**炭素骨格が跡形もなくなる**のがこの反応の要点。
+ *   「C は全部 CO₂ へ・H は全部 H₂O へ」が図で見えることが、元素分析（燃やして
+ *   CO₂ と H₂O の質量から組成を出す）の理屈そのものになる。
+ *
+ * ⚠ **門番は「C・H・O だけ」**。窒素・硫黄・ハロゲンを含むものを通すと、
+ *   この画面が扱わない生成物（NO₂・SO₂・HCl…）を黙って省いた式になる。
+ *   ★ 電荷を持つ粒（塩）と `R`（重合鎖の端）も落とす —— どちらも
+ *   **「分子1個ぶんの式」が決まらない**（DESIGN_reaction_execution.md の
+ *   「係数を書くなら分子が1個ぶんに決まっていること」）。
+ * ========================================================================== */
+
+// その連結成分が完全燃焼の式を書ける相手か（書けるなら組成を返す。書けなければ null）
+function combustionComposition(mol, ids) {
+    let c = 0, h = 0, o = 0;
+    for (const id of ids) {
+        const a = mol.atoms.find(x => x.id === id);
+        if (!a) return null;
+        if (a.charge) return null;                 // 塩の粒（分子1個ぶんが決まらない）
+        if (a.element === 'H') { h++; continue; }
+        if (a.element === 'C') c++;
+        else if (a.element === 'O') o++;
+        else return null;                          // N・S・ハロゲン・R・金属
+        h += mol.getFreeValency(id);               // 自動補完の水素
+    }
+    if (c < 1 || h % 2 !== 0) return null;
+    return { c, h, o, co2: c, h2o: h / 2, o2: c + h / 4 - o / 2 };
+}
+
+// 完全燃焼できる分子（連結成分）の一覧。site は成分の原子IDをそのまま並べたもの
+function combustibleComponents(mol) {
+    const seen = new Set();
+    const sites = [];
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = [...componentOf(mol, a.id)];
+        ids.forEach(id => seen.add(id));
+        if (combustionComposition(mol, ids)) sites.push(ids);
+    });
+    return sites;
+}
+
+/**
+ * 生成物（CO₂ と H₂O）を置く場所を決める。
+ *
+ * ★ **元の分子が居た場所を中心に格子で並べる**（`parkAsWater` と同じ考え方＝近くに置く）。
+ *   遠くに飛ばすと「この分子が燃えてこうなった」が読めない。
+ * ⚠ **他の分子に重ねない** —— 近い順に候補をずらして、空いている場所を探す。
+ * 返り値: [{x, y}]（前から CO₂ のぶん・続いて H₂O のぶん）。置けなければ null
+ */
+function combustionProductSpots(mol, ids, count) {
+    const own = new Set(ids);
+    const heavy = ids.map(id => mol.atoms.find(a => a.id === id)).filter(a => a && a.element !== 'H');
+    if (!heavy.length) return null;
+    const G = bondStep(mol, heavy[0].id);
+    const cx = heavy.reduce((s, a) => s + a.x, 0) / heavy.length;
+    const cy = heavy.reduce((s, a) => s + a.y, 0) / heavy.length;
+    const others = mol.atoms.filter(a => !own.has(a.id) && a.element !== 'H');
+    const cols = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / cols);
+    const cellW = G * 3.6, cellH = G * 2;          // CO₂ は横に3原子ぶん（O=C=O）
+    const layout = (ox, oy) => {
+        const spots = [];
+        for (let i = 0; i < count; i++) {
+            const r = Math.floor(i / cols), k = i % cols;
+            spots.push({
+                x: cx + ox + (k - (cols - 1) / 2) * cellW,
+                y: cy + oy + (r - (rows - 1) / 2) * cellH
+            });
+        }
+        return spots;
+    };
+    const clear = spots => spots.every(p =>
+        others.every(a => Math.hypot(a.x - p.x, a.y - p.y) >= G * 1.6 &&
+            Math.hypot(a.x - (p.x - G), a.y - p.y) >= G * 1.6 &&
+            Math.hypot(a.x - (p.x + G), a.y - p.y) >= G * 1.6));
+    const cands = [{ x: 0, y: 0, d: 0 }];
+    for (let i = -6; i <= 6; i++) {
+        for (let j = -6; j <= 6; j++) {
+            const d = Math.hypot(i, j);
+            if (d < 1 || d > 6) continue;
+            cands.push({ x: i * cellW, y: j * cellH, d });
+        }
+    }
+    cands.sort((p, q) => p.d - q.d);
+    for (const cand of cands) {
+        const spots = layout(cand.x, cand.y);
+        if (clear(spots)) return spots;
+    }
+    return null;
 }
 
 /* ==========================================================================
@@ -3067,6 +3228,101 @@ function stackChainsForBridge(mol, caId, cbId) {
     return false;
 }
 
+/* ==========================================================================
+ * 共重合（v1541・ユーザー決定 2026-09-12）
+ *
+ * > **共重合の反応全体を見たほうがよいと思います。**
+ * > **選択した分子、反応のために召喚した分子はすべてつながるようにすべきだと考えます。**
+ *
+ * ⚠⚠ **直す前の挙動**: スチレン2個＋ブタジエン2個を並べて付加重合を押すと、
+ *   エラーにもならず**スチレンだけが繋がってブタジエンが残った**（黙って別物ができる）。
+ *   原因は `addition_polymerization` の `detect` が正準コードでグループ分けし、
+ *   「同じ単量体が2つ以上」のグループだけを site にしていたこと。
+ *
+ * ★ **直す向きは「赤で止める」ではない**（ユーザー明言）。
+ *   **並んでいる単量体を全部つなぐ札を出す**。
+ *
+ * ⚠ **決めたことと理由**:
+ *   ① **並びは「画面に並べた順」**（交互でもブロックでもない）。
+ *      - 実際の共重合の並び（交互・ランダム・ブロック）は条件で変わり、**一通りに決まらない**。
+ *        どれか1つを勝手に選ぶと、画面が言えないことを言うことになる。
+ *      - 既存の重合3本が全部「並べた順」なので、流儀を1つに保てる。
+ *      - ★ **ユーザーが並べ替えれば思いどおりの並びになる** ＝ 決めるのを人に返せる。
+ *   ② **画面では「交互共重合体ができます」と断定しない**（ユーザー指示）。
+ *      caption は「並べた順につないだ」と、実際は一通りに決まらないことだけを言う。
+ *   ③ **SBR の実在の比（スチレン1：ブタジエン3 など）に寄せない。**
+ *      ⚠ 寄せるには根拠が要るが、**教科書も参考書も比を書いていない**（用途で変わる）。
+ *      ＝ 比は**並べた個数がそのまま**になる。
+ *   ④ **加硫と噛み合う**: ジエンの単位は 1,4-付加で中央に C=C が残るので、
+ *      できた共重合体はそのまま `vulcanization` の相手になる（SBR → 加硫ゴム）。
+ *
+ * ⚠ **homopolymer の3本は今までどおり**。単一種のときは既存の札が出る
+ *   （この札は「2種類以上あるとき」しか出ない）＝ 既存の見え方を1つも変えない。
+ * ========================================================================== */
+
+/**
+ * 共重合につなげる単位を集める。返り値は
+ *   ビニル系 … { kind:'vinyl', key, head, tail, comp, code, x, y }
+ *   共役ジエン … { kind:'diene', key, d:{c1..c4}, comp, code, x, y }
+ * ⚠ **同じ分子から2通り拾わない**: 共役ジエンは C=C を2本持つので
+ *   `vinylBonds` 側の「1分子に C=C が1本だけ」の門番で自動的に外れる。
+ */
+function copolymerUnits(mol) {
+    const units = [];
+    const vinyls = vinylBonds(mol);
+    vinyls.forEach(v => {
+        const comp = componentOf(mol, v.head);
+        if (vinyls.filter(w => comp.has(w.head)).length !== 1) return;
+        units.push({ kind: 'vinyl', key: v.head, head: v.head, tail: v.tail, comp });
+    });
+    conjugatedDienes(mol).forEach(d => {
+        units.push({ kind: 'diene', key: d.c1, d, comp: componentOf(mol, d.c1) });
+    });
+    units.forEach(u => {
+        const heavy = [...u.comp].map(id => mol.atoms.find(a => a.id === id))
+            .filter(a => a && a.element !== 'H');
+        u.x = heavy.reduce((s, a) => s + a.x, 0) / (heavy.length || 1);
+        u.y = heavy.reduce((s, a) => s + a.y, 0) / (heavy.length || 1);
+        u.code = componentCode(mol, u.key);
+        /* 鎖に入る側（in）と出る側（out）、それぞれの1つ内側（`inBack`／`back`）。
+         * ★ 内側の原子は**鎖が伸びる向き**を決めるのに要る（`chainDirection`・§14）。 */
+        if (u.kind === 'vinyl') { u.in = u.tail; u.inBack = u.head; u.out = u.head; u.back = u.tail; }
+        else { u.in = u.d.c1; u.inBack = u.d.c2; u.out = u.d.c4; u.back = u.d.c3; }
+    });
+    return units;
+}
+
+/**
+ * 「この鎖に入らなかった単量体」を数えて一言にする（v1541）。
+ *
+ * ⚠⚠ **ユーザー実機報告の芯**: スチレン2個＋ブタジエン2個で付加重合を押すと
+ *   **スチレンだけが繋がってブタジエンが黙って残った**。⛔ 赤で止めるのは違う
+ *   （2種類を別々に重合したい人もいる）ので、**残ったことをその場で言い、
+ *   全部つなぐ札の名前を教える**。
+ * ⚠ **反応を起こす前に呼ぶこと**（起こしたあとでは、使った単量体の C=C が
+ *   もう無いので「残り」と区別できない）。
+ */
+function leftoverMonomerNote(mol, siteIds) {
+    const used = new Set(siteIds);
+    const all = copolymerUnits(mol);
+    const rest = all.filter(u => !used.has(u.key) && !used.has(u.in) && !used.has(u.out));
+    if (!rest.length) return '';
+    const mixed = new Set(all.map(u => u.code)).size >= 2;
+    return `\n⚠ **この鎖に入らなかった単量体が ${rest.length} 個、画面に残っています。**` +
+        (mixed
+            ? '並べたものを全部つないで1本の鎖にするなら、' +
+              '「共重合（並べた単量体をすべてつなぐ）」のほうを選んでください。'
+            : 'つなぎたいときは、もう一度この反応を実行してください。');
+}
+
+/** 画面に並べた順（長いほうの軸で左→右／上→下）に単位を並べ替える */
+function sortCopolymerUnits(units) {
+    const xs = units.map(u => u.x), ys = units.map(u => u.y);
+    const spread = v => Math.max(...v) - Math.min(...v);
+    const byX = spread(xs) >= spread(ys);
+    return units.slice().sort((p, q) => (byX ? p.x - q.x : p.y - q.y));
+}
+
 /** その原子を含む分子（連結成分）の正準コード。同じ単量体かの判定に使う */
 function componentCode(mol, atomId) {
     const ids = componentOf(mol, atomId);
@@ -3172,10 +3428,30 @@ function attachREnds(mol, ends) {
  * 返り値は {left, right}。**左右は座標で決める**（原子IDは乱数なので順序に頼らない。
  * `vinylBonds` が対称な C=C で頭尾が入れ替わって RX13 を落とした事故と同じ罠）
  */
+/**
+ * ★ エテン（エチレン）1分子を探す（v1541）。`acetyleneUnits` の C=C 版。
+ *
+ * ⚠ **門番はあちらと同じ「分子全体が C=C の2原子だけ」**にした。参考書（`alkene.md`）が
+ * 付加の式を書いているのは **エテンだけ**で、「エテンへの付加反応の式は、どれも書けるように
+ * してください」と名指ししている。★ 一般のアルケンへ広げる根拠が本文に無いので広げない
+ * （広げると、-COOH と C=C を同じ分子に持つアクリル酸などで「どちらが先か」を
+ *  自分で決めることになる ＝ 参考書に無い判断をアプリが勝手にする）。
+ *
+ * 返り値は {left, right}。**左右は座標で決める**（理由は `acetyleneUnits` と同じ）。
+ */
+function etheneUnits(mol) {
+    return doubleOrTripleUnits(mol, 2);
+}
+
 function acetyleneUnits(mol) {
+    return doubleOrTripleUnits(mol, 3);
+}
+
+/** `acetyleneUnits` / `etheneUnits` の共通部分（数え方を2つに増やさないため1か所に置く） */
+function doubleOrTripleUnits(mol, wantType) {
     const out = [];
     mol.bonds.forEach(b => {
-        if (b.type !== 3) return;
+        if (b.type !== wantType) return;
         const a1 = mol.atoms.find(a => a.id === b.atomId1);
         const a2 = mol.atoms.find(a => a.id === b.atomId2);
         if (!a1 || !a2 || a1.element !== 'C' || a2.element !== 'C') return;
@@ -3281,6 +3557,137 @@ function condensationPolymerUnits(mol) {
     if (n < 2) return null;
     const byX = (p, q) => p.x - q.x;
     return { acids: as.sort(byX).slice(0, n), partners: ps.sort(byX).slice(0, n), kind };
+}
+
+/* ==========================================================================
+ * 脱ハロゲン化水素・アルキンの三量化・小さい環の開裂（v1541・参考書の式3本）
+ * ========================================================================== */
+
+const RX_HALOGENS = ['Cl', 'Br', 'I'];
+
+/**
+ * 脱ハロゲン化水素（−HX）ができる箇所 `[X のついた C, 水素のある隣の C, X]`。
+ *
+ * ⚠⚠ 参考書の **1,2-ジクロロエタン → 塩化ビニル**（PVC の原料を作る道）が
+ *   アプリで起こせなかった（v1540 の実測）。
+ * ★ 門番は「**その分子が炭化水素とハロゲンだけ**でできていること」。
+ *   -OH や -COOH が混ざるものは別の反応（脱水・エステル化）が先に来るので扱わない。
+ * ⚠ **同じ生成物になる向きは畳む** —— 1,2-ジクロロエタンは左右どちらの Cl を抜いても
+ *   塩化ビニルになるので、札が2枚出ると「違うものが2つできる」と読める。
+ *   畳み方は `sideChainOxidationSites` と同じ手口（**生成物の正準コード**で数える）。
+ */
+function dehydrohalogenationSites(mol) {
+    const out = [];
+    const seen = new Set();
+    /* ⚠⚠ **芳香環の炭素は外す**（実測で踏んだ）。クロロベンゼンで札が出て、
+     *   環の中に4本目の二重結合が入った**実在しない分子**ができていた。
+     *   ★ 芳香族の C-Cl は切れにくく、教科書は高温高圧の加水分解
+     *     （`hydrolysis_chlorobenzene`）でしか扱わない。 */
+    const aromatic = aromaticAtomSet(mol);
+    mol.bonds.forEach(bond => {
+        if (bond.type !== 1) return;
+        if (aromatic.has(bond.atomId1) || aromatic.has(bond.atomId2)) return;
+        const pair = [mol.atoms.find(x => x.id === bond.atomId1),
+            mol.atoms.find(x => x.id === bond.atomId2)];
+        if (pair.some(a => !a || a.element !== 'C')) return;
+        [[0, 1], [1, 0]].forEach(([i, j]) => {
+            const ca = pair[i], cb = pair[j];
+            if (mol.getFreeValency(cb.id) < 1) return;          // 抜ける水素が無い
+            const hal = mol.getNeighbors(ca.id)
+                .find(n => n.type === 1 && RX_HALOGENS.includes(n.atom.element));
+            if (!hal) return;
+            const comp = componentOf(mol, ca.id);
+            if (mol.atoms.some(x => comp.has(x.id) && x.element !== 'C' && x.element !== 'H' &&
+                !RX_HALOGENS.includes(x.element))) return;
+            // 「できる分子」を位相だけ組んで正準コードで畳む（同じ分子の中の等価な向きだけ）
+            const ids = [...comp].filter(id => id !== hal.atom.id);
+            const { mol: sub, map } = subMolecule(mol, ids);
+            const nb = sub.getBond(map.get(ca.id), map.get(cb.id));
+            if (!nb) return;
+            nb.type = 2;
+            const key = [...comp].sort().join(',') + '|' + canonicalCode(sub);
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push([ca.id, cb.id, hal.atom.id]);
+        });
+    });
+    return out;
+}
+
+/**
+ * 小さい環（三員環の炭素環）を開いて付加できる箇所 `[環の炭素A, 環の炭素B]`。
+ *
+ * ★ **対象はシクロプロパンだけ**（重原子が炭素3個の環）。教科書が「環に**ひずみ**があるので
+ *   小さい環は付加で開く」と書いているのはこの形で、置換基の付いた三員環まで広げると
+ *   **どの辺が切れるか**が一意に決まらない（できる分子も名前が付かない）。
+ * ⚠ どの辺を切っても同じものができるので、返すのは **1件だけ**。
+ */
+function strainedRingSites(mol) {
+    const out = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (a.element !== 'C' || seen.has(a.id)) return;
+        const comp = [...componentOf(mol, a.id)];
+        comp.forEach(id => seen.add(id));
+        const heavy = comp.map(id => mol.atoms.find(x => x.id === id))
+            .filter(x => x && x.element !== 'H');
+        if (heavy.length !== 3 || !heavy.every(x => x.element === 'C')) return;
+        // 3本とも単結合で環になっていること
+        const ring = [];
+        for (let i = 0; i < 3; i++) {
+            for (let j = i + 1; j < 3; j++) {
+                const b = mol.getBond(heavy[i].id, heavy[j].id);
+                if (b) ring.push(b);
+            }
+        }
+        if (ring.length !== 3 || ring.some(b => b.type !== 1)) return;
+        out.push([ring[0].atomId1, ring[0].atomId2]);
+    });
+    return out;
+}
+
+/**
+ * **AB型の単量体**（1分子の中に -COOH と -OH を1つずつ持つ ＝ ヒドロキシ酸）が
+ * 2個以上並んでいるかを見る（v1541）。返り値は左から並べた単位の配列（無ければ null）。
+ *
+ * ⚠⚠ **参考書の「n 乳酸 → ポリ乳酸」がここで落ちていた。** 既存の
+ *   `condensationPolymerUnits` は「2価の酸 ＋ 2価のアルコール」という**対**しか見ないので、
+ *   1分子で両方を持つ単量体は実測で0件だった。
+ *
+ * ★ **アミノ酸（-COOH ＋ -NH₂）は入れない。** 教科書はアミノ酸の縮合を
+ *   「ペプチド結合を1本ずつ作る」形で教えており、その道は `amidation` に既にある。
+ *   ここで一気に繋ぐ札を足すと、同じことをする入口が2つになる。
+ *   ⚠ ヒドロキシ酸のほうは**どこにも道が無かった**ので足す。
+ */
+function hydroxyAcidUnits(mol) {
+    const groups = findFunctionalGroups(mol);
+    const seen = new Set();
+    const units = [];
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = componentOf(mol, a.id);
+        ids.forEach(i => seen.add(i));
+        const heavy = [...ids].map(i => mol.atoms.find(x => x.id === i))
+            .filter(x => x && x.element !== 'H');
+        if (heavy.length < 3) return;
+        const mine = groups.filter(g => ids.has(g.atomIds[0]));
+        const cx = mine.filter(g => g.type === 'carboxyl');
+        const al = mine.filter(g => ALCOHOL_TYPES.includes(g.type));
+        // ⚠ **ちょうど1つずつ**。2つ以上あるものは既存の「2価の単量体」の担当
+        if (cx.length !== 1 || al.length !== 1) return;
+        // ⚠ ほかの反応性の基（アミン・フェノール・アルデヒド…）が混ざるものは扱わない
+        if (mine.length !== 2) return;
+        units.push({
+            ids, acid: { c: cx[0].atomIds[0], oh: cx[0].atomIds[2] }, other: { x: al[0].atomIds[0] },
+            code: componentCode(mol, heavy[0].id),
+            x: Math.min(...heavy.map(h => h.x))
+        });
+    });
+    if (units.length < 2) return null;
+    // **同じ単量体だけ**（既存の縮合重合と同じ約束。違う種類の混合は共重合の話）
+    const same = units.filter(u => u.code === units[0].code);
+    if (same.length < 2) return null;
+    return same.sort((p, q) => p.x - q.x);
 }
 
 // 多重結合への付加の共通処理。elemA/elemB は付加する元素（null は水素＝自動水素に任せる）。
@@ -3683,7 +4090,8 @@ const REAGENTS = [
         name: '希硫酸',
         formula: 'H₂SO₄ aq',
         kind: 'transform',
-        acts: 'エステルと酸無水物と二糖のグリコシド結合（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
+        // ⚠ v1541 でアミド結合（ペプチド結合）の加水分解を足したので、ここにも書き足す（規約1-2）
+        acts: 'エステルと酸無水物とアミド結合（ペプチド結合）と二糖のグリコシド結合（加熱すると水が入って切れます）と、カルボン酸・フェノール・スルホン酸のナトリウム塩（弱酸の遊離）です',
         miss: '同じエステルでも、NaOH で切ると出てくるのはカルボン酸ではなく**その塩**です（けん化）。酸で切るこちらは平衡なので、逆のエステル化も同時に起こります。' +
             'また、強い酸は弱い酸をその塩から追い出します（弱酸の遊離）が、遊離させる相手の塩がいまの分子にはありません。' +
             '単糖（グルコースなど）は、これ以上切れる -O- のつながりを持たないので加水分解されません。切れるのは単糖どうしをつないだ二糖・多糖のグリコシド結合です。'
@@ -3836,10 +4244,16 @@ const REAGENTS = [
         name: '塩素・光',
         formula: 'Cl₂',
         kind: 'transform',
-        acts: 'アルカン（鎖状の飽和炭化水素）の水素です（光を当てると1つずつ塩素に置き換わります）',
+        /* ⚠ **v1541 で3つに増えた**（もとはアルカンの置換だけ）。規約1-2 のとおり、
+         *   ルールを足したら瓶の `acts`・`miss` も書き足す ——
+         *   もとの `miss` は「C=C をもつ分子では付加が起こるのでこの瓶では扱いません」と
+         *   書いてあり、付加を足したいま**そのままでは嘘になる**。 */
+        acts: 'アルカン（鎖状の飽和炭化水素）の水素（光を当てると1つずつ塩素に置き換わります）と、' +
+            'C=C・C≡C（付加）と、ベンゼン環（光を当てると 3Cl₂ が付加します）です',
         miss: 'アルカンは反応しにくい炭化水素ですが、光を当てると塩素と**置換**反応を起こします（付加ではありません）。' +
-            'ベンゼン環は光では置換されず、鉄を触媒にした「塩素・鉄触媒」の瓶を使います。' +
-            'C=C や C≡C をもつ分子では、置換より先に**付加**が起こるのでこの瓶では扱いません。'
+            '同じ塩素でも、C=C や C≡C があるとそちらへの**付加**が先に起こります。' +
+            'ベンゼン環は光を当てると 3Cl₂ が付加してヘキサクロロシクロヘキサンになり、' +
+            '鉄を触媒にすると付加ではなく**置換**（クロロベンゼン）になります ＝ 「塩素・鉄触媒」の瓶です。'
     },
     {
         id: 'mixed_acid',
@@ -3870,9 +4284,37 @@ const REAGENTS = [
         name: '酸素・PdCl₂/CuCl₂',
         formula: 'O₂',
         kind: 'transform',
-        acts: 'エチレンです（酸化されてアセトアルデヒドになります）',
-        miss: 'この瓶はエチレンからアセトアルデヒドを作る工業的製法のためのものです。' +
-            '高校で扱うのはエチレンの場合だけなので、ほかの分子では何も起こしません。'
+        // ⚠ v1541 でプロペン（→ アセトン）まで広げたので書き直した（規約1-2）
+        acts: 'エチレン（→ アセトアルデヒド）とプロペン（→ アセトン）です',
+        miss: 'この瓶はエチレンからアセトアルデヒドを、プロペンからアセトンを作る工業的製法のためのものです。' +
+            '教科書と参考書が式を書いているのはこの2つだけなので、ほかの分子では何も起こしません。' +
+            '同じ反応なのに行き先が変わるのは、**酸素が置換基の多いほうの炭素につく**ためです' +
+            '（エチレンはアルデヒド・プロペンはケトン）。'
+    },
+    {
+        /* ★★ 燃焼の瓶（v1541）。⚠ **瓶が1本増える**（25 → 26本）。
+         *
+         * ⚠ **既存の瓶に相乗りできないか**（`DESIGN_reagent_palette.md` §10.5 規約1）を先に見た:
+         *   - `o2_pdcl2`（酸素・PdCl₂/CuCl₂）… ⚠ **名前が嘘になる。** あちらは
+         *     ワッカー法の触媒つきの瓶で、「触媒を入れずに火をつける」ことを名乗れない。
+         *     しかも**効く相手が正反対**（あちらはエチレンだけ／こちらは炭素を持つもの全部）
+         *   - 酸化剤（KMnO₄・K₂Cr₂O₇）… ⚠ 燃焼は酸化剤の水溶液でやる操作ではない
+         *   ★ ＝ 規約1の③「既存のどの瓶の名前でも嘘になる」に当たるので1本足す。
+         *
+         * ⚠ **区分割りはしない**（`cl2_light`（24本目）・`co2`（25本目）と同じ扱い）。
+         *   区分の切り方は「高校化学をどう教えるか」の判断で、反応レーンが決める話ではない。
+         *
+         * ★ **なぜ要るか**: 参考書の式で「燃焼」は3本（メタン・エタノール・ベンゼンの完全燃焼）
+         *   あるのに、**アプリには燃焼のルールが1本も無かった**（v1540 の実測）。
+         *   元素分析の節が立っているのに、その式を画面で起こせなかった。 */
+        id: 'o2_flame',
+        name: '酸素（点火）',
+        formula: 'O₂',
+        kind: 'transform',
+        acts: '炭素と水素（と酸素）だけでできた分子です。完全燃焼して二酸化炭素と水になります',
+        miss: '燃やせるのは C・H・O だけでできた分子です。' +
+            '窒素・硫黄・ハロゲンを含むものは、この画面では扱わない生成物（NO₂・SO₂・HCl など）ができるので断ります。' +
+            'また、塩や重合でできた鎖（両端の R）のように「分子1個ぶんの式」が決まらないものも燃やせません。'
     },
     {
         id: 'sulfur',
@@ -4790,6 +5232,8 @@ const REACTION_RULES = [
             const units = [];
             for (let i = 0; i < site.length; i += 2) units.push({ head: site[i], tail: site[i + 1] });
             if (units.length < 2) throw new Error('単量体が2つ以上必要です');
+            // ⚠ **反応を起こす前に数える**（起こしたあとでは「残り」と区別できない）
+            const leftover = leftoverMonomerNote(mol, site);
             // 二重結合を単結合に開く（これが付加重合の本体）
             units.forEach(u => {
                 const b = mol.getBond(u.head, u.tail);
@@ -4837,9 +5281,81 @@ const REACTION_RULES = [
                     '両端の R は「この先も同じ単位が続く」という印です（教科書では −[ ]ₙ− の角括弧で書きます）。' +
                     '付加重合では原子が1つも出入りしません（脱水などの副生成物が出ない）ので、' +
                     '単量体の分子式を n 倍したものが高分子の組成になります。' +
-                    '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。',
+                    '鎖が画面に収まるよう表示を引きました。ホイールやピンチで拡大すると、繋がり目を1つずつ確かめられます。' +
+                    leftover,
                 changed: [...new Set([...changed, ...endIds])],
                 refit: true // 伸びた鎖の全体が見えるように視野を合わせる
+            };
+        }
+    },
+    {
+        /* ★★ 脱ハロゲン化水素（v1541・参考書の式1本）。
+         * 門番と畳み方は `dehydrohalogenationSites` の注記。
+         *
+         * ⚠ **瓶は持たせない。** 教科書はここで試薬を名指しせず、工業的には
+         *   「加熱して熱分解」、実験室では「水酸化ナトリウムの**アルコール溶液**」と
+         *   条件のほうが分かれる。⚠ `naoh_aq`（水溶液）に相乗りさせると
+         *   **瓶の名前が嘘になる**（水溶液では置換のほうが起こる）ので、
+         *   `amidation`・`dehydration_anhydride` と同じく札だけにする（§4-1）。
+         *
+         * ★ 抜けたハロゲンは**消さずに脇へ置く**（`parkAsWater` と同じ扱い）——
+         *   結合を失った Cl は自動水素で **HCl** として描かれるので、
+         *   「ハロゲン化水素がとれる」が画面にそのまま出る。 */
+        id: 'dehydrohalogenation',
+        label: '脱ハロゲン化水素（−HX）→ アルケン',
+        detect: (mol) => dehydrohalogenationSites(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [ca, cb, halId] = site;
+            const bond = mol.getBond(ca, cb);
+            if (!bond) throw new Error('C-C 結合が見つかりません');
+            const el = (mol.atoms.find(a => a.id === halId) || {}).element;
+            const hx = { Cl: '塩化水素 HCl', Br: '臭化水素 HBr', I: 'ヨウ化水素 HI' }[el] ||
+                'ハロゲン化水素';
+            mol.removeBond(ca, halId);
+            bond.type = 2;
+            parkAsWater(mol, halId);   // 結合を失ったハロゲンは自動水素で HX として描かれる
+            return {
+                caption: `ハロゲンと、隣の炭素についていた水素がいっしょにとれて、` +
+                    `**${hx}** が外れました（脱離反応）。残った2つの炭素のあいだに二重結合ができます。` +
+                    '1,2-ジクロロエタンからこの反応で塩化ビニルを作り、それを付加重合したものが' +
+                    'ポリ塩化ビニル（PVC）です。' +
+                    '⚠ **付加の逆向き**にあたる反応で、アルコールの分子内脱水（−H₂O）と' +
+                    '「隣り合う2つの炭素から、となりどうしの原子が1組とれて C=C ができる」形は同じです。',
+                changed: [ca, cb]
+            };
+        }
+    },
+    {
+        /* ★★ 小さい環の開裂付加（v1541・参考書の式1本 ＝ シクロプロパン ＋ Br₂）。
+         * 門番は `strainedRingSites`（重原子が炭素3個の環だけ）。
+         *
+         * ★ **瓶は `br2_water`**（付加と同じ瓶）。同じ臭素水が、
+         *   ふつうのシクロアルカンには効かず**三員環だけ開く**ところがこの反応の見どころ。 */
+        id: 'ring_opening_addition',
+        reagentId: 'br2_water',
+        label: '開環付加: Br₂（三員環のひずみ）→ 1,3-ジブロモプロパン',
+        detect: (mol) => strainedRingSites(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [ca, cb] = site;
+            // ★ 先に2つとも置けるか試す（途中で場所が尽きて半端な図にしない）
+            if (!attachGroup(mol, ca, 'Br', true) || !attachGroup(mol, cb, 'Br', true)) {
+                throw noRoom('臭素を置く空間がありません');
+            }
+            mol.removeBond(ca, cb);
+            const added = [...attachGroup(mol, ca, 'Br'), ...attachGroup(mol, cb, 'Br')];
+            // 登録の図（1,3-ジブロモプロパン）へ写して鎖をまっすぐにする
+            game.redrawProductsAsStandalone({ only: [...componentOf(mol, ca)] });
+            return {
+                caption: 'シクロプロパンの環が開いて、両端に臭素が付きました（開環付加）。' +
+                    '⚠ ふつうのシクロアルカン（シクロヘキサンなど）は**置換**しか起こさないのに、' +
+                    '**三員環は付加で開きます** —— 炭素の結合角が 60° まで押し曲げられていて' +
+                    '（本来は 109.5°）、環に**ひずみ**があるためです。' +
+                    'だからシクロプロパンは臭素水を脱色し、' +
+                    '「臭素水の脱色 ＝ 不飽和結合」という覚え方の例外になります。',
+                changed: [ca, cb, ...added],
+                refit: true
             };
         }
     },
@@ -4910,6 +5426,80 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ アセチレンの三量化（v1541・参考書の式1本 ＝ 3C₂H₂ → C₆H₆）。
+         *
+         * ⚠⚠ `alkyne_polymerization`（鎖のポリアセチレン）は前からあったが、
+         *   **環になる道**が無かった（v1540 の実測）。★ 同じ材料が条件で
+         *   「鎖」と「環（ベンゼン）」に分かれるのが、この一組の見どころ。
+         *
+         * ★ **ちょうど3分子のときだけ出す。** 4分子以上並んでいるときに
+         *   「3つだけ選んで環にする」と、残りをどうするかが画面から読めない
+         *   （鎖のほうは何個でも繋がるので、そちらへ譲る）。
+         * ⚠ **瓶は持たせない** —— 教科書は「赤熱した鉄に触れさせる」と
+         *   **装置と温度**を書き、試薬を名指ししない（§4-1）。
+         * ⚠ **キャンバス全体が対象**（重合3本と同じ理由）。 */
+        id: 'alkyne_trimerization',
+        wholeCanvas: true,
+        label: '三量化（アセチレンを3分子並べて）→ ベンゼン',
+        detect(mol) {
+            const units = acetyleneUnits(mol);
+            if (units.length !== 3) return [];
+            units.sort((p, q) => p.x - q.x);
+            return [units.flatMap(u => [u.left, u.right])];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            if (site.length !== 6) throw new Error('アセチレンが3分子必要です');
+            const atoms = site.map(id => mol.atoms.find(a => a.id === id));
+            if (atoms.some(a => !a)) throw new Error('原子が見つかりません');
+            const own = new Set(site);
+            /* ★ 環の座標は**登録のベンゼンと同じ形**（半径 40・60°刻み）。
+             *   ⚠ 手で作図するときの直交の規約は変えていない ——
+             *   ここは「反応で置く生成物」なので、登録の図に合わせるのが筋（§14 と同じ考え方）。 */
+            const R = 40, S = 34.64;
+            const off = [[R, 0], [R / 2, S], [-R / 2, S], [-R, 0], [-R / 2, -S], [R / 2, -S]];
+            const cx = atoms.reduce((s, a) => s + a.x, 0) / 6;
+            const cy = atoms.reduce((s, a) => s + a.y, 0) / 6;
+            const others = mol.atoms.filter(a => !own.has(a.id) && a.element !== 'H');
+            const G = bondStep(mol, site[0]);
+            const fits = (dx, dy) => off.every(([ox, oy]) =>
+                others.every(o => Math.hypot(o.x - (cx + dx + ox), o.y - (cy + dy + oy)) >= G * 1.2));
+            let put = null;
+            const cands = [{ x: 0, y: 0, d: 0 }];
+            for (let i = -5; i <= 5; i++) {
+                for (let j = -5; j <= 5; j++) {
+                    const d = Math.hypot(i, j);
+                    if (d >= 1 && d <= 5) cands.push({ x: i * 2 * R, y: j * 2 * R, d });
+                }
+            }
+            cands.sort((p, q) => p.d - q.d);
+            for (const cand of cands) { if (fits(cand.x, cand.y)) { put = cand; break; } }
+            if (!put) throw noRoom('ベンゼン環を置く空間がありません');
+            atoms.forEach((a, i) => { a.x = cx + put.x + off[i][0]; a.y = cy + put.y + off[i][1]; });
+            // 三重結合が二重結合になり、空いた手で隣の分子とつながる ＝ 原子は1つも出入りしない
+            for (let i = 0; i < 6; i += 2) {
+                const b = mol.getBond(site[i], site[i + 1]);
+                if (!b || b.type !== 3) throw new Error('三重結合が見つかりません');
+                b.type = 2;
+            }
+            mol.addBond(site[1], site[2], 1);
+            mol.addBond(site[3], site[4], 1);
+            mol.addBond(site[5], site[0], 1);
+            return {
+                caption: 'アセチレン3分子が環になって、ベンゼンができました（3C₂H₂ → C₆H₆）。' +
+                    '**赤熱した鉄**に触れさせると起こります。' +
+                    '⚠ 原子は1つも出入りしません —— 三重結合が二重結合になり、' +
+                    '空いた手で隣の分子とつながって6員環が閉じるだけです。' +
+                    '★ 同じアセチレンでも、条件が違えば**鎖**のポリアセチレンになります' +
+                    '（並べて「付加重合」を選ぶとそちらが見られます）。' +
+                    '環が閉じると6個の電子が環全体に広がり、二重結合が3本あるのに' +
+                    '付加しにくい（＝ 芳香族の）性質が現れます。',
+                changed: [...site],
+                refit: true
+            };
+        }
+    },
+    {
         id: 'diene_polymerization',
         // ★ **キャンバス全体が対象**（`siteFilter` の注記）。「並べた単量体をまとめて」
         //    繋ぐ反応なので、いま見ている分子で絞ると**2本目の鎖が作れなくなる**
@@ -4939,6 +5529,8 @@ const REACTION_RULES = [
                 units.push({ c1: site[i], c2: site[i + 1], c3: site[i + 2], c4: site[i + 3] });
             }
             if (units.length < 2) throw new Error('共役ジエンが2つ以上必要です');
+            // ⚠ **反応を起こす前に数える**（v1541。理由は `leftoverMonomerNote` の注記）
+            const leftover = leftoverMonomerNote(mol, site);
             // 1,4-付加重合の本体: 両端の二重結合を開き、**中央に新しい二重結合ができる**。
             // これが「二重結合が移動する」という要点で、ゴムの弾性・加硫の土台になる
             units.forEach(u => {
@@ -4984,7 +5576,101 @@ const REACTION_RULES = [
                     `天然ゴムはイソプレンがシス形に繋がったもので、同じ形でトランスに繋がるとグタペルカという硬い樹脂になります。` +
                     `いまの図は直交作図なのでシス・トランスを示していません。左の「⇄ シス/トランス整形」で` +
                     `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。` +
-                    `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。`,
+                    `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。` +
+                    leftover,
+                changed: [...new Set([...changed, ...endIds])],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ★★ 共重合（v1541）。設計の判断と理由は `copolymerUnits` の上の注記にまとめてある。
+         * ⚠ **2種類以上あるときだけ出る**（単一種は既存の3本に譲る ＝ 札が二重にならない）。 */
+        id: 'copolymerization',
+        wholeCanvas: true,
+        label: '共重合（並べた単量体をすべてつなぐ）→ 2種類以上が1本の鎖に',
+        detect(mol) {
+            const units = copolymerUnits(mol);
+            if (units.length < 2) return [];
+            if (new Set(units.map(u => u.code)).size < 2) return [];
+            return [sortCopolymerUnits(units).map(u => u.key)];
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const all = copolymerUnits(mol);
+            const units = site.map(key => all.find(u => u.key === key));
+            if (units.some(u => !u)) throw new Error('単量体が見つかりません');
+            if (units.length < 2) throw new Error('単量体が2つ以上必要です');
+            const changed = [];
+            /* ---- ① それぞれの単量体を「鎖の1単位」に開く。
+             *   ⚠ **開き方は種類ごとに違う**（ここが共重合の要点）:
+             *     ビニル系 … C=C が単結合になる（原子は出入りしない）
+             *     共役ジエン … 両端が単結合になり、**中央に二重結合が移る**（1,4-付加）
+             *   ★ ジエンの側に C=C が残るので、できた鎖はそのまま加硫できる。 */
+            units.forEach(u => {
+                if (u.kind === 'vinyl') {
+                    const b = mol.getBond(u.head, u.tail);
+                    if (!b) throw new Error('二重結合が見つかりません');
+                    b.type = 1;
+                } else {
+                    const b12 = mol.getBond(u.d.c1, u.d.c2);
+                    const b23 = mol.getBond(u.d.c2, u.d.c3);
+                    const b34 = mol.getBond(u.d.c3, u.d.c4);
+                    if (!b12 || !b23 || !b34) throw new Error('共役ジエンの結合が見つかりません');
+                    b12.type = 1; b34.type = 1; b23.type = 2;
+                    changed.push(u.d.c2, u.d.c3);   // 中央へ移った二重結合（CV4）
+                }
+            });
+            // 頭の置換基を主鎖と直交する向きへ立て直す（ビニル系だけ。付加重合と同じ）
+            units.forEach((u, i) => {
+                if (u.kind === 'vinyl') uprightChainSubstituent(mol, u.head, u.tail, i % 2 ? -1 : 1);
+            });
+            // ---- ② 並べた順につなぐ（まだ繋いでいない単量体は鎖の続き扱い＝§14）
+            const pending = new Set();
+            units.slice(1).forEach(u => u.comp.forEach(id => pending.add(id)));
+            let linkFrom = units[0].out;
+            let linkBack = units[0].back;
+            for (let i = 1; i < units.length; i++) {
+                const u = units[i];
+                const movingIds = [...componentOf(mol, u.in)];
+                movingIds.forEach(id => pending.delete(id));
+                const plan = planAttachment(mol, linkFrom, u.in, movingIds, [...pending],
+                    chainDirection(mol, linkBack, linkFrom));
+                if (!plan) throw noRoom('生成物を配置する空間がありません');
+                applyAttachment(mol, movingIds, plan);
+                mol.addBond(linkFrom, u.in, 1);
+                changed.push(linkFrom, u.in);
+                linkBack = u.back;
+                linkFrom = u.out;
+            }
+            const endIds = attachREnds(mol, [
+                [units[0].in, chainDirection(mol, units[0].inBack, units[0].in)],
+                [linkFrom, chainDirection(mol, linkBack, linkFrom)]
+            ]);
+            // ---- ③ 何が何個つながったかを数える（比を作らず、並べた個数をそのまま言う）
+            const kinds = new Map();
+            units.forEach(u => kinds.set(u.code, (kinds.get(u.code) || 0) + 1));
+            const n = units.length;
+            return {
+                /* ⚠⚠ **「交互共重合体ができます」と断定しない**（ユーザー指示 2026-09-12）。
+                 *   どの並びを選んでも本当にそうとは限らないので、画面が言えるのは
+                 *   **「いま並べた順につないだ」**ことだけ。 */
+                caption: `${kinds.size} 種類の単量体 ${n} 個が**共重合**しました。` +
+                    '2種類以上の単量体をいっしょに重合させることを共重合といい、' +
+                    'できた高分子（共重合体）は、どちらか一方だけの高分子とは違う性質になります。' +
+                    'スチレンと 1,3-ブタジエンの共重合体が SBR（スチレン-ブタジエンゴム）で、' +
+                    'ゴムの中で最も多く作られている合成ゴムです。' +
+                    '\n⚠ **つないだ順は、いま画面に並べた順そのものです。** ' +
+                    '実際の共重合では単量体がどの順に並ぶかは条件で決まり、' +
+                    '交互・ランダム・ブロックとさまざまで**一通りには決まりません**。' +
+                    '並べ替えてからもう一度実行すれば、別の並びの鎖ができます。' +
+                    '単量体の数の比も、いま並べた個数がそのまま出ているだけです' +
+                    '（実際の比は用途によって変えます）。' +
+                    (units.some(u => u.kind === 'diene')
+                        ? '\n★ 共役ジエンの単位では二重結合が中央へ移って鎖に残るので、' +
+                          'この鎖はそのまま硫黄で架橋できます（加硫）。'
+                        : '') +
+                    '両端の R は「この先も続く」印です。',
                 changed: [...new Set([...changed, ...endIds])],
                 refit: true
             };
@@ -5205,10 +5891,21 @@ const REACTION_RULES = [
         //    **4分子ちょうどでは出ない穴**——箇所が4分子ぜんぶを含むので focus に必ず当たる。
         //    出るのは「1本目を作ったあと、単量体を並べ直して2本目」のとき（PM13 で再現）
         wholeCanvas: true,
-        label: '縮合重合（2価の単量体を並べて）→ ポリエステル／ポリアミド',
+        label: '縮合重合（単量体を並べて）→ ポリエステル／ポリアミド',
         detect(mol) {
             const u = condensationPolymerUnits(mol);
-            if (!u) return [];
+            if (!u) {
+                /* ★ **AB型（ヒドロキシ酸）**（v1541）。1分子が -COOH と -OH を1つずつ持つので、
+                 *   鎖は A-A-A-A と同じ単位が続く。⓵ 参考書の「n 乳酸 → ポリ乳酸」がこれ。
+                 *   ⚠ 結合の作り方は対の場合と1つも違わない（`apply` は 3つ組しか見ない）。 */
+                const ab = hydroxyAcidUnits(mol);
+                if (!ab) return [];
+                const site = [];
+                for (let i = 0; i + 1 < ab.length; i++) {
+                    site.push(ab[i].acid.c, ab[i].acid.oh, ab[i + 1].other.x);
+                }
+                return [site];
+            }
             // 鎖の並びは 酸 → 相手 → 酸 → 相手 …（交互）。i 番目と i+1 番目を
             // 「右の基」と「左の基」で繋ぐと、画面の並びのまま鎖になる
             const chain = [];
@@ -5228,7 +5925,13 @@ const REACTION_RULES = [
             for (let i = 0; i < site.length; i += 3) {
                 links.push({ c: site[i], oh: site[i + 1], x: site[i + 2] });
             }
-            if (links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
+            /* ★ **AB型（ヒドロキシ酸）かどうかを先に見る**（v1541）。
+             *   AB型では「i 番目の相手（-OH）」と「i+1 番目の酸（-COOH）」が**同じ分子**にある。
+             *   ⚠ 対（2価の酸 ＋ 2価のアルコール）では必ず別の分子なので、これで見分けられる。 */
+            const ab = hydroxyAcidUnits(mol);
+            const isAB = !!ab && ab.some(u => u.acid.c === links[0].c);
+            if (!isAB && links.length < 3) throw new Error('単量体が2組（4分子）以上必要です');
+            if (links.length < 1) throw new Error('単量体が2個以上必要です');
             const changed = [];
             let chainIds = componentOf(mol, links[0].c);
             // 繋ぐ前の単量体は鎖の続き（v1436・§14。付加重合と同じ約束）。
@@ -5277,17 +5980,24 @@ const REACTION_RULES = [
                 [endOther.atomIds[0], outward(endOther.atomIds[0])]
             ]);
             const amide = AMINE_NH_TYPES.includes(endOther.type);
-            const n = (links.length + 1) / 2;
+            const n = isAB ? links.length + 1 : (links.length + 1) / 2;
             return {
-                caption: `2価カルボン酸 ${n} 個と2価${amide ? 'アミン' : 'アルコール'} ${n} 個が縮合重合して、` +
+                caption: (isAB
+                    ? `1分子の中に -COOH と -OH を1つずつ持つ単量体（ヒドロキシ酸）${n} 個が縮合重合して、`
+                    : `2価カルボン酸 ${n} 個と2価${amide ? 'アミン' : 'アルコール'} ${n} 個が縮合重合して、`) +
                     `${amide ? 'アミド' : 'エステル'}結合が ${links.length} か所できました。` +
                     `つなぐたびに水が1分子とれるのが「縮合」で、原子が1つも出入りしない付加重合との違いです` +
                     `（画面に出ている水 ${links.length + 1} 分子がその証拠です）。` +
-                    (amide
-                        ? 'アジピン酸とヘキサメチレンジアミンからできるのがナイロン66（ポリアミド）で、'
-                          + 'アミド結合 -CO-NH- はタンパク質のペプチド結合と同じつながり方です。'
-                        : 'テレフタル酸とエチレングリコールからできるのがポリエチレンテレフタラート'
-                          + '（PET・ポリエステル）で、エステル結合 -CO-O- でつながっています。') +
+                    (isAB
+                        ? '⚠ **単量体が1種類でも縮合重合はできます** —— 1分子の中に -COOH と -OH の'
+                          + '両方があるので、隣の分子の -OH と自分の -COOH でつながっていけるためです。'
+                          + '乳酸からできるのがポリ乳酸で、土の中の微生物に分解される'
+                          + '生分解性のポリエステルとして使われます。'
+                        : amide
+                            ? 'アジピン酸とヘキサメチレンジアミンからできるのがナイロン66（ポリアミド）で、'
+                              + 'アミド結合 -CO-NH- はタンパク質のペプチド結合と同じつながり方です。'
+                            : 'テレフタル酸とエチレングリコールからできるのがポリエチレンテレフタラート'
+                              + '（PET・ポリエステル）で、エステル結合 -CO-O- でつながっています。') +
                     '両端の R は「この先も同じ単位が続く」という印です' +
                     '（教科書では −[ ]ₙ− の角括弧で書きます）。',
                 changed: [...new Set([...changed, ...endIds])],
@@ -5332,6 +6042,35 @@ const REACTION_RULES = [
         apply(game, site) {
             return addAcrossMultipleBond(game, site, 'Br', 'Br',
                 '臭素 Br₂ が付加しました。赤褐色の臭素水が脱色されるこの反応は、C=C や C≡C（不飽和結合）の検出に使われます。');
+        }
+    },
+    {
+        /* ★★ 塩素の付加（v1541）。
+         * ⚠⚠ **参考書は「アルケンは臭素 Br₂ や塩素 Cl₂ とすみやかに反応します」と
+         *   書いているのに、アプリは塩素の付加を持っていなかった**（v1540 の実測）。
+         *   塩素の瓶は2本とも**置換**（`cl2_light` がアルカン・`cl2_fe` が芳香環）で、
+         *   `cl2_light` の `miss` は「C=C をもつ分子では付加が起こるのでこの瓶では扱いません」と
+         *   **自分で断っていた** ＝ 教科書が並べて書いている2つのうち片方だけが無かった。
+         *
+         * ⚠ **瓶は増やさない**（`DESIGN_reagent_palette.md` §10.5 規約1）。
+         *   ★ `cl2_light`（塩素・光）に**付ける**: 中身は Cl₂ そのもので、
+         *     光があっても C=C への付加は起こる（むしろ置換より速い）。
+         *   ⚠ 規約1-2 のとおり、瓶の `acts` と `miss` を書き換えてある
+         *     （「この瓶では扱いません」が嘘になるため）。
+         *
+         * ★ ここが `add_br2` と対になることで、同じ瓶の中で
+         *   **アルカン＝置換／アルケン＝付加**が並んで見える。 */
+        id: 'add_cl2',
+        label: '付加: Cl₂（塩素の付加）',
+        reagentId: 'cl2_light',
+        detect: multipleBondSites,
+        apply(game, site) {
+            return addAcrossMultipleBond(game, site, 'Cl', 'Cl',
+                '塩素 Cl₂ が付加しました。C=C や C≡C は臭素とも塩素ともすみやかに反応します。' +
+                'アルカンでは置換（水素が1つずつ置き換わる）しか起こらないのに、' +
+                '不飽和結合があると**付加のほうが先に起こる**のがこの2つの違いです。' +
+                'エチレンから 1,2-ジクロロエタンを作り、そこから塩化水素をとると塩化ビニルになります' +
+                '（ポリ塩化ビニルの原料）。');
         }
     },
     {
@@ -5404,9 +6143,17 @@ const REACTION_RULES = [
          *   **水は1分子も出ない**（縮合ではなく付加）—— ここがエステル化との違いで、
          *   だから「ビニルアルコールのエステル」に見えるのに、
          *   ビニルアルコールからは作れない（不安定ですぐアセトアルデヒドになる）。 */
+        /* ★★ v1541: **エテンにも効くようにした**（参考書 `alkene.md` の
+         *   `CH₂=CH₂ ＋ CH₃COOH → CH₃COOC₂H₅`。実測でエチレンに0件だった）。
+         * ⚠ **行き先が三重と二重で違う**のが、この1本を2本に分けなかった理由:
+         *     C≡C → C=C … 酢酸**ビニル**（ビニル基が残る ＝ 付加重合の単量体になる）
+         *     C=C  → C-C … 酢酸**エチル**（ふつうのエステル。もう重合しない）
+         *   ★ **同じ「酢酸の付加」なのに、開く前の結合が1本違うだけで行き先が変わる** ——
+         *     ここを1つの札で並べて見せられるのが、分けないことの取り柄。
+         * ⚠ id は変えていない（`audit.js` とテスト4本が文字で引いている）。 */
         id: 'add_carboxylic_acid_alkyne',
-        label: '付加: アセチレン＋酢酸 → 酢酸ビニル',
-        morphStages: 'joinFirst', // ①2分子が並ぶ → ②三重結合が開いてつながる
+        label: '付加: 酢酸（アセチレン → 酢酸ビニル／エテン → 酢酸エチル）',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②多重結合が開いてつながる
         detect(mol) {
             /* ★ **アセチレン1分子の集め方は `acetyleneUnits` を借りる**（付加重合と同じもの）。
              * ⚠ **同じ名前の関数を自分で書きかけて実際に踏んだ** —— 後ろの宣言が勝つので
@@ -5414,7 +6161,7 @@ const REACTION_RULES = [
              *   ★ 数え方が2つになる事故でもあるので、借りるのが正しい。
              * ★ あちらの門番（分子全体が C≡C の2原子 ＝ アセチレンだけ）がそのまま要る ——
              *   教科書がこの付加を書いているのはアセチレンについてだけ（5編 p.31）。 */
-            const units = acetyleneUnits(mol);
+            const units = [...acetyleneUnits(mol), ...etheneUnits(mol)];
             if (!units.length) return [];
             /* ⚠⚠ **酸の側にも門番が要る**（v1508 の定期レビュー。もとは -COOH さえあれば
              *   何でも通っていた）。★ **実測で決めた** —— 酸を16種そろえて走らせると、
@@ -5450,24 +6197,40 @@ const REACTION_RULES = [
             const mol = game.userMolecule;
             const [c1, c2, oId] = site;
             const bond = mol.getBond(c1, c2);
-            if (!bond || bond.type !== 3) throw new Error('アセチレンの C≡C が見つかりません');
+            if (!bond || (bond.type !== 3 && bond.type !== 2)) {
+                throw new Error('アセチレンの C≡C・エテンの C=C が見つかりません');
+            }
+            const wasTriple = bond.type === 3;
             const acidIds = [...componentOf(mol, oId)];
-            // ⚠ **置き場を先に確かめる**（途中で失敗して三重結合だけ開いた形を残さない）
+            // ⚠ **置き場を先に確かめる**（途中で失敗して多重結合だけ開いた形を残さない）
             const plan = planAttachment(mol, c1, oId, acidIds);
             if (!plan) throw noRoom('生成物を配置する空間がありません');
-            bond.type = 2;                       // 三重 → 二重（付加。水は出ない）
+            bond.type = wasTriple ? 2 : 1;       // 1本ほどけるだけ（付加。水は出ない）
             applyAttachment(mol, acidIds, plan);
             mol.addBond(c1, oId, 1);
             return {
-                caption: 'アセチレンに酢酸が付加して、酢酸ビニル CH₂=CH-O-CO-CH₃ ができました（触媒を用いる）。' +
-                    '三重結合が二重結合になり、酢酸の -OH の**酸素がそのまま橋**になります。' +
+                caption: (wasTriple
+                    ? 'アセチレンに酢酸が付加して、酢酸ビニル CH₂=CH-O-CO-CH₃ ができました（触媒を用いる）。' +
+                      '三重結合が二重結合になり、酢酸の -OH の**酸素がそのまま橋**になります。'
+                    : 'エテンに酢酸が付加して、酢酸エチル CH₃COOC₂H₅ ができました。' +
+                      '二重結合が単結合になり、酢酸の -OH の**酸素がそのまま橋**になります。' +
+                      '酢酸は「電離する H」と「残りの原子団 -OCOCH₃」に分かれて、' +
+                      '**二重結合の両側の炭素に1つずつ**入りました。') +
                     '⚠ **水は1分子も出ません** —— これは縮合（エステル化）ではなく**付加**です。' +
-                    '\n同じようにアセチレンに塩化水素を付加すると塩化ビニル、' +
-                    'シアン化水素を付加するとアクリロニトリルができます。' +
-                    'どれもビニル基 CH₂=CH- をもち、付加重合して高分子になります' +
-                    '（酢酸ビニル → ポリ酢酸ビニル → けん化してポリビニルアルコール → ビニロン）。' +
-                    '\n★ できた分子は「ビニルアルコールのエステル」の形をしていますが、' +
-                    'ビニルアルコールからは作れません（不安定で、すぐアセトアルデヒドに変わるためです）。',
+                    (wasTriple
+                        ? '\n同じようにアセチレンに塩化水素を付加すると塩化ビニル、' +
+                          'シアン化水素を付加するとアクリロニトリルができます。' +
+                          'どれもビニル基 CH₂=CH- をもち、付加重合して高分子になります' +
+                          '（酢酸ビニル → ポリ酢酸ビニル → けん化してポリビニルアルコール → ビニロン）。' +
+                          '\n★ できた分子は「ビニルアルコールのエステル」の形をしていますが、' +
+                          'ビニルアルコールからは作れません（不安定で、すぐアセトアルデヒドに変わるためです）。' +
+                          '\n⚠ **同じ酢酸でも、相手がエテンだと行き先が変わります** —— ' +
+                          'エテンに付加させると二重結合が単結合になりきってしまうので、' +
+                          '酢酸ビニルではなく**酢酸エチル**ができ、もう付加重合はできません。'
+                        : '\n⚠ **同じ酢酸でも、相手がアセチレンだと行き先が変わります** —— ' +
+                          '三重結合は1本ほどけても二重結合が残るので、' +
+                          '酢酸エチルではなく**酢酸ビニル**ができ、そのまま付加重合の単量体になります。' +
+                          '\n★ 酢酸エチルはエステルなので、ここから加水分解すれば酢酸とエタノールに戻せます。'),
                 changed: [c1, c2, oId]
             };
         }
@@ -5640,6 +6403,58 @@ const REACTION_RULES = [
         }
     },
     {
+        /* ★★ ベンゼン ＋ 3Cl₂ → ヘキサクロロシクロヘキサン（v1541・参考書の式1本）。
+         * ⓵ **生成物 `hexachlorocyclohexane` は登録済み**で、そこへ行く手段だけが無かった。
+         *
+         * ★ **門番は `hydrogenate_benzene_ring` と同じ形**（同じ「環への付加」なので、
+         *   線を2通り持たない）—— ①その分子が炭化水素だけ ②ふつうの C=C/C≡C が残っていない。
+         * ★ **一気に3つ付ける**のは省略ではなく教科書どおり（`bromination_activated_ring` と
+         *   同じ考え方）。途中の一付加体・二付加体は取り出せない。
+         * ⚠ **鉄触媒の置換（`aromatic_halogenation`）と同じ瓶にしない** ——
+         *   条件で行き先が正反対に分かれるのがこの反応の要点で、
+         *   瓶の名前（光／鉄触媒）がその条件そのものになっている。 */
+        id: 'add_cl2_benzene_ring',
+        reagentId: 'cl2_light',
+        label: '付加: Cl₂ ×3（光）→ ベンゼン環がヘキサクロロシクロヘキサンになる',
+        detect(mol) {
+            const multiples = multipleBondSites(mol);
+            return isolatedBenzeneRings(mol).filter(ring => {
+                const comp = componentOf(mol, ring[0]);
+                if (mol.atoms.some(a => comp.has(a.id) &&
+                    a.element !== 'C' && a.element !== 'H')) return false;
+                if (multiples.some(ids => ids.some(id => comp.has(id)))) return false;
+                // 置換基のある環（トルエンなど）は、6個の塩素を置く場所が足りない
+                return ring.every(id => mol.getNeighbors(id)
+                    .filter(n => n.atom.element !== 'H' && ring.includes(n.atom.id)).length === 2 &&
+                    mol.getFreeValency(id) >= 1);
+            });
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const ring = new Set(site);
+            const inside = mol.bonds.filter(b => ring.has(b.atomId1) && ring.has(b.atomId2));
+            if (inside.length !== 6) throw new Error('ベンゼン環の6本が見つかりません');
+            // ★ **先に塩素の置き場を全部ためす**（途中で場所が尽きて半端な図にしない）
+            if (!site.every(id => attachGroup(mol, id, 'Cl', true))) {
+                throw noRoom('環のまわりに塩素6個を置く空間がありません');
+            }
+            inside.forEach(b => { b.type = 1; });   // 環の6本が単結合になる ＝ 芳香族性が消える
+            const added = [];
+            site.forEach(id => { added.push(...attachGroup(mol, id, 'Cl')); });
+            return {
+                caption: 'ベンゼン環に塩素が付加して、ヘキサクロロシクロヘキサンになりました' +
+                    '（C₆H₆ ＋ 3Cl₂ → C₆H₆Cl₆）。**紫外線を当てる**のが条件です。' +
+                    '⚠ 同じ塩素でも、**鉄（塩化鉄(III)）を触媒にすると置換**が起こって' +
+                    'クロロベンゼン C₆H₅Cl になります —— 条件だけで行き先が付加と置換に分かれる、' +
+                    'ベンゼンの性質がいちばんよく出る一組です。' +
+                    '付加すると環の二重結合がすべて無くなるので、できるのは芳香族ではなく' +
+                    'シクロヘキサン環の化合物です。',
+                changed: [...site, ...added],
+                refit: true
+            };
+        }
+    },
+    {
         /* ★ ワッカー法（§10.11-D #27・§10.3-f C-3・v1472。ユーザーが「足す」と決めていた）。
          * ★ **教科書 本文 p.150 に式がある**（p.282 に再掲）・入試12〜13件。
          * ⚠ ただし**教科書に「ワッカー法」という名前は無い**（参考書が名づけている）ので、
@@ -5649,25 +6464,34 @@ const REACTION_RULES = [
          *   教科書・入試が扱うのはエチレンの場合だけ（§4-1 の線）。 */
         id: 'wacker_oxidation',
         reagentId: 'o2_pdcl2',
-        label: 'ワッカー法（エチレン → アセトアルデヒド）',
-        detect(mol) { return ethyleneUnits(mol); },
+        // ⚠ v1541 でプロペン → アセトンまで広げたので、札の名前も書き直した
+        label: 'ワッカー法（エチレン → アセトアルデヒド／プロペン → アセトン）',
+        detect(mol) { return wackerUnits(mol); },
         apply(game, site) {
             const mol = game.userMolecule;
             const [c1, c2] = site;
             const spot = freeSpotAround(mol, c1);
             if (!spot) throw noRoom('カルボニルの酸素を置く空間がありません');
             const bond = mol.getBond(c1, c2);
-            if (!bond || bond.type !== 2) throw new Error('エチレンの C=C が見つかりません');
+            if (!bond || bond.type !== 2) throw new Error('C=C が見つかりません');
+            // 酸素がつく側に炭素の隣がいくつあるか ＝ できるのがアルデヒドかケトンかの分かれ目
+            const branched = mol.getNeighbors(c1).filter(n => n.atom.element !== 'H').length >= 2;
             bond.type = 1;
             const o = mol.addAtom('O', spot.x, spot.y);
             mol.addBond(c1, o.id, 2);
             bendCarbonyl(mol, c1, o.id);
             return {
-                caption: 'エチレンが酸化されてアセトアルデヒドになりました。' +
+                caption: (branched
+                    ? 'プロペンが酸化されてアセトンになりました。'
+                    : 'エチレンが酸化されてアセトアルデヒドになりました。') +
                     '塩化パラジウム(II) と塩化銅(II) を触媒に、酸素で酸化します。' +
-                    '**炭素は2個のまま残り**、C=C の片方が C=O に変わるだけです' +
+                    '**炭素の数は変わらず**、C=C の片方が C=O に変わるだけです' +
                     '（切れて減る酸化開裂との違いはここです）。' +
-                    'アセトアルデヒドの工業的製法で、教科書には式が載っています' +
+                    '⚠ **酸素がつくのは置換基の多いほうの炭素**（マルコフニコフ則）なので、' +
+                    'エチレンからはアルデヒド（アセトアルデヒド）ができるのに、' +
+                    'プロペンからはケトン（アセトン）ができます —— ' +
+                    '同じ反応なのに行き先が変わるのはこのためです。' +
+                    'どちらも工業的製法で、教科書に式が載っています' +
                     '（「ワッカー法」という呼び名は参考書のものです）。',
                 changed: [c1, c2, o.id]
             };
@@ -5870,6 +6694,10 @@ const REACTION_RULES = [
          *
          * ⚠ **瓶は `cl2_light`（新設）。`cl2_fe` に相乗りさせていない**（瓶の注記を見ること）。 */
         id: 'chlorinate_alkane',
+        /* ★ 機構データ `methane_chlorination` は `reactions.json` に**前からあった**のに、
+         *   ここから名指ししていなかったので巻矢印で見られなかった（v1541 の実測で発見）。
+         *   ⛔ 新しい機構データは1件も書いていない ＝ 1行つないだだけ（13 → 14本）。 */
+        mechanismId: 'methane_chlorination',
         reagentId: 'cl2_light',
         label: 'アルカンの置換（Cl₂・光）→ 塩化アルキル',
         detect: (mol) => alkaneSubstitutionSites(mol),
@@ -6109,6 +6937,62 @@ const REACTION_RULES = [
         label: '加水分解（エステル + H₂O, 酸を触媒に加熱）',
         detect(mol) { return detectEsterLinkages(mol); },
         apply(game, site) { return cleaveEster(game, site, false); }
+    },
+    {
+        /* ★★ アミド結合の加水分解（v1541・参考書の式1本＝ポリペプチドの加水分解）。
+         *
+         * ⚠⚠ **アミド結合を切るルールが1本も無かった。** `amidation`（作る側）と
+         *   `acetylation_anhydride` は前からあるのに**帰りが無い片道**で、
+         *   実測でジペプチド・アセトアニリド・ナイロン66 のどれにも0件だった（v1540）。
+         *   ★ 1本足すと、参考書の「ポリペプチドの加水分解」だけでなく
+         *     アセトアニリド・ナイロンにも同じ札が出る。
+         *
+         * ★ **切り方は `cleaveAcylOxygen` に任せる**（CV1 の約束＝切る反応の印を1か所で決める）。
+         *   ⚠ 名前は「Oxygen」だが、やっているのは「アシル基から相手の重原子を外して
+         *   -OH を生やす」ことで、相手が O でも N でも1行も違わない。
+         *
+         * ★ **環状アミド（ラクタム）も通す。** カプロラクタム ＋ H₂O →
+         *   6-アミノヘキサン酸は、ナイロン6 の話でそのまま出てくる。
+         *   `cleaveAcylOxygen` が「切っても分子が分かれない」場合を既に扱っている。
+         *
+         * ⚠ **瓶は増やさない** —— エステルの加水分解と同じ希硫酸（`h2so4_dil`）。
+         *   規約1-2 のとおり瓶の `acts`・`miss` も書き足してある。 */
+        id: 'hydrolysis_amide',
+        reagentId: 'h2so4_dil',
+        label: '加水分解（アミド結合 + H₂O, 酸を触媒に加熱）',
+        detect(mol) {
+            return findFunctionalGroups(mol)
+                .filter(g => g.type === 'amide')
+                /* ⚠ **尿素型（同じカルボニル炭素に N が2つ）は落とす**（実測で入っていた）。
+                 *   切ると**カルバミン酸 H₂N-COOH** ができるが、これは単離できず
+                 *   ただちに CO₂ ＋ NH₃ に分かれる ＝ 画面に描くと嘘の図になる。
+                 *   ★ 尿素そのものは「尿素樹脂の材料」として登録してあるので、
+                 *     ここを開けておくと必ず踏む。 */
+                .filter(g => mol.getNeighbors(g.atomIds[0])
+                    .filter(n => n.atom.element === 'N').length === 1)
+                .map(g => g.atomIds); // [カルボニルC, =O, N]
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [cId, , nId] = site;
+            const { changed } = cleaveAcylOxygen(mol, cId, nId);
+            const stillOne = componentOf(mol, cId).has(nId); // 環だった（分子が分かれていない）
+            return {
+                caption: 'アミド結合が加水分解されて、カルボン酸とアミンに分かれました。' +
+                    '水が1分子入って、C 側が -COOH に、N 側が -NH- に戻ります（アミド化の逆）。' +
+                    (stillOne
+                        ? '⚠ もとが**環状のアミド（ラクタム）**だったので、環が開いただけで分子の数は増えません。' +
+                          'カプロラクタムを開くと 6-アミノヘキサン酸になり、これがナイロン6 の繰り返し単位です。'
+                        : '') +
+                    'タンパク質を塩酸と煮ると、ペプチド結合がここで切れてアミノ酸に分かれます' +
+                    '（ポリペプチドの加水分解）。ナイロンのアミド結合・アセトアニリドのアミド結合も同じ形なので、' +
+                    'まったく同じ切れ方をします。' +
+                    '⚠ アミド結合はエステル結合より切れにくいので、酸（か塩基）を加えて**長く加熱**します。' +
+                    '体の中では、その仕事を消化酵素（ペプチダーゼ）がしています。',
+                changed,
+                refit: true
+            };
+        }
     },
     {
         /* グリコシド結合の加水分解（P12-8 の穴埋め・2026-08-07。qa の棚卸しで2件）。
@@ -6801,6 +7685,264 @@ const REACTION_RULES = [
         morphStages: 'bondsFirst', // ①環の配置のまま開く → ②鎖状に整列する
         detect(mol) { return detectGlucopyranose(mol); },
         apply(game, site) { return applyOpenRing(game, site); }
+    },
+    {
+        /* ★ ナトリウムフェノキシド ＋ ヨードメタン → アニソール ＋ NaI（v1541・参考書 aromatic.md の式1本）。
+         *   参考書: `C₆H₅ONa ＋ CH₃I → C₆H₅OCH₃ ＋ NaI`（発展。★「呈色しなくなる」「分子量が14増える」の2点で十分、と書く）。
+         * ★ **門番（相手）: ヨードメタン1分子だけ**（重原子が C と I の2個・単結合）。参考書が名指しするのは CH₃I だけで、
+         *   ヨードエタン・クロロメタンへ広げる根拠が本文に無い。
+         * ★ **門番（フェノキシドの側）: `phenoxideSaltSites`**（芳香環に直結した -O⁻ と金属の粒）。
+         *   ⚠ ナトリウムエトキシド（鎖の -O⁻）・カルボン酸塩・スルホン酸塩はそこで落ちる。
+         * ⚠ Na⁺ と I⁻ は NaI になって水に残るので、どちらも図から外す（`diazo_coupling` と同じ扱い）。
+         * ⚠ **瓶は持たせない** —— 相手は試薬ではなく**分子**で、CH₃ の炭素がそのまま生成物に入る
+         *   （アセタール化のホルムアルデヒドと同じ理由）。入口は `PARTNER_CANDIDATES` の札。
+         * ⚠ 札の名前に「酸化」「H₂O」「H₂」を書かない（燃焼の札の注記を見ること）。 */
+        id: 'williamson_ether',
+        morphStages: 'joinFirst', // ①2分子が並ぶ → ②O と CH₃ がつながる
+        label: 'エーテル化: ナトリウムフェノキシド ＋ ヨードメタン → アニソール',
+        detect(mol) {
+            const phen = phenoxideSaltSites(mol);
+            if (!phen.length) return [];
+            const methyls = [];
+            mol.atoms.forEach(a => {
+                if (a.element !== 'I' || a.charge) return;
+                const heavy = [...componentOf(mol, a.id)]
+                    .map(id => mol.atoms.find(x => x.id === id))
+                    .filter(x => x && x.element !== 'H');
+                if (heavy.length !== 2) return;
+                const c = heavy.find(x => x.element === 'C');
+                const b = c && mol.getBond(a.id, c.id);
+                if (!c || c.charge || !b || b.type !== 1) return;
+                methyls.push([c.id, a.id]);
+            });
+            const out = [];
+            phen.forEach(([metalId, oId]) => {
+                const own = componentOf(mol, oId);
+                methyls.forEach(([cId, iId]) => {
+                    if (!own.has(cId)) out.push([oId, cId, metalId, iId]);   // 別分子どうしのみ
+                });
+            });
+            return out;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const [oId, cId, metalId, iId] = site;
+            const o = mol.atoms.find(a => a.id === oId);
+            if (!o || !(o.charge < 0)) throw new Error('フェノキシドの -O⁻ が見つかりません');
+            // ⚠ **置き場を先に確かめる**（途中で失敗して「I だけ外れた図」を残さない）。
+            //    外れる I と Na は衝突判定から除く
+            const moving = [...componentOf(mol, cId)].filter(id => id !== iId);
+            const plan = planAttachment(mol, oId, cId, moving, [iId, metalId]);
+            if (!plan) throw noRoom('生成物を配置する空間がありません');
+            mol.removeAtom(iId);
+            freeSaltAcid(mol, metalId, oId);     // 粒が消え、-O⁻ の電荷も落ちる
+            applyAttachment(mol, moving, plan);
+            mol.addBond(oId, cId, 1);
+            return {
+                caption: 'ナトリウムフェノキシドにヨードメタン CH₃I を作用させると、' +
+                    '**アニソール（メトキシベンゼン）C₆H₅OCH₃** ができました。' +
+                    '-O⁻ が CH₃ の炭素と結びつき、ヨウ素が I⁻ として外れます。' +
+                    '外れた Na⁺ と I⁻ は塩（NaI）になって水に残るので、図から外しました。' +
+                    '\n★ フェノールの -OH の H が CH₃ に置き換わった形なので、' +
+                    '**塩化鉄(III) 水溶液を加えても呈色しなくなり**、' +
+                    'フェノールと比べて**分子量が 14 増えます**（H 1個ぶんが CH₃ 1個ぶんになる）。',
+                changed: [oId, cId]
+            };
+        }
+    },
+    {
+        /* ★ ナフタレンの空気酸化 → 無水フタル酸（v1541・参考書 aromatic.md）。
+         * 門番と係数のずれは `naphthaleneUnits` の注記。
+         * ★ **原子を作り直さず、壊れる環の炭素を使い回す**: 残る環の隣にあった2個が
+         *   カルボニル炭素になり、奥の2個が CO₂ として出ていく ＝ 前後比較で
+         *   「どの炭素がどこへ行ったか」が追える。
+         * ⚠ **置き場は先に全部確かめる**（途中で失敗して環だけ壊れた図を残さない）。
+         * ⚠ 札の名前に「酸化」「H₂O」を書かない（燃焼の札の注記と同じ事故 ＝ 文字で引くテストに当たる）。 */
+        id: 'naphthalene_air_oxidation',
+        label: 'ナフタレン → 無水フタル酸（V₂O₅・空気）',
+        detect: (mol) => naphthaleneUnits(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const set = new Set(site);
+            const at = id => mol.atoms.find(a => a.id === id);
+            const ringNbr = id => mol.getNeighbors(id).filter(n => set.has(n.atom.id)).map(n => n.atom.id);
+            const fused = site.filter(id => ringNbr(id).length === 3);
+            if (fused.length !== 2) throw new Error('ナフタレンの縮合部が見つかりません');
+            const [fa, fb] = fused;
+            // 縮合部を通らずにたどると、それぞれの環が「4原子の道」になる（fa の隣 → … → fb の隣）
+            const walk = (start) => {
+                const path = [start];
+                let prev = fa, cur = start;
+                for (;;) {
+                    const next = ringNbr(cur).find(x => x !== prev && !fused.includes(x));
+                    if (!next) break;
+                    path.push(next); prev = cur; cur = next;
+                }
+                return path;
+            };
+            const rings = ringNbr(fa).filter(x => x !== fb).map(walk);
+            if (rings.length !== 2 || rings.some(r => r.length !== 4)) throw new Error('ナフタレンの環が見つかりません');
+            const cen = r => ({ x: r.reduce((s, id) => s + at(id).x, 0) / 4, y: r.reduce((s, id) => s + at(id).y, 0) / 4 });
+            // 壊すのは右の環（同じなら下）。⚠ **座標で決める**（原子IDは乱数）。化学的には等価
+            rings.sort((p, q) => (cen(p).x - cen(q).x) || (cen(p).y - cen(q).y));
+            const [keep, gone] = rings;
+            const [k1, k2, k3, k4] = keep;
+            const [p1, q1, q2, p2] = gone;      // p1 は fa の隣・p2 は fb の隣
+            const before = heavyBondSignature(mol, site);
+
+            // ---- 五員環（fa・p1・O・p2・fb）の座標 ＝ 縮合の結合を底辺にした正五角形
+            const A = at(fa), B = at(fb);
+            const L = Math.hypot(B.x - A.x, B.y - A.y) || bondStep(mol, fa);
+            const ex = (B.x - A.x) / L, ey = (B.y - A.y) / L;
+            const gc = cen(gone), mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+            let ux = -ey, uy = ex;
+            if ((gc.x - mx) * ux + (gc.y - my) * uy < 0) { ux = -ux; uy = -uy; }
+            const c108 = Math.cos(108 * Math.PI / 180), s108 = Math.sin(108 * Math.PI / 180);
+            const P1 = { x: A.x + L * (ex * c108 + ux * s108), y: A.y + L * (ey * c108 + uy * s108) };
+            const P2 = { x: B.x + L * (-ex * c108 + ux * s108), y: B.y + L * (-ey * c108 + uy * s108) };
+            const hgt = L * Math.sqrt(5 + 2 * Math.sqrt(5)) / 2;
+            const OB = { x: mx + ux * hgt, y: my + uy * hgt };
+            const pc = { x: (A.x + B.x + P1.x + P2.x + OB.x) / 5, y: (A.y + B.y + P1.y + P2.y + OB.y) / 5 };
+            const outward = P => {
+                const dx = P.x - pc.x, dy = P.y - pc.y, d = Math.hypot(dx, dy) || 1;
+                return { x: P.x + L * dx / d, y: P.y + L * dy / d };
+            };
+            const OC1 = outward(P1), OC2 = outward(P2);
+            const others = mol.atoms.filter(a => !set.has(a.id) && a.element !== 'H');
+            if ([P1, P2, OB, OC1, OC2].some(p => others.some(o => Math.hypot(o.x - p.x, o.y - p.y) < L * 0.8))) {
+                throw noRoom('無水フタル酸を置く空間がありません');
+            }
+            // ---- 仮置きして CO₂ と H₂O の置き場を探す（見つからなければ元に戻して断る）
+            const saved = [p1, p2].map(id => ({ id, x: at(id).x, y: at(id).y }));
+            Object.assign(at(p1), { x: P1.x, y: P1.y });
+            Object.assign(at(p2), { x: P2.x, y: P2.y });
+            const ob = mol.addAtom('O', OB.x, OB.y);
+            const oc1 = mol.addAtom('O', OC1.x, OC1.y);
+            const oc2 = mol.addAtom('O', OC2.x, OC2.y);
+            const spots = combustionProductSpots(mol, [q1, q2], 4);
+            if (!spots) {
+                [ob, oc1, oc2].forEach(o => mol.removeAtom(o.id));
+                saved.forEach(s => Object.assign(at(s.id), { x: s.x, y: s.y }));
+                throw noRoom('生成物を置く空間がありません');
+            }
+            // ---- ここから先は戻らない: 残る環のケクレ構造を組み直し、壊れる環を開く
+            const setType = (x, y, t) => {
+                const b = mol.getBond(x, y);
+                if (!b) throw new Error('環の結合が見つかりません');
+                b.type = t;
+            };
+            setType(fa, fb, 2); setType(fa, k1, 1); setType(k1, k2, 2);
+            setType(k2, k3, 1); setType(k3, k4, 2); setType(k4, fb, 1);
+            setType(fa, p1, 1); setType(fb, p2, 1);
+            mol.removeAtom(q1);
+            mol.removeAtom(q2);
+            mol.addBond(p1, ob.id, 1);
+            mol.addBond(p2, ob.id, 1);
+            mol.addBond(p1, oc1.id, 2);
+            mol.addBond(p2, oc2.id, 2);
+            const G = bondStep(mol, fa);
+            const made = [ob.id, oc1.id, oc2.id];
+            for (let i = 0; i < 2; i++) {
+                const p = spots[i];
+                const c = mol.addAtom('C', p.x, p.y);
+                const oL = mol.addAtom('O', p.x - G, p.y);
+                const oR = mol.addAtom('O', p.x + G, p.y);
+                mol.addBond(oL.id, c.id, 2);
+                mol.addBond(c.id, oR.id, 2);
+                made.push(c.id, oL.id, oR.id);      // ⚠ CO₂ に fromReaction は付けない（燃焼と同じ理由）
+            }
+            for (let i = 2; i < 4; i++) {
+                const o = mol.addAtom('O', spots[i].x, spots[i].y);
+                o.fromReaction = true;              // 自動水素で H₂O として描かれる
+                made.push(o.id);
+            }
+            const after = heavyBondSignature(mol, site);
+            const moved = site.filter(id => after.has(id) && after.get(id) !== before.get(id));
+            return {
+                caption: 'ナフタレンを、酸化バナジウム(V) **V₂O₅** を触媒にして空気中の酸素で酸化すると、' +
+                    '**片方の環が壊れて**無水フタル酸ができました。' +
+                    '**2C₁₀H₈ ＋ 9O₂ → 2C₈H₄O₃ ＋ 4CO₂ ＋ 4H₂O** です' +
+                    '（図に出ているのは**1分子ぶん**で、CO₂ が 2 個・H₂O が 2 個です）。' +
+                    '壊れた環の炭素4個のうち、残った環の隣にあった2個は **C=O** になって酸素でつながり' +
+                    '（酸無水物の五員環）、奥の2個は二酸化炭素になって出ていきます。' +
+                    '★ 同じ無水フタル酸は、o-キシレンを酸化してできるフタル酸を加熱しても得られます' +
+                    '（隣り合った2つの -COOH が分子内で脱水する）。',
+                changed: [...moved, ...made],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ★★ 完全燃焼（v1541）。参考書の式3本（メタン・エタノール・ベンゼン）を1本で埋める。
+         * 門番と置き場の理屈は `combustionComposition` / `combustionProductSpots` の注記。
+         *
+         * ★ **係数つきの式を caption に必ず出す。** 図（CO₂ が何個・H₂O が何個）と
+         *   式の係数が**同じ数**であることが、この反応を画面でやる意味そのもの
+         *   —— 元素分析はこの数を使って組成を逆算する。 */
+        id: 'combustion',
+        reagentId: 'o2_flame',
+        /* ⚠ **札の名前に生成物を書かない。** 反応の一覧からボタンを**文字で**引いている
+         *   テストが4本あり、書き方を変えるたびに別のテストへ当たった（`→ CO₂ ＋ H₂O` は
+         *   L4・L6 の「H₂O」と RG10 の「H₂」に・`→ 二酸化炭素と水` は L6・RG14 の「**酸化**」に）。★ 生成物は caption が係数つきの式で言うので、札は条件だけを名乗ればよい。⚠ 一覧の並びも**この1本を末尾に置いた** ——
+         *   有機化合物はたいてい燃えるので、前のほうに置くと
+         *   **どの分子でも燃焼が先頭に並ぶ**（見たい反応が下へ押し出される）。 */
+        label: '完全燃焼（O₂・点火）',
+        detect: (mol) => combustibleComponents(mol),
+        apply(game, site) {
+            const mol = game.userMolecule;
+            const comp = combustionComposition(mol, site);
+            if (!comp) throw new Error('燃焼の式が書けない分子です');
+            const spots = combustionProductSpots(mol, site, comp.co2 + comp.h2o);
+            if (!spots) throw noRoom('生成物を置く空間がありません');
+            const G = bondStep(mol, site[0]);
+            // 燃えた分子は跡形もなくなる ＝ もとの原子はすべて消える
+            site.forEach(id => mol.removeAtom(id));
+            const changed = [];
+            for (let i = 0; i < comp.co2; i++) {
+                const p = spots[i];
+                const c = mol.addAtom('C', p.x, p.y);
+                const oL = mol.addAtom('O', p.x - G, p.y);
+                const oR = mol.addAtom('O', p.x + G, p.y);
+                mol.addBond(oL.id, c.id, 2);
+                mol.addBond(c.id, oR.id, 2);
+                /* ⚠ **CO₂ には `fromReaction` を付けない。** この印は `parkAsWater` が
+                 *   置いた「脱離した水」を表すもので、CV1/CV4 の物差しは
+                 *   **その印の付いた成分を検査から外す**（印は変化点を指すもので
+                 *   生成物の目録ではない、という約束）。CO₂ は燃焼の主生成物なので、
+                 *   外してしまうと「変化が1つも起きなかった反応」に化ける。 */
+                [c, oL, oR].forEach(a => { changed.push(a.id); });
+            }
+            for (let i = 0; i < comp.h2o; i++) {
+                const p = spots[comp.co2 + i];
+                const o = mol.addAtom('O', p.x, p.y);
+                o.fromReaction = true;          // 自動水素で H₂O として描かれる
+                changed.push(o.id);
+            }
+            // ---- 係数を整数にそろえた式を作る（O₂ が半整数になるときだけ全体を2倍する）
+            const k = Number.isInteger(comp.o2) ? 1 : 2;
+            const sub = n => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+            const co = n => (n === 1 ? '' : String(n));
+            const fuel = 'C' + (comp.c > 1 ? sub(comp.c) : '') +
+                'H' + (comp.h > 1 ? sub(comp.h) : '') +
+                (comp.o ? 'O' + (comp.o > 1 ? sub(comp.o) : '') : '');
+            const eq = `${co(k)}${fuel} ＋ ${co(comp.o2 * k)}O₂ → ` +
+                `${co(comp.co2 * k)}CO₂ ＋ ${co(comp.h2o * k)}H₂O`;
+            return {
+                caption: `完全燃焼しました。**${eq}** です。` +
+                    `炭素は1個残らず二酸化炭素に、水素は1個残らず水になります` +
+                    `（図に出ているのは**1分子ぶん**で、CO₂ が ${comp.co2} 個・H₂O が ${comp.h2o} 個です）。` +
+                    (k === 2
+                        ? `⚠ この分子は O₂ の係数が分数になるので、**式全体を2倍**して整数にそろえてあります。` +
+                          `式の ${comp.co2 * 2}CO₂・${comp.h2o * 2}H₂O が図の2倍になっているのはそのためです。`
+                        : '') +
+                    (comp.o ? `もとの分子が持っていた酸素 ${comp.o} 個も生成物の側に入るので、` +
+                        `必要な O₂ はそのぶん少なくなります。` : '') +
+                    'この「C の数 ＝ CO₂ の数」「H の数 ＝ H₂O の数の2倍」という対応が元素分析の土台で、' +
+                    '燃やして出てきた CO₂ と H₂O の質量から、もとの分子の C と H の数を逆算します。',
+                changed,
+                refit: true
+            };
+        }
     }
 ];
 
@@ -6820,7 +7962,16 @@ const REACTION_RULES = [
  * PVA を呼び出して見ているとき「＋ ホルムアルデヒド を呼び出す → アセタール化」の札が立つ。
  * ★ 札は名前の一致では出ない —— `findPartnerHints` が**実際に並べて `detect` を回し**、
  *   箇所が2分子にまたがったときだけ出す（＝ 相手を足しても何も起きない分子では出ない）。 */
-const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール', 'ホルムアルデヒド'];
+/* ★ v1541: ヨードメタンを足した（`williamson_ether` の入口）。ナトリウムフェノキシドを見ているとき
+ *   「＋ ヨードメタン を呼び出す → アニソール」の札が立つ。⚠ ほかの分子では札は出ない
+ *   （`findPartnerHints` が実際に並べて `detect` を回すので、フェノキシド以外では箇所が出ない。
+ *    ライブラリ全 1,163 件に並べて確かめた）。
+ * ⚠⚠ **ここは登録名と1文字違わず一致させること。** `findPartnerHints` は
+ *   `library.find(e => e.name === name)` で**完全一致**で引くので、別名（括弧の前だけ）では
+ *   **黙って候補から落ちる**（エラーも出ない）。v1541 で `'ヨードメタン'` と書いて実際に踏んだ
+ *   （RXF23 が「札が出ない」で赤）。 */
+const PARTNER_CANDIDATES = ['エタノール', 'メタノール', '酢酸', 'グリセリン', 'フェノール', 'ホルムアルデヒド',
+    'ヨードメタン（ヨウ化メチル）'];
 
 // 畳んだ見出しの札と id（v1420）。**文言と id は1か所**——テストと実装が同じものを見る
 const PARTNER_HINTS_ID = 'partner-hints';
