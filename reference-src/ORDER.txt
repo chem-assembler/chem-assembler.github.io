@@ -8,12 +8,15 @@ alkene
 alkyne
 cycloalkane
 alcohol
+alcohol-class
 ether
 alcohol-oxidation-map
 alcohol-dehydration
 aldehyde
 ketone
+iodoform
 carboxylic-acid
 ester
+esterification
 fat
 reaction-mechanisms

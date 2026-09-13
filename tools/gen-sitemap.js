@@ -45,6 +45,9 @@ const PAGES = [
     ['/muki/snake.html', 'muki/snake.html'],
     ['/muki/separation.html', 'muki/separation.html'],
     ['/muki/tree.html', 'muki/tree.html'],
+    // ⚠ 2026-09-13: akinator.html は 3ba0898e（muki v32）が sitemap.xml へ**手で**足していて、
+    //   この表に無かった ＝ 誰かが生成し直すたびに sitemap から黙って消えていた（ref-alcsplit が踏んだ）
+    ['/muki/akinator.html', 'muki/akinator.html'],
     ['/privacy.html', 'privacy.html'],
 ];
 
