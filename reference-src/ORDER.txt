@@ -25,3 +25,4 @@ disaccharide
 polysaccharide
 amino-acid
 protein
+enzyme
