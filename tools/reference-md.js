@@ -397,8 +397,12 @@
            `page.memos` に行番号ごと残し、生成器が「まだ片付いていないメモが N 件」と数えて出す（§20-2）。
            ⚠ `serialize` は PAGE_KEYS しか書かないので、**reference.json には入らない**。 */
         var memos = [];
+        /* ⚠ `//` の直前は「行の先頭」か「`:` と `/` 以外の1字」。**句点の直後（`〜です。//メモ`）もメモ**
+           （v1546。以前は直前が空白のときだけで、`。//` が本文に素通りしていた）。
+           ⚠ `://`（URL）はメモにしない。⓵ 否定の後読み `(?<!…)` を使わないのは、test.html 以外の古いブラウザで
+           ファイルごと構文エラーにしないため。直前の1字は m[1] に取り、本文側に残す。 */
         var lines = raw.map(function (line, n) {
-            var m = /(^|\s)\/\/(.*)$/.exec(line);
+            var m = /(^|[^:\/])\/\/(.*)$/.exec(line);
             if (!m) return line;
             var body = m[2].trim();
             if (body) memos.push({ line: n + 1, text: body });
