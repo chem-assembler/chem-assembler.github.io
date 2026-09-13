@@ -1154,6 +1154,46 @@ function ipLongestHeavyPath(mol) {
     return best;
 }
 
+/**
+ * ★ **ハース式の糖を、登録どおりの形で標準の図に描かせる**下ごしらえ（v1549・参考書の図の道具から呼ぶ）。
+ *
+ * > α とβ で 1位の −OH の上下が図で見分けられること（発注 2026-09-14）
+ *
+ * **新しい描き方は書いていない。** ハース式の形は**登録データの座標そのもの**（名前から呼び出したとき
+ * キャンバスに出るのと同じ）で、ここがするのは次の2つだけ:
+ *   ① 門番に `haworthSugarCycles`（chemistry.js・キャンバスの ⇅ 札と同じ判定）を借り、糖の環が無ければ false
+ *   ② 座標を `IP_HSTEP / 42` 倍して `_ipFixedLayout` を立てる ＝ `renderStandardFigure` の
+ *      「座標を焼き付けた答案はそのまま描く」道（v1440・シス/トランス用）に乗せる。
+ *      倍率は `layoutMolecule` へ落ちる環の図と同じ（本の中の結合の長さを1つにする）
+ * ⚠ 何もしないと `layoutMolecule` の直交の図になり、**1位の −OH の上下（α/β）が図から消える**。
+ * ⚠ `mol` の座標を書き換えるので、写しを渡すこと（登録の target を直に渡さない）
+ */
+/**
+ * 分子の座標が「描ける図」か（紙の図の型で登録の座標を使ってよいか・v1549）。
+ * ⚠ 列挙器が作った分子は座標が全部 0,0 ＝ 使えない（そのときは今までどおり `layoutMolecule`）
+ */
+function ipCoordsUsable(mol) {
+    const heavy = mol.atoms.filter(a => a.element !== 'H');
+    if (heavy.length < 2) return false;
+    for (let i = 0; i < heavy.length; i++) {
+        for (let j = i + 1; j < heavy.length; j++) {
+            if (Math.hypot(heavy[i].x - heavy[j].x, heavy[i].y - heavy[j].y) < 20) return false;
+        }
+    }
+    return true;
+}
+
+function ipHaworthFigure(mol) {
+    if (typeof haworthSugarCycles !== 'function') return false;
+    let cycles;
+    try { cycles = haworthSugarCycles(mol); } catch (e) { return false; }
+    if (!cycles || !cycles.length) return false;
+    const k = IP_HSTEP / 42;
+    mol.atoms.forEach(a => { a.x *= k; a.y *= k; });
+    mol._ipFixedLayout = true;
+    return true;
+}
+
 /** 渡された鎖を横一直線（`IP_HSTEP` 刻み）に置き、枝を上下へ伸ばした座標（`ipNumberedLayout` と共用） */
 function ipLayoutFromChain(mol, chain) {
     const order = chain.slice();
@@ -3985,8 +4025,25 @@ class IsomerPractice {
     // ★ `numbered` を渡すと、**素の 1・2・3 のかわりにキャンバスと同じ帯と `C₁` の添え字**を
     //   重ねる（F・§8-3）。同じ図に番号が2通り出ないよう、素の番号は**そのとき描かない**。
     //   エーテル（`ipNumberedLayout` が null）でも 2色の塗り分けが出るのはこの道のおかげ
-    renderStandardFigure(svgId, mol, numbered) {
+    //
+    // ★ `opts.paper`（v1549・**参考書の図を焼く道具だけが渡す**）＝ 紙の図の型。アプリの画面は渡さない。
+    //   ① 環のある分子は**登録の座標**（芳香環は正六角形・半径40）で描く（⚠ 渡さないと `layoutMolecule` の長方形）
+    //   ② 描くのは同じ `renderMoleculeIntoSvg` で、丸を描かず水素を元素記号へまとめる口（`paper`）を開けるだけ
+    renderStandardFigure(svgId, mol, numbered, opts) {
         const g = this.game;
+        const paper = !!(opts && opts.paper);
+        //   ★ 環の無い分子も登録の座標を使う（酢酸は登録が CH₃−C−OH の横一直線＋=O が上 ＝ 教科書の形。
+        //     鎖の道 `ipStraightLayout` は同じ長さの鎖でヘテロ原子を優先するので O=C−OH を主鎖にして CH₃ を上へ出す）
+        //   ⚠ 登録の刻みは 42 と 80 が混ざる（compounds と stages）ので、**結合の長さの中央値を IP_HSTEP にそろえる**
+        if (paper && !mol._ipFixedLayout && ipCoordsUsable(mol)) {
+            const lens = mol.bonds.map(b => {
+                const a1 = mol.atoms.find(a => a.id === b.atomId1), a2 = mol.atoms.find(a => a.id === b.atomId2);
+                return Math.hypot(a1.x - a2.x, a1.y - a2.y);
+            }).filter(l => l > 1e-6).sort((p, q) => p - q);
+            const k = lens.length ? IP_HSTEP / lens[Math.floor(lens.length / 2)] : 1;
+            mol.atoms.forEach(a => { a.x *= k; a.y *= k; });
+            mol._ipFixedLayout = true;
+        }
         // ★ 2本目の道（`ipStraightLayout`・v1440）＝ **番号は振らないが鎖は横一直線**。
         //   エーテルはここへ来る（`iupacNameDetail` が null を返す ＝ 番号の道には乗れない）。
         //   ⚠ 番号を出すのは `layout.order` が非 null のときだけ ＝ 門番は N-4 のまま
@@ -4022,7 +4079,7 @@ class IsomerPractice {
                 bonds: mol.bonds.map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }))
             };
         }
-        renderMoleculeIntoSvg(g, svgId, target);
+        renderMoleculeIntoSvg(g, svgId, target, false, false, paper ? opts : null);
         // ★ `🔢` を押した行は、キャンバスと同じ帯と `C₁` の添え字を重ねて**素の番号は出さない**
         //   （同じ図に番号が2通り並ぶのを避ける。§8-3）。門番は N-4 のままで、
         //   出せない図（環・芳香族）は false が返って**何も足さない**

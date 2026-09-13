@@ -31,6 +31,16 @@
  * | `chain=<数> subs=<位置-基,…>` | ⚠ 重原子9個以上のアルカンだけ。主鎖の炭素数と側鎖（`2-メチル,3-エチル`）から骨格を組む。**組んだあと `iupacName` で `name=` と照合する**（違えば赤） |
  * | `numbered`      | 主鎖にオレンジの帯と `C₁ C₂ …` の番号を重ねる（アプリの `🔢` と同じもの） |
  * | `plain`         | ⚠ **位置番号を消す。**アプリの標準の図は素の `1 2 3 …` を主鎖の下に振るので、番号の話をする前のページでは邪魔になる（消すのは番号の文字だけで、形は触らない） |
+ * | `haworth`       | ★ **糖をハース式で描く**（v1549）。登録の座標（名前から呼び出したときの形）をそのまま描く ＝ **1位の −OH の上下（α/β）が図に出る**。⚠ 登録済みの名前だけ・糖の環（`haworthSugarCycles`）が無ければ赤。中身は `learn.js` の `ipHaworthFigure` |
+ *
+ * ★ **原稿に書かずに1枚だけ焼く**（v1549。原稿の校正中に新しい図を用意する口）:
+ *
+ *      node tools/gen-figure.mjs --port=8811 --src=saccharide-alpha-glucose-haworth.png --gen="name=α-D-グルコース（α-D-グルコピラノース） haworth"
+ *
+ *   ⚠ `--src=` と `--gen=` は必ず組で書く。原稿の図（`gen:` のある `:::figure`）には触らない
+ *
+ * ★ **塩（成分が2つ以上の登録）も焼ける**（v1549）。粒（Na⁺・Cl⁻）は `layoutMolecule` /
+ *   `renderStandardFigure` が反対の電荷の原子の近くへ置く（`chemistry.js` の `layoutDetachedComponents`）
  *
  * ★ **どの道で作っても、最後に `iupacName` で名前を突き合わせる。**
  *   ＝ **原稿に書いた名前と違う分子が図になることがない。**
@@ -56,6 +66,14 @@ const args = process.argv.slice(2);
 const CHECK = args.includes('--check');
 const PORT = (args.find(a => a.startsWith('--port=')) || '--port=8486').split('=')[1];
 const ONLY = args.filter(a => !a.startsWith('--'));
+/* 原稿に書かずに1枚だけ焼く口（`--src=` と `--gen=` の組） */
+const ONE_SRC = (args.find(a => a.startsWith('--src=')) || '').slice('--src='.length);
+const ONE_GEN = (args.find(a => a.startsWith('--gen=')) || '').slice('--gen='.length);
+/* ⚠ 1枚焼きの置き先。`reference-img/` に原稿から名指しされない図を置くと `gen-reference.mjs` が
+   「参照されていない図」で止まるので、差し替えを決めるまでは外に置けるようにする */
+const OUT_DIR = (args.find(a => a.startsWith('--out=')) || '').slice('--out='.length);
+/* 紙の図の型で「まとめる／線で描く」を上書きできる原子団（quiz.js の PAPER_GROUP_KEY と同じ綴り） */
+const PAPER_GROUP_KEYS = ['COOH', 'CHO', 'NO2', 'SO3H'];
 
 /* 焼く大きさ。★ 既存56枚（幅 1150px 前後）に合わせる ＝ 本文の幅 572px の2倍。
    ⚠ 縦長の分子で高さが伸びすぎないように、天井も持つ */
@@ -92,6 +110,8 @@ const PAPER_CSS = `
 #figbake line.svg-bond-ink{ stroke: rgba(28,34,45,0.92) !important; }
 #figbake line.iupac-band{ stroke: #b4680a !important; opacity:0.34 !important; }
 #figbake text.iupac-group-name{ stroke: rgba(255,255,255,0.95) !important; }
+#figbake text.svg-paper-label{ fill:#1c222d !important; font-family: "Helvetica Neue", Arial, sans-serif; }
+#figbake text.svg-charge{ fill:#1c222d !important; }
 `;
 
 /* ============================================================================
@@ -114,19 +134,34 @@ function collect() {
 
 /** `gen:` の1行を読む。⚠ 知らない語は**黙って捨てない**（綴り違いが図の取り違えになる） */
 function parseGen(text, where) {
-    const spec = { numbered: false, plain: false };
+    const spec = { numbered: false, plain: false, haworth: false };
     String(text).trim().split(/\s+/).filter(Boolean).forEach(tok => {
         if (tok === 'numbered') { spec.numbered = true; return; }
         if (tok === 'plain') { spec.plain = true; return; }
+        if (tok === 'haworth') { spec.haworth = true; return; }
+        if (tok === 'paper') { spec.paper = true; return; }
+        const g = /^(condense|expand)=(.+)$/.exec(tok);
+        if (g) {
+            const keys = g[2].split(',').map(s => s.trim()).filter(Boolean);
+            const bad = keys.filter(k => !PAPER_GROUP_KEYS.includes(k));
+            if (bad.length) throw new Error(`${where}: gen の ${g[1]}= に知らない原子団「${bad.join(',')}」があります（書けるのは ${PAPER_GROUP_KEYS.join(' / ')}）`);
+            spec[g[1]] = keys;
+            return;
+        }
         const m = /^(name|formula|chain|subs)=(.+)$/.exec(tok);
         if (!m) throw new Error(`${where}: :::figure の gen に読めない語「${tok}」があります`
-            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain）');
+            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / condense= / expand=）');
         spec[m[1]] = m[2];
     });
     if (!spec.name) throw new Error(`${where}: :::figure の gen に name= がありません（図が何の分子かを名乗ってください）`);
     if (spec.chain && !spec.subs) throw new Error(`${where}: gen の chain= には subs= を添えます`);
     if (spec.subs && !spec.chain) throw new Error(`${where}: gen の subs= には chain= を添えます`);
     if (spec.numbered && spec.plain) throw new Error(`${where}: gen の numbered と plain は同時に書けません`);
+    if ((spec.condense || spec.expand) && !spec.paper) throw new Error(`${where}: gen の condense= / expand= は paper と組で書きます（丸の図には原子団のまとめが無い）`);
+    if (spec.condense && spec.expand && spec.condense.some(k => spec.expand.includes(k))) throw new Error(`${where}: gen の condense= と expand= に同じ原子団が入っています`);
+    if (spec.paper && spec.numbered) throw new Error(`${where}: gen の paper に numbered はまだ付けられません（主鎖の帯は丸の図の上で合わせてある）`);
+    if (spec.haworth && spec.numbered) throw new Error(`${where}: gen の haworth に numbered は付けられません（主鎖の帯はハース環に出せない）`);
+    if (spec.haworth && (spec.formula || spec.chain)) throw new Error(`${where}: gen の haworth は登録済みの名前だけで使えます（formula= / chain= は組めない）`);
     return spec;
 }
 
@@ -211,6 +246,14 @@ async function bake(jobs) {
 
             if (!mol) return { error: `「${spec.name}」が stages.json / compounds.json にありません。formula= か chain=/subs= を添えてください` };
 
+            /* ★ ハース式: 登録の座標のまま描かせる（⚠ 作図はここに書かない。中身は learn.js の ipHaworthFigure） */
+            if (spec.haworth) {
+                if (!entry) return { error: `haworth は登録済みの名前だけで使えます（「${spec.name}」は登録にありません）` };
+                if (typeof ipHaworthFigure !== 'function') return { error: 'アプリに ipHaworthFigure がありません（v1549 より古い版を配信している）' };
+                if (!ipHaworthFigure(mol)) return { error: `「${spec.name}」にハース式として読む糖の環がありません（haworthSugarCycles が空）` };
+                via += '・ハース式';
+            }
+
             /* ★★ **名前で突き合わせる**（登録済みの1件は名前そのもので引いているので除く）。
                ⚠ これが無いと「原稿の名前と違う分子の図」が黙って焼ける */
             if (!entry) {
@@ -233,7 +276,8 @@ async function bake(jobs) {
             box.appendChild(svg);
             document.body.appendChild(box);
             /* ★ 書き出し練習の答え合わせに出るのと**同じ関数**。`this` は `game` を持つ物だけでよい */
-            IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svg.id, mol, !!spec.numbered);
+            IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svg.id, mol, !!spec.numbered,
+                { paper: !!spec.paper, condense: spec.condense || [], expand: spec.expand || [] });
             /* ★ 素の位置番号（`1 2 3 …`）だけを消す。⚠ 元素記号（`.svg-atom-text`）は残す
                ＝ 形にも結合にも触っていない（描いたあとで文字を1種類だけ取り去るだけ） */
             if (spec.plain) {
@@ -265,7 +309,9 @@ async function bake(jobs) {
         }
         const el = await pg.$('#figbake-svg');
         const buf = await el.screenshot({ type: 'png' });
-        writeFileSync(path.join(IMG, job.src), buf);
+        const outDir = OUT_DIR || IMG;
+        if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
+        writeFileSync(path.join(outDir, job.src), buf);
         done.push({ ...job, ...r, bytes: buf.length });
         console.log(`   ✅ ${job.src}  ${r.w}x${r.h}  ${(buf.length / 1024).toFixed(0)}KB`
             + `  ← ${job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`);
@@ -276,8 +322,17 @@ async function bake(jobs) {
 
 async function main() {
     let jobs;
-    try { jobs = collect(); }
-    catch (e) { console.log('❌ ' + e.message); process.exit(1); }
+    if (!!ONE_SRC !== !!ONE_GEN) { console.log('❌ --src= と --gen= は組で書きます'); process.exit(1); }
+    if (OUT_DIR && !ONE_SRC) { console.log('❌ --out= は --src= / --gen= の1枚焼きでだけ使えます（原稿の図は reference-img/ へ焼く）'); process.exit(1); }
+    if (ONE_SRC) {
+        if (CHECK) { console.log('❌ --check は原稿の図だけを見ます（--src= とは組めません）'); process.exit(1); }
+        if (!/^[a-z0-9][a-z0-9-]*\.png$/.test(ONE_SRC)) { console.log(`❌ --src=${ONE_SRC} は「英小文字・数字・ハイフン.png」の名前にします`); process.exit(1); }
+        try { jobs = [{ id: '(--src 指定)', src: ONE_SRC, gen: ONE_GEN, spec: parseGen(ONE_GEN, '--gen') }]; }
+        catch (e) { console.log('❌ ' + e.message); process.exit(1); }
+    } else {
+        try { jobs = collect(); }
+        catch (e) { console.log('❌ ' + e.message); process.exit(1); }
+    }
 
     if (!jobs.length) {
         console.log('焼く図はありません（:::figure に gen: を書いた図が対象です）');
