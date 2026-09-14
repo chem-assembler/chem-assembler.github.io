@@ -1586,6 +1586,47 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     ((opts && opts.condense) || []).forEach(k => want.add(k));
     ((opts && opts.expand) || []).forEach(k => want.delete(k));
 
+    // ★ ホルミル基 −CHO は **C−H も線で描く**（v1554・ユーザー提案「ホルミル基の場合は例外的にC-Hも書くのが標準」／統合側も賛成）。
+    //   教科書でも確かめた: 5編 p.148 の図(8)「R−C−H（=O が下）」・p.150 問5「CH₃−C−H」。
+    //   ⚠ `mol` は紙の図のために作った写しなので、H を**本物の原子として足してよい**（登録にもアプリの画面にも触らない）。
+    //   H の置き場所: 相手の重原子（R）の反対側（教科書の R−C−H の一直線）。そこが =O と重なるなら C=O と直角の側。
+    //   ホルムアルデヒド（R が無い）は C=O と直角の左右に H を2つ。
+    //   ⚠ `condense=CHO`（1つの文字「CHO」にまとめる上書き）のときは足さない ＝ 今までどおりの道が使える
+    if (!want.has('CHO')) {
+        const heavyLens = mol.bonds.map(bd => {
+            const p = mol.atoms.find(a => a.id === bd.atomId1), q = mol.atoms.find(a => a.id === bd.atomId2);
+            return Math.hypot(p.x - q.x, p.y - q.y);
+        }).filter(l => l > 1e-6).sort((p, q) => p - q);
+        const L0 = heavyLens.length ? heavyLens[Math.floor(heavyLens.length / 2)] : 46;
+        const inRing = typeof _ringAtomIds === 'function' ? _ringAtomIds(mol) : new Set();
+        mol.atoms.filter(c => c.element === 'C' && !inRing.has(c.id) && !c.charge).forEach(c => {
+            const nbs = mol.getNeighbors(c.id);
+            const oxo = nbs.find(nb => nb.type === 2 && nb.atom.element === 'O'
+                && mol.getNeighbors(nb.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+            if (!oxo) return;
+            const nH = mol.getFreeValency(c.id);
+            if (nH < 1) return;                               // ケトン・カルボン酸などは H を持たない
+            const others = nbs.filter(nb => nb !== oxo && nb.atom.element !== 'H');
+            const unit = (a) => { const dx = a.x - c.x, dy = a.y - c.y, l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
+            const uo = unit(oxo.atom);
+            const perp = [[-uo[1], uo[0]], [uo[1], -uo[0]]];
+            let dirs;
+            if (others.length === 1 && nH === 1) {
+                const ur = unit(others[0].atom);
+                const straight = [-ur[0], -ur[1]];
+                dirs = [(straight[0] * uo[0] + straight[1] * uo[1]) > 0.9 ? perp.find(p => (p[0] * ur[0] + p[1] * ur[1]) < 0.5) || perp[0] : straight];
+            } else if (others.length === 0 && nH === 2) {
+                dirs = perp;                                  // ホルムアルデヒド H−C(=O)−H
+            } else {
+                return;
+            }
+            dirs.forEach(([dx, dy]) => {
+                const h = mol.addAtom('H', c.x + dx * L0, c.y + dy * L0);
+                mol.addBond(c.id, h.id, 1);
+            });
+        });
+    }
+
     // 自動水素の数（描く水素と同じ計算 ＝ 電荷つきの -NH₃⁺ は 3・Cl⁻ は 0）
     const hCount = new Map();
     mol.calculateHydrogens().forEach(h => hCount.set(h.parentId, (hCount.get(h.parentId) || 0) + 1));
@@ -1637,6 +1678,7 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     //   ★ 文字の大きさの比がハース式だけ違うので、測る前に決める
     const front = new Map();   // bond → { kind: 'thick' | 'wedge', backId }
     const ringWidths = [];     // ハース環ごとの { 横幅, 員数 }（文字の大きさの物差し）
+    const haworthRings = [];   // ハース環の原子ID（外周を1枚の多角形で描く・v1554）
     if (typeof haworthSugarCycles === 'function') {
         let cycles = [];
         try { cycles = haworthSugarCycles(mol); } catch (e) { cycles = []; }
@@ -1647,6 +1689,7 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             if (low.size !== 2) return;
             const xs = cyc.map(id => byId.get(id).x);
             ringWidths.push({ w: Math.max(...xs) - Math.min(...xs), n: cyc.length });
+            haworthRings.push(cyc);
             mol.bonds.forEach(b => {
                 if (!ids.has(b.atomId1) || !ids.has(b.atomId2)) return;
                 const l1 = low.has(b.atomId1), l2 = low.has(b.atomId2);
@@ -1817,8 +1860,73 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         bondsGroup.appendChild(p);
     };
 
+    // ★★ ハース環の外周は**1枚の多角形**（v1554・ユーザー「ハース環の角をきれいに多角形にしましょう（はみ出したり欠けたりしない）」）。
+    //   v1550〜1551 は帯・くさび・奥の細線を別々の部品で描いていたので、角で端がはみ出したり継ぎ目が欠けたりしていた。
+    //   ・環を順にたどり、**文字のある環の原子（ふつうは環の O）で開いた1本の帯**として、辺ごとに始点・終点の太さを持たせる
+    //     （奥の辺は lineW・くさびは lineW → W・手前の辺は W）
+    //   ・角は**隣り合う辺の縁を延ばした交点**で閉じる（マイター）。⚠ 交点が頂点から「その角の太さの半分 × 4」より遠いときは
+    //     面取り（両方の縁の端をそのまま結ぶ）にする。4 は SVG の stroke-miterlimit の既定値と同じ ＝ 鋭い角でとがりすぎない
+    //   ・文字のある原子の所は、今までどおり文字の縁で止める（字に線が食い込まない）
+    //   ⚠ 文字のある原子が環に1つも無い形（今の登録には無い）は、今までどおり辺ごとの部品で描く
+    const consumed = new Set();
+    const bondBetween = (x, y) => mol.bonds.find(bd => (bd.atomId1 === x && bd.atomId2 === y) || (bd.atomId1 === y && bd.atomId2 === x));
+    const MITER_LIMIT = 4;
+    haworthRings.forEach(cyc => {
+        const ids = new Set(cyc);
+        const order = [cyc[0]];
+        while (order.length < cyc.length) {
+            const last = order[order.length - 1];
+            const next = mol.getNeighbors(last).map(nb => nb.atom.id).find(id => ids.has(id) && !order.includes(id));
+            if (next == null) break;
+            order.push(next);
+        }
+        if (order.length !== cyc.length) return;
+        const start = order.findIndex(id => ext.has(id));
+        if (start < 0) return;
+        const seq = order.slice(start).concat(order.slice(0, start), [order[start]]);
+        const segs = [];
+        for (let i = 0; i + 1 < seq.length; i++) {
+            const A = byId.get(seq[i]), Z = byId.get(seq[i + 1]);
+            const bd = bondBetween(A.id, Z.id);
+            if (!bd || bd.type !== 1) return;              // 環に二重結合がある形は糖ではない（念のため辺ごとの部品に戻す）
+            const dx = Z.x - A.x, dy = Z.y - A.y, len = Math.hypot(dx, dy);
+            if (len < 1e-6) return;
+            const ux = dx / len, uy = dy / len;
+            const f = front.get(bd);
+            const wA = !f ? lineW : (f.kind === 'thick' || f.backId !== A.id ? W : lineW);
+            const wZ = !f ? lineW : (f.kind === 'thick' || f.backId !== Z.id ? W : lineW);
+            const tA = ext.has(A.id) ? trimOf(A.id, ux, uy) : 0, tZ = ext.has(Z.id) ? trimOf(Z.id, -ux, -uy) : 0;
+            segs.push({ bd, P: [A.x + ux * tA, A.y + uy * tA], Q: [Z.x - ux * tZ, Z.y - uy * tZ], V: [Z.x, Z.y], ux, uy, hA: wA / 2, hZ: wZ / 2 });
+        }
+        const side = (sgn) => {
+            const E = segs.map(s => {
+                const nx = -s.uy * sgn, ny = s.ux * sgn;
+                return [[s.P[0] + nx * s.hA, s.P[1] + ny * s.hA], [s.Q[0] + nx * s.hZ, s.Q[1] + ny * s.hZ]];
+            });
+            const pts = [E[0][0]];
+            for (let i = 0; i < segs.length; i++) {
+                if (i + 1 === segs.length) { pts.push(E[i][1]); break; }
+                const [p1, p2] = E[i], [p3, p4] = E[i + 1];
+                const d1 = [p2[0] - p1[0], p2[1] - p1[1]], d2 = [p4[0] - p3[0], p4[1] - p3[1]];
+                const den = d1[0] * d2[1] - d1[1] * d2[0];
+                const h = Math.max(segs[i].hZ, segs[i + 1].hA);
+                if (Math.abs(den) < 1e-9) { pts.push(p2); continue; }   // まっすぐ続く角
+                const t = ((p3[0] - p1[0]) * d2[1] - (p3[1] - p1[1]) * d2[0]) / den;
+                const X = [p1[0] + d1[0] * t, p1[1] + d1[1] * t];
+                const V = segs[i].V;
+                if (Math.hypot(X[0] - V[0], X[1] - V[1]) > MITER_LIMIT * h) pts.push(p2, p3);   // 面取り
+                else pts.push(X);
+            }
+            return pts;
+        };
+        const left = side(1), right = side(-1);
+        poly(left.concat(right.reverse()));
+        segs.forEach(s => consumed.add(s.bd));
+    });
+
     mol.bonds.forEach(b => {
         if (hidden.has(b.atomId1) || hidden.has(b.atomId2)) return;
+        if (consumed.has(b)) return;                       // ハース環の外周（上で1枚の多角形にした）
         const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
         const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
         if (len < 1e-6) return;
@@ -1868,6 +1976,14 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             return;
         }
         draw(p, q, b.type);
+    });
+    // ★ 線の端は丸める（v1554）。ベンゼン環など辺ごとの線が頂点で出会う所に、切りっぱなしの端どうしの欠け（外側の三角の隙間）が出ないように。
+    //   丸めの半径は線の太さの半分（価標の 0.014）＝ 文字の縁で止めた端がはみ出す量もそれだけ
+    //   ⚠ 紙の図の線には目印の class を足す（v1554）。焼く道具はこの class だけを**不透明な墨色**に読み替える ——
+    //     丸の図の読み替え（rgba 0.92）のままだと、端の丸どうしが重なる所だけ色が濃い点になり、帯・くさび（塗り）とも色がずれる
+    bondsGroup.querySelectorAll('line').forEach(l => {
+        l.setAttribute('stroke-linecap', 'round');
+        l.classList.add('svg-paper-line');
     });
 
     const pad = 30;

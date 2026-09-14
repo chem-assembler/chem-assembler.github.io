@@ -55219,13 +55219,27 @@
                 const m = g.createTargetFromData({ target: fgtEntry(W, name).target });
                 assert(W.ipHaworthFigure(m), `「${name}」がハース式の門番を通らない`);
                 ip.renderStandardFigure(svg.id, m, false, { paper: true });
+                // ★ v1554: 環の外周（奥の細線・くさび・手前の帯）は**1枚の多角形** ＝ 角で継ぎ目が無い
+                //   （ユーザー「ハース環の角をきれいに多角形にしましょう（はみ出したり欠けたりしない）」）
                 const polys = [...svg.querySelectorAll('.svg-paper-wedge')].map(p => p.getAttribute('points').split(' ')
                     .map(s => s.split(',').map(Number)));
-                assert(polys.length === 3, `「${name}」の手前の辺とくさびが ${polys.length} 枚（3枚のはず）`);
-                const widths = polys.map(q => [Math.hypot(q[0][0] - q[3][0], q[0][1] - q[3][1]), Math.hypot(q[1][0] - q[2][0], q[1][1] - q[2][1])]);
-                const even = widths.filter(([w1, w2]) => Math.abs(w1 - w2) < 1e-6).length;
-                const taper = widths.filter(([w1, w2]) => Math.min(w1, w2) * 2 < Math.max(w1, w2)).length;
-                assert(even === 1 && taper === 2, `「${name}」の帯とくさびの形が違う（幅一定 ${even}・片側が細い ${taper}。1 と 2 のはず）`);
+                assert(polys.length === 1, `「${name}」の環の外周が ${polys.length} 枚の部品に分かれている（1枚のはず ＝ 角に継ぎ目ができる）`);
+                const pts = polys[0];
+                assert(pts.length % 2 === 0, `「${name}」の外周の多角形の頂点が奇数（${pts.length}）＝ 左右の縁が対応していない`);
+                // 左の縁 i 番と右の縁（逆順）の対が、その所の帯の太さ。奥の端（環の O の所）は細く、手前の辺は太い
+                const half = pts.length / 2;
+                const thick = [...Array(half).keys()].map(i => Math.hypot(pts[i][0] - pts[pts.length - 1 - i][0], pts[i][1] - pts[pts.length - 1 - i][1]));
+                assert(Math.max(...thick) > 2.5 * thick[0] && Math.abs(thick[0] - thick[half - 1]) < 1e-6,
+                    `「${name}」の外周の太さが、奥の両端で細く手前で太い形になっていない（${thick.map(t => t.toFixed(2)).join(',')}）`);
+                // 角は縁の交点で閉じている ＝ 隣り合う縁の点が重ならない（同じ所に2点並ぶと、そこが継ぎ目になる）
+                for (let i = 1; i < pts.length; i++) {
+                    assert(Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) > 1e-6, `「${name}」の外周に重なった頂点がある（${i}番）`);
+                }
+                // 環の辺は線では描かない（部品の二重描き ＝ はみ出しの元）。線は環の外の結合の本数だけ
+                const ringIds = new Set(W._ringAtomIds(m).values ? [...W._ringAtomIds(m)] : []);
+                const nonRing = m.bonds.filter(bd => !(ringIds.has(bd.atomId1) && ringIds.has(bd.atomId2))).length;
+                const lineCount = svg.querySelectorAll('.quiz-bonds line.svg-bond-ink').length;
+                assert(lineCount === nonRing, `「${name}」の線が ${lineCount} 本（環の外の結合 ${nonRing} 本のはず ＝ 環の辺を線でも描いている）`);
             });
             {
                 // 否定対照: 丸の図（opts を渡さない）には帯もくさびも出ない
@@ -55273,7 +55287,16 @@
             assert(aa.circles === 0, `紙の図に丸が ${aa.circles} 個描かれている`);
             same(aa.labels, ['H₃C', 'C', 'O', 'OH'], '酢酸（既定 ＝ C=O は線・OH だけ文字）');
             same(paperOf('酢酸', { condense: ['COOH'] }).labels, ['H₃C', 'COOH'], '酢酸（condense=COOH）');
-            same(paperOf('ベンズアルデヒド').labels, ['CH', 'O'], 'ベンズアルデヒド（既定 ＝ C=O は線＋H）');
+            // ★ v1554: −CHO は C−H も線（ユーザー提案・教科書 5編 p.148 の図(8) R−C−H）。C から出る線は3本（環・=O・H）
+            {
+                const bz = paperOf('ベンズアルデヒド');
+                same(bz.labels, ['C', 'H', 'O'], 'ベンズアルデヒド（既定 ＝ C=O も C−H も線）');
+                // 線の本数: 環 9（辺6・内側3）＋ 環−C 1 ＋ C=O 2 ＋ C−H 1 ＝ 13
+                const n = svg.querySelectorAll('.quiz-bonds line.svg-bond-ink').length;
+                assert(n === 13, `ベンズアルデヒドの線が ${n} 本（13本のはず ＝ C から環・=O・H の3本が出ていない）`);
+                // 否定対照: condense=CHO なら今までどおり1つの文字
+                same(paperOf('ベンズアルデヒド', { condense: ['CHO'] }).labels, ['CHO'], 'ベンズアルデヒド（condense=CHO）');
+            }
             same(paperOf('ニトロベンゼン').labels, ['NO₂'], 'ニトロベンゼン（既定 ＝ 文字）');
             same(paperOf('ニトロベンゼン', { expand: ['NO2'] }).labels, ['N', 'O', 'O'], 'ニトロベンゼン（expand=NO2）');
             same(paperOf('ベンゼンスルホン酸').labels, ['SO₃H'], 'ベンゼンスルホン酸（既定 ＝ 文字）');
@@ -55333,7 +55356,8 @@
             {
                 paperOf('ベンズアルデヒド');
                 const labs = [...svg.querySelectorAll('.svg-paper-label')];
-                const ch = labs.find(t => t.getAttribute('data-label') === 'CH'), o = labs.find(t => t.getAttribute('data-label') === 'O');
+                // ⚠ v1554 から −CHO の C は H を線で出すので、文字は「C」1字
+                const ch = labs.find(t => t.getAttribute('data-label') === 'C'), o = labs.find(t => t.getAttribute('data-label') === 'O');
                 const edgeLen = Math.max(...[...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')].map(l =>
                     Math.hypot(+l.getAttribute('x2') - +l.getAttribute('x1'), +l.getAttribute('y2') - +l.getAttribute('y1'))));
                 const cX = +ch.getAttribute('x') + ch.getSubStringLength(0, 1) / 2, oX = +o.getAttribute('x') + o.getComputedTextLength() / 2;
