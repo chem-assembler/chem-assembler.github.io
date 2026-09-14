@@ -2736,9 +2736,12 @@
 
     test('F11: クイズの変形は「主鎖を曲げる」を優先する（伸びただけの問題を減らす）', async (c) => {
         // 立体を名前に反映するトグルは**既定 OFF**（2026-08-02）。ここは立体命名そのものを
-        // 見るテストなので明示的に ON にする（UI の既定値にテストを依存させない）
-        c.game.setReadStereo(true);
+        // 見るテストなので明示的に ON にする（UI の既定値にテストを依存させない）。
+        // ⚠ 終わったら必ず戻す。戻さないと後ろのテストがこの ON に黙って頼る（LB1 がそうだった）
         const W = c.W, g = c.game;
+        const savedStereo = g.readStereo;
+        g.setReadStereo(true);
+        try {
         // ユーザー指摘「結合が伸びただけの問題が出やすい」。実測すると強度2で
         // 一直線の分子の53%が「一直線のまま伸びただけ」だった。
         // 原因は屈曲の候補から**回す側が1原子の場合を除外**していたこと。
@@ -2791,6 +2794,9 @@
                         `${nm}: 1原子の屈曲で立体が変わった`);
                 }
             });
+        } finally {
+            g.setReadStereo(savedStereo);
+        }
     });
 
     test('LB7: 名称ライブラリ第3弾B（ベンゼン二置換体は o-/m-/p- の全108通りで名前が出る）', async (c) => {
@@ -4480,6 +4486,11 @@
 
     test('F8: 名称ライブラリの全化合物が自己命名でき・構造が一意（P12-3 命名拡充の整合）', async (c) => {
         const g = c.game, W = c.W;
+        // D-/L- や鎖状の糖は立体でだけ名前が決まる＝立体を名前に反映する前提。トグルの既定は OFF なので
+        // 明示的に ON にする（以前は前のテスト F11 が ON のまま残していたのに頼っていた）
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
         const lib = g.getCompoundLibrary();
         // (1) すべての compounds.json エントリが lookupCompoundName で「同じ構造の名前」に命名できる
         const nameFails = [];
@@ -4508,10 +4519,18 @@
             assert(g.lookupCompoundName(g.createTargetFromData({ target: entry.target })) === nm,
                 `${nm} が正しく命名されない`);
         });
+        } finally {
+            g.setReadStereo(saved);
+        }
     });
 
     test('LB1: 名称ライブラリ第1弾（v460）が名前で引ける・オレイン酸はシスでだけ名乗る', async (c) => {
         const g = c.game, W = c.W;
+        // シスでだけ名乗る＝立体を名前に反映する前提。トグルの既定は OFF なので明示的に ON にする
+        // （以前は前のテスト F11 が ON のまま残していたのに頼っていて、単独で走らせると落ちた）
+        const saved = g.readStereo;
+        g.setReadStereo(true);
+        try {
         // (1) DESIGN_compound_coverage.md §4 の17件。消えたら気づけるように名前で押さえる
         ['ナトリウムフェノキシド（フェノールのナトリウム塩）', 'ベンゼンスルホン酸ナトリウム',
             'サリチル酸ナトリウム', '安息香酸ナトリウム', 'ギ酸ナトリウム', 'オレイン酸', 'メタクリル酸',
@@ -4534,6 +4553,9 @@
         assert(Object.values(W.readBondGeoFromCoords(mol)).join() === 'anti',
             '枝を反対側へ移してもトランスに読めない');
         assert(g.lookupCompoundName(mol) !== 'オレイン酸', 'トランスに描いた図がオレイン酸を名乗る');
+        } finally {
+            g.setReadStereo(saved);
+        }
     });
 
     test('LB2: 名称ライブラリ第2弾①（トリオレイン・ニトログリセリン・二糖4件）', async (c) => {
