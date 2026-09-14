@@ -10934,7 +10934,7 @@ class Reactor {
          *   ⚠ まとめたぶんの握手は見えない ＝ 急に出る／消える原子が出る。**どの原子がそうなるかを記録する**:
          *     foldedPartnerIds … まとめて描かなかった相手の原子（生成物に入るものは急に出る）
          *     foldedByproductIds … まとめて描かなかった副生成物の原子（基質から出ていくものは急に消える）
-         *   RXP3・RXF1 は、急に出る／消える原子がこの記録の中に収まることを見る（外に1つでもあれば赤）。
+         *   RXP3・RXN1 は、急に出る／消える原子がこの記録の中に収まることを見る（外に1つでもあれば赤）。
          *   `_foldCopies = false` でまとめない（否定対照） */
         const foldedPartnerIds = [], foldedByproductIds = [];
         let foldedH = 0;
