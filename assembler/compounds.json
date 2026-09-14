@@ -1042,5 +1042,12 @@
 {"id":"hydrogen-chloride","name":"塩化水素","formula":"HCl","target":{"atoms":[{"element":"Cl","x":400,"y":300}],"bonds":[]}},
 {"id":"hydrogen-bromide","name":"臭化水素","formula":"HBr","target":{"atoms":[{"element":"Br","x":400,"y":300}],"bonds":[]}},
 {"id":"hydrogen-iodide","name":"ヨウ化水素","formula":"HI","target":{"atoms":[{"element":"I","x":400,"y":300}],"bonds":[]}},
-{"id":"iodomethane","name":"ヨードメタン（ヨウ化メチル）","formula":"CH3I","target":{"atoms":[{"element":"C","x":400,"y":300},{"element":"I","x":442,"y":300}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":1}]}}
+{"id":"iodomethane","name":"ヨードメタン（ヨウ化メチル）","formula":"CH3I","target":{"atoms":[{"element":"C","x":400,"y":300},{"element":"I","x":442,"y":300}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":1}]}},
+{"id":"chlorine","name":"塩素","formula":"Cl2","target":{"atoms":[{"element":"Cl","x":400,"y":300},{"element":"Cl","x":442,"y":300}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":1}]}},
+{"id":"bromine","name":"臭素","formula":"Br2","target":{"atoms":[{"element":"Br","x":400,"y":300},{"element":"Br","x":442,"y":300}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":1}]}},
+{"id":"iodine","name":"ヨウ素","formula":"I2","target":{"atoms":[{"element":"I","x":400,"y":300},{"element":"I","x":442,"y":300}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":1}]}},
+{"id":"oxygen","name":"酸素","formula":"O2","target":{"atoms":[{"element":"O","x":400,"y":300},{"element":"O","x":442,"y":300}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":2}]}},
+{"id":"sodium-hydroxide","name":"水酸化ナトリウム","formula":"NaOH","target":{"atoms":[{"element":"O","x":400,"y":300,"charge":-1},{"element":"Na","x":442,"y":300,"charge":1}],"bonds":[]}},
+{"id":"sodium-nitrite","name":"亜硝酸ナトリウム","formula":"NaNO2","target":{"atoms":[{"element":"O","x":400,"y":300,"charge":-1},{"element":"N","x":442,"y":300},{"element":"O","x":442,"y":258},{"element":"Na","x":358,"y":300,"charge":1}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":1},{"atom1Index":1,"atom2Index":2,"type":2}]}},
+{"id":"sodium-hydrogencarbonate","name":"炭酸水素ナトリウム","formula":"NaHCO3","target":{"atoms":[{"element":"C","x":400,"y":300},{"element":"O","x":400,"y":258},{"element":"O","x":358,"y":300},{"element":"O","x":442,"y":300,"charge":-1},{"element":"Na","x":484,"y":300,"charge":1}],"bonds":[{"atom1Index":0,"atom2Index":1,"type":2},{"atom1Index":0,"atom2Index":2,"type":1},{"atom1Index":0,"atom2Index":3,"type":1}]}}
 ]
