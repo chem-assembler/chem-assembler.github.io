@@ -1558,7 +1558,14 @@ const PAPER_HAWORTH_FRONT = 3.1;
      p.223 アミロペクチン 0.230／p.225 セルロース 0.230・0.269／p.218 グルコース 0.317 ＝ 中央値 0.23（0.19〜0.32）。
    手前の帯の太さ ÷ 辺は 0.061〜0.062（全ページ同じ）・ふつうの線は p.220 で 0.6pt ＝ 0.020。
    ⚠ v1550 はこの比を**結合長の中央値**（ハース式では縦の置換基の線が多数派）に掛けていて、文字が半分ほどになっていた */
-const PAPER_HAWORTH_CAP_PER_EDGE = 0.23;
+/* ⚠⚠ v1551 の2度目の測り直し: **物差しは手前の辺でもなく、環の横幅**。
+   手前の辺だけで合わせると、教科書と並べた画像で文字がまだ小さかった。原因は環の形 ——
+   教科書のピラノース環は手前の辺が横幅の 0.43（p.220・221・223・225 すべて同じ型）、登録の座標は 0.30（手前 60・横幅 200）。
+   横幅に対しては、大文字の高さ 0.100（ピラノース 15か所すべて 0.099〜0.100）・フラノース 0.118（p.220 スクロースの1か所）。
+   ふつうの線は 0.6pt ÷ 69.7pt ＝ 0.0086（手前の帯は 3.1 倍で 0.027） */
+const PAPER_HAWORTH_CAP_PER_RING6 = 0.100;
+const PAPER_HAWORTH_CAP_PER_RING5 = 0.118;
+const PAPER_HAWORTH_WIDTH_PER_RING = 0.0086;
 /* 環の中の二重結合の内側の線（5編 p.185 ベンゼン環: 辺 10.04pt・内側の線は辺から 1.93pt・長さ 8.87〜8.94pt）
    ＝ 辺からの距離 0.192・両端を 0.058 ずつ詰める（辺の長さに対して） */
 const PAPER_RING_INNER_OFFSET = 0.192;
@@ -1629,6 +1636,7 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     //   ＝ ピラノースは C2−C3、フラノースは C3−C4。その2原子と環でつながる残りの辺をくさび（奥が細く、手前が太い）
     //   ★ 文字の大きさの比がハース式だけ違うので、測る前に決める
     const front = new Map();   // bond → { kind: 'thick' | 'wedge', backId }
+    const ringWidths = [];     // ハース環ごとの { 横幅, 員数 }（文字の大きさの物差し）
     if (typeof haworthSugarCycles === 'function') {
         let cycles = [];
         try { cycles = haworthSugarCycles(mol); } catch (e) { cycles = []; }
@@ -1637,6 +1645,8 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             const yMax = Math.max(...cyc.map(id => byId.get(id).y));
             const low = new Set(cyc.filter(id => byId.get(id).y >= yMax - 2));
             if (low.size !== 2) return;
+            const xs = cyc.map(id => byId.get(id).x);
+            ringWidths.push({ w: Math.max(...xs) - Math.min(...xs), n: cyc.length });
             mol.bonds.forEach(b => {
                 if (!ids.has(b.atomId1) || !ids.has(b.atomId2)) return;
                 const l1 = low.has(b.atomId1), l2 = low.has(b.atomId2);
@@ -1657,14 +1667,15 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     const B = lens.length ? lens[Math.floor(lens.length / 2)] : 46;
     // ★ ハース式の物差しは**手前の辺の長さ**（v1551）。⚠ v1550 は結合長の中央値（＝ 数の多い縦の置換基の線 38）に
     //   手前の辺で測った比 0.22 を掛けていて、文字が教科書の半分ほどになっていた（ユーザー「比率が違うように見える」）
-    const frontLens = [...front.entries()].filter(([, f]) => f.kind === 'thick').map(([b]) => {
-        const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
-        return Math.hypot(p.x - q.x, p.y - q.y);
-    });
-    const edge = frontLens.length ? frontLens.reduce((s, l) => s + l, 0) / frontLens.length : B;
-    const capH = haworth ? PAPER_HAWORTH_CAP_PER_EDGE * edge : PAPER_CAP_PER_BOND * B;
+    //   ⚠ 2度目の測り直しで、物差しを**環の横幅**に変えた（上の PAPER_HAWORTH_CAP_PER_RING6 の注を参照）。
+    //     環が2つ（二糖）のときは、環ごとの「横幅 × 比」を平均する（ピラノース 0.100・フラノース 0.118）
+    const capH = haworth
+        ? ringWidths.reduce((s, r) => s + r.w * (r.n === 5 ? PAPER_HAWORTH_CAP_PER_RING5 : PAPER_HAWORTH_CAP_PER_RING6), 0) / ringWidths.length
+        : PAPER_CAP_PER_BOND * B;
     const fs = capH / PAPER_CAP_EM;
-    const lineW = haworth ? PAPER_HAWORTH_WIDTH_PER_EDGE * edge : PAPER_WIDTH_PER_BOND * B;
+    const lineW = haworth
+        ? ringWidths.reduce((s, r) => s + r.w, 0) / ringWidths.length * PAPER_HAWORTH_WIDTH_PER_RING
+        : PAPER_WIDTH_PER_BOND * B;
     const style = { width: lineW, gap: PAPER_GAP_PER_BOND * B };
     const subFs = fs * PAPER_SUB_SIZE, subDy = fs * PAPER_SUB_DROP;
 
