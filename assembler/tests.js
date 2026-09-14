@@ -55213,6 +55213,28 @@
                     `★ ${an} / ${bn} の1位の −OH が α=${sides[0] > 0 ? '下' : '上'}・β=${sides[1] > 0 ? '下' : '上'}（α は下・β は上のはず）`);
                 lines.push(an.replace(/（.*/, ''));
             });
+            // ★ 紙の図の型のハース式は、手前の辺が太い帯・両脇がくさび（v1550・ユーザー「ハース環は手前を太く、12間、34間はくさび型」）
+            //   ピラノース（グルコース）もフラノース（フルクトース）も、太い帯1つ＋くさび2つ ＝ 3枚。帯は幅が一定、くさびは片側が細い
+            ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトフラノース'].forEach(name => {
+                const m = g.createTargetFromData({ target: fgtEntry(W, name).target });
+                assert(W.ipHaworthFigure(m), `「${name}」がハース式の門番を通らない`);
+                ip.renderStandardFigure(svg.id, m, false, { paper: true });
+                const polys = [...svg.querySelectorAll('.svg-paper-wedge')].map(p => p.getAttribute('points').split(' ')
+                    .map(s => s.split(',').map(Number)));
+                assert(polys.length === 3, `「${name}」の手前の辺とくさびが ${polys.length} 枚（3枚のはず）`);
+                const widths = polys.map(q => [Math.hypot(q[0][0] - q[3][0], q[0][1] - q[3][1]), Math.hypot(q[1][0] - q[2][0], q[1][1] - q[2][1])]);
+                const even = widths.filter(([w1, w2]) => Math.abs(w1 - w2) < 1e-6).length;
+                const taper = widths.filter(([w1, w2]) => Math.min(w1, w2) * 2 < Math.max(w1, w2)).length;
+                assert(even === 1 && taper === 2, `「${name}」の帯とくさびの形が違う（幅一定 ${even}・片側が細い ${taper}。1 と 2 のはず）`);
+            });
+            {
+                // 否定対照: 丸の図（opts を渡さない）には帯もくさびも出ない
+                const m = g.createTargetFromData({ target: fgtEntry(W, pairs[0][0]).target });
+                W.ipHaworthFigure(m);
+                ip.renderStandardFigure(svg.id, m, false);
+                assert(svg.querySelectorAll('.svg-paper-wedge').length === 0, '丸の図のハース式に紙の図の帯・くさびが出た');
+            }
+
             // ★★ 否定対照: ハース式を通さない（今までの標準の図＝ layoutMolecule）と、α とβ は同じ図になる
             const prints = pairs[0].map(name => {
                 ip.renderStandardFigure(svg.id, g.createTargetFromData({ target: fgtEntry(W, name).target }), false);
@@ -55239,7 +55261,8 @@
             ip.renderStandardFigure(svg.id, m, false, Object.assign({ paper: true }, extra || {}));
             return {
                 m,
-                labels: [...svg.querySelectorAll('.svg-paper-label')].map(t => t.textContent).sort(),
+                // ⚠ v1550 から下付き数字は tspan の普通の数字で描く（textContent は "H3C"）。綴りは data-label が持つ
+                labels: [...svg.querySelectorAll('.svg-paper-label')].map(t => t.getAttribute('data-label')).sort(),
                 circles: svg.querySelectorAll('.quiz-atoms circle').length
             };
         };
@@ -55265,6 +55288,27 @@
             assert(edges.length === 6 && Math.max(...edges.map(e => e.len)) - Math.min(...edges.map(e => e.len)) < 0.5,
                 `トルエンの環の辺の長さがそろわない（${edges.map(e => e.len.toFixed(1)).join(',')}）`);
             assert(edges.filter(e => e.slant).length === 4, `トルエンの環が正六角形でない（斜めの辺 ${edges.filter(e => e.slant).length} 本・4本のはず）`);
+
+            // ★ 価標は**結合している原子の元素記号**に付ける（v1550・ユーザー「CH2であれば…価標はCの位置に合わせます」）。
+            //   2-メチルプロパンの縦の価標（CH と上の CH₃ をつなぐ）は、`CH` の **C の字の中心**を通り、`CH` のかたまりの中央は通らない
+            {
+                paperOf('2-メチルプロパン');
+                const ch = [...svg.querySelectorAll('.svg-paper-label')].find(t => t.getAttribute('data-label') === 'CH');
+                assert(ch, '2-メチルプロパンの図に CH の文字が無い');
+                const x0 = +ch.getAttribute('x');
+                const cMid = x0 + ch.getSubStringLength(0, 1) / 2;
+                const blockMid = x0 + ch.getComputedTextLength() / 2;
+                const vertical = [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')]
+                    .filter(l => Math.abs(+l.getAttribute('x1') - +l.getAttribute('x2')) < 1e-6);
+                assert(vertical.length === 1, `2-メチルプロパンの縦の価標が ${vertical.length} 本（1本のはず）`);
+                const vx = +vertical[0].getAttribute('x1');
+                assert(Math.abs(vx - cMid) < 0.5, `★ 縦の価標が C の字の中心を通らない（価標 ${vx.toFixed(1)}・C ${cMid.toFixed(1)}）`);
+                assert(Math.abs(vx - blockMid) > 2, `縦の価標が CH のかたまりの中央を通っている（${vx.toFixed(1)}）＝ C に付けていない`);
+                // ★ 横の価標は文字に食われて消えない（CH−CH₃ は字の幅ぶん価標を伸ばす）
+                const horizontal = [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')]
+                    .filter(l => Math.abs(+l.getAttribute('y1') - +l.getAttribute('y2')) < 1e-6);
+                assert(horizontal.length === 2, `2-メチルプロパンの横の価標が ${horizontal.length} 本（2本のはず ＝ 文字に食われて消えた）`);
+            }
 
             // ★★ 否定対照: opts を渡さない（アプリの画面の呼び方）と、今までどおり丸の図・紙の文字は0・環は長方形
             const e = fgtEntry(W, 'トルエン');
