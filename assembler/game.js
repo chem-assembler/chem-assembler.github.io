@@ -6224,7 +6224,8 @@ class Game {
     // 見出しを付ける分子と、その番号を決める（図と名前チップで同じ番号を使うため1か所にまとめる）。
     // 重原子1個の分子は、作図中に置きかけた孤立原子（C を1つ置いた直後など）であることが
     // 多いので対象外。ただし**反応でできた副生成物（水など）は含める**
-    // （P12-8。ユーザー指摘「反応で CH4 や H2O が生じた場合は表示すべき」）
+    // （P12-8。ユーザー指摘「反応で CH4 や H2O が生じた場合は表示すべき」）。
+    // ★ v1553 から、**登録に名前がある**1原子の分子（CH₄・H₂O・NH₃・HCl）も含める（`isNamedSingleAtomPart`）
     markedMolecules(hidden) {
         const visible = (part) => part.atoms
             .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
@@ -6237,7 +6238,7 @@ class Game {
         const marked = parts.filter(p => {
             const atoms = visible(p);
             if (sheet) return atoms.length >= 1;
-            return atoms.length >= 2 || atoms.some(a => a.fromReaction);
+            return atoms.length >= 2 || atoms.some(a => a.fromReaction) || this.isNamedSingleAtomPart(p, atoms);
         });
         // 見出しは「分子が2つ以上あることを示す」ためのものなので、1つなら付けない
         if (marked.length < (sheet ? 1 : 2)) return { parts, marks: new Map() };
@@ -6674,7 +6675,11 @@ class Game {
             if (item.ids.has(sg.id)) return;
             if (segmentHitsRect(sg, rect)) cost += 10000;
         });
-        placed.forEach(p => { if (rectsOverlap(p, rect)) cost += 10000; });
+        /* ★ 見出しどうしは**くっつけない**（v1553・ユーザー検品「① 2-メチルブタン と ② 1-プロパノール の札が
+         *   くっついている」）。枠の高さの 1/4 ぶん膨らませて比べる ＝ 触れているだけの隣も1段送る */
+        const gap = rect.h * 0.25;
+        const padded = { x: rect.x - gap, y: rect.y - gap, w: rect.w + gap * 2, h: rect.h + gap * 2 };
+        placed.forEach(p => { if (rectsOverlap(p, padded)) cost += 10000; });
         ink.boxes.forEach(b => {
             if (item.ids.size && b.ids.has(item.atoms[0].id)) return; // 自分の分子
             // **別の分子を跨いだ**か（＝自分の下にある分子より下、または上にある分子より上へ
@@ -6896,9 +6901,24 @@ class Game {
         if (this.currentMode === 'learn') return false; // 学習の練習では名前を伏せる
         if (window.reactionPlayer && window.reactionPlayer.prediction) return false; // 予測中は答えになる
         const visible = (p) => p.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
-        const ok = (p) => { const v = visible(p); return v.length >= 2 || v.some(a => a.fromReaction); };
+        const ok = (p) => {
+            const v = visible(p);
+            return v.length >= 2 || v.some(a => a.fromReaction) || this.isNamedSingleAtomPart(p, v);
+        };
         if (!ok(part)) return false;
         return parts.filter(ok).length === 1;
+    }
+
+    /**
+     * ★ 重原子1個の分子でも、**登録に名前があれば**見出しを付ける（v1553・ユーザー仕様
+     *   「CH4やH2Oも物質名をチップで表示する」）。
+     * ⚠ 名前の出どころは `lookupCompoundName` だけ ＝ 登録に無い1原子（H₂S など）には出さない
+     *   （作り名を出さない）。重原子2個以上の分子の扱いは1つも変えていない。
+     * ⚠ 伏せる規則は呼び元のまま（書き出し練習は `captionForPart`、学習・予測は `isSoleLabeledPart`）。
+     */
+    isNamedSingleAtomPart(part, visibleHeavy) {
+        if (!visibleHeavy || visibleHeavy.length !== 1) return false;
+        return !!this.lookupCompoundName(part);
     }
 
     /**
@@ -10510,8 +10530,36 @@ class Game {
      *              | { kind:'ether', mol, groups, name }
      */
     iupacNumberingDetail() {
-        const subject = this.iupacNumberingSubject();
-        const mol = subject.mol;
+        return this._iupacDetailFor(this.iupacNumberingSubject().mol);
+    }
+
+    /**
+     * ★ 帯の 🔢 は**キャンバスの分子すべて**に振る（v1553・ユーザー仕様
+     *   「複数分子キャンバスがあるとき、主鎖と番号を表示、はすべての分子について実行する」）。
+     * 分子ごとに**同じ門番**（`_iupacDetailFor`）を通し、出せた分子だけを返す ＝ 対応範囲の一覧は増やさない。
+     * ⚠ 分子モーダルの 🔢 は見出しで1分子を名指ししているので、今までどおり `iupacNumberingDetail()`（1分子）。
+     * @returns { items:[{ part, mark, det }], count, skipped:[mark] }
+     */
+    iupacNumberingDetails(hidden) {
+        const { parts, marks } = this.markedMolecules(hidden);
+        const heavy = parts.filter(p => p.atoms.some(a => a.element !== 'H'));
+        const items = [], skipped = [];
+        heavy.forEach(p => {
+            const det = this._iupacDetailFor(p);
+            const mark = marks.get(p) || '';
+            if (det) items.push({ part: p, mark, det });
+            else skipped.push(mark);
+        });
+        return { items, count: heavy.length, skipped };
+    }
+
+    /** いまの表示が「分子すべて」か（帯の 🔢 を分子2つ以上で押した回） */
+    _iupacAllMode() {
+        return !!(this.iupacNumbering && this.iupacNumbering.all);
+    }
+
+    /** 門番の本体（1分子ぶん）。`iupacNumberingDetail` と `iupacNumberingDetails` が共有する */
+    _iupacDetailFor(mol) {
         if (!mol || !mol.atoms.some(a => a.element !== 'H')) return null;
         // 付け根マーカー R が付いていればアルキル基として読む（§4）。
         // **付け根が必ず C1** で、向きを選ぶ余地が無い ＝ 主鎖の場合より単純
@@ -10578,8 +10626,8 @@ class Game {
      * 表示の入切。**主鎖も番号も覚えない** ＝ 描くたびに同じ1回の計算から取り直す。
      * `part` は「名称の説明」で押されているかけらの添字だけ（かけらの中身は覚えない）。
      */
-    setIupacNumbering(on) {
-        this.iupacNumbering = on ? { sig: this._iupacNumberingSignature(), part: null } : null;
+    setIupacNumbering(on, all) {
+        this.iupacNumbering = on ? { sig: this._iupacNumberingSignature(), part: null, all: !!all } : null;
         this.syncIupacNumberingButtons();
         this.updateDrawing();
     }
@@ -10605,7 +10653,7 @@ class Game {
      *   'chain' | 'alkyl' | 'ether'（出せる）／
      *   'empty' | 'practice' | 'multi' | 'ring' | 'unsupported'（出せない）
      */
-    iupacNumberingNotice() {
+    iupacNumberingNotice(fromModal) {
         const mol = this.userMolecule;
         if (!mol || !mol.atoms.some(a => a.element !== 'H')) {
             return { code: 'empty', ok: false, det: null,
@@ -10615,6 +10663,24 @@ class Game {
         if (this._iupacNumberingBlockedByPractice()) {
             return { code: 'practice', ok: false, det: null,
                 message: '練習中は主鎖と番号を出せません（答えの一部になるため）。書き終えたら「答え合わせ」で確認しましょう。' };
+        }
+        /* ★ 分子が2つ以上 ＝ 帯の 🔢 は**すべての分子**に振る（v1553・ユーザー仕様）。
+         *   ⚠ 分子モーダルから押した回（`fromModal`）は見出しで1分子を名指ししているので、下の1分子の道へ。
+         *   番号をつけられない分子（環・未対応の官能基）は飛ばし、飛ばしたことを番号で1言だけ言う。 */
+        if (!fromModal) {
+            const many = this.iupacNumberingDetails();
+            if (many.count >= 2) {
+                if (!many.items.length) {
+                    return { code: 'multi', ok: false, det: null, many,
+                        message: `キャンバスの${many.count}つの分子は、どれも主鎖に番号をつける形ではありません。` };
+                }
+                const names = many.items.map(it => `${it.mark ? it.mark + ' ' : ''}${it.det.name}`).join('・');
+                const skip = many.skipped.filter(Boolean);
+                return { code: 'multi', ok: true, det: null, many,
+                    message: `主鎖と番号を出しました（${names}）。` +
+                        (skip.length ? `${skip.join('・')} は主鎖に番号をつける形ではありません。` : '') +
+                        'もう一度押すと消えます。' };
+            }
         }
         const det = this.iupacNumberingDetail();
         if (det && det.kind === 'ether') {
@@ -10683,7 +10749,12 @@ class Game {
             if (rep) this.setFocusedMolecule(rep.id);
         }
         // ★ 出せるかどうかは門番だけが決める。ここに「対応している形」の一覧を書かない
-        const notice = this.iupacNumberingNotice();
+        const notice = this.iupacNumberingNotice(fromModal);
+        if (notice.ok && notice.code === 'multi') {
+            this.setIupacNumbering(true, true);
+            this.showToast(notice.message, 4000, 'success');
+            return;
+        }
         if (!notice.ok) {
             // 環は**言葉だけでは指せない**（「環」がどれか図の上で分からない）ので丸で名指しする。
             // 丸は「この原子が問題」の語彙（§3-1）＝ ここでは主鎖の帯ではなく丸が正しい
@@ -10724,6 +10795,25 @@ class Game {
         };
         if (this.iupacNumbering.sig !== this._iupacNumberingSignature()) return off();
         if (this._iupacNumberingBlockedByPractice()) return off();
+        /* ★ 「分子すべて」の回（v1553）。分子ごとに下の1分子の描き方をそのまま回し、字幕は1つにまとめる。
+         *   ⚠ 名前のかけらの行は**番号を出した分子が1つのときだけ**（2つ以上だと、押したかけらがどの分子の話か割れる） */
+        if (this._iupacAllMode()) {
+            const many = this.iupacNumberingDetails(hidden);
+            if (!many.items.length) return off();
+            const only = many.items.length === 1 ? many.items[0].det : null;
+            this.renderIupacNameParts(only);
+            if (only) this._iupacGlow(only, hidden);
+            if (many.items.some(it => it.det.kind !== 'sugar')) this._iupacLiftBondInk(this.bondsGroup);
+            const head = [], notes = [];
+            many.items.forEach(it => {
+                const ls = this._iupacDrawOne(it.det, hidden);
+                const tag = it.mark ? it.mark + ' ' : '';
+                head.push(tag + ls[0].replace(/^🔢 /, ''));
+                ls.slice(1).forEach(l => notes.push(tag + l));
+            });
+            this._iupacCaption([`🔢 ${head.join('　')}`, ...notes, '※ 番号の表示中は作図できません。'], hidden, hydrogens);
+            return;
+        }
         const det = this.iupacNumberingDetail();
         if (!det) return off();
         // 名称の説明（設計回 E）。**番号と同じ帯・同じ出入り**で、押されたかけらは図の上で光る
@@ -10733,7 +10823,13 @@ class Game {
         // ⚠ 糖は帯も光も敷かない（下の 'sugar' の枝）ので、濃くする理由も無い ＝
         //   図は**番号が増えるだけ**で、線の見え方は 🔢 を押す前と1ピクセルも変わらない
         if (det.kind !== 'sugar') this._iupacLiftBondInk(this.bondsGroup);
+        const lines = this._iupacDrawOne(det, hidden);
+        lines.push('※ 番号の表示中は作図できません。');
+        this._iupacCaption(lines, hidden, hydrogens);
+    }
 
+    /** 1分子ぶんの帯・番号を描き、字幕の行（先頭が `🔢 名前`）を返す（v1553 で切り出し。中身は元のまま） */
+    _iupacDrawOne(det, hidden) {
         const visible = (id) => !(hidden && hidden.has(id));
         const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
         const lines = [];
@@ -10806,8 +10902,7 @@ class Game {
                 if (lib && lib !== det.name && lib.indexOf(det.name) < 0) lines.push(`（慣用名: ${lib}）`);
             }
         }
-        lines.push('※ 番号の表示中は作図できません。');
-        this._iupacCaption(lines, hidden, hydrogens);
+        return lines;
     }
 
     /* ===== 名称の説明（DESIGN_iupac_check.md §3・§5。設計回 E1〜E3）=====
