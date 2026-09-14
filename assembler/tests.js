@@ -15314,6 +15314,128 @@
         }
     });
 
+    /* ===== RXH: 反応する H を反応の前に重原子と同じ丸にする（v1556）=====
+     * ユーザー指示: 「反応するH原子を先に重原子と同じようなグラフィックに変えてから反応させるのがよい」
+     *   「隣の分子や、分子内の他の原子と干渉する可能性があるのでその対策が必要」
+     *   「置換反応では、反応するH原子を選ぶ余地があります。反応相手のCl2などが近づくスペースも必要です」
+     *   「分子内脱水では…OHと反応させられる（同じ側の）H原子は限定されます」
+     * ★ 物差しは `bigHydrogenOverlaps`（再生の各コマで、大きくした H とほかの原子の丸・結合の線の最短距離）。 */
+    const rxhRun = (c, names, id) => {
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.userMolecule = new W.Molecule();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
+        const rule = W.REACTION_RULES.find(r => r.id === id);
+        const sites = rule.detect(g.userMolecule) || [];
+        assert(sites.length, `${names.join('＋')} に ${id} の箇所が無い（検査が素通りする）`);
+        rx.execute(rule, sites[0]);
+        rx._morphGen++; rx._morphing = false;   // 再生のループは止め、コマは playback の関数で直接見る
+        const L = rx.lastReaction;
+        const plan = rx.buildPlayback(L, rule.morphStages || null);
+        assert(plan, `${id}: 再生の段取りが組まれない`);
+        return { L, plan };
+    };
+
+    test('RXH1: 反応する H は反応の前に重原子と同じ大きさの丸になり、再生のどのコマでもほかの原子・結合に重ならない（否定対照つき・v1556）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        // ⚠ 発注書の「トルエンの側鎖の塩素化」はアプリに無い反応（chlorinate_alkane はアルカンだけ）＝ 込み合ったアルカンで代える
+        const cases = [
+            [['エタノール'], 'dehydration_intra'], [['2-ブタノール'], 'dehydration_intra'], [['1-プロパノール'], 'dehydration_intra'],
+            [['フェノール'], 'bromination_activated_ring'], [['2-メチルプロパン'], 'chlorinate_alkane'], [['メタン'], 'chlorinate_alkane'],
+            [['ベンゼン'], 'aromatic_halogenation'], [['酢酸', 'エタノール'], 'esterification']
+        ];
+        let controlHits = 0;
+        try {
+            for (const [names, id] of cases) {
+                const { plan } = rxhRun(c, names, id);
+                assert(plan.reacting.length >= 1, `${id}（${names[0]}）: 反応する H が見つからない`);
+                const ov = rx.bigHydrogenOverlaps(plan, 120);
+                assert(ov.length === 0, `${id}（${names[0]}）: 大きくした H が ${ov.length} コマ重なった ${JSON.stringify(ov.slice(0, 3))}`);
+                // 置き直しの前は元の大きさ・反応の直前は重原子と同じ丸（r=10）・片付けのあとは元の大きさ
+                rx.renderPlaybackAt(plan, 0);
+                assert(!g.atomsGroup.querySelector('[data-big-h]'), `${id}: 置き直しの前から H が大きい`);
+                rx.renderPlaybackAt(plan, 1);
+                const big = [...g.atomsGroup.querySelectorAll('[data-big-h]')];
+                assert(big.length === plan.reacting.length &&
+                    big.every(n => n.querySelector('circle').getAttribute('r') === '10'),
+                    `${id}（${names[0]}）: 反応の直前に H が重原子と同じ丸になっていない（${big.map(n => n.querySelector('circle').getAttribute('r'))}）`);
+                rx.renderPlaybackAt(plan, 3);
+                assert(!g.atomsGroup.querySelector('[data-big-h]'), `${id}: 反応のあとも H が大きいまま`);
+                // ★ 否定対照: 対策（H の選び方・道筋の曲げ・向きを回す）を外すと重なる
+                rx._bendAvoid = false; rx._hChoice = false; rx._bigHAvoid = false;
+                try {
+                    controlHits += rx.bigHydrogenOverlaps(rxhRun(c, names, id).plan, 120).length;
+                } finally {
+                    rx._bendAvoid = undefined; rx._hChoice = undefined; rx._bigHAvoid = undefined;
+                }
+                g.updateDrawing();
+            }
+            assert(controlHits > 0, '対策を外しても重なりが0件 ＝ この物差しは何も見張っていない');
+        } finally {
+            rx._bendAvoid = undefined; rx._hChoice = undefined; rx._bigHAvoid = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXH2: 反応する H は図の位置で選ぶ ＝ 分子内脱水は OH に近い H・置換は相手が H の外側（空いた側）から近づく（否定対照つき・v1556）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const bondedTo = (snap, id) => {
+            const b = snap.bonds.find(x => x.atomId1 === id || x.atomId2 === id);
+            return b ? (b.atomId1 === id ? b.atomId2 : b.atomId1) : null;
+        };
+        const at = (snap, id) => snap.atoms.find(a => a.id === id);
+        /** 選ばれた H と、同じ原子に付いたほかの H の、受け取る原子（反応前の位置）までの距離 */
+        const choice = (L) => {
+            const src = L.anim || L;
+            const hx = rx.withMorphHydrogens(src.before, src.after);
+            const plan = rx.buildPlayback(L, null);
+            const hid = plan.reacting[0];
+            const p = bondedTo(hx.before, hid), q = bondedTo(hx.after, hid);
+            const recv = at(hx.before, q);
+            const sib = hx.before.bonds.filter(b => b.atomId1 === p || b.atomId2 === p)
+                .map(b => (b.atomId1 === p ? b.atomId2 : b.atomId1))
+                .map(id => at(hx.before, id)).filter(a => a && a.element === 'H' && a.id !== hid);
+            const d = a => Math.hypot(a.x - recv.x, a.y - recv.y);
+            return { chosen: d(at(hx.before, hid)), others: sib.map(d), hx, hid, p, recv };
+        };
+        try {
+            // ① 分子内脱水（2-ブタノール）: OH と同じ側の H（OH にいちばん近い H）が離れる
+            const on = choice(rxhRun(c, ['2-ブタノール'], 'dehydration_intra').L);
+            assert(on.others.length, '下ごしらえ: β炭素に H が1つしか無い（題材を替えること）');
+            assert(on.chosen < Math.min(...on.others),
+                `分子内脱水で OH に近い H が選ばれていない（選んだ H ${on.chosen.toFixed(0)} / ほか ${on.others.map(x => x.toFixed(0))}）`);
+            rx._hChoice = false;
+            try {
+                const off = choice(rxhRun(c, ['2-ブタノール'], 'dehydration_intra').L);
+                assert(off.chosen > Math.min(...off.others),
+                    `否定対照: 選び方を外しても OH に近い H が選ばれた ＝ この検査は何も見張っていない（${off.chosen.toFixed(0)} / ${off.others.map(x => x.toFixed(0))}）`);
+            } finally { rx._hChoice = undefined; }
+
+            // ② 置換（2-メチルプロパンの塩素化）: HCl になる Cl は、選ばれた H の延長（外側）に居る
+            const angleOf = (L) => {
+                const r = choice(L);
+                const P = at(r.hx.before, r.p), H = at(r.hx.before, r.hid);
+                const a1 = Math.atan2(H.y - P.y, H.x - P.x), a2 = Math.atan2(r.recv.y - P.y, r.recv.x - P.x);
+                let d = Math.abs(a1 - a2); if (d > Math.PI) d = 2 * Math.PI - d;
+                return { deg: d * 180 / Math.PI, far: Math.hypot(r.recv.x - P.x, r.recv.y - P.y) > Math.hypot(H.x - P.x, H.y - P.y) };
+            };
+            const s1 = angleOf(rxhRun(c, ['2-メチルプロパン'], 'chlorinate_alkane').L);
+            assert(s1.deg < 20 && s1.far, `置換の相手が H の外側に居ない（H と相手の向きの差 ${s1.deg.toFixed(0)}°）`);
+            W.PARTNER_LOCAL = false;
+            try {
+                const s2 = angleOf(rxhRun(c, ['2-メチルプロパン'], 'chlorinate_alkane').L);
+                assert(s2.deg >= 20, `否定対照: 右の端に置いても向きの差が ${s2.deg.toFixed(0)}° ＝ この検査は何も見張っていない`);
+            } finally { W.PARTNER_LOCAL = undefined; }
+            g.updateDrawing();
+        } finally {
+            rx._hChoice = undefined; W.PARTNER_LOCAL = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     test('IW5: ヒント5段 — 押すたびに1段ずつ積み上がり、最終段のあとは答え合わせだけ（スコアつき）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;

@@ -8562,6 +8562,13 @@ const HS_DURATION  = 1500;
 const HS_PLAIN_DURATION = 800;
 /** 再生の終わりに、写しにだけ置いた副生成物が薄れる尺（v1556） */
 const RX_FADE_MS = 500;
+/** ★ 反応の前の置き直し（相手が現れる・反応する H が大きな丸になる・環が回る）の尺と、そのあとの一呼吸（v1556） */
+const RX_PRE_MS = 500;
+const RX_HOLD_MS = 350;
+/** 反応のあと、大きくした H が元の大きさに戻り、副生成物が薄れる尺 */
+const RX_POST_MS = 500;
+/** 大きくした H を親から離して置く長さ（丸の半径 10 どうしが重ならない。標準の結合は 42） */
+const RX_BIG_H_LEN = 28;
 /* ★ 離したときに手が引く長さ（座標の単位。標準の結合は 40）。
  * ⚠ **割合で引かない**（実測）—— 原子の丸で両端 10 ずつ隠れるので、40 の結合で目に見える線は
  *   半分あたり 10 しかない。6割も引くと**線が消えて印の丸だけ**になり、「手」に見えなくなった。
@@ -8696,10 +8703,52 @@ function summonReactionPartner(ruleId, before, mol) {
             cx += G * 3;
         }
     } else if (shape === 'X2-sub') {
+        /* ★ 相手（X−X）は**付いた X の外側**に置く（v1556・ユーザー指示「反応相手のCl2などが近づくスペースも必要です」）。
+         *   付いた X は `apply` が空いた向き（`freeSpotAround`）に置いている ＝ その向きの延長に X−X を並べると、
+         *   相手は空いた側から近づき、HX になる X（遠い方）にいちばん近い H が「離れる手」に選ばれる。
+         * ⚠ 並べる場所が他の原子に近すぎれば遠くへずらし、それでも無理なら今までどおり右に置く。
+         *   `window.PARTNER_LOCAL = false` で今までの置き方に戻る（否定対照） */
+        const local = typeof window === 'undefined' || window.PARTNER_LOCAL !== false;
+        const others = heavyAll.slice();
+        const segsAll = [];
+        [before, { atoms: mol.atoms, bonds: mol.bonds }].forEach(s => {
+            const pos = new Map(s.atoms.filter(a => a.element !== 'H').map(a => [a.id, a]));
+            s.bonds.forEach(b => { const p = pos.get(b.atomId1), q = pos.get(b.atomId2); if (p && q) segsAll.push([p, q]); });
+        });
+        // ★ 水素の位置も避ける（v1556。反応する H は大きな丸になって伸びる）
+        const hPts = [before, mol].flatMap(s => {
+            const m = new Molecule();
+            s.atoms.filter(a => a.element !== 'H').forEach(a => m.atoms.push(copyAtomMarks(new Atom(a.id, a.element, a.x, a.y), a)));
+            s.bonds.forEach(b => { if (m.atoms.some(x => x.id === b.atomId1) && m.atoms.some(x => x.id === b.atomId2)) m.bonds.push(new Bond(b.atomId1, b.atomId2, b.type)); });
+            return m.calculateHydrogens();
+        });
+        const clear = p => others.every(o => Math.hypot(o.x - p.x, o.y - p.y) >= G * 1.25) &&
+            hPts.every(q => Math.hypot(q.x - p.x, q.y - p.y) >= G * 1.1) &&
+            segsAll.every(([a, b]) => pointSegmentDistance(p, a, b) >= G * 0.75);
         groups.forEach(gr => {
-            put(gr.root, cx, y0);
-            leave(gr.root.element, cx + G, y0, gr.root.id);
-            cx += G * 3;
+            const nb = mol.bonds.map(b => (b.atomId1 === gr.root.id ? b.atomId2 : b.atomId2 === gr.root.id ? b.atomId1 : null))
+                .find(id => id && had.has(id));
+            const s = nb && mol.atoms.find(a => a.id === nb);
+            let spot = null;
+            if (local && s) {
+                const L = Math.hypot(gr.root.x - s.x, gr.root.y - s.y) || 1;
+                const ux = (gr.root.x - s.x) / L, uy = (gr.root.y - s.y) / L;
+                for (let k = 2; k <= 6 && !spot; k += 0.5) {
+                    const a = { x: s.x + ux * G * k, y: s.y + uy * G * k };
+                    const b = { x: s.x + ux * G * (k + 1), y: s.y + uy * G * (k + 1) };
+                    if (clear(a) && clear(b)) spot = { a, b };
+                }
+            }
+            if (spot) {
+                put(gr.root, spot.a.x, spot.a.y);
+                leave(gr.root.element, spot.b.x, spot.b.y, gr.root.id);
+                others.push(spot.a, spot.b);
+                segsAll.push([spot.a, spot.b]);
+            } else {
+                put(gr.root, cx, y0);
+                leave(gr.root.element, cx + G, y0, gr.root.id);
+                cx += G * 3;
+            }
         });
     } else if (shape === 'as-is') {
         groups.forEach(gr => { put(gr.root, cx, y0); cx += G * 2; });
@@ -8894,6 +8943,14 @@ function solveEquation(eq, need) {
     };
     rec(0, 0);
     return best;
+}
+
+/** ★ 道筋の曲げ（v1556）。bend: Map(id → {nx, ny, amp})。進み e で横へ amp·sin(πe) ずらす（始点と終点はずらさない） */
+function rxBendOffset(bend, id, e) {
+    const b = bend && bend.get(id);
+    if (!b || !b.amp) return { x: 0, y: 0 };
+    const k = b.amp * Math.sin(Math.PI * Math.max(0, Math.min(1, e)));
+    return { x: b.nx * k, y: b.ny * k };
 }
 
 /** 原子の id を付け替える（結合の端点の並び atomId1 < atomId2 も直す） */
@@ -10481,6 +10538,8 @@ class Reactor {
         g.saveState();
         // 反応前のキャンバス全体を写す（差分ハイライトのため原子ID付き。apply が壊す前に取る）
         const before = this.snapshotMolecule(g.userMolecule);
+        // ★ 画面に出ている反応前の図そのもの（v1556）。`before` はこのあと相手を足されるので、再生の最初のコマはこちらから始める
+        const beforeReal = this.snapshotMolecule(g.userMolecule);
         // ★ 「↩ 反応前に戻す」用の**完全な**控え（v1409）。
         //   `before` は前後比較の絵を描くための抜き書き（id・元素・座標・電荷）で、
         //   ロック・不斉マーク・ベンゼンの中心角など**描き戻しに要る属性を持たない**。
@@ -10531,13 +10590,16 @@ class Reactor {
             before,
             beforeState,
             after: this.snapshotMolecule(g.userMolecule),
-            anim   // 再生の写し（相手と副生成物つき）。無い反応は null
+            anim,   // 再生の写し（相手と副生成物つき）。無い反応は null
+            beforeReal,   // 画面に出ていた反応前の図（相手を足す前）
+            rotation: null
         };
         this.clearDeadEnd(); // 反応が通ったら、前に出した「ここで止まりました」は用済み（v1420）
         this.clearNoRoom();  // 同じ理由で「置く場所がない」の札も下ろす（v1466）
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
         // 生成物データは確定済み。前→後をモーフィングで見せ、完了後に通常描画＋変化箇所ハイライト
-        this.animateExecution(before, this.lastReaction.after, result, rule.morphStages || null, anim);
+        this.animateExecution(before, this.lastReaction.after, result, rule.morphStages || null, anim,
+            { beforeReal, rotation: this.lastReaction.rotation });
     }
 
     // ===== 実行時モーフィング（P12-5 第2弾。表示のみ・検証/Undo/監査には一切影響しない） =====
@@ -10766,6 +10828,9 @@ class Reactor {
         };
         occupy(before.atoms, before.bonds);
         occupy(mol.atoms, mol.bonds);
+        /* ★ 水素の位置も避ける（v1556）。反応する H は大きな丸になって 28px まで伸びるので、
+         *   相手が H のすぐ外に居ると丸どうしが重なる */
+        const occH = this.molFromSnapshot(before).calculateHydrogens().concat(mol.calculateHydrogens());
         const centroid = pts => pts.length
             ? { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length } : null;
         const changed = (result && result.changed) || [];
@@ -10786,6 +10851,7 @@ class Reactor {
                         const px = anchor.x + i * step - c0.x, py = anchor.y + j * step - c0.y;
                         const pts = offs.map(o => ({ x: px + o.x, y: py + o.y }));
                         const ok = heavySlots.every(k => occA.every(q => Math.hypot(q.x - pts[k].x, q.y - pts[k].y) >= G * 1.25) &&
+                                occH.every(q => Math.hypot(q.x - pts[k].x, q.y - pts[k].y) >= G * 1.1) &&
                                 occS.every(([a, b]) => pointSegmentDistance(pts[k], a, b) >= G * 0.75)) &&
                             inst.bonds.every(([a, b]) => occA.every(q => pointSegmentDistance(q, pts[a], pts[b]) >= G * 0.75));
                         const d = Math.hypot(i, j);
@@ -10867,14 +10933,36 @@ class Reactor {
         let seq = 0;
         const nid = () => `morphH_${seq++}`;
         const B = [], A = [], lost = [], gained = [];
+        /* ★★ **反応する H は図の位置で選ぶ**（v1556・ユーザー指示 2026-09-15
+         * 「分子内脱水では…構造式の位置関係によって、OHと反応させられる（同じ側の）H原子は限定されます」
+         * 「置換反応では、反応するH原子を選ぶ余地があります。反応相手のCl2などが近づくスペースも必要です」）。
+         *   H を失う原子の H のうち、**H を受け取る原子（水になる O・HCl になる Cl）の反応前の位置にいちばん近い H**
+         *   を「離れる手」に先に決める。残りの H は今までどおり向きの近いものどうしで組む。
+         * ⚠ 選べるのは**同じ原子に付いた H の中だけ**（どの炭素から抜けるかは `apply` が決めている）
+         *   ＝ 生成物・正準コードは変わらない。`_hChoice = false` で今までの選び方に戻る（否定対照） */
+        const gainPts = [];
+        new Set([...gb.keys(), ...ga.keys()]).forEach(pid => {
+            if ((ga.get(pid) || []).length > (gb.get(pid) || []).length && bpos.has(pid)) {
+                gainPts.push({ pid, p: bpos.get(pid) });
+            }
+        });
         // ⚠ 親の走査順は id の並びで固定する（Map の挿入順＝原子の並びに頼ると、同じ反応で組み方が揺れる）
         [...new Set([...gb.keys(), ...ga.keys()])].sort().forEach(pid => {
             const lb = gb.get(pid) || [], la = ga.get(pid) || [];
             const ui = new Set(), uj = new Set();
             if (bpos.has(pid) && apos.has(pid)) {
+                const dropSet = new Set();
+                const pts = gainPts.filter(q => q.pid !== pid);
+                if (lb.length > la.length && pts.length && this._hChoice !== false) {
+                    const near = h => Math.min(...pts.map(q => Math.hypot(h.x - q.p.x, h.y - q.p.y)));
+                    lb.map((h, i) => i)
+                        .sort((i, j) => near(lb[i]) - near(lb[j]) || lb[i].x - lb[j].x || lb[i].y - lb[j].y)
+                        .slice(0, lb.length - la.length)
+                        .forEach(i => dropSet.add(i));
+                }
                 const cand = [];
-                lb.forEach((h, i) => la.forEach((k, j) => cand.push({
-                    i, j, d: hsAngleGap(ang(bpos.get(pid), h), ang(apos.get(pid), k)) })));
+                lb.forEach((h, i) => { if (!dropSet.has(i)) la.forEach((k, j) => cand.push({
+                    i, j, d: hsAngleGap(ang(bpos.get(pid), h), ang(apos.get(pid), k)) })); });
                 cand.sort((x, y) => x.d - y.d || x.i - y.i || x.j - y.j);
                 cand.forEach(c => {
                     if (ui.has(c.i) || uj.has(c.j)) return;
@@ -10908,14 +10996,42 @@ class Reactor {
             const heavy = before.atoms.concat(after.atoms);
             let cx = Math.round((Math.max(...heavy.map(a => a.x)) + G * 3) / G) * G;
             const y0 = Math.round(restG.reduce((s, K) => s + K.h.y, 0) / restG.length / G) * G;
+            /* ★ H₂ は**受け取る原子のそば**の空いた所に置く（v1556）。右の端に置くと、H が分子の上を
+             *   横切って飛んでくる（実測: ベンゼン環の水素化で H の丸が 42 コマ重なった）。
+             *   置けなければ今までどおり右に置く */
+            const segs = [];
+            [before, after].forEach(s => {
+                const pos = new Map(s.atoms.map(a => [a.id, a]));
+                s.bonds.forEach(b => { const p = pos.get(b.atomId1), q = pos.get(b.atomId2); if (p && q) segs.push([p, q]); });
+            });
+            const placed = [];
+            const spotNear = (c) => {
+                for (let r = 1; r <= 16; r++) {
+                    let best = null, bestD = Infinity;
+                    for (let i = -r; i <= r; i++) for (let j = -r; j <= r; j++) {
+                        if (Math.max(Math.abs(i), Math.abs(j)) !== r) continue;
+                        const p1 = { x: c.x + i * G / 2 - G * 0.35, y: c.y + j * G / 2 };
+                        const p2 = { x: p1.x + G * 0.7, y: p1.y };
+                        const ok = [p1, p2].every(p => heavy.concat(placed).every(o => Math.hypot(o.x - p.x, o.y - p.y) >= G * 1.1) &&
+                            segs.every(([a, b]) => pointSegmentDistance(p, a, b) >= G * 0.7));
+                        const d = Math.hypot(i, j);
+                        if (ok && d < bestD) { bestD = d; best = [p1, p2]; }
+                    }
+                    if (best) return best;
+                }
+                return null;
+            };
             for (let k = 0; k + 1 < restG.length; k += 2) {
                 const ids = [nid(), nid()];
+                const c = { x: (restG[k].h.x + restG[k + 1].h.x) / 2, y: (restG[k].h.y + restG[k + 1].h.y) / 2 };
+                const near = spotNear(c);
+                const spots = near || [{ x: cx, y: y0 }, { x: cx + G, y: y0 }];
+                if (near) placed.push(...near); else cx += G * 3;
                 [0, 1].forEach(n => {
-                    B.push({ id: ids[n], h: { x: cx + n * G, y: y0 }, p: null });
+                    B.push({ id: ids[n], h: spots[n], p: null });
                     A.push({ id: ids[n], h: restG[k + n].h, p: restG[k + n].p });
                 });
                 extraBonds.push({ atomId1: ids[0], atomId2: ids[1], type: 1 });
-                cx += G * 3;
             }
             restG = restG.length % 2 ? [restG[restG.length - 1]] : [];
         }
@@ -10961,7 +11077,365 @@ class Reactor {
             () => this._morphSkip || this._morphGen !== gen);
     }
 
-    animateExecution(before, after, result, morphStages = null, anim = null) {
+    /* ==========================================================================
+     * ★★ 再生の段取り（v1556）
+     *   ① 置き直し（T 0→1）… 画面の図から、相手が現れ・反応する H が大きな丸になって結合の向きへ伸び・環が回る
+     *      → 一呼吸（T=1 のまま）
+     *   ② 握手のつなぎ替え（T 1→2）… 今までと同じ（2分子が並ぶ反応は 1→1.5 並ぶ・1.5→2 結合）
+     *   ③ 片付け（T 2→3）… 大きくした H が元に戻り、写しにだけ置いた副生成物が薄れる
+     * ユーザー指示: 「反応するH原子を先に重原子と同じようなグラフィックに変えてから反応させるのがよい」
+     *   「隣の分子や、分子内の他の原子と干渉する可能性があるのでその対策が必要」
+     * ⚠ 見た目だけ。`lastReaction` の before/after・キャンバス・判定には触らない。
+     * ========================================================================== */
+
+    /** 副生成物（transient）と、それに付いた H・親の無い H を外した写し */
+    settleSnapshot(snap, transientIds) {
+        const gone = new Set(transientIds || []);
+        const nb = new Map();
+        snap.bonds.forEach(b => {
+            nb.set(b.atomId1, (nb.get(b.atomId1) || []).concat(b.atomId2));
+            nb.set(b.atomId2, (nb.get(b.atomId2) || []).concat(b.atomId1));
+        });
+        snap.atoms.forEach(a => {
+            if (a.element !== 'H') return;
+            const list = nb.get(a.id) || [];
+            if (!list.length || list.some(id => gone.has(id))) gone.add(a.id);
+        });
+        return {
+            atoms: snap.atoms.filter(a => !gone.has(a.id)),
+            bonds: snap.bonds.filter(b => !gone.has(b.atomId1) && !gone.has(b.atomId2))
+        };
+    }
+
+    /**
+     * 再生の段取りを組む（DOM 非依存）。`L` は `{ before, after, anim, beforeReal, rotation }`。
+     * @returns plan または null（新しく見せるものが無い ＝ 今までどおりの再生）
+     */
+    buildPlayback(L, morphStages = null) {
+        if (!L || !L.before || !L.after) return null;
+        if (morphStages && morphStages !== 'joinFirst') return null;
+        const src = L.anim || L;
+        const hx = this.withMorphHydrogens(src.before, src.after);
+        const real = L.beforeReal || L.before;
+        const rot = L.rotation || null;
+        const isH = a => a.element === 'H';
+        const parentMap = snap => {
+            const hs = new Set(snap.atoms.filter(isH).map(a => a.id));
+            const m = new Map();
+            snap.bonds.forEach(b => {
+                if (hs.has(b.atomId1)) m.set(b.atomId1, b.atomId2);
+                else if (hs.has(b.atomId2)) m.set(b.atomId2, b.atomId1);
+            });
+            return m;
+        };
+        const pB = parentMap(hx.before), pA = parentMap(hx.after);
+        const inA = new Set(hx.after.atoms.map(a => a.id));
+        // 反応する H ＝ 反応の前と後で付いている原子が変わる H（前後どちらにも居るもの）
+        const reacting = hx.before.atoms
+            .filter(a => isH(a) && inA.has(a.id) && (pB.get(a.id) || null) !== (pA.get(a.id) || null))
+            .map(a => a.id).sort();
+        const realIds = new Set(real.atoms.map(a => a.id));
+        const partnerIds = hx.before.atoms.filter(a => !isH(a) && !realIds.has(a.id)).map(a => a.id);
+        const transient = (L.anim && L.anim.transient) || [];
+        if (!reacting.length && !partnerIds.length && !transient.length && !rot) return null;
+
+        // ---- 反応する H を大きな丸にして、結合の向きへ伸ばす（込み合っていれば空いた向きへ回す・最後は控えめに）
+        const enlarge = (snap, parents) => {
+            const out = { atoms: snap.atoms.map(a => ({ ...a })), bonds: snap.bonds };
+            const pos = new Map(out.atoms.map(a => [a.id, a]));
+            const scale = new Map();
+            const clash = (p, r, selfId, parentId) => {
+                for (const o of out.atoms) {
+                    if (o.id === selfId || o.id === parentId) continue;
+                    const ro = isH(o) ? 6 + 4 * (scale.get(o.id) || 0) : 10;
+                    if (Math.hypot(o.x - p.x, o.y - p.y) < r + ro + 2) return true;
+                }
+                for (const b of out.bonds) {
+                    if (b.atomId1 === selfId || b.atomId2 === selfId) continue;
+                    const q1 = pos.get(b.atomId1), q2 = pos.get(b.atomId2);
+                    if (q1 && q2 && pointSegmentDistance(p, q1, q2) < r + 2) return true;
+                }
+                return false;
+            };
+            reacting.forEach(id => {
+                const h = pos.get(id);
+                if (!h) return;
+                const p = pos.get(parents.get(id));
+                if (!p) { scale.set(id, 1); return; }
+                const a0 = Math.atan2(h.y - p.y, h.x - p.x);
+                const base = isH(p) ? RX_BIG_H_LEN - 4 : RX_BIG_H_LEN;
+                const tries = this._bigHAvoid === false ? [[1, 0]] :
+                    [1, 0.7].flatMap(s => [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90].map(dd => [s, dd]));
+                let hit = null;
+                for (const [s, dd] of tries) {
+                    const a = a0 + dd * Math.PI / 180;
+                    const len = base - (1 - s) * 10;
+                    const q = { x: p.x + Math.cos(a) * len, y: p.y + Math.sin(a) * len };
+                    if (this._bigHAvoid === false || !clash(q, 6 + 4 * s, id, p.id)) { hit = { q, s, dd }; break; }
+                }
+                if (!hit) hit = { q: { x: p.x + Math.cos(a0) * (base - 5), y: p.y + Math.sin(a0) * (base - 5) }, s: 0.5, dd: 0 };
+                h.x = hit.q.x; h.y = hit.q.y;
+                scale.set(id, hit.s);
+                // 込み合っていて向きを回した／小さくした H の記録（実測の報告用）
+                if (hit.s < 1 || hit.dd) adjusted.push({ id, parent: p.id, turn: hit.dd || 0, scale: hit.s });
+            });
+            return { snap: out, scale, adjusted };
+        };
+        const adjusted = [];
+        const E1 = enlarge(hx.before, pB), E2 = enlarge(hx.after, pA);
+
+        // ---- 画面に出ている反応前の図（相手なし・H は画面と同じ位置・環は回す前）
+        const rotIds = new Set(rot ? rot.ids : []);
+        const turn = (p, th) => {
+            const c = Math.cos(th), s = Math.sin(th), dx = p.x - rot.cx, dy = p.y - rot.cy;
+            return { x: rot.cx + dx * c - dy * s, y: rot.cy + dx * s + dy * c };
+        };
+        const realPos = new Map(real.atoms.map(a => [a.id, a]));
+        const realH = new Map();
+        this.molFromSnapshot(real).calculateHydrogens().forEach(h => {
+            if (!realH.has(h.parentId)) realH.set(h.parentId, []);
+            realH.get(h.parentId).push(h);
+        });
+        const S0atoms = [];
+        const byParent = new Map();
+        hx.before.atoms.forEach(a => {
+            if (!isH(a)) { if (realIds.has(a.id)) S0atoms.push({ ...a, x: realPos.get(a.id).x, y: realPos.get(a.id).y }); return; }
+            const pid = pB.get(a.id);
+            if (!pid || !realIds.has(pid)) return;
+            if (!byParent.has(pid)) byParent.set(pid, []);
+            byParent.get(pid).push(a);
+        });
+        byParent.forEach((hs, pid) => {
+            const P1 = hx.before.atoms.find(x => x.id === pid), P0 = realPos.get(pid);
+            const offs = (realH.get(pid) || []).map(h => ({ h, a: Math.atan2(h.y - P0.y, h.x - P0.x) }));
+            const th = rot && rotIds.has(pid) ? rot.theta : 0;
+            const cand = [];
+            hs.forEach((h, i) => offs.forEach((o, j) => cand.push({
+                i, j, d: hsAngleGap(Math.atan2(h.y - P1.y, h.x - P1.x) - th, o.a) })));
+            cand.sort((u, v) => u.d - v.d || u.i - v.i || u.j - v.j);
+            const ui = new Set(), uj = new Set();
+            cand.forEach(c => {
+                if (ui.has(c.i) || uj.has(c.j)) return;
+                ui.add(c.i); uj.add(c.j);
+                S0atoms.push({ ...hs[c.i], x: offs[c.j].h.x, y: offs[c.j].h.y });
+            });
+            hs.forEach((h, i) => { if (!ui.has(i)) S0atoms.push({ ...h, x: P0.x + (h.x - P1.x), y: P0.y + (h.y - P1.y) }); });
+        });
+        const S0ids = new Set(S0atoms.map(a => a.id));
+        const S0 = { atoms: S0atoms, bonds: hx.before.bonds.filter(b => S0ids.has(b.atomId1) && S0ids.has(b.atomId2)) };
+        const turning = new Set(S0atoms.filter(a => rotIds.has(a.id) || (isH(a) && rotIds.has(pB.get(a.id)))).map(a => a.id));
+        const A2 = this.settleSnapshot(hx.after, transient);
+
+        /* ---- ★ 反応する H の道筋を曲げる（v1556・ユーザー指示「干渉する可能性があるのでその対策が必要」）。
+         *   置換では、離れる H と入ってくる X が**同じ線の上ですれ違う**（C−H … X−X が一直線）。
+         *   道筋を横へ amp·sin(πe) だけずらし、途中のどのコマでもほかの原子の丸・結合の線に重ならない
+         *   いちばん小さい曲げを選ぶ。`_bendAvoid = false` で曲げない（否定対照） */
+        const P0 = new Map(E1.snap.atoms.map(a => [a.id, a])), P1 = new Map(E2.snap.atoms.map(a => [a.id, a]));
+        const allIds = [...new Set([...P0.keys(), ...P1.keys()])];
+        const bkey = b => (b.atomId1 < b.atomId2 ? `${b.atomId1}|${b.atomId2}` : `${b.atomId2}|${b.atomId1}`);
+        const bondsU = [...new Map(E1.snap.bonds.concat(E2.snap.bonds).map(b => [bkey(b), [b.atomId1, b.atomId2]])).values()];
+        const reactSet = new Set(reacting);
+        const bend = new Map();
+        const posAt = (id, e) => {
+            const a = P0.get(id), b = P1.get(id);
+            if (!(a && b)) return a || b;
+            const o = rxBendOffset(bend, id, e);
+            return { x: a.x + (b.x - a.x) * e + o.x, y: a.y + (b.y - a.y) * e + o.y };
+        };
+        const hParents = new Map(reacting.map(id => [id, new Set([pB.get(id), pA.get(id)].filter(Boolean))]));
+        if (this._bendAvoid !== false) {
+            reacting.forEach(id => {
+                const a = P0.get(id), b = P1.get(id);
+                const len = a && b ? Math.hypot(b.x - a.x, b.y - a.y) : 0;
+                if (len < 1) return;
+                const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
+                const sA = E1.scale.get(id) || 0, sB = E2.scale.get(id) || 0;
+                const cost = amp => {
+                    bend.set(id, { nx, ny, amp });
+                    let c = 0;
+                    for (let k = 1; k < 16; k++) {
+                        const e = k / 16, h = posAt(id, e), r = 6 + 4 * (sA + (sB - sA) * e);
+                        for (const oid of allIds) {
+                            if (oid === id) continue;
+                            const o = posAt(oid, e);
+                            const ro = P0.get(oid) && isH(P0.get(oid)) || P1.get(oid) && isH(P1.get(oid))
+                                ? (reactSet.has(oid) ? 10 : 6) : 10;
+                            const lim = hParents.get(id).has(oid) ? Math.max(r, ro) : r + ro - 1;
+                            if (Math.hypot(o.x - h.x, o.y - h.y) < lim) c++;
+                        }
+                        for (const [u, v] of bondsU) {
+                            if (u === id || v === id) continue;
+                            const p = posAt(u, e), q = posAt(v, e);
+                            if (p && q && pointSegmentDistance(h, p, q) < r - 1) c++;
+                        }
+                    }
+                    return c;
+                };
+                let best = { amp: 0, c: cost(0) };
+                if (best.c) {
+                    for (const amp of [20, -20, 32, -32, 44, -44, 56, -56, 70, -70]) {
+                        const c = cost(amp);
+                        if (c < best.c) best = { amp, c };
+                        if (!c) break;
+                    }
+                }
+                if (best.amp) bend.set(id, { nx, ny, amp: best.amp }); else bend.delete(id);
+            });
+        }
+        return {
+            bend, hParents,
+            S0, S1: E1.snap, A1: E2.snap, A2,
+            scaleS1: E1.scale, scaleA1: E2.scale,
+            mid: morphStages === 'joinFirst' ? this.buildMidSnapshot(E1.snap, E2.snap, 'moveFirst') : null,
+            rot, turning, turn, reacting, partnerIds, transient, adjusted
+        };
+    }
+
+    /** 時刻 T（0〜3）の段と、その段で描く前後・進み・位置の差し替え・H の大きさ */
+    playbackLeg(plan, T) {
+        const clamp = v => Math.max(0, Math.min(1, v));
+        if (T <= 1) {
+            const u = clamp(T);
+            const to = new Map(plan.S1.atoms.map(a => [a.id, a]));
+            const override = new Map();
+            plan.S0.atoms.forEach(a => {
+                const q = to.get(a.id) || a;
+                if (plan.rot && plan.turning.has(a.id)) {
+                    const r = plan.turn(a, plan.rot.theta * u), rEnd = plan.turn(a, plan.rot.theta);
+                    override.set(a.id, { x: r.x + (q.x - rEnd.x) * u, y: r.y + (q.y - rEnd.y) * u });
+                } else {
+                    override.set(a.id, { x: a.x + (q.x - a.x) * u, y: a.y + (q.y - a.y) * u });
+                }
+            });
+            const scale = new Map([...plan.scaleS1].map(([id, s]) => [id, s * u]));
+            return { from: plan.S0, to: plan.S1, t: u, override, scale };
+        }
+        if (T <= 2) {
+            const t = clamp(T - 1);
+            const ids = new Set([...plan.scaleS1.keys(), ...plan.scaleA1.keys()]);
+            const scale = new Map([...ids].map(id => [id, hsLerp(plan.scaleS1.get(id) || 0, plan.scaleA1.get(id) || 0, t)]));
+            if (plan.mid) {
+                return t <= 0.5
+                    ? { from: plan.S1, to: plan.mid, t: t * 2, override: undefined, scale, bend: plan.bend }
+                    : { from: plan.mid, to: plan.A1, t: (t - 0.5) * 2, override: undefined, scale };
+            }
+            return { from: plan.S1, to: plan.A1, t, override: undefined, scale, bend: plan.bend };
+        }
+        const u = clamp(T - 2);
+        const to = new Map(plan.A2.atoms.map(a => [a.id, a]));
+        const override = new Map();
+        plan.A1.atoms.forEach(a => {
+            const q = to.get(a.id) || a;
+            override.set(a.id, { x: a.x + (q.x - a.x) * u, y: a.y + (q.y - a.y) * u });
+        });
+        const scale = new Map([...plan.scaleA1].map(([id, s]) => [id, s * (1 - u)]));
+        return { from: plan.A1, to: plan.A2, t: u, override, scale };
+    }
+
+    renderPlaybackAt(plan, T) {
+        const leg = this.playbackLeg(plan, T);
+        this.renderMorphFrame(leg.from, leg.to, leg.t, leg.override, leg.scale, leg.bend);
+    }
+
+    /** 時刻 T のコマの形（原子の位置・大きさ・線分と、その線分がどの原子の手か）。重なりの実測に使う */
+    playbackGeometryAt(plan, T) {
+        const leg = this.playbackLeg(plan, T);
+        const frame = this.interpolateMorph(leg.from, leg.to, leg.t, leg.override, leg.bend);
+        const atoms = frame.atoms.map(a => ({ ...a, scale: leg.scale.get(a.id) || 0 }));
+        const pos = new Map(atoms.map(a => [a.id, a]));
+        const segs = [];
+        const useHS = leg.t > 0 && leg.t < 1 && !leg.override && this.handshakeHasChange(leg.from, leg.to);
+        if (useHS) {
+            this.handshakeHandsAt(leg.from, leg.to, leg.t, leg.bend).forEach(h => {
+                if (h.alpha <= 0.3 || h.len <= HS_INSET + 0.01) return;
+                segs.push({ x1: h.x1, y1: h.y1, x2: h.x2, y2: h.y2, ids: [h.atomId, h.fromOther, h.toOther].filter(Boolean) });
+            });
+        } else {
+            const key = b => (b.atomId1 < b.atomId2 ? `${b.atomId1}|${b.atomId2}` : `${b.atomId2}|${b.atomId1}`);
+            const fb = new Map(leg.from.bonds.map(b => [key(b), b])), tb = new Map(leg.to.bonds.map(b => [key(b), b]));
+            new Set([...fb.keys(), ...tb.keys()]).forEach(k => {
+                const b = fb.get(k) || tb.get(k);
+                const alpha = fb.has(k) && tb.has(k) ? 1 : (fb.has(k) ? 1 - leg.t : leg.t);
+                const p = pos.get(b.atomId1), q = pos.get(b.atomId2);
+                if (!p || !q || alpha <= 0.3) return;
+                segs.push({ x1: p.x, y1: p.y, x2: q.x, y2: q.y, ids: [b.atomId1, b.atomId2] });
+            });
+        }
+        return { atoms, segs };
+    }
+
+    /**
+     * ★ 大きくした H が、ほかの原子の丸・ほかの結合の線に重なったコマを数える（v1556）。
+     * 大きくした H ＝ 大きさ 0.5 以上。見えない（薄い 0.3 以下の）原子・線は数えない。
+     * その H 自身の手（H から伸びる手・H へ伸びてくる手）は数えない。
+     */
+    bigHydrogenOverlaps(plan, samples = 90) {
+        const out = [];
+        for (let i = 0; i <= samples; i++) {
+            const T = 3 * i / samples;
+            const { atoms, segs } = this.playbackGeometryAt(plan, T);
+            atoms.forEach(h => {
+                if (h.element !== 'H' || h.scale < 0.5 || h.opacity < 0.3) return;
+                const r = 6 + 4 * h.scale;
+                const own = (plan.hParents && plan.hParents.get(h.id)) || new Set();
+                atoms.forEach(o => {
+                    if (o.id === h.id || o.opacity < 0.3) return;
+                    const ro = o.element === 'H' ? 6 + 4 * (o.scale || 0) : 10;
+                    const d = Math.hypot(o.x - h.x, o.y - h.y);
+                    /* ⚠ その H が手でつながっている原子（反応前・反応後の相手）とは丸どうしが触れてよい。
+                     *   ただし**中心が相手の丸の中に入る**（すり抜ける）のは重なりに数える */
+                    const lim = own.has(o.id) ? Math.max(r, ro) : r + ro - 1;
+                    if (d < lim) out.push({ T, h: h.id, with: o.id, element: o.element, d: Math.round(d * 10) / 10 });
+                });
+                segs.forEach(s => {
+                    if (s.ids.includes(h.id)) return;
+                    const d = pointSegmentDistance(h, { x: s.x1, y: s.y1 }, { x: s.x2, y: s.y2 });
+                    if (d < r - 1) out.push({ T, h: h.id, bond: s.ids.join('-'), d: Math.round(d * 10) / 10 });
+                });
+            });
+        }
+        return out;
+    }
+
+    /** 段取りどおりに再生する */
+    runPlayback(plan, highlight) {
+        const g = this.game;
+        const gen = ++this._morphGen;
+        this._morphing = true;
+        this._morphSkip = false;
+        const stop = () => this._morphSkip || this._morphGen !== gen;
+        const smooth = t => t * t * (3 - 2 * t);
+        const legs = [
+            { T0: 0, T1: 1, dur: RX_PRE_MS, warp: smooth },
+            { T0: 1, T1: 1, dur: RX_HOLD_MS, warp: t => t }
+        ];
+        if (plan.mid) {
+            const t1 = this.morphTiming(plan.S1, plan.mid, 450), t2 = this.morphTiming(plan.mid, plan.A1, 400);
+            legs.push({ T0: 1, T1: 1.5, dur: t1.dur, warp: t1.warp }, { T0: 1.5, T1: 2, dur: t2.dur, warp: t2.warp });
+        } else {
+            const tm = this.morphTiming(plan.S1, plan.A1, HS_PLAIN_DURATION);
+            legs.push({ T0: 1, T1: 2, dur: tm.dur, warp: tm.warp });
+        }
+        legs.push({ T0: 2, T1: 3, dur: RX_POST_MS, warp: smooth });
+        this.renderPlaybackAt(plan, 0);
+        let chain = Promise.resolve();
+        legs.forEach(leg => {
+            chain = chain.then(() => {
+                if (stop()) return null;
+                return animateFramesLoop(leg.dur,
+                    t => { if (this._morphGen === gen) this.renderPlaybackAt(plan, leg.T0 + (leg.T1 - leg.T0) * leg.warp(t)); },
+                    stop);
+            });
+        });
+        chain.then(() => {
+            if (this._morphGen !== gen) return;
+            this._morphing = false;
+            g.updateDrawing();
+            highlight();
+        });
+    }
+
+    animateExecution(before, after, result, morphStages = null, anim = null, extra = {}) {
         const g = this.game;
         // まず生成物を確定表示（判定・カード・名称は同期で最終状態に。テスト・監査に影響させない）
         g.updateDrawing();
@@ -11005,6 +11479,10 @@ class Reactor {
          *   自分で水素を計算して描くので、ここでは足さない（二重に置かない） */
         const transient = anim ? anim.transient : null;
         if (!morphStages || morphStages === 'joinFirst') {
+            /* ★ 置き直し → 一呼吸 → 握手 → 片付け の段取り（v1556・`buildPlayback`）。
+             *   新しく見せるもの（相手・反応する H・環の回転・副生成物）が無い反応は下の今までどおりの再生 */
+            const plan = this.buildPlayback({ before, after, anim, beforeReal: extra.beforeReal, rotation: extra.rotation }, morphStages);
+            if (plan) { this.runPlayback(plan, highlight); return; }
             // ★ 反応式ぶんの相手と副生成物を置いた写し（v1556・`planEquation`）
             if (anim) { before = anim.before; after = anim.after; }
             const hx = this.withMorphHydrogens(before, after);
@@ -11421,7 +11899,7 @@ class Reactor {
      * 各手は `{ atomId, ax, ay, angle, len, off, ... }` と、実際に描く線分 `x1,y1 → x2,y2`。
      * `x1,y1` は必ずその原子の縁（＝ 根元は原子から離れない）。
      */
-    handshakeHandsAt(before, after, t) {
+    handshakeHandsAt(before, after, t, bend) {
         const plan = this.handshakePlan(before, after);
         const tt = hsClamp(t);
         const posT = hsEase(tt, HS_FLOAT_END, HS_SWING_END);
@@ -11433,7 +11911,10 @@ class Reactor {
         const apos = new Map(after.atoms.map(a => [a.id, a]));
         const at = id => {
             const b = bpos.get(id), a = apos.get(id);
-            if (b && a) return { x: hsLerp(b.x, a.x, posT), y: hsLerp(b.y, a.y, posT) };
+            if (b && a) {
+                const o = rxBendOffset(bend, id, posT);
+                return { x: hsLerp(b.x, a.x, posT) + o.x, y: hsLerp(b.y, a.y, posT) + o.y };
+            }
             return b || a || null;
         };
         const pos = new Map();
@@ -11485,8 +11966,8 @@ class Reactor {
      * **1本の線に戻してから描く**（半分ずつ描くと中点に継ぎ目が見えるため）。
      * 色は前後比較と同じ約束 —— 離れた手＝オレンジ、握手した所＝シアン。
      */
-    handshakeSegments(before, after, t, atomAlpha) {
-        const hands = this.handshakeHandsAt(before, after, t);
+    handshakeSegments(before, after, t, atomAlpha, bend) {
+        const hands = this.handshakeHandsAt(before, after, t, bend);
         const segs = [], marks = [];
         /* ★ **まだ握っている2本は1本に戻してから描く。**
          * ⚠ 半分ずつ描くと**中点に継ぎ目の点が出る**（実測: ①の静止中、二重結合の割れる側の
@@ -11538,7 +12019,7 @@ class Reactor {
     // 共通原子は座標を線形補間、脱離原子はフェードアウト、付加原子はフェードイン、
     // 結合は **握手のつなぎ替え**（価標を中点で割って旋回させる）で表す（DOM非依存＝テスト可能）。
     // ⚠ t=0 と t=1 では**まるごとの結合**を返す（＝ 反応前後の図そのもの。RX4 が見ている）。
-    interpolateMorph(before, after, t, override) {
+    interpolateMorph(before, after, t, override, bend) {
         /* ★ **握手のつなぎ替えを使う条件**: 端点（t=0 / t=1）でないこと・結合が変わること・
          *   `override`（紙のフリップ）でないこと。⚠ どれかを外れたら v1539 までの描き方に落ちる
          *   ＝ 並ぶだけの段や糖のフリップの見え方は1ドットも変えていない。 */
@@ -11551,7 +12032,9 @@ class Reactor {
         const atoms = [];
         before.atoms.forEach(a => {
             const af = afterById.get(a.id);
-            if (af) atoms.push({ id: a.id, element: a.element, x: lerp(a.x, af.x), y: lerp(a.y, af.y), opacity: 1 });
+            // ★ 反応する H の道筋を横へ曲げる（v1556・`buildPlayback` の bend。相手の原子とすれ違うときに重ならない）
+            const o = rxBendOffset(bend, a.id, ease);
+            if (af) atoms.push({ id: a.id, element: a.element, x: lerp(a.x, af.x) + o.x, y: lerp(a.y, af.y) + o.y, opacity: 1 });
             else atoms.push({ id: a.id, element: a.element, x: a.x, y: a.y, opacity: clamp(1 - ease) }); // 脱離
         });
         after.atoms.forEach(a => {
@@ -11559,7 +12042,7 @@ class Reactor {
         });
         if (useHS) {
             const alphaById = new Map(atoms.map(a => [a.id, a.opacity]));
-            const { segs, marks } = this.handshakeSegments(before, after, t, alphaById);
+            const { segs, marks } = this.handshakeSegments(before, after, t, alphaById, bend);
             return { atoms, bonds: [], lanes: segs, marks };
         }
         /* ★ `override` … その原子だけ位置を差し替える（`DESIGN_sugar.md` §4-9f の紙の回転）。
@@ -11589,11 +12072,11 @@ class Reactor {
     }
 
     // 補間1フレームを実キャンバス（atomsGroup/bondsGroup）に描く。自動水素は省略（完了時に通常描画で出る）
-    renderMorphFrame(before, after, t, override) {
+    renderMorphFrame(before, after, t, override, scale, bend) {
         const g = this.game;
         g.atomsGroup.innerHTML = '';
         g.bondsGroup.innerHTML = '';
-        const frame = this.interpolateMorph(before, after, t, override);
+        const frame = this.interpolateMorph(before, after, t, override, bend);
         const NS = 'http://www.w3.org/2000/svg';
         (frame.lanes || []).forEach(s => {
             const line = document.createElementNS(NS, 'line');
@@ -11629,9 +12112,17 @@ class Reactor {
             const start = g.atomsGroup.childElementCount;
             g.renderAtom(`morph_${a.id}`, a.element, a.x, a.y, false);
             const lab = labels.get(a.id);
+            // ★ 反応する H は重原子と同じ大きさの丸にする（v1556・大きさ 0→1 で H の丸 6 → 重原子の丸 10）
+            const s = scale && a.element === 'H' ? (scale.get(a.id) || 0) : 0;
             for (let i = start; i < g.atomsGroup.children.length; i++) {
                 const node = g.atomsGroup.children[i];
                 node.setAttribute('opacity', String(a.opacity));
+                if (s > 0) {
+                    const circle = node.querySelector('circle'), txt = node.querySelector('text');
+                    if (circle) circle.setAttribute('r', String(6 + 4 * s));
+                    if (txt) { txt.style.fontSize = `${6.5 + 2.5 * s}px`; txt.setAttribute('y', String(a.y + 2 + s)); }
+                    node.setAttribute('data-big-h', s.toFixed(2));
+                }
                 if (lab && (override || t < HS_FLOAT_END)) {
                     const txt = node.querySelector('text');
                     if (txt) { txt.textContent = lab; node.setAttribute('data-label', lab); }
