@@ -30448,6 +30448,9 @@
         assert(rule, 'aromatic_nitration が無い');
         const sites = rule.detect(g.userMolecule);
         assert(sites.length, 'ニトロ化の箇所が無い');
+        // ⚠ v1553 から `lastReaction.before` には呼んだ相手（HNO₃）も載る（握手のつなぎ替えの材料）。
+        //   「反応前のキャンバス」は**押す前に**写しておく
+        const beforeCode = W.canonicalCode(g.userMolecule);
         W.reactor.execute(rule, sites[0]);
         assert(shown(), '（下ごしらえ）反応後に札が出ていない');
         const afterCode = W.canonicalCode(g.userMolecule);
@@ -30474,8 +30477,6 @@
         assert(shown(), '機構を見て戻っても「↩ 反応前に戻す」が出ない（申し立ての症状）');
 
         // ③ 押せば本当に反応前へ戻る（札が出るだけの空振りにしない）
-        const beforeCode = W.canonicalCode(
-            g.createTargetFromData({ target: W.reactor.snapshotToTarget(W.reactor.lastReaction.before) }));
         btn.click();
         assert(W.canonicalCode(g.userMolecule) === beforeCode,
             '押しても反応前の図に戻らない');
