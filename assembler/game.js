@@ -4846,9 +4846,11 @@ class Game {
                 atoms.push({ element: 'N', x: nx, y: ny });
                 bonds.push({ from: -1, to: 0, type: 1 });
                 // ニトロ基は N(=O)(-O) で構築する（開発方針 4章-2。N(=O)(=O) は価標超過）
-                atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(ang + Math.PI / 2), y: ny + GRID_SIZE * Math.sin(ang + Math.PI / 2) });
+                // O は C—N の延長から ±60°（＝ ang ± 2π/3 を N から見た向き）に置き、O—N—O を 120° にする
+                // （v1552・実際は約125°。以前の ang ± π/2 は O—N—O が 180° の一直線になっていた）
+                atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(ang + Math.PI / 3), y: ny + GRID_SIZE * Math.sin(ang + Math.PI / 3) });
                 bonds.push({ from: 0, to: 1, type: 2 });
-                atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(ang - Math.PI / 2), y: ny + GRID_SIZE * Math.sin(ang - Math.PI / 2) });
+                atoms.push({ element: 'O', x: nx + GRID_SIZE * Math.cos(ang - Math.PI / 3), y: ny + GRID_SIZE * Math.sin(ang - Math.PI / 3) });
                 bonds.push({ from: 0, to: 2, type: 1 });
             } else if (moduleType === 'so3h') {
                 // スルホ基 -SO₃H は S(=O)(=O)(-OH)。硫黄は6価として扱う（開発方針5章）
