@@ -118,6 +118,7 @@
  *                  DESIGN_isomer_practice.md / DESIGN_stereo_point.md
  * | J   | 1〜3   | 縮合スナップ・ゴースト |
  * | K   | 1〜5   | 価数の特例（ニトロ・硫黄）とモジュール配置 |
+ * | KK  | 1〜3   | ★★ **縮合環のケクレ構造の同一視**（v1557・ユーザー決定 2026-09-15「直す」）。ナフタレンのケクレ構造3つのうち共有辺が単結合の2つで片方の環が 1,2,1,2,1,1 になり、「6員閉路が交互」しか見ない `findAromaticBondKeys` に落ちて登録と正準コードが合わなかった（手で環を2つ縮合させると「該当なし」）。6員閉路の集まりの上で「どの原子も二重結合をちょうど1本、閉路の結合の上に持つ」（＝骨格の完全マッチング）を足した。1 が実物（手で縮合・共有辺が単結合のまま「ナフタレン」）＋ナフタレン・キノリンの各3構造、**2 は否定対照**（COT・シクロヘキサジエン・ブタジエン・ベンゾキノン・デカリン・バレレンは 0 本／ジヒドロナフタレン2種とテトラリンは片環だけで別コード）、3 が登録の芳香族全件×全部の置き方（⚠ 登録図で変わったのはアントラセン1件だけ＝登録図そのものが2環しか拾えていなかった。`tools/dump-canonical.js` の前後 diff） |
  * | KT  | 1〜3   | ⚠⚠ **還元性の判定にケトースを入れた**（v1511・ユーザー指摘「ヒドロキシケトンも含めると話がさらに複雑になりますね」）。`reducingCarbonylAtoms` は ①-CHO ②環のヘミアセタール しか見ておらず、**鎖状の D-フルクトースが陰性**だった ＝ 化学の誤り（教科書はフェーリング液で陽性として扱う）。③ **α-ヒドロキシケトン**（門番は「α位に水素が残っている」の1つだけ）を足して直した。1 が名前で引く台帳（陽性9件・陰性10件。⚠ **スクロース・トレハロースが陰性のまま**＝入試で問われる区別、**アセトン・ブタノン・アセトフェノンが陰性のまま**＝瓶の `negative` の要点、**α-ケト酸4件が陰性のまま**＝隣の -OH はカルボキシ基のもので水素が無い）・**2 は否定対照**＝ 分子を5通り作り変えて判定が動くこと（⚠ **-O- に変える対照はライブラリの分子では立たない** ——緩めた写しで全件測っても判定が変わる分子が0件だったので、その場で作る）・3 が画面の文言（「還元性があるのは -CHO だけ」と言い切ったままだと判定と説明が食い違う） |
  * | L   | 1〜9   | 名称呼び出しと反応実行（M2〜M5）。**8 は帯の入力欄の受け口**＝ 打った名前と同じ候補（リスト最上位）を選ぶと `change` が飛ばないので置けなかった実発生。二重よけを「名前で覚える」形にすると同じ分子を2つ並べる操作（分子間脱水）が組めなくなるので、そこも見張る。**9 は呼んだ分子が「見えるところ」に来ること**＝ ユーザー申し立て「最初呼び出されないが、スクロールすると急に現れる」。⚠ 画面外に着地していたのではなく（`fitCanvasToMolecule` が全体に合わせるので座標は常に視野の中）、**全体に合わせるほど呼んだ本人が縮む**のが正体（実測 結合1本 13.7px）。位置と**大きさ**（`SUMMON_MIN_BOND_PX`）の2本立てで測り、⑦ が「いつでも寄せる」に倒す否定対照 |
  * | LB  | 1〜22  | 名称ライブラリ（compounds.json）の弾ごとの検品 |
@@ -869,6 +870,161 @@
         const na = z.addAtom('Na', 150, 0); na.charge = 1;
         assert(W.saltCounterMetal(z, oz.id) === null, '★ 双性イオンの -COO⁻（正味 0）が Na⁺ を相方に取った');
         return 'O ごとの近さでは同じ Na⁺ を取る場面で、1対1に組み分けた／双性イオンは取らない';
+    });
+
+    // ===== KK. 縮合環のケクレ構造の同一視（v1557）=====
+    // ナフタレンのケクレ構造は3つ。共有辺が単結合の2つでは片方の環が 1,2,1,2,1,1 になり、
+    // 「6員閉路が交互」だけを見る判定に落ちて、登録のナフタレンと正準コードが合わなかった
+    // （v1552 のレーン報告 ＝ 手で環を2つ縮合させると「該当なし」）。
+    // 原子リストと結合 [i, j, type] から分子を組む共通の道具
+    const kkMk = (W, elems, bonds) => {
+        const m = new W.Molecule();
+        const ids = elems.map((e, i) => m.addAtom(e, 100 + 40 * i, 100).id);
+        bonds.forEach(([i, j, t]) => m.addBond(ids[i], ids[j], t));
+        return m;
+    };
+    // ナフタレン骨格（0-1 が共有辺。環A: 0,1,2,3,4,5 / 環B: 0,1,6,7,8,9）。dbl は二重にする結合の添字
+    const kkNaph = (dbl) => [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [1, 6], [6, 7], [7, 8], [8, 9], [9, 0]]
+        .map(([i, j], k) => [i, j, dbl.includes(k) ? 2 : 1]);
+    // 二重結合を持つ重原子の集合の上で、完全マッチング（＝ケクレ構造の候補）を全部列挙する
+    const kkMatchings = (mol) => {
+        const S = new Set();
+        mol.bonds.forEach(b => { if (b.type === 2) { S.add(b.atomId1); S.add(b.atomId2); } });
+        const nodes = [...S];
+        const edges = mol.bonds.filter(b => b.type !== 3 && S.has(b.atomId1) && S.has(b.atomId2));
+        const out = [], used = new Set();
+        const rec = (chosen) => {
+            const free = nodes.find(n => !used.has(n));
+            if (free === undefined) { out.push([...chosen]); return; }
+            edges.forEach(e => {
+                if (e.atomId1 !== free && e.atomId2 !== free) return;
+                const o = e.atomId1 === free ? e.atomId2 : e.atomId1;
+                if (used.has(o)) return;
+                used.add(free); used.add(o); chosen.push(e);
+                rec(chosen);
+                chosen.pop(); used.delete(free); used.delete(o);
+            });
+        };
+        rec([]);
+        return { out, edges };
+    };
+
+    test('KK1: 手で環を2つ縮合させ、共有辺が単結合でも「ナフタレン」と名前が出る（3つのケクレ構造が同じコード）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        g.setMode('free');
+        g.placeModule('benzene', 400, 300, null);
+        const ring = g.userMolecule.atoms.filter(a => a.element === 'C');
+        assert(ring.length === 6, `ベンゼン環が置けていない（C ${ring.length} 個）`);
+        // 左の縦の辺（x が最小の2原子）。道具は右の縦の辺を二重にする（v1552）ので、ここは単結合
+        const minX = Math.min(...ring.map(a => a.x));
+        const left = ring.filter(a => Math.abs(a.x - minX) < 1);
+        assert(left.length === 2, `左の縦の辺が見つからない（${left.length} 原子）`);
+        const shared = g.userMolecule.getBond(left[0].id, left[1].id);
+        assert(shared && shared.type === 1, '★ 空振り防止: 縮合させる辺が単結合でない（この検査の前提が崩れている）');
+        // 縮合先の環の中心 ＝ 辺の中点から外向きに L·cos30°
+        const L = Math.hypot(left[0].x - left[1].x, left[0].y - left[1].y);
+        const mx = (left[0].x + left[1].x) / 2, my = (left[0].y + left[1].y) / 2;
+        g.placeModule('benzene', mx - L * Math.cos(Math.PI / 6), my, null);
+        const mol = g.userMolecule;
+        assert(mol.atoms.filter(a => a.element === 'C').length === 10, `縮合できていない（C ${mol.atoms.length} 個）`);
+        assert(shared.type === 1, '共有辺が単結合のまま（＝直す前に「該当なし」になっていた形）でない');
+        assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), '価標が壊れた');
+        assert(W.findAromaticBondKeys(mol).size === 11, `芳香族の結合が ${W.findAromaticBondKeys(mol).size} 本（11 本を期待）`);
+        const name = g.lookupCompoundName(mol) || '';
+        assert(name.includes('ナフタレン'), `名前が「${name || '（該当なし）'}」（ナフタレンを期待）`);
+        assert(g.computeMolecularFormula(mol) === 'C₁₀H₈', `分子式が ${g.computeMolecularFormula(mol)}`);
+        // 3つのケクレ構造（共有辺 二重／単・環A 3本／単・環B 3本）が登録と同じコード
+        const reg = W.COMPOUNDS.find(e => e.id === 'naphthalene');
+        const regCode = W.canonicalCode(g.createTargetFromData({ target: reg.target }));
+        const C10 = Array(10).fill('C');
+        [[0, 2, 4, 7, 9], [1, 3, 5, 7, 9], [2, 4, 6, 8, 10]].forEach((dbl, i) => {
+            const m = kkMk(W, C10, kkNaph(dbl));
+            assert(W.canonicalCode(m) === regCode, `ナフタレンのケクレ構造 ${i + 1} のコードが登録と違う`);
+            assert(W.verifyMolecule(m, g.createTargetFromData({ target: reg.target })), `ケクレ構造 ${i + 1} が同型判定で不正解`);
+        });
+        // キノリン（N を含む縮合環）も同じ
+        const q = W.COMPOUNDS.find(e => e.id === 'quinoline');
+        const qCode = W.canonicalCode(g.createTargetFromData({ target: q.target }));
+        const qCodes = new Set([[0, 2, 4, 7, 9], [1, 3, 5, 7, 9], [2, 4, 6, 8, 10]]
+            .map(dbl => W.canonicalCode(kkMk(W, ['N'].concat(Array(9).fill('C')), kkNaph(dbl)))));
+        assert(qCodes.size === 1 && qCodes.has(qCode), `キノリンの3つのケクレ構造が ${qCodes.size} 通りに割れる`);
+        c.reset();
+        return `共有辺が単結合の縮合で「${name}」・芳香族 11 本・ナフタレンとキノリンの各3構造が登録と同じコード`;
+    });
+
+    test('KK2: ★否定対照 — 芳香族でない共役系（COT・シクロヘキサジエン・ブタジエン・キノン）と、二重結合の位置が本当に違う異性体は同じにしない', async (c) => {
+        const W = c.W;
+        const C = n => Array(n).fill('C');
+        const ring = (n, dbl) => Array.from({ length: n }, (_, i) => [i, (i + 1) % n, dbl.includes(i) ? 2 : 1]);
+        const ar = m => W.findAromaticBondKeys(m).size;
+        const zero = [
+            ['シクロオクタテトラエン', kkMk(W, C(8), ring(8, [0, 2, 4, 6]))],
+            ['1,3-シクロヘキサジエン', kkMk(W, C(6), ring(6, [0, 2]))],
+            ['1,4-シクロヘキサジエン', kkMk(W, C(6), ring(6, [0, 3]))],
+            ['1,3-ブタジエン', kkMk(W, C(4), [[0, 1, 2], [1, 2, 1], [2, 3, 2]])],
+            ['p-ベンゾキノン', kkMk(W, C(6).concat(['O', 'O']), ring(6, [1, 4]).concat([[0, 6, 2], [3, 7, 2]]))],
+            ['デカリン', kkMk(W, C(10), kkNaph([]))],
+            // 6員閉路が3つ重なるが、橋頭の炭素に二重結合が無い
+            ['バレレン', kkMk(W, C(8), [[0, 1, 1], [1, 2, 2], [2, 3, 1], [3, 4, 1], [4, 5, 2], [5, 0, 1], [0, 6, 1], [6, 7, 2], [7, 3, 1]])]
+        ];
+        zero.forEach(([nm, m]) => assert(ar(m) === 0, `${nm} が芳香族になった（${ar(m)} 本）`));
+        // 片方の環だけ芳香族: 残った C=C は '2' のまま、位置が違えば別のコード
+        const dh12 = kkMk(W, C(10), kkNaph([0, 2, 4, 7]));   // 1,2-ジヒドロナフタレン
+        const dh14 = kkMk(W, C(10), kkNaph([0, 2, 4, 8]));   // 1,4-ジヒドロナフタレン
+        const tet = kkMk(W, C(10), kkNaph([0, 2, 4]));       // テトラリン
+        [['1,2-ジヒドロナフタレン', dh12], ['1,4-ジヒドロナフタレン', dh14], ['テトラリン', tet]]
+            .forEach(([nm, m]) => assert(ar(m) === 6, `${nm} の芳香族が ${ar(m)} 本（ベンゼン環1つ＝6 本を期待）`));
+        const codes = new Set([dh12, dh14, tet].map(m => W.canonicalCode(m)));
+        assert(codes.size === 3, `1,2-／1,4-ジヒドロナフタレン／テトラリンが ${codes.size} 通り（3 通りを期待）`);
+        const naph = kkMk(W, C(10), kkNaph([1, 3, 5, 7, 9]));
+        assert(!codes.has(W.canonicalCode(naph)), 'ジヒドロナフタレンがナフタレンと同じコードになった');
+        // 登録の非芳香族の共役系（お題・ライブラリ）は1件も芳香族にならない
+        const lib = [...W.STAGES, ...W.COMPOUNDS].filter(e => e.target && e.target.atoms);
+        const nonArom = lib.filter(e => /ブタジエン|イソプレン|シクロヘキセン|シクロオクタ|ベンゾキノン/.test(e.name));
+        assert(nonArom.length >= 3, `登録の非芳香族の共役系が ${nonArom.length} 件しか無い`);
+        nonArom.forEach(e => {
+            const m = c.game.createTargetFromData({ target: e.target });
+            assert(ar(m) === 0, `${e.name} が芳香族になった（${ar(m)} 本）`);
+        });
+        return `0 本: ${zero.length} 件＋登録 ${nonArom.length} 件／片環だけ芳香族の3件は別コード`;
+    });
+
+    test('KK3: 登録の芳香族 全件で、二重結合のどの置き方（完全マッチング）でも登録と同じコード・同じ名前', async (c) => {
+        const W = c.W, g = c.game;
+        const lib = [...W.STAGES, ...W.COMPOUNDS].filter(e => e.target && e.target.atoms);
+        let checked = 0, fused = 0, placements = 0;
+        const broken = [];
+        lib.forEach(e => {
+            const mol = g.createTargetFromData({ target: e.target });
+            if (!W.findAromaticBondKeys(mol).size) return;
+            const { out, edges } = kkMatchings(mol);
+            if (out.length < 2) return;
+            checked++;
+            if (out.length >= 3) fused++;
+            const base = W.canonicalCode(mol);
+            const baseName = g.lookupCompoundName(mol, { noStereo: true }) || '';
+            const baseAr = W.findAromaticBondKeys(mol).size;
+            out.forEach(m => {
+                placements++;
+                const sel = new Set(m);
+                edges.forEach(b => { b.type = sel.has(b) ? 2 : 1; });
+                if (W.canonicalCode(mol) !== base || W.findAromaticBondKeys(mol).size !== baseAr ||
+                    (g.lookupCompoundName(mol, { noStereo: true }) || '') !== baseName) {
+                    broken.push(e.name);
+                }
+            });
+        });
+        assert(checked >= 250, `検査した芳香族が ${checked} 件（250 件以上を期待）`);
+        assert(fused >= 10, `置き方が3通り以上ある縮合環が ${fused} 件（10 件以上を期待）`);
+        assert(broken.length === 0, `置き方でコードか名前が変わる: ${[...new Set(broken)].slice(0, 8).join(' / ')}`);
+        // アントラセン・フェナントレンは環3つとも芳香族（16 本）。直す前のアントラセンの登録図は2環（11 本）しか拾えていなかった
+        ['anthracene', 'phenanthrene'].forEach(id => {
+            const e = W.COMPOUNDS.find(x => x.id === id);
+            const n = W.findAromaticBondKeys(g.createTargetFromData({ target: e.target })).size;
+            assert(n === 16, `${e.name} の芳香族の結合が ${n} 本（16 本を期待）`);
+        });
+        return `芳香族 ${checked} 件・置き方 ${placements} 通り（縮合環 ${fused} 件）すべて登録と同じコード`;
     });
 
     // ===== C. 編集操作 =====
