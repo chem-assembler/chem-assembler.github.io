@@ -724,7 +724,9 @@
         // フタル酸の仲間（ジメチル・ジエチル・水素カリウム）も同じ形（ユーザー決定 2026-09-15・v1558）。サリチルアルデヒドは既定のまま
         const SAL = ['salicylic-acid', 'methyl-salicylate', 'ethyl-salicylate', 'acetylsalicylic-acid', 'sodium-salicylate'];
         const PHT = ['phthalic-acid', 'dimethyl-phthalate', 'diethyl-phthalate', 'potassium-hydrogen-phthalate'];
-        const EXCEPT = new Set(['nicotine', 'tyrosine', ...SAL, ...PHT]);
+        // o・m に同じ置換基が2つ並ぶ4件も、真上ではなく右上・右下（o）／左上・右上（m）に置く（2026-09-15 ユーザー承認・v1561。形は AR9 で見る）
+        const PAIR_SYM = ['phthalaldehyde', 'o-diacetylbenzene', 'isophthalaldehyde', 'm-diacetylbenzene'];
+        const EXCEPT = new Set(['nicotine', 'tyrosine', ...SAL, ...PHT, ...PAIR_SYM]);
         let mono = 0, di = 0; const bad = [];
         arAll(c).forEach(([tag, e]) => {
             const s = arSubstituents(e); if (!s || !s.subs.length || s.subs.length > 2) return;
@@ -1067,12 +1069,12 @@
         // ユーザー決定 2026-09-15（v1558）:「ベンゼン環の炭素原子に直接結合している原子は、六角形の頂点方向の延長でよいですが、
         // その先は水平・鉛直方向（脂肪族の標準）にする」。対象は縮合していない芳香環が1つの登録分子。
         // ニトロ基は v1552 の 120°（AR4）、環の外の C=C を含む側鎖（シス/トランス）は見ない。
-        // 例外（名指し）: 横の頂点の SO₃H（先が3本で、水平・鉛直の空きは2つしかない）／
-        //   同じ置換基が o・m に2つあり、斜めの線について鏡映対称な図（水平・鉛直にすると対称が崩れる・ユーザー判断待ち）／
+        // 例外（名指し）: 横の頂点の SO₃H（先が3本で、水平・鉛直の空きは2つしかない。決定: 今のまま・2026-09-15 ユーザー「①②は承認」）／
         //   ニコチン（置換基に環がある）
+        // ★ o・m に同じ置換基が2つ並ぶ4件は例外から外した（2026-09-15 ユーザー承認・v1561）: o はフタル酸と同じ右上・右下
+        //   （横線について鏡映対称）、m は左上・右上（縦線について鏡映対称）へ回し、=O を鉛直・CH₃ を水平にした（下で期待値を見る）
         const EXCEPT = new Set(['o-sulfobenzoic-acid', 'o-benzenedisulfonic-acid', 'o-hydroxybenzenesulfonic-acid',
-            'm-sulfobenzoic-acid', 'm-benzenedisulfonic-acid', 'm-hydroxybenzenesulfonic-acid',
-            'phthalaldehyde', 'isophthalaldehyde', 'o-diacetylbenzene', 'm-diacetylbenzene', 'nicotine']);
+            'm-sulfobenzoic-acid', 'm-benzenedisulfonic-acid', 'm-hydroxybenzenesulfonic-acid', 'nicotine']);
         const isAxis = (d) => [0, 90, 180, -90].some(v => arAngDiff(d, v) < 2);
         const inspect = (t) => {
             const { A, adj, rings, arom } = arRings(t);
@@ -1137,6 +1139,43 @@
         assert(n >= 300 && mols >= 200, `置換基 ${n} 個・分子 ${mols} 件しか見ていない（判定が空振りしている）`);
         assert(bad.length === 0, `2個目から先が斜めの置換基のある分子 ${bad.length} 件: ${bad.slice(0, 10).join(' ')}`);
         assert(stale.length === 0, `例外に名指ししたのに水平・鉛直になっている（例外から外す）: ${stale.join(' ')}`);
+        // o・m に同じ置換基が2つ並ぶ4件（2026-09-15 ユーザー承認・v1561）:
+        //   o は右上(−30°)と右下(30°)で横線について対称、m は左上(−150°)と右上(−30°)で縦線について対称。
+        //   =O は鉛直で外向き・CH₃ は水平で外向き
+        const PAIR = { 'phthalaldehyde': 'o', 'o-diacetylbenzene': 'o', 'isophthalaldehyde': 'm', 'm-diacetylbenzene': 'm' };
+        const pairShape = (t, kind) => {
+            const { A, adj, arom } = arRings(t); const r = arom[0]; const cen = arCenter(A, r);
+            const verts = [], why = [];
+            r.forEach(a => adj[a].forEach(e1 => {
+                const b = e1.v; if (r.includes(b)) return;
+                const vd = arDeg(cen, A[a]); verts.push(Math.round(vd));
+                const dO = adj[b].find(x => x.t === 2), sC = adj[b].find(x => x.v !== a && x.t === 1);
+                const wantO = Math.sin(vd * Math.PI / 180) < 0 ? -90 : 90, wantC = Math.cos(vd * Math.PI / 180) > 0 ? 0 : 180;
+                if (!dO || arAngDiff(arDeg(A[b], A[dO.v]), wantO) > 2) why.push(`=O ${dO ? arDeg(A[b], A[dO.v]).toFixed(0) : '?'}°（期待 ${wantO}°）`);
+                if (sC && arAngDiff(arDeg(A[b], A[sC.v]), wantC) > 2) why.push(`CH₃ ${arDeg(A[b], A[sC.v]).toFixed(0)}°（期待 ${wantC}°）`);
+            }));
+            const want = kind === 'o' ? [-30, 30] : [-150, -30];
+            verts.sort((x, y) => x - y);
+            if (verts.length !== 2 || verts.some((v, i) => arAngDiff(v, want[i]) > 3)) why.push(`頂点 ${verts.join('°・')}°（期待 ${want.join('°・')}°）`);
+            const mirror = kind === 'o' ? (p => ({ x: p.x, y: 2 * cen.y - p.y })) : (p => ({ x: 2 * cen.x - p.x, y: p.y }));
+            const sym = A.every(p => { const q = mirror(p); return A.some(o => o.element === p.element && Math.hypot(o.x - q.x, o.y - q.y) < 1.5); });
+            if (!sym) why.push(`${kind === 'o' ? '横線' : '縦線'}について対称でない`);
+            return why;
+        };
+        Object.entries(PAIR).forEach(([id, kind]) => {
+            const e = c.W.COMPOUNDS.find(x => x.id === id); assert(e, `${id} が登録に無い`);
+            const why = pairShape(e.target, kind);
+            assert(why.length === 0, `${e.name}: ${why.join('・')}`);
+        });
+        // ★否定対照: 直す前の頂点（o は上と右上・m は上と右下）へ回し戻した図は拾える
+        const rotBack = (id, deg) => {
+            const t = JSON.parse(JSON.stringify(c.W.COMPOUNDS.find(x => x.id === id).target));
+            const { A, arom } = arRings(t); const cen = arCenter(A, arom[0]); const th = deg * Math.PI / 180;
+            t.atoms.forEach(p => { const dx = p.x - cen.x, dy = p.y - cen.y; p.x = cen.x + dx * Math.cos(th) - dy * Math.sin(th); p.y = cen.y + dx * Math.sin(th) + dy * Math.cos(th); });
+            return t;
+        };
+        assert(pairShape(rotBack('o-diacetylbenzene', -60), 'o').length > 0, '否定対照: 上と右上に戻した o-ジアセチルベンゼンを「右上・右下」と判定した（判定が空振りしている）');
+        assert(pairShape(rotBack('m-diacetylbenzene', 60), 'm').length > 0, '否定対照: 上と右下に戻した m-ジアセチルベンゼンを「左上・右上」と判定した（判定が空振りしている）');
     });
 
     test('C1: プレビュー＝実結合（2原子隣接の交点で2本）', async (c) => {
