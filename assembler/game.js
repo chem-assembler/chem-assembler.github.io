@@ -4573,7 +4573,7 @@ class Game {
 
         let count = 6;
         let R = GRID_SIZE * 0.833;
-        let angleOffset = 0; // benzene は頂点が左右（既存動作の維持）
+        let angleOffset = 0; // benzene は下の自由配置で頂点が上下（v1552。以前は頂点が左右）
         if (moduleType === 'n-ring') {
             count = ringCount || 6;
             R = GRID_SIZE / (2 * Math.sin(Math.PI / count));
@@ -4627,7 +4627,8 @@ class Game {
             // 自由配置: カーソルを絶対グリッドに丸めた点が中心
             center = { x: snapToGrid(rawX), y: snapToGrid(rawY) };
             for (let k = 0; k < count; k++) {
-                const ang = (moduleType === 'benzene') ? k * Math.PI / 3 : k * 2 * Math.PI / count + angleOffset;
+                // ベンゼン環も頂点が上下（v1552・ユーザー決定 2026-09-14「そろえます」＝ 登録の図と同じ向き）
+                const ang = (moduleType === 'benzene') ? k * Math.PI / 3 - Math.PI / 2 : k * 2 * Math.PI / count + angleOffset;
                 vertices.push({ x: center.x + R * Math.cos(ang), y: center.y + R * Math.sin(ang) });
             }
         }
