@@ -698,9 +698,10 @@
         assert(bad.length === 0, `頂点が上下でない芳香環 ${bad.length} 個: ${bad.slice(0, 12).join(' ')}`);
     });
 
-    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチンだけ・名指し）', async (c) => {
-        // ニコチンは直す前から頂点が上下の手描き（ピロリジン環との角度を保つため v1552 では回していない）
-        const EXCEPT = new Set(['nicotine']);
+    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシンだけ・名指し）', async (c) => {
+        // ニコチン・チロシンは直す前から頂点が上下の手描き（v1552 では回していない）。
+        // チロシンはアミノ酸の側鎖が上・OH が下（フェニルアラニンと同じ並び）で、格の規則だと OH が主になる
+        const EXCEPT = new Set(['nicotine', 'tyrosine']);
         let mono = 0, di = 0; const bad = [];
         arAll(c).forEach(([tag, e]) => {
             const s = arSubstituents(e); if (!s || !s.subs.length || s.subs.length > 2) return;
