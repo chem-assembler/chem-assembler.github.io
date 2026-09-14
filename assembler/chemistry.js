@@ -430,12 +430,6 @@ class Molecule {
 }
 
 /**
- * ベンゼン環（＝6員環で単結合・二重結合が交互に並ぶ環＝ケクレ構造）を検出し、
- * その環に属する結合のキー ('id1_id2'、ID昇順) の集合を返します。
- * ケクレ構造の二重結合の位置は化学的に無意味（共鳴）なので、
- * 検証時にこの集合に含まれる結合の次数差を吸収するために使います（開発方針 4章-3）。
- */
-/**
  * その原子の使用価標が許容範囲かを判定する（P9-5 監査で発見した不整合の修正）。
  * ニトロ基の N は電荷分離形 N(=O)(-O) として4本を許容する慣例（開発方針 4章-2）だが、
  * その根拠となる「=O と -O の両方を持つ」パターンが崩れた場合は不正として扱う。
@@ -1934,6 +1928,33 @@ function findOutOfScopeMotifs(mol) {
     return motifs.filter(m => (seen.has(m.type) ? false : (seen.add(m.type), true)));
 }
 
+/**
+ * ベンゼン環（＝6員環で単結合・二重結合が交互に並ぶ環＝ケクレ構造）に属する結合のキー
+ * ('id1_id2'、ID昇順) の集合を返す。ケクレ構造の二重結合の位置は化学的に無意味（共鳴）なので、
+ * `canonicalCode` / `verifyMolecule` はこの集合の結合を 'a' に潰して位相の違いを吸収する。
+ *
+ * 2つの見方を**足し合わせる**（どちらかで芳香族なら芳香族）:
+ *   ① **単環**: 6員閉路そのものが交互（1,2,1,2,1,2）。従来どおり。
+ *   ② **縮合環**（v1557）: 6員閉路の集まり T で、**T の原子がどれも二重結合をちょうど1本、
+ *      しかも T の閉路の結合の上に持つ**（＝ T の骨格の完全マッチング）とき、T の全結合。
+ *
+ * ⚠⚠ **なぜ②が要るか**: ナフタレンのケクレ構造は3つあり、共有辺が**単結合**の2つでは
+ *   片方の環が 1,2,1,2,1,1 になって①に落ちる（v1552 のレーン報告 ＝ 手で環を2つ縮合させると
+ *   「該当なし」）。ベンゼン様の縮合環（ナフタレン・アントラセン・フェナントレン…）では
+ *   **骨格の完全マッチングがそのままケクレ構造**なので、どの置き方でも同じ集合になる。
+ *
+ * ⚠ **広げすぎない**ための線（否定対照は tests.js の KK2）:
+ *   - 6員閉路しか種にしない → シクロオクタテトラエン・ブタジエンは何も起きない
+ *   - 原子1つでも二重結合を持たない（sp3）・2本持つ・三重結合を持つ・**相手が閉路の外**
+ *     （キノンの C=O）なら、その閉路ごと落とす → シクロヘキサジエン・ベンゾキノン・
+ *     1,2-/1,4-ジヒドロナフタレンは芳香族にならず、残った C=C は '2' のまま区別される
+ *   - 落とすと相手が「閉路の外」になる原子が増えるので、**変わらなくなるまで繰り返す**
+ *     （テトラヒドロアントラセンの飽和環を落としたあと、残る2環はナフタレンとして通る）。
+ *     閉路を落とすことで新たに通る閉路は無いので、この反復は**最大の T** に着く。
+ *   ★ ①で通る閉路は②でも通る（各原子が環内に二重結合を1本ずつ持つ）ので、
+ *     単環の判定は1本も変わらない。登録全件の正準コードの不変は `tools/dump-canonical.js` で見た
+ *     （変わったのはアントラセン1件だけ ＝ 登録図そのものが①で2環しか拾えていなかった）。
+ */
 function findAromaticBondKeys(mol) {
     const aromatic = new Set();
     const bondKey = (a, b) => a < b ? `${a}_${b}` : `${b}_${a}`;
@@ -1959,27 +1980,60 @@ function findAromaticBondKeys(mol) {
         return cycles;
     };
 
+    // 6員閉路を「結合キー6本」の形で集める（同じ閉路は両回りで2度出るので畳む）
+    const sixCycles = [];
+    const seenCycle = new Set();
     mol.atoms.forEach(atom => {
         if (atom.element === 'H') return;
         findSixCycles(atom.id).forEach(cycle => {
-            // 環に沿った結合次数を取得し、単・二重の交互配置(1,2,1,2,1,2 または 2,1,2,1,2,1)か判定
+            const keys = [];
             const types = [];
             for (let i = 0; i < 6; i++) {
                 const b = mol.getBond(cycle[i], cycle[(i + 1) % 6]);
                 if (!b) return;
+                keys.push(bondKey(cycle[i], cycle[(i + 1) % 6]));
                 types.push(b.type);
             }
-            const isAlternating = types.every((t, i) => t === (i % 2 === 0 ? types[0] : types[1]));
-            const isKekule = isAlternating &&
-                ((types[0] === 1 && types[1] === 2) || (types[0] === 2 && types[1] === 1));
-            if (isKekule) {
-                for (let i = 0; i < 6; i++) {
-                    aromatic.add(bondKey(cycle[i], cycle[(i + 1) % 6]));
-                }
-            }
+            const sig = [...keys].sort().join('|');
+            if (seenCycle.has(sig)) return;
+            seenCycle.add(sig);
+            sixCycles.push({ atoms: cycle, keys, types });
         });
     });
-    return aromatic;
+
+    // ① 単環: 環に沿った結合次数が単・二重の交互配置(1,2,1,2,1,2 または 2,1,2,1,2,1)
+    sixCycles.forEach(({ keys, types }) => {
+        const isAlternating = types.every((t, i) => t === (i % 2 === 0 ? types[0] : types[1]));
+        const isKekule = isAlternating &&
+            ((types[0] === 1 && types[1] === 2) || (types[0] === 2 && types[1] === 1));
+        if (isKekule) keys.forEach(k => aromatic.add(k));
+    });
+
+    // ② 縮合環: 原子ごとの「二重結合の相手」を1回だけ数え、閉路の集まりを違反が無くなるまで削る
+    if (sixCycles.length < 2) return aromatic;
+    const doubleOf = new Map();   // 原子ID → その原子の二重結合キー（ちょうど1本のときだけ）
+    const bad = new Set();        // 二重結合が 0本／2本以上、または三重結合を持つ原子
+    mol.bonds.forEach(b => {
+        if (b.type === 3) { bad.add(b.atomId1); bad.add(b.atomId2); return; }
+        if (b.type !== 2) return;
+        const k = bondKey(b.atomId1, b.atomId2);
+        [b.atomId1, b.atomId2].forEach(id => {
+            if (doubleOf.has(id)) bad.add(id);
+            doubleOf.set(id, k);
+        });
+    });
+    let T = sixCycles;
+    for (;;) {
+        const bondsT = new Set();
+        T.forEach(c => c.keys.forEach(k => bondsT.add(k)));
+        const okAtom = (id) => !bad.has(id) && doubleOf.has(id) && bondsT.has(doubleOf.get(id));
+        const next = T.filter(c => c.atoms.every(okAtom));
+        if (next.length === T.length) {
+            bondsT.forEach(k => aromatic.add(k));
+            return aromatic;
+        }
+        T = next;
+    }
 }
 
 /**
