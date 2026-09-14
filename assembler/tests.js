@@ -14784,7 +14784,17 @@
             .map(p => g.lookupCompoundName(p) || g.computeMolecularFormula(p));
         const codes = parts.filter(p => heavy(p).length && !heavy(p).every(a => a.fromReaction))
             .map(p => W.canonicalCode(p)).sort().join('|');
-        return { n0, d, left, codes, before: L.before };
+        return { n0, d, left, codes, before: L.before, after: L.after };
+    };
+    /** アニメの写し（自動水素を本物の H として置いたもの）で、急に出る／消える原子を H も含めて数える */
+    const rxpPop = (c, r) => {
+        const hx = c.W.reactor.withMorphHydrogens(r.before, r.after);
+        const bi = new Set(hx.before.atoms.map(a => a.id)), ai = new Set(hx.after.atoms.map(a => a.id));
+        return {
+            hx,
+            pop: hx.after.atoms.filter(a => !bi.has(a.id)).map(a => a.element).join(''),
+            gone: hx.before.atoms.filter(a => !ai.has(a.id)).map(a => a.element).join('')
+        };
     };
 
     test('RXP1: 置換・付加・加水分解は相手の分子を呼んでから反応する ＝ 急に出る原子が0個・生成物は同じ（v1553）', async (c) => {
@@ -14797,11 +14807,19 @@
             ['エチレン', 'add_br2', []],
             ['ベンゼン', 'aromatic_nitration', ['水']],
             ['ベンゼン', 'aromatic_sulfonation', ['水']],
-            ['エチレン', 'add_water', []]
+            ['エチレン', 'add_water', []],
+            ['エチレン', 'add_hcl', []],
+            ['エチレン', 'add_h2', []],
+            ['酢酸エチル', 'hydrolysis_ester', []]
         ];
         try {
             for (const [name, id, wantLeft] of cases) {
                 const r = rxpRun(c, name, id);
+                // ★ H も含めて、アニメの写しで急に出る／消える原子が0個（自動水素の手が離れて握手し直す）
+                const p = rxpPop(c, r);
+                assert(!p.pop && !p.gone,
+                    `${id}: アニメの写しで急に出る原子「${p.pop}」／消える原子「${p.gone}」がある`);
+                assert(p.hx.before.atoms.some(a => a.element === 'H'), `${id}: 自動水素が写しに置かれていない`);
                 assert(r.d.addedAtoms.length === 0,
                     `${id}: 反応前の図に無い原子が ${r.d.addedAtoms.map(a => a.element).join('')} 出た（相手を呼べていない）`);
                 assert(r.d.removedAtoms.length === 0, `${id}: 反応前の図から消えた原子がある`);
@@ -14810,11 +14828,17 @@
                 await 反応の再生を待つ(c);
                 // ★ 否定対照: 表から外すと急に出る原子が戻る（＝ この物差しが空振りしていない）。生成物の正準コードは同じ
                 const saved = W.PARTNER_SUMMON[id];
+                if (!saved) { await 反応の再生を待つ(c); continue; }   // H₂ の付加は表に載せていない（H₂ は写しの側で呼ぶ）
                 delete W.PARTNER_SUMMON[id];
                 try {
                     const plain = rxpRun(c, name, id);
                     assert(plain.d.addedAtoms.length > 0, `${id}: 表から外しても急に出る原子が0個 ＝ この検査は何も見張っていない`);
                     assert(plain.left.length === 0, `${id}: 表から外したのに副生成物が残った`);
+                    // ★ H の否定対照: 相手を呼ばない置換では、C から離れた H の行き先が無く「消える H」が出る
+                    if (id === 'chlorinate_alkane') {
+                        const pp = rxpPop(c, plain);
+                        assert(/H/.test(pp.gone), `相手を呼ばない塩素化で消える H が数えられない（「${pp.gone}」）＝ H の物差しが空振り`);
+                    }
                     assert(plain.codes === r.codes, `${id}: 相手を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
                 } finally {
                     W.PARTNER_SUMMON[id] = saved;
