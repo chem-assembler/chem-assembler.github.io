@@ -714,14 +714,16 @@
         assert(bad.length === 0, `頂点が上下でない芳香環 ${bad.length} 個: ${bad.slice(0, 12).join(' ')}`);
     });
 
-    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシン・サリチル酸の仲間・フタル酸だけ・名指し）', async (c) => {
+    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシン・サリチル酸の仲間・フタル酸の仲間だけ・名指し）', async (c) => {
         // ニコチン・チロシンは直す前から頂点が上下の手描き（v1552 では回していない）。
         // チロシンはアミノ酸の側鎖が上・OH が下（フェニルアラニンと同じ並び）で、格の規則だと OH が主になる
         // サリチル酸はユーザー決定（2026-09-14）で COOH を右上・OH を右下（2つの置換基を見比べるため・教科書 p.185）
         // サリチル酸の仲間（エステル・塩・アセチル体）も同じ形（ユーザー決定 2026-09-15・v1555）
         // フタル酸は COOH を右上・右下（ユーザー決定 2026-09-15・教科書 p.183 の単独の図・p.197 の地図）
+        // フタル酸の仲間（ジメチル・ジエチル・水素カリウム）も同じ形（ユーザー決定 2026-09-15・v1558）。サリチルアルデヒドは既定のまま
         const SAL = ['salicylic-acid', 'methyl-salicylate', 'ethyl-salicylate', 'acetylsalicylic-acid', 'sodium-salicylate'];
-        const EXCEPT = new Set(['nicotine', 'tyrosine', ...SAL, 'phthalic-acid']);
+        const PHT = ['phthalic-acid', 'dimethyl-phthalate', 'diethyl-phthalate', 'potassium-hydrogen-phthalate'];
+        const EXCEPT = new Set(['nicotine', 'tyrosine', ...SAL, ...PHT]);
         let mono = 0, di = 0; const bad = [];
         arAll(c).forEach(([tag, e]) => {
             const s = arSubstituents(e); if (!s || !s.subs.length || s.subs.length > 2) return;
@@ -751,9 +753,12 @@
             const s = arSubstituents(e); const d = s.subs.filter(x => x.rank === 2).map(x => x.dir);
             return d.length === 2 && d.some(v => arAngDiff(v, -30) < 3) && d.some(v => arAngDiff(v, 30) < 3);
         };
-        assert(phShape(byId('phthalic-acid')), `フタル酸: COOH が ${arSubstituents(byId('phthalic-acid')).subs.map(x => x.dir.toFixed(0)).join('°・')}°（期待は −30°・30°）`);
+        PHT.forEach(id => {
+            const e = byId(id); assert(e, `${id} が登録に無い`);
+            assert(phShape(e), `${e.name}: COOH 系が ${arSubstituents(e).subs.map(x => x.dir.toFixed(0)).join('°・')}°（期待は −30°・30°）`);
+        });
         // ★否定対照: 名指ししていない仲間は既定の規則のまま（例外が勝手に広がっていない）＝ 右上・右下の判定には通らない
-        ['salicylaldehyde', 'dimethyl-phthalate', 'diethyl-phthalate', 'potassium-hydrogen-phthalate'].forEach(id => {
+        ['salicylaldehyde'].forEach(id => {
             const e = byId(id); assert(e, `否定対照の ${id} が登録に無い`);
             assert(!EXCEPT.has(id), `否定対照の ${id} が例外に入っている`);
             assert(salShape(e) !== true && !phShape(e), `否定対照: ${e.name} まで右上・右下になっている（名指ししていない仲間へ広げていないか）`);
