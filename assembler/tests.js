@@ -1793,7 +1793,11 @@
         const ringC = mol.getNeighbors(n.id).map(x => x.atom).find(a => a.element === 'C');
         assert(ringC, 'N に付いた環炭素が無い（登録図が変わった）');
         missReset(c);
-        const spot = findMissSpot(c, ringC.x, ringC.y, { reason: 'hcrossing' });
+        // v1552: 芳香環を頂点が上下に回したら、N の付け根の環炭素のまわりには「H が結合線に乗る点」が無くなった。
+        //   ⚠ 守る内容（止める・文言・否定対照）は変えず、**探す場所だけ**を 付け根 → N → 残りの重原子 と広げる
+        const around = [ringC, n, ...mol.atoms.filter(a => a.element !== 'H' && a !== ringC && a !== n)];
+        let spot = null;
+        for (const a of around) { spot = findMissSpot(c, a.x, a.y, { reason: 'hcrossing' }); if (spot) break; }
         assert(spot, '「自由配置で H が乗る」で止まる点が作れなかった（場面の作り方が古い）');
         const before = heavyOf(c).length;
         c.clickAt(spot.x, spot.y);
@@ -53338,7 +53342,9 @@
                 `${name}: 作業帯がキャンバスの ${Math.round(ins.bottom / rect.height * 100)}% しか覆っていない` +
                 ' ＝ この幅で帯が薄くなったなら EQ9 の前提を測り直すこと');
             // ★ 入りきる分子は床に届く（直す前は ベンゼン 16.2 / アニリン 16.1 / エタノール 14.6）
-            for (const 分子 of ['ベンゼン', 'アニリン', 'エタノール']) {
+            // ⚠ v1552 でアニリンを外した: 芳香環を頂点が上下にして NH₂ を真上にしたので、縦 122 単位＋余白 2格 ＝ 206 単位が
+            //   高さ 106px の帯に入る限界は 21.6px（入りきらない分子 ＝ 下のアセチルサリチル酸と同じ扱い）。横長のプロパンに替えた
+            for (const 分子 of ['ベンゼン', 'プロパン', 'エタノール']) {
                 await 呼ぶ(W, D, 分子);
                 const px = g.screenPxPerGrid();
                 assert(px >= FLOOR - 0.5,
