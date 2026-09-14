@@ -55748,6 +55748,42 @@
                     `★ ${an} / ${bn} の1位の −OH が α=${sides[0] > 0 ? '下' : '上'}・β=${sides[1] > 0 ? '下' : '上'}（α は下・β は上のはず）`);
                 lines.push(an.replace(/（.*/, ''));
             });
+            // ★ 紙の図の型のハース式は、手前の辺が太い帯・両脇がくさび（v1550・ユーザー「ハース環は手前を太く、12間、34間はくさび型」）
+            //   ピラノース（グルコース）もフラノース（フルクトース）も、太い帯1つ＋くさび2つ ＝ 3枚。帯は幅が一定、くさびは片側が細い
+            ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトフラノース'].forEach(name => {
+                const m = g.createTargetFromData({ target: fgtEntry(W, name).target });
+                assert(W.ipHaworthFigure(m), `「${name}」がハース式の門番を通らない`);
+                ip.renderStandardFigure(svg.id, m, false, { paper: true });
+                // ★ v1554: 環の外周（奥の細線・くさび・手前の帯）は**1枚の多角形** ＝ 角で継ぎ目が無い
+                //   （ユーザー「ハース環の角をきれいに多角形にしましょう（はみ出したり欠けたりしない）」）
+                const polys = [...svg.querySelectorAll('.svg-paper-wedge')].map(p => p.getAttribute('points').split(' ')
+                    .map(s => s.split(',').map(Number)));
+                assert(polys.length === 1, `「${name}」の環の外周が ${polys.length} 枚の部品に分かれている（1枚のはず ＝ 角に継ぎ目ができる）`);
+                const pts = polys[0];
+                assert(pts.length % 2 === 0, `「${name}」の外周の多角形の頂点が奇数（${pts.length}）＝ 左右の縁が対応していない`);
+                // 左の縁 i 番と右の縁（逆順）の対が、その所の帯の太さ。奥の端（環の O の所）は細く、手前の辺は太い
+                const half = pts.length / 2;
+                const thick = [...Array(half).keys()].map(i => Math.hypot(pts[i][0] - pts[pts.length - 1 - i][0], pts[i][1] - pts[pts.length - 1 - i][1]));
+                assert(Math.max(...thick) > 2.5 * thick[0] && Math.abs(thick[0] - thick[half - 1]) < 1e-6,
+                    `「${name}」の外周の太さが、奥の両端で細く手前で太い形になっていない（${thick.map(t => t.toFixed(2)).join(',')}）`);
+                // 角は縁の交点で閉じている ＝ 隣り合う縁の点が重ならない（同じ所に2点並ぶと、そこが継ぎ目になる）
+                for (let i = 1; i < pts.length; i++) {
+                    assert(Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]) > 1e-6, `「${name}」の外周に重なった頂点がある（${i}番）`);
+                }
+                // 環の辺は線では描かない（部品の二重描き ＝ はみ出しの元）。線は環の外の結合の本数だけ
+                const ringIds = new Set(W._ringAtomIds(m).values ? [...W._ringAtomIds(m)] : []);
+                const nonRing = m.bonds.filter(bd => !(ringIds.has(bd.atomId1) && ringIds.has(bd.atomId2))).length;
+                const lineCount = svg.querySelectorAll('.quiz-bonds line.svg-bond-ink').length;
+                assert(lineCount === nonRing, `「${name}」の線が ${lineCount} 本（環の外の結合 ${nonRing} 本のはず ＝ 環の辺を線でも描いている）`);
+            });
+            {
+                // 否定対照: 丸の図（opts を渡さない）には帯もくさびも出ない
+                const m = g.createTargetFromData({ target: fgtEntry(W, pairs[0][0]).target });
+                W.ipHaworthFigure(m);
+                ip.renderStandardFigure(svg.id, m, false);
+                assert(svg.querySelectorAll('.svg-paper-wedge').length === 0, '丸の図のハース式に紙の図の帯・くさびが出た');
+            }
+
             // ★★ 否定対照: ハース式を通さない（今までの標準の図＝ layoutMolecule）と、α とβ は同じ図になる
             const prints = pairs[0].map(name => {
                 ip.renderStandardFigure(svg.id, g.createTargetFromData({ target: fgtEntry(W, name).target }), false);
@@ -55774,7 +55810,8 @@
             ip.renderStandardFigure(svg.id, m, false, Object.assign({ paper: true }, extra || {}));
             return {
                 m,
-                labels: [...svg.querySelectorAll('.svg-paper-label')].map(t => t.textContent).sort(),
+                // ⚠ v1550 から下付き数字は tspan の普通の数字で描く（textContent は "H3C"）。綴りは data-label が持つ
+                labels: [...svg.querySelectorAll('.svg-paper-label')].map(t => t.getAttribute('data-label')).sort(),
                 circles: svg.querySelectorAll('.quiz-atoms circle').length
             };
         };
@@ -55785,7 +55822,16 @@
             assert(aa.circles === 0, `紙の図に丸が ${aa.circles} 個描かれている`);
             same(aa.labels, ['H₃C', 'C', 'O', 'OH'], '酢酸（既定 ＝ C=O は線・OH だけ文字）');
             same(paperOf('酢酸', { condense: ['COOH'] }).labels, ['H₃C', 'COOH'], '酢酸（condense=COOH）');
-            same(paperOf('ベンズアルデヒド').labels, ['CH', 'O'], 'ベンズアルデヒド（既定 ＝ C=O は線＋H）');
+            // ★ v1554: −CHO は C−H も線（ユーザー提案・教科書 5編 p.148 の図(8) R−C−H）。C から出る線は3本（環・=O・H）
+            {
+                const bz = paperOf('ベンズアルデヒド');
+                same(bz.labels, ['C', 'H', 'O'], 'ベンズアルデヒド（既定 ＝ C=O も C−H も線）');
+                // 線の本数: 環 9（辺6・内側3）＋ 環−C 1 ＋ C=O 2 ＋ C−H 1 ＝ 13
+                const n = svg.querySelectorAll('.quiz-bonds line.svg-bond-ink').length;
+                assert(n === 13, `ベンズアルデヒドの線が ${n} 本（13本のはず ＝ C から環・=O・H の3本が出ていない）`);
+                // 否定対照: condense=CHO なら今までどおり1つの文字
+                same(paperOf('ベンズアルデヒド', { condense: ['CHO'] }).labels, ['CHO'], 'ベンズアルデヒド（condense=CHO）');
+            }
             same(paperOf('ニトロベンゼン').labels, ['NO₂'], 'ニトロベンゼン（既定 ＝ 文字）');
             same(paperOf('ニトロベンゼン', { expand: ['NO2'] }).labels, ['N', 'O', 'O'], 'ニトロベンゼン（expand=NO2）');
             same(paperOf('ベンゼンスルホン酸').labels, ['SO₃H'], 'ベンゼンスルホン酸（既定 ＝ 文字）');
@@ -55800,6 +55846,59 @@
             assert(edges.length === 6 && Math.max(...edges.map(e => e.len)) - Math.min(...edges.map(e => e.len)) < 0.5,
                 `トルエンの環の辺の長さがそろわない（${edges.map(e => e.len.toFixed(1)).join(',')}）`);
             assert(edges.filter(e => e.slant).length === 4, `トルエンの環が正六角形でない（斜めの辺 ${edges.filter(e => e.slant).length} 本・4本のはず）`);
+
+            // ★ 価標は**結合している原子の元素記号**に付ける（v1550・ユーザー「CH2であれば…価標はCの位置に合わせます」）。
+            //   2-メチルプロパンの縦の価標（CH と上の CH₃ をつなぐ）は、`CH` の **C の字の中心**を通り、`CH` のかたまりの中央は通らない
+            {
+                paperOf('2-メチルプロパン');
+                const ch = [...svg.querySelectorAll('.svg-paper-label')].find(t => t.getAttribute('data-label') === 'CH');
+                assert(ch, '2-メチルプロパンの図に CH の文字が無い');
+                const x0 = +ch.getAttribute('x');
+                const cMid = x0 + ch.getSubStringLength(0, 1) / 2;
+                const blockMid = x0 + ch.getComputedTextLength() / 2;
+                const vertical = [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')]
+                    .filter(l => Math.abs(+l.getAttribute('x1') - +l.getAttribute('x2')) < 1e-6);
+                assert(vertical.length === 1, `2-メチルプロパンの縦の価標が ${vertical.length} 本（1本のはず）`);
+                const vx = +vertical[0].getAttribute('x1');
+                assert(Math.abs(vx - cMid) < 0.5, `★ 縦の価標が C の字の中心を通らない（価標 ${vx.toFixed(1)}・C ${cMid.toFixed(1)}）`);
+                assert(Math.abs(vx - blockMid) > 2, `縦の価標が CH のかたまりの中央を通っている（${vx.toFixed(1)}）＝ C に付けていない`);
+                // ★ 横の価標は文字に食われて消えない（CH−CH₃ は字の幅ぶん価標を伸ばす）
+                const horizontal = [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')]
+                    .filter(l => Math.abs(+l.getAttribute('y1') - +l.getAttribute('y2')) < 1e-6);
+                assert(horizontal.length === 2, `2-メチルプロパンの横の価標が ${horizontal.length} 本（2本のはず ＝ 文字に食われて消えた）`);
+            }
+
+            // ★ 環の中の二重結合は、1本が辺そのもの・もう1本が環の内側（v1551・ユーザー「= が6角形に収まるように」）。
+            //   トルエン: 線は 9本（辺 6・内側 3）。内側の3本は、辺の6本より環の中心に近く、辺より短い
+            {
+                paperOf('トルエン');
+                const inkLines = [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')].map(l => {
+                    const x1 = +l.getAttribute('x1'), y1 = +l.getAttribute('y1'), x2 = +l.getAttribute('x2'), y2 = +l.getAttribute('y2');
+                    return { mx: (x1 + x2) / 2, my: (y1 + y2) / 2, len: Math.hypot(x2 - x1, y2 - y1) };
+                });
+                // 環の辺 ＝ 長さがいちばん多い値（CH₃ への線は文字で詰まるので短い）
+                const edgeLen = Math.max(...inkLines.map(l => l.len));
+                const edges = inkLines.filter(l => Math.abs(l.len - edgeLen) < 0.5);
+                assert(edges.length === 6, `トルエンの環の辺が ${edges.length} 本（6本のはず ＝ 二重結合が辺をまたいでいる）`);
+                const cx = edges.reduce((s, l) => s + l.mx, 0) / 6, cy = edges.reduce((s, l) => s + l.my, 0) / 6;
+                const edgeDist = Math.hypot(edges[0].mx - cx, edges[0].my - cy);
+                const inner = inkLines.filter(l => Math.hypot(l.mx - cx, l.my - cy) < edgeDist - 1);
+                assert(inner.length === 3 && inner.every(l => l.len < edgeLen - 1),
+                    `トルエンの内側の線が ${inner.length} 本（3本・辺より短いはず）`);
+            }
+            // ★ 結合の長さはそろう（v1551・ユーザー「ベンズアルデヒドの C=O が他より長い」。登録は環の辺 40・C=O 60）。
+            //   C（CH の C の字）と O の中心の距離が、環の辺の長さと同じ
+            {
+                paperOf('ベンズアルデヒド');
+                const labs = [...svg.querySelectorAll('.svg-paper-label')];
+                // ⚠ v1554 から −CHO の C は H を線で出すので、文字は「C」1字
+                const ch = labs.find(t => t.getAttribute('data-label') === 'C'), o = labs.find(t => t.getAttribute('data-label') === 'O');
+                const edgeLen = Math.max(...[...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')].map(l =>
+                    Math.hypot(+l.getAttribute('x2') - +l.getAttribute('x1'), +l.getAttribute('y2') - +l.getAttribute('y1'))));
+                const cX = +ch.getAttribute('x') + ch.getSubStringLength(0, 1) / 2, oX = +o.getAttribute('x') + o.getComputedTextLength() / 2;
+                const d = Math.hypot(cX - oX, +ch.getAttribute('y') - +o.getAttribute('y'));
+                assert(Math.abs(d - edgeLen) < 0.5, `★ ベンズアルデヒドの C=O が ${d.toFixed(1)}（環の辺 ${edgeLen.toFixed(1)} と同じはず）`);
+            }
 
             // ★★ 否定対照: opts を渡さない（アプリの画面の呼び方）と、今までどおり丸の図・紙の文字は0・環は長方形
             const e = fgtEntry(W, 'トルエン');

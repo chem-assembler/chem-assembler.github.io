@@ -112,6 +112,8 @@ const PAPER_CSS = `
 #figbake text.iupac-group-name{ stroke: rgba(255,255,255,0.95) !important; }
 #figbake text.svg-paper-label{ fill:#1c222d !important; font-family: "Helvetica Neue", Arial, sans-serif; }
 #figbake text.svg-charge{ fill:#1c222d !important; }
+#figbake .svg-paper-wedge{ fill:#1c222d !important; }
+#figbake line.svg-bond-ink.svg-paper-line{ stroke:#1c222d !important; }
 `;
 
 /* ============================================================================
