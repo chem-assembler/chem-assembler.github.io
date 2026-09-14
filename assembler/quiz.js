@@ -1538,14 +1538,46 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) 
  *      `opts.condense`（例 ['COOH','CHO']）でまとめる側へ、`opts.expand`（例 ['NO2']）で線で描く側へ上書きできる
  * ⚠ エステル（COO・HCOO）は検出されても**まとめない**（重原子どうしの結合は線で描く原則）
  */
-const PAPER_FONT = 15;
+/* ★★ **教科書を測って決めた比**（v1550・数研出版 R5化学 Vol.2 の PDF をベクタと画素で測った。数値の出どころは
+ *   DEVELOPMENT.md ではなくこのコメントが正。すべて「価標（原子の中心どうし）の長さ」を 1 とした比）
+ *   ・文字（大文字）の高さ 0.42 … 5編 p.104 エテン 0.411・シクロヘキサン 0.440／p.157 酢酸 0.421・マレイン酸 0.390
+ *   ・線の太さ 0.028 … 同 0.028・0.030・0.030・0.022
+ *   ・二重線の間隔（線の中心どうし）0.125 … 酢酸 0.130・マレイン酸 0.121
+ *   ・下付き数字は大きさ 0.58・基線の下がり 0.14（文字の大きさに対して）… 5編 p.106・119・124・162 の 0.54〜0.59／0.12〜0.16
+ *   ・ハース式の手前の辺は、ふつうの線の 3.1 倍 … 6編 p.220 マルトース（手前 1.86pt・ふつう 0.6pt）
+ * ⚠ 文字の高さは「大文字のインクの高さ」で合わせる。font-size に直すときは Helvetica/Arial の大文字 0.716em で割る */
+const PAPER_CAP_PER_BOND = 0.42;
+const PAPER_WIDTH_PER_BOND = 0.028;
+const PAPER_GAP_PER_BOND = 0.125;
+const PAPER_SUB_SIZE = 0.58;
+const PAPER_SUB_DROP = 0.14;
+const PAPER_CAP_EM = 0.716;
+const PAPER_HAWORTH_FRONT = 3.1;
+/* ハース式の文字は**手前の辺の長さ**に対して決める（v1551 で測り直した。大文字の高さ ＝ 字の大きさ × 0.748 ÷ 手前の帯の長さ）
+   … 6編 p.220 マルトース 0.230・0.230・0.186／p.221 セロビオース・ラクトース・トレハロース 0.230・0.268・0.230・0.272／
+     p.223 アミロペクチン 0.230／p.225 セルロース 0.230・0.269／p.218 グルコース 0.317 ＝ 中央値 0.23（0.19〜0.32）。
+   手前の帯の太さ ÷ 辺は 0.061〜0.062（全ページ同じ）・ふつうの線は p.220 で 0.6pt ＝ 0.020。
+   ⚠ v1550 はこの比を**結合長の中央値**（ハース式では縦の置換基の線が多数派）に掛けていて、文字が半分ほどになっていた */
+/* ⚠⚠ v1551 の2度目の測り直し: **物差しは手前の辺でもなく、環の横幅**。
+   手前の辺だけで合わせると、教科書と並べた画像で文字がまだ小さかった。原因は環の形 ——
+   教科書のピラノース環は手前の辺が横幅の 0.43（p.220・221・223・225 すべて同じ型）、登録の座標は 0.30（手前 60・横幅 200）。
+   横幅に対しては、大文字の高さ 0.100（ピラノース 15か所すべて 0.099〜0.100）・フラノース 0.118（p.220 スクロースの1か所）。
+   ふつうの線は 0.6pt ÷ 69.7pt ＝ 0.0086（手前の帯は 3.1 倍で 0.027） */
+const PAPER_HAWORTH_CAP_PER_RING6 = 0.100;
+const PAPER_HAWORTH_CAP_PER_RING5 = 0.118;
+const PAPER_HAWORTH_WIDTH_PER_RING = 0.0086;
+/* 環の中の二重結合の内側の線（5編 p.185 ベンゼン環: 辺 10.04pt・内側の線は辺から 1.93pt・長さ 8.87〜8.94pt）
+   ＝ 辺からの距離 0.192・両端を 0.058 ずつ詰める（辺の長さに対して） */
+const PAPER_RING_INNER_OFFSET = 0.192;
+const PAPER_RING_INNER_TRIM = 0.058;
+const PAPER_HAWORTH_WIDTH_PER_EDGE = 0.020;
+/* 価標の見えている長さの床（価標1本に対して）。教科書は字が長いと価標のほうを伸ばす
+   … 5編 p.104 エテン 5.36/14.19・p.157 酢酸 5.57/14.06・マレイン酸 6.94/19.24 ＝ 0.36〜0.40 */
+const PAPER_MIN_SEGMENT = 0.38;
 const PAPER_DEFAULT_CONDENSE = ['NO2', 'SO3H'];
 const PAPER_GROUP_KEY = { 'NO₂': 'NO2', 'SO₃H': 'SO3H', 'COOH': 'COOH', 'CHO': 'CHO' };
 const PAPER_GROUP_REVERSED = { 'NO₂': 'O₂N', 'SO₃H': 'HO₃S', 'SO₃': 'O₃S', 'COOH': 'HOOC', 'CHO': 'OHC' };
-
-function paperLabelWidth(text) {
-    return [...text].reduce((w, ch) => w + ('₀₁₂₃₄₅₆₇₈₉'.includes(ch) ? 0.42 : 0.64) * PAPER_FONT, 0);
-}
+const PAPER_SUBSCRIPTS = '₀₁₂₃₄₅₆₇₈₉';
 
 function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     const NS = 'http://www.w3.org/2000/svg';
@@ -1553,6 +1585,47 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     const want = new Set(PAPER_DEFAULT_CONDENSE);
     ((opts && opts.condense) || []).forEach(k => want.add(k));
     ((opts && opts.expand) || []).forEach(k => want.delete(k));
+
+    // ★ ホルミル基 −CHO は **C−H も線で描く**（v1554・ユーザー提案「ホルミル基の場合は例外的にC-Hも書くのが標準」／統合側も賛成）。
+    //   教科書でも確かめた: 5編 p.148 の図(8)「R−C−H（=O が下）」・p.150 問5「CH₃−C−H」。
+    //   ⚠ `mol` は紙の図のために作った写しなので、H を**本物の原子として足してよい**（登録にもアプリの画面にも触らない）。
+    //   H の置き場所: 相手の重原子（R）の反対側（教科書の R−C−H の一直線）。そこが =O と重なるなら C=O と直角の側。
+    //   ホルムアルデヒド（R が無い）は C=O と直角の左右に H を2つ。
+    //   ⚠ `condense=CHO`（1つの文字「CHO」にまとめる上書き）のときは足さない ＝ 今までどおりの道が使える
+    if (!want.has('CHO')) {
+        const heavyLens = mol.bonds.map(bd => {
+            const p = mol.atoms.find(a => a.id === bd.atomId1), q = mol.atoms.find(a => a.id === bd.atomId2);
+            return Math.hypot(p.x - q.x, p.y - q.y);
+        }).filter(l => l > 1e-6).sort((p, q) => p - q);
+        const L0 = heavyLens.length ? heavyLens[Math.floor(heavyLens.length / 2)] : 46;
+        const inRing = typeof _ringAtomIds === 'function' ? _ringAtomIds(mol) : new Set();
+        mol.atoms.filter(c => c.element === 'C' && !inRing.has(c.id) && !c.charge).forEach(c => {
+            const nbs = mol.getNeighbors(c.id);
+            const oxo = nbs.find(nb => nb.type === 2 && nb.atom.element === 'O'
+                && mol.getNeighbors(nb.atom.id).filter(x => x.atom.element !== 'H').length === 1);
+            if (!oxo) return;
+            const nH = mol.getFreeValency(c.id);
+            if (nH < 1) return;                               // ケトン・カルボン酸などは H を持たない
+            const others = nbs.filter(nb => nb !== oxo && nb.atom.element !== 'H');
+            const unit = (a) => { const dx = a.x - c.x, dy = a.y - c.y, l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
+            const uo = unit(oxo.atom);
+            const perp = [[-uo[1], uo[0]], [uo[1], -uo[0]]];
+            let dirs;
+            if (others.length === 1 && nH === 1) {
+                const ur = unit(others[0].atom);
+                const straight = [-ur[0], -ur[1]];
+                dirs = [(straight[0] * uo[0] + straight[1] * uo[1]) > 0.9 ? perp.find(p => (p[0] * ur[0] + p[1] * ur[1]) < 0.5) || perp[0] : straight];
+            } else if (others.length === 0 && nH === 2) {
+                dirs = perp;                                  // ホルムアルデヒド H−C(=O)−H
+            } else {
+                return;
+            }
+            dirs.forEach(([dx, dy]) => {
+                const h = mol.addAtom('H', c.x + dx * L0, c.y + dy * L0);
+                mol.addBond(c.id, h.id, 1);
+            });
+        });
+    }
 
     // 自動水素の数（描く水素と同じ計算 ＝ 電荷つきの -NH₃⁺ は 3・Cl⁻ は 0）
     const hCount = new Map();
@@ -1576,79 +1649,343 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         groupAt.set(rootId, { label, anchorId: gr.anchorIds[0], charge });
     });
 
-    // 各原子の文字（null ＝ 文字を書かない環の炭素）
+    // 各原子の文字（null ＝ 文字を書かない環の炭素）。
+    // ★ `atEnd` ＝ **結合している原子の元素記号が文字の後ろにある**か（H₃C・HO・O₂N・HOOC）。価標はその記号に付ける（v1550）
     const labels = new Map();
     mol.atoms.forEach(a => {
         if (hidden.has(a.id)) return;
         const heavyNb = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H' && !hidden.has(n.atom.id));
         const grp = groupAt.get(a.id);
-        let text;
         if (grp) {
             const anc = byId.get(grp.anchorId);
-            text = (anc && anc.x > a.x + 1) ? PAPER_GROUP_REVERSED[grp.label] : grp.label;
+            const rev = !!(anc && anc.x > a.x + 1);
+            labels.set(a.id, { text: rev ? PAPER_GROUP_REVERSED[grp.label] : grp.label, atEnd: rev });
         } else if (a.element === 'C' && ring.has(a.id) && !a.charge) {
-            text = null;
+            labels.set(a.id, null);
         } else {
             const n = hCount.get(a.id) || 0;
             const hs = n ? 'H' + (n > 1 ? sub(n) : '') : '';
             // 左端の原子（相手が右にだけある）は H を前に書く（H₃C−・HO−・H₂N−）
             const leftEnd = heavyNb.length === 1 && heavyNb[0].atom.x > a.x + 1;
-            text = (leftEnd && hs) ? hs + a.element : a.element + hs;
+            const atEnd = !!(leftEnd && hs);
+            labels.set(a.id, { text: atEnd ? hs + a.element : a.element + hs, atEnd });
         }
-        labels.set(a.id, text);
     });
 
-    const boxOf = (id) => {
-        const t = labels.get(id);
-        return t ? { hw: paperLabelWidth(t) / 2 + 1.5, hh: PAPER_FONT * 0.5 + 1 } : null;
-    };
-    // 結合線を文字の箱の縁で止める（⚠ renderTargetBond は両端を 10 ずつ詰めるので、そのぶん外へ伸ばして渡す）
-    const trimOf = (box, ux, uy) => {
-        if (!box) return 0;
-        const tx = Math.abs(ux) > 1e-9 ? box.hw / Math.abs(ux) : Infinity;
-        const ty = Math.abs(uy) > 1e-9 ? box.hh / Math.abs(uy) : Infinity;
+    // ── ⓪ ハース式の手前の辺（太い帯）と、その両脇のくさび（v1550・教科書の慣習）──
+    //   ⚠ 門番は haworthSugarCycles（キャンバスの ⇅ と同じ判定）。手前 ＝ 環の中で**いちばん下（y 最大）にある2原子**
+    //   ＝ ピラノースは C2−C3、フラノースは C3−C4。その2原子と環でつながる残りの辺をくさび（奥が細く、手前が太い）
+    //   ★ 文字の大きさの比がハース式だけ違うので、測る前に決める
+    const front = new Map();   // bond → { kind: 'thick' | 'wedge', backId }
+    const ringWidths = [];     // ハース環ごとの { 横幅, 員数 }（文字の大きさの物差し）
+    const haworthRings = [];   // ハース環の原子ID（外周を1枚の多角形で描く・v1554）
+    if (typeof haworthSugarCycles === 'function') {
+        let cycles = [];
+        try { cycles = haworthSugarCycles(mol); } catch (e) { cycles = []; }
+        cycles.forEach(cyc => {
+            const ids = new Set(cyc);
+            const yMax = Math.max(...cyc.map(id => byId.get(id).y));
+            const low = new Set(cyc.filter(id => byId.get(id).y >= yMax - 2));
+            if (low.size !== 2) return;
+            const xs = cyc.map(id => byId.get(id).x);
+            ringWidths.push({ w: Math.max(...xs) - Math.min(...xs), n: cyc.length });
+            haworthRings.push(cyc);
+            mol.bonds.forEach(b => {
+                if (!ids.has(b.atomId1) || !ids.has(b.atomId2)) return;
+                const l1 = low.has(b.atomId1), l2 = low.has(b.atomId2);
+                if (l1 && l2) front.set(b, { kind: 'thick' });
+                else if (l1 || l2) front.set(b, { kind: 'wedge', backId: l1 ? b.atomId2 : b.atomId1 });
+            });
+        });
+    }
+    const haworth = front.size > 0;
+
+    // ── 大きさは価標の長さから決める（★ 教科書の比。結合長の中央値を「価標1本」とする）──
+    //   ⚠ ハース式は教科書でも環を大きく描く（6編 p.220 マルトース: 環の辺 30.25pt に対して字 9.31pt ＝ 大文字の高さ 0.22・
+    //     ふつうの線 0.6pt ＝ 0.020）。構造式の比（0.42）のまま描くと、環の中と外の OH・CH₂OH が重なる（v1550 の見本で実測）
+    const lens = mol.bonds.map(b => {
+        const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+        return Math.hypot(p.x - q.x, p.y - q.y);
+    }).filter(l => l > 1e-6).sort((p, q) => p - q);
+    const B = lens.length ? lens[Math.floor(lens.length / 2)] : 46;
+    // ★ ハース式の物差しは**手前の辺の長さ**（v1551）。⚠ v1550 は結合長の中央値（＝ 数の多い縦の置換基の線 38）に
+    //   手前の辺で測った比 0.22 を掛けていて、文字が教科書の半分ほどになっていた（ユーザー「比率が違うように見える」）
+    //   ⚠ 2度目の測り直しで、物差しを**環の横幅**に変えた（上の PAPER_HAWORTH_CAP_PER_RING6 の注を参照）。
+    //     環が2つ（二糖）のときは、環ごとの「横幅 × 比」を平均する（ピラノース 0.100・フラノース 0.118）
+    const capH = haworth
+        ? ringWidths.reduce((s, r) => s + r.w * (r.n === 5 ? PAPER_HAWORTH_CAP_PER_RING5 : PAPER_HAWORTH_CAP_PER_RING6), 0) / ringWidths.length
+        : PAPER_CAP_PER_BOND * B;
+    const fs = capH / PAPER_CAP_EM;
+    const lineW = haworth
+        ? ringWidths.reduce((s, r) => s + r.w, 0) / ringWidths.length * PAPER_HAWORTH_WIDTH_PER_RING
+        : PAPER_WIDTH_PER_BOND * B;
+    const style = { width: lineW, gap: PAPER_GAP_PER_BOND * B };
+    const subFs = fs * PAPER_SUB_SIZE, subDy = fs * PAPER_SUB_DROP;
+
+    // ── ① 文字を置いて測る（価標の端を決めるのに字幅が要るので、結合より先）──
+    const ext = new Map();   // id → { L, R, up, down }（原子の中心から左右上下へ、文字が占める幅）
+    const placed = [];       // 位置は ② で価標を伸ばしてから決める
+    mol.atoms.forEach(a => {
+        if (hidden.has(a.id)) return;
+        const lab = labels.get(a.id);
+        if (!lab) return;
+        // ⚠ 文字と電荷の印は <g> に包む（丸の図の renderTargetAtom と同じ入れ子）。
+        //   `.quiz-atoms > text` を直に拾う後処理（参考書の図の `plain` が素の番号を消す）に電荷の印を巻き込ませない
+        const grp = document.createElementNS(NS, 'g');
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('class', 'svg-atom-text svg-paper-label');
+        t.setAttribute('data-label', lab.text);   // ★ 読み手（テスト）が見る綴り。画面の字は下付きを tspan で描く
+        t.setAttribute('fill', `var(--color-${a.element.toLowerCase()})`);
+        t.style.fontSize = fs + 'px';
+        const chars = [...lab.text].map(ch => PAPER_SUBSCRIPTS.includes(ch)
+            ? { ch: String(PAPER_SUBSCRIPTS.indexOf(ch)), sub: true } : { ch, sub: false });
+        let lowered = false, hasSub = false;
+        chars.forEach(c => {
+            const sp = document.createElementNS(NS, 'tspan');
+            if (c.sub !== lowered) { sp.setAttribute('dy', c.sub ? subDy : -subDy); lowered = c.sub; }
+            if (c.sub) { sp.style.fontSize = subFs + 'px'; hasSub = true; }
+            sp.textContent = c.ch;
+            t.appendChild(sp);
+        });
+        grp.appendChild(t);
+        atomsGroup.appendChild(grp);
+        // 字幅: 描いた字を測る（⚠ 描けない環境では字形の平均で見積もる）
+        const est = (i0, i1) => chars.slice(i0, i1).reduce((w, c) => w + (c.sub ? 0.556 * subFs
+            : (/[a-z]/.test(c.ch) ? 0.5 : 0.72) * fs), 0);
+        let pos = (i) => est(0, i);
+        try {
+            if (t.getComputedTextLength() > 0) pos = (i) => (i === 0 ? 0 : t.getSubStringLength(0, i));
+        } catch (e) { /* 見積もりのまま */ }
+        const n = chars.length, symLen = a.element.length;
+        const s0 = lab.atEnd ? n - symLen : 0, s1 = s0 + symLen;
+        const center = (pos(s0) + pos(s1)) / 2;           // 元素記号の中心（文字の先頭から）
+        const total = pos(n);
+        const padX = 0.12 * fs;
+        const e = { L: center + padX, R: total - center + padX, up: capH / 2 + padX, down: capH / 2 + padX + (hasSub ? subDy : 0) };
+        ext.set(a.id, e);
+        const shownCharge = groupAt.has(a.id) ? groupAt.get(a.id).charge : a.charge;
+        placed.push({ a, t, grp, center, e, shownCharge });
+    });
+
+    // 価標をその向きの文字の縁で止める（★ 左右は元素記号から左端／右端まで・上下は大文字の高さ）
+    const trimOf = (id, ux, uy) => {
+        const e = ext.get(id);
+        if (!e) return 0;
+        const hx = ux >= 0 ? e.R : e.L, hy = uy >= 0 ? e.down : e.up;
+        const tx = Math.abs(ux) > 1e-9 ? hx / Math.abs(ux) : Infinity;
+        const ty = Math.abs(uy) > 1e-9 ? hy / Math.abs(uy) : Infinity;
         return Math.min(tx, ty);
     };
+
+    // ── ② 価標が文字に食われるなら、**価標のほうを伸ばす**（v1550・教科書と同じ。字は小さくしない）──
+    //   ⚠ 伸ばすのは環に入っていない結合だけ。その結合で分子を2つに切り、**小さいほう**を結合の向きへ平行移動する
+    //     （切った先の中の結合は長さも角度も変わらない ＝ 形は保つ）。環の辺は切っても分かれないので触らない
+    const sideOf = (startId, cut) => {
+        const seen = new Set([startId]);
+        const stack = [startId];
+        while (stack.length) {
+            const id = stack.pop();
+            mol.getNeighbors(id).forEach(nb => {
+                const nid = nb.atom.id;
+                if (seen.has(nid)) return;
+                if ((id === cut.atomId1 && nid === cut.atomId2) || (id === cut.atomId2 && nid === cut.atomId1)) return;
+                seen.add(nid);
+                stack.push(nid);
+            });
+        }
+        return seen;
+    };
+    // ★ まず**環に入っていない結合の長さを価標1本（B）にそろえる**（v1551・ユーザー「ベンズアルデヒドの C=O が他より長い」）。
+    //   原因は登録の座標: ベンズアルデヒドは環の辺 40 に対して C=O が 60（482,300 → 482,240）。中央値で縮めても 1.5 倍が残る。
+    //   ⚠ ハース式はそろえない（奥行きを出すために辺の長さが違うのが形そのもの）。環の辺も触らない（正六角形は登録どおり）
+    if (!haworth) {
+        mol.bonds.forEach(b => {
+            const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+            const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
+            if (len < 1e-6 || Math.abs(len - B) < 1e-6) return;
+            const s2 = sideOf(a2.id, b);
+            if (s2.has(a1.id)) return;                   // 環の辺
+            const s1 = sideOf(a1.id, b);
+            const ux = dx / len, uy = dy / len, d = B - len;
+            const [move, sx, sy] = s2.size <= s1.size ? [s2, ux, uy] : [s1, -ux, -uy];
+            move.forEach(id => { const at = byId.get(id); at.x += sx * d; at.y += sy * d; });
+        });
+    }
     mol.bonds.forEach(b => {
         if (hidden.has(b.atomId1) || hidden.has(b.atomId2)) return;
         const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
         const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
         if (len < 1e-6) return;
         const ux = dx / len, uy = dy / len;
-        const t1 = trimOf(boxOf(a1.id), ux, uy), t2 = trimOf(boxOf(a2.id), ux, uy);
-        if (t1 + t2 >= len - 2) return;
-        game.renderTargetBond(a1.x + ux * (t1 - 10), a1.y + uy * (t1 - 10),
-            a2.x - ux * (t2 - 10), a2.y - uy * (t2 - 10), b.type, false, bondsGroup);
+        const visible = len - trimOf(a1.id, ux, uy) - trimOf(a2.id, -ux, -uy);
+        const need = PAPER_MIN_SEGMENT * B;
+        if (visible >= need) return;
+        const s2 = sideOf(a2.id, b);
+        if (s2.has(a1.id)) return;                       // 環の辺
+        const s1 = sideOf(a1.id, b);
+        const extra = need - visible;
+        const [move, sx, sy] = s2.size <= s1.size ? [s2, ux, uy] : [s1, -ux, -uy];
+        move.forEach(id => { const at = byId.get(id); at.x += sx * extra; at.y += sy * extra; });
     });
 
+    // ── ③ 文字を置く（価標を伸ばしたあとの座標で）──
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     mol.atoms.forEach(a => {
         if (hidden.has(a.id)) return;
-        const box = boxOf(a.id) || { hw: 0, hh: 0 };
-        minX = Math.min(minX, a.x - box.hw); maxX = Math.max(maxX, a.x + box.hw);
-        minY = Math.min(minY, a.y - box.hh); maxY = Math.max(maxY, a.y + box.hh);
-        const text = labels.get(a.id);
-        if (!text) return;
-        // ⚠ 文字と電荷の印は <g> に包む（丸の図の renderTargetAtom と同じ入れ子）。
-        //   `.quiz-atoms > text` を直に拾う後処理（参考書の図の `plain` が素の番号を消す）に電荷の印を巻き込ませない
-        const grp = document.createElementNS(NS, 'g');
-        const t = document.createElementNS(NS, 'text');
-        t.setAttribute('x', a.x);
-        t.setAttribute('y', a.y + PAPER_FONT * 0.36);
-        t.setAttribute('text-anchor', 'middle');
-        t.setAttribute('class', 'svg-atom-text svg-paper-label');
-        t.setAttribute('fill', `var(--color-${a.element.toLowerCase()})`);
-        t.style.fontSize = PAPER_FONT + 'px';
-        t.textContent = text;
-        grp.appendChild(t);
-        const shownCharge = groupAt.has(a.id) ? groupAt.get(a.id).charge : a.charge;
-        if (shownCharge) {
-            const mark = game.chargeMarkNode(a.x + paperLabelWidth(text) / 2 - 7, a.y - 3, shownCharge);
-            mark.style.fontSize = '14px';
-            grp.appendChild(mark);
-        }
-        atomsGroup.appendChild(grp);
+        minX = Math.min(minX, a.x); maxX = Math.max(maxX, a.x);
+        minY = Math.min(minY, a.y); maxY = Math.max(maxY, a.y);
     });
+    placed.forEach(({ a, t, grp, center, e, shownCharge }) => {
+        t.setAttribute('x', a.x - center);                // ★ 元素記号の中心を原子の中心に
+        t.setAttribute('y', a.y + capH / 2);              // 大文字のインクの上下の中央を原子の中心に
+        minX = Math.min(minX, a.x - e.L); maxX = Math.max(maxX, a.x + e.R);
+        minY = Math.min(minY, a.y - e.up); maxY = Math.max(maxY, a.y + e.down);
+        if (shownCharge) {
+            const mark = game.chargeMarkNode(0, 0, shownCharge);
+            mark.setAttribute('x', a.x + e.R);
+            mark.setAttribute('y', a.y - capH * 0.3);
+            mark.style.fontSize = (fs * 0.8) + 'px';
+            grp.appendChild(mark);
+            maxX = Math.max(maxX, a.x + e.R + fs * 0.6);
+        }
+    });
+
+    // ── ④ 価標を描く ──
+    const W = lineW * PAPER_HAWORTH_FRONT;
+    const poly = (pts) => {
+        const p = document.createElementNS(NS, 'polygon');
+        p.setAttribute('points', pts.map(q => `${q[0]},${q[1]}`).join(' '));
+        p.setAttribute('class', 'svg-paper-wedge');
+        p.setAttribute('fill', 'rgba(255,255,255,0.72)');
+        bondsGroup.appendChild(p);
+    };
+
+    // ★★ ハース環の外周は**1枚の多角形**（v1554・ユーザー「ハース環の角をきれいに多角形にしましょう（はみ出したり欠けたりしない）」）。
+    //   v1550〜1551 は帯・くさび・奥の細線を別々の部品で描いていたので、角で端がはみ出したり継ぎ目が欠けたりしていた。
+    //   ・環を順にたどり、**文字のある環の原子（ふつうは環の O）で開いた1本の帯**として、辺ごとに始点・終点の太さを持たせる
+    //     （奥の辺は lineW・くさびは lineW → W・手前の辺は W）
+    //   ・角は**隣り合う辺の縁を延ばした交点**で閉じる（マイター）。⚠ 交点が頂点から「その角の太さの半分 × 4」より遠いときは
+    //     面取り（両方の縁の端をそのまま結ぶ）にする。4 は SVG の stroke-miterlimit の既定値と同じ ＝ 鋭い角でとがりすぎない
+    //   ・文字のある原子の所は、今までどおり文字の縁で止める（字に線が食い込まない）
+    //   ⚠ 文字のある原子が環に1つも無い形（今の登録には無い）は、今までどおり辺ごとの部品で描く
+    const consumed = new Set();
+    const bondBetween = (x, y) => mol.bonds.find(bd => (bd.atomId1 === x && bd.atomId2 === y) || (bd.atomId1 === y && bd.atomId2 === x));
+    const MITER_LIMIT = 4;
+    haworthRings.forEach(cyc => {
+        const ids = new Set(cyc);
+        const order = [cyc[0]];
+        while (order.length < cyc.length) {
+            const last = order[order.length - 1];
+            const next = mol.getNeighbors(last).map(nb => nb.atom.id).find(id => ids.has(id) && !order.includes(id));
+            if (next == null) break;
+            order.push(next);
+        }
+        if (order.length !== cyc.length) return;
+        const start = order.findIndex(id => ext.has(id));
+        if (start < 0) return;
+        const seq = order.slice(start).concat(order.slice(0, start), [order[start]]);
+        const segs = [];
+        for (let i = 0; i + 1 < seq.length; i++) {
+            const A = byId.get(seq[i]), Z = byId.get(seq[i + 1]);
+            const bd = bondBetween(A.id, Z.id);
+            if (!bd || bd.type !== 1) return;              // 環に二重結合がある形は糖ではない（念のため辺ごとの部品に戻す）
+            const dx = Z.x - A.x, dy = Z.y - A.y, len = Math.hypot(dx, dy);
+            if (len < 1e-6) return;
+            const ux = dx / len, uy = dy / len;
+            const f = front.get(bd);
+            const wA = !f ? lineW : (f.kind === 'thick' || f.backId !== A.id ? W : lineW);
+            const wZ = !f ? lineW : (f.kind === 'thick' || f.backId !== Z.id ? W : lineW);
+            const tA = ext.has(A.id) ? trimOf(A.id, ux, uy) : 0, tZ = ext.has(Z.id) ? trimOf(Z.id, -ux, -uy) : 0;
+            segs.push({ bd, P: [A.x + ux * tA, A.y + uy * tA], Q: [Z.x - ux * tZ, Z.y - uy * tZ], V: [Z.x, Z.y], ux, uy, hA: wA / 2, hZ: wZ / 2 });
+        }
+        const side = (sgn) => {
+            const E = segs.map(s => {
+                const nx = -s.uy * sgn, ny = s.ux * sgn;
+                return [[s.P[0] + nx * s.hA, s.P[1] + ny * s.hA], [s.Q[0] + nx * s.hZ, s.Q[1] + ny * s.hZ]];
+            });
+            const pts = [E[0][0]];
+            for (let i = 0; i < segs.length; i++) {
+                if (i + 1 === segs.length) { pts.push(E[i][1]); break; }
+                const [p1, p2] = E[i], [p3, p4] = E[i + 1];
+                const d1 = [p2[0] - p1[0], p2[1] - p1[1]], d2 = [p4[0] - p3[0], p4[1] - p3[1]];
+                const den = d1[0] * d2[1] - d1[1] * d2[0];
+                const h = Math.max(segs[i].hZ, segs[i + 1].hA);
+                if (Math.abs(den) < 1e-9) { pts.push(p2); continue; }   // まっすぐ続く角
+                const t = ((p3[0] - p1[0]) * d2[1] - (p3[1] - p1[1]) * d2[0]) / den;
+                const X = [p1[0] + d1[0] * t, p1[1] + d1[1] * t];
+                const V = segs[i].V;
+                if (Math.hypot(X[0] - V[0], X[1] - V[1]) > MITER_LIMIT * h) pts.push(p2, p3);   // 面取り
+                else pts.push(X);
+            }
+            return pts;
+        };
+        const left = side(1), right = side(-1);
+        poly(left.concat(right.reverse()));
+        segs.forEach(s => consumed.add(s.bd));
+    });
+
+    mol.bonds.forEach(b => {
+        if (hidden.has(b.atomId1) || hidden.has(b.atomId2)) return;
+        if (consumed.has(b)) return;                       // ハース環の外周（上で1枚の多角形にした）
+        const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+        const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
+        if (len < 1e-6) return;
+        const ux = dx / len, uy = dy / len;
+        const t1 = trimOf(a1.id, ux, uy), t2 = trimOf(a2.id, -ux, -uy);
+        if (t1 + t2 >= len - 2) return;
+        const p = [a1.x + ux * t1, a1.y + uy * t1], q = [a2.x - ux * t2, a2.y - uy * t2];
+        const f = front.get(b);
+        if (f && b.type === 1) {
+            const nx = -uy, ny = ux;
+            // 太さ: 帯は W、くさびは奥 lineW → 手前 W。⚠ 環の頂点で太さが途切れないよう、手前の端を W/2 だけ伸ばす
+            const w1 = f.kind === 'thick' || f.backId !== a1.id ? W : lineW;
+            const w2 = f.kind === 'thick' || f.backId !== a2.id ? W : lineW;
+            const e1 = w1 === W && !ext.get(a1.id) ? W / 2 : 0, e2 = w2 === W && !ext.get(a2.id) ? W / 2 : 0;
+            const P = [p[0] - ux * e1, p[1] - uy * e1], Q = [q[0] + ux * e2, q[1] + uy * e2];
+            poly([[P[0] + nx * w1 / 2, P[1] + ny * w1 / 2], [Q[0] + nx * w2 / 2, Q[1] + ny * w2 / 2],
+                [Q[0] - nx * w2 / 2, Q[1] - ny * w2 / 2], [P[0] - nx * w1 / 2, P[1] - ny * w1 / 2]]);
+            return;
+        }
+        // ⚠ renderTargetBond は両端を 10 ずつ詰めるので、そのぶん外へ伸ばして渡す
+        const draw = (P, Q, type) => game.renderTargetBond(P[0] - ux * 10, P[1] - uy * 10, Q[0] + ux * 10, Q[1] + uy * 10, type, false, bondsGroup, style);
+        // ★ 環の中の二重結合は、**1本は辺そのもの・もう1本は環の中心の側へ寄せて短く**（v1551・ユーザー「= が6角形に収まるように」）。
+        //   比は 5編 p.185 のベンゼン環（辺 10.04pt・内側の線は辺から 1.93pt・長さ 8.87〜8.94pt）＝ 距離 0.192・両端を 0.058 ずつ詰める。
+        //   ★ 寄せる向きは**その結合を含む最小の環の重心**から決める ＝ 環の向き（頂点が上か横か）に依らない
+        if (b.type === 2 && sideOf(a2.id, b).has(a1.id)) {
+            const prev = new Map([[a1.id, null]]);
+            const queue = [a1.id];
+            while (queue.length && !prev.has(a2.id)) {
+                const id = queue.shift();
+                mol.getNeighbors(id).forEach(nb => {
+                    const nid = nb.atom.id;
+                    if (prev.has(nid) || (id === a1.id && nid === a2.id)) return;
+                    prev.set(nid, id);
+                    queue.push(nid);
+                });
+            }
+            const cyc = [];
+            for (let id = a2.id; id != null; id = prev.get(id)) cyc.push(byId.get(id));
+            const cx = cyc.reduce((s, at) => s + at.x, 0) / cyc.length, cy = cyc.reduce((s, at) => s + at.y, 0) / cyc.length;
+            let nx = -uy, ny = ux;
+            if ((cx - (a1.x + a2.x) / 2) * nx + (cy - (a1.y + a2.y) / 2) * ny < 0) { nx = -nx; ny = -ny; }
+            const off = PAPER_RING_INNER_OFFSET * len, cut = PAPER_RING_INNER_TRIM * len;
+            draw(p, q, 1);
+            const ip = [a1.x + ux * Math.max(t1, cut) + nx * off, a1.y + uy * Math.max(t1, cut) + ny * off];
+            const iq = [a2.x - ux * Math.max(t2, cut) + nx * off, a2.y - uy * Math.max(t2, cut) + ny * off];
+            draw(ip, iq, 1);
+            return;
+        }
+        draw(p, q, b.type);
+    });
+    // ★ 線の端は丸める（v1554）。ベンゼン環など辺ごとの線が頂点で出会う所に、切りっぱなしの端どうしの欠け（外側の三角の隙間）が出ないように。
+    //   丸めの半径は線の太さの半分（価標の 0.014）＝ 文字の縁で止めた端がはみ出す量もそれだけ
+    //   ⚠ 紙の図の線には目印の class を足す（v1554）。焼く道具はこの class だけを**不透明な墨色**に読み替える ——
+    //     丸の図の読み替え（rgba 0.92）のままだと、端の丸どうしが重なる所だけ色が濃い点になり、帯・くさび（塗り）とも色がずれる
+    bondsGroup.querySelectorAll('line').forEach(l => {
+        l.setAttribute('stroke-linecap', 'round');
+        l.classList.add('svg-paper-line');
+    });
+
     const pad = 30;
     svg.setAttribute('viewBox', `${minX - pad} ${minY - pad} ${(maxX - minX) + pad * 2} ${(maxY - minY) + pad * 2}`);
 }
