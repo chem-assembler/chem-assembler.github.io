@@ -14668,6 +14668,56 @@
         return m;
     }
 
+    test('CHIP1: CH₄・H₂O のような重原子1個の分子にも名前の見出しが出る／登録に無い物と練習中は出さない（v1553）', async (c) => {
+        // ユーザー仕様「CH4やH2Oも物質名をチップで表示する」。
+        // ⚠ 直す前は `markedMolecules` / `isSoleLabeledPart` が「重原子2個以上」で切っていて、
+        //   呼び出したメタン・水・アンモニア・塩化水素に 🔍 の見出しが1つも出なかった（実測）
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const captions = () => [...D.getElementById('chem-svg').querySelectorAll('text')]
+            .map(t => t.textContent).filter(s => /[①-⑳]|🔍/.test(s));
+        try {
+            g.setMode('free');
+            for (const n of ['メタン', '水', 'アンモニア', '塩化水素']) {
+                g.userMolecule = new W.Molecule(); g.updateDrawing();
+                assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`);
+                g.updateDrawing();
+                const cap = captions();
+                assert(cap.length === 1 && cap[0] === `🔍 ${n}`, `${n} の見出しが ${JSON.stringify(cap)}（「🔍 ${n}」を期待）`);
+            }
+            // 並べると番号と分子式つきで全部に出る
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            ['メタン', '水', 'エタノール'].forEach(n => g.summonMolecule(n));
+            g.updateDrawing();
+            const three = captions();
+            assert(three.join('|') === '🔍 ① メタン CH₄|🔍 ② 水 H₂O|🔍 ③ エタノール C₂H₆O',
+                `3分子の見出しが ${JSON.stringify(three)}`);
+            // ★ 否定対照①: 登録に名前の無い1原子には出さない（作り名を出さない）
+            g.userMolecule = new W.Molecule();
+            g.userMolecule.addAtom('S', 420, 294);
+            g.updateDrawing();
+            assert(g.lookupCompoundName(g.userMolecule) === null, '下ごしらえ: S 1個に名前が引けてしまう（題材を替えること）');
+            assert(captions().length === 0, `登録に無い1原子に見出しが出た（${JSON.stringify(captions())}）`);
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+        // ★ 否定対照②: 書き出し練習の答案用紙では番号だけ（名前を伏せる決めはそのまま）
+        const ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(0);
+        try {
+            ipSheet(c, [{ atoms: ['C'], bonds: [] }, { atoms: ['O'], bonds: [] }]);
+            const cap = captions();
+            assert(cap.join('|') === '①|②', `練習中の見出しが番号だけになっていない（${JSON.stringify(cap)}）`);
+            const svgText = D.getElementById('chem-svg').textContent;
+            assert(!/メタン|水/.test(svgText), '練習中のキャンバスにメタン／水の名前が出た');
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
     test('IW5: ヒント5段 — 押すたびに1段ずつ積み上がり、最終段のあとは答え合わせだけ（スコアつき）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
