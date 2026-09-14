@@ -1553,8 +1553,16 @@ const PAPER_SUB_SIZE = 0.58;
 const PAPER_SUB_DROP = 0.14;
 const PAPER_CAP_EM = 0.716;
 const PAPER_HAWORTH_FRONT = 3.1;
-/* ハース式だけは環を大きく描く（6編 p.220 マルトース: 環の辺 30.25pt・字 9.31pt → 大文字の高さ 6.67pt ＝ 0.22・ふつうの線 0.6pt ＝ 0.020） */
-const PAPER_HAWORTH_CAP_PER_EDGE = 0.22;
+/* ハース式の文字は**手前の辺の長さ**に対して決める（v1551 で測り直した。大文字の高さ ＝ 字の大きさ × 0.748 ÷ 手前の帯の長さ）
+   … 6編 p.220 マルトース 0.230・0.230・0.186／p.221 セロビオース・ラクトース・トレハロース 0.230・0.268・0.230・0.272／
+     p.223 アミロペクチン 0.230／p.225 セルロース 0.230・0.269／p.218 グルコース 0.317 ＝ 中央値 0.23（0.19〜0.32）。
+   手前の帯の太さ ÷ 辺は 0.061〜0.062（全ページ同じ）・ふつうの線は p.220 で 0.6pt ＝ 0.020。
+   ⚠ v1550 はこの比を**結合長の中央値**（ハース式では縦の置換基の線が多数派）に掛けていて、文字が半分ほどになっていた */
+const PAPER_HAWORTH_CAP_PER_EDGE = 0.23;
+/* 環の中の二重結合の内側の線（5編 p.185 ベンゼン環: 辺 10.04pt・内側の線は辺から 1.93pt・長さ 8.87〜8.94pt）
+   ＝ 辺からの距離 0.192・両端を 0.058 ずつ詰める（辺の長さに対して） */
+const PAPER_RING_INNER_OFFSET = 0.192;
+const PAPER_RING_INNER_TRIM = 0.058;
 const PAPER_HAWORTH_WIDTH_PER_EDGE = 0.020;
 /* 価標の見えている長さの床（価標1本に対して）。教科書は字が長いと価標のほうを伸ばす
    … 5編 p.104 エテン 5.36/14.19・p.157 酢酸 5.57/14.06・マレイン酸 6.94/19.24 ＝ 0.36〜0.40 */
@@ -1647,9 +1655,16 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         return Math.hypot(p.x - q.x, p.y - q.y);
     }).filter(l => l > 1e-6).sort((p, q) => p - q);
     const B = lens.length ? lens[Math.floor(lens.length / 2)] : 46;
-    const capH = (haworth ? PAPER_HAWORTH_CAP_PER_EDGE : PAPER_CAP_PER_BOND) * B;
+    // ★ ハース式の物差しは**手前の辺の長さ**（v1551）。⚠ v1550 は結合長の中央値（＝ 数の多い縦の置換基の線 38）に
+    //   手前の辺で測った比 0.22 を掛けていて、文字が教科書の半分ほどになっていた（ユーザー「比率が違うように見える」）
+    const frontLens = [...front.entries()].filter(([, f]) => f.kind === 'thick').map(([b]) => {
+        const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+        return Math.hypot(p.x - q.x, p.y - q.y);
+    });
+    const edge = frontLens.length ? frontLens.reduce((s, l) => s + l, 0) / frontLens.length : B;
+    const capH = haworth ? PAPER_HAWORTH_CAP_PER_EDGE * edge : PAPER_CAP_PER_BOND * B;
     const fs = capH / PAPER_CAP_EM;
-    const lineW = (haworth ? PAPER_HAWORTH_WIDTH_PER_EDGE : PAPER_WIDTH_PER_BOND) * B;
+    const lineW = haworth ? PAPER_HAWORTH_WIDTH_PER_EDGE * edge : PAPER_WIDTH_PER_BOND * B;
     const style = { width: lineW, gap: PAPER_GAP_PER_BOND * B };
     const subFs = fs * PAPER_SUB_SIZE, subDy = fs * PAPER_SUB_DROP;
 
@@ -1726,6 +1741,22 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         }
         return seen;
     };
+    // ★ まず**環に入っていない結合の長さを価標1本（B）にそろえる**（v1551・ユーザー「ベンズアルデヒドの C=O が他より長い」）。
+    //   原因は登録の座標: ベンズアルデヒドは環の辺 40 に対して C=O が 60（482,300 → 482,240）。中央値で縮めても 1.5 倍が残る。
+    //   ⚠ ハース式はそろえない（奥行きを出すために辺の長さが違うのが形そのもの）。環の辺も触らない（正六角形は登録どおり）
+    if (!haworth) {
+        mol.bonds.forEach(b => {
+            const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+            const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
+            if (len < 1e-6 || Math.abs(len - B) < 1e-6) return;
+            const s2 = sideOf(a2.id, b);
+            if (s2.has(a1.id)) return;                   // 環の辺
+            const s1 = sideOf(a1.id, b);
+            const ux = dx / len, uy = dy / len, d = B - len;
+            const [move, sx, sy] = s2.size <= s1.size ? [s2, ux, uy] : [s1, -ux, -uy];
+            move.forEach(id => { const at = byId.get(id); at.x += sx * d; at.y += sy * d; });
+        });
+    }
     mol.bonds.forEach(b => {
         if (hidden.has(b.atomId1) || hidden.has(b.atomId2)) return;
         const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
@@ -1797,7 +1828,35 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             return;
         }
         // ⚠ renderTargetBond は両端を 10 ずつ詰めるので、そのぶん外へ伸ばして渡す
-        game.renderTargetBond(p[0] - ux * 10, p[1] - uy * 10, q[0] + ux * 10, q[1] + uy * 10, b.type, false, bondsGroup, style);
+        const draw = (P, Q, type) => game.renderTargetBond(P[0] - ux * 10, P[1] - uy * 10, Q[0] + ux * 10, Q[1] + uy * 10, type, false, bondsGroup, style);
+        // ★ 環の中の二重結合は、**1本は辺そのもの・もう1本は環の中心の側へ寄せて短く**（v1551・ユーザー「= が6角形に収まるように」）。
+        //   比は 5編 p.185 のベンゼン環（辺 10.04pt・内側の線は辺から 1.93pt・長さ 8.87〜8.94pt）＝ 距離 0.192・両端を 0.058 ずつ詰める。
+        //   ★ 寄せる向きは**その結合を含む最小の環の重心**から決める ＝ 環の向き（頂点が上か横か）に依らない
+        if (b.type === 2 && sideOf(a2.id, b).has(a1.id)) {
+            const prev = new Map([[a1.id, null]]);
+            const queue = [a1.id];
+            while (queue.length && !prev.has(a2.id)) {
+                const id = queue.shift();
+                mol.getNeighbors(id).forEach(nb => {
+                    const nid = nb.atom.id;
+                    if (prev.has(nid) || (id === a1.id && nid === a2.id)) return;
+                    prev.set(nid, id);
+                    queue.push(nid);
+                });
+            }
+            const cyc = [];
+            for (let id = a2.id; id != null; id = prev.get(id)) cyc.push(byId.get(id));
+            const cx = cyc.reduce((s, at) => s + at.x, 0) / cyc.length, cy = cyc.reduce((s, at) => s + at.y, 0) / cyc.length;
+            let nx = -uy, ny = ux;
+            if ((cx - (a1.x + a2.x) / 2) * nx + (cy - (a1.y + a2.y) / 2) * ny < 0) { nx = -nx; ny = -ny; }
+            const off = PAPER_RING_INNER_OFFSET * len, cut = PAPER_RING_INNER_TRIM * len;
+            draw(p, q, 1);
+            const ip = [a1.x + ux * Math.max(t1, cut) + nx * off, a1.y + uy * Math.max(t1, cut) + ny * off];
+            const iq = [a2.x - ux * Math.max(t2, cut) + nx * off, a2.y - uy * Math.max(t2, cut) + ny * off];
+            draw(ip, iq, 1);
+            return;
+        }
+        draw(p, q, b.type);
     });
 
     const pad = 30;
