@@ -4627,8 +4627,11 @@ class Game {
             // 自由配置: カーソルを絶対グリッドに丸めた点が中心
             center = { x: snapToGrid(rawX), y: snapToGrid(rawY) };
             for (let k = 0; k < count; k++) {
-                // ベンゼン環も頂点が上下（v1552・ユーザー決定 2026-09-14「そろえます」＝ 登録の図と同じ向き）
-                const ang = (moduleType === 'benzene') ? k * Math.PI / 3 - Math.PI / 2 : k * 2 * Math.PI / count + angleOffset;
+                // ベンゼン環も頂点が上下（v1552・ユーザー決定 2026-09-14「そろえます」＝ 登録の図と同じ向き）。
+                // ⚠ 頂点0 を右上（−30°）から始める: 下の辺の計画は「頂点0-1・2-3・4-5 が二重」なので、
+                //   **右の縦の辺が二重**になる（登録のナフタレンの共有辺と同じ）。頂点0 を真上から始めると
+                //   右の縦の辺が単結合になり、そこへ縮合したナフタレンが名前に当たらない（N1 の ring-fusion で実測）
+                const ang = (moduleType === 'benzene') ? k * Math.PI / 3 - Math.PI / 6 : k * 2 * Math.PI / count + angleOffset;
                 vertices.push({ x: center.x + R * Math.cos(ang), y: center.y + R * Math.sin(ang) });
             }
         }
