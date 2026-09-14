@@ -8600,6 +8600,138 @@ const hsMix = (c1, c2, u) => [
 const hsRgba = c =>
     `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${Math.round(c[3] * 1000) / 1000})`;
 
+/* ==========================================================================
+ * ★★ 反応の相手をキャンバスに呼ぶ（v1553・ユーザー仕様 2026-09-14）
+ *
+ * > **置換反応では、Cl2を召喚するようにする**
+ * > **急に出現する原子がないか調べれば、同様の事例を探せるはずです。
+ * >   現状では急に原子が入れ替わったようにしか見えないのが問題です**
+ *
+ * ⚠ **直す前**: `apply` は付く原子（Cl・Br・O・NO₂…）を**何も無い所に**足していた。
+ *   握手のつなぎ替えは「反応前にいた原子の手」しか旋回させられないので、
+ *   付く原子はフェードインで湧いて出た（実測: 全 74 本を回して `computeDiff().addedAtoms` を数えた）。
+ *
+ * ★ **やり方（見た目だけ）**: `apply` が足した原子を**そのまま相手の分子の一員として**
+ *   反応前の図（`before` の写し）に置く ＝ 付く原子の id は前後で同じなので、
+ *   その原子の手が「相手の分子の中の結合」から「基質との結合」へ旋回する。
+ *   相手の分子で余る原子（Cl₂ の片方・HNO₃ の -OH）は**本当にキャンバスへ残す**（`fromReaction`）
+ *   ＝ 自動水素で HCl・H₂O として描かれる（反応式の右辺の副生成物）。
+ * ⛔ `apply`・`detect`・正準コードの判定は1行も変えていない（足した原子の結合は `apply` のまま）。
+ *
+ * 形は4つ:
+ *   'X2-sub'  … X₂ → R-X ＋ HX（付いた X 1個ごとに相方の X を1個残す）
+ *   'X2-add'  … X₂ → 付加（付いた X を2個ずつ X-X に組む。余りなし）
+ *   'as-is'   … HX・H₂O（付いた重原子1個がそのまま相手の分子。余りなし）
+ *   'plus-OH' … HNO₃・H₂SO₄（付いた基の中心に -OH を1本足して相手にする。-OH は H₂O として残る）
+ * ========================================================================== */
+const PARTNER_SUMMON = {
+    chlorinate_alkane: 'X2-sub',
+    aromatic_halogenation: 'X2-sub',
+    bromination_activated_ring: 'X2-sub',
+    add_cl2: 'X2-add',
+    add_br2: 'X2-add',
+    ring_opening_addition: 'X2-add',
+    add_cl2_benzene_ring: 'X2-add',
+    add_hcl: 'as-is',
+    add_hbr: 'as-is',
+    add_hi: 'as-is',
+    add_water: 'as-is',
+    hydrolysis_ester: 'as-is',
+    hydrolysis_anhydride: 'as-is',
+    hydrolysis_amide: 'as-is',
+    hydrolysis_glycoside: 'as-is',
+    aromatic_nitration: 'plus-OH',
+    aromatic_sulfonation: 'plus-OH'
+};
+
+/**
+ * `apply` のあとに呼ぶ。`before`（反応前の写し）へ相手の分子を足し、余る原子を `mol` に残す。
+ * @returns 足したかどうか（false ＝ 今までどおりの見え方）
+ */
+function summonReactionPartner(ruleId, before, mol) {
+    const shape = PARTNER_SUMMON[ruleId];
+    if (!shape) return false;
+    const G = (typeof GRID_SIZE !== 'undefined') ? GRID_SIZE : 42;
+    const LIMIT = (typeof CANVAS_LIMIT !== 'undefined') ? CANVAS_LIMIT : 5000;
+    const had = new Set(before.atoms.map(a => a.id));
+    const added = mol.atoms.filter(a => !had.has(a.id) && a.element !== 'H');
+    if (!added.length) return false;
+    const addedIds = new Set(added.map(a => a.id));
+    const inner = mol.bonds.filter(b => addedIds.has(b.atomId1) && addedIds.has(b.atomId2));
+    // 付いた原子を「基」ごとに分ける（付いた原子どうしの結合でつながったもの）。根 ＝ 基質とつながる原子
+    const groups = [];
+    const seen = new Set();
+    added.forEach(a => {
+        if (seen.has(a.id)) return;
+        const ids = [a.id]; seen.add(a.id);
+        for (let i = 0; i < ids.length; i++) {
+            inner.forEach(b => {
+                const o = b.atomId1 === ids[i] ? b.atomId2 : b.atomId2 === ids[i] ? b.atomId1 : null;
+                if (o && !seen.has(o)) { seen.add(o); ids.push(o); }
+            });
+        }
+        const atoms = ids.map(id => mol.atoms.find(x => x.id === id));
+        const root = atoms.find(x => mol.bonds.some(b =>
+            (b.atomId1 === x.id && had.has(b.atomId2)) || (b.atomId2 === x.id && had.has(b.atomId1)))) || atoms[0];
+        groups.push({ atoms, root });
+    });
+    if (shape === 'X2-add' && added.length % 2 !== 0) return false;
+    if (shape !== 'plus-OH' && groups.some(gr => gr.atoms.length !== 1)) return false;
+
+    // 置き場所: 反応前・反応後どちらの図よりも右（重ならない）。高さは付いた先の平均
+    const heavyAll = before.atoms.concat(mol.atoms).filter(a => a.element !== 'H');
+    let cx = Math.round((Math.max(...heavyAll.map(a => a.x)) + G * 3) / G) * G;
+    const anchorsY = added.map(a => a.y);
+    const y0 = Math.round(anchorsY.reduce((s, v) => s + v, 0) / anchorsY.length / G) * G;
+    const atomsOut = [], bondsOut = [], leftovers = [];
+    const put = (a, x, y) => atomsOut.push({ id: a.id, element: a.element, x, y, charge: a.charge || 0 });
+    const leave = (element, x, y, partnerId) => leftovers.push({ element, x, y, partnerId });
+
+    if (shape === 'X2-add') {
+        for (let i = 0; i < added.length; i += 2) {
+            put(added[i], cx, y0); put(added[i + 1], cx + G, y0);
+            bondsOut.push({ atomId1: added[i].id, atomId2: added[i + 1].id, type: 1 });
+            cx += G * 3;
+        }
+    } else if (shape === 'X2-sub') {
+        groups.forEach(gr => {
+            put(gr.root, cx, y0);
+            leave(gr.root.element, cx + G, y0, gr.root.id);
+            cx += G * 3;
+        });
+    } else if (shape === 'as-is') {
+        groups.forEach(gr => { put(gr.root, cx, y0); cx += G * 2; });
+    } else {
+        groups.forEach(gr => {
+            cx += G;
+            const dx = cx - gr.root.x, dy = y0 - gr.root.y;
+            const moved = gr.atoms.map(a => ({ a, x: a.x + dx, y: a.y + dy }));
+            moved.forEach(m => put(m.a, m.x, m.y));
+            inner.filter(b => gr.atoms.some(a => a.id === b.atomId1))
+                .forEach(b => bondsOut.push({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }));
+            // -OH は根から空いている向きへ1本（基の原子と 0.65 マス以内に重ねない）
+            const dirs = [[0, G], [0, -G], [G, 0], [-G, 0]];
+            const free = dirs.find(([ox, oy]) => moved.every(m =>
+                Math.hypot(m.x - (cx + ox), m.y - (y0 + oy)) >= G * 0.65)) || dirs[0];
+            leave('O', cx + free[0], y0 + free[1], gr.root.id);
+            cx += G * 3;
+        });
+    }
+    const all = atomsOut.concat(leftovers);
+    if (all.some(p => Math.abs(p.x) > LIMIT || Math.abs(p.y) > LIMIT)) return false;
+
+    // ここで初めて書き込む（途中で false を返した回は、before も mol も触っていない）
+    atomsOut.forEach(p => before.atoms.push(p));
+    bondsOut.forEach(b => before.bonds.push(b));
+    leftovers.forEach(l => {
+        const o = mol.addAtom(l.element, l.x, l.y);
+        o.fromReaction = true;   // 自動水素で HCl・H₂O として描かれる（反応でできた副生成物）
+        before.atoms.push({ id: o.id, element: o.element, x: o.x, y: o.y, charge: 0 });
+        before.bonds.push({ atomId1: l.partnerId, atomId2: o.id, type: 1 });
+    });
+    return true;
+}
+
 class Reactor {
     constructor(game) {
         this.game = game;
@@ -10133,6 +10265,11 @@ class Reactor {
          * ⚠ **`applyToMixture` と同じ関数**を通す ＝ 表（`RULE_PHASE`）を2か所で読まない。
          *   ここが無いと、反応カードから中和したときだけ層が動かない（入口で結果が割れる）。 */
         this.assignPhaseFor(rule, site, []);
+        /* ★ 相手の分子（Cl₂・HNO₃・H₂O など）を反応前の図に置き、余りを HCl・H₂O として残す（v1553）。
+         *   見た目だけ ＝ 生成物の結合は `apply` が作ったまま。呼べたら視野を合わせ直す（右に置くので） */
+        if (summonReactionPartner(rule.id, before, g.userMolecule)) {
+            result = { ...result, refit: true };
+        }
         // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
@@ -11266,6 +11403,7 @@ if (typeof window !== 'undefined') {
         holdEnd: HS_HOLD_END, partEnd: HS_PART_END, floatEnd: HS_FLOAT_END,
         swingEnd: HS_SWING_END, duration: HS_DURATION, inset: HS_INSET
     };
+    window.PARTNER_SUMMON = PARTNER_SUMMON;     // RXP1・RXP2（相手の分子を呼ぶ）が読む
     window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
     window.noRoom = noRoom;
 }

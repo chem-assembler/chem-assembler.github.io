@@ -14739,6 +14739,93 @@
         }
     });
 
+    /* ===== RXP: 反応の相手をキャンバスに呼ぶ（v1553・ユーザー仕様「置換反応では、Cl2を召喚するようにする」）=====
+     * ⚠ 直す前は `apply` が付く原子を何も無い所に足していたので、握手のつなぎ替えでも
+     *   その原子はフェードインで湧いて出た（「急に原子が入れ替わったようにしか見えない」）。
+     * ★ 物差しは `computeDiff(before, after).addedAtoms` ＝ 反応前の図に無かった重原子の数。 */
+    const rxpRun = (c, name, id) => {
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule(name), `${name} を呼び出せない（検査が素通りする）`);
+        const rule = W.REACTION_RULES.find(r => r.id === id);
+        const sites = rule.detect(g.userMolecule) || [];
+        assert(sites.length, `${name} に ${id} の箇所が無い（検査が素通りする）`);
+        const n0 = g.userMolecule.atoms.length;
+        rx.execute(rule, sites[0]);
+        rx._morphSkip = true;
+        const L = rx.lastReaction;
+        const d = rx.computeDiff(L.before, L.after);
+        const parts = g.splitMolecules();
+        const heavy = p => p.atoms.filter(a => a.element !== 'H');
+        const left = parts.filter(p => heavy(p).length && heavy(p).every(a => a.fromReaction))
+            .map(p => g.lookupCompoundName(p) || g.computeMolecularFormula(p));
+        const codes = parts.filter(p => heavy(p).length && !heavy(p).every(a => a.fromReaction))
+            .map(p => W.canonicalCode(p)).sort().join('|');
+        return { n0, d, left, codes, before: L.before };
+    };
+
+    test('RXP1: 置換・付加・加水分解は相手の分子を呼んでから反応する ＝ 急に出る原子が0個・生成物は同じ（v1553）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const cases = [
+            ['メタン', 'chlorinate_alkane', ['塩化水素']],
+            ['ベンゼン', 'aromatic_halogenation', ['塩化水素']],
+            ['エチレン', 'add_br2', []],
+            ['ベンゼン', 'aromatic_nitration', ['水']],
+            ['ベンゼン', 'aromatic_sulfonation', ['水']],
+            ['エチレン', 'add_water', []]
+        ];
+        try {
+            for (const [name, id, wantLeft] of cases) {
+                const r = rxpRun(c, name, id);
+                assert(r.d.addedAtoms.length === 0,
+                    `${id}: 反応前の図に無い原子が ${r.d.addedAtoms.map(a => a.element).join('')} 出た（相手を呼べていない）`);
+                assert(r.d.removedAtoms.length === 0, `${id}: 反応前の図から消えた原子がある`);
+                assert(JSON.stringify(r.left) === JSON.stringify(wantLeft),
+                    `${id}: 残った副生成物が ${JSON.stringify(r.left)}（${JSON.stringify(wantLeft)} を期待）`);
+                await 反応の再生を待つ(c);
+                // ★ 否定対照: 表から外すと急に出る原子が戻る（＝ この物差しが空振りしていない）。生成物の正準コードは同じ
+                const saved = W.PARTNER_SUMMON[id];
+                delete W.PARTNER_SUMMON[id];
+                try {
+                    const plain = rxpRun(c, name, id);
+                    assert(plain.d.addedAtoms.length > 0, `${id}: 表から外しても急に出る原子が0個 ＝ この検査は何も見張っていない`);
+                    assert(plain.left.length === 0, `${id}: 表から外したのに副生成物が残った`);
+                    assert(plain.codes === r.codes, `${id}: 相手を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
+                } finally {
+                    W.PARTNER_SUMMON[id] = saved;
+                }
+                await 反応の再生を待つ(c);
+            }
+            // 「↩ 反応前に戻す」は、呼んだ相手ごと反応前（メタン1つ）に戻る
+            rxpRun(c, 'メタン', 'chlorinate_alkane');
+            await 反応の再生を待つ(c);
+            assert(rx.undoLastReaction() !== false, '反応前に戻せない');
+            const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+            assert(heavy.length === 1 && heavy[0].element === 'C', `反応前に戻したのに Cl が残っている（${heavy.map(a => a.element).join('')}）`);
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXP2: ★否定対照 — 表に無い反応は反応前の図に何も足さない／表の名前はすべて実在のルール（v1553）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        try {
+            Object.keys(W.PARTNER_SUMMON).forEach(id =>
+                assert(W.REACTION_RULES.some(r => r.id === id), `PARTNER_SUMMON の ${id} は REACTION_RULES に無い`));
+            const r = rxpRun(c, 'エタノール', 'oxidize_primary');
+            assert(!W.PARTNER_SUMMON.oxidize_primary, '下ごしらえ: 酸化が表に載っている（題材を替えること）');
+            assert(r.before.atoms.length === r.n0, `表に無い反応で反応前の図に原子が足された（${r.before.atoms.length} / ${r.n0}）`);
+            assert(r.left.length === 0, `表に無い反応で副生成物が足された（${JSON.stringify(r.left)}）`);
+            await 反応の再生を待つ(c);
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     test('IW5: ヒント5段 — 押すたびに1段ずつ積み上がり、最終段のあとは答え合わせだけ（スコアつき）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
