@@ -488,11 +488,56 @@ const SALT_METAL_ELEMENTS = ['Na', 'K'];
 function saltCounterMetal(mol, oId) {
     const o = mol.atoms.find(a => a.id === oId);
     if (!o || !(o.charge < 0)) return null;
+    return saltMetalPairs(mol).get(oId) || null;
+}
+
+/**
+ * ★★ 陰イオンの O と金属イオンの粒を**1対1**で組む（v1552・SEP2 の実測で直した）。
+ *
+ * ⚠⚠ 以前は「その O から**いちばん近い**粒」を O ごとに独立に選んでいた。
+ *   分液で塩が2つ並ぶと、**隣の塩の Na⁺ のほうが自分の Na⁺ より近い**配置が起きる
+ *   （芳香環を頂点が上下に回した v1552 で実発生: 安息香酸ナトリウムの O⁻ が
+ *   ナトリウムフェノキシドの Na⁺ を掴み、**2つの O⁻ が同じ Na⁺ を取り合って**
+ *   混合物の遊離で安息香酸が飛ばされた）。＝ 答えが**図の向き**で変わる潜在バグ。
+ * ★ 粒は結合を持たないので「同じ連結成分の中で近いもの」はそのままでは決まらない。
+ *   代わりに、**全部の組を距離の近い順に並べ、O も粒も一度しか使わない**（貪欲な1対1）。
+ *   さらに**成分の正味の電荷ぶんしか粒を取らない**（-COO⁻ と -NH₃⁺ の双性イオンは 0 ＝ 取らない。
+ *   `game.js` の `attachCounterIons` が正味の電荷で相方を決めるのと同じ考え方）。
+ * 原子IDは乱数なので、同じ距離のときは座標（x → y）で決める。
+ */
+function saltMetalPairs(mol) {
     const bonded = new Set();
     mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
-    return mol.atoms
-        .filter(x => !bonded.has(x.id) && x.charge > 0 && SALT_METAL_ELEMENTS.includes(x.element))
-        .sort((p, q) => Math.hypot(p.x - o.x, p.y - o.y) - Math.hypot(q.x - o.x, q.y - o.y))[0] || null;
+    const metals = mol.atoms.filter(x => !bonded.has(x.id) && x.charge > 0 && SALT_METAL_ELEMENTS.includes(x.element));
+    const pairs = new Map();
+    if (!metals.length) return pairs;
+    // 連結成分と、その正味の電荷（受け入れられる粒の数）
+    const compOf = new Map();
+    const room = [];
+    mol.atoms.forEach(a => {
+        if (compOf.has(a.id) || !bonded.has(a.id)) return;
+        const k = room.length; let net = 0;
+        const stack = [a.id]; compOf.set(a.id, k);
+        while (stack.length) {
+            const id = stack.pop();
+            const at = mol.atoms.find(x => x.id === id);
+            net += (at && at.charge) || 0;
+            mol.getNeighbors(id).forEach(n => { if (!compOf.has(n.atom.id)) { compOf.set(n.atom.id, k); stack.push(n.atom.id); } });
+        }
+        room.push(Math.max(0, -net));
+    });
+    const anions = mol.atoms.filter(x => x.element === 'O' && x.charge < 0 && compOf.has(x.id));
+    const cand = [];
+    anions.forEach(o => metals.forEach(m => cand.push({ o, m, d: Math.hypot(m.x - o.x, m.y - o.y) })));
+    cand.sort((p, q) => (p.d - q.d) || (p.m.x - q.m.x) || (p.m.y - q.m.y) || (p.o.x - q.o.x) || (p.o.y - q.o.y));
+    const usedM = new Set();
+    cand.forEach(({ o, m }) => {
+        if (pairs.has(o.id) || usedM.has(m.id)) return;
+        const k = compOf.get(o.id);
+        if (room[k] <= 0) return;
+        pairs.set(o.id, m); usedM.add(m.id); room[k]--;
+    });
+    return pairs;
 }
 
 /**
