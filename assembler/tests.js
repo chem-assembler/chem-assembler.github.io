@@ -907,6 +907,82 @@
 
     // ===== C. 編集操作 =====
 
+    test('AR9: 置換基の1個目は頂点の延長・2個目から先は水平か鉛直（例外は名指し・否定対照: 先が斜めのフタル酸は拾える）', async (c) => {
+        // ユーザー決定 2026-09-15（v1558）:「ベンゼン環の炭素原子に直接結合している原子は、六角形の頂点方向の延長でよいですが、
+        // その先は水平・鉛直方向（脂肪族の標準）にする」。対象は縮合していない芳香環が1つの登録分子。
+        // ニトロ基は v1552 の 120°（AR4）、環の外の C=C を含む側鎖（シス/トランス）は見ない。
+        // 例外（名指し）: 横の頂点の SO₃H（先が3本で、水平・鉛直の空きは2つしかない）／
+        //   同じ置換基が o・m に2つあり、斜めの線について鏡映対称な図（水平・鉛直にすると対称が崩れる・ユーザー判断待ち）／
+        //   ニコチン（置換基に環がある）
+        const EXCEPT = new Set(['o-sulfobenzoic-acid', 'o-benzenedisulfonic-acid', 'o-hydroxybenzenesulfonic-acid',
+            'm-sulfobenzoic-acid', 'm-benzenedisulfonic-acid', 'm-hydroxybenzenesulfonic-acid',
+            'phthalaldehyde', 'isophthalaldehyde', 'o-diacetylbenzene', 'm-diacetylbenzene', 'nicotine']);
+        const isAxis = (d) => [0, 90, 180, -90].some(v => arAngDiff(d, v) < 2);
+        const inspect = (t) => {
+            const { A, adj, rings, arom } = arRings(t);
+            if (arom.length !== 1) return null;
+            const r = arom[0];
+            if (rings.some(o => o !== r && o.filter(x => r.includes(x)).length >= 2)) return null;
+            const cen = arCenter(A, r); const out = { n: 0, bad: [] };
+            r.forEach(a => adj[a].forEach(e1 => {
+                const b = e1.v; if (r.includes(b)) return;
+                if (A[b].element === 'N' && adj[b].filter(x => A[x.v].element === 'O' && adj[x.v].length === 1).length === 2) return;
+                const sub = []; const seen = new Set([a, b]); const q = [b]; let cc = false;
+                while (q.length) {
+                    const u = q.shift();
+                    adj[u].forEach(e2 => {
+                        if (seen.has(e2.v) || r.includes(e2.v)) return;
+                        seen.add(e2.v);
+                        if (e2.t === 2 && A[u].element === 'C' && A[e2.v].element === 'C') cc = true;
+                        sub.push([u, e2.v]); q.push(e2.v);
+                    });
+                }
+                if (cc) return;
+                out.n++;
+                if (arAngDiff(arDeg(cen, A[a]), arDeg(A[a], A[b])) > 3) out.bad.push(`${A[b].element}${b} が頂点の延長でない`);
+                sub.forEach(([u, v]) => { const d = arDeg(A[u], A[v]); if (!isAxis(d)) out.bad.push(`${A[u].element}${u}—${A[v].element}${v} ${d.toFixed(0)}°`); });
+            }));
+            return out;
+        };
+        // フタル酸（ユーザー原文）: 右上の COOH は =O が真上・OH が右、右下の COOH は =O が真下・OH が右
+        const ph = c.W.COMPOUNDS.find(x => x.id === 'phthalic-acid');
+        const { A: FA, adj: fadj, arom: farom } = arRings(ph.target);
+        const fcen = arCenter(FA, farom[0]);
+        let seenPh = 0;
+        farom[0].forEach(a => fadj[a].forEach(e1 => {
+            const b = e1.v; if (farom[0].includes(b)) return;
+            seenPh++;
+            const vd = arDeg(fcen, FA[a]);
+            const dO = fadj[b].find(x => x.t === 2), sO = fadj[b].find(x => x.v !== a && x.t === 1);
+            const want = vd < 0 ? -90 : 90;
+            assert(dO && sO && arAngDiff(arDeg(FA[b], FA[dO.v]), want) < 2 && arAngDiff(arDeg(FA[b], FA[sO.v]), 0) < 2,
+                `フタル酸の${vd < 0 ? '右上' : '右下'}: =O ${dO ? arDeg(FA[b], FA[dO.v]).toFixed(0) : '?'}°・OH ${sO ? arDeg(FA[b], FA[sO.v]).toFixed(0) : '?'}°（期待は =O ${want}°・OH 0°）`);
+        }));
+        assert(seenPh === 2, `フタル酸の置換基が ${seenPh} 個`);
+        // ★否定対照: 直す前と同じく先を 30° 傾けたフタル酸は「斜め」と判定される
+        const old = JSON.parse(JSON.stringify(ph.target));
+        farom[0].forEach(a => fadj[a].forEach(e1 => {
+            const b = e1.v; if (farom[0].includes(b)) return;
+            fadj[b].filter(x => x.v !== a).forEach(x => {
+                const p = FA[x.v], o = FA[b], t = -30 * Math.PI / 180;
+                old.atoms[x.v].x = o.x + (p.x - o.x) * Math.cos(t) - (p.y - o.y) * Math.sin(t);
+                old.atoms[x.v].y = o.y + (p.x - o.x) * Math.sin(t) + (p.y - o.y) * Math.cos(t);
+            });
+        }));
+        const neg = inspect(old);
+        assert(neg && neg.bad.length >= 2, `否定対照: 先を 30° 傾けたフタル酸を「水平・鉛直」と判定した（判定が空振りしている: ${neg ? neg.bad.join(' ') : 'null'}）`);
+        let n = 0, mols = 0; const bad = [], stale = [];
+        arAll(c).forEach(([tag, e]) => {
+            const s = inspect(e.target); if (!s || !s.n) return;
+            mols++; n += s.n;
+            if (EXCEPT.has(e.id)) { if (!s.bad.length) stale.push(e.id); return; }
+            if (s.bad.length) bad.push(`${tag}:${e.id}(${s.bad.slice(0, 2).join('・')})`);
+        });
+        assert(n >= 300 && mols >= 200, `置換基 ${n} 個・分子 ${mols} 件しか見ていない（判定が空振りしている）`);
+        assert(bad.length === 0, `2個目から先が斜めの置換基のある分子 ${bad.length} 件: ${bad.slice(0, 10).join(' ')}`);
+        assert(stale.length === 0, `例外に名指ししたのに水平・鉛直になっている（例外から外す）: ${stale.join(' ')}`);
+    });
+
     test('C1: プレビュー＝実結合（2原子隣接の交点で2本）', async (c) => {
         c.reset();
         c.game.userMolecule.addAtom('C', 336, 294);
