@@ -16,6 +16,7 @@
  * | AC  | 1〜3   | ⚠⚠ **アルカンの塩素化**（v1511・ユーザー指摘「アルカン全般に Cl2との置換反応がリストされていないと思います」）。実測でもメタン・エタン・プロパン・シクロヘキサン・クロロメタンで**53本が1本も出なかった**（塩素の反応は鉄触媒による**環**の置換だけ）。★ **混合物を操作で見せる** —— ①どの水素かは**箇所選び**（同じ生成物になる位置は畳む。プロパンで2件・エタンは1件）②何段目かは**止めない**（メタン → 四塩化炭素の4段）。1 が対象範囲（門番3つ＝C と Cl だけ・全部単結合・木）と畳み方（★同じ分子を2つ並べても2つめが消えない）・2 が段と生成物の**名前**（メタン4段を教科書の並びで照合＋ライブラリ 38 分子・120 通りの生成物すべてに名前が付く）・3 が画面（瓶2本が隣り合う／箇所選び／caption が毎回「混合物」と「いま何個」を言い、埋まりきった段だけ言い分ける／★否定対照＝ベンゼンに光は効かずアルカンに鉄触媒も効かない）。⚠ **瓶が1本増えた**（23 → 24本。`cl2_fe` に相乗りさせなかった理由はコード側の注記） |
  * | AK  | 1〜11  | アルキル基の書き出し練習と**アルキル基の命名規則**（**10〜11 は `ID11` の直し（同点主鎖は「置換基数が最多」を先に見る）の影響範囲**＝ 10 が「効く相手は C₆ 1件・C₇ 3件だけ・C₁〜C₅ は 0」を名指しと全域の性質（採った鎖の枝は同点候補の最大）で固定、11 が接頭辞・エーテルの基名への波及と、登録図で 0 件であること。W3 で答案用紙化。AK3・AK4 は否定対照。**5〜8 は付け根の増やし方**＝ DESIGN_isomer_practice.md §14-5。5 は「炭素を置けば付け根が生える」・6〜8 は否定対照＝ 6 が「炭素以外には生やさない・extra と言い分ける」・7 が「＋答案 で viewBox が動かない」・8 が「枠は押した回数でなく描いた回数ぶん」。**9 は帯の「🧹 並べ直す」**＝ W4 を3つの書き出し練習でそろえる最後の1つ。押せる／押せないを `drawnCount()` ではなく**成分の数**で決める（こちらの drawnCount は付け根だけの枠を数えないので、枠を増やしただけの人がいちばん散らかった状態で押せなくなる）） |
  * | B   | 1〜8   | 化学モデル（芳香族・不斉・自動水素） |
+ * | AR  | 1〜8   | 登録データの座標の直し 第2弾（v1552・ユーザー決定 2026-09-09）: 芳香環は「頂点が上下」・1置換/2置換は主な置換基が真上・ナフタレンの共有辺は縦・ニトロ基 O—N—O 120°（登録と道具）・無水フタル酸の五員環が正五角形・★否定対照＝正準コードは図の向きに依らない・8 塩の Na⁺ は1対1で組む（SEP2 の潜在バグ） |
  * | BC  | 1〜4   | モーダルの背景（枠の外）を押したら閉じる（BC2〜BC4 は否定対照） |
  * | BX  | 1〜4   | 伸長した結合線が既存の原子の下をくぐらない（BX3 は否定対照・BX4 は理由の言い分け） |
  * | BZ  | 1〜7   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限）。**6〜7 は選択画面のプリセット**＝ DESIGN_practice_revision.md §4-3。6 は「押すだけで芳香族の回が開き、環4つで 4/4」・**7 は否定対照**＝ 芳香族のボタンが生の列挙（`problems` → `enumerateConstitutionalIsomers`）の道へ落ちていないこと |
@@ -615,6 +616,245 @@
             'C=OのOにHが付いている');
     });
 
+    // ===== AR. 登録データの芳香環の向き・ニトロ基の角度・無水フタル酸の五員環（座標の直し 第2弾・v1552） =====
+    // ユーザー決定（2026-09-09）: 芳香環は「頂点が上下」（数研 R5化学 Vol.2 5編 p.172）。1置換体は置換基が上・
+    // 2置換体もメインの置換基が上・ナフタレンの共有辺は縦・ニトロ基の O—N—O は約120°・無水フタル酸の五員環は正五角形。
+    // ⚠ 見るのは登録データ（compounds.json / stages.json）の座標。ユーザーが描く図は見ない。
+    // ⚠ ベンゼン環の道具は「頂点が左右」のまま（収録済みの台本 11本が環の頂点を座標でタップしているため。v1552 の報告）。
+
+    // 登録の target（添字の結合）から、芳香族六員環（環の各原子が環内に二重結合を1本持つ）と五員環を拾う
+    const arRings = (t) => {
+        const A = t.atoms, adj = A.map(() => []);
+        t.bonds.forEach(b => { adj[b.atom1Index].push({ v: b.atom2Index, t: b.type }); adj[b.atom2Index].push({ v: b.atom1Index, t: b.type }); });
+        const bt = (i, j) => (adj[i].find(e => e.v === j) || {}).t;
+        const found = new Map();
+        [5, 6].forEach(len => {
+            for (let s = 0; s < A.length; s++) {
+                const dfs = (p) => {
+                    const u = p[p.length - 1];
+                    if (p.length === len) {
+                        if (adj[u].some(e => e.v === s)) { const k = [...p].sort((a, b) => a - b).join(); if (!found.has(k)) found.set(k, p.slice()); }
+                        return;
+                    }
+                    adj[u].forEach(e => { if (!p.includes(e.v) && e.v > s) dfs([...p, e.v]); });
+                };
+                dfs([s]);
+            }
+        });
+        const rings = [...found.values()];
+        const arom = rings.filter(r => r.length === 6 &&
+            r.every((a, k) => [bt(a, r[(k + 1) % 6]), bt(a, r[(k + 5) % 6])].includes(2)));
+        return { A, adj, rings, arom };
+    };
+    const arCenter = (A, r) => ({ x: r.reduce((s, i) => s + A[i].x, 0) / r.length, y: r.reduce((s, i) => s + A[i].y, 0) / r.length });
+    const arDeg = (from, to) => Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
+    const arAngDiff = (a, b) => { const d = Math.abs(((a - b) % 360 + 360) % 360); return d > 180 ? 360 - d : d; };
+    // 環の頂点の位相（mod 60）。30 なら頂点が上下、0 なら頂点が左右
+    const arPhase = (A, r) => { const c = arCenter(A, r); return ((arDeg(c, A[r[0]]) % 60) + 60) % 60; };
+    const arVertexUp = (A, r) => Math.abs(arPhase(A, r) - 30) < 2;
+    // 置換基の格（小さいほど主）。v1552 の直しと同じ規則（教科書 p.180・184・185 のフェノール類は OH が上）
+    const arRank = (A, adj, attach, b) => {
+        const el = A[b].element;
+        if (el === 'O') return 1;
+        if (el === 'S') return 2;
+        if (el === 'C') {
+            const nb = adj[b].filter(e => e.v !== attach);
+            const dO = nb.some(e => A[e.v].element === 'O' && e.t === 2);
+            const sO = nb.some(e => A[e.v].element === 'O' && e.t === 1);
+            if (dO && sO) return 2;
+            if (dO || nb.some(e => A[e.v].element === 'N' && e.t === 3)) return 3;
+            return 5;
+        }
+        if (el === 'N') return adj[b].filter(e => A[e.v].element === 'O' && adj[e.v].length === 1).length >= 2 ? 7 : 4;
+        return ['F', 'Cl', 'Br', 'I'].includes(el) ? 6 : 5;
+    };
+    // 縮合していない芳香環1つだけの分子で、環外の重原子の置換基を返す
+    const arSubstituents = (entry) => {
+        const { A, adj, rings, arom } = arRings(entry.target);
+        if (arom.length !== 1) return null;
+        const r = arom[0];
+        if (rings.some(o => o !== r && o.filter(x => r.includes(x)).length >= 2)) return null;
+        const subs = [];
+        r.forEach(a => adj[a].forEach(e => {
+            if (r.includes(e.v) || A[e.v].element === 'H') return;
+            subs.push({ a, b: e.v, rank: arRank(A, adj, a, e.v), dir: arDeg(A[a], A[e.v]) });
+        }));
+        return { A, r, subs };
+    };
+    const arAll = (c) => [...c.W.STAGES.map(e => ['stages', e]), ...c.W.COMPOUNDS.map(e => ['compounds', e])];
+
+    test('AR1: 登録の芳香環はすべて「頂点が上下」（否定対照: 頂点が左右の環は拾える）', async (c) => {
+        // 否定対照: v1551 までのベンゼン（頂点が左右）を判定に通すと「上下でない」になること
+        const oldBenzene = { atoms: [[440, 300], [420, 334.64], [380, 334.64], [360, 300], [380, 265.36], [420, 265.36]].map(([x, y]) => ({ element: 'C', x, y })),
+            bonds: [0, 1, 2, 3, 4, 5].map(i => ({ atom1Index: i, atom2Index: (i + 1) % 6, type: i % 2 ? 1 : 2 })) };
+        const o = arRings(oldBenzene);
+        assert(o.arom.length === 1 && !arVertexUp(o.A, o.arom[0]), '否定対照: 頂点が左右のベンゼンを「上下」と判定した（判定が空振りしている）');
+        let n = 0; const bad = [];
+        arAll(c).forEach(([tag, e]) => {
+            const { A, arom } = arRings(e.target);
+            arom.forEach(r => { n++; if (!arVertexUp(A, r)) bad.push(`${tag}:${e.id}(位相 ${arPhase(A, r).toFixed(1)}°)`); });
+        });
+        assert(n >= 300, `芳香環が ${n} 個しか見つからない（判定が空振りしている）`);
+        assert(bad.length === 0, `頂点が上下でない芳香環 ${bad.length} 個: ${bad.slice(0, 12).join(' ')}`);
+    });
+
+    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシン・サリチル酸だけ・名指し）', async (c) => {
+        // ニコチン・チロシンは直す前から頂点が上下の手描き（v1552 では回していない）。
+        // チロシンはアミノ酸の側鎖が上・OH が下（フェニルアラニンと同じ並び）で、格の規則だと OH が主になる
+        // サリチル酸はユーザー決定（2026-09-14）で COOH を右上・OH を右下（2つの置換基を見比べるため・教科書 p.185）
+        const EXCEPT = new Set(['nicotine', 'tyrosine', 'salicylic-acid']);
+        let mono = 0, di = 0; const bad = [];
+        arAll(c).forEach(([tag, e]) => {
+            const s = arSubstituents(e); if (!s || !s.subs.length || s.subs.length > 2) return;
+            const best = Math.min(...s.subs.map(x => x.rank));
+            const up = s.subs.filter(x => x.rank === best).some(x => arAngDiff(x.dir, -90) < 3);
+            if (s.subs.length === 1) mono++; else di++;
+            if (!up && !EXCEPT.has(e.id)) bad.push(`${tag}:${e.id}`);
+        });
+        assert(mono >= 50 && di >= 150, `1置換 ${mono}件・2置換 ${di}件しか見つからない（判定が空振りしている）`);
+        assert(bad.length === 0, `主な置換基が真上でない ${bad.length} 件: ${bad.slice(0, 12).join(' ')}`);
+        // 教科書の図と同じ向き（数研 p.174・185）: o-キシレンは真上と右上・サリチル酸は COOH が右上で OH が右下（ユーザー決定 2026-09-14）
+        const find = (name) => c.W.STAGES.find(x => x.name === name) || c.W.COMPOUNDS.find(x => x.name === name);
+        const sal = arSubstituents(find('サリチル酸'));
+        const oh = sal.subs.find(x => x.rank === 1), cooh = sal.subs.find(x => x.rank === 2);
+        assert(arAngDiff(cooh.dir, -30) < 3 && arAngDiff(oh.dir, 30) < 3,
+            `サリチル酸: COOH ${cooh.dir.toFixed(0)}°・OH ${oh.dir.toFixed(0)}°（期待は COOH −30°＝右上・OH 30°＝右下）`);
+        const oxy = arSubstituents(find('o-キシレン'));
+        assert(oxy.subs.some(x => arAngDiff(x.dir, -90) < 3) && oxy.subs.some(x => arAngDiff(x.dir, -30) < 3),
+            `o-キシレン: CH3 が ${oxy.subs.map(x => x.dir.toFixed(0)).join('°・')}°（期待は真上と右上）`);
+    });
+
+    test('AR3: ナフタレンは共有辺が縦・2つの環が横に並ぶ（stages と compounds の両方）', async (c) => {
+        [c.W.STAGES, c.W.COMPOUNDS].forEach((list, li) => {
+            const e = list.find(x => x.id === 'naphthalene');
+            assert(e, `${li ? 'compounds' : 'stages'} にナフタレンが無い`);
+            const { A, arom } = arRings(e.target);
+            assert(arom.length === 2, `ナフタレンの芳香環が ${arom.length} 個`);
+            const shared = arom[0].filter(x => arom[1].includes(x));
+            assert(shared.length === 2, '共有辺が見つからない');
+            assert(Math.abs(A[shared[0]].x - A[shared[1]].x) < 0.5, `共有辺が縦でない（x ${A[shared[0]].x} と ${A[shared[1]].x}）`);
+            const c0 = arCenter(A, arom[0]), c1 = arCenter(A, arom[1]);
+            assert(Math.abs(c0.y - c1.y) < 0.5, `2つの環の中心の高さが違う（${c0.y.toFixed(2)} と ${c1.y.toFixed(2)}）＝ 横に並んでいない`);
+        });
+    });
+
+    test('AR4: 登録のニトロ基は O—N—O が 120°前後（否定対照: 180° の一直線は拾える）', async (c) => {
+        const angleOf = (A, adj, i) => {
+            const os = adj[i].filter(e => A[e.v].element === 'O' && adj[e.v].length === 1);
+            if (A[i].element !== 'N' || adj[i].length !== 3 || os.length !== 2) return null;
+            return arAngDiff(arDeg(A[i], A[os[0].v]), arDeg(A[i], A[os[1].v]));
+        };
+        // 否定対照: v1551 までのニトロベンゼン（O が N の上下に一直線）
+        const old = arRings({ atoms: [{ element: 'C', x: 440, y: 300 }, { element: 'N', x: 482, y: 300 }, { element: 'O', x: 482, y: 258 }, { element: 'O', x: 482, y: 342 }],
+            bonds: [{ atom1Index: 0, atom2Index: 1, type: 1 }, { atom1Index: 1, atom2Index: 2, type: 2 }, { atom1Index: 1, atom2Index: 3, type: 1 }] });
+        assert(Math.abs(angleOf(old.A, old.adj, 1) - 180) < 1, '否定対照: 一直線のニトロ基の角度が 180° と測れない');
+        let n = 0; const bad = [];
+        arAll(c).forEach(([tag, e]) => {
+            const { A, adj } = arRings(e.target);
+            A.forEach((a, i) => { const ang = angleOf(A, adj, i); if (ang === null) return; n++; if (Math.abs(ang - 120) > 5) bad.push(`${tag}:${e.id}(${ang.toFixed(0)}°)`); });
+        });
+        assert(n >= 70, `ニトロ基が ${n} 個しか見つからない`);
+        assert(bad.length === 0, `O—N—O が 120° でないニトロ基 ${bad.length} 個: ${bad.slice(0, 12).join(' ')}`);
+    });
+
+    test('AR5: ニトロ基の道具も O—N—O = 120°・C—N—O = 120°（ベンゼン環に貼る）', async (c) => {
+        c.reset();
+        c.game.placeModule('benzene', 400, 300, null);
+        const ring = c.game.userMolecule.atoms.filter(a => a.element === 'C');
+        c.game.placeModule('no2', ring[0].x, ring[0].y, ring[0]);
+        const m = c.game.userMolecule;
+        const N = m.atoms.find(a => a.element === 'N');
+        assert(N, 'ニトロ基が置けていない');
+        const nb = m.getNeighbors(N.id).map(x => x.atom);
+        const os = nb.filter(a => a.element === 'O'), C = nb.find(a => a.element === 'C');
+        assert(os.length === 2 && C, `N の隣が O ${os.length}個・C ${C ? 1 : 0}個`);
+        const ono = arAngDiff(arDeg(N, os[0]), arDeg(N, os[1]));
+        const cno = os.map(o => arAngDiff(arDeg(N, C), arDeg(N, o)));
+        assert(Math.abs(ono - 120) < 1, `O—N—O が ${ono.toFixed(1)}°（期待は 120°）`);
+        assert(cno.every(v => Math.abs(v - 120) < 1), `C—N—O が ${cno.map(v => v.toFixed(1)).join('°・')}°（期待は 120°。環の側へ折り返していないか）`);
+        assert(c.W.verifyMolecule(m, c.game.createTargetFromData(c.W.STAGES.find(s => s.name === 'ニトロベンゼン'))),
+            '道具で組んだニトロベンゼンが正解にならない');
+    });
+
+    test('AR6: 無水フタル酸の五員環は正五角形・ベンゼン環と横に並ぶ（無水マレイン酸と同じ形）', async (c) => {
+        const shape = (id) => {
+            const e = c.W.COMPOUNDS.find(x => x.id === id);
+            const { A, rings } = arRings(e.target);
+            const r5 = rings.find(r => r.length === 5);
+            const edges = r5.map((x, i) => Math.hypot(A[x].x - A[r5[(i + 1) % 5]].x, A[x].y - A[r5[(i + 1) % 5]].y));
+            const cen = arCenter(A, r5);
+            const radii = r5.map(x => Math.hypot(A[x].x - cen.x, A[x].y - cen.y));
+            const spread = v => (Math.max(...v) - Math.min(...v)) / Math.max(...v);
+            return { A, rings, r5, cen, edge: spread(edges), radius: spread(radii) };
+        };
+        const ma = shape('maleic-anhydride');
+        assert(ma.edge < 0.02 && ma.radius < 0.02, `無水マレイン酸（基準）の五員環がばらついている（辺 ${ma.edge.toFixed(3)}・半径 ${ma.radius.toFixed(3)}）`);
+        const pa = shape('phthalic-anhydride');
+        assert(pa.edge < 0.02 && pa.radius < 0.02, `無水フタル酸の五員環が正五角形でない（辺のばらつき ${(pa.edge * 100).toFixed(1)}%・半径 ${(pa.radius * 100).toFixed(1)}%）`);
+        const hex = pa.rings.find(r => r.length === 6);
+        const hc = arCenter(pa.A, hex);
+        assert(Math.abs(hc.y - pa.cen.y) < 0.5 && pa.cen.x > hc.x, `ベンゼン環（中心 ${hc.x.toFixed(1)},${hc.y.toFixed(1)}）と五員環（${pa.cen.x.toFixed(1)},${pa.cen.y.toFixed(1)}）が左右に並んでいない`);
+    });
+
+    test('AR7: ★否定対照 — 正準コードは図の向きに依らない（全件を30°回して鏡に映しても1件も変わらない・位置を変えれば変わる）', async (c) => {
+        const build = (t, tf) => {
+            const m = new c.W.Molecule();
+            const ids = t.atoms.map(a => { const p = tf ? tf(a) : a; const at = m.addAtom(a.element, p.x, p.y); c.W.copyAtomMarks(at, a); return at.id; });
+            t.bonds.forEach(b => m.addBond(ids[b.atom1Index], ids[b.atom2Index], b.type));
+            return m;
+        };
+        const tf = (a) => { const x = 800 - a.x, y = a.y; const k = Math.PI / 6; return { x: 400 + (x - 400) * Math.cos(k) - (y - 300) * Math.sin(k), y: 300 + (x - 400) * Math.sin(k) + (y - 300) * Math.cos(k) }; };
+        const bad = []; let n = 0;
+        arAll(c).forEach(([tag, e]) => {
+            n++;
+            const a = c.W.canonicalCode(build(e.target)), b = c.W.canonicalCode(build(e.target, tf));
+            if (a !== b) bad.push(`${tag}:${e.id}`);
+        });
+        assert(n > 1000, `見た件数が ${n}`);
+        assert(bad.length === 0, `向きで正準コードが変わった ${bad.length} 件: ${bad.slice(0, 10).join(' ')}`);
+        // 否定対照: 置換基の位置（o → m）を変えれば正準コードは変わる ＝ 上の比較が空振りしていない
+        const find = (name) => c.W.STAGES.find(x => x.name === name);
+        const o = c.W.canonicalCode(c.game.createTargetFromData(find('o-キシレン')));
+        const mx = find('m-キシレン');
+        assert(mx && o !== c.W.canonicalCode(c.game.createTargetFromData(mx)), '否定対照: o-キシレンと m-キシレンの正準コードが同じ');
+    });
+
+    test('AR8: ★否定対照 — 塩の Na⁺ は1つの O⁻ としか組まない（隣の塩の Na⁺ が近くても取り合わない・双性イオンは取らない）', async (c) => {
+        // v1552・SEP2 の実測: 芳香環を回したら安息香酸ナトリウムの O⁻ が隣のフェノキシドの Na⁺ を掴み、
+        // 2つの O⁻ が同じ Na⁺ を取り合って、混合物の遊離で安息香酸が飛ばされた（答えが図の向きで変わる）
+        const W = c.W;
+        const m = new W.Molecule();
+        const salt = (x, y) => {      // CH3-C(=O)-O⁻ （O⁻ が (x, y)）
+            const c1 = m.addAtom('C', x - 84, y), c2 = m.addAtom('C', x - 42, y), od = m.addAtom('O', x - 42, y - 42), o = m.addAtom('O', x, y);
+            m.addBond(c1.id, c2.id, 1); m.addBond(c2.id, od.id, 2); m.addBond(c2.id, o.id, 1);
+            o.charge = -1;
+            return o;
+        };
+        const oA = salt(100, 100), oB = salt(300, 100);
+        const naNearA = m.addAtom('Na', 140, 100); naNearA.charge = 1;   // A まで 40・B まで 160
+        const naFar = m.addAtom('Na', 330, 180); naFar.charge = 1;       // B まで 85
+        // さらに B に近い2つめの候補を A の近くに置く（A の O⁻ から見ても B の O⁻ から見ても近い粒）
+        naNearA.x = 190; // A まで 90・B まで 110 ＝ O ごとに独立に選ぶと A も B もこれを取る
+        const oldRule = (o) => m.atoms.filter(x => x.charge > 0).sort((p, q) => Math.hypot(p.x - o.x, p.y - o.y) - Math.hypot(q.x - o.x, q.y - o.y))[0];
+        assert(oldRule(oA) === naNearA && oldRule(oB) === naFar,
+            '前提の置き方が崩れた（O ごとに近い粒を選ぶ規則で A と B が別の粒を取っている）');
+        // 取り合いの場面を作る: B の粒をもっと遠くへ
+        naFar.x = 300; naFar.y = 300;   // B まで 200
+        assert(oldRule(oA) === naNearA && oldRule(oB) === naNearA,
+            '否定対照: 「O ごとにいちばん近い粒」だと A と B が同じ Na⁺ を取る場面になっていない');
+        const mA = W.saltCounterMetal(m, oA.id), mB = W.saltCounterMetal(m, oB.id);
+        assert(mA && mB, `相方が見つからない（A ${mA && mA.id}・B ${mB && mB.id}）`);
+        assert(mA !== mB, '★ 2つの O⁻ が同じ Na⁺ を取った（1対1で組んでいない）');
+        // 双性イオン（-NH3⁺ と -COO⁻ が同じ成分）は、すぐそばに Na⁺ があっても取らない
+        const z = new W.Molecule();
+        const n = z.addAtom('N', 0, 0), ca = z.addAtom('C', 42, 0), cc = z.addAtom('C', 84, 0), od = z.addAtom('O', 84, -42), oz = z.addAtom('O', 126, 0);
+        z.addBond(n.id, ca.id, 1); z.addBond(ca.id, cc.id, 1); z.addBond(cc.id, od.id, 2); z.addBond(cc.id, oz.id, 1);
+        n.charge = 1; oz.charge = -1;
+        const na = z.addAtom('Na', 150, 0); na.charge = 1;
+        assert(W.saltCounterMetal(z, oz.id) === null, '★ 双性イオンの -COO⁻（正味 0）が Na⁺ を相方に取った');
+        return 'O ごとの近さでは同じ Na⁺ を取る場面で、1対1に組み分けた／双性イオンは取らない';
+    });
+
     // ===== C. 編集操作 =====
 
     test('C1: プレビュー＝実結合（2原子隣接の交点で2本）', async (c) => {
@@ -1189,7 +1429,10 @@
         // 環モジュール（もとは 72〜112px の帯でしか置けなかった ＝ ニコチンが組めない原因）。
         // クリアランス（27.3px）で弾かれる 70px までは従来どおり不可、**その先はぜんぶ可**
         assert(!freeRingOk(c, 70), '重なる近さ（70px）でも置けてしまう（クリアランスが効いていない）');
-        [72, 120, 200, 400].forEach(d => {
+        // ⚠ v1552 で 72 → 76 に替えた（前提が古い）: ベンゼン環の道具を頂点が上下にしたので、いちばん右の頂点は
+        //   中心 +30.3px（以前は +35px）。五員環の中心はグリッド（42）に丸まるので、頂点 +72px は 70px と同じ格子点へ
+        //   丸まり、**本当に重なる**（実測: 中心 504,294・clearance で overlap）。丸めが次の格子点へ移るのは +75px から
+        [76, 120, 200, 400].forEach(d => {
             assert(freeRingOk(c, d), `ベンゼンから ${d}px 離した所に五員環を置けない`);
         });
     });
@@ -1553,7 +1796,11 @@
         const ringC = mol.getNeighbors(n.id).map(x => x.atom).find(a => a.element === 'C');
         assert(ringC, 'N に付いた環炭素が無い（登録図が変わった）');
         missReset(c);
-        const spot = findMissSpot(c, ringC.x, ringC.y, { reason: 'hcrossing' });
+        // v1552: 芳香環を頂点が上下に回したら、N の付け根の環炭素のまわりには「H が結合線に乗る点」が無くなった。
+        //   ⚠ 守る内容（止める・文言・否定対照）は変えず、**探す場所だけ**を 付け根 → N → 残りの重原子 と広げる
+        const around = [ringC, n, ...mol.atoms.filter(a => a.element !== 'H' && a !== ringC && a !== n)];
+        let spot = null;
+        for (const a of around) { spot = findMissSpot(c, a.x, a.y, { reason: 'hcrossing' }); if (spot) break; }
         assert(spot, '「自由配置で H が乗る」で止まる点が作れなかった（場面の作り方が古い）');
         const before = heavyOf(c).length;
         c.clickAt(spot.x, spot.y);
@@ -12186,6 +12433,27 @@
         g.updateDrawing();
     });
 
+    /**
+     * ★★ **作り直し待ちの台本**（2026-09-14・v1552）。
+     * ベンゼン環の道具を「頂点が上下」にした（ユーザー決定「そろえます。動画の台本はまだ使ってないもののみ修正しますが、後で個別に」）。
+     * 下の台本は環を (420,294) に置いたあと**旧い頂点の座標をタップ**するので、今は狙った分子で終わらない。
+     * **ユーザーが個別に直す**（⛔ テストの側で台本を書き換えない）。
+     * - N2 はこの一覧の台本を**飛ばす**（飛ばした本数を出力に1行で出す）
+     * - N2d はこの一覧の台本が**今も落ちる**ことを確かめる（★ 否定対照）。直って通るようになったら赤にして、
+     *   **一覧から外すよう促す** ＝ 一覧が古いまま残らない
+     * ⚠ intro-draw（V1）・l1-intro（L1）は旧い頂点をタップするが、吸着で新しい頂点に付き、結末も合う（実測）ので入れていない。
+     */
+    const DEMOS_PENDING_RING_TOOL = [
+        'build-dopamine',           // V70
+        'build-adrenaline-series',  // V80
+        'build-serotonin',          // V81
+        'build-paracetamol',        // V82
+        'build-aspirin',            // V83
+        'build-vanillin',           // V84
+        'build-capsaicin',          // V86
+        'build-tnt',                // V87
+    ];
+
     test('N2: 録画モード用のSNSデモ（demos*.json）が完走する（P13-2）', async (c) => {
         c.reset();
         const tp = c.W.tutorialPlayer;
@@ -12227,7 +12495,9 @@
                     if (q.computePools) q.computePools();
                 });
         };
-        for (const d of demos.filter(d => d.id !== 'intro-draw')) {
+        DEMOS_PENDING_RING_TOOL.forEach(id => assert(demos.some(d => d.id === id), `作り直し待ちの一覧にある台本が見つからない: ${id}`));
+        const skipped = demos.filter(d => DEMOS_PENDING_RING_TOOL.includes(d.id)).length;
+        for (const d of demos.filter(d => d.id !== 'intro-draw' && !DEMOS_PENDING_RING_TOOL.includes(d.id))) {
             resetQuizFilters();
             await tp.play(d.id, { fast: true, keepResult: true, initialState: d.state });
             assert(!tp.lastError, `デモ「${d.id}」の再生が落ちた: ${tp.lastError && tp.lastError.message}`);
@@ -12255,6 +12525,7 @@
         // 台本が増えるたびに同じ穴が空くので、**3つのクイズをまとめて戻す**。
         // **範囲（レベル）と分野も戻す**（2026-08-20 に足した軸。既定は範囲＝basic・分野＝all）
         resetQuizFilters();   // ⚠ 中身は上の `resetQuizFilters` へ畳んだ（同じことを2回書かない）
+        return `${demos.length - skipped} 本を再生／作り直し待ちで飛ばした台本 ${skipped} 本（DEMOS_PENDING_RING_TOOL）`;
     });
 
     test('N2b: 立体を名前に出す台本は readStereo を宣言している（P13-2・2026-08-04）', async (c) => {
@@ -12358,6 +12629,9 @@
         const tp = c.W.tutorialPlayer;
         const demos = (await c.W.loadAllDemos()).filter(d => d.expect);
         assert(demos.length > 0, '`expect` を宣言した台本が1件も無い');
+        // 作り直し待ちの台本はすべて expect を持つ（持たないと「今も落ちる」を名前で確かめられない）
+        DEMOS_PENDING_RING_TOOL.forEach(id => assert(demos.some(d => d.id === id), `作り直し待ちの台本「${id}」が expect を宣言していない（今も落ちるかを確かめられない）`));
+        let pendingStopped = 0, pendingWrong = 0;
         const before = tp.speedScale;
         try {
             tp.speedScale = 1; tp.baseSpeedScale = 1;
@@ -12382,13 +12656,24 @@
                 c.game.userMolecule = new c.W.Molecule();
                 c.game.updateDrawing();
                 if (d.state) c.game.restoreState(JSON.parse(JSON.stringify(d.state)));
+                const pending = DEMOS_PENDING_RING_TOOL.includes(d.id);
+                let thrown = null;
                 for (const a of d.steps.flatMap(s => s.actions || [])) {
                     if (a.type === 'wait') continue;
-                    await tp.doAction(a, true);
+                    if (!pending) { await tp.doAction(a, true); }
+                    else { try { await tp.doAction(a, true); } catch (e) { thrown = e.message; break; } }
                     await new Promise(r => setTimeout(r, 1));
                 }
                 const name = c.D.getElementById('compound-name').textContent;
                 const formula = c.D.getElementById('compound-formula').textContent;
+                if (pending) {
+                    // ★ 否定対照: 作り直し待ちの台本は**今も**狙った分子で終わらない（止まる か 名前・分子式が違う）
+                    const wrong = (d.expect.name && !name.includes(d.expect.name)) || (d.expect.formula && !formula.includes(d.expect.formula));
+                    assert(thrown || wrong,
+                        `台本「${d.id}」は作り直し待ちの一覧にあるのに、「${name}」${formula} で狙いどおりに終わった ＝ **直ったので DEMOS_PENDING_RING_TOOL から外すこと**`);
+                    if (thrown) pendingStopped++; else pendingWrong++;
+                    continue;
+                }
                 if (d.expect.name) assert(name.includes(d.expect.name),
                     `台本「${d.id}」の名称チップが「${name}」（「${d.expect.name}」を期待）`);
                 if (d.expect.formula) assert(formula.includes(d.expect.formula),
@@ -12400,6 +12685,7 @@
             c.game.userMolecule = new c.W.Molecule();
             c.game.updateDrawing();
         }
+        return `expect の台本 ${demos.length - DEMOS_PENDING_RING_TOOL.length} 本が狙いどおり／作り直し待ち ${DEMOS_PENDING_RING_TOOL.length} 本は今も落ちる（止まる ${pendingStopped}・名前違い ${pendingWrong}）`;
     });
 
     test('N2e: デモを見終わったら、道具と結合次数が見る前に戻る（2026-08-13）', async (c) => {
@@ -47800,7 +48086,9 @@
          *   並び、硫黄の席（橋の 1/3 と 2/3 の点）が鎖の原子で塞がれる ＝
          *   **化学ではなく置き場の都合**で 0 件になる（実機でもそこは
          *   `stackChainsForBridge` が apply の中で寄せて直す領分）。 */
-        mol.atoms.forEach(a => { a.y -= 400; });
+        // ⚠ v1552 で 400 → 800（前提が古い）: スチレンを頂点が上下・ビニル横向きにしたら、400 退かしただけでは
+        //   2本目が1本目と同じ帯に並び、硫黄の席が塞がる（実測: 400 で 0 件・800 で 2 件。直す前のデータは 400 で 1 件）
+        mol.atoms.forEach(a => { a.y -= 800; });
         ['スチレン', '1,3-ブタジエン', 'スチレン', '1,3-ブタジエン'].forEach(n => g.summonMolecule(n));
         g.updateDrawing();
         const s2 = rule.detect(mol);
@@ -53098,7 +53386,9 @@
                 `${name}: 作業帯がキャンバスの ${Math.round(ins.bottom / rect.height * 100)}% しか覆っていない` +
                 ' ＝ この幅で帯が薄くなったなら EQ9 の前提を測り直すこと');
             // ★ 入りきる分子は床に届く（直す前は ベンゼン 16.2 / アニリン 16.1 / エタノール 14.6）
-            for (const 分子 of ['ベンゼン', 'アニリン', 'エタノール']) {
+            // ⚠ v1552 でアニリンを外した: 芳香環を頂点が上下にして NH₂ を真上にしたので、縦 122 単位＋余白 2格 ＝ 206 単位が
+            //   高さ 106px の帯に入る限界は 21.6px（入りきらない分子 ＝ 下のアセチルサリチル酸と同じ扱い）。横長のプロパンに替えた
+            for (const 分子 of ['ベンゼン', 'プロパン', 'エタノール']) {
                 await 呼ぶ(W, D, 分子);
                 const px = g.screenPxPerGrid();
                 assert(px >= FLOOR - 0.5,
