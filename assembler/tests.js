@@ -302,6 +302,22 @@
     const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
     const near = (a, b, tol = 3) => Math.abs(a - b) <= tol;
 
+    /* ★ 反応でできた副生成物（`fromReaction` の原子 ＝ HCl・HBr・H₂O）を除いた写し（v1553）。
+     *   v1553 から置換・付加は相手の分子を呼び、余りを HCl・H₂O としてキャンバスに残すので、
+     *   「生成物の分子式／正準コード／名前」をキャンバス全体で見る検査はこれを通す。 */
+    const 副生成物を除く = (W, mol) => {
+        const m = new W.Molecule();
+        const idMap = new Map();
+        mol.atoms.filter(a => !a.fromReaction).forEach(a => {
+            const na = m.addAtom(a.element, a.x, a.y);
+            if (a.charge) na.charge = a.charge;
+            idMap.set(a.id, na.id);
+        });
+        mol.bonds.filter(b => idMap.has(b.atomId1) && idMap.has(b.atomId2))
+            .forEach(b => m.addBond(idMap.get(b.atomId1), idMap.get(b.atomId2), b.type));
+        return m;
+    };
+
     /* ★ **反応の再生（モーフィング）が終わるまで待つ。**
      *
      * ⚠⚠ **尺を数字で書かない。** v1539 まで再生は 800ms だったので、待つ側は
@@ -2057,17 +2073,22 @@
         assert(D.getElementById('mobile-name-chip').textContent.includes('C₁₂H₂₂O₁₁'),
             '1分子のとき左下の札から分子式が消えた');
 
-        // ⚠ 見出しが出ないほど小さい成分（水1つ）があるときは、札のほうが式を出す。
-        //   どちらにも出ない状態を作らない（脱水縮合で水が1つ出たことが読めなくなる）
+        // ⚠ 水1つのような小さい成分も、式が画面のどこかに必ず出る（脱水縮合で水が1つ出たことが読めなくなる）。
+        //   v1553 から水にも見出し（🔍 ② 水 H₂O）が付く（ユーザー仕様「CH4やH2Oも物質名をチップで表示する」）ので、
+        //   式は見出しに出て、札は名前だけになる。★ 見るのは「見出しか札のどちらかに出ている」こと
         g.userMolecule = new c.W.Molecule();
         g.updateDrawing();
         assert(g.summonMolecule('グリシルグリシン（ジペプチド）'), 'ジペプチドを呼び出せない');
         assert(g.summonMolecule('水'), '水を呼び出せない');
         g.updateDrawing();
         const chip2 = D.getElementById('mobile-name-chip').textContent;
-        assert(chip2.includes('C₄H₈N₂O₃') && chip2.includes('H₂O'),
-            `水の式が画面のどこにも出ていない（札は「${chip2}」）`);
-        assert(!chip2.includes('C₄H₁₀N₂O₄'), `合算した式が札に出ている（「${chip2}」）`);
+        const caps2 = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍')).join(' / ');
+        const onScreen = chip2 + ' / ' + caps2;
+        assert(onScreen.includes('C₄H₈N₂O₃') && onScreen.includes('H₂O'),
+            `水の式が画面のどこにも出ていない（札は「${chip2}」・見出しは「${caps2}」）`);
+        assert(caps2.includes('水 H₂O'), `水の見出しに式が付いていない（「${caps2}」）`);
+        assert(!onScreen.includes('C₄H₁₀N₂O₄'), `合算した式が画面に出ている（「${onScreen}」）`);
     });
 
     test('F3: シス/トランスの判定と命名区別（P8-1）', async (c) => {
@@ -9837,7 +9858,9 @@
         summon('ベンゼン');
         substitute('ニトロ化');
         assert(nameShown().includes('ニトロベンゼン'), `ニトロ化後が「${nameShown()}」`);
-        assert(g.computeMolecularFormula() === 'C₆H₅NO₂', `分子式が${g.computeMolecularFormula()}`);
+        // ⚠ v1553 から副生成物の H₂O もキャンバスに残る ＝ 生成物の式は副生成物を除いて見る
+        const 生成物の式 = () => g.computeMolecularFormula(副生成物を除く(c.W, g.userMolecule));
+        assert(生成物の式() === 'C₆H₅NO₂', `分子式が${生成物の式()}`);
 
         // **同じ手順なら毎回同じ位置に置換基が生えること**（C-2b。2026-08-01・動画レーンの実測で
         // ニトロ化 6:4／スルホン化 6:4／塩素化 8:2 に揺れていた）。原子IDは乱数で、
@@ -9896,7 +9919,7 @@
         assert(tRing, '候補の原子が見つからない');
         c.clickAt(tRing.x, tRing.y);
         assert(!c.W.reactor.picking, 'トルエンで選択モードが解除されない');
-        assert(g.computeMolecularFormula() === 'C₇H₇NO₂', `トルエンのニトロ化後の分子式が${g.computeMolecularFormula()}`);
+        assert(生成物の式() === 'C₇H₇NO₂', `トルエンのニトロ化後の分子式が${生成物の式()}`);
 
         // 非芳香族（シクロヘキサン）には芳香族置換を提示しない
         summon('シクロヘキサン');
@@ -39012,8 +39035,10 @@
             const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
             c.clickAt(atom.x, atom.y);
         }
-        assert(CC(g.userMolecule) === expectedPhenol,
-            `臭素水の瓶からフェノールを押しても 2,4,6-トリブロモフェノールにならない: ${CC(g.userMolecule)}`);
+        // ⚠ v1553 から副生成物の HBr ×3 もキャンバスに残る ＝ 生成物は副生成物を除いて見る
+        const 瓶の生成物 = CC(副生成物を除く(W, g.userMolecule));
+        assert(瓶の生成物 === expectedPhenol,
+            `臭素水の瓶からフェノールを押しても 2,4,6-トリブロモフェノールにならない: ${瓶の生成物}`);
 
         // ---- (5) 否定対照（瓶の経路）。ベンゼンでは分子が変わらず、**文面が逆を教えていない** ----
         setupReagent(c, ['ベンゼン']);
@@ -52546,8 +52571,10 @@
     };
     const AC_NAME = (c) => {
         const g = c.game, W = c.W;
-        const lib = g.lookupCompoundName(g.userMolecule);
-        return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+        // ⚠ v1553 から副生成物の HCl もキャンバスに残る ＝ 生成物の名前は副生成物を除いて引く
+        const mol = 副生成物を除く(W, g.userMolecule);
+        const lib = g.lookupCompoundName(mol);
+        return (lib && (lib.name || lib)) || W.iupacName(mol) || '（未登録）';
     };
 
     test('AC1: 対象は鎖状の飽和炭化水素だけ ＝ 同じ生成物になる位置は畳む', async (c) => {
