@@ -55310,6 +55310,37 @@
                 assert(horizontal.length === 2, `2-メチルプロパンの横の価標が ${horizontal.length} 本（2本のはず ＝ 文字に食われて消えた）`);
             }
 
+            // ★ 環の中の二重結合は、1本が辺そのもの・もう1本が環の内側（v1551・ユーザー「= が6角形に収まるように」）。
+            //   トルエン: 線は 9本（辺 6・内側 3）。内側の3本は、辺の6本より環の中心に近く、辺より短い
+            {
+                paperOf('トルエン');
+                const inkLines = [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')].map(l => {
+                    const x1 = +l.getAttribute('x1'), y1 = +l.getAttribute('y1'), x2 = +l.getAttribute('x2'), y2 = +l.getAttribute('y2');
+                    return { mx: (x1 + x2) / 2, my: (y1 + y2) / 2, len: Math.hypot(x2 - x1, y2 - y1) };
+                });
+                // 環の辺 ＝ 長さがいちばん多い値（CH₃ への線は文字で詰まるので短い）
+                const edgeLen = Math.max(...inkLines.map(l => l.len));
+                const edges = inkLines.filter(l => Math.abs(l.len - edgeLen) < 0.5);
+                assert(edges.length === 6, `トルエンの環の辺が ${edges.length} 本（6本のはず ＝ 二重結合が辺をまたいでいる）`);
+                const cx = edges.reduce((s, l) => s + l.mx, 0) / 6, cy = edges.reduce((s, l) => s + l.my, 0) / 6;
+                const edgeDist = Math.hypot(edges[0].mx - cx, edges[0].my - cy);
+                const inner = inkLines.filter(l => Math.hypot(l.mx - cx, l.my - cy) < edgeDist - 1);
+                assert(inner.length === 3 && inner.every(l => l.len < edgeLen - 1),
+                    `トルエンの内側の線が ${inner.length} 本（3本・辺より短いはず）`);
+            }
+            // ★ 結合の長さはそろう（v1551・ユーザー「ベンズアルデヒドの C=O が他より長い」。登録は環の辺 40・C=O 60）。
+            //   C（CH の C の字）と O の中心の距離が、環の辺の長さと同じ
+            {
+                paperOf('ベンズアルデヒド');
+                const labs = [...svg.querySelectorAll('.svg-paper-label')];
+                const ch = labs.find(t => t.getAttribute('data-label') === 'CH'), o = labs.find(t => t.getAttribute('data-label') === 'O');
+                const edgeLen = Math.max(...[...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')].map(l =>
+                    Math.hypot(+l.getAttribute('x2') - +l.getAttribute('x1'), +l.getAttribute('y2') - +l.getAttribute('y1'))));
+                const cX = +ch.getAttribute('x') + ch.getSubStringLength(0, 1) / 2, oX = +o.getAttribute('x') + o.getComputedTextLength() / 2;
+                const d = Math.hypot(cX - oX, +ch.getAttribute('y') - +o.getAttribute('y'));
+                assert(Math.abs(d - edgeLen) < 0.5, `★ ベンズアルデヒドの C=O が ${d.toFixed(1)}（環の辺 ${edgeLen.toFixed(1)} と同じはず）`);
+            }
+
             // ★★ 否定対照: opts を渡さない（アプリの画面の呼び方）と、今までどおり丸の図・紙の文字は0・環は長方形
             const e = fgtEntry(W, 'トルエン');
             const m0 = g.createTargetFromData({ target: e.target });
