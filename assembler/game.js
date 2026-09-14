@@ -6669,7 +6669,11 @@ class Game {
             if (item.ids.has(sg.id)) return;
             if (segmentHitsRect(sg, rect)) cost += 10000;
         });
-        placed.forEach(p => { if (rectsOverlap(p, rect)) cost += 10000; });
+        /* ★ 見出しどうしは**くっつけない**（v1553・ユーザー検品「① 2-メチルブタン と ② 1-プロパノール の札が
+         *   くっついている」）。枠の高さの 1/4 ぶん膨らませて比べる ＝ 触れているだけの隣も1段送る */
+        const gap = rect.h * 0.25;
+        const padded = { x: rect.x - gap, y: rect.y - gap, w: rect.w + gap * 2, h: rect.h + gap * 2 };
+        placed.forEach(p => { if (rectsOverlap(p, padded)) cost += 10000; });
         ink.boxes.forEach(b => {
             if (item.ids.size && b.ids.has(item.atoms[0].id)) return; // 自分の分子
             // **別の分子を跨いだ**か（＝自分の下にある分子より下、または上にある分子より上へ
