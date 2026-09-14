@@ -714,11 +714,14 @@
         assert(bad.length === 0, `頂点が上下でない芳香環 ${bad.length} 個: ${bad.slice(0, 12).join(' ')}`);
     });
 
-    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシン・サリチル酸だけ・名指し）', async (c) => {
+    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシン・サリチル酸の仲間・フタル酸だけ・名指し）', async (c) => {
         // ニコチン・チロシンは直す前から頂点が上下の手描き（v1552 では回していない）。
         // チロシンはアミノ酸の側鎖が上・OH が下（フェニルアラニンと同じ並び）で、格の規則だと OH が主になる
         // サリチル酸はユーザー決定（2026-09-14）で COOH を右上・OH を右下（2つの置換基を見比べるため・教科書 p.185）
-        const EXCEPT = new Set(['nicotine', 'tyrosine', 'salicylic-acid']);
+        // サリチル酸の仲間（エステル・塩・アセチル体）も同じ形（ユーザー決定 2026-09-15・v1555）
+        // フタル酸は COOH を右上・右下（ユーザー決定 2026-09-15・教科書 p.183 の単独の図・p.197 の地図）
+        const SAL = ['salicylic-acid', 'methyl-salicylate', 'ethyl-salicylate', 'acetylsalicylic-acid', 'sodium-salicylate'];
+        const EXCEPT = new Set(['nicotine', 'tyrosine', ...SAL, 'phthalic-acid']);
         let mono = 0, di = 0; const bad = [];
         arAll(c).forEach(([tag, e]) => {
             const s = arSubstituents(e); if (!s || !s.subs.length || s.subs.length > 2) return;
@@ -731,10 +734,36 @@
         assert(bad.length === 0, `主な置換基が真上でない ${bad.length} 件: ${bad.slice(0, 12).join(' ')}`);
         // 教科書の図と同じ向き（数研 p.174・185）: o-キシレンは真上と右上・サリチル酸は COOH が右上で OH が右下（ユーザー決定 2026-09-14）
         const find = (name) => c.W.STAGES.find(x => x.name === name) || c.W.COMPOUNDS.find(x => x.name === name);
-        const sal = arSubstituents(find('サリチル酸'));
-        const oh = sal.subs.find(x => x.rank === 1), cooh = sal.subs.find(x => x.rank === 2);
-        assert(arAngDiff(cooh.dir, -30) < 3 && arAngDiff(oh.dir, 30) < 3,
-            `サリチル酸: COOH ${cooh.dir.toFixed(0)}°・OH ${oh.dir.toFixed(0)}°（期待は COOH −30°＝右上・OH 30°＝右下）`);
+        const byId = (id) => c.W.STAGES.find(x => x.id === id) || c.W.COMPOUNDS.find(x => x.id === id);
+        // サリチル酸の仲間: O で付く置換基（格1）が右下・カルボキシ系（格2）が右上
+        const salShape = (e) => {
+            const s = arSubstituents(e); if (!s || s.subs.length !== 2) return null;
+            const oh = s.subs.find(x => x.rank === 1), cooh = s.subs.find(x => x.rank === 2);
+            return oh && cooh && arAngDiff(cooh.dir, -30) < 3 && arAngDiff(oh.dir, 30) < 3 ? true : `COO ${cooh ? cooh.dir.toFixed(0) : '?'}°・O ${oh ? oh.dir.toFixed(0) : '?'}°`;
+        };
+        SAL.forEach(id => {
+            const e = byId(id); assert(e, `${id} が登録に無い`);
+            const r = salShape(e);
+            assert(r === true, `${e.name}: ${r}（期待は COOH 系 −30°＝右上・O 30°＝右下）`);
+        });
+        // フタル酸: 2つの COOH が右上（−30°）と右下（30°）
+        const phShape = (e) => {
+            const s = arSubstituents(e); const d = s.subs.filter(x => x.rank === 2).map(x => x.dir);
+            return d.length === 2 && d.some(v => arAngDiff(v, -30) < 3) && d.some(v => arAngDiff(v, 30) < 3);
+        };
+        assert(phShape(byId('phthalic-acid')), `フタル酸: COOH が ${arSubstituents(byId('phthalic-acid')).subs.map(x => x.dir.toFixed(0)).join('°・')}°（期待は −30°・30°）`);
+        // ★否定対照: 名指ししていない仲間は既定の規則のまま（例外が勝手に広がっていない）＝ 右上・右下の判定には通らない
+        ['salicylaldehyde', 'dimethyl-phthalate', 'diethyl-phthalate', 'potassium-hydrogen-phthalate'].forEach(id => {
+            const e = byId(id); assert(e, `否定対照の ${id} が登録に無い`);
+            assert(!EXCEPT.has(id), `否定対照の ${id} が例外に入っている`);
+            assert(salShape(e) !== true && !phShape(e), `否定対照: ${e.name} まで右上・右下になっている（名指ししていない仲間へ広げていないか）`);
+        });
+        // ★否定対照: 判定が空振りしていない ＝ 直す前の向き（O が真上）のサリチル酸メチルは「違う」と言える
+        const msOld = JSON.parse(JSON.stringify(byId('methyl-salicylate')));
+        { const s = arSubstituents(msOld); const cen = arCenter(s.A, s.r), t = -30 * Math.PI / 180;
+          msOld.target.atoms.forEach(a => { const dx = a.x - cen.x, dy = a.y - cen.y;
+              a.x = cen.x + dx * Math.cos(2 * t) + dy * Math.sin(2 * t); a.y = cen.y + dx * Math.sin(2 * t) - dy * Math.cos(2 * t); }); }
+        assert(salShape(msOld) !== true, '否定対照: O が真上のサリチル酸メチルを「右上・右下」と判定した（判定が空振りしている）');
         const oxy = arSubstituents(find('o-キシレン'));
         assert(oxy.subs.some(x => arAngDiff(x.dir, -90) < 3) && oxy.subs.some(x => arAngDiff(x.dir, -30) < 3),
             `o-キシレン: CH3 が ${oxy.subs.map(x => x.dir.toFixed(0)).join('°・')}°（期待は真上と右上）`);
