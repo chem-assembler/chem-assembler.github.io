@@ -15305,14 +15305,34 @@
         rx.execute(rule, sites[0]);
         rx._morphSkip = true;
         const L = rx.lastReaction;
-        const d = rx.computeDiff(L.before, L.after);
+        /* ★ v1560: 相手と副生成物は再生の写し（L.anim）にだけ居る。キャンバスには残らない。
+         *   物差しは写しの前後（表から外した否定対照では L.anim が無いので、今までどおり L.before/L.after） */
+        const src = L.anim || L;
+        const d = rx.computeDiff(src.before, src.after);
         const parts = g.splitMolecules();
         const heavy = p => p.atoms.filter(a => a.element !== 'H');
-        const left = parts.filter(p => heavy(p).length && heavy(p).every(a => a.fromReaction))
-            .map(p => g.lookupCompoundName(p) || g.computeMolecularFormula(p));
+        // 写しの副生成物（再生の終わりに薄れるもの）の名前
+        const left = [];
+        if (L.anim) {
+            const tmp = rx.molFromSnapshot(L.anim.after);
+            const tset = new Set(L.anim.transient);
+            const seen = new Set();
+            tmp.atoms.filter(a => tset.has(a.id)).forEach(a => {
+                if (seen.has(a.id)) return;
+                const comp = W.componentOf ? W.componentOf(tmp, a.id) : new Set([a.id]);
+                comp.forEach(id => seen.add(id));
+                const p = new W.Molecule();
+                tmp.atoms.filter(x => comp.has(x.id)).forEach(x => p.atoms.push(x));
+                tmp.bonds.filter(b => comp.has(b.atomId1) && comp.has(b.atomId2)).forEach(b => p.bonds.push(b));
+                const nm = g.lookupCompoundName(p);
+                left.push((nm && (nm.name || nm)) || g.computeMolecularFormula(p));
+            });
+        }
+        const leftOnCanvas = parts.filter(p => heavy(p).length && heavy(p).every(a => a.fromReaction)).length;
         const codes = parts.filter(p => heavy(p).length && !heavy(p).every(a => a.fromReaction))
             .map(p => W.canonicalCode(p)).sort().join('|');
-        return { n0, d, left, codes, before: L.before, after: L.after };
+        const canvas = g.userMolecule.atoms.map(a => a.element).sort().join('');
+        return { n0, d, left, leftOnCanvas, codes, canvas, before: src.before, after: src.after, L };
     };
     /** アニメの写し（自動水素を本物の H として置いたもの）で、急に出る／消える原子を H も含めて数える */
     const rxpPop = (c, r) => {
@@ -15352,7 +15372,9 @@
                     `${id}: 反応前の図に無い原子が ${r.d.addedAtoms.map(a => a.element).join('')} 出た（相手を呼べていない）`);
                 assert(r.d.removedAtoms.length === 0, `${id}: 反応前の図から消えた原子がある`);
                 assert(JSON.stringify(r.left) === JSON.stringify(wantLeft),
-                    `${id}: 残った副生成物が ${JSON.stringify(r.left)}（${JSON.stringify(wantLeft)} を期待）`);
+                    `${id}: 写しの副生成物が ${JSON.stringify(r.left)}（${JSON.stringify(wantLeft)} を期待）`);
+                // ★ v1560: 副生成物はキャンバスに残らない（再生の終わりに薄れて消える）
+                assert(r.leftOnCanvas === 0, `${id}: 副生成物がキャンバスに ${r.leftOnCanvas} 個残った`);
                 await 反応の再生を待つ(c);
                 // ★ 否定対照: 表から外すと急に出る原子が戻る（＝ この物差しが空振りしていない）。生成物の正準コードは同じ
                 const saved = W.PARTNER_SUMMON[id];
@@ -15362,6 +15384,8 @@
                     const plain = rxpRun(c, name, id);
                     assert(plain.d.addedAtoms.length > 0, `${id}: 表から外しても急に出る原子が0個 ＝ この検査は何も見張っていない`);
                     assert(plain.left.length === 0, `${id}: 表から外したのに副生成物が残った`);
+                    // ★ 相手を呼んでもキャンバスの原子は apply のまま（副生成物を足さない）
+                    assert(plain.canvas === r.canvas, `${id}: 相手を呼ぶとキャンバスの原子が変わった（${r.canvas} / ${plain.canvas}）`);
                     // ★ H の否定対照: 相手を呼ばない置換では、C から離れた H の行き先が無く「消える H」が出る
                     if (id === 'chlorinate_alkane') {
                         const pp = rxpPop(c, plain);
@@ -15373,7 +15397,7 @@
                 }
                 await 反応の再生を待つ(c);
             }
-            // 「↩ 反応前に戻す」は、呼んだ相手ごと反応前（メタン1つ）に戻る
+            // 「↩ 反応前に戻す」は反応前（メタン1つ）に戻る
             rxpRun(c, 'メタン', 'chlorinate_alkane');
             await 反応の再生を待つ(c);
             assert(rx.undoLastReaction() !== false, '反応前に戻せない');
@@ -15393,8 +15417,9 @@
                 assert(W.REACTION_RULES.some(r => r.id === id), `PARTNER_SUMMON の ${id} は REACTION_RULES に無い`));
             const r = rxpRun(c, 'エタノール', 'oxidize_primary');
             assert(!W.PARTNER_SUMMON.oxidize_primary, '下ごしらえ: 酸化が表に載っている（題材を替えること）');
-            assert(r.before.atoms.length === r.n0, `表に無い反応で反応前の図に原子が足された（${r.before.atoms.length} / ${r.n0}）`);
-            assert(r.left.length === 0, `表に無い反応で副生成物が足された（${JSON.stringify(r.left)}）`);
+            // ⚠ v1556 から酸化は PARTNER_EQUATIONS で [O] を呼ぶ（写し L.anim にだけ）。ここで見るのは v1553 の表 ＝ 本物の反応前の図と、キャンバス
+            assert(r.L.before.atoms.length === r.n0, `表に無い反応で反応前の図に原子が足された（${r.L.before.atoms.length} / ${r.n0}）`);
+            assert(r.leftOnCanvas === 0, `表に無い反応でキャンバスに副生成物が足された（${r.leftOnCanvas}）`);
             await 反応の再生を待つ(c);
         } finally {
             g.userMolecule = new W.Molecule(); g.updateDrawing();
@@ -15424,10 +15449,20 @@
         const codes = parts.filter(p => heavy(p).length && !heavy(p).every(a => a.fromReaction))
             .map(p => W.canonicalCode(p)).sort().join('|');
         const canvas = g.userMolecule.atoms.map(a => a.element).sort().join('');
+        /* ★ v1560: 係数の大きい相手・副生成物は1つだけ描いて「×n」を添える（まとめたぶんの握手は見えない）。
+         *   急に出る原子は「まとめて描かなかった相手の原子」、急に消える原子は「まとめて描かなかった副生成物の原子」の
+         *   **中に収まっていれば**数えない。H は数だけで見る（まとめたぶんの H の合計まで）。
+         *   ⚠ 記録（foldedPartnerIds・foldedByproductIds）の外に1つでもあれば pop / gone に出る ＝ 赤 */
+        const A = L.anim;
+        const fp = new Set(A ? A.foldedPartnerIds || [] : []), fb = new Set(A ? A.foldedByproductIds || [] : []);
+        const popA = hx.after.atoms.filter(a => !bi.has(a.id)), goneA = hx.before.atoms.filter(a => !ai.has(a.id));
+        const isH = a => a.element === 'H';
+        const hExcess = Math.max(0, popA.filter(isH).length + goneA.filter(isH).length - (A ? A.foldedH || 0 : 0));
         return {
             L, hx, codes, canvas,
-            pop: hx.after.atoms.filter(a => !bi.has(a.id)).map(a => a.element).join(''),
-            gone: hx.before.atoms.filter(a => !ai.has(a.id)).map(a => a.element).join('')
+            pop: popA.filter(a => !isH(a) && !fp.has(a.id)).map(a => a.element).join('') + 'H'.repeat(hExcess),
+            gone: goneA.filter(a => !isH(a) && !fb.has(a.id)).map(a => a.element).join(''),
+            foldedPop: popA.filter(a => !isH(a) && fp.has(a.id)).length
         };
     };
 
@@ -15517,6 +15552,149 @@
             assert(hOnO === 2, `bare を外しても [O] の H が ${hOnO} 本（2 を期待）＝ 検査が空振り`);
             g.updateDrawing();
         } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    /* ===== RXF・RXC・NAOH（v1560）=====
+     * ユーザー:「それでやってみましょう」（係数の大きい相手は1つだけ出して「×n」）／
+     *   「反応の前後を見る、では反応式の左辺と右辺が対応している状態にしてください」／
+     *   「NaOHについては、Na に OH-のO側がつくほうがよいです」 */
+    test('RXF1: 係数が3以上の相手・副生成物は1つだけ描いて「×n」を添える／基質の別々の位置と握手する相手と [O] はまとめない（否定対照つき・v1560）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const count = (snap, el) => snap.atoms.filter(a => a.element === el).length;
+        const texts = snap => (snap.labels || []).map(l => l.text).sort().join(',');
+        try {
+            // ① ヨードホルム（エタノール）: I₂ ×4・NaOH ×6 を1つずつ、NaI ×5・H₂O ×5 も1つずつ
+            let r = rxpEqRun(c, ['エタノール'], 'iodoform');
+            let A = r.L.anim;
+            assert(count(A.before, 'I') === 2 && count(A.before, 'Na') === 1,
+                `I₂ と NaOH が1つずつ描かれていない（I ${count(A.before, 'I')}・Na ${count(A.before, 'Na')}）`);
+            assert(texts(A.before) === '×4,×6', `相手の札が ${texts(A.before)}（×4,×6 を期待）`);
+            assert(texts(A.after) === '×5,×5', `副生成物の札が ${texts(A.after)}（×5,×5 を期待）`);
+            assert(!r.pop && !r.gone, `まとめた記録の外で急に出る「${r.pop}」／消える「${r.gone}」原子がある`);
+            // ★ 否定対照1: まとめたぶんは本当に握手が見えない（記録が無ければ急に出る原子になる）
+            assert(r.foldedPop > 0, 'まとめたのに急に出る原子が0個 ＝ 記録の検査が何も見張っていない');
+            const eq = rx.equationText(A, 'iodoform');
+            assert(/4I₂ ＋ 6NaOH/.test(eq) && /5NaI/.test(eq) && /5H₂O/.test(eq), `反応式が係数どおりでない（${eq}）`);
+            await 反応の再生を待つ(c);
+            // ★ 否定対照2: まとめないと I₂ が4つ・札なし
+            rx._foldCopies = false;
+            try {
+                r = rxpEqRun(c, ['エタノール'], 'iodoform');
+                A = r.L.anim;
+                assert(count(A.before, 'I') === 8 && !(A.before.labels || []).length,
+                    `否定対照: まとめなくても I が ${count(A.before, 'I')} 個・札 ${texts(A.before)}`);
+                assert(!r.pop && !r.gone && r.foldedPop === 0, 'まとめないのに急に出る原子がある');
+            } finally { rx._foldCopies = undefined; }
+            await 反応の再生を待つ(c);
+            // ② まとめないもの: フェノールの三臭素化（Br₂ は3つとも別々の位置）・側鎖の酸化の [O]×3・メタンの燃焼の O₂×2
+            const tb = rxpRun(c, 'フェノール', 'bromination_activated_ring');
+            assert(count(tb.L.anim.before, 'Br') === 6 && !(tb.L.anim.before.labels || []).length,
+                `三臭素化の Br₂ がまとめられた（Br ${count(tb.L.anim.before, 'Br')}）`);
+            await 反応の再生を待つ(c);
+            const sc = rxpEqRun(c, ['トルエン'], 'oxidize_side_chain');
+            assert(sc.L.anim.before.atoms.filter(a => a.label === '[O]').length === 3, '側鎖の酸化の [O] がまとめられた');
+            await 反応の再生を待つ(c);
+            const cm = rxpEqRun(c, ['メタン'], 'combustion');
+            assert(count(cm.L.anim.before, 'O') === 4 && !(cm.L.anim.before.labels || []).length, 'メタンの燃焼の O₂×2 がまとめられた');
+            await 反応の再生を待つ(c);
+            // ③ 再生のコマに札が出る
+            r = rxpEqRun(c, ['エタノール'], 'iodoform');
+            rx._morphGen++; rx._morphing = false;
+            const plan = rx.buildPlayback(r.L, null);
+            rx.renderPlaybackAt(plan, 1);
+            const shown = [...g.atomsGroup.querySelectorAll('.rx-mult')].map(t => t.textContent).sort().join(',');
+            assert(shown === '×4,×6', `反応の直前のコマの札が「${shown}」`);
+            g.updateDrawing();
+        } finally {
+            rx._foldCopies = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXC1: 反応の前後を見るは、前＝基質＋呼んだ相手・後＝生成物＋副生成物で、並ぶ物質と係数が caption の式と一致する（否定対照つき・v1560）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rx = W.reactor;
+        g.setMode('free');
+        const toast = () => (D.getElementById('canvas-toast') || {}).textContent || '';
+        try {
+            for (const [names, id] of [[['メタン'], 'combustion'], [['ベンゼン'], 'combustion'], [['エタノール'], 'combustion'], [['ナフタレン'], 'naphthalene_air_oxidation']]) {
+                const r = rxpEqRun(c, names, id);
+                const cap = toast();
+                rx.openCompare();
+                const eqEl = D.getElementById('rx-cmp-eq');
+                assert(eqEl, `${id}（${names[0]}）: 前後比較に反応式の行が無い`);
+                assert(cap.includes(eqEl.textContent),
+                    `${id}（${names[0]}）: 前後比較の式「${eqEl.textContent}」が caption に無い（caption: ${cap.slice(0, 80)}）`);
+                // 図の数: 前の図に呼んだ相手が居る
+                const svgs = D.querySelectorAll('#rx-compare-overlay svg');
+                assert(svgs.length === 2, '前後の図が2つない');
+                rx.closeCompare();
+                // ★ 否定対照: 左辺から O₂ を1つ抜くと式が caption と合わなくなる
+                const A = r.L.anim;
+                const o2 = A.before.atoms.find(a => a.element === 'O' && !r.L.before.atoms.some(b => b.id === a.id));
+                const drop = new Set([o2.id]);
+                A.before.bonds.forEach(b => { if (b.atomId1 === o2.id) drop.add(b.atomId2); if (b.atomId2 === o2.id) drop.add(b.atomId1); });
+                const cut = { atoms: A.before.atoms.filter(a => !drop.has(a.id)), bonds: A.before.bonds.filter(b => !drop.has(b.atomId1) && !drop.has(b.atomId2)), labels: (A.before.labels || []).filter(l => !drop.has(l.id)) };
+                const bad = rx.equationText({ ...A, before: cut }, id);
+                assert(!cap.includes(bad), `否定対照: O₂ を抜いた式「${bad}」も caption に含まれる ＝ この検査は何も見張っていない`);
+                await 反応の再生を待つ(c);
+            }
+            // 塩素化: 右辺に HCl（キャンバスには残らないが、前後比較には出る）
+            rxpRun(c, 'メタン', 'chlorinate_alkane');
+            rx.openCompare();
+            const t = D.getElementById('rx-cmp-eq').textContent;
+            assert(t === 'CH₄ ＋ Cl₂ → CH₃Cl ＋ HCl', `塩素化の前後比較の式が「${t}」`);
+            rx.closeCompare();
+            await 反応の再生を待つ(c);
+            // ヨードホルム: 前後比較にも「×n」の札
+            rxpEqRun(c, ['エタノール'], 'iodoform');
+            rx.openCompare();
+            const mult = [...D.querySelectorAll('#rx-compare-overlay .rx-mult')].map(x => x.textContent).sort().join(',');
+            assert(mult === '×4,×5,×5,×6', `前後比較の札が「${mult}」`);
+            rx.closeCompare();
+            await 反応の再生を待つ(c);
+        } finally {
+            rx.closeCompare();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('NAOH1: NaOH は「Na ··· O−H」の順 ＝ Na⁺ は H より O に近い（反応の写し・登録の図／否定対照つき・v1560）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const measure = () => {
+            const r = rxpEqRun(c, ['フェノール'], 'neutralize_naoh');
+            const hx = r.hx;
+            const na = hx.before.atoms.find(a => a.element === 'Na' && !r.L.before.atoms.some(b => b.id === a.id));
+            const o = hx.before.atoms.find(a => a.element === 'O' && a.charge === -1);
+            const hb = hx.before.bonds.find(b => b.atomId1 === o.id || b.atomId2 === o.id);
+            const h = hx.before.atoms.find(a => a.id === (hb.atomId1 === o.id ? hb.atomId2 : hb.atomId1));
+            return { naO: Math.hypot(na.x - o.x, na.y - o.y), naH: Math.hypot(na.x - h.x, na.y - h.y) };
+        };
+        const saved = W.RX_SPECIES.NaOH.atoms.map(a => a.slice());
+        try {
+            const m = measure();
+            assert(m.naO < m.naH, `NaOH の Na が O より H に近い（Na−O ${m.naO.toFixed(0)} / Na−H ${m.naH.toFixed(0)}）`);
+            await 反応の再生を待つ(c);
+            // 登録の図（名前から呼び出す 水酸化ナトリウム）
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule('水酸化ナトリウム'), '水酸化ナトリウムを呼び出せない');
+            const mm = g.userMolecule;
+            const na = mm.atoms.find(a => a.element === 'Na'), o = mm.atoms.find(a => a.element === 'O');
+            const h = mm.calculateHydrogens().find(x => x.parentId === o.id);
+            assert(Math.hypot(na.x - o.x, na.y - o.y) < Math.hypot(na.x - h.x, na.y - h.y), '登録の水酸化ナトリウムで Na が H 側にいる');
+            // ★ 否定対照: Na を H 側（右）に置くと Na は H のほうが近くなる
+            W.RX_SPECIES.NaOH.atoms[1][1] = 1;
+            const bad = measure();
+            assert(!(bad.naO < bad.naH), `否定対照: Na を H 側に置いても Na−O ${bad.naO.toFixed(0)} < Na−H ${bad.naH.toFixed(0)} ＝ この検査は何も見張っていない`);
+            await 反応の再生を待つ(c);
+        } finally {
+            W.RX_SPECIES.NaOH.atoms = saved;
             g.userMolecule = new W.Molecule(); g.updateDrawing();
         }
     });
