@@ -70,6 +70,7 @@
  *                  8 が 375px の実測（帯の増分 ≦ 50px・押しものが画面の中・出発物が帯の裏に入らない） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
+ * | FGT | 1〜3   | ★ **参考書の図を焼く経路**（v1549・`tools/gen-figure.mjs` が呼ぶアプリの関数）。1 が塩（結合でつながらない成分）＝ 22件が丸の図・紙の図とも描け、粒が反対の電荷の近くに置かれる。**否定対照は2つ**＝ 成分を置く口を塞ぐと塩が実際に落ちる／電荷の無い 120件の図は口の有無で1本も変わらない。2 がハース式（`ipHaworthFigure`）＝ グルコース・ガラクトース・フルクトフラノースの α/β で1位の −OH が下／上。**否定対照は直交の図では α とβ が同じ図**。3 が紙の図の型（丸を描かず H をまとめる・−NO₂/−SO₃H は文字・−COOH/−CHO は C=O を線・condense/expand の上書き・芳香環は正六角形）。**否定対照は opts を渡さない既定の図が丸のまま** |
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | FZ  | 1〜4   | ★ **夜間監査のファズが「反応の面」に届いているか**（v1502・DESIGN_review_pack2.md §4-3／発注書 B）。定期レビューの実測で **49本の反応のうち16本にファズが1回も届いていなかった**（相手が要る反応が中心。`summon` は 1,145件から一様に1件しか引かないので同じ単量体がそろわない）。手当ては `audit.js` 側（「相手を並べる組」の枝＋到達本数・空振り率の記録）で、ここはそれが空振りしていないことの見張り。1 が題材の表の二重持ち（tests.js の `CV_PAIR_SAMPLES` と audit.js の `PAIR_SAMPLES`）が食い違わないこと・**2 が本体**＝ 監査の題材を並べると届いていなかった 16 本のボタンが実際に生えること（★否定対照 = 相手を並べなければ生えない・空のキャンバスでは 0 本）・3 が「監査が出す数」の作り＝ **回数ではなく本数**（1本に1万回届いても `rulesApplied` は 1）と率の分母（★否定対照 = 1回も引かなければ率は null）・**4 は札の選び方**＝ 「組」を足すだけでは 0回が 14→10 本にしか減らなかった（同じ種300個の A/B の実測）ので、半分の確率で「まだ届いていない札」を選ぶ誘導を足した。その物差し（届いた回数 → 押した回数）を純関数で単体検査する（★否定対照 = `?noguide=1` で一様な乱数に戻る・乱数が外れた回も一様） |
  * | FV  | 1〜3   | 🔍「全体表示」が合わせる先（v1402・ユーザー申し立て「分子を呼び出して表示したとき、全体表示、でそれらの分子が枠内に入らない」）。`fitCanvasToTarget()` は名前のとおり**お題**に合わせる関数で、🧪自由にはお題が無い ＝ 範囲が (400,300) の1点に潰れて視野がそこへ飛んでいた（実測 160原子中 12個）。1 が本体（自由・学習で描いたもの全体に合う。呼び終えた直後と、画面外へ飛ばしてからの2通り）・**2 は否定対照**＝ 🧩パズルは今までどおりお題に合わせる（viewBox の実数で固定。自由の直しがパズルへ漏れると赤）・**3 も否定対照**＝ 空のキャンバスでも視野が1点に潰れない／お題の視野を借りに行かない |
@@ -55070,6 +55071,213 @@
         assert(extra.length === 0, `★ 名簿に無いエントリが電荷を持っている: ${extra.join(', ')}`);
         ION_CHARGED_ENTRIES.forEach(n => assert(charged.includes(n), `名簿の「${n}」が電荷を持っていない（名簿が古い）`));
         return `双性・アニリン塩酸塩・ジアゾニウムが §3-3 の表どおり／電荷つき登録 ${charged.length} 件（名簿どおり）`;
+    });
+
+    /* ===== 参考書の図を焼く経路（v1549・tools/gen-figure.mjs）=====
+     * ⚠ 道具そのものは node＋playwright なので test.html からは走らない。
+     *   ここで見るのは**道具が呼ぶアプリの関数**（renderStandardFigure・ipHaworthFigure・紙の図の型）だけ */
+    /** 図の重原子の丸と結合線を、順序と向きに依らない形で並べる（⚠ 自動水素は原子IDの乱数で並びが揺れるので入れない） */
+    const fgtFigurePrint = (svg) => {
+        const r = (v) => Math.round(+v * 100) / 100;
+        const circles = [...svg.querySelectorAll('.quiz-atoms circle')].filter(el => el.getAttribute('r') === '10')
+            .map(el => `c${r(el.getAttribute('cx'))},${r(el.getAttribute('cy'))}`);
+        const lines = [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')].map(el => {
+            const p = [[r(el.getAttribute('x1')), r(el.getAttribute('y1'))], [r(el.getAttribute('x2')), r(el.getAttribute('y2'))]]
+                .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+            return `l${p[0]}|${p[1]}`;
+        });
+        const texts = [...svg.querySelectorAll('.quiz-atoms text')].filter(t => t.textContent !== 'H')
+            .map(t => `t${t.textContent}@${r(t.getAttribute('x'))},${r(t.getAttribute('y'))}`);
+        return [...circles, ...lines, ...texts].sort().join(';');
+    };
+    const fgtEntry = (W, name) => [...W.STAGES, ...W.COMPOUNDS].find(e => e.name === name && e.target);
+
+    test('FGT1: ★ 塩（結合でつながらない成分）も図になる —— 22件で落ちず、粒は反対の電荷の近く（★否定対照2つ）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        const G = 46;   // IP_HSTEP
+        const salts = [...W.STAGES, ...W.COMPOUNDS].filter(e => e.target && e.target.atoms.some(a => a.charge));
+        assert(salts.length === ION_CHARGED_ENTRIES.length, `テスト前提（電荷つき ${ION_CHARGED_ENTRIES.length} 件）が崩れた（${salts.length}件）`);
+        const svg = ipFigureSvg(c, 'fgt1-fig');
+        const drawAll = (paper) => {
+            const failed = [];
+            salts.forEach(e => {
+                try {
+                    const m0 = g.createTargetFromData({ target: e.target });
+                    W.layoutMolecule(m0);
+                    assert(m0.atoms.every(a => Number.isFinite(a.x) && Number.isFinite(a.y)), 'layoutMolecule が座標を置かなかった原子がある');
+                    const m = g.createTargetFromData({ target: e.target });
+                    ip.renderStandardFigure(svg.id, m, false, paper ? { paper: true } : undefined);
+                    const marks = svg.querySelectorAll('.svg-charge').length;
+                    const want = e.target.atoms.filter(a => a.charge).length;
+                    assert(marks === want, `電荷の印が ${marks} 個（${want} 個のはず）`);
+                } catch (err) { failed.push(`${e.name}: ${err.message}`); }
+            });
+            return failed;
+        };
+        try {
+            // ① ★ 陽性: 丸の図・紙の図とも 22件すべて描け、電荷の印が数どおり出る
+            const f1 = drawAll(false), f2 = drawAll(true);
+            assert(f1.length === 0, `★ 塩の標準の図が描けない: ${f1.slice(0, 3).join(' / ')}`);
+            assert(f2.length === 0, `★ 塩の紙の図が描けない: ${f2.slice(0, 3).join(' / ')}`);
+            // ② 粒（結合ゼロの電荷つき原子）は、反対の電荷の原子から格子4つ以内・他の原子から 0.6 格子以上離れる
+            const far = [];
+            salts.forEach(e => {
+                const m = g.createTargetFromData({ target: e.target });
+                const pos = W.ipStraightLayout(m) ? W.ipStraightLayout(m).pos : null;
+                if (!pos) return;   // 環のある塩は layoutMolecule 側（①で描けることは見た）
+                W.placeDetachedComponents(m, pos, G);
+                m.atoms.filter(a => a.charge && m.getNeighbors(a.id).length === 0).forEach(ion => {
+                    const p = pos.get(ion.id);
+                    const partner = m.atoms.filter(a => Math.sign(a.charge || 0) === -Math.sign(ion.charge))
+                        .map(a => Math.hypot(pos.get(a.id).x - p.x, pos.get(a.id).y - p.y));
+                    const near = Math.min(...partner);
+                    const crowd = Math.min(...m.atoms.filter(a => a !== ion).map(a => Math.hypot(pos.get(a.id).x - p.x, pos.get(a.id).y - p.y)));
+                    if (!(near <= 4 * G + 1e-6) || !(crowd >= 0.6 * G - 1e-6)) far.push(`${e.name}（相手まで ${near.toFixed(0)}・最寄り ${crowd.toFixed(0)}）`);
+                });
+            });
+            assert(far.length === 0, `粒の置き場所が相手から遠い／他と重なる: ${far.join(' / ')}`);
+
+            // ③ ★★ 否定対照: 成分を置く2つの口を塞ぐと、塩は実際に落ちる（＝ ①は直した道を見ている）
+            const realL = W.layoutDetachedComponents, realP = W.placeDetachedComponents;
+            const plainPrints = [];
+            const others = [...W.STAGES, ...W.COMPOUNDS].filter(e => e.target && !e.target.atoms.some(a => a.charge)).slice(0, 120);
+            others.forEach(e => {
+                ip.renderStandardFigure(svg.id, g.createTargetFromData({ target: e.target }), false);
+                plainPrints.push(fgtFigurePrint(svg));
+            });
+            let broken;
+            const blockedPrints = [];
+            W.layoutDetachedComponents = () => {};
+            W.placeDetachedComponents = (m, p) => p;
+            try {
+                broken = drawAll(false).length;
+                // ④ ★★ 否定対照: 電荷の無い分子（1成分）の図は、口を塞いでも1本も変わらない ＝ 今までの図に触っていない
+                others.forEach(e => {
+                    ip.renderStandardFigure(svg.id, g.createTargetFromData({ target: e.target }), false);
+                    blockedPrints.push(fgtFigurePrint(svg));
+                });
+            } finally {
+                W.layoutDetachedComponents = realL;
+                W.placeDetachedComponents = realP;
+            }
+            assert(broken === salts.length, `否定対照が空振り: 口を塞いでも ${salts.length - broken} 件の塩が描けてしまう`);
+            const changed = others.filter((e, i) => plainPrints[i] !== blockedPrints[i]).map(e => e.name);
+            assert(changed.length === 0, `★ 電荷の無い分子の図が、成分を置く口の有無で変わった: ${changed.slice(0, 5).join(' / ')}`);
+            return `塩 ${salts.length} 件が丸の図・紙の図とも描ける／口を塞ぐと ${broken} 件落ちる／電荷の無い ${others.length} 件は1本も変わらない`;
+        } finally {
+            svg.remove();
+        }
+    });
+
+    test('FGT2: ★ ハース式の図（ipHaworthFigure）は α とβ で1位の −OH の上下が逆（★否定対照: 直交の図では同じ図）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        const pairs = [
+            ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
+            ['α-D-ガラクトース（α-D-ガラクトピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+            ['α-D-フルクトフラノース', 'β-D-フルクトフラノース']
+        ];
+        const svg = ipFigureSvg(c, 'fgt2-fig');
+        /** アノマー炭素（環の O の隣で、環の外に −OH を持つ炭素）とその O の、描いた縦の向き（+1 ＝ 下） */
+        const anomericSide = (m) => {
+            const ring = W._ringAtomIds(m);
+            const ringO = m.atoms.find(a => a.element === 'O' && ring.has(a.id));
+            for (const nb of m.getNeighbors(ringO.id)) {
+                const cA = nb.atom;
+                if (cA.element !== 'C' || !ring.has(cA.id)) continue;
+                const oh = m.getNeighbors(cA.id).map(n => n.atom)
+                    .find(a => a.element === 'O' && !ring.has(a.id) && m.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1);
+                if (oh) return { c: cA, o: oh, side: Math.sign(oh.y - cA.y) };
+            }
+            return null;
+        };
+        const drawnAt = (x, y) => [...svg.querySelectorAll('.quiz-atoms circle')]
+            .some(el => el.getAttribute('r') === '10' && Math.hypot(+el.getAttribute('cx') - x, +el.getAttribute('cy') - y) < 0.5);
+        try {
+            const lines = [];
+            pairs.forEach(([an, bn]) => {
+                const sides = [an, bn].map(name => {
+                    const e = fgtEntry(W, name);
+                    assert(e, `テスト前提: 登録に「${name}」が無い`);
+                    const m = g.createTargetFromData({ target: e.target });
+                    assert(W.ipHaworthFigure(m) === true, `「${name}」がハース式の門番を通らない`);
+                    ip.renderStandardFigure(svg.id, m, false);
+                    const s = anomericSide(m);
+                    assert(s && s.side !== 0, `「${name}」のアノマー炭素の −OH が読めない`);
+                    // ★ 描いた図にその位置の丸がある（＝ 座標を読んだだけでなく、その座標で描いている）
+                    assert(drawnAt(s.o.x, s.o.y) && drawnAt(s.c.x, s.c.y), `「${name}」の図に1位の C / −OH の丸が座標どおりに無い`);
+                    return s.side;
+                });
+                assert(sides[0] === 1 && sides[1] === -1,
+                    `★ ${an} / ${bn} の1位の −OH が α=${sides[0] > 0 ? '下' : '上'}・β=${sides[1] > 0 ? '下' : '上'}（α は下・β は上のはず）`);
+                lines.push(an.replace(/（.*/, ''));
+            });
+            // ★★ 否定対照: ハース式を通さない（今までの標準の図＝ layoutMolecule）と、α とβ は同じ図になる
+            const prints = pairs[0].map(name => {
+                ip.renderStandardFigure(svg.id, g.createTargetFromData({ target: fgtEntry(W, name).target }), false);
+                return fgtFigurePrint(svg);
+            });
+            assert(prints[0] === prints[1], '否定対照が空振り: 直交の図でも α とβ が違う図になっている（この検査は ipHaworthFigure を見ていない）');
+            // 糖でない環は門番で断る
+            const cyc = fgtEntry(W, 'シクロヘキサノール');
+            if (cyc) assert(W.ipHaworthFigure(g.createTargetFromData({ target: cyc.target })) === false, 'シクロヘキサノールがハース式の門番を通った');
+            return `${lines.join('・')} の α/β で1位の −OH が下／上に分かれる／直交の図では α とβ が同じ図`;
+        } finally {
+            svg.remove();
+        }
+    });
+
+    test('FGT3: 紙の図の型は丸を描かず H をまとめる・−NO₂/−SO₃H は文字・−COOH は C=O を線（上書き2通り・★否定対照: 既定の図は丸のまま）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        const svg = ipFigureSvg(c, 'fgt3-fig');
+        const paperOf = (name, extra) => {
+            const e = fgtEntry(W, name);
+            assert(e, `テスト前提: 登録に「${name}」が無い`);
+            const m = g.createTargetFromData({ target: e.target });
+            ip.renderStandardFigure(svg.id, m, false, Object.assign({ paper: true }, extra || {}));
+            return {
+                m,
+                labels: [...svg.querySelectorAll('.svg-paper-label')].map(t => t.textContent).sort(),
+                circles: svg.querySelectorAll('.quiz-atoms circle').length
+            };
+        };
+        const same = (got, want, what) => assert(JSON.stringify(got) === JSON.stringify([...want].sort()),
+            `${what} の文字が ${JSON.stringify(got)}（${JSON.stringify([...want].sort())} のはず）`);
+        try {
+            const aa = paperOf('酢酸');
+            assert(aa.circles === 0, `紙の図に丸が ${aa.circles} 個描かれている`);
+            same(aa.labels, ['H₃C', 'C', 'O', 'OH'], '酢酸（既定 ＝ C=O は線・OH だけ文字）');
+            same(paperOf('酢酸', { condense: ['COOH'] }).labels, ['H₃C', 'COOH'], '酢酸（condense=COOH）');
+            same(paperOf('ベンズアルデヒド').labels, ['CH', 'O'], 'ベンズアルデヒド（既定 ＝ C=O は線＋H）');
+            same(paperOf('ニトロベンゼン').labels, ['NO₂'], 'ニトロベンゼン（既定 ＝ 文字）');
+            same(paperOf('ニトロベンゼン', { expand: ['NO2'] }).labels, ['N', 'O', 'O'], 'ニトロベンゼン（expand=NO2）');
+            same(paperOf('ベンゼンスルホン酸').labels, ['SO₃H'], 'ベンゼンスルホン酸（既定 ＝ 文字）');
+            // ★ 芳香環は登録の座標（正六角形）で描く ＝ 環の6辺の長さがそろう（layoutMolecule の長方形なら 1:√2 の対角は無いが縦横で揃わない形になる）
+            const tol = paperOf('トルエン');
+            same(tol.labels, ['CH₃'], 'トルエン（環の炭素は文字を書かない）');
+            const ring = W._ringAtomIds(tol.m);
+            const edges = tol.m.bonds.filter(b => ring.has(b.atomId1) && ring.has(b.atomId2)).map(b => {
+                const a1 = tol.m.atoms.find(a => a.id === b.atomId1), a2 = tol.m.atoms.find(a => a.id === b.atomId2);
+                return { len: Math.hypot(a1.x - a2.x, a1.y - a2.y), slant: Math.abs(a1.x - a2.x) > 1e-6 && Math.abs(a1.y - a2.y) > 1e-6 };
+            });
+            assert(edges.length === 6 && Math.max(...edges.map(e => e.len)) - Math.min(...edges.map(e => e.len)) < 0.5,
+                `トルエンの環の辺の長さがそろわない（${edges.map(e => e.len.toFixed(1)).join(',')}）`);
+            assert(edges.filter(e => e.slant).length === 4, `トルエンの環が正六角形でない（斜めの辺 ${edges.filter(e => e.slant).length} 本・4本のはず）`);
+
+            // ★★ 否定対照: opts を渡さない（アプリの画面の呼び方）と、今までどおり丸の図・紙の文字は0・環は長方形
+            const e = fgtEntry(W, 'トルエン');
+            const m0 = g.createTargetFromData({ target: e.target });
+            ip.renderStandardFigure(svg.id, m0, false);
+            assert(svg.querySelectorAll('.svg-paper-label').length === 0, '既定の図に紙の文字が混ざった');
+            assert([...svg.querySelectorAll('.quiz-atoms circle')].filter(el => el.getAttribute('r') === '10').length === 7,
+                '既定の図の重原子の丸が 7 個でない（アプリの見た目が変わった）');
+            assert(!m0._ipFixedLayout, '既定の図が登録の座標に切り替わった（紙の図の型が漏れている）');
+            return '酢酸・ベンズアルデヒド・ニトロベンゼン・ベンゼンスルホン酸・トルエンが決めどおり／condense・expand が効く／既定の図は丸のまま';
+        } finally {
+            svg.remove();
+        }
     });
 
     test('ION2: 正準コードのラベルは電荷を明示する（N(4) と N⁺(4) が割れる・不斉判定も電荷を見る）', async (c) => {

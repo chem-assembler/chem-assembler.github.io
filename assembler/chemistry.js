@@ -1290,38 +1290,18 @@ function findAnyCycle(mol) {
     return cycle;
 }
 
-function layoutMolecule(mol) {
-    const G = 42;
-    if (mol.atoms.length === 0) return;
-    const placed = new Map();
-    const occupied = [];
+/**
+ * `layoutMolecule` の BFS（直進優先 → 直交 → 距離2倍 → 周辺の螺旋探索）。
+ * ⚠ v1549 で関数に切り出しただけで、**手順も順序も1つも変えていない**
+ *   （つながっていない成分を置く `layoutDetachedComponents` が同じ手で残りを伸ばすため）。
+ * placed: id → {x,y}、occupied: 置いた座標の配列（placed と同じ中身を順に持つ）
+ */
+function layoutGrowFrom(mol, placed, occupied, parentDir, queue, G) {
     const isFree = (x, y) => occupied.every(p => Math.hypot(p.x - x, p.y - y) >= G * 0.6);
     const put = (id, x, y) => {
         placed.set(id, { x, y });
         occupied.push({ x, y });
     };
-
-    // 1. 環があれば最初の環をテンプレートで置く（3員=直角三角形、5員=家型、6員=長方形）
-    const RING_TEMPLATES = {
-        3: [[0, 0], [G, 0], [G, G]],
-        4: [[0, 0], [G, 0], [G, G], [0, G]],
-        5: [[0, 0], [G, 0], [2 * G, 0], [2 * G, G], [0, G]],
-        6: [[0, 0], [G, 0], [2 * G, 0], [2 * G, G], [G, G], [0, G]],
-        7: [[0, 0], [G, 0], [2 * G, 0], [3 * G, 0], [3 * G, G], [G, G], [0, G]],
-        8: [[0, 0], [G, 0], [2 * G, 0], [3 * G, 0], [3 * G, G], [2 * G, G], [G, G], [0, G]]
-    };
-    const cycle = findAnyCycle(mol);
-    if (cycle && RING_TEMPLATES[cycle.length]) {
-        RING_TEMPLATES[cycle.length].forEach(([x, y], i) => put(cycle[i], x, y));
-    }
-
-    // 2. 残りをBFSで配置（直進優先 → 直交 → 距離2倍 → 周辺の螺旋探索）
-    if (placed.size === 0) {
-        const start = mol.atoms.find(a => mol.getNeighbors(a.id).length <= 1) || mol.atoms[0];
-        put(start.id, 0, 0);
-    }
-    const parentDir = new Map();
-    const queue = [...placed.keys()];
     while (queue.length) {
         const id = queue.shift();
         const pos = placed.get(id);
@@ -1363,6 +1343,162 @@ function layoutMolecule(mol) {
             queue.push(n.atom.id);
         });
     }
+}
+
+/**
+ * ★ **結合でつながっていない成分**（塩の Na⁺・Cl⁻ など）を、すでに置いた原子の近くへ離して置く（v1549・表示専用）。
+ *
+ * **なぜ要るか**: 電荷つきの登録（v1538・アニリン塩酸塩など 22件）は、イオンを**結合ゼロの粒**として持つ。
+ *   `layoutMolecule` も `ipLayoutFromChain` も「置いた原子から結合をたどる」ので粒へ届かず、
+ *   座標の無い原子を読んで**落ちていた**（参考書の図の道具・書き出しのサムネイル・絞り込み）。
+ *
+ * **置き方**（化学の約束ではなく見た目だけ）:
+ *   ・大きい成分から順に、成分の中の電荷のある原子（無ければ先頭）を「種」にする
+ *   ・相手は**反対の電荷を持つ、置き済みの原子**（無ければ電荷のある原子 → 右端の原子）
+ *   ・相手の結合と反対の向き（4方向のうちいちばん外向き）へ、格子 2つぶん離す。塞がっていれば 3・4つぶん
+ *   ・種から先（多原子イオンの残り）は `layoutGrowFrom` と同じ手で伸ばす
+ * ★ **全原子が置き済みなら何もしない** ＝ 1成分の分子の図は1px も変わらない
+ */
+function layoutDetachedComponents(mol, placed, occupied, parentDir, G) {
+    if (mol.atoms.every(a => placed.has(a.id))) return;
+    const order = new Map(mol.atoms.map((a, i) => [a.id, i]));
+    const byId = new Map(mol.atoms.map(a => [a.id, a]));
+    const isFree = (x, y) => occupied.every(p => Math.hypot(p.x - x, p.y - y) >= G * 0.6);
+    // 置いていない原子を成分に分ける（⚠ 並びは mol.atoms の順だけで決める ＝ 原子IDの順序に頼らない）
+    const comps = [];
+    const seen = new Set();
+    mol.atoms.forEach(a => {
+        if (placed.has(a.id) || seen.has(a.id)) return;
+        const comp = [a.id];
+        seen.add(a.id);
+        for (let i = 0; i < comp.length; i++) {
+            mol.getNeighbors(comp[i]).forEach(n => {
+                if (seen.has(n.atom.id) || placed.has(n.atom.id)) return;
+                seen.add(n.atom.id);
+                comp.push(n.atom.id);
+            });
+        }
+        comps.push(comp.sort((p, q) => order.get(p) - order.get(q)));
+    });
+    comps.sort((p, q) => (q.length - p.length) || (order.get(p[0]) - order.get(q[0])));
+    const usedAnchors = new Set();
+    comps.forEach(comp => {
+        const seed = byId.get(comp.find(id => byId.get(id).charge) || comp[0]);
+        const sign = Math.sign(seed.charge || comp.reduce((s, id) => s + (byId.get(id).charge || 0), 0));
+        const placedAtoms = mol.atoms.filter(a => placed.has(a.id));
+        const pick = (ok) => placedAtoms.find(a => ok(a) && !usedAnchors.has(a.id)) || placedAtoms.find(ok);
+        const anchor = (sign && pick(a => Math.sign(a.charge || 0) === -sign))
+            || pick(a => a.charge)
+            || placedAtoms.reduce((best, a) => {
+                const p = placed.get(a.id), b = placed.get(best.id);
+                return (p.x > b.x || (p.x === b.x && p.y < b.y)) ? a : best;
+            }, placedAtoms[0]);
+        usedAnchors.add(anchor.id);
+        const at = placed.get(anchor.id);
+        // 相手の結合（置き済みの隣）と反対を向く
+        let vx = 0, vy = 0;
+        mol.getNeighbors(anchor.id).forEach(n => {
+            const p = placed.get(n.atom.id);
+            if (!p) return;
+            const d = Math.hypot(p.x - at.x, p.y - at.y) || 1;
+            vx -= (p.x - at.x) / d; vy -= (p.y - at.y) / d;
+        });
+        if (Math.hypot(vx, vy) < 1e-6) { vx = 1; vy = 0; }
+        const dirs = [[G, 0], [0, -G], [0, G], [-G, 0]]
+            .map((d, i) => ({ d, i, dot: d[0] * vx + d[1] * vy }))
+            .sort((p, q) => (q.dot - p.dot) || (p.i - q.i))
+            .map(o => o.d);
+        let spot = null;
+        for (const mult of [2, 3, 4]) {
+            for (const [dx, dy] of dirs) {
+                if (isFree(at.x + dx * mult, at.y + dy * mult)) { spot = { x: at.x + dx * mult, y: at.y + dy * mult, dx, dy }; break; }
+            }
+            if (spot) break;
+        }
+        if (!spot) {
+            // 近くが全部塞がっている（大きな図のまん中）→ 図の右端のさらに外へ
+            const maxX = Math.max(...occupied.map(p => p.x));
+            spot = { x: maxX + 2 * G, y: at.y, dx: G, dy: 0 };
+        }
+        placed.set(seed.id, { x: spot.x, y: spot.y });
+        occupied.push({ x: spot.x, y: spot.y });
+        parentDir.set(seed.id, { dx: spot.dx, dy: spot.dy });
+        layoutGrowFrom(mol, placed, occupied, parentDir, [seed.id], G);
+    });
+}
+
+/**
+ * ★ 座標の表（id → {x,y}）で持つ配置（`ipLayoutFromChain` など）に、つながっていない成分を足す口（v1549）。
+ * `pos` をその場で書き足して返す。全原子が置き済みなら何もしない
+ */
+/** いちばん大きい連結成分の原子IDの集合（同数なら mol.atoms で先に出る原子を含むほう） */
+function layoutLargestComponent(mol) {
+    const seen = new Set();
+    let best = new Set();
+    mol.atoms.forEach(a => {
+        if (seen.has(a.id)) return;
+        const comp = new Set([a.id]);
+        const stack = [a.id];
+        seen.add(a.id);
+        while (stack.length) {
+            mol.getNeighbors(stack.pop()).forEach(n => {
+                if (seen.has(n.atom.id)) return;
+                seen.add(n.atom.id); comp.add(n.atom.id); stack.push(n.atom.id);
+            });
+        }
+        if (comp.size > best.size) best = comp;
+    });
+    return best;
+}
+
+function placeDetachedComponents(mol, pos, G) {
+    if (mol.atoms.every(a => pos.has(a.id))) return pos;
+    const occupied = [...pos.values()].map(p => ({ x: p.x, y: p.y }));
+    layoutDetachedComponents(mol, pos, occupied, new Map(), G);
+    return pos;
+}
+
+function layoutMolecule(mol) {
+    const G = 42;
+    if (mol.atoms.length === 0) return;
+    const placed = new Map();
+    const occupied = [];
+    const put = (id, x, y) => {
+        placed.set(id, { x, y });
+        occupied.push({ x, y });
+    };
+
+    // 1. 環があれば最初の環をテンプレートで置く（3員=直角三角形、5員=家型、6員=長方形）
+    const RING_TEMPLATES = {
+        3: [[0, 0], [G, 0], [G, G]],
+        4: [[0, 0], [G, 0], [G, G], [0, G]],
+        5: [[0, 0], [G, 0], [2 * G, 0], [2 * G, G], [0, G]],
+        6: [[0, 0], [G, 0], [2 * G, 0], [2 * G, G], [G, G], [0, G]],
+        7: [[0, 0], [G, 0], [2 * G, 0], [3 * G, 0], [3 * G, G], [G, G], [0, G]],
+        8: [[0, 0], [G, 0], [2 * G, 0], [3 * G, 0], [3 * G, G], [2 * G, G], [G, G], [0, G]]
+    };
+    const cycle = findAnyCycle(mol);
+    if (cycle && RING_TEMPLATES[cycle.length]) {
+        RING_TEMPLATES[cycle.length].forEach(([x, y], i) => put(cycle[i], x, y));
+    }
+
+    // 2. 残りをBFSで配置（直進優先 → 直交 → 距離2倍 → 周辺の螺旋探索）
+    if (placed.size === 0) {
+        // ⚠ 塩（成分が2つ以上）では、結合ゼロの粒（Na⁺）も「隣が1本以下」に当たる。
+        //   粒から始めると主な成分が「つながっていない側」に回るので、**いちばん大きい成分**の中から選ぶ。
+        //   ★ 1成分の分子では `main` が全原子 ＝ 選ばれる原子は今までと同じ
+        const main = layoutLargestComponent(mol);
+        const start = mol.atoms.find(a => main.has(a.id) && mol.getNeighbors(a.id).length <= 1)
+            || mol.atoms.find(a => main.has(a.id)) || mol.atoms[0];
+        put(start.id, 0, 0);
+    }
+    const parentDir = new Map();
+    layoutGrowFrom(mol, placed, occupied, parentDir, [...placed.keys()], G);
+    // 3. ★ つながっていない成分（塩のイオン Na⁺・Cl⁻ など）を置く（v1549）。
+    //    ⚠ 以前は BFS がたどり着けない原子の座標が無いまま下の書き戻しへ進み、
+    //      `placed.get(a.id)` が undefined で**落ちていた**（登録の電荷つき 22件すべて）。
+    //    ★ 1成分の分子はここを1度も通らない ＝ 今までの図は1px も変わらない
+    layoutDetachedComponents(mol, placed, occupied, parentDir, G);
     mol.atoms.forEach(a => {
         const p = placed.get(a.id);
         a.x = p.x;
