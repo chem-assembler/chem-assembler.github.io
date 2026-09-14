@@ -8562,6 +8562,8 @@ const HS_DURATION  = 1500;
 const HS_PLAIN_DURATION = 800;
 /** 再生の終わりに、写しにだけ置いた副生成物が薄れる尺（v1556） */
 const RX_FADE_MS = 500;
+/** 同じ相手・副生成物がこの数以上なら1つだけ描いて「×n」を添える（v1560） */
+const RX_FOLD_MIN = 3;
 /** ★ 反応の前の置き直し（相手が現れる・反応する H が大きな丸になる・環が回る）の尺と、そのあとの一呼吸（v1556） */
 const RX_PRE_MS = 500;
 const RX_HOLD_MS = 350;
@@ -8769,28 +8771,39 @@ function summonReactionPartner(ruleId, before, mol) {
         });
     }
     const all = atomsOut.concat(leftovers);
-    if (all.some(p => Math.abs(p.x) > LIMIT || Math.abs(p.y) > LIMIT)) return false;
+    if (all.some(p => Math.abs(p.x) > LIMIT || Math.abs(p.y) > LIMIT)) return null;
 
-    // ここで初めて書き込む（途中で false を返した回は、before も mol も触っていない）
-    atomsOut.forEach(p => before.atoms.push(p));
-    bondsOut.forEach(b => before.bonds.push(b));
-    leftovers.forEach(l => {
-        const o = mol.addAtom(l.element, l.x, l.y);
-        o.fromReaction = true;   // 自動水素で HCl・H₂O として描かれる（反応でできた副生成物）
-        before.atoms.push({ id: o.id, element: o.element, x: o.x, y: o.y, charge: 0 });
-        before.bonds.push({ atomId1: l.partnerId, atomId2: o.id, type: 1 });
+    /* ★★ v1560: 余り（HCl・H₂O）は**キャンバスに残さず、再生の写しにだけ置いて薄れさせる**
+     *   （ユーザー「副生成物は薄れて消える形にそろえ」。v1556 の 26 本と同じ形）。
+     *   ⚠ v1553 は `before` と `mol` を書き換えていた。いまは**どちらも触らず**写しを返す
+     *   ＝ キャンバス・判定・Undo・lastReaction.before は apply のまま */
+    const animBefore = { atoms: before.atoms.map(a => ({ ...a })), bonds: before.bonds.map(b => ({ ...b })) };
+    const animAfter = {
+        atoms: mol.atoms.map(a => ({ id: a.id, element: a.element, x: a.x, y: a.y, charge: a.charge || 0 })),
+        bonds: mol.bonds.map(b => ({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }))
+    };
+    atomsOut.forEach(p => animBefore.atoms.push(p));
+    bondsOut.forEach(b => animBefore.bonds.push(b));
+    const transient = [];
+    leftovers.forEach((l, k) => {
+        const id = `rxsum_${k}`;
+        animBefore.atoms.push({ id, element: l.element, x: l.x, y: l.y, charge: 0 });
+        animBefore.bonds.push({ atomId1: l.partnerId, atomId2: id, type: 1 });
+        animAfter.atoms.push({ id, element: l.element, x: l.x, y: l.y, charge: 0 });   // 自動水素で HCl・H₂O
+        transient.push(id);
         /* ★ HNO₃ の -OH の H は**写しに明示で置く**。N に単結合の O が2つ付くと、自動水素は
          *   ニトロ基の O⁻ として読んで H を生やさない（実測: HNO₃ が H 無しで描かれ、
          *   反応後の H₂O の H が1つ急に出た）。`withMorphHydrogens` が明示の H も自動水素と同じに扱う */
         const root = atomsOut.find(p => p.id === l.partnerId);
         if (shape === 'plus-OH' && root && root.element === 'N') {
-            const L = Math.hypot(o.x - root.x, o.y - root.y) || 1;
-            before.atoms.push({ id: `summonH_${o.id}`, element: 'H',
-                x: o.x + 16 * (o.x - root.x) / L, y: o.y + 16 * (o.y - root.y) / L, charge: 0 });
-            before.bonds.push({ atomId1: o.id, atomId2: `summonH_${o.id}`, type: 1 });
+            const L = Math.hypot(l.x - root.x, l.y - root.y) || 1;
+            animBefore.atoms.push({ id: `summonH_${id}`, element: 'H',
+                x: l.x + 16 * (l.x - root.x) / L, y: l.y + 16 * (l.y - root.y) / L, charge: 0 });
+            animBefore.bonds.push({ atomId1: id, atomId2: `summonH_${id}`, type: 1 });
         }
     });
-    return true;
+    return { before: animBefore, after: animAfter, transient, renames: new Map(), counts: null, hGap: 0,
+        foldedPartnerIds: [], foldedByproductIds: [], foldedH: 0 };
 }
 
 /* ==========================================================================
@@ -8826,7 +8839,9 @@ const RX_SPECIES = {
     H2O: { atoms: [['O', 0, 0]], bonds: [] },
     I2: { atoms: [['I', 0, 0], ['I', 1, 0]], bonds: [[0, 1, 1]] },
     HCl: { atoms: [['Cl', 0, 0]], bonds: [] },
-    NaOH: { atoms: [['O', 0, 0, -1], ['Na', 1, 0, 1]], bonds: [] },
+    /* ★ Na⁺ は OH⁻ の **O 側**に置く（v1560・ユーザー「NaOHについては、Na に OH-のO側がつくほうがよい」）。
+     *   結合の無い O⁻ の自動水素は右（0°）に生えるので、Na⁺ を左に置くと「Na ··· O−H」の順になる */
+    NaOH: { atoms: [['O', 0, 0, -1], ['Na', -1, 0, 1]], bonds: [] },
     NaNO2: { atoms: [['O', 0, 0], ['N', 1, 0], ['O', 2, 0, -1], ['Na', 3, 0, 1]], bonds: [[0, 1, 2], [1, 2, 1]] },
     NaHCO3: { atoms: [['C', 0, 0], ['O', 0, -1], ['O', -1, 0], ['O', 1, 0, -1], ['Na', 2, 0, 1]],
         bonds: [[0, 1, 2], [0, 2, 1], [0, 3, 1]] },
@@ -10575,8 +10590,8 @@ class Reactor {
          *   反応前の写し（before）と生成物（キャンバス）を同じだけ回す ＝ 生成物も右上のまま残る。
          *   ⚠ 相手を置く前に回す（相手の置き場は回したあとの図で決める） */
         const rotation = this.turnRingForReaction(rule, before, g.userMolecule, result);
-        let anim = null;
-        if (summonReactionPartner(rule.id, before, g.userMolecule)) {
+        let anim = summonReactionPartner(rule.id, before, g.userMolecule);
+        if (anim) {
             result = { ...result, refit: true };
         } else {
             /* ★ 反応式ぶんの相手（[O]・NaOH・NaNO₂・無水酢酸・I₂・O₂ など）と副生成物を再生の写しにだけ置く（v1556）。
@@ -10622,13 +10637,13 @@ class Reactor {
                 const b = beforeById.get(a.id);
                 return b ? { ...a, x: b.x, y: b.y } : { ...a };
             });
-            return { atoms, bonds: after.bonds.map(b => ({ ...b })) };
+            return { atoms, bonds: after.bonds.map(b => ({ ...b })), labels: after.labels || [] };
         }
         const atoms = before.atoms.map(a => {
             const af = afterById.get(a.id);
             return af ? { ...a, x: af.x, y: af.y } : { ...a };
         });
-        return { atoms, bonds: before.bonds.map(b => ({ ...b })) };
+        return { atoms, bonds: before.bonds.map(b => ({ ...b })), labels: before.labels || [] };
     }
 
     // スナップショットから一時的な Molecule を作る（中間状態の自動水素を計算するため）
@@ -10912,6 +10927,41 @@ class Reactor {
         }
         if (byproducts.some(inst => inst.slots.some(s => s.id === null))) return null;
 
+        /* ★★ 係数の大きい相手・副生成物は**1つだけ描いて「×n」の札を添える**（v1560・ユーザー「それでやってみましょう」）。
+         *   境界: 同じ種類が **3個以上**（RX_FOLD_MIN）のときだけまとめる。
+         *   ⚠ **まとめない**: 仮の [O]（1個ずつ基質の決まった原子と握手する）・v1553 の `PARTNER_SUMMON`
+         *     （Br₂×3・Cl₂×3 は基質の別々の位置と握手する ＝ まとめると原子が急に出るのが戻る）・2個まで（見える）。
+         *   ⚠ まとめたぶんの握手は見えない ＝ 急に出る／消える原子が出る。**どの原子がそうなるかを記録する**:
+         *     foldedPartnerIds … まとめて描かなかった相手の原子（生成物に入るものは急に出る）
+         *     foldedByproductIds … まとめて描かなかった副生成物の原子（基質から出ていくものは急に消える）
+         *   RXP3・RXF1 は、急に出る／消える原子がこの記録の中に収まることを見る（外に1つでもあれば赤）。
+         *   `_foldCopies = false` でまとめない（否定対照） */
+        const foldedPartnerIds = [], foldedByproductIds = [];
+        let foldedH = 0;
+        const foldCopies = (list, visible, sink) => {
+            const byName = new Map();
+            list.forEach(inst => { if (!byName.has(inst.name)) byName.set(inst.name, []); byName.get(inst.name).push(inst); });
+            byName.forEach((insts, name) => {
+                if (this._foldCopies === false || insts.length < RX_FOLD_MIN || name === '[O]') return;
+                const rep = insts.slice().sort((a, b) => visible(b) - visible(a))[0];
+                rep.mult = insts.length;
+                insts.forEach(inst => {
+                    if (inst === rep) return;
+                    inst.folded = true;
+                    inst.slots.forEach(s => sink.push(s.id));
+                    foldedH += rxSpeciesCount(name).H;
+                });
+            });
+            for (let i = list.length - 1; i >= 0; i--) if (list[i].folded) list.splice(i, 1);
+        };
+        // 描く1つは、生成物と握手する原子（湧いた原子）をいちばん多く持つもの
+        foldCopies(partners, inst => inst.slots.filter(s => !s.fresh).length, foldedPartnerIds);
+        const foldedP = new Set(foldedPartnerIds);
+        const goneIds = new Set(gones.map(a => a.id));
+        // 副生成物は、描いた相手・基質から来る原子をいちばん多く持つもの
+        foldCopies(byproducts, inst => inst.slots.filter(s => goneIds.has(s.id) ||
+            (s.id && !foldedP.has(s.id) && String(s.id).startsWith('rxeq_'))).length, foldedByproductIds);
+
         // ④ 置き場: 反応する場所のそばの空いた所（反応前・反応後どちらの図とも重ならない）
         const bPos = new Map(before.atoms.map(a => [a.id, a]));
         const mPos = new Map(mol.atoms.map(a => [a.id, a]));
@@ -10986,10 +11036,19 @@ class Reactor {
         put(animBefore, partners);
         const animAfter = this.snapshotMolecule(mol);
         put(animAfter, byproducts);
+        // 「×n」の札: 描いた1つの右上。原子に結びつけておく（再生で原子と一緒に動く）
+        const labelOf = inst => {
+            const heavySlot = inst.slots.find(s => s.el !== 'H') || inst.slots[0];
+            const maxX = Math.max(...inst.slots.map(s => s.x)), minY = Math.min(...inst.slots.map(s => s.y));
+            return { id: heavySlot.id, dx: maxX - heavySlot.x + 18, dy: minY - heavySlot.y - 14, text: `×${inst.mult}` };
+        };
+        animBefore.labels = partners.filter(i => i.mult).map(labelOf);
+        animAfter.labels = byproducts.filter(i => i.mult).map(labelOf);
         return {
             before: animBefore, after: animAfter,
             transient: byproducts.flatMap(inst => inst.slots.map(s => s.id)),
-            renames, counts: sol.counts, hGap: sol.hGap
+            renames, counts: sol.counts, hGap: sol.hGap,
+            foldedPartnerIds, foldedByproductIds, foldedH
         };
     }
 
@@ -11009,6 +11068,7 @@ class Reactor {
             return { snap: { atoms: snap.atoms.filter(a => !hid.has(a.id)),
                 bonds: snap.bonds.filter(b => !hid.has(b.atomId1) && !hid.has(b.atomId2)) }, explicit };
         };
+        const labB = before.labels || [], labA = after.labels || [];
         const sb = splitH(before), sa = splitH(after);
         before = sb.snap; after = sa.snap;
         /* ★ `bare` の原子（仮の [O]・金属の Na）には自動水素を生やさない（v1556） */
@@ -11138,8 +11198,9 @@ class Reactor {
             bonds: snap.bonds.concat(list.filter(e => e.p).map(e => ({ atomId1: e.p, atomId2: e.id, type: 1 })), bonds)
         });
         return {
-            before: build(before, B, extraBonds),
-            after: build(after, A, []),
+            // ★ 「×n」の札（v1560）は写しから写しへ引き継ぐ
+            before: Object.assign(build(before, B, extraBonds), { labels: labB }),
+            after: Object.assign(build(after, A, []), { labels: labA }),
             lost: restL.length, gained: restG.length
         };
     }
@@ -11198,7 +11259,8 @@ class Reactor {
         });
         return {
             atoms: snap.atoms.filter(a => !gone.has(a.id)),
-            bonds: snap.bonds.filter(b => !gone.has(b.atomId1) && !gone.has(b.atomId2))
+            bonds: snap.bonds.filter(b => !gone.has(b.atomId1) && !gone.has(b.atomId2)),
+            labels: (snap.labels || []).filter(l => !gone.has(l.id))
         };
     }
 
@@ -11236,7 +11298,7 @@ class Reactor {
 
         // ---- 反応する H を大きな丸にして、結合の向きへ伸ばす（込み合っていれば空いた向きへ回す・最後は控えめに）
         const enlarge = (snap, parents) => {
-            const out = { atoms: snap.atoms.map(a => ({ ...a })), bonds: snap.bonds };
+            const out = { atoms: snap.atoms.map(a => ({ ...a })), bonds: snap.bonds, labels: snap.labels || [] };
             const pos = new Map(out.atoms.map(a => [a.id, a]));
             const scale = new Map();
             const clash = (p, r, selfId, parentId) => {
@@ -12203,6 +12265,25 @@ class Reactor {
         });
         /* ★ 仮の [O] は札を「[O]」にする（v1556）。⚠ 旋回が始まるまで（握手し直したあとは本物の O） */
         const labels = new Map(before.atoms.filter(x => x.label).map(x => [x.id, x.label]));
+        /* ★ 「×n」の札（v1560）。相手の札は握手が始まると薄れ、副生成物の札は握手のあとに現れる */
+        const lt = (override || !this.handshakeHasChange(before, after)) ? t : hsEase(t, HS_FLOAT_END, HS_SWING_END);
+        const drawMult = (snap, op) => (snap.labels || []).forEach(l => {
+            const a = frame.atoms.find(x => x.id === l.id);
+            const o = Math.min(op, a ? a.opacity : 0);
+            if (!a || o <= 0.01) return;
+            const txt = document.createElementNS(NS, 'text');
+            txt.setAttribute('x', a.x + l.dx); txt.setAttribute('y', a.y + l.dy);
+            txt.setAttribute('fill', '#ffd166');
+            txt.setAttribute('font-size', '14');
+            txt.setAttribute('font-weight', 'bold');
+            txt.setAttribute('opacity', String(o));
+            txt.setAttribute('class', 'rx-mult');
+            txt.setAttribute('data-mult', l.text);
+            txt.setAttribute('pointer-events', 'none');
+            txt.textContent = l.text;
+            g.atomsGroup.appendChild(txt);
+        });
+        if (before !== after) { drawMult(before, 1 - lt); drawMult(after, lt); } else drawMult(before, 1);
         frame.atoms.forEach(a => {
             const start = g.atomsGroup.childElementCount;
             g.renderAtom(`morph_${a.id}`, a.element, a.x, a.y, false);
@@ -12330,7 +12411,11 @@ class Reactor {
         const sc = SCALES[this._compareScale] || SCALES.md;
         const ORANGE = 'var(--neon-orange)', CYAN = 'var(--neon-blue)', GREEN = 'var(--neon-green)';
         const rx = this.lastReaction;
-        const diff = this.computeDiff(rx.before, rx.after);
+        /* ★★ 相手を呼んだ反応は、前後比較も**反応式の左辺と右辺**にそろえる（v1560・ユーザー
+         *   「反応の前後を見る、では反応式の左辺と右辺が対応している状態にしてください」）。
+         *   前 ＝ 基質＋呼んだ相手すべて／後 ＝ 生成物＋副生成物すべて（まとめたものは「×n」の札）。 */
+        const src = rx.anim || rx;
+        const diff = this.computeDiff(src.before, src.after);
         ov.innerHTML = '';
 
         // ヘッダー: タイトル＋反応名 ＋ 図サイズ切替（小/中/大。IP_REVIEW_SCALES を共用）
@@ -12360,8 +12445,17 @@ class Reactor {
         ov.appendChild(headRow);
 
         // 2図（反応前 / 反応後）を並置
+        /* ★ 分子が多くて横に長いときは**上下に並べる**（v1560）。図は枠に収まるように縮む（viewBox）ので、
+         *   横長の図を半分の幅に入れると字が読めないほど小さくなる。縦横比 2.2 を超えたら1列 */
+        const aspect = s => {
+            const xs = s.atoms.map(a => a.x), ys = s.atoms.map(a => a.y);
+            return xs.length ? (Math.max(...xs) - Math.min(...xs) + 60) / (Math.max(...ys) - Math.min(...ys) + 60) : 1;
+        };
+        const stacked = Math.max(aspect(src.before), aspect(src.after)) > 2.2;
         const grid = document.createElement('div');
-        grid.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px;';
+        grid.id = 'rx-cmp-grid';
+        grid.setAttribute('data-layout', stacked ? 'stacked' : 'side');
+        grid.style.cssText = `display:grid; grid-template-columns:${stacked ? '1fr' : '1fr 1fr'}; gap:12px; margin-bottom:10px;`;
         const pending = [];
         const makeFig = (caption, snapshot, marks, accent) => {
             const cell = document.createElement('div');
@@ -12384,15 +12478,23 @@ class Reactor {
             pending.push({ id: svg.id, snapshot, marks });
             grid.appendChild(cell);
         };
-        makeFig('反応前', rx.before, {
+        makeFig('反応前', src.before, {
             atoms: diff.removedAtoms.map(a => ({ x: a.x, y: a.y, color: ORANGE })),
             bonds: diff.lostBonds.map(b => ({ ...b, color: ORANGE, dashed: true }))
         }, ORANGE);
-        makeFig('反応後', rx.after, {
+        makeFig('反応後', src.after, {
             atoms: diff.addedAtoms.map(a => ({ x: a.x, y: a.y, color: GREEN })),
             bonds: diff.gainedBonds.map(b => ({ ...b, color: CYAN, dashed: false }))
         }, CYAN);
         ov.appendChild(grid);
+        // ★ 並んでいる物質と係数を反応式の形で1行（v1560）。caption の式と同じ数になる
+        if (rx.anim) {
+            const eqEl = document.createElement('div');
+            eqEl.id = 'rx-cmp-eq';
+            eqEl.style.cssText = 'font-size:14px; color:#fff; text-align:center; margin:-2px 0 10px; letter-spacing:0.02em;';
+            eqEl.textContent = this.equationText(rx.anim, rx.ruleId);
+            ov.appendChild(eqEl);
+        }
 
         // 凡例
         /* 凡例（v1477・ユーザー実機報告「レジェンドの『オレンジ』や『シアン』は色なので、
@@ -12473,11 +12575,123 @@ class Reactor {
      *
      * ⚠ **色そのものは変えていない**（オレンジ＝切れた／シアン＝できた／緑＝付加した原子）。
      *   変えたのは**重ね順・太さ・濃さ**と、**1本ぶんかどうかの描き分け**だけ。 */
+    /**
+     * 写しの図を物質ごとに分け、係数つきの化学式の並びにする（v1560・前後比較の反応式）。
+     * 対イオンの粒は相方に付ける（`game.attachCounterIons`）。「×n」の札は係数に入れる。
+     */
+    equationSide(snap) {
+        const g = this.game;
+        const m = this.molFromSnapshot(snap);
+        const bare = new Set(snap.atoms.filter(a => a.bare).map(a => a.id));
+        const mult = new Map((snap.labels || []).map(l => [l.id, parseInt(String(l.text).replace('×', ''), 10) || 1]));
+        const hs = m.calculateHydrogens().filter(h => !bare.has(h.parentId));
+        const seen = new Set();
+        let parts = [];
+        m.atoms.forEach(a => {
+            if (seen.has(a.id)) return;
+            const ids = new Set([a.id]), st = [a.id];
+            seen.add(a.id);
+            while (st.length) {
+                const id = st.pop();
+                m.getNeighbors(id).forEach(n => { if (!ids.has(n.atom.id)) { ids.add(n.atom.id); seen.add(n.atom.id); st.push(n.atom.id); } });
+            }
+            const p = new Molecule();
+            m.atoms.filter(x => ids.has(x.id)).forEach(x => p.atoms.push(x));
+            m.bonds.filter(b => ids.has(b.atomId1) && ids.has(b.atomId2)).forEach(b => p.bonds.push(b));
+            parts.push(p);
+        });
+        if (typeof g.attachCounterIons === 'function') parts = g.attachCounterIons(parts);
+        /* ⚠ 粒どうしの塩（NaCl・NaI・KCl）は相方の分子が無いので attachCounterIons では組まれない。
+         *   残った1原子の陽イオンと陰イオンを、近いものどうしで1つにする（実測: NaI が「5Na ＋ I」と出た） */
+        const lone = sign => parts.filter(p => p.atoms.length === 1 && p.bonds.length === 0 && Math.sign(p.atoms[0].charge || 0) === sign);
+        const cats = lone(1), ans = lone(-1);
+        const pairsIon = [];
+        cats.forEach(cp => ans.forEach(ap => pairsIon.push({ cp, ap, d: Math.hypot(cp.atoms[0].x - ap.atoms[0].x, cp.atoms[0].y - ap.atoms[0].y) })));
+        pairsIon.sort((p, q) => p.d - q.d);
+        const usedIon = new Set();
+        pairsIon.forEach(({ cp, ap }) => {
+            if (usedIon.has(cp) || usedIon.has(ap)) return;
+            usedIon.add(cp); usedIon.add(ap);
+            cp.atoms.push(...ap.atoms);
+            parts = parts.filter(p => p !== ap);
+        });
+        const sub = n => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+        // 無機物は教科書の書き方にする（Hill 順だと NaOH が HNaO になる）
+        const INORGANIC = { HNaO: 'NaOH', ClNa: 'NaCl', INa: 'NaI', 'CHNaO₃': 'NaHCO₃', 'NNaO₂': 'NaNO₂',
+            'Na₂O₃S': 'Na₂SO₃', ClK: 'KCl', ClH: 'HCl', BrH: 'HBr', HI: 'HI', 'HNO₃': 'HNO₃', 'H₂O₄S': 'H₂SO₄' };
+        const items = [];
+        parts.forEach(p => {
+            const ids = new Set(p.atoms.map(a => a.id));
+            const cnt = {};
+            p.atoms.forEach(a => { cnt[a.element] = (cnt[a.element] || 0) + 1; });
+            const h = hs.filter(x => ids.has(x.parentId)).length;
+            if (h) cnt.H = (cnt.H || 0) + h;
+            let f;
+            if (p.atoms.length === 1 && bare.has(p.atoms[0].id) && p.atoms[0].element === 'O') f = '[O]';
+            else {
+                const keys = Object.keys(cnt);
+                const order = cnt.C ? ['C', 'H', ...keys.filter(k => k !== 'C' && k !== 'H').sort()] : keys.sort();
+                f = order.filter(k => cnt[k]).map(k => k + (cnt[k] > 1 ? sub(cnt[k]) : '')).join('');
+                f = INORGANIC[f] || f;
+            }
+            const k = Math.max(1, ...p.atoms.map(a => mult.get(a.id) || 1));
+            const hit = items.find(x => x.f === f);
+            if (hit) hit.n += k; else items.push({ f, n: k });
+        });
+        return items;
+    }
+
+    /** 前後比較に出す反応式。空気・O₂ で燃やす反応は [O] を ½O₂ に数え、分数になれば全体を2倍する（caption と同じ約束） */
+    equationText(anim, ruleId) {
+        let L = this.equationSide(anim.before);
+        const R = this.equationSide(anim.after);
+        const eq = PARTNER_EQUATIONS[ruleId];
+        if (eq && eq.partners.includes('O2')) {
+            const o = L.find(x => x.f === '[O]');
+            if (o) {
+                L = L.filter(x => x !== o);
+                const o2 = L.find(x => x.f === 'O₂');
+                if (o2) o2.n += o.n / 2; else L.push({ f: 'O₂', n: o.n / 2 });
+            }
+        }
+        const k = [...L, ...R].some(x => !Number.isInteger(x.n)) ? 2 : 1;
+        const fmt = list => list.map(x => `${x.n * k === 1 ? '' : x.n * k}${x.f}`).join(' ＋ ');
+        return `${fmt(L)} → ${fmt(R)}`;
+    }
+
     renderCompareFigure(svgId, snapshot, marks) {
         renderMoleculeIntoSvg(this.game, svgId, this.snapshotToTarget(snapshot));
         const svg = document.getElementById(svgId);
         if (!svg) return;
         const NS = 'http://www.w3.org/2000/svg';
+        /* ★ 写しにだけ居る「bare」の原子（仮の [O]・金属の Na・Na₂SO₃ の S）は、この図の描き方だと
+         *   自動水素が生えて水や NaH に見える。生えた H を消し、[O] の札を戻す（v1560） */
+        (snapshot.atoms || []).filter(a => a.bare).forEach(a => {
+            [...svg.querySelectorAll('.quiz-atoms text')].forEach(t => {
+                const tx = +t.getAttribute('x'), ty = +t.getAttribute('y');
+                if (t.textContent === 'H' && Math.hypot(tx - a.x, ty - a.y) < 26) {
+                    const prev = t.previousElementSibling;
+                    if (prev && prev.tagName === 'circle') prev.remove();
+                    t.remove();
+                }
+                if (a.label && t.textContent === a.element && Math.abs(tx - a.x) < 3 && Math.abs(ty - a.y) < 6) t.textContent = a.label;
+            });
+            [...svg.querySelectorAll('.quiz-bonds line')].forEach(l => {
+                const x1 = +l.getAttribute('x1'), y1 = +l.getAttribute('y1'), x2 = +l.getAttribute('x2'), y2 = +l.getAttribute('y2');
+                if (Math.hypot(x2 - x1, y2 - y1) < 22 && pointSegmentDistance(a, { x: x1, y: y1 }, { x: x2, y: y2 }) < 14) l.remove();
+            });
+        });
+        // 「×n」の札
+        (snapshot.labels || []).forEach(lb => {
+            const a = snapshot.atoms.find(x => x.id === lb.id);
+            if (!a) return;
+            const t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', a.x + lb.dx); t.setAttribute('y', a.y + lb.dy);
+            t.setAttribute('fill', '#ffd166'); t.setAttribute('font-size', '16'); t.setAttribute('font-weight', 'bold');
+            t.setAttribute('class', 'rx-mult'); t.setAttribute('data-mult', lb.text);
+            t.textContent = lb.text;
+            svg.appendChild(t);
+        });
         const hi = document.createElementNS(NS, 'g');
         hi.setAttribute('class', 'rx-diff-layer');
         (marks.bonds || []).forEach(bm => {
