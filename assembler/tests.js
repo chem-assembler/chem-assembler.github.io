@@ -15401,6 +15401,343 @@
         }
     });
 
+    /* ===== RXP3: 反応式ぶんの相手（[O]・NaOH・NaNO₂・無水酢酸・I₂・O₂ など）と副生成物を再生の写しにだけ置く（v1556）=====
+     * ユーザー決定: 「O、Naはその案で」「ジアゾ化、アセチル化もそれぞれ、NaNO2、無水酢酸 を呼び出せば解決する」
+     *   「燃焼は仮のO または O2 で」。ヨードホルムは I₂ と NaOH だけ（統合側の答え）。
+     * ★ 物差しは RXP1 と同じ（アニメの写しで急に出る／消える原子を H も含めて数える）。
+     *   ⚠ ただし相手と副生成物は `lastReaction.anim` にだけ居る ＝ キャンバス・前後比較の図・判定は変わらない。 */
+    const rxpEqRun = (c, names, id) => {
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.userMolecule = new W.Molecule();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
+        const rule = W.REACTION_RULES.find(r => r.id === id);
+        const sites = rule.detect(g.userMolecule) || [];
+        assert(sites.length, `${names.join('＋')} に ${id} の箇所が無い（検査が素通りする）`);
+        rx.execute(rule, sites[0]);
+        rx._morphSkip = true;
+        const L = rx.lastReaction;
+        const src = L.anim || L;
+        const hx = rx.withMorphHydrogens(src.before, src.after);
+        const bi = new Set(hx.before.atoms.map(a => a.id)), ai = new Set(hx.after.atoms.map(a => a.id));
+        const parts = g.splitMolecules();
+        const heavy = p => p.atoms.filter(a => a.element !== 'H');
+        const codes = parts.filter(p => heavy(p).length && !heavy(p).every(a => a.fromReaction))
+            .map(p => W.canonicalCode(p)).sort().join('|');
+        const canvas = g.userMolecule.atoms.map(a => a.element).sort().join('');
+        return {
+            L, hx, codes, canvas,
+            pop: hx.after.atoms.filter(a => !bi.has(a.id)).map(a => a.element).join(''),
+            gone: hx.before.atoms.filter(a => !ai.has(a.id)).map(a => a.element).join('')
+        };
+    };
+
+    test('RXP3: 酸化・中和・ジアゾ化・アセチル化・ヨードホルム・燃焼などは反応式ぶんの相手を呼ぶ ＝ 写しで急に出る／消える原子が0個・キャンバスと生成物は同じ（否定対照つき・v1556）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const PHO = 'ナトリウムフェノキシド（フェノールのナトリウム塩）';
+        const cases = [
+            [['エタノール'], 'oxidize_primary', { '[O]': 1, H2O: 1 }],
+            [['エタノール'], 'oxidize_primary_vigorous', { '[O]': 2, H2O: 1 }],
+            [['2-プロパノール'], 'oxidize_secondary'],
+            [['アセトアルデヒド'], 'oxidize_aldehyde', { '[O]': 1 }],
+            [['トルエン'], 'oxidize_side_chain', { '[O]': 3, H2O: 1 }],
+            [['エチルベンゼン'], 'oxidize_side_chain', { '[O]': 6, H2O: 2, CO2: 1 }],
+            [['1-ブテン'], 'oxidative_cleavage', { '[O]': 5, H2O: 1, CO2: 1 }],
+            [['エチレン'], 'wacker_oxidation', { '[O]': 1 }],
+            [['ナフタレン'], 'naphthalene_air_oxidation', { O2: 4, '[O]': 1 }],
+            [['エタノール'], 'iodoform', { I2: 4, NaOH: 6, NaI: 5, H2O: 5 }],
+            [['アセトン'], 'iodoform', { I2: 3, NaOH: 4, NaI: 3, H2O: 3 }],
+            [['酢酸'], 'neutralize_naoh', { NaOH: 1, H2O: 1 }],
+            [['酢酸'], 'neutralize_nahco3', { NaHCO3: 1, H2O: 1, CO2: 1 }],
+            [['エタノール'], 'react_sodium', { Na: 1, H: 1 }],
+            [['ベンゼンスルホン酸ナトリウム'], 'alkali_fusion', { NaOH: 2, Na2SO3: 1, H2O: 1 }],
+            [['クロロベンゼン'], 'hydrolysis_chlorobenzene', { NaOH: 2, NaCl: 1, H2O: 1 }],
+            [['酢酸ナトリウム'], 'liberate_weak_acid', { HCl: 1, NaCl: 1 }],
+            [[PHO], 'kolbe_schmidt', { CO2: 1 }],
+            [[PHO], 'liberate_co2', { CO2: 1, H2O: 1, NaHCO3: 1 }],
+            [['アニリン'], 'amine_hcl', { HCl: 1 }],
+            // ⚠ ジアゾ化は NaNO₂ だけでは収支が合わない ＝ HCl を2つ呼ぶ
+            [['アニリン'], 'diazotization', { NaNO2: 1, HCl: 2, NaCl: 1, H2O: 2 }],
+            [['塩化ベンゼンジアゾニウム'], 'diazonium_decompose', { H2O: 1, N2: 1, HCl: 1 }],
+            [['塩化ベンゼンジアゾニウム', PHO], 'diazo_coupling', { NaCl: 1 }],
+            [['アニリン塩酸塩'], 'amine_liberate_naoh', { NaOH: 1, NaCl: 1, H2O: 1 }],
+            [['酢酸エチル'], 'saponification', { NaOH: 1 }],
+            [[PHO, 'ヨードメタン（ヨウ化メチル）'], 'williamson_ether', { NaI: 1 }],
+            [['アニリン'], 'acetylation_anhydride', { Ac2O: 1, CH3COOH: 1 }],
+            [['メタン'], 'combustion', { O2: 2 }],
+            [['ベンゼン'], 'combustion', { O2: 7, '[O]': 1 }]
+        ];
+        try {
+            for (const [names, id, want] of cases) {
+                const r = rxpEqRun(c, names, id);
+                const A = r.L.anim;
+                assert(A, `${id}（${names[0]}）: 相手を呼べていない（収支が合わない）`);
+                assert(!r.pop && !r.gone, `${id}（${names[0]}）: 写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」がある`);
+                assert(A.hGap === 0, `${id}: H の収支が ${A.hGap} 合わない`);
+                if (want) Object.entries(want).forEach(([k, v]) =>
+                    assert((A.counts[k] || 0) === v, `${id}（${names[0]}）: ${k} が ${A.counts[k] || 0} 個（${v} を期待）`));
+                // 副生成物はキャンバスに居ない（再生の終わりに薄れるだけ）
+                const ids = new Set(g.userMolecule.atoms.map(a => a.id));
+                assert(A.transient.every(x => !ids.has(x)), `${id}: 写しの副生成物がキャンバスに入った`);
+                // 仮の [O] には水素が生えない（水に見えない）
+                A.before.atoms.filter(a => a.label === '[O]').forEach(o => {
+                    assert(!r.hx.before.bonds.some(b => (b.atomId1 === o.id || b.atomId2 === o.id) &&
+                        r.hx.before.atoms.some(h => h.element === 'H' && (h.id === b.atomId1 || h.id === b.atomId2))),
+                        `${id}: 仮の [O] に水素が生えた（水に見える）`);
+                });
+                await 反応の再生を待つ(c);
+                // ★ 否定対照: 表から外すと急に出る／消える原子が戻る。生成物の正準コードとキャンバスの原子は同じ
+                const saved = W.PARTNER_EQUATIONS[id];
+                delete W.PARTNER_EQUATIONS[id];
+                try {
+                    const plain = rxpEqRun(c, names, id);
+                    assert(!plain.L.anim, `${id}: 表から外したのに相手を呼んだ`);
+                    assert(plain.pop || plain.gone, `${id}（${names[0]}）: 表から外しても急に出る／消える原子が0個 ＝ この検査は何も見張っていない`);
+                    assert(plain.codes === r.codes, `${id}: 相手を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
+                    assert(plain.canvas === r.canvas, `${id}: 相手を呼ぶとキャンバスの原子が変わった（${r.canvas} / ${plain.canvas}）`);
+                } finally {
+                    W.PARTNER_EQUATIONS[id] = saved;
+                }
+                await 反応の再生を待つ(c);
+            }
+            // ★ [O] の札: 旋回の前は「[O]」、握手し直したあとは本物の O
+            const r = rxpEqRun(c, ['エタノール'], 'oxidize_primary');
+            rx._morphGen++; rx._morphing = false;
+            rx.renderMorphFrame(r.hx.before, r.hx.after, 0.2);
+            assert(g.atomsGroup.querySelector('[data-label="[O]"]'), '旋回の前に [O] の札が出ていない');
+            rx.renderMorphFrame(r.hx.before, r.hx.after, 0.95);
+            assert(!g.atomsGroup.querySelector('[data-label="[O]"]'), '握手し直したあとも [O] の札が残っている');
+            // ★ 否定対照: bare を外すと [O] に H が2つ生える（＝ 上の「生えない」は bare が効いている）
+            const naked = { atoms: r.L.anim.before.atoms.map(a => { const o = { ...a }; delete o.bare; return o; }), bonds: r.L.anim.before.bonds };
+            const hx2 = rx.withMorphHydrogens(naked, r.L.anim.after);
+            const oId = r.L.anim.before.atoms.find(a => a.label === '[O]').id;
+            const hOnO = hx2.before.bonds.filter(b => (b.atomId1 === oId || b.atomId2 === oId) &&
+                hx2.before.atoms.some(h => h.element === 'H' && (h.id === b.atomId1 || h.id === b.atomId2))).length;
+            assert(hOnO === 2, `bare を外しても [O] の H が ${hOnO} 本（2 を期待）＝ 検査が空振り`);
+            g.updateDrawing();
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    /* ===== RXH: 反応する H を反応の前に重原子と同じ丸にする（v1556）=====
+     * ユーザー指示: 「反応するH原子を先に重原子と同じようなグラフィックに変えてから反応させるのがよい」
+     *   「隣の分子や、分子内の他の原子と干渉する可能性があるのでその対策が必要」
+     *   「置換反応では、反応するH原子を選ぶ余地があります。反応相手のCl2などが近づくスペースも必要です」
+     *   「分子内脱水では…OHと反応させられる（同じ側の）H原子は限定されます」
+     * ★ 物差しは `bigHydrogenOverlaps`（再生の各コマで、大きくした H とほかの原子の丸・結合の線の最短距離）。 */
+    const rxhRun = (c, names, id) => {
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.userMolecule = new W.Molecule();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
+        const rule = W.REACTION_RULES.find(r => r.id === id);
+        const sites = rule.detect(g.userMolecule) || [];
+        assert(sites.length, `${names.join('＋')} に ${id} の箇所が無い（検査が素通りする）`);
+        rx.execute(rule, sites[0]);
+        rx._morphGen++; rx._morphing = false;   // 再生のループは止め、コマは playback の関数で直接見る
+        const L = rx.lastReaction;
+        const plan = rx.buildPlayback(L, rule.morphStages || null);
+        assert(plan, `${id}: 再生の段取りが組まれない`);
+        return { L, plan };
+    };
+
+    test('RXH1: 反応する H は反応の前に重原子と同じ大きさの丸になり、再生のどのコマでもほかの原子・結合に重ならない（否定対照つき・v1556）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        // ⚠ 発注書の「トルエンの側鎖の塩素化」はアプリに無い反応（chlorinate_alkane はアルカンだけ）＝ 込み合ったアルカンで代える
+        const cases = [
+            [['エタノール'], 'dehydration_intra'], [['2-ブタノール'], 'dehydration_intra'], [['1-プロパノール'], 'dehydration_intra'],
+            [['フェノール'], 'bromination_activated_ring'], [['2-メチルプロパン'], 'chlorinate_alkane'], [['メタン'], 'chlorinate_alkane'],
+            [['ベンゼン'], 'aromatic_halogenation'], [['酢酸', 'エタノール'], 'esterification']
+        ];
+        let controlHits = 0;
+        try {
+            for (const [names, id] of cases) {
+                const { plan } = rxhRun(c, names, id);
+                assert(plan.reacting.length >= 1, `${id}（${names[0]}）: 反応する H が見つからない`);
+                const ov = rx.bigHydrogenOverlaps(plan, 120);
+                assert(ov.length === 0, `${id}（${names[0]}）: 大きくした H が ${ov.length} コマ重なった ${JSON.stringify(ov.slice(0, 3))}`);
+                // 置き直しの前は元の大きさ・反応の直前は重原子と同じ丸（r=10）・片付けのあとは元の大きさ
+                rx.renderPlaybackAt(plan, 0);
+                assert(!g.atomsGroup.querySelector('[data-big-h]'), `${id}: 置き直しの前から H が大きい`);
+                rx.renderPlaybackAt(plan, 1);
+                const big = [...g.atomsGroup.querySelectorAll('[data-big-h]')];
+                assert(big.length === plan.reacting.length &&
+                    big.every(n => n.querySelector('circle').getAttribute('r') === '10'),
+                    `${id}（${names[0]}）: 反応の直前に H が重原子と同じ丸になっていない（${big.map(n => n.querySelector('circle').getAttribute('r'))}）`);
+                rx.renderPlaybackAt(plan, 3);
+                assert(!g.atomsGroup.querySelector('[data-big-h]'), `${id}: 反応のあとも H が大きいまま`);
+                // ★ 否定対照: 対策（H の選び方・道筋の曲げ・向きを回す）を外すと重なる
+                rx._bendAvoid = false; rx._hChoice = false; rx._bigHAvoid = false;
+                try {
+                    controlHits += rx.bigHydrogenOverlaps(rxhRun(c, names, id).plan, 120).length;
+                } finally {
+                    rx._bendAvoid = undefined; rx._hChoice = undefined; rx._bigHAvoid = undefined;
+                }
+                g.updateDrawing();
+            }
+            assert(controlHits > 0, '対策を外しても重なりが0件 ＝ この物差しは何も見張っていない');
+            /* ★ 環を回す反応（v1556・RXR1 の題材）でも、置き直しから片付けまで大きくした H が重ならない */
+            for (const [names, id] of [[['フェノール'], 'neutralize_naoh'], [['アニリン'], 'diazotization']]) {
+                const { plan } = rxhRun(c, names, id);
+                const ov = rx.bigHydrogenOverlaps(plan, 120);
+                assert(ov.length === 0, `${id}（${names[0]}・環を回す）: 大きくした H が ${ov.length} コマ重なった ${JSON.stringify(ov.slice(0, 3))}`);
+            }
+        } finally {
+            rx._bendAvoid = undefined; rx._hChoice = undefined; rx._bigHAvoid = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    /* ===== RXR: 反応のときに芳香環を回し、反応する置換基を右上（相手の側）へ向ける（v1556）=====
+     * ユーザー決定: 「②反応時に回すようにしましょう。どのみち、反応分子の召喚、整列などで反応前の分子の移動はあります」
+     * 教科書の本文の反応式は置換基1つでも右上（5編 p.179〜201）。登録の図（名前から呼び出す）は真上のまま。 */
+    test('RXR1: 置換基が反応するとき芳香環を回して置換基を右上へ／環が反応する・置換基が2つ・登録の図は回さない／正準コードは同じ（否定対照つき・v1556）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const deg = (P, Q) => Math.atan2(Q.y - P.y, Q.x - P.x) * 180 / Math.PI;
+        /** 反応後のキャンバスで、単独のベンゼン環の置換基の向き（度）を全部 */
+        const subAngles = () => {
+            const m = g.userMolecule;
+            return W.isolatedBenzeneRings(m).map(ring => {
+                const set = new Set(ring);
+                const out = [];
+                ring.forEach(cid => m.getNeighbors(cid).forEach(n => {
+                    if (!set.has(n.atom.id) && n.atom.element !== 'H') out.push(Math.round(deg(m.atoms.find(a => a.id === cid), n.atom)));
+                }));
+                return out.sort((p, q) => p - q);
+            });
+        };
+        const codes = () => g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H' && !a.fromReaction))
+            .map(p => W.canonicalCode(p)).sort().join('|');
+        const run = (names, id) => {
+            g.userMolecule = new W.Molecule();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
+            const rule = W.REACTION_RULES.find(r => r.id === id);
+            const sites = rule.detect(g.userMolecule) || [];
+            assert(sites.length, `${names[0]} に ${id} の箇所が無い（検査が素通りする）`);
+            const upright = subAngles();
+            rx.execute(rule, sites[0]);
+            rx._morphSkip = true;
+            return { upright, after: subAngles(), codes: codes(), L: rx.lastReaction };
+        };
+        const ROT = [
+            [['フェノール'], 'neutralize_naoh'], [['アニリン'], 'diazotization'], [['アニリン'], 'acetylation_anhydride'],
+            [['アニリン'], 'amine_hcl'], [['クロロベンゼン'], 'hydrolysis_chlorobenzene'], [['トルエン'], 'oxidize_side_chain'],
+            [['安息香酸'], 'neutralize_naoh'], [['塩化ベンゼンジアゾニウム'], 'diazonium_decompose']
+        ];
+        const KEEP = [
+            [['ベンゼン'], 'aromatic_nitration', '置換基が無い（環そのものが反応する）'],
+            [['フェノール'], 'bromination_activated_ring', '環そのものが反応する'],
+            [['ナトリウムフェノキシド（フェノールのナトリウム塩）'], 'kolbe_schmidt', 'オルト位（環）が反応する'],
+            [['サリチル酸'], 'neutralize_naoh', '置換基が2つ（登録の形を崩さない）'],
+            [['フェノール'], 'dehydration_intra', null]   // ← 置き換え用のダミー（下で除く）
+        ].filter(k => k[2]);
+        try {
+            // 登録の図（名前から呼び出す）は真上のまま
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule('フェノール'), 'フェノールを呼び出せない');
+            assert(JSON.stringify(subAngles()) === '[[-90]]', `登録の図のフェノールの -OH が真上でない（${JSON.stringify(subAngles())}）`);
+            for (const [names, id] of ROT) {
+                const r = run(names, id);
+                assert(JSON.stringify(r.upright) === '[[-90]]', `下ごしらえ: ${names[0]} の置換基が真上でない（${JSON.stringify(r.upright)}）`);
+                assert(r.L.rotation, `${id}（${names[0]}）: 環を回していない`);
+                assert(JSON.stringify(r.after) === '[[-30]]', `${id}（${names[0]}）: 反応後の置換基が右上（-30°）でない（${JSON.stringify(r.after)}）`);
+                // 環の頂点は上下のまま（どれかの環原子が中心の真上）
+                const m = g.userMolecule, ring = W.isolatedBenzeneRings(m)[0].map(x => m.atoms.find(a => a.id === x));
+                const cx = ring.reduce((s, a) => s + a.x, 0) / 6, cy = ring.reduce((s, a) => s + a.y, 0) / 6;
+                assert(ring.some(a => Math.abs(deg({ x: cx, y: cy }, a) + 90) < 2), `${id}: 回したら環の頂点が上下でなくなった`);
+                // 再生の最初のコマは画面の図（真上）・置き直しのあと（T=1）は右上
+                const plan = rx.buildPlayback(r.L, null);
+                const cId = r.L.rotation && W.isolatedBenzeneRings(m)[0].find(x => m.getNeighbors(x).some(n => n.atom.element !== 'H' && !W.isolatedBenzeneRings(m)[0].includes(n.atom.id)));
+                const rootId = m.getNeighbors(cId).find(n => n.atom.element !== 'H' && !W.isolatedBenzeneRings(m)[0].includes(n.atom.id)).atom.id;
+                const s0 = new Map(plan.S0.atoms.map(a => [a.id, a])), s1 = new Map(plan.S1.atoms.map(a => [a.id, a]));
+                if (s0.has(rootId)) {
+                    assert(Math.abs(deg(s0.get(cId), s0.get(rootId)) + 90) < 2, `${id}: 再生の最初のコマで置換基が真上でない`);
+                    assert(Math.abs(deg(s1.get(cId), s1.get(rootId)) + 30) < 2, `${id}: 置き直しのあと置換基が右上でない`);
+                }
+                await 反応の再生を待つ(c);
+                // ★ 否定対照: 回さないと真上のまま。生成物の正準コードは同じ
+                rx._ringTurn = false;
+                try {
+                    const plain = run(names, id);
+                    assert(JSON.stringify(plain.after) === '[[-90]]', `否定対照: 回さなくても置換基が ${JSON.stringify(plain.after)} ＝ この検査は何も見張っていない`);
+                    assert(plain.codes === r.codes, `${id}: 環を回すと正準コードが変わった\n  回す: ${r.codes}\n  回さない: ${plain.codes}`);
+                } finally { rx._ringTurn = undefined; }
+                await 反応の再生を待つ(c);
+            }
+            for (const [names, id, why] of KEEP) {
+                const r = run(names, id);
+                assert(!r.L.rotation, `${id}（${names[0]}）: ${why}のに環を回した`);
+                await 反応の再生を待つ(c);
+            }
+        } finally {
+            rx._ringTurn = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXH2: 反応する H は図の位置で選ぶ ＝ 分子内脱水は OH に近い H・置換は相手が H の外側（空いた側）から近づく（否定対照つき・v1556）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const bondedTo = (snap, id) => {
+            const b = snap.bonds.find(x => x.atomId1 === id || x.atomId2 === id);
+            return b ? (b.atomId1 === id ? b.atomId2 : b.atomId1) : null;
+        };
+        const at = (snap, id) => snap.atoms.find(a => a.id === id);
+        /** 選ばれた H と、同じ原子に付いたほかの H の、受け取る原子（反応前の位置）までの距離 */
+        const choice = (L) => {
+            const src = L.anim || L;
+            const hx = rx.withMorphHydrogens(src.before, src.after);
+            const plan = rx.buildPlayback(L, null);
+            const hid = plan.reacting[0];
+            const p = bondedTo(hx.before, hid), q = bondedTo(hx.after, hid);
+            const recv = at(hx.before, q);
+            const sib = hx.before.bonds.filter(b => b.atomId1 === p || b.atomId2 === p)
+                .map(b => (b.atomId1 === p ? b.atomId2 : b.atomId1))
+                .map(id => at(hx.before, id)).filter(a => a && a.element === 'H' && a.id !== hid);
+            const d = a => Math.hypot(a.x - recv.x, a.y - recv.y);
+            return { chosen: d(at(hx.before, hid)), others: sib.map(d), hx, hid, p, recv };
+        };
+        try {
+            // ① 分子内脱水（2-ブタノール）: OH と同じ側の H（OH にいちばん近い H）が離れる
+            const on = choice(rxhRun(c, ['2-ブタノール'], 'dehydration_intra').L);
+            assert(on.others.length, '下ごしらえ: β炭素に H が1つしか無い（題材を替えること）');
+            assert(on.chosen < Math.min(...on.others),
+                `分子内脱水で OH に近い H が選ばれていない（選んだ H ${on.chosen.toFixed(0)} / ほか ${on.others.map(x => x.toFixed(0))}）`);
+            rx._hChoice = false;
+            try {
+                const off = choice(rxhRun(c, ['2-ブタノール'], 'dehydration_intra').L);
+                assert(off.chosen > Math.min(...off.others),
+                    `否定対照: 選び方を外しても OH に近い H が選ばれた ＝ この検査は何も見張っていない（${off.chosen.toFixed(0)} / ${off.others.map(x => x.toFixed(0))}）`);
+            } finally { rx._hChoice = undefined; }
+
+            // ② 置換（2-メチルプロパンの塩素化）: HCl になる Cl は、選ばれた H の延長（外側）に居る
+            const angleOf = (L) => {
+                const r = choice(L);
+                const P = at(r.hx.before, r.p), H = at(r.hx.before, r.hid);
+                const a1 = Math.atan2(H.y - P.y, H.x - P.x), a2 = Math.atan2(r.recv.y - P.y, r.recv.x - P.x);
+                let d = Math.abs(a1 - a2); if (d > Math.PI) d = 2 * Math.PI - d;
+                return { deg: d * 180 / Math.PI, far: Math.hypot(r.recv.x - P.x, r.recv.y - P.y) > Math.hypot(H.x - P.x, H.y - P.y) };
+            };
+            const s1 = angleOf(rxhRun(c, ['2-メチルプロパン'], 'chlorinate_alkane').L);
+            assert(s1.deg < 20 && s1.far, `置換の相手が H の外側に居ない（H と相手の向きの差 ${s1.deg.toFixed(0)}°）`);
+            W.PARTNER_LOCAL = false;
+            try {
+                const s2 = angleOf(rxhRun(c, ['2-メチルプロパン'], 'chlorinate_alkane').L);
+                assert(s2.deg >= 20, `否定対照: 右の端に置いても向きの差が ${s2.deg.toFixed(0)}° ＝ この検査は何も見張っていない`);
+            } finally { W.PARTNER_LOCAL = undefined; }
+            g.updateDrawing();
+        } finally {
+            rx._hChoice = undefined; W.PARTNER_LOCAL = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     test('IW5: ヒント5段 — 押すたびに1段ずつ積み上がり、最終段のあとは答え合わせだけ（スコアつき）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, ip = W.isomerPractice;
@@ -55745,7 +56082,9 @@
         'ベンゼンスルホン酸ナトリウム', 'アルキルベンゼンスルホン酸ナトリウム',
         '酢酸カリウム', 'フタル酸水素カリウム',
         // 参考書の反応式を再現するために追記（2026-09-13・合成洗剤と吸水性樹脂の単量体）
-        'p-ドデシルベンゼンスルホン酸ナトリウム', 'アクリル酸ナトリウム'];
+        'p-ドデシルベンゼンスルホン酸ナトリウム', 'アクリル酸ナトリウム',
+        // 反応の相手として呼ぶ分子を登録（v1556・rx-partner2。NaOH・NaNO₂・NaHCO₃ は電離した形 ＝ 粒つき）
+        '水酸化ナトリウム', '亜硝酸ナトリウム', '炭酸水素ナトリウム'];
 
     // 原子と結合と電荷から分子を組む（EL3 の `mk` に電荷を足したもの）
     const ionMk = (W, els, bonds, charges = {}) => {
