@@ -1538,14 +1538,31 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) 
  *      `opts.condense`（例 ['COOH','CHO']）でまとめる側へ、`opts.expand`（例 ['NO2']）で線で描く側へ上書きできる
  * ⚠ エステル（COO・HCOO）は検出されても**まとめない**（重原子どうしの結合は線で描く原則）
  */
-const PAPER_FONT = 15;
+/* ★★ **教科書を測って決めた比**（v1550・数研出版 R5化学 Vol.2 の PDF をベクタと画素で測った。数値の出どころは
+ *   DEVELOPMENT.md ではなくこのコメントが正。すべて「価標（原子の中心どうし）の長さ」を 1 とした比）
+ *   ・文字（大文字）の高さ 0.42 … 5編 p.104 エテン 0.411・シクロヘキサン 0.440／p.157 酢酸 0.421・マレイン酸 0.390
+ *   ・線の太さ 0.028 … 同 0.028・0.030・0.030・0.022
+ *   ・二重線の間隔（線の中心どうし）0.125 … 酢酸 0.130・マレイン酸 0.121
+ *   ・下付き数字は大きさ 0.58・基線の下がり 0.14（文字の大きさに対して）… 5編 p.106・119・124・162 の 0.54〜0.59／0.12〜0.16
+ *   ・ハース式の手前の辺は、ふつうの線の 3.1 倍 … 6編 p.220 マルトース（手前 1.86pt・ふつう 0.6pt）
+ * ⚠ 文字の高さは「大文字のインクの高さ」で合わせる。font-size に直すときは Helvetica/Arial の大文字 0.716em で割る */
+const PAPER_CAP_PER_BOND = 0.42;
+const PAPER_WIDTH_PER_BOND = 0.028;
+const PAPER_GAP_PER_BOND = 0.125;
+const PAPER_SUB_SIZE = 0.58;
+const PAPER_SUB_DROP = 0.14;
+const PAPER_CAP_EM = 0.716;
+const PAPER_HAWORTH_FRONT = 3.1;
+/* ハース式だけは環を大きく描く（6編 p.220 マルトース: 環の辺 30.25pt・字 9.31pt → 大文字の高さ 6.67pt ＝ 0.22・ふつうの線 0.6pt ＝ 0.020） */
+const PAPER_HAWORTH_CAP_PER_EDGE = 0.22;
+const PAPER_HAWORTH_WIDTH_PER_EDGE = 0.020;
+/* 価標の見えている長さの床（価標1本に対して）。教科書は字が長いと価標のほうを伸ばす
+   … 5編 p.104 エテン 5.36/14.19・p.157 酢酸 5.57/14.06・マレイン酸 6.94/19.24 ＝ 0.36〜0.40 */
+const PAPER_MIN_SEGMENT = 0.38;
 const PAPER_DEFAULT_CONDENSE = ['NO2', 'SO3H'];
 const PAPER_GROUP_KEY = { 'NO₂': 'NO2', 'SO₃H': 'SO3H', 'COOH': 'COOH', 'CHO': 'CHO' };
 const PAPER_GROUP_REVERSED = { 'NO₂': 'O₂N', 'SO₃H': 'HO₃S', 'SO₃': 'O₃S', 'COOH': 'HOOC', 'CHO': 'OHC' };
-
-function paperLabelWidth(text) {
-    return [...text].reduce((w, ch) => w + ('₀₁₂₃₄₅₆₇₈₉'.includes(ch) ? 0.42 : 0.64) * PAPER_FONT, 0);
-}
+const PAPER_SUBSCRIPTS = '₀₁₂₃₄₅₆₇₈₉';
 
 function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     const NS = 'http://www.w3.org/2000/svg';
@@ -1576,38 +1593,138 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         groupAt.set(rootId, { label, anchorId: gr.anchorIds[0], charge });
     });
 
-    // 各原子の文字（null ＝ 文字を書かない環の炭素）
+    // 各原子の文字（null ＝ 文字を書かない環の炭素）。
+    // ★ `atEnd` ＝ **結合している原子の元素記号が文字の後ろにある**か（H₃C・HO・O₂N・HOOC）。価標はその記号に付ける（v1550）
     const labels = new Map();
     mol.atoms.forEach(a => {
         if (hidden.has(a.id)) return;
         const heavyNb = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H' && !hidden.has(n.atom.id));
         const grp = groupAt.get(a.id);
-        let text;
         if (grp) {
             const anc = byId.get(grp.anchorId);
-            text = (anc && anc.x > a.x + 1) ? PAPER_GROUP_REVERSED[grp.label] : grp.label;
+            const rev = !!(anc && anc.x > a.x + 1);
+            labels.set(a.id, { text: rev ? PAPER_GROUP_REVERSED[grp.label] : grp.label, atEnd: rev });
         } else if (a.element === 'C' && ring.has(a.id) && !a.charge) {
-            text = null;
+            labels.set(a.id, null);
         } else {
             const n = hCount.get(a.id) || 0;
             const hs = n ? 'H' + (n > 1 ? sub(n) : '') : '';
             // 左端の原子（相手が右にだけある）は H を前に書く（H₃C−・HO−・H₂N−）
             const leftEnd = heavyNb.length === 1 && heavyNb[0].atom.x > a.x + 1;
-            text = (leftEnd && hs) ? hs + a.element : a.element + hs;
+            const atEnd = !!(leftEnd && hs);
+            labels.set(a.id, { text: atEnd ? hs + a.element : a.element + hs, atEnd });
         }
-        labels.set(a.id, text);
     });
 
-    const boxOf = (id) => {
-        const t = labels.get(id);
-        return t ? { hw: paperLabelWidth(t) / 2 + 1.5, hh: PAPER_FONT * 0.5 + 1 } : null;
-    };
-    // 結合線を文字の箱の縁で止める（⚠ renderTargetBond は両端を 10 ずつ詰めるので、そのぶん外へ伸ばして渡す）
-    const trimOf = (box, ux, uy) => {
-        if (!box) return 0;
-        const tx = Math.abs(ux) > 1e-9 ? box.hw / Math.abs(ux) : Infinity;
-        const ty = Math.abs(uy) > 1e-9 ? box.hh / Math.abs(uy) : Infinity;
+    // ── ⓪ ハース式の手前の辺（太い帯）と、その両脇のくさび（v1550・教科書の慣習）──
+    //   ⚠ 門番は haworthSugarCycles（キャンバスの ⇅ と同じ判定）。手前 ＝ 環の中で**いちばん下（y 最大）にある2原子**
+    //   ＝ ピラノースは C2−C3、フラノースは C3−C4。その2原子と環でつながる残りの辺をくさび（奥が細く、手前が太い）
+    //   ★ 文字の大きさの比がハース式だけ違うので、測る前に決める
+    const front = new Map();   // bond → { kind: 'thick' | 'wedge', backId }
+    if (typeof haworthSugarCycles === 'function') {
+        let cycles = [];
+        try { cycles = haworthSugarCycles(mol); } catch (e) { cycles = []; }
+        cycles.forEach(cyc => {
+            const ids = new Set(cyc);
+            const yMax = Math.max(...cyc.map(id => byId.get(id).y));
+            const low = new Set(cyc.filter(id => byId.get(id).y >= yMax - 2));
+            if (low.size !== 2) return;
+            mol.bonds.forEach(b => {
+                if (!ids.has(b.atomId1) || !ids.has(b.atomId2)) return;
+                const l1 = low.has(b.atomId1), l2 = low.has(b.atomId2);
+                if (l1 && l2) front.set(b, { kind: 'thick' });
+                else if (l1 || l2) front.set(b, { kind: 'wedge', backId: l1 ? b.atomId2 : b.atomId1 });
+            });
+        });
+    }
+    const haworth = front.size > 0;
+
+    // ── 大きさは価標の長さから決める（★ 教科書の比。結合長の中央値を「価標1本」とする）──
+    //   ⚠ ハース式は教科書でも環を大きく描く（6編 p.220 マルトース: 環の辺 30.25pt に対して字 9.31pt ＝ 大文字の高さ 0.22・
+    //     ふつうの線 0.6pt ＝ 0.020）。構造式の比（0.42）のまま描くと、環の中と外の OH・CH₂OH が重なる（v1550 の見本で実測）
+    const lens = mol.bonds.map(b => {
+        const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+        return Math.hypot(p.x - q.x, p.y - q.y);
+    }).filter(l => l > 1e-6).sort((p, q) => p - q);
+    const B = lens.length ? lens[Math.floor(lens.length / 2)] : 46;
+    const capH = (haworth ? PAPER_HAWORTH_CAP_PER_EDGE : PAPER_CAP_PER_BOND) * B;
+    const fs = capH / PAPER_CAP_EM;
+    const lineW = (haworth ? PAPER_HAWORTH_WIDTH_PER_EDGE : PAPER_WIDTH_PER_BOND) * B;
+    const style = { width: lineW, gap: PAPER_GAP_PER_BOND * B };
+    const subFs = fs * PAPER_SUB_SIZE, subDy = fs * PAPER_SUB_DROP;
+
+    // ── ① 文字を置いて測る（価標の端を決めるのに字幅が要るので、結合より先）──
+    const ext = new Map();   // id → { L, R, up, down }（原子の中心から左右上下へ、文字が占める幅）
+    const placed = [];       // 位置は ② で価標を伸ばしてから決める
+    mol.atoms.forEach(a => {
+        if (hidden.has(a.id)) return;
+        const lab = labels.get(a.id);
+        if (!lab) return;
+        // ⚠ 文字と電荷の印は <g> に包む（丸の図の renderTargetAtom と同じ入れ子）。
+        //   `.quiz-atoms > text` を直に拾う後処理（参考書の図の `plain` が素の番号を消す）に電荷の印を巻き込ませない
+        const grp = document.createElementNS(NS, 'g');
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('class', 'svg-atom-text svg-paper-label');
+        t.setAttribute('data-label', lab.text);   // ★ 読み手（テスト）が見る綴り。画面の字は下付きを tspan で描く
+        t.setAttribute('fill', `var(--color-${a.element.toLowerCase()})`);
+        t.style.fontSize = fs + 'px';
+        const chars = [...lab.text].map(ch => PAPER_SUBSCRIPTS.includes(ch)
+            ? { ch: String(PAPER_SUBSCRIPTS.indexOf(ch)), sub: true } : { ch, sub: false });
+        let lowered = false, hasSub = false;
+        chars.forEach(c => {
+            const sp = document.createElementNS(NS, 'tspan');
+            if (c.sub !== lowered) { sp.setAttribute('dy', c.sub ? subDy : -subDy); lowered = c.sub; }
+            if (c.sub) { sp.style.fontSize = subFs + 'px'; hasSub = true; }
+            sp.textContent = c.ch;
+            t.appendChild(sp);
+        });
+        grp.appendChild(t);
+        atomsGroup.appendChild(grp);
+        // 字幅: 描いた字を測る（⚠ 描けない環境では字形の平均で見積もる）
+        const est = (i0, i1) => chars.slice(i0, i1).reduce((w, c) => w + (c.sub ? 0.556 * subFs
+            : (/[a-z]/.test(c.ch) ? 0.5 : 0.72) * fs), 0);
+        let pos = (i) => est(0, i);
+        try {
+            if (t.getComputedTextLength() > 0) pos = (i) => (i === 0 ? 0 : t.getSubStringLength(0, i));
+        } catch (e) { /* 見積もりのまま */ }
+        const n = chars.length, symLen = a.element.length;
+        const s0 = lab.atEnd ? n - symLen : 0, s1 = s0 + symLen;
+        const center = (pos(s0) + pos(s1)) / 2;           // 元素記号の中心（文字の先頭から）
+        const total = pos(n);
+        const padX = 0.12 * fs;
+        const e = { L: center + padX, R: total - center + padX, up: capH / 2 + padX, down: capH / 2 + padX + (hasSub ? subDy : 0) };
+        ext.set(a.id, e);
+        const shownCharge = groupAt.has(a.id) ? groupAt.get(a.id).charge : a.charge;
+        placed.push({ a, t, grp, center, e, shownCharge });
+    });
+
+    // 価標をその向きの文字の縁で止める（★ 左右は元素記号から左端／右端まで・上下は大文字の高さ）
+    const trimOf = (id, ux, uy) => {
+        const e = ext.get(id);
+        if (!e) return 0;
+        const hx = ux >= 0 ? e.R : e.L, hy = uy >= 0 ? e.down : e.up;
+        const tx = Math.abs(ux) > 1e-9 ? hx / Math.abs(ux) : Infinity;
+        const ty = Math.abs(uy) > 1e-9 ? hy / Math.abs(uy) : Infinity;
         return Math.min(tx, ty);
+    };
+
+    // ── ② 価標が文字に食われるなら、**価標のほうを伸ばす**（v1550・教科書と同じ。字は小さくしない）──
+    //   ⚠ 伸ばすのは環に入っていない結合だけ。その結合で分子を2つに切り、**小さいほう**を結合の向きへ平行移動する
+    //     （切った先の中の結合は長さも角度も変わらない ＝ 形は保つ）。環の辺は切っても分かれないので触らない
+    const sideOf = (startId, cut) => {
+        const seen = new Set([startId]);
+        const stack = [startId];
+        while (stack.length) {
+            const id = stack.pop();
+            mol.getNeighbors(id).forEach(nb => {
+                const nid = nb.atom.id;
+                if (seen.has(nid)) return;
+                if ((id === cut.atomId1 && nid === cut.atomId2) || (id === cut.atomId2 && nid === cut.atomId1)) return;
+                seen.add(nid);
+                stack.push(nid);
+            });
+        }
+        return seen;
     };
     mol.bonds.forEach(b => {
         if (hidden.has(b.atomId1) || hidden.has(b.atomId2)) return;
@@ -1615,40 +1732,74 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
         if (len < 1e-6) return;
         const ux = dx / len, uy = dy / len;
-        const t1 = trimOf(boxOf(a1.id), ux, uy), t2 = trimOf(boxOf(a2.id), ux, uy);
-        if (t1 + t2 >= len - 2) return;
-        game.renderTargetBond(a1.x + ux * (t1 - 10), a1.y + uy * (t1 - 10),
-            a2.x - ux * (t2 - 10), a2.y - uy * (t2 - 10), b.type, false, bondsGroup);
+        const visible = len - trimOf(a1.id, ux, uy) - trimOf(a2.id, -ux, -uy);
+        const need = PAPER_MIN_SEGMENT * B;
+        if (visible >= need) return;
+        const s2 = sideOf(a2.id, b);
+        if (s2.has(a1.id)) return;                       // 環の辺
+        const s1 = sideOf(a1.id, b);
+        const extra = need - visible;
+        const [move, sx, sy] = s2.size <= s1.size ? [s2, ux, uy] : [s1, -ux, -uy];
+        move.forEach(id => { const at = byId.get(id); at.x += sx * extra; at.y += sy * extra; });
     });
 
+    // ── ③ 文字を置く（価標を伸ばしたあとの座標で）──
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     mol.atoms.forEach(a => {
         if (hidden.has(a.id)) return;
-        const box = boxOf(a.id) || { hw: 0, hh: 0 };
-        minX = Math.min(minX, a.x - box.hw); maxX = Math.max(maxX, a.x + box.hw);
-        minY = Math.min(minY, a.y - box.hh); maxY = Math.max(maxY, a.y + box.hh);
-        const text = labels.get(a.id);
-        if (!text) return;
-        // ⚠ 文字と電荷の印は <g> に包む（丸の図の renderTargetAtom と同じ入れ子）。
-        //   `.quiz-atoms > text` を直に拾う後処理（参考書の図の `plain` が素の番号を消す）に電荷の印を巻き込ませない
-        const grp = document.createElementNS(NS, 'g');
-        const t = document.createElementNS(NS, 'text');
-        t.setAttribute('x', a.x);
-        t.setAttribute('y', a.y + PAPER_FONT * 0.36);
-        t.setAttribute('text-anchor', 'middle');
-        t.setAttribute('class', 'svg-atom-text svg-paper-label');
-        t.setAttribute('fill', `var(--color-${a.element.toLowerCase()})`);
-        t.style.fontSize = PAPER_FONT + 'px';
-        t.textContent = text;
-        grp.appendChild(t);
-        const shownCharge = groupAt.has(a.id) ? groupAt.get(a.id).charge : a.charge;
-        if (shownCharge) {
-            const mark = game.chargeMarkNode(a.x + paperLabelWidth(text) / 2 - 7, a.y - 3, shownCharge);
-            mark.style.fontSize = '14px';
-            grp.appendChild(mark);
-        }
-        atomsGroup.appendChild(grp);
+        minX = Math.min(minX, a.x); maxX = Math.max(maxX, a.x);
+        minY = Math.min(minY, a.y); maxY = Math.max(maxY, a.y);
     });
+    placed.forEach(({ a, t, grp, center, e, shownCharge }) => {
+        t.setAttribute('x', a.x - center);                // ★ 元素記号の中心を原子の中心に
+        t.setAttribute('y', a.y + capH / 2);              // 大文字のインクの上下の中央を原子の中心に
+        minX = Math.min(minX, a.x - e.L); maxX = Math.max(maxX, a.x + e.R);
+        minY = Math.min(minY, a.y - e.up); maxY = Math.max(maxY, a.y + e.down);
+        if (shownCharge) {
+            const mark = game.chargeMarkNode(0, 0, shownCharge);
+            mark.setAttribute('x', a.x + e.R);
+            mark.setAttribute('y', a.y - capH * 0.3);
+            mark.style.fontSize = (fs * 0.8) + 'px';
+            grp.appendChild(mark);
+            maxX = Math.max(maxX, a.x + e.R + fs * 0.6);
+        }
+    });
+
+    // ── ④ 価標を描く ──
+    const W = lineW * PAPER_HAWORTH_FRONT;
+    const poly = (pts) => {
+        const p = document.createElementNS(NS, 'polygon');
+        p.setAttribute('points', pts.map(q => `${q[0]},${q[1]}`).join(' '));
+        p.setAttribute('class', 'svg-paper-wedge');
+        p.setAttribute('fill', 'rgba(255,255,255,0.72)');
+        bondsGroup.appendChild(p);
+    };
+
+    mol.bonds.forEach(b => {
+        if (hidden.has(b.atomId1) || hidden.has(b.atomId2)) return;
+        const a1 = byId.get(b.atomId1), a2 = byId.get(b.atomId2);
+        const dx = a2.x - a1.x, dy = a2.y - a1.y, len = Math.hypot(dx, dy);
+        if (len < 1e-6) return;
+        const ux = dx / len, uy = dy / len;
+        const t1 = trimOf(a1.id, ux, uy), t2 = trimOf(a2.id, -ux, -uy);
+        if (t1 + t2 >= len - 2) return;
+        const p = [a1.x + ux * t1, a1.y + uy * t1], q = [a2.x - ux * t2, a2.y - uy * t2];
+        const f = front.get(b);
+        if (f && b.type === 1) {
+            const nx = -uy, ny = ux;
+            // 太さ: 帯は W、くさびは奥 lineW → 手前 W。⚠ 環の頂点で太さが途切れないよう、手前の端を W/2 だけ伸ばす
+            const w1 = f.kind === 'thick' || f.backId !== a1.id ? W : lineW;
+            const w2 = f.kind === 'thick' || f.backId !== a2.id ? W : lineW;
+            const e1 = w1 === W && !ext.get(a1.id) ? W / 2 : 0, e2 = w2 === W && !ext.get(a2.id) ? W / 2 : 0;
+            const P = [p[0] - ux * e1, p[1] - uy * e1], Q = [q[0] + ux * e2, q[1] + uy * e2];
+            poly([[P[0] + nx * w1 / 2, P[1] + ny * w1 / 2], [Q[0] + nx * w2 / 2, Q[1] + ny * w2 / 2],
+                [Q[0] - nx * w2 / 2, Q[1] - ny * w2 / 2], [P[0] - nx * w1 / 2, P[1] - ny * w1 / 2]]);
+            return;
+        }
+        // ⚠ renderTargetBond は両端を 10 ずつ詰めるので、そのぶん外へ伸ばして渡す
+        game.renderTargetBond(p[0] - ux * 10, p[1] - uy * 10, q[0] + ux * 10, q[1] + uy * 10, b.type, false, bondsGroup, style);
+    });
+
     const pad = 30;
     svg.setAttribute('viewBox', `${minX - pad} ${minY - pad} ${(maxX - minX) + pad * 2} ${(maxY - minY) + pad * 2}`);
 }

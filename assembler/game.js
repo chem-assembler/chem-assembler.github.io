@@ -5970,7 +5970,9 @@ class Game {
     }
 
     // 結合1本をミニ描画する（出力先グループを指定可能。既定はお手本モーダル。クイズ等からも流用）
-    renderTargetBond(x1, y1, x2, y2, type, isHConnection = false, targetGroup = this.targetBonds) {
+    // ★ `style`（v1550・参考書の紙の図の型だけが渡す）= { width, gap } —— 教科書を測った線の太さと二重線の間隔。
+    //   ⚠ 渡さなければ今までの 3 / ±2.5 / 2.2 / 1.6 のまま（アプリの画面は1つも変わらない）
+    renderTargetBond(x1, y1, x2, y2, type, isHConnection = false, targetGroup = this.targetBonds, style = null) {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const len = Math.sqrt(dx*dx + dy*dy);
@@ -6003,27 +6005,28 @@ class Game {
             line.setAttribute('x2', ex);
             line.setAttribute('y2', ey);
             line.setAttribute('stroke', strokeColor);
-            line.setAttribute('stroke-width', isHConnection ? '1.5' : '3');
+            line.setAttribute('stroke-width', isHConnection ? '1.5' : (style ? String(style.width) : '3'));
             ink(line);
         } else if (type === 2) {
             const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            const nx = -uy * 2.5;
-            const ny = ux * 2.5;
+            const half = style ? style.gap / 2 : 2.5;
+            const nx = -uy * half;
+            const ny = ux * half;
             
             line1.setAttribute('x1', sx + nx);
             line1.setAttribute('y1', sy + ny);
             line1.setAttribute('x2', ex + nx);
             line1.setAttribute('y2', ey + ny);
             line1.setAttribute('stroke', strokeColor);
-            line1.setAttribute('stroke-width', '2.2');
-            
+            line1.setAttribute('stroke-width', style ? String(style.width) : '2.2');
+
             line2.setAttribute('x1', sx - nx);
             line2.setAttribute('y1', sy - ny);
             line2.setAttribute('x2', ex - nx);
             line2.setAttribute('y2', ey - ny);
             line2.setAttribute('stroke', strokeColor);
-            line2.setAttribute('stroke-width', '2.2');
+            line2.setAttribute('stroke-width', style ? String(style.width) : '2.2');
 
             ink(line1);
             ink(line2);
@@ -6031,7 +6034,7 @@ class Game {
             // 三重結合（中央＋左右の3本線。ユーザー側キャンバスのrenderBondと同じ見た目）
             const nx = -uy;
             const ny = ux;
-            const gap = 5;
+            const gap = style ? style.gap : 5;
             [-gap, 0, gap].forEach(offset => {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', sx + nx * offset);
@@ -6039,7 +6042,7 @@ class Game {
                 line.setAttribute('x2', ex + nx * offset);
                 line.setAttribute('y2', ey + ny * offset);
                 line.setAttribute('stroke', strokeColor);
-                line.setAttribute('stroke-width', offset === 0 ? '2.2' : '1.6');
+                line.setAttribute('stroke-width', style ? String(style.width) : (offset === 0 ? '2.2' : '1.6'));
                 ink(line);
             });
         }
