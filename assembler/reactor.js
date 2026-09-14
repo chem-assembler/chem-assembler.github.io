@@ -10571,6 +10571,10 @@ class Reactor {
         this.assignPhaseFor(rule, site, []);
         /* ★ 相手の分子（Cl₂・HNO₃・H₂O など）を反応前の図に置き、余りを HCl・H₂O として残す（v1553）。
          *   見た目だけ ＝ 生成物の結合は `apply` が作ったまま。呼べたら視野を合わせ直す（右に置くので） */
+        /* ★ 相手を呼んで並べる反応では、置換基が反応する芳香環を回して**反応する置換基を右上（相手の側）**へ向ける（v1556）。
+         *   反応前の写し（before）と生成物（キャンバス）を同じだけ回す ＝ 生成物も右上のまま残る。
+         *   ⚠ 相手を置く前に回す（相手の置き場は回したあとの図で決める） */
+        const rotation = this.turnRingForReaction(rule, before, g.userMolecule, result);
         let anim = null;
         if (summonReactionPartner(rule.id, before, g.userMolecule)) {
             result = { ...result, refit: true };
@@ -10591,8 +10595,8 @@ class Reactor {
             beforeState,
             after: this.snapshotMolecule(g.userMolecule),
             anim,   // 再生の写し（相手と副生成物つき）。無い反応は null
-            beforeReal,   // 画面に出ていた反応前の図（相手を足す前）
-            rotation: null
+            beforeReal,   // 画面に出ていた反応前の図（相手を足す前・環を回す前）
+            rotation      // 環を回したとき { ids, cx, cy, theta }。回していなければ null
         };
         this.clearDeadEnd(); // 反応が通ったら、前に出した「ここで止まりました」は用済み（v1420）
         this.clearNoRoom();  // 同じ理由で「置く場所がない」の札も下ろす（v1466）
@@ -10737,6 +10741,97 @@ class Reactor {
      * ⚠ `lastReaction` にも `userMolecule` にも H は入れない（前後比較の図・判定・Undo は1つも変わらない）。
      * @returns { before, after, lost, gained } — lost/gained は④で残った本数
      */
+    /**
+     * ★★ 反応のときに芳香環を回し、反応する置換基を右上へ向ける（v1556・ユーザー決定 2026-09-15
+     *   「②反応時に回すようにしましょう。どのみち、反応分子の召喚、整列などで反応前の分子の移動はあります」）。
+     *
+     * 教科書の本文の反応式では、置換基1つの芳香族でも置換基を**右上**に置く（フェノール → ナトリウムフェノキシド、
+     * ニトロベンゼン → アニリン、ジアゾ化。5編 p.179〜201 で約30個）。表・地図・単独の図では真上。
+     *
+     * 回す／回さないの境界:
+     *   ○ 置換基が1つだけの単独のベンゼン環で、**反応するのがその置換基**
+     *     （置換基の根元の原子が変わる：-OH の中和・-NH₂ のジアゾ化・側鎖の酸化）
+     *     または**置換基が入れ替わる**（環の根元の炭素だけが変わる：クロロベンゼンの加水分解・ジアゾニウムの分解）
+     *   × 環そのものが反応する（ニトロ化・臭素化・コルベ・シュミットのオルト位）… 置換基は真上のまま
+     *   × 反応するのが側鎖の先（根元の原子が変わらない）… 回さない
+     *   × 置換基が2つ以上（サリチル酸・フタル酸の仲間）… 登録の形（右上・右下）を崩さない
+     *   × 相手を呼ばない反応・回す角度が 60° の倍数でない（環の頂点が上下でなくなる）・回すと他の分子に重なる
+     * ⚠ 見た目だけ（座標の剛体回転）。結合・元素・電荷は触らない ＝ 正準コードは同じ。`_ringTurn = false` で回さない
+     * @returns { ids, cx, cy, theta } または null
+     */
+    turnRingForReaction(rule, before, mol, result) {
+        if (this._ringTurn === false) return null;
+        const eq = PARTNER_EQUATIONS[rule.id];
+        if (!PARTNER_SUMMON[rule.id] && !(eq && eq.partners.length)) return null;
+        const changed = new Set((result && result.changed) || []);
+        if (!changed.size) return null;
+        const G = (typeof GRID_SIZE !== 'undefined') ? GRID_SIZE : 42;
+        const bm = this.molFromSnapshot(before);
+        let plan = null;
+        for (const ring of isolatedBenzeneRings(bm)) {
+            const inRing = new Set(ring);
+            const subs = [];
+            ring.forEach(c => bm.getNeighbors(c).forEach(n => {
+                if (!inRing.has(n.atom.id) && n.atom.element !== 'H') subs.push({ c, r: n.atom.id });
+            }));
+            if (subs.length !== 1) continue;
+            const { c, r } = subs[0];
+            const ringChanged = ring.filter(id => changed.has(id));
+            if (ringChanged.some(id => id !== c)) continue;           // 環そのものが反応する
+            /* 置換基の官能基が反応するか ＝ 変わった原子が**環から2結合以内**（根元の原子か、その隣）。
+             *   -OH・-NH₂ は根元、-COOH・-SO₃H の O は根元の隣。3結合以上先（2-フェニルエタノールの -OH）は「側鎖の先」 */
+            const near = new Set([r]);
+            bm.getNeighbors(r).forEach(n => { if (n.atom.id !== c && n.atom.element !== 'H') near.add(n.atom.id); });
+            if (![...near].some(id => changed.has(id)) && !ringChanged.length) continue;
+            const C = bm.atoms.find(a => a.id === c), R = bm.atoms.find(a => a.id === r);
+            let theta = -Math.PI / 6 - Math.atan2(R.y - C.y, R.x - C.x);
+            while (theta > Math.PI) theta -= 2 * Math.PI;
+            while (theta < -Math.PI) theta += 2 * Math.PI;
+            const step = Math.PI / 3;
+            if (Math.abs(theta) < 0.05 || Math.abs(theta - Math.round(theta / step) * step) > 0.05) continue;
+            const cx = ring.reduce((s, id) => s + bm.atoms.find(a => a.id === id).x, 0) / 6;
+            const cy = ring.reduce((s, id) => s + bm.atoms.find(a => a.id === id).y, 0) / 6;
+            plan = { c, theta: Math.round(theta / step) * step, cx, cy };
+            break;
+        }
+        if (!plan) return null;
+        // 回す原子: 反応前・反応後それぞれの分子と、そのそばの対イオンの粒
+        const withIons = (m) => {
+            if (!m.atoms.some(a => a.id === plan.c)) return new Set();
+            const comp = componentOf(m, plan.c);
+            const bonded = new Set();
+            m.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+            const compAtoms = m.atoms.filter(a => comp.has(a.id));
+            /* ⚠ 対イオンの粒は `placeCounterIon` が空き位置の**2倍の遠さ**（約 84px）に置く。
+             *   1.6 マスで拾うと Cl⁻ を置き去りにし、回した -N≡N が Cl⁻ に 31px まで近づいて回すのをやめていた
+             *   （実測: アニリンのジアゾ化）。2.2 マスまで拾う */
+            m.atoms.forEach(a => {
+                if (bonded.has(a.id) || !a.charge) return;
+                if (compAtoms.some(x => Math.hypot(x.x - a.x, x.y - a.y) <= G * 2.2)) comp.add(a.id);
+            });
+            return comp;
+        };
+        const ids = new Set([...withIons(bm), ...withIons(mol)]);
+        const cs = Math.cos(plan.theta), sn = Math.sin(plan.theta);
+        const turn = p => {
+            const dx = p.x - plan.cx, dy = p.y - plan.cy;
+            return { x: plan.cx + dx * cs - dy * sn, y: plan.cy + dx * sn + dy * cs };
+        };
+        // 回したあとに他の原子へ近づきすぎないか（反応前・反応後の両方で）
+        const ok = [before.atoms, mol.atoms].every(list => {
+            const moved = list.filter(a => ids.has(a.id) && a.element !== 'H').map(turn);
+            const rest = list.filter(a => !ids.has(a.id) && a.element !== 'H');
+            return moved.every(p => rest.every(q => Math.hypot(p.x - q.x, p.y - q.y) >= G * 0.9));
+        });
+        if (!ok) return null;
+        [before.atoms, mol.atoms].forEach(list => list.forEach(a => {
+            if (!ids.has(a.id)) return;
+            const p = turn(a);
+            a.x = p.x; a.y = p.y;
+        }));
+        return { ids: [...ids], cx: plan.cx, cy: plan.cy, theta: plan.theta };
+    }
+
     /**
      * ★★ 反応式ぶんの相手と副生成物を、再生の写しにだけ置く（v1556・`PARTNER_EQUATIONS` の注記）。
      * `apply` のあとに呼ぶ。`reuse` の付け替えだけは `mol` の id を書き換える（元素・結合・電荷は触らない）。
@@ -12474,6 +12569,7 @@ if (typeof window !== 'undefined') {
     };
     window.PARTNER_SUMMON = PARTNER_SUMMON;     // RXP1・RXP2（相手の分子を呼ぶ）が読む
     window.PARTNER_EQUATIONS = PARTNER_EQUATIONS; // RXP3〜（反応式ぶんの相手と副生成物・v1556）が読む
+    window.isolatedBenzeneRings = isolatedBenzeneRings; // RXR1（反応のときに環を回す）が読む
     window.RX_SPECIES = RX_SPECIES;
     window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
     window.noRoom = noRoom;

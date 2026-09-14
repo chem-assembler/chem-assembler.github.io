@@ -15372,8 +15372,103 @@
                 g.updateDrawing();
             }
             assert(controlHits > 0, '対策を外しても重なりが0件 ＝ この物差しは何も見張っていない');
+            /* ★ 環を回す反応（v1556・RXR1 の題材）でも、置き直しから片付けまで大きくした H が重ならない */
+            for (const [names, id] of [[['フェノール'], 'neutralize_naoh'], [['アニリン'], 'diazotization']]) {
+                const { plan } = rxhRun(c, names, id);
+                const ov = rx.bigHydrogenOverlaps(plan, 120);
+                assert(ov.length === 0, `${id}（${names[0]}・環を回す）: 大きくした H が ${ov.length} コマ重なった ${JSON.stringify(ov.slice(0, 3))}`);
+            }
         } finally {
             rx._bendAvoid = undefined; rx._hChoice = undefined; rx._bigHAvoid = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    /* ===== RXR: 反応のときに芳香環を回し、反応する置換基を右上（相手の側）へ向ける（v1556）=====
+     * ユーザー決定: 「②反応時に回すようにしましょう。どのみち、反応分子の召喚、整列などで反応前の分子の移動はあります」
+     * 教科書の本文の反応式は置換基1つでも右上（5編 p.179〜201）。登録の図（名前から呼び出す）は真上のまま。 */
+    test('RXR1: 置換基が反応するとき芳香環を回して置換基を右上へ／環が反応する・置換基が2つ・登録の図は回さない／正準コードは同じ（否定対照つき・v1556）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const deg = (P, Q) => Math.atan2(Q.y - P.y, Q.x - P.x) * 180 / Math.PI;
+        /** 反応後のキャンバスで、単独のベンゼン環の置換基の向き（度）を全部 */
+        const subAngles = () => {
+            const m = g.userMolecule;
+            return W.isolatedBenzeneRings(m).map(ring => {
+                const set = new Set(ring);
+                const out = [];
+                ring.forEach(cid => m.getNeighbors(cid).forEach(n => {
+                    if (!set.has(n.atom.id) && n.atom.element !== 'H') out.push(Math.round(deg(m.atoms.find(a => a.id === cid), n.atom)));
+                }));
+                return out.sort((p, q) => p - q);
+            });
+        };
+        const codes = () => g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H' && !a.fromReaction))
+            .map(p => W.canonicalCode(p)).sort().join('|');
+        const run = (names, id) => {
+            g.userMolecule = new W.Molecule();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
+            const rule = W.REACTION_RULES.find(r => r.id === id);
+            const sites = rule.detect(g.userMolecule) || [];
+            assert(sites.length, `${names[0]} に ${id} の箇所が無い（検査が素通りする）`);
+            const upright = subAngles();
+            rx.execute(rule, sites[0]);
+            rx._morphSkip = true;
+            return { upright, after: subAngles(), codes: codes(), L: rx.lastReaction };
+        };
+        const ROT = [
+            [['フェノール'], 'neutralize_naoh'], [['アニリン'], 'diazotization'], [['アニリン'], 'acetylation_anhydride'],
+            [['アニリン'], 'amine_hcl'], [['クロロベンゼン'], 'hydrolysis_chlorobenzene'], [['トルエン'], 'oxidize_side_chain'],
+            [['安息香酸'], 'neutralize_naoh'], [['塩化ベンゼンジアゾニウム'], 'diazonium_decompose']
+        ];
+        const KEEP = [
+            [['ベンゼン'], 'aromatic_nitration', '置換基が無い（環そのものが反応する）'],
+            [['フェノール'], 'bromination_activated_ring', '環そのものが反応する'],
+            [['ナトリウムフェノキシド（フェノールのナトリウム塩）'], 'kolbe_schmidt', 'オルト位（環）が反応する'],
+            [['サリチル酸'], 'neutralize_naoh', '置換基が2つ（登録の形を崩さない）'],
+            [['フェノール'], 'dehydration_intra', null]   // ← 置き換え用のダミー（下で除く）
+        ].filter(k => k[2]);
+        try {
+            // 登録の図（名前から呼び出す）は真上のまま
+            g.userMolecule = new W.Molecule();
+            assert(g.summonMolecule('フェノール'), 'フェノールを呼び出せない');
+            assert(JSON.stringify(subAngles()) === '[[-90]]', `登録の図のフェノールの -OH が真上でない（${JSON.stringify(subAngles())}）`);
+            for (const [names, id] of ROT) {
+                const r = run(names, id);
+                assert(JSON.stringify(r.upright) === '[[-90]]', `下ごしらえ: ${names[0]} の置換基が真上でない（${JSON.stringify(r.upright)}）`);
+                assert(r.L.rotation, `${id}（${names[0]}）: 環を回していない`);
+                assert(JSON.stringify(r.after) === '[[-30]]', `${id}（${names[0]}）: 反応後の置換基が右上（-30°）でない（${JSON.stringify(r.after)}）`);
+                // 環の頂点は上下のまま（どれかの環原子が中心の真上）
+                const m = g.userMolecule, ring = W.isolatedBenzeneRings(m)[0].map(x => m.atoms.find(a => a.id === x));
+                const cx = ring.reduce((s, a) => s + a.x, 0) / 6, cy = ring.reduce((s, a) => s + a.y, 0) / 6;
+                assert(ring.some(a => Math.abs(deg({ x: cx, y: cy }, a) + 90) < 2), `${id}: 回したら環の頂点が上下でなくなった`);
+                // 再生の最初のコマは画面の図（真上）・置き直しのあと（T=1）は右上
+                const plan = rx.buildPlayback(r.L, null);
+                const cId = r.L.rotation && W.isolatedBenzeneRings(m)[0].find(x => m.getNeighbors(x).some(n => n.atom.element !== 'H' && !W.isolatedBenzeneRings(m)[0].includes(n.atom.id)));
+                const rootId = m.getNeighbors(cId).find(n => n.atom.element !== 'H' && !W.isolatedBenzeneRings(m)[0].includes(n.atom.id)).atom.id;
+                const s0 = new Map(plan.S0.atoms.map(a => [a.id, a])), s1 = new Map(plan.S1.atoms.map(a => [a.id, a]));
+                if (s0.has(rootId)) {
+                    assert(Math.abs(deg(s0.get(cId), s0.get(rootId)) + 90) < 2, `${id}: 再生の最初のコマで置換基が真上でない`);
+                    assert(Math.abs(deg(s1.get(cId), s1.get(rootId)) + 30) < 2, `${id}: 置き直しのあと置換基が右上でない`);
+                }
+                await 反応の再生を待つ(c);
+                // ★ 否定対照: 回さないと真上のまま。生成物の正準コードは同じ
+                rx._ringTurn = false;
+                try {
+                    const plain = run(names, id);
+                    assert(JSON.stringify(plain.after) === '[[-90]]', `否定対照: 回さなくても置換基が ${JSON.stringify(plain.after)} ＝ この検査は何も見張っていない`);
+                    assert(plain.codes === r.codes, `${id}: 環を回すと正準コードが変わった\n  回す: ${r.codes}\n  回さない: ${plain.codes}`);
+                } finally { rx._ringTurn = undefined; }
+                await 反応の再生を待つ(c);
+            }
+            for (const [names, id, why] of KEEP) {
+                const r = run(names, id);
+                assert(!r.L.rotation, `${id}（${names[0]}）: ${why}のに環を回した`);
+                await 反応の再生を待つ(c);
+            }
+        } finally {
+            rx._ringTurn = undefined;
             g.userMolecule = new W.Molecule(); g.updateDrawing();
         }
     });
