@@ -14762,6 +14762,41 @@
         }
     });
 
+    test('LBG1: 分子が近く並んでも、図の下の見出しの札はくっつかず間が空く（否定対照つき・v1553）', async (c) => {
+        // ユーザー検品「① 2-メチルブタン と ② 1-プロパノール の札がくっついている」。
+        // ⚠ 直す前は「重なっていない」だけを見ていたので、端が触れている札は段送りされなかった
+        c.reset();
+        const g = c.game, W = c.W;
+        const minGap = () => {
+            const rs = g._labelRects || [];
+            let worst = Infinity;
+            for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+                const a = rs[i], b = rs[j];
+                const gx = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w));
+                const gy = Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h));
+                worst = Math.min(worst, Math.max(gx, gy));
+            }
+            return { worst, n: rs.length, h: rs.length ? rs[0].h : 0 };
+        };
+        try {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            ['2-メチルブタン', '1-プロパノール', 'ベンゼン'].forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない`));
+            g.updateDrawing();
+            const on = minGap();
+            assert(on.n === 3, `見出しが ${on.n} 個（3個を期待）`);
+            assert(on.worst >= on.h * 0.2, `見出しの札どうしの間が ${on.worst.toFixed(1)}（札の高さ ${on.h.toFixed(1)} の 1/5 以上を期待）`);
+            // ★ 否定対照: 段送りを止めると、同じ並びで札が触れる／重なる（＝ 物差しが空振りしていない）
+            g.labelCollisionAvoid = false;
+            g.updateDrawing();
+            const off = minGap();
+            assert(off.worst < off.h * 0.2, `段送りを止めても札の間が空いている（${off.worst.toFixed(1)}）＝ この並びは検査にならない`);
+        } finally {
+            delete g.labelCollisionAvoid;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     /* ===== RXP: 反応の相手をキャンバスに呼ぶ（v1553・ユーザー仕様「置換反応では、Cl2を召喚するようにする」）=====
      * ⚠ 直す前は `apply` が付く原子を何も無い所に足していたので、握手のつなぎ替えでも
      *   その原子はフェードインで湧いて出た（「急に原子が入れ替わったようにしか見えない」）。
