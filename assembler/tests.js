@@ -12433,6 +12433,27 @@
         g.updateDrawing();
     });
 
+    /**
+     * ★★ **作り直し待ちの台本**（2026-09-14・v1552）。
+     * ベンゼン環の道具を「頂点が上下」にした（ユーザー決定「そろえます。動画の台本はまだ使ってないもののみ修正しますが、後で個別に」）。
+     * 下の台本は環を (420,294) に置いたあと**旧い頂点の座標をタップ**するので、今は狙った分子で終わらない。
+     * **ユーザーが個別に直す**（⛔ テストの側で台本を書き換えない）。
+     * - N2 はこの一覧の台本を**飛ばす**（飛ばした本数を出力に1行で出す）
+     * - N2d はこの一覧の台本が**今も落ちる**ことを確かめる（★ 否定対照）。直って通るようになったら赤にして、
+     *   **一覧から外すよう促す** ＝ 一覧が古いまま残らない
+     * ⚠ intro-draw（V1）・l1-intro（L1）は旧い頂点をタップするが、吸着で新しい頂点に付き、結末も合う（実測）ので入れていない。
+     */
+    const DEMOS_PENDING_RING_TOOL = [
+        'build-dopamine',           // V70
+        'build-adrenaline-series',  // V80
+        'build-serotonin',          // V81
+        'build-paracetamol',        // V82
+        'build-aspirin',            // V83
+        'build-vanillin',           // V84
+        'build-capsaicin',          // V86
+        'build-tnt',                // V87
+    ];
+
     test('N2: 録画モード用のSNSデモ（demos*.json）が完走する（P13-2）', async (c) => {
         c.reset();
         const tp = c.W.tutorialPlayer;
@@ -12474,7 +12495,9 @@
                     if (q.computePools) q.computePools();
                 });
         };
-        for (const d of demos.filter(d => d.id !== 'intro-draw')) {
+        DEMOS_PENDING_RING_TOOL.forEach(id => assert(demos.some(d => d.id === id), `作り直し待ちの一覧にある台本が見つからない: ${id}`));
+        const skipped = demos.filter(d => DEMOS_PENDING_RING_TOOL.includes(d.id)).length;
+        for (const d of demos.filter(d => d.id !== 'intro-draw' && !DEMOS_PENDING_RING_TOOL.includes(d.id))) {
             resetQuizFilters();
             await tp.play(d.id, { fast: true, keepResult: true, initialState: d.state });
             assert(!tp.lastError, `デモ「${d.id}」の再生が落ちた: ${tp.lastError && tp.lastError.message}`);
@@ -12502,6 +12525,7 @@
         // 台本が増えるたびに同じ穴が空くので、**3つのクイズをまとめて戻す**。
         // **範囲（レベル）と分野も戻す**（2026-08-20 に足した軸。既定は範囲＝basic・分野＝all）
         resetQuizFilters();   // ⚠ 中身は上の `resetQuizFilters` へ畳んだ（同じことを2回書かない）
+        return `${demos.length - skipped} 本を再生／作り直し待ちで飛ばした台本 ${skipped} 本（DEMOS_PENDING_RING_TOOL）`;
     });
 
     test('N2b: 立体を名前に出す台本は readStereo を宣言している（P13-2・2026-08-04）', async (c) => {
@@ -12605,6 +12629,9 @@
         const tp = c.W.tutorialPlayer;
         const demos = (await c.W.loadAllDemos()).filter(d => d.expect);
         assert(demos.length > 0, '`expect` を宣言した台本が1件も無い');
+        // 作り直し待ちの台本はすべて expect を持つ（持たないと「今も落ちる」を名前で確かめられない）
+        DEMOS_PENDING_RING_TOOL.forEach(id => assert(demos.some(d => d.id === id), `作り直し待ちの台本「${id}」が expect を宣言していない（今も落ちるかを確かめられない）`));
+        let pendingStopped = 0, pendingWrong = 0;
         const before = tp.speedScale;
         try {
             tp.speedScale = 1; tp.baseSpeedScale = 1;
@@ -12629,13 +12656,24 @@
                 c.game.userMolecule = new c.W.Molecule();
                 c.game.updateDrawing();
                 if (d.state) c.game.restoreState(JSON.parse(JSON.stringify(d.state)));
+                const pending = DEMOS_PENDING_RING_TOOL.includes(d.id);
+                let thrown = null;
                 for (const a of d.steps.flatMap(s => s.actions || [])) {
                     if (a.type === 'wait') continue;
-                    await tp.doAction(a, true);
+                    if (!pending) { await tp.doAction(a, true); }
+                    else { try { await tp.doAction(a, true); } catch (e) { thrown = e.message; break; } }
                     await new Promise(r => setTimeout(r, 1));
                 }
                 const name = c.D.getElementById('compound-name').textContent;
                 const formula = c.D.getElementById('compound-formula').textContent;
+                if (pending) {
+                    // ★ 否定対照: 作り直し待ちの台本は**今も**狙った分子で終わらない（止まる か 名前・分子式が違う）
+                    const wrong = (d.expect.name && !name.includes(d.expect.name)) || (d.expect.formula && !formula.includes(d.expect.formula));
+                    assert(thrown || wrong,
+                        `台本「${d.id}」は作り直し待ちの一覧にあるのに、「${name}」${formula} で狙いどおりに終わった ＝ **直ったので DEMOS_PENDING_RING_TOOL から外すこと**`);
+                    if (thrown) pendingStopped++; else pendingWrong++;
+                    continue;
+                }
                 if (d.expect.name) assert(name.includes(d.expect.name),
                     `台本「${d.id}」の名称チップが「${name}」（「${d.expect.name}」を期待）`);
                 if (d.expect.formula) assert(formula.includes(d.expect.formula),
@@ -12647,6 +12685,7 @@
             c.game.userMolecule = new c.W.Molecule();
             c.game.updateDrawing();
         }
+        return `expect の台本 ${demos.length - DEMOS_PENDING_RING_TOOL.length} 本が狙いどおり／作り直し待ち ${DEMOS_PENDING_RING_TOOL.length} 本は今も落ちる（止まる ${pendingStopped}・名前違い ${pendingWrong}）`;
     });
 
     test('N2e: デモを見終わったら、道具と結合次数が見る前に戻る（2026-08-13）', async (c) => {
