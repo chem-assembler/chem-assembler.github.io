@@ -698,10 +698,11 @@
         assert(bad.length === 0, `頂点が上下でない芳香環 ${bad.length} 個: ${bad.slice(0, 12).join(' ')}`);
     });
 
-    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシンだけ・名指し）', async (c) => {
+    test('AR2: 1置換体は置換基が真上・2置換体は主な置換基が真上（例外はニコチン・チロシン・サリチル酸だけ・名指し）', async (c) => {
         // ニコチン・チロシンは直す前から頂点が上下の手描き（v1552 では回していない）。
         // チロシンはアミノ酸の側鎖が上・OH が下（フェニルアラニンと同じ並び）で、格の規則だと OH が主になる
-        const EXCEPT = new Set(['nicotine', 'tyrosine']);
+        // サリチル酸はユーザー決定（2026-09-14）で COOH を右上・OH を右下（2つの置換基を見比べるため・教科書 p.185）
+        const EXCEPT = new Set(['nicotine', 'tyrosine', 'salicylic-acid']);
         let mono = 0, di = 0; const bad = [];
         arAll(c).forEach(([tag, e]) => {
             const s = arSubstituents(e); if (!s || !s.subs.length || s.subs.length > 2) return;
@@ -712,12 +713,12 @@
         });
         assert(mono >= 50 && di >= 150, `1置換 ${mono}件・2置換 ${di}件しか見つからない（判定が空振りしている）`);
         assert(bad.length === 0, `主な置換基が真上でない ${bad.length} 件: ${bad.slice(0, 12).join(' ')}`);
-        // 教科書の図と同じ向き（数研 p.174・180・185）: トルエンの CH3・フェノールの OH・サリチル酸は OH が上で COOH が右上
+        // 教科書の図と同じ向き（数研 p.174・185）: o-キシレンは真上と右上・サリチル酸は COOH が右上で OH が右下（ユーザー決定 2026-09-14）
         const find = (name) => c.W.STAGES.find(x => x.name === name) || c.W.COMPOUNDS.find(x => x.name === name);
         const sal = arSubstituents(find('サリチル酸'));
         const oh = sal.subs.find(x => x.rank === 1), cooh = sal.subs.find(x => x.rank === 2);
-        assert(arAngDiff(oh.dir, -90) < 3 && arAngDiff(cooh.dir, -30) < 3,
-            `サリチル酸: OH ${oh.dir.toFixed(0)}°・COOH ${cooh.dir.toFixed(0)}°（期待は OH −90°・COOH −30°）`);
+        assert(arAngDiff(cooh.dir, -30) < 3 && arAngDiff(oh.dir, 30) < 3,
+            `サリチル酸: COOH ${cooh.dir.toFixed(0)}°・OH ${oh.dir.toFixed(0)}°（期待は COOH −30°＝右上・OH 30°＝右下）`);
         const oxy = arSubstituents(find('o-キシレン'));
         assert(oxy.subs.some(x => arAngDiff(x.dir, -90) < 3) && oxy.subs.some(x => arAngDiff(x.dir, -30) < 3),
             `o-キシレン: CH3 が ${oxy.subs.map(x => x.dir.toFixed(0)).join('°・')}°（期待は真上と右上）`);
