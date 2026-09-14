@@ -943,11 +943,11 @@
             assert(W.canonicalCode(m) === regCode, `ナフタレンのケクレ構造 ${i + 1} のコードが登録と違う`);
             assert(W.verifyMolecule(m, g.createTargetFromData({ target: reg.target })), `ケクレ構造 ${i + 1} が同型判定で不正解`);
         });
-        // キノリン（N を含む縮合環）も同じ
+        // キノリン（N を含む縮合環）も同じ。N は縮合部の隣（添字 2）＝ 添字 0 は縮合部の炭素なので N を置くと別の分子
         const q = W.COMPOUNDS.find(e => e.id === 'quinoline');
         const qCode = W.canonicalCode(g.createTargetFromData({ target: q.target }));
         const qCodes = new Set([[0, 2, 4, 7, 9], [1, 3, 5, 7, 9], [2, 4, 6, 8, 10]]
-            .map(dbl => W.canonicalCode(kkMk(W, ['N'].concat(Array(9).fill('C')), kkNaph(dbl)))));
+            .map(dbl => W.canonicalCode(kkMk(W, C10.map((e, i) => i === 2 ? 'N' : e), kkNaph(dbl)))));
         assert(qCodes.size === 1 && qCodes.has(qCode), `キノリンの3つのケクレ構造が ${qCodes.size} 通りに割れる`);
         c.reset();
         return `共有辺が単結合の縮合で「${name}」・芳香族 11 本・ナフタレンとキノリンの各3構造が登録と同じコード`;
