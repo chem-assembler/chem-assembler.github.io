@@ -1541,7 +1541,7 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) 
 const PAPER_FONT = 15;
 const PAPER_DEFAULT_CONDENSE = ['NO2', 'SO3H'];
 const PAPER_GROUP_KEY = { 'NO₂': 'NO2', 'SO₃H': 'SO3H', 'COOH': 'COOH', 'CHO': 'CHO' };
-const PAPER_GROUP_REVERSED = { 'NO₂': 'O₂N', 'SO₃H': 'HO₃S', 'COOH': 'HOOC', 'CHO': 'OHC' };
+const PAPER_GROUP_REVERSED = { 'NO₂': 'O₂N', 'SO₃H': 'HO₃S', 'SO₃': 'O₃S', 'COOH': 'HOOC', 'CHO': 'OHC' };
 
 function paperLabelWidth(text) {
     return [...text].reduce((w, ch) => w + ('₀₁₂₃₄₅₆₇₈₉'.includes(ch) ? 0.42 : 0.64) * PAPER_FONT, 0);
@@ -1569,7 +1569,11 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         if (gr.memberIds.some(id => hidden.has(id) || groupAt.has(id))) return;   // 重なる検出は先勝ち
         const rootId = gr.memberIds[0];
         gr.memberIds.slice(1).forEach(id => hidden.add(id));
-        groupAt.set(rootId, { label: gr.label, anchorId: gr.anchorIds[0] });
+        // ★ まとめた中の電荷（スルホン酸の塩の O⁻）は文字の側へ移す。⚠ 移さないと隠した O と一緒に印が消える
+        //   （−SO₃H の H は O⁻ には無いので、電荷があれば `SO₃` と書いて印を添える ＝ −SO₃⁻）
+        const charge = gr.memberIds.reduce((s, id) => s + (byId.get(id).charge || 0), 0);
+        const label = (charge && gr.label === 'SO₃H') ? 'SO₃' : gr.label;
+        groupAt.set(rootId, { label, anchorId: gr.anchorIds[0], charge });
     });
 
     // 各原子の文字（null ＝ 文字を書かない環の炭素）
@@ -1637,8 +1641,9 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         t.style.fontSize = PAPER_FONT + 'px';
         t.textContent = text;
         grp.appendChild(t);
-        if (a.charge) {
-            const mark = game.chargeMarkNode(a.x + paperLabelWidth(text) / 2 - 7, a.y - 3, a.charge);
+        const shownCharge = groupAt.has(a.id) ? groupAt.get(a.id).charge : a.charge;
+        if (shownCharge) {
+            const mark = game.chargeMarkNode(a.x + paperLabelWidth(text) / 2 - 7, a.y - 3, shownCharge);
             mark.style.fontSize = '14px';
             grp.appendChild(mark);
         }
