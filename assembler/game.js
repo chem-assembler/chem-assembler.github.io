@@ -6218,7 +6218,8 @@ class Game {
     // 見出しを付ける分子と、その番号を決める（図と名前チップで同じ番号を使うため1か所にまとめる）。
     // 重原子1個の分子は、作図中に置きかけた孤立原子（C を1つ置いた直後など）であることが
     // 多いので対象外。ただし**反応でできた副生成物（水など）は含める**
-    // （P12-8。ユーザー指摘「反応で CH4 や H2O が生じた場合は表示すべき」）
+    // （P12-8。ユーザー指摘「反応で CH4 や H2O が生じた場合は表示すべき」）。
+    // ★ v1553 から、**登録に名前がある**1原子の分子（CH₄・H₂O・NH₃・HCl）も含める（`isNamedSingleAtomPart`）
     markedMolecules(hidden) {
         const visible = (part) => part.atoms
             .filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
@@ -6231,7 +6232,7 @@ class Game {
         const marked = parts.filter(p => {
             const atoms = visible(p);
             if (sheet) return atoms.length >= 1;
-            return atoms.length >= 2 || atoms.some(a => a.fromReaction);
+            return atoms.length >= 2 || atoms.some(a => a.fromReaction) || this.isNamedSingleAtomPart(p, atoms);
         });
         // 見出しは「分子が2つ以上あることを示す」ためのものなので、1つなら付けない
         if (marked.length < (sheet ? 1 : 2)) return { parts, marks: new Map() };
@@ -6890,9 +6891,24 @@ class Game {
         if (this.currentMode === 'learn') return false; // 学習の練習では名前を伏せる
         if (window.reactionPlayer && window.reactionPlayer.prediction) return false; // 予測中は答えになる
         const visible = (p) => p.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id)));
-        const ok = (p) => { const v = visible(p); return v.length >= 2 || v.some(a => a.fromReaction); };
+        const ok = (p) => {
+            const v = visible(p);
+            return v.length >= 2 || v.some(a => a.fromReaction) || this.isNamedSingleAtomPart(p, v);
+        };
         if (!ok(part)) return false;
         return parts.filter(ok).length === 1;
+    }
+
+    /**
+     * ★ 重原子1個の分子でも、**登録に名前があれば**見出しを付ける（v1553・ユーザー仕様
+     *   「CH4やH2Oも物質名をチップで表示する」）。
+     * ⚠ 名前の出どころは `lookupCompoundName` だけ ＝ 登録に無い1原子（H₂S など）には出さない
+     *   （作り名を出さない）。重原子2個以上の分子の扱いは1つも変えていない。
+     * ⚠ 伏せる規則は呼び元のまま（書き出し練習は `captionForPart`、学習・予測は `isSoleLabeledPart`）。
+     */
+    isNamedSingleAtomPart(part, visibleHeavy) {
+        if (!visibleHeavy || visibleHeavy.length !== 1) return false;
+        return !!this.lookupCompoundName(part);
     }
 
     /**
