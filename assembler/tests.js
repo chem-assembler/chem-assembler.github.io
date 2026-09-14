@@ -303,6 +303,22 @@
     const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
     const near = (a, b, tol = 3) => Math.abs(a - b) <= tol;
 
+    /* ★ 反応でできた副生成物（`fromReaction` の原子 ＝ HCl・HBr・H₂O）を除いた写し（v1553）。
+     *   v1553 から置換・付加は相手の分子を呼び、余りを HCl・H₂O としてキャンバスに残すので、
+     *   「生成物の分子式／正準コード／名前」をキャンバス全体で見る検査はこれを通す。 */
+    const 副生成物を除く = (W, mol) => {
+        const m = new W.Molecule();
+        const idMap = new Map();
+        mol.atoms.filter(a => !a.fromReaction).forEach(a => {
+            const na = m.addAtom(a.element, a.x, a.y);
+            if (a.charge) na.charge = a.charge;
+            idMap.set(a.id, na.id);
+        });
+        mol.bonds.filter(b => idMap.has(b.atomId1) && idMap.has(b.atomId2))
+            .forEach(b => m.addBond(idMap.get(b.atomId1), idMap.get(b.atomId2), b.type));
+        return m;
+    };
+
     /* ★ **反応の再生（モーフィング）が終わるまで待つ。**
      *
      * ⚠⚠ **尺を数字で書かない。** v1539 まで再生は 800ms だったので、待つ側は
@@ -2304,17 +2320,22 @@
         assert(D.getElementById('mobile-name-chip').textContent.includes('C₁₂H₂₂O₁₁'),
             '1分子のとき左下の札から分子式が消えた');
 
-        // ⚠ 見出しが出ないほど小さい成分（水1つ）があるときは、札のほうが式を出す。
-        //   どちらにも出ない状態を作らない（脱水縮合で水が1つ出たことが読めなくなる）
+        // ⚠ 水1つのような小さい成分も、式が画面のどこかに必ず出る（脱水縮合で水が1つ出たことが読めなくなる）。
+        //   v1553 から水にも見出し（🔍 ② 水 H₂O）が付く（ユーザー仕様「CH4やH2Oも物質名をチップで表示する」）ので、
+        //   式は見出しに出て、札は名前だけになる。★ 見るのは「見出しか札のどちらかに出ている」こと
         g.userMolecule = new c.W.Molecule();
         g.updateDrawing();
         assert(g.summonMolecule('グリシルグリシン（ジペプチド）'), 'ジペプチドを呼び出せない');
         assert(g.summonMolecule('水'), '水を呼び出せない');
         g.updateDrawing();
         const chip2 = D.getElementById('mobile-name-chip').textContent;
-        assert(chip2.includes('C₄H₈N₂O₃') && chip2.includes('H₂O'),
-            `水の式が画面のどこにも出ていない（札は「${chip2}」）`);
-        assert(!chip2.includes('C₄H₁₀N₂O₄'), `合算した式が札に出ている（「${chip2}」）`);
+        const caps2 = [...D.querySelectorAll('#atoms-group text')]
+            .map(t => t.textContent).filter(t => t.includes('🔍')).join(' / ');
+        const onScreen = chip2 + ' / ' + caps2;
+        assert(onScreen.includes('C₄H₈N₂O₃') && onScreen.includes('H₂O'),
+            `水の式が画面のどこにも出ていない（札は「${chip2}」・見出しは「${caps2}」）`);
+        assert(caps2.includes('水 H₂O'), `水の見出しに式が付いていない（「${caps2}」）`);
+        assert(!onScreen.includes('C₄H₁₀N₂O₄'), `合算した式が画面に出ている（「${onScreen}」）`);
     });
 
     test('F3: シス/トランスの判定と命名区別（P8-1）', async (c) => {
@@ -6310,37 +6331,31 @@
             const { butanol, ethanol } = mnTwoMolecules(g, W);
             assert(butanol && ethanol && g.countMolecules() === 2,
                 '1-ブタノール＋エタノールの2分子を作れない（検査が素通りする）');
-            // ① 「選ぶ」は既にある印（focusedMolecule。図の下の名前のタップ・🎯 のタップが立てる）
-            g.setFocusedMolecule(butanol.atoms.find(a => a.element === 'C').id);
+            /* ★ v1553 でユーザー仕様が変わった:「複数分子キャンバスがあるとき、主鎖と番号を表示、は
+             *   すべての分子について実行する」。帯の 🔢 は**選んでいなくても**全部の分子に振る。
+             *   （2026-08-28 の「選んだ分子に振る」は分子モーダルの 🔢 に残る ＝ MN4） */
             const notice = g.iupacNumberingNotice();
-            assert(notice.ok && notice.code === 'chain',
-                `選んだのに出せないと言われた（code=${notice.code} / ${notice.message}）`);
-            assert(notice.det && notice.det.name === '1-ブタノール',
-                `番号の相手が 1-ブタノール でない（${notice.det && notice.det.name}）`);
-            // ② 実際に押して、画面に番号が出る
-            g.toggleIupacNumbering();
-            assert(g.iupacNumberingActive(), '選んだのに主鎖と番号が点かない');
+            assert(notice.ok && notice.code === 'multi',
+                `分子が2つなのに全部に振ると言わない（code=${notice.code} / ${notice.message}）`);
+            assert(/1-ブタノール/.test(notice.message) && /エタノール/.test(notice.message),
+                `案内が2つの名前を言っていない: ${notice.message}`);
+            D.getElementById('btn-iupac-numbering').click();
+            assert(g.iupacNumberingActive() && g._iupacAllMode(), '帯の 🔢 で全部の分子に振る表示が点かない');
             g.updateDrawing();
             const nums = inCanvasNumbers(D).map(t => t.textContent.trim()).sort();
-            assert(nums.length === 4 && nums.join(',') === '1,2,3,4',
-                `番号が 1〜4 でない（${JSON.stringify(nums)}）`);
-            // ③ 番号は**選んだ分子の炭素の上**に乗っている
+            assert(nums.join(',') === '1,1,2,2,3,4', `番号が 1〜4 と 1〜2 でない（${JSON.stringify(nums)}）`);
+            // ★ 数だけで見ない —— 分子ごとに、その分子の炭素の上に乗っている数を数える
             const on = mnNumberedIds(g, D);
             const bIds = new Set(butanol.atoms.map(a => a.id));
-            assert(on.size === 4 && [...on].every(id => bIds.has(id)),
-                `番号が選んだ分子の外へ出ている（${on.size}個中 ${[...on].filter(id => !bIds.has(id)).length}個）`);
-            // ④ 帯（主鎖の色）も選んだ分子にだけ乗る。C4 の主鎖なので帯は3本、
-            //    端点はすべて選んだ分子の原子の座標に一致する
+            const eIds = new Set(ethanol.atoms.map(a => a.id));
+            assert([...on].filter(id => bIds.has(id)).length === 4, '1-ブタノール の炭素4つに番号が乗っていない');
+            assert([...on].filter(id => eIds.has(id)).length === 2, 'エタノール の炭素2つに番号が乗っていない');
+            // 帯は 3本（C4）＋1本（C2）
             const bands = [...D.querySelectorAll('#chem-svg line.iupac-band')];
-            assert(bands.length === 3, `主鎖の帯が3本でない（${bands.length}本）`);
-            const bxy = new Set(butanol.atoms.map(a => `${Math.round(a.x)},${Math.round(a.y)}`));
-            bands.forEach(l => ['1', '2'].forEach(k => {
-                const key = `${Math.round(parseFloat(l.getAttribute('x' + k)))},${Math.round(parseFloat(l.getAttribute('y' + k)))}`;
-                assert(bxy.has(key), `帯の端点 (${key}) が選んだ分子の原子に乗っていない`);
-            }));
-            // ⑤ 慣用名の引き先も選んだ分子（キャンバス全体で引くと必ず外れる）
-            assert(g.lookupCompoundName(g.iupacNumberingDetail().mol) === '1-ブタノール',
-                '番号を出している分子の名前が引けない（引き先がキャンバス全体になっている）');
+            assert(bands.length === 4, `主鎖の帯が4本でない（${bands.length}本）`);
+            // 押し直すと消える
+            D.getElementById('btn-iupac-numbering').click();
+            assert(!g.iupacNumberingActive(), 'もう一度押しても消えない');
         } finally {
             g.setIupacNumbering(false);
             g.focusedMolecule = null;
@@ -6359,16 +6374,15 @@
             const bIds = new Set(butanol.atoms.map(a => a.id));
             const eIds = new Set(ethanol.atoms.map(a => a.id));
 
-            // ① 何も選んでいない ＝ 出さない。⚠ 言い方は「1つにしてください」ではなく「選んでください」
-            const none = g.iupacNumberingNotice();
+            // ① 分子モーダルの道（`fromModal`・1分子の道）では、何も選んでいなければ出さない
+            //   ⚠ 言い方は「1つにしてください」ではなく「選んでください」
+            const none = g.iupacNumberingNotice(true);
             assert(!none.ok && none.code === 'multi', `無選択で ${none.code} を返した`);
             assert(/選/.test(none.message) && !/1つだけにしてから/.test(none.message),
                 `無選択の断り文が「選んでください」になっていない: ${none.message}`);
-            g.toggleIupacNumbering();
-            assert(!g.iupacNumberingActive(), '何も選んでいないのに主鎖と番号が点いた');
-            // 無理やり点けても描く側の門番が同じ答えを出す（IN3 と同じ二段構え）
+            // 1分子の表示を無理やり点けても描く側の門番が同じ答えを出す（IN3 と同じ二段構え）
             g.setIupacNumbering(true); g.updateDrawing();
-            assert(inCanvasNumbers(D).length === 0, '何も選んでいないのに番号が描かれた');
+            assert(inCanvasNumbers(D).length === 0, '何も選んでいないのに1分子の表示で番号が描かれた');
             g.setIupacNumbering(false);
 
             // ② ★ここが本題 —— 選んだほうに出て、**選んでいないほうには出ない**。
@@ -6396,6 +6410,26 @@
             const after = g.iupacNumberingNotice();
             assert(after.ok && after.det && after.det.name === '1-ブタノール',
                 `1分子に戻ったのに素直に出ない（code=${after.code}）`);
+
+            // ⑤ ★ 否定対照（v1553）: 全部に振る表示でも、**番号をつけられない分子は飛ばす**
+            g.userMolecule = new W.Molecule(); g.focusedMolecule = null;
+            g.summonMolecule('1-ブタノール'); g.summonMolecule('ベンゼン'); g.updateDrawing();
+            const skip = g.iupacNumberingNotice();
+            assert(skip.ok && skip.code === 'multi' && skip.many.items.length === 1 && skip.many.skipped.length === 1,
+                `環の分子を飛ばしていない（${skip.code} / ${skip.message}）`);
+            assert(/②/.test(skip.message), `飛ばした分子を番号で言っていない: ${skip.message}`);
+            g.toggleIupacNumbering(); g.updateDrawing();
+            const bz = g.splitMolecules().find(p => p.atoms.filter(a => a.element === 'C').length === 6);
+            const onSkip = mnNumberedIds(g, D);
+            assert(onSkip.size === 4 && bz.atoms.every(a => !onSkip.has(a.id)),
+                `ベンゼンに番号が乗った／1-ブタノールに乗っていない（${onSkip.size}個）`);
+            g.setIupacNumbering(false);
+            // ⑥ ★ 否定対照: どれも番号をつけられないなら点かない
+            g.userMolecule = new W.Molecule();
+            g.summonMolecule('ベンゼン'); g.summonMolecule('シクロヘキサン'); g.updateDrawing();
+            g.toggleIupacNumbering();
+            assert(!g.iupacNumberingActive(), 'どの分子にも番号をつけられないのに表示が点いた');
+            g.userMolecule = new W.Molecule(); g.summonMolecule('1-ブタノール'); g.updateDrawing();
 
             // ④ 陰性対照 —— 1分子だけのキャンバスでは、選択の有無で答えが変わらない
             g.focusedMolecule = null;
@@ -6426,12 +6460,13 @@
             // ⚠ 断り文は**選んだ分子について**言う。キャンバス全体を見ていると
             //   「分子が2つあります」に落ちて、なぜ出ないのかが伝わらない
             g.setFocusedMolecule(benzene.atoms[0].id);
-            const ring = g.iupacNumberingNotice();
+            // ⚠ v1553 から、選んだ1分子について言うのは**分子モーダルの道**（`fromModal`）だけ
+            const ring = g.iupacNumberingNotice(true);
             assert(!ring.ok && ring.code === 'ring',
                 `ベンゼンを選んだのに ${ring.code} を返した（${ring.message}）`);
             // 隣に環があっても、鎖のほうを選べば出る（環の存在がキャンバス全体に伝染しない）
             g.setFocusedMolecule(butanol.atoms.find(a => a.element === 'C').id);
-            const ok = g.iupacNumberingNotice();
+            const ok = g.iupacNumberingNotice(true);
             assert(ok.ok && ok.det && ok.det.name === '1-ブタノール',
                 `隣の環に引きずられて出せなくなっている（code=${ok.code}）`);
         } finally {
@@ -6468,13 +6503,19 @@
             // ★ 押しが「選ぶ」を兼ねる ＝ 図の琥珀の枠・右パネルの分類と同じ分子を指す
             assert(g.moleculeModalPart() && g.moleculeModalPart().atoms.some(a => a.id === g.focusedMolecule),
                 'モーダルの分子と focusedMolecule が食い違っている（画面の中で言うことが割れる）');
+            // ★ モーダルの表示は**1分子**（全部に振る表示ではない）＝ 相手の分子に番号が乗らない
+            assert(!g._iupacAllMode(), 'モーダルの 🔢 が全部の分子に振っている');
+            g.updateDrawing();
+            const other = [butanol, ethanol].find(p => g.lookupCompoundName(p) !== name);
+            const onM = mnNumberedIds(g, D);
+            assert(other.atoms.every(a => !onM.has(a.id)), 'モーダルが見ていない分子にも番号が乗った');
             g.setIupacNumbering(false);
-            // ⚠ 陰性対照 —— 帯の側のボタンは今までどおり「選んでから」（押しが選ぶを兼ねるのは
-            //   モーダルだけ。キャンバスの帯から押した回に勝手に①を指すと C-9 に戻る）
+            // ⚠ 対照 —— 帯の側のボタンは v1553 から「すべての分子に振る」（ユーザー仕様）。
+            //   ①だけを指すのではなく全部に出るので、C-9（答えを指す）には当たらない
             g.focusedMolecule = null;
             D.getElementById('btn-iupac-numbering').click();
-            assert(!g.iupacNumberingActive(),
-                '帯の 🔢 が、何も選んでいないのに①を指して点いた（C-9 に戻っている）');
+            assert(g.iupacNumberingActive() && g._iupacAllMode(),
+                '帯の 🔢 が、分子2つのキャンバスで全部に振る表示にならない');
         } finally {
             g.closeMoleculeModal();
             g.setIupacNumbering(false);
@@ -6722,18 +6763,19 @@
                     `  字幕 : ${r.said}\n  notice: ${r.n.message}`);
             });
             // (b) ★ 門番は緩めない。言い分けても**出せないものは出さない**
-            ['empty', 'ring', 'unsupported', 'multi', 'practice'].forEach(k => {
+            ['empty', 'ring', 'unsupported', 'practice'].forEach(k => {
                 assert(s[k].n.ok === false, `${k} が ok:true になっている（門番を緩めた）`);
                 assert(s[k].shown === false, `${k} なのに主鎖と番号が点いた（門番を緩めた）`);
             });
-            ['chain', 'ether', 'alkyl'].forEach(k => {
+            // ★ 'multi' は v1553 から「すべての分子に振る」（ユーザー仕様）＝ 出せる側
+            ['chain', 'ether', 'alkyl', 'multi'].forEach(k => {
                 assert(s[k].n.ok === true, `${k} が ok:false になっている`);
                 assert(s[k].shown === true, `${k} なのに表示が点かない`);
             });
             // (c) 理由を名指しする（文言の中身。ここが同じなら言い分けたことにならない）
             assert(s.ring.said.includes('環'), `環の断り文が理由を言っていない: ${s.ring.said}`);
-            assert(s.multi.said.includes('分子') && /[0-9０-９]/.test(s.multi.said),
-                `複数分子の断り文が個数を言っていない: ${s.multi.said}`);
+            assert(/①/.test(s.multi.said) && /②/.test(s.multi.said),
+                `複数分子の案内が番号で分子を言っていない: ${s.multi.said}`);
             assert(s.unsupported.said.includes('官能基') && s.unsupported.said.includes('まだ'),
                 `未対応官能基の断り文が理由を言っていない: ${s.unsupported.said}`);
             assert(s.practice.said.includes('練習'), `練習中の断り文が理由を言っていない: ${s.practice.said}`);
@@ -6799,8 +6841,8 @@
             gs.forEach(nm => assert(s.ether.n.message.includes(nm),
                 `エーテルの案内に基の名前「${nm}」が無い: ${s.ether.n.message}`));
             // 出せる回の文言は、出せない回の文言と混ざらない
-            ['chain', 'ether', 'alkyl'].forEach(a => {
-                ['empty', 'ring', 'unsupported', 'multi', 'practice'].forEach(b => {
+            ['chain', 'ether', 'alkyl', 'multi'].forEach(a => {
+                ['empty', 'ring', 'unsupported', 'practice'].forEach(b => {
                     assert(s[a].n.message !== s[b].n.message,
                         `${a} と ${b} が同じ文言（出せた回と断った回が区別できない）`);
                 });
@@ -10063,7 +10105,9 @@
         summon('ベンゼン');
         substitute('ニトロ化');
         assert(nameShown().includes('ニトロベンゼン'), `ニトロ化後が「${nameShown()}」`);
-        assert(g.computeMolecularFormula() === 'C₆H₅NO₂', `分子式が${g.computeMolecularFormula()}`);
+        // ⚠ v1553 から副生成物の H₂O もキャンバスに残る ＝ 生成物の式は副生成物を除いて見る
+        const 生成物の式 = () => g.computeMolecularFormula(副生成物を除く(c.W, g.userMolecule));
+        assert(生成物の式() === 'C₆H₅NO₂', `分子式が${生成物の式()}`);
 
         // **同じ手順なら毎回同じ位置に置換基が生えること**（C-2b。2026-08-01・動画レーンの実測で
         // ニトロ化 6:4／スルホン化 6:4／塩素化 8:2 に揺れていた）。原子IDは乱数で、
@@ -10122,7 +10166,7 @@
         assert(tRing, '候補の原子が見つからない');
         c.clickAt(tRing.x, tRing.y);
         assert(!c.W.reactor.picking, 'トルエンで選択モードが解除されない');
-        assert(g.computeMolecularFormula() === 'C₇H₇NO₂', `トルエンのニトロ化後の分子式が${g.computeMolecularFormula()}`);
+        assert(生成物の式() === 'C₇H₇NO₂', `トルエンのニトロ化後の分子式が${生成物の式()}`);
 
         // 非芳香族（シクロヘキサン）には芳香族置換を提示しない
         summon('シクロヘキサン');
@@ -14953,6 +14997,202 @@
         c.game.updateDrawing();
         return m;
     }
+
+    test('CHIP1: CH₄・H₂O のような重原子1個の分子にも名前の見出しが出る／登録に無い物と練習中は出さない（v1553）', async (c) => {
+        // ユーザー仕様「CH4やH2Oも物質名をチップで表示する」。
+        // ⚠ 直す前は `markedMolecules` / `isSoleLabeledPart` が「重原子2個以上」で切っていて、
+        //   呼び出したメタン・水・アンモニア・塩化水素に 🔍 の見出しが1つも出なかった（実測）
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const captions = () => [...D.getElementById('chem-svg').querySelectorAll('text')]
+            .map(t => t.textContent).filter(s => /[①-⑳]|🔍/.test(s));
+        try {
+            g.setMode('free');
+            for (const n of ['メタン', '水', 'アンモニア', '塩化水素']) {
+                g.userMolecule = new W.Molecule(); g.updateDrawing();
+                assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`);
+                g.updateDrawing();
+                const cap = captions();
+                assert(cap.length === 1 && cap[0] === `🔍 ${n}`, `${n} の見出しが ${JSON.stringify(cap)}（「🔍 ${n}」を期待）`);
+            }
+            // 並べると番号と分子式つきで全部に出る
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            ['メタン', '水', 'エタノール'].forEach(n => g.summonMolecule(n));
+            g.updateDrawing();
+            const three = captions();
+            assert(three.join('|') === '🔍 ① メタン CH₄|🔍 ② 水 H₂O|🔍 ③ エタノール C₂H₆O',
+                `3分子の見出しが ${JSON.stringify(three)}`);
+            // ★ 否定対照①: 登録に名前の無い1原子には出さない（作り名を出さない）
+            g.userMolecule = new W.Molecule();
+            g.userMolecule.addAtom('S', 420, 294);
+            g.updateDrawing();
+            assert(g.lookupCompoundName(g.userMolecule) === null, '下ごしらえ: S 1個に名前が引けてしまう（題材を替えること）');
+            assert(captions().length === 0, `登録に無い1原子に見出しが出た（${JSON.stringify(captions())}）`);
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+        // ★ 否定対照②: 書き出し練習の答案用紙では番号だけ（名前を伏せる決めはそのまま）
+        const ip = W.isomerPractice;
+        g.setMode('learn');
+        ip.start(0);
+        try {
+            ipSheet(c, [{ atoms: ['C'], bonds: [] }, { atoms: ['O'], bonds: [] }]);
+            const cap = captions();
+            assert(cap.join('|') === '①|②', `練習中の見出しが番号だけになっていない（${JSON.stringify(cap)}）`);
+            const svgText = D.getElementById('chem-svg').textContent;
+            assert(!/メタン|水/.test(svgText), '練習中のキャンバスにメタン／水の名前が出た');
+        } finally {
+            ip.stop();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            g.setMode('puzzle');
+        }
+    });
+
+    test('LBG1: 分子が近く並んでも、図の下の見出しの札はくっつかず間が空く（否定対照つき・v1553）', async (c) => {
+        // ユーザー検品「① 2-メチルブタン と ② 1-プロパノール の札がくっついている」。
+        // ⚠ 直す前は「重なっていない」だけを見ていたので、端が触れている札は段送りされなかった
+        c.reset();
+        const g = c.game, W = c.W;
+        const minGap = () => {
+            const rs = g._labelRects || [];
+            let worst = Infinity;
+            for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+                const a = rs[i], b = rs[j];
+                const gx = Math.max(b.x - (a.x + a.w), a.x - (b.x + b.w));
+                const gy = Math.max(b.y - (a.y + a.h), a.y - (b.y + b.h));
+                worst = Math.min(worst, Math.max(gx, gy));
+            }
+            return { worst, n: rs.length, h: rs.length ? rs[0].h : 0 };
+        };
+        try {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule();
+            ['2-メチルブタン', '1-プロパノール', 'ベンゼン'].forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない`));
+            g.updateDrawing();
+            const on = minGap();
+            assert(on.n === 3, `見出しが ${on.n} 個（3個を期待）`);
+            assert(on.worst >= on.h * 0.2, `見出しの札どうしの間が ${on.worst.toFixed(1)}（札の高さ ${on.h.toFixed(1)} の 1/5 以上を期待）`);
+            // ★ 否定対照: 段送りを止めると、同じ並びで札が触れる／重なる（＝ 物差しが空振りしていない）
+            g.labelCollisionAvoid = false;
+            g.updateDrawing();
+            const off = minGap();
+            assert(off.worst < off.h * 0.2, `段送りを止めても札の間が空いている（${off.worst.toFixed(1)}）＝ この並びは検査にならない`);
+        } finally {
+            delete g.labelCollisionAvoid;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    /* ===== RXP: 反応の相手をキャンバスに呼ぶ（v1553・ユーザー仕様「置換反応では、Cl2を召喚するようにする」）=====
+     * ⚠ 直す前は `apply` が付く原子を何も無い所に足していたので、握手のつなぎ替えでも
+     *   その原子はフェードインで湧いて出た（「急に原子が入れ替わったようにしか見えない」）。
+     * ★ 物差しは `computeDiff(before, after).addedAtoms` ＝ 反応前の図に無かった重原子の数。 */
+    const rxpRun = (c, name, id) => {
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.userMolecule = new W.Molecule();
+        assert(g.summonMolecule(name), `${name} を呼び出せない（検査が素通りする）`);
+        const rule = W.REACTION_RULES.find(r => r.id === id);
+        const sites = rule.detect(g.userMolecule) || [];
+        assert(sites.length, `${name} に ${id} の箇所が無い（検査が素通りする）`);
+        const n0 = g.userMolecule.atoms.length;
+        rx.execute(rule, sites[0]);
+        rx._morphSkip = true;
+        const L = rx.lastReaction;
+        const d = rx.computeDiff(L.before, L.after);
+        const parts = g.splitMolecules();
+        const heavy = p => p.atoms.filter(a => a.element !== 'H');
+        const left = parts.filter(p => heavy(p).length && heavy(p).every(a => a.fromReaction))
+            .map(p => g.lookupCompoundName(p) || g.computeMolecularFormula(p));
+        const codes = parts.filter(p => heavy(p).length && !heavy(p).every(a => a.fromReaction))
+            .map(p => W.canonicalCode(p)).sort().join('|');
+        return { n0, d, left, codes, before: L.before, after: L.after };
+    };
+    /** アニメの写し（自動水素を本物の H として置いたもの）で、急に出る／消える原子を H も含めて数える */
+    const rxpPop = (c, r) => {
+        const hx = c.W.reactor.withMorphHydrogens(r.before, r.after);
+        const bi = new Set(hx.before.atoms.map(a => a.id)), ai = new Set(hx.after.atoms.map(a => a.id));
+        return {
+            hx,
+            pop: hx.after.atoms.filter(a => !bi.has(a.id)).map(a => a.element).join(''),
+            gone: hx.before.atoms.filter(a => !ai.has(a.id)).map(a => a.element).join('')
+        };
+    };
+
+    test('RXP1: 置換・付加・加水分解は相手の分子を呼んでから反応する ＝ 急に出る原子が0個・生成物は同じ（v1553）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const cases = [
+            ['メタン', 'chlorinate_alkane', ['塩化水素']],
+            ['ベンゼン', 'aromatic_halogenation', ['塩化水素']],
+            ['エチレン', 'add_br2', []],
+            ['ベンゼン', 'aromatic_nitration', ['水']],
+            ['ベンゼン', 'aromatic_sulfonation', ['水']],
+            ['エチレン', 'add_water', []],
+            ['エチレン', 'add_hcl', []],
+            ['エチレン', 'add_h2', []],
+            ['酢酸エチル', 'hydrolysis_ester', []]
+        ];
+        try {
+            for (const [name, id, wantLeft] of cases) {
+                const r = rxpRun(c, name, id);
+                // ★ H も含めて、アニメの写しで急に出る／消える原子が0個（自動水素の手が離れて握手し直す）
+                const p = rxpPop(c, r);
+                assert(!p.pop && !p.gone,
+                    `${id}: アニメの写しで急に出る原子「${p.pop}」／消える原子「${p.gone}」がある`);
+                assert(p.hx.before.atoms.some(a => a.element === 'H'), `${id}: 自動水素が写しに置かれていない`);
+                assert(r.d.addedAtoms.length === 0,
+                    `${id}: 反応前の図に無い原子が ${r.d.addedAtoms.map(a => a.element).join('')} 出た（相手を呼べていない）`);
+                assert(r.d.removedAtoms.length === 0, `${id}: 反応前の図から消えた原子がある`);
+                assert(JSON.stringify(r.left) === JSON.stringify(wantLeft),
+                    `${id}: 残った副生成物が ${JSON.stringify(r.left)}（${JSON.stringify(wantLeft)} を期待）`);
+                await 反応の再生を待つ(c);
+                // ★ 否定対照: 表から外すと急に出る原子が戻る（＝ この物差しが空振りしていない）。生成物の正準コードは同じ
+                const saved = W.PARTNER_SUMMON[id];
+                if (!saved) { await 反応の再生を待つ(c); continue; }   // H₂ の付加は表に載せていない（H₂ は写しの側で呼ぶ）
+                delete W.PARTNER_SUMMON[id];
+                try {
+                    const plain = rxpRun(c, name, id);
+                    assert(plain.d.addedAtoms.length > 0, `${id}: 表から外しても急に出る原子が0個 ＝ この検査は何も見張っていない`);
+                    assert(plain.left.length === 0, `${id}: 表から外したのに副生成物が残った`);
+                    // ★ H の否定対照: 相手を呼ばない置換では、C から離れた H の行き先が無く「消える H」が出る
+                    if (id === 'chlorinate_alkane') {
+                        const pp = rxpPop(c, plain);
+                        assert(/H/.test(pp.gone), `相手を呼ばない塩素化で消える H が数えられない（「${pp.gone}」）＝ H の物差しが空振り`);
+                    }
+                    assert(plain.codes === r.codes, `${id}: 相手を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
+                } finally {
+                    W.PARTNER_SUMMON[id] = saved;
+                }
+                await 反応の再生を待つ(c);
+            }
+            // 「↩ 反応前に戻す」は、呼んだ相手ごと反応前（メタン1つ）に戻る
+            rxpRun(c, 'メタン', 'chlorinate_alkane');
+            await 反応の再生を待つ(c);
+            assert(rx.undoLastReaction() !== false, '反応前に戻せない');
+            const heavy = g.userMolecule.atoms.filter(a => a.element !== 'H');
+            assert(heavy.length === 1 && heavy[0].element === 'C', `反応前に戻したのに Cl が残っている（${heavy.map(a => a.element).join('')}）`);
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXP2: ★否定対照 — 表に無い反応は反応前の図に何も足さない／表の名前はすべて実在のルール（v1553）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        g.setMode('free');
+        try {
+            Object.keys(W.PARTNER_SUMMON).forEach(id =>
+                assert(W.REACTION_RULES.some(r => r.id === id), `PARTNER_SUMMON の ${id} は REACTION_RULES に無い`));
+            const r = rxpRun(c, 'エタノール', 'oxidize_primary');
+            assert(!W.PARTNER_SUMMON.oxidize_primary, '下ごしらえ: 酸化が表に載っている（題材を替えること）');
+            assert(r.before.atoms.length === r.n0, `表に無い反応で反応前の図に原子が足された（${r.before.atoms.length} / ${r.n0}）`);
+            assert(r.left.length === 0, `表に無い反応で副生成物が足された（${JSON.stringify(r.left)}）`);
+            await 反応の再生を待つ(c);
+        } finally {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
 
     test('IW5: ヒント5段 — 押すたびに1段ずつ積み上がり、最終段のあとは答え合わせだけ（スコアつき）', async (c) => {
         c.reset();
@@ -30576,6 +30816,9 @@
         assert(rule, 'aromatic_nitration が無い');
         const sites = rule.detect(g.userMolecule);
         assert(sites.length, 'ニトロ化の箇所が無い');
+        // ⚠ v1553 から `lastReaction.before` には呼んだ相手（HNO₃）も載る（握手のつなぎ替えの材料）。
+        //   「反応前のキャンバス」は**押す前に**写しておく
+        const beforeCode = W.canonicalCode(g.userMolecule);
         W.reactor.execute(rule, sites[0]);
         assert(shown(), '（下ごしらえ）反応後に札が出ていない');
         const afterCode = W.canonicalCode(g.userMolecule);
@@ -30602,8 +30845,6 @@
         assert(shown(), '機構を見て戻っても「↩ 反応前に戻す」が出ない（申し立ての症状）');
 
         // ③ 押せば本当に反応前へ戻る（札が出るだけの空振りにしない）
-        const beforeCode = W.canonicalCode(
-            g.createTargetFromData({ target: W.reactor.snapshotToTarget(W.reactor.lastReaction.before) }));
         btn.click();
         assert(W.canonicalCode(g.userMolecule) === beforeCode,
             '押しても反応前の図に戻らない');
@@ -39139,8 +39380,10 @@
             const atom = g.userMolecule.atoms.find(a => site.includes(a.id));
             c.clickAt(atom.x, atom.y);
         }
-        assert(CC(g.userMolecule) === expectedPhenol,
-            `臭素水の瓶からフェノールを押しても 2,4,6-トリブロモフェノールにならない: ${CC(g.userMolecule)}`);
+        // ⚠ v1553 から副生成物の HBr ×3 もキャンバスに残る ＝ 生成物は副生成物を除いて見る
+        const 瓶の生成物 = CC(副生成物を除く(W, g.userMolecule));
+        assert(瓶の生成物 === expectedPhenol,
+            `臭素水の瓶からフェノールを押しても 2,4,6-トリブロモフェノールにならない: ${瓶の生成物}`);
 
         // ---- (5) 否定対照（瓶の経路）。ベンゼンでは分子が変わらず、**文面が逆を教えていない** ----
         setupReagent(c, ['ベンゼン']);
@@ -52675,8 +52918,10 @@
     };
     const AC_NAME = (c) => {
         const g = c.game, W = c.W;
-        const lib = g.lookupCompoundName(g.userMolecule);
-        return (lib && (lib.name || lib)) || W.iupacName(g.userMolecule) || '（未登録）';
+        // ⚠ v1553 から副生成物の HCl もキャンバスに残る ＝ 生成物の名前は副生成物を除いて引く
+        const mol = 副生成物を除く(W, g.userMolecule);
+        const lib = g.lookupCompoundName(mol);
+        return (lib && (lib.name || lib)) || W.iupacName(mol) || '（未登録）';
     };
 
     test('AC1: 対象は鎖状の飽和炭化水素だけ ＝ 同じ生成物になる位置は畳む', async (c) => {
