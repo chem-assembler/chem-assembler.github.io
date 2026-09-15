@@ -2909,6 +2909,79 @@
             '正解の色が出題中と同じまま（答え合わせが見えない）');
     });
 
+    test('QUIZ_UNIFORM: 3種のクイズとも、出題中の選択肢は見た目がそろう（出題直後・答えた次の問題）', async (c) => {
+        // 2026-09-15・ユーザー「V137 は最初から『違う』にマーカーされていますね」。
+        // 同じ？違う？の2択で `#btn-quiz-diff` だけに inline のオレンジが付いていた
+        // （立体の3択で v1537 に外したのと同じ病気）。どのクイズでも、
+        // 出題中に1つだけ色・枠・影・濃さ・印が違えば「これが特別だ」と読まれる。
+        c.reset();
+        const W = c.W, D = c.D;
+        const wait = () => new Promise(r => setTimeout(r, 300));   // transition 0.2s を待つ
+        const sig = (b) => {
+            const s = W.getComputedStyle(b), a = W.getComputedStyle(b, '::after');
+            return [s.backgroundColor, s.borderTopColor, s.boxShadow, s.color, s.opacity, a.content].join(' | ');
+        };
+        const same = async (label, btns) => {
+            await wait();
+            assert(btns.length >= 2, `${label}: 選択肢が見つからない`);
+            const sigs = btns.map(sig);
+            assert(new Set(sigs).size === 1,
+                `${label}: 選択肢の見た目がそろっていない\n  ` +
+                btns.map((b, i) => `${b.textContent.trim()} = ${sigs[i]}`).join('\n  '));
+            btns.forEach(b => {
+                const cls = [...b.classList].filter(x => x.startsWith('quiz-choice'));
+                assert(cls.length === 0, `${label}: ${b.textContent.trim()} に答え合わせの印 ${cls.join(' ')} が残っている`);
+            });
+            return sigs;
+        };
+
+        // --- 同じ？違う？（2択＝台本 V64・V92・V107・V137 の形） ---
+        const q = W.quiz;
+        const pairBtns = () => [D.getElementById('btn-quiz-same'), D.getElementById('btn-quiz-diff')];
+        q.setForced('diff');
+        try {
+            q.open();
+            const sig1 = await same('同じ？違う？ 出題直後', pairBtns());
+            D.getElementById('btn-quiz-diff').click();
+            await wait();
+            D.getElementById('btn-quiz-next').click();
+            await same('同じ？違う？ 答えた次の問題', pairBtns());
+
+            // ⚠ 否定対照: 直す前の inline のオレンジに戻すと赤くなること
+            const diff = D.getElementById('btn-quiz-diff');
+            diff.style.cssText = 'background:var(--neon-orange); box-shadow:0 0 15px rgba(255,165,2,0.4);';
+            await wait();
+            assert(sig(diff) !== sig1[0], '否定対照が効いていない（「違う」をオレンジに戻しても検査が通る）');
+            diff.style.cssText = '';
+        } finally {
+            q.setForced(null);
+            D.getElementById('btn-quiz-close').click();
+        }
+
+        // --- 命名（V108〜V112・V135・V138） ---
+        const nq = W.namingQuiz;
+        const nBtns = () => [...D.querySelectorAll('#naming-choices button')];
+        nq.open();
+        await same('命名 出題直後', nBtns());
+        nBtns()[0].click();
+        await wait();
+        assert(nBtns().some(b => b.classList.contains('quiz-choice-right')), '命名: 答え合わせの緑が付かない');
+        nq.nextQuestion();
+        await same('命名 答えた次の問題', nBtns());
+        if (nq.close) nq.close();
+
+        // --- 立体（V113・V114・V136・V140） ---
+        const sq = W.stereoQuiz;
+        const sBtns = () => ['same', 'enantiomer', 'diastereomer'].map(k => sq.buttons[k]);
+        sq.open();
+        await same('立体 出題直後', sBtns());
+        sq.answer('diastereomer');
+        await wait();
+        assert(sBtns().some(b => b.classList.contains('quiz-choice-right')), '立体: 答え合わせの緑が付かない');
+        sq.nextQuestion();
+        await same('立体 答えた次の問題', sBtns());
+    });
+
     test('F5c: 総数当てに高分子を出題しない（切り出した一部を1分子と数えない）', async (c) => {
         // 2026-08-09・ユーザー検品。収録でポリビニルアルコール（C₆H₁₂O₃R₂）が出た。
         // この登録は R を端に置いた**繰り返し単位の切り出し**で、その一部分だけを
