@@ -56712,6 +56712,20 @@
                 assert(horizontal.length === 2, `2-メチルプロパンの横の価標が ${horizontal.length} 本（2本のはず ＝ 文字に食われて消えた）`);
             }
 
+            // ★ 文字を書かない環の炭素はベンゼン型の環とハース式の糖の環だけ（v1562・教科書 6編 p.254 のビニロンは環の炭素も CH₂・CH）。
+            //   ビニロン（アセタール環のある鎖）は重原子すべてに文字が付く。否定対照は上のトルエン（環の炭素は文字なし・CH₃ だけ）
+            {
+                const vin = paperOf('ビニロン');
+                const heavy = vin.m.atoms.filter(a => a.element !== 'H').length;
+                assert(vin.labels.length === heavy,
+                    `★ ビニロンの文字が ${vin.labels.length} 個（重原子 ${heavy} 個すべてに付くはず ＝ 環の炭素を骨格の頂点にしている）`);
+                // ★ 文字どうしの環の辺も線が残る（v1562 の最初の焼き直しでは CH−CH₂ の線が文字に食われて消え「CH CH₂CH」になった）。
+                //   ビニロンの結合はすべて単結合 ＝ 線の本数 ＝ 結合の本数
+                const lines = svg.querySelectorAll('.quiz-bonds line.svg-bond-ink').length;
+                assert(lines === vin.m.bonds.length,
+                    `★ ビニロンの線が ${lines} 本（結合 ${vin.m.bonds.length} 本すべて描かれるはず ＝ 文字に食われて消えた線がある）`);
+            }
+
             // ★ 環の中の二重結合は、1本が辺そのもの・もう1本が環の内側（v1551・ユーザー「= が6角形に収まるように」）。
             //   トルエン: 線は 9本（辺 6・内側 3）。内側の3本は、辺の6本より環の中心に近く、辺より短い
             {

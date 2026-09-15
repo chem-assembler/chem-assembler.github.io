@@ -31,6 +31,8 @@
  * | `chain=<数> subs=<位置-基,…>` | ⚠ 重原子9個以上のアルカンだけ。主鎖の炭素数と側鎖（`2-メチル,3-エチル`）から骨格を組む。**組んだあと `iupacName` で `name=` と照合する**（違えば赤） |
  * | `numbered`      | 主鎖にオレンジの帯と `C₁ C₂ …` の番号を重ねる（アプリの `🔢` と同じもの） |
  * | `plain`         | ⚠ **位置番号を消す。**アプリの標準の図は素の `1 2 3 …` を主鎖の下に振るので、番号の話をする前のページでは邪魔になる（消すのは番号の文字だけで、形は触らない） |
+ * | （既定）`paper` | ★★ **原稿の図は既定で紙の図の型**（v1562・ユーザー「参考書の図は焼き直してよいです」＝ 見本 paper4 の見た目で決定）。教科書の比の文字・環は登録の座標・−NO₂/−SO₃H は文字・−COOH/−CHO は線。⚠ 原稿の `gen:` に `paper` を書かなくても効く（校正中の原稿を1文字も変えずに焼き直すため）。`--src=` の1枚焼きは今までどおり `paper` を書いたときだけ |
+ * | `circle`        | 紙の図の型をやめて、アプリの丸の図で焼く（v1562 までの見た目）。⚠ `numbered` は紙の図の型と組めないので、書かなくても丸の図になる |
  * | `haworth`       | ★ **糖をハース式で描く**（v1549）。登録の座標（名前から呼び出したときの形）をそのまま描く ＝ **1位の −OH の上下（α/β）が図に出る**。⚠ 登録済みの名前だけ・糖の環（`haworthSugarCycles`）が無ければ赤。中身は `learn.js` の `ipHaworthFigure` |
  *
  * ★ **原稿に書かずに1枚だけ焼く**（v1549。原稿の校正中に新しい図を用意する口）:
@@ -128,7 +130,10 @@ function collect() {
         const page = RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), `reference-src/${id}.md`, { pages: ids });
         (page.blocks || []).forEach(b => {
             if (b.kind !== 'figure' || !b.gen) return;
-            jobs.push({ id, src: b.src, gen: b.gen, spec: parseGen(b.gen, `reference-src/${id}.md`) });
+            const spec = parseGen(b.gen, `reference-src/${id}.md`);
+            // ★ 原稿の図は既定で紙の図の型（v1562）。⚠ numbered（主鎖の帯と C₁ の添え字）は丸の図の上で合わせてあるので丸の図のまま
+            if (!spec.circle && !spec.numbered && !spec.paper) { spec.paper = true; spec.paperByDefault = true; }
+            jobs.push({ id, src: b.src, gen: b.gen, spec });
         });
     });
     return jobs;
@@ -142,6 +147,7 @@ function parseGen(text, where) {
         if (tok === 'plain') { spec.plain = true; return; }
         if (tok === 'haworth') { spec.haworth = true; return; }
         if (tok === 'paper') { spec.paper = true; return; }
+        if (tok === 'circle') { spec.circle = true; return; }
         const g = /^(condense|expand)=(.+)$/.exec(tok);
         if (g) {
             const keys = g[2].split(',').map(s => s.trim()).filter(Boolean);
@@ -152,7 +158,7 @@ function parseGen(text, where) {
         }
         const m = /^(name|formula|chain|subs)=(.+)$/.exec(tok);
         if (!m) throw new Error(`${where}: :::figure の gen に読めない語「${tok}」があります`
-            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / condense= / expand=）');
+            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand=）');
         spec[m[1]] = m[2];
     });
     if (!spec.name) throw new Error(`${where}: :::figure の gen に name= がありません（図が何の分子かを名乗ってください）`);
@@ -194,7 +200,7 @@ async function bake(jobs) {
     if (!existsSync(IMG)) mkdirSync(IMG, { recursive: true });
     const done = [];
     for (const job of jobs) {
-        const r = await pg.evaluate(({ spec, OUT_W, MAX_H, FIT_W }) => {
+        const bakeOne = (spec) => pg.evaluate(({ spec, OUT_W, MAX_H, FIT_W }) => {
             /* ── ① 分子を決める（★ 道は3つ。どれも最後に名前で照合する）──────────── */
             const g = window.game;
             const lib = (window.COMPOUNDS || []).concat(window.STAGES || []);
@@ -296,7 +302,17 @@ async function bake(jobs) {
             svg.style.width = (w / 2) + 'px';
             svg.style.height = (h / 2) + 'px';
             return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length };
-        }, { spec: job.spec, OUT_W, MAX_H, FIT_W });
+        }, { spec, OUT_W, MAX_H, FIT_W });
+        let r = await bakeOne(job.spec);
+        /* ★ 紙の図の型は字の長さぶん価標を伸ばすので、長い鎖（ステアリン酸 C₁₈）は横に伸びて床 9:1 を超える（v1562 実測 10.1:1）。
+           ⚠ 鎖を (CH₂)₁₆ に畳むかはユーザーの判断待ちなので、ここでは決めない ——
+           **原稿の既定で紙の図になっている図だけ**、平たすぎたら丸の図（v1562 までの見た目）で焼き直して、そのことを出力に書く。
+           `paper` を明示した図（--src= の1枚焼き）は今までどおり赤で止める */
+        if (!r.error && r.aspect > ASPECT_WARN && job.spec.paperByDefault) {
+            const flat = r.aspect;
+            r = await bakeOne(Object.assign({}, job.spec, { paper: false, condense: undefined, expand: undefined }));
+            if (!r.error) r.fellBack = `紙の図は ${flat.toFixed(1)}:1 で平たすぎるので丸の図`;
+        }
 
         if (r.error) {
             console.error(`❌ reference-src/${job.id}.md の ${job.src}: ${r.error}`);
@@ -316,7 +332,8 @@ async function bake(jobs) {
         writeFileSync(path.join(outDir, job.src), buf);
         done.push({ ...job, ...r, bytes: buf.length });
         console.log(`   ✅ ${job.src}  ${r.w}x${r.h}  ${(buf.length / 1024).toFixed(0)}KB`
-            + `  ← ${job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`);
+            + `  ← ${job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`
+            + (r.fellBack ? `  ⚠ ${r.fellBack}` : (job.spec.paper ? '  （紙の図）' : '  （丸の図）')));
     }
     await browser.close();
     return done;
