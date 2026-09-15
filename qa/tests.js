@@ -1175,7 +1175,20 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   ＝ **assembler へ戻す道が開いた**。★ とくに `diazonium-decomp` は
     //   「行き先が2つある（フェノール／アゾ化合物）」という積み残しがあるので、
     //   行き先を決める作業と一緒に見直すこと。
-    var KNOWN_BOTTLES = 26, KNOWN_RULES = 64, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    // ★ 2026-09-15（qa v111・assembler v1541〜v1563 を追って）: 燃焼の瓶 `o2_flame` が1本（c0abd446）、
+    //   ルールが10本（combustion / add_cl2 / add_cl2_benzene_ring / hydrolysis_amide / copolymerization /
+    //   dehydrohalogenation / ring_opening_addition / alkyne_trimerization / naphthalene_air_oxidation /
+    //   williamson_ether）。瓶 26→27・ルール 64→74・機構は 14 のまま。
+    //   ⚠ v1541 から赤いまま（瓶の assert が先に落ちるので、ルールのずれは見えていなかった）。
+    //   ★見直し候補の残り2件は**今回も繋がらない**:
+    //     - `org.aro.c8h10-isomers` … 異性体列挙器の上限。反応とは無関係
+    //     - `org.carbonyl.lactone` … エステル化は今も分子間だけ（reactor.js の esterification の detect が
+    //       同じ分子の -OH を飛ばしている）。足されたルールに分子内エステル化は無い
+    //   ⚠⚠ **★の付いていない none のうち4件は、新しいルールで繋がりうる**（この便では繋いでいない ——
+    //   繋ぐと questions.json を書き換えることになり、別便の校正と重なるため）:
+    //   `org.ali.alkane-combustion`（combustion）・`org.ali.acetylene-benzene`（alkyne_trimerization）・
+    //   `org.poly.copolymer` / `org.poly.sbr-copolymer`（copolymerization）。why が「reactor に無い」のまま古い
+    var KNOWN_BOTTLES = 27, KNOWN_RULES = 74, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
@@ -1686,6 +1699,175 @@ function runUiTests(doc, DATA) {
       setWidth(BASE_W);
       assert(!bad.length, bad.slice(0, 4).join(" / ") +
         "。押せない入口は、機能そのものが無いのと同じになる");
+    });
+
+    // ---- ヘッダーの戻り道（2026-09-15・ユーザー指摘） ----
+    // ⚠ 指摘:「ハブにもどるボタンはあるのですが、qaに戻るボタンが無いように見えます」
+    //   「ハブ、という表現は伝わりにくい」。
+    // ★ ヘッダーに2段を常に置く: 外＝「🏠 化学レンズ」（ほかのアプリと同じ表記）／中＝「一問一答」（単元一覧）。
+    //   実測（v110）では、習得マップのマスから始めた回の「やめる」と、その結果画面の
+    //   「単元にもどる」がマップへ着地し、単元一覧まで2手かかっていた。
+    var NAV_KEY = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.STORE_KEY;
+    function visibleView() {
+      return ["view-home", "view-map", "view-study", "view-result"].filter(function (v) {
+        return !d.getElementById(v).classList.contains("hidden");
+      });
+    }
+    // ヘッダーの「一問一答」を**本物のクリック**で押す。既定の遷移を止めたか（＝ページを開き直していないか）も返す
+    function pressHeaderHome() {
+      var a = d.getElementById("nav-home");
+      assert(a, "ヘッダーに「一問一答」のリンク（#nav-home）が無い");
+      var ev = new frame.contentWindow.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+      return !a.dispatchEvent(ev);   // true ＝ 既定の遷移を止めた
+    }
+    function assertLandedHome(where) {
+      var v = visibleView();
+      assert(v.length === 1 && v[0] === "view-home",
+        where + " でヘッダーの「一問一答」を押しても単元一覧に着かない（見えている画面: " + v.join(",") + "）");
+    }
+    function flipThrough() {
+      // めくり回を最後まで進める（答えを見る → わかった）
+      for (var k = 0; k < 80 && !d.getElementById("view-study").classList.contains("hidden"); k++) {
+        var r = d.getElementById("btn-reveal"); if (r) r.click();
+        var g = d.getElementById("btn-good-q"); if (g) g.click();
+      }
+    }
+
+    t("ヘッダー: 戻り道は「🏠 化学レンズ」と「一問一答」の2本だけ", function () {
+      var links = Array.prototype.slice.call(d.querySelectorAll(".top a"));
+      assert(links.length === 2, "ヘッダーの横並びのリンクが " + links.length + " 本（2本まで）");
+      var out = d.querySelector('.top a[href="../"]');
+      assert(out && /🏠\s*化学レンズ/.test(out.textContent),
+        "化学レンズのトップへ戻るリンクが「🏠 化学レンズ」になっていない（" + (out && out.textContent.trim()) + "）");
+      var home = d.getElementById("nav-home");
+      assert(home && home.getAttribute("href") === "./" && home.textContent.indexOf("一問一答") >= 0,
+        "「一問一答」が単元一覧へのリンクになっていない");
+    });
+
+    t("ヘッダー: 画面の文字・aria-label・title に「ハブ」が無い（伝わりにくい語）", function () {
+      var bad = [];
+      var w = d.createTreeWalker(d.body, frame.contentWindow.NodeFilter.SHOW_TEXT, null);
+      for (var n = w.nextNode(); n; n = w.nextNode()) {
+        var tag = n.parentNode && n.parentNode.nodeName;
+        if (tag === "SCRIPT" || tag === "STYLE") continue;
+        if (n.nodeValue.indexOf("ハブ") >= 0) bad.push("文字「" + n.nodeValue.trim().slice(0, 20) + "」");
+      }
+      Array.prototype.forEach.call(d.querySelectorAll("[aria-label],[title],[alt]"), function (el) {
+        ["aria-label", "title", "alt"].forEach(function (k) {
+          var s = el.getAttribute(k);
+          if (s && s.indexOf("ハブ") >= 0) bad.push(k + "「" + s + "」");
+        });
+      });
+      if (d.title.indexOf("ハブ") >= 0) bad.push("<title>");
+      assert(!bad.length, "「ハブ」が画面に残っている: " + bad.slice(0, 4).join(" / "));
+    });
+
+    t("ヘッダー: どの画面からも「一問一答」の1手で単元一覧に着く（ページは開き直さない）", function () {
+      var saved = NAV_KEY ? frame.contentWindow.localStorage.getItem(NAV_KEY) : null;
+      var visited = [];
+      function check(where, setup) {
+        setup();
+        var v = visibleView()[0];
+        assert(pressHeaderHome(), where + " で「一問一答」がページを開き直している（既定の遷移を止めていない）");
+        assertLandedHome(where + "（" + v + "）");
+        visited.push(where);
+      }
+      try {
+        check("単元一覧", function () {});
+        check("習得マップ", function () { d.getElementById("btn-map").click(); });
+        check("習得マップ（マスを開いた）", function () {
+          d.getElementById("btn-map").click();
+          if (!d.getElementById("btn-map-flip")) mapCells()[0].click();
+        });
+        check("暗記（答えを見る前）", function () { btnIn(unitCards()[0], "暗記").click(); });
+        check("暗記（答えを開いた）", function () {
+          btnIn(unitCards()[0], "暗記").click(); d.getElementById("btn-reveal").click();
+        });
+        check("測定（採点後）", function () {
+          btnIn(unitCards()[0], "測定").click();
+          d.querySelector("#opts input").click(); d.getElementById("btn-grade").click();
+        });
+        check("マスから始めた暗記", function () {
+          d.getElementById("btn-map").click();
+          if (!d.getElementById("btn-map-flip")) mapCells()[0].click();
+          d.getElementById("btn-map-flip").click();
+        });
+        check("マスから始めた回の結果", function () {
+          d.getElementById("btn-map").click();
+          var one = mapCells().filter(function (c) { return Number(c.querySelector(".gc-n").textContent) === 1; })[0] ||
+            mapCells()[0];
+          if (!one.classList.contains("is-sel")) one.click();
+          d.getElementById("btn-map-flip").click();
+          flipThrough();
+          assert(!d.getElementById("view-result").classList.contains("hidden"), "結果画面まで進めない（テストの前提）");
+        });
+      } finally {
+        // めくりで付けた記録を元に戻す（テスト用の iframe でも、利用者の記録と同じ置き場なので汚さない）
+        if (NAV_KEY) {
+          if (saved === null) frame.contentWindow.localStorage.removeItem(NAV_KEY);
+          else frame.contentWindow.localStorage.setItem(NAV_KEY, saved);
+        }
+        var sel = d.querySelector(".gc.is-sel");
+        if (sel) { d.getElementById("btn-map").click(); d.querySelector(".gc.is-sel").click(); d.getElementById("btn-map-back").click(); }
+      }
+      assert(visited.length === 8, "回れた画面が " + visited.length + " / 8");
+    });
+
+    t("ヘッダー: 演習の途中で「一問一答」を押しても「やめる」と同じ扱い（記録も控えも動かさない）", function () {
+      var W = frame.contentWindow;
+      var RK = "qa.resume.v1";
+      function snap() { return [NAV_KEY ? W.localStorage.getItem(NAV_KEY) : "", W.sessionStorage.getItem(RK)]; }
+      function midway() {
+        btnIn(unitCards()[0], "測定").click();
+        d.querySelector("#opts input").click();          // 選んだが、まだ採点していない
+      }
+      midway();
+      var before = snap();
+      assert(pressHeaderHome(), "既定の遷移を止めていない");
+      assertLandedHome("測定の途中");
+      var byHeader = snap();
+      midway();
+      d.getElementById("btn-quit").click();
+      var byQuit = snap();
+      assert(byHeader[0] === before[0] && byHeader[1] === before[1],
+        "「一問一答」で出たら記録か控えが動いた（答えていない1問を記録した？）");
+      assert(byQuit[0] === byHeader[0] && byQuit[1] === byHeader[1],
+        "「やめる」と「一問一答」で、出たあとの記録・控えが食い違う");
+    });
+
+    t("ヘッダー: マスから始めた回は「やめる」がマップ・「一問一答」が単元一覧（来た道とはじめを分ける）", function () {
+      d.getElementById("btn-map").click();
+      if (!d.getElementById("btn-map-flip")) mapCells()[0].click();
+      d.getElementById("btn-map-flip").click();
+      d.getElementById("btn-quit").click();
+      assert(!d.getElementById("view-map").classList.contains("hidden"), "マスから始めた回の「やめる」がマップへ戻らない");
+      d.getElementById("btn-map-flip").click();
+      pressHeaderHome();
+      assertLandedHome("マスから始めた暗記");
+      d.getElementById("btn-map").click();
+      var sel = d.querySelector(".gc.is-sel"); if (sel) sel.click();
+      d.getElementById("btn-map-back").click();
+    });
+
+    t("結果: マスから始めた回の戻るボタンは「マップにもどる」と書く（押した先と札を合わせる）", function () {
+      var W = frame.contentWindow;
+      var saved = NAV_KEY ? W.localStorage.getItem(NAV_KEY) : null;
+      try {
+        d.getElementById("btn-map").click();
+        var one = mapCells().filter(function (c) { return Number(c.querySelector(".gc-n").textContent) === 1; })[0] ||
+          mapCells()[0];
+        if (!one.classList.contains("is-sel")) one.click();
+        d.getElementById("btn-map-flip").click();
+        flipThrough();
+        var b = d.getElementById("btn-home");
+        assert(b.textContent.indexOf("マップ") >= 0, "札が「" + b.textContent + "」のまま");
+        b.click();
+        assert(!d.getElementById("view-map").classList.contains("hidden"), "押してもマップに戻らない");
+        d.querySelector(".gc.is-sel").click();
+        d.getElementById("btn-map-back").click();
+      } finally {
+        if (NAV_KEY) { if (saved === null) W.localStorage.removeItem(NAV_KEY); else W.localStorage.setItem(NAV_KEY, saved); }
+      }
     });
 
     t("報告: 版が固定値でなく、ヘッダー表示の版を拾う", function () {
@@ -2274,6 +2456,24 @@ function runUiTests(doc, DATA) {
             assert(a.D.querySelector("#back-band .bb-miss"), "見つからなかった見た目になっていない");
           } finally { a.kill(); }
         });
+      });
+    }).then(function () {
+      // ★ 別のアプリから着地した回（1項目のめくり・参考書の範囲）からも、ヘッダーの1手で単元一覧へ（2026-09-15）
+      return ta("ヘッダー: ?code= / ?codes= で着地した回からも「一問一答」の1手で単元一覧に着く", function () {
+        function one(query, where) {
+          return openWith(query).then(function (a) {
+            try {
+              assert(!a.D.getElementById("view-study").classList.contains("hidden"), where + " で演習に着地しない（テストの前提）");
+              var ev = new a.W.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+              assert(!a.D.getElementById("nav-home").dispatchEvent(ev), where + " で「一問一答」がページを開き直している");
+              assert(!a.D.getElementById("view-home").classList.contains("hidden") &&
+                a.D.getElementById("view-study").classList.contains("hidden"),
+                where + " でヘッダーの「一問一答」を押しても単元一覧に着かない");
+            } finally { a.kill(); }
+          });
+        }
+        return one("&code=" + encodeURIComponent(sample.code) + "&from=assembler", "assembler から戻った1項目の回")
+          .then(function () { return one("&codes=" + encodeURIComponent(sample.code) + "&from=reference", "参考書から来た範囲の回"); });
       });
     }).then(function () { resolve(results); });
   });
