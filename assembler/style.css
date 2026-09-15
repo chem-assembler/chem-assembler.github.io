@@ -1729,8 +1729,8 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 /* かけらは「名前を切った断片」に見せる ＝ 隣どうしを詰めて、押せることだけを枠で示す。
    ⚠ 高さの床（34px）は `.work-strip button` が敷いている（TAP1 の 32px を割らない） */
 .iupac-parts .iupac-part {
-    padding: 3px 7px;
-    font-size: 13px;
+    padding: 3px 8px;
+    font-size: 16px;   /* v1567・ユーザー指摘 N1「名称の説明が小さくて見づらい」: 13px → 16px */
     font-weight: 700;
     color: var(--text-primary);
     background: rgba(255, 165, 2, 0.10);
@@ -1784,7 +1784,7 @@ b.em { font-weight: 700; color: var(--neon-blue); }
     margin: 0;
     flex: 1 1 160px;
     min-width: 0;
-    font-size: 11px;
+    font-size: 14px;   /* v1567・N1: 11px → 14px */
     line-height: 1.35;
     color: var(--text-secondary);
 }
