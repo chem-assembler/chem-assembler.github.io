@@ -788,6 +788,8 @@ function slTrack(name, params) {
     $('pbar-fill').style.width = '100%';
     $('score-ok').textContent = s.right;
     $('score-ng').textContent = s.wrong;
+    // 戻る先を札に書く（マップから始めた回は、押すとマップへ戻る）
+    $('btn-home').textContent = fromMap() ? 'マップにもどる' : '単元にもどる';
     if (s.mode === 'choice') {
       $('score-ok-label').textContent = '正解';
       $('score-ng-label').textContent = '不正解';
@@ -802,15 +804,30 @@ function slTrack(name, params) {
   // ---------- 起動 ----------
   // 演習から戻る先は「来た道」。習得マップのマスから始めた回はマップへ返す
   // （単元一覧へ飛ばすと、いま埋めていた帯を見失う）
-  function goBack() {
+  function fromMap() {
     // 'confirm'（測定で未確認をまとめて確かめる）もマップから始まるのでマップへ返す
-    if (session && (session.scope === 'lv' || session.scope === 'confirm')) {
-      renderMap(); show('view-map'); return;
-    }
+    return !!(session && (session.scope === 'lv' || session.scope === 'confirm'));
+  }
+  // ★ 演習・結果から出て行く道は**ここ1か所**（2026-09-15）。
+  //   「やめる」「単元にもどる」とヘッダーの「一問一答」は、行き先だけが違い、扱いは同じ。
+  //   記録は1問ごとに markResult が書いているので、出て行くときに捨てるのは
+  //   **まだ答えていない1問の途中だけ**（「やめる」と同じ）。控え（RESUME_KEY）は飛び道具専用なので触らない
+  function leaveTo(dest) {
+    if (dest === 'map') { renderMap(); show('view-map'); return; }
     renderHome(); show('view-home');
   }
+  function goBack() { leaveTo(fromMap() ? 'map' : 'home'); }
   $('btn-quit').addEventListener('click', goBack);
   $('btn-home').addEventListener('click', goBack);
+  // ヘッダーの「一問一答」＝ どの画面からでも1手で単元一覧へ（はじめに戻る）。
+  // ⚠ 履歴には積まない（画面の切り替えはどれも積んでいないので、ブラウザの戻るの意味をそろえる）。
+  // 別タブで開く操作（Ctrl/中ボタン）はリンクのまま通す
+  $('nav-home').addEventListener('click', function (e) {
+    if (e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    if (!DATA) return;                 // 読み込みに失敗した画面では、リンクのまま開き直す
+    e.preventDefault();
+    leaveTo('home');
+  });
   $('btn-again').addEventListener('click', function () {
     // 確かめる回の「もう一度」は、**いま未確認のものを取り直す**。
     // 元の一覧を使い回すと、たったいま定着したものをまた出すことになる
@@ -1133,7 +1150,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=110')
+  fetch('data/exam_usage.jsonl?v=111')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -1148,7 +1165,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=110')
+  fetch('questions.json?v=111')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {

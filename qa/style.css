@@ -38,8 +38,10 @@ button{font-family:inherit}
 .top{display:flex;align-items:center;gap:12px;padding:18px 0 8px}
 .back{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft);font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;transition:border-color .18s,transform .15s}
 .back:hover{border-color:var(--accent);transform:translateX(-2px)}
-.back svg{width:13px;height:13px}
-.brand{display:flex;align-items:baseline;gap:10px;margin-left:2px}
+.back{min-height:44px;box-sizing:border-box;white-space:nowrap}
+.brand{display:flex;align-items:center;gap:10px;margin-left:2px;min-height:44px;padding:0 6px;border-radius:10px;min-width:0}
+a.brand:hover b{color:var(--accent-ink)}
+a.brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .brand b{font-size:17px;font-weight:800;letter-spacing:.01em}
 .brand .dom{font-size:11.5px;font-weight:800;letter-spacing:.06em;color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));background:color-mix(in srgb,var(--accent) 8%,var(--surface));border-radius:999px;padding:3px 9px}
 .version{margin-left:auto;font-size:11px;color:var(--ink-faint);font-family:ui-monospace,monospace}
