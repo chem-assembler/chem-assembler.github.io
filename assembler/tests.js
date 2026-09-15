@@ -7600,10 +7600,13 @@
                         assert([...anchors].some(a => reach(a).has(id)),
                             `${nm}: 「${p.text}」で ${[...anchors].join(',')} 番と繋がっていない原子が光っている`);
                     });
-                    // 完了条件そのもの: `-1-` を押したら C₁ **だけ**が光る
+                    // 完了条件そのもの: `-1-` を押したら C₁ と**その -OH の酸素だけ**が光る
+                    // （v1567・N3: 位置番号と接尾辞は「1番の炭素にヒドロキシ基」のまとまりで選ばれる）
                     if (p.role === 'locant' && p.kind === 'ol' && p.locs.length === 1) {
-                        assert(lit.size === 1 && lit.has(chain[p.locs[0] - 1]),
-                            `${nm}: 「${p.text}」を押しても C${p.locs[0]} だけが光らない`);
+                        const cid = chain[p.locs[0] - 1];
+                        const oh = m.getNeighbors(cid).filter(n => n.atom.element === 'O').map(n => n.atom.id);
+                        assert(lit.size === 2 && lit.has(cid) && oh.length === 1 && lit.has(oh[0]),
+                            `${nm}: 「${p.text}」を押しても C${p.locs[0]} とその -OH だけが光らない（${lit.size} 個）`);
                     }
                     b.click();   // もう一度押して消す（押しっぱなしにしない）
                     assert(D.querySelectorAll('#chem-svg circle.iupac-part-glow').length === 0,
@@ -7731,6 +7734,259 @@
             });
         } finally {
             g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    // ===== NE1〜NE4: 名称の説明のまとまり・個数・選んだ分子・URL 着地（v1567・ユーザー指摘 2026-09-15 N1〜N5）=====
+    // 分子は座標つきで手で組む（名称ライブラリに無い 3,3-ジメチル-2-ブタノール などを使うため）。
+    // spec = [元素…], [[i, j, 次数?]…], [[x, y]…]（格子の単位）
+    const neBuild = (W, els, bonds, pos, ox = 0, oy = 0, into = null) => {
+        const m = into || new W.Molecule();
+        const ids = els.map((e, i) => m.addAtom(e, (ox + pos[i][0]) * 42, (oy + pos[i][1]) * 42).id);
+        bonds.forEach(([a, b, t]) => m.addBond(ids[a], ids[b], t || 1));
+        return { m, ids };
+    };
+    // 3,3-ジメチル-2-ブタノール（ユーザーが試した題材）: C1-C2(OH)-C3(Me)(Me)-C4
+    const NE_DMB = [['C', 'C', 'C', 'C', 'O', 'C', 'C'],
+        [[0, 1], [1, 2], [2, 3], [1, 4], [2, 5], [2, 6]],
+        [[0, 0], [1, 0], [2, 0], [3, 0], [1, 1], [2, -1], [2, 1]]];
+    const neParts = (D) => [...D.querySelectorAll('#iupac-parts .iupac-part')];
+    const nePressed = (D) => neParts(D).filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.textContent);
+    const neClick = (D, text) => {
+        const b = neParts(D).find(x => x.textContent === text);
+        assert(b, `かけら「${text}」が帯に無い（あるのは ${neParts(D).map(x => x.textContent).join('|')}）`);
+        b.click();
+    };
+    const neNote = (D) => D.getElementById('iupac-parts-note').textContent;
+    const neShow = (g, W, spec) => {
+        g.setIupacNumbering(false);
+        g.userMolecule = neBuild(W, ...spec).m;
+        g.updateDrawing();
+        g.setIupacNumbering(true);
+        assert(g.iupacNumberingActive(), '主鎖と番号が出ない（検査が素通りする）');
+    };
+
+    test('NE1: 位置番号と接尾辞は「◯番の炭素にヒドロキシ基」のまとまりで選ばれる（N3）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            neShow(g, W, NE_DMB);
+            assert(g.iupacNumberingDetail().name === '3,3-ジメチル-2-ブタノール',
+                `題材の名前が ${g.iupacNumberingDetail().name}`);
+            // ★ 本題: `-2-` を押すと `ノール` も一緒に押された見た目になり、文はまとまりで言う
+            neClick(D, '-2-');
+            assert(nePressed(D).join('|') === '-2-|ノール', `-2- を押して押されたのが「${nePressed(D).join('|')}」`);
+            assert(neNote(D) === '2番の炭素にヒドロキシ基（-OH）がついているね。', `-2- の説明が「${neNote(D)}」`);
+            const mol = g.userMolecule;
+            const glow = D.querySelectorAll('#chem-svg circle.iupac-part-glow').length;
+            assert(glow === 2, `-2- で光った原子が ${glow} 個（C2 と O の2個のはず）`);
+            assert(D.querySelectorAll('#chem-svg rect.iupac-part-frame').length === 1,
+                '-2- のまとまり（C2 と -OH）が1つの枠で囲まれていない（N2）');
+            // 接尾辞の側から押しても同じまとまり・同じ文
+            neClick(D, '-2-');           // 消す
+            assert(nePressed(D).length === 0 && D.querySelectorAll('#chem-svg circle.iupac-part-glow').length === 0,
+                'もう一度押しても消えない');
+            neClick(D, 'ノール');
+            assert(nePressed(D).join('|') === '-2-|ノール', `ノール を押して押されたのが「${nePressed(D).join('|')}」`);
+            assert(neNote(D) === '2番の炭素にヒドロキシ基（-OH）がついているね。', `ノール の説明が「${neNote(D)}」`);
+            neClick(D, '-2-');           // まとまりのもう片方を押しても消える
+            assert(nePressed(D).length === 0, 'まとまりの片方を押し直しても消えない');
+            // 二重結合も同じ型（位置番号＋語尾）
+            neShow(g, W, [['C', 'C', 'C', 'C'], [[0, 1], [1, 2, 2], [2, 3]], [[0, 0], [1, 0], [2, 0], [3, 0]]]);
+            neClick(D, '2-');
+            assert(nePressed(D).join('|') === '2-|ン', `2-ブテンの 2- で押されたのが「${nePressed(D).join('|')}」`);
+            assert(neNote(D) === '2番と3番の炭素のあいだに二重結合 C=C があるね。', `2-ブテンの説明が「${neNote(D)}」`);
+
+            // ★否定対照① まとまらないかけら: 幹は1つだけ押される（ノールまで巻き込まない）
+            neShow(g, W, NE_DMB);
+            neClick(D, 'ブタ');
+            assert(nePressed(D).join('|') === 'ブタ', `幹を押して押されたのが「${nePressed(D).join('|')}」`);
+            // ★否定対照② 位置番号が名前に無い（エタノール）: 接尾辞1つで、従来のかけらの説明のまま
+            neShow(g, W, [['C', 'C', 'O'], [[0, 1], [1, 2]], [[0, 0], [1, 0], [2, 0]]]);
+            neClick(D, 'ノール');
+            assert(nePressed(D).join('|') === 'ノール', `エタノールで押されたのが「${nePressed(D).join('|')}」`);
+            assert(neNote(D).indexOf('「ノール」') >= 0, `エタノールの ノール が従来の説明でない: ${neNote(D)}`);
+            // ★否定対照③ まとめる関数を外すと、本題の物差しが赤くなる（物差しが空回りしていない）
+            const orig = g._iupacPartGroup;
+            try {
+                g._iupacPartGroup = (parts, i) => [i];
+                neShow(g, W, NE_DMB);
+                neClick(D, '-2-');
+                assert(nePressed(D).join('|') === '-2-', `まとめを外しても ${nePressed(D).join('|')} が押されている`);
+                assert(neNote(D) !== '2番の炭素にヒドロキシ基（-OH）がついているね。',
+                    'まとめを外しても同じ文が出る（NE1 の文の物差しは何も見ていない）');
+            } finally { g._iupacPartGroup = orig; }
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('NE2: 数詞（ジ・トリ）は個数として言い、位置番号は1つずつ言う（N4）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        try {
+            // ★ 本題: 3,3-ジメチル ＝「2個のメチル基が、3番と3番の炭素」
+            neShow(g, W, NE_DMB);
+            neClick(D, '3,3-ジメチル');
+            assert(neNote(D) === '2個のメチル基が、3番と3番の炭素についているね。', `3,3-ジメチル の説明が「${neNote(D)}」`);
+            assert(D.querySelectorAll('#chem-svg rect.iupac-part-frame').length === 2,
+                `3,3-ジメチル の枠が ${D.querySelectorAll('#chem-svg rect.iupac-part-frame').length} 個（メチル基ごとに2つのはず。N2）`);
+            const cases = [
+                ['2,2,4-トリメチルペンタン',
+                    [['C', 'C', 'C', 'C', 'C', 'C', 'C', 'C'], [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [1, 6], [3, 7]],
+                        [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0], [1, -1], [1, 1], [3, 1]]],
+                    '2,2,4-トリメチル', '3個のメチル基が、2番と2番と4番の炭素についているね。'],
+                ['2-クロロ-3-メチルブタン',
+                    [['C', 'C', 'C', 'C', 'Cl', 'C'], [[0, 1], [1, 2], [2, 3], [1, 4], [2, 5]],
+                        [[0, 0], [1, 0], [2, 0], [3, 0], [1, 1], [2, 1]]],
+                    '2-クロロ', '2番の炭素に塩素原子 Cl がついているね。'],
+                ['1,2-エタンジオール',
+                    [['C', 'C', 'O', 'O'], [[0, 1], [0, 2], [1, 3]], [[0, 0], [1, 0], [0, 1], [1, 1]]],
+                    '1,2-', '2個のヒドロキシ基（-OH）が、1番と2番の炭素についているね。'],
+                // ★否定対照: 1個のときは「1個の」と言わない（個数は2つ以上のときだけ言う）
+                ['2-メチル-2-プロパノール',
+                    [['C', 'C', 'C', 'O', 'C'], [[0, 1], [1, 2], [1, 3], [1, 4]], [[0, 0], [1, 0], [2, 0], [1, 1], [1, -1]]],
+                    '2-メチル', '2番の炭素にメチル基がついているね。']
+            ];
+            cases.forEach(([nm, spec, part, want]) => {
+                neShow(g, W, spec);
+                assert(g.iupacNumberingDetail().name === nm, `${nm} のつもりが ${g.iupacNumberingDetail().name}`);
+                neClick(D, part);
+                assert(neNote(D) === want, `${nm} の ${part}: 「${neNote(D)}」（期待「${want}」）`);
+            });
+            assert(neNote(D).indexOf('個') < 0, `1個の置換基に個数を言っている: ${neNote(D)}`);
+            // ★否定対照: 数詞を落とす実装（位置番号の数を数えない文）だと本題が赤くなる
+            const orig = g._iupacUnitNote;
+            try {
+                g._iupacUnitNote = function (det, parts, group) {
+                    const p = parts[group[0]];
+                    return p && p.role === 'sub' ? `${p.label}基が${[...new Set(p.locs)].join('・')}番の炭素についているね。` : '';
+                };
+                neShow(g, W, NE_DMB);
+                neClick(D, '3,3-ジメチル');
+                assert(neNote(D) !== '2個のメチル基が、3番と3番の炭素についているね。',
+                    '個数を言わない文でも本題が通る（NE2 の物差しは何も見ていない）');
+            } finally { g._iupacUnitNote = orig; }
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('NE3: 分子が2つ以上 —— 番号は全部に、名前の説明は選んだ分子だけ（選んでいなければ出ない・N5）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        const row = () => D.getElementById('iupac-parts-row');
+        const numbers = () => D.getElementById('atoms-group').querySelectorAll('.iupac-number').length;
+        try {
+            const a = neBuild(W, ...NE_DMB, 0, 0);
+            const b = neBuild(W, ['C', 'C', 'C', 'C', 'C'], [[0, 1], [1, 2], [2, 3], [1, 4]],
+                [[0, 0], [1, 0], [2, 0], [3, 0], [1, 1]], 7, 0, a.m);
+            g.userMolecule = a.m;
+            g.focusedMolecule = null;
+            g.updateDrawing();
+            D.getElementById('btn-iupac-numbering').click();
+            assert(g.iupacNumberingActive() && g._iupacAllMode(), '2分子で 🔢 を押しても「全部に振る」にならない');
+            assert(numbers() === 8, `番号が ${numbers()} 個（4＋4 のはず）`);
+            // ★否定対照: 選んでいなければ説明は出ない（アプリが①を勝手に説明しない）
+            assert(row().classList.contains('hidden') && neParts(D).length === 0,
+                '分子を選んでいないのに名前の部品が出ている（答えを指してしまう）');
+            // ★ 本題: 見出しのタップと同じ入口（分子モーダル）で②を選ぶ → 閉じると②の説明
+            g.openMoleculeModal(b.ids[0]);
+            g.closeMoleculeModal();
+            assert(g.iupacNumberingActive() && numbers() === 8, '分子を選んだら番号が消えた／減った');
+            assert(!row().classList.contains('hidden'), '②を選んでも名前の部品が出ない');
+            assert(neParts(D).map(x => x.textContent).join('') === '2-メチルブタン',
+                `②を選んだのに説明が「${neParts(D).map(x => x.textContent).join('')}」`);
+            const mark = row().dataset.mark;
+            assert(mark && row().querySelector('.ws-label').textContent.indexOf(mark) >= 0,
+                `どの分子の説明かが見出しの番号で出ていない（mark=${mark}・${row().querySelector('.ws-label').textContent}）`);
+            neClick(D, '2-メチル');
+            assert(neNote(D) === '2番の炭素にメチル基がついているね。', `②の 2-メチル の説明が「${neNote(D)}」`);
+            // ①に選び替える → ①の説明に替わり、②で押していたかけらは持ち越さない
+            g.openMoleculeModal(a.ids[0]);
+            g.closeMoleculeModal();
+            assert(neParts(D).map(x => x.textContent).join('') === '3,3-ジメチル-2-ブタノール',
+                `①に選び替えても説明が「${neParts(D).map(x => x.textContent).join('')}」`);
+            assert(nePressed(D).length === 0 && D.querySelectorAll('#chem-svg circle.iupac-part-glow').length === 0,
+                '分子を選び替えたのに前の分子で押したかけらが残っている');
+            neClick(D, '-2-');
+            assert(nePressed(D).join('|') === '-2-|ノール', '選んだ分子でもまとまりで押されない');
+            // ★否定対照: 選択を外すと説明も消える（番号は残る）
+            g.focusedMolecule = null;
+            g.updateDrawing();
+            assert(row().classList.contains('hidden'), '選択を外しても名前の部品が残っている');
+            assert(numbers() === 8, '選択を外したら番号まで消えた');
+        } finally {
+            g.setIupacNumbering(false);
+            g.focusedMolecule = null;
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('NE4: ?open=isomer&formula= で着地するとお題と「やめる」の帯が出る（mode-audit 上位1）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        // (a) ★ 本物の URL で起動して見る（起動の順番が原因なので、関数を呼ぶだけでは再現しない）
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute; left:-9999px; top:0; width:1280px; height:800px; border:0;';
+        f.src = 'index.html?se=0&open=isomer&formula=C5H12';
+        document.body.appendChild(f);
+        try {
+            for (let i = 0; i < 300 && !(f.contentWindow && f.contentWindow.appReady); i++) {
+                await new Promise(r => setTimeout(r, 100));
+            }
+            const W2 = f.contentWindow, D2 = f.contentDocument;
+            assert(W2 && W2.appReady, '?open=isomer&formula= でアプリが起動しない');
+            // 帯を畳んでいたのは起動直後に予約された renderList（setTimeout 0）。それが走り終わるまで待つ
+            await new Promise(r => setTimeout(r, 400));
+            const ip = W2.isomerPractice;
+            assert(ip && ip.active && ip.problem, '着地しても書き出し練習が始まっていない（検査が素通りする）');
+            assert(!D2.getElementById('ws-practice').classList.contains('hidden'),
+                '★ 着地したのに練習の帯（お題・答え合わせ・やめる）が隠れている');
+            assert(!D2.getElementById('work-strip').classList.contains('hidden'), '★ 着地したのに作業帯ごと隠れている');
+            const live = D2.getElementById('ws-practice-live').textContent;
+            assert(live.indexOf('C₅H₁₂') >= 0, `帯にお題の分子式が出ていない（${live}）`);
+            const stopBtn = [...D2.querySelectorAll('#ws-practice-actions button')].find(x => /やめる/.test(x.textContent));
+            assert(stopBtn && stopBtn.offsetParent !== null, '帯に「やめる」が見えていない（抜ける手が無い）');
+        } finally {
+            f.remove();
+        }
+        // (b) 原因の順番をこの画面で組み直す: 書き出しを始めた**あと**に、他の2つの練習の renderList が走る
+        const ip = W.isomerPractice;
+        const strip = () => D.getElementById('ws-practice');
+        try {
+            g.setMode('learn');
+            ip.startFromFormula('C4H10');
+            assert(ip.active && ip.problem && !strip().classList.contains('hidden'), '下ごしらえ: 書き出しが始まらない');
+            W.alkylPractice.renderList();
+            W.stereoPractice.renderList();
+            assert(!strip().classList.contains('hidden'), '★ 他の練習の「お題選びに戻る」が、使用中の帯を畳んだ');
+            // ★否定対照: 「ほかの練習が帯を使っているか」を見ないと、同じ順番で帯が消える（(a) の症状そのもの）
+            const orig = W.practiceStripHeldByOther;
+            try {
+                W.practiceStripHeldByOther = () => false;
+                W.alkylPractice.renderList();
+                assert(strip().classList.contains('hidden'),
+                    '見張りを外しても帯が消えない（NE4 の物差しは原因を見ていない）');
+            } finally { W.practiceStripHeldByOther = orig; }
+            // 自分の練習をやめたときは、今までどおり帯が畳まれる
+            ip.renderSession();
+            assert(!strip().classList.contains('hidden'), '見張りを戻したら帯が戻らない');
+            ip.stop();
+            assert(strip().classList.contains('hidden'), '書き出しをやめても帯が残る（畳む側を壊した）');
+        } finally {
+            if (ip.active) ip.stop();
+            g.setMode('free');
             g.userMolecule = new W.Molecule();
             g.updateDrawing();
         }
