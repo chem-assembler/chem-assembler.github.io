@@ -7815,9 +7815,11 @@
                 g._iupacPartGroup = (parts, i) => [i];
                 neShow(g, W, NE_DMB);
                 neClick(D, '-2-');
+                // ⚠ 文は位置番号だけからでも正しく言える（「2番の炭素にヒドロキシ基」）ので、文ではなく
+                //   **押された見た目と光る原子**で見る ＝ まとめを外すと ノール が押されず、-OH が光らない
                 assert(nePressed(D).join('|') === '-2-', `まとめを外しても ${nePressed(D).join('|')} が押されている`);
-                assert(neNote(D) !== '2番の炭素にヒドロキシ基（-OH）がついているね。',
-                    'まとめを外しても同じ文が出る（NE1 の文の物差しは何も見ていない）');
+                const g1 = D.querySelectorAll('#chem-svg circle.iupac-part-glow').length;
+                assert(g1 === 1, `まとめを外しても光る原子が ${g1} 個（C2 だけの1個になるはず）＝ 本題の「2個」の物差しが何も見ていない`);
             } finally { g._iupacPartGroup = orig; }
         } finally {
             g.setIupacNumbering(false);
