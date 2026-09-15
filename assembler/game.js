@@ -10799,13 +10799,20 @@ class Game {
         if (this.iupacNumbering.sig !== this._iupacNumberingSignature()) return off();
         if (this._iupacNumberingBlockedByPractice()) return off();
         /* ★ 「分子すべて」の回（v1553）。分子ごとに下の1分子の描き方をそのまま回し、字幕は1つにまとめる。
-         *   ⚠ 名前のかけらの行は**番号を出した分子が1つのときだけ**（2つ以上だと、押したかけらがどの分子の話か割れる） */
+         * ★ 名前のかけらの行は**どの分子の話かが1つに決まるときだけ**出す（v1567・ユーザー指摘 N5
+         *   「選択中の分子があれば、名称の説明を出す」）:
+         *   ・番号を出せた分子が1つだけ ＝ その分子
+         *   ・人が選んだ分子（琥珀の枠。見出しのタップ・分子モーダル・🎯 で立つ `focusedMolecule`）＝ その分子
+         *   ⚠ **新しい選択は作らない**（§N-8 と同じ）。⚠ 選んでいないときは出さない ——
+         *     既定で①を説明すると「どれが◯◯？」と考えている生徒にアプリが答えを指す（C-9） */
         if (this._iupacAllMode()) {
             const many = this.iupacNumberingDetails(hidden);
             if (!many.items.length) return off();
-            const only = many.items.length === 1 ? many.items[0].det : null;
-            this.renderIupacNameParts(only);
-            if (only) this._iupacGlow(only, hidden);
+            const picked = this.focusedMolecule
+                ? many.items.find(it => it.part.atoms.some(a => a.id === this.focusedMolecule)) : null;
+            const chosen = many.items.length === 1 ? many.items[0] : (picked || null);
+            this.renderIupacNameParts(chosen ? chosen.det : null, chosen && many.items.length >= 2 ? chosen.mark : '');
+            if (chosen) this._iupacGlow(chosen.det, hidden);
             if (many.items.some(it => it.det.kind !== 'sugar')) this._iupacLiftBondInk(this.bondsGroup);
             const head = [], notes = [];
             many.items.forEach(it => {
@@ -11144,22 +11151,102 @@ class Game {
     }
 
     /**
-     * 帯の「名前の部品」行を組む。`det` が null なら行ごと消す（＝ 門番 N-4 がそのまま効く）。
+     * ★ 押したかけらと**意味のまとまり**になるかけらの添字（v1567・ユーザー指摘 N3
+     *   「2 を選んだときは ノール も同時に選び、2番の炭素にヒドロキシ基、というまとまりで説明」）。
+     *
+     * まとまるのは **位置番号（`-2-`）と、同じ `kind` の接尾辞（`ノール`・`エン`・`イン`）** だけ。
+     * 置換基（`3,3-ジメチル`）は位置番号を自分の中に持っているので、もともと1つで1まとまり。
+     * ⚠ **`nameParts` は1バイトも変えない**（かけらを繋ぎ直すと IN10 が赤）。まとめるのは押し方と光らせ方だけ。
      */
-    renderIupacNameParts(det) {
+    _iupacPartGroup(parts, i) {
+        const p = parts && parts[i];
+        if (!p) return [];
+        if ((p.role === 'locant' || p.role === 'suffix') && p.kind) {
+            const g = [];
+            parts.forEach((q, k) => { if ((q.role === 'locant' || q.role === 'suffix') && q.kind === p.kind) g.push(k); });
+            // 位置番号が名前に出ていない（エタノール・プロペン）ときは接尾辞1つ ＝ 従来の説明のまま
+            if (g.some(k => parts[k].role === 'locant')) return g;
+        }
+        return [i];
+    }
+
+    /** 置換基の名前を「何がついているか」の言葉に（ハロゲンは基ではなく原子で言う） */
+    _iupacSubWhat(label) {
+        // 末尾の空白は「塩素原子 Cl がついている」の Cl と が の間（元素記号に助詞を詰めない）
+        const HALO = { 'フルオロ': 'フッ素原子 F ', 'クロロ': '塩素原子 Cl ', 'ブロモ': '臭素原子 Br ', 'ヨード': 'ヨウ素原子 I ' };
+        return HALO[label] || `${label}基`;
+    }
+
+    /**
+     * ★ まとまり1つの説明（先生の声掛け・1文）。まとまりにならないかけら（幹・語尾）は `_iupacPartNote` のまま。
+     * ★ **数詞（ジ・トリ）は個数として言う**（ユーザー指摘 N4「2個のメチル基が3番と3番の炭素についている」）。
+     *   位置番号は重なっても省かない（`3,3-` は「3番と3番」）＝ 名前の数字と1つずつ対応させる。
+     * ⚠ 「」で語を引かない（SC3 (c) の約束: 引いた語は名前の中に無ければならない）。
+     */
+    _iupacUnitNote(det, parts, group) {
+        const ps = (group || []).map(k => parts[k]).filter(Boolean);
+        if (!ps.length) return '';
+        const where = (locs) => locs.map(l => `${l}番`).join('と');
+        if (ps.length === 1 && ps[0].role === 'sub') {
+            const s = ps[0], n = (s.locs || []).length, what = this._iupacSubWhat(s.label);
+            return n >= 2 ? `${n}個の${what}が、${where(s.locs)}の炭素についているね。`
+                : `${where(s.locs)}の炭素に${what}がついているね。`;
+        }
+        const head = ps.find(p => p.role === 'locant');
+        if (!head) return '';
+        const locs = head.locs || [], n = locs.length;
+        if (head.kind === 'ol') {
+            return n >= 2 ? `${n}個のヒドロキシ基（-OH）が、${where(locs)}の炭素についているね。`
+                : `${where(locs)}の炭素にヒドロキシ基（-OH）がついているね。`;
+        }
+        const bond = head.kind === 'yne' ? '三重結合 C≡C' : '二重結合 C=C';
+        const pair = (l) => `${l}番と${l + 1}番`;
+        return n >= 2 ? `${n}個の${bond}が、${locs.map(pair).join('・')}の炭素のあいだにあるね。`
+            : `${pair(locs[0])}の炭素のあいだに${bond} があるね。`;
+    }
+
+    /** いま押されているまとまり（添字の配列）。押されていなければ空 */
+    _iupacSelectedGroup(det) {
+        const sel = this.iupacNumbering ? this.iupacNumbering.part : null;
+        if (sel == null || !det || !det.parts || !det.parts[sel]) return [];
+        return this._iupacPartGroup(det.parts, sel);
+    }
+
+    /** まとまりの説明文（まとまりなら声掛け、1つなら従来のかけらの説明） */
+    _iupacGroupNote(det, parts, group) {
+        return this._iupacUnitNote(det, parts, group) ||
+            (group.length ? this._iupacPartNote(det, parts[group[0]], parts, group[0]) : '');
+    }
+
+    /**
+     * 帯の「名前の部品」行を組む。`det` が null なら行ごと消す（＝ 門番 N-4 がそのまま効く）。
+     * `mark` … 分子が2つ以上のとき、どの分子の名前かを見出しの番号（①②）で添える（N5）。
+     */
+    renderIupacNameParts(det, mark) {
         const row = document.getElementById('iupac-parts-row');
         const box = document.getElementById('iupac-parts');
         const note = document.getElementById('iupac-parts-note');
         if (!row || !box || !note) return;
         const parts = det && det.parts;
+        const label = row.querySelector('.ws-label');
         if (!parts || !parts.length) {
             row.classList.add('hidden');
             box.textContent = ''; note.textContent = '';
+            if (label) label.textContent = '名前の部品';
             return;
         }
+        // 説明する分子が替わったら、押していたかけらは持ち越さない（添字は分子ごとに意味が違う）
+        const key = det.mol ? det.mol.atoms.map(a => a.id).sort().join(',') : '';
+        if (this.iupacNumbering && this.iupacNumbering.partOf !== key) {
+            if (this.iupacNumbering.partOf != null) this.iupacNumbering.part = null;
+            this.iupacNumbering.partOf = key;
+        }
         row.classList.remove('hidden');
+        row.dataset.mark = mark || '';
+        if (label) label.textContent = mark ? `${mark} の名前の部品` : '名前の部品';
         box.textContent = '';
-        const sel = this.iupacNumbering ? this.iupacNumbering.part : null;
+        const group = this._iupacSelectedGroup(det);
+        const sel = group.length ? this.iupacNumbering.part : null;
         parts.forEach((p, i) => {
             const b = document.createElement('button');
             b.type = 'button';
@@ -11182,41 +11269,91 @@ class Game {
             } else {
                 b.textContent = p.text;
             }
-            b.setAttribute('aria-pressed', sel === i ? 'true' : 'false');
-            b.title = this._iupacPartNote(det, p, parts, i);
+            // ★ まとまり（位置番号＋接尾辞）は**一緒に押された見た目**にする（N3）
+            b.setAttribute('aria-pressed', group.includes(i) ? 'true' : 'false');
+            b.title = this._iupacGroupNote(det, parts, this._iupacPartGroup(parts, i));
             b.addEventListener('click', () => {
                 if (!this.iupacNumbering) return;
-                // もう一度押したら消す（トグル）＝ 押しっぱなしで図が光り続けない
-                this.iupacNumbering.part = (this.iupacNumbering.part === i) ? null : i;
+                // もう一度押したら消す（トグル）。まとまりのどちらを押し直しても消える
+                const now = this._iupacSelectedGroup(det);
+                this.iupacNumbering.part = now.includes(i) ? null : i;
                 this.updateDrawing();
             });
             box.appendChild(b);
         });
         const dir = this.iupacDirectionReason(det);
-        const pick = (sel != null && parts[sel]) ? this._iupacPartNote(det, parts[sel], parts, sel) : '';
-        // 向きの理由は**常に見えている**（押していないときの既定の1行）。
-        // かけらを押したらその説明を前に出し、位置番号のかけらでは向きの理由も一緒に見せる
-        note.textContent = pick
-            ? (parts[sel].role === 'locant' && dir ? `${pick} ${dir}` : pick)
-            : (dir || (det.kind === 'ether' ? 'エーテルは主鎖に番号をつけません。' : ''));
+        const pick = group.length ? this._iupacGroupNote(det, parts, group) : '';
+        // 向きの理由は**押していないときの既定の1行**。押したら、そのまとまりの声掛け1文だけにする
+        // （v1567: 位置番号に向きの理由を足して2文にしていたのをやめた ＝ 画面の文は短く）
+        note.textContent = pick || dir || (det.kind === 'ether' ? 'エーテルは主鎖に番号をつけません。' : '');
     }
 
-    /** 押されたかけらに対応する原子を光らせる（結合線の下に敷く。丸のハイライトとは別の語彙） */
+    /**
+     * 押されたかけら（まとまり）に対応する原子を光らせる（結合線の下に敷く。丸のハイライトとは別の語彙）。
+     * ★ 置換基・-OH・エーテルの基は、原子の丸に加えて**まわりを大きめの枠で囲む**
+     *   （v1567・ユーザー指摘 N2「メチル基のハイライトは、分子選択のように大きめの枠で」）。
+     *   枠は**基ごとに1つ**（3,3-ジメチル なら2つ）＝ 個数が図でも数えられる。
+     * ⚠ 置換基の枠には主鎖の炭素を入れない（付け根の炭素は丸だけ）。入れると 3,3-ジメチル の
+     *   2つの枠が主鎖の炭素でつながって1つになり、「2個」が図から読めなくなる。
+     * ⚠ 多重結合・幹には枠を付けない —— 帯と C=C の2本線の上に塗りを重ねると
+     *   二重結合が読みにくくなる（NM1 の物差し）。
+     */
     _iupacGlow(det, hidden) {
-        const sel = this.iupacNumbering ? this.iupacNumbering.part : null;
-        if (sel == null || !det.parts || !det.parts[sel]) return;
+        const group = this._iupacSelectedGroup(det);
+        if (!group.length) return;
+        const NS = 'http://www.w3.org/2000/svg';
         const byId = new Map(this.userMolecule.atoms.map(a => [a.id, a]));
-        this.iupacPartAtoms(det, det.parts[sel]).forEach(id => {
+        const lit = new Set();
+        group.forEach(k => this.iupacPartAtoms(det, det.parts[k]).forEach(id => lit.add(id)));
+        lit.forEach(id => {
             if (hidden && hidden.has(id)) return;
             const a = byId.get(id);
             if (!a) return;
-            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            const c = document.createElementNS(NS, 'circle');
             c.setAttribute('cx', a.x); c.setAttribute('cy', a.y); c.setAttribute('r', '14');
             c.setAttribute('fill', 'var(--color-cyan, #00e8ff)');
             c.setAttribute('opacity', '0.30');
             c.setAttribute('pointer-events', 'none');
             c.setAttribute('class', 'iupac-part-glow');
             this.bondsGroup.insertBefore(c, this.bondsGroup.firstChild);
+        });
+        // ---- 枠（N2）----
+        const roles = group.map(k => det.parts[k]);
+        const framed = roles.some(p => p.role === 'sub' || p.role === 'ether-group' || p.kind === 'ol');
+        if (!framed) return;
+        const chainSet = new Set(det.chain || []);
+        const isSub = roles.length === 1 && roles[0].role === 'sub';
+        const pool = new Set([...lit].filter(id => !(hidden && hidden.has(id)) && byId.has(id) &&
+            !(isSub && chainSet.has(id))));
+        const mol = det.mol || this.userMolecule;
+        const seen = new Set();
+        pool.forEach(start => {
+            if (seen.has(start)) return;
+            const comp = [], st = [start];
+            seen.add(start);
+            while (st.length) {
+                const x = st.pop();
+                comp.push(byId.get(x));
+                mol.getNeighbors(x).forEach(n => {
+                    if (!pool.has(n.atom.id) || seen.has(n.atom.id)) return;
+                    seen.add(n.atom.id); st.push(n.atom.id);
+                });
+            }
+            // 余白は付いている水素（自動の H は中心から約 20 離れて描かれる）まで枠に入る大きさ
+            const pad = 27;
+            const x1 = Math.min(...comp.map(a => a.x)) - pad, x2 = Math.max(...comp.map(a => a.x)) + pad;
+            const y1 = Math.min(...comp.map(a => a.y)) - pad, y2 = Math.max(...comp.map(a => a.y)) + pad;
+            const r = document.createElementNS(NS, 'rect');
+            r.setAttribute('x', x1); r.setAttribute('y', y1);
+            r.setAttribute('width', x2 - x1); r.setAttribute('height', y2 - y1);
+            r.setAttribute('rx', '12');
+            r.setAttribute('fill', 'rgba(0, 232, 255, 0.10)');
+            r.setAttribute('stroke', 'var(--color-cyan, #00e8ff)');
+            r.setAttribute('stroke-width', '2.5');
+            r.setAttribute('pointer-events', 'none');
+            r.setAttribute('class', 'iupac-part-frame');
+            // 結合線の下（塗りが線と字を濁らせない）。丸の光よりさらに後ろ
+            this.bondsGroup.insertBefore(r, this.bondsGroup.firstChild);
         });
     }
 
