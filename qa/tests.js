@@ -1175,7 +1175,20 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //   ＝ **assembler へ戻す道が開いた**。★ とくに `diazonium-decomp` は
     //   「行き先が2つある（フェノール／アゾ化合物）」という積み残しがあるので、
     //   行き先を決める作業と一緒に見直すこと。
-    var KNOWN_BOTTLES = 26, KNOWN_RULES = 64, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    // ★ 2026-09-15（qa v111・assembler v1541〜v1563 を追って）: 燃焼の瓶 `o2_flame` が1本（c0abd446）、
+    //   ルールが10本（combustion / add_cl2 / add_cl2_benzene_ring / hydrolysis_amide / copolymerization /
+    //   dehydrohalogenation / ring_opening_addition / alkyne_trimerization / naphthalene_air_oxidation /
+    //   williamson_ether）。瓶 26→27・ルール 64→74・機構は 14 のまま。
+    //   ⚠ v1541 から赤いまま（瓶の assert が先に落ちるので、ルールのずれは見えていなかった）。
+    //   ★見直し候補の残り2件は**今回も繋がらない**:
+    //     - `org.aro.c8h10-isomers` … 異性体列挙器の上限。反応とは無関係
+    //     - `org.carbonyl.lactone` … エステル化は今も分子間だけ（reactor.js の esterification の detect が
+    //       同じ分子の -OH を飛ばしている）。足されたルールに分子内エステル化は無い
+    //   ⚠⚠ **★の付いていない none のうち4件は、新しいルールで繋がりうる**（この便では繋いでいない ——
+    //   繋ぐと questions.json を書き換えることになり、別便の校正と重なるため）:
+    //   `org.ali.alkane-combustion`（combustion）・`org.ali.acetylene-benzene`（alkyne_trimerization）・
+    //   `org.poly.copolymer` / `org.poly.sbr-copolymer`（copolymerization）。why が「reactor に無い」のまま古い
+    var KNOWN_BOTTLES = 27, KNOWN_RULES = 74, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
