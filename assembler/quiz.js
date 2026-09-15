@@ -1649,6 +1649,43 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         groupAt.set(rootId, { label, anchorId: gr.anchorIds[0], charge });
     });
 
+    // ★ 文字を書かない環の炭素は、**ベンゼン型の環（環の原子がすべて C で、どれも環の中に二重結合を持つ）とハース式の糖の環だけ**（v1562）。
+    //   ⚠ v1554 までは「環の炭素はすべて文字なし」で、ビニロンのアセタール環（主鎖の CH・CH₂ と O−CH₂−O）や
+    //     チミンの環まで骨格の頂点になり、同じ鎖の CH₂ と文字の有無が食い違っていた。
+    //     教科書でも確かめた: 6編 p.254 式(5) のビニロンは環の炭素も CH₂・CH と書く／p.244 図b の塩基は C・N・H を書く
+    const skeletal = new Set();
+    {
+        const ringCycleOf = (bd) => {                     // その結合を含む最小の環（原子の並び）
+            const prev = new Map([[bd.atomId1, null]]);
+            const queue = [bd.atomId1];
+            while (queue.length && !prev.has(bd.atomId2)) {
+                const id = queue.shift();
+                mol.getNeighbors(id).forEach(nb => {
+                    const nid = nb.atom.id;
+                    if (prev.has(nid) || (id === bd.atomId1 && nid === bd.atomId2)) return;
+                    prev.set(nid, id);
+                    queue.push(nid);
+                });
+            }
+            if (!prev.has(bd.atomId2)) return null;
+            const cyc = [];
+            for (let id = bd.atomId2; id != null; id = prev.get(id)) cyc.push(id);
+            return cyc;
+        };
+        mol.bonds.forEach(bd => {
+            if (bd.type !== 2 || !ring.has(bd.atomId1) || !ring.has(bd.atomId2)) return;
+            const cyc = ringCycleOf(bd);
+            if (!cyc || cyc.length !== 6) return;
+            const inCyc = new Set(cyc);
+            const ok = cyc.every(id => byId.get(id).element === 'C'
+                && mol.getNeighbors(id).some(nb => nb.type === 2 && inCyc.has(nb.atom.id)));
+            if (ok) cyc.forEach(id => skeletal.add(id));
+        });
+        if (typeof haworthSugarCycles === 'function') {
+            try { haworthSugarCycles(mol).forEach(cyc => cyc.forEach(id => skeletal.add(id))); } catch (e) { /* 糖の環なし */ }
+        }
+    }
+
     // 各原子の文字（null ＝ 文字を書かない環の炭素）。
     // ★ `atEnd` ＝ **結合している原子の元素記号が文字の後ろにある**か（H₃C・HO・O₂N・HOOC）。価標はその記号に付ける（v1550）
     const labels = new Map();
@@ -1660,7 +1697,7 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             const anc = byId.get(grp.anchorId);
             const rev = !!(anc && anc.x > a.x + 1);
             labels.set(a.id, { text: rev ? PAPER_GROUP_REVERSED[grp.label] : grp.label, atEnd: rev });
-        } else if (a.element === 'C' && ring.has(a.id) && !a.charge) {
+        } else if (a.element === 'C' && skeletal.has(a.id) && !a.charge) {
             labels.set(a.id, null);
         } else {
             const n = hCount.get(a.id) || 0;
