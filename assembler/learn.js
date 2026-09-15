@@ -1503,6 +1503,22 @@ function stereoFoldLines(mol, name, info, reason) {
  *   - 答え合わせは **1問1回**。押した瞬間の採点表とスコアを凍結する
  *     （`スコア = 正しく描けた種類数 − ヒント到達段数`。下限0・§15-5b）
  */
+
+/**
+ * ★ 作業帯の練習面（`#ws-practice`）は**3種の練習で1つを使い回す**（§4-2）。
+ *   別の練習がお題を持って帯を使っているあいだは、自分の「お題選びに戻った」で帯を畳まない。
+ *
+ * ⚠ 症状（v1567 で直した・棚卸し mode-audit 上位1）: `?open=isomer&formula=C5H12` で着地すると
+ *   お題も「やめる」も出なかった。起動の順は
+ *   `new AlkylPractice` / `new StereoIsomerPractice`（`setTimeout(renderList, 0)` を予約）→
+ *   `applyOpenParam`（異性体の書き出しを始めて帯を出す）→ **予約していた renderList が走り、
+ *   お題を持っていない2つが共有の帯を null で畳む**。学習メニューから選ぶ道は起動の後なので出ていた。
+ */
+function practiceStripHeldByOther(self) {
+    return [window.isomerPractice, window.alkylPractice, window.stereoPractice]
+        .some(p => p && p !== self && p.active && p.problem);
+}
+
 class IsomerPractice {
     constructor(game) {
         this.game = game;
@@ -1825,7 +1841,7 @@ class IsomerPractice {
         if (!this.body) return;
         this.active = false;
         // お題選びに戻った ＝ 作業帯の出番は終わり（第3段。stop() もここを通る）
-        if (this.game.setPracticeStrip) this.game.setPracticeStrip(null);
+        if (this.game.setPracticeStrip && !practiceStripHeldByOther(this)) this.game.setPracticeStrip(null);
         this._pending = [];
         this.body.innerHTML = '';
 
@@ -4211,7 +4227,7 @@ class AlkylPractice {
         if (!this.body) return;
         this.active = false;
         // お題選びに戻った ＝ 作業帯の出番は終わり（第3段。stop() もここを通る）
-        if (this.game.setPracticeStrip) this.game.setPracticeStrip(null);
+        if (this.game.setPracticeStrip && !practiceStripHeldByOther(this)) this.game.setPracticeStrip(null);
         this.problem = null;
         this._pending = [];
         this.closeReview();
@@ -5357,7 +5373,7 @@ class StereoIsomerPractice {
         if (!this.body) return;
         this.active = false;
         // お題選びに戻った ＝ 作業帯の出番は終わり（第3段。stop() もここを通る）
-        if (this.game.setPracticeStrip) this.game.setPracticeStrip(null);
+        if (this.game.setPracticeStrip && !practiceStripHeldByOther(this)) this.game.setPracticeStrip(null);
         this.problem = null;
         this._pending = [];
         this.closeReview();
