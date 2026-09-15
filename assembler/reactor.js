@@ -2247,6 +2247,72 @@ function anhydrideBridgeSpot(mol, cA, cB, path, ignoreIds) {
 }
 
 /**
+ * ★ 分子内脱水で閉じる**五員環を正五角形に置く**（v1566・DESIGN_structure_render.md「5員は正五角形」）。
+ *
+ * ⚠ 以前は架橋の O を `anhydrideBridgeSpot` で「空いている所」に置くだけで、カルボニル炭素は
+ *   カルボン酸のときの位置のままだった。フタル酸（-COOH が右上・右下）では2つのカルボニル炭素が
+ *   縦に一直線に並ぶので、O がその中点に落ちて**内角 120・60・180・60・120°**につぶれていた
+ *   （動画 V134 の場面で実測）。直鎖に描いたコハク酸は 18・180° まで崩れていた。
+ *
+ * 置き方: 経路の内側の辺（path[1]-path[2]。フタル酸ならベンゼン環と共有する辺、マレイン酸なら C=C）は
+ *   **動かさず**、その辺の上に正五角形を立てる。動かすのはカルボニル炭素2つ・架橋の O・=O だけ。
+ *   =O は五角形の中心から外向きに出す（登録の無水フタル酸と同じ形）。
+ * ⚠ 見た目だけ。結合は `apply` が作る ＝ 正準コードは変わらない。
+ * @returns Map<原子id, {x,y}> または null（五員環でない・置くと他の原子に重なる）
+ */
+function anhydridePentagonPlacement(mol, cand, ohA, ohB) {
+    const path = cand && cand.path;
+    if (!path || path.length !== 4) return null;
+    const at = id => mol.atoms.find(x => x.id === id);
+    const [cA, p1, p2, cB] = path.map(at);
+    if (!cA || !p1 || !p2 || !cB) return null;
+    const s = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    if (s < 1e-6) return null;
+    const ex = (p2.x - p1.x) / s, ey = (p2.y - p1.y) / s;
+    const nx = -ey, ny = ex;
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    const carbonylO = c => mol.bonds
+        .filter(b => b.type === 2 && (b.atomId1 === c.id || b.atomId2 === c.id))
+        .map(b => at(b.atomId1 === c.id ? b.atomId2 : b.atomId1))
+        .filter(o => o && o.element === 'O' && o.id !== ohA && o.id !== ohB);
+    const exo = [[cA, carbonylO(cA)], [cB, carbonylO(cB)]];
+    // どちら側に立てるか: カルボニル炭素のある側。辺と一直線（直鎖）なら =O のある側
+    const side = (pts) => pts.reduce((acc, p) => acc + (p.x - mx) * nx + (p.y - my) * ny, 0);
+    const sgn = v => (Math.abs(v) < s * 1e-3 ? 0 : Math.sign(v));
+    let sign = sgn(side([cA, cB]));
+    if (!sign) sign = sgn(side(exo.flatMap(([, os]) => os)));
+    const signs = sign ? [sign, -sign] : [1, -1];
+    const moving = new Set([cA.id, cB.id, ohA, ohB, ...exo.flatMap(([, os]) => os.map(o => o.id))]);
+    const others = mol.atoms.filter(x => x.element !== 'H' && !moving.has(x.id));
+    const G = bondStep(mol, p1.id);
+    const clear = G * 0.6;
+    const apothem = s / (2 * Math.tan(Math.PI / 5));
+    for (const sg of signs) {
+        const cx = mx + nx * sg * apothem, cy = my + ny * sg * apothem;
+        const rot = (p, t) => {
+            const dx = p.x - cx, dy = p.y - cy, c = Math.cos(t), sn = Math.sin(t);
+            return { x: cx + dx * c - dy * sn, y: cy + dx * sn + dy * c };
+        };
+        // p1 を回して p2 に重なる向き（±72°）で、p2 → cB → O → cA と進む
+        let t = 2 * Math.PI / 5;
+        const q = rot(p1, t);
+        if (Math.hypot(q.x - p2.x, q.y - p2.y) > s * 0.05) t = -t;
+        const nB = rot(p2, t), nO = rot(nB, t), nA = rot(nO, t);
+        const place = new Map([[cB.id, nB], [ohA, nO], [cA.id, nA]]);
+        exo.forEach(([c, os]) => {
+            const np = place.get(c.id);
+            const ux = np.x - cx, uy = np.y - cy, L = Math.hypot(ux, uy) || 1;
+            // 長さは結合の標準（カルボン酸の図の =O は 60px のことがあるが、登録の無水フタル酸は約 42px）
+            os.forEach(o => place.set(o.id, { x: np.x + ux / L * G, y: np.y + uy / L * G }));
+        });
+        if ([...place.values()].every(p => others.every(o => Math.hypot(o.x - p.x, o.y - p.y) > clear))) {
+            return place;
+        }
+    }
+    return null;
+}
+
+/**
  * 分子内脱水で酸無水物にできるカルボキシ基の組。
  * 返り値は `{ site: [cA, ohA, cB, ohB], geo }`。`geo` は `'ok'`（実行できる）／
  * `'anti'`（トランス。フマル酸）／`'unknown'`（図からシス/トランスが読めない）。
@@ -6850,11 +6916,21 @@ const REACTION_RULES = [
             const spot = cand && anhydrideBridgeSpot(mol, cA, cB, cand.path, [ohA, ohB]);
             if (!spot) throw noRoom('環をつくる空間がありません');
             const ring = cand.path.length + 1; // 架橋の O を足した環の大きさ
+            // ★ 五員環は正五角形に置く（v1566）。置けないとき（六員環・重なる）は今までどおり O だけ動かす
+            const pentagon = anhydridePentagonPlacement(mol, cand, ohA, ohB);
             // 片方の -OH の O を架橋にし、もう片方の -OH は水として出す
             mol.removeBond(cB, ohB);
+            if (pentagon) {
+                pentagon.forEach((p, id) => {
+                    const a = mol.atoms.find(x => x.id === id);
+                    if (a) { a.x = p.x; a.y = p.y; }
+                });
+            } else {
+                const o = mol.atoms.find(x => x.id === ohA);
+                o.x = spot.x; o.y = spot.y;
+            }
+            // ⚠ 水は形を決めたあとで逃がす（先に逃がすと、動かした五角形の上に水が残りうる）
             parkAsWater(mol, ohB);
-            const o = mol.atoms.find(x => x.id === ohA);
-            o.x = spot.x; o.y = spot.y;
             mol.addBond(ohA, cB, 1);
             return {
                 caption: `2つのカルボキシ基から水がとれて、${ring}員環の酸無水物 -CO-O-CO- ができました（加熱）。` +
