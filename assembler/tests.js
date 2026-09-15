@@ -41114,6 +41114,100 @@
         c.reset();
     });
 
+    /* ★ RC6b: 反応で閉じた酸無水物の五員環は**正五角形**（v1566）。
+     * ⚠ 以前は架橋の O を空いている所へ置くだけで、フタル酸から作ると O が2つのカルボニル炭素の
+     *   中点に落ち、内角 120・60・180・60・120° につぶれていた（動画 V134 の場面・実測）。
+     *   直鎖に描いたコハク酸は 18・180° まで崩れていた。
+     * **否定対照**: `anhydridePentagonPlacement` を無効にする（直す前の置き方に戻す）と赤になる。 */
+    test('RC6b: 反応でできた無水フタル酸・無水マレイン酸・無水コハク酸の五員環が正五角形（108°±5°）', async (c) => {
+        const W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const dehyd = W.REACTION_RULES.find(r => r.id === 'dehydration_anhydride');
+        assert(dehyd && typeof W.anhydridePentagonPlacement === 'function', '分子内脱水か五角形の置き方が無い');
+        const setup = (names) => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+            g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        // 架橋の O（C 2つとだけ単結合）から五員環をたどり、内角を返す（座標は snap でも mol でもよい）
+        const ringAngles = (atoms, bonds) => {
+            const byId = new Map(atoms.map(a => [a.id, a]));
+            const nb = id => bonds.filter(b => b.atomId1 === id || b.atomId2 === id)
+                .map(b => byId.get(b.atomId1 === id ? b.atomId2 : b.atomId1))
+                .filter(a => a && a.element !== 'H');
+            let ring = null;
+            for (const o of atoms.filter(a => a.element === 'O')) {
+                const cs = nb(o.id);
+                if (cs.length !== 2 || cs.some(x => x.element !== 'C')) continue;
+                const dfs = (p) => {
+                    if (ring) return;
+                    if (p.length === 5) { if (nb(p[4].id).includes(p[0])) ring = p.slice(); return; }
+                    nb(p[p.length - 1].id).forEach(w => { if (!p.includes(w)) dfs([...p, w]); });
+                };
+                dfs([o]);
+                if (ring) break;
+            }
+            assert(ring, '架橋の O を含む五員環が見つからない');
+            return ring.map((P, i) => {
+                const A = ring[(i + 4) % 5], B = ring[(i + 1) % 5];
+                let d = Math.abs(Math.atan2(A.y - P.y, A.x - P.x) - Math.atan2(B.y - P.y, B.x - P.x)) * 180 / Math.PI;
+                if (d > 180) d = 360 - d;
+                return d;
+            });
+        };
+        const pentagonal = angs => angs.every(a => Math.abs(a - 108) <= 5);
+        const react = (from) => {
+            const mol = setup([from]);
+            const sites = dehyd.detect(mol);
+            assert(sites.length === 1, `${from}: 候補が ${sites.length} 件`);
+            dehyd.apply(g, sites[0]);
+            g.updateDrawing();
+            return ringAngles(mol.atoms, mol.bonds);
+        };
+        const fmt = angs => angs.map(Math.round).join('・');
+
+        // ---- (1) 3組とも正五角形・正準コードは登録＋水のまま ----
+        [['フタル酸', '無水フタル酸'], ['マレイン酸', '無水マレイン酸'],
+         ['コハク酸（ブタン二酸）', '無水コハク酸']].forEach(([from, to]) => {
+            const angs = react(from);
+            assert(pentagonal(angs), `${from} → ${to}: 五員環の内角が ${fmt(angs)}°（108°±5° を期待）`);
+            const got = CC(g.userMolecule);
+            setup([to, '水']);
+            assert(got === CC(g.userMolecule), `${from} → ${to}: 正準コードが登録＋水と違う`);
+        });
+
+        // ---- (2) 実機の流れ（execute）: 生成物の控え・環を回さない・反応前に戻す ----
+        {
+            const mol = setup(['フタル酸']);
+            const code0 = CC(mol);
+            W.reactor.execute(dehyd, dehyd.detect(mol)[0]);
+            W.reactor.finalizeMorph();
+            const L = W.reactor.lastReaction;
+            assert(L && L.after, '前後のスナップショットが残っていない');
+            const angs = ringAngles(L.after.atoms, L.after.bonds);
+            assert(pentagonal(angs), `実機（execute）の生成物の内角が ${fmt(angs)}°`);
+            assert(!L.rotation, 'フタル酸（置換基2つ）の環を回した（登録の右上・右下を崩さない決まり）');
+            assert(W.reactor.undoLastReaction() !== false, '反応前に戻せない');
+            assert(CC(g.userMolecule) === code0, '反応前に戻したのにフタル酸に戻らない');
+        }
+
+        // ---- (3) **否定対照**: 直す前の置き方（O だけ空いている所へ）に戻すと赤になる ----
+        const saved = W.anhydridePentagonPlacement;
+        try {
+            W.anhydridePentagonPlacement = () => null;
+            const legacy = react('フタル酸');
+            assert(!pentagonal(legacy), `否定対照が効かない（直す前の置き方でも ${fmt(legacy)}°）`);
+            assert(legacy.some(a => Math.abs(a - 180) < 3), `直す前の置き方で O が一直線に並んでいない（${fmt(legacy)}°）`);
+        } finally {
+            W.anhydridePentagonPlacement = saved;
+        }
+        c.reset();
+    });
+
     test('ID7: stages.json の全件に id があり、compounds と食い違わない（合流させて使うため）', async (c) => {
         // `getCompoundLibrary()` は stages と compounds を**合流**させる。
         // 片方にしか id が無いと、stages にしかない58件が id で引けない
