@@ -41,6 +41,106 @@ var CODE_RE = /^org\.[a-zA-Z]+\.[a-z0-9-]+$/;
 //   「試す」「反応させる」が画面と合っている。
 var BUILD_VERB = /組み立て|組んで|組む|組み上げ|くみたて|つくる|作る|作っ|つくっ/;
 
+// ★ 「問い＋選択肢1個」の組で読めるか（2026-09-15・ユーザー提案）。
+//
+// ⚠ 選択肢は **毎回並べ替えられ**（app.js の renderChoice が shuffle する）、
+//   学習者は「問い＋その肢」を1つずつ真偽判定する。**並び全体を読む前提で書いた肢は崩れる。**
+//   ユーザーの校正で続けて見つかった型（REVIEW_CRITERIA.md C17）のうち、形で見分けられる2つを機械で見る:
+//
+//   (1) 指示語（この・その・どちら・どれ・これ・それ・次の・上の…）の**指す先が、その肢の中にも問いの中にも無い**
+//       ——「この混合物を転化糖という」（混合物は別の肢）／「生成物はどちらもジカルボン酸である」（2つは別の肢）
+//   (2) 問いが「〜ときについて正しいものをすべて選べ」の硬い形
+//
+// ⚠ 見ているのは**形だけ**。「指す先がある」の判定は近似で、次の3つで決めている:
+//   - 読点「、」より後ろの指示語は、同じ肢の前半を受けていると見なす（「…異なれば、その炭素は」）
+//   - 「この／その＋名詞」は、その名詞が問いにあれば問いを受けていると見なす
+//   - 「どちら／どれ」は、2つの候補（「AとB」「A・B」「左右」「両」）が肢の前半か問いにあれば受けていると見なす。
+//     ただし「どちらの＋名詞」は、その名詞も問いか肢の前半に要る（「どちらの酸素原子」は候補が分子なので決まらない）
+// ⚠ 軸のずれ・段階の抜け・文として不自然、は**機械では見られない**。pair_review.js で書き出して読む（C17）
+var PAIR_DEMONSTRATIVE_SKIP = /(そのまま|そのもの|それぞれ|それ以上|それ以外|これ以上|同じ)/g;
+function pairContextHitsOf(q, text) {
+  var hits = [];
+  var s = String(text).replace(PAIR_DEMONSTRATIVE_SKIP, function (m) { return new Array(m.length + 1).join("＿"); });
+  var NOUN = /^[一-龥々ァ-ヶーA-Za-z0-9₀-₉α-ωΑ-Ω]+/;
+  // 2つの候補の印。「ナイロンが絹に似るのは、どちらも」のような比べる言い方も候補を2つ立てている
+  var PAIR = /[^、。\s]と[一-龥ァ-ヶA-Za-z0-9]|・|左右|両|に似|より/;
+  var re = /(この|その|あの|どちら|どれ|これ|それ|こちら|そちら|前者|後者|次の|前の|上の|下の|上記|以下の)/g, m;
+  while ((m = re.exec(s))) {
+    var w = m[1], at = m.index, before = s.slice(0, at), after = s.slice(at + w.length);
+    var afterComma = before.indexOf("、") >= 0;
+    var prev = before.slice(-1);
+    if (/^(次の|前の|上の|下の|以下の)$/.test(w)) {
+      // 「紫外線下の」「2種類以上の」「アセタール化する前の」のような語の一部は拾わない
+      if (before === "" || /[、はがもをに]/.test(prev)) hits.push("指示語「" + w + "」が別の肢や並びを指している");
+      continue;
+    }
+    if (w === "上記" || w === "前者" || w === "後者") { hits.push("指示語「" + w + "」が別の肢や並びを指している"); continue; }
+    if (w === "この" || w === "その" || w === "あの") {
+      if (afterComma) continue;
+      var noun = (after.match(NOUN) || [""])[0];
+      if (noun && (String(q).indexOf(noun) >= 0 || before.indexOf(noun) >= 0)) continue;
+      hits.push("「" + w + noun + "」の指す先が問いにも肢の中にも無い");
+      continue;
+    }
+    if (w === "どちら" || w === "どれ") {
+      var pairBefore = PAIR.test(before), pairQ = PAIR.test(String(q));
+      if (!pairBefore && !pairQ) { hits.push("「" + w + "」の候補が問いにも肢の中にも無い"); continue; }
+      if (!pairBefore && after.charAt(0) === "の") {
+        var n2 = (after.slice(1).match(NOUN) || [""])[0];
+        if (n2 && String(q).indexOf(n2) < 0 && before.indexOf(n2) < 0) {
+          hits.push("「" + w + "の" + n2 + "」の候補が問いにも肢の中にも無い");
+        }
+      }
+      continue;
+    }
+    // これ・それ・こちら・そちら
+    if (!afterComma) hits.push("「" + w + "」の指す先が肢の中に無い");
+  }
+  return hits;
+}
+var PAIR_STIFF_Q = /ときについて/;
+// 全 choice の組を見て、引っかかったものを { key: "code#肢番号" または "code#q", why, text } で返す
+function pairContextHits(patterns) {
+  var out = [];
+  patterns.forEach(function (p) {
+    (p.variants || []).filter(function (v) { return v.mode === "choice"; }).forEach(function (v) {
+      if (PAIR_STIFF_Q.test(v.q || "")) {
+        out.push({ key: p.code + "#q", why: "問いが「〜ときについて正しいものを選べ」の硬い形", text: v.q });
+      }
+      (v.options || []).forEach(function (o, i) {
+        pairContextHitsOf(v.q || "", o).forEach(function (why) {
+          out.push({ key: p.code + "#" + i, why: why, text: o });
+        });
+      });
+    });
+  });
+  return out;
+}
+// ⚠ **いまある件を名指しで通している**（直すかどうかはユーザーが決める・2026-09-15 時点）。
+//   新しく足す問題には効く。**直したら、ここからも外す**（外し忘れは下の検査が赤で知らせる）
+var PAIR_CONTEXT_KNOWN = {
+  // ① 指示語が別の肢を指す
+  "org.aro.xylene-oxidation#2": "「どちらも」＝p-体と o-体（別の肢）",
+  "org.bio.invert-sugar#1": "「この混合物」＝グルコースとフルクトース（別の肢）",
+  "org.carbonyl.ester-water-origin#3": "「どちらの酸素原子」＝酢酸とエタノールの O（候補が問いに無い）",
+  "org.ali.markovnikov#2": "「どちらの生成物」＝2つの付加生成物（書かれていない）",
+  "org.alcohol.iodoform#0": "「この反応」＝問いは「実験」としか言っていない",
+  "org.alcohol.iodoform#2": "同上",
+  "org.alcohol.iodoform#4": "同上",
+  "org.alcohol.iodoform#5": "同上",
+  // 機械の近似で赤になるが、読むと通るもの（統合側の18件には無い）
+  "org.bio.isoelectric-point#1": "「どちらの電極」＝問いの「ろ紙の両端に直流電圧」を電極と読めば決まる",
+  // ③ 問いが「〜ときについて」
+  "org.carbonyl.salt-strong-acid#q": "③",
+  "org.carbonyl.saponification#q": "③",
+  "org.aro.halogenation#q": "③",
+  "org.aro.xylene-oxidation#q": "③",
+  "org.phenol.phenoxide-co2#q": "③",
+  "org.bio.zwitterion-ph#q": "③",
+  "org.bio.peptide-bond#q": "③",
+  "org.bio.denaturation#q": "③"
+};
+
 // ------------------------------------------------------ データテスト（純検査）
 function runDataTests(DATA) {
   var results = [];
@@ -236,6 +336,31 @@ function runDataTests(DATA) {
         });
       });
     });
+  });
+
+  // ★ 問い＋肢1個の組（C17）。定義と理由は冒頭の pairContextHitsOf の注記を読むこと
+  t("組: 肢の指示語が別の肢を指していない・問いが「〜ときについて」でない（C17）", function () {
+    var hits = pairContextHits(patterns);
+    var fresh = hits.filter(function (h) { return !PAIR_CONTEXT_KNOWN[h.key]; });
+    assert(!fresh.length, fresh.slice(0, 4).map(function (h) {
+      return h.key + ": " + h.why + "「" + h.text + "」";
+    }).join(" / ") + "（選択肢は並べ替えられ、問いと1個ずつ組で読まれる。指す先を肢の中に書く）");
+    var hitKeys = {};
+    hits.forEach(function (h) { hitKeys[h.key] = 1; });
+    var stale = Object.keys(PAIR_CONTEXT_KNOWN).filter(function (k) { return !hitKeys[k]; });
+    assert(!stale.length, "★直った（または項目が消えた）ので PAIR_CONTEXT_KNOWN から外す: " + stale.join(" / "));
+    // ★否定対照 —— 見分けそのものが働いていることを、その場で確かめる
+    assert(pairContextHitsOf("スクロースを加水分解したあとの溶液について正しいものをすべて選べ。", "この混合物を転化糖という").length === 1,
+      "「この混合物」を拾えていない（この検査は何も守っていない）");
+    assert(pairContextHitsOf("キシレンを酸化したときの生成物について正しいものをすべて選べ。", "生成物はどちらもジカルボン酸である").length === 1,
+      "候補の無い「どちら」を拾えていない");
+    assert(!pairContextHitsOf("不斉炭素原子の判定について正しいものをすべて選べ。", "4つの手がすべて異なれば、その炭素は不斉炭素原子である").length &&
+      !pairContextHitsOf("ポリアミド系の繊維について正しいものをすべて選べ。", "ナイロン66とナイロン6はどちらもポリアミドである").length &&
+      !pairContextHitsOf("凝固点降下について正しいものをすべて選べ。", "電離する物質では粒子の数が増えるので、そのままでは正しい分子量が出ない").length,
+      "肢の中に指す先がある指示語まで赤にしている（見分けが広すぎる）");
+    assert(PAIR_STIFF_Q.test("酢酸エチルに水酸化ナトリウム水溶液を加えて加熱したときについて正しいものをすべて選べ。") &&
+      !PAIR_STIFF_Q.test("酢酸エチルに水酸化ナトリウム水溶液を加えて加熱したときの変化について正しいものをすべて選べ。"),
+      "「〜ときについて」の見分けが働いていない");
   });
 
   // 課程改訂で変わった用語（KNOWLEDGE_CAVEATS J-4 の表）。
@@ -2619,6 +2744,9 @@ function runLedgerTests(DATA, LEDGER) {
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     runDataTests: runDataTests,
+    pairContextHits: pairContextHits,
+    pairContextHitsOf: pairContextHitsOf,
+    PAIR_CONTEXT_KNOWN: PAIR_CONTEXT_KNOWN,
     runVersionTests: runVersionTests,
     runLinkTargetTests: runLinkTargetTests,
     runInventoryTests: runInventoryTests,
