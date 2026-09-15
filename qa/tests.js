@@ -98,14 +98,15 @@ function pairContextHitsOf(q, text) {
   }
   return hits;
 }
-var PAIR_STIFF_Q = /ときについて/;
+// 「〜ときについて」「〜ときの話として」＝ 何を答えるか（変化・生成物・理由…）を言っていない問い（v114 で「話」も足した）
+var PAIR_STIFF_Q = /とき(について|の話)/;
 // 全 choice の組を見て、引っかかったものを { key: "code#肢番号" または "code#q", why, text } で返す
 function pairContextHits(patterns) {
   var out = [];
   patterns.forEach(function (p) {
     (p.variants || []).filter(function (v) { return v.mode === "choice"; }).forEach(function (v) {
       if (PAIR_STIFF_Q.test(v.q || "")) {
-        out.push({ key: p.code + "#q", why: "問いが「〜ときについて正しいものを選べ」の硬い形", text: v.q });
+        out.push({ key: p.code + "#q", why: "問いが「〜ときについて／〜ときの話として正しいものを選べ」の硬い形", text: v.q });
       }
       (v.options || []).forEach(function (o, i) {
         pairContextHitsOf(v.q || "", o).forEach(function (why) {
@@ -116,29 +117,11 @@ function pairContextHits(patterns) {
   });
   return out;
 }
-// ⚠ **いまある件を名指しで通している**（直すかどうかはユーザーが決める・2026-09-15 時点）。
+// ⚠ **機械の近似で赤になるが、読むと通るものだけ**を名指しで通している。
+//   2026-09-15 の既知16件（指示語8・「〜ときについて」8）は v114 で直したので外した。
 //   新しく足す問題には効く。**直したら、ここからも外す**（外し忘れは下の検査が赤で知らせる）
 var PAIR_CONTEXT_KNOWN = {
-  // ① 指示語が別の肢を指す
-  "org.aro.xylene-oxidation#2": "「どちらも」＝p-体と o-体（別の肢）",
-  "org.bio.invert-sugar#1": "「この混合物」＝グルコースとフルクトース（別の肢）",
-  "org.carbonyl.ester-water-origin#3": "「どちらの酸素原子」＝酢酸とエタノールの O（候補が問いに無い）",
-  "org.ali.markovnikov#2": "「どちらの生成物」＝2つの付加生成物（書かれていない）",
-  "org.alcohol.iodoform#0": "「この反応」＝問いは「実験」としか言っていない",
-  "org.alcohol.iodoform#2": "同上",
-  "org.alcohol.iodoform#4": "同上",
-  "org.alcohol.iodoform#5": "同上",
-  // 機械の近似で赤になるが、読むと通るもの（統合側の18件には無い）
-  "org.bio.isoelectric-point#1": "「どちらの電極」＝問いの「ろ紙の両端に直流電圧」を電極と読めば決まる",
-  // ③ 問いが「〜ときについて」
-  "org.carbonyl.salt-strong-acid#q": "③",
-  "org.carbonyl.saponification#q": "③",
-  "org.aro.halogenation#q": "③",
-  "org.aro.xylene-oxidation#q": "③",
-  "org.phenol.phenoxide-co2#q": "③",
-  "org.bio.zwitterion-ph#q": "③",
-  "org.bio.peptide-bond#q": "③",
-  "org.bio.denaturation#q": "③"
+  "org.bio.isoelectric-point#1": "「どちらの電極」＝問いの「ろ紙の両端に直流電圧」を電極と読めば決まる"
 };
 
 // ------------------------------------------------------ データテスト（純検査）
@@ -361,6 +344,9 @@ function runDataTests(DATA) {
     assert(PAIR_STIFF_Q.test("酢酸エチルに水酸化ナトリウム水溶液を加えて加熱したときについて正しいものをすべて選べ。") &&
       !PAIR_STIFF_Q.test("酢酸エチルに水酸化ナトリウム水溶液を加えて加熱したときの変化について正しいものをすべて選べ。"),
       "「〜ときについて」の見分けが働いていない");
+    assert(PAIR_STIFF_Q.test("高吸水性樹脂を水に入れたときの話として、正しいものをすべて選べ。") &&
+      !PAIR_STIFF_Q.test("高吸水性樹脂のつくりと、水に入れたときの変化について、正しいものをすべて選べ。"),
+      "「〜ときの話として」の見分けが働いていない（または変化を言った問いまで赤にしている）");
   });
 
   // 課程改訂で変わった用語（KNOWLEDGE_CAVEATS J-4 の表）。
