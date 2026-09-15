@@ -56541,6 +56541,11 @@
                 const heavy = vin.m.atoms.filter(a => a.element !== 'H').length;
                 assert(vin.labels.length === heavy,
                     `★ ビニロンの文字が ${vin.labels.length} 個（重原子 ${heavy} 個すべてに付くはず ＝ 環の炭素を骨格の頂点にしている）`);
+                // ★ 文字どうしの環の辺も線が残る（v1562 の最初の焼き直しでは CH−CH₂ の線が文字に食われて消え「CH CH₂CH」になった）。
+                //   ビニロンの結合はすべて単結合 ＝ 線の本数 ＝ 結合の本数
+                const lines = svg.querySelectorAll('.quiz-bonds line.svg-bond-ink').length;
+                assert(lines === vin.m.bonds.length,
+                    `★ ビニロンの線が ${lines} 本（結合 ${vin.m.bonds.length} 本すべて描かれるはず ＝ 文字に食われて消えた線がある）`);
             }
 
             // ★ 環の中の二重結合は、1本が辺そのもの・もう1本が環の内側（v1551・ユーザー「= が6角形に収まるように」）。
