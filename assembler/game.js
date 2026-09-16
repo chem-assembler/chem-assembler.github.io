@@ -3668,6 +3668,31 @@ class Game {
         this._syncCanvasModeBadge();
         // 選択中の道具の札は名札の位置を見て並ぶので、名札がそろってから（v1570）
         this.syncToolChip();
+        this.syncFoldedStripEmpty();
+    }
+
+    /**
+     * 段③で帯の段を畳んだ結果、**出ている面の中身が全部畳まれた**ら帯ごと畳む（v1570）。
+     * ⚠ 畳むのは CSS（`.plate-*`）なので、`setWorkPane` の「面が出ているか」では分からない
+     *   （実測: 2分子で 🔢 を出すと、中身の無い帯が 15px の枠だけ残った）。
+     * ⚠ 名札が出ていないときは何もしない（ふだんの作図のたびに測らない）。
+     */
+    syncFoldedStripEmpty() {
+        const strip = document.getElementById('work-strip');
+        if (!strip) return;
+        if (!this._plateMode) {
+            if (strip.classList.contains('ws-folded-empty')) {
+                strip.classList.remove('ws-folded-empty');
+                this.syncWorkStripHeight();
+            }
+            return;
+        }
+        const was = strip.classList.contains('ws-folded-empty');
+        strip.classList.remove('ws-folded-empty');
+        const panes = [...strip.querySelectorAll('.ws-pane:not(.hidden)')];
+        const empty = panes.length > 0 && panes.every(p => p.getBoundingClientRect().height === 0);
+        strip.classList.toggle('ws-folded-empty', empty);
+        if (was !== empty) this.syncWorkStripHeight();
     }
 
     _syncCanvasModeBadge() {
@@ -3784,8 +3809,10 @@ class Game {
      *   **自由モードでは5秒で消す**（道具を選び直したら、また出して5秒）。
      *   ⇄・✳・⬍ の ON は名札のモードにしない ＝ この札で見せる。
      * ★ 作業中（名札が出ているあいだ）の扱いは、こちらで次のように決めた:
-     *   ・手で描く作業（パズル・練習・課題・分液・予測）… **出したまま**。描く道具が答えに直結するので、
+     *   ・手で描く作業（パズル・練習・予測）… **出したまま**。描く道具が答えに直結するので、
      *     いま何が置かれるかが常に見えている方がよい
+     *   ・課題・分液 … **出さない**。手元は 🧪 実験の瓶の面で、描く道具は画面に無い（実測: 分液の画に
+     *     「選択中 C 炭素を置く」が出て、押せる相手の無い道具を言っていた）
      *   ・名札そのものがタップの意味を言っている作業（分子選び・主鎖と番号・機構の再生・⏸ 停止）
      *     … **出さない**（描けない／同じことを2回言う）
      * ⚠ 人の操作のときだけ出す（`noteModeChange` と同じ理由・台本の画に足さない）。短尺の収録では出さない。
@@ -3826,7 +3853,7 @@ class Game {
         const rec = document.documentElement.classList.contains('rec-short');
         const plate = this._plateMode || '';
         const paused = !!(window.reactor && window.reactor.morphPauseInfo && window.reactor.morphPauseInfo());
-        const 描く作業 = ['puzzle', 'practice', 'quest', 'sep', 'predict'];
+        const 描く作業 = ['puzzle', 'practice', 'predict'];
         let show, persistent = false;
         if (rec || paused) show = false;
         else if (plate) { show = 描く作業.includes(plate); persistent = show; }
@@ -6672,6 +6699,8 @@ class Game {
         // ここも作図と同じ層に描く ＝ カーソルを動かしただけで消えては困る。
         // **状態は残さない**ので、図が変わっていればこの中で自分から消える
         this.renderIupacNumbering(hidden, hydrogens);
+        // 名前の部品の段が出入りしたので、畳んだ帯が空になったかを見直す（v1570・段③）
+        this.syncFoldedStripEmpty();
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
         // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）

@@ -1174,6 +1174,8 @@ button:hover {
 #work-strip.plate-numbering #reaction-card:not(:has(> button:not(.hidden):not(#btn-molecule-modal):not(#btn-iupac-numbering))) {
     display: none !important;
 }
+/* 畳んだ結果、帯に見えるものが1つも残らなかったら帯ごと畳む（game.js `syncFoldedStripEmpty`） */
+#work-strip.ws-folded-empty { display: none !important; }
 /* ★ 下の2ボタンは中身の幅にして1段に並べる（v1570・案C 段③・ユーザー決定「コンパクトにして1段」）。
    以前は ⚗ が `ws-wide` で段の残りを全部使い、375px では 🔢 が2段目に落ちていた */
 #reaction-card #btn-molecule-modal { flex: 0 0 auto; width: auto; }
