@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1571">
+    <link rel="stylesheet" href="style.css?v=1572">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1571</div>
+            <div class="version">v1572</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -217,6 +217,11 @@
                          #btn-condense は無傷。ここに複製を置かないこと -->
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control"><span class="tile-icon">🔍</span><span class="tile-label">全体表示</span></button>
                     <button id="btn-clear-all" class="danger-btn" title="キャンバスの作図をすべて消します"><span class="tile-icon">🗑</span><span class="tile-label">全消去</span></button>
+                    <!-- 🧽 分子を消去（v1570・段④・ユーザー提案 2026-09-17）。分子を選んでいればその分子、
+                         1つだけならそれ、2つ以上で選んでいなければ「消す分子をタップ」のモードに入る。
+                         ⚠ リボンの枠が1つ増える（DESIGN_ribbon_consolidation.md §1-1 の 9枠 → 10枠）。
+                            1280/375/320px の並びは tests.js の UM12 が実測で見張る（375・320 はもとから2段） -->
+                    <button id="btn-delete-molecule" class="danger-btn" title="分子を1つずつ消します（選んでいる分子・1つだけの分子はすぐ消し、2つ以上ならタップした分子を消します。↩ 戻す で戻せます）"><span class="tile-icon">🧽</span><span class="tile-label">分子消去</span></button>
                     <!-- 🔤 呼出（§21・ユーザー決定「A または 左ペイン」→ 実測で A を採用）。
                          押すと `#summon-modal` が開き、名前を入れて分子を呼び出せる。
                          ⚠ **作業帯の `#summon-input` は据え置き**（消さない・移さない）。これは入口を
@@ -285,6 +290,10 @@
                          ⚠ 図の上に載るので**文字の部分はタップを通す**（pointer-events:none）。
                             押せるのは「やめる」だけ ＝ 押せるように見えて押せない面を作らない -->
                     <div id="canvas-mode-badge" class="hidden" aria-live="polite"></div>
+                    <!-- 選択中の道具の札（v1570・ユーザー決定 2026-09-17「見本 B」）。キャンバスの右上、
+                         名札があればそのすぐ下。中身と出し入れは game.js の `syncToolChip()`。
+                         ⚠ 図の上に載るので pointer-events:none（押せるものは持たない） -->
+                    <div id="canvas-tool-chip" class="hidden" aria-live="polite"></div>
                     <!-- 描画エリア内の字幕トースト（P12-8）。右パネルの #verify-result は
                          スクロールで見切れて気づかれないため、キャンバス内にも同じ内容を出す -->
                     <div id="canvas-toast" class="hidden"></div>
@@ -395,6 +404,11 @@
                                      このボタンは**ヒント専用**に変えた。段は「ヒント（分類）→ お手本（答えの図）」 -->
                                 <button id="btn-verify" class="secondary-btn ws-action">💡 ヒント</button>
                                 <button id="btn-show-target" class="secondary-btn ws-action ws-outline">お手本を見る</button>
+                                <!-- v1570（案C 段②）: お題名はキャンバス上端の名札へ移り、上の見出し行
+                                     （押すとお題モーダル）は名札が出ているあいだ畳む。開く口をこの段に1つ残す。
+                                     出し入れは game.js の `syncPlateDuplicates` -->
+                                <button id="btn-puzzle-pick" class="view-btn ws-action hidden"
+                                        title="お題の説明・シリーズ・問題の選択を開きます">お題を選ぶ ›</button>
                             </div>
                         </div>
                         <!-- 🧪 標準（自由）モードの面（第5段・§5-2 の 46）。
@@ -445,14 +459,14 @@
                                  主の入口はキャンバスの見出しのタップで、これはその控え -->
                             <div class="ws-row" id="reaction-card">
                                 <button id="btn-molecule-modal" class="view-btn ws-action ws-wide"
-                                        title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">⚗ 反応させる・調べる（反応 —）</button>
+                                        title="分類・反応させる分子の選択・できる反応の一覧をまとめて開きます（キャンバスの分子の名前をタップしても同じ）">⚗ 反応させる（—）</button>
                                 <!-- 🔢 命名の確認（DESIGN_iupac_check.md §9-1・ユーザー決定）。
                                      「名前が出るものは主鎖も見える」で一貫させるため、**自由モードにも常設**する
                                      （分子モーダルの中だけにしない）。にぎやかさはトグルで畳める ＝ このボタン。
                                      ⚠ 行は増やさず `#reaction-card` の行に相乗りする（帯の高さは
                                         キャンバスを覆う量そのもの。WS1・WS3 が可視域を見張っている） -->
                                 <button id="btn-iupac-numbering" class="view-btn ws-action"
-                                        title="いまの名前が、どの鎖を主鎖と決めて・どちら向きに番号を振った結果かをキャンバスに描きます（表示中は作図できません）">🔢 主鎖と番号を見る</button>
+                                        title="いまの名前が、どの鎖を主鎖と決めて・どちら向きに番号を振った結果かをキャンバスに描きます（表示中は作図できません）">🔢 主鎖と番号</button>
                                 <!-- ↩ 反応前に戻す（v1409・ユーザー申し立て「反応させた場合、もとの分子に
                                      戻るにはどうする？」）。反応を実行すると分子モーダルは閉じるので、
                                      画面に残るのはこの帯だけ ＝ **戻る道はここに無いと見つからない**
@@ -611,7 +625,7 @@
                                 <button id="btn-sep-all" class="view-btn ws-action hidden"
                                         title="拡大をやめて、全部の成分を並べて表示します">⤢ 全体を見る</button>
                                 <button id="btn-sep-end" class="view-btn ws-action"
-                                        title="水面の帯を下ろします（塩になった印は消えません）">✕ 分液をやめる</button>
+                                        title="分液をやめて水面の帯を下ろします（塩になった印は消えません）">やめる</button>
                             </div>
                             <div id="sep-cards" class="sep-cards"></div>
                             <div id="sep-note" class="sep-note"></div>
@@ -702,7 +716,10 @@
             <div class="modal-footer" style="display:flex; flex-direction:column; gap:var(--mp-gap);">
                 <button id="btn-next-stage" class="primary-btn">次のお題へ</button>
                 <button id="btn-pick-stage" class="secondary-btn">別のお題へ</button>
-                <button id="btn-win-close" class="secondary-btn">閉じる（自由モードへ）</button>
+                <!-- v1570: 「閉じる（自由モードへ）」を「閉じる（パズルに残る）」と「やめる（自由へ）」に分けた。
+                     ⚠ 閉じる＝その場を閉じるだけ、やめる＝モードを抜ける（全モード共通の規則） -->
+                <button id="btn-win-close" class="secondary-btn">閉じる</button>
+                <button id="btn-win-quit" class="secondary-btn">やめる</button>
             </div>
         </div>
     </div>
@@ -855,7 +872,7 @@
                  **id 据え置き**（game.js が id で leaveGuard に結んでいる）。
                  リボンの「← 自由へ」タイルでも同じことができるので、こちらは**保険** -->
             <div class="puzzle-footer modal-footer">
-                <button id="btn-back-to-free" class="mode-back" title="標準（自由）に戻ります。描いている分子はそのまま残ります">← 自由に戻る</button>
+                <button id="btn-back-to-free" class="mode-back" title="パズルをやめて自由モードに戻ります。描いている分子はそのまま残ります">やめる</button>
                 <button id="btn-puzzle-close" class="primary-btn">閉じる</button>
             </div>
         </div>
@@ -1070,7 +1087,7 @@
                 <div id="nw-tagbar" class="nw-tagbar"></div>
                 <div class="nw-filter-row">
                     <input id="nw-search" type="search" class="nw-search" placeholder="実験の文でも意味でも探せます（例: ヨード）" aria-label="カードを探す">
-                    <button id="btn-nw-filter-clear" class="nw-filter-clear" title="タグと検索をどちらも解除します">絞り込みをやめる</button>
+                    <button id="btn-nw-filter-clear" class="nw-filter-clear" title="タグと検索をどちらも解除します">条件を消す</button>
                     <span id="nw-filter-count" class="nw-filter-count"></span>
                 </div>
             </div>
@@ -2201,7 +2218,7 @@
             <div id="nring-choices" style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
                 <!-- 3〜8員環のボタンをJSで生成 -->
             </div>
-            <button id="btn-nring-cancel" class="view-btn modal-footer" style="padding:10px;">キャンセル</button>
+            <button id="btn-nring-cancel" class="view-btn modal-footer" style="padding:10px;">閉じる</button>
         </div>
     </div>
 
@@ -2243,19 +2260,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1571"></script>
+    <script src="chemistry.js?v=1572"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1571"></script>
-    <script src="game.js?v=1571"></script>
-    <script src="reaction.js?v=1571"></script>
-    <script src="quiz.js?v=1571"></script>
-    <script src="stereo.js?v=1571"></script>
-    <script src="reactor.js?v=1571"></script>
-    <script src="narrowing.js?v=1571"></script>
-    <script src="learn.js?v=1571"></script>
-    <script src="tutorial.js?v=1571"></script>
-    <script src="rec.js?v=1571"></script>
+    <script src="deadend.js?v=1572"></script>
+    <script src="game.js?v=1572"></script>
+    <script src="reaction.js?v=1572"></script>
+    <script src="quiz.js?v=1572"></script>
+    <script src="stereo.js?v=1572"></script>
+    <script src="reactor.js?v=1572"></script>
+    <script src="narrowing.js?v=1572"></script>
+    <script src="learn.js?v=1572"></script>
+    <script src="tutorial.js?v=1572"></script>
+    <script src="rec.js?v=1572"></script>
 </body>
 </html>

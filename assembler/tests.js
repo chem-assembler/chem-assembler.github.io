@@ -281,6 +281,7 @@
  *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
  * | UX  | 1〜3   | 「操作の案内」の字数の上限（v1468・ux-density.md。ユーザー発注「説明が冗長・字が小さい／ただし発展の話は必要な人が見られるように」）。**1 が上限**（9画面ぶん。数えるのは押す前に読ませる説明だけで、化学の説明・答え合わせ・設問・一覧・図・**閉じた `<details>` の中身**は数えない。併せて `.learn-acc` が既定で閉じていること**と中身が空でないこと**を見る ＝ 「畳んだふりをして消す」で通せない）・**2 は否定対照**＝ 実物と同じ長さの1文（47字）を足すと**9画面すべてで**上限を超えること（余裕が広すぎて止め木にならない状態を検出する）・3 は十字の4操作の規則が `CROSS_RULES_HTML` 1本で ⏱ と 🔤 の両方から開けること |
+ * | UM  | 1〜13  | **モードの抜け方と名札**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る）・**5〜6 は全モード共通の名札**（段②）: 5 が各モードで名札が出て「やめる」で抜ける（機構の反応名から「（〜生成）」を落とす。**否定対照**＝自由では出ない・短尺収録 .rec-short では出ない）・6 が名札のあいだ帯の見出し行・橙の大見出し・長文トーストを出さない（**否定対照**＝名札を止めると大見出しが描かれる）・**7〜8 は選択中の道具の札**（見本 B）: 7 が道具を替えると札が変わり自由モードでは5秒で消える（**否定対照**＝4秒ではまだ出ている・パズル中は消えない・合成の操作では出ない）・8 が 375/320px で名札が1行のまま・札がその下に重ならず並ぶ（**否定対照**＝上端に置けば重なる）・**9〜11 は段③**: 9 が下の2ボタンを 375/320px でも1段（**否定対照**＝旧い名札と幅の取り方なら2段）・10 が作業中は自由モードの段を畳む（**否定対照**＝自由・短尺収録では畳まない）・11 が左下の分子式表示を出さず見出しに分子式（**否定対照**＝短尺収録では札を出す）・**12〜13 は段④ 🧽 分子を消去**: 12 がリボンに枠が増えても 1280 は1段・375/320 は2段で字が切れない（**否定対照**＝長い札なら切れを検出）・13 が選んだ分子だけ消え、ほかの原子数と正準コードは不変・↩ 戻すで戻る・やめると「分子の消去を終了しました」・反応の結果を消すと ↩ 反応前に戻す が引っ込む（**否定対照**＝押しただけでは消えない・反応直後は札が出ている） |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
@@ -2620,8 +2621,11 @@
             `1分子の分子式が「${D.getElementById('compound-formula').textContent}」`);
         const solo = [...D.querySelectorAll('#atoms-group text')]
             .map(t => t.textContent).filter(t => t.includes('🔍'));
-        assert(solo.length === 1 && !solo[0].includes('C₁₂H₂₂O₁₁'),
-            `1分子の見出しに分子式が付いた（${solo.join(' / ')}）`);
+        // ⚠ v1570 で期待値を変えた（案C 段③・ユーザー決定「左下の分子式表示はカット」）:
+        //   左下の札をふだんの画面から外したので、1分子の見出しにも分子式を1つだけ添える
+        //   （合算の式ではなく、その1分子の式 ＝ この検査の芯「合算しない」はそのまま）
+        assert(solo.length === 1 && solo[0].split('C₁₂H₂₂O₁₁').length === 2,
+            `1分子の見出しに分子式が1つ付いていない（${solo.join(' / ')}）`);
         assert(D.getElementById('mobile-name-chip').textContent.includes('C₁₂H₂₂O₁₁'),
             '1分子のとき左下の札から分子式が消えた');
 
@@ -7106,8 +7110,11 @@
             g.toggleIupacNumbering();
             const said = t.classList.contains('hidden') ? '' : t.textContent;
             const shown = g.iupacNumberingActive();
+            // v1570: 出せた回の名前は名札が出す（IN5 がこれを読む）
+            const plate = D.getElementById('canvas-mode-badge');
+            const plateText = plate.getAttribute('data-mode') === 'numbering' ? plate.textContent : '';
             g.setIupacNumbering(false);
-            out[code] = { n, said, shown };
+            out[code] = { n, said, shown, plateText };
         };
         const summon = (nm) => { g.userMolecule = new W.Molecule(); g.summonMolecule(nm); g.updateDrawing(); };
 
@@ -7157,6 +7164,21 @@
             Object.entries(s).forEach(([want, r]) => {
                 assert(r.n && r.n.code === want,
                     `${want} の場面なのに code が「${r.n && r.n.code}」になっている`);
+                /* ⚠ v1570 で期待値を変えた（案C 段②）: 'chain'（出せた回）は、名前と「やめる」を
+                 *   キャンバス上端の名札が出すので、同じことを言う「主鎖と番号を出しました（名前）」の
+                 *   トーストは出さない。黙っているのではない ＝ **名札に番号を生んだ名前が出ている**ことを見る */
+                if (want === 'chain' && !r.said) {
+                    assert(r.shown && r.n.det && r.plateText.includes(r.n.det.name),
+                        `chain で字幕も名札の名前も出ない（黙っている）: 名札「${r.plateText}」`);
+                    return;
+                }
+                // 'multi' も同じ（飛ばした分子が無い回は、①②の名前を名札が出す）
+                if (want === 'multi' && !r.said) {
+                    assert(r.shown && /①/.test(r.plateText) && /②/.test(r.plateText),
+                        `multi で字幕も名札の番号も出ない（黙っている）: 名札「${r.plateText}」`);
+                    r.said = r.plateText;   // (c) の「番号で分子を言う」は名札の文で見る
+                    return;
+                }
                 assert(r.said && r.said.length > 0, `${want} で字幕が出ない（黙って断っている）`);
                 assert(r.said === r.n.message,
                     `${want}: 字幕と notice の文言が違う（トグルが古い一語を出し続けている）\n` +
@@ -7351,7 +7373,12 @@
                 if (want > 0) {
                     // ★ 字幕の逃がしを 36 → 26px に**戻した**（v1371）。番号が外へ出なくなったので
                     //   広げておく理由が消えたため。図と説明が離れすぎないことをここで押さえる
-                    const gap = inCaptionGap(g, D);
+                    // ⚠ v1570: 名札が出ているあいだは橙の大見出しを描かない（案C 段②）ので、
+                    //   字幕の置き方は名札を出さない状態（短尺の収録）で測る。測っている幾何は同じ
+                    D.documentElement.classList.add('rec-short');
+                    let gap;
+                    try { g.updateDrawing(); gap = inCaptionGap(g, D); }
+                    finally { D.documentElement.classList.remove('rec-short'); g.updateDrawing(); }
                     assert(gap >= 20 && gap <= 30,
                         `${nm}: 図と字幕の縦の隔たりが ${gap.toFixed(1)}px（20〜30px のはず。26px を期待）`);
                 }
@@ -8031,8 +8058,14 @@
             assert(!D2.getElementById('work-strip').classList.contains('hidden'), '★ 着地したのに作業帯ごと隠れている');
             const live = D2.getElementById('ws-practice-live').textContent;
             assert(live.indexOf('C₅H₁₂') >= 0, `帯にお題の分子式が出ていない（${live}）`);
-            const stopBtn = [...D2.querySelectorAll('#ws-practice-actions button')].find(x => /やめる/.test(x.textContent));
-            assert(stopBtn && stopBtn.offsetParent !== null, '帯に「やめる」が見えていない（抜ける手が無い）');
+            // ⚠ v1570 で見る相手を変えた（案C 段②）: お題と「やめる」はキャンバス上端の名札が出し、
+            //   帯の同じ行と「やめる」は名札のあいだ畳む。着地したときに**名札に**お題と「やめる」が見えていること
+            const plate = D2.getElementById('canvas-mode-badge');
+            const plateStop = plate.querySelector('.cmb-stop');
+            assert(plate.getAttribute('data-mode') === 'practice' && plate.textContent.indexOf('C₅H₁₂') >= 0,
+                `名札にお題の分子式が出ていない（${plate.textContent}）`);
+            assert(plateStop && plateStop.offsetParent !== null && /やめる/.test(plateStop.textContent),
+                '名札に「やめる」が見えていない（抜ける手が無い）');
         } finally {
             f.remove();
         }
@@ -14332,7 +14365,13 @@
     lxQuitCase('LX2: アルキル基の書き出しを「やめる」と 🧪自由 へ戻る', 'ak-body', /C₃H₇/);
     lxQuitCase('LX3: 立体異性体の書き出しを「やめる」と 🧪自由 へ戻る', 'sp-body', /2-ブテン/);
 
-    test('LX4: 答え合わせで終了しても採点結果への道が残る（🧪自由 へ移るが帯は生きている）', async (c) => {
+    /* ⚠ LX4 の期待値を v1570 で変えた（案C 段①「知らせなしにモードが移る所をなくす」）。
+     *   v1392 では答え合わせの瞬間に 🧪自由 へ移していたが、帯には練習の続き
+     *   （結果を見る／もう一度／やめる）が残るので、**練習中なのにモード表示だけ自由に変わり、
+     *   しかも何も言わなかった**（棚卸し C6・上位9位）。いまは**学習に残る**。
+     *   ①③ の「free を期待」を「learn を期待」に替え、見張りの芯（採点結果への道が残る・
+     *   帯がオーバーレイを覆わない・もう一度で白紙に戻る・パズルへ移れば捨てる）はそのまま。 */
+    test('LX4: 答え合わせで終了しても採点結果への道が残る（学習に残り、帯も生きている）', async (c) => {
         c.reset();
         const g = c.game, D = c.D, W = c.W, ip = W.isomerPractice;
         await lxStart(c, 'ip-body', /^C₄H₁₀/);
@@ -14350,8 +14389,8 @@
         assert(ans && !ans.disabled, '作業帯の「🔍 答え合わせ」が押せない');
         ans.click();
 
-        // ① 採点して終了 ＝ 居場所は 🧪自由（ただしタブの見た目はオーバーレイの下なので後で見る）
-        assert(g.currentMode === 'free', `答え合わせで終了したのに free にならない（${g.currentMode}）`);
+        // ① 採点して終了しても居場所は 📚学習のまま（v1570。黙って自由へ移さない）
+        assert(g.currentMode === 'learn', `答え合わせで学習から移ってしまった（${g.currentMode}）`);
         assert(ip._finished, '_finished が立っていない（テストの前提が崩れている）');
         assert(ip.active, '採点した瞬間にセッションが破棄された（結果を見返す道が断たれる）');
         // ② ★ 帯はオーバーレイの下に居座らない（帯 z-index 30 > オーバーレイ 20）。
@@ -14362,9 +14401,12 @@
 
         // ③ 面を閉じたら帯が戻り、「↻ もう一度」も「🔍 結果を見る」も残っている
         [...D.querySelectorAll('#ip-review-overlay button')].find(b => /描画に戻る/.test(b.textContent)).click();
-        lxAssertFree(c, '採点結果の面を閉じたあと');
-        assert(lxStripBtn(c, /もう一度/), '自由モードへ移ったら「↻ もう一度」が消えた（採点結果への道が断たれた）');
-        assert(lxStripBtn(c, /結果を見る/), '自由モードへ移ったら「🔍 結果を見る」が消えた');
+        assert(g.currentMode === 'learn', `採点結果の面を閉じたら学習から移った（${g.currentMode}）`);
+        assert(D.querySelector('.mode-tab[data-mode="learn"]').classList.contains('active'),
+            '採点結果の面を閉じたあと 📚学習 のタブが外れた');
+        assert(!D.getElementById('ws-practice').classList.contains('hidden'), '採点結果の面を閉じても練習の帯が戻らない');
+        assert(lxStripBtn(c, /もう一度/), '採点後に「↻ もう一度」が消えた（採点結果への道が断たれた）');
+        assert(lxStripBtn(c, /結果を見る/), '採点後に「🔍 結果を見る」が消えた');
         assert(g.userMolecule.atoms.length === 4, '採点したらキャンバスの答案が消えた');
 
         // ④ 「↻ もう一度」は**学習へ戻す**（自由モードに練習を取り残さない）
@@ -14388,7 +14430,12 @@
         g.setMode('puzzle');
     });
 
-    test('LX5: 学習メニューから開いたクイズを閉じても 🧪自由 へ戻る（練習だけの手当てにしない）', async (c) => {
+    /* ⚠ LX5 の期待値を v1570 で変えた（案C 段①「閉じる ではモードを変えない」）。
+     *   以前はクイズを「閉じる」と 🧪自由 へ落ち、次のクイズへは 📚→アコーディオン→ボタン の3手だった
+     *   （棚卸し C2・上位7位「閉じるの結果がモーダルごとに逆」）。いまは**学習メニューへ戻る**。
+     *   v1392 の芯（学習のまま押せるものが無い画面を作らない）は、メニューが開くので保たれる。
+     *   メニューを閉じたら 🧪自由 へ移ることは、ここで続けて見る。 */
+    test('LX5: 学習メニューから開いたクイズを閉じると学習メニューへ戻り、メニューを閉じると 🧪自由 へ', async (c) => {
         c.reset();
         const g = c.game, D = c.D;
         [['btn-quiz', 'quiz-modal', 'btn-quiz-close'],
@@ -14401,7 +14448,11 @@
                 `${openId}: Study モーダルが開いたまま（前提が崩れている）`);
             assert(g.currentMode === 'learn', `${openId}: クイズを開いた時点で学習モードでない`);
             D.getElementById(closeId).click();
-            lxAssertFree(c, `${openId} を閉じたあと`);
+            assert(g.currentMode === 'learn', `${openId} を閉じたら学習から移った（${g.currentMode}）`);
+            assert(!D.getElementById('study-modal').classList.contains('hidden'),
+                `${openId} を閉じても学習メニューに戻らない`);
+            D.getElementById('btn-study-close').click();
+            lxAssertFree(c, `${openId} → 学習メニューを閉じたあと`);
         });
         g.setMode('puzzle');
     });
@@ -14694,7 +14745,8 @@
         // ⚠ 6 → 7（2026-09-02・📖 資料ペインの `top: 44px`。ヘッダーを 44px にしているのが
         //    この条件なので、同じ1行に合わせるのが正しい）。
         //    件数はブロックを**足したとき**にここで一緒に上げる（減ったときは赤で捕まる）
-        assert(数[共通] === 7, `縦横共通のブロックが ${数[共通]} 個（7個であるべき）`);
+        // ⚠ 7 → 9（v1570・案C 段②。全モード共通の名札の詰めと、選択中の道具の札の詰めを足した）
+        assert(数[共通] === 9, `縦横共通のブロックが ${数[共通]} 個（9個であるべき）`);
         assert(数[縦] === 1, `縦（M1）のブロックが ${数[縦]} 個（1個であるべき）`);
         assert(数[横] === 1, `横（M2）のブロックが ${数[横]} 個（1個であるべき）`);
         // 否定対照 —— 上限を外して `(orientation: portrait)` 単独にすると縦長の PC まで
@@ -15671,7 +15723,9 @@
                 assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`);
                 g.updateDrawing();
                 const cap = captions();
-                assert(cap.length === 1 && cap[0] === `🔍 ${n}`, `${n} の見出しが ${JSON.stringify(cap)}（「🔍 ${n}」を期待）`);
+                // ⚠ v1570 で期待値を変えた（案C 段③「左下の分子式表示はカット」）: 1分子でも分子式を添える
+                const want = `🔍 ${n} ${g.computeMolecularFormula()}`;
+                assert(cap.length === 1 && cap[0] === want, `${n} の見出しが ${JSON.stringify(cap)}（「${want}」を期待）`);
             }
             // 並べると番号と分子式つきで全部に出る
             g.userMolecule = new W.Molecule(); g.updateDrawing();
@@ -30618,6 +30672,14 @@
                 assert(FW.reactionPlayer && FW.reactionPlayer.reactions.length, `${name}: 反応データが来ない`);
                 FW.reactionPlayer.enter(0);
                 await new Promise(r => setTimeout(r, 60));
+                // ⚠ v1570（案C 段②）: ふだんの画面では出口はキャンバス上端の名札の「やめる」で、
+                //   帯の #btn-rx-exit は名札のあいだ畳む。まず名札に出口があることを見て、
+                //   帯の出口の置き場所（送り戻しから離す・段を増やさない）は名札を出さない状態
+                //   （短尺の収録）で今までどおり測る
+                const plateStop = FD.querySelector('#canvas-mode-badge[data-mode="mechanism"] .cmb-stop');
+                assert(plateStop && plateStop.getBoundingClientRect().height >= 32, `${name}: 名札に機構の「やめる」が無い`);
+                FD.documentElement.classList.add('rec-short');
+                FW.game.syncCanvasModeBadge();
                 const exit = FD.getElementById('btn-rx-exit');
                 const prev = FD.getElementById('btn-rx-prev');
                 const next = FD.getElementById('btn-rx-next');
@@ -30836,16 +30898,15 @@
 
         // ③ 文言 —— ⚠ 「編集できません」と書かない。止まっているのはタップの意味だけで、
         //    ↩ 戻す・分子ごとのドラッグ・🗑 全消去は生きている
+        // ⚠ v1570 で期待値を変えた（案C 段②・全モード共通の名札）: 名札は「何をするか（先生の声掛け）
+        //   ＋ 数 ＋ やめる」の1行だけにし、**2行目の但し書き（作図はできません／動かす・戻す・全消去は
+        //   できます）は引いた**（ユーザー方針「小さい字は読まれない」・統合側の文案表）。
+        //   見るのは「何をするかを言う」「但し書きの行が無い」「編集できません と書かない」の3つ
         const txt = b.textContent;
-        assert(/反応させる分子を選ぶ/.test(txt), `モードの名前が入っていない: ${txt}`);
+        assert(/反応させる分子/.test(txt) && /タップ/.test(txt), `何をするか（反応させる分子をタップ）が入っていない: ${txt}`);
         assert(!/編集できません/.test(txt),
             `★「編集できません」と書いている（動かす・戻す・消すはできるので嘘になる）: ${txt}`);
-        assert(/作図/.test(txt) && /できません/.test(txt),
-            `作図が止まっていることが書かれていない: ${txt}`);
-        ['原子を置く', '結合をつなぐ'].forEach(w =>
-            assert(txt.includes(w), `何ができないのかが具体的でない（「${w}」が無い）: ${txt}`));
-        ['動かす', '戻す', '全消去'].forEach(w =>
-            assert(txt.includes(w), `できることに「${w}」が書かれていない: ${txt}`));
+        assert(!b.querySelector('.cmb-note'), `名札に小さい字の但し書きの行が残っている: ${txt}`);
 
         // ④ 選んだ数（0 のときも出す ＝ まだ何も選んでいないことが読める）
         assert(/選んだ 0\/4/.test(txt), `数が「選んだ 0/4」で始まらない: ${txt}`);
@@ -30899,7 +30960,10 @@
         rxTurnOnMoleculeSelect(c);
         assert(sbVisible(c), '下ごしらえでバッジが出ていない（③）');
         g.setMode('puzzle');
-        assert(!g.reactionSelectMode && !sbVisible(c), '★モードを移してもバッジが残る（setMode 経路）');
+        // ⚠ v1570 で期待値を変えた: パズルにも名札が出るようになった（案C 段②）ので、
+        //   「名札が消える」ではなく「分子選びの名札が消える」を見る
+        assert(!g.reactionSelectMode && !(sbVisible(c) && sbBadge(c).getAttribute('data-mode') === 'reaction-select'),
+            '★モードを移してもバッジが残る（setMode 経路）');
 
         // ④ 機構ビューア（`ReactionPlayer.enter()`）。⚠ ビューアが持ち主のあいだ
         //    `updateDrawing()` は早い return で折り返すので、そこで消し忘れると残る
@@ -30907,7 +30971,8 @@
         rxTurnOnMoleculeSelect(c);
         assert(sbVisible(c), '下ごしらえでバッジが出ていない（④）');
         rxPickFromList(c, 'ethene_br2');
-        assert(!g.reactionSelectMode && !sbVisible(c),
+        // ⚠ v1570: 機構ビューアにも名札が出る（③と同じ理由で「分子選びの名札が消える」を見る）
+        assert(!g.reactionSelectMode && !(sbVisible(c) && sbBadge(c).getAttribute('data-mode') === 'reaction-select'),
             '★機構ビューアに入ってもバッジが残る（ReactionPlayer.enter 経路・早い return の先）');
         rp.exit();
 
@@ -30980,6 +31045,21 @@
         c.clickAt(spot.x + 42, spot.y);
         assert(g.userMolecule.atoms.length === before + 2,
             `バッジの下に原子が置けない（${before} → ${g.userMolecule.atoms.length}）`);
+        /* ⚠ v1570: 名札が全幅・1行（40px）になり、最初に当たる点が格子から 20px ずれた所になった。
+         *   置いた原子は格子へ吸われるので、同じ点をタップしても原子に届かない（名札がタップを
+         *   食っているのではない ＝ 上の elementFromPoint は緑）。**置けた原子が元の点に来るよう
+         *   視野をずらし**、その原子の上を名札越しにタップする（見たいことは変えていない） */
+        {
+            const placed = g.userMolecule.atoms.slice(before)
+                .reduce((m, a) => (!m || Math.hypot(a.x - spot.x, a.y - spot.y) < Math.hypot(m.x - spot.x, m.y - spot.y)) ? a : m, null);
+            const vb = c.svg.viewBox.baseVal;
+            vb.x += placed.x - spot.x; vb.y += placed.y - spot.y;
+            g.updateDrawing();
+            spot.x = placed.x; spot.y = placed.y;
+            const p2 = c.toClient(spot.x, spot.y);
+            assert(inBadge(p2.clientX, p2.clientY) && !onStop(p2.clientX, p2.clientY),
+                '視野をずらしても置いた原子が名札の下に来ない（テスト前提が崩れている）');
+        }
         rxTurnOnMoleculeSelect(c);
         c.clickAt(spot.x, spot.y);
         assert(g.selectedMolecules.length === 1,
@@ -31009,7 +31089,9 @@
                 const badge = FD.getElementById('canvas-mode-badge');
                 assert(badge && !badge.classList.contains('hidden'), `${name}: バッジが出ていない`);
                 const on = strip();
-                assert(on === off, `${name}: バッジで作業帯が ${off}px → ${on}px に伸びた（段を増やしてはいけない）`);
+                // ⚠ v1570 で期待値を変えた（案C 段③）: 分子選びのあいだは「名称から呼び出す」の段を畳むので、
+                //   帯は**縮む**のが正しい。見るのは「伸びない」
+                assert(on <= off, `${name}: バッジで作業帯が ${off}px → ${on}px に伸びた（段を増やしてはいけない）`);
                 const wrap = FD.getElementById('svg-wrapper').getBoundingClientRect();
                 const br = badge.getBoundingClientRect();
                 assert(br.left >= wrap.left - 1 && br.right <= wrap.right + 1,
@@ -31325,16 +31407,20 @@
                     row: Math.round(row.getBoundingClientRect().height),
                     strip: Math.round(strip.getBoundingClientRect().height)
                 };
-                assert(after.row === before.row,
-                    `${name}: 札が出ると #reaction-card が ${before.row}px → ${after.row}px（段が増えた）`);
-                assert(after.strip === before.strip,
-                    `${name}: 札が出ると帯が ${before.strip}px → ${after.strip}px（キャンバスを余計に覆う）`);
-                // 🔢 と同じ段に相乗りしている（押す場所が状態で動かない）
+                /* ⚠ v1570 で期待値を変えた（案C 段③・ユーザー決定「下の2ボタンはコンパクトにして1段」）。
+                 *   ⚗ と 🔢 が 375px でも1段に並ぶようになり、ふだんの帯は 128 → 88px に縮んだ。
+                 *   そのぶん 375/320px では「↩ 反応前に戻す」が同じ段に入りきらず、**札が出ているあいだだけ
+                 *   2段目へ回る**（実測 88 → 128px ＝ v1569 までのふだんの帯と同じ高さ）。
+                 *   約束を「段を増やさない」から「**v1569 までの帯（2段・128px）を超えない**」と
+                 *   「🔢 より前に割り込まない」に替えた。⚠ 2段目へ回る回は帯が上へ1段伸びるので、
+                 *   ⚗・🔢 の押す場所が 40px 上へ動く（統合側へ報告済み。rx-replay の ▶ と同じ段の話） */
+                assert(after.row <= 74 + 1,
+                    `${name}: 札が出ると #reaction-card が ${before.row}px → ${after.row}px（2段を超えた）`);
+                assert(after.strip <= 128 + 1,
+                    `${name}: 札が出ると帯が ${before.strip}px → ${after.strip}px（v1569 までの帯 128px を超えて覆う）`);
                 const nb = FD.getElementById('btn-iupac-numbering').getBoundingClientRect();
                 const bb = fbtn.getBoundingClientRect();
-                assert(Math.abs(bb.top - nb.top) <= 3,
-                    `${name}: 札が 🔢 と別の段にいる（${Math.round(bb.top)} vs ${Math.round(nb.top)}）`);
-                assert(bb.left >= nb.right,
+                assert((Math.abs(bb.top - nb.top) <= 3 && bb.left >= nb.right) || bb.top >= nb.bottom - 1,
                     `${name}: 札が 🔢 の前に割り込んでいる（🔢 の位置が反応のたびに動く）`);
                 // 押しものの床（32px）を割らない
                 assert(bb.height >= 32, `${name}: 札の高さが ${Math.round(bb.height)}px（32px の床を割る）`);
@@ -34953,7 +35039,10 @@
      *   **旧式と新式の答えが分かれる配置になっていること**を主張に含めるので、
      *   直しを戻せば必ず赤くなるし、症状の出ない配置で緑になることもない。 */
     test('EQ1: 厚い帯を「天井」と読み違えず、呼んだ分子が帯の裏に入らない（320px・実発生）', async () => {
-        await withViewport(320, 568, async (W, D, name) => {
+        // ⚠ v1570 で画面の高さを 568 → 480px に替えた（案C 段③）。下の2ボタンが1段になり、自由モードの帯が
+        //   128 → 88px に薄くなったので、320×568 では「旧式でも床と読める」＝ 症状の出る配置でなくなった
+        //   （この検査自身の注のとおり前提を測り直した）。見ている読み違いは同じ
+        await withViewport(320, 480, async (W, D, name) => {
             const g = W.game;
             g.setMode('free');
             // 🧪 実験パレットにすると左パネルが 83 → 160px になり、キャンバスが 311 → 234px へ縮む
@@ -35371,8 +35460,13 @@
                 `${name}: 課題の帯でキャンバスを覆う量が ${Math.round(strip.height - 素の帯)}px 増えた` +
                 '（「名称から呼び出す」の段を畳む手当てが効いていない）');
             // 帯の押しものが画面の中にあること
-            ['ws-quest-head', 'btn-quest-restart', 'btn-quest-quit'].forEach(id => {
-                const b = D.getElementById(id).getBoundingClientRect();
+            // ⚠ v1570 で見る相手を変えた（案C 段②）: 課題の行き先と「やめる」はキャンバス上端の名札へ移り、
+            //   帯の #ws-quest-head / #btn-quest-quit は名札が出ているあいだ畳む。帯に残る押しもの
+            //   （↻ はじめから）と名札の「やめる」が画面の中にあることを見る
+            assert(D.getElementById('canvas-mode-badge').getAttribute('data-mode') === 'quest', `${name}: 課題の名札が出ていない`);
+            [['btn-quest-restart', D.getElementById('btn-quest-restart')],
+             ['名札のやめる', D.querySelector('#canvas-mode-badge .cmb-stop')]].forEach(([id, el]) => {
+                const b = el.getBoundingClientRect();
                 assert(b.width > 0 && b.top >= -1 && b.bottom <= W.innerHeight + 1,
                     `${name}: #${id} が画面の外（y=${Math.round(b.top)}〜${Math.round(b.bottom)} / 画面 ${W.innerHeight}）`);
                 assert(b.height >= 30, `${name}: #${id} の高さが ${Math.round(b.height)}px（帯の押しものの床は 34px）`);
@@ -35461,7 +35555,10 @@
         // 名札の「幹」＝ 丸括弧の件数を落とした部分。**2か所で同じ語を使う**ことを機械で見張る
         // （U3 でボタンの文言を変えたのに案内を直し忘れると、ここで赤くなる）
         const stem = btn.textContent.split('（')[0].trim();
-        assert(stem === '⚗ 反応させる・調べる', `作業帯のボタンの名札が変わっている（${stem}）`);
+        // ⚠ v1570 で期待値を変えた（案C 段③「コンパクトにして1段」）: 名札を「⚗ 反応させる」に縮めた。
+        //   資料（reference-src・この便では触らない）はまだ「⚗ 反応させる・調べる」と書いており、
+        //   下の includes は前方一致で通る ＝ **資料の語の直しは統合側へ申し送り**
+        assert(stem === '⚗ 反応させる', `作業帯のボタンの名札が変わっている（${stem}）`);
 
         /* ⚠⚠ **案内の置き場所が v1513 で変わった**。以前は 📚 学習の ⚗️ アコーディオンの中の
            `#rx-viewer-note` に在ったが、**その札ごと撤去した**（ユーザー決定 2026-09-03）。
@@ -35492,13 +35589,13 @@
             return btn.textContent;
         };
         const eth = await summon('エタノール');
-        assert(/（反応 \d+件）/.test(eth), `エタノールで件数が出ていない（${eth}）`);
+        assert(/（\d+件）/.test(eth), `エタノールで件数が出ていない（${eth}）`);   // v1570: （反応 N件）→（N件）
         assert(eth.split('（')[0].trim() === stem, `件数が付くと名札が変わる（${eth}）＝ U3 の案3`);
         c.reset();
         g.setMode('free');
         g.syncInspectButton();
         const zero = btn.textContent;
-        assert(/（反応 —）/.test(zero), `0件のときに「反応 —」でない（${zero}）`);
+        assert(/（—）/.test(zero), `0件のときに「（—）」でない（${zero}）`);
         assert(zero.split('（')[0].trim() === stem,
             `0件のときに名札が変わっている（${zero} ／ ${eth}）＝ U3 の案3を踏んでいる`);
     });
@@ -37004,14 +37101,14 @@
         const input = D.getElementById('summon-input');
 
         // (1) 何も無いときは「反応 —」（0件を数字で書かない）
-        assert(/反応 —/.test(inspect.textContent),
+        assert(/（—）/.test(inspect.textContent),   // v1570: 「（反応 —）」→「（—）」
             `空のキャンバスで件数が「—」でない（${inspect.textContent}）`);
 
         // (2) **「-OH を付けた瞬間に酸化ボタンが生える」気づきを件数の変化として残す**（§4-2）。
         //     メタン → エタノール で、ラベルの数字が増える。ラベルは常に実数と一致する
         const label = () => {
             const n = W.reactor.executableCount;
-            assert(inspect.textContent.includes(n > 0 ? `反応 ${n}件` : '反応 —'),
+            assert(inspect.textContent.includes(n > 0 ? `（${n}件）` : '（—）'),
                 `件数がライブ更新されていない（${inspect.textContent} / 実際は ${n}件）`);
             return n;
         };
@@ -39092,7 +39189,9 @@
             assert(btns.length === 4, `作業帯の押しものが4つでない（${btns.length}）`);
             assert(btns.filter(b => /並べ直す/.test(b.textContent)).length === 1,
                 '「🧹 並べ直す」が帯に無い（W4・§12-5）');
-            btns.forEach(b => {
+            // ⚠ v1570: 「やめる」は名札に出ている間は帯から畳む（.ws-quit）ので、床を測るのは
+            //   帯に見えている3つ ＋ 名札の「やめる」
+            [...btns.filter(b => !b.classList.contains('ws-quit')), D.querySelector('#canvas-mode-badge .cmb-stop')].forEach(b => {
                 const r = b.getBoundingClientRect();
                 assert(r.width > 0 && r.height >= 32,
                     `${b.textContent} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
@@ -39529,7 +39628,20 @@
                 // ② それでも お題名・分子式・構造判定・お手本 が見えている
                 const strip = D.getElementById('work-strip');
                 assert(strip && !strip.classList.contains('hidden'), `${name}: 作業帯が出ていない`);
-                ['target-name', 'target-formula', 'btn-verify', 'btn-show-target'].forEach(id => {
+                // ⚠ v1570 で見る相手を変えた（案C 段②）: お題名・分子式は**キャンバス上端の名札**が出す。
+                //   帯の #target-name / #target-formula は id を残したまま、名札が出ているあいだ行ごと畳む
+                ['target-name', 'target-formula'].forEach(id => {
+                    const el = D.getElementById(id);
+                    assert(el && strip.contains(el), `${name}: #${id} が消えている（id を消さない不変条件）`);
+                });
+                const plate = D.getElementById('canvas-mode-badge');
+                const st = g._stagePlate || {};
+                assert(!plate.classList.contains('hidden') && plate.getAttribute('data-mode') === 'puzzle' &&
+                    st.name && plate.textContent.includes(st.name) && plate.textContent.includes(st.formula),
+                    `${name}: 名札にお題名と分子式が無い（${plate.textContent}）`);
+                const pr = plate.getBoundingClientRect();
+                assert(pr.width > 0 && pr.height > 0, `${name}: お題の名札が見えていない`);
+                ['btn-verify', 'btn-show-target'].forEach(id => {
                     const el = D.getElementById(id);
                     assert(el, `${name}: #${id} が消えている（id を消さない不変条件）`);
                     assert(strip.contains(el), `${name}: #${id} が作業帯のお題ストリップの外にある`);
@@ -39538,7 +39650,7 @@
                         `${name}: #${id} が見えていない（${Math.round(r.width)}×${Math.round(r.height)}）`);
                 });
                 // ③ 押しものは 32px の床を守る（§2-5）
-                ['btn-verify', 'btn-show-target', 'ws-target-head'].forEach(id => {
+                ['btn-verify', 'btn-show-target', 'btn-puzzle-pick'].forEach(id => {
                     const r = D.getElementById(id).getBoundingClientRect();
                     assert(r.height >= 32,
                         `${name}: #${id} が ${Math.round(r.width)}×${Math.round(r.height)}（32px の床を割っている）`);
@@ -39626,28 +39738,25 @@
         }
     });
 
-    test('RB11: 化合物名チップが PC でも出る（`.mobile-only` を外した）', async (c) => {
-        // §5-2 の 41。名前・分子式は右パネルの「🔍 いま描いている分子」にしか無く、
-        // PC でも視線がキャンバスから離れていた。右パネルは第5段で消えるので、
-        // ここが名前の**常設の置き場所**になる
+    /* ⚠ RB11 の期待値を v1570 で変えた（案C 段③・ユーザー決定「左下の小さい分子式表示はカット」）。
+     *   §5-2 の 41 で「PC でも出す」にした左下の札を、**ふだんの画面からは外した**。
+     *   名前と分子式の常設の置き場所は分子の見出し（🔍 エタノール C₂H₆O）に移った（UM11 が見る）。
+     *   ここでは「中身は今までどおり組み立てられる（短尺の収録で使う）」「ふだんは出ない」
+     *   「短尺の収録では出る」の3つを見る */
+    test('RB11: 化合物名チップは中身を組み立て続け、ふだんは出さず、短尺の収録でだけ出す（v1570）', async (c) => {
         const chip = c.D.getElementById('mobile-name-chip');
-        assert(chip, '化合物名チップが無い');
-        assert(!chip.classList.contains('mobile-only'),
-            'チップに .mobile-only が残っている（PC で出ない）');
-        // 共有の iframe は幅が広い（＝ PC レイアウト）。ここで出ることが「PC でも出る」の証明
+        assert(chip, '化合物名チップが無い（短尺の収録の見せ場で使う）');
         c.reset();
         c.game.setMode('free');
         c.game.summonMolecule('エタノール');
-        assert(c.W.getComputedStyle(chip).display !== 'none', 'PC でチップが display:none');
-        assert(chip.getClientRects().length > 0, 'PC でチップの矩形が出ない');
         assert(/エタノール/.test(chip.textContent) && /C₂H₆O/.test(chip.textContent),
-            `PC のチップに名称と分子式が出ない（${chip.textContent}）`);
-        // 帯とぶつからない（--work-strip-h ぶん上へ逃げる）。パズルではお題ストリップが出る
-        c.game.setMode('puzzle');
-        const strip = c.D.getElementById('work-strip').getBoundingClientRect();
-        const cr = chip.getBoundingClientRect();
-        assert(cr.bottom <= strip.top + 1,
-            `チップ（下端 ${Math.round(cr.bottom)}）がお題ストリップ（上端 ${Math.round(strip.top)}）に重なる`);
+            `チップの中身に名称と分子式が組み立てられていない（${chip.textContent}）`);
+        assert(c.W.getComputedStyle(chip).display === 'none', 'ふだんの画面で左下の札が出ている（カットの決定）');
+        c.D.documentElement.classList.add('rec-short');
+        try {
+            assert(c.W.getComputedStyle(chip).display !== 'none' && chip.getClientRects().length > 0,
+                '短尺の収録で名前の札が出ない（見せ場が崩れる）');
+        } finally { c.D.documentElement.classList.remove('rec-short'); }
         c.game.userMolecule = new c.W.Molecule();
         c.game.updateDrawing();
         c.game.setMode('free');
@@ -40231,21 +40340,27 @@
             押せた++;
         }
         assert(押せた === 3, `タイルを確かめたモードが ${押せた} 個（3モードであるべき）`);
-        // ⑤ パズルから押すと 🧪自由へ移り、モーダルが開く
+        // ⑤ パズルから押すとモーダルが開く。⚠ v1570 で期待値を変えた: **開いただけでは自由へ移らない**
+        //   （案C 段①。以前は押した瞬間に黙ってパズルが終わり、閉じても戻らなかった ＝ 棚卸し A13）。
+        //   移るのは⑦で実際に呼び出したとき
         g.setMode('puzzle');
         const pm = D.getElementById('puzzle-modal'); if (pm) pm.classList.add('hidden');
         tile.click();
-        assert(g.currentMode === 'free', `タイルを押しても自由モードにならない（${g.currentMode}）`);
+        assert(g.currentMode === 'puzzle', `タイルを押しただけでパズルが終わった（${g.currentMode}）`);
         assert(!modal.classList.contains('hidden'), 'タイルを押してもモーダルが開かない');
+        assert(/パズルを終えて自由モード/.test(D.getElementById('summon-modal-msg').textContent),
+            `呼び出すとパズルが終わることを開いた時点で言っていない: ${D.getElementById('summon-modal-msg').textContent}`);
         // ⑥ 引けない名前では**閉じない**（閉じると打ち直す場所が無くなる）
         mInput.value = 'この名前はライブラリに無いはず';
         D.getElementById('btn-summon-ok').click();
         assert(!modal.classList.contains('hidden'), '引けない名前でモーダルが閉じてしまう');
-        assert(D.getElementById('summon-modal-msg').textContent.length > 0, '引けない名前の案内が出ない');
+        // ⚠ v1570: ⑤で開いた時点の1行が入っているので、「空でない」ではなく文で見る
+        assert(/ライブラリにありません/.test(D.getElementById('summon-modal-msg').textContent), '引けない名前の案内が出ない');
         // ⑦ 正しい名前なら閉じて、分子が出る
         mInput.value = '酢酸';
         D.getElementById('btn-summon-ok').click();
         assert(modal.classList.contains('hidden'), '呼び出した後もモーダルが開いたまま');
+        assert(g.currentMode === 'free', `呼び出しても自由モードにならない（${g.currentMode}）`);
         assert(g.userMolecule.atoms.filter(a => a.element === 'C').length === 2 &&
                g.userMolecule.atoms.filter(a => a.element === 'O').length === 2,
             `🔤 呼出で酢酸が出ない（C${g.userMolecule.atoms.filter(a => a.element === 'C').length}` +
@@ -40296,8 +40411,13 @@
             // 「移動する」を押せば、そこで初めて開く
             D.getElementById('btn-confirm-ok').click();
             assert(!modal.classList.contains('hidden'), '確認を承諾しても呼び出しモーダルが開かない');
-            assert(畳まれた === 1, `承諾後に練習が畳まれた回数が ${畳まれた}（1回であるべき）`);
-            D.getElementById('btn-summon-cancel').click();
+            // ⚠ v1570 で期待値を変えた: モードを移す（＝練習を畳む）のは**開いたとき**ではなく
+            //   **実際に呼び出したとき**（案C 段①「開いただけで黙ってモードを移さない」）。
+            //   確認を挟む位置（開く前）は変えていないので、このテストの芯はそのまま
+            assert(畳まれた === 0, `開いただけで練習が畳まれた（${畳まれた} 回）`);
+            D.getElementById('summon-modal-input').value = '酢酸';
+            D.getElementById('btn-summon-ok').click();
+            assert(畳まれた === 1, `呼び出したあとに練習が畳まれた回数が ${畳まれた}（1回であるべき）`);
         } finally {
             c.W.isomerPractice = 退避;
         }
@@ -44245,8 +44365,10 @@
                 // ① 段も高さも増えない（実装前の実測値）
                 assert(D.querySelectorAll('#ws-puzzle .ws-row').length === 2,
                     `${name}: お題ストリップが ${D.querySelectorAll('#ws-puzzle .ws-row').length} 段になっている（2段のはず）`);
-                assert(Math.abs(strip.getBoundingClientRect().height - 88) <= 1,
-                    `${name}: 作業帯が ${Math.round(strip.getBoundingClientRect().height)}px（実装前は 88px）`);
+                // ⚠ v1570 で期待値を変えた（案C 段②）: お題名の行（1段目）は名札が出すので畳み、
+                //   帯は 88 → 49px（1段）に**縮んだ**。芯の「段を増やさない」は「88px を超えない」で見る
+                assert(strip.getBoundingClientRect().height <= 88 + 1,
+                    `${name}: 作業帯が ${Math.round(strip.getBoundingClientRect().height)}px（実装前は 88px ＝ これを超えない）`);
                 // ② 入口は帯ではなくお題モーダルの中（母集団を決める #select-series と同じ面）
                 const btn = D.getElementById('btn-random-stage');
                 assert(btn, `${name}: 🎲 の入口が無い`);
@@ -57619,7 +57741,8 @@
         const { marks: mk2 } = g.markedMolecules(null);
         assert(mk2.size === 0, '塩1つなのに ①② の番号が振られた');
         // 見出しは塩の名前（ION5 で登録済み）。⚠ 粒が付かないと「🔍 C₆H₈N」（陽イオンだけの分子式）になる
-        assert(g.captionForPart(parts[0], null) === '🔍 アニリン塩酸塩', `見出しが ${g.captionForPart(parts[0], null)}（アニリン塩酸塩 のはず。C₆H₈N と Cl に割れてはいけない）`);
+        // ⚠ v1570: 1分子の見出しにも分子式を添えるようになった（案C 段③）
+        assert(g.captionForPart(parts[0], null) === '🔍 アニリン塩酸塩 C₆H₈ClN',`見出しが ${g.captionForPart(parts[0], null)}（アニリン塩酸塩 のはず。C₆H₈N と Cl に割れてはいけない）`);
         // (4) 同じ塩が2つ: それぞれの Cl⁻ が**いちばん近い**相方に付く（横取りしない）
         const second = g.createTargetFromData({ target: ionAnilineHClTarget(300) });
         second.atoms.forEach(a => g.userMolecule.atoms.push(a));
@@ -57674,7 +57797,8 @@
         assert(g.lookupCompoundName(parts[0]) === NAME, `見出しの名前が「${g.lookupCompoundName(parts[0])}」`);
         assert(g.lookupCompoundName(g.userMolecule) === NAME, 'キャンバス全体でも名前が引けない');
         const cap = g.captionForPart(parts[0], null);
-        assert(cap === `🔍 ${NAME}`, `見出しが「${cap}」`);
+        // ⚠ v1570: 1分子の見出しにも分子式を添えるようになった（案C 段③）
+        assert(cap === `🔍 ${NAME} C₆H₈ClN`, `見出しが「${cap}」`);
         const label = g.computeCompoundLabel();
         assert(label.name === NAME && label.formula === 'C₆H₈ClN', `右パネルの名前・分子式が ${label.name} / ${label.formula}`);
         // 図: + と − の印が1つずつ・Cl⁻ に H が生えない・-NH₃⁺ に H が3つ
@@ -58275,6 +58399,633 @@
 
         c.reset();
         return '酸素を選んだ状態から3本とも炭素で始まる（エタン／エタノール／プロパン）';
+    });
+
+    /* ===== UM: モードの抜け方（v1570・案C・ユーザー決定 2026-09-15〜16） =====
+     *
+     * ★ 申し立て: 「分液モードや、反応相手を選ぶモードから抜けているかどうかがわかりづらい」。
+     * ★ 決まったこと（段①）: やめたら「〜を終了しました」／自由モードに入ったら名札に
+     *   「自由モード」を5秒／「閉じる」ではモードを変えない／知らせなしのモード移動をなくす。
+     * ⚠ 知らせは**人の操作のときだけ**出す（台本の無人再生の画に字幕を足さない）。テストの合成
+     *   イベントは人の操作ではないので、知らせを見る回だけ `_modeNoticeForTest` で数える。
+     *   ＝ 否定対照の1つが「旗を下ろすと合成の操作では何も出ない」。 */
+    const umToast = (c) => {
+        const t = c.D.getElementById('canvas-toast');
+        return t.classList.contains('hidden') ? '' : t.textContent;
+    };
+    const umBadge = (c) => {
+        const b = c.D.getElementById('canvas-mode-badge');
+        return b.classList.contains('hidden') ? null : { mode: b.getAttribute('data-mode'), text: b.textContent };
+    };
+    /** 知らせを数える状態で fn を走らせ、後片付け（名札の5秒・旗）まで必ず戻す */
+    const umWithNotice = async (c, fn) => {
+        const g = c.game;
+        g._modeNoticeForTest = true;
+        try { return await fn(); } finally {
+            g._modeNoticeForTest = false;
+            g._freePlateUntil = 0;
+            clearTimeout(g._freePlateTimer);
+            g.hideCanvasToast();
+            g.syncCanvasModeBadge();
+        }
+    };
+    const umSettle = (c) => c.tick(40);   // 見比べは操作が終わった後（setTimeout 0）
+    /** 前のテストが開いたまま残したモーダル・重ね面を閉じる（学習の「やめる」の行き先が変わるため） */
+    const umCloseSurfaces = (c) => {
+        c.D.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
+        ['ip-review-overlay', 'rx-compare-overlay', 'ak-review-overlay', 'sp-review-overlay']
+            .forEach(id => { const el = c.D.getElementById(id); if (el) el.classList.add('hidden'); });
+    };
+
+    test('UM1: モードをやめると「〜を終了しました」と名札「自由モード」が出る（分液・分子選び・パズル・練習・機構。否定対照つき）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        const 見た = [];
+        await umWithNotice(c, async () => {
+            // ---- 分液 ----
+            c.reset(); g.setMode('free'); g.summonMolecule('安息香酸'); await umSettle(c);
+            g.hideCanvasToast();
+            g.startSeparation(); await umSettle(c);
+            // ★ 否定対照①: 入っただけでは「終了しました」も「自由モード」も出ない
+            assert(!/終了しました/.test(umToast(c)), `分液に入っただけで終了の知らせが出た: ${umToast(c)}`);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '分液に入っただけで名札が「自由モード」');
+            D.getElementById('btn-sep-end').click(); await umSettle(c);
+            assert(umToast(c) === '分液を終了しました', `分液をやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free' && /自由モード/.test(umBadge(c).text),
+                `分液をやめても名札が「自由モード」にならない: ${JSON.stringify(umBadge(c))}`);
+            見た.push('分液');
+
+            // ---- 反応させる分子選び（名札の「やめる」）----
+            rxFreeCanvasWithMolecule(c); await umSettle(c);
+            rxTurnOnMoleculeSelect(c); await umSettle(c);
+            g.hideCanvasToast();
+            D.querySelector('#canvas-mode-badge .cmb-stop').click(); await umSettle(c);
+            assert(!g.reactionSelectMode, '前提: 名札の「やめる」で選ぶモードが下りない');
+            assert(umToast(c) === '反応させる分子選びを終了しました', `分子選びをやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', `分子選びをやめても「自由モード」が出ない: ${JSON.stringify(umBadge(c))}`);
+            見た.push('分子選び');
+
+            // ---- パズル（お題モーダルの「やめる」）----
+            c.reset(); await umSettle(c);
+            const back = D.getElementById('btn-back-to-free');
+            assert(back.textContent.trim() === 'やめる', `お題モーダルの抜ける札が「${back.textContent.trim()}」`);
+            back.click(); await umSettle(c);
+            assert(g.currentMode === 'free', 'お題モーダルの「やめる」でパズルを抜けない');
+            assert(umToast(c) === 'パズルを終了しました', `パズルをやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', 'パズルをやめても「自由モード」が出ない');
+            見た.push('パズル');
+
+            // ---- 書き出し練習（帯の「やめる」）----
+            c.reset(); umCloseSurfaces(c); await umSettle(c);
+            await lxStart(c, 'ip-body', /^C₄H₁₀/); await umSettle(c);
+            g.hideCanvasToast();
+            lxStripBtn(c, /やめる/).click(); await umSettle(c);
+            assert(g.currentMode === 'free', '練習の「やめる」で自由へ移らない');
+            assert(umToast(c) === '書き出し練習を終了しました', `練習をやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', '練習をやめても「自由モード」が出ない');
+            見た.push('書き出し練習');
+
+            // ---- 反応機構ビューア（帯の「やめる」）----
+            c.reset(); g.setMode('learn'); await umSettle(c);
+            const sel = D.getElementById('select-reaction');
+            sel.value = '0'; sel.dispatchEvent(new W.Event('change', { bubbles: true }));
+            await umSettle(c);
+            assert(W.reactionPlayer.active, '前提: ビューアが始まらない');
+            g.hideCanvasToast();
+            D.getElementById('btn-rx-exit').click(); await umSettle(c);
+            assert(umToast(c) === '反応機構を終了しました', `機構をやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', `機構をやめても「自由モード」が出ない（${g.currentMode}）`);
+            見た.push('反応機構');
+        });
+
+        // ★ 否定対照②: 知らせを数えない（＝ 台本・テストの合成の操作）と、何も出ない
+        c.reset(); g.setMode('free'); g.summonMolecule('安息香酸'); await umSettle(c);
+        g.startSeparation(); await umSettle(c);
+        g.hideCanvasToast();
+        D.getElementById('btn-sep-end').click(); await umSettle(c);
+        assert(!/終了しました/.test(umToast(c)), `合成の操作なのに知らせが出た（台本の画に入る）: ${umToast(c)}`);
+        assert(!umBadge(c), '合成の操作なのに名札「自由モード」が出た');
+        c.reset();
+        return `知らせを確かめたモード: ${見た.join('・')}`;
+    });
+
+    test('UM2: 名札「自由モード」は5秒で消える（否定対照: 4秒の時点ではまだ出ている）', async (c) => {
+        const g = c.game, D = c.D;
+        await umWithNotice(c, async () => {
+            c.reset(); await umSettle(c);
+            D.getElementById('btn-back-to-free').click(); await umSettle(c);
+            const b = D.getElementById('canvas-mode-badge');
+            assert(umBadge(c) && umBadge(c).mode === 'free', '前提: パズルをやめても名札「自由モード」が出ない');
+            // 押しものは持たない（読むだけの札）・消え方は CSS のフェード
+            assert(!b.querySelector('button'), '「自由モード」の札に押しものがある');
+            assert(/cmb-free-fade/.test(c.W.getComputedStyle(b).animationName), 'フェードの指定が当たっていない');
+            await c.tick(4000);
+            assert(umBadge(c) && umBadge(c).mode === 'free', '★ 否定対照: 4秒で消えている（5秒を待たずに消える実装）');
+            await c.tick(1300);
+            assert(!umBadge(c), '★ 5秒を過ぎても「自由モード」が残っている');
+            // 何かのモードに入ったら、5秒を待たずに引っ込む
+            g.setMode('puzzle'); await umSettle(c);
+            g.setMode('free'); await umSettle(c);
+            assert(umBadge(c) && umBadge(c).mode === 'free', '前提: 2回目の「自由モード」が出ない');
+            g.startSeparation(); await umSettle(c);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '分液に入っても「自由モード」が残っている');
+            g.endSeparation();
+        });
+        c.reset();
+    });
+
+    test('UM3: 「閉じる」ではモードを変えない（CLEAR・お題・クイズ）／「やめる」は抜ける（否定対照）', async (c) => {
+        const g = c.game, D = c.D;
+        // ① CLEAR の「閉じる」はパズルに残る
+        c.reset();
+        const win = D.getElementById('win-modal');
+        win.classList.remove('hidden');
+        assert(D.getElementById('btn-win-close').textContent.trim() === '閉じる',
+            `CLEAR の閉じる札が「${D.getElementById('btn-win-close').textContent.trim()}」`);
+        D.getElementById('btn-win-close').click();
+        assert(win.classList.contains('hidden'), 'CLEAR の「閉じる」で閉じない');
+        assert(g.currentMode === 'puzzle', `★ CLEAR の「閉じる」でパズルを抜けた（${g.currentMode}）`);
+        // ★ 否定対照: CLEAR の「やめる」は抜ける
+        win.classList.remove('hidden');
+        D.getElementById('btn-win-quit').click();
+        assert(win.classList.contains('hidden') && g.currentMode === 'free',
+            `CLEAR の「やめる」でパズルを抜けない（${g.currentMode}）`);
+        // ② お題モーダルの「閉じる」はパズルに残る
+        c.reset();
+        g.setPuzzleOpen(true);
+        D.getElementById('btn-puzzle-close').click();
+        assert(g.currentMode === 'puzzle', `お題モーダルの「閉じる」でパズルを抜けた（${g.currentMode}）`);
+        // ③ 学習メニューから開いたクイズの「閉じる」は学習に残り、メニューへ戻る
+        c.reset();
+        lxOpenStudy(c);
+        D.getElementById('btn-quiz').click();
+        D.getElementById('btn-quiz-close').click();
+        assert(g.currentMode === 'learn', `クイズの「閉じる」で学習を抜けた（${g.currentMode}）`);
+        assert(!D.getElementById('study-modal').classList.contains('hidden'), 'クイズを閉じても学習メニューに戻らない');
+        D.getElementById('btn-study-close').click();
+        // ④ 抜ける札の語は「やめる」、閉じるだけの札は「閉じる」
+        const 札 = (id) => D.getElementById(id).textContent.trim();
+        assert(札('btn-sep-end') === 'やめる', `分液の抜ける札が「${札('btn-sep-end')}」`);
+        assert(札('btn-back-to-free') === 'やめる', `お題モーダルの抜ける札が「${札('btn-back-to-free')}」`);
+        assert(札('btn-nring-cancel') === '閉じる', `員数選びの閉じる札が「${札('btn-nring-cancel')}」`);
+        assert(札('btn-nw-filter-clear') === '条件を消す',
+            `絞り込みの解除が「${札('btn-nw-filter-clear')}」（やめる はモードの出口の語）`);
+        c.reset();
+    });
+
+    test('UM4: 知らせなしのモード移動が無い（パズル中の 🔤呼出・答え合わせ。否定対照つき）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        await umWithNotice(c, async () => {
+            // ① パズル中に 🔤呼出を開いて閉じても、パズルのまま
+            c.reset(); await umSettle(c);
+            D.getElementById('btn-summon').click(); await umSettle(c);
+            assert(g.currentMode === 'puzzle', `★ 🔤呼出を開いただけでパズルを抜けた（${g.currentMode}）`);
+            D.getElementById('btn-summon-cancel').click(); await umSettle(c);
+            assert(g.currentMode === 'puzzle', `★ 🔤呼出を閉じたらパズルを抜けていた（${g.currentMode}）`);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '閉じただけで「自由モード」が出た');
+            // ★ 否定対照: 実際に呼び出せば自由へ移る —— そのとき名札「自由モード」が出る（黙っては移らない）
+            D.getElementById('btn-summon').click();
+            D.getElementById('summon-modal-input').value = 'エタノール';
+            D.getElementById('btn-summon-ok').click(); await umSettle(c);
+            assert(g.currentMode === 'free', '呼び出しても自由へ移らない');
+            assert(umBadge(c) && umBadge(c).mode === 'free', '★ 呼び出しでパズルを抜けたのに「自由モード」が出ない（黙って移った）');
+
+            // ② 書き出し練習の答え合わせでは学習に残る
+            c.reset(); await umSettle(c);
+            await lxStart(c, 'ip-body', /^C₄H₁₀/);
+            let prev = null;
+            for (let i = 0; i < 4; i++) {
+                const a = g.userMolecule.addAtom('C', 200 + i * 42, 300);
+                if (prev) g.userMolecule.addBond(prev.id, a.id, 1);
+                prev = a;
+            }
+            g.updateDrawing(); W.isomerPractice.onDrawingChange();
+            lxStripBtn(c, /答え合わせ/).click(); await umSettle(c);
+            assert(g.currentMode === 'learn', `★ 答え合わせで学習を抜けた（${g.currentMode}）`);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '答え合わせで「自由モード」が出た');
+            W.isomerPractice.closeReview();
+        });
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        c.reset();
+    });
+
+    /* ===== UM5〜UM6: 全モード共通の名札（v1570・案C 段②） ===== */
+    const umPlate = (c) => {
+        const b = umBadge(c);
+        return b && b.mode !== 'free' ? b : null;
+    };
+    const umPlateStop = (c) => c.D.querySelector('#canvas-mode-badge .cmb-stop');
+    const umHidden = (c, sel) => {
+        const el = c.D.querySelector(sel);
+        return !el || c.W.getComputedStyle(el).display === 'none' || el.getBoundingClientRect().height === 0;
+    };
+
+    test('UM5: 各モードで名札が出て、名札の「やめる」でそのモードを抜ける（否定対照: 自由では出ない・短尺収録では出ない）', async (c) => {
+        const g = c.game, D = c.D, W = c.W, rp = W.reactionPlayer;
+        const 見た = [];
+        const 確かめる = async (name, mode, re, 抜けた) => {
+            await umSettle(c);
+            const p = umPlate(c);
+            assert(p && p.mode === mode, `${name}: 名札が「${mode}」で出ない（${JSON.stringify(umBadge(c))}）`);
+            assert(re.test(p.text), `${name}: 名札の文「${p.text}」が ${re} に合わない`);
+            const stop = umPlateStop(c);
+            assert(stop && stop.textContent.trim() === 'やめる', `${name}: 名札に「やめる」が無い`);
+            assert(stop.getBoundingClientRect().height >= 32, `${name}: 「やめる」が 32px を割る`);
+            // 1行に収まる（小さい字の2行目を持たない）
+            assert(!D.querySelector('#canvas-mode-badge .cmb-note'), `${name}: 名札に但し書きの行がある`);
+            stop.click(); await umSettle(c);
+            assert(抜けた(), `${name}: 名札の「やめる」でモードを抜けない`);
+            assert(!umPlate(c) || umPlate(c).mode !== mode, `${name}: やめたのに名札が残る`);
+            見た.push(name);
+        };
+        // ★ 否定対照①: 自由で何もしていなければ名札は無い
+        c.reset(); g.setMode('free'); g.summonMolecule('エタノール'); await umSettle(c);
+        assert(!umPlate(c), `自由モードなのに名札が出ている: ${JSON.stringify(umBadge(c))}`);
+
+        c.reset();
+        await 確かめる('パズル', 'puzzle', /組み立てよう/, () => g.currentMode === 'free');
+
+        c.reset(); g.setMode('free'); g.summonMolecule('安息香酸'); g.startSeparation();
+        await 確かめる('分液', 'sep', /分液.*層に分けよう/, () => !g.separationActive);
+
+        rxFreeCanvasWithMolecule(c); rxTurnOnMoleculeSelect(c);
+        await 確かめる('分子選び', 'reaction-select', /反応させる分子.*タップしよう/, () => !g.reactionSelectMode);
+
+        c.reset(); g.setMode('free'); g.userMolecule = new W.Molecule(); g.summonMolecule('2-メチルブタン');
+        D.getElementById('btn-iupac-numbering').click();
+        await 確かめる('主鎖と番号', 'numbering', /2-メチルブタン.*主鎖と番号/, () => !g.iupacNumbering);
+
+        c.reset(); g.setMode('free'); g.userMolecule = new W.Molecule(); g.updateDrawing();
+        assert(g.startQuest('eq-ethanol-ethene').ok !== false, '課題が始まらない');
+        await 確かめる('課題', 'quest', /エタノール → エチレン.*にしよう/, () => !g.currentQuest);
+
+        c.reset(); await lxStart(c, 'ip-body', /^C₄H₁₀/);
+        await 確かめる('書き出し練習', 'practice', /C₄H₁₀.*ぜんぶ描こう/, () => !W.isomerPractice.active);
+
+        c.reset(); g.setMode('learn'); assert(rp.openById('ethanol_e1'), 'ethanol_e1 が開けない');
+        await umSettle(c);
+        // ★ 反応名から「（〜生成）」を落とす（ユーザー決定 7）
+        assert(umPlate(c) && !/生成/.test(umPlate(c).text), `機構の名札に「（〜生成）」が残っている: ${umPlate(c) && umPlate(c).text}`);
+        assert(/ステップ 1 \/ /.test(umPlate(c).text), `機構の名札にステップが無い: ${umPlate(c).text}`);
+        await 確かめる('反応機構', 'mechanism', /エタノールの分子内脱水.*電子の動きを見よう/, () => !rp.active);
+
+        c.reset(); g.setMode('learn'); rp.openById('esterification'); rp.startPrediction();
+        await 確かめる('生成物予測', 'predict', /エステル化 の主生成物を描こう/, () => !rp.prediction && rp.active);
+        assert(umPlate(c) && umPlate(c).mode === 'mechanism', '予測をやめたら機構の名札に戻らない');
+        rp.exit();
+
+        // ★ 否定対照②: 短尺の収録（.rec-short）では、v1570 で増えた名札は出さない（台本の画を変えない）
+        c.reset();
+        D.documentElement.classList.add('rec-short');
+        try {
+            g.syncCanvasModeBadge();
+            assert(!umPlate(c), `短尺の収録なのにパズルの名札が出ている: ${JSON.stringify(umBadge(c))}`);
+            assert(!umHidden(c, '#ws-target-head'), '名札を出さない回なのに、帯のお題名の行が畳まれている');
+        } finally {
+            D.documentElement.classList.remove('rec-short');
+            g.syncCanvasModeBadge();
+        }
+        c.reset();
+        return `名札を確かめたモード: ${見た.join('・')}`;
+    });
+
+    /* ===== UM7〜UM8: 選択中の道具の札（v1570・ユーザー決定 2026-09-17「見本 B」） ===== */
+    const umChip = (c, D = c.D) => {
+        const el = D.getElementById('canvas-tool-chip');
+        return el && !el.classList.contains('hidden') && el.getBoundingClientRect().height > 0 ? el.textContent : null;
+    };
+
+    test('UM7: 道具を替えると選択中の札が変わり、自由モードでは5秒で消える（否定対照: 作業中は消えない・合成の操作では出ない）', async (c) => {
+        const g = c.game, D = c.D;
+        await umWithNotice(c, async () => {
+            c.reset(); g.setMode('free'); g.summonMolecule('エタノール'); await umSettle(c);
+            g._toolChipUntil = 0; g.syncToolChip();
+            assert(!umChip(c), `道具を替えていないのに札が出ている: ${umChip(c)}`);
+            D.querySelector('.atom-btn.atom-o').click(); await umSettle(c);
+            assert(umChip(c) && /酸素を置く/.test(umChip(c)), `酸素を選んでも札が「酸素を置く」にならない: ${umChip(c)}`);
+            D.querySelector('.mod-btn[data-module="benzene"]').click(); await umSettle(c);
+            assert(/ベンゼン環を置く/.test(umChip(c) || ''), `ベンゼン環を選んでも札が変わらない: ${umChip(c)}`);
+            D.querySelector('.mod-btn[data-module="benzene"]').click();          // 解除
+            D.getElementById('btn-tool-erase').click(); await umSettle(c);
+            assert(/消しゴム/.test(umChip(c) || ''), `消しゴムを選んでも札が変わらない: ${umChip(c)}`);
+            D.getElementById('btn-cistrans-reshape').click(); await umSettle(c);
+            assert(/シス\/トランス/.test(umChip(c) || ''), `⇄ を ON にしても札に出ない: ${umChip(c)}`);
+            assert(!umPlate(c), '⇄ の ON が名札のモードになっている（札で見せる決定）');
+            D.getElementById('btn-cistrans-reshape').click();
+            D.getElementById('btn-tool-select').click(); await umSettle(c);
+            // 5秒で消える（4秒ではまだ出ている）
+            await c.tick(4000);
+            assert(umChip(c), '★ 否定対照: 4秒で札が消えている');
+            await c.tick(1300);
+            assert(!umChip(c), '★ 自由モードで5秒を過ぎても札が残っている');
+
+            // ★ 否定対照①: 描く作業中（パズル）は出したまま消えない
+            c.reset(); await umSettle(c);
+            D.querySelector('.atom-btn.atom-n').click(); await umSettle(c);
+            assert(/窒素を置く/.test(umChip(c) || ''), `パズル中に札が出ない: ${umChip(c)}`);
+            const plate = D.getElementById('canvas-mode-badge').getBoundingClientRect();
+            const chip = D.getElementById('canvas-tool-chip').getBoundingClientRect();
+            assert(chip.top >= plate.bottom, `札が名札の下に並んでいない（名札 ${Math.round(plate.bottom)} / 札 ${Math.round(chip.top)}）`);
+            await c.tick(5300);
+            assert(umChip(c), '★ パズル中なのに5秒で札が消えた（作業中は出したまま）');
+            // 名札がタップの意味を言っている作業（主鎖と番号）では出さない
+            g.setMode('free'); g.userMolecule = new c.W.Molecule(); g.summonMolecule('ブタン');
+            D.getElementById('btn-iupac-numbering').click(); await umSettle(c);
+            assert(!umChip(c), `主鎖と番号の表示中に札が出ている: ${umChip(c)}`);
+            g.toggleIupacNumbering(false);
+        });
+        // ★ 否定対照②: 合成の操作（台本・テスト）では自由モードの札を出さない
+        c.reset(); g.setMode('free'); await umSettle(c);
+        g._toolChipUntil = 0; g.syncToolChip();
+        D.querySelector('.atom-btn.atom-cl').click(); await umSettle(c);
+        assert(!umChip(c), `合成の操作なのに札が出た（台本の画に入る）: ${umChip(c)}`);
+        D.querySelector('.atom-btn.atom-c').click();
+        c.reset();
+    });
+
+    test('UM8: 375px でも名札は1行のまま崩れず、選択中の札はその下に重ならずに並ぶ（否定対照: 上端に置けば重なる）', async () => {
+        for (const [w, h] of [[375, 812], [320, 568]]) {
+            await withViewport(w, h, async (W, D, name) => {
+                const g = W.game;
+                g._modeNoticeForTest = true;
+                try {
+                    g.setMode('puzzle');
+                    D.querySelector('.mod-btn[data-module="benzene"]').click();
+                    await new Promise(r => setTimeout(r, 60));
+                    const wrap = D.getElementById('svg-wrapper').getBoundingClientRect();
+                    const plateEl = D.getElementById('canvas-mode-badge');
+                    const plate = plateEl.getBoundingClientRect();
+                    const stop = plateEl.querySelector('.cmb-stop').getBoundingClientRect();
+                    const chipEl = D.getElementById('canvas-tool-chip');
+                    assert(!chipEl.classList.contains('hidden'), `${name}: 札が出ていない`);
+                    const chip = chipEl.getBoundingClientRect();
+                    assert(plate.height <= 44, `${name}: 名札が ${Math.round(plate.height)}px（1行 40px を超えて折り返した）`);
+                    assert(stop.right <= wrap.right + 1 && stop.left >= wrap.left && stop.height >= 32,
+                        `${name}: 名札の「やめる」がはみ出す・潰れる`);
+                    assert(chip.top >= plate.bottom && chip.right <= wrap.right + 1 && chip.left >= wrap.left - 1,
+                        `${name}: 札が名札と重なる・はみ出す（名札 ${Math.round(plate.bottom)} / 札 ${Math.round(chip.top)}〜）`);
+                    // ★ 否定対照: 札を上端（top 8px）に置いた場合の矩形は名札と重なる ＝ 上の物差しは空振りしていない
+                    const 上端なら = { top: wrap.top + 8, bottom: wrap.top + 8 + chip.height, left: chip.left, right: chip.right };
+                    assert(上端なら.top < plate.bottom && 上端なら.bottom > plate.top && 上端なら.left < plate.right,
+                        `${name}: ⚠ 否定対照が効いていない（上端に置いても名札と重ならない）`);
+                    D.querySelector('.mod-btn[data-module="benzene"]').click();
+                } finally { g._modeNoticeForTest = false; }
+            });
+        }
+    });
+
+    /* ===== UM9〜UM11: 帯を畳む・下の2ボタンを1段・左下の分子式表示を消す（v1570・案C 段③） ===== */
+
+    test('UM9: 下の2ボタン（⚗ 反応させる・🔢 主鎖と番号）は 375/320px でも1段に並ぶ（否定対照: 旧い幅の取り方だと2段になる）', async () => {
+        for (const [w, h] of [[1280, 800], [375, 812], [320, 568]]) {
+            await withViewport(w, h, async (W, D, name) => {
+                const g = W.game;
+                g.setMode('free');
+                assert(g.summonMolecule('エタノール'), `${name}: エタノールが呼び出せない`);
+                await new Promise(r => setTimeout(r, 60));
+                const mm = D.getElementById('btn-molecule-modal'), nb = D.getElementById('btn-iupac-numbering');
+                assert(/^⚗ 反応させる（\d+件）$/.test(mm.textContent), `${name}: ⚗ の名札が「${mm.textContent}」`);
+                assert(nb.textContent === '🔢 主鎖と番号', `${name}: 🔢 の名札が「${nb.textContent}」`);
+                const a = mm.getBoundingClientRect(), b = nb.getBoundingClientRect();
+                assert(Math.abs(a.top - b.top) <= 2 && b.left >= a.right, `${name}: 2ボタンが1段に並ばない（${Math.round(a.top)} / ${Math.round(b.top)}）`);
+                assert(a.height >= 32 && b.height >= 32, `${name}: 押しものの床 32px を割る`);
+                // ★ 否定対照: 旧い名札と「段の残りを全部使う」幅に戻すと、狭い画面では 🔢 が2段目へ落ちる
+                const 元 = [mm.textContent, mm.style.flex];
+                try {
+                    mm.textContent = '⚗ 反応させる・調べる（反応 6件）';
+                    mm.style.flex = '1 1 auto';
+                    nb.textContent = '🔢 主鎖と番号を見る';
+                    const a2 = mm.getBoundingClientRect(), b2 = nb.getBoundingClientRect();
+                    if (w < 900) assert(b2.top > a2.top + 2, `${name}: ⚠ 否定対照が効いていない（旧い取り方でも1段に収まる）`);
+                } finally {
+                    mm.textContent = 元[0]; mm.style.flex = 元[1]; g.syncIupacNumberingButtons();
+                }
+            });
+        }
+    });
+
+    test('UM10: 作業中は自由モードの段を畳む（分液・主鎖と番号・機構は呼び出しも反応させるも／分子選びは呼び出しだけ。否定対照: 自由・短尺収録では畳まない）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        const shown = (sel) => !umHidden(c, sel);
+        c.reset(); g.setMode('free'); g.summonMolecule('エタノール'); await umSettle(c);
+        // ★ 否定対照①: 自由では畳まない
+        assert(shown('#ws-free-summon') && shown('#btn-molecule-modal') && shown('#btn-iupac-numbering'),
+            '自由モードなのに呼び出し／反応させるの段が畳まれている');
+        g.openMoleculeModal(); D.getElementById('btn-reaction-select').click(); D.getElementById('btn-molecule-modal-close').click();
+        await umSettle(c);
+        assert(!shown('#ws-free-summon'), '分子選びのあいだ「名称から呼び出す」が畳まれない');
+        assert(shown('#btn-molecule-modal'), '分子選びのあいだ「⚗ 反応させる」まで畳まれた（選んだあとに要る）');
+        g.deactivateReactionSelectMode(); g.updateDrawing();
+        g.startSeparation(); await umSettle(c);
+        assert(!shown('#ws-free-summon') && !shown('#btn-molecule-modal') && !shown('#btn-iupac-numbering'),
+            '分液のあいだ自由モードの段が畳まれない');
+        // ★ 否定対照②: 短尺の収録では名札を出さないので、帯も畳まない（台本の画を変えない）
+        D.documentElement.classList.add('rec-short');
+        try {
+            g.syncCanvasModeBadge();
+            assert(shown('#ws-free-summon') && shown('#btn-molecule-modal'), '短尺の収録なのに分液で帯が畳まれた');
+        } finally { D.documentElement.classList.remove('rec-short'); g.syncCanvasModeBadge(); }
+        g.endSeparation();
+        D.getElementById('btn-iupac-numbering').click(); await umSettle(c);
+        assert(g.iupacNumbering && !shown('#ws-free-summon') && !shown('#btn-iupac-numbering'), '主鎖と番号のあいだ段が畳まれない');
+        assert(shown('#iupac-parts-row') || !D.getElementById('iupac-parts').children.length,
+            '主鎖と番号のあいだ「名前の部品」の段まで畳まれた');
+        g.toggleIupacNumbering(false); await umSettle(c);
+        assert(shown('#ws-free-summon') && shown('#btn-iupac-numbering'), 'やめたあと段が戻らない');
+        W.reactionPlayer.openById('esterification'); await umSettle(c);
+        assert(!shown('#ws-free'), '機構の再生中に自由モードの段が出ている');
+        W.reactionPlayer.exit(); await umSettle(c);
+        assert(shown('#ws-free-summon'), '機構をやめたあと段が戻らない');
+        c.reset();
+    });
+
+    test('UM11: 左下の分子式表示は出さず、分子の見出しに分子式を添える（否定対照: 短尺の収録では上中央の大きな札のまま）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        c.reset(); g.setMode('free'); g.userMolecule = new W.Molecule(); g.summonMolecule('エタノール'); g.updateDrawing();
+        const chip = D.getElementById('mobile-name-chip');
+        assert(chip.textContent.includes('エタノール'), '前提: 札の中身が組み立てられていない');
+        assert(W.getComputedStyle(chip).display === 'none', `左下の分子式表示が出ている（${chip.textContent}）`);
+        const caps = [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent).filter(s => /^🔍/.test(s));
+        assert(caps.length === 1 && caps[0] === '🔍 エタノール C₂H₆O', `見出しが ${JSON.stringify(caps)}（「🔍 エタノール C₂H₆O」を期待）`);
+        // 2分子: 分子ごとに式（v1538 のまま）
+        g.summonMolecule('酢酸'); g.updateDrawing();
+        const caps2 = [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent).filter(s => /^🔍/.test(s));
+        assert(caps2.join('|') === '🔍 ① エタノール C₂H₆O|🔍 ② 酢酸 C₂H₄O₂', `2分子の見出しが ${JSON.stringify(caps2)}`);
+        // ★ 否定対照: 短尺の収録（.rec-short）では札を出す（台本の見せ場「描くと名前が出る」）。
+        //   1分子の見出しは名前だけに戻る（札が分子式を出しているので2度出さない）
+        D.documentElement.classList.add('rec-short');
+        try {
+            g.userMolecule = new W.Molecule(); g.summonMolecule('エタノール'); g.updateDrawing();
+            assert(W.getComputedStyle(chip).display !== 'none' && chip.getBoundingClientRect().height > 0,
+                '短尺の収録なのに名前の札が消えている（台本の見せ場が崩れる）');
+            const recCaps = [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent).filter(s => /^🔍/.test(s));
+            assert(recCaps.length === 1 && recCaps[0] === '🔍 エタノール',
+                `短尺の収録で1分子の見出しに分子式が付いている（札と2度出る）: ${JSON.stringify(recCaps)}`);
+        } finally { D.documentElement.classList.remove('rec-short'); g.updateDrawing(); }
+        c.reset();
+    });
+
+    /* ===== UM12〜UM13: 🧽 分子を消去（v1570・段④・ユーザー提案 2026-09-17） ===== */
+
+    test('UM12: リボンに「分子を消去」が増えても 1280px は1段・375/320px は2段のまま、札の字もはみ出さない（否定対照: 5字の「分子を消去」ならはみ出しを検出する）', async () => {
+        for (const [w, h, maxRows] of [[1280, 800, 1], [375, 812, 2], [320, 568, 2]]) {
+            await withViewport(w, h, async (W, D, name) => {
+                const g = W.game;
+                g.setMode('puzzle');       // 「← 自由へ」も出る ＝ 枠がいちばん多い状態
+                const hdr = D.querySelector('.canvas-header').getBoundingClientRect();
+                const tiles = [...D.querySelectorAll('.canvas-header > button, .canvas-header > .mode-tab')]
+                    .filter(t => t.getBoundingClientRect().width > 0);
+                assert(tiles.some(t => t.id === 'btn-delete-molecule'), `${name}: 「分子を消去」がリボンに無い`);
+                const rows = new Set(tiles.map(t => Math.round(t.getBoundingClientRect().top)));
+                assert(rows.size <= maxRows, `${name}: リボンが ${rows.size} 段（${maxRows} 段以内を期待）`);
+                tiles.forEach(t => {
+                    const r = t.getBoundingClientRect();
+                    assert(r.right <= hdr.right + 1 && r.left >= hdr.left - 1, `${name}: ${t.textContent.trim()} がリボンからはみ出す`);
+                    assert(r.width >= 34 && r.height >= 34, `${name}: ${t.textContent.trim()} が ${Math.round(r.width)}×${Math.round(r.height)}`);
+                });
+                const lab = D.querySelector('#btn-delete-molecule .tile-label');
+                const tile = D.getElementById('btn-delete-molecule');
+                // ⚠ 札は「分子消去」の4字。「分子を消去」の5字は 11px で 55px ＝ タイルの中身 50px をはみ出す（実測）
+                const はみ出す = () => lab.getBoundingClientRect().width > tile.clientWidth + 1;
+                assert(lab.textContent === '分子消去', `${name}: 札が「${lab.textContent}」`);
+                assert(!はみ出す(), `${name}: 「分子消去」の字がタイルからはみ出す`);
+                // ★ 否定対照: 5字の「分子を消去」にすると、同じ物差しがはみ出しを検出する
+                const 元 = lab.textContent;
+                try {
+                    lab.textContent = '分子を消去';
+                    assert(はみ出す(), `${name}: ⚠ 否定対照が効いていない（5字でもはみ出しを検出しない）`);
+                } finally { lab.textContent = 元; }
+                g.setMode('free');
+            });
+        }
+    });
+
+    test('UM13: 分子を消去 —— 選んだ分子だけ消え、ほかは原子数も正準コードも変わらず、↩ 戻すで戻る（否定対照つき）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        const btn = D.getElementById('btn-delete-molecule');
+        const heavyParts = () => g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        const snapshot = () => heavyParts().map(p => `${W.canonicalCode(p)}#${p.atoms.length}`).sort();
+        const 置く = (names) => {
+            c.reset(); g.setMode('free'); g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = []; g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            g.updateDrawing();
+        };
+        const partOf = (name) => heavyParts().find(p => g.lookupCompoundName(p) === name);
+        await umWithNotice(c, async () => {
+            // ① 選んでいない・2つ以上 → 「消す分子をタップ」のモード（押しただけでは何も消えない＝否定対照）
+            置く(['エタノール', '酢酸', 'ベンゼン']);
+            const before = snapshot();
+            btn.click(); await umSettle(c);
+            assert(g.deleteMoleculeMode, '選んでいないのにモードに入らない');
+            assert(JSON.stringify(snapshot()) === JSON.stringify(before), '★ 押しただけで分子が消えた（タップで選ぶ前に消している）');
+            assert(umPlate(c) && umPlate(c).mode === 'delete-molecule' && /消す分子.*タップしよう/.test(umPlate(c).text),
+                `名札が「消す分子をタップしよう」にならない: ${JSON.stringify(umBadge(c))}`);
+            // ② 酢酸の炭素をタップ → 酢酸だけ消える
+            const ac = partOf('酢酸');
+            const target = ac.atoms.find(a => a.element === 'C');
+            const 酢酸 = `${W.canonicalCode(ac)}#${ac.atoms.length}`;
+            c.clickAt(target.x, target.y); await umSettle(c);
+            const after = snapshot();
+            assert(after.length === 2 && !after.includes(酢酸), `酢酸が消えていない（${after.join(' / ')}）`);
+            assert(JSON.stringify(after) === JSON.stringify(before.filter(s => s !== 酢酸)),
+                `★ ほかの分子の原子数か正準コードが変わった（前 ${before.join(' / ')} → 後 ${after.join(' / ')}）`);
+            assert(g.deleteMoleculeMode, '1つ消しただけでモードが下りた（続けて消せない）');
+            // ③ 何も無い所のタップは何もしない（作図に化けない）
+            c.clickAt(760, 560); await umSettle(c);
+            assert(JSON.stringify(snapshot()) === JSON.stringify(after), '何も無い所のタップで図が変わった');
+            // ④ やめる → 「分子の消去を終了しました」
+            g.hideCanvasToast();
+            umPlateStop(c).click(); await umSettle(c);
+            assert(!g.deleteMoleculeMode, '名札の「やめる」でモードが下りない');
+            assert(umToast(c) === '分子の消去を終了しました', `やめた知らせ: 「${umToast(c)}」`);
+            // ⑤ ↩ 戻す で戻る
+            g.undo(); await umSettle(c);
+            assert(JSON.stringify(snapshot()) === JSON.stringify(before), `↩ 戻すで酢酸が戻らない（${snapshot().join(' / ')}）`);
+
+            // ⑥ 選んでいる（🎯）ときに押す → その分子をすぐ消す（モードに入らない）
+            置く(['エタノール', '酢酸']);
+            const b2 = snapshot();
+            rxTurnOnMoleculeSelect(c);
+            const et = partOf('エタノール').atoms.find(a => a.element === 'O');
+            c.clickAt(et.x, et.y);
+            assert(g.selectedMolecules.length === 1, '前提: エタノールを選べない');
+            btn.click(); await umSettle(c);
+            assert(!g.deleteMoleculeMode, '選んでいるのにタップのモードに入った');
+            assert(heavyParts().length === 1 && g.lookupCompoundName(heavyParts()[0]) === '酢酸',
+                `選んだエタノールだけが消えていない（${heavyParts().map(p => g.lookupCompoundName(p)).join('・')}）`);
+            g.undo(); await umSettle(c);
+            assert(JSON.stringify(snapshot()) === JSON.stringify(b2), '↩ 戻すで選んだ分子が戻らない');
+            g.deactivateReactionSelectMode();
+
+            // ⑦ 分子が1つだけ → そのまま消える（全消去と同じ結果）。戻せる
+            置く(['エタノール']);
+            btn.click(); await umSettle(c);
+            assert(!g.deleteMoleculeMode && g.userMolecule.atoms.length === 0, '1分子で押しても消えない／モードに入った');
+            g.undo(); await umSettle(c);
+            assert(heavyParts().length === 1, '↩ 戻すで1分子が戻らない');
+
+            // ⑧ 反応の結果が載っているとき: 反応していない方を消すと「↩ 反応前に戻す」は引っ込む
+            置く(['エテン', 'ベンゼン']);
+            const rule = W.REACTION_RULES.find(r => r.id === 'add_br2');
+            W.reactor.execute(rule, rule.detect(g.userMolecule)[0]);
+            await 反応の再生を待つ(c);
+            W.reactor.finalizeMorph();
+            await umSettle(c);
+            const undoBtn = D.getElementById('btn-rx-undo');
+            assert(!undoBtn.classList.contains('hidden'), '前提（否定対照）: 反応の直後に「↩ 反応前に戻す」が出ていない');
+            btn.click(); await umSettle(c);
+            const bz = partOf('ベンゼン');
+            assert(bz, '前提: ベンゼンが見つからない');
+            const bzC = bz.atoms.find(a => a.element === 'C');
+            c.clickAt(bzC.x, bzC.y); await umSettle(c);
+            assert(!partOf('ベンゼン'), 'ベンゼンが消えていない');
+            assert(undoBtn.classList.contains('hidden'), '★ 分子を消したのに「↩ 反応前に戻す」が出たまま（押すと消した分子ごと巻き戻る）');
+            g.deactivateDeleteMoleculeMode();
+        });
+        c.reset();
+    });
+
+    test('UM6: 名札が出ているあいだ、帯の見出し行・橙の大見出し・長文トーストを出さない（否定対照: 名札を止めると出る）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        // ① 分液: 帯の「🧪 分液」・説明1行・「やめる」を畳む
+        c.reset(); g.setMode('free'); g.summonMolecule('安息香酸'); g.startSeparation(); await umSettle(c);
+        ['#ws-sep .ws-sep-title', '#sep-note', '#btn-sep-end'].forEach(sel =>
+            assert(umHidden(c, sel), `分液: 名札があるのに ${sel} が出ている`));
+        g.endSeparation();
+        // ② パズル: 帯のお題名の行を畳み、お題を選ぶ口は同じ帯に残す
+        c.reset(); await umSettle(c);
+        assert(umHidden(c, '#ws-target-head'), 'パズル: 名札があるのに帯にお題名の行が出ている');
+        assert(!umHidden(c, '#btn-puzzle-pick'), 'パズル: お題の行を畳んだのに「お題を選ぶ」の口が無い');
+        D.getElementById('btn-puzzle-pick').click();
+        assert(!D.getElementById('puzzle-modal').classList.contains('hidden'), '「お題を選ぶ」でお題モーダルが開かない');
+        D.getElementById('btn-puzzle-close').click();
+        // ③ 主鎖と番号: キャンバスの橙の大見出し（🔢 名前・※ 作図できません）を描かない／「出しました」のトーストも出さない
+        c.reset(); g.setMode('free'); g.userMolecule = new W.Molecule(); g.summonMolecule('2-メチルブタン');
+        g.hideCanvasToast();
+        D.getElementById('btn-iupac-numbering').click(); await umSettle(c);
+        const texts = () => [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent);
+        assert(!texts().some(t => /^🔢 |番号の表示中は作図できません/.test(t)),
+            `主鎖と番号: 名札があるのに橙の大見出しが残っている（${texts().filter(t => /🔢|※/.test(t)).join(' / ')}）`);
+        assert(!/主鎖と番号を出しました/.test(umToast(c)), `主鎖と番号: 名札と同じことをトーストでも言っている: ${umToast(c)}`);
+        // ★ 否定対照: 名札を出さない状態（短尺の収録）にすると、大見出しは今までどおり描かれる
+        D.documentElement.classList.add('rec-short');
+        try {
+            g.updateDrawing();
+            assert(texts().some(t => /番号の表示中は作図できません/.test(t)),
+                '⚠ 否定対照が効いていない（名札を出さなくても大見出しが描かれない ＝ 測り方が空振り）');
+        } finally {
+            D.documentElement.classList.remove('rec-short');
+            g.updateDrawing();
+        }
+        g.toggleIupacNumbering(false);
+        // ④ 分子選び: 2分子あるときは長文トーストを出さない（1分子のときの次の一手は RX34 が見る）
+        rxFreeCanvasWithMolecule(c);
+        c.clickAt(400, 426); c.clickAt(442, 426);
+        g.hideCanvasToast();
+        rxTurnOnMoleculeSelect(c); await umSettle(c);
+        assert(!/反応させたい分子をタップしてください/.test(umToast(c)) && !umToast(c),
+            `分子選び: 名札と同じことを長文トーストで重ねている: ${umToast(c).slice(0, 60)}`);
+        g.deactivateReactionSelectMode();
+        c.reset();
     });
 
     // ===== 一部だけ流す（`?only=`）=====

@@ -427,6 +427,8 @@ function moleculeWithCandidate(mol, parent, pt, element, adj) {
 // 4 なのは**グリセリン＋脂肪酸3分子＝油脂**が高校化学でいちばん分子数の多い反応列だから。
 // 一度に全部が反応するわけではなく、同じ反応を繰り返す間ずっと絞り込みを効かせるための上限
 const MAX_REACTION_SELECTION = 4;
+/** 自由モードに戻ったときの名札「自由モード」を出しておく時間（v1570・ユーザー決定「5秒でフェードアウト」） */
+const FREE_PLATE_MS = 5000;
 
 /**
  * 「🎯 反応させる分子を選ぶ」を、キャンバスに分子が1つ（か0）しか無い状態で始めたときの案内
@@ -578,6 +580,8 @@ class Game {
         // 選んだ順が式の並びになる（先に選んだ方が左）。中身は代表原子のIDの配列
         this.reactionSelectMode = false;
         this.selectedMolecules = [];
+        // 🧽 分子を消去の「消す分子をタップ」モード（v1570・段④・ユーザー提案 2026-09-17）
+        this.deleteMoleculeMode = false;
         // 「⚗ この分子の反応」カードがいま分析している分子（レビュー項目9）。中身は代表原子のID。
         // **反応の絞り込み（selectedMolecules）とは別物**で、こちらは分類表示の対象を指すだけ。
         // 図では実線＋淡い光の枠（琥珀）で示し、選択枠（青の破線＋①②）と見分けられるようにする
@@ -1079,6 +1083,8 @@ class Game {
                     this.selectedTool = 'select';
                     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                     document.getElementById('btn-tool-select').classList.add('active');
+                    // 🧽 消す分子をタップするモードは下ろす（環・官能基を置く手に戻す・v1570 段④）
+                    this.deactivateDeleteMoleculeMode();
                     // 不斉炭素マークモードは解除する（モジュール配置と競合し、
                     // クリックが不斉マークに奪われてモジュールが置けなくなるため）
                     if (this.asymmetricMode) {
@@ -1184,6 +1190,10 @@ class Game {
             btnExport.addEventListener('click', () => this.exportMoleculeJson());
         }
 
+        // 🧽 分子を消去（v1570・段④）。中身は `onDeleteMoleculeButton`
+        const btnDeleteMolecule = document.getElementById('btn-delete-molecule');
+        if (btnDeleteMolecule) btnDeleteMolecule.addEventListener('click', () => this.onDeleteMoleculeButton());
+
         this.btnClearAll.addEventListener('click', () => {
             // 「全消去」は巻矢印まで含めて消す。原子が空でも矢印だけ浮いて残るのを防ぐため、
             // Undo履歴の判定より先に解除する（検品レビュー 17）
@@ -1219,9 +1229,19 @@ class Game {
                 this.setPuzzleOpen(true);
             });
         }
+        /* ★ v1570（案C 段①の規則「やめる＝モードを抜ける／閉じる＝その場を閉じるだけ」）で
+         *   出口を4つにした。以前の「閉じる（自由モードへ）」は、ここだけ「閉じる」がモードを抜けていた
+         *   （お題モーダルの「閉じる」はパズルに残る ＝ 同じ語で結果が逆・棚卸し上位7位）。
+         *   閉じる … パズルに残る（解いた図を見返す）／ やめる … パズルを終えて 🧪自由 へ */
         const btnWinClose = document.getElementById('btn-win-close');
         if (btnWinClose) {
             btnWinClose.addEventListener('click', () => {
+                this.winModal.classList.add('hidden');
+            });
+        }
+        const btnWinQuit = document.getElementById('btn-win-quit');
+        if (btnWinQuit) {
+            btnWinQuit.addEventListener('click', () => {
                 this.winModal.classList.add('hidden');
                 this.setMode('free');
             });
@@ -1302,6 +1322,8 @@ class Game {
                 }
                 this.reactionSelectMode = true;
                 btnRxSel.classList.add('active');
+                // 🧽 消す分子をタップするモードとは排他（v1570・段④）
+                if (this.deleteMoleculeMode) { this.deleteMoleculeMode = false; const bdm = document.getElementById('btn-delete-molecule'); if (bdm) bdm.classList.remove('active'); }
                 // 他の編集モードとは排他（作図の手が滑って分子が壊れるのを防ぐ）
                 this.selectedModule = null;
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
@@ -1318,11 +1340,11 @@ class Game {
                 //   （先に選んだ方が式の左）、押せなくすると式の並びを決める手段が消える。
                 //   足すのは「次に何をすればよいか」の1文だけ
                 const lonely = this.canvasMoleculeCount() < 2;
-                this.showToast(`反応させたい分子をタップしてください（${MAX_REACTION_SELECTION}つまで）。` +
-                    '先に選んだ方が式の左になります。油脂のように何回も反応させるときは、' +
-                    '使う分子をまとめて選んでおけます。何もない所をタップすると選び直せます。' +
-                    'やめたいときは、左のパレットで道具（選択・結合・消しゴム）を選べば戻ります。' +
-                    (lonely ? ' ' + REACTION_SELECT_LONELY_HINT : ''), lonely ? 9000 : 7000, 'success');
+                // ★ v1570（案C 段②）: **長文トーストは出さない**。何をするか（タップしよう）・
+                //   数・やめる はキャンバス上端の名札が出したまま持つので、同じことを
+                //   「続きを読む」付きの5行で重ねていた（棚卸し A8）。
+                //   残すのは**次の一手が要るとき**（分子が1つしかない）の1文だけ（RX34 が見張る）
+                if (lonely) this.showToast(REACTION_SELECT_LONELY_HINT, 7000, 'success');
                 this.clearUIOverlay();
                 this.updateDrawing();
             });
@@ -1415,6 +1437,7 @@ class Game {
         this.setupStudyModal();
         this.setupPuzzleModal();
         this.setupLearnExit();
+        this.watchTrustedInput();
         // 枠の外を押したら閉じる（§22）。**持ち主の配線より先でよい** —— 押すのは
         // ボタンそのものなので、そのボタンに誰がいつ listener を足したかに依存しない
         this.setupBackdropClose();
@@ -1431,6 +1454,14 @@ class Game {
         const strip = document.getElementById('work-strip');
         if (strip && typeof ResizeObserver === 'function') {
             new ResizeObserver(() => this.syncWorkStripHeight()).observe(strip);
+        }
+        // 名札（v1570）の「ステップ 1 / 2」は機構ビューアが帯に書く文を写す。
+        // ⚠ ビューアのコマ送りは `updateDrawing()` を通らない（`goto()` が直に描く）ので、
+        //   書き換わったことを見張って名札をそろえる ＝ reaction.js に手を入れない
+        const stepLabel = document.getElementById('reaction-step-label');
+        if (stepLabel && typeof MutationObserver === 'function') {
+            new MutationObserver(() => this.syncCanvasModeBadge())
+                .observe(stepLabel, { childList: true, characterData: true, subtree: true });
         }
 
         // 右パネルの下シート（☰ で開き ✕ / バックドロップで閉じる。P11 M1）の配線は
@@ -1613,6 +1644,8 @@ class Game {
         const stage = STAGES[index];
         this.targetName.textContent = stage.name;
         this.targetFormula.textContent = stage.formula;
+        // 名札（v1570）が読む控え。⚠ DOM を読み返さない（v770 の申し送り）
+        this._stagePlate = { name: stage.name, formula: stage.formula };
         this.targetDesc.textContent = stage.desc;
         this.verifyResult.classList.add('hidden');
         
@@ -2363,8 +2396,20 @@ class Game {
         // ⚠ **黙って消さずに理由を出す**。消す手段は同じボタン（トグル）だけにして、
         //   「なぜ置けないのか」と「どう戻すのか」を1つの文で言い切る
         if (this.iupacNumbering) {
-            this.showToast('主鎖と番号を表示中は作図できません。「🔢 主鎖と番号を消す」で戻せます。', 3000);
+            // v1570: 出口は名札の「やめる」になった（帯の札は押下の見た目だけ）
+            this.showToast('主鎖と番号を出しているあいだは描けません。上の「やめる」で戻れます。', 3000);
             return;
+        }
+
+        // --- 🧽 消す分子をタップするモード（v1570・段④）。原子か結合を押した分子を丸ごと消す ---
+        if (this.deleteMoleculeMode) {
+            let atom = clickedAtom;
+            if (!atom) {
+                const bond = this.findBondAt(coords.rawX, coords.rawY);
+                if (bond) atom = this.userMolecule.atoms.find(a => a.id === bond.atomId1) || null;
+            }
+            if (atom) this.deleteMoleculesByAtomIds([atom.id]);
+            return; // 何も無い所のタップは何もしない（作図に化けない）
         }
 
         // --- 反応させる分子を選ぶモード (ON) 時の特別処理（C-1） ---
@@ -3258,6 +3303,81 @@ class Game {
         this.deactivateHaworthMode();
         this.deactivateReactionSelectMode();
         this.deactivateStereoPointMode();
+        this.deactivateDeleteMoleculeMode();
+    }
+
+    /* ===== 🧽 分子を消去（v1570・段④・ユーザー提案 2026-09-17「全消去のほかに 分子を消去 があるとよさそう」） =====
+     *
+     * ★ いまの仕組みを確かめた結果: 分子ごとに消す道は**無かった**（分子モーダルに削除は無く、
+     *   消しゴムは原子・結合を1つずつ消す）。だから新しく足す。消す実体は `deleteMoleculesByAtomIds` 1つ。
+     * ★ 振る舞い（統合側の案どおり）:
+     *   ・分子を選んでいる（🎯 の青い枠・見出しを押した琥珀の枠）ときに押す → その分子を消す
+     *   ・分子が1つだけ → それを消す（全消去と同じ結果。ボタンは隠さない ＝ リボンの並びを状態で変えない）
+     *   ・選んでいない（2つ以上）→「消す分子をタップ」のモード（名札「🧽 消す分子をタップしよう」＋やめる）。
+     *     続けて何個でも消せる。分子が無くなったら自分で下りる
+     * ⚠ ↩ 戻す で戻せる（消す前に `saveState()` を1回 ＝ 1回の消去が1回の Undo）
+     * ⚠ 対イオンの粒（Cl⁻ など）は相方と同じ分子として一緒に消す（`splitMolecules` の切り分けに従う）
+     * ⚠ 反応の結果を消したら「↩ 反応前に戻す」は引っ込む（`reactor.syncUndoButton` がトポロジーで見る）
+     */
+    onDeleteMoleculeButton() {
+        if (this.deleteMoleculeMode) { this.deactivateDeleteMoleculeMode(); return; }
+        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (!parts.length) { this.showToast('キャンバスに分子がありません。', 2500); return; }
+        // 選んでいる分子（🎯 の選択が先。無ければ見出しを押した琥珀の枠）
+        let ids = [];
+        if (this.reactionSelectMode && this.selectedMolecules.length) {
+            ids = this.selectedMoleculeSets().map(s => [...s][0]);
+        } else {
+            const info = this.focusedMoleculeInfo(null);
+            if (info && info.explicit) ids = [info.part.atoms[0].id];
+        }
+        if (!ids.length && parts.length === 1) ids = [parts[0].atoms[0].id];
+        if (ids.length) { this.deleteMoleculesByAtomIds(ids); return; }
+        // ここからモードに入る。タップの意味を変える他の道具は下ろす（setTool と同じ並び）
+        this.selectedModule = null;
+        document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+        this.asymmetricMode = false;
+        const bam = document.getElementById('btn-asym-mark'); if (bam) bam.classList.remove('active');
+        this.reshapeMode = false;
+        const brs = document.getElementById('btn-cistrans-reshape'); if (brs) brs.classList.remove('active');
+        this.deactivateHaworthMode();
+        this.deactivateStereoPointMode();
+        this._dropReactionSelectState();
+        this.deleteMoleculeMode = true;
+        const btn = document.getElementById('btn-delete-molecule');
+        if (btn) btn.classList.add('active');
+        this.clearUIOverlay();
+        this.updateDrawing();
+    }
+
+    /** モードを下ろす。戻り値: 実際に下ろしたら true */
+    deactivateDeleteMoleculeMode() {
+        if (!this.deleteMoleculeMode) return false;
+        this.deleteMoleculeMode = false;
+        const btn = document.getElementById('btn-delete-molecule');
+        if (btn) btn.classList.remove('active');
+        this.updateDrawing();
+        return true;
+    }
+
+    /** 原子IDを含む分子（`splitMolecules` の1成分＝対イオンの粒ごと）を丸ごと消す。1回の Undo で戻る */
+    deleteMoleculesByAtomIds(atomIds) {
+        const parts = this.splitMolecules();
+        const doomed = new Set();
+        atomIds.forEach(id => {
+            const p = parts.find(q => q.atoms.some(a => a.id === id));
+            if (p) p.atoms.forEach(a => doomed.add(a.id));
+        });
+        if (!doomed.size) return false;
+        this.saveState();
+        const m = this.userMolecule;
+        m.bonds = m.bonds.filter(b => !doomed.has(b.atomId1) && !doomed.has(b.atomId2));
+        m.atoms = m.atoms.filter(a => !doomed.has(a.id));
+        this.selectedMolecules = this.selectedMolecules.filter(id => !doomed.has(id));
+        if (this.focusedMolecule && doomed.has(this.focusedMolecule)) this.focusedMolecule = null;
+        this.clearUIOverlay();
+        this.updateDrawing();
+        return true;
     }
 
     // α/β 面マークモードを解除する（他モードへ切替える既存フックから呼ぶ。P12-7 M2b）
@@ -3405,24 +3525,134 @@ class Game {
                 stopTitle: `②${mp.next}（画面のどこかをタップしても同じです）`
             };
         }
+        /* ★★ v1570（案C 段②）: **全モード共通の名札**にした。
+         *   型は「アイコン ＋ 何をするか（先生の声掛け・1行）＋ 数 ＋ やめる」の1行だけ。
+         *   ⚠ 小さい字の但し書き（2行目）は付けない（ユーザー方針「小さい字は読まれない」）。
+         *     v1416 の「作図はできません／動かす・戻すはできます」はここから引いた。
+         *     名札を出しているあいだは、同じことを言う長文トースト・キャンバスの橙の大見出し・
+         *     帯の見出し行も出さない（`syncPlateDuplicates`）。
+         *   ⚠ 並びは**内側の作業が先**（分子選び → 予測 → 機構 → 番号 → 分液 → 課題 → 練習 → パズル）。
+         *     名札は1つなので、いま手を動かしている相手を言う。「やめる」もその相手をやめる。 */
+        const plate = this.modePlateSpec();
+        if (plate) return plate;
+        // ★ ほかのモードから自由モードへ戻った直後の5秒（v1570・ユーザー決定）。
+        //   ⚠ 何かのモードに入ったら即座に引っ込む（上の分岐が先に返る／一覧が空でない）
+        if (this._freePlateUntil && Date.now() < this._freePlateUntil && this.activeModes().length === 0) {
+            return { mode: 'free', icon: '', task: '自由モード' };
+        }
+        return null;
+    }
+
+    /**
+     * 各モードの名札の中身（v1570・案C 段②。文案は統合側の見本 compare.html の表）。
+     * 返すのは `{ mode, icon, task(HTML), count, stop, stopTitle, onStop }`。
+     * ⚠ `task` の中の名前は必ず `esc` を通す（名前は登録データ由来で `<` を含みうる）。
+     */
+    modePlateSpec() {
+        const esc = (s) => String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const click = (id) => () => { const b = document.getElementById(id); if (b) b.click(); };
+        // ⚠ 短尺動画の収録（`.rec-short`）では、v1570 で増えた名札は出さない。
+        //   上端はテロップ（top 9%）の場所で、台本はこの名札の無い画で書かれている。
+        //   v1416 からある2つ（分子選び・①で停止）だけは今までどおり出す
+        const rec = document.documentElement.classList.contains('rec-short');
         if (this.reactionSelectMode) {
             // 数は `selectedMolecules` の生の長さではなく `selectedMoleculeSets()` で数える
             // ＝ 反応で1つに繋がった2件をまとめる規則（図の枠と同じ数）を共有する
             const n = this.selectedMoleculeSets().length;
             return {
-                mode: 'reaction-select',
-                title: '🎯 反応させる分子を選ぶ',
+                mode: 'reaction-select', icon: '🎯',
+                task: '<b>反応させる分子</b>をタップしよう',
                 count: `選んだ ${n}/${MAX_REACTION_SELECTION}`,
                 countTitle: `いま選んでいる分子の数（${MAX_REACTION_SELECTION}つまで／先に選んだ方が式の左）`,
-                // ⚠ 「編集できません」とは書かない。止まっているのはタップの意味だけで、
-                //   動かす・戻す・消すは生きている（できることを必ず並べて書く）
-                note: '作図（原子を置く・結合をつなぐ）はできません。'
-                    + '分子を動かす・↩ 戻す はできます。'
-                    // ⚠ v1454: 🗑 全消去 で分子が0個になると**選ぶモードも終わる**ようにした
-                    //   （選ぶ相手が無いのに選ぶモードだけ残るのは行き止まり）。ここもそう書く
-                    + '🗑 全消去 で分子が無くなると、選ぶのも終わります。',
                 stop: 'やめる',
-                stopTitle: '選ぶのをやめて作図に戻ります（左の道具や環・官能基のボタンを選んでも戻ります）'
+                stopTitle: '選ぶのをやめて作図に戻ります（左の道具や環・官能基のボタンを選んでも戻ります）',
+                onStop: () => {
+                    const btn = document.getElementById('btn-reaction-select');
+                    if (btn) { btn.click(); return; }
+                    if (this.deactivateReactionSelectMode()) this.updateDrawing();
+                }
+            };
+        }
+        if (this.deleteMoleculeMode) {
+            return {
+                mode: 'delete-molecule', icon: '🧽',
+                task: '<b>消す分子</b>をタップしよう',
+                stop: 'やめる', stopTitle: '分子を消すのをやめて、作図に戻ります（消した分子は ↩ 戻す で戻せます）',
+                onStop: () => this.deactivateDeleteMoleculeMode()
+            };
+        }
+        if (rec) return null;
+        const rp = window.reactionPlayer;
+        if (rp && rp.prediction) {
+            return {
+                mode: 'predict', icon: '🎯',
+                task: `<b>${esc(rp.predictionSubject())}</b> の主生成物を描こう`,
+                stop: 'やめる', stopTitle: '予測をやめて、反応の再生に戻ります',
+                onStop: click('btn-rx-cancel-predict')
+            };
+        }
+        if (rp && rp.active) {
+            const step = (document.getElementById('reaction-step-label') || {}).textContent || '';
+            return {
+                mode: 'mechanism', icon: '⚗',
+                // ★ 反応名は「（〜生成）」を落とす（ユーザー決定 7。予測のお題と同じ規則）
+                task: `<b>${esc(rp.predictionSubject())}</b>　電子の動きを見よう`,
+                count: step,
+                stop: 'やめる', stopTitle: '反応の再生をやめてキャンバスに戻ります（見る前に描いていた図が戻ります）',
+                onStop: click('btn-rx-exit')
+            };
+        }
+        if (this.iupacNumbering) {
+            const name = this._iupacPlateName;
+            return {
+                mode: 'numbering', icon: '🔢',
+                task: name ? `<b>${esc(name)}</b> の主鎖と番号` : '<b>主鎖と番号</b>',
+                stop: 'やめる', stopTitle: '主鎖と番号の表示をやめて、作図に戻ります',
+                onStop: () => { if (this.iupacNumbering) this.toggleIupacNumbering(false); }
+            };
+        }
+        if (this.separationActive) {
+            return {
+                mode: 'sep', icon: '🧪',
+                task: '<b>分液</b>　瓶をかけて、層に分けよう',
+                stop: 'やめる', stopTitle: '分液をやめて水面の帯を下ろします（塩になった印は消えません）',
+                onStop: click('btn-sep-end')
+            };
+        }
+        if (this.currentQuest) {
+            const q = this.currentQuest;
+            return {
+                mode: 'quest', icon: '🎯',
+                task: `<b>${esc(q.start)} → ${esc(q.goal)}</b> にしよう`,
+                count: this._questNowText || '',
+                stop: 'やめる', stopTitle: '課題をやめます（キャンバスはそのまま残ります）',
+                onStop: click('btn-quest-quit')
+            };
+        }
+        const practice = [window.isomerPractice, window.alkylPractice, window.stereoPractice]
+            .find(p => p && p.active && p.problem && typeof p.plateSpec === 'function');
+        if (practice) {
+            const ps = practice.plateSpec();
+            if (ps) {
+                return {
+                    mode: 'practice', icon: '✏️', task: ps.task, count: ps.count,
+                    stop: 'やめる', stopTitle: '練習をやめます（図は消えません）',
+                    onStop: () => {
+                        const b = [...document.querySelectorAll('#ws-practice-actions button')]
+                            .find(x => x.textContent.trim() === 'やめる');
+                        if (b) b.click(); else practice.stop();
+                    }
+                };
+            }
+        }
+        if (this.currentMode === 'puzzle' && this._stagePlate) {
+            const s = this._stagePlate;
+            return {
+                mode: 'puzzle', icon: '🧩',
+                task: `<b>${esc(s.name)}</b><span class="cmb-formula">${esc(s.formula)}</span> を組み立てよう`,
+                stop: 'やめる', stopTitle: 'パズルをやめて自由モードに戻ります（描いている分子はそのまま残ります）',
+                onStop: click('btn-back-to-free')
             };
         }
         return null;
@@ -3435,15 +3665,51 @@ class Game {
      * `updateDrawing()` を通らないので、そこからも1回呼ぶ。
      */
     syncCanvasModeBadge() {
+        this._syncCanvasModeBadge();
+        // 選択中の道具の札は名札の位置を見て並ぶので、名札がそろってから（v1570）
+        this.syncToolChip();
+        this.syncFoldedStripEmpty();
+    }
+
+    /**
+     * 段③で帯の段を畳んだ結果、**出ている面の中身が全部畳まれた**ら帯ごと畳む（v1570）。
+     * ⚠ 畳むのは CSS（`.plate-*`）なので、`setWorkPane` の「面が出ているか」では分からない
+     *   （実測: 2分子で 🔢 を出すと、中身の無い帯が 15px の枠だけ残った）。
+     * ⚠ 名札が出ていないときは何もしない（ふだんの作図のたびに測らない）。
+     */
+    syncFoldedStripEmpty() {
+        const strip = document.getElementById('work-strip');
+        if (!strip) return;
+        if (!this._plateMode) {
+            if (strip.classList.contains('ws-folded-empty')) {
+                strip.classList.remove('ws-folded-empty');
+                this.syncWorkStripHeight();
+            }
+            return;
+        }
+        const was = strip.classList.contains('ws-folded-empty');
+        strip.classList.remove('ws-folded-empty');
+        const panes = [...strip.querySelectorAll('.ws-pane:not(.hidden)')];
+        const empty = panes.length > 0 && panes.every(p => p.getBoundingClientRect().height === 0);
+        strip.classList.toggle('ws-folded-empty', empty);
+        if (was !== empty) this.syncWorkStripHeight();
+    }
+
+    _syncCanvasModeBadge() {
         const box = document.getElementById('canvas-mode-badge');
+        // モードの出入りを見比べる入口（`updateDrawing` の先頭からここへ来る）
+        this.noteModeChange();
         if (!box) return;
         const spec = this.canvasModeBadgeSpec();
+        this.syncPlateDuplicates(spec);
         if (!spec) {
             box.classList.add('hidden');
             box.removeAttribute('data-mode');
             this._modeBadgeKey = '';
+            this._modeBadgeSpec = null;
             return;
         }
+        this._modeBadgeSpec = spec;
         // `#from-band`（アプリ横断の戻り道）が出ている回だけ、その実測ぶん下へ降ろす。
         // 帯の高さは文言と幅で変わるので、決め打ちの数字を置かない
         const band = document.getElementById('from-band');
@@ -3456,7 +3722,7 @@ class Game {
         box.style.top = top + 'px';
         box.classList.remove('hidden');
         // 中身は変わったときだけ組み直す（updateDrawing は作図のたびに走る）
-        const key = `${spec.mode}|${spec.count}`;
+        const key = `${spec.mode}|${spec.task || spec.title}|${spec.count}`;
         if (this._modeBadgeKey === key) return;
         this._modeBadgeKey = key;
         box.setAttribute('data-mode', spec.mode);
@@ -3468,8 +3734,17 @@ class Game {
             box.appendChild(el);
             return el;
         };
-        span('cmb-title', spec.title);
-        span('cmb-count', spec.count).title = spec.countTitle || '';
+        if (spec.icon) span('cmb-icon', spec.icon);
+        if (spec.task != null) {
+            // ⚠ 中身は `modePlateSpec` が esc を通して組んだ HTML（名前を太字にするため）
+            const t = span('cmb-title', '');
+            t.innerHTML = spec.task;
+        } else {
+            span('cmb-title', spec.title);
+        }
+        // 「自由モード」の札は名前だけ（数も押しものも持たない）
+        if (spec.count) span('cmb-count', spec.count).title = spec.countTitle || '';
+        if (!spec.stop) return;
         const stop = document.createElement('button');
         stop.type = 'button';
         stop.className = 'cmb-stop';
@@ -3481,7 +3756,7 @@ class Game {
             this.stopCanvasModeBadgeMode();
         });
         box.appendChild(stop);
-        span('cmb-note', spec.note);
+        if (spec.note) span('cmb-note', spec.note);
     }
 
     /**
@@ -3497,11 +3772,224 @@ class Game {
             window.reactor.advanceMorph();
             return;
         }
-        if (this.reactionSelectMode) {
-            const btn = document.getElementById('btn-reaction-select');
-            if (btn) { btn.click(); return; }
-            if (this.deactivateReactionSelectMode()) this.updateDrawing();
+        // ★ v1570: 各モードの「やめる」は**持ち主の出口を押す**（`modePlateSpec` の onStop）。
+        //   下ろす道を名札のために新しく書かない ＝ 後始末が名札経由のときだけ抜ける、を作らない
+        const spec = this.modePlateSpec();
+        if (spec && spec.onStop) spec.onStop();
+    }
+
+    /**
+     * 名札を出しているあいだは、**同じことを言う面を引っ込める**（v1570・案C 段②）。
+     *   ・帯の見出し行（分液の「🧪 分液」と説明1行・課題の行き先と「いま」・練習の「お題…いま N個」・
+     *     パズルのお題名・機構のステップ表示）と、帯の中の「やめる」
+     *   ・キャンバスの橙の大見出し（🔢 の名前と「※ 番号の表示中は作図できません」）は `_iupacCaption` が見る
+     * ⚠ 消すのではなく畳むだけ（CSS の `#work-strip.plate-<mode>`）。名札が出ない場面
+     *   （`.rec-short` の収録・名札を返さない状態）では、帯は今までどおり見出しを持つ。
+     */
+    syncPlateDuplicates(spec) {
+        const strip = document.getElementById('work-strip');
+        const mode = spec && spec.mode !== 'free' && spec.mode !== 'morph-pause' ? spec.mode : '';
+        this._plateMode = mode;
+        if (!strip) return;
+        [...strip.classList].filter(c => c.startsWith('plate-')).forEach(c => {
+            if (c !== 'plate-' + mode) strip.classList.remove(c);
+        });
+        if (mode) strip.classList.add('plate-' + mode);
+        strip.classList.toggle('plate-on', !!mode);
+        // パズルのお題名の行を畳むと、お題モーダルを開く口がそこに無くなる ＝ 同じ段に1つ出す
+        const pick = document.getElementById('btn-puzzle-pick');
+        if (pick) pick.classList.toggle('hidden', mode !== 'puzzle');
+    }
+
+    /* ===== 選択中の道具の札（v1570・ユーザー提案 3「選択中のボタンを表示する機能」・2026-09-17 決定） =====
+     *
+     * ★ ユーザーの答え: 見本 B（名札とは別の小さい札をキャンバスの右上。名札があればそのすぐ下）。
+     *   対象は左パネルの道具（元素・環・官能基・結合・消しゴム）と、タップの意味を変える道具
+     *   （反応させる分子を選ぶ・⇄ シス/トランス整形・✳ 不斉マーク・⬍ α/β 面マーク）。
+     *   **自由モードでは5秒で消す**（道具を選び直したら、また出して5秒）。
+     *   ⇄・✳・⬍ の ON は名札のモードにしない ＝ この札で見せる。
+     * ★ 作業中（名札が出ているあいだ）の扱いは、こちらで次のように決めた:
+     *   ・手で描く作業（パズル・練習・予測）… **出したまま**。描く道具が答えに直結するので、
+     *     いま何が置かれるかが常に見えている方がよい
+     *   ・課題・分液 … **出さない**。手元は 🧪 実験の瓶の面で、描く道具は画面に無い（実測: 分液の画に
+     *     「選択中 C 炭素を置く」が出て、押せる相手の無い道具を言っていた）
+     *   ・名札そのものがタップの意味を言っている作業（分子選び・主鎖と番号・機構の再生・⏸ 停止）
+     *     … **出さない**（描けない／同じことを2回言う）
+     * ⚠ 人の操作のときだけ出す（`noteModeChange` と同じ理由・台本の画に足さない）。短尺の収録では出さない。
+     */
+    toolChipLabel() {
+        if (this.deleteMoleculeMode) return { icon: '🧽', label: '消す分子を選ぶ' };
+        if (this.reactionSelectMode) return { icon: '🎯', label: '反応させる分子を選ぶ' };
+        if (this.reshapeMode) return { icon: '⇄', label: 'シス/トランスを整える' };
+        if (this.asymmetricMode) return { icon: '✳', label: '不斉炭素に印をつける' };
+        if (this.haworthMode) return { icon: '⬍', label: 'α/β の面に印をつける' };
+        if (this.selectedModule) {
+            const b = document.querySelector(`.mod-btn[data-module="${this.selectedModule}"]`);
+            const t = (b ? b.textContent : this.selectedModule).trim();
+            const m = t.match(/^(\S+)\s+(.+)$/);
+            return m ? { icon: m[1], label: `${m[2]}を置く` } : { icon: '', label: `${t}を置く` };
         }
+        if (this.selectedTool === 'erase') return { icon: '🧽', label: '消しゴム' };
+        if (this.selectedTool === 'bond') return { icon: '／', label: '結合をつなぐ' };
+        const names = { C: '炭素', O: '酸素', N: '窒素', Cl: '塩素', S: '硫黄', Br: '臭素', I: 'ヨウ素', K: 'カリウム' };
+        const el = this.selectedAtomType || 'C';
+        return { icon: el, label: `${names[el] || el}を置く` };
+    }
+
+    syncToolChip() {
+        const chip = document.getElementById('canvas-tool-chip');
+        if (!chip) return;
+        const { icon, label } = this.toolChipLabel();
+        const key = `${icon}|${label}`;
+        if (this._toolChipKey !== undefined && this._toolChipKey !== key &&
+            (this._trustedInputNow || this._modeNoticeForTest)) {
+            this._toolChipUntil = Date.now() + FREE_PLATE_MS;
+            clearTimeout(this._toolChipTimer);
+            this._toolChipTimer = setTimeout(() => this.syncToolChip(), FREE_PLATE_MS + 20);
+            // フェードを頭からやり直す
+            chip.classList.add('hidden');
+        }
+        this._toolChipKey = key;
+        const rec = document.documentElement.classList.contains('rec-short');
+        const plate = this._plateMode || '';
+        const paused = !!(window.reactor && window.reactor.morphPauseInfo && window.reactor.morphPauseInfo());
+        const 描く作業 = ['puzzle', 'practice', 'predict'];
+        let show, persistent = false;
+        if (rec || paused) show = false;
+        else if (plate) { show = 描く作業.includes(plate); persistent = show; }
+        else show = !!this._toolChipUntil && Date.now() < this._toolChipUntil;
+        if (!show) { chip.classList.add('hidden'); return; }
+        chip.innerHTML = '';
+        const k = document.createElement('span'); k.className = 'ctc-k'; k.textContent = '選択中';
+        const v = document.createElement('span'); v.className = 'ctc-v'; v.textContent = `${icon} ${label}`.trim();
+        chip.append(k, v);
+        chip.classList.toggle('ctc-fade', !persistent);
+        // 名札が出ていればそのすぐ下、無ければ上端（名札と同じく #from-band の実測ぶん下げる）
+        const wrap = document.getElementById('svg-wrapper');
+        const badge = document.getElementById('canvas-mode-badge');
+        let top = 8;
+        if (wrap && badge && !badge.classList.contains('hidden')) {
+            const br = badge.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+            if (br.height > 0) top = Math.round(br.bottom - wr.top) + 6;
+        } else if (wrap) {
+            const band = document.getElementById('from-band');
+            if (band && !band.classList.contains('hidden')) {
+                const br = band.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+                if (br.height > 0) top = Math.round(br.bottom - wr.top) + 8;
+            }
+        }
+        chip.style.top = top + 'px';
+        chip.classList.remove('hidden');
+    }
+
+    /* ===== モードを抜けたことを画面で言う（v1570・案C 段①・ユーザー決定 2026-09-15〜16） =====
+     *
+     * **申し立て**: 「分液モードや、反応相手を選ぶモードから抜けているかどうかがわかりづらい」。
+     * 棚卸し（67状態）では、抜けたときに画面が言うことが**モードごとにばらばら**で、
+     * パズル中の 🔤呼出・学習系を閉じる・書き出し練習の答え合わせは**何も言わずに**モードが移っていた。
+     *
+     * ★ ユーザーの答え:
+     *   ① やめたら「〜を終了しました」をトーストで出す
+     *   ② 自由モードに入ったら（ほかのモードから抜けたときを含む）名札に「自由モード」と出して5秒で消す
+     *
+     * ★ **出口ごとに書かない。結果で決める**（`setupLearnExit` と同じ理由 —— 出口は 20 を超える）。
+     *   いま動いているモードの一覧（`activeModes`）を控えておき、変わったら差分を言う。
+     *   ⚠ 1回の操作の中で「止めて・また始める」（練習の ↻ もう一度・お題の差し替え）を
+     *     終了と読まないよう、見比べるのは**その操作が終わった後**（`setTimeout 0`）。
+     *
+     * ⚠ **人の操作で変わったときだけ言う**（`event.isTrusted`）。
+     *   台本（demos）の無人再生・`?open=` の着地・テストの `setMode` はどれも合成の操作なので、
+     *   ここでトーストや名札を足すと**収録した動画の画に知らない字幕が入る**。
+     *   テストが知らせそのものを確かめるときだけ `_modeNoticeForTest` で合成の操作も数える。
+     */
+    activeModes() {
+        const out = [];
+        const rp = window.reactionPlayer;
+        // ⚠ 並びは名札に出す優先の逆順ではなく「外側 → 内側」。名札（段②）は後ろから見る
+        if (this.currentMode === 'puzzle') out.push({ key: 'puzzle', name: 'パズル' });
+        // 📚 学習は**メニューを開いただけでも** currentMode が learn になる（タイルの点灯はそのまま・
+        // ユーザー未回答 5）。メニューだけでは「終了しました」とは言わない（name: null）が、
+        // 自由モードへ戻ったことは言う
+        if (this.currentMode === 'learn') out.push({ key: 'learn', name: null });
+        if (this.currentQuest) out.push({ key: 'quest', name: '課題' });
+        if ([window.isomerPractice, window.alkylPractice, window.stereoPractice].some(p => p && p.active)) {
+            out.push({ key: 'practice', name: '書き出し練習' });
+        }
+        if (rp && rp.active) out.push({ key: 'mechanism', name: '反応機構' });
+        if (rp && rp.prediction) out.push({ key: 'predict', name: '生成物予測' });
+        if (this.separationActive) out.push({ key: 'sep', name: '分液' });
+        if (this.iupacNumbering) out.push({ key: 'numbering', name: '主鎖と番号の表示' });
+        if (this.reactionSelectMode) out.push({ key: 'reaction-select', name: '反応させる分子選び' });
+        if (this.deleteMoleculeMode) out.push({ key: 'delete-molecule', name: '分子の消去' });
+        return out;
+    }
+
+    /** モードが変わったかもしれない所から呼ぶ（見比べるのは操作が終わった後に1回だけ） */
+    noteModeChange() {
+        // ⚠ `window.event.isTrusted` だけでは足りない。名札の「やめる」は持ち主のボタンを
+        //   `btn.click()` で押し直す（下ろす道を1本にするため）ので、その内側では
+        //   `window.event` が**合成の click** になる。人の入力が来たこと自体を控えておく
+        //   （`watchTrustedInput`）ほうで見る
+        if (this._trustedInputNow || this._modeNoticeForTest) this._modeChangeByHand = true;
+        if (this._modeCheckTimer) return;
+        // 同じ操作の中で出た別のトースト（反応の結果など）を上書きしないための目印
+        this._toastSeqAtModeChange = this._toastSeq || 0;
+        this._modeCheckTimer = setTimeout(() => {
+            this._modeCheckTimer = null;
+            this.checkModeTransition();
+        }, 0);
+    }
+
+    checkModeTransition() {
+        const now = this.activeModes();
+        const prev = this._modeList;
+        const byHand = this._modeChangeByHand;
+        this._modeChangeByHand = false;
+        this._modeList = now;
+        if (!prev) return;                       // 起動直後の1回目は控えるだけ
+        const nowKeys = new Set(now.map(m => m.key));
+        const ended = prev.filter(m => !nowKeys.has(m.key));
+        const started = now.some(m => !prev.some(p => p.key === m.key));
+        if (!ended.length && !started) return;
+        if (!byHand) return;
+        const names = ended.map(m => m.name).filter(Boolean);
+        // ⚠ 同じ操作で別の知らせ（反応の結果・呼び出しの断りなど）が出ていたら、そちらを残す。
+        //   抜けたことは下の名札「自由モード」でも読める
+        if (names.length && (this._toastSeq || 0) === this._toastSeqAtModeChange) {
+            this.showToast(`${names.join('・')}を終了しました`, 3500, 'success');
+        }
+        if (ended.length && now.length === 0) this.showFreeModePlate();
+    }
+
+    /**
+     * 人の入力（`isTrusted`）が来てから、その処理が終わるまで（`setTimeout 0`）を印にする。
+     * 台本・テストの合成イベントは印を立てない ＝ 無人再生の画に知らせが入らない。
+     */
+    watchTrustedInput() {
+        const mark = (e) => {
+            if (!e.isTrusted) return;
+            this._trustedInputNow = true;
+            clearTimeout(this._trustedInputTimer);
+            this._trustedInputTimer = setTimeout(() => { this._trustedInputNow = false; }, 0);
+        };
+        ['pointerdown', 'pointerup', 'click', 'keydown', 'change'].forEach(t =>
+            window.addEventListener(t, mark, true));
+        // 道具のボタンは updateDrawing を通らないものが多い ＝ 押し終わりで選択中の札をそろえる
+        window.addEventListener('click', () => this.syncToolChip());
+    }
+
+    /** 名札に「自由モード」を5秒だけ出す（消え方は CSS のフェード。ここは出し入れだけ） */
+    showFreeModePlate() {
+        this._freePlateUntil = Date.now() + FREE_PLATE_MS;
+        const box = document.getElementById('canvas-mode-badge');
+        // ⚠ 出ている最中にもう一度出すときは、いったん隠してフェードを頭からやり直す
+        if (box) { box.classList.add('hidden'); this._modeBadgeKey = ''; }
+        this.syncCanvasModeBadge();
+        clearTimeout(this._freePlateTimer);
+        this._freePlateTimer = setTimeout(() => {
+            this._freePlateUntil = 0;
+            this.syncCanvasModeBadge();
+        }, FREE_PLATE_MS);
     }
 
     // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
@@ -3527,6 +4015,8 @@ class Game {
         //   比べる相手を「表示後に残る文字列」に替えるだけで、見分けの意味は元のまま
         //   （＝ 誰かが後から別の文言を入れたら、こちらの時計では消さない）。
         const plain = stripEmphasis(message);
+        // 何回目の知らせか（`checkModeTransition` が「同じ操作で別の知らせが出たか」を見る）
+        this._toastSeq = (this._toastSeq || 0) + 1;
         const canvasToast = document.getElementById('canvas-toast');
         if (canvasToast) {
             const shownMs = this.paintCanvasToast(canvasToast, message, type, ms);
@@ -6070,6 +6560,14 @@ class Game {
            ⚠ `canvasMoleculeCount()` を呼ぶのは**モードが ON のときだけ**（OFF のときは
              作図のたびの `splitMolecules()` を1回も増やさない）。 */
         if (this.reactionSelectMode && this.canvasMoleculeCount() === 0) this._dropReactionSelectState();
+        // 🧽 消す分子をタップするモードも同じ約束（v1570・段④）: 消す相手が無い／キャンバスをビューアが借りている／
+        //   自由モードでない ときは下りる（ここで状態だけ下ろす ＝ 描き直しは二重にしない）
+        if (this.deleteMoleculeMode && (this.canvasMoleculeCount() === 0 || this.currentMode === 'learn' ||
+            (window.reactionPlayer && window.reactionPlayer.active))) {
+            this.deleteMoleculeMode = false;
+            const bdm = document.getElementById('btn-delete-molecule');
+            if (bdm) bdm.classList.remove('active');
+        }
         // ★ 常設バッジは**いちばん先**にそろえる（v1416）。この下には反応機構ビューアが
         //   持ち主のときの早い return があり、そこで折り返すと
         //   「モードは下りたのにバッジが残る」型の食い違いが生まれる
@@ -6201,6 +6699,8 @@ class Game {
         // ここも作図と同じ層に描く ＝ カーソルを動かしただけで消えては困る。
         // **状態は残さない**ので、図が変わっていればこの中で自分から消える
         this.renderIupacNumbering(hidden, hydrogens);
+        // 名前の部品の段が出入りしたので、畳んだ帯が空になったかを見直す（v1570・段③）
+        this.syncFoldedStripEmpty();
         // 5. 化合物名・分子式のライブ表示を更新（P7-6）
         this.updateCompoundInfo();
         // 6. 「この分子の反応」カードの分類表示を更新（P9-1 M1）
@@ -6298,7 +6798,14 @@ class Game {
          *   式が図に付いていなかった（画面には合算した C₂₄H₄₄O₂₂ だけが出ていた）。
          * ⚠ 1分子のときは今までどおり名前だけ（左下の札が名前と分子式を両方出している）。
          * ⚠ 名前が引けないときは今までどおり分子式そのものが見出しになる（二重には出さない）。 */
-        const head = name ? (mark ? `${name} ${formula}` : name) : formula;
+        /* ★ v1570（案C 段③・ユーザー決定「左下の小さい分子式表示はカット」）: **1分子のときも**
+         *   名前のうしろに分子式を添える。左下の札（`#mobile-name-chip`）を画面から外したので、
+         *   分子式の置き場所はこの見出しだけになった（「🔍 エタノール C₂H₆O」）。
+         *   ⚠ 短尺の収録（.rec-short）では左下の札を上中央の大きな札として今までどおり出す（見せ場） */
+        //   ⚠ ただし短尺の収録で1分子のときは、上中央の大きな札が名前と分子式を出しているので
+        //     見出しは今までどおり名前だけ（同じ式を画面に2度出さない・台本の画を変えない）
+        const recShort = typeof document !== 'undefined' && document.documentElement.classList.contains('rec-short');
+        const head = name ? (mark || !recShort ? `${name} ${formula}` : name) : formula;
         // ★ 分液の面を開いているあいだは、どの層に居るかを見出しに添える（I-1・§4-5 #4）。
         //   ⚠ 文言は `phaseSuffix()` ただ1つ ＝ 帯の札と図の見出しが同じ字を出す
         return `🔍 ${mark ? mark + ' ' : ''}${head}${this.phaseSuffix(part)}`.trim();
@@ -6956,6 +7463,7 @@ class Game {
      */
     tapHasOtherMeaning() {
         if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return true;
+        if (this.deleteMoleculeMode) return true;   // v1570・段④（結合の判定線・見出しに食わせない）
         // ★ 「立体が分かれる場所」の印モード（v1435・段1）。**結合をタップして印を付ける**ので、
         //    ここに載っていないと判定線に食われて C=C が C≡C に化ける（§4-3・`IW26`）
         if (this.stereoPointMode) return true;
@@ -7274,6 +7782,8 @@ class Game {
         const any = [...strip.querySelectorAll('.ws-pane')].some(p => !p.classList.contains('hidden'));
         strip.classList.toggle('hidden', !any);
         this.syncWorkStripHeight();
+        // 帯の面の出し入れ ＝ 作業（練習・機構・分液）の出入り。名札と知らせをそろえる（v1570）
+        this.syncCanvasModeBadge();
     }
 
     /* ===== 分液の層（DESIGN_ion_layer.md I-1）=====
@@ -7576,6 +8086,8 @@ class Game {
             if (a.id) b.id = a.id;
             b.disabled = !!a.disabled;
             if (a.active) b.classList.add('active');
+            // 練習の出口。名札（v1570）が出ているあいだは名札の「やめる」と重なるので畳む（CSS）
+            if (a.label === 'やめる') b.classList.add('ws-quit');
             b.addEventListener('click', a.onClick);
             acts.appendChild(b);
         });
@@ -7634,9 +8146,9 @@ class Game {
             document.querySelectorAll('#work-strip .ws-pane').forEach(p => {
                 if (!p.classList.contains('hidden')) panes.set(p.id, p.textContent);
             });
-            const others = [...document.querySelectorAll('.modal-overlay')]
-                .filter(m => m !== modal && !m.classList.contains('hidden')).length;
-            return { panes, others };
+            const opened = [...document.querySelectorAll('.modal-overlay')]
+                .filter(m => m !== modal && !m.classList.contains('hidden'));
+            return { panes, others: opened.length, ids: opened.map(m => m.id) };
         };
         /**
          * 「バトンを渡した」＝ **何かが新しく出た**（面が出た・面の中身が別の作業に差し替わった・
@@ -7650,7 +8162,13 @@ class Game {
             const now = canvasSide();
             const grew = now.others > before.others ||
                 [...now.panes].some(([id, text]) => !before.panes.has(id) || before.panes.get(id) !== text);
-            if (grew) this.setStudyOpen(false);
+            if (grew) {
+                // ★ メニューから開いたモーダル（クイズ11枚など）を覚えておく。
+                //   それを「閉じる」と、このメニューへ戻る（`setupLearnExit`・v1570）
+                const 開いた = now.ids.filter(id => !before.ids.includes(id));
+                this._studyHandoffModals = 開いた;
+                this.setStudyOpen(false);
+            }
         };
         // ⚠ capture で先に控える（モーダルは祖先なので、中のボタンの handler より前に走る）
         modal.addEventListener('click', snap, true);
@@ -7687,9 +8205,29 @@ class Game {
      *    （1回のクリックが終わったあとに1度だけ見るので、途中の「誰も出ていない」瞬間を拾わない）。
      */
     setupLearnExit() {
+        /* ★ **「閉じる」でモードを変えない**（v1570・案C 段①の規則）。
+         *   学習メニューから開いたクイズ・命名クイズなどを「閉じる」と、以前は 🧪自由 へ落ちた
+         *   ＝ 次のクイズへは 📚 → アコーディオン → ボタン の3手（棚卸し C2・上位7位
+         *   「閉じるの結果がモーダルごとに逆」）。いまは**学習メニューへ戻る**（1手）。
+         *   ⚠ 戻すのは「メニューから開いたモーダル」だけ（`_studyHandoffModals`）。
+         *     同じ学習モード中でも、🔤呼出 のように別の入口から開いたものは巻き込まない。
+         * ⚠ 学習メニューそのものを閉じたとき・練習や機構を「やめる」ときは従来どおり 🧪自由 へ移る
+         *   （v1392 のユーザー決定）。そのとき名札に「自由モード」が出る（`checkModeTransition`）
+         *   ＝ 黙っては移らない。 */
+        let 開いていた = [];
+        document.addEventListener('click', () => {
+            開いていた = [...document.querySelectorAll('.modal-overlay')]
+                .filter(m => !m.classList.contains('hidden')).map(m => m.id);
+        }, true);
         document.addEventListener('click', () => {
             if (this.currentMode !== 'learn') return;
             if (this.learnSurfaceOpen()) return;
+            const 戻り先 = this._studyHandoffModals || [];
+            if (開いていた.some(id => 戻り先.includes(id))) {
+                this._studyHandoffModals = [];
+                this.setStudyOpen(true);
+                return;
+            }
             this.setMode('free');
         });
     }
@@ -7770,6 +8308,8 @@ class Game {
         // お題ストリップの見出しをタップすると開く（§7-4。説明文へ1手で戻れる道）
         const head = document.getElementById('ws-target-head');
         if (head) head.addEventListener('click', () => this.setPuzzleOpen(true));
+        const pick = document.getElementById('btn-puzzle-pick');
+        if (pick) pick.addEventListener('click', () => this.setPuzzleOpen(true));
     }
 
     /**
@@ -7916,6 +8456,7 @@ class Game {
         // 「🎯 反応させる分子を選ぶ」は 🧪自由 の分子モーダルの道具なので、
         // モードが変わったら下ろす（v1409。持ち越すとタップが作図に戻らない）
         this.deactivateReactionSelectMode();
+        this.deactivateDeleteMoleculeMode();
         // ★ 実験モードのパレットも 🧪自由 の中だけの持ち替え（DESIGN_experiment_mode.md §3-3）。
         //   ⚠ 🧩パズル・📚学習 へ移ったら**必ず作図の道具に戻す** —— 戻さないと、
         //     お題の分子を組もうとした人の手元に原子ボタンが1つも無い画面が出る。
@@ -7976,6 +8517,8 @@ class Game {
         try { localStorage.setItem('chemAssembler.mode', mode); } catch (e) { /* privateモード等 */ }
         // モバイルの名前チップはモードで表示/非表示が変わるため同期する
         if (this.userMolecule) this.syncMobileNameChip();
+        // 名札と「〜を終了しました」をそろえる（v1570。見比べは操作が終わった後）
+        this.syncCanvasModeBadge();
     }
 
     /**
@@ -8412,10 +8955,15 @@ class Game {
             try { input.focus(); } catch (e) { /* 環境によっては効かない */ }
         };
         // 呼び出しは 🧪自由の仕事（描いた分子を触れる場所）。
-        // `leaveGuard` → `setMode('free')` の順は `.mode-tab` の一括配線と同じ形
+        // ★ **開いただけではモードを変えない**（v1570・案C 段①「知らせなしにモードが移る所をなくす」）。
+        //   以前は押した瞬間に `setMode('free')` していたので、パズル中に 🔤 を押すと
+        //   **お題の帯が黙って消え、閉じても戻らなかった**（棚卸し A13・上位2位）。
+        //   移るのは実際に呼び出したとき（下の `実行`）で、そのとき「パズルを終了しました」と
+        //   名札「自由モード」が出る（`checkModeTransition`）。開いた時点ではそうなることを1行で言う。
         btn.addEventListener('click', () => this.leaveGuard('free', () => {
-            this.setMode('free');
             open();
+            const 抜けるもの = { puzzle: 'パズル', learn: '学習' }[this.currentMode];
+            if (msg && 抜けるもの) msg.textContent = `呼び出すと、${抜けるもの}を終えて自由モードに移ります。`;
         }));
 
         const 実行 = () => {
@@ -8435,6 +8983,10 @@ class Game {
                 return;
             }
             close();
+            // ★ モードを移すのはここ（開いた時点ではない・v1570）。
+            //   ⚠ 自由モードにいても呼ぶ（以前の「開いたら setMode('free')」と同じ後始末 ＝
+            //     採点済みで持って出た練習を畳む、などを1つも落とさない）
+            this.setMode('free');
             this.summonMolecule(name);
         };
         ok.addEventListener('mousedown', (e) => e.preventDefault());   // 押す前に blur させない
@@ -9534,6 +10086,8 @@ class Game {
             now.textContent = this._questDone
                 ? `✅ できました（${q.goal}）`
                 : (names.length ? `いま: ${names.join(' ＋ ')}` : 'いま: キャンバスは空です');
+            // 名札（v1570）の数の欄にも同じ文を出す（下の setWorkPane が名札をそろえる）
+            this._questNowText = now.textContent;
             now.title = this._questDone
                 ? '目標の分子がキャンバスにあります。別の課題へ移るか、↻ はじめから でもう一度たどれます'
                 : 'いまキャンバスにある分子です（効かない瓶を押しても、ここは変わりません）';
@@ -9587,7 +10141,9 @@ class Game {
         const btn = document.getElementById('btn-molecule-modal');
         if (!btn) return;
         const n = (window.reactor && window.reactor.executableCount) || 0;
-        btn.textContent = `⚗ 反応させる・調べる（反応 ${n > 0 ? n + '件' : '—'}）`;
+        // ★ v1570（案C 段③・ユーザー決定「コンパクトにして1段」）: 「⚗ 反応させる（6件）」に縮めた。
+        //   375px でも 🔢 と1段に並ぶ幅にするため。⚠ 件数で文言を変えない約束はそのまま
+        btn.textContent = `⚗ 反応させる（${n > 0 ? n + '件' : '—'}）`;
     }
 
     /* ===== ⇅ 上下に裏返す（分子まるごと・DESIGN_sugar.md §1-2b 帰結3・v1450） =====
@@ -10753,9 +11309,15 @@ class Game {
         }
         // ★ 出せるかどうかは門番だけが決める。ここに「対応している形」の一覧を書かない
         const notice = this.iupacNumberingNotice(fromModal);
+        // ★ v1570（案C 段②）: 名前と「やめる」はキャンバス上端の名札が出す。
+        //   「主鎖と番号を出しました（名前）」だけのトーストは同じことの二重なので出さない。
+        //   ⚠ 化学の言い分け（飛ばした分子・エーテル・糖・アルキル基）は名札に無い話なので出す。
+        //   ⚠ 名札を出さない短尺の収録（`.rec-short`）では今までどおり出す
+        const plateSays = !document.documentElement.classList.contains('rec-short');
         if (notice.ok && notice.code === 'multi') {
             this.setIupacNumbering(true, true);
-            this.showToast(notice.message, 4000, 'success');
+            const skipped = notice.many && notice.many.skipped.filter(Boolean).length;
+            if (!plateSays || skipped) this.showToast(notice.message, 4000, 'success');
             return;
         }
         if (!notice.ok) {
@@ -10772,6 +11334,7 @@ class Game {
             return;
         }
         this.setIupacNumbering(true);
+        if (plateSays && notice.code === 'chain') return;
         this.showToast(notice.message, notice.code === 'chain' ? 3000 : 4000, 'success');
     }
 
@@ -10781,7 +11344,11 @@ class Game {
         ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
             const b = document.getElementById(id);
             if (!b) return;
-            b.textContent = on ? '🔢 主鎖と番号を消す' : '🔢 主鎖と番号を見る';
+            // ★ v1570: 帯の札は「🔢 主鎖と番号」1つの名前にし、ON は押下の見た目（.active）で見せる。
+            //   出口は名札の「やめる」（案C）。分子モーダルの札は今までどおり言い分ける
+            b.textContent = id === 'btn-iupac-numbering'
+                ? '🔢 主鎖と番号'
+                : (on ? '🔢 主鎖と番号を消す' : '🔢 主鎖と番号を見る');
             b.setAttribute('aria-pressed', on ? 'true' : 'false');
             b.classList.toggle('active', on);
         });
@@ -11524,6 +12091,19 @@ class Game {
      *   （実測: ヘキサンで 26.0px）。広げたままだと図と説明が理由なく離れる。
      */
     _iupacCaption(lines, hidden, hydrogens) {
+        /* ★ v1570（案C 段②）: 名前はキャンバス上端の名札へ移した。橙の大見出し（`🔢 名前`）と
+         *   「※ 番号の表示中は作図できません。」は、名札が出ているあいだ描かない
+         *   （名札の「やめる」が出口なので、断り書きも要らない）。
+         *   ⚠ 2行目以降の中身（エーテル・糖の言い分け）は化学の話なので残す */
+        const head = lines.length && /^🔢 /.test(lines[0]) ? lines[0].replace(/^🔢 /, '') : '';
+        if (this._iupacPlateName !== head) {
+            this._iupacPlateName = head;
+            // 名札は updateDrawing の先頭でそろえるので、名前が決まった今もう一度だけ
+            this.syncCanvasModeBadge();
+        }
+        if (this._plateMode === 'numbering') {
+            lines = lines.filter((l, i) => !(i === 0 && head) && !/^※ 番号の表示中/.test(l));
+        }
         const pts = [
             ...this.userMolecule.atoms.filter(a => a.element !== 'H' && !(hidden && hidden.has(a.id))),
             ...(hydrogens || [])
@@ -12030,7 +12610,9 @@ class Game {
          * 幅（高さ）の半分以上をまたぐものだけを「床・天井・壁」として数える
          * ——トーストのような小さい浮きもので視野が縮むのを避けるため。
          */
-        ['#work-strip', '#summon-input', '.canvas-header'].forEach(sel => {
+        // ⚠ `#canvas-mode-badge`（v1570 から全モードの名札・上端の全幅）も天井に数える。
+        //   「自由モード」の5秒の札は中身ぶんの幅なので、下の「半分以上をまたぐ」で自然に外れる
+        ['#work-strip', '#summon-input', '.canvas-header', '#canvas-mode-badge'].forEach(sel => {
             document.querySelectorAll(sel).forEach(el => {
                 if (!el.offsetParent && getComputedStyle(el).position !== 'fixed') return; // 非表示
                 const b = el.getBoundingClientRect();
