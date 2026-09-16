@@ -1015,6 +1015,19 @@ button:hover {
     color: var(--text-secondary);
     font-size: 11px;
 }
+/* ★ 自由モードへ戻った直後の名札「自由モード」（v1570・ユーザー決定「5秒でフェードアウト」）。
+   消す時計は game.js の `showFreeModePlate()`（FREE_PLATE_MS）。ここは見え方だけ ——
+   4秒は読めるように出しておき、最後の1秒で薄れる。押しものは持たない */
+#canvas-mode-badge[data-mode="free"] {
+    font-size: 15px;
+    padding: 7px 14px;
+    animation: cmb-free-fade 5s linear forwards;
+}
+#canvas-mode-badge[data-mode="free"] .cmb-title { color: var(--text-primary); }
+@keyframes cmb-free-fade {
+    0%, 80% { opacity: 1; }
+    100% { opacity: 0; }
+}
 /* 条件は「手持ちレイアウト」共通（§スマホ対応の見出しにある3行が正） */
 @media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
     #canvas-mode-badge { font-size: 11px; padding: 5px 8px; gap: 4px 8px; }

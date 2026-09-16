@@ -427,6 +427,8 @@ function moleculeWithCandidate(mol, parent, pt, element, adj) {
 // 4 なのは**グリセリン＋脂肪酸3分子＝油脂**が高校化学でいちばん分子数の多い反応列だから。
 // 一度に全部が反応するわけではなく、同じ反応を繰り返す間ずっと絞り込みを効かせるための上限
 const MAX_REACTION_SELECTION = 4;
+/** 自由モードに戻ったときの名札「自由モード」を出しておく時間（v1570・ユーザー決定「5秒でフェードアウト」） */
+const FREE_PLATE_MS = 5000;
 
 /**
  * 「🎯 反応させる分子を選ぶ」を、キャンバスに分子が1つ（か0）しか無い状態で始めたときの案内
@@ -1219,9 +1221,19 @@ class Game {
                 this.setPuzzleOpen(true);
             });
         }
+        /* ★ v1570（案C 段①の規則「やめる＝モードを抜ける／閉じる＝その場を閉じるだけ」）で
+         *   出口を4つにした。以前の「閉じる（自由モードへ）」は、ここだけ「閉じる」がモードを抜けていた
+         *   （お題モーダルの「閉じる」はパズルに残る ＝ 同じ語で結果が逆・棚卸し上位7位）。
+         *   閉じる … パズルに残る（解いた図を見返す）／ やめる … パズルを終えて 🧪自由 へ */
         const btnWinClose = document.getElementById('btn-win-close');
         if (btnWinClose) {
             btnWinClose.addEventListener('click', () => {
+                this.winModal.classList.add('hidden');
+            });
+        }
+        const btnWinQuit = document.getElementById('btn-win-quit');
+        if (btnWinQuit) {
+            btnWinQuit.addEventListener('click', () => {
                 this.winModal.classList.add('hidden');
                 this.setMode('free');
             });
@@ -1415,6 +1427,7 @@ class Game {
         this.setupStudyModal();
         this.setupPuzzleModal();
         this.setupLearnExit();
+        this.watchTrustedInput();
         // 枠の外を押したら閉じる（§22）。**持ち主の配線より先でよい** —— 押すのは
         // ボタンそのものなので、そのボタンに誰がいつ listener を足したかに依存しない
         this.setupBackdropClose();
@@ -3425,6 +3438,11 @@ class Game {
                 stopTitle: '選ぶのをやめて作図に戻ります（左の道具や環・官能基のボタンを選んでも戻ります）'
             };
         }
+        // ★ ほかのモードから自由モードへ戻った直後の5秒（v1570・ユーザー決定）。
+        //   ⚠ 何かのモードに入ったら即座に引っ込む（上の分岐が先に返る／一覧が空でない）
+        if (this._freePlateUntil && Date.now() < this._freePlateUntil && this.activeModes().length === 0) {
+            return { mode: 'free', title: '自由モード' };
+        }
         return null;
     }
 
@@ -3436,6 +3454,8 @@ class Game {
      */
     syncCanvasModeBadge() {
         const box = document.getElementById('canvas-mode-badge');
+        // モードの出入りを見比べる入口（`updateDrawing` の先頭からここへ来る）
+        this.noteModeChange();
         if (!box) return;
         const spec = this.canvasModeBadgeSpec();
         if (!spec) {
@@ -3469,7 +3489,9 @@ class Game {
             return el;
         };
         span('cmb-title', spec.title);
-        span('cmb-count', spec.count).title = spec.countTitle || '';
+        // 「自由モード」の札は名前だけ（数も押しものも持たない）
+        if (spec.count) span('cmb-count', spec.count).title = spec.countTitle || '';
+        if (!spec.stop) return;
         const stop = document.createElement('button');
         stop.type = 'button';
         stop.className = 'cmb-stop';
@@ -3481,7 +3503,7 @@ class Game {
             this.stopCanvasModeBadgeMode();
         });
         box.appendChild(stop);
-        span('cmb-note', spec.note);
+        if (spec.note) span('cmb-note', spec.note);
     }
 
     /**
@@ -3502,6 +3524,113 @@ class Game {
             if (btn) { btn.click(); return; }
             if (this.deactivateReactionSelectMode()) this.updateDrawing();
         }
+    }
+
+    /* ===== モードを抜けたことを画面で言う（v1570・案C 段①・ユーザー決定 2026-09-15〜16） =====
+     *
+     * **申し立て**: 「分液モードや、反応相手を選ぶモードから抜けているかどうかがわかりづらい」。
+     * 棚卸し（67状態）では、抜けたときに画面が言うことが**モードごとにばらばら**で、
+     * パズル中の 🔤呼出・学習系を閉じる・書き出し練習の答え合わせは**何も言わずに**モードが移っていた。
+     *
+     * ★ ユーザーの答え:
+     *   ① やめたら「〜を終了しました」をトーストで出す
+     *   ② 自由モードに入ったら（ほかのモードから抜けたときを含む）名札に「自由モード」と出して5秒で消す
+     *
+     * ★ **出口ごとに書かない。結果で決める**（`setupLearnExit` と同じ理由 —— 出口は 20 を超える）。
+     *   いま動いているモードの一覧（`activeModes`）を控えておき、変わったら差分を言う。
+     *   ⚠ 1回の操作の中で「止めて・また始める」（練習の ↻ もう一度・お題の差し替え）を
+     *     終了と読まないよう、見比べるのは**その操作が終わった後**（`setTimeout 0`）。
+     *
+     * ⚠ **人の操作で変わったときだけ言う**（`event.isTrusted`）。
+     *   台本（demos）の無人再生・`?open=` の着地・テストの `setMode` はどれも合成の操作なので、
+     *   ここでトーストや名札を足すと**収録した動画の画に知らない字幕が入る**。
+     *   テストが知らせそのものを確かめるときだけ `_modeNoticeForTest` で合成の操作も数える。
+     */
+    activeModes() {
+        const out = [];
+        const rp = window.reactionPlayer;
+        // ⚠ 並びは名札に出す優先の逆順ではなく「外側 → 内側」。名札（段②）は後ろから見る
+        if (this.currentMode === 'puzzle') out.push({ key: 'puzzle', name: 'パズル' });
+        // 📚 学習は**メニューを開いただけでも** currentMode が learn になる（タイルの点灯はそのまま・
+        // ユーザー未回答 5）。メニューだけでは「終了しました」とは言わない（name: null）が、
+        // 自由モードへ戻ったことは言う
+        if (this.currentMode === 'learn') out.push({ key: 'learn', name: null });
+        if (this.currentQuest) out.push({ key: 'quest', name: '課題' });
+        if ([window.isomerPractice, window.alkylPractice, window.stereoPractice].some(p => p && p.active)) {
+            out.push({ key: 'practice', name: '書き出し練習' });
+        }
+        if (rp && rp.active) out.push({ key: 'mechanism', name: '反応機構' });
+        if (rp && rp.prediction) out.push({ key: 'predict', name: '生成物予測' });
+        if (this.separationActive) out.push({ key: 'sep', name: '分液' });
+        if (this.iupacNumbering) out.push({ key: 'numbering', name: '主鎖と番号の表示' });
+        if (this.reactionSelectMode) out.push({ key: 'reaction-select', name: '反応させる分子選び' });
+        return out;
+    }
+
+    /** モードが変わったかもしれない所から呼ぶ（見比べるのは操作が終わった後に1回だけ） */
+    noteModeChange() {
+        // ⚠ `window.event.isTrusted` だけでは足りない。名札の「やめる」は持ち主のボタンを
+        //   `btn.click()` で押し直す（下ろす道を1本にするため）ので、その内側では
+        //   `window.event` が**合成の click** になる。人の入力が来たこと自体を控えておく
+        //   （`watchTrustedInput`）ほうで見る
+        if (this._trustedInputNow || this._modeNoticeForTest) this._modeChangeByHand = true;
+        if (this._modeCheckTimer) return;
+        // 同じ操作の中で出た別のトースト（反応の結果など）を上書きしないための目印
+        this._toastSeqAtModeChange = this._toastSeq || 0;
+        this._modeCheckTimer = setTimeout(() => {
+            this._modeCheckTimer = null;
+            this.checkModeTransition();
+        }, 0);
+    }
+
+    checkModeTransition() {
+        const now = this.activeModes();
+        const prev = this._modeList;
+        const byHand = this._modeChangeByHand;
+        this._modeChangeByHand = false;
+        this._modeList = now;
+        if (!prev) return;                       // 起動直後の1回目は控えるだけ
+        const nowKeys = new Set(now.map(m => m.key));
+        const ended = prev.filter(m => !nowKeys.has(m.key));
+        const started = now.some(m => !prev.some(p => p.key === m.key));
+        if (!ended.length && !started) return;
+        if (!byHand) return;
+        const names = ended.map(m => m.name).filter(Boolean);
+        // ⚠ 同じ操作で別の知らせ（反応の結果・呼び出しの断りなど）が出ていたら、そちらを残す。
+        //   抜けたことは下の名札「自由モード」でも読める
+        if (names.length && (this._toastSeq || 0) === this._toastSeqAtModeChange) {
+            this.showToast(`${names.join('・')}を終了しました`, 3500, 'success');
+        }
+        if (ended.length && now.length === 0) this.showFreeModePlate();
+    }
+
+    /**
+     * 人の入力（`isTrusted`）が来てから、その処理が終わるまで（`setTimeout 0`）を印にする。
+     * 台本・テストの合成イベントは印を立てない ＝ 無人再生の画に知らせが入らない。
+     */
+    watchTrustedInput() {
+        const mark = (e) => {
+            if (!e.isTrusted) return;
+            this._trustedInputNow = true;
+            clearTimeout(this._trustedInputTimer);
+            this._trustedInputTimer = setTimeout(() => { this._trustedInputNow = false; }, 0);
+        };
+        ['pointerdown', 'pointerup', 'click', 'keydown', 'change'].forEach(t =>
+            window.addEventListener(t, mark, true));
+    }
+
+    /** 名札に「自由モード」を5秒だけ出す（消え方は CSS のフェード。ここは出し入れだけ） */
+    showFreeModePlate() {
+        this._freePlateUntil = Date.now() + FREE_PLATE_MS;
+        const box = document.getElementById('canvas-mode-badge');
+        // ⚠ 出ている最中にもう一度出すときは、いったん隠してフェードを頭からやり直す
+        if (box) { box.classList.add('hidden'); this._modeBadgeKey = ''; }
+        this.syncCanvasModeBadge();
+        clearTimeout(this._freePlateTimer);
+        this._freePlateTimer = setTimeout(() => {
+            this._freePlateUntil = 0;
+            this.syncCanvasModeBadge();
+        }, FREE_PLATE_MS);
     }
 
     // 初めて結合ができたときに一度だけ、結合線タップで次数を変えられることを案内する。
@@ -3527,6 +3656,8 @@ class Game {
         //   比べる相手を「表示後に残る文字列」に替えるだけで、見分けの意味は元のまま
         //   （＝ 誰かが後から別の文言を入れたら、こちらの時計では消さない）。
         const plain = stripEmphasis(message);
+        // 何回目の知らせか（`checkModeTransition` が「同じ操作で別の知らせが出たか」を見る）
+        this._toastSeq = (this._toastSeq || 0) + 1;
         const canvasToast = document.getElementById('canvas-toast');
         if (canvasToast) {
             const shownMs = this.paintCanvasToast(canvasToast, message, type, ms);
@@ -7274,6 +7405,8 @@ class Game {
         const any = [...strip.querySelectorAll('.ws-pane')].some(p => !p.classList.contains('hidden'));
         strip.classList.toggle('hidden', !any);
         this.syncWorkStripHeight();
+        // 帯の面の出し入れ ＝ 作業（練習・機構・分液）の出入り。名札と知らせをそろえる（v1570）
+        this.syncCanvasModeBadge();
     }
 
     /* ===== 分液の層（DESIGN_ion_layer.md I-1）=====
@@ -7634,9 +7767,9 @@ class Game {
             document.querySelectorAll('#work-strip .ws-pane').forEach(p => {
                 if (!p.classList.contains('hidden')) panes.set(p.id, p.textContent);
             });
-            const others = [...document.querySelectorAll('.modal-overlay')]
-                .filter(m => m !== modal && !m.classList.contains('hidden')).length;
-            return { panes, others };
+            const opened = [...document.querySelectorAll('.modal-overlay')]
+                .filter(m => m !== modal && !m.classList.contains('hidden'));
+            return { panes, others: opened.length, ids: opened.map(m => m.id) };
         };
         /**
          * 「バトンを渡した」＝ **何かが新しく出た**（面が出た・面の中身が別の作業に差し替わった・
@@ -7650,7 +7783,13 @@ class Game {
             const now = canvasSide();
             const grew = now.others > before.others ||
                 [...now.panes].some(([id, text]) => !before.panes.has(id) || before.panes.get(id) !== text);
-            if (grew) this.setStudyOpen(false);
+            if (grew) {
+                // ★ メニューから開いたモーダル（クイズ11枚など）を覚えておく。
+                //   それを「閉じる」と、このメニューへ戻る（`setupLearnExit`・v1570）
+                const 開いた = now.ids.filter(id => !before.ids.includes(id));
+                this._studyHandoffModals = 開いた;
+                this.setStudyOpen(false);
+            }
         };
         // ⚠ capture で先に控える（モーダルは祖先なので、中のボタンの handler より前に走る）
         modal.addEventListener('click', snap, true);
@@ -7687,9 +7826,29 @@ class Game {
      *    （1回のクリックが終わったあとに1度だけ見るので、途中の「誰も出ていない」瞬間を拾わない）。
      */
     setupLearnExit() {
+        /* ★ **「閉じる」でモードを変えない**（v1570・案C 段①の規則）。
+         *   学習メニューから開いたクイズ・命名クイズなどを「閉じる」と、以前は 🧪自由 へ落ちた
+         *   ＝ 次のクイズへは 📚 → アコーディオン → ボタン の3手（棚卸し C2・上位7位
+         *   「閉じるの結果がモーダルごとに逆」）。いまは**学習メニューへ戻る**（1手）。
+         *   ⚠ 戻すのは「メニューから開いたモーダル」だけ（`_studyHandoffModals`）。
+         *     同じ学習モード中でも、🔤呼出 のように別の入口から開いたものは巻き込まない。
+         * ⚠ 学習メニューそのものを閉じたとき・練習や機構を「やめる」ときは従来どおり 🧪自由 へ移る
+         *   （v1392 のユーザー決定）。そのとき名札に「自由モード」が出る（`checkModeTransition`）
+         *   ＝ 黙っては移らない。 */
+        let 開いていた = [];
+        document.addEventListener('click', () => {
+            開いていた = [...document.querySelectorAll('.modal-overlay')]
+                .filter(m => !m.classList.contains('hidden')).map(m => m.id);
+        }, true);
         document.addEventListener('click', () => {
             if (this.currentMode !== 'learn') return;
             if (this.learnSurfaceOpen()) return;
+            const 戻り先 = this._studyHandoffModals || [];
+            if (開いていた.some(id => 戻り先.includes(id))) {
+                this._studyHandoffModals = [];
+                this.setStudyOpen(true);
+                return;
+            }
             this.setMode('free');
         });
     }
@@ -7976,6 +8135,8 @@ class Game {
         try { localStorage.setItem('chemAssembler.mode', mode); } catch (e) { /* privateモード等 */ }
         // モバイルの名前チップはモードで表示/非表示が変わるため同期する
         if (this.userMolecule) this.syncMobileNameChip();
+        // 名札と「〜を終了しました」をそろえる（v1570。見比べは操作が終わった後）
+        this.syncCanvasModeBadge();
     }
 
     /**
@@ -8412,10 +8573,15 @@ class Game {
             try { input.focus(); } catch (e) { /* 環境によっては効かない */ }
         };
         // 呼び出しは 🧪自由の仕事（描いた分子を触れる場所）。
-        // `leaveGuard` → `setMode('free')` の順は `.mode-tab` の一括配線と同じ形
+        // ★ **開いただけではモードを変えない**（v1570・案C 段①「知らせなしにモードが移る所をなくす」）。
+        //   以前は押した瞬間に `setMode('free')` していたので、パズル中に 🔤 を押すと
+        //   **お題の帯が黙って消え、閉じても戻らなかった**（棚卸し A13・上位2位）。
+        //   移るのは実際に呼び出したとき（下の `実行`）で、そのとき「パズルを終了しました」と
+        //   名札「自由モード」が出る（`checkModeTransition`）。開いた時点ではそうなることを1行で言う。
         btn.addEventListener('click', () => this.leaveGuard('free', () => {
-            this.setMode('free');
             open();
+            const 抜けるもの = { puzzle: 'パズル', learn: '学習' }[this.currentMode];
+            if (msg && 抜けるもの) msg.textContent = `呼び出すと、${抜けるもの}を終えて自由モードに移ります。`;
         }));
 
         const 実行 = () => {
@@ -8435,6 +8601,10 @@ class Game {
                 return;
             }
             close();
+            // ★ モードを移すのはここ（開いた時点ではない・v1570）。
+            //   ⚠ 自由モードにいても呼ぶ（以前の「開いたら setMode('free')」と同じ後始末 ＝
+            //     採点済みで持って出た練習を畳む、などを1つも落とさない）
+            this.setMode('free');
             this.summonMolecule(name);
         };
         ok.addEventListener('mousedown', (e) => e.preventDefault());   // 押す前に blur させない
