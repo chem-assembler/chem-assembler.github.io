@@ -31454,6 +31454,79 @@
         }
     });
 
+    test('RRP2: もう一度見る —— 次の操作で見直しは終わる（タップ・↩ 戻す・次の反応・反応前に戻す）／見直しのあいだも帯の段は増えない（v1568）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rx = W.reactor;
+        g.setMode('free');
+        const btn = id => D.getElementById(id);
+        const vis = id => btn(id).getBoundingClientRect().width > 0;
+        const pausedMid = () => {
+            assert(rx.replayRestart() && rx.replayStep(1), '（下ごしらえ）見直しに入れない');
+            const st = rx.replayState();
+            assert(st.shown && !st.playing && st.pos > 0, `（下ごしらえ）途中で止まっていない ${JSON.stringify(st)}`);
+        };
+        try {
+            // ① 止めた写しの上でキャンバスをタップ ＝ 見直しを終える（作図はしない）
+            await rrpRun(c, ['エタノール'], 'dehydration_intra');
+            const s0 = rrpSig(c);
+            pausedMid();
+            c.clickAt(40, 40);
+            assert(!rx.replayState().shown && !rx._morphing, 'タップしても見直しが終わらない');
+            assert(rrpSig(c) === s0, `タップで作図が起きた（${rrpSig(c)} ≠ ${s0}）`);
+            assert(vis('btn-rx-replay') && vis('btn-rx-undo'), 'タップで終えたあと帯の行が戻らない');
+            // ② 止めたままリボンの ↩ 戻す（分子が反応前へ変わる）＝ 見直しは終わり、▶ も引っ込む
+            pausedMid();
+            btn('btn-undo').click();
+            assert(!rx.replayState().shown && !rx._morphing, '↩ 戻す のあとも写しが出たまま（次のタップが飲まれる）');
+            assert(!vis('btn-rx-replay') && !btn('reaction-card').classList.contains('rx-replaying'), '↩ 戻す のあとも ▶ か見直しの行が残る');
+            btn('btn-redo').click();
+            assert(vis('btn-rx-replay'), 'やり直しで反応のあとへ戻っても ▶ が戻らない');
+            // ③ 止めたまま次の反応 ＝ 前の見直しは捨て、▶ は新しい反応を見直す
+            pausedMid();
+            const L1 = rx.lastReaction;
+            const rule = W.REACTION_RULES.find(r => r.id === 'add_water');
+            const sites = rule ? rule.detect(g.userMolecule) : [];
+            assert(sites.length, 'エテンに水の付加の箇所が無い（検査が素通りする）');
+            rx.execute(rule, sites[0]);
+            assert(!rx.replayState().shown && rx.lastReaction !== L1, '次の反応を実行しても前の見直しが残る');
+            await 反応の再生を待つ(c);
+            assert(rx.replayRestart() && rx.replayState().stops.includes('join'), '次の反応を見直せない');
+            assert(btn('btn-rx-replay-exit').click() === undefined && !rx.replayState().shown, 'やめる で見直しが終わらない');
+            // ④ ↩ 反応前に戻す ＝ 見直す反応が無くなる
+            btn('btn-rx-undo').click();
+            assert(!vis('btn-rx-replay') && rx.replayPlay() === false, '反応前に戻したのに ▶ が出ている／押せる');
+        } finally {
+            rx.finalizeMorph();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+        // ⑤ 見直しのあいだも #reaction-card と帯の高さは変わらない（行を入れ替えるだけ）・操作は1段に並ぶ・32px の床
+        for (const [w, h] of [[375, 812], [320, 740]]) {
+            await withViewport(w, h, async (FW, FD, name) => {
+                const FG = FW.game;
+                FG.setMode('free');
+                FG.userMolecule = new FW.Molecule(); FG.updateDrawing();
+                assert(FG.summonMolecule('エテン'), `${name}: エテンが呼び出せない`);
+                const rule = FW.REACTION_RULES.find(r => r.id === 'add_br2');
+                FW.reactor.execute(rule, rule.detect(FG.userMolecule)[0]);
+                await new Promise(r => setTimeout(r, 60));
+                const row = FD.getElementById('reaction-card'), strip = FD.getElementById('work-strip');
+                const hgt = el => Math.round(el.getBoundingClientRect().height);
+                const rest = { row: hgt(row), strip: hgt(strip) };
+                const play = FD.getElementById('btn-rx-replay').getBoundingClientRect();
+                const undo = FD.getElementById('btn-rx-undo').getBoundingClientRect();
+                assert(play.width > 0 && Math.abs(play.top - undo.top) <= 3 && play.left >= undo.right,
+                    `${name}: ▶ が ↩ 反応前に戻す の後ろの同じ段にいない`);
+                assert(FW.reactor.replayRestart(), `${name}: 見直しに入れない`);
+                const ctl = [...FD.querySelectorAll('#rx-replay-controls button')].map(b => b.getBoundingClientRect());
+                assert(hgt(row) === rest.row && hgt(strip) === rest.strip,
+                    `${name}: 見直しに入ると #reaction-card ${rest.row}→${hgt(row)}px・帯 ${rest.strip}→${hgt(strip)}px（段が増えた）`);
+                assert(ctl.length === 5 && ctl.every(r => r.width > 0 && Math.abs(r.top - ctl[0].top) <= 3 && r.height >= 32),
+                    `${name}: 見直しの操作が1段に並んでいない／32px を割る ${JSON.stringify(ctl.map(r => [Math.round(r.top), Math.round(r.width), Math.round(r.height)]))}`);
+                FW.reactor.replayExit();
+            });
+        }
+    });
+
     /**
      * ===== RX32・RX33: 予測モードの「お題」（v1409） =====
      *
