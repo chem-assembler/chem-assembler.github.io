@@ -1025,6 +1025,127 @@ function nearestCounterIon(mol, atomId, sign) {
         .sort((p, q) => Math.hypot(p.x - a.x, p.y - a.y) - Math.hypot(q.x - a.x, q.y - a.y))[0] || null;
 }
 
+/* ===== 分液の水層で、対イオンの粒を「自分の相方のそば」に保つ（v1569・発注書 C）=====
+ *
+ * ★★ **塩はもう電離した形で描いている**（v1538）。直すのは**粒の置き場**だけ。
+ *   実測（v1567・V141 の手4／V143 の手3）: 安息香酸ナトリウムの Na⁺ は O⁻ の右2マスに置かれ、
+ *   あとからフェノールが隣で -O⁻ になると、**その Na⁺ はフェノキシドの O⁻ のほうが近い**。
+ *   相方は距離で組む（`saltMetalPairs`・`attachCounterIons`）ので、
+ *   ① 図では Na⁺ がどちらの塩のものか読めない
+ *   ② CO₂ を吹き込むと**安息香酸側の Na⁺ が外され**、フェノキシド側の Na⁺ が
+ *      安息香酸イオンから 227px 離れて残る（V143 の手4）
+ *   —— 分子式・名前・層は合っているので、他の検査は全部通っていた。
+ *
+ * ★ 決め方: 反応の**前**に「どの粒が誰の相方か」を控え（その時点では紛れていない）、
+ *   反応で増えた粒は「その反応で電荷が付いた原子」の相方として足す。
+ *   反応と層の移動のあと、**水層の粒が紛れていたら**（自分の相方より近い逆符号の原子がある／
+ *   よその成分の原子のほうが近い）相方のまわりの格子点へ置き直す。
+ * ⚠ **紛れていない粒は1 px も動かさない**（単独の塩・アニリン塩酸塩の見た目は今までどおり）。
+ * ⚠ **場面の境界は `applyToMixture`**（分液の面を開いて瓶を押したとき）。反応の一覧・
+ *   名前から呼び出した塩・参考書の図は通らない。有機層（印の無い成分）の粒も動かさない。
+ * ⚠ 座標は見た目専用（CLAUDE.md）＝ 結合・電荷・正準コードには触らない。
+ */
+function counterIonOwners(mol) {
+    const owners = new Map();   // 粒の id → 相方の原子の id
+    if (typeof saltMetalPairs === 'function') {
+        saltMetalPairs(mol).forEach((m, oId) => owners.set(m.id, oId));
+    }
+    // 陰イオンの粒（Cl⁻ など）は -NH₃⁺ などの陽イオン側と1対1で組む（近い順）
+    const bonded = new Set();
+    mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+    const anions = mol.atoms.filter(x => !bonded.has(x.id) && x.charge < 0);
+    const cations = mol.atoms.filter(x => bonded.has(x.id) && x.charge > 0);
+    const cand = [];
+    anions.forEach(ion => cations.forEach(c => cand.push({ ion, c, d: Math.hypot(ion.x - c.x, ion.y - c.y) })));
+    cand.sort((p, q) => (p.d - q.d) || (p.ion.x - q.ion.x) || (p.ion.y - q.ion.y));
+    const usedC = new Set();
+    cand.forEach(({ ion, c }) => {
+        if (owners.has(ion.id) || usedC.has(c.id)) return;
+        owners.set(ion.id, c.id); usedC.add(c.id);
+    });
+    return owners;
+}
+
+/** 反応で増えた粒を、その反応で電荷が付いた（符号が逆の）原子の相方として控えに足す */
+function adoptNewCounterIons(mol, owners, beforeIds, beforeCharge) {
+    const bonded = new Set();
+    mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+    const fresh = mol.atoms.filter(a => !beforeIds.has(a.id) && !bonded.has(a.id) && a.charge);
+    const charged = mol.atoms.filter(a => bonded.has(a.id) && a.charge &&
+        (beforeCharge.get(a.id) || 0) !== a.charge);
+    const added = [];
+    fresh.forEach(ion => {
+        const mate = charged
+            .filter(a => Math.sign(a.charge) === -Math.sign(ion.charge) && ![...owners.values()].includes(a.id))
+            .sort((p, q) => Math.hypot(p.x - ion.x, p.y - ion.y) - Math.hypot(q.x - ion.x, q.y - ion.y))[0];
+        if (mate) { owners.set(ion.id, mate.id); added.push(ion.id); }
+    });
+    // 消えた粒は控えから外す（遊離で粒が取れた）
+    [...owners.keys()].forEach(id => { if (!mol.atoms.some(a => a.id === id)) owners.delete(id); });
+    return added;
+}
+
+/**
+ * 粒がその位置で「自分の相方のもの」と読めるか。
+ * ① 逆符号の電荷をもつ（結合のある）原子のうち、相方がはっきりいちばん近い
+ * ② よその成分の原子より、自分の成分の原子のほうがはっきり近い（`attachCounterIons` が同じ成分に付ける）
+ * ③ ほかの原子と重ならない
+ */
+function counterIonReadsClearly(mol, ionId, mateId, at = null) {
+    const ion = mol.atoms.find(a => a.id === ionId);
+    const mate = mol.atoms.find(a => a.id === mateId);
+    if (!ion || !mate) return true;
+    const p = at || ion;
+    const G = bondStep(mol, mateId);
+    const d = (x) => Math.hypot(x.x - p.x, x.y - p.y);
+    const dMate = d(mate);
+    const bonded = new Set();
+    mol.bonds.forEach(b => { bonded.add(b.atomId1); bonded.add(b.atomId2); });
+    if (mol.atoms.some(x => x.id !== ionId && x.element !== 'H' && d(x) < G * 0.65)) return false;
+    if (mol.atoms.some(x => x.id !== mateId && bonded.has(x.id) &&
+        Math.sign(x.charge || 0) === -Math.sign(ion.charge) && d(x) < dMate + G * 0.3)) return false;
+    // 相方の連結成分（粒は結合を持たないので、ここには入らない）
+    const mine = new Set([mateId]);
+    const stack = [mateId];
+    while (stack.length) {
+        const id = stack.pop();
+        mol.getNeighbors(id).forEach(n => { if (!mine.has(n.atom.id)) { mine.add(n.atom.id); stack.push(n.atom.id); } });
+    }
+    const nearMine = Math.min(...mol.atoms.filter(x => mine.has(x.id)).map(d));
+    const foreign = mol.atoms.filter(x => !mine.has(x.id) && x.id !== ionId && bonded.has(x.id));
+    if (foreign.length && Math.min(...foreign.map(d)) < nearMine + G * 0.1) return false;
+    return true;
+}
+
+/**
+ * 水層（`phase === 'aq'`）の粒のうち、紛れているものだけを相方のそばへ置き直す。
+ * `extraIds` は「まだ印は無いが、これから水層へ行く」粒（同じ反応で増えたもの）。
+ * 置き場は相方から格子の2マス → 1マス → 斜めの順。どこも紛れるなら動かさない。
+ */
+function tidyAqueousCounterIons(mol, owners, extraIds = []) {
+    const extra = new Set(extraIds);
+    const G = typeof GRID_SIZE === 'number' ? GRID_SIZE : 42;
+    const steps = [[2, 0], [-2, 0], [0, -2], [0, 2], [1, 0], [-1, 0], [0, -1], [0, 1],
+        [2, -1], [-2, -1], [2, 1], [-2, 1], [1, -2], [-1, -2], [1, 2], [-1, 2],
+        [1, -1], [-1, -1], [1, 1], [-1, 1], [2, -2], [-2, -2], [2, 2], [-2, 2]];
+    const moved = [];
+    owners.forEach((mateId, ionId) => {
+        const ion = mol.atoms.find(a => a.id === ionId);
+        const mate = mol.atoms.find(a => a.id === mateId);
+        if (!ion || !mate) return;
+        if (!(mate.phase === 'aq' || extra.has(ionId))) return;   // 有機層の塩は触らない
+        if (counterIonReadsClearly(mol, ionId, mateId)) return;
+        for (const [sx, sy] of steps) {
+            const at = { x: mate.x + sx * G, y: mate.y + sy * G };
+            if (!counterIonReadsClearly(mol, ionId, mateId, at)) continue;
+            ion.x = at.x; ion.y = at.y;
+            moved.push(ionId);
+            return;
+        }
+    });
+    return moved;
+}
+
 /**
  * C=O にした酸素が炭素鎖と一直線に並んでいたら、直交の空いた向きへ折る（検品レビュー C-7）。
  *
@@ -9866,11 +9987,23 @@ class Reactor {
                     s.filter(x => typeof x === 'string').every(x => mine.has(x)));
                 if (!site) continue;
                 try {
+                    /* ★ 反応の**前**に粒の相方を控える（v1569・`tidyAqueousCounterIons` の注記）。
+                     *   反応のあとで距離から組み直すと、隣にできた塩の粒と取り違える */
+                    const mol0 = g.userMolecule;
+                    const owners = counterIonOwners(mol0);
+                    const beforeIds = new Set(mol0.atoms.map(a => a.id));
+                    const beforeCharge = new Map(mol0.atoms.map(a => [a.id, a.charge || 0]));
                     const res = rule.apply(g, site);
                     applied++;
                     hits.push(part.name);
                     if (res && res.caption) captions.push(`${part.name}: ${res.caption}`);
+                    const toAq = RULE_PHASE[rule.id] && RULE_PHASE[rule.id].phase === 'aq';
+                    const fresh = adoptNewCounterIons(g.userMolecule, owners, beforeIds, beforeCharge);
+                    // 層の印を付ける前に置き直す（`splitMolecules` が粒を近い成分に付けるため）
+                    tidyAqueousCounterIons(g.userMolecule, owners, toAq ? fresh : []);
                     this.assignPhaseFor(rule, site, part.ids);
+                    // 水層へ降ろしたあとにもう一度（平行移動で隣の塩と近づくことがある）
+                    tidyAqueousCounterIons(g.userMolecule, owners);
                 } catch (e) {
                     console.error('反応実行エラー:', rule.id, e);
                     misses.push(`${part.name}（置く場所が足りませんでした）`);
@@ -12827,6 +12960,9 @@ if (typeof window !== 'undefined') {
      *   ★ こちらから呼べるように出しておく（乗り換えは narrowing.js 側の仕事）。 */
     window.reducingCarbonylAtoms = reducingCarbonylAtoms;
     window.RULE_PHASE = RULE_PHASE;             // ルール → 層の対応表（SEP 群が読む）
+    // 水層の粒が相方のそばで読めるか（SEP9 が読む・v1569）
+    window.counterIonOwners = counterIonOwners;
+    window.counterIonReadsClearly = counterIonReadsClearly;
     // `reagentId` が文字列でも配列でもよいことを、テスト側も同じ関数で読む（v1428）
     window.ruleReagentIds = ruleReagentIds;
     window.ruleUsesReagent = ruleUsesReagent;
