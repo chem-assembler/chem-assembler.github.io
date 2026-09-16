@@ -16274,6 +16274,139 @@
         }
     });
 
+    /* ===== RXP4・RXP5: v1563 で残した「相手を呼べずに原子が急に出る」2つ（v1574・ユーザー決定 2026-09-17「7.進める」）=====
+     * RXP4 … ニトロ基の還元。瓶は h2_ni（水素＋触媒）なので H₂ を呼ぶ（C₆H₅NO₂ ＋ 3H₂ → C₆H₅NH₂ ＋ 2H₂O）
+     * RXP5 … 重合の鎖の端の R。R ＝「となりに続く単量体」を反応前の図に離して置き、握手で端とつなぐ
+     *        （写しは再生専用 ＝ 前後比較と反応式は今までどおり） */
+    test('RXP4: ニトロ基の還元は H₂ を3分子呼ぶ ＝ 写しで急に出る／消える原子が0個・H₂ は札にまとめず3つ描く・式は係数どおり（否定対照つき・v1574）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rx = W.reactor;
+        g.setMode('free');
+        const GS = 42;
+        const hhBonds = snap => snap.bonds.filter(b => [b.atomId1, b.atomId2]
+            .every(id => (snap.atoms.find(a => a.id === id) || {}).element === 'H'));
+        try {
+            const r = rxpEqRun(c, ['ニトロベンゼン'], 'reduce_nitro');
+            const A = r.L.anim;
+            assert(A, 'ニトロ基の還元で H₂ を呼べていない（収支が合わない）');
+            assert(!r.pop && !r.gone, `写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」がある`);
+            assert(A.hGap === 0, `H の収支が ${A.hGap} 合わない`);
+            assert(A.counts.H2 === 3 && A.counts.H2O === 2, `係数が H₂ ${A.counts.H2}・H₂O ${A.counts.H2O}（3・2 を期待）`);
+            // H₂ は3つとも描く（札なし）＝ 相手の H が6個・H−H の結合が3本
+            const real = new Set(r.L.before.atoms.map(a => a.id));
+            const hs = A.before.atoms.filter(a => a.element === 'H' && !real.has(a.id));
+            assert(hs.length === 6 && hhBonds(A.before).length === 3 && !(A.before.labels || []).length,
+                `H₂ が3つ描かれていない（H ${hs.length}・H−H ${hhBonds(A.before).length}・札 ${(A.before.labels || []).map(l => l.text)}）`);
+            // 再生の写しでも H−H が3本残り、端点の無い結合が無い（H−H を親子にすると端点が宙に浮く）
+            const ids = new Set(r.hx.before.atoms.map(a => a.id));
+            assert(r.hx.before.bonds.every(b => ids.has(b.atomId1) && ids.has(b.atomId2)), '再生の写しに端点の無い結合がある');
+            assert(hhBonds(r.hx.before).length === 3, `再生の写しの H−H が ${hhBonds(r.hx.before).length} 本（3 を期待）`);
+            // H₂ は分子の上に置かない（重原子の当たり判定を H の枠で受ける）
+            const heavy = A.before.atoms.filter(a => a.element !== 'H');
+            hs.forEach(h => assert(heavy.every(q => Math.hypot(q.x - h.x, q.y - h.y) >= GS * 1.25 - 0.5),
+                `H₂ の H（${Math.round(h.x)},${Math.round(h.y)}）が重原子に近すぎる`));
+            // 前後比較の式
+            const eq = rx.equationText(A, 'reduce_nitro');
+            assert(eq === 'C₆H₅NO₂ ＋ 3H₂ → C₆H₇N ＋ 2H₂O', `反応式が「${eq}」`);
+            rx.openCompare();
+            assert((D.getElementById('rx-cmp-eq') || {}).textContent === eq, '前後比較に H₂ の式が出ない');
+            rx.closeCompare();
+            await 反応の再生を待つ(c);
+            // ★ 否定対照①: 表から外すと O が2つ消える。生成物とキャンバスの原子は同じ
+            const saved = W.PARTNER_EQUATIONS.reduce_nitro;
+            delete W.PARTNER_EQUATIONS.reduce_nitro;
+            try {
+                const plain = rxpEqRun(c, ['ニトロベンゼン'], 'reduce_nitro');
+                assert(!plain.L.anim, '表から外したのに相手を呼んだ');
+                assert(plain.gone === 'OO', `表から外すと消える原子が「${plain.gone}」（OO を期待）＝ この検査は何も見張っていない`);
+                assert(plain.codes === r.codes, `H₂ を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
+                assert(plain.canvas === r.canvas, `H₂ を呼ぶとキャンバスの原子が変わった（${r.canvas} / ${plain.canvas}）`);
+            } finally {
+                W.PARTNER_EQUATIONS.reduce_nitro = saved;
+            }
+            await 反応の再生を待つ(c);
+            // ★ 否定対照②: H₂ を「×n」にまとめると、札「×3」と、描かなかった H₂ の H から湧く名無しの H₂ が同時に出る
+            W.RX_NO_FOLD.delete('H2');
+            try {
+                const folded = rxpEqRun(c, ['ニトロベンゼン'], 'reduce_nitro');
+                const labels = (folded.L.anim.before.labels || []).map(l => l.text).join(',');
+                const drawn = hhBonds(folded.L.anim.before).length, shown = hhBonds(folded.hx.before).length;
+                assert(labels === '×3' && drawn === 1 && shown > drawn,
+                    `否定対照: まとめても札「${labels}」・描いた H₂ ${drawn}・写しの H₂ ${shown} ＝ 食い違いが出ない`);
+            } finally {
+                W.RX_NO_FOLD.add('H2');
+            }
+            await 反応の再生を待つ(c);
+        } finally {
+            W.RX_NO_FOLD.add('H2');
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXP5: 重合の鎖の端の R は反応前の図に離して置き、握手でつなぐ ＝ 急に出る R が0個・前後比較と生成物は今までどおり（否定対照つき・v1574）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rx = W.reactor;
+        g.setMode('free');
+        const GS = 42;
+        const E = 'エチレン（エテン）', A2 = 'アセチレン（エチン）', BD = '1,3-ブタジエン';
+        const cases = [
+            [[E, E, E], 'addition_polymerization'],
+            [['スチレン', 'スチレン', 'スチレン'], 'addition_polymerization'],
+            [['塩化ビニル', '塩化ビニル', '塩化ビニル'], 'addition_polymerization'],
+            [[A2, A2, A2], 'alkyne_polymerization'],
+            [[BD, BD, BD], 'diene_polymerization'],
+            [['スチレン', BD, 'スチレン', BD], 'copolymerization'],
+            [['ε-カプロラクタム', 'ε-カプロラクタム', 'ε-カプロラクタム'], 'ring_opening_polymerization'],
+            [['アジピン酸', 'ヘキサメチレンジアミン', 'アジピン酸', 'ヘキサメチレンジアミン'], 'condensation_polymerization']
+        ];
+        try {
+            for (const [names, id] of cases) {
+                const tag = `${id}（${names[0]}）`;
+                const r = rxpEqRun(c, names, id);
+                const L = r.L, A = L.anim;
+                assert(A && A.playbackOnly, `${tag}: 鎖の端の R を置いた写しが無い`);
+                assert(!r.pop && !r.gone, `${tag}: 写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」がある`);
+                const rs = A.before.atoms.filter(a => a.element === 'R');
+                assert(rs.length === 2 && rs.every(a => a.bare), `${tag}: 反応前の図の R が ${rs.length} 個（2つ・水素なしを期待）`);
+                // R はまだどこともつながっていない・端から離れている・水素が生えていない
+                rs.forEach(R => {
+                    assert(!A.before.bonds.some(b => b.atomId1 === R.id || b.atomId2 === R.id), `${tag}: 反応前の R が結合している`);
+                    assert(!r.hx.before.bonds.some(b => b.atomId1 === R.id || b.atomId2 === R.id), `${tag}: 反応前の R に水素が生えた（R−H に見える）`);
+                    const nb = L.after.bonds.find(b => b.atomId1 === R.id || b.atomId2 === R.id);
+                    const endId = nb.atomId1 === R.id ? nb.atomId2 : nb.atomId1;
+                    const end = A.before.atoms.find(a => a.id === endId);
+                    const d = Math.hypot(end.x - R.x, end.y - R.y);
+                    assert(d >= GS * 1.5, `${tag}: 反応前の R が端に近すぎて、もうつながって見える（${Math.round(d)}px）`);
+                    assert(A.before.atoms.filter(a => a.element !== 'H' && a.id !== R.id)
+                        .every(q => Math.hypot(q.x - R.x, q.y - R.y) >= GS * 1.05), `${tag}: 反応前の R がほかの原子に重なる`);
+                });
+                // 前後比較は今までどおり（R は反応式の物質ではない）
+                assert(!L.before.atoms.some(a => a.element === 'R'), `${tag}: 前後比較の反応前の図に R が入った`);
+                rx.openCompare();
+                assert(!D.getElementById('rx-cmp-eq'), `${tag}: 前後比較に反応式の行が出た（R を物質として並べることになる）`);
+                rx.closeCompare();
+                // 再生: 画面の図（T=0）に R は無く、置き直しのあと（T=1）に2つ現れる
+                rx._morphGen++; rx._morphing = false;
+                const plan = rx.buildPlayback(L, null);
+                assert(plan && rs.every(R => plan.partnerIds.includes(R.id)) && !plan.S0.atoms.some(a => a.element === 'R') &&
+                    plan.S1.atoms.filter(a => a.element === 'R').length === 2, `${tag}: 再生で R が相手として現れない`);
+                g.updateDrawing();
+                await 反応の再生を待つ(c);
+                // ★ 否定対照: 置かないと R が2つ急に出る。生成物とキャンバスは同じ
+                rx._chainEndSummon = false;
+                try {
+                    const plain = rxpEqRun(c, names, id);
+                    assert(!plain.L.anim && plain.pop === 'RR', `${tag}: 否定対照で急に出る原子が「${plain.pop}」（RR を期待）＝ この検査は何も見張っていない`);
+                    assert(plain.codes === r.codes && plain.canvas === r.canvas, `${tag}: R を置くと生成物かキャンバスが変わった`);
+                } finally { rx._chainEndSummon = undefined; }
+                await 反応の再生を待つ(c);
+            }
+        } finally {
+            rx._chainEndSummon = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     /* ===== RXN・RXC・NAOH（v1560。⚠ RXF は v1541 の「参考書の式を起こす反応」が使っている）=====
      * ユーザー:「それでやってみましょう」（係数の大きい相手は1つだけ出して「×n」）／
      *   「反応の前後を見る、では反応式の左辺と右辺が対応している状態にしてください」／
@@ -31826,6 +31959,113 @@
         }
     });
 
+    /* ★ RRP3（v1574）: v1574 で直した3つが、▶ もう一度見る でも同じ形になる。
+     *   見直しは写し（`lastReaction.anim`）から段取りを組み直すので、実行時にだけ効く直し方だと見直しで元に戻る。 */
+    test('RRP3: もう一度見る —— ニトロ基の還元の H₂・重合の端の R・無水グルタル酸の正六角形が、見直しの段でも同じに出る（否定対照つき・v1574）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        /** いまキャンバスに描かれている写しの原子（id → {element, x, y}） */
+        const drawn = () => new Map([...g.atomsGroup.querySelectorAll('[data-id^="morph_"]')].map(n => {
+            const cir = n.querySelector('circle'), txt = n.querySelector('text');
+            return [n.getAttribute('data-id').slice(6), { element: txt ? txt.textContent : '', x: +cir.getAttribute('cx'), y: +cir.getAttribute('cy'), op: +(n.getAttribute('opacity') || 1) }];
+        }));
+        /** 見直しの止まれる段（⏭ の行き先）ごとに写しを描いて集める。最後の段は終わる直前のコマ */
+        const stages = () => {
+            assert(rx.replayRestart(), '見直しに入れない');
+            const r = rx._replay;
+            const out = r.tl.stops.map(s => {
+                rx.drawReplayAt(r, Math.min(s.p, r.tl.end - 1e-6));
+                return { stage: s.key, atoms: drawn() };
+            });
+            rx.replayExit();
+            rx.finalizeMorph();
+            return out;
+        };
+        const E = 'エチレン（エテン）';
+        try {
+            // ① ニトロ基の還元: 相手が現れる段に H₂ の H が6個（H−H の相手どうし）・反応前の段には無い
+            await rrpRun(c, ['ニトロベンゼン'], 'reduce_nitro');
+            let st = stages();
+            const plan = rx.buildPlayback(rx.lastReaction, null);
+            const h2Ids = plan.S1.atoms.filter(a => a.element === 'H' && !plan.S0.atoms.some(b => b.id === a.id)).map(a => a.id);
+            const summon = st.find(s => s.stage === 'summon');
+            assert(summon, `ニトロ基の還元の見直しに「相手が現れる」段が無い（${st.map(s => s.stage).join('→')}）`);
+            // ⚠ 描かれていても薄さ 0.3 以下は「見えていない」（現れる前の原子は不透明度 0 で置かれる）
+            const seen = (s, id) => s.atoms.has(id) && s.atoms.get(id).op > 0.3;
+            assert(h2Ids.length === 6 && h2Ids.every(id => seen(summon, id)) && h2Ids.every(id => !seen(st[0], id)),
+                `見直しの段で H₂ の H が6個現れない（相手が現れる段 ${h2Ids.filter(id => seen(summon, id)).length}/${h2Ids.length}・反応前の段 ${h2Ids.filter(id => seen(st[0], id)).length}）`);
+            const oCount = s => [...s.atoms.values()].filter(a => a.element === 'O' && a.op > 0.3).length;
+            const joinOf = list => list.find(s => s.stage === 'join');
+            // ⚠ 最後の「薄れる」段は、水（副生成物）が消えるのが正しい ＝ 数えない
+            assert(joinOf(st) && st.filter(s => s.stage !== 'fade').every(s => oCount(s) === 2),
+                `見直しのどこかの段で O が消えた（${st.map(s => `${s.stage}:${oCount(s)}`).join('→')}）`);
+            // ★ 否定対照①: H₂ を呼ばない反応では、つながる段で O が消える（この物差しは O の出入りを見ている）
+            const savedEq = W.PARTNER_EQUATIONS.reduce_nitro;
+            delete W.PARTNER_EQUATIONS.reduce_nitro;
+            try {
+                await rrpRun(c, ['ニトロベンゼン'], 'reduce_nitro');
+                st = stages();
+                assert(joinOf(st) && oCount(joinOf(st)) < 2, `否定対照: H₂ を呼ばなくても ${st.map(s => `${s.stage}:${oCount(s)}`).join('→')} ＝ 空振り`);
+            } finally { W.PARTNER_EQUATIONS.reduce_nitro = savedEq; }
+
+            // ② 付加重合: 反応前の段に R は無く、相手が現れる段で2つ出て、つながる段まで残る
+            const rCount = s => [...s.atoms.values()].filter(a => a.element === 'R' && a.op > 0.3).length;
+            await rrpRun(c, [E, E, E], 'addition_polymerization');
+            st = stages();
+            assert(rCount(st[0]) === 0, '見直しの反応前の段に R が居る');
+            const firstR = st.findIndex(s => rCount(s) === 2);
+            assert(firstR > 0 && st[firstR].stage === 'summon', `見直しで R が「相手が現れる」段に出ない（${st.map(s => `${s.stage}:${rCount(s)}`).join('→')}）`);
+            // ★ 否定対照②: R を置かないと、相手が現れる段が無く、R はつながる段で初めて出る
+            rx._chainEndSummon = false;
+            try {
+                await rrpRun(c, [E, E, E], 'addition_polymerization');
+                st = stages();
+                const k = st.findIndex(s => rCount(s) === 2);
+                assert(!st.some(s => s.stage === 'summon') && st[k] && st[k].stage !== 'summon',
+                    `否定対照: R を置かなくても ${st.map(s => `${s.stage}:${rCount(s)}`).join('→')} ＝ この検査は何も見張っていない`);
+            } finally { rx._chainEndSummon = undefined; }
+
+            // ③ 無水グルタル酸: つながる段の写しの六員環が正六角形
+            const hexAt = () => {
+                const L = rx.lastReaction;
+                st = stages();
+                const join = st.find(s => s.stage === 'join');
+                assert(join, `分子内脱水の見直しに「つながる」段が無い（${st.map(s => s.stage).join('→')}）`);
+                const ring = [];
+                // 反応後の図の架橋の O（C 2つとだけ単結合）から六員環をたどる
+                const nb = id => L.after.bonds.filter(b => b.atomId1 === id || b.atomId2 === id)
+                    .map(b => (b.atomId1 === id ? b.atomId2 : b.atomId1)).filter(x => { const a = L.after.atoms.find(y => y.id === x); return a && a.element !== 'H'; });
+                const bridge = L.after.atoms.find(a => a.element === 'O' && nb(a.id).length === 2);
+                const dfs = p => { if (ring.length) return; if (p.length === 6) { if (nb(p[5]).includes(p[0])) ring.push(...p); return; } nb(p[p.length - 1]).forEach(w => { if (!p.includes(w)) dfs([...p, w]); }); };
+                dfs([bridge.id]);
+                assert(ring.length === 6, '反応後の図に六員環が無い');
+                const pts = ring.map(id => join.atoms.get(id));
+                assert(pts.every(Boolean), '見直しの段に環の原子が描かれていない');
+                return pts.map((P, i) => {
+                    const A = pts[(i + 5) % 6], B = pts[(i + 1) % 6];
+                    let d = Math.abs(Math.atan2(A.y - P.y, A.x - P.x) - Math.atan2(B.y - P.y, B.x - P.x)) * 180 / Math.PI;
+                    return d > 180 ? 360 - d : d;
+                });
+            };
+            await rrpRun(c, ['グルタル酸（ペンタン二酸）'], 'dehydration_anhydride');
+            let angs = hexAt();
+            assert(angs.every(a => Math.abs(a - 120) <= 5), `見直しの無水グルタル酸の内角が ${angs.map(Math.round).join('・')}°`);
+            // ★ 否定対照③: 六角形に置かないと、見直しの段でもつぶれている
+            const savedHex = W.anhydrideHexagonPlacement;
+            W.anhydrideHexagonPlacement = () => null;
+            try {
+                await rrpRun(c, ['グルタル酸（ペンタン二酸）'], 'dehydration_anhydride');
+                angs = hexAt();
+                assert(!angs.every(a => Math.abs(a - 120) <= 5), `否定対照: 六角形に置かなくても見直しの内角が ${angs.map(Math.round).join('・')}° ＝ 空振り`);
+            } finally { W.anhydrideHexagonPlacement = savedHex; }
+        } finally {
+            rx._chainEndSummon = undefined;
+            rx.finalizeMorph();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     /**
      * ===== RX32・RX33: 予測モードの「お題」（v1409） =====
      *
@@ -42053,6 +42293,137 @@
             W.anhydridePentagonPlacement = saved;
         }
         c.reset();
+    });
+
+    /* ★ RC6c: 反応で閉じた酸無水物の**六員環は正六角形**（v1574・ユーザー決定 2026-09-17「6.直す」）。
+     * ⚠ v1566 の総当たりで、グルタル酸 → 無水グルタル酸が内角 139・21・180・180・180・21° につぶれていた。
+     *   直鎖のままではカルボニル炭素だけを動かしても正六角形にならない ＝ 鎖の CH₂ まで動かす。
+     * **否定対照**: `anhydrideHexagonPlacement` を無効にすると赤／置く場所がふさがれていれば動かさない。 */
+    test('RC6c: 反応でできた無水グルタル酸の六員環が正六角形（120°±5°・頂点が上下）／ふさがれていれば反対側・両側ふさがれば動かさない（否定対照つき・v1574）', async (c) => {
+        const W = c.W, g = c.game;
+        const CC = W.canonicalCode;
+        const GLU = 'グルタル酸（ペンタン二酸）';
+        const dehyd = W.REACTION_RULES.find(r => r.id === 'dehydration_anhydride');
+        assert(dehyd && typeof W.anhydrideHexagonPlacement === 'function', '分子内脱水か六角形の置き方が無い');
+        const setup = () => {
+            c.reset();
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+            assert(g.summonMolecule(GLU), 'グルタル酸が呼び出せない');
+            g.updateDrawing();
+            return g.userMolecule;
+        };
+        /** 架橋の O を含む六員環（原子の並び） */
+        const ringOf = (atoms, bonds) => {
+            const byId = new Map(atoms.map(a => [a.id, a]));
+            const nb = id => bonds.filter(b => b.atomId1 === id || b.atomId2 === id)
+                .map(b => byId.get(b.atomId1 === id ? b.atomId2 : b.atomId1)).filter(a => a && a.element !== 'H');
+            let ring = null;
+            for (const o of atoms.filter(a => a.element === 'O')) {
+                const cs = nb(o.id);
+                if (cs.length !== 2 || cs.some(x => x.element !== 'C')) continue;
+                const dfs = (p) => {
+                    if (ring) return;
+                    if (p.length === 6) { if (nb(p[5].id).includes(p[0])) ring = p.slice(); return; }
+                    nb(p[p.length - 1].id).forEach(w => { if (!p.includes(w)) dfs([...p, w]); });
+                };
+                dfs([o]);
+                if (ring) break;
+            }
+            assert(ring, '架橋の O を含む六員環が見つからない');
+            return ring;
+        };
+        const angles = ring => ring.map((P, i) => {
+            const A = ring[(i + 5) % 6], B = ring[(i + 1) % 6];
+            let d = Math.abs(Math.atan2(A.y - P.y, A.x - P.x) - Math.atan2(B.y - P.y, B.x - P.x)) * 180 / Math.PI;
+            if (d > 180) d = 360 - d;
+            return d;
+        });
+        const hexagonal = angs => angs.every(a => Math.abs(a - 120) <= 5);
+        const fmt = angs => angs.map(Math.round).join('・');
+        const react = () => {
+            const mol = g.userMolecule;
+            const sites = dehyd.detect(mol);
+            assert(sites.length === 1, `グルタル酸: 候補が ${sites.length} 件`);
+            dehyd.apply(g, sites[0]);
+            g.updateDrawing();
+            return ringOf(mol.atoms, mol.bonds);
+        };
+        const legacyCode = (() => {
+            const saved = W.anhydrideHexagonPlacement;
+            W.anhydrideHexagonPlacement = () => null;
+            try { setup(); react(); return CC(g.userMolecule); } finally { W.anhydrideHexagonPlacement = saved; }
+        })();
+        try {
+            // ---- (1) 正六角形・頂点が上下（架橋の O が真上か真下）・=O は外向き・正準コードは直す前と同じ ----
+            {
+                const mol = setup();
+                const ring = react();
+                const angs = angles(ring);
+                assert(hexagonal(angs), `無水グルタル酸の内角が ${fmt(angs)}°（120°±5° を期待）`);
+                const cx = ring.reduce((s, a) => s + a.x, 0) / 6, cy = ring.reduce((s, a) => s + a.y, 0) / 6;
+                const o = ring[0];
+                assert(Math.abs(o.x - cx) < 2, `架橋の O が環の真上・真下にない（頂点が上下でない。O ${Math.round(o.x)} / 中心 ${Math.round(cx)}）`);
+                // =O は環の中心から外向き
+                mol.bonds.filter(b => b.type === 2).forEach(b => {
+                    const C = mol.atoms.find(a => a.id === b.atomId1 || a.id === b.atomId2);
+                    const [p, q] = [b.atomId1, b.atomId2].map(id => mol.atoms.find(a => a.id === id));
+                    const carbon = p.element === 'C' ? p : q, ox = p.element === 'O' ? p : q;
+                    assert(C && Math.hypot(ox.x - cx, ox.y - cy) > Math.hypot(carbon.x - cx, carbon.y - cy) + 30,
+                        '=O が環の外向きに出ていない');
+                });
+                assert(CC(mol) === legacyCode, '六角形に置くと正準コードが変わった');
+            }
+            // ---- (2) 実機の流れ（execute）: 前後比較の控えも正六角形・反応前に戻せる ----
+            {
+                const mol = setup();
+                const code0 = CC(mol);
+                W.reactor.execute(dehyd, dehyd.detect(mol)[0]);
+                W.reactor.finalizeMorph();
+                const L = W.reactor.lastReaction;
+                const angs = angles(ringOf(L.after.atoms, L.after.bonds));
+                assert(hexagonal(angs), `実機（execute）の生成物の内角が ${fmt(angs)}°`);
+                assert(W.reactor.undoLastReaction() !== false && CC(g.userMolecule) === code0, '反応前のグルタル酸に戻らない');
+            }
+            // ---- (3) ふさがれているとき: 片側なら反対側に立てる／両側なら今までどおり（動かさない・重ねない） ----
+            {
+                const mol = setup();
+                const cand = W.anhydrideDehydrationCandidates(mol).find(x => x.geo === 'ok');
+                const mid = mol.atoms.find(a => a.id === cand.path[2]);
+                const first = W.anhydrideHexagonPlacement(mol, cand, cand.site[1], cand.site[3]);
+                const oFirst = first.get(cand.site[1]);
+                const up = oFirst.y < mid.y;
+                // 先に立てる側の O の位置をふさぐ
+                mol.addAtom('C', oFirst.x, oFirst.y);
+                g.updateDrawing();
+                const ring = react();
+                assert(hexagonal(angles(ring)), `片側をふさぐと六角形にならない（${fmt(angles(ring))}°）`);
+                assert((ring[0].y < mid.y) !== up, '片側をふさいだのに同じ側に立てた（重なっている）');
+            }
+            {
+                const mol = setup();
+                const cand = W.anhydrideDehydrationCandidates(mol).find(x => x.geo === 'ok');
+                const mid = mol.atoms.find(a => a.id === cand.path[2]);
+                mol.addAtom('C', mid.x, mid.y - 84);
+                mol.addAtom('C', mid.x, mid.y + 84);
+                g.updateDrawing();
+                assert(W.anhydrideHexagonPlacement(mol, cand, cand.site[1], cand.site[3]) === null,
+                    '両側をふさいでも六角形を立てようとした（重なる）');
+            }
+            // ---- (4) **否定対照**: 直す前の置き方に戻すと赤（つぶれた六員環） ----
+            const saved = W.anhydrideHexagonPlacement;
+            try {
+                W.anhydrideHexagonPlacement = () => null;
+                setup();
+                const legacy = angles(react());
+                assert(!hexagonal(legacy), `否定対照が効かない（直す前の置き方でも ${fmt(legacy)}°）`);
+                assert(legacy.some(a => Math.abs(a - 180) < 3), `直す前の置き方で鎖が一直線に並んでいない（${fmt(legacy)}°）`);
+            } finally {
+                W.anhydrideHexagonPlacement = saved;
+            }
+        } finally {
+            c.reset();
+        }
     });
 
     test('ID7: stages.json の全件に id があり、compounds と食い違わない（合流させて使うため）', async (c) => {

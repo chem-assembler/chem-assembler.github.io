@@ -2434,6 +2434,94 @@ function anhydridePentagonPlacement(mol, cand, ohA, ohB) {
 }
 
 /**
+ * ★ 分子内脱水で閉じる**六員環を正六角形に置く**（v1574・DESIGN_structure_render.md「6員は頂点が上下・左右が縦の辺」）。
+ *
+ * ⚠ v1566 の総当たりで、グルタル酸 → 無水グルタル酸が**内角 139・21・180・180・180・21°**につぶれていた。
+ *   直鎖のまま O だけ（あるいはカルボニル炭素だけ）を動かしても正六角形にはならない ＝ **鎖の CH₂ も動かす**。
+ *
+ * 置き方: 経路のまん中の原子（path[2]。グルタル酸なら 3 位の CH₂）だけを**動かさず**、それを頂点にした
+ *   頂点が上下の正六角形を立てる。まん中の原子の向かい（para）が架橋の O になる。
+ *   立てる側は、カルボニル炭素のある側。一直線（直鎖）なら =O のある側（五員環と同じ決め方）。
+ *   動かす原子: 環の残り4つ（p1・p3・カルボニル炭素2つ）・架橋の O・=O、
+ *   **p1・p3 に付いた枝**（根を環の中心から外向きに置き直し、その先は根と同じだけずらす）。
+ *   ⚠ 動かした原子が1つでも、動かさない原子（ほかの分子も含む）の 0.6 マス以内に入れば、
+ *     もう片側を試し、それでも駄目なら null（呼ぶ側が今までどおり O だけ動かす）。
+ * ⚠ 見た目だけ。結合は `apply` が作る ＝ 正準コードは変わらない。
+ * @returns Map<原子id, {x,y}> または null（六員環でない・置くと重なる）
+ */
+function anhydrideHexagonPlacement(mol, cand, ohA, ohB) {
+    const path = cand && cand.path;
+    if (!path || path.length !== 5) return null;
+    const at = id => mol.atoms.find(x => x.id === id);
+    const [cA, p1, p2, p3, cB] = path.map(at);
+    if (!cA || !p1 || !p2 || !p3 || !cB) return null;
+    const G = bondStep(mol, p2.id);
+    const carbonylO = c => mol.bonds
+        .filter(b => b.type === 2 && (b.atomId1 === c.id || b.atomId2 === c.id))
+        .map(b => at(b.atomId1 === c.id ? b.atomId2 : b.atomId1))
+        .filter(o => o && o.element === 'O' && o.id !== ohA && o.id !== ohB);
+    const exo = [[cA, carbonylO(cA)], [cB, carbonylO(cB)]];
+    const ringIds = new Set([cA.id, p1.id, p2.id, p3.id, cB.id, ohA]);
+    // p1・p3 の枝（環の外の重原子と、その先）
+    const branches = [p1, p3].map(r => mol.getNeighbors(r.id)
+        .map(n => n.atom).filter(a => a.element !== 'H' && !ringIds.has(a.id))
+        .map(root => {
+            const ids = [root.id], seen = new Set([r.id, root.id]);
+            let loop = false;
+            for (let i = 0; i < ids.length && !loop; i++) {
+                mol.getNeighbors(ids[i]).forEach(n => {
+                    if (n.atom.element === 'H' || seen.has(n.atom.id)) return;
+                    if (ringIds.has(n.atom.id)) { loop = true; return; }   // 環へ戻る枝（橋かけ）は扱わない
+                    seen.add(n.atom.id); ids.push(n.atom.id);
+                });
+            }
+            return loop ? null : { r, root, ids };
+        }));
+    if (branches.some(list => list.some(b => !b))) return null;
+    const moving = new Set([cA.id, p1.id, p3.id, cB.id, ohA, ohB,
+        ...exo.flatMap(([, os]) => os.map(o => o.id)), ...branches.flat().flatMap(b => b.ids)]);
+    const others = mol.atoms.filter(x => x.element !== 'H' && !moving.has(x.id) && x.id !== p2.id);
+    // 立てる側（上下）: カルボニル炭素・p1・p3 の重心が p2 のどちら側か。一直線なら =O の側
+    const sgn = v => (Math.abs(v) < G * 0.05 ? 0 : Math.sign(v));
+    let sign = sgn([cA, p1, p3, cB].reduce((s, a) => s + a.y - p2.y, 0));
+    if (!sign) sign = sgn(exo.flatMap(([, os]) => os).reduce((s, o) => s + o.y - p2.y, 0));
+    const signs = sign ? [sign, -sign] : [-1, 1];
+    // p1 は今いる左右の側に残す（鏡に映した図にしない）
+    const p1Right = p1.x - p2.x > 0 || (p1.x === p2.x && p3.x < p2.x);
+    const clear = G * 0.6;
+    for (const sg of signs) {
+        // sg = −1 ＝ 環は p2 の上（p2 が下の頂点）、+1 ＝ 環は p2 の下（p2 が上の頂点）
+        const cx = p2.x, cy = p2.y + sg * G;
+        const vtx = deg => ({ x: cx + G * Math.cos(deg * Math.PI / 180), y: cy + G * Math.sin(deg * Math.PI / 180) });
+        const top = sg > 0;   // p2 が上の頂点（−90°）
+        const a0 = top ? -90 : 90;
+        // 右回り（画面で時計回り）に p2 → 右の隣 → 右の2つ先 → O → …
+        const step = top ? 60 : -60;
+        const right1 = vtx(a0 + step), right2 = vtx(a0 + 2 * step), oPos = vtx(a0 + 3 * step),
+            left2 = vtx(a0 + 4 * step), left1 = vtx(a0 + 5 * step);
+        const [n1, nA, nB, n3] = p1Right ? [right1, right2, left2, left1] : [left1, left2, right2, right1];
+        const place = new Map([[p1.id, n1], [cA.id, nA], [ohA, oPos], [cB.id, nB], [p3.id, n3]]);
+        const outward = (np, len) => {
+            const ux = np.x - cx, uy = np.y - cy, L = Math.hypot(ux, uy) || 1;
+            return { x: np.x + ux / L * len, y: np.y + uy / L * len };
+        };
+        exo.forEach(([c, os]) => os.forEach(o => place.set(o.id, outward(place.get(c.id), G))));
+        branches.flat().forEach(b => {
+            const np = place.get(b.r.id);
+            const len = Math.hypot(b.root.x - b.r.x, b.root.y - b.r.y) || G;
+            const q = outward(np, len);
+            const dx = q.x - b.root.x, dy = q.y - b.root.y;
+            b.ids.forEach(id => { const a = at(id); place.set(id, { x: a.x + dx, y: a.y + dy }); });
+        });
+        const pts = [...place.values()];
+        const okOthers = pts.every(p => others.every(o => Math.hypot(o.x - p.x, o.y - p.y) > clear));
+        const okSelf = pts.every((p, i) => pts.every((q, j) => j <= i || Math.hypot(p.x - q.x, p.y - q.y) > clear));
+        if (okOthers && okSelf) return place;
+    }
+    return null;
+}
+
+/**
  * 分子内脱水で酸無水物にできるカルボキシ基の組。
  * 返り値は `{ site: [cA, ohA, cB, ohB], geo }`。`geo` は `'ok'`（実行できる）／
  * `'anti'`（トランス。フマル酸）／`'unknown'`（図からシス/トランスが読めない）。
@@ -7037,8 +7125,9 @@ const REACTION_RULES = [
             const spot = cand && anhydrideBridgeSpot(mol, cA, cB, cand.path, [ohA, ohB]);
             if (!spot) throw noRoom('環をつくる空間がありません');
             const ring = cand.path.length + 1; // 架橋の O を足した環の大きさ
-            // ★ 五員環は正五角形に置く（v1566）。置けないとき（六員環・重なる）は今までどおり O だけ動かす
-            const pentagon = anhydridePentagonPlacement(mol, cand, ohA, ohB);
+            // ★ 五員環は正五角形（v1566）・六員環は正六角形（v1574）に置く。置けないとき（重なる）は今までどおり O だけ動かす
+            const pentagon = anhydridePentagonPlacement(mol, cand, ohA, ohB) ||
+                anhydrideHexagonPlacement(mol, cand, ohA, ohB);
             // 片方の -OH の O を架橋にし、もう片方の -OH は水として出す
             mol.removeBond(cB, ohB);
             if (pentagon) {
@@ -9052,6 +9141,10 @@ const RX_SPECIES = {
     Na: { atoms: [['Na', 0, 0, 0, { bare: true }]], bonds: [] },
     // ½H₂ ＝ 1分子ぶんの反応で出る水素は原子1個ぶん。明示の H を1つ置いて、再生の終わりに薄れさせる
     H: { atoms: [['H', 0, 0]], bonds: [] },
+    /* ★ H₂（v1574・ニトロ基の還元の相手）。重原子が無いので**明示の H 2つを H−H でつなぐ**。
+     *   ⚠ 名前の登録（`summonMolecule`）はできない（v1556 の報告）＝ 写しにだけ置く。
+     *   間隔は `withMorphHydrogens` ③ が呼ぶ H₂ と同じ 0.7 マス */
+    H2: { atoms: [['H', 0, 0], ['H', 0.7, 0]], bonds: [[0, 1, 1]] },
     CH3COOH: { atoms: [['C', 0, 0], ['C', 1, 0], ['O', 1, -1], ['O', 2, 0]], bonds: [[0, 1, 1], [1, 2, 2], [1, 3, 1]] },
     Ac2O: { atoms: [['C', 0, 0], ['C', 1, 0], ['O', 1, -1], ['O', 2, 0], ['C', 3, 0], ['O', 3, -1], ['C', 4, 0]],
         bonds: [[0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1], [4, 5, 2], [4, 6, 1]] }
@@ -9090,8 +9183,19 @@ const PARTNER_EQUATIONS = {
     amine_liberate_naoh: { partners: ['NaOH'], byproducts: ['NaCl', 'H2O'] },
     saponification: { partners: ['NaOH'], byproducts: [] },
     williamson_ether: { partners: [], byproducts: ['NaI'] },
-    acetylation_anhydride: { partners: ['Ac2O'], byproducts: ['CH3COOH'] }
+    acetylation_anhydride: { partners: ['Ac2O'], byproducts: ['CH3COOH'] },
+    /* ★ ニトロ基の還元（v1574・ユーザー決定 2026-09-17「7.進める」）。
+     *   瓶は `h2_ni`（水素＋触媒）なので、呼ぶ相手は **H₂**。教科書の実験室の製法（Sn＋HCl）は
+     *   caption が言葉で案内している（還元剤を瓶の中身に合わせる ＝ 画面と瓶が食い違わない）。
+     *   収支は C₆H₅NO₂ ＋ 3H₂ → C₆H₅NH₂ ＋ 2H₂O（係数は `solveEquation` が解く）。
+     *   ⚠ H₂ は「×n」にまとめない（`RX_NO_FOLD`）。3つが N・O・O の別々の原子へ H を渡す */
+    reduce_nitro: { partners: ['H2'], byproducts: ['H2O'] }
 };
+
+/* 「×n」にまとめない相手（v1574）。1個ずつ基質の決まった原子と握手するもの。
+ *   [O] … 酸化される原子へ1つずつ／H2 … ニトロ基の還元で N・O・O へ別々に H を渡す
+ *   （まとめると、描かなかった H₂ の H が `withMorphHydrogens` ③ で名無しの H₂ として湧き、札と数が食い違う） */
+const RX_NO_FOLD = new Set(['[O]', 'H2']);
 
 /** 分子の型1つを、元素ごとの数（H は自動水素と明示の H の合計）にする */
 function rxSpeciesCount(name) {
@@ -10830,6 +10934,8 @@ class Reactor {
                 result = { ...result, changed: result.changed.map(id => anim.renames.get(id) || id) };
             }
         }
+        // ★ 重合の鎖の端の R（v1574）。相手の表に載らない反応だけ（表の反応は R を付けない）
+        if (!anim) anim = this.planChainEnds(before, g.userMolecule);
         // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
@@ -11090,6 +11196,70 @@ class Reactor {
      * `apply` のあとに呼ぶ。`reuse` の付け替えだけは `mol` の id を書き換える（元素・結合・電荷は触らない）。
      * @returns { before, after, transient, renames, counts, hGap } または null（表に無い／収支が合わない ＝ 今までどおり）
      */
+    /**
+     * ★★ 重合の鎖の端の R を、反応前の図に「鎖の続き」として置く（v1574・ユーザー決定 2026-09-17「7.進める」）。
+     *
+     * **症状**: 付加重合・ジエン・ポリアセチレン・共重合・開環重合・縮合重合で、`apply` が鎖の両端に付ける
+     *   R（「この先も同じ単位が続く」印）が、再生の途中で**何も無い所から急に出ていた**。
+     *
+     * ★ **選んだ形: R を反応前の図に、つながる端のそばへ離して置き、再生の握手で結合させる**。
+     *   R が表すのは**となりに続く単量体（鎖のほかの部分）**。二重結合（開環重合ならアミド結合）が開いて
+     *   となりとつながる、という重合の中身は端でも中でも同じなので、「端の炭素が R と新しく手をつなぐ」は
+     *   化学としてそのまま正しい。
+     *   ⚠ **採らなかった形**: R を最初から端に付けて薄く出しておく。反応前の単量体に R が付いている図になり、
+     *     「単量体がもう鎖の一部だった」と読めてしまう（エチレンの図が R−CH₂−CH₂ に見える）。
+     *
+     * ⚠ **再生の写しにだけ置く**（`playbackOnly`）。キャンバス・生成物・正準コードは `apply` のまま。
+     *   ⚠ 前後比較は今までどおり `lastReaction.before/after`（反応式の行も出さない）——
+     *   R は反応式の物質ではないので、左辺に「2R」と並べると誤解になる。
+     * ⚠ R には水素を生やさない（`bare`。1価なので、生やすと R−H に見える）。
+     * `_chainEndSummon = false` で今までどおり（否定対照）。
+     * @returns 再生の写し、または null（新しく出る R が無い）
+     */
+    planChainEnds(before, mol) {
+        if (this._chainEndSummon === false) return null;
+        const G = (typeof GRID_SIZE !== 'undefined') ? GRID_SIZE : 42;
+        const bPos = new Map(before.atoms.map(a => [a.id, a]));
+        const rs = mol.atoms.filter(a => a.element === 'R' && !bPos.has(a.id));
+        if (!rs.length) return null;
+        const occ = before.atoms.filter(a => a.element !== 'H');
+        const segs = before.bonds.map(b => [bPos.get(b.atomId1), bPos.get(b.atomId2)]).filter(([p, q]) => p && q);
+        const hs = this.molFromSnapshot(before).calculateHydrogens();
+        const placed = [];
+        const ends = [];
+        for (const r of rs) {
+            const nb = mol.getNeighbors(r.id).map(n => n.atom).find(a => bPos.has(a.id));
+            if (!nb) return null;
+            const cb = bPos.get(nb.id);
+            const L = Math.hypot(r.x - nb.x, r.y - nb.y) || 1;
+            const ux = (r.x - nb.x) / L, uy = (r.y - nb.y) / L;
+            const clear = p => occ.every(o => Math.hypot(o.x - p.x, o.y - p.y) >= G * 1.1) &&
+                hs.every(h => Math.hypot(h.x - p.x, h.y - p.y) >= G * 0.8) &&
+                placed.every(o => Math.hypot(o.x - p.x, o.y - p.y) >= G * 1.1) &&
+                segs.every(([p1, p2]) => pointSegmentDistance(p, p1, p2) >= G * 0.6);
+            // 鎖の延長（向きそのまま）を遠くまで先に試し、ふさがっていれば向きを振る ＝ R が鎖の軸の上に来やすい
+            let spot = null;
+            for (const deg of [0, 30, -30, 60, -60, 90, -90]) {
+                for (const k of [1.75, 2.25, 2.75, 3.5]) {
+                    const th = deg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+                    const p = { x: cb.x + (ux * c - uy * s) * G * k, y: cb.y + (ux * s + uy * c) * G * k };
+                    if (clear(p)) { spot = p; break; }
+                }
+                if (spot) break;
+            }
+            if (!spot) spot = { x: cb.x + ux * G * 1.75, y: cb.y + uy * G * 1.75 };
+            placed.push(spot);
+            ends.push({ id: r.id, element: 'R', x: spot.x, y: spot.y, charge: 0, bare: true });
+        }
+        const animBefore = { atoms: before.atoms.map(a => ({ ...a })).concat(ends), bonds: before.bonds.map(b => ({ ...b })) };
+        return {
+            before: animBefore, after: this.snapshotMolecule(mol),
+            transient: [], renames: new Map(), counts: null, hGap: 0,
+            foldedPartnerIds: [], foldedByproductIds: [], foldedH: 0,
+            playbackOnly: true
+        };
+    }
+
     planEquation(ruleId, before, mol, result) {
         const eq = PARTNER_EQUATIONS[ruleId];
         if (!eq) return null;
@@ -11180,7 +11350,7 @@ class Reactor {
             const byName = new Map();
             list.forEach(inst => { if (!byName.has(inst.name)) byName.set(inst.name, []); byName.get(inst.name).push(inst); });
             byName.forEach((insts, name) => {
-                if (this._foldCopies === false || insts.length < RX_FOLD_MIN || name === '[O]') return;
+                if (this._foldCopies === false || insts.length < RX_FOLD_MIN || RX_NO_FOLD.has(name)) return;
                 const rep = insts.slice().sort((a, b) => visible(b) - visible(a))[0];
                 rep.mult = insts.length;
                 insts.forEach(inst => {
@@ -11223,7 +11393,10 @@ class Reactor {
         const place = (inst, anchor) => {
             const offs = inst.slots.map(s => ({ x: s.dx * G, y: s.dy * G }));
             const c0 = centroid(offs);
-            const heavySlots = inst.slots.map((s, k) => (s.el === 'H' ? -1 : k)).filter(k => k >= 0);
+            let heavySlots = inst.slots.map((s, k) => (s.el === 'H' ? -1 : k)).filter(k => k >= 0);
+            /* ★ 重原子の無い相手（H₂・v1574）は H の枠を重原子と同じに避けさせる。
+             *   空のままだと当たり判定が素通りし、分子の真上に置かれる */
+            if (!heavySlots.length) heavySlots = inst.slots.map((s, k) => k);
             let found = null;
             const step = G / 2;
             for (let r = 0; r <= 24 && !found; r++) {
@@ -11299,10 +11472,18 @@ class Reactor {
             const hs = snap.atoms.filter(a => a.element === 'H');
             if (!hs.length) return { snap, explicit: [] };
             const hid = new Set(hs.map(a => a.id));
+            /* ★ H−H（写しに置いた H₂・v1574）は**親なしの手**にし、相方を覚えておく。
+             *   親を相方の H にすると、その H は図から外すので結合の端点が宙に浮く。
+             *   H₂ の結合は、両方に新しい id が付いたあとで結び直す（下の ⑤） */
+            const byId = new Map();
             const explicit = hs.map(a => {
                 const b = snap.bonds.find(x => x.atomId1 === a.id || x.atomId2 === a.id);
-                return { parentId: b ? (b.atomId1 === a.id ? b.atomId2 : b.atomId1) : null, x: a.x, y: a.y };
+                const other = b ? (b.atomId1 === a.id ? b.atomId2 : b.atomId1) : null;
+                const e = { parentId: other && !hid.has(other) ? other : null, x: a.x, y: a.y, mateId: other && hid.has(other) ? other : null };
+                byId.set(a.id, e);
+                return e;
             });
+            explicit.forEach(e => { if (e.mateId) { e.mate = byId.get(e.mateId); delete e.mateId; } else delete e.mateId; });
             return { snap: { atoms: snap.atoms.filter(a => !hid.has(a.id)),
                 bonds: snap.bonds.filter(b => !hid.has(b.atomId1) && !hid.has(b.atomId2)) }, explicit };
         };
@@ -11431,6 +11612,18 @@ class Reactor {
         // ④ 残りは片側だけに置く（今までどおりフェード）
         restL.forEach(L => B.push({ id: nid(), h: L.h, p: L.p }));
         restG.forEach(K => A.push({ id: nid(), h: K.h, p: K.p }));
+        // ⑤ 写しに置いた H₂ の H−H を、付いた id どうしで結び直す（v1574）
+        const matesOf = (list, bonds) => {
+            const idOf = new Map(list.map(e => [e.h, e.id]));
+            list.forEach(e => {
+                if (!e.h.mate || !idOf.has(e.h.mate)) return;
+                const other = idOf.get(e.h.mate);
+                if (e.id < other) bonds.push({ atomId1: e.id, atomId2: other, type: 1 });
+            });
+        };
+        matesOf(B, extraBonds);
+        const extraAfter = [];
+        matesOf(A, extraAfter);
         const build = (snap, list, bonds) => ({
             atoms: snap.atoms.concat(list.map(e => ({ id: e.id, element: 'H', x: e.h.x, y: e.h.y, charge: 0 }))),
             bonds: snap.bonds.concat(list.filter(e => e.p).map(e => ({ atomId1: e.p, atomId2: e.id, type: 1 })), bonds)
@@ -11438,7 +11631,7 @@ class Reactor {
         return {
             // ★ 「×n」の札（v1560）は写しから写しへ引き継ぐ
             before: Object.assign(build(before, B, extraBonds), { labels: labB }),
-            after: Object.assign(build(after, A, []), { labels: labA }),
+            after: Object.assign(build(after, A, extraAfter), { labels: labA }),
             lost: restL.length, gained: restG.length
         };
     }
@@ -12937,7 +13130,9 @@ class Reactor {
         /* ★★ 相手を呼んだ反応は、前後比較も**反応式の左辺と右辺**にそろえる（v1560・ユーザー
          *   「反応の前後を見る、では反応式の左辺と右辺が対応している状態にしてください」）。
          *   前 ＝ 基質＋呼んだ相手すべて／後 ＝ 生成物＋副生成物すべて（まとめたものは「×n」の札）。 */
-        const src = rx.anim || rx;
+        // ⚠ 鎖の端の R だけを置いた写し（`playbackOnly`・v1574）は再生専用。前後比較は今までどおり
+        const eqAnim = rx.anim && !rx.anim.playbackOnly ? rx.anim : null;
+        const src = eqAnim || rx;
         const diff = this.computeDiff(src.before, src.after);
         ov.innerHTML = '';
 
@@ -13011,7 +13206,7 @@ class Reactor {
         }, CYAN);
         ov.appendChild(grid);
         // ★ 並んでいる物質と係数を反応式の形で1行（v1560）。caption の式と同じ数になる
-        if (rx.anim) {
+        if (eqAnim) {
             const eqEl = document.createElement('div');
             eqEl.id = 'rx-cmp-eq';
             eqEl.style.cssText = 'font-size:14px; color:#fff; text-align:center; margin:-2px 0 10px; letter-spacing:0.02em;';
@@ -13311,6 +13506,7 @@ if (typeof window !== 'undefined') {
     window.PARTNER_EQUATIONS = PARTNER_EQUATIONS; // RXP3〜（反応式ぶんの相手と副生成物・v1556）が読む
     window.isolatedBenzeneRings = isolatedBenzeneRings; // RXR1（反応のときに環を回す）が読む
     window.RX_SPECIES = RX_SPECIES;
+    window.RX_NO_FOLD = RX_NO_FOLD;             // RXP4（H₂ を「×n」にまとめない）の否定対照が読む
     window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
     window.noRoom = noRoom;
 }
