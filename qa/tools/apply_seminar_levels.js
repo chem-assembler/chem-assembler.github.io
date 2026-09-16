@@ -24,7 +24,7 @@
  * | 実測 | 現行 | 変更後 | 根拠 |
  * |---|---|---|---|
  * | 基本（例題・問題）に出る | Lv3・Lv4 | **Lv2** | 出題は上限を語る（§3-2）。基本に出る＝Lv≤2 |
- * | 発展にしか出ない | Lv1・Lv2 | **Lv3** | 基本に一度も出ない＝Lv≥3（弱い信号） |
+ * | 発展にしか出ない（プロセスにも出ない） | Lv1・Lv2 | **Lv3** | 基本に一度も出ない＝Lv≥3（弱い信号） |
  * | 未測定 | — | **動かさない** | 根拠が無い。同じ水増しを持つ可能性は高いが推測で動かさない |
  *
  * **Lv1 には落とさない。** セミナーは基本例題と基本問題を区別できない（§3-3 b）ので
@@ -36,6 +36,12 @@
  * **その問題が基本だった**ことしか言わない —— 6コードにまたがる問題の1つなら、
  * その知識自体が基本とは限らない。だから **1件ずつ人が見る**前提で表を出す。
  * `またがり` 欄が小さい（2〜3）ほど信号が強い。
+ *
+ * ## ⚠ ユーザーの上書きは動かさない（2026-09-17）
+ *
+ * 規則は `level_rules.js` の `seminarRule`、上書きは `data/level_matrix.jsonl` の `override` 欄。
+ * 上書きのある項目は、規則が何と言っても上書きの値のまま（`finalLv` の関所）。
+ * 否定対照は `QA_LEVEL_MATRIX=<上書きを消した写し> node qa/tools/apply_seminar_levels.js`。
  */
 'use strict';
 
@@ -43,8 +49,6 @@ var fs = require('fs');
 var path = require('path');
 
 var QA = path.resolve(__dirname, '..');
-var LEVELS = ['基本例題', '基本問題', '発展例題', '発展問題'];
-var BASIC = { '基本例題': 1, '基本問題': 1 };
 
 var qa = JSON.parse(fs.readFileSync(path.join(QA, 'questions.json'), 'utf8'));
 var known = {};
@@ -52,40 +56,32 @@ qa.patterns.forEach(function (p) { known[p.code] = p; });
 
 // ---- セミナーの実測を集める ----
 // ⚠ 材料は **qa/data/ ではなくリポジトリの外**（公開しないため。source_paths.js に理由）
+// ⚠ プロセスも読む（2026-09-17）。読まないと「プロセスに出るが問題では発展にだけ出る」項目を
+//   Lv1 → 3 に上げる案を出す（level_rules.js の seminarRule に理由）
 var SRC = require('./source_paths');
-var files = SRC.list(/^seminar_map_ch\d+\.jsonl$/);
-if (!files.length) { console.log('セミナーの対応表がまだ無い。\n' + SRC.missingMessage()); process.exit(0); }
+var RULES = require('./level_rules');
+var MATRIX = require('./level_matrix');
+var seenMap = MATRIX.readSeminarFlags();
+if (!seenMap) { console.log('セミナーの対応表がまだ無い。\n' + SRC.missingMessage()); process.exit(0); }
 
-var seen = {};   // code -> { basic, adv, span（またがりの最小値）, where }
-files.forEach(function (f) {
-  fs.readFileSync(SRC.at(f), 'utf8').split(/\r?\n/)
-    .filter(function (l) { return l.trim(); }).map(JSON.parse)
-    .forEach(function (o) {
-      (o.codes || []).forEach(function (c) {
-        var s = seen[c] || (seen[c] = { basic: false, adv: false, span: 99, where: {} });
-        s.where[o.level] = true;
-        if (BASIC[o.level]) {
-          s.basic = true;
-          // 基本での「またがり」だけを見る（下げの根拠になるのは基本側の出題）
-          if (o.codes.length < s.span) s.span = o.codes.length;
-        } else s.adv = true;
-      });
-    });
-});
+// ★ ユーザーの上書き（data/level_matrix.jsonl の override 欄）。**上書きのある項目は動かさない**
+var overrides = MATRIX.readOverrides();
 
 // ---- 変更案 ----
-var down = [], up = [];
-Object.keys(seen).sort().forEach(function (c) {
+var down = [], up = [], kept = [];
+Array.from(seenMap.keys()).sort().forEach(function (c) {
   var p = known[c];
   if (!p) return;                          // verify_seminar_map.js が鳴らす
   var lv = p.difficulty || 1;
-  var s = seen[c];
-  var where = LEVELS.filter(function (L) { return s.where[L]; }).join('+');
-  if (s.basic && lv >= 3) {
-    down.push({ code: c, from: lv, to: 2, span: s.span, where: where, unit: p.unit });
-  } else if (!s.basic && s.adv && lv <= 2) {
-    up.push({ code: c, from: lv, to: 3, span: null, where: where, unit: p.unit });
+  var s = seenMap.get(c);
+  var machine = RULES.seminarRule(lv, s.seminarMap, s.process);
+  var to = RULES.finalLv(machine, overrides.get(c));
+  if (machine !== lv && to !== machine) {
+    kept.push({ code: c, from: lv, machine: machine, to: to, o: overrides.get(c) });
   }
+  if (to === lv) return;
+  if (to < lv) down.push({ code: c, from: lv, to: to, span: s.span, where: s.whereText, unit: p.unit });
+  else up.push({ code: c, from: lv, to: to, span: null, where: s.whereText, unit: p.unit });
 });
 
 function show(title, rows) {
@@ -100,6 +96,12 @@ function show(title, rows) {
 }
 show('▼ 下げ（基本に出るのに Lv3以上）', down);
 show('▲ 上げ（発展にしか出ないのに Lv2以下）', up);
+
+console.log('\n■ ユーザーの上書きで据え置き（' + kept.length + '件・data/level_matrix.jsonl の override）');
+kept.forEach(function (k) {
+  console.log('  Lv' + k.from + '（規則なら ' + k.machine + '）  ' + k.code.padEnd(36) +
+    k.o.date + ' ' + k.o.reason);
+});
 
 // 単元ごとの平均 Lv がどう動くか（水増しが取れたかを見る）
 var before = {}, after = {};

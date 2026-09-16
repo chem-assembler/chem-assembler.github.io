@@ -546,6 +546,16 @@ qa の2件と **QB2** が赤くなる。どちらを壊しても必ずどこか�
 
 ## 変更履歴
 
+- 2026-09-17: **none だった4件を `reaction` で繋いだ**（qa v115・ユーザー決定「つなげる」。assembler v1541 のルール）。
+  `org.ali.alkane-combustion` → `?summon=methane&reagent=combustion`、
+  `org.ali.acetylene-benzene` → `?summon=acetylene&reagent=alkyne_trimerization`、
+  `org.poly.copolymer` / `org.poly.sbr-copolymer` → `?summon=styrene&reagent=copolymerization`。
+  ⚠ **新しい型: 札が複数分子を要るルール**（三量化はちょうど3分子・共重合は2種類以上）。
+  `?summon=` は1分子しか置けないので、着地した時点では札が出ない。
+  ⚠ ただし `selectReagent` の選択は残るので、**「名称から呼び出す」で分子を足すと、選んだ札が印つきで現れる**（実機で確認）。
+  そこで札（label）が「3分子並べて」「1,3-ブタジエンを並べて」と**足す作業を言う**形にした
+  （§7 の「組め」問題は summon の話で、reaction は「試薬を実行させる」までが約束なので食い違わない）。
+  燃焼は1分子で札が出るので、そのまま押せば CO₂ ＋ 2H₂O になる
 - 2026-09-10: **§7 を追加。** summon の札 81件のうち **60件が「組め」と言っていた**のを直した（v105）。
   `?summon=` は着地した瞬間に組み上げるので、押した人に組む作業は残っていない。
   `tests.js` に見張りを2本（配信データ側・棚卸し側）。否定対照を実測済み。
