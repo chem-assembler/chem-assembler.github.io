@@ -1588,8 +1588,9 @@ b.em { font-weight: 700; color: var(--neon-blue); }
 #rx-replay-controls button { min-width: 34px; padding: 4px 5px; font-size: 14px; }
 #rx-replay-controls #btn-rx-replay-exit { font-size: 12px; padding: 4px 10px; margin-left: 4px; }
 #rx-replay-controls button:disabled { opacity: 0.35; cursor: default; }
-/* 見直しているあいだは、行を見直しの操作だけにする（🔢・↩ などは写しの図には効かない） */
-#reaction-card.rx-replaying > :not(#rx-replay-controls) { display: none !important; }
+/* 見直しているあいだは、🔢・↩ などの段を見直しの操作に入れ替える（それらは写しの図には効かない）。
+   ⚠ 1段目の ⚗（ws-wide）は残す —— 消すと帯が 40px 縮み、見直しの途中でキャンバスの大きさが変わる（RRP2 ⑤が実測で捕まえた） */
+#reaction-card.rx-replaying > :not(#rx-replay-controls):not(#btn-molecule-modal) { display: none !important; }
 #reaction-step-label {
     font-size: 11px;
     color: var(--text-muted);
