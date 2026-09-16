@@ -1295,10 +1295,15 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //     - `org.aro.c8h10-isomers` … 異性体列挙器の上限。反応とは無関係
     //     - `org.carbonyl.lactone` … エステル化は今も分子間だけ（reactor.js の esterification の detect が
     //       同じ分子の -OH を飛ばしている）。足されたルールに分子内エステル化は無い
-    //   ⚠⚠ **★の付いていない none のうち4件は、新しいルールで繋がりうる**（この便では繋いでいない ——
-    //   繋ぐと questions.json を書き換えることになり、別便の校正と重なるため）:
+    //   ⚠⚠ **★の付いていない none のうち4件は、新しいルールで繋がりうる**（v111 の便では繋いでいない）:
     //   `org.ali.alkane-combustion`（combustion）・`org.ali.acetylene-benzene`（alkyne_trimerization）・
-    //   `org.poly.copolymer` / `org.poly.sbr-copolymer`（copolymerization）。why が「reactor に無い」のまま古い
+    //   `org.poly.copolymer` / `org.poly.sbr-copolymer`（copolymerization）。
+    //   ★ **2026-09-17（qa v115）に4件とも kind:"reaction" で繋いだ**（ユーザー決定「つなげる」）。実機で確認:
+    //     - 燃焼 … `?summon=methane&reagent=combustion` で札が選ばれた状態で着き、押すと CO₂ ＋ 2H₂O
+    //     - 三量化・共重合 … ⚠ **札は複数分子が並んだときだけ出る**（三量化はちょうど3分子・共重合は2種類以上）が、
+    //       `?summon=` は1分子しか置けない。着地のあと「名称から呼び出す」で足すと、選んだ札が印つきで出て
+    //       ベンゼン／スチレン-ブタジエンの鎖ができる。札（label）が「並べて」と言い、足す分子は note に書いた
+    //   ⚠ 次にルールが増えたときも、**none の why が「reactor に無い」と言っている行**を拾い直すこと
     var KNOWN_BOTTLES = 27, KNOWN_RULES = 74, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
