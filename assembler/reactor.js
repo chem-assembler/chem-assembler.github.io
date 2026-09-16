@@ -11769,8 +11769,9 @@ class Reactor {
 
     /** 段取りは ▶ を押したときに1回だけ組む（⚠ refresh は作図のたびに走るので、そこでは組まない） */
     ensureReplay() {
-        if (this._replay && this._replay.L === this.lastReaction) return this._replay;
+        // ⚠ 門番は**段取りを持っていても毎回**見る（描き足したあとに、組んであった段取りで写しを出さない。RRP1 否定対照②が実測で捕まえた）
         if (!this.canReplay()) return null;
+        if (this._replay && this._replay.L === this.lastReaction) return this._replay;
         const tl = this.buildReplayTimeline(this.lastReaction);
         if (!tl) return null;
         this._replay = { L: this.lastReaction, tl, pos: tl.end, playing: false, open: false, gen: -1 };
