@@ -1090,6 +1090,39 @@ button:hover {
     #canvas-mode-badge .cmb-title b { font-size: 14px; }
     #canvas-mode-badge .cmb-icon { font-size: 16px; }
 }
+/* 選択中の道具の札（v1570・ユーザー決定「見本 B」）。キャンバスの右上、名札があればそのすぐ下（top は JS）。
+   色は道具ボタンの押下と同じ橙系 ＝ 名札（シアン＝モード）と見分ける。
+   自由モードでは5秒で消える（`.ctc-fade`・消す時計は game.js）。作業中は出したまま */
+#canvas-tool-chip {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 27;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100% - 16px);
+    padding: 4px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 165, 2, 0.75);
+    background: rgba(8, 12, 18, 0.9);
+    color: #ffd28a;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    pointer-events: none;
+}
+#canvas-tool-chip.hidden { display: none; }
+#canvas-tool-chip .ctc-k { color: var(--text-secondary); font-weight: 400; font-size: 12px; }
+#canvas-tool-chip .ctc-v { overflow: hidden; text-overflow: ellipsis; }
+#canvas-tool-chip.ctc-fade { animation: cmb-free-fade 5s linear forwards; }
+@media (max-width: 899px), (max-width: 1126px) and (orientation: portrait) {
+    #canvas-tool-chip { font-size: 12px; padding: 3px 9px; }
+}
+#svg-wrapper:has(> #ip-review-overlay:not(.hidden), > #rx-compare-overlay:not(.hidden),
+                 > #ak-review-overlay:not(.hidden), > #sp-review-overlay:not(.hidden)) #canvas-tool-chip {
+    display: none;
+}
 /* 答え合わせ・前後比較のオーバーレイを開いているあいだは名札を出さない（見出しを覆うため） */
 #svg-wrapper:has(> #ip-review-overlay:not(.hidden), > #rx-compare-overlay:not(.hidden),
                  > #ak-review-overlay:not(.hidden), > #sp-review-overlay:not(.hidden)) #canvas-mode-badge {

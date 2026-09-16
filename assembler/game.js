@@ -3561,6 +3561,12 @@ class Game {
      * `updateDrawing()` を通らないので、そこからも1回呼ぶ。
      */
     syncCanvasModeBadge() {
+        this._syncCanvasModeBadge();
+        // 選択中の道具の札は名札の位置を見て並ぶので、名札がそろってから（v1570）
+        this.syncToolChip();
+    }
+
+    _syncCanvasModeBadge() {
         const box = document.getElementById('canvas-mode-badge');
         // モードの出入りを見比べる入口（`updateDrawing` の先頭からここへ来る）
         this.noteModeChange();
@@ -3666,6 +3672,84 @@ class Game {
         if (pick) pick.classList.toggle('hidden', mode !== 'puzzle');
     }
 
+    /* ===== 選択中の道具の札（v1570・ユーザー提案 3「選択中のボタンを表示する機能」・2026-09-17 決定） =====
+     *
+     * ★ ユーザーの答え: 見本 B（名札とは別の小さい札をキャンバスの右上。名札があればそのすぐ下）。
+     *   対象は左パネルの道具（元素・環・官能基・結合・消しゴム）と、タップの意味を変える道具
+     *   （反応させる分子を選ぶ・⇄ シス/トランス整形・✳ 不斉マーク・⬍ α/β 面マーク）。
+     *   **自由モードでは5秒で消す**（道具を選び直したら、また出して5秒）。
+     *   ⇄・✳・⬍ の ON は名札のモードにしない ＝ この札で見せる。
+     * ★ 作業中（名札が出ているあいだ）の扱いは、こちらで次のように決めた:
+     *   ・手で描く作業（パズル・練習・課題・分液・予測）… **出したまま**。描く道具が答えに直結するので、
+     *     いま何が置かれるかが常に見えている方がよい
+     *   ・名札そのものがタップの意味を言っている作業（分子選び・主鎖と番号・機構の再生・⏸ 停止）
+     *     … **出さない**（描けない／同じことを2回言う）
+     * ⚠ 人の操作のときだけ出す（`noteModeChange` と同じ理由・台本の画に足さない）。短尺の収録では出さない。
+     */
+    toolChipLabel() {
+        if (this.reactionSelectMode) return { icon: '🎯', label: '反応させる分子を選ぶ' };
+        if (this.reshapeMode) return { icon: '⇄', label: 'シス/トランスを整える' };
+        if (this.asymmetricMode) return { icon: '✳', label: '不斉炭素に印をつける' };
+        if (this.haworthMode) return { icon: '⬍', label: 'α/β の面に印をつける' };
+        if (this.selectedModule) {
+            const b = document.querySelector(`.mod-btn[data-module="${this.selectedModule}"]`);
+            const t = (b ? b.textContent : this.selectedModule).trim();
+            const m = t.match(/^(\S+)\s+(.+)$/);
+            return m ? { icon: m[1], label: `${m[2]}を置く` } : { icon: '', label: `${t}を置く` };
+        }
+        if (this.selectedTool === 'erase') return { icon: '🧽', label: '消しゴム' };
+        if (this.selectedTool === 'bond') return { icon: '／', label: '結合をつなぐ' };
+        const names = { C: '炭素', O: '酸素', N: '窒素', Cl: '塩素', S: '硫黄', Br: '臭素', I: 'ヨウ素', K: 'カリウム' };
+        const el = this.selectedAtomType || 'C';
+        return { icon: el, label: `${names[el] || el}を置く` };
+    }
+
+    syncToolChip() {
+        const chip = document.getElementById('canvas-tool-chip');
+        if (!chip) return;
+        const { icon, label } = this.toolChipLabel();
+        const key = `${icon}|${label}`;
+        if (this._toolChipKey !== undefined && this._toolChipKey !== key &&
+            (this._trustedInputNow || this._modeNoticeForTest)) {
+            this._toolChipUntil = Date.now() + FREE_PLATE_MS;
+            clearTimeout(this._toolChipTimer);
+            this._toolChipTimer = setTimeout(() => this.syncToolChip(), FREE_PLATE_MS + 20);
+            // フェードを頭からやり直す
+            chip.classList.add('hidden');
+        }
+        this._toolChipKey = key;
+        const rec = document.documentElement.classList.contains('rec-short');
+        const plate = this._plateMode || '';
+        const paused = !!(window.reactor && window.reactor.morphPauseInfo && window.reactor.morphPauseInfo());
+        const 描く作業 = ['puzzle', 'practice', 'quest', 'sep', 'predict'];
+        let show, persistent = false;
+        if (rec || paused) show = false;
+        else if (plate) { show = 描く作業.includes(plate); persistent = show; }
+        else show = !!this._toolChipUntil && Date.now() < this._toolChipUntil;
+        if (!show) { chip.classList.add('hidden'); return; }
+        chip.innerHTML = '';
+        const k = document.createElement('span'); k.className = 'ctc-k'; k.textContent = '選択中';
+        const v = document.createElement('span'); v.className = 'ctc-v'; v.textContent = `${icon} ${label}`.trim();
+        chip.append(k, v);
+        chip.classList.toggle('ctc-fade', !persistent);
+        // 名札が出ていればそのすぐ下、無ければ上端（名札と同じく #from-band の実測ぶん下げる）
+        const wrap = document.getElementById('svg-wrapper');
+        const badge = document.getElementById('canvas-mode-badge');
+        let top = 8;
+        if (wrap && badge && !badge.classList.contains('hidden')) {
+            const br = badge.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+            if (br.height > 0) top = Math.round(br.bottom - wr.top) + 6;
+        } else if (wrap) {
+            const band = document.getElementById('from-band');
+            if (band && !band.classList.contains('hidden')) {
+                const br = band.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+                if (br.height > 0) top = Math.round(br.bottom - wr.top) + 8;
+            }
+        }
+        chip.style.top = top + 'px';
+        chip.classList.remove('hidden');
+    }
+
     /* ===== モードを抜けたことを画面で言う（v1570・案C 段①・ユーザー決定 2026-09-15〜16） =====
      *
      * **申し立て**: 「分液モードや、反応相手を選ぶモードから抜けているかどうかがわかりづらい」。
@@ -3757,6 +3841,8 @@ class Game {
         };
         ['pointerdown', 'pointerup', 'click', 'keydown', 'change'].forEach(t =>
             window.addEventListener(t, mark, true));
+        // 道具のボタンは updateDrawing を通らないものが多い ＝ 押し終わりで選択中の札をそろえる
+        window.addEventListener('click', () => this.syncToolChip());
     }
 
     /** 名札に「自由モード」を5秒だけ出す（消え方は CSS のフェード。ここは出し入れだけ） */
