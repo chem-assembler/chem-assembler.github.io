@@ -4376,6 +4376,39 @@ function _iupacOlCore(n, olLocs, eneLocs = [], yneLocs = [], out) {
     return unsat + '-' + olLocs.join(',') + '-' + (IUPAC_MULT[k] || '') + 'オール';
 }
 
+// カルボニル化合物（ケトン -オン／アルデヒド -アール／カルボン酸 -酸）の接尾辞つき幹（v1573）。
+// kind='one'|'al'|'oic'、loc=C=O 炭素の位置番号（al/oic は必ず 1 で名前には書かない）。
+// 例: (4,'one',2)→"2-ブタノン"、(3,'one',2)→"プロパノン"（位置が一意なので省略。プロペン・エタノールと同じ流儀）、
+//     (4,'al')→"ブタナール"、(4,'oic')→"ブタン酸"、(1,'al')→"メタナール"、(1,'oic')→"メタン酸"
+// ★ 高校の範囲に絞る: 1分子に C=O は1つ・-OH／エーテル／多重結合／ハロゲンとの同居は呼ぶ側が断る
+//   （ヒドロキシ酸・ケト酸・二酸・不飽和カルボニルは**この便では null**。DESIGN_iupac_check.md §12）
+// out（配列）については `_iupacUnsatCore` と同じ（返す文字列を作ったかけらをそのまま push する。IN10）
+function _iupacCarbonylCore(n, kind, loc, out) {
+    const stem = IUPAC_ALKANE_STEM[n];
+    if (!stem) return null;
+    const push = (text, role, extra) => { if (out) out.push(Object.assign({ text, role }, extra || {})); };
+    if (kind === 'one') {
+        const tail = { kind: 'one', locs: [loc] };
+        const omit = n === 3;   // プロパノンは C2 しか C=O になれない
+        if (!omit) push(loc + '-', 'locant', tail);
+        push(stem, 'stem', { size: n });
+        push('ノン', 'suffix', tail);
+        return (omit ? '' : loc + '-') + stem + 'ノン';
+    }
+    if (kind === 'al') {
+        push(stem, 'stem', { size: n });
+        push('ナール', 'suffix', { kind: 'al', locs: [1] });
+        return stem + 'ナール';
+    }
+    if (kind === 'oic') {
+        // 「ブタン酸」の幹は「ブタン」（ジオールの `ブタンジオール` と同じ割り方。ン は飽和の段）
+        push(stem + 'ン', 'stem', { size: n });
+        push('酸', 'suffix', { kind: 'oic', locs: [1] });
+        return stem + 'ン酸';
+    }
+    return null;
+}
+
 // chain（番号順の炭素配列）の各炭素に付く全置換基を {loc,name,key}[] で返す。
 // 置換基＝主鎖に乗らない炭素枝（アルキル基・再帰命名）と、炭素に付いたハロゲン。命名不能なら null。
 // haloAdj は炭素→付いたハロゲン置換基名の配列（whole-molから事前計算）
@@ -4556,19 +4589,25 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
  *   kind,       // 'chain' | 'ether'
  *   mainChain,  // 番号順の炭素ID配列。番号 k の炭素 = mainChain[k-1]。kind==='ether' では null
  *   groups,     // kind==='ether' のときだけ [{ids, rootId, name, mainChain}, …]（2つ）。他は null
- *   locants,    // { ol, ene, yne, subs:[{loc,key,name}] } 説明文用。kind==='ether' では null
+ *   locants,    // { ol, ene, yne, subs:[{loc,key,name}], co, coKind } 説明文用。kind==='ether' では null
+ *               //   co = C=O 炭素の位置番号（1つ）・coKind = 'one'|'al'|'oic'（v1573。無ければ [] / null）
  *   nameParts,  // ★ 名称の説明用の**かけらの列**（下記）
- *   dirReason   // ★ 番号の向きを決めた比較（'ol'|'unsat'|'ene'|'sub'|'alpha'|'tie'）。ether は null
+ *   dirReason   // ★ 番号の向きを決めた比較（'carbonyl'|'ol'|'unsat'|'ene'|'sub'|'alpha'|'tie'）。ether は null
  * }
+ *
+ * ★ カルボニル（v1573・DESIGN_iupac_check.md §12）: ケトン（-オン）・アルデヒド（-アール）・
+ *   カルボン酸（-酸）を、**C=O が1つだけで他の官能基・多重結合・ハロゲンを持たない**ときに名乗る。
+ *   エステル・アミド・酸無水物・二酸・ヒドロキシ酸・ケト酸・不飽和カルボニルは今までどおり null
  *
  * ★ `nameParts` = `[{ text, role, ... }]`。**名前を割り直したものではない** ——
  *   `name` を組み立てるときに連結した当のかけらをそのまま並べたもので、
  *   `nameParts.map(p => p.text).join('')` は `name` と**常に1バイト単位で一致する**（IN10）。
  *   role と付随する値（画面はこれだけを見て光らせる原子を決める。IN11）:
  *     'sub'          … 置換基（`2-メチル`）。`locs` ＝ 位置番号の配列・`label` ＝ 基の名前
- *     'locant'       … 位置番号（`-1-`）。`kind` ＝ 'ol'|'ene'|'yne'・`locs`
+ *     'locant'       … 位置番号（`-1-`）。`kind` ＝ 'ol'|'ene'|'yne'|'one'・`locs`
  *     'stem'         … 幹（`プロパ`）。`size` ＝ 主鎖の炭素数
- *     'suffix'       … 接尾辞（`ノール`）。`kind`・`locs` は locant と同じ意味
+ *     'suffix'       … 接尾辞（`ノール`・`ノン`・`ナール`・`酸`）。`kind`（'ol'|'ene'|'yne'|'one'|'al'|'oic'）・
+ *                      `locs` は locant と同じ意味（al/oic は位置番号を書かないので locs=[1] の suffix だけ）
  *     'sat'          … 飽和の印（アルカンの `ン`）
  *     'ether-group'  … エーテルの基。`groups` ＝ `groups[]` の添字の配列
  *     'ether-suffix' … `エーテル`
@@ -4589,19 +4628,46 @@ function iupacNameDetail(mol) {
     const carbons = heavy.filter(a => a.element === 'C');
     if (!carbons.length) return null;
     const carbonIds = new Set(carbons.map(a => a.id));
-    // 多重結合は炭素間のみ
-    if (mol.bonds.some(b => b.type >= 2 && (!carbonIds.has(b.atomId1) || !carbonIds.has(b.atomId2)))) return null;
+    const oxygens = heavy.filter(a => a.element === 'O');
+    // ★ カルボニル C=O（v1573）: O が炭素1個とだけ二重結合でつながっているもの。
+    //   C=O 炭素の隣を見て ケトン（炭素2個）／アルデヒド（炭素1個以下・空き価標あり）／
+    //   カルボン酸（末端の -OH が1つ）に分ける。エステル（-O- の先に炭素）・炭酸（-OH が2つ）・
+    //   酸塩化物などは `co` が立たず、下で「見分けのつかない C=O」として null になる
+    const carbonyl = [];   // [{ cId, oId, kind:'one'|'al'|'oic', ohId }]
+    for (const o of oxygens) {
+        const nb = mol.getNeighbors(o.id);
+        if (nb.length !== 1 || nb[0].type !== 2 || nb[0].atom.element !== 'C') continue;
+        const c = nb[0].atom;
+        const cn = mol.getNeighbors(c.id).filter(n => n.atom.id !== o.id && n.atom.element !== 'H');
+        const cC = cn.filter(n => n.atom.element === 'C');
+        const cO = cn.filter(n => n.atom.element === 'O' && n.type === 1);
+        if (cn.length !== cC.length + cO.length) continue;        // C=O の炭素に N・ハロゲン等が付く
+        let kind = null, ohId = null;
+        if (cO.length === 0 && cC.length === 2) kind = 'one';
+        else if (cO.length === 0 && cC.length <= 1) kind = 'al';
+        else if (cO.length === 1 && cC.length <= 1) {
+            const oh = cO[0].atom;
+            if (mol.getNeighbors(oh.id).length === 1 && !oh.charge) { kind = 'oic'; ohId = oh.id; }
+        }
+        if (kind) carbonyl.push({ cId: c.id, oId: o.id, kind, ohId });
+    }
+    const coOxygen = new Set(carbonyl.flatMap(x => [x.oId, x.ohId].filter(Boolean)));
+    // 多重結合は炭素間か、上で見分けた C=O のみ
+    if (mol.bonds.some(b => b.type >= 2 && (!carbonIds.has(b.atomId1) || !carbonIds.has(b.atomId2)) &&
+        !carbonyl.some(x => (b.atomId1 === x.cId && b.atomId2 === x.oId) || (b.atomId2 === x.cId && b.atomId1 === x.oId)))) return null;
     // ハロゲンは炭素1個にだけ単結合で付く末端置換基
+    let haloCount = 0;
     for (const a of heavy) {
         if (!IUPAC_HALOGEN[a.element]) continue;
         const nb = mol.getNeighbors(a.id);
         if (nb.length !== 1 || nb[0].atom.element !== 'C') return null;
+        haloCount++;
     }
-    // 酸素の分類: -OH（炭素1個・単結合）か エーテル（炭素2個・単結合）。それ以外（C=O・ペルオキシド等）は未対応
-    const oxygens = heavy.filter(a => a.element === 'O');
+    // 酸素の分類: -OH（炭素1個・単結合）か エーテル（炭素2個・単結合）。それ以外（ペルオキシド等）は未対応
     const hydroxylC = [];
     let etherCount = 0;
     for (const o of oxygens) {
+        if (coOxygen.has(o.id)) continue;   // C=O とカルボン酸の -OH は上で数えた
         if (mol.bonds.some(b => (b.atomId1 === o.id || b.atomId2 === o.id) && b.type !== 1)) return null;
         const cNb = mol.getNeighbors(o.id).filter(n => n.atom.element === 'C');
         const allNb = mol.getNeighbors(o.id);
@@ -4610,6 +4676,12 @@ function iupacNameDetail(mol) {
         else return null;
     }
     const hasMultiple = mol.bonds.some(b => b.type >= 2 && carbonIds.has(b.atomId1) && carbonIds.has(b.atomId2));
+    // ★ カルボニルは**1つだけ・単独で**扱う（v1573・高校の範囲）。2つ以上（二酸・ジケトン）、
+    //   -OH／エーテル／C=C／ハロゲンとの同居（ヒドロキシ酸・ケト酸・不飽和カルボニル・クロロ酢酸）は
+    //   接尾辞と接頭辞の優先順位（オキソ・ヒドロキシ）や位置番号の省略規則が要るので、この便では名乗らない
+    const co = carbonyl.length === 1 ? carbonyl[0] : null;
+    if (carbonyl.length > 1) return null;
+    if (co && (hydroxylC.length || etherCount || hasMultiple || haloCount)) return null;
     // 不飽和アルコール（アリルアルコール・プロパルギルアルコール等）は v625 で対応した
     // （DESIGN_compound_coverage.md §9.6-3）。ただし次の2つは今も未対応:
     //   ・不飽和エーテル（メチルビニルエーテル）… 慣用名の流儀なので「ビニル」「アリル」という
@@ -4658,8 +4730,10 @@ function iupacNameDetail(mol) {
     const ohSet = new Set(hydroxylC);
     const totalMult = [...cbond.values()].filter(t => t >= 2).length;
 
-    // 主鎖候補: 主特性基(-OH)を最も多く含む → 多重結合を最も多く含む → 最長 の炭素鎖
-    const ohIn = path => path.filter(c => ohSet.has(c)).length;
+    // 主鎖候補: 主特性基(-OH または C=O の炭素)を最も多く含む → 多重結合を最も多く含む → 最長 の炭素鎖
+    // ★ C=O の炭素は主鎖に必ず入る（ohSet と同じ扱い。同居は上で断っているのでどちらか一方だけ）
+    const prinSet = co ? new Set([co.cId]) : ohSet;
+    const ohIn = path => path.filter(c => prinSet.has(c)).length;
     const multIn = path => { let c = 0; for (let k = 0; k + 1 < path.length; k++) if ((cbond.get(_iupacCKey(path[k], path[k + 1])) || 1) >= 2) c++; return c; };
     let cands;
     if (carbons.length === 1) {
@@ -4670,7 +4744,7 @@ function iupacNameDetail(mol) {
         for (let i = 0; i < leaves.length; i++) for (let j = i + 1; j < leaves.length; j++) paths.push(_iupacPath(adj, leaves[i], leaves[j]));
         if (!paths.length) return null;
         const bestOh = Math.max(...paths.map(ohIn));
-        if (bestOh < ohSet.size) return null;            // 全OHを1本の鎖に収められない（分岐ポリオール・未対応）
+        if (bestOh < prinSet.size) return null;          // 全OHを1本の鎖に収められない（分岐ポリオール・未対応）
         let pool = paths.filter(p => ohIn(p) === bestOh);
         const bestMult = Math.max(...pool.map(multIn));
         if (bestMult < totalMult) return null;
@@ -4680,16 +4754,18 @@ function iupacNameDetail(mol) {
     }
     if (!IUPAC_ALKANE_STEM[cands[0].length]) return null;
 
-    const named = cands.map(chain => _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet)).filter(Boolean);
+    const named = cands.map(chain => _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet, co)).filter(Boolean);
     if (!named.length) return null;
-    // 同点主鎖: OH位置番号最小 → 多重結合位置最小 → 置換基数最多 → 置換基位置最小 → 辞書順
-    named.sort((a, b) => _iupacCmpLocants(a.olLocs, b.olLocs) || _iupacCmpLocants(a.unsat, b.unsat) ||
+    // 同点主鎖: C=O位置番号最小 → OH位置番号最小 → 多重結合位置最小 → 置換基数最多 → 置換基位置最小 → 辞書順
+    named.sort((a, b) => _iupacCmpLocants(a.coLocs, b.coLocs) || _iupacCmpLocants(a.olLocs, b.olLocs) ||
+        _iupacCmpLocants(a.unsat, b.unsat) ||
         (b.subCount - a.subCount) || _iupacCmpLocants(a.locants, b.locants) || a.name.localeCompare(b.name, 'ja'));
     // ★ 最後に選ばれた 1本をそのまま持ち出す（捨てない）。ここが「決める場所」で、他には無い
     const best = named[0];
     return {
         name: best.name, kind: 'chain', mainChain: best.chain, groups: null,
-        locants: { ol: best.olLocs, ene: best.eneLocs, yne: best.yneLocs, subs: best.subs },
+        locants: { ol: best.olLocs, ene: best.eneLocs, yne: best.yneLocs, subs: best.subs,
+                   co: best.coLocs, coKind: co ? co.kind : null },
         nameParts: best.parts, dirReason: best.dirReason
     };
 }
@@ -4703,27 +4779,30 @@ function iupacName(mol) {
 }
 
 // 1本の主鎖候補について、両方向で番号付けし規則に沿って名前を作る。
-// 番号付けの優先順位: 主特性基(-OH)の位置番号を最小 → 多重結合の位置番号を最小（二重結合優先）→ 置換基の位置番号最小 → アルファベット
-function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
+// 番号付けの優先順位: 主特性基(C=O → -OH)の位置番号を最小 → 多重結合の位置番号を最小（二重結合優先）→ 置換基の位置番号最小 → アルファベット
+// co = カルボニル { cId, kind }（v1573）。無ければ null で、それ以前と1バイトも変わらない道を通る
+function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet, co) {
     const n = chain.length;
     const hasOh = ohSet && ohSet.size > 0;
     const evalDir = (order) => {
         const subs = _iupacCollectSubs(adj, haloAdj, order);
         if (subs === null) return null;
-        const eneLocs = [], yneLocs = [], olLocs = [];
+        const eneLocs = [], yneLocs = [], olLocs = [], coLocs = [];
         for (let i = 0; i < order.length; i++) if (ohSet && ohSet.has(order[i])) olLocs.push(i + 1);
+        if (co) { const k = order.indexOf(co.cId); if (k < 0) return null; coLocs.push(k + 1); }
         for (let i = 0; i + 1 < order.length; i++) {
             const t = cbond.get(_iupacCKey(order[i], order[i + 1])) || 1;
             if (t === 2) eneLocs.push(i + 1); else if (t === 3) yneLocs.push(i + 1);
         }
         // ★ order（＝番号順の原子ID列）を捨てない。採用した向きの order がそのまま主鎖の番号になる
         //   （DESIGN_iupac_check.md §N-2）。ここで捨てると、画面が向きを選び直すことになる
-        return { order, subs, eneLocs, yneLocs, olLocs };
+        return { order, subs, eneLocs, yneLocs, olLocs, coLocs };
     };
     const f = evalDir(chain), r = evalDir(chain.slice().reverse());
     if (!f || !r) return null;
     const subLocs = d => d.subs.map(x => x.loc).sort((a, b) => a - b);
     let d;
+    const cCo = _iupacCmpLocants(f.coLocs, r.coLocs);
     const cOl = _iupacCmpLocants(_iupacSortNum(f.olLocs), _iupacSortNum(r.olLocs));
     const cUn = _iupacCmpLocants(_iupacSortNum(f.eneLocs.concat(f.yneLocs)), _iupacSortNum(r.eneLocs.concat(r.yneLocs)));
     const cEne = _iupacCmpLocants(_iupacSortNum(f.eneLocs), _iupacSortNum(r.eneLocs));
@@ -4733,7 +4812,10 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
     //   ⚠ 名前の出力は1バイトも変わらない（下の分岐はそのまま。足したのは代入1つだけ）。
     //   IN12 が `compounds.json` 全件で出力不変を、IN13 が6通りとも実際に出ることを見張る
     let dirReason;
-    if (cOl !== 0) { d = cOl < 0 ? f : r; dirReason = 'ol'; }
+    // ★ 'carbonyl'（v1573）: C=O の炭素の位置番号で決まった。アルデヒド・カルボン酸は端の炭素が
+    //   C1 なので必ずここで決まる（メタナール・メタン酸だけは両向きが同じで 'tie'）
+    if (cCo !== 0) { d = cCo < 0 ? f : r; dirReason = 'carbonyl'; }
+    else if (cOl !== 0) { d = cOl < 0 ? f : r; dirReason = 'ol'; }
     else if (cUn !== 0) { d = cUn < 0 ? f : r; dirReason = 'unsat'; }
     else if (cEne !== 0) { d = cEne < 0 ? f : r; dirReason = 'ene'; }
     else if (cSub !== 0) { d = cSub < 0 ? f : r; dirReason = 'sub'; }
@@ -4744,15 +4826,16 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet) {
     }
     const eL = _iupacSortNum(d.eneLocs), yL = _iupacSortNum(d.yneLocs), oL = _iupacSortNum(d.olLocs);
     const coreParts = [];
-    const core = hasOh ? _iupacOlCore(n, oL, eL, yL, coreParts) : _iupacUnsatCore(n, eL, yL, coreParts);
+    const core = co ? _iupacCarbonylCore(n, co.kind, d.coLocs[0], coreParts)
+        : hasOh ? _iupacOlCore(n, oL, eL, yL, coreParts) : _iupacUnsatCore(n, eL, yL, coreParts);
     if (!core) return null;
     const out = { coreParts, parts: null };
-    const name = _iupacAssemble(core, d.subs, n === 1 && !hasOh, out); // メタン系ハロゲン化物のみ置換基位置を省略
+    const name = _iupacAssemble(core, d.subs, n === 1 && !hasOh && !co, out); // メタン系ハロゲン化物のみ置換基位置を省略
     if (!name) return null;
     // chain = 採用した向きの原子ID列。番号 k の炭素 = chain[k-1]（向きは配列の順そのもの）
     return {
         name, chain: d.order, subCount: d.subs.length, subs: d.subs, parts: out.parts, dirReason,
-        olLocs: oL, eneLocs: eL, yneLocs: yL, unsat: _iupacSortNum(eL.concat(yL)), locants: subLocs(d)
+        olLocs: oL, eneLocs: eL, yneLocs: yL, coLocs: d.coLocs, unsat: _iupacSortNum(eL.concat(yL)), locants: subLocs(d)
     };
 }
 

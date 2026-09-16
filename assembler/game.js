@@ -11570,6 +11570,20 @@ class Game {
             });
             return [...out];
         }
+        if (part.kind === 'one' || part.kind === 'al' || part.kind === 'oic') {
+            // カルボニル（v1573）。位置番号（`2-`）は**その炭素**、接尾辞（`ノン`）は**その =O**。
+            // アルデヒド・カルボン酸は位置番号のかけらが無いので、接尾辞が C1 と O をまとめて指す
+            // （-CHO・-COOH は「1番の炭素がその基になっている」と読む）
+            locs.forEach(loc => {
+                const cid = at(loc);
+                if (cid == null) return;
+                if (part.role === 'locant' || part.kind !== 'one') out.add(cid);
+                if (part.role !== 'locant') mol.getNeighbors(cid).forEach(n => {
+                    if (n.atom.element === 'O' && !chainSet.has(n.atom.id)) out.add(n.atom.id);
+                });
+            });
+            return [...out];
+        }
         return [...out];
     }
 
@@ -11584,6 +11598,13 @@ class Game {
         const L = det.locants || {};
         const j = (arr) => (arr && arr.length ? arr.join('・') : '');
         switch (det.dirReason) {
+            case 'carbonyl': {
+                // C=O の炭素の番号で決まった（v1573）。アルデヒド・カルボン酸は端の炭素が C1 と決まっている
+                const co = j(L.co) || '1';
+                if (L.coKind === 'al') return `−CHO の炭素を 1 番にします（アルデヒドは端の炭素が C1）。`;
+                if (L.coKind === 'oic') return `−COOH の炭素を 1 番にします（カルボン酸は端の炭素が C1）。`;
+                return `C=O が ${co} 番になる向きを選びました（C=O の番号がいちばん小さくなる向き）。`;
+            }
             case 'ol': return `-OH が ${j(L.ol) || '1'} 番になる向きを選びました（-OH の番号がいちばん小さくなる向き）。`;
             case 'unsat': return `多重結合（C=C・C≡C）が早く来る向きを選びました（${j((L.ene || []).concat(L.yne || [])) || '—'} 番）。`;
             case 'ene': return '二重結合が早く来る向きを選びました。';
@@ -11691,12 +11712,17 @@ class Game {
             }
             case 'locant':
                 if (part.kind === 'ol') return `-OH が付いている炭素の番号です（${j(part.locs)} 番）。`;
+                if (part.kind === 'one') return `C=O（カルボニル基）になっている炭素の番号です（${j(part.locs)} 番）。`;
                 if (part.kind === 'yne') return `三重結合が始まる炭素の番号です（${j(part.locs)} 番）。`;
                 return `二重結合が始まる炭素の番号です（${j(part.locs)} 番）。`;
             case 'suffix':
                 // ⚠ 「」で引くのは**画面に出ている字**にする（`エタノール` に「オール」という
                 //   並びは無く、かけらは「ノール」。同じ食い違いが「エン」で申し立てられた）
                 if (part.kind === 'ol') return `「${part.text}」＝ -OH（ヒドロキシ基）を持つことを表す接尾辞です（-オール）。`;
+                // カルボニル（v1573）。字面は「ノン」「ナール」「酸」
+                if (part.kind === 'one') return `「${part.text}」＝ 鎖の途中の炭素が C=O（カルボニル基）であることを表す接尾辞です（-オン）。`;
+                if (part.kind === 'al') return `「${part.text}」＝ 端の炭素が −CHO（ホルミル基）であることを表す接尾辞です（-アール）。`;
+                if (part.kind === 'oic') return `「${part.text}」＝ 端の炭素が −COOH（カルボキシ基）であることを表す接尾辞です。`;
                 // ⚠ 単一の不飽和では、このかけらの字面は「ン」1字（「エン」「イン」という並びは
                 //   画面に**存在しない**）。説明と字面をそろえる ＝ 二重／三重を示しているのは直前の段
                 if (part.text === 'ン') {
@@ -11759,9 +11785,14 @@ class Game {
             return n >= 2 ? `${n}個の${what}が、${where(s.locs)}の炭素についているね。`
                 : `${where(s.locs)}の炭素に${what}がついているね。`;
         }
-        const head = ps.find(p => p.role === 'locant');
+        // アルデヒド・カルボン酸は位置番号のかけらが無い（C1 と決まっている）ので、接尾辞1つで1まとまり（v1573）
+        //   ケトンも位置番号を省く回（プロパノン）は接尾辞だけ ＝ 同じ声掛けにする
+        if (ps.length === 1 && ps[0].role === 'suffix' && ps[0].kind === 'al') return '1番の炭素がホルミル基（−CHO）になっているね。';
+        if (ps.length === 1 && ps[0].role === 'suffix' && ps[0].kind === 'oic') return '1番の炭素がカルボキシ基（−COOH）になっているね。';
+        const head = ps.find(p => p.role === 'locant') || (ps.length === 1 && ps[0].kind === 'one' ? ps[0] : null);
         if (!head) return '';
         const locs = head.locs || [], n = locs.length;
+        if (head.kind === 'one') return `${where(locs)}の炭素がカルボニル基（C=O）になっているね。`;
         if (head.kind === 'ol') {
             return n >= 2 ? `${n}個のヒドロキシ基（-OH）が、${where(locs)}の炭素についているね。`
                 : `${where(locs)}の炭素にヒドロキシ基（-OH）がついているね。`;
@@ -11886,7 +11917,9 @@ class Game {
         });
         // ---- 枠（N2）----
         const roles = group.map(k => det.parts[k]);
-        const framed = roles.some(p => p.role === 'sub' || p.role === 'ether-group' || p.kind === 'ol');
+        // カルボニル（one/al/oic）も -OH と同じく「鎖から突き出た基」なので枠で囲む（v1573）
+        const framed = roles.some(p => p.role === 'sub' || p.role === 'ether-group' || p.kind === 'ol' ||
+            p.kind === 'one' || p.kind === 'al' || p.kind === 'oic');
         if (!framed) return;
         const chainSet = new Set(det.chain || []);
         const isSub = roles.length === 1 && roles[0].role === 'sub';
