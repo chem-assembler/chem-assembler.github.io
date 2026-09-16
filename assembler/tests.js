@@ -56438,6 +56438,145 @@
         return 'サリチル酸ナトリウムを登録と同じ正準コードで生成／漏斗の中では遊離だけ／2手でサリチル酸';
     });
 
+    test('SEP9: 水層の塩の粒は自分の相方のそばに立つ（塩が2つ並んでも取り違えない・v1569）', async (c) => {
+        /* 発注書 video-scripts/ORDER_quiz_display_2026-09-12.md の C（V141〜V143）。
+         * ★ 電離した形は v1538 で入っている（SEP_IONIZED）。この検査が見るのは**置き場**:
+         *   v1567 の実測では、安息香酸ナトリウムの Na⁺ が隣のナトリウムフェノキシドの O⁻ に
+         *   いちばん近く立ち、CO₂ を吹き込むと**安息香酸側の Na⁺ が外れて**、
+         *   残った Na⁺ が安息香酸イオンから 227px 離れていた（V143 の手4）。
+         * ⚠ 名前・分子式・層は壊れる前も合っていた ＝ **距離と相方を見ないと捕まらない**。 */
+        c.reset();
+        const g = c.game, W = c.W, R = W.reactor;
+        const G = 42;   // GRID_SIZE
+        const bottle = id => W.REAGENTS.find(r => r.id === id);
+        const bondCount = (mol, id) => mol.bonds.filter(b => b.atomId1 === id || b.atomId2 === id).length;
+        const coordsOf = name => {
+            const p = sepPart(c, name);
+            assert(p, `「${name}」が居ない`);
+            return p.atoms.map(a => `${a.id}:${a.x},${a.y}`).sort().join('|');
+        };
+        // 水層の塩を全部見る。返すのは粒の数
+        const checkAq = (label, wantIons) => {
+            const mol = g.userMolecule;
+            const owners = W.counterIonOwners(mol);
+            let n = 0;
+            g.splitMolecules().filter(p => g.phaseOfPart(p) === 'aq').forEach(p => {
+                const name = g.lookupCompoundName(p) || g.computeMolecularFormula(p);
+                p.atoms.filter(a => a.charge && bondCount(mol, a.id) === 0).forEach(ion => {
+                    n++;
+                    const mateId = owners.get(ion.id);
+                    assert(mateId, `${label}: ${name} の ${ion.element} に相方が無い`);
+                    const mate = mol.atoms.find(a => a.id === mateId);
+                    assert(p.atoms.some(a => a.id === mateId),
+                        `★ ${label}: ${name} の ${ion.element} の相方が別の成分に居る（取り違え）`);
+                    const d = Math.hypot(mate.x - ion.x, mate.y - ion.y);
+                    assert(d <= G * 2.3,
+                        `★ ${label}: ${name} の ${ion.element} が相方から ${Math.round(d)}px 離れている`);
+                    assert(W.counterIonReadsClearly(mol, ion.id, mateId),
+                        `★ ${label}: ${name} の ${ion.element} が、よその陰イオン／成分のほうに近い`);
+                });
+            });
+            assert(n === wantIons, `${label}: 水層の粒が ${n} 個（${wantIons} 個のはず）`);
+        };
+
+        // ---- ① V141: 安息香酸・フェノール・トルエン →（NaHCO₃）→（NaOH）
+        sepSetup(c, ['安息香酸', 'フェノール', 'トルエン']);
+        g.startSeparation();
+        const toluene0 = coordsOf('トルエン');
+        const toluSig0 = sepBondSig(sepPart(c, 'トルエン'));
+        const phenol0 = coordsOf('フェノール');
+        R.applyToMixture(bottle('nahco3'));
+        checkAq('V141 NaHCO₃', 1);
+        // ⚠ エーテル層の分子は1 px も動かない
+        assert(coordsOf('フェノール') === phenol0, '★ 効いていないフェノール（有機層）の座標が動いた');
+        assert(coordsOf('トルエン') === toluene0, '★ 有機層のトルエンの座標が動いた');
+        R.applyToMixture(bottle('naoh_aq'));
+        checkAq('V141 NaOH', 2);
+        assert(coordsOf('トルエン') === toluene0 && sepBondSig(sepPart(c, 'トルエン')) === toluSig0,
+            '★ 有機層のトルエンが動いた／変わった');
+        const names141 = g.separationParts().map(r => `${r.name}:${r.phase}`).sort().join(' / ');
+        assert(/安息香酸ナトリウム:aq/.test(names141) && /フェノキシド.*:aq/.test(names141) && /トルエン:ether/.test(names141),
+            `名前と層が変わった（${names141}）`);
+
+        // ---- ② V143: 安息香酸・フェノール →（NaOH）→（CO₂）→ 残る Na⁺ は安息香酸イオンの隣
+        c.reset();
+        sepSetup(c, ['安息香酸', 'フェノール']);
+        g.startSeparation();
+        R.applyToMixture(bottle('naoh_aq'));
+        checkAq('V143 NaOH', 2);
+        // ⚠ 否定対照（直す前の並び）: 安息香酸の Na⁺ をフェノキシドの O⁻ 寄りへ動かすと、
+        //   検査が赤くなり、しかも相方の組み方が本当に入れ替わる（＝ 見た目だけの話ではない）
+        {
+            const mol = g.userMolecule;
+            const benzP = sepPart(c, '安息香酸ナトリウム');
+            const pheP = g.splitMolecules().find(p => /フェノキシド/.test(g.lookupCompoundName(p) || ''));
+            const oB = benzP.atoms.find(a => a.element === 'O' && a.charge === -1);
+            const oP = pheP.atoms.find(a => a.element === 'O' && a.charge === -1);
+            const naB = mol.atoms.find(a => a.id === W.saltCounterMetal(mol, oB.id).id);
+            const keep = { x: naB.x, y: naB.y };
+            naB.x = oB.x + (oP.x - oB.x) * 0.7; naB.y = oB.y + (oP.y - oB.y) * 0.7;
+            assert(!W.counterIonReadsClearly(mol, naB.id, oB.id),
+                '否定対照: 隣の O⁻ 寄りに立つ Na⁺ を「読める」と判定した（検査が空振り）');
+            assert(W.saltCounterMetal(mol, oB.id).id !== naB.id,
+                '否定対照: 取り違える並びなのに相方が入れ替わらない（前提が崩れた）');
+            naB.x = keep.x; naB.y = keep.y;
+            assert(W.saltCounterMetal(mol, oB.id).id === naB.id, '否定対照のあと元に戻せない');
+        }
+        R.applyToMixture(bottle('co2'));
+        checkAq('V143 CO₂', 1);
+        const names143 = g.splitMolecules().map(p => g.lookupCompoundName(p));
+        assert(names143.includes('フェノール') && names143.includes('安息香酸ナトリウム'),
+            `★ CO₂ の結末の名前が違う（${names143.join(' / ')}）`);
+        // 遊離はそのまま効く（強酸で安息香酸も戻る）
+        R.applyToMixture(bottle('h2so4_dil'));
+        const back = g.separationParts();
+        assert(back.every(r => r.phase === 'ether') && back.some(r => r.name === '安息香酸'),
+            `★ 遊離で安息香酸に戻らない（${back.map(r => r.name + ':' + r.phase).join(' / ')}）`);
+        assert(!g.userMolecule.atoms.some(a => a.charge), '遊離のあとに電荷が残っている');
+
+        // ---- ③ V142: アニリン塩酸塩（紛れていないので置き場は今までどおり）→ NaOH で入れかわる
+        c.reset();
+        sepSetup(c, ['アニリン', 'フェノール', 'トルエン']);
+        g.startSeparation();
+        R.applyToMixture(bottle('hcl'));
+        checkAq('V142 塩酸', 1);
+        {
+            const mol = g.userMolecule;
+            const cl = mol.atoms.find(a => a.element === 'Cl');
+            const n = mol.atoms.find(a => a.element === 'N');
+            // placeCounterIon の既定（2マス先の直交）から動いていない
+            const dx = Math.abs(cl.x - n.x), dy = Math.abs(cl.y - n.y);
+            assert((Math.abs(dx - 2 * G) < 1 && dy < 1) || (Math.abs(dy - 2 * G) < 1 && dx < 1),
+                `アニリン塩酸塩の Cl⁻ の置き場が変わった（N から dx=${dx} dy=${dy}）`);
+        }
+        R.applyToMixture(bottle('naoh_aq'));
+        checkAq('V142 NaOH', 1);
+        assert(g.separationParts().some(r => r.name === 'アニリン' && r.phase === 'ether'),
+            '★ NaOH でアニリンが有機層へ戻らない');
+
+        // ---- ④ 分液以外の場面は通らない: 反応の一覧から中和した塩と、分液の単独の塩で Na⁺ の置き場が同じ
+        const offsetAfterNeutralize = (useSep) => {
+            c.reset();
+            sepSetup(c, ['安息香酸']);
+            if (useSep) { g.startSeparation(); R.applyToMixture(bottle('naoh_aq')); }
+            else {
+                const rule = W.REACTION_RULES.find(r => r.id === 'neutralize_naoh');
+                rule.apply(g, rule.detect(g.userMolecule)[0]);
+                g.updateDrawing();
+            }
+            const mol = g.userMolecule;
+            const o = mol.atoms.find(a => a.element === 'O' && a.charge === -1);
+            const na = mol.atoms.find(a => a.element === 'Na');
+            assert(o && na && bondCount(mol, na.id) === 0, `中和で電離形の塩にならない（分液=${useSep}）`);
+            return `${Math.round(na.x - o.x)},${Math.round(na.y - o.y)}`;
+        };
+        const plain = offsetAfterNeutralize(false), inSep = offsetAfterNeutralize(true);
+        assert(plain === inSep,
+            `★ 紛れていない単独の塩まで置き直した（反応の一覧 ${plain} ／ 分液 ${inSep}）`);
+        c.reset();
+        return `V141/V142/V143 の水層の粒がすべて相方のそば／CO₂ のあとの Na⁺ も隣／単独の塩の置き場 ${plain} は不変`;
+    });
+
     /* ============================================================================
      * DH: ★★ 「A を脱水するとできるアルケンを書き出す」（v1516・ユーザー原文 2026-09-03）
      *
