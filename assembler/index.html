@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1569">
+    <link rel="stylesheet" href="style.css?v=1571">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1569</div>
+            <div class="version">v1571</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -467,6 +467,25 @@
                                         作図が黙って消えない -->
                                 <button id="btn-rx-undo" class="view-btn ws-action hidden"
                                         title="直前に実行した反応を取り消して、反応前の分子に戻します（この操作自体も ↩ 戻す で取り消せます）">↩ 反応前に戻す</button>
+                                <!-- ▶ 反応をもう一度見る（v1568・ユーザー要望「反応をもう一度見たいです。反応機構と同じように、
+                                     再生、コマ送りなどのボタンが欲しいです」）。reactor.replayPlay() ほか。
+                                     ★ ふだん（反応の結果が載っているあいだ）は **▶ 1つだけ**を ↩ の後ろに出す。
+                                        ⚠ 375px・320px では ↩ の後ろの余りが 90px・29.8px しかない（実測）＝
+                                        4つ並べると段が増える（RX31 ④）。▶ は幅 28px にして 320px でも同じ段に収める。
+                                     ★ 見直しているあいだは、この行を**見直しの操作だけ**に入れ替える（`#reaction-card.rx-replaying`）。
+                                        機構ビューアが帯の面ごと入れ替えるのと同じ考え方 ——
+                                        キャンバスに出ているのは写しなので、↩ 反応前に戻す・🔢 を押しても見えている図には効かない。
+                                     ⚠ 並びと記号と title は機構ビューアの #reaction-controls と同じ（🔄 ⏮ ▶ ⏭）。
+                                        id は別（#btn-rx-restart などは tutorials.json が名指ししている） -->
+                                <button id="btn-rx-replay" class="view-btn ws-action hidden"
+                                        title="この反応をもう一度見る">▶</button>
+                                <div id="rx-replay-controls" class="hidden" role="group" aria-label="反応をもう一度見る">
+                                    <button id="btn-rx-replay-restart" class="view-btn" title="最初から">🔄</button>
+                                    <button id="btn-rx-replay-prev" class="view-btn" title="前のステップ">⏮</button>
+                                    <button id="btn-rx-replay-play" class="view-btn" title="再生 / 一時停止">▶</button>
+                                    <button id="btn-rx-replay-next" class="view-btn" title="次のステップ">⏭</button>
+                                    <button id="btn-rx-replay-exit" class="view-btn ws-action" title="見直しをやめて、反応のあとの図に戻ります">やめる</button>
+                                </div>
                                 <!-- 🧹 分子を並べ直す（v1466・ユーザー決定 2026-08-26 の案「い」）。
                                      ★ 反応が「置く空間がありません」で断ったときだけ出す（reactor.showNoRoom）。
                                      ⚠ **なぜ札が要るか**: 断り文は「分子を離してから実行してください」と
@@ -2224,19 +2243,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1569"></script>
+    <script src="chemistry.js?v=1571"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1569"></script>
-    <script src="game.js?v=1569"></script>
-    <script src="reaction.js?v=1569"></script>
-    <script src="quiz.js?v=1569"></script>
-    <script src="stereo.js?v=1569"></script>
-    <script src="reactor.js?v=1569"></script>
-    <script src="narrowing.js?v=1569"></script>
-    <script src="learn.js?v=1569"></script>
-    <script src="tutorial.js?v=1569"></script>
-    <script src="rec.js?v=1569"></script>
+    <script src="deadend.js?v=1571"></script>
+    <script src="game.js?v=1571"></script>
+    <script src="reaction.js?v=1571"></script>
+    <script src="quiz.js?v=1571"></script>
+    <script src="stereo.js?v=1571"></script>
+    <script src="reactor.js?v=1571"></script>
+    <script src="narrowing.js?v=1571"></script>
+    <script src="learn.js?v=1571"></script>
+    <script src="tutorial.js?v=1571"></script>
+    <script src="rec.js?v=1571"></script>
 </body>
 </html>
