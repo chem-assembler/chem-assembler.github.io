@@ -41,7 +41,7 @@ const DEADEND_STAGES = {
 
 // 起きた場所の言い換え（設置場所が増えたらここに足す。ここも**種類の数が限られる**）
 const DEADEND_PLACES = {
-    'partner-hint': '相手の分子を呼び出す（⚗ 反応させる・調べる）'
+    'partner-hint': '相手の分子を呼び出す（⚗ 反応させる）'
 };
 
 const DeadEnd = {
