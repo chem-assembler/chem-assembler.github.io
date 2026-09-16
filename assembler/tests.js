@@ -31344,6 +31344,116 @@
         c.reset();
     });
 
+    /* ===== RRP: 反応をもう一度見る（v1568）=====
+     * ユーザー要望「反応をもう一度見たいです。反応機構と同じように、再生、コマ送りなどのボタンが欲しいです。」
+     * ★ 見張ること: 写しで描く（キャンバスの正準コード・原子数・履歴が変わらない）／⏭ が意味のある段に止まる／
+     *   🔄 で反応前の段に戻る／終わると本物の図と帯の行が戻る。 */
+    const rrpSig = (c) => c.game.splitMolecules().map(p => c.W.canonicalCode(p)).sort().join('|') +
+        ` 原子${c.game.userMolecule.atoms.length} 履歴${c.game.history.length}`;
+    const rrpRun = async (c, names, id) => {
+        const g = c.game, W = c.W;
+        W.reactor.finalizeMorph();
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = []; g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
+        assert(c.D.getElementById('btn-rx-replay').classList.contains('hidden'), '反応の前から ▶ が出ている');
+        const rule = W.REACTION_RULES.find(r => r.id === id);
+        const sites = rule.detect(g.userMolecule) || [];
+        assert(sites.length, `${names.join('＋')} に ${id} の箇所が無い（検査が素通りする）`);
+        W.reactor.execute(rule, sites[0]);
+        await 反応の再生を待つ(c);
+    };
+
+    test('RRP1: ▶ もう一度見る —— ⏭ は意味のある段に止まり、🔄 で反応前へ、⏸ で止まる。キャンバスは変わらない（否定対照つき・v1568）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rx = W.reactor;
+        g.setMode('free');
+        const btn = id => D.getElementById(id);
+        const vis = id => btn(id).getBoundingClientRect().width > 0;
+        const card = btn('reaction-card');
+        // ⚠ 自動水素の id は描くたびに振り直される（実測）ので、絵の比較からは外す
+        const frame = () => (g.bondsGroup.innerHTML + '#' + g.atomsGroup.innerHTML).replace(/ data-id="[^"]*"/g, '');
+        const cases = [
+            { names: ['エタノール'], id: 'dehydration_intra', want: ['before', 'summon', 'part', 'join'] },
+            { names: ['酢酸', 'エタノール'], id: 'esterification', want: ['before', 'summon', 'align', 'part', 'join'] },
+            { names: ['D-グルコース（鎖状）'], id: 'cyclize_glucose_beta', want: ['before', 'mid', 'part'] }
+        ];
+        /** ⏭ で終わりまでたどり、止まった段と、その段の絵を集める */
+        const walk = (s0) => {
+            const seen = [rx.replayState().stage], frames = [frame()];
+            for (let i = 0; i < 20 && rx.replayState().shown; i++) {
+                btn('btn-rx-replay-next').click();
+                const st = rx.replayState();
+                assert(rrpSig(c) === s0, `⏭ ${i + 1} 回目でキャンバスが変わった（${rrpSig(c)} ≠ ${s0}）`);
+                if (!st.shown) break;
+                assert(st.stage, `⏭ が段の途中（pos=${st.pos}）に止まった`);
+                seen.push(st.stage); frames.push(frame());
+            }
+            return { seen, frames };
+        };
+        try {
+            for (const cs of cases) {
+                const tag = `${cs.id}（${cs.names.join('＋')}）`;
+                await rrpRun(c, cs.names, cs.id);
+                assert(vis('btn-rx-replay') && vis('btn-rx-undo'), `${tag}: 反応のあとに ▶ と ↩ が並んでいない`);
+                const s0 = rrpSig(c), L0 = rx.lastReaction;
+                // ▶ → ⏸ → 🔄（ふだんは ▶ しか無いので、押して入る）
+                btn('btn-rx-replay').click();
+                assert(rx.replayState().playing, `${tag}: ▶ を押しても流れない`);
+                assert(card.classList.contains('rx-replaying') && vis('rx-replay-controls') && !vis('btn-rx-undo') && !vis('btn-iupac-numbering'),
+                    `${tag}: 見直しのあいだ、帯の行が見直しの操作に入れ替わっていない`);
+                await c.tick(300);
+                btn('btn-rx-replay-play').click();
+                const paused = rx.replayState();
+                assert(paused.shown && !paused.playing && paused.pos > 0, `${tag}: ⏸ で止まらない ${JSON.stringify(paused)}`);
+                await c.tick(200);
+                assert(rx.replayState().pos === paused.pos, `${tag}: ⏸ のあとも進んでいる`);
+                assert(rrpSig(c) === s0, `${tag}: 流しているあいだにキャンバスが変わった`);
+                btn('btn-rx-replay-restart').click();
+                assert(rx.replayState().stage === 'before' && btn('btn-rx-replay-prev').disabled,
+                    `${tag}: 🔄 で反応前の段に戻らない ${JSON.stringify(rx.replayState())}`);
+                // ⏭ で段を順にたどる
+                const { seen, frames } = walk(s0);
+                assert(JSON.stringify(seen) === JSON.stringify(cs.want), `${tag}: 止まった段 ${seen.join('→')}（期待 ${cs.want.join('→')}）`);
+                assert(new Set(frames).size === frames.length, `${tag}: 段ごとの絵が同じものを含む（止まっても絵が変わらない）`);
+                // 最後まで進むと、本物の図と帯の行が戻る
+                assert(!rx.replayState().shown && !rx._morphing, `${tag}: ⏭ で最後まで進んでも見直しが終わらない`);
+                assert(!card.classList.contains('rx-replaying') && vis('btn-rx-replay') && vis('btn-rx-undo'), `${tag}: 終わっても帯の行が戻らない`);
+                // ⏮ は終わりから1段ずつ戻る
+                btn('btn-rx-replay').click(); btn('btn-rx-replay-play').click();   // 入って止める
+                rx.replayStep(1); rx.replayStep(1); rx.replayStep(1); rx.replayStep(1); rx.replayStep(1); rx.replayStep(1);
+                assert(!rx.replayState().shown, `${tag}: （下ごしらえ）終わりまで進まない`);
+                assert(rx.replayStep(-1) && rx.replayState().stage === cs.want[cs.want.length - 1],
+                    `${tag}: 終わりから ⏮ で最後の段に戻らない ${JSON.stringify(rx.replayState())}`);
+                // ▶ で続きから終わりまで流す
+                btn('btn-rx-replay-play').click();
+                for (let i = 0; i < 160 && rx.replayState().shown; i++) await c.tick(50);
+                assert(!rx.replayState().shown && !rx._morphing, `${tag}: ▶ で終わりまで流れない`);
+                assert(rrpSig(c) === s0 && rx.lastReaction === L0, `${tag}: 見直しのあとキャンバスか直近の反応が変わった（${rrpSig(c)} ≠ ${s0}）`);
+            }
+            // ★ 否定対照①: 絵を写しでなく本物で描く見直しなら、段ごとの絵が区別できない（この検査は絵の違いを見ている）
+            await rrpRun(c, ['エタノール'], 'dehydration_intra');
+            const s1 = rrpSig(c);
+            const saved = rx.drawReplayAt;
+            rx.drawReplayAt = function () { g.updateDrawing(); };
+            try {
+                rx.replayRestart();
+                const { frames } = walk(s1);
+                assert(new Set(frames).size < frames.length, '否定対照: 本物を描いても段ごとの絵が別になった ＝ 絵の検査は何も見ていない');
+            } finally { rx.drawReplayAt = saved; rx.finalizeMorph(); }
+            // ★ 否定対照②: 描き足すと正準コードの物差しが変わる（＝ 上の「変わらない」は空振りではない）／▶ は引っ込み押せない
+            g.saveState();
+            g.userMolecule.addAtom('C', g.userMolecule.atoms[0].x, g.userMolecule.atoms[0].y + 210);
+            g.updateDrawing();
+            assert(rrpSig(c) !== s1, '否定対照: 描き足しても物差しが変わらない');
+            assert(!vis('btn-rx-replay') && rx.replayPlay() === false, '描き足したのに ▶ が出ている／押せる（見直す図がもう無い）');
+            btn('btn-undo').click();
+            assert(vis('btn-rx-replay'), '描き足しを ↩ 戻す で戻しても ▶ が戻らない');
+        } finally {
+            rx.finalizeMorph();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     /**
      * ===== RX32・RX33: 予測モードの「お題」（v1409） =====
      *
