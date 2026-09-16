@@ -1147,6 +1147,35 @@ button:hover {
 #work-strip.plate-predict #reaction-step-label {
     display: none !important;
 }
+/* ★ 作業中は自由モードの段（名称から呼び出す／⚗ 反応させる・🔢）を畳む（v1570・案C 段③）。
+   `#work-strip.quest-on`（課題中は呼び出しの段を畳む）の決めを、名札の出ているモードへ広げた。
+   根拠はモードごとに1つ:
+     分液 …… 瓶で反応させる（呼び出す・反応させるの出番が無い）
+     主鎖と番号 …… 作図できない（呼び出すと図が変わって番号が消える）／出口は名札
+     機構の再生・予測 …… キャンバスはビューアが借りている（押しても見えていない図を触る）
+     反応させる分子を選ぶ …… **呼び出しの段だけ**畳む（反応させる・調べるは選んだあとに要る）
+   ⚠ 「↩ 反応前に戻す」「🧹 並べ直す」「⇅⇄⟳」と、見直し（▶・rx-replay）の札は畳まない
+     （分液で瓶をかけた直後の戻り道が消えるため）。残る札が無ければ段ごと畳む。
+   ⚠ 名札を出さない短尺の収録では `.plate-*` が付かないので、帯は今までどおり（台本の画を変えない）。
+   ⚠ 台本の `summon`（83件）は、この畳む状態の最中に1件も来ない（v1570 に grep で確認）。 */
+#work-strip.plate-reaction-select #ws-free-summon,
+#work-strip.plate-sep #ws-free-summon,
+#work-strip.plate-numbering #ws-free-summon,
+#work-strip.plate-mechanism #ws-free,
+#work-strip.plate-predict #ws-free,
+#work-strip.plate-sep #btn-molecule-modal,
+#work-strip.plate-sep #btn-iupac-numbering,
+#work-strip.plate-numbering #btn-molecule-modal,
+#work-strip.plate-numbering #btn-iupac-numbering {
+    display: none !important;
+}
+#work-strip.plate-sep #reaction-card:not(:has(> button:not(.hidden):not(#btn-molecule-modal):not(#btn-iupac-numbering))),
+#work-strip.plate-numbering #reaction-card:not(:has(> button:not(.hidden):not(#btn-molecule-modal):not(#btn-iupac-numbering))) {
+    display: none !important;
+}
+/* ★ 下の2ボタンは中身の幅にして1段に並べる（v1570・案C 段③・ユーザー決定「コンパクトにして1段」）。
+   以前は ⚗ が `ws-wide` で段の残りを全部使い、375px では 🔢 が2段目に落ちていた */
+#reaction-card #btn-molecule-modal { flex: 0 0 auto; width: auto; }
 /* 分液: 見出しとやめるを畳んだあと「⤢ 全体を見る」も出ていなければ、行ごと畳む（空の段を残さない） */
 #work-strip.plate-sep #ws-sep > .ws-row:first-child:not(:has(#btn-sep-all:not(.hidden))) {
     display: none;
@@ -1305,6 +1334,11 @@ b.em { font-weight: 700; color: var(--neon-blue); }
     z-index: 250;
 }
 #mobile-name-chip:empty { display: none; }
+/* ★ v1570（案C 段③・ユーザー決定「左下の小さい分子式表示はカット」）: ふだんの画面からは外す。
+   分子式は分子の見出し（🔍 エタノール C₂H₆O）が持つ（game.js `captionForPart`）。
+   ⚠ **短尺の収録（.rec-short）では今までどおり出す** —— 上中央の大きな札「描くと名前が出る」が
+   台本の見せ場（下の `.rec-short #mobile-name-chip`）。中身の組み立て（`syncMobileNameChip`）も残す */
+html:not(.rec-short) #mobile-name-chip { display: none !important; }
 
 .stereo-facing-btn.active {
     background: var(--neon-purple);

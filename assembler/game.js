@@ -6655,7 +6655,11 @@ class Game {
          *   式が図に付いていなかった（画面には合算した C₂₄H₄₄O₂₂ だけが出ていた）。
          * ⚠ 1分子のときは今までどおり名前だけ（左下の札が名前と分子式を両方出している）。
          * ⚠ 名前が引けないときは今までどおり分子式そのものが見出しになる（二重には出さない）。 */
-        const head = name ? (mark ? `${name} ${formula}` : name) : formula;
+        /* ★ v1570（案C 段③・ユーザー決定「左下の小さい分子式表示はカット」）: **1分子のときも**
+         *   名前のうしろに分子式を添える。左下の札（`#mobile-name-chip`）を画面から外したので、
+         *   分子式の置き場所はこの見出しだけになった（「🔍 エタノール C₂H₆O」）。
+         *   ⚠ 短尺の収録（.rec-short）では左下の札を上中央の大きな札として今までどおり出す（見せ場） */
+        const head = name ? `${name} ${formula}` : formula;
         // ★ 分液の面を開いているあいだは、どの層に居るかを見出しに添える（I-1・§4-5 #4）。
         //   ⚠ 文言は `phaseSuffix()` ただ1つ ＝ 帯の札と図の見出しが同じ字を出す
         return `🔍 ${mark ? mark + ' ' : ''}${head}${this.phaseSuffix(part)}`.trim();
@@ -9989,7 +9993,9 @@ class Game {
         const btn = document.getElementById('btn-molecule-modal');
         if (!btn) return;
         const n = (window.reactor && window.reactor.executableCount) || 0;
-        btn.textContent = `⚗ 反応させる・調べる（反応 ${n > 0 ? n + '件' : '—'}）`;
+        // ★ v1570（案C 段③・ユーザー決定「コンパクトにして1段」）: 「⚗ 反応させる（6件）」に縮めた。
+        //   375px でも 🔢 と1段に並ぶ幅にするため。⚠ 件数で文言を変えない約束はそのまま
+        btn.textContent = `⚗ 反応させる（${n > 0 ? n + '件' : '—'}）`;
     }
 
     /* ===== ⇅ 上下に裏返す（分子まるごと・DESIGN_sugar.md §1-2b 帰結3・v1450） =====
@@ -11190,7 +11196,11 @@ class Game {
         ['btn-iupac-numbering', 'mm-btn-iupac-numbering'].forEach(id => {
             const b = document.getElementById(id);
             if (!b) return;
-            b.textContent = on ? '🔢 主鎖と番号を消す' : '🔢 主鎖と番号を見る';
+            // ★ v1570: 帯の札は「🔢 主鎖と番号」1つの名前にし、ON は押下の見た目（.active）で見せる。
+            //   出口は名札の「やめる」（案C）。分子モーダルの札は今までどおり言い分ける
+            b.textContent = id === 'btn-iupac-numbering'
+                ? '🔢 主鎖と番号'
+                : (on ? '🔢 主鎖と番号を消す' : '🔢 主鎖と番号を見る');
             b.setAttribute('aria-pressed', on ? 'true' : 'false');
             b.classList.toggle('active', on);
         });

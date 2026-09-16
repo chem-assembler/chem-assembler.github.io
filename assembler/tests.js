@@ -281,7 +281,7 @@
  *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
  * | UX  | 1〜3   | 「操作の案内」の字数の上限（v1468・ux-density.md。ユーザー発注「説明が冗長・字が小さい／ただし発展の話は必要な人が見られるように」）。**1 が上限**（9画面ぶん。数えるのは押す前に読ませる説明だけで、化学の説明・答え合わせ・設問・一覧・図・**閉じた `<details>` の中身**は数えない。併せて `.learn-acc` が既定で閉じていること**と中身が空でないこと**を見る ＝ 「畳んだふりをして消す」で通せない）・**2 は否定対照**＝ 実物と同じ長さの1文（47字）を足すと**9画面すべてで**上限を超えること（余裕が広すぎて止め木にならない状態を検出する）・3 は十字の4操作の規則が `CROSS_RULES_HTML` 1本で ⏱ と 🔤 の両方から開けること |
- * | UM  | 1〜8   | **モードの抜け方と名札**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る）・**5〜6 は全モード共通の名札**（段②）: 5 が各モードで名札が出て「やめる」で抜ける（機構の反応名から「（〜生成）」を落とす。**否定対照**＝自由では出ない・短尺収録 .rec-short では出ない）・6 が名札のあいだ帯の見出し行・橙の大見出し・長文トーストを出さない（**否定対照**＝名札を止めると大見出しが描かれる）・**7〜8 は選択中の道具の札**（見本 B）: 7 が道具を替えると札が変わり自由モードでは5秒で消える（**否定対照**＝4秒ではまだ出ている・パズル中は消えない・合成の操作では出ない）・8 が 375/320px で名札が1行のまま・札がその下に重ならず並ぶ（**否定対照**＝上端に置けば重なる） |
+ * | UM  | 1〜11  | **モードの抜け方と名札**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る）・**5〜6 は全モード共通の名札**（段②）: 5 が各モードで名札が出て「やめる」で抜ける（機構の反応名から「（〜生成）」を落とす。**否定対照**＝自由では出ない・短尺収録 .rec-short では出ない）・6 が名札のあいだ帯の見出し行・橙の大見出し・長文トーストを出さない（**否定対照**＝名札を止めると大見出しが描かれる）・**7〜8 は選択中の道具の札**（見本 B）: 7 が道具を替えると札が変わり自由モードでは5秒で消える（**否定対照**＝4秒ではまだ出ている・パズル中は消えない・合成の操作では出ない）・8 が 375/320px で名札が1行のまま・札がその下に重ならず並ぶ（**否定対照**＝上端に置けば重なる）・**9〜11 は段③**: 9 が下の2ボタンを 375/320px でも1段（**否定対照**＝旧い名札と幅の取り方なら2段）・10 が作業中は自由モードの段を畳む（**否定対照**＝自由・短尺収録では畳まない）・11 が左下の分子式表示を出さず見出しに分子式（**否定対照**＝短尺収録では札を出す） |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
@@ -15690,7 +15690,9 @@
                 assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`);
                 g.updateDrawing();
                 const cap = captions();
-                assert(cap.length === 1 && cap[0] === `🔍 ${n}`, `${n} の見出しが ${JSON.stringify(cap)}（「🔍 ${n}」を期待）`);
+                // ⚠ v1570 で期待値を変えた（案C 段③「左下の分子式表示はカット」）: 1分子でも分子式を添える
+                const want = `🔍 ${n} ${g.computeMolecularFormula()}`;
+                assert(cap.length === 1 && cap[0] === want, `${n} の見出しが ${JSON.stringify(cap)}（「${want}」を期待）`);
             }
             // 並べると番号と分子式つきで全部に出る
             g.userMolecule = new W.Molecule(); g.updateDrawing();
@@ -31046,7 +31048,9 @@
                 const badge = FD.getElementById('canvas-mode-badge');
                 assert(badge && !badge.classList.contains('hidden'), `${name}: バッジが出ていない`);
                 const on = strip();
-                assert(on === off, `${name}: バッジで作業帯が ${off}px → ${on}px に伸びた（段を増やしてはいけない）`);
+                // ⚠ v1570 で期待値を変えた（案C 段③）: 分子選びのあいだは「名称から呼び出す」の段を畳むので、
+                //   帯は**縮む**のが正しい。見るのは「伸びない」
+                assert(on <= off, `${name}: バッジで作業帯が ${off}px → ${on}px に伸びた（段を増やしてはいけない）`);
                 const wrap = FD.getElementById('svg-wrapper').getBoundingClientRect();
                 const br = badge.getBoundingClientRect();
                 assert(br.left >= wrap.left - 1 && br.right <= wrap.right + 1,
@@ -31362,16 +31366,20 @@
                     row: Math.round(row.getBoundingClientRect().height),
                     strip: Math.round(strip.getBoundingClientRect().height)
                 };
-                assert(after.row === before.row,
-                    `${name}: 札が出ると #reaction-card が ${before.row}px → ${after.row}px（段が増えた）`);
-                assert(after.strip === before.strip,
-                    `${name}: 札が出ると帯が ${before.strip}px → ${after.strip}px（キャンバスを余計に覆う）`);
-                // 🔢 と同じ段に相乗りしている（押す場所が状態で動かない）
+                /* ⚠ v1570 で期待値を変えた（案C 段③・ユーザー決定「下の2ボタンはコンパクトにして1段」）。
+                 *   ⚗ と 🔢 が 375px でも1段に並ぶようになり、ふだんの帯は 128 → 88px に縮んだ。
+                 *   そのぶん 375/320px では「↩ 反応前に戻す」が同じ段に入りきらず、**札が出ているあいだだけ
+                 *   2段目へ回る**（実測 88 → 128px ＝ v1569 までのふだんの帯と同じ高さ）。
+                 *   約束を「段を増やさない」から「**v1569 までの帯（2段・128px）を超えない**」と
+                 *   「🔢 より前に割り込まない」に替えた。⚠ 2段目へ回る回は帯が上へ1段伸びるので、
+                 *   ⚗・🔢 の押す場所が 40px 上へ動く（統合側へ報告済み。rx-replay の ▶ と同じ段の話） */
+                assert(after.row <= 74 + 1,
+                    `${name}: 札が出ると #reaction-card が ${before.row}px → ${after.row}px（2段を超えた）`);
+                assert(after.strip <= 128 + 1,
+                    `${name}: 札が出ると帯が ${before.strip}px → ${after.strip}px（v1569 までの帯 128px を超えて覆う）`);
                 const nb = FD.getElementById('btn-iupac-numbering').getBoundingClientRect();
                 const bb = fbtn.getBoundingClientRect();
-                assert(Math.abs(bb.top - nb.top) <= 3,
-                    `${name}: 札が 🔢 と別の段にいる（${Math.round(bb.top)} vs ${Math.round(nb.top)}）`);
-                assert(bb.left >= nb.right,
+                assert((Math.abs(bb.top - nb.top) <= 3 && bb.left >= nb.right) || bb.top >= nb.bottom - 1,
                     `${name}: 札が 🔢 の前に割り込んでいる（🔢 の位置が反応のたびに動く）`);
                 // 押しものの床（32px）を割らない
                 assert(bb.height >= 32, `${name}: 札の高さが ${Math.round(bb.height)}px（32px の床を割る）`);
@@ -35320,7 +35328,10 @@
         // 名札の「幹」＝ 丸括弧の件数を落とした部分。**2か所で同じ語を使う**ことを機械で見張る
         // （U3 でボタンの文言を変えたのに案内を直し忘れると、ここで赤くなる）
         const stem = btn.textContent.split('（')[0].trim();
-        assert(stem === '⚗ 反応させる・調べる', `作業帯のボタンの名札が変わっている（${stem}）`);
+        // ⚠ v1570 で期待値を変えた（案C 段③「コンパクトにして1段」）: 名札を「⚗ 反応させる」に縮めた。
+        //   資料（reference-src・この便では触らない）はまだ「⚗ 反応させる・調べる」と書いており、
+        //   下の includes は前方一致で通る ＝ **資料の語の直しは統合側へ申し送り**
+        assert(stem === '⚗ 反応させる', `作業帯のボタンの名札が変わっている（${stem}）`);
 
         /* ⚠⚠ **案内の置き場所が v1513 で変わった**。以前は 📚 学習の ⚗️ アコーディオンの中の
            `#rx-viewer-note` に在ったが、**その札ごと撤去した**（ユーザー決定 2026-09-03）。
@@ -35351,13 +35362,13 @@
             return btn.textContent;
         };
         const eth = await summon('エタノール');
-        assert(/（反応 \d+件）/.test(eth), `エタノールで件数が出ていない（${eth}）`);
+        assert(/（\d+件）/.test(eth), `エタノールで件数が出ていない（${eth}）`);   // v1570: （反応 N件）→（N件）
         assert(eth.split('（')[0].trim() === stem, `件数が付くと名札が変わる（${eth}）＝ U3 の案3`);
         c.reset();
         g.setMode('free');
         g.syncInspectButton();
         const zero = btn.textContent;
-        assert(/（反応 —）/.test(zero), `0件のときに「反応 —」でない（${zero}）`);
+        assert(/（—）/.test(zero), `0件のときに「（—）」でない（${zero}）`);
         assert(zero.split('（')[0].trim() === stem,
             `0件のときに名札が変わっている（${zero} ／ ${eth}）＝ U3 の案3を踏んでいる`);
     });
@@ -36863,14 +36874,14 @@
         const input = D.getElementById('summon-input');
 
         // (1) 何も無いときは「反応 —」（0件を数字で書かない）
-        assert(/反応 —/.test(inspect.textContent),
+        assert(/（—）/.test(inspect.textContent),   // v1570: 「（反応 —）」→「（—）」
             `空のキャンバスで件数が「—」でない（${inspect.textContent}）`);
 
         // (2) **「-OH を付けた瞬間に酸化ボタンが生える」気づきを件数の変化として残す**（§4-2）。
         //     メタン → エタノール で、ラベルの数字が増える。ラベルは常に実数と一致する
         const label = () => {
             const n = W.reactor.executableCount;
-            assert(inspect.textContent.includes(n > 0 ? `反応 ${n}件` : '反応 —'),
+            assert(inspect.textContent.includes(n > 0 ? `（${n}件）` : '（—）'),
                 `件数がライブ更新されていない（${inspect.textContent} / 実際は ${n}件）`);
             return n;
         };
@@ -39500,28 +39511,25 @@
         }
     });
 
-    test('RB11: 化合物名チップが PC でも出る（`.mobile-only` を外した）', async (c) => {
-        // §5-2 の 41。名前・分子式は右パネルの「🔍 いま描いている分子」にしか無く、
-        // PC でも視線がキャンバスから離れていた。右パネルは第5段で消えるので、
-        // ここが名前の**常設の置き場所**になる
+    /* ⚠ RB11 の期待値を v1570 で変えた（案C 段③・ユーザー決定「左下の小さい分子式表示はカット」）。
+     *   §5-2 の 41 で「PC でも出す」にした左下の札を、**ふだんの画面からは外した**。
+     *   名前と分子式の常設の置き場所は分子の見出し（🔍 エタノール C₂H₆O）に移った（UM11 が見る）。
+     *   ここでは「中身は今までどおり組み立てられる（短尺の収録で使う）」「ふだんは出ない」
+     *   「短尺の収録では出る」の3つを見る */
+    test('RB11: 化合物名チップは中身を組み立て続け、ふだんは出さず、短尺の収録でだけ出す（v1570）', async (c) => {
         const chip = c.D.getElementById('mobile-name-chip');
-        assert(chip, '化合物名チップが無い');
-        assert(!chip.classList.contains('mobile-only'),
-            'チップに .mobile-only が残っている（PC で出ない）');
-        // 共有の iframe は幅が広い（＝ PC レイアウト）。ここで出ることが「PC でも出る」の証明
+        assert(chip, '化合物名チップが無い（短尺の収録の見せ場で使う）');
         c.reset();
         c.game.setMode('free');
         c.game.summonMolecule('エタノール');
-        assert(c.W.getComputedStyle(chip).display !== 'none', 'PC でチップが display:none');
-        assert(chip.getClientRects().length > 0, 'PC でチップの矩形が出ない');
         assert(/エタノール/.test(chip.textContent) && /C₂H₆O/.test(chip.textContent),
-            `PC のチップに名称と分子式が出ない（${chip.textContent}）`);
-        // 帯とぶつからない（--work-strip-h ぶん上へ逃げる）。パズルではお題ストリップが出る
-        c.game.setMode('puzzle');
-        const strip = c.D.getElementById('work-strip').getBoundingClientRect();
-        const cr = chip.getBoundingClientRect();
-        assert(cr.bottom <= strip.top + 1,
-            `チップ（下端 ${Math.round(cr.bottom)}）がお題ストリップ（上端 ${Math.round(strip.top)}）に重なる`);
+            `チップの中身に名称と分子式が組み立てられていない（${chip.textContent}）`);
+        assert(c.W.getComputedStyle(chip).display === 'none', 'ふだんの画面で左下の札が出ている（カットの決定）');
+        c.D.documentElement.classList.add('rec-short');
+        try {
+            assert(c.W.getComputedStyle(chip).display !== 'none' && chip.getClientRects().length > 0,
+                '短尺の収録で名前の札が出ない（見せ場が崩れる）');
+        } finally { c.D.documentElement.classList.remove('rec-short'); }
         c.game.userMolecule = new c.W.Molecule();
         c.game.updateDrawing();
         c.game.setMode('free');
@@ -57365,7 +57373,8 @@
         const { marks: mk2 } = g.markedMolecules(null);
         assert(mk2.size === 0, '塩1つなのに ①② の番号が振られた');
         // 見出しは塩の名前（ION5 で登録済み）。⚠ 粒が付かないと「🔍 C₆H₈N」（陽イオンだけの分子式）になる
-        assert(g.captionForPart(parts[0], null) === '🔍 アニリン塩酸塩', `見出しが ${g.captionForPart(parts[0], null)}（アニリン塩酸塩 のはず。C₆H₈N と Cl に割れてはいけない）`);
+        // ⚠ v1570: 1分子の見出しにも分子式を添えるようになった（案C 段③）
+        assert(g.captionForPart(parts[0], null) === '🔍 アニリン塩酸塩 C₆H₈ClN',`見出しが ${g.captionForPart(parts[0], null)}（アニリン塩酸塩 のはず。C₆H₈N と Cl に割れてはいけない）`);
         // (4) 同じ塩が2つ: それぞれの Cl⁻ が**いちばん近い**相方に付く（横取りしない）
         const second = g.createTargetFromData({ target: ionAnilineHClTarget(300) });
         second.atoms.forEach(a => g.userMolecule.atoms.push(a));
@@ -57420,7 +57429,8 @@
         assert(g.lookupCompoundName(parts[0]) === NAME, `見出しの名前が「${g.lookupCompoundName(parts[0])}」`);
         assert(g.lookupCompoundName(g.userMolecule) === NAME, 'キャンバス全体でも名前が引けない');
         const cap = g.captionForPart(parts[0], null);
-        assert(cap === `🔍 ${NAME}`, `見出しが「${cap}」`);
+        // ⚠ v1570: 1分子の見出しにも分子式を添えるようになった（案C 段③）
+        assert(cap === `🔍 ${NAME} C₆H₈ClN`, `見出しが「${cap}」`);
         const label = g.computeCompoundLabel();
         assert(label.name === NAME && label.formula === 'C₆H₈ClN', `右パネルの名前・分子式が ${label.name} / ${label.formula}`);
         // 図: + と − の印が1つずつ・Cl⁻ に H が生えない・-NH₃⁺ に H が3つ
@@ -58052,6 +58062,12 @@
         }
     };
     const umSettle = (c) => c.tick(40);   // 見比べは操作が終わった後（setTimeout 0）
+    /** 前のテストが開いたまま残したモーダル・重ね面を閉じる（学習の「やめる」の行き先が変わるため） */
+    const umCloseSurfaces = (c) => {
+        c.D.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
+        ['ip-review-overlay', 'rx-compare-overlay', 'ak-review-overlay', 'sp-review-overlay']
+            .forEach(id => { const el = c.D.getElementById(id); if (el) el.classList.add('hidden'); });
+    };
 
     test('UM1: モードをやめると「〜を終了しました」と名札「自由モード」が出る（分液・分子選び・パズル・練習・機構。否定対照つき）', async (c) => {
         const g = c.game, D = c.D, W = c.W;
@@ -58091,7 +58107,7 @@
             見た.push('パズル');
 
             // ---- 書き出し練習（帯の「やめる」）----
-            c.reset(); await umSettle(c);
+            c.reset(); umCloseSurfaces(c); await umSettle(c);
             await lxStart(c, 'ip-body', /^C₄H₁₀/); await umSettle(c);
             g.hideCanvasToast();
             lxStripBtn(c, /やめる/).click(); await umSettle(c);
@@ -58387,6 +58403,92 @@
                 } finally { g._modeNoticeForTest = false; }
             });
         }
+    });
+
+    /* ===== UM9〜UM11: 帯を畳む・下の2ボタンを1段・左下の分子式表示を消す（v1570・案C 段③） ===== */
+
+    test('UM9: 下の2ボタン（⚗ 反応させる・🔢 主鎖と番号）は 375/320px でも1段に並ぶ（否定対照: 旧い幅の取り方だと2段になる）', async () => {
+        for (const [w, h] of [[1280, 800], [375, 812], [320, 568]]) {
+            await withViewport(w, h, async (W, D, name) => {
+                const g = W.game;
+                g.setMode('free');
+                assert(g.summonMolecule('エタノール'), `${name}: エタノールが呼び出せない`);
+                await new Promise(r => setTimeout(r, 60));
+                const mm = D.getElementById('btn-molecule-modal'), nb = D.getElementById('btn-iupac-numbering');
+                assert(/^⚗ 反応させる（\d+件）$/.test(mm.textContent), `${name}: ⚗ の名札が「${mm.textContent}」`);
+                assert(nb.textContent === '🔢 主鎖と番号', `${name}: 🔢 の名札が「${nb.textContent}」`);
+                const a = mm.getBoundingClientRect(), b = nb.getBoundingClientRect();
+                assert(Math.abs(a.top - b.top) <= 2 && b.left >= a.right, `${name}: 2ボタンが1段に並ばない（${Math.round(a.top)} / ${Math.round(b.top)}）`);
+                assert(a.height >= 32 && b.height >= 32, `${name}: 押しものの床 32px を割る`);
+                // ★ 否定対照: 旧い名札と「段の残りを全部使う」幅に戻すと、狭い画面では 🔢 が2段目へ落ちる
+                const 元 = [mm.textContent, mm.style.flex];
+                try {
+                    mm.textContent = '⚗ 反応させる・調べる（反応 6件）';
+                    mm.style.flex = '1 1 auto';
+                    nb.textContent = '🔢 主鎖と番号を見る';
+                    const a2 = mm.getBoundingClientRect(), b2 = nb.getBoundingClientRect();
+                    if (w < 900) assert(b2.top > a2.top + 2, `${name}: ⚠ 否定対照が効いていない（旧い取り方でも1段に収まる）`);
+                } finally {
+                    mm.textContent = 元[0]; mm.style.flex = 元[1]; g.syncIupacNumberingButtons();
+                }
+            });
+        }
+    });
+
+    test('UM10: 作業中は自由モードの段を畳む（分液・主鎖と番号・機構は呼び出しも反応させるも／分子選びは呼び出しだけ。否定対照: 自由・短尺収録では畳まない）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        const shown = (sel) => !umHidden(c, sel);
+        c.reset(); g.setMode('free'); g.summonMolecule('エタノール'); await umSettle(c);
+        // ★ 否定対照①: 自由では畳まない
+        assert(shown('#ws-free-summon') && shown('#btn-molecule-modal') && shown('#btn-iupac-numbering'),
+            '自由モードなのに呼び出し／反応させるの段が畳まれている');
+        g.openMoleculeModal(); D.getElementById('btn-reaction-select').click(); D.getElementById('btn-molecule-modal-close').click();
+        await umSettle(c);
+        assert(!shown('#ws-free-summon'), '分子選びのあいだ「名称から呼び出す」が畳まれない');
+        assert(shown('#btn-molecule-modal'), '分子選びのあいだ「⚗ 反応させる」まで畳まれた（選んだあとに要る）');
+        g.deactivateReactionSelectMode(); g.updateDrawing();
+        g.startSeparation(); await umSettle(c);
+        assert(!shown('#ws-free-summon') && !shown('#btn-molecule-modal') && !shown('#btn-iupac-numbering'),
+            '分液のあいだ自由モードの段が畳まれない');
+        // ★ 否定対照②: 短尺の収録では名札を出さないので、帯も畳まない（台本の画を変えない）
+        D.documentElement.classList.add('rec-short');
+        try {
+            g.syncCanvasModeBadge();
+            assert(shown('#ws-free-summon') && shown('#btn-molecule-modal'), '短尺の収録なのに分液で帯が畳まれた');
+        } finally { D.documentElement.classList.remove('rec-short'); g.syncCanvasModeBadge(); }
+        g.endSeparation();
+        D.getElementById('btn-iupac-numbering').click(); await umSettle(c);
+        assert(g.iupacNumbering && !shown('#ws-free-summon') && !shown('#btn-iupac-numbering'), '主鎖と番号のあいだ段が畳まれない');
+        assert(shown('#iupac-parts-row') || !D.getElementById('iupac-parts').children.length,
+            '主鎖と番号のあいだ「名前の部品」の段まで畳まれた');
+        g.toggleIupacNumbering(false); await umSettle(c);
+        assert(shown('#ws-free-summon') && shown('#btn-iupac-numbering'), 'やめたあと段が戻らない');
+        W.reactionPlayer.openById('esterification'); await umSettle(c);
+        assert(!shown('#ws-free'), '機構の再生中に自由モードの段が出ている');
+        W.reactionPlayer.exit(); await umSettle(c);
+        assert(shown('#ws-free-summon'), '機構をやめたあと段が戻らない');
+        c.reset();
+    });
+
+    test('UM11: 左下の分子式表示は出さず、分子の見出しに分子式を添える（否定対照: 短尺の収録では上中央の大きな札のまま）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        c.reset(); g.setMode('free'); g.userMolecule = new W.Molecule(); g.summonMolecule('エタノール'); g.updateDrawing();
+        const chip = D.getElementById('mobile-name-chip');
+        assert(chip.textContent.includes('エタノール'), '前提: 札の中身が組み立てられていない');
+        assert(W.getComputedStyle(chip).display === 'none', `左下の分子式表示が出ている（${chip.textContent}）`);
+        const caps = [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent).filter(s => /^🔍/.test(s));
+        assert(caps.length === 1 && caps[0] === '🔍 エタノール C₂H₆O', `見出しが ${JSON.stringify(caps)}（「🔍 エタノール C₂H₆O」を期待）`);
+        // 2分子: 分子ごとに式（v1538 のまま）
+        g.summonMolecule('酢酸'); g.updateDrawing();
+        const caps2 = [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent).filter(s => /^🔍/.test(s));
+        assert(caps2.join('|') === '🔍 ① エタノール C₂H₆O|🔍 ② 酢酸 C₂H₄O₂', `2分子の見出しが ${JSON.stringify(caps2)}`);
+        // ★ 否定対照: 短尺の収録（.rec-short）では札を出す（台本の見せ場「描くと名前が出る」）
+        D.documentElement.classList.add('rec-short');
+        try {
+            assert(W.getComputedStyle(chip).display !== 'none' && chip.getBoundingClientRect().height > 0,
+                '短尺の収録なのに名前の札が消えている（台本の見せ場が崩れる）');
+        } finally { D.documentElement.classList.remove('rec-short'); }
+        c.reset();
     });
 
     test('UM6: 名札が出ているあいだ、帯の見出し行・橙の大見出し・長文トーストを出さない（否定対照: 名札を止めると出る）', async (c) => {
