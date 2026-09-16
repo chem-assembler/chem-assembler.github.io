@@ -281,7 +281,7 @@
  *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
  * | UX  | 1〜3   | 「操作の案内」の字数の上限（v1468・ux-density.md。ユーザー発注「説明が冗長・字が小さい／ただし発展の話は必要な人が見られるように」）。**1 が上限**（9画面ぶん。数えるのは押す前に読ませる説明だけで、化学の説明・答え合わせ・設問・一覧・図・**閉じた `<details>` の中身**は数えない。併せて `.learn-acc` が既定で閉じていること**と中身が空でないこと**を見る ＝ 「畳んだふりをして消す」で通せない）・**2 は否定対照**＝ 実物と同じ長さの1文（47字）を足すと**9画面すべてで**上限を超えること（余裕が広すぎて止め木にならない状態を検出する）・3 は十字の4操作の規則が `CROSS_RULES_HTML` 1本で ⏱ と 🔤 の両方から開けること |
- * | UM  | 1〜6   | **モードの抜け方と名札**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る）・**5〜6 は全モード共通の名札**（段②）: 5 が各モードで名札が出て「やめる」で抜ける（機構の反応名から「（〜生成）」を落とす。**否定対照**＝自由では出ない・短尺収録 .rec-short では出ない）・6 が名札のあいだ帯の見出し行・橙の大見出し・長文トーストを出さない（**否定対照**＝名札を止めると大見出しが描かれる） |
+ * | UM  | 1〜8   | **モードの抜け方と名札**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る）・**5〜6 は全モード共通の名札**（段②）: 5 が各モードで名札が出て「やめる」で抜ける（機構の反応名から「（〜生成）」を落とす。**否定対照**＝自由では出ない・短尺収録 .rec-short では出ない）・6 が名札のあいだ帯の見出し行・橙の大見出し・長文トーストを出さない（**否定対照**＝名札を止めると大見出しが描かれる）・**7〜8 は選択中の道具の札**（見本 B）: 7 が道具を替えると札が変わり自由モードでは5秒で消える（**否定対照**＝4秒ではまだ出ている・パズル中は消えない・合成の操作では出ない）・8 が 375/320px で名札が1行のまま・札がその下に重ならず並ぶ（**否定対照**＝上端に置けば重なる） |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
@@ -58302,6 +58302,91 @@
         }
         c.reset();
         return `名札を確かめたモード: ${見た.join('・')}`;
+    });
+
+    /* ===== UM7〜UM8: 選択中の道具の札（v1570・ユーザー決定 2026-09-17「見本 B」） ===== */
+    const umChip = (c, D = c.D) => {
+        const el = D.getElementById('canvas-tool-chip');
+        return el && !el.classList.contains('hidden') && el.getBoundingClientRect().height > 0 ? el.textContent : null;
+    };
+
+    test('UM7: 道具を替えると選択中の札が変わり、自由モードでは5秒で消える（否定対照: 作業中は消えない・合成の操作では出ない）', async (c) => {
+        const g = c.game, D = c.D;
+        await umWithNotice(c, async () => {
+            c.reset(); g.setMode('free'); g.summonMolecule('エタノール'); await umSettle(c);
+            g._toolChipUntil = 0; g.syncToolChip();
+            assert(!umChip(c), `道具を替えていないのに札が出ている: ${umChip(c)}`);
+            D.querySelector('.atom-btn.atom-o').click(); await umSettle(c);
+            assert(umChip(c) && /酸素を置く/.test(umChip(c)), `酸素を選んでも札が「酸素を置く」にならない: ${umChip(c)}`);
+            D.querySelector('.mod-btn[data-module="benzene"]').click(); await umSettle(c);
+            assert(/ベンゼン環を置く/.test(umChip(c) || ''), `ベンゼン環を選んでも札が変わらない: ${umChip(c)}`);
+            D.querySelector('.mod-btn[data-module="benzene"]').click();          // 解除
+            D.getElementById('btn-tool-erase').click(); await umSettle(c);
+            assert(/消しゴム/.test(umChip(c) || ''), `消しゴムを選んでも札が変わらない: ${umChip(c)}`);
+            D.getElementById('btn-cistrans-reshape').click(); await umSettle(c);
+            assert(/シス\/トランス/.test(umChip(c) || ''), `⇄ を ON にしても札に出ない: ${umChip(c)}`);
+            assert(!umPlate(c), '⇄ の ON が名札のモードになっている（札で見せる決定）');
+            D.getElementById('btn-cistrans-reshape').click();
+            D.getElementById('btn-tool-select').click(); await umSettle(c);
+            // 5秒で消える（4秒ではまだ出ている）
+            await c.tick(4000);
+            assert(umChip(c), '★ 否定対照: 4秒で札が消えている');
+            await c.tick(1300);
+            assert(!umChip(c), '★ 自由モードで5秒を過ぎても札が残っている');
+
+            // ★ 否定対照①: 描く作業中（パズル）は出したまま消えない
+            c.reset(); await umSettle(c);
+            D.querySelector('.atom-btn.atom-n').click(); await umSettle(c);
+            assert(/窒素を置く/.test(umChip(c) || ''), `パズル中に札が出ない: ${umChip(c)}`);
+            const plate = D.getElementById('canvas-mode-badge').getBoundingClientRect();
+            const chip = D.getElementById('canvas-tool-chip').getBoundingClientRect();
+            assert(chip.top >= plate.bottom, `札が名札の下に並んでいない（名札 ${Math.round(plate.bottom)} / 札 ${Math.round(chip.top)}）`);
+            await c.tick(5300);
+            assert(umChip(c), '★ パズル中なのに5秒で札が消えた（作業中は出したまま）');
+            // 名札がタップの意味を言っている作業（主鎖と番号）では出さない
+            g.setMode('free'); g.userMolecule = new c.W.Molecule(); g.summonMolecule('ブタン');
+            D.getElementById('btn-iupac-numbering').click(); await umSettle(c);
+            assert(!umChip(c), `主鎖と番号の表示中に札が出ている: ${umChip(c)}`);
+            g.toggleIupacNumbering(false);
+        });
+        // ★ 否定対照②: 合成の操作（台本・テスト）では自由モードの札を出さない
+        c.reset(); g.setMode('free'); await umSettle(c);
+        g._toolChipUntil = 0; g.syncToolChip();
+        D.querySelector('.atom-btn.atom-cl').click(); await umSettle(c);
+        assert(!umChip(c), `合成の操作なのに札が出た（台本の画に入る）: ${umChip(c)}`);
+        D.querySelector('.atom-btn.atom-c').click();
+        c.reset();
+    });
+
+    test('UM8: 375px でも名札は1行のまま崩れず、選択中の札はその下に重ならずに並ぶ（否定対照: 上端に置けば重なる）', async () => {
+        for (const [w, h] of [[375, 812], [320, 568]]) {
+            await withViewport(w, h, async (W, D, name) => {
+                const g = W.game;
+                g._modeNoticeForTest = true;
+                try {
+                    g.setMode('puzzle');
+                    D.querySelector('.mod-btn[data-module="benzene"]').click();
+                    await new Promise(r => setTimeout(r, 60));
+                    const wrap = D.getElementById('svg-wrapper').getBoundingClientRect();
+                    const plateEl = D.getElementById('canvas-mode-badge');
+                    const plate = plateEl.getBoundingClientRect();
+                    const stop = plateEl.querySelector('.cmb-stop').getBoundingClientRect();
+                    const chipEl = D.getElementById('canvas-tool-chip');
+                    assert(!chipEl.classList.contains('hidden'), `${name}: 札が出ていない`);
+                    const chip = chipEl.getBoundingClientRect();
+                    assert(plate.height <= 44, `${name}: 名札が ${Math.round(plate.height)}px（1行 40px を超えて折り返した）`);
+                    assert(stop.right <= wrap.right + 1 && stop.left >= wrap.left && stop.height >= 32,
+                        `${name}: 名札の「やめる」がはみ出す・潰れる`);
+                    assert(chip.top >= plate.bottom && chip.right <= wrap.right + 1 && chip.left >= wrap.left - 1,
+                        `${name}: 札が名札と重なる・はみ出す（名札 ${Math.round(plate.bottom)} / 札 ${Math.round(chip.top)}〜）`);
+                    // ★ 否定対照: 札を上端（top 8px）に置いた場合の矩形は名札と重なる ＝ 上の物差しは空振りしていない
+                    const 上端なら = { top: wrap.top + 8, bottom: wrap.top + 8 + chip.height, left: chip.left, right: chip.right };
+                    assert(上端なら.top < plate.bottom && 上端なら.bottom > plate.top && 上端なら.left < plate.right,
+                        `${name}: ⚠ 否定対照が効いていない（上端に置いても名札と重ならない）`);
+                    D.querySelector('.mod-btn[data-module="benzene"]').click();
+                } finally { g._modeNoticeForTest = false; }
+            });
+        }
     });
 
     test('UM6: 名札が出ているあいだ、帯の見出し行・橙の大見出し・長文トーストを出さない（否定対照: 名札を止めると出る）', async (c) => {

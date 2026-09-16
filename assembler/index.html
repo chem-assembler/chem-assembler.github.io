@@ -285,6 +285,10 @@
                          ⚠ 図の上に載るので**文字の部分はタップを通す**（pointer-events:none）。
                             押せるのは「やめる」だけ ＝ 押せるように見えて押せない面を作らない -->
                     <div id="canvas-mode-badge" class="hidden" aria-live="polite"></div>
+                    <!-- 選択中の道具の札（v1570・ユーザー決定 2026-09-17「見本 B」）。キャンバスの右上、
+                         名札があればそのすぐ下。中身と出し入れは game.js の `syncToolChip()`。
+                         ⚠ 図の上に載るので pointer-events:none（押せるものは持たない） -->
+                    <div id="canvas-tool-chip" class="hidden" aria-live="polite"></div>
                     <!-- 描画エリア内の字幕トースト（P12-8）。右パネルの #verify-result は
                          スクロールで見切れて気づかれないため、キャンバス内にも同じ内容を出す -->
                     <div id="canvas-toast" class="hidden"></div>
