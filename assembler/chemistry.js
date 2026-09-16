@@ -4376,7 +4376,7 @@ function _iupacOlCore(n, olLocs, eneLocs = [], yneLocs = [], out) {
     return unsat + '-' + olLocs.join(',') + '-' + (IUPAC_MULT[k] || '') + 'オール';
 }
 
-// カルボニル化合物（ケトン -オン／アルデヒド -アール／カルボン酸 -酸）の接尾辞つき幹（v1573）。
+// カルボニル化合物（ケトン -オン／アルデヒド -アール／カルボン酸 -酸）の接尾辞つき幹（v1576）。
 // kind='one'|'al'|'oic'、loc=C=O 炭素の位置番号（al/oic は必ず 1 で名前には書かない）。
 // 例: (4,'one',2)→"2-ブタノン"、(3,'one',2)→"プロパノン"（位置が一意なので省略。プロペン・エタノールと同じ流儀）、
 //     (4,'al')→"ブタナール"、(4,'oic')→"ブタン酸"、(1,'al')→"メタナール"、(1,'oic')→"メタン酸"
@@ -4590,12 +4590,12 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
  *   mainChain,  // 番号順の炭素ID配列。番号 k の炭素 = mainChain[k-1]。kind==='ether' では null
  *   groups,     // kind==='ether' のときだけ [{ids, rootId, name, mainChain}, …]（2つ）。他は null
  *   locants,    // { ol, ene, yne, subs:[{loc,key,name}], co, coKind } 説明文用。kind==='ether' では null
- *               //   co = C=O 炭素の位置番号（1つ）・coKind = 'one'|'al'|'oic'（v1573。無ければ [] / null）
+ *               //   co = C=O 炭素の位置番号（1つ）・coKind = 'one'|'al'|'oic'（v1576。無ければ [] / null）
  *   nameParts,  // ★ 名称の説明用の**かけらの列**（下記）
  *   dirReason   // ★ 番号の向きを決めた比較（'carbonyl'|'ol'|'unsat'|'ene'|'sub'|'alpha'|'tie'）。ether は null
  * }
  *
- * ★ カルボニル（v1573・DESIGN_iupac_check.md §12）: ケトン（-オン）・アルデヒド（-アール）・
+ * ★ カルボニル（v1576・DESIGN_iupac_check.md §12）: ケトン（-オン）・アルデヒド（-アール）・
  *   カルボン酸（-酸）を、**C=O が1つだけで他の官能基・多重結合・ハロゲンを持たない**ときに名乗る。
  *   エステル・アミド・酸無水物・二酸・ヒドロキシ酸・ケト酸・不飽和カルボニルは今までどおり null
  *
@@ -4629,7 +4629,7 @@ function iupacNameDetail(mol) {
     if (!carbons.length) return null;
     const carbonIds = new Set(carbons.map(a => a.id));
     const oxygens = heavy.filter(a => a.element === 'O');
-    // ★ カルボニル C=O（v1573）: O が炭素1個とだけ二重結合でつながっているもの。
+    // ★ カルボニル C=O（v1576）: O が炭素1個とだけ二重結合でつながっているもの。
     //   C=O 炭素の隣を見て ケトン（炭素2個）／アルデヒド（炭素1個以下・空き価標あり）／
     //   カルボン酸（末端の -OH が1つ）に分ける。エステル（-O- の先に炭素）・炭酸（-OH が2つ）・
     //   酸塩化物などは `co` が立たず、下で「見分けのつかない C=O」として null になる
@@ -4676,7 +4676,7 @@ function iupacNameDetail(mol) {
         else return null;
     }
     const hasMultiple = mol.bonds.some(b => b.type >= 2 && carbonIds.has(b.atomId1) && carbonIds.has(b.atomId2));
-    // ★ カルボニルは**1つだけ・単独で**扱う（v1573・高校の範囲）。2つ以上（二酸・ジケトン）、
+    // ★ カルボニルは**1つだけ・単独で**扱う（v1576・高校の範囲）。2つ以上（二酸・ジケトン）、
     //   -OH／エーテル／C=C／ハロゲンとの同居（ヒドロキシ酸・ケト酸・不飽和カルボニル・クロロ酢酸）は
     //   接尾辞と接頭辞の優先順位（オキソ・ヒドロキシ）や位置番号の省略規則が要るので、この便では名乗らない
     const co = carbonyl.length === 1 ? carbonyl[0] : null;
@@ -4780,7 +4780,7 @@ function iupacName(mol) {
 
 // 1本の主鎖候補について、両方向で番号付けし規則に沿って名前を作る。
 // 番号付けの優先順位: 主特性基(C=O → -OH)の位置番号を最小 → 多重結合の位置番号を最小（二重結合優先）→ 置換基の位置番号最小 → アルファベット
-// co = カルボニル { cId, kind }（v1573）。無ければ null で、それ以前と1バイトも変わらない道を通る
+// co = カルボニル { cId, kind }（v1576）。無ければ null で、それ以前と1バイトも変わらない道を通る
 function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet, co) {
     const n = chain.length;
     const hasOh = ohSet && ohSet.size > 0;
@@ -4812,7 +4812,7 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet, co) {
     //   ⚠ 名前の出力は1バイトも変わらない（下の分岐はそのまま。足したのは代入1つだけ）。
     //   IN12 が `compounds.json` 全件で出力不変を、IN13 が6通りとも実際に出ることを見張る
     let dirReason;
-    // ★ 'carbonyl'（v1573）: C=O の炭素の位置番号で決まった。アルデヒド・カルボン酸は端の炭素が
+    // ★ 'carbonyl'（v1576）: C=O の炭素の位置番号で決まった。アルデヒド・カルボン酸は端の炭素が
     //   C1 なので必ずここで決まる（メタナール・メタン酸だけは両向きが同じで 'tie'）
     if (cCo !== 0) { d = cCo < 0 ? f : r; dirReason = 'carbonyl'; }
     else if (cOl !== 0) { d = cOl < 0 ? f : r; dirReason = 'ol'; }

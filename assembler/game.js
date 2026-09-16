@@ -11571,7 +11571,7 @@ class Game {
             return [...out];
         }
         if (part.kind === 'one' || part.kind === 'al' || part.kind === 'oic') {
-            // カルボニル（v1573）。位置番号（`2-`）は**その炭素**、接尾辞（`ノン`）は**その =O**。
+            // カルボニル（v1576）。位置番号（`2-`）は**その炭素**、接尾辞（`ノン`）は**その =O**。
             // アルデヒド・カルボン酸は位置番号のかけらが無いので、接尾辞が C1 と O をまとめて指す
             // （-CHO・-COOH は「1番の炭素がその基になっている」と読む）
             locs.forEach(loc => {
@@ -11599,7 +11599,7 @@ class Game {
         const j = (arr) => (arr && arr.length ? arr.join('・') : '');
         switch (det.dirReason) {
             case 'carbonyl': {
-                // C=O の炭素の番号で決まった（v1573）。アルデヒド・カルボン酸は端の炭素が C1 と決まっている
+                // C=O の炭素の番号で決まった（v1576）。アルデヒド・カルボン酸は端の炭素が C1 と決まっている
                 const co = j(L.co) || '1';
                 if (L.coKind === 'al') return `−CHO の炭素を 1 番にします（アルデヒドは端の炭素が C1）。`;
                 if (L.coKind === 'oic') return `−COOH の炭素を 1 番にします（カルボン酸は端の炭素が C1）。`;
@@ -11719,7 +11719,7 @@ class Game {
                 // ⚠ 「」で引くのは**画面に出ている字**にする（`エタノール` に「オール」という
                 //   並びは無く、かけらは「ノール」。同じ食い違いが「エン」で申し立てられた）
                 if (part.kind === 'ol') return `「${part.text}」＝ -OH（ヒドロキシ基）を持つことを表す接尾辞です（-オール）。`;
-                // カルボニル（v1573）。字面は「ノン」「ナール」「酸」
+                // カルボニル（v1576）。字面は「ノン」「ナール」「酸」
                 if (part.kind === 'one') return `「${part.text}」＝ 鎖の途中の炭素が C=O（カルボニル基）であることを表す接尾辞です（-オン）。`;
                 if (part.kind === 'al') return `「${part.text}」＝ 端の炭素が −CHO（ホルミル基）であることを表す接尾辞です（-アール）。`;
                 if (part.kind === 'oic') return `「${part.text}」＝ 端の炭素が −COOH（カルボキシ基）であることを表す接尾辞です。`;
@@ -11785,7 +11785,7 @@ class Game {
             return n >= 2 ? `${n}個の${what}が、${where(s.locs)}の炭素についているね。`
                 : `${where(s.locs)}の炭素に${what}がついているね。`;
         }
-        // アルデヒド・カルボン酸は位置番号のかけらが無い（C1 と決まっている）ので、接尾辞1つで1まとまり（v1573）
+        // アルデヒド・カルボン酸は位置番号のかけらが無い（C1 と決まっている）ので、接尾辞1つで1まとまり（v1576）
         //   ケトンも位置番号を省く回（プロパノン）は接尾辞だけ ＝ 同じ声掛けにする
         if (ps.length === 1 && ps[0].role === 'suffix' && ps[0].kind === 'al') return '1番の炭素がホルミル基（−CHO）になっているね。';
         if (ps.length === 1 && ps[0].role === 'suffix' && ps[0].kind === 'oic') return '1番の炭素がカルボキシ基（−COOH）になっているね。';
@@ -11917,7 +11917,7 @@ class Game {
         });
         // ---- 枠（N2）----
         const roles = group.map(k => det.parts[k]);
-        // カルボニル（one/al/oic）も -OH と同じく「鎖から突き出た基」なので枠で囲む（v1573）
+        // カルボニル（one/al/oic）も -OH と同じく「鎖から突き出た基」なので枠で囲む（v1576）
         const framed = roles.some(p => p.role === 'sub' || p.role === 'ether-group' || p.kind === 'ol' ||
             p.kind === 'one' || p.kind === 'al' || p.kind === 'oic');
         if (!framed) return;

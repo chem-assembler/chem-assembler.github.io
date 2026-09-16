@@ -5214,6 +5214,9 @@
             'ピメリン酸（ヘプタン二酸）', 'スベリン酸（オクタン二酸）', 'セバシン酸（デカン二酸）',
             'ヘキサナール', 'ヘプタナール', '2-メチルブタナール',
             '3-メチルブタナール（イソバレルアルデヒド）', '2,2-ジメチルプロパナール（ピバルアルデヒド）',
+            // ⚠ v1576 以降、C=O が1つだけの ケトン・アルデヒド・カルボン酸 は iupacName が名乗る（IN16）。
+            //   ここの一覧は慣用名の併記（カプロン酸・イソバレルアルデヒド）や書き出し練習の答えの表のために残す
+            //   ＝ 下の「iupacName が null」は「null か、登録名がその系統名を含む」に緩めた
             '2-ヘキサノン（メチルブチルケトン）', '3-ヘキサノン（エチルプロピルケトン）',
             '2-ヘプタノン（メチルペンチルケトン）', '3-メチル-2-ブタノン（メチルイソプロピルケトン）',
             '4-メチル-2-ペンタノン（メチルイソブチルケトン）', '2,3-ブタンジオン（ジアセチル）',
@@ -5225,8 +5228,9 @@
         names.forEach(nm => {
             const mol = targetOf(nm);
             assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
-            assert(W.iupacName(mol) === null,
-                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+            const sys = W.iupacName(mol);
+            assert(sys === null || nm.indexOf(sys) >= 0,
+                `${nm} を iupacName が「${sys}」と命名した（登録の要否を見直すこと）`);
         });
         // 入試の定番: C5H10O2 のエステル9種がそろい、**構造がすべて違う**
         const c5esters = ['ギ酸ブチル', 'ギ酸イソブチル', 'ギ酸sec-ブチル', 'ギ酸tert-ブチル',
@@ -5490,8 +5494,10 @@
         names.forEach(nm => {
             const mol = targetOf(nm);
             assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
-            assert(W.iupacName(mol) === null,
-                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+            // v1576 以降: C=O が1つだけの鎖状カルボニルは系統名が出る。登録名がそれを含む（慣用名の併記）なら可
+            const sys = W.iupacName(mol);
+            assert(sys === null || nm.indexOf(sys) >= 0,
+                `${nm} を iupacName が「${sys}」と命名した（登録の要否を見直すこと）`);
         });
         // C₆H₈O₂ のシクロヘキサンジオン3種が分子式そろい・構造は別
         const diones = ['1,2-シクロヘキサンジオン', '1,3-シクロヘキサンジオン', '1,4-シクロヘキサンジオン'];
@@ -5691,6 +5697,9 @@
             'ギ酸ペンチル', 'ギ酸イソペンチル', 'ギ酸ネオペンチル', 'ギ酸(1-メチルブチル)',
             'ギ酸(2-メチルブチル)', 'ギ酸(1-エチルプロピル)', 'ギ酸(1,1-ジメチルプロピル)',
             'ギ酸(1,2-ジメチルプロピル)',
+            // ⚠ 上の C₆ の鎖状カルボニル 17 件は v1576 以降 iupacName が同じ名前を作れる（IN16）。
+            //   登録は書き出し練習（fgPresets）の答えの表と qa の id 引きが使っているので残し、
+            //   下の検査は「null か、登録名がその系統名を含む」に緩めた（要否の見直しは別便）
             '2,2-ジメチルプロパン酸メチル', '2-メチルブタン酸メチル', '3-メチルブタン酸メチル',
             '2-メチルプロパンニトリル', '2,2-ジメチルプロパンニトリル', '2-メチルブタンニトリル',
             '3-メチルブタンニトリル', 'ヘキサンニトリル', '2,2-ジメチルブタンニトリル',
@@ -5704,8 +5713,9 @@
         names.forEach(nm => {
             const mol = targetOf(nm);
             assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
-            assert(W.iupacName(mol) === null,
-                `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
+            const sys = W.iupacName(mol);
+            assert(sys === null || nm.indexOf(sys) >= 0,
+                `${nm} を iupacName が「${sys}」と命名した（登録の要否を見直すこと）`);
         });
         // C₆H₁₂O のアルデヒド（既出のヘキサナールを含む）が分子式そろい・構造は全部別。
         // **件数の決め打ちはしない**——リストを増やしても > 0 と「全部別」で成り立つ形にする
@@ -6396,7 +6406,7 @@
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'ベンゼン'))) === null, '芳香環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'エチルアミン').target })) === null,
             'ヘテロ原子（N）を含む分子に系統名を付けた');
-        // ⚠ v1573: ケトン・アルデヒド・カルボン酸は名乗るようになった（IN16）。C=O の否定対照はエステルで取る
+        // ⚠ v1576: ケトン・アルデヒド・カルボン酸は名乗るようになった（IN16）。C=O の否定対照はエステルで取る
         assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '酢酸メチル').target })) === null,
             'エステル（C=O-O-C）を含む分子に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'アセトアルデヒド'))) === 'エタナール',
@@ -6643,7 +6653,7 @@
         try {
             // 環・エステル・複数分子・エーテル。どれも `iupacNameDetail` が
             // **番号を返さない**もので、門番1行だけで自動的に番号なしになる
-            // （⚠ v1573 でケトン・アルデヒド・カルボン酸は出るようになったので、C=O の否定対照はエステル）
+            // （⚠ v1576 でケトン・アルデヒド・カルボン酸は出るようになったので、C=O の否定対照はエステル）
             const CASES = [
                 ['シクロブタン', 'ring'],
                 ['ベンゼン', 'ring'],
@@ -7132,7 +7142,7 @@
         summon('ジエチルエーテル'); shot('ether');
         // ④ 環
         summon('シクロブタン'); shot('ring');
-        // ⑤ 環でない未対応（エステル。⚠ v1573 でアセトンは出るようになった）
+        // ⑤ 環でない未対応（エステル。⚠ v1576 でアセトンは出るようになった）
         summon('酢酸メチル'); shot('unsupported');
         // ⑥ 複数分子
         g.userMolecule = new W.Molecule();
@@ -7551,7 +7561,7 @@
             m.getNeighbors(cid).forEach(n => {
                 const a = n.atom;
                 if (a.element === 'H' || set.has(a.id)) return;
-                // C=O（v1573）: 二重結合の O は主特性基の炭素の印。カルボン酸の -OH は C=O の炭素に
+                // C=O（v1576）: 二重結合の O は主特性基の炭素の印。カルボン酸の -OH は C=O の炭素に
                 // 付いているので、ここでは -OH に数えない（同じ炭素の印を2度取らない）
                 if (a.element === 'O' && n.type === 2) { co.push(i + 1); return; }
                 if (isOh(a)) {
@@ -7748,7 +7758,7 @@
             if (!d || d.kind !== 'chain') return;
             named++;
             const f = inLocsFor(m, d.mainChain), r = inLocsFor(m, d.mainChain.slice().reverse());
-            const cCo = inCmpLocs(f.co, r.co);   // v1573: C=O の炭素が -OH より先
+            const cCo = inCmpLocs(f.co, r.co);   // v1576: C=O の炭素が -OH より先
             const cOl = inCmpLocs(f.ol, r.ol);
             const cUn = inCmpLocs(f.ene.concat(f.yne).sort((a, b) => a - b), r.ene.concat(r.yne).sort((a, b) => a - b));
             const cEne = inCmpLocs(f.ene, r.ene);
@@ -7807,7 +7817,7 @@
         //   エンインは `_iupacUnsatCore` が未対応（null）なので**名前ごと出ない**。
         //   ここを「5通りでよい」と緩めるのではなく、**出ない理由のほうを名指しで固定する**
         //   （下の (b)）。エンインの命名を実装した日には (b) が赤くなり、測り直しに来ることになる
-        // ★ v1573 で 'carbonyl'（C=O の炭素の位置で決まった）が加わり **7通りのうち出るのは6通り**
+        // ★ v1576 で 'carbonyl'（C=O の炭素の位置で決まった）が加わり **7通りのうち出るのは6通り**
         ['carbonyl', 'ol', 'unsat', 'sub', 'alpha', 'tie'].forEach(k =>
             assert(seen.has(k), `dirReason='${k}' が1件も出ない（向きの理由が空回りしている）: 出たのは ${[...seen.keys()].join(',')}`));
         assert(seen.size === 6, `dirReason が ${seen.size} 種類出た（6種類のはず）: ${[...seen.keys()].join(',')}`);
@@ -8283,7 +8293,7 @@
         assert(libNamed >= 150, `ライブラリで名前が出たのが ${libNamed} 件（実測 150件以上のはず・名前が消えている）`);
     });
 
-    /* ===== IN16〜IN17: カルボニル（ケトン・アルデヒド・カルボン酸）の系統名（v1573・DESIGN_iupac_check.md §12）=====
+    /* ===== IN16〜IN17: カルボニル（ケトン・アルデヒド・カルボン酸）の系統名（v1576・DESIGN_iupac_check.md §12）=====
      *
      * ユーザー決定（2026-09-17）「4. 広げる」。C=O を1つだけ持つ非環式の分子に、主鎖と番号・名前の部品・説明を
      * v1567 の型で出す。IN16 が陽性（名前・主鎖・番号・まとまり・声掛け）、IN17 が★否定対照
@@ -47656,7 +47666,8 @@
         const n2 = g.iupacNumberingNotice();
         assert(n2.code === 'ring' && !n2.ok,
             `★ 糖でない環の言い分けが変わっている（${n2.code}）—— 糖の枝が環ぜんぶを飲み込んでいる`);
-        load('酢酸');
+        // ⚠ v1576 で酢酸（カルボン酸）は出るようになったので、未対応の代表はエステル
+        load('酢酸メチル');
         assert(g.iupacNumberingNotice().code === 'unsupported',
             `★ 未対応の官能基の言い分けが変わっている（${g.iupacNumberingNotice().code}）`);
         // ---- ③ ★ 分子が2つあるときは糖でも出さない（'multi' の言い分けをそのまま通す）----
