@@ -9052,6 +9052,10 @@ const RX_SPECIES = {
     Na: { atoms: [['Na', 0, 0, 0, { bare: true }]], bonds: [] },
     // ½H₂ ＝ 1分子ぶんの反応で出る水素は原子1個ぶん。明示の H を1つ置いて、再生の終わりに薄れさせる
     H: { atoms: [['H', 0, 0]], bonds: [] },
+    /* ★ H₂（v1574・ニトロ基の還元の相手）。重原子が無いので**明示の H 2つを H−H でつなぐ**。
+     *   ⚠ 名前の登録（`summonMolecule`）はできない（v1556 の報告）＝ 写しにだけ置く。
+     *   間隔は `withMorphHydrogens` ③ が呼ぶ H₂ と同じ 0.7 マス */
+    H2: { atoms: [['H', 0, 0], ['H', 0.7, 0]], bonds: [[0, 1, 1]] },
     CH3COOH: { atoms: [['C', 0, 0], ['C', 1, 0], ['O', 1, -1], ['O', 2, 0]], bonds: [[0, 1, 1], [1, 2, 2], [1, 3, 1]] },
     Ac2O: { atoms: [['C', 0, 0], ['C', 1, 0], ['O', 1, -1], ['O', 2, 0], ['C', 3, 0], ['O', 3, -1], ['C', 4, 0]],
         bonds: [[0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1], [4, 5, 2], [4, 6, 1]] }
@@ -9090,8 +9094,19 @@ const PARTNER_EQUATIONS = {
     amine_liberate_naoh: { partners: ['NaOH'], byproducts: ['NaCl', 'H2O'] },
     saponification: { partners: ['NaOH'], byproducts: [] },
     williamson_ether: { partners: [], byproducts: ['NaI'] },
-    acetylation_anhydride: { partners: ['Ac2O'], byproducts: ['CH3COOH'] }
+    acetylation_anhydride: { partners: ['Ac2O'], byproducts: ['CH3COOH'] },
+    /* ★ ニトロ基の還元（v1574・ユーザー決定 2026-09-17「7.進める」）。
+     *   瓶は `h2_ni`（水素＋触媒）なので、呼ぶ相手は **H₂**。教科書の実験室の製法（Sn＋HCl）は
+     *   caption が言葉で案内している（還元剤を瓶の中身に合わせる ＝ 画面と瓶が食い違わない）。
+     *   収支は C₆H₅NO₂ ＋ 3H₂ → C₆H₅NH₂ ＋ 2H₂O（係数は `solveEquation` が解く）。
+     *   ⚠ H₂ は「×n」にまとめない（`RX_NO_FOLD`）。3つが N・O・O の別々の原子へ H を渡す */
+    reduce_nitro: { partners: ['H2'], byproducts: ['H2O'] }
 };
+
+/* 「×n」にまとめない相手（v1574）。1個ずつ基質の決まった原子と握手するもの。
+ *   [O] … 酸化される原子へ1つずつ／H2 … ニトロ基の還元で N・O・O へ別々に H を渡す
+ *   （まとめると、描かなかった H₂ の H が `withMorphHydrogens` ③ で名無しの H₂ として湧き、札と数が食い違う） */
+const RX_NO_FOLD = new Set(['[O]', 'H2']);
 
 /** 分子の型1つを、元素ごとの数（H は自動水素と明示の H の合計）にする */
 function rxSpeciesCount(name) {
@@ -11180,7 +11195,7 @@ class Reactor {
             const byName = new Map();
             list.forEach(inst => { if (!byName.has(inst.name)) byName.set(inst.name, []); byName.get(inst.name).push(inst); });
             byName.forEach((insts, name) => {
-                if (this._foldCopies === false || insts.length < RX_FOLD_MIN || name === '[O]') return;
+                if (this._foldCopies === false || insts.length < RX_FOLD_MIN || RX_NO_FOLD.has(name)) return;
                 const rep = insts.slice().sort((a, b) => visible(b) - visible(a))[0];
                 rep.mult = insts.length;
                 insts.forEach(inst => {
@@ -11223,7 +11238,10 @@ class Reactor {
         const place = (inst, anchor) => {
             const offs = inst.slots.map(s => ({ x: s.dx * G, y: s.dy * G }));
             const c0 = centroid(offs);
-            const heavySlots = inst.slots.map((s, k) => (s.el === 'H' ? -1 : k)).filter(k => k >= 0);
+            let heavySlots = inst.slots.map((s, k) => (s.el === 'H' ? -1 : k)).filter(k => k >= 0);
+            /* ★ 重原子の無い相手（H₂・v1574）は H の枠を重原子と同じに避けさせる。
+             *   空のままだと当たり判定が素通りし、分子の真上に置かれる */
+            if (!heavySlots.length) heavySlots = inst.slots.map((s, k) => k);
             let found = null;
             const step = G / 2;
             for (let r = 0; r <= 24 && !found; r++) {
@@ -11299,10 +11317,18 @@ class Reactor {
             const hs = snap.atoms.filter(a => a.element === 'H');
             if (!hs.length) return { snap, explicit: [] };
             const hid = new Set(hs.map(a => a.id));
+            /* ★ H−H（写しに置いた H₂・v1574）は**親なしの手**にし、相方を覚えておく。
+             *   親を相方の H にすると、その H は図から外すので結合の端点が宙に浮く。
+             *   H₂ の結合は、両方に新しい id が付いたあとで結び直す（下の ⑤） */
+            const byId = new Map();
             const explicit = hs.map(a => {
                 const b = snap.bonds.find(x => x.atomId1 === a.id || x.atomId2 === a.id);
-                return { parentId: b ? (b.atomId1 === a.id ? b.atomId2 : b.atomId1) : null, x: a.x, y: a.y };
+                const other = b ? (b.atomId1 === a.id ? b.atomId2 : b.atomId1) : null;
+                const e = { parentId: other && !hid.has(other) ? other : null, x: a.x, y: a.y, mateId: other && hid.has(other) ? other : null };
+                byId.set(a.id, e);
+                return e;
             });
+            explicit.forEach(e => { if (e.mateId) { e.mate = byId.get(e.mateId); delete e.mateId; } else delete e.mateId; });
             return { snap: { atoms: snap.atoms.filter(a => !hid.has(a.id)),
                 bonds: snap.bonds.filter(b => !hid.has(b.atomId1) && !hid.has(b.atomId2)) }, explicit };
         };
@@ -11431,6 +11457,18 @@ class Reactor {
         // ④ 残りは片側だけに置く（今までどおりフェード）
         restL.forEach(L => B.push({ id: nid(), h: L.h, p: L.p }));
         restG.forEach(K => A.push({ id: nid(), h: K.h, p: K.p }));
+        // ⑤ 写しに置いた H₂ の H−H を、付いた id どうしで結び直す（v1574）
+        const matesOf = (list, bonds) => {
+            const idOf = new Map(list.map(e => [e.h, e.id]));
+            list.forEach(e => {
+                if (!e.h.mate || !idOf.has(e.h.mate)) return;
+                const other = idOf.get(e.h.mate);
+                if (e.id < other) bonds.push({ atomId1: e.id, atomId2: other, type: 1 });
+            });
+        };
+        matesOf(B, extraBonds);
+        const extraAfter = [];
+        matesOf(A, extraAfter);
         const build = (snap, list, bonds) => ({
             atoms: snap.atoms.concat(list.map(e => ({ id: e.id, element: 'H', x: e.h.x, y: e.h.y, charge: 0 }))),
             bonds: snap.bonds.concat(list.filter(e => e.p).map(e => ({ atomId1: e.p, atomId2: e.id, type: 1 })), bonds)
@@ -11438,7 +11476,7 @@ class Reactor {
         return {
             // ★ 「×n」の札（v1560）は写しから写しへ引き継ぐ
             before: Object.assign(build(before, B, extraBonds), { labels: labB }),
-            after: Object.assign(build(after, A, []), { labels: labA }),
+            after: Object.assign(build(after, A, extraAfter), { labels: labA }),
             lost: restL.length, gained: restG.length
         };
     }
