@@ -75,26 +75,11 @@ readJsonl('exam_usage.jsonl').forEach((r) => {
 });
 
 // ---- §7-2 の表を「片側の論法が許す範囲」まで広げたもの ----
-// ⚠ **表の単一値をそのまま当てない。** §7-2 は表のすぐ下で
-//   「**片側の論法は §3-2 のまま維持する（強い信号だけを採る）**」と書いている。
-//   表の単一値には、片側の論法が支持しない動きが混じっている（2026-08-13 に実測）:
-//     ・「本文×基本 ＝ 2」… 片側は「基本に出る → **Lv ≤ 2**」なので **1 も許される**。
-//       単一値のままだと、いま Lv1 の5件（alkane-names・ketone-def・saccharide-def ほか）を
-//       **根拠なく2へ押し上げる**
-//     ・「発展欄×未登場 ＝ 4」… 片側では発展欄は「Lv ≥ 2」の**弱い**信号、未登場は
-//       「**何も言えない**」。この2つから 4 は出てこない。単一値のままだと Lv3 の6件
-//       （orientation・keto-enol ほか）を最難へ押し上げる
-//   そこで**両側の許容区間の共通部分**を採り、**いまの値がその中にあれば動かさない**。
-//   ＝ 強い信号が強いるときだけ動く。§3-5 の轍（先に表を作って外した）を繰り返さないため。
-//   ⚠ 「本文×未登場」だけは §7-2 の ※ に実測の根拠（セミナーは要項の表を問題にしない）が
-//   あるので、片側の共通部分 [1,3] ではなく設計書どおり [1,2] を使う。
-const TABLE = {
-    '本文':       { 'プロセス': [1, 1], '基本': [1, 2], '発展': [3, 3], '未登場': [1, 2] },
-    '発展欄':     { 'プロセス': [1, 1], '基本': [1, 2], '発展': [3, 4], '未登場': [2, 4] },
-    '見あたらない': { 'プロセス': [1, 1], '基本': [1, 2], '発展': [3, 4], '未登場': [1, 4] },
-};
-// 教科書の判定が弱い（matchLen < 12）ときは表を使わず、セミナー側の片側の論法だけで挟む
-const SEMINAR_ONLY = { 'プロセス': [1, 1], '基本': [1, 2], '発展': [3, 4], '未登場': [1, 4] };
+// 表と、なぜ単一値でなく区間にするかは level_rules.js に移した（ブラウザのテストと共有するため）
+const RULES = require('./level_rules');
+// ★ ユーザーの上書き（data/level_matrix.jsonl の override 欄）。**上書きのある項目は difficulty を動かさない**
+//   否定対照: QA_LEVEL_MATRIX=<上書きを消した写し> で走らせると、区間の端へ戻す案が出る
+const overrides = require('./level_matrix').readOverrides();
 
 const rows = [];
 items.forEach((it) => {
@@ -105,9 +90,11 @@ items.forEach((it) => {
     const ans = asAnswer.get(it.code);
     const tool = asTool.get(it.code) || 0;
 
-    const range = (weak ? SEMINAR_ONLY[sem] : TABLE[scope][sem]);
+    const range = RULES.tableRange(scope, weak, sem);
     const cur = it.difficulty;
-    const next = (cur >= range[0] && cur <= range[1]) ? cur : (cur < range[0] ? range[0] : range[1]);
+    const machine = RULES.clamp(cur, range);
+    const override = overrides.get(it.code);
+    const next = RULES.finalLv(machine, override);
 
     const ev = { textbook: scope, seminar: sem };
     if (weak) ev.textbookWeak = true;
@@ -116,7 +103,7 @@ items.forEach((it) => {
     if (tool) exam.asTool = tool;
     if (Object.keys(exam).length) ev.exam = exam;
 
-    rows.push({ it, ev, cur, next, range, weak, scope, sem, ans, tool });
+    rows.push({ it, ev, cur, next, machine, override, range, weak, scope, sem, ans, tool });
 });
 
 // ---- 分布を出す ----
@@ -126,6 +113,8 @@ console.log('■ 教科書での扱い     ', JSON.stringify(tally((r) => r.scop
 console.log('  うち判定が弱い     ', rows.filter((r) => r.weak).length, '件（表を使わずセミナー側だけで挟む）');
 console.log('■ セミナーでの扱い   ', JSON.stringify(tally((r) => r.sem)));
 console.log('■ difficulty 変化    ', JSON.stringify(tally((r) => (r.cur === r.next ? '据え置き' : `${r.cur}→${r.next}`))));
+console.log('■ 上書きで据え置き  ', rows.filter((r) => r.override && r.machine !== r.next)
+    .map((r) => `${r.it.code}（区間なら ${r.machine}・${r.override.date} ${r.override.reason}）`).join(' / ') || 'なし');
 console.log('■ difficulty 分布    ', '前', JSON.stringify(tally((r) => r.cur)), '→ 後', JSON.stringify(tally((r) => r.next)));
 
 const judged = rows.filter((r) => r.ev.exam && r.ev.exam.asAnswer !== undefined);

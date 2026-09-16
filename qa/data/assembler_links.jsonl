@@ -20,7 +20,7 @@
 {"code":"org.ali.alkane-solubility","kind":"none","why":"水への溶けにくさと密度は組んでも見えない（無極性であることは構造から言えるが、溶ける様子は画面に無い）"}
 {"code":"org.ali.methane-prep","kind":"none","why":"酢酸ナトリウムと水酸化ナトリウムを加熱する脱炭酸は reactor に無く、加熱などの実験操作も assembler は扱わない"}
 {"code":"org.ali.methane-props","kind":"none","why":"無色無臭という感覚的な性質と、天然ガスの主成分という用途は分子構造に現れない"}
-{"code":"org.ali.alkane-combustion","kind":"none","why":"燃焼に対応する反応が reactor に無く、発熱量も assembler は表現しない"}
+{"code":"org.ali.alkane-combustion","kind":"reaction","label":"メタンを完全燃焼させる","name":"メタン","reagent":"combustion","note":"assembler v1541 の完全燃焼（ルール combustion・瓶 o2_flame）。?reagent= はルールの id を渡す（着地で分子モーダルが開き、札が選ばれた状態になる）。係数つきの式（CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O）が出て、C は全部 CO₂・H は全部 H₂O になることが図で見える。発熱量（燃料に使われる理由）は assembler は表現しない。2026-09-17 実機で確認"}
 {"code":"org.ali.cyclo-props","kind":"none","why":"鎖式アルカンと性質が似ていることは画面で比べられない。環そのものは org.ali.class-chain-ring の担当"}
 {"code":"org.ali.cyclo-strain","kind":"summon","label":"シクロプロパンの三員環を見る","name":"シクロプロパン","note":"三員環の 60° という結合角のひずみは、三角形の形として画面で見える数少ない例"}
 {"code":"org.ali.alkene-functional","kind":"summon","label":"エチレンの二重結合を見る","name":"エチレン","note":"org.ali.alkene-shape と同じ分子。こちらは C=C があること、あちらは平面性を見る。入口を1つにまとめる余地はある"}
@@ -48,7 +48,7 @@
 {"code":"org.ali.acetylene-h2o","kind":"reaction","label":"アセチレンに水を付加する","name":"アセチレン","reagent":"add_water","note":"reactor は三重結合のときだけ分岐して、エノールを経ずアセトアルデヒドを直接出す実装なので、この項目の答えがそのまま見える"}
 {"code":"org.ali.keto-enol","kind":"summon","label":"ビニルアルコール（エノール型）の C=C と −OH を見る","name":"ビニルアルコール","note":"エノール型の構造（C=C にヒドロキシ基）は見えるが、ケト型へ変わる過程は reactor に無い。ライブラリにこの分子があるかは未確認"}
 {"code":"org.ali.acetylene-hcl","kind":"reaction","label":"アセチレンにハロゲン化水素を付加する","name":"アセチレン","reagent":"add_hbr","note":"項目は HCl で生成物は塩化ビニルだが、reactor の H-X は HBr のみなので画面では臭化ビニルになる。塩化ビニルの形そのものは org.ali.vinyl-group で見せている"}
-{"code":"org.ali.acetylene-benzene","kind":"none","why":"アセチレン3分子の三量化に対応する反応が reactor に無い。生成物のベンゼンの構造は org.aro.benzene-structure の担当"}
+{"code":"org.ali.acetylene-benzene","kind":"reaction","label":"アセチレンを3分子並べて三量化する","name":"アセチレン","reagent":"alkyne_trimerization","note":"assembler v1541 の三量化（ルール alkyne_trimerization・瓶なし）。⚠ 札はアセチレンがちょうど3分子並んだときだけ出るが、?summon= は1分子しか置けない。着地のあと「名称から呼び出す」であと2分子並べると、札が選ばれた状態で出てベンゼンができる（2026-09-17 実機で確認）。同じ一覧にポリアセチレン（鎖）の札も並ぶので、同じ材料が鎖と環に分かれることも見える。ベンゼンの構造そのものは org.aro.benzene-structure の担当"}
 {"code":"org.ali.silver-acetylide","kind":"none","why":"白色沈殿という色と沈殿の観察は assembler が表現しない"}
 {"code":"org.ali.acetic-vinyl","kind":"summon","label":"酢酸ビニルのエステル結合を見る","name":"酢酸ビニル","note":"アセチレンへの酢酸の付加は reactor に無いので、生成物の形を見せる"}
 {"code":"org.ali.isomer-classification","kind":"reference","label":"資料「同じ分子式で、別の分子」を分子式ごとに並べて見る","note":"kind:none だった理由（枠組みなので1分子では見えない）を、assembler の 📖 資料が埋めた。同じ分子式の行が2つ以上並ぶこと自体が構造異性体の実物になっている。ページは指定せず code だけ送る"}
@@ -251,7 +251,7 @@
 {"code":"org.poly.average-mw","kind":"none","why":"平均分子量は数値の話で、重合度がそろわないこと（分子ごとの長さの分布）は1本の鎖を組んでも見えない"}
 {"code":"org.poly.addition-vs-condensation","kind":"reaction","label":"縮合重合になる組み合わせを確かめる","name":"テレフタル酸","reagent":"condensation_polymer_info","note":"reactor の情報表示が「つなぐたびに水がとれる（だから縮合）」と説明するので、付加重合との違いがここで読める。エチレングリコールも並べないと表示が出ない。付加側は org.poly.monomer-polymer が担当"}
 {"code":"org.poly.ring-opening","kind":"summon","label":"ε-カプロラクタムの環を見る","name":"ε-カプロラクタム","note":"環状単量体の姿（環の中にアミド結合がある）は見えるが、環が開いてつながる過程は reactor に無い。具体例のナイロン6は org.poly.nylon6 の担当"}
-{"code":"org.poly.copolymer","kind":"none","why":"2種類の単量体を1本の鎖に組み込む共重合は reactor に無く、混合比で性質を調節できることも assembler では表現しない"}
+{"code":"org.poly.copolymer","kind":"reaction","label":"スチレンにもう1種類の単量体を並べて共重合させる","name":"スチレン","reagent":"copolymerization","note":"assembler v1541 の共重合（ルール copolymerization・瓶なし）。⚠ 札は2種類以上の単量体が並んだときだけ出るが、?summon= は1分子しか置けない。着地のあと「名称から呼び出す」で2種類目（例: 1,3-ブタジエン）を並べると札が選ばれた状態で出る（2026-09-17 実機で確認）。並べた個数がそのまま鎖の中の比になるので、混合比を変えて試せる。性質が調節できること自体は assembler では表現しない"}
 {"code":"org.poly.crystalline-amorphous","kind":"none","why":"結晶部分と非晶部分は多数の鎖の並び方の話で、assembler が扱う1分子の作図には現れない。軟化点・膨潤・コロイド溶液も無い"}
 {"code":"org.poly.thermoplastic-thermoset","kind":"none","why":"鎖状か立体網目かは鎖どうしの関係で、1分子の作図では表せない。加熱による軟化・硬化も assembler に無い","note":"網目に近いものは加硫（org.poly.vulcanization）で硫黄の橋かけとして見えるので、新機能が入ったら再検討の対象"}
 {"code":"org.poly.polyethylene","kind":"reaction","label":"エチレンの付加重合を試す","name":"エチレン","reagent":"addition_polymerization","note":"単量体と重合の種類を確かめる入口。高密度・低密度の枝分かれの違いは assembler では見えない。総論は org.poly.monomer-polymer が担当"}
@@ -279,7 +279,7 @@
 {"code":"org.poly.rubber-aging","kind":"none","why":"酸素・オゾン・紫外線による酸化と、弾性を失ってもろくなる変化は assembler に無い（老化防止剤も扱わない）","note":"原因である「主鎖に C=C が残る」ことは org.poly.natural-rubber の 1,4-付加重合で見える"}
 {"code":"org.poly.butadiene-rubber","kind":"reaction","label":"1,3-ブタジエンの1,4-付加重合を試す","name":"1,3-ブタジエン","reagent":"diene_polymerization","note":"主鎖に C=C が1個ずつ残ることが見える（加硫できる理由）。1,3-ブタジエン自体がライブラリに無いのが穴で登録候補。reactor の 1,4-付加重合は共役ジエン一般を想定しているので、入れば動くはず"}
 {"code":"org.poly.chloroprene-rubber","kind":"reaction","label":"クロロプレンの1,4-付加重合を試す","name":"クロロプレン","reagent":"diene_polymerization","note":"塩素原子が主鎖に残ることは見える。耐油性・耐候性・用途は assembler に無い"}
-{"code":"org.poly.sbr-copolymer","kind":"none","why":"2種類の単量体をいっしょに重合させる共重合は reactor に無く、スチレン単位とブタジエン単位が1本の鎖に混ざった構造をつくれない","note":"単量体のスチレンは org.aro.styrene、ブタジエンの重合は org.poly.butadiene-rubber が担当"}
+{"code":"org.poly.sbr-copolymer","kind":"reaction","label":"スチレンと1,3-ブタジエンを並べて共重合させる","name":"スチレン","reagent":"copolymerization","note":"assembler v1541 の共重合（ルール copolymerization・瓶なし）。⚠ 着地はスチレン1分子だけ。「名称から呼び出す」で 1,3-ブタジエンを並べると札が選ばれた状態で出て、スチレン単位とブタジエン単位（1,4-付加で中央に C=C が残る）が1本の鎖になる（2026-09-17 実機で確認）。できた鎖はそのまま加硫（vulcanization）の相手になる。単量体のスチレンは org.aro.styrene、ブタジエンの重合は org.poly.butadiene-rubber が担当"}
 {"code":"org.poly.silicone-rubber","kind":"none","why":"ケイ素 Si が assembler の元素表（C・O・N・Cl・Br・I・S・H・Na・K・R）に無いので、-Si-O-Si-O- の主鎖を作図できない"}
 {"code":"org.anal.ir-carbonyl","kind":"none","why":"赤外吸収スペクトルは assembler が扱わない（分子の骨格を描く道具で、スペクトルの図を持たない）","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
 {"code":"org.ali.alkyl-count","kind":"practice","label":"アルキル基の書き出し練習を開く（炭素数3は2種・炭素数4は4種）","open":"practice","note":"2026-08-08 追加（入試解析レーンの発注・手筋から出た未収録知識）"}
