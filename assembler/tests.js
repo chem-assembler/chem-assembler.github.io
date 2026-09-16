@@ -2621,8 +2621,11 @@
             `1分子の分子式が「${D.getElementById('compound-formula').textContent}」`);
         const solo = [...D.querySelectorAll('#atoms-group text')]
             .map(t => t.textContent).filter(t => t.includes('🔍'));
-        assert(solo.length === 1 && !solo[0].includes('C₁₂H₂₂O₁₁'),
-            `1分子の見出しに分子式が付いた（${solo.join(' / ')}）`);
+        // ⚠ v1570 で期待値を変えた（案C 段③・ユーザー決定「左下の分子式表示はカット」）:
+        //   左下の札をふだんの画面から外したので、1分子の見出しにも分子式を1つだけ添える
+        //   （合算の式ではなく、その1分子の式 ＝ この検査の芯「合算しない」はそのまま）
+        assert(solo.length === 1 && solo[0].split('C₁₂H₂₂O₁₁').length === 2,
+            `1分子の見出しに分子式が1つ付いていない（${solo.join(' / ')}）`);
         assert(D.getElementById('mobile-name-chip').textContent.includes('C₁₂H₂₂O₁₁'),
             '1分子のとき左下の札から分子式が消えた');
 
@@ -7107,8 +7110,11 @@
             g.toggleIupacNumbering();
             const said = t.classList.contains('hidden') ? '' : t.textContent;
             const shown = g.iupacNumberingActive();
+            // v1570: 出せた回の名前は名札が出す（IN5 がこれを読む）
+            const plate = D.getElementById('canvas-mode-badge');
+            const plateText = plate.getAttribute('data-mode') === 'numbering' ? plate.textContent : '';
             g.setIupacNumbering(false);
-            out[code] = { n, said, shown };
+            out[code] = { n, said, shown, plateText };
         };
         const summon = (nm) => { g.userMolecule = new W.Molecule(); g.summonMolecule(nm); g.updateDrawing(); };
 
@@ -7158,6 +7164,21 @@
             Object.entries(s).forEach(([want, r]) => {
                 assert(r.n && r.n.code === want,
                     `${want} の場面なのに code が「${r.n && r.n.code}」になっている`);
+                /* ⚠ v1570 で期待値を変えた（案C 段②）: 'chain'（出せた回）は、名前と「やめる」を
+                 *   キャンバス上端の名札が出すので、同じことを言う「主鎖と番号を出しました（名前）」の
+                 *   トーストは出さない。黙っているのではない ＝ **名札に番号を生んだ名前が出ている**ことを見る */
+                if (want === 'chain' && !r.said) {
+                    assert(r.shown && r.n.det && r.plateText.includes(r.n.det.name),
+                        `chain で字幕も名札の名前も出ない（黙っている）: 名札「${r.plateText}」`);
+                    return;
+                }
+                // 'multi' も同じ（飛ばした分子が無い回は、①②の名前を名札が出す）
+                if (want === 'multi' && !r.said) {
+                    assert(r.shown && /①/.test(r.plateText) && /②/.test(r.plateText),
+                        `multi で字幕も名札の番号も出ない（黙っている）: 名札「${r.plateText}」`);
+                    r.said = r.plateText;   // (c) の「番号で分子を言う」は名札の文で見る
+                    return;
+                }
                 assert(r.said && r.said.length > 0, `${want} で字幕が出ない（黙って断っている）`);
                 assert(r.said === r.n.message,
                     `${want}: 字幕と notice の文言が違う（トグルが古い一語を出し続けている）\n` +
@@ -7352,7 +7373,12 @@
                 if (want > 0) {
                     // ★ 字幕の逃がしを 36 → 26px に**戻した**（v1371）。番号が外へ出なくなったので
                     //   広げておく理由が消えたため。図と説明が離れすぎないことをここで押さえる
-                    const gap = inCaptionGap(g, D);
+                    // ⚠ v1570: 名札が出ているあいだは橙の大見出しを描かない（案C 段②）ので、
+                    //   字幕の置き方は名札を出さない状態（短尺の収録）で測る。測っている幾何は同じ
+                    D.documentElement.classList.add('rec-short');
+                    let gap;
+                    try { g.updateDrawing(); gap = inCaptionGap(g, D); }
+                    finally { D.documentElement.classList.remove('rec-short'); g.updateDrawing(); }
                     assert(gap >= 20 && gap <= 30,
                         `${nm}: 図と字幕の縦の隔たりが ${gap.toFixed(1)}px（20〜30px のはず。26px を期待）`);
                 }
@@ -8032,8 +8058,14 @@
             assert(!D2.getElementById('work-strip').classList.contains('hidden'), '★ 着地したのに作業帯ごと隠れている');
             const live = D2.getElementById('ws-practice-live').textContent;
             assert(live.indexOf('C₅H₁₂') >= 0, `帯にお題の分子式が出ていない（${live}）`);
-            const stopBtn = [...D2.querySelectorAll('#ws-practice-actions button')].find(x => /やめる/.test(x.textContent));
-            assert(stopBtn && stopBtn.offsetParent !== null, '帯に「やめる」が見えていない（抜ける手が無い）');
+            // ⚠ v1570 で見る相手を変えた（案C 段②）: お題と「やめる」はキャンバス上端の名札が出し、
+            //   帯の同じ行と「やめる」は名札のあいだ畳む。着地したときに**名札に**お題と「やめる」が見えていること
+            const plate = D2.getElementById('canvas-mode-badge');
+            const plateStop = plate.querySelector('.cmb-stop');
+            assert(plate.getAttribute('data-mode') === 'practice' && plate.textContent.indexOf('C₅H₁₂') >= 0,
+                `名札にお題の分子式が出ていない（${plate.textContent}）`);
+            assert(plateStop && plateStop.offsetParent !== null && /やめる/.test(plateStop.textContent),
+                '名札に「やめる」が見えていない（抜ける手が無い）');
         } finally {
             f.remove();
         }
@@ -14713,7 +14745,8 @@
         // ⚠ 6 → 7（2026-09-02・📖 資料ペインの `top: 44px`。ヘッダーを 44px にしているのが
         //    この条件なので、同じ1行に合わせるのが正しい）。
         //    件数はブロックを**足したとき**にここで一緒に上げる（減ったときは赤で捕まる）
-        assert(数[共通] === 7, `縦横共通のブロックが ${数[共通]} 個（7個であるべき）`);
+        // ⚠ 7 → 9（v1570・案C 段②。全モード共通の名札の詰めと、選択中の道具の札の詰めを足した）
+        assert(数[共通] === 9, `縦横共通のブロックが ${数[共通]} 個（9個であるべき）`);
         assert(数[縦] === 1, `縦（M1）のブロックが ${数[縦]} 個（1個であるべき）`);
         assert(数[横] === 1, `横（M2）のブロックが ${数[横]} 個（1個であるべき）`);
         // 否定対照 —— 上限を外して `(orientation: portrait)` 単独にすると縦長の PC まで
@@ -30639,6 +30672,14 @@
                 assert(FW.reactionPlayer && FW.reactionPlayer.reactions.length, `${name}: 反応データが来ない`);
                 FW.reactionPlayer.enter(0);
                 await new Promise(r => setTimeout(r, 60));
+                // ⚠ v1570（案C 段②）: ふだんの画面では出口はキャンバス上端の名札の「やめる」で、
+                //   帯の #btn-rx-exit は名札のあいだ畳む。まず名札に出口があることを見て、
+                //   帯の出口の置き場所（送り戻しから離す・段を増やさない）は名札を出さない状態
+                //   （短尺の収録）で今までどおり測る
+                const plateStop = FD.querySelector('#canvas-mode-badge[data-mode="mechanism"] .cmb-stop');
+                assert(plateStop && plateStop.getBoundingClientRect().height >= 32, `${name}: 名札に機構の「やめる」が無い`);
+                FD.documentElement.classList.add('rec-short');
+                FW.game.syncCanvasModeBadge();
                 const exit = FD.getElementById('btn-rx-exit');
                 const prev = FD.getElementById('btn-rx-prev');
                 const next = FD.getElementById('btn-rx-next');
@@ -34815,7 +34856,10 @@
      *   **旧式と新式の答えが分かれる配置になっていること**を主張に含めるので、
      *   直しを戻せば必ず赤くなるし、症状の出ない配置で緑になることもない。 */
     test('EQ1: 厚い帯を「天井」と読み違えず、呼んだ分子が帯の裏に入らない（320px・実発生）', async () => {
-        await withViewport(320, 568, async (W, D, name) => {
+        // ⚠ v1570 で画面の高さを 568 → 480px に替えた（案C 段③）。下の2ボタンが1段になり、自由モードの帯が
+        //   128 → 88px に薄くなったので、320×568 では「旧式でも床と読める」＝ 症状の出る配置でなくなった
+        //   （この検査自身の注のとおり前提を測り直した）。見ている読み違いは同じ
+        await withViewport(320, 480, async (W, D, name) => {
             const g = W.game;
             g.setMode('free');
             // 🧪 実験パレットにすると左パネルが 83 → 160px になり、キャンバスが 311 → 234px へ縮む
@@ -44138,8 +44182,10 @@
                 // ① 段も高さも増えない（実装前の実測値）
                 assert(D.querySelectorAll('#ws-puzzle .ws-row').length === 2,
                     `${name}: お題ストリップが ${D.querySelectorAll('#ws-puzzle .ws-row').length} 段になっている（2段のはず）`);
-                assert(Math.abs(strip.getBoundingClientRect().height - 88) <= 1,
-                    `${name}: 作業帯が ${Math.round(strip.getBoundingClientRect().height)}px（実装前は 88px）`);
+                // ⚠ v1570 で期待値を変えた（案C 段②）: お題名の行（1段目）は名札が出すので畳み、
+                //   帯は 88 → 49px（1段）に**縮んだ**。芯の「段を増やさない」は「88px を超えない」で見る
+                assert(strip.getBoundingClientRect().height <= 88 + 1,
+                    `${name}: 作業帯が ${Math.round(strip.getBoundingClientRect().height)}px（実装前は 88px ＝ これを超えない）`);
                 // ② 入口は帯ではなくお題モーダルの中（母集団を決める #select-series と同じ面）
                 const btn = D.getElementById('btn-random-stage');
                 assert(btn, `${name}: 🎲 の入口が無い`);
