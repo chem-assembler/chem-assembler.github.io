@@ -2927,6 +2927,26 @@ class IsomerPractice {
     }
 
     /**
+     * キャンバス上端の名札（v1570・案C 段②）に出す1行。`game.modePlateSpec` が読む。
+     * ★ 帯の見出し（`stripLiveHtml`）と**同じ材料**から、先生の声掛けの形で組む。
+     * ⚠ 種類数（分母）は出さない（v1489・§12-2。数えるのは描いてある図の個数だけ）
+     */
+    plateSpec() {
+        if (!this.active || !this.problem) return null;
+        const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const f = esc(this.problem.formula);
+        if (this._finished) {
+            return { task: `<b>${f}</b> の答え合わせをしたよ`, count: `${this._finalScore.score}点` };
+        }
+        const sc = this.scopeInfo();
+        let what;
+        if (sc && sc.headline) what = `<b>${esc(sc.headline)}</b>`;
+        else if (this.problem.stereoAsked) what = `<b>${f}</b>（立体まで）の異性体`;
+        else what = `<b>${f}</b>${sc ? '（' + esc(sc.tag) + '）' : ''} の異性体`;
+        return { task: `${what}をぜんぶ描こう`, count: `${this.drawnCount()}個` };
+    }
+
+    /**
      * ★ ヒントの段を1つ進める（**この関数だけが減点する**）。
      *
      * 「押した回数 ＝ 到達した段」を保つのが肝（§15-5a）。表示を出し直すために
@@ -4715,6 +4735,13 @@ class AlkylPractice {
             `いま <span class="ws-live-ok">${this.drawnCount()}個</span> 描いてあります`;
     }
 
+    /** 名札の1行（v1570・`IsomerPractice.plateSpec` と同じ形） */
+    plateSpec() {
+        if (!this.active || !this.problem) return null;
+        const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        return { task: `<b>${esc(this.problem.formula)}</b> の基をぜんぶ描こう`, count: `${this.drawnCount()}個` };
+    }
+
     // 作図が変わるたびに game.updateDrawing から呼ばれる
     onDrawingChange() {
         if (!this.active || !this.problem || this._reviewing) return;
@@ -5804,6 +5831,12 @@ class StereoIsomerPractice {
     stripLiveHtml(n) {
         return `お題 <b>${this.problem.label}</b> の立体異性体 全 ${this.problem.total} 種 ／ ` +
             `いま <span class="ws-live-ok">${n}個</span> 描いてあります`;
+    }
+
+    /** 名札の1行（v1570・`IsomerPractice.plateSpec` と同じ形） */
+    plateSpec() {
+        if (!this.active || !this.problem) return null;
+        return { task: `<b>${this.problem.label}</b> の立体異性体をぜんぶ描こう`, count: `${this.drawnCount()}個` };
     }
 
     // ===== 答え合わせ／書き出しの確認 =====

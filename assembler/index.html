@@ -395,6 +395,11 @@
                                      このボタンは**ヒント専用**に変えた。段は「ヒント（分類）→ お手本（答えの図）」 -->
                                 <button id="btn-verify" class="secondary-btn ws-action">💡 ヒント</button>
                                 <button id="btn-show-target" class="secondary-btn ws-action ws-outline">お手本を見る</button>
+                                <!-- v1570（案C 段②）: お題名はキャンバス上端の名札へ移り、上の見出し行
+                                     （押すとお題モーダル）は名札が出ているあいだ畳む。開く口をこの段に1つ残す。
+                                     出し入れは game.js の `syncPlateDuplicates` -->
+                                <button id="btn-puzzle-pick" class="view-btn ws-action hidden"
+                                        title="お題の説明・シリーズ・問題の選択を開きます">お題を選ぶ ›</button>
                             </div>
                         </div>
                         <!-- 🧪 標準（自由）モードの面（第5段・§5-2 の 46）。
