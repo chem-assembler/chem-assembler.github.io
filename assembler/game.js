@@ -6802,7 +6802,10 @@ class Game {
          *   名前のうしろに分子式を添える。左下の札（`#mobile-name-chip`）を画面から外したので、
          *   分子式の置き場所はこの見出しだけになった（「🔍 エタノール C₂H₆O」）。
          *   ⚠ 短尺の収録（.rec-short）では左下の札を上中央の大きな札として今までどおり出す（見せ場） */
-        const head = name ? `${name} ${formula}` : formula;
+        //   ⚠ ただし短尺の収録で1分子のときは、上中央の大きな札が名前と分子式を出しているので
+        //     見出しは今までどおり名前だけ（同じ式を画面に2度出さない・台本の画を変えない）
+        const recShort = typeof document !== 'undefined' && document.documentElement.classList.contains('rec-short');
+        const head = name ? (mark || !recShort ? `${name} ${formula}` : name) : formula;
         // ★ 分液の面を開いているあいだは、どの層に居るかを見出しに添える（I-1・§4-5 #4）。
         //   ⚠ 文言は `phaseSuffix()` ただ1つ ＝ 帯の札と図の見出しが同じ字を出す
         return `🔍 ${mark ? mark + ' ' : ''}${head}${this.phaseSuffix(part)}`.trim();
