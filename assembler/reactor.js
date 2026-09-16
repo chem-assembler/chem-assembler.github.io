@@ -9168,6 +9168,23 @@ class Reactor {
         // ↩ 反応前に戻す（v1409）。帯（#ws-free）の中に置いた1つだけの出口
         this.undoBtn = document.getElementById('btn-rx-undo');
         if (this.undoBtn) this.undoBtn.addEventListener('click', () => this.undoLastReaction());
+        // ▶ 反応をもう一度見る（v1568）。⚠ 出し入れは `syncUndoButton()` の中で ↩ と同じ条件でそろえる
+        this._replay = null;
+        this.replayCard = document.getElementById('reaction-card');
+        this.replayBtn = document.getElementById('btn-rx-replay');
+        this.replayControls = document.getElementById('rx-replay-controls');
+        const rb = id => document.getElementById(id);
+        this.replayBtns = {
+            restart: rb('btn-rx-replay-restart'), prev: rb('btn-rx-replay-prev'),
+            play: rb('btn-rx-replay-play'), next: rb('btn-rx-replay-next'), exit: rb('btn-rx-replay-exit')
+        };
+        if (this.replayBtn) this.replayBtn.addEventListener('click', () => this.replayPlay());
+        const on = (b, fn) => { if (b) b.addEventListener('click', fn); };
+        on(this.replayBtns.play, () => this.replayPlay());
+        on(this.replayBtns.prev, () => this.replayStep(-1));
+        on(this.replayBtns.next, () => this.replayStep(1));
+        on(this.replayBtns.restart, () => this.replayRestart());
+        on(this.replayBtns.exit, () => this.replayExit());
         this.syncUndoButton();
         // 🧹 分子を並べ直す（v1466）。場所不足で断ったときだけ同じ帯に出る出口
         this.lastNoRoom = null;   // { message } ＝ いま断られている理由（テストと報告の口）
@@ -9294,6 +9311,9 @@ class Reactor {
             this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) ===
             this.topologyKey(this.lastReaction.after));
         this.undoBtn.classList.toggle('hidden', !show);
+        // ▶ もう一度見る（v1568）も**同じ条件・同じ呼ばれ方**でそろえる ＝ 呼び出し元（refresh・機構ビューア・
+        //   game.updateDrawing の早期 return）を増やさずに、↩ と ▶ が食い違う瞬間を作らない
+        this.syncReplayControls();
         return show;
     }
 
@@ -10687,8 +10707,17 @@ class Reactor {
             after: this.snapshotMolecule(g.userMolecule),
             anim,   // 再生の写し（相手と副生成物つき）。無い反応は null
             beforeReal,   // 画面に出ていた反応前の図（相手を足す前・環を回す前）
-            rotation      // 環を回したとき { ids, cx, cy, theta }。回していなければ null
+            rotation,     // 環を回したとき { ids, cx, cy, theta }。回していなければ null
+            /* ▶ もう一度見る（v1568）ための材料。**再生の道を選ぶのに要るものだけ**を控える
+             *   （`animateExecution` が `result` から読んでいるもの）。見直しは写しで描くので、キャンバスには触らない */
+            replaySrc: {
+                morphStages: rule.morphStages || null,
+                changed: Array.isArray(result.changed) ? result.changed.slice() : null,
+                morphSequence: Array.isArray(result.morphSequence) && result.morphSequence.length ? result.morphSequence : null,
+                haworth: this.haworthFlipShots(result).length ? result.haworthRedraws : null
+            }
         };
+        this._replay = null;   // 前の反応の見直しの段取りは捨てる（次に ▶ を押したときに組み直す）
         this.clearDeadEnd(); // 反応が通ったら、前に出した「ここで止まりました」は用済み（v1420）
         this.clearNoRoom();  // 同じ理由で「置く場所がない」の札も下ろす（v1466）
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
@@ -11668,6 +11697,280 @@ class Reactor {
         });
     }
 
+    /* ==========================================================================
+     * ★★ 反応をもう一度見る（v1568・ユーザー要望 2026-09-15）
+     * > 「分子を反応させたとき、反応前にもどす、があるのはよいのですが、反応をもう一度見たいです。
+     * >   反応機構と同じように、再生、コマ送りなどのボタンが欲しいです。」
+     *
+     * ★ **写しで描く**。描く関数は反応を実行したときの再生と同じもの（`renderPlaybackAt`・
+     *   `renderMorphFrame`・紙のフリップ）で、段の組み方も `animateExecution` と同じ順に選ぶ。
+     *   ⚠ `userMolecule`・履歴・`lastReaction` には触らない（RRP1 が正準コード・原子数・履歴で見張る）。
+     * ★ **止まれる段**（コマ送りの行き先）… 意味のある区切りだけ:
+     *   before 反応前 → summon 相手が現れ、反応する H が大きくなる（環を回すのもここ）
+     *   → align 2分子が並ぶ（並ぶ反応だけ） → part 手が離れる → join 握手し直す
+     *   → fade 副生成物が薄れる（無ければ settle ＝ H が元の大きさに戻る）
+     *   ⚠ 「相手が現れる」と「H が大きくなる」は実行時の再生で**同じ 0.5 秒に同時に**起きるので1段にした。
+     * ========================================================================== */
+
+    /** 見直しの段取り（コマの並び `segs` と止まれる段 `stops`）を組む。DOM は触らない */
+    buildReplayTimeline(L) {
+        if (!L || !L.before || !L.after || !L.replaySrc) return null;
+        const src = L.replaySrc;
+        const segs = [];
+        const stops = [{ p: 0, key: 'before' }];
+        const smooth = t => t * t * (3 - 2 * t);
+        // 補間の段を1つ足す。結合が変わる段は「手が離れた」（HS_PART_END）でも止まれる
+        const pushMorph = (from, to, base, key, drawAt) => {
+            const tm = this.morphTiming(from, to, base);
+            const k = segs.length;
+            const draw = drawAt || (u => this.renderMorphFrame(from, to, u));
+            segs.push({ dur: tm.dur, draw: t => draw(tm.warp(t)) });
+            if (this.handshakeHasChange(from, to)) stops.push({ p: k + HS_PART_END, key: 'part' });
+            stops.push({ p: k + 1, key });
+        };
+        if (src.haworth) {
+            const legs = this.haworthFlipLegs(this.haworthFlipShots({ haworthRedraws: src.haworth }));
+            legs.forEach((leg, k) => {
+                const t0 = k / legs.length, span = 1 / legs.length;
+                segs.push({
+                    dur: leg.kind === 'turn' ? 900 : 350,
+                    draw: t => {
+                        const e = smooth(t), map = this.haworthFlipPosAt(leg, e);
+                        this.renderMorphFrame(L.before, L.after, Math.min(1, t0 + span * e), map);
+                        if (leg.kind === 'turn') this.renderFlipAxis(leg.step, [...map.values()]);
+                    }
+                });
+                stops.push({ p: segs.length, key: leg.kind });
+            });
+        } else if (src.morphSequence) {
+            const shots = [L.before, ...src.morphSequence];
+            for (let k = 0; k + 1 < shots.length; k++) {
+                const mid = this.buildMidSnapshot(shots[k], shots[k + 1], 'moveFirst');
+                pushMorph(shots[k], mid, 450, 'align');
+                pushMorph(mid, shots[k + 1], 400, 'join');
+            }
+        } else {
+            this.buildReplayMorphSegs(L, src.morphStages || null, segs, stops, pushMorph, smooth);
+        }
+        if (!segs.length) return null;
+        const end = segs.length;
+        if (!stops.some(s => Math.abs(s.p - end) < 1e-6)) stops.push({ p: end, key: 'after' });
+        stops.sort((a, b) => a.p - b.p);
+        return { segs, stops, end };
+    }
+
+    /** 見直せるか ＝ ↩ 反応前に戻す と同じ条件（直近の反応の結果がいまキャンバスに載っている） */
+    canReplay() {
+        const L = this.lastReaction;
+        if (!L || !L.replaySrc || !L.after) return false;
+        if (window.reactionPlayer && window.reactionPlayer.ownsCanvas && window.reactionPlayer.ownsCanvas()) return false;
+        return this.topologyKey(this.snapshotMolecule(this.game.userMolecule)) === this.topologyKey(L.after);
+    }
+
+    /** 段取りは ▶ を押したときに1回だけ組む（⚠ refresh は作図のたびに走るので、そこでは組まない） */
+    ensureReplay() {
+        if (this._replay && this._replay.L === this.lastReaction) return this._replay;
+        if (!this.canReplay()) return null;
+        const tl = this.buildReplayTimeline(this.lastReaction);
+        if (!tl) return null;
+        this._replay = { L: this.lastReaction, tl, pos: tl.end, playing: false, open: false, gen: -1 };
+        return this._replay;
+    }
+
+    /** いまキャンバスに見直しの写しが出ているか（別の描画に持っていかれたら false） */
+    replayFrameShown() {
+        const r = this._replay;
+        return !!(r && r.open && r.gen === this._morphGen && this._morphing);
+    }
+
+    drawReplayAt(r, p) {
+        const segs = r.tl.segs;
+        let k = Math.floor(p + 1e-9), t = p - k;
+        if (k >= segs.length) { k = segs.length - 1; t = 1; }
+        else if (k > 0 && t < 1e-9) { k -= 1; t = 1; }   // 段の境目は「前の段の終わり」を描く
+        segs[k].draw(Math.max(0, Math.min(1, t)));
+    }
+
+    openReplay(r) {
+        const g = this.game;
+        if (g.iupacNumbering && g.setIupacNumbering) g.setIupacNumbering(false);   // 番号の絵は写しと合わない
+        if (g.clearUIOverlay) g.clearUIOverlay();   // 反応のハイライトの輪を写しの上に残さない
+        const hadPause = !!this._morphPause;
+        this._morphPause = null;
+        r.open = true;
+        r.gen = ++this._morphGen;   // 実行時の再生が走っていれば止める
+        this._morphing = true;      // 写しを出しているあいだはキャンバスのタップで作図しない（タップ ＝ 見直しを終える）
+        this._morphSkip = false;
+        if (hadPause && g.syncCanvasModeBadge) g.syncCanvasModeBadge();
+    }
+
+    closeReplay(r, redraw = true) {
+        r.open = false;
+        r.playing = false;
+        r.pos = r.tl.end;
+        if (this._morphGen === r.gen) { this._morphing = false; this._morphSkip = false; }
+        if (redraw) {
+            this.game.updateDrawing();   // 本物の分子（反応のあと）に戻す。中で syncReplayControls が走る
+            const ids = r.L.replaySrc.changed;
+            if (ids) this.game.highlightAtoms(ids.map(id => this.game.userMolecule.atoms.find(a => a.id === id)).filter(Boolean));
+        }
+        this.syncReplayControls();
+    }
+
+    /** ▶／⏸。写しが出ていなければ最初から、止めていればその続きから、終わりまで流す */
+    replayPlay() {
+        const r = this.ensureReplay();
+        if (!r) return false;
+        if (this.replayFrameShown() && r.playing) {   // ⏸ 一時停止（写しはそのコマのまま）
+            r.playing = false;
+            this.syncReplayControls();
+            return true;
+        }
+        if (!this.replayFrameShown()) { r.pos = 0; this.openReplay(r); }
+        else if (r.pos >= r.tl.end - 1e-6) r.pos = 0;
+        r.playing = true;
+        const gen = r.gen;
+        let last = null;
+        const tick = now => {
+            if (this._morphGen !== gen || !r.playing || !r.open) return;
+            if (last === null) last = now;
+            let dt = Math.min(200, Math.max(0, now - last));
+            last = now;
+            while (dt > 0 && r.pos < r.tl.end) {
+                const k = Math.min(Math.floor(r.pos + 1e-9), r.tl.segs.length - 1);
+                const dur = Math.max(1, r.tl.segs[k].dur);
+                const rest = (k + 1 - r.pos) * dur;
+                if (dt >= rest) { r.pos = k + 1; dt -= rest; } else { r.pos += dt / dur; dt = 0; }
+            }
+            if (r.pos >= r.tl.end) { this.closeReplay(r); return; }
+            this.drawReplayAt(r, r.pos);
+            requestAnimationFrame(tick);
+        };
+        this.drawReplayAt(r, r.pos);
+        this.syncReplayControls();
+        if (typeof requestAnimationFrame !== 'function') { this.closeReplay(r); return true; }
+        requestAnimationFrame(tick);
+        return true;
+    }
+
+    /** ⏮／⏭ コマ送り。止まれる段（`tl.stops`）の前／次へ。最後の段まで進んだら見直しを終える */
+    replayStep(dir) {
+        const r = this.ensureReplay();
+        if (!r) return false;
+        const shown = this.replayFrameShown();
+        const pos = shown ? r.pos : r.tl.end;
+        const eps = 1e-6;
+        const to = dir > 0 ? r.tl.stops.find(s => s.p > pos + eps)
+            : [...r.tl.stops].reverse().find(s => s.p < pos - eps);
+        if (!to) return false;
+        r.playing = false;
+        if (!shown) this.openReplay(r);
+        r.pos = to.p;
+        if (r.pos >= r.tl.end - eps) { this.closeReplay(r); return true; }
+        this.drawReplayAt(r, r.pos);
+        this.syncReplayControls();
+        return true;
+    }
+
+    /** 🔄 最初から（反応前のコマで止める） */
+    replayRestart() {
+        const r = this.ensureReplay();
+        if (!r) return false;
+        r.playing = false;
+        if (!this.replayFrameShown()) this.openReplay(r);
+        r.pos = 0;
+        this.drawReplayAt(r, 0);
+        this.syncReplayControls();
+        return true;
+    }
+
+    /** やめる（反応のあとの図に戻る） */
+    replayExit() {
+        const r = this._replay;
+        if (!r || !this.replayFrameShown()) return false;
+        this.closeReplay(r);
+        return true;
+    }
+
+    /** いまの見直しの様子（テストと報告の口） */
+    replayState() {
+        const r = this._replay, shown = this.replayFrameShown();
+        const at = r && shown ? r.tl.stops.find(s => Math.abs(s.p - r.pos) < 1e-6) : null;
+        return {
+            can: this.canReplay(), shown, playing: !!(r && shown && r.playing),
+            pos: r ? r.pos : null, end: r ? r.tl.end : null,
+            stage: at ? at.key : null, stops: r ? r.tl.stops.map(s => s.key) : null
+        };
+    }
+
+    /** ▶ と見直しの操作の出し入れ。`syncUndoButton()` から呼ばれる */
+    syncReplayControls() {
+        const r = this._replay;
+        const shown = this.replayFrameShown();
+        if (r && r.open && !shown) { r.open = false; r.playing = false; r.pos = r.tl.end; }   // 別の描画に持っていかれた
+        if (shown && !this.canReplay()) {
+            // 写しを出しているあいだに分子が変わった（リボンの ↩ 戻す・全消去など）＝ 見直す相手がもう無い
+            r.open = false; r.playing = false;
+            this._morphGen++; this._morphing = false; this._morphSkip = false;
+        }
+        const open = this.replayFrameShown();
+        const can = !open && this.canReplay();
+        if (this.replayBtn) this.replayBtn.classList.toggle('hidden', !can);
+        if (this.replayControls) this.replayControls.classList.toggle('hidden', !open);
+        if (this.replayCard) this.replayCard.classList.toggle('rx-replaying', open);
+        const b = this.replayBtns;
+        if (b && b.play) {
+            b.play.textContent = open && r.playing ? '⏸' : '▶';
+            // ⚠ 流しているあいだは位置がコマごとに進む（ここは再描画のたびには呼ばれない）＝ 押せるままにする
+            if (b.prev) b.prev.disabled = !open || (!r.playing && r.pos <= 1e-6);
+            if (b.next) b.next.disabled = !open || (!r.playing && r.pos >= r.tl.end - 1e-6);
+        }
+        return open;
+    }
+
+    /** 見直しの段（紙のフリップ・1組ずつ以外）。⚠ 道の選び方は `animateExecution` と同じ順 */
+    buildReplayMorphSegs(L, ms, segs, stops, pushMorph, smooth) {
+        const plan = (!ms || ms === 'joinFirst') ? this.buildPlayback(L, ms) : null;
+        if (plan) {
+            segs.push({ dur: RX_PRE_MS, draw: t => this.renderPlaybackAt(plan, smooth(t)) });
+            if (plan.partnerIds.length || plan.reacting.length || plan.rot) stops.push({ p: 1, key: 'summon' });
+            segs.push({ dur: RX_HOLD_MS, draw: () => this.renderPlaybackAt(plan, 1) });   // 一呼吸（止まる段にはしない）
+            if (plan.mid) {
+                pushMorph(plan.S1, plan.mid, 450, 'align', u => this.renderPlaybackAt(plan, 1 + 0.5 * u));
+                pushMorph(plan.mid, plan.A1, 400, 'join', u => this.renderPlaybackAt(plan, 1.5 + 0.5 * u));
+            } else {
+                pushMorph(plan.S1, plan.A1, HS_PLAIN_DURATION, 'join', u => this.renderPlaybackAt(plan, 1 + u));
+            }
+            segs.push({ dur: RX_POST_MS, draw: t => this.renderPlaybackAt(plan, 2 + smooth(t)) });
+            stops.push({ p: segs.length, key: plan.transient.length ? 'fade' : 'settle' });
+            return;
+        }
+        let b = L.before, a = L.after;
+        const transient = (L.anim && L.anim.transient) || [];
+        if (!ms || ms === 'joinFirst') {
+            if (L.anim) { b = L.anim.before; a = L.anim.after; }
+            const hx = this.withMorphHydrogens(b, a);
+            b = hx.before; a = hx.after;
+        }
+        if (ms === 'joinFirst') {
+            const mid = this.buildMidSnapshot(b, a, 'moveFirst');
+            pushMorph(b, mid, 450, 'align');
+            pushMorph(mid, a, 400, 'join');
+        } else if (ms) {
+            // 環化・開環（bondsFirst／moveFirst）。実行時はここでタップ待ちに止まる ＝ 見直しでは止まれる段にする
+            const mid = this.buildMidSnapshot(b, a, ms);
+            pushMorph(b, mid, 700, 'mid');
+            pushMorph(mid, a, HS_PLAIN_DURATION, 'join');
+        } else {
+            pushMorph(b, a, HS_PLAIN_DURATION, 'join');
+        }
+        if (transient.length && (!ms || ms === 'joinFirst')) {
+            const settled = this.settleSnapshot(a, transient), still = new Map();
+            segs.push({ dur: RX_FADE_MS, draw: t => this.renderMorphFrame(a, settled, t, still) });
+            stops.push({ p: segs.length, key: 'fade' });
+        }
+    }
+
     animateExecution(before, after, result, morphStages = null, anim = null, extra = {}) {
         const g = this.game;
         // まず生成物を確定表示（判定・カード・名称は同期で最終状態に。テスト・監査に影響させない）
@@ -11869,6 +12172,33 @@ class Reactor {
         });
     }
 
+    /** 紙のフリップの段: 各断片の回転を順に並べ、最後に「寄せる」を1段（再生と ▶ もう一度見る の共用） */
+    haworthFlipLegs(shots) {
+        const legs = [];
+        shots.forEach(shot => {
+            shot.flip.steps.forEach((step, i) => legs.push({ kind: 'turn', shot, step, i }));
+            legs.push({ kind: 'slide', shot });
+        });
+        return legs;
+    }
+
+    /** 紙のフリップの段 `leg` の進み `t`（0〜1）での原子の位置 */
+    haworthFlipPosAt(leg, t) {
+        const map = new Map();
+        if (leg.kind === 'turn') {
+            // ★ 剛体の 180° 回転。⚠ 直線補間ではない ＝ 軌跡は弧になる
+            haworthFlipFrame(leg.step.hinge, Math.PI * t).forEach(p => map.set(p.id, p));
+        } else {
+            // 寄せる（平行移動だけ）。⚠ ここだけは直線でよい —— 形はもう変わらない
+            const to = new Map(leg.shot.after.map(p => [p.id, p]));
+            leg.shot.flip.end.forEach(p => {
+                const q = to.get(p.id) || p;
+                map.set(p.id, { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t });
+            });
+        }
+        return map;
+    }
+
     /** 回す断片の一覧（回さない分子なら空配列） */
     haworthFlipShots(result) {
         return (result && result.haworthRedraws || [])
@@ -11910,27 +12240,9 @@ class Reactor {
         this._morphSkip = false;
         const smoothstep = t => t * t * (3 - 2 * t);
         const stop = () => this._morphSkip || this._morphGen !== gen;
-        // 段の組み立て: 各断片の回転を順に並べ、最後に「寄せる」を1段
-        const legs = [];
-        shots.forEach(shot => {
-            shot.flip.steps.forEach((step, i) => legs.push({ kind: 'turn', shot, step, i }));
-            legs.push({ kind: 'slide', shot });
-        });
-        const posAt = (leg, t) => {
-            const map = new Map();
-            if (leg.kind === 'turn') {
-                // ★ 剛体の 180° 回転。⚠ 直線補間ではない ＝ 軌跡は弧になる
-                haworthFlipFrame(leg.step.hinge, Math.PI * t).forEach(p => map.set(p.id, p));
-            } else {
-                // 寄せる（平行移動だけ）。⚠ ここだけは直線でよい —— 形はもう変わらない
-                const to = new Map(leg.shot.after.map(p => [p.id, p]));
-                leg.shot.flip.end.forEach(p => {
-                    const q = to.get(p.id) || p;
-                    map.set(p.id, { x: p.x + (q.x - p.x) * t, y: p.y + (q.y - p.y) * t });
-                });
-            }
-            return map;
-        };
+        // 段の組み立て: 各断片の回転を順に並べ、最後に「寄せる」を1段（▶ もう一度見る と共用・v1568）
+        const legs = this.haworthFlipLegs(shots);
+        const posAt = (leg, t) => this.haworthFlipPosAt(leg, t);
         const run = (k) => {
             if (this._morphGen !== gen) return Promise.resolve(null);
             if (k >= legs.length || this._morphSkip) return Promise.resolve(null);
@@ -12470,6 +12782,7 @@ class Reactor {
     discardLastReaction() {
         this.closeCompare();
         this.lastReaction = null;
+        this._replay = null;   // 見直す反応が無くなった（▶ は syncUndoButton が下ろす）
     }
 
     setCompareScale(scale) {
