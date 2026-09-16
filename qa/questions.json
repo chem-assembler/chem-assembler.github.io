@@ -1089,6 +1089,12 @@
       "evidence": {
         "textbook": "本文",
         "seminar": "基本"
+      },
+      "link": {
+        "kind": "reaction",
+        "label": "メタンを完全燃焼させる",
+        "summon": "methane",
+        "reagent": "combustion"
       }
     },
     {
@@ -2492,6 +2498,12 @@
         "exam": {
           "asTool": 4
         }
+      },
+      "link": {
+        "kind": "reaction",
+        "label": "アセチレンを3分子並べて三量化する",
+        "summon": "acetylene",
+        "reagent": "alkyne_trimerization"
       }
     },
     {
@@ -12333,6 +12345,12 @@
         "exam": {
           "asTool": 2
         }
+      },
+      "link": {
+        "kind": "reaction",
+        "label": "スチレンにもう1種類の単量体を並べて共重合させる",
+        "summon": "styrene",
+        "reagent": "copolymerization"
       }
     },
     {
@@ -13740,6 +13758,12 @@
         "exam": {
           "asTool": 2
         }
+      },
+      "link": {
+        "kind": "reaction",
+        "label": "スチレンと1,3-ブタジエンを並べて共重合させる",
+        "summon": "styrene",
+        "reagent": "copolymerization"
       }
     },
     {
