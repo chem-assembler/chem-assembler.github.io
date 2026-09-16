@@ -2727,8 +2727,147 @@ function runLedgerTests(DATA, LEDGER) {
   return results;
 }
 
+/* ---------------------------------------------------------------- Lv の根拠の表（2026-09-17）
+ * `data/level_matrix.jsonl`（正・手で書くのは override 欄だけ）と `LEVEL_MATRIX.md`（生成物）が、
+ * questions.json と食い違っていないか。そして **Lv を書き換える道具が上書きを守るか**。
+ *
+ * ⚠ なぜ要るか: `apply_seminar_levels.js` / `build_evidence.js` は「いまの Lv が規則から外れていたら動かす」。
+ *   ユーザーが根拠を読んで決めた Lv（ピクリン酸 3→2）を、**回すだけで黙って元に戻していた**（v112 の便の報告）。
+ * ★ 規則と関所は `tools/level_rules.js` に1つだけ置き、道具とこのテストが同じものを使う。
+ * ⚠ 読めなかった環境（file:// 直開きなど）では「読めていない」で落とす（黙って合格にしない）。
+ */
+function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC) {
+  var results = [];
+  var t = function (name, fn) {
+    try { fn(); results.push({ name: name, ok: true }); }
+    catch (e) { results.push({ name: name, ok: false, err: String(e && e.message || e) }); }
+  };
+  var assert = function (c, m) { if (!c) throw new Error(m || "assertion failed"); };
+  var rows = ROWS || [];
+  var text = String(MD || "");
+  var byCode = {};
+  rows.forEach(function (r) { byCode[r.code] = r; });
+  var HOW = "（node qa/tools/gen_level_matrix.js --write）";
+
+  t("表: 行数が項目数と同じで、全項目が1行ずつある", function () {
+    assert(rows.length, "data/level_matrix.jsonl を読めていない（テストの前提が崩れている）");
+    assert(rows.length === DATA.patterns.length,
+      "表 " + rows.length + " 行 / 項目 " + DATA.patterns.length + " 件" + HOW);
+    var lack = DATA.patterns.filter(function (p) { return !byCode[p.code]; }).map(function (p) { return p.code; });
+    assert(!lack.length, "表に無い項目: " + lack.slice(0, 4).join(" ") + HOW);
+  });
+
+  t("表: 現在の Lv（questions.json）が表の現在・最終の Lv と一致する", function () {
+    var bad = DATA.patterns.filter(function (p) {
+      var r = byCode[p.code];
+      return r && (r.lv !== p.difficulty || r.final !== p.difficulty);
+    }).map(function (p) {
+      var r = byCode[p.code];
+      return p.code + "（difficulty " + p.difficulty + " / 表 現在 " + r.lv + "・最終 " + r.final + "）";
+    });
+    assert(!bad.length, "ずれている " + bad.length + " 件: " + bad.slice(0, 3).join(" / ") +
+      "。上書きを足したなら difficulty も直す。difficulty を直したなら表を作り直す" + HOW);
+  });
+
+  t("表: 根拠の欄が questions.json の evidence と一致する（表が古くない）", function () {
+    var bad = DATA.patterns.filter(function (p) {
+      var r = byCode[p.code], ev = p.evidence || {};
+      if (!r) return false;
+      return r.textbook !== ev.textbook || (r.textbookWeak === true) !== (ev.textbookWeak === true) ||
+        r.seminar !== ev.seminar || JSON.stringify(r.exam || null) !== JSON.stringify(ev.exam || null);
+    }).map(function (p) { return p.code; });
+    assert(!bad.length, "根拠の欄が古い " + bad.length + " 件: " + bad.slice(0, 4).join(" ") + HOW);
+  });
+
+  t("表: 機械の目安の欄が規則（tools/level_rules.js）で計算し直した値と一致する", function () {
+    assert(RULES && RULES.seminarRule, "tools/level_rules.js を読めていない");
+    var bad = rows.filter(function (r) {
+      var range = RULES.tableRange(r.textbook, r.textbookWeak === true, r.seminar);
+      return r.ruleSeminar !== RULES.seminarRule(r.lv, r.seminarMap, r.seminar === "プロセス") ||
+        JSON.stringify(r.tableRange) !== JSON.stringify(range) || r.ruleTable !== RULES.clamp(r.lv, range);
+    }).map(function (r) { return r.code; });
+    assert(!bad.length, "目安の欄が規則と違う " + bad.length + " 件: " + bad.slice(0, 4).join(" ") + HOW);
+  });
+
+  t("表: 上書きには値・元の値・日付・理由がそろっている", function () {
+    var ov = rows.filter(function (r) { return r.override; });
+    var bad = ov.filter(function (r) {
+      var o = r.override;
+      return !(o.lv >= 1 && o.lv <= 4) || !(o.from >= 1 && o.from <= 4) || o.from === o.lv ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(o.date || "") || !String(o.reason || "").trim();
+    }).map(function (r) { return r.code; });
+    assert(!bad.length, "上書きの記録が欠けている: " + bad.join(" "));
+  });
+
+  t("表: 上書き2件（ナフタレンの空気酸化 4→3・ピクリン酸 3→2）が理由つきで記録されている", function () {
+    [["org.aro.naphthalene-oxidation", 4, 3], ["org.phenol.picric", 3, 2]].forEach(function (x) {
+      var r = byCode[x[0]];
+      assert(r && r.override, x[0] + " に上書きの記録が無い");
+      assert(r.override.from === x[1] && r.override.lv === x[2],
+        x[0] + " の上書きが " + r.override.from + "→" + r.override.lv + "（期待 " + x[1] + "→" + x[2] + "）");
+      assert(/ユーザー判断/.test(r.override.reason), x[0] + " の理由に「ユーザー判断」が無い");
+    });
+  });
+
+  t("表: 機械の目安と食い違う Lv には、必ず上書きの記録がある（根拠の無い手直しを残さない）", function () {
+    var loose = rows.filter(function (r) {
+      return !r.override && (r.ruleSeminar !== r.lv || r.ruleTable !== r.lv);
+    }).map(function (r) { return r.code + "（Lv" + r.lv + " / §3-2→" + r.ruleSeminar + " / §7-2→" + r.ruleTable + "）"; });
+    assert(!loose.length, "記録の無い食い違い " + loose.length + " 件: " + loose.slice(0, 3).join(" / ") +
+      "。ユーザーの判断なら data/level_matrix.jsonl の override に書く。そうでなければ Lv を目安に戻す");
+  });
+
+  t("関所: 上書きのある項目は、どちらの規則を当てても上書きの値のまま（否定対照: 上書きを外すと機械の値に戻る）", function () {
+    var ov = rows.filter(function (r) { return r.override; });
+    assert(ov.length, "上書きが1件も無い（この検査が空回りする）");
+    var kept = ov.filter(function (r) {
+      return RULES.finalLv(r.ruleSeminar, r.override) === r.override.lv &&
+        RULES.finalLv(r.ruleTable, r.override) === r.override.lv;
+    });
+    assert(kept.length === ov.length, "上書きを守れていない: " +
+      ov.filter(function (r) { return kept.indexOf(r) < 0; }).map(function (r) { return r.code; }).join(" "));
+    // 否定対照: 上書きを外したら機械の値が出る。しかも少なくとも1件は上書きと違う値になる
+    // （全件で機械と上書きが同じなら、関所が効いているかをこの検査では確かめられない）
+    var reverted = ov.filter(function (r) {
+      assert(RULES.finalLv(r.ruleSeminar, null) === r.ruleSeminar, r.code + ": 上書きが無いのに機械の値が出ない");
+      assert(RULES.finalLv(r.ruleTable, null) === r.ruleTable, r.code + ": 上書きが無いのに機械の値が出ない");
+      return r.ruleSeminar !== r.override.lv || r.ruleTable !== r.override.lv;
+    });
+    assert(reverted.length >= 1, "上書きを外しても戻る項目が無い（否定対照が成立しない）");
+    assert(byCode["org.phenol.picric"].ruleSeminar === 3 && byCode["org.phenol.picric"].ruleTable === 3,
+      "ピクリン酸は上書きを外すと Lv3 に戻るはず（否定対照の実例）");
+  });
+
+  t("関所: Lv を書き換える道具（apply_seminar_levels.js・build_evidence.js）が関所を通っている", function () {
+    var src = TOOL_SRC || {};
+    ["apply_seminar_levels.js", "build_evidence.js"].forEach(function (f) {
+      var s = String(src[f] || "");
+      assert(s, "tools/" + f + " を読めていない");
+      assert(/require\(['"]\.\/level_rules['"]\)/.test(s), f + " が level_rules.js を読んでいない");
+      assert(/readOverrides\(/.test(s), f + " が上書き（readOverrides）を読んでいない");
+      assert(/finalLv\(/.test(s), f + " が関所（finalLv）を通していない");
+    });
+  });
+
+  t("一覧: LEVEL_MATRIX.md が生成物であることと、全項目の最終の Lv を載せている", function () {
+    assert(text, "LEVEL_MATRIX.md を読めていない");
+    assert(text.indexOf("gen_level_matrix.js") >= 0 && text.indexOf("手で直さない") >= 0, "生成物である旨が書かれていない");
+    var lines = {};
+    text.split(/\r?\n/).forEach(function (l) {
+      var m = l.match(/^\| `(org\.[a-zA-Z]+\.[a-z0-9-]+)` \| .* \| (\d) \|$/);
+      if (m && l.split(" | ").length >= 10) lines[m[1]] = +m[2];
+    });
+    var bad = DATA.patterns.filter(function (p) { return lines[p.code] !== p.difficulty; })
+      .map(function (p) { return p.code + "（一覧 " + lines[p.code] + " / difficulty " + p.difficulty + "）"; });
+    assert(!bad.length, "一覧と食い違う " + bad.length + " 件: " + bad.slice(0, 3).join(" / ") + HOW);
+  });
+
+  return results;
+}
+
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
+    runLevelMatrixTests: runLevelMatrixTests,
     runDataTests: runDataTests,
     pairContextHits: pairContextHits,
     pairContextHitsOf: pairContextHitsOf,
