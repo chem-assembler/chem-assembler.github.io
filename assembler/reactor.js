@@ -13505,6 +13505,7 @@ if (typeof window !== 'undefined') {
     window.PARTNER_EQUATIONS = PARTNER_EQUATIONS; // RXP3〜（反応式ぶんの相手と副生成物・v1556）が読む
     window.isolatedBenzeneRings = isolatedBenzeneRings; // RXR1（反応のときに環を回す）が読む
     window.RX_SPECIES = RX_SPECIES;
+    window.RX_NO_FOLD = RX_NO_FOLD;             // RXP4（H₂ を「×n」にまとめない）の否定対照が読む
     window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
     window.noRoom = noRoom;
 }
