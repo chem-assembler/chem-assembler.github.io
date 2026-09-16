@@ -58482,12 +58482,17 @@
         g.summonMolecule('酢酸'); g.updateDrawing();
         const caps2 = [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent).filter(s => /^🔍/.test(s));
         assert(caps2.join('|') === '🔍 ① エタノール C₂H₆O|🔍 ② 酢酸 C₂H₄O₂', `2分子の見出しが ${JSON.stringify(caps2)}`);
-        // ★ 否定対照: 短尺の収録（.rec-short）では札を出す（台本の見せ場「描くと名前が出る」）
+        // ★ 否定対照: 短尺の収録（.rec-short）では札を出す（台本の見せ場「描くと名前が出る」）。
+        //   1分子の見出しは名前だけに戻る（札が分子式を出しているので2度出さない）
         D.documentElement.classList.add('rec-short');
         try {
+            g.userMolecule = new W.Molecule(); g.summonMolecule('エタノール'); g.updateDrawing();
             assert(W.getComputedStyle(chip).display !== 'none' && chip.getBoundingClientRect().height > 0,
                 '短尺の収録なのに名前の札が消えている（台本の見せ場が崩れる）');
-        } finally { D.documentElement.classList.remove('rec-short'); }
+            const recCaps = [...D.querySelectorAll('#atoms-group text')].map(t => t.textContent).filter(s => /^🔍/.test(s));
+            assert(recCaps.length === 1 && recCaps[0] === '🔍 エタノール',
+                `短尺の収録で1分子の見出しに分子式が付いている（札と2度出る）: ${JSON.stringify(recCaps)}`);
+        } finally { D.documentElement.classList.remove('rec-short'); g.updateDrawing(); }
         c.reset();
     });
 
