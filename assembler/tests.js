@@ -8335,8 +8335,11 @@
             const lc = d.nameParts.filter(p => p.role === 'locant');
             // 位置番号を書くのはケトンだけ（プロパノンは位置が一意なので省く）
             assert(lc.length === (kind === 'one' && n !== 3 ? 1 : 0), `${want}: 位置番号のかけらが ${lc.length} 個`);
-            // 向きの理由: C=O の位置で決まる（1炭素だけは両向きが同じ ＝ tie）
-            assert(d.dirReason === (n === 1 ? 'tie' : 'carbonyl'), `${want}: dirReason=${d.dirReason}`);
+            // 向きの理由: C=O の位置で決まる。C=O が鎖の真ん中（3-ペンタノン・メタナール）は両向きで同じなので
+            // その先（置換基 → tie）へ委ねられる
+            const mid = 2 * loc === n + 1;
+            assert(mid ? (d.dirReason === 'tie' || d.dirReason === 'sub') : d.dirReason === 'carbonyl',
+                `${want}: dirReason=${d.dirReason}`);
         });
         // ★ 標準図（答え合わせの表）も同じ門番 ＝ 番号が出て、順は mainChain そのもの（IP7 と同じ物差し）
         const bu = inLibMol(c, 'エチルメチルケトン（ブタノン）');
