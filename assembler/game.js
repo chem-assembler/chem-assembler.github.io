@@ -580,6 +580,8 @@ class Game {
         // 選んだ順が式の並びになる（先に選んだ方が左）。中身は代表原子のIDの配列
         this.reactionSelectMode = false;
         this.selectedMolecules = [];
+        // 🧽 分子を消去の「消す分子をタップ」モード（v1570・段④・ユーザー提案 2026-09-17）
+        this.deleteMoleculeMode = false;
         // 「⚗ この分子の反応」カードがいま分析している分子（レビュー項目9）。中身は代表原子のID。
         // **反応の絞り込み（selectedMolecules）とは別物**で、こちらは分類表示の対象を指すだけ。
         // 図では実線＋淡い光の枠（琥珀）で示し、選択枠（青の破線＋①②）と見分けられるようにする
@@ -1081,6 +1083,8 @@ class Game {
                     this.selectedTool = 'select';
                     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                     document.getElementById('btn-tool-select').classList.add('active');
+                    // 🧽 消す分子をタップするモードは下ろす（環・官能基を置く手に戻す・v1570 段④）
+                    this.deactivateDeleteMoleculeMode();
                     // 不斉炭素マークモードは解除する（モジュール配置と競合し、
                     // クリックが不斉マークに奪われてモジュールが置けなくなるため）
                     if (this.asymmetricMode) {
@@ -1185,6 +1189,10 @@ class Game {
         if (btnExport) {
             btnExport.addEventListener('click', () => this.exportMoleculeJson());
         }
+
+        // 🧽 分子を消去（v1570・段④）。中身は `onDeleteMoleculeButton`
+        const btnDeleteMolecule = document.getElementById('btn-delete-molecule');
+        if (btnDeleteMolecule) btnDeleteMolecule.addEventListener('click', () => this.onDeleteMoleculeButton());
 
         this.btnClearAll.addEventListener('click', () => {
             // 「全消去」は巻矢印まで含めて消す。原子が空でも矢印だけ浮いて残るのを防ぐため、
@@ -1314,6 +1322,8 @@ class Game {
                 }
                 this.reactionSelectMode = true;
                 btnRxSel.classList.add('active');
+                // 🧽 消す分子をタップするモードとは排他（v1570・段④）
+                if (this.deleteMoleculeMode) { this.deleteMoleculeMode = false; const bdm = document.getElementById('btn-delete-molecule'); if (bdm) bdm.classList.remove('active'); }
                 // 他の編集モードとは排他（作図の手が滑って分子が壊れるのを防ぐ）
                 this.selectedModule = null;
                 document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
@@ -2391,6 +2401,17 @@ class Game {
             return;
         }
 
+        // --- 🧽 消す分子をタップするモード（v1570・段④）。原子か結合を押した分子を丸ごと消す ---
+        if (this.deleteMoleculeMode) {
+            let atom = clickedAtom;
+            if (!atom) {
+                const bond = this.findBondAt(coords.rawX, coords.rawY);
+                if (bond) atom = this.userMolecule.atoms.find(a => a.id === bond.atomId1) || null;
+            }
+            if (atom) this.deleteMoleculesByAtomIds([atom.id]);
+            return; // 何も無い所のタップは何もしない（作図に化けない）
+        }
+
         // --- 反応させる分子を選ぶモード (ON) 時の特別処理（C-1） ---
         if (this.reactionSelectMode) {
             this.toggleMoleculeSelection(clickedAtom);
@@ -3282,6 +3303,81 @@ class Game {
         this.deactivateHaworthMode();
         this.deactivateReactionSelectMode();
         this.deactivateStereoPointMode();
+        this.deactivateDeleteMoleculeMode();
+    }
+
+    /* ===== 🧽 分子を消去（v1570・段④・ユーザー提案 2026-09-17「全消去のほかに 分子を消去 があるとよさそう」） =====
+     *
+     * ★ いまの仕組みを確かめた結果: 分子ごとに消す道は**無かった**（分子モーダルに削除は無く、
+     *   消しゴムは原子・結合を1つずつ消す）。だから新しく足す。消す実体は `deleteMoleculesByAtomIds` 1つ。
+     * ★ 振る舞い（統合側の案どおり）:
+     *   ・分子を選んでいる（🎯 の青い枠・見出しを押した琥珀の枠）ときに押す → その分子を消す
+     *   ・分子が1つだけ → それを消す（全消去と同じ結果。ボタンは隠さない ＝ リボンの並びを状態で変えない）
+     *   ・選んでいない（2つ以上）→「消す分子をタップ」のモード（名札「🧽 消す分子をタップしよう」＋やめる）。
+     *     続けて何個でも消せる。分子が無くなったら自分で下りる
+     * ⚠ ↩ 戻す で戻せる（消す前に `saveState()` を1回 ＝ 1回の消去が1回の Undo）
+     * ⚠ 対イオンの粒（Cl⁻ など）は相方と同じ分子として一緒に消す（`splitMolecules` の切り分けに従う）
+     * ⚠ 反応の結果を消したら「↩ 反応前に戻す」は引っ込む（`reactor.syncUndoButton` がトポロジーで見る）
+     */
+    onDeleteMoleculeButton() {
+        if (this.deleteMoleculeMode) { this.deactivateDeleteMoleculeMode(); return; }
+        const parts = this.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        if (!parts.length) { this.showToast('キャンバスに分子がありません。', 2500); return; }
+        // 選んでいる分子（🎯 の選択が先。無ければ見出しを押した琥珀の枠）
+        let ids = [];
+        if (this.reactionSelectMode && this.selectedMolecules.length) {
+            ids = this.selectedMoleculeSets().map(s => [...s][0]);
+        } else {
+            const info = this.focusedMoleculeInfo(null);
+            if (info && info.explicit) ids = [info.part.atoms[0].id];
+        }
+        if (!ids.length && parts.length === 1) ids = [parts[0].atoms[0].id];
+        if (ids.length) { this.deleteMoleculesByAtomIds(ids); return; }
+        // ここからモードに入る。タップの意味を変える他の道具は下ろす（setTool と同じ並び）
+        this.selectedModule = null;
+        document.querySelectorAll('.mod-btn').forEach(b => b.classList.remove('active'));
+        this.asymmetricMode = false;
+        const bam = document.getElementById('btn-asym-mark'); if (bam) bam.classList.remove('active');
+        this.reshapeMode = false;
+        const brs = document.getElementById('btn-cistrans-reshape'); if (brs) brs.classList.remove('active');
+        this.deactivateHaworthMode();
+        this.deactivateStereoPointMode();
+        this._dropReactionSelectState();
+        this.deleteMoleculeMode = true;
+        const btn = document.getElementById('btn-delete-molecule');
+        if (btn) btn.classList.add('active');
+        this.clearUIOverlay();
+        this.updateDrawing();
+    }
+
+    /** モードを下ろす。戻り値: 実際に下ろしたら true */
+    deactivateDeleteMoleculeMode() {
+        if (!this.deleteMoleculeMode) return false;
+        this.deleteMoleculeMode = false;
+        const btn = document.getElementById('btn-delete-molecule');
+        if (btn) btn.classList.remove('active');
+        this.updateDrawing();
+        return true;
+    }
+
+    /** 原子IDを含む分子（`splitMolecules` の1成分＝対イオンの粒ごと）を丸ごと消す。1回の Undo で戻る */
+    deleteMoleculesByAtomIds(atomIds) {
+        const parts = this.splitMolecules();
+        const doomed = new Set();
+        atomIds.forEach(id => {
+            const p = parts.find(q => q.atoms.some(a => a.id === id));
+            if (p) p.atoms.forEach(a => doomed.add(a.id));
+        });
+        if (!doomed.size) return false;
+        this.saveState();
+        const m = this.userMolecule;
+        m.bonds = m.bonds.filter(b => !doomed.has(b.atomId1) && !doomed.has(b.atomId2));
+        m.atoms = m.atoms.filter(a => !doomed.has(a.id));
+        this.selectedMolecules = this.selectedMolecules.filter(id => !doomed.has(id));
+        if (this.focusedMolecule && doomed.has(this.focusedMolecule)) this.focusedMolecule = null;
+        this.clearUIOverlay();
+        this.updateDrawing();
+        return true;
     }
 
     // α/β 面マークモードを解除する（他モードへ切替える既存フックから呼ぶ。P12-7 M2b）
@@ -3476,6 +3572,14 @@ class Game {
                     if (btn) { btn.click(); return; }
                     if (this.deactivateReactionSelectMode()) this.updateDrawing();
                 }
+            };
+        }
+        if (this.deleteMoleculeMode) {
+            return {
+                mode: 'delete-molecule', icon: '🧽',
+                task: '<b>消す分子</b>をタップしよう',
+                stop: 'やめる', stopTitle: '分子を消すのをやめて、作図に戻ります（消した分子は ↩ 戻す で戻せます）',
+                onStop: () => this.deactivateDeleteMoleculeMode()
             };
         }
         if (rec) return null;
@@ -3687,6 +3791,7 @@ class Game {
      * ⚠ 人の操作のときだけ出す（`noteModeChange` と同じ理由・台本の画に足さない）。短尺の収録では出さない。
      */
     toolChipLabel() {
+        if (this.deleteMoleculeMode) return { icon: '🧽', label: '消す分子を選ぶ' };
         if (this.reactionSelectMode) return { icon: '🎯', label: '反応させる分子を選ぶ' };
         if (this.reshapeMode) return { icon: '⇄', label: 'シス/トランスを整える' };
         if (this.asymmetricMode) return { icon: '✳', label: '不斉炭素に印をつける' };
@@ -3788,6 +3893,7 @@ class Game {
         if (this.separationActive) out.push({ key: 'sep', name: '分液' });
         if (this.iupacNumbering) out.push({ key: 'numbering', name: '主鎖と番号の表示' });
         if (this.reactionSelectMode) out.push({ key: 'reaction-select', name: '反応させる分子選び' });
+        if (this.deleteMoleculeMode) out.push({ key: 'delete-molecule', name: '分子の消去' });
         return out;
     }
 
@@ -6427,6 +6533,14 @@ class Game {
            ⚠ `canvasMoleculeCount()` を呼ぶのは**モードが ON のときだけ**（OFF のときは
              作図のたびの `splitMolecules()` を1回も増やさない）。 */
         if (this.reactionSelectMode && this.canvasMoleculeCount() === 0) this._dropReactionSelectState();
+        // 🧽 消す分子をタップするモードも同じ約束（v1570・段④）: 消す相手が無い／キャンバスをビューアが借りている／
+        //   自由モードでない ときは下りる（ここで状態だけ下ろす ＝ 描き直しは二重にしない）
+        if (this.deleteMoleculeMode && (this.canvasMoleculeCount() === 0 || this.currentMode === 'learn' ||
+            (window.reactionPlayer && window.reactionPlayer.active))) {
+            this.deleteMoleculeMode = false;
+            const bdm = document.getElementById('btn-delete-molecule');
+            if (bdm) bdm.classList.remove('active');
+        }
         // ★ 常設バッジは**いちばん先**にそろえる（v1416）。この下には反応機構ビューアが
         //   持ち主のときの早い return があり、そこで折り返すと
         //   「モードは下りたのにバッジが残る」型の食い違いが生まれる
@@ -7317,6 +7431,7 @@ class Game {
      */
     tapHasOtherMeaning() {
         if (this.reactionSelectMode || this.reshapeMode || this.asymmetricMode || this.haworthMode) return true;
+        if (this.deleteMoleculeMode) return true;   // v1570・段④（結合の判定線・見出しに食わせない）
         // ★ 「立体が分かれる場所」の印モード（v1435・段1）。**結合をタップして印を付ける**ので、
         //    ここに載っていないと判定線に食われて C=C が C≡C に化ける（§4-3・`IW26`）
         if (this.stereoPointMode) return true;
@@ -8309,6 +8424,7 @@ class Game {
         // 「🎯 反応させる分子を選ぶ」は 🧪自由 の分子モーダルの道具なので、
         // モードが変わったら下ろす（v1409。持ち越すとタップが作図に戻らない）
         this.deactivateReactionSelectMode();
+        this.deactivateDeleteMoleculeMode();
         // ★ 実験モードのパレットも 🧪自由 の中だけの持ち替え（DESIGN_experiment_mode.md §3-3）。
         //   ⚠ 🧩パズル・📚学習 へ移ったら**必ず作図の道具に戻す** —— 戻さないと、
         //     お題の分子を組もうとした人の手元に原子ボタンが1つも無い画面が出る。

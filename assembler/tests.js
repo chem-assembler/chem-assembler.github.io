@@ -281,7 +281,7 @@
  *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
  * | UX  | 1〜3   | 「操作の案内」の字数の上限（v1468・ux-density.md。ユーザー発注「説明が冗長・字が小さい／ただし発展の話は必要な人が見られるように」）。**1 が上限**（9画面ぶん。数えるのは押す前に読ませる説明だけで、化学の説明・答え合わせ・設問・一覧・図・**閉じた `<details>` の中身**は数えない。併せて `.learn-acc` が既定で閉じていること**と中身が空でないこと**を見る ＝ 「畳んだふりをして消す」で通せない）・**2 は否定対照**＝ 実物と同じ長さの1文（47字）を足すと**9画面すべてで**上限を超えること（余裕が広すぎて止め木にならない状態を検出する）・3 は十字の4操作の規則が `CROSS_RULES_HTML` 1本で ⏱ と 🔤 の両方から開けること |
- * | UM  | 1〜11  | **モードの抜け方と名札**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る）・**5〜6 は全モード共通の名札**（段②）: 5 が各モードで名札が出て「やめる」で抜ける（機構の反応名から「（〜生成）」を落とす。**否定対照**＝自由では出ない・短尺収録 .rec-short では出ない）・6 が名札のあいだ帯の見出し行・橙の大見出し・長文トーストを出さない（**否定対照**＝名札を止めると大見出しが描かれる）・**7〜8 は選択中の道具の札**（見本 B）: 7 が道具を替えると札が変わり自由モードでは5秒で消える（**否定対照**＝4秒ではまだ出ている・パズル中は消えない・合成の操作では出ない）・8 が 375/320px で名札が1行のまま・札がその下に重ならず並ぶ（**否定対照**＝上端に置けば重なる）・**9〜11 は段③**: 9 が下の2ボタンを 375/320px でも1段（**否定対照**＝旧い名札と幅の取り方なら2段）・10 が作業中は自由モードの段を畳む（**否定対照**＝自由・短尺収録では畳まない）・11 が左下の分子式表示を出さず見出しに分子式（**否定対照**＝短尺収録では札を出す） |
+ * | UM  | 1〜13  | **モードの抜け方と名札**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る）・**5〜6 は全モード共通の名札**（段②）: 5 が各モードで名札が出て「やめる」で抜ける（機構の反応名から「（〜生成）」を落とす。**否定対照**＝自由では出ない・短尺収録 .rec-short では出ない）・6 が名札のあいだ帯の見出し行・橙の大見出し・長文トーストを出さない（**否定対照**＝名札を止めると大見出しが描かれる）・**7〜8 は選択中の道具の札**（見本 B）: 7 が道具を替えると札が変わり自由モードでは5秒で消える（**否定対照**＝4秒ではまだ出ている・パズル中は消えない・合成の操作では出ない）・8 が 375/320px で名札が1行のまま・札がその下に重ならず並ぶ（**否定対照**＝上端に置けば重なる）・**9〜11 は段③**: 9 が下の2ボタンを 375/320px でも1段（**否定対照**＝旧い名札と幅の取り方なら2段）・10 が作業中は自由モードの段を畳む（**否定対照**＝自由・短尺収録では畳まない）・11 が左下の分子式表示を出さず見出しに分子式（**否定対照**＝短尺収録では札を出す）・**12〜13 は段④ 🧽 分子を消去**: 12 がリボンに枠が増えても 1280 は1段・375/320 は2段で字が切れない（**否定対照**＝長い札なら切れを検出）・13 が選んだ分子だけ消え、ほかの原子数と正準コードは不変・↩ 戻すで戻る・やめると「分子の消去を終了しました」・反応の結果を消すと ↩ 反応前に戻す が引っ込む（**否定対照**＝押しただけでは消えない・反応直後は札が出ている） |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
@@ -58488,6 +58488,126 @@
             assert(W.getComputedStyle(chip).display !== 'none' && chip.getBoundingClientRect().height > 0,
                 '短尺の収録なのに名前の札が消えている（台本の見せ場が崩れる）');
         } finally { D.documentElement.classList.remove('rec-short'); }
+        c.reset();
+    });
+
+    /* ===== UM12〜UM13: 🧽 分子を消去（v1570・段④・ユーザー提案 2026-09-17） ===== */
+
+    test('UM12: リボンに「分子を消去」が増えても 1280px は1段・375/320px は2段のまま、札の字もはみ出さない（否定対照: 5字の「分子を消去」ならはみ出しを検出する）', async () => {
+        for (const [w, h, maxRows] of [[1280, 800, 1], [375, 812, 2], [320, 568, 2]]) {
+            await withViewport(w, h, async (W, D, name) => {
+                const g = W.game;
+                g.setMode('puzzle');       // 「← 自由へ」も出る ＝ 枠がいちばん多い状態
+                const hdr = D.querySelector('.canvas-header').getBoundingClientRect();
+                const tiles = [...D.querySelectorAll('.canvas-header > button, .canvas-header > .mode-tab')]
+                    .filter(t => t.getBoundingClientRect().width > 0);
+                assert(tiles.some(t => t.id === 'btn-delete-molecule'), `${name}: 「分子を消去」がリボンに無い`);
+                const rows = new Set(tiles.map(t => Math.round(t.getBoundingClientRect().top)));
+                assert(rows.size <= maxRows, `${name}: リボンが ${rows.size} 段（${maxRows} 段以内を期待）`);
+                tiles.forEach(t => {
+                    const r = t.getBoundingClientRect();
+                    assert(r.right <= hdr.right + 1 && r.left >= hdr.left - 1, `${name}: ${t.textContent.trim()} がリボンからはみ出す`);
+                    assert(r.width >= 34 && r.height >= 34, `${name}: ${t.textContent.trim()} が ${Math.round(r.width)}×${Math.round(r.height)}`);
+                });
+                const lab = D.querySelector('#btn-delete-molecule .tile-label');
+                const tile = D.getElementById('btn-delete-molecule');
+                // ⚠ 札は「分子消去」の4字。「分子を消去」の5字は 11px で 55px ＝ タイルの中身 50px をはみ出す（実測）
+                const はみ出す = () => lab.getBoundingClientRect().width > tile.clientWidth + 1;
+                assert(lab.textContent === '分子消去', `${name}: 札が「${lab.textContent}」`);
+                assert(!はみ出す(), `${name}: 「分子消去」の字がタイルからはみ出す`);
+                // ★ 否定対照: 5字の「分子を消去」にすると、同じ物差しがはみ出しを検出する
+                const 元 = lab.textContent;
+                try {
+                    lab.textContent = '分子を消去';
+                    assert(はみ出す(), `${name}: ⚠ 否定対照が効いていない（5字でもはみ出しを検出しない）`);
+                } finally { lab.textContent = 元; }
+                g.setMode('free');
+            });
+        }
+    });
+
+    test('UM13: 分子を消去 —— 選んだ分子だけ消え、ほかは原子数も正準コードも変わらず、↩ 戻すで戻る（否定対照つき）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        const btn = D.getElementById('btn-delete-molecule');
+        const heavyParts = () => g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H'));
+        const snapshot = () => heavyParts().map(p => `${W.canonicalCode(p)}#${p.atoms.length}`).sort();
+        const 置く = (names) => {
+            c.reset(); g.setMode('free'); g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = []; g.updateDrawing();
+            names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            g.updateDrawing();
+        };
+        const partOf = (name) => heavyParts().find(p => g.lookupCompoundName(p) === name);
+        await umWithNotice(c, async () => {
+            // ① 選んでいない・2つ以上 → 「消す分子をタップ」のモード（押しただけでは何も消えない＝否定対照）
+            置く(['エタノール', '酢酸', 'ベンゼン']);
+            const before = snapshot();
+            btn.click(); await umSettle(c);
+            assert(g.deleteMoleculeMode, '選んでいないのにモードに入らない');
+            assert(JSON.stringify(snapshot()) === JSON.stringify(before), '★ 押しただけで分子が消えた（タップで選ぶ前に消している）');
+            assert(umPlate(c) && umPlate(c).mode === 'delete-molecule' && /消す分子.*タップしよう/.test(umPlate(c).text),
+                `名札が「消す分子をタップしよう」にならない: ${JSON.stringify(umBadge(c))}`);
+            // ② 酢酸の炭素をタップ → 酢酸だけ消える
+            const ac = partOf('酢酸');
+            const target = ac.atoms.find(a => a.element === 'C');
+            const 酢酸 = `${W.canonicalCode(ac)}#${ac.atoms.length}`;
+            c.clickAt(target.x, target.y); await umSettle(c);
+            const after = snapshot();
+            assert(after.length === 2 && !after.includes(酢酸), `酢酸が消えていない（${after.join(' / ')}）`);
+            assert(JSON.stringify(after) === JSON.stringify(before.filter(s => s !== 酢酸)),
+                `★ ほかの分子の原子数か正準コードが変わった（前 ${before.join(' / ')} → 後 ${after.join(' / ')}）`);
+            assert(g.deleteMoleculeMode, '1つ消しただけでモードが下りた（続けて消せない）');
+            // ③ 何も無い所のタップは何もしない（作図に化けない）
+            c.clickAt(760, 560); await umSettle(c);
+            assert(JSON.stringify(snapshot()) === JSON.stringify(after), '何も無い所のタップで図が変わった');
+            // ④ やめる → 「分子の消去を終了しました」
+            g.hideCanvasToast();
+            umPlateStop(c).click(); await umSettle(c);
+            assert(!g.deleteMoleculeMode, '名札の「やめる」でモードが下りない');
+            assert(umToast(c) === '分子の消去を終了しました', `やめた知らせ: 「${umToast(c)}」`);
+            // ⑤ ↩ 戻す で戻る
+            g.undo(); await umSettle(c);
+            assert(JSON.stringify(snapshot()) === JSON.stringify(before), `↩ 戻すで酢酸が戻らない（${snapshot().join(' / ')}）`);
+
+            // ⑥ 選んでいる（🎯）ときに押す → その分子をすぐ消す（モードに入らない）
+            置く(['エタノール', '酢酸']);
+            const b2 = snapshot();
+            rxTurnOnMoleculeSelect(c);
+            const et = partOf('エタノール').atoms.find(a => a.element === 'O');
+            c.clickAt(et.x, et.y);
+            assert(g.selectedMolecules.length === 1, '前提: エタノールを選べない');
+            btn.click(); await umSettle(c);
+            assert(!g.deleteMoleculeMode, '選んでいるのにタップのモードに入った');
+            assert(heavyParts().length === 1 && g.lookupCompoundName(heavyParts()[0]) === '酢酸',
+                `選んだエタノールだけが消えていない（${heavyParts().map(p => g.lookupCompoundName(p)).join('・')}）`);
+            g.undo(); await umSettle(c);
+            assert(JSON.stringify(snapshot()) === JSON.stringify(b2), '↩ 戻すで選んだ分子が戻らない');
+            g.deactivateReactionSelectMode();
+
+            // ⑦ 分子が1つだけ → そのまま消える（全消去と同じ結果）。戻せる
+            置く(['エタノール']);
+            btn.click(); await umSettle(c);
+            assert(!g.deleteMoleculeMode && g.userMolecule.atoms.length === 0, '1分子で押しても消えない／モードに入った');
+            g.undo(); await umSettle(c);
+            assert(heavyParts().length === 1, '↩ 戻すで1分子が戻らない');
+
+            // ⑧ 反応の結果が載っているとき: 反応していない方を消すと「↩ 反応前に戻す」は引っ込む
+            置く(['エテン', 'ベンゼン']);
+            const rule = W.REACTION_RULES.find(r => r.id === 'add_br2');
+            W.reactor.execute(rule, rule.detect(g.userMolecule)[0]);
+            await 反応の再生を待つ(c);
+            W.reactor.finalizeMorph();
+            await umSettle(c);
+            const undoBtn = D.getElementById('btn-rx-undo');
+            assert(!undoBtn.classList.contains('hidden'), '前提（否定対照）: 反応の直後に「↩ 反応前に戻す」が出ていない');
+            btn.click(); await umSettle(c);
+            const bz = partOf('ベンゼン');
+            assert(bz, '前提: ベンゼンが見つからない');
+            const bzC = bz.atoms.find(a => a.element === 'C');
+            c.clickAt(bzC.x, bzC.y); await umSettle(c);
+            assert(!partOf('ベンゼン'), 'ベンゼンが消えていない');
+            assert(undoBtn.classList.contains('hidden'), '★ 分子を消したのに「↩ 反応前に戻す」が出たまま（押すと消した分子ごと巻き戻る）');
+            g.deactivateDeleteMoleculeMode();
+        });
         c.reset();
     });
 

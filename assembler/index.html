@@ -217,6 +217,11 @@
                          #btn-condense は無傷。ここに複製を置かないこと -->
                     <button id="btn-reset-view" class="view-btn" data-tutorial="view-control"><span class="tile-icon">🔍</span><span class="tile-label">全体表示</span></button>
                     <button id="btn-clear-all" class="danger-btn" title="キャンバスの作図をすべて消します"><span class="tile-icon">🗑</span><span class="tile-label">全消去</span></button>
+                    <!-- 🧽 分子を消去（v1570・段④・ユーザー提案 2026-09-17）。分子を選んでいればその分子、
+                         1つだけならそれ、2つ以上で選んでいなければ「消す分子をタップ」のモードに入る。
+                         ⚠ リボンの枠が1つ増える（DESIGN_ribbon_consolidation.md §1-1 の 9枠 → 10枠）。
+                            1280/375/320px の並びは tests.js の UM12 が実測で見張る（375・320 はもとから2段） -->
+                    <button id="btn-delete-molecule" class="danger-btn" title="分子を1つずつ消します（選んでいる分子・1つだけの分子はすぐ消し、2つ以上ならタップした分子を消します。↩ 戻す で戻せます）"><span class="tile-icon">🧽</span><span class="tile-label">分子消去</span></button>
                     <!-- 🔤 呼出（§21・ユーザー決定「A または 左ペイン」→ 実測で A を採用）。
                          押すと `#summon-modal` が開き、名前を入れて分子を呼び出せる。
                          ⚠ **作業帯の `#summon-input` は据え置き**（消さない・移さない）。これは入口を

@@ -1159,6 +1159,7 @@ button:hover {
    ⚠ 名札を出さない短尺の収録では `.plate-*` が付かないので、帯は今までどおり（台本の画を変えない）。
    ⚠ 台本の `summon`（83件）は、この畳む状態の最中に1件も来ない（v1570 に grep で確認）。 */
 #work-strip.plate-reaction-select #ws-free-summon,
+#work-strip.plate-delete-molecule #ws-free-summon,
 #work-strip.plate-sep #ws-free-summon,
 #work-strip.plate-numbering #ws-free-summon,
 #work-strip.plate-mechanism #ws-free,
