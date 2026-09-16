@@ -281,6 +281,7 @@
  *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
  * | UX  | 1〜3   | 「操作の案内」の字数の上限（v1468・ux-density.md。ユーザー発注「説明が冗長・字が小さい／ただし発展の話は必要な人が見られるように」）。**1 が上限**（9画面ぶん。数えるのは押す前に読ませる説明だけで、化学の説明・答え合わせ・設問・一覧・図・**閉じた `<details>` の中身**は数えない。併せて `.learn-acc` が既定で閉じていること**と中身が空でないこと**を見る ＝ 「畳んだふりをして消す」で通せない）・**2 は否定対照**＝ 実物と同じ長さの1文（47字）を足すと**9画面すべてで**上限を超えること（余裕が広すぎて止め木にならない状態を検出する）・3 は十字の4操作の規則が `CROSS_RULES_HTML` 1本で ⏱ と 🔤 の両方から開けること |
+ * | UM  | 1〜4   | **モードの抜け方**（v1570・案C 段①・ユーザー決定 2026-09-15〜16「分液・反応相手を選ぶモードから抜けたかが分からない」）。1 がやめたときの「〜を終了しました」と名札「自由モード」（分液・分子選び・パズル・練習・機構。**否定対照**＝入っただけでは出ない／合成の操作では出ない）・2 が5秒で消える（**否定対照**＝4秒ではまだ出ている）・3 が「閉じる」はモードを変えない（CLEAR・お題・クイズ。**否定対照**＝「やめる」は抜ける）・4 が知らせなしのモード移動が無い（🔤呼出・答え合わせ。**否定対照**＝呼び出せば移り、名札が出る） |
  * | WS  | 1〜5   | 作業帯が可視域に収まる（PC 幅の退行・v866）＋ 🔤 呼出タイル（v868） |
  * | XL  | 1〜3   | 大物の登録図（コレステロール・インジゴ。手で組んだ図と同型か・名前を言い切るか。XL3 は否定対照） |
  * | ZD  | 1〜2   | 分子ごとの移動の落下先（0.0px の完全重複を作らない罠。v1180 で 1原子ドラッグから移設） |
@@ -14332,7 +14333,13 @@
     lxQuitCase('LX2: アルキル基の書き出しを「やめる」と 🧪自由 へ戻る', 'ak-body', /C₃H₇/);
     lxQuitCase('LX3: 立体異性体の書き出しを「やめる」と 🧪自由 へ戻る', 'sp-body', /2-ブテン/);
 
-    test('LX4: 答え合わせで終了しても採点結果への道が残る（🧪自由 へ移るが帯は生きている）', async (c) => {
+    /* ⚠ LX4 の期待値を v1570 で変えた（案C 段①「知らせなしにモードが移る所をなくす」）。
+     *   v1392 では答え合わせの瞬間に 🧪自由 へ移していたが、帯には練習の続き
+     *   （結果を見る／もう一度／やめる）が残るので、**練習中なのにモード表示だけ自由に変わり、
+     *   しかも何も言わなかった**（棚卸し C6・上位9位）。いまは**学習に残る**。
+     *   ①③ の「free を期待」を「learn を期待」に替え、見張りの芯（採点結果への道が残る・
+     *   帯がオーバーレイを覆わない・もう一度で白紙に戻る・パズルへ移れば捨てる）はそのまま。 */
+    test('LX4: 答え合わせで終了しても採点結果への道が残る（学習に残り、帯も生きている）', async (c) => {
         c.reset();
         const g = c.game, D = c.D, W = c.W, ip = W.isomerPractice;
         await lxStart(c, 'ip-body', /^C₄H₁₀/);
@@ -14350,8 +14357,8 @@
         assert(ans && !ans.disabled, '作業帯の「🔍 答え合わせ」が押せない');
         ans.click();
 
-        // ① 採点して終了 ＝ 居場所は 🧪自由（ただしタブの見た目はオーバーレイの下なので後で見る）
-        assert(g.currentMode === 'free', `答え合わせで終了したのに free にならない（${g.currentMode}）`);
+        // ① 採点して終了しても居場所は 📚学習のまま（v1570。黙って自由へ移さない）
+        assert(g.currentMode === 'learn', `答え合わせで学習から移ってしまった（${g.currentMode}）`);
         assert(ip._finished, '_finished が立っていない（テストの前提が崩れている）');
         assert(ip.active, '採点した瞬間にセッションが破棄された（結果を見返す道が断たれる）');
         // ② ★ 帯はオーバーレイの下に居座らない（帯 z-index 30 > オーバーレイ 20）。
@@ -14362,9 +14369,12 @@
 
         // ③ 面を閉じたら帯が戻り、「↻ もう一度」も「🔍 結果を見る」も残っている
         [...D.querySelectorAll('#ip-review-overlay button')].find(b => /描画に戻る/.test(b.textContent)).click();
-        lxAssertFree(c, '採点結果の面を閉じたあと');
-        assert(lxStripBtn(c, /もう一度/), '自由モードへ移ったら「↻ もう一度」が消えた（採点結果への道が断たれた）');
-        assert(lxStripBtn(c, /結果を見る/), '自由モードへ移ったら「🔍 結果を見る」が消えた');
+        assert(g.currentMode === 'learn', `採点結果の面を閉じたら学習から移った（${g.currentMode}）`);
+        assert(D.querySelector('.mode-tab[data-mode="learn"]').classList.contains('active'),
+            '採点結果の面を閉じたあと 📚学習 のタブが外れた');
+        assert(!D.getElementById('ws-practice').classList.contains('hidden'), '採点結果の面を閉じても練習の帯が戻らない');
+        assert(lxStripBtn(c, /もう一度/), '採点後に「↻ もう一度」が消えた（採点結果への道が断たれた）');
+        assert(lxStripBtn(c, /結果を見る/), '採点後に「🔍 結果を見る」が消えた');
         assert(g.userMolecule.atoms.length === 4, '採点したらキャンバスの答案が消えた');
 
         // ④ 「↻ もう一度」は**学習へ戻す**（自由モードに練習を取り残さない）
@@ -14388,7 +14398,12 @@
         g.setMode('puzzle');
     });
 
-    test('LX5: 学習メニューから開いたクイズを閉じても 🧪自由 へ戻る（練習だけの手当てにしない）', async (c) => {
+    /* ⚠ LX5 の期待値を v1570 で変えた（案C 段①「閉じる ではモードを変えない」）。
+     *   以前はクイズを「閉じる」と 🧪自由 へ落ち、次のクイズへは 📚→アコーディオン→ボタン の3手だった
+     *   （棚卸し C2・上位7位「閉じるの結果がモーダルごとに逆」）。いまは**学習メニューへ戻る**。
+     *   v1392 の芯（学習のまま押せるものが無い画面を作らない）は、メニューが開くので保たれる。
+     *   メニューを閉じたら 🧪自由 へ移ることは、ここで続けて見る。 */
+    test('LX5: 学習メニューから開いたクイズを閉じると学習メニューへ戻り、メニューを閉じると 🧪自由 へ', async (c) => {
         c.reset();
         const g = c.game, D = c.D;
         [['btn-quiz', 'quiz-modal', 'btn-quiz-close'],
@@ -14401,7 +14416,11 @@
                 `${openId}: Study モーダルが開いたまま（前提が崩れている）`);
             assert(g.currentMode === 'learn', `${openId}: クイズを開いた時点で学習モードでない`);
             D.getElementById(closeId).click();
-            lxAssertFree(c, `${openId} を閉じたあと`);
+            assert(g.currentMode === 'learn', `${openId} を閉じたら学習から移った（${g.currentMode}）`);
+            assert(!D.getElementById('study-modal').classList.contains('hidden'),
+                `${openId} を閉じても学習メニューに戻らない`);
+            D.getElementById('btn-study-close').click();
+            lxAssertFree(c, `${openId} → 学習メニューを閉じたあと`);
         });
         g.setMode('puzzle');
     });
@@ -40048,21 +40067,27 @@
             押せた++;
         }
         assert(押せた === 3, `タイルを確かめたモードが ${押せた} 個（3モードであるべき）`);
-        // ⑤ パズルから押すと 🧪自由へ移り、モーダルが開く
+        // ⑤ パズルから押すとモーダルが開く。⚠ v1570 で期待値を変えた: **開いただけでは自由へ移らない**
+        //   （案C 段①。以前は押した瞬間に黙ってパズルが終わり、閉じても戻らなかった ＝ 棚卸し A13）。
+        //   移るのは⑦で実際に呼び出したとき
         g.setMode('puzzle');
         const pm = D.getElementById('puzzle-modal'); if (pm) pm.classList.add('hidden');
         tile.click();
-        assert(g.currentMode === 'free', `タイルを押しても自由モードにならない（${g.currentMode}）`);
+        assert(g.currentMode === 'puzzle', `タイルを押しただけでパズルが終わった（${g.currentMode}）`);
         assert(!modal.classList.contains('hidden'), 'タイルを押してもモーダルが開かない');
+        assert(/パズルを終えて自由モード/.test(D.getElementById('summon-modal-msg').textContent),
+            `呼び出すとパズルが終わることを開いた時点で言っていない: ${D.getElementById('summon-modal-msg').textContent}`);
         // ⑥ 引けない名前では**閉じない**（閉じると打ち直す場所が無くなる）
         mInput.value = 'この名前はライブラリに無いはず';
         D.getElementById('btn-summon-ok').click();
         assert(!modal.classList.contains('hidden'), '引けない名前でモーダルが閉じてしまう');
-        assert(D.getElementById('summon-modal-msg').textContent.length > 0, '引けない名前の案内が出ない');
+        // ⚠ v1570: ⑤で開いた時点の1行が入っているので、「空でない」ではなく文で見る
+        assert(/ライブラリにありません/.test(D.getElementById('summon-modal-msg').textContent), '引けない名前の案内が出ない');
         // ⑦ 正しい名前なら閉じて、分子が出る
         mInput.value = '酢酸';
         D.getElementById('btn-summon-ok').click();
         assert(modal.classList.contains('hidden'), '呼び出した後もモーダルが開いたまま');
+        assert(g.currentMode === 'free', `呼び出しても自由モードにならない（${g.currentMode}）`);
         assert(g.userMolecule.atoms.filter(a => a.element === 'C').length === 2 &&
                g.userMolecule.atoms.filter(a => a.element === 'O').length === 2,
             `🔤 呼出で酢酸が出ない（C${g.userMolecule.atoms.filter(a => a.element === 'C').length}` +
@@ -40113,8 +40138,13 @@
             // 「移動する」を押せば、そこで初めて開く
             D.getElementById('btn-confirm-ok').click();
             assert(!modal.classList.contains('hidden'), '確認を承諾しても呼び出しモーダルが開かない');
-            assert(畳まれた === 1, `承諾後に練習が畳まれた回数が ${畳まれた}（1回であるべき）`);
-            D.getElementById('btn-summon-cancel').click();
+            // ⚠ v1570 で期待値を変えた: モードを移す（＝練習を畳む）のは**開いたとき**ではなく
+            //   **実際に呼び出したとき**（案C 段①「開いただけで黙ってモードを移さない」）。
+            //   確認を挟む位置（開く前）は変えていないので、このテストの芯はそのまま
+            assert(畳まれた === 0, `開いただけで練習が畳まれた（${畳まれた} 回）`);
+            D.getElementById('summon-modal-input').value = '酢酸';
+            D.getElementById('btn-summon-ok').click();
+            assert(畳まれた === 1, `呼び出したあとに練習が畳まれた回数が ${畳まれた}（1回であるべき）`);
         } finally {
             c.W.isomerPractice = 退避;
         }
@@ -57953,6 +57983,207 @@
 
         c.reset();
         return '酸素を選んだ状態から3本とも炭素で始まる（エタン／エタノール／プロパン）';
+    });
+
+    /* ===== UM: モードの抜け方（v1570・案C・ユーザー決定 2026-09-15〜16） =====
+     *
+     * ★ 申し立て: 「分液モードや、反応相手を選ぶモードから抜けているかどうかがわかりづらい」。
+     * ★ 決まったこと（段①）: やめたら「〜を終了しました」／自由モードに入ったら名札に
+     *   「自由モード」を5秒／「閉じる」ではモードを変えない／知らせなしのモード移動をなくす。
+     * ⚠ 知らせは**人の操作のときだけ**出す（台本の無人再生の画に字幕を足さない）。テストの合成
+     *   イベントは人の操作ではないので、知らせを見る回だけ `_modeNoticeForTest` で数える。
+     *   ＝ 否定対照の1つが「旗を下ろすと合成の操作では何も出ない」。 */
+    const umToast = (c) => {
+        const t = c.D.getElementById('canvas-toast');
+        return t.classList.contains('hidden') ? '' : t.textContent;
+    };
+    const umBadge = (c) => {
+        const b = c.D.getElementById('canvas-mode-badge');
+        return b.classList.contains('hidden') ? null : { mode: b.getAttribute('data-mode'), text: b.textContent };
+    };
+    /** 知らせを数える状態で fn を走らせ、後片付け（名札の5秒・旗）まで必ず戻す */
+    const umWithNotice = async (c, fn) => {
+        const g = c.game;
+        g._modeNoticeForTest = true;
+        try { return await fn(); } finally {
+            g._modeNoticeForTest = false;
+            g._freePlateUntil = 0;
+            clearTimeout(g._freePlateTimer);
+            g.hideCanvasToast();
+            g.syncCanvasModeBadge();
+        }
+    };
+    const umSettle = (c) => c.tick(40);   // 見比べは操作が終わった後（setTimeout 0）
+
+    test('UM1: モードをやめると「〜を終了しました」と名札「自由モード」が出る（分液・分子選び・パズル・練習・機構。否定対照つき）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        const 見た = [];
+        await umWithNotice(c, async () => {
+            // ---- 分液 ----
+            c.reset(); g.setMode('free'); g.summonMolecule('安息香酸'); await umSettle(c);
+            g.hideCanvasToast();
+            g.startSeparation(); await umSettle(c);
+            // ★ 否定対照①: 入っただけでは「終了しました」も「自由モード」も出ない
+            assert(!/終了しました/.test(umToast(c)), `分液に入っただけで終了の知らせが出た: ${umToast(c)}`);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '分液に入っただけで名札が「自由モード」');
+            D.getElementById('btn-sep-end').click(); await umSettle(c);
+            assert(umToast(c) === '分液を終了しました', `分液をやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free' && /自由モード/.test(umBadge(c).text),
+                `分液をやめても名札が「自由モード」にならない: ${JSON.stringify(umBadge(c))}`);
+            見た.push('分液');
+
+            // ---- 反応させる分子選び（名札の「やめる」）----
+            rxFreeCanvasWithMolecule(c); await umSettle(c);
+            rxTurnOnMoleculeSelect(c); await umSettle(c);
+            g.hideCanvasToast();
+            D.querySelector('#canvas-mode-badge .cmb-stop').click(); await umSettle(c);
+            assert(!g.reactionSelectMode, '前提: 名札の「やめる」で選ぶモードが下りない');
+            assert(umToast(c) === '反応させる分子選びを終了しました', `分子選びをやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', `分子選びをやめても「自由モード」が出ない: ${JSON.stringify(umBadge(c))}`);
+            見た.push('分子選び');
+
+            // ---- パズル（お題モーダルの「やめる」）----
+            c.reset(); await umSettle(c);
+            const back = D.getElementById('btn-back-to-free');
+            assert(back.textContent.trim() === 'やめる', `お題モーダルの抜ける札が「${back.textContent.trim()}」`);
+            back.click(); await umSettle(c);
+            assert(g.currentMode === 'free', 'お題モーダルの「やめる」でパズルを抜けない');
+            assert(umToast(c) === 'パズルを終了しました', `パズルをやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', 'パズルをやめても「自由モード」が出ない');
+            見た.push('パズル');
+
+            // ---- 書き出し練習（帯の「やめる」）----
+            c.reset(); await umSettle(c);
+            await lxStart(c, 'ip-body', /^C₄H₁₀/); await umSettle(c);
+            g.hideCanvasToast();
+            lxStripBtn(c, /やめる/).click(); await umSettle(c);
+            assert(g.currentMode === 'free', '練習の「やめる」で自由へ移らない');
+            assert(umToast(c) === '書き出し練習を終了しました', `練習をやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', '練習をやめても「自由モード」が出ない');
+            見た.push('書き出し練習');
+
+            // ---- 反応機構ビューア（帯の「やめる」）----
+            c.reset(); g.setMode('learn'); await umSettle(c);
+            const sel = D.getElementById('select-reaction');
+            sel.value = '0'; sel.dispatchEvent(new W.Event('change', { bubbles: true }));
+            await umSettle(c);
+            assert(W.reactionPlayer.active, '前提: ビューアが始まらない');
+            g.hideCanvasToast();
+            D.getElementById('btn-rx-exit').click(); await umSettle(c);
+            assert(umToast(c) === '反応機構を終了しました', `機構をやめた知らせ: 「${umToast(c)}」`);
+            assert(umBadge(c) && umBadge(c).mode === 'free', `機構をやめても「自由モード」が出ない（${g.currentMode}）`);
+            見た.push('反応機構');
+        });
+
+        // ★ 否定対照②: 知らせを数えない（＝ 台本・テストの合成の操作）と、何も出ない
+        c.reset(); g.setMode('free'); g.summonMolecule('安息香酸'); await umSettle(c);
+        g.startSeparation(); await umSettle(c);
+        g.hideCanvasToast();
+        D.getElementById('btn-sep-end').click(); await umSettle(c);
+        assert(!/終了しました/.test(umToast(c)), `合成の操作なのに知らせが出た（台本の画に入る）: ${umToast(c)}`);
+        assert(!umBadge(c), '合成の操作なのに名札「自由モード」が出た');
+        c.reset();
+        return `知らせを確かめたモード: ${見た.join('・')}`;
+    });
+
+    test('UM2: 名札「自由モード」は5秒で消える（否定対照: 4秒の時点ではまだ出ている）', async (c) => {
+        const g = c.game, D = c.D;
+        await umWithNotice(c, async () => {
+            c.reset(); await umSettle(c);
+            D.getElementById('btn-back-to-free').click(); await umSettle(c);
+            const b = D.getElementById('canvas-mode-badge');
+            assert(umBadge(c) && umBadge(c).mode === 'free', '前提: パズルをやめても名札「自由モード」が出ない');
+            // 押しものは持たない（読むだけの札）・消え方は CSS のフェード
+            assert(!b.querySelector('button'), '「自由モード」の札に押しものがある');
+            assert(/cmb-free-fade/.test(c.W.getComputedStyle(b).animationName), 'フェードの指定が当たっていない');
+            await c.tick(4000);
+            assert(umBadge(c) && umBadge(c).mode === 'free', '★ 否定対照: 4秒で消えている（5秒を待たずに消える実装）');
+            await c.tick(1300);
+            assert(!umBadge(c), '★ 5秒を過ぎても「自由モード」が残っている');
+            // 何かのモードに入ったら、5秒を待たずに引っ込む
+            g.setMode('puzzle'); await umSettle(c);
+            g.setMode('free'); await umSettle(c);
+            assert(umBadge(c) && umBadge(c).mode === 'free', '前提: 2回目の「自由モード」が出ない');
+            g.startSeparation(); await umSettle(c);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '分液に入っても「自由モード」が残っている');
+            g.endSeparation();
+        });
+        c.reset();
+    });
+
+    test('UM3: 「閉じる」ではモードを変えない（CLEAR・お題・クイズ）／「やめる」は抜ける（否定対照）', async (c) => {
+        const g = c.game, D = c.D;
+        // ① CLEAR の「閉じる」はパズルに残る
+        c.reset();
+        const win = D.getElementById('win-modal');
+        win.classList.remove('hidden');
+        assert(D.getElementById('btn-win-close').textContent.trim() === '閉じる',
+            `CLEAR の閉じる札が「${D.getElementById('btn-win-close').textContent.trim()}」`);
+        D.getElementById('btn-win-close').click();
+        assert(win.classList.contains('hidden'), 'CLEAR の「閉じる」で閉じない');
+        assert(g.currentMode === 'puzzle', `★ CLEAR の「閉じる」でパズルを抜けた（${g.currentMode}）`);
+        // ★ 否定対照: CLEAR の「やめる」は抜ける
+        win.classList.remove('hidden');
+        D.getElementById('btn-win-quit').click();
+        assert(win.classList.contains('hidden') && g.currentMode === 'free',
+            `CLEAR の「やめる」でパズルを抜けない（${g.currentMode}）`);
+        // ② お題モーダルの「閉じる」はパズルに残る
+        c.reset();
+        g.setPuzzleOpen(true);
+        D.getElementById('btn-puzzle-close').click();
+        assert(g.currentMode === 'puzzle', `お題モーダルの「閉じる」でパズルを抜けた（${g.currentMode}）`);
+        // ③ 学習メニューから開いたクイズの「閉じる」は学習に残り、メニューへ戻る
+        c.reset();
+        lxOpenStudy(c);
+        D.getElementById('btn-quiz').click();
+        D.getElementById('btn-quiz-close').click();
+        assert(g.currentMode === 'learn', `クイズの「閉じる」で学習を抜けた（${g.currentMode}）`);
+        assert(!D.getElementById('study-modal').classList.contains('hidden'), 'クイズを閉じても学習メニューに戻らない');
+        D.getElementById('btn-study-close').click();
+        // ④ 抜ける札の語は「やめる」、閉じるだけの札は「閉じる」
+        const 札 = (id) => D.getElementById(id).textContent.trim();
+        assert(札('btn-sep-end') === 'やめる', `分液の抜ける札が「${札('btn-sep-end')}」`);
+        assert(札('btn-back-to-free') === 'やめる', `お題モーダルの抜ける札が「${札('btn-back-to-free')}」`);
+        assert(札('btn-nring-cancel') === '閉じる', `員数選びの閉じる札が「${札('btn-nring-cancel')}」`);
+        assert(札('btn-nw-filter-clear') === '条件を消す',
+            `絞り込みの解除が「${札('btn-nw-filter-clear')}」（やめる はモードの出口の語）`);
+        c.reset();
+    });
+
+    test('UM4: 知らせなしのモード移動が無い（パズル中の 🔤呼出・答え合わせ。否定対照つき）', async (c) => {
+        const g = c.game, D = c.D, W = c.W;
+        await umWithNotice(c, async () => {
+            // ① パズル中に 🔤呼出を開いて閉じても、パズルのまま
+            c.reset(); await umSettle(c);
+            D.getElementById('btn-summon').click(); await umSettle(c);
+            assert(g.currentMode === 'puzzle', `★ 🔤呼出を開いただけでパズルを抜けた（${g.currentMode}）`);
+            D.getElementById('btn-summon-cancel').click(); await umSettle(c);
+            assert(g.currentMode === 'puzzle', `★ 🔤呼出を閉じたらパズルを抜けていた（${g.currentMode}）`);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '閉じただけで「自由モード」が出た');
+            // ★ 否定対照: 実際に呼び出せば自由へ移る —— そのとき名札「自由モード」が出る（黙っては移らない）
+            D.getElementById('btn-summon').click();
+            D.getElementById('summon-modal-input').value = 'エタノール';
+            D.getElementById('btn-summon-ok').click(); await umSettle(c);
+            assert(g.currentMode === 'free', '呼び出しても自由へ移らない');
+            assert(umBadge(c) && umBadge(c).mode === 'free', '★ 呼び出しでパズルを抜けたのに「自由モード」が出ない（黙って移った）');
+
+            // ② 書き出し練習の答え合わせでは学習に残る
+            c.reset(); await umSettle(c);
+            await lxStart(c, 'ip-body', /^C₄H₁₀/);
+            let prev = null;
+            for (let i = 0; i < 4; i++) {
+                const a = g.userMolecule.addAtom('C', 200 + i * 42, 300);
+                if (prev) g.userMolecule.addBond(prev.id, a.id, 1);
+                prev = a;
+            }
+            g.updateDrawing(); W.isomerPractice.onDrawingChange();
+            lxStripBtn(c, /答え合わせ/).click(); await umSettle(c);
+            assert(g.currentMode === 'learn', `★ 答え合わせで学習を抜けた（${g.currentMode}）`);
+            assert(!umBadge(c) || umBadge(c).mode !== 'free', '答え合わせで「自由モード」が出た');
+            W.isomerPractice.closeReview();
+        });
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        c.reset();
     });
 
     // ===== 一部だけ流す（`?only=`）=====
