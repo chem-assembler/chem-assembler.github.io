@@ -10845,6 +10845,8 @@ class Reactor {
                 result = { ...result, changed: result.changed.map(id => anim.renames.get(id) || id) };
             }
         }
+        // ★ 重合の鎖の端の R（v1574）。相手の表に載らない反応だけ（表の反応は R を付けない）
+        if (!anim) anim = this.planChainEnds(before, g.userMolecule);
         // 直近反応を記録（前後比較・機構ジャンプ・モーフィングで共用）
         this.lastReaction = {
             ruleId: rule.id,
@@ -11105,6 +11107,69 @@ class Reactor {
      * `apply` のあとに呼ぶ。`reuse` の付け替えだけは `mol` の id を書き換える（元素・結合・電荷は触らない）。
      * @returns { before, after, transient, renames, counts, hGap } または null（表に無い／収支が合わない ＝ 今までどおり）
      */
+    /**
+     * ★★ 重合の鎖の端の R を、反応前の図に「鎖の続き」として置く（v1574・ユーザー決定 2026-09-17「7.進める」）。
+     *
+     * **症状**: 付加重合・ジエン・ポリアセチレン・共重合・開環重合・縮合重合で、`apply` が鎖の両端に付ける
+     *   R（「この先も同じ単位が続く」印）が、再生の途中で**何も無い所から急に出ていた**。
+     *
+     * ★ **選んだ形: R を反応前の図に、つながる端のそばへ離して置き、再生の握手で結合させる**。
+     *   R が表すのは**となりに続く単量体（鎖のほかの部分）**。二重結合（開環重合ならアミド結合）が開いて
+     *   となりとつながる、という重合の中身は端でも中でも同じなので、「端の炭素が R と新しく手をつなぐ」は
+     *   化学としてそのまま正しい。
+     *   ⚠ **採らなかった形**: R を最初から端に付けて薄く出しておく。反応前の単量体に R が付いている図になり、
+     *     「単量体がもう鎖の一部だった」と読めてしまう（エチレンの図が R−CH₂−CH₂ に見える）。
+     *
+     * ⚠ **再生の写しにだけ置く**（`playbackOnly`）。キャンバス・生成物・正準コードは `apply` のまま。
+     *   ⚠ 前後比較は今までどおり `lastReaction.before/after`（反応式の行も出さない）——
+     *   R は反応式の物質ではないので、左辺に「2R」と並べると誤解になる。
+     * ⚠ R には水素を生やさない（`bare`。1価なので、生やすと R−H に見える）。
+     * `_chainEndSummon = false` で今までどおり（否定対照）。
+     * @returns 再生の写し、または null（新しく出る R が無い）
+     */
+    planChainEnds(before, mol) {
+        if (this._chainEndSummon === false) return null;
+        const G = (typeof GRID_SIZE !== 'undefined') ? GRID_SIZE : 42;
+        const bPos = new Map(before.atoms.map(a => [a.id, a]));
+        const rs = mol.atoms.filter(a => a.element === 'R' && !bPos.has(a.id));
+        if (!rs.length) return null;
+        const occ = before.atoms.filter(a => a.element !== 'H');
+        const segs = before.bonds.map(b => [bPos.get(b.atomId1), bPos.get(b.atomId2)]).filter(([p, q]) => p && q);
+        const hs = this.molFromSnapshot(before).calculateHydrogens();
+        const placed = [];
+        const ends = [];
+        for (const r of rs) {
+            const nb = mol.getNeighbors(r.id).map(n => n.atom).find(a => bPos.has(a.id));
+            if (!nb) return null;
+            const cb = bPos.get(nb.id);
+            const L = Math.hypot(r.x - nb.x, r.y - nb.y) || 1;
+            const ux = (r.x - nb.x) / L, uy = (r.y - nb.y) / L;
+            const clear = p => occ.every(o => Math.hypot(o.x - p.x, o.y - p.y) >= G * 1.1) &&
+                hs.every(h => Math.hypot(h.x - p.x, h.y - p.y) >= G * 0.8) &&
+                placed.every(o => Math.hypot(o.x - p.x, o.y - p.y) >= G * 1.1) &&
+                segs.every(([p1, p2]) => pointSegmentDistance(p, p1, p2) >= G * 0.6);
+            let spot = null;
+            for (const k of [1.75, 2.25, 2.75, 3.5]) {
+                for (const deg of [0, 30, -30, 60, -60, 90, -90]) {
+                    const th = deg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+                    const p = { x: cb.x + (ux * c - uy * s) * G * k, y: cb.y + (ux * s + uy * c) * G * k };
+                    if (clear(p)) { spot = p; break; }
+                }
+                if (spot) break;
+            }
+            if (!spot) spot = { x: cb.x + ux * G * 1.75, y: cb.y + uy * G * 1.75 };
+            placed.push(spot);
+            ends.push({ id: r.id, element: 'R', x: spot.x, y: spot.y, charge: 0, bare: true });
+        }
+        const animBefore = { atoms: before.atoms.map(a => ({ ...a })).concat(ends), bonds: before.bonds.map(b => ({ ...b })) };
+        return {
+            before: animBefore, after: this.snapshotMolecule(mol),
+            transient: [], renames: new Map(), counts: null, hGap: 0,
+            foldedPartnerIds: [], foldedByproductIds: [], foldedH: 0,
+            playbackOnly: true
+        };
+    }
+
     planEquation(ruleId, before, mol, result) {
         const eq = PARTNER_EQUATIONS[ruleId];
         if (!eq) return null;
@@ -12975,7 +13040,9 @@ class Reactor {
         /* ★★ 相手を呼んだ反応は、前後比較も**反応式の左辺と右辺**にそろえる（v1560・ユーザー
          *   「反応の前後を見る、では反応式の左辺と右辺が対応している状態にしてください」）。
          *   前 ＝ 基質＋呼んだ相手すべて／後 ＝ 生成物＋副生成物すべて（まとめたものは「×n」の札）。 */
-        const src = rx.anim || rx;
+        // ⚠ 鎖の端の R だけを置いた写し（`playbackOnly`・v1574）は再生専用。前後比較は今までどおり
+        const eqAnim = rx.anim && !rx.anim.playbackOnly ? rx.anim : null;
+        const src = eqAnim || rx;
         const diff = this.computeDiff(src.before, src.after);
         ov.innerHTML = '';
 
@@ -13049,7 +13116,7 @@ class Reactor {
         }, CYAN);
         ov.appendChild(grid);
         // ★ 並んでいる物質と係数を反応式の形で1行（v1560）。caption の式と同じ数になる
-        if (rx.anim) {
+        if (eqAnim) {
             const eqEl = document.createElement('div');
             eqEl.id = 'rx-cmp-eq';
             eqEl.style.cssText = 'font-size:14px; color:#fff; text-align:center; margin:-2px 0 10px; letter-spacing:0.02em;';
