@@ -6396,8 +6396,11 @@
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'ベンゼン'))) === null, '芳香環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'エチルアミン').target })) === null,
             'ヘテロ原子（N）を含む分子に系統名を付けた');
-        assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'アセトアルデヒド'))) === null,
-            'カルボニル（C=O）を含む分子に系統名を付けた');
+        // ⚠ v1573: ケトン・アルデヒド・カルボン酸は名乗るようになった（IN16）。C=O の否定対照はエステルで取る
+        assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '酢酸メチル').target })) === null,
+            'エステル（C=O-O-C）を含む分子に系統名を付けた');
+        assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'アセトアルデヒド'))) === 'エタナール',
+            'アセトアルデヒドの系統名（エタナール）が出ない');
         // (5) 統合: lookupCompoundName がライブラリ外のアルカン（オクタン）を系統名で返す
         const oct = new W.Molecule();
         let prev = null;
@@ -6638,12 +6641,13 @@
         c.reset();
         g.setMode('free');
         try {
-            // 環・カルボニル・複数分子・エーテル。どれも `iupacNameDetail` が
+            // 環・エステル・複数分子・エーテル。どれも `iupacNameDetail` が
             // **番号を返さない**もので、門番1行だけで自動的に番号なしになる
+            // （⚠ v1573 でケトン・アルデヒド・カルボン酸は出るようになったので、C=O の否定対照はエステル）
             const CASES = [
                 ['シクロブタン', 'ring'],
                 ['ベンゼン', 'ring'],
-                ['アセトン', 'carbonyl'],
+                ['酢酸メチル', 'carbonyl'],
                 ['ジエチルエーテル', 'ether']
             ];
             CASES.forEach(([nm, kind]) => {
@@ -7046,7 +7050,7 @@
             //   キャンバス側は IN3 が「番号テキストが0個」で見張っているが、標準図は別の関数なので
             //   別に見ないと、答え合わせの図だけが「未対応でも最長鎖くらい出しておこう」に戻せてしまう
             [['シクロブタン', '環'], ['ベンゼン', '芳香環'],
-             ['アセトン', 'カルボニル'], ['ジエチルエーテル', 'エーテル']].forEach(([nm, why]) => {
+             ['酢酸メチル', 'エステル'], ['ジエチルエーテル', 'エーテル']].forEach(([nm, why]) => {
                 g.userMolecule = new W.Molecule();
                 g.summonMolecule(nm);
                 assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
@@ -7128,8 +7132,8 @@
         summon('ジエチルエーテル'); shot('ether');
         // ④ 環
         summon('シクロブタン'); shot('ring');
-        // ⑤ 環でない未対応（カルボニル）
-        summon('アセトン'); shot('unsupported');
+        // ⑤ 環でない未対応（エステル。⚠ v1573 でアセトンは出るようになった）
+        summon('酢酸メチル'); shot('unsupported');
         // ⑥ 複数分子
         g.userMolecule = new W.Molecule();
         g.summonMolecule('エタノール'); g.summonMolecule('エタノール'); g.updateDrawing();
@@ -7541,13 +7545,19 @@
     // 材料は分子と鎖だけ ＝ 命名の実装を1行も呼ばない
     const inLocsFor = (m, chain) => {
         const set = new Set(chain);
-        const ol = [], ene = [], yne = [], sub = [];
+        const ol = [], ene = [], yne = [], sub = [], co = [];
         const isOh = (a) => a.element === 'O' && m.getNeighbors(a.id).filter(n => n.atom.element !== 'H').length === 1;
         chain.forEach((cid, i) => {
             m.getNeighbors(cid).forEach(n => {
                 const a = n.atom;
                 if (a.element === 'H' || set.has(a.id)) return;
-                if (isOh(a)) ol.push(i + 1); else sub.push(i + 1);
+                // C=O（v1573）: 二重結合の O は主特性基の炭素の印。カルボン酸の -OH は C=O の炭素に
+                // 付いているので、ここでは -OH に数えない（同じ炭素の印を2度取らない）
+                if (a.element === 'O' && n.type === 2) { co.push(i + 1); return; }
+                if (isOh(a)) {
+                    if (m.getNeighbors(cid).some(x => x.atom.element === 'O' && x.type === 2)) return;
+                    ol.push(i + 1);
+                } else sub.push(i + 1);
             });
         });
         for (let i = 0; i + 1 < chain.length; i++) {
@@ -7556,7 +7566,7 @@
             if (b && b.type === 3) yne.push(i + 1);
         }
         const s = (arr) => arr.slice().sort((x, y) => x - y);
-        return { ol: s(ol), ene: s(ene), yne: s(yne), sub: s(sub) };
+        return { ol: s(ol), ene: s(ene), yne: s(yne), sub: s(sub), co: s(co) };
     };
     // 列挙で作った分子は座標を持たない（全部 (0,0)）ので、描いて測る検査は格子に並べてから使う
     const inLaid = (W, src) => {
@@ -7738,11 +7748,12 @@
             if (!d || d.kind !== 'chain') return;
             named++;
             const f = inLocsFor(m, d.mainChain), r = inLocsFor(m, d.mainChain.slice().reverse());
+            const cCo = inCmpLocs(f.co, r.co);   // v1573: C=O の炭素が -OH より先
             const cOl = inCmpLocs(f.ol, r.ol);
             const cUn = inCmpLocs(f.ene.concat(f.yne).sort((a, b) => a - b), r.ene.concat(r.yne).sort((a, b) => a - b));
             const cEne = inCmpLocs(f.ene, r.ene);
             const cSub = inCmpLocs(f.sub, r.sub);
-            const first = cOl !== 0 ? ['ol', cOl] : cUn !== 0 ? ['unsat', cUn] : cEne !== 0 ? ['ene', cEne]
+            const first = cCo !== 0 ? ['carbonyl', cCo] : cOl !== 0 ? ['ol', cOl] : cUn !== 0 ? ['unsat', cUn] : cEne !== 0 ? ['ene', cEne]
                 : cSub !== 0 ? ['sub', cSub] : null;
             if (first) {
                 if (first[1] > 0) fails.push(`${label}(${d.name}): ${first[0]} で負けている向きが選ばれている`);
@@ -7796,9 +7807,10 @@
         //   エンインは `_iupacUnsatCore` が未対応（null）なので**名前ごと出ない**。
         //   ここを「5通りでよい」と緩めるのではなく、**出ない理由のほうを名指しで固定する**
         //   （下の (b)）。エンインの命名を実装した日には (b) が赤くなり、測り直しに来ることになる
-        ['ol', 'unsat', 'sub', 'alpha', 'tie'].forEach(k =>
+        // ★ v1573 で 'carbonyl'（C=O の炭素の位置で決まった）が加わり **7通りのうち出るのは6通り**
+        ['carbonyl', 'ol', 'unsat', 'sub', 'alpha', 'tie'].forEach(k =>
             assert(seen.has(k), `dirReason='${k}' が1件も出ない（向きの理由が空回りしている）: 出たのは ${[...seen.keys()].join(',')}`));
-        assert(seen.size === 5, `dirReason が ${seen.size} 種類出た（5種類のはず）: ${[...seen.keys()].join(',')}`);
+        assert(seen.size === 6, `dirReason が ${seen.size} 種類出た（6種類のはず）: ${[...seen.keys()].join(',')}`);
         assert(!seen.has('ene'), `dirReason='ene' が出た（エンインが命名できるようになった？ 設計書 §7-3 を測り直すこと）`);
         // (b) 'ene' が出ない理由＝ エンイン（C=C と C≡C が同居）は命名そのものが未対応
         const enyne = new W.Molecule();
@@ -7811,7 +7823,7 @@
         // (c) 門番 N-4 は緩めていない ＝ 名前が出ないものには**説明が0文字**
         g.setMode('free');
         try {
-            ['シクロブタン', 'ベンゼン', 'アセトン'].forEach(nm => {
+            ['シクロブタン', 'ベンゼン', '酢酸メチル'].forEach(nm => {
                 g.userMolecule = new W.Molecule();
                 g.summonMolecule(nm);
                 assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
@@ -8269,6 +8281,194 @@
             `ライブラリの名前が変わった: ${fails.slice(0, 6).join(' / ')}`);
         // 実測 150件（compounds 99 ＋ stages 51）。減っていたら範囲外の null 化が巻き添えにしている
         assert(libNamed >= 150, `ライブラリで名前が出たのが ${libNamed} 件（実測 150件以上のはず・名前が消えている）`);
+    });
+
+    /* ===== IN16〜IN17: カルボニル（ケトン・アルデヒド・カルボン酸）の系統名（v1573・DESIGN_iupac_check.md §12）=====
+     *
+     * ユーザー決定（2026-09-17）「4. 広げる」。C=O を1つだけ持つ非環式の分子に、主鎖と番号・名前の部品・説明を
+     * v1567 の型で出す。IN16 が陽性（名前・主鎖・番号・まとまり・声掛け）、IN17 が★否定対照
+     * （エステル・二酸・ヒドロキシ酸などは従来どおり null／既存の名前は1件も変わらない／登録名と食い違わない）。
+     */
+
+    // ライブラリ（stages → compounds の順）から名前で1件引いて分子にする
+    const inLibMol = (c, nm) => {
+        const e = c.W.STAGES.find(x => x.name === nm) || c.W.COMPOUNDS.find(x => x.name === nm);
+        assert(e && e.target, `${nm} がライブラリに無い（検査が素通りする）`);
+        return c.game.createTargetFromData({ target: e.target });
+    };
+
+    test('IN16: カルボニル — 名前・主鎖・番号・部品のまとまり・声掛けが v1567 の型で出る', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        // (a) 名前と主鎖。C=O の炭素が主鎖に入り、その位置番号が期待どおり
+        const CASES = [
+            // [登録名, 系統名, 主鎖の炭素数, C=O の炭素の番号, 種別]
+            ['3-メチル-2-ブタノン（メチルイソプロピルケトン）', '3-メチル-2-ブタノン', 4, 2, 'one'],
+            ['エチルメチルケトン（ブタノン）', '2-ブタノン', 4, 2, 'one'],
+            ['3-ペンタノン（ジエチルケトン）', '3-ペンタノン', 5, 3, 'one'],
+            ['2-メチル-3-ペンタノン', '2-メチル-3-ペンタノン', 5, 3, 'one'],
+            ['アセトン', 'プロパノン', 3, 2, 'one'],
+            ['ブタナール（ブチルアルデヒド）', 'ブタナール', 4, 1, 'al'],
+            ['2-メチルプロパナール（イソブチルアルデヒド）', '2-メチルプロパナール', 3, 1, 'al'],
+            ['ホルムアルデヒド', 'メタナール', 1, 1, 'al'],
+            ['酪酸（ブタン酸）', 'ブタン酸', 4, 1, 'oic'],
+            ['イソ酪酸（2-メチルプロパン酸）', '2-メチルプロパン酸', 3, 1, 'oic'],
+            ['ピバル酸（2,2-ジメチルプロパン酸）', '2,2-ジメチルプロパン酸', 3, 1, 'oic'],
+            ['酢酸', 'エタン酸', 2, 1, 'oic'],
+            ['ギ酸', 'メタン酸', 1, 1, 'oic'],
+            ['ラウリン酸', 'ドデカン酸', 12, 1, 'oic']
+        ];
+        CASES.forEach(([lib, want, n, loc, kind]) => {
+            const m = inLibMol(c, lib);
+            const d = W.iupacNameDetail(m);
+            assert(d && d.name === want, `${lib}: 系統名が「${d && d.name}」（「${want}」のはず）`);
+            assert(d.kind === 'chain' && d.mainChain.length === n, `${want}: 主鎖の炭素数が ${d.mainChain.length}（${n} のはず）`);
+            const coC = m.atoms.find(a => a.element === 'C' && m.getNeighbors(a.id).some(x => x.atom.element === 'O' && x.type === 2));
+            assert(d.mainChain[loc - 1] === coC.id, `${want}: C=O の炭素が ${d.mainChain.indexOf(coC.id) + 1} 番（${loc} 番のはず）`);
+            assert(d.locants.coKind === kind && d.locants.co.join() === String(loc), `${want}: locants.co/coKind が ${d.locants.co}/${d.locants.coKind}`);
+            // IN10 と同じ約束: かけらを繋ぐと名前に戻る。接尾辞の kind は種別と同じ
+            assert(d.nameParts.map(p => p.text).join('') === want, `${want}: かけらを繋いでも名前に戻らない`);
+            const suf = d.nameParts.find(p => p.role === 'suffix');
+            assert(suf && suf.kind === kind, `${want}: 接尾辞のかけらが無いか kind が違う（${suf && suf.kind}）`);
+            assert(suf.text === { one: 'ノン', al: 'ナール', oic: '酸' }[kind], `${want}: 接尾辞の字面が「${suf.text}」`);
+            const lc = d.nameParts.filter(p => p.role === 'locant');
+            // 位置番号を書くのはケトンだけ（プロパノンは位置が一意なので省く）
+            assert(lc.length === (kind === 'one' && n !== 3 ? 1 : 0), `${want}: 位置番号のかけらが ${lc.length} 個`);
+            // 向きの理由: C=O の位置で決まる（1炭素だけは両向きが同じ ＝ tie）
+            assert(d.dirReason === (n === 1 ? 'tie' : 'carbonyl'), `${want}: dirReason=${d.dirReason}`);
+        });
+        // ★ 標準図（答え合わせの表）も同じ門番 ＝ 番号が出て、順は mainChain そのもの（IP7 と同じ物差し）
+        const bu = inLibMol(c, 'エチルメチルケトン（ブタノン）');
+        const lay = W.ipNumberedLayout(bu);
+        assert(lay && lay.order && lay.order.join() === W.iupacNameDetail(bu).mainChain.join(),
+            '2-ブタノンの標準図に番号が出ない、または順が mainChain と違う');
+
+        // (b) 画面。3-メチル-2-ブタノンで「2-」を押すと「ノン」も一緒に押され、C2 と =O が光り、声掛けが1文
+        const glow = () => [...D.querySelectorAll('#chem-svg circle.iupac-part-glow')].map(cc => {
+            const x = parseFloat(cc.getAttribute('cx')), y = parseFloat(cc.getAttribute('cy'));
+            const a = g.userMolecule.atoms.find(p => Math.hypot(p.x - x, p.y - y) < 0.6);
+            assert(a, '光っている円が原子の上に無い');
+            return a;
+        });
+        const note = () => D.getElementById('iupac-parts-note').textContent;
+        const btns = () => [...D.querySelectorAll('#iupac-parts .iupac-part')];
+        const pressed = () => btns().filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.textContent);
+        const open = (nm) => {
+            g.userMolecule = new W.Molecule(); g.summonMolecule(nm); g.updateDrawing();
+            const nt = g.iupacNumberingNotice();
+            assert(nt.ok && nt.code === 'chain', `${nm}: 断り文の code が ${nt.code}（chain のはず。v1572 までは unsupported）`);
+            g.setIupacNumbering(true); g.updateDrawing();
+            assert(g.iupacNumberingActive(), `${nm} で主鎖と番号が出ない`);
+            return W.iupacNameDetail(g.userMolecule);
+        };
+        try {
+            let d = open('3-メチル-2-ブタノン（メチルイソプロピルケトン）');
+            assert(btns().map(b => b.textContent).join('') === '3-メチル-2-ブタノン', `帯のかけらが「${btns().map(b => b.textContent).join('')}」`);
+            assert(inCanvasNumbers(D).length === 4, `炭素番号が ${inCanvasNumbers(D).length} 個（4個のはず）`);
+            assert(/C=O が 2 番になる向き/.test(note()), `押していないときの1行が「${note()}」`);
+            btns().find(b => b.textContent === '-2-').click();
+            assert(pressed().join('|') === '-2-|ノン', `「2-」を押しても「ノン」が一緒に押されない（${pressed().join('|')}）`);
+            assert(note() === '2番の炭素がカルボニル基（C=O）になっているね。', `声掛けが「${note()}」`);
+            let lit = glow();
+            const c2 = g.userMolecule.atoms.find(a => a.id === d.mainChain[1]);
+            assert(lit.length === 2 && lit.some(a => a.id === c2.id) && lit.some(a => a.element === 'O'),
+                `「2-」で光るのが C2 と =O の2つでない（${lit.map(a => a.element).join(',')}）`);
+            assert(D.querySelectorAll('#chem-svg rect.iupac-part-frame').length === 1, 'C=O の枠が1つ出ていない');
+            btns().find(b => b.textContent === '-2-').click();
+            assert(pressed().length === 0, 'もう一度押しても消えない');
+            // 置換基のまとまりは従来どおり（3番の炭素にメチル基）
+            btns().find(b => b.textContent === '3-メチル').click();
+            assert(note() === '3番の炭素にメチル基がついているね。', `置換基の声掛けが「${note()}」`);
+            g.setIupacNumbering(false);
+
+            // ブタン酸: 位置番号のかけらは無く、「酸」1つで C1・=O・-OH が光る
+            d = open('酪酸（ブタン酸）');
+            assert(btns().map(b => b.textContent).join('|') === 'ブタン|酸', `ブタン酸のかけらが「${btns().map(b => b.textContent).join('|')}」`);
+            assert(/−COOH の炭素を 1 番にします/.test(note()), `ブタン酸の既定の1行が「${note()}」`);
+            btns().find(b => b.textContent === '酸').click();
+            assert(note() === '1番の炭素がカルボキシ基（−COOH）になっているね。', `ブタン酸の声掛けが「${note()}」`);
+            lit = glow();
+            assert(lit.length === 3 && lit.filter(a => a.element === 'O').length === 2 && lit.some(a => a.id === d.mainChain[0]),
+                `「酸」で光るのが C1 と O 2つでない（${lit.map(a => a.element).join(',')}）`);
+            // 慣用名は副（N-6）: 名札の名前は系統名、慣用名は添える
+            const plate = D.getElementById('canvas-mode-badge');
+            assert(plate.getAttribute('data-mode') === 'numbering' && plate.textContent.indexOf('ブタン酸') >= 0,
+                `名札に系統名が出ていない（${plate.textContent}）`);
+            g.setIupacNumbering(false);
+
+            // ブタナール: 「ナール」1つで C1 と =O
+            d = open('ブタナール（ブチルアルデヒド）');
+            assert(btns().map(b => b.textContent).join('|') === 'ブタ|ナール', `ブタナールのかけらが「${btns().map(b => b.textContent).join('|')}」`);
+            btns().find(b => b.textContent === 'ナール').click();
+            assert(note() === '1番の炭素がホルミル基（−CHO）になっているね。', `ブタナールの声掛けが「${note()}」`);
+            lit = glow();
+            assert(lit.length === 2 && lit.some(a => a.element === 'O') && lit.some(a => a.id === d.mainChain[0]),
+                `「ナール」で光るのが C1 と =O でない（${lit.map(a => a.element).join(',')}）`);
+            g.setIupacNumbering(false);
+
+            // 2-メチルプロパナール: 幹の2色（数詞｜段）は従来の割り方のまま
+            open('2-メチルプロパナール（イソブチルアルデヒド）');
+            const stemBtn = btns().find(b => b.classList.contains('iupac-part-stem'));
+            assert(stemBtn && stemBtn.querySelector('.stem-num').textContent === 'プロ' && stemBtn.dataset.stage === 'sat',
+                '2-メチルプロパナールの幹が「プロ｜パ」（飽和）に割れていない');
+            g.setIupacNumbering(false);
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('IN17: ★否定対照 — 範囲外の C=O は従来どおり null／既存の名前は不変／新しい名前は登録名と食い違わない', async (c) => {
+        const g = c.game, W = c.W;
+        // (a) この便で扱わないもの（DESIGN_iupac_check.md §12 の境界）。1つでも名乗ったら赤
+        const OUT = [
+            ['酢酸メチル', 'エステル'], ['アセトアミド', 'アミド'], ['無水酢酸', '酸無水物'],
+            ['コハク酸（ブタン二酸）', '二酸'], ['2,3-ブタンジオン（ジアセチル）', 'ジケトン'],
+            ['グリオキサール', 'ジアルデヒド'], ['乳酸', 'ヒドロキシ酸'], ['ピルビン酸', 'ケト酸'],
+            ['グリオキシル酸', 'アルデヒド酸'], ['アクリル酸', '不飽和カルボン酸'],
+            ['クロトンアルデヒド（2-ブテナール）', '不飽和アルデヒド'], ['メチルビニルケトン（3-ブテン-2-オン）', '不飽和ケトン'],
+            ['クロロ酢酸（モノクロロ酢酸）', 'ハロゲンとの同居'], ['クロラール（トリクロロアセトアルデヒド）', 'ハロゲンとの同居'],
+            ['クロロアセトン（1-クロロ-2-プロパノン）', 'ハロゲンとの同居'], ['炭酸', '-OH が2つ'],
+            ['ヒドロキシアセトン（アセトール）', 'ヒドロキシケトン'], ['ミリスチン酸', '幹の表に無い炭素数（C14）']
+        ];
+        OUT.forEach(([nm, why]) => {
+            const n = W.iupacName(inLibMol(c, nm));
+            assert(n === null, `${nm}（${why}）に名前が付いた: ${n}（この便では扱わない）`);
+        });
+        // (b) 既存の名前は1バイトも変わらない（アルコール・ジオール・エーテル・ハロゲン化物・不飽和）
+        [['エタノール', 'エタノール'], ['2-メチル-2-プロパノール', '2-メチル-2-プロパノール'],
+         ['エチレングリコール', '1,2-エタンジオール'], ['ジエチルエーテル', 'ジエチルエーテル'],
+         ['クロロホルム', 'トリクロロメタン'], ['1,3-ブタジエン', '1,3-ブタジエン'],
+         ['アリルアルコール（2-プロペン-1-オール）', '2-プロペン-1-オール'], ['1-プロパノール', '1-プロパノール']
+        ].forEach(([lib, want]) => {
+            const got = W.iupacName(inLibMol(c, lib));
+            assert(got === want, `${lib} の系統名が「${got}」になった（「${want}」のはず）`);
+        });
+        // (c) ライブラリ全件: 名前が出た件数の内訳を凍結する。C=O を持たないものは v1572 と同じ 153 件、
+        //     新しく出たのは C=O を持つ 101 件（dump-canonical.js の前後比較と同じ数）。
+        //     ★ 新しい名前は**登録名の中に系統名がある**か、慣用名だけの 9 件（手で照合済み）のどれか
+        const TRIVIAL = { 'ホルムアルデヒド': 'メタナール', 'アセトアルデヒド': 'エタナール', 'アセトン': 'プロパノン',
+            'ギ酸': 'メタン酸', '酢酸': 'エタン酸', 'プロピオン酸': 'プロパン酸',
+            'エチルメチルケトン（ブタノン）': '2-ブタノン', 'ラウリン酸': 'ドデカン酸' };
+        const CO = new Set(['ketone', 'aldehyde', 'carboxyl']);
+        let coNamed = 0, otherNamed = 0;
+        const bad = [];
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            const m = g.createTargetFromData({ target: e.target });
+            const n = W.iupacName(m);
+            if (!n) return;
+            const types = W.findFunctionalGroups(m).map(x => x.type);
+            if (!types.some(t => CO.has(t))) { otherNamed++; return; }
+            coNamed++;
+            if (types.filter(t => CO.has(t)).length !== 1) bad.push(`${e.name}: C=O が2つ以上なのに名乗った（${n}）`);
+            if (e.name.indexOf(n) < 0 && TRIVIAL[e.name] !== n) bad.push(`${e.name} ＝ ${n}（登録名と食い違う）`);
+        });
+        assert(bad.length === 0, `登録名と食い違う: ${bad.slice(0, 6).join(' / ')}（計${bad.length}件）`);
+        assert(otherNamed >= 153, `C=O を持たないもので名前が出たのが ${otherNamed} 件（153 件以上のはず・名前が消えている）`);
+        assert(coNamed >= 101, `C=O を持つもので名前が出たのが ${coNamed} 件（101 件以上のはず）`);
     });
 
     /* ===== SC. 幹の中の2色（発注書 C-1・v1413・ユーザー申し立て 2026-08-17）=====
