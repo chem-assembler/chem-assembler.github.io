@@ -2434,6 +2434,94 @@ function anhydridePentagonPlacement(mol, cand, ohA, ohB) {
 }
 
 /**
+ * ★ 分子内脱水で閉じる**六員環を正六角形に置く**（v1574・DESIGN_structure_render.md「6員は頂点が上下・左右が縦の辺」）。
+ *
+ * ⚠ v1566 の総当たりで、グルタル酸 → 無水グルタル酸が**内角 139・21・180・180・180・21°**につぶれていた。
+ *   直鎖のまま O だけ（あるいはカルボニル炭素だけ）を動かしても正六角形にはならない ＝ **鎖の CH₂ も動かす**。
+ *
+ * 置き方: 経路のまん中の原子（path[2]。グルタル酸なら 3 位の CH₂）だけを**動かさず**、それを頂点にした
+ *   頂点が上下の正六角形を立てる。まん中の原子の向かい（para）が架橋の O になる。
+ *   立てる側は、カルボニル炭素のある側。一直線（直鎖）なら =O のある側（五員環と同じ決め方）。
+ *   動かす原子: 環の残り4つ（p1・p3・カルボニル炭素2つ）・架橋の O・=O、
+ *   **p1・p3 に付いた枝**（根を環の中心から外向きに置き直し、その先は根と同じだけずらす）。
+ *   ⚠ 動かした原子が1つでも、動かさない原子（ほかの分子も含む）の 0.6 マス以内に入れば、
+ *     もう片側を試し、それでも駄目なら null（呼ぶ側が今までどおり O だけ動かす）。
+ * ⚠ 見た目だけ。結合は `apply` が作る ＝ 正準コードは変わらない。
+ * @returns Map<原子id, {x,y}> または null（六員環でない・置くと重なる）
+ */
+function anhydrideHexagonPlacement(mol, cand, ohA, ohB) {
+    const path = cand && cand.path;
+    if (!path || path.length !== 5) return null;
+    const at = id => mol.atoms.find(x => x.id === id);
+    const [cA, p1, p2, p3, cB] = path.map(at);
+    if (!cA || !p1 || !p2 || !p3 || !cB) return null;
+    const G = bondStep(mol, p2.id);
+    const carbonylO = c => mol.bonds
+        .filter(b => b.type === 2 && (b.atomId1 === c.id || b.atomId2 === c.id))
+        .map(b => at(b.atomId1 === c.id ? b.atomId2 : b.atomId1))
+        .filter(o => o && o.element === 'O' && o.id !== ohA && o.id !== ohB);
+    const exo = [[cA, carbonylO(cA)], [cB, carbonylO(cB)]];
+    const ringIds = new Set([cA.id, p1.id, p2.id, p3.id, cB.id, ohA]);
+    // p1・p3 の枝（環の外の重原子と、その先）
+    const branches = [p1, p3].map(r => mol.getNeighbors(r.id)
+        .map(n => n.atom).filter(a => a.element !== 'H' && !ringIds.has(a.id))
+        .map(root => {
+            const ids = [root.id], seen = new Set([r.id, root.id]);
+            let loop = false;
+            for (let i = 0; i < ids.length && !loop; i++) {
+                mol.getNeighbors(ids[i]).forEach(n => {
+                    if (n.atom.element === 'H' || seen.has(n.atom.id)) return;
+                    if (ringIds.has(n.atom.id)) { loop = true; return; }   // 環へ戻る枝（橋かけ）は扱わない
+                    seen.add(n.atom.id); ids.push(n.atom.id);
+                });
+            }
+            return loop ? null : { r, root, ids };
+        }));
+    if (branches.some(list => list.some(b => !b))) return null;
+    const moving = new Set([cA.id, p1.id, p3.id, cB.id, ohA, ohB,
+        ...exo.flatMap(([, os]) => os.map(o => o.id)), ...branches.flat().flatMap(b => b.ids)]);
+    const others = mol.atoms.filter(x => x.element !== 'H' && !moving.has(x.id) && x.id !== p2.id);
+    // 立てる側（上下）: カルボニル炭素・p1・p3 の重心が p2 のどちら側か。一直線なら =O の側
+    const sgn = v => (Math.abs(v) < G * 0.05 ? 0 : Math.sign(v));
+    let sign = sgn([cA, p1, p3, cB].reduce((s, a) => s + a.y - p2.y, 0));
+    if (!sign) sign = sgn(exo.flatMap(([, os]) => os).reduce((s, o) => s + o.y - p2.y, 0));
+    const signs = sign ? [sign, -sign] : [-1, 1];
+    // p1 は今いる左右の側に残す（鏡に映した図にしない）
+    const p1Right = p1.x - p2.x > 0 || (p1.x === p2.x && p3.x < p2.x);
+    const clear = G * 0.6;
+    for (const sg of signs) {
+        // sg = −1 ＝ 環は p2 の上（p2 が下の頂点）、+1 ＝ 環は p2 の下（p2 が上の頂点）
+        const cx = p2.x, cy = p2.y + sg * G;
+        const vtx = deg => ({ x: cx + G * Math.cos(deg * Math.PI / 180), y: cy + G * Math.sin(deg * Math.PI / 180) });
+        const top = sg > 0;   // p2 が上の頂点（−90°）
+        const a0 = top ? -90 : 90;
+        // 右回り（画面で時計回り）に p2 → 右の隣 → 右の2つ先 → O → …
+        const step = top ? 60 : -60;
+        const right1 = vtx(a0 + step), right2 = vtx(a0 + 2 * step), oPos = vtx(a0 + 3 * step),
+            left2 = vtx(a0 + 4 * step), left1 = vtx(a0 + 5 * step);
+        const [n1, nA, nB, n3] = p1Right ? [right1, right2, left2, left1] : [left1, left2, right2, right1];
+        const place = new Map([[p1.id, n1], [cA.id, nA], [ohA, oPos], [cB.id, nB], [p3.id, n3]]);
+        const outward = (np, len) => {
+            const ux = np.x - cx, uy = np.y - cy, L = Math.hypot(ux, uy) || 1;
+            return { x: np.x + ux / L * len, y: np.y + uy / L * len };
+        };
+        exo.forEach(([c, os]) => os.forEach(o => place.set(o.id, outward(place.get(c.id), G))));
+        branches.flat().forEach(b => {
+            const np = place.get(b.r.id);
+            const len = Math.hypot(b.root.x - b.r.x, b.root.y - b.r.y) || G;
+            const q = outward(np, len);
+            const dx = q.x - b.root.x, dy = q.y - b.root.y;
+            b.ids.forEach(id => { const a = at(id); place.set(id, { x: a.x + dx, y: a.y + dy }); });
+        });
+        const pts = [...place.values()];
+        const okOthers = pts.every(p => others.every(o => Math.hypot(o.x - p.x, o.y - p.y) > clear));
+        const okSelf = pts.every((p, i) => pts.every((q, j) => j <= i || Math.hypot(p.x - q.x, p.y - q.y) > clear));
+        if (okOthers && okSelf) return place;
+    }
+    return null;
+}
+
+/**
  * 分子内脱水で酸無水物にできるカルボキシ基の組。
  * 返り値は `{ site: [cA, ohA, cB, ohB], geo }`。`geo` は `'ok'`（実行できる）／
  * `'anti'`（トランス。フマル酸）／`'unknown'`（図からシス/トランスが読めない）。
@@ -7037,8 +7125,9 @@ const REACTION_RULES = [
             const spot = cand && anhydrideBridgeSpot(mol, cA, cB, cand.path, [ohA, ohB]);
             if (!spot) throw noRoom('環をつくる空間がありません');
             const ring = cand.path.length + 1; // 架橋の O を足した環の大きさ
-            // ★ 五員環は正五角形に置く（v1566）。置けないとき（六員環・重なる）は今までどおり O だけ動かす
-            const pentagon = anhydridePentagonPlacement(mol, cand, ohA, ohB);
+            // ★ 五員環は正五角形（v1566）・六員環は正六角形（v1574）に置く。置けないとき（重なる）は今までどおり O だけ動かす
+            const pentagon = anhydridePentagonPlacement(mol, cand, ohA, ohB) ||
+                anhydrideHexagonPlacement(mol, cand, ohA, ohB);
             // 片方の -OH の O を架橋にし、もう片方の -OH は水として出す
             mol.removeBond(cB, ohB);
             if (pentagon) {
