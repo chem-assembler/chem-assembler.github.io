@@ -11237,9 +11237,10 @@ class Reactor {
                 hs.every(h => Math.hypot(h.x - p.x, h.y - p.y) >= G * 0.8) &&
                 placed.every(o => Math.hypot(o.x - p.x, o.y - p.y) >= G * 1.1) &&
                 segs.every(([p1, p2]) => pointSegmentDistance(p, p1, p2) >= G * 0.6);
+            // 鎖の延長（向きそのまま）を遠くまで先に試し、ふさがっていれば向きを振る ＝ R が鎖の軸の上に来やすい
             let spot = null;
-            for (const k of [1.75, 2.25, 2.75, 3.5]) {
-                for (const deg of [0, 30, -30, 60, -60, 90, -90]) {
+            for (const deg of [0, 30, -30, 60, -60, 90, -90]) {
+                for (const k of [1.75, 2.25, 2.75, 3.5]) {
                     const th = deg * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
                     const p = { x: cb.x + (ux * c - uy * s) * G * k, y: cb.y + (ux * s + uy * c) * G * k };
                     if (clear(p)) { spot = p; break; }
