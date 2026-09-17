@@ -6406,9 +6406,10 @@
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'ベンゼン'))) === null, '芳香環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'エチルアミン').target })) === null,
             'ヘテロ原子（N）を含む分子に系統名を付けた');
-        // ⚠ v1576: ケトン・アルデヒド・カルボン酸は名乗るようになった（IN16）。C=O の否定対照はエステルで取る
-        assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '酢酸メチル').target })) === null,
-            'エステル（C=O-O-C）を含む分子に系統名を付けた');
+        // ⚠ v1576: ケトン・アルデヒド・カルボン酸は名乗るようになった（IN16）。v1578: エステル・二酸も（IN18）。
+        //   C=O の否定対照は酸無水物で取る
+        assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '無水酢酸').target })) === null,
+            '酸無水物（C=O-O-C=O）を含む分子に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'アセトアルデヒド'))) === 'エタナール',
             'アセトアルデヒドの系統名（エタナール）が出ない');
         // (5) 統合: lookupCompoundName がライブラリ外のアルカン（オクタン）を系統名で返す
@@ -6651,13 +6652,13 @@
         c.reset();
         g.setMode('free');
         try {
-            // 環・エステル・複数分子・エーテル。どれも `iupacNameDetail` が
+            // 環・酸無水物・複数分子・エーテル。どれも `iupacNameDetail` が
             // **番号を返さない**もので、門番1行だけで自動的に番号なしになる
-            // （⚠ v1576 でケトン・アルデヒド・カルボン酸は出るようになったので、C=O の否定対照はエステル）
+            // （⚠ v1576 でケトン・アルデヒド・カルボン酸、v1578 でエステル・二酸は出るようになったので、C=O の否定対照は酸無水物）
             const CASES = [
                 ['シクロブタン', 'ring'],
                 ['ベンゼン', 'ring'],
-                ['酢酸メチル', 'carbonyl'],
+                ['無水酢酸', 'carbonyl'],
                 ['ジエチルエーテル', 'ether']
             ];
             CASES.forEach(([nm, kind]) => {
@@ -7060,7 +7061,7 @@
             //   キャンバス側は IN3 が「番号テキストが0個」で見張っているが、標準図は別の関数なので
             //   別に見ないと、答え合わせの図だけが「未対応でも最長鎖くらい出しておこう」に戻せてしまう
             [['シクロブタン', '環'], ['ベンゼン', '芳香環'],
-             ['酢酸メチル', 'エステル'], ['ジエチルエーテル', 'エーテル']].forEach(([nm, why]) => {
+             ['無水酢酸', '酸無水物'], ['ジエチルエーテル', 'エーテル']].forEach(([nm, why]) => {
                 g.userMolecule = new W.Molecule();
                 g.summonMolecule(nm);
                 assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
@@ -7142,8 +7143,8 @@
         summon('ジエチルエーテル'); shot('ether');
         // ④ 環
         summon('シクロブタン'); shot('ring');
-        // ⑤ 環でない未対応（エステル。⚠ v1576 でアセトンは出るようになった）
-        summon('酢酸メチル'); shot('unsupported');
+        // ⑤ 環でない未対応（酸無水物。⚠ v1576 でアセトン、v1578 で酢酸メチルは出るようになった）
+        summon('無水酢酸'); shot('unsupported');
         // ⑥ 複数分子
         g.userMolecule = new W.Molecule();
         g.summonMolecule('エタノール'); g.summonMolecule('エタノール'); g.updateDrawing();
@@ -7833,7 +7834,7 @@
         // (c) 門番 N-4 は緩めていない ＝ 名前が出ないものには**説明が0文字**
         g.setMode('free');
         try {
-            ['シクロブタン', 'ベンゼン', '酢酸メチル'].forEach(nm => {
+            ['シクロブタン', 'ベンゼン', '無水酢酸'].forEach(nm => {
                 g.userMolecule = new W.Molecule();
                 g.summonMolecule(nm);
                 assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
