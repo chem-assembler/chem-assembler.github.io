@@ -136,6 +136,10 @@ const SPECIES = {
      ＝ H₂S は還元剤にしかなれない。酸化されると単体の S（淡黄色・水にとけない）になる */
   "H2S":           { disp: "H₂S",            name: "硫化水素（腐卵臭）",               atoms: { H: 2, S: 1 }, charge: 0 },
   "S":             { disp: "S",               name: "硫黄（淡黄色・水にとけない）",     atoms: { S: 1 }, charge: 0 },
+  /* 塩化スズ(Ⅱ)（2026-09-17・半反応式の一覧に足した還元剤）。還元剤としてはたらくのは Sn²⁺ */
+  "SnCl2":         { disp: "SnCl₂",          name: "塩化スズ(Ⅱ)",                      atoms: { Sn: 1, Cl: 2 }, charge: 0 },
+  "Sn^2+":         { disp: "Sn²⁺",           name: "スズ(Ⅱ)イオン",                    atoms: { Sn: 1 }, charge: 2 },
+  "Sn^4+":         { disp: "Sn⁴⁺",           name: "スズ(Ⅳ)イオン",                    atoms: { Sn: 1 }, charge: 4 },
   /* 有機の酸化還元（アルコールの段階的酸化）。disp は構造が見えるように書く
      — 酸化数を「どの炭素か」の真下に出すには、化学式の中で炭素の位置が分かる必要がある */
   "C2H5OH":        { disp: "CH₃CH₂OH",       name: "エタノール",                       atoms: { C: 2, H: 6, O: 1 }, charge: 0 },
@@ -392,6 +396,7 @@ const DISSOCIATION = {
   "K2Cr2O7":   ["K+", "K+", "Cr2O7^2-"],
   "Cr2(SO4)3": ["Cr^3+", "Cr^3+", "SO4^2-", "SO4^2-", "SO4^2-"],
   "H2C2O4":    ["H+", "H+", "C2O4^2-"],
+  "SnCl2":     ["Sn^2+", "Cl-", "Cl-"],
   "Cu(NO3)2":  ["Cu^2+", "NO3-", "NO3-"],
   // 錯塩は「錯イオン＋対イオン」に電離する（錯イオンは水中でひとまとまりのまま）
   "Cu(NH3)4SO4": ["Cu(NH3)4^2+", "SO4^2-"],
@@ -1656,9 +1661,21 @@ const HALF_REACTIONS = {
   "H2O_red":   { disp: "2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻", kind: "reduction", couple: "H2O/H2",
                  left: [{ sp: "H2O", n: 2 }, { sp: "e-", n: 2 }],
                  right: [{ sp: "H2", n: 1 }, { sp: "OH-", n: 2 }] },
-  "OH_ox":     { disp: "4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻", kind: "oxidation", couple: "O2/OH-",
+  "OH_ox":    { disp: "4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻", kind: "oxidation", couple: "O2/OH-",
                  left: [{ sp: "OH-", n: 4 }],
                  right: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 2 }, { sp: "e-", n: 4 }] },
+
+  /* 主な酸化剤・還元剤の表にあって、アプリに無かった2本（2026-09-17・ユーザーの決定
+     「スライドにあってアプリに無い式を足す」）。どちらも H⁺・H₂O が要らない、e⁻ だけの式。
+       Sn2_ox  … 塩化スズ(Ⅱ)。Fe2_ox（Fe²⁺ → Fe³⁺）と同じ形で、動く e⁻ が2個
+       Cl2_red … 塩素（ハロゲンの単体）。I2_red と同じ形。
+                 ⚠ 対は電気分解の Cl_ox と同じ "Cl2/Cl-" で、**梯子には載せない**
+                 （載せると Cl_ox にも順位が付き、電気分解の向きを強さ比べで答えてしまう）。
+                 自由組み立ての相手は LISTED_OXIDANTS で列挙する */
+  "Sn2_ox":    { disp: "Sn²⁺ → Sn⁴⁺ ＋ 2e⁻", kind: "oxidation", couple: "Sn^4+/Sn^2+",
+                 left: [{ sp: "Sn^2+", n: 1 }], right: [{ sp: "Sn^4+", n: 1 }, { sp: "e-", n: 2 }] },
+  "Cl2_red":   { disp: "Cl₂ ＋ 2e⁻ → 2Cl⁻", kind: "reduction", couple: "Cl2/Cl-",
+                 left: [{ sp: "Cl2", n: 1 }, { sp: "e-", n: 2 }], right: [{ sp: "Cl-", n: 2 }] },
 };
 
 /* 半反応式の e⁻ の数（酸化なら出す数、還元なら受け取る数） */
@@ -1730,6 +1747,9 @@ const OXIDATION = {
   "H2S":      { H: 1, S: -2 },
   "S":        { S: 0 },
   "SO4^2-":   { S: 6, O: -2 },
+  // 塩化スズ(Ⅱ)（2026-09-17）。Sn は +2 → +4
+  "Sn^2+":    { Sn: 2 },
+  "Sn^4+":    { Sn: 4 },
 };
 
 /* ---- 酸化数は「原子1個ずつ」で扱う ----
@@ -1805,9 +1825,43 @@ function oxChangeOfHalf(hr) {
     const c = { el, from: fu[0], to: tu[0], count: restL.length };
     // 1種類の変化にまとまらない＝データの誤りか、この図法では扱えない反応。テストで弾く
     if (fu.length !== 1 || tu.length !== 1 || restL.length !== restR.length) c.ambiguous = true;
+    /* ★ 変わった原子が**どの物質にいたか／どの物質に入ったか**（2026-09-17・ORDER_review 行 T）。
+       O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O では、−2 になった O は **H₂O** にいて、O₂ の O は 0 のまま。
+       元素と数だけでは「右辺の O₂ を見ればよい」と読めてしまうので、物質まで持つ。
+       その値を持つ物質が辺に1つだけのときに id、決まらないときは null。 */
+    c.fromIn = c.ambiguous ? null : oxHolderOf(hr.left, el, c.from);
+    c.toIn = c.ambiguous ? null : oxHolderOf(hr.right, el, c.to);
     changes.push(c);
   }
   return changes;
+}
+
+/* 辺 terms の中で、元素 el の原子を酸化数 v で持つ物質（1つに決まらなければ null） */
+function oxHolderOf(terms, el, v) {
+  const ids = [...new Set(terms
+    .filter((t) => t.sp !== "e-" && OXIDATION[t.sp] && oxAtomList(t.sp, el).includes(v))
+    .map((t) => t.sp))];
+  return ids.length === 1 ? ids[0] : null;
+}
+
+/* ★ O₃ のように「**同じ元素が、変わらないまま同じ辺に残る**」回だけ、どの物質の原子を見るかを返す
+   （2026-09-17・ORDER_review 行 T。ユーザーの言葉「B方式で書く場合、右辺のO2でなくH2OのO原子を
+   見ることがわかるようにしたい」）。
+   返すのは { side, sp, stay: [{ sp, ox }] }。それ以外の回は null
+   ＝ MnO₄⁻ → Mn²⁺ のように、その元素を持つ物質が各辺に1つしかない回には何も足さない。
+   ⚠ 見るのは**変わったあとの辺**（toIn の辺）。O₂ は O₃ の O が 0 のまま移っただけの物質。 */
+function halfOxWhere(hr, c) {
+  if (!hr || !c || c.ambiguous || !c.toIn) return null;
+  const stay = [];
+  for (const t of hr.right) {
+    if (t.sp === "e-" || t.sp === c.toIn || !OXIDATION[t.sp]) continue;
+    const list = oxAtomList(t.sp, c.el);
+    if (!list.length) continue;
+    // 変わらなかった原子 ＝ 左辺のときの値（c.from）のまま右辺にいる
+    if (list.includes(c.from)) stay.push({ sp: t.sp, ox: c.from });
+  }
+  if (!stay.length) return null;
+  return { side: "right", sp: c.toIn, stay };
 }
 
 /* ================================================================================
@@ -2199,22 +2253,26 @@ function oxTaskList() {
    ★ **2通りを両方通す。⚠ B は A の並べ替えではない。**
      手順A … O を H₂O で・H を H⁺ で合わせ、**最後に残った電荷の差**を e⁻ で埋める。
               電子は最後まで「帳尻」でしかなく、意味が出てこない
-     手順B … **先に酸化数の変化から e⁻ の数を決める**。O・H はあとの辻褄合わせで、
-              電荷の一致は**答え合わせ**として最後に来る
-   ＝ 段の並びだけでなく、**電荷が「解く材料」なのか「検算」なのか**が入れ替わる。
+     手順B … **先に酸化数の変化から e⁻ の数を決める**。次に H⁺（塩基性なら OH⁻）で電荷を合わせ、
+              最後に H₂O で O と H を合わせる（2026-09-17 ユーザー決定。旧は e⁻ → H₂O → H⁺ で電荷は検算）
+   ＝ 段の並びだけでなく、**電荷が何を決めるか**（A は e⁻ の数・B は H⁺ の数）が入れ替わる。
 
    ⚠ **答えの表は持たない。** 出題は HALF_REACTIONS から H₂O・H⁺・e⁻ を**抜いた骨格**で作り、
    採点は compareSides（原子・電荷の保存）と oxChangeOfHalf（酸化数の変化）だけで閉じる。
    ⚠ **hr.disp（完成した式）を画面に出さないこと** —— 出した瞬間、答えが横に書いてある練習になる。 */
 
-/* 人に入れさせる項。この3つだけが「骨格から抜ける」 */
+/* 人に入れさせる項。この3つだけが「骨格から抜ける」（画面の欄もこの3種 × 左右） */
 const HALF_AUX = ["H2O", "H+", "e-"];
+/* ★ 塩基性の式も含めた「骨格から抜ける項」（2026-09-17・手順B の順番の変更）。
+   手順B の②は「電荷を合わせる ＝ 酸性なら H⁺、塩基性なら OH⁻」なので、モデルは OH⁻ も抜けるようにする。
+   ⚠ 画面の欄（HALF_AUX）には足していない —— 塩基性の式はまだ出題に入れていない（halfBuildTaskOf） */
+const HALF_AUX_ALL = ["H2O", "H+", "OH-", "e-"];
 
 /* 骨格（＝与える面）。半反応式から H₂O・H⁺・e⁻ を抜いたもの */
 function halfSkeletonOf(id) {
   const hr = HALF_REACTIONS[id];
   if (!hr) return null;
-  const strip = (side) => side.filter((t) => !HALF_AUX.includes(t.sp)).map((t) => ({ sp: t.sp, n: t.n }));
+  const strip = (side) => side.filter((t) => !HALF_AUX_ALL.includes(t.sp)).map((t) => ({ sp: t.sp, n: t.n }));
   return { left: strip(hr.left), right: strip(hr.right) };
 }
 
@@ -2225,7 +2283,8 @@ function halfSkeletonDisp(sk) {
 }
 
 /* 【出題1件】。出題にできない式は null。⚠ **一覧は手で持たない**（HALF_REACTIONS から導く） */
-function halfBuildTaskOf(id) {
+function halfBuildTaskOf(id, opts) {
+  const basicOk = !!(opts && opts.basic);
   const hr = HALF_REACTIONS[id];
   if (!hr) return null;
   const sk = halfSkeletonOf(id);
@@ -2240,8 +2299,11 @@ function halfBuildTaskOf(id) {
        1つに決まらない。⚠ **A だけ出せる回を作らない** —— 同じ式を2通りで組み比べるのが
        この練習の眼目なので、片方しか通らない回は母数から外す（§7-6 の決め）。 */
     if (oxPerAtomSpecies(t.sp) || SPECIES[t.sp].name.includes("断片")) return null;
-    // 塩基性条件（OH⁻ を持つ式）は範囲外。§7-5 —— いま OH⁻ を持つ式は1本しかない
-    if (t.sp === "OH-") return null;
+    /* 塩基性条件（OH⁻ を持つ式）は出題の範囲外。§7-5 —— いま OH⁻ を持つ式は1本しかない。
+       ★ 2026-09-17: 手順B（新しい順番）は ② で OH⁻ を置けば塩基性でも解ける（opts.basic で確かめられる）。
+       ⚠ それでも出題に入れないのは、**手順A（H₂O → H⁺ → e⁻）では OH⁻ が書けず、B だけの回になる**から
+       （上の「A だけ出せる回を作らない」と同じ理由の裏返し。§7-6） */
+    if (t.sp === "OH-" && !basicOk) return null;
   }
   const ch = oxChangeOfHalf(hr).filter((c) => c.from !== c.to);
   if (ch.length !== 1 || ch[0].ambiguous) return null;
@@ -2252,6 +2314,8 @@ function halfBuildTaskOf(id) {
        酸化数が上がった原子は電子を**出す**ので e⁻ は右辺、下がったなら左辺。 */
     electrons: Math.abs(c.to - c.from) * c.count,
     eSide: c.to > c.from ? "right" : "left",
+    /* 手順B の②で電荷を合わせるイオン。式の書き方（writtenFor）が塩基性なら OH⁻、それ以外は H⁺ */
+    chargeKey: writtenFor(hr) === "basic" ? "OH-" : "H+",
   };
 }
 
@@ -2269,7 +2333,17 @@ function halfBuildList() {
 }
 
 /* ★ 2通りの手順。**段の並びと見出しの文言がそのまま入れ替わる**（§2 の要件）。
-   by は採点のよりどころ: "atom"（その元素の数）／"charge"（電荷の差）／"ox"（酸化数の変化）。 */
+   by は採点のよりどころ: "atom"（その元素の数）／"charge"（電荷の差を e⁻ で）／"ox"（酸化数の変化）／
+   "chargeIon"（電荷を H⁺ か OH⁻ で合わせる）／"atoms"（els の元素がすべてそろう）。
+
+   ★★ 2026-09-17 ユーザー決定: **手順B の順番をスライド「その2」に合わせる。**
+     ① 酸化数から e⁻ の数と辺を決める → ② 電荷を合わせる（酸性なら H⁺、塩基性なら OH⁻）→ ③ H₂O で O（と H）
+   旧: e⁻ → H₂O → H⁺ で、電荷は締めの検算だった。変えた理由（統合側からユーザーへ伝えたもの）:
+     ・塩基性でも同じ手順で書ける（H⁺ で書いてから OH⁻ に書き換える手間が要らない）
+     ・電荷を合わせることが係数決定の柱になる ・スライド・動画と順番がそろう
+   ⚠ 手順A（H₂O → H⁺ → e⁻）は変えていない。
+   ⚠ ②の欄は task.chargeKey で決まる（halfStepKey）。③は O を合わせれば H も必ずそろう
+     （e⁻ と電荷を先に合わせてあるため）ので、O と H を1つの段でまとめて見る。 */
 const HALF_PROCS = {
   A: {
     id: "A", label: "手順A：H₂O → H⁺ → e⁻",
@@ -2281,22 +2355,27 @@ const HALF_PROCS = {
     ],
   },
   B: {
-    id: "B", label: "手順B：酸化数 → e⁻ → H₂O → H⁺",
-    lead: "電子が先。酸化数が動いたぶんが e⁻ の数で、O と H はあとから辻褄を合わせる。",
+    id: "B", label: "手順B：酸化数 → e⁻ → H⁺ → H₂O",
+    lead: "まず酸化数の変化から e⁻ を決めよう。次に H⁺ で電荷を、最後に H₂O で O と H を合わせよう。",
     steps: [
-      { key: "e-",  by: "ox",            head: "酸化数の変化から e⁻ の数を決める" },
-      { key: "H2O", by: "atom", el: "O", head: "O の数を H₂O で合わせる" },
-      { key: "H+",  by: "atom", el: "H", head: "H の数を H⁺ で合わせる" },
+      { key: "e-",  by: "ox",                    head: "酸化数の変化から e⁻ の数を決める" },
+      { key: "H+",  by: "chargeIon",             head: "電荷を H⁺ で合わせる" },
+      { key: "H2O", by: "atoms", els: ["O", "H"], head: "O と H を H₂O で合わせる" },
     ],
   },
 };
 
 /* いまの入力から式の両辺を組み立てる。keys に挙がった項だけを載せる
    （まだ来ていない段の項は式に出さない ＝ 段が進むほど式が伸びる）。 */
+/* その出題で、段 st が入れさせる種（手順B の②だけ、酸性なら H⁺・塩基性なら OH⁻ に変わる） */
+function halfStepKey(task, st) {
+  return st.by === "chargeIon" && task && task.chargeKey ? task.chargeKey : st.key;
+}
+
 function halfTerms(task, vals, keys) {
   const side = (which) => {
     const out = task.skeleton[which].map((t) => ({ sp: t.sp, n: t.n }));
-    for (const k of HALF_AUX) {
+    for (const k of HALF_AUX_ALL) {
       if (keys && !keys.includes(k)) continue;
       const n = ((vals && vals[k]) || {})[which];
       if (Number.isInteger(n) && n > 0) out.push({ sp: k, n });
@@ -2315,8 +2394,9 @@ function checkHalfStep(task, procId, stepIdx, vals) {
   const proc = HALF_PROCS[procId];
   if (!task || !proc || !proc.steps[stepIdx]) return null;
   const st = proc.steps[stepIdx];
-  const D = SPECIES[st.key].disp;
-  const got = (vals && vals[st.key]) || {};
+  const key = halfStepKey(task, st);
+  const D = SPECIES[key].disp;
+  const got = (vals && vals[key]) || {};
   const L = got.left, R = got.right;
   const has = (v) => Number.isInteger(v) && v > 0;
   if (!Number.isInteger(L) && !Number.isInteger(R)) {
@@ -2332,9 +2412,31 @@ function checkHalfStep(task, procId, stepIdx, vals) {
   if (L < 0 || R < 0) {
     return { ok: false, kind: "wrong", reason: `${D} の個数は 0 以上。` };
   }
-  const keys = proc.steps.slice(0, stepIdx + 1).map((s) => s.key);
+  const keys = proc.steps.slice(0, stepIdx + 1).map((s) => halfStepKey(task, s));
   const terms = halfTerms(task, vals, keys);
   const cmp = compareSides(terms.left, terms.right);
+  /* 手順B の②: 電荷を H⁺（塩基性なら OH⁻）で合わせる。⚠ ここでは O・H はまだ見ない（③の仕事） */
+  if (st.by === "chargeIon") {
+    if (!cmp.chargeOk) {
+      return { ok: false, kind: "wrong",
+        reason: `電荷が合っていない —— 左 ${fmtOxNum(cmp.chargeLeft)} / 右 ${fmtOxNum(cmp.chargeRight)}。` +
+          `${D} は1個で ${SPECIES[key].charge > 0 ? "+1" : "−1"} ぶん。` };
+    }
+    return { ok: true, kind: "ok",
+      reason: `電荷が左右でそろった（${D} で合わせた）。` };
+  }
+  /* 手順B の③: H₂O で O を合わせる。e⁻ と電荷を先に合わせてあるので、O がそろえば H もそろう */
+  if (st.by === "atoms") {
+    // ⚠ 言う順は els の順（O が先）。O を合わせるのがこの段の仕事で、H はついてくる側
+    const ng = st.els.map((el) => cmp.rows.find((r) => r.el === el)).filter((r) => r && !r.ok);
+    if (!ng.length) {
+      return { ok: true, kind: "ok",
+        reason: `${st.els.join(" も ")} も左右でそろった（${D} で合わせた）。` };
+    }
+    return { ok: false, kind: "wrong",
+      reason: ng.map((r) => `${r.el} の数が合っていない —— 左 ${r.left} 個 / 右 ${r.right} 個。`).join("") +
+        `足りないほうの辺に ${D} を置く。` };
+  }
   if (st.by === "atom") {
     const row = cmp.rows.find((r) => r.el === st.el);
     if (!row || row.ok) {
@@ -2395,8 +2497,146 @@ function halfStepIndex(task, procId, vals) {
 function halfBuildDone(task, procId, vals) {
   const proc = HALF_PROCS[procId];
   if (!proc || halfStepIndex(task, procId, vals) < proc.steps.length) return false;
-  const terms = halfTerms(task, vals, HALF_AUX);
+  const terms = halfTerms(task, vals, HALF_AUX_ALL);
   return compareSides(terms.left, terms.right).balanced;
+}
+
+/* ================================================================================
+   【半反応式の一覧】halfCatalog（2026-09-17・半反応式ページの作り直し 段1）
+
+   3ページ（halflist.html＝一覧／halfquiz.html＝暗記テスト／halfreaction.html＝係数決定）が
+   **同じ1か所から**読むためのデータ。ユーザーの決定（2026-09-17）:
+     ・一覧に載せるのは HALF_REACTIONS の全部（足した Sn²⁺・Cl₂ を含む）
+     ・ただし**グループ分けを明確にし**、生徒のレベルと科目（化学基礎だけ／化学まで）に合わせる
+     ・暗記テストで問うのは**反応の前後の物質まで**（e⁻ の数・H⁺・H₂O の数は問わない）
+     ・分子の形（HNO₃・H₂SO₄・H₂C₂O₄）も並べて書けるようにする
+
+   ⚠ 導けるもの（酸化剤か還元剤か・液性・変化する原子・e⁻ の数・前後の物質・出題になるか）は
+   **ここに書かない**。HALF_CATALOG_META が持つのは、式から導けない5つだけ:
+     name（物質名）・sp（化学式の欄に出す物質）・subject／level／section（グループ）
+   ＋ 分子の形（molecular）。分子の形は**項で持つ**ので、原子・電荷・e⁻ の数をテストで検算できる。
+
+   ★ グループの根拠（画面には出さない。「教科書に載っている／いない」を画面で断定しないため）:
+     subject "basic" … 数研 化学基礎 p.157 表2・啓林館 化学基礎 p.166 表2〜4 の「主な酸化剤・還元剤」、
+                        イオン化傾向（数研 p.166〜168）。スライド「無機の基本１」p.38・39 の表
+     subject "chem"  … 電気分解の電極（数研 化学 Vol.1-2編 p.121〜122。化学基礎では「発展」p.179〜183）、
+                        有機の酸化（このアプリでは既に「有機（発展）」の札で分けている）
+     level 1「まず覚える」… スライド p.38・39 の表にある式（金属は「陽イオンの電荷を覚える」の行）
+     level 2「次に」      … 教科書の表・本文にあるが、スライドの表には無い式（O₃・I₂・金属イオンと H⁺）
+     level 3「発展」      … 液性で式が変わる MnO₄⁻（中性・塩基性）と、有機の酸化
+   ================================================================================ */
+
+const HALF_SUBJECTS = { basic: "化学基礎", chem: "化学" };
+const HALF_LEVELS = { 1: "まず覚える", 2: "次に", 3: "発展" };
+const HALF_SECTIONS = {
+  oxidant: "主な酸化剤", reductant: "主な還元剤", metal: "金属とイオン",
+  electrolysis: "電気分解の電極", organic: "有機化合物の酸化",
+};
+
+/* 並び順がそのまま一覧の並び順（section → level の順に置く）。キーは HALF_REACTIONS と1対1（テストで固定） */
+const HALF_CATALOG_META = {
+  // --- 化学基礎: 主な酸化剤（スライド p.38 の並び） ---
+  "MnO4_red":      { name: "過マンガン酸カリウム", sp: "KMnO4",   subject: "basic", level: 1, section: "oxidant" },
+  "Cr2O7_red":     { name: "二クロム酸カリウム",   sp: "K2Cr2O7", subject: "basic", level: 1, section: "oxidant" },
+  "NO3_red":       { name: "希硝酸",               sp: "HNO3",    subject: "basic", level: 1, section: "oxidant",
+                     molecular: { left: [{ sp: "HNO3", n: 1 }, { sp: "H+", n: 3 }, { sp: "e-", n: 3 }],
+                                  right: [{ sp: "NO", n: 1 }, { sp: "H2O", n: 2 }] } },
+  "NO3_red_conc":  { name: "濃硝酸",               sp: "HNO3",    subject: "basic", level: 1, section: "oxidant",
+                     molecular: { left: [{ sp: "HNO3", n: 1 }, { sp: "H+", n: 1 }, { sp: "e-", n: 1 }],
+                                  right: [{ sp: "NO2", n: 1 }, { sp: "H2O", n: 1 }] } },
+  // 熱濃硫酸は**式そのものが分子の形**（H₂SO₄）。イオンの形に書き直すと別の話に化ける（HALF_REACTIONS の注記）
+  "H2SO4_hot_red": { name: "熱濃硫酸",             sp: "H2SO4",   subject: "basic", level: 1, section: "oxidant",
+                     molecularIsMain: true },
+  "H2O2_red":      { name: "過酸化水素",           sp: "H2O2",    subject: "basic", level: 1, section: "oxidant" },
+  "SO2_red":       { name: "二酸化硫黄",           sp: "SO2",     subject: "basic", level: 1, section: "oxidant" },
+  "Cl2_red":       { name: "塩素",                 sp: "Cl2",     subject: "basic", level: 1, section: "oxidant" },
+  "O3_red":        { name: "オゾン",               sp: "O3",      subject: "basic", level: 2, section: "oxidant" },
+  "I2_red":        { name: "ヨウ素",               sp: "I2",      subject: "basic", level: 2, section: "oxidant" },
+  "MnO4_red_neutral": { name: "過マンガン酸カリウム", sp: "KMnO4", subject: "basic", level: 3, section: "oxidant" },
+  // --- 化学基礎: 主な還元剤（スライド p.39 の並び） ---
+  "oxalate_ox":    { name: "シュウ酸",             sp: "H2C2O4",  subject: "basic", level: 1, section: "reductant",
+                     molecular: { left: [{ sp: "H2C2O4", n: 1 }],
+                                  right: [{ sp: "CO2", n: 2 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] } },
+  "Fe2_ox":        { name: "硫酸鉄(Ⅱ)",            sp: "FeSO4",   subject: "basic", level: 1, section: "reductant" },
+  "Sn2_ox":        { name: "塩化スズ(Ⅱ)",          sp: "SnCl2",   subject: "basic", level: 1, section: "reductant" },
+  "H2S_ox":        { name: "硫化水素",             sp: "H2S",     subject: "basic", level: 1, section: "reductant" },
+  "I_ox":          { name: "ヨウ化カリウム",       sp: "KI",      subject: "basic", level: 1, section: "reductant" },
+  "H2O2_ox":       { name: "過酸化水素",           sp: "H2O2",    subject: "basic", level: 1, section: "reductant" },
+  "SO2_ox":        { name: "二酸化硫黄",           sp: "SO2",     subject: "basic", level: 1, section: "reductant" },
+  // --- 化学基礎: 金属とイオン（金属の単体は還元剤の表の最後の行・イオン化傾向） ---
+  "Zn_ox":         { name: "亜鉛",                 sp: "Zn",      subject: "basic", level: 1, section: "metal" },
+  "Fe_ox":         { name: "鉄",                   sp: "Fe",      subject: "basic", level: 1, section: "metal" },
+  "Cu_ox":         { name: "銅",                   sp: "Cu",      subject: "basic", level: 1, section: "metal" },
+  "Mg_ox":         { name: "マグネシウム",         sp: "Mg",      subject: "basic", level: 1, section: "metal" },
+  "Al_ox":         { name: "アルミニウム",         sp: "Al",      subject: "basic", level: 1, section: "metal" },
+  "Cu_red":        { name: "硫酸銅(Ⅱ)",            sp: "CuSO4",   subject: "basic", level: 2, section: "metal" },
+  "Ag_red":        { name: "硝酸銀",               sp: "AgNO3",   subject: "basic", level: 2, section: "metal" },
+  "H_red":         { name: "うすい塩酸",           sp: "HCl",     subject: "basic", level: 2, section: "metal" },
+  // --- 化学: 電気分解の電極 ---
+  "Cl_ox":         { name: "塩化物イオン",         sp: "Cl-",     subject: "chem",  level: 1, section: "electrolysis" },
+  "H2O_red":       { name: "水（陰極）",           sp: "H2O",     subject: "chem",  level: 1, section: "electrolysis" },
+  "H2O_ox":        { name: "水（陽極）",           sp: "H2O",     subject: "chem",  level: 1, section: "electrolysis" },
+  "OH_ox":         { name: "水酸化物イオン",       sp: "OH-",     subject: "chem",  level: 1, section: "electrolysis" },
+  // --- 化学: 有機化合物の酸化（アプリの「有機（発展）」と同じ扱い） ---
+  "EtOH_ox":       { name: "エタノール",           sp: "C2H5OH",  subject: "chem",  level: 3, section: "organic" },
+  "MeCHO_ox":      { name: "アセトアルデヒド",     sp: "CH3CHO",  subject: "chem",  level: 3, section: "organic" },
+  "iPrOH_ox":      { name: "2-プロパノール",       sp: "C3H7OH",  subject: "chem",  level: 3, section: "organic" },
+  "iodoform_ox":   { name: "ヨードホルム反応（メチル基）",   sp: "CH3+",   subject: "chem", level: 3, section: "organic" },
+  "acylRest_ox":   { name: "ヨードホルム反応（残りの断片）", sp: "CH3CO-", subject: "chem", level: 3, section: "organic" },
+  "formylRest_ox": { name: "ヨードホルム反応（残りの断片）", sp: "CHO-",   subject: "chem", level: 3, section: "organic" },
+};
+
+/* 項の並びを式の文字列にする（一覧・分子の形で使う）。係数 1 は書かない */
+function halfTermsDisp(left, right) {
+  const side = (arr) => arr.map((t) => (t.n > 1 ? t.n : "") + SPECIES[t.sp].disp).join(" ＋ ");
+  return side(left) + " → " + side(right);
+}
+
+/* 反応の前後の物質（暗記テストで問う範囲）。H₂O・H⁺・OH⁻・e⁻ を抜く。
+   ⚠ 抜いて辺が空になる式（2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻ など）は、その辺だけ e⁻ 以外を残す
+   ＝ 水そのものが主役の回では、水が「前の物質」になる */
+function halfCoreOf(hr) {
+  const drop = ["H2O", "H+", "OH-", "e-"];
+  const pick = (side) => {
+    const core = side.filter((t) => !drop.includes(t.sp));
+    const out = core.length ? core : side.filter((t) => t.sp !== "e-");
+    return out.map((t) => ({ sp: t.sp, n: t.n }));
+  };
+  return { left: pick(hr.left), right: pick(hr.right) };
+}
+
+/* 【一覧】全件を HALF_CATALOG_META の並び順で返す */
+function halfCatalog() {
+  const buildIds = new Set(halfBuildList().map((t) => t.id));
+  return Object.keys(HALF_CATALOG_META).filter((id) => HALF_REACTIONS[id]).map((id) => {
+    const hr = HALF_REACTIONS[id], m = HALF_CATALOG_META[id];
+    const ch = oxChangeOfHalf(hr).filter((c) => c.from !== c.to);
+    const mol = m.molecular
+      ? { left: m.molecular.left, right: m.molecular.right, disp: halfTermsDisp(m.molecular.left, m.molecular.right) }
+      : null;
+    return {
+      id, name: m.name, sp: m.sp, disp: hr.disp,
+      kind: hr.kind,
+      role: hr.kind === "reduction" ? "oxidant" : "reductant",   // 還元される式 ＝ 中身は酸化剤
+      cond: conditionOfHalf(hr),         // その式を使うのに要る液性（acid / basic / any）
+      written: writtenFor(hr),           // 紙の上の書き方（acid / basic / any）
+      changes: ch,                       // 変化する原子（有機は炭素1個・O₃ は O 1個）
+      electrons: electronsOf(hr),
+      core: halfCoreOf(hr),              // 反応の前後の物質（暗記テストで問う範囲）
+      molecular: mol,                    // 分子の形（HNO₃・H₂C₂O₄）。無ければ null
+      molecularIsMain: !!m.molecularIsMain,
+      subject: m.subject, level: m.level, section: m.section,
+      build: buildIds.has(id),           // 係数決定（halfreaction.html）の出題になっているか
+    };
+  });
+}
+
+/* 科目とレベルで絞る。upTo は "basic"（化学基礎だけ）か "chem"（化学まで）。maxLevel は 1〜3 */
+function halfCatalogFilter(list, opts) {
+  const o = opts || {};
+  const subjects = o.upTo === "basic" ? ["basic"] : ["basic", "chem"];
+  const maxLevel = Number.isInteger(o.maxLevel) ? o.maxLevel : 3;
+  return list.filter((e) => subjects.includes(e.subject) && e.level <= maxLevel);
 }
 
 /* 有色の化学種の色（溶液中の酸化還元アニメの色変化用。見た目専用だが検証はする）。
@@ -2627,6 +2867,10 @@ const REDOX_LADDER_ACID = {
      ほとんど変わらないので、**同じ 85 に置いて強弱を決めない**（§2-3。差が高校で扱える
      解像度より細かい。しかもこの2つはどちらも酸化の側の対なので、突き合わされる場面が無い）。 */
   "SO4^2-/SO2":      85,
+  /* 塩化スズ(Ⅱ)（2026-09-17）。E° は +0.15 V で S/H₂S・SO₄²⁻/SO₂ とほぼ同じなので、
+     同じ 85 に置いて強弱を決めない（3つとも還元剤の側の対で、突き合わされる場面が無い）。
+     順位だけで相手を広げないよう、試薬の pairsWith で言い切る範囲を絞る */
+  "Sn^4+/Sn^2+":     85,
   "H+/H2":           80,  // ここが「イオン化傾向で H より上か下か」の境目
   "Fe^2+/Fe":        60,
   "CO2/C2O4^2-":     55,  // シュウ酸
@@ -2702,6 +2946,14 @@ const LISTED_OXIDANTS = {
     partners: ["Cu_ox"],
     why: "熱濃硫酸が強い酸化剤としてはたらくのは「熱くて濃い」からで、その強さは" +
       "強さの順位（梯子）には乗りません。このアプリは、教科書が扱う相手だけを収録しています。",
+  },
+  /* 塩素（2026-09-17）。順位を持たせない理由は強さではなく**対の共有**:
+     Cl₂/Cl⁻ は電気分解の陽極の式（Cl_ox）と同じ対なので、梯子に載せると電気分解の向きまで
+     強さ比べで答えることになる（B3 の決め）。相手は、ハロゲンの単体の酸化作用として
+     よく出る組（ヨウ化カリウム・硫酸鉄(Ⅱ)・硫化水素）だけを書く。 */
+  "Cl2_red": {
+    partners: ["I_ox", "Fe2_ox", "H2S_ox"],
+    why: "塩素の強さは、このアプリでは順位（梯子）に載せていません。相手はよく出る組み合わせだけを収録しています。",
   },
 };
 
@@ -2795,6 +3047,9 @@ const REAGENTS = [
   { id: "SO2_asOxidant", sp: "SO2", side: "ox", label: "二酸化硫黄（酸化剤として）",
     half: { acid: "SO2_red" }, pairsWith: ["H2S_ox"],
     note: "同じ物質が一覧の「e⁻ を出す側（還元剤）」にも出る。酸化剤にまわるのは硫化水素が相手のときだけ" },
+  /* 塩素（2026-09-17）。相手は LISTED_OXIDANTS で列挙する（順位を持たない理由はそちら） */
+  { id: "Cl2", sp: "Cl2", side: "ox", label: "塩素", half: { any: "Cl2_red" },
+    note: "黄緑色の気体。e⁻ を受け取って Cl⁻ になる" },
   { id: "CuSO4", sp: "CuSO4", side: "ox", label: "硫酸銅(Ⅱ)水溶液",
     half: { any: "Cu_red" }, note: "酸化剤としてはたらくのは Cu²⁺" },
   { id: "AgNO3", sp: "AgNO3", side: "ox", label: "硝酸銀水溶液",
@@ -2807,6 +3062,12 @@ const REAGENTS = [
   { id: "Cu", sp: "Cu", side: "red", label: "銅", half: { any: "Cu_ox" } },
   { id: "FeSO4", sp: "FeSO4", side: "red", label: "硫酸鉄(Ⅱ)",
     half: { any: "Fe2_ox" }, note: "還元剤としてはたらくのは Fe²⁺" },
+  /* 塩化スズ(Ⅱ)（2026-09-17）。順位は S/H₂S と同じ 85 で低いので、絞らないと
+     ほぼ全部の酸化剤と反応することになる（シュウ酸と同じ事情）。
+     言い切るのは色の変わる酸化剤（KMnO₄・K₂Cr₂O₇）と H₂O₂ と塩素だけ */
+  { id: "SnCl2", sp: "SnCl2", side: "red", label: "塩化スズ(Ⅱ)",
+    half: { any: "Sn2_ox" }, pairsWith: ["MnO4_red", "Cr2O7_red", "H2O2_red"],
+    note: "還元剤としてはたらくのは Sn²⁺" },
   /* シュウ酸の順位（CO₂/C₂O₄²⁻）は梯子のかなり下なので、順位だけで見ると
      **ほぼすべての酸化剤と反応する**ことになってしまう。だが実際に高校で扱うのは
      KMnO₄ の滴定（と K₂Cr₂O₇）だけで、うすい塩酸から水素が出たりはしない

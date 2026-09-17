@@ -2269,6 +2269,10 @@ main.timelineMain {
 }
 .hbProc button.active { background: #3b82c4; border-color: #3b82c4; color: #fff; }
 .hbOxLink { display: inline-block; margin-top: 4px; font-size: calc(12 * var(--fs-u)); color: #2f5b7a; }
+/* ★ O₃ の回だけの札（行 T）。変わった原子がどの物質にいるか。検算の行と同じ字の大きさで1行 */
+.hbOxWhere {
+  margin-top: 4px; font-size: calc(13 * var(--fs-u)); line-height: 1.6; color: #8a4a1f;
+}
 
 /* ---- 価数＝高さのブロック（blocks.js・DESIGN_ion_blocks.md・2026-09-07）----
    イオンの一覧から選んで積む列。⚠ 既存の係数ステッパー（.stepper）を置き換えるものではなく、

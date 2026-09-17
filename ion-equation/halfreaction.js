@@ -38,6 +38,15 @@ let taskIdx = 0;
 let procId = "A";
 let vals = {};        // { 種: { left: n, right: n } }（空欄は delete）
 
+/* ★ ○× の印（2026-09-17・half-marks.js）。ユーザーの決定:
+     「赤（ng）を一度でも出してクリアしたら ×、一度も出さずにクリアしたら ○。途中でやめたら印は変えない」
+   ＝ 1回の挑戦（式・手順を選んでから、クリアするか離れるまで）のあいだに赤を出したかを覚えておき、
+   **クリアした瞬間に1回だけ**書く。挑戦を始め直す所（式を変える・手順を変える・もう一度）で捨てる。
+   ⚠ ページの見た目は変えない（印を出すのは一覧のページの仕事）。 */
+let ngSeen = false;     // この挑戦で赤を出したか
+let marked = false;     // この挑戦の印をもう書いたか（クリア後に打ち直しても2回書かない）
+function resetAttempt() { ngSeen = false; marked = false; }
+
 function task() { return TASKS[taskIdx]; }
 function proc() { return HALF_PROCS[procId]; }
 
@@ -162,10 +171,27 @@ function buildOxHint(box) {
   line.append(el("span", "oxGiven", fmtOxNum(c.to)));
   line.append(el("span", null, "　変わった原子は " + c.count + " 個"));
   box.appendChild(line);
-  // 練習Y への往復（この数の出し方はあちらの担当）
-  const sp = [...t.skeleton.left, ...t.skeleton.right]
-    .map((x) => x.sp)
-    .find((x) => SPECIES[x].atoms[c.el] && halfOxLinkable(x));
+  /* ★ O₃ の回だけの札（2026-09-17・ORDER_review 行 T）。
+     右辺の O₂ を見ると O は 0 のままなので、「変わった原子は 1 個」がどこを指すのか分からない。
+     ⚠ 札を出すのは halfOxWhere が返す回だけ（同じ元素が、変わらないまま同じ辺に残る回）。
+     MnO₄⁻ → Mn²⁺ のような回にまで「右辺の◯◯の Mn」と足すと、指示の行が1つ増えるだけになる。 */
+  const where = halfOxWhere(HALF_REACTIONS[t.id], c);
+  if (where) {
+    const stay = where.stay
+      .map((s) => `${SPECIES[s.sp].disp} の ${c.el} は ${fmtOxNum(s.ox)} のまま`).join("、");
+    const note = el("div", "hbOxWhere",
+      `見るのは${where.side === "right" ? "右辺" : "左辺"}の ${SPECIES[where.sp].disp} の ${c.el}。${stay}。`);
+    note.id = "hbOxWhere";
+    box.appendChild(note);
+  }
+  /* 練習Y への往復（この数の出し方はあちらの担当）。
+     ★ 送り先は「変わった原子を持つ物質」から選ぶ（札が指す物質 → 変わる前 → 変わった後の順）。
+     ⚠ 骨格の中で最初に見つかった種、だけで選ぶと、O₃ の回に O₃ や O₂（どちらも O は 0）へ
+     送ることになりうる ＝ −2 の出し方を知りたい人に 0 の練習を渡してしまう。 */
+  const sp = [where && where.sp, c.fromIn, c.toIn].find((x) => x && halfOxLinkable(x)) ||
+    (where ? null : [...t.skeleton.left, ...t.skeleton.right]
+      .map((x) => x.sp)
+      .find((x) => SPECIES[x].atoms[c.el] && halfOxLinkable(x)));
   if (sp) {
     const a = document.createElement("a");
     a.className = "hbOxLink";
@@ -195,13 +221,13 @@ function refresh() {
   p.steps.forEach((st, i) => {
     const ahead = i > at;               // まだ来ていない段
     for (const side of SIDES) {
-      const node = document.getElementById("hbSlot_" + KEYCODE[st.key] + "_" + side);
-      const v = (vals[st.key] || {})[side];
+      const node = document.getElementById("hbSlot_" + KEYCODE[halfStepKey(t, st)] + "_" + side);
+      const v = (vals[halfStepKey(t, st)] || {})[side];
       const zero = !Number.isInteger(v) || v === 0;
       node.hidden = done && zero;
       node.classList.toggle("hbSlotNow", !done && i === at);
       node.classList.toggle("hbSlotAhead", ahead);
-      const inp = document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side);
+      const inp = document.getElementById("hbIn_" + KEYCODE[halfStepKey(t, st)] + "_" + side);
       inp.disabled = ahead;
       /* ⚠ 押しても無反応、にはしない（なぜ打てないのかを、答えを言わずに返す）。
          ★ 数も辺も出さない ＝ ここから答えは漏れない */
@@ -229,33 +255,43 @@ function refresh() {
        ⚠ **枠と見出しには数が1つも出てこない**ので、伏せるのはここ1か所で足りる。 */
     e.msg.hidden = ahead;
     e.extra.hidden = ahead || st.by !== "ox";
-    if (!e.extra.hidden) buildOxHint(e.extra);
+    // ⚠ 隠すときは中身も捨てる（手順A に切り替えたあとも、B の札が隠れたまま DOM に残っていた）
+    if (!e.extra.hidden) buildOxHint(e.extra); else e.extra.innerHTML = "";
     if (ahead) {
       e.msg.textContent = "";
       // 先の段の欄に、前に付いた赤い印を残さない
       for (const side of SIDES) {
-        document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side).classList.remove("ng");
+        document.getElementById("hbIn_" + KEYCODE[halfStepKey(t, st)] + "_" + side).classList.remove("ng");
       }
       return;
     }
     const r = checkHalfStep(t, procId, i, vals);
     const ngIn = r && r.kind === "wrong";
+    if (ngIn) ngSeen = true;              // ★ 赤を出した（欄の ng と採点の文の ng は同じ条件）
     for (const side of SIDES) {
-      const inp = document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side);
+      const inp = document.getElementById("hbIn_" + KEYCODE[halfStepKey(t, st)] + "_" + side);
       inp.classList.toggle("ng", !!ngIn);
     }
     setStatusMsg(e.msg, plain(r.reason), r.ok ? "ok" : r.kind === "wrong" ? "ng" : "info");
   });
 
-  /* ★ 手順B の締めは**電荷の検算**。A では電荷が答えを決めたが、B では最後に合っているかを
-     確かめるだけ ＝ 同じ式でも、電荷の役どころが入れ替わることを1行で見せる。 */
+  /* ★ 手順B の締めの1行（id は hbCharge のまま）。
+     ⚠ 2026-09-17 に手順B の順番を変えた（e⁻ → 電荷(H⁺) → H₂O）ので、電荷はもう「締めの検算」ではなく
+     ②で合わせる柱になった。締めでは**H が最後に自然とそろった**ことを数で見せる
+     ＝ e⁻ と電荷を先に決めてあれば、H₂O で O を合わせるだけで H もそろう（手順B の芯）。 */
   const showCharge = done && procId === "B";
   chargeEl.hidden = !showCharge;
   if (showCharge) {
-    const terms = halfTerms(t, vals, HALF_AUX);
-    const cmp = compareSides(terms.left, terms.right);
-    chargeEl.textContent = `電荷は 左 ${fmtOxNum(cmp.chargeLeft)} ／ 右 ${fmtOxNum(cmp.chargeRight)} —— ` +
-      "合っている。手順B では、電荷は答えを決める材料ではなく最後の答え合わせ。";
+    const terms = halfTerms(t, vals, HALF_AUX_ALL);
+    const hRow = compareSides(terms.left, terms.right).rows.find((r) => r.el === "H");
+    chargeEl.textContent = hRow
+      ? `H も 左 ${hRow.left} 個 ／ 右 ${hRow.right} 個 でそろった。e⁻ と電荷を先に合わせたから、O を合わせれば H もそろう。`
+      : "e⁻ と電荷を先に合わせたから、最後は O を合わせるだけで済んだ。";
+  }
+
+  if (done && !marked) {
+    marked = true;
+    if (window.HalfMarks) window.HalfMarks.record(t.id, "build", window.HalfMarks.buildOk(ngSeen));
   }
 
   clearEl.hidden = !done;
@@ -288,7 +324,7 @@ function showClear() {
   const rt = document.createElement("button");
   rt.id = "hbRetry";
   rt.textContent = `↺ 同じ式をもう一度（${proc().label.split("：")[0]} のまま）`;
-  rt.onclick = () => { vals = {}; refresh(); };   // 式も手順も組み直さない（欄の値は refresh が消す）
+  rt.onclick = () => { vals = {}; resetAttempt(); refresh(); };   // 式も手順も組み直さない（欄の値は refresh が消す）
   clearEl.appendChild(rt);
   if (taskIdx < TASKS.length - 1) {
     const nx = document.createElement("button");
@@ -318,6 +354,7 @@ function setProc(id) {
   if (!HALF_PROCS[id]) return false;
   procId = id;
   vals = {};            // ⚠ 持ち越さない（持ち越すと B の1段目を通らずに完成する）
+  resetAttempt();       // 手順を変えたら別の挑戦
   buildProcBar();
   buildFormula();
   refresh();
@@ -346,6 +383,7 @@ function buildStageNav() {
 
 function initTask() {
   vals = {};
+  resetAttempt();       // 式を変えたら別の挑戦（前の式で出した赤を持ち越さない）
   buildStageNav();
   stageTitleEl.innerHTML = "";
   stageTitleEl.appendChild(el("strong", null, taskLabel(taskIdx)));
@@ -363,10 +401,11 @@ window.HalfBuild = {
     const at = halfStepIndex(t, procId, vals);
     return {
       taskIdx, id: t.id, proc: procId,
-      steps: proc().steps.map((s) => s.key),
+      steps: proc().steps.map((s) => halfStepKey(t, s)),
       at, done: halfBuildDone(t, procId, vals),
       clear: !clearEl.hidden,
       charge: !chargeEl.hidden,
+      ngSeen, marked,     // ○× の印（この挑戦で赤を出したか・もう書いたか）
     };
   },
   goto(id) {
