@@ -3173,6 +3173,57 @@ function runModelTests() {
     assert(oxHolderOf([{ sp: "O2", n: 1 }, { sp: "H2O", n: 1 }], "O", -2) === "H2O", "H₂O の O を引けない");
   });
 
+  /* ---- ○× の印 half-marks.js（2026-09-17・段1）---- */
+
+  t("MARKS: ○→×→○ と最後の結果で上書きし、表示は1つ・保存は暗記と係数で分かれる", () => {
+    const mem = {};
+    const fake = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); } };
+    const M = HalfMarks.create(fake);
+    assert(M.KEY === "ioneq_half_marks", "保存のキーが違う: " + M.KEY);
+    assert(M.shown("MnO4_red") === null, "何もしていないのに印がある");
+    M.record("MnO4_red", "build", true, 1);
+    assert(M.shown("MnO4_red") === "o", "○ にならない");
+    M.record("MnO4_red", "build", false, 2);
+    assert(M.shown("MnO4_red") === "x", "○ → × に切り替わらない");
+    M.record("MnO4_red", "build", true, 3);
+    assert(M.shown("MnO4_red") === "o", "× → ○ に切り替わらない");
+    // 保存の形そのもの
+    const saved = JSON.parse(mem["ioneq_half_marks"]);
+    assert(JSON.stringify(saved) === JSON.stringify({ MnO4_red: { build: "o", last: "build", at: 3 } }),
+      "保存の形が { [halfId]: { recall, build, last, at } } でない: " + mem["ioneq_half_marks"]);
+    // ★ 暗記と係数は別に残り、表示は「最後にやった方」
+    M.record("MnO4_red", "recall", false, 4);
+    assert(M.shown("MnO4_red") === "x" && M.get("MnO4_red").build === "o",
+      "暗記の × で係数の ○ が消えた、または表示が最後の結果でない: " + JSON.stringify(M.get("MnO4_red")));
+    M.record("MnO4_red", "build", true, 5);
+    assert(M.shown("MnO4_red") === "o" && M.get("MnO4_red").recall === "x", "係数の ○ で暗記の × が消えた");
+    // 集計（一覧に出す ids ごと）
+    M.record("O3_red", "recall", false, 6);
+    const tl = M.tally(["MnO4_red", "O3_red", "Zn_ox"]);
+    assert(tl.o === 1 && tl.x === 1 && tl.none === 1 && tl.total === 3, "集計が合わない: " + JSON.stringify(tl));
+    assert(M.tally(["MnO4_red", "O3_red"], "recall").x === 2, "暗記だけの集計が合わない");
+    // ★ 否定対照: 知らない練習の名前では書かない
+    assert(M.record("MnO4_red", "quiz", true) === null && M.get("MnO4_red").at === 5, "知らない練習名で書いてしまった");
+    // 係数決定の規則: 赤を一度でも出したら ×
+    assert(HalfMarks.buildOk(false) === true && HalfMarks.buildOk(true) === false, "赤を出したかの規則が逆");
+  });
+
+  t("MARKS: localStorage が無い・例外を投げる・中身が壊れていても止まらない", () => {
+    const none = HalfMarks.create(null);
+    assert(none.record("Zn_ox", "build", true) && none.shown("Zn_ox") === null, "置き場が無いときに止まるか、書けたことになっている");
+    const boom = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); } };
+    const B = HalfMarks.create(boom);
+    let threw = false;
+    try { B.record("Zn_ox", "build", true); B.shown("Zn_ox"); B.tally(["Zn_ox"]); } catch (e) { threw = true; }
+    assert(!threw, "置き場が例外を投げると止まる");
+    assert(B.tally(["Zn_ox"]).none === 1, "読めないときは「まだ」として数えない");
+    // 壊れた中身は捨てる（形の合わない1件だけを落とし、ほかは読む）
+    const broken = { getItem: () => '{"Zn_ox":{"build":"maru"},"Cu_ox":{"recall":"x","last":"recall","at":7}}', setItem() {} };
+    const C = HalfMarks.create(broken);
+    assert(C.get("Zn_ox") === null && C.shown("Cu_ox") === "x", "壊れた1件の扱いが違う");
+    assert(HalfMarks.create({ getItem: () => "{not json", setItem() {} }).shown("Cu_ox") === null, "JSON でない中身で止まる");
+  });
+
   /* ---- 半反応式の一覧 halfCatalog（2026-09-17・段1）---- */
 
   t("CATALOG: 全36件が1件ずつ載り、メタの鍵と HALF_REACTIONS が1対1で、グループが決まっている", () => {
@@ -10747,6 +10798,62 @@ async function runHalfBuildUITests(iframe) {
     win.HalfBuild.goto("O3_red");
     win.HalfBuild.setProc("A");
     assert(!doc.getElementById("hbOxWhere"), "手順A にも札が出ている");
+  });
+
+  /* ★ ○× の印（2026-09-17・ユーザーの決定）:「赤（ng）を一度でも出してクリアしたら ×、
+     一度も出さずにクリアしたら ○。途中でやめたら印は変えない」。
+     ⚠ iframe は test.html と同じ置き場（localStorage）を使うので、前の中身を退避して最後に戻す */
+  await t("HALF UI: ★クリアで印を書く —— 赤なし ○・赤あり ×・途中でやめたら変えない", async () => {
+    const M = win.HalfMarks;
+    assert(M, "halfreaction.html に half-marks.js が読み込まれていない");
+    let before = null;
+    try { before = win.localStorage.getItem(M.KEY); win.localStorage.removeItem(M.KEY); } catch (e) { /* 使えない環境 */ }
+    try {
+      win.HalfBuild.goto("MnO4_red");
+      win.HalfBuild.setProc("B");
+      assert(M.shown("MnO4_red") === null, "始める前から印がある");
+      solveB();
+      assert(state().done && state().marked && !state().ngSeen, "赤なしでクリアしたのに記録の状態が違う: " + JSON.stringify(state()));
+      assert(M.shown("MnO4_red") === "o" && M.get("MnO4_red").build === "o", "赤なしでクリアしても ○ にならない");
+      // ★ ○ → ×: 一度でも赤を出してからクリア
+      doc.getElementById("hbRetry").click();
+      assert(!state().ngSeen && !state().marked, "「もう一度」で前の挑戦の記録を持ち越している");
+      typeInto("e-", "right", 5);                              // 置く辺が逆 → 赤
+      assert(doc.getElementById("hbIn_e_right").classList.contains("ng") && state().ngSeen, "赤を出したのに覚えていない");
+      assert(M.shown("MnO4_red") === "o", "クリアする前に印を書き換えた");
+      typeInto("e-", "right", "");
+      solveB();
+      assert(state().done, "直したあとクリアできない");
+      assert(M.shown("MnO4_red") === "x", "赤を出してクリアしたのに × にならない: " + M.shown("MnO4_red"));
+      // クリアのあとに打ち直しても、同じ挑戦では2回書かない
+      const at1 = M.get("MnO4_red").at;
+      typeInto("e-", "left", 4); typeInto("e-", "left", 5);
+      assert(M.get("MnO4_red").at === at1 && M.shown("MnO4_red") === "x", "クリア後の打ち直しで印を書き直した");
+      // ★ × → ○
+      doc.getElementById("hbRetry").click();
+      solveB();
+      assert(M.shown("MnO4_red") === "o", "赤なしでクリアし直しても ○ に戻らない");
+      // ★ 途中でやめたら変えない（赤を出して、クリアせずに別の式へ）
+      win.HalfBuild.goto("Cr2O7_red");
+      win.HalfBuild.setProc("B");
+      typeInto("e-", "right", 6);
+      assert(state().ngSeen, "Cr₂O₇²⁻ で赤を出したのに覚えていない");
+      win.HalfBuild.goto("MnO4_red");
+      assert(M.get("Cr2O7_red") === null, "クリアしていない式に印が付いた");
+      assert(!state().ngSeen, "別の式に移っても前の式の赤を持ち越している");
+      // ★ 手順を変えたら別の挑戦（B で出した赤を A のクリアに持ち込まない）
+      win.HalfBuild.setProc("B");
+      typeInto("e-", "right", 5);
+      win.HalfBuild.setProc("A");
+      solveA();
+      assert(M.shown("MnO4_red") === "o", "手順を変える前の赤で × になった");
+      // 保存は係数決定の欄（build）だけ。暗記（recall）は書かない
+      assert(M.get("MnO4_red").recall === undefined, "係数決定で暗記の印を書いた");
+    } finally {
+      try {
+        if (before === null) win.localStorage.removeItem(M.KEY); else win.localStorage.setItem(M.KEY, before);
+      } catch (e) { /* 使えない環境 */ }
+    }
   });
 
   await t("HALF UI: 与えるのは骨格だけ（完成した式が画面のどこにも出ない）", async () => {

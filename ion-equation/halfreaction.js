@@ -38,6 +38,15 @@ let taskIdx = 0;
 let procId = "A";
 let vals = {};        // { 種: { left: n, right: n } }（空欄は delete）
 
+/* ★ ○× の印（2026-09-17・half-marks.js）。ユーザーの決定:
+     「赤（ng）を一度でも出してクリアしたら ×、一度も出さずにクリアしたら ○。途中でやめたら印は変えない」
+   ＝ 1回の挑戦（式・手順を選んでから、クリアするか離れるまで）のあいだに赤を出したかを覚えておき、
+   **クリアした瞬間に1回だけ**書く。挑戦を始め直す所（式を変える・手順を変える・もう一度）で捨てる。
+   ⚠ ページの見た目は変えない（印を出すのは一覧のページの仕事）。 */
+let ngSeen = false;     // この挑戦で赤を出したか
+let marked = false;     // この挑戦の印をもう書いたか（クリア後に打ち直しても2回書かない）
+function resetAttempt() { ngSeen = false; marked = false; }
+
 function task() { return TASKS[taskIdx]; }
 function proc() { return HALF_PROCS[procId]; }
 
@@ -258,6 +267,7 @@ function refresh() {
     }
     const r = checkHalfStep(t, procId, i, vals);
     const ngIn = r && r.kind === "wrong";
+    if (ngIn) ngSeen = true;              // ★ 赤を出した（欄の ng と採点の文の ng は同じ条件）
     for (const side of SIDES) {
       const inp = document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side);
       inp.classList.toggle("ng", !!ngIn);
@@ -274,6 +284,11 @@ function refresh() {
     const cmp = compareSides(terms.left, terms.right);
     chargeEl.textContent = `電荷は 左 ${fmtOxNum(cmp.chargeLeft)} ／ 右 ${fmtOxNum(cmp.chargeRight)} —— ` +
       "合っている。手順B では、電荷は答えを決める材料ではなく最後の答え合わせ。";
+  }
+
+  if (done && !marked) {
+    marked = true;
+    if (window.HalfMarks) window.HalfMarks.record(t.id, "build", window.HalfMarks.buildOk(ngSeen));
   }
 
   clearEl.hidden = !done;
@@ -306,7 +321,7 @@ function showClear() {
   const rt = document.createElement("button");
   rt.id = "hbRetry";
   rt.textContent = `↺ 同じ式をもう一度（${proc().label.split("：")[0]} のまま）`;
-  rt.onclick = () => { vals = {}; refresh(); };   // 式も手順も組み直さない（欄の値は refresh が消す）
+  rt.onclick = () => { vals = {}; resetAttempt(); refresh(); };   // 式も手順も組み直さない（欄の値は refresh が消す）
   clearEl.appendChild(rt);
   if (taskIdx < TASKS.length - 1) {
     const nx = document.createElement("button");
@@ -336,6 +351,7 @@ function setProc(id) {
   if (!HALF_PROCS[id]) return false;
   procId = id;
   vals = {};            // ⚠ 持ち越さない（持ち越すと B の1段目を通らずに完成する）
+  resetAttempt();       // 手順を変えたら別の挑戦
   buildProcBar();
   buildFormula();
   refresh();
@@ -364,6 +380,7 @@ function buildStageNav() {
 
 function initTask() {
   vals = {};
+  resetAttempt();       // 式を変えたら別の挑戦（前の式で出した赤を持ち越さない）
   buildStageNav();
   stageTitleEl.innerHTML = "";
   stageTitleEl.appendChild(el("strong", null, taskLabel(taskIdx)));
@@ -385,6 +402,7 @@ window.HalfBuild = {
       at, done: halfBuildDone(t, procId, vals),
       clear: !clearEl.hidden,
       charge: !chargeEl.hidden,
+      ngSeen, marked,     // ○× の印（この挑戦で赤を出したか・もう書いたか）
     };
   },
   goto(id) {
