@@ -48321,8 +48321,8 @@
         const n2 = g.iupacNumberingNotice();
         assert(n2.code === 'ring' && !n2.ok,
             `★ 糖でない環の言い分けが変わっている（${n2.code}）—— 糖の枝が環ぜんぶを飲み込んでいる`);
-        // ⚠ v1576 で酢酸（カルボン酸）は出るようになったので、未対応の代表はエステル
-        load('酢酸メチル');
+        // ⚠ v1576 で酢酸（カルボン酸）、v1580 で酢酸メチル（エステル）は出るようになったので、未対応の代表は酸無水物
+        load('無水酢酸');
         assert(g.iupacNumberingNotice().code === 'unsupported',
             `★ 未対応の官能基の言い分けが変わっている（${g.iupacNumberingNotice().code}）`);
         // ---- ③ ★ 分子が2つあるときは糖でも出さない（'multi' の言い分けをそのまま通す）----
