@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1577">
+    <link rel="stylesheet" href="style.css?v=1579">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1577</div>
+            <div class="version">v1579</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -1624,8 +1624,9 @@
 
     <div id="quiz-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 820px;">
-            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物はどれ？</h2>
-            <p style="font-size:13px; color:var(--text-secondary);">左の見本と同じ化合物を①〜④から1つ選んでください（水素は自動補完で描かれています）。</p>
+            <!-- 見出しと指示は4択の言い方。2択（収録用・保険）のあいだは quiz.js の `applyForm` が差し替える（v1579） -->
+            <h2 id="quiz-title" class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物はどれ？</h2>
+            <p id="quiz-lead" style="font-size:13px; color:var(--text-secondary);">左の見本と同じ化合物を①〜④から1つ選んでください（水素は自動補完で描かれています）。</p>
             <!-- ⚠ **人が触るつまみは2つだけ**（2026-08-20・ユーザー決定
                  「出題範囲、難易度が選べるとわかりやすい」）。
                    出題範囲 … レベル（高校で扱うか）＋分野（大きなくくり）＝ v1425 のまま
@@ -2260,19 +2261,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1577"></script>
+    <script src="chemistry.js?v=1579"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1577"></script>
-    <script src="game.js?v=1577"></script>
-    <script src="reaction.js?v=1577"></script>
-    <script src="quiz.js?v=1577"></script>
-    <script src="stereo.js?v=1577"></script>
-    <script src="reactor.js?v=1577"></script>
-    <script src="narrowing.js?v=1577"></script>
-    <script src="learn.js?v=1577"></script>
-    <script src="tutorial.js?v=1577"></script>
-    <script src="rec.js?v=1577"></script>
+    <script src="deadend.js?v=1579"></script>
+    <script src="game.js?v=1579"></script>
+    <script src="reaction.js?v=1579"></script>
+    <script src="quiz.js?v=1579"></script>
+    <script src="stereo.js?v=1579"></script>
+    <script src="reactor.js?v=1579"></script>
+    <script src="narrowing.js?v=1579"></script>
+    <script src="learn.js?v=1579"></script>
+    <script src="tutorial.js?v=1579"></script>
+    <script src="rec.js?v=1579"></script>
 </body>
 </html>
