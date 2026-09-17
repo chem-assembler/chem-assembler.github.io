@@ -3147,6 +3147,51 @@ function runModelTests() {
       "0 と空欄が同じ扱いになっている");
   });
 
+  /* ★ 2026-09-17 ユーザー決定: 手順B の順番をスライド「その2」に合わせる
+       ① 酸化数から e⁻ の数と辺 → ② 電荷を合わせる（酸性 H⁺・塩基性 OH⁻）→ ③ H₂O で O（と H） */
+  t("HALFBUILD: ★手順B は e⁻ → 電荷（H⁺）→ H₂O の順で、段ごとに電荷・O と H を見る（手順A は変えていない）", () => {
+    assert(JSON.stringify(HALF_PROCS.B.steps.map((s) => s.key)) === JSON.stringify(["e-", "H+", "H2O"]),
+      "手順B の並びが e⁻ → H⁺ → H₂O でない");
+    assert(JSON.stringify(HALF_PROCS.B.steps.map((s) => s.by)) === JSON.stringify(["ox", "chargeIon", "atoms"]),
+      "手順B の段の見どころが 酸化数 → 電荷 → 原子 でない");
+    assert(JSON.stringify(HALF_PROCS.A.steps.map((s) => s.key)) === JSON.stringify(["H2O", "H+", "e-"]),
+      "手順A の並びが変わった（変えない約束）");
+    const task = halfBuildTaskOf("MnO4_red");
+    // ②: e⁻ 5個（左）を置いたあと、電荷は 左 −6 / 右 +2 ＝ H⁺ 8個を左に置けばそろう（O はまだ見ない）
+    const s2 = checkHalfStep(task, "B", 1, { "e-": { left: 5 }, "H+": { left: 8 } });
+    assert(s2.ok && s2.reason.includes("電荷"), "②で電荷をそろえても通らない: " + s2.reason);
+    // ★ 否定対照: H⁺ を逆の辺・数違いは電荷が合わず落ちる
+    const s2r = checkHalfStep(task, "B", 1, { "e-": { left: 5 }, "H+": { right: 8 } });
+    assert(!s2r.ok && s2r.kind === "wrong" && s2r.reason.includes("電荷"), "H⁺ を逆の辺に置いても②が通った: " + s2r.reason);
+    assert(!checkHalfStep(task, "B", 1, { "e-": { left: 5 }, "H+": { left: 7 } }).ok, "H⁺ が1個足りなくても②が通った");
+    // ⚠ ②の文は e⁻ の数も H⁺ の数も言わない（電荷の値だけ）
+    assert(!s2r.reason.includes("8 個") && !/H⁺ を 8/.test(s2r.reason), "②の文が H⁺ の数を漏らしている: " + s2r.reason);
+    // ③: H₂O を右に4個で O も H もそろう。逆の辺なら O と H の両方が合わないと言う
+    assert(checkHalfStep(task, "B", 2, { "e-": { left: 5 }, "H+": { left: 8 }, "H2O": { right: 4 } }).ok, "③が通らない");
+    const s3 = checkHalfStep(task, "B", 2, { "e-": { left: 5 }, "H+": { left: 8 }, "H2O": { left: 4 } });
+    assert(!s3.ok && s3.reason.indexOf("O の数") >= 0 && s3.reason.indexOf("O の数") < s3.reason.indexOf("H の数"),
+      "③で O が先に名指しされない: " + s3.reason);
+    // ★ 否定対照: 旧い順（e⁻ → H₂O → H⁺）の入れ方では②で止まる
+    assert(halfStepIndex(task, "B", { "e-": { left: 5 }, "H2O": { right: 4 } }) === 1, "旧い順で②を飛ばして進めた");
+  });
+
+  t("HALFBUILD: ★塩基性の式（MnO₄⁻ → MnO₂）は手順B なら OH⁻ で解けるが、手順A では解けないので出題に入れない", () => {
+    assert(!halfBuildTaskOf("MnO4_red_neutral"), "塩基性の式が既定で出題に入っている");
+    const task = halfBuildTaskOf("MnO4_red_neutral", { basic: true });
+    assert(task && task.chargeKey === "OH-" && task.electrons === 3 && task.eSide === "left",
+      "塩基性の出題の形が違う: " + JSON.stringify(task));
+    assert(halfSkeletonDisp(task.skeleton) === "MnO₄⁻ → MnO₂", "骨格に OH⁻ が残っている: " + halfSkeletonDisp(task.skeleton));
+    // 実物: ① e⁻ 3個左 → ② 電荷 左 −4 / 右 0 → OH⁻ 4個を右 → ③ O 左 4 / 右 6 → H₂O 2個を左
+    const v = { "e-": { left: 3 }, "OH-": { right: 4 }, "H2O": { left: 2 } };
+    assert(halfBuildDone(task, "B", v) && halfStepIndex(task, "B", v) === 3, "手順B で OH⁻ を使っても解けない");
+    assert(checkHalfStep(task, "B", 1, v).reason.includes("OH⁻"), "②の欄が OH⁻ になっていない");
+    // ★ 否定対照: ②に H⁺ を置いても塩基性の回では進まない／手順A では OH⁻ を書く段が無いので完成しない
+    assert(!halfBuildDone(task, "B", { "e-": { left: 3 }, "H+": { left: 4 }, "H2O": { right: 2 } }), "塩基性の回に H⁺ で通った");
+    assert(!halfBuildDone(task, "A", v), "手順A で OH⁻ の式が完成した（A に OH⁻ の段は無いはず）");
+    // 酸性の回の②は H⁺ のまま
+    assert(halfBuildList().every((t2) => t2.chargeKey === "H+"), "出題に H⁺ 以外で電荷を合わせる回が混ざった");
+  });
+
   /* ★ 行 T（2026-09-14 ユーザー・2026-09-17 実装）:「B方式で書く場合、右辺のO2でなくH2OのO原子を
      見ることがわかるようにしたい」。O₃ の3個の O のうち、0 → −2 になるのは H₂O に入る1個だけ。 */
   t("HALFBUILD: ★O₃ は変わった O が右辺の H₂O にいると言え、O₂ の O は 0 のまま（他の出題には札が付かない）", () => {
@@ -3370,7 +3415,10 @@ function runModelTests() {
     assert(total === 96, "先の段の総数が変わった: " + total);
     assert(digits === 0, "先の段の採点の文に数が出ている（枠より先に文が漏らす）: " + digits);
     // ⚠ ここが「文だけは伏せる」根拠。0 になったら伏せる必要が消える ＝ 決め直してよい
-    assert(greens === 58, "先の段が嘘の緑になる件数が変わった: " + greens);
+    /* ⚠ 2026-09-17（段1.5）: 58 → 40。手順B の順番を e⁻ → H⁺（電荷）→ H₂O に変えたため。
+       ②の電荷の段は 0 を入れても e⁻ を置いていなければ合わず緑にならない回が増え、
+       ③の H₂O の段は O と H の両方を見るので緑になりにくい。伏せる理由（嘘の緑が 0 でない）は変わらない */
+    assert(greens === 40, "先の段が嘘の緑になる件数が変わった: " + greens);
     // ⚠ 見出しには数が1つも出てこない（だから見出しは先に出してよい）
     const heads = ["A", "B"].map((p) => HALF_PROCS[p].steps.map((s) => s.head).join(" ")).join(" ");
     assert(!/[0-9]/.test(heads), "段の見出しに数が出ている: " + heads);
@@ -10569,7 +10617,8 @@ async function runHalfBuildUITests(iframe) {
   const msgOf = (i) => doc.querySelector("#hbStep" + i + " .hbMsg").textContent;
   // MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O を、それぞれの手順の順に入れる
   const solveA = () => { typeInto("H2O", "right", 4); typeInto("H+", "left", 8); typeInto("e-", "left", 5); };
-  const solveB = () => { typeInto("e-", "left", 5); typeInto("H2O", "right", 4); typeInto("H+", "left", 8); };
+  // ⚠ 2026-09-17: 手順B の順番を e⁻ → H⁺（電荷）→ H₂O に変えた（ユーザー決定）
+  const solveB = () => { typeInto("e-", "left", 5); typeInto("H+", "left", 8); typeInto("H2O", "right", 4); };
 
   await t("HALF UI: ★手順A（H₂O → H⁺ → e⁻）が最後まで通り、前の段が片づくまで次が開かない", async () => {
     win.HalfBuild.goto("MnO4_red");
@@ -10603,10 +10652,13 @@ async function runHalfBuildUITests(iframe) {
     assert(doc.getElementById("hbSlot_w_left").hidden, "完成しても 0 個の H₂O が式に残っている");
   });
 
-  await t("HALF UI: ★手順B は段の並びが入れ替わり、e⁻ が1段目に来る（並べ替えではない）", async () => {
+  await t("HALF UI: ★手順B は段の並びが入れ替わり、e⁻ → H⁺（電荷）→ H₂O の順に来る（並べ替えではない）", async () => {
     win.HalfBuild.goto("MnO4_red");
     win.HalfBuild.setProc("B");
-    assert(JSON.stringify(state().steps) === JSON.stringify(["e-", "H2O", "H+"]), "手順B の段の並びが違う");
+    // ⚠ 2026-09-17: 期待値を ["e-","H2O","H+"] から変えた（ユーザー決定で手順B の順番をスライドに合わせた）
+    assert(JSON.stringify(state().steps) === JSON.stringify(["e-", "H+", "H2O"]), "手順B の段の並びが違う");
+    assert(doc.querySelector("#hbStep1 .hbHead").textContent.includes("電荷") &&
+      doc.querySelector("#hbStep2 .hbHead").textContent.includes("H₂O"), "手順B の見出しが 電荷 → H₂O になっていない");
     // 1段目でハイライトされるのは e⁻ の欄（A ではここが H₂O だった）。⚠ 枠は6つとも出たまま
     assert(doc.getElementById("hbSlot_e_left").classList.contains("hbSlotNow") &&
       !doc.getElementById("hbSlot_w_left").classList.contains("hbSlotNow"),
@@ -10622,13 +10674,15 @@ async function runHalfBuildUITests(iframe) {
       "酸化数の出し方（練習Y）へ戻る道が無い");
     solveB();
     assert(state().done && state().clear, "手順B で最後まで組めない");
-    /* ★ 電荷の役どころが入れ替わっている:
-         A … 電荷が e⁻ の数を決める材料（3段目の見出しが電荷）
-         B … 電荷は最後の答え合わせ（段ではなく、締めの1行） */
-    assert(state().charge && doc.getElementById("hbCharge").textContent.includes("答え合わせ"),
-      "手順B の締めに電荷の検算が出ない");
+    /* ★ 電荷が何を決めるかが入れ替わっている:
+         A … 電荷が e⁻ の数を決める（3段目）
+         B … 電荷が H⁺ の数を決める（2段目）。締めの1行は「H も自然にそろった」
+       ⚠ 2026-09-17: 締めの期待値を「答え合わせ（電荷の検算）」から「H もそろった」に変えた
+         （手順B で電荷が段になったので、締めで電荷を検算すると同じことを2回言う） */
+    const close = doc.getElementById("hbCharge").textContent;
+    assert(state().charge && close.includes("H も") && close.includes("8 個"), "手順B の締めに H のそろいが出ない: " + close);
     win.HalfBuild.setProc("A"); solveA();
-    assert(!state().charge, "手順A にも検算の行が出ている（電荷は3段目で使い切っている）");
+    assert(!state().charge, "手順A にも締めの行が出ている");
   });
 
   await t("HALF UI: ★否定対照 —— 辺・数・両辺置きは通らず、答えを漏らさない", async () => {
@@ -10643,13 +10697,20 @@ async function runHalfBuildUITests(iframe) {
     assert(state().at === 0, "e⁻ の数が違っても先へ進んだ");
     assert(!msgOf(0).includes("5"), "採点の文が e⁻ の数を漏らしている: " + msgOf(0));
     typeInto("e-", "left", 5);
-    typeInto("H2O", "left", 4);                 // ★水を逆の辺に
-    assert(state().at === 1, "H₂O を逆の辺に置いても先へ進んだ");
-    assert(msgOf(1).includes("O の数"), "どの原子が合っていないか言っていない: " + msgOf(1));
-    typeInto("H2O", "right", 4);                // ★両辺に置く
+    // ⚠ 2026-09-17: 手順B の2段目は H⁺（電荷）、3段目が H₂O になった（ユーザー決定）ので、叩く欄を入れ替えた
+    typeInto("H+", "right", 8);                 // ★H⁺ を逆の辺に
+    assert(state().at === 1, "H⁺ を逆の辺に置いても先へ進んだ");
+    assert(msgOf(1).includes("電荷"), "電荷が合っていないと言っていない: " + msgOf(1));
+    typeInto("H+", "left", 8);                  // ★両辺に置く
     assert(state().at === 1 && msgOf(1).includes("打ち消し"), "両辺に置いても通った: " + msgOf(1));
-    typeInto("H2O", "left", 0);
+    typeInto("H+", "right", 0);
     assert(state().at === 2, "片方を 0 に戻しても直らない");
+    typeInto("H2O", "left", 4);                 // ★水を逆の辺に
+    assert(state().at === 2, "H₂O を逆の辺に置いても先へ進んだ");
+    assert(msgOf(2).includes("O の数"), "どの原子が合っていないか言っていない: " + msgOf(2));
+    typeInto("H2O", "left", 0);
+    typeInto("H2O", "right", 4);
+    assert(state().done, "直しても完成しない");
   });
 
   await t("HALF UI: 手順を切り替えると入力を捨てる（B の1段目を飛ばせない）", async () => {
@@ -10677,7 +10738,7 @@ async function runHalfBuildUITests(iframe) {
   await t("HALF UI: ★★まだ来ていない段の欄は閉じる（同じ入力順では両方 解けない）", async () => {
     const inp = (key, side) => doc.getElementById("hbIn_" + IN[key] + "_" + side);
     win.HalfBuild.goto("MnO4_red");
-    win.HalfBuild.setProc("B");                     // 段の並びは e⁻ → H₂O → H⁺
+    win.HalfBuild.setProc("B");                     // 段の並びは e⁻ → H⁺ → H₂O（2026-09-17 から）
     assert(!inp("e-", "left").disabled && !inp("e-", "right").disabled,
       "B の1段目（e⁻）の欄まで閉じている（段の中では左右どちらからでも入れられること）");
     assert(inp("H2O", "left").disabled && inp("H2O", "right").disabled &&
@@ -10703,10 +10764,11 @@ async function runHalfBuildUITests(iframe) {
     assert(state().at === 1,
       "e⁻ を入れた途端に段が飛んだ ＝ 順を外した H₂O・H⁺ を受け取っている: " + state().at);
     assert(!state().done, "手順A の入力順のまま手順B がクリアできてしまう");
-    assert(!inp("H2O", "left").disabled, "1段進んでも次の段の欄が開かない");
-    assert(inp("H+", "left").disabled, "その先の段まで一緒に開いている");
-    typeInto("H2O", "right", 4);
+    // ⚠ 2026-09-17: 2段目が H⁺・3段目が H₂O になった（ユーザー決定）ので、開く欄の期待値を入れ替えた
+    assert(!inp("H+", "left").disabled, "1段進んでも次の段（H⁺）の欄が開かない");
+    assert(inp("H2O", "left").disabled, "その先の段（H₂O）まで一緒に開いている");
     typeInto("H+", "left", 8);
+    typeInto("H2O", "right", 4);
     assert(state().done, "手順B の順なら最後まで通る");
     // ★ 済んだ段は開けたまま（間違いに気づいたら前に戻って直せる）
     assert(!inp("e-", "left").disabled, "完成したら前の段が閉じてしまい、直しに戻れない");
