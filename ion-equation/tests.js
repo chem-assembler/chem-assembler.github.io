@@ -1249,7 +1249,8 @@ function runModelTests() {
     assert(matchRedox("SO2_asOxidant", "H2O2_asReductant", "acid").reasonCode === "ladder-reversed",
       "SO₂×H₂O₂ が ladder-reversed でない");
     // 向きを入れ替えると相手の顔ぶれが変わる（＝絞り込み自体が「向きが大事」を教える）
-    assert(so2.length === 4 && redsFor("H2O2_asOxidant").length === 9,
+    // ⚠ 2026-09-17: H₂O₂ は 9 → 10（塩化スズ(Ⅱ)を足し、pairsWith に H2O2_red を入れたため）
+    assert(so2.length === 4 && redsFor("H2O2_asOxidant").length === 10,
       "実測の件数が変わった: SO₂ " + so2.length + " / H₂O₂ " + redsFor("H2O2_asOxidant").length);
     assert(redsFor("H2O2_asOxidant").includes("SO2_asReductant"),
       "H₂O₂ を酸化剤にすると SO₂（還元剤）が現れる、が成り立たない");
@@ -3189,10 +3190,11 @@ function runModelTests() {
         }
       }
     }
-    assert(total === 88, "先の段の総数が変わった: " + total);
+    // ⚠ 2026-09-17: 88 → 96 / 52 → 58（出題に Sn2_ox・Cl2_red の2件が入った。2件×2手順×2段 ＝ +8）
+    assert(total === 96, "先の段の総数が変わった: " + total);
     assert(digits === 0, "先の段の採点の文に数が出ている（枠より先に文が漏らす）: " + digits);
     // ⚠ ここが「文だけは伏せる」根拠。0 になったら伏せる必要が消える ＝ 決め直してよい
-    assert(greens === 52, "先の段が嘘の緑になる件数が変わった: " + greens);
+    assert(greens === 58, "先の段が嘘の緑になる件数が変わった: " + greens);
     // ⚠ 見出しには数が1つも出てこない（だから見出しは先に出してよい）
     const heads = ["A", "B"].map((p) => HALF_PROCS[p].steps.map((s) => s.head).join(" ")).join(" ");
     assert(!/[0-9]/.test(heads), "段の見出しに数が出ている: " + heads);
