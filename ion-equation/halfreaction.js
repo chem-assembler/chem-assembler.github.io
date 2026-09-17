@@ -246,7 +246,8 @@ function refresh() {
        ⚠ **枠と見出しには数が1つも出てこない**ので、伏せるのはここ1か所で足りる。 */
     e.msg.hidden = ahead;
     e.extra.hidden = ahead || st.by !== "ox";
-    if (!e.extra.hidden) buildOxHint(e.extra);
+    // ⚠ 隠すときは中身も捨てる（手順A に切り替えたあとも、B の札が隠れたまま DOM に残っていた）
+    if (!e.extra.hidden) buildOxHint(e.extra); else e.extra.innerHTML = "";
     if (ahead) {
       e.msg.textContent = "";
       // 先の段の欄に、前に付いた赤い印を残さない
