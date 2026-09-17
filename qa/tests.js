@@ -2804,13 +2804,57 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC) {
     assert(!bad.length, "上書きの記録が欠けている: " + bad.join(" "));
   });
 
-  t("表: 上書き2件（ナフタレンの空気酸化 4→3・ピクリン酸 3→2）が理由つきで記録されている", function () {
-    [["org.aro.naphthalene-oxidation", 4, 3], ["org.phenol.picric", 3, 2]].forEach(function (x) {
+  // 上書き5件。v115 で2件、2026-09-17 のユーザー決定「記録してください」で過去の3件
+  // （git の履歴に「ユーザーの判断」と残っていたのに表に無かったもの）を足した。
+  // ⚠ **件数を固定する**: 黙って1件消えても、機械の目安と一致する項目（下の3件はどれも一致）は
+  //   「記録の無い食い違い」の検査に掛からない ＝ ここでしか気づけない
+  var OVERRIDES = [
+    ["org.aro.naphthalene-oxidation", 4, 3, "2026-09-15", /v112/],
+    ["org.phenol.picric", 3, 2, "2026-09-15", /v112/],
+    ["org.anal.detect-s", 3, 2, "2026-09-11", /v108（8d6065e7）/],
+    ["org.fat.saponification-value", 4, 3, "2026-09-11", /v110（c75fdc9e）/],
+    ["org.fat.iodine-value", 4, 3, "2026-09-11", /v110（c75fdc9e）/]
+  ];
+  /** 上書きの記録を OVERRIDES と突き合わせ、問題点の一覧を返す（否定対照でも同じ関数を使う） */
+  function overrideProblems(rs) {
+    var by = {}, errs = [];
+    rs.forEach(function (r) { by[r.code] = r; });
+    var ov = rs.filter(function (r) { return r.override; }).map(function (r) { return r.code; });
+    if (ov.length !== OVERRIDES.length) errs.push("上書きが " + ov.length + " 件（期待 " + OVERRIDES.length + " 件）: " + ov.join(" ") +
+      "。増やしたならこの表にも足す");
+    OVERRIDES.forEach(function (x) {
+      var r = by[x[0]], o = r && r.override;
+      if (!o) { errs.push(x[0] + " に上書きの記録が無い"); return; }
+      if (o.from !== x[1] || o.lv !== x[2]) errs.push(x[0] + " の上書きが " + o.from + "→" + o.lv + "（期待 " + x[1] + "→" + x[2] + "）");
+      if (o.date !== x[3]) errs.push(x[0] + " の日付が " + o.date + "（期待 " + x[3] + " ＝ 判断したコミットの日）");
+      if (!/ユーザー判断/.test(o.reason || "")) errs.push(x[0] + " の理由に「ユーザー判断」が無い");
+      if (!x[4].test(o.ref || "")) errs.push(x[0] + " の記録（ref）が判断したコミットを指していない: " + o.ref);
+      var p = DATA.patterns.filter(function (q) { return q.code === x[0]; })[0];
+      if (!p || p.difficulty !== x[2]) errs.push(x[0] + " の difficulty が上書きの値 " + x[2] + " になっていない");
+    });
+    return errs;
+  }
+  t("表: 上書き5件（ナフタレンの空気酸化・ピクリン酸・硫黄の検出・けん化価・ヨウ素価）が理由つきで記録されている", function () {
+    var errs = overrideProblems(rows);
+    assert(!errs.length, errs.slice(0, 3).join(" / "));
+    // 否定対照: 1件（硫黄の検出）の上書きを外した写し・日付をずらした写しでは、この検査が赤になる
+    var minus = rows.map(function (r) {
+      return r.code === "org.anal.detect-s" ? { code: r.code, override: null } : r;
+    });
+    assert(overrideProblems(minus).length >= 2, "否定対照が成立しない（上書きを1件外しても検査が赤にならない）");
+    var shifted = rows.map(function (r) {
+      if (r.code !== "org.fat.iodine-value") return r;
+      var o = {}; for (var k in r.override) o[k] = r.override[k];
+      o.date = "2026-09-17";
+      return { code: r.code, override: o };
+    });
+    assert(overrideProblems(shifted).length === 1, "否定対照が成立しない（日付をずらしても検査が赤にならない）");
+  });
+  // 過去の3件は「git 履歴にだけ残っていた」ので、記録した日を理由に残す
+  t("表: 過去の上書き3件の理由に、記録した日（2026-09-17 記録）が添えてある", function () {
+    OVERRIDES.slice(2).forEach(function (x) {
       var r = byCode[x[0]];
-      assert(r && r.override, x[0] + " に上書きの記録が無い");
-      assert(r.override.from === x[1] && r.override.lv === x[2],
-        x[0] + " の上書きが " + r.override.from + "→" + r.override.lv + "（期待 " + x[1] + "→" + x[2] + "）");
-      assert(/ユーザー判断/.test(r.override.reason), x[0] + " の理由に「ユーザー判断」が無い");
+      assert(r && r.override && /（2026-09-17 記録）/.test(r.override.reason), x[0] + " の理由に「（2026-09-17 記録）」が無い");
     });
   });
 
