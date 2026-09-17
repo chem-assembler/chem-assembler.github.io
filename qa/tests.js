@@ -2741,7 +2741,7 @@ function runLedgerTests(DATA, LEDGER) {
  * ★ 規則と関所は `tools/level_rules.js` に1つだけ置き、道具とこのテストが同じものを使う。
  * ⚠ 読めなかった環境（file:// 直開きなど）では「読めていない」で落とす（黙って合格にしない）。
  */
-function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC) {
+function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC, USAGE_TEXT) {
   var results = [];
   var t = function (name, fn) {
     try { fn(); results.push({ name: name, ok: true }); }
@@ -2804,13 +2804,57 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC) {
     assert(!bad.length, "上書きの記録が欠けている: " + bad.join(" "));
   });
 
-  t("表: 上書き2件（ナフタレンの空気酸化 4→3・ピクリン酸 3→2）が理由つきで記録されている", function () {
-    [["org.aro.naphthalene-oxidation", 4, 3], ["org.phenol.picric", 3, 2]].forEach(function (x) {
+  // 上書き5件。v115 で2件、2026-09-17 のユーザー決定「記録してください」で過去の3件
+  // （git の履歴に「ユーザーの判断」と残っていたのに表に無かったもの）を足した。
+  // ⚠ **件数を固定する**: 黙って1件消えても、機械の目安と一致する項目（下の3件はどれも一致）は
+  //   「記録の無い食い違い」の検査に掛からない ＝ ここでしか気づけない
+  var OVERRIDES = [
+    ["org.aro.naphthalene-oxidation", 4, 3, "2026-09-15", /v112/],
+    ["org.phenol.picric", 3, 2, "2026-09-15", /v112/],
+    ["org.anal.detect-s", 3, 2, "2026-09-11", /v108（8d6065e7）/],
+    ["org.fat.saponification-value", 4, 3, "2026-09-11", /v110（c75fdc9e）/],
+    ["org.fat.iodine-value", 4, 3, "2026-09-11", /v110（c75fdc9e）/]
+  ];
+  /** 上書きの記録を OVERRIDES と突き合わせ、問題点の一覧を返す（否定対照でも同じ関数を使う） */
+  function overrideProblems(rs) {
+    var by = {}, errs = [];
+    rs.forEach(function (r) { by[r.code] = r; });
+    var ov = rs.filter(function (r) { return r.override; }).map(function (r) { return r.code; });
+    if (ov.length !== OVERRIDES.length) errs.push("上書きが " + ov.length + " 件（期待 " + OVERRIDES.length + " 件）: " + ov.join(" ") +
+      "。増やしたならこの表にも足す");
+    OVERRIDES.forEach(function (x) {
+      var r = by[x[0]], o = r && r.override;
+      if (!o) { errs.push(x[0] + " に上書きの記録が無い"); return; }
+      if (o.from !== x[1] || o.lv !== x[2]) errs.push(x[0] + " の上書きが " + o.from + "→" + o.lv + "（期待 " + x[1] + "→" + x[2] + "）");
+      if (o.date !== x[3]) errs.push(x[0] + " の日付が " + o.date + "（期待 " + x[3] + " ＝ 判断したコミットの日）");
+      if (!/ユーザー判断/.test(o.reason || "")) errs.push(x[0] + " の理由に「ユーザー判断」が無い");
+      if (!x[4].test(o.ref || "")) errs.push(x[0] + " の記録（ref）が判断したコミットを指していない: " + o.ref);
+      var p = DATA.patterns.filter(function (q) { return q.code === x[0]; })[0];
+      if (!p || p.difficulty !== x[2]) errs.push(x[0] + " の difficulty が上書きの値 " + x[2] + " になっていない");
+    });
+    return errs;
+  }
+  t("表: 上書き5件（ナフタレンの空気酸化・ピクリン酸・硫黄の検出・けん化価・ヨウ素価）が理由つきで記録されている", function () {
+    var errs = overrideProblems(rows);
+    assert(!errs.length, errs.slice(0, 3).join(" / "));
+    // 否定対照: 1件（硫黄の検出）の上書きを外した写し・日付をずらした写しでは、この検査が赤になる
+    var minus = rows.map(function (r) {
+      return r.code === "org.anal.detect-s" ? { code: r.code, override: null } : r;
+    });
+    assert(overrideProblems(minus).length >= 2, "否定対照が成立しない（上書きを1件外しても検査が赤にならない）");
+    var shifted = rows.map(function (r) {
+      if (r.code !== "org.fat.iodine-value") return r;
+      var o = {}; for (var k in r.override) o[k] = r.override[k];
+      o.date = "2026-09-17";
+      return { code: r.code, override: o };
+    });
+    assert(overrideProblems(shifted).length === 1, "否定対照が成立しない（日付をずらしても検査が赤にならない）");
+  });
+  // 過去の3件は「git 履歴にだけ残っていた」ので、記録した日を理由に残す
+  t("表: 過去の上書き3件の理由に、記録した日（2026-09-17 記録）が添えてある", function () {
+    OVERRIDES.slice(2).forEach(function (x) {
       var r = byCode[x[0]];
-      assert(r && r.override, x[0] + " に上書きの記録が無い");
-      assert(r.override.from === x[1] && r.override.lv === x[2],
-        x[0] + " の上書きが " + r.override.from + "→" + r.override.lv + "（期待 " + x[1] + "→" + x[2] + "）");
-      assert(/ユーザー判断/.test(r.override.reason), x[0] + " の理由に「ユーザー判断」が無い");
+      assert(r && r.override && /（2026-09-17 記録）/.test(r.override.reason), x[0] + " の理由に「（2026-09-17 記録）」が無い");
     });
   });
 
@@ -2865,6 +2909,152 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC) {
     var bad = DATA.patterns.filter(function (p) { return lines[p.code] !== p.difficulty; })
       .map(function (p) { return p.code + "（一覧 " + lines[p.code] + " / difficulty " + p.difficulty + "）"; });
     assert(!bad.length, "一覧と食い違う " + bad.length + " 件: " + bad.slice(0, 3).join(" / ") + HOW);
+  });
+
+  /* ---- 根拠ごとの Lv（2026-09-17・ユーザー決定「根拠ごとのレベルも記録しておいてください」）----
+   * 表の `lvBy` = { textbook: [下限, 上限], seminar: [下限, 上限], exam: null（規則なし） }。
+   * 規則は tools/level_rules.js の BY_TEXTBOOK・BY_SEMINAR・BY_EXAM の1か所。 */
+  var isRange = function (g) {
+    return Object.prototype.toString.call(g) === "[object Array]" && g.length === 2 &&
+      g[0] >= 1 && g[1] <= 4 && g[0] <= g[1] && g[0] === Math.floor(g[0]) && g[1] === Math.floor(g[1]);
+  };
+  /** 表の lvBy を、questions.json の evidence から規則で計算し直した値と突き合わせる（否定対照でも使う） */
+  function lvByProblems(rs) {
+    var byP = {};
+    DATA.patterns.forEach(function (p) { byP[p.code] = p; });
+    return rs.filter(function (r) {
+      var p = byP[r.code];
+      return !p || JSON.stringify(r.lvBy) !== JSON.stringify(RULES.evidenceLv(p.evidence));
+    }).map(function (r) { return r.code; });
+  }
+
+  t("根拠ごとの Lv: 全行に教科書・セミナー・入試の3欄がある（区間は 1〜4 の [下限, 上限]・入試は規則なし＝null）", function () {
+    assert(rows.length, "data/level_matrix.jsonl を読めていない");
+    var bad = rows.filter(function (r) {
+      var b = r.lvBy;
+      return !b || !("textbook" in b) || !("seminar" in b) || !("exam" in b) ||
+        !isRange(b.textbook) || !isRange(b.seminar) || b.exam !== null;
+    }).map(function (r) { return r.code; });
+    assert(!bad.length, "根拠ごとの Lv の欄が欠けている・形が違う " + bad.length + " 件: " + bad.slice(0, 4).join(" ") + HOW);
+  });
+
+  t("根拠ごとの Lv: 規則（level_rules.js の evidenceLv）で questions.json の evidence から計算し直した値と一致する（否定対照: 1件書き換えると赤）", function () {
+    assert(RULES && RULES.evidenceLv, "tools/level_rules.js の evidenceLv を読めていない");
+    var bad = lvByProblems(rows);
+    assert(!bad.length, "根拠ごとの Lv が規則と違う " + bad.length + " 件: " + bad.slice(0, 4).join(" ") + HOW);
+    // 否定対照: ピクリン酸のセミナーから見た Lv を [1,2] に書き換えた写し → 1件だけ赤
+    var tampered = rows.map(function (r) {
+      if (r.code !== "org.phenol.picric") return r;
+      return { code: r.code, lvBy: { textbook: r.lvBy.textbook, seminar: [1, 2], exam: null } };
+    });
+    var neg = lvByProblems(tampered);
+    assert(neg.length === 1 && neg[0] === "org.phenol.picric", "否定対照が成立しない（書き換えた行を検出できない）: " + neg.join(" "));
+  });
+
+  t("根拠ごとの Lv: 変換の規則が設計書 §7-2 の片側の論法の表どおり（本文≤3・発展欄≥2・プロセス1・基本≤2・発展≥3・入試は規則なし）", function () {
+    var J = function (x) { return JSON.stringify(x); };
+    assert(J(RULES.BY_TEXTBOOK) === J({ "本文": [1, 3], "発展欄": [2, 4], "見あたらない": [1, 4] }),
+      "教科書の規則が §7-2 と違う: " + J(RULES.BY_TEXTBOOK));
+    assert(J(RULES.BY_SEMINAR) === J({ "プロセス": [1, 1], "基本": [1, 2], "発展": [3, 4], "未登場": [1, 4] }),
+      "セミナーの規則が §7-2 と違う: " + J(RULES.BY_SEMINAR));
+    assert(RULES.BY_EXAM === null, "入試に Lv の規則が入っている（§7-2「出題頻度は混ぜない」・§7-3「閾値は先に決めない」）");
+    // 弱い教科書の判定は Lv を言わない（§7-2 の表も弱いときはセミナー側だけで挟む ＝ SEMINAR_ONLY と同じ扱い）
+    assert(J(RULES.evidenceLv({ textbook: "本文", textbookWeak: true, seminar: "基本" }).textbook) === "[1,4]",
+      "（弱）の教科書から Lv が出ている");
+    assert(RULES.SEMINAR_ONLY === RULES.BY_SEMINAR, "弱いときの区間（SEMINAR_ONLY）がセミナーの規則と別物になっている");
+    assert(RULES.push(2, [3, 4]) === "up" && RULES.push(4, [1, 3]) === "down" && RULES.push(2, [1, 3]) === "" && RULES.push(2, null) === "",
+      "押している向き（push）の判定が違う");
+  });
+
+  t("根拠ごとの Lv: 目安 §7-2 の区間は「教科書 ∩ セミナー」。違う欄は理由のある3つ（本文×未登場・発展欄×プロセス・発展欄×基本）だけ", function () {
+    var odd = [];
+    Object.keys(RULES.TABLE).forEach(function (tb) {
+      Object.keys(RULES.TABLE[tb]).forEach(function (sem) {
+        var a = RULES.BY_TEXTBOOK[tb], b = RULES.BY_SEMINAR[sem];
+        var lo = Math.max(a[0], b[0]), hi = Math.min(a[1], b[1]);
+        var cellRange = RULES.TABLE[tb][sem];
+        if (lo > hi || cellRange[0] !== lo || cellRange[1] !== hi) odd.push(tb + "×" + sem);
+      });
+    });
+    assert(JSON.stringify(odd.sort()) === JSON.stringify(RULES.NOT_INTERSECTION.slice().sort()),
+      "共通部分にならない欄が " + odd.join("・") + "（記録は " + RULES.NOT_INTERSECTION.join("・") + "）。表か規則を変えたなら理由を level_rules.js に書く");
+  });
+
+  t("入試: 手筋の数が古い行には今の値（asToolNow）が並び、questions.json の値はそのまま（否定対照: 今の値を外すと赤）", function () {
+    var text = String(USAGE_TEXT || "");
+    assert(text, "data/exam_usage.jsonl を読めていない");
+    assert(RULES.asToolOf, "tools/level_rules.js の asToolOf を読めていない");
+    var now = {};
+    text.split(/\r?\n/).forEach(function (l) {
+      if (!l.trim()) return;
+      var o = JSON.parse(l);
+      if (!o._readme) now[o.code] = RULES.asToolOf(o.problems);
+    });
+    var check = function (rs) {
+      var byP = {};
+      DATA.patterns.forEach(function (p) { byP[p.code] = p; });
+      return rs.filter(function (r) {
+        var ev = (byP[r.code] || {}).evidence || {};
+        var old = (ev.exam && ev.exam.asTool) || 0, n = now[r.code] || 0;
+        return n === old ? r.asToolNow !== undefined : r.asToolNow !== n;
+      }).map(function (r) { return r.code + "（evidence " + (((byP[r.code] || {}).evidence || {}).exam || {}).asTool + " / 今 " + now[r.code] + " / 表 " + r.asToolNow + "）"; });
+    };
+    var bad = check(rows);
+    assert(!bad.length, "今の値の欄がずれている " + bad.length + " 件: " + bad.slice(0, 3).join(" / ") + HOW);
+    var stale = rows.filter(function (r) { return r.asToolNow !== undefined; });
+    assert(byCode["org.ali.class-chain-ring"] && byCode["org.ali.class-chain-ring"].exam.asTool === 44,
+      "questions.json の asTool（org.ali.class-chain-ring は 44）が変わっている。この表の便では変えない約束");
+    // 否定対照: 古い行から今の値を外した写し → その行が赤
+    if (stale.length) {
+      var cut = rows.map(function (r) {
+        if (r !== stale[0]) return r;
+        var c = {}; for (var k in r) if (k !== "asToolNow") c[k] = r[k];
+        return c;
+      });
+      assert(check(cut).length === 1, "否定対照が成立しない（今の値を外しても検出できない）");
+    }
+  });
+
+  t("一覧: LEVEL_MATRIX.md の全項目の表に、根拠ごとの Lv と押している向き（↑↓）が規則どおり載っている（否定対照: 矢印を消すと赤）", function () {
+    assert(text, "LEVEL_MATRIX.md を読めていない");
+    var HEAD = "| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv |";
+    assert(text.indexOf(HEAD) >= 0, "全項目の表の見出しに根拠ごとの Lv の欄が無い");
+    var short = function (g) {
+      if (!g) return "";
+      return g[0] === g[1] ? String(g[0]) : (g[0] === 1 && g[1] === 4 ? "—" : (g[0] === 1 ? "≤" + g[1] : (g[1] === 4 ? "≥" + g[0] : g[0] + "〜" + g[1])));
+    };
+    var expect = function (r, k) {
+      var g = r.lvBy && r.lvBy[k];
+      if (!g) return "";
+      var d = RULES.push(r.final, g);
+      return short(g) + (d === "up" ? " **↑**" : d === "down" ? " **↓**" : "");
+    };
+    var scan = function (md) {
+      var seen = {}, errs = [];
+      md.split(/\r?\n/).forEach(function (l) {
+        var m = l.match(/^\| `(org\.[a-zA-Z]+\.[a-z0-9-]+)` \| /);
+        if (!m) return;
+        var cells = l.split(" | ");
+        if (cells.length < 13) return;   // 全項目の表だけ（13欄）
+        var r = byCode[m[1]];
+        if (!r) return;
+        seen[m[1]] = true;
+        if (cells[4] !== expect(r, "textbook") || cells[6] !== expect(r, "seminar") || cells[8] !== expect(r, "exam"))
+          errs.push(m[1] + "（一覧 " + cells[4] + " / " + cells[6] + " / " + cells[8] + "）");
+      });
+      rows.forEach(function (r) { if (!seen[r.code]) errs.push(r.code + " が全項目の表に無い"); });
+      return errs;
+    };
+    var errs = scan(text);
+    assert(!errs.length, "一覧の根拠ごとの Lv が規則と違う " + errs.length + " 件: " + errs.slice(0, 3).join(" / ") + HOW);
+    var arrows = rows.filter(function (r) { return RULES.push(r.final, r.lvBy.textbook) || RULES.push(r.final, r.lvBy.seminar); });
+    assert(arrows.some(function (r) { return r.code === "org.phenol.picric"; }),
+      "ピクリン酸（上書き 3→2・セミナーは発展 ≥3）がセミナーに押し上げられている項目に入っていない");
+    // 否定対照: ピクリン酸の行の矢印を消した md → 赤
+    var cutMd = text.split(/\r?\n/).map(function (l) {
+      return l.indexOf("| `org.phenol.picric` |") === 0 ? l.replace(" **↑**", "") : l;
+    }).join("\n");
+    assert(scan(cutMd).length >= 1, "否定対照が成立しない（矢印を消しても検出できない）");
   });
 
   return results;
