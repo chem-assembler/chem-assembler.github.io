@@ -16152,10 +16152,12 @@
     const rxpEqRun = (c, names, id) => {
         const g = c.game, W = c.W, rx = W.reactor;
         g.userMolecule = new W.Molecule();
-        names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
+        // names は名前の並び、または題材を組む関数（加硫の「鎖が2本」・v1579）
+        if (typeof names === 'function') names(g, W);
+        else names.forEach(n => assert(g.summonMolecule(n), `${n} を呼び出せない（検査が素通りする）`));
         const rule = W.REACTION_RULES.find(r => r.id === id);
         const sites = rule.detect(g.userMolecule) || [];
-        assert(sites.length, `${names.join('＋')} に ${id} の箇所が無い（検査が素通りする）`);
+        assert(sites.length, `${typeof names === 'function' ? '組んだ題材' : names.join('＋')} に ${id} の箇所が無い（検査が素通りする）`);
         rx.execute(rule, sites[0]);
         rx._morphSkip = true;
         const L = rx.lastReaction;
@@ -16403,6 +16405,107 @@
             }
         } finally {
             rx._chainEndSummon = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    /* ===== RXP6: 加硫は硫黄 S を2つ呼ぶ（v1579・ユーザー決定 2026-09-17「7.直す」）=====
+     * v1577 の全ルール走査で、急に出る原子が残った最後の1本（橋の S が2つ、何も無い所から湧いていた）。
+     * ★ 呼ぶのは S 原子2つ（S₈ にしない理由は `PARTNER_EQUATIONS.vulcanization` の注記）。
+     * ★ 前後比較の図は「前 ＝ 鎖＋S」にそろえ、反応式の行は出さない（基質の式に R が入るため）。
+     * ★ 動画レーンの記録（d9a55010）の「箇所選びが終わらない」も、実物の手順（鎖2本 → 加硫 → 光った原子を押す）で見る。 */
+    const rxpTwoChains = (g, W) => {
+        const dien = W.REACTION_RULES.find(x => x.id === 'diene_polymerization');
+        for (let k = 0; k < 2; k++) {
+            for (let i = 0; i < 3; i++) assert(g.summonMolecule('1,3-ブタジエン'), '1,3-ブタジエン を呼び出せない');
+            const s = dien.detect(g.userMolecule);
+            assert(s.length, `${k + 1} 本目の 1,4-付加重合の箇所が無い（題材が組めない）`);
+            dien.apply(g, s[0]);
+        }
+        g.updateDrawing();
+        assert(g.splitMolecules().length === 2, `鎖が ${g.splitMolecules().length} 本（2本を期待）`);
+    };
+    test('RXP6: 加硫は硫黄 S を2つ呼ぶ ＝ 写しで急に出る原子が0個・S は水素なし・前後比較の図に S・式の行は出ない／箇所選びは押せば終わる（否定対照つき・v1579）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rx = W.reactor;
+        g.setMode('free');
+        const GS = 42;
+        const rule = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        try {
+            // ① 箇所選び: 光った原子を押していけば、有限回で S が2つ入る（押しても同じ候補に戻らない）
+            g.userMolecule = new W.Molecule();
+            rxpTwoChains(g, W);
+            const sites = rule.detect(g.userMolecule);
+            assert(sites.length >= 2, `加硫の箇所が ${sites.length} 件（箇所選びに入る 2件以上を期待）`);
+            rx.onRuleClick(rule, sites);
+            let clicks = 0;
+            const counts = [];
+            while (rx.picking && clicks < 6) {
+                counts.push(rx.picking.sites.length);
+                const marks = [...D.querySelectorAll('#ui-group [data-hl-atom]')].map(el => el.getAttribute('data-hl-atom'));
+                assert(marks.length, `${clicks + 1} 回目: 箇所選びなのにハイライトが無い`);
+                rx.handlePick(g.userMolecule.atoms.find(a => a.id === marks[0]));
+                clicks++;
+            }
+            const sCount = g.userMolecule.atoms.filter(a => a.element === 'S').length;
+            assert(!rx.picking && sCount === 2,
+                `箇所選びが終わらない（${clicks} 回押して候補 ${counts.join(' → ')}・S ${sCount} 個）`);
+            assert(counts.every((n, i) => i === 0 || n < counts[i - 1]), `押しても候補が減らない（${counts.join(' → ')}）`);
+            await 反応の再生を待つ(c);
+
+            // ② 急に出る原子が0個・S は2つとも相手として反応前の図にいる
+            const r = rxpEqRun(c, rxpTwoChains, 'vulcanization');
+            const L = r.L, A = L.anim;
+            assert(A && !A.playbackOnly, '加硫で硫黄を呼べていない（写しが無い／再生専用になっている）');
+            assert(!r.pop && !r.gone, `写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」がある`);
+            assert(A.counts && A.counts.S === 2, `S が ${A.counts && A.counts.S} 個（2 を期待）`);
+            const real = new Set(L.before.atoms.map(a => a.id));
+            const ss = A.before.atoms.filter(a => a.element === 'S' && !real.has(a.id));
+            assert(ss.length === 2 && ss.every(s => s.bare), `反応前の図の S が ${ss.length} 個（2つ・水素なしを期待）`);
+            const heavy = A.before.atoms.filter(a => a.element !== 'H');
+            ss.forEach(s => {
+                assert(!A.before.bonds.some(b => b.atomId1 === s.id || b.atomId2 === s.id), '反応前の S がもう結合している');
+                assert(!r.hx.before.bonds.some(b => b.atomId1 === s.id || b.atomId2 === s.id), '反応前の S に水素が生えた（H₂S に見える）');
+                assert(heavy.every(q => q.id === s.id || Math.hypot(q.x - s.x, q.y - s.y) >= GS * 1.25 - 0.5),
+                    `S（${Math.round(s.x)},${Math.round(s.y)}）がほかの原子に重なる`);
+            });
+            // 再生の段取りでも S は「呼んだ相手」として現れる（画面の図 T=0 には無い）
+            rx._morphGen++; rx._morphing = false;
+            const plan = rx.buildPlayback(L, null);
+            assert(plan && ss.every(s => plan.partnerIds.includes(s.id)) && !plan.S0.atoms.some(a => a.element === 'S'),
+                '再生で S が相手として現れない');
+            g.updateDrawing();
+            // ③ 前後比較: 前の図に S が2つ・式の行は出ない
+            rx.openCompare();
+            assert(!D.getElementById('rx-cmp-eq'), `前後比較に反応式の行が出た（${(D.getElementById('rx-cmp-eq') || {}).textContent}）`);
+            const svgs = [...D.querySelectorAll('#rx-compare-overlay svg')];
+            const sIn = svg => [...svg.querySelectorAll('.quiz-atoms text')].filter(t => t.textContent === 'S').length;
+            assert(svgs.length === 2 && sIn(svgs[0]) === 2 && sIn(svgs[1]) === 2,
+                `前後比較の S が 前 ${svgs[0] ? sIn(svgs[0]) : '-'}・後 ${svgs[1] ? sIn(svgs[1]) : '-'}（2・2 を期待）`);
+            rx.closeCompare();
+            // ★ 否定対照①: 式の行を止める印を外すと、行が出て化学式に R が入る（＝ 印が効いている）
+            W.PARTNER_EQUATIONS.vulcanization.equationRow = true;
+            try {
+                rx.openCompare();
+                const row = (D.getElementById('rx-cmp-eq') || {}).textContent || '';
+                assert(/R/.test(row) && /S/.test(row), `否定対照: 印を外しても式の行が「${row}」（R を含む式を期待）`);
+                rx.closeCompare();
+            } finally { W.PARTNER_EQUATIONS.vulcanization.equationRow = false; }
+            await 反応の再生を待つ(c);
+            // ★ 否定対照②: 表から外すと S が2つ急に出る。生成物とキャンバスの原子は同じ
+            const saved = W.PARTNER_EQUATIONS.vulcanization;
+            delete W.PARTNER_EQUATIONS.vulcanization;
+            try {
+                const plain = rxpEqRun(c, rxpTwoChains, 'vulcanization');
+                assert(!plain.L.anim && plain.pop === 'SS', `否定対照: 表から外すと急に出る原子が「${plain.pop}」（SS を期待）＝ この検査は何も見張っていない`);
+                assert(plain.codes === r.codes, `S を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
+                assert(plain.canvas === r.canvas, `S を呼ぶとキャンバスの原子が変わった（${r.canvas} / ${plain.canvas}）`);
+            } finally {
+                W.PARTNER_EQUATIONS.vulcanization = saved;
+            }
+            await 反応の再生を待つ(c);
+        } finally {
+            rx.closeCompare();
             g.userMolecule = new W.Molecule(); g.updateDrawing();
         }
     });

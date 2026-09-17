@@ -9145,6 +9145,9 @@ const RX_SPECIES = {
      *   ⚠ 名前の登録（`summonMolecule`）はできない（v1556 の報告）＝ 写しにだけ置く。
      *   間隔は `withMorphHydrogens` ③ が呼ぶ H₂ と同じ 0.7 マス */
     H2: { atoms: [['H', 0, 0], ['H', 0.7, 0]], bonds: [[0, 1, 1]] },
+    /* ★ 硫黄 S（v1579・加硫の相手）。**原子1個ずつ**呼ぶ（S₈ の環にはしない。理由は `PARTNER_EQUATIONS.vulcanization`）。
+     *   ⚠ `bare` … 結合の無い S に自動水素が2本生えると H₂S に見える */
+    S: { atoms: [['S', 0, 0, 0, { bare: true }]], bonds: [] },
     CH3COOH: { atoms: [['C', 0, 0], ['C', 1, 0], ['O', 1, -1], ['O', 2, 0]], bonds: [[0, 1, 1], [1, 2, 2], [1, 3, 1]] },
     Ac2O: { atoms: [['C', 0, 0], ['C', 1, 0], ['O', 1, -1], ['O', 2, 0], ['C', 3, 0], ['O', 3, -1], ['C', 4, 0]],
         bonds: [[0, 1, 1], [1, 2, 2], [1, 3, 1], [3, 4, 1], [4, 5, 2], [4, 6, 1]] }
@@ -9189,7 +9192,19 @@ const PARTNER_EQUATIONS = {
      *   caption が言葉で案内している（還元剤を瓶の中身に合わせる ＝ 画面と瓶が食い違わない）。
      *   収支は C₆H₅NO₂ ＋ 3H₂ → C₆H₅NH₂ ＋ 2H₂O（係数は `solveEquation` が解く）。
      *   ⚠ H₂ は「×n」にまとめない（`RX_NO_FOLD`）。3つが N・O・O の別々の原子へ H を渡す */
-    reduce_nitro: { partners: ['H2'], byproducts: ['H2O'] }
+    reduce_nitro: { partners: ['H2'], byproducts: ['H2O'] },
+    /* ★ 加硫（v1579・ユーザー決定 2026-09-17「7.直す」）。v1577 の走査で**急に出る原子が残った最後の1本**
+     *   （橋の S が2つ、何も無い所から湧いていた）。瓶は `sulfur` なので、呼ぶ相手は**硫黄 S を原子で2つ**。
+     *   ★ S₈ にしない理由: 橋に入るのは2つだけなので、S₈ を呼ぶと**残り6つの行き場**が要る。
+     *     S₆ として薄れさせると「S₈ が S₂ と S₆ に割れる」という無い反応を見せ、
+     *     全部を橋に入れると図の「代表としてジ（-S-S-）」と食い違う。
+     *     高校の反応式は単体の硫黄を **S** と書く（Fe ＋ S → FeS）ので、原子2つがいちばん誤解が少ない。
+     *   ⚠ **前後比較の反応式の行は出さない**（`equationRow: false`）。基質はゴムの鎖で、式にすると
+     *     C₁₀H₁₆R₂ のように **R が化学式に入る**（重合の端の R を式に並べないのと同じ理由・v1574）。
+     *     前後比較の図は他の相手と同じく「前 ＝ 鎖＋呼んだ S」になる。
+     *   ⚠ H は合わない（hGap 2）。`apply` は二重結合の相方の炭素に H を1つずつ足すので、
+     *     その H は今までどおり `withMorphHydrogens` ③ が H₂ として呼ぶ（生成物は変えない） */
+    vulcanization: { partners: ['S'], byproducts: [], equationRow: false }
 };
 
 /* 「×n」にまとめない相手（v1574）。1個ずつ基質の決まった原子と握手するもの。
@@ -13206,7 +13221,8 @@ class Reactor {
         }, CYAN);
         ov.appendChild(grid);
         // ★ 並んでいる物質と係数を反応式の形で1行（v1560）。caption の式と同じ数になる
-        if (eqAnim) {
+        // ⚠ `equationRow: false`（加硫・v1579）は図だけそろえて式の行は出さない（基質の式に R が入るため）
+        if (eqAnim && (PARTNER_EQUATIONS[rx.ruleId] || {}).equationRow !== false) {
             const eqEl = document.createElement('div');
             eqEl.id = 'rx-cmp-eq';
             eqEl.style.cssText = 'font-size:14px; color:#fff; text-align:center; margin:-2px 0 10px; letter-spacing:0.02em;';
