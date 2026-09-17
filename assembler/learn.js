@@ -1088,7 +1088,7 @@ const IP_HINT_NAMES = 5;
 function ipNumberedLayout(mol) {
     const detail = iupacNameDetail(mol);
     if (!detail || detail.kind !== 'chain' || !detail.mainChain || !detail.mainChain.length) return null;
-    // ★ エステル（v1578・§13）: 番号は酸の主鎖だけ（`order`）だが、**横一直線に置く道**は
+    // ★ エステル（v1580・§13）: 番号は酸の主鎖だけ（`order`）だが、**横一直線に置く道**は
     //   酸の鎖 → −O− → アルキル基の鎖（付け根から）を繋いだもの ＝ 教科書の `CH₃-COO-CH₂CH₃` の並び。
     //   酸の鎖だけを横にすると、ギ酸エステルは C1 が1個で残りが縦に積まれる
     //   ⚠ `order` は mainChain そのまま（並べ替えない・アルキル基の炭素に番号を振らない）

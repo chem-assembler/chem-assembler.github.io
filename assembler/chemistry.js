@@ -4380,7 +4380,7 @@ function _iupacOlCore(n, olLocs, eneLocs = [], yneLocs = [], out) {
 // kind='one'|'al'|'oic'|'oate'|'dioic'、loc=C=O 炭素の位置番号（al/oic/oate は必ず 1 で名前には書かない）。
 // 例: (4,'one',2)→"2-ブタノン"、(3,'one',2)→"プロパノン"（位置が一意なので省略。プロペン・エタノールと同じ流儀）、
 //     (4,'al')→"ブタナール"、(4,'oic')→"ブタン酸"、(1,'al')→"メタナール"、(1,'oic')→"メタン酸"
-// ★ v1578（DESIGN_iupac_check.md §13）:
+// ★ v1580（DESIGN_iupac_check.md §13）:
 //     'oate'  … エステルの酸の部分。字面は 'oic' と同じ「ブタン酸」だが、接尾辞の kind を分けて
 //               「−COOH」ではなく「−COO−」と説明できるようにする（アルキル基は呼ぶ側が後ろに足す）
 //     'dioic' … 二酸「ブタン二酸」。両端の炭素が −COOH なので位置番号は書かない（locs は [1, n]）
@@ -4599,7 +4599,7 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
  *   kind,       // 'chain' | 'ether'
  *   mainChain,  // 番号順の炭素ID配列。番号 k の炭素 = mainChain[k-1]。kind==='ether' では null
  *   groups,     // kind==='ether' のとき [{ids, rootId, name, mainChain}, …]（2つ）。
- *               //   ★ エステル（v1578）は kind==='chain' のまま**1つ**（アルコール側のアルキル基。oId ＝ −O−）。他は null
+ *               //   ★ エステル（v1580）は kind==='chain' のまま**1つ**（アルコール側のアルキル基。oId ＝ −O−）。他は null
  *   locants,    // { ol, ene, yne, subs:[{loc,key,name}], co, coKind } 説明文用。kind==='ether' では null
  *               //   co = C=O 炭素の位置番号（二酸は2つ）・coKind = 'one'|'al'|'oic'|'oate'|'dioic'（無ければ [] / null）
  *   nameParts,  // ★ 名称の説明用の**かけらの列**（下記）
@@ -4608,7 +4608,7 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
  *
  * ★ カルボニル（v1576・DESIGN_iupac_check.md §12）: ケトン（-オン）・アルデヒド（-アール）・
  *   カルボン酸（-酸）を、**C=O が1つだけで他の官能基・多重結合・ハロゲンを持たない**ときに名乗る。
- * ★ エステル（酸の名前＋アルキル基。`エタン酸エチル`）と二酸（`ブタン二酸`）は v1578（§13）で足した。
+ * ★ エステル（酸の名前＋アルキル基。`エタン酸エチル`）と二酸（`ブタン二酸`）は v1580（§13）で足した。
  *   アミド・酸無水物・二酸のエステル・ヒドロキシ酸・ケト酸・不飽和カルボニル・ラクトンは今までどおり null
  *
  * ★ `nameParts` = `[{ text, role, ... }]`。**名前を割り直したものではない** ——
@@ -4616,7 +4616,7 @@ function _iupacEtherDetail(adj, haloAdj, mol, oId) {
  *   `nameParts.map(p => p.text).join('')` は `name` と**常に1バイト単位で一致する**（IN10）。
  *   role と付随する値（画面はこれだけを見て光らせる原子を決める。IN11）:
  *     'sub'          … 置換基（`2-メチル`）。`locs` ＝ 位置番号の配列・`label` ＝ 基の名前
- *     'ester-alkyl'  … エステルのアルコール側のアルキル基（`エチル`／`(1,1-ジメチルプロピル)`。v1578）。`groups`=[0]・`label`
+ *     'ester-alkyl'  … エステルのアルコール側のアルキル基（`エチル`／`(1,1-ジメチルプロピル)`。v1580）。`groups`=[0]・`label`
  *     'locant'       … 位置番号（`-1-`）。`kind` ＝ 'ol'|'ene'|'yne'|'one'・`locs`
  *     'stem'         … 幹（`プロパ`）。`size` ＝ 主鎖の炭素数
  *     'suffix'       … 接尾辞（`ノール`・`ノン`・`ナール`・`酸`）。`kind`（'ol'|'ene'|'yne'|'one'|'al'|'oic'）・
@@ -4644,7 +4644,7 @@ function iupacNameDetail(mol) {
     const oxygens = heavy.filter(a => a.element === 'O');
     // ★ カルボニル C=O（v1576）: O が炭素1個とだけ二重結合でつながっているもの。
     //   C=O 炭素の隣を見て ケトン（炭素2個）／アルデヒド（炭素1個以下・空き価標あり）／
-    //   カルボン酸（末端の -OH が1つ）／エステル（-O- の先に炭素1個。v1578・§13）に分ける。
+    //   カルボン酸（末端の -OH が1つ）／エステル（-O- の先に炭素1個。v1580・§13）に分ける。
     //   炭酸（-OH が2つ）・酸塩化物などは `co` が立たず、下で「見分けのつかない C=O」として null になる
     const carbonyl = [];   // [{ cId, oId, kind:'one'|'al'|'oic'|'oate', ohId, alkoxyC }]
     for (const o of oxygens) {
@@ -4698,7 +4698,7 @@ function iupacNameDetail(mol) {
     // ★ カルボニルは**単独で**扱う（v1576・高校の範囲）。-OH／エーテル／C=C／ハロゲンとの同居
     //   （ヒドロキシ酸・ケト酸・不飽和カルボニル・クロロ酢酸）は接尾辞と接頭辞の優先順位（オキソ・ヒドロキシ）や
     //   位置番号の省略規則が要るので名乗らない。
-    // ★ v1578（§13）: C=O が2つのときは**両方がカルボン酸（-COOH）のとき＝二酸**だけ名乗る（`kind:'dioic'`）。
+    // ★ v1580（§13）: C=O が2つのときは**両方がカルボン酸（-COOH）のとき＝二酸**だけ名乗る（`kind:'dioic'`）。
     //   ジケトン・ジアルデヒド・二酸のエステル（シュウ酸ジメチル）・酸無水物（2つとも 'oate'）・
     //   モノエステル（'oic'＋'oate'）は今までどおり null
     let co = null;
@@ -4753,7 +4753,7 @@ function iupacNameDetail(mol) {
         while (q.length) { const x = q.shift(); adj.get(x).forEach(n => { if (!seen.has(n)) { seen.add(n); q.push(n); } }); }
         return seen;
     };
-    // ★ エステル（v1578・§13）: 炭素は −O− をはさんで**酸の部分**と**アルコールの部分（アルキル基）**の
+    // ★ エステル（v1580・§13）: 炭素は −O− をはさんで**酸の部分**と**アルコールの部分（アルキル基）**の
     //   2つの連結成分に分かれる。主鎖と番号は酸の部分だけで決め、アルキル基は `iupacAlkylName` で
     //   名づけて名前の後ろに足す（酢酸エチル ＝ エタン酸エチル）。付け根（O についた炭素）が基の C1
     let alkyl = null;
@@ -4803,7 +4803,7 @@ function iupacNameDetail(mol) {
         (b.subCount - a.subCount) || _iupacCmpLocants(a.locants, b.locants) || a.name.localeCompare(b.name, 'ja'));
     // ★ 最後に選ばれた 1本をそのまま持ち出す（捨てない）。ここが「決める場所」で、他には無い
     const best = named[0];
-    // エステルのアルコール側（v1578）。エーテルの `groups` と同じ形で1つだけ（画面は2色目の帯と基の名前で示す）
+    // エステルのアルコール側（v1580）。エーテルの `groups` と同じ形で1つだけ（画面は2色目の帯と基の名前で示す）
     const groups = alkyl ? [{ ids: alkyl.ids, rootId: co.alkoxyC, name: alkyl.name, mainChain: alkyl.chain, oId: co.ohId }] : null;
     return {
         name: best.name, kind: 'chain', mainChain: best.chain, groups,
@@ -4832,7 +4832,7 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet, co) {
         if (subs === null) return null;
         const eneLocs = [], yneLocs = [], olLocs = [], coLocs = [];
         for (let i = 0; i < order.length; i++) if (ohSet && ohSet.has(order[i])) olLocs.push(i + 1);
-        // C=O 炭素の位置番号（二酸は2つ・昇順。v1578）
+        // C=O 炭素の位置番号（二酸は2つ・昇順。v1580）
         if (co) { for (const cid of co.cIds) { const k = order.indexOf(cid); if (k < 0) return null; coLocs.push(k + 1); } coLocs.sort((a, b) => a - b); }
         for (let i = 0; i + 1 < order.length; i++) {
             const t = cbond.get(_iupacCKey(order[i], order[i + 1])) || 1;
@@ -4876,7 +4876,7 @@ function _iupacNameForMainChain(adj, haloAdj, cbond, chain, ohSet, co) {
     const out = { coreParts, parts: null };
     let name = _iupacAssemble(core, d.subs, n === 1 && !hasOh && !co, out); // メタン系ハロゲン化物のみ置換基位置を省略
     if (!name) return null;
-    // ★ エステル（v1578・§13）: 酸の名前の後ろに**アルコール側のアルキル基**を足す（エタン酸＋エチル）。
+    // ★ エステル（v1580・§13）: 酸の名前の後ろに**アルコール側のアルキル基**を足す（エタン酸＋エチル）。
     //   複合置換基（枝つきの基）は登録名と同じく括弧で囲む（`ギ酸(1,1-ジメチルプロピル)`）。
     //   かけらは1つ（`ester-alkyl`）＝ 押すと基の炭素が光る。`groups[0]` がその基
     if (co && co.kind === 'oate') {
