@@ -7033,7 +7033,8 @@ async function runRedoxUITests(iframe) {
       REAGENTS.some((r) => r.id === id && r.side === "red"));
     // 既定（KMnO₄）は14件全部。KMnO₄ は収録した還元剤すべてに何か言える
     p.pick("KMnO4", "FeSO4");
-    assert(redsNow().length === 14, "KMnO₄ の相手が14件でない: " + redsNow().length);
+    // ⚠ 2026-09-17: 14 → 15（還元剤に塩化スズ(Ⅱ)を足した。KMnO₄ とは反応すると言える）
+    assert(redsNow().length === 15, "KMnO₄ の相手が15件でない: " + redsNow().length);
     /* 熱濃硫酸に切り替えると 14 → 1（銅だけ）。ここが S-1 のいちばん大きい効き目で、
        発注の実測表「熱濃硫酸は14件中13件が判定しない」に対応する。 */
     p.pick("H2SO4_hot", "Cu");
@@ -7055,7 +7056,8 @@ async function runRedoxUITests(iframe) {
       "選んでも理由が説明されない（一覧に残す意味が消える）");
     // 向きを入れ替えると相手が入れ替わる（絞り込み自体が「向きが大事」を教える）
     p.pick("H2O2_asOxidant", "SO2_asReductant");
-    assert(redsNow().length === 9 && redsNow().includes("SO2_asReductant"),
+    // ⚠ 2026-09-17: 9 → 10（塩化スズ(Ⅱ)の pairsWith に H2O2_red を入れた）
+    assert(redsNow().length === 10 && redsNow().includes("SO2_asReductant"),
       "H₂O₂ を酸化剤にしたときの相手が違う: " + redsNow().join(","));
     p.cleanup();
   });
@@ -7073,7 +7075,8 @@ async function runRedoxUITests(iframe) {
        「反応しない」は1つも消えていないので、「消えている＝反応しない」にはならない。 */
     p.pick("H2SO4_hot", "Cu");
     const g = p.st().optgroups.red.join(" / ");
-    assert(/判定しない13件は非表示/.test(g), "非表示の件数がラベルに出ていない: " + g);
+    // ⚠ 2026-09-17: 13 → 14（塩化スズ(Ⅱ)は熱濃硫酸とは判定しない側に入る）
+    assert(/判定しない14件は非表示/.test(g), "非表示の件数がラベルに出ていない: " + g);
     // 絞っていないほうのラベルには何も足さない（毎回ただし書きが付くと読み飛ばされる）
     p.pick("KMnO4", "FeSO4");
     assert(!/非表示/.test(p.st().optgroups.red.join(" / ")),
