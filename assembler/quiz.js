@@ -2196,6 +2196,9 @@ function readForcedFromUrl(key, allowed) {
  * 誤答を作る側の意図は信用しない ＝ 崩し変換が偶然もとに戻っても取り違えない。
  * 正解がちょうど1つにならなかった問題は**捨てて作り直す**。
  */
+/* 2択（同じ／違う）のときの見出しと指示（v1579）。先生の声掛けで短く、4択の「①〜④」を言わない */
+const SAME_QUIZ_PAIR_TEXT = { title: '🎓 この2つは同じ化合物？', lead: '同じか違うか選ぼう' };
+
 class SameCompoundQuiz {
     constructor(game) {
         this.game = game;
@@ -2224,6 +2227,15 @@ class SameCompoundQuiz {
         this.pairFigEl = document.getElementById('quiz-pair-figure');
         this.pairRowEl = document.getElementById('quiz-pair-answer');
         this.goalLabelEl = document.getElementById('quiz-goal-label');
+        /* ★ 見出しと指示も形に合わせる（v1579・ユーザー決定 2026-09-17「8.直す」）。
+         *   直す前は2択の画面でも「同じ化合物はどれ？」「①〜④から1つ選んでください」のままだった。
+         *   4択の文は HTML に書いたものをそのまま使う（ここに2つめの写しを持たない） */
+        this.titleEl = document.getElementById('quiz-title');
+        this.leadEl = document.getElementById('quiz-lead');
+        this.choiceText = {
+            title: this.titleEl ? this.titleEl.textContent : '',
+            lead: this.leadEl ? this.leadEl.textContent : ''
+        };
         this.cells = [0, 1, 2, 3].map(i => document.getElementById(`quiz-cell-${i}`));
         // 出題の指定（'same' / 'diff' / null）。null なら今までどおり乱数。
         // 収録が「答えを賭けて撮り、外れたら撮り直す」形になるのを止めるためのもの
@@ -2465,6 +2477,8 @@ class SameCompoundQuiz {
         if (this.pairFigEl) this.pairFigEl.classList.toggle('hidden', !pair);
         if (this.pairRowEl) this.pairRowEl.classList.toggle('hidden', !pair);
         if (this.goalLabelEl) this.goalLabelEl.textContent = pair ? '左の図' : '見本';
+        if (this.titleEl) this.titleEl.textContent = pair ? SAME_QUIZ_PAIR_TEXT.title : this.choiceText.title;
+        if (this.leadEl) this.leadEl.textContent = pair ? SAME_QUIZ_PAIR_TEXT.lead : this.choiceText.lead;
     }
 
     nextQuestion() {

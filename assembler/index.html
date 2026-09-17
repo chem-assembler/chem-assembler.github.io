@@ -1624,8 +1624,9 @@
 
     <div id="quiz-modal" class="modal-overlay hidden">
         <div class="modal-content" style="max-width: 820px;">
-            <h2 class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物はどれ？</h2>
-            <p style="font-size:13px; color:var(--text-secondary);">左の見本と同じ化合物を①〜④から1つ選んでください（水素は自動補完で描かれています）。</p>
+            <!-- 見出しと指示は4択の言い方。2択（収録用・保険）のあいだは quiz.js の `applyForm` が差し替える（v1579） -->
+            <h2 id="quiz-title" class="neon-text" style="color:#e0b0ff; text-shadow:0 0 10px var(--neon-purple); font-size:24px;">🎓 同じ化合物はどれ？</h2>
+            <p id="quiz-lead" style="font-size:13px; color:var(--text-secondary);">左の見本と同じ化合物を①〜④から1つ選んでください（水素は自動補完で描かれています）。</p>
             <!-- ⚠ **人が触るつまみは2つだけ**（2026-08-20・ユーザー決定
                  「出題範囲、難易度が選べるとわかりやすい」）。
                    出題範囲 … レベル（高校で扱うか）＋分野（大きなくくり）＝ v1425 のまま
