@@ -3298,8 +3298,14 @@
             "selector": "#btn-molecule-modal"
           },
           {
-            "type": "reactionButton",
+            "type": "button",
+            "selector": "#reaction-actions button",
             "contains": "アミド化"
+          },
+          {
+            "type": "click",
+            "x": 526,
+            "y": 300
           },
           {
             "type": "frame",
