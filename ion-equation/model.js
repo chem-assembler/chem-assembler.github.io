@@ -2453,6 +2453,144 @@ function halfBuildDone(task, procId, vals) {
   return compareSides(terms.left, terms.right).balanced;
 }
 
+/* ================================================================================
+   【半反応式の一覧】halfCatalog（2026-09-17・半反応式ページの作り直し 段1）
+
+   3ページ（halflist.html＝一覧／halfquiz.html＝暗記テスト／halfreaction.html＝係数決定）が
+   **同じ1か所から**読むためのデータ。ユーザーの決定（2026-09-17）:
+     ・一覧に載せるのは HALF_REACTIONS の全部（足した Sn²⁺・Cl₂ を含む）
+     ・ただし**グループ分けを明確にし**、生徒のレベルと科目（化学基礎だけ／化学まで）に合わせる
+     ・暗記テストで問うのは**反応の前後の物質まで**（e⁻ の数・H⁺・H₂O の数は問わない）
+     ・分子の形（HNO₃・H₂SO₄・H₂C₂O₄）も並べて書けるようにする
+
+   ⚠ 導けるもの（酸化剤か還元剤か・液性・変化する原子・e⁻ の数・前後の物質・出題になるか）は
+   **ここに書かない**。HALF_CATALOG_META が持つのは、式から導けない5つだけ:
+     name（物質名）・sp（化学式の欄に出す物質）・subject／level／section（グループ）
+   ＋ 分子の形（molecular）。分子の形は**項で持つ**ので、原子・電荷・e⁻ の数をテストで検算できる。
+
+   ★ グループの根拠（画面には出さない。「教科書に載っている／いない」を画面で断定しないため）:
+     subject "basic" … 数研 化学基礎 p.157 表2・啓林館 化学基礎 p.166 表2〜4 の「主な酸化剤・還元剤」、
+                        イオン化傾向（数研 p.166〜168）。スライド「無機の基本１」p.38・39 の表
+     subject "chem"  … 電気分解の電極（数研 化学 Vol.1-2編 p.121〜122。化学基礎では「発展」p.179〜183）、
+                        有機の酸化（このアプリでは既に「有機（発展）」の札で分けている）
+     level 1「まず覚える」… スライド p.38・39 の表にある式（金属は「陽イオンの電荷を覚える」の行）
+     level 2「次に」      … 教科書の表・本文にあるが、スライドの表には無い式（O₃・I₂・金属イオンと H⁺）
+     level 3「発展」      … 液性で式が変わる MnO₄⁻（中性・塩基性）と、有機の酸化
+   ================================================================================ */
+
+const HALF_SUBJECTS = { basic: "化学基礎", chem: "化学" };
+const HALF_LEVELS = { 1: "まず覚える", 2: "次に", 3: "発展" };
+const HALF_SECTIONS = {
+  oxidant: "主な酸化剤", reductant: "主な還元剤", metal: "金属とイオン",
+  electrolysis: "電気分解の電極", organic: "有機化合物の酸化",
+};
+
+/* 並び順がそのまま一覧の並び順（section → level の順に置く）。キーは HALF_REACTIONS と1対1（テストで固定） */
+const HALF_CATALOG_META = {
+  // --- 化学基礎: 主な酸化剤（スライド p.38 の並び） ---
+  "MnO4_red":      { name: "過マンガン酸カリウム", sp: "KMnO4",   subject: "basic", level: 1, section: "oxidant" },
+  "Cr2O7_red":     { name: "二クロム酸カリウム",   sp: "K2Cr2O7", subject: "basic", level: 1, section: "oxidant" },
+  "NO3_red":       { name: "希硝酸",               sp: "HNO3",    subject: "basic", level: 1, section: "oxidant",
+                     molecular: { left: [{ sp: "HNO3", n: 1 }, { sp: "H+", n: 3 }, { sp: "e-", n: 3 }],
+                                  right: [{ sp: "NO", n: 1 }, { sp: "H2O", n: 2 }] } },
+  "NO3_red_conc":  { name: "濃硝酸",               sp: "HNO3",    subject: "basic", level: 1, section: "oxidant",
+                     molecular: { left: [{ sp: "HNO3", n: 1 }, { sp: "H+", n: 1 }, { sp: "e-", n: 1 }],
+                                  right: [{ sp: "NO2", n: 1 }, { sp: "H2O", n: 1 }] } },
+  // 熱濃硫酸は**式そのものが分子の形**（H₂SO₄）。イオンの形に書き直すと別の話に化ける（HALF_REACTIONS の注記）
+  "H2SO4_hot_red": { name: "熱濃硫酸",             sp: "H2SO4",   subject: "basic", level: 1, section: "oxidant",
+                     molecularIsMain: true },
+  "H2O2_red":      { name: "過酸化水素",           sp: "H2O2",    subject: "basic", level: 1, section: "oxidant" },
+  "SO2_red":       { name: "二酸化硫黄",           sp: "SO2",     subject: "basic", level: 1, section: "oxidant" },
+  "Cl2_red":       { name: "塩素",                 sp: "Cl2",     subject: "basic", level: 1, section: "oxidant" },
+  "O3_red":        { name: "オゾン",               sp: "O3",      subject: "basic", level: 2, section: "oxidant" },
+  "I2_red":        { name: "ヨウ素",               sp: "I2",      subject: "basic", level: 2, section: "oxidant" },
+  "MnO4_red_neutral": { name: "過マンガン酸カリウム", sp: "KMnO4", subject: "basic", level: 3, section: "oxidant" },
+  // --- 化学基礎: 主な還元剤（スライド p.39 の並び） ---
+  "oxalate_ox":    { name: "シュウ酸",             sp: "H2C2O4",  subject: "basic", level: 1, section: "reductant",
+                     molecular: { left: [{ sp: "H2C2O4", n: 1 }],
+                                  right: [{ sp: "CO2", n: 2 }, { sp: "H+", n: 2 }, { sp: "e-", n: 2 }] } },
+  "Fe2_ox":        { name: "硫酸鉄(Ⅱ)",            sp: "FeSO4",   subject: "basic", level: 1, section: "reductant" },
+  "Sn2_ox":        { name: "塩化スズ(Ⅱ)",          sp: "SnCl2",   subject: "basic", level: 1, section: "reductant" },
+  "H2S_ox":        { name: "硫化水素",             sp: "H2S",     subject: "basic", level: 1, section: "reductant" },
+  "I_ox":          { name: "ヨウ化カリウム",       sp: "KI",      subject: "basic", level: 1, section: "reductant" },
+  "H2O2_ox":       { name: "過酸化水素",           sp: "H2O2",    subject: "basic", level: 1, section: "reductant" },
+  "SO2_ox":        { name: "二酸化硫黄",           sp: "SO2",     subject: "basic", level: 1, section: "reductant" },
+  // --- 化学基礎: 金属とイオン（金属の単体は還元剤の表の最後の行・イオン化傾向） ---
+  "Zn_ox":         { name: "亜鉛",                 sp: "Zn",      subject: "basic", level: 1, section: "metal" },
+  "Fe_ox":         { name: "鉄",                   sp: "Fe",      subject: "basic", level: 1, section: "metal" },
+  "Cu_ox":         { name: "銅",                   sp: "Cu",      subject: "basic", level: 1, section: "metal" },
+  "Mg_ox":         { name: "マグネシウム",         sp: "Mg",      subject: "basic", level: 1, section: "metal" },
+  "Al_ox":         { name: "アルミニウム",         sp: "Al",      subject: "basic", level: 1, section: "metal" },
+  "Cu_red":        { name: "硫酸銅(Ⅱ)",            sp: "CuSO4",   subject: "basic", level: 2, section: "metal" },
+  "Ag_red":        { name: "硝酸銀",               sp: "AgNO3",   subject: "basic", level: 2, section: "metal" },
+  "H_red":         { name: "うすい塩酸",           sp: "HCl",     subject: "basic", level: 2, section: "metal" },
+  // --- 化学: 電気分解の電極 ---
+  "Cl_ox":         { name: "塩化物イオン",         sp: "Cl-",     subject: "chem",  level: 1, section: "electrolysis" },
+  "H2O_red":       { name: "水（陰極）",           sp: "H2O",     subject: "chem",  level: 1, section: "electrolysis" },
+  "H2O_ox":        { name: "水（陽極）",           sp: "H2O",     subject: "chem",  level: 1, section: "electrolysis" },
+  "OH_ox":         { name: "水酸化物イオン",       sp: "OH-",     subject: "chem",  level: 1, section: "electrolysis" },
+  // --- 化学: 有機化合物の酸化（アプリの「有機（発展）」と同じ扱い） ---
+  "EtOH_ox":       { name: "エタノール",           sp: "C2H5OH",  subject: "chem",  level: 3, section: "organic" },
+  "MeCHO_ox":      { name: "アセトアルデヒド",     sp: "CH3CHO",  subject: "chem",  level: 3, section: "organic" },
+  "iPrOH_ox":      { name: "2-プロパノール",       sp: "C3H7OH",  subject: "chem",  level: 3, section: "organic" },
+  "iodoform_ox":   { name: "ヨードホルム反応（メチル基）",   sp: "CH3+",   subject: "chem", level: 3, section: "organic" },
+  "acylRest_ox":   { name: "ヨードホルム反応（残りの断片）", sp: "CH3CO-", subject: "chem", level: 3, section: "organic" },
+  "formylRest_ox": { name: "ヨードホルム反応（残りの断片）", sp: "CHO-",   subject: "chem", level: 3, section: "organic" },
+};
+
+/* 項の並びを式の文字列にする（一覧・分子の形で使う）。係数 1 は書かない */
+function halfTermsDisp(left, right) {
+  const side = (arr) => arr.map((t) => (t.n > 1 ? t.n : "") + SPECIES[t.sp].disp).join(" ＋ ");
+  return side(left) + " → " + side(right);
+}
+
+/* 反応の前後の物質（暗記テストで問う範囲）。H₂O・H⁺・OH⁻・e⁻ を抜く。
+   ⚠ 抜いて辺が空になる式（2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻ など）は、その辺だけ e⁻ 以外を残す
+   ＝ 水そのものが主役の回では、水が「前の物質」になる */
+function halfCoreOf(hr) {
+  const drop = ["H2O", "H+", "OH-", "e-"];
+  const pick = (side) => {
+    const core = side.filter((t) => !drop.includes(t.sp));
+    const out = core.length ? core : side.filter((t) => t.sp !== "e-");
+    return out.map((t) => ({ sp: t.sp, n: t.n }));
+  };
+  return { left: pick(hr.left), right: pick(hr.right) };
+}
+
+/* 【一覧】全件を HALF_CATALOG_META の並び順で返す */
+function halfCatalog() {
+  const buildIds = new Set(halfBuildList().map((t) => t.id));
+  return Object.keys(HALF_CATALOG_META).filter((id) => HALF_REACTIONS[id]).map((id) => {
+    const hr = HALF_REACTIONS[id], m = HALF_CATALOG_META[id];
+    const ch = oxChangeOfHalf(hr).filter((c) => c.from !== c.to);
+    const mol = m.molecular
+      ? { left: m.molecular.left, right: m.molecular.right, disp: halfTermsDisp(m.molecular.left, m.molecular.right) }
+      : null;
+    return {
+      id, name: m.name, sp: m.sp, disp: hr.disp,
+      kind: hr.kind,
+      role: hr.kind === "reduction" ? "oxidant" : "reductant",   // 還元される式 ＝ 中身は酸化剤
+      cond: conditionOfHalf(hr),         // その式を使うのに要る液性（acid / basic / any）
+      written: writtenFor(hr),           // 紙の上の書き方（acid / basic / any）
+      changes: ch,                       // 変化する原子（有機は炭素1個・O₃ は O 1個）
+      electrons: electronsOf(hr),
+      core: halfCoreOf(hr),              // 反応の前後の物質（暗記テストで問う範囲）
+      molecular: mol,                    // 分子の形（HNO₃・H₂C₂O₄）。無ければ null
+      molecularIsMain: !!m.molecularIsMain,
+      subject: m.subject, level: m.level, section: m.section,
+      build: buildIds.has(id),           // 係数決定（halfreaction.html）の出題になっているか
+    };
+  });
+}
+
+/* 科目とレベルで絞る。upTo は "basic"（化学基礎だけ）か "chem"（化学まで）。maxLevel は 1〜3 */
+function halfCatalogFilter(list, opts) {
+  const o = opts || {};
+  const subjects = o.upTo === "basic" ? ["basic"] : ["basic", "chem"];
+  const maxLevel = Number.isInteger(o.maxLevel) ? o.maxLevel : 3;
+  return list.filter((e) => subjects.includes(e.subject) && e.level <= maxLevel);
+}
+
 /* 有色の化学種の色（溶液中の酸化還元アニメの色変化用。見た目専用だが検証はする）。
    ここに無い種は無色（既定の淡色）として扱う。 */
 const SPECIES_COLOR = {

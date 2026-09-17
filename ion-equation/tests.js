@@ -3173,6 +3173,131 @@ function runModelTests() {
     assert(oxHolderOf([{ sp: "O2", n: 1 }, { sp: "H2O", n: 1 }], "O", -2) === "H2O", "H₂O の O を引けない");
   });
 
+  /* ---- 半反応式の一覧 halfCatalog（2026-09-17・段1）---- */
+
+  t("CATALOG: 全36件が1件ずつ載り、メタの鍵と HALF_REACTIONS が1対1で、グループが決まっている", () => {
+    const cat = halfCatalog();
+    const hrIds = Object.keys(HALF_REACTIONS), metaIds = Object.keys(HALF_CATALOG_META);
+    assert(cat.length === 36 && hrIds.length === 36, "件数が 36 でない: 一覧 " + cat.length + " / 式 " + hrIds.length);
+    for (const id of hrIds) assert(HALF_CATALOG_META[id], id + ": 一覧のメタに無い（足した式が一覧から漏れる）");
+    for (const id of metaIds) assert(HALF_REACTIONS[id], id + ": メタにあるのに式が無い");
+    assert(new Set(cat.map((e) => e.id)).size === 36, "同じ式が2回載っている");
+    for (const e of cat) {
+      assert(SPECIES[e.sp], e.id + ": 化学式の欄の物質が SPECIES に無い: " + e.sp);
+      assert(HALF_SUBJECTS[e.subject] && HALF_LEVELS[e.level] && HALF_SECTIONS[e.section],
+        e.id + ": グループが表の外: " + [e.subject, e.level, e.section].join("/"));
+      assert(e.name && e.name.trim(), e.id + ": 物質名が空");
+      // 導出した値が式と食い違わない
+      assert(e.role === (HALF_REACTIONS[e.id].kind === "reduction" ? "oxidant" : "reductant"), e.id + ": 役が式と逆");
+      assert(e.electrons === electronsOf(HALF_REACTIONS[e.id]), e.id + ": e⁻ の数が式と違う");
+      assert(e.build === halfBuildList().some((t2) => t2.id === e.id), e.id + ": 出題になっているかの印が違う");
+      // 試薬として選べる式は、化学式の欄が試薬の物質と一致する（名前の二重持ちでずれない）
+      const rgs = REAGENTS.filter((r) => Object.values(r.half).includes(e.id));
+      if (rgs.length) assert(rgs.some((r) => r.sp === e.sp), e.id + ": 化学式の欄 " + e.sp + " が試薬（" + rgs.map((r) => r.sp).join(",") + "）と違う");
+    }
+    // 件数（グループ分けの案をそのまま固定する。変えるときはここと報告の表を一緒に直す）
+    const n = (f) => cat.filter(f).length;
+    assert(n((e) => e.subject === "basic") === 26 && n((e) => e.subject === "chem") === 10,
+      "科目の内訳が 26/10 でない: " + n((e) => e.subject === "basic") + "/" + n((e) => e.subject === "chem"));
+    assert(halfCatalogFilter(cat, { upTo: "basic", maxLevel: 1 }).length === 20, "化学基礎・まず覚える が 20 件でない");
+    assert(halfCatalogFilter(cat, { upTo: "chem" }).length === 36, "化学まで で全件にならない");
+    // ★ スライド p.38・39 の表の行は、どれも化学基礎の「まず覚える」
+    for (const id of ["MnO4_red", "Cr2O7_red", "NO3_red", "NO3_red_conc", "H2SO4_hot_red", "H2O2_red", "SO2_red", "Cl2_red",
+      "oxalate_ox", "Fe2_ox", "Sn2_ox", "H2S_ox", "I_ox", "H2O2_ox", "SO2_ox"]) {
+      const e = cat.find((x) => x.id === id);
+      assert(e.subject === "basic" && e.level === 1, id + ": スライドの表の式が「化学基礎・まず覚える」にない");
+    }
+    // ★ 電気分解の電極はすべて化学。有機（アプリの「有機（発展）」）はすべて発展
+    for (const st of ELECTROLYSIS_STAGES) {
+      for (const id of [st.anode, st.cathode]) {
+        const e = cat.find((x) => x.id === id);
+        if (e.section === "electrolysis") assert(e.subject === "chem", id + ": 電気分解の電極が化学基礎に入っている");
+      }
+    }
+    for (const id of Object.keys(ORGANIC_OXIDANTS)) {
+      const e = cat.find((x) => x.id === id);
+      assert(e.section === "organic" && e.level === 3, id + ": 有機の酸化が「発展」に入っていない");
+    }
+    // ★ 否定対照: 化学基礎だけに絞ると、電気分解と有機が消える
+    const basic = halfCatalogFilter(cat, { upTo: "basic" });
+    assert(!basic.some((e) => e.section === "electrolysis" || e.section === "organic"), "化学基礎だけなのに化学の式が残る");
+    assert(!halfCatalogFilter(cat, { upTo: "chem", maxLevel: 2 }).some((e) => e.level === 3), "レベル2までで発展が残る");
+  });
+
+  t("CATALOG: 前後の物質（暗記テストの範囲）には H⁺・e⁻ が無く、分子の形はつり合って e⁻ の数も同じ", () => {
+    const cat = halfCatalog();
+    for (const e of cat) {
+      for (const s of ["left", "right"]) {
+        assert(e.core[s].length > 0, e.id + ": 前後の物質の " + s + " が空");
+        assert(!e.core[s].some((t2) => t2.sp === "e-"), e.id + ": 前後の物質に e⁻ が入っている");
+      }
+    }
+    const byId = (id) => cat.find((x) => x.id === id);
+    assert(halfTermsDisp(byId("MnO4_red").core.left, byId("MnO4_red").core.right) === "MnO₄⁻ → Mn²⁺", "MnO₄⁻ の前後");
+    assert(halfTermsDisp(byId("O3_red").core.left, byId("O3_red").core.right) === "O₃ → O₂", "O₃ の前後が O₃ → O₂ でない");
+    // 水が主役の式は、水が前の物質として残る（辺を空にしない）
+    assert(halfTermsDisp(byId("H2O_ox").core.left, byId("H2O_ox").core.right) === "2H₂O → O₂", "水の酸化の前後");
+    // 分子の形。★ 項で持つので検算できる
+    const checkMol = (id, mol) => {
+      const hr = HALF_REACTIONS[id];
+      if (!compareSides(mol.left, mol.right).balanced) return "つり合わない";
+      if (electronsOf(mol) !== electronsOf(hr)) return "e⁻ の数が違う";
+      const eSide = (x) => (x.left.some((t2) => t2.sp === "e-") ? "left" : "right");
+      if (eSide(mol) !== eSide(hr)) return "e⁻ の辺が違う";
+      if (![...mol.left, ...mol.right].some((t2) => t2.sp === HALF_CATALOG_META[id].sp)) return "分子の形に物質が出てこない";
+      return null;
+    };
+    const withMol = cat.filter((e) => e.molecular).map((e) => e.id);
+    assert(JSON.stringify(withMol) === JSON.stringify(["NO3_red", "NO3_red_conc", "oxalate_ox"]),
+      "分子の形を持つ式が HNO₃×2・H₂C₂O₄ でない: " + withMol.join(","));
+    for (const id of withMol) {
+      const bad = checkMol(id, byId(id).molecular);
+      assert(!bad, id + ": 分子の形が " + bad);
+    }
+    assert(byId("NO3_red").molecular.disp === "HNO₃ ＋ 3H⁺ ＋ 3e⁻ → NO ＋ 2H₂O", "希硝酸の分子の形: " + byId("NO3_red").molecular.disp);
+    assert(byId("oxalate_ox").molecular.disp === "H₂C₂O₄ → 2CO₂ ＋ 2H⁺ ＋ 2e⁻", "シュウ酸の分子の形: " + byId("oxalate_ox").molecular.disp);
+    // 熱濃硫酸は式そのものが分子の形
+    const h2so4 = cat.filter((e) => e.molecularIsMain).map((e) => e.id);
+    assert(JSON.stringify(h2so4) === JSON.stringify(["H2SO4_hot_red"]), "式そのものが分子の形の回: " + h2so4.join(","));
+    assert(HALF_REACTIONS["H2SO4_hot_red"].left.some((t2) => t2.sp === "H2SO4"), "熱濃硫酸の式が H₂SO₄ で書かれていない");
+    // ★ 否定対照: 検算の道具が壊れた分子の形を落とす（H⁺ を 4 のままにした希硝酸・e⁻ を右に置いたもの）
+    assert(checkMol("NO3_red", { left: [{ sp: "HNO3", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 3 }],
+      right: [{ sp: "NO", n: 1 }, { sp: "H2O", n: 2 }] }), "H⁺ の数を間違えた分子の形が通った");
+    assert(checkMol("oxalate_ox", { left: [{ sp: "H2C2O4", n: 1 }, { sp: "e-", n: 2 }],
+      right: [{ sp: "CO2", n: 2 }, { sp: "H+", n: 2 }] }), "e⁻ を逆の辺に置いた分子の形が通った");
+  });
+
+  t("CATALOG: 足した2本（Sn²⁺ → Sn⁴⁺・Cl₂ → 2Cl⁻）が保存し、係数決定で手順A・B の両方が通る", () => {
+    for (const [id, el, from, to, e] of [["Sn2_ox", "Sn", 2, 4, 2], ["Cl2_red", "Cl", 0, -1, 2]]) {
+      const hr = HALF_REACTIONS[id];
+      assert(compareSides(hr.left, hr.right).balanced, id + ": つり合わない");
+      const ch = oxChangeOfHalf(hr);
+      assert(ch.length === 1 && ch[0].el === el && ch[0].from === from && ch[0].to === to,
+        id + ": 酸化数の変化が違う: " + JSON.stringify(ch));
+      const task = halfBuildTaskOf(id);
+      assert(task && task.electrons === e, id + ": 係数決定の出題にならない、または e⁻ の数が違う");
+      const v = halfTruth(id);
+      for (const p of ["A", "B"]) assert(halfBuildDone(task, p, v), id + "/" + p + ": 正しい式で完成にならない");
+      // ★ 否定対照: e⁻ を逆の辺・1個ずらすと通らない
+      const rev = JSON.parse(JSON.stringify(v));
+      rev["e-"] = task.eSide === "left" ? { right: e } : { left: e };
+      const off = JSON.parse(JSON.stringify(v));
+      off["e-"] = { [task.eSide]: e + 1 };
+      for (const p of ["A", "B"]) {
+        assert(!halfBuildDone(task, p, rev), id + "/" + p + ": e⁻ を逆の辺に置いても通った");
+        assert(!halfBuildDone(task, p, off), id + "/" + p + ": e⁻ を1個ずらしても通った");
+      }
+    }
+    // 塩素は梯子に載せない（電気分解の Cl_ox と対を共有する）が、列挙した相手とは反応する
+    assert(rankOfHalf("Cl2_red") === null && rankOfHalf("Cl_ox") === null, "塩素の対に順位が付いた");
+    assert(matchRedox("Cl2", "KI", "acid").verdict === "reacts", "塩素 × ヨウ化カリウムが反応しない");
+    assert(matchRedox("KMnO4", "SnCl2", "acid").verdict === "reacts", "KMnO₄ × 塩化スズ(Ⅱ)が反応しない");
+    // ★ 否定対照: 塩化スズ(Ⅱ)はうすい塩酸（H⁺）を還元しない ＝ 順序が逆
+    assert(matchRedox("HCl_dil", "SnCl2", "acid").reasonCode === "ladder-reversed", "Sn²⁺ が H⁺ を還元することになっている");
+    // イオン化傾向（金属の対だけ）に Sn²⁺/Sn⁴⁺ が混ざらない
+    assert(!IONIZATION_SERIES.includes("Sn"), "イオン化傾向の並びに Sn が混ざった");
+  });
+
   /* ★ 枠を全部見せる（2026-08-28）ときに、どこまでなら漏れないかの実測を固定する。
      ⚠ **この2つの数が入れ替わったら、伏せる場所を決め直すこと。** */
   t("HALFBUILD: ★枠を先に見せても漏れない／⚠ 先の段の採点の文だけは緑が嘘になる", () => {
