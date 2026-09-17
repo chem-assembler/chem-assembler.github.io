@@ -11143,7 +11143,7 @@ class Game {
         // ⚠ **ここでも新しい計算はしない。**門番が持ち出すのは `iupacNameDetail` が返したものだけ
         // ⚠ `mol` は**対象の1分子**（§N-8）。名前引き（`lookupCompoundName`）と
         //   かけらの原子引き（`iupacPartAtoms`）はキャンバス全体ではなくこれを見る
-        // ⚠ `groups` はエステルのアルコール側（1つ。v1578・§13）。エーテルと同じ形で、帯の2色目と基の名前になる
+        // ⚠ `groups` はエステルのアルコール側（1つ。v1580・§13）。エーテルと同じ形で、帯の2色目と基の名前になる
         return { kind: 'chain', mol, chain: d.mainChain, name: d.name,
             parts: d.nameParts, locants: d.locants, dirReason: d.dirReason, groups: d.groups || null };
     }
@@ -11445,7 +11445,7 @@ class Game {
                 if (!visible(a.id)) return;
                 this._iupacSubscript(this._iupacAtomText(this.atomsGroup, a), i + 1);
             });
-            // ★ エステルのアルコール側（v1578・§13）: 番号は酸の部分だけ。O についたアルキル基は
+            // ★ エステルのアルコール側（v1580・§13）: 番号は酸の部分だけ。O についたアルキル基は
             //   エーテルの2色目（桃）の帯と基の名前で示す ＝「数えない側」が図で分かる
             (det.groups || []).forEach(g => this._iupacGroupBand(this.userMolecule, g, IUPAC_GROUP_COLORS[1], byId, visible, this.bondsGroup, this.atomsGroup));
             // ★ N-6: **番号を生んだ名前を必ず同じ画面に出す。**
@@ -11470,7 +11470,7 @@ class Game {
     }
 
     /**
-     * アルキル基1つを帯（色）と基の名前で示す（エーテルの両側・エステルのアルコール側が共有。v1578 で切り出し）。
+     * アルキル基1つを帯（色）と基の名前で示す（エーテルの両側・エステルのアルコール側が共有。v1580 で切り出し）。
      * 炭素1個の基（メチル）は結合が無いので、帯の代わりに短い印を置く
      */
     _iupacGroupBand(mol, g, color, byId, visible, bondsTarget, textTarget) {
@@ -11537,7 +11537,7 @@ class Game {
         const at = (loc) => chain[loc - 1];
         const chainSet = new Set(chain);
         if (part.role === 'stem' || part.role === 'sat') { chain.forEach(id => out.add(id)); return [...out]; }
-        // エステルのアルコール側（v1578）: `groups[0].ids` ＝ O についたアルキル基の炭素
+        // エステルのアルコール側（v1580）: `groups[0].ids` ＝ O についたアルキル基の炭素
         if (part.role === 'ester-alkyl') {
             (part.groups || []).forEach(i => ((det.groups && det.groups[i]) ? det.groups[i].ids : []).forEach(id => out.add(id)));
             return [...out];
@@ -11589,7 +11589,7 @@ class Game {
             // カルボニル（v1576）。位置番号（`2-`）は**その炭素**、接尾辞（`ノン`）は**その =O**。
             // アルデヒド・カルボン酸は位置番号のかけらが無いので、接尾辞が C1 と O をまとめて指す
             // （-CHO・-COOH は「1番の炭素がその基になっている」と読む）。
-            // エステルの「酸」は C1 と =O と −O−（v1578）、二酸の「二酸」は両端（locs=[1,n]）をまとめて指す
+            // エステルの「酸」は C1 と =O と −O−（v1580）、二酸の「二酸」は両端（locs=[1,n]）をまとめて指す
             locs.forEach(loc => {
                 const cid = at(loc);
                 if (cid == null) return;
@@ -11619,7 +11619,7 @@ class Game {
                 const co = j(L.co) || '1';
                 if (L.coKind === 'al') return `−CHO の炭素を 1 番にします（アルデヒドは端の炭素が C1）。`;
                 if (L.coKind === 'oic') return `−COOH の炭素を 1 番にします（カルボン酸は端の炭素が C1）。`;
-                // エステル（v1578）: 番号は酸の部分だけ。O についたアルキル基は数えない
+                // エステル（v1580）: 番号は酸の部分だけ。O についたアルキル基は数えない
                 if (L.coKind === 'oate') return `−COO− の C=O の炭素を 1 番にします（酸の部分の端が C1。O についたアルキル基は数えません）。`;
                 return `C=O が ${co} 番になる向きを選びました（C=O の番号がいちばん小さくなる向き）。`;
             }
@@ -11629,8 +11629,10 @@ class Game {
             case 'sub': return `置換基が早く来る向きを選びました（${j((L.subs || []).map(s => s.loc)) || '—'} 番）。`;
             case 'alpha': return '位置番号は両向きで同じだったので、名前の早い置換基が小さい番号になる向きを選びました。';
             case 'tie':
-                // 二酸（v1578）: 両端が −COOH なので向きは決まらない ＝ それを言う
+                // 二酸（v1580）: 両端が −COOH なので向きは決まらない ＝ それを言う
                 if (L.coKind === 'dioic') return '両端の炭素が −COOH なので、どちらから数えても同じです（位置番号は書きません）。';
+                // ギ酸エステル（メタン酸メチル）: 酸の炭素が1つで向きは無いが、「数えない側」は言う
+                if (L.coKind === 'oate') return `−COO− の C=O の炭素が 1 番です（酸の部分は炭素1個。O についたアルキル基は数えません）。`;
                 return 'どちら向きでも同じでした（番号の付き方が変わらない形です）。';
             default: return '';
         }
@@ -11744,7 +11746,7 @@ class Game {
                 if (part.kind === 'one') return `「${part.text}」＝ 鎖の途中の炭素が C=O（カルボニル基）であることを表す接尾辞です（-オン）。`;
                 if (part.kind === 'al') return `「${part.text}」＝ 端の炭素が −CHO（ホルミル基）であることを表す接尾辞です（-アール）。`;
                 if (part.kind === 'oic') return `「${part.text}」＝ 端の炭素が −COOH（カルボキシ基）であることを表す接尾辞です。`;
-                // エステル・二酸（v1578）
+                // エステル・二酸（v1580）
                 if (part.kind === 'oate') return `「${part.text}」＝ ここまでがカルボン酸からきた部分で、端の炭素が −COO−（エステル結合）になっています。`;
                 if (part.kind === 'dioic') return `「${part.text}」＝ 両端の炭素が −COOH（カルボキシ基）であることを表す接尾辞です。`;
                 // ⚠ 単一の不飽和では、このかけらの字面は「ン」1字（「エン」「イン」という並びは
@@ -11814,7 +11816,7 @@ class Game {
         //   ケトンも位置番号を省く回（プロパノン）は接尾辞だけ ＝ 同じ声掛けにする
         if (ps.length === 1 && ps[0].role === 'suffix' && ps[0].kind === 'al') return '1番の炭素がホルミル基（−CHO）になっているね。';
         if (ps.length === 1 && ps[0].role === 'suffix' && ps[0].kind === 'oic') return '1番の炭素がカルボキシ基（−COOH）になっているね。';
-        // エステル・二酸（v1578・§13）
+        // エステル・二酸（v1580・§13）
         if (ps.length === 1 && ps[0].role === 'suffix' && ps[0].kind === 'oate') {
             const acid = this._iupacEsterAcidName(det, parts);
             return `ここまでが${acid}からきた部分で、1番の炭素が −COO−（エステル結合）になっているね。`;
@@ -11838,7 +11840,7 @@ class Game {
     }
 
     /**
-     * エステルの酸の部分の名前（系統名。慣用名があれば括弧で添える）。v1578・§13。
+     * エステルの酸の部分の名前（系統名。慣用名があれば括弧で添える）。v1580・§13。
      * 系統名は `nameParts` の**アルキル基より前のかけらを繋いだもの**（名前を作り直さない）。
      * 慣用名は**ライブラリの登録名から引く**（新しい表は作らない）: 登録名（または括弧内の別名）が
      * アルキル基の字面で終わっていれば、その手前が酸の慣用名（`酢酸エチル` → `酢酸`）。
@@ -12279,7 +12281,7 @@ class Game {
         }
         if (d.kind !== 'chain' || !d.mainChain || !d.mainChain.length) return false;
         const chain = d.mainChain.map(id => byId.get(id)).filter(Boolean);
-        // エステルのアルコール側（v1578）: キャンバスと同じ2色目の帯と基の名前
+        // エステルのアルコール側（v1580）: キャンバスと同じ2色目の帯と基の名前
         (d.groups || []).forEach(grp => this._iupacGroupBand(mol, grp, IUPAC_GROUP_COLORS[1], byId, all, bonds, atoms));
         for (let k = 0; k + 1 < chain.length; k++) {
             this._iupacBand(chain[k], chain[k + 1], 'var(--neon-orange, #ffa502)', bonds);
