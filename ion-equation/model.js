@@ -1805,9 +1805,43 @@ function oxChangeOfHalf(hr) {
     const c = { el, from: fu[0], to: tu[0], count: restL.length };
     // 1種類の変化にまとまらない＝データの誤りか、この図法では扱えない反応。テストで弾く
     if (fu.length !== 1 || tu.length !== 1 || restL.length !== restR.length) c.ambiguous = true;
+    /* ★ 変わった原子が**どの物質にいたか／どの物質に入ったか**（2026-09-17・ORDER_review 行 T）。
+       O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O では、−2 になった O は **H₂O** にいて、O₂ の O は 0 のまま。
+       元素と数だけでは「右辺の O₂ を見ればよい」と読めてしまうので、物質まで持つ。
+       その値を持つ物質が辺に1つだけのときに id、決まらないときは null。 */
+    c.fromIn = c.ambiguous ? null : oxHolderOf(hr.left, el, c.from);
+    c.toIn = c.ambiguous ? null : oxHolderOf(hr.right, el, c.to);
     changes.push(c);
   }
   return changes;
+}
+
+/* 辺 terms の中で、元素 el の原子を酸化数 v で持つ物質（1つに決まらなければ null） */
+function oxHolderOf(terms, el, v) {
+  const ids = [...new Set(terms
+    .filter((t) => t.sp !== "e-" && OXIDATION[t.sp] && oxAtomList(t.sp, el).includes(v))
+    .map((t) => t.sp))];
+  return ids.length === 1 ? ids[0] : null;
+}
+
+/* ★ O₃ のように「**同じ元素が、変わらないまま同じ辺に残る**」回だけ、どの物質の原子を見るかを返す
+   （2026-09-17・ORDER_review 行 T。ユーザーの言葉「B方式で書く場合、右辺のO2でなくH2OのO原子を
+   見ることがわかるようにしたい」）。
+   返すのは { side, sp, stay: [{ sp, ox }] }。それ以外の回は null
+   ＝ MnO₄⁻ → Mn²⁺ のように、その元素を持つ物質が各辺に1つしかない回には何も足さない。
+   ⚠ 見るのは**変わったあとの辺**（toIn の辺）。O₂ は O₃ の O が 0 のまま移っただけの物質。 */
+function halfOxWhere(hr, c) {
+  if (!hr || !c || c.ambiguous || !c.toIn) return null;
+  const stay = [];
+  for (const t of hr.right) {
+    if (t.sp === "e-" || t.sp === c.toIn || !OXIDATION[t.sp]) continue;
+    const list = oxAtomList(t.sp, c.el);
+    if (!list.length) continue;
+    // 変わらなかった原子 ＝ 左辺のときの値（c.from）のまま右辺にいる
+    if (list.includes(c.from)) stay.push({ sp: t.sp, ox: c.from });
+  }
+  if (!stay.length) return null;
+  return { side: "right", sp: c.toIn, stay };
 }
 
 /* ================================================================================

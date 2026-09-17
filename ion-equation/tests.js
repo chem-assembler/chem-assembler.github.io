@@ -3146,6 +3146,32 @@ function runModelTests() {
       "0 と空欄が同じ扱いになっている");
   });
 
+  /* ★ 行 T（2026-09-14 ユーザー・2026-09-17 実装）:「B方式で書く場合、右辺のO2でなくH2OのO原子を
+     見ることがわかるようにしたい」。O₃ の3個の O のうち、0 → −2 になるのは H₂O に入る1個だけ。 */
+  t("HALFBUILD: ★O₃ は変わった O が右辺の H₂O にいると言え、O₂ の O は 0 のまま（他の出題には札が付かない）", () => {
+    const hr = HALF_REACTIONS["O3_red"];
+    const ch = oxChangeOfHalf(hr).filter((c) => c.from !== c.to);
+    assert(ch.length === 1 && ch[0].el === "O" && ch[0].count === 1, "O₃ の変化が O 1個でない: " + JSON.stringify(ch));
+    assert(ch[0].fromIn === "O3" && ch[0].toIn === "H2O",
+      "変わった O の居場所が O₃ → H₂O になっていない: " + JSON.stringify(ch[0]));
+    const w = halfOxWhere(hr, ch[0]);
+    assert(w && w.side === "right" && w.sp === "H2O", "札が右辺の H₂O を指していない: " + JSON.stringify(w));
+    assert(w.stay.length === 1 && w.stay[0].sp === "O2" && w.stay[0].ox === 0,
+      "O₂ の O が 0 のまま、を持っていない: " + JSON.stringify(w.stay));
+    // ★ 否定対照: 係数決定の出題のうち、札が付くのは O₃ だけ（付けすぎると指示の行が増えるだけ）
+    const withNote = halfBuildList().filter((task) => halfOxWhere(HALF_REACTIONS[task.id], task.change));
+    assert(withNote.length === 1 && withNote[0].id === "O3_red",
+      "札の付く出題が O₃ だけでない: " + withNote.map((x) => x.id).join(","));
+    // ★ 否定対照: 全出題で、変わった原子の居場所が1つに決まっている（null の回が無い）
+    for (const task of halfBuildList()) {
+      assert(task.change.fromIn && task.change.toIn, task.id + ": 変わった原子の居場所が決まらない");
+    }
+    // ★ 否定対照: 同じ値を持つ物質が辺に2つあるときは、居場所を決めつけない（null）
+    assert(oxHolderOf([{ sp: "O2", n: 1 }, { sp: "O3", n: 1 }], "O", 0) === null,
+      "O₂ と O₃ のどちらの O か決まらないのに、片方を返した");
+    assert(oxHolderOf([{ sp: "O2", n: 1 }, { sp: "H2O", n: 1 }], "O", -2) === "H2O", "H₂O の O を引けない");
+  });
+
   /* ★ 枠を全部見せる（2026-08-28）ときに、どこまでなら漏れないかの実測を固定する。
      ⚠ **この2つの数が入れ替わったら、伏せる場所を決め直すこと。** */
   t("HALFBUILD: ★枠を先に見せても漏れない／⚠ 先の段の採点の文だけは緑が嘘になる", () => {
@@ -10559,6 +10585,41 @@ async function runHalfBuildUITests(iframe) {
     // ★ 否定対照: 空欄に戻すと「まだ」に戻る（0 と空欄が同じ扱いになっていないこと）
     typeInto("H2O", "left", "");
     assert(!state().done && state().at === 0, "空欄に戻しても完成のまま");
+  });
+
+  /* ★ 行 T（2026-09-17）。手順B で酸化数を見る段に、変わった O が右辺の H₂O にいると出す */
+  await t("HALF UI: ★O₃ の手順B に「右辺の H₂O の O・O₂ の O は 0 のまま」が出て、他の式には出ない", async () => {
+    const oxStep = () => {
+      const i = HALF_PROCS.B.steps.findIndex((s) => s.by === "ox");
+      return doc.querySelector("#hbStep" + i + " .hbExtra");
+    };
+    win.HalfBuild.goto("O3_red");
+    win.HalfBuild.setProc("B");
+    const box = oxStep();
+    assert(box && !box.hidden, "O₃ の手順B で酸化数の段が出ていない");
+    const note = box.querySelector("#hbOxWhere");
+    assert(note, "O₃ なのに、どの O を見るかの札が無い: " + box.textContent);
+    const s = note.textContent;
+    assert(s.includes("右辺") && s.includes("H₂O") && s.includes("O₂") && s.includes("0 のまま"),
+      "札が右辺の H₂O と O₂ の 0 を言っていない: " + s);
+    // ⚠ 答え（e⁻ の数 2）は札にも出さない
+    assert(!/2/.test(s.replace(/[₀-₉]/g, "")), "札に数が出ている（e⁻ の数が漏れうる）: " + s);
+    // ★「この数の出し方 →」が O₃・O₂（どちらも O は 0）へ送っていない
+    const link = box.querySelector(".hbOxLink");
+    if (link) {
+      const href = link.getAttribute("href");
+      assert(!/sp=O3(&|$)/.test(href) && !/sp=O2(&|$)/.test(href), "−2 の出し方を 0 の物質へ送っている: " + href);
+    }
+    // ★ 否定対照: MnO₄⁻ → Mn²⁺ には札を出さない（Mn を持つ物質は各辺に1つだけ）
+    win.HalfBuild.goto("MnO4_red");
+    win.HalfBuild.setProc("B");
+    assert(!oxStep().querySelector("#hbOxWhere"), "O₃ 以外にも札が出ている");
+    assert(oxStep().querySelector(".hbOxLink").getAttribute("href").includes("sp=MnO4-"),
+      "MnO₄⁻ の「この数の出し方」の送り先が変わった");
+    // ★ 否定対照: 手順A では酸化数の段そのものが無い
+    win.HalfBuild.goto("O3_red");
+    win.HalfBuild.setProc("A");
+    assert(!doc.getElementById("hbOxWhere"), "手順A にも札が出ている");
   });
 
   await t("HALF UI: 与えるのは骨格だけ（完成した式が画面のどこにも出ない）", async () => {

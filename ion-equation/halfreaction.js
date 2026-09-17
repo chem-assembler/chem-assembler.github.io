@@ -162,10 +162,27 @@ function buildOxHint(box) {
   line.append(el("span", "oxGiven", fmtOxNum(c.to)));
   line.append(el("span", null, "　変わった原子は " + c.count + " 個"));
   box.appendChild(line);
-  // 練習Y への往復（この数の出し方はあちらの担当）
-  const sp = [...t.skeleton.left, ...t.skeleton.right]
-    .map((x) => x.sp)
-    .find((x) => SPECIES[x].atoms[c.el] && halfOxLinkable(x));
+  /* ★ O₃ の回だけの札（2026-09-17・ORDER_review 行 T）。
+     右辺の O₂ を見ると O は 0 のままなので、「変わった原子は 1 個」がどこを指すのか分からない。
+     ⚠ 札を出すのは halfOxWhere が返す回だけ（同じ元素が、変わらないまま同じ辺に残る回）。
+     MnO₄⁻ → Mn²⁺ のような回にまで「右辺の◯◯の Mn」と足すと、指示の行が1つ増えるだけになる。 */
+  const where = halfOxWhere(HALF_REACTIONS[t.id], c);
+  if (where) {
+    const stay = where.stay
+      .map((s) => `${SPECIES[s.sp].disp} の ${c.el} は ${fmtOxNum(s.ox)} のまま`).join("、");
+    const note = el("div", "hbOxWhere",
+      `見るのは${where.side === "right" ? "右辺" : "左辺"}の ${SPECIES[where.sp].disp} の ${c.el}。${stay}。`);
+    note.id = "hbOxWhere";
+    box.appendChild(note);
+  }
+  /* 練習Y への往復（この数の出し方はあちらの担当）。
+     ★ 送り先は「変わった原子を持つ物質」から選ぶ（札が指す物質 → 変わる前 → 変わった後の順）。
+     ⚠ 骨格の中で最初に見つかった種、だけで選ぶと、O₃ の回に O₃ や O₂（どちらも O は 0）へ
+     送ることになりうる ＝ −2 の出し方を知りたい人に 0 の練習を渡してしまう。 */
+  const sp = [where && where.sp, c.fromIn, c.toIn].find((x) => x && halfOxLinkable(x)) ||
+    (where ? null : [...t.skeleton.left, ...t.skeleton.right]
+      .map((x) => x.sp)
+      .find((x) => SPECIES[x].atoms[c.el] && halfOxLinkable(x)));
   if (sp) {
     const a = document.createElement("a");
     a.className = "hbOxLink";
