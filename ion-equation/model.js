@@ -2253,22 +2253,26 @@ function oxTaskList() {
    ★ **2通りを両方通す。⚠ B は A の並べ替えではない。**
      手順A … O を H₂O で・H を H⁺ で合わせ、**最後に残った電荷の差**を e⁻ で埋める。
               電子は最後まで「帳尻」でしかなく、意味が出てこない
-     手順B … **先に酸化数の変化から e⁻ の数を決める**。O・H はあとの辻褄合わせで、
-              電荷の一致は**答え合わせ**として最後に来る
-   ＝ 段の並びだけでなく、**電荷が「解く材料」なのか「検算」なのか**が入れ替わる。
+     手順B … **先に酸化数の変化から e⁻ の数を決める**。次に H⁺（塩基性なら OH⁻）で電荷を合わせ、
+              最後に H₂O で O と H を合わせる（2026-09-17 ユーザー決定。旧は e⁻ → H₂O → H⁺ で電荷は検算）
+   ＝ 段の並びだけでなく、**電荷が何を決めるか**（A は e⁻ の数・B は H⁺ の数）が入れ替わる。
 
    ⚠ **答えの表は持たない。** 出題は HALF_REACTIONS から H₂O・H⁺・e⁻ を**抜いた骨格**で作り、
    採点は compareSides（原子・電荷の保存）と oxChangeOfHalf（酸化数の変化）だけで閉じる。
    ⚠ **hr.disp（完成した式）を画面に出さないこと** —— 出した瞬間、答えが横に書いてある練習になる。 */
 
-/* 人に入れさせる項。この3つだけが「骨格から抜ける」 */
+/* 人に入れさせる項。この3つだけが「骨格から抜ける」（画面の欄もこの3種 × 左右） */
 const HALF_AUX = ["H2O", "H+", "e-"];
+/* ★ 塩基性の式も含めた「骨格から抜ける項」（2026-09-17・手順B の順番の変更）。
+   手順B の②は「電荷を合わせる ＝ 酸性なら H⁺、塩基性なら OH⁻」なので、モデルは OH⁻ も抜けるようにする。
+   ⚠ 画面の欄（HALF_AUX）には足していない —— 塩基性の式はまだ出題に入れていない（halfBuildTaskOf） */
+const HALF_AUX_ALL = ["H2O", "H+", "OH-", "e-"];
 
 /* 骨格（＝与える面）。半反応式から H₂O・H⁺・e⁻ を抜いたもの */
 function halfSkeletonOf(id) {
   const hr = HALF_REACTIONS[id];
   if (!hr) return null;
-  const strip = (side) => side.filter((t) => !HALF_AUX.includes(t.sp)).map((t) => ({ sp: t.sp, n: t.n }));
+  const strip = (side) => side.filter((t) => !HALF_AUX_ALL.includes(t.sp)).map((t) => ({ sp: t.sp, n: t.n }));
   return { left: strip(hr.left), right: strip(hr.right) };
 }
 
@@ -2279,7 +2283,8 @@ function halfSkeletonDisp(sk) {
 }
 
 /* 【出題1件】。出題にできない式は null。⚠ **一覧は手で持たない**（HALF_REACTIONS から導く） */
-function halfBuildTaskOf(id) {
+function halfBuildTaskOf(id, opts) {
+  const basicOk = !!(opts && opts.basic);
   const hr = HALF_REACTIONS[id];
   if (!hr) return null;
   const sk = halfSkeletonOf(id);
@@ -2294,8 +2299,11 @@ function halfBuildTaskOf(id) {
        1つに決まらない。⚠ **A だけ出せる回を作らない** —— 同じ式を2通りで組み比べるのが
        この練習の眼目なので、片方しか通らない回は母数から外す（§7-6 の決め）。 */
     if (oxPerAtomSpecies(t.sp) || SPECIES[t.sp].name.includes("断片")) return null;
-    // 塩基性条件（OH⁻ を持つ式）は範囲外。§7-5 —— いま OH⁻ を持つ式は1本しかない
-    if (t.sp === "OH-") return null;
+    /* 塩基性条件（OH⁻ を持つ式）は出題の範囲外。§7-5 —— いま OH⁻ を持つ式は1本しかない。
+       ★ 2026-09-17: 手順B（新しい順番）は ② で OH⁻ を置けば塩基性でも解ける（opts.basic で確かめられる）。
+       ⚠ それでも出題に入れないのは、**手順A（H₂O → H⁺ → e⁻）では OH⁻ が書けず、B だけの回になる**から
+       （上の「A だけ出せる回を作らない」と同じ理由の裏返し。§7-6） */
+    if (t.sp === "OH-" && !basicOk) return null;
   }
   const ch = oxChangeOfHalf(hr).filter((c) => c.from !== c.to);
   if (ch.length !== 1 || ch[0].ambiguous) return null;
@@ -2306,6 +2314,8 @@ function halfBuildTaskOf(id) {
        酸化数が上がった原子は電子を**出す**ので e⁻ は右辺、下がったなら左辺。 */
     electrons: Math.abs(c.to - c.from) * c.count,
     eSide: c.to > c.from ? "right" : "left",
+    /* 手順B の②で電荷を合わせるイオン。式の書き方（writtenFor）が塩基性なら OH⁻、それ以外は H⁺ */
+    chargeKey: writtenFor(hr) === "basic" ? "OH-" : "H+",
   };
 }
 
@@ -2323,7 +2333,17 @@ function halfBuildList() {
 }
 
 /* ★ 2通りの手順。**段の並びと見出しの文言がそのまま入れ替わる**（§2 の要件）。
-   by は採点のよりどころ: "atom"（その元素の数）／"charge"（電荷の差）／"ox"（酸化数の変化）。 */
+   by は採点のよりどころ: "atom"（その元素の数）／"charge"（電荷の差を e⁻ で）／"ox"（酸化数の変化）／
+   "chargeIon"（電荷を H⁺ か OH⁻ で合わせる）／"atoms"（els の元素がすべてそろう）。
+
+   ★★ 2026-09-17 ユーザー決定: **手順B の順番をスライド「その2」に合わせる。**
+     ① 酸化数から e⁻ の数と辺を決める → ② 電荷を合わせる（酸性なら H⁺、塩基性なら OH⁻）→ ③ H₂O で O（と H）
+   旧: e⁻ → H₂O → H⁺ で、電荷は締めの検算だった。変えた理由（統合側からユーザーへ伝えたもの）:
+     ・塩基性でも同じ手順で書ける（H⁺ で書いてから OH⁻ に書き換える手間が要らない）
+     ・電荷を合わせることが係数決定の柱になる ・スライド・動画と順番がそろう
+   ⚠ 手順A（H₂O → H⁺ → e⁻）は変えていない。
+   ⚠ ②の欄は task.chargeKey で決まる（halfStepKey）。③は O を合わせれば H も必ずそろう
+     （e⁻ と電荷を先に合わせてあるため）ので、O と H を1つの段でまとめて見る。 */
 const HALF_PROCS = {
   A: {
     id: "A", label: "手順A：H₂O → H⁺ → e⁻",
@@ -2335,22 +2355,27 @@ const HALF_PROCS = {
     ],
   },
   B: {
-    id: "B", label: "手順B：酸化数 → e⁻ → H₂O → H⁺",
-    lead: "電子が先。酸化数が動いたぶんが e⁻ の数で、O と H はあとから辻褄を合わせる。",
+    id: "B", label: "手順B：酸化数 → e⁻ → H⁺ → H₂O",
+    lead: "まず酸化数の変化から e⁻ を決めよう。次に H⁺ で電荷を、最後に H₂O で O と H を合わせよう。",
     steps: [
-      { key: "e-",  by: "ox",            head: "酸化数の変化から e⁻ の数を決める" },
-      { key: "H2O", by: "atom", el: "O", head: "O の数を H₂O で合わせる" },
-      { key: "H+",  by: "atom", el: "H", head: "H の数を H⁺ で合わせる" },
+      { key: "e-",  by: "ox",                    head: "酸化数の変化から e⁻ の数を決める" },
+      { key: "H+",  by: "chargeIon",             head: "電荷を H⁺ で合わせる" },
+      { key: "H2O", by: "atoms", els: ["O", "H"], head: "O と H を H₂O で合わせる" },
     ],
   },
 };
 
 /* いまの入力から式の両辺を組み立てる。keys に挙がった項だけを載せる
    （まだ来ていない段の項は式に出さない ＝ 段が進むほど式が伸びる）。 */
+/* その出題で、段 st が入れさせる種（手順B の②だけ、酸性なら H⁺・塩基性なら OH⁻ に変わる） */
+function halfStepKey(task, st) {
+  return st.by === "chargeIon" && task && task.chargeKey ? task.chargeKey : st.key;
+}
+
 function halfTerms(task, vals, keys) {
   const side = (which) => {
     const out = task.skeleton[which].map((t) => ({ sp: t.sp, n: t.n }));
-    for (const k of HALF_AUX) {
+    for (const k of HALF_AUX_ALL) {
       if (keys && !keys.includes(k)) continue;
       const n = ((vals && vals[k]) || {})[which];
       if (Number.isInteger(n) && n > 0) out.push({ sp: k, n });
@@ -2369,8 +2394,9 @@ function checkHalfStep(task, procId, stepIdx, vals) {
   const proc = HALF_PROCS[procId];
   if (!task || !proc || !proc.steps[stepIdx]) return null;
   const st = proc.steps[stepIdx];
-  const D = SPECIES[st.key].disp;
-  const got = (vals && vals[st.key]) || {};
+  const key = halfStepKey(task, st);
+  const D = SPECIES[key].disp;
+  const got = (vals && vals[key]) || {};
   const L = got.left, R = got.right;
   const has = (v) => Number.isInteger(v) && v > 0;
   if (!Number.isInteger(L) && !Number.isInteger(R)) {
@@ -2386,9 +2412,31 @@ function checkHalfStep(task, procId, stepIdx, vals) {
   if (L < 0 || R < 0) {
     return { ok: false, kind: "wrong", reason: `${D} の個数は 0 以上。` };
   }
-  const keys = proc.steps.slice(0, stepIdx + 1).map((s) => s.key);
+  const keys = proc.steps.slice(0, stepIdx + 1).map((s) => halfStepKey(task, s));
   const terms = halfTerms(task, vals, keys);
   const cmp = compareSides(terms.left, terms.right);
+  /* 手順B の②: 電荷を H⁺（塩基性なら OH⁻）で合わせる。⚠ ここでは O・H はまだ見ない（③の仕事） */
+  if (st.by === "chargeIon") {
+    if (!cmp.chargeOk) {
+      return { ok: false, kind: "wrong",
+        reason: `電荷が合っていない —— 左 ${fmtOxNum(cmp.chargeLeft)} / 右 ${fmtOxNum(cmp.chargeRight)}。` +
+          `${D} は1個で ${SPECIES[key].charge > 0 ? "+1" : "−1"} ぶん。` };
+    }
+    return { ok: true, kind: "ok",
+      reason: `電荷が左右でそろった（${D} で合わせた）。` };
+  }
+  /* 手順B の③: H₂O で O を合わせる。e⁻ と電荷を先に合わせてあるので、O がそろえば H もそろう */
+  if (st.by === "atoms") {
+    // ⚠ 言う順は els の順（O が先）。O を合わせるのがこの段の仕事で、H はついてくる側
+    const ng = st.els.map((el) => cmp.rows.find((r) => r.el === el)).filter((r) => r && !r.ok);
+    if (!ng.length) {
+      return { ok: true, kind: "ok",
+        reason: `${st.els.join(" も ")} も左右でそろった（${D} で合わせた）。` };
+    }
+    return { ok: false, kind: "wrong",
+      reason: ng.map((r) => `${r.el} の数が合っていない —— 左 ${r.left} 個 / 右 ${r.right} 個。`).join("") +
+        `足りないほうの辺に ${D} を置く。` };
+  }
   if (st.by === "atom") {
     const row = cmp.rows.find((r) => r.el === st.el);
     if (!row || row.ok) {
@@ -2449,7 +2497,7 @@ function halfStepIndex(task, procId, vals) {
 function halfBuildDone(task, procId, vals) {
   const proc = HALF_PROCS[procId];
   if (!proc || halfStepIndex(task, procId, vals) < proc.steps.length) return false;
-  const terms = halfTerms(task, vals, HALF_AUX);
+  const terms = halfTerms(task, vals, HALF_AUX_ALL);
   return compareSides(terms.left, terms.right).balanced;
 }
 

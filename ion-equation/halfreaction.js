@@ -221,13 +221,13 @@ function refresh() {
   p.steps.forEach((st, i) => {
     const ahead = i > at;               // まだ来ていない段
     for (const side of SIDES) {
-      const node = document.getElementById("hbSlot_" + KEYCODE[st.key] + "_" + side);
-      const v = (vals[st.key] || {})[side];
+      const node = document.getElementById("hbSlot_" + KEYCODE[halfStepKey(t, st)] + "_" + side);
+      const v = (vals[halfStepKey(t, st)] || {})[side];
       const zero = !Number.isInteger(v) || v === 0;
       node.hidden = done && zero;
       node.classList.toggle("hbSlotNow", !done && i === at);
       node.classList.toggle("hbSlotAhead", ahead);
-      const inp = document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side);
+      const inp = document.getElementById("hbIn_" + KEYCODE[halfStepKey(t, st)] + "_" + side);
       inp.disabled = ahead;
       /* ⚠ 押しても無反応、にはしない（なぜ打てないのかを、答えを言わずに返す）。
          ★ 数も辺も出さない ＝ ここから答えは漏れない */
@@ -261,7 +261,7 @@ function refresh() {
       e.msg.textContent = "";
       // 先の段の欄に、前に付いた赤い印を残さない
       for (const side of SIDES) {
-        document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side).classList.remove("ng");
+        document.getElementById("hbIn_" + KEYCODE[halfStepKey(t, st)] + "_" + side).classList.remove("ng");
       }
       return;
     }
@@ -269,21 +269,24 @@ function refresh() {
     const ngIn = r && r.kind === "wrong";
     if (ngIn) ngSeen = true;              // ★ 赤を出した（欄の ng と採点の文の ng は同じ条件）
     for (const side of SIDES) {
-      const inp = document.getElementById("hbIn_" + KEYCODE[st.key] + "_" + side);
+      const inp = document.getElementById("hbIn_" + KEYCODE[halfStepKey(t, st)] + "_" + side);
       inp.classList.toggle("ng", !!ngIn);
     }
     setStatusMsg(e.msg, plain(r.reason), r.ok ? "ok" : r.kind === "wrong" ? "ng" : "info");
   });
 
-  /* ★ 手順B の締めは**電荷の検算**。A では電荷が答えを決めたが、B では最後に合っているかを
-     確かめるだけ ＝ 同じ式でも、電荷の役どころが入れ替わることを1行で見せる。 */
+  /* ★ 手順B の締めの1行（id は hbCharge のまま）。
+     ⚠ 2026-09-17 に手順B の順番を変えた（e⁻ → 電荷(H⁺) → H₂O）ので、電荷はもう「締めの検算」ではなく
+     ②で合わせる柱になった。締めでは**H が最後に自然とそろった**ことを数で見せる
+     ＝ e⁻ と電荷を先に決めてあれば、H₂O で O を合わせるだけで H もそろう（手順B の芯）。 */
   const showCharge = done && procId === "B";
   chargeEl.hidden = !showCharge;
   if (showCharge) {
-    const terms = halfTerms(t, vals, HALF_AUX);
-    const cmp = compareSides(terms.left, terms.right);
-    chargeEl.textContent = `電荷は 左 ${fmtOxNum(cmp.chargeLeft)} ／ 右 ${fmtOxNum(cmp.chargeRight)} —— ` +
-      "合っている。手順B では、電荷は答えを決める材料ではなく最後の答え合わせ。";
+    const terms = halfTerms(t, vals, HALF_AUX_ALL);
+    const hRow = compareSides(terms.left, terms.right).rows.find((r) => r.el === "H");
+    chargeEl.textContent = hRow
+      ? `H も 左 ${hRow.left} 個 ／ 右 ${hRow.right} 個 でそろった。e⁻ と電荷を先に合わせたから、O を合わせれば H もそろう。`
+      : "e⁻ と電荷を先に合わせたから、最後は O を合わせるだけで済んだ。";
   }
 
   if (done && !marked) {
@@ -398,7 +401,7 @@ window.HalfBuild = {
     const at = halfStepIndex(t, procId, vals);
     return {
       taskIdx, id: t.id, proc: procId,
-      steps: proc().steps.map((s) => s.key),
+      steps: proc().steps.map((s) => halfStepKey(t, s)),
       at, done: halfBuildDone(t, procId, vals),
       clear: !clearEl.hidden,
       charge: !chargeEl.hidden,
