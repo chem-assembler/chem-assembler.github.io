@@ -2913,6 +2913,62 @@
             '正解の色が出題中と同じまま（答え合わせが見えない）');
     });
 
+    test('QUIZ_PAIRTEXT: 同じ？違う？の見出しと指示は形に合わせる ＝ 2択は「この2つは同じ化合物？」「同じか違うか選ぼう」・4択は今のまま（否定対照つき・v1579）', async (c) => {
+        // 2026-09-17・ユーザー決定「8.直す」。2択の画面（台本 V24・V64・V92・V107・V137）でも
+        // 見出し「同じ化合物はどれ？」・指示「①〜④から1つ選んでください」＝ 4択の言い方のままだった。
+        c.reset();
+        const W = c.W, D = c.D, q = W.quiz;
+        const title = () => D.getElementById('quiz-title').textContent;
+        const lead = () => D.getElementById('quiz-lead').textContent;
+        const pairShown = () => !D.getElementById('quiz-pair-answer').classList.contains('hidden');
+        const choiceShown = () => !D.getElementById('quiz-options').classList.contains('hidden');
+        const CHOICE_T = '🎓 同じ化合物はどれ？';
+        const PAIR_T = '🎓 この2つは同じ化合物？', PAIR_L = '同じか違うか選ぼう';
+        // 2択の文として正しいか（4択の言い方が1文字でも残っていれば赤）
+        const pairTextOk = () => title() === PAIR_T && lead() === PAIR_L && !/どれ|①|④|1つ選/.test(title() + lead());
+        try {
+            // ① 4択（既定）: 今のまま
+            q.setForced(null); q.setForcedPair(null, null);
+            q.open();
+            assert(choiceShown() && !pairShown(), '（前提）既定で4択が出ていない');
+            assert(title() === CHOICE_T && /①〜④から1つ選んでください/.test(lead()),
+                `4択の見出し・指示が変わった（「${title()}」／「${lead()}」）`);
+            const choiceLead = lead();
+            // ② 2択（答えの指定 ＝ V24・V64・V92 の形）
+            q.setForced('diff');
+            q.nextQuestion();
+            assert(pairShown() && !choiceShown(), '（前提）setForced で2択になっていない');
+            assert(pairTextOk(), `2択なのに見出し・指示が「${title()}」／「${lead()}」`);
+            // ③ 2択（組の指定 ＝ V107・V137 の形）。次の問題でも2択の文のまま
+            assert(q.setForcedPair('1-プロパノール', '2-プロパノール') === null, '（前提）組の指定が通らない');
+            q.nextQuestion();
+            assert(pairShown() && pairTextOk(), `組を指定した2択の見出し・指示が「${title()}」／「${lead()}」`);
+            D.getElementById('btn-quiz-diff').click();
+            D.getElementById('btn-quiz-next').click();
+            assert(pairShown() && pairTextOk(), `答えた次の問題で見出し・指示が「${title()}」／「${lead()}」`);
+            // ④ 指定を外すと4択の文に戻る（2択の文が居座らない）
+            q.setForced(null); q.setForcedPair(null, null);
+            q.nextQuestion();
+            assert(choiceShown() && title() === CHOICE_T && lead() === choiceLead,
+                `4択に戻ったのに見出し・指示が「${title()}」／「${lead()}」`);
+            // ★ 否定対照: 差し替えを止めると（直す前）、2択でも4択の言い方が残る ＝ 上の検査はそれを赤にする
+            const saved = [q.titleEl, q.leadEl];
+            q.titleEl = null; q.leadEl = null;
+            try {
+                q.setForced('diff');
+                q.nextQuestion();
+                assert(pairShown() && !pairTextOk() && /どれ/.test(title()) && /①〜④/.test(lead()),
+                    `否定対照: 差し替えを止めても2択の文「${title()}」／「${lead()}」＝ この検査は何も見張っていない`);
+            } finally {
+                [q.titleEl, q.leadEl] = saved;
+            }
+        } finally {
+            q.setForced(null); q.setForcedPair(null, null);
+            q.nextQuestion();
+            D.getElementById('btn-quiz-close').click();
+        }
+    });
+
     test('QUIZ_UNIFORM: 3種のクイズとも、出題中の選択肢は見た目がそろう（出題直後・答えた次の問題）', async (c) => {
         // 2026-09-15・ユーザー「V137 は最初から『違う』にマーカーされていますね」。
         // 同じ？違う？の2択で `#btn-quiz-diff` だけに inline のオレンジが付いていた
