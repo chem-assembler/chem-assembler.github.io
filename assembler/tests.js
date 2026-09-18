@@ -55243,11 +55243,16 @@
      *     機械が組む3つの表（系列・機構・対応表）が件数を出しているのは
      *     **「絞っていない」と名乗るため**で、手で書く表には名乗る約束が無い（§30-1）。
      *     ⚠ だから**機械が組む表からは消えていないこと**も一緒に見る（消すと約束が消える）。
+     *   ② ★ **数だけの列は既定で右へ寄る**（原稿に `align` が無いときだけ・§30-3）。
+     *     ⚠ 単位や語の付いた列は**寄せない**（桁がそろわないのに右へ張り付くと読みにくい）。
+     *   ③ ⚠⚠ **原稿の `align` が勝つ** —— 数の列に `center` と書いてあれば中央のまま
+     *     （既定は「書かなかったとき」の話で、書いたものを上書きしない）。
      */
-    test('REF27: 手で書く表の見出しに行数を足さない（機械が組む表の件数は残す）', async (c) => {
+    test('REF27: 手で書く表の見出しに行数を足さず、数だけの列は既定で右に寄る（原稿の align が勝つ）', async (c) => {
         const W = c.W;
         const book = W.referenceBook;
         assert(book, 'referenceBook が居ない');
+        const cellsOf = t => [...t.querySelectorAll('tbody tr')].map(tr => [...tr.children]);
 
         /* ── ① 見出しは caption そのまま（行数を足さない）── */
         const cap = '合成繊維の分類';
@@ -55269,6 +55274,50 @@
         assert(stageCap && /（\d+行）$/.test(stageCap.textContent),
             `系列から組む表の見出しから件数が消えている（「${stageCap && stageCap.textContent}」）`
             + ' ＝「絞っていない」という名乗りが消えた');
+
+        /* ── ② 数だけの列は既定で右（ほかの列は今までどおり何も足さない）── */
+        const auto = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）',
+            head: ['名称', '分子量'], rows: ['メタン | 16', 'エタン | 30', 'プロパン | 44']
+        }).querySelector('table');
+        cellsOf(auto).forEach((tr, r) => {
+            assert(!tr[0].style.textAlign, `${r + 1}行目の字の列に寄せが付いた（${tr[0].style.textAlign}）`);
+            assert(tr[1].style.textAlign === 'right',
+                `${r + 1}行目の数の列が右に寄っていない（${tr[1].style.textAlign || '(指定なし)'}）`);
+        });
+        const autoTh = [...auto.querySelectorAll('thead th')];
+        assert(!autoTh[0].style.textAlign && autoTh[1].style.textAlign === 'right',
+            '数の列の見出しが数と同じ側に寄っていない');
+
+        /* ⚠ 否定対照: 単位や語の付いた列・数が1つだけの列は寄せない（判定の綴りは learn.js の1本） */
+        const numCols = W.refNumericColumns;
+        assert(typeof numCols === 'function', '「数だけの列」の判定が learn.js から見えない');
+        const cases = [
+            [['メタン | −161 ℃', 'エタン | 気体', 'プロパン | −42 ℃'], 2, [false, false], '単位と語の付いた列'],
+            [['メタン | 16', 'エタン | 気体'], 2, [false, false], '数が1つしかない列'],
+            [['1 | メタン', '2 | エタン', '3 | プロパン'], 2, [true, false], '先頭が数の列'],
+            [['16 | 1.5', '30 | 2', '44 | 2.5'], 2, [true, true], '小数の列'],
+            [['<b>16</b> | メタン', '<b>30</b> | エタン'], 2, [true, false], '強調の札が付いた数（本文の記法を通ったあと）']
+        ];
+        cases.forEach(([rows, n, want, what]) => {
+            const got = numCols(rows, n);
+            assert(JSON.stringify(got) === JSON.stringify(want),
+                `${what}: 数だけの列の判定が ${JSON.stringify(got)}（期待 ${JSON.stringify(want)}）`);
+        });
+        const mixed = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）',
+            head: ['名称', '沸点'], rows: ['メタン | −161 ℃', 'エタン | 気体', 'プロパン | −42 ℃']
+        }).querySelector('table');
+        cellsOf(mixed).forEach((tr, r) => assert(!tr[1].style.textAlign,
+            `${r + 1}行目: 単位の付いた列まで右に寄った（${tr[1].style.textAlign}）`));
+
+        /* ── ③ 原稿の align が勝つ ── */
+        const forced = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）', align: 'left | center',
+            head: ['名称', '炭素数'], rows: ['メタン | 1', 'エタン | 2', 'プロパン | 3']
+        }).querySelector('table');
+        cellsOf(forced).forEach((tr, r) => assert(tr[1].style.textAlign === 'center',
+            `${r + 1}行目: 原稿が center と書いた数の列を既定が上書きした（${tr[1].style.textAlign}）`));
 
         /* ★ 実データ: 見出しを持つ表すべてで caption と1文字も違わない（空回りしていない）*/
         const pages = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());

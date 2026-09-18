@@ -6460,6 +6460,27 @@ const REF_EXERCISE_OPEN = '解答を見る';
    ⚠⚠ **`REF_ADVANCED_WORD`（発展）と役が違う。⛔ 混ぜない** ——
      発展 ＝ 範囲の外／誤解 ＝ 範囲の内で間違えやすい。★ だから**畳まない**
      （発展の節は `<details>` に畳むが、誤解はいちばん読ませたい人が開かないので開いたまま置く）。 */
+/* ★★ 手で書く表の「数だけの列」（設計書 §30-3・v1584）。
+ *
+ * ★ ユーザーのメモ「**数値の列は右寄せを既定にできないか**」への答え。
+ *   ⚠⚠ **判定は厳しくする** —— 単位や語の付いた列（`−161 ℃`・`約 3`）まで右へ寄せると、
+ *     桁がそろわないのに右へ張り付いて**かえって読みにくい**。★ 数だけの列に絞る。
+ * ⚠ セルは本文の記法を通ったあと（`**16**` → `<b>16</b>`）なので、**札を剥いでから**見る。
+ * ⚠ 空のセルは数えない（表の「−」や空欄で列が数でなくなるのを避ける）が、
+ *   **2つ以上の数が縦に並んでいること**を要る条件にする（1個だけの数は「列」ではない）。
+ */
+const REF_NUM_CELL = /^[0-9０-９]+([.,．，][0-9０-９]+)*$/;
+function refNumericColumns(rows, cols) {
+    const strip = s => String(s).replace(/<[^>]*>/g, '').replace(/[\s ]+/g, '');
+    const body = (rows || []).map(r => String(r).split(REF_CELL_SEP).map(strip));
+    const out = [];
+    for (let i = 0; i < cols; i++) {
+        const filled = body.map(r => r[i] === undefined ? '' : r[i]).filter(v => v !== '');
+        out.push(filled.length >= 2 && filled.every(v => REF_NUM_CELL.test(v)));
+    }
+    return out;
+}
+
 const REF_MISTAKE_TAG = 'よくある誤解';
 const REF_MISTAKE_WRONG = '✗';
 const REF_MISTAKE_RIGHT = '✓';
@@ -6990,11 +7011,17 @@ class ReferenceBook {
         const t = document.createElement('table');
         t.className = 'ref-hand-table';
         /* ★ 列ごとの寄せ（設計書 §20-9。原稿の `align: center | … | right`）。
-           ⚠ **書かれていなければ何も足さない** —— 既定の見え方は style.css の持ちもので、
-              「既定はこれ」をここに書き写すと決めごとが2か所になる。
-           ⚠ 数が head と合わない align は**書式のほうで止まる**（1列ずれた寄せを出さない）。 */
+           ⚠ 数が head と合わない align は**書式のほうで止まる**（1列ずれた寄せを出さない）。
+           ★★ **数だけの列は既定で右へ寄せる**（v1584・設計書 §30-3）。
+              ⚠ これは「見え方の既定」ではなく**中身から決まる寄せ** —— 桁をそろえて縦に
+                 読めるようにするためで、style.css には書けない（中身を見ないと決まらない）。
+              ⚠⚠ **原稿の `align` が勝つ。**既定は「書かなかった列」の話で、書いたものは上書きしない。 */
         const align = (block.align || '').split(REF_CELL_SEP).map(s => s.trim());
-        const setAlign = (cell, i) => { if (align[i]) cell.style.textAlign = align[i]; };
+        const auto = refNumericColumns(block.rows, block.head.length);
+        const setAlign = (cell, i) => {
+            const v = align[i] || (auto[i] ? 'right' : '');
+            if (v) cell.style.textAlign = v;
+        };
         const thead = document.createElement('thead');
         const htr = document.createElement('tr');
         block.head.forEach((h, i) => {
@@ -7663,6 +7690,9 @@ if (typeof window !== 'undefined') {
     window.REF_MISTAKE_TAG = REF_MISTAKE_TAG;
     window.REF_MISTAKE_WRONG = REF_MISTAKE_WRONG;
     window.REF_MISTAKE_RIGHT = REF_MISTAKE_RIGHT;
+    /* ★ 「数だけの列」の判定（§30-3）。`REF27` が否定対照（単位つきの列を右へ寄せない）を
+       この口から見る ＝ 判定の綴りを検査に書き写さない */
+    window.refNumericColumns = refNumericColumns;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;
