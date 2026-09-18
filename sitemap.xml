@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://chem.schoollenz.com/</loc>
-    <lastmod>2026-09-12</lastmod>
+    <lastmod>2026-09-18</lastmod>
   </url>
   <url>
     <loc>https://chem.schoollenz.com/assembler/</loc>
@@ -10,7 +10,7 @@
   </url>
   <url>
     <loc>https://chem.schoollenz.com/ion-equation/portal.html</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-18</lastmod>
   </url>
   <url>
     <loc>https://chem.schoollenz.com/ion-equation/</loc>
@@ -22,7 +22,7 @@
   </url>
   <url>
     <loc>https://chem.schoollenz.com/ion-equation/redox.html</loc>
-    <lastmod>2026-09-17</lastmod>
+    <lastmod>2026-09-18</lastmod>
   </url>
   <url>
     <loc>https://chem.schoollenz.com/ion-equation/battery.html</loc>
@@ -35,6 +35,10 @@
   <url>
     <loc>https://chem.schoollenz.com/ion-equation/condition.html</loc>
     <lastmod>2026-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://chem.schoollenz.com/ion-equation/halflist.html</loc>
+    <lastmod>2026-09-18</lastmod>
   </url>
   <url>
     <loc>https://chem.schoollenz.com/qa/</loc>

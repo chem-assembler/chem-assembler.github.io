@@ -35,6 +35,8 @@ const PAGES = [
     // 2026-09-07: 電池と電気分解を2枚に割った（DESIGN_battery_electrolysis.md §8）
     ['/ion-equation/electrolysis.html', 'ion-equation/electrolysis.html'],
     ['/ion-equation/condition.html', 'ion-equation/condition.html'],
+    // 2026-09-18: 半反応式の一覧（覚えるための資料。練習ページと違い、読むだけで意味がある）
+    ['/ion-equation/halflist.html', 'ion-equation/halflist.html'],
     ['/qa/', 'qa/index.html'],
     // ⚠ 2026-09-02: `/muki/` は入口（3つの遊び方の一覧）になり、スネークは snake.html へ移った。
     //   ★ `/muki/` だけを載せていると、**中身のある3枚が sitemap から消えた**ことになる

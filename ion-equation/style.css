@@ -2402,3 +2402,71 @@ main.timelineMain {
   margin: 0 0 2px; padding-left: 9px; border-left: 4px solid #a9c6de;
 }
 .roleUnitNote { font-size: calc(12 * var(--fs-u)); color: #7d8a91; line-height: 1.7; margin: 0 0 8px; padding-left: 13px; }
+
+/* ---- 半反応式の一覧（halflist.html・2026-09-18）----
+   ⚠ 説明の小さい字を増やさない。1行に載せるのは【印・名前・化学式】【式】【札】【進む釦】の4段だけ。
+   .rxnRow（反応インデックスの行）をそのまま土台にして、半反応式に要るものだけを足す。 */
+.hlMain { padding: 16px 16px 40px; }
+.hlLead { font-size: calc(14.5 * var(--fs-u)); line-height: 1.8; color: #46525e; margin: 4px 0 14px; }
+#hlFilters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+/* 練習に進む口。**表より先に置く**（順を決めてから表を見る、が自然な流れ） */
+#hlStart {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 10px;
+  background: #f0f6fb; border: 1px solid #cfe0ee; border-radius: 10px;
+}
+.hlNote { font-size: calc(12.5 * var(--fs-u)); color: #5a6570; }
+#hlTally { font-size: calc(13 * var(--fs-u)); color: #5a6570; margin: 6px 2px 10px; }
+.hlSec { margin-bottom: 18px; }
+.hlRow { padding: 10px 14px; }
+.hlHead { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+/* 印は3通り（〇・×・まだ）。**色だけで言い分けない**（字も変える） */
+.hlMark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  font-size: calc(14 * var(--fs-u)); font-weight: bold;
+}
+.hlMark.hlOk { background: #e4f3e8; color: #2e6b43; }
+.hlMark.hlNg { background: #fbeae5; color: #a8432a; }
+.hlMark.hlNone { background: #eef1f4; color: #9aa7b4; }
+.hlName { font-size: calc(14 * var(--fs-u)); font-weight: bold; color: #23303b; }
+.hlSp { font-size: calc(13 * var(--fs-u)); color: #6c7a88; }
+.hlEq { font-size: calc(17 * var(--fs-u)); margin-bottom: 4px; overflow-x: auto; }
+/* もう一つの書き方。**本体と同じ濃さにしない**（先に覚えるほうが分かるように）
+   ⚠ どちらが教科書かは書かない ＝ 言うのは「こう書いてもよい」だけ */
+.hlAlt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.hlAltLead { font-size: calc(11.5 * var(--fs-u)); color: #8a94a0; }
+.hlAltEq { font-size: calc(14.5 * var(--fs-u)); color: #5a6570; }
+.rxnBadge.hlRole { background: #eaf1f7; border-color: #c2d5e5; color: #2f5a7d; font-weight: bold; }
+.hlGoOne { margin-top: 6px; }
+@media (max-width: 480px) {
+  .hlMain { padding: 12px 12px 32px; }
+  .hlEq { font-size: calc(15.5 * var(--fs-u)); }
+}
+
+/* ---- 半反応式を組む画面の上の帯（halfreaction.html・2026-09-18）----
+   ユーザーの指摘「①②… の帯は分かりにくい」。番号だけでは**いま何の式か**も
+   **どこへ戻れるか**も読めなかったので、番号の帯の下で3つを言う:
+   戻り先（一覧）／いま何本目か／いま組んでいる式の名前と骨格。
+   ⚠ 小さい字を積み増さない ＝ 2行で終わらせる。 */
+.hbWhere {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+  font-size: calc(12.5 * var(--fs-u)); margin-bottom: 4px;
+}
+.hbBack { color: #3d6b8f; text-decoration: none; display: inline-flex; align-items: center; min-height: 32px; }
+.hbBack:hover { text-decoration: underline; }
+.hbCount { color: #7d8a91; }
+.hbNow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.hbNowName { font-size: calc(15 * var(--fs-u)); color: #23303b; }
+.hbNowEq { font-size: calc(16 * var(--fs-u)); color: #46525e; }
+
+/* 書き方の選択（硝酸・熱濃硫酸・シュウ酸）。⚠ どちらが教科書かは書かない */
+.hbForm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 8px; }
+.hbFormLead { font-size: calc(12 * var(--fs-u)); color: #8a94a0; margin-right: 2px; }
+.hbFormBtn {
+  border: 1px solid #c4cdd6; background: #fff; color: #46525e;
+  border-radius: 14px; padding: 4px 12px; min-height: 32px;
+  font-size: calc(13 * var(--fs-u)); cursor: pointer;
+}
+.hbFormBtn:hover { background: #f0f4f8; }
+.hbFormBtn.active { background: #275d8c; border-color: #275d8c; color: #fff; }
