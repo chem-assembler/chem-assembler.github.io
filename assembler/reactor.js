@@ -124,6 +124,88 @@ function parkAsWater(mol, oId) {
     o.fromReaction = true;
 }
 
+/* ===== 加水分解は水を使う（v1584・発注書 G。V134 のユーザー指摘）=====
+ *
+ * ⚠ **脱水で出た水が、加水分解のあとも画面に残っていた**
+ *   （フタル酸 →〔酸無水物〕→ 無水フタル酸＋水 →〔加水分解〕→ フタル酸 ＋ **水** ）。
+ *   結末の表示も「① フタル酸 ＋ ② 水」で、**反応式の収支と画面が食い違う**。
+ * ★ 加水分解は水を**使う**側なので、画面の水を1分子引き取って消す。
+ * ⚠ **消すのは「結合を1本も持たない酸素」だけ**（＝ 自動水素で H₂O と描かれているもの）。
+ *   結合を持つ酸素はどこかの分子の一部なので触らない。
+ * ★ 近い水から取る ＝ さっき自分が出した水が、そのまま戻ったように見える。
+ *
+ * @returns 引き取った水の原子（無ければ null）
+ */
+function takeWaterFromCanvas(mol, nearId) {
+    const near = mol.atoms.find(a => a.id === nearId);
+    const waters = mol.atoms.filter(a => a.element === 'O' &&
+        !mol.bonds.some(b => b.atomId1 === a.id || b.atomId2 === a.id));
+    if (!waters.length) return null;
+    // 反応で出た水を先に取る（人が置いた酸素より、さっき出た水を戻すほうが筋が読める）
+    const pick = waters.filter(a => a.fromReaction);
+    const pool = pick.length ? pick : waters;
+    let best = pool[0];
+    if (near) pool.forEach(a => {
+        if (Math.hypot(a.x - near.x, a.y - near.y) < Math.hypot(best.x - near.x, best.y - near.y)) best = a;
+    });
+    const i = mol.atoms.indexOf(best);
+    if (i >= 0) mol.atoms.splice(i, 1);
+    return best;
+}
+
+/* ===== 環をつくる前の姿を控える／戻す（v1584・発注書 G）=====
+ *
+ * ⚠ **加水分解で戻ったフタル酸の -COOH の向きが、最初に置いたフタル酸と違っていた**
+ *   （ユーザー実機報告・V134）。**同じ分子に戻ったのに見た目が変わる**ので、
+ *   「元に戻った」が画から読めない。
+ * ★ 原因は**脱水の側**にある: 五角形／六角形に置き直すときに -COOH まわりを動かしていて、
+ *   加水分解で環を開いても**動かした座標のまま**だった。
+ * ★ 直し方は「戻すときの作図をやり直す」ではなく、**行きで控えて帰りで戻す**。
+ *   座標は見た目専用（CLAUDE.md）なので、控えを持っても化学は1つも変わらない。
+ * ⚠ 戻した先に別の原子が居たら**戻さない**（あとから描き足した図の上に重ねない）。 */
+const PRE_RING_XY = 'preRingXY';   // その原子が環になる前に居た場所
+const OH_HOME_XY = 'ohHomeXY';     // そのアシル炭素の -OH がどこに付いていたか
+
+/** 脱水の直前に控える。`ids` は座標を動かしうる原子、`ohOf` は 炭素id → その -OH の原子 */
+function rememberPreRing(mol, ids, ohOf) {
+    ids.forEach(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        if (a) a[PRE_RING_XY] = { x: a.x, y: a.y };
+    });
+    Object.entries(ohOf).forEach(([cId, oh]) => {
+        const c = mol.atoms.find(x => x.id === cId);
+        if (c && oh) c[OH_HOME_XY] = { x: oh.x, y: oh.y };
+    });
+}
+
+/**
+ * 加水分解のあとに元の姿へ戻す。控えを持っている原子だけが動く
+ * （＝ ライブラリから呼び出した無水フタル酸には控えが無いので、今までどおりの図になる）。
+ * @returns 戻したなら true
+ */
+function restorePreRing(mol, ids, extraMoving = []) {
+    // ⚠ `ids` は呼び出し側で重ねて渡される（環＋成分＋印）ので**必ず重複を落とす** ——
+    //   同じ原子を2度なぞると、1度目で控えを消したあと2度目が undefined を読む（実測）
+    const kept = [...new Set(ids)].map(id => mol.atoms.find(a => a.id === id))
+        .filter(a => a && a[PRE_RING_XY]);
+    if (!kept.length) return false;
+    /* ⚠ **呼び出し側がこのあと置き直す原子は「邪魔者」に数えない。**
+     *   加水分解で生えた -OH の酸素は、まさに戻し先（もとの -OH の場所）の上に立っている
+     *   ので、数えると必ずぶつかって**一度も戻せなくなる**（実測でここに落ちた）。 */
+    const moving = new Set(kept.map(a => a.id).concat(extraMoving));
+    const others = mol.atoms.filter(a => a.element !== 'H' && !moving.has(a.id));
+    // 戻り先が空いているか（あとから描き足した図の上に重ねない）
+    const clash = kept.some(a => others.some(o =>
+        Math.hypot(o.x - a[PRE_RING_XY].x, o.y - a[PRE_RING_XY].y) < GRID_SIZE * 0.6));
+    if (clash) return false;
+    kept.forEach(a => { a.x = a[PRE_RING_XY].x; a.y = a[PRE_RING_XY].y; delete a[PRE_RING_XY]; });
+    return true;
+}
+
+/* ⚠ -OH の酸素を引くのは **既にある `hydroxylOxygenOf`**（3200行台）を使う。
+ *   ⚠⚠ ここで同じ名前の関数をもう1つ書いたら、**後ろの宣言が黙って勝って**
+ *   「原子を返すつもりが id が返る」壊れ方をした（実測。図はそのままで例外も出ない）。 */
+
 // planAttachment 用: 動かす原子の集合（脱離する原子は含めない）
 function movingSetOf(moving, ignore) {
     return [...moving].filter(id => !ignore.has(id));
@@ -7128,6 +7210,15 @@ const REACTION_RULES = [
             // ★ 五員環は正五角形（v1566）・六員環は正六角形（v1574）に置く。置けないとき（重なる）は今までどおり O だけ動かす
             const pentagon = anhydridePentagonPlacement(mol, cand, ohA, ohB) ||
                 anhydrideHexagonPlacement(mol, cand, ohA, ohB);
+            /* ★ **環にする前の姿をここで控える**（発注書 G）。控えるのは
+             *   「動かしうる原子ぜんぶ」＝ 五角形／六角形の置き直しが触る範囲より広く取る
+             *   （環になる経路・2つのアシル炭素・その酸素）。加水分解が帰り道でここへ戻す。 */
+            rememberPreRing(mol,
+                [...cand.path, ohA, ohB,
+                    ...mol.bonds.filter(b => b.atomId1 === cA || b.atomId2 === cA ||
+                                             b.atomId1 === cB || b.atomId2 === cB)
+                        .flatMap(b => [b.atomId1, b.atomId2])],
+                { [cA]: mol.atoms.find(a => a.id === ohA), [cB]: mol.atoms.find(a => a.id === ohB) });
             // 片方の -OH の O を架橋にし、もう片方の -OH は水として出す
             mol.removeBond(cB, ohB);
             if (pentagon) {
@@ -7206,7 +7297,29 @@ const REACTION_RULES = [
             const ring = ringAtomIdsOf(mol).has(oId); // 環状の酸無水物（無水フタル酸など）
             // ★ 切り方も印の列挙も `cleaveAcylOxygen` に任せる（同書 CV1）。
             //   ⚠ ここは `changed: [cId, o.id]` と書いてあり、**切り離される側の酢酸が光らなかった**
+            /* ★ 環の中の原子ぜんぶを先に控えておく（発注書 G）。切ったあとで引くと、
+             *   すでに別の分子に分かれていて片方しか拾えない。 */
+            const ringIds = ring ? [...ringAtomIdsOf(mol)] : [];
+            const near = [...componentOf(mol, cId)];
             const { changed } = cleaveAcylOxygen(mol, cId, oId);
+            /* ★★ 加水分解は水を**使う**（発注書 G）。画面に浮いている水を1分子引き取る
+             *   ＝「① フタル酸 ＋ ② 水」で終わらない。 */
+            takeWaterFromCanvas(mol, cId);
+            /* ★★ 環をつくる前の姿へ戻す（発注書 G）。⚠ **控えを持つ原子だけ**が動くので、
+             *   ライブラリから呼び出した無水フタル酸はいままでどおりの図になる。
+             *   戻したあと、2つの -COOH の酸素を「もとの -OH が付いていた場所」へ置き直す
+             *   ＝ 架橋だった O と、いま生えた O のどちらが来ても同じ絵になる。 */
+            const homes = mol.atoms.filter(a => a[OH_HOME_XY])
+                .map(c => ({ c, oh: mol.atoms.find(x => x.id === hydroxylOxygenOf(mol, c.id)) }))
+                .filter(x => x.oh);
+            const back = restorePreRing(mol, ringIds.concat(near, changed),
+                homes.map(x => x.oh.id));
+            if (back) {
+                homes.forEach(({ c, oh }) => {
+                    oh.x = c[OH_HOME_XY].x; oh.y = c[OH_HOME_XY].y;
+                    delete c[OH_HOME_XY];
+                });
+            }
             return {
                 caption: '酸無水物が加水分解されました（-CO-O-CO- + H₂O → -COOH が2つ）。' +
                     (ring

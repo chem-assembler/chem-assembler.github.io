@@ -42699,18 +42699,46 @@
                W.reverseRuleIdOf('dehydration_anhydride') === 'hydrolysis_anhydride',
             '行きと帰りの対に酸無水物が入っていない（片道のまま）');
         {
+            /* ★★ v1585・発注書 G（V134 のユーザー指摘）で**戻り方そのものが変わった**:
+             *   ① 加水分解は水を**使う**ので、脱水で出た水は画面から消える
+             *      （v1584 まで「① フタル酸 ＋ ② 水」で終わっていた）
+             *   ② 戻った分子は**最初に置いたのと同じ向き**になる
+             *      （v1584 までは五角形に置き直した座標のままで、-COOH の向きが違った） */
             const before = codeOf(['フタル酸']);
+            const xy = (m) => m.atoms.filter(a => a.element !== 'H')
+                .map(a => `${a.element}@${Math.round(a.x)},${Math.round(a.y)}`).sort().join(' ');
+            const xyBefore = xy(setup(['フタル酸']));
+            // ⚠ `codeOf` はキャンバスを作り直す（`setup` を通る）ので、**比べる文字列は先に取る**
+            const withWater = codeOf(['フタル酸', '水']);
             const mol = setup(['フタル酸']);
             dehyd.apply(g, dehyd.detect(mol)[0]);
             g.updateDrawing();
+            assert(g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length === 2,
+                '前提が崩れている（脱水で水が1分子出るはず）');
             const hSites = hydro.detect(mol);
             assert(hSites.length === 1, `できた無水物を加水分解できない（${hSites.length} 件）`);
             hydro.apply(g, hSites[0]);
             g.updateDrawing();
-            // 水が1分子余分に残るので、フタル酸＋水と比べる
-            assert(CC(mol) === codeOf(['フタル酸', '水']),
-                `往復してフタル酸に戻らない\n  実際: ${CC(mol)}\n  期待: ${codeOf(['フタル酸', '水'])}`);
-            assert(before !== CC(mol), '前提が崩れている（水のぶんだけ違うはず）');
+            // ---- ① 水を使ったので、残るのはフタル酸だけ
+            assert(CC(mol) === before,
+                `往復してフタル酸に戻らない\n  実際: ${CC(mol)}\n  期待: ${before}`);
+            assert(CC(mol) !== withWater,
+                '★ 加水分解したのに水が画面に残っている（反応式の収支と画面が食い違う）');
+            // ---- ② 向きまで最初と同じ（「元に戻った」が画から読める）
+            assert(xy(mol) === xyBefore,
+                `★ 戻ったフタル酸の向きが最初と違う\n  実際: ${xy(mol)}\n  期待: ${xyBefore}`);
+        }
+        {
+            /* ★ 否定対照: **ライブラリから呼び出した無水フタル酸**（この画面で脱水していない）は
+             *   控えを持たないので、いままでどおりの図になる ＝ 控えの無い相手に細工をしない。
+             *   ⚠ 水も画面に無いので、消す水も無い。 */
+            const mol = setup(['無水フタル酸']);
+            const sites = hydro.detect(mol);
+            assert(sites.length === 1, '呼び出した無水フタル酸を加水分解できない');
+            hydro.apply(g, sites[0]);
+            g.updateDrawing();
+            assert(CC(g.userMolecule) === codeOf(['フタル酸']),
+                '呼び出した無水フタル酸の加水分解がフタル酸にならない');
         }
         c.reset();
     });
