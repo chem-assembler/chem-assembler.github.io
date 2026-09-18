@@ -28879,6 +28879,18 @@
         const minX = Math.min(...carbons.map(a => a.x));
         assert(Math.abs(g.userMolecule.atoms.find(a => a.id === leftmost).x - minX) < 1,
             'いちばん左に並べた単量体が、できた鎖の左端に来ていない（繋ぐ順と伸びる向きが逆）');
+
+        /* ---- (6) 置換基が鎖の伸びる先に描かれている単量体（v1593・§30） ----
+         *    置換基の倒し方を「そのまま」→「同じ側」→「1つおき」で選ぶようにしても、
+         *    どの単量体でも主鎖は一直線のまま（§14 と同じ物差し）。
+         *    claude/quizzical-turing-2c0b2a の PM3 (6) の取り込み直し。 */
+        [['スチレン', 8], ['酢酸ビニル', 8], ['メタクリル酸メチル', 8],
+         ['アクリル酸', 8], ['アクリルアミド', 8]].forEach(([name, n]) => {
+            const r = polymerize('addition_polymerization', new Array(3).fill(name));
+            assert(r.ids.length === n, `${name} の主鎖が ${r.ids.length} 原子（${n} を期待）`);
+            assert(r.bent === 0 && r.ySpread === 0,
+                `${name}3個の鎖が一直線でない（折れ${r.bent}・y ${r.ySpread}px。${r.text}）`);
+        });
         c.reset();
     });
 
@@ -28999,7 +29011,8 @@
             assert(Math.abs(Math.max(dx, dy) - G) < 1,
                 `主鎖の結合が格子の刻みでない（${Math.round(Math.max(dx, dy))}px・刻み ${G}px）`);
         });
-        // 置換基（-Cl）が既存の 120° のまま＝ こちらは**変えていない**ことも合わせて言う
+        // 置換基（-Cl）の数。⚠ ここは個数しか見ていない ―― §30 の直しの前は -Cl が縦に倒れていても緑だった。
+        //   「120° のまま」は PM16 ③ が角度で見る（§30）
         const cl = g.userMolecule.atoms.filter(a => a.element === 'Cl');
         assert(cl.length === 4, `Cl が ${cl.length} 個（単量体4個ぶんの4個を期待）`);
         c.reset();
@@ -29556,6 +29569,184 @@
         assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 4,
             '鎖2本ぶんの R（4個）になっていない');
         D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    /* ===== PM15・PM16: 付加重合の置換基の向き（v1593・DESIGN_reaction_execution.md §30） =====
+     *
+     * claude/quizzical-turing-2c0b2a の PM7・PM8 の取り込み直し（ユーザー決定 2026-09-19:
+     * ブランチの作図方針を採る）。主張はすべて座標の数で書く。
+     *   - 酢酸ビニル … アセトキシ基が**全部主鎖の真下**・中の結合も直交
+     *     （登録済み polyvinyl-alcohol の -OH が全部真下なのと同じ形）
+     *   - 塩化ビニル … **-Cl は呼び出したときの 120° のまま**（PM16 ③）
+     *   - スチレン … 環が太いので上下交互（PM7 ③ と同じ）
+     * ⚠ CLAUDE.md の作図例外（±120°）は増やしていない ―― 付加重合は C=C を単結合に開くのが本体で、
+     *   開いた炭素は sp3。倒すのは**直交作図へ戻す**こと。
+     */
+    const addPoly3 = (c, name, n = 3) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        for (let i = 0; i < n; i++) g.summonMolecule(name);
+        const rule = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // 主鎖の原子から出る枝の付け根（{c: 主鎖の原子, s: 付け根}）
+    const pendantRoots = (mol, back, pick = (a) => a.element !== 'H') => mol.atoms
+        .filter(a => back.has(a.id))
+        .flatMap(a => mol.getNeighbors(a.id)
+            .filter(n => !back.has(n.atom.id) && pick(n.atom))
+            .map(n => ({ c: a, s: n.atom })));
+
+    test('PM15: 酢酸ビニルの置換基は全部主鎖の真下・スチレンの環は上下交互（登録済みポリビニルアルコールと同じ形）', async (c) => {
+        const W = c.W, g = c.game;
+
+        // ---- ① 酢酸ビニル: エステルの O が3つとも主鎖の真下 ----
+        const pvac = addPoly3(c, '酢酸ビニル');
+        const back = new Set(polymerBackbone(pvac).ids);
+        const chainY = pvac.atoms.find(a => back.has(a.id)).y;
+        const roots = pendantRoots(pvac, back);
+        assert(roots.length === 3, `枝の付け根が ${roots.length} 本（単量体3個ぶんの3本を期待）`);
+        roots.forEach(({ c: cc, s }) => {
+            assert(Math.abs(s.x - cc.x) < 1,
+                `枝が主鎖に垂直でない（付け根 ${Math.round(cc.x)},${Math.round(cc.y)} → ` +
+                `${s.element}(${Math.round(s.x)},${Math.round(s.y)})）`);
+            assert(s.y > chainY, '枝が主鎖の下に出ていない（polyvinyl-alcohol は全部真下）');
+        });
+        // アセトキシ基の中も直交のまま（半端な角度で回していない）
+        pvac.atoms.filter(a => !back.has(a.id) && a.element !== 'H').forEach(a =>
+            pvac.getNeighbors(a.id).forEach(n => {
+                if (n.atom.element === 'H') return;
+                const dx = Math.abs(a.x - n.atom.x), dy = Math.abs(a.y - n.atom.y);
+                assert(dx < 1 || dy < 1,
+                    `アセトキシ基に斜めの結合ができた（${Math.round(dx)},${Math.round(dy)}）`);
+            }));
+
+        // ---- ② けん化してできるポリビニルアルコールも、登録図と同じく -OH が全部真下 ----
+        const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
+        for (let k = 0; k < 3; k++) {
+            const s = sap.detect(g.userMolecule);
+            assert(s.length, `けん化の箇所が ${k} 回目で尽きた（3回を期待）`);
+            sap.apply(g, s[0]);
+            g.updateDrawing();
+        }
+        const pva = g.userMolecule;
+        const pBack = new Set(polymerBackbone(pva).ids);
+        const pY = pva.atoms.find(a => pBack.has(a.id)).y;
+        const oh = pendantRoots(pva, pBack);
+        assert(oh.length === 3 && oh.every(({ s }) => s.element === 'O'),
+            `けん化後の枝が -OH 3本でない（${oh.map(r => r.s.element).join(',')}）`);
+        const offs = oh.map(({ c: cc, s }) => `${Math.round(s.x - cc.x)},${Math.round(s.y - cc.y)}`);
+        const G = W.GRID_SIZE || 42;
+        assert(offs.every(o => o === `0,${G}`),
+            `ポリビニルアルコールの -OH が全部真下でない（${offs.join(' / ')}。登録図は 0,${G} ×3）`);
+        assert(pY < oh[0].s.y, '-OH が主鎖の下に出ていない');
+
+        // ---- ③ スチレン: 環は主鎖に垂直で上下に振り分けられ、正六角形のまま ----
+        const ps = addPoly3(c, 'スチレン');
+        const psBack = new Set(polymerBackbone(ps).ids);
+        const psY = ps.atoms.find(a => psBack.has(a.id)).y;
+        const ipso = pendantRoots(ps, psBack, a => a.element === 'C');
+        assert(ipso.length === 3, `環の付け根が ${ipso.length} 本（3本を期待）`);
+        ipso.forEach(({ c: cc, s }) => assert(Math.abs(s.x - cc.x) < 1,
+            `環が主鎖に垂直でない（${Math.round(s.x - cc.x)}px ずれている）`));
+        const sides = ipso.map(({ s }) => (s.y > psY ? 1 : -1));
+        assert(new Set(sides).size === 2,
+            `ベンゼン環が全部同じ側に出ている（${sides.join(',')}）。同じ側だと隣の環と 14.8px まで詰まる`);
+        // 環は放射状のまま（ipso まわりの3本が 120° ずつ）。
+        // ★ 環を含む枝まで 90° へ丸めて回すと、ここが 150/120/90 になって赤（取り込み直しで実測）
+        ipso.forEach(({ s }) => {
+            const around = ps.getNeighbors(s.id).filter(n => n.atom.element !== 'H')
+                .map(n => Math.atan2(n.atom.y - s.y, n.atom.x - s.x) * 180 / Math.PI)
+                .sort((a, b) => a - b);
+            assert(around.length === 3, `ipso のまわりが ${around.length} 本`);
+            const gaps = [around[1] - around[0], around[2] - around[1], 360 - (around[2] - around[0])];
+            assert(gaps.every(x => Math.abs(x - 120) < 1),
+                `環が放射状でない（ipso まわり ${gaps.map(x => Math.round(x)).join('/')}）＝ 環の辺の途中から主鎖へ出て見える`);
+        });
+        const ringLens = ps.bonds
+            .filter(b => !psBack.has(b.atomId1) && !psBack.has(b.atomId2))
+            .map(b => {
+                const p = ps.atoms.find(a => a.id === b.atomId1);
+                const q = ps.atoms.find(a => a.id === b.atomId2);
+                return Math.hypot(p.x - q.x, p.y - q.y);
+            });
+        assert(ringLens.length === 18, `環の中の結合が ${ringLens.length} 本（3環×6本の18を期待）`);
+        assert(Math.max(...ringLens) - Math.min(...ringLens) < 1,
+            `倒したせいで環がゆがんだ（辺 ${ringLens.map(v => Math.round(v)).join(',')}）`);
+        c.reset();
+    });
+
+    test('PM16（否定対照）: 置換基を倒すのは見た目だけ ― 判定も、塩化ビニルの 120° も、傍観分子も変えない', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+
+        // ---- ① 生成物は正しいポリスチレン: 二重結合は環の9本だけ・価標健全・頭-尾 ----
+        const ps = addPoly3(c, 'スチレン');
+        assert(ps.atoms.every(a => W.isValencyValid(ps, a.id)), '重合後に価標が壊れた');
+        assert(ps.bonds.filter(b => b.type === 2).length === 9,
+            `二重結合が ${ps.bonds.filter(b => b.type === 2).length} 本（ベンゼン環3個ぶんの9本だけを期待）`);
+        const psBack = polymerBackbone(ps).ids;
+        assert(psBack.length === 8, `主鎖が ${psBack.length} 原子（R+C6+R を期待）`);
+        const withRing = psBack.filter(id => ps.getNeighbors(id)
+            .some(nb => nb.atom.element === 'C' && !psBack.includes(nb.atom.id)));
+        assert(withRing.length === 3, `環の付いた主鎖炭素が ${withRing.length} 個（3個を期待）`);
+        const pattern = psBack.slice(1, -1).map(id => (withRing.includes(id) ? 'Ph' : 'H2'));
+        assert(pattern.join('-') === 'H2-Ph-H2-Ph-H2-Ph' || pattern.join('-') === 'Ph-H2-Ph-H2-Ph-H2',
+            `頭-尾の並びが崩れた（${pattern.join('-')}）`);
+
+        // ---- ② 正準コードは座標を見ていない（平行移動・環の上下反転で不変） ----
+        const code = CC(ps);
+        ps.atoms.forEach(a => { a.x += 211; a.y -= 73; });
+        assert(CC(ps) === code, '分子を平行移動しただけで正準コードが変わった');
+        const flipBack = new Set(polymerBackbone(ps).ids);
+        const chainY = ps.atoms.find(a => flipBack.has(a.id)).y;
+        ps.atoms.forEach(a => { if (!flipBack.has(a.id)) a.y = 2 * chainY - a.y; });
+        assert(CC(ps) === code, '環を上下ひっくり返しただけで別の高分子になった');
+
+        // ---- ③ ★ 塩化ビニルの -Cl は 120° のまま（置換基が道を塞いでいない分子は「そのまま」が勝つ） ----
+        //    §18-1 の上下交互（uprightChainSubstituent）に戻すと、ここが「斜め 0/3」で赤になる
+        const pvc = addPoly3(c, '塩化ビニル');
+        const pvcBack = new Set(polymerBackbone(pvc).ids);
+        const cls = pvc.atoms.filter(a => a.element === 'Cl');
+        assert(cls.length === 3, `Cl が ${cls.length} 個（3個を期待）`);
+        const tilted = cls.filter(cl => {
+            const cc = pvc.getNeighbors(cl.id).find(n => pvcBack.has(n.atom.id));
+            if (!cc) return false;
+            const dx = Math.abs(cl.x - cc.atom.x), dy = Math.abs(cl.y - cc.atom.y);
+            return dx > 1 && dy > 1;
+        });
+        assert(tilted.length === 3,
+            `塩化ビニルの -Cl が 120° のままでない（斜め ${tilted.length}/3）。` +
+            'すでに一直線に出ている分子は「そのまま」が勝つ約束（v1593・§30）');
+        const pvcLine = polymerBackbone(pvc);
+        assert(pvcLine.bent === 0 && pvcLine.ySpread === 0,
+            `塩化ビニル3個の主鎖が一直線でない（折れ${pvcLine.bent}・y ${pvcLine.ySpread}px）`);
+
+        // ---- ④ 倒すのは重合する単量体だけ ― 離して置いた傍観分子には1原子も触れない ----
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        for (let i = 0; i < 3; i++) g.summonMolecule('酢酸ビニル');
+        const spectator = new W.Molecule();
+        const s1 = spectator.addAtom('C', -900, -700).id;
+        const s2 = spectator.addAtom('O', -858, -700).id;
+        spectator.addBond(s1, s2, 1);
+        spectator.atoms.forEach(a => g.userMolecule.atoms.push(a));
+        spectator.bonds.forEach(b => g.userMolecule.bonds.push(b));
+        g.updateDrawing();
+        const before = spectator.atoms.map(a => `${a.x},${a.y}`).join(' ');
+        const rule = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const after = g.userMolecule.atoms.filter(a => a.id === s1 || a.id === s2)
+            .map(a => `${a.x},${a.y}`).join(' ');
+        assert(before === after, `重合と関係のない分子の座標が動いた（${before} → ${after}）`);
         c.reset();
     });
 
@@ -30646,8 +30837,8 @@
      * **3単位＋両端 R**（`DESIGN_reaction_execution.md` §21-1 (b)）。
      *
      * ⚠ **名前は正準コードで引くので、座標までは一致しない**（実測）: 反応は置換基を
-     *   上下交互に出す（`uprightChainSubstituent` の `i % 2`）が、登録図は PVA と同じく
-     *   全部同じ側に出している。**それでも名前は出る** ＝ 一致を見るのは座標ではなくコード。 */
+     *   倒し方を「そのまま」→「同じ側」→「1つおき」から選ぶ（v1593・§30。塩化ビニルの -Cl は
+     *   120° のまま・スチレンの環は上下交互）が、登録図は PVA と同じく全部同じ側に出している。**それでも名前は出る** ＝ 一致を見るのは座標ではなくコード。 */
 
     // 単量体を n 個呼んで付加重合させ、いちばん大きい成分を返す
     const addPolymerize = (c, monomer, n) => {
