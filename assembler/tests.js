@@ -16875,6 +16875,92 @@
         }
     });
 
+    test('RXP7: 1,4-付加重合はシス形（天然ゴム）で描き、トランス形（グタペルカ）へ入れ替えられる（発注書 L・v1587）', async (c) => {
+        /* 2026-09-17・ユーザー判断「イソプレンであれば、**②を基本、ただし比較のために③**」。
+         * ⚠ v1586 まで**できる鎖は必ずトランス形**で、V130「ゴムが弾むようになるまで」の
+         *   題と真逆の図（＝ グタペルカ）を描いていた。
+         * ★ 見るのは4つ:
+         *   ① 重合したてで、鎖の C=C が**すべて syn（シス形）**
+         *   ② 入れ替えると**すべて anti**、もう一度で syn に戻る
+         *   ③ 入れ替えても**正準コード・分子式・原子の数が1つも変わらない**（動くのは座標だけ）
+         *   ④ シス形の鎖でも**加硫できる**（V130 の筋が通る） */
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const poly = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const flip = W.REACTION_RULES.find(r => r.id === 'diene_cis_trans');
+        assert(poly && flip, '1,4-付加重合か、シス/トランスの入れ替えのルールが無い');
+        assert(!flip.info, 'シス/トランスの入れ替えが「説明だけ」になっている（図が変わらない）');
+        const geos = () => Object.values(W.readBondGeoFromCoords(g.userMolecule));
+        const build = (name, n) => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            for (let i = 0; i < n; i++) assert(g.summonMolecule(name), `${name} を呼び出せない`);
+            g.updateDrawing();
+            const s = poly.detect(g.userMolecule);
+            assert(s.length, `${name} ×${n}: 1,4-付加重合の箇所が無い`);
+            poly.apply(g, s[0]);
+            g.updateDrawing();
+        };
+        try {
+            // ---- ① 重合したてがシス形（★ 単位が2個でも3個でも）
+            [2, 3].forEach(n => {
+                build('イソプレン', n);
+                const gs = geos();
+                assert(gs.length === n && gs.every(x => x === 'syn'),
+                    `★ イソプレン ×${n} の鎖が シス形になっていない（${gs.join(',') || 'C=C が読めない'}）`);
+            });
+            // 1,3-ブタジエンでも同じ道を通る（メチルの無い鎖）
+            build('1,3-ブタジエン', 2);
+            assert(geos().every(x => x === 'syn'), `★ ポリブタジエンがシス形でない（${geos().join(',')}）`);
+
+            // ---- ②③ 入れ替えでトランス ⇄ シス。**中身は1つも変わらない**
+            build('イソプレン', 3);
+            const code0 = W.canonicalCode(g.userMolecule);
+            const atoms0 = g.userMolecule.atoms.map(a => a.element).sort().join('');
+            const sites = flip.detect(g.userMolecule);
+            assert(sites.length === 1, `入れ替えの箇所が ${sites.length} 件（1件を期待）`);
+            const cap1 = flip.apply(g, sites[0]).caption;
+            g.updateDrawing();
+            assert(geos().every(x => x === 'anti'), `★ 入れ替えてもトランス形にならない（${geos().join(',')}）`);
+            assert(/グタペルカ/.test(cap1) && /まっすぐ/.test(cap1), `トランスの一言が筋を言っていない: ${cap1.slice(0, 40)}`);
+            const cap2 = flip.apply(g, flip.detect(g.userMolecule)[0]).caption;
+            g.updateDrawing();
+            assert(geos().every(x => x === 'syn'), `★ もう一度押してもシス形に戻らない（${geos().join(',')}）`);
+            assert(/天然ゴム/.test(cap2) && /折れ曲が/.test(cap2), `シスの一言が筋を言っていない: ${cap2.slice(0, 40)}`);
+            assert(W.canonicalCode(g.userMolecule) === code0,
+                '★ 入れ替えで正準コードが変わった（動かしてよいのは座標だけ）');
+            assert(g.userMolecule.atoms.map(a => a.element).sort().join('') === atoms0,
+                '★ 入れ替えで原子の顔ぶれが変わった');
+
+            // ---- ④ シス形の鎖でも加硫できる（V130 の筋が通る）
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            for (let k = 0; k < 2; k++) {
+                for (let i = 0; i < 2; i++) assert(g.summonMolecule('イソプレン'), 'イソプレンを呼び出せない');
+                const s = poly.detect(g.userMolecule);
+                assert(s.length, `${k + 1} 本目の鎖が作れない`);
+                poly.apply(g, s[0]);
+                g.updateDrawing();
+            }
+            assert(geos().every(x => x === 'syn'), `2本ともシス形になっていない（${geos().join(',')}）`);
+            const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+            const vs = vul.detect(g.userMolecule);
+            assert(vs.length, '★ シス形の鎖2本で加硫の箇所が1つも出ない（V130 の筋が切れる）');
+            vul.apply(g, vs[0]);
+            g.updateDrawing();
+            assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === 2,
+                'シス形の鎖に硫黄の橋が架からない');
+            // ★ 否定対照: 橋が架かったあとは入れ替えを出さない（網目を引き直さない）
+            assert(flip.detect(g.userMolecule).length === 0,
+                '★ 加硫したあとにも入れ替えが出ている（架橋した網目を引き直すと橋が伸びる）');
+            return 'イソプレン2・3量体とポリブタジエンがシス形／⇄で anti⇄syn・正準コードは不変／シス形の鎖で加硫も通る';
+        } finally {
+            rx.closeCompare && rx.closeCompare();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     /* ===== RXN・RXC・NAOH（v1560。⚠ RXF は v1541 の「参考書の式を起こす反応」が使っている）=====
      * ユーザー:「それでやってみましょう」（係数の大きい相手は1つだけ出して「×n」）／
      *   「反応の前後を見る、では反応式の左辺と右辺が対応している状態にしてください」／
@@ -39077,6 +39163,11 @@
              * ⚠ 相手のヨードメタンは**試薬ではなく分子**で、CH₃ の炭素がそのまま生成物に入る
              *   （アセタール化のホルムアルデヒドと同じ理由）。入口は `PARTNER_CANDIDATES` の札 ＝ RXF23 が見張る */
             'williamson_ether',
+            /* ★ v1587 `diene_cis_trans`（シス形 ⇄ トランス形の入れ替え・発注書 L）。
+             * ⚠ **瓶はありえない** —— 試薬で起こす反応ではなく、
+             *   できた鎖を**シス形（天然ゴム）とトランス形（グタペルカ）で描き分けて見くらべる**札。
+             *   入口は「⚗ この分子にできること」の一覧そのもの。 */
+            'diene_cis_trans',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
         assert(now.length === expected.length,
@@ -52336,9 +52427,17 @@
      *   ★ 電荷が入って（I-3）**本物の塩を描くようになった**ので、2本とも
      *     「変化のある反応」の側へ移った ＝ ここから外れるのが正しい。
      *   ⚠ 残る6本はすべて `_info`（「この条件では起こらない」を説明するだけの札）。 */
+    /* ⚠⚠ **6 → 7 に増えた**（v1587・発注書 L で `diene_cis_trans` を足した）。
+     *   ★ これは `_info` ではないが、**結合を1本も変えないのが仕様**の反応:
+     *     シス形 ⇄ トランス形の入れ替えは**座標だけ**を動かす（天然ゴム ⇄ グタペルカ）。
+     *     つなぎ方も分子式も同じで、違うのは二重結合のまわりの向きだけ ＝
+     *     結合の署名が変わらないのが正しい。
+     *   ⚠ **`_info` でない行がここに増えるのは、ふつうはバグの合図**なので、
+     *     増やすときは必ずこの注記のように理由を書くこと。 */
     const CV4_NO_CHANGE_RULES = [
         'oxidize_tertiary_info', 'oxidation_out_of_scope_info', 'esterification_phenol_info',
-        'condensation_polymer_info', 'aromatic_deactivated_info', 'dehydration_anhydride_info'
+        'condensation_polymer_info', 'aromatic_deactivated_info', 'dehydration_anhydride_info',
+        'diene_cis_trans'
     ];
 
     /* 重原子ごとの「隣の原子 id ＋ 結合次数（＋電荷）」の集合（文字列）。
