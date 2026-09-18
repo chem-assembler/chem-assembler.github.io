@@ -25371,8 +25371,9 @@
         assert(cmpUI, '表示中の図で対応づけできない');
         assert(D.querySelectorAll('#sq-svg-a .sq-overlay-marks circle').length === cmpUI.total,
             '一致/不一致の印の数が中心の数と合わない');
-        // ⚠ 文言は 2026-08-25 に「平行移動」から「重ねました」へ変わった（回すようになったため。OV1〜OV4）
-        assert(D.getElementById('sq-overlay-note').textContent.includes('重ねました'),
+        // ⚠ 文言は v1585 に「〜しました」から先生の声かけへ変わった（押した時点では
+        //   「これから何をするか」だけを出し、結果は回し終わってから足す。OV1〜OV7）
+        assert(/重ねてみよう|回してみよう/.test(D.getElementById('sq-overlay-note').textContent),
             '重ね合わせの説明が出ない');
         btn.click(); // 解除
         assert(!D.querySelector('#sq-svg-a .sq-overlay-ghost, #sq-svg-a .sq-overlay-marks'),
@@ -25524,49 +25525,67 @@
         const W = c.W, D = c.D;
         const q = W.stereoQuiz;
         q.build();
-        D.getElementById('sq-mode').value = 'pair';
+        // ⚠ **「すべて」で回す**（v1585）。標準（pair）だけだと「立体はそろっているのに
+        //   絵が合わない」型（鏡映と回転が打ち消し合った図）が出ず、そこの文言を見られない
+        D.getElementById('sq-mode').value = 'all';
         const note = () => D.getElementById('sq-overlay-note').textContent;
         const btn = D.getElementById('btn-sq-overlay');
         // ボタンの文言は「平行移動」ではない（回すようになったので、言葉も直す）
         assert(!btn.textContent.includes('平行移動') && btn.textContent.includes('回して'),
             `ボタンの文言が直っていない（${btn.textContent}）`);
 
-        let sawRot = false, sawNoRot = false, sawFail = false;
-        for (let i = 0; i < 200 && !(sawRot && sawNoRot && sawFail); i++) {
+        let sawRot = false, sawNoFit = false, sawFail = false;
+        for (let i = 0; i < 300 && !(sawRot && sawNoFit && sawFail); i++) {
             q.nextQuestion();
             if (!q.current) continue;
             q.answer(q.current.rel);
             if (btn.classList.contains('hidden')) continue;
-            btn.click();
+            // ⚠ 文言だけを見るので、**動かさずに終わりの姿**を出す（v1585）。
+            //   押して回すところまで見るのは OV5・OV6（1問ずつ時間をかけて見る）
+            q.showOverlay({ animate: false });
             const t = note();
             const plan = q.overlayPlan();
-            if (plan.turns === 0) {
-                sawNoRot = true;
-                assert(t.includes('回さずに'), `回さなかったのにそう書いていない: ${t.slice(0, 60)}`);
+            if (plan.mismatch > 0) {
+                // 重ならないときは、どの角度で止まったかではなく「回してみよう」と言う。
+                // ⚠ ただし**回せる向きが 0° しか無い図**（ハース環の糖）では回さない ——
+                //   回していないのに「回した」と書くのが v1585 以前の失敗そのもの
+                const canSpin = plan.allowed.some(k => k !== 0);
+                assert(t.includes(canSpin ? '回してみよう' : 'そのまま'),
+                    `回す／回さないの言い方が図と合わない（許された角度 ${plan.allowed.join('/')}）: ${t.slice(0, 60)}`);
+            } else if (plan.turns === 0) {
+                assert(t.includes('そのまま'), `回さなかったのにそう書いていない: ${t.slice(0, 60)}`);
             } else {
-                sawRot = true;
-                assert(t.includes(`${plan.turns * 90}° 回してから`),
+                assert(t.includes(`${plan.turns * 90}° 回して、図Aに重ねてみよう`),
                     `${plan.turns * 90}° 回したのにそう書いていない: ${t.slice(0, 60)}`);
             }
             if (plan.mismatch > 0) {
                 sawFail = true;
-                assert(t.includes('紙面内でどう回しても重なりません'),
-                    `重ならないのに言い切っていない: ${t}`);
-                assert(t.includes('重ね合わせられない'), '重ね合わせの定義が画面に出ていない');
-                assert(!t.includes('すべて重なる'), '重ならないのに「すべて重なる」と書いている');
+                assert(t.includes('どの向きでも重ならないね'), `重ならないのに言い切っていない: ${t}`);
+                assert(t.includes('回すだけでは重ならない'), '「回すだけでは重ならない」の形で言っていない');
+                assert(!t.includes('そろったね'), '重ならないのに「そろった」と書いている');
+                // ★ 「くさびが違うから別」とは言わない（同じ立体でも書き方でくさびは変わる）
+                assert(!/くさび(が|の絵が)?(違|ちが)/.test(t),
+                    `くさびの絵の違いを理由にしている: ${t}`);
             } else if (plan.rms < 2) {
-                assert(t.includes('ぴったり重なりました'), `重なったのにそう書いていない: ${t}`);
+                if (plan.turns > 0) sawRot = true;
+                assert(t.includes('そろったね') || t.includes('そろっているね'),
+                    `重なったのにそう書いていない: ${t}`);
+                assert(t.includes('同じ分子'), `同じ分子だと言っていない: ${t}`);
             } else {
                 // 立体は一致しているが絵は合わない（鏡映と回転が打ち消し合った図など）。
-                // ここで「すべて重なる」と書くと**また絵と食い違う**
-                assert(t.includes('紙面内の回転では絵は重なりません'),
+                // ここで「そろった」と書くと**また絵と食い違う**
+                sawNoFit = true;
+                assert(t.includes('回すだけでは絵が重ならないね'),
                     `絵が合っていないのに合ったように書いている: ${t}`);
             }
-            btn.click();   // 解除
+            // ⚠ 小さい字を増やさない（ユーザー方針）。説明は3行まで
+            assert(t.split('\n').length <= 3, `説明が長すぎる（${t.split('\n').length}行）: ${t}`);
+            q.clearOverlay();
         }
-        assert(sawRot, '回す例が1件も出ない');
-        assert(sawNoRot, '回さない例が1件も出ない');
+        assert(sawRot, '「回したら重なった」例が1件も出ない');
+        assert(sawNoFit, '「立体はそろっているが絵は合わない」例が1件も出ない');
         assert(sawFail, '重ならない例が1件も出ない');
+        D.getElementById('sq-mode').value = 'pair';
         D.getElementById('btn-sq-close').click();
     });
 
@@ -25596,6 +25615,223 @@
         }
         assert(n >= 20, `検査できた出題が少なすぎる（${n}件）`);
         D.getElementById('sq-mode').value = 'pair';
+    });
+
+    /* ==========================================================================
+     * OV5〜OV7: **回すところを見せる**（v1585・ユーザー決定）
+     *
+     * ⚠⚠ **直す前に何が起きていたか。** 角度は求めていた（OV1）のに、**画では回していなかった** ——
+     * 回し終わった図がいきなり滑り込むので、見ている側には「向きの違う2枚がそのまま重なった」
+     * としか見えず、**重なる証明になっていなかった**（V140 の回は紙面の中で 270° 回した関係）。
+     * いまは ① 図Bのまま現れる → ② ゆっくり回る（角度を表示）→ ③ 重なる → ④ ✓/✗ の印。
+     * ⚠ **裏返しは使わない**（OV2 が見張る）。⚠ **判定は1つも動かさない**（OV4 が否定対照）。
+     * ========================================================================== */
+
+    test('OV5: 回す角度が機械で求まり、その角度で影がぴったり重なる（幾何をテスト側で検算）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'all';
+        // 回転行列をテスト側で作り直す（実装の返り値をそのまま信じない）
+        const rot = (p, deg, cx, cy) => {
+            const r = deg * Math.PI / 180, cs = Math.cos(r), sn = Math.sin(r);
+            const dx = p.x - cx, dy = p.y - cy;
+            return { x: cx + dx * cs - dy * sn, y: cy + dx * sn + dy * cs };
+        };
+        let n = 0, spun = 0;
+        for (let i = 0; i < 120 && n < 40; i++) {
+            q.nextQuestion();
+            if (!q.current) continue;
+            const plan = q.overlayPlan();
+            const geo = q.overlayGhostGeometry();
+            if (!plan || !geo) continue;
+            n++;
+            assert(geo.angle === plan.turns * 90,
+                `表示する角度と選んだ角度が違う（${geo.angle}° / ${plan.turns * 90}°）`);
+            assert([0, 90, 180, 270].includes(geo.angle), `作図の刻みでない角度（${geo.angle}°）`);
+            if (geo.angle > 0) spun++;
+            // ★ 影は「回す前の図B」を (tx,ty) 平行移動し、(cx,cy) で angle 回したもの。
+            //   それが plan の重ね位置（回した図B ＋ dx,dy）に乗ることを1原子ずつ確かめる
+            const u = q._dispMolB.atoms, f = plan.molB.atoms;
+            assert(u.length === f.length, '回す前と後で原子の数が違う');
+            let worst = 0;
+            u.forEach((a, k) => {
+                const p = rot({ x: a.x + geo.tx, y: a.y + geo.ty }, geo.angle, geo.cx, geo.cy);
+                worst = Math.max(worst, Math.hypot(p.x - (f[k].x + plan.dx), p.y - (f[k].y + plan.dy)));
+            });
+            assert(worst < 2, `回した影が重ね位置に乗らない（最大 ${worst.toFixed(1)}px・${q.current.nameA}）`);
+        }
+        assert(n >= 20, `検査できた出題が少なすぎる（${n}件）`);
+        assert(spun >= 5, `回す出題が集まらない（${spun}件）`);
+        D.getElementById('sq-mode').value = 'pair';
+    });
+
+    test('OV6: 押すと「0°から回り出して、回し終わってから重なる」（重なる組・重ならない組の両方）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'all';
+        const btn = D.getElementById('btn-sq-overlay');
+        const note = () => D.getElementById('sq-overlay-note').textContent;
+        const spinOf = () => D.querySelector('#sq-svg-a .sq-overlay-spin');
+        const angleOf = () => {
+            const m = /rotate\(([-\d.]+)/.exec(spinOf().getAttribute('transform'));
+            return m ? parseFloat(m[1]) : null;
+        };
+        // 「回して重なる組」と「どう回しても重ならない組」を1つずつ実際に走らせる
+        const run = async (want) => {
+            let found = null;
+            for (let i = 0; i < 300 && !found; i++) {
+                q.nextQuestion();
+                if (!q.current) continue;
+                const plan = q.overlayPlan();
+                if (!plan || plan.turns === 0) continue;             // 回す回だけを見る
+                if (want === 'fit' && !(plan.mismatch === 0 && plan.rms < 2)) continue;
+                if (want === 'miss' && plan.mismatch === 0) continue;
+                found = plan;
+            }
+            assert(found, `${want} の出題が見つからない`);
+            q.answer(q.current.rel);
+            assert(!btn.classList.contains('hidden'), '解答後に重ね合わせボタンが出ない');
+            btn.click();
+            // ① 押した直後は**まだ回っていない**（＝「回す前の図B」から始まる）
+            assert(spinOf(), '影の回転用の入れ物が無い');
+            assert(angleOf() === 0, `押した直後にもう回っている（${angleOf()}°）`);
+            // ② 答え（重なった／重ならない）は回し終わるまで出さない
+            assert(!/そろったね|どの向きでも重ならないね/.test(note()),
+                `回す前に結果が出ている: ${note()}`);
+            // ③ 途中の角度が実際に現れる（テレポートしていない）
+            const seen = [];
+            const poll = setInterval(() => seen.push(angleOf()), 25);
+            await q._overlayAnim;
+            clearInterval(poll);
+            const mid = seen.filter(a => a !== null && a > 0.5 && a < found.turns * 90 - 0.5);
+            assert(mid.length > 0, `回る途中の角度が1度も現れない（${seen.slice(0, 12).join(',')}）`);
+            assert(Math.max(...seen) > found.turns * 90 - 5,
+                `選んだ角度まで回りきっていない（最大 ${Math.max(...seen)}° / ${found.turns * 90}°）`);
+            // ④ 終わりは選んだ角度で止まり（＝そこで描き直す）、結果の文と印が出る。
+            //    ⚠ 描き直したあとの `rotate` は 0 に戻る —— 逆さまの元素記号を残さないため
+            const ghost = D.querySelector('#sq-svg-a .sq-overlay-ghost');
+            assert(ghost.getAttribute('data-turned') === String(found.turns * 90),
+                `回した角度が影に残っていない（${ghost.getAttribute('data-turned')}）`);
+            assert(angleOf() === 0, `描き直したのに回転が残っている（${angleOf()}°）`);
+            const label = D.querySelector('#sq-svg-a .sq-overlay-angle');
+            assert(label && label.textContent.includes(`${found.turns * 90}°`),
+                `回した角度が画面に出ていない（${label && label.textContent}）`);
+            assert(D.querySelector('#sq-svg-a .sq-overlay-marks').style.opacity === '1',
+                '回し終わったのに ✓/✗ の印が出ない');
+            const t = note();
+            if (want === 'fit') assert(t.includes('そろったね'), `重なったと言っていない: ${t}`);
+            else assert(t.includes('どの向きでも重ならないね'), `重ならないと言っていない: ${t}`);
+            // ⑤ 動かさずに出した「終わりの姿」と同じ所に着く（テストの近道が作り話でない）
+            const anim = ghost.innerHTML;
+            q.clearOverlay();
+            q.showOverlay({ animate: false });
+            const still = D.querySelector('#sq-svg-a .sq-overlay-ghost');
+            assert(still.innerHTML === anim, '動かしたときと動かさないときで終わりの姿が違う');
+            assert(still.getAttribute('data-turned') === String(found.turns * 90),
+                '動かさないときだけ回した角度が残らない');
+            assert(note() === t, '動かさないときだけ文が違う');
+            q.clearOverlay();
+        };
+        await run('fit');
+        await run('miss');
+        // 解除すると角度の表示も影も残らない
+        assert(!D.querySelector('#sq-svg-a .sq-overlay-angle, #sq-svg-a .sq-overlay-spin'),
+            '解除しても影や角度の表示が残る');
+        D.getElementById('sq-mode').value = 'pair';
+        D.getElementById('btn-sq-close').click();
+    });
+
+    test('OV7: くさびも図の一部として一緒に回る（影にも手前・奥の印がある）', async (c) => {
+        c.reset();
+        const W = c.W, D = c.D;
+        const q = W.stereoQuiz;
+        q.build();
+        D.getElementById('sq-mode').value = 'wedge';
+        const btn = D.getElementById('btn-sq-overlay');
+        let plan = null;
+        for (let i = 0; i < 300 && !plan; i++) {
+            q.nextQuestion();
+            if (!q.current) continue;
+            const p = q.overlayPlan();
+            if (p && p.turns > 0 && p.mismatch === 0 && p.rms < 2) plan = p;
+        }
+        assert(plan, 'くさび図モードで「回すと重なる」出題が見つからない');
+        const wedgesB = D.querySelectorAll('#sq-svg-b .quiz-bonds polygon').length;
+        assert(wedgesB > 0, '図Bに手前のくさびが描かれていない（前提が崩れた）');
+        q.answer(q.current.rel);
+        btn.click();
+        // ① 影にもくさびがあり、② それは**回る入れ物の中**にある（＝図の一部として一緒に回る）
+        const ghostWedges = D.querySelectorAll('#sq-svg-a .sq-overlay-spin polygon');
+        assert(ghostWedges.length === wedgesB,
+            `影のくさびの数が図Bと違う（影 ${ghostWedges.length} / 図B ${wedgesB}）`);
+        assert(D.querySelectorAll('#sq-svg-a .sq-overlay-ghost polygon').length === ghostWedges.length,
+            'くさびが回る入れ物の外にある（一緒に回らない）');
+        // 奥の破線のくさびも影に入っている（手前だけ描くと「手前・奥」の対が崩れる）
+        const dashB = D.querySelectorAll('#sq-svg-b .quiz-bonds line[stroke="#78beff"]').length;
+        const dashG = D.querySelectorAll('#sq-svg-a .sq-overlay-spin line[stroke="#78beff"]').length;
+        assert(dashB > 0 && dashG === dashB, `影の破線のくさびが合わない（影 ${dashG} / 図B ${dashB}）`);
+        // ③ 実際に動く: 影の入れ物にかかる回転（rotate の角度）が 0° から動く。
+        //   ⚠ 画面上の座標（getBoundingClientRect）では見ない —— 回帰テストはモーダルを
+        //   開かずに動かすので、描画の箱はどれも 0 になって「動いていない」ように見える
+        const angleOf = () => parseFloat(/rotate\(([-\d.]+)/
+            .exec(D.querySelector('#sq-svg-a .sq-overlay-spin').getAttribute('transform'))[1]);
+        const cen = (el) => {
+            const pts = el.getAttribute('points').trim().split(/\s+/).map(s => s.split(',').map(Number));
+            return { x: pts.reduce((s, p) => s + p[0], 0) / pts.length,
+                     y: pts.reduce((s, p) => s + p[1], 0) / pts.length };
+        };
+        // 影のくさびは「図Bの座標 →（tx,ty）平行移動 →（cx,cy）で angle 回転」で図Aの紙の上に来る
+        const geo = q.overlayGhostGeometry();
+        const toA = (p, deg) => {
+            const r = deg * Math.PI / 180, cs = Math.cos(r), sn = Math.sin(r);
+            const dx = p.x + geo.tx - geo.cx, dy = p.y + geo.ty - geo.cy;
+            return { x: geo.cx + dx * cs - dy * sn, y: geo.cy + dx * sn + dy * cs };
+        };
+        const svgA = D.getElementById('sq-svg-a');
+        const aWedges = [...svgA.querySelectorAll('.quiz-bonds polygon')].map(cen);
+        assert(aWedges.length === ghostWedges.length, '図Aと影でくさびの数が違う');
+        const nearest = (p) => Math.min(...aWedges.map(w => Math.hypot(w.x - p.x, w.y - p.y)));
+        const before = [...ghostWedges].map(cen);
+        assert(angleOf() === 0, `押した直後にもう回っている（${angleOf()}°）`);
+        // ③ 回っている途中は、くさびも一緒に回っている（回転が効く位置にいる）
+        let spun = 0;
+        const poll = setInterval(() => { if (angleOf() > 5) spun++; }, 25);
+        await q._overlayAnim;
+        clearInterval(poll);
+        assert(spun > 0, 'くさびを入れた入れ物が1度も回らなかった');
+        // ④ 回し終わったくさびは、図Aのくさびの上に乗る
+        //    ⚠ 回し終わりに**描き直す**ので、終わりの姿は回転ではなく座標そのもので見る
+        const after = [...D.querySelectorAll('#sq-svg-a .sq-overlay-ghost polygon')].map(cen);
+        assert(after.length === wedgesB, `描き直したらくさびの数が変わった（${after.length}）`);
+        const worst = after.reduce((m, p) =>
+            Math.max(m, nearest({ x: p.x + plan.dx, y: p.y + plan.dy })), 0);
+        assert(worst < 14, `回したくさびが図Aのくさびに乗らない（最大 ${worst.toFixed(1)}px）`);
+        // 否定対照: 回さずに（0°のまま）重ねたら、くさびは図Aのくさびに乗らない
+        const rawWorst = before.reduce((m, p) => Math.max(m, nearest(toA(p, 0))), 0);
+        assert(rawWorst > 20,
+            `否定対照が成立しない（回さなくてもくさびが合う: ${rawWorst.toFixed(1)}px）`);
+        // 念のため: 回した位置なら乗る（＝回転が効いていることを、描き直しとは別に確かめる）
+        const spinWorst = before.reduce((m, p) => Math.max(m, nearest(toA(p, geo.angle))), 0);
+        assert(spinWorst < 14, `回した先が図Aに合わない（最大 ${spinWorst.toFixed(1)}px）`);
+        // ⑤ 否定対照: くさびを出さないモードの影にはくさびを描かない（影は骨格だけ）
+        q.clearOverlay();
+        D.getElementById('sq-mode').value = 'pair';
+        let plain = null;
+        for (let i = 0; i < 200 && !plain; i++) {
+            q.nextQuestion();
+            if (q.current && q.overlayPlan()) plain = q.overlayPlan();
+        }
+        assert(plain, '標準モードで出題できない');
+        q.answer(q.current.rel);
+        q.showOverlay({ animate: false });
+        assert(D.querySelectorAll('#sq-svg-a .sq-overlay-ghost polygon').length === 0,
+            'くさびを出さないモードなのに影にくさびがある');
+        q.clearOverlay();
+        D.getElementById('btn-sq-close').click();
     });
 
     /* ==========================================================================
