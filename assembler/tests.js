@@ -18434,6 +18434,60 @@
         }
     });
 
+    test('IW26: 「並べ直す」の字幕も答案を「個」で数える（3つの練習とも・発注書 §C）', async (c) => {
+        // ★ 実発生。§C（コミット 50ed6f5）で帯・パネル・答え合わせは「いま N個 描いてあります」に
+        //   そろえたが、**そのあとに足した「🧹 並べ直す」（W4・v1389）だけが「枚」のまま**残った。
+        //   同じ画面に「いま 4個 描いてあります」と「答案 4枚を 2×2 に並べ直しました」が同時に出る
+        //   （2026-08-16 公開のロング動画 L2 と、そこから切り出した縦型の両方に並んで映っている）。
+        // ⚠ 見るのは**実際に出た字幕**（#canvas-toast）で、ソースの文字列ではない ＝
+        //   3つの練習それぞれの配線がこの文を出すことまで込みで止まる。
+        //   IW15（帯・パネル・答え合わせ）と合わせて、答案を数える語の全部が「個」で挟まる。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('learn');
+        const GRID = W.GRID_SIZE;
+        const tn = D.getElementById('canvas-toast');
+        assert(tn, '#canvas-toast が無い（前提が崩れている）');
+
+        /** 並べ直しが必ず動く散らかり方（元ブランチ claude/suspicious-tu-bae8ed では IW17。main の IW17 は別物）。ブタンを5つ、格子から外して置く */
+        const scatter = () => {
+            const m = new W.Molecule();
+            [[0, 0], [300, 40], [80, 180], [350, 260], [20, 400]].forEach(([dx, dy]) => {
+                const ids = [0, 1, 2, 3].map(i => m.addAtom('C', 30 + dx + i * GRID, 30 + dy).id);
+                for (let i = 0; i < 3; i++) m.addBond(ids[i], ids[i + 1], 1);
+            });
+            g.userMolecule = m;
+            g.history = []; g.redoStack = [];
+            g.updateDrawing();
+        };
+
+        const seen = [];
+        [['異性体', W.isomerPractice], ['アルキル基', W.alkylPractice], ['立体異性体', W.stereoPractice]]
+            .forEach(([label, practice]) => {
+                assert(practice && typeof practice.tidySheet === 'function',
+                    `${label}: tidySheet が無い（配線が変わった）`);
+                scatter();
+                tn.textContent = '';
+                practice.tidySheet();
+                const t = tn.textContent;
+                seen.push({ label, t });
+                assert(/^答案 \d+個を \d+×\d+ に並べ直しました/.test(t),
+                    `${label}: 字幕が「答案 N個を R×C に並べ直しました」でない（${t}）`);
+                assert(!/\d+\s*枚/.test(t), `${label}: 字幕が答案を「枚」で数えている（${t}）`);
+            });
+        assert(seen.length === 3, `3つとも測れていない（${seen.length}）`);
+
+        // ★★ 空振り防止 —— この物差しが**直す前の文言を本当に弾く**ことをその場で確かめる
+        const old = '答案 4枚を 2×2 に並べ直しました（図の形は変えていません。↩ で戻せます）';
+        assert(!/^答案 \d+個を \d+×\d+ に並べ直しました/.test(old),
+            '直す前の「答案 N枚を」が新しい物差しを通ってしまう ＝ 空振りの緑');
+        assert(/\d+\s*枚/.test(old), '「N枚」の見張りが働いていない');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
         // §15-5a: 表示中の段は**貼り付いたまま自動更新**でなければならない。
         // 再表示のために押し直させる作りは「ヒントを使った量」ではなく**記憶力**を測ることになる。
@@ -26364,6 +26418,110 @@
             `drawingKey が ⇅ と ⇄ を見分けられない（${split}/${q.hwPool.length - 1}）`);
     });
 
+    test('HQ8: クイズの図でもハース環の手前の辺が太く・隣はテーパー（キャンバスと同じ判定・発注書 J）', async (c) => {
+        /* claude/serene-haibt-1c2b46（元 v1452 の HQ5）の取り込み直し（v1590）。
+         * キャンバス（drawMolecule）は手前の辺を太く描くが、クイズ・立体ビュー・分子モーダルの図は
+         * 別経路（renderMoleculeIntoSvg）で、そちらには太線が無かった（2026-08-22 ユーザー指摘）。
+         * ⚠ 元ブランチの後で main は「太い棒3本」から「手前1本は太い棒・隣2本は手前が太く奥が細い台形」
+         *   （v1583・発注書 J）に変わったので、検査もその形で書き直した:
+         *   ① 実際の出題（見本＋3択）に太線とテーパーが出る
+         *   ② 糖の全数＋上下反転で、太線・台形が `_haworthFrontBondKeys(mol)` と1本ずつ一致する
+         *      （両端の太さも・位置は線の中点で照合）／台形の太い端が下（手前）
+         *   ③ ★否定対照: 酸素の無い環・鎖・平たく描いていない酸素の環（フラン）には付かない */
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const q = W.choiceQuiz;
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        const thickOf = (id) => [...D.querySelectorAll(`#${id} .quiz-bonds line`)]
+            .filter(l => +l.getAttribute('stroke-width') > 3);
+        const taperOf = (id) => [...D.querySelectorAll(`#${id} .quiz-bonds polygon.svg-bond-taper`)];
+        // ① 実際の出題。見本（登録の図そのもの）には必ず出る。
+        //   ⚠ 選択肢は全部ではない —— フラノースを上下反転・180° 回転した図は環の O が下の頂点に来て
+        //     判定（前縁は水平）が0本になる（②の flippedNone）。出題はランダムなので「少なくとも1枚」で見る
+        assert(thickOf('pk-goal').length >= 1, 'pk-goal に手前の太線が無い');
+        assert(taperOf('pk-goal').length >= 2, `pk-goal にテーパーが無い（${taperOf('pk-goal').length} 本）`);
+        assert(['pk-opt-0', 'pk-opt-1', 'pk-opt-2'].some(id => thickOf(id).length >= 1 && taperOf(id).length >= 2),
+            '選択肢の図のどれにも手前の太線とテーパーが無い');
+        /* 台形の両端（points は 端1外→端2外→端2内→端1内）。幅と中心を**座標で**読む */
+        const ends = (poly) => {
+            const p = poly.getAttribute('points').trim().split(/\s+/).map(s => s.split(',').map(Number));
+            const w = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+            return [
+                { w: w(p[0], p[3]), x: (p[0][0] + p[3][0]) / 2, y: (p[0][1] + p[3][1]) / 2 },
+                { w: w(p[1], p[2]), x: (p[1][0] + p[2][0]) / 2, y: (p[1][1] + p[2][1]) / 2 }
+            ];
+        };
+        // ⚠ 鍵を '_' で割らない（原子IDそのものに '_' が入る）。結合から鍵を作って引く
+        const midOf = (mol, key) => {
+            const bd = mol.bonds.find(x => `${x.atomId1}_${x.atomId2}` === key);
+            assert(bd, `判定の鍵 ${key} に当たる結合が無い`);
+            const a1 = mol.atoms.find(a => a.id === bd.atomId1), a2 = mol.atoms.find(a => a.id === bd.atomId2);
+            return { x: (a1.x + a2.x) / 2, y: (a1.y + a2.y) / 2 };
+        };
+        // ② 全数
+        let figures = 0;
+        /* ⚠ 上下反転した図は判定が0本のことがある（フラノースを裏返すと環の O が下の頂点に来て、
+         *   前縁が水平でなくなる ＝ `_haworthFrontBondKeys` の「前縁は水平」の門で外れる。
+         *   キャンバスでも同じ判定なので、ここでは**描いた図が判定と一致する**ことだけを見る）。
+         *   正立の図（登録の図そのもの）は必ず1環ぶん以上を持つ */
+        let flippedNone = 0;
+        const checkFigure = (name, target, upright) => {
+            const mol = W.renderMoleculeIntoSvg(g, 'pk-opt-0', target, false, false);
+            const front = g._haworthFrontBondKeys(mol);
+            const heads = [...front].filter(([, w]) => w[0] === w[1]);
+            const tapers = [...front].filter(([, w]) => w[0] !== w[1]);
+            if (upright) {
+                assert(heads.length >= 1 && tapers.length >= 2,
+                    `${name}: 判定が糖の環を見ていない（手前 ${heads.length} / テーパー ${tapers.length}）`);
+            } else if (!front.size) flippedNone++;
+            const thick = thickOf('pk-opt-0'), taper = taperOf('pk-opt-0');
+            assert(thick.length === heads.length,
+                `${name}: 太線が ${thick.length} 本（判定は ${heads.length} 本）`);
+            assert(taper.length === tapers.length,
+                `${name}: テーパーが ${taper.length} 本（判定は ${tapers.length} 本）`);
+            thick.forEach(l => {
+                const mx = (+l.getAttribute('x1') + +l.getAttribute('x2')) / 2;
+                const my = (+l.getAttribute('y1') + +l.getAttribute('y2')) / 2;
+                assert(heads.some(([k]) => { const m = midOf(mol, k); return near(mx, m.x, 1) && near(my, m.y, 1); }),
+                    `${name}: 太線が判定と違う場所にある（${mx},${my}）`);
+                assert(+l.getAttribute('stroke-width') === heads[0][1][0], `${name}: 太線の太さが判定と違う`);
+            });
+            taper.forEach(t => {
+                const [e1, e2] = ends(t);
+                const fat = e1.w > e2.w ? e1 : e2, thin = e1.w > e2.w ? e2 : e1;
+                assert(fat.w > thin.w + 1.5,
+                    `${name}: 台形の両端の太さが変わらない（${fat.w.toFixed(1)} / ${thin.w.toFixed(1)}）`);
+                // ★ 手前（下）が太い。上下反転した図でも、反転後の座標で判定し直すのでいつも下が太い
+                assert(fat.y > thin.y + 1, `★ ${name}: 台形の太い端が奥（上）に来ている`);
+                const mx = (e1.x + e2.x) / 2, my = (e1.y + e2.y) / 2;
+                const hit = tapers.find(([k]) => { const m = midOf(mol, k); return near(mx, m.x, 1) && near(my, m.y, 1); });
+                assert(hit, `${name}: テーパーが判定と違う場所にある（${mx},${my}）`);
+                assert(near(fat.w, Math.max(...hit[1]), 0.5) && near(thin.w, Math.min(...hit[1]), 0.5),
+                    `${name}: 台形の両端の太さが判定（${hit[1]}）と違う`);
+            });
+            figures++;
+        };
+        q.buildHaworth();
+        assert(q.hwPool.length >= 10, `ハースの題材が少なすぎる（${q.hwPool.length}）`);
+        q.hwPool.forEach(e => {
+            checkFigure(e.name, e.target, true);
+            checkFigure(`${e.name}（上下反転）`, W.flipTargetVertically(e.target), false);
+        });
+        // ③ ★否定対照: 酸素の無い環／鎖／平たく描いていない酸素の環には付かない
+        ['エタノール', 'シクロヘキサン', 'フラン', '無水マレイン酸'].forEach(name => {
+            const e = g.resolveCompound(name);
+            assert(e, `否定対照の ${name} が見つからない`);
+            W.renderMoleculeIntoSvg(g, 'pk-opt-0', e.target, false, false);
+            assert(thickOf('pk-opt-0').length === 0 && taperOf('pk-opt-0').length === 0,
+                `★ ${name} の図に手前の太線／テーパーが出た`);
+        });
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        D.getElementById('btn-pk-close').click();
+        return `糖 ${q.hwPool.length} 件×正立/上下反転 = ${figures} 枚で判定と1本ずつ一致（上下反転で判定0本は ${flippedNone} 枚）・否定対照4件は素のまま`;
+    });
+
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
@@ -33861,6 +34019,119 @@
         D.querySelector('.rg-bottle[data-reagent="nahco3"]').click();
         res = D.getElementById('exp-reagent-note').textContent;
         assert(res.includes('陽性'), `カルボン酸を見ているのに陰性（${res.slice(0, 40)}）`);
+
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    /**
+     * RX45: **解説カード（`info`）も同じ絞り込みを通る**（v1589・DESIGN_reaction_execution.md §13.8）。
+     * claude/zen-swartz-9a5df4（元 v1431）の取り込み直し。
+     *
+     * v1429 は `refresh()` / `reagentHits()` の絞り込みに `!rule.info` という除け口を残した。
+     * `siteAllowed` は「箇所を持たない情報カードは絞らない」（`if (!ids.length) return true;`）を
+     * 自分で持っているので、この除け口は**箇所を持つ info ルール**（どれも原子IDの配列を返す）に
+     * 対しては有害なだけだった。
+     *
+     * ユーザーの実測（v1430・2026-08-20）: 4本のアルコールを並べて **1-ブタノールを選んでも**
+     * 「この分子にできること」に `⚠ 酸化（3級アルコール）` が残る
+     * （その解説は 2-メチル-2-プロパノール のもの）。
+     *
+     * ⚠ 札を絞るだけでは足りない。info の `apply()` が**キャンバス全体**を見て文面を作ると、
+     *   「札は A の分子で出たのに文面は B の話も含む」が残る。⑥がそこを見る。
+     *   ⚠ 元ブランチは `oxidation_out_of_scope_info` の「環」と「側鎖」で測っていたが、
+     *   その2つは v1472 で実行へ移った（残るのはエチレンだけ）。今の main で段落が2種類に
+     *   分かれる info は `dehydration_anhydride_info`（トランス形／シス・トランスが読めない）なので、
+     *   フマル酸と描き分け前のブテン二酸で測る。
+     */
+    test('RX45: ★解説カード（info）も「いま見ている分子」で絞る（隣の分子の注意書きが混ざらない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const rxRules = () => [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .map(b => b.dataset.rule);
+        const 一級 = '1-ブタノール', 三級 = '2-メチル-2-プロパノール';
+        const アルコール4本 = [一級, '2-ブタノール', '2-メチル-1-プロパノール（イソブタノール）', 三級];
+
+        // ① ユーザーの再現そのもの —— 1-ブタノールを見ているのに3級アルコールの解説が出ない
+        scopeSetup(c, アルコール4本, 0);
+        assert(D.getElementById('mm-name').textContent === 一級,
+            `開いた分子が違う（${D.getElementById('mm-name').textContent}）`);
+        assert(!rxRules().includes('oxidize_tertiary_info'),
+            `1-ブタノールを見ているのに「⚠ 酸化（3級アルコール）」が出る` +
+            `＝ 申し立ての症状（${rxRules().join(' / ')}）`);
+        // ② 絞りすぎの検出 —— 見ている分子自身の反応は残る
+        assert(rxRules().includes('oxidize_primary'),
+            `1-ブタノール自身の酸化まで消えている（${rxRules().join(' / ')}）`);
+
+        // ③ ★陰性対照 —— 3級アルコールを見れば出る（「常に消す」で緑になっていない）
+        scopeSetup(c, アルコール4本, 3);
+        assert(D.getElementById('mm-name').textContent === 三級,
+            `③の分子が開けていない（${D.getElementById('mm-name').textContent}）`);
+        assert(rxRules().includes('oxidize_tertiary_info'),
+            `3級アルコールを見ているのに解説カードが出ない（${rxRules().join(' / ')}）`);
+        // ④ ★陰性対照 —— 1分子だけのときの振る舞いは変えていない
+        scopeSetup(c, [三級], 0);
+        assert(rxRules().includes('oxidize_tertiary_info'),
+            `1分子だけのときに解説カードが消えた（絞り込みが暴走している）`);
+
+        // ⑤ 瓶の経路も同じ（判定を2か所に書いていないことの実測）
+        const oxBottle = W.REAGENTS.find(r =>
+            r.id === W.REACTION_RULES.find(x => x.id === 'oxidize_tertiary_info').reagentId[0]);
+        assert(oxBottle, '酸化剤の瓶が見つからない');
+        scopeSetup(c, [一級, 三級], 0);
+        assert(!W.reactor.reagentHits(oxBottle).map(h => h.rule.id).includes('oxidize_tertiary_info'),
+            '瓶からなら隣の分子の解説が引ける（絞り込みが1か所で効いていない）');
+        scopeSetup(c, [一級, 三級], 1);
+        assert(W.reactor.reagentHits(oxBottle).map(h => h.rule.id).includes('oxidize_tertiary_info'),
+            '3級アルコールを見ているのに瓶から解説が引けない');
+        // ⑤' `oxidation_out_of_scope_info`（今はエチレンだけ）も同じ門を通る
+        scopeSetup(c, [一級, 'エチレン（エテン）'], 0);
+        assert(!rxRules().includes('oxidation_out_of_scope_info'),
+            `1-ブタノールを見ているのに隣のエチレンの「⚠ 酸化（ここでは図を変えない範囲）」が出る（${rxRules().join(' / ')}）`);
+        scopeSetup(c, [一級, 'エチレン（エテン）'], 1);
+        assert(rxRules().includes('oxidation_out_of_scope_info'),
+            `エチレンを見ているのに「⚠ 酸化（ここでは図を変えない範囲）」が出ない（${rxRules().join(' / ')}）`);
+
+        // ⑥ ★文面も同じ範囲で作る（札だけ絞ると「札は A・文面は B も」になる）。
+        //    `dehydration_anhydride_info` は「反対側（トランス形）」と「シスかトランスか読めない」で
+        //    別の段落を返すので、1つずつ並べて**片方しか語らない**ことを見る
+        const toast = D.getElementById('canvas-toast');
+        const anhydrideCaption = (names, which) => {
+            scopeSetup(c, names, which);
+            const btn = D.querySelector('#reaction-actions button[data-rule="dehydration_anhydride_info"]');
+            assert(btn, `${names[which]} を見ているのに「⚠ 分子内脱水 → 酸無水物（この形では起こらない）」が出ない` +
+                `（${rxRules().join(' / ')}）`);
+            toast.textContent = 'RX45-MARK';
+            btn.click();
+            assert(toast.textContent !== 'RX45-MARK', '解説カードを押しても何も出ない');
+            return toast.textContent;
+        };
+        const 反対 = 'フマル酸', 不明 = 'ブテン二酸（マレイン酸／フマル酸）';
+        const ANTI = '反対側（トランス形）', UNKNOWN = '図から読み取れません';
+        const capAnti = anhydrideCaption([反対, 不明], 0);
+        assert(capAnti.includes(ANTI),
+            `フマル酸を見ているのにトランス形の話が無い（${capAnti.slice(0, 60)}）`);
+        assert(!capAnti.includes(UNKNOWN),
+            `フマル酸を見ているのに隣のブテン二酸（読めない）の話が混ざる（${capAnti.slice(0, 120)}）`);
+        const capUnknown = anhydrideCaption([反対, 不明], 1);
+        assert(capUnknown.includes(UNKNOWN),
+            `ブテン二酸を見ているのに「読めない」の話が無い（${capUnknown.slice(0, 60)}）`);
+        assert(!capUnknown.includes(ANTI),
+            `ブテン二酸を見ているのに隣のフマル酸（トランス形）の話が混ざる（${capUnknown.slice(0, 120)}）`);
+        // ★陰性対照 —— 並べたときの文面が、1分子だけのときと**同じ**（絞りすぎて痩せていない）
+        assert(capAnti === anhydrideCaption([反対], 0),
+            '並べたときのフマル酸の文面が、1分子のときと違う（絞りすぎ）');
+        assert(capUnknown === anhydrideCaption([不明], 0),
+            '並べたときのブテン二酸の文面が、1分子のときと違う（絞りすぎ）');
+
+        // ⑦ ★否定対照 —— **2分子に跨る解説カードはどちら側から見ても残る**
+        //    （「見ている分子の中で完結するものだけ」に絞ると、ここが赤くなる）
+        scopeSetup(c, ['安息香酸', 'フェノール'], 0);
+        assert(rxRules().includes('esterification_phenol_info'),
+            `カルボン酸側から、2分子に跨る解説カードが消えた（${rxRules().join(' / ')}）`);
+        scopeSetup(c, ['安息香酸', 'フェノール'], 1);
+        assert(rxRules().includes('esterification_phenol_info'),
+            `フェノール側から、2分子に跨る解説カードが消えた（${rxRules().join(' / ')}）`);
 
         D.getElementById('btn-molecule-modal-close').click();
         c.reset();
