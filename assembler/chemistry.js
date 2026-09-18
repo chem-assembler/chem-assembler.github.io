@@ -1703,7 +1703,7 @@ function findFunctionalGroups(mol) {
                 //   絞り込みの「加水分解するとカルボン酸とアルコール」・ラクトンのカードまで通ってしまう）。
                 //   v1592 まで使う側が3か所で同じ判定を書き直して振るい落としていた
                 //   （quiz.js の isAnhydrideSide・reactor.js の isAnhydrideLinkage・
-                //   findCondensableGroups）＝ 型が足りていない印だった（DESIGN_compound_coverage.md §21）
+                //   findCondensableGroups）＝ 型が足りていない印だった（DESIGN_compound_coverage.md §22）
             } else if (nb.some(n => n.type === 1 && n.atom.element === 'N')) {
                 // アミド -C(=O)-N<（アセトアミド・ペプチド結合・ナイロン）。
                 // **ここが無かったので、アミドが「アルデヒド基」として拾われていた**
