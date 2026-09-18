@@ -3762,6 +3762,180 @@ function attachR(mol, atomId, prefer) {
  * @param ends `[原子id, 向きの好み]` の配列
  * @returns 付けた R と、その付け先の原子 id（R が置けなかった端も、原子のほうは必ず返す）
  */
+/* ============================================================================
+ * ★★ 1,4-付加重合でできた鎖を **シス形／トランス形に描き分ける**（v1587・発注書 L）
+ *
+ * ユーザー判断（2026-09-17）「イソプレンであれば、**②を基本、ただし比較のために③**」＝
+ *   **シス形を既定**（天然ゴム ＝ シス-1,4-ポリイソプレン）にし、
+ *   **比較のためにトランス形（グタペルカ）へ切り替えられる**ようにする。
+ *
+ * ⚠⚠ **v1586 まで、できる鎖は必ずトランス形だった**（実測。鎖の C=C 2か所とも
+ *   主鎖が反対側）。「ゴムが弾むようになるまで」（V130）の題と真逆の図で、
+ *   画面は天然ゴムではなく**グタペルカ**を描いていた。
+ *
+ * ★★ **なぜ「その場で裏返す」ではなく「鎖を引き直す」のか**（実測してこちらにした）:
+ *   いまの図は C=C が 60° の斜めで、主鎖の C1・C4 はどちらも水平に出ている。
+ *   この向きだと **C1 も C4 も 120° の空き2か所のうち片方しか選べず、
+ *   どう入れ替えてもトランスにしかならない**（もう片方は鎖が自分の上に折り返す）。
+ *   ＝ シスにするには **C=C を水平に置き直す**しかない。
+ *
+ * ★ 引き直す形（S ＝ 結合1本・DX/DY ＝ 120° の刻み）:
+ *   - **C=C は水平**（C2 → C3 が +S）
+ *   - シス … C1 は C2 の左下・C4 は C3 の右下 ＝ **主鎖が同じ側** → 鎖は水平のまま山形に折れる
+ *   - トランス … C4 だけ右上 ＝ **主鎖が反対側** → 鎖は階段状にまっすぐ伸びる
+ *   どちらも教科書の図の形で、「シスは折れ、トランスはまっすぐ」がそのまま画になる。
+ *
+ * ⚠ **座標しか動かさない**（CLAUDE.md「検証はトポロジーのみ」）。結合・元素・電荷は無傷。
+ * ========================================================================== */
+
+/** 鎖の両端の R をたどって主鎖の原子列を返す（R … R）。線形の鎖でなければ null */
+function polymerBackbonePath(mol, seedId) {
+    const comp = componentOf(mol, seedId);
+    const rs = [...comp].map(id => mol.atoms.find(a => a.id === id))
+        .filter(a => a && a.element === 'R');
+    if (rs.length !== 2) return null;
+    // R → R の道を1本だけ探す（枝に入っても行き止まりで戻る）
+    const goal = rs[1].id;
+    const path = [];
+    const seen = new Set();
+    const walk = (id) => {
+        if (seen.has(id)) return false;
+        seen.add(id);
+        path.push(id);
+        if (id === goal) return true;
+        for (const n of mol.getNeighbors(id)) {
+            if (n.atom.element === 'H') continue;
+            if (walk(n.atom.id)) return true;
+        }
+        path.pop();
+        return false;
+    };
+    return walk(rs[0].id) ? path : null;
+}
+
+/** その鎖の C=C が主鎖から見てシス形（主鎖が同じ側）か。1つも無ければ null */
+function dieneChainIsCis(mol, path) {
+    const at = id => mol.atoms.find(a => a.id === id);
+    for (let i = 1; i + 2 < path.length; i++) {
+        const b = mol.getBond(path[i], path[i + 1]);
+        if (!b || b.type !== 2) continue;
+        const c2 = at(path[i]), c3 = at(path[i + 1]), c1 = at(path[i - 1]), c4 = at(path[i + 2]);
+        if (!c1 || !c2 || !c3 || !c4) continue;
+        const ax = c3.x - c2.x, ay = c3.y - c2.y;
+        const side = (p, o) => Math.sign(ax * (p.y - o.y) - ay * (p.x - o.x));
+        const s1 = side(c1, c2), s4 = side(c4, c3);
+        if (!s1 || !s4) continue;
+        return s1 === s4;
+    }
+    return null;
+}
+
+/**
+ * 主鎖を引き直して、C=C をすべてシス形（`cis`）またはトランス形にする。
+ * ⚠ **置けなければ1原子も動かさない**（呼び出し側は今までどおりの図になるだけ）。
+ * @returns 引き直したら true
+ */
+function layoutDieneChain(mol, path, cis) {
+    const S = GRID_SIZE, DX = S / 2, DY = S * Math.sqrt(3) / 2;
+    const at = id => mol.atoms.find(a => a.id === id);
+    const inPath = new Set(path);
+    // 主鎖から下がる枝（H 以外）。枝の中身は形を保ったまま、付け根の移動ぶんだけ運ぶ
+    const branchOf = new Map();
+    path.forEach(id => {
+        const subs = mol.getNeighbors(id).map(n => n.atom)
+            .filter(a => a.element !== 'H' && !inPath.has(a.id));
+        if (subs.length) branchOf.set(id, subs);
+    });
+    /* 進む向きを1本ずつ決める。⚠ **C=C は必ず水平**にし、その前後を 120° で受ける
+     *   ＝ シス／トランスの違いは「C=C の次の一歩を下げるか上げるか」だけになる。 */
+    const steps = [];
+    for (let i = 0; i + 1 < path.length; i++) {
+        const b = mol.getBond(path[i], path[i + 1]);
+        const prevWasDouble = i > 0 && (mol.getBond(path[i - 1], path[i]) || {}).type === 2;
+        if (b && b.type === 2) steps.push({ x: S, y: 0 });                    // C=C は水平
+        else if (i + 2 < path.length && (mol.getBond(path[i + 1], path[i + 2]) || {}).type === 2)
+            steps.push({ x: DX, y: -DY });                                    // C=C へ入る一歩（上げる）
+        else if (prevWasDouble) steps.push({ x: DX, y: cis ? DY : -DY });     // ★ ここだけがシス／トランス
+        else steps.push({ x: S, y: 0 });                                      // つなぎ目（水平）
+    }
+    // 新しい座標を先に全部作る（置けるか確かめてから当てる）
+    const start = at(path[0]);
+    if (!start) return false;
+    const pos = new Map([[path[0], { x: start.x, y: start.y }]]);
+    steps.forEach((d, i) => {
+        const p = pos.get(path[i]);
+        pos.set(path[i + 1], { x: p.x + d.x, y: p.y + d.y });
+    });
+    // sp2 炭素の1原子の枝（メチル・塩素）は、主鎖の反対側の 120° の席に置く
+    const slot = new Map();
+    for (let i = 1; i + 1 < path.length; i++) {
+        const b2 = mol.getBond(path[i], path[i + 1]), b0 = mol.getBond(path[i - 1], path[i]);
+        const isSp2 = (b2 && b2.type === 2) || (b0 && b0.type === 2);
+        const subs = branchOf.get(path[i]);
+        if (!isSp2 || !subs || subs.length !== 1 || mol.getNeighbors(subs[0].id)
+            .filter(n => n.atom.element !== 'H').length !== 1) continue;
+        const me = pos.get(path[i]);
+        const other = (b2 && b2.type === 2) ? pos.get(path[i - 1]) : pos.get(path[i + 1]);
+        // 主鎖の相手（other）の鏡 ＝ C=C 軸をはさんで反対側の席
+        const axis = (b2 && b2.type === 2) ? pos.get(path[i + 1]) : pos.get(path[i - 1]);
+        const ux = (axis.x - me.x) / (Math.hypot(axis.x - me.x, axis.y - me.y) || 1);
+        const uy = (axis.y - me.y) / (Math.hypot(axis.x - me.x, axis.y - me.y) || 1);
+        const wx = other.x - me.x, wy = other.y - me.y;
+        const dot = wx * ux + wy * uy;
+        slot.set(subs[0].id, { x: me.x + ux * dot - (wx - ux * dot), y: me.y + uy * dot - (wy - uy * dot) });
+    }
+    // 鎖の外の原子とぶつからない高さを探す（見つからなければ何もしない）
+    const movingIds = new Set([...path, ...[...branchOf.values()].flat().map(a => a.id)]);
+    const outside = mol.atoms.filter(a => a.element !== 'H' && !movingIds.has(a.id));
+    const MIN = S * 0.65;
+    const spots = () => {
+        const list = [...pos.entries()].map(([id, p]) => p);
+        slot.forEach(p => list.push(p));
+        branchOf.forEach((subs, id) => subs.forEach(s => {
+            if (slot.has(s.id)) return;
+            const d = { x: pos.get(id).x - at(id).x, y: pos.get(id).y - at(id).y };
+            list.push({ x: s.x + d.x, y: s.y + d.y });
+        }));
+        return list;
+    };
+    let shift = 0;
+    for (let k = 0; k <= 12; k++) {
+        shift = k * 3 * S;
+        const ok = spots().every(p =>
+            outside.every(o => Math.hypot(o.x - p.x, o.y - (p.y + shift)) >= MIN));
+        if (ok) break;
+        if (k === 12) return false;
+    }
+    // ここから実際に動かす
+    branchOf.forEach((subs, id) => {
+        const d = { x: pos.get(id).x - at(id).x, y: pos.get(id).y + shift - at(id).y };
+        subs.forEach(s => {
+            if (slot.has(s.id)) return;
+            [...componentOfBlocked(mol, s.id, path)].forEach(bid => {
+                const a = at(bid); if (a) { a.x += d.x; a.y += d.y; }
+            });
+        });
+    });
+    path.forEach(id => { const a = at(id); const p = pos.get(id); a.x = p.x; a.y = p.y + shift; });
+    slot.forEach((p, id) => { const a = at(id); if (a) { a.x = p.x; a.y = p.y + shift; } });
+    return true;
+}
+
+/** `from` から届く原子（`blocked` は越えない） */
+function componentOfBlocked(mol, from, blocked) {
+    const stop = new Set(blocked);
+    const seen = new Set([from]);
+    const st = [from];
+    while (st.length) {
+        const id = st.pop();
+        mol.getNeighbors(id).forEach(n => {
+            if (stop.has(n.atom.id) || seen.has(n.atom.id)) return;
+            seen.add(n.atom.id); st.push(n.atom.id);
+        });
+    }
+    return seen;
+}
+
 function attachREnds(mol, ends) {
     const out = [];
     ends.forEach(([atomId, prefer]) => {
@@ -5925,17 +6099,83 @@ const REACTION_RULES = [
                 [units[0].c1, chainDirection(mol, units[0].c2, units[0].c1)],
                 [linkFrom, chainDirection(mol, linkBack, linkFrom)]
             ]);
+            /* ★★ できた鎖を**シス形**に引き直す（v1587・発注書 L）。
+             * ⚠ v1586 まではここで何もせず、できる鎖は必ずトランス形（＝ グタペルカ）だった。
+             * ⚠ 置けなければ1原子も動かない ＝ 今までどおりの図になるだけ。 */
+            const path = polymerBackbonePath(mol, units[0].c2);
+            const laidOut = path ? layoutDieneChain(mol, path, true) : false;
             const n = units.length;
             return {
                 caption: `共役ジエン ${n} 個が 1,4-付加重合しました。両端（1位と4位）の炭素で繋がり、` +
                     `二重結合は両端から中央へ移っています。ここが付加重合との違いで、` +
                     `できた鎖に二重結合が残るため、硫黄で架橋できます（加硫）。` +
-                    `天然ゴムはイソプレンがシス形に繋がったもので、同じ形でトランスに繋がるとグタペルカという硬い樹脂になります。` +
-                    `いまの図は直交作図なのでシス・トランスを示していません。左の「⇄ シス/トランス整形」で` +
-                    `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。` +
+                    (laidOut
+                        ? `図は**シス形**で描いてあります。天然ゴムはイソプレンがシス形に繋がったもので、` +
+                          `二重結合のところで鎖が折れ曲がるので、鎖が丸まって、引くと伸び、離すと戻ります。` +
+                          `同じつなぎ方でもトランス形になるとグタペルカという硬い樹脂で、鎖がまっすぐ並んで弾みません。` +
+                          `見くらべたいときは「シス形 ⇄ トランス形を入れ替える」を押してください。`
+                        : `天然ゴムはイソプレンがシス形に繋がったもので、同じ形でトランスに繋がるとグタペルカという硬い樹脂になります。` +
+                          `いまの図は場所が足りずシス形に引き直せませんでした。左の「⇄ シス/トランス整形」で` +
+                          `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。`) +
                     `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。` +
                     leftover,
                 changed: [...new Set([...changed, ...endIds])],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ★★ シス形 ⇄ トランス形の入れ替え（v1587・発注書 L）。
+         * ユーザー判断（2026-09-17）「イソプレンであれば、**②を基本、ただし比較のために③**」の③。
+         *
+         * ★ **なぜ反応の一覧に置くのか**: シスとトランスは別の物質（天然ゴムとグタペルカ）で、
+         *   「同じ分子式・同じつなぎ方なのに、幾何がちがうだけで別の材料になる」ことを
+         *   見くらべるのがこの回（V130）の芯。**押すと図が変わる**ものは一覧に並べる約束にそろえる。
+         * ⚠ **座標しか変えない**ので、正準コード・分子式・↩ は素通りする。
+         * ⚠ 硫黄の橋が架かったあとは出さない（架橋した網目を引き直すと、橋が伸びて別の絵になる）。 */
+        id: 'diene_cis_trans',
+        /* ⚠ **`wholeCanvas` は付けない。** 付けてよいのは「並べた単量体を横につないでいく」
+         *   重合だけ（PM10 がそこを見張っている）。こちらは**いま見ている1本の鎖**を
+         *   引き直すだけなので、絞り込みは今までどおり `focus` に任せる。 */
+        label: 'シス形 ⇄ トランス形を入れ替える（天然ゴム ⇄ グタペルカ）',
+        detect(mol) {
+            const seen = new Set();
+            const out = [];
+            mol.atoms.forEach(a => {
+                if (a.element !== 'R' || seen.has(a.id)) return;
+                const comp = componentOf(mol, a.id);
+                comp.forEach(id => seen.add(id));
+                if ([...comp].some(id => (mol.atoms.find(x => x.id === id) || {}).element === 'S')) return;
+                const path = polymerBackbonePath(mol, a.id);
+                if (!path) return;
+                // 主鎖に C=C が1本でもあること（＝ 1,4-付加重合でできた鎖）
+                const has = path.some((id, i) => i + 1 < path.length &&
+                    (mol.getBond(id, path[i + 1]) || {}).type === 2);
+                if (has && dieneChainIsCis(mol, path) !== null) out.push(path.slice());
+            });
+            return out;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            // site は主鎖の原子列そのもの。座標が動いていても id で引き直せる
+            const path = site.filter(id => mol.atoms.some(a => a.id === id));
+            if (path.length !== site.length) throw new Error('鎖の形が変わっています');
+            const wasCis = dieneChainIsCis(mol, path);
+            if (!layoutDieneChain(mol, path, !wasCis)) {
+                throw noRoom('鎖を引き直す空間がありません');
+            }
+            const nowCis = !wasCis;
+            return {
+                caption: nowCis
+                    ? 'シス形（天然ゴム）にしました。二重結合のところで鎖が折れ曲がるので、' +
+                      '鎖は丸まります。引くと伸び、離すと戻る —— これがゴムの弾性です。' +
+                      'つなぎ方も分子式も、トランス形とまったく同じです。'
+                    : 'トランス形（グタペルカ）にしました。鎖がまっすぐ並ぶので、' +
+                      '結晶のように固まって硬くなり、弾みません。' +
+                      'つなぎ方も分子式もシス形と同じで、違うのは二重結合のまわりの向きだけです。',
+                /* ⚠ **印（オレンジの破線）は付けない。** 印は「結合が変わった原子」の合図で、
+                 *   ここは結合を1本も変えていない（動かしたのは座標だけ）。CV4 の物差しとも合う。 */
+                changed: [],
                 refit: true
             };
         }
