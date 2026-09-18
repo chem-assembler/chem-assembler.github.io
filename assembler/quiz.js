@@ -271,16 +271,6 @@ const QUIZ_GROUPS = [
 ];
 
 /**
- * その `ester` 群が**酸無水物の片側**か（-CO-O-CO- の O をはさんで向こうもカルボニル炭素）。
- * `findFunctionalGroups` の ester の `atomIds` は [カルボニル C, =O, -O-] の順。
- */
-function isAnhydrideSide(mol, heavyNb, g) {
-    const cId = g.atomIds[0], oId = g.atomIds[2];
-    return heavyNb(oId).some(n => n.atom.id !== cId && n.atom.element === 'C' &&
-        heavyNb(n.atom.id).some(m => m.type === 2 && m.atom.element === 'O'));
-}
-
-/**
  * その分子が当てはまる官能基・骨格の値（複数）。**構造だけから導く**。
  * ⚠ `tools/quiz-group-census.js` と回帰テスト QG1〜QG5 はこの1つの定義を読む
  *   （分類の規則を書き写さない ＝ 数字と画面がずれないようにするため）。
@@ -291,7 +281,6 @@ function compoundGroupsOf(mol) {
     try { raw = findFunctionalGroups(mol); } catch (e) { raw = []; }
     const types = new Set(raw.map(g => g.type));
     const has = (...t) => t.some(x => types.has(x));
-    const heavyNb = (id) => mol.getNeighbors(id).filter(n => n.atom.element !== 'H');
     const out = [];
 
     // 官能基: 含んでいれば入る（サリチル酸メチルは ester にも phenol にも入る）
@@ -301,14 +290,17 @@ function compoundGroupsOf(mol) {
     if (has('aldehyde')) out.push('aldehyde');
     if (has('ketone')) out.push('ketone');
     if (has('carboxyl', 'carboxylate')) out.push('carboxyl');
-    // ⚠ **酸無水物（-CO-O-CO-）は ester に入れない**（`node tools/quiz-group-census.js
+    // ⚠ **酸無水物（-CO-O-CO-）は ester に入らない**（`node tools/quiz-group-census.js
     //   --group=ester --scope=basic` で見つけた。無水酢酸・無水フタル酸・無水マレイン酸の3件）。
-    //   `findFunctionalGroups` は -CO-O- を見て**両側に ester を立てる**が、
     //   **紙の上では「無水酢酸」であって「酢酸〜エステル」ではない** ＝
     //   「エステルの命名（酸名＋アルキル基名）を練習する」の練習台にならない。
-    //   ここで振るい落としても `field`・`scopeLevel` は変わらないので、
-    //   ふつうの出題からは今までどおり出る（効くのは `?group=ester` を指したときだけ）
-    if (raw.some(g => g.type === 'ester' && !isAnhydrideSide(mol, heavyNb, g))) out.push('ester');
+    //   `field`・`scopeLevel` は変わらないので、ふつうの出題からは今までどおり出る
+    //   （効くのは `?group=ester` を指したときだけ）。
+    //   ★ v1592 で `findFunctionalGroups` が `anhydride` を別の型で返すようになったので、
+    //     ここで振るい落とす必要が無くなった（以前は isAnhydrideSide で局所に除いていた。
+    //     **件数は1件も変わらない**。`node tools/quiz-group-census.js --group=ester --scope=basic` で確認ずみ）。
+    //   ⚠ 軸そのものには 酸無水物 を足していない（該当6件では練習台にならないため）
+    if (has('ester')) out.push('ester');
     if (has('amide')) out.push('amide');
     if (has('amine1', 'amine2', 'amine3')) out.push('amine');
     if (has('nitro')) out.push('nitro');
