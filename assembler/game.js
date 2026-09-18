@@ -225,6 +225,22 @@ const LABEL_CHIP_HEIGHT = 34;
 const PHASE_AQ = 'aq';
 const PHASE_ETHER = 'ether';
 const PHASE_LAYER_NAMES = { [PHASE_AQ]: '水層', [PHASE_ETHER]: '有機層（エーテル層）' };
+/* ★★ 水層の帯に「いま何を入れた層か」を添える（発注書 H・2026-09-17）。
+ *
+ * ⚠ **行を増やさない。** 足すのは**帯の中の1語だけ**（「水層」→「水層（NaOH）」）で、
+ *   説明の行も札の行も1つも増えない（memory「画面の小さい字は読まれない」）。
+ * ★ **なぜ要るか**: 分液の画は「何を入れたか」と「どの層に居るか」の2つで出来ているのに、
+ *   いままで**試薬の名前は音（ナレーション）にしか無かった** ＝ 音を切って見ると筋が追えない。
+ * ⚠ 文字は瓶の `formula` をそのまま使う（別表を作ると瓶と食い違う）。
+ *   末尾の ` aq`（「NaOH aq」）だけ落とす —— 層そのものが水溶液なので二度言わない。 */
+function layerNameWith(phase, reagentLabel) {
+    const base = PHASE_LAYER_NAMES[phase];
+    return (phase === PHASE_AQ && reagentLabel) ? `${base}（${reagentLabel}）` : base;
+}
+/** 瓶 → 帯に出す1語。⚠ **ここ1か所**（reactor から呼ぶ唯一の入口） */
+function separationReagentLabel(reagent) {
+    return String((reagent && reagent.formula) || '').replace(/\s*aq$/, '').trim() || null;
+}
 const PHASE_CAPTIONS = {
     [PHASE_AQ]: '（水層）',
     // `amine_hcl` の印（塩になったから水に溶けた、という順序を見出しでも言う）
@@ -232,6 +248,10 @@ const PHASE_CAPTIONS = {
     // 印は `aq` なのに帯の中に居ない ＝ 手でドラッグして層の外へ出した（D-I8）
     'aq:outside': '（水層のはずが層の外に出ています）'
 };
+/* ハース環の奥行きの太さ（発注書 J）。**手前 6・奥 3** ＝ ふだんの単結合（3）から
+ * ちょうど2倍まで開く。⚠ 数はここ2つだけ（`renderBond` にも `_haworthFrontBondKeys` にも書かない）。 */
+const HAWORTH_FRONT_WIDTH = 6;
+const HAWORTH_BACK_WIDTH = 3;
 /* 水面から成分までの空き（マス）。見出し（分子の下端＋1.1〜1.65マス）が水面をまたがない幅。
  * ⚠ 平行移動は**マスの整数倍**に丸める ＝ 原子が格子点から外れない */
 const PHASE_GAP_ROWS = 3;
@@ -635,6 +655,9 @@ class Game {
         this.separationActive = false;
         this.phaseDividerY = null;
         this.separationFocusId = null;  // 札から拡大した1件（スマホの形。D-I2）
+        /* いま漏斗へ入れた試薬の1語（発注書 H）。⚠ **分子のデータではない**ので原子には持たせず、
+         * 画面の状態として持つ。↩ で戻せるよう `serializeState` に1行だけ載せる。 */
+        this.aqReagentLabel = null;
 
         this.coordDisplay = document.getElementById('coord-display');
         this.btnVerify = document.getElementById('btn-verify');
@@ -1510,7 +1533,11 @@ class Game {
         return JSON.stringify({
             atoms: this.userMolecule.atoms,
             bonds: this.userMolecule.bonds,
-            deletedBonds: this.userMolecule.deletedBonds
+            deletedBonds: this.userMolecule.deletedBonds,
+            /* 水層の帯に出している試薬の1語（発注書 H）。⚠ **分子ではないが履歴には載せる** ——
+             * 載せないと ↩ で図だけ戻って帯の字が残り、「入れる前」の画に
+             * 「入れた後」の名前が付く（音を切って見る人には嘘になる）。 */
+            aqReagent: this.aqReagentLabel || null
         });
     }
 
@@ -1525,6 +1552,8 @@ class Game {
         // 履歴を巻き戻すなら反応機構の表示は無効になる。巻矢印を残すと
         // 復元した分子の上に古い矢印が浮く（検品レビュー 16）
         this.deactivateReactionMode();
+        // 水層の帯の1語も一緒に戻す（発注書 H。古い控えには無いので既定は「まだ何も入れていない」）
+        this.aqReagentLabel = state.aqReagent || null;
         // ★ 反応の印（オレンジの破線）も同じ理由でここ（v1477）。巻き戻した図は
         //   「その反応で変わった図」ではないので、印だけ残ると復元した分子の上に古い丸が浮く。
         //   ⚠ 下の `dropStaleHighlights()` では足りない —— 巻き戻しても**原子は生きている**
@@ -5420,11 +5449,29 @@ class Game {
     // 教科書のハース投影は手前の辺を太く描く慣習があるため、それを再現する（P12-7 M2c 仕上げ）。
     // ※判定は座標のみを見る**表示専用**の処理。同一判定・検証・立体コードには一切影響しない。
     //   全炭素環（ベンゼン・シクロヘキサン）は酸素を含まないので対象外＝従来どおりの太さ。
+    /**
+     * ハース環の手前側の結合と、**両端それぞれの太さ**（発注書 J・2026-09-17）。
+     *
+     * ★ ユーザー「**ハース環、フラノース・ピラノース　一番手前の結合、の隣の結合、は
+     *   テーパーをつけて教科書の図に寄せる**」。
+     * ⚠ v1582 までは手前の3本を**どれも太さ 6 の棒**で描いていた ＝ 太いだけで
+     *   **どちらが手前か**が読めない。教科書のハース図は
+     *   **一番手前の辺がいちばん太く、そこから奥へ向かって細くなる**。
+     * ★ **決め方はただ1つ**: その端の原子が「一番手前の辺」に乗っていれば太い側、
+     *   乗っていなければ細い側。これで
+     *   - 一番手前の辺（両端とも乗っている）… 太いまま（6-6）
+     *   - その隣2本（片端だけ乗っている）… **手前が太く奥が細い**（6-3）
+     *   - それ以外 … 触らない
+     *   になる。左右のどちらかだけを太くする分岐を書かないので、図が左右で崩れない。
+     * ⚠ **座標は1px も動かさない**（見た目専用・CLAUDE.md「検証はトポロジーのみ」）。
+     *
+     * @returns Map<`${atomId1}_${atomId2}`, [w1, w2]>（w1 が atomId1 側の太さ）
+     */
     _haworthFrontBondKeys() {
         const mol = this.userMolecule;
         const ring = this._ringAtomIdSet();
-        if (ring.size === 0) return new Set();
-        const keys = new Set();
+        if (ring.size === 0) return new Map();
+        const keys = new Map();
         const seen = new Set();
         ring.forEach(startId => {
             if (seen.has(startId)) return;
@@ -5445,14 +5492,42 @@ class Game {
             const atoms = [...comp].map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
             if (atoms.length < 5 || atoms.length > 7) return;                       // 糖の環のみ
             if (atoms.filter(a => a.element === 'O').length !== 1) return;          // 環内酸素ちょうど1個
-            const cy = atoms.reduce((s, a) => s + a.y, 0) / atoms.length;
+            /* ⚠⚠ **「平たく描かれているか」で門を作る**（v1583・発注書 J の副産物）。
+             * v1582 までの門は「酸素を含む5〜7員環」だけで、**フラン・無水マレイン酸・
+             * テトラヒドロピラン・γ-ブチロラクトンなど10件の平面の環にまで手前の太線が付いていた**
+             * （実測。奥行きのない図に奥行きの記号が乗る ＝ 読み手には意味のない太さ）。
+             * ★ ハース図は**横に広く縦に平たく**描く約束なので、外接箱の縦横比で分かれる:
+             *   実測は **ピラノース 2.08・フラノース 1.51 ／ 平面の環は 1.05 以下**。
+             *   境目 1.3 はその谷の真ん中で、どちらの側にも 0.2 以上の余裕がある。 */
+            const xs = atoms.map(a => a.x), ys = atoms.map(a => a.y);
+            const w = Math.max(...xs) - Math.min(...xs);
+            const h = Math.max(...ys) - Math.min(...ys);
+            if (!(h > 0 && w / h >= 1.3)) return;
+            const edges = [];
             mol.bonds.forEach(b => {
                 if (!comp.has(b.atomId1) || !comp.has(b.atomId2)) return;
                 const a1 = mol.atoms.find(a => a.id === b.atomId1);
                 const a2 = mol.atoms.find(a => a.id === b.atomId2);
-                if (!a1 || !a2) return;
-                // 両端が環の中心より手前（画面下側）＝手前の辺
-                if (a1.y >= cy - 1 && a2.y >= cy - 1) keys.add(`${b.atomId1}_${b.atomId2}`);
+                if (a1 && a2) edges.push({ b, a1, a2 });
+            });
+            if (!edges.length) return;
+            /* いちばん手前の辺 ＝ 中点がいちばん下（y が大きい）もの。
+             * ⚠ 原子IDの順序には頼らない（memory「原子IDに順序を頼らない」）ので
+             *   座標で決める。同点なら先に見つけたほうで確定させる。 */
+            let head = edges[0];
+            edges.forEach(e => {
+                if ((e.a1.y + e.a2.y) / 2 > (head.a1.y + head.a2.y) / 2 + 0.5) head = e;
+            });
+            // ハースの前縁は水平に描く。傾いていたらハース図ではない（点で立つ六角形など）
+            if (Math.abs(head.a1.y - head.a2.y) > GRID_SIZE * 0.5) return;
+            const onHead = new Set([head.b.atomId1, head.b.atomId2]);
+            // 一番手前の辺と、それに触れている辺（＝隣）だけ。奥の辺は素の太さのまま
+            edges.forEach(({ b }) => {
+                if (!onHead.has(b.atomId1) && !onHead.has(b.atomId2)) return;
+                keys.set(`${b.atomId1}_${b.atomId2}`, [
+                    onHead.has(b.atomId1) ? HAWORTH_FRONT_WIDTH : HAWORTH_BACK_WIDTH,
+                    onHead.has(b.atomId2) ? HAWORTH_FRONT_WIDTH : HAWORTH_BACK_WIDTH
+                ]);
             });
         });
         return keys;
@@ -6648,16 +6723,16 @@ class Game {
             }
         });
 
-        // 2. 重原子間の結合線を描画（ハース環の手前側は太く＝教科書の慣習。表示専用）
-        const frontKeys = this._haworthFrontBondKeys();
+        // 2. 重原子間の結合線を描画（ハース環は手前が太く奥が細い＝教科書の慣習。表示専用）
+        const frontWidths = this._haworthFrontBondKeys();
         this.userMolecule.bonds.forEach(bond => {
             const a1 = this.userMolecule.atoms.find(a => a.id === bond.atomId1);
             const a2 = this.userMolecule.atoms.find(a => a.id === bond.atomId2);
             if (!a1 || !a2) return;
             if (hidden.has(a1.id) || hidden.has(a2.id)) return;
 
-            const isFront = frontKeys.has(`${bond.atomId1}_${bond.atomId2}`);
-            this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond, isFront);
+            const widths = frontWidths.get(`${bond.atomId1}_${bond.atomId2}`) || null;
+            this.renderBond(a1.x, a1.y, a2.x, a2.y, bond.type, false, bond, widths);
         });
 
         // 3. 水素原子(H)自体の描画
@@ -7806,6 +7881,8 @@ class Game {
         this.phaseDividerY = Math.round((bottom + GRID_SIZE * PHASE_GAP_ROWS) / GRID_SIZE) * GRID_SIZE;
         this.separationActive = true;
         this.separationFocusId = null;
+        // 新しい漏斗 ＝ まだ何も入れていない（帯の1語は瓶を押してから出る・発注書 H）
+        this.aqReagentLabel = null;
         // すでに `aq` の印が付いている成分は、面を開いた時点で水層へ降ろす
         this.splitMolecules().forEach(part => {
             if (this.phaseOfPart(part) === PHASE_AQ) this.movePartToPhase(part.atoms.map(a => a.id), PHASE_AQ);
@@ -7924,8 +8001,8 @@ class Game {
             t.textContent = text;
             this.bondsGroup.appendChild(t);
         };
-        put(PHASE_LAYER_NAMES[PHASE_ETHER], y - 6 * s, 'auto');
-        put(PHASE_LAYER_NAMES[PHASE_AQ], y + 6 * s, 'hanging');
+        put(layerNameWith(PHASE_ETHER, this.aqReagentLabel), y - 6 * s, 'auto');
+        put(layerNameWith(PHASE_AQ, this.aqReagentLabel), y + 6 * s, 'hanging');
     }
 
     /**
@@ -7965,7 +8042,7 @@ class Game {
             row.dataset.phase = phase;
             const head = document.createElement('span');
             head.className = 'sep-layer-name';
-            head.textContent = PHASE_LAYER_NAMES[phase];
+            head.textContent = layerNameWith(phase, this.aqReagentLabel);
             row.appendChild(head);
             if (!here.length) {
                 const empty = document.createElement('span');
@@ -9195,7 +9272,12 @@ class Game {
         this.atomsGroup.appendChild(group);
     }
 
-    renderBond(x1, y1, x2, y2, type, isHConnection = false, bondObj = null, isHaworthFront = false) {
+    /**
+     * 結合1本を描く。
+     * @param haworthWidths ハース環の手前側だけ `[w1, w2]`（端ごとの太さ・発注書 J）。
+     *   ⚠ **2つの数が違えば台形（テーパー）**、同じなら太い1本の線。それ以外は null。
+     */
+    renderBond(x1, y1, x2, y2, type, isHConnection = false, bondObj = null, haworthWidths = null) {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const len = Math.sqrt(dx*dx + dy*dy);
@@ -9226,16 +9308,37 @@ class Game {
 
         // 1. 見た目の線（ビジュアル）を描画する
         if (type === 1) {
-            // 単結合（ハース環の手前側は太く描いて奥行きを示す＝教科書の慣習）
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', sx);
-            line.setAttribute('y1', sy);
-            line.setAttribute('x2', ex);
-            line.setAttribute('y2', ey);
-            line.setAttribute('stroke', isHaworthFront ? 'rgba(255,255,255,0.72)' : strokeColor);
-            line.setAttribute('stroke-width', isHaworthFront ? '6' : '3');
-            line.setAttribute('pointer-events', 'none'); // クリック判定を透過
-            ink(line);
+            /* 単結合。★ ハース環の手前側だけ、両端の太さが違う**台形**で描く（発注書 J）
+             *   ＝ 手前が太く奥が細い ＝ 教科書のハース図。
+             * ⚠ 線（`<line>`）では端ごとに太さを変えられないので、両端が違うときだけ
+             *   `<polygon>` にする。太さが同じ（一番手前の辺）なら線のまま。 */
+            const w1 = haworthWidths ? haworthWidths[0] : 3;
+            const w2 = haworthWidths ? haworthWidths[1] : 3;
+            const color = haworthWidths ? 'rgba(255,255,255,0.72)' : strokeColor;
+            if (w1 !== w2) {
+                const nx = -uy, ny = ux;                 // 線に直交する単位ベクトル
+                const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                // 端1の外→端1の内→端2の内→端2の外、の順に回して台形を閉じる
+                poly.setAttribute('points',
+                    `${sx + nx * w1 / 2},${sy + ny * w1 / 2} ` +
+                    `${ex + nx * w2 / 2},${ey + ny * w2 / 2} ` +
+                    `${ex - nx * w2 / 2},${ey - ny * w2 / 2} ` +
+                    `${sx - nx * w1 / 2},${sy - ny * w1 / 2}`);
+                poly.setAttribute('fill', color);
+                poly.setAttribute('class', 'svg-bond-ink svg-bond-taper');
+                poly.setAttribute('pointer-events', 'none');
+                this.bondsGroup.appendChild(poly);
+            } else {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', sx);
+                line.setAttribute('y1', sy);
+                line.setAttribute('x2', ex);
+                line.setAttribute('y2', ey);
+                line.setAttribute('stroke', color);
+                line.setAttribute('stroke-width', String(w1));
+                line.setAttribute('pointer-events', 'none'); // クリック判定を透過
+                ink(line);
+            }
         } else if (type === 2) {
             // 二重結合 (平行な2本の線)
             const nx = -uy;
@@ -12149,6 +12252,13 @@ class Game {
         lines.forEach(l => {
             l.setAttribute('stroke', 'rgba(255,255,255,0.92)');
             l.classList.add('iupac-bond-lifted');
+        });
+        /* ハース環のテーパー（発注書 J）は `<polygon>` なので、上の `line` の選択に入らない。
+         * ⚠ 塗り（`fill`）で描いているので濃くする属性も違う。ここを落とすと
+         *   **糖の環だけ帯の下で薄いまま**になる（＝ 手当ての目的そのものが欠ける）。 */
+        group.querySelectorAll('polygon.svg-bond-ink').forEach(p => {
+            p.setAttribute('fill', 'rgba(255,255,255,0.92)');
+            p.classList.add('iupac-bond-lifted');
         });
         return lines.length;
     }
