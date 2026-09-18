@@ -17063,6 +17063,66 @@
         }
     });
 
+    /* ===== RXH2: ニトロ基の還元 —— 回す途中の跡を避け、交差をほどく（v1584） =====
+     *
+     * ★ ユーザーの指摘（v1577 の残り）: 「**ニトロ基の還元の再生で、大きくした H の丸が
+     *   数コマ他の原子にかかる**」。⓵ 実測（直す前）: **5 コマ**重なっていて、内訳は2つ:
+     *
+     *   ⓵ **T=0.50〜0.55（置き直しの段）** … 環を 60° 回している**途中**に、
+     *     ニトロ基の O とその手が、呼んだ H₂ の H の丸を横切っていた（O に 4.3px）。
+     *     ⚠ 相手を置くのは「回し終わった図」で空きを探していたため ＝ **掃いた跡**を見ていなかった。
+     *   ⓵ **T≈1.7（握手の段）** … N に付く2つの H を「近いものから」組んでいたので、
+     *     遠いほうの H が **N を突き抜けて反対側へ回り込んで**いた（N の丸の中へ 8.5px）。
+     *
+     * ★ 直したのは3つ（`planEquation` の掃いた跡・`withMorphHydrogens` の 2-opt・
+     *   曲げを選ぶ物差しを実物に）。⚠ どれも**生成物は変えない**（見え方だけ）。
+     * ⚠⚠ **残り 1 コマは「手の線」**（同じ O へ向かうもう1つの H へ伸びた手に丸がかかる）。
+     *   ★ ここが見るのは **「原子の丸との重なりが 0」** —— ユーザーの指摘そのもの。
+     *   ⛔ 手の線まで 0 にする曲げは（10 通り × 2周 探しても）無い ＝ 数を上げて誤魔化さない。
+     */
+    test('RXH2: ニトロ基の還元は、環を回す途中も H の交差も避ける（原子との重なり 0・否定対照つき・v1584）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const names = ['ニトロベンゼン'], id = 'reduce_nitro';
+        /** 大きくした H の重なりを「原子の丸」と「手の線」に分けて数える */
+        const count = () => {
+            const ov = rx.bigHydrogenOverlaps(rxhRun(c, names, id).plan, 120);
+            return { atoms: ov.filter(o => !o.bond), all: ov };
+        };
+        try {
+            const now = count();
+            assert(now.atoms.length === 0,
+                `ニトロ基の還元で、大きくした H が原子の丸に ${now.atoms.length} コマ重なった`
+                + ` ${JSON.stringify(now.atoms.slice(0, 3))}`);
+            assert(now.all.length <= 1,
+                `手の線にかかるコマが ${now.all.length} コマに増えた（直した時点は 1 コマ）`
+                + ` ${JSON.stringify(now.all.slice(0, 3))}`);
+            /* ★ 反応そのものは変えていない（相手は H₂ 3分子・副生成物は水2分子） */
+            const eq = W.PARTNER_EQUATIONS[id];
+            assert(eq && eq.partners.indexOf('H2') >= 0, 'ニトロ基の還元が H₂ を呼ばなくなっている');
+
+            /* ── 否定対照①: 掃いた跡を避けないと、回している途中に原子の丸が重なる ── */
+            rx._sweepAvoid = false;
+            const noSweep = count();
+            rx._sweepAvoid = undefined;
+            assert(noSweep.atoms.length > 0,
+                '掃いた跡を避けるのをやめても原子の重なりが 0 ＝ この対策は何もしていない');
+            assert(noSweep.atoms.some(o => o.T < 1),
+                `掃いた跡の重なりが置き直しの段（T<1）に出ない ${JSON.stringify(noSweep.atoms.slice(0, 3))}`);
+
+            /* ── 否定対照②: 交差をほどかないと、重なるコマが増える ── */
+            rx._hSwap = false;
+            const noSwap = count();
+            rx._hSwap = undefined;
+            assert(noSwap.all.length > now.all.length,
+                `交差をほどくのをやめても重なりが増えない（${noSwap.all.length} コマ / ほどくと ${now.all.length} コマ）`);
+        } finally {
+            rx._sweepAvoid = undefined; rx._hSwap = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
     /* ===== RXR: 反応のときに芳香環を回し、反応する置換基を右上（相手の側）へ向ける（v1556）=====
      * ユーザー決定: 「②反応時に回すようにしましょう。どのみち、反応分子の召喚、整列などで反応前の分子の移動はあります」
      * 教科書の本文の反応式は置換基1つでも右上（5編 p.179〜201）。登録の図（名前から呼び出す）は真上のまま。 */
