@@ -11284,7 +11284,7 @@
       "code": "org.bio.isoelectric-point",
       "unit": "bio",
       "group": "アミノ酸",
-      "difficulty": 1,
+      "difficulty": 2,
       "tags": [
         "性質",
         "実験"
