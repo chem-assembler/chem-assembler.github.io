@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>元素の確認 ｜ 化学の参考書</title>
-<meta name="description" content="有機化合物に C・H・N・Cl・S が入っているかを調べる操作と、そのとき見える変化のまとめ。検出の反応はどれも無機で習った中和・水和・沈殿なので、反応式ごと並べて見比べられます。">
+<meta name="description" content="有機化合物に C・H・N・Cl・S が入っているかを検出する方法のまとめです。無機で学習した知識も多く登場します。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/element-detection/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="元素の確認 ｜ 化学の参考書">
-<meta property="og:description" content="有機化合物に C・H・N・Cl・S が入っているかを調べる操作と、そのとき見える変化のまとめ。検出の反応はどれも無機で習った中和・水和・沈殿なので、反応式ごと並べて見比べられます。">
+<meta property="og:description" content="有機化合物に C・H・N・Cl・S が入っているかを検出する方法のまとめです。無機で学習した知識も多く登場します。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/element-detection/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -837,53 +844,55 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
 <main class="wrap">
 <h1>元素の確認</h1>
-<p class="lede">有機化合物に C・H・N・Cl・S が入っているかを調べる操作と、そのとき見える変化のまとめ。検出の反応はどれも無機で習った中和・水和・沈殿なので、反応式ごと並べて見比べられます。</p>
+<p class="lede">有機化合物に C・H・N・Cl・S が入っているかを検出する方法のまとめです。無機で学習した知識も多く登場します。</p>
 <div><span class="unit-label">元素の確認・元素分析</span><span class="unit-label">元素の確認（定性分析）</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（7節）</summary><ul><li><a href="#ref-sec-qualitative" data-ref-anchor="qualitative">定性分析と定量分析</a></li><li><a href="#ref-sec-list" data-ref-anchor="list">5元素の確認法の一覧</a></li><li><a href="#ref-sec-carbon" data-ref-anchor="carbon">炭素の確認 —— 石灰水の白濁</a></li><li><a href="#ref-sec-hydrogen" data-ref-anchor="hydrogen">水素の確認 —— 硫酸銅(II)無水物の青変</a></li><li><a href="#ref-sec-nitrogen" data-ref-anchor="nitrogen">窒素の確認 —— アンモニアの白煙</a></li><li><a href="#ref-sec-chlorine-sulfur" data-ref-anchor="chlorine-sulfur">塩素・硫黄の確認</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">有機化合物をつくる元素は、C・H・O のほかに N・S・Cl などに限られます。このページでは、試料にどの元素が入っているかを調べる操作を、元素ごとに見ていきます。</p>
+<p class="ref-p">有機化合物をつくる元素は少なく、C・H・O のほかに N・S・Cl などに限られます。このページでは、試料にどの元素が入っているかを調べる操作を、元素ごとに見ていきます。</p>
 <section class="ref-sec" id="ref-sec-qualitative"><h4 class="ref-sec-h">定性分析と定量分析</h4><p class="ref-sec-lead">「何が入っているか」を調べるのが定性分析、「どれだけ入っているか」を調べるのが定量分析です。</p></section>
 <p class="ref-p">試料に何が含まれているか、何という物質なのかを調べる分析を<b>定性分析</b>といいます。これに対して、何 g・何 mol といった量を調べる分析を<b>定量分析</b>といいます。</p>
 <p class="ref-p">このページは定性分析、次の「元素分析」のページが定量分析です。</p>
-<p class="ref-p">たとえばアミノ酸のシステインは、C・H・O に加えて N と S を含みます。このページの操作を順に当てていくと、5元素のうち Cl 以外の4つで変化が見えます（O だけは確認の操作がありません。下の節で扱います）。</p>
+<p class="ref-p">たとえばアミノ酸のシステインは、C・H・O に加えて N と S を含みます。このページで扱っている5つの元素（C・H・N・Cl・S）の検出反応のうち、Cl 以外の4つで変化が見えます（O だけは確認の操作がありません。下の節で扱います）。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/element-detection-cysteine.png" alt="システインの構造式。炭素3個の骨格に、アミノ基 −NH₂、カルボキシ基 −COOH、硫黄をふくむ −CH₂−SH が付いている" loading="lazy"><figcaption class="ref-figure-cap">システイン。C・H・O のほかに <b>N</b> と <b>S</b> を含むので、窒素と硫黄の確認で変化が見えます。</figcaption></figure>
 <p class="ref-p">調べる前に、試料は<b>純物質</b>にしておきます。混合物のままでは、どの物質の元素を見ているのかが決まらないためです。分けるには蒸留・再結晶・抽出（分液漏斗）・クロマトグラフィーを使います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-separation/">抽出（分液漏斗）で混合物を分ける操作は芳香族化合物の分離のページへ</a></p>
 <section class="ref-sec" id="ref-sec-list"><h4 class="ref-sec-h">5元素の確認法の一覧</h4><p class="ref-sec-lead">元素ごとに「操作 → 生成物 → 確認方法」が1組になっています。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">成分元素の確認（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">元素</th><th style="text-align: left;">操作</th><th style="text-align: left;">生成物</th><th style="text-align: left;">確認方法</th></tr></thead><tbody><tr><td style="text-align: left;"><b>炭素 C</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: left;">CO₂</td><td style="text-align: left;">石灰水に通じると<b>白濁</b>する</td></tr><tr><td style="text-align: left;"><b>水素 H</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: left;">H₂O</td><td style="text-align: left;">白色の硫酸銅(II)無水物が<b>青色</b>になる（塩化コバルト紙が青から<b>赤</b>に変わる）</td></tr><tr><td style="text-align: left;"><b>窒素 N</b></td><td style="text-align: left;">NaOH を加えて加熱する</td><td style="text-align: left;">NH₃</td><td style="text-align: left;">濃塩酸を近づけると<b>白煙</b>が生じる／湿った<b>赤色リトマス紙が青変</b>する</td></tr><tr><td style="text-align: left;"><b>塩素 Cl</b></td><td style="text-align: left;">焼いた銅線につけて加熱する</td><td style="text-align: left;">CuCl₂</td><td style="text-align: left;"><b>青緑色</b>の炎色反応が見られる（バイルシュタイン反応）</td></tr><tr><td style="text-align: left;"><b>硫黄 S</b></td><td style="text-align: left;">金属 Na を加えて加熱・融解する</td><td style="text-align: left;">Na₂S</td><td style="text-align: left;">水に溶かして酢酸鉛(II)水溶液を加えると<b>黒色沈殿</b>が生じる</td></tr></tbody></table></div>
-<p class="ref-p"><b>この表の「操作」と「確認方法」は、5元素とも組にして必ず覚えてください。</b>反応そのものはどれも無機で習ったものなので、無機の知識と結び付けると覚える量が減ります。</p>
-<section class="ref-sec" id="ref-sec-carbon"><h4 class="ref-sec-h">炭素の確認 —— 石灰水の白濁</h4><p class="ref-sec-lead">完全燃焼で出た CO₂ を、石灰水との中和で見つけます。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">成分元素の確認</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">元素</th><th style="text-align: left;">操作</th><th style="text-align: center;">生成物</th><th style="text-align: left;">確認方法</th></tr></thead><tbody><tr><td style="text-align: center;"><b>炭素 C</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: center;">CO₂</td><td style="text-align: left;">石灰水に通じると<b>白濁</b>する</td></tr><tr><td style="text-align: center;"><b>水素 H</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: center;">H₂O</td><td style="text-align: left;">白色の硫酸銅(II)無水物が<b>青色</b>になる（塩化コバルト紙が青から<b>赤</b>に変わる）</td></tr><tr><td style="text-align: center;"><b>窒素 N</b></td><td style="text-align: left;">NaOH を加えて加熱する</td><td style="text-align: center;">NH₃</td><td style="text-align: left;">濃塩酸を近づけると<b>白煙</b>が生じる／湿った<b>赤色リトマス紙が青変</b>する</td></tr><tr><td style="text-align: center;"><b>塩素 Cl</b></td><td style="text-align: left;">焼いた銅線につけて加熱する</td><td style="text-align: center;">CuCl₂</td><td style="text-align: left;"><b>青緑色</b>の炎色反応が見られる（バイルシュタイン反応）</td></tr><tr><td style="text-align: center;"><b>硫黄 S</b></td><td style="text-align: left;">金属 Na を加えて加熱・融解する</td><td style="text-align: center;">Na₂S</td><td style="text-align: left;">水に溶かして酢酸鉛(II)水溶液を加えると<b>黒色沈殿</b>が生じる</td></tr></tbody></table></div>
+<p class="ref-p"><b>5つの元素それぞれ「操作」と「確認方法」をセットにして覚えるようにしてください。</b>C・H・N の反応と、Cl・S で見える変化（銅の炎色反応・硫化鉛(II)の黒色沈殿）は無機で習ったものなので、無機の知識と結び付けると覚える量が減ります。銅線につける操作と、金属 Na と融解する操作は、有機で初めて出てきます。</p>
+<section class="ref-sec" id="ref-sec-carbon"><h4 class="ref-sec-h">炭素の確認 —— 石灰水の白濁</h4><p class="ref-sec-lead">完全燃焼で出た CO₂ を、石灰水との中和・沈殿反応で検出します。</p></section>
 <p class="ref-p">炭素を含む有機化合物を完全燃焼させると、二酸化炭素が発生します。この気体を石灰水に通じると、炭酸カルシウムの白色沈殿が生じて白濁します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ca(OH)₂ ＋ CO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaCO₃↓ ＋ H₂O</span></div><p class="ref-note">酸性酸化物の CO₂ と、塩基の Ca(OH)₂ の中和です。白濁の正体は CaCO₃ の沈殿です。</p></div>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CaCO₃ ＋ CO₂ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Ca(HCO₃)₂</span></div><p class="ref-note">CO₂ を通じ続けると、沈殿が炭酸水素カルシウムになって溶け、無色にもどります。</p></div>
-<p class="ref-p">確認に使うのは「<b>一度白濁したか</b>」です。通じ続けて透明にもどっても、CO₂ が出たことに変わりはありません。</p>
-<section class="ref-sec" id="ref-sec-hydrogen"><h4 class="ref-sec-h">水素の確認 —— 硫酸銅(II)無水物の青変</h4><p class="ref-sec-lead">完全燃焼で出た H₂O を、白色の無水物が水和して青くなる変化で見つけます。</p></section>
+<p class="ref-p">ちなみに、白濁したあとも CO₂ を通じ続けると、沈殿が炭酸水素カルシウム Ca(HCO₃)₂ になって溶け、無色にもどります。この反応は無機化学でくわしく学びます。</p>
+<section class="ref-sec" id="ref-sec-hydrogen"><h4 class="ref-sec-h">水素の確認 —— 硫酸銅(II)無水物の青変</h4><p class="ref-sec-lead">完全燃焼で出た H₂O を、白色の硫酸銅(II)無水物が水和して青くなる変化で検出します。</p></section>
 <p class="ref-p">水素を含む有機化合物を完全燃焼させると、水が発生します。白色の硫酸銅(II)無水物は少量の水と反応して、青色の硫酸銅(II)五水和物になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CuSO₄ ＋ 5H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuSO₄・5H₂O</span></div><p class="ref-note">白色の無水物が、青色の五水和物になります。</p></div>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">CuSO₄・5H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuSO₄ ＋ 5H₂O</span></div><p class="ref-note">逆向きの変化です。加熱すると水和水が抜けて白色にもどる、可逆な反応です。</p></div>
-<p class="ref-p">青色の塩化コバルト紙が赤色に変わることでも水を検出できます。高校化学ではあまり登場しないので、<b>塩化コバルト紙は覚えなくても構いません</b>。見て「水の検出だ」と分かれば十分です。</p>
-<section class="ref-sec" id="ref-sec-nitrogen"><h4 class="ref-sec-h">窒素の確認 —— アンモニアの白煙</h4><p class="ref-sec-lead">NaOH と加熱して出た NH₃ を、塩酸との白煙かリトマス紙で見つけます。</p></section>
-<p class="ref-p">窒素を含む有機化合物に水酸化ナトリウムを加えて加熱すると、有機化合物が分解されてアンモニアが発生します。濃塩酸をつけたガラス棒を近づけると、塩化アンモニウムの細かい結晶が白煙として見えます。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₃ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NH₄Cl</span></div><p class="ref-note">塩基の NH₃ と酸の HCl の中和です。白煙は NH₄Cl の微粒子です。</p></div>
+<p class="ref-p">ちなみに、青くなった五水和物を加熱すると、水和水が抜けて白色の無水物にもどります。</p>
+<p class="ref-p">青色の塩化コバルト紙が赤色に変わることでも水を検出できます。中学理科の学習内容ですが、高校化学ではあまり登場しないので、<b>塩化コバルト紙は覚えなくても構いません</b>。</p>
+<section class="ref-sec" id="ref-sec-nitrogen"><h4 class="ref-sec-h">窒素の確認 —— アンモニアの白煙</h4><p class="ref-sec-lead">NaOH と加熱して出た NH₃ を、塩酸との白煙かリトマス紙で検出します。</p></section>
+<p class="ref-p">窒素を含む有機化合物に水酸化ナトリウムを加えて加熱すると、有機化合物が分解されてアンモニアが発生します。アンモニアに濃塩酸をつけたガラス棒を近づけると、塩化アンモニウムの細かい結晶が白煙として見えます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₃ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NH₄Cl</span></div><p class="ref-note">塩基の NH₃ と酸の HCl の中和です。白煙は NH₄Cl の微粒子（固体）が空気に分散したコロイドです。</p></div>
 <p class="ref-p">アンモニアは高校化学で扱う気体のうち、ただ1つの塩基性の気体です。そのため、湿らせた赤色リトマス紙を青く変えることでも確認できます。</p>
-<p class="ref-p">この方法で NH₃ が出るのは、アミノ基 −NH₂ のような形で N が入っているときです。ニトロ基 −NO₂ の N ではアンモニアが発生しません。<b>この区別は覚える必要はありません。</b></p>
-<section class="ref-sec" id="ref-sec-chlorine-sulfur"><h4 class="ref-sec-h">塩素・硫黄の確認</h4><p class="ref-sec-lead">塩素は銅線の炎色反応、硫黄は硫化鉛(II)の黒色沈殿で見つけます。</p></section>
-<p class="ref-p">塩素を含む有機化合物を、焼いた銅線につけて加熱すると、塩化銅(II)が生じて銅の<b>青緑色</b>の炎色反応が見られます。これを<b>バイルシュタイン反応</b>といいます。塩素の確認は無機化学では習わないので、<b>この組は丸暗記で構いません</b>。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">試料中の Cl ＋ Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over">焼いた銅線・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuCl₂</span></div><p class="ref-note">CuCl₂ は炎の中で気化しやすいので、Cu の炎色反応が見えます。銅線そのものを炎に入れても、この色は出ません。</p></div>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">銅線の炎色反応で青緑色が見えたので、試料には塩素が入っている。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">青緑色が見えて分かるのは「ハロゲンが入っている」までです。臭素やヨウ素を含む化合物でも同じ色が出ます。</span></p><p class="ref-mistake-why">高校の問題では試料がふつう塩素化合物なので Cl と答えて済みますが、選択肢に Br や I が並んでいる問題では、この1歩で外れます。</p></div>
+<p class="ref-p">この方法で NH₃ が出るのは、アミノ基 −NH₂ のような形で N が入っているときです。ニトロ基 −NO₂ の N ではアンモニアが発生しません。<b>この区別は問題で知識を問われることはないので覚える必要はありません。</b></p>
+<section class="ref-sec" id="ref-sec-chlorine-sulfur"><h4 class="ref-sec-h">塩素・硫黄の確認</h4><p class="ref-sec-lead">塩素は銅線の炎色反応、硫黄は硫化鉛(II)の黒色沈殿で検出します。</p></section>
+<p class="ref-p">塩素を含む有機化合物を、焼いた銅線につけて加熱すると、塩化銅(II)が生じて銅の<b>青緑色</b>の炎色反応が見られます。これを<b>バイルシュタイン反応</b>といいます。Cu の炎色反応の色は化学基礎でも必修ですが、バイルシュタイン反応は有機化学でしか登場しません。<b>この反応は実験操作と結果を丸暗記するだけで構いません</b>。</p>
+<p class="ref-p">ちなみに、臭素やヨウ素を含む化合物でも、同じ青緑色が見られます。</p>
+<h5 class="ref-h5 ref-h5-advanced">炎の中で塩化銅(II)ができる<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">試料中の Cl ＋ Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over">焼いた銅線・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CuCl₂</span></div><p class="ref-note">CuCl₂ は炎の中で気化しやすいので、Cu の炎色反応が見えます。銅線そのものを炎に入れても、この色は出ません。CuCl₂ が生じることは覚えなくてよいです。</p></div>
+<h5 class="ref-h5">硫黄の確認</h5>
 <p class="ref-p">硫黄を含む有機化合物に金属ナトリウムを加えて加熱・融解すると、硫化ナトリウムが生じます。これを水に溶かして酢酸鉛(II)水溶液を加えると、硫化鉛(II)の黒色沈殿が生じます。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Na₂S ＋ Pb(CH₃COO)₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">PbS↓ ＋ 2CH₃COONa</span></div><p class="ref-note">S²⁻ と Pb²⁺ の沈殿反応です。硫化物イオンは多くの金属イオンと黒色の沈殿をつくります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Na₂S ＋ Pb(CH₃COO)₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">PbS↓ ＋ 2CH₃COONa</span></div><p class="ref-note">S²⁻ と Pb²⁺ の沈殿反応です。</p></div>
+<p class="ref-p">ちなみに、硫化物イオンは Pb²⁺ のほかにも多くの金属イオンと黒色の沈殿をつくります。この沈殿は無機化学でくわしく学びます。</p>
 <h5 class="ref-h5">酸素だけは確認の操作が無い</h5>
 <p class="ref-p">酸素には、上の4元素のような確認の操作がありません。燃焼に使う O₂ からも CO₂ や H₂O の O が来るので、生成物を見ても試料に O があったかどうかは分からないためです。</p>
 <p class="ref-p">★ 酸素は、次のページの元素分析で「<b>全体の質量から C と H を引いた残り</b>」として出します。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/elemental-analysis/">どれだけ入っているかを量る元素分析のページへ</a></p>
-<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">表の組は必ず、反応式は3本、ほかは読めれば十分です。</p></section>
+<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">表の「操作」と「確認方法」の組と、反応式3本を覚えます。</p></section>
 <p class="ref-p"><b>5元素の「操作」と「確認方法」の組は、必ず覚えてください。</b></p>
-<p class="ref-p">反応式は <b>Ca(OH)₂ ＋ CO₂</b>・<b>CuSO₄ ＋ 5H₂O</b>・<b>NH₃ ＋ HCl</b> の3本を書けるようにしましょう。どれも無機化学で一度書いた式です。</p>
-<p class="ref-p">炭酸水素カルシウムができる逆向きの式、硫化鉛(II)の沈殿の式は、問題文に操作が書いてあれば読み取れる程度で構いません。塩化コバルト紙、ニトロ基では NH₃ が出ないことは<b>覚えなくても構いません</b>。</p>
-<p class="ref-p">ただし「<b>青緑色の炎色反応はハロゲン全体で出る</b>」ことは覚えておきましょう。</p>
+<p class="ref-p">反応式は次の3本を書けるようにしておきます。どれも無機化学で一度書いた式です。</p>
+<ul class="ref-list"><li>Ca(OH)₂ ＋ CO₂ → CaCO₃ ＋ H₂O</li><li>CuSO₄ ＋ 5H₂O → CuSO₄・5H₂O</li><li>NH₃ ＋ HCl → NH₄Cl</li></ul>
+<p class="ref-p">硫化鉛(II)の沈殿の式は、問題文の操作から読み取れれば大丈夫です。塩化コバルト紙と、ニトロ基では NH₃ が出ないことは、覚えなくても構いません。</p>
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の操作で存在が確認できる元素を、元素記号で答えよ。<b>(1) 完全燃焼して発生した気体を石灰水に通じると白濁した　(2) 完全燃焼して生じた液体を硫酸銅(II)無水物につけると青くなった　(3) 焼いた銅線の先につけて加熱すると青緑色の炎色反応を示した　(4) 金属ナトリウムと加熱・融解した生成物を水に溶かし、酢酸鉛(II)水溶液を加えると黒色沈殿を生じた　(5) 水酸化ナトリウムを加えて加熱し、発生した気体に濃塩酸をつけたガラス棒を近づけると白煙を生じた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) C　(2) H　(3) Cl（正確には「ハロゲン」まで）　(4) S　(5) N</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を化学反応式で書け。<b>(1) 石灰水に二酸化炭素を吹き込むと白濁した　(2) (1) の液にさらに二酸化炭素を吹き込むと無色になった　(3) 硫酸銅(II)無水物に水を滴下すると青くなった　(4) 酢酸鉛(II)水溶液に硫化水素を吹き込むと黒色沈殿が生じた</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) Ca(OH)₂ ＋ CO₂ → CaCO₃ ＋ H₂O　(2) CaCO₃ ＋ CO₂ ＋ H₂O → Ca(HCO₃)₂　(3) CuSO₄ ＋ 5H₂O → CuSO₄・5H₂O　(4) Pb(CH₃COO)₂ ＋ H₂S → PbS ＋ 2CH₃COOH　(4) は硫化水素が弱酸なので、生じるのは酢酸です。</p></div></details></div>

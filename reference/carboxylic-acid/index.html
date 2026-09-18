@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -865,14 +872,14 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-callout ref-callout-memorize"><b class="ref-callout-tag">丸暗記でよい</b><p class="ref-callout-text"><b>カルボン酸は、炭酸 H₂CO₃ より強い酸です。</b>この1行が次の節の遊離反応をすべて決めるので、丸暗記してください。</p></div>
 <section class="ref-sec" id="ref-sec-list"><h4 class="ref-sec-h">主なカルボン酸</h4><p class="ref-sec-lead">名前・示性式と、その化合物だけがもつ性質。ギ酸とシュウ酸の「還元性」は別のものです。</p></section>
 <p class="ref-p">カルボン酸の名前は、対応するアルカンの語尾に「酸」を付け加えるのが IUPAC 命名法です。メタンからは「メタン酸」、エタンからは「エタン酸」となります。ただし高校化学でこの名前を見かけることはまずないので、<b>慣用名のほうを覚えます</b>。メタン酸がギ酸、エタン酸が酢酸、プロパン酸がプロピオン酸です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">主なモノカルボン酸（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: left;">おさえるところ</th><th style="text-align: left;">覚える範囲</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ギ酸</b></td><td style="text-align: left;">HCOOH</td><td style="text-align: left;">ホルミル基をもつので還元性を示す</td><td style="text-align: left;"><b>必ず覚える</b></td></tr><tr><td style="text-align: left;"><b>酢酸</b></td><td style="text-align: left;">CH₃COOH</td><td style="text-align: left;">純粋なものは融点が17℃で、寒い日には凍るので<b>氷酢酸</b>という</td><td style="text-align: left;"><b>必ず覚える</b></td></tr><tr><td style="text-align: left;">プロピオン酸</td><td style="text-align: left;">CH₃CH₂COOH</td><td style="text-align: left;">慣用名がそのまま問われることはまずない</td><td style="text-align: left;">名前だけ</td></tr><tr><td style="text-align: left;">酪酸</td><td style="text-align: left;">CH₃CH₂CH₂COOH</td><td style="text-align: left;">強い不快臭をもつ</td><td style="text-align: left;">名前だけ</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">主なモノカルボン酸</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: left;">おさえるところ</th><th style="text-align: left;">覚える範囲</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ギ酸</b></td><td style="text-align: left;">HCOOH</td><td style="text-align: left;">ホルミル基をもつので還元性を示す</td><td style="text-align: left;"><b>必ず覚える</b></td></tr><tr><td style="text-align: left;"><b>酢酸</b></td><td style="text-align: left;">CH₃COOH</td><td style="text-align: left;">純粋なものは融点が17℃で、寒い日には凍るので<b>氷酢酸</b>という</td><td style="text-align: left;"><b>必ず覚える</b></td></tr><tr><td style="text-align: left;">プロピオン酸</td><td style="text-align: left;">CH₃CH₂COOH</td><td style="text-align: left;">慣用名がそのまま問われることはまずない</td><td style="text-align: left;">名前だけ</td></tr><tr><td style="text-align: left;">酪酸</td><td style="text-align: left;">CH₃CH₂CH₂COOH</td><td style="text-align: left;">強い不快臭をもつ</td><td style="text-align: left;">名前だけ</td></tr></tbody></table></div>
 <p class="ref-p"><b>ギ酸と酢酸は必ず覚えてください。</b>プロピオン酸から先は、慣用名を覚えていないと解けない問題はかなりレアなので、名前を見て「カルボン酸の仲間だ」と分かれば十分です。</p>
 <p class="ref-p"><b>酢酸の融点17℃は覚えておくとよい数値です。</b>「ジエチルエーテルの沸点34℃の半分」と関連付けておくと、2つまとめて思い出せます。</p>
 <h5 class="ref-h5">ギ酸だけは還元性を示す</h5>
 <p class="ref-p">ギ酸 HCOOH は、見方を変えるとホルミル基 −CHO をもっています。だからカルボン酸でありながら、アルデヒドと同じように<b>還元性</b>を示し、銀鏡反応を示します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/carboxylic-formic-formyl.png" alt="ギ酸の構造式 H−C(=O)−OH。左側の H−C=O の部分だけが橙色の角丸で塗られ、その左に「ホルミル基」と書かれている" loading="lazy"><figcaption class="ref-figure-cap">ギ酸 HCOOH を切り分けると、<b>H−C=O</b> ＝ ホルミル基がそのまま入っています。残りの −OH と合わせるとカルボキシ基です。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ester/">同じ理由で還元性を示すギ酸エステル HCOO−R をエステルのページで見る</a></p>
-<div class="ref-table-wrap"><div class="ref-cap">主なジカルボン酸とヒドロキシ酸（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: left;">おさえるところ</th></tr></thead><tbody><tr><td style="text-align: left;"><b>シュウ酸</b></td><td style="text-align: left;">(COOH)₂</td><td style="text-align: left;">最も簡単なジカルボン酸。2価の弱酸であり、<b>2価の還元剤</b>でもある</td></tr><tr><td style="text-align: left;"><b>マレイン酸</b></td><td style="text-align: left;">CH(COOH)=CH(COOH)</td><td style="text-align: left;"><b>シス</b>形。加熱すると分子内脱水して無水マレイン酸になる。分子内でも水素結合するので融点が低い</td></tr><tr><td style="text-align: left;"><b>フマル酸</b></td><td style="text-align: left;">CH(COOH)=CH(COOH)</td><td style="text-align: left;"><b>トランス</b>形。分子間でしか水素結合しないので融点が高い</td></tr><tr><td style="text-align: left;"><b>乳酸</b></td><td style="text-align: left;">CH₃CH(OH)COOH</td><td style="text-align: left;">ヒドロキシ酸。不斉炭素原子を1個もつので鏡像異性体がある</td></tr><tr><td style="text-align: left;">酒石酸</td><td style="text-align: left;">(CH(OH)COOH)₂</td><td style="text-align: left;">不斉炭素原子を2個もつ。フェーリング液の材料</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">主なジカルボン酸とヒドロキシ酸</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: left;">おさえるところ</th></tr></thead><tbody><tr><td style="text-align: left;"><b>シュウ酸</b></td><td style="text-align: left;">(COOH)₂</td><td style="text-align: left;">最も簡単なジカルボン酸。2価の弱酸であり、<b>2価の還元剤</b>でもある</td></tr><tr><td style="text-align: left;"><b>マレイン酸</b></td><td style="text-align: left;">CH(COOH)=CH(COOH)</td><td style="text-align: left;"><b>シス</b>形。加熱すると分子内脱水して無水マレイン酸になる。分子内でも水素結合するので融点が低い</td></tr><tr><td style="text-align: left;"><b>フマル酸</b></td><td style="text-align: left;">CH(COOH)=CH(COOH)</td><td style="text-align: left;"><b>トランス</b>形。分子間でしか水素結合しないので融点が高い</td></tr><tr><td style="text-align: left;"><b>乳酸</b></td><td style="text-align: left;">CH₃CH(OH)COOH</td><td style="text-align: left;">ヒドロキシ酸。不斉炭素原子を1個もつので鏡像異性体がある</td></tr><tr><td style="text-align: left;">酒石酸</td><td style="text-align: left;">(CH(OH)COOH)₂</td><td style="text-align: left;">不斉炭素原子を2個もつ。フェーリング液の材料</td></tr></tbody></table></div>
 <h5 class="ref-h5">「還元性」という言葉が2つのものを指している</h5>
 <p class="ref-p">シュウ酸とギ酸は、どちらも「還元剤としてはたらく」のに、<b>銀鏡反応を示すのはギ酸だけ</b>です。同じ「還元性」という言葉が、別のものを指しています。</p>
 <p class="ref-p">ギ酸が示す還元性は<b>ホルミル基によるもの</b>なので、銀鏡反応もフェーリング液の還元も示します。シュウ酸にはホルミル基がないので、<b>過マンガン酸カリウムの滴定で2価の還元剤としてはたらく</b>一方で、<b>銀鏡反応は示しません</b>。</p>

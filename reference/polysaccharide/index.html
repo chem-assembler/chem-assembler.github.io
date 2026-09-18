@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -859,7 +866,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-iodine"><h4 class="ref-sec-h">ヨウ素デンプン反応</h4><p class="ref-sec-lead">デンプンの水溶液にヨウ素ヨウ化カリウム水溶液を加えると青紫色になります。加熱すると色が消え、冷やすと戻ります。</p></section>
 <p class="ref-p">デンプンの水溶液に<b>ヨウ素ヨウ化カリウム水溶液（ヨウ素液）</b>を加えると、<b>青紫色</b>になります。これを<b>ヨウ素デンプン反応</b>といいます。</p>
 <p class="ref-p">色が出るのは、デンプンのらせんの中にヨウ素が入り込むためです。<b>加熱するとらせんがゆるんで色が消え、冷やすとまた青紫色に戻ります。</b></p>
-<div class="ref-table-wrap"><div class="ref-cap">多糖とヨウ素の呈色（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">もとの単糖</th><th style="text-align: left;">枝分かれ</th><th style="text-align: left;">ヨウ素の呈色</th></tr></thead><tbody><tr><td style="text-align: left;">アミロース</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">なし（らせん）</td><td style="text-align: left;">濃い青色</td></tr><tr><td style="text-align: left;">アミロペクチン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">多い</td><td style="text-align: left;">赤紫色</td></tr><tr><td style="text-align: left;">グリコーゲン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">さらに多い</td><td style="text-align: left;">赤褐色</td></tr><tr><td style="text-align: left;">セルロース</td><td style="text-align: left;">β-グルコース</td><td style="text-align: left;">なし（まっすぐ伸びる）</td><td style="text-align: left;">呈色しない</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">多糖とヨウ素の呈色</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">もとの単糖</th><th style="text-align: left;">枝分かれ</th><th style="text-align: left;">ヨウ素の呈色</th></tr></thead><tbody><tr><td style="text-align: left;">アミロース</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">なし（らせん）</td><td style="text-align: left;">濃い青色</td></tr><tr><td style="text-align: left;">アミロペクチン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">多い</td><td style="text-align: left;">赤紫色</td></tr><tr><td style="text-align: left;">グリコーゲン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">さらに多い</td><td style="text-align: left;">赤褐色</td></tr><tr><td style="text-align: left;">セルロース</td><td style="text-align: left;">β-グルコース</td><td style="text-align: left;">なし（まっすぐ伸びる）</td><td style="text-align: left;">呈色しない</td></tr></tbody></table></div>
 <p class="ref-p"><b>「デンプンは青紫色、加熱で消えて冷やすと戻る」は必ず暗記してください。</b>アミロースとアミロペクチンの色の違いは、余裕があれば覚える程度で構いません。呈色の仕組みは覚える必要はありません。</p>
 <section class="ref-sec" id="ref-sec-hydrolysis"><h4 class="ref-sec-h">デンプンの加水分解</h4><p class="ref-sec-lead">アミラーゼでデキストリンを経てマルトースまで、マルターゼでグルコースまで分解されます。</p></section>
 <p class="ref-p">デンプンは、酵素<b>アミラーゼ</b>のはたらきで、少し短くなった<b>デキストリン</b>を経て、二糖の<b>マルトース</b>まで分解されます。マルトースは酵素<b>マルターゼ</b>でグルコースになります。</p>
@@ -874,7 +881,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">セルロースは酵素<b>セルラーゼ</b>で二糖の<b>セロビオース</b>に、さらに<b>セロビアーゼ</b>でグルコースに分解されます。ヒトはセルラーゼをもたないので、セルロースを消化できません。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2(C₆H₁₀O₅)ₙ ＋ nH₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">セルラーゼ</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">nC₁₂H₂₂O₁₁（セロビオース）</span></div><p class="ref-note">デンプンをアミラーゼで分解する式と、形はまったく同じです。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-cellobiose.png" alt="セロビオースの構造式を直交で描いた図。β-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">セルロースの部分構造にあたる<b>セロビオース</b>。β-グルコースどうしがつながっています。</figcaption></figure>
-<div class="ref-table-wrap"><div class="ref-cap">デンプンとセルロースの対比（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">デンプン</th><th style="text-align: left;">セルロース</th></tr></thead><tbody><tr><td style="text-align: left;">もとの単糖</td><td style="text-align: left;"><b>α-グルコース</b></td><td style="text-align: left;"><b>β-グルコース</b></td></tr><tr><td style="text-align: left;">鎖の形</td><td style="text-align: left;">らせん（アミロペクチンは枝分かれ）</td><td style="text-align: left;">まっすぐ伸びて束になる</td></tr><tr><td style="text-align: left;">ヨウ素デンプン反応</td><td style="text-align: left;">青紫色</td><td style="text-align: left;">呈色しない</td></tr><tr><td style="text-align: left;">所在</td><td style="text-align: left;">植物の種子・根などにたくわえる</td><td style="text-align: left;">植物の細胞壁</td></tr><tr><td style="text-align: left;">ヒトが消化できるか</td><td style="text-align: left;">できる</td><td style="text-align: left;">できない</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">デンプンとセルロースの対比</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">デンプン</th><th style="text-align: left;">セルロース</th></tr></thead><tbody><tr><td style="text-align: left;">もとの単糖</td><td style="text-align: left;"><b>α-グルコース</b></td><td style="text-align: left;"><b>β-グルコース</b></td></tr><tr><td style="text-align: left;">鎖の形</td><td style="text-align: left;">らせん（アミロペクチンは枝分かれ）</td><td style="text-align: left;">まっすぐ伸びて束になる</td></tr><tr><td style="text-align: left;">ヨウ素デンプン反応</td><td style="text-align: left;">青紫色</td><td style="text-align: left;">呈色しない</td></tr><tr><td style="text-align: left;">所在</td><td style="text-align: left;">植物の種子・根などにたくわえる</td><td style="text-align: left;">植物の細胞壁</td></tr><tr><td style="text-align: left;">ヒトが消化できるか</td><td style="text-align: left;">できる</td><td style="text-align: left;">できない</td></tr></tbody></table></div>
 <p class="ref-p"><b>「α形ならデンプン、β形ならセルロース」</b>と覚えましょう。この表の残りの行は、ほとんどこの1行から理由をつけて出せます。</p>
 <section class="ref-sec" id="ref-sec-cellulose-oh"><h4 class="ref-sec-h">セルロースの −OH は1単位に3個</h4><p class="ref-sec-lead">繰り返し単位 C₆H₁₀O₅ には −OH が3個あるので、[C₆H₇O₂(OH)₃]<sub>n</sub> と書けます。誘導体の計算はすべてここから始まります。</p></section>
 <p class="ref-p">セルロースの繰り返し単位 C₆H₁₀O₅ には、<b>−OH が3個</b>残っています。−OH を外に出して書くと <b>[C₆H₇O₂(OH)₃]<sub>n</sub></b> です。</p>
@@ -883,7 +890,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-nitrocellulose"><h4 class="ref-sec-h">ニトロセルロースとアセチルセルロース</h4><p class="ref-sec-lead">−OH を濃硝酸でエステルにするとニトロセルロース、無水酢酸でエステルにするとアセチルセルロースになります。</p></section>
 <p class="ref-p">セルロースに<b>濃硝酸と濃硫酸の混合物</b>を作用させると、−OH が硝酸エステル −ONO₂ に変わります。3個とも変わったものが<b>トリニトロセルロース</b>で、<b>無煙火薬</b>の原料です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">[C₆H₇O₂(OH)₃]ₙ ＋ 3nHNO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">[C₆H₇O₂(ONO₂)₃]ₙ ＋ 3nH₂O</span></div><p class="ref-note">−OH の H と硝酸の OH から水がとれる<b>エステル化</b>です。−O−NO₂ と、炭素と窒素の間に酸素が1個はさまっています。</p></div>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">ニトロセルロースは、ベンゼンのニトロ化と同じくニトロ化でできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">ニトロセルロースは<b>硝酸エステル</b>で、できる反応は<b>エステル化</b>です。</span></p><p class="ref-mistake-why">名前に「ニトロ」と付いているためです。★ ニトロ化合物は C−NO₂、硝酸エステルは C−O−NO₂ で、<b>酸素が1個はさまるかどうか</b>で見分けます。ニトログリセリンも同じ硝酸エステルです。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">ニトロセルロースは、ベンゼンのニトロ化と同じくニトロ化でできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ニトロセルロースは<b>硝酸エステル</b>で、できる反応は<b>エステル化</b>です。</span></p><p class="ref-mistake-why">名前に「ニトロ」と付いているためです。★ ニトロ化合物は C−NO₂、硝酸エステルは C−O−NO₂ で、<b>酸素が1個はさまるかどうか</b>で見分けます。ニトログリセリンも同じ硝酸エステルです。</p></div>
 <p class="ref-p">セルロースに<b>無水酢酸</b>を作用させると、−OH がアセチル化されて<b>トリアセチルセルロース</b>になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">[C₆H₇O₂(OH)₃]ₙ ＋ 3n(CH₃CO)₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">[C₆H₇O₂(OCOCH₃)₃]ₙ ＋ 3nCH₃COOH</span></div><p class="ref-note">酢酸エステルができるアセチル化です。</p></div>
 <p class="ref-p">トリアセチルセルロースは溶媒に溶けにくいので、エステル結合を<b>一部だけ加水分解</b>してジアセチルセルロースに戻し、アセトンに溶かして紡ぎます。これが<b>アセテート繊維</b>です。</p>
@@ -891,7 +898,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">エステル化と加水分解の一般形はこちら</a></p>
 <section class="ref-sec" id="ref-sec-fiber"><h4 class="ref-sec-h">再生繊維と半合成繊維</h4><p class="ref-sec-lead">セルロースをいったん溶かして紡ぎ直したものが再生繊維、−OH を化学的に変えて紡いだものが半合成繊維です。</p></section>
 <p class="ref-p">木材パルプなどの短いセルロースは、そのままでは衣料の糸になりません。そこで、化学の力で長い繊維に作り直します。</p>
-<div class="ref-table-wrap"><div class="ref-cap">セルロースから作る繊維（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">分類</th><th style="text-align: left;">作り方</th></tr></thead><tbody><tr><td style="text-align: left;">ビスコースレーヨン</td><td style="text-align: left;"><b>再生繊維</b></td><td style="text-align: left;">NaOH と二硫化炭素 CS₂ で溶かし、希硫酸中に押し出して紡ぎ直す</td></tr><tr><td style="text-align: left;">銅アンモニアレーヨン（キュプラ）</td><td style="text-align: left;"><b>再生繊維</b></td><td style="text-align: left;">シュワイツァー試薬に溶かし、希硫酸中に押し出して紡ぎ直す</td></tr><tr><td style="text-align: left;">アセテート繊維</td><td style="text-align: left;"><b>半合成繊維</b></td><td style="text-align: left;">−OH の一部を酢酸エステルに変えてから紡ぐ</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">セルロースから作る繊維</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">分類</th><th style="text-align: left;">作り方</th></tr></thead><tbody><tr><td style="text-align: left;">ビスコースレーヨン</td><td style="text-align: left;"><b>再生繊維</b></td><td style="text-align: left;">NaOH と二硫化炭素 CS₂ で溶かし、希硫酸中に押し出して紡ぎ直す</td></tr><tr><td style="text-align: left;">銅アンモニアレーヨン（キュプラ）</td><td style="text-align: left;"><b>再生繊維</b></td><td style="text-align: left;">シュワイツァー試薬に溶かし、希硫酸中に押し出して紡ぎ直す</td></tr><tr><td style="text-align: left;">アセテート繊維</td><td style="text-align: left;"><b>半合成繊維</b></td><td style="text-align: left;">−OH の一部を酢酸エステルに変えてから紡ぐ</td></tr></tbody></table></div>
 <p class="ref-p"><b>「再生繊維か半合成繊維か」の区別と、代表例3つの名前は暗記してください。</b>溶かすのに使う薬品の名前（シュワイツァー試薬の中身など）は、覚えなくて構いません。問題文に与えられることがほとんどです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/synthetic-fiber/">合成繊維も含めた繊維の分類と用途は合成繊維のページへ</a></p>
 <h5 class="ref-h5">例題</h5>

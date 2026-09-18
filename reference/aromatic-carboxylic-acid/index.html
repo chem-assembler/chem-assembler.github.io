@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -854,7 +861,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-salicylic"><h4 class="ref-sec-h">サリチル酸 —— 2つの性質をもつ</h4><p class="ref-sec-lead">−OH と −COOH が o の位置に付いた化合物。カルボン酸とフェノール類の両方の性質を示します。</p></section>
 <p class="ref-p"><b>サリチル酸 C₆H₄(OH)COOH</b> は、ベンゼン環に<b>ヒドロキシ基 −OH とカルボキシ基 −COOH が隣り合って（o の位置に）</b>付いた化合物です。そのため、<b>カルボン酸の性質とフェノール類の性質を両方</b>示します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-salicylic.png" alt="サリチル酸の構造式。ベンゼン環の隣り合う2個の炭素に、ヒドロキシ基とカルボキシ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸</b>。−OH（フェノール類の部分）と −COOH（カルボン酸の部分）が隣り合っています。</figcaption></figure>
-<div class="ref-table-wrap"><div class="ref-cap">安息香酸・フェノール・サリチル酸は2つの試薬でこう応じる（2行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">試薬</th><th style="text-align: left;">安息香酸</th><th style="text-align: left;">フェノール</th><th style="text-align: left;">サリチル酸</th></tr></thead><tbody><tr><td style="text-align: left;"><b>NaHCO₃ 水溶液</b></td><td style="text-align: left;">CO₂ を出して溶ける</td><td style="text-align: left;">反応しない</td><td style="text-align: left;"><b>CO₂ を出して溶ける</b></td></tr><tr><td style="text-align: left;"><b>FeCl₃ 水溶液</b></td><td style="text-align: left;">呈色しない</td><td style="text-align: left;">紫色に呈色する</td><td style="text-align: left;"><b>赤紫色に呈色する</b></td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">安息香酸・フェノール・サリチル酸は2つの試薬でこう応じる</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">試薬</th><th style="text-align: left;">安息香酸</th><th style="text-align: left;">フェノール</th><th style="text-align: left;">サリチル酸</th></tr></thead><tbody><tr><td style="text-align: left;"><b>NaHCO₃ 水溶液</b></td><td style="text-align: left;">CO₂ を出して溶ける</td><td style="text-align: left;">反応しない</td><td style="text-align: left;"><b>CO₂ を出して溶ける</b></td></tr><tr><td style="text-align: left;"><b>FeCl₃ 水溶液</b></td><td style="text-align: left;">呈色しない</td><td style="text-align: left;">紫色に呈色する</td><td style="text-align: left;"><b>赤紫色に呈色する</b></td></tr></tbody></table></div>
 <p class="ref-p"><b>「両方の試薬に応じるのはサリチル酸だけ」と覚えましょう。</b>NaHCO₃ に応じるのは −COOH のはたらき、FeCl₃ に応じるのは環に付いた −OH のはたらきです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/phenol-reactions/">塩化鉄(III) による呈色（フェノール類の検出）</a></p>
 <section class="ref-sec" id="ref-sec-branch"><h4 class="ref-sec-h">どちらの基が反応するかで行き先が分かれる</h4><p class="ref-sec-lead">無水酢酸では −OH がアセチル化されてアセチルサリチル酸に、メタノールでは −COOH がエステル化されてサリチル酸メチルになります。</p></section>
@@ -866,7 +873,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₄(OH)COOH ＋ CH₃OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₄(OH)COOCH₃ ＋ H₂O</span></div><p class="ref-note">サリチル酸メチルができます。−COOH が −COOCH₃ に変わり、−OH は残っています。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-methyl-salicylate.png" alt="サリチル酸メチルの構造式。ベンゼン環の隣り合う炭素に、ヒドロキシ基とメチルエステルの基が付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸メチル</b>。−COOH がエステル化され、−OH はそのまま残っています。</figcaption></figure>
 <p class="ref-p"><b>2つの医薬品の名前・用途と、「どちらの基が反応したか」は必ず覚えてください。</b>構造式を書かせる問題もよく登場します。反応の細かい条件は覚えなくて構いません。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">アセチルサリチル酸もサリチル酸メチルも、サリチル酸の −COOH がエステルになったものである。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">アセチルサリチル酸は −OH がアセチル化されたもの（−COOH が残る）、サリチル酸メチルは −COOH がエステル化されたもの（−OH が残る）。</span></p><p class="ref-mistake-why">どちらも「エステル」なので混ざりやすいところです。残っている基を見れば、NaHCO₃ と FeCl₃ への応じ方がそのまま決まります。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">アセチルサリチル酸もサリチル酸メチルも、サリチル酸の −COOH がエステルになったものである。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">アセチルサリチル酸は −OH がアセチル化されたもの（−COOH が残る）、サリチル酸メチルは −COOH がエステル化されたもの（−OH が残る）。</span></p><p class="ref-mistake-why">どちらも「エステル」なので混ざりやすいところです。残っている基を見れば、NaHCO₃ と FeCl₃ への応じ方がそのまま決まります。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/esterification/">カルボン酸とアルコールのエステル化そのものは、エステル化のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aniline/">同じ無水酢酸でアニリンをアセチル化する</a></p>
 <h5 class="ref-h5">例題</h5>

@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -864,7 +871,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-emulsify"><h4 class="ref-sec-h">乳化 —— 汚れが落ちるしくみ</h4><p class="ref-sec-lead">セッケンの疎水基が油汚れを取り囲み、親水基を外に向けた粒子になって水の中に散らばります。これを乳化といいます。</p></section>
 <p class="ref-p">セッケン水に油汚れがふれると、セッケンの<b>疎水基が油のほうに入り込み</b>、油の粒を取り囲みます。外側には親水基が並ぶので、油の粒はそのまま<b>水の中に散らばる</b>ことができます。この作用を<b>乳化</b>といい、できた液を<b>乳濁液（エマルション）</b>といいます。</p>
 <p class="ref-p">具体例として、油でよごれた布をセッケン水の中でもむと、油が小さな粒になって布から離れ、水の中に散らばります。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">セッケンは、油汚れを溶かして落とす</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">セッケンは油汚れを<b>溶かすのではなく</b>、疎水基で<b>包んで、水の中に散らす</b>ことで落とします（乳化）。</span></p><p class="ref-mistake-why">「汚れが見えなくなる」ことを「溶けた」と言いかえてしまうためです。★ 油の粒はそのまま残っていて、セッケンに包まれて水中に浮いているだけです。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">セッケンは、油汚れを溶かして落とす</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">セッケンは油汚れを<b>溶かすのではなく</b>、疎水基で<b>包んで、水の中に散らす</b>ことで落とします（乳化）。</span></p><p class="ref-mistake-why">「汚れが見えなくなる」ことを「溶けた」と言いかえてしまうためです。★ 油の粒はそのまま残っていて、セッケンに包まれて水中に浮いているだけです。</p></div>
 <p class="ref-p"><b>「乳化は、油を包んで水の中に散らすこと」</b>と覚えましょう。</p>
 <section class="ref-sec" id="ref-sec-alkaline"><h4 class="ref-sec-h">セッケン水が塩基性になるわけ</h4><p class="ref-sec-lead">セッケンは弱酸である高級脂肪酸と、強塩基である水酸化ナトリウムからできた塩なので、水溶液中で加水分解して弱い塩基性を示します。</p></section>
 <p class="ref-p">セッケンは、<b>弱酸</b>の高級脂肪酸 R−COOH と<b>強塩基</b>の NaOH からできた塩です。このような塩は、水に溶かすと一部が水と反応して <b>OH⁻</b> を生じます（塩の加水分解）。</p>
@@ -887,7 +894,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">R−C₆H₄−SO₃H ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−C₆H₄−SO₃Na ＋ H₂O</span></div><p class="ref-note">スルホン酸は強酸なので、できた塩の水溶液は中性です。</p></div>
 <p class="ref-p">もう1つの型は、高級アルコールを濃硫酸で<b>硫酸エステル</b>にしてから中和したものです。具体例は<b>硫酸ドデシルナトリウム</b> C₁₂H₂₅−OSO₃Na です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₁₂H₂₅−OH ＋ H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₁₂H₂₅−OSO₃H ＋ H₂O</span></div><p class="ref-note">高級アルコールの −OH と硫酸から水がとれて、硫酸エステルができます。これも NaOH で中和して使います。</p></div>
-<div class="ref-table-wrap"><div class="ref-cap">セッケンと合成洗剤（6行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">セッケン</th><th style="text-align: left;">合成洗剤</th></tr></thead><tbody><tr><td style="text-align: left;">親水基</td><td style="text-align: left;">−COO⁻</td><td style="text-align: left;">−SO₃⁻・−OSO₃⁻</td></tr><tr><td style="text-align: left;">もとの酸</td><td style="text-align: left;"><b>弱酸</b>（高級脂肪酸）</td><td style="text-align: left;"><b>強酸</b>（スルホン酸・硫酸エステル）</td></tr><tr><td style="text-align: left;">水溶液の液性</td><td style="text-align: left;"><b>弱い塩基性</b></td><td style="text-align: left;"><b>中性</b></td></tr><tr><td style="text-align: left;">硬水の中で</td><td style="text-align: left;">Ca²⁺・Mg²⁺ と沈殿して泡立たない</td><td style="text-align: left;">沈殿しないので使える</td></tr><tr><td style="text-align: left;">絹・羊毛の洗濯</td><td style="text-align: left;">向かない</td><td style="text-align: left;">使える</td></tr><tr><td style="text-align: left;">微生物による分解</td><td style="text-align: left;">分解されやすい</td><td style="text-align: left;">枝分かれの多いものは分解されにくい（いまは直鎖のものが多い）</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">セッケンと合成洗剤</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">セッケン</th><th style="text-align: left;">合成洗剤</th></tr></thead><tbody><tr><td style="text-align: left;">親水基</td><td style="text-align: left;">−COO⁻</td><td style="text-align: left;">−SO₃⁻・−OSO₃⁻</td></tr><tr><td style="text-align: left;">もとの酸</td><td style="text-align: left;"><b>弱酸</b>（高級脂肪酸）</td><td style="text-align: left;"><b>強酸</b>（スルホン酸・硫酸エステル）</td></tr><tr><td style="text-align: left;">水溶液の液性</td><td style="text-align: left;"><b>弱い塩基性</b></td><td style="text-align: left;"><b>中性</b></td></tr><tr><td style="text-align: left;">硬水の中で</td><td style="text-align: left;">Ca²⁺・Mg²⁺ と沈殿して泡立たない</td><td style="text-align: left;">沈殿しないので使える</td></tr><tr><td style="text-align: left;">絹・羊毛の洗濯</td><td style="text-align: left;">向かない</td><td style="text-align: left;">使える</td></tr><tr><td style="text-align: left;">微生物による分解</td><td style="text-align: left;">分解されやすい</td><td style="text-align: left;">枝分かれの多いものは分解されにくい（いまは直鎖のものが多い）</td></tr></tbody></table></div>
 <p class="ref-p"><b>「セッケンは弱酸の塩、合成洗剤は強酸の塩」の一点だけは必ず覚えてください。</b>液性も、硬水での沈殿も、絹・羊毛に使えるかも、すべてここから出ます。<b>アルキルベンゼンスルホン酸ナトリウムの構造（ベンゼン環に長いアルキル基と −SO₃Na）は書けるようにしておきましょう。</b>アルキル基の正確な炭素数は覚えなくて構いません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/benzene-substitution/">ベンゼンのスルホン化そのものは、ベンゼンの置換反応のページへ</a></p>
 <section class="ref-sec" id="ref-sec-surfactant"><h4 class="ref-sec-h">界面活性剤</h4><p class="ref-sec-lead">セッケンも合成洗剤も、水の表面張力を小さくし、水と油をなじませるはたらきをもちます。このような物質をまとめて界面活性剤といいます。</p></section>

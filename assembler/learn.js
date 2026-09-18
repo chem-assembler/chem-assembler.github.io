@@ -1088,7 +1088,15 @@ const IP_HINT_NAMES = 5;
 function ipNumberedLayout(mol) {
     const detail = iupacNameDetail(mol);
     if (!detail || detail.kind !== 'chain' || !detail.mainChain || !detail.mainChain.length) return null;
-    return { order: detail.mainChain.slice(), pos: ipLayoutFromChain(mol, detail.mainChain) };
+    // ★ エステル（v1582・§13）: 番号は酸の主鎖だけ（`order`）だが、**横一直線に置く道**は
+    //   酸の鎖 → −O− → アルキル基の鎖（付け根から）を繋いだもの ＝ 教科書の `CH₃-COO-CH₂CH₃` の並び。
+    //   酸の鎖だけを横にすると、ギ酸エステルは C1 が1個で残りが縦に積まれる
+    //   ⚠ `order` は mainChain そのまま（並べ替えない・アルキル基の炭素に番号を振らない）
+    const g = detail.groups && detail.groups[0];
+    const lay = (g && g.oId != null && g.mainChain)
+        ? detail.mainChain.slice().reverse().concat([g.oId], g.mainChain)
+        : detail.mainChain;
+    return { order: detail.mainChain.slice(), pos: ipLayoutFromChain(mol, lay) };
 }
 
 /**
@@ -6452,9 +6460,33 @@ const REF_EXERCISE_OPEN = '解答を見る';
    ⚠⚠ **`REF_ADVANCED_WORD`（発展）と役が違う。⛔ 混ぜない** ——
      発展 ＝ 範囲の外／誤解 ＝ 範囲の内で間違えやすい。★ だから**畳まない**
      （発展の節は `<details>` に畳むが、誤解はいちばん読ませたい人が開かないので開いたまま置く）。 */
+/* ★★ 手で書く表の「数だけの列」（設計書 §30-3・v1584）。
+ *
+ * ★ ユーザーのメモ「**数値の列は右寄せを既定にできないか**」への答え。
+ *   ⚠⚠ **判定は厳しくする** —— 単位や語の付いた列（`−161 ℃`・`約 3`）まで右へ寄せると、
+ *     桁がそろわないのに右へ張り付いて**かえって読みにくい**。★ 数だけの列に絞る。
+ * ⚠ セルは本文の記法を通ったあと（`**16**` → `<b>16</b>`）なので、**札を剥いでから**見る。
+ * ⚠ 空のセルは数えない（表の「−」や空欄で列が数でなくなるのを避ける）が、
+ *   **2つ以上の数が縦に並んでいること**を要る条件にする（1個だけの数は「列」ではない）。
+ */
+const REF_NUM_CELL = /^[0-9０-９]+([.,．，][0-9０-９]+)*$/;
+function refNumericColumns(rows, cols) {
+    const strip = s => String(s).replace(/<[^>]*>/g, '').replace(/[\s ]+/g, '');
+    const body = (rows || []).map(r => String(r).split(REF_CELL_SEP).map(strip));
+    const out = [];
+    for (let i = 0; i < cols; i++) {
+        const filled = body.map(r => r[i] === undefined ? '' : r[i]).filter(v => v !== '');
+        out.push(filled.length >= 2 && filled.every(v => REF_NUM_CELL.test(v)));
+    }
+    return out;
+}
+
+/* ★★ 印は**学校の慣習どおり ×／○**（v1584・設計書 §30-2）。
+   ⚠ もとは ✗／✓ だったが、**✓ は「確認済み」「やった」に読まれる**（点検表の印）——
+     日本の答案で「合っている」を言う字は ○ で、誤りは ×。★ 読み手の手が覚えている字に合わせる。 */
 const REF_MISTAKE_TAG = 'よくある誤解';
-const REF_MISTAKE_WRONG = '✗';
-const REF_MISTAKE_RIGHT = '✓';
+const REF_MISTAKE_WRONG = '×';
+const REF_MISTAKE_RIGHT = '○';
 
 /* 例題に添える図。★ **`:::figure` と同じ class を使う**（`.ref-figure-img`）——
    「スライドから焼いた図は貼った紙」という見せ方を2通りに増やさない（REFBOOK_STYLE §2-5）。
@@ -6964,20 +6996,35 @@ class ReferenceBook {
     renderPlainTable(block) {
         const wrap = document.createElement('div');
         wrap.className = 'ref-table-wrap';
+        /* ⚠⚠ **手で書く表の見出しに「（N行）」を足さない**（v1584・ユーザーの指摘「(5行)はいらない」）。
+         *
+         * ★ 機械が組む3つの表（`renderStageTable` / `renderMechanismTable` / `renderDehydrationTable`）
+         *   が見出しに件数を出しているのは**「絞っていない」と名乗るため**（原則1・参照は全体像で渡す）——
+         *   行を選ぶ引数が無いので「系列の全件」「登録の全件」しか出せず、
+         *   件数はその約束を読み手が数えて確かめられる形にしたもの（`REF3`/`REF15` が同じ数を見張る）。
+         * ⛔ **手で書く表には名乗る約束が無い。** 行は原稿に書いたぶんがそのまま出るだけなので、
+         *   「（5行）」は **原稿の行数を読み手に見せているだけ** ＝ 画面の小さい字を1つ増やして何も言っていない。
+         * ⚠ だから消すのは**この器だけ**。機械が組む3つは触らない（あちらは消すと約束が消える）。 */
         if (block.caption) {
             const cap = document.createElement('div');
             cap.className = 'ref-cap';
-            cap.innerHTML = block.caption + '（' + block.rows.length + '行）';
+            cap.innerHTML = block.caption;
             wrap.appendChild(cap);
         }
         const t = document.createElement('table');
         t.className = 'ref-hand-table';
         /* ★ 列ごとの寄せ（設計書 §20-9。原稿の `align: center | … | right`）。
-           ⚠ **書かれていなければ何も足さない** —— 既定の見え方は style.css の持ちもので、
-              「既定はこれ」をここに書き写すと決めごとが2か所になる。
-           ⚠ 数が head と合わない align は**書式のほうで止まる**（1列ずれた寄せを出さない）。 */
+           ⚠ 数が head と合わない align は**書式のほうで止まる**（1列ずれた寄せを出さない）。
+           ★★ **数だけの列は既定で右へ寄せる**（v1584・設計書 §30-3）。
+              ⚠ これは「見え方の既定」ではなく**中身から決まる寄せ** —— 桁をそろえて縦に
+                 読めるようにするためで、style.css には書けない（中身を見ないと決まらない）。
+              ⚠⚠ **原稿の `align` が勝つ。**既定は「書かなかった列」の話で、書いたものは上書きしない。 */
         const align = (block.align || '').split(REF_CELL_SEP).map(s => s.trim());
-        const setAlign = (cell, i) => { if (align[i]) cell.style.textAlign = align[i]; };
+        const auto = refNumericColumns(block.rows, block.head.length);
+        const setAlign = (cell, i) => {
+            const v = align[i] || (auto[i] ? 'right' : '');
+            if (v) cell.style.textAlign = v;
+        };
         const thead = document.createElement('thead');
         const htr = document.createElement('tr');
         block.head.forEach((h, i) => {
@@ -7023,10 +7070,14 @@ class ReferenceBook {
      *
      * ⚠⚠ **急所は「誤りを本文と同じ字で出さない」こと。** 同じ字で2行並べると、
      *   **どちらが正しいかを読まないと分からない** ＝ 囲みを作った意味が消える。
-     *   ★ だから誤りの行は ✗ の札・沈めた色・**取り消し線**の3つで印を付け、
-     *     正しい行は ✓ と本文と同じ強さで出す（見た瞬間に上が誤りだと分かること）。
-     * ⚠ 取り消し線だけに頼らない —— 色を見分けられない人にも ✗ / ✓ の字が残る。
+     *   ★ だから誤りの行は **× の札**と沈めた色、正しい行は **○** と本文と同じ強さで出す
+     *     （見た瞬間に上が誤りだと分かること）。
+     * ⚠ 色だけに頼らない —— 色を見分けられない人にも **× / ○ の字**が残る。
      *   ★ 読み上げにも残るよう、札は `aria-hidden` にせず素の文字で置く。
+     * ⚠⚠ **取り消し線は掛けない**（v1584・設計書 §30-2）。★ この囲みは
+     *   **誤りのほうを読ませて「自分の考えだ」と気づかせる**器なので、
+     *   ⛔ 読みにくくしてはいけない（下付きの付いた式や漢字に線が重なる）。
+     *   ★ 学校の慣習の × が**字**の手がかりとして残るので、色だけの区別にはならない。
      *
      * ⚠⚠ **畳まない。**（発展の節は `<details>` に畳む。あちらは「読み飛ばしてよい」印だが、
      *   こちらは**いちばん読ませたい人が開かない**ので開いたまま置く・§28-2）。
@@ -7646,6 +7697,9 @@ if (typeof window !== 'undefined') {
     window.REF_MISTAKE_TAG = REF_MISTAKE_TAG;
     window.REF_MISTAKE_WRONG = REF_MISTAKE_WRONG;
     window.REF_MISTAKE_RIGHT = REF_MISTAKE_RIGHT;
+    /* ★ 「数だけの列」の判定（§30-3）。`REF27` が否定対照（単位つきの列を右へ寄せない）を
+       この口から見る ＝ 判定の綴りを検査に書き写さない */
+    window.refNumericColumns = refNumericColumns;
     window.gradeStereoPoints = gradeStereoPoints;
     window.stereoMarksOf = stereoMarksOf;
     window.stereoFoldLines = stereoFoldLines;

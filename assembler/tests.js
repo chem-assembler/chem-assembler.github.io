@@ -86,7 +86,7 @@
  * | IC  | 1〜3   | ★ **お題を選ぶ線**。1 は 2026-09-01 に**架け替えた** —— ユーザー判断でアルデヒド C₇・カルボン酸 C₇ をお題に足した結果、**「腕がペンチルに収まる」は1件も落とさなくなった**（実測: `FG_MAX_CARBON` の内側の全域で「上限20 を通るのに 腕>5」はその2件だけ）ので**門番から外し**、いま 1 が見張るのは **お題 = 「2〜20種 ＋ 名前が出そろう ＋ 不飽和度1」を通るものの全部**（集合ごと突き合わせ・落ちたのはエステル C₇ の45種だけ・腕の線を門番に戻すとお題が2件減ることを実測・ギ酸エステルのアシル側は 0 と数える）。`functionalArmCarbons` は**測る道具として残す**・2 が **C₇ に足した名前を1件ずつ名指し**（件数では見ない。位置番号を1つ間違えた名前も赤くする）・**3 は数え落としの門番**＝ 種と腕の道は**カルボニル炭素が環に載った分子を作れない**（C₆H₁₀O のケトンに**シクロヘキサノンが入らない**）ので、**お題は全部が不飽和度1**（飽和形）であること。⚠ 腕がペンチル以内でも21種以上になる**不飽和の式は13件ある**ので、母数を数え直す人は必ずここへ来る。⚠ **腕の線を列挙の門番 `FG_ARM_MAX` に下ろすと黙って数え落とす**（エステル C₇ が 45→44種）—— 門番から外した今も同じ |
  * | ID  | 1〜11  | 1〜9 は**化合物 id と URL の受け口**（compounds / stages）。⚠ **10〜11 は別の話**（発注が接頭辞 `ID` を指定したが 1〜9 が使用済みだったため続き番号にした）＝ ★ **C₇H₁₄O₂ のエステル45種の名前**（ユーザー判断 D-C3・2026-09-01「名無し39件にも名前を足す」）。10 が **45件を1つずつ名指し**（件数では見ない。⚠ 名前を足しても**出題には入らない**ことも見る ＝ 45種 > 上限20）・**11 は同点主鎖の規則**＝ `iupacAlkylName`（アルキル基側）も `iupacName`（アルカン側）と同じく「置換基数が最多」を先に見る（1979 A-2.6(a)／2013 P-46.1(k)）。★ 2026-09-02 まで抜けていて **C₆ のアルキル基1つで名前が割れていた**（`1-イソプロピルプロピル` → 正しくは `1-エチル-2-メチルプロピル`）。それまでは誤ったほうを凍結していたが、直して架け替えた。★否定対照 = **C₃〜C₅ では起こりえない**（同点の最長鎖で枝の数が違うものが0件）＝ アルキル基の書き出し練習（`carbonCounts=[3,4,5]`）には届かない。影響範囲の名指しは `AK10`・接頭辞／エーテルへの波及は `AK11` |
  * | IH  | 1〜4   | 種類数を伏せた出題と分類つきのお題（v1489）。1 が「数を出さない4か所と、移った先（ヒント段1・答え合わせ）」・2 が分類つきのお題13件・3 は否定対照（「全部列挙してから捨てる」道では C₇H₁₄O₂ が1件も出せない）・**4 は引き金**＝ C₇ の4件が落ちる／通る理由が変わったら赤くする（2026-09-01 に一度引かれ、物差しを「名前が足りない」から「腕がペンチルを超える」へ架け替えた） |
- * | IN  | 1〜13  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
+ * | IN  | 1〜19  | 命名の確認（主鎖と番号が名前と同じ計算から出ていること。**16〜17 はカルボニル（v1576・§12）・18〜19 はエステルと二酸（v1582・§13）**＝ 偶数が陽性・奇数が★否定対照。IN2 は否定対照・IN3 は門番・IN4 は画面の2経路・IN5 は断り文の言い分け・IN6 は否定対照・IN7 は番号が炭素の丸に収まっている実測（v1371 で「自動水素と重ならない」から書き換え）・IN8 は否定対照・IN9 は2桁 C₁₀。**10〜13 は名称の説明**＝ 10 が「部品を繋ぐと名前に戻る」・11 が「部品と図の対応は mainChain/locants からだけ」・12 が「dirReason を足しても向きは不変」・13 は否定対照＝ dirReason が出そろう／門番 N-4 を緩めると赤。**14〜15 は複合置換基の括弧**＝ 14 が「`2-(クロロメチル)プロパン` が組み立つ・基の中の位置番号が漏れない」・15 は否定対照＝ 壊れた名前が1つも残らない／範囲外（ビス・入れ子）は null／ライブラリの名前は不変） |
  * | ION | 1〜3   | ★ **電荷**（DESIGN_ion_layer.md I-3・§3-3）。電荷は `maxValencyOf` 1か所で価標に効く（D-I12）。1 が設計書 §3-3 の表そのもの（双性 ≠ 中性・-NH₃⁺ に H 3・Cl⁻ の粒に H 0・ジアゾニウム N⁺ の4本が通る）と**既存データに電荷が 0 件**であること（`ION_CHARGED_ENTRIES` に名前で列挙）。**否定対照は EL3(4)**＝電荷の無い C-N≡N は弾いたまま。2 が正準コードのラベル（N(4) と N⁺(4) が割れる・`verifyMolecule` も割れる・不斉判定が電荷を見る）。3 が官能基の型（ammonium / carboxylate_ion / diazonium）と `iupacName` の門番＝ CH₃O⁻ を「メタノール」と名乗らない・アニリン塩酸塩の N⁺ に `amine_hcl` が二度かからない |
  * | IP  | 4〜5・7〜8・10 | 異性体の書き出し練習（本体）。**1〜3・9 は W1 で・6 は W2 で IW へ移した**（欠番にして再利用しない）。IP10 は否定対照（系統分類が原子の作成順で変わらない） |
  * | IS  | 1〜5   | 書き出し練習の門番（重い分子式の断り方）＋テスト台帳の自己点検。**3〜5 は「木しか作れない式」の枝刈りと C₇H₁₆ のお題**（v1485・ユーザー要望「C₇H₁₆ の練習がしたい」2026-08-31）。3 が列挙器（`enumerationIsTreeOnly` の言い分け・C₇H₁₆ が打ち切られず9種そろう・**9種を名前で名指し**）・**4 は否定対照**＝ 枝刈りを1つも持たない素朴な列挙をその場で書いて突き合わせる（数の表の書き写し間違いごと捕まえる）・5 が画面（お題として並ぶ・入力欄からも開く・9種に名前が付く。**否定対照は「重原子7個でも木でなければ断る」**＝ C₇H₁₄・C₆H₁₅N・C₆H₁₄S が数える前に断られる） |
@@ -5244,6 +5244,21 @@
             'チオフェンが五員環・二重結合2本になっていない');
     });
 
+    /**
+     * 登録名 `nm` が系統名 `sys` を「含んでいる」か（null は可）。v1582 でエステル・二酸が名乗るようになり、
+     * 登録名は「酸の慣用名＋アルキル基」（酢酸エチル・ギ酸プロピル・ラウリン酸メチル）が多いので、
+     * 教科書の範囲の酸の慣用名 → 系統名（6つ＋二酸2つ）と アミル → ペンチル を読み替えてから照らす。
+     * ⚠ ここは**照合の物差し**で、アプリの名前づけには関与しない（表を増やすときは登録名の側を見ること）
+     */
+    const LB_ACID_TRIVIAL = [['ギ酸', 'メタン酸'], ['酢酸', 'エタン酸'], ['プロピオン酸', 'プロパン酸'], ['酪酸', 'ブタン酸'],
+        ['吉草酸', 'ペンタン酸'], ['ラウリン酸', 'ドデカン酸'], ['シュウ酸', 'エタン二酸'], ['アジピン酸', 'ヘキサン二酸']];
+    const lbSysOk = (nm, sys) => {
+        if (sys === null) return true;
+        if (nm.indexOf(sys) >= 0) return true;
+        const read = LB_ACID_TRIVIAL.reduce((s, [t, x]) => s.replace(t, x), nm).replace('イソアミル', 'イソペンチル').replace('アミル', 'ペンチル');
+        return read.indexOf(sys) >= 0;
+    };
+
     test('LB12: 名称ライブラリ第4弾A（鎖状の C=O。エステル・カルボン酸・アルデヒド・ケトン）', async (c) => {
         const g = c.game, W = c.W;
         const targetOf = (nm) => {
@@ -5285,7 +5300,7 @@
             const mol = targetOf(nm);
             assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
             const sys = W.iupacName(mol);
-            assert(sys === null || nm.indexOf(sys) >= 0,
+            assert(lbSysOk(nm, sys),
                 `${nm} を iupacName が「${sys}」と命名した（登録の要否を見直すこと）`);
         });
         // 入試の定番: C5H10O2 のエステル9種がそろい、**構造がすべて違う**
@@ -5422,7 +5437,8 @@
         names.forEach(nm => {
             const mol = targetOf(nm);
             assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
-            assert(W.iupacName(mol) === null,
+            // v1582: ラウリン酸メチル（エステル）は系統名 ドデカン酸メチル が出る。酸の慣用名を読み替えて照らす
+            assert(lbSysOk(nm, W.iupacName(mol)),
                 `${nm} を iupacName が「${W.iupacName(mol)}」と命名した（登録の要否を見直すこと）`);
         });
         // 酸の強さの比較で並べる酢酸のハロゲン置換体は、構造がすべて違う
@@ -5552,7 +5568,7 @@
             assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
             // v1576 以降: C=O が1つだけの鎖状カルボニルは系統名が出る。登録名がそれを含む（慣用名の併記）なら可
             const sys = W.iupacName(mol);
-            assert(sys === null || nm.indexOf(sys) >= 0,
+            assert(lbSysOk(nm, sys),
                 `${nm} を iupacName が「${sys}」と命名した（登録の要否を見直すこと）`);
         });
         // C₆H₈O₂ のシクロヘキサンジオン3種が分子式そろい・構造は別
@@ -5770,7 +5786,7 @@
             const mol = targetOf(nm);
             assert(g.lookupCompoundName(mol) === nm, `${nm} が正しく命名されない`);
             const sys = W.iupacName(mol);
-            assert(sys === null || nm.indexOf(sys) >= 0,
+            assert(lbSysOk(nm, sys),
                 `${nm} を iupacName が「${sys}」と命名した（登録の要否を見直すこと）`);
         });
         // C₆H₁₂O のアルデヒド（既出のヘキサナールを含む）が分子式そろい・構造は全部別。
@@ -6462,9 +6478,10 @@
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'ベンゼン'))) === null, '芳香環に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === 'エチルアミン').target })) === null,
             'ヘテロ原子（N）を含む分子に系統名を付けた');
-        // ⚠ v1576: ケトン・アルデヒド・カルボン酸は名乗るようになった（IN16）。C=O の否定対照はエステルで取る
-        assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '酢酸メチル').target })) === null,
-            'エステル（C=O-O-C）を含む分子に系統名を付けた');
+        // ⚠ v1576: ケトン・アルデヒド・カルボン酸は名乗るようになった（IN16）。v1582: エステル・二酸も（IN18）。
+        //   C=O の否定対照は酸無水物で取る
+        assert(W.iupacName(g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === '無水酢酸').target })) === null,
+            '酸無水物（C=O-O-C=O）を含む分子に系統名を付けた');
         assert(W.iupacName(g.createTargetFromData(W.STAGES.find(s => s.name === 'アセトアルデヒド'))) === 'エタナール',
             'アセトアルデヒドの系統名（エタナール）が出ない');
         // (5) 統合: lookupCompoundName がライブラリ外のアルカン（オクタン）を系統名で返す
@@ -6707,13 +6724,13 @@
         c.reset();
         g.setMode('free');
         try {
-            // 環・エステル・複数分子・エーテル。どれも `iupacNameDetail` が
+            // 環・酸無水物・複数分子・エーテル。どれも `iupacNameDetail` が
             // **番号を返さない**もので、門番1行だけで自動的に番号なしになる
-            // （⚠ v1576 でケトン・アルデヒド・カルボン酸は出るようになったので、C=O の否定対照はエステル）
+            // （⚠ v1576 でケトン・アルデヒド・カルボン酸、v1582 でエステル・二酸は出るようになったので、C=O の否定対照は酸無水物）
             const CASES = [
                 ['シクロブタン', 'ring'],
                 ['ベンゼン', 'ring'],
-                ['酢酸メチル', 'carbonyl'],
+                ['無水酢酸', 'carbonyl'],
                 ['ジエチルエーテル', 'ether']
             ];
             CASES.forEach(([nm, kind]) => {
@@ -7116,7 +7133,7 @@
             //   キャンバス側は IN3 が「番号テキストが0個」で見張っているが、標準図は別の関数なので
             //   別に見ないと、答え合わせの図だけが「未対応でも最長鎖くらい出しておこう」に戻せてしまう
             [['シクロブタン', '環'], ['ベンゼン', '芳香環'],
-             ['酢酸メチル', 'エステル'], ['ジエチルエーテル', 'エーテル']].forEach(([nm, why]) => {
+             ['無水酢酸', '酸無水物'], ['ジエチルエーテル', 'エーテル']].forEach(([nm, why]) => {
                 g.userMolecule = new W.Molecule();
                 g.summonMolecule(nm);
                 assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
@@ -7198,8 +7215,8 @@
         summon('ジエチルエーテル'); shot('ether');
         // ④ 環
         summon('シクロブタン'); shot('ring');
-        // ⑤ 環でない未対応（エステル。⚠ v1576 でアセトンは出るようになった）
-        summon('酢酸メチル'); shot('unsupported');
+        // ⑤ 環でない未対応（酸無水物。⚠ v1576 でアセトン、v1582 で酢酸メチルは出るようになった）
+        summon('無水酢酸'); shot('unsupported');
         // ⑥ 複数分子
         g.userMolecule = new W.Molecule();
         g.summonMolecule('エタノール'); g.summonMolecule('エタノール'); g.updateDrawing();
@@ -7889,7 +7906,7 @@
         // (c) 門番 N-4 は緩めていない ＝ 名前が出ないものには**説明が0文字**
         g.setMode('free');
         try {
-            ['シクロブタン', 'ベンゼン', '酢酸メチル'].forEach(nm => {
+            ['シクロブタン', 'ベンゼン', '無水酢酸'].forEach(nm => {
                 g.userMolecule = new W.Molecule();
                 g.summonMolecule(nm);
                 assert(g.userMolecule.atoms.length > 0, `${nm} を呼び出せない（検査が素通りする）`);
@@ -8339,7 +8356,10 @@
             const n = W.iupacName(g.createTargetFromData({ target: e.target }));
             if (!n) return;
             libNamed++;
-            if (n.indexOf('(') >= 0) { libParen++; fails.push(`ライブラリに括弧つき: ${e.name}＝${n}`); }
+            // ⚠ v1582: エステルのアルキル基が複合置換基のときは**登録名も同じ括弧**を持つ（`ギ酸(1,1-ジメチルプロピル)`）。
+            //   その括弧は「この直しがライブラリに届いた」印ではなく登録名の写しなので、登録名に同じ括弧があるものだけ通す
+            const paren = (n.match(/\([^)]*\)/g) || []);
+            if (paren.some(p => e.name.indexOf(p) < 0)) { libParen++; fails.push(`ライブラリに括弧つき: ${e.name}＝${n}`); }
             if (IN14_BROKEN.test(n)) { libBroken++; fails.push(`ライブラリに壊れた名前: ${e.name}＝${n}`); }
         });
         assert(libEntries >= 1000, `ライブラリを ${libEntries} 件しか見ていない（1059件のはず）`);
@@ -8492,9 +8512,10 @@
     test('IN17: ★否定対照 — 範囲外の C=O は従来どおり null／既存の名前は不変／新しい名前は登録名と食い違わない', async (c) => {
         const g = c.game, W = c.W;
         // (a) この便で扱わないもの（DESIGN_iupac_check.md §12 の境界）。1つでも名乗ったら赤
+        //     ⚠ v1582: エステルと二酸は名乗るようになった（IN18）ので、その2件は IN18 の陽性へ移した
         const OUT = [
-            ['酢酸メチル', 'エステル'], ['アセトアミド', 'アミド'], ['無水酢酸', '酸無水物'],
-            ['コハク酸（ブタン二酸）', '二酸'], ['2,3-ブタンジオン（ジアセチル）', 'ジケトン'],
+            ['アセトアミド', 'アミド'], ['無水酢酸', '酸無水物'],
+            ['2,3-ブタンジオン（ジアセチル）', 'ジケトン'],
             ['グリオキサール', 'ジアルデヒド'], ['乳酸', 'ヒドロキシ酸'], ['ピルビン酸', 'ケト酸'],
             ['グリオキシル酸', 'アルデヒド酸'], ['アクリル酸', '不飽和カルボン酸'],
             ['クロトンアルデヒド（2-ブテナール）', '不飽和アルデヒド'], ['メチルビニルケトン（3-ブテン-2-オン）', '不飽和ケトン'],
@@ -8516,28 +8537,291 @@
             assert(got === want, `${lib} の系統名が「${got}」になった（「${want}」のはず）`);
         });
         // (c) ライブラリ全件: 名前が出た件数の内訳を凍結する。C=O を持たないものは v1572 と同じ 153 件、
-        //     新しく出たのは C=O を持つ 101 件（dump-canonical.js の前後比較と同じ数）。
-        //     ★ 新しい名前は**登録名の中に系統名がある**か、慣用名だけの 9 件（手で照合済み）のどれか
+        //     v1576 で出たのは C=O を持つ 101 件、v1582 でエステル・二酸の 98 件（dump-canonical.js の前後比較と同じ数）。
+        //     ★ 新しい名前は**登録名の中に系統名がある**か、慣用名だけの 9 件（手で照合済み）のどれか。
+        //     エステル・二酸は「酸の慣用名＋アルキル基」の登録が多い（酢酸エチル）ので、酸の慣用名 → 系統名の
+        //     読み替え（`lbSysOk`。LB 系と同じ物差し）で照らす
         const TRIVIAL = { 'ホルムアルデヒド': 'メタナール', 'アセトアルデヒド': 'エタナール', 'アセトン': 'プロパノン',
             'ギ酸': 'メタン酸', '酢酸': 'エタン酸', 'プロピオン酸': 'プロパン酸',
             'エチルメチルケトン（ブタノン）': '2-ブタノン', 'ラウリン酸': 'ドデカン酸' };
-        const CO = new Set(['ketone', 'aldehyde', 'carboxyl']);
-        let coNamed = 0, otherNamed = 0;
+        const CO = new Set(['ketone', 'aldehyde', 'carboxyl', 'ester']);
+        let coNamed = 0, esterNamed = 0, dioicNamed = 0, otherNamed = 0;
         const bad = [];
         [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
             if (!e.target) return;
             const m = g.createTargetFromData({ target: e.target });
-            const n = W.iupacName(m);
-            if (!n) return;
+            const d = W.iupacNameDetail(m);
+            if (!d) return;
+            const n = d.name;
             const types = W.findFunctionalGroups(m).map(x => x.type);
             if (!types.some(t => CO.has(t))) { otherNamed++; return; }
-            coNamed++;
-            if (types.filter(t => CO.has(t)).length !== 1) bad.push(`${e.name}: C=O が2つ以上なのに名乗った（${n}）`);
-            if (e.name.indexOf(n) < 0 && TRIVIAL[e.name] !== n) bad.push(`${e.name} ＝ ${n}（登録名と食い違う）`);
+            const co = types.filter(t => CO.has(t));
+            if (co.length === 2 && co.every(t => t === 'carboxyl')) {
+                dioicNamed++;
+                if (d.locants.coKind !== 'dioic' || !/二酸$/.test(n)) bad.push(`${e.name}: 二酸なのに coKind=${d.locants.coKind}（${n}）`);
+            } else if (co.length === 1 && co[0] === 'ester') {
+                esterNamed++;
+                if (d.locants.coKind !== 'oate' || !d.groups || d.groups.length !== 1) bad.push(`${e.name}: エステルなのに coKind=${d.locants.coKind}／groups が1つでない（${n}）`);
+            } else {
+                coNamed++;
+                if (co.length !== 1) bad.push(`${e.name}: C=O が2つ以上なのに名乗った（${n}）`);
+            }
+            if (TRIVIAL[e.name] !== n && !lbSysOk(e.name, n)) bad.push(`${e.name} ＝ ${n}（登録名と食い違う）`);
         });
         assert(bad.length === 0, `登録名と食い違う: ${bad.slice(0, 6).join(' / ')}（計${bad.length}件）`);
         assert(otherNamed >= 153, `C=O を持たないもので名前が出たのが ${otherNamed} 件（153 件以上のはず・名前が消えている）`);
         assert(coNamed >= 101, `C=O を持つもので名前が出たのが ${coNamed} 件（101 件以上のはず）`);
+        assert(esterNamed >= 86 && dioicNamed >= 12, `エステル ${esterNamed} 件・二酸 ${dioicNamed} 件（86／12 件以上のはず・v1582 の実測は 98 行）`);
+    });
+
+    /* ===== IN18〜IN19: エステルと二酸の系統名（v1582・DESIGN_iupac_check.md §13）=====
+     *
+     * ユーザー決定（2026-09-17）「6. 広げる」→ エステルと二酸を先に。
+     * エステル ＝ 酸の名前＋アルコール側のアルキル基（酢酸エチル ＝ エタン酸エチル）。番号は酸の部分だけ（C=O の炭素が C1）、
+     * アルキル基は桃色の帯と基の名前で「数えない側」を示す。二酸 ＝ ブタン二酸（両端が −COOH。位置番号は書かない）。
+     * IN18 が陽性（名前・主鎖・基・部品・画面・標準図）、IN19 が★否定対照（境界は null のまま／既存の名前は不変／
+     * アルキル基の炭素に番号が付かない）。
+     */
+
+    test('IN18: エステル・二酸 — 名前・主鎖（酸の部分だけ）・アルキル基・部品・声掛け・標準図', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        c.reset();
+        g.setMode('free');
+        // (a) 名前と主鎖。[登録名, 系統名, 酸の主鎖の炭素数, coKind, アルキル基の名前（二酸は null）]
+        const CASES = [
+            ['酢酸エチル', 'エタン酸エチル', 2, 'oate', 'エチル'],
+            ['ギ酸メチル', 'メタン酸メチル', 1, 'oate', 'メチル'],
+            ['プロピオン酸メチル', 'プロパン酸メチル', 3, 'oate', 'メチル'],
+            ['イソ酪酸エチル（2-メチルプロパン酸エチル）', '2-メチルプロパン酸エチル', 3, 'oate', 'エチル'],
+            ['酢酸イソアミル（酢酸イソペンチル）', 'エタン酸イソペンチル', 2, 'oate', 'イソペンチル'],
+            ['ギ酸tert-ブチル', 'メタン酸tert-ブチル', 1, 'oate', 'tert-ブチル'],
+            ['ギ酸(1,1-ジメチルプロピル)', 'メタン酸(1,1-ジメチルプロピル)', 1, 'oate', '1,1-ジメチルプロピル'],
+            ['3,3-ジメチルブタン酸メチル', '3,3-ジメチルブタン酸メチル', 4, 'oate', 'メチル'],
+            ['ラウリン酸メチル', 'ドデカン酸メチル', 12, 'oate', 'メチル'],
+            ['コハク酸（ブタン二酸）', 'ブタン二酸', 4, 'dioic', null],
+            ['シュウ酸', 'エタン二酸', 2, 'dioic', null],
+            ['マロン酸（プロパン二酸）', 'プロパン二酸', 3, 'dioic', null],
+            ['アジピン酸', 'ヘキサン二酸', 6, 'dioic', null],
+            ['メチルマロン酸（2-メチルプロパン二酸）', '2-メチルプロパン二酸', 3, 'dioic', null],
+            ['セバシン酸（デカン二酸）', 'デカン二酸', 10, 'dioic', null]
+        ];
+        CASES.forEach(([lib, want, n, kind, alkyl]) => {
+            const m = inLibMol(c, lib);
+            const d = W.iupacNameDetail(m);
+            assert(d && d.name === want, `${lib}: 系統名が「${d && d.name}」（「${want}」のはず）`);
+            assert(d.kind === 'chain' && d.mainChain.length === n, `${want}: 主鎖の炭素数が ${d.mainChain.length}（${n} のはず）`);
+            assert(d.locants.coKind === kind, `${want}: coKind が ${d.locants.coKind}`);
+            assert(d.nameParts.map(p => p.text).join('') === want, `${want}: かけらを繋いでも名前に戻らない`);
+            const coC = m.atoms.filter(a => a.element === 'C' && m.getNeighbors(a.id).some(x => x.atom.element === 'O' && x.type === 2)).map(a => a.id);
+            const carbons = m.atoms.filter(a => a.element === 'C').map(a => a.id);
+            if (kind === 'oate') {
+                // 酸の部分: C=O の炭素が C1。アルコール側: groups[0] の炭素で、主鎖と合わせて全炭素になる（重なりなし）
+                assert(coC.length === 1 && d.mainChain[0] === coC[0], `${want}: C=O の炭素が C1 でない`);
+                assert(d.groups && d.groups.length === 1 && d.groups[0].name === alkyl, `${want}: アルコール側の基が「${d.groups && d.groups[0] && d.groups[0].name}」（${alkyl} のはず）`);
+                // 酸の部分（C1 から C-C 結合で届く炭素。主鎖＋枝）とアルキル基で全炭素を1回ずつ覆う
+                const gset = new Set(d.groups[0].ids), cset = new Set(d.mainChain);
+                const acid = new Set([coC[0]]), st = [coC[0]];
+                while (st.length) { const x = st.pop(); m.getNeighbors(x).forEach(nb => { if (nb.atom.element === 'C' && !acid.has(nb.atom.id)) { acid.add(nb.atom.id); st.push(nb.atom.id); } }); }
+                assert(d.mainChain.every(id => acid.has(id)), `${want}: 主鎖に酸の部分でない炭素がある`);
+                assert(carbons.every(id => gset.has(id) !== acid.has(id)), `${want}: 酸の部分とアルキル基が全炭素を1回ずつ覆っていない`);
+                assert(!d.mainChain.some(id => gset.has(id)) && cset.size === d.mainChain.length, `${want}: 主鎖にアルキル基の炭素が入った`);
+                assert(d.groups[0].mainChain[0] === d.groups[0].rootId && gset.has(d.groups[0].rootId), `${want}: 基の付け根が基の C1 でない`);
+                // 付け根は −O− に付いている（その O は C=O の炭素にも付く）
+                const oNb = m.getNeighbors(d.groups[0].rootId).filter(x => x.atom.element === 'O').map(x => x.atom.id);
+                assert(oNb.length === 1 && oNb[0] === d.groups[0].oId && m.getNeighbors(oNb[0]).some(x => x.atom.id === coC[0]),
+                    `${want}: 付け根の O がエステルの −O− でない`);
+                const last = d.nameParts[d.nameParts.length - 1];
+                assert(last.role === 'ester-alkyl' && last.label === alkyl && last.groups.join() === '0', `${want}: 最後のかけらがアルキル基でない（${last.role}）`);
+                assert(d.nameParts.filter(p => p.role === 'ester-alkyl').length === 1, `${want}: アルキル基のかけらが2つ以上`);
+                assert(d.dirReason === (n === 1 ? 'tie' : 'carbonyl'), `${want}: dirReason=${d.dirReason}`);
+                assert(d.locants.co.join() === '1', `${want}: locants.co=${d.locants.co}`);
+            } else {
+                assert(coC.length === 2 && d.mainChain[0] !== d.mainChain[n - 1] &&
+                    coC.includes(d.mainChain[0]) && coC.includes(d.mainChain[n - 1]), `${want}: 両端が C=O の炭素でない`);
+                assert(d.groups === null, `${want}: 二酸に groups が付いた`);
+                assert(d.locants.co.join() === `1,${n}`, `${want}: locants.co=${d.locants.co}（1,${n} のはず）`);
+                assert(d.nameParts.filter(p => p.role === 'locant').length === 0, `${want}: 二酸に位置番号のかけらが出た`);
+                const suf = d.nameParts.find(p => p.role === 'suffix');
+                assert(suf && suf.text === '二酸' && suf.kind === 'dioic' && suf.locs.join() === `1,${n}`, `${want}: 接尾辞が「${suf && suf.text}」`);
+                assert(d.dirReason === 'tie' || d.dirReason === 'sub' || d.dirReason === 'alpha', `${want}: dirReason=${d.dirReason}`);
+            }
+            // 標準図: 番号は酸の主鎖そのもの（IP7 と同じ物差し）。エステルは全重原子が =O 以外 横一直線
+            const lay = W.ipNumberedLayout(m);
+            assert(lay && lay.order.join() === d.mainChain.join(), `${want}: 標準図の番号が mainChain と違う`);
+            if (kind === 'oate') {
+                // 酸の主鎖 → −O− → アルキル基の鎖 が同じ y（横一直線）。=O は上か下
+                const line = d.mainChain.slice().reverse().concat([d.groups[0].oId], d.groups[0].mainChain);
+                assert(line.every(id => lay.pos.get(id) && lay.pos.get(id).y === 0), `${want}: 標準図で 酸の鎖・−O−・アルキル基の鎖 が横一直線でない`);
+                const dblO = m.getNeighbors(coC[0]).find(x => x.atom.element === 'O' && x.type === 2).atom.id;
+                assert(lay.pos.get(dblO) && lay.pos.get(dblO).y !== 0, `${want}: 標準図で =O が鎖の上に乗っている`);
+                const xs = line.map(id => lay.pos.get(id).x);
+                assert(xs.every((x, i) => i === 0 || x > xs[i - 1]), `${want}: 標準図の並びが 酸 → −O− → アルキル基 の順でない`);
+            }
+        });
+
+        // (b) 画面。酢酸エチル: 帯は酸の鎖（橙）とアルキル基（桃）、番号は酸だけ、かけらは「エタン|酸|エチル」
+        const glow = () => [...D.querySelectorAll('#chem-svg circle.iupac-part-glow')].map(cc => {
+            const x = parseFloat(cc.getAttribute('cx')), y = parseFloat(cc.getAttribute('cy'));
+            const a = g.userMolecule.atoms.find(p => Math.hypot(p.x - x, p.y - y) < 0.6);
+            assert(a, '光っている円が原子の上に無い');
+            return a;
+        });
+        const note = () => D.getElementById('iupac-parts-note').textContent;
+        const btns = () => [...D.querySelectorAll('#iupac-parts .iupac-part')];
+        const pressed = () => btns().filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.textContent);
+        const open = (nm) => {
+            g.userMolecule = new W.Molecule(); g.summonMolecule(nm); g.updateDrawing();
+            const nt = g.iupacNumberingNotice();
+            assert(nt.ok && nt.code === 'chain', `${nm}: 断り文の code が ${nt.code}（chain のはず。v1577 までは unsupported）`);
+            g.setIupacNumbering(true); g.updateDrawing();
+            assert(g.iupacNumberingActive(), `${nm} で主鎖と番号が出ない`);
+            return W.iupacNameDetail(g.userMolecule);
+        };
+        try {
+            let d = open('酢酸エチル');
+            assert(btns().map(b => b.textContent).join('|') === 'エタン|酸|エチル', `かけらが「${btns().map(b => b.textContent).join('|')}」`);
+            assert(inCanvasNumbers(D).length === 2, `炭素番号が ${inCanvasNumbers(D).length} 個（酸の部分の2個のはず）`);
+            assert(/−COO− の C=O の炭素を 1 番にします/.test(note()), `押していないときの1行が「${note()}」`);
+            const texts = [...D.querySelectorAll('#chem-svg text')].map(t => (t.textContent || '').trim());
+            assert(texts.includes('エチル'), 'アルコール側の基の名前「エチル」が図に出ていない');
+            assert(texts.some(t => t.indexOf('慣用名: 酢酸エチル') >= 0), '慣用名（酢酸エチル）が添えられていない');
+            const bands = [...D.querySelectorAll('#chem-svg line.iupac-band')].map(l => l.getAttribute('stroke'));
+            assert(bands.length === 2 && new Set(bands).size === 2, `帯が ${bands.length} 本・色 ${new Set(bands).size} 種（酸の鎖1本＋アルキル基1本の2色のはず）`);
+            const plate = D.getElementById('canvas-mode-badge');
+            assert(plate.getAttribute('data-mode') === 'numbering' && plate.textContent.indexOf('エタン酸エチル') >= 0, `名札が「${plate.textContent}」`);
+            // 「酸」: C1 と =O と −O− が光り、枠1つ。声掛けは酸の部分の由来（慣用名はライブラリから）
+            btns().find(b => b.textContent === '酸').click();
+            assert(pressed().join('|') === '酸', `「酸」を押したのに ${pressed().join('|')} が押されている`);
+            assert(note() === 'ここまでがエタン酸（酢酸）からきた部分で、1番の炭素が −COO−（エステル結合）になっているね。', `「酸」の声掛けが「${note()}」`);
+            let lit = glow();
+            assert(lit.length === 3 && lit.filter(a => a.element === 'O').length === 2 && lit.some(a => a.id === d.mainChain[0]),
+                `「酸」で光るのが C1 と O 2つでない（${lit.map(a => a.element).join(',')}）`);
+            assert(D.querySelectorAll('#chem-svg rect.iupac-part-frame').length === 1, '−COO− の枠が1つでない');
+            btns().find(b => b.textContent === '酸').click();
+            assert(pressed().length === 0, 'もう一度押しても消えない');
+            // 「エチル」: アルキル基の炭素2つが光り、主鎖の炭素は光らない
+            btns().find(b => b.textContent === 'エチル').click();
+            assert(note() === 'O についたエチル基がアルコール側だね。', `「エチル」の声掛けが「${note()}」`);
+            lit = glow();
+            const cset = new Set(d.mainChain);
+            assert(lit.length === 2 && lit.every(a => a.element === 'C' && !cset.has(a.id)), `「エチル」で光るのがアルキル基の炭素2つでない（${lit.map(a => a.element).join(',')}）`);
+            assert(D.querySelectorAll('#chem-svg rect.iupac-part-frame').length === 1, 'アルキル基の枠が1つでない');
+            // 幹の2色は従来の割り方（エ｜タン）
+            const stemBtn = btns().find(b => b.classList.contains('iupac-part-stem'));
+            assert(stemBtn && stemBtn.querySelector('.stem-num').textContent === 'エ' && stemBtn.dataset.stage === 'sat', '幹が「エ｜タン」に割れていない');
+            g.setIupacNumbering(false);
+
+            // ギ酸メチル: 酸の炭素が1個。向きは無いが「数えない側」は言う
+            open('ギ酸メチル');
+            assert(btns().map(b => b.textContent).join('|') === 'メタン|酸|メチル', `ギ酸メチルのかけらが「${btns().map(b => b.textContent).join('|')}」`);
+            assert(inCanvasNumbers(D).length === 1, `ギ酸メチルの炭素番号が ${inCanvasNumbers(D).length} 個（1個のはず）`);
+            assert(/O についたアルキル基は数えません/.test(note()), `ギ酸メチルの既定の1行が「${note()}」`);
+            btns().find(b => b.textContent === '酸').click();
+            assert(note() === 'ここまでがメタン酸（ギ酸）からきた部分で、1番の炭素が −COO−（エステル結合）になっているね。', `ギ酸メチルの声掛けが「${note()}」`);
+            g.setIupacNumbering(false);
+
+            // 2,2-ジメチルプロパン酸メチル: 登録名が系統名そのもの ＝ 慣用名を添えない
+            open('2,2-ジメチルプロパン酸メチル');
+            btns().find(b => b.textContent === '酸').click();
+            assert(note() === 'ここまでが2,2-ジメチルプロパン酸からきた部分で、1番の炭素が −COO−（エステル結合）になっているね。', `声掛けが「${note()}」`);
+            g.setIupacNumbering(false);
+
+            // コハク酸: かけらは「ブタン|二酸」、番号は 1〜4、「二酸」で両端の C と O 4つが光り枠は2つ
+            d = open('コハク酸（ブタン二酸）');
+            assert(btns().map(b => b.textContent).join('|') === 'ブタン|二酸', `コハク酸のかけらが「${btns().map(b => b.textContent).join('|')}」`);
+            assert(inCanvasNumbers(D).length === 4, `コハク酸の炭素番号が ${inCanvasNumbers(D).length} 個`);
+            assert(/両端の炭素が −COOH なので、どちらから数えても同じ/.test(note()), `コハク酸の既定の1行が「${note()}」`);
+            btns().find(b => b.textContent === '二酸').click();
+            assert(note() === '1番と4番の炭素がカルボキシ基（−COOH）になっているね（両端なので位置番号は書かない）。', `コハク酸の声掛けが「${note()}」`);
+            lit = glow();
+            assert(lit.length === 6 && lit.filter(a => a.element === 'O').length === 4 && lit.some(a => a.id === d.mainChain[0]) && lit.some(a => a.id === d.mainChain[3]),
+                `「二酸」で光るのが両端の C と O 4つでない（${lit.map(a => a.element).join(',')}）`);
+            assert(D.querySelectorAll('#chem-svg rect.iupac-part-frame').length === 2, '−COOH の枠が2つでない');
+            assert(D.getElementById('canvas-mode-badge').textContent.indexOf('ブタン二酸') >= 0, '名札に系統名（ブタン二酸）が出ていない');
+            g.setIupacNumbering(false);
+
+            // シュウ酸: 慣用名だけの登録 ＝ 「（慣用名: シュウ酸）」が添えられる
+            open('シュウ酸');
+            assert([...D.querySelectorAll('#chem-svg text')].some(t => (t.textContent || '').indexOf('慣用名: シュウ酸') >= 0), 'シュウ酸の慣用名が添えられていない');
+            g.setIupacNumbering(false);
+        } finally {
+            g.setIupacNumbering(false);
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+        }
+    });
+
+    test('IN19: ★否定対照 — エステル・二酸の境界は null のまま／既存の名前は不変／アルキル基の炭素に番号は付かない', async (c) => {
+        const g = c.game, W = c.W;
+        // (a) この便でも扱わないもの（DESIGN_iupac_check.md §13-3）。1つでも名乗ったら赤
+        const OUT = [
+            ['無水酢酸', '酸無水物'], ['無水プロピオン酸', '酸無水物'], ['アセトアミド', 'アミド'],
+            ['シュウ酸ジメチル', '二酸のジエステル'], ['マロン酸ジエチル', '二酸のジエステル'],
+            ['アセト酢酸エチル（3-オキソブタン酸エチル）', 'ケトエステル'],
+            ['酢酸ビニル', 'C=C を持つエステル'], ['メタクリル酸メチル', 'C=C を持つエステル'], ['アクリル酸エチル', 'C=C を持つエステル'],
+            ['炭酸ジメチル', '炭酸エステル'], ['γ-ブチロラクトン（4-ブタノリド）', 'ラクトン（環）'],
+            ['安息香酸メチル', '芳香族エステル'], ['酢酸フェニル', 'フェニルエステル'], ['酢酸ベンジル', 'ベンジルエステル'],
+            ['マレイン酸', '不飽和二酸'], ['フマル酸', '不飽和二酸'], ['ブテン二酸（マレイン酸／フマル酸）', '不飽和二酸'],
+            ['酒石酸', 'ヒドロキシ二酸'], ['リンゴ酸', 'ヒドロキシ二酸'], ['クエン酸', 'ヒドロキシ三酸'],
+            ['オキサロ酢酸', 'ケト二酸'], ['グルタミン酸', 'アミノ二酸'], ['テレフタル酸', '芳香族二酸'],
+            ['パルミチン酸メチル', '幹の表に無い炭素数（C16）'], ['トリステアリン（油脂・ステアリン酸のグリセリド）', '油脂'],
+            ['モノステアリン酸グリセリド（油脂のけん化の途中）', 'ヒドロキシ基を持つエステル'], ['ポリ酢酸ビニル', '高分子（R）']
+        ];
+        OUT.forEach(([nm, why]) => {
+            const n = W.iupacName(inLibMol(c, nm));
+            assert(n === null, `${nm}（${why}）に名前が付いた: ${n}（§13-3 の境界）`);
+        });
+        // (b) 手で作った境界。ライブラリに無い形も null のまま
+        const build = (els, bonds) => {
+            const m = new W.Molecule(), ids = [];
+            els.forEach((e, k) => ids.push(m.addAtom(e, 100 + (k % 6) * 42, 150 + Math.floor(k / 6) * 42).id));
+            bonds.forEach(([a, b, t]) => m.addBond(ids[a], ids[b], t || 1));
+            return m;
+        };
+        // 酢酸 2-ヒドロキシエチル（アルキル基側に -OH）: C C(=O) O C C O
+        assert(W.iupacName(build(['C', 'C', 'O', 'O', 'C', 'C', 'O'], [[0, 1], [1, 2, 2], [1, 3], [3, 4], [4, 5], [5, 6]])) === null,
+            'アルコール側に -OH を持つエステルに名前が付いた');
+        // 酢酸 2-クロロエチル（アルキル基側にハロゲン）
+        assert(W.iupacName(build(['C', 'C', 'O', 'O', 'C', 'C', 'Cl'], [[0, 1], [1, 2, 2], [1, 3], [3, 4], [4, 5], [5, 6]])) === null,
+            'アルコール側に Cl を持つエステルに名前が付いた');
+        // コハク酸モノメチル（-COOH と -COO- の同居）: O=C(O)-C-C-C(=O)-O-C
+        assert(W.iupacName(build(['O', 'C', 'O', 'C', 'C', 'C', 'O', 'O', 'C'], [[0, 1, 2], [1, 2], [1, 3], [3, 4], [4, 5], [5, 6, 2], [5, 7], [7, 8]])) === null,
+            '-COOH と -COO- が同居する分子に名前が付いた');
+        // 対照: 同じ部品で作った酢酸エチル・コハク酸は名乗る（＝ (b) が「いつでも null」の物差しでない）
+        assert(W.iupacName(build(['C', 'C', 'O', 'O', 'C', 'C'], [[0, 1], [1, 2, 2], [1, 3], [3, 4], [4, 5]])) === 'エタン酸エチル', '手で作った酢酸エチルが名乗らない');
+        assert(W.iupacName(build(['O', 'C', 'O', 'C', 'C', 'C', 'O', 'O'], [[0, 1, 2], [1, 2], [1, 3], [3, 4], [4, 5], [5, 6, 2], [5, 7]])) === 'ブタン二酸', '手で作ったコハク酸が名乗らない');
+        // (c) 既存の名前は1バイトも変わらない（v1576 のカルボニル・アルコール・エーテル）
+        [['アセトン', 'プロパノン'], ['酪酸（ブタン酸）', 'ブタン酸'], ['ブタナール（ブチルアルデヒド）', 'ブタナール'],
+         ['3-メチル-2-ブタノン（メチルイソプロピルケトン）', '3-メチル-2-ブタノン'], ['ギ酸', 'メタン酸'], ['酢酸', 'エタン酸'],
+         ['エタノール', 'エタノール'], ['ジエチルエーテル', 'ジエチルエーテル'], ['エチレングリコール', '1,2-エタンジオール']
+        ].forEach(([lib, want]) => {
+            const got = W.iupacName(inLibMol(c, lib));
+            assert(got === want, `${lib} の系統名が「${got}」になった（「${want}」のはず）`);
+        });
+        // (d) ★ ライブラリのエステル全件で、アルキル基の炭素には番号が付かず（mainChain に入らず）、
+        //     置換基のかけら（'sub'）を押してもアルキル基の炭素は光らない ＝ 「数えない側」が守られている
+        let esters = 0;
+        [...W.STAGES, ...W.COMPOUNDS].forEach(e => {
+            if (!e.target) return;
+            const m = g.createTargetFromData({ target: e.target });
+            const d = W.iupacNameDetail(m);
+            if (!d || !d.locants || d.locants.coKind !== 'oate') return;
+            esters++;
+            const gset = new Set(d.groups[0].ids);
+            assert(!d.mainChain.some(id => gset.has(id)), `${e.name}: アルキル基の炭素に番号が付いた`);
+            const lay = W.ipNumberedLayout(m);
+            assert(lay && !lay.order.some(id => gset.has(id)), `${e.name}: 標準図でアルキル基の炭素に番号が付いた`);
+            const det = { kind: 'chain', mol: m, chain: d.mainChain, parts: d.nameParts, locants: d.locants, groups: d.groups };
+            d.nameParts.forEach(p => {
+                const lit = g.iupacPartAtoms(det, p);
+                if (p.role === 'ester-alkyl') {
+                    assert(lit.length === gset.size && lit.every(id => gset.has(id)), `${e.name}: アルキル基のかけらで光るのが基の炭素と一致しない`);
+                } else {
+                    assert(!lit.some(id => gset.has(id)), `${e.name}: 「${p.text}」でアルキル基の炭素が光る`);
+                }
+            });
+        });
+        assert(esters >= 86, `ライブラリのエステルが ${esters} 件しか名乗っていない（86 件以上のはず）`);
     });
 
     /* ===== SC. 幹の中の2色（発注書 C-1・v1413・ユーザー申し立て 2026-08-17）=====
@@ -16775,6 +17059,66 @@
             }
         } finally {
             rx._bendAvoid = undefined; rx._hChoice = undefined; rx._bigHAvoid = undefined;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    /* ===== RXH3: ニトロ基の還元 —— 回す途中の跡を避け、交差をほどく（v1584） =====
+     *
+     * ★ ユーザーの指摘（v1577 の残り）: 「**ニトロ基の還元の再生で、大きくした H の丸が
+     *   数コマ他の原子にかかる**」。⓵ 実測（直す前）: **5 コマ**重なっていて、内訳は2つ:
+     *
+     *   ⓵ **T=0.50〜0.55（置き直しの段）** … 環を 60° 回している**途中**に、
+     *     ニトロ基の O とその手が、呼んだ H₂ の H の丸を横切っていた（O に 4.3px）。
+     *     ⚠ 相手を置くのは「回し終わった図」で空きを探していたため ＝ **掃いた跡**を見ていなかった。
+     *   ⓵ **T≈1.7（握手の段）** … N に付く2つの H を「近いものから」組んでいたので、
+     *     遠いほうの H が **N を突き抜けて反対側へ回り込んで**いた（N の丸の中へ 8.5px）。
+     *
+     * ★ 直したのは3つ（`planEquation` の掃いた跡・`withMorphHydrogens` の 2-opt・
+     *   曲げを選ぶ物差しを実物に）。⚠ どれも**生成物は変えない**（見え方だけ）。
+     * ⚠⚠ **残り 1 コマは「手の線」**（同じ O へ向かうもう1つの H へ伸びた手に丸がかかる）。
+     *   ★ ここが見るのは **「原子の丸との重なりが 0」** —— ユーザーの指摘そのもの。
+     *   ⛔ 手の線まで 0 にする曲げは（10 通り × 2周 探しても）無い ＝ 数を上げて誤魔化さない。
+     */
+    test('RXH3: ニトロ基の還元は、環を回す途中も H の交差も避ける（原子との重なり 0・否定対照つき・v1584）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const names = ['ニトロベンゼン'], id = 'reduce_nitro';
+        /** 大きくした H の重なりを「原子の丸」と「手の線」に分けて数える */
+        const count = () => {
+            const ov = rx.bigHydrogenOverlaps(rxhRun(c, names, id).plan, 120);
+            return { atoms: ov.filter(o => !o.bond), all: ov };
+        };
+        try {
+            const now = count();
+            assert(now.atoms.length === 0,
+                `ニトロ基の還元で、大きくした H が原子の丸に ${now.atoms.length} コマ重なった`
+                + ` ${JSON.stringify(now.atoms.slice(0, 3))}`);
+            assert(now.all.length <= 1,
+                `手の線にかかるコマが ${now.all.length} コマに増えた（直した時点は 1 コマ）`
+                + ` ${JSON.stringify(now.all.slice(0, 3))}`);
+            /* ★ 反応そのものは変えていない（相手は H₂ 3分子・副生成物は水2分子） */
+            const eq = W.PARTNER_EQUATIONS[id];
+            assert(eq && eq.partners.indexOf('H2') >= 0, 'ニトロ基の還元が H₂ を呼ばなくなっている');
+
+            /* ── 否定対照①: 掃いた跡を避けないと、回している途中に原子の丸が重なる ── */
+            rx._sweepAvoid = false;
+            const noSweep = count();
+            rx._sweepAvoid = undefined;
+            assert(noSweep.atoms.length > 0,
+                '掃いた跡を避けるのをやめても原子の重なりが 0 ＝ この対策は何もしていない');
+            assert(noSweep.atoms.some(o => o.T < 1),
+                `掃いた跡の重なりが置き直しの段（T<1）に出ない ${JSON.stringify(noSweep.atoms.slice(0, 3))}`);
+
+            /* ── 否定対照②: 交差をほどかないと、重なるコマが増える ── */
+            rx._hSwap = false;
+            const noSwap = count();
+            rx._hSwap = undefined;
+            assert(noSwap.all.length > now.all.length,
+                `交差をほどくのをやめても重なりが増えない（${noSwap.all.length} コマ / ほどくと ${now.all.length} コマ）`);
+        } finally {
+            rx._sweepAvoid = undefined; rx._hSwap = undefined;
             g.userMolecule = new W.Molecule(); g.updateDrawing();
         }
     });
@@ -48196,8 +48540,8 @@
         const n2 = g.iupacNumberingNotice();
         assert(n2.code === 'ring' && !n2.ok,
             `★ 糖でない環の言い分けが変わっている（${n2.code}）—— 糖の枝が環ぜんぶを飲み込んでいる`);
-        // ⚠ v1576 で酢酸（カルボン酸）は出るようになったので、未対応の代表はエステル
-        load('酢酸メチル');
+        // ⚠ v1576 で酢酸（カルボン酸）、v1582 で酢酸メチル（エステル）は出るようになったので、未対応の代表は酸無水物
+        load('無水酢酸');
         assert(g.iupacNumberingNotice().code === 'unsupported',
             `★ 未対応の官能基の言い分けが変わっている（${g.iupacNumberingNotice().code}）`);
         // ---- ③ ★ 分子が2つあるときは糖でも出さない（'multi' の言い分けをそのまま通す）----
@@ -54230,7 +54574,9 @@
         }));
         assert(seen >= 1, ':::table の align を使っているページが1枚も無い（この検査が空回りしている）');
 
-        /* ★ 書かない表は**今までどおり**（既定の見え方を .md 側にも learn.js 側にも写していない） */
+        /* ★ 書かない表は**今までどおり**（既定の見え方を .md 側にも learn.js 側にも写していない）。
+           ⚠ v1584 で例外が1つできた（**数だけの列**は右へ寄る・§30-3 / `REF27` ②）ので、
+              ここの見本は**字の列だけ**にしてある ＝ 例外に当たらないことを見ている。 */
         const plain = book.renderBlock({
             kind: 'table', source: 'slides:見本 s1（手で組んでいる）',
             head: ['左', '右'], rows: ['あ | い']
@@ -54818,7 +55164,9 @@
      * ★ ここが見るのは5つ:
      *   ① ⚠⚠ **誤りの行を、本文と同じ字で出さない** —— この囲みを作った理由そのもの。
      *     同じ字で2行並べると、**どちらが正しいかを読まないと分からない。**
-     *     ★ 印は3つ重ねる（✗ の字・弱めた色・取り消し線）＝ **色を見分けられない人にも残る。**
+     *     ★ 印は2つ重ねる（**学校の慣習の ×／○ の字**・弱めた色）＝ **色を見分けられない人にも残る。**
+     *     ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— 誤りのほうを読ませる器なので、
+     *       下付きの付いた式や漢字に線を重ねて読みにくくしない。★ ここはその**否定対照**も見る。
      *   ② ⚠⚠ **発展と混ざらない** —— 発展＝範囲の外／誤解＝範囲の内で間違えやすい。
      *     ★ だから **畳まない**（`<details>` にしない）し、本文に「発展」と書いたら書式が赤くする。
      *   ③ **欄が2つあることが本体** —— `wrong` を書かずに済ませられない（＝ 誤解を言葉にさせる）。
@@ -54847,6 +55195,10 @@
             'よくある誤解の札の言葉が learn.js に無い（記号だけにしない約束）');
         assert(W.REF_MISTAKE_WRONG && W.REF_MISTAKE_RIGHT && W.REF_MISTAKE_WRONG !== W.REF_MISTAKE_RIGHT,
             '誤り／正しい形の印が同じ字になっている（色だけで分けると、色を見分けられない人に届かない）');
+        /* ⚠ **ここだけは字を書き写す。**学校の慣習（誤り ×／正しい ○）そのものが決めごとで、
+           ⛔ ✓ は「確認済み・やった」に読まれる（点検表の印）＝ 戻したら赤にする（§30-2） */
+        assert(W.REF_MISTAKE_WRONG === '×' && W.REF_MISTAKE_RIGHT === '○',
+            `誤解の印が学校の慣習（×／○）でない（いまは ${W.REF_MISTAKE_WRONG}／${W.REF_MISTAKE_RIGHT}）`);
 
         const FM = [
             '---', 'id: t', 'unit: alcohol', 'unitLabel: アルコールとカルボニル化合物', 'group: 見本',
@@ -54909,9 +55261,17 @@
                 `誤りの行が本文とまったく同じ字で出ている（${cWrong}）＝ どちらが正しいか読まないと分からない`);
             assert(cRight === cBody,
                 `正しい行が本文と違う字で出ている（本文 ${cBody} / 正しい行 ${cRight}）＝ 正しいほうを弱めない`);
+            /* ⚠⚠ **取り消し線を掛けない**（v1584・§30-2）。★ 代わりの手がかりは**字**（×／○）——
+               ⓵ 実測: 誤りの文には下付きの付いた式や漢字が入るので、線を重ねると読めなくなる。
+               ★ 「色だけが手がかり」になっていないことは、**色を使わない**この2つで見る:
+                 ⓵ 印の字が行の先頭に素の文字で居る（上の indexOf）
+                 ⓶ 誤りと正しい行で**字が違う**（上の REF_MISTAKE_WRONG !== RIGHT） */
             const deco = W.getComputedStyle(wrong.querySelector('.ref-mistake-body')).textDecorationLine;
-            assert(/line-through/.test(deco),
-                `誤りの文に取り消し線が効いていない（${deco}）＝ 色だけが手がかりになっている`);
+            assert(!/line-through/.test(deco),
+                `誤りの文に取り消し線が掛かっている（${deco}）＝ いちばん読ませたい文を読みにくくしている`);
+            /* ⚠ 印そのものにも線を掛けない（もとから掛けていない・退行の見張り） */
+            const markDeco = W.getComputedStyle(wrong.querySelector('.ref-mistake-mark')).textDecorationLine;
+            assert(!/line-through/.test(markDeco), `誤りの印に取り消し線が掛かっている（${markDeco}）`);
             /* ★ 強調（`**`）が生きている ＝ 行を丸ごと太字にしていない */
             assert(right.querySelector('b'), '正しい行の強調（**）が消えている（行ごと太字にすると急所が読めない）');
         } finally {
@@ -54942,11 +55302,117 @@
             `/reference/${id}/: 焼いたページのよくある誤解が ${doc.querySelectorAll('.ref-mistake').length} 個（原稿は ${want} 件・焼き直し忘れ？）`);
         assert((doc.body.textContent || '').indexOf(W.REF_MISTAKE_WRONG) >= 0
             && (doc.body.textContent || '').indexOf(W.REF_MISTAKE_RIGHT) >= 0,
-            `/reference/${id}/: 焼いた本文から ✗ / ✓ の字が消えている（色だけの手がかりになっている）`);
+            `/reference/${id}/: 焼いた本文から × / ○ の字が消えている（色だけの手がかりになっている）`);
         /* ⚠ 明るい地への読み替えが焼かれていること（暗い地の敷き rgba(0,0,0,.22) は明るい地で灰色の面になる） */
         assert(/\.ref-mistake\{[^}]*background:#/.test(doc.documentElement.outerHTML),
             `/reference/${id}/: よくある誤解の明るい地への読み替えが焼かれていない`);
         assert(true, `よくある誤解 ${found.length} 件（${found.map(m => m.at).join('・')}）`);
+    });
+
+    /* ===== REF27: 手で書く表の見出しと寄せ（設計書 §30-1 / §30-3・v1584） =====
+     *
+     * ★ ユーザーのメモ（合成繊維のページ・2026-09-17）:
+     *   「**(5行)はいらない**」「**数値の列は右寄せを既定にできないか**」
+     *
+     * ★ ここが見るのは3つ:
+     *   ① ⚠⚠ **手で書く表の見出しは原稿の `caption` と1文字も違わない** ——
+     *     機械が組む3つの表（系列・機構・対応表）が件数を出しているのは
+     *     **「絞っていない」と名乗るため**で、手で書く表には名乗る約束が無い（§30-1）。
+     *     ⚠ だから**機械が組む表からは消えていないこと**も一緒に見る（消すと約束が消える）。
+     *   ② ★ **数だけの列は既定で右へ寄る**（原稿に `align` が無いときだけ・§30-3）。
+     *     ⚠ 単位や語の付いた列は**寄せない**（桁がそろわないのに右へ張り付くと読みにくい）。
+     *   ③ ⚠⚠ **原稿の `align` が勝つ** —— 数の列に `center` と書いてあれば中央のまま
+     *     （既定は「書かなかったとき」の話で、書いたものを上書きしない）。
+     */
+    test('REF27: 手で書く表の見出しに行数を足さず、数だけの列は既定で右に寄る（原稿の align が勝つ）', async (c) => {
+        const W = c.W;
+        const book = W.referenceBook;
+        assert(book, 'referenceBook が居ない');
+        const cellsOf = t => [...t.querySelectorAll('tbody tr')].map(tr => [...tr.children]);
+
+        /* ── ① 見出しは caption そのまま（行数を足さない）── */
+        const cap = '合成繊維の分類';
+        const w1 = book.renderBlock({
+            kind: 'table', caption: cap, source: 'slides:見本 s1（手で組んでいる）',
+            head: ['繊維', '原料'], rows: ['ナイロン66 | アジピン酸', 'ビニロン | 酢酸ビニル', 'アクリル | アクリロニトリル']
+        });
+        const capEl = w1.querySelector('.ref-cap');
+        assert(capEl, '手で書く表の見出しが出ていない');
+        assert(capEl.textContent === cap,
+            `手で書く表の見出しが原稿の caption と違う（「${capEl.textContent}」・行数を足していないか）`);
+        assert(!/行）|件）/.test(capEl.textContent), '手で書く表の見出しに行数・件数が付いている');
+
+        /* ⚠ 機械が組む表からは消えていない（あちらの件数は「絞っていない」という名乗り）*/
+        const stageCap = book.renderBlock({
+            kind: 'stageTable', variant: 'carbon', series: 'アルカン（直鎖）',
+            source: 'stages:アルカン（直鎖）', caption: '直鎖アルカン'
+        }).querySelector('.ref-cap');
+        assert(stageCap && /（\d+行）$/.test(stageCap.textContent),
+            `系列から組む表の見出しから件数が消えている（「${stageCap && stageCap.textContent}」）`
+            + ' ＝「絞っていない」という名乗りが消えた');
+
+        /* ── ② 数だけの列は既定で右（ほかの列は今までどおり何も足さない）── */
+        const auto = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）',
+            head: ['名称', '分子量'], rows: ['メタン | 16', 'エタン | 30', 'プロパン | 44']
+        }).querySelector('table');
+        cellsOf(auto).forEach((tr, r) => {
+            assert(!tr[0].style.textAlign, `${r + 1}行目の字の列に寄せが付いた（${tr[0].style.textAlign}）`);
+            assert(tr[1].style.textAlign === 'right',
+                `${r + 1}行目の数の列が右に寄っていない（${tr[1].style.textAlign || '(指定なし)'}）`);
+        });
+        const autoTh = [...auto.querySelectorAll('thead th')];
+        assert(!autoTh[0].style.textAlign && autoTh[1].style.textAlign === 'right',
+            '数の列の見出しが数と同じ側に寄っていない');
+
+        /* ⚠ 否定対照: 単位や語の付いた列・数が1つだけの列は寄せない（判定の綴りは learn.js の1本） */
+        const numCols = W.refNumericColumns;
+        assert(typeof numCols === 'function', '「数だけの列」の判定が learn.js から見えない');
+        const cases = [
+            [['メタン | −161 ℃', 'エタン | 気体', 'プロパン | −42 ℃'], 2, [false, false], '単位と語の付いた列'],
+            [['メタン | 16', 'エタン | 気体'], 2, [false, false], '数が1つしかない列'],
+            [['1 | メタン', '2 | エタン', '3 | プロパン'], 2, [true, false], '先頭が数の列'],
+            [['16 | 1.5', '30 | 2', '44 | 2.5'], 2, [true, true], '小数の列'],
+            [['<b>16</b> | メタン', '<b>30</b> | エタン'], 2, [true, false], '強調の札が付いた数（本文の記法を通ったあと）']
+        ];
+        cases.forEach(([rows, n, want, what]) => {
+            const got = numCols(rows, n);
+            assert(JSON.stringify(got) === JSON.stringify(want),
+                `${what}: 数だけの列の判定が ${JSON.stringify(got)}（期待 ${JSON.stringify(want)}）`);
+        });
+        const mixed = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）',
+            head: ['名称', '沸点'], rows: ['メタン | −161 ℃', 'エタン | 気体', 'プロパン | −42 ℃']
+        }).querySelector('table');
+        cellsOf(mixed).forEach((tr, r) => assert(!tr[1].style.textAlign,
+            `${r + 1}行目: 単位の付いた列まで右に寄った（${tr[1].style.textAlign}）`));
+
+        /* ── ③ 原稿の align が勝つ ── */
+        const forced = book.renderBlock({
+            kind: 'table', source: 'slides:見本 s1（手で組んでいる）', align: 'left | center',
+            head: ['名称', '炭素数'], rows: ['メタン | 1', 'エタン | 2', 'プロパン | 3']
+        }).querySelector('table');
+        cellsOf(forced).forEach((tr, r) => assert(tr[1].style.textAlign === 'center',
+            `${r + 1}行目: 原稿が center と書いた数の列を既定が上書きした（${tr[1].style.textAlign}）`));
+
+        /* ★ 実データ: 見出しを持つ表すべてで caption と1文字も違わない（空回りしていない）*/
+        const pages = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
+        let hand = 0, captioned = 0;
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'table') return;
+            hand++;
+            if (!b.caption) return;
+            captioned++;
+            const el = book.renderBlock(b).querySelector('.ref-cap');
+            /* ⚠ `caption` は本文の記法（`**` や下付きの `~`）を通ってから入るので、
+                 素の字どうしで比べる（`<sub>` を剥いだ字が一致すれば足したものが無い） */
+            const raw = W.document.createElement('div');
+            raw.innerHTML = b.caption;
+            assert(el.textContent === raw.textContent,
+                `${p.id}: 手で書く表の見出しが caption と違う（「${el.textContent}」）`);
+        }));
+        assert(hand >= 10 && captioned >= 5,
+            `手で書く表が ${hand} 枚・うち見出しつき ${captioned} 枚（実データで空回りしている）`);
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====

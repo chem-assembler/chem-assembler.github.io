@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -850,7 +857,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例で見ます。酢酸 CH₃COOH とエタノール C₂H₅OH からは、<b>酢酸エチル CH₃COOC₂H₅</b> と水ができます。酢酸の −OH とエタノールの −H が抜けて、残りがエステル結合でつながった形です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/esterification.png" alt="カルボン酸とアルコールが脱水縮合してエステルと水になる反応の構造式。カルボン酸の OH とアルコールの H が橙色の枠で囲まれ、そこから矢印が右端の H₂O を指している" loading="lazy"><figcaption class="ref-figure-cap">とれるのは、<b>カルボン酸の −OH</b> と<b>アルコールの −H</b> です。向きを逆に覚えないでください。</figcaption></figure>
 <p class="ref-p"><b>「カルボン酸から OH、アルコールから H がとれる」は丸暗記してください。</b>反応の仕組みの上でそう決まっているもので、どちらの原子が水になったかを問う問題がよく登場します。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">エステル化でとれる水は、アルコールの −OH とカルボン酸の −H からできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">とれるのは<b>カルボン酸の −OH</b> と<b>アルコールの −H</b> です。</span></p><p class="ref-mistake-why">水がとれる反応は「両方から1個ずつ」としか覚えていないと、向きが半分の確率で入れ替わるためです。⚠ 酸素に印を付けた酢酸とエタノールを使うと、<b>アルコール側の酸素がエステルのほうに残る</b>ことが確かめられます。★ 「切れるのはカルボン酸の C−OH 結合」と1か所だけ覚えれば、向きは二度と迷いません。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">エステル化でとれる水は、アルコールの −OH とカルボン酸の −H からできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">とれるのは<b>カルボン酸の −OH</b> と<b>アルコールの −H</b> です。</span></p><p class="ref-mistake-why">水がとれる反応は「両方から1個ずつ」としか覚えていないと、向きが半分の確率で入れ替わるためです。⚠ 酸素に印を付けた酢酸とエタノールを使うと、<b>アルコール側の酸素がエステルのほうに残る</b>ことが確かめられます。★ 「切れるのはカルボン酸の C−OH 結合」と1か所だけ覚えれば、向きは二度と迷いません。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">反応するアルコール側の性質（級・沸点・ほかの反応）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">反応するカルボン酸側の性質（酸の強さ・二量体・各論）はこちら</a></p>
 <section class="ref-sec" id="ref-sec-break"><h4 class="ref-sec-h">加水分解とけん化 —— エステル結合を切る</h4><p class="ref-sec-lead">酸を使えばもとのカルボン酸とアルコールに戻りますが可逆。塩基を使うとカルボン酸は塩になり、最後まで進みます。</p></section>
@@ -859,7 +866,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">エステルに<b>水酸化ナトリウム水溶液</b>を加えて加熱すると、カルボン酸の塩とアルコールに分かれます。これを<b>けん化</b>といいます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−COO−R′ ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−COONa ＋ R′−OH</span></div><p class="ref-note">生じたカルボン酸がその場で中和されて塩になるので、逆反応が起こりません。だから最後まで進みます。</p></div>
 <p class="ref-p"><b>「加水分解は可逆、けん化は最後まで進む」と覚えましょう。</b>同じ「エステルを切る」操作でも、酸を使うか塩基を使うかで結果が変わります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">エステル結合をつくる／切る3本の反応（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">反応の名前</th><th style="text-align: left;">加えるもの</th><th style="text-align: left;">できるもの</th><th style="text-align: left;">逆にもどるか</th></tr></thead><tbody><tr><td style="text-align: left;">エステル化</td><td style="text-align: left;">カルボン酸とアルコールに濃硫酸を加えて加熱</td><td style="text-align: left;">エステル ＋ 水</td><td style="text-align: left;">もどる（可逆）。濃硫酸が水を取り除いて右へ寄せる</td></tr><tr><td style="text-align: left;">加水分解</td><td style="text-align: left;">エステルに水と希硫酸などの酸を加える</td><td style="text-align: left;">カルボン酸 ＋ アルコール</td><td style="text-align: left;">もどる（可逆）。だから完全には切れない</td></tr><tr><td style="text-align: left;">けん化</td><td style="text-align: left;">エステルに水酸化ナトリウム水溶液を加えて加熱</td><td style="text-align: left;">カルボン酸のナトリウム塩 ＋ アルコール</td><td style="text-align: left;">もどらない。塩になった時点で逆反応が起こらない</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">エステル結合をつくる／切る3本の反応</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">反応の名前</th><th style="text-align: left;">加えるもの</th><th style="text-align: left;">できるもの</th><th style="text-align: left;">逆にもどるか</th></tr></thead><tbody><tr><td style="text-align: left;">エステル化</td><td style="text-align: left;">カルボン酸とアルコールに濃硫酸を加えて加熱</td><td style="text-align: left;">エステル ＋ 水</td><td style="text-align: left;">もどる（可逆）。濃硫酸が水を取り除いて右へ寄せる</td></tr><tr><td style="text-align: left;">加水分解</td><td style="text-align: left;">エステルに水と希硫酸などの酸を加える</td><td style="text-align: left;">カルボン酸 ＋ アルコール</td><td style="text-align: left;">もどる（可逆）。だから完全には切れない</td></tr><tr><td style="text-align: left;">けん化</td><td style="text-align: left;">エステルに水酸化ナトリウム水溶液を加えて加熱</td><td style="text-align: left;">カルボン酸のナトリウム塩 ＋ アルコール</td><td style="text-align: left;">もどらない。塩になった時点で逆反応が起こらない</td></tr></tbody></table></div>
 <p class="ref-p"><b>この3行は必ず暗記してください。</b>構造決定では「加水分解した」「けん化した」のどちらで書かれているかによって、答えるものがカルボン酸なのかその塩なのかが変わります。</p>
 <h5 class="ref-h5">油脂のけん化は、同じ反応の3か所ぶん</h5>
 <p class="ref-p">油脂はグリセリンと高級脂肪酸3分子からできたエステルで、<b>エステル結合を3つ</b>もっています。だから油脂をけん化すると、上の反応が同じ分子の3か所で同時に起こり、<b>NaOH が3分子</b>必要になります。できるのはグリセリン1分子と、脂肪酸のナトリウム塩3分子 ＝ <b>セッケン</b>です。</p>

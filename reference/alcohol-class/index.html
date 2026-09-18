@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -860,7 +867,7 @@ a.ref-link::before { content: '→ '; }
 <ol class="ref-list"><li>ヒドロキシ基 −OH を探し、それが結合している炭素原子に印を付ける。<div class="ref-li-hang">この炭素だけが数える相手で、ほかの炭素は関係ありません</div></li><li>印を付けた炭素から出ている結合の先を見て、<b>炭素原子</b>がいくつあるかを数える。<div class="ref-li-hang">水素 H や −OH の酸素は数えません</div></li><li>数えた個数がそのまま級になる。<div class="ref-li-hang">0個か1個なら「第1級」、2個なら「第2級」、3個なら「第3級」</div></li></ol>
 <p class="ref-p">具体例で数えてみます。2-ブタノール CH₃CH(OH)CH₂CH₃ では、−OH が付いているのは左から2番目の炭素です。この炭素には1番目の炭素と3番目の炭素の<b>2個</b>が結合しているので、<b>第2級アルコール</b>です。</p>
 <p class="ref-p">メタノール CH₃OH も数えてみます。−OH が付いた炭素に結合している炭素は<b>0個</b>です。0個も第1級に入れるので、メタノールは<b>第1級アルコール</b>になります。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">分子全体の炭素の数が3個だから、第3級アルコールである</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">級は分子全体の炭素の数とは関係ありません。<b>−OH が付いた炭素のとなりにある炭素だけ</b>を数えます。</span></p><p class="ref-mistake-why">「級」という言葉が炭素の数を言っているように見えるためです。⚠ 1-プロパノール CH₃CH₂CH₂OH は炭素が3個ありますが、−OH が付いた炭素のとなりの炭素は1個だけなので<b>第1級</b>です。数える範囲を −OH のとなりだけに絞ってください。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">分子全体の炭素の数が3個だから、第3級アルコールである</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">級は分子全体の炭素の数とは関係ありません。<b>−OH が付いた炭素のとなりにある炭素だけ</b>を数えます。</span></p><p class="ref-mistake-why">「級」という言葉が炭素の数を言っているように見えるためです。⚠ 1-プロパノール CH₃CH₂CH₂OH は炭素が3個ありますが、−OH が付いた炭素のとなりの炭素は1個だけなので<b>第1級</b>です。数える範囲を −OH のとなりだけに絞ってください。</p></div>
 <div class="ref-example"><h4>例題：2-プロパノール をつくる</h4><p class="ref-p" style="margin: 0px;">ひとつ組んで、その場で数えてみましょう。炭素3個の真ん中の炭素に −OH を付けて <b>2-プロパノール</b> を組みます。−OH が付いた炭素のとなりに炭素が2個あるので、第2級アルコールです。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.alcohol.class&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=alcohol-class">▶ 2-プロパノールを組んでみる</a><p class="ref-note">組み上がりの判定は、いつものパズルと同じお題（アルコールとエーテルの4問目）がそのまま受け持ちます。</p></div>
 <p class="ref-p">級は<b>アルコールを考えるうえで非常に重要な分類</b>です。酸化したときの行き先も、沸点の並ぶ順も、ヨードホルム反応を示すかどうかも、すべて級がからんできます。<b>級の数え方は必ず覚えて、その場で判定できるようにしてください。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">級によって酸化の行き先がどう変わるか（第1級→アルデヒド→カルボン酸、第2級→ケトン、第3級→酸化されない）はこちら</a></p>
@@ -868,7 +875,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">価数と級は別の軸</h5>
 <p class="ref-p">価数と級は別のことを数えているので、<b>1つの分子に両方の名前が同時に付きます</b>。エチレングリコールは −OH が2個なので2価、その −OH が付いた炭素のとなりの炭素はどちらも1個なので第1級 ＝ <b>2価の第1級アルコール</b>です。</p>
 <p class="ref-p">多価アルコールでは、<b>級は −OH ごとに決まります</b>。グリセリンは両端の2つの −OH が第1級、まん中の −OH が第2級です。だから「グリセリンは何級か」という問い方はせず、必要なときは「まん中の −OH は第2級」のように場所を言います。</p>
-<div class="ref-table-wrap"><div class="ref-cap">価数と級を両方数えた例（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: left;">価数</th><th style="text-align: left;">級</th></tr></thead><tbody><tr><td style="text-align: left;">メタノール</td><td style="text-align: left;">CH₃OH</td><td style="text-align: left;">1価</td><td style="text-align: left;">第1級（となりの炭素 0個）</td></tr><tr><td style="text-align: left;">エタノール</td><td style="text-align: left;">CH₃CH₂OH</td><td style="text-align: left;">1価</td><td style="text-align: left;">第1級（となりの炭素 1個）</td></tr><tr><td style="text-align: left;">2-プロパノール</td><td style="text-align: left;">CH₃CH(OH)CH₃</td><td style="text-align: left;">1価</td><td style="text-align: left;">第2級（となりの炭素 2個）</td></tr><tr><td style="text-align: left;">2-メチル-2-ブタノール</td><td style="text-align: left;">(CH₃)₂C(OH)CH₂CH₃</td><td style="text-align: left;">1価</td><td style="text-align: left;">第3級（となりの炭素 3個）</td></tr><tr><td style="text-align: left;">1,2-プロパンジオール</td><td style="text-align: left;">CH₂(OH)CH(OH)CH₃</td><td style="text-align: left;">2価</td><td style="text-align: left;">端の −OH が第1級、まん中の −OH が第2級</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">価数と級を両方数えた例</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: left;">価数</th><th style="text-align: left;">級</th></tr></thead><tbody><tr><td style="text-align: left;">メタノール</td><td style="text-align: left;">CH₃OH</td><td style="text-align: left;">1価</td><td style="text-align: left;">第1級（となりの炭素 0個）</td></tr><tr><td style="text-align: left;">エタノール</td><td style="text-align: left;">CH₃CH₂OH</td><td style="text-align: left;">1価</td><td style="text-align: left;">第1級（となりの炭素 1個）</td></tr><tr><td style="text-align: left;">2-プロパノール</td><td style="text-align: left;">CH₃CH(OH)CH₃</td><td style="text-align: left;">1価</td><td style="text-align: left;">第2級（となりの炭素 2個）</td></tr><tr><td style="text-align: left;">2-メチル-2-ブタノール</td><td style="text-align: left;">(CH₃)₂C(OH)CH₂CH₃</td><td style="text-align: left;">1価</td><td style="text-align: left;">第3級（となりの炭素 3個）</td></tr><tr><td style="text-align: left;">1,2-プロパンジオール</td><td style="text-align: left;">CH₂(OH)CH(OH)CH₃</td><td style="text-align: left;">2価</td><td style="text-align: left;">端の −OH が第1級、まん中の −OH が第2級</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の行そのものを覚える必要はありません。</b>覚えるのは「価数は −OH の個数」「級は −OH が付いた炭素のとなりの炭素の個数」という2つの数え方のほうで、表はその場で数えた結果です。</p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>

@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -868,7 +875,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">だから<b>金属ナトリウムを加えて水素が発生すればアルコール、しなければエーテル</b>と判別できます。<b>この判別は必ず暗記してください。</b>構造決定の問題文では、ほとんどいつもこの一手から始まります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">アルコール側の反応式（ナトリウムアルコキシドができる）と、アルコールが起こす6つの反応の俯瞰はこちら</a></p>
 <p class="ref-p">違いをまとめると次のようになります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">アルコールとエーテルの違い（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">アルコール</th><th style="text-align: left;">エーテル</th></tr></thead><tbody><tr><td style="text-align: left;">沸点</td><td style="text-align: left;">高い</td><td style="text-align: left;">低い</td></tr><tr><td style="text-align: left;">溶けやすさ</td><td style="text-align: left;">水に溶ける</td><td style="text-align: left;">水に溶けにくく、有機溶媒に溶ける</td></tr><tr><td style="text-align: left;">金属ナトリウム</td><td style="text-align: left;">反応して H₂ を発生する</td><td style="text-align: left;">反応しない</td></tr><tr><td style="text-align: left;">酸化</td><td style="text-align: left;">還元剤としてはたらき、アルデヒド・ケトン・カルボン酸になる</td><td style="text-align: left;">反応しない</td></tr><tr><td style="text-align: left;">脱水</td><td style="text-align: left;">分子内脱水でアルケン、分子間脱水でエーテルになる</td><td style="text-align: left;">反応しない</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">アルコールとエーテルの違い</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">アルコール</th><th style="text-align: left;">エーテル</th></tr></thead><tbody><tr><td style="text-align: left;">沸点</td><td style="text-align: left;">高い</td><td style="text-align: left;">低い</td></tr><tr><td style="text-align: left;">溶けやすさ</td><td style="text-align: left;">水に溶ける</td><td style="text-align: left;">水に溶けにくく、有機溶媒に溶ける</td></tr><tr><td style="text-align: left;">金属ナトリウム</td><td style="text-align: left;">反応して H₂ を発生する</td><td style="text-align: left;">反応しない</td></tr><tr><td style="text-align: left;">酸化</td><td style="text-align: left;">還元剤としてはたらき、アルデヒド・ケトン・カルボン酸になる</td><td style="text-align: left;">反応しない</td></tr><tr><td style="text-align: left;">脱水</td><td style="text-align: left;">分子内脱水でアルケン、分子間脱水でエーテルになる</td><td style="text-align: left;">反応しない</td></tr></tbody></table></div>
 <section class="ref-sec" id="ref-sec-prep"><h4 class="ref-sec-h">エーテルのつくり方 —— アルコールの分子間脱水</h4><p class="ref-sec-lead">濃硫酸を 130〜140℃ にして、2分子のアルコールから水1分子がとれると、エーテルができます。</p></section>
 <p class="ref-p">濃硫酸を加えたアルコールを <b>130〜140℃</b> に加熱すると、<b>2つの分子のあいだ</b>で脱水反応が起こってエーテルが生じます。分子と分子のあいだで脱水するので<b>分子間脱水</b>といいます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2C₂H₅OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">130〜140℃</span></span><span class="ref-rx-side">C₂H₅OC₂H₅ ＋ H₂O</span></div><p class="ref-note">エタノール2分子から水1分子がとれて、<b>ジエチルエーテル</b>ができます。</p></div>

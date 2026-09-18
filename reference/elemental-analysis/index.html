@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -847,18 +854,18 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/element-detection/">どの元素が含まれているかを調べる操作は、元素の確認のページへ</a></p>
 <section class="ref-sec" id="ref-sec-apparatus"><h4 class="ref-sec-h">装置 —— 燃やして、水と二酸化炭素を別々に受ける</h4><p class="ref-sec-lead">試料を CuO で完全に酸化し、生じた H₂O を塩化カルシウム管、CO₂ をソーダ石灰管で吸収します。</p></section>
 <p class="ref-p">乾燥した酸素を送りながら試料を加熱して燃焼させ、生じた気体を2本の吸収管に順に通します。</p>
-<div class="ref-table-wrap"><div class="ref-cap">装置の各部の役目（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">位置</th><th style="text-align: left;">もの</th><th style="text-align: left;">役目</th></tr></thead><tbody><tr><td style="text-align: left;">入口</td><td style="text-align: left;">乾燥した O₂（または空気）</td><td style="text-align: left;">燃焼に使う。湿っていると、その水まで1本目に吸収されてしまう</td></tr><tr><td style="text-align: left;">燃焼管</td><td style="text-align: left;">試料 ＋ <b>酸化銅(II) CuO</b></td><td style="text-align: left;">試料を<b>完全に酸化</b>する酸化剤。CO やすすを残さない</td></tr><tr><td style="text-align: left;">1本目</td><td style="text-align: left;"><b>塩化カルシウム管</b>（CaCl₂）</td><td style="text-align: left;">中性の乾燥剤なので <b>H₂O だけ</b>を吸収する。増えた質量 ＝ H₂O の質量</td></tr><tr><td style="text-align: left;">2本目</td><td style="text-align: left;"><b>ソーダ石灰管</b>（NaOH ＋ CaO）</td><td style="text-align: left;">塩基性なので酸性の <b>CO₂</b> を吸収する。増えた質量 ＝ CO₂ の質量</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">装置の各部の役目</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">位置</th><th style="text-align: left;">もの</th><th style="text-align: left;">役目</th></tr></thead><tbody><tr><td style="text-align: left;">入口</td><td style="text-align: left;">乾燥した O₂（または空気）</td><td style="text-align: left;">燃焼に使う。湿っていると、その水まで1本目に吸収されてしまう</td></tr><tr><td style="text-align: left;">燃焼管</td><td style="text-align: left;">試料 ＋ <b>酸化銅(II) CuO</b></td><td style="text-align: left;">試料を<b>完全に酸化</b>する酸化剤。CO やすすを残さない</td></tr><tr><td style="text-align: left;">1本目</td><td style="text-align: left;"><b>塩化カルシウム管</b>（CaCl₂）</td><td style="text-align: left;">中性の乾燥剤なので <b>H₂O だけ</b>を吸収する。増えた質量 ＝ H₂O の質量</td></tr><tr><td style="text-align: left;">2本目</td><td style="text-align: left;"><b>ソーダ石灰管</b>（NaOH ＋ CaO）</td><td style="text-align: left;">塩基性なので酸性の <b>CO₂</b> を吸収する。増えた質量 ＝ CO₂ の質量</td></tr></tbody></table></div>
 <p class="ref-p">酸化銅(II)は、試料を完全燃焼させるための酸化剤です。不完全燃焼で CO やすすが残ると、吸収管で量った質量が試料中の C の量と合わなくなるためです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">試料（C・H・O からなる） ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">CuO・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ H₂O</span></div><p class="ref-note">試料中の C は全部 CO₂ に、H は全部 H₂O になります。係数は試料の分子式によって変わるので、ここでは書いていません。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₂H₅OH ＋ 3O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2CO₂ ＋ 3H₂O</span></div><p class="ref-note">エタノールの例です。右辺の O は、試料の O と燃焼に使った O₂ の O が混ざっています。だから O の質量だけは、吸収管の質量からは出せません。</p></div>
 <section class="ref-sec" id="ref-sec-order"><h4 class="ref-sec-h">吸収管の順番 —— 水が先、二酸化炭素が後</h4><p class="ref-sec-lead">塩化カルシウム管を先、ソーダ石灰管を後につなぎます。逆にすると H₂O と CO₂ を別々に量れません。</p></section>
 <p class="ref-p"><b>「塩化カルシウム管が先、ソーダ石灰管が後」の順番は、理由ごと必ず覚えてください。</b>理由まで書かせる問題がよく登場します。</p>
 <p class="ref-p">塩化カルシウムは中性の乾燥剤なので、水だけを吸収します。一方、ソーダ石灰は水酸化ナトリウムと酸化カルシウムの混合物で塩基性なので、水だけでなく酸性の二酸化炭素も吸収します。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">ソーダ石灰管を先につないでも、2本の質量の増え方から H₂O と CO₂ の質量はそれぞれ求められる。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">ソーダ石灰管を先につなぐと、H₂O と CO₂ が1本目で一緒に吸収されてしまい、2本目はほとんど増えません。合計しか分からないので、別々には求められません。</span></p><p class="ref-mistake-why">無機で習った気体の乾燥剤の組み合わせ（酸性の気体に塩基性の乾燥剤は使わない）と同じ理由です。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">ソーダ石灰管を先につないでも、2本の質量の増え方から H₂O と CO₂ の質量はそれぞれ求められる。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ソーダ石灰管を先につなぐと、H₂O と CO₂ が1本目で一緒に吸収されてしまい、2本目はほとんど増えません。合計しか分からないので、別々には求められません。</span></p><p class="ref-mistake-why">無機で習った気体の乾燥剤の組み合わせ（酸性の気体に塩基性の乾燥剤は使わない）と同じ理由です。</p></div>
 <p class="ref-p">ソーダ石灰は、酸化カルシウムを濃い水酸化ナトリウム水溶液に浸してから加熱・乾燥させた、白色の粒状の固体です。<b>作り方は覚えなくても構いません。</b>「塩基性だから CO₂ も吸う」が言えれば十分です。</p>
 <section class="ref-sec" id="ref-sec-mass"><h4 class="ref-sec-h">質量を元素ごとに割り振る</h4><p class="ref-sec-lead">CO₂ の質量から C、H₂O の質量から H を出し、O は全体から引き算で出します。</p></section>
 <p class="ref-p">試料の質量、吸収された H₂O の質量、CO₂ の質量から、元素ごとの質量を次のように出します。</p>
-<div class="ref-table-wrap"><div class="ref-cap">各元素の質量の出し方（H=1.0、C=12、O=16）（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">求めるもの</th><th style="text-align: left;">式</th><th style="text-align: left;">わけ</th></tr></thead><tbody><tr><td style="text-align: left;"><b>C の質量</b></td><td style="text-align: left;">CO₂ の質量 × 12/44</td><td style="text-align: left;">CO₂ の分子量 44 のうち、C が占めるのは 12</td></tr><tr><td style="text-align: left;"><b>H の質量</b></td><td style="text-align: left;">H₂O の質量 × 2.0/18</td><td style="text-align: left;">H₂O の分子量 18 のうち、H が占めるのは <b>2個ぶんの 2.0</b></td></tr><tr><td style="text-align: left;"><b>O の質量</b></td><td style="text-align: left;">試料の質量 −（C の質量 ＋ H の質量）</td><td style="text-align: left;">酸素だけは引き算でしか出せない</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">各元素の質量の出し方（H=1.0、C=12、O=16）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">求めるもの</th><th style="text-align: left;">式</th><th style="text-align: left;">わけ</th></tr></thead><tbody><tr><td style="text-align: left;"><b>C の質量</b></td><td style="text-align: left;">CO₂ の質量 × 12/44</td><td style="text-align: left;">CO₂ の分子量 44 のうち、C が占めるのは 12</td></tr><tr><td style="text-align: left;"><b>H の質量</b></td><td style="text-align: left;">H₂O の質量 × 2.0/18</td><td style="text-align: left;">H₂O の分子量 18 のうち、H が占めるのは <b>2個ぶんの 2.0</b></td></tr><tr><td style="text-align: left;"><b>O の質量</b></td><td style="text-align: left;">試料の質量 −（C の質量 ＋ H の質量）</td><td style="text-align: left;">酸素だけは引き算でしか出せない</td></tr></tbody></table></div>
 <p class="ref-p"><b>H は 1.0/18 ではなく 2.0/18 です。</b>水1分子には H が2個入っているためです。ここは計算でいちばん間違えやすいところです。</p>
 <p class="ref-p">たとえば CO₂ が 17.6 mg なら、C の質量は 17.6 × 12/44 ＝ 4.8 mg です。H₂O が 7.20 mg なら、H の質量は 7.20 × 2.0/18 ＝ 0.80 mg です。</p>
 <p class="ref-p">原子量は問題文に与えられるので、覚えるものではありません。</p>
@@ -871,7 +878,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-molecular"><h4 class="ref-sec-h">分子式にする —— 組成式の何倍か</h4><p class="ref-sec-lead">分子式は組成式の整数倍です。分子量を組成式の式量で割って、倍率を出します。</p></section>
 <p class="ref-p">組成式は「原子の<b>数の比</b>」を、分子式は「1分子中の原子の<b>数</b>」を表します。そのため分子式は組成式の整数倍になり、倍率は「分子量 ÷ 組成式の式量」で決まります。</p>
 <p class="ref-p">たとえば組成式 CH₂O（式量30）で分子量が60なら、60 ÷ 30 ＝ 2 なので分子式は C₂H₄O₂ です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">組成式が CH₂O になる化合物（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分子式</th><th style="text-align: right;">分子量</th><th style="text-align: left;">組成式の何倍か</th><th style="text-align: left;">化合物の例</th></tr></thead><tbody><tr><td style="text-align: left;">CH₂O</td><td style="text-align: right;">30</td><td style="text-align: left;">1倍</td><td style="text-align: left;">ホルムアルデヒド HCHO</td></tr><tr><td style="text-align: left;">C₂H₄O₂</td><td style="text-align: right;">60</td><td style="text-align: left;">2倍</td><td style="text-align: left;">酢酸 CH₃COOH</td></tr><tr><td style="text-align: left;">C₃H₆O₃</td><td style="text-align: right;">90</td><td style="text-align: left;">3倍</td><td style="text-align: left;">乳酸 CH₃CH(OH)COOH</td></tr><tr><td style="text-align: left;">C₆H₁₂O₆</td><td style="text-align: right;">180</td><td style="text-align: left;">6倍</td><td style="text-align: left;">グルコース</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">組成式が CH₂O になる化合物</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分子式</th><th style="text-align: right;">分子量</th><th style="text-align: left;">組成式の何倍か</th><th style="text-align: left;">化合物の例</th></tr></thead><tbody><tr><td style="text-align: left;">CH₂O</td><td style="text-align: right;">30</td><td style="text-align: left;">1倍</td><td style="text-align: left;">ホルムアルデヒド HCHO</td></tr><tr><td style="text-align: left;">C₂H₄O₂</td><td style="text-align: right;">60</td><td style="text-align: left;">2倍</td><td style="text-align: left;">酢酸 CH₃COOH</td></tr><tr><td style="text-align: left;">C₃H₆O₃</td><td style="text-align: right;">90</td><td style="text-align: left;">3倍</td><td style="text-align: left;">乳酸 CH₃CH(OH)COOH</td></tr><tr><td style="text-align: left;">C₆H₁₂O₆</td><td style="text-align: right;">180</td><td style="text-align: left;">6倍</td><td style="text-align: left;">グルコース</td></tr></tbody></table></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/elemental-analysis-acetic-acid.png" alt="酢酸の構造式。メチル基の炭素に、C=O と −OH をもつカルボキシ基の炭素がつながっている" loading="lazy"><figcaption class="ref-figure-cap">酢酸 CH₃COOH。組成式は CH₂O で、その<b>2倍</b>が分子式 C₂H₄O₂ です。</figcaption></figure>
 <p class="ref-p">組成式だけでは、どの化合物か決まりません。上の4つはどれも組成式が CH₂O です。分子式まで出すには、分子量が必要です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">酢酸・乳酸の性質はカルボン酸のページへ</a></p>

@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -878,11 +885,11 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n C₆H₁₁NO（ε-カプロラクタム）</span><span class="ref-rx-arrow"><span class="ref-rx-over">少量の水</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">［NH−(CH₂)₅−CO］ₙ</span></div><p class="ref-note">環の中のアミド結合が1か所切れて鎖になり、次の分子とつながります。水はきっかけとして働くだけなので、反応式の両辺には出てきません。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polymer-basics-nylon6.png" alt="ナイロン6の鎖の一部の構造式。NH、CH₂ が5個、C=O の順に並んだ単位が3つ一列につながり、両端の R から先にも鎖が続くことを示した図" loading="lazy"><figcaption class="ref-figure-cap">ナイロン6の鎖の一部（繰り返し単位3つぶん）。1単位は ε-カプロラクタムの<b>環をほどいて一直線に伸ばした形</b>です。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-compare"><h4 class="ref-sec-h">重合の型を並べる</h4><p class="ref-sec-lead">付加・縮合・開環の3つは「何が出ていくか」で見分けます。フェノール樹脂などの付加縮合は、付加と縮合をくり返す別の型です。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">重合の型（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">型</th><th style="text-align: left;">単量体に要るもの</th><th style="text-align: left;">出ていくもの</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">C=C（二重結合）</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ポリエチレン・ポリ塩化ビニル・ポリスチレン</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">反応できる官能基が1分子に2つ</td><td style="text-align: left;"><b>水など</b></td><td style="text-align: left;">ポリエチレンテレフタラート・ナイロン66</td></tr><tr><td style="text-align: left;">開環重合</td><td style="text-align: left;">環状の構造</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ナイロン6</td></tr><tr><td style="text-align: left;">付加縮合</td><td style="text-align: left;">付加と縮合を交互にくり返せる組み合わせ</td><td style="text-align: left;"><b>水</b></td><td style="text-align: left;">フェノール樹脂・尿素樹脂・メラミン樹脂</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">重合の型</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">型</th><th style="text-align: left;">単量体に要るもの</th><th style="text-align: left;">出ていくもの</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">C=C（二重結合）</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ポリエチレン・ポリ塩化ビニル・ポリスチレン</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">反応できる官能基が1分子に2つ</td><td style="text-align: left;"><b>水など</b></td><td style="text-align: left;">ポリエチレンテレフタラート・ナイロン66</td></tr><tr><td style="text-align: left;">開環重合</td><td style="text-align: left;">環状の構造</td><td style="text-align: left;"><b>なし</b></td><td style="text-align: left;">ナイロン6</td></tr><tr><td style="text-align: left;">付加縮合</td><td style="text-align: left;">付加と縮合を交互にくり返せる組み合わせ</td><td style="text-align: left;"><b>水</b></td><td style="text-align: left;">フェノール樹脂・尿素樹脂・メラミン樹脂</td></tr></tbody></table></div>
 <p class="ref-p"><b>付加・縮合・開環の3つの名前と、「何が出ていくか」は必ず暗記してください。</b>「付加と開環は何も出ない、縮合は水が出る」と対にして覚えるのが確実です。</p>
 <p class="ref-p">付加縮合は、合成樹脂のうち網目になるものだけに出てくる型です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">付加縮合でできる熱硬化性樹脂（フェノール樹脂・尿素樹脂など）</a></p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">ナイロン6 は、ナイロン66 と同じ縮合重合でできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">ナイロン6 は<b>開環重合</b>でできます。ε-カプロラクタムの環が開くだけで、水はとれません。</span></p><p class="ref-mistake-why">「ナイロン＝アミド結合＝縮合」と結合の種類から型を決めてしまうためです。★ 型は結合の種類ではなく「つなぐときに何が出ていくか」で決まります。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">ナイロン6 は、ナイロン66 と同じ縮合重合でできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ナイロン6 は<b>開環重合</b>でできます。ε-カプロラクタムの環が開くだけで、水はとれません。</span></p><p class="ref-mistake-why">「ナイロン＝アミド結合＝縮合」と結合の種類から型を決めてしまうためです。★ 型は結合の種類ではなく「つなぐときに何が出ていくか」で決まります。</p></div>
 <section class="ref-sec" id="ref-sec-copolymer"><h4 class="ref-sec-h">共重合</h4><p class="ref-sec-lead">2種類以上の単量体をまぜて重合させると、1本の鎖に両方の単位が入った共重合体ができます。混ぜる比で性質を調節できます。</p></section>
 <p class="ref-p">2種類以上の単量体を混ぜて重合させることを<b>共重合</b>、できた重合体を<b>共重合体</b>といいます。<b>単量体の種類と混ぜる割合を変えることで、材料の硬さや弾性を調節できます。</b></p>
 <p class="ref-p">具体例は、スチレンと 1,3-ブタジエンからできる<b>スチレン-ブタジエンゴム（SBR）</b>です。</p>

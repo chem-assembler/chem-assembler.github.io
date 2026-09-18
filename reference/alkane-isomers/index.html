@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -880,7 +887,7 @@ a.ref-link::before { content: '→ '; }
 <ol class="ref-list"><li><b>考えられるいちばん大きい環から始めて、環の原子を1個ずつ減らしていく。</b><div class="ref-li-hang">炭素数が5なら「5員環 → 4員環 → 3員環」の順です。<b>2員環以下は考えません。</b></div></li><li><b>環からはみ出した炭素を、側鎖として環につける。</b><div class="ref-li-hang">側鎖になる炭素が2個以上なら、「まとめて1個のエチル基 −CH₂CH₃ にするか、別々の2個のメチル基 −CH₃ にするか」で場合分けします。</div></li><li><b>メチル基を2個以上つけるときは、つける場所で場合分けする。</b><div class="ref-li-hang">「環の同じ炭素に2個まとめてつけるか、別々の炭素に1個ずつつけるか」を分けます。</div></li></ol>
 <p class="ref-p">具体例として、C₅H₁₀ の環式の構造異性体を書き出してみます。</p>
 <ul class="ref-list"><li><b>5員環</b> … <b>シクロペンタン</b>の1種類。</li><li><b>4員環</b> … 残り1個の炭素を側鎖にします。4員環は対称なのでつけ方は1通りで、<b>メチルシクロブタン</b>の1種類。</li><li><b>3員環</b> … 残り2個の炭素を側鎖にします。まとめて1個のエチル基にすると<b>エチルシクロプロパン</b>、別々の2個のメチル基にすると、同じ炭素につけて <b>1,1-ジメチルシクロプロパン</b>、別の炭素につけて <b>1,2-ジメチルシクロプロパン</b>の、合わせて3種類。</li></ul>
-<div class="ref-table-wrap"><div class="ref-cap">C₅H₁₀ の環式構造異性体 —— 環の大きさで場合分けした5種（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">環の大きさ</th><th style="text-align: left;">環からはみ出した炭素の置き方</th><th style="text-align: left;">名称</th></tr></thead><tbody><tr><td style="text-align: center;">5員環</td><td style="text-align: left;">側鎖なし</td><td style="text-align: left;">シクロペンタン</td></tr><tr><td style="text-align: center;">4員環</td><td style="text-align: left;">メチル基1個</td><td style="text-align: left;">メチルシクロブタン</td></tr><tr><td style="text-align: center;">3員環</td><td style="text-align: left;">2個をまとめてエチル基1個</td><td style="text-align: left;">エチルシクロプロパン</td></tr><tr><td style="text-align: center;">3員環</td><td style="text-align: left;">メチル基2個を同じ炭素に</td><td style="text-align: left;">1,1-ジメチルシクロプロパン</td></tr><tr><td style="text-align: center;">3員環</td><td style="text-align: left;">メチル基2個を別の炭素に</td><td style="text-align: left;">1,2-ジメチルシクロプロパン</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">C₅H₁₀ の環式構造異性体 —— 環の大きさで場合分けした5種</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">環の大きさ</th><th style="text-align: left;">環からはみ出した炭素の置き方</th><th style="text-align: left;">名称</th></tr></thead><tbody><tr><td style="text-align: center;">5員環</td><td style="text-align: left;">側鎖なし</td><td style="text-align: left;">シクロペンタン</td></tr><tr><td style="text-align: center;">4員環</td><td style="text-align: left;">メチル基1個</td><td style="text-align: left;">メチルシクロブタン</td></tr><tr><td style="text-align: center;">3員環</td><td style="text-align: left;">2個をまとめてエチル基1個</td><td style="text-align: left;">エチルシクロプロパン</td></tr><tr><td style="text-align: center;">3員環</td><td style="text-align: left;">メチル基2個を同じ炭素に</td><td style="text-align: left;">1,1-ジメチルシクロプロパン</td></tr><tr><td style="text-align: center;">3員環</td><td style="text-align: left;">メチル基2個を別の炭素に</td><td style="text-align: left;">1,2-ジメチルシクロプロパン</td></tr></tbody></table></div>
 <p class="ref-p">以上で<b>環式の構造異性体は5種類</b>です。<b>鎖式（ペンテン）も含めると構造異性体は10種類、立体異性体まで含めると13種類</b>になります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">二重結合そのものの話（回転できないこと・シス－トランス異性体・付加反応）はアルケンのページに</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/cycloalkane/">環そのものの話（三員環・四員環のひずみ・環のシス－トランス異性体）はシクロアルカンのページに</a></p>
