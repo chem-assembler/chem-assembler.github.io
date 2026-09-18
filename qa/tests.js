@@ -1303,8 +1303,10 @@ function runInventoryTests(DATA, LINKS, COMPOUNDS, STAGES, REACTOR_JS, REACTIONS
     //     - 三量化・共重合 … ⚠ **札は複数分子が並んだときだけ出る**（三量化はちょうど3分子・共重合は2種類以上）が、
     //       `?summon=` は1分子しか置けない。着地のあと「名称から呼び出す」で足すと、選んだ札が印つきで出て
     //       ベンゼン／スチレン-ブタジエンの鎖ができる。札（label）が「並べて」と言い、足す分子は note に書いた
+    //   ★ 2026-09-19（assembler v1583）: 75本目は diene_cis_trans（ポリイソプレンのシス形⇄トランス形）。
+    //     none の行は増えない。org.poly.rubber-cis-trans の note を「入れ替える」札に合わせて直した
     //   ⚠ 次にルールが増えたときも、**none の why が「reactor に無い」と言っている行**を拾い直すこと
-    var KNOWN_BOTTLES = 27, KNOWN_RULES = 74, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
+    var KNOWN_BOTTLES = 27, KNOWN_RULES = 75, KNOWN_MECHANISMS = 14;   // 瓶は transform 17 ＋ detect 6
     var revisit = rows.filter(function (o) { return /★見直し候補/.test(o.note || ""); })
       .map(function (o) { return o.code; });
     var hint = "★見直し候補の " + revisit.length + " 件（" + revisit.slice(0, 4).join(" ") +
