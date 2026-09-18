@@ -3038,6 +3038,12 @@ function haworthTurnedTarget(game, target, kind) {
     };
 }
 
+// 重ね合わせビューで、影が「回る場所」を図Aの右へずらす量（px）。
+// ★ **重ねる前に回す**ので、回している間だけ図Aの隣に置く（v1585）。重なってから回すと
+//   「回さなくても重なっていた」ように見えてしまい、回す意味が画から消える
+const OVERLAY_START_DX = 60;
+const overlayWait = (ms) => new Promise(r => setTimeout(r, ms));
+
 class StereoQuiz {
     constructor(game) {
         this.game = game;
@@ -3227,6 +3233,9 @@ class StereoQuiz {
         this._dispTargetB = reshapeGeometryForDisplay(this.game, q.targetB);
         this._dispMolA = renderMoleculeIntoSvg(this.game, 'sq-svg-a', this._dispTargetA, wedge);
         this._dispMolB = renderMoleculeIntoSvg(this.game, 'sq-svg-b', this._dispTargetB, wedge);
+        // ★ 影にもくさびを描くかは**描いたときの表示**で決める（v1585）。
+        //   あとから出題範囲を変えても、画面に出ている図と影の描き方は食い違わない
+        this._dispWedge = wedge;
         this.current = q;
         this.resultEl.textContent = '';
         this.resultEl.className = '';
@@ -3285,6 +3294,18 @@ class StereoQuiz {
     // どの角度を選んでも比較の結果（centers / geos の match）は同じになる。
     // ⚠ **鏡映はどの角度でも使わない** —— 鏡に映して重なるのがエナンチオマーの定義なので、
     // 鏡映を許すと「重ね合わせられるか」という問いそのものが消える。
+    //
+    // ⚠⚠ **回すところを見せる**（v1585・ユーザー決定）。2026-08-25 の直しで角度は求めていたが、
+    // **画では回さずに、回し終わった図がいきなり滑り込んで**いた ＝ 見ている側には
+    // 「向きの違う2枚がそのまま重なった」としか見えず、重なる証明になっていなかった
+    // （V140 の回は紙面の中で 270° 回した関係）。いまは
+    //   ① 影が図Bのまま現れる → ② ゆっくり回る（角度を画面に出す） → ③ 重なる → ④ ✓/✗ の印
+    // の順に進める。重ならない組でも**許された向きを順に回してみせて**から「重ならない」と言う。
+    // ⚠ **裏返しは使わない**（②の操作に入れない）。裏返しは手前（くさび）と奥（破線）を
+    // 入れ替える ＝ 鏡像をつくる操作なので、重ねる手に入れると問いが消える。
+    // 画面の言葉も「くさびが違うから別」ではなく「**回すだけでは重ならない**」の形で言う
+    // —— 同じ立体でも書き方によってくさびの付き方は変わる（入れ替え2回で元に戻る）ので、
+    // くさびの絵の違いを根拠にしてはいけない。**判定は今までどおり立体の記述で行う。**
 
     /** 図Bに当ててよい紙面内回転（90°刻み）の一覧。0 は必ず入る */
     overlayAllowedTurns() {
@@ -3359,12 +3380,70 @@ class StereoQuiz {
         return plan ? plan.cmp : null;
     }
 
+    /**
+     * ★ **回すところを見せるための幾何**（v1585・ユーザー決定「回すところを見せる」）。
+     *
+     * 影は**回す前の図B（`_dispMolB`）そのもの**で描き、SVG の `rotate(角度, cx, cy)` で回す。
+     * 「回したあとの図を作って置く」のではないので、**くさびも水素も図の一部として一緒に回る**
+     * （＝ ユーザー決定③。手前・奥の印は図の一部）。
+     *
+     * ⚠ **回し終わったら、止まった向きで描き直す**（`settle`）—— 紙ごと回すと元素記号まで
+     * 逆さまになり、図Aの「C」と重なって黒い四角に見えるため。描き直して図の読みが変わらないのは、
+     * 許された角度（`overlayAllowedTurns`）が「回して読み直しても立体が変わらない」角度だけだから。
+     * フィッシャー投影なら 0°/180° しか通らず、180° は横を横・縦を縦へ移すので
+     * `drawWedges` の向きの決め方（横＝手前・縦＝奥）と食い違わない。
+     * 90° が通るのは「くさびを使わない分子」（C=C だけの図）に限られる。
+     *
+     * 返り値 { angle, cx, cy, tx, ty, radius } ／ できなければ null。
+     *   `tx,ty` … 影を図Aの紙の上に置くための平行移動（回す前の座標に足す）
+     *   `cx,cy` … 回す中心（重心）。この中心で `angle` 回すと、plan の重ね位置にぴたりと乗る
+     */
+    overlayGhostGeometry() {
+        const plan = this.overlayPlan();
+        if (!plan || !this._dispMolB) return null;
+        const heavy = m => m.atoms.filter(a => a.element !== 'H');
+        const u = heavy(this._dispMolB), f = heavy(plan.molB);
+        if (!u.length || u.length !== f.length) return null;
+        const cen = (list, ox, oy) => ({
+            x: list.reduce((s, a) => s + a.x, 0) / list.length + ox,
+            y: list.reduce((s, a) => s + a.y, 0) / list.length + oy
+        });
+        const cU = cen(u, 0, 0), cF = cen(f, plan.dx, plan.dy);
+        // ⚠ **回転は剛体なので、重心を合わせれば残りは角度だけで決まる**。
+        //   （f = R·u + t なら 重心も f̄ = R·ū + t、引き算して f - f̄ = R·(u - ū)）
+        return {
+            angle: plan.turns * 90,
+            cx: cF.x, cy: cF.y,
+            tx: cF.x - cU.x, ty: cF.y - cU.y,
+            radius: Math.max(...u.map(a => Math.hypot(a.x - cU.x, a.y - cU.y)))
+        };
+    }
+
+    /** 影を何度ずつ回してみせるか（{to, ms} の並び）。重ならない組は許された角度を順に見せる */
+    overlaySpinLegs(plan) {
+        const LEG = 900, SWEEP = 620;
+        if (plan.mismatch === 0) {
+            return plan.turns === 0 ? [] : [{ to: plan.turns * 90, ms: LEG }];
+        }
+        // ★ 重ならないときこそ「回してみせる」（ユーザー決定①）。
+        //   許された向きを順に見せてから、いちばん重なる向きで止める
+        const legs = [];
+        plan.allowed.filter(k => k !== 0).forEach(k => legs.push({ to: k * 90, ms: SWEEP }));
+        legs.push({ to: plan.turns * 90, ms: SWEEP });
+        return legs.length > 4 ? legs.slice(legs.length - 4) : legs;
+    }
+
     toggleOverlay() {
         if (this._overlayOn) this.clearOverlay();
         else this.showOverlay();
     }
 
-    showOverlay() {
+    /**
+     * @param opts.animate 既定 true。false なら**動かさずに終わりの姿**にする
+     *   （回帰テストが「終わりの状態」を素早く見るための道）。
+     */
+    showOverlay(opts) {
+        const animate = !(opts && opts.animate === false);
         const plan = this.overlayPlan();
         const svgA = document.getElementById('sq-svg-a');
         const svgB = document.getElementById('sq-svg-b');
@@ -3372,33 +3451,52 @@ class StereoQuiz {
             if (this.overlayNoteEl) this.overlayNoteEl.textContent = 'この組では重ね合わせ表示ができません。';
             return;
         }
+        const geo = this.overlayGhostGeometry();
+        if (!geo) {
+            if (this.overlayNoteEl) this.overlayNoteEl.textContent = 'この組では重ね合わせ表示ができません。';
+            return;
+        }
         const cmp = plan.cmp;
-        // ★ molB は**選ばれた角度へ回したあとの図**（回さない方が良ければ turns=0 の図そのもの）
-        const molA = this._dispMolA, molB = plan.molB;
-        const heavyB = molB.atoms.filter(a => a.element !== 'H');
-        // 平行移動量: 対応づけた原子どうしの重心を合わせる（回したあとに合わせる）
-        const dx = plan.dx, dy = plan.dy;
+        const molA = this._dispMolA;
+        const showWedge = !!this._dispWedge;
 
         const NS = 'http://www.w3.org/2000/svg';
-        // 図Bのゴースト（重原子の骨格だけ。水素・くさびは省いて「影」であることを分かりやすく）
+        // 影は3枚重ねの入れ子: 外＝滑り込み（CSS）／中＝回転（角度を JS で進める）／内＝紙の上への平行移動
         const ghost = document.createElementNS(NS, 'g');
         ghost.setAttribute('class', 'sq-overlay-ghost');
         ghost.setAttribute('style',
-            'opacity:0; transform:translate(120px,0); transition:opacity .5s ease, transform .5s ease;' +
+            `opacity:0; transform:translate(${OVERLAY_START_DX}px,0);` +
+            ' transition:opacity .3s ease, transform .6s ease;' +
             ' filter:drop-shadow(0 0 5px rgba(0,242,254,0.7));');
-        molB.bonds.forEach(b => {
-            const a1 = molB.atoms.find(a => a.id === b.atomId1);
-            const a2 = molB.atoms.find(a => a.id === b.atomId2);
-            if (!a1 || !a2) return;
-            this.game.renderTargetBond(a1.x + dx, a1.y + dy, a2.x + dx, a2.y + dy, b.type, false, ghost);
-        });
-        heavyB.forEach(a => this.game.renderTargetAtom(a.element, a.x + dx, a.y + dy, ghost, a.charge || 0));
+        const spin = document.createElementNS(NS, 'g');
+        spin.setAttribute('class', 'sq-overlay-spin');
+        spin.setAttribute('transform', `rotate(0 ${geo.cx} ${geo.cy})`);
+        const body = document.createElementNS(NS, 'g');
+        body.setAttribute('transform', `translate(${geo.tx} ${geo.ty})`);
+        // ★ 中身は**回す前の図B**（`_dispMolB`）。くさび図モードなら水素とくさびも描く ——
+        //   手前・奥の印は図の一部なので、影にも入れて一緒に回す
+        this.drawOverlayGhostBody(this._dispMolB, body, showWedge);
+        spin.appendChild(body);
+        ghost.appendChild(spin);
         svgA.appendChild(ghost);
+
+        // 回した角度の表示（回す間は数字が進む）
+        const label = document.createElementNS(NS, 'text');
+        label.setAttribute('class', 'sq-overlay-angle');
+        label.setAttribute('x', geo.cx);
+        label.setAttribute('y', geo.cy - geo.radius - 16);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('fill', 'rgba(0,242,254,0.95)');
+        label.setAttribute('font-size', '17');
+        label.setAttribute('font-weight', 'bold');
+        label.textContent = '';
+        svgA.appendChild(label);
+        this._overlayLabel = label;
 
         // 一致/不一致の印（図Aの座標に描く。ゴーストが滑り込んだあとに現れる）
         const marks = document.createElementNS(NS, 'g');
         marks.setAttribute('class', 'sq-overlay-marks');
-        marks.setAttribute('style', 'opacity:0; transition:opacity .4s ease .45s;');
+        marks.setAttribute('style', 'opacity:0; transition:opacity .4s ease;');
         const addMark = (x, y, match) => {
             const color = match ? 'rgba(46,213,115,0.95)' : 'rgba(255,71,87,0.95)';
             const ring = document.createElementNS(NS, 'circle');
@@ -3424,83 +3522,176 @@ class StereoQuiz {
         });
         svgA.appendChild(marks);
 
-        // 図Aの枠を、ゴーストも収まる範囲へ広げる（元の viewBox は解除時に戻す）
+        // 図Aの枠を、回している間の影も収まる範囲へ広げる（元の viewBox は解除時に戻す）。
+        // ★ 回っている影は重心 (cx,cy) から半径 radius の円の中に必ず収まるので、円で囲えば足りる
+        //   （終わりの姿だけを囲うと、回っている途中がはみ出して切れる）
         this._overlayViewBox = svgA.getAttribute('viewBox');
         const vb = (this._overlayViewBox || '0 0 320 250').split(/\s+/).map(Number);
-        let minX = vb[0], minY = vb[1], maxX = vb[0] + vb[2], maxY = vb[1] + vb[3];
-        heavyB.forEach(a => {
-            minX = Math.min(minX, a.x + dx - 30); maxX = Math.max(maxX, a.x + dx + 30);
-            minY = Math.min(minY, a.y + dy - 30); maxY = Math.max(maxY, a.y + dy + 30);
-        });
+        const r = geo.radius + 34;
+        const minX = Math.min(vb[0], geo.cx - r);
+        const minY = Math.min(vb[1], geo.cy - r - 22);   // 角度の文字のぶん
+        const maxX = Math.max(vb[0] + vb[2], geo.cx + r + OVERLAY_START_DX);
+        const maxY = Math.max(vb[1] + vb[3], geo.cy + r);
         svgA.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`);
-
-        // 滑り込みアニメーション開始（2段 rAF で初期スタイルを確定させてから遷移）
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            ghost.style.opacity = '0.55';
-            ghost.style.transform = 'translate(0,0)';
-            marks.style.opacity = '1';
-        }));
         svgB.style.opacity = '0.25';
 
-        // 言葉でも結果を示す（数は最良の対応での実測値）
-        const badC = cmp.centers.filter(x => !x.match).length;
-        const badG = cmp.geos.filter(x => !x.match).length;
-        const parts = [];
-        if (cmp.centers.length) {
-            parts.push(badC === 0
-                ? `不斉炭素原子 ${cmp.centers.length} 個はすべて一致（緑の◯）`
-                : `不斉炭素原子 ${cmp.centers.length} 個中 ${badC} 個で立体が食い違い（赤の破線◯）`);
-        }
-        if (cmp.geos.length) {
-            parts.push(badG === 0
-                ? 'C=C のシス/トランスは一致（緑の◯）'
-                : `C=C ${cmp.geos.length} 本中 ${badG} 本でシス/トランスが食い違い（赤の破線◯）`);
-        }
-        // ★ **何をしたかを必ず書く**（回した／回さなかった・どの角度を試せたか）。
-        // 直す前は「平行移動しました」としか書かず、しかも実際は回していなかったので、
-        // 180°回転の問題では交差した絵の下に「すべて重なる」と出ていた
-        const NAMES = ['0°（回さない）', '90°', '180°', '270°'];
-        const did = plan.turns === 0
-            ? '図Bを「回さずに」影にして図Aへ重ねました。'
-            : `図Bを ${plan.turns * 90}° 回してから影にして図Aへ重ねました。`;
-        const tried = plan.allowed.length >= 4
-            ? '紙面内の 90°刻み（0°・90°・180°・270°）をすべて試し、いちばん重なるものを選んでいます。'
-            : `試せる角度は ${plan.allowed.map(k => NAMES[k]).join('・')} だけです` +
-              '（ほかの角度は、回すと図から読める立体そのものが変わってしまうので使えません）。' +
-              'そのなかでいちばん重なるものを選びました。';
-        const fit = plan.rms < 2;
-        // ★ どう回しても重ならないときは言い切る（重ね合わせの定義を画面に出す）
-        let verdict;
-        if (badC + badG > 0) {
-            verdict = '→ 紙面内でどう回しても重なりません。' +
-                '回転と平行移動だけで一致するものが「重ね合わせられる＝同じ分子」なので、' +
-                'これは重ね合わせられない別の分子です' +
-                '（鏡に映せば重なる場合もありますが、それは鏡像異性体の関係です）。';
-        } else if (fit) {
-            verdict = '→ 図がぴったり重なりました（ずれ 0px）＝ 回転と平行移動だけで一致する＝同じ分子です。';
-        } else {
-            // 立体はすべて一致しているのに絵が合わない ＝ 紙面内の回転では届かない置き方
-            // （左右を反転した図など）。ここで「すべて重なる」と書くと絵と食い違う
-            verdict = '→ 立体はすべて一致＝同じ分子ですが、紙面内の回転では絵は重なりません' +
-                `（残りのずれ ${Math.round(plan.rms)}px）。` +
-                '紙から持ち上げて裏返すか、図を描き直せば重なります。';
-        }
-        if (this.overlayNoteEl) {
-            this.overlayNoteEl.textContent =
-                did + tried + '\n' +
-                '原子の対応は、見た目の位置ではなく「つながり方が最もよく合う対応」で決めています' +
-                '（鏡に映す操作は使いません——鏡映で重なるのが鏡像異性体の定義だからです）。\n' +
-                parts.join('、') + ' ' + verdict;
-        }
+        // ★ 言葉は2段（v1585）。押した時点では「これから何をするか」だけを出し、
+        //   結果は**回し終わってから**足す ＝ 絵より先に答えが出てしまわない
+        const wedgeWord = showWedge ? '位置もくさびも' : '位置も';
+        // ⚠ 回せる向きが 0° しか無い図（ハース環の糖）もある —— そのときは
+        //   「回してみよう」と書かない（回していないのに回したと書くのが v1585 以前の失敗）
+        const spinLegs = this.overlaySpinLegs(plan);
+        const willSpin = spinLegs.some(l => l.to !== 0) || geo.angle > 0;
+        const intro = (plan.mismatch > 0 && willSpin)
+            ? '図Bを回してみよう。'
+            : (plan.turns === 0
+                ? '図Bをそのまま図Aに重ねてみよう。'
+                : `図Bを ${geo.angle}° 回して、図Aに重ねてみよう。`);
+        // ★ **回し終わったら描き直す**（ユーザー決定③の「描き直しが要るなら描き直す」）。
+        //   紙ごと回すと**元素記号まで逆さま**になり、図Aの「C」と影の「C」が重なって
+        //   黒い四角に見える（実測）。止まった向きは必ず `allowed` の角度なので、
+        //   そこから描き直しても図の読み（手前・奥）は変わらない ＝ 描き直してよい。
+        //   ⚠ 描き直すのは**重ねる前**（回し終わってすぐ）—— 重ねてから直すと字が跳ねて見える
+        const settle = () => {
+            while (body.firstChild) body.removeChild(body.firstChild);
+            spin.setAttribute('transform', `rotate(0 ${geo.cx} ${geo.cy})`);
+            body.setAttribute('transform', `translate(${plan.dx} ${plan.dy})`);
+            this.drawOverlayGhostBody(plan.molB, body, showWedge);
+            ghost.setAttribute('data-turned', String(geo.angle));
+        };
+        const finish = () => {
+            if (this.overlayNoteEl) this.overlayNoteEl.textContent = intro + '\n' + this.overlayVerdict(plan, wedgeWord);
+            // 角度の表示は「何をしたか」で締める（回した／回してみて元へ戻した／回していない）
+            if (this._overlayLabel) {
+                this._overlayLabel.textContent = geo.angle > 0 ? `${geo.angle}° 回した`
+                    : (willSpin ? 'もとの向き' : '');
+            }
+            marks.style.opacity = '1';
+        };
+        if (this.overlayNoteEl) this.overlayNoteEl.textContent = intro;
         if (this.overlayBtn) this.overlayBtn.textContent = '↩ 重ね合わせを解除';
         this._overlayOn = true;
+
+        // 回す → 重ねる → 印を出す、の順に進める（ユーザー決定①「重ねる前に回す」）
+        const token = (this._overlayToken = (this._overlayToken || 0) + 1);
+        const alive = () => this._overlayOn && this._overlayToken === token;
+        if (!animate) {
+            ghost.style.transition = 'none';
+            ghost.style.opacity = '0.55';
+            ghost.style.transform = 'translate(0,0)';
+            marks.style.transition = 'none';
+            this._overlayAngle = geo.angle;
+            settle();
+            finish();
+            this._overlayAnim = Promise.resolve();
+            return;
+        }
+        this._overlayAnim = (async () => {
+            await overlayWait(30);
+            if (!alive()) return;
+            ghost.style.opacity = '0.55';                 // まず「回す前の図B」として現れる
+            await overlayWait(340);
+            if (!alive()) return;
+            await this.runOverlaySpin(spin, willSpin ? this._overlayLabel : null, geo, spinLegs, alive);
+            if (!alive()) return;
+            settle();                                     // 向きが決まったら描き直す
+            await overlayWait(240);
+            if (!alive()) return;
+            ghost.style.transform = 'translate(0,0)';     // 回し終わってから重ねる
+            await overlayWait(680);
+            if (!alive()) return;
+            finish();
+        })();
+    }
+
+    /**
+     * 影を回す（{to, ms} の並びを順に）。⚠ `requestAnimationFrame` ではなく `setTimeout` で進める ——
+     * 画面が隠れている（ブラウザのタブが裏・Browser ペインが非表示）と rAF は**1度も呼ばれず**、
+     * 回帰テストがそこで止まってしまう。setTimeout なら間引かれても必ず終わりまで進む
+     */
+    runOverlaySpin(spin, label, geo, legs, alive) {
+        const setAngle = (a) => {
+            spin.setAttribute('transform', `rotate(${a} ${geo.cx} ${geo.cy})`);
+            this._overlayAngle = a;
+            if (label) label.textContent = `${Math.round(a)}°`;
+        };
+        setAngle(0);
+        let from = 0;
+        return legs.reduce((chain, leg) => chain.then(() => new Promise(resolve => {
+            const t0 = Date.now(), span = leg.to - from, base = from;
+            const step = () => {
+                if (!alive()) { resolve(); return; }
+                const p = leg.ms <= 0 ? 1 : Math.min(1, (Date.now() - t0) / leg.ms);
+                // ゆっくり動き出してゆっくり止まる（ease-in-out）
+                const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+                setAngle(base + span * e);
+                if (p >= 1) { from = leg.to; resolve(); return; }
+                setTimeout(step, 16);
+            };
+            step();
+        })), Promise.resolve());
+    }
+
+    /** 重なったか／重ならなかったかを、先生の声かけの形で1〜2行にする（v1585） */
+    overlayVerdict(plan, wedgeWord) {
+        if (plan.mismatch > 0) {
+            // ★ 「くさびの絵が違うから別」とは**言わない**（同じ立体でもくさびの付き方は書き方で変わる）。
+            //   言うのは「回すだけでは重ならない」。裏返しは手前と奥を入れ替える＝鏡像をつくる操作
+            const a = readStereoOf(this._dispMolA), b = readStereoOf(plan.molB);
+            const mirrorFits = !!(a && b && a.mirrorCode === b.stereoCode);
+            return '→ どの向きでも重ならないね（赤い破線の◯がそろわないところ）。' +
+                '回すだけでは重ならない ＝ 同じ分子ではない。\n' +
+                (mirrorFits
+                    ? '裏返せば重なるけれど、裏返すと手前と奥が入れ替わる ＝ 鏡像をつくる操作。だから鏡像異性体。'
+                    : '裏返しても重ならない ＝ 鏡像でもない、別の立体異性体。');
+        }
+        if (plan.rms >= 2) {
+            // 立体はそろっているのに絵が合わない ＝ 紙面内の回転では届かない置き方（左右を反転した図など）
+            return `→ 立体はそろっているから同じ分子。でも紙の上で回すだけでは絵が重ならないね（ずれ ${Math.round(plan.rms)}px）。` +
+                '描き直せば重なるよ。';
+        }
+        return plan.turns === 0
+            ? `→ 回さなくても、${wedgeWord}そろっているね ＝ 同じ分子。`
+            : `→ ${plan.turns * 90}° 回したら、${wedgeWord}そろったね ＝ 回すだけで重なる同じ分子。`;
+    }
+
+    /**
+     * 影の中身を描く。⚠ **回す前の図Bの座標のまま**描く（回すのは外側の `rotate`）。
+     * くさび図モードでは水素とくさびも描く ＝ 手前・奥の印も図の一部として一緒に回る
+     */
+    drawOverlayGhostBody(mol, group, showWedge) {
+        const game = this.game;
+        const hydrogens = showWedge ? stretchStereoHydrogens(mol, mol.calculateHydrogens()) : [];
+        const wedgeSet = showWedge ? wedgedBondKeys(mol, hydrogens) : null;
+        const plain = (x, y) => !wedgeSet || !wedgeSet.has(x + '|' + y);
+        hydrogens.forEach(h => {
+            const parent = mol.atoms.find(a => a.id === h.parentId);
+            if (parent && plain(h.parentId, 'H:' + h.x + ',' + h.y)) {
+                game.renderTargetBond(parent.x, parent.y, h.x, h.y, 1, true, group);
+            }
+        });
+        mol.bonds.forEach(b => {
+            const a1 = mol.atoms.find(a => a.id === b.atomId1);
+            const a2 = mol.atoms.find(a => a.id === b.atomId2);
+            if (!a1 || !a2) return;
+            if (!plain(b.atomId1, b.atomId2) || !plain(b.atomId2, b.atomId1)) return;
+            game.renderTargetBond(a1.x, a1.y, a2.x, a2.y, b.type, false, group);
+        });
+        if (showWedge) drawWedges(mol, hydrogens, group);
+        hydrogens.forEach(h => game.renderTargetAtom('H', h.x, h.y, group));
+        mol.atoms.filter(a => a.element !== 'H')
+            .forEach(a => game.renderTargetAtom(a.element, a.x, a.y, group, a.charge || 0));
     }
 
     clearOverlay() {
         this._overlayOn = false;
+        this._overlayToken = (this._overlayToken || 0) + 1;   // 動いている途中の影を止める
+        this._overlayLabel = null;
+        this._overlayAngle = 0;
         const svgA = document.getElementById('sq-svg-a');
         const svgB = document.getElementById('sq-svg-b');
-        if (svgA) svgA.querySelectorAll('.sq-overlay-ghost, .sq-overlay-marks').forEach(el => el.remove());
+        if (svgA) svgA.querySelectorAll('.sq-overlay-ghost, .sq-overlay-marks, .sq-overlay-angle')
+            .forEach(el => el.remove());
         if (svgA && this._overlayViewBox) svgA.setAttribute('viewBox', this._overlayViewBox);
         this._overlayViewBox = null;
         if (svgB) svgB.style.opacity = '';
