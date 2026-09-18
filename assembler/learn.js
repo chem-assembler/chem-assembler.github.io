@@ -6972,10 +6972,19 @@ class ReferenceBook {
     renderPlainTable(block) {
         const wrap = document.createElement('div');
         wrap.className = 'ref-table-wrap';
+        /* ⚠⚠ **手で書く表の見出しに「（N行）」を足さない**（v1584・ユーザーの指摘「(5行)はいらない」）。
+         *
+         * ★ 機械が組む3つの表（`renderStageTable` / `renderMechanismTable` / `renderDehydrationTable`）
+         *   が見出しに件数を出しているのは**「絞っていない」と名乗るため**（原則1・参照は全体像で渡す）——
+         *   行を選ぶ引数が無いので「系列の全件」「登録の全件」しか出せず、
+         *   件数はその約束を読み手が数えて確かめられる形にしたもの（`REF3`/`REF15` が同じ数を見張る）。
+         * ⛔ **手で書く表には名乗る約束が無い。** 行は原稿に書いたぶんがそのまま出るだけなので、
+         *   「（5行）」は **原稿の行数を読み手に見せているだけ** ＝ 画面の小さい字を1つ増やして何も言っていない。
+         * ⚠ だから消すのは**この器だけ**。機械が組む3つは触らない（あちらは消すと約束が消える）。 */
         if (block.caption) {
             const cap = document.createElement('div');
             cap.className = 'ref-cap';
-            cap.innerHTML = block.caption + '（' + block.rows.length + '行）';
+            cap.innerHTML = block.caption;
             wrap.appendChild(cap);
         }
         const t = document.createElement('table');

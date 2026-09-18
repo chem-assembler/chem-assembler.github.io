@@ -55233,6 +55233,63 @@
         assert(true, `よくある誤解 ${found.length} 件（${found.map(m => m.at).join('・')}）`);
     });
 
+    /* ===== REF27: 手で書く表の見出しと寄せ（設計書 §30-1 / §30-3・v1584） =====
+     *
+     * ★ ユーザーのメモ（合成繊維のページ・2026-09-17）:
+     *   「**(5行)はいらない**」「**数値の列は右寄せを既定にできないか**」
+     *
+     * ★ ここが見るのは3つ:
+     *   ① ⚠⚠ **手で書く表の見出しは原稿の `caption` と1文字も違わない** ——
+     *     機械が組む3つの表（系列・機構・対応表）が件数を出しているのは
+     *     **「絞っていない」と名乗るため**で、手で書く表には名乗る約束が無い（§30-1）。
+     *     ⚠ だから**機械が組む表からは消えていないこと**も一緒に見る（消すと約束が消える）。
+     */
+    test('REF27: 手で書く表の見出しに行数を足さない（機械が組む表の件数は残す）', async (c) => {
+        const W = c.W;
+        const book = W.referenceBook;
+        assert(book, 'referenceBook が居ない');
+
+        /* ── ① 見出しは caption そのまま（行数を足さない）── */
+        const cap = '合成繊維の分類';
+        const w1 = book.renderBlock({
+            kind: 'table', caption: cap, source: 'slides:見本 s1（手で組んでいる）',
+            head: ['繊維', '原料'], rows: ['ナイロン66 | アジピン酸', 'ビニロン | 酢酸ビニル', 'アクリル | アクリロニトリル']
+        });
+        const capEl = w1.querySelector('.ref-cap');
+        assert(capEl, '手で書く表の見出しが出ていない');
+        assert(capEl.textContent === cap,
+            `手で書く表の見出しが原稿の caption と違う（「${capEl.textContent}」・行数を足していないか）`);
+        assert(!/行）|件）/.test(capEl.textContent), '手で書く表の見出しに行数・件数が付いている');
+
+        /* ⚠ 機械が組む表からは消えていない（あちらの件数は「絞っていない」という名乗り）*/
+        const stageCap = book.renderBlock({
+            kind: 'stageTable', variant: 'carbon', series: 'アルカン（直鎖）',
+            source: 'stages:アルカン（直鎖）', caption: '直鎖アルカン'
+        }).querySelector('.ref-cap');
+        assert(stageCap && /（\d+行）$/.test(stageCap.textContent),
+            `系列から組む表の見出しから件数が消えている（「${stageCap && stageCap.textContent}」）`
+            + ' ＝「絞っていない」という名乗りが消えた');
+
+        /* ★ 実データ: 見出しを持つ表すべてで caption と1文字も違わない（空回りしていない）*/
+        const pages = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
+        let hand = 0, captioned = 0;
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'table') return;
+            hand++;
+            if (!b.caption) return;
+            captioned++;
+            const el = book.renderBlock(b).querySelector('.ref-cap');
+            /* ⚠ `caption` は本文の記法（`**` や下付きの `~`）を通ってから入るので、
+                 素の字どうしで比べる（`<sub>` を剥いだ字が一致すれば足したものが無い） */
+            const raw = W.document.createElement('div');
+            raw.innerHTML = b.caption;
+            assert(el.textContent === raw.textContent,
+                `${p.id}: 手で書く表の見出しが caption と違う（「${el.textContent}」）`);
+        }));
+        assert(hand >= 10 && captioned >= 5,
+            `手で書く表が ${hand} 枚・うち見出しつき ${captioned} 枚（実データで空回りしている）`);
+    });
+
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====
      *
      * ⚠⚠ **化学の誤りの修正**（統合セッションの実測 2026-09-03）。
