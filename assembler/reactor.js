@@ -8857,6 +8857,26 @@ const RX_HOLD_MS = 350;
 const RX_POST_MS = 500;
 /** 大きくした H を親から離して置く長さ（丸の半径 10 どうしが重ならない。標準の結合は 42） */
 const RX_BIG_H_LEN = 28;
+/* ★ 環を回すとき、相手の置き場が避ける「掃いた跡」を何コマぶん見るか（v1584・`planEquation` ④）。
+ * ⚠ 回す角は π/3（60°）の倍数なので 6 コマ ＝ 10° ごと。★ 半径 10 の丸が 10° で進む長さは
+ *   環の外側（中心から 70 ほど）でも 12px ほど ＝ 丸1つぶんより細かい ＝ すり抜けが起きない。 */
+const RX_SWEEP_STEPS = 6;
+/* ★ 反応する H の道筋を曲げる幅の候補と、選ぶときに見るコマ数（v1556。物差しは v1584 で実物に替えた）。
+ * ⚠ **小さいほうから試して、重なりが 0 になった時点で止める**（いちばん小さい曲げを選ぶ）。 */
+const RX_BEND_AMPS = [20, -20, 32, -32, 44, -44, 56, -56, 70, -70];
+/* ★ 粗い候補で 0 にならなかったときだけ見る、細かい足し引き（`RX_BEND_MAX` を超えては曲げない） */
+const RX_BEND_FINE = [6, -6, 12, -12, 18, -18, 26, -26];
+const RX_BEND_MAX = 96;
+/* ⚠⚠ **見張り（`RXH1` の `bigHydrogenOverlaps(plan, 120)`）と同じ刻み**にする ——
+ *   0〜3 を 120 で割ると 0.025 刻みなので、1〜2 の1段は **40**。
+ *   ⓵ 実測: 24（＝ 0.042 刻み）だと **T=1.65 の1コマだけの重なりを飛び越して**しまい、
+ *      「探索は 0 と答えたのに見張りは 1 と数える」が3件（フェノールの臭素化・メタンの塩素化・ジアゾ化）。
+ *   ⚠ 細かくすればよいわけでもない（60 にするとジアゾ化が 2 に増える）—— **同じ刻みが最良**。 */
+const RX_BEND_SAMPLES = 40;
+/* ★ 曲げを選び直す周回の数。⚠ 相手はほかの反応する H の手でもあるので、1周では最善にならない */
+const RX_BEND_PASSES = 2;
+/* ★ 原子の丸に食い込む重なりは、手の線に丸がかかるより重く数える（曲げを選ぶときだけの重み） */
+const RX_BEND_ATOM_COST = 4;
 /* ★ 離したときに手が引く長さ（座標の単位。標準の結合は 40）。
  * ⚠ **割合で引かない**（実測）—— 原子の丸で両端 10 ずつ隠れるので、40 の結合で目に見える線は
  *   半分あたり 10 しかない。6割も引くと**線が消えて印の丸だけ**になり、「手」に見えなくなった。
@@ -10944,7 +10964,8 @@ class Reactor {
         } else {
             /* ★ 反応式ぶんの相手（[O]・NaOH・NaNO₂・無水酢酸・I₂・O₂ など）と副生成物を再生の写しにだけ置く（v1556）。
              *   `reuse` で付け替えた id は `changed`（ハイライト）にも写す */
-            anim = this.planEquation(rule.id, before, g.userMolecule, result);
+            // ⚠ 回した角を渡す（相手の置き場は「回し終わった図」だけでなく**掃いた跡**も避ける・v1584）
+            anim = this.planEquation(rule.id, before, g.userMolecule, result, rotation);
             if (anim && anim.renames.size && Array.isArray(result.changed)) {
                 result = { ...result, changed: result.changed.map(id => anim.renames.get(id) || id) };
             }
@@ -11275,7 +11296,7 @@ class Reactor {
         };
     }
 
-    planEquation(ruleId, before, mol, result) {
+    planEquation(ruleId, before, mol, result, rotation) {
         const eq = PARTNER_EQUATIONS[ruleId];
         if (!eq) return null;
         const G = (typeof GRID_SIZE !== 'undefined') ? GRID_SIZE : 42;
@@ -11396,6 +11417,37 @@ class Reactor {
         };
         occupy(before.atoms, before.bonds);
         occupy(mol.atoms, mol.bonds);
+        /* ★★ 環を**回している途中**の位置も避ける（v1584・ニトロ基の還元で実測）。
+         *
+         * ⚠⚠ 回すのは相手を置く**前**（`execute`）なので、`before` / `mol` は**回し終わった図**。
+         *   ⛔ 終わりの図だけで空きを探すと、**回っている最中に置換基が相手の上を通る** ——
+         *   ⓵ 実測: ニトロベンゼンの還元（環を 60° 回す）で、呼んだ H₂ の H の丸に
+         *      ニトロ基の O とその手が **5 コマ**重なった（`bigHydrogenOverlaps`・T=0.50〜0.55）。
+         *   ⚠ `buildPlayback` の「道筋を曲げる」（`_bendAvoid`）は**握手の段（T=1→2）だけ**で、
+         *      置き直しの段（T=0→1・回すのはここ）には掛かっていない ＝ あちらでは直せない。
+         * ★ だから**置き場のほうで**避ける ——
+         *   終わりの位置から角を**戻しながら**数コマぶんの位置と手を占有に足す ＝ 掃いた跡ごと空けさせる。
+         * ⚠ `_sweepAvoid = false` で今までどおり（否定対照）。 */
+        if (rotation && rotation.theta && this._sweepAvoid !== false) {
+            const back = (p, th) => {
+                const co = Math.cos(th), si = Math.sin(th);
+                const dx = p.x - rotation.cx, dy = p.y - rotation.cy;
+                return { x: rotation.cx + dx * co - dy * si, y: rotation.cy + dx * si + dy * co };
+            };
+            const turning = new Set(rotation.ids || []);
+            [before, mol].forEach(snap => {
+                const movers = snap.atoms.filter(a => heavy(a) && turning.has(a.id));
+                if (!movers.length) return;
+                for (let k = 1; k < RX_SWEEP_STEPS; k++) {
+                    const at = new Map(movers.map(a => [a.id, back(a, -rotation.theta * k / RX_SWEEP_STEPS)]));
+                    at.forEach(p => occA.push(p));
+                    snap.bonds.forEach(b => {
+                        const p = at.get(b.atomId1), q = at.get(b.atomId2);
+                        if (p && q) occS.push([p, q]);
+                    });
+                }
+            });
+        }
         /* ★ 水素の位置も避ける（v1556）。反応する H は大きな丸になって 28px まで伸びるので、
          *   相手が H のすぐ外に居ると丸どうしが重なる */
         const occH = this.molFromSnapshot(before).calculateHydrogens().concat(mol.calculateHydrogens());
@@ -11570,12 +11622,39 @@ class Reactor {
             i, j, d: Math.hypot(L.h.x - K.h.x, L.h.y - K.h.y) })));
         cand.sort((x, y) => x.d - y.d || x.i - y.i || x.j - y.j);
         const usedL = new Set(), usedG = new Set();
+        const lg = [];
         cand.forEach(c => {
             if (usedL.has(c.i) || usedG.has(c.j)) return;
             usedL.add(c.i); usedG.add(c.j);
+            lg.push([c.i, c.j]);
+        });
+        /* ★★ **交差をほどく**（2-opt・v1584）。⚠ 上の組み方は「近いものから順に取る」だけなので、
+         *   ⛔ **合計がいちばん短い組み方にならないことがある** ——
+         *   ⓵ 実測（ニトロベンゼンの還元）: N に付く2つの H を 59＋116 で組んでいたが、
+         *      入れ替えると 70＋84。★ 長いほうの H が **N を突き抜けて反対側へ回り込んで**いた
+         *      （`bigHydrogenOverlaps` で N の丸の中に入るコマが出る）。
+         * ★ 2つの組を入れ替えて合計が短くなるなら入れ替える ＝ **交差している組は必ずほどける**
+         *   （交差する2線分は、つなぎ替えると必ず合計が短くなる）。
+         * ⚠ `_hSwap = false` で今までどおり（否定対照）。⚠ 順は `cand` の並びで固定 ＝ 結果は毎回同じ。 */
+        if (this._hSwap !== false && lg.length > 1) {
+            const dLG = (i, j) => Math.hypot(lost[i].h.x - gained[j].h.x, lost[i].h.y - gained[j].h.y);
+            for (let pass = 0; pass < lg.length; pass++) {
+                let moved = false;
+                for (let u = 0; u < lg.length; u++) {
+                    for (let v = u + 1; v < lg.length; v++) {
+                        const [i1, j1] = lg[u], [i2, j2] = lg[v];
+                        if (dLG(i1, j2) + dLG(i2, j1) < dLG(i1, j1) + dLG(i2, j2) - 0.01) {
+                            lg[u] = [i1, j2]; lg[v] = [i2, j1]; moved = true;
+                        }
+                    }
+                }
+                if (!moved) break;
+            }
+        }
+        lg.forEach(([i, j]) => {
             const id = nid();
-            B.push({ id, h: lost[c.i].h, p: lost[c.i].p });
-            A.push({ id, h: gained[c.j].h, p: gained[c.j].p });
+            B.push({ id, h: lost[i].h, p: lost[i].p });
+            A.push({ id, h: gained[j].h, p: gained[j].p });
         });
         const restL = lost.filter((L, i) => !usedL.has(i));
         let restG = gained.filter((K, j) => !usedG.has(j));
@@ -11834,64 +11913,72 @@ class Reactor {
          *   道筋を横へ amp·sin(πe) だけずらし、途中のどのコマでもほかの原子の丸・結合の線に重ならない
          *   いちばん小さい曲げを選ぶ。`_bendAvoid = false` で曲げない（否定対照） */
         const P0 = new Map(E1.snap.atoms.map(a => [a.id, a])), P1 = new Map(E2.snap.atoms.map(a => [a.id, a]));
-        const allIds = [...new Set([...P0.keys(), ...P1.keys()])];
-        const bkey = b => (b.atomId1 < b.atomId2 ? `${b.atomId1}|${b.atomId2}` : `${b.atomId2}|${b.atomId1}`);
-        const bondsU = [...new Map(E1.snap.bonds.concat(E2.snap.bonds).map(b => [bkey(b), [b.atomId1, b.atomId2]])).values()];
-        const reactSet = new Set(reacting);
         const bend = new Map();
-        const posAt = (id, e) => {
-            const a = P0.get(id), b = P1.get(id);
-            if (!(a && b)) return a || b;
-            const o = rxBendOffset(bend, id, e);
-            return { x: a.x + (b.x - a.x) * e + o.x, y: a.y + (b.y - a.y) * e + o.y };
-        };
         const hParents = new Map(reacting.map(id => [id, new Set([pB.get(id), pA.get(id)].filter(Boolean))]));
-        if (this._bendAvoid !== false) {
-            reacting.forEach(id => {
-                const a = P0.get(id), b = P1.get(id);
-                const len = a && b ? Math.hypot(b.x - a.x, b.y - a.y) : 0;
-                if (len < 1) return;
-                const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
-                const sA = E1.scale.get(id) || 0, sB = E2.scale.get(id) || 0;
-                const cost = amp => {
-                    bend.set(id, { nx, ny, amp });
-                    let c = 0;
-                    for (let k = 1; k < 16; k++) {
-                        const e = k / 16, h = posAt(id, e), r = 6 + 4 * (sA + (sB - sA) * e);
-                        for (const oid of allIds) {
-                            if (oid === id) continue;
-                            const o = posAt(oid, e);
-                            const ro = P0.get(oid) && isH(P0.get(oid)) || P1.get(oid) && isH(P1.get(oid))
-                                ? (reactSet.has(oid) ? 10 : 6) : 10;
-                            const lim = hParents.get(id).has(oid) ? Math.max(r, ro) : r + ro - 1;
-                            if (Math.hypot(o.x - h.x, o.y - h.y) < lim) c++;
-                        }
-                        for (const [u, v] of bondsU) {
-                            if (u === id || v === id) continue;
-                            const p = posAt(u, e), q = posAt(v, e);
-                            if (p && q && pointSegmentDistance(h, p, q) < r - 1) c++;
-                        }
-                    }
-                    return c;
-                };
-                let best = { amp: 0, c: cost(0) };
-                if (best.c) {
-                    for (const amp of [20, -20, 32, -32, 44, -44, 56, -56, 70, -70]) {
-                        const c = cost(amp);
-                        if (c < best.c) best = { amp, c };
-                        if (!c) break;
-                    }
-                }
-                if (best.amp) bend.set(id, { nx, ny, amp: best.amp }); else bend.delete(id);
-            });
-        }
-        return {
+        const plan = {
             bend, hParents,
             S0, S1: E1.snap, A1: E2.snap, A2,
             scaleS1: E1.scale, scaleA1: E2.scale,
             mid: morphStages === 'joinFirst' ? this.buildMidSnapshot(E1.snap, E2.snap, 'moveFirst') : null,
             rot, turning, turn, reacting, partnerIds, transient, adjusted
         };
+        if (this._bendAvoid !== false) {
+            /* ★★ **物差しは再生の実物**（v1584）。⚠ もとは「真っ直ぐ動く」と仮定した近似で数えていたが、
+             *   握手の段は**浮かせて振る**（`hsEase` / `handshakeHandsAt`）ので**実際の形と食い違い**、
+             *   ⓵ ニトロ基の還元では近似が 0 と答えた曲げで **実測 5 コマ**重なっていた。
+             *   ★ `bigHydrogenOverlaps` を握手の段だけ・この H だけに絞って呼ぶ ＝
+             *     **見張りと同じ物差しで選ぶ**（決めごとを2か所に持たない）。
+             * ⚠⚠ **2周する**（`RX_BEND_PASSES`）—— 相手は**ほかの反応する H の手**でもあるので、
+             *   1周目に決めた曲げは、あとの H が曲がったあとには最善でなくなる。
+             *   ⓵ ニトロ基の還元は H が6つ（N へ2つ・O へ4つ）同じ方から来るので、
+             *     1周では 4 コマ残り、2周目で 0 になった。★ 途中で 0 になれば打ち切る。 */
+            const sides = new Map();
+            reacting.forEach(id => {
+                const a = P0.get(id), b = P1.get(id);
+                const len = a && b ? Math.hypot(b.x - a.x, b.y - a.y) : 0;
+                if (len >= 1) sides.set(id, { nx: -(b.y - a.y) / len, ny: (b.x - a.x) / len });
+            });
+            /* ⚠ **重なりの重さは同じではない。**★ ほかの**原子の丸**に食い込むほうが、
+             *   手の線に丸がかかるより目に付く（線は細く、掛かっても字の上を横切らない）。
+             *   ⓵ 実測: 重みを付けないと、同じ「1コマ」でも **O に 1.7px まで食い込む**曲げが
+             *     選ばれることがあった（手の線に 4px かかるだけの曲げと同点になるため）。 */
+            const hits = id => this.bigHydrogenOverlaps(plan, RX_BEND_SAMPLES, { T0: 1, T1: 2, only: id })
+                .reduce((s, o) => s + (o.bond ? 1 : RX_BEND_ATOM_COST), 0);
+            for (let pass = 0; pass < RX_BEND_PASSES; pass++) {
+                let left = 0;
+                sides.forEach(({ nx, ny }, id) => {
+                    const cost = amp => {
+                        if (amp) bend.set(id, { nx, ny, amp }); else bend.delete(id);
+                        return hits(id);
+                    };
+                    let best = { amp: 0, c: cost(0) };
+                    if (best.c) {
+                        for (const amp of RX_BEND_AMPS) {
+                            const c = cost(amp);
+                            if (c < best.c) best = { amp, c };
+                            if (!c) break;
+                        }
+                    }
+                    /* ★ 粗い候補で 0 にならなかったときだけ、**いちばん良かった幅のまわりを細かく**見る
+                     *   （v1584）。⚠ 0 になった回はここへ来ない ＝ **今までどおり「いちばん小さい曲げ」**。
+                     *   ⓵ 実測: ジアゾ化は粗い10通りでは最小が 1 コマ（手の線に 0.5px）だったが、
+                     *      細かく見ると 0 になる幅がある（重なりは幅に対して滑らかに変わらない）。 */
+                    if (best.c) {
+                        for (const d of RX_BEND_FINE) {
+                            const amp = best.amp + d;
+                            if (!amp || Math.abs(amp) > RX_BEND_MAX) continue;
+                            const c = cost(amp);
+                            if (c < best.c) best = { amp, c };
+                            if (!c) break;
+                        }
+                    }
+                    cost(best.amp);
+                    left += best.c;
+                });
+                if (!left) break;
+            }
+        }
+        return plan;
     }
 
     /** 時刻 T（0〜3）の段と、その段で描く前後・進み・位置の差し替え・H の大きさ */
@@ -11972,12 +12059,19 @@ class Reactor {
      * 大きくした H ＝ 大きさ 0.5 以上。見えない（薄い 0.3 以下の）原子・線は数えない。
      * その H 自身の手（H から伸びる手・H へ伸びてくる手）は数えない。
      */
-    bigHydrogenOverlaps(plan, samples = 90) {
+    bigHydrogenOverlaps(plan, samples = 90, opts) {
+        /* ★ `opts` は**段取りを選ぶときに自分で使う**ための絞り（v1584）:
+         *   `T0` / `T1` … 見る段（既定は 0〜3 の全部）／`only` … この id の H だけ見る。
+         * ⚠ 絞りを足しただけで**数え方は1つ**（見張りと、曲げを選ぶ側が同じ物差しを使う）。 */
+        const T0 = opts && opts.T0 !== undefined ? opts.T0 : 0;
+        const T1 = opts && opts.T1 !== undefined ? opts.T1 : 3;
+        const only = (opts && opts.only) || null;
         const out = [];
         for (let i = 0; i <= samples; i++) {
-            const T = 3 * i / samples;
+            const T = T0 + (T1 - T0) * i / samples;
             const { atoms, segs } = this.playbackGeometryAt(plan, T);
             atoms.forEach(h => {
+                if (only && h.id !== only) return;
                 if (h.element !== 'H' || h.scale < 0.5 || h.opacity < 0.3) return;
                 const r = 6 + 4 * h.scale;
                 const own = (plan.hParents && plan.hParents.get(h.id)) || new Set();
