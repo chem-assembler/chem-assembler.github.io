@@ -4138,8 +4138,9 @@ const RX_HALOGENS = ['Cl', 'Br', 'I'];
  *   畳み方は `sideChainOxidationSites` と同じ手口（**生成物の正準コード**で数える）。
  */
 function dehydrohalogenationSites(mol) {
-    const out = [];
+    const cands = [];
     const seen = new Set();
+    const posOf = id => mol.atoms.find(x => x.id === id);
     /* ⚠⚠ **芳香環の炭素は外す**（実測で踏んだ）。クロロベンゼンで札が出て、
      *   環の中に4本目の二重結合が入った**実在しない分子**ができていた。
      *   ★ 芳香族の C-Cl は切れにくく、教科書は高温高圧の加水分解
@@ -4154,8 +4155,10 @@ function dehydrohalogenationSites(mol) {
         [[0, 1], [1, 0]].forEach(([i, j]) => {
             const ca = pair[i], cb = pair[j];
             if (mol.getFreeValency(cb.id) < 1) return;          // 抜ける水素が無い
+            // 同じ炭素にハロゲンが2つ以上（1,1-ジクロロ…）なら、どれを抜くかも座標で決める
             const hal = mol.getNeighbors(ca.id)
-                .find(n => n.type === 1 && RX_HALOGENS.includes(n.atom.element));
+                .filter(n => n.type === 1 && RX_HALOGENS.includes(n.atom.element))
+                .sort((p, q) => (p.atom.x - q.atom.x) || (p.atom.y - q.atom.y))[0];
             if (!hal) return;
             const comp = componentOf(mol, ca.id);
             if (mol.atoms.some(x => comp.has(x.id) && x.element !== 'C' && x.element !== 'H' &&
@@ -4167,10 +4170,28 @@ function dehydrohalogenationSites(mol) {
             if (!nb) return;
             nb.type = 2;
             const key = [...comp].sort().join(',') + '|' + canonicalCode(sub);
-            if (seen.has(key)) return;
-            seen.add(key);
-            out.push([ca.id, cb.id, hal.atom.id]);
+            cands.push({ key, site: [ca.id, cb.id, hal.atom.id] });
         });
+    });
+    /* ⚠⚠ **畳む前に座標で並べる**（v1591・DT1）。`Bond` は端点を**原子IDの小さい順**に
+     *   持つので、上の `[[0, 1], [1, 0]]` はどちらの向きが先に来るかが**原子IDの乱数で決まる**。
+     *   そのまま「先に来たほうを残す」と、1,2-ジクロロエタンで**どちらの Cl が抜けるか**
+     *   （＝ 生成物の図）が呼ぶたびに入れ替わっていた（1,2-ジブロモエタン・
+     *   ヘキサクロロシクロヘキサンも同じ）。残す1件は「X の付いた炭素 → 相手の炭素 → X」の
+     *   座標の順（左 → 上）で決める（CLAUDE.md「原子IDに順序を頼らない」）。 */
+    const cmp = (p, q) => (p.x - q.x) || (p.y - q.y);
+    cands.sort((u, v) => {
+        for (let k = 0; k < 3; k++) {
+            const d = cmp(posOf(u.site[k]), posOf(v.site[k]));
+            if (d) return d;
+        }
+        return 0;
+    });
+    const out = [];
+    cands.forEach(({ key, site }) => {
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(site);
     });
     return out;
 }
