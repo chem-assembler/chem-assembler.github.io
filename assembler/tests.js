@@ -18434,6 +18434,60 @@
         }
     });
 
+    test('IW26: 「並べ直す」の字幕も答案を「個」で数える（3つの練習とも・発注書 §C）', async (c) => {
+        // ★ 実発生。§C（コミット 50ed6f5）で帯・パネル・答え合わせは「いま N個 描いてあります」に
+        //   そろえたが、**そのあとに足した「🧹 並べ直す」（W4・v1389）だけが「枚」のまま**残った。
+        //   同じ画面に「いま 4個 描いてあります」と「答案 4枚を 2×2 に並べ直しました」が同時に出る
+        //   （2026-08-16 公開のロング動画 L2 と、そこから切り出した縦型の両方に並んで映っている）。
+        // ⚠ 見るのは**実際に出た字幕**（#canvas-toast）で、ソースの文字列ではない ＝
+        //   3つの練習それぞれの配線がこの文を出すことまで込みで止まる。
+        //   IW15（帯・パネル・答え合わせ）と合わせて、答案を数える語の全部が「個」で挟まる。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('learn');
+        const GRID = W.GRID_SIZE;
+        const tn = D.getElementById('canvas-toast');
+        assert(tn, '#canvas-toast が無い（前提が崩れている）');
+
+        /** 並べ直しが必ず動く散らかり方（元ブランチ claude/suspicious-tu-bae8ed では IW17。main の IW17 は別物）。ブタンを5つ、格子から外して置く */
+        const scatter = () => {
+            const m = new W.Molecule();
+            [[0, 0], [300, 40], [80, 180], [350, 260], [20, 400]].forEach(([dx, dy]) => {
+                const ids = [0, 1, 2, 3].map(i => m.addAtom('C', 30 + dx + i * GRID, 30 + dy).id);
+                for (let i = 0; i < 3; i++) m.addBond(ids[i], ids[i + 1], 1);
+            });
+            g.userMolecule = m;
+            g.history = []; g.redoStack = [];
+            g.updateDrawing();
+        };
+
+        const seen = [];
+        [['異性体', W.isomerPractice], ['アルキル基', W.alkylPractice], ['立体異性体', W.stereoPractice]]
+            .forEach(([label, practice]) => {
+                assert(practice && typeof practice.tidySheet === 'function',
+                    `${label}: tidySheet が無い（配線が変わった）`);
+                scatter();
+                tn.textContent = '';
+                practice.tidySheet();
+                const t = tn.textContent;
+                seen.push({ label, t });
+                assert(/^答案 \d+個を \d+×\d+ に並べ直しました/.test(t),
+                    `${label}: 字幕が「答案 N個を R×C に並べ直しました」でない（${t}）`);
+                assert(!/\d+\s*枚/.test(t), `${label}: 字幕が答案を「枚」で数えている（${t}）`);
+            });
+        assert(seen.length === 3, `3つとも測れていない（${seen.length}）`);
+
+        // ★★ 空振り防止 —— この物差しが**直す前の文言を本当に弾く**ことをその場で確かめる
+        const old = '答案 4枚を 2×2 に並べ直しました（図の形は変えていません。↩ で戻せます）';
+        assert(!/^答案 \d+個を \d+×\d+ に並べ直しました/.test(old),
+            '直す前の「答案 N枚を」が新しい物差しを通ってしまう ＝ 空振りの緑');
+        assert(/\d+\s*枚/.test(old), '「N枚」の見張りが働いていない');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
         // §15-5a: 表示中の段は**貼り付いたまま自動更新**でなければならない。
         // 再表示のために押し直させる作りは「ヒントを使った量」ではなく**記憶力**を測ることになる。
