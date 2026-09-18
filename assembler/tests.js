@@ -22,7 +22,7 @@
  * | BZ  | 1〜7   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限）。**6〜7 は選択画面のプリセット**＝ DESIGN_practice_revision.md §4-3。6 は「押すだけで芳香族の回が開き、環4つで 4/4」・**7 は否定対照**＝ 芳香族のボタンが生の列挙（`problems` → `enumerateConstitutionalIsomers`）の道へ落ちていないこと |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
- * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
+ * | CF  | 1〜6   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致・**6 は酸無水物をエステルと呼ばない**＝ anhydride 型〈v1592〉。画面3か所・絞り込みの ester/lactone/M12・反応とクイズの件数まで見る） |
  * | CS  | 1〜5   | ★★ **「条件にある構造を書き出す」**（v1510・ユーザー原文 2026-09-03「書き出しを充実させ／一通りすべて書き出させる／条件にある構造を書き出す／に分けるイメージです」。設計は `DESIGN_isomer_practice.md` §20）。**書き出しの面が2種類に分かれた**ので、①（分子式＋分類で全部）と②（条件で1〜数個）が**画面から読み取れる**ことがまず要件。1 が本体（見出し2本・②が①の中に埋まっていない・13件を開いて答えを**名前で**突き合わせ・見出しと作業帯が条件そのものを名乗る）・**2 は否定対照**＝ 同じ分子式でも条件に合わない構造は `scope` で断られ、断り文が条件を名乗る（＋合う構造は `ok` ＝ ①が「何でも scope」の空振りでないこと）・**3 は在庫の門番**＝ C₂〜C₅ を総当たりして出題を作り直し集合ごと突き合わせる。⚠⚠ **落としているのは「ザイツェフ／マルコフニコフの主生成物だけを数えるか、副生成物まで数えるかで答えが変わるもの」11件だけで、答えの少なさではない**（ユーザー明言「答えが多くない書き出し問題は練習問題として有用」＝ `IP_MIN_ISOMERS` はこの型に掛けない。**答えが1種の回が4件 出荷されている**ことをここで固定する）・**4 は「立体異性体の有無」**＝ 13件すべてが `stereoAsked`（★ 段が「立体異性体がある回」にだけ出ると**段の有無が答えを漏らす**）で、**あり6件・なし7件を名指し**・**5 は陰性対照**＝ ②を足しても①の答えの数が1つも動かない（開く前後のスナップショット比較。`IP4` の既知値の表とは別の壊れ方＝キャッシュ汚染を見る）＋記録の鍵が①と衝突しない |
  * | CT  | 1      | ★★ **添え物の字のコントラスト**（v1530・WCAG 2.1 AA。設計は `DESIGN_reference_book.md` §21）。⚠⚠ `--text-muted: #606880` が **20 種の字**で AA（4.5:1）を割っていた —— どれも 12px 前後なので**「大きい字の緩和（3:1）」も使えない**。★ 直したのは `:root` の1行なので**誰かが1文字直せば黙って戻る** ＝ ここが門番。1 は `--text-muted` で描かれた字を3面（🧪自由・📚学習・📖資料ペイン）で集め、**祖先をさかのぼって組み立てた実効の地**（パネル・モーダル・薄敷きが重なるほど地は明るくなり比は**下がる**。実測で 3.14〜3.57 の幅があった ＝ `--bg-main` の上だけ見るといちばん悪い場所を 0.4 ぶん見落とす）に対して比を出す。★ **緩和は実測の px と太さで判定**（18.66px 以上の太字 or 24px 以上）。★ **空振りで緑にしない**（10 件未満・3面そろわなければ赤）。★ **否定対照を自分の中に持つ**＝ 直す前の `#606880` を同じ地に載せると 10 件以上が割れること（地の組み立てか比の式が壊れたら「全部合格」ではなくここが赤くなる）。⚠ **名簿は持たない**（1変数の話なので要らない）。⚠ 面を 40 通り・全部の文字まで広く見るのは`tools/check-contrast.mjs` の係で、**あちらは手で走らせるもの ＝ 門番ではない**（§21-6） |
  * | CV  | 1〜4   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個）。**4 は分子が増えない反応まで広げた悉皆**（v1500）＝ 反応の前後で「重原子ごとの隣の原子 id ＋ 結合次数」を取り、変わったのに印が無い／変わっていないのに印がある を全 49 本で見る。⚠ **1 は分かれた成分しか見ないので、分子が増えない 35 本は無検査だった** —— 実測で4本の赤（ジエン重合の中央へ移った C=C 6個・加硫の相方2個・ヨードホルムの O 1個の渡し落とし／ビニロンの cA・cB の渡しすぎ）。名指しの許容は2件・変化なしが正しい `_info` 6本も名指しで固定 |
@@ -12055,6 +12055,7 @@
         const PAIRS = [
             ['カルボキシ基 -COOH', 'carboxyl'],
             ['エステル結合 -COO-', 'ester'],
+            ['酸無水物 -CO-O-CO-', 'anhydride'],
             ['アミド結合 -CO-N<', 'amide'],
             ['アルデヒド基 -CHO', 'aldehyde'],
             ['ケトンの C=O', 'ketone'],
@@ -12077,6 +12078,115 @@
         });
         assert(mismatches.length === 0,
             `構造の要点と官能基検出が食い違う図が ${mismatches.length} 件: ${mismatches.slice(0, 5).join(' / ')}`);
+    });
+
+    test('CF6: 酸無水物 -CO-O-CO- はエステルではない（中央の O ごとに anhydride 1件）', async (c) => {
+        // v1592（claude/trusting-wiles-4bc22b の取り込み直し。ユーザー決定: ブランチ方式を正にする）
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const typesOf = (name) => W.findFunctionalGroups(fromLib(name)).map(x => x.type);
+
+        // ---- (1) 登録ずみの酸無水物6件が anhydride ×1 で、ester を1件も立てない ----
+        // ⚠ 直す前は **どちらのカルボニル炭素から見てもエステルの形**なので
+        //   `[{type:'ester'},{type:'ester'}]` が返り、「⚗ この分子の反応」カードに
+        //   **エステル結合×2** と出ていた。高校化学では別の分類（`org.carbonyl.acid-anhydride`）
+        const ANHYDRIDES = ['無水酢酸', '無水プロピオン酸', '無水安息香酸',
+            '無水フタル酸', '無水マレイン酸', '無水コハク酸'];
+        ANHYDRIDES.forEach(nm => {
+            const t = typesOf(nm);
+            assert(t.filter(x => x === 'anhydride').length === 1,
+                `${nm} の酸無水物が ${t.filter(x => x === 'anhydride').length} 件（1件を期待。${t.join('/')}）`);
+            assert(!t.includes('ester'), `${nm} が「エステル結合」として拾われている（${t.join('/')}）`);
+            // 中央の O がエーテル結合に化けていないこと（エーテルの枝と同じ C-O-C の形をしている）
+            assert(!t.includes('ether'), `${nm} の中央の O が「エーテル結合」と出ている（${t.join('/')}）`);
+        });
+
+        // ---- (2) atomIds の並びは ester とそろっている（reactor.js の加水分解がこの順で受ける）----
+        // [カルボニルC, =O, 中央の-O-, もう一方のカルボニルC, その=O]
+        const acAn = fromLib('無水酢酸');
+        const gAn = W.findFunctionalGroups(acAn).find(x => x.type === 'anhydride');
+        const el = (id) => acAn.atoms.find(a => a.id === id).element;
+        assert(gAn.atomIds.length === 5, `atomIds が ${gAn.atomIds.length} 個（5個を期待）`);
+        assert(['C', 'O', 'O', 'C', 'O'].every((e, i) => el(gAn.atomIds[i]) === e),
+            `atomIds の並びが違う（${gAn.atomIds.map(el).join(',')}）`);
+        const bondType = (p, q) => (acAn.bonds.find(b =>
+            (b.atomId1 === p && b.atomId2 === q) || (b.atomId1 === q && b.atomId2 === p)) || {}).type;
+        assert(bondType(gAn.atomIds[0], gAn.atomIds[1]) === 2 &&
+               bondType(gAn.atomIds[0], gAn.atomIds[2]) === 1 &&
+               bondType(gAn.atomIds[3], gAn.atomIds[2]) === 1 &&
+               bondType(gAn.atomIds[3], gAn.atomIds[4]) === 2,
+            'atomIds が -C(=O)-O-C(=O)- の並びになっていない');
+
+        // ---- (3) 否定対照: 本物のエステルは今までどおり ester のまま ----
+        // 環状エステル（ラクトン）・高分子・ギ酸エステルまで含めて、1件も落ちていないこと
+        [['酢酸エチル', 1], ['安息香酸メチル', 1], ['ギ酸メチル', 1],
+            ['γ-ブチロラクトン（4-ブタノリド）', 1], ['ポリエチレンテレフタラート', 5]].forEach(([nm, n]) => {
+            const t = typesOf(nm);
+            assert(t.filter(x => x === 'ester').length === n,
+                `${nm} のエステルが ${t.filter(x => x === 'ester').length} 本（${n} 本を期待。${t.join('/')}）`);
+            assert(!t.includes('anhydride'), `${nm} が酸無水物と出ている（${t.join('/')}）`);
+        });
+        // エーテルも巻き添えにしていない（C-O-C の枝を3分岐に書き換えたので）
+        assert(typesOf('ジメチルエーテル').includes('ether'), 'ジメチルエーテルがエーテルでなくなった');
+        assert(typesOf('アニソール（メトキシベンゼン）').includes('ether'), 'アニソールがエーテルでなくなった');
+
+        // ---- (4) 画面に出る分類がエステルから酸無水物へ移ったこと ----
+        // learn.js の分類表（異性体の一覧の見出し）と、game.js の「⚗ この分子の反応」カード
+        assert(W.categorizeMolecule(fromLib('無水酢酸')) === '酸無水物',
+            `learn の分類が「${W.categorizeMolecule(fromLib('無水酢酸'))}」（酸無水物を期待）`);
+        assert(W.categorizeMolecule(fromLib('酢酸エチル')) === 'エステル',
+            `酢酸エチルの learn の分類が「${W.categorizeMolecule(fromLib('酢酸エチル'))}」（否定対照）`);
+        assert(g.functionalGroupSummary(fromLib('無水酢酸')) === '酸無水物（-CO-O-CO-）',
+            `⚗カードの表示が「${g.functionalGroupSummary(fromLib('無水酢酸'))}」`);
+        assert(W.describeStructure(fromLib('無水酢酸')).some(p => p.startsWith('酸無水物 -CO-O-CO- ×1')),
+            `構造のポイントに酸無水物が出ない: ${W.describeStructure(fromLib('無水酢酸')).join('、')}`);
+        assert(!W.describeStructure(fromLib('無水酢酸')).some(p => p.startsWith('エステル結合')),
+            `構造のポイントにエステル結合が出る: ${W.describeStructure(fromLib('無水酢酸')).join('、')}`);
+
+        // ---- (5) 絞り込みの「加水分解するとカルボン酸とアルコールが得られた」に当たらない ----
+        // 酸無水物の加水分解で出るのはカルボン酸2つで、アルコールは1つも出ない。
+        // ラクトン（環状エステル）のカードにも当たってはいけない（無水フタル酸は環状だが
+        // ラクトンではない）——どちらも `ester` を見ているので、型を分けた効き目がここに出る
+        assert(W.NW && W.NARROW_CARDS, '絞り込みの NW / NARROW_CARDS が無い（テストの前提が崩れている）');
+        const card = (id) => W.NARROW_CARDS.find(x => x.id === id);
+        ['無水酢酸', '無水フタル酸', '無水マレイン酸', '無水コハク酸', '無水安息香酸'].forEach(nm => {
+            const m = fromLib(nm);
+            assert(!card('ester').test(m), `${nm} が「エステル結合をもつ」に当たる`);
+            assert(!card('lactone').test(m), `${nm} が「環状エステル（ラクトン）」に当たる`);
+        });
+        // ⚠ main 側だけにある使い先: M12 の「加水分解してから片割れを見る」（NW.hydrolysis）。
+        //   直す前は無水酢酸が「酢酸＋酢酸」を酸とアルコールの組として2つ返し、
+        //   アルコール側の酢酸を読んで「得られたアルコールがヨードホルム陽性」にまで当たっていた
+        assert(W.NW.hydrolysis(fromLib('無水酢酸')).pairs.length === 0,
+            `無水酢酸の加水分解が酸とアルコールの組を ${W.NW.hydrolysis(fromLib('無水酢酸')).pairs.length} 組返す`);
+        assert(!card('hyd-alc-iodoform').test(fromLib('無水酢酸')), '無水酢酸が「加水分解で得られたアルコールがヨードホルム陽性」に当たる');
+        // 否定対照: 本物のエステルは今までどおり当たる
+        assert(card('ester').test(fromLib('酢酸エチル')), '酢酸エチルが「エステル結合をもつ」に当たらない');
+        assert(card('lactone').test(fromLib('γ-ブチロラクトン（4-ブタノリド）')), 'γ-ブチロラクトンがラクトンに当たらない');
+        assert(W.NW.hydrolysis(fromLib('酢酸エチル')).pairs.length === 1, '酢酸エチルの加水分解が組を返さない');
+        assert(card('hyd-alc-iodoform').test(fromLib('酢酸エチル')), '酢酸エチルが「加水分解で得られたアルコールがヨードホルム陽性」に当たらない');
+        assert(W.NW.partsLabel(fromLib('無水酢酸')) === '酸無水物',
+            `候補の内訳が「${W.NW.partsLabel(fromLib('無水酢酸'))}」（酸無水物を期待）`);
+        assert(!/ラクトン/.test(W.NW.partsLabel(fromLib('無水フタル酸'))),
+            `無水フタル酸の候補の内訳が「${W.NW.partsLabel(fromLib('無水フタル酸'))}」（ラクトンと呼んでいる）`);
+        assert(W.NW.partsLabel(fromLib('酢酸エチル')) === 'エステル',
+            `酢酸エチルの候補の内訳が「${W.NW.partsLabel(fromLib('酢酸エチル'))}」（否定対照）`);
+
+        // ---- (6) 反応とクイズは型を分けても結果が同じ（局所の回避策をまとめた先）----
+        const rule = (id) => W.REACTION_RULES.find(r => r.id === id);
+        ANHYDRIDES.forEach(nm => {
+            const n = rule('hydrolysis_anhydride').detect(fromLib(nm)).length;
+            assert(n === 1, `${nm} の酸無水物の加水分解が ${n} 箇所（1を期待）`);
+            assert(rule('hydrolysis_ester').detect(fromLib(nm)).length === 0, `${nm} にエステルの加水分解が出る`);
+            assert(!W.compoundGroupsOf(fromLib(nm)).includes('ester'), `${nm} がクイズの ester の軸に入る`);
+        });
+        assert(rule('hydrolysis_ester').detect(fromLib('酢酸エチル')).length === 1, '酢酸エチルにエステルの加水分解が出ない（否定対照）');
+        assert(W.compoundGroupsOf(fromLib('酢酸エチル')).includes('ester'), '酢酸エチルがクイズの ester の軸から落ちた（否定対照）');
     });
 
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
