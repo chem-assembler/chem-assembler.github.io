@@ -34731,6 +34731,168 @@
         c.reset();
     });
 
+    /* ===== 反応の結果は呼ぶたびに変わらない（MK1・DT1・2026-08-26） =====
+       **同じ版・同じブラウザで、同じ分子に同じ反応を2回起こすと結果が違う**という実測から始めた。
+       `Molecule.addAtom` の原子IDは乱数（`atom_xxxxxxxxx`）で、`Bond` は端点を
+       **IDの小さい順**に並べ替えて持つ。したがって `findFunctionalGroups` が返す
+       `cc_double` の `atomIds` は**毎回どちらが先に来るか分からない**。
+       この並びを「どちらを先に見るか」に使っていた箇所が2つあり、両方が揺れていた:
+         ① マルコフニコフ則の同点処理（`addAcrossMultipleBond`）… 置換基が付く炭素
+         ② 酸化開裂（`oxidative_cleavage`）… `componentOf(mol, id2)` の側を下へ逃がす
+       ①はさらに**炭素だけを数えていた**ため、ビニル位にヘテロ原子が付く分子
+       （塩化ビニル・酢酸ビニル・ビニルアルコール・メチルビニルエーテル）で左右が同点になり、
+       **できる分子そのものが毎回入れ替わっていた**（塩化ビニル＋HCl が
+       1,1-ジクロロエタン と 1,2-ジクロロエタン。実測20回で 11:9）。
+
+       ⚠ **検査は乱数を待たない**。`relabelIds` で原子IDを「並べた順」に振り直した複製を作れば、
+       `Bond` の正規化を通じて **`site` の並びを手で両方向に作れる** ＝ 実行のたびに
+       当たり外れが変わらない（乱数に頼ると、1件だけ回帰したとき半々でしか落ちない）。 */
+
+    // 原子IDを「並べた順」で振り直した複製。`reverse` で ID の大小関係が丸ごと裏返る。
+    // ⚠ 結合の端点は `Bond` に正規化させる（自前で入れ替えると `removeBond` が当たらなくなる）
+    const relabelIds = (W, m, reverse) => {
+        const list = reverse ? [...m.atoms].reverse() : [...m.atoms];
+        const map = new Map();
+        list.forEach((a, i) => map.set(a.id, 'atom_z' + String(i).padStart(4, '0')));
+        const out = new W.Molecule();
+        m.atoms.forEach(a => {
+            const b = new W.Atom(map.get(a.id), a.element, a.x, a.y, a.isLocked);
+            Object.keys(a).forEach(k => { if (k !== 'id') b[k] = a[k]; });
+            out.atoms.push(b);
+        });
+        m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+        return out;
+    };
+
+    test('MK1: マルコフニコフ則は「置換基の数」で決める（塩化ビニル＋HCl は 1,1-ジクロロエタン）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const molOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        // 両方のID並びで実行して、できた分子の名前を返す（片方だけ合っていても通さない）
+        const productNames = (name, ruleId) => {
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} のルールが無い`);
+            const base = molOf(name);
+            return [false, true].map(rev => {
+                const mol = relabelIds(W, base, rev);
+                const sites = rule.detect(mol);
+                assert(sites.length > 0, `${name} で ${ruleId} が検出されない（前提が崩れている）`);
+                g.userMolecule = mol;
+                rule.apply(g, sites[0]);
+                return g.lookupCompoundName(mol) || W.iupacName(mol) || '?';
+            });
+        };
+        const both = (name, ruleId, want) => {
+            const got = productNames(name, ruleId);
+            assert(got[0] === want && got[1] === want,
+                `${name} ＋ ${ruleId} が ${got.join(' / ')}（${want} を期待。左右で違うならID順に頼っている）`);
+        };
+
+        // ---- (1) ヘテロ原子が付いたビニル位。**ここが v1456 まで半々で入れ替わっていた** ----
+        both('塩化ビニル', 'add_hcl', '1,1-ジクロロエタン');
+        both('ビニルアルコール', 'add_hbr', '1-ブロモエタノール');
+
+        // ---- (2) 教科書どおりの例が動かないこと（規則を広げて古い正解を壊していない） ----
+        both('2-メチルプロペン（イソブテン）', 'add_hbr', '2-ブロモ-2-メチルプロパン');
+        both('1-ブテン', 'add_hbr', '2-ブロモブタン');
+        // 三重結合の水和も同じ関数を通る（v1456 まではここに同じ式が書き写してあった）
+        both('プロピン（メチルアセチレン）', 'add_water', 'アセトン');
+        both('1-ブチン（エチルアセチレン）', 'add_water', 'エチルメチルケトン（ブタノン）');
+
+        /* ---- (3) ★否定対照 —— **旧規則（炭素だけを数える）をここに書き写して、
+               それでは決まらないことを示す**。ここが通ってしまうなら検査が効いていない ---- */
+        const vc = molOf('塩化ビニル');
+        const site = W.REACTION_RULES.find(r => r.id === 'add_hcl').detect(vc)[0];
+        const countBy = (keep) => site.map((id, i) => vc.getNeighbors(id)
+            .filter(n => keep(n.atom) && n.atom.id !== site[1 - i]).length);
+        const oldWay = countBy(a => a.element === 'C');   // v1456 まで
+        const newWay = countBy(a => a.element !== 'H');   // いま
+        assert(oldWay[0] === oldWay[1],
+            `旧規則（炭素だけを数える）で塩化ビニルの左右に差が出ている（${oldWay}）＝ 否定対照が成り立たない`);
+        assert(newWay[0] !== newWay[1],
+            `新規則（置換基を数える）でも塩化ビニルの左右が同点（${newWay}）＝ 行き先が決まっていない`);
+
+        c.reset();
+    });
+
+    test('DT1: 同じ反応を同じ分子に2回起こすと、生成物の図が1px も違わない（全ライブラリ×全反応）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e && e.target && e.name);
+        assert(source.length > 900, `ライブラリが ${source.length} 件しかない（前提が崩れている）`);
+        // 平行移動を除いた図の形（CO1 と同じ物差し。回転・鏡映は同一視しない）
+        const shapeOf = (m) => {
+            const hv = m.atoms.filter(a => a.element !== 'H');
+            if (!hv.length) return '';
+            const mx = Math.min(...hv.map(a => a.x)), my = Math.min(...hv.map(a => a.y));
+            return hv.map(a => `${a.element}:${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join('|');
+        };
+        // 情報だけのルール（`info`）は図を変えないので対象外
+        const rules = W.REACTION_RULES.filter(r => !r.info && typeof r.apply === 'function');
+        assert(rules.length >= 30, `走査するルールが ${rules.length} 件しかない（前提が崩れている）`);
+
+        // その分子にその反応を「ID の並びを両方向にして」起こし、[順, 逆] の図を返す。
+        // 検出されなければ null（＝この組み合わせは数えない）
+        const runBoth = (base, rule) => {
+            const out = [];
+            for (const rev of [false, true]) {
+                const mol = relabelIds(W, base, rev);
+                let sites;
+                try { sites = rule.detect(mol) || []; } catch (e) { return null; }
+                if (!sites.length) return null;
+                g.userMolecule = mol;
+                try { rule.apply(g, sites[0]); } catch (e) { out.push('ERR:' + e.message); continue; }
+                out.push(shapeOf(mol));
+            }
+            return out;
+        };
+
+        const differ = [];
+        let pairs = 0;
+        source.forEach(e => {
+            let base;
+            try { base = g.createTargetFromData({ target: e.target }); } catch (err) { return; }
+            rules.forEach(rule => {
+                const r = runBoth(base, rule);
+                if (!r) return;
+                pairs++;
+                if (r[0] !== r[1]) differ.push(`${rule.id}｜${e.name}`);
+            });
+        });
+        // 走査した件数そのものを押さえる（detect が黙って0件になったら「全部一致」に見えてしまう）
+        assert(pairs > 2500, `起こせた反応が ${pairs} 件しかない（2500件以上の想定。前提が崩れている）`);
+        /* ⚠ 直す前の実測（同じ走査を当てたもの）:
+             v1456 … **242 件**（add_hbr 57 ／ add_hcl 57 ／ add_hi 57 ／ add_water 57 ／
+                      oxidative_cleavage 14）
+             1つ前のコミット（置換基を数えるようにした状態）… **254 件**
+                      ——ヘテロ環18件が同点に移るぶん増え、ビニル系9件が減る
+           直したのは `multipleBondSites`（並びを座標で決める）と
+           `markovnikovCarbon` の同点処理（座標で決める）の2か所だけ。 */
+        // 反応ごとの内訳（どの家族が残っているかを失敗の文だけで読めるように）
+        const byRule = {};
+        differ.forEach(d => { const k = d.split('｜')[0]; byRule[k] = (byRule[k] || 0) + 1; });
+        assert(differ.length === 0,
+            `同じ反応を2回起こして図が違う組み合わせが ${differ.length} 件` +
+            `（${Object.entries(byRule).map(([k, n]) => k + ' ' + n).join(' ／ ')}）: ${differ.slice(0, 12).join('、')}` +
+            (differ.length > 12 ? ` ほか${differ.length - 12}件` : ''));
+
+        /* ---- ★否定対照 —— **物差しが「図の違い」を本当に見分ける**ことを示す。
+               ここが通ってしまうなら、上の 0 件は「何も見ていない」の 0 件 ---- */
+        const eth = source.find(x => x.name === 'エタノール' && x.target);
+        const a1 = g.createTargetFromData({ target: eth.target });
+        const a2 = g.createTargetFromData({ target: eth.target });
+        assert(shapeOf(a1) === shapeOf(a2), '同じ分子を2回作って図が違う（物差しが揺れている）');
+        a2.atoms.find(a => a.element === 'O').x += 42;
+        assert(shapeOf(a1) !== shapeOf(a2), '原子を1マス動かしても同じ図と判定される ＝ 物差しが効いていない');
+
+        c.reset();
+    });
+
     /* ===== 行き止まりの報告（DE1〜3・v1420） =====
        「押したのに何も起きない」は今日だけで4件出た（相手の呼び出し・全体表示・モーダル・選ぶモード）。
        **汎用の仕組み**（`deadend.js` の `DeadEnd`）で、最初の設置場所が RX36 の失敗。
