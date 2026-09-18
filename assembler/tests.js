@@ -16765,7 +16765,7 @@
         g.updateDrawing();
         assert(g.splitMolecules().length === 2, `鎖が ${g.splitMolecules().length} 本（2本を期待）`);
     };
-    test('RXP6: 加硫は硫黄 S を2つ呼ぶ ＝ 写しで急に出る原子が0個・S は水素なし・前後比較の図に S・式の行は出ない／箇所選びは押せば終わる（否定対照つき・v1579）', async (c) => {
+    test('RXP6: 加硫は硫黄 S を2つ呼び、H₂ は出入りさせない ＝ 急に出る重原子が0個・S は水素なし・前後比較の図に S・式の行は出ない／箇所選びは押せば終わる（否定対照つき・v1579／v1586）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rx = W.reactor;
         g.setMode('free');
@@ -16797,7 +16797,31 @@
             const r = rxpEqRun(c, rxpTwoChains, 'vulcanization');
             const L = r.L, A = L.anim;
             assert(A && !A.playbackOnly, '加硫で硫黄を呼べていない（写しが無い／再生専用になっている）');
-            assert(!r.pop && !r.gone, `写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」がある`);
+            /* ⚠⚠ **加硫だけは「急に出る H が2つ」を許す**（v1586・発注書 K・ユーザー指摘 V130）。
+             * v1585 まではその2つを `withMorphHydrogens` ③ が **H₂ 1分子**として呼んでいて、
+             * 数のうえでは 0 個になっていた。しかし**実際の加硫で H₂ は出入りしない**ので、
+             * 画面に H₂ を出すほうが嘘だった。いまは二重結合の相方の炭素のそばで静かに現れる。
+             * ★ 出るのは **H だけ・2つだけ**（重原子が1つでも湧いたら、それは別の壊れ方）。 */
+            assert(r.pop === 'HH' && !r.gone,
+                `写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」（H が2つだけを期待）`);
+            assert(!r.hx.before.bonds.some(b => {
+                const p = r.hx.before.atoms.find(a => a.id === b.atomId1);
+                const q = r.hx.before.atoms.find(a => a.id === b.atomId2);
+                return p && q && p.element === 'H' && q.element === 'H';
+            }), '★ 加硫の再生に H₂（H−H）が出ている —— 実際の加硫で H₂ は出入りしない');
+            // ★ 否定対照: 除外をやめると H₂ が戻る ＝ この検査が空振りしていない
+            {
+                const keep = W.RX_NO_MORPH_H2.has('vulcanization');
+                W.RX_NO_MORPH_H2.delete('vulcanization');
+                try {
+                    const back = rx.withMorphHydrogens(r.L.anim.before, r.L.anim.after);
+                    assert(back.before.bonds.some(b => {
+                        const p = back.before.atoms.find(a => a.id === b.atomId1);
+                        const q = back.before.atoms.find(a => a.id === b.atomId2);
+                        return p && q && p.element === 'H' && q.element === 'H';
+                    }), '否定対照: 除外をやめても H₂ が出ない ＝ この検査は何も見張っていない');
+                } finally { if (keep) W.RX_NO_MORPH_H2.add('vulcanization'); }
+            }
             assert(A.counts && A.counts.S === 2, `S が ${A.counts && A.counts.S} 個（2 を期待）`);
             const real = new Set(L.before.atoms.map(a => a.id));
             const ss = A.before.atoms.filter(a => a.element === 'S' && !real.has(a.id));
@@ -16837,7 +16861,8 @@
             delete W.PARTNER_EQUATIONS.vulcanization;
             try {
                 const plain = rxpEqRun(c, rxpTwoChains, 'vulcanization');
-                assert(!plain.L.anim && plain.pop === 'SS', `否定対照: 表から外すと急に出る原子が「${plain.pop}」（SS を期待）＝ この検査は何も見張っていない`);
+                // ⚠ H 2つは v1586 から常に急に出る（発注書 K）ので、見るのは **S が2つ増えたか**
+                assert(!plain.L.anim && plain.pop === 'SSHH', `否定対照: 表から外すと急に出る原子が「${plain.pop}」（SSHH を期待）＝ この検査は何も見張っていない`);
                 assert(plain.codes === r.codes, `S を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
                 assert(plain.canvas === r.canvas, `S を呼ぶとキャンバスの原子が変わった（${r.canvas} / ${plain.canvas}）`);
             } finally {

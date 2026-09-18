@@ -9315,8 +9315,12 @@ const PARTNER_EQUATIONS = {
      *   ⚠ **前後比較の反応式の行は出さない**（`equationRow: false`）。基質はゴムの鎖で、式にすると
      *     C₁₀H₁₆R₂ のように **R が化学式に入る**（重合の端の R を式に並べないのと同じ理由・v1574）。
      *     前後比較の図は他の相手と同じく「前 ＝ 鎖＋呼んだ S」になる。
-     *   ⚠ H は合わない（hGap 2）。`apply` は二重結合の相方の炭素に H を1つずつ足すので、
-     *     その H は今までどおり `withMorphHydrogens` ③ が H₂ として呼ぶ（生成物は変えない） */
+     *   ⚠ H は合わない（hGap 2）。`apply` は二重結合の相方の炭素に H を1つずつ足す。
+     *   ⚠⚠ **v1585 まで、その H を `withMorphHydrogens` ③ が「名前の無い H₂」として呼んでいた**
+     *     （動画レーン V130・ユーザー指摘）。**実際の加硫で H₂ は出入りしない**ので、
+     *     v1586 で `RX_NO_MORPH_H2` に入れて③を通さないことにした。いまは炭素のそばで
+     *     静かに現れるだけ（④）＝ ゴムの鎖がもともと持っている手の描き方の話に戻した。
+     *     **生成物は1原子も変わっていない**（変えたのは再生の見せ方だけ） */
     vulcanization: { partners: ['S'], byproducts: [], equationRow: false }
 };
 
@@ -9324,6 +9328,17 @@ const PARTNER_EQUATIONS = {
  *   [O] … 酸化される原子へ1つずつ／H2 … ニトロ基の還元で N・O・O へ別々に H を渡す
  *   （まとめると、描かなかった H₂ の H が `withMorphHydrogens` ③ で名無しの H₂ として湧き、札と数が食い違う） */
 const RX_NO_FOLD = new Set(['[O]', 'H2']);
+
+/* ★★ **余った手を H₂ として呼ばない反応**（v1586・発注書 K。ユーザー指摘 V130）。
+ *
+ * ⚠ `withMorphHydrogens` ③ は「反応後に増えた自動水素」が2つ余ると、
+ *   出どころとして **H₂ を1分子** 写しに置く。ふつうはそれで正しい（ニトロ基の還元）が、
+ *   **加硫では嘘になる** —— 実際の加硫で H₂ は出入りしない。
+ * ★ 加硫の図は C=C に硫黄が付く形なので、二重結合の相方の炭素に H が1つずつ増える。
+ *   その H は**ゴムの鎖がもともと持っている手の描き方**の話で、反応式に出る分子ではない。
+ *   ＝ ④ に落として、炭素のそばで静かに現れるだけにする。
+ * ⚠ **生成物は1原子も変わらない**（変わるのは再生の見せ方だけ）。 */
+const RX_NO_MORPH_H2 = new Set(['vulcanization']);
 
 /** 分子の型1つを、元素ごとの数（H は自動水素と明示の H の合計）にする */
 function rxSpeciesCount(name) {
@@ -11700,8 +11715,10 @@ class Reactor {
         const restL = lost.filter((L, i) => !usedL.has(i));
         let restG = gained.filter((K, j) => !usedG.has(j));
         // ③ 余った「握手する手」は H₂ として呼ぶ（2個ずつ）
+        // ⚠ ただし `RX_NO_MORPH_H2` の反応は呼ばない（発注書 K。加硫で H₂ は出入りしない）
         const extraBonds = [];
-        if (restG.length >= 2) {
+        const noH2 = RX_NO_MORPH_H2.has(this.lastReaction && this.lastReaction.ruleId);
+        if (restG.length >= 2 && !noH2) {
             const heavy = before.atoms.concat(after.atoms);
             let cx = Math.round((Math.max(...heavy.map(a => a.x)) + G * 3) / G) * G;
             const y0 = Math.round(restG.reduce((s, K) => s + K.h.y, 0) / restG.length / G) * G;
@@ -13643,6 +13660,7 @@ if (typeof window !== 'undefined') {
     window.isolatedBenzeneRings = isolatedBenzeneRings; // RXR1（反応のときに環を回す）が読む
     window.RX_SPECIES = RX_SPECIES;
     window.RX_NO_FOLD = RX_NO_FOLD;             // RXP4（H₂ を「×n」にまとめない）の否定対照が読む
+    window.RX_NO_MORPH_H2 = RX_NO_MORPH_H2;     // RXP6（加硫で H₂ を呼ばない・発注書 K）の否定対照が読む
     window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
     window.noRoom = noRoom;
 }
