@@ -1691,9 +1691,19 @@ function findFunctionalGroups(mol) {
                     }
                 } else if (oBeyond.length === 0) {
                     groups.push({ type: 'carboxyl', label: 'カルボキシ基（カルボン酸）', atomIds: [a.id, doubleO[0].atom.id, o.id] });
-                } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'C') {
+                } else if (oBeyond.length === 1 && oBeyond[0].atom.element === 'C' &&
+                           !heavyNb(oBeyond[0].atom.id).some(x => x.type === 2 && x.atom.element === 'O')) {
                     groups.push({ type: 'ester', label: 'エステル結合', atomIds: [a.id, doubleO[0].atom.id, o.id] });
                 }
+                // ⚠ **向こう側もカルボニル炭素なら酸無水物 -CO-O-CO- で、エステルではない**
+                //   （高校化学では別の分類。`org.carbonyl.acid-anhydride`）。ここでは何も言わず、
+                //   **中央の O のところで `anhydride` 1件として数える**（下の O の枝）。
+                //   ここで黙らないと**同じ O を両側の炭素が取り合って「エステル結合×2」**になり、
+                //   無水酢酸が「エステル」として画面に出る（⚗この分子の反応・learn の分類・
+                //   絞り込みの「加水分解するとカルボン酸とアルコール」・ラクトンのカードまで通ってしまう）。
+                //   v1592 まで使う側が3か所で同じ判定を書き直して振るい落としていた
+                //   （quiz.js の isAnhydrideSide・reactor.js の isAnhydrideLinkage・
+                //   findCondensableGroups）＝ 型が足りていない印だった（DESIGN_compound_coverage.md §21）
             } else if (nb.some(n => n.type === 1 && n.atom.element === 'N')) {
                 // アミド -C(=O)-N<（アセトアミド・ペプチド結合・ナイロン）。
                 // **ここが無かったので、アミドが「アルデヒド基」として拾われていた**
@@ -1772,9 +1782,23 @@ function findFunctionalGroups(mol) {
                     groups.push({ type: types[deg], label: labels[deg], atomIds: [a.id, c.id] });
                 }
             } else if (nb.length === 2 && nb.every(n => n.type === 1 && n.atom.element === 'C')) {
-                // C-O-C: どちらかがカルボニル炭素ならエステルの一部なので除外
-                const esterSide = nb.some(n => heavyNb(n.atom.id).some(x => x.type === 2 && x.atom.element === 'O'));
-                if (!esterSide) {
+                // C-O-C: 隣のカルボニル炭素の数で3つに分かれる。
+                //   2つ … 酸無水物 -CO-O-CO-（ここで1件だけ数える）
+                //   1つ … エステルの -O-（炭素側で ester として計上ずみ）
+                //   0つ … エーテル結合
+                const acyl = nb.filter(n => heavyNb(n.atom.id).some(x => x.type === 2 && x.atom.element === 'O'));
+                if (acyl.length === 2) {
+                    // 酸無水物。**中央の O ごとに1件**なので、無水酢酸は1件・無水フタル酸も1件。
+                    // atomIds は [カルボニルC, =O, 中央の-O-, もう一方のカルボニルC, その=O] の順。
+                    // ⚠ 先頭3つの並びは ester とそろえてある（reactor.js の加水分解が
+                    //   `const [cId, , oId] = site` で受けているため。並びを変えるとそこが壊れる）
+                    const dblO = (cid) => heavyNb(cid).find(x => x.type === 2 && x.atom.element === 'O');
+                    groups.push({
+                        type: 'anhydride', label: '酸無水物（-CO-O-CO-）',
+                        atomIds: [acyl[0].atom.id, dblO(acyl[0].atom.id).atom.id, a.id,
+                                  acyl[1].atom.id, dblO(acyl[1].atom.id).atom.id]
+                    });
+                } else if (acyl.length === 0) {
                     groups.push({ type: 'ether', label: 'エーテル結合', atomIds: [nb[0].atom.id, a.id, nb[1].atom.id] });
                 }
             }
@@ -3805,10 +3829,23 @@ function describeStructure(mol) {
     let cooh = 0, ester = 0, cho = 0, ketone = 0, amide = 0;
     const saltMetals = new Map(); // 金属元素 → -COO(金属) の本数（Na と K がある）
     const carbonylC = new Set();
+    // 酸無水物 -CO-O-CO- を先に取り分ける。**中央の O ごとに1件**数え、両隣のカルボニル炭素は
+    // 下のループで黙らせる。そうしないと**両側の炭素が同じ O を取り合って「エステル ×2」**になり、
+    // 無水酢酸が「エステル結合 -COO- ×2」と出る（findFunctionalGroups と同じ取り違え）
+    let anhydride = 0;
+    const anhydrideC = new Set();
+    heavy.filter(a => a.element === 'O').forEach(o => {
+        const ns = mol.getNeighbors(o.id).filter(x => x.atom.element !== 'H');
+        if (ns.length !== 2 || !ns.every(x => x.type === 1 && x.atom.element === 'C')) return;
+        if (!ns.every(x => mol.getNeighbors(x.atom.id).some(y => y.atom.element === 'O' && y.type === 2))) return;
+        anhydride++;
+        ns.forEach(x => anhydrideC.add(x.atom.id));
+    });
     heavy.filter(a => a.element === 'C').forEach(c => {
         const ns = mol.getNeighbors(c.id);
         if (!ns.some(x => x.atom.element === 'O' && x.type === 2)) return;
-        carbonylC.add(c.id);
+        carbonylC.add(c.id); // 中央の O を「エーテル結合」に数えないための印なので、酸無水物でも立てる
+        if (anhydrideC.has(c.id)) return;
         const sglOs = ns.filter(x => x.atom.element === 'O' && x.type === 1);
         const hasOH = sglOs.some(x => mol.getFreeValency(x.atom.id) >= 1);
         const hasOR = sglOs.some(x => mol.getNeighbors(x.atom.id).filter(y => y.atom.element === 'C').length === 2);
@@ -3838,6 +3875,7 @@ function describeStructure(mol) {
 
     if (cooh) points.push(`カルボキシ基 -COOH ×${cooh}`);
     if (ester) points.push(`エステル結合 -COO- ×${ester}`);
+    if (anhydride) points.push(`酸無水物 -CO-O-CO- ×${anhydride}`);
     saltMetals.forEach((n, metal) => points.push(`カルボン酸の塩 -COO⁻ ${metal}⁺ ×${n}`));
     // N が置換されたアミド（N,N-ジメチルホルムアミドなど21件）も含むので -CO-NH- とは書けない
     if (amide) points.push(`アミド結合 -CO-N< ×${amide}`);

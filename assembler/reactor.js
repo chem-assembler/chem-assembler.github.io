@@ -487,8 +487,11 @@ function planShoveAside(mol, placed, bystanderIds, clearance) {
 }
 
 // エステル結合の箇所を返す（加水分解とけん化で共用）。
-// 酸無水物（-CO-O-CO-）は同じ -CO-O- の形なので ester として拾われるが、
-// 加水分解は起こっても「エステルの加水分解・けん化」ではないので専用ルールに任せる
+// 酸無水物（-CO-O-CO-）は同じ -CO-O- の形をしているが、加水分解は起こっても
+// 「エステルの加水分解・けん化」ではないので専用ルール（hydrolysis_anhydride）に任せる。
+// ⚠ v1592 で **findFunctionalGroups 自身が anhydride を別の型で返すようになった**ので、
+//   下の isAnhydrideLinkage の filter はもう素通りする。`isAmideNitrogen` と同じ二重の防波堤として
+//   残してある（反応ルールを読むときに「酸無水物は入らない」が条件として見えるように）
 function detectEsterLinkages(mol) {
     return findFunctionalGroups(mol)
         .filter(g => g.type === 'ester')
@@ -7523,12 +7526,14 @@ const REACTION_RULES = [
         id: 'hydrolysis_anhydride',
         reagentId: 'h2so4_dil',
         label: '加水分解（酸無水物 + H₂O） → カルボン酸',
+        // ⚠ v1592 で `findFunctionalGroups` が `anhydride` を返すようになった。
+        //   以前は「ester のうち向かい側もカルボニルのもの」を拾い、**2つのカルボニルから
+        //   同じ酸素が2回見える**ので酸素ごとに畳んでいた。いまは検出側が中央の O ごとに
+        //   1件返すので、畳む必要が無い（atomIds の先頭3つの並びは ester と同じままなので
+        //   下の apply の `const [cId, , oId] = site` はそのまま効く）
         detect(mol) {
-            const seen = new Set();
             return findFunctionalGroups(mol)
-                .filter(g => g.type === 'ester' && isAnhydrideLinkage(mol, g.atomIds[2], g.atomIds[0]))
-                // -CO-O-CO- は2つのカルボニルから同じ酸素が見えるので、酸素ごとに1件へまとめる
-                .filter(g => { if (seen.has(g.atomIds[2])) return false; seen.add(g.atomIds[2]); return true; })
+                .filter(g => g.type === 'anhydride')
                 .map(g => g.atomIds);
         },
         apply(game, site) {
