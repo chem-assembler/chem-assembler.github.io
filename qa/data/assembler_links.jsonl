@@ -207,9 +207,11 @@
 {"code":"org.bio.saccharide-class","kind":"none","why":"加水分解で単糖が何分子生じるかによる分類の定義で、分子を1つ呼び出しても単糖・二糖・多糖の境目は見えない"}
 {"code":"org.bio.monosaccharide","kind":"none","why":"グルコース・フルクトース・ガラクトースが同じ C₆H₁₂O₆ であることは3つを並べて比べないと見えず、summon は分子を1つしか呼べない。水への溶けやすさも見えない","note":"『複数の分子を並べて比べる』画面ができたら最初に見直す候補"}
 {"code":"org.bio.glucose-structure","kind":"summon","label":"グルコースの鎖状構造を見る","name":"鎖状グルコース","note":"一端のホルミル基と残りの炭素のヒドロキシ基の並び、不斉炭素4個が見える。環状ではなく開いた鎖状の形がほしい"}
+{"code":"org.bio.glucose-chiral","kind":"summon","label":"グルコースの不斉炭素原子を見る","name":"鎖状グルコース","note":"端から2番目〜5番目の炭素原子が4種類の異なる原子や原子団と結合していること、両端の炭素がそうでないことが見える"}
 {"code":"org.bio.glucose-ring","kind":"reaction","label":"グルコースの環化を試す","name":"鎖状グルコース","reagent":"cyclize_glucose_alpha","note":"α形をつくる代表。β形は同じ操作の cyclize_glucose_beta、開環は org.bio.glucose-reducing が担当"}
 {"code":"org.bio.glucose-reducing","kind":"reaction","label":"グルコースの環が開くところを試す","name":"α-グルコース","reagent":"open_glucopyranose","note":"銀鏡反応やフェーリング液の色そのものは見せられないが、還元性の原因＝環が開いてホルミル基が現れることは見える"}
 {"code":"org.bio.fructose","kind":"summon","label":"フルクトースのカルボニル基を見る","name":"鎖状フルクトース","note":"カルボニル基（ケトン基）が鎖の内側にあることは見える。塩基性条件での異性化（ホルミル基への変化）は reactor に無い"}
+{"code":"org.bio.fructose-reducing","kind":"summon","label":"フルクトースのカルボニル基の隣を見る","name":"鎖状フルクトース","note":"カルボニル基の隣の炭素にヒドロキシ基が付いていること（α-ヒドロキシケトンの形）は見える。塩基性条件での異性化（ホルミル基への変化）は reactor に無い"}
 {"code":"org.bio.alcohol-fermentation","kind":"none","why":"酵素チマーゼによるアルコール発酵は reactor の反応ルールに無く、C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂ という量的な関係も分子を組んでは見えない"}
 {"code":"org.bio.disaccharide-def","kind":"summon","label":"二糖のグリコシド結合を見る","name":"マルトース","note":"単糖2分子から水がとれてできた -O- のつなぎ目が見える代表としてマルトース。縮合そのものの操作は reactor に無い"}
 {"code":"org.bio.maltose","kind":"summon","label":"マルトースのグルコース2分子を見る","name":"マルトース","note":"グルコース2分子でできていることは見える。マルターゼという酵素名と還元性の呈色は見せられない。つなぎ目そのものは org.bio.disaccharide-def が担当なので、同じ分子を2項目で使っている点は要判断"}
