@@ -124,6 +124,88 @@ function parkAsWater(mol, oId) {
     o.fromReaction = true;
 }
 
+/* ===== 加水分解は水を使う（v1584・発注書 G。V134 のユーザー指摘）=====
+ *
+ * ⚠ **脱水で出た水が、加水分解のあとも画面に残っていた**
+ *   （フタル酸 →〔酸無水物〕→ 無水フタル酸＋水 →〔加水分解〕→ フタル酸 ＋ **水** ）。
+ *   結末の表示も「① フタル酸 ＋ ② 水」で、**反応式の収支と画面が食い違う**。
+ * ★ 加水分解は水を**使う**側なので、画面の水を1分子引き取って消す。
+ * ⚠ **消すのは「結合を1本も持たない酸素」だけ**（＝ 自動水素で H₂O と描かれているもの）。
+ *   結合を持つ酸素はどこかの分子の一部なので触らない。
+ * ★ 近い水から取る ＝ さっき自分が出した水が、そのまま戻ったように見える。
+ *
+ * @returns 引き取った水の原子（無ければ null）
+ */
+function takeWaterFromCanvas(mol, nearId) {
+    const near = mol.atoms.find(a => a.id === nearId);
+    const waters = mol.atoms.filter(a => a.element === 'O' &&
+        !mol.bonds.some(b => b.atomId1 === a.id || b.atomId2 === a.id));
+    if (!waters.length) return null;
+    // 反応で出た水を先に取る（人が置いた酸素より、さっき出た水を戻すほうが筋が読める）
+    const pick = waters.filter(a => a.fromReaction);
+    const pool = pick.length ? pick : waters;
+    let best = pool[0];
+    if (near) pool.forEach(a => {
+        if (Math.hypot(a.x - near.x, a.y - near.y) < Math.hypot(best.x - near.x, best.y - near.y)) best = a;
+    });
+    const i = mol.atoms.indexOf(best);
+    if (i >= 0) mol.atoms.splice(i, 1);
+    return best;
+}
+
+/* ===== 環をつくる前の姿を控える／戻す（v1584・発注書 G）=====
+ *
+ * ⚠ **加水分解で戻ったフタル酸の -COOH の向きが、最初に置いたフタル酸と違っていた**
+ *   （ユーザー実機報告・V134）。**同じ分子に戻ったのに見た目が変わる**ので、
+ *   「元に戻った」が画から読めない。
+ * ★ 原因は**脱水の側**にある: 五角形／六角形に置き直すときに -COOH まわりを動かしていて、
+ *   加水分解で環を開いても**動かした座標のまま**だった。
+ * ★ 直し方は「戻すときの作図をやり直す」ではなく、**行きで控えて帰りで戻す**。
+ *   座標は見た目専用（CLAUDE.md）なので、控えを持っても化学は1つも変わらない。
+ * ⚠ 戻した先に別の原子が居たら**戻さない**（あとから描き足した図の上に重ねない）。 */
+const PRE_RING_XY = 'preRingXY';   // その原子が環になる前に居た場所
+const OH_HOME_XY = 'ohHomeXY';     // そのアシル炭素の -OH がどこに付いていたか
+
+/** 脱水の直前に控える。`ids` は座標を動かしうる原子、`ohOf` は 炭素id → その -OH の原子 */
+function rememberPreRing(mol, ids, ohOf) {
+    ids.forEach(id => {
+        const a = mol.atoms.find(x => x.id === id);
+        if (a) a[PRE_RING_XY] = { x: a.x, y: a.y };
+    });
+    Object.entries(ohOf).forEach(([cId, oh]) => {
+        const c = mol.atoms.find(x => x.id === cId);
+        if (c && oh) c[OH_HOME_XY] = { x: oh.x, y: oh.y };
+    });
+}
+
+/**
+ * 加水分解のあとに元の姿へ戻す。控えを持っている原子だけが動く
+ * （＝ ライブラリから呼び出した無水フタル酸には控えが無いので、今までどおりの図になる）。
+ * @returns 戻したなら true
+ */
+function restorePreRing(mol, ids, extraMoving = []) {
+    // ⚠ `ids` は呼び出し側で重ねて渡される（環＋成分＋印）ので**必ず重複を落とす** ——
+    //   同じ原子を2度なぞると、1度目で控えを消したあと2度目が undefined を読む（実測）
+    const kept = [...new Set(ids)].map(id => mol.atoms.find(a => a.id === id))
+        .filter(a => a && a[PRE_RING_XY]);
+    if (!kept.length) return false;
+    /* ⚠ **呼び出し側がこのあと置き直す原子は「邪魔者」に数えない。**
+     *   加水分解で生えた -OH の酸素は、まさに戻し先（もとの -OH の場所）の上に立っている
+     *   ので、数えると必ずぶつかって**一度も戻せなくなる**（実測でここに落ちた）。 */
+    const moving = new Set(kept.map(a => a.id).concat(extraMoving));
+    const others = mol.atoms.filter(a => a.element !== 'H' && !moving.has(a.id));
+    // 戻り先が空いているか（あとから描き足した図の上に重ねない）
+    const clash = kept.some(a => others.some(o =>
+        Math.hypot(o.x - a[PRE_RING_XY].x, o.y - a[PRE_RING_XY].y) < GRID_SIZE * 0.6));
+    if (clash) return false;
+    kept.forEach(a => { a.x = a[PRE_RING_XY].x; a.y = a[PRE_RING_XY].y; delete a[PRE_RING_XY]; });
+    return true;
+}
+
+/* ⚠ -OH の酸素を引くのは **既にある `hydroxylOxygenOf`**（3200行台）を使う。
+ *   ⚠⚠ ここで同じ名前の関数をもう1つ書いたら、**後ろの宣言が黙って勝って**
+ *   「原子を返すつもりが id が返る」壊れ方をした（実測。図はそのままで例外も出ない）。 */
+
 // planAttachment 用: 動かす原子の集合（脱離する原子は含めない）
 function movingSetOf(moving, ignore) {
     return [...moving].filter(id => !ignore.has(id));
@@ -3680,6 +3762,180 @@ function attachR(mol, atomId, prefer) {
  * @param ends `[原子id, 向きの好み]` の配列
  * @returns 付けた R と、その付け先の原子 id（R が置けなかった端も、原子のほうは必ず返す）
  */
+/* ============================================================================
+ * ★★ 1,4-付加重合でできた鎖を **シス形／トランス形に描き分ける**（v1587・発注書 L）
+ *
+ * ユーザー判断（2026-09-17）「イソプレンであれば、**②を基本、ただし比較のために③**」＝
+ *   **シス形を既定**（天然ゴム ＝ シス-1,4-ポリイソプレン）にし、
+ *   **比較のためにトランス形（グタペルカ）へ切り替えられる**ようにする。
+ *
+ * ⚠⚠ **v1586 まで、できる鎖は必ずトランス形だった**（実測。鎖の C=C 2か所とも
+ *   主鎖が反対側）。「ゴムが弾むようになるまで」（V130）の題と真逆の図で、
+ *   画面は天然ゴムではなく**グタペルカ**を描いていた。
+ *
+ * ★★ **なぜ「その場で裏返す」ではなく「鎖を引き直す」のか**（実測してこちらにした）:
+ *   いまの図は C=C が 60° の斜めで、主鎖の C1・C4 はどちらも水平に出ている。
+ *   この向きだと **C1 も C4 も 120° の空き2か所のうち片方しか選べず、
+ *   どう入れ替えてもトランスにしかならない**（もう片方は鎖が自分の上に折り返す）。
+ *   ＝ シスにするには **C=C を水平に置き直す**しかない。
+ *
+ * ★ 引き直す形（S ＝ 結合1本・DX/DY ＝ 120° の刻み）:
+ *   - **C=C は水平**（C2 → C3 が +S）
+ *   - シス … C1 は C2 の左下・C4 は C3 の右下 ＝ **主鎖が同じ側** → 鎖は水平のまま山形に折れる
+ *   - トランス … C4 だけ右上 ＝ **主鎖が反対側** → 鎖は階段状にまっすぐ伸びる
+ *   どちらも教科書の図の形で、「シスは折れ、トランスはまっすぐ」がそのまま画になる。
+ *
+ * ⚠ **座標しか動かさない**（CLAUDE.md「検証はトポロジーのみ」）。結合・元素・電荷は無傷。
+ * ========================================================================== */
+
+/** 鎖の両端の R をたどって主鎖の原子列を返す（R … R）。線形の鎖でなければ null */
+function polymerBackbonePath(mol, seedId) {
+    const comp = componentOf(mol, seedId);
+    const rs = [...comp].map(id => mol.atoms.find(a => a.id === id))
+        .filter(a => a && a.element === 'R');
+    if (rs.length !== 2) return null;
+    // R → R の道を1本だけ探す（枝に入っても行き止まりで戻る）
+    const goal = rs[1].id;
+    const path = [];
+    const seen = new Set();
+    const walk = (id) => {
+        if (seen.has(id)) return false;
+        seen.add(id);
+        path.push(id);
+        if (id === goal) return true;
+        for (const n of mol.getNeighbors(id)) {
+            if (n.atom.element === 'H') continue;
+            if (walk(n.atom.id)) return true;
+        }
+        path.pop();
+        return false;
+    };
+    return walk(rs[0].id) ? path : null;
+}
+
+/** その鎖の C=C が主鎖から見てシス形（主鎖が同じ側）か。1つも無ければ null */
+function dieneChainIsCis(mol, path) {
+    const at = id => mol.atoms.find(a => a.id === id);
+    for (let i = 1; i + 2 < path.length; i++) {
+        const b = mol.getBond(path[i], path[i + 1]);
+        if (!b || b.type !== 2) continue;
+        const c2 = at(path[i]), c3 = at(path[i + 1]), c1 = at(path[i - 1]), c4 = at(path[i + 2]);
+        if (!c1 || !c2 || !c3 || !c4) continue;
+        const ax = c3.x - c2.x, ay = c3.y - c2.y;
+        const side = (p, o) => Math.sign(ax * (p.y - o.y) - ay * (p.x - o.x));
+        const s1 = side(c1, c2), s4 = side(c4, c3);
+        if (!s1 || !s4) continue;
+        return s1 === s4;
+    }
+    return null;
+}
+
+/**
+ * 主鎖を引き直して、C=C をすべてシス形（`cis`）またはトランス形にする。
+ * ⚠ **置けなければ1原子も動かさない**（呼び出し側は今までどおりの図になるだけ）。
+ * @returns 引き直したら true
+ */
+function layoutDieneChain(mol, path, cis) {
+    const S = GRID_SIZE, DX = S / 2, DY = S * Math.sqrt(3) / 2;
+    const at = id => mol.atoms.find(a => a.id === id);
+    const inPath = new Set(path);
+    // 主鎖から下がる枝（H 以外）。枝の中身は形を保ったまま、付け根の移動ぶんだけ運ぶ
+    const branchOf = new Map();
+    path.forEach(id => {
+        const subs = mol.getNeighbors(id).map(n => n.atom)
+            .filter(a => a.element !== 'H' && !inPath.has(a.id));
+        if (subs.length) branchOf.set(id, subs);
+    });
+    /* 進む向きを1本ずつ決める。⚠ **C=C は必ず水平**にし、その前後を 120° で受ける
+     *   ＝ シス／トランスの違いは「C=C の次の一歩を下げるか上げるか」だけになる。 */
+    const steps = [];
+    for (let i = 0; i + 1 < path.length; i++) {
+        const b = mol.getBond(path[i], path[i + 1]);
+        const prevWasDouble = i > 0 && (mol.getBond(path[i - 1], path[i]) || {}).type === 2;
+        if (b && b.type === 2) steps.push({ x: S, y: 0 });                    // C=C は水平
+        else if (i + 2 < path.length && (mol.getBond(path[i + 1], path[i + 2]) || {}).type === 2)
+            steps.push({ x: DX, y: -DY });                                    // C=C へ入る一歩（上げる）
+        else if (prevWasDouble) steps.push({ x: DX, y: cis ? DY : -DY });     // ★ ここだけがシス／トランス
+        else steps.push({ x: S, y: 0 });                                      // つなぎ目（水平）
+    }
+    // 新しい座標を先に全部作る（置けるか確かめてから当てる）
+    const start = at(path[0]);
+    if (!start) return false;
+    const pos = new Map([[path[0], { x: start.x, y: start.y }]]);
+    steps.forEach((d, i) => {
+        const p = pos.get(path[i]);
+        pos.set(path[i + 1], { x: p.x + d.x, y: p.y + d.y });
+    });
+    // sp2 炭素の1原子の枝（メチル・塩素）は、主鎖の反対側の 120° の席に置く
+    const slot = new Map();
+    for (let i = 1; i + 1 < path.length; i++) {
+        const b2 = mol.getBond(path[i], path[i + 1]), b0 = mol.getBond(path[i - 1], path[i]);
+        const isSp2 = (b2 && b2.type === 2) || (b0 && b0.type === 2);
+        const subs = branchOf.get(path[i]);
+        if (!isSp2 || !subs || subs.length !== 1 || mol.getNeighbors(subs[0].id)
+            .filter(n => n.atom.element !== 'H').length !== 1) continue;
+        const me = pos.get(path[i]);
+        const other = (b2 && b2.type === 2) ? pos.get(path[i - 1]) : pos.get(path[i + 1]);
+        // 主鎖の相手（other）の鏡 ＝ C=C 軸をはさんで反対側の席
+        const axis = (b2 && b2.type === 2) ? pos.get(path[i + 1]) : pos.get(path[i - 1]);
+        const ux = (axis.x - me.x) / (Math.hypot(axis.x - me.x, axis.y - me.y) || 1);
+        const uy = (axis.y - me.y) / (Math.hypot(axis.x - me.x, axis.y - me.y) || 1);
+        const wx = other.x - me.x, wy = other.y - me.y;
+        const dot = wx * ux + wy * uy;
+        slot.set(subs[0].id, { x: me.x + ux * dot - (wx - ux * dot), y: me.y + uy * dot - (wy - uy * dot) });
+    }
+    // 鎖の外の原子とぶつからない高さを探す（見つからなければ何もしない）
+    const movingIds = new Set([...path, ...[...branchOf.values()].flat().map(a => a.id)]);
+    const outside = mol.atoms.filter(a => a.element !== 'H' && !movingIds.has(a.id));
+    const MIN = S * 0.65;
+    const spots = () => {
+        const list = [...pos.entries()].map(([id, p]) => p);
+        slot.forEach(p => list.push(p));
+        branchOf.forEach((subs, id) => subs.forEach(s => {
+            if (slot.has(s.id)) return;
+            const d = { x: pos.get(id).x - at(id).x, y: pos.get(id).y - at(id).y };
+            list.push({ x: s.x + d.x, y: s.y + d.y });
+        }));
+        return list;
+    };
+    let shift = 0;
+    for (let k = 0; k <= 12; k++) {
+        shift = k * 3 * S;
+        const ok = spots().every(p =>
+            outside.every(o => Math.hypot(o.x - p.x, o.y - (p.y + shift)) >= MIN));
+        if (ok) break;
+        if (k === 12) return false;
+    }
+    // ここから実際に動かす
+    branchOf.forEach((subs, id) => {
+        const d = { x: pos.get(id).x - at(id).x, y: pos.get(id).y + shift - at(id).y };
+        subs.forEach(s => {
+            if (slot.has(s.id)) return;
+            [...componentOfBlocked(mol, s.id, path)].forEach(bid => {
+                const a = at(bid); if (a) { a.x += d.x; a.y += d.y; }
+            });
+        });
+    });
+    path.forEach(id => { const a = at(id); const p = pos.get(id); a.x = p.x; a.y = p.y + shift; });
+    slot.forEach((p, id) => { const a = at(id); if (a) { a.x = p.x; a.y = p.y + shift; } });
+    return true;
+}
+
+/** `from` から届く原子（`blocked` は越えない） */
+function componentOfBlocked(mol, from, blocked) {
+    const stop = new Set(blocked);
+    const seen = new Set([from]);
+    const st = [from];
+    while (st.length) {
+        const id = st.pop();
+        mol.getNeighbors(id).forEach(n => {
+            if (stop.has(n.atom.id) || seen.has(n.atom.id)) return;
+            seen.add(n.atom.id); st.push(n.atom.id);
+        });
+    }
+    return seen;
+}
+
 function attachREnds(mol, ends) {
     const out = [];
     ends.forEach(([atomId, prefer]) => {
@@ -5843,17 +6099,83 @@ const REACTION_RULES = [
                 [units[0].c1, chainDirection(mol, units[0].c2, units[0].c1)],
                 [linkFrom, chainDirection(mol, linkBack, linkFrom)]
             ]);
+            /* ★★ できた鎖を**シス形**に引き直す（v1587・発注書 L）。
+             * ⚠ v1586 まではここで何もせず、できる鎖は必ずトランス形（＝ グタペルカ）だった。
+             * ⚠ 置けなければ1原子も動かない ＝ 今までどおりの図になるだけ。 */
+            const path = polymerBackbonePath(mol, units[0].c2);
+            const laidOut = path ? layoutDieneChain(mol, path, true) : false;
             const n = units.length;
             return {
                 caption: `共役ジエン ${n} 個が 1,4-付加重合しました。両端（1位と4位）の炭素で繋がり、` +
                     `二重結合は両端から中央へ移っています。ここが付加重合との違いで、` +
                     `できた鎖に二重結合が残るため、硫黄で架橋できます（加硫）。` +
-                    `天然ゴムはイソプレンがシス形に繋がったもので、同じ形でトランスに繋がるとグタペルカという硬い樹脂になります。` +
-                    `いまの図は直交作図なのでシス・トランスを示していません。左の「⇄ シス/トランス整形」で` +
-                    `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。` +
+                    (laidOut
+                        ? `図は**シス形**で描いてあります。天然ゴムはイソプレンがシス形に繋がったもので、` +
+                          `二重結合のところで鎖が折れ曲がるので、鎖が丸まって、引くと伸び、離すと戻ります。` +
+                          `同じつなぎ方でもトランス形になるとグタペルカという硬い樹脂で、鎖がまっすぐ並んで弾みません。` +
+                          `見くらべたいときは「シス形 ⇄ トランス形を入れ替える」を押してください。`
+                        : `天然ゴムはイソプレンがシス形に繋がったもので、同じ形でトランスに繋がるとグタペルカという硬い樹脂になります。` +
+                          `いまの図は場所が足りずシス形に引き直せませんでした。左の「⇄ シス/トランス整形」で` +
+                          `中央の二重結合をタップすると、シス（天然ゴム）とトランス（グタペルカ）を描き分けられます。`) +
                     `両端の R は「この先も続く」印です。ホイールやピンチで拡大すると、中央に移った二重結合を1つずつ確かめられます。` +
                     leftover,
                 changed: [...new Set([...changed, ...endIds])],
+                refit: true
+            };
+        }
+    },
+    {
+        /* ★★ シス形 ⇄ トランス形の入れ替え（v1587・発注書 L）。
+         * ユーザー判断（2026-09-17）「イソプレンであれば、**②を基本、ただし比較のために③**」の③。
+         *
+         * ★ **なぜ反応の一覧に置くのか**: シスとトランスは別の物質（天然ゴムとグタペルカ）で、
+         *   「同じ分子式・同じつなぎ方なのに、幾何がちがうだけで別の材料になる」ことを
+         *   見くらべるのがこの回（V130）の芯。**押すと図が変わる**ものは一覧に並べる約束にそろえる。
+         * ⚠ **座標しか変えない**ので、正準コード・分子式・↩ は素通りする。
+         * ⚠ 硫黄の橋が架かったあとは出さない（架橋した網目を引き直すと、橋が伸びて別の絵になる）。 */
+        id: 'diene_cis_trans',
+        /* ⚠ **`wholeCanvas` は付けない。** 付けてよいのは「並べた単量体を横につないでいく」
+         *   重合だけ（PM10 がそこを見張っている）。こちらは**いま見ている1本の鎖**を
+         *   引き直すだけなので、絞り込みは今までどおり `focus` に任せる。 */
+        label: 'シス形 ⇄ トランス形を入れ替える（天然ゴム ⇄ グタペルカ）',
+        detect(mol) {
+            const seen = new Set();
+            const out = [];
+            mol.atoms.forEach(a => {
+                if (a.element !== 'R' || seen.has(a.id)) return;
+                const comp = componentOf(mol, a.id);
+                comp.forEach(id => seen.add(id));
+                if ([...comp].some(id => (mol.atoms.find(x => x.id === id) || {}).element === 'S')) return;
+                const path = polymerBackbonePath(mol, a.id);
+                if (!path) return;
+                // 主鎖に C=C が1本でもあること（＝ 1,4-付加重合でできた鎖）
+                const has = path.some((id, i) => i + 1 < path.length &&
+                    (mol.getBond(id, path[i + 1]) || {}).type === 2);
+                if (has && dieneChainIsCis(mol, path) !== null) out.push(path.slice());
+            });
+            return out;
+        },
+        apply(game, site) {
+            const mol = game.userMolecule;
+            // site は主鎖の原子列そのもの。座標が動いていても id で引き直せる
+            const path = site.filter(id => mol.atoms.some(a => a.id === id));
+            if (path.length !== site.length) throw new Error('鎖の形が変わっています');
+            const wasCis = dieneChainIsCis(mol, path);
+            if (!layoutDieneChain(mol, path, !wasCis)) {
+                throw noRoom('鎖を引き直す空間がありません');
+            }
+            const nowCis = !wasCis;
+            return {
+                caption: nowCis
+                    ? 'シス形（天然ゴム）にしました。二重結合のところで鎖が折れ曲がるので、' +
+                      '鎖は丸まります。引くと伸び、離すと戻る —— これがゴムの弾性です。' +
+                      'つなぎ方も分子式も、トランス形とまったく同じです。'
+                    : 'トランス形（グタペルカ）にしました。鎖がまっすぐ並ぶので、' +
+                      '結晶のように固まって硬くなり、弾みません。' +
+                      'つなぎ方も分子式もシス形と同じで、違うのは二重結合のまわりの向きだけです。',
+                /* ⚠ **印（オレンジの破線）は付けない。** 印は「結合が変わった原子」の合図で、
+                 *   ここは結合を1本も変えていない（動かしたのは座標だけ）。CV4 の物差しとも合う。 */
+                changed: [],
                 refit: true
             };
         }
@@ -7128,6 +7450,15 @@ const REACTION_RULES = [
             // ★ 五員環は正五角形（v1566）・六員環は正六角形（v1574）に置く。置けないとき（重なる）は今までどおり O だけ動かす
             const pentagon = anhydridePentagonPlacement(mol, cand, ohA, ohB) ||
                 anhydrideHexagonPlacement(mol, cand, ohA, ohB);
+            /* ★ **環にする前の姿をここで控える**（発注書 G）。控えるのは
+             *   「動かしうる原子ぜんぶ」＝ 五角形／六角形の置き直しが触る範囲より広く取る
+             *   （環になる経路・2つのアシル炭素・その酸素）。加水分解が帰り道でここへ戻す。 */
+            rememberPreRing(mol,
+                [...cand.path, ohA, ohB,
+                    ...mol.bonds.filter(b => b.atomId1 === cA || b.atomId2 === cA ||
+                                             b.atomId1 === cB || b.atomId2 === cB)
+                        .flatMap(b => [b.atomId1, b.atomId2])],
+                { [cA]: mol.atoms.find(a => a.id === ohA), [cB]: mol.atoms.find(a => a.id === ohB) });
             // 片方の -OH の O を架橋にし、もう片方の -OH は水として出す
             mol.removeBond(cB, ohB);
             if (pentagon) {
@@ -7206,7 +7537,29 @@ const REACTION_RULES = [
             const ring = ringAtomIdsOf(mol).has(oId); // 環状の酸無水物（無水フタル酸など）
             // ★ 切り方も印の列挙も `cleaveAcylOxygen` に任せる（同書 CV1）。
             //   ⚠ ここは `changed: [cId, o.id]` と書いてあり、**切り離される側の酢酸が光らなかった**
+            /* ★ 環の中の原子ぜんぶを先に控えておく（発注書 G）。切ったあとで引くと、
+             *   すでに別の分子に分かれていて片方しか拾えない。 */
+            const ringIds = ring ? [...ringAtomIdsOf(mol)] : [];
+            const near = [...componentOf(mol, cId)];
             const { changed } = cleaveAcylOxygen(mol, cId, oId);
+            /* ★★ 加水分解は水を**使う**（発注書 G）。画面に浮いている水を1分子引き取る
+             *   ＝「① フタル酸 ＋ ② 水」で終わらない。 */
+            takeWaterFromCanvas(mol, cId);
+            /* ★★ 環をつくる前の姿へ戻す（発注書 G）。⚠ **控えを持つ原子だけ**が動くので、
+             *   ライブラリから呼び出した無水フタル酸はいままでどおりの図になる。
+             *   戻したあと、2つの -COOH の酸素を「もとの -OH が付いていた場所」へ置き直す
+             *   ＝ 架橋だった O と、いま生えた O のどちらが来ても同じ絵になる。 */
+            const homes = mol.atoms.filter(a => a[OH_HOME_XY])
+                .map(c => ({ c, oh: mol.atoms.find(x => x.id === hydroxylOxygenOf(mol, c.id)) }))
+                .filter(x => x.oh);
+            const back = restorePreRing(mol, ringIds.concat(near, changed),
+                homes.map(x => x.oh.id));
+            if (back) {
+                homes.forEach(({ c, oh }) => {
+                    oh.x = c[OH_HOME_XY].x; oh.y = c[OH_HOME_XY].y;
+                    delete c[OH_HOME_XY];
+                });
+            }
             return {
                 caption: '酸無水物が加水分解されました（-CO-O-CO- + H₂O → -COOH が2つ）。' +
                     (ring
@@ -9222,8 +9575,12 @@ const PARTNER_EQUATIONS = {
      *   ⚠ **前後比較の反応式の行は出さない**（`equationRow: false`）。基質はゴムの鎖で、式にすると
      *     C₁₀H₁₆R₂ のように **R が化学式に入る**（重合の端の R を式に並べないのと同じ理由・v1574）。
      *     前後比較の図は他の相手と同じく「前 ＝ 鎖＋呼んだ S」になる。
-     *   ⚠ H は合わない（hGap 2）。`apply` は二重結合の相方の炭素に H を1つずつ足すので、
-     *     その H は今までどおり `withMorphHydrogens` ③ が H₂ として呼ぶ（生成物は変えない） */
+     *   ⚠ H は合わない（hGap 2）。`apply` は二重結合の相方の炭素に H を1つずつ足す。
+     *   ⚠⚠ **v1585 まで、その H を `withMorphHydrogens` ③ が「名前の無い H₂」として呼んでいた**
+     *     （動画レーン V130・ユーザー指摘）。**実際の加硫で H₂ は出入りしない**ので、
+     *     v1586 で `RX_NO_MORPH_H2` に入れて③を通さないことにした。いまは炭素のそばで
+     *     静かに現れるだけ（④）＝ ゴムの鎖がもともと持っている手の描き方の話に戻した。
+     *     **生成物は1原子も変わっていない**（変えたのは再生の見せ方だけ） */
     vulcanization: { partners: ['S'], byproducts: [], equationRow: false }
 };
 
@@ -9231,6 +9588,17 @@ const PARTNER_EQUATIONS = {
  *   [O] … 酸化される原子へ1つずつ／H2 … ニトロ基の還元で N・O・O へ別々に H を渡す
  *   （まとめると、描かなかった H₂ の H が `withMorphHydrogens` ③ で名無しの H₂ として湧き、札と数が食い違う） */
 const RX_NO_FOLD = new Set(['[O]', 'H2']);
+
+/* ★★ **余った手を H₂ として呼ばない反応**（v1586・発注書 K。ユーザー指摘 V130）。
+ *
+ * ⚠ `withMorphHydrogens` ③ は「反応後に増えた自動水素」が2つ余ると、
+ *   出どころとして **H₂ を1分子** 写しに置く。ふつうはそれで正しい（ニトロ基の還元）が、
+ *   **加硫では嘘になる** —— 実際の加硫で H₂ は出入りしない。
+ * ★ 加硫の図は C=C に硫黄が付く形なので、二重結合の相方の炭素に H が1つずつ増える。
+ *   その H は**ゴムの鎖がもともと持っている手の描き方**の話で、反応式に出る分子ではない。
+ *   ＝ ④ に落として、炭素のそばで静かに現れるだけにする。
+ * ⚠ **生成物は1原子も変わらない**（変わるのは再生の見せ方だけ）。 */
+const RX_NO_MORPH_H2 = new Set(['vulcanization']);
 
 /** 分子の型1つを、元素ごとの数（H は自動水素と明示の H の合計）にする */
 function rxSpeciesCount(name) {
@@ -10172,6 +10540,13 @@ class Reactor {
             misses.push(part.name);
         });
         if (!applied) { g.history.pop(); this.explainReagentMiss(reagent); return { hits, misses }; }
+        /* ★ 水層の帯に「いま何を入れた層か」を出す（発注書 H）。
+         * ⚠ **効いたときだけ**書き換える —— 空振りは履歴も戻す（すぐ上）ので、
+         *   ここで字だけ変えると ↩ の戻り先と食い違う。
+         * ⚠ 字を作るのは `separationReagentLabel`（game.js）ただ1つ ＝ 瓶と食い違わない。 */
+        if (typeof separationReagentLabel === 'function') {
+            g.aqReagentLabel = separationReagentLabel(reagent);
+        }
         this.discardLastReaction();   // 「反応の前後」は1つの反応の話。混合物では名乗らない
         g.updateDrawing();
         if (g.fitSeparationView) g.fitSeparationView();
@@ -11659,8 +12034,10 @@ class Reactor {
         const restL = lost.filter((L, i) => !usedL.has(i));
         let restG = gained.filter((K, j) => !usedG.has(j));
         // ③ 余った「握手する手」は H₂ として呼ぶ（2個ずつ）
+        // ⚠ ただし `RX_NO_MORPH_H2` の反応は呼ばない（発注書 K。加硫で H₂ は出入りしない）
         const extraBonds = [];
-        if (restG.length >= 2) {
+        const noH2 = RX_NO_MORPH_H2.has(this.lastReaction && this.lastReaction.ruleId);
+        if (restG.length >= 2 && !noH2) {
             const heavy = before.atoms.concat(after.atoms);
             let cx = Math.round((Math.max(...heavy.map(a => a.x)) + G * 3) / G) * G;
             const y0 = Math.round(restG.reduce((s, K) => s + K.h.y, 0) / restG.length / G) * G;
@@ -13617,6 +13994,7 @@ if (typeof window !== 'undefined') {
     window.isolatedBenzeneRings = isolatedBenzeneRings; // RXR1（反応のときに環を回す）が読む
     window.RX_SPECIES = RX_SPECIES;
     window.RX_NO_FOLD = RX_NO_FOLD;             // RXP4（H₂ を「×n」にまとめない）の否定対照が読む
+    window.RX_NO_MORPH_H2 = RX_NO_MORPH_H2;     // RXP6（加硫で H₂ を呼ばない・発注書 K）の否定対照が読む
     window.NoRoomError = NoRoomError;           // RS1〜RS4（場所不足の出口）が読む
     window.noRoom = noRoom;
 }

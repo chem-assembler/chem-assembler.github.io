@@ -16765,7 +16765,7 @@
         g.updateDrawing();
         assert(g.splitMolecules().length === 2, `鎖が ${g.splitMolecules().length} 本（2本を期待）`);
     };
-    test('RXP6: 加硫は硫黄 S を2つ呼ぶ ＝ 写しで急に出る原子が0個・S は水素なし・前後比較の図に S・式の行は出ない／箇所選びは押せば終わる（否定対照つき・v1579）', async (c) => {
+    test('RXP6: 加硫は硫黄 S を2つ呼び、H₂ は出入りさせない ＝ 急に出る重原子が0個・S は水素なし・前後比較の図に S・式の行は出ない／箇所選びは押せば終わる（否定対照つき・v1579／v1586）', async (c) => {
         c.reset();
         const g = c.game, W = c.W, D = c.D, rx = W.reactor;
         g.setMode('free');
@@ -16797,7 +16797,31 @@
             const r = rxpEqRun(c, rxpTwoChains, 'vulcanization');
             const L = r.L, A = L.anim;
             assert(A && !A.playbackOnly, '加硫で硫黄を呼べていない（写しが無い／再生専用になっている）');
-            assert(!r.pop && !r.gone, `写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」がある`);
+            /* ⚠⚠ **加硫だけは「急に出る H が2つ」を許す**（v1586・発注書 K・ユーザー指摘 V130）。
+             * v1585 まではその2つを `withMorphHydrogens` ③ が **H₂ 1分子**として呼んでいて、
+             * 数のうえでは 0 個になっていた。しかし**実際の加硫で H₂ は出入りしない**ので、
+             * 画面に H₂ を出すほうが嘘だった。いまは二重結合の相方の炭素のそばで静かに現れる。
+             * ★ 出るのは **H だけ・2つだけ**（重原子が1つでも湧いたら、それは別の壊れ方）。 */
+            assert(r.pop === 'HH' && !r.gone,
+                `写しで急に出る原子「${r.pop}」／消える原子「${r.gone}」（H が2つだけを期待）`);
+            assert(!r.hx.before.bonds.some(b => {
+                const p = r.hx.before.atoms.find(a => a.id === b.atomId1);
+                const q = r.hx.before.atoms.find(a => a.id === b.atomId2);
+                return p && q && p.element === 'H' && q.element === 'H';
+            }), '★ 加硫の再生に H₂（H−H）が出ている —— 実際の加硫で H₂ は出入りしない');
+            // ★ 否定対照: 除外をやめると H₂ が戻る ＝ この検査が空振りしていない
+            {
+                const keep = W.RX_NO_MORPH_H2.has('vulcanization');
+                W.RX_NO_MORPH_H2.delete('vulcanization');
+                try {
+                    const back = rx.withMorphHydrogens(r.L.anim.before, r.L.anim.after);
+                    assert(back.before.bonds.some(b => {
+                        const p = back.before.atoms.find(a => a.id === b.atomId1);
+                        const q = back.before.atoms.find(a => a.id === b.atomId2);
+                        return p && q && p.element === 'H' && q.element === 'H';
+                    }), '否定対照: 除外をやめても H₂ が出ない ＝ この検査は何も見張っていない');
+                } finally { if (keep) W.RX_NO_MORPH_H2.add('vulcanization'); }
+            }
             assert(A.counts && A.counts.S === 2, `S が ${A.counts && A.counts.S} 個（2 を期待）`);
             const real = new Set(L.before.atoms.map(a => a.id));
             const ss = A.before.atoms.filter(a => a.element === 'S' && !real.has(a.id));
@@ -16837,7 +16861,8 @@
             delete W.PARTNER_EQUATIONS.vulcanization;
             try {
                 const plain = rxpEqRun(c, rxpTwoChains, 'vulcanization');
-                assert(!plain.L.anim && plain.pop === 'SS', `否定対照: 表から外すと急に出る原子が「${plain.pop}」（SS を期待）＝ この検査は何も見張っていない`);
+                // ⚠ H 2つは v1586 から常に急に出る（発注書 K）ので、見るのは **S が2つ増えたか**
+                assert(!plain.L.anim && plain.pop === 'SSHH', `否定対照: 表から外すと急に出る原子が「${plain.pop}」（SSHH を期待）＝ この検査は何も見張っていない`);
                 assert(plain.codes === r.codes, `S を呼ぶと生成物の正準コードが変わった\n  あり: ${r.codes}\n  なし: ${plain.codes}`);
                 assert(plain.canvas === r.canvas, `S を呼ぶとキャンバスの原子が変わった（${r.canvas} / ${plain.canvas}）`);
             } finally {
@@ -16846,6 +16871,92 @@
             await 反応の再生を待つ(c);
         } finally {
             rx.closeCompare();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXP7: 1,4-付加重合はシス形（天然ゴム）で描き、トランス形（グタペルカ）へ入れ替えられる（発注書 L・v1587）', async (c) => {
+        /* 2026-09-17・ユーザー判断「イソプレンであれば、**②を基本、ただし比較のために③**」。
+         * ⚠ v1586 まで**できる鎖は必ずトランス形**で、V130「ゴムが弾むようになるまで」の
+         *   題と真逆の図（＝ グタペルカ）を描いていた。
+         * ★ 見るのは4つ:
+         *   ① 重合したてで、鎖の C=C が**すべて syn（シス形）**
+         *   ② 入れ替えると**すべて anti**、もう一度で syn に戻る
+         *   ③ 入れ替えても**正準コード・分子式・原子の数が1つも変わらない**（動くのは座標だけ）
+         *   ④ シス形の鎖でも**加硫できる**（V130 の筋が通る） */
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        const poly = W.REACTION_RULES.find(r => r.id === 'diene_polymerization');
+        const flip = W.REACTION_RULES.find(r => r.id === 'diene_cis_trans');
+        assert(poly && flip, '1,4-付加重合か、シス/トランスの入れ替えのルールが無い');
+        assert(!flip.info, 'シス/トランスの入れ替えが「説明だけ」になっている（図が変わらない）');
+        const geos = () => Object.values(W.readBondGeoFromCoords(g.userMolecule));
+        const build = (name, n) => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            for (let i = 0; i < n; i++) assert(g.summonMolecule(name), `${name} を呼び出せない`);
+            g.updateDrawing();
+            const s = poly.detect(g.userMolecule);
+            assert(s.length, `${name} ×${n}: 1,4-付加重合の箇所が無い`);
+            poly.apply(g, s[0]);
+            g.updateDrawing();
+        };
+        try {
+            // ---- ① 重合したてがシス形（★ 単位が2個でも3個でも）
+            [2, 3].forEach(n => {
+                build('イソプレン', n);
+                const gs = geos();
+                assert(gs.length === n && gs.every(x => x === 'syn'),
+                    `★ イソプレン ×${n} の鎖が シス形になっていない（${gs.join(',') || 'C=C が読めない'}）`);
+            });
+            // 1,3-ブタジエンでも同じ道を通る（メチルの無い鎖）
+            build('1,3-ブタジエン', 2);
+            assert(geos().every(x => x === 'syn'), `★ ポリブタジエンがシス形でない（${geos().join(',')}）`);
+
+            // ---- ②③ 入れ替えでトランス ⇄ シス。**中身は1つも変わらない**
+            build('イソプレン', 3);
+            const code0 = W.canonicalCode(g.userMolecule);
+            const atoms0 = g.userMolecule.atoms.map(a => a.element).sort().join('');
+            const sites = flip.detect(g.userMolecule);
+            assert(sites.length === 1, `入れ替えの箇所が ${sites.length} 件（1件を期待）`);
+            const cap1 = flip.apply(g, sites[0]).caption;
+            g.updateDrawing();
+            assert(geos().every(x => x === 'anti'), `★ 入れ替えてもトランス形にならない（${geos().join(',')}）`);
+            assert(/グタペルカ/.test(cap1) && /まっすぐ/.test(cap1), `トランスの一言が筋を言っていない: ${cap1.slice(0, 40)}`);
+            const cap2 = flip.apply(g, flip.detect(g.userMolecule)[0]).caption;
+            g.updateDrawing();
+            assert(geos().every(x => x === 'syn'), `★ もう一度押してもシス形に戻らない（${geos().join(',')}）`);
+            assert(/天然ゴム/.test(cap2) && /折れ曲が/.test(cap2), `シスの一言が筋を言っていない: ${cap2.slice(0, 40)}`);
+            assert(W.canonicalCode(g.userMolecule) === code0,
+                '★ 入れ替えで正準コードが変わった（動かしてよいのは座標だけ）');
+            assert(g.userMolecule.atoms.map(a => a.element).sort().join('') === atoms0,
+                '★ 入れ替えで原子の顔ぶれが変わった');
+
+            // ---- ④ シス形の鎖でも加硫できる（V130 の筋が通る）
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            for (let k = 0; k < 2; k++) {
+                for (let i = 0; i < 2; i++) assert(g.summonMolecule('イソプレン'), 'イソプレンを呼び出せない');
+                const s = poly.detect(g.userMolecule);
+                assert(s.length, `${k + 1} 本目の鎖が作れない`);
+                poly.apply(g, s[0]);
+                g.updateDrawing();
+            }
+            assert(geos().every(x => x === 'syn'), `2本ともシス形になっていない（${geos().join(',')}）`);
+            const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+            const vs = vul.detect(g.userMolecule);
+            assert(vs.length, '★ シス形の鎖2本で加硫の箇所が1つも出ない（V130 の筋が切れる）');
+            vul.apply(g, vs[0]);
+            g.updateDrawing();
+            assert(g.userMolecule.atoms.filter(a => a.element === 'S').length === 2,
+                'シス形の鎖に硫黄の橋が架からない');
+            // ★ 否定対照: 橋が架かったあとは入れ替えを出さない（網目を引き直さない）
+            assert(flip.detect(g.userMolecule).length === 0,
+                '★ 加硫したあとにも入れ替えが出ている（架橋した網目を引き直すと橋が伸びる）');
+            return 'イソプレン2・3量体とポリブタジエンがシス形／⇄で anti⇄syn・正準コードは不変／シス形の鎖で加硫も通る';
+        } finally {
+            rx.closeCompare && rx.closeCompare();
             g.userMolecule = new W.Molecule(); g.updateDrawing();
         }
     });
@@ -23858,6 +23969,77 @@
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
+    });
+
+    test('FR2: ハース環の手前の辺は太く、隣の2本はテーパー（手前が太く奥が細い・発注書 J）', async (c) => {
+        /* 2026-09-17・ユーザー「**ハース環、フラノース・ピラノース　一番手前の結合、の隣の結合、は
+         * テーパーをつけて教科書の図に寄せる**」。
+         * ★ 見るのは3つ:
+         *   ① 一番手前の辺は太い1本の線／その隣2本は**両端の太さが違う台形**（＝テーパー）
+         *   ② テーパーの**太い端が下（手前）**にある（上下が逆だと奥が太くなる）
+         *   ③ ★ 否定対照: **平たく描かれていない環（フラン・無水マレイン酸など）には付かない**
+         *      —— 奥行きのない図に奥行きの記号を乗せない。⚠ v1582 まではここが付いていた。 */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        const taper = () => [...D.querySelectorAll('#bonds-group polygon.svg-bond-taper')];
+        const thick = () => [...D.querySelectorAll('#bonds-group line.svg-bond-ink')]
+            .filter(l => +l.getAttribute('stroke-width') > 3);
+        const draw = (name) => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            assert(g.summonMolecule(name), `${name} を呼び出せない（検査が素通りする）`);
+            g.updateDrawing();
+        };
+        /* 台形の「両端の幅」を測る。points は 端1外→端2外→端2内→端1内 の順なので、
+         * 0-3 の距離が端1の幅、1-2 の距離が端2の幅。⚠ 描いた順ではなく**座標**で読む */
+        const ends = (poly) => {
+            const p = poly.getAttribute('points').trim().split(/\s+/)
+                .map(s => s.split(',').map(Number));
+            const w = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+            return [
+                { w: w(p[0], p[3]), y: (p[0][1] + p[3][1]) / 2 },
+                { w: w(p[1], p[2]), y: (p[1][1] + p[2][1]) / 2 }
+            ];
+        };
+
+        // ---- ① ピラノース（六員環）と ② フラノース（五員環）で同じ形になる
+        [['α-D-グルコース（α-D-グルコピラノース）', 6], ['β-D-フルクトフラノース', 5]].forEach(([name, n]) => {
+            draw(name);
+            assert(thick().length === 1,
+                `${name}: 一番手前の辺が太い1本になっていない（${thick().length} 本）`);
+            const ts = taper();
+            assert(ts.length === 2,
+                `${name}: テーパーの辺が ${ts.length} 本（一番手前の辺の隣 2本を期待・${n}員環）`);
+            ts.forEach(t => {
+                const [e1, e2] = ends(t);
+                const fat = e1.w > e2.w ? e1 : e2, thin = e1.w > e2.w ? e2 : e1;
+                assert(fat.w > thin.w + 1.5,
+                    `${name}: 両端の太さが変わらない（${fat.w.toFixed(1)} / ${thin.w.toFixed(1)}）`);
+                assert(fat.y > thin.y + 1,
+                    `★ ${name}: 太い端が奥（上）に来ている（手前が太く奥が細い、が逆）`);
+            });
+        });
+
+        // ---- ③ 二糖は環が2つぶん（マルトースは 太2本＋テーパー4本）
+        draw('マルトース（麦芽糖）');
+        assert(thick().length === 2 && taper().length === 4,
+            `二糖で環2つぶんにならない（太 ${thick().length} / テーパー ${taper().length}）`);
+
+        // ---- ④ ★★ 否定対照: 平たく描いていない「酸素を含む環」には付かない
+        //      （v1582 まではフラン・無水マレイン酸・THP などにも太線が付いていた）
+        ['フラン', '無水マレイン酸', 'テトラヒドロピラン（オキサン）',
+            'γ-ブチロラクトン（4-ブタノリド）'].forEach(name => {
+            draw(name);
+            assert(thick().length === 0 && taper().length === 0,
+                `★ ${name}: 平面の環に手前の太線が付いている（太 ${thick().length} / テーパー ${taper().length}）`);
+        });
+
+        // ---- ⑤ 無回帰: ベンゼンなど酸素の無い環は元から対象外
+        draw('ベンゼン');
+        assert(thick().length === 0 && taper().length === 0, 'ベンゼンに手前の太線が付いた');
+        c.reset();
+        return 'ピラノース／フラノースとも 太1＋テーパー2・太い端が手前／二糖は2環ぶん／平面の環4件は素のまま';
     });
 
     test('ST8: 立体を名前に反映するトグル＋鎖状⇄環状の平衡（P12-7 M2e / M2d）', async (c) => {
@@ -39277,6 +39459,11 @@
              * ⚠ 相手のヨードメタンは**試薬ではなく分子**で、CH₃ の炭素がそのまま生成物に入る
              *   （アセタール化のホルムアルデヒドと同じ理由）。入口は `PARTNER_CANDIDATES` の札 ＝ RXF23 が見張る */
             'williamson_ether',
+            /* ★ v1587 `diene_cis_trans`（シス形 ⇄ トランス形の入れ替え・発注書 L）。
+             * ⚠ **瓶はありえない** —— 試薬で起こす反応ではなく、
+             *   できた鎖を**シス形（天然ゴム）とトランス形（グタペルカ）で描き分けて見くらべる**札。
+             *   入口は「⚗ この分子にできること」の一覧そのもの。 */
+            'diene_cis_trans',
             'diene_polymerization', 'open_glucopyranose'].sort();
         const now = unlinked(RULES);
         assert(now.length === expected.length,
@@ -42924,18 +43111,46 @@
                W.reverseRuleIdOf('dehydration_anhydride') === 'hydrolysis_anhydride',
             '行きと帰りの対に酸無水物が入っていない（片道のまま）');
         {
+            /* ★★ v1585・発注書 G（V134 のユーザー指摘）で**戻り方そのものが変わった**:
+             *   ① 加水分解は水を**使う**ので、脱水で出た水は画面から消える
+             *      （v1584 まで「① フタル酸 ＋ ② 水」で終わっていた）
+             *   ② 戻った分子は**最初に置いたのと同じ向き**になる
+             *      （v1584 までは五角形に置き直した座標のままで、-COOH の向きが違った） */
             const before = codeOf(['フタル酸']);
+            const xy = (m) => m.atoms.filter(a => a.element !== 'H')
+                .map(a => `${a.element}@${Math.round(a.x)},${Math.round(a.y)}`).sort().join(' ');
+            const xyBefore = xy(setup(['フタル酸']));
+            // ⚠ `codeOf` はキャンバスを作り直す（`setup` を通る）ので、**比べる文字列は先に取る**
+            const withWater = codeOf(['フタル酸', '水']);
             const mol = setup(['フタル酸']);
             dehyd.apply(g, dehyd.detect(mol)[0]);
             g.updateDrawing();
+            assert(g.splitMolecules().filter(p => p.atoms.some(a => a.element !== 'H')).length === 2,
+                '前提が崩れている（脱水で水が1分子出るはず）');
             const hSites = hydro.detect(mol);
             assert(hSites.length === 1, `できた無水物を加水分解できない（${hSites.length} 件）`);
             hydro.apply(g, hSites[0]);
             g.updateDrawing();
-            // 水が1分子余分に残るので、フタル酸＋水と比べる
-            assert(CC(mol) === codeOf(['フタル酸', '水']),
-                `往復してフタル酸に戻らない\n  実際: ${CC(mol)}\n  期待: ${codeOf(['フタル酸', '水'])}`);
-            assert(before !== CC(mol), '前提が崩れている（水のぶんだけ違うはず）');
+            // ---- ① 水を使ったので、残るのはフタル酸だけ
+            assert(CC(mol) === before,
+                `往復してフタル酸に戻らない\n  実際: ${CC(mol)}\n  期待: ${before}`);
+            assert(CC(mol) !== withWater,
+                '★ 加水分解したのに水が画面に残っている（反応式の収支と画面が食い違う）');
+            // ---- ② 向きまで最初と同じ（「元に戻った」が画から読める）
+            assert(xy(mol) === xyBefore,
+                `★ 戻ったフタル酸の向きが最初と違う\n  実際: ${xy(mol)}\n  期待: ${xyBefore}`);
+        }
+        {
+            /* ★ 否定対照: **ライブラリから呼び出した無水フタル酸**（この画面で脱水していない）は
+             *   控えを持たないので、いままでどおりの図になる ＝ 控えの無い相手に細工をしない。
+             *   ⚠ 水も画面に無いので、消す水も無い。 */
+            const mol = setup(['無水フタル酸']);
+            const sites = hydro.detect(mol);
+            assert(sites.length === 1, '呼び出した無水フタル酸を加水分解できない');
+            hydro.apply(g, sites[0]);
+            g.updateDrawing();
+            assert(CC(g.userMolecule) === codeOf(['フタル酸']),
+                '呼び出した無水フタル酸の加水分解がフタル酸にならない');
         }
         c.reset();
     });
@@ -52508,9 +52723,17 @@
      *   ★ 電荷が入って（I-3）**本物の塩を描くようになった**ので、2本とも
      *     「変化のある反応」の側へ移った ＝ ここから外れるのが正しい。
      *   ⚠ 残る6本はすべて `_info`（「この条件では起こらない」を説明するだけの札）。 */
+    /* ⚠⚠ **6 → 7 に増えた**（v1587・発注書 L で `diene_cis_trans` を足した）。
+     *   ★ これは `_info` ではないが、**結合を1本も変えないのが仕様**の反応:
+     *     シス形 ⇄ トランス形の入れ替えは**座標だけ**を動かす（天然ゴム ⇄ グタペルカ）。
+     *     つなぎ方も分子式も同じで、違うのは二重結合のまわりの向きだけ ＝
+     *     結合の署名が変わらないのが正しい。
+     *   ⚠ **`_info` でない行がここに増えるのは、ふつうはバグの合図**なので、
+     *     増やすときは必ずこの注記のように理由を書くこと。 */
     const CV4_NO_CHANGE_RULES = [
         'oxidize_tertiary_info', 'oxidation_out_of_scope_info', 'esterification_phenol_info',
-        'condensation_polymer_info', 'aromatic_deactivated_info', 'dehydration_anhydride_info'
+        'condensation_polymer_info', 'aromatic_deactivated_info', 'dehydration_anhydride_info',
+        'diene_cis_trans'
     ];
 
     /* 重原子ごとの「隣の原子 id ＋ 結合次数（＋電荷）」の集合（文字列）。
@@ -58326,6 +58549,69 @@
             `★ 紛れていない単独の塩まで置き直した（反応の一覧 ${plain} ／ 分液 ${inSep}）`);
         c.reset();
         return `V141/V142/V143 の水層の粒がすべて相方のそば／CO₂ のあとの Na⁺ も隣／単独の塩の置き場 ${plain} は不変`;
+    });
+
+    test('SEP10: 水層の帯に「いま何を入れた層か」が出て、入れ替えると字も変わる（発注書 H）', async (c) => {
+        /* 2026-09-17・ユーザー「**水層に （NaOH）などのステータスを表すようにしたい**」（V141〜V143）。
+         * ★ 見るのは3つ:
+         *   ① 入れる前は「水層」だけ（ふだんの画に1語も足さない）
+         *   ② 瓶を押すと帯と札の見出しが「水層（HCl）」になる
+         *   ③ **入れ替えると字も入れ替わる**（V142 は HCl → NaOH の2手）
+         * ⚠ **行は増やさない**ので、帯の文字の**数**が増えていないことも見る
+         *   （説明の行が足されると、短尺の画で字が小さくなる）。 */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, R = W.reactor;
+        const bottle = id => {
+            const b = W.REAGENTS.find(r => r.id === id);
+            assert(b, `瓶 ${id} が無い`);
+            return b;
+        };
+        const bandTexts = () => [...D.querySelectorAll('#bonds-group text')].map(t => t.textContent);
+        const aqBand = () => bandTexts().find(t => /^水層/.test(t));
+        const aqHead = () => {
+            const row = [...D.querySelectorAll('.sep-row')].find(r => r.dataset.phase === 'aq');
+            assert(row, '帯に水層の行が無い');
+            return row.querySelector('.sep-layer-name').textContent;
+        };
+
+        sepSetup(c, ['アニリン', 'ニトロベンゼン']);
+        g.startSeparation();
+        const before = bandTexts().length;
+        assert(aqBand() === '水層', `① 何も入れていないのに帯に字が付いている: ${aqBand()}`);
+        assert(aqHead() === '水層', `① 札の見出しにも字が付いている: ${aqHead()}`);
+
+        // ---- ② 塩酸を入れる → 帯と見出しに（HCl）
+        R.applyToMixture(bottle('hcl'));
+        g.updateDrawing();
+        assert(aqBand() === '水層（HCl）', `② 帯が「水層（HCl）」にならない: ${aqBand()}`);
+        assert(aqHead() === '水層（HCl）', `② 札の見出しが変わらない: ${aqHead()}`);
+        assert(bandTexts().length === before,
+            `★ 帯の文字が ${before} → ${bandTexts().length} に増えた（行を増やさない約束）`);
+        // ★ 否定対照: 有機層の側には試薬の字を付けない
+        assert(bandTexts().some(t => /^有機層/.test(t) && !/HCl/.test(t)),
+            `★ 有機層の帯にまで試薬の名前が付いた（${bandTexts().join(' / ')}）`);
+
+        // ---- ③ 入れ替えると字も入れ替わる（V142 の2手目）
+        R.applyToMixture(bottle('naoh_aq'));
+        g.updateDrawing();
+        assert(aqBand() === '水層（NaOH）',
+            `③ 試薬を入れ替えたのに帯が変わらない（末尾の aq も落とす）: ${aqBand()}`);
+
+        // ---- ④ ↩ で図が戻るなら字も戻る（「入れる前」の画に「入れた後」の名前を残さない）
+        g.undo();
+        g.updateDrawing();
+        assert(aqBand() === '水層（HCl）', `④ ↩ で帯の字が戻らない: ${aqBand()}`);
+
+        // ---- ⑤ 炭酸水素ナトリウムでも同じ道を通る（発注書の3つ目の例）
+        c.reset();
+        sepSetup(c, ['安息香酸', 'ニトロベンゼン']);
+        g.startSeparation();
+        assert(aqBand() === '水層', '⑤ 新しい漏斗なのに前の字が残っている');
+        R.applyToMixture(bottle('nahco3'));
+        g.updateDrawing();
+        assert(aqBand() === '水層（NaHCO₃）', `⑤ NaHCO₃ が帯に出ない: ${aqBand()}`);
+        c.reset();
+        return '水層（HCl）→（NaOH）→ ↩ で（HCl）／（NaHCO₃）も同じ道／帯の行数は不変';
     });
 
     /* ============================================================================
