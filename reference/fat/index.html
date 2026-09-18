@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -849,7 +856,7 @@ a.ref-link::before { content: '→ '; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-structure.png" alt="油脂の構造式を左向きと右向きの2通りで並べた図。どちらも中央に炭素3個のグリセリン骨格があり、そこから3本の −O−CO−R がのびている" loading="lazy"><figcaption class="ref-figure-cap">油脂の構造式は<b>どちらの向きに書いても構いません</b>。ただし示性式にするときは、左向きなら −OCO−、右向きなら −COO− と書き分けます。</figcaption></figure>
 <p class="ref-p"><b>エステル結合の示性式の向きは、書くときに毎回確かめてください。</b>−OCO− と −COO− は同じ結合ですが、左右どちらから読むかで並びが変わります。</p>
 <p class="ref-p">天然の油脂を構成する脂肪酸は、<b>炭素数16か18のものがほとんど</b>です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">油脂をつくる主な高級脂肪酸（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: center;">C=C の数</th></tr></thead><tbody><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>パルミチン酸</b></td><td style="text-align: left;">C₁₅H₃₁COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>ステアリン酸</b></td><td style="text-align: left;">C₁₇H₃₅COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>オレイン酸</b></td><td style="text-align: left;">C₁₇H₃₃COOH</td><td style="text-align: center;">1</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノール酸</b></td><td style="text-align: left;">C₁₇H₃₁COOH</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノレン酸</b></td><td style="text-align: left;">C₁₇H₂₉COOH</td><td style="text-align: center;">3</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">油脂をつくる主な高級脂肪酸</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">名称</th><th style="text-align: left;">示性式</th><th style="text-align: center;">C=C の数</th></tr></thead><tbody><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>パルミチン酸</b></td><td style="text-align: left;">C₁₅H₃₁COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">飽和脂肪酸</td><td style="text-align: left;"><b>ステアリン酸</b></td><td style="text-align: left;">C₁₇H₃₅COOH</td><td style="text-align: center;">0</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>オレイン酸</b></td><td style="text-align: left;">C₁₇H₃₃COOH</td><td style="text-align: center;">1</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノール酸</b></td><td style="text-align: left;">C₁₇H₃₁COOH</td><td style="text-align: center;">2</td></tr><tr><td style="text-align: left;">不飽和脂肪酸</td><td style="text-align: left;"><b>リノレン酸</b></td><td style="text-align: left;">C₁₇H₂₉COOH</td><td style="text-align: center;">3</td></tr></tbody></table></div>
 <p class="ref-p"><b>この5つは名前と示性式を必ず暗記してください。</b>炭素数を1つずつ覚える必要はありません。<b>「基本的に18」と覚えて</b>、パルミチン酸だけが16、と付け足すのがいちばん軽い覚え方です。</p>
 <p class="ref-p">表を縦に見ると、<b>C=C が1個増えるごとに H 原子が2個減り、分子量が2小さくなります</b>。ステアリン酸 C₁₇H₃₅COOH（C=C は0個）から H を2個ずつ引いていけば、オレイン酸・リノール酸・リノレン酸の示性式がその場で出てきます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">高級脂肪酸・不飽和脂肪酸という呼び名の分け方はカルボン酸のページへ</a></p>

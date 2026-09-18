@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -848,9 +855,9 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">アルケンとは</h4><p class="ref-sec-lead">一般式は C<sub>n</sub>H<sub>2n</sub>。n に炭素の数を入れれば分子式が出ます。名前は対応するアルカンの語尾を -ene に変えたものです。</p></section>
 <p class="ref-p">一般式 C<sub>n</sub>H<sub>2n</sub> の n に炭素の数を代入すれば、対応するアルケンの分子式が得られます。n=2 ならエテン C₂H₄、n=3 ならプロペン C₃H₆、n=4 ならブテン C₄H₈ です。</p>
 <p class="ref-p">アルケンの名前は、<b>同じ炭素数のアルカンの語尾を -ane から -ene に変えて</b>つくります。エタン（ethane）ならエテン（ethene）、プロパン（propane）ならプロペン（propene）です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">同じ炭素数のアルカンとアルケン（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">炭素数</th><th style="text-align: left;">アルカン</th><th style="text-align: left;">アルケン</th></tr></thead><tbody><tr><td style="text-align: center;">2</td><td style="text-align: left;">エタン C₂H₆</td><td style="text-align: left;">エテン C₂H₄</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: left;">プロパン C₃H₈</td><td style="text-align: left;">プロペン C₃H₆</td></tr><tr><td style="text-align: center;">4</td><td style="text-align: left;">ブタン C₄H₁₀</td><td style="text-align: left;">ブテン C₄H₈</td></tr><tr><td style="text-align: center;">5</td><td style="text-align: left;">ペンタン C₅H₁₂</td><td style="text-align: left;">ペンテン C₅H₁₀</td></tr><tr><td style="text-align: center;">6</td><td style="text-align: left;">ヘキサン C₆H₁₄</td><td style="text-align: left;">ヘキセン C₆H₁₂</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">同じ炭素数のアルカンとアルケン</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">炭素数</th><th style="text-align: left;">アルカン</th><th style="text-align: left;">アルケン</th></tr></thead><tbody><tr><td style="text-align: center;">2</td><td style="text-align: left;">エタン C₂H₆</td><td style="text-align: left;">エテン C₂H₄</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: left;">プロパン C₃H₈</td><td style="text-align: left;">プロペン C₃H₆</td></tr><tr><td style="text-align: center;">4</td><td style="text-align: left;">ブタン C₄H₁₀</td><td style="text-align: left;">ブテン C₄H₈</td></tr><tr><td style="text-align: center;">5</td><td style="text-align: left;">ペンタン C₅H₁₂</td><td style="text-align: left;">ペンテン C₅H₁₀</td></tr><tr><td style="text-align: center;">6</td><td style="text-align: left;">ヘキサン C₆H₁₄</td><td style="text-align: left;">ヘキセン C₆H₁₂</td></tr></tbody></table></div>
 <p class="ref-p">二重結合や三重結合をまとめて<b>不飽和結合</b>、不飽和結合をもつ炭化水素を<b>不飽和炭化水素</b>といいます。アルケンは不飽和炭化水素の代表です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">主なアルケン（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th><th style="text-align: left;">備考</th></tr></thead><tbody><tr><td style="text-align: left;">エテン（エチレン）</td><td style="text-align: left;">CH₂=CH₂</td><td style="text-align: left;">いちばん小さいアルケン</td></tr><tr><td style="text-align: left;">プロペン（プロピレン）</td><td style="text-align: left;">CH₂=CHCH₃</td><td style="text-align: left;">—</td></tr><tr><td style="text-align: left;">1-ブテン</td><td style="text-align: left;">CH₂=CHCH₂CH₃</td><td style="text-align: left;">2-ブテンとは構造異性体</td></tr><tr><td style="text-align: left;">シス-2-ブテン</td><td style="text-align: left;">CH₃CH=CHCH₃</td><td style="text-align: left;">トランス体とは立体異性体</td></tr><tr><td style="text-align: left;">トランス-2-ブテン</td><td style="text-align: left;">CH₃CH=CHCH₃</td><td style="text-align: left;">シス体とは立体異性体</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">主なアルケン</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th><th style="text-align: left;">備考</th></tr></thead><tbody><tr><td style="text-align: left;">エテン（エチレン）</td><td style="text-align: left;">CH₂=CH₂</td><td style="text-align: left;">いちばん小さいアルケン</td></tr><tr><td style="text-align: left;">プロペン（プロピレン）</td><td style="text-align: left;">CH₂=CHCH₃</td><td style="text-align: left;">—</td></tr><tr><td style="text-align: left;">1-ブテン</td><td style="text-align: left;">CH₂=CHCH₂CH₃</td><td style="text-align: left;">2-ブテンとは構造異性体</td></tr><tr><td style="text-align: left;">シス-2-ブテン</td><td style="text-align: left;">CH₃CH=CHCH₃</td><td style="text-align: left;">トランス体とは立体異性体</td></tr><tr><td style="text-align: left;">トランス-2-ブテン</td><td style="text-align: left;">CH₃CH=CHCH₃</td><td style="text-align: left;">シス体とは立体異性体</td></tr></tbody></table></div>
 <p class="ref-p"><b>エテンとエチレン、プロペンとプロピレンは同じ物質です。</b>エチレン・プロピレンのほうは IUPAC 命名法に基づかない慣用名ですが、こちらのほうがよく使われます。<b>どちらの名前で出てきても同じものだと分かるようにしておいてください。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/hydrocarbon-classes/">アルカン・アルケン・アルキン・シクロアルカンの一般式を並べて見る</a></p>
 <section class="ref-sec" id="ref-sec-shape"><h4 class="ref-sec-h">二重結合のまわりの形</h4><p class="ref-sec-lead">C=C のまわりの6個の原子は同一平面上に固定され、結合角は約120°。二重結合は単結合より短く、三重結合より長いです。</p></section>

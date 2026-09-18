@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -858,7 +865,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">分子式 C₈H₁₀ の芳香族炭化水素は、ベンゼン環 C₆ の外に炭素が2個あります。次の手順で数えると、もれなく数えられます。</p>
 <ol class="ref-list"><li>ベンゼン環の外にある炭素の数を数える。<div class="ref-li-hang">C₈H₁₀ なら 8−6＝2個</div></li><li>その炭素を「1本の側鎖にまとめる」か「2本に分ける」かで場合分けする。</li><li>まとめた場合は、側鎖の名前を付けて1種。<div class="ref-li-hang">炭素2個をまとめるとエチル基 → エチルベンゼンの1種</div></li><li>分けた場合は、2本の位置で o・m・p の3種。<div class="ref-li-hang">メチル基2本 → o-キシレン・m-キシレン・p-キシレンの3種</div></li></ol>
 <p class="ref-p">合わせて <b>エチルベンゼン・o-キシレン・m-キシレン・p-キシレンの4種</b>です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">分子式 C₈H₁₀ の芳香族炭化水素（4種）（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">側鎖</th><th style="text-align: left;">酸化して得られるもの</th></tr></thead><tbody><tr><td style="text-align: left;"><b>エチルベンゼン</b></td><td style="text-align: left;">エチル基1本</td><td style="text-align: left;">安息香酸</td></tr><tr><td style="text-align: left;"><b>o-キシレン</b></td><td style="text-align: left;">メチル基2本が隣</td><td style="text-align: left;">フタル酸</td></tr><tr><td style="text-align: left;"><b>m-キシレン</b></td><td style="text-align: left;">メチル基2本が1つおき</td><td style="text-align: left;">イソフタル酸</td></tr><tr><td style="text-align: left;"><b>p-キシレン</b></td><td style="text-align: left;">メチル基2本が向かい</td><td style="text-align: left;">テレフタル酸</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">分子式 C₈H₁₀ の芳香族炭化水素（4種）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">側鎖</th><th style="text-align: left;">酸化して得られるもの</th></tr></thead><tbody><tr><td style="text-align: left;"><b>エチルベンゼン</b></td><td style="text-align: left;">エチル基1本</td><td style="text-align: left;">安息香酸</td></tr><tr><td style="text-align: left;"><b>o-キシレン</b></td><td style="text-align: left;">メチル基2本が隣</td><td style="text-align: left;">フタル酸</td></tr><tr><td style="text-align: left;"><b>m-キシレン</b></td><td style="text-align: left;">メチル基2本が1つおき</td><td style="text-align: left;">イソフタル酸</td></tr><tr><td style="text-align: left;"><b>p-キシレン</b></td><td style="text-align: left;">メチル基2本が向かい</td><td style="text-align: left;">テレフタル酸</td></tr></tbody></table></div>
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=isomer&amp;formula=C8H10">分子式 C₈H₁₀ の芳香族炭化水素をアプリで書き出してみる（4種）</a></p>
 <section class="ref-sec" id="ref-sec-styrene-naphthalene"><h4 class="ref-sec-h">スチレンとナフタレン</h4><p class="ref-sec-lead">スチレンは環にビニル基が付いたもので、付加重合します。ナフタレンは環が2個つながったもので、昇華しやすい結晶です。</p></section>
 <p class="ref-p">スチレン C₆H₅CH=CH₂ は、ベンゼン環に<b>ビニル基 −CH=CH₂</b> が付いた化合物です。側鎖の C=C のところで<b>付加重合</b>して、ポリスチレンになります。</p>

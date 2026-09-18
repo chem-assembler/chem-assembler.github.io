@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -874,7 +881,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CHO ＋ 2Cu²⁺ ＋ 5OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−COO⁻ ＋ Cu₂O ＋ 3H₂O</span></div><p class="ref-note">こちらも銅(II)イオンが塩基性で沈殿しないよう、酒石酸イオンと錯イオンをつくらせてあります。左辺の Cu²⁺ と OH⁻ をくっつけて Cu(OH)₂ と書かないのはそのためです。</p></div>
 <p class="ref-p">この反応も酸化還元反応なので、半反応式からの組み立てを行います。酸化剤の Cu²⁺ は Cu₂O になります。</p>
 <h5 class="ref-h5">2つの反応のまとめ</h5>
-<div class="ref-table-wrap"><div class="ref-cap">還元性を目に見える形にする2つの反応（2行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">反応の名前</th><th style="text-align: left;">加えるもの</th><th style="text-align: left;">見える変化</th><th style="text-align: left;">還元されてできるもの</th></tr></thead><tbody><tr><td style="text-align: left;">銀鏡反応</td><td style="text-align: left;">アンモニア性硝酸銀水溶液を加えて加温</td><td style="text-align: left;">器壁に鏡のように析出する</td><td style="text-align: left;">銀 Ag（単体）</td></tr><tr><td style="text-align: left;">フェーリング液の還元</td><td style="text-align: left;">フェーリング液を加えて加熱</td><td style="text-align: left;">赤色の沈殿が生じる</td><td style="text-align: left;">酸化銅(I) Cu₂O</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">還元性を目に見える形にする2つの反応</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">反応の名前</th><th style="text-align: left;">加えるもの</th><th style="text-align: left;">見える変化</th><th style="text-align: left;">還元されてできるもの</th></tr></thead><tbody><tr><td style="text-align: left;">銀鏡反応</td><td style="text-align: left;">アンモニア性硝酸銀水溶液を加えて加温</td><td style="text-align: left;">器壁に鏡のように析出する</td><td style="text-align: left;">銀 Ag（単体）</td></tr><tr><td style="text-align: left;">フェーリング液の還元</td><td style="text-align: left;">フェーリング液を加えて加熱</td><td style="text-align: left;">赤色の沈殿が生じる</td><td style="text-align: left;">酸化銅(I) Cu₂O</td></tr></tbody></table></div>
 <p class="ref-p">アルデヒドとケトンは同じ分子式 C<sub>n</sub>H<sub>2n</sub>O をもちますが、<b>ケトンは還元性を示さない</b>ので、この2つの反応をどちらも起こしません。<b>「アルデヒドは還元性あり、ケトンは還元性なし」は必ず暗記してください。</b></p>
 <p class="ref-p">ギ酸はカルボン酸に分類されますが、ホルミル基をもっているため還元性を示します。脂肪族の範囲では「還元性をもつのはアルデヒドとギ酸」と覚えるとよいでしょう。生体高分子で学習するグルコースなどの糖類も還元性を示します。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">ギ酸がカルボン酸なのに還元性を示すわけ（カルボン酸のページ）</a></p>
