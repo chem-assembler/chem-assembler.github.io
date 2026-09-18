@@ -25,10 +25,34 @@ const stageTitleEl = document.getElementById("stageTitle");
 const formulaEl    = document.getElementById("hbFormula");
 const procBarEl    = document.getElementById("procBar");
 const procLeadEl   = document.getElementById("procLead");
+const formBarEl    = document.getElementById("formBar");
 const chargeEl     = document.getElementById("hbCharge");
 const clearEl      = document.getElementById("clearBanner");
 
-const TASKS = halfBuildList();
+/* ★ 一覧（halflist.html）から渡された列（2026-09-18）。
+   `?q=id,id,…` が来たらその順で組む。来なければ全部の出題を既定の順で。
+   ⚠ **ここで混ぜ直さない** —— ランダムは一覧が押した時点で決めて URL に入れてある
+   （送り先で混ぜると「次の式へ」のたびに並びが変わって、どこまでやったか分からなくなる）。 */
+const NAMES = Object.fromEntries(halfCatalog().map((e) => [e.id, e.name]));
+const q = new URLSearchParams(location.search);
+
+function tasksFromQuery() {
+  const raw = (q.get("q") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const seen = new Set();
+  const picked = [];
+  for (const id of raw) {
+    if (seen.has(id)) continue;
+    const t = halfBuildTaskOf(id);
+    if (!t) continue;                 // 係数決定にならない式が混ざっていても黙って飛ばす
+    seen.add(id);
+    picked.push(t);
+  }
+  return picked;
+}
+
+const QUEUED = tasksFromQuery();
+const TASKS = QUEUED.length ? QUEUED : halfBuildList();
+const FROM_LIST = QUEUED.length > 0;
 
 /* 入力欄の id に使う短い名前（"H+" や "e-" はそのままでは id に向かない） */
 const KEYCODE = { "H2O": "w", "H+": "h", "e-": "e" };
@@ -36,6 +60,7 @@ const SIDES = ["left", "right"];
 
 let taskIdx = 0;
 let procId = "A";
+let formId = null;    // 書き方（硝酸・熱濃硫酸・シュウ酸だけ2通り）。null なら本体
 let vals = {};        // { 種: { left: n, right: n } }（空欄は delete）
 
 /* ★ ○× の印（2026-09-17・half-marks.js）。ユーザーの決定:
@@ -47,8 +72,24 @@ let ngSeen = false;     // この挑戦で赤を出したか
 let marked = false;     // この挑戦の印をもう書いたか（クリア後に打ち直しても2回書かない）
 function resetAttempt() { ngSeen = false; marked = false; }
 
-function task() { return TASKS[taskIdx]; }
+/* いま組んでいる出題。書き方を選んでいればその書き方で組み直す
+   （骨格そのものが HNO₃ ⇄ NO₃⁻ と入れ替わる ＝ 入れる H⁺ の数も変わる） */
+function task() {
+  const base = TASKS[taskIdx];
+  if (!formId) return base;
+  return halfBuildTaskOf(base.id, { form: formId }) || base;
+}
 function proc() { return HALF_PROCS[procId]; }
+/* 書き方が2通りある式か（無ければ空の配列） */
+function writings() {
+  const w = halfWritingsOf(TASKS[taskIdx].id);
+  return w.length > 1 ? w : [];
+}
+/* 書き方の呼び名 ＝ 骨格の左辺のいちばん最初の物質（HNO₃ か NO₃⁻ か） */
+function writingLabel(key) {
+  const sk = halfSkeletonOf(TASKS[taskIdx].id, key);
+  return sk && sk.left.length ? SPECIES[sk.left[0].sp].disp : key;
+}
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -175,7 +216,8 @@ function buildOxHint(box) {
      右辺の O₂ を見ると O は 0 のままなので、「変わった原子は 1 個」がどこを指すのか分からない。
      ⚠ 札を出すのは halfOxWhere が返す回だけ（同じ元素が、変わらないまま同じ辺に残る回）。
      MnO₄⁻ → Mn²⁺ のような回にまで「右辺の◯◯の Mn」と足すと、指示の行が1つ増えるだけになる。 */
-  const where = halfOxWhere(HALF_REACTIONS[t.id], c);
+  // ⚠ **選んだ書き方の物質で言う**（HNO₃ で組んでいるのに NO₃⁻ を指さない）
+  const where = halfOxWhere(t.terms, c);
   if (where) {
     const stay = where.stay
       .map((s) => `${SPECIES[s.sp].disp} の ${c.el} は ${fmtOxNum(s.ox)} のまま`).join("、");
@@ -330,7 +372,7 @@ function showClear() {
     const nx = document.createElement("button");
     nx.id = "hbNext";
     nx.textContent = "次の式へ →";
-    nx.onclick = () => { taskIdx++; initTask(); };
+    nx.onclick = () => { taskIdx++; formId = null; initTask(); };
     clearEl.appendChild(nx);
   }
 }
@@ -363,8 +405,9 @@ function setProc(id) {
 
 /* ---- 出題の切り替え ---- */
 
-function taskLabel(i) {
-  return `${i + 1}：${halfSkeletonDisp(TASKS[i].skeleton)}`;
+function navLabel(i) {
+  // ⚠ 名前は出すが、**完成した式は出さない**（骨格まで）
+  return `${NAMES[TASKS[i].id] || ""}　${halfSkeletonDisp(TASKS[i].skeleton)}`.trim();
 }
 
 function buildStageNav() {
@@ -374,20 +417,76 @@ function buildStageNav() {
     // ⚠ 帯に出すのは番号だけ（他の全モードと同じ）。名前は title と「☰ 一覧」が持つ
     b.textContent = String(i + 1);
     b.className = i === taskIdx ? "active" : "";
-    b.title = taskLabel(i);
-    b.dataset.label = halfSkeletonDisp(t.skeleton);
-    b.onclick = () => { taskIdx = i; initTask(); };
+    b.title = navLabel(i);
+    b.dataset.label = navLabel(i);
+    b.onclick = () => { taskIdx = i; formId = null; initTask(); };
     stageNavEl.appendChild(b);
   });
+}
+
+/* ★ いちばん上の帯（2026-09-18・ユーザーの指摘「①②… の帯は分かりにくい」）。
+   番号だけでは**いま何の式を組んでいるのか**も、**どこへ戻れるのか**も読めなかった。
+   ここで3つを言う: 戻り先（一覧）／いま何本目か／いま組んでいる式の名前と骨格。
+   ⚠ **答えは出さない**（名前と骨格まで。e⁻ も H⁺ も数は出てこない）。 */
+function buildWhere() {
+  stageTitleEl.innerHTML = "";
+  const bar = el("div", "hbWhere");
+  const back = document.createElement("a");
+  back.className = "hbBack";
+  back.id = "hbBack";
+  back.href = "halflist.html";
+  back.textContent = "← 半反応式の一覧へ";
+  bar.appendChild(back);
+  bar.appendChild(el("span", "hbCount", `${taskIdx + 1} 本目 / ${TASKS.length} 本`));
+  stageTitleEl.appendChild(bar);
+
+  const now = el("div", "hbNow");
+  now.appendChild(el("strong", "hbNowName", NAMES[TASKS[taskIdx].id] || ""));
+  now.appendChild(el("span", "hbNowEq", halfSkeletonDisp(task().skeleton)));
+  stageTitleEl.appendChild(now);
+}
+
+/* ★ 書き方の選択（2026-09-18・ユーザーの決定）。硝酸は HNO₃ でも NO₃⁻ でも、
+   熱濃硫酸は H₂SO₄ でも SO₄²⁻ でも組める ＝ **どちらで書いても正解**。
+   ⚠ どちらが教科書か・出典は書かない。言うのは「どちらで書いてもよい」だけ。
+   ⚠ 切り替えたら入力は捨てる（骨格そのものが変わるので、数を持ち越すと嘘の途中経過になる）。 */
+function buildFormBar() {
+  const ws = writings();
+  formBarEl.innerHTML = "";
+  formBarEl.hidden = !ws.length;
+  if (!ws.length) return;
+  const cur = formId || ws[0].key;
+  formBarEl.appendChild(el("span", "hbFormLead", "どちらで書いてもよい"));
+  for (const w of ws) {
+    const b = document.createElement("button");
+    b.id = "hbForm_" + w.key;
+    b.className = "hbFormBtn" + (w.key === cur ? " active" : "");
+    b.textContent = writingLabel(w.key) + " で書く";
+    b.onclick = () => setForm(w.key);
+    formBarEl.appendChild(b);
+  }
+}
+
+function setForm(key) {
+  const ws = writings();
+  if (!ws.some((w) => w.key === key)) return false;
+  formId = key;
+  vals = {};            // 骨格が変わる ＝ 前の数はもう使えない
+  resetAttempt();       // 書き方を変えたら別の挑戦
+  buildWhere();
+  buildFormBar();
+  buildFormula();
+  refresh();
+  return true;
 }
 
 function initTask() {
   vals = {};
   resetAttempt();       // 式を変えたら別の挑戦（前の式で出した赤を持ち越さない）
   buildStageNav();
-  stageTitleEl.innerHTML = "";
-  stageTitleEl.appendChild(el("strong", null, taskLabel(taskIdx)));
+  buildWhere();
   buildProcBar();
+  buildFormBar();
   buildFormula();
   refresh();
 }
@@ -406,14 +505,18 @@ window.HalfBuild = {
       clear: !clearEl.hidden,
       charge: !chargeEl.hidden,
       ngSeen, marked,     // ○× の印（この挑戦で赤を出したか・もう書いたか）
+      form: t.form, forms: writings().map((w) => w.key),   // 書き方（2通りある式だけ2件）
+      fromList: FROM_LIST,                                  // 一覧から列を渡されて来たか
+      back: document.getElementById("hbBack").getAttribute("href"),
     };
   },
   goto(id) {
     const i = TASKS.findIndex((t) => t.id === id);
     if (i < 0) return false;
-    taskIdx = i; initTask(); return true;
+    taskIdx = i; formId = null; initTask(); return true;
   },
   setProc,
+  setForm,
   set(key, side, v) {
     if (!vals[key]) vals[key] = {};
     if (v === null) delete vals[key][side]; else vals[key][side] = v;
@@ -421,7 +524,6 @@ window.HalfBuild = {
   },
 };
 
-const q = new URLSearchParams(location.search);
 const idParam = q.get("half");
 if (idParam) {
   const i = TASKS.findIndex((t) => t.id === idParam);

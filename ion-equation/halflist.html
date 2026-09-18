@@ -28,54 +28,38 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>イオンでみる化学反応式 - 酸化数を決める</title>
+<title>半反応式の一覧｜イオンでみる化学反応式</title>
 <link rel="stylesheet" href="style.css?v=215">
 </head>
 <body>
 <header>
-  <!-- data-short は「狭い縦画面でだけ使う短い呼び名」。札が題名の行から溢れて
-       ヘッダーが1段太るのを防ぐ（style.css の「モード名の札を短い呼び名に差し替える」） -->
-  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="酸化数">酸化数を決める</span></h1>
+  <!-- data-short は「狭い縦画面でだけ使う短い呼び名」（style.css の「モード名の札を短い呼び名に差し替える」） -->
+  <h1>イオンでみる化学反応式 <span class="modeTag" data-short="一覧">半反応式の一覧</span></h1>
   <div class="version">v215</div>
-  <div class="stageBar">
-    <span class="navCount" aria-hidden="true" hidden></span>
-    <div class="hscroll"><nav id="stageNav" class="strip" aria-label="出題を選ぶ"></nav></div>
-  </div>
-  <div class="hscroll"><nav class="modeBar strip" data-mode="oxnum"></nav></div>
+  <div class="hscroll"><nav class="modeBar strip" data-mode="halflist"></nav></div>
 </header>
-<main class="timelineMain">
-  <div id="stageTitle"></div>
-  <div id="timeline">
-    <section class="step" id="step1">
-      <div class="stepHead"><span class="stepNo">1</span>イオンに分ける<span class="oxRole stepNowTag" id="step1Now" hidden>いま入れるところ</span></div>
-      <div class="sheetScroll"><div id="splitSheet"></div></div>
-      <div id="splitMsg"></div>
-      <div id="whySplit" class="footNote"></div>
-    </section>
+<main class="libMain hlMain">
+  <p class="hlLead">
+    まずここに並んだ式を覚えよう。覚えた式は、そのまま係数を決める練習に進める。
+  </p>
 
-    <!-- ★ 段2の枠も最初から出す（2026-08-28・ユーザーの指示）。
-         ⚠ ただし**段2の値は段1の答えそのもの**（箱の見出しの電荷・単原子イオンの灰色の数・
-            「めざす合計 ＝ そのイオンの電荷」）なので、段1が片づくまでそこだけ ？ で伏せる。
-            oxidation.js の buildOxSheet(masked) を見よ -->
-    <section class="step" id="step2">
-      <div class="stepHead"><span class="stepNo">2</span>イオンの中で酸化数を決める<span class="oxRole stepNowTag" id="step2Now" hidden>いま入れるところ</span></div>
-      <div id="oxSheet"></div>
-      <div id="oxMsg"></div>
-      <div id="oxGivenNote" class="footNote"></div>
-    </section>
+  <!-- どこまでの式を出すか（科目とレベル）。押した瞬間に表が入れ替わる -->
+  <section id="hlFilters"></section>
 
-    <section class="step" id="step3" hidden>
-      <div class="stepHead"><span class="stepNo">3</span>もっと細かく —— 仮想的に単原子イオンへ分ける</div>
-      <div id="virtWrap"></div>
-    </section>
+  <!-- 練習に進む口。順を選んでから押す -->
+  <section id="hlStart">
+    <div id="hlOrder" class="filterGroup" role="group" aria-label="出題の順をえらぶ"></div>
+    <a id="hlGo" class="rxnPlay" href="halfreaction.html">この順で係数を決める練習へ →</a>
+    <div id="hlGoNote" class="hlNote"></div>
+  </section>
 
-    <div id="clearBanner" hidden></div>
-  </div>
+  <div id="hlTally"></div>
+  <div id="hlList"></div>
 </main>
 <footer class="pageFoot"><a href="../privacy.html">プライバシーポリシー</a></footer>
 <script src="model.js?v=215"></script>
-<script src="schematic.js?v=215"></script>
+<script src="half-marks.js?v=215"></script>
 <script src="header-ui.js?v=215"></script>
-<script src="oxidation.js?v=215"></script>
+<script src="halflist.js?v=215"></script>
 </body>
 </html>
