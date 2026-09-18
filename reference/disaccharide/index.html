@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -852,7 +859,7 @@ a.ref-link::before { content: '→ '; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-maltose.png" alt="マルトースの構造式を直交で描いた図。六員環2つが、1個の酸素原子を間にはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>マルトース</b>。グルコースの六員環2つが、酸素原子1個をはさんでつながっています（グリコシド結合）。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/saccharide/">単糖の環状構造（α形・β形）と還元性の出どころは単糖類のページへ</a></p>
 <section class="ref-sec" id="ref-sec-four"><h4 class="ref-sec-h">4つの二糖</h4><p class="ref-sec-lead">マルトース・スクロース・ラクトース・セロビオースを、構成する単糖・分解する酵素・還元性で並べます。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">代表的な二糖（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">構成する単糖</th><th style="text-align: left;">加水分解する酵素</th><th style="text-align: center;">還元性</th></tr></thead><tbody><tr><td style="text-align: left;">マルトース（麦芽糖）</td><td style="text-align: left;">グルコース ＋ グルコース</td><td style="text-align: left;">マルターゼ</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">スクロース（ショ糖）</td><td style="text-align: left;">グルコース ＋ フルクトース</td><td style="text-align: left;">スクラーゼ（インベルターゼ）</td><td style="text-align: center;"><b>なし</b></td></tr><tr><td style="text-align: left;">ラクトース（乳糖）</td><td style="text-align: left;">グルコース ＋ ガラクトース</td><td style="text-align: left;">ラクターゼ</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">セロビオース</td><td style="text-align: left;">グルコース ＋ グルコース</td><td style="text-align: left;">セロビアーゼ</td><td style="text-align: center;">あり</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">代表的な二糖</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">構成する単糖</th><th style="text-align: left;">加水分解する酵素</th><th style="text-align: center;">還元性</th></tr></thead><tbody><tr><td style="text-align: left;">マルトース（麦芽糖）</td><td style="text-align: left;">グルコース ＋ グルコース</td><td style="text-align: left;">マルターゼ</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">スクロース（ショ糖）</td><td style="text-align: left;">グルコース ＋ フルクトース</td><td style="text-align: left;">スクラーゼ（インベルターゼ）</td><td style="text-align: center;"><b>なし</b></td></tr><tr><td style="text-align: left;">ラクトース（乳糖）</td><td style="text-align: left;">グルコース ＋ ガラクトース</td><td style="text-align: left;">ラクターゼ</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">セロビオース</td><td style="text-align: left;">グルコース ＋ グルコース</td><td style="text-align: left;">セロビアーゼ</td><td style="text-align: center;">あり</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の4行（構成する単糖・酵素・還元性）は暗記してください。</b>α-1,4 のような結合の位置の番号は覚えなくて構いません。</p>
 <p class="ref-p"><b>「還元性が無いのはスクロースだけ」</b>と覚えましょう。</p>
 <p class="ref-p">具体例として、マルトースの加水分解を式で書くとグルコース2分子になります。</p>
@@ -867,7 +874,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">マルトースでは、片方のグルコースの1位が相手とつながっていますが、<b>もう片方のグルコースの1位は −OH のまま残っています</b>。だからそちらの環が開けて、還元性を示します。</p>
 <p class="ref-p">スクロースでは、グルコースの1位とフルクトースの2位（どちらも環が開ける部分）<b>どうしでつながっています</b>。両方ともふさがっているので、どちらの環も開けず、<b>還元性を示しません</b>。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/disaccharide-sucrose.png" alt="スクロースの構造式を直交で描いた図。六員環のグルコースと五員環のフルクトースが、1個の酸素原子を間にはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap"><b>スクロース</b>。六員環のグルコースと五員環のフルクトースが、環が開ける部分どうしでつながっています。</figcaption></figure>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">二糖はどれも単糖が2つつながったものなので、単糖と同じように還元性を示す</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body"><b>スクロースは還元性を示しません。</b>マルトース・ラクトース・セロビオースは示します。</span></p><p class="ref-mistake-why">「単糖はすべて還元性を示す」をそのまま二糖に広げてしまうためです。★ 還元性はつなぎ方で決まり、スクロースは環が開ける部分どうしでつながっています。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">二糖はどれも単糖が2つつながったものなので、単糖と同じように還元性を示す</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>スクロースは還元性を示しません。</b>マルトース・ラクトース・セロビオースは示します。</span></p><p class="ref-mistake-why">「単糖はすべて還元性を示す」をそのまま二糖に広げてしまうためです。★ 還元性はつなぎ方で決まり、スクロースは環が開ける部分どうしでつながっています。</p></div>
 <section class="ref-sec" id="ref-sec-invert-sugar"><h4 class="ref-sec-h">転化糖</h4><p class="ref-sec-lead">スクロースを加水分解すると、グルコースとフルクトースの等量混合物になります。これを転化糖といい、還元性を示します。</p></section>
 <p class="ref-p">スクロースに<b>希硫酸を加えて加熱する</b>か、酵素<b>スクラーゼ（インベルターゼ）</b>を作用させると、グルコースとフルクトースに分かれます。この等量混合物を<b>転化糖</b>といいます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₁₂H₂₂O₁₁（スクロース） ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">スクラーゼまたは希硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₁₂O₆（グルコース） ＋ C₆H₁₂O₆（フルクトース）</span></div><p class="ref-note">ふさがっていた部分がほどけて、単糖が2つとも還元性を示すようになります。</p></div>

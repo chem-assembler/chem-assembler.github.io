@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -847,13 +854,13 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/polymer-basics/">付加重合・縮合重合・開環重合の違い</a></p>
 <section class="ref-sec" id="ref-sec-classification"><h4 class="ref-sec-h">繊維の分類</h4><p class="ref-sec-lead">繊維は天然繊維と化学繊維に分かれ、化学繊維はさらに再生繊維・半合成繊維・合成繊維に分かれます。</p></section>
 <p class="ref-p">繊維は、自然にあるものをそのまま使う<b>天然繊維</b>と、化学的な処理や合成でつくる<b>化学繊維</b>に分けられます。化学繊維はさらに、原料と処理のしかたで3つに分かれます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">繊維の分類（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">大分類</th><th style="text-align: left;">小分類</th><th style="text-align: left;">原料</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">天然繊維</td><td style="text-align: left;">植物繊維</td><td style="text-align: left;">セルロース</td><td style="text-align: left;">綿・麻</td></tr><tr><td style="text-align: left;">天然繊維</td><td style="text-align: left;">動物繊維</td><td style="text-align: left;">タンパク質</td><td style="text-align: left;">絹・羊毛</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">再生繊維</td><td style="text-align: left;">セルロースを溶かし、繊維にもどす</td><td style="text-align: left;">レーヨン</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">半合成繊維</td><td style="text-align: left;">セルロースの一部を化学的に変える</td><td style="text-align: left;">アセテート</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">合成繊維</td><td style="text-align: left;">石油などからつくった単量体</td><td style="text-align: left;">ナイロン・ポリエステル・アクリル繊維・ビニロン</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">繊維の分類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">大分類</th><th style="text-align: left;">小分類</th><th style="text-align: left;">原料</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">天然繊維</td><td style="text-align: left;">植物繊維</td><td style="text-align: left;">セルロース</td><td style="text-align: left;">綿・麻</td></tr><tr><td style="text-align: left;">天然繊維</td><td style="text-align: left;">動物繊維</td><td style="text-align: left;">タンパク質</td><td style="text-align: left;">絹・羊毛</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">再生繊維</td><td style="text-align: left;">セルロースを溶かし、繊維にもどす</td><td style="text-align: left;">レーヨン</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">半合成繊維</td><td style="text-align: left;">セルロースの一部を化学的に変える</td><td style="text-align: left;">アセテート</td></tr><tr><td style="text-align: left;">化学繊維</td><td style="text-align: left;">合成繊維</td><td style="text-align: left;">石油などからつくった単量体</td><td style="text-align: left;">ナイロン・ポリエステル・アクリル繊維・ビニロン</td></tr></tbody></table></div>
 <p class="ref-p">「<b>再生はもどす、半合成は一部を変える、合成は一からつくる</b>」と区別しましょう。再生繊維と半合成繊維の原料は、どちらも天然のセルロース（木材パルプなど）です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">再生繊維・半合成繊維の原料になるセルロース</a></p>
 <section class="ref-sec" id="ref-sec-by-type"><h4 class="ref-sec-h">合成繊維を重合の型で整理する</h4><p class="ref-sec-lead">合成繊維を、重合の型・単量体・主鎖の結合で並べます。開環重合でできるのはナイロン6だけです。</p></section>
 <p class="ref-p">合成繊維をつくる重合の型は、<b>つなぐときに何がとれるか</b>で3つに分かれます。</p>
 <ul class="ref-list"><li><b>縮合重合</b>：単量体の官能基どうしから、水 H₂O などの小さな分子がとれてつながります。−COOH と −NH₂ ならアミド結合、−COOH と −OH ならエステル結合になります</li><li><b>開環重合</b>：環状の単量体の環が開いてつながります。何もとれません</li><li><b>付加重合</b>：単量体の C=C が開いてつながります。何もとれません。ビニル化合物なら n CH₂=CHX → ［CH₂−CHX］ₙ の形です</li></ul>
-<div class="ref-table-wrap"><div class="ref-cap">合成繊維と重合の型（6行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">重合の型</th><th style="text-align: left;">繊維</th><th style="text-align: left;">単量体</th><th style="text-align: left;">主鎖の結合</th></tr></thead><tbody><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">ナイロン66</td><td style="text-align: left;">アジピン酸 ＋ ヘキサメチレンジアミン</td><td style="text-align: left;">アミド結合</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">アラミド繊維</td><td style="text-align: left;">テレフタル酸ジクロリド ＋ p-フェニレンジアミン</td><td style="text-align: left;">アミド結合</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">ポリエステル繊維（PET）</td><td style="text-align: left;">テレフタル酸 ＋ エチレングリコール</td><td style="text-align: left;">エステル結合</td></tr><tr><td style="text-align: left;"><b>開環重合</b></td><td style="text-align: left;">ナイロン6</td><td style="text-align: left;">ε-カプロラクタム</td><td style="text-align: left;">アミド結合</td></tr><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">アクリル繊維</td><td style="text-align: left;">アクリロニトリル</td><td style="text-align: left;">炭素どうしの結合</td></tr><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">ビニロン</td><td style="text-align: left;">酢酸ビニル（→ PVA → アセタール化）</td><td style="text-align: left;">炭素どうしの結合（一部に −O−CH₂−O−）</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">合成繊維と重合の型</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">重合の型</th><th style="text-align: left;">繊維</th><th style="text-align: left;">単量体</th><th style="text-align: left;">主鎖の結合</th></tr></thead><tbody><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">ナイロン66</td><td style="text-align: left;">アジピン酸 ＋ ヘキサメチレンジアミン</td><td style="text-align: left;">アミド結合</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">アラミド繊維</td><td style="text-align: left;">テレフタル酸ジクロリド ＋ p-フェニレンジアミン</td><td style="text-align: left;">アミド結合</td></tr><tr><td style="text-align: left;">縮合重合</td><td style="text-align: left;">ポリエステル繊維（PET）</td><td style="text-align: left;">テレフタル酸 ＋ エチレングリコール</td><td style="text-align: left;">エステル結合</td></tr><tr><td style="text-align: left;"><b>開環重合</b></td><td style="text-align: left;">ナイロン6</td><td style="text-align: left;">ε-カプロラクタム</td><td style="text-align: left;">アミド結合</td></tr><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">アクリル繊維</td><td style="text-align: left;">アクリロニトリル</td><td style="text-align: left;">炭素どうしの結合</td></tr><tr><td style="text-align: left;">付加重合</td><td style="text-align: left;">ビニロン</td><td style="text-align: left;">酢酸ビニル（→ PVA → アセタール化）</td><td style="text-align: left;">炭素どうしの結合（一部に −O−CH₂−O−）</td></tr></tbody></table></div>
 <p class="ref-p"><b>単量体の名前と、主鎖の結合の種類は必ず暗記してください。</b>型は「<b>開環重合はナイロン6だけ</b>」を起点にすると早く覚えられます。重合の温度や圧力などの条件は覚えなくて構いません。</p>
 <section class="ref-sec" id="ref-sec-nylon66"><h4 class="ref-sec-h">ナイロン66</h4><p class="ref-sec-lead">アジピン酸とヘキサメチレンジアミンの縮合重合でできます。主鎖がアミド結合でつながったポリアミドです。</p></section>
 <p class="ref-p">アジピン酸 HOOC−(CH₂)₄−COOH とヘキサメチレンジアミン H₂N−(CH₂)₆−NH₂ を縮合重合させると、<b>ナイロン66</b> ができます。−COOH と −NH₂ から水がとれて、<b>アミド結合 −CO−NH−</b> でつながります。</p>
@@ -866,7 +873,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n C₆H₁₁NO（ε-カプロラクタム）</span><span class="ref-rx-arrow"><span class="ref-rx-over">少量の水</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">［NH−(CH₂)₅−CO］ₙ</span></div><p class="ref-note">環の中のアミド結合が切れて鎖になり、次の分子とつながります。水はきっかけとして働くだけで、反応式には出てきません。</p></div>
 <p class="ref-p">名前の「6」は、<b>単量体1個に含まれる炭素が6個</b>であることを表しています。</p>
 <p class="ref-p">ナイロン66 とナイロン6 は、どちらもアミド結合でつながったポリアミドですが、できかたが違います。<b>ナイロン66 は2種類の単量体から水がとれる縮合重合、ナイロン6 は1種類の環が開くだけで何もとれない開環重合</b>です。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">ナイロン6 も、ナイロン66 と同じく縮合重合で水がとれてできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">ナイロン6 は<b>開環重合</b>でできます。ε-カプロラクタムの環が開くだけで、水はとれません。</span></p><p class="ref-mistake-why">どちらも重合するとアミド結合をもつナイロンになりますが、重合様式が違います。★ 単量体が環か、2種類の鎖状分子かに着目し、重合時に脱離する分子の有無を確認しましょう。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">ナイロン6 も、ナイロン66 と同じく縮合重合で水がとれてできる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ナイロン6 は<b>開環重合</b>でできます。ε-カプロラクタムの環が開くだけで、水はとれません。</span></p><p class="ref-mistake-why">どちらも重合するとアミド結合をもつナイロンになりますが、重合様式が違います。★ 単量体が環か、2種類の鎖状分子かに着目し、重合時に脱離する分子の有無を確認しましょう。</p></div>
 <section class="ref-sec" id="ref-sec-polyamide-silk"><h4 class="ref-sec-h">ナイロンが絹に似ている理由</h4><p class="ref-sec-lead">絹や羊毛のタンパク質もアミド結合でつながっています。同じ結合をもつので、ナイロンは絹に似た光沢と手ざわりになります。</p></section>
 <p class="ref-p">絹や羊毛は、アミノ酸がつながった<b>タンパク質</b>でできています。アミノ酸どうしのつながりは、−CO−NH− の<b>アミド結合</b>で、タンパク質の場合はとくに<b>ペプチド結合</b>とよびます。<b>アミド結合とペプチド結合は同じ結合で、呼び名が違うだけ</b>です。</p>
 <p class="ref-p">ナイロンは絹と同じアミド結合をくり返しもつので、<b>絹に似た光沢と手ざわり</b>をもち、強くしなやかな繊維になります。鎖と鎖のあいだで、アミド結合の N−H と C=O が水素結合をつくって引き合うためです。</p>

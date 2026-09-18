@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -848,7 +855,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">アルキンとは</h4><p class="ref-sec-lead">一般式は C<sub>n</sub>H<sub>2n-2</sub>。名前は対応するアルカンの語尾を -yne に変えたものです。名前のついたアルキンは2つしかありません。</p></section>
 <p class="ref-p">一般式 C<sub>n</sub>H<sub>2n-2</sub> の n に炭素の数を代入すれば、分子式が得られます。n=2 ならエチン C₂H₂、n=3 ならプロピン C₃H₄、n=4 ならブチン C₄H₆ です。</p>
 <p class="ref-p">アルキンの名前は、<b>同じ炭素数のアルカンの語尾を -ane から -yne に変えて</b>つくります。エタン（ethane）ならエチン（ethyne）、プロパン（propane）ならプロピン（propyne）です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">主なアルキン（2行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th></tr></thead><tbody><tr><td style="text-align: left;">エチン（アセチレン）</td><td style="text-align: left;">CH≡CH</td></tr><tr><td style="text-align: left;">プロピン（メチルアセチレン）</td><td style="text-align: left;">CH≡CCH₃</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">主なアルキン</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th></tr></thead><tbody><tr><td style="text-align: left;">エチン（アセチレン）</td><td style="text-align: left;">CH≡CH</td></tr><tr><td style="text-align: left;">プロピン（メチルアセチレン）</td><td style="text-align: left;">CH≡CCH₃</td></tr></tbody></table></div>
 <p class="ref-p"><b>慣用名（ニックネーム）で呼ばれるアルキンは、この2つだけです。</b>アセチレンは IUPAC 命名法に基づかない慣用名ですが、こちらのほうがよく使われます。<b>エチンとアセチレンが同じものだと分かるようにしておいてください。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/hydrocarbon-classes/">アルカン・アルケン・アルキン・シクロアルカンの語尾（-ane / -ene / -yne）と一般式を、1つの表で並べて見る</a></p>
 <section class="ref-sec" id="ref-sec-shape"><h4 class="ref-sec-h">三重結合のまわりの形</h4><p class="ref-sec-lead">C≡C のまわりの4個の原子は一直線上に固定されます。結合角は180°、炭素間の距離はいちばん短くなります。</p></section>
@@ -866,7 +873,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkene/">不飽和結合の検出と、付加反応のくわしい話はアルケンのページに</a></p>
 <section class="ref-sec" id="ref-sec-vinyl"><h4 class="ref-sec-h">エチンからビニル化合物をつくる</h4><p class="ref-sec-lead">エチンに1分子だけ付加させると、いろいろなビニル化合物が得られます。ビニル化合物は付加重合の材料になります。</p></section>
 <p class="ref-p">エチン CH≡CH に<b>1分子だけ付加</b>させると、<b>ビニル化合物 CH₂=CHX</b> が得られます。何を付加させるかで、できるビニル化合物が変わります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">エチンに1分子付加してできるビニル化合物（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">付加する物質</th><th style="text-align: center;">入る原子・原子団 −X</th><th style="text-align: left;">できるビニル化合物</th></tr></thead><tbody><tr><td style="text-align: left;">水素 H₂</td><td style="text-align: center;">−H</td><td style="text-align: left;">エテン（エチレン）</td></tr><tr><td style="text-align: left;">塩化水素 HCl</td><td style="text-align: center;">−Cl</td><td style="text-align: left;">塩化ビニル</td></tr><tr><td style="text-align: left;">酢酸 CH₃COOH</td><td style="text-align: center;">−OCOCH₃</td><td style="text-align: left;">酢酸ビニル</td></tr><tr><td style="text-align: left;">シアン化水素 HCN</td><td style="text-align: center;">−C≡N</td><td style="text-align: left;">アクリロニトリル</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">エチンに1分子付加してできるビニル化合物</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">付加する物質</th><th style="text-align: center;">入る原子・原子団 −X</th><th style="text-align: left;">できるビニル化合物</th></tr></thead><tbody><tr><td style="text-align: left;">水素 H₂</td><td style="text-align: center;">−H</td><td style="text-align: left;">エテン（エチレン）</td></tr><tr><td style="text-align: left;">塩化水素 HCl</td><td style="text-align: center;">−Cl</td><td style="text-align: left;">塩化ビニル</td></tr><tr><td style="text-align: left;">酢酸 CH₃COOH</td><td style="text-align: center;">−OCOCH₃</td><td style="text-align: left;">酢酸ビニル</td></tr><tr><td style="text-align: left;">シアン化水素 HCN</td><td style="text-align: center;">−C≡N</td><td style="text-align: left;">アクリロニトリル</td></tr></tbody></table></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH≡CH ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₂=CHCl</span></div><p class="ref-note">塩化ビニル。付加重合させるとポリ塩化ビニルになります。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH≡CH ＋ CH₃COOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CH₃COOCH=CH₂</span></div><p class="ref-note">酢酸ビニル。付加重合させるとポリ酢酸ビニルになります。</p></div>
 <p class="ref-p"><b>この表の4つは、そのまま高分子の単量体（モノマー）になります。</b>エチンは「ビニル化合物の入口」だと思っておくと、あとで高分子を学ぶときに効いてきます。</p>
