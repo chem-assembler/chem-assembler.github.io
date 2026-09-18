@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -850,9 +857,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">同じことは、<b>カルボニル基 −CO− の一方にメチル基 −CH₃ が結合している</b>、と言い換えることもできます。アルコールの側なら、<b>ヒドロキシ基 −OH が結合した炭素にメチル基 −CH₃ が結合している第1級または第2級アルコール</b>です。</p>
 <p class="ref-p">具体例を挙げます。カルボニル化合物では<b>アセトアルデヒド CH₃CHO</b>（ヨードホルム反応を示す唯一のアルデヒド）と<b>アセトン CH₃COCH₃</b>。アルコールでは<b>エタノール CH₃CH₂OH</b>（示す唯一の第1級アルコール）と<b>2-プロパノール CH₃CH(OH)CH₃</b>です。</p>
 <p class="ref-p">酢酸 CH₃COOH もアセチル基をもっていますが、<b>カルボン酸はヨードホルム反応を示しません</b>。示すのはカルボニル化合物とアルコールだけ、と範囲をはっきりさせておいてください。</p>
-<div class="ref-table-wrap"><div class="ref-cap">ヨードホルム反応を示すもの・示さないもの（7行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th><th style="text-align: left;">分類</th><th style="text-align: left;">ヨードホルム反応</th></tr></thead><tbody><tr><td style="text-align: left;">アセトアルデヒド</td><td style="text-align: left;">CH₃CHO</td><td style="text-align: left;">アルデヒド</td><td style="text-align: left;">○ アセチル基をもつ唯一のアルデヒド</td></tr><tr><td style="text-align: left;">アセトン</td><td style="text-align: left;">CH₃COCH₃</td><td style="text-align: left;">ケトン</td><td style="text-align: left;">○ アセチル基をもつ</td></tr><tr><td style="text-align: left;">エタノール</td><td style="text-align: left;">CH₃CH₂OH</td><td style="text-align: left;">第1級アルコール</td><td style="text-align: left;">○ 酸化するとアセトアルデヒドになる唯一の第1級アルコール</td></tr><tr><td style="text-align: left;">2-プロパノール</td><td style="text-align: left;">CH₃CH(OH)CH₃</td><td style="text-align: left;">第2級アルコール</td><td style="text-align: left;">○ 酸化するとアセトンになる</td></tr><tr><td style="text-align: left;">酢酸</td><td style="text-align: left;">CH₃COOH</td><td style="text-align: left;">カルボン酸</td><td style="text-align: left;">× アセチル基はあるが、カルボン酸は示さない</td></tr><tr><td style="text-align: left;">メタノール</td><td style="text-align: left;">CH₃OH</td><td style="text-align: left;">第1級アルコール</td><td style="text-align: left;">× 酸化してもホルムアルデヒドで、アセチル基ができない</td></tr><tr><td style="text-align: left;">2-メチル-2-プロパノール</td><td style="text-align: left;">(CH₃)₃COH</td><td style="text-align: left;">第3級アルコール</td><td style="text-align: left;">× そもそも酸化されない</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">ヨードホルム反応を示すもの・示さないもの</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th><th style="text-align: left;">分類</th><th style="text-align: left;">ヨードホルム反応</th></tr></thead><tbody><tr><td style="text-align: left;">アセトアルデヒド</td><td style="text-align: left;">CH₃CHO</td><td style="text-align: left;">アルデヒド</td><td style="text-align: left;">○ アセチル基をもつ唯一のアルデヒド</td></tr><tr><td style="text-align: left;">アセトン</td><td style="text-align: left;">CH₃COCH₃</td><td style="text-align: left;">ケトン</td><td style="text-align: left;">○ アセチル基をもつ</td></tr><tr><td style="text-align: left;">エタノール</td><td style="text-align: left;">CH₃CH₂OH</td><td style="text-align: left;">第1級アルコール</td><td style="text-align: left;">○ 酸化するとアセトアルデヒドになる唯一の第1級アルコール</td></tr><tr><td style="text-align: left;">2-プロパノール</td><td style="text-align: left;">CH₃CH(OH)CH₃</td><td style="text-align: left;">第2級アルコール</td><td style="text-align: left;">○ 酸化するとアセトンになる</td></tr><tr><td style="text-align: left;">酢酸</td><td style="text-align: left;">CH₃COOH</td><td style="text-align: left;">カルボン酸</td><td style="text-align: left;">× アセチル基はあるが、カルボン酸は示さない</td></tr><tr><td style="text-align: left;">メタノール</td><td style="text-align: left;">CH₃OH</td><td style="text-align: left;">第1級アルコール</td><td style="text-align: left;">× 酸化してもホルムアルデヒドで、アセチル基ができない</td></tr><tr><td style="text-align: left;">2-メチル-2-プロパノール</td><td style="text-align: left;">(CH₃)₃COH</td><td style="text-align: left;">第3級アルコール</td><td style="text-align: left;">× そもそも酸化されない</td></tr></tbody></table></div>
 <p class="ref-p"><b>ヨードホルム反応を示す構造は必ず暗記してください。</b>覚え方は「アセチル基をもつカルボニル化合物」と「酸化するとそれになるアルコール」の2つを言えるようにするのがおすすめです。<b>アルコールを判定するときは、酸化して生じるカルボニル化合物がアセチル基をもつかどうかで見る</b>と、第3級アルコールが示さない理由（そもそも酸化されない）も同時に説明できます。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">アセチル基 −COCH₃ をもつ化合物は、すべてヨードホルム反応を示す</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">酢酸 CH₃COOH はアセチル基をもちますが、<b>示しません</b>。示すのは<b>カルボニル化合物とアルコール</b>だけです。</span></p><p class="ref-mistake-why">「アセチル基をもつかどうか」だけを合言葉にすると、カルボン酸とそのエステルまで拾ってしまうためです。⚠ 酢酸の C=O のとなりは −OH なので、ここはカルボキシ基という別の官能基になっています。★ 判定するときは、<b>アセチル基があるか</b>と<b>それがカルボニル化合物かアルコールか</b>の2つを続けて見てください。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">アセチル基 −COCH₃ をもつ化合物は、すべてヨードホルム反応を示す</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">酢酸 CH₃COOH はアセチル基をもちますが、<b>示しません</b>。示すのは<b>カルボニル化合物とアルコール</b>だけです。</span></p><p class="ref-mistake-why">「アセチル基をもつかどうか」だけを合言葉にすると、カルボン酸とそのエステルまで拾ってしまうためです。⚠ 酢酸の C=O のとなりは −OH なので、ここはカルボキシ基という別の官能基になっています。★ 判定するときは、<b>アセチル基があるか</b>と<b>それがカルボニル化合物かアルコールか</b>の2つを続けて見てください。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-class/">第1級・第2級・第3級の数え方（アルコールの分類）はこちら</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">どのアルコールを酸化すると何になるか（級ごとの行き先）はこちら</a></p>
 <section class="ref-sec" id="ref-sec-equation"><h4 class="ref-sec-h">ヨードホルム反応の反応式</h4><p class="ref-sec-lead">ヨウ素を酸化剤、相手を還元剤とする酸化還元反応です。アルコールから始めるとヨウ素が1分子ぶん多く要ります。</p></section>

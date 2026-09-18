@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -852,7 +859,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">調べる前に、試料は<b>純物質</b>にしておきます。混合物のままでは、どの物質の元素を見ているのかが決まらないためです。分けるには蒸留・再結晶・抽出（分液漏斗）・クロマトグラフィーを使います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-separation/">抽出（分液漏斗）で混合物を分ける操作は芳香族化合物の分離のページへ</a></p>
 <section class="ref-sec" id="ref-sec-list"><h4 class="ref-sec-h">5元素の確認法の一覧</h4><p class="ref-sec-lead">元素ごとに「操作 → 生成物 → 確認方法」が1組になっています。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">成分元素の確認（5行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">元素</th><th style="text-align: left;">操作</th><th style="text-align: center;">生成物</th><th style="text-align: left;">確認方法</th></tr></thead><tbody><tr><td style="text-align: center;"><b>炭素 C</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: center;">CO₂</td><td style="text-align: left;">石灰水に通じると<b>白濁</b>する</td></tr><tr><td style="text-align: center;"><b>水素 H</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: center;">H₂O</td><td style="text-align: left;">白色の硫酸銅(II)無水物が<b>青色</b>になる（塩化コバルト紙が青から<b>赤</b>に変わる）</td></tr><tr><td style="text-align: center;"><b>窒素 N</b></td><td style="text-align: left;">NaOH を加えて加熱する</td><td style="text-align: center;">NH₃</td><td style="text-align: left;">濃塩酸を近づけると<b>白煙</b>が生じる／湿った<b>赤色リトマス紙が青変</b>する</td></tr><tr><td style="text-align: center;"><b>塩素 Cl</b></td><td style="text-align: left;">焼いた銅線につけて加熱する</td><td style="text-align: center;">CuCl₂</td><td style="text-align: left;"><b>青緑色</b>の炎色反応が見られる（バイルシュタイン反応）</td></tr><tr><td style="text-align: center;"><b>硫黄 S</b></td><td style="text-align: left;">金属 Na を加えて加熱・融解する</td><td style="text-align: center;">Na₂S</td><td style="text-align: left;">水に溶かして酢酸鉛(II)水溶液を加えると<b>黒色沈殿</b>が生じる</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">成分元素の確認</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">元素</th><th style="text-align: left;">操作</th><th style="text-align: center;">生成物</th><th style="text-align: left;">確認方法</th></tr></thead><tbody><tr><td style="text-align: center;"><b>炭素 C</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: center;">CO₂</td><td style="text-align: left;">石灰水に通じると<b>白濁</b>する</td></tr><tr><td style="text-align: center;"><b>水素 H</b></td><td style="text-align: left;">完全燃焼させる</td><td style="text-align: center;">H₂O</td><td style="text-align: left;">白色の硫酸銅(II)無水物が<b>青色</b>になる（塩化コバルト紙が青から<b>赤</b>に変わる）</td></tr><tr><td style="text-align: center;"><b>窒素 N</b></td><td style="text-align: left;">NaOH を加えて加熱する</td><td style="text-align: center;">NH₃</td><td style="text-align: left;">濃塩酸を近づけると<b>白煙</b>が生じる／湿った<b>赤色リトマス紙が青変</b>する</td></tr><tr><td style="text-align: center;"><b>塩素 Cl</b></td><td style="text-align: left;">焼いた銅線につけて加熱する</td><td style="text-align: center;">CuCl₂</td><td style="text-align: left;"><b>青緑色</b>の炎色反応が見られる（バイルシュタイン反応）</td></tr><tr><td style="text-align: center;"><b>硫黄 S</b></td><td style="text-align: left;">金属 Na を加えて加熱・融解する</td><td style="text-align: center;">Na₂S</td><td style="text-align: left;">水に溶かして酢酸鉛(II)水溶液を加えると<b>黒色沈殿</b>が生じる</td></tr></tbody></table></div>
 <p class="ref-p"><b>5つの元素それぞれ「操作」と「確認方法」をセットにして覚えるようにしてください。</b>C・H・N の反応と、Cl・S で見える変化（銅の炎色反応・硫化鉛(II)の黒色沈殿）は無機で習ったものなので、無機の知識と結び付けると覚える量が減ります。銅線につける操作と、金属 Na と融解する操作は、有機で初めて出てきます。</p>
 <section class="ref-sec" id="ref-sec-carbon"><h4 class="ref-sec-h">炭素の確認 —— 石灰水の白濁</h4><p class="ref-sec-lead">完全燃焼で出た CO₂ を、石灰水との中和・沈殿反応で検出します。</p></section>
 <p class="ref-p">炭素を含む有機化合物を完全燃焼させると、二酸化炭素が発生します。この気体を石灰水に通じると、炭酸カルシウムの白色沈殿が生じて白濁します。</p>

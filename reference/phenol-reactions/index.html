@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -852,7 +859,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅OH ＋ 3Br₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₂Br₃OH↓ ＋ 3HBr</span></div><p class="ref-note">2,4,6-トリブロモフェノールの白色沈殿ができます。−OH から見て o・p・o の3か所に入ります。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-reactions-tribromophenol.png" alt="2,4,6-トリブロモフェノールの構造式。ベンゼン環にヒドロキシ基が1個付き、その両隣と向かいの炭素に臭素原子が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>2,4,6-トリブロモフェノール</b>。−OH の両隣（o）と向かい（p）の3か所に Br が入っています。</figcaption></figure>
 <p class="ref-p"><b>「ベンゼンは触媒が要る、フェノールは要らない」と対にして覚えましょう。</b></p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">フェノールに臭素水を加えると、アルケンと同じように付加反応が起こって臭素水の色が消える。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">フェノールでは置換反応が起こり、2,4,6-トリブロモフェノールの白色沈殿ができる。</span></p><p class="ref-mistake-why">どちらも臭素水を使うので混ざりやすいところです。アルケンは脱色（付加）、フェノールは白色沈殿（置換）と、見た目で区別します。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">フェノールに臭素水を加えると、アルケンと同じように付加反応が起こって臭素水の色が消える。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">フェノールでは置換反応が起こり、2,4,6-トリブロモフェノールの白色沈殿ができる。</span></p><p class="ref-mistake-why">どちらも臭素水を使うので混ざりやすいところです。アルケンは脱色（付加）、フェノールは白色沈殿（置換）と、見た目で区別します。</p></div>
 <p class="ref-p">フェノールを混酸でニトロ化すると、同じように3か所にニトロ基が入って<b>ピクリン酸（2,4,6-トリニトロフェノール）</b>の<b>黄色の結晶</b>ができます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅OH ＋ 3HNO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₂(NO₂)₃OH ＋ 3H₂O</span></div><p class="ref-note">ピクリン酸ができます。3か所が 2,4,6 になるのは、臭素化と同じ理由です。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-reactions-picric-acid.png" alt="ピクリン酸の構造式。ベンゼン環にヒドロキシ基が1個付き、その両隣と向かいの炭素にニトロ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>ピクリン酸（2,4,6-トリニトロフェノール）</b>。臭素化と同じ3か所にニトロ基が入っています。</figcaption></figure>
@@ -879,7 +886,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅Cl ＋ 2NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">高温・高圧</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅ONa ＋ NaCl ＋ H₂O</span></div><p class="ref-note">Cl が −ONa に置き換わって、ナトリウムフェノキシドができます。</p></div>
 <p class="ref-p">どちらの方法も、最後にナトリウムフェノキシドに酸を加えてフェノールを取り出します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅ONa ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅OH ＋ NaCl</span></div><p class="ref-note">塩酸のほうが強い酸なので、フェノールが遊離します。CO₂ を吹き込んでも同じようにフェノールが遊離します。</p></div>
-<div class="ref-table-wrap"><div class="ref-cap">フェノールの3つのつくり方（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">方法</th><th style="text-align: left;">出発物質</th><th style="text-align: left;">途中でできるもの</th><th style="text-align: left;">フェノールと一緒にできるもの</th></tr></thead><tbody><tr><td style="text-align: left;"><b>クメン法</b></td><td style="text-align: left;">ベンゼン ＋ プロペン</td><td style="text-align: left;">クメン → クメンヒドロペルオキシド</td><td style="text-align: left;"><b>アセトン</b></td></tr><tr><td style="text-align: left;">アルカリ融解</td><td style="text-align: left;">ベンゼンスルホン酸ナトリウム</td><td style="text-align: left;">ナトリウムフェノキシド</td><td style="text-align: left;">—</td></tr><tr><td style="text-align: left;">クロロベンゼンから</td><td style="text-align: left;">クロロベンゼン</td><td style="text-align: left;">ナトリウムフェノキシド</td><td style="text-align: left;">—</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">フェノールの3つのつくり方</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">方法</th><th style="text-align: left;">出発物質</th><th style="text-align: left;">途中でできるもの</th><th style="text-align: left;">フェノールと一緒にできるもの</th></tr></thead><tbody><tr><td style="text-align: left;"><b>クメン法</b></td><td style="text-align: left;">ベンゼン ＋ プロペン</td><td style="text-align: left;">クメン → クメンヒドロペルオキシド</td><td style="text-align: left;"><b>アセトン</b></td></tr><tr><td style="text-align: left;">アルカリ融解</td><td style="text-align: left;">ベンゼンスルホン酸ナトリウム</td><td style="text-align: left;">ナトリウムフェノキシド</td><td style="text-align: left;">—</td></tr><tr><td style="text-align: left;">クロロベンゼンから</td><td style="text-align: left;">クロロベンゼン</td><td style="text-align: left;">ナトリウムフェノキシド</td><td style="text-align: left;">—</td></tr></tbody></table></div>
 <p class="ref-p"><b>経路（ベンゼン → ベンゼンスルホン酸 → ナトリウム塩 → ナトリウムフェノキシド → フェノール）と中間体の名前は覚えてください。</b>温度や圧力の数値は覚えなくて構いません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/benzene-substitution/">出発物質のベンゼンスルホン酸とクロロベンゼンをつくる置換反応</a></p>
 <section class="ref-sec" id="ref-sec-uses"><h4 class="ref-sec-h">フェノールの用途</h4><p class="ref-sec-lead">フェノール樹脂や医薬品・染料の原料になります。</p></section>

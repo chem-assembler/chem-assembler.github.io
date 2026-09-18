@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -867,24 +874,24 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ペプチド結合の <b>C=O</b> の O と、別のペプチド結合の <b>N−H</b> の H の間には<b>水素結合</b>ができます。この水素結合によって、鎖がらせん状に巻いた <b>α-ヘリックス</b>や、鎖が並んでひだ状になった <b>β-シート</b>ができます。これを<b>二次構造</b>といいます。</p>
 <p class="ref-p">二次構造をもった鎖が、さらに分子全体として立体的に折りたたまれた形を<b>三次構造</b>といいます。三次構造は、側鎖どうしの<b>ジスルフィド結合 −S−S−</b>（システインの −SH どうしからできる）・イオン結合・水素結合などで保たれています。</p>
 <p class="ref-p">三次構造をもった鎖（サブユニット）が、いくつか集まってできた形を<b>四次構造</b>といいます。ヘモグロビンは4本の鎖が集まった四次構造をもちます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">タンパク質の構造（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">段階</th><th style="text-align: left;">何を指すか</th><th style="text-align: left;">おもに何で保たれているか</th></tr></thead><tbody><tr><td style="text-align: left;">一次構造</td><td style="text-align: left;">アミノ酸の<b>並び順</b></td><td style="text-align: left;">ペプチド結合</td></tr><tr><td style="text-align: left;">二次構造</td><td style="text-align: left;">α-ヘリックス・β-シート</td><td style="text-align: left;">ペプチド結合の C=O と N−H の間の<b>水素結合</b></td></tr><tr><td style="text-align: left;">三次構造</td><td style="text-align: left;">分子全体の折りたたみ</td><td style="text-align: left;"><b>ジスルフィド結合</b>・イオン結合・水素結合など</td></tr><tr><td style="text-align: left;">四次構造</td><td style="text-align: left;">サブユニットの集まり</td><td style="text-align: left;">サブユニットどうしの弱い結びつき</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">タンパク質の構造</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">段階</th><th style="text-align: left;">何を指すか</th><th style="text-align: left;">おもに何で保たれているか</th></tr></thead><tbody><tr><td style="text-align: left;">一次構造</td><td style="text-align: left;">アミノ酸の<b>並び順</b></td><td style="text-align: left;">ペプチド結合</td></tr><tr><td style="text-align: left;">二次構造</td><td style="text-align: left;">α-ヘリックス・β-シート</td><td style="text-align: left;">ペプチド結合の C=O と N−H の間の<b>水素結合</b></td></tr><tr><td style="text-align: left;">三次構造</td><td style="text-align: left;">分子全体の折りたたみ</td><td style="text-align: left;"><b>ジスルフィド結合</b>・イオン結合・水素結合など</td></tr><tr><td style="text-align: left;">四次構造</td><td style="text-align: left;">サブユニットの集まり</td><td style="text-align: left;">サブユニットどうしの弱い結びつき</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の「段階」と「何を指すか」の2列は暗記してください。</b>二次構造が水素結合、三次構造でジスルフィド結合が出てくる、の2点までは覚えておきましょう。四次構造をもつタンパク質の名前を覚える必要はありません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/protein-cysteine.png" alt="システインの構造式。アミノ基とカルボキシ基が付いた炭素から CH2 をはさんで SH が出ている" loading="lazy"><figcaption class="ref-figure-cap"><b>システイン</b>。側鎖の −SH どうしが結びついて、ジスルフィド結合 −S−S− をつくります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-classification"><h4 class="ref-sec-h">タンパク質の分類</h4><p class="ref-sec-lead">アミノ酸だけからなるものを単純タンパク質、糖や色素などもふくむものを複合タンパク質といいます。形からは球状タンパク質と繊維状タンパク質に分けます。</p></section>
 <p class="ref-p">加水分解したときに<b>アミノ酸だけ</b>が得られるものを<b>単純タンパク質</b>、アミノ酸のほかに<b>糖・リン酸・色素・核酸など</b>もふくむものを<b>複合タンパク質</b>といいます。</p>
 <p class="ref-p">形で分けると、鎖が丸くまとまって水に溶けやすい<b>球状タンパク質</b>と、鎖が束になって水に溶けにくい<b>繊維状タンパク質</b>があります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">タンパク質の分類と例（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分け方</th><th style="text-align: left;">種類</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">成分で</td><td style="text-align: left;">単純タンパク質（アミノ酸だけ）</td><td style="text-align: left;">アルブミン（卵白）・ケラチン（羊毛・毛・爪）・フィブロイン（絹）・コラーゲン（皮膚・骨）</td></tr><tr><td style="text-align: left;">成分で</td><td style="text-align: left;">複合タンパク質（ほかの成分もふくむ）</td><td style="text-align: left;">カゼイン（牛乳・リン酸をふくむ）・ヘモグロビン（血液・色素をふくむ）</td></tr><tr><td style="text-align: left;">形で</td><td style="text-align: left;">球状タンパク質（水に溶けやすい）</td><td style="text-align: left;">アルブミン・ヘモグロビン</td></tr><tr><td style="text-align: left;">形で</td><td style="text-align: left;">繊維状タンパク質（水に溶けにくい）</td><td style="text-align: left;">ケラチン・フィブロイン・コラーゲン</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">タンパク質の分類と例</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分け方</th><th style="text-align: left;">種類</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">成分で</td><td style="text-align: left;">単純タンパク質（アミノ酸だけ）</td><td style="text-align: left;">アルブミン（卵白）・ケラチン（羊毛・毛・爪）・フィブロイン（絹）・コラーゲン（皮膚・骨）</td></tr><tr><td style="text-align: left;">成分で</td><td style="text-align: left;">複合タンパク質（ほかの成分もふくむ）</td><td style="text-align: left;">カゼイン（牛乳・リン酸をふくむ）・ヘモグロビン（血液・色素をふくむ）</td></tr><tr><td style="text-align: left;">形で</td><td style="text-align: left;">球状タンパク質（水に溶けやすい）</td><td style="text-align: left;">アルブミン・ヘモグロビン</td></tr><tr><td style="text-align: left;">形で</td><td style="text-align: left;">繊維状タンパク質（水に溶けにくい）</td><td style="text-align: left;">ケラチン・フィブロイン・コラーゲン</td></tr></tbody></table></div>
 <p class="ref-p"><b>「単純／複合」「球状／繊維状」の4つの名前と意味は暗記してください。</b>例として、<b>絹はフィブロイン、羊毛はケラチン</b>の2つは覚えておきましょう。それ以外のタンパク質がどれにあたるかの一覧は、覚える必要はありません。</p>
 <p class="ref-p">球状タンパク質を水に溶かすと、分子1個がコロイド粒子の大きさになるので、コロイド溶液になります。多量の塩を加えると沈殿します（塩析）。</p>
 <section class="ref-sec" id="ref-sec-denaturation"><h4 class="ref-sec-h">変性</h4><p class="ref-sec-lead">熱・強い酸や塩基・重金属イオン・アルコールなどによって、タンパク質の立体構造がこわれることを変性といいます。ペプチド結合は切れないので、一次構造は変わりません。</p></section>
 <p class="ref-p">タンパク質に<b>熱</b>を加えたり、<b>強い酸や塩基</b>、<b>重金属イオン（Cu²⁺・Hg²⁺・Pb²⁺ など）</b>、<b>エタノールなどの有機溶媒</b>を加えたりすると、二次構造以上を保っていた水素結合などが切れて、<b>立体構造がこわれます</b>。これを<b>変性</b>といいます。</p>
 <p class="ref-p">具体例として、生卵を加熱すると白く固まり、冷やしても元に戻りません。卵白のアルブミンが熱で変性したためです。消毒用アルコールが細菌を殺すのも、細菌のタンパク質を変性させるためです。</p>
 <p class="ref-p"><b>「変性でこわれるのは立体構造。ペプチド結合は切れないので、一次構造は変わらない」</b>と覚えましょう。変性したタンパク質は、ふつう元の形に戻りません。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">変性すると、タンパク質のペプチド結合が切れてアミノ酸にばらばらになる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">変性で切れるのは、立体構造を保っていた<b>水素結合など</b>です。<b>ペプチド結合は切れず、一次構造は変わりません。</b></span></p><p class="ref-mistake-why">「こわれる」を加水分解と同じものとして覚えてしまうためです。★ ペプチド結合を切るのは、酸や酵素による<b>加水分解</b>のほうです。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">変性すると、タンパク質のペプチド結合が切れてアミノ酸にばらばらになる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">変性で切れるのは、立体構造を保っていた<b>水素結合など</b>です。<b>ペプチド結合は切れず、一次構造は変わりません。</b></span></p><p class="ref-mistake-why">「こわれる」を加水分解と同じものとして覚えてしまうためです。★ ペプチド結合を切るのは、酸や酵素による<b>加水分解</b>のほうです。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/enzyme/">酵素が高温ではたらかなくなるのも変性のためです（酵素のページへ）</a></p>
 <section class="ref-sec" id="ref-sec-color-tests"><h4 class="ref-sec-h">呈色反応</h4><p class="ref-sec-lead">ビウレット反応はペプチド結合、キサントプロテイン反応はベンゼン環、硫黄の検出は硫黄、ニンヒドリン反応はアミノ基を検出します。</p></section>
 <p class="ref-p">タンパク質やアミノ酸を検出する反応は4つあります。<b>どれも「何を検出しているか」で使い分けます。</b></p>
-<div class="ref-table-wrap"><div class="ref-cap">タンパク質・アミノ酸の呈色反応（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">試薬と操作</th><th style="text-align: left;">色</th><th style="text-align: left;">何を検出しているか</th></tr></thead><tbody><tr><td style="text-align: left;">ビウレット反応</td><td style="text-align: left;">NaOH 水溶液を加えて塩基性にし、少量の CuSO₄ 水溶液を加える</td><td style="text-align: left;">赤紫色</td><td style="text-align: left;"><b>ペプチド結合2個以上</b>（トリペプチド以上）</td></tr><tr><td style="text-align: left;">キサントプロテイン反応</td><td style="text-align: left;">濃硝酸を加えて加熱し、冷やしてからアンモニア水で塩基性にする</td><td style="text-align: left;">黄色 → 橙黄色</td><td style="text-align: left;">側鎖の<b>ベンゼン環</b></td></tr><tr><td style="text-align: left;">硫黄の検出</td><td style="text-align: left;">NaOH 水溶液を加えて加熱し、酢酸鉛(II) 水溶液を加える</td><td style="text-align: left;">黒色沈殿（PbS）</td><td style="text-align: left;">側鎖の<b>硫黄</b></td></tr><tr><td style="text-align: left;">ニンヒドリン反応</td><td style="text-align: left;">ニンヒドリン水溶液を加えて温める</td><td style="text-align: left;">青紫色〜赤紫色</td><td style="text-align: left;"><b>アミノ基 −NH₂</b></td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">タンパク質・アミノ酸の呈色反応</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">試薬と操作</th><th style="text-align: left;">色</th><th style="text-align: left;">何を検出しているか</th></tr></thead><tbody><tr><td style="text-align: left;">ビウレット反応</td><td style="text-align: left;">NaOH 水溶液を加えて塩基性にし、少量の CuSO₄ 水溶液を加える</td><td style="text-align: left;">赤紫色</td><td style="text-align: left;"><b>ペプチド結合2個以上</b>（トリペプチド以上）</td></tr><tr><td style="text-align: left;">キサントプロテイン反応</td><td style="text-align: left;">濃硝酸を加えて加熱し、冷やしてからアンモニア水で塩基性にする</td><td style="text-align: left;">黄色 → 橙黄色</td><td style="text-align: left;">側鎖の<b>ベンゼン環</b></td></tr><tr><td style="text-align: left;">硫黄の検出</td><td style="text-align: left;">NaOH 水溶液を加えて加熱し、酢酸鉛(II) 水溶液を加える</td><td style="text-align: left;">黒色沈殿（PbS）</td><td style="text-align: left;">側鎖の<b>硫黄</b></td></tr><tr><td style="text-align: left;">ニンヒドリン反応</td><td style="text-align: left;">ニンヒドリン水溶液を加えて温める</td><td style="text-align: left;">青紫色〜赤紫色</td><td style="text-align: left;"><b>アミノ基 −NH₂</b></td></tr></tbody></table></div>
 <p class="ref-p"><b>この表は4行とも「試薬・色・何を検出しているか」まで暗記してください。</b>反応の仕組みは覚える必要はありません。</p>
 <p class="ref-p">キサントプロテイン反応の黄色は、側鎖の<b>ベンゼン環がニトロ化</b>されたためです。ベンゼン環をもつアミノ酸の中でも、<b>チロシン</b>のように環に −OH が付いたものがよく反応します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">側鎖のベンゼン環 ＋ HNO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">ニトロ化されたベンゼン環（黄色） ＋ H₂O</span></div><p class="ref-note">ベンゼンのニトロ化と同じ置換反応です。</p></div>

@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -848,7 +855,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">鎖の両端の水素を1個ずつとりさって、あいた手どうしをつなぐと環になります。<b>水素が2個減る</b>ので、アルカンの C<sub>n</sub>H<sub>2n+2</sub> を基準にして、シクロアルカンの一般式は <b>C<sub>n</sub>H<sub>2n</sub></b> です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hydrocarbon-ring.png" alt="プロパンの構造式の両端の H に緑の丸をつけ、矢印でシクロプロパンの三角形の構造式に変わるようすを描いた図" loading="lazy"><figcaption class="ref-figure-cap">プロパン C₃H₈ の<b>両端の H を1個ずつとりさって手をつなぐ</b>と、シクロプロパン C₃H₆ になります。</figcaption></figure>
 <p class="ref-p">n=3 を代入すればシクロプロパン C₃H₆、n=6 を代入すればシクロヘキサン C₆H₁₂ です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">主なシクロアルカン（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">分子式</th></tr></thead><tbody><tr><td style="text-align: left;">シクロプロパン</td><td style="text-align: left;">C₃H₆</td></tr><tr><td style="text-align: left;">シクロブタン</td><td style="text-align: left;">C₄H₈</td></tr><tr><td style="text-align: left;">シクロペンタン</td><td style="text-align: left;">C₅H₁₀</td></tr><tr><td style="text-align: left;">シクロヘキサン</td><td style="text-align: left;">C₆H₁₂</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">主なシクロアルカン</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">分子式</th></tr></thead><tbody><tr><td style="text-align: left;">シクロプロパン</td><td style="text-align: left;">C₃H₆</td></tr><tr><td style="text-align: left;">シクロブタン</td><td style="text-align: left;">C₄H₈</td></tr><tr><td style="text-align: left;">シクロペンタン</td><td style="text-align: left;">C₅H₁₀</td></tr><tr><td style="text-align: left;">シクロヘキサン</td><td style="text-align: left;">C₆H₁₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>この C<sub>n</sub>H<sub>2n</sub> は、アルケンの一般式とまったく同じです。</b>つまり <b>C₅H₁₀ と言われただけでは、ペンテン（アルケン）なのかシクロペンタンなのか決められません。</b>異性体を書き出す問題で「鎖式に限る」と書いていなければ、<b>環式も書かなければならない</b>、ということです。</p>
 <div class="ref-callout ref-callout-memorize"><b class="ref-callout-tag">丸暗記でよい</b><p class="ref-callout-text"><b>「シクロアルカン C<sub>n</sub>H<sub>2n</sub> は、アルケン C<sub>n</sub>H<sub>2n</sub> の構造異性体」</b>——この1行は覚えてしまってください。異性体の数え上げで書き落とす原因の第1位がここです。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/hydrocarbon-classes/">6つのグループと一般式をまとめて見る</a></p>

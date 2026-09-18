@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -868,7 +875,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">メタノール CH₃OH は炭素原子が1個しかなく、「ヒドロキシ基 −OH がついた炭素の隣の炭素」が存在しないため脱水反応を起こしません。2,2-ジメチル-1-プロパノールは、「ヒドロキシ基 −OH がついた炭素の隣の炭素」に水素原子が1個もついていないため脱水反応を起こしません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-dehydration-methanol.png" alt="メタノールの構造式。炭素1個にヒドロキシ基 OH が1つと水素が3個付いているだけで、隣に炭素がない" loading="lazy"><figcaption class="ref-figure-cap">メタノール CH₄O。−OH が付いた炭素の<b>隣に炭素がありません</b>。二重結合を作る相手がいないので脱水できません。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-dehydration-neopentyl.png" alt="2,2-ジメチル-1-プロパノールの構造式。中心の炭素にメチル基 CH₃ が3個と、ヒドロキシ基 OH が付いた CH₂ が1個、合わせて4本の結合が出ている" loading="lazy"><figcaption class="ref-figure-cap">2,2-ジメチル-1-プロパノール C₅H₁₂O。−OH が付いた炭素の隣（中心の炭素）は、<b>4本の手がすべて炭素でふさがっていて水素が1個もありません</b>。抜くものがないので脱水できません。</figcaption></figure>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">第3級アルコールは酸化されないのだから、脱水もできない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">第3級アルコールは<b>脱水できます</b>。できないのは<b>メタノール</b>と<b>2,2-ジメチル-1-プロパノール</b>で、どちらも<b>第1級</b>です。</span></p><p class="ref-mistake-why">酸化と脱水を混同したものです。酸化で見るのは「<b>−OH が付いた炭素</b>に水素があるか」で、第3級はそこが炭素3本でふさがっているので酸化されません。脱水で見るのは「<b>その隣の炭素</b>に水素があるか」なので、級とは関係がありません。⚠ 級で言えるのは酸化のほうだけです。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">第3級アルコールは酸化されないのだから、脱水もできない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">第3級アルコールは<b>脱水できます</b>。できないのは<b>メタノール</b>と<b>2,2-ジメチル-1-プロパノール</b>で、どちらも<b>第1級</b>です。</span></p><p class="ref-mistake-why">酸化と脱水を混同したものです。酸化で見るのは「<b>−OH が付いた炭素</b>に水素があるか」で、第3級はそこが炭素3本でふさがっているので酸化されません。脱水で見るのは「<b>その隣の炭素</b>に水素があるか」なので、級とは関係がありません。⚠ 級で言えるのは酸化のほうだけです。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-class/">級の数え方（−OH が付いた炭素のとなりに炭素がいくつあるか）はこちら</a></p>
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">2-ブタノールを濃硫酸とともに160〜170℃に加熱した。<b>(1) 生じるアルケンを構造異性体として2つ書け。(2) そのうち主生成物はどちらか。(3) 主生成物には立体異性体が2つある。優先的に生じるのはどちらか。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>1-ブテン</b> CH₂=CHCH₂CH₃ と <b>2-ブテン</b> CH₃CH=CHCH₃。−OH が付いた C₂ の隣が C₁ と C₃ の2つあり、どちらから H が抜けるかで行き先が分かれます。(2) 主生成物は <b>2-ブテン</b>（ザイツェフ則）。(3) <b>トランス-2-ブテン</b>。シス形は立体障害があるぶん不安定です。</p></div></details></div>

@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -860,7 +867,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2C₆H₅NO₂ ＋ 3Sn ＋ 14HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2C₆H₅NH₃Cl ＋ 3SnCl₄ ＋ 4H₂O</span></div><p class="ref-note">①還元してアニリン塩酸塩にします。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅NH₃Cl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅NH₂ ＋ NaCl ＋ H₂O</span></div><p class="ref-note">②NaOH 水溶液を加えてアニリンを遊離させます。</p></div>
 <p class="ref-p"><b>還元の式の係数は覚えなくて構いませんが、「還元してできるのはアニリン塩酸塩で、NaOH を加えてアニリンにする」という2段の流れは必ず覚えてください。</b></p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">ニトロベンゼンをスズと塩酸で還元すると、そのままアニリンが得られる。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">スズと塩酸で還元するとアニリン塩酸塩ができ、そこに NaOH 水溶液を加えて初めてアニリンが遊離する。</span></p><p class="ref-mistake-why">還元は塩酸の中で行うので、塩基のアニリンは塩酸と中和して塩のまま残ります。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">ニトロベンゼンをスズと塩酸で還元すると、そのままアニリンが得られる。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">スズと塩酸で還元するとアニリン塩酸塩ができ、そこに NaOH 水溶液を加えて初めてアニリンが遊離する。</span></p><p class="ref-mistake-why">還元は塩酸の中で行うので、塩基のアニリンは塩酸と中和して塩のまま残ります。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/benzene-substitution/">出発物質のニトロベンゼンをつくるニトロ化</a></p>
 <section class="ref-sec" id="ref-sec-detect"><h4 class="ref-sec-h">アニリンを見分ける</h4><p class="ref-sec-lead">さらし粉水溶液で赤紫色に呈色します。二クロム酸カリウムで酸化すると黒色のアニリンブラックになります。</p></section>
 <p class="ref-p">アニリンの水溶液に<b>さらし粉水溶液</b>を加えると、<b>赤紫色</b>に呈色します。<b>「アニリンはさらし粉で赤紫」と覚えましょう。</b>アニリンの検出によく使われます。</p>
@@ -882,7 +889,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅N₂Cl ＋ C₆H₅ONa</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅−N=N−C₆H₄−OH ＋ NaCl</span></div><p class="ref-note">p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）ができます。フェノールの −OH から見て p の位置で結びつきます。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aniline-hydroxyazobenzene.png" alt="p-ヒドロキシアゾベンゼンの構造式。2個のベンゼン環が −N=N− でつながり、片方の環の向かい側の炭素にヒドロキシ基が結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>p-ヒドロキシアゾベンゼン</b>。2個の環を<b>アゾ基 −N=N−</b> がつないでいます。</figcaption></figure>
 <p class="ref-p">アゾ基をもつ化合物を<b>アゾ化合物</b>といいます。アゾ化合物の多くは黄色〜赤色の色をもち、<b>アゾ染料</b>として使われます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">ニトロベンゼンからアゾ染料までの4段（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">段</th><th style="text-align: left;">加えるもの・条件</th><th style="text-align: left;">できるもの</th></tr></thead><tbody><tr><td style="text-align: center;">1</td><td style="text-align: left;">スズ（または鉄）と塩酸</td><td style="text-align: left;">アニリン塩酸塩</td></tr><tr><td style="text-align: center;">2</td><td style="text-align: left;">NaOH 水溶液</td><td style="text-align: left;">アニリン</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: left;">塩酸と NaNO₂・<b>5℃以下</b></td><td style="text-align: left;">塩化ベンゼンジアゾニウム</td></tr><tr><td style="text-align: center;">4</td><td style="text-align: left;">ナトリウムフェノキシド</td><td style="text-align: left;"><b>p-ヒドロキシアゾベンゼン</b>（橙赤色）</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">ニトロベンゼンからアゾ染料までの4段</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">段</th><th style="text-align: left;">加えるもの・条件</th><th style="text-align: left;">できるもの</th></tr></thead><tbody><tr><td style="text-align: center;">1</td><td style="text-align: left;">スズ（または鉄）と塩酸</td><td style="text-align: left;">アニリン塩酸塩</td></tr><tr><td style="text-align: center;">2</td><td style="text-align: left;">NaOH 水溶液</td><td style="text-align: left;">アニリン</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: left;">塩酸と NaNO₂・<b>5℃以下</b></td><td style="text-align: left;">塩化ベンゼンジアゾニウム</td></tr><tr><td style="text-align: center;">4</td><td style="text-align: left;">ナトリウムフェノキシド</td><td style="text-align: left;"><b>p-ヒドロキシアゾベンゼン</b>（橙赤色）</td></tr></tbody></table></div>
 <p class="ref-p"><b>ニトロベンゼンからアゾ染料までの4段（還元 → 遊離 → ジアゾ化 → カップリング）の流れは、よく登場するので、反応式ごと書けるようにしておきましょう。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/phenol/">カップリングの相手になるナトリウムフェノキシドのページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/functional-groups/">アミノ基・アゾ基・アミド結合を官能基の一覧で見る</a></p>

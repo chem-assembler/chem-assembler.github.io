@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -858,7 +865,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>「背骨は糖とリン酸、枝が塩基」</b>と覚えましょう。どの糖のどの位置の炭素でつながっているか（3′位・5′位）は覚えなくて構いません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ester/">カルボン酸以外の酸（リン酸・硝酸）もエステルをつくる話はエステルのページへ</a></p>
 <section class="ref-sec" id="ref-sec-dna-rna"><h4 class="ref-sec-h">DNA と RNA の違い</h4><p class="ref-sec-lead">DNA と RNA は、五炭糖の種類・塩基の1つ・鎖の本数が違います。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">DNA と RNA の違い（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">DNA</th><th style="text-align: left;">RNA</th></tr></thead><tbody><tr><td style="text-align: left;">五炭糖</td><td style="text-align: left;">デオキシリボース C₅H₁₀O₄</td><td style="text-align: left;">リボース C₅H₁₀O₅</td></tr><tr><td style="text-align: left;">塩基</td><td style="text-align: left;">A・G・C・<b>T（チミン）</b></td><td style="text-align: left;">A・G・C・<b>U（ウラシル）</b></td></tr><tr><td style="text-align: left;">鎖の本数</td><td style="text-align: left;">2本（<b>二重らせん</b>）</td><td style="text-align: left;">ふつう1本</td></tr><tr><td style="text-align: left;">おもなはたらき</td><td style="text-align: left;">遺伝情報を保存する</td><td style="text-align: left;">タンパク質の合成にはたらく</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">DNA と RNA の違い</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">DNA</th><th style="text-align: left;">RNA</th></tr></thead><tbody><tr><td style="text-align: left;">五炭糖</td><td style="text-align: left;">デオキシリボース C₅H₁₀O₄</td><td style="text-align: left;">リボース C₅H₁₀O₅</td></tr><tr><td style="text-align: left;">塩基</td><td style="text-align: left;">A・G・C・<b>T（チミン）</b></td><td style="text-align: left;">A・G・C・<b>U（ウラシル）</b></td></tr><tr><td style="text-align: left;">鎖の本数</td><td style="text-align: left;">2本（<b>二重らせん</b>）</td><td style="text-align: left;">ふつう1本</td></tr><tr><td style="text-align: left;">おもなはたらき</td><td style="text-align: left;">遺伝情報を保存する</td><td style="text-align: left;">タンパク質の合成にはたらく</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の4行は暗記してください。</b>特に、糖の「デオキシ（酸素が1個少ない）」と、塩基の「DNA は T、RNA は U」の2か所が問われます。塩基の構造式を覚える必要はありません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/nucleic-acid-thymine.png" alt="チミンの構造式を直交で描いた図。窒素原子2個をふくむ六員環に、C=O が2個とメチル基が1個付いている" loading="lazy"><figcaption class="ref-figure-cap">DNA だけにふくまれる塩基の<b>チミン</b>。RNA では、このメチル基が無いウラシルに置きかわります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-base-pair"><h4 class="ref-sec-h">塩基の対と二重らせん</h4><p class="ref-sec-lead">DNA の2本の鎖は、塩基どうしが水素結合で対をつくってつながり、二重らせんになっています。対になるのは A と T、G と C です。</p></section>
@@ -866,7 +873,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">2本の鎖は、この対をはさんでねじれ、<b>二重らせん</b>になっています。</p>
 <p class="ref-p"><b>「A と T、G と C」</b>と覚えましょう。RNA では T の代わりに U なので、<b>A と U</b> が対になります。</p>
 <p class="ref-p">対の相手が決まっているので、DNA では <b>A の数 ＝ T の数、G の数 ＝ C の数</b>になります。具体例として、ある DNA の塩基のうち A が 20% なら、T も 20%、残りの 60% を G と C が半分ずつ分けて、G と C は 30% ずつです。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">DNA の塩基はどれも同じ割合でふくまれるので、4種類とも25%ずつになる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">DNA で等しくなるのは、<b>A と T どうし、G と C どうし</b>だけです。A と G の割合は DNA ごとに違います。</span></p><p class="ref-mistake-why">「対になるものが同じ数」を「4種類がすべて同じ数」と広げてしまうためです。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">DNA の塩基はどれも同じ割合でふくまれるので、4種類とも25%ずつになる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">DNA で等しくなるのは、<b>A と T どうし、G と C どうし</b>だけです。A と G の割合は DNA ごとに違います。</span></p><p class="ref-mistake-why">「対になるものが同じ数」を「4種類がすべて同じ数」と広げてしまうためです。</p></div>
 <details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-flow"><summary class="ref-adv-sum"><h4 class="ref-sec-h">遺伝情報の流れ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">DNA の塩基の並び順が RNA に写しとられ、RNA の塩基の並び順にしたがってアミノ酸がつながり、タンパク質ができます。</p></summary><div class="ref-adv-body"><p class="ref-p">DNA の<b>塩基の並び順</b>が遺伝情報です。この並び順が、塩基の対の決まりにしたがって RNA に写しとられ、RNA の塩基3個の並びごとに1つのアミノ酸が決まって、タンパク質の<b>一次構造</b>（アミノ酸の並び順）ができます。</p><p class="ref-p"><b>DNA → RNA → タンパク質</b>という情報の向きだけ知っておけば十分です。写しとる仕組みの名前や、どの塩基の並びがどのアミノ酸になるかは、化学では覚える必要はありません。</p><p class="ref-link-row"><a class="ref-link" href="/reference/protein/">タンパク質の一次構造（アミノ酸の並び順）はタンパク質のページへ</a></p></div></details>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>

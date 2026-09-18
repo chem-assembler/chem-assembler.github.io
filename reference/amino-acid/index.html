@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -854,7 +861,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-example"><h4>例題：アラニン をつくる</h4><p class="ref-p" style="margin: 0px;">アラニンを組んで、1つの炭素に −NH₂ と −COOH と −CH₃ が付く形を手で確かめます。</p><a class="ref-try" href="/assembler/?open=reference&amp;code=org.bio.amino-acid-def&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=amino-acid">▶ アラニンを組んでみる</a><p class="ref-note">まん中の炭素には、H・NH₂・COOH・CH₃ の4つの違うものが付いています。</p></div>
 <section class="ref-sec" id="ref-sec-sidechain"><h4 class="ref-sec-h">側鎖による分類</h4><p class="ref-sec-lead">側鎖に −COOH をもつものを酸性アミノ酸、−NH₂ をもつものを塩基性アミノ酸、どちらももたないものを中性アミノ酸といいます。</p></section>
 <p class="ref-p">α-アミノ酸は、どれも −NH₂ と −COOH を1個ずつもっています。そこに<b>側鎖にもう1個 −COOH があれば酸性アミノ酸</b>、<b>もう1個 −NH₂ があれば塩基性アミノ酸</b>、どちらも無ければ<b>中性アミノ酸</b>です。</p>
-<div class="ref-table-wrap"><div class="ref-cap">代表的な α-アミノ酸（7行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">側鎖 R</th><th style="text-align: left;">分類</th><th style="text-align: left;">覚えどころ</th></tr></thead><tbody><tr><td style="text-align: left;">グリシン</td><td style="text-align: left;">−H</td><td style="text-align: left;">中性</td><td style="text-align: left;">不斉炭素原子をもたない</td></tr><tr><td style="text-align: left;">アラニン</td><td style="text-align: left;">−CH₃</td><td style="text-align: left;">中性</td><td style="text-align: left;">いちばん簡単な不斉なアミノ酸</td></tr><tr><td style="text-align: left;">システイン</td><td style="text-align: left;">−CH₂−SH</td><td style="text-align: left;">中性</td><td style="text-align: left;"><b>硫黄</b>をもつ</td></tr><tr><td style="text-align: left;">フェニルアラニン</td><td style="text-align: left;">−CH₂−C₆H₅</td><td style="text-align: left;">中性</td><td style="text-align: left;"><b>ベンゼン環</b>をもつ</td></tr><tr><td style="text-align: left;">チロシン</td><td style="text-align: left;">−CH₂−C₆H₄−OH</td><td style="text-align: left;">中性</td><td style="text-align: left;">ベンゼン環とフェノール性の −OH をもつ</td></tr><tr><td style="text-align: left;">グルタミン酸</td><td style="text-align: left;">−(CH₂)₂−COOH</td><td style="text-align: left;"><b>酸性</b></td><td style="text-align: left;">側鎖に −COOH</td></tr><tr><td style="text-align: left;">リシン</td><td style="text-align: left;">−(CH₂)₄−NH₂</td><td style="text-align: left;"><b>塩基性</b></td><td style="text-align: left;">側鎖に −NH₂</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">代表的な α-アミノ酸</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">側鎖 R</th><th style="text-align: left;">分類</th><th style="text-align: left;">覚えどころ</th></tr></thead><tbody><tr><td style="text-align: left;">グリシン</td><td style="text-align: left;">−H</td><td style="text-align: left;">中性</td><td style="text-align: left;">不斉炭素原子をもたない</td></tr><tr><td style="text-align: left;">アラニン</td><td style="text-align: left;">−CH₃</td><td style="text-align: left;">中性</td><td style="text-align: left;">いちばん簡単な不斉なアミノ酸</td></tr><tr><td style="text-align: left;">システイン</td><td style="text-align: left;">−CH₂−SH</td><td style="text-align: left;">中性</td><td style="text-align: left;"><b>硫黄</b>をもつ</td></tr><tr><td style="text-align: left;">フェニルアラニン</td><td style="text-align: left;">−CH₂−C₆H₅</td><td style="text-align: left;">中性</td><td style="text-align: left;"><b>ベンゼン環</b>をもつ</td></tr><tr><td style="text-align: left;">チロシン</td><td style="text-align: left;">−CH₂−C₆H₄−OH</td><td style="text-align: left;">中性</td><td style="text-align: left;">ベンゼン環とフェノール性の −OH をもつ</td></tr><tr><td style="text-align: left;">グルタミン酸</td><td style="text-align: left;">−(CH₂)₂−COOH</td><td style="text-align: left;"><b>酸性</b></td><td style="text-align: left;">側鎖に −COOH</td></tr><tr><td style="text-align: left;">リシン</td><td style="text-align: left;">−(CH₂)₄−NH₂</td><td style="text-align: left;"><b>塩基性</b></td><td style="text-align: left;">側鎖に −NH₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>この7つは、名前と側鎖の特徴（硫黄・ベンゼン環・余分な −COOH や −NH₂）まで暗記してください。</b>タンパク質の呈色反応でどれが陽性になるかに、そのままつながります。天然のタンパク質をつくるおよそ20種のアミノ酸を、すべて覚える必要はありません。</p>
 <section class="ref-sec" id="ref-sec-chirality"><h4 class="ref-sec-h">不斉炭素原子</h4><p class="ref-sec-lead">α位の炭素には H・NH₂・COOH・R の4つが付くので、R が H でなければ不斉炭素原子になります。グリシンだけが例外です。</p></section>
 <p class="ref-p">α-アミノ酸の α位の炭素には、<b>H・−NH₂・−COOH・R</b> の4つが結合しています。R が H 以外なら4つがすべて違うので、この炭素は<b>不斉炭素原子</b>になり、<b>鏡像異性体</b>が存在します。</p>
@@ -882,11 +889,11 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-isoelectric"><h4 class="ref-sec-h">等電点と電気泳動</h4><p class="ref-sec-lead">陽イオン・双性イオン・陰イオンの電荷の合計が全体として0になる pH を等電点といいます。等電点では、電圧をかけてもアミノ酸はどちらの電極にも移動しません。</p></section>
 <p class="ref-p">水溶液の pH を変えていくと、ある pH で、陽イオン・双性イオン・陰イオンの<b>電荷の合計が全体として0</b>になります。この pH をそのアミノ酸の<b>等電点</b>といいます。等電点では、ほとんどが双性イオンになっています。</p>
 <p class="ref-p">アミノ酸の水溶液に電圧をかけると、陽イオンは陰極へ、陰イオンは陽極へ移動します。これを<b>電気泳動</b>といいます。等電点では電荷の合計が0なので、<b>どちらの電極にも移動しません</b>。</p>
-<div class="ref-table-wrap"><div class="ref-cap">水溶液の pH と、多くなる形・電気泳動での動き（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">水溶液の pH</th><th style="text-align: left;">多くなる形</th><th style="text-align: left;">電気泳動での動き</th></tr></thead><tbody><tr><td style="text-align: left;">等電点より小さい（酸性側）</td><td style="text-align: left;">陽イオン</td><td style="text-align: left;"><b>陰極</b>へ移動する</td></tr><tr><td style="text-align: left;">等電点と同じ</td><td style="text-align: left;">双性イオン</td><td style="text-align: left;">移動しない</td></tr><tr><td style="text-align: left;">等電点より大きい（塩基性側）</td><td style="text-align: left;">陰イオン</td><td style="text-align: left;"><b>陽極</b>へ移動する</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">水溶液の pH と、多くなる形・電気泳動での動き</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">水溶液の pH</th><th style="text-align: left;">多くなる形</th><th style="text-align: left;">電気泳動での動き</th></tr></thead><tbody><tr><td style="text-align: left;">等電点より小さい（酸性側）</td><td style="text-align: left;">陽イオン</td><td style="text-align: left;"><b>陰極</b>へ移動する</td></tr><tr><td style="text-align: left;">等電点と同じ</td><td style="text-align: left;">双性イオン</td><td style="text-align: left;">移動しない</td></tr><tr><td style="text-align: left;">等電点より大きい（塩基性側）</td><td style="text-align: left;">陰イオン</td><td style="text-align: left;"><b>陽極</b>へ移動する</td></tr></tbody></table></div>
 <p class="ref-p"><b>この表の3行の向きは暗記してください。</b>「自分の等電点より酸性側なら陽イオン」と覚えれば、残りの2行はその場で出ます。</p>
 <p class="ref-p">等電点の値は、中性アミノ酸ではおよそ6、<b>酸性アミノ酸では小さく</b>（グルタミン酸は約3）、<b>塩基性アミノ酸では大きく</b>（リシンは約10）なります。側鎖の −COOH や −NH₂ のぶんだけ、酸性側か塩基性側へずれるためです。</p>
 <p class="ref-p"><b>「酸性アミノ酸の等電点は小さい、塩基性アミノ酸の等電点は大きい」というずれ方だけは覚えてください。</b>個々のアミノ酸の等電点の数値は、覚える必要はありません。問題文に与えられます。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">等電点では、アミノ酸がすべて双性イオンになっている</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">等電点は、陽イオン・双性イオン・陰イオンの<b>電荷の合計が全体として0になる pH</b> です。ほとんどが双性イオンですが、陽イオンと陰イオンもわずかに同じ量ずつあります。</span></p><p class="ref-mistake-why">「双性イオンは電荷の合計が0」と「等電点では電荷の合計が0」を同じものとして覚えてしまうためです。★ 入試の記述では「電荷の合計（平均）が0になる pH」と書けば安全です。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">等電点では、アミノ酸がすべて双性イオンになっている</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">等電点は、陽イオン・双性イオン・陰イオンの<b>電荷の合計が全体として0になる pH</b> です。ほとんどが双性イオンですが、陽イオンと陰イオンもわずかに同じ量ずつあります。</span></p><p class="ref-mistake-why">「双性イオンは電荷の合計が0」と「等電点では電荷の合計が0」を同じものとして覚えてしまうためです。★ 入試の記述では「電荷の合計（平均）が0になる pH」と書けば安全です。</p></div>
 <section class="ref-sec" id="ref-sec-ninhydrin"><h4 class="ref-sec-h">アミノ酸の検出</h4><p class="ref-sec-lead">アミノ酸にニンヒドリン水溶液を加えて温めると、青紫色から赤紫色になります。</p></section>
 <p class="ref-p">アミノ酸の水溶液に<b>ニンヒドリン</b>の水溶液を加えて温めると、<b>青紫色〜赤紫色</b>になります。これを<b>ニンヒドリン反応</b>といい、アミノ基 −NH₂ を検出する反応です。</p>
 <p class="ref-p"><b>「ニンヒドリン反応はアミノ酸の検出、色は青紫〜赤紫」は暗記してください。</b>ほかの呈色反応といっしょに、タンパク質のページで表にまとめています。</p>

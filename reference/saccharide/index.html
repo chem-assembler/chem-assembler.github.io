@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -849,14 +856,14 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">実際の構造は、炭素の鎖に −OH がたくさん付き、1か所がホルミル基かカルボニル基になっている化合物です。<b>「−OH がたくさん ＋ C=O が1個」</b>と覚えておくと、構造式を見て糖だと気づけます。</p>
 <section class="ref-sec" id="ref-sec-class"><h4 class="ref-sec-h">単糖・二糖・多糖</h4><p class="ref-sec-lead">加水分解して、それ以上小さな糖にならないものが単糖です。単糖が2個つながったものが二糖、多数つながったものが多糖です。</p></section>
 <p class="ref-p">糖類は、<b>加水分解すると単糖が何個できるか</b>で3つに分けます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">糖類の分類（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">加水分解で生じる単糖</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">単糖</td><td style="text-align: left;">それ以上加水分解されない</td><td style="text-align: left;">グルコース・フルクトース・ガラクトース</td></tr><tr><td style="text-align: left;">二糖</td><td style="text-align: left;">2分子</td><td style="text-align: left;">マルトース・スクロース・ラクトース・セロビオース</td></tr><tr><td style="text-align: left;">多糖</td><td style="text-align: left;">多数</td><td style="text-align: left;">デンプン・セルロース・グリコーゲン</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">糖類の分類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分類</th><th style="text-align: left;">加水分解で生じる単糖</th><th style="text-align: left;">代表例</th></tr></thead><tbody><tr><td style="text-align: left;">単糖</td><td style="text-align: left;">それ以上加水分解されない</td><td style="text-align: left;">グルコース・フルクトース・ガラクトース</td></tr><tr><td style="text-align: left;">二糖</td><td style="text-align: left;">2分子</td><td style="text-align: left;">マルトース・スクロース・ラクトース・セロビオース</td></tr><tr><td style="text-align: left;">多糖</td><td style="text-align: left;">多数</td><td style="text-align: left;">デンプン・セルロース・グリコーゲン</td></tr></tbody></table></div>
 <p class="ref-p"><b>この3つの分類と、それぞれの代表例の名前は暗記してください。</b>二糖と多糖の中身は、それぞれのページで扱います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/disaccharide/">単糖が2個つながった二糖類のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">単糖が多数つながった多糖類（デンプンとセルロース）のページへ</a></p>
 <section class="ref-sec" id="ref-sec-monosaccharide"><h4 class="ref-sec-h">代表的な単糖</h4><p class="ref-sec-lead">グルコース・フルクトース・ガラクトースは、どれも分子式 C₆H₁₂O₆ の異性体です。</p></section>
 <p class="ref-p">炭素を6個もつ単糖を<b>六炭糖（ヘキソース）</b>といいます。代表的な3つはどれも分子式が C₆H₁₂O₆ で、たがいに<b>異性体</b>の関係にあります。</p>
 <p class="ref-p">鎖状構造でホルミル基 −CHO をもつ単糖を<b>アルドース</b>、カルボニル基 C=O を鎖の途中にもつ単糖を<b>ケトース</b>といいます。グルコースとガラクトースはアルドース、フルクトースはケトースです。</p>
-<div class="ref-table-wrap"><div class="ref-cap">代表的な単糖（六炭糖）（3行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">分類</th><th style="text-align: left;">特徴</th><th style="text-align: center;">還元性</th></tr></thead><tbody><tr><td style="text-align: left;">グルコース（ブドウ糖）</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">血液中に約0.1%ふくまれる。水溶液中で六員環をつくる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">フルクトース（果糖）</td><td style="text-align: left;">ケトース</td><td style="text-align: left;">糖の中でいちばん甘い。水溶液中で六員環と五員環の両方をとる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">ガラクトース</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">ラクトースの成分。グルコースと −OH の向きが1か所だけ違う</td><td style="text-align: center;">あり</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">代表的な単糖（六炭糖）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">分類</th><th style="text-align: left;">特徴</th><th style="text-align: center;">還元性</th></tr></thead><tbody><tr><td style="text-align: left;">グルコース（ブドウ糖）</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">血液中に約0.1%ふくまれる。水溶液中で六員環をつくる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">フルクトース（果糖）</td><td style="text-align: left;">ケトース</td><td style="text-align: left;">糖の中でいちばん甘い。水溶液中で六員環と五員環の両方をとる</td><td style="text-align: center;">あり</td></tr><tr><td style="text-align: left;">ガラクトース</td><td style="text-align: left;">アルドース</td><td style="text-align: left;">ラクトースの成分。グルコースと −OH の向きが1か所だけ違う</td><td style="text-align: center;">あり</td></tr></tbody></table></div>
 <p class="ref-p"><b>この3つの名前と分子式 C₆H₁₂O₆ は暗記してください。</b>−OH がどちらを向いているかまで覚える必要はありません。炭素を5個もつ五炭糖（リボース・デオキシリボース）は、核酸のページで出てくるまで覚えなくても構いません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/saccharide-fructose-chain.png" alt="D-フルクトースの鎖状構造式。炭素6個の鎖の2番目の炭素が C=O になっていて、残りの炭素に −OH が付いている" loading="lazy"><figcaption class="ref-figure-cap">フルクトースは<b>鎖の2番目の炭素が C=O</b> のケトースです。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-glucose-chain"><h4 class="ref-sec-h">グルコースの鎖状構造</h4><p class="ref-sec-lead">鎖の一端がホルミル基、残りの5個の炭素に −OH が1個ずつ付いています。不斉炭素原子は4個です。</p></section>
@@ -884,7 +891,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-fructose"><h4 class="ref-sec-h">フルクトースが還元性を示すわけ</h4><p class="ref-sec-lead">フルクトースはホルミル基をもたないケトースですが、塩基性の水溶液中で一部がホルミル基をもつ形に変わるので、還元性を示します。</p></section>
 <p class="ref-p">フルクトースの鎖状構造には<b>ホルミル基がありません</b>。それでもフルクトースは、銀鏡反応もフェーリング液の還元も陽性です。</p>
 <p class="ref-p">これは、銀鏡反応やフェーリング液の反応が起こる<b>塩基性の水溶液中で、フルクトースの一部がホルミル基をもつ構造に変わる</b>ためです。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">✗</b><span class="ref-mistake-body">フルクトースはケトースでホルミル基をもたないので、還元性を示さない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">✓</b><span class="ref-mistake-body">フルクトースも<b>還元性を示します</b>。塩基性の水溶液中で、一部がホルミル基をもつ構造に変わるためです。</span></p><p class="ref-mistake-why">「還元性 ＝ ホルミル基」を逆向きに使って「ホルミル基が無い ＝ 還元性が無い」としてしまうためです。★ <b>単糖はすべて還元性を示す</b>、と覚えておけば迷いません。</p></div>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">フルクトースはケトースでホルミル基をもたないので、還元性を示さない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">フルクトースも<b>還元性を示します</b>。塩基性の水溶液中で、一部がホルミル基をもつ構造に変わるためです。</span></p><p class="ref-mistake-why">「還元性 ＝ ホルミル基」を逆向きに使って「ホルミル基が無い ＝ 還元性が無い」としてしまうためです。★ <b>単糖はすべて還元性を示す</b>、と覚えておけば迷いません。</p></div>
 <p class="ref-p"><b>「単糖はすべて還元性を示す」と覚えてください。</b>変わる仕組みの名前や途中の構造は、覚える必要はありません。</p>
 <section class="ref-sec" id="ref-sec-fermentation"><h4 class="ref-sec-h">アルコール発酵</h4><p class="ref-sec-lead">酵母のもつ酵素群チマーゼで、グルコースはエタノールと二酸化炭素に分解されます。</p></section>
 <p class="ref-p">グルコースやフルクトースなどの単糖に<b>酵母</b>を加えておくと、酵母がもつ酵素群<b>チマーゼ</b>のはたらきで、<b>エタノールと二酸化炭素</b>が生じます。これを<b>アルコール発酵</b>といいます。</p>

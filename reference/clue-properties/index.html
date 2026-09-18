@@ -653,19 +653,26 @@ footer a:hover{color:var(--brand)}
     background: rgba(0, 0, 0, 0.22);
 }
 .ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
-/* ⚠ 折り返した2行目が ✗ / ✓ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
    （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
 .ref-mistake-wrong,
 .ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
-.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; }
-/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること */
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
 .ref-mistake-wrong { color: var(--text-secondary); }
 .ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
-.ref-mistake-wrong .ref-mistake-body { text-decoration: line-through; text-decoration-thickness: 1px; }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
 /* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
    足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
 .ref-mistake-right { color: var(--text-primary); }
-.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); font-weight: 700; }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
 .ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
 /* ★★ ページどうし・アプリへのリンク（§20-7）。
    ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
@@ -846,14 +853,14 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">構造決定の条件のうち、沸点・融点・色・においのような<b>物性</b>は、候補を大きく削る力は弱い一方で、残った候補を<b>1つに決める</b>ときに強くはたらきます。決めた構造が正しいかの確かめにも使えます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/clue-order/">物性を「分類 → 数 → 物性」の最後の段で使う理由は、手がかりの順番のページへ</a></p>
 <section class="ref-sec" id="ref-sec-bp-mp"><h4 class="ref-sec-h">沸点・融点・状態で名指しできるもの</h4><p class="ref-sec-lead">沸点34℃のジエチルエーテル、融点17℃の酢酸、常温で気体のホルムアルデヒド、融点の高いアミノ酸。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">数値や状態で名指しできる物質（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">問題文の書きぶり</th><th style="text-align: left;">物質</th><th style="text-align: left;">ひとこと</th></tr></thead><tbody><tr><td style="text-align: left;">沸点 <b>34℃</b>、引火しやすい無色の液体</td><td style="text-align: left;"><b>ジエチルエーテル</b> C₂H₅OC₂H₅</td><td style="text-align: left;">麻酔作用がある。沸点34℃がそのまま目印になる</td></tr><tr><td style="text-align: left;">融点約 <b>17℃</b>、冬に凍ることがある刺激臭の液体</td><td style="text-align: left;"><b>酢酸</b> CH₃COOH</td><td style="text-align: left;">純度の高いものを<b>氷酢酸</b>という</td></tr><tr><td style="text-align: left;"><b>常温で気体</b>のアルデヒド</td><td style="text-align: left;"><b>ホルムアルデヒド</b> HCHO</td><td style="text-align: left;">沸点は約 −19℃。水溶液はホルマリン</td></tr><tr><td style="text-align: left;">分子量のわりに<b>融点が非常に高く</b>、水に溶けやすく有機溶媒に溶けにくい固体</td><td style="text-align: left;"><b>アミノ酸</b></td><td style="text-align: left;">結晶の中で双性イオンになっている</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">数値や状態で名指しできる物質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">問題文の書きぶり</th><th style="text-align: left;">物質</th><th style="text-align: left;">ひとこと</th></tr></thead><tbody><tr><td style="text-align: left;">沸点 <b>34℃</b>、引火しやすい無色の液体</td><td style="text-align: left;"><b>ジエチルエーテル</b> C₂H₅OC₂H₅</td><td style="text-align: left;">麻酔作用がある。沸点34℃がそのまま目印になる</td></tr><tr><td style="text-align: left;">融点約 <b>17℃</b>、冬に凍ることがある刺激臭の液体</td><td style="text-align: left;"><b>酢酸</b> CH₃COOH</td><td style="text-align: left;">純度の高いものを<b>氷酢酸</b>という</td></tr><tr><td style="text-align: left;"><b>常温で気体</b>のアルデヒド</td><td style="text-align: left;"><b>ホルムアルデヒド</b> HCHO</td><td style="text-align: left;">沸点は約 −19℃。水溶液はホルマリン</td></tr><tr><td style="text-align: left;">分子量のわりに<b>融点が非常に高く</b>、水に溶けやすく有機溶媒に溶けにくい固体</td><td style="text-align: left;"><b>アミノ酸</b></td><td style="text-align: left;">結晶の中で双性イオンになっている</td></tr></tbody></table></div>
 <p class="ref-p"><b>酢酸の融点17℃は、ジエチルエーテルの沸点34℃の半分</b>と結び付けておくと、2つまとめて思い出せます。</p>
 <p class="ref-p">アセトアルデヒドは沸点が約20℃で気体になりやすいですが、高校化学では揮発しやすい液体として扱います。「常温で気体のアルデヒド」と書かれたら、ホルムアルデヒドと読みましょう。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/clue-properties-diethyl-ether.png" alt="ジエチルエーテルの構造式。酸素原子の両側に、2個の炭素からなるエチル基が1つずつ付いている" loading="lazy"><figcaption class="ref-figure-cap">ジエチルエーテル。O に H が付いていないので、分子どうしで水素結合をつくれず、沸点が34℃と低くなります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/ether/">ジエチルエーテルの性質とつくり方はエーテルのページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/amino-acid/">アミノ酸の双性イオンと融点はアミノ酸のページへ</a></p>
 <section class="ref-sec" id="ref-sec-look-smell"><h4 class="ref-sec-h">見た目・においで名指しできるもの</h4><p class="ref-sec-lead">淡黄色で水より重いニトロベンゼン、空気中で褐色になるアニリン、昇華するナフタレン、果実のにおいのエステル。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">見た目・においで名指しできる物質（4行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">問題文の書きぶり</th><th style="text-align: left;">物質</th><th style="text-align: left;">ひとこと</th></tr></thead><tbody><tr><td style="text-align: left;"><b>淡黄色</b>で<b>水より重い</b>油状の液体、特有のにおい</td><td style="text-align: left;"><b>ニトロベンゼン</b> C₆H₅NO₂</td><td style="text-align: left;">水より重いので、水と混ぜると下の層になる</td></tr><tr><td style="text-align: left;">無色の油状の液体で、空気中に置くと<b>しだいに褐色</b>になる</td><td style="text-align: left;"><b>アニリン</b> C₆H₅NH₂</td><td style="text-align: left;">空気中で酸化されて色が付く</td></tr><tr><td style="text-align: left;"><b>昇華しやすい</b>無色の<b>板状結晶</b>で、防虫剤に使われる</td><td style="text-align: left;"><b>ナフタレン</b> C₁₀H₈</td><td style="text-align: left;">固体から直接気体になる</td></tr><tr><td style="text-align: left;"><b>果実のような芳香</b>をもつ、水に溶けにくい<b>中性</b>の液体</td><td style="text-align: left;"><b>エステル</b></td><td style="text-align: left;">物質名ではなく<b>分類</b>が決まる</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">見た目・においで名指しできる物質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">問題文の書きぶり</th><th style="text-align: left;">物質</th><th style="text-align: left;">ひとこと</th></tr></thead><tbody><tr><td style="text-align: left;"><b>淡黄色</b>で<b>水より重い</b>油状の液体、特有のにおい</td><td style="text-align: left;"><b>ニトロベンゼン</b> C₆H₅NO₂</td><td style="text-align: left;">水より重いので、水と混ぜると下の層になる</td></tr><tr><td style="text-align: left;">無色の油状の液体で、空気中に置くと<b>しだいに褐色</b>になる</td><td style="text-align: left;"><b>アニリン</b> C₆H₅NH₂</td><td style="text-align: left;">空気中で酸化されて色が付く</td></tr><tr><td style="text-align: left;"><b>昇華しやすい</b>無色の<b>板状結晶</b>で、防虫剤に使われる</td><td style="text-align: left;"><b>ナフタレン</b> C₁₀H₈</td><td style="text-align: left;">固体から直接気体になる</td></tr><tr><td style="text-align: left;"><b>果実のような芳香</b>をもつ、水に溶けにくい<b>中性</b>の液体</td><td style="text-align: left;"><b>エステル</b></td><td style="text-align: left;">物質名ではなく<b>分類</b>が決まる</td></tr></tbody></table></div>
 <p class="ref-p">エステルの行だけは、決まるのが物質名ではなく分類です。低分子量のエステルは果実のにおいをもち、酢酸エチルや酢酸ペンチルのように、どれか1つに決めるには別の条件が要ります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/benzene-substitution/">ニトロベンゼンのつくり方と性質はベンゼンの置換反応のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aniline/">アニリンが酸化されやすいことはアニリンのページへ</a></p>
@@ -861,7 +868,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/ester/">エステルのにおいと性質はエステルのページへ</a></p>
 <section class="ref-sec" id="ref-sec-position"><h4 class="ref-sec-h">位置だけが違う異性体は、沸点で分かれることがある</h4><p class="ref-sec-lead">1-プロパノールと2-プロパノールは、分類でも分子式でも分かれませんが、沸点が違います。</p></section>
 <p class="ref-p">官能基の<b>位置</b>だけが違う異性体は、「分類 → 数」の段では分かれません。そのとき物性が最後の決め手になることがあります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">C₃H₈O のアルコール2種の沸点（2行）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th><th style="text-align: right;">沸点</th></tr></thead><tbody><tr><td style="text-align: left;"><b>1-プロパノール</b></td><td style="text-align: left;">CH₃CH₂CH₂OH</td><td style="text-align: right;">97℃</td></tr><tr><td style="text-align: left;"><b>2-プロパノール</b></td><td style="text-align: left;">CH₃CH(OH)CH₃</td><td style="text-align: right;">82℃</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">C₃H₈O のアルコール2種の沸点</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">化合物</th><th style="text-align: left;">示性式</th><th style="text-align: right;">沸点</th></tr></thead><tbody><tr><td style="text-align: left;"><b>1-プロパノール</b></td><td style="text-align: left;">CH₃CH₂CH₂OH</td><td style="text-align: right;">97℃</td></tr><tr><td style="text-align: left;"><b>2-プロパノール</b></td><td style="text-align: left;">CH₃CH(OH)CH₃</td><td style="text-align: right;">82℃</td></tr></tbody></table></div>
 <p class="ref-p">どちらも分子式は C₃H₈O で、ナトリウムと反応するアルコールです。<b>分類の条件では分かれません。</b>−OH が鎖の内側に付いた2-プロパノールのほうが、分子どうしが近づきにくく、沸点が低くなっています。</p>
 <p class="ref-p">ただし「酸化するとケトンになった」という条件があれば、物性を使わなくても2-プロパノールに決まります。<b>分類の条件で決まるなら、そちらを先に使いましょう。</b></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">アルコールの沸点と水素結合はアルコールのページへ</a></p>
