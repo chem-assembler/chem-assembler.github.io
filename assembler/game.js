@@ -252,6 +252,41 @@ const PHASE_CAPTIONS = {
  * ちょうど2倍まで開く。⚠ 数はここ2つだけ（`renderBond` にも `_haworthFrontBondKeys` にも書かない）。 */
 const HAWORTH_FRONT_WIDTH = 6;
 const HAWORTH_BACK_WIDTH = 3;
+/* ハース環の手前側の結合の色（キャンバスの `renderBond` とクイズ等の `renderTargetBond` が共有・v1590） */
+const HAWORTH_FRONT_COLOR = 'rgba(255,255,255,0.72)';
+/**
+ * ハース環の手前側の単結合1本を描く要素を作る（v1590）。**両端の太さが違えば台形**（テーパー）、
+ * 同じなら太い1本の線。⚠ キャンバス（`renderBond`）とクイズ・立体ビュー・分子モーダルの図
+ * （`renderTargetBond`）の**両方がここを通る** ＝ 見た目の約束を2か所に書き写さない。
+ * `sx..ey` は端を縮めたあとの座標、`ux,uy` は線の向きの単位ベクトル。
+ */
+function haworthFrontBondNode(sx, sy, ex, ey, ux, uy, w1, w2) {
+    const NS = 'http://www.w3.org/2000/svg';
+    if (w1 !== w2) {
+        const nx = -uy, ny = ux;                 // 線に直交する単位ベクトル
+        const poly = document.createElementNS(NS, 'polygon');
+        // 端1の外→端2の外→端2の内→端1の内、の順に回して台形を閉じる
+        poly.setAttribute('points',
+            `${sx + nx * w1 / 2},${sy + ny * w1 / 2} ` +
+            `${ex + nx * w2 / 2},${ey + ny * w2 / 2} ` +
+            `${ex - nx * w2 / 2},${ey - ny * w2 / 2} ` +
+            `${sx - nx * w1 / 2},${sy - ny * w1 / 2}`);
+        poly.setAttribute('fill', HAWORTH_FRONT_COLOR);
+        poly.setAttribute('class', 'svg-bond-ink svg-bond-taper');
+        poly.setAttribute('pointer-events', 'none');
+        return poly;
+    }
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', sx);
+    line.setAttribute('y1', sy);
+    line.setAttribute('x2', ex);
+    line.setAttribute('y2', ey);
+    line.setAttribute('stroke', HAWORTH_FRONT_COLOR);
+    line.setAttribute('stroke-width', String(w1));
+    line.setAttribute('class', 'svg-bond-ink');
+    line.setAttribute('pointer-events', 'none');
+    return line;
+}
 /* 水面から成分までの空き（マス）。見出し（分子の下端＋1.1〜1.65マス）が水面をまたがない幅。
  * ⚠ 平行移動は**マスの整数倍**に丸める ＝ 原子が格子点から外れない */
 const PHASE_GAP_ROWS = 3;
@@ -5465,11 +5500,13 @@ class Game {
      *   になる。左右のどちらかだけを太くする分岐を書かないので、図が左右で崩れない。
      * ⚠ **座標は1px も動かさない**（見た目専用・CLAUDE.md「検証はトポロジーのみ」）。
      *
+     * ★ `mol` を渡すと任意の分子を判定できる（v1590・クイズ・立体ビュー・分子モーダルの図
+     *   `renderMoleculeIntoSvg` 用）。省略時は従来どおり作図中の `userMolecule`。
+     *
      * @returns Map<`${atomId1}_${atomId2}`, [w1, w2]>（w1 が atomId1 側の太さ）
      */
-    _haworthFrontBondKeys() {
-        const mol = this.userMolecule;
-        const ring = this._ringAtomIdSet();
+    _haworthFrontBondKeys(mol = this.userMolecule) {
+        const ring = this._ringAtomIdSet(mol);
         if (ring.size === 0) return new Map();
         const keys = new Map();
         const seen = new Set();
@@ -5533,8 +5570,7 @@ class Game {
         return keys;
     }
 
-    _ringAtomIdSet() {
-        const mol = this.userMolecule;
+    _ringAtomIdSet(mol = this.userMolecule) {
         const inRing = new Set();
         mol.bonds.forEach(bond => {
             const visited = new Set([bond.atomId1]);
@@ -6545,7 +6581,10 @@ class Game {
     // 結合1本をミニ描画する（出力先グループを指定可能。既定はお手本モーダル。クイズ等からも流用）
     // ★ `style`（v1550・参考書の紙の図の型だけが渡す）= { width, gap } —— 教科書を測った線の太さと二重線の間隔。
     //   ⚠ 渡さなければ今までの 3 / ±2.5 / 2.2 / 1.6 のまま（アプリの画面は1つも変わらない）
-    renderTargetBond(x1, y1, x2, y2, type, isHConnection = false, targetGroup = this.targetBonds, style = null) {
+    // ★ `haworthWidths`（v1590）= ハース環の手前側だけ `[w1, w2]`（`_haworthFrontBondKeys(mol)` の値）。
+    //   キャンバスの `renderBond` と同じ約束で、手前の辺は太く・その隣は手前が太く奥が細い台形。
+    //   ⚠ 渡さなければ今までの線のまま（お手本モーダル等の呼び出しは1つも変わらない）
+    renderTargetBond(x1, y1, x2, y2, type, isHConnection = false, targetGroup = this.targetBonds, style = null, haworthWidths = null) {
         const dx = x2 - x1;
         const dy = y2 - y1;
         const len = Math.sqrt(dx*dx + dy*dy);
@@ -6571,7 +6610,9 @@ class Game {
             targetGroup.appendChild(line);
         };
 
-        if (type === 1) {
+        if (type === 1 && haworthWidths && !isHConnection) {
+            targetGroup.appendChild(haworthFrontBondNode(sx, sy, ex, ey, ux, uy, haworthWidths[0], haworthWidths[1]));
+        } else if (type === 1) {
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', sx);
             line.setAttribute('y1', sy);
@@ -9312,30 +9353,17 @@ class Game {
              *   ＝ 手前が太く奥が細い ＝ 教科書のハース図。
              * ⚠ 線（`<line>`）では端ごとに太さを変えられないので、両端が違うときだけ
              *   `<polygon>` にする。太さが同じ（一番手前の辺）なら線のまま。 */
-            const w1 = haworthWidths ? haworthWidths[0] : 3;
-            const w2 = haworthWidths ? haworthWidths[1] : 3;
-            const color = haworthWidths ? 'rgba(255,255,255,0.72)' : strokeColor;
-            if (w1 !== w2) {
-                const nx = -uy, ny = ux;                 // 線に直交する単位ベクトル
-                const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                // 端1の外→端1の内→端2の内→端2の外、の順に回して台形を閉じる
-                poly.setAttribute('points',
-                    `${sx + nx * w1 / 2},${sy + ny * w1 / 2} ` +
-                    `${ex + nx * w2 / 2},${ey + ny * w2 / 2} ` +
-                    `${ex - nx * w2 / 2},${ey - ny * w2 / 2} ` +
-                    `${sx - nx * w1 / 2},${sy - ny * w1 / 2}`);
-                poly.setAttribute('fill', color);
-                poly.setAttribute('class', 'svg-bond-ink svg-bond-taper');
-                poly.setAttribute('pointer-events', 'none');
-                this.bondsGroup.appendChild(poly);
+            if (haworthWidths) {
+                // 形は `haworthFrontBondNode`（クイズ等の `renderTargetBond` と共有・v1590）
+                this.bondsGroup.appendChild(haworthFrontBondNode(sx, sy, ex, ey, ux, uy, haworthWidths[0], haworthWidths[1]));
             } else {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', sx);
                 line.setAttribute('y1', sy);
                 line.setAttribute('x2', ex);
                 line.setAttribute('y2', ey);
-                line.setAttribute('stroke', color);
-                line.setAttribute('stroke-width', String(w1));
+                line.setAttribute('stroke', strokeColor);
+                line.setAttribute('stroke-width', '3');
                 line.setAttribute('pointer-events', 'none'); // クリック判定を透過
                 ink(line);
             }
