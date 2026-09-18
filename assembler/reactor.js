@@ -10152,6 +10152,13 @@ class Reactor {
             misses.push(part.name);
         });
         if (!applied) { g.history.pop(); this.explainReagentMiss(reagent); return { hits, misses }; }
+        /* ★ 水層の帯に「いま何を入れた層か」を出す（発注書 H）。
+         * ⚠ **効いたときだけ**書き換える —— 空振りは履歴も戻す（すぐ上）ので、
+         *   ここで字だけ変えると ↩ の戻り先と食い違う。
+         * ⚠ 字を作るのは `separationReagentLabel`（game.js）ただ1つ ＝ 瓶と食い違わない。 */
+        if (typeof separationReagentLabel === 'function') {
+            g.aqReagentLabel = separationReagentLabel(reagent);
+        }
         this.discardLastReaction();   // 「反応の前後」は1つの反応の話。混合物では名乗らない
         g.updateDrawing();
         if (g.fitSeparationView) g.fitSeparationView();

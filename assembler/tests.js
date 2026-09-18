@@ -57910,6 +57910,69 @@
         return `V141/V142/V143 の水層の粒がすべて相方のそば／CO₂ のあとの Na⁺ も隣／単独の塩の置き場 ${plain} は不変`;
     });
 
+    test('SEP10: 水層の帯に「いま何を入れた層か」が出て、入れ替えると字も変わる（発注書 H）', async (c) => {
+        /* 2026-09-17・ユーザー「**水層に （NaOH）などのステータスを表すようにしたい**」（V141〜V143）。
+         * ★ 見るのは3つ:
+         *   ① 入れる前は「水層」だけ（ふだんの画に1語も足さない）
+         *   ② 瓶を押すと帯と札の見出しが「水層（HCl）」になる
+         *   ③ **入れ替えると字も入れ替わる**（V142 は HCl → NaOH の2手）
+         * ⚠ **行は増やさない**ので、帯の文字の**数**が増えていないことも見る
+         *   （説明の行が足されると、短尺の画で字が小さくなる）。 */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, R = W.reactor;
+        const bottle = id => {
+            const b = W.REAGENTS.find(r => r.id === id);
+            assert(b, `瓶 ${id} が無い`);
+            return b;
+        };
+        const bandTexts = () => [...D.querySelectorAll('#bonds-group text')].map(t => t.textContent);
+        const aqBand = () => bandTexts().find(t => /^水層/.test(t));
+        const aqHead = () => {
+            const row = [...D.querySelectorAll('.sep-row')].find(r => r.dataset.phase === 'aq');
+            assert(row, '帯に水層の行が無い');
+            return row.querySelector('.sep-layer-name').textContent;
+        };
+
+        sepSetup(c, ['アニリン', 'ニトロベンゼン']);
+        g.startSeparation();
+        const before = bandTexts().length;
+        assert(aqBand() === '水層', `① 何も入れていないのに帯に字が付いている: ${aqBand()}`);
+        assert(aqHead() === '水層', `① 札の見出しにも字が付いている: ${aqHead()}`);
+
+        // ---- ② 塩酸を入れる → 帯と見出しに（HCl）
+        R.applyToMixture(bottle('hcl'));
+        g.updateDrawing();
+        assert(aqBand() === '水層（HCl）', `② 帯が「水層（HCl）」にならない: ${aqBand()}`);
+        assert(aqHead() === '水層（HCl）', `② 札の見出しが変わらない: ${aqHead()}`);
+        assert(bandTexts().length === before,
+            `★ 帯の文字が ${before} → ${bandTexts().length} に増えた（行を増やさない約束）`);
+        // ★ 否定対照: 有機層の側には試薬の字を付けない
+        assert(bandTexts().some(t => /^有機層/.test(t) && !/HCl/.test(t)),
+            `★ 有機層の帯にまで試薬の名前が付いた（${bandTexts().join(' / ')}）`);
+
+        // ---- ③ 入れ替えると字も入れ替わる（V142 の2手目）
+        R.applyToMixture(bottle('naoh_aq'));
+        g.updateDrawing();
+        assert(aqBand() === '水層（NaOH）',
+            `③ 試薬を入れ替えたのに帯が変わらない（末尾の aq も落とす）: ${aqBand()}`);
+
+        // ---- ④ ↩ で図が戻るなら字も戻る（「入れる前」の画に「入れた後」の名前を残さない）
+        g.undo();
+        g.updateDrawing();
+        assert(aqBand() === '水層（HCl）', `④ ↩ で帯の字が戻らない: ${aqBand()}`);
+
+        // ---- ⑤ 炭酸水素ナトリウムでも同じ道を通る（発注書の3つ目の例）
+        c.reset();
+        sepSetup(c, ['安息香酸', 'ニトロベンゼン']);
+        g.startSeparation();
+        assert(aqBand() === '水層', '⑤ 新しい漏斗なのに前の字が残っている');
+        R.applyToMixture(bottle('nahco3'));
+        g.updateDrawing();
+        assert(aqBand() === '水層（NaHCO₃）', `⑤ NaHCO₃ が帯に出ない: ${aqBand()}`);
+        c.reset();
+        return '水層（HCl）→（NaOH）→ ↩ で（HCl）／（NaHCO₃）も同じ道／帯の行数は不変';
+    });
+
     /* ============================================================================
      * DH: ★★ 「A を脱水するとできるアルケンを書き出す」（v1516・ユーザー原文 2026-09-03）
      *

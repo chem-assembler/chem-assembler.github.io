@@ -225,6 +225,22 @@ const LABEL_CHIP_HEIGHT = 34;
 const PHASE_AQ = 'aq';
 const PHASE_ETHER = 'ether';
 const PHASE_LAYER_NAMES = { [PHASE_AQ]: '水層', [PHASE_ETHER]: '有機層（エーテル層）' };
+/* ★★ 水層の帯に「いま何を入れた層か」を添える（発注書 H・2026-09-17）。
+ *
+ * ⚠ **行を増やさない。** 足すのは**帯の中の1語だけ**（「水層」→「水層（NaOH）」）で、
+ *   説明の行も札の行も1つも増えない（memory「画面の小さい字は読まれない」）。
+ * ★ **なぜ要るか**: 分液の画は「何を入れたか」と「どの層に居るか」の2つで出来ているのに、
+ *   いままで**試薬の名前は音（ナレーション）にしか無かった** ＝ 音を切って見ると筋が追えない。
+ * ⚠ 文字は瓶の `formula` をそのまま使う（別表を作ると瓶と食い違う）。
+ *   末尾の ` aq`（「NaOH aq」）だけ落とす —— 層そのものが水溶液なので二度言わない。 */
+function layerNameWith(phase, reagentLabel) {
+    const base = PHASE_LAYER_NAMES[phase];
+    return (phase === PHASE_AQ && reagentLabel) ? `${base}（${reagentLabel}）` : base;
+}
+/** 瓶 → 帯に出す1語。⚠ **ここ1か所**（reactor から呼ぶ唯一の入口） */
+function separationReagentLabel(reagent) {
+    return String((reagent && reagent.formula) || '').replace(/\s*aq$/, '').trim() || null;
+}
 const PHASE_CAPTIONS = {
     [PHASE_AQ]: '（水層）',
     // `amine_hcl` の印（塩になったから水に溶けた、という順序を見出しでも言う）
@@ -635,6 +651,9 @@ class Game {
         this.separationActive = false;
         this.phaseDividerY = null;
         this.separationFocusId = null;  // 札から拡大した1件（スマホの形。D-I2）
+        /* いま漏斗へ入れた試薬の1語（発注書 H）。⚠ **分子のデータではない**ので原子には持たせず、
+         * 画面の状態として持つ。↩ で戻せるよう `serializeState` に1行だけ載せる。 */
+        this.aqReagentLabel = null;
 
         this.coordDisplay = document.getElementById('coord-display');
         this.btnVerify = document.getElementById('btn-verify');
@@ -1510,7 +1529,11 @@ class Game {
         return JSON.stringify({
             atoms: this.userMolecule.atoms,
             bonds: this.userMolecule.bonds,
-            deletedBonds: this.userMolecule.deletedBonds
+            deletedBonds: this.userMolecule.deletedBonds,
+            /* 水層の帯に出している試薬の1語（発注書 H）。⚠ **分子ではないが履歴には載せる** ——
+             * 載せないと ↩ で図だけ戻って帯の字が残り、「入れる前」の画に
+             * 「入れた後」の名前が付く（音を切って見る人には嘘になる）。 */
+            aqReagent: this.aqReagentLabel || null
         });
     }
 
@@ -1525,6 +1548,8 @@ class Game {
         // 履歴を巻き戻すなら反応機構の表示は無効になる。巻矢印を残すと
         // 復元した分子の上に古い矢印が浮く（検品レビュー 16）
         this.deactivateReactionMode();
+        // 水層の帯の1語も一緒に戻す（発注書 H。古い控えには無いので既定は「まだ何も入れていない」）
+        this.aqReagentLabel = state.aqReagent || null;
         // ★ 反応の印（オレンジの破線）も同じ理由でここ（v1477）。巻き戻した図は
         //   「その反応で変わった図」ではないので、印だけ残ると復元した分子の上に古い丸が浮く。
         //   ⚠ 下の `dropStaleHighlights()` では足りない —— 巻き戻しても**原子は生きている**
@@ -7806,6 +7831,8 @@ class Game {
         this.phaseDividerY = Math.round((bottom + GRID_SIZE * PHASE_GAP_ROWS) / GRID_SIZE) * GRID_SIZE;
         this.separationActive = true;
         this.separationFocusId = null;
+        // 新しい漏斗 ＝ まだ何も入れていない（帯の1語は瓶を押してから出る・発注書 H）
+        this.aqReagentLabel = null;
         // すでに `aq` の印が付いている成分は、面を開いた時点で水層へ降ろす
         this.splitMolecules().forEach(part => {
             if (this.phaseOfPart(part) === PHASE_AQ) this.movePartToPhase(part.atoms.map(a => a.id), PHASE_AQ);
@@ -7924,8 +7951,8 @@ class Game {
             t.textContent = text;
             this.bondsGroup.appendChild(t);
         };
-        put(PHASE_LAYER_NAMES[PHASE_ETHER], y - 6 * s, 'auto');
-        put(PHASE_LAYER_NAMES[PHASE_AQ], y + 6 * s, 'hanging');
+        put(layerNameWith(PHASE_ETHER, this.aqReagentLabel), y - 6 * s, 'auto');
+        put(layerNameWith(PHASE_AQ, this.aqReagentLabel), y + 6 * s, 'hanging');
     }
 
     /**
@@ -7965,7 +7992,7 @@ class Game {
             row.dataset.phase = phase;
             const head = document.createElement('span');
             head.className = 'sep-layer-name';
-            head.textContent = PHASE_LAYER_NAMES[phase];
+            head.textContent = layerNameWith(phase, this.aqReagentLabel);
             row.appendChild(head);
             if (!here.length) {
                 const empty = document.createElement('span');
