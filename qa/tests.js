@@ -2804,18 +2804,21 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC, USAGE_TEXT) {
     assert(!bad.length, "上書きの記録が欠けている: " + bad.join(" "));
   });
 
-  // 上書き6件。v115 で2件、2026-09-17 のユーザー決定「記録してください」で過去の3件
+  // 上書き8件。v115 で2件、2026-09-17 のユーザー決定「記録してください」で過去の3件
   // （git の履歴に「ユーザーの判断」と残っていたのに表に無かったもの）を足した。
   // ⚠ **件数を固定する**: 黙って1件消えても、機械の目安と一致する項目（下の3件はどれも一致）は
   //   「記録の無い食い違い」の検査に掛からない ＝ ここでしか気づけない
   // v119 で1件（等電点。2026-09-18 のユーザー指摘「Lv1 ではない」）。⚠ 新しい上書きは末尾に足す（下の slice(2, 5) が過去の3件を指す）
+  // v139 で2件（フルクトースを「還元性を示す」Lv1 と「なぜ」Lv3 に割った。2026-09-18 のユーザー決定）
   var OVERRIDES = [
     ["org.aro.naphthalene-oxidation", 4, 3, "2026-09-15", /v112/],
     ["org.phenol.picric", 3, 2, "2026-09-15", /v112/],
     ["org.anal.detect-s", 3, 2, "2026-09-11", /v108（8d6065e7）/],
     ["org.fat.saponification-value", 4, 3, "2026-09-11", /v110（c75fdc9e）/],
     ["org.fat.iodine-value", 4, 3, "2026-09-11", /v110（c75fdc9e）/],
-    ["org.bio.isoelectric-point", 1, 2, "2026-09-19", /v119/]
+    ["org.bio.isoelectric-point", 1, 2, "2026-09-19", /v119/],
+    ["org.bio.fructose", 2, 1, "2026-09-19", /v139/],
+    ["org.bio.fructose-reducing", 2, 3, "2026-09-19", /v139/]
   ];
   /** 上書きの記録を OVERRIDES と突き合わせ、問題点の一覧を返す（否定対照でも同じ関数を使う） */
   function overrideProblems(rs) {
@@ -2836,7 +2839,7 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC, USAGE_TEXT) {
     });
     return errs;
   }
-  t("表: 上書き6件（ナフタレンの空気酸化・ピクリン酸・硫黄の検出・けん化価・ヨウ素価・等電点）が理由つきで記録されている", function () {
+  t("表: 上書き8件（ナフタレンの空気酸化・ピクリン酸・硫黄の検出・けん化価・ヨウ素価・等電点・フルクトースの2件）が理由つきで記録されている", function () {
     var errs = overrideProblems(rows);
     assert(!errs.length, errs.slice(0, 3).join(" / "));
     // 否定対照: 1件（硫黄の検出）の上書きを外した写し・日付をずらした写しでは、この検査が赤になる
