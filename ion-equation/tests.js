@@ -3019,8 +3019,9 @@ function runModelTests() {
 
   /* 半反応式の正解から、人が入れる3つの項の入力値を作る（テストの中でだけ使う道具）。
      ⚠ **アプリはこれを持たない** —— 採点は原子・電荷の保存と酸化数の変化だけで閉じている。 */
-  const halfTruth = (id) => {
-    const hr = HALF_REACTIONS[id];
+  const halfTruth = (id, form) => {
+    // ★ 書き方（2026-09-18）。HNO₃ で組むのか NO₃⁻ で組むのかで、入れる H⁺ の数が変わる
+    const hr = form ? halfWritingOf(id, form) : HALF_REACTIONS[id];
     const v = {};
     for (const k of HALF_AUX) {
       v[k] = {};
@@ -3037,7 +3038,8 @@ function runModelTests() {
     const list = halfBuildList();
     assert(list.length >= 20, "出題できる式が少なすぎる: " + list.length);
     for (const task of list) {
-      const hr = HALF_REACTIONS[task.id];
+      // ⚠ 見るのは**その出題が使っている書き方**（本体が分子の形の式がある）
+      const hr = task.terms;
       for (const t2 of [...hr.left, ...hr.right]) {
         if (t2.sp === "e-") continue;
         // ⚠ 有機・断片は手順B の「1個あたりの動き」が1つに決まらないので母数から外れている
@@ -3065,8 +3067,8 @@ function runModelTests() {
       for (const t2 of [...task.skeleton.left, ...task.skeleton.right]) {
         assert(!HALF_AUX.includes(t2.sp), task.id + ": 骨格に " + SPECIES[t2.sp].disp + " が残っている: " + disp);
       }
-      // ⚠ 完成した式（hr.disp）そのものは、骨格からは決して作れない
-      assert(disp !== HALF_REACTIONS[task.id].disp, task.id + ": 骨格が完成した式と同じ");
+      // ⚠ 完成した式（その書き方の disp）そのものは、骨格からは決して作れない
+      assert(disp !== halfWritingOf(task.id, task.form).disp, task.id + ": 骨格が完成した式と同じ");
     }
     assert(halfSkeletonDisp(halfBuildTaskOf("Cr2O7_red").skeleton) === "Cr₂O₇²⁻ → 2 Cr³⁺",
       "骨格の書き方が違う: " + halfSkeletonDisp(halfBuildTaskOf("Cr2O7_red").skeleton));
@@ -3077,7 +3079,7 @@ function runModelTests() {
        ⚠ **e⁻ の数を酸化数から導いた値が electronsOf と一致する**（独立の帳簿が2つ合う）。 */
     let n = 0;
     for (const task of halfBuildList()) {
-      const v = halfTruth(task.id);
+      const v = halfTruth(task.id, task.form);
       for (const p of ["A", "B"]) {
         assert(halfBuildDone(task, p, v), task.id + "/" + p + ": 正しい式なのに完成にならない");
         assert(halfStepIndex(task, p, v) === HALF_PROCS[p].steps.length,
@@ -3271,13 +3273,14 @@ function runModelTests() {
 
   /* ---- 半反応式の一覧 halfCatalog（2026-09-17・段1）---- */
 
-  t("CATALOG: 全36件が1件ずつ載り、メタの鍵と HALF_REACTIONS が1対1で、グループが決まっている", () => {
+  t("CATALOG: 全47件が1件ずつ載り、メタの鍵と HALF_REACTIONS が1対1で、グループが決まっている", () => {
     const cat = halfCatalog();
     const hrIds = Object.keys(HALF_REACTIONS), metaIds = Object.keys(HALF_CATALOG_META);
-    assert(cat.length === 36 && hrIds.length === 36, "件数が 36 でない: 一覧 " + cat.length + " / 式 " + hrIds.length);
+    // ⚠ 2026-09-18（段2）: 36 → 47。電池・電気分解の電極と、金属の単体・臭素を足した
+    assert(cat.length === 47 && hrIds.length === 47, "件数が 47 でない: 一覧 " + cat.length + " / 式 " + hrIds.length);
     for (const id of hrIds) assert(HALF_CATALOG_META[id], id + ": 一覧のメタに無い（足した式が一覧から漏れる）");
     for (const id of metaIds) assert(HALF_REACTIONS[id], id + ": メタにあるのに式が無い");
-    assert(new Set(cat.map((e) => e.id)).size === 36, "同じ式が2回載っている");
+    assert(new Set(cat.map((e) => e.id)).size === 47, "同じ式が2回載っている");
     for (const e of cat) {
       assert(SPECIES[e.sp], e.id + ": 化学式の欄の物質が SPECIES に無い: " + e.sp);
       assert(HALF_SUBJECTS[e.subject] && HALF_LEVELS[e.level] && HALF_SECTIONS[e.section],
@@ -3293,10 +3296,10 @@ function runModelTests() {
     }
     // 件数（グループ分けの案をそのまま固定する。変えるときはここと報告の表を一緒に直す）
     const n = (f) => cat.filter(f).length;
-    assert(n((e) => e.subject === "basic") === 26 && n((e) => e.subject === "chem") === 10,
-      "科目の内訳が 26/10 でない: " + n((e) => e.subject === "basic") + "/" + n((e) => e.subject === "chem"));
-    assert(halfCatalogFilter(cat, { upTo: "basic", maxLevel: 1 }).length === 20, "化学基礎・まず覚える が 20 件でない");
-    assert(halfCatalogFilter(cat, { upTo: "chem" }).length === 36, "化学まで で全件にならない");
+    assert(n((e) => e.subject === "basic") === 28 && n((e) => e.subject === "chem") === 19,
+      "科目の内訳が 28/19 でない: " + n((e) => e.subject === "basic") + "/" + n((e) => e.subject === "chem"));
+    assert(halfCatalogFilter(cat, { upTo: "basic", maxLevel: 1 }).length === 21, "化学基礎・まず覚える が 21 件でない");
+    assert(halfCatalogFilter(cat, { upTo: "chem" }).length === 47, "化学まで で全件にならない");
     // ★ スライド p.38・39 の表の行は、どれも化学基礎の「まず覚える」
     for (const id of ["MnO4_red", "Cr2O7_red", "NO3_red", "NO3_red_conc", "H2SO4_hot_red", "H2O2_red", "SO2_red", "Cl2_red",
       "oxalate_ox", "Fe2_ox", "Sn2_ox", "H2S_ox", "I_ox", "H2O2_ox", "SO2_ox"]) {
@@ -3316,7 +3319,7 @@ function runModelTests() {
     }
     // ★ 否定対照: 化学基礎だけに絞ると、電気分解と有機が消える
     const basic = halfCatalogFilter(cat, { upTo: "basic" });
-    assert(!basic.some((e) => e.section === "electrolysis" || e.section === "organic"), "化学基礎だけなのに化学の式が残る");
+    assert(!basic.some((e) => ["electrolysis", "battery", "organic"].includes(e.section)), "化学基礎だけなのに化学の式が残る");
     assert(!halfCatalogFilter(cat, { upTo: "chem", maxLevel: 2 }).some((e) => e.level === 3), "レベル2までで発展が残る");
   });
 
@@ -3333,34 +3336,57 @@ function runModelTests() {
     assert(halfTermsDisp(byId("O3_red").core.left, byId("O3_red").core.right) === "O₃ → O₂", "O₃ の前後が O₃ → O₂ でない");
     // 水が主役の式は、水が前の物質として残る（辺を空にしない）
     assert(halfTermsDisp(byId("H2O_ox").core.left, byId("H2O_ox").core.right) === "2H₂O → O₂", "水の酸化の前後");
-    // 分子の形。★ 項で持つので検算できる
-    const checkMol = (id, mol) => {
+    /* ★ 書き方が2通りある式（2026-09-18・ユーザーの決定「どちらで書いてもよい」）。
+       ⚠ 項で持つので**もう一方の書き方も検算できる** —— つり合い・e⁻ の数・e⁻ の辺が本体と同じこと。 */
+    const checkForm = (id, f) => {
       const hr = HALF_REACTIONS[id];
-      if (!compareSides(mol.left, mol.right).balanced) return "つり合わない";
-      if (electronsOf(mol) !== electronsOf(hr)) return "e⁻ の数が違う";
+      if (!compareSides(f.left, f.right).balanced) return "つり合わない";
+      if (electronsOf(f) !== electronsOf(hr)) return "e⁻ の数が違う";
       const eSide = (x) => (x.left.some((t2) => t2.sp === "e-") ? "left" : "right");
-      if (eSide(mol) !== eSide(hr)) return "e⁻ の辺が違う";
-      if (![...mol.left, ...mol.right].some((t2) => t2.sp === HALF_CATALOG_META[id].sp)) return "分子の形に物質が出てこない";
+      if (eSide(f) !== eSide(hr)) return "e⁻ の辺が違う";
       return null;
     };
-    const withMol = cat.filter((e) => e.molecular).map((e) => e.id);
-    assert(JSON.stringify(withMol) === JSON.stringify(["NO3_red", "NO3_red_conc", "oxalate_ox"]),
-      "分子の形を持つ式が HNO₃×2・H₂C₂O₄ でない: " + withMol.join(","));
-    for (const id of withMol) {
-      const bad = checkMol(id, byId(id).molecular);
-      assert(!bad, id + ": 分子の形が " + bad);
+    const twoWays = cat.filter((e) => e.forms.length > 1).map((e) => e.id);
+    assert(JSON.stringify(twoWays) === JSON.stringify(["NO3_red", "NO3_red_conc", "H2SO4_hot_red", "oxalate_ox"]),
+      "書き方が2通りある式が 硝酸×2・熱濃硫酸・シュウ酸 でない: " + twoWays.join(","));
+    for (const e of cat) {
+      assert(e.forms.length >= 1 && e.forms[0].main, e.id + ": 本体の書き方が先頭に来ていない");
+      assert(e.disp === e.forms[0].disp, e.id + ": 一覧に出す式が本体の書き方でない");
+      for (const f of e.forms) {
+        const bad = checkForm(e.id, f);
+        assert(!bad, e.id + "/" + f.key + ": 書き方が " + bad);
+        // どちらの書き方でも、係数決定で手順A・B の両方が通る（＝ どちらで書いても正解）
+        const task = halfBuildTaskOf(e.id, { form: f.key });
+        if (!task) continue;
+        const v = halfTruth(e.id, f.key);
+        for (const p of ["A", "B"]) {
+          assert(halfBuildDone(task, p, v), e.id + "/" + f.key + "/" + p + ": その書き方で完成にならない");
+        }
+      }
     }
-    assert(byId("NO3_red").molecular.disp === "HNO₃ ＋ 3H⁺ ＋ 3e⁻ → NO ＋ 2H₂O", "希硝酸の分子の形: " + byId("NO3_red").molecular.disp);
-    assert(byId("oxalate_ox").molecular.disp === "H₂C₂O₄ → 2CO₂ ＋ 2H⁺ ＋ 2e⁻", "シュウ酸の分子の形: " + byId("oxalate_ox").molecular.disp);
-    // 熱濃硫酸は式そのものが分子の形
-    const h2so4 = cat.filter((e) => e.molecularIsMain).map((e) => e.id);
-    assert(JSON.stringify(h2so4) === JSON.stringify(["H2SO4_hot_red"]), "式そのものが分子の形の回: " + h2so4.join(","));
+    /* ★ ユーザーの決定そのもの（2026-09-18）:
+         硝酸は**分子の形が本体**・イオンの形も正解／熱濃硫酸は H₂SO₄ が本体・イオンの形も正解 */
+    assert(byId("NO3_red").disp === "HNO₃ ＋ 3H⁺ ＋ 3e⁻ → NO ＋ 2H₂O", "希硝酸の本体: " + byId("NO3_red").disp);
+    assert(byId("NO3_red").forms[1].disp === "NO₃⁻ ＋ 4H⁺ ＋ 3e⁻ → NO ＋ 2H₂O", "希硝酸のもう一つの書き方");
+    assert(byId("NO3_red_conc").disp === "HNO₃ ＋ H⁺ ＋ e⁻ → NO₂ ＋ H₂O", "濃硝酸の本体: " + byId("NO3_red_conc").disp);
+    assert(byId("NO3_red_conc").forms[1].disp === "NO₃⁻ ＋ 2H⁺ ＋ e⁻ → NO₂ ＋ H₂O", "濃硝酸のもう一つの書き方");
+    assert(byId("H2SO4_hot_red").disp === "H₂SO₄ ＋ 2H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O", "熱濃硫酸の本体");
+    assert(byId("H2SO4_hot_red").forms[1].disp === "SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O",
+      "熱濃硫酸のイオンの形が認められていない: " + byId("H2SO4_hot_red").forms[1].disp);
+    assert(byId("oxalate_ox").disp === "C₂O₄²⁻ → 2CO₂ ＋ 2e⁻", "シュウ酸の本体");
+    assert(byId("oxalate_ox").forms[1].disp === "H₂C₂O₄ → 2CO₂ ＋ 2H⁺ ＋ 2e⁻", "シュウ酸の分子の形");
+    // ⚠ 足し合わせに使う形（HALF_REACTIONS）は動かさない ＝ 組み立てモードの筆算が変わらない
+    assert(byId("NO3_red").baseDisp === HALF_REACTIONS["NO3_red"].disp, "足し合わせに使う形が入れ替わった");
+    assert(HALF_REACTIONS["NO3_red"].left.some((t2) => t2.sp === "NO3-"), "組み立ての式が NO₃⁻ でなくなった");
     assert(HALF_REACTIONS["H2SO4_hot_red"].left.some((t2) => t2.sp === "H2SO4"), "熱濃硫酸の式が H₂SO₄ で書かれていない");
-    // ★ 否定対照: 検算の道具が壊れた分子の形を落とす（H⁺ を 4 のままにした希硝酸・e⁻ を右に置いたもの）
-    assert(checkMol("NO3_red", { left: [{ sp: "HNO3", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 3 }],
+    // ★ 否定対照: 検算の道具が壊れた書き方を落とす（H⁺ を 4 のままにした分子形・e⁻ を右に置いたもの）
+    assert(checkForm("NO3_red", { left: [{ sp: "HNO3", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 3 }],
       right: [{ sp: "NO", n: 1 }, { sp: "H2O", n: 2 }] }), "H⁺ の数を間違えた分子の形が通った");
-    assert(checkMol("oxalate_ox", { left: [{ sp: "H2C2O4", n: 1 }, { sp: "e-", n: 2 }],
+    assert(checkForm("oxalate_ox", { left: [{ sp: "H2C2O4", n: 1 }, { sp: "e-", n: 2 }],
       right: [{ sp: "CO2", n: 2 }, { sp: "H+", n: 2 }] }), "e⁻ を逆の辺に置いた分子の形が通った");
+    // ★ 無い書き方は引けない（「どちらでもよい」は、この4本だけの話）
+    assert(!halfWritingOf("MnO4_red", "molecular"), "書き方を持たない式に別の書き方が生えた");
+    assert(halfWritingOf("MnO4_red").disp === HALF_REACTIONS["MnO4_red"].disp, "書き方1通りの式の本体が式そのものでない");
   });
 
   t("CATALOG: 足した2本（Sn²⁺ → Sn⁴⁺・Cl₂ → 2Cl⁻）が保存し、係数決定で手順A・B の両方が通る", () => {
@@ -3394,6 +3420,107 @@ function runModelTests() {
     assert(!IONIZATION_SERIES.includes("Sn"), "イオン化傾向の並びに Sn が混ざった");
   });
 
+  /* ---- 足した11本（2026-09-18・段2。電池・電気分解の電極と、金属の単体・臭素）---- */
+
+  t("CATALOG: 足した11本が保存し、酸化数の変化と e⁻ の数が合い、グループが決まっている", () => {
+    /* [id, 変わる元素, from, to, e⁻ の数, 係数決定の出題になるか] */
+    const ADDED = [
+      ["Na_ox", "Na", 0, 1, 1, true],
+      ["H_ox", "H", 0, 1, 2, false],            // 骨格が片側だけ（H⁺ 自身が主役）
+      ["O2_red", "O", 0, -2, 4, false],         // 骨格が片側だけ（H₂O 自身が主役）
+      ["O2_red_basic", "O", 0, -2, 4, false],   // OH⁻ を持つので既定では出題外
+      ["H2_ox_basic", "H", 0, 1, 2, false],     // 同上
+      ["Pb_ox", "Pb", 0, 2, 2, true],
+      ["PbO2_red", "Pb", 4, 2, 2, true],
+      ["Al_red", "Al", 3, 0, 3, true],
+      ["C_ox", "C", 0, 4, 4, true],
+      ["C_ox_CO", "C", 0, 2, 2, true],
+      ["Br_ox", "Br", -1, 0, 2, true],
+    ];
+    const cat = halfCatalog();
+    for (const [id, el, from, to, e, buildable] of ADDED) {
+      const hr = HALF_REACTIONS[id];
+      assert(hr, id + ": 式が無い");
+      assert(compareSides(hr.left, hr.right).balanced, id + ": 原子か電荷がつり合わない");
+      const ch = oxChangeOfHalf(hr).filter((c) => c.from !== c.to);
+      assert(ch.length === 1 && !ch[0].ambiguous && ch[0].el === el && ch[0].from === from && ch[0].to === to,
+        id + ": 酸化数の変化が違う: " + JSON.stringify(ch));
+      assert(electronsOf(hr) === e, id + ": e⁻ の数が " + electronsOf(hr));
+      const delta = ch[0].count * (ch[0].to - ch[0].from);
+      assert(delta === (hr.kind === "oxidation" ? e : -e), id + ": Δ酸化数と e⁻ の帳尻が合わない");
+      // 一覧に載り、グループが表の中にある
+      const row = cat.find((x) => x.id === id);
+      assert(row && HALF_SECTIONS[row.section] && HALF_SUBJECTS[row.subject] && HALF_LEVELS[row.level],
+        id + ": 一覧のグループが決まっていない");
+      // ★ 係数決定で解けること（解ける式は手順A・B の両方で最後まで通る）
+      const task = halfBuildTaskOf(id);
+      assert(!!task === buildable, id + ": 係数決定の出題になるかの見立てが違う");
+      if (!task) continue;
+      const v = halfTruth(id);
+      for (const p of ["A", "B"]) {
+        assert(halfBuildDone(task, p, v), id + "/" + p + ": 正しい式で完成にならない");
+        assert(halfStepIndex(task, p, v) === HALF_PROCS[p].steps.length, id + "/" + p + ": 段が最後まで進まない");
+      }
+      // ★ 否定対照: e⁻ を逆の辺・1個ずらすと通らない
+      const rev = JSON.parse(JSON.stringify(v));
+      rev["e-"] = task.eSide === "left" ? { right: e } : { left: e };
+      const off = JSON.parse(JSON.stringify(v));
+      off["e-"] = { [task.eSide]: e + 1 };
+      for (const p of ["A", "B"]) {
+        assert(!halfBuildDone(task, p, rev), id + "/" + p + ": e⁻ を逆の辺に置いても通った");
+        assert(!halfBuildDone(task, p, off), id + "/" + p + ": e⁻ を1個ずらしても通った");
+      }
+    }
+    // 電池・電気分解の電極は「化学」。⚠ 化学基礎だけに絞ると消える
+    for (const id of ["Pb_ox", "PbO2_red", "O2_red", "O2_red_basic", "H2_ox_basic", "Br_ox", "Al_red", "C_ox", "C_ox_CO"]) {
+      assert(cat.find((x) => x.id === id).subject === "chem", id + ": 化学基礎に入っている");
+    }
+    assert(cat.filter((x) => x.section === "battery").length === 5, "電池の電極が5本でない");
+    /* ⚠ **梯子には載せない**（電源や導線が e⁻ を運ぶ反応は強さ比べでは決まらない）。
+       ★ ただし Al³⁺/Al のように、既に梯子にある対の**裏返し**は順位を持ったままでよい
+       —— 順位は対に付いていて、式の向きには付いていないから */
+    for (const id of ["Pb_ox", "PbO2_red", "O2_red_basic", "Br_ox", "C_ox", "C_ox_CO"]) {
+      assert(rankOfHalf(id) === null, id + ": 電極の式に順位が付いた");
+    }
+    // 電池の電極を足しても、板として選べる金属は増えない（判断できない相手を候補に出さない）
+    assert(!BATTERY_ELECTRODES.includes("Pb") && !BATTERY_ELECTRODES.includes("Na"),
+      "式を足しただけで電池の板が増えた: " + BATTERY_ELECTRODES.join(","));
+    // イオン化傾向の並びも動かない（梯子に対を足していないので）
+    assert(!IONIZATION_SERIES.includes("Na") && !IONIZATION_SERIES.includes("Pb"),
+      "イオン化傾向の並びが動いた: " + IONIZATION_SERIES.join(","));
+  });
+
+  /* ---- 出題の順（一覧 → 係数決定へ渡す列。2026-09-18）---- */
+
+  t("QUEUE: 順に・ランダム・×だけ の3通りで、渡す列が決まる", () => {
+    const cat = halfCatalog();
+    const seq = halfQueueIds(cat, "seq");
+    // ⚠ 係数決定にならない式は列に入れない（押しても解けない式でそこが行き止まりになる）
+    assert(seq.length === halfBuildList().length, "順に の列が出題の数と違う: " + seq.length);
+    for (const id of seq) assert(halfBuildTaskOf(id), id + ": 解けない式が列に入っている");
+    assert(JSON.stringify(seq) === JSON.stringify(cat.filter((e) => e.build).map((e) => e.id)),
+      "順に の列が一覧の並びと違う");
+    // ランダムは並べ替えるだけ（顔ぶれは変わらない）。乱数は差し替えて並びを固定する
+    let k = 0;
+    const rnd = () => [0.9, 0.1, 0.5, 0.0, 0.7][(k++) % 5];
+    const rand = halfQueueIds(cat, "random", null, rnd);
+    assert(rand.length === seq.length && new Set(rand).size === rand.length, "ランダムで件数か顔ぶれが変わった");
+    assert(JSON.stringify([...rand].sort()) === JSON.stringify([...seq].sort()), "ランダムで顔ぶれが変わった");
+    assert(JSON.stringify(rand) !== JSON.stringify(seq), "ランダムなのに並びが同じ");
+    // × だけ
+    const marks = { "MnO4_red": "x", "Cr2O7_red": "o", "Zn_ox": "x" };
+    const ng = halfQueueIds(cat, "ng", (id) => marks[id] || null);
+    assert(JSON.stringify([...ng].sort()) === JSON.stringify(["MnO4_red", "Zn_ox"].sort()),
+      "× だけの列が違う: " + ng.join(","));
+    // ★ 否定対照: 印が1つも無ければ列は空（＝「まだ × は無い」と言える）
+    assert(halfQueueIds(cat, "ng", () => null).length === 0, "印が無いのに × の列が出た");
+    // 絞り込んだ一覧を渡せば、その中だけの列になる
+    const basic = halfCatalogFilter(cat, { upTo: "basic", maxLevel: 1 });
+    const bq = halfQueueIds(basic, "seq");
+    assert(bq.length && bq.length < seq.length, "絞り込みが列に効いていない");
+    assert(!bq.some((id) => halfCatalog().find((e) => e.id === id).subject === "chem"), "化学基礎だけの列に化学が混ざった");
+  });
+
   /* ★ 枠を全部見せる（2026-08-28）ときに、どこまでなら漏れないかの実測を固定する。
      ⚠ **この2つの数が入れ替わったら、伏せる場所を決め直すこと。** */
   t("HALFBUILD: ★枠を先に見せても漏れない／⚠ 先の段の採点の文だけは緑が嘘になる", () => {
@@ -3411,14 +3538,16 @@ function runModelTests() {
         }
       }
     }
-    // ⚠ 2026-09-17: 88 → 96 / 52 → 58（出題に Sn2_ox・Cl2_red の2件が入った。2件×2手順×2段 ＝ +8）
-    assert(total === 96, "先の段の総数が変わった: " + total);
+    /* ⚠ 2026-09-17: 88 → 96 / 52 → 58（出題に Sn2_ox・Cl2_red の2件が入った。2件×2手順×2段 ＝ +8）
+       ⚠ 2026-09-18: 96 → 124（電池・電気分解の電極などで出題が 24 → 31 件。7件×2手順×2段 ＝ +28） */
+    assert(total === 124, "先の段の総数が変わった: " + total);
     assert(digits === 0, "先の段の採点の文に数が出ている（枠より先に文が漏らす）: " + digits);
     // ⚠ ここが「文だけは伏せる」根拠。0 になったら伏せる必要が消える ＝ 決め直してよい
     /* ⚠ 2026-09-17（段1.5）: 58 → 40。手順B の順番を e⁻ → H⁺（電荷）→ H₂O に変えたため。
        ②の電荷の段は 0 を入れても e⁻ を置いていなければ合わず緑にならない回が増え、
        ③の H₂O の段は O と H の両方を見るので緑になりにくい。伏せる理由（嘘の緑が 0 でない）は変わらない */
-    assert(greens === 40, "先の段が嘘の緑になる件数が変わった: " + greens);
+    // ⚠ 2026-09-18（段2）: 40 → 53。出題が 24 → 31 件に増えたぶん
+    assert(greens === 53, "先の段が嘘の緑になる件数が変わった: " + greens);
     // ⚠ 見出しには数が1つも出てこない（だから見出しは先に出してよい）
     const heads = ["A", "B"].map((p) => HALF_PROCS[p].steps.map((s) => s.head).join(" ")).join(" ");
     assert(!/[0-9]/.test(heads), "段の見出しに数が出ている: " + heads);
@@ -10943,6 +11072,83 @@ async function runHalfBuildUITests(iframe) {
     }
   });
 
+  /* ★ 上の帯（2026-09-18・ユーザーの指摘「①②… の帯は分かりにくい」）。
+     番号だけでは**いま何の式か**も**どこへ戻れるか**も読めなかった。 */
+  await t("HALF UI: ★いま何を組んでいるかと、戻り先が読める", async () => {
+    win.HalfBuild.goto("MnO4_red");
+    const title = doc.getElementById("stageTitle");
+    // 戻り先（一覧）が押せる
+    const back = doc.getElementById("hbBack");
+    assert(back && back.getAttribute("href") === "halflist.html", "一覧への戻り道が無い: " + (back && back.href));
+    assert(back.textContent.includes("一覧"), "戻り先が何なのか読めない: " + back.textContent);
+    // いま何本目か
+    const i = win.HalfBuild.state().taskIdx;
+    assert(title.querySelector(".hbCount").textContent === `${i + 1} 本目 / ${win.HalfBuild.count()} 本`,
+      "いま何本目かが読めない: " + title.querySelector(".hbCount").textContent);
+    // いま組んでいる式の名前と骨格（⚠ 完成した式は出さない）
+    assert(title.querySelector(".hbNowName").textContent === "過マンガン酸カリウム",
+      "式の名前が出ていない: " + title.querySelector(".hbNowName").textContent);
+    assert(title.querySelector(".hbNowEq").textContent === halfSkeletonDisp(halfBuildTaskOf("MnO4_red").skeleton),
+      "骨格が出ていない");
+    assert(!title.textContent.includes(HALF_REACTIONS["MnO4_red"].disp), "完成した式が帯に出ている");
+    // 「☰ 一覧」にも名前が出る（番号だけの帯を押す前に行き先が分かる）
+    assert($$("#stageNav button").every((b) => b.dataset.label.includes("→")), "一覧の名前に骨格が無い");
+    assert($$("#stageNav button")[i].dataset.label.includes("過マンガン酸カリウム"), "一覧の名前に物質名が無い");
+  });
+
+  /* ★ 書き方が2通りある式（2026-09-18・ユーザーの決定）。どちらで書いても正解 */
+  await t("HALF UI: ★硝酸も熱濃硫酸も、2通りのどちらで書いてもクリアできる", async () => {
+    const bar = doc.getElementById("formBar");
+    /* [id, 本体の書き方で入れる値, もう一方の書き方で入れる値] */
+    const CASES = [
+      ["NO3_red", "molecular", { "H+": 3, "H2O": 2 }, "ionic", { "H+": 4, "H2O": 2 }],
+      ["H2SO4_hot_red", "molecular", { "H+": 2, "H2O": 2 }, "ionic", { "H+": 4, "H2O": 2 }],
+    ];
+    for (const [id, mainKey, mainV, altKey, altV] of CASES) {
+      win.HalfBuild.goto(id);
+      assert(!bar.hidden, id + ": 書き方の選択が出ていない");
+      assert(bar.textContent.includes("どちらで書いてもよい"), id + ": どちらでもよいと言っていない");
+      assert(state().form === mainKey, id + ": 本体の書き方で始まっていない: " + state().form);
+      // 本体の書き方で解く（手順B: e⁻ → H⁺ → H₂O）
+      win.HalfBuild.setProc("B");
+      const e = halfBuildTaskOf(id).electrons;
+      typeInto("e-", "left", e); typeInto("H+", "left", mainV["H+"]); typeInto("H2O", "right", mainV["H2O"]);
+      assert(state().done, id + "/" + mainKey + ": 本体の書き方でクリアにならない");
+      // もう一方の書き方に替える（⚠ 入力は捨てる）
+      assert(win.HalfBuild.setForm(altKey), id + ": 書き方を替えられない");
+      assert(state().form === altKey && !state().done, id + ": 替えたのに前の入力が残っている");
+      typeInto("e-", "left", e); typeInto("H+", "left", altV["H+"]); typeInto("H2O", "right", altV["H2O"]);
+      assert(state().done, id + "/" + altKey + ": もう一方の書き方でクリアにならない");
+      // ★ 否定対照: 本体の書き方の H⁺ の数をそのまま入れても通らない（別の式になっている）
+      win.HalfBuild.setForm(mainKey);
+      typeInto("e-", "left", e); typeInto("H+", "left", altV["H+"]); typeInto("H2O", "right", altV["H2O"]);
+      assert(!state().done, id + ": 書き方が違うのに同じ数で通った");
+    }
+    // 書き方が1通りの式では、選択そのものが出ない
+    win.HalfBuild.goto("MnO4_red");
+    assert(bar.hidden, "書き方が1通りの式に選択が出ている");
+  });
+
+  /* ★ 足した式（2026-09-18・段2）が、この画面で実際に解けること */
+  await t("HALF UI: ★足した式（鉛蓄電池・溶融塩電解・臭素）が最後まで組める", async () => {
+    /* [id, 手順B で入れる値] ⚠ H₂O・H⁺ が要らない回は 0 を入れる（空欄と 0 は別） */
+    const CASES = [
+      ["Pb_ox", { "e-": ["right", 2], "H+": ["left", 0], "H2O": ["left", 0] }],
+      ["PbO2_red", { "e-": ["left", 2], "H+": ["left", 4], "H2O": ["right", 2] }],
+      ["Al_red", { "e-": ["left", 3], "H+": ["left", 0], "H2O": ["left", 0] }],
+      ["C_ox", { "e-": ["right", 4], "H+": ["left", 0], "H2O": ["left", 0] }],
+      ["Br_ox", { "e-": ["right", 2], "H+": ["left", 0], "H2O": ["left", 0] }],
+      ["Na_ox", { "e-": ["right", 1], "H+": ["left", 0], "H2O": ["left", 0] }],
+    ];
+    for (const [id, v] of CASES) {
+      assert(win.HalfBuild.goto(id), id + ": 出題に無い");
+      win.HalfBuild.setProc("B");
+      for (const key of ["e-", "H+", "H2O"]) typeInto(key, v[key][0], v[key][1]);
+      assert(state().done, id + ": 正しい数を入れてもクリアにならない — " + JSON.stringify(state()));
+      assert(!state().ngSeen, id + ": 正しい数なのに赤が出た");
+    }
+  });
+
   return results;
 }
 
@@ -11140,10 +11346,12 @@ async function runPortalUITests(iframe) {
       "束の並びが単元の順でない: " + us.map((u) => u.id).join());
     assert(/①/.test(us[0].name) && /②/.test(us[1].name) && /③/.test(us[2].name),
       "単元に番号が付いていない: " + us.map((u) => u.name).join(" / "));
-    // ③ の並び（部品3 → 組み立て2 → 応用2）。電池と電気分解が最後に対で並ぶ
+    /* ③ の並び（部品4 → 組み立て2 → 応用2）。電池と電気分解が最後に対で並ぶ
+       ⚠ 2026-09-18: 半反応式を「一覧（覚える）」と「組む」に分けたので、部品が3→4になった。
+       **一覧が先**（読む順が学ぶ順） */
     const redox = us.find((u) => u.id === "ru-redox");
     assert(redox.hrefs.join() ===
-      "oxidation.html,halfreaction.html,condition.html,redox.html,redox.html?free=1,battery.html,electrolysis.html",
+      "oxidation.html,halflist.html,halfreaction.html,condition.html,redox.html,redox.html?free=1,battery.html,electrolysis.html",
       "③ の並びが 部品→組み立て→応用 でない: " + redox.hrefs.join());
     /* ★ 中和は①と②の両方に出す（ユーザー決定）。ただし**同じ札を2枚並べない** ——
        題も行き先も違い、①のほうは「沈殿ができる」ことに着目していると分かる書き分け。 */
@@ -11388,6 +11596,183 @@ async function runPortalUITests(iframe) {
   return results;
 }
 
+/* ---- 半反応式の一覧の UI テスト（halflist.html を iframe で駆動・2026-09-18）---- */
+
+async function runHalfListUITests(iframe) {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const win = iframe.contentWindow;
+  const doc = iframe.contentDocument;
+  const $$ = (sel) => [...doc.querySelectorAll(sel)];
+  const ui = () => win.HalfList;
+  const state = () => ui().state();
+
+  /* 一覧の localStorage（印）は test.html と同じ置き場なので、触ったら必ず戻す */
+  const withMarks = async (seed, fn) => {
+    const M = win.HalfMarks;
+    let before = null;
+    try { before = win.localStorage.getItem(M.KEY); win.localStorage.setItem(M.KEY, JSON.stringify(seed)); }
+    catch (e) { /* 使えない環境ではそのまま（印は「まだ」になる） */ }
+    try { ui().render(); await fn(M); } finally {
+      try {
+        if (before === null) win.localStorage.removeItem(M.KEY); else win.localStorage.setItem(M.KEY, before);
+      } catch (e) { /* 使えない環境 */ }
+      ui().render();
+    }
+  };
+
+  /* 送り先（係数決定）を実際に開く。?q= の受け渡しを**リンクの文字列ではなく着地で**確かめる */
+  const openHalf = (href) => new Promise((r) => {
+    const f = doc.createElement("iframe");
+    f.style.cssText = "width:400px;height:300px;position:absolute;left:-9999px";
+    f.src = href + (href.includes("?") ? "&" : "?") + "nocache=" + Date.now();
+    f.onload = () => setTimeout(() => r(f), 80);
+    doc.body.appendChild(f);
+  });
+
+  await t("LIST UI: 全件がグループごとに、一覧の並びのまま出る", () => {
+    ui().setFilter({ upTo: "chem", maxLevel: 3 });
+    const s = state();
+    const cat = halfCatalog();
+    assert(s.rows.length === cat.length, "行の数が一覧の件数と違う: " + s.rows.length + " / " + cat.length);
+    // グループの見出しは HALF_SECTIONS の並び順（＝ 学ぶ順）
+    const wantSecs = Object.keys(HALF_SECTIONS).filter((k) => cat.some((e) => e.section === k));
+    assert(JSON.stringify(s.sections) === JSON.stringify(wantSecs), "グループの並びが違う: " + s.sections.join(","));
+    // 行はグループごとに固まり、その中は一覧の並びのまま
+    const want = wantSecs.flatMap((sec) => cat.filter((e) => e.section === sec).map((e) => e.id));
+    assert(JSON.stringify(s.rows) === JSON.stringify(want), "行の並びが一覧と違う");
+    // ★ 式・役・液性・e⁻ の数が読める（1行ずつ見る）
+    for (const e of cat) {
+      const row = doc.querySelector('.hlRow[data-half="' + e.id + '"]');
+      assert(row, e.id + ": 行が無い");
+      assert(row.querySelector(".hlEq").textContent === e.disp, e.id + ": 式が本体の書き方で出ていない");
+      assert(row.querySelector(".hlRole").textContent.trim(), e.id + ": 役の札が空");
+      const badges = [...row.querySelectorAll(".rxnBadge")].map((b) => b.textContent);
+      assert(badges.length === 3, e.id + ": 札が3つでない: " + badges.join("/"));
+      assert(badges[2] === "e⁻ " + e.electrons + " 個", e.id + ": e⁻ の数の札が違う");
+    }
+    // 電気分解と電池は「陽極／陰極」「負極／正極」で呼ぶ（同じ式でも場所で呼び名が変わる）
+    const roleOf = (id) => doc.querySelector('.hlRow[data-half="' + id + '"] .hlRole').textContent;
+    assert(roleOf("Cl_ox") === "陽極" && roleOf("H2O_red") === "陰極", "電気分解の役が電極の名前でない");
+    assert(roleOf("Pb_ox") === "負極" && roleOf("PbO2_red") === "正極", "電池の役が電極の名前でない");
+    assert(roleOf("MnO4_red") === "酸化剤" && roleOf("H2S_ox") === "還元剤", "溶液中の役が酸化剤・還元剤でない");
+  });
+
+  await t("LIST UI: 科目とレベルで絞ると、その中だけになる", () => {
+    ui().setFilter({ upTo: "basic", maxLevel: 3 });
+    let s = state();
+    assert(s.rows.length === halfCatalogFilter(halfCatalog(), { upTo: "basic" }).length, "化学基礎だけの件数が違う");
+    assert(!s.sections.includes("electrolysis") && !s.sections.includes("battery") && !s.sections.includes("organic"),
+      "化学基礎だけなのに化学のグループが残る: " + s.sections.join(","));
+    ui().setFilter({ upTo: "chem", maxLevel: 1 });
+    s = state();
+    assert(s.rows.every((id) => halfCatalog().find((e) => e.id === id).level === 1), "レベル1だけにならない");
+    ui().setFilter({ upTo: "chem", maxLevel: 3 });
+  });
+
+  await t("LIST UI: ★印は 〇・×・未挑戦 の3通りで出る", async () => {
+    await withMarks({ "MnO4_red": { build: "o", last: "build", at: 1 },
+                      "Cr2O7_red": { build: "x", last: "build", at: 2 } }, (M) => {
+      const mark = (id) => doc.querySelector('.hlRow[data-half="' + id + '"] .hlMark');
+      assert(M.shown("MnO4_red") === "o" && M.shown("Cr2O7_red") === "x", "置き場が読めていない（この環境では印が試せない）");
+      assert(mark("MnO4_red").textContent === "〇" && mark("MnO4_red").classList.contains("hlOk"), "〇 が出ない");
+      assert(mark("Cr2O7_red").textContent === "×" && mark("Cr2O7_red").classList.contains("hlNg"), "× が出ない");
+      assert(mark("Zn_ox").textContent === "—" && mark("Zn_ox").classList.contains("hlNone"), "未挑戦の印が出ない");
+      // 集計も3通りで出る
+      assert(/できた 1/.test(state().tally) && /間違えた 1/.test(state().tally), "集計が印と合わない: " + state().tally);
+    });
+    // ★ 否定対照: 印を消すと全部「まだ」に戻る
+    await withMarks({}, () => {
+      assert(state().marks.every((m) => m === "—"), "印を消しても 〇× が残る");
+    });
+  });
+
+  await t("LIST UI: ★出題の順（順に・ランダム・×だけ）を選んで、その列を係数決定へ渡す", async () => {
+    ui().setFilter({ upTo: "chem", maxLevel: 3 });
+    ui().setOrder("seq");
+    const seq = state();
+    assert(seq.go && seq.go.startsWith("halfreaction.html?q="), "渡す列がリンクに入っていない: " + seq.go);
+    const ids = seq.go.split("q=")[1].split("&")[0].split(",");
+    assert(JSON.stringify(ids) === JSON.stringify(seq.queue), "リンクの列と選んだ列が違う");
+    // ★ 着地で確かめる（受け取った側が、その列をその順に持っていること）
+    const f = await openHalf(seq.go);
+    const hb = f.contentWindow.HalfBuild;
+    assert(hb, "係数決定のページが開かない");
+    assert(JSON.stringify(hb.list()) === JSON.stringify(ids), "渡した列の順で開いていない: " + hb.list().join(","));
+    assert(hb.state().fromList === true, "一覧から来たことが伝わっていない");
+    f.remove();
+    // ランダムは顔ぶれが同じで並びが変わる。⚠ 押した時点で決めて URL に入れる
+    ui().setOrder("random");
+    const r1 = state().go.split("q=")[1].split("&")[0].split(",");
+    assert(JSON.stringify([...r1].sort()) === JSON.stringify([...ids].sort()), "ランダムで顔ぶれが変わった");
+    // × だけ
+    await withMarks({ "MnO4_red": { build: "x", last: "build", at: 1 } }, async () => {
+      ui().setOrder("ng");
+      const s = state();
+      assert(JSON.stringify(s.queue) === JSON.stringify(["MnO4_red"]), "× だけの列が違う: " + s.queue.join(","));
+      const f2 = await openHalf(s.go);
+      assert(JSON.stringify(f2.contentWindow.HalfBuild.list()) === JSON.stringify(["MnO4_red"]), "× だけの列で開かない");
+      f2.remove();
+    });
+    // ★ 否定対照: × が1本も無ければ、進む口は出ない（行き止まりの代わりに理由を言う）
+    await withMarks({}, () => {
+      ui().setOrder("ng");
+      assert(state().go === null, "× が無いのに進む口が出ている");
+      assert(/×/.test(state().goNote), "× が無いことを言っていない: " + state().goNote);
+    });
+    ui().setOrder("seq");
+  });
+
+  await t("LIST UI: 1本ごとの「係数を決める」は、その式から始まる", async () => {
+    ui().setFilter({ upTo: "chem", maxLevel: 3 });
+    ui().setOrder("seq");
+    const href = ui().hrefOf("Pb_ox");
+    assert(href && href.includes("half=Pb_ox"), "その式から始まるようになっていない: " + href);
+    const f = await openHalf(href);
+    const st = f.contentWindow.HalfBuild.state();
+    assert(st.id === "Pb_ox", "押した式で開かない: " + st.id);
+    f.remove();
+    // ★ 係数決定にならない式には釦を出さない（押しても解けない行き止まりを作らない）
+    for (const id of ["H2O_ox", "O2_red_basic", "H_ox"]) {
+      const row = doc.querySelector('.hlRow[data-half="' + id + '"]');
+      assert(row && !row.querySelector(".hlGoOne"), id + ": 解けない式に練習の釦が出ている");
+    }
+  });
+
+  await t("LIST UI: 書き方が2通りある式は「こう書いてもよい」と両方出る（出典は書かない）", () => {
+    ui().setFilter({ upTo: "chem", maxLevel: 3 });
+    for (const id of ["NO3_red", "NO3_red_conc", "H2SO4_hot_red", "oxalate_ox"]) {
+      const row = doc.querySelector('.hlRow[data-half="' + id + '"]');
+      const e = halfCatalog().find((x) => x.id === id);
+      assert(row.querySelector(".hlEq").textContent === e.forms[0].disp, id + ": 本体の式が違う");
+      const alt = row.querySelector(".hlAltEq");
+      assert(alt && alt.textContent === e.forms[1].disp, id + ": もう一つの書き方が出ていない");
+    }
+    // 硝酸は分子の形が本体・熱濃硫酸はイオンの形も認める（ユーザーの決定 2026-09-18）
+    const eqOf = (id) => doc.querySelector('.hlRow[data-half="' + id + '"] .hlEq').textContent;
+    const altOf = (id) => doc.querySelector('.hlRow[data-half="' + id + '"] .hlAltEq').textContent;
+    assert(eqOf("NO3_red").startsWith("HNO₃"), "希硝酸の本体が分子の形でない: " + eqOf("NO3_red"));
+    assert(altOf("NO3_red").startsWith("NO₃⁻"), "希硝酸のイオンの形が出ていない");
+    assert(eqOf("H2SO4_hot_red").startsWith("H₂SO₄"), "熱濃硫酸の本体が H₂SO₄ でない");
+    assert(altOf("H2SO4_hot_red").startsWith("SO₄²⁻"), "熱濃硫酸のイオンの形が認められていない");
+    // ⚠ 画面に出典を書かない・「教科書に載っている／いない」を断定しない
+    const text = doc.querySelector("main").textContent;
+    for (const ng of ["教科書", "出典", "参考書", "数研", "啓林"]) {
+      assert(!text.includes(ng), "画面に「" + ng + "」が出ている");
+    }
+    // ⚠ 無い機能（暗記のテスト）を予告しない
+    for (const ng of ["暗記テスト", "準備中", "近日", "coming"]) {
+      assert(!text.includes(ng), "まだ無い機能を予告している: " + ng);
+    }
+  });
+
+  return results;
+}
+
 if (typeof document !== "undefined" && document.getElementById("results")) {
   const render = (el, results, title) => {
     const okCount = results.filter((r) => r.ok).length;
@@ -11413,6 +11798,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
   const iframeE = document.getElementById("appElyz");   // B3-2: 電気分解を別ページに割った
   const iframeO = document.getElementById("appOx");
   const iframeH = document.getElementById("appHalf");
+  const iframeHL = document.getElementById("appHalfList");   // 半反応式の一覧（2026-09-18）
   const startUI = () => {
     const ready = iframe.contentWindow && iframe.contentWindow.IonEq &&
       iframeR.contentWindow && iframeR.contentWindow.RedoxEq &&
@@ -11423,6 +11809,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
       iframeL.contentWindow && iframeL.contentWindow.IonLibUI &&
       iframeO.contentWindow && iframeO.contentWindow.OxNum &&
       iframeH.contentWindow && iframeH.contentWindow.HalfBuild &&
+      iframeHL.contentWindow && iframeHL.contentWindow.HalfList &&
       iframeL.contentWindow.IonLibUI.state().total > 0;   // reactions.json の読み込み待ち
     if (!ready) { setTimeout(startUI, 100); return; }
     runReactionLibraryTests().then((rlib) =>
@@ -11433,7 +11820,8 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
               runBatteryUITests(iframeB).then((rs6) =>
               runElectrolysisUITests(iframeE).then((rs9) =>
               runOxNumUITests(iframeO).then((rs7) =>
-              runHalfBuildUITests(iframeH).then((rs8) => {
+              runHalfBuildUITests(iframeH).then((rs8) =>
+              runHalfListUITests(iframeHL).then((rs10) => {
                 const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
                 const uiEl = document.getElementById("uiresults");
                 const uiOk = render(uiEl, rs1, "UI(イオン反応)");
@@ -11445,11 +11833,12 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
                 const eOk = render(uiEl, rs9, "UI(電気分解)");
                 const oOk = render(uiEl, rs7, "UI(酸化数)");
                 const hOk = render(uiEl, rs8, "UI(半反応式)");
+                const hlOk = render(uiEl, rs10, "UI(半反応式の一覧)");
                 const total = document.getElementById("total");
-                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk && eOk && oOk && hOk;
+                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk && eOk && oOk && hOk && hlOk;
                 total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
                 total.className = allOk ? "pass" : "fail";
-              }))))))))));
+              })))))))))));
   };
   startUI();
 }
