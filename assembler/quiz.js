@@ -1491,12 +1491,18 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) 
             game.renderTargetBond(parent.x, parent.y, h.x, h.y, 1, true, bondsGroup);
         }
     });
+    /* ★ ハース環の手前の辺は太く・その隣は手前が太く奥が細い（v1590・紙のハース投影の約束）。
+     * キャンバス（drawMolecule）と同じ判定 `_haworthFrontBondKeys` を、**描いているこの mol** にかける。
+     * この関数がクイズ・立体ビュー・分子モーダルの図の共通入口なので、全部に効く（表示専用）。
+     * ⚠ 平たく描いていない環（フラン・無水マレイン酸など）は判定の縦横比の門で外れる */
+    const frontWidths = game._haworthFrontBondKeys(mol);
     mol.bonds.forEach(b => {
         const a1 = mol.atoms.find(a => a.id === b.atomId1);
         const a2 = mol.atoms.find(a => a.id === b.atomId2);
         if (!a1 || !a2) return;
         if (!plain(b.atomId1, b.atomId2) || !plain(b.atomId2, b.atomId1)) return;
-        game.renderTargetBond(a1.x, a1.y, a2.x, a2.y, b.type, false, bondsGroup);
+        game.renderTargetBond(a1.x, a1.y, a2.x, a2.y, b.type, false, bondsGroup, null,
+            frontWidths.get(`${b.atomId1}_${b.atomId2}`) || null);
     });
     if (showWedge) drawWedges(mol, hydrogens, bondsGroup);
     hydrogens.forEach(h => game.renderTargetAtom('H', h.x, h.y, atomsGroup));

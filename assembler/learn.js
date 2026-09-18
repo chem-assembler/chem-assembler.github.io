@@ -2883,7 +2883,7 @@ class IsomerPractice {
     tidySheet() {
         const r = this.game.tidyAnswerSlots();
         if (r.moved > 0) {
-            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
+            this.game.showToast(`答案 ${r.total}個を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
             return;
         }
         if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
@@ -4723,7 +4723,7 @@ class AlkylPractice {
     tidySheet() {
         const r = this.game.tidyAnswerSlots();
         if (r.moved > 0) {
-            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
+            this.game.showToast(`答案 ${r.total}個を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
             return;
         }
         if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
@@ -5802,7 +5802,7 @@ class StereoIsomerPractice {
     tidySheet() {
         const r = this.game.tidyAnswerSlots();
         if (r.moved > 0) {
-            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形も向きも変えていません。↩ で戻せます）`);
+            this.game.showToast(`答案 ${r.total}個を ${r.cols}×${r.rows} に並べ直しました（図の形も向きも変えていません。↩ で戻せます）`);
             return;
         }
         if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
