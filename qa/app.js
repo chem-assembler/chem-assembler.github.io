@@ -54,9 +54,36 @@ function slTrack(name, params) {
   }
   function rec(pid) {
     if (!progress[pid]) {
-      progress[pid] = { box: 0, right: 0, wrong: 0, seen: 0, last: 0, cRight: 0, cWrong: 0 };
+      progress[pid] = { box: 0, right: 0, wrong: 0, seen: 0, last: 0, cRight: 0, cWrong: 0,
+                        fRight: 0, fWrong: 0, missF: false, missC: false };
+    } else if (progress[pid].fRight === undefined) {
+      // 4状態より前の記録は**読むときに読み替える**（足すだけで、元の欄は1つも消さない）
+      progress[pid] = migrateRecord(progress[pid]);
     }
     return progress[pid];
+  }
+
+  /* ★ 4状態より前の記録（v2 の器・fRight を持たない）を読み替える（2026-09-19）。
+   *
+   * 旧の記録は「合計の正誤（right/wrong）」「選択問題の正誤（cRight/cWrong）」「box」だけ。
+   * - めくりの正誤は**差し引きで正確に出る**（right − cRight / wrong − cWrong）。
+   * - 「いま間違えたままか」は**順序の記録が無いので一般には分からない**。
+   *   分かるのは**最後の1回が不正解だったか**だけ: box は不正解で 1 に落ち、正解で1つ上がり、
+   *   0 は未着手のときしか無いので、`wrong > 0 && box === 1` ⇔ 最後の1回が不正解。
+   *   そのときは、不正解のあるモードに旗を立てる（両方に不正解があれば両方。どちらが最後か分からない）。
+   * - 最後が正解だった記録の、それより前の不正解は**解けたものとして扱う**（旗を立てない）。
+   * ⚠ 元の欄は書き換えない。欄を**足すだけ**。 */
+  function migrateRecord(r) {
+    var o = {};
+    Object.keys(r || {}).forEach(function (k) { o[k] = r[k]; });
+    var right = o.right || 0, wrong = o.wrong || 0, cR = o.cRight || 0, cW = o.cWrong || 0;
+    o.cRight = cR; o.cWrong = cW;
+    o.fRight = Math.max(0, right - cR);
+    o.fWrong = Math.max(0, wrong - cW);
+    var lastWasWrong = !!o.seen && wrong > 0 && o.box === 1;
+    o.missF = lastWasWrong && o.fWrong > 0;
+    o.missC = lastWasWrong && cW > 0;
+    return o;
   }
 
   // `mode` を受け取る。**box（間隔反復のスケジュール）は両モードで動かし、
@@ -64,16 +91,27 @@ function slTrack(name, params) {
   // box が「次にいつ出すか」と「定着したか」の2役を兼ねていたのを、後者だけ切り出した:
   // 想起のタイミングは暗記モードの結果でも動いてよいが、**定着の認定は測定に基づく**
   // （TAXONOMY §4 の本則。めくりの ○× は自己申告なので証明にならない）。
+  //
+  // ★ 4状態（2026-09-19・qa-map4）のために、**めくりの成績も別に数える**（fRight / fWrong）。
+  //   あわせて「間違えたまま」を**モードごとの旗**で持つ（missF / missC）。
+  //   旗は同じモードで正解すると降りる（めくりの「あやしい」はめくりの「わかった」で、
+  //   選択問題の「不正解」は選択問題の「正解」で）。
   function markResult(pid, ok, mode) {
-    var r = rec(pid);
+    applyResult(rec(pid), ok, mode);
+    saveProgress();
+  }
+  // 記録1件に結果を1つ足す（純ロジック。テストが記録を渡して試せるように分けた）
+  function applyResult(r, ok, mode) {
     r.seen++;
     r.last = Date.now();
     if (ok) { r.right++; r.box = Math.min(MAX_BOX, r.box + 1); }
     else { r.wrong++; r.box = 1; }
     if (mode === 'choice') {
-      if (ok) r.cRight++; else r.cWrong++;
+      if (ok) { r.cRight++; r.missC = false; } else { r.cWrong++; r.missC = true; }
+    } else {
+      if (ok) { r.fRight++; r.missF = false; } else { r.fWrong++; r.missF = true; }
     }
-    saveProgress();
+    return r;
   }
 
   // ---------- ユーティリティ ----------
@@ -101,57 +139,66 @@ function slTrack(name, params) {
   }
 
   // 状態の判定は**ここだけ**でやる。ホームの単元カードと習得マップが同じ関数を使う
-  // （別々に書くと「単元カードでは定着なのにマップでは学習中」というずれが出る）。
+  // （別々に書くと「単元カードでは緑なのにマップではオレンジ」というずれが出る）。
   //
-  // **定着の認定は測定モード(choice)での正解を要する**（TAXONOMY §4 の本則・2026-08-06 実装）。
-  // めくりの ○× は学習者の自己申告なので、練習であって証明ではない。
-  // 一方 box（間隔反復のスケジュール）は**両モードで上げる** —— 想起のタイミングは
-  // 暗記モードの結果でも動いてよい。この2つを分けたのが今回の変更。
-  //
-  // `unconfirmed` は「めくりでは通るが、測定でまだ確かめていない」状態。
-  // **`done` に混ぜない**（混ぜると自己申告が到達度として数えられる）が、
-  // `wip` に落とすのも実態と違う（実際そこまで積んである）ので独立の状態にした。
-  // 測定モードで1回通せば `done` になる ＝ 回復は軽い。
-  var MASTER_BOX = 4;
+  // ★ **4状態に単純化した**（2026-09-19・ユーザー指示。旧: new/wip/unconfirmed/done ＋ box≥4 の回数条件）。
+  //   new  … 未着手（一度も出していない）
+  //   wip  … 着手中（めくりの「わかった」と選択問題の「正解」の**一方だけ**がある）
+  //   miss … 間違えた（めくりの「あやしい」か選択問題の「不正解」が**まだ解けていない**）
+  //   done … どちらも正解（めくり・選択問題の両方で正解があり、間違えたままのものが無い）
+  //   ⚠ **miss は done より強い**: 両方で正解していても、あとで間違えれば miss に裏返る。
+  //     同じモードでやり直して正解すれば旗が降り、両方そろっていれば done に裏返る（オセロ）。
+  //   ⚠ box（間隔反復のスケジュール）は**状態の判定には使わない**（出題順だけに使う）。
+  //     旧の「正解を4回積む」条件は外した。
   // 判定の芯は**記録を受け取る形**で書く（localStorage を読まない）。
-  // こうするとテストが記録を直接渡して判定だけを試せる ＝ UI を4回クリックしなくてよい。
-  // `stateOf` はこれに記録を渡すだけ。**判定を2箇所に書かない**
-  function stateOfRecord(r) {
+  // テストが記録を直接渡して判定だけを試せる。`stateOf` はこれに記録を渡すだけ
+  function viewOf(r) {
+    if (!r) return null;
+    return r.fRight === undefined ? migrateRecord(r) : r;
+  }
+  function stateOfRecord(r0) {
+    var r = viewOf(r0);
     if (!r || !r.seen) return 'new';
-    if (r.box < MASTER_BOX) return 'wip';
-    return (r.cRight || 0) > 0 ? 'done' : 'unconfirmed';
+    if (r.missF || r.missC) return 'miss';
+    if ((r.fRight || 0) > 0 && (r.cRight || 0) > 0) return 'done';
+    return 'wip';
   }
   function stateOf(code) { return stateOfRecord(rec(code)); }
 
-  // **緑が点くまでに何が残っているか**を、状態と同じ芯から答える（2026-08-23）。
-  //
-  // ⚠ **きっかけは「正解しても緑が点かない」という報告。** 実測すると仕様どおりで、
-  // 測定モードで4回正解して初めて緑になった（1〜3回目はオレンジ＝学習中）。
-  // つまり不具合は判定ではなく、**画面が条件の半分しか言っていなかった**こと:
-  // マップの注記は「測定モードでの正解で認定」とは書いていたが、
-  // **`box` を MASTER_BOX まで積む必要がある＝4回要る**とはどこにも書いていなかった。
-  //
-  // 残りを数で言えば、押した人が「あと何回か」を数えられる。
-  // **`stateOfRecord` と同じ2条件をここで読む** —— 条件を2か所に書くと必ずずれる。
-  function needsOf(r) {
-    // 未着手（seen=0）は box を見ない。**`stateOfRecord` が seen を先に見るのに合わせる** ——
-    // 合わせないと「残り0なのに未着手」という、どちらを信じてよいか分からない行が作れてしまう
-    var box = (r && r.seen) ? (r.box || 0) : 0;
+  // **緑になるまでに何が残っているか**を、状態と同じ芯から答える。
+  // 各モードで「まだ正解が無い」か「間違えたまま」なら、そのモードでやることが残っている
+  function needsOf(r0) {
+    var r = viewOf(r0);
+    var seen = !!(r && r.seen);
     return {
-      rounds: Math.max(0, MASTER_BOX - box),                   // あと何回正解を積むか
-      needChoice: !(r && (r.cRight || 0) > 0)                  // 測定モードでの正解がまだか
+      flip: !seen || !!r.missF || !((r.fRight || 0) > 0),       // めくりでやることが残っている
+      choice: !seen || !!r.missC || !((r.cRight || 0) > 0),     // 選択問題でやることが残っている
+      again: !!(seen && (r.missF || r.missC))                   // 間違えたまま（やり直し）
     };
   }
+  // 画面に出す一言（先生の声掛け）。空文字 ＝ もう緑
   function needsLabel(r) {
     var n = needsOf(r);
-    if (!n.rounds && !n.needChoice) return '';                 // もう定着している
-    if (!n.rounds) return '定着まで 測定モードで1回';
-    return '定着まで あと ' + n.rounds + ' 回' +
-      (n.needChoice ? '（うち1回は測定モード）' : '');
+    if (!n.flip && !n.choice) return '';
+    var both = n.flip && n.choice;
+    if (n.again) {
+      return both ? 'めくりと選択問題でもう一度やってみよう'
+        : n.flip ? 'めくりでもう一度「わかった」にしよう'
+        : '選択問題でもう一度正解しよう';
+    }
+    if (both) return 'めくりと選択問題、両方で正解しよう';
+    return n.flip ? 'めくりでも「わかった」にしよう' : '選択問題でも正解しよう';
   }
-  var STATE_NAME = { new: '未着手', wip: '学習中', unconfirmed: '測定で未確認', done: '定着' };
-  // 帯・凡例・一覧で使う順序。**定着 → 測定で未確認 → 学習中 → 未着手**（進んだものから）
-  var STATES = ['done', 'unconfirmed', 'wip', 'new'];
+  // 最後に習得マップで見せた状態から、いまの状態への変わり方。
+  // **「間違えた」⇄「どちらも正解」だけを裏返す**（オセロ）。ほかの変化は色が変わるだけ
+  function flipKind(prev, cur) {
+    if (prev === 'done' && cur === 'miss') return 'to-miss';
+    if (prev === 'miss' && cur === 'done') return 'to-done';
+    return '';
+  }
+  var STATE_NAME = { new: '未着手', wip: '着手中', miss: '間違えた', done: 'どちらも正解' };
+  // 凡例・一覧で使う順序（進んだものから）
+  var STATES = ['done', 'wip', 'miss', 'new'];
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -166,7 +213,7 @@ function slTrack(name, params) {
       var ps = patternsOf(u.id);
       var total = ps.length;
       var mastered = ps.filter(function (p) { return stateOf(p.code) === 'done'; }).length;
-      var unconf = ps.filter(function (p) { return stateOf(p.code) === 'unconfirmed'; }).length;
+      var missed = ps.filter(function (p) { return stateOf(p.code) === 'miss'; }).length;
       var started = ps.filter(function (p) { return rec(p.code).seen > 0; }).length;
       var pct = total ? Math.round((mastered / total) * 100) : 0;
 
@@ -179,13 +226,13 @@ function slTrack(name, params) {
         '<div class="u-stat">' +
           '<span>知識項目 <b>' + total + '</b></span>' +
           '<span>着手 <b>' + started + '</b></span>' +
-          '<span>定着 <b>' + mastered + '</b></span>' +
-          // 「めくりでは通るが測定で未確認」は 0 のとき出さない（0 が並ぶと読む邪魔になる）
-          (unconf ? '<span class="u-unconf">測定で未確認 <b>' + unconf + '</b></span>' : '') +
+          '<span>' + STATE_NAME.done + ' <b>' + mastered + '</b></span>' +
+          // 「間違えた」は 0 のとき出さない（0 が並ぶと読む邪魔になる）
+          (missed ? '<span class="u-miss">' + STATE_NAME.miss + ' <b>' + missed + '</b></span>' : '') +
         '</div>' +
         '<div class="u-actions">' +
           '<button class="btn primary" data-unit="' + u.id + '" data-mode="flip">暗記モード（めくり）</button>' +
-          '<button class="btn ghost" data-unit="' + u.id + '" data-mode="choice">測定モード（複数選択）</button>' +
+          '<button class="btn ghost" data-unit="' + u.id + '" data-mode="choice">選択問題</button>' +
         '</div>';
       host.appendChild(el);
     });
@@ -208,19 +255,33 @@ function slTrack(name, params) {
   }
 
   function tallyHtml(ps) {
-    var n = { new: 0, wip: 0, unconfirmed: 0, done: 0 };
+    var n = { new: 0, wip: 0, miss: 0, done: 0 };
     ps.forEach(function (p) { n[stateOf(p.code)]++; });
-    // 幅は件数比。0件の帯は出さない（1px の線が残ると読み違える）
+    // 幅は件数比。0件の区切りは出さない（1px の線が残ると読み違える）
     var seg = STATES.filter(function (k) { return n[k]; }).map(function (k) {
       return '<span class="sg ' + k + '" style="flex:' + n[k] + '"></span>';
     }).join('');
     return { html: '<div class="stack">' + seg + '</div>', n: n };
   }
 
+  // ★ 最後に習得マップで見せた状態（code → 状態）。裏返し（flipKind）の「前」に使う。
+  //   ⚠ 進捗（STORE_KEY）とは**別のキー**に置く ＝ 表示の控えで学習の記録を汚さない。
+  //   控えが無い（初めて開いた・読み替えた直後）ときは何も裏返さない
+  var SHOWN_KEY = 'slz-qa-v2-shown';
+  function loadShown() {
+    try { return JSON.parse(localStorage.getItem(SHOWN_KEY)) || null; } catch (e) { return null; }
+  }
+  function saveShown(m) {
+    try { localStorage.setItem(SHOWN_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+
   function renderMap() {
     var host = $('map-host');
     var all = DATA.patterns;
     var t = tallyHtml(all);
+    var shown = loadShown() || {};
+    var nowShown = {};
+    var flipN = 0;
 
     var html = '<div class="map-sum">' +
       '<h2>習得マップ</h2>' +
@@ -250,7 +311,14 @@ function slTrack(name, params) {
         }
         var sel = mapSel && mapSel.unitId === u.id && mapSel.lv === lv;
         var dots = ps.map(function (p) {
-          return '<i class="dot ' + stateOf(p.code) + '"></i>';
+          var st = stateOf(p.code);
+          nowShown[p.code] = st;
+          // ★ 「間違えた」⇄「どちらも正解」はオセロのように裏返して見せる。
+          //   裏返すのは**前に見せた色と違うときの1回だけ**（控えをすぐ書き換えるので2度は回らない）
+          var fk = flipKind(shown[p.code], st);
+          if (!fk) return '<i class="dot ' + st + '"></i>';
+          return '<i class="dot ' + st + ' flip ' + fk + '" style="animation-delay:' +
+            (0.35 + 0.12 * Math.min(flipN++, 20)).toFixed(2) + 's"></i>';
         }).join('');
         html += '<button class="gc' + (sel ? ' is-sel' : '') + '"' +
           ' data-unit="' + u.id + '" data-lv="' + lv + '"' +
@@ -261,35 +329,30 @@ function slTrack(name, params) {
     });
     html += '</div></div>';
 
-    // 「測定で未確認」があるなら、そこだけを測定モードで回せるようにする。
-    // 状態を作っただけで行き先が無いと、降格が「損失」に見えて手が止まる。
-    // やることとして示せば、1回通すだけで定着に戻る
-    var unconf = DATA.patterns.filter(function (p) { return stateOf(p.code) === 'unconfirmed'; });
-    if (unconf.length) {
-      html += '<div class="confirm-cta">' +
-        '<p><b>測定で未確認が ' + unconf.length + ' 項目</b>あります。' +
-        'めくりでは通っていますが、測定モードでまだ確かめていません。</p>' +
-        '<button class="btn primary" id="btn-confirm-all">この ' + unconf.length +
-          ' 項目を測定モードで確かめる</button></div>';
+    // 「間違えた」があるなら、そこだけをやり直せるようにする（間違えたモードで出す）。
+    // 状態を作っただけで行き先が無いと、赤が「損失」に見えて手が止まる
+    var missF = all.filter(function (p) { return stateOf(p.code) === 'miss' && rec(p.code).missF; });
+    var missC = all.filter(function (p) { return stateOf(p.code) === 'miss' && rec(p.code).missC; });
+    if (missF.length || missC.length) {
+      html += '<div class="retry-cta">' +
+        '<p>間違えたところをもう一度やって、緑に裏返そう。</p><div class="u-actions">' +
+        (missF.length ? '<button class="btn primary" id="btn-retry-flip">めくりで ' + missF.length + ' 項目</button>' : '') +
+        (missC.length ? '<button class="btn primary" id="btn-retry-choice">選択問題で ' + missC.length + ' 項目</button>' : '') +
+        '</div></div>';
     }
 
-    // ⚠ **条件を全部書く。** 以前は「測定モードでの正解で認定」しか書いておらず、
-    // **正解を MASTER_BOX 回積む必要がある**ことが画面のどこにも無かった。
-    // 1回正解して緑が点かないのは仕様どおりだが、それを画面が説明していなかった
-    html += '<p class="map-note"><b>緑（定着）が点く条件は2つ。</b>' +
-      '(1) <b>正解を ' + MASTER_BOX + ' 回積む</b>（途中で間違えると1回ぶんに戻る）。' +
-      '(2) そのうち <b>1回以上を測定モード（複数選択）で通す</b>。' +
-      '<b>1回正解しただけでは学習中（オレンジ）のまま</b>で、あと何回要るかは下の一覧に出る。' +
-      'めくりの ○× は自分で押すものなので、練習の記録として数え、到達度の証明にはしていない' +
-      '（TAXONOMY §4）。次にいつ出すかの判定には、めくりの結果も使っている。</p>';
+    // 指示は1行（画面の小さい字は読まれない）
+    html += '<p class="map-note">めくりで「わかった」、選択問題で「正解」。<b>両方そろえば緑</b>になる。</p>';
 
     html += '<div id="map-detail"></div>';
     host.innerHTML = html;
+    saveShown(nowShown);
 
-    if ($('btn-confirm-all')) {
-      $('btn-confirm-all').addEventListener('click', function () {
-        startConfirmSession(unconf);
-      });
+    if ($('btn-retry-flip')) {
+      $('btn-retry-flip').addEventListener('click', function () { startRetrySession(missF, 'flip'); });
+    }
+    if ($('btn-retry-choice')) {
+      $('btn-retry-choice').addEventListener('click', function () { startRetrySession(missC, 'choice'); });
     }
 
     Array.prototype.forEach.call(host.querySelectorAll('.gc[data-unit]'), function (b) {
@@ -310,8 +373,8 @@ function slTrack(name, params) {
     var ps = bucket(mapSel.unitId, mapSel.lv);
     var t = tallyHtml(ps);
 
-    // 状態の名前だけだと「なぜ緑にならないか」が読めない。**残りを数で言う**
-    // （needsLabel は stateOfRecord と同じ2条件から作っている）
+    // 状態の名前だけだと「なぜ緑にならないか」が読めない。**次にやることを言う**
+    // （needsLabel は stateOfRecord と同じ記録から作っている）
     var rows = ps.map(function (p) {
       var st = stateOf(p.code);
       var next = needsLabel(rec(p.code));
@@ -327,8 +390,8 @@ function slTrack(name, params) {
       '<p class="sub">' + ps.length + ' 項目 — ' +
         STATES.map(function (k) { return STATE_NAME[k] + ' ' + t.n[k]; }).join(' / ') + '</p>' +
       '<div class="u-actions">' +
-        '<button class="btn primary" id="btn-map-flip">この帯を暗記する</button>' +
-        '<button class="btn ghost" id="btn-map-choice">この帯を測定する</button>' +
+        '<button class="btn primary" id="btn-map-flip">この単元を暗記する</button>' +
+        '<button class="btn ghost" id="btn-map-choice">この単元を選択問題で解く</button>' +
       '</div>' +
       '<ul class="mi-list">' + rows + '</ul>' +
       '</div>';
@@ -351,6 +414,7 @@ function slTrack(name, params) {
   // 間違えたものをすぐ繰り返すのが間隔反復の要なので、誤答経験のある項目を最優先にする。
   function priority(r) {
     if (r.seen > 0 && r.box <= 1) return -1;   // 直近で間違えた項目
+    if (r.missF || r.missC) return -1;         // 間違えたままの項目（4状態の「間違えた」）
     return r.box;                               // 0=未着手 → 定着度の低い順
   }
 
@@ -377,15 +441,15 @@ function slTrack(name, params) {
     renderStudy();
   }
 
-  // 「測定で未確認」だけを測定モードで出す。**単元をまたぐ**ので startSession とは別にした
+  // 「間違えた」だけを、**間違えたモードで**出す。**単元をまたぐ**ので startSession とは別にした
   // （startSession は単元1つを前提に組んである）。
-  // mode は choice 固定 —— この画面の目的は確かめることなので、めくりを選べる意味がない
-  function startConfirmSession(patterns) {
+  // 旗はモードごとに持っているので、めくりで間違えたものはめくりで、選択問題は選択問題でやり直す
+  function startRetrySession(patterns, mode) {
     var queue = shuffle(patterns).map(function (p) {
-      return { pattern: p, variant: pickVariant(p, 'choice') };
+      return { pattern: p, variant: pickVariant(p, mode) };
     });
     session = {
-      unitId: null, mode: 'choice', scope: 'confirm', lv: null,
+      unitId: null, mode: mode, scope: 'retry', lv: null,
       queue: queue, idx: 0, right: 0, wrong: 0, marked: {}
     };
     show('view-study');
@@ -793,7 +857,7 @@ function slTrack(name, params) {
     if (s.mode === 'choice') {
       $('score-ok-label').textContent = '正解';
       $('score-ng-label').textContent = '不正解';
-      $('result-sub').textContent = '測定モード — ' + s.right + ' / ' + s.queue.length + ' 項目に正解';
+      $('result-sub').textContent = '選択問題 — ' + s.right + ' / ' + s.queue.length + ' 項目に正解';
     } else {
       $('score-ok-label').textContent = 'わかった';
       $('score-ng-label').textContent = 'あやしい';
@@ -805,8 +869,8 @@ function slTrack(name, params) {
   // 演習から戻る先は「来た道」。習得マップのマスから始めた回はマップへ返す
   // （単元一覧へ飛ばすと、いま埋めていた帯を見失う）
   function fromMap() {
-    // 'confirm'（測定で未確認をまとめて確かめる）もマップから始まるのでマップへ返す
-    return !!(session && (session.scope === 'lv' || session.scope === 'confirm'));
+    // 'retry'（間違えたものをまとめてやり直す）もマップから始まるのでマップへ返す
+    return !!(session && (session.scope === 'lv' || session.scope === 'retry'));
   }
   // ★ 演習・結果から出て行く道は**ここ1か所**（2026-09-15）。
   //   「やめる」「単元にもどる」とヘッダーの「一問一答」は、行き先だけが違い、扱いは同じ。
@@ -829,12 +893,16 @@ function slTrack(name, params) {
     leaveTo('home');
   });
   $('btn-again').addEventListener('click', function () {
-    // 確かめる回の「もう一度」は、**いま未確認のものを取り直す**。
-    // 元の一覧を使い回すと、たったいま定着したものをまた出すことになる
-    if (session.scope === 'confirm') {
-      var left = DATA.patterns.filter(function (p) { return stateOf(p.code) === 'unconfirmed'; });
+    // やり直しの回の「もう一度」は、**いま間違えたままのものを取り直す**（同じモードで）。
+    // 元の一覧を使い回すと、たったいま解けたものをまた出すことになる
+    if (session.scope === 'retry') {
+      var m = session.mode;
+      var left = DATA.patterns.filter(function (p) {
+        var r = rec(p.code);
+        return m === 'choice' ? !!r.missC : !!r.missF;
+      });
       if (!left.length) { renderMap(); show('view-map'); return; }
-      startConfirmSession(left);
+      startRetrySession(left, m);
       return;
     }
     // ★ 範囲の回（参考書から `?codes=` で来た）は**同じ範囲をもう一度**。
@@ -877,11 +945,18 @@ function slTrack(name, params) {
   // `stateOf` は記録を1つ渡して判定だけ見たいので、判定の芯を分けて露出する
   window.QaEngine = {
     priority: priority,
-    MASTER_BOX: MASTER_BOX,
     STORE_KEY: STORE_KEY,
+    SHOWN_KEY: SHOWN_KEY,
+    STATE_NAME: STATE_NAME,
+    STATES: STATES,
     stateOfRecord: stateOfRecord,
+    migrateRecord: migrateRecord,
+    applyResult: applyResult,
+    flipKind: flipKind,
     needsOf: needsOf,
-    needsLabel: needsLabel
+    needsLabel: needsLabel,
+    // 記録を仕込んで画面を描き直す口（テスト・実機確認用）。記録そのものは保存する
+    reload: function () { progress = loadProgress(); }
   };
 
   // ---------- 来た道（アプリ横断の戻り道・v44） ----------

@@ -1459,24 +1459,6 @@ function runUiTests(doc, DATA) {
       backHome();
     });
 
-    // 状態を1つ足したら、**点・凡例・帯・明細の全部**に行き渡っていないと数が合わなくなる。
-    // 凡例だけ古いままだと「全283項目」の内訳が合わず、読む側が黙って誤解する
-    t("習得マップ: 凡例に4状態（定着・測定で未確認・学習中・未着手）が揃い、合計が総数になる", function () {
-      d.getElementById("btn-map").click();
-      var items = [].slice.call(d.querySelectorAll(".legend span")).filter(function (e) {
-        return !e.classList.contains("tot");
-      });
-      var names = items.map(function (e) { return e.textContent.replace(/[\d\s]/g, ""); });
-      ["定着", "測定で未確認", "学習中", "未着手"].forEach(function (want) {
-        assert(names.indexOf(want) >= 0, "凡例に「" + want + "」が無い（" + names.join("/") + "）");
-      });
-      var sum = items.reduce(function (a, e) { return a + Number(e.querySelector("b").textContent); }, 0);
-      assert(sum === DATA.patterns.length,
-        "凡例の合計 " + sum + " が知識項目 " + DATA.patterns.length + " 件と合わない" +
-        "（状態を足したのに凡例へ行き渡っていない）");
-      backHome();
-    });
-
     t("習得マップ: マスを押すと、その帯の項目だけが明細に並ぶ", function () {
       d.getElementById("btn-map").click();
       var cell = mapCells()[0];
@@ -1533,9 +1515,9 @@ function runUiTests(doc, DATA) {
       d.getElementById("btn-quit").click();
     });
 
-    t("測定モード: 正解だけを選ぶと「正解」になる", function () {
+    t("選択問題: 正解だけを選ぶと「正解」になる", function () {
       var card = unitCards()[0];
-      btnIn(card, "測定").click();
+      btnIn(card, "選択問題").click();
       // 出題された設問を DATA から引き当て、正解の文言を得る
       var qText = (cardText().split("\n").filter(function (s) { return /選べ/.test(s); })[0] || "").trim();
       var pat = null, va = null;
@@ -1558,9 +1540,9 @@ function runUiTests(doc, DATA) {
       d.getElementById("btn-quit").click();
     });
 
-    t("測定モード: 正解を1つ落とすと不正解になる（完全一致採点）", function () {
+    t("選択問題: 正解を1つ落とすと不正解になる（完全一致採点）", function () {
       var card = unitCards()[0];
-      btnIn(card, "測定").click();
+      btnIn(card, "選択問題").click();
       var qText = (cardText().split("\n").filter(function (s) { return /選べ/.test(s); })[0] || "").trim();
       var va = null;
       DATA.patterns.forEach(function (p) {
@@ -1606,145 +1588,291 @@ function runUiTests(doc, DATA) {
       assert(pri(a) < pri(b), "定着度の高い項目が先に出ている");
     });
 
-    // ---- 定着の認定（TAXONOMY §4 の本則。2026-08-06 実装） ----
-    // **めくりの自己採点だけでは定着にしない。** ここが緩むと習得マップの数字が
-    // 「練習量」に戻り、到達度として読めなくなる。
-    // 判定の芯（記録 → 状態）を直接叩く。UI 経由だと4回クリックが要る
-    var stOf = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.stateOfRecord;
-    var MB = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.MASTER_BOX;
+    // ---- 習得マップの4状態（2026-09-19・qa-map4） ----
+    // 未着手 / 着手中（めくり・選択問題の一方だけ正解）/ 間違えた（やり直しが残っている）/ どちらも正解。
+    // 判定の芯（記録 → 状態）を直接叩く。UI 経由だと何回もクリックが要る
+    var QE = frame.contentWindow.QaEngine || {};
+    var stOf = QE.stateOfRecord, mig = QE.migrateRecord, apply = QE.applyResult, flipKind = QE.flipKind;
+    var needs = QE.needsOf, needsLabel = QE.needsLabel;
+    function blank() {
+      return { box: 0, right: 0, wrong: 0, seen: 0, last: 0, cRight: 0, cWrong: 0,
+               fRight: 0, fWrong: 0, missF: false, missC: false };
+    }
+    function play(steps) {   // steps: [["flip"|"choice", true|false], ...]
+      var r = blank();
+      steps.forEach(function (s) { apply(r, s[1], s[0]); });
+      return r;
+    }
 
-    t("定着: めくりだけで box を満たしても「定着」にならない（測定で未確認）", function () {
-      assert(stOf, "app.js が QaEngine.stateOfRecord を露出していない");
-      var めくりだけ = { seen: 4, box: MB, right: 4, wrong: 0, cRight: 0, cWrong: 0, last: 100 };
-      assert(stOf(めくりだけ) === "unconfirmed",
-        "めくり4回で " + stOf(めくりだけ) + " になった（自己採点が到達度として数えられている）");
-    });
-
-    t("定着: 測定で1回正解すれば「定着」になる（回復が軽い）", function () {
-      var 確認済み = { seen: 5, box: MB, right: 5, wrong: 0, cRight: 1, cWrong: 0, last: 100 };
-      assert(stOf(確認済み) === "done", "測定で正解しても " + stOf(確認済み) + " のまま");
-    });
-
-    t("定着: 測定で正解しても box が足りなければ「学習中」", function () {
-      // 認定は「測定で確かめた」かつ「繰り返せている」の両方が要る。
-      // 片方だけで done にすると、1回まぐれで通ったものが定着になる
-      var 一回だけ = { seen: 1, box: 1, right: 1, wrong: 0, cRight: 1, cWrong: 0, last: 100 };
-      assert(stOf(一回だけ) === "wip", "box=1 なのに " + stOf(一回だけ) + " になった");
-    });
-
-    t("定着: 未着手は cRight があっても「未着手」", function () {
-      // seen=0 は出題していない状態。記録が壊れて cRight だけ立っても未着手を守る
-      assert(stOf({ seen: 0, box: 0, cRight: 3 }) === "new", "seen=0 が未着手にならない");
-      assert(stOf(null) === "new", "記録なしが未着手にならない");
-    });
-
-    // ---- 「あと何回で緑になるか」（2026-08-23） ----
-    // ⚠ **きっかけは「正解しても緑が点かない」という報告。** 実測すると仕様どおりで、
-    // 測定モードで4回正解して初めて緑になった。不具合は判定ではなく**画面の説明**にあった。
-    // ここが守るのは「残りの数え方が状態判定と食い違わないこと」＝ 条件を2か所に書かない
-    var needs = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.needsOf;
-    var needsLabel = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.needsLabel;
-
-    t("残り: 未着手には「あと " + MB + " 回（うち1回は測定モード）」と答える", function () {
-      assert(needsLabel, "app.js が QaEngine.needsLabel を露出していない");
-      var s = needsLabel({ seen: 0, box: 0, cRight: 0 });
-      assert(s.indexOf("あと " + MB + " 回") >= 0, "回数が出ていない: " + s);
-      assert(s.indexOf("測定モード") >= 0, "測定モードの条件が出ていない: " + s);
-    });
-
-    t("残り: 測定で3回正解した記録に残るのは「あと 1 回」だけ", function () {
-      var s = needsLabel({ seen: 3, box: 3, right: 3, cRight: 3 });
-      assert(s.indexOf("あと 1 回") >= 0, "残り1回と出ない: " + s);
-      assert(s.indexOf("測定モード") < 0, "測定モードは済んでいるのに条件が残っている: " + s);
-    });
-
-    t("残り: めくりだけで box を満たした記録に残るのは「測定モードで1回」だけ", function () {
-      var s = needsLabel({ seen: 4, box: MB, right: 4, cRight: 0 });
-      assert(s.indexOf("測定モードで1回") >= 0, "測定モードの残りが出ない: " + s);
-      assert(s.indexOf("あと") < 0, "回数は足りているのに残っている: " + s);
-    });
-
-    t("残り: 定着した記録には残りが無い", function () {
-      assert(needsLabel({ seen: 4, box: MB, right: 4, cRight: 1 }) === "",
-        "定着しているのに残りが出ている");
-    });
-
-    t("残り: 残りが空になるのは stateOfRecord が「定着」と言うときだけ（条件を2か所に書かない）", function () {
-      var bad = [];
-      [0, 1, 3, 4].forEach(function (seen) {
-        [0, 1, 3, 4, 5].forEach(function (box) {
-          [0, 2].forEach(function (cRight) {
-            var r = { seen: seen, box: box, right: seen, wrong: 0, cRight: cRight, last: 1 };
-            var 空 = needsLabel(r) === "";
-            var 定着 = stOf(r) === "done";
-            if (空 !== 定着) {
-              bad.push("seen=" + seen + " box=" + box + " cRight=" + cRight +
-                " → 状態 " + stOf(r) + " / 残り「" + needsLabel(r) + "」");
-            }
-          });
-        });
+    t("4状態: 露出している口がそろっている", function () {
+      ["stateOfRecord", "migrateRecord", "applyResult", "flipKind", "needsOf", "needsLabel", "STATE_NAME", "STATES"]
+        .forEach(function (k) { assert(QE[k], "QaEngine." + k + " が無い"); });
+      assert(QE.STATES.length === 4, "状態が " + QE.STATES.length + " 個（4つにする）");
+      ["new", "wip", "miss", "done"].forEach(function (k) {
+        assert(QE.STATES.indexOf(k) >= 0, "状態 " + k + " が無い");
       });
-      assert(!bad.length, bad.slice(0, 3).join(" / ") +
-        "。残りの数え方と状態判定がずれると、画面が「あと0回」と言いながら緑にならない");
     });
 
-    t("残り: needsOf は回数と測定モードを別々に返す（画面がどちらか一方だけ書けるように）", function () {
-      assert(needs, "QaEngine.needsOf がない");
-      var n = needs({ seen: 1, box: 1, cRight: 0 });
-      assert(n.rounds === MB - 1, "rounds が " + n.rounds + "（期待 " + (MB - 1) + "）");
-      assert(n.needChoice === true, "needChoice が立っていない");
-      var m = needs({ seen: 9, box: 9, cRight: 2 });
-      assert(m.rounds === 0 && m.needChoice === false, "定着済みなのに残りがある");
+    t("4状態: 一度も出していなければ未着手", function () {
+      assert(stOf(null) === "new", "記録なしが未着手にならない");
+      assert(stOf(blank()) === "new", "seen=0 が未着手にならない");
+      assert(stOf({ seen: 0, box: 0, cRight: 3 }) === "new", "seen=0 で cRight だけ立った記録が未着手にならない");
+    });
+
+    t("4状態: めくり・選択問題の一方だけ正解なら着手中", function () {
+      assert(stOf(play([["flip", true]])) === "wip", "めくりだけ正解が着手中にならない");
+      assert(stOf(play([["choice", true]])) === "wip", "選択問題だけ正解が着手中にならない");
+      assert(stOf(play([["flip", true], ["flip", true], ["flip", true], ["flip", true]])) === "wip",
+        "めくりを何回わかったにしても、選択問題の正解が無ければ緑にしない");
+    });
+
+    t("4状態: 両方で正解すればどちらも正解（回数は要らない）", function () {
+      assert(stOf(play([["flip", true], ["choice", true]])) === "done", "めくり1回＋選択問題1回で緑にならない");
+    });
+
+    t("4状態: 「あやしい」「不正解」で間違えたになり、同じモードの正解で解除される", function () {
+      var a = play([["flip", false]]);
+      assert(stOf(a) === "miss", "めくりの「あやしい」が間違えたにならない");
+      apply(a, true, "choice");
+      assert(stOf(a) === "miss", "めくりの間違いが選択問題の正解で解除された（同じモードでやり直す）");
+      apply(a, true, "flip");
+      assert(stOf(a) === "done", "めくりでわかったにしたら解除され、両方そろって緑になるはず（" + stOf(a) + "）");
+      var b = play([["choice", false]]);
+      assert(stOf(b) === "miss", "選択問題の不正解が間違えたにならない");
+      apply(b, true, "choice");
+      assert(stOf(b) === "wip", "選択問題で正解したら解除されて着手中になるはず（" + stOf(b) + "）");
+    });
+
+    t("4状態: どちらも正解のあとに間違えると間違えたに戻る", function () {
+      var r = play([["flip", true], ["choice", true]]);
+      assert(stOf(r) === "done", "前提が崩れている");
+      apply(r, false, "choice");
+      assert(stOf(r) === "miss", "緑のあとの不正解が間違えたにならない（" + stOf(r) + "）");
+    });
+
+    t("裏返し: 「間違えた」⇄「どちらも正解」のときだけ裏返す（両向き）", function () {
+      assert(flipKind("done", "miss") === "to-miss", "緑→赤が裏返らない");
+      assert(flipKind("miss", "done") === "to-done", "赤→緑が裏返らない");
+      [["new", "wip"], ["wip", "done"], ["wip", "miss"], ["miss", "wip"], ["done", "done"],
+       ["miss", "miss"], [undefined, "done"], [undefined, "miss"], ["done", "wip"]].forEach(function (p) {
+        assert(flipKind(p[0], p[1]) === "", p[0] + "→" + p[1] + " で裏返ってしまう");
+      });
+    });
+
+    // ---- 旧状態からの読み替え（既存の記録を消さない） ----
+    t("読み替え: 旧「測定で未確認」（めくりだけで box≥4）は着手中", function () {
+      var old = { seen: 4, box: 4, right: 4, wrong: 0, cRight: 0, cWrong: 0, last: 100 };
+      var m = mig(old);
+      assert(m.fRight === 4 && m.fWrong === 0, "めくりの正解数が差し引きで出ていない");
+      assert(stOf(old) === "wip", "旧の測定で未確認が " + stOf(old) + " になった");
+    });
+
+    t("読み替え: 旧「定着」はめくりにも正解があればどちらも正解、選択問題だけなら着手中", function () {
+      assert(stOf({ seen: 5, box: 4, right: 5, wrong: 0, cRight: 1, cWrong: 0 }) === "done",
+        "めくり4＋選択問題1 の旧定着が緑にならない");
+      assert(stOf({ seen: 4, box: 4, right: 4, wrong: 0, cRight: 4, cWrong: 0 }) === "wip",
+        "選択問題だけの旧定着が着手中にならない（めくりの正解が無い）");
+    });
+
+    t("読み替え: 最後の1回が不正解（box=1）の記録は、そのモードで間違えた", function () {
+      var f = mig({ seen: 2, box: 1, right: 1, wrong: 1, cRight: 1, cWrong: 0 });
+      assert(f.missF === true && f.missC === false, "めくりの不正解がめくりの旗にならない");
+      var c = mig({ seen: 2, box: 1, right: 1, wrong: 1, cRight: 0, cWrong: 1 });
+      assert(c.missC === true && c.missF === false, "選択問題の不正解が選択問題の旗にならない");
+      var both = mig({ seen: 3, box: 1, right: 1, wrong: 2, cRight: 1, cWrong: 1 });
+      assert(both.missF && both.missC, "どちらが最後か分からない記録は両方に旗を立てる");
+    });
+
+    t("読み替え: 最後が正解の記録は、それより前の不正解を解けたものとして扱う", function () {
+      var r = mig({ seen: 3, box: 2, right: 2, wrong: 1, cRight: 1, cWrong: 1 });
+      assert(!r.missF && !r.missC, "最後が正解なのに旗が立っている");
+      assert(stOf(r) === "done", "めくり1＋選択問題1 の正解があるのに " + stOf(r));
+    });
+
+    t("読み替え: 元の欄は1つも書き換えない（足すだけ）", function () {
+      var old = { seen: 7, box: 3, right: 5, wrong: 2, cRight: 2, cWrong: 1, last: 12345 };
+      var copy = JSON.parse(JSON.stringify(old));
+      var m = mig(old);
+      Object.keys(copy).forEach(function (k) {
+        assert(m[k] === copy[k], "欄 " + k + " が " + copy[k] + " → " + m[k] + " に変わった");
+        assert(old[k] === copy[k], "読み替えが元の記録を書き換えた（" + k + "）");
+      });
+    });
+
+    // ---- 次にやること（needsLabel は stateOfRecord と同じ記録から作る） ----
+    t("残り: 未着手には「両方で正解しよう」と言う", function () {
+      var s = needsLabel(blank());
+      assert(s.indexOf("めくり") >= 0 && s.indexOf("選択問題") >= 0, "未着手の一言: " + s);
+    });
+
+    t("残り: 着手中には足りないほうのモードだけを言う", function () {
+      var s1 = needsLabel(play([["flip", true]]));
+      assert(s1.indexOf("選択問題") >= 0 && s1.indexOf("めくり") < 0, "めくりだけ正解の一言: " + s1);
+      var s2 = needsLabel(play([["choice", true]]));
+      assert(s2.indexOf("めくり") >= 0 && s2.indexOf("選択問題") < 0, "選択問題だけ正解の一言: " + s2);
+    });
+
+    t("残り: 間違えたには「もう一度」とやり直すモードを言う", function () {
+      var s = needsLabel(play([["flip", true], ["choice", true], ["choice", false]]));
+      assert(s.indexOf("もう一度") >= 0 && s.indexOf("選択問題") >= 0, "選択問題で間違えた一言: " + s);
+    });
+
+    t("残り: 残りが空になるのは stateOfRecord が「どちらも正解」と言うときだけ", function () {
+      var bad = [];
+      [0, 1, 2].forEach(function (fR) { [0, 1].forEach(function (cR) {
+        [false, true].forEach(function (mF) { [false, true].forEach(function (mC) {
+          var r = blank();
+          r.seen = fR + cR + (mF ? 1 : 0) + (mC ? 1 : 0);
+          r.fRight = fR; r.cRight = cR; r.missF = mF; r.missC = mC;
+          if ((needsLabel(r) === "") !== (stOf(r) === "done")) {
+            bad.push("fR=" + fR + " cR=" + cR + " missF=" + mF + " missC=" + mC + " → " + stOf(r) + "「" + needsLabel(r) + "」");
+          }
+          var n = needs(r);
+          if ((!n.flip && !n.choice) !== (stOf(r) === "done")) bad.push("needsOf が食い違う: " + JSON.stringify(n));
+        }); });
+      }); });
+      assert(!bad.length, bad.slice(0, 3).join(" / "));
     });
 
     t("定着: 記録の器が変わったので保存キーを上げている（古い記録を読まない）", function () {
-      // v1 の記録は mode を持たないので、読むと根拠のない「定着」が残る。
+      // v1 の記録は mode を持たないので、読むと根拠のない緑が残る。
       // **消してはいない**（読まなくなるだけ。学習履歴は取り戻せる）
-      var key = frame.contentWindow.QaEngine && frame.contentWindow.QaEngine.STORE_KEY;
+      var key = QE.STORE_KEY;
       assert(key && key !== "slz-qa-v1",
         "保存キーが " + key + " のまま（mode を持たない古い記録を読み込んでしまう）");
     });
 
-    // ---- 習得マップが条件を全部言っているか（2026-08-23） ----
-    // ⚠ **判定は正しいのに画面が半分しか説明していない**、という型の不具合を見張る。
-    // 注記は「測定モードでの正解で認定」とだけ書いてあり、**回数が要ることを書いていなかった**
-    t("マップ: 緑が点く条件を注記が全部書いている（回数と測定モード）", function () {
+    // ---- 画面: 凡例・注記・一覧・文言 ----
+    t("マップ: 凡例は4つだけで、合計が総数になる", function () {
+      d.getElementById("btn-map").click();
+      var items = [].slice.call(d.querySelectorAll(".legend span")).filter(function (e) {
+        return !e.classList.contains("tot");
+      });
+      assert(items.length === 4, "凡例が " + items.length + " 個");
+      var names = items.map(function (e) { return e.textContent.replace(/[\d\s]/g, ""); });
+      ["どちらも正解", "着手中", "間違えた", "未着手"].forEach(function (want) {
+        assert(names.indexOf(want) >= 0, "凡例に「" + want + "」が無い（" + names.join("/") + "）");
+      });
+      var sum = items.reduce(function (a, e) { return a + Number(e.querySelector("b").textContent); }, 0);
+      assert(sum === DATA.patterns.length, "凡例の合計 " + sum + " が知識項目 " + DATA.patterns.length + " 件と合わない");
+      d.getElementById("btn-map-back").click();
+    });
+
+    t("マップ: 注記は1行で、めくりと選択問題の両方を言う", function () {
       d.getElementById("btn-map").click();
       var note = d.querySelector(".map-note");
       assert(note, "習得マップに注記が無い");
       var text = note.innerText;
-      assert(text.indexOf("測定モード") >= 0, "測定モードの条件が注記に無い");
-      assert(new RegExp("正解を\\s*" + MB + "\\s*回").test(text),
-        "「正解を " + MB + " 回積む」が注記に無い（回数の条件が画面に出ていない）: " +
-        text.slice(0, 90));
+      assert(text.indexOf("めくり") >= 0 && text.indexOf("選択問題") >= 0, "注記: " + text);
+      assert(text.length <= 60, "注記が長い（" + text.length + " 字）。小さい字の説明は読まれない");
       d.getElementById("btn-map-back").click();
     });
 
-    t("マップ: 定着していない項目に「あと何回で緑になるか」が出る", function () {
+    t("マップ: 緑でない項目にだけ「次にやること」が出る", function () {
       d.getElementById("btn-map").click();
       var first = d.querySelector(".gc[data-unit][data-lv]");
-      assert(first, "習得マップにマスが無い");
       var uid = first.getAttribute("data-unit"), lv = first.getAttribute("data-lv");
       first.click();
       var rows = Array.prototype.slice.call(d.querySelectorAll("#map-detail .mi"));
       assert(rows.length, "マスを開いても項目が出ない");
-      // 定着した行にだけ残りが無い ＝ 出し分けが状態と一致している
       var bad = rows.filter(function (li) {
-        var 定着 = li.classList.contains("done");
+        var 緑 = li.classList.contains("done");
         var 残りあり = !!li.querySelector(".mi-next");
-        return 定着 ? 残りあり : !残りあり;
+        return 緑 ? 残りあり : !残りあり;
       });
-      assert(!bad.length, bad.length + " 行で「定着まで…」の出し方が状態と食い違う（" +
-        (bad.length ? bad[0].innerText.replace(/\s+/g, " ").slice(0, 50) : "") + "）");
-      var 未着手 = rows.filter(function (li) { return li.classList.contains("new"); })[0];
-      if (未着手) {
-        var s = 未着手.querySelector(".mi-next").textContent;
-        assert(s.indexOf("あと " + MB + " 回") >= 0,
-          "未着手の行が「あと " + MB + " 回」と言っていない: " + s);
-      }
-      // 開いたマスを閉じて画面をもとに戻す（後続のテストが見る画面を汚さない）
+      assert(!bad.length, bad.length + " 行で「次にやること」の出し方が状態と食い違う");
       d.querySelector('.gc[data-unit="' + uid + '"][data-lv="' + lv + '"]').click();
       d.getElementById("btn-map-back").click();
+    });
+
+    t("文言: 画面に「測定」「帯」が残っていない（ホーム・マップ・明細・meta）", function () {
+      var found = [];
+      function scan(where, el) {
+        var s = (el.innerText || "");
+        ["測定", "帯"].forEach(function (w) { if (s.indexOf(w) >= 0) found.push(where + " に「" + w + "」"); });
+      }
+      scan("ホーム", d.getElementById("view-home"));
+      d.getElementById("btn-map").click();
+      var c = d.querySelector(".gc[data-unit][data-lv]");
+      if (!c.classList.contains("is-sel")) c.click();
+      scan("習得マップ", d.getElementById("view-map"));
+      d.querySelector(".gc.is-sel").click();
+      d.getElementById("btn-map-back").click();
+      assert(btnIn(unitCards()[0], "選択問題"), "単元カードに「選択問題」のボタンが無い");
+      assert(!btnIn(unitCards()[0], "測" + "定"), "単元カードに「測定」のボタンが残っている");
+      var md = d.querySelector('meta[name="description"]').getAttribute("content");
+      var og = d.querySelector('meta[property="og:description"]').getAttribute("content");
+      if (/測定|帯/.test(md)) found.push("meta description");
+      if (/測定|帯/.test(og)) found.push("og:description");
+      assert(!found.length, found.join(" / "));
+    });
+
+    // ---- 裏返し（オセロ）が画面で起きるか ----
+    // 記録を仕込んで、マップを開いたときに1つだけ裏返ることを見る。
+    // ⚠ 利用者の記録を汚さないよう、前後で2つのキーを戻す
+    function withSeeded(code, shownState, record, fn) {
+      var W = frame.contentWindow, K = QE.STORE_KEY, SK = QE.SHOWN_KEY;
+      var saved = W.localStorage.getItem(K), savedShown = W.localStorage.getItem(SK);
+      try {
+        var pr = {}; try { pr = JSON.parse(saved) || {}; } catch (e) {}
+        pr[code] = record;
+        W.localStorage.setItem(K, JSON.stringify(pr));
+        var sh = {}; sh[code] = shownState;
+        W.localStorage.setItem(SK, JSON.stringify(sh));
+        QE.reload();
+        fn();
+      } finally {
+        if (saved === null) W.localStorage.removeItem(K); else W.localStorage.setItem(K, saved);
+        if (savedShown === null) W.localStorage.removeItem(SK); else W.localStorage.setItem(SK, savedShown);
+        QE.reload();
+        if (!d.getElementById("view-map").classList.contains("hidden")) d.getElementById("btn-map-back").click();
+      }
+    }
+
+    t("裏返し: 緑だった項目を間違えると、マップを開いたとき赤へ裏返る（1回だけ）", function () {
+      var code = DATA.patterns[0].code;
+      withSeeded(code, "done", play([["flip", true], ["choice", true], ["choice", false]]), function () {
+        d.getElementById("btn-map").click();
+        var f = d.querySelectorAll(".gc .dot.flip");
+        assert(f.length === 1, "裏返る点が " + f.length + " 個（1個のはず）");
+        assert(f[0].classList.contains("to-miss") && f[0].classList.contains("miss"), "赤への裏返しになっていない: " + f[0].className);
+        // 描き直し（マスを押す）でもう一度は回らない
+        d.querySelector(".gc[data-unit]").click();
+        d.querySelector(".gc[data-unit]").click();
+        assert(d.querySelectorAll(".gc .dot.flip").length === 0, "描き直すたびに裏返っている");
+      });
+    });
+
+    t("裏返し: 赤だった項目をやり直して両方そろうと、緑へ裏返る", function () {
+      var code = DATA.patterns[0].code;
+      withSeeded(code, "miss", play([["flip", true], ["choice", false], ["choice", true]]), function () {
+        d.getElementById("btn-map").click();
+        var f = d.querySelectorAll(".gc .dot.flip");
+        assert(f.length === 1 && f[0].classList.contains("to-done") && f[0].classList.contains("done"),
+          "緑への裏返しになっていない（" + f.length + " 個）");
+      });
+    });
+
+    t("裏返し: 赤→着手中（まだ片方だけ）は裏返さない", function () {
+      var code = DATA.patterns[0].code;
+      withSeeded(code, "miss", play([["choice", false], ["choice", true]]), function () {
+        d.getElementById("btn-map").click();
+        assert(d.querySelectorAll(".gc .dot.flip").length === 0, "緑になっていないのに裏返った");
+      });
+    });
+
+    t("やり直し: 間違えたがあると、マップにやり直しのボタンが出て、そのモードで始まる", function () {
+      var code = DATA.patterns[0].code;
+      withSeeded(code, "miss", play([["flip", true], ["choice", false]]), function () {
+        d.getElementById("btn-map").click();
+        var b = d.getElementById("btn-retry-choice");
+        assert(b, "選択問題のやり直しボタンが無い");
+        b.click();
+        assert(!d.getElementById("view-study").classList.contains("hidden"), "やり直しの回に入らない");
+        assert(d.querySelectorAll("#card-host .opt").length > 0, "選択問題で始まっていない");
+        d.getElementById("btn-quit").click();
+        assert(!d.getElementById("view-map").classList.contains("hidden"), "やめたらマップへ戻るはず");
+      });
     });
 
     // ---- 画面幅（2026-08-06 新設） ----
@@ -1902,7 +2030,7 @@ function runUiTests(doc, DATA) {
           btnIn(unitCards()[0], "暗記").click(); d.getElementById("btn-reveal").click();
         });
         check("測定（採点後）", function () {
-          btnIn(unitCards()[0], "測定").click();
+          btnIn(unitCards()[0], "選択問題").click();
           d.querySelector("#opts input").click(); d.getElementById("btn-grade").click();
         });
         check("マスから始めた暗記", function () {
@@ -1936,7 +2064,7 @@ function runUiTests(doc, DATA) {
       var RK = "qa.resume.v1";
       function snap() { return [NAV_KEY ? W.localStorage.getItem(NAV_KEY) : "", W.sessionStorage.getItem(RK)]; }
       function midway() {
-        btnIn(unitCards()[0], "測定").click();
+        btnIn(unitCards()[0], "選択問題").click();
         d.querySelector("#opts input").click();          // 選んだが、まだ採点していない
       }
       midway();
