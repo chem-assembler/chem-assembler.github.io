@@ -55102,7 +55102,9 @@
      * ★ ここが見るのは5つ:
      *   ① ⚠⚠ **誤りの行を、本文と同じ字で出さない** —— この囲みを作った理由そのもの。
      *     同じ字で2行並べると、**どちらが正しいかを読まないと分からない。**
-     *     ★ 印は3つ重ねる（✗ の字・弱めた色・取り消し線）＝ **色を見分けられない人にも残る。**
+     *     ★ 印は2つ重ねる（**学校の慣習の ×／○ の字**・弱めた色）＝ **色を見分けられない人にも残る。**
+     *     ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— 誤りのほうを読ませる器なので、
+     *       下付きの付いた式や漢字に線を重ねて読みにくくしない。★ ここはその**否定対照**も見る。
      *   ② ⚠⚠ **発展と混ざらない** —— 発展＝範囲の外／誤解＝範囲の内で間違えやすい。
      *     ★ だから **畳まない**（`<details>` にしない）し、本文に「発展」と書いたら書式が赤くする。
      *   ③ **欄が2つあることが本体** —— `wrong` を書かずに済ませられない（＝ 誤解を言葉にさせる）。
@@ -55131,6 +55133,10 @@
             'よくある誤解の札の言葉が learn.js に無い（記号だけにしない約束）');
         assert(W.REF_MISTAKE_WRONG && W.REF_MISTAKE_RIGHT && W.REF_MISTAKE_WRONG !== W.REF_MISTAKE_RIGHT,
             '誤り／正しい形の印が同じ字になっている（色だけで分けると、色を見分けられない人に届かない）');
+        /* ⚠ **ここだけは字を書き写す。**学校の慣習（誤り ×／正しい ○）そのものが決めごとで、
+           ⛔ ✓ は「確認済み・やった」に読まれる（点検表の印）＝ 戻したら赤にする（§30-2） */
+        assert(W.REF_MISTAKE_WRONG === '×' && W.REF_MISTAKE_RIGHT === '○',
+            `誤解の印が学校の慣習（×／○）でない（いまは ${W.REF_MISTAKE_WRONG}／${W.REF_MISTAKE_RIGHT}）`);
 
         const FM = [
             '---', 'id: t', 'unit: alcohol', 'unitLabel: アルコールとカルボニル化合物', 'group: 見本',
@@ -55193,9 +55199,17 @@
                 `誤りの行が本文とまったく同じ字で出ている（${cWrong}）＝ どちらが正しいか読まないと分からない`);
             assert(cRight === cBody,
                 `正しい行が本文と違う字で出ている（本文 ${cBody} / 正しい行 ${cRight}）＝ 正しいほうを弱めない`);
+            /* ⚠⚠ **取り消し線を掛けない**（v1584・§30-2）。★ 代わりの手がかりは**字**（×／○）——
+               ⓵ 実測: 誤りの文には下付きの付いた式や漢字が入るので、線を重ねると読めなくなる。
+               ★ 「色だけが手がかり」になっていないことは、**色を使わない**この2つで見る:
+                 ⓵ 印の字が行の先頭に素の文字で居る（上の indexOf）
+                 ⓶ 誤りと正しい行で**字が違う**（上の REF_MISTAKE_WRONG !== RIGHT） */
             const deco = W.getComputedStyle(wrong.querySelector('.ref-mistake-body')).textDecorationLine;
-            assert(/line-through/.test(deco),
-                `誤りの文に取り消し線が効いていない（${deco}）＝ 色だけが手がかりになっている`);
+            assert(!/line-through/.test(deco),
+                `誤りの文に取り消し線が掛かっている（${deco}）＝ いちばん読ませたい文を読みにくくしている`);
+            /* ⚠ 印そのものにも線を掛けない（もとから掛けていない・退行の見張り） */
+            const markDeco = W.getComputedStyle(wrong.querySelector('.ref-mistake-mark')).textDecorationLine;
+            assert(!/line-through/.test(markDeco), `誤りの印に取り消し線が掛かっている（${markDeco}）`);
             /* ★ 強調（`**`）が生きている ＝ 行を丸ごと太字にしていない */
             assert(right.querySelector('b'), '正しい行の強調（**）が消えている（行ごと太字にすると急所が読めない）');
         } finally {
@@ -55226,7 +55240,7 @@
             `/reference/${id}/: 焼いたページのよくある誤解が ${doc.querySelectorAll('.ref-mistake').length} 個（原稿は ${want} 件・焼き直し忘れ？）`);
         assert((doc.body.textContent || '').indexOf(W.REF_MISTAKE_WRONG) >= 0
             && (doc.body.textContent || '').indexOf(W.REF_MISTAKE_RIGHT) >= 0,
-            `/reference/${id}/: 焼いた本文から ✗ / ✓ の字が消えている（色だけの手がかりになっている）`);
+            `/reference/${id}/: 焼いた本文から × / ○ の字が消えている（色だけの手がかりになっている）`);
         /* ⚠ 明るい地への読み替えが焼かれていること（暗い地の敷き rgba(0,0,0,.22) は明るい地で灰色の面になる） */
         assert(/\.ref-mistake\{[^}]*background:#/.test(doc.documentElement.outerHTML),
             `/reference/${id}/: よくある誤解の明るい地への読み替えが焼かれていない`);
