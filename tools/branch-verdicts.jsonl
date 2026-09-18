@@ -1,0 +1,12 @@
+{"branch":"claude/nice-fermi-8c2a0d","sha":"84f07e3d6f66","verdict":"不要","note":"v842 硫黄。main は §7-1g v950 の別の直し。両方入れると二重に枝を刈る","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/nifty-hertz-1d08a4","sha":"1ffbfdcbeec2","verdict":"不要","note":"v844 アルデヒド。main は getFreeValency>=1 で塞いだ","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/epic-wright-e4c57d","sha":"c09e6cc4424b","verdict":"不要","note":"v927 二糖。main は StereoCountQuiz.UNIT_LIMIT で塞いだ","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/agitated-khorana-ab22e6","sha":"a16359d786f3","verdict":"不要","note":"v1030 クイズの範囲戻し。main は N2 の後片付けで直した","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/exciting-curran-78581e","sha":"90b54d7873f0","verdict":"不要","note":"ion v115 粒の重なり。main は4回反復＋pushOutOfBox","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/adoring-jepsen-bd952a","sha":"d6c6a0eb64d1","verdict":"取り込み済み","note":"v1185 変形と立体。同じ文面が v1201 で main に入っている","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/clever-jepsen-8d29a6","sha":"4b65281ad4c2","verdict":"取り込み済み","note":"v1184 ST19 の母数。main は POOL で同じ内容","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/gifted-jemison-690022","sha":"34382ec80d2e","verdict":"不要","note":"run-tests.mjs に qa の書式を教える件。qa/test.html が ALL PASS を併記する形で相手側が解決","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/wonderful-northcutt-e871c9","sha":"3fd6b3964908","verdict":"不要","note":"qa の版表記 v1→v3。版が進みすぎて意味を失った","date":"2026-08-13","by":"DEVELOPMENT.md「放置された claude/* ブランチの棚卸し」"}
+{"branch":"claude/quirky-mayer-257ed8","sha":"e620595f3808","verdict":"不要","note":"v1467 加硫。直しは main に約90%（別経路でもう一度直した）","date":"2026-09-19","by":"GradeLens 側の調査（C:/Antigravity/handoff_chem_20260919/HANDOFF.md）"}
+{"branch":"claude/magical-ritchie-96dc7d","sha":"213af9fdd9d1","verdict":"不要","note":"本体コードの新行が main に約94%。残りは launch.json のポート登録","date":"2026-09-19","by":"GradeLens 側の調査（C:/Antigravity/handoff_chem_20260919/HANDOFF.md）"}
+{"branch":"claude/heuristic-hertz-b8a749","sha":"1c7e115f972e","verdict":"不要","note":"qa の反応在庫の件数合わせのみ（main は在庫が進んで別の数に合わせ直し済み）","date":"2026-09-19","by":"GradeLens 側の調査（C:/Antigravity/handoff_chem_20260919/HANDOFF.md）"}
