@@ -559,7 +559,7 @@
         "actions": [
           { "type": "button", "selector": "#btn-sq-overlay" },
           { "type": "hover", "x": 400, "y": 583 },
-          { "type": "wait", "ms": 2060 }
+          { "type": "wait", "ms": 4200 }
         ]
       },
       {
