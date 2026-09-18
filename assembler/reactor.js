@@ -2062,10 +2062,13 @@ function wackerUnits(mol) {
             if (b && b.type === 2) pair.push([id, jd]);
         }));
         if (pair.length !== 1) return;                       // C=C はちょうど1本
-        const heavyNb = id => mol.getNeighbors(id).filter(n => n.atom.element !== 'H').length;
         const [p, q] = pair[0];
-        // 置換基の多いほう（＝ マルコフニコフ則で酸素がつく側）を先に置く
-        out.push(heavyNb(p) >= heavyNb(q) ? [p, q] : [q, p]);
+        // 置換基の多いほう（＝ マルコフニコフ則で酸素がつく側）を先に置く。
+        // ⚠ エチレンは左右が同点 —— v1590 までは同点を `p`（＝ 原子IDの小さいほう）に倒していて、
+        //   原子IDは乱数なので**酸素の付く炭素が呼ぶたびに入れ替わっていた**（DT1）。
+        //   付加と同じ `markovnikovCarbon` を通して、同点は座標で決める
+        const first = markovnikovCarbon(mol, p, q);
+        out.push(first === p ? [p, q] : [q, p]);
     });
     return out;
 }
@@ -2982,11 +2985,38 @@ function acidKindOf(mol, oId, anchorId) {
     };
 }
 
-// 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す
+/**
+ * 多重結合（非芳香族の C=C / C≡C）の一覧を [id1, id2] の配列で返す。
+ *
+ * ⚠ **並びは座標で決める**（v1591・claude/festive-gauss-213324 の取り込み直し）。
+ * `findFunctionalGroups` が返す `atomIds` は `Bond` の並び ＝ **原子IDの小さい順**で、
+ * その原子IDは乱数なので **同じ分子に同じ反応を2回起こすと [id1, id2] が入れ替わる**。
+ * 受け取る側はこの並びを「どちらを先に見るか」に使っているため、
+ * 生成物の**座標**（ときには生成物そのもの）が呼ぶたびに変わっていた:
+ *   - `oxidative_cleavage` … `roles` の最後の側を下へ逃がす
+ *     ＝ **切れた2つのどちらが降りるか**が毎回変わる
+ *   - `addAcrossMultipleBond` … 左右が同点のときに `id1` 側へ置換基を付ける
+ *     （同点の扱いは `markovnikovCarbon` 側でも座標で決めているが、**入口でも揃えておく**。
+ *     `site` を手で組んで渡す道が増えても、ここを通れば並びが決まる）
+ * 左上（x → y の順）を先にする。**トポロジーは1文字も変えない**ので、
+ * どちらを先に返すかは図の再現性だけの問題。回帰テストは tests.js の DT1。
+ */
 function multipleBondSites(mol) {
     return findFunctionalGroups(mol)
         .filter(g => g.type === 'cc_double' || g.type === 'cc_triple')
-        .map(g => g.atomIds);
+        .map(g => orderByPosition(mol, g.atomIds));
+}
+
+/**
+ * 2原子の組 `[id1, id2]` を**座標で並べ直す**（左 → 上 の順。座標まで同じならIDを最後の手段に）。
+ * 原子IDは乱数なので、ID順に頼ると同じ操作の結果が毎回変わる（CLAUDE.md「原子IDに順序を頼らない」）。
+ */
+function orderByPosition(mol, ids) {
+    const a = mol.atoms.find(x => x.id === ids[0]);
+    const b = mol.atoms.find(x => x.id === ids[1]);
+    if (!a || !b) return ids;
+    const first = (a.x !== b.x) ? (a.x < b.x) : (a.y !== b.y) ? (a.y < b.y) : (a.id < b.id);
+    return first ? [a.id, b.id] : [b.id, a.id];
 }
 
 // ===== 重合の下ごしらえ（P12-8。ユーザー要望「重合反応も実装したい」） =====
@@ -4352,8 +4382,9 @@ const RX_HALOGENS = ['Cl', 'Br', 'I'];
  *   畳み方は `sideChainOxidationSites` と同じ手口（**生成物の正準コード**で数える）。
  */
 function dehydrohalogenationSites(mol) {
-    const out = [];
+    const cands = [];
     const seen = new Set();
+    const posOf = id => mol.atoms.find(x => x.id === id);
     /* ⚠⚠ **芳香環の炭素は外す**（実測で踏んだ）。クロロベンゼンで札が出て、
      *   環の中に4本目の二重結合が入った**実在しない分子**ができていた。
      *   ★ 芳香族の C-Cl は切れにくく、教科書は高温高圧の加水分解
@@ -4368,8 +4399,10 @@ function dehydrohalogenationSites(mol) {
         [[0, 1], [1, 0]].forEach(([i, j]) => {
             const ca = pair[i], cb = pair[j];
             if (mol.getFreeValency(cb.id) < 1) return;          // 抜ける水素が無い
+            // 同じ炭素にハロゲンが2つ以上（1,1-ジクロロ…）なら、どれを抜くかも座標で決める
             const hal = mol.getNeighbors(ca.id)
-                .find(n => n.type === 1 && RX_HALOGENS.includes(n.atom.element));
+                .filter(n => n.type === 1 && RX_HALOGENS.includes(n.atom.element))
+                .sort((p, q) => (p.atom.x - q.atom.x) || (p.atom.y - q.atom.y))[0];
             if (!hal) return;
             const comp = componentOf(mol, ca.id);
             if (mol.atoms.some(x => comp.has(x.id) && x.element !== 'C' && x.element !== 'H' &&
@@ -4381,10 +4414,28 @@ function dehydrohalogenationSites(mol) {
             if (!nb) return;
             nb.type = 2;
             const key = [...comp].sort().join(',') + '|' + canonicalCode(sub);
-            if (seen.has(key)) return;
-            seen.add(key);
-            out.push([ca.id, cb.id, hal.atom.id]);
+            cands.push({ key, site: [ca.id, cb.id, hal.atom.id] });
         });
+    });
+    /* ⚠⚠ **畳む前に座標で並べる**（v1591・DT1）。`Bond` は端点を**原子IDの小さい順**に
+     *   持つので、上の `[[0, 1], [1, 0]]` はどちらの向きが先に来るかが**原子IDの乱数で決まる**。
+     *   そのまま「先に来たほうを残す」と、1,2-ジクロロエタンで**どちらの Cl が抜けるか**
+     *   （＝ 生成物の図）が呼ぶたびに入れ替わっていた（1,2-ジブロモエタン・
+     *   ヘキサクロロシクロヘキサンも同じ）。残す1件は「X の付いた炭素 → 相手の炭素 → X」の
+     *   座標の順（左 → 上）で決める（CLAUDE.md「原子IDに順序を頼らない」）。 */
+    const cmp = (p, q) => (p.x - q.x) || (p.y - q.y);
+    cands.sort((u, v) => {
+        for (let k = 0; k < 3; k++) {
+            const d = cmp(posOf(u.site[k]), posOf(v.site[k]));
+            if (d) return d;
+        }
+        return 0;
+    });
+    const out = [];
+    cands.forEach(({ key, site }) => {
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push(site);
     });
     return out;
 }
@@ -4465,6 +4516,31 @@ function hydroxyAcidUnits(mol) {
     return same.sort((p, q) => p.x - q.x);
 }
 
+/**
+ * マルコフニコフ則で「置換基（X・OH・O）が付く側」の炭素を返す（`id1` / `id2` のどちらか）。
+ *
+ * ⚠ **数えるのは置換基であって炭素ではない**（v1591・claude/festive-gauss-213324 の取り込み直し）。
+ * v1590 まではここが `element === 'C'` で**炭素だけ**を数えていたため、
+ * ビニル位にヘテロ原子が付いた分子で左右が同点になり、**行き先が決まっていなかった**:
+ *   - 塩化ビニル ＋ HCl … 1,1-ジクロロエタン と 1,2-ジクロロエタン が**呼ぶたびに入れ替わる**
+ *     （同点のときは `site` の並び ＝ 原子IDの順で決まり、原子IDは乱数のため）
+ *   - 同じ形の 酢酸ビニル・ビニルアルコール・メチルビニルエーテル も同様
+ * 画面に出す文（「X は置換基の多い炭素へ」）はもともと置換基と書いてあり、
+ * **文のほうが正しくてコードが炭素に狭めていた**。C=C の炭素は σ 結合が3本なので
+ * 「置換基の数」と「水素の数」は裏返しの関係にあり、教科書の言い方
+ * （H はすでに H の多い炭素へ）とも一致する。
+ *
+ * 同点（エチレン・2-ブテン・2-ヘキセンのように左右が本当に対等）のときは
+ * **座標で決める**（`orderByPosition`。左上を先に採る）。回帰テストは tests.js の MK1・DT1。
+ */
+function markovnikovCarbon(mol, id1, id2) {
+    const subs = (id, other) => mol.getNeighbors(id)
+        .filter(n => n.atom.element !== 'H' && n.atom.id !== other).length;
+    const n1 = subs(id1, id2), n2 = subs(id2, id1);
+    if (n1 !== n2) return n1 > n2 ? id1 : id2;
+    return orderByPosition(mol, [id1, id2])[0];
+}
+
 // 多重結合への付加の共通処理。elemA/elemB は付加する元素（null は水素＝自動水素に任せる）。
 // 片側だけに置換基が付く場合（HX・H₂O）はマルコフニコフ則で置換基の多い炭素側に付ける
 function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
@@ -4475,12 +4551,8 @@ function addAcrossMultipleBond(game, site, elemA, elemB, caption) {
 
     let cX = id1, cY = id2;
     if (elemA && !elemB) {
-        const subs = (id, other) => mol.getNeighbors(id)
-            .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
-        if (subs(id2, id1) > subs(id1, id2)) {
-            cX = id2;
-            cY = id1;
-        }
+        cX = markovnikovCarbon(mol, id1, id2);
+        cY = cX === id1 ? id2 : id1;
     }
 
     bond.type -= 1;
@@ -7408,9 +7480,9 @@ const REACTION_RULES = [
                 // ケト・エノール互変異性でケト形（C=O）を直接生成する
                 // （アセチレン→アセトアルデヒド、プロピン→アセトン）
                 const [id1, id2] = site;
-                const subs = (id, other) => mol.getNeighbors(id)
-                    .filter(n => n.atom.element === 'C' && n.atom.id !== other).length;
-                const cX = subs(id2, id1) > subs(id1, id2) ? id2 : id1; // マルコフニコフ則
+                // マルコフニコフ則。**`addAcrossMultipleBond` と同じ関数を通す**
+                // （v1590 まではここに同じ式が書き写してあり、置換基でなく炭素を数える誤りも二重にあった）
+                const cX = markovnikovCarbon(mol, id1, id2);
                 const spot = freeSpotAround(mol, cX);
                 if (!spot) throw noRoom('生成物を配置する空間がありません');
                 bond.type = 1;
