@@ -3742,6 +3742,224 @@ function chainDirection(mol, backId, fromId) {
 }
 
 /**
+ * `startId` から先の枝（`cId` を通らない側）の原子IDを返す（v1593・§30）。
+ * 枝が主鎖の炭素へ**2か所でつながっている**（＝ C=C を含む環）なら null。
+ * 剛体で回すと環が壊れるので、そういう枝は触らない。
+ */
+function branchBeyond(mol, startId, cId, chainIds) {
+    const seen = new Set([startId]);
+    const out = [startId];
+    const stack = [startId];
+    while (stack.length) {
+        const id = stack.pop();
+        for (const n of mol.getNeighbors(id)) {
+            if (chainIds.has(n.atom.id)) {
+                if (id === startId && n.atom.id === cId) continue; // 付け根そのもの
+                return null;
+            }
+            if (seen.has(n.atom.id)) continue;
+            seen.add(n.atom.id);
+            stack.push(n.atom.id);
+            out.push(n.atom.id);
+        }
+    }
+    return out;
+}
+
+/**
+ * 倒したあとの図が読めるか（重原子が詰まっていないか・結合線が原子を貫通しないか）。
+ * 物差しは game.js の `reshapeVinylAngles` と同じで、**倒したせいで詰まったときだけ**だめとする
+ * （元から詰まっている図は倒す前も後も同じなので、こちらの責任ではない）。
+ */
+function foldedLayoutOk(mol, ids, gapBefore) {
+    const heavy = [...ids].map(id => mol.atoms.find(a => a.id === id))
+        .filter(a => a && a.element !== 'H');
+    if (heavy.length < 2) return true;
+    const gap = minGapAmong(heavy);
+    if (gap < bondStep(mol, heavy[0].id) * 0.65 && gap < gapBefore - 1e-6) return false;
+    const byId = new Map(heavy.map(a => [a.id, a]));
+    return !mol.bonds.some(b => {
+        const p = byId.get(b.atomId1), q = byId.get(b.atomId2);
+        if (!p || !q) return false;
+        return heavy.some(a => a.id !== p.id && a.id !== q.id &&
+            pointSegmentDistance(a, p, q) < SHOVE_LINE_CLEARANCE);
+    });
+}
+
+/**
+ * 開いた C=C の炭素にぶら下がる枝を、**主鎖に垂直な向き**へ倒す（v1593・§30）。
+ *
+ * 付加重合が「生成物を配置する空間がありません」で止まる分子（スチレン・酢酸ビニル・
+ * メタクリル酸メチル…）は、置換基が**鎖の伸びる先に描かれている**のが原因。
+ * 呼び出したスチレンはベンゼン環が head 炭素の真横（＝次の単量体を置く位置）にあり、
+ * どの向き・どの回転でも自分の環と当たる（環があるので `canSpin90` の 90° 回転も使えない）。
+ *
+ * ★ **`uprightChainSubstituent`（2026-08-26・§18-1）との違い**（ユーザー決定 2026-09-19）:
+ *   あちらは**すべての単量体の置換基を上下交互に立てる**ので、置換基が道を塞いでいない
+ *   塩化ビニルの -Cl まで縦に倒れ、酢酸ビニルのアセトキシ基も上下交互・中の結合が斜めになっていた。
+ *   付加重合はこちらに切り替え、「そのまま」→「同じ側（真下）」→「1つおき」の順に試して
+ *   **最初に主鎖が一直線になった形**を採る（`addition_polymerization` の注記）。
+ *   ⚠ 共重合（`copolymerization`）はまだ `uprightChainSubstituent` のまま。
+ *
+ * ⚠ **CLAUDE.md の作図例外（±120°）とはぶつからない。** あの例外は「名称から呼び出した
+ * 分子の、環に含まれない **C=C** まわり」の話で、二重結合が平面だから 120° に開く。
+ * 付加重合は**その二重結合を単結合に開くのが本体**なので、開いた時点で炭素は sp3 になり
+ * 例外の対象から外れる ―― つまりここでやるのは**直交作図へ戻す**ことであって、
+ * 例外を1つ増やすことではない。垂直に倒した形は登録済みの
+ * `polyvinyl-alcohol`（主鎖 y=300 の一直線に -OH が y=342 ＝真下）そのもの。
+ *
+ * 動かすのは枝の**角度だけ**で、`c-枝` の結合長も枝の中の距離も1つも変えない
+ * （回転と平行移動だけの剛体移動）。座標は見た目専用なので判定には影響しない。
+ * 枝が2本ある 1,1-二置換（メタクリル酸メチル）は上下へ振り分ける。
+ *
+ * 倒せたら true。3本以上ぶら下がる炭素と、環が主鎖へ回り込む枝は触らない。
+ */
+function foldPendantsPerpendicular(mol, cId, chainIds, perp) {
+    const c = mol.atoms.find(a => a.id === cId);
+    if (!c) return false;
+    const subs = mol.getNeighbors(cId)
+        .filter(n => n.atom.element !== 'H' && !chainIds.has(n.atom.id))
+        .map(n => n.atom);
+    if (!subs.length || subs.length > 2) return false;
+    // どちらの枝を優先の側（下）に置くか。**座標で決める**
+    // （原子IDは乱数なので順序に頼らない ―― `acetyleneUnits` と同じ約束）
+    const along = (a, d) => d.x * (a.x - c.x) + d.y * (a.y - c.y);
+    subs.sort((p, q) => along(q, perp) - along(p, perp));
+    const sides = [perp, { x: -perp.x, y: -perp.y }];
+    const ringIds = typeof ringAtomIds === 'function' ? ringAtomIds(mol) : new Set();
+    let moved = false;
+    subs.forEach((s, i) => {
+        const branch = branchBeyond(mol, s.id, cId, chainIds);
+        if (!branch) return;
+        const dir = sides[i];
+        const len = Math.hypot(s.x - c.x, s.y - c.y) || bondStep(mol, cId);
+        /*
+         * 枝を回す量は「枝が伸びていく向き」を垂直に合わせる角度。伸びていく向きは
+         * **付け根の先の重心**で見る（環のように次の1本が2方向へ分かれる枝でも決まる）。
+         * さらに **90°の倍数へ丸める**: 枝の中は直交で描かれているので、
+         * 半端な角度で回すと枝の中の直角がすべて斜めになる
+         * （酢酸ビニルのアセトキシ基で実測。-30° で回すと -O-C(-O)-C が 30° 傾いた）。
+         */
+        const rest = branch.filter(id => id !== s.id)
+            .map(id => mol.atoms.find(a => a.id === id))
+            .filter(a => a && a.element !== 'H');
+        const out = rest.length
+            ? { x: rest.reduce((t, a) => t + a.x, 0) / rest.length - s.x,
+                y: rest.reduce((t, a) => t + a.y, 0) / rest.length - s.y }
+            : { x: s.x - c.x, y: s.y - c.y };
+        /*
+         * ⚠ **環を含む枝だけは丸めない**（v1593 の取り込み直しで足した）。環は付け根の結合の
+         *   延長上に中心が来る**放射状**で描かれている（§18-1 原因1）ので、`c-枝` の結合を
+         *   ちょうど垂直にする角度で回せば放射状のまま立つ。90°へ丸めるとスチレンの環が
+         *   30° ずれ、**六角形の辺の途中から主鎖へ結合が出ているように見えた**（実測）。
+         *   環の辺は元から斜めなので、丸めで守るべき直角がそもそも無い。
+         */
+        const hasRing = branch.some(id => ringIds.has(id));
+        const step = Math.PI / 2;
+        const rot = hasRing
+            ? Math.atan2(dir.y, dir.x) - Math.atan2(s.y - c.y, s.x - c.x)
+            : Math.round((Math.atan2(dir.y, dir.x) - Math.atan2(out.y, out.x)) / step) * step;
+        const cos = Math.cos(rot), sin = Math.sin(rot);
+        const nx = c.x + len * dir.x, ny = c.y + len * dir.y;
+        const sx = s.x, sy = s.y;
+        branch.forEach(id => {
+            const a = mol.atoms.find(x => x.id === id);
+            if (!a) return;
+            const rx = a.x - sx, ry = a.y - sy;
+            a.x = nx + rx * cos - ry * sin;
+            a.y = ny + rx * sin + ry * cos;
+        });
+        moved = true;
+    });
+    return moved;
+}
+
+/**
+ * 開いた単量体を頭-尾の順に繋いで1本の鎖にする（`addition_polymerization` の本体・v1593・§30）。
+ *
+ * `fold` は置換基の倒し方:
+ *   - `'none'` … 触らない（呼び出したときの ±120° のまま。**これを最初に試す**ので、
+ *     置換基が道を塞いでいない分子（塩化ビニル・アクリロニトリル…）はこの形で出る）
+ *   - `'same'` … すべて同じ側（下）へ倒す。登録済み `polyvinyl-alcohol` と同じ形
+ *   - `'alternate'` … 1つおきに反対側へ倒す。**ベンゼン環のように太い置換基**では
+ *     同じ側に並べると隣どうしが 14.8px まで詰まる（実測。単位の間隔 84px に対し
+ *     縦に倒した環の幅が 69.2px）ので、上下へ振り分けないと置けない
+ *
+ * 途中で置けなくなったら**座標も足した結合も元へ戻して** null を返す。
+ * 呼び出し側が次の手を試すので、**この関数が失敗しても分子は1つも変わらない**。
+ */
+function linkVinylUnits(mol, units, fold) {
+    const snap = mol.atoms.map(a => ({ a, x: a.x, y: a.y }));
+    const added = [];
+    // 足した結合を先に外してから座標を戻す（順番を逆にすると removeBond が見つけられない）
+    const undo = () => {
+        added.forEach(([p, q]) => mol.removeBond(p, q));
+        snap.forEach(s => { s.a.x = s.x; s.a.y = s.y; });
+    };
+    const dir = chainDirection(mol, units[0].tail, units[0].head);
+    let folded = false;
+    if (fold !== 'none' && dir) {
+        // 主鎖に垂直な2方向。横向きの鎖なら「下」を先に使う
+        // （登録済み `polyvinyl-alcohol` は主鎖 y=300 に対して -OH が y=342 ＝真下）
+        const perps = Math.abs(dir.x) >= Math.abs(dir.y)
+            ? [{ x: 0, y: 1 }, { x: 0, y: -1 }]
+            : [{ x: 1, y: 0 }, { x: -1, y: 0 }];
+        units.forEach((u, i) => {
+            const ids = componentOf(mol, u.head);
+            const before = mol.atoms.filter(a => ids.has(a.id)).map(a => ({ a, x: a.x, y: a.y }));
+            const gapBefore = minGapAmong(before.map(b => b.a).filter(a => a.element !== 'H'));
+            const side = perps[(fold === 'alternate' && i % 2) ? 1 : 0];
+            const chainIds = new Set([u.head, u.tail]);
+            const hit = [u.head, u.tail]
+                .map(cId => foldPendantsPerpendicular(mol, cId, chainIds, side))
+                .some(Boolean);
+            // 倒したせいで図が読めなくなるなら、その単量体だけ元へ戻す
+            if (!hit) return;
+            if (foldedLayoutOk(mol, ids, gapBefore)) folded = true;
+            else before.forEach(b => { b.a.x = b.x; b.a.y = b.y; });
+        });
+    }
+    const changed = [];
+    // ★ **まだ繋いでいない単量体は「邪魔者」ではなく、この鎖の続き**（v1436・§14）。
+    //   当たり判定から外さないと、横に並んだ次の単量体を避けて上下へ逃げ、
+    //   鎖が階段状に折れる。避けた相手はこの後どうせ動かして繋ぐので、
+    //   最後の1個を置くときには全員が鎖の上に乗っていて、重なりは残らない
+    const pending = new Set();
+    units.slice(1).forEach(u => componentOf(mol, u.head).forEach(id => pending.add(id)));
+    let linkFrom = units[0].head;
+    let linkBack = units[0].tail; // 主鎖の1つ内側（＝鎖が伸びる向きを決める）
+    for (let i = 1; i < units.length; i++) {
+        const u = units[i];
+        const movingIds = [...componentOf(mol, u.head)];
+        movingIds.forEach(id => pending.delete(id));
+        const plan = planAttachment(mol, linkFrom, u.tail, movingIds, [...pending],
+            chainDirection(mol, linkBack, linkFrom));
+        if (!plan) { undo(); return null; }
+        applyAttachment(mol, movingIds, plan);
+        mol.addBond(linkFrom, u.tail, 1);
+        added.push([linkFrom, u.tail]);
+        changed.push(linkFrom, u.tail);
+        linkBack = u.tail;
+        linkFrom = u.head; // 次はこの単量体の頭に繋ぐ
+    }
+    return { changed, linkFrom, linkBack, folded, undo };
+}
+
+/**
+ * できた主鎖（tail₀-head₀-tail₁-head₁-…）が一直線か（v1593・§30）。
+ * §14 の PM3 と同じ主張を、R を付ける前の段階で**倒し方を選ぶために**使う。
+ * 「隣どうしの差がすべて同じベクトル」＝ 折れ0・ばらつき0・刻み一定 を一度に見ている。
+ */
+function mainChainStraight(mol, units) {
+    const pts = units.flatMap(u => [u.tail, u.head])
+        .map(id => mol.atoms.find(a => a.id === id));
+    if (pts.some(p => !p) || pts.length < 3) return true;
+    const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+    return pts.every((p, i) => i === 0 ||
+        (Math.abs(p.x - pts[i - 1].x - dx) < 1 && Math.abs(p.y - pts[i - 1].y - dy) < 1));
+}
+
+/**
  * 「この先も同じ単位が続く」印として R（価標1の擬似元素）を付ける。
  * 空いている直交方向のうち、他の原子と近づかない位置を選ぶ。置けなければ null
  *
@@ -5800,34 +6018,32 @@ const REACTION_RULES = [
                 if (!b) throw new Error('二重結合が見つかりません');
                 b.type = 1;
             });
-            // 頭の置換基を主鎖と直交する向きへ立て直す（`uprightChainSubstituent`）。
-            // **単量体ごとに交互の側へ出す** ―― 同じ側にそろえると、隣の枝どうしが
-            // 84px 間隔でぶつかって置けなくなる（スチレンで実測。環の幅が 69px ある）
-            units.forEach((u, i) => uprightChainSubstituent(mol, u.head, u.tail, i % 2 ? -1 : 1));
-            // 頭（置換基の多い炭素）に次の単量体の尾（少ない炭素）を繋ぐと、
-            // 教科書どおりの「頭-尾（head-to-tail）」の並びになる
-            const changed = [];
-            // ★ **まだ繋いでいない単量体は「邪魔者」ではなく、この鎖の続き**（v1436・§14）。
-            //   当たり判定から外さないと、横に並んだ次の単量体を避けて上下へ逃げ、
-            //   鎖が階段状に折れる。避けた相手はこの後どうせ動かして繋ぐので、
-            //   最後の1個を置くときには全員が鎖の上に乗っていて、重なりは残らない
-            const pending = new Set();
-            units.slice(1).forEach(u => componentOf(mol, u.head).forEach(id => pending.add(id)));
-            let linkFrom = units[0].head;
-            let linkBack = units[0].tail; // 主鎖の1つ内側（＝鎖が伸びる向きを決める）
-            for (let i = 1; i < units.length; i++) {
-                const u = units[i];
-                const movingIds = [...componentOf(mol, u.head)];
-                movingIds.forEach(id => pending.delete(id));
-                const plan = planAttachment(mol, linkFrom, u.tail, movingIds, [...pending],
-                    chainDirection(mol, linkBack, linkFrom));
-                if (!plan) throw noRoom('生成物を配置する空間がありません');
-                applyAttachment(mol, movingIds, plan);
-                mol.addBond(linkFrom, u.tail, 1);
-                changed.push(linkFrom, u.tail);
-                linkBack = u.tail;
-                linkFrom = u.head; // 次はこの単量体の頭に繋ぐ
+            /* 頭（置換基の多い炭素）に次の単量体の尾（少ない炭素）を繋ぐと、
+             * 教科書どおりの「頭-尾（head-to-tail）」の並びになる。
+             *
+             * ★ **置換基の倒し方は「そのまま」→「同じ側（真下）」→「1つおき」の順に試し、
+             *   最初に主鎖が一直線になった形を採る**（v1593・§30。ユーザー決定 2026-09-19）。
+             *   - 置換基が道を塞いでいない分子（塩化ビニル・アクリロニトリル…）は
+             *     **「そのまま」が勝つ** ＝ -Cl は呼び出したときの 120° のまま
+             *   - 酢酸ビニル・アクリル酸などは**全部真下**へそろい、アセトキシ基の中も直交のまま
+             *     （登録済み `polyvinyl-alcohol` の -OH が全部真下なのと同じ形）
+             *   - スチレンのように太い置換基だけが**上下交互**になる（同じ側だと隣の環と 14.8px）
+             *   採る基準を「置けた」ではなく「**一直線になった**」にしてあるのは、置けるだけの
+             *   倒し方が §14 の目的（鎖をまっすぐ見せる）を満たさないことがあるため。
+             *   一直線がどれも作れないときだけ、最初に置けた倒し方へ戻す。
+             * ⚠ 以前は全単量体を `uprightChainSubstituent` で上下交互に立てていた（§18-1）。
+             *   共重合はまだそちらを使っている。 */
+            let built = null, fallback = null;
+            for (const fold of ['none', 'same', 'alternate']) {
+                const r = linkVinylUnits(mol, units, fold);
+                if (!r) continue;
+                if (mainChainStraight(mol, units)) { built = r; break; }
+                if (!fallback) fallback = fold;
+                r.undo();
             }
+            if (!built && fallback) built = linkVinylUnits(mol, units, fallback);
+            if (!built) throw noRoom('生成物を配置する空間がありません');
+            const { changed, linkFrom, linkBack } = built;
             // 両端に R を付けて「ここから先も同じ単位が続く」ことを示す。
             // R は価標1の擬似元素で、アルキル基練習でも使っている既存の表記。
             // 向きは**鎖をそのまま1歩伸ばした先**（v1436・§14）
