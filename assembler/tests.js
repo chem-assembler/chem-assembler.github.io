@@ -33920,6 +33920,119 @@
         c.reset();
     });
 
+    /**
+     * RX45: **解説カード（`info`）も同じ絞り込みを通る**（v1589・DESIGN_reaction_execution.md §13.8）。
+     * claude/zen-swartz-9a5df4（元 v1431）の取り込み直し。
+     *
+     * v1429 は `refresh()` / `reagentHits()` の絞り込みに `!rule.info` という除け口を残した。
+     * `siteAllowed` は「箇所を持たない情報カードは絞らない」（`if (!ids.length) return true;`）を
+     * 自分で持っているので、この除け口は**箇所を持つ info ルール**（どれも原子IDの配列を返す）に
+     * 対しては有害なだけだった。
+     *
+     * ユーザーの実測（v1430・2026-08-20）: 4本のアルコールを並べて **1-ブタノールを選んでも**
+     * 「この分子にできること」に `⚠ 酸化（3級アルコール）` が残る
+     * （その解説は 2-メチル-2-プロパノール のもの）。
+     *
+     * ⚠ 札を絞るだけでは足りない。info の `apply()` が**キャンバス全体**を見て文面を作ると、
+     *   「札は A の分子で出たのに文面は B の話も含む」が残る。⑥がそこを見る。
+     *   ⚠ 元ブランチは `oxidation_out_of_scope_info` の「環」と「側鎖」で測っていたが、
+     *   その2つは v1472 で実行へ移った（残るのはエチレンだけ）。今の main で段落が2種類に
+     *   分かれる info は `dehydration_anhydride_info`（トランス形／シス・トランスが読めない）なので、
+     *   フマル酸と描き分け前のブテン二酸で測る。
+     */
+    test('RX45: ★解説カード（info）も「いま見ている分子」で絞る（隣の分子の注意書きが混ざらない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const rxRules = () => [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .map(b => b.dataset.rule);
+        const 一級 = '1-ブタノール', 三級 = '2-メチル-2-プロパノール';
+        const アルコール4本 = [一級, '2-ブタノール', '2-メチル-1-プロパノール（イソブタノール）', 三級];
+
+        // ① ユーザーの再現そのもの —— 1-ブタノールを見ているのに3級アルコールの解説が出ない
+        scopeSetup(c, アルコール4本, 0);
+        assert(D.getElementById('mm-name').textContent === 一級,
+            `開いた分子が違う（${D.getElementById('mm-name').textContent}）`);
+        assert(!rxRules().includes('oxidize_tertiary_info'),
+            `1-ブタノールを見ているのに「⚠ 酸化（3級アルコール）」が出る` +
+            `＝ 申し立ての症状（${rxRules().join(' / ')}）`);
+        // ② 絞りすぎの検出 —— 見ている分子自身の反応は残る
+        assert(rxRules().includes('oxidize_primary'),
+            `1-ブタノール自身の酸化まで消えている（${rxRules().join(' / ')}）`);
+
+        // ③ ★陰性対照 —— 3級アルコールを見れば出る（「常に消す」で緑になっていない）
+        scopeSetup(c, アルコール4本, 3);
+        assert(D.getElementById('mm-name').textContent === 三級,
+            `③の分子が開けていない（${D.getElementById('mm-name').textContent}）`);
+        assert(rxRules().includes('oxidize_tertiary_info'),
+            `3級アルコールを見ているのに解説カードが出ない（${rxRules().join(' / ')}）`);
+        // ④ ★陰性対照 —— 1分子だけのときの振る舞いは変えていない
+        scopeSetup(c, [三級], 0);
+        assert(rxRules().includes('oxidize_tertiary_info'),
+            `1分子だけのときに解説カードが消えた（絞り込みが暴走している）`);
+
+        // ⑤ 瓶の経路も同じ（判定を2か所に書いていないことの実測）
+        const oxBottle = W.REAGENTS.find(r =>
+            r.id === W.REACTION_RULES.find(x => x.id === 'oxidize_tertiary_info').reagentId[0]);
+        assert(oxBottle, '酸化剤の瓶が見つからない');
+        scopeSetup(c, [一級, 三級], 0);
+        assert(!W.reactor.reagentHits(oxBottle).map(h => h.rule.id).includes('oxidize_tertiary_info'),
+            '瓶からなら隣の分子の解説が引ける（絞り込みが1か所で効いていない）');
+        scopeSetup(c, [一級, 三級], 1);
+        assert(W.reactor.reagentHits(oxBottle).map(h => h.rule.id).includes('oxidize_tertiary_info'),
+            '3級アルコールを見ているのに瓶から解説が引けない');
+        // ⑤' `oxidation_out_of_scope_info`（今はエチレンだけ）も同じ門を通る
+        scopeSetup(c, [一級, 'エチレン（エテン）'], 0);
+        assert(!rxRules().includes('oxidation_out_of_scope_info'),
+            `1-ブタノールを見ているのに隣のエチレンの「⚠ 酸化（ここでは図を変えない範囲）」が出る（${rxRules().join(' / ')}）`);
+        scopeSetup(c, [一級, 'エチレン（エテン）'], 1);
+        assert(rxRules().includes('oxidation_out_of_scope_info'),
+            `エチレンを見ているのに「⚠ 酸化（ここでは図を変えない範囲）」が出ない（${rxRules().join(' / ')}）`);
+
+        // ⑥ ★文面も同じ範囲で作る（札だけ絞ると「札は A・文面は B も」になる）。
+        //    `dehydration_anhydride_info` は「反対側（トランス形）」と「シスかトランスか読めない」で
+        //    別の段落を返すので、1つずつ並べて**片方しか語らない**ことを見る
+        const toast = D.getElementById('canvas-toast');
+        const anhydrideCaption = (names, which) => {
+            scopeSetup(c, names, which);
+            const btn = D.querySelector('#reaction-actions button[data-rule="dehydration_anhydride_info"]');
+            assert(btn, `${names[which]} を見ているのに「⚠ 分子内脱水 → 酸無水物（この形では起こらない）」が出ない` +
+                `（${rxRules().join(' / ')}）`);
+            toast.textContent = 'RX45-MARK';
+            btn.click();
+            assert(toast.textContent !== 'RX45-MARK', '解説カードを押しても何も出ない');
+            return toast.textContent;
+        };
+        const 反対 = 'フマル酸', 不明 = 'ブテン二酸（マレイン酸／フマル酸）';
+        const ANTI = '反対側（トランス形）', UNKNOWN = '図から読み取れません';
+        const capAnti = anhydrideCaption([反対, 不明], 0);
+        assert(capAnti.includes(ANTI),
+            `フマル酸を見ているのにトランス形の話が無い（${capAnti.slice(0, 60)}）`);
+        assert(!capAnti.includes(UNKNOWN),
+            `フマル酸を見ているのに隣のブテン二酸（読めない）の話が混ざる（${capAnti.slice(0, 120)}）`);
+        const capUnknown = anhydrideCaption([反対, 不明], 1);
+        assert(capUnknown.includes(UNKNOWN),
+            `ブテン二酸を見ているのに「読めない」の話が無い（${capUnknown.slice(0, 60)}）`);
+        assert(!capUnknown.includes(ANTI),
+            `ブテン二酸を見ているのに隣のフマル酸（トランス形）の話が混ざる（${capUnknown.slice(0, 120)}）`);
+        // ★陰性対照 —— 並べたときの文面が、1分子だけのときと**同じ**（絞りすぎて痩せていない）
+        assert(capAnti === anhydrideCaption([反対], 0),
+            '並べたときのフマル酸の文面が、1分子のときと違う（絞りすぎ）');
+        assert(capUnknown === anhydrideCaption([不明], 0),
+            '並べたときのブテン二酸の文面が、1分子のときと違う（絞りすぎ）');
+
+        // ⑦ ★否定対照 —— **2分子に跨る解説カードはどちら側から見ても残る**
+        //    （「見ている分子の中で完結するものだけ」に絞ると、ここが赤くなる）
+        scopeSetup(c, ['安息香酸', 'フェノール'], 0);
+        assert(rxRules().includes('esterification_phenol_info'),
+            `カルボン酸側から、2分子に跨る解説カードが消えた（${rxRules().join(' / ')}）`);
+        scopeSetup(c, ['安息香酸', 'フェノール'], 1);
+        assert(rxRules().includes('esterification_phenol_info'),
+            `フェノール側から、2分子に跨る解説カードが消えた（${rxRules().join(' / ')}）`);
+
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
     /*
      * ===== RX46〜RX48: 反応の一覧は「たどる」と「決める」が別（v1439） =====
      *

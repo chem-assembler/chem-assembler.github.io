@@ -2182,14 +2182,37 @@ function sideChainProductKey(mol, benzylId, branch) {
     return [...comp].sort().join(',') + '#' + canonicalCode(probe);
 }
 
+/** 箇所（原子IDの並び）を引き比べるための鍵。IDは乱数なので**並べ替えてから**繋ぐ（v1589・§13.8） */
+function siteKey(site) {
+    return (Array.isArray(site) ? site.filter(x => typeof x === 'string') : []).sort().join('|');
+}
+
+/**
+ * `info` ルールの `apply(game, sites)` が「**札に残った箇所だけ**」を語るための共通の門（v1589・§13.8）。
+ * `sites` は `refresh()` / `reagentHits()` が `siteAllowed` で絞ったあとの並び。
+ * 渡されなかったとき（古い呼び方・空）は全件を返す ＝ 従来どおり分子全体で文面を作る。
+ * ⚠ 絞った結果が0件になるときも全件に戻す（文面が「何もありません」に痩せるより、従来の文面のほうがまし）
+ */
+function pickShownSites(all, sites, keyOf) {
+    if (!Array.isArray(sites) || !sites.length) return all;
+    const shown = new Set(sites.map(siteKey));
+    const picked = all.filter(x => shown.has(siteKey(keyOf(x))));
+    return picked.length ? picked : all;
+}
+
 /**
  * 酸化剤では**図を変えない**と決めた形の一覧と、その理由の種別。
- * `info` ルールは箇所を受け取らない（`onRuleClick` が `apply(game)` を引数なしで呼ぶ）ので、
- * 文面を作るときは分子をもう一度見る。ここは `{ sites, kinds }` の両方を返す。
+ * 文面を作るときは分子をもう一度見る（`apply` は書き換えを持たないので毎回引き直してよい）。
+ * ここは `{ sites, kinds, kindOf }` を返す。
+ *
+ * ⚠ **種別は箇所ごとに引けるようにしてある**（`kindOf`・v1589・§13.8）。
+ *   札が「いま見ている分子」で絞られるので、`kinds` を全体から作ると
+ *   **札は A の分子で出たのに文面は B の話も含む**になる。`apply` は渡された箇所だけを引く
  */
 function oxidationOutOfScope(mol) {
     const sites = [];
     const kinds = new Set();
+    const kindOf = new Map();
     // **側鎖酸化で図が変わる範囲の C=C は案内から外す**（§10.3 決着）。
     // スチレンの C=C は「末端だから切らない」ではなく、側鎖ごと酸化されて安息香酸になる ——
     // 実行できるボタンの横に「ここでは変えません」を並べると、どちらが起きるのか読めない
@@ -2201,9 +2224,9 @@ function oxidationOutOfScope(mol) {
         const cls = alkeneCleavageClass(mol, s);
         if (cls !== 'gone') return;
         if (s.every(id => consumed.has(id))) return;
-        sites.push(s); kinds.add(cls);
+        sites.push(s); kinds.add(cls); kindOf.set(siteKey(s), cls);
     });
-    return { sites, kinds };
+    return { sites, kinds, kindOf };
 }
 
 /* ==========================================================================
@@ -5298,14 +5321,17 @@ const REACTION_RULES = [
     },
     {
         /* §10.3・§10.4 の線引きを**画面から見えるようにする** info（「判断できないものは出さない」の
-         * 出さない側に、理由だけは返す）。箇所は受け取らないので文面は分子をもう一度見て作る。 */
+         * 出さない側に、理由だけは返す）。文面は分子をもう一度見て作る。 */
         id: 'oxidation_out_of_scope_info',
         reagentId: OXIDANT_REAGENT_IDS,
         label: '⚠ 酸化（ここでは図を変えない範囲）',
         info: true,
         detect(mol) { return oxidationOutOfScope(mol).sites; },
-        apply(game) {
-            const kinds = oxidationOutOfScope(game.userMolecule).kinds;
+        /* ⚠ **札に残った箇所だけを語る**（v1589・§13.8）。`sites` は絞ったあとの並びで、
+         * ここだけ全体を数え直すと「札は見ている分子で出たのに、文面は隣の分子の話も含む」になる */
+        apply(game, sites) {
+            const { sites: all, kindOf } = oxidationOutOfScope(game.userMolecule);
+            const kinds = new Set(pickShownSites(all, sites, x => x).map(s => kindOf.get(siteKey(s))));
             const parts = [];
             /* ★ **エチレンだけ**（両端が =CH₂）。文面はユーザー承認済み（2026-08-27）。
              * ⚠ **詳しい経路（グリコール → シュウ酸）は書かない。**
@@ -7494,9 +7520,12 @@ const REACTION_RULES = [
             return anhydrideDehydrationCandidates(mol)
                 .filter(c => c.geo !== 'ok').map(c => c.site);
         },
-        apply(game) {
-            const kinds = new Set(anhydrideDehydrationCandidates(game.userMolecule)
-                .filter(c => c.geo !== 'ok').map(c => c.geo));
+        /* ⚠ **札に残った箇所だけを語る**（v1589・§13.8。`oxidation_out_of_scope_info` と同じ）。
+         * フマル酸（反対側）と描き分け前のブテン二酸（読めない）を並べたとき、
+         * 見ている側の段落だけを出す */
+        apply(game, sites) {
+            const cands = anhydrideDehydrationCandidates(game.userMolecule).filter(c => c.geo !== 'ok');
+            const kinds = new Set(pickShownSites(cands, sites, c => c.site).map(c => c.geo));
             const parts = [];
             if (kinds.has('anti')) {
                 parts.push('2つのカルボキシ基が**二重結合をはさんで反対側（トランス形）**にあります。' +
@@ -10064,7 +10093,11 @@ class Reactor {
             }
             // ⚠ `selSets.length &&` の門番は外した（v1429）。選択が無いときも
             //    「いま見ている分子」で絞る ＝ 判定は `siteAllowed` ただ1つに任せる
-            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
+            // ⚠ `!rule.info` の除け口も外した（v1589・§13.8）。解説カードだけ素通しにすると
+            //    「1-ブタノールを見ているのに ⚠ 酸化（3級アルコール）が出る」＝ 隣の分子の
+            //    解説が混ざる。箇所を持たない情報カードは `siteAllowed` 自身が通す
+            //    （`if (!ids.length) return true;`）ので、ここに例外は要らない
+            sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             if (!rule.info) executable++;
             const btn = document.createElement('button');
@@ -10420,7 +10453,9 @@ class Reactor {
                 console.error('反応ルール検出エラー:', rule.id, e);
                 return;
             }
-            if (!rule.info) sites = sites.filter(s => siteAllowed(s, rule));
+            // `refresh()` と同じ（v1589・§13.8）。解説カードも絞る ＝ 瓶から引いた解説が
+            // 隣の分子のものにならない。箇所を持たない情報カードは `siteAllowed` が通す
+            sites = sites.filter(s => siteAllowed(s, rule));
             if (sites.length === 0) return;
             hits.push({ rule, sites });
         });
@@ -10682,7 +10717,7 @@ class Reactor {
         // 「選べるが、いまは材料が足りない」条件（v1424）。**押しても何も起きない、にしない**
         if (!hit.sites) { this.explainConditionMiss(hit.rule, reagent); return; }
         this.clearReagentNote();
-        if (hit.rule.info) { this.showReagentInfo(hit.rule); return; }
+        if (hit.rule.info) { this.showReagentInfo(hit.rule, hit.sites); return; }
         if (this.game.closeMoleculeModal) this.game.closeMoleculeModal();
         // ⚠ **押した瓶を持って行く**（v1428）。「効くが、ふつうはそちらを使わない」を
         //   結果に添えられるのは、どの瓶から来たかを知っているここから先だけ。
@@ -10692,14 +10727,15 @@ class Reactor {
 
     // `info` ルールの解説を瓶の節に出す。**分子は1原子も変わらず・Undo も積まない**
     // （`apply` を呼ぶが、`info` ルールの `apply` は文を返すだけで書き換えない）
-    showReagentInfo(rule) {
+    // `sites` は `reagentHits()` が絞ったあとの並び（v1589・§13.8。反応カードと同じものを渡す）
+    showReagentInfo(rule, sites) {
         const note = this.reagentNoteEl;
         if (!note) return;
         note.innerHTML = '';
         const p = document.createElement('div');
         p.style.cssText = 'font-size:11.5px; line-height:1.5; color:var(--text-secondary);';
         // `**…**` は太字にして出す（v1467・game.js の `setEmphasisText`）
-        setEmphasisText(p, rule.apply(this.game).caption);
+        setEmphasisText(p, rule.apply(this.game, sites).caption);
         note.appendChild(p);
     }
 
@@ -11186,7 +11222,9 @@ class Reactor {
             // 解説のみ（実行なし・Undo履歴も積まない）。
             // 引数なしで呼ぶと、分子を見て文面を作る info ルール（縮合重合）が game を受け取れず
             // 落ちてトーストごと出なくなる（v331 の夜間監査で検出）。実行系と同じ引数で渡す
-            this.game.showToast(rule.apply(this.game).caption, 6000, 'success');
+            // ⚠ **絞ったあとの箇所を渡す**（v1589・§13.8）。札を「いま見ている分子」で
+            //   絞っても、文面が全体を数え直していたら混ざりは残る
+            this.game.showToast(rule.apply(this.game, sites).caption, 6000, 'success');
             return;
         }
         this.narrow(rule, sites, reagent);
