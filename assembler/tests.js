@@ -26418,6 +26418,110 @@
             `drawingKey が ⇅ と ⇄ を見分けられない（${split}/${q.hwPool.length - 1}）`);
     });
 
+    test('HQ8: クイズの図でもハース環の手前の辺が太く・隣はテーパー（キャンバスと同じ判定・発注書 J）', async (c) => {
+        /* claude/serene-haibt-1c2b46（元 v1452 の HQ5）の取り込み直し（v1590）。
+         * キャンバス（drawMolecule）は手前の辺を太く描くが、クイズ・立体ビュー・分子モーダルの図は
+         * 別経路（renderMoleculeIntoSvg）で、そちらには太線が無かった（2026-08-22 ユーザー指摘）。
+         * ⚠ 元ブランチの後で main は「太い棒3本」から「手前1本は太い棒・隣2本は手前が太く奥が細い台形」
+         *   （v1583・発注書 J）に変わったので、検査もその形で書き直した:
+         *   ① 実際の出題（見本＋3択）に太線とテーパーが出る
+         *   ② 糖の全数＋上下反転で、太線・台形が `_haworthFrontBondKeys(mol)` と1本ずつ一致する
+         *      （両端の太さも・位置は線の中点で照合）／台形の太い端が下（手前）
+         *   ③ ★否定対照: 酸素の無い環・鎖・平たく描いていない酸素の環（フラン）には付かない */
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const q = W.choiceQuiz;
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        const thickOf = (id) => [...D.querySelectorAll(`#${id} .quiz-bonds line`)]
+            .filter(l => +l.getAttribute('stroke-width') > 3);
+        const taperOf = (id) => [...D.querySelectorAll(`#${id} .quiz-bonds polygon.svg-bond-taper`)];
+        // ① 実際の出題。見本（登録の図そのもの）には必ず出る。
+        //   ⚠ 選択肢は全部ではない —— フラノースを上下反転・180° 回転した図は環の O が下の頂点に来て
+        //     判定（前縁は水平）が0本になる（②の flippedNone）。出題はランダムなので「少なくとも1枚」で見る
+        assert(thickOf('pk-goal').length >= 1, 'pk-goal に手前の太線が無い');
+        assert(taperOf('pk-goal').length >= 2, `pk-goal にテーパーが無い（${taperOf('pk-goal').length} 本）`);
+        assert(['pk-opt-0', 'pk-opt-1', 'pk-opt-2'].some(id => thickOf(id).length >= 1 && taperOf(id).length >= 2),
+            '選択肢の図のどれにも手前の太線とテーパーが無い');
+        /* 台形の両端（points は 端1外→端2外→端2内→端1内）。幅と中心を**座標で**読む */
+        const ends = (poly) => {
+            const p = poly.getAttribute('points').trim().split(/\s+/).map(s => s.split(',').map(Number));
+            const w = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+            return [
+                { w: w(p[0], p[3]), x: (p[0][0] + p[3][0]) / 2, y: (p[0][1] + p[3][1]) / 2 },
+                { w: w(p[1], p[2]), x: (p[1][0] + p[2][0]) / 2, y: (p[1][1] + p[2][1]) / 2 }
+            ];
+        };
+        // ⚠ 鍵を '_' で割らない（原子IDそのものに '_' が入る）。結合から鍵を作って引く
+        const midOf = (mol, key) => {
+            const bd = mol.bonds.find(x => `${x.atomId1}_${x.atomId2}` === key);
+            assert(bd, `判定の鍵 ${key} に当たる結合が無い`);
+            const a1 = mol.atoms.find(a => a.id === bd.atomId1), a2 = mol.atoms.find(a => a.id === bd.atomId2);
+            return { x: (a1.x + a2.x) / 2, y: (a1.y + a2.y) / 2 };
+        };
+        // ② 全数
+        let figures = 0;
+        /* ⚠ 上下反転した図は判定が0本のことがある（フラノースを裏返すと環の O が下の頂点に来て、
+         *   前縁が水平でなくなる ＝ `_haworthFrontBondKeys` の「前縁は水平」の門で外れる。
+         *   キャンバスでも同じ判定なので、ここでは**描いた図が判定と一致する**ことだけを見る）。
+         *   正立の図（登録の図そのもの）は必ず1環ぶん以上を持つ */
+        let flippedNone = 0;
+        const checkFigure = (name, target, upright) => {
+            const mol = W.renderMoleculeIntoSvg(g, 'pk-opt-0', target, false, false);
+            const front = g._haworthFrontBondKeys(mol);
+            const heads = [...front].filter(([, w]) => w[0] === w[1]);
+            const tapers = [...front].filter(([, w]) => w[0] !== w[1]);
+            if (upright) {
+                assert(heads.length >= 1 && tapers.length >= 2,
+                    `${name}: 判定が糖の環を見ていない（手前 ${heads.length} / テーパー ${tapers.length}）`);
+            } else if (!front.size) flippedNone++;
+            const thick = thickOf('pk-opt-0'), taper = taperOf('pk-opt-0');
+            assert(thick.length === heads.length,
+                `${name}: 太線が ${thick.length} 本（判定は ${heads.length} 本）`);
+            assert(taper.length === tapers.length,
+                `${name}: テーパーが ${taper.length} 本（判定は ${tapers.length} 本）`);
+            thick.forEach(l => {
+                const mx = (+l.getAttribute('x1') + +l.getAttribute('x2')) / 2;
+                const my = (+l.getAttribute('y1') + +l.getAttribute('y2')) / 2;
+                assert(heads.some(([k]) => { const m = midOf(mol, k); return near(mx, m.x, 1) && near(my, m.y, 1); }),
+                    `${name}: 太線が判定と違う場所にある（${mx},${my}）`);
+                assert(+l.getAttribute('stroke-width') === heads[0][1][0], `${name}: 太線の太さが判定と違う`);
+            });
+            taper.forEach(t => {
+                const [e1, e2] = ends(t);
+                const fat = e1.w > e2.w ? e1 : e2, thin = e1.w > e2.w ? e2 : e1;
+                assert(fat.w > thin.w + 1.5,
+                    `${name}: 台形の両端の太さが変わらない（${fat.w.toFixed(1)} / ${thin.w.toFixed(1)}）`);
+                // ★ 手前（下）が太い。上下反転した図でも、反転後の座標で判定し直すのでいつも下が太い
+                assert(fat.y > thin.y + 1, `★ ${name}: 台形の太い端が奥（上）に来ている`);
+                const mx = (e1.x + e2.x) / 2, my = (e1.y + e2.y) / 2;
+                const hit = tapers.find(([k]) => { const m = midOf(mol, k); return near(mx, m.x, 1) && near(my, m.y, 1); });
+                assert(hit, `${name}: テーパーが判定と違う場所にある（${mx},${my}）`);
+                assert(near(fat.w, Math.max(...hit[1]), 0.5) && near(thin.w, Math.min(...hit[1]), 0.5),
+                    `${name}: 台形の両端の太さが判定（${hit[1]}）と違う`);
+            });
+            figures++;
+        };
+        q.buildHaworth();
+        assert(q.hwPool.length >= 10, `ハースの題材が少なすぎる（${q.hwPool.length}）`);
+        q.hwPool.forEach(e => {
+            checkFigure(e.name, e.target, true);
+            checkFigure(`${e.name}（上下反転）`, W.flipTargetVertically(e.target), false);
+        });
+        // ③ ★否定対照: 酸素の無い環／鎖／平たく描いていない酸素の環には付かない
+        ['エタノール', 'シクロヘキサン', 'フラン', '無水マレイン酸'].forEach(name => {
+            const e = g.resolveCompound(name);
+            assert(e, `否定対照の ${name} が見つからない`);
+            W.renderMoleculeIntoSvg(g, 'pk-opt-0', e.target, false, false);
+            assert(thickOf('pk-opt-0').length === 0 && taperOf('pk-opt-0').length === 0,
+                `★ ${name} の図に手前の太線／テーパーが出た`);
+        });
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        D.getElementById('btn-pk-close').click();
+        return `糖 ${q.hwPool.length} 件×正立/上下反転 = ${figures} 枚で判定と1本ずつ一致（上下反転で判定0本は ${flippedNone} 枚）・否定対照4件は素のまま`;
+    });
+
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
