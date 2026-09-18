@@ -23800,6 +23800,77 @@
         g.updateDrawing();
     });
 
+    test('FR2: ハース環の手前の辺は太く、隣の2本はテーパー（手前が太く奥が細い・発注書 J）', async (c) => {
+        /* 2026-09-17・ユーザー「**ハース環、フラノース・ピラノース　一番手前の結合、の隣の結合、は
+         * テーパーをつけて教科書の図に寄せる**」。
+         * ★ 見るのは3つ:
+         *   ① 一番手前の辺は太い1本の線／その隣2本は**両端の太さが違う台形**（＝テーパー）
+         *   ② テーパーの**太い端が下（手前）**にある（上下が逆だと奥が太くなる）
+         *   ③ ★ 否定対照: **平たく描かれていない環（フラン・無水マレイン酸など）には付かない**
+         *      —— 奥行きのない図に奥行きの記号を乗せない。⚠ v1582 まではここが付いていた。 */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('free');
+        const taper = () => [...D.querySelectorAll('#bonds-group polygon.svg-bond-taper')];
+        const thick = () => [...D.querySelectorAll('#bonds-group line.svg-bond-ink')]
+            .filter(l => +l.getAttribute('stroke-width') > 3);
+        const draw = (name) => {
+            g.userMolecule = new W.Molecule();
+            g.updateDrawing();
+            assert(g.summonMolecule(name), `${name} を呼び出せない（検査が素通りする）`);
+            g.updateDrawing();
+        };
+        /* 台形の「両端の幅」を測る。points は 端1外→端2外→端2内→端1内 の順なので、
+         * 0-3 の距離が端1の幅、1-2 の距離が端2の幅。⚠ 描いた順ではなく**座標**で読む */
+        const ends = (poly) => {
+            const p = poly.getAttribute('points').trim().split(/\s+/)
+                .map(s => s.split(',').map(Number));
+            const w = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+            return [
+                { w: w(p[0], p[3]), y: (p[0][1] + p[3][1]) / 2 },
+                { w: w(p[1], p[2]), y: (p[1][1] + p[2][1]) / 2 }
+            ];
+        };
+
+        // ---- ① ピラノース（六員環）と ② フラノース（五員環）で同じ形になる
+        [['α-D-グルコース（α-D-グルコピラノース）', 6], ['β-D-フルクトフラノース', 5]].forEach(([name, n]) => {
+            draw(name);
+            assert(thick().length === 1,
+                `${name}: 一番手前の辺が太い1本になっていない（${thick().length} 本）`);
+            const ts = taper();
+            assert(ts.length === 2,
+                `${name}: テーパーの辺が ${ts.length} 本（一番手前の辺の隣 2本を期待・${n}員環）`);
+            ts.forEach(t => {
+                const [e1, e2] = ends(t);
+                const fat = e1.w > e2.w ? e1 : e2, thin = e1.w > e2.w ? e2 : e1;
+                assert(fat.w > thin.w + 1.5,
+                    `${name}: 両端の太さが変わらない（${fat.w.toFixed(1)} / ${thin.w.toFixed(1)}）`);
+                assert(fat.y > thin.y + 1,
+                    `★ ${name}: 太い端が奥（上）に来ている（手前が太く奥が細い、が逆）`);
+            });
+        });
+
+        // ---- ③ 二糖は環が2つぶん（マルトースは 太2本＋テーパー4本）
+        draw('マルトース（麦芽糖）');
+        assert(thick().length === 2 && taper().length === 4,
+            `二糖で環2つぶんにならない（太 ${thick().length} / テーパー ${taper().length}）`);
+
+        // ---- ④ ★★ 否定対照: 平たく描いていない「酸素を含む環」には付かない
+        //      （v1582 まではフラン・無水マレイン酸・THP などにも太線が付いていた）
+        ['フラン', '無水マレイン酸', 'テトラヒドロピラン（オキサン）',
+            'γ-ブチロラクトン（4-ブタノリド）'].forEach(name => {
+            draw(name);
+            assert(thick().length === 0 && taper().length === 0,
+                `★ ${name}: 平面の環に手前の太線が付いている（太 ${thick().length} / テーパー ${taper().length}）`);
+        });
+
+        // ---- ⑤ 無回帰: ベンゼンなど酸素の無い環は元から対象外
+        draw('ベンゼン');
+        assert(thick().length === 0 && taper().length === 0, 'ベンゼンに手前の太線が付いた');
+        c.reset();
+        return 'ピラノース／フラノースとも 太1＋テーパー2・太い端が手前／二糖は2環ぶん／平面の環4件は素のまま';
+    });
+
     test('ST8: 立体を名前に反映するトグル＋鎖状⇄環状の平衡（P12-7 M2e / M2d）', async (c) => {
         c.reset();
         const g = c.game, W = c.W;
