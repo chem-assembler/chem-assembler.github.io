@@ -22749,7 +22749,9 @@
         // (d) 他のモードではくさびを描かない（＝フィッシャーの規約を読む練習のまま）
         modeEl.value = 'pair';
         q.nextQuestion();
-        assert(D.querySelectorAll('#sq-svg-a .quiz-bonds polygon').length === 0,
+        // ⚠ ハース環の手前の太線（台形 .svg-bond-taper・v1590 でクイズの図にも出た）はくさびではない。
+        //   出題が糖に当たったときだけ台形を数えて落ちていた（ST 帯の順で再現・2026-09-19）
+        assert(D.querySelectorAll('#sq-svg-a .quiz-bonds polygon:not(.svg-bond-taper)').length === 0,
             '標準モードにくさびが描かれている');
         assert(D.getElementById('sq-wedge-legend').classList.contains('hidden'),
             '標準モードで凡例が出ている');
