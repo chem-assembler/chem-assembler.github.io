@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) — SchoolLenz 共通。媒体別の流入を測る（SNS_PLAN.md の KPI） -->
+<!-- 自分の端末と開発用の駆動を計測から外す。
+     (1) **localhost / 127.0.0.1 / *.local / file:// は無条件で止める**。ここが一番の穴だった:
+         GA4 の (direct) 1,394 セッションのうち **1,366（98%）がホスト名 localhost** ＝ ボットではなく
+         自分たちの回帰テストと開発だった（2026-08-12 に判明）。(2) の印は localStorage ＝
+         **オリジンごと**なので、本番で押しても localhost 側には一切効かない。だから印より先に見る
+     (2) 各端末で一度だけ ?slz_internal=1 を付けて開くと印が残り、**IP が変わっても以後ずっと対象外**。
+         IP での内部トラフィック除外は、リレーだと出口が変わり携帯回線だと他人と共有するため
+         この環境では成立しなかった（2026-08-10）。解除は localStorage の slz_internal を消す
+     (3) test.html / audit.html / devices.html の iframe に埋め込まれているときも止める。
+         **回帰テストがキーイベントまで GA4 へ送っていた**（(direct) に古い版つきの URL が実データとして
+         記録されていた）。iframe の src を1つずつ直す手もあるが、tests.js が動的に作る iframe が
+         20か所以上あって取りこぼす。**読み込まれた側で気づく**ほうが確実。
+         top が別オリジンなら参照で例外になるので、外部サイトへの正当な埋め込みは止めない -->
+<script>try{var _h=location.hostname,_p=location.search.indexOf('slz_internal')>-1,_i=_h==='localhost'||_h==='127.0.0.1'||_h==='[::1]'||_h===''||/\.local$/.test(_h);if(_p){try{localStorage.setItem('slz_internal','1');}catch(e){}}if(!_i){try{_i=_p||!!localStorage.getItem('slz_internal');}catch(e){_i=_p;}}if(!_i&&window.top!==window.self){try{_i=/\/(test|audit|devices)\.html$/.test(window.top.location.pathname);}catch(e){}}if(_i)window['ga-disable-G-403BPCLQ0D']=true;}catch(e){}</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-403BPCLQ0D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-403BPCLQ0D');
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
+<meta name="robots" content="noai, noimageai">
+<title>気体の法則と状態方程式 —— 比例と反比例で解く ｜ 化学の参考書</title>
+<meta name="description" content="気体の P・V・n・T は PV ＝ nRT で結ばれます。「＝ の逆側は比例・同じ側は反比例」と読み、0℃ なら 22.4L、それ以外なら 300K・1.0×10⁵Pa の 24.9L を基準にして、代入せずに比で解きます。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/gas-laws/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="SchoolLenz">
+<meta property="og:title" content="気体の法則と状態方程式 —— 比例と反比例で解く ｜ 化学の参考書">
+<meta property="og:description" content="気体の P・V・n・T は PV ＝ nRT で結ばれます。「＝ の逆側は比例・同じ側は反比例」と読み、0℃ なら 22.4L、それ以外なら 300K・1.0×10⁵Pa の 24.9L を基準にして、代入せずに比で解きます。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/gas-laws/">
+<meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<style>/* ★ 面Aの器の色。⚠ 表・例題・図の色は assembler/style.css から切り出したものが下に続き、
+   そのあとの LIGHT_CSS が**明るい地へ読み替える**（読み替えの漏れは checkLightCoverage が赤にする） */
+:root{--bg:#f5f3ef;--panel:#fff;--line:#dcd7cd;--fg:#20242b;--dim:#59616c;
+--accent:#0d6c78;--brand:#00f2fe;--band:#0f141c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Noto Sans JP",system-ui,sans-serif;line-height:1.85}
+.wrap{max-width:984px;margin:0 auto;padding:0 16px}
+/* ★★ **1カラムのときも読み欄を広げすぎない**（2026-09-10・実測）。
+   ⚠ 984px の器をそのまま使うと、**800〜999px の窓で1行 45〜56字**になっていた
+     （実測: 768px → 43.3字 ／ 900px → 51.1字 ／ 999px → 56.0字）
+     ＝ タブレット横と小さいノートPCがちょうどここに落ちる。
+   ★ 712 = 読み欄 680 + 左右の余白 16×2 ＝ **どの幅でも 40字を超えない**。
+   ⚠ 1000px 以上は2カラムなので触らない（あちらは grid が 680px に決めている）。 */
+@media (max-width:999px){main.wrap{max-width:712px}}
+/* ★ 帯だけは暗いまま（ブランドの手がかり） */
+header{background:var(--band);padding:11px 0;font-size:13px;color:#a8b0c4}
+header a{color:#a8b0c4;text-decoration:none}
+header a:hover{color:var(--brand)}
+h1{font-size:clamp(22px,4.4vw,32px);margin:30px 0 10px;line-height:1.45;letter-spacing:.01em}
+h2{font-size:19px;margin:44px 0 14px;padding-bottom:7px;border-bottom:2px solid var(--line)}
+h3{font-size:16px;margin:28px 0 8px;color:var(--dim)}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--dim);font-weight:700}
+.lede{color:var(--dim);margin:0 0 22px;font-size:15.5px;line-height:1.85}
+.unit-label{display:inline-block;font-size:12px;color:var(--dim);background:#eae6de;border:1px solid var(--line);
+border-radius:999px;padding:3px 12px;margin:0 6px 6px 0}
+/* 索引 */
+.idx{list-style:none;padding:0;margin:0 0 26px;display:grid;gap:12px}
+.idx li{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+box-shadow:0 1px 2px rgba(32,36,43,.05)}
+.idx a{display:block;padding:15px 17px;text-decoration:none;color:var(--fg)}
+.idx a:hover{border-color:var(--accent)}
+.idx b{display:block;font-size:16.5px;margin-bottom:5px}
+.idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
+   ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
+     ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
+       字数を保つために器のほうを広げた（17px / 680px ＝ 1行 40.0 字）。
+   ⚠ **行送りの倍率は 1.95 のまま変えていない**（実寸は 30.2 → 33.2px。字が大きくなったぶん）。 */
+.ref-scope{font-size:17px}
+.ref-scope .ref-p{font-size:17px;line-height:1.95;margin:0 0 20px}
+/* ⚠ 表は**器の幅いっぱいに引き伸ばさない**（ペインは 340px なので 100% でよいが、
+   広い読み物では「C の数」の列が 250px になって数字と名称が離れる） */
+.ref-scope .ref-table{font-size:15px;width:auto}
+.ref-scope .ref-mech-table,.ref-scope .ref-map-table{font-size:15px}
+.ref-scope .ref-cap{font-size:13.5px;margin-bottom:8px}
+.ref-scope .ref-table-wrap{margin-bottom:28px}
+.ref-scope .ref-example{font-size:15.5px}
+.ref-scope .ref-example h4{font-size:16px}
+.ref-scope .ref-note{font-size:13.5px}
+.ref-scope a.ref-try,.ref-scope a.ref-mech-play{display:inline-block;text-decoration:none}
+/* 埋め込み（★ 押してから読み込む。置いただけで相手の page_view が飛ばないように） */
+.embed{margin:26px 0;padding:18px;background:var(--panel);border:1px solid var(--accent);border-radius:12px}
+.embed b{display:block;font-size:15.5px;margin-bottom:4px}
+.embed p{margin:0;color:var(--dim);font-size:14px}
+.embed button{margin-top:12px;background:var(--accent);color:#fff;font-weight:700;font-size:14.5px;
+border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
+.embed button:hover{filter:brightness(1.12)}
+.embed iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
+.embed .alt{display:inline-block;margin-top:10px;margin-left:14px;color:var(--accent);font-size:13.5px}
+/* ★★ 2カラム（設計書 §19-1・ユーザー承認）——「検索から飛んできたけど自分が欲しい情報が
+   どこにあるかわからない」を避けるための目次。⚠ **狭い面では上の折りたたみに落とす**（同じ markup）。
+   ⚠ markup は learn.js の renderToc が組んだもの ＝ 面A側に2本目の目次を持たない（§19-6） */
+/* ⚠⚠ セレクタは**全部 .ref-layout から始める**（.ref-toc … 単独では効かない）。
+   ★ 面Aの CSS は「器（ここ）→ assembler/style.css の切り出し → 明るい地への読み替え」の順に
+     並ぶので、**同じ強さのセレクタは切り出しのほうが勝つ**。
+   ⚠ 実際、.ref-toc details などの器の指定は**焼いた版でずっと効いていなかった**
+     （広い画面でも資料ペインの小さなカードのまま出ていた。2026-09-09 に実測して判明）。 */
+.ref-layout{display:block}
+/* ★★ 狭い面では**畳んだ目次を上に貼り付ける**（2026-09-10）。
+   ⚠ 貼り付けないと、375px 幅で **9,477px ＝ 11.6画面**を読むあいだ、
+     現在地の手がかりがページの先頭に置いてきぼりになる（＝ 見に行けない ＝ 無いのと同じ）。
+   ★ 地を敷いて左右いっぱいに伸ばす（本文が札の脇から透けない） */
+.ref-layout .ref-toc{position:sticky;top:0;z-index:5;margin:22px -16px 10px;padding:6px 16px 8px;
+background:var(--bg)}
+.ref-layout .ref-toc details{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+max-height:calc(100vh - 28px);overflow:auto;box-shadow:0 1px 3px rgba(32,36,43,.07)}
+.ref-layout .ref-toc summary{padding:12px 14px;font-size:14px;color:var(--fg);cursor:pointer;font-weight:700}
+/* ★ 畳んだ目次の札に出す現在地（TOC_JS が入れる。⚠ 広い面では summary ごと隠れる）。
+   ⚠ **1行に留める** —— 節名には長いものがあり、折り返させると札の高さが
+     スクロールのたびに変わって下の本文が飛ぶ（実測して1行に決めた。札は 88px で固定） */
+.ref-layout .ref-toc summary .ref-toc-now{display:block;margin-top:3px;font-weight:400;
+font-size:12.5px;color:var(--accent);line-height:1.5;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ref-layout .ref-toc summary .ref-toc-now:empty{display:none}
+.ref-layout .ref-toc ul{list-style:none;margin:0;padding:0 14px 12px}
+.ref-layout .ref-toc li{margin:0 0 2px}
+.ref-layout .ref-toc a{display:block;padding:6px 9px;border-radius:6px;font-size:13.5px;color:var(--dim);
+text-decoration:none;line-height:1.65}
+.ref-layout .ref-toc a:hover{color:var(--accent);background:#eae6de}
+/* ★★ いま読んでいる節（設計書 §20-3）。⚠ 色だけに頼らず、**太さと左の線**も足す */
+.ref-layout .ref-toc a[aria-current="true"]{color:var(--fg);font-weight:700;background:#e6efef;
+box-shadow:inset 3px 0 0 var(--accent)}
+@media (min-width:1000px){
+  .ref-layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:40px;align-items:start}
+  /* ⚠⚠ **節（:::section）が1つも無いページには目次そのものが出ない**（＝ .ref-toc が居ない）。
+     ★ そのとき本文が**1列目（232px）に落ちて**、右の 680px が丸ごと空く ——
+       実測: alkane-naming の本文が幅 232px、貼った図が 232px（読めない大きさ）。
+     ⚠ 6ページ中4ページが節を持たないので、**空くほうが普通**の状態だった。
+     ★ 直し方は1行 —— 本文は**いつも2列目**に置く（目次が居なくても列は動かない）。 */
+  .ref-layout>.ref-scope{grid-column:2}
+  /* ⚠ 広い面では**目次が独立した1列**なので、狭い面の「貼り付いた札」の飾りを全部戻す */
+  .ref-layout .ref-toc{position:sticky;top:16px;margin:0;padding:0;background:none;
+  max-height:calc(100vh - 32px);overflow:auto}
+  .ref-layout .ref-toc summary{display:none}
+  .ref-layout .ref-toc details{background:none;border:0;border-left:1px solid var(--line);border-radius:0;
+  max-height:none;overflow:visible;box-shadow:none}
+  .ref-layout .ref-toc ul{padding:2px 0 2px 8px}
+  /* ★ 題・要約・小見出しも読み欄にそろえる。⚠ 前は本文 572px に対して題が 828px あり、
+     **左端が2つある**状態だった（画面の中で目の帰る位置が定まらない） */
+  main.wrap>h1,main.wrap>h2,main.wrap>.lede,main.wrap>.embed,main.wrap>nav.seq,
+  main.wrap>div:not(.ref-layout){margin-left:272px;max-width:680px}
+  main.wrap>h1{margin-left:272px}
+}
+/* 節。★ 追従ヘッダーは無いが、アンカーで着地したとき見出しが窓の上端に貼り付かないよう余白を置く。
+   ★★ **見出しを本文から立たせる**（設計書 §20-2）—— 前は本文と同じ色・同じ太さで、
+      7画面ぶん同じ見た目が続いていた（「とっかかりにくい」の実体）。
+   ⚠⚠ **決めごとは面Aと面Bで1つ**（assembler/style.css の .ref-sec にも同じ注記がある）:
+      ⚠ この注記は SHELL_CSS（テンプレートリテラル）の中なので**バッククォートを書けない**。
+      ① 章の切れ目は**節の上の線**（見出しの下の線ではない）
+      ② 見出しは**本文の約1.35倍**（面A 23/17 ・面B 17.5/13）
+      ③ **最初の節には線を引かない**
+      ★ ここで上書きしているのは**寸法だけ** —— 読み欄 680px と資料ペイン 340px で
+        同じ px を使うと、片方が必ず外れる。 */
+.ref-scope .ref-sec{scroll-margin-top:18px;margin:52px 0 16px;padding-top:22px;border-top:2px solid var(--line)}
+.ref-scope .ref-sec:first-child{margin-top:8px;padding-top:0;border-top:0}
+.ref-scope .ref-sec-h{font-size:23px;line-height:1.5;color:var(--fg);margin-bottom:6px}
+.ref-scope .ref-sec-lead{font-size:14.5px;color:var(--dim)}
+/* ★★ 発展の折りたたみ（設計書 §24）。⚠⚠ **セレクタを .ref-scope から始める** ——
+   assembler/style.css の切り出しは素の .ref-adv なので、
+   上の .ref-scope .ref-sec（0,2,0）に負けて**上線と 52px の余白が残る**（.ref-toc と同じ踏み方・上の注記）。
+   ★ ここで上書きするのは**寸法だけ**（色は LIGHT_CSS ＝ 明るい地への読み替え側）。 */
+.ref-scope .ref-adv{margin:52px 0 22px;padding-top:0;border-top:0;border-left-width:4px;scroll-margin-top:18px}
+.ref-scope .ref-adv:first-child{margin-top:8px}
+.ref-scope .ref-adv-sum{padding:16px 20px}
+.ref-scope .ref-adv-body{padding:0 20px 8px}
+/* ⚠ 畳んだ札の中では題を一段小さく（開くと本文が続くので、節そのものと同じ強さにしない） */
+.ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
+.ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
+.ref-scope .ref-figure{margin:0 0 24px}
+.ref-scope .ref-figure-cap{font-size:13.5px}
+.ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
+.ref-scope .ref-rx-eq{font-size:17.5px}
+.ref-scope .ref-hand-table{font-size:15px}
+.ref-scope .ref-callout{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-callout-text{font-size:15.5px}
+/* よくある誤解（:::mistake・§28）。★ 面Aは読み欄 680px なので寸法だけ上げる（色は LIGHT_CSS） */
+.ref-scope .ref-mistake{margin:0 0 24px;padding:13px 17px}
+.ref-scope .ref-mistake-tag{font-size:12.5px}
+.ref-scope .ref-mistake-wrong,.ref-scope .ref-mistake-right{font-size:15.5px;margin-bottom:6px}
+.ref-scope .ref-mistake-mark{font-size:16px}
+.ref-scope .ref-mistake-why{font-size:14.5px}
+/* 例題（:::exercise・§22）。★ 面Aは読み欄 680px なので、面B（資料ペイン 340px）の
+   13px のままでは本文（16px）より小さく、解くための文が添え物に見える。
+   ⚠ 直すのは**寸法だけ**（色は assembler/style.css の1本を切り出して使う）。 */
+.ref-scope .ref-exercise{margin:0 0 24px;padding:14px 18px}
+.ref-scope .ref-ex-tag{font-size:12.5px}
+.ref-scope .ref-ex-q{font-size:16px}
+.ref-scope .ref-ex-a{font-size:15.5px}
+.ref-scope .ref-ex-open{font-size:14px;padding:6px 13px;min-height:32px}
+/* 用語の索引（★ 機械で組む・§19-7） */
+.terms{list-style:none;padding:0;margin:0 0 26px}
+.terms li{border-bottom:1px solid var(--line);padding:10px 2px;font-size:15px}
+.terms a{color:var(--fg);text-decoration:none}
+.terms a:hover{color:var(--accent)}
+.terms span{display:block;font-size:13px;color:var(--dim);margin-top:2px}
+/* 前後・索引へ */
+nav.seq{display:flex;flex-wrap:wrap;gap:16px;margin:36px 0;font-size:14.5px}
+nav.seq a{color:var(--accent);text-decoration:none}
+nav.seq a:hover{text-decoration:underline}
+footer{background:var(--band);color:#a8b0c4;margin-top:44px;padding:18px 0 46px;font-size:12.5px;line-height:1.8}
+footer a{color:#a8b0c4}
+footer a:hover{color:var(--brand)}
+:root{--border-color:rgba(255, 255, 255, 0.08);--font-main:'Noto Sans JP', sans-serif;--neon-green:#2ecc71;--neon-purple:#9b59b6;--neon-red:#ff4757;--text-muted:#7a84a2;--text-primary:#f5f6fa;--text-secondary:#a0a8c0}
+.ref-p {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+/* 表そのもの。⚠ **10行そろって初めて規則が見える**ので、絞り込みも折りたたみも付けない
+   （DEVELOPMENT.md「参照は全体像で行う。部分を切り出して渡さない」） */
+.ref-table-wrap { overflow-x: auto; margin: 0 0 12px; }
+.ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-table th, .ref-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    white-space: nowrap;
+}
+.ref-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-table td.ref-c { text-align: right; color: var(--text-muted); }
+/* 分子式でまとめた群の見出し（第2ページ）。⚠ **行は1つも減らない** ——
+   左の1列を rowspan で共有するだけで、隠しても畳んでもいない（`REF4` が見えている行数で見張る） */
+.ref-table td.ref-group {
+    vertical-align: top;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* 官能基の列（第3ページ）。⚠ ここだけ折り返す —— 「1級アルコール×2」のような長い語が
+   nowrap のままだと表が横に伸びて、狭い画面で横スクロールしないと名称の列が読めない */
+.ref-table td.ref-fg { white-space: normal; min-width: 7.5em; }
+/* ⚠ ここは **--font-code を使わない**。装飾等幅では C が ⊏ に見えて読み取りづらい
+   （実機 375px で確認）。資料は読み物なので本文と同じ字で出す */
+.ref-table td.ref-formula { letter-spacing: 0.02em; }
+.ref-cap { font-size: 11.5px; color: var(--text-muted); margin: 0 0 6px; }
+/* 反応機構の表（第4ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   stages の表は「行に ▶ を置かない」（説明と練習の層を混ぜない・設計書 §10-2）が
+   機構の表は1行が読み物そのものなので ▶ を置く。class を分けておくと
+   `REF6`/`REF10` の「`table.ref-table` の中にボタンが無い」がそのまま生き続ける */
+.ref-mech-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-mech-table th, .ref-mech-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-mech-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ref-mech-table td.ref-group {
+    vertical-align: top;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-mech-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 型の列も**折り返す**。「芳香族置換反応」を nowrap にすると、それだけで
+   資料ペイン（実測 271px）の3分の1を食う */
+.ref-mech-table td.ref-group { white-space: normal; width: 4.5em; }
+/* 反応名・1行説明・段数・▶ を1つの欄に入れる（どれも reactions.json の1件から）。
+   ⚠⚠ **4列にしない。** 実測（1280px・ペイン 320px・器 271px）で
+      「型 / 反応 / 段数 / ▶」は表が **426px** になり、**▶ が器の右外**（+155px）に出て
+      横スクロールしないと押せなかった ＝ **押すものが見えない** */
+.ref-mech-table td.ref-mech-name { white-space: normal; }
+.ref-mech-table td.ref-mech-name b { color: var(--text-primary); }
+.ref-mech-name .ref-mech-desc {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+.ref-mech-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+.ref-mech-steps { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+.ref-mech-play {
+    min-height: 32px;
+    padding: 5px 10px;
+    white-space: nowrap;
+    font-family: var(--font-main);
+    font-size: 12.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+/* アルコールと脱水生成物の対応表（第5ページ）。⚠ **`.ref-table` とは別の class**にしてある ——
+   `.ref-table` は「stages.json の系列から作った表」の印で、`REF8`/`REF9`/`REF10` が
+   その前提（行数＝系列の件数・名称が STAGES に在る）で見張っている。
+   この表の元は列挙器（`enumerateConstitutionalIsomers`）なので、混ぜると物差しが噛み合わない */
+.ref-map-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ref-map-table th, .ref-map-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-map-table th {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    font-weight: 600;
+}
+.ref-map-table td.ref-group {
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+}
+.ref-map-table td.ref-group span { display: block; font-size: 11px; color: var(--text-muted); }
+/* ⚠ 名称の列は**折り返す**。「2,2-ジメチル-1-プロパノール」を nowrap にすると
+   それだけで 14em を占め、資料ペイン（実測 271px）では生成物の列が器の外へ出る */
+.ref-map-table td.ref-map-from { white-space: normal; min-width: 6.5em; }
+.ref-map-table td.ref-map-to { white-space: normal; min-width: 6.5em; }
+/* 主生成物（2つ以上できる行だけ）。⚠ 色だけに頼らず「（主）」の文字も出す */
+.ref-map-table .ref-map-major { color: var(--neon-cyan, #7ef); }
+/* 副生成物（同じ行に2つ以上できるときだけ）。⚠ 主より一段沈める ＝ どちらが主かは色の濃さでも読める */
+.ref-map-table .ref-map-minor { color: var(--text-muted); }
+/* 脱水できない行。★ 空欄にせず、できない旨と理由を書く（空欄は「調べていない」と読める） */
+.ref-map-table tr.ref-map-blocked td { background: rgba(255, 255, 255, 0.02); }
+.ref-map-table .ref-map-none { color: var(--text-secondary); }
+.ref-map-table .ref-map-why {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+/* 例題（無料）。★ **新しい採点は作らない** —— 押すと既存のパズルのお題
+   （stages.json の `target` 照合）へ渡すだけ（設計書 §5-2 の (b)） */
+.ref-example {
+    border: 1px solid var(--neon-purple);
+    border-radius: 10px;
+    padding: 12px;
+    background: rgba(155, 89, 182, 0.10);
+}
+.ref-example h4 { margin: 0 0 8px; font-size: 13px; color: #e0b0ff; }
+.ref-try {
+    display: block;
+    width: 100%;
+    min-height: 40px;
+    margin-top: 10px;
+    padding: 9px 12px;
+    font-family: var(--font-main);
+    font-size: 13.5px;
+    color: #e0b0ff;
+    background: var(--color-bg, rgba(0, 0, 0, 0.35));
+    border: 1px solid var(--neon-purple);
+    border-radius: 8px;
+    cursor: pointer;
+}
+.ref-note { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin: 8px 0 0; }
+/* ============================================================================
+ * ★★ 器を広げたぶん（2026-09-09・設計書 §19）
+ *
+ * ⚠ **面A（`/reference/`）はこの規則を `tools/gen-reference-pages.mjs` が切り出して埋める**
+ *   （書き写さない・§17-3 ③）。★ 焼いた HTML に出てくる `.ref-*` の class に規則が1つも
+ *   無ければ生成器が赤くなるので、**ここに書き忘れると気づける**。
+ * ========================================================================== */
+
+/* 節の見出し。★ `id="ref-sec-<anchor>"` が付いていて、目次と用語の索引の行き先になる
+ *
+ * ★★ **章の切れ目は「見出しの下の線」ではなく「節の上の線＋大きな余白」**（2026-09-10・ref-read レーン）。
+ *   ⚠ **面Aと面Bで同じ決めごと**にしてある —— 面Aは `gen-reference-pages.mjs` の
+ *     `.ref-scope .ref-sec` / `.ref-sec-h` がこれを上書きするが、**上書きしているのは寸法だけ**で、
+ *     ①節の上に線 ②見出しは本文の約1.35倍 ③最初の節には線を引かない、の3つは共通。
+ *   ⚠ **なぜ直したか**（ユーザーの申し立て「わかりにくいというか、とっかかりにくい」）:
+ *     前は **見出し 14px / 本文 13px ＝ 1.08倍**で、下線も `--border-color`（白の 8%）。
+ *     ★ 資料ペインは1ページ **5,594px ＝ 6.8画面ぶん**あり、**そのあいだ切れ目が見えなかった。** */
+.ref-sec {
+    margin: 36px 0 10px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-color);
+    scroll-margin-top: 12px;
+}
+/* ⚠ 1つ目の節の上には線を引かない（ページの頭に意味の無い区切りが出る） */
+.ref-sec:first-child { margin-top: 2px; padding-top: 0; border-top: 0; }
+.ref-sec-h {
+    margin: 0 0 5px;
+    /* ★ 本文 13px の 1.35倍。⚠ 面Aは 23px / 本文 17px ＝ 同じ 1.35倍（器が違うので px は違う） */
+    font-size: 17.5px;
+    line-height: 1.45;
+    color: #e0b0ff;
+}
+/* ★ 「この節で分かること」1行。⚠ 本文と同じ見た目にしない（着地した人が最初に読む文なので） */
+.ref-sec-lead { margin: 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+/* ★ 節の目次。**markup は面Aと同じ**（`<nav class="ref-toc"><details>`）で、
+   狭いこのペインでは「上の折りたたみ」、面Aの広い画面では左に固定される（CSS だけの違い） */
+.ref-toc { margin: 0 0 14px; }
+.ref-toc details {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-toc summary { padding: 7px 10px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.ref-toc ul { list-style: none; margin: 0; padding: 0 10px 8px; }
+.ref-toc li { margin: 0 0 4px; }
+.ref-toc a { font-size: 12.5px; color: #e0b0ff; text-decoration: none; line-height: 1.6; }
+/* ★ 節の下の小見出し（§20-5）。⚠ **節（`.ref-sec-h`）より一段小さく**、地の色も持たない ——
+   目次に出ないもの（＝ 検索の着地点ではないもの）が、節と同じ強さで並ばないようにする */
+.ref-h5 {
+    margin: 16px 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    border-left: 3px solid var(--border-color);
+    padding-left: 8px;
+}
+/* ★★ 発展の印（設計書 §23・REFBOOK_STYLE §10）。**節・小見出し・目次の3か所に同じ札**が出る。
+   ⚠⚠ **注意（黄）・丸暗記（紫）・反応式の重要度（★★★）と見分けが付くこと**が要る ——
+     どれも「大事さ」の話だが、この札だけは**大事さを言っていない**（範囲の外か内か、だけ）。
+   ★ だから色を1つ空けた（緑）。⚠ 面Aは明るい地なので `gen-reference-pages.mjs` の
+     LIGHT_CSS で読み替える（`#7fd6a4` は白地で 1.9:1 ＝ 読めない）。
+   ★ 地を持たず**縁だけ**にしてあるのは、囲み（callout）と同じ強さに見せないため。 */
+.ref-adv-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #7fd6a4;
+    border: 1px solid #7fd6a4;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+/* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
+.ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
+   ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
+   ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
+.ref-sec-advanced { border-top-color: #7fd6a4; }
+.ref-h5-advanced { border-left-color: #7fd6a4; }
+/* ============================================================================
+ * ★★ 発展は**畳んで置く**（設計書 §24・2026-09-11）
+ *
+ * > 初学者のニーズと発展レベルのニーズを同時に満たしたい。
+ * > 初学者がとっかかりにくくなるのは避けたいし、事典的に網羅もしたい（ユーザー）
+ *
+ * ★★ **網羅する量は1文字も減らさない。減らすのは最初に画面へ出る量だけ。**
+ * ⚠ 器は `<details>`（`:::exercise` の解答隠しと同じ）＝ **JS が要らない**ので、
+ *   焼いた面A（`/reference/<id>/`）でもアプリの面Bでも同じ markup が同じように効く。
+ * ⚠ 面Aは `tools/gen-reference-pages.mjs` がここを切り出し、
+ *   **寸法は SHELL_CSS・色は LIGHT_CSS** が上書きする（明るい地では緑が 1.9:1 で読めない）。
+ *
+ * ★ 畳んでも開いても、**左の帯と地色で「ここは発展」が見えている**こと ——
+ *   閉じた札が本文と同じ地だと、ただの見出しに見えて「開くと続きがある」と読めない。
+ *
+ * ⚠⚠ **畳むのは `:::section` だけ。`## 小見出し` の発展は畳まない**（設計書 §24-2）——
+ *   小見出しには「どこまでが発展か」が器で言えない。`alkane.md` の
+ *   「電子対はどう動いているのか（発展）」は**寄り道が1段落だけ**で、そのあとに
+ *   **★★★（必ず覚える）の反応式**が続く ＝ 次の節まで畳むと必ず覚える式が既定で隠れる。
+ * ========================================================================== */
+.ref-adv {
+    margin: 36px 0 14px;
+    /* ⚠ 節の上線（`.ref-sec`）は使わない —— 層の印は**左の帯と地**に持たせる
+       （線と帯と地が全部出ると、発展だけ3重に飾られて本文より強く見える） */
+    border-top: 0;
+    padding-top: 0;
+    border-left: 3px solid #7fd6a4;
+    border-radius: 0 10px 10px 0;
+    /* ★★ **暗い地では「沈める」**（明るい地の面Aは逆に「緑の紙を敷く」）。
+       ⚠⚠ **緑の薄敷きは実測で赤になった**（2026-09-11・check-contrast）——
+         rgba(127,214,164,.07) を敷くと資料ペインの地が #15181f → #1c2528 に明るくなり、
+         中に入る添え物の字（`--text-muted` #7a84a2）が **4.78:1 → 4.22:1** で AA を割った。
+       ★ `--text-muted` は「4.5 を満たす中でいちばん暗い側」で選んである（:root の注記）ので、
+         **この地の上には、いまより明るい敷きを置く余地がほとんど無い**（上限は約 +40% の輝度）。
+       ★ だから**逆へ倒した** —— 沈めると中の字は全部 4.78 → 5.04 に上がる。
+         緑の手がかりは**左の帯・▶ の印・「発展」の札**が持つので、地まで緑にする必要はない。 */
+    background: rgba(0, 0, 0, 0.25);
+    scroll-margin-top: 12px;
+}
+.ref-adv-sum {
+    padding: 11px 12px;
+    cursor: pointer;
+    /* ⚠ 既定の三角を消して自前の ▶ / ▼ に替える（`.ref-ex-open` と同じ理由：
+         ブラウザごとに位置が違い、題の1行目とそろわない） */
+    list-style: none;
+}
+.ref-adv-sum::-webkit-details-marker { display: none; }
+.ref-adv-sum > .ref-sec-h { margin-top: 0; }
+.ref-adv-sum > .ref-sec-h::before {
+    content: '▶ ';
+    color: #7fd6a4;
+    font-size: 0.8em;
+    vertical-align: 0.1em;
+}
+.ref-adv[open] > .ref-adv-sum > .ref-sec-h::before { content: '▼ '; }
+.ref-adv-body { padding: 2px 12px 6px; }
+/* ⚠ 畳んだ中の最後の余白が二重にならないように */
+.ref-adv-body > *:last-child { margin-bottom: 0; }
+/* ★★ 穴あきテンプレートの `○○`（設計書 §23-2）。**名前の作り方を「型」で見せるための空欄。**
+   ⚠⚠ **文字を消して下線だけにしない。** 理由は3つ:
+     ① 「まるまるブタン」と**声に出せる**（本人の書きぶりは「そのまま声に出せる短い文字列」・§8-4）
+     ② **検索にかかる**（面Aで「○○ブタン」を本文検索できる。下線だけだと本文0字）
+     ③ **字数を暗示しない**（`____` は長さで「何文字入るか」を勝手に言ってしまう）
+   ★ 代わりに「ここは空欄」を**薄い地と点線の下線**で言う。⚠ 文字色は本文のまま（AA を割らない）。 */
+.ref-blank {
+    padding: 0 2px;
+    border-radius: 3px 3px 0 0;
+    /* ⚠⚠ **沈める**（明るくしない）。2026-09-12 に実測して直した ——
+       前は `rgba(255,255,255,.07)` で敷きを*持ち上げて*いたので、添え物の色の字が
+       載ったとき（ケトンのページの図の説明）に **4.35:1 で AA 割れ**していた。
+       ★ 沈めると同じ字で **5.05:1**。発展の折りたたみで一度通った道とまったく同じ
+       （`.ref-adv` の注記・`DESIGN_reference_book.md` §24-2）。
+       ⚠ 「穴」に見えることは点線の下線が受け持っているので、向きを変えても役は変わらない。 */
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 2px dotted var(--text-muted);
+    letter-spacing: 0.06em;
+}
+/* 箇条書き。⚠ 番号つき（`ordered: true`）は素材の「手順 S1〜Sn」用 */
+.ref-list { margin: 0 0 12px; padding-left: 1.4em; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
+.ref-list li { margin: 0 0 5px; }
+/* ★★ ぶら下げの補足（設計書 §23-3）。**項目の中**に入るので、番号の右の文字列と縦がそろう。
+   ⚠ 本文と同じ見た目にしない（補足だと分かること）が、AA は割らない（`--text-secondary` は 8.3:1）。 */
+.ref-li-hang {
+    margin: 4px 0 2px;
+    padding-left: 0.8em;
+    border-left: 2px solid var(--border-color);
+    font-size: 12.5px;
+    line-height: 1.75;
+    color: var(--text-secondary);
+}
+/* ★ 図（スライド由来の構造式）。⚠ アプリの作図とは別もの ——
+   参考書は**紙に書く構造式**で見せる（ユーザー方針・設計書 §18-2） */
+.ref-figure { margin: 0 0 14px; }
+.ref-figure-img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    /* ⚠ スライドは白地なので、暗い器の上にそのまま置くと図が浮く。地を白にして囲む */
+    background: #fff;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+}
+.ref-figure-cap { font-size: 11.5px; color: var(--text-muted); margin: 5px 0 0; line-height: 1.6; }
+/* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
+.ref-rx {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+/* ⚠ **記号だけを出さない**（言葉を添える。ユーザー指示・§18-3） */
+.ref-rx-level { font-size: 11.5px; margin-bottom: 6px; letter-spacing: 0.04em; }
+.ref-rx-lv1 { color: #ffd166; }
+.ref-rx-lv2 { color: var(--text-secondary); }
+.ref-rx-lv3 { color: var(--text-muted); }
+/* ⚠ 折り返しを許す（狭いペインで式が横に溢れると、右辺が読めない） */
+.ref-rx-eq {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+.ref-rx-side { white-space: nowrap; }
+/* 矢印の上下に条件（試薬・温度・触媒）。★ 空なら高さも取らない */
+.ref-rx-arrow { display: inline-flex; flex-direction: column; align-items: center; min-width: 3.4em; }
+.ref-rx-over, .ref-rx-under { font-size: 10.5px; color: var(--neon-cyan, #7ef); line-height: 1.3; white-space: nowrap; }
+.ref-rx-over:empty, .ref-rx-under:empty { display: none; }
+.ref-rx-bar { font-size: 22px; line-height: 1.05; color: var(--text-secondary); }
+/* ★ 手で書く表（機械が行を作れないもの）。
+   ⚠ **`.ref-table` とは別の class** —— あちらは「stages.json の系列から作った表」の物差し
+      （`REF8`/`REF9`/`REF10`）が掛かっている（`.ref-map-table` と同じ判断） */
+.ref-hand-table { width: 100%; border-collapse: collapse; font-size: 12.5px; line-height: 1.6; }
+.ref-hand-table th, .ref-hand-table td {
+    border: 1px solid var(--border-color);
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.ref-hand-table th { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); font-weight: 600; white-space: nowrap; }
+/* 注意の囲み。⚠ 札の言葉は learn.js の `REF_TONE_WORDS`（記号だけにしない） */
+.ref-callout {
+    margin: 0 0 14px;
+    padding: 9px 12px;
+    border-left: 3px solid var(--border-color);
+    border-radius: 0 8px 8px 0;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-callout-tag { display: block; font-size: 11.5px; margin-bottom: 3px; color: var(--text-secondary); }
+.ref-callout-text { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--text-primary); }
+.ref-callout-caution { border-left-color: #ffd166; }
+.ref-callout-caution .ref-callout-tag { color: #ffd166; }
+.ref-callout-memorize { border-left-color: var(--neon-purple); }
+.ref-callout-memorize .ref-callout-tag { color: #e0b0ff; }
+.ref-callout-skip { border-left-color: var(--text-muted); }
+/* ★ 補足。**型を書かない `::: … :::` の既定**（§20-4）。⚠ いちばん静かな見せ方にする ——
+   「ちょっと囲みたい」だけの囲みが、注意（黄）や丸暗記（紫）より目立ってはいけない */
+.ref-callout-note { border-left-color: var(--text-secondary); }
+.ref-callout-note .ref-callout-tag { color: var(--text-muted); }
+/* ★★ よくある誤解（`:::mistake`・設計書 §28）。⚠ 札の言葉は learn.js の `REF_MISTAKE_TAG`。
+   ⚠⚠ **急所は「誤りの行を本文と同じ字で出さない」こと** —— 同じ字で2行並べると、
+      どちらが正しいかを読まないと分からない ＝ この囲みを作った意味が消える。
+      ★ 印は3つ重ねる: ✗ の字（色だけに頼らない）・弱めた色・取り消し線。
+   ⚠⚠ **暗い地では敷きを沈める**（明るくしない）—— 発展の折りたたみで実測済み:
+      薄い敷きを *明るく* すると添え物の字が 4.78:1 → 4.22:1 で AA 割れ、
+      **沈めると 5.04:1 に上がる**（`DESIGN_reference_book.md` §24-2）。
+   ★ 左の帯は赤（`--neon-red`）—— 注意の黄・丸暗記の紫・例題の水色・発展の緑と
+      重ならない残りの1色で、「誤り」の意味にも合う。 */
+.ref-mistake {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-red);
+    border-radius: 0 10px 10px 0;
+    background: rgba(0, 0, 0, 0.22);
+}
+.ref-mistake-tag { display: block; font-size: 11.5px; letter-spacing: 0.03em; margin-bottom: 5px; color: var(--neon-red); }
+/* ⚠ 折り返した2行目が × / ○ の下にもぐらないよう、札のぶんだけ下げてぶら下げる
+   （狭い資料ペイン 286px では誤解の文がほぼ必ず2行になる・実測） */
+.ref-mistake-wrong,
+.ref-mistake-right { margin: 0 0 4px; font-size: 12.5px; line-height: 1.7; padding-left: 1.4em; text-indent: -1.4em; }
+/* ★ 印は**学校の慣習どおり ×／○**（§30-2）。⚠ 太くするのは**印だけ** ——
+   行を太字にすると原稿が `**` で付けた強調が読めなくなる（下の ⚠ と同じ理由） */
+.ref-mistake-mark { display: inline-block; width: 1.4em; font-size: 13px; text-indent: 0; font-weight: 700; }
+/* ⚠ 誤りの行。**本文（--text-primary）を使わない** ＝ 見た瞬間に「こちらではない」と分かること。
+   ⚠⚠ **取り消し線は掛けない**（v1584・§30-2）—— この囲みは誤りのほうを読ませる器なので、
+      下付きの付いた式や漢字に線を重ねて読みにくくしない。★ × の字が色以外の手がかりとして残る */
+.ref-mistake-wrong { color: var(--text-secondary); }
+.ref-mistake-wrong .ref-mistake-mark { color: var(--neon-red); }
+/* ⚠⚠ **ここに `line-through` を戻さない**（v1584・§30-2）。★ 明示して書いておくのは、
+   「消し忘れ」ではなく「外すと決めた」ことを規則の形で残すため（`REF26` ① が裏返しで見張る） */
+.ref-mistake-wrong .ref-mistake-body,
+.ref-mistake-right .ref-mistake-body { text-decoration: none; }
+/* ★ 正しい行だけが**本文と同じ強さ**。⚠ ここに font-weight を足さない ——
+   足すと行が丸ごと太字になり、原稿が `**` で付けた強調（どこが急所か）が読めなくなる */
+.ref-mistake-right { color: var(--text-primary); }
+.ref-mistake-right .ref-mistake-mark { color: var(--neon-green); }
+.ref-mistake-why { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+/* ★★ ページどうし・アプリへのリンク（§20-7）。
+   ⚠ **まだ書いていないページ宛（`.ref-link-soon`）は押せない** ので、
+      押せるものと同じ見た目にしない —— 淡くしたうえで「準備中」の札を必ず添える
+      （札を出すのは learn.js。ここは見た目だけ）。 */
+.ref-link-row { margin: 0 0 12px; }
+.ref-link {
+    display: inline-block;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+a.ref-link { color: #e0b0ff; text-decoration: none; }
+a.ref-link:hover { border-color: var(--neon-purple); background: rgba(224, 176, 255, 0.08); }
+a.ref-link::before { content: '→ '; }
+.ref-link-soon { color: var(--text-muted); border-style: dashed; cursor: default; }
+.ref-link-badge { margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--text-secondary); }
+/* ★★ 例題（`:::exercise`・設計書 §22）—— **読者が自分で解く**もの。
+   ⚠⚠ `.ref-example`（▶ 組んでみる）とは別もの。あちらは紫の器で「パズルのお題を開く」、
+      こちらは水色の帯で「紙に書いて、解答を開いて見比べる」。★ 色を分けたのは、
+      同じページに両方が並ぶから（どちらを押すと画面が変わるのかが見て分かること）。
+   ⚠ **添え物の色（`--text-secondary` / `--text-muted`）を使わない** ——
+      面Bのそれらは AA（4.5:1）を割っている（§21-9 の2）。例題は読んで解くものなので、
+      本文と同じ `--text-primary` で通す（大きさと太さで段を付ける）。 */
+.ref-exercise {
+    margin: 0 0 14px;
+    padding: 11px 12px;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--neon-cyan, #7ef);
+    border-radius: 0 10px 10px 0;
+    background: rgba(255, 255, 255, 0.03);
+}
+.ref-ex-tag { display: block; font-size: 11.5px; letter-spacing: 0.04em; margin-bottom: 4px; color: var(--text-primary); }
+.ref-ex-q { margin: 0; font-size: 13px; line-height: 1.75; color: var(--text-primary); }
+/* ⚠ 例題の図は**原寸より大きくしない**。スライドの構造式は素の大きさが 310px 前後なので、
+   読み欄いっぱい（面Aで 680px）に引き伸ばすと2倍に拡大されて、紙に書いた図に見えなくなる。
+   ★ 狭い面（資料ペイン 320px）では今までどおり幅いっぱいに縮む。 */
+.ref-exercise .ref-figure-img { margin-top: 8px; max-width: 430px; }
+/* ⚠⚠ **解答は閉じたまま置く**（ページを開いた瞬間に答えが見えない）。
+   ★ `<details>` の既定が閉じ ＝ **JS を1行も使わない**ので、面A（焼いた静的ページ）でも効く。
+   ⚠ 既定の三角（`list-style`／`::-webkit-details-marker`）を消して、自前の ▶ / ▼ に替える
+      —— ブラウザごとに位置が違い、札の枠から はみ出して見えるため。 */
+.ref-ex-answer { margin-top: 10px; }
+.ref-ex-open {
+    display: inline-block;
+    min-height: 28px;
+    padding: 4px 11px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--color-bg, rgba(0, 0, 0, 0.25));
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    list-style: none;
+}
+.ref-ex-open::-webkit-details-marker { display: none; }
+.ref-ex-open::before { content: '▶ '; }
+.ref-ex-answer[open] .ref-ex-open::before { content: '▼ '; }
+.ref-ex-a { margin-top: 9px; font-size: 12.5px; line-height: 1.75; color: var(--text-primary); }
+.ref-ex-a p { margin: 0; }
+/* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
+:root{
+  --text-primary:#20242b;   /* 本文 */
+  --text-secondary:#4e5765; /* 表の見出し・節の1行 */
+  --text-muted:#636b78;     /* 添え物（⚠ #6a7280 だと図の説明が 4.37:1 で 4.5 に届かなかった） */
+  --border-color:#d5d0c7;   /* 罫線（⚠ 前は rgba(255,255,255,.08) ＝ 明るい地では消える） */
+  --neon-purple:#7c4dab;
+  /* ⚠ この2つは assembler/style.css の :root に**無い**（予備つきで使われている）ので、
+     ここで定義すると予備を上書きできる ＝ 規則そのものを書き直さずに読み替えられる */
+  --neon-cyan:#0d6c78;      /* .ref-rx-over / .ref-map-major（前は予備の #7ef ＝ 白地で 1.5:1） */
+  --color-bg:#fff;          /* .ref-try / .ref-mech-play の地（前は予備の rgba(0,0,0,.35)） */
+}
+/* ── ② 「白の薄敷き」を明るい地の敷きへ ── */
+.ref-scope .ref-table th,.ref-scope .ref-mech-table th,.ref-scope .ref-map-table th,
+.ref-scope .ref-hand-table th{background:#e9e5dd;color:#3b4351}
+.ref-scope .ref-table td.ref-group,.ref-scope .ref-mech-table td.ref-group,
+.ref-scope .ref-map-table td.ref-group{background:#f0ece4;color:var(--fg)}
+.ref-scope .ref-map-table tr.ref-map-blocked td{background:#efedea}
+.ref-scope .ref-rx{background:var(--panel);border-color:var(--line)}
+.ref-scope .ref-hand-table td{background:var(--panel)}
+.ref-scope .ref-callout{background:#f0ece4;border-radius:0 8px 8px 0}
+/* ── ③ 3つの調子が**見て区別できる**こと（明るい地では前の色は効かない）── */
+.ref-scope .ref-callout-caution{background:#fdf4e0;border-left-color:#c07a00}
+.ref-scope .ref-callout-caution .ref-callout-tag{color:#8a5600}
+.ref-scope .ref-callout-memorize{background:#f3ecfa;border-left-color:#7c4dab}
+.ref-scope .ref-callout-memorize .ref-callout-tag{color:#5f3585}
+.ref-scope .ref-callout-skip{background:#eeece8;border-left-color:#9aa0a8}
+.ref-scope .ref-callout-tag{font-size:12.5px;font-weight:700;letter-spacing:.03em}
+/* ── ④ 明るい地で読めなくなる文字色 ── */
+.ref-scope .ref-sec-h{color:var(--fg)}
+.ref-toc a{color:var(--dim)}
+.ref-scope .ref-rx-lv1{color:#8a5600;font-weight:700}
+/* 矢印の上下の条件（試薬・温度・触媒）。⚠ 予備の #7ef は白地で 1.5:1 ＝ 読めない */
+.ref-scope .ref-rx-over,.ref-scope .ref-rx-under{color:#0d6c78}
+.ref-scope .ref-example{background:#f3ecfa;border-color:#7c4dab}
+.ref-scope .ref-example h4{color:#5f3585}
+.ref-scope a.ref-try,.ref-scope a.ref-mech-play{color:#5f3585;background:var(--panel);border-color:#7c4dab}
+.ref-scope a.ref-try:hover,.ref-scope a.ref-mech-play:hover{background:#f3ecfa}
+/* ページどうし・アプリへのリンク。⚠ 暗い地の #e0b0ff は明るい地で 1.9:1 ＝ 読めない。
+   ★ 同じ「押せる札」の .ref-try と同じ色に寄せる（読者から見て同じ種類のものなので） */
+.ref-scope a.ref-link{color:#5f3585}
+.ref-scope a.ref-link:hover{border-color:#7c4dab;background:#f3ecfa}
+/* 例題（:::exercise・§22）。⚠ 暗い地では「白の薄敷き＋水色の帯」だったが、
+   明るい地では敷きが効かない（#f5f3ef の上に rgba(255,255,255,.03) ＝ 見た目が変わらない）。
+   ★ 読み替えの向きは .ref-rx と同じ ＝ 紙（--panel）を敷いて罫線で囲む。
+   ⚠ 左の帯は --accent（#0d6c78）で残す —— border-color の一括指定は
+     左の帯まで罫線の色にしてしまうので、そのあとに border-left-color を書き戻す。
+   ⚠⚠ 「解答を見る」の札は **押せるものに見えること**が要る（押さないと答えが出ない）ので、
+     地を白にして罫線を濃くする（rgba(0,0,0,.25) は明るい地では灰色の面になる）。 */
+/* ★★ 発展の印（§23）。⚠ 暗い地の #7fd6a4 は明るい地で 1.9:1 ＝ 読めない。
+   ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
+     見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
+.ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+.ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
+.ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
+/* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
+   明るい地でそれをやると「灰色の面」になって、注意（橙）・丸暗記（紫）と同じ強さの囲みに見える。
+   ★ 明るい地では逆に**緑寄りの紙を敷く**（#ebf2ec）—— 本文の地 #f5f3ef と紙 #fff の
+     どちらとも見分けが付き、添え物の字（#59616c）で 5.50:1・発展の緑（#2e6b45）で 5.58:1（AA）。
+   ⚠ 向きが逆なのは**要件が違うから** —— 暗い地は添え物の字（--text-muted）の余地がほとんど無く、
+     ペインの地より明るい敷きを置けない（assembler/style.css の .ref-adv の注記に実測がある）。
+   ⚠ ここは LIGHT_CSS（テンプレートリテラル）の中なので、コメントにバッククォートを書けない。 */
+.ref-scope .ref-adv{background:#ebf2ec;border-left-color:#2e6b45}
+.ref-scope .ref-adv-sum>.ref-sec-h::before{color:#2e6b45}
+/* ★ 穴あきテンプレートの ○○（§23-2）。⚠ 白の薄敷きは明るい地では見えない ＝ 紙より一段沈めた地にする
+   （⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにもバッククォートを書けない） */
+/* ⚠⚠ 字の色も読み替える（2026-09-12 実測）—— 敷きを沈めた（#e7e2d8）ぶん、
+   添え物の色（--text-muted:#636b78）のままでは **4.17:1 で AA 割れ**だった。
+   ★ 一段濃い #4e5765（--text-secondary と同じ値）にして 5.58:1。
+   ⚠ 「穴」に見えることは地と下線が受け持っているので、字を濃くしても役は変わらない。 */
+.ref-scope .ref-blank{background:#e7e2d8;border-bottom-color:#8a8478;color:#4e5765}
+/* ★★ よくある誤解（§28）。⚠ 暗い地では敷きを**沈めて**層を作っている（rgba(0,0,0,.22)）が、
+   明るい地でそれをやると灰色の面になる ＝ 発展の折りたたみとまったく同じ踏み方。
+   ★ 明るい地では**赤寄りの紙を敷く**（#faeceb）—— 本文の地 #f5f3ef とも紙 #fff とも
+     見分けが付き、本文 13.5:1・添え物 6.2:1・✗ の赤 6.1:1・✓ の緑 6.2:1（全部 AA）。
+   ⚠⚠ ✗ と ✓ の色は **var(--neon-red) / var(--neon-green) なので checkLightCoverage に映らない** ——
+     ここで読み替えないと、白地で 3.0:1 と 1.9:1 のまま黙って出る。
+   ⚠ 誤りの行の取り消し線は色ではないので、明るい地でもそのまま効く。 */
+/* ⚠ border-color は左の帯まで塗るので、**先に**書いて そのあと左だけ戻す（.ref-exercise と同じ順。
+   ⚠ ここは LIGHT_CSS のテンプレート文字列の中なので、コメントにバッククォートを書けない） */
+.ref-scope .ref-mistake{background:#faeceb;border-color:#e3d2d0;border-left-color:#a62828}
+.ref-scope .ref-mistake-tag{color:#a62828;font-weight:700}
+.ref-scope .ref-mistake-wrong{color:#4e5765}
+.ref-scope .ref-mistake-wrong .ref-mistake-mark{color:#a62828}
+.ref-scope .ref-mistake-right{color:var(--fg)}
+.ref-scope .ref-mistake-right .ref-mistake-mark{color:#166534}
+.ref-scope .ref-mistake-why{color:#4e5765}
+.ref-scope .ref-exercise{background:var(--panel);border-color:var(--line);border-left-color:var(--accent)}
+.ref-scope .ref-ex-open{background:#fff;border-color:#b9b2a6;color:var(--fg)}
+.ref-scope .ref-ex-open:hover{background:#eaf4f5;border-color:#0d6c78}
+/* ★★ **印刷は開いた状態で出す**（§24）。
+   ⚠ @media は assembler/style.css から切り出されない（器の話）ので、面Aぶんはここに書く。
+   ⚠⚠ **SHELL_CSS ではなくここ（いちばん後ろ）に置く。** @media は強さを足さないので、
+     SHELL に書くと ▶ の打ち消し（.ref-adv-sum>.ref-sec-h::before）が
+     **切り出しの同じ強さの規則に負けて効かない**（.ref-toc details と同じ踏み方・上の注記）。
+   ★ 疑似要素 ::details-content を持たない版は refAdvSetup の beforeprint が開く。 */
+@media print{
+  .ref-adv::details-content{content-visibility:visible}
+  .ref-adv{break-inside:avoid-page}
+  /* 紙の上では ▶ が「まだ閉じている」と読めてしまうので消す（中身は出ている） */
+  .ref-scope .ref-adv-sum>.ref-sec-h::before{content:''}
+  .ref-layout .ref-toc{position:static;max-height:none}
+}</style>
+</head>
+<body>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
+<main class="wrap">
+<h1>気体の法則と状態方程式 —— 比例と反比例で解く</h1>
+<p class="lede">気体の P・V・n・T は PV ＝ nRT で結ばれます。「＝ の逆側は比例・同じ側は反比例」と読み、0℃ なら 22.4L、それ以外なら 300K・1.0×10⁵Pa の 24.9L を基準にして、代入せずに比で解きます。</p>
+<div><span class="unit-label">物質の状態</span><span class="unit-label">気体の法則</span></div>
+
+<div class="ref-layout">
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（7節）</summary><ul><li><a href="#ref-sec-laws" data-ref-anchor="laws">ボイルの法則・シャルルの法則</a></li><li><a href="#ref-sec-equation" data-ref-anchor="equation">気体の状態方程式 PV ＝ nRT</a></li><li><a href="#ref-sec-read" data-ref-anchor="read">状態方程式は使わない —— ＝ の逆側は比例、同じ側は反比例</a></li><li><a href="#ref-sec-standard" data-ref-anchor="standard">基準は2つ —— 22.4L と 24.9L</a></li><li><a href="#ref-sec-steps" data-ref-anchor="steps">比の図式で解く手順</a></li><li><a href="#ref-sec-molar-mass" data-ref-anchor="molar-mass">気体の分子量</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
+<div class="ref-scope">
+<p class="ref-p">気体は、圧力・体積・温度を変えると、それに応じて形を変えます。このページでは、気体の圧力 P・体積 V・物質量 n・絶対温度 T の関係をまとめ、気体の計算を「比例・反比例」だけで解けるようにします。温度はすべて絶対温度（T ＝ t ＋ 273）で扱うので、先に三態のページの絶対温度を確かめておきましょう。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">熱運動と絶対温度（T ＝ t ＋ 273）はこちら</a></p>
+<section class="ref-sec" id="ref-sec-laws"><h4 class="ref-sec-h">ボイルの法則・シャルルの法則</h4><p class="ref-sec-lead">温度が一定なら、気体の体積は圧力に反比例します（ボイルの法則）。圧力が一定なら、気体の体積は絶対温度に比例します（シャルルの法則）。</p></section>
+<p class="ref-p">気体は、圧力 P を2倍にすると体積 V が 1/2倍に、3倍にすると 1/3倍になります。言葉で言うと「気体の圧力 P と体積 V は反比例する」、式で書くと「PV ＝ k（一定）」です。これを<b>ボイルの法則</b>といいます。ゴムボールを強く握ると小さくなる、飛行機の中ではお菓子の袋がパンパンにふくらむ、といった経験と結びつけておきましょう。</p>
+<p class="ref-p">気体は、絶対温度 T を2倍にすると体積 V が2倍になります。言葉で言うと「気体の絶対温度 T と体積 V は比例する」、式で書くと「V ＝ kT」です。これを<b>シャルルの法則</b>といいます。熱気球は、中の空気を温めてふくらませる（密度を小さくする）ことで浮かび上がります。</p>
+<p class="ref-p">2つの法則を、体積 V を主語にして組み合わせます。V は T に比例し、P の逆数 1/P に比例するので、V ＝ k × T/P と書けます。変数を左辺に集めると次の式になり、これを<b>ボイル・シャルルの法則</b>といいます。</p>
+<p class="ref-p">ボイル・シャルルの法則は <b>PV/T ＝ k（一定）</b> です。</p>
+<p class="ref-p">圧力 P と温度 T の関係も、この式から出てきます。体積を一定にしたまま温度を2倍にすると、圧力は2倍になります。これは次の4段階で考えると納得できます。</p>
+<ol class="ref-list"><li>圧力を一定にしたまま、温度 T を2倍にする。</li><li>体積 V が2倍になる（シャルルの法則）。</li><li>ピストンを押して、体積 V を 1/2倍にしてもとに戻す。</li><li>圧力 P が2倍になる（ボイルの法則）。</li></ol>
+<p class="ref-p">言葉で解釈すると「気体の温度を2倍にすると体積が2倍になろうとするが、それを無理やり押さえつけて体積を一定に保つには、2倍の圧力で押さえる必要がある」ということです。</p>
+<p class="ref-p"><b>法則の名前は、ふだん問題を解くときには分からなくても困りません。</b>名前を問われる問題に答えられるよう、「ボイルは P と V」「シャルルは V と T」の対応だけ覚えておきましょう。</p>
+<section class="ref-sec" id="ref-sec-equation"><h4 class="ref-sec-h">気体の状態方程式 PV ＝ nRT</h4><p class="ref-sec-lead">ボイル・シャルルの法則の定数に、標準状態の 1mol の値を入れると気体定数 R が決まり、PV ＝ nRT が得られます。</p></section>
+<p class="ref-p">ボイル・シャルルの法則の定数 k は、1mol の気体の値が1つ分かれば決まります。0℃（273K）・1.013×10⁵Pa を<b>標準状態</b>といい、標準状態で 1mol の気体の体積は 22.4L です。これを PV/T ＝ k に入れると、次のようになります。</p>
+<p class="ref-p">k ＝ 1.013×10⁵Pa × 22.4L ／（273K × 1mol）≒ 8.31×10³ Pa·L/(K·mol) です。</p>
+<p class="ref-p">気体の体積は物質量 n に比例するので、n〔mol〕の気体では V ＝ n × k × T/P です。この k を<b>気体定数</b>と名づけて R で表し、分母を払うと<b>気体の状態方程式</b>が得られます。</p>
+<p class="ref-p">気体の状態方程式は <b>PV ＝ nRT</b>（R ＝ 8.31×10³ Pa·L/(K·mol)）です。</p>
+<p class="ref-p">問題では、R ＝ 8.3×10³ Pa·L/(K·mol) のように有効数字2桁で与えられることがほとんどです。<b>R の値は問題文で与えられるので暗記しなくてよいですが、PV ＝ nRT の形は必ず覚えてください。</b></p>
+<section class="ref-sec" id="ref-sec-read"><h4 class="ref-sec-h">状態方程式は使わない —— ＝ の逆側は比例、同じ側は反比例</h4><p class="ref-sec-lead">PV ＝ nRT の「＝」の逆側にある変数どうしは比例、同じ側にある変数どうしは反比例します。関係は暗記せず、式から読みます。</p></section>
+<p class="ref-p">状態方程式は、数値を代入すれば知りたい変数が求められるので便利です。しかし、代入して解くやり方には次の3つの弱点があります。</p>
+<ol class="ref-list"><li>桁の計算が多く、計算が遅くなり、ミスが多くなる。</li><li>数値を入れるだけなので、答えがどのくらいの大きさになるか見当がつかない。</li><li>見当がないので、桁を間違えても気づけない。</li></ol>
+<p class="ref-p">そこでこの参考書では、状態方程式に数値を代入するのはできるだけ避け、<b>基準になる状態から、変数どうしの比例・反比例を考えて解きます。</b>計算が少ないので速く、状況を思い浮かべながら解くので間違いにも気づきやすくなります。</p>
+<p class="ref-p">変数どうしの関係は、PV ＝ nRT の形から読みます。<b>「＝」の逆側にある変数どうしは比例、同じ側にある変数どうしは反比例</b>です。</p>
+<div class="ref-table-wrap"><div class="ref-cap">PV ＝ nRT から読む、変数どうしの関係</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変数</th><th style="text-align: left;">＝ の</th><th style="text-align: left;">関係</th><th style="text-align: left;">言語的解釈</th></tr></thead><tbody><tr><td style="text-align: left;">P と V</td><td style="text-align: left;">同じ側</td><td style="text-align: left;">反比例</td><td style="text-align: left;">体積を小さくすると、押し込められた分子が壁を強く押すので圧力が大きくなる</td></tr><tr><td style="text-align: left;">V と T</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">温度を上げると気体がふくらむので体積が大きくなる</td></tr><tr><td style="text-align: left;">P と T</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">体積一定のまま温度を上げると、ふくらもうとする気体が壁を強く押す</td></tr><tr><td style="text-align: left;">n と P</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">圧力は分子が壁を押す力の合計なので、分子の数に比例する</td></tr><tr><td style="text-align: left;">n と V</td><td style="text-align: left;">逆側</td><td style="text-align: left;">比例</td><td style="text-align: left;">ほかの条件を変えずに体積を変えれば、中の分子の数も体積に比例する</td></tr><tr><td style="text-align: left;">n と T</td><td style="text-align: left;">同じ側</td><td style="text-align: left;">反比例</td><td style="text-align: left;">温度は分子1個あたりの運動エネルギーの平均値なので、エネルギーの総量が一定なら分子の数と反比例する</td></tr></tbody></table></div>
+<p class="ref-p">n と T の反比例は分かりにくいので、みかんで考えます。12個のみかんを2人で分ければ1人6個、3人で分ければ1人4個です。人数（n にあたる）と1人あたりの個数（T にあたる）が反比例するのと同じことです。</p>
+<p class="ref-p"><b>この表は暗記するのではなく、必要なときに PV ＝ nRT から読み取れるようにしましょう。</b>数式の読み方と言語的解釈の両方から、気体のイメージをつくっておくことが大切です。</p>
+<section class="ref-sec" id="ref-sec-standard"><h4 class="ref-sec-h">基準は2つ —— 22.4L と 24.9L</h4><p class="ref-sec-lead">0℃ の問題は標準状態の 22.4L/mol を、0℃ 以外の問題は 300K・1.0×10⁵Pa の 24.9L/mol を基準にします。</p></section>
+<p class="ref-p">比例・反比例で解くには、基準になる状態が要ります。1つ目の基準は標準状態で、<b>0℃・1.013×10⁵Pa で 1mol の気体は 22.4L</b> です（1mol の気体の体積をモル体積といいます）。</p>
+<p class="ref-p">2つ目の基準として、<b>300K・1.0×10⁵Pa で 1mol の気体の体積</b>を使います。R ＝ 8.3×10³ Pa·L/(K·mol) として計算すると、次のように約分できて 24.9L になります。</p>
+<p class="ref-p">V ＝ nRT/P ＝ 1mol × 8.3×10³ × 300K ／ 1.0×10⁵Pa ＝ 8.3 × 3 ＝ 24.9L です。</p>
+<p class="ref-p">この参考書では、300K・1.0×10⁵Pa の状態を<b>準標準状態</b>と呼びます。</p>
+<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">「準標準状態」は、この参考書（と講義のスライド）での呼び名です。教科書や入試では使われていないので、答案には書かないでください。答案では「300K、1.0×10⁵Pa で 1mol の気体の体積は 24.9L」のように、条件を数値で書きます。</p></div>
+<p class="ref-p">標準状態から温度だけを 273K → 300K に上げたのが準標準状態です。温度が 300/273 ≒ 1.1倍なので、体積も 22.4L の約 1.1倍で 24.9L になります。「標準状態を少し温めて、少しふくらませたのが準標準状態」と感覚的にとらえておきましょう。</p>
+<div class="ref-table-wrap"><div class="ref-cap">計算の基準にする2つの状態</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">基準</th><th style="text-align: left;">温度</th><th style="text-align: left;">圧力</th><th style="text-align: left;">1mol の体積</th><th style="text-align: left;">使う問題</th><th style="text-align: left;">覚え方</th></tr></thead><tbody><tr><td style="text-align: left;">標準状態</td><td style="text-align: left;">0℃（273K）</td><td style="text-align: left;">1.013×10⁵Pa</td><td style="text-align: left;">22.4L</td><td style="text-align: left;">0℃ の問題</td><td style="text-align: left;">224 ＝ 2⁵ × 7 なので「22.4 は7の倍数」</td></tr><tr><td style="text-align: left;">準標準状態</td><td style="text-align: left;">300K（27℃）</td><td style="text-align: left;">1.0×10⁵Pa</td><td style="text-align: left;">24.9L</td><td style="text-align: left;">0℃ 以外の問題</td><td style="text-align: left;">24.9 ＝ 8.3 × 3 なので R と約分できる</td></tr></tbody></table></div>
+<p class="ref-p"><b>22.4L と 24.9L の2つは必ず覚えてください。</b>24.9 は、忘れても 8.3 × 3 でその場で出せます。<b>24.9 ＝ 8.3 × 3 と知っていると、R ＝ 8.3×10³ と約分できる</b>ので、計算がとても楽になります。</p>
+<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">標準状態の圧力は 1.013×10⁵Pa です。0℃・1.0×10⁵Pa で 1mol の体積を正確に求めると 22.7L になり、22.4L とは 1% ほど違います。有効数字2桁の問題で 0℃ なら、圧力が 1.0×10⁵Pa でも 22.4L を基準にして構いませんが、有効数字3桁の問題では答えが少しずれることがあります。</p></div>
+<section class="ref-sec" id="ref-sec-steps"><h4 class="ref-sec-h">比の図式で解く手順</h4><p class="ref-sec-lead">基準の状態と問題の状態を並べ、変わった変数ごとに倍率を書き、比例なら同じ倍率、反比例なら逆数の倍率を掛けます。</p></section>
+<p class="ref-p">気体の計算は、次の順に進めます。</p>
+<ol class="ref-list"><li>温度が ℃ なら、先に K に直す。</li><li>基準を決める。<div class="ref-li-hang">0℃ なら 22.4L、それ以外なら 24.9L（1mol・1.0×10⁵Pa）。前後の状態が与えられていれば、前の状態が基準です。</div></li><li>基準と比べて変わった変数を縦に並べ、「前 → 後」と倍率（×<span class="ref-blank">○○</span>）を書く。</li><li>求める変数と比例なら「比」、反比例なら「反」の札を付ける。<div class="ref-li-hang">比は同じ倍率を、反は逆数の倍率を掛けます。</div></li><li>倍率をまとめて掛ける前に、概算して答えの大きさの見当をつける。</li></ol>
+<p class="ref-p">★ 小数の倍率は分数に直し（×1.5 ではなく ×3/2）、約分はきりのよいところで止めます。<b>計算の途中では桁をいじらず、有効数字の形にするのは最後だけ</b>にしましょう。</p>
+<p class="ref-p">具体例1で、360K・6.0L・2.0×10⁵Pa の気体を 300K・4.0L にしたときの圧力を求めます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">具体例1 の比の図式（求めるのは P）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変数</th><th style="text-align: right;">前</th><th style="text-align: right;">後</th><th style="text-align: right;">変化の倍率</th><th style="text-align: left;">P との関係</th><th style="text-align: right;">P に掛ける倍率</th></tr></thead><tbody><tr><td style="text-align: left;">T</td><td style="text-align: right;">360K</td><td style="text-align: right;">300K</td><td style="text-align: right;">×5/6</td><td style="text-align: left;">比</td><td style="text-align: right;">×5/6</td></tr><tr><td style="text-align: left;">V</td><td style="text-align: right;">6.0L</td><td style="text-align: right;">4.0L</td><td style="text-align: right;">×2/3</td><td style="text-align: left;">反</td><td style="text-align: right;">×3/2</td></tr><tr><td style="text-align: left;">P</td><td style="text-align: right;">2.0×10⁵Pa</td><td style="text-align: right;">□</td><td style="text-align: right;">——</td><td style="text-align: left;">——</td><td style="text-align: right;">×5/4</td></tr></tbody></table></div>
+<p class="ref-p">P は 2.0×10⁵Pa × 5/6 × 3/2 ＝ 2.0×10⁵Pa × 5/4 ＝ <b>2.5×10⁵Pa</b> です。「温度が下がって圧力は少し下がり、体積が小さくなって圧力は上がる。合わせて少し上がる」と見当をつけておくと、桁の間違いに気づけます。</p>
+<p class="ref-p">具体例2で、300K・3.0×10⁵Pa・10L の気体の物質量を、準標準状態を基準にして求めます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">具体例2 の比の図式（求めるのは n、基準は準標準状態）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変数</th><th style="text-align: right;">基準</th><th style="text-align: right;">問題</th><th style="text-align: right;">変化の倍率</th><th style="text-align: left;">n との関係</th><th style="text-align: right;">n に掛ける倍率</th></tr></thead><tbody><tr><td style="text-align: left;">P</td><td style="text-align: right;">1.0×10⁵Pa</td><td style="text-align: right;">3.0×10⁵Pa</td><td style="text-align: right;">×3</td><td style="text-align: left;">比</td><td style="text-align: right;">×3</td></tr><tr><td style="text-align: left;">V</td><td style="text-align: right;">24.9L</td><td style="text-align: right;">10L</td><td style="text-align: right;">×100/249</td><td style="text-align: left;">比</td><td style="text-align: right;">×100/249</td></tr><tr><td style="text-align: left;">T</td><td style="text-align: right;">300K</td><td style="text-align: right;">300K</td><td style="text-align: right;">×1</td><td style="text-align: left;">——</td><td style="text-align: right;">——</td></tr><tr><td style="text-align: left;">n</td><td style="text-align: right;">1mol</td><td style="text-align: right;">□</td><td style="text-align: right;">——</td><td style="text-align: left;">——</td><td style="text-align: right;">×100/83</td></tr></tbody></table></div>
+<p class="ref-p">n は 1mol × 3 × 100/249 ＝ 100/83 ≒ <b>1.2mol</b> です。249 ＝ 83 × 3 なので、3 と約分できます。100/249 はおよそ 2/5 なので、「3 × 2/5 ＝ 1.2 くらい」と概算しておきましょう。</p>
+<p class="ref-p">どうしても状態方程式に代入するときは、次の3つを守ります。</p>
+<ul class="ref-list"><li>求めるものを主語（左辺）にしてから代入する。n を求めるなら、先に n ＝ PV/RT と変形する。</li><li>何を代入したか分かるように、気体定数以外には単位を書く。</li><li>R は 8.3×10³ より 8300 と書いた方が計算しやすいことが多い。</li></ul>
+<section class="ref-sec" id="ref-sec-molar-mass"><h4 class="ref-sec-h">気体の分子量</h4><p class="ref-sec-lead">分子量 M・物質量 n・質量 w の関係 Mn ＝ w を PV ＝ nRT に入れて、M を主語に変形します。式は覚えずに、その場で導きます。</p></section>
+<p class="ref-p">気体の分子量を M、その気体 n〔mol〕の質量を w〔g〕とします。分子量は 1mol の質量なので、1mol : M〔g〕＝ n〔mol〕: w〔g〕の比例式ができ、ここから <b>Mn ＝ w</b>（分子量 × 物質量 ＝ 質量）が出てきます。</p>
+<p class="ref-p">Mn ＝ w を n ＝ w/M と変形して PV ＝ nRT に入れると PV ＝ wRT/M、さらに M を主語にすると次の式になります。</p>
+<p class="ref-p">これが <b>M ＝ wRT/PV</b> です。</p>
+<p class="ref-p"><b>この式は暗記せず、Mn ＝ w と PV ＝ nRT からその場で導けるようにしましょう。</b>2行で導けるので、覚えるより確実です。分子量には単位がありませんが、計算の途中では g/mol として扱います。</p>
+<p class="ref-p">密度が与えられた問題は、準標準状態を使うともっと簡単に解けます。300K・1.0×10⁵Pa で密度が 1.6g/L の気体なら、1L で 1.6g です。準標準状態の 1mol は 24.9L なので、<b>24.9L の質量がそのまま分子量</b>になります。</p>
+<p class="ref-p">1L : 1.6g ＝ 24.9L : □g より、□ ＝ 1.6 × 24.9 ＝ 39.84 なので、分子量は <b>40</b> です。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">0℃ でない問題でも、1mol ＝ 22.4L として物質量を求める</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">22.4L は 0℃（273K）・1.013×10⁵Pa のときだけの値です。300K・1.0×10⁵Pa なら 24.9L、それ以外の温度・圧力なら、基準から比例・反比例で直します。</span></p><p class="ref-mistake-why">化学基礎で「1mol ＝ 22.4L」を先に覚えるので、条件を確かめずに使ってしまうためです。22.4L を使う前に、必ず温度が 0℃ かどうかを見ましょう。</p></div>
+<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">PV ＝ nRT、「＝ の逆側は比例・同じ側は反比例」、22.4L（0℃）と 24.9L（300K・1.0×10⁵Pa）の3つを覚えます。</p></section>
+<p class="ref-p"><b>必ず覚えるのは、PV ＝ nRT と、22.4L（0℃・1.013×10⁵Pa）・24.9L（300K・1.0×10⁵Pa）の2つの基準です。</b>変数どうしの関係は「＝ の逆側は比例、同じ側は反比例」の1行から読めば足ります。</p>
+<p class="ref-p">ボイル・シャルル・ボイル＝シャルルの法則の式、分子量の式 M ＝ wRT/PV、気体定数の値は、覚えていなくて困ることはほとんどありません。どれも PV ＝ nRT から導けるか、問題文で与えられます。</p>
+<h5 class="ref-h5">例題</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の問いに有効数字2桁で答えよ。(1) 400K・5.0×10⁵Pa の気体を、同じ体積のまま 3.5×10⁵Pa にすると何 K になるか。(2) 72L・2.4×10⁵Pa の気体を、同じ温度のまま 48L にすると何 Pa になるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 2.8×10²K（280K）。P と T は ＝ の逆側なので比例。P が 7/10倍なので、T も 400K × 7/10 ＝ 280K。(2) 3.6×10⁵Pa。P と V は ＝ の同じ側なので反比例。V が 2/3倍なので、P は逆数の 3/2倍で 2.4×10⁵Pa × 3/2 ＝ 3.6×10⁵Pa。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">2.0mol の気体は、0℃・1.4×10⁵Pa で何 L になるか。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>32L。0℃ なので標準状態の 22.4L（1mol）を基準にします。P は 1.0×10⁵Pa から 7/5倍で V とは反比例（×5/7）、n は 2倍で V とは比例（×2）。22.4L × 5/7 × 2 ＝ 32L。★ 22.4 は7の倍数（224 ＝ 2⁵ × 7）なので、7 がきれいに約分できます。「20 × 3/2 ＝ 30 くらい」と概算しておきましょう。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.6mol の気体は、500K・40L で何 Pa になるか。有効数字2桁で答えよ。ただし、R ＝ 8.3×10³ Pa·L/(K·mol) とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>1.7×10⁵Pa。0℃ ではないので、準標準状態（300K・1.0×10⁵Pa・24.9L・1mol）を基準にします。P と n・T は比例、P と V は反比例。n は ×1.6（比）、T は 300K → 500K で ×5/3（比）、V は 24.9L → 40L で ×40/24.9、P とは反比例なので逆数の ×24.9/40 を掛ける（反）。1.0×10⁵Pa × 1.6 × 5/3 × 24.9/40 ＝ 1.66×10⁵ ≒ 1.7×10⁵Pa。★ 249 ＝ 83 × 3 なので、5/3 の 3 と約分できます。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ある気体 1.0g は、47℃・1.0×10⁵Pa で 490mL であった。この気体の分子量を有効数字2桁で答えよ。ただし、R ＝ 8.3×10³ Pa·L/(K·mol) とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>54。先に 273 ＋ 47 ＝ 320K に直します。Mn ＝ w より n ＝ w/M を PV ＝ nRT に入れて、M ＝ wRT/PV ＝ 1.0g × 8300 × 320K ／（1.0×10⁵Pa × 0.490L）≒ 54.2 なので 54。★ 条件が準標準状態に近いので、1mol はおよそ 25L。0.5L で 1g なら 25L では 50g くらい、と概算できます。</p></div></details></div>
+</div>
+</div>
+
+<nav class="seq"><a href="/reference/vapor-pressure/">← 液体の蒸気圧と沸騰</a>
+<a href="/reference/">参考書の目次</a>
+<a href="/reference/terms/">用語から引く</a>
+<a href="/reference/gas-mixture/">混合気体と分圧 —— 全圧はてんびんで →</a></nav>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
+  if (!b) return;
+  var f = document.createElement('iframe');
+  f.src = b.getAttribute('data-embed');
+  f.setAttribute('loading', 'lazy');
+  f.setAttribute('title', b.getAttribute('data-embed-title') || '');
+  b.parentNode.appendChild(f);
+  b.remove();
+});
+</script>
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
+
+</main>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+</body>
+</html>
