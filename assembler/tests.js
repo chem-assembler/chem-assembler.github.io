@@ -274,10 +274,11 @@
  * | SW  | 1〜6   | 立体異性体の書き出しの答案用紙化（DESIGN_practice_revision.md §5）。SW1 は登録の廃止（2/2 と帯の個数）・SW2 は同じ立体の指摘・**SW3 は未確定の欄（★否定対照 SW5 つき＝未確定を不正解に丸めると赤）**・SW4 は否定対照＝名前を伏せる門番・**SW6 は否定対照＝立体の帯の「🧹 並べ直す」が向きを1度も変えない**（相対座標と stereoCode の2本立て。IW7 より強い物差しで、v446 の縦置き規則を踏み抜く直しをここで止める） |
  * | TAP | 1      | 押せるものの床（32px） |
  * | TC  | 1〜6   | 引きずったタップの取り消し（TC5 は否定対照）。台帳に載っていなかったので登録した |
- * | TF  | 1〜3   | **一部だけ流す仕掛け（`?only=`）そのものの検査**。道具が壊れると全部の検査が黙って
+ * | TF  | 1〜4   | **一部だけ流す仕掛け（`?only=`・`?shard=`）そのものの検査**。道具が壊れると全部の検査が黙って
  *                  無効になるので、ここが空振りだと最悪の事故になる。1 が選び方（無指定は全件・1件・帯・
  *                  複数・当たらない語）・2 が「絞っていると分かる表示」を**本物の test.html を開いて**
  *                  見る（帯の件数／除外数／summary が緑にならない）・3 は当たらない番号で赤く止まること
+ *                  ・4 は `?shard=i/n` が全件を重なりも抜けも無く並びを変えずに切ること（CI の並列の前提）
  *                  ＝「絞ったつもりで0件・緑」を作らない |
  * | TG  | 1      | お手本モーダル |
  * | UX  | 1〜3   | 「操作の案内」の字数の上限（v1468・ux-density.md。ユーザー発注「説明が冗長・字が小さい／ただし発展の話は必要な人が見られるように」）。**1 が上限**（9画面ぶん。数えるのは押す前に読ませる説明だけで、化学の説明・答え合わせ・設問・一覧・図・**閉じた `<details>` の中身**は数えない。併せて `.learn-acc` が既定で閉じていること**と中身が空でないこと**を見る ＝ 「畳んだふりをして消す」で通せない）・**2 は否定対照**＝ 実物と同じ長さの1文（47字）を足すと**9画面すべてで**上限を超えること（余裕が広すぎて止め木にならない状態を検出する）・3 は十字の4操作の規則が `CROSS_RULES_HTML` 1本で ⏱ と 🔤 の両方から開けること |
@@ -410,8 +411,21 @@
     // 各テストは**代表を数件、描画ありのまま**残して同じ検査に掛けている
     // （＝描画ありと描画なしで結果が変わらないことを、テスト自身が突き合わせている）。
     const QUIET_KEYS = ['updateDrawing', 'fitCanvasToMolecule', 'saveState', 'showToast'];
+    // ★ **反応の再生（モーフィング）の組み立ても止める**（2026-09-19）。v1584 で `buildPlayback` が
+    //   コマごとに「大きくした H の丸が他の原子にかからないか」を調べるようになり（RXH2）、燃焼1回で
+    //   0.3〜0.8 秒かかる。RX10b の掃き出しは v925 の 67 秒から**単独で 1,063 秒**に伸びていた（実測）。
+    //   再生は「表示のみ・検証/Undo/監査には一切影響しない」（reactor.js animateExecution の約束）ので、
+    //   アプリ自身の「動きを減らす」経路（`_reducedMotion()` が真なら再生を組まずに結果だけ確定）を借りる。
+    //   ⚠ 再生そのものの検査（RXH・RX の再生系）は覆いの外で本物が走るので、そちらの網は減らない
     function withoutRendering(c, fn) {
         const g = c.game;
+        const rx = c.W.reactor;
+        const rxSaved = rx ? [Object.prototype.hasOwnProperty.call(rx, '_reducedMotion'), rx._reducedMotion] : null;
+        if (rx) {
+            const still = () => true;
+            still._quietStub = true;
+            rx._reducedMotion = still;
+        }
         // 覆いには目印を付ける。**「自前のプロパティかどうか」では見分けられない**
         // ―― 別のテスト（RX9）が原型のメソッドを自前プロパティとして置き直しているため
         const saved = QUIET_KEYS.map(k => [k, Object.prototype.hasOwnProperty.call(g, k), g[k]]);
@@ -427,6 +441,10 @@
                 delete g[k];
                 if (wasOwn) g[k] = fn0;
             });
+            if (rx) {
+                delete rx._reducedMotion;
+                if (rxSaved[0]) rx._reducedMotion = rxSaved[1];
+            }
         }
     }
     // 覆いが本当に外れたか（外れないと以後のテストが「描いていないのに緑」になる）。
@@ -438,6 +456,9 @@
             assert(!g[k]._quietStub,
                 `${k} の差し替えが残っている（描画が止まったまま後続テストへ漏れる）`);
         });
+        const rx = c.W.reactor;
+        assert(!rx || !(rx._reducedMotion && rx._reducedMotion._quietStub),
+            '反応の再生を止めた覆いが残っている（以後の反応がアニメなしのまま後続テストへ漏れる）');
         // 実際に描けることまで見る（関数が居るだけでは足りない）
         g.userMolecule = new c.W.Molecule();
         g.summonMolecule('エタノール');
@@ -13986,10 +14007,16 @@
             await p.doAction({ type: 'speed', value: 2 }, false);
             assert(p.speedScale === 4, `基準2倍で value=2 なら4倍のはず（実際 ${p.speedScale}）`);
             // 実時間でも効いていることを見る（掛け算だけ合っていても sleep が使わなければ意味がない）
-            const t0 = performance.now();
-            await p.sleep(800);
-            const fast = performance.now() - t0;
-            assert(fast < 320, `4倍なら 800ms の待ちは 200ms 前後のはず（実際 ${Math.round(fast)}ms）`);
+            // ⚠ **3回測って一番速い値で見る**（2026-09-19）。ヘッドレスで**アプリ起動の直後**に走ると、
+            //   起動の後始末でタイマーが遅れて 437ms と出た（CI の分割実行で N2c が区間の先頭＝233件目に来て発覚。
+            //   前に1件でも流せば 230ms 前後）。遅れは一時的なものなので、最小値なら「4倍が効いているか」だけを見られる
+            let fast = Infinity;
+            for (let k = 0; k < 3 && fast >= 320; k++) {
+                const t0 = performance.now();
+                await p.sleep(800);
+                fast = Math.min(fast, performance.now() - t0);
+            }
+            assert(fast < 320, `4倍なら 800ms の待ちは 200ms 前後のはず（3回のうち最速で ${Math.round(fast)}ms）`);
             await p.doAction({ type: 'speed' }, false);   // value 省略 ＝ 基準へ戻る
             assert(p.speedScale === 2, `value 省略なら基準（2倍）へ戻るはず（実際 ${p.speedScale}）`);
         } finally {
@@ -22506,6 +22533,40 @@
             // 「合格」と読める文字が1つも無いこと（0/0 で緑に見えるのが最悪）
             assert(!/✅/.test(sum.textContent), `打ち間違いの画面に ✅ が出ている: ${sum.textContent.slice(0, 160)}`);
         } finally { f.remove(); }
+    });
+
+    test('TF4: ?shard=i/n は全件を重なりも抜けも無く、並びを変えずに n 区間へ切る', async () => {
+        // ★ CI はこれを n 本の並列ジョブで流して「全テスト合格」の代わりにする。
+        //   **区間の和が全件にならなければ、門番が黙って一部を流さなくなる**のでここで止める
+        const ids = (s) => buildSelection(tests, s).selected.map(t => testId(t.name));
+        const all = tests.map(t => testId(t.name));
+        for (const n of [1, 2, 3, 4, 7]) {
+            const parts = [];
+            for (let i = 1; i <= n; i++) {
+                const sel = buildSelection(tests, `?shard=${i}/${n}`);
+                assert(sel.filtering === true && sel.missing.length === 0, `shard=${i}/${n} が受け付けられない（${sel.missing.join(',')}）`);
+                assert(sel.shard && sel.shard.i === i && sel.shard.n === n, `shard=${i}/${n} の名乗りが無い`);
+                assert(sel.shard.to - sel.shard.from + 1 === sel.selected.length,
+                    `shard=${i}/${n} の「◯〜◯件目」と件数が合わない（${sel.shard.from}〜${sel.shard.to}・${sel.selected.length}件）`);
+                parts.push(...ids(`?shard=${i}/${n}`));
+            }
+            // 連結すると全件の並びそのものになる ＝ 重なりも抜けも無く、区間の中の順序も全走と同じ
+            assert(parts.length === all.length && parts.every((id, k) => id === all[k]),
+                `n=${n} の区間をつなげても全件の並びにならない（${parts.length}/${all.length} 件）`);
+        }
+        // 区間の大きさは1件以内の差（どれか1本だけ重い、を切り方で作らない）
+        const sizes = [1, 2, 3, 4].map(i => ids(`?shard=${i}/4`).length);
+        assert(Math.max(...sizes) - Math.min(...sizes) <= 1, `4分割の件数が偏っている（${sizes.join('/')}）`);
+        // 読めない指定は赤で止める（黙って全件・0件で緑にしない）
+        for (const bad of ['0/4', '5/4', '1/0', 'abc', '', '1/4/2', '-1/4']) {
+            const sel = buildSelection(tests, `?shard=${encodeURIComponent(bad)}`);
+            assert(sel.missing.length === 1 && sel.selected.length === 0, `shard=${bad} を受け付けてしまった（${sel.selected.length} 件）`);
+        }
+        // only と重ねると全件の保証が消えるので受け付けない
+        const both = buildSelection(tests, '?shard=1/4&only=RX');
+        assert(both.missing.length === 1 && both.selected.length === 0, 'shard と only の重ね掛けを受け付けてしまった');
+        // 無指定は今までどおり全件（分割の口が既定の全走を変えていない）
+        assert(buildSelection(tests, '').selected.length === tests.length, '無指定で全件にならない');
     });
 
     test('ST30: R・S の読み物（用語と決め方の骨組み＋実装との一致・M2.5 その3）', async (c) => {
@@ -35275,9 +35336,18 @@
         known.forEach(k => assert(worse.includes(k), `既知の ${k} が出ない（検査の前提が変わった）`));
 
         // ---- (4) 鎖状グルコースは「ライブラリと同じフィッシャー投影」であることを言い切る ----
-        const opened = react(molOf('β-D-グルコース（β-D-グルコピラノース）'), 'open_glucopyranose');
-        assert(g.lookupCompoundName(opened) === 'D-グルコース（鎖状）',
-            `開環で鎖状グルコースにならない（${g.lookupCompoundName(opened)}）`);
+        // ★「D-」まで名乗るのは**立体を名前に反映する（readStereo）が ON のときだけ**。OFF だと鎖状の糖は
+        //   「〜のどれか（立体で決まります）」になる（game.js lookupCompoundName の (2)）。全走では前のテストが
+        //   ON のまま去っていたので通っていた ＝ 前提は自分で作る（2026-09-19・shard で発覚）
+        const savedStereo = g.readStereo;
+        g.readStereo = true;
+        try {
+            const opened = react(molOf('β-D-グルコース（β-D-グルコピラノース）'), 'open_glucopyranose');
+            assert(g.lookupCompoundName(opened) === 'D-グルコース（鎖状）',
+                `開環で鎖状グルコースにならない（${g.lookupCompoundName(opened)}）`);
+        } finally {
+            g.readStereo = savedStereo;
+        }
         assert(straightCO(molOf('D-グルコース（鎖状）')) === 1,
             'ライブラリの鎖状グルコースが一直線でない（フィッシャー投影の前提が変わった）');
 
@@ -45104,6 +45174,9 @@
         // 早稲田大 2021-3(1) がこの型で、6化合物のうち4つが種類数だけで決まる
         const W = c.W;
         const nw = W.narrowing;
+        // ★ 入試問題の一覧は絞り込みモードの生成時に**待たずに**読み始める（appReady は待たない）。
+        //   全走では先に走る NW が読み終えていたので通っていた ＝ 単独・分割実行で null（2026-09-19・shard で発覚）
+        if (!nw.problems) await nw.loadProblems();
         const pool = W.enumerateConstitutionalIsomers(['C', 'C', 'C', 'C', 'C', 'O'], 12, 3000000).isomers;
         assert(pool.length === 14, `C5H12O が ${pool.length} 通り（期待 14）`);
 
@@ -45154,6 +45227,9 @@
         // 並べ方だけ数えれば 6×5×4＝120 → 対称でまとめて10通りにしかならない
         const W = c.W;
         const nw = W.narrowing;
+        // ★ 入試問題の一覧は絞り込みモードの生成時に**待たずに**読み始める（appReady は待たない）。
+        //   全走では先に走る NW が読み終えていたので通っていた ＝ 単独・分割実行で null（2026-09-19・shard で発覚）
+        if (!nw.problems) await nw.loadProblems();
         const place = W.ringPlacements(6, ['OH', 'iPr', 'Me']);
         assert(place.length === 10, `並べ方が ${place.length} 通り（期待 10）`);
         // 重原子11個 ＝ 列挙エンジンの射程外であることを固定する（この道具が要る理由）
@@ -45210,6 +45286,9 @@
         // アミノ基・アミド・ニンヒドリンの言い方が1つも無かった
         const W = c.W;
         const nw = W.narrowing;
+        // ★ 入試問題の一覧は絞り込みモードの生成時に**待たずに**読み始める（appReady は待たない）。
+        //   全走では先に走る NW が読み終えていたので通っていた ＝ 単独・分割実行で null（2026-09-19・shard で発覚）
+        if (!nw.problems) await nw.loadProblems();
         const show = W.fragShow;
 
         // ⚠ **元素の並びはヒル式**（C・H のあとはアルファベット順 ＝ N が O より先）。
@@ -45316,6 +45395,9 @@
         // 4問の検算をここに固定しておく（増やすときは、この注記ごと書き換えること）
         const W = c.W;
         const nw = W.narrowing;
+        // ★ 入試問題の一覧は絞り込みモードの生成時に**待たずに**読み始める（appReady は待たない）。
+        //   全走では先に走る NW が読み終えていたので通っていた ＝ 単独・分割実行で null（2026-09-19・shard で発覚）
+        if (!nw.problems) await nw.loadProblems();
         const card = (id) => W.NARROW_CARDS.find((x) => x.id === id);
 
         // ---- 神戸大3: ケトンのカードが無くて積めなかった（ketone-no の裏が空いていた）----
@@ -61668,11 +61750,49 @@
         return !/^[A-Z]/.test(rest);                              // 帯の指定
     };
 
-    // 絞り込みの決定を1つの純粋関数に閉じ込める（TF1 がこれを直に呼んで検査する）。
-    // 返り値: { filtering, selected, total, tokens, missing }
+    // ===== 分けて流す（`?shard=i/n`）=====
+    //
+    // **なぜ要るか**: 全走は CI で約50分（2026-09-19）。CI の並列ジョブ n 本に分ければ1本あたり 1/n になる。
+    // `?only=` は**人が選ぶ**ので漏れうる＝門番に使えない。`?shard=` は**機械が全件を n 個の区間に切る**ので、
+    // 1〜n を全部流せば全件を1回ずつ流したことになる（TF4 がこれを確かめる）。
+    //
+    // ⚠ **連続した区間で切る**（1〜150件目・151〜300件目…）。飛び飛び（i 番目おき）にしないのは、
+    //    並びを変えると「前のテストが残した状態」が変わり、全走では出ない赤・消える赤が出るから（EQ の件）。
+    //    連続なら区間の中の並びは全走と同じで、違うのは「区間の先頭が新しいアプリで始まる」ことだけ
+    //    ＝ 全走の先頭と同じ条件。
+    // ⚠ 1本の分割実行は「全テスト合格」ではない。画面は緑にせず、run-tests.mjs は終了コード 4 を返す。
+    //    全区間がそろったかは CI の最後のジョブ（shard-gate）が件数の合計で確かめる
+    const SHARD_PARAM = 'shard';
+    // `i/n` を読む。読めなければ null（＝指定ミス。黙って全件流さない）
+    const parseShard = (raw) => {
+        const m = /^\s*(\d+)\s*\/\s*(\d+)\s*$/.exec(String(raw));
+        if (!m) return null;
+        const i = Number(m[1]), n = Number(m[2]);
+        if (!(n >= 1 && i >= 1 && i <= n)) return null;
+        return { i, n };
+    };
+    // 区間の切り方。i 番目（1始まり）は [floor((i-1)N/n), floor(iN/n)) ＝ 1〜n で重なりも抜けも無い
+    const shardRange = (total, i, n) => [Math.floor((i - 1) * total / n), Math.floor(i * total / n)];
+
+    // 絞り込みの決定を1つの純粋関数に閉じ込める（TF1・TF4 がこれを直に呼んで検査する）。
+    // 返り値: { filtering, selected, total, tokens, missing, shard }
     //   missing … 1件も当たらなかった語。**1つでもあれば実行しない**
+    //   shard   … `?shard=` のときだけ { i, n, from, to }（from/to は1始まりの通し番号）
     function buildSelection(list, search) {
-        const raw = new URLSearchParams(search || '').get(FILTER_PARAM);
+        const params = new URLSearchParams(search || '');
+        const shardRaw = params.get(SHARD_PARAM);
+        if (shardRaw !== null) {
+            const sh = parseShard(shardRaw);
+            // `?only=` と重ねると「区間の中をさらに人が選ぶ」＝全件の保証が消えるので受け付けない
+            if (!sh || params.get(FILTER_PARAM) !== null) {
+                return { filtering: true, selected: [], total: list.length, tokens: [], raw: shardRaw, shard: null,
+                    missing: [sh ? '(shard と only は同時に使えない)' : `(shard=${shardRaw} は i/n の形でない・1≦i≦n)`] };
+            }
+            const [a, b] = shardRange(list.length, sh.i, sh.n);
+            return { filtering: true, selected: list.slice(a, b), total: list.length, tokens: [], missing: [], raw: shardRaw,
+                shard: { i: sh.i, n: sh.n, from: a + 1, to: b } };
+        }
+        const raw = params.get(FILTER_PARAM);
         if (raw === null) return { filtering: false, selected: list, total: list.length, tokens: [], missing: [], raw: null };
         const tokens = String(raw).split(',').map(s => s.trim()).filter(s => s !== '');
         // `?only=` を値なしで付けたときに黙って全件流すと、絞ったつもりの全走になる。指定ミスとして扱う
@@ -61693,7 +61813,8 @@
         el.textContent = `⚠ 絞り込み実行：全 ${sel.total} 件のうち ${sel.selected.length} 件だけを流しています（除外 ${excluded} 件）`;
         const sub = doc.createElement('span');
         sub.className = 'sub';
-        sub.textContent = `指定: only=${sel.tokens.join(',')} ／ ここが緑になっても「全テスト合格」ではありません。`
+        sub.textContent = (sel.shard ? `指定: shard=${sel.shard.i}/${sel.shard.n}（${sel.shard.from}〜${sel.shard.to} 件目）` : `指定: only=${sel.tokens.join(',')}`)
+            + ' ／ ここが緑になっても「全テスト合格」ではありません。'
             + 'コミット前の確認はパラメータ無しで全件流すこと。';
         el.appendChild(sub);
         return el;
@@ -61711,7 +61832,7 @@
         if (sel.missing.length) {
             summary.className = 'fail';
             summary.textContent = `❌ 絞り込みの指定が1件も当たりません: ${sel.missing.join(' / ')}`
-                + `（only=${sel.raw}）。番号の打ち間違いか、tests.js 冒頭の台帳にある帯かを確かめること。`
+                + `（指定: ${sel.raw}）。番号の打ち間違いか、tests.js 冒頭の台帳にある帯かを確かめること。`
                 + '何も流していないので、この画面は合否を何も語っていません。';
             return;
         }
@@ -61720,6 +61841,9 @@
         }
         const 走らせる = sel.selected;
         const 帯 = sel.filtering ? `⚠ 絞り込み（${走らせる.length}/${sel.total} 件）` : '';
+        // CI の shard-gate が「全区間がそろったか」を数えるための口（run-tests.mjs の --report が読む）
+        window.testSelection = { shard: sel.shard || null, selected: 走らせる.length, total: sel.total,
+            ids: 走らせる.map(t => testId(t.name)) };
 
         // iframe内のアプリ初期化の完了を待つ（appReady = 全データロード済み。
         // game/reactionPlayerの存在だけではreactions.jsonのロード完了前に走り出す競合があった）
@@ -61791,7 +61915,8 @@
             summary.className = 'filtered';
             summary.textContent = (ok ? `✅ ${passed}/${走らせる.length} 合格` : `❌ ${走らせる.length - passed} 件失敗（${passed}/${走らせる.length} 合格）`)
                 + `（${totalSec} 秒）── ⚠ 絞り込み実行：全 ${sel.total} 件中 ${走らせる.length} 件だけ`
-                + `・${sel.total - 走らせる.length} 件は流していない ＝ これは「全テスト合格」ではない（only=${sel.tokens.join(',')}）`;
+                + `・${sel.total - 走らせる.length} 件は流していない ＝ これは「全テスト合格」ではない（`
+                + (sel.shard ? `分割実行 shard=${sel.shard.i}/${sel.shard.n}・${sel.shard.from}〜${sel.shard.to} 件目` : `only=${sel.tokens.join(',')}`) + '）';
             return;
         }
         summary.className = ok ? 'pass' : 'fail';

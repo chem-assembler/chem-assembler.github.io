@@ -135,7 +135,8 @@ Actions は無料。`.github/workflows/tests.yml` が **どのブランチの pu
 | ジョブ | 中身 | 所要（実測） |
 |---|---|---|
 | `verify`（Linux） | `verify-release.js`（main 以外のブランチは **規則8を origin/main との差し引き**で）・`verify-compounds.js`・構文 | 15 秒 |
-| `browser`（**Windows**） | `run-tests.mjs` で assembler / qa / ratio の全走（assembler は落ちたテストだけ1回流し直す） | assembler 40〜50 分・他は 1 分 |
+| `browser`（**Windows**） | `run-tests.mjs` で assembler / qa / ratio の全走。**assembler は4本に分けて並列**（`--shard=i/4`）・落ちたテストだけ1回流し直す | 分ける前の assembler は 40〜50 分・他は 1 分 |
+| `shard-gate`（Linux） | assembler の4区間が**そろって**流れたか（1〜4 が1本ずつ・件数の和が全件数）を、各区間の `--report=` の JSON で数える | 数秒 |
 
 - ★ **レーンの使い方**: 自分のブランチを `git push -u origin <branch>` する → `gh run list --branch <branch>` と `gh run view <id>` で読む。
   **手元の機械で 45 分待たなくてよい**（その間、手元のブラウザと CPU は他のレーンが使える）
@@ -150,6 +151,18 @@ Actions は無料。`.github/workflows/tests.yml` が **どのブランチの pu
   これは上の「1回落ちたら再実行して切り分ける」を機械でやっているだけ。⚠ **警告が同じテストで続いたら直す対象**
 - ⚠ **改行は CRLF で展開する**（`core.autocrlf true`）。リポジトリの中身は LF で、`compounds.json` などは
   「CRLF であること」まで検査しているので、Linux の既定（LF）のままだと形の検査が落ちる
+- ★ **assembler を4本に分けた（2026-09-19）。** `test.html?shard=i/n` は全件を**連続した区間**で切る
+  （1〜232件目・233〜465件目…）。飛び飛びにしないのは、並びを変えると「前のテストが残した状態」が変わるから。
+  区間を全部つなぐと全件の並びそのものになることは **TF4** が確かめる。
+  1本の分割実行は「全テスト合格」ではないので、画面は橙・`run-tests.mjs` は通っても**終了コード 4**。
+  全体の合否は `shard-gate` が決める（matrix の行を1つ消すと、ここが赤で止める）
+  - ⚠ **分けたら隠れた順序依存が6件出た**（NW15・16・17・19 は入試問題の一覧の読み込みを待っていなかった／
+    CO1 は立体を名前に反映する ON を前のテストに頼っていた／N2c は区間の先頭＝起動直後に時間を測って遅れた）。
+    全走では前のテストのおかげで通っていたもの。**区間の先頭に来たテストが落ちたら、まず単独（`--only=`）で流す**
+  - ⚠ **RX10b が 67 秒（v925）から単独で 1,063 秒に伸びていた。** v1584 の再生の組み立て（RXH2）を
+    `withoutRendering` が止めていなかったため。覆いに「反応の再生を組まない」を足して **約9秒**に戻した
+  - ⚠ 分ける数を変えるときは `.github/workflows/tests.yml` の matrix の行と `shard-gate` の `SHARDS` を一緒に変える
+  - 手元で分けて流すなら `node tools/run-tests.mjs <url> --shard=2/4`（⚠ 手元の門番は今までどおり全件1本）
 - 試走で分かったこと: v1583 の main でも OV5・OV7（立体の回す出題）は**出題の偶然で落ちる**（手元で6回中2回）。
   CI で OV が赤でも、まず `--only=OV` を何回か回してゆらぎか確かめる
 
