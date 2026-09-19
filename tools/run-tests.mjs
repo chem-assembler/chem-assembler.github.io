@@ -4,10 +4,13 @@
  *   node tools/run-tests.mjs                                        … 既定（:8134 の assembler）
  *   node tools/run-tests.mjs http://localhost:8123/ratio/test.html  … 別のページ
  *   node tools/run-tests.mjs --only=NW30,RX                         … 一部だけ（assembler のみ）
+ *   node tools/run-tests.mjs --shard=2/4 --report=s2.json            … 4分割の2本目（assembler のみ・CI の並列用）
  *
  * ⚠ `--only=` は**否定対照を素早く見るための道具**で、門番には使えない。
  *   絞ったときは全部通っても**終了コード 3**を返す（0 ＝「コミットして良い」を絞り込みで
  *   名乗らせない）。無指定はいままでどおり全件・全合格で 0。
+ * ⚠ `--shard=i/n` は全部通っても**終了コード 4**（1本の分割は「全テスト合格」ではない）。
+ *   全区間がそろって全部通ったかは、CI の shard-gate が `--report=` の JSON を数えて決める。
  *
  * **なぜ要るか**: Claude の Browser ペインは非表示のとき `document.hidden === true` になり、
  * 5分ほどで Chrome の **intensive throttling** が効いて `setTimeout` が分単位に落ちる。
@@ -41,6 +44,13 @@ if (onlyArg) {
 // **エンジンの違いで壊れる類**（getScreenCTM の値・100dvh・-webkit- 接頭辞）は拾える。
 // 既定は chromium。webkit を使うには一度だけ `npx playwright install webkit` が要る。
 const engineArg = (args.find(a => a.startsWith('--engine=')) || '').split('=')[1] || 'chromium';
+// `--shard=2/4` … test.html の `?shard=` に渡して、全件を4つの連続区間に切った2本目だけ流す
+const shardArg = (args.find(a => a.startsWith('--shard=')) || '').slice('--shard='.length);
+if (shardArg) {
+    target += (target.includes('?') ? '&' : '?') + 'shard=' + encodeURIComponent(shardArg);
+}
+// `--report=path` … 結果を JSON で書き出す（CI の shard-gate が全区間の件数を突き合わせる）
+const reportPath = (args.find(a => a.startsWith('--report=')) || '').slice('--report='.length);
 
 const require = createRequire(path.join(here, 'record', 'package.json'));
 const playwright = require('playwright');
@@ -157,10 +167,26 @@ if (fails.length) {
 // 一部だけの緑がコミットの許可に化けるのを防ぐ）。URL に ?only= が無くても
 // **ページ自身が絞り込みだと言っている**ことを見る ＝ 判定の根拠を1本にする
 const filtered = /絞り込み/.test(summary);
+const selection = await page.evaluate(() => window.testSelection || null).catch(() => null);
 await browser.close();
+const passedAll = okRun && fails.length === 0;
+if (reportPath) {
+    const fs = await import('node:fs');
+    fs.writeFileSync(reportPath, JSON.stringify({
+        target, passed: passedAll, summary, fails,
+        shard: selection && selection.shard, selected: selection ? selection.selected : null,
+        total: selection ? selection.total : null, ids: selection ? selection.ids : null
+    }, null, 1));
+}
+// 分割実行（ページが shard を名乗っている）なら、通っても 4 を返す
+if (selection && selection.shard) {
+    if (!passedAll) process.exit(1);
+    console.log(`⚠ これは分割実行 ${selection.shard.i}/${selection.shard.n}（${selection.selected}/${selection.total} 件）です。終了コード 4 を返します`);
+    process.exit(4);
+}
 if (filtered) {
     console.log('⚠ これは絞り込み実行です。全テスト合格ではないので、終了コード 3 を返します');
     console.log('  （コミット前の確認は --only= を外して全件流すこと）');
     process.exit(3);
 }
-process.exit(okRun && fails.length === 0 ? 0 : 1);
+process.exit(passedAll ? 0 : 1);
