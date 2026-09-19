@@ -72,6 +72,22 @@ items:
 
 つまり、**酸と塩基は価数の逆の比で完全に中和します**。a 価の酸と b 価の塩基は **b mol : a mol** です。
 
+:::table
+caption: 価数の組と、完全に中和する物質量の比
+source: slides:酸塩基の基本４ p.8〜10・p.16（練習1）の組み合わせを、価数の組ごとに並べた
+head:
+- 酸の価数
+- 塩基の価数
+- 酸 : 塩基（mol）
+- 具体例
+align: center | center | center | left
+rows:
+- 1 | 1 | 1 : 1 | HCl と NaOH
+- 1 | 2 | 2 : 1 | HCl と Ca(OH)₂
+- 2 | 1 | 1 : 2 | H₂SO₄ と NaOH
+- 3 | 2 | 2 : 3 | H₃PO₄ と Ca(OH)₂
+:::
+
 :::section
 anchor: equation
 title: 完全に中和する反応式の書き方
