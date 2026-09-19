@@ -90,7 +90,11 @@ level: ★★★
 note: 「弱酸と塩基の塩 ＋ 強酸 → 強酸と塩基の塩 ＋ 弱酸」の型。FeS の S²⁻ が H⁺ を2個受け取って H₂S になり、残った Fe²⁺ と SO₄²⁻ が組んで FeSO₄ になります。
 :::
 
-//図: 無機の基本６ s9 弱酸の遊離のブロック図（FeS と H₂SO₄ の陽イオン・陰イオンの組み換え）。⚠ PDF 待ち（pptx しか無い）
+:::figure
+src: sulfur-fes-displacement.png
+alt: FeS を「弱酸 H₂S と塩基 Fe(OH)₂ が手をつないだ塩」、H₂SO₄ を「強酸」の人形で表し、反応後は強酸 H₂SO₄ が塩基 Fe(OH)₂ と手をつないで FeSO₄ になり、弱酸 H₂S が1人で出ていく図
+caption: 強酸が塩基の相手を奪い、弱酸が追い出されます。FeS を「弱酸 H₂S と塩基 Fe(OH)₂ からできた塩」と見るのがこつです。
+:::
 
 :::link
 to: acid-displacement
@@ -171,7 +175,11 @@ text: 陰イオンごとに沈む相手と沈殿の色の一覧はこちら
 
 //app: muki/tree 「硫化物で分ける系統分離の樹を試す」（⚠ tree.html は開くたびに抽選。1問を名指しする口は無い）
 
-//図: 無機の基本６ s11 イオン化列と硫化物の沈殿の区分。⚠ PDF 待ち（pptx しか無い）
+:::figure
+src: sulfur-sulfide-ionization.png
+alt: イオン化列 Li＞K＞Ca＞Na＞Mg＞Al＞Zn＞Fe＞Ni＞Sn＞Pb＞H₂＞Cu＞Hg＞Ag＞Pt＞Au の上に、Al〜Ni を「中・塩基性で沈殿（酸性では沈殿しない）」、Sn〜Ag を「酸性溶液中でも沈殿」と囲み、Li〜Mg は「S²⁻ で沈殿しない」と示した図
+caption: イオン化傾向が小さいほど、陽イオンが S²⁻ と沈殿をつくりやすくなります。Al だけは Al(OH)₃ として沈みます。
+:::
 
 :::section
 anchor: so2
