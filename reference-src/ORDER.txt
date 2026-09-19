@@ -49,3 +49,4 @@ alkaline-earth
 amphoteric-metal
 iron
 copper-silver
+transition-oxidizers
