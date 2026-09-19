@@ -46,3 +46,4 @@ clue-properties
 reaction-mechanisms
 alkali-metal
 alkaline-earth
+amphoteric-metal
