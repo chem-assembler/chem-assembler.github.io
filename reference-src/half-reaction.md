@@ -113,7 +113,7 @@ terms:
 left: MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻
 right: Mn²⁺ ＋ 4H₂O
 level: ★★★
-note: 過マンガン酸カリウム KMnO₄（硫酸酸性）。赤紫色の MnO₄⁻ が、ほぼ無色の Mn²⁺ になります。
+note: 過マンガン酸カリウム KMnO₄（硫酸酸性）。赤紫色の MnO₄⁻ が、淡赤色の Mn²⁺ になります（薄い水溶液ではほぼ無色に見えます）。
 :::
 
 :::reaction
