@@ -48,3 +48,4 @@ hydrogen-noble-gas
 oxygen-ozone
 halogen
 chlorine
+sulfur
