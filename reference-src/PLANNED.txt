@@ -24,6 +24,26 @@ zaitsev               ザイツェフ則 —— 脱水で2つできるとき、�
 steric-hindrance      立体障害 —— 大きな原子団どうしがぶつかって不安定になること
 oxidation-number      有機化合物中の原子の酸化数の決め方
 
+# ── 無機・理論（I4 便が自分のページから張るぶんだけ仮に登録。便0a の登録と重なったら便0a の行を残す）
+periodic-table        周期表と元素の性質〔無機〕
+inorg-reaction-types  無機の反応は5つの型で読む〔無機〕
+precipitate           沈殿の生成と色〔無機〕
+flame-color           炎色反応と水溶液の色〔無機〕
+cation-separation     金属イオンの系統分離〔無機〕
+salt                  塩 —— つくる・もどす・水溶液の性質〔理論〕
+acid-displacement     弱酸の遊離・揮発性の酸の遊離〔理論〕
+half-reaction         半反応式の書き方と主な酸化剤・還元剤〔理論〕
+redox-equation        酸化還元反応式の組み立て〔理論〕
+redox-titration       酸化還元滴定〔理論〕
+ionization-tendency   金属のイオン化傾向〔理論〕
+electrolysis-industry 電気分解の工業的利用〔理論〕
+alkaline-earth        2族元素〔無機〕
+amphoteric-metal      両性金属 —— Al・Zn・Sn・Pb〔無機〕
+iron                  鉄〔無機〕
+copper-silver         銅と銀〔無機〕
+transition-oxidizers  クロムとマンガン〔無機〕
+complex-ion           錯イオン〔無機〕
+
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
 #   general-formula … ⚠ 中身が hydrocarbon-classes の節「一般式と同族体」（#ref-sec-homolog）と
