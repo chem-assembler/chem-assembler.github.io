@@ -123,6 +123,7 @@
          test.html が `reference.json` を読んで見る（CLAUDE.md「横断の整合性検査は両方のデータが揃う側に置く」）。 */
     /* ⚠⚠ **名前は受け側（便0b）の表とそろえてある**: ion-equation/tests.js の `refReceiversIon`・
          ratio/tests.js・muki/tests.js の `refReceivers`。足す・消すときは**3つの表も同時に**。
+         ★ ただし各表が持つのは**自分のアプリの名前だけ**（自分宛てのリンクしか見ない）＝ `ratio/*` を足したら ratio/tests.js の表に足す。
        ⚠ id の要否も受け側に合わせる —— 引数を取る受け口は **id が必須**（無いと受け側の検査が赤）。
          省略してよいのは `opt: true` の1つだけ（muki/akinator の ?deck= ＝ 既定のデッキ）。
        ★ `ion-equation` と `ion-equation/index`、`muki` と `muki/index` は同じもの（受け側の表にどちらも在る） */
@@ -144,7 +145,11 @@
         'muki/snake': { path: '/muki/snake.html', param: null },
         'muki/akinator': { path: '/muki/akinator.html', param: 'deck', opt: true },
         'ratio/stoich': { path: '/ratio/stoich.html', param: 'r' },
-        'ratio/titration': { path: '/ratio/titration.html', param: null }
+        'ratio/titration': { path: '/ratio/titration.html', param: null },
+        /* ★ 理論の便0（2026-09-19・ref-theory-design §6-1）: 3つとも引数を取らない（開くと最初の問題） */
+        'ratio/proportion': { path: '/ratio/proportion.html', param: null },
+        'ratio/balance': { path: '/ratio/balance.html', param: null },
+        'ratio/thermo': { path: '/ratio/thermo.html', param: null }
     };
     /* 受け口へ渡す id の綴り。⚠ `MnO4-`（化学式）・`MnO4_red,Fe2_ox`（半反応式の列）・`u-gas` を受ける */
     var APP_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.,+-]*$/;
