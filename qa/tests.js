@@ -14,7 +14,7 @@ var TAGS = [
   // 観点
   "分類", "一般式", "官能基", "分子の形", "命名", "異性体", "反応", "検出", "製法", "性質",
   "身のまわり", "実験", "計算",
-  // 「同定」は clue 単元（手がかりから物質に当たりを付ける）の横串。
+  // 「同定」は structure 単元（構造決定・旧 clue ＝手がかりから物質に当たりを付ける）の横串。
   // ⚠ 「検出」とは別物にする。検出は試薬を作用させて陽性・陰性を見る操作で、
   // 同定は与えられた測定値・見た目から物質を名指しする読みのほう
   "同定",
@@ -164,6 +164,20 @@ function runDataTests(DATA) {
   t("単元: id・name・summary が揃っている", function () {
     units.forEach(function (u) {
       assert(u.id && u.name && u.summary, "単元の情報が欠けている: " + u.id);
+    });
+  });
+
+  // ★ 単元の並びはユーザーが決めた順（2026-09-19・v145 で 11 → 17 単元に割り直し）。
+  //   ホームのカードも習得マップの行もこの配列の順に出るので、配列の順＝画面の順。
+  //   ⚠ 旧 id（carbonyl・aroN・bio・clue）は消した。項目コード（org.carbonyl.* など）は学習記録の
+  //   キーなので変えていない ＝ コードの接頭辞と単元の id は一致しない
+  t("単元: 17単元がユーザーの並び順どおりで、旧 id が残っていない", function () {
+    var want = ["anal", "aliphatic", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
+      "aroAcid", "aroNitrogen", "aroSep", "sugar", "aminoAcid", "protein", "nucleic", "poly", "structure"];
+    var got = units.map(function (u) { return u.id; });
+    assert(got.join(",") === want.join(","), "単元の並びが違う: " + got.join(","));
+    ["carbonyl", "aroN", "bio", "clue"].forEach(function (old) {
+      assert(!patterns.some(function (p) { return p.unit === old; }), "旧 id が項目に残っている: " + old);
     });
   });
 
@@ -567,18 +581,18 @@ function runDataTests(DATA) {
       "「組む」の見分けが広すぎる（直した札まで赤にしている）");
   });
 
-  // ---- 確度（clue 単元・2026-08-12）----
+  // ---- 確度（structure 単元＝構造決定・旧 clue・2026-08-12）----
   // ⚠ この単元だけは「確実に正しい知識」ではなく「たぶんこれだろう」を扱う。
   // 印が付いていない項目が紛れると、**断定と推測の区別が消える**のが一番こわい事故なので、
-  // 「clue なら必ず付いている」と「clue 以外には付いていない」を両側から締める。
+  // 「structure なら必ず付いている」と「structure 以外には付いていない」を両側から締める。
   var CERTAINTY = ["確実", "ほぼ確実", "たぶん"];
-  t("確度: clue 単元の全項目に付いており、他の単元には付いていない", function () {
+  t("確度: 構造決定（structure）単元の全項目に付いており、他の単元には付いていない", function () {
     patterns.forEach(function (p) {
-      if (p.unit === "clue") {
-        assert(p.certainty, p.code + ": clue 単元なのに確度が無い");
+      if (p.unit === "structure") {
+        assert(p.certainty, p.code + ": 構造決定（structure）単元なのに確度が無い");
         assert(CERTAINTY.indexOf(p.certainty) >= 0, p.code + ": 未知の確度「" + p.certainty + "」");
       } else {
-        assert(!p.certainty, p.code + ": clue 以外に確度が付いている（断定と推測が混ざる）");
+        assert(!p.certainty, p.code + ": 構造決定（structure）以外に確度が付いている（断定と推測が混ざる）");
       }
     });
   });
@@ -2210,8 +2224,8 @@ function runUiTests(doc, DATA) {
         var KEY = a.W.QaEngine.STORE_KEY;
         var saved = a.W.localStorage.getItem(KEY);
         try {
-          var start = a.D.querySelector('#unit-list button[data-unit="carbonyl"][data-mode="flip"]');
-          assert(start, "カルボニルの単元カードに暗記モードのボタンが無い");
+          var start = a.D.querySelector('#unit-list button[data-unit="carboxyl"][data-mode="flip"]');
+          assert(start, "カルボン酸・エステルの単元カードに暗記モードのボタンが無い");
           start.click();
           var link = null, seen = 0;
           for (var i = 0; i < 40 && !link; i++) {
@@ -2225,7 +2239,7 @@ function runUiTests(doc, DATA) {
             if (!good) break;
             good.click();
           }
-          assert(link, "カルボニルの回に飛び道具のある問題が1つも出なかった（回が短すぎる）");
+          assert(link, "カルボン酸・エステルの回に飛び道具のある問題が1つも出なかった（回が短すぎる）");
           var qof = a.D.getElementById("q-of").textContent.replace(/\s/g, "");
           var qtext = a.D.querySelector(".q-text").textContent;
           var href = link.getAttribute("href");
@@ -2304,7 +2318,7 @@ function runUiTests(doc, DATA) {
           // ⚠ 控えはコードで持っているので、**データを直した後に古い控えが残りうる**。
           // 引き当てられないものが1つでもあれば復元しない（別の問題を出すほうが害が大きい）
           sessionStorage.setItem(RESUME_KEY, JSON.stringify({
-            code: trip.code, unitId: "carbonyl", mode: "flip", scope: "daily", lv: null,
+            code: trip.code, unitId: "carboxyl", mode: "flip", scope: "daily", lv: null,
             idx: 0, right: 0, wrong: 0,
             queue: [[trip.code, 0], ["org.gone.removed-item", 0]], revealed: false
           }));
@@ -2313,6 +2327,35 @@ function runUiTests(doc, DATA) {
               assert(a.D.getElementById("q-of").textContent.replace(/\s/g, "") === "1/1",
                 "消えた項目を含む控えで復元してしまった（引き当てられない問題が回に混ざる）");
             } finally { a.kill(); clearResume(); }
+          });
+        });
+      }).then(function () {
+        return ta("QW8b: 単元の割り直し（v145）より前の控えでも「もう一度」が0問の回にならない", function () {
+          // ⚠ v145 で carbonyl・aroN・bio・clue の id が消えた。割り直しの前に控えた続きは
+          //   消えた id を持っていて、そのまま戻すと「もう一度」が startSession('carbonyl') ＝ 0問になる。
+          //   いま居る項目の単元に読み替えていることを、実際に「もう一度」を押して確かめる
+          sessionStorage.setItem(RESUME_KEY, JSON.stringify({
+            code: trip.code, unitId: "carbonyl", mode: "flip", scope: "all", lv: null,
+            idx: 0, right: 0, wrong: 0, queue: [[trip.code, 0]], revealed: true
+          }));
+          return openWith("&code=" + encodeURIComponent(trip.code) + "&from=assembler").then(function (a) {
+            var KEY = a.W.QaEngine.STORE_KEY;
+            var saved = a.W.localStorage.getItem(KEY);
+            try {
+              assert(a.D.getElementById("back-band").textContent.indexOf("続きから") >= 0,
+                "控えから戻していない（検査の前提が崩れている）");
+              a.D.getElementById("btn-good-q").click();
+              assert(!a.D.getElementById("view-result").classList.contains("hidden"), "結果画面に進まない");
+              a.D.getElementById("btn-again").click();
+              var m = a.D.getElementById("q-of").textContent.replace(/\s/g, "").match(/^1\/(\d+)$/);
+              var unit = DATA.patterns.filter(function (p) { return p.code === trip.code; })[0].unit;
+              var n = DATA.patterns.filter(function (p) { return p.unit === unit; }).length;
+              assert(m && +m[1] === n, "「もう一度」の回が " + a.D.getElementById("q-of").textContent +
+                "（期待 1 / " + n + " ＝ " + unit + " の全項目）");
+            } finally {
+              if (saved === null) a.W.localStorage.removeItem(KEY); else a.W.localStorage.setItem(KEY, saved);
+              a.kill(); clearResume();
+            }
           });
         });
       }).then(function () {
@@ -2352,8 +2395,8 @@ function runUiTests(doc, DATA) {
           var KEY = a.W.QaEngine.STORE_KEY;
           var saved = a.W.localStorage.getItem(KEY);
           try {
-            var start = a.D.querySelector('#unit-list button[data-unit="carbonyl"][data-mode="choice"]');
-            assert(start, "カルボニルの単元カードに測定モードのボタンが無い");
+            var start = a.D.querySelector('#unit-list button[data-unit="carboxyl"][data-mode="choice"]');
+            assert(start, "カルボン酸・エステルの単元カードに測定モードのボタンが無い");
             start.click();
             var f = null;
             for (var i = 0; i < 12; i++) {
@@ -2556,7 +2599,7 @@ function runUiTests(doc, DATA) {
       // データ側の検査（runDataTests）は印が付いているかまでしか見ないので、
       // **実際に画面へ出ているか**はここで見る
       var clue = DATA.patterns.filter(function (p) { return p.certainty === "たぶん"; })[0];
-      return ta("確度: clue 単元はこたえより先に確度の印が出る", function () {
+      return ta("確度: 構造決定（structure）単元はこたえより先に確度の印が出る", function () {
         return openWith("&code=" + encodeURIComponent(clue.code)).then(function (a) {
           try {
             a.D.getElementById("btn-reveal").click();
