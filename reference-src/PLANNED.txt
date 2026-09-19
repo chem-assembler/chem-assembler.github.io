@@ -37,7 +37,6 @@ redox-equation        酸化還元反応式の組み立て〔理論〕
 redox-titration       酸化還元滴定〔理論〕
 ionization-tendency   金属のイオン化傾向〔理論〕
 electrolysis-industry 電気分解の工業的利用〔理論〕
-alkaline-earth        2族元素〔無機〕
 amphoteric-metal      両性金属 —— Al・Zn・Sn・Pb〔無機〕
 iron                  鉄〔無機〕
 copper-silver         銅と銀〔無機〕
