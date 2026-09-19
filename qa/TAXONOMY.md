@@ -22,6 +22,15 @@ app非依存に設計し将来 **D（全アプリ共通の背骨）** へ育て�
 - **unit（無機・理論）**（2026-09-19 予約。項目はまだ無い）:
   `inorg.basis`(無機の土台) / `inorg.nonmetal`(非金属元素) / `inorg.metal`(金属元素) / `inorg.qual`(イオンを見分ける) /
   `theo.acid-base`(酸と塩基) / `theo.redox`(酸化還元) / `theo.electro`(電池と電気分解)
+- **unit（理論の8単元）**（2026-09-19 理論の便0 で予約。項目はまだ無い。並びは GROUPS.tsv の順）:
+  - `theo.structure`(物質の構造)
+  - `theo.mole`(物質量と化学反応式) … ⚠ 計算の技能 `calc.*`（`calc.ratio` など）とは別。知識と技能を混ぜない
+  - `theo.state`(物質の状態)
+  - `theo.solution`(溶液) … ★ 綴りは `questions.json` の `req`（`theo.solution.colligative`）で既に使っているもの。group「希薄溶液の性質」がこの topic に当たる
+  - `theo.thermo`(化学反応とエネルギー)
+  - `theo.kinetics`(反応の速さ)
+  - `theo.equilibrium`(化学平衡)
+  - `theo.ionic-eq`(電離平衡) … `theo.ionization` はイオン化エネルギーと紛れるので採らない。`req` の `theo.acid-base.polyprotic` は `theo.ionic-eq.polyprotic` に書き換えた（実体の無いコード＝習得データ0件なので「一度振ったら変えない」に当たらない）
   - ★ **group の綴りは `GROUPS.tsv`（グループ台帳）が正**。参考書のページ（1グループ＝1ページ）が先に書かれるので、
     項目を作るときは台帳と同じ unit・同じ group にする（qa の test.html が見る）。
 - **topic-slug**: 小項目を表す短い英字ケバブ。単元内で一意。
