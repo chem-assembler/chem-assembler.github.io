@@ -44,3 +44,4 @@ elemental-analysis
 clue-order
 clue-properties
 reaction-mechanisms
+alkali-metal
