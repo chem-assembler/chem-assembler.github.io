@@ -69,6 +69,7 @@ flame-color
 cation-separation
 atomic-weight
 mole
+concentration
 acid-base-definition
 acid-base-strength
 ph
