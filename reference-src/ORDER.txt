@@ -91,3 +91,4 @@ electrolysis-industry
 reaction-rate
 rate-law
 activation-energy
+equilibrium-constant
