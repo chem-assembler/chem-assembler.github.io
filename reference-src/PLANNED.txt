@@ -29,7 +29,6 @@ redox-basics          酸化と還元 —— e⁻ のやりとり
 ionization-tendency   金属のイオン化傾向
 half-reaction         半反応式の書き方と主な酸化剤・還元剤
 half-reaction-condition  液性による書き換え
-electrolysis-basics   電気分解で何が反応するか
 electrolysis-equations  電気分解の反応式
 faraday               電気分解の量的関係
 electrolysis-industry  電気分解の工業的利用
