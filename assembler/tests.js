@@ -54500,7 +54500,10 @@
 
         // 索引から開ける（ページを足したら黙って並ぶ ＝ 索引は reference.json から機械で組む）
         const n = await W.referenceBook.renderIndex();
-        assert(n === pages.length, `索引のボタン数 ${n} が reference.json の ${pages.length} 件と合わない`);
+        /* ⚠ 資料ペイン（面B）の索引は**有機のページだけ**（v1596・§31-1）。REF4 と同じ数え方にそろえる
+           （無機・理論44枚が入った統合で、全件と比べていたここだけ赤になった） */
+        const orgCount = pages.filter(W.refIsOrganic).length;
+        assert(n === orgCount, `索引のボタン数 ${n} が reference.json の有機のページ ${orgCount} 件と合わない`);
         assert(D.querySelector(`#reference-list .ref-index-btn[data-ref-page="${page.id}"]`),
             `索引に ${page.id} のボタンが無い`);
         assert(await W.referenceBook.open(page.id), `${page.id}: 開けない`);

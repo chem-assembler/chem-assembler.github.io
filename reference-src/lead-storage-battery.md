@@ -133,6 +133,21 @@ note: 全体の反応。右向きが放電、左向きが充電です。e⁻ 2mo
 
 放電すると H₂SO₄ が減って H₂O が増えるので、**電解液の硫酸の濃度（密度）は下がります**。
 
+:::table
+caption: 放電したときの変化（e⁻ 2mol あたり）
+source: このページの負極・正極・全体の3本の式と、各節の質量の計算（Pb＝207・S＝32・O＝16）を1枚に並べ直したもの
+head:
+- 項目
+- 負極
+- 正極
+- 電解液
+align: left | center | center | center
+rows:
+- 変わる物質 | Pb → PbSO₄ | PbO₂ → PbSO₄ | H₂SO₄ → H₂O
+- Pb の酸化数 | 0 → ＋2 | ＋4 → ＋2 | ——
+- 質量・量の変化 | 96g 増える | 64g 増える | H₂SO₄ 2mol 減り H₂O 2mol 増える
+:::
+
 :::section
 anchor: charge
 title: 充電と、鉛蓄電池を動かす力
