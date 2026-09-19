@@ -158,6 +158,16 @@ items:
 
 両辺とも体積を mL で書けば、1000 で割る操作は両辺で消えるので、そのまま mL で計算できます。
 
+:::figure
+src: neutralization-app-h2so4.png
+alt: 硫酸 0.10 mol/L 10.0 mL を中和する NaOH 水溶液の体積を問う問題の画面。酸 H₂SO₄ の帯は価数2なので2つ分の長さで H⁺ 0.00200 mol、その下の塩基 NaOH の帯は長さが「？」になっていて、2本の帯が同じ長さになる体積を求める形
+caption: 「H⁺ の mol ＝ OH⁻ の mol」を帯の長さで見た図。**2価の硫酸は、同じ mol でも帯が2倍の長さ**になります。
+:::
+
+//撮影: url=/ratio/titration.html?slz_internal=1 sel=#qTitle〜#equivRow の範囲（clip） 状態=問題の番号「4」を押した直後（答えは入れていない）。⚠ ?q= のような受け口が無いので、番号のボタンを押して状態を作った
+
+//app: ratio/titration 「中和の計算（価数 × 物質量のつり合い）」
+
 具体例として、0.020 mol/L の水酸化カルシウム水溶液 12 mL とちょうど中和する 0.0080 mol/L の硫酸の体積を x mL とすると、
 
 :::list
