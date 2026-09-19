@@ -71,6 +71,7 @@ atomic-weight
 mole
 concentration
 chemical-equation
+stoichiometry
 acid-base-definition
 acid-base-strength
 ph
