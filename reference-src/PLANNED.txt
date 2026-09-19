@@ -25,7 +25,6 @@ steric-hindrance      立体障害 —— 大きな原子団どうしがぶつ�
 oxidation-number      有機化合物中の原子の酸化数の決め方
 
 # ⚠ ref-a1（酸と塩基のドラフト便）が足した行。便0a が同じ id を登録していたら、統合のときにどちらか1行へ
-acid-displacement     弱酸の遊離・揮発性の酸の遊離〔理論〕
 titration             中和滴定〔理論〕
 gas-preparation       気体の製法・捕集・乾燥の早見〔無機〕
 sulfur                硫黄・硫化水素・二酸化硫黄〔無機〕
