@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
-<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<title>電気分解で何が反応するか —— 陽極と陰極の優先順位 ｜ 化学の参考書</title>
+<meta name="description" content="外部の電源で e⁻ を押し付けたり奪ったりして、無理やり酸化還元反応を起こすのが電気分解です。陽極は4段、陰極は2段の優先順位で、どの物質が反応するかが決まります。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/electrolysis-basics/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
-<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:title" content="電気分解で何が反応するか —— 陽極と陰極の優先順位 ｜ 化学の参考書">
+<meta property="og:description" content="外部の電源で e⁻ を押し付けたり奪ったりして、無理やり酸化還元反応を起こすのが電気分解です。陽極は4段、陰極は2段の優先順位で、どの物質が反応するかが決まります。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/electrolysis-basics/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -842,35 +842,62 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
 <main class="wrap">
-<h1>反応の道すじ（反応機構）</h1>
-<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
-<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+<h1>電気分解で何が反応するか —— 陽極と陰極の優先順位</h1>
+<p class="lede">外部の電源で e⁻ を押し付けたり奪ったりして、無理やり酸化還元反応を起こすのが電気分解です。陽極は4段、陰極は2段の優先順位で、どの物質が反応するかが決まります。</p>
+<div><span class="unit-label">電池と電気分解</span><span class="unit-label">電気分解で何が反応するか</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-mechanism" data-ref-anchor="mechanism">電気分解の仕組み</a></li><li><a href="#ref-sec-anode" data-ref-anchor="anode">陽極で反応するもの —— 4段の優先順位</a></li><li><a href="#ref-sec-cathode" data-ref-anchor="cathode">陰極で反応するもの —— 2段の優先順位</a></li><li><a href="#ref-sec-flowchart" data-ref-anchor="flowchart">フローチャートで判断する</a></li><li><a href="#ref-sec-why" data-ref-anchor="why">優先順位がこうなる理由</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
-<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
-<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
-<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
-<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
-<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの下の「<b>⚗ 反応させる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+<p class="ref-p"><b>電気分解</b>では、電池の反応とは逆に、外部の電源（電池）で e⁻ を押し付けたり奪ったりして、無理やり酸化還元反応を起こします。反応する物質は、酸化剤・還元剤の強さ（イオン化傾向）で決まるので、酸化還元とイオン化傾向がこのページの前提です。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/redox-basics/">酸化剤・還元剤と酸化数の復習はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/ionization-tendency/">イオン化傾向と、金属の単体・陽イオンの可逆反応の復習はこちら</a></p>
+<section class="ref-sec" id="ref-sec-mechanism"><h4 class="ref-sec-h">電気分解の仕組み</h4><p class="ref-sec-lead">電源の正極につないだ電極が陽極、負極につないだ電極が陰極です。陽極では酸化、陰極では還元が起こります。</p></section>
+<p class="ref-p">外部の電池（電源）を利用して電流を流し、無理やり酸化還元反応を起こすことを<b>電気分解</b>といいます。イオンを含む水溶液（電解液）を入れた容器を電解槽といいます。</p>
+<p class="ref-p">電源の<b>正極</b>につないだ電極を<b>陽極</b>、電源の<b>負極</b>につないだ電極を<b>陰極</b>といいます。e⁻ は電源の負極から出て、導線を通って陰極へ流れ込み、陽極から出て電源の正極へもどります（電流は e⁻ の逆向き）。電解液の中では、e⁻ の代わりにイオンが移動して回路をつなぎます。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-cell.png" alt="電解槽の模式図。電源の負極から出た e⁻ が陰極に流れ込み、陽極から出た e⁻ が電源の正極にもどる。陰極は e⁻ を押し付けられて酸化剤が還元され、陽極は e⁻ を奪われて還元剤が酸化される。電解液の中では陰イオンが陽極へ、陽イオンが陰極へ移動する" loading="lazy"><figcaption class="ref-figure-cap">陰極は e⁻ を<b>押し付けられ</b>、酸化剤が還元されます。陽極は e⁻ を<b>奪われ</b>、還元剤が酸化されます。</figcaption></figure>
+<div class="ref-table-wrap"><div class="ref-cap">陽極と陰極</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: center;">陽極</th><th style="text-align: center;">陰極</th></tr></thead><tbody><tr><td style="text-align: left;">つなぐ先</td><td style="text-align: center;">電源の正極</td><td style="text-align: center;">電源の負極</td></tr><tr><td style="text-align: left;">e⁻</td><td style="text-align: center;">奪われる</td><td style="text-align: center;">押し付けられる</td></tr><tr><td style="text-align: left;">反応する物質</td><td style="text-align: center;">還元剤（e⁻ を出すもの）</td><td style="text-align: center;">酸化剤（e⁻ を受け取るもの）</td></tr><tr><td style="text-align: left;">起こる反応</td><td style="text-align: center;">酸化</td><td style="text-align: center;">還元</td></tr></tbody></table></div>
+<p class="ref-p"><b>「陽極は e⁻ を奪われて還元剤が酸化される、陰極は e⁻ を押し付けられて酸化剤が還元される」を必ず覚えてください。</b>電池の正極・負極と名前が似ていますが、電池の負極（酸化が起こる）に対応するのは電気分解の陽極です。</p>
+<section class="ref-sec" id="ref-sec-anode"><h4 class="ref-sec-h">陽極で反応するもの —— 4段の優先順位</h4><p class="ref-sec-lead">①電極の金属 → ②ハロゲン化物イオン → ③OH⁻ → ④H₂O の順に、e⁻ を奪われやすいものから反応します。</p></section>
+<p class="ref-p">陽極では e⁻ が奪われる反応（酸化される反応）が、次の優先順位で起こります。<b>上にあるものが1つでもあれば、それが反応します。</b></p>
+<ol class="ref-list"><li>炭素 C・金 Au・白金 Pt 以外の電極の金属が、e⁻ を失って陽イオンになり電解液に溶け込む。<div class="ref-li-hang">例：Cu → Cu²⁺ ＋ 2e⁻、Ag → Ag⁺ ＋ e⁻</div></li><li>電解液中のハロゲン化物イオンが e⁻ を失い、ハロゲンの単体ができる。<div class="ref-li-hang">例：2Cl⁻ → Cl₂ ＋ 2e⁻、2I⁻ → I₂ ＋ 2e⁻</div></li><li>電解液中の水酸化物イオン OH⁻ が e⁻ を失い、酸素 O₂ が発生する（塩基性のときだけ）。<div class="ref-li-hang">例：4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻</div></li><li>電解液中の水 H₂O が e⁻ を失い、酸素 O₂ が発生する。<div class="ref-li-hang">例：2H₂O → O₂ ＋ 4H⁺ ＋ 4e⁻</div></li></ol>
+<p class="ref-p">③の OH⁻ は、<b>塩基性の水溶液の中にしか存在しません</b>。中性・酸性の水溶液では OH⁻ はほとんど無いので、③は飛ばして④の水が反応します。</p>
+<section class="ref-sec" id="ref-sec-cathode"><h4 class="ref-sec-h">陰極で反応するもの —— 2段の優先順位</h4><p class="ref-sec-lead">Al よりイオン化傾向が小さい金属の陽イオン（H⁺ も含む）があればそれが、無ければ H₂O が e⁻ を受け取ります。</p></section>
+<p class="ref-p">陰極では e⁻ を押し付けられる反応（還元される反応）が、次の優先順位で起こります。</p>
+<ol class="ref-list"><li>電解液中の、Al よりイオン化傾向が小さい金属の陽イオンが e⁻ を受け取り、単体の金属として析出する。H⁺ の場合は H₂ が発生する。<div class="ref-li-hang">例：Cu²⁺ ＋ 2e⁻ → Cu、Ag⁺ ＋ e⁻ → Ag、2H⁺ ＋ 2e⁻ → H₂</div></li><li>水 H₂O が e⁻ を受け取り、水素 H₂ が発生する。<div class="ref-li-hang">例：2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻</div></li></ol>
+<p class="ref-p">イオン化列 Li ＞ K ＞ Ca ＞ Na ＞ Mg ＞ Al ＞ Zn ＞ Fe ＞ Ni ＞ Sn ＞ Pb ＞ (H₂) ＞ Cu ＞ Hg ＞ Ag ＞ Pt ＞ Au のうち、<b>Li から Al までの陽イオン（K⁺・Ca²⁺・Na⁺・Mg²⁺・Al³⁺ など）は、水溶液の中では還元されません</b>。これらの陽イオンより、H₂O のほうが e⁻ を受け取る力が強いためです。</p>
+<p class="ref-p"><b>「Al までの陽イオンは水溶液では還元されない」という境界線は必ず覚えてください。</b>Na や Al の単体を電気分解でつくるには、水の無い状態（融解した塩）で電気分解します。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-industry/">水の無い状態で電気分解する溶融塩電解（アルミニウムの製造）はこちら</a></p>
+<p class="ref-p">ちなみに、Zn²⁺・Ni²⁺・Fe²⁺ のようにイオン化傾向が中くらいの金属の陽イオンでは、濃度や電圧によって、金属の析出と H₂ の発生が同時に起こることがあります。<b>高校の問題では、優先順位のとおり金属が析出するとして解いて構いません。</b></p>
+<section class="ref-sec" id="ref-sec-flowchart"><h4 class="ref-sec-h">フローチャートで判断する</h4><p class="ref-sec-lead">陽極は「電極 → ハロゲン化物イオン → 塩基性か」の3つの問い、陰極は「Al より小さい陽イオンがあるか」の1つの問いで決まります。</p></section>
+<p class="ref-p">優先順位を、上から順に「ある？」と問うていくと、次のフローチャートになります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-flowchart.png" alt="電気分解のフローチャート。陽極：電極が C・Pt・Au 以外なら電極の金属が反応、そうでなく電解液にハロゲン化物イオンがあればそれが反応、そうでなく塩基性なら OH⁻ が反応、どれでもなければ水が反応。陰極：Al よりイオン化傾向が小さい元素の陽イオンがあればそれが反応、無ければ水が反応" loading="lazy"><figcaption class="ref-figure-cap">陽極は3つの問いを、陰極は1つの問いを上から順にたどります。<b>OH⁻ は塩基性のときにしか存在しない</b>ことに注意します。</figcaption></figure>
+<p class="ref-p">具体例で、塩化ナトリウム水溶液を白金電極で電気分解する場合をたどります。</p>
+<ol class="ref-list"><li>陽極：電極は Pt なので反応しない（n）。電解液に Cl⁻ がある（y）ので、<b>Cl⁻ が反応</b>して Cl₂ が発生する。</li><li>陰極：陽イオンは Na⁺ だけで、Na は Al よりイオン化傾向が大きい（n）ので、<b>H₂O が反応</b>して H₂ が発生する。</li></ol>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/electrolysis-basics-app-nacl.png" alt="アプリ「イオンでみる化学反応式」の電気分解の画面。塩化ナトリウム水溶液の中に Na⁺・Cl⁻ と H₂O があり、陰極で反応するのは Na⁺ か H₂O か、陽極で反応するのは Cl⁻ か H₂O かを選ぶボタンが並んでいる" loading="lazy"><figcaption class="ref-figure-cap">水溶液の中にいるイオンと水から、陰極・陽極で反応するものを選んでみましょう。</figcaption></figure>
+<p class="ref-link-row"><a class="ref-link" href="/ion-equation/electrolysis.html?s=e3&amp;from=reference&amp;page=electrolysis-basics">塩化ナトリウム水溶液の電気分解で、両極で何が反応するかを選ぶ</a></p>
+<section class="ref-sec" id="ref-sec-why"><h4 class="ref-sec-h">優先順位がこうなる理由</h4><p class="ref-sec-lead">陽極では e⁻ を失いやすいもの、陰極では e⁻ を受け取りやすいものから反応します。</p></section>
+<p class="ref-p">電極の金属は、e⁻ を放出して陽イオンになる<b>還元剤</b>なので、e⁻ を奪われる陽極でしか反応しません。<b>陰極では電極の金属は反応しません。</b></p>
+<p class="ref-p">Au と Pt は、イオン化傾向がきわめて小さく、単体が酸化されにくいので、陽極にしても反応しません。炭素 C は非金属元素で、共有結合の結晶なので e⁻ を奪われにくく、やはり陽極で反応しません。</p>
+<p class="ref-p">ハロゲン化物イオンの中では、I⁻ ＞ Br⁻ ＞ Cl⁻ の順に陽極で反応しやすく、F⁻ は反応しません。ハロゲンの単体の酸化力は原子が小さいほど強く（F₂ ＞ Cl₂ ＞ Br₂ ＞ I₂）、その逆向きの反応であるハロゲン化物イオンの酸化は、原子が小さいほど起こりにくいためです。</p>
+<p class="ref-p">NO₃⁻ や SO₄²⁻ などの陰イオンは安定で、H₂O より e⁻ を奪われにくいので、水溶液では陽極で反応しません。<b>「NO₃⁻・SO₄²⁻ があるときは、陽極では水（塩基性なら OH⁻）が反応する」と覚えましょう。</b></p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">硫酸銅(Ⅱ)水溶液を白金電極で電気分解すると、陽極では SO₄²⁻ が反応する</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">SO₄²⁻ は水溶液の中では陽極で反応しません。陽極では <b>H₂O</b> が反応して O₂ が発生します。</span></p><p class="ref-mistake-why">「陰イオンは陽極へ移動する」から「陽極へ来た陰イオンが反応する」と短絡してしまうためです。★ 移動することと、e⁻ を奪われることは別で、奪われやすさは優先順位で決まります。</p></div>
+<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">陽極4段・陰極2段の優先順位と、「Al までの陽イオンは水溶液では還元されない」境界を覚えます。</p></section>
+<p class="ref-p"><b>陽極の優先順位「①C・Au・Pt 以外の電極の金属 ②ハロゲン化物イオン ③OH⁻（塩基性のとき） ④H₂O」と、陰極の優先順位「①Al よりイオン化傾向が小さい金属の陽イオン（H⁺ も含む） ②H₂O」は必ず暗記してください。</b>フローチャートの形で覚えても構いません。</p>
+<p class="ref-p">ハロゲン化物イオンの反応しやすさの順（I⁻ ＞ Br⁻ ＞ Cl⁻）は、問題で問われることはほとんどありません。<b>理由の説明として読めれば十分でしょう。</b></p>
+<h5 class="ref-h5">例題</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の条件で電気分解を行ったとき、陽極・陰極で反応する物質を化学式で答えよ。<b>(1) 塩化ナトリウム水溶液、陽極 白金・陰極 白金　(2) 硫酸銅(Ⅱ)水溶液、陽極 金・陰極 金　(3) 塩化カルシウム水溶液、陽極 銅・陰極 銅　(4) ヨウ化カリウム水溶液、陽極 白金・陰極 白金　(5) 硫酸銅(Ⅱ)水溶液、陽極 銅・陰極 銅　(6) 水酸化ナトリウム水溶液、陽極 炭素・陰極 鉄</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 陽極 Cl⁻・陰極 H₂O　(2) 陽極 H₂O・陰極 Cu²⁺　(3) 陽極 Cu・陰極 H₂O　(4) 陽極 I⁻・陰極 H₂O　(5) 陽極 Cu・陰極 Cu²⁺　(6) 陽極 OH⁻・陰極 H₂O　(3)(5) は陽極の電極が銅なので、電解液に何があっても電極の Cu が先に反応します。(6) の陰極の鉄は、陰極なので反応しません。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の条件で電気分解を行ったとき、陽極・陰極で反応する物質を化学式で答えよ。<b>(1) 水酸化ナトリウム水溶液、白金・白金　(2) 硝酸アルミニウム水溶液、金・金　(3) 硫酸、銅・銅　(4) 硝酸銀水溶液、白金・白金　(5) 塩酸、銅・銅　(6) 塩化カルシウム水溶液、陽極 金・陰極 銅</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 陽極 OH⁻・陰極 H₂O　(2) 陽極 H₂O・陰極 H₂O　(3) 陽極 Cu・陰極 H⁺　(4) 陽極 H₂O・陰極 Ag⁺　(5) 陽極 Cu・陰極 H⁺　(6) 陽極 Cl⁻・陰極 H₂O　(2) の Al³⁺ は水溶液では還元されず、NO₃⁻ も陽極で反応しないので、両極とも水が反応します。</p></div></details></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-equations/">反応するものが決まったあと、両極の反応式を書く方法はこちら</a></p>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/clue-properties/">← 見た目・におい・沸点から当たりを付ける</a>
+<nav class="seq"><a href="/reference/lead-storage-battery/">← 鉛蓄電池 —— 反応式のストーリーと質量の変化</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/inorg-reaction-types/">無機の反応は5つの型で読む →</a></nav>
+<a href="/reference/electrolysis-equations/">電気分解の反応式 —— 金属・ハロゲン化物イオン・水関係 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -883,10 +910,58 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>

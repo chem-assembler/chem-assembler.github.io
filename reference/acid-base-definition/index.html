@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
-<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<title>酸と塩基の定義 —— アレニウスとブレンステッド・ローリー ｜ 化学の参考書</title>
+<meta name="description" content="酸の本体は H⁺、塩基の本体は OH⁻。ふだんはアレニウスの定義で考え、指示されたときだけブレンステッド・ローリーの定義で H⁺ のやりとりを見ます。H₂O や HCO₃⁻ が相手によって酸にも塩基にもなることまで。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/acid-base-definition/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
-<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:title" content="酸と塩基の定義 —— アレニウスとブレンステッド・ローリー ｜ 化学の参考書">
+<meta property="og:description" content="酸の本体は H⁺、塩基の本体は OH⁻。ふだんはアレニウスの定義で考え、指示されたときだけブレンステッド・ローリーの定義で H⁺ のやりとりを見ます。H₂O や HCO₃⁻ が相手によって酸にも塩基にもなることまで。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/acid-base-definition/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -842,35 +842,70 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
 <main class="wrap">
-<h1>反応の道すじ（反応機構）</h1>
-<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
-<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+<h1>酸と塩基の定義 —— アレニウスとブレンステッド・ローリー</h1>
+<p class="lede">酸の本体は H⁺、塩基の本体は OH⁻。ふだんはアレニウスの定義で考え、指示されたときだけブレンステッド・ローリーの定義で H⁺ のやりとりを見ます。H₂O や HCO₃⁻ が相手によって酸にも塩基にもなることまで。</p>
+<div><span class="unit-label">酸と塩基</span><span class="unit-label">酸と塩基の定義</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-properties" data-ref-anchor="properties">酸と塩基の性質</a></li><li><a href="#ref-sec-arrhenius" data-ref-anchor="arrhenius">アレニウスの定義</a></li><li><a href="#ref-sec-bronsted" data-ref-anchor="bronsted">ブレンステッド・ローリーの定義</a></li><li><a href="#ref-sec-compare" data-ref-anchor="compare">2つの定義で解釈がどう違うか</a></li><li><a href="#ref-sec-role" data-ref-anchor="role">酸か塩基かは反応相手によって変わる</a></li><li><a href="#ref-sec-which" data-ref-anchor="which">実際はどちらの定義を使うのか</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
-<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
-<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
-<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
-<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
-<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの下の「<b>⚗ 反応させる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+<p class="ref-p">酸と塩基の性質は、それぞれ<b>水素イオン H⁺</b> と<b>水酸化物イオン OH⁻</b> によるものです。「酸の本体は H⁺、塩基の本体は OH⁻」と覚えましょう。このページでは、何を酸・塩基とよぶかの決め方（定義）を2つ見ていきます。</p>
+<section class="ref-sec" id="ref-sec-properties"><h4 class="ref-sec-h">酸と塩基の性質</h4><p class="ref-sec-lead">酸は酸っぱく青色リトマス紙を赤くし、塩基は苦く赤色リトマス紙を青くします。酸と塩基が反応すると、互いの性質を打ち消し合います（中和）。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">酸と塩基の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">酸（H⁺）の性質</th><th style="text-align: left;">塩基（OH⁻）の性質</th></tr></thead><tbody><tr><td style="text-align: left;">酸っぱい味</td><td style="text-align: left;">苦い味</td></tr><tr><td style="text-align: left;">青色リトマス紙を赤に変える</td><td style="text-align: left;">赤色リトマス紙を青に変える</td></tr><tr><td style="text-align: left;">Fe・Mg・Zn などの金属と反応して水素を発生する</td><td style="text-align: left;">触れるとぬるぬるする</td></tr></tbody></table></div>
+<p class="ref-p">これらの性質は、酸では H⁺、塩基では OH⁻ がもたらしています。酸と塩基を反応させると、H⁺ と OH⁻ が結びついて H₂O になるので、互いの性質が打ち消されます。これを<b>中和</b>といいます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/neutralization/">中和反応の式の書き方と量的関係は、中和反応のページへ</a></p>
+<section class="ref-sec" id="ref-sec-arrhenius"><h4 class="ref-sec-h">アレニウスの定義</h4><p class="ref-sec-lead">水に溶けて H⁺ を生じる物質が酸、水に溶けて OH⁻ を生じる物質が塩基です。</p></section>
+<p class="ref-p">「<b>水に溶けて水素イオン H⁺ を生じる物質</b>」を<b>酸</b>、「<b>水に溶けて水酸化物イオン OH⁻ を生じる物質</b>」を<b>塩基</b>といいます。これを<b>アレニウスの定義</b>といいます。</p>
+<p class="ref-p">構造で言い直すと、<b>酸は H⁺ と陰イオンがくっついた構造</b>、<b>塩基は OH⁻ と陽イオンがくっついた構造</b>をしています。水に溶けると、このくっつきが離れてイオンに分かれます（<b>電離</b>）。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H⁺ ＋ Cl⁻</span></div><p class="ref-note">塩化水素は H⁺ と陰イオン Cl⁻ がくっついた構造なので酸です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na⁺ ＋ OH⁻</span></div><p class="ref-note">水酸化ナトリウムは OH⁻ と陽イオン Na⁺ がくっついた構造なので塩基です。</p></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-base-definition-arrhenius.png" alt="酸は H⁺ と陰イオンがくっついたもの、塩基は陽イオンと OH⁻ がくっついたもので、どちらも水中で電離して2つのイオンに分かれることを示した模式図" loading="lazy"><figcaption class="ref-figure-cap">アレニウスの定義。<b>酸は「H⁺＋陰イオン」、塩基は「陽イオン＋OH⁻」</b>の組み合わせで、水中で電離して分かれます。</figcaption></figure>
+<p class="ref-p">アレニウスの定義では、水に溶けたときに H⁺ を出すか OH⁻ を出すかで決めるので、<b>物質ごとに酸か塩基かが決まっています</b>。</p>
+<section class="ref-sec" id="ref-sec-bronsted"><h4 class="ref-sec-h">ブレンステッド・ローリーの定義</h4><p class="ref-sec-lead">反応相手に H⁺ を与える物質が酸、反応相手から H⁺ を受け取る物質が塩基です。</p></section>
+<p class="ref-p">「<b>反応相手に水素イオン H⁺ を与える物質</b>」を<b>酸</b>、「<b>反応相手から H⁺ を受け取る物質</b>」を<b>塩基</b>といいます。これを<b>ブレンステッド・ローリーの定義</b>といいます。アレニウスの定義を広げたものです。</p>
+<p class="ref-p">具体例として、気体どうしの塩化水素とアンモニアの反応を見ます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl ＋ NH₃</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NH₄Cl</span></div><p class="ref-note">塩化アンモニウムの白煙が生じます。イオンに分けて書くと HCl ＋ NH₃ → NH₄⁺ ＋ Cl⁻ となり、HCl から NH₃ へ H⁺ が渡されていることがわかります。</p></div>
+<p class="ref-p">この反応で、H⁺ を与えた HCl が酸、H⁺ を受け取った NH₃ が塩基です。ブレンステッド・ローリーの定義を使うと、次の2つの点でアレニウスの定義より広く扱えます。</p>
+<ul class="ref-list"><li>水溶液の中だけでなく、気体や固体の反応でも酸・塩基を考えられる</li><li>OH⁻ を放出しない物質（NH₃ など）も塩基として扱える</li></ul>
+<p class="ref-p">「OH⁻ を放出すること」と「H⁺ を受け取ること」は、<b>酸が出す H⁺ を打ち消してなくす</b>という点で同じ意味をもちます。OH⁻ は H⁺ とすぐに反応して H₂O になるためです。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H⁺ ＋ OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂O</span></div><p class="ref-note">酸と塩基はすぐに反応します。この式がすべての中和の芯です。</p></div>
+<section class="ref-sec" id="ref-sec-compare"><h4 class="ref-sec-h">2つの定義で解釈がどう違うか</h4><p class="ref-sec-lead">塩化水素はどちらの定義でも酸です。アンモニアが塩基であることは、アレニウスの定義ではうまく説明できず、ブレンステッド・ローリーの定義で説明できます。</p></section>
+<h5 class="ref-h5">塩化水素の場合</h5>
+<p class="ref-p">アレニウスの定義では、塩化水素は水に溶けると電離して H⁺ を放出するから酸です（HCl → H⁺ ＋ Cl⁻）。HCl 単独で酸と判断しています。</p>
+<p class="ref-p">ブレンステッド・ローリーの定義では、塩化水素は水と反応するとき、水に H⁺ を与えるから酸です。H⁺ を受け取った H₂O は<b>オキソニウムイオン H₃O⁺</b> になります。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₃O⁺ ＋ Cl⁻</span></div><p class="ref-note">HCl は H₂O に H⁺ を与えた（酸）。H₂O は HCl から H⁺ を受け取った（塩基）。</p></div>
+<p class="ref-p">HCl はどちらの定義でも酸になりますが、考え方が違います。ブレンステッド・ローリーの定義では、<b>酸と塩基は必ずセットで判断します</b>。</p>
+<h5 class="ref-h5">アンモニアの場合</h5>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">NH₃ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NH₄⁺ ＋ OH⁻</span></div><p class="ref-note">NH₃ は H₂O から H⁺ を受け取った（塩基）。H₂O は NH₃ に H⁺ を渡した（酸）。</p></div>
+<p class="ref-p">アンモニアは分子の中に OH を持っていないので、「水に溶けて OH⁻ を出す」というアレニウスの定義ではうまく説明できません。ブレンステッド・ローリーの定義なら「水から H⁺ を受け取るから塩基」と説明できます。</p>
+<section class="ref-sec" id="ref-sec-role"><h4 class="ref-sec-h">酸か塩基かは反応相手によって変わる</h4><p class="ref-sec-lead">ブレンステッド・ローリーの定義では、同じ物質でも相手によって酸にも塩基にもなります。H₂O と HCO₃⁻ がその代表です。</p></section>
+<p class="ref-p">ブレンステッド・ローリーの定義は、2つの物質が反応したときの <b>H⁺ のやりとり</b>で決めるので、酸・塩基は物質の種類ではなく<b>反応における役割</b>です。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/acid-base-definition-amphoteric.png" alt="H₂O が NH₃ 相手には H⁺ を渡して酸、HCl 相手には H⁺ を受け取って塩基になること、HCO₃⁻ が OH⁻ 相手には酸、H⁺ 相手には塩基になることを、H⁺ の移動の矢印で示した図" loading="lazy"><figcaption class="ref-figure-cap"><b>H₂O は NH₃ 相手では酸、HCl 相手では塩基</b>。<b>HCO₃⁻ は OH⁻ 相手では酸、H⁺ 相手では塩基</b>としてはたらきます。</figcaption></figure>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">HCO₃⁻ ＋ OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₃²⁻ ＋ H₂O</span></div><p class="ref-note">HCO₃⁻ が OH⁻ に H⁺ を渡しているので、HCO₃⁻ は酸です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">HCO₃⁻ ＋ H⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂CO₃</span></div><p class="ref-note">HCO₃⁻ が H⁺ を受け取っているので、HCO₃⁻ は塩基です。</p></div>
+<h5 class="ref-h5">水が左辺にある反応式の見分け方</h5>
+<p class="ref-p">H₂O が左辺にある反応式では、右辺を見るだけで H₂O のはたらきが決まります。</p>
+<ul class="ref-list"><li>右辺に <b>OH⁻</b> がある → H₂O は H⁺ を相手に渡して OH⁻ が残った ＝ <b>H₂O は酸</b></li><li>右辺に <b>H₃O⁺</b> がある → H₂O は H⁺ を受け取った ＝ <b>H₂O は塩基</b></li></ul>
+<p class="ref-p">「<b>右辺に OH⁻ なら H₂O は酸、H₃O⁺ なら H₂O は塩基</b>」と覚えましょう。</p>
+<section class="ref-sec" id="ref-sec-which"><h4 class="ref-sec-h">実際はどちらの定義を使うのか</h4><p class="ref-sec-lead">ふだんはアレニウスの定義を使い、ブレンステッド・ローリーの定義で判断するよう指示されたときだけ、そちらを使います。</p></section>
+<p class="ref-p">ふだん「酸」「塩基」という言葉を使うときに、どちらの定義かを意識する必要はありません。ある物質が「酸である」「塩基である」と言うときは、<b>アレニウスの定義</b>を使っています。</p>
+<p class="ref-p">反応式を示して「ブレンステッド・ローリーの定義で酸・塩基を判断せよ」と<b>指示された問題でだけ</b>、H⁺ のやりとりを見て判断します。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">H₂O は中性なので、酸でも塩基でもない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">アレニウスの定義では H₂O は酸でも塩基でもありませんが、<b>ブレンステッド・ローリーの定義では、相手によって酸にも塩基にもなります</b>（NH₃ 相手では酸、HCl 相手では塩基）。</span></p><p class="ref-mistake-why">2つの定義を1つの問いの中で混ぜてしまうためです。★ 「酸である」という物質の分類はアレニウス、「酸としてはたらいた」という反応の中の役割はブレンステッド・ローリー、と分けて読みます。</p></div>
+<p class="ref-p"><b>2つの定義の文言はどちらも正確に言えるようにしてください。</b>酸と塩基がどう決まるか（価数・強弱）は次のページで扱います。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/acid-base-strength/">酸と塩基の価数と強弱、代表的な酸・塩基の一覧へ</a></p>
+<h5 class="ref-h5">例題</h5>
+<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の反応で、<b>H₂O</b> はブレンステッド・ローリーの定義の酸・塩基のどちらとしてはたらいているか。(1) HCl ＋ H₂O → H₃O⁺ ＋ Cl⁻　(2) CH₃COO⁻ ＋ H₂O → CH₃COOH ＋ OH⁻　(3) NH₃ ＋ H₂O → NH₄⁺ ＋ OH⁻　(4) CO₃²⁻ ＋ H₂O → HCO₃⁻ ＋ OH⁻</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>塩基</b>（右辺に H₃O⁺ がある ＝ HCl から H⁺ を受け取った）　(2) <b>酸</b>（右辺に OH⁻ がある ＝ CH₃COO⁻ に H⁺ を渡した）　(3) <b>酸</b>（NH₃ に H⁺ を渡した）　(4) <b>酸</b>（CO₃²⁻ に H⁺ を渡した）</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の反応で、<b>左辺の最初の物質</b>はブレンステッド・ローリーの定義の酸・塩基のどちらとしてはたらいているか。(1) HSO₄⁻ ＋ H₂O → H₃O⁺ ＋ SO₄²⁻　(2) CH₃COO⁻ ＋ HCl → CH₃COOH ＋ Cl⁻　(3) NH₄⁺ ＋ H₂O → NH₃ ＋ H₃O⁺　(4) HCO₃⁻ ＋ OH⁻ → CO₃²⁻ ＋ H₂O</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>酸</b>（H₂O に H⁺ を与えた）　(2) <b>塩基</b>（HCl から H⁺ を受け取った）　(3) <b>酸</b>（H₂O に H⁺ を与えた）　(4) <b>酸</b>（OH⁻ に H⁺ を与えた）</p></div></details></div>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/clue-properties/">← 見た目・におい・沸点から当たりを付ける</a>
+<nav class="seq"><a href="/reference/cation-separation/">← 金属イオンの系統分離</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/inorg-reaction-types/">無機の反応は5つの型で読む →</a></nav>
+<a href="/reference/acid-base-strength/">酸・塩基の価数と強弱 —— 強酸は3つだけ覚える →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -883,10 +918,58 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>
