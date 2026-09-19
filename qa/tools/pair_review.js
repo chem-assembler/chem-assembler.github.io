@@ -3,10 +3,10 @@
  * 「問い＋選択肢1個」の組を書き出す（REVIEW_CRITERIA.md C17・2026-09-15）。
  *
  *   node qa/tools/pair_review.js                          … 全 choice の組を標準出力へ
- *   node qa/tools/pair_review.js --unit bio               … 単元で絞る（カンマ区切りで複数可）
+ *   node qa/tools/pair_review.js --unit sugar             … 単元で絞る（カンマ区切りで複数可）
  *   node qa/tools/pair_review.js --code org.bio.invert    … コードの前方一致で絞る（カンマ区切りで複数可）
  *   node qa/tools/pair_review.js --flagged                … 機械の検査（tests.js）に引っかかった組だけ
- *   node qa/tools/pair_review.js --unit bio --out x.md    … ファイルに書き出す
+ *   node qa/tools/pair_review.js --unit sugar --out x.md  … ファイルに書き出す
  *   node qa/tools/pair_review.js --count                  … 単元ごとの組の数だけ
  *
  * ## なぜ要るか
