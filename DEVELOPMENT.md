@@ -135,15 +135,19 @@ Actions は無料。`.github/workflows/tests.yml` が **どのブランチの pu
 | ジョブ | 中身 | 所要（実測） |
 |---|---|---|
 | `verify`（Linux） | `verify-release.js`（main 以外のブランチは **規則8を origin/main との差し引き**で）・`verify-compounds.js`・構文 | 15 秒 |
-| `browser`（**Windows**） | `run-tests.mjs` で assembler / qa / ratio / ion-equation / muki の全走 | assembler 50 分・他は 1 分 |
+| `browser`（**Windows**） | `run-tests.mjs` で assembler / qa / ratio の全走（assembler は落ちたテストだけ1回流し直す） | assembler 40〜50 分・他は 1 分 |
 
 - ★ **レーンの使い方**: 自分のブランチを `git push -u origin <branch>` する → `gh run list --branch <branch>` と `gh run view <id>` で読む。
   **手元の機械で 45 分待たなくてよい**（その間、手元のブラウザと CPU は他のレーンが使える）
 - ⚠ **手元の全走の代わりにはしない**のは今までどおり。CI は追加の網で、**統合の前の最後の砦は統合側の全走**
 - ⚠ **ブラウザは Windows で回す。** ion-equation は Segoe UI / Yu Gothic UI を指定していて、Linux では字形が変わり
   「2行に収まる」類の検査が4件食い違った。Windows に移すと assembler・qa・ratio は手元と同じく全合格した
-- ⚠ **ion-equation・muki は CI では赤にしない**（`continue-on-error`）。「375px で高さ N px 以内」「32px 以上」の上限が
-  runner の字の描き方で 1〜2% 超える（1913/1900px・31/32px）。どちらも手元なら数十秒なので、**門番は手元の全走のまま**
+- ⚠ **ion-equation・muki は CI で回さない。** 「375px で高さ N px 以内」「32px 以上」の上限が runner の字の描き方で
+  1〜2% 超えて毎回落ちる（1913/1900px・31/32px）。**毎回赤のメールが来ると本物の赤が読まれなくなる**ので外した。
+  どちらも手元なら数十秒なので、**門番は手元の全走のまま**
+- ★ **assembler は落ちたテストだけ1回流し直す。** runner は手元より遅く、全走3回で毎回ちがう1件
+  （QUIZ_UNIFORM・REF11）が時間待ちで落ちた。流し直しで通れば「ゆらぎ」の警告付きで緑、落ちれば赤。
+  これは上の「1回落ちたら再実行して切り分ける」を機械でやっているだけ。⚠ **警告が同じテストで続いたら直す対象**
 - ⚠ **改行は CRLF で展開する**（`core.autocrlf true`）。リポジトリの中身は LF で、`compounds.json` などは
   「CRLF であること」まで検査しているので、Linux の既定（LF）のままだと形の検査が落ちる
 - 試走で分かったこと: v1583 の main でも OV5・OV7（立体の回す出題）は**出題の偶然で落ちる**（手元で6回中2回）。

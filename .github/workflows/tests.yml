@@ -53,17 +53,16 @@ jobs:
     #   テストの基準は手元の Windows なので、同じ OS の字幅で測る
     runs-on: windows-latest
     timeout-minutes: 90
-    # ion-equation・muki には「375px でページの高さが N px 以内」「押せるものが 32px 以上」のような
-    # 手元の字の描き方で測った上限がある。runner では 1〜2% 超えて落ちる（2026-09-19: 1913/1900px・31/32px）。
-    # この2つは手元で数十秒で終わるので門番は手元の全走のまま。ここでは結果を出すだけで、CI を赤にしない
-    continue-on-error: ${{ matrix.page == 'ion-equation' || matrix.page == 'muki' }}
+    # ⚠ ion-equation・muki は外した。「375px で高さ N px 以内」「32px 以上」の上限が runner の字の描き方で
+    #   1〜2% 超えて毎回落ちる（1913/1900px・31/32px）。毎回赤のメールが来ると本物の赤が読まれなくなる。
+    #   どちらも手元なら数十秒なので、門番は手元の全走のまま
     defaults:
       run:
         shell: bash
     strategy:
       fail-fast: false
       matrix:
-        page: [assembler, qa, ion-equation, ratio, muki]
+        page: [assembler, qa, ratio]
     steps:
       - name: 改行を手元（Windows）と同じ CRLF で展開する
         # リポジトリの中身は LF。手元は core.autocrlf=true で CRLF に展開しており、
@@ -78,7 +77,31 @@ jobs:
         run: npm install --no-audit --no-fund && npx playwright install chromium
       - name: 全走（${{ matrix.page }}）
         # サーバーは同じ step の中で立てる（Windows の runner では step をまたぐ裏の処理が残る保証が無い）
+        #
+        # ★ 落ちたテストだけもう一度流す（DEVELOPMENT.md「RX13・ST29 … 1回落ちて再実行で通ったらゆらぎ」の手順を機械でやる）。
+        #   runner は手元より遅く、assembler の全走3回で毎回ちがう1件（QUIZ_UNIFORM・REF11 …）が時間待ちで落ちた。
+        #   流し直しで通れば「ゆらぎ」として警告を出して緑、流し直しでも落ちれば赤。
+        #   ⚠ 合否の行が1行も無いとき（起動失敗）は流し直さずに赤（DEVELOPMENT.md「出力ゼロ・終了コード1」）
         run: |
           python -m http.server 8134 --bind 127.0.0.1 >/dev/null 2>&1 &
-          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8134/${{ matrix.page }}/test.html >/dev/null && break; sleep 1; done
-          node tools/run-tests.mjs http://127.0.0.1:8134/${{ matrix.page }}/test.html
+          URL=http://127.0.0.1:8134/${{ matrix.page }}/test.html
+          for i in $(seq 1 30); do curl -sf "$URL" >/dev/null && break; sleep 1; done
+          set +e
+          node tools/run-tests.mjs "$URL" | tee full.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          [ "$code" = 0 ] && exit 0
+          ids=$(sed -n '/^--- 失敗 ---$/,$p' full.txt | grep -oE '^  [A-Z_]+[0-9]*[a-z]?:' | tr -d ' :' | paste -sd, -)
+          if [ -z "$ids" ] || [ "${{ matrix.page }}" != assembler ]; then exit "$code"; fi
+          echo "::group::落ちたテストだけ流し直す: $ids"
+          set +e
+          node tools/run-tests.mjs "$URL" --only="$ids" | tee retry.txt
+          rcode=${PIPESTATUS[0]}
+          set -e
+          echo "::endgroup::"
+          # --only= は全部通っても終了コード 3（絞り込みの印）を返す
+          if [ "$rcode" = 3 ]; then
+            echo "::warning title=ゆらぎ::全走で落ちた $ids が、流し直しでは通った（時間待ちの揺れ。続けば直す）"
+            exit 0
+          fi
+          exit 1
