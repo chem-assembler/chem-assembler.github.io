@@ -91,3 +91,4 @@ electrolysis-industry
 dissolution
 solubility
 gas-solubility
+colligative
