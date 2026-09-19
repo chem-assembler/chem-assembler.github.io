@@ -46,3 +46,4 @@ clue-properties
 reaction-mechanisms
 hydrogen-noble-gas
 oxygen-ozone
+halogen
