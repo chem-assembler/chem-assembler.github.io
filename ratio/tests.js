@@ -2930,7 +2930,7 @@
 
     runPortalUI();
     runTapTargets();
-    finish();
+    runRefLinks(finish);
   }
 
   // ================================================================
@@ -3045,6 +3045,115 @@
       }
       return bad.length === 0;
     }), uiOut);
+  }
+
+  // ================================================================
+  // 参考書から来るリンク（2026-09-19・便0b）
+  //   ① 参考書（../assembler/reference.json）の `:::link app: ratio/<受け口> id:` が実在するか
+  //      ＝ CLAUDE.md「横断の整合性検査は、両方のデータが揃う側に置く」。参考書はこちらの問題表を持たない
+  //   ② nav.js の「← 参考書へ戻る」の帯（出る・出ない・戻り先）
+  //   ⚠ 受け口の名前はここに1本の表で持つ。台帳（tools/reference-md.js）に足したらここにも足す
+  // ================================================================
+  function refReceivers() {
+    return {
+      'ratio/stoich': new Set(M.REACTIONS.map(function (p) { return p.id; })),
+      'ratio/titration': null      // 引数を取らない
+    };
+  }
+
+  function refLinkProblems(pages, recv) {
+    var out = [], seen = 0;
+    function walk(o, page) {
+      if (Array.isArray(o)) { o.forEach(function (x) { walk(x, page); }); return; }
+      if (!o || typeof o !== 'object') return;
+      if (o.kind === 'link' && typeof o.app === 'string' &&
+          (o.app === 'ratio' || o.app.indexOf('ratio/') === 0)) {
+        seen++;
+        var id = o.id == null ? '' : String(o.id);
+        var where = page + ' → ' + o.app + (id ? ' ' + id : '');
+        if (!(o.app in recv)) out.push(where + '（受け口の表に無い名前）');
+        else if (recv[o.app] === null) { if (id) out.push(where + '（この受け口は id を取らない）'); }
+        else if (!id) out.push(where + '（id が無い）');
+        else if (!recv[o.app].has(id)) out.push(where + '（id が実在しない）');
+      }
+      Object.keys(o).forEach(function (k) { if (o[k] && typeof o[k] === 'object') walk(o[k], page); });
+    }
+    (pages || []).forEach(function (p) { walk(p.blocks || [], p.id || '?'); });
+    return { problems: out, seen: seen };
+  }
+
+  function refProbe(src, prop, cb) {
+    var f = document.createElement('iframe');
+    f.style.cssText = 'position:absolute; left:-9999px; width:375px; height:600px;';
+    f.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'probe=' + Date.now();
+    document.body.appendChild(f);
+    var tries = 0;
+    (function poll() {
+      var w = null;
+      try { w = f.contentWindow && f.contentWindow[prop] ? f.contentWindow : null; } catch (e) { w = null; }
+      if (!w && ++tries < 200) { setTimeout(poll, 50); return; }
+      var d = w ? f.contentDocument : null;
+      try { cb(w, d); } finally { f.remove(); }
+    })();
+  }
+
+  function runRefLinks(done) {
+    section('参考書から来るリンク', uiOut);
+    var recv = refReceivers();
+    ok('REF1: 受け口の表が空でない（stoich の問題 id が引ける）',
+      recv['ratio/stoich'].size > 10 && recv['ratio/stoich'].has('r1'), uiOut);
+    var g = refLinkProblems([{ id: 'p', blocks: [
+      { kind: 'link', app: 'ratio/stoich', id: 'r1', text: 'x' },
+      { kind: 'link', app: 'ratio/titration', text: 'x' },
+      { kind: 'link', app: 'ion-equation/redox', id: 'no-such', text: 'よそのアプリは見ない' },
+      { kind: 'link', to: 'alcohol', text: '参考書の中のリンクは見ない' }
+    ] }], recv);
+    var b = refLinkProblems([{ id: 'p', blocks: [
+      { kind: 'link', app: 'ratio/stoich', id: 'r999', text: 'x' },
+      { kind: 'link', app: 'ratio/stoich', text: 'x' },
+      { kind: 'link', app: 'ratio/titration', id: 't1', text: 'x' },
+      { kind: 'link', app: 'ratio/nosuch', id: 'x', text: 'x' }
+    ] }], recv);
+    ok('REF2: ⚠ 否定対照 — 在る id は通し、無い id・id なし・余計な id・知らない受け口は赤にする',
+      g.problems.length === 0 && g.seen === 2 && b.problems.length === 4, uiOut);
+
+    fetch('../assembler/reference.json', { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }).then(function (pages) {
+      var r = refLinkProblems(pages, recv);
+      ok('REF3: 参考書の ratio 宛てのリンクの id がすべて実在する（' + r.seen + '本' +
+        (r.problems.length ? '・' + r.problems.join(' / ') : '') + '）',
+        Array.isArray(pages) && pages.length > 10 && r.problems.length === 0, uiOut);
+    }).catch(function (e) {
+      ok('REF3: ../assembler/reference.json を読める（' + e + '）', false, uiOut);
+    }).then(function () {
+      var target = M.REACTIONS[2].id;
+      refProbe('stoich.html?r=' + target + '&from=reference&page=faraday', 'ChemStoichApp', function (w, d) {
+        var a = d && d.querySelector('.refBack .refBackLink');
+        ok('REF4: 参考書から来たら「← 参考書へ戻る」の帯が出る', !!a && a.textContent === '← 参考書へ戻る', uiOut);
+        ok('REF4-2: 戻り先はそのページ（/reference/faraday/）・_top',
+          !!a && /\/reference\/faraday\/$/.test(new URL(a.href).pathname) && a.target === '_top', uiOut);
+        ok('REF4-3: 帯はヘッダーの外（直後）に置く',
+          !!d && !d.querySelector('header .refBack') &&
+          !!d.querySelector('header').nextElementSibling &&
+          d.querySelector('header').nextElementSibling.classList.contains('refBack'), uiOut);
+        ok('REF4-4: 押す物は 32px 以上', !!a && a.getBoundingClientRect().height >= 32, uiOut);
+        ok('REF4-5: ?r= の問題は開く（' + target + '）',
+          !!w && w.ChemStoichApp.state.idx === 2, uiOut);
+        ok('REF4-6: ⚠ 参考書から来たのに「索引から来ました」と言わない（#fromBox は隠れたまま）',
+          !!d && d.getElementById('fromBox').hidden, uiOut);
+        refProbe('titration.html?from=reference&page=' + encodeURIComponent('../qa'), 'ChemTitrationApp', function (w2, d2) {
+          var a2 = d2 && d2.querySelector('.refBack .refBackLink');
+          ok('REF5: ⚠ page が読めない形なら参考書の索引（/reference/）へ戻す',
+            !!a2 && /\/reference\/$/.test(new URL(a2.href).pathname), uiOut);
+          var dl = document.getElementById('appLinked').contentDocument;
+          ok('REF6: ⚠ 否定対照 — 参考書から来ていなければ帯は出ない（stoich.html?r=r14）',
+            !!dl && !dl.querySelector('.refBack') && !dl.getElementById('fromBox').hidden, uiOut);
+          done();
+        });
+      });
+    });
   }
 
   function finish() {
