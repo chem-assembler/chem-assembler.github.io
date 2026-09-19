@@ -30,7 +30,7 @@
     //   「少ないけど全部通った」に見えてしまう（★ 型A の画面だけで 95 件ある）
     // ⚠ ME（入口と受け口）は**いちばん最後**に走るので、下限をゆるいままにすると
     //   「旧 `/muki/` の着地」の検査が丸ごと落ちても気づけない（実測 629 → 620 に上げた）
-    var MIN_CASES = 705;
+    var MIN_CASES = 720;   // 2026-09-19: 参考書から来るリンク（最後に走る）の 11 件を足して実測 724
 
     function section(title, target) {
         var h = document.createElement('h2');
@@ -4439,6 +4439,148 @@
         }).then(next);
     }
 
+    // ===============================================================
+    // 参考書から来るリンク（2026-09-19・便0b）
+    //   ① 参考書（../assembler/reference.json）の `:::link app: muki/<受け口> id:` が実在するか
+    //      ＝ CLAUDE.md「横断の整合性検査は、両方のデータが揃う側に置く」
+    //   ② ref-back.js の「← 参考書へ戻る」（出る・出ない・戻り先・シェアに載せない）
+    //   ⚠ 受け口の名前はここに1本の表で持つ。台帳（tools/reference-md.js）に足したらここにも足す
+    //   ⚠ muki には1問を名指しする口が無い ＝ id を取るのは入口の ?open= とアキの ?deck= だけ
+    // ===============================================================
+    function refReceivers(openKeys) {
+        var none = function (id) { return id === ''; };
+        var opens = function (id) { return openKeys.indexOf(id) >= 0; };
+        return {
+            'muki': opens,
+            'muki/index': opens,
+            // ?deck= は省略してよい（既定のデッキ）
+            'muki/akinator': function (id) { return id === '' || akiDeckIds().indexOf(id) >= 0; },
+            'muki/separation': none,
+            'muki/tree': none,
+            'muki/snake': none
+        };
+    }
+
+    function refLinkProblems(pages, recv) {
+        var out = [], seen = 0;
+        function walk(o, page) {
+            if (Array.isArray(o)) { o.forEach(function (x) { walk(x, page); }); return; }
+            if (!o || typeof o !== 'object') return;
+            if (o.kind === 'link' && typeof o.app === 'string' &&
+                (o.app === 'muki' || o.app.indexOf('muki/') === 0)) {
+                seen++;
+                var id = o.id == null ? '' : String(o.id);
+                var where = page + ' → ' + o.app + (id ? ' ' + id : '');
+                if (!Object.prototype.hasOwnProperty.call(recv, o.app)) out.push(where + '（受け口の表に無い名前）');
+                else if (!recv[o.app](id)) out.push(where + (id ? '（id が実在しない・取らない）' : '（id が無い）'));
+            }
+            Object.keys(o).forEach(function (k) { if (o[k] && typeof o[k] === 'object') walk(o[k], page); });
+        }
+        (pages || []).forEach(function (p) { walk(p.blocks || [], p.id || '?'); });
+        return { problems: out, seen: seen };
+    }
+
+    function refProbe(src, cb) {
+        var f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute; left:-9999px; width:375px; height:700px;';
+        f.src = src;
+        document.body.appendChild(f);
+        var tries = 0;
+        setTimeout(function poll() {
+            var d = null, file = '';
+            try { d = f.contentDocument; file = f.contentWindow.location.pathname.split('/').pop(); } catch (e) { d = null; }
+            // ⚠ 入口の ?open= は非同期に転送するので、行き先に着いてから測る
+            var ready = !!(d && d.readyState === 'complete' && d.querySelector('.topbar') &&
+                !/[?&]open=/.test(f.contentWindow.location.search));
+            if (!ready && ++tries < 100) { setTimeout(poll, 50); return; }
+            var res = { file: file, link: null, first: '', share: '', count: 0 };
+            try {
+                var a = d.querySelector('.topbar .refBackLink');
+                res.link = a && { text: a.textContent, path: new URL(a.href).pathname, target: a.target,
+                    h: a.getBoundingClientRect().height };
+                var first = d.querySelector('.topbar .hubLink');
+                res.first = first ? first.getAttribute('href') : '';
+                res.count = d.querySelectorAll('.refBackLink').length;
+                if (typeof f.contentWindow.shareUrl === 'function') res.share = f.contentWindow.shareUrl();
+            } catch (e) { res.err = String(e); }
+            f.remove();
+            cb(res);
+        }, 250);
+    }
+
+    function runRefLinks(next) {
+        section('参考書から来るリンク（ref-back.js）', uiOut);
+        if (!onHttp) { ok('REF: iframe と fetch が使える（file:// では不可）', false, uiOut); next(); return; }
+        fetch('index.html', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (html) {
+            var m = /MUKI_OPEN_TARGETS\s*=\s*\{([^}]*)\}/.exec(html);
+            var keys = m ? (m[1].match(/(\w+)\s*:/g) || []).map(function (k) { return k.replace(/\s*:$/, ''); }) : [];
+            ok('REF1: 入口の ?open= の語彙が読める（' + keys.join(',') + '）', keys.length >= 4 && keys.indexOf('tree') >= 0, uiOut);
+            var recv = refReceivers(keys);
+            var g = refLinkProblems([{ id: 'p', blocks: [
+                { kind: 'link', app: 'muki', id: 'tree', text: 'x' },
+                { kind: 'link', app: 'muki/akinator', id: 'muki1', text: 'x' },
+                { kind: 'link', app: 'muki/akinator', text: 'x' },
+                { kind: 'link', app: 'muki/separation', text: 'x' },
+                { kind: 'link', app: 'ion-equation/redox', id: 'no-such', text: 'よそのアプリは見ない' },
+                { kind: 'link', to: 'alcohol', text: '参考書の中のリンクは見ない' }
+            ] }], recv);
+            var b = refLinkProblems([{ id: 'p', blocks: [
+                { kind: 'link', app: 'muki', id: 'nosuch', text: 'x' },
+                { kind: 'link', app: 'muki', text: 'x' },
+                { kind: 'link', app: 'muki/akinator', id: 'nodeck', text: 'x' },
+                { kind: 'link', app: 'muki/tree', id: 'x', text: 'x' },
+                { kind: 'link', app: 'muki/nosuch', text: 'x' }
+            ] }], recv);
+            ok('REF2: ⚠ 否定対照 — 在る id は通し、無い id・id なし・余計な id・知らない受け口は赤にする',
+                g.problems.length === 0 && g.seen === 4 && b.problems.length === 5, uiOut);
+            return fetch('../assembler/reference.json', { cache: 'no-store' }).then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            }).then(function (pages) {
+                var r = refLinkProblems(pages, recv);
+                ok('REF3: 参考書の muki 宛てのリンクの id がすべて実在する（' + r.seen + '本' +
+                    (r.problems.length ? '・' + r.problems.join(' / ') : '') + '）',
+                    Array.isArray(pages) && pages.length > 10 && r.problems.length === 0, uiOut);
+            });
+        }).catch(function (e) {
+            ok('REF1-3: 入口と参考書のデータを読める（' + e + '）', false, uiOut);
+        }).then(function () {
+            // ★ 入口の ?open= を通っても from/page が連れて行かれ、行き先で帯が出る
+            var CASES = [
+                ['index.html?open=tree&from=reference&page=cation-separation', 'tree.html', '/reference/cation-separation/', '入口の ?open= を通って型A'],
+                ['separation.html?from=reference&page=precipitate', 'separation.html', '/reference/precipitate/', '型B'],
+                ['akinator.html?deck=muki1&from=reference&page=flame-color', 'akinator.html', '/reference/flame-color/', 'アキ'],
+                ['snake.html?from=reference&page=precipitate', 'snake.html', '/reference/precipitate/', 'スネーク'],
+                ['index.html?from=reference&page=inorg-reaction-types', 'index.html', '/reference/inorg-reaction-types/', '入口そのもの'],
+                ['tree.html?from=reference&page=..%2Fqa', 'tree.html', '/reference/', '⚠ 読めない page は索引へ']
+            ];
+            var i = 0;
+            (function step() {
+                if (i >= CASES.length) {
+                    // ⚠ 否定対照 — 参考書から来ていなければ出ない
+                    refProbe('separation.html?from=qa&page=precipitate', function (r) {
+                        ok('REF-N: ⚠ 否定対照 — from が reference でなければ帯は出ない', r.file === 'separation.html' && !r.link, uiOut);
+                        refProbe('snake.html?from=reference&page=precipitate', function (r2) {
+                            ok('REF-S: ⚠ スネークのシェア URL に from= / page= を載せない（' + r2.share + '）',
+                                !!r2.share && r2.share.indexOf('from=') < 0 && r2.share.indexOf('page=') < 0, uiOut);
+                            next();
+                        });
+                    });
+                    return;
+                }
+                var c = CASES[i++];
+                refProbe(c[0], function (r) {
+                    ok('REF4-' + i + ': ' + c[3] + ' — 「← 参考書へ戻る」が ' + c[2] + ' を指す（→ ' +
+                        r.file + ' ' + (r.link ? r.link.path : '帯なし') + '）',
+                        r.file === c[1] && !!r.link && r.link.text === '← 参考書へ戻る' &&
+                        r.link.path.slice(-c[2].length) === c[2] && r.link.target === '_top' &&
+                        r.link.h >= 32 && r.first === '../index.html' && r.count === 1, uiOut);
+                    step();
+                });
+            })();
+        });
+    }
+
     // スネークの UI テストが終わったら、型B → 型A → アキ → 入口の順に進んでから締める。
     // ⚠ finish() を直に呼ばないこと（型B・型A・アキ・入口のテストが丸ごと空振りする）
     function endAll() {
@@ -4448,7 +4590,7 @@
                     runTreeUI(function () {
                         runAkinatorSource(function () {
                             runAkinatorUI(function () {
-                                runEntrySource(function () { runEntryUI(finish); });
+                                runEntrySource(function () { runEntryUI(function () { runRefLinks(finish); }); });
                             });
                         });
                     });
