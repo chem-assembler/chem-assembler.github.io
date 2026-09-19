@@ -222,6 +222,25 @@ text: NaCl と濃硫酸の反応でできるのは Na₂SO₄ ではなく NaHSO
 
 「**濃硫酸が登場する反応は加熱が必要**」と覚えておきましょう。
 
+:::table
+caption: 遊離の型のまとめ
+source: このページの反応式（無機の基本１ p.24・練習5、無機の基本５ s16・s25、無機の基本６ s9・s13、教科書の CaCO₃・Na₂SiO₃）を型ごとに並べた
+head:
+- 型
+- 塩
+- 加えるもの
+- 出てくるもの
+align: left | left | left | left
+rows:
+- 弱酸の遊離 | CH₃COONa | 塩酸 | CH₃COOH
+- 弱酸の遊離 | FeS | 希硫酸 | H₂S（気体）
+- 弱酸の遊離 | Na₂SO₃ | 希硫酸 | SO₂（気体）＋ H₂O
+- 弱酸の遊離 | CaCO₃ | 希塩酸 | CO₂（気体）＋ H₂O
+- 弱塩基の遊離 | NH₄Cl | NaOH・Ca(OH)₂ | NH₃（気体）＋ H₂O
+- 揮発性の酸の遊離 | NaCl | 濃硫酸（加熱） | HCl（気体）
+- 揮発性の酸の遊離 | CaF₂ | 濃硫酸（加熱） | HF（気体）
+:::
+
 :::link
 to: sulfuric-acid
 text: 濃硫酸の不揮発性・酸化力・脱水作用は、硫酸のページへ
