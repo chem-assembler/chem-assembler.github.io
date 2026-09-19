@@ -54098,8 +54098,10 @@
         assert(pages.length >= 3, `資料が ${pages.length} ページしかない（2枚目・3枚目が入っていない）`);
         // 索引は reference.json から機械で組む ＝ ページを足したら黙って並ぶ
         const n = await W.referenceBook.renderIndex();
-        assert(n === allPages.length && D.querySelectorAll('#reference-list .ref-index-btn').length === allPages.length,
-            `索引のボタン数が reference.json のページ数（${allPages.length}）と合わない`);
+        /* ⚠ 資料ペイン（面B）に並ぶのは**有機のページだけ**（v1596・§31-1。無機・理論は組めない） */
+        const orgPages = allPages.filter(W.refIsOrganic);
+        assert(n === orgPages.length && D.querySelectorAll('#reference-list .ref-index-btn').length === orgPages.length,
+            `索引のボタン数が reference.json の有機のページ数（${orgPages.length}）と合わない`);
         // ⚠ ページ id は検査に書き写さない。reference.json に在るものを全部見る
         for (const p of pages) {
             assert(await W.referenceBook.open(p.id), `${p.id}: 開けない`);
@@ -55068,11 +55070,20 @@
                                   ⓵ qa 側にも接頭辞そのものの知識項目は無い（近いのは
                                     org.ali.name-mainchain / name-substituent-order だが、
                                     どちらも命名のページが先に挙げている ＝ 同じコードは2ページに置けない）。 */
-        const noCodes = pages.filter(p => !(p.codes || []).length).map(p => p.id);
+        /* ★★ v1596（§31-5）: **この名指しは有機の中だけ**。無機・理論は qa の項目がまだ無いので、
+           束ね方を先に決めた **グループ台帳（qa/GROUPS.tsv）に載っていれば codes なしでよい**
+           （ref-inorg-design §1-3 の案C。後で qa が項目を作ったら codes: を足す）。 */
+        const orgPages = pages.filter(p => RM.divisionOf(p.unit) === 'org');
+        const noCodes = orgPages.filter(p => !(p.codes || []).length).map(p => p.id);
         assert(noCodes.join(',') === 'functional-groups,numeral-prefix',
-            `知識項目を持たないページが「${noCodes.join('・') || '（無し）'}」`
+            `有機で知識項目を持たないページが「${noCodes.join('・') || '（無し）'}」`
             + '（持たなくてよいのは単元をまたぐ横断のページだけ・§26。増やすなら設計書に理由を残すこと）');
-        assert(nCodes >= pages.length - noCodes.length, 'codes が1件も無いページがある');
+        const ledger = RM.parseGroups(await grab('../qa/GROUPS.tsv', 'グループ台帳（qa/GROUPS.tsv）'));
+        pages.filter(p => RM.divisionOf(p.unit) !== 'org' && !(p.codes || []).length).forEach(p => {
+            assert(ledger.some(r => r.page === p.id && r.unit === p.unit && r.group === p.group),
+                `${p.id}: 無機・理論で codes を持たないページは qa/GROUPS.tsv に同じ unit・group で載っていること`);
+        });
+        assert(nCodes >= orgPages.length - noCodes.length, 'codes が1件も無いページがある');
     });
 
     /* ===== REF18: 面A ＝ /reference/ の公開ページ（v1524） =====
@@ -55124,17 +55135,23 @@
            ⚠ `REF17` が「reference.json の並び ＝ ORDER.txt」を見ているので、
              ここは reference.json を物差しにすれば **原稿の並びを見ていることになる**
              （物差しを2本にしない）。 */
+        /* ★ v1596（§31-1）から **区分 → unit → group** の3階層。区分の対応表は書式の1本（RM.divisionOf） */
+        const RM = window.ReferenceMd;
+        assert(RM && typeof RM.divisionOf === 'function', 'ReferenceMd.divisionOf が居ない');
         const wantIndex = [];
         {
-            const units = [];
+            const divs = [];
             pages.forEach(p => {
-                let u = units.find(x => x.unit === p.unit);
-                if (!u) { u = { unit: p.unit, groups: [] }; units.push(u); }
+                const k = RM.divisionOf(p.unit);
+                let d = divs.find(x => x.key === k);
+                if (!d) { d = { key: k, units: [] }; divs.push(d); }
+                let u = d.units.find(x => x.unit === p.unit);
+                if (!u) { u = { unit: p.unit, groups: [] }; d.units.push(u); }
                 let g = u.groups.find(x => x.name === p.group);
                 if (!g) { g = { name: p.group, ids: [] }; u.groups.push(g); }
                 g.ids.push(p.id);
             });
-            units.forEach(u => u.groups.forEach(g => g.ids.forEach(id => wantIndex.push(id))));
+            divs.forEach(d => d.units.forEach(u => u.groups.forEach(g => g.ids.forEach(id => wantIndex.push(id)))));
         }
         const idx = parse(await grab('../reference/index.html', '参考書の索引'));
         const gotIndex = [...idx.querySelectorAll('.idx a[href]')]
@@ -55205,12 +55222,17 @@
                     `${where}: 一問一答へ送るコードが原稿と違う\n    送っている: ${sent.join(', ')}\n    原稿      : ${p.codes.join(', ')}`);
                 assert(/[?&]mode=choice(&|$)/.test(qaSrc),
                     `${where}: 一問一答が測定モードで開かない（めくりは自己申告なので「解ける形」にならない）`);
-                assert(appSrc && appSrc.indexOf('code=' + encodeURIComponent(p.codes[0])) > 0,
-                    `${where}: アプリの埋め込みが先頭コードを載せていない（着地するページを決めているのは code）`);
-                // ★ その先頭コードが、ほんとうにこのページへ戻ること（決めているのは pageByCode 1か所）
-                const back = book.pageByCode(p.codes[0]);
-                assert(back && back.id === p.id,
-                    `${where}: 先頭コード「${p.codes[0]}」が別のページ（${back && back.id}）へ着地する`);
+                /* ⚠ 「▶ アプリの中で開く」は有機だけ（v1596・§31-1。資料ペインは有機しか並べない） */
+                if (!W.refIsOrganic(p)) {
+                    assert(!appSrc, `${where}: 無機・理論のページにアプリ（資料ペイン）の箱が出ている（${appSrc}）`);
+                } else {
+                    assert(appSrc && appSrc.indexOf('code=' + encodeURIComponent(p.codes[0])) > 0,
+                        `${where}: アプリの埋め込みが先頭コードを載せていない（着地するページを決めているのは code）`);
+                    // ★ その先頭コードが、ほんとうにこのページへ戻ること（決めているのは pageByCode 1か所）
+                    const back = book.pageByCode(p.codes[0]);
+                    assert(back && back.id === p.id,
+                        `${where}: 先頭コード「${p.codes[0]}」が別のページ（${back && back.id}）へ着地する`);
+                }
             }
 
             /* ── ⑤ 動画は `video:` が在るページだけ ── */
@@ -55632,7 +55654,8 @@
         pages.forEach(p => (p.blocks || []).forEach(b => {
             if (b.kind !== 'link') return;
             nLink++;
-            assert(('to' in b) !== ('open' in b), `${p.id}: :::link が to と open を両方持つ／どちらも持たない`);
+            assert(['to', 'open', 'app'].filter(k => k in b).length === 1,
+                `${p.id}: :::link が to / open / app のどれか1つだけを持っていない`);
             if (!b.open) return;
             nOpen++;
             assert(Object.prototype.hasOwnProperty.call(targets, b.open),
@@ -56614,6 +56637,116 @@
         }));
         assert(hand >= 10 && captioned >= 5,
             `手で書く表が ${hand} 枚・うち見出しつき ${captioned} 枚（実データで空回りしている）`);
+    });
+
+    /* ===== REF28: 無機・理論へ広げる器（v1596・設計書 §31・2026-09-19 便0a） =====
+     *
+     * ★ 設計の正は ref-inorg-design（統合側の scratchpad）§4〜§6。足したものは5つ:
+     *   ① `:::reaction` の `arrow: ⇄`（可逆）   ② `:::link` の `app:` ＋ `id:`（ほかのアプリの受け口）
+     *   ③ 区分（有機・無機・理論）と面Bの絞り込み ④ `:::figure` の `shot:`（アプリの画面の切り取り）
+     *   ⑤ グループ台帳 `qa/GROUPS.tsv`
+     * ⚠ 無機・理論のページはまだ0枚なので、**実データでは空回りする所を合成したページで確かめる**
+     *   （どれも否定対照つき ＝ 通すべきものが通り、止めるべきものが止まる）。
+     */
+    test('REF28: 可逆の矢印・ほかのアプリへのリンク・区分・画面の切り取り・グループ台帳', async (c) => {
+        const W = c.W;
+        const RM = window.ReferenceMd;
+        const book = W.referenceBook;
+        assert(RM && book, 'ReferenceMd / referenceBook が居ない');
+        const FRESH = () => '?nocache=' + Date.now() + Math.random();
+        const grab = async (url, what) => {
+            const res = await fetch(url + FRESH());
+            assert(res.ok, `${what} が読めない（${url}・HTTP ${res.status}）`);
+            return await res.text();
+        };
+        const md = (body, unit) => ['---', 'id: zz-ref28', 'unit: ' + (unit || 'theo.redox'), 'unitLabel: 酸化還元',
+            'group: 半反応式', 'title: 検査用', 'summary: これは検査のためだけに組んだページで、画面には出しません。三十字を超えるように書きます。',
+            'source:', '  - slides:検査', 'singleSource: false', 'why: 検査のためだけに組んだページなので、表を作った理由は無い（二十字以上）。',
+            '---', '', body, ''].join('\n');
+        const parse = (body, unit) => RM.parsePage(md(body, unit), 'REF28', { pages: ['zz-ref28'] }).blocks[0];
+        const red = (body, unit) => { try { parse(body, unit); return ''; } catch (e) { return e.message; } };
+
+        /* ── ① 可逆の矢印 ── */
+        assert(RM.ARROWS.join(',') === '→,⇄', `書式の矢印が「${RM.ARROWS.join(',')}」`);
+        const rev = parse(':::reaction\nleft: Cl₂ ＋ H₂O\narrow: ⇄\nright: HCl ＋ HClO\nlevel: ★★★\n:::');
+        assert(book.renderBlock(rev).querySelector('.ref-rx-bar').textContent === '⇄', '⇄ が描かれていない');
+        const fwd = parse(':::reaction\nleft: A\nright: B\nlevel: ★★★\n:::');
+        assert(!('arrow' in fwd) && book.renderBlock(fwd).querySelector('.ref-rx-bar').textContent === '→',
+            'arrow を書かない式が → で出ていない（有機の既存の式が変わる）');
+        assert(/arrow/.test(red(':::reaction left: A arrow: <=> right: B level: ★★★ :::')), '否定対照: arrow の綴り違いが通った');
+        assert(/可逆の矢印/.test(red(':::reaction left: A ⇄ B right: C level: ★★★ :::')), '否定対照: left に ⇄ を書く逃げ道が通った');
+
+        /* ── ② ほかのアプリの受け口 ── */
+        const ln = parse(':::link\napp: ion-equation/redox\nid: rs1\ntext: 過マンガン酸カリウムと鉄(Ⅱ)イオンの反応式を組み立てる\n:::');
+        assert(ln.href === '/ion-equation/redox.html?rxn=rs1&from=reference&page=zz-ref28', `href が違う: ${ln.href}`);
+        const a = book.renderBlock(ln).querySelector('a');
+        assert(a && a.getAttribute('href') === ln.href, 'app: のリンクが焼き込んだ href の <a> になっていない');
+        const hash = parse(':::link app: ion-equation/portal id: u-gas text: 気体の発生の反応式を書いてみる :::');
+        assert(hash.href === '/ion-equation/portal.html?from=reference&page=zz-ref28#u-gas', `# の受け口の href が違う: ${hash.href}`);
+        assert(/台帳にありません/.test(red(':::link app: ion-equation/nowhere text: どこにも無い受け口へ飛ぶ :::')), '否定対照: 台帳に無い app が通った');
+        assert(/引数を受けない/.test(red(':::link app: muki/tree id: x text: 系統分離の樹を開いてみよう :::')), '否定対照: 引数の無い受け口に id が通った');
+        assert(/id: が要ります/.test(red(':::link app: ion-equation/battery text: ダニエル電池を組んでみよう :::')),
+            '否定対照: id の要る受け口（受け側の表で id 必須）に id なしが通った');
+        assert(!red(':::link app: muki/akinator text: 無機のアキネーターで遊んでみよう :::'), 'muki/akinator は ?deck= を省略してよい');
+        assert(/どれか1つだけ/.test(red(':::link to: ph app: muki/tree text: 系統分離の樹を開いてみよう :::')), '否定対照: to と app の両方が通った');
+        assert(/知らないキー/.test(red(':::link\napp: muki/tree\nhref: /x\ntext: 系統分離の樹を開いてみよう\n:::')), '否定対照: href を原稿に書けた');
+        // 受け口のページが配信されている（台帳の path の綴り違い）
+        for (const [name, t] of Object.entries(RM.APP_TARGETS)) {
+            const res = await fetch('..' + t.path + FRESH());
+            assert(res.ok, `受け口の台帳「${name}」の ${t.path} が開けない（HTTP ${res.status}）`);
+        }
+        // 実データ: 焼き込んだ href が台帳から組み直したものと同じ（手で直していない・台帳を変えたら焼き直す）
+        const pages = JSON.parse(await grab('reference.json', 'reference.json'));
+        pages.forEach(p => (p.blocks || []).forEach(b => {
+            if (b.kind !== 'link' || !b.app) return;
+            assert(b.href === RM.appHref(b.app, b.id, p.id), `${p.id}: app: ${b.app} の href が台帳と違う（node tools/gen-reference.mjs）`);
+        }));
+
+        /* ── ③ 区分 ── */
+        assert(RM.DIVISIONS.map(d => d.label).join('→') === '有機→無機→理論', '区分の順が 有機→無機→理論 でない');
+        ['alcohol', 'aliphatic', 'org.ali', 'inorg.metal', 'inorg.qual', 'theo.redox', 'theo.acid-base'].concat(pages.map(p => p.unit))
+            .forEach(u => assert(W.refIsOrganic({ unit: u }) === (RM.divisionOf(u) === 'org'),
+                `learn.js の refIsOrganic と書式の divisionOf が「${u}」で割れている`));
+        assert(/区分が読めません/.test(red('検査の段落です。', 'calc.ratio')), '否定対照: 知らない区分の unit が通った');
+        // 面B（資料ペイン）は有機だけ。⚠ 無機のページを1枚まぜて確かめ、必ず元に戻す
+        await book.load();
+        const saved = book.pages;
+        try {
+            book.pages = saved.concat([{ id: 'zz-ref28-inorg', unit: 'inorg.metal', unitLabel: '金属元素', group: '鉄', title: '検査用の無機', blocks: [] }]);
+            const n = await book.renderIndex();
+            const D = W.document;
+            assert(n === saved.filter(W.refIsOrganic).length, `資料ペインの索引が ${n} 件（有機だけのはず）`);
+            assert(!D.querySelector('#reference-list [data-ref-page="zz-ref28-inorg"]'), '資料ペインに無機のページが並んだ');
+        } finally {
+            book.pages = saved;
+            await book.renderIndex();
+        }
+
+        /* ── ④ 画面の切り取り ── */
+        const fig = ':::figure\nsrc: zz-ref28-app-nacl.png\nshot: url=/ion-equation/electrolysis.html?s=e3&x=1 sel=.cell > svg wait=800 状態=開いたまま\n'
+            + 'alt: 塩化ナトリウム水溶液の電気分解の電解槽の図\ncaption: 電気分解\n:::';
+        const fb = parse(fig);
+        const shot = RM.parseShot(fb.shot, 'REF28');
+        assert(shot.url === '/ion-equation/electrolysis.html?s=e3&x=1' && shot.sel === '.cell > svg' && shot.wait === '800',
+            `shot の読みが違う: ${JSON.stringify(shot)}`);
+        assert(/-app-/.test(red(fig.replace('zz-ref28-app-nacl', 'zz-ref28-nacl'))), '否定対照: -app- の無い名前が通った');
+        assert(/両方/.test(red(fig.replace('shot:', 'gen: name=メタン\nshot:'))), '否定対照: gen と shot の両方が通った');
+        assert(/sel=/.test(red(fig.replace(' sel=.cell > svg', ''))), '否定対照: sel の無い shot が通った（画面全体を撮らない）');
+
+        /* ── ⑤ グループ台帳 ── */
+        const ledger = RM.parseGroups(await grab('../qa/GROUPS.tsv', 'グループ台帳'));
+        assert(ledger.length >= 44, `台帳が ${ledger.length} 行（無機23・理論21 のはず）`);
+        assert(ledger.every(r => RM.divisionOf(r.unit) === 'inorg' || RM.divisionOf(r.unit) === 'theo'), '台帳に有機の行がある');
+        const planned = new Set(RM.normalize(await grab('../reference-src/PLANNED.txt', 'PLANNED.txt')).split('\n')
+            .map(s => (/^([a-z0-9][a-z0-9-]*)\s+\S/.exec(s.trim()) || [])[1]).filter(Boolean));
+        const live = new Set(pages.map(p => p.id));
+        ledger.forEach(r => assert(live.has(r.page) || planned.has(r.page),
+            `台帳の「${r.page}」が、書けてもいないし PLANNED.txt にも居ない（他のページから名指しできない）`));
+        pages.filter(p => RM.divisionOf(p.unit) !== 'org').forEach(p => {
+            const r = ledger.find(x => x.page === p.id);
+            assert(r && r.unit === p.unit && r.unitLabel === p.unitLabel && r.group === p.group,
+                `${p.id}: 前書きの unit / unitLabel / group が台帳と違う`);
+        });
     });
 
     /* ===== KT: 還元性の判定（ケトースを陽性にする・v1511） =====

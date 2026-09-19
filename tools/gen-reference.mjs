@@ -89,6 +89,14 @@ function checkLinks(pages, planned) {
                 + 'この行を消してください（「まだ無いページ」の表なので、書けたものが残っていると計画が嘘になります）');
         }
     });
+    /* ★ `app:` の受け口のページがリポジトリに実在する（台帳の path の綴り違いをここで止める・§31-3）。
+       ⚠ id が相手のデータに在るかは受け口の持ち主の test.html の仕事（ここは相手のデータを持たない） */
+    Object.entries(RM.APP_TARGETS).forEach(([name, t]) => {
+        const rel = t.path.replace(/^\//, '') + (t.path.endsWith('/') ? 'index.html' : '');
+        if (!existsSync(path.join(ROOT, rel))) {
+            throw new Error(`tools/reference-md.js の APP_TARGETS「${name}」の行き先 ${t.path} がリポジトリにありません`);
+        }
+    });
     pages.forEach(p => (p.blocks || []).forEach(b => {
         if (b.kind !== 'link' || !b.to) return;
         if (live.has(b.to) || planned.has(b.to)) return;
@@ -97,6 +105,76 @@ function checkLinks(pages, planned) {
             + `   まだ無いがリンクしてよいページ: ${planned.size ? [...planned.keys()].join(' / ') : '(なし)'}\n`
             + '   ★ 綴りが合っているなら、reference-src/PLANNED.txt に1行足してください（「id␣␣表示名」）');
     }));
+}
+
+/* ★★ 区分とグループ台帳（設計書 §31-1・§31-5・2026-09-19 便0a）。⚠ ディレクトリと qa を読めるのはここだけ。
+ *
+ * 見るのは4つ:
+ *   ① ORDER.txt の並びが **区分の順**（有機 → 無機 → 理論）を崩していない
+ *   ② `inorg.*` / `theo.*` のページは **qa/GROUPS.tsv の自分の行**と unit・unitLabel・group が一致する
+ *      （⚠ 綴りが1字違うと、後で qa が項目を作ったときに「同じグループ」にならない）
+ *   ③ 台帳のページは **書けているか、PLANNED.txt に居る**（＝ 他の便が `to:` で名指しできる）
+ *      ★ 無機・理論のページどうしの並びは台帳の「並び」の順
+ *   ④ ★ 黄: 台帳のグループに qa の項目が付いたのに、ページが `codes:` を持っていない（赤にしない ——
+ *      ページを書く人と qa を作る人が別の便なので、どちらかが先に進むのは普通のこと）
+ */
+const GROUPS = path.join(ROOT, 'qa', 'GROUPS.tsv');
+function checkDivisions(pages, planned) {
+    const rank = k => RM.DIVISIONS.findIndex(d => d.key === k);
+    let last = 0, lastId = null;
+    pages.forEach(p => {
+        const r = rank(RM.divisionOf(p.unit));
+        if (r < last) {
+            throw new Error(`reference-src/ORDER.txt: 「${p.id}」（${RM.divisionLabel(RM.divisionOf(p.unit))}）が`
+                + `「${lastId}」より後ろにあります。索引は区分ごとに ${RM.DIVISIONS.map(d => d.label).join(' → ')} の順に並べます`);
+        }
+        last = r; lastId = p.id;
+    });
+    if (!existsSync(GROUPS)) throw new Error('qa/GROUPS.tsv（グループ台帳）がありません');
+    const rows = RM.parseGroups(readFileSync(GROUPS, 'utf8'));
+    const byPage = new Map(rows.map(r => [r.page, r]));
+    const live = new Set(pages.map(p => p.id));
+    let lastOrder = -1, lastLedgerId = null;
+    pages.forEach(p => {
+        if (RM.divisionOf(p.unit) === 'org') return;
+        const row = byPage.get(p.id);
+        if (!row) {
+            throw new Error(`reference-src/${p.id}.md: unit が ${p.unit} のページは qa/GROUPS.tsv（グループ台帳）に行が要ります\n`
+                + '   ★ 1グループ＝1ページ。束ね方は台帳が決め、qa と参考書の両方が従います（ref-inorg-design §1-3）');
+        }
+        ['unit', 'unitLabel', 'group'].forEach(k => {
+            if (p[k] !== row[k]) {
+                throw new Error(`reference-src/${p.id}.md: 前書きの ${k} が「${p[k]}」で、qa/GROUPS.tsv の「${row[k]}」と違います`
+                    + '（綴りがずれると、qa が項目を作ったときに同じグループになりません）');
+            }
+        });
+        const o = Number(row.order);
+        if (o < lastOrder) {
+            throw new Error(`reference-src/ORDER.txt: 「${p.id}」（台帳の並び ${row.order}）が「${lastLedgerId}」より後ろにあります`
+                + '（無機・理論の並びは qa/GROUPS.tsv の「並び」の順）');
+        }
+        lastOrder = o; lastLedgerId = p.id;
+    });
+    const lost = rows.filter(r => !live.has(r.page) && !planned.has(r.page)).map(r => r.page);
+    if (lost.length) {
+        throw new Error(`qa/GROUPS.tsv のページが、書けてもいないし PLANNED.txt にも居ません: ${lost.join(', ')}\n`
+            + '   ★ まだ書いていないなら reference-src/PLANNED.txt に「id␣␣表示名」を1行足します（他のページから名指しできるように）');
+    }
+    /* ④ 黄（止めない） */
+    const qf = path.join(ROOT, 'qa', 'questions.json');
+    if (!existsSync(qf)) return;
+    const pats = (JSON.parse(readFileSync(qf, 'utf8')).patterns || []);
+    const yellow = [];
+    rows.forEach(r => {
+        if (!live.has(r.page)) return;
+        const n = pats.filter(q => String(q.code).startsWith(r.unit + '.') && q.group === r.group).length;
+        const page = pages.find(p => p.id === r.page);
+        if (n && !(page.codes || []).length) yellow.push(`${r.page}（${r.unit} / ${r.group} に qa の項目 ${n} 件）`);
+    });
+    if (yellow.length) {
+        console.log(`🟡 qa に項目ができたのに codes: を持っていないページ ${yellow.length} 枚（止めません。codes: を足してください）`);
+        yellow.forEach(s => console.log('   ' + s));
+    }
 }
 
 /* ★★ 図のファイル（`reference-img/`）を見る（設計書 §20-10）。⚠⚠ **ここでしか見られない** ——
@@ -277,7 +355,9 @@ function main() {
     let pages;
     try {
         pages = buildPages();
-        checkLinks(pages, readPlanned());
+        const planned = readPlanned();
+        checkLinks(pages, planned);
+        checkDivisions(pages, planned);
         checkFigures(pages);
         reportMistakes(pages);
     } catch (e) {
