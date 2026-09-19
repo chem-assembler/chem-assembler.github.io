@@ -69,6 +69,7 @@ flame-color
 cation-separation
 molecular-shape
 intermolecular-force
+crystal-types
 acid-base-definition
 acid-base-strength
 ph
