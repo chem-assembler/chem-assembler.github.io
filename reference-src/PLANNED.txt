@@ -45,11 +45,6 @@ gas-solubility            気体の溶解度 —— ヘンリーの法則
 colligative               希薄溶液の性質 —— 蒸気圧降下・沸点上昇・凝固点降下
 osmotic-pressure          浸透圧 —— 気体と同じ式
 colloid                   コロイド
-reaction-enthalpy         反応エンタルピーと熱化学反応式
-heat-measurement          熱量の測定 —— 温度変化のグラフを延ばす
-hess-law                  ヘスの法則 —— エネルギー図の高さで足し引き
-bond-enthalpy             結合エンタルピー
-light-energy              化学反応と光
 reaction-rate             反応速度の表し方 —— 主語と単位
 rate-law                  反応速度式と反応の次数
 activation-energy         反応の速さを変える条件 —— 活性化エネルギーと触媒
