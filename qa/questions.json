@@ -14762,7 +14762,7 @@
       "req": [
         "org.bio.amino-acid-sidechain",
         "org.bio.zwitterion-ph",
-        "theo.acid-base.polyprotic"
+        "theo.ionic-eq.polyprotic"
       ],
       "knowledge": "中性アミノ酸は二段階の電離平衡を示すが、側鎖に余分なカルボキシ基やアミノ基をもつ酸性・塩基性アミノ酸は三段階の電離平衡を示す。",
       "variants": [
