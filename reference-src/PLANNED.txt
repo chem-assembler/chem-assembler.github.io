@@ -45,7 +45,6 @@ complex-ion           錯イオン
 titration             中和滴定
 neutralization        中和反応と量的関係
 hydrogen-noble-gas    水素と貴ガス
-precipitate           沈殿の生成と色
 flame-color           炎色反応と水溶液の色
 cation-separation     金属イオンの系統分離
 
