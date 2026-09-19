@@ -97,3 +97,8 @@ heat-measurement
 hess-law
 bond-enthalpy
 light-energy
+weak-acid-equilibrium
+hydrolysis-ph
+buffer
+polyprotic-acid
+solubility-product
