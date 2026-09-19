@@ -51,11 +51,6 @@ activation-energy         反応の速さを変える条件 —— 活性化エ�
 equilibrium-constant      化学平衡と平衡定数 —— 生成物が分子
 le-chatelier              平衡の移動 —— ルシャトリエの原理
 pressure-equilibrium      圧平衡定数と解離度
-weak-acid-equilibrium     弱酸・弱塩基の電離平衡 —— Ka ＝ cα²
-hydrolysis-ph             塩の加水分解と pH —— Kh ＝ ch²
-buffer                    緩衝液 —— 両方そろうと緩衝液
-polyprotic-acid           2段階電離 —— pH は1段目だけ
-solubility-product        溶解度積 —— 沈殿の判定と硫化物の分離
 
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
