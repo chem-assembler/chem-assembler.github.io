@@ -92,3 +92,4 @@ weak-acid-equilibrium
 hydrolysis-ph
 buffer
 polyprotic-acid
+solubility-product
