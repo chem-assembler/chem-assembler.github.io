@@ -217,6 +217,7 @@ header a:hover{color:var(--brand)}
 h1{font-size:clamp(22px,4.4vw,32px);margin:30px 0 10px;line-height:1.45;letter-spacing:.01em}
 h2{font-size:19px;margin:44px 0 14px;padding-bottom:7px;border-bottom:2px solid var(--line)}
 h3{font-size:16px;margin:28px 0 8px;color:var(--dim)}
+h4{font-size:14.5px;margin:18px 0 8px;color:var(--dim);font-weight:700}
 .lede{color:var(--dim);margin:0 0 22px;font-size:15.5px;line-height:1.85}
 .unit-label{display:inline-block;font-size:12px;color:var(--dim);background:#eae6de;border:1px solid var(--line);
 border-radius:999px;padding:3px 12px;margin:0 6px 6px 0}
@@ -569,7 +570,11 @@ function checkLightCoverage(extracted, light) {
     }
 }
 
-function page({ title, desc, canonical, crumb, body, css }) {
+/* ★ フッターの1文（§31-1）。⚠ 「表はパズルでみる有機化学が組んだ」は**有機のページのときだけ**本当 ——
+   無機・理論のページ・区分をまたぐ索引には出さない */
+const FOOT_ORG = '表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。\n';
+
+function page({ title, desc, canonical, crumb, body, css, foot = '' }) {
     return `<!doctype html>
 <html lang="ja">
 <head>
@@ -599,8 +604,7 @@ ${css}</style>
 <main class="wrap">
 ${body}
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">${foot}Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>
 `;
@@ -713,7 +717,13 @@ function embedBox(label, lead, src, alt) {
  * ========================================================================== */
 function referencePage(p, blocksHtml, tocHtml, prev, next) {
     const utm = `&utm_source=reference&utm_medium=internal&utm_campaign=${p.id}`;
-    const crumb = `<a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a>`;
+    /* ★★ 区分で出し分ける（§31-1）。⚠ 有機のページは今までどおり（1バイトも変えない）。
+       無機・理論は assembler を通らない —— 「化学レンズ ／ 参考書 ／ 無機」 */
+    const div = RM.divisionOf(p.unit);
+    const isOrg = div === 'org';
+    const crumb = isOrg
+        ? `<a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a>`
+        : `<a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ ${esc(RM.divisionLabel(div))}`;
 
     /* ★ 動画は `video:` が在るページだけ。⚠ 無ければ**枠そのものを出さない**（`REF18` ⑤） */
     const video = p.video
@@ -729,7 +739,9 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
        ⚠ **「0問」と書いた箱を出さない**（`video` と同じ扱い。枠そのものを出さない）。 */
     const codes = p.codes || [];
     const qaSrc = codes.length ? `/qa/?codes=${codes.map(encodeURIComponent).join(',')}&mode=choice&from=reference` : '';
-    const appSrc = codes.length ? `/assembler/?open=reference&code=${encodeURIComponent(codes[0])}` : '';
+    /* ⚠ 「▶ アプリの中で開く」は**有機だけ**（§31-1）—— 資料ペインは有機のページしか並べない。
+       無機・理論の「試す」は本文の `:::link app:` が受け持つ */
+    const appSrc = codes.length && isOrg ? `/assembler/?open=reference&code=${encodeURIComponent(codes[0])}` : '';
 
     const body = `<h1>${esc(p.title)}</h1>
 <p class="lede">${esc(p.summary)}</p>
@@ -745,10 +757,10 @@ ${codes.length ? `
 <h2>解けるか試す</h2>
 ${embedBox(`▶ 一問一答で解く（${codes.length}問・測定モード）`,
             'このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。', qaSrc, true)}
-
+${appSrc ? `
 <h2>読みながら組む</h2>
 ${embedBox('▶ アプリの中で開く', 'このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。', appSrc, true)}
-` : ''}
+` : ''}` : ''}
 <nav class="seq">${prev ? `<a href="/reference/${prev.id}/">← ${esc(prev.title)}</a>` : ''}
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
@@ -757,7 +769,7 @@ ${EMBED_JS}
 ${tocHtml ? TOC_JS : ''}
 ${(p.blocks || []).some(b => b.kind === 'section' && b.advanced) ? advJs() : ''}`;
 
-    return { crumb, body, utm };
+    return { crumb, body, utm, foot: isOrg ? FOOT_ORG : '' };
 }
 
 /* ============================================================================
@@ -797,38 +809,44 @@ function termsPage(pages) {
 <nav class="seq"><a href="/reference/">参考書の目次</a></nav>`;
     return page({
         title: '用語から引く ｜ 化学の参考書',
-        desc: `有機化学の用語から、参考書の該当する節へ直接飛べる索引（${rows.length}件）。`
+        /* ⚠ 有機に限らない（§31-1）。無機・理論の節もここに並ぶ */
+        desc: `化学の用語から、参考書の該当する節へ直接飛べる索引（${rows.length}件）。`
             + '節の見出しと各節が扱う用語から機械で作っています。',
         canonical: `${ORIGIN}/reference/terms/`,
-        crumb: '<a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a> ／ 用語',
+        crumb: '<a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 用語',
         body, css: '',
     });
 }
 
-/* ★ 索引は `unit` → `group` の2階層（R-3）。⚠ **並びは ORDER.txt のまま**（順を発明しない） */
+/* ★ 索引は **区分 → `unit` → `group` の3階層**（§31-1・2026-09-19。前は unit → group の2階層）。
+   ⚠ **並びは ORDER.txt のまま**（順を発明しない）。区分の順（有機 → 無機 → 理論）は
+     `gen-reference.mjs` が ORDER.txt の側で守らせている ＝ ここで並べ替えない */
 function indexPage(pages) {
-    const units = [];
+    const divs = [];
     pages.forEach(p => {
-        let u = units.find(x => x.unit === p.unit);
-        if (!u) { u = { unit: p.unit, label: p.unitLabel, groups: [] }; units.push(u); }
+        const key = RM.divisionOf(p.unit);
+        let d = divs.find(x => x.key === key);
+        if (!d) { d = { key, label: RM.divisionLabel(key), units: [] }; divs.push(d); }
+        let u = d.units.find(x => x.unit === p.unit);
+        if (!u) { u = { unit: p.unit, label: p.unitLabel, groups: [] }; d.units.push(u); }
         let g = u.groups.find(x => x.name === p.group);
         if (!g) { g = { name: p.group, pages: [] }; u.groups.push(g); }
         g.pages.push(p);
     });
-    const body = `<h1>化学の参考書 — 表で読む有機化学</h1>
-<p class="lede">1つの分子を見ているだけでは規則にならないことを、<b>並べて</b>読むページです。
-どの表もアプリの出題データからその場で組んだもので、抜けも重複もありません。
-読んだあとは、同じ画面で一問一答を解いたり、分子を組んだりできます。</p>
+    const body = `<h1>化学の参考書</h1>
+<p class="lede">1つの分子や1本の反応式を見ているだけでは規則にならないことを、<b>並べて</b>読むページです。
+有機・無機・理論の順に並んでいます。
+読んだあとは、同じ画面から一問一答やアプリで試せます。</p>
 <nav class="seq"><a href="/reference/terms/">用語から引く（マルコフニコフ則・置換反応…）</a></nav>
-${units.map(u => `<h2>${esc(u.label)}</h2>\n` + u.groups.map(g =>
-        `<h3>${esc(g.name)}</h3>\n<ul class="idx">` + g.pages.map(p =>
+${divs.map(d => `<h2>${esc(d.label)}</h2>\n` + d.units.map(u => `<h3>${esc(u.label)}</h3>\n` + u.groups.map(g =>
+        `<h4>${esc(g.name)}</h4>\n<ul class="idx">` + g.pages.map(p =>
             `<li><a href="/reference/${p.id}/"><b>${esc(p.title)}</b><span>${esc(p.summary)}</span></a></li>`
-        ).join('') + '</ul>').join('\n')).join('\n')}`;
+        ).join('') + '</ul>').join('\n')).join('\n')).join('\n')}`;
     return page({
-        title: '化学の参考書 — 表で読む有機化学 ｜ 化学レンズ',
-        desc: '有機化学を「1分子では見えない規則」の側から読む参考書。表はすべてアプリが出題データから数え上げたもので、読んだその場で一問一答を解き、分子を組んで確かめられます。',
+        title: '化学の参考書 ｜ 化学レンズ',
+        desc: '化学を「1つだけでは見えない規則」の側から、並べて読む参考書。有機・無機・理論の順に並び、有機の表はアプリが出題データから数え上げたものです。',
         canonical: `${ORIGIN}/reference/`,
-        crumb: '<a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ 参考書',
+        crumb: '<a href="/">化学レンズ</a> ／ 参考書',
         body,
         css: '',
     });
@@ -954,12 +972,12 @@ const files = new Map();
 files.set(path.join(OUT, 'index.html'), indexPage(pages));
 files.set(path.join(OUT, 'terms', 'index.html'), termsPage(pages));
 baked.forEach(({ p, html, toc }, i) => {
-    const { crumb, body } = referencePage(p, html, toc, pages[i - 1] || null, pages[i + 1] || null);
+    const { crumb, body, foot } = referencePage(p, html, toc, pages[i - 1] || null, pages[i + 1] || null);
     files.set(path.join(OUT, p.id, 'index.html'), page({
         title: `${p.title} ｜ 化学の参考書`,
         desc: p.summary,
         canonical: `${ORIGIN}/reference/${p.id}/`,
-        crumb, body, css: CSS,
+        crumb, body, css: CSS, foot,
     }));
 });
 

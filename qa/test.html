@@ -22,16 +22,16 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 </style>
 </head>
 <body>
-<h1>一問一答（qa）回帰テスト <span class="version">v145</span></h1>
+<h1>一問一答（qa）回帰テスト <span class="version">v146</span></h1>
 <h2 id="total">実行中…</h2>
 <div id="results"></div>
 
 <h3>テスト対象アプリ（iframe・UIテストが操作する）</h3>
-<iframe id="app" src="index.html?v=145"></iframe>
+<iframe id="app" src="index.html?v=146"></iframe>
 
 <!-- Lv の規則と関所（道具と共有・2026-09-17）。tests.js の runLevelMatrixTests が使う -->
-<script src="tools/level_rules.js?v=145"></script>
-<script src="tests.js?v=145"></script>
+<script src="tools/level_rules.js?v=146"></script>
+<script src="tests.js?v=146"></script>
 <script>
 (function () {
   var out = document.getElementById('results');
@@ -80,14 +80,14 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
 
   // データと版のテスト → アプリの読み込みを待って UI テスト
   Promise.all([
-    fetch('questions.json?v=145').then(function (r) { return r.json(); }),
-    fetch('index.html?v=145').then(function (r) { return r.text(); }),
-    fetch('app.js?v=145').then(function (r) { return r.text(); }),
+    fetch('questions.json?v=146').then(function (r) { return r.json(); }),
+    fetch('index.html?v=146').then(function (r) { return r.text(); }),
+    fetch('app.js?v=146').then(function (r) { return r.text(); }),
     // 隣のアプリのデータ（飛び道具の指す先が実在するかを実データで検査するため）
     fetch('../assembler/compounds.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     fetch('../assembler/stages.json' + FRESH).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
     // 棚卸し表（283項目に「何を見せるか」を決めた正の表。JSONL なので1行ずつ読む）
-    fetch('data/assembler_links.jsonl?v=145').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/assembler_links.jsonl?v=146').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
       }).catch(function () { return []; }),
@@ -116,13 +116,15 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
     fetch('../assembler/reference.json' + FRESH).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; }),
     // Lv の根拠の表（2026-09-17）。正の jsonl と、人が読む生成物の md。
     // Lv を書き換える道具の本体も読む（上書きの関所を通っているかを見る）。⚠ **末尾に足す**
-    fetch('data/level_matrix.jsonl?v=145').then(function (r) { return r.ok ? r.text() : ''; })
+    fetch('data/level_matrix.jsonl?v=146').then(function (r) { return r.ok ? r.text() : ''; })
       .then(function (txt) {
         return txt.split(/\r?\n/).filter(function (l) { return l.trim(); }).map(function (l) { return JSON.parse(l); });
       }).catch(function () { return []; }),
     fetch('LEVEL_MATRIX.md' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
     fetch('tools/apply_seminar_levels.js' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
-    fetch('tools/build_evidence.js' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; })
+    fetch('tools/build_evidence.js' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; }),
+    // グループ台帳（2026-09-19）。無機・理論の束ね方を問いより先に決めた表。⚠ **末尾に足す**
+    fetch('GROUPS.tsv' + FRESH).then(function (r) { return r.ok ? r.text() : ''; }).catch(function () { return ''; })
   ]).then(function (res) {
     var DATA = res[0], indexHtml = res[1], appJs = res[2], COMPOUNDS = res[3], STAGES = res[4], LINKS = res[5];
     var REACTOR_JS = res[6], QUIZ_JS = res[7], REACTIONS = res[8], USAGE_TEXT = res[9], LEDGER = res[10];
@@ -138,6 +140,7 @@ iframe { width: 960px; max-width: 100%; height: 640px; border: 1px solid #ccc; b
     section('確度の一覧（CERTAINTY_LEDGER.md との一致）', runLedgerTests(DATA, LEDGER));
     section('Lv の根拠の表（level_matrix.jsonl・LEVEL_MATRIX.md・道具の関所）',
       runLevelMatrixTests(DATA, LEVEL_ROWS, LEVEL_MD, window.LevelRules, LEVEL_TOOLS, USAGE_TEXT));
+    section('グループ台帳（GROUPS.tsv・無機と理論の束ね方）', runGroupTests(DATA, res[17]));
 
     var frame = document.getElementById('app');
     function whenReady(cb) {

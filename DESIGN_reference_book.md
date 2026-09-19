@@ -3913,3 +3913,83 @@ qa の group「分類・一般式」に合わせて **`hydrocarbon-classes`** �
 
 ★ `REF27` ②③ が「数だけの列が右へ寄る」「単位つきの列は寄らない」「原稿の `align` が勝つ」を見張る。
 ⚠ 判定の綴りは `learn.js` の1本（`window.refNumericColumns`）で、**検査に書き写していない**。
+
+## §31 ★★ 無機・理論へ広げる器（2026-09-19・便0a・v1596）
+
+★ 設計の正は統合側の `ref-inorg-design.md`（§4 置き場所・§5 図・§6 つなぎ・§7 便の割り方）。
+ここはこの器で**足した書式と、機械が見ていること**だけを書く。書式の実装は `tools/reference-md.js` の1本。
+
+### 31-1. 区分（有機・無機・理論）
+
+- ⚠ **前書きにキーを足していない**（校正中の有機46枚を1文字も触らない）。区分は `unit` の頭で決まる:
+  `inorg.*` → 無機、`theo.*` → 理論、点の無い素の名前（`alcohol` など）と `org.*` → 有機。対応表は `RM.divisionOf` の1本。
+  頭が知らない語（`calc.ratio` など）は赤。
+- 索引（`/reference/`）は **区分（h2）→ unit（h3）→ group（h4）** の3段。h1 は「化学の参考書」（中立）。
+- ORDER.txt は区分の順（有機 → 無機 → 理論）を崩せない（`gen-reference.mjs` が赤）。
+- 面A: 有機以外のページのパンくずは `化学レンズ ／ 参考書 ／ 無機`、フッターの「表はパズルでみる有機化学が…」は有機のページだけ。
+  「▶ アプリの中で開く」の箱は有機だけ（codes を持っていても無機・理論には出さない）。用語の索引・索引の文言は中立。
+- 面B（資料ペイン）は **有機のページだけ**を並べる（`learn.js` の `refIsOrganic`。書式の `divisionOf` と割れていないことは `REF28`）。
+  面Bの中の `to:` が無機・理論のページを指したら、別のタブで面Aを開く。
+
+### 31-2. 可逆の矢印 `arrow: ⇄`
+
+```
+:::reaction
+left: Cl₂ ＋ H₂O
+arrow: ⇄
+right: HCl ＋ HClO
+level: ★★★
+:::
+```
+- 書けるのは `→` と `⇄` だけ。**書かなければ →**（有機の既存の式は変わらない）。
+- ⛔ `left` / `right` / `over` / `under` に ⇄（⇌ ⇆ も）を書くと赤（式の中に矢印を書く逃げ道を作らない）。
+
+### 31-3. ほかのアプリへのリンク `app:` ＋ `id:`
+
+```
+:::link
+app: ion-equation/redox
+id: rs1
+text: 過マンガン酸カリウムと鉄(Ⅱ)イオンの反応式を、半反応式から組み立てる
+:::
+```
+- ★ `app:` の値は **受け口の台帳 `APP_TARGETS`（tools/reference-md.js）の名前だけ**。⛔ URL は原稿に書かない。
+  名前は受け側（便0b）の検査の表とそろえてある: ion-equation/tests.js の `refReceiversIon`・ratio/tests.js・muki/tests.js の `refReceivers`。
+- 台帳（名前 → パス・引数）:
+  `ion-equation`・`ion-equation/index`（`/ion-equation/?rxn=`）／`ion-equation/redox`（`?rxn=`）／`ion-equation/oxidation`（`?sp=`）／
+  `ion-equation/halfreaction`（`?q=` カンマ区切り）／`ion-equation/halflist`（id なし）／`ion-equation/battery`・`electrolysis`・`condition`（`?s=`）／
+  `ion-equation/portal`（`#u-…` `#sr-…`）／`muki`・`muki/index`（`/muki/?open=`）／`muki/akinator`（`?deck=`・省略可）／
+  `muki/separation`・`muki/tree`・`muki/snake`（id なし）／`ratio/stoich`（`?r=`）／`ratio/titration`（id なし）
+- 引数を取る受け口は **id 必須**（省略できるのは `muki/akinator` だけ）。取らない受け口に id を書くと赤。
+- `href` は **読むときに焼き込む**（`soon` と同じ扱い・原稿には書けない）。戻り道として `from=reference&page=<ページid>` を必ず付ける
+  （CLAUDE.md「アプリ横断のリンクは往復にする」。受け側はこれで「← 参考書へ戻る」を出す）。
+- ⚠ **id が相手のデータに在るかは、受け口の持ち主の test.html が見る**（`reference.json` を読む。便0b）。
+  参考書の側は「台帳の受け口のページが配信されているか」（`gen-reference.mjs` と `REF28`）まで。
+
+### 31-4. アプリの画面の切り取り `shot:`（`:::figure`）
+
+```
+:::figure
+src: electrolysis-basics-app-nacl.png
+shot: url=/ion-equation/electrolysis.html?s=e3 sel=#cell wait=800 状態=開いたまま
+alt: …
+caption: …
+:::
+```
+- `url=`（必須・ルートからのパス）・`sel=`（必須・撮る要素。画面全体は撮らない）・`wait=`（ミリ秒）・`scale=`（1 か 2）・`状態=`（覚え書き）。
+- src は `<ページid>-app-<中身>.png`。`gen:` と同じ図には書けない。この欄は画面に出さない（`&` `>` を素で書ける）。
+- 撮るのは `node tools/gen-app-figure.mjs --port=<ポート> [ページid]`（`--check` は在るかだけ）。
+  ⚠ **同じ URL を2回撮って1バイトでも違えば赤** ＝ 抽選の画面（muki の tree / separation / snake）を黙って焼かない（実測で赤になった）。
+
+### 31-5. グループ台帳 `qa/GROUPS.tsv`
+
+- 無機・理論の「unit → group → ページ id」を **問いより先に**決めた表（ref-inorg-design §1-3 の案C）。44行。置き場所は qa（コードの持ち主）。
+- 参考書: `inorg.*`/`theo.*` のページは台帳の自分の行と unit・unitLabel・group が一致し、並びは台帳の順。台帳のページは書けているか PLANNED.txt に居る。
+  codes を持たなくてよい（`REF17` ④ の「codes 無しは2枚だけ」は有機の中だけの名指しになった）。
+- qa: `inorg.*`/`theo.*` の項目の group は台帳の同じ unit に在ること（qa の test.html）。
+- 🟡 台帳のグループに qa の項目が付いたのに、ページが `codes:` を持っていなければ `gen-reference.mjs` が一覧を出す（止めない）。
+
+### 31-6. 仮置きのメモを移す `tools/migrate-ref-memos.mjs`
+
+ドラフトの便は器が入るまで `//app:`・`//⇄`・`//撮影:` のメモで待っている（発注書のひな形 §3-5・§4-2・§5）。
+`node tools/migrate-ref-memos.mjs [ページid…]` で見て、`--write` で移す（移せないものは残して一覧に出す）。そのあと `gen-reference.mjs`。
