@@ -2,7 +2,7 @@
 id: inorg-reaction-types
 unit: inorg.basis
 unitLabel: 無機の土台
-group: 反応の型
+group: 無機の反応の型
 title: 無機の反応は5つの型で読む
 summary: 無機の反応式は、中和・遊離・酸化還元・沈殿・錯イオンの5つの型のどれかに当てはまります。型を見分けて、型ごとの書き方のページへ進むための入口です。
 source:

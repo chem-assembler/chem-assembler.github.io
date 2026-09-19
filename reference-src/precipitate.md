@@ -2,7 +2,7 @@
 id: precipitate
 unit: inorg.qual
 unitLabel: イオンを見分ける
-group: 沈殿
+group: 沈殿の生成と色
 title: 沈殿の生成と色
 summary: どの陰イオンが、どの陽イオンと沈殿をつくるかを、陰イオンごとに並べました。色と「酸に溶けるか」も一緒に覚えます。硫化物だけは、液性で沈むかどうかが変わります。
 source:

@@ -2,7 +2,7 @@
 id: chlorine
 unit: inorg.nonmetal
 unitLabel: 非金属元素
-group: 塩素と塩化水素
+group: 塩素
 title: 塩素と塩化水素
 summary: 塩素 Cl₂ と塩化水素 HCl のまとめ。Cl₂ の性質表・実験室的製法と洗気瓶・水との反応・さらし粉、HCl の性質表・製法・酸と還元剤と沈殿の3つの顔、次亜塩素酸イオンと塩素のオキソ酸を1枚にしました。
 source:
