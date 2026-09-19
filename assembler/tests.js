@@ -22,7 +22,7 @@
  * | BZ  | 1〜7   | ベンゼン環を種にした異性体列挙（C₈H₁₀ の4種・環の対称性・環外の上限）。**6〜7 は選択画面のプリセット**＝ DESIGN_practice_revision.md §4-3。6 は「押すだけで芳香族の回が開き、環4つで 4/4」・**7 は否定対照**＝ 芳香族のボタンが生の列挙（`problems` → `enumerateConstitutionalIsomers`）の道へ落ちていないこと |
  * | C   | 1〜9   | 作図の基本操作・Undo・削除 |
  * | CD  | 1〜4   | キャンバス側の畳んだ描画（**2〜4 はエステル -COO- の縮約**＝ DESIGN_chain_condense.md「中間の原子団を畳む」。2 が畳めること・往復、**3 が否定対照＝畳んでも作図データ（canonicalCode）が1文字も変わらない**、4 が取りすぎの対照＝酸無水物・環状エステル・アミドは畳まない） |
- * | CF  | 1〜5   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致） |
+ * | CF  | 1〜6   | 官能基の細目（アミンの級数・カルボン酸の塩・R や Cl を水素と取り違えない・要点と官能基検出の一致・**6 は酸無水物をエステルと呼ばない**＝ anhydride 型〈v1592〉。画面3か所・絞り込みの ester/lactone/M12・反応とクイズの件数まで見る） |
  * | CS  | 1〜5   | ★★ **「条件にある構造を書き出す」**（v1510・ユーザー原文 2026-09-03「書き出しを充実させ／一通りすべて書き出させる／条件にある構造を書き出す／に分けるイメージです」。設計は `DESIGN_isomer_practice.md` §20）。**書き出しの面が2種類に分かれた**ので、①（分子式＋分類で全部）と②（条件で1〜数個）が**画面から読み取れる**ことがまず要件。1 が本体（見出し2本・②が①の中に埋まっていない・13件を開いて答えを**名前で**突き合わせ・見出しと作業帯が条件そのものを名乗る）・**2 は否定対照**＝ 同じ分子式でも条件に合わない構造は `scope` で断られ、断り文が条件を名乗る（＋合う構造は `ok` ＝ ①が「何でも scope」の空振りでないこと）・**3 は在庫の門番**＝ C₂〜C₅ を総当たりして出題を作り直し集合ごと突き合わせる。⚠⚠ **落としているのは「ザイツェフ／マルコフニコフの主生成物だけを数えるか、副生成物まで数えるかで答えが変わるもの」11件だけで、答えの少なさではない**（ユーザー明言「答えが多くない書き出し問題は練習問題として有用」＝ `IP_MIN_ISOMERS` はこの型に掛けない。**答えが1種の回が4件 出荷されている**ことをここで固定する）・**4 は「立体異性体の有無」**＝ 13件すべてが `stereoAsked`（★ 段が「立体異性体がある回」にだけ出ると**段の有無が答えを漏らす**）で、**あり6件・なし7件を名指し**・**5 は陰性対照**＝ ②を足しても①の答えの数が1つも動かない（開く前後のスナップショット比較。`IP4` の既知値の表とは別の壊れ方＝キャッシュ汚染を見る）＋記録の鍵が①と衝突しない |
  * | CT  | 1      | ★★ **添え物の字のコントラスト**（v1530・WCAG 2.1 AA。設計は `DESIGN_reference_book.md` §21）。⚠⚠ `--text-muted: #606880` が **20 種の字**で AA（4.5:1）を割っていた —— どれも 12px 前後なので**「大きい字の緩和（3:1）」も使えない**。★ 直したのは `:root` の1行なので**誰かが1文字直せば黙って戻る** ＝ ここが門番。1 は `--text-muted` で描かれた字を3面（🧪自由・📚学習・📖資料ペイン）で集め、**祖先をさかのぼって組み立てた実効の地**（パネル・モーダル・薄敷きが重なるほど地は明るくなり比は**下がる**。実測で 3.14〜3.57 の幅があった ＝ `--bg-main` の上だけ見るといちばん悪い場所を 0.4 ぶん見落とす）に対して比を出す。★ **緩和は実測の px と太さで判定**（18.66px 以上の太字 or 24px 以上）。★ **空振りで緑にしない**（10 件未満・3面そろわなければ赤）。★ **否定対照を自分の中に持つ**＝ 直す前の `#606880` を同じ地に載せると 10 件以上が割れること（地の組み立てか比の式が壊れたら「全部合格」ではなくここが赤くなる）。⚠ **名簿は持たない**（1変数の話なので要らない）。⚠ 面を 40 通り・全部の文字まで広く見るのは`tools/check-contrast.mjs` の係で、**あちらは手で走らせるもの ＝ 門番ではない**（§21-6） |
  * | CV  | 1〜4   | **切る反応の印**（v1490・ユーザー実機報告「加水分解時に、マーカーが酢酸のほうにしかつきません。エタノールにもつくべきでは？」）。**`changed:` は 34か所あって書き方がばらばら**で、エステルの加水分解／けん化／酸無水物の加水分解は切り離される側の酸素が落ち、グリコシド結合の加水分解は入っていた ＝ うっかりではなく「印の列挙を人に任せる設計」の問題。**1 は悉皆**＝ 切る反応を人が並べず、`REACTION_RULES` を実際に走らせて**連結成分が分かれたかどうか**で対象を決める（題材はライブラリ全件から自動で拾い、相手の分子が要る 12 本だけ `CV_PAIR_SAMPLES` に手で書く）。⚠ **見張れた本数と題材が無い本数を緑のときも画面に出す**（絞って「全部通った」を作らないため。実測 48/48 本・題材なし0本・実際に分かれた 14 本）。**いちど分かれた反応が分かれなくなったら赤**（`CV_MUST_SPLIT` のラチェット。題材はライブラリから自動で拾うので、拾われる分子が環状のもの＝切っても分子の数が増えない相手に化けると、`cut` から `intact` へ移るだけで黙って見逃す）。**脱離した水は対象外**（`parkAsWater` の `fromReaction` で機械的に引く。理由は「印は変化点を指すもので生成物の目録ではない」）。**2 は否定対照**＝ もともと正しく動いていたスクロースの加水分解が同じ物差しで通る（＝ 1 の赤が空振りでない）。**3 も否定対照**＝ ①「印が2つ以上ある」では通ってしまうこと（酸の側だけで2つ出る）・②直しを外すと同じ物差しが赤くなること・③水の除外が広がっていないこと（除外した成分は必ず酸素1個）。**4 は分子が増えない反応まで広げた悉皆**（v1500）＝ 反応の前後で「重原子ごとの隣の原子 id ＋ 結合次数」を取り、変わったのに印が無い／変わっていないのに印がある を全 49 本で見る。⚠ **1 は分かれた成分しか見ないので、分子が増えない 35 本は無検査だった** —— 実測で4本の赤（ジエン重合の中央へ移った C=C 6個・加硫の相方2個・ヨードホルムの O 1個の渡し落とし／ビニロンの cA・cB の渡しすぎ）。名指しの許容は2件・変化なしが正しい `_info` 6本も名指しで固定 |
@@ -12055,6 +12055,7 @@
         const PAIRS = [
             ['カルボキシ基 -COOH', 'carboxyl'],
             ['エステル結合 -COO-', 'ester'],
+            ['酸無水物 -CO-O-CO-', 'anhydride'],
             ['アミド結合 -CO-N<', 'amide'],
             ['アルデヒド基 -CHO', 'aldehyde'],
             ['ケトンの C=O', 'ketone'],
@@ -12077,6 +12078,115 @@
         });
         assert(mismatches.length === 0,
             `構造の要点と官能基検出が食い違う図が ${mismatches.length} 件: ${mismatches.slice(0, 5).join(' / ')}`);
+    });
+
+    test('CF6: 酸無水物 -CO-O-CO- はエステルではない（中央の O ごとに anhydride 1件）', async (c) => {
+        // v1592（claude/trusting-wiles-4bc22b の取り込み直し。ユーザー決定: ブランチ方式を正にする）
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const fromLib = (name) => {
+            const entry = source.find(x => x.name === name && x.target);
+            assert(entry, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: entry.target });
+        };
+        const typesOf = (name) => W.findFunctionalGroups(fromLib(name)).map(x => x.type);
+
+        // ---- (1) 登録ずみの酸無水物6件が anhydride ×1 で、ester を1件も立てない ----
+        // ⚠ 直す前は **どちらのカルボニル炭素から見てもエステルの形**なので
+        //   `[{type:'ester'},{type:'ester'}]` が返り、「⚗ この分子の反応」カードに
+        //   **エステル結合×2** と出ていた。高校化学では別の分類（`org.carbonyl.acid-anhydride`）
+        const ANHYDRIDES = ['無水酢酸', '無水プロピオン酸', '無水安息香酸',
+            '無水フタル酸', '無水マレイン酸', '無水コハク酸'];
+        ANHYDRIDES.forEach(nm => {
+            const t = typesOf(nm);
+            assert(t.filter(x => x === 'anhydride').length === 1,
+                `${nm} の酸無水物が ${t.filter(x => x === 'anhydride').length} 件（1件を期待。${t.join('/')}）`);
+            assert(!t.includes('ester'), `${nm} が「エステル結合」として拾われている（${t.join('/')}）`);
+            // 中央の O がエーテル結合に化けていないこと（エーテルの枝と同じ C-O-C の形をしている）
+            assert(!t.includes('ether'), `${nm} の中央の O が「エーテル結合」と出ている（${t.join('/')}）`);
+        });
+
+        // ---- (2) atomIds の並びは ester とそろっている（reactor.js の加水分解がこの順で受ける）----
+        // [カルボニルC, =O, 中央の-O-, もう一方のカルボニルC, その=O]
+        const acAn = fromLib('無水酢酸');
+        const gAn = W.findFunctionalGroups(acAn).find(x => x.type === 'anhydride');
+        const el = (id) => acAn.atoms.find(a => a.id === id).element;
+        assert(gAn.atomIds.length === 5, `atomIds が ${gAn.atomIds.length} 個（5個を期待）`);
+        assert(['C', 'O', 'O', 'C', 'O'].every((e, i) => el(gAn.atomIds[i]) === e),
+            `atomIds の並びが違う（${gAn.atomIds.map(el).join(',')}）`);
+        const bondType = (p, q) => (acAn.bonds.find(b =>
+            (b.atomId1 === p && b.atomId2 === q) || (b.atomId1 === q && b.atomId2 === p)) || {}).type;
+        assert(bondType(gAn.atomIds[0], gAn.atomIds[1]) === 2 &&
+               bondType(gAn.atomIds[0], gAn.atomIds[2]) === 1 &&
+               bondType(gAn.atomIds[3], gAn.atomIds[2]) === 1 &&
+               bondType(gAn.atomIds[3], gAn.atomIds[4]) === 2,
+            'atomIds が -C(=O)-O-C(=O)- の並びになっていない');
+
+        // ---- (3) 否定対照: 本物のエステルは今までどおり ester のまま ----
+        // 環状エステル（ラクトン）・高分子・ギ酸エステルまで含めて、1件も落ちていないこと
+        [['酢酸エチル', 1], ['安息香酸メチル', 1], ['ギ酸メチル', 1],
+            ['γ-ブチロラクトン（4-ブタノリド）', 1], ['ポリエチレンテレフタラート', 5]].forEach(([nm, n]) => {
+            const t = typesOf(nm);
+            assert(t.filter(x => x === 'ester').length === n,
+                `${nm} のエステルが ${t.filter(x => x === 'ester').length} 本（${n} 本を期待。${t.join('/')}）`);
+            assert(!t.includes('anhydride'), `${nm} が酸無水物と出ている（${t.join('/')}）`);
+        });
+        // エーテルも巻き添えにしていない（C-O-C の枝を3分岐に書き換えたので）
+        assert(typesOf('ジメチルエーテル').includes('ether'), 'ジメチルエーテルがエーテルでなくなった');
+        assert(typesOf('アニソール（メトキシベンゼン）').includes('ether'), 'アニソールがエーテルでなくなった');
+
+        // ---- (4) 画面に出る分類がエステルから酸無水物へ移ったこと ----
+        // learn.js の分類表（異性体の一覧の見出し）と、game.js の「⚗ この分子の反応」カード
+        assert(W.categorizeMolecule(fromLib('無水酢酸')) === '酸無水物',
+            `learn の分類が「${W.categorizeMolecule(fromLib('無水酢酸'))}」（酸無水物を期待）`);
+        assert(W.categorizeMolecule(fromLib('酢酸エチル')) === 'エステル',
+            `酢酸エチルの learn の分類が「${W.categorizeMolecule(fromLib('酢酸エチル'))}」（否定対照）`);
+        assert(g.functionalGroupSummary(fromLib('無水酢酸')) === '酸無水物（-CO-O-CO-）',
+            `⚗カードの表示が「${g.functionalGroupSummary(fromLib('無水酢酸'))}」`);
+        assert(W.describeStructure(fromLib('無水酢酸')).some(p => p.startsWith('酸無水物 -CO-O-CO- ×1')),
+            `構造のポイントに酸無水物が出ない: ${W.describeStructure(fromLib('無水酢酸')).join('、')}`);
+        assert(!W.describeStructure(fromLib('無水酢酸')).some(p => p.startsWith('エステル結合')),
+            `構造のポイントにエステル結合が出る: ${W.describeStructure(fromLib('無水酢酸')).join('、')}`);
+
+        // ---- (5) 絞り込みの「加水分解するとカルボン酸とアルコールが得られた」に当たらない ----
+        // 酸無水物の加水分解で出るのはカルボン酸2つで、アルコールは1つも出ない。
+        // ラクトン（環状エステル）のカードにも当たってはいけない（無水フタル酸は環状だが
+        // ラクトンではない）——どちらも `ester` を見ているので、型を分けた効き目がここに出る
+        assert(W.NW && W.NARROW_CARDS, '絞り込みの NW / NARROW_CARDS が無い（テストの前提が崩れている）');
+        const card = (id) => W.NARROW_CARDS.find(x => x.id === id);
+        ['無水酢酸', '無水フタル酸', '無水マレイン酸', '無水コハク酸', '無水安息香酸'].forEach(nm => {
+            const m = fromLib(nm);
+            assert(!card('ester').test(m), `${nm} が「エステル結合をもつ」に当たる`);
+            assert(!card('lactone').test(m), `${nm} が「環状エステル（ラクトン）」に当たる`);
+        });
+        // ⚠ main 側だけにある使い先: M12 の「加水分解してから片割れを見る」（NW.hydrolysis）。
+        //   直す前は無水酢酸が「酢酸＋酢酸」を酸とアルコールの組として2つ返し、
+        //   アルコール側の酢酸を読んで「得られたアルコールがヨードホルム陽性」にまで当たっていた
+        assert(W.NW.hydrolysis(fromLib('無水酢酸')).pairs.length === 0,
+            `無水酢酸の加水分解が酸とアルコールの組を ${W.NW.hydrolysis(fromLib('無水酢酸')).pairs.length} 組返す`);
+        assert(!card('hyd-alc-iodoform').test(fromLib('無水酢酸')), '無水酢酸が「加水分解で得られたアルコールがヨードホルム陽性」に当たる');
+        // 否定対照: 本物のエステルは今までどおり当たる
+        assert(card('ester').test(fromLib('酢酸エチル')), '酢酸エチルが「エステル結合をもつ」に当たらない');
+        assert(card('lactone').test(fromLib('γ-ブチロラクトン（4-ブタノリド）')), 'γ-ブチロラクトンがラクトンに当たらない');
+        assert(W.NW.hydrolysis(fromLib('酢酸エチル')).pairs.length === 1, '酢酸エチルの加水分解が組を返さない');
+        assert(card('hyd-alc-iodoform').test(fromLib('酢酸エチル')), '酢酸エチルが「加水分解で得られたアルコールがヨードホルム陽性」に当たらない');
+        assert(W.NW.partsLabel(fromLib('無水酢酸')) === '酸無水物',
+            `候補の内訳が「${W.NW.partsLabel(fromLib('無水酢酸'))}」（酸無水物を期待）`);
+        assert(!/ラクトン/.test(W.NW.partsLabel(fromLib('無水フタル酸'))),
+            `無水フタル酸の候補の内訳が「${W.NW.partsLabel(fromLib('無水フタル酸'))}」（ラクトンと呼んでいる）`);
+        assert(W.NW.partsLabel(fromLib('酢酸エチル')) === 'エステル',
+            `酢酸エチルの候補の内訳が「${W.NW.partsLabel(fromLib('酢酸エチル'))}」（否定対照）`);
+
+        // ---- (6) 反応とクイズは型を分けても結果が同じ（局所の回避策をまとめた先）----
+        const rule = (id) => W.REACTION_RULES.find(r => r.id === id);
+        ANHYDRIDES.forEach(nm => {
+            const n = rule('hydrolysis_anhydride').detect(fromLib(nm)).length;
+            assert(n === 1, `${nm} の酸無水物の加水分解が ${n} 箇所（1を期待）`);
+            assert(rule('hydrolysis_ester').detect(fromLib(nm)).length === 0, `${nm} にエステルの加水分解が出る`);
+            assert(!W.compoundGroupsOf(fromLib(nm)).includes('ester'), `${nm} がクイズの ester の軸に入る`);
+        });
+        assert(rule('hydrolysis_ester').detect(fromLib('酢酸エチル')).length === 1, '酢酸エチルにエステルの加水分解が出ない（否定対照）');
+        assert(W.compoundGroupsOf(fromLib('酢酸エチル')).includes('ester'), '酢酸エチルがクイズの ester の軸から落ちた（否定対照）');
     });
 
     test('M1: 構造異性体の全列挙（既知の異性体数と一致）と学習モーダル', async (c) => {
@@ -18434,6 +18544,60 @@
         }
     });
 
+    test('IW26: 「並べ直す」の字幕も答案を「個」で数える（3つの練習とも・発注書 §C）', async (c) => {
+        // ★ 実発生。§C（コミット 50ed6f5）で帯・パネル・答え合わせは「いま N個 描いてあります」に
+        //   そろえたが、**そのあとに足した「🧹 並べ直す」（W4・v1389）だけが「枚」のまま**残った。
+        //   同じ画面に「いま 4個 描いてあります」と「答案 4枚を 2×2 に並べ直しました」が同時に出る
+        //   （2026-08-16 公開のロング動画 L2 と、そこから切り出した縦型の両方に並んで映っている）。
+        // ⚠ 見るのは**実際に出た字幕**（#canvas-toast）で、ソースの文字列ではない ＝
+        //   3つの練習それぞれの配線がこの文を出すことまで込みで止まる。
+        //   IW15（帯・パネル・答え合わせ）と合わせて、答案を数える語の全部が「個」で挟まる。
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        g.setMode('learn');
+        const GRID = W.GRID_SIZE;
+        const tn = D.getElementById('canvas-toast');
+        assert(tn, '#canvas-toast が無い（前提が崩れている）');
+
+        /** 並べ直しが必ず動く散らかり方（元ブランチ claude/suspicious-tu-bae8ed では IW17。main の IW17 は別物）。ブタンを5つ、格子から外して置く */
+        const scatter = () => {
+            const m = new W.Molecule();
+            [[0, 0], [300, 40], [80, 180], [350, 260], [20, 400]].forEach(([dx, dy]) => {
+                const ids = [0, 1, 2, 3].map(i => m.addAtom('C', 30 + dx + i * GRID, 30 + dy).id);
+                for (let i = 0; i < 3; i++) m.addBond(ids[i], ids[i + 1], 1);
+            });
+            g.userMolecule = m;
+            g.history = []; g.redoStack = [];
+            g.updateDrawing();
+        };
+
+        const seen = [];
+        [['異性体', W.isomerPractice], ['アルキル基', W.alkylPractice], ['立体異性体', W.stereoPractice]]
+            .forEach(([label, practice]) => {
+                assert(practice && typeof practice.tidySheet === 'function',
+                    `${label}: tidySheet が無い（配線が変わった）`);
+                scatter();
+                tn.textContent = '';
+                practice.tidySheet();
+                const t = tn.textContent;
+                seen.push({ label, t });
+                assert(/^答案 \d+個を \d+×\d+ に並べ直しました/.test(t),
+                    `${label}: 字幕が「答案 N個を R×C に並べ直しました」でない（${t}）`);
+                assert(!/\d+\s*枚/.test(t), `${label}: 字幕が答案を「枚」で数えている（${t}）`);
+            });
+        assert(seen.length === 3, `3つとも測れていない（${seen.length}）`);
+
+        // ★★ 空振り防止 —— この物差しが**直す前の文言を本当に弾く**ことをその場で確かめる
+        const old = '答案 4枚を 2×2 に並べ直しました（図の形は変えていません。↩ で戻せます）';
+        assert(!/^答案 \d+個を \d+×\d+ に並べ直しました/.test(old),
+            '直す前の「答案 N枚を」が新しい物差しを通ってしまう ＝ 空振りの緑');
+        assert(/\d+\s*枚/.test(old), '「N枚」の見張りが働いていない');
+
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        g.setMode('puzzle');
+    });
+
     test('IW8: ★否定対照 — 読み返しでは減点されない（開閉は無料・表示は自動更新）', async (c) => {
         // §15-5a: 表示中の段は**貼り付いたまま自動更新**でなければならない。
         // 再表示のために押し直させる作りは「ヒントを使った量」ではなく**記憶力**を測ることになる。
@@ -22585,7 +22749,9 @@
         // (d) 他のモードではくさびを描かない（＝フィッシャーの規約を読む練習のまま）
         modeEl.value = 'pair';
         q.nextQuestion();
-        assert(D.querySelectorAll('#sq-svg-a .quiz-bonds polygon').length === 0,
+        // ⚠ ハース環の手前の太線（台形 .svg-bond-taper・v1590 でクイズの図にも出た）はくさびではない。
+        //   出題が糖に当たったときだけ台形を数えて落ちていた（ST 帯の順で再現・2026-09-19）
+        assert(D.querySelectorAll('#sq-svg-a .quiz-bonds polygon:not(.svg-bond-taper)').length === 0,
             '標準モードにくさびが描かれている');
         assert(D.getElementById('sq-wedge-legend').classList.contains('hidden'),
             '標準モードで凡例が出ている');
@@ -26364,6 +26530,110 @@
             `drawingKey が ⇅ と ⇄ を見分けられない（${split}/${q.hwPool.length - 1}）`);
     });
 
+    test('HQ8: クイズの図でもハース環の手前の辺が太く・隣はテーパー（キャンバスと同じ判定・発注書 J）', async (c) => {
+        /* claude/serene-haibt-1c2b46（元 v1452 の HQ5）の取り込み直し（v1590）。
+         * キャンバス（drawMolecule）は手前の辺を太く描くが、クイズ・立体ビュー・分子モーダルの図は
+         * 別経路（renderMoleculeIntoSvg）で、そちらには太線が無かった（2026-08-22 ユーザー指摘）。
+         * ⚠ 元ブランチの後で main は「太い棒3本」から「手前1本は太い棒・隣2本は手前が太く奥が細い台形」
+         *   （v1583・発注書 J）に変わったので、検査もその形で書き直した:
+         *   ① 実際の出題（見本＋3択）に太線とテーパーが出る
+         *   ② 糖の全数＋上下反転で、太線・台形が `_haworthFrontBondKeys(mol)` と1本ずつ一致する
+         *      （両端の太さも・位置は線の中点で照合）／台形の太い端が下（手前）
+         *   ③ ★否定対照: 酸素の無い環・鎖・平たく描いていない酸素の環（フラン）には付かない */
+        c.reset();
+        const W = c.W, D = c.D, g = c.game;
+        const q = W.choiceQuiz;
+        D.getElementById('btn-choice-quiz-haworth').click();
+        assert(q.current && q.current.kind === 'haworth', 'ハースの出題になっていない');
+        const thickOf = (id) => [...D.querySelectorAll(`#${id} .quiz-bonds line`)]
+            .filter(l => +l.getAttribute('stroke-width') > 3);
+        const taperOf = (id) => [...D.querySelectorAll(`#${id} .quiz-bonds polygon.svg-bond-taper`)];
+        // ① 実際の出題。見本（登録の図そのもの）には必ず出る。
+        //   ⚠ 選択肢は全部ではない —— フラノースを上下反転・180° 回転した図は環の O が下の頂点に来て
+        //     判定（前縁は水平）が0本になる（②の flippedNone）。出題はランダムなので「少なくとも1枚」で見る
+        assert(thickOf('pk-goal').length >= 1, 'pk-goal に手前の太線が無い');
+        assert(taperOf('pk-goal').length >= 2, `pk-goal にテーパーが無い（${taperOf('pk-goal').length} 本）`);
+        assert(['pk-opt-0', 'pk-opt-1', 'pk-opt-2'].some(id => thickOf(id).length >= 1 && taperOf(id).length >= 2),
+            '選択肢の図のどれにも手前の太線とテーパーが無い');
+        /* 台形の両端（points は 端1外→端2外→端2内→端1内）。幅と中心を**座標で**読む */
+        const ends = (poly) => {
+            const p = poly.getAttribute('points').trim().split(/\s+/).map(s => s.split(',').map(Number));
+            const w = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+            return [
+                { w: w(p[0], p[3]), x: (p[0][0] + p[3][0]) / 2, y: (p[0][1] + p[3][1]) / 2 },
+                { w: w(p[1], p[2]), x: (p[1][0] + p[2][0]) / 2, y: (p[1][1] + p[2][1]) / 2 }
+            ];
+        };
+        // ⚠ 鍵を '_' で割らない（原子IDそのものに '_' が入る）。結合から鍵を作って引く
+        const midOf = (mol, key) => {
+            const bd = mol.bonds.find(x => `${x.atomId1}_${x.atomId2}` === key);
+            assert(bd, `判定の鍵 ${key} に当たる結合が無い`);
+            const a1 = mol.atoms.find(a => a.id === bd.atomId1), a2 = mol.atoms.find(a => a.id === bd.atomId2);
+            return { x: (a1.x + a2.x) / 2, y: (a1.y + a2.y) / 2 };
+        };
+        // ② 全数
+        let figures = 0;
+        /* ⚠ 上下反転した図は判定が0本のことがある（フラノースを裏返すと環の O が下の頂点に来て、
+         *   前縁が水平でなくなる ＝ `_haworthFrontBondKeys` の「前縁は水平」の門で外れる。
+         *   キャンバスでも同じ判定なので、ここでは**描いた図が判定と一致する**ことだけを見る）。
+         *   正立の図（登録の図そのもの）は必ず1環ぶん以上を持つ */
+        let flippedNone = 0;
+        const checkFigure = (name, target, upright) => {
+            const mol = W.renderMoleculeIntoSvg(g, 'pk-opt-0', target, false, false);
+            const front = g._haworthFrontBondKeys(mol);
+            const heads = [...front].filter(([, w]) => w[0] === w[1]);
+            const tapers = [...front].filter(([, w]) => w[0] !== w[1]);
+            if (upright) {
+                assert(heads.length >= 1 && tapers.length >= 2,
+                    `${name}: 判定が糖の環を見ていない（手前 ${heads.length} / テーパー ${tapers.length}）`);
+            } else if (!front.size) flippedNone++;
+            const thick = thickOf('pk-opt-0'), taper = taperOf('pk-opt-0');
+            assert(thick.length === heads.length,
+                `${name}: 太線が ${thick.length} 本（判定は ${heads.length} 本）`);
+            assert(taper.length === tapers.length,
+                `${name}: テーパーが ${taper.length} 本（判定は ${tapers.length} 本）`);
+            thick.forEach(l => {
+                const mx = (+l.getAttribute('x1') + +l.getAttribute('x2')) / 2;
+                const my = (+l.getAttribute('y1') + +l.getAttribute('y2')) / 2;
+                assert(heads.some(([k]) => { const m = midOf(mol, k); return near(mx, m.x, 1) && near(my, m.y, 1); }),
+                    `${name}: 太線が判定と違う場所にある（${mx},${my}）`);
+                assert(+l.getAttribute('stroke-width') === heads[0][1][0], `${name}: 太線の太さが判定と違う`);
+            });
+            taper.forEach(t => {
+                const [e1, e2] = ends(t);
+                const fat = e1.w > e2.w ? e1 : e2, thin = e1.w > e2.w ? e2 : e1;
+                assert(fat.w > thin.w + 1.5,
+                    `${name}: 台形の両端の太さが変わらない（${fat.w.toFixed(1)} / ${thin.w.toFixed(1)}）`);
+                // ★ 手前（下）が太い。上下反転した図でも、反転後の座標で判定し直すのでいつも下が太い
+                assert(fat.y > thin.y + 1, `★ ${name}: 台形の太い端が奥（上）に来ている`);
+                const mx = (e1.x + e2.x) / 2, my = (e1.y + e2.y) / 2;
+                const hit = tapers.find(([k]) => { const m = midOf(mol, k); return near(mx, m.x, 1) && near(my, m.y, 1); });
+                assert(hit, `${name}: テーパーが判定と違う場所にある（${mx},${my}）`);
+                assert(near(fat.w, Math.max(...hit[1]), 0.5) && near(thin.w, Math.min(...hit[1]), 0.5),
+                    `${name}: 台形の両端の太さが判定（${hit[1]}）と違う`);
+            });
+            figures++;
+        };
+        q.buildHaworth();
+        assert(q.hwPool.length >= 10, `ハースの題材が少なすぎる（${q.hwPool.length}）`);
+        q.hwPool.forEach(e => {
+            checkFigure(e.name, e.target, true);
+            checkFigure(`${e.name}（上下反転）`, W.flipTargetVertically(e.target), false);
+        });
+        // ③ ★否定対照: 酸素の無い環／鎖／平たく描いていない酸素の環には付かない
+        ['エタノール', 'シクロヘキサン', 'フラン', '無水マレイン酸'].forEach(name => {
+            const e = g.resolveCompound(name);
+            assert(e, `否定対照の ${name} が見つからない`);
+            W.renderMoleculeIntoSvg(g, 'pk-opt-0', e.target, false, false);
+            assert(thickOf('pk-opt-0').length === 0 && taperOf('pk-opt-0').length === 0,
+                `★ ${name} の図に手前の太線／テーパーが出た`);
+        });
+        D.getElementById('pk-kind').value = 'symbol';
+        q.newQuestion();
+        D.getElementById('btn-pk-close').click();
+        return `糖 ${q.hwPool.length} 件×正立/上下反転 = ${figures} 枚で判定と1本ずつ一致（上下反転で判定0本は ${flippedNone} 枚）・否定対照4件は素のまま`;
+    });
+
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
         c.reset();
         const W = c.W, D = c.D;
@@ -28879,6 +29149,18 @@
         const minX = Math.min(...carbons.map(a => a.x));
         assert(Math.abs(g.userMolecule.atoms.find(a => a.id === leftmost).x - minX) < 1,
             'いちばん左に並べた単量体が、できた鎖の左端に来ていない（繋ぐ順と伸びる向きが逆）');
+
+        /* ---- (6) 置換基が鎖の伸びる先に描かれている単量体（v1593・§30） ----
+         *    置換基の倒し方を「そのまま」→「同じ側」→「1つおき」で選ぶようにしても、
+         *    どの単量体でも主鎖は一直線のまま（§14 と同じ物差し）。
+         *    claude/quizzical-turing-2c0b2a の PM3 (6) の取り込み直し。 */
+        [['スチレン', 8], ['酢酸ビニル', 8], ['メタクリル酸メチル', 8],
+         ['アクリル酸', 8], ['アクリルアミド', 8]].forEach(([name, n]) => {
+            const r = polymerize('addition_polymerization', new Array(3).fill(name));
+            assert(r.ids.length === n, `${name} の主鎖が ${r.ids.length} 原子（${n} を期待）`);
+            assert(r.bent === 0 && r.ySpread === 0,
+                `${name}3個の鎖が一直線でない（折れ${r.bent}・y ${r.ySpread}px。${r.text}）`);
+        });
         c.reset();
     });
 
@@ -28999,7 +29281,8 @@
             assert(Math.abs(Math.max(dx, dy) - G) < 1,
                 `主鎖の結合が格子の刻みでない（${Math.round(Math.max(dx, dy))}px・刻み ${G}px）`);
         });
-        // 置換基（-Cl）が既存の 120° のまま＝ こちらは**変えていない**ことも合わせて言う
+        // 置換基（-Cl）の数。⚠ ここは個数しか見ていない ―― §30 の直しの前は -Cl が縦に倒れていても緑だった。
+        //   「120° のまま」は PM16 ③ が角度で見る（§30）
         const cl = g.userMolecule.atoms.filter(a => a.element === 'Cl');
         assert(cl.length === 4, `Cl が ${cl.length} 個（単量体4個ぶんの4個を期待）`);
         c.reset();
@@ -29556,6 +29839,184 @@
         assert(g.userMolecule.atoms.filter(a => a.element === 'R').length === 4,
             '鎖2本ぶんの R（4個）になっていない');
         D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
+    /* ===== PM15・PM16: 付加重合の置換基の向き（v1593・DESIGN_reaction_execution.md §30） =====
+     *
+     * claude/quizzical-turing-2c0b2a の PM7・PM8 の取り込み直し（ユーザー決定 2026-09-19:
+     * ブランチの作図方針を採る）。主張はすべて座標の数で書く。
+     *   - 酢酸ビニル … アセトキシ基が**全部主鎖の真下**・中の結合も直交
+     *     （登録済み polyvinyl-alcohol の -OH が全部真下なのと同じ形）
+     *   - 塩化ビニル … **-Cl は呼び出したときの 120° のまま**（PM16 ③）
+     *   - スチレン … 環が太いので上下交互（PM7 ③ と同じ）
+     * ⚠ CLAUDE.md の作図例外（±120°）は増やしていない ―― 付加重合は C=C を単結合に開くのが本体で、
+     *   開いた炭素は sp3。倒すのは**直交作図へ戻す**こと。
+     */
+    const addPoly3 = (c, name, n = 3) => {
+        const g = c.game, W = c.W;
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        for (let i = 0; i < n; i++) g.summonMolecule(name);
+        const rule = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        return g.userMolecule;
+    };
+    // 主鎖の原子から出る枝の付け根（{c: 主鎖の原子, s: 付け根}）
+    const pendantRoots = (mol, back, pick = (a) => a.element !== 'H') => mol.atoms
+        .filter(a => back.has(a.id))
+        .flatMap(a => mol.getNeighbors(a.id)
+            .filter(n => !back.has(n.atom.id) && pick(n.atom))
+            .map(n => ({ c: a, s: n.atom })));
+
+    test('PM15: 酢酸ビニルの置換基は全部主鎖の真下・スチレンの環は上下交互（登録済みポリビニルアルコールと同じ形）', async (c) => {
+        const W = c.W, g = c.game;
+
+        // ---- ① 酢酸ビニル: エステルの O が3つとも主鎖の真下 ----
+        const pvac = addPoly3(c, '酢酸ビニル');
+        const back = new Set(polymerBackbone(pvac).ids);
+        const chainY = pvac.atoms.find(a => back.has(a.id)).y;
+        const roots = pendantRoots(pvac, back);
+        assert(roots.length === 3, `枝の付け根が ${roots.length} 本（単量体3個ぶんの3本を期待）`);
+        roots.forEach(({ c: cc, s }) => {
+            assert(Math.abs(s.x - cc.x) < 1,
+                `枝が主鎖に垂直でない（付け根 ${Math.round(cc.x)},${Math.round(cc.y)} → ` +
+                `${s.element}(${Math.round(s.x)},${Math.round(s.y)})）`);
+            assert(s.y > chainY, '枝が主鎖の下に出ていない（polyvinyl-alcohol は全部真下）');
+        });
+        // アセトキシ基の中も直交のまま（半端な角度で回していない）
+        pvac.atoms.filter(a => !back.has(a.id) && a.element !== 'H').forEach(a =>
+            pvac.getNeighbors(a.id).forEach(n => {
+                if (n.atom.element === 'H') return;
+                const dx = Math.abs(a.x - n.atom.x), dy = Math.abs(a.y - n.atom.y);
+                assert(dx < 1 || dy < 1,
+                    `アセトキシ基に斜めの結合ができた（${Math.round(dx)},${Math.round(dy)}）`);
+            }));
+
+        // ---- ② けん化してできるポリビニルアルコールも、登録図と同じく -OH が全部真下 ----
+        const sap = W.REACTION_RULES.find(r => r.id === 'saponification');
+        for (let k = 0; k < 3; k++) {
+            const s = sap.detect(g.userMolecule);
+            assert(s.length, `けん化の箇所が ${k} 回目で尽きた（3回を期待）`);
+            sap.apply(g, s[0]);
+            g.updateDrawing();
+        }
+        const pva = g.userMolecule;
+        const pBack = new Set(polymerBackbone(pva).ids);
+        const pY = pva.atoms.find(a => pBack.has(a.id)).y;
+        const oh = pendantRoots(pva, pBack);
+        assert(oh.length === 3 && oh.every(({ s }) => s.element === 'O'),
+            `けん化後の枝が -OH 3本でない（${oh.map(r => r.s.element).join(',')}）`);
+        const offs = oh.map(({ c: cc, s }) => `${Math.round(s.x - cc.x)},${Math.round(s.y - cc.y)}`);
+        const G = W.GRID_SIZE || 42;
+        assert(offs.every(o => o === `0,${G}`),
+            `ポリビニルアルコールの -OH が全部真下でない（${offs.join(' / ')}。登録図は 0,${G} ×3）`);
+        assert(pY < oh[0].s.y, '-OH が主鎖の下に出ていない');
+
+        // ---- ③ スチレン: 環は主鎖に垂直で上下に振り分けられ、正六角形のまま ----
+        const ps = addPoly3(c, 'スチレン');
+        const psBack = new Set(polymerBackbone(ps).ids);
+        const psY = ps.atoms.find(a => psBack.has(a.id)).y;
+        const ipso = pendantRoots(ps, psBack, a => a.element === 'C');
+        assert(ipso.length === 3, `環の付け根が ${ipso.length} 本（3本を期待）`);
+        ipso.forEach(({ c: cc, s }) => assert(Math.abs(s.x - cc.x) < 1,
+            `環が主鎖に垂直でない（${Math.round(s.x - cc.x)}px ずれている）`));
+        const sides = ipso.map(({ s }) => (s.y > psY ? 1 : -1));
+        assert(new Set(sides).size === 2,
+            `ベンゼン環が全部同じ側に出ている（${sides.join(',')}）。同じ側だと隣の環と 14.8px まで詰まる`);
+        // 環は放射状のまま（ipso まわりの3本が 120° ずつ）。
+        // ★ 環を含む枝まで 90° へ丸めて回すと、ここが 150/120/90 になって赤（取り込み直しで実測）
+        ipso.forEach(({ s }) => {
+            const around = ps.getNeighbors(s.id).filter(n => n.atom.element !== 'H')
+                .map(n => Math.atan2(n.atom.y - s.y, n.atom.x - s.x) * 180 / Math.PI)
+                .sort((a, b) => a - b);
+            assert(around.length === 3, `ipso のまわりが ${around.length} 本`);
+            const gaps = [around[1] - around[0], around[2] - around[1], 360 - (around[2] - around[0])];
+            assert(gaps.every(x => Math.abs(x - 120) < 1),
+                `環が放射状でない（ipso まわり ${gaps.map(x => Math.round(x)).join('/')}）＝ 環の辺の途中から主鎖へ出て見える`);
+        });
+        const ringLens = ps.bonds
+            .filter(b => !psBack.has(b.atomId1) && !psBack.has(b.atomId2))
+            .map(b => {
+                const p = ps.atoms.find(a => a.id === b.atomId1);
+                const q = ps.atoms.find(a => a.id === b.atomId2);
+                return Math.hypot(p.x - q.x, p.y - q.y);
+            });
+        assert(ringLens.length === 18, `環の中の結合が ${ringLens.length} 本（3環×6本の18を期待）`);
+        assert(Math.max(...ringLens) - Math.min(...ringLens) < 1,
+            `倒したせいで環がゆがんだ（辺 ${ringLens.map(v => Math.round(v)).join(',')}）`);
+        c.reset();
+    });
+
+    test('PM16（否定対照）: 置換基を倒すのは見た目だけ ― 判定も、塩化ビニルの 120° も、傍観分子も変えない', async (c) => {
+        const g = c.game, W = c.W;
+        const CC = W.canonicalCode;
+
+        // ---- ① 生成物は正しいポリスチレン: 二重結合は環の9本だけ・価標健全・頭-尾 ----
+        const ps = addPoly3(c, 'スチレン');
+        assert(ps.atoms.every(a => W.isValencyValid(ps, a.id)), '重合後に価標が壊れた');
+        assert(ps.bonds.filter(b => b.type === 2).length === 9,
+            `二重結合が ${ps.bonds.filter(b => b.type === 2).length} 本（ベンゼン環3個ぶんの9本だけを期待）`);
+        const psBack = polymerBackbone(ps).ids;
+        assert(psBack.length === 8, `主鎖が ${psBack.length} 原子（R+C6+R を期待）`);
+        const withRing = psBack.filter(id => ps.getNeighbors(id)
+            .some(nb => nb.atom.element === 'C' && !psBack.includes(nb.atom.id)));
+        assert(withRing.length === 3, `環の付いた主鎖炭素が ${withRing.length} 個（3個を期待）`);
+        const pattern = psBack.slice(1, -1).map(id => (withRing.includes(id) ? 'Ph' : 'H2'));
+        assert(pattern.join('-') === 'H2-Ph-H2-Ph-H2-Ph' || pattern.join('-') === 'Ph-H2-Ph-H2-Ph-H2',
+            `頭-尾の並びが崩れた（${pattern.join('-')}）`);
+
+        // ---- ② 正準コードは座標を見ていない（平行移動・環の上下反転で不変） ----
+        const code = CC(ps);
+        ps.atoms.forEach(a => { a.x += 211; a.y -= 73; });
+        assert(CC(ps) === code, '分子を平行移動しただけで正準コードが変わった');
+        const flipBack = new Set(polymerBackbone(ps).ids);
+        const chainY = ps.atoms.find(a => flipBack.has(a.id)).y;
+        ps.atoms.forEach(a => { if (!flipBack.has(a.id)) a.y = 2 * chainY - a.y; });
+        assert(CC(ps) === code, '環を上下ひっくり返しただけで別の高分子になった');
+
+        // ---- ③ ★ 塩化ビニルの -Cl は 120° のまま（置換基が道を塞いでいない分子は「そのまま」が勝つ） ----
+        //    §18-1 の上下交互（uprightChainSubstituent）に戻すと、ここが「斜め 0/3」で赤になる
+        const pvc = addPoly3(c, '塩化ビニル');
+        const pvcBack = new Set(polymerBackbone(pvc).ids);
+        const cls = pvc.atoms.filter(a => a.element === 'Cl');
+        assert(cls.length === 3, `Cl が ${cls.length} 個（3個を期待）`);
+        const tilted = cls.filter(cl => {
+            const cc = pvc.getNeighbors(cl.id).find(n => pvcBack.has(n.atom.id));
+            if (!cc) return false;
+            const dx = Math.abs(cl.x - cc.atom.x), dy = Math.abs(cl.y - cc.atom.y);
+            return dx > 1 && dy > 1;
+        });
+        assert(tilted.length === 3,
+            `塩化ビニルの -Cl が 120° のままでない（斜め ${tilted.length}/3）。` +
+            'すでに一直線に出ている分子は「そのまま」が勝つ約束（v1593・§30）');
+        const pvcLine = polymerBackbone(pvc);
+        assert(pvcLine.bent === 0 && pvcLine.ySpread === 0,
+            `塩化ビニル3個の主鎖が一直線でない（折れ${pvcLine.bent}・y ${pvcLine.ySpread}px）`);
+
+        // ---- ④ 倒すのは重合する単量体だけ ― 離して置いた傍観分子には1原子も触れない ----
+        c.reset();
+        g.setMode('free');
+        g.userMolecule = new W.Molecule();
+        g.updateDrawing();
+        for (let i = 0; i < 3; i++) g.summonMolecule('酢酸ビニル');
+        const spectator = new W.Molecule();
+        const s1 = spectator.addAtom('C', -900, -700).id;
+        const s2 = spectator.addAtom('O', -858, -700).id;
+        spectator.addBond(s1, s2, 1);
+        spectator.atoms.forEach(a => g.userMolecule.atoms.push(a));
+        spectator.bonds.forEach(b => g.userMolecule.bonds.push(b));
+        g.updateDrawing();
+        const before = spectator.atoms.map(a => `${a.x},${a.y}`).join(' ');
+        const rule = W.REACTION_RULES.find(r => r.id === 'addition_polymerization');
+        rule.apply(g, rule.detect(g.userMolecule)[0]);
+        g.updateDrawing();
+        const after = g.userMolecule.atoms.filter(a => a.id === s1 || a.id === s2)
+            .map(a => `${a.x},${a.y}`).join(' ');
+        assert(before === after, `重合と関係のない分子の座標が動いた（${before} → ${after}）`);
         c.reset();
     });
 
@@ -30646,8 +31107,8 @@
      * **3単位＋両端 R**（`DESIGN_reaction_execution.md` §21-1 (b)）。
      *
      * ⚠ **名前は正準コードで引くので、座標までは一致しない**（実測）: 反応は置換基を
-     *   上下交互に出す（`uprightChainSubstituent` の `i % 2`）が、登録図は PVA と同じく
-     *   全部同じ側に出している。**それでも名前は出る** ＝ 一致を見るのは座標ではなくコード。 */
+     *   倒し方を「そのまま」→「同じ側」→「1つおき」から選ぶ（v1593・§30。塩化ビニルの -Cl は
+     *   120° のまま・スチレンの環は上下交互）が、登録図は PVA と同じく全部同じ側に出している。**それでも名前は出る** ＝ 一致を見るのは座標ではなくコード。 */
 
     // 単量体を n 個呼んで付加重合させ、いちばん大きい成分を返す
     const addPolymerize = (c, monomer, n) => {
@@ -33866,6 +34327,119 @@
         c.reset();
     });
 
+    /**
+     * RX45: **解説カード（`info`）も同じ絞り込みを通る**（v1589・DESIGN_reaction_execution.md §13.8）。
+     * claude/zen-swartz-9a5df4（元 v1431）の取り込み直し。
+     *
+     * v1429 は `refresh()` / `reagentHits()` の絞り込みに `!rule.info` という除け口を残した。
+     * `siteAllowed` は「箇所を持たない情報カードは絞らない」（`if (!ids.length) return true;`）を
+     * 自分で持っているので、この除け口は**箇所を持つ info ルール**（どれも原子IDの配列を返す）に
+     * 対しては有害なだけだった。
+     *
+     * ユーザーの実測（v1430・2026-08-20）: 4本のアルコールを並べて **1-ブタノールを選んでも**
+     * 「この分子にできること」に `⚠ 酸化（3級アルコール）` が残る
+     * （その解説は 2-メチル-2-プロパノール のもの）。
+     *
+     * ⚠ 札を絞るだけでは足りない。info の `apply()` が**キャンバス全体**を見て文面を作ると、
+     *   「札は A の分子で出たのに文面は B の話も含む」が残る。⑥がそこを見る。
+     *   ⚠ 元ブランチは `oxidation_out_of_scope_info` の「環」と「側鎖」で測っていたが、
+     *   その2つは v1472 で実行へ移った（残るのはエチレンだけ）。今の main で段落が2種類に
+     *   分かれる info は `dehydration_anhydride_info`（トランス形／シス・トランスが読めない）なので、
+     *   フマル酸と描き分け前のブテン二酸で測る。
+     */
+    test('RX45: ★解説カード（info）も「いま見ている分子」で絞る（隣の分子の注意書きが混ざらない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const rxRules = () => [...D.querySelectorAll('#reaction-actions button[data-rule]')]
+            .map(b => b.dataset.rule);
+        const 一級 = '1-ブタノール', 三級 = '2-メチル-2-プロパノール';
+        const アルコール4本 = [一級, '2-ブタノール', '2-メチル-1-プロパノール（イソブタノール）', 三級];
+
+        // ① ユーザーの再現そのもの —— 1-ブタノールを見ているのに3級アルコールの解説が出ない
+        scopeSetup(c, アルコール4本, 0);
+        assert(D.getElementById('mm-name').textContent === 一級,
+            `開いた分子が違う（${D.getElementById('mm-name').textContent}）`);
+        assert(!rxRules().includes('oxidize_tertiary_info'),
+            `1-ブタノールを見ているのに「⚠ 酸化（3級アルコール）」が出る` +
+            `＝ 申し立ての症状（${rxRules().join(' / ')}）`);
+        // ② 絞りすぎの検出 —— 見ている分子自身の反応は残る
+        assert(rxRules().includes('oxidize_primary'),
+            `1-ブタノール自身の酸化まで消えている（${rxRules().join(' / ')}）`);
+
+        // ③ ★陰性対照 —— 3級アルコールを見れば出る（「常に消す」で緑になっていない）
+        scopeSetup(c, アルコール4本, 3);
+        assert(D.getElementById('mm-name').textContent === 三級,
+            `③の分子が開けていない（${D.getElementById('mm-name').textContent}）`);
+        assert(rxRules().includes('oxidize_tertiary_info'),
+            `3級アルコールを見ているのに解説カードが出ない（${rxRules().join(' / ')}）`);
+        // ④ ★陰性対照 —— 1分子だけのときの振る舞いは変えていない
+        scopeSetup(c, [三級], 0);
+        assert(rxRules().includes('oxidize_tertiary_info'),
+            `1分子だけのときに解説カードが消えた（絞り込みが暴走している）`);
+
+        // ⑤ 瓶の経路も同じ（判定を2か所に書いていないことの実測）
+        const oxBottle = W.REAGENTS.find(r =>
+            r.id === W.REACTION_RULES.find(x => x.id === 'oxidize_tertiary_info').reagentId[0]);
+        assert(oxBottle, '酸化剤の瓶が見つからない');
+        scopeSetup(c, [一級, 三級], 0);
+        assert(!W.reactor.reagentHits(oxBottle).map(h => h.rule.id).includes('oxidize_tertiary_info'),
+            '瓶からなら隣の分子の解説が引ける（絞り込みが1か所で効いていない）');
+        scopeSetup(c, [一級, 三級], 1);
+        assert(W.reactor.reagentHits(oxBottle).map(h => h.rule.id).includes('oxidize_tertiary_info'),
+            '3級アルコールを見ているのに瓶から解説が引けない');
+        // ⑤' `oxidation_out_of_scope_info`（今はエチレンだけ）も同じ門を通る
+        scopeSetup(c, [一級, 'エチレン（エテン）'], 0);
+        assert(!rxRules().includes('oxidation_out_of_scope_info'),
+            `1-ブタノールを見ているのに隣のエチレンの「⚠ 酸化（ここでは図を変えない範囲）」が出る（${rxRules().join(' / ')}）`);
+        scopeSetup(c, [一級, 'エチレン（エテン）'], 1);
+        assert(rxRules().includes('oxidation_out_of_scope_info'),
+            `エチレンを見ているのに「⚠ 酸化（ここでは図を変えない範囲）」が出ない（${rxRules().join(' / ')}）`);
+
+        // ⑥ ★文面も同じ範囲で作る（札だけ絞ると「札は A・文面は B も」になる）。
+        //    `dehydration_anhydride_info` は「反対側（トランス形）」と「シスかトランスか読めない」で
+        //    別の段落を返すので、1つずつ並べて**片方しか語らない**ことを見る
+        const toast = D.getElementById('canvas-toast');
+        const anhydrideCaption = (names, which) => {
+            scopeSetup(c, names, which);
+            const btn = D.querySelector('#reaction-actions button[data-rule="dehydration_anhydride_info"]');
+            assert(btn, `${names[which]} を見ているのに「⚠ 分子内脱水 → 酸無水物（この形では起こらない）」が出ない` +
+                `（${rxRules().join(' / ')}）`);
+            toast.textContent = 'RX45-MARK';
+            btn.click();
+            assert(toast.textContent !== 'RX45-MARK', '解説カードを押しても何も出ない');
+            return toast.textContent;
+        };
+        const 反対 = 'フマル酸', 不明 = 'ブテン二酸（マレイン酸／フマル酸）';
+        const ANTI = '反対側（トランス形）', UNKNOWN = '図から読み取れません';
+        const capAnti = anhydrideCaption([反対, 不明], 0);
+        assert(capAnti.includes(ANTI),
+            `フマル酸を見ているのにトランス形の話が無い（${capAnti.slice(0, 60)}）`);
+        assert(!capAnti.includes(UNKNOWN),
+            `フマル酸を見ているのに隣のブテン二酸（読めない）の話が混ざる（${capAnti.slice(0, 120)}）`);
+        const capUnknown = anhydrideCaption([反対, 不明], 1);
+        assert(capUnknown.includes(UNKNOWN),
+            `ブテン二酸を見ているのに「読めない」の話が無い（${capUnknown.slice(0, 60)}）`);
+        assert(!capUnknown.includes(ANTI),
+            `ブテン二酸を見ているのに隣のフマル酸（トランス形）の話が混ざる（${capUnknown.slice(0, 120)}）`);
+        // ★陰性対照 —— 並べたときの文面が、1分子だけのときと**同じ**（絞りすぎて痩せていない）
+        assert(capAnti === anhydrideCaption([反対], 0),
+            '並べたときのフマル酸の文面が、1分子のときと違う（絞りすぎ）');
+        assert(capUnknown === anhydrideCaption([不明], 0),
+            '並べたときのブテン二酸の文面が、1分子のときと違う（絞りすぎ）');
+
+        // ⑦ ★否定対照 —— **2分子に跨る解説カードはどちら側から見ても残る**
+        //    （「見ている分子の中で完結するものだけ」に絞ると、ここが赤くなる）
+        scopeSetup(c, ['安息香酸', 'フェノール'], 0);
+        assert(rxRules().includes('esterification_phenol_info'),
+            `カルボン酸側から、2分子に跨る解説カードが消えた（${rxRules().join(' / ')}）`);
+        scopeSetup(c, ['安息香酸', 'フェノール'], 1);
+        assert(rxRules().includes('esterification_phenol_info'),
+            `フェノール側から、2分子に跨る解説カードが消えた（${rxRules().join(' / ')}）`);
+
+        D.getElementById('btn-molecule-modal-close').click();
+        c.reset();
+    });
+
     /*
      * ===== RX46〜RX48: 反応の一覧は「たどる」と「決める」が別（v1439） =====
      *
@@ -34727,6 +35301,174 @@
             const p = et2before.get(a.id);
             return p && (Math.abs(p.x - a.x) > 0.5 || Math.abs(p.y - a.y) > 0.5);
         }), 'エタノールの酸化で =O が1px も動いていない ＝ 折る側が働いていない');
+
+        c.reset();
+    });
+
+    /* ===== 反応の結果は呼ぶたびに変わらない（MK1・DT1・2026-08-26） =====
+       **同じ版・同じブラウザで、同じ分子に同じ反応を2回起こすと結果が違う**という実測から始めた。
+       `Molecule.addAtom` の原子IDは乱数（`atom_xxxxxxxxx`）で、`Bond` は端点を
+       **IDの小さい順**に並べ替えて持つ。したがって `findFunctionalGroups` が返す
+       `cc_double` の `atomIds` は**毎回どちらが先に来るか分からない**。
+       この並びを「どちらを先に見るか」に使っていた箇所が2つあり、両方が揺れていた:
+         ① マルコフニコフ則の同点処理（`addAcrossMultipleBond`）… 置換基が付く炭素
+         ② 酸化開裂（`oxidative_cleavage`）… `componentOf(mol, id2)` の側を下へ逃がす
+       ①はさらに**炭素だけを数えていた**ため、ビニル位にヘテロ原子が付く分子
+       （塩化ビニル・酢酸ビニル・ビニルアルコール・メチルビニルエーテル）で左右が同点になり、
+       **できる分子そのものが毎回入れ替わっていた**（塩化ビニル＋HCl が
+       1,1-ジクロロエタン と 1,2-ジクロロエタン。実測20回で 11:9）。
+
+       ⚠ **検査は乱数を待たない**。`relabelIds` で原子IDを「並べた順」に振り直した複製を作れば、
+       `Bond` の正規化を通じて **`site` の並びを手で両方向に作れる** ＝ 実行のたびに
+       当たり外れが変わらない（乱数に頼ると、1件だけ回帰したとき半々でしか落ちない）。 */
+
+    // 原子IDを「並べた順」で振り直した複製。`reverse` で ID の大小関係が丸ごと裏返る。
+    // ⚠ 結合の端点は `Bond` に正規化させる（自前で入れ替えると `removeBond` が当たらなくなる）
+    const relabelIds = (W, m, reverse) => {
+        const list = reverse ? [...m.atoms].reverse() : [...m.atoms];
+        const map = new Map();
+        list.forEach((a, i) => map.set(a.id, 'atom_z' + String(i).padStart(4, '0')));
+        const out = new W.Molecule();
+        m.atoms.forEach(a => {
+            const b = new W.Atom(map.get(a.id), a.element, a.x, a.y, a.isLocked);
+            Object.keys(a).forEach(k => { if (k !== 'id') b[k] = a[k]; });
+            out.atoms.push(b);
+        });
+        m.bonds.forEach(b => out.addBond(map.get(b.atomId1), map.get(b.atomId2), b.type));
+        return out;
+    };
+
+    test('MK1: マルコフニコフ則は「置換基の数」で決める（塩化ビニル＋HCl は 1,1-ジクロロエタン）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
+        const molOf = (name) => {
+            const e = source.find(x => x.name === name && x.target);
+            assert(e, `${name} がライブラリに無い（テストの前提が崩れている）`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        // 両方のID並びで実行して、できた分子の名前を返す（片方だけ合っていても通さない）
+        const productNames = (name, ruleId) => {
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            assert(rule, `${ruleId} のルールが無い`);
+            const base = molOf(name);
+            return [false, true].map(rev => {
+                const mol = relabelIds(W, base, rev);
+                const sites = rule.detect(mol);
+                assert(sites.length > 0, `${name} で ${ruleId} が検出されない（前提が崩れている）`);
+                g.userMolecule = mol;
+                rule.apply(g, sites[0]);
+                return g.lookupCompoundName(mol) || W.iupacName(mol) || '?';
+            });
+        };
+        const both = (name, ruleId, want) => {
+            const got = productNames(name, ruleId);
+            assert(got[0] === want && got[1] === want,
+                `${name} ＋ ${ruleId} が ${got.join(' / ')}（${want} を期待。左右で違うならID順に頼っている）`);
+        };
+
+        // ---- (1) ヘテロ原子が付いたビニル位。**ここが v1456 まで半々で入れ替わっていた** ----
+        both('塩化ビニル', 'add_hcl', '1,1-ジクロロエタン');
+        both('ビニルアルコール', 'add_hbr', '1-ブロモエタノール');
+
+        // ---- (2) 教科書どおりの例が動かないこと（規則を広げて古い正解を壊していない） ----
+        both('2-メチルプロペン（イソブテン）', 'add_hbr', '2-ブロモ-2-メチルプロパン');
+        both('1-ブテン', 'add_hbr', '2-ブロモブタン');
+        // 三重結合の水和も同じ関数を通る（v1456 まではここに同じ式が書き写してあった）
+        both('プロピン（メチルアセチレン）', 'add_water', 'アセトン');
+        both('1-ブチン（エチルアセチレン）', 'add_water', 'エチルメチルケトン（ブタノン）');
+
+        /* ---- (3) ★否定対照 —— **旧規則（炭素だけを数える）をここに書き写して、
+               それでは決まらないことを示す**。ここが通ってしまうなら検査が効いていない ---- */
+        const vc = molOf('塩化ビニル');
+        const site = W.REACTION_RULES.find(r => r.id === 'add_hcl').detect(vc)[0];
+        const countBy = (keep) => site.map((id, i) => vc.getNeighbors(id)
+            .filter(n => keep(n.atom) && n.atom.id !== site[1 - i]).length);
+        const oldWay = countBy(a => a.element === 'C');   // v1456 まで
+        const newWay = countBy(a => a.element !== 'H');   // いま
+        assert(oldWay[0] === oldWay[1],
+            `旧規則（炭素だけを数える）で塩化ビニルの左右に差が出ている（${oldWay}）＝ 否定対照が成り立たない`);
+        assert(newWay[0] !== newWay[1],
+            `新規則（置換基を数える）でも塩化ビニルの左右が同点（${newWay}）＝ 行き先が決まっていない`);
+
+        c.reset();
+    });
+
+    test('DT1: 同じ反応を同じ分子に2回起こすと、生成物の図が1px も違わない（全ライブラリ×全反応）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const source = (W.COMPOUNDS || []).concat(W.STAGES || []).filter(e => e && e.target && e.name);
+        assert(source.length > 900, `ライブラリが ${source.length} 件しかない（前提が崩れている）`);
+        // 平行移動を除いた図の形（CO1 と同じ物差し。回転・鏡映は同一視しない）
+        const shapeOf = (m) => {
+            const hv = m.atoms.filter(a => a.element !== 'H');
+            if (!hv.length) return '';
+            const mx = Math.min(...hv.map(a => a.x)), my = Math.min(...hv.map(a => a.y));
+            return hv.map(a => `${a.element}:${Math.round(a.x - mx)},${Math.round(a.y - my)}`).sort().join('|');
+        };
+        // 情報だけのルール（`info`）は図を変えないので対象外
+        const rules = W.REACTION_RULES.filter(r => !r.info && typeof r.apply === 'function');
+        assert(rules.length >= 30, `走査するルールが ${rules.length} 件しかない（前提が崩れている）`);
+
+        // その分子にその反応を「ID の並びを両方向にして」起こし、[順, 逆] の図を返す。
+        // 検出されなければ null（＝この組み合わせは数えない）
+        const runBoth = (base, rule) => {
+            const out = [];
+            for (const rev of [false, true]) {
+                const mol = relabelIds(W, base, rev);
+                let sites;
+                try { sites = rule.detect(mol) || []; } catch (e) { return null; }
+                if (!sites.length) return null;
+                g.userMolecule = mol;
+                try { rule.apply(g, sites[0]); } catch (e) { out.push('ERR:' + e.message); continue; }
+                out.push(shapeOf(mol));
+            }
+            return out;
+        };
+
+        const differ = [];
+        let pairs = 0;
+        source.forEach(e => {
+            let base;
+            try { base = g.createTargetFromData({ target: e.target }); } catch (err) { return; }
+            rules.forEach(rule => {
+                const r = runBoth(base, rule);
+                if (!r) return;
+                pairs++;
+                if (r[0] !== r[1]) differ.push(`${rule.id}｜${e.name}`);
+            });
+        });
+        // 走査した件数そのものを押さえる（detect が黙って0件になったら「全部一致」に見えてしまう）
+        assert(pairs > 2500, `起こせた反応が ${pairs} 件しかない（2500件以上の想定。前提が崩れている）`);
+        /* ⚠ 直す前の実測（同じ走査を当てたもの）:
+             v1456 … **242 件**（add_hbr 57 ／ add_hcl 57 ／ add_hi 57 ／ add_water 57 ／
+                      oxidative_cleavage 14）
+             1つ前のコミット（置換基を数えるようにした状態）… **254 件**
+                      ——ヘテロ環18件が同点に移るぶん増え、ビニル系9件が減る
+           直したのは `multipleBondSites`（並びを座標で決める）と
+           `markovnikovCarbon` の同点処理（座標で決める）の2か所だけ。
+           ★ v1591 で main に取り込み直したときの実測（全反応ルールが増えていた）:
+             v1590 … **242 件**（HBr・HCl・HI・水 各56 ／ 酸化開裂13 ／
+                      脱ハロゲン化水素3 ／ ワッカー法2）
+             上の2か所＋`wackerUnits` の同点 … **3 件**（脱ハロゲン化水素だけ）
+             `dehydrohalogenationSites` を畳む前に座標で並べる … **0 件**
+           否定対照: 座標の並びを外すと 251 件・脱ハロゲン化水素の並べ替えを外すと 3 件に戻る。 */
+        // 反応ごとの内訳（どの家族が残っているかを失敗の文だけで読めるように）
+        const byRule = {};
+        differ.forEach(d => { const k = d.split('｜')[0]; byRule[k] = (byRule[k] || 0) + 1; });
+        assert(differ.length === 0,
+            `同じ反応を2回起こして図が違う組み合わせが ${differ.length} 件` +
+            `（${Object.entries(byRule).map(([k, n]) => k + ' ' + n).join(' ／ ')}）: ${differ.slice(0, 12).join('、')}` +
+            (differ.length > 12 ? ` ほか${differ.length - 12}件` : ''));
+
+        /* ---- ★否定対照 —— **物差しが「図の違い」を本当に見分ける**ことを示す。
+               ここが通ってしまうなら、上の 0 件は「何も見ていない」の 0 件 ---- */
+        const eth = source.find(x => x.name === 'エタノール' && x.target);
+        const a1 = g.createTargetFromData({ target: eth.target });
+        const a2 = g.createTargetFromData({ target: eth.target });
+        assert(shapeOf(a1) === shapeOf(a2), '同じ分子を2回作って図が違う（物差しが揺れている）');
+        a2.atoms.find(a => a.element === 'O').x += 42;
+        assert(shapeOf(a1) !== shapeOf(a2), '原子を1マス動かしても同じ図と判定される ＝ 物差しが効いていない');
 
         c.reset();
     });

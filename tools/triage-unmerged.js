@@ -38,7 +38,11 @@ const LEDGER = path.join(__dirname, 'branch-verdicts.jsonl');
 const args = process.argv.slice(2);
 const DEEP = args.includes('--deep');
 const SHOW_ALL = args.includes('--all');
-const BASE = 'main';
+// ★ 基準は **origin/main**（公開されたもの）。本体の作業ツリーは複数セッションの共有で、
+//   ローカルの main は隣のレーンの未 push のコミットを抱えたまま origin より何十件も遅れていることがある
+//   （2026-09-19 実発生: ahead 2 / behind 56。統合した6本が「未統合」に見え、台帳も古いものを読んだ）。
+//   origin/main は最後の git fetch の時点なので、正確に見たいときは先に fetch する
+const BASE = git(['rev-parse', '--verify', '-q', 'origin/main']) ? 'origin/main' : 'main';
 
 function git(argv, cwd = ROOT) {
     try {
@@ -56,13 +60,15 @@ const days = unix => Math.floor((Date.now() / 1000 - unix) / 86400);
 
 // --- 判定台帳（1行1件の JSON。{branch, sha, verdict, note, date}） ---
 const verdicts = []; // {branch, sha(短縮可), verdict, note, date}
-if (fs.existsSync(LEDGER)) {
-    for (const [i, l] of lines(fs.readFileSync(LEDGER, 'utf8')).entries()) {
+// 台帳は「自分の木」のものと「基準（origin/main）」のものを合わせて読む（どちらかにしか無い判定を落とさない）
+const ledgerText = [fs.existsSync(LEDGER) ? fs.readFileSync(LEDGER, 'utf8') : '', git(['show', BASE + ':tools/branch-verdicts.jsonl']) || ''].join('\n');
+{
+    for (const [i, l] of lines(ledgerText).entries()) {
         try {
             const e = JSON.parse(l);
             if (e.branch && e.sha) verdicts.push(e);
         } catch (e) {
-            console.error(`⚠ branch-verdicts.jsonl の ${i + 1} 行目が JSON として読めません（飛ばします）`);
+            console.error(`⚠ branch-verdicts.jsonl の行が JSON として読めません（飛ばします）: ${l.slice(0, 60)}`);
         }
     }
 }
@@ -120,7 +126,9 @@ async function main() {
     for (const r of rows) (verdictOf(r.name, r.sha) && !SHOW_ALL ? hidden : shown).push(r);
     shown.sort((x, y) => x.unix - y.unix); // 古いものから（放置が長いほど上）
 
-    console.log(`■ main に入っていない仕事（${shown.length} 本${hidden.length ? `・判定済み ${hidden.length} 本は隠した（--all で表示）` : ''}）`);
+    const baseAge = (git(['log', '-1', '--format=%cr', BASE]) || '').trim();
+    console.log(`基準: ${BASE}（最新のコミット ${baseAge}。古ければ先に git fetch）`);
+    console.log(`■ ${BASE} に入っていない仕事（${shown.length} 本${hidden.length ? `・判定済み ${hidden.length} 本は隠した（--all で表示）` : ''}）`);
     if (!shown.length) console.log('  なし');
     else {
         console.log('  経過  独自  変更   main側  最終       ' + (DEEP ? '旧行残存 新行既存  ' : '') + 'ブランチ');
