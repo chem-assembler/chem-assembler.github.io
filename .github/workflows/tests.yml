@@ -25,6 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: 改行を手元（Windows）と同じ CRLF で展開する
+        # リポジトリの中身は LF。手元は core.autocrlf=true で CRLF に展開しており、
+        # compounds.json・requests.json は「CRLF であること」まで検査している（CLAUDE.md の規約）
+        run: git config --global core.autocrlf true
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # 規則5・8 は git の履歴と origin/main との差し引きを見る
@@ -51,6 +55,10 @@ jobs:
       matrix:
         page: [assembler, qa, ion-equation, ratio, muki]
     steps:
+      - name: 改行を手元（Windows）と同じ CRLF で展開する
+        # リポジトリの中身は LF。手元は core.autocrlf=true で CRLF に展開しており、
+        # compounds.json・requests.json は「CRLF であること」まで検査している（CLAUDE.md の規約）
+        run: git config --global core.autocrlf true
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
