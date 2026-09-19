@@ -11,6 +11,30 @@
    ここは見た目だけを扱う。化学の判断もステージの中身も一切持たない
    （「.strip の中に子要素が並ぶ」「開いているものに .active が付く」という DOM の約束だけに依存）。 */
 (() => {
+  /* ---- 参考書から来たときの戻り道（2026-09-19・参考書を無機・理論へ広げる 便0b）----
+     CLAUDE.md「アプリ横断のリンクは往復にする」。参考書（/reference/）の `:::link app:` は
+     `?from=reference&page=<ページid>` を付けて来る。ここは**全ページが読む**ので1か所で効く。
+     ⚠ 知ってよいのは相手の URL の形（`/reference/<ページid>/`）だけ。ページの一覧は持たない。
+     ⚠ page が読めない形なら索引（`/reference/`）へ戻す（行き止まりにしない・勝手な URL を作らない）。
+     ⚠ ヘッダーの中には入れない（320×568 でヘッダー 120px 以下の約束）。ヘッダーの直後に細い帯で置く。
+     ⚠ `_top` ＝ どこかに埋め込まれていても、枠ではなくタブごと参考書へ戻す（qa の帯と同じ）。 */
+  try {
+    const p = new URLSearchParams(location.search);
+    const head = document.querySelector("header");
+    if (p.get("from") === "reference" && head && !document.querySelector(".refBack")) {
+      const page = p.get("page") || "";
+      const band = document.createElement("div");
+      band.className = "refBack";
+      const a = document.createElement("a");
+      a.className = "refBackLink";
+      a.href = "../reference/" + (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page) ? page + "/" : "");
+      a.target = "_top";
+      a.textContent = "← 参考書へ戻る";
+      band.appendChild(a);
+      head.after(band);
+    }
+  } catch (e) { /* 戻り道が作れなくても本体は動かす */ }
+
   /* ---- モードの帯を組み立てる（2026-08-10）----
      ここは本来「見た目係」だが、**モードの帯だけは中身も組み立てる**。
      以前は6ページが帯を手書きしていて、どこから何へ行けるかがばらばらになり、
