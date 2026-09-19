@@ -89,3 +89,4 @@ electrolysis-equations
 faraday
 electrolysis-industry
 reaction-rate
+rate-law
