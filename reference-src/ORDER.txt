@@ -88,3 +88,4 @@ electrolysis-basics
 electrolysis-equations
 faraday
 electrolysis-industry
+reaction-rate
