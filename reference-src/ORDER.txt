@@ -92,3 +92,4 @@ reaction-rate
 rate-law
 activation-energy
 equilibrium-constant
+le-chatelier
