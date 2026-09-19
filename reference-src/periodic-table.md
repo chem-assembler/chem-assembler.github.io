@@ -2,7 +2,7 @@
 id: periodic-table
 unit: inorg.basis
 unitLabel: 無機の土台
-group: 周期表
+group: 周期表と元素の性質
 title: 周期表と元素の性質
 summary: 典型元素と遷移元素、陽性と陰性、イオン化エネルギー・電子親和力・電気陰性度を、周期表の位置とクーロン力で説明します。
 source:
