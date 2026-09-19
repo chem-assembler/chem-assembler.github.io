@@ -67,6 +67,7 @@ complex-ion
 precipitate
 flame-color
 cation-separation
+substance-classification
 acid-base-definition
 acid-base-strength
 ph
