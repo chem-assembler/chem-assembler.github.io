@@ -48,8 +48,14 @@ jobs:
         run: for f in assembler/*.js; do node --check "$f"; done
 
   browser:
-    runs-on: ubuntu-latest
+    # ⚠ Windows で回す。ion-equation は Segoe UI / Yu Gothic UI を指定していて、Linux では別の字形に
+    #   置き換わり「狭い画面で2行に収まる」類の検査が手元と食い違う（2026-09-19 の試走で4件）。
+    #   テストの基準は手元の Windows なので、同じ OS の字幅で測る
+    runs-on: windows-latest
     timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -63,14 +69,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: 日本語フォント（字幅を測るテストがある）
-        run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-cjk
       - name: playwright（tools/record のものを借りる ＝ 手元と同じ置き場所）
         working-directory: tools/record
-        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
-      - name: 配信サーバー
-        run: |
-          nohup python3 -m http.server 8134 --bind 127.0.0.1 >/dev/null 2>&1 &
-          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8134/${{ matrix.page }}/test.html >/dev/null && break; sleep 1; done
+        run: npm install --no-audit --no-fund && npx playwright install chromium
       - name: 全走（${{ matrix.page }}）
-        run: node tools/run-tests.mjs http://127.0.0.1:8134/${{ matrix.page }}/test.html
+        # サーバーは同じ step の中で立てる（Windows の runner では step をまたぐ裏の処理が残る保証が無い）
+        run: |
+          python -m http.server 8134 --bind 127.0.0.1 >/dev/null 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8134/${{ matrix.page }}/test.html >/dev/null && break; sleep 1; done
+          node tools/run-tests.mjs http://127.0.0.1:8134/${{ matrix.page }}/test.html
