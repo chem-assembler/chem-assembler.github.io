@@ -144,12 +144,16 @@ items:
 
 :::figure
 src: electrolysis-basics-app-nacl.png
+shot: url=/ion-equation/electrolysis.html?s=e3 sel=#stepWhat 状態=開いた直後（どれも選んでいない）
 alt: アプリ「イオンでみる化学反応式」の電気分解の画面。塩化ナトリウム水溶液の中に Na⁺・Cl⁻ と H₂O があり、陰極で反応するのは Na⁺ か H₂O か、陽極で反応するのは Cl⁻ か H₂O かを選ぶボタンが並んでいる
 caption: 水溶液の中にいるイオンと水から、陰極・陽極で反応するものを選んでみましょう。
 :::
 
-//撮影: url=/ion-equation/electrolysis.html?s=e3 sel=#stepWhat 状態=開いた直後（どれも選んでいない）
-//app: ion-equation/electrolysis s=e3 「塩化ナトリウム水溶液の電気分解で、両極で何が反応するかを選ぶ」
+:::link
+app: ion-equation/electrolysis
+id: e3
+text: 塩化ナトリウム水溶液の電気分解で、両極で何が反応するかを選ぶ
+:::
 
 :::section
 anchor: why

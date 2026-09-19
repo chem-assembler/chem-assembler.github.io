@@ -100,7 +100,11 @@ level: ★★★
 note: 正極の反応式。極板の PbO₂ が、極板の上の PbSO₄ に変わります。
 :::
 
-//app: ion-equation/halfreaction q=Pb_ox,PbO2_red 「鉛蓄電池の負極・正極の半反応式を組む」
+:::link
+app: ion-equation/halfreaction
+id: Pb_ox,PbO2_red
+text: 鉛蓄電池の負極・正極の半反応式を組む
+:::
 
 正極の極板は、**e⁻ 2mol が流れるごとに PbO₂ 1mol（239g）が PbSO₄ 1mol（303g）に変わります**。差し引きで S 1個・O 2個の分、**質量は 64g 増えます**。
 
@@ -121,12 +125,11 @@ lead: 両極の式を足すと、e⁻ 2mol あたり H₂SO₄ が 2mol 減り�
 :::reaction
 left: Pb ＋ PbO₂ ＋ 2H₂SO₄
 over: 放電
+arrow: ⇄
 right: 2PbSO₄ ＋ 2H₂O
 level: ★★★
-note: 全体の反応（可逆）。右向きが放電、左向きが充電です。e⁻ 2mol が流れるごとに、電解液では H₂SO₄ が 2mol 減り、H₂O が 2mol 増えます。
+note: 全体の反応。右向きが放電、左向きが充電です。e⁻ 2mol が流れるごとに、電解液では H₂SO₄ が 2mol 減り、H₂O が 2mol 増えます。
 :::
-
-//⇄ 鉛蓄電池の全体の式は「放電 → ／ ← 充電」の可逆。:::reaction に arrow: が入ったら ⇄ にして under: 充電 を足す
 
 放電すると H₂SO₄ が減って H₂O が増えるので、**電解液の硫酸の濃度（密度）は下がります**。
 

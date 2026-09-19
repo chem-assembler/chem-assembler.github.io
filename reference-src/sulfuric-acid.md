@@ -149,19 +149,23 @@ note: 硫酸カルシウム CaSO₄ はセッコウとして建材や彫刻に�
 
 :::reaction
 left: CaSO₄・2H₂O
-right: CaSO₄・H₂O ＋ H₂O
+over: 加熱
+arrow: ⇄
+right: CaSO₄・½H₂O ＋ ³⁄₂H₂O
 level: ★☆☆
-note: （可逆）セッコウ CaSO₄・2H₂O を加熱すると焼きセッコウ CaSO₄・H₂O になり、焼きセッコウを水で練ると体積をやや増しながらセッコウにもどります（かつての医療用ギプス）。
+note: セッコウ CaSO₄・2H₂O を加熱すると焼きセッコウ CaSO₄・½H₂O（半水和物）になり、焼きセッコウを水で練ると体積をやや増しながらセッコウにもどります（かつての医療用ギプス）。
 :::
-
-//⇄ CaSO₄・2H₂O ⇄ CaSO₄・H₂O ＋ H₂O（`:::reaction` に arrow: ⇄ が入ったら書き換える）
 
 :::link
 to: precipitate
 text: 陰イオンごとに沈む相手と沈殿の色の一覧はこちら
 :::
 
-//app: ion-equation/index rxn=s5 「塩化バリウムと硫酸ナトリウムの沈殿反応の係数を決める」
+:::link
+app: ion-equation/index
+id: s5
+text: 塩化バリウムと硫酸ナトリウムの沈殿反応の係数を決める
+:::
 
 ## ⑤ 鉛蓄電池 —— 両極に PbSO₄ が析出する
 
@@ -253,13 +257,16 @@ note: 熱濃硫酸が酸化剤としてはたらくときの半反応式。
 
 :::figure
 src: sulfuric-acid-app-hot-h2so4-half.png
+shot: url=/ion-equation/halfreaction.html?q=H2SO4_hot_red sel=#timeline 状態=開いた直後（何も入れていない。書き方は既定の「H₂SO₄ で書く」）
 alt: H₂SO₄ と SO₂ だけが書かれた式に、H₂O・H⁺・e⁻ の数を入れて半反応式を完成させる画面。「H₂SO₄ で書く」と「SO₄²⁻ で書く」を選べ、手順A「H₂O → H⁺ → e⁻」が選ばれている
 caption: 「熱濃硫酸は SO₂ になる」とだけ覚えておき、O を H₂O で、H を H⁺ で、電荷を e⁻ で合わせます。SO₄²⁻ で書いても同じ半反応式になります。
 :::
 
-//撮影: url=/ion-equation/halfreaction.html?q=H2SO4_hot_red sel=#timeline 状態=開いた直後（何も入れていない。書き方は既定の「H₂SO₄ で書く」）
-
-//app: ion-equation/halfreaction q=H2SO4_hot_red 「熱濃硫酸が酸化剤としてはたらく半反応式を組む」
+:::link
+app: ion-equation/halfreaction
+id: H2SO4_hot_red
+text: 熱濃硫酸が酸化剤としてはたらく半反応式を組む
+:::
 
 :::reaction
 left: Cu ＋ 2H₂SO₄

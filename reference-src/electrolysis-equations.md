@@ -160,12 +160,16 @@ items:
 
 :::figure
 src: electrolysis-equations-app-condition.png
+shot: url=/ion-equation/condition.html?s=b1 sel=#timeline 状態=開いた直後（OH⁻ の数は 0 のまま）
 alt: アプリ「イオンでみる化学反応式」の液性の書き換えの画面。酸性条件の半反応式 2H⁺ ＋ 2e⁻ → H₂ を出発点に、両辺に足す OH⁻ の数を選ぶ欄と、H⁺ と OH⁻ が結びついて H₂O になる様子の図がある
 caption: 両辺に足す OH⁻ の数を選ぶと、H⁺ と OH⁻ が結びついて H₂O になる様子が見られます。
 :::
 
-//撮影: url=/ion-equation/condition.html?s=b1 sel=#timeline 状態=開いた直後（OH⁻ の数は 0 のまま）
-//app: ion-equation/condition s=b1 「水の電気分解の陰極の式を、酸性から塩基性に書き換える」
+:::link
+app: ion-equation/condition
+id: b1
+text: 水の電気分解の陰極の式を、酸性から塩基性に書き換える
+:::
 
 :::section
 anchor: anode-water
@@ -188,7 +192,11 @@ items:
 
 塩基性のときは、できた式の両辺に 4OH⁻ を足して、4H⁺ ＋ 4OH⁻ を 4H₂O にまとめ、両辺の 2H₂O を消すと、4OH⁻ → O₂ ＋ 2H₂O ＋ 4e⁻ になります。
 
-//app: ion-equation/condition s=b2 「水の電気分解の陽極の式を、酸性から塩基性に書き換える」
+:::link
+app: ion-equation/condition
+id: b2
+text: 水の電気分解の陽極の式を、酸性から塩基性に書き換える
+:::
 
 :::section
 anchor: sono2

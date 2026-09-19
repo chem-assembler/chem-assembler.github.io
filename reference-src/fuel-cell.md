@@ -105,7 +105,11 @@ level: ★★★
 note: 正極（リン酸型）。O₂ が酸化剤としてはたらきます。
 :::
 
-//app: ion-equation/halfreaction q=H_ox,O2_red 「燃料電池の負極・正極の半反応式を組む」
+:::link
+app: ion-equation/halfreaction
+id: H_ox,O2_red
+text: 燃料電池の負極・正極の半反応式を組む
+:::
 
 2本の式の e⁻ の係数をそろえて足すと、全体の反応式になります。負極の式を2倍すると e⁻ が 4e⁻ でそろい、足すと e⁻ が消えます。
 
@@ -160,7 +164,11 @@ level: ★★★
 note: 正極（アルカリ型）。O₂ ＋ 4H⁺ ＋ 4e⁻ → 2H₂O の両辺に 4OH⁻ を足し、両辺の 2H₂O を消したもの。
 :::
 
-//app: ion-equation/halfreaction q=H2_ox_basic,O2_red_basic 「アルカリ型燃料電池の負極・正極の半反応式を組む」
+:::link
+app: ion-equation/halfreaction
+id: H2_ox_basic,O2_red_basic
+text: アルカリ型燃料電池の負極・正極の半反応式を組む
+:::
 
 アルカリ型でも、負極の式を2倍して足すと、全体は 2H₂ ＋ O₂ → 2H₂O になります。電解液が違っても、全体の反応はリン酸型と同じです。
 

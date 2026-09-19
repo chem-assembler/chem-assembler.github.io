@@ -31,14 +31,22 @@ NH₃ の N 原子には**非共有電子対**が1組あります。この電子
 
 :::figure
 src: complex-ion-app-cu-nh3.png
+shot: url=/ion-equation/?rxn=complex-cu-nh3 sel=svg#beaker 状態=イオン反応式の係数を 1・4・1 に合わせて「▶ 係数どおりに再生」を押し、12秒待ってから撮影
 alt: ビーカーの模式図。中央の Cu のまわりを NH₃ が4個取り囲んだ粒（電荷 2+）が1個あり、離れたところに SO₄²⁻ が1個ある
 caption: CuSO₄ に NH₃ を4個ぶん加えたあと。**Cu²⁺ のまわりを NH₃ 4個が取り囲んで [Cu(NH₃)₄]²⁺** になり、SO₄²⁻ は反応に加わらずに残ります。
 :::
 
-//撮影: url=/ion-equation/?rxn=complex-cu-nh3 sel=svg#beaker 状態=イオン反応式の係数を 1・4・1 に合わせて「▶ 係数どおりに再生」を押し、12秒待ってから撮影
+:::link
+app: ion-equation
+id: complex-cu-nh3
+text: 硫酸銅とアンモニア（錯イオン）
+:::
 
-//app: ion-equation ?rxn=complex-cu-nh3 「硫酸銅とアンモニア（錯イオン）」
-//app: ion-equation portal.html#u-complex 「錯イオンと沈殿の再溶解」の単元
+:::link
+app: ion-equation/portal
+id: u-complex
+text: 錯イオンと沈殿の再溶解をまとめて試す
+:::
 
 錯イオンの化学式は、**全体を [ ] で囲み、右上に錯イオン全体の電荷**を書きます。電荷は「中心の金属イオンの電荷 ＋ 配位子の電荷の合計」です。NH₃ や H₂O は電荷をもたないので [Cu(NH₃)₄]²⁺ は ＋2 のまま、OH⁻ は −1 なので Al³⁺ に4個つくと [Al(OH)₄]⁻（3 − 4 ＝ −1）になります。
 

@@ -111,12 +111,16 @@ caption: 亜鉛板（負極）から出た e⁻ は導線を通って銅板（�
 
 :::figure
 src: cell-basics-app-daniell.png
+shot: url=/ion-equation/battery.html?s=b1 sel=svg#cell 状態=開いた直後（板をタップする前）
 alt: アプリ「イオンでみる化学反応式」の電池の画面。硫酸亜鉛水溶液に亜鉛板、硫酸銅(Ⅱ)水溶液に銅板が浸され、間に素焼き板がある。どちらの板が溶けるかを予想する前の状態
 caption: どちらの板が溶けるかを予想してからつなぐと、e⁻ とイオンの動きが見られます。
 :::
 
-//撮影: url=/ion-equation/battery.html?s=b1 sel=svg#cell 状態=開いた直後（板をタップする前）
-//app: ion-equation/battery s=b1 「ダニエル電池を組み立てて、どちらの板が溶けるか予想する」
+:::link
+app: ion-equation/battery
+id: b1
+text: ダニエル電池を組み立てて、どちらの板が溶けるか予想する
+:::
 
 :::section
 anchor: plate

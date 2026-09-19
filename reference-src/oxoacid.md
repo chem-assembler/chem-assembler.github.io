@@ -178,21 +178,19 @@ CO₂ と SO₂ は水に溶けて弱い酸性を示します。弱酸なので�
 
 :::reaction
 left: CO₂ ＋ H₂O
+arrow: ⇄
 right: H⁺ ＋ HCO₃⁻
 level: ★★★
-note: （可逆）CO₂ ＋ H₂O → H₂CO₃ と、H₂CO₃ の1段階目の電離を足した式です。
+note: CO₂ ＋ H₂O → H₂CO₃ と、H₂CO₃ の1段階目の電離を足した式です。
 :::
-
-//⇄ CO₂ ＋ H₂O ⇄ H⁺ ＋ HCO₃⁻（arrow: ⇄ の欄が入ったら直す）
 
 :::reaction
 left: SO₂ ＋ H₂O
+arrow: ⇄
 right: H⁺ ＋ HSO₃⁻
 level: ★★★
-note: （可逆）SO₂ ＋ H₂O → H₂SO₃ と、H₂SO₃ の1段階目の電離を足した式です。
+note: SO₂ ＋ H₂O → H₂SO₃ と、H₂SO₃ の1段階目の電離を足した式です。
 :::
-
-//⇄ SO₂ ＋ H₂O ⇄ H⁺ ＋ HSO₃⁻（arrow: ⇄ の欄が入ったら直す）
 
 ## 二酸化窒素だけは酸化還元になる
 

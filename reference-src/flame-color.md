@@ -64,11 +64,10 @@ rows:
 
 :::figure
 src: flame-color-app-flame.png
+shot: url=/muki/separation.html sel=#log li:first 状態=ページの JS で window.sepUI.state.truth を Na・K・Ca・Cu・Ag に順に固定し、history を空にしてから sepUI.doOp('flame') を押した5枚を、1手目の札の文を切り落として縦に並べた（separation.html は開くたびに抽選なので、状態をページの JS で作った）・viewport 1200・deviceScaleFactor 1
 alt: 暗い地の画面に、炎の色の見本と「炎が○○色になった」という文が5段並んでいる。上から黄色、赤紫色、橙赤色、青緑色、そして最後は色の見本が空で「炎に色はつかなかった」
 caption: 系統分離の画面で炎色反応の札を押したときの結果。上から Na⁺・K⁺・Ca²⁺・Cu²⁺・Ag⁺ を入れた容器です。**Ag⁺ のように、7元素以外は炎に色がつきません。**
 :::
-
-//撮影: url=/muki/separation.html sel=#log li:first 状態=ページの JS で window.sepUI.state.truth を Na・K・Ca・Cu・Ag に順に固定し、history を空にしてから sepUI.doOp('flame') を押した5枚を、1手目の札の文を切り落として縦に並べた（separation.html は開くたびに抽選なので、状態をページの JS で作った）・viewport 1200・deviceScaleFactor 1
 
 :::callout
 tone: caution

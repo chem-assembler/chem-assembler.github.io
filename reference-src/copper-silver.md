@@ -55,8 +55,17 @@ note: 熱濃硫酸。SO₂ が発生します。
 
 この3本は、銅の半反応式 Cu → Cu²⁺ ＋ 2e⁻ と、酸化剤（希硝酸・濃硝酸・熱濃硫酸）の半反応式を組み合わせれば出てきます。**反応物と生成物（何の気体が出るか）は暗記し、係数は半反応式から出す**ようにしましょう。
 
-//app: ion-equation/redox rxn=rn1 「銅と希硝酸（無色の NO が発生）」
-//app: ion-equation/redox rxn=rn2 「銅と濃硝酸（赤褐色の NO₂ が発生）」
+:::link
+app: ion-equation/redox
+id: rn1
+text: 銅と希硝酸（無色の NO が発生）
+:::
+
+:::link
+app: ion-equation/redox
+id: rn2
+text: 銅と濃硝酸（赤褐色の NO₂ が発生）
+:::
 
 :::link
 to: redox-equation
@@ -91,13 +100,16 @@ note: Cu は e⁻ を2個出し、Ag⁺ は1個ずつ受け取るので、Ag⁺ 
 
 :::figure
 src: copper-silver-app-silver-tree.png
+shot: url=/ion-equation/redox.html?rxn=r2 sel=#schematicWrap 状態=「＋ Ag⁺（酸化剤）」を1回押して Ag⁺ を2個にしたところ
 alt: 模式図。左に Cu が1個、そこから e⁻ が2個それぞれ矢印で右の Ag⁺ 2個へ移っている。下に「Ag⁺ 2個と Cu 1個でちょうど反応する」とある
 caption: Cu 1個が出す e⁻ は2個、Ag⁺ 1個が受け取る e⁻ は1個なので、**Cu 1個に Ag⁺ が2個**です。
 :::
 
-//撮影: url=/ion-equation/redox.html?rxn=r2 sel=#schematicWrap 状態=「＋ Ag⁺（酸化剤）」を1回押して Ag⁺ を2個にしたところ
-
-//app: ion-equation/redox rxn=r2 「銅と銀イオン（銀樹）」
+:::link
+app: ion-equation/redox
+id: r2
+text: 銅と銀イオン（銀樹）
+:::
 
 :::link
 to: ionization-tendency
@@ -163,8 +175,17 @@ level: ★★★
 note: 黒色の沈殿。酸性の水溶液でも沈殿します。
 :::
 
-//app: ion-equation ?rxn=cu-nh3-step1 「硫酸銅とアンモニア水（少量：沈殿）」
-//app: ion-equation ?rxn=cu-nh3-step2 「水酸化銅(Ⅱ)とアンモニア水（過剰：再溶解）」
+:::link
+app: ion-equation
+id: cu-nh3-step1
+text: 硫酸銅とアンモニア水（少量：沈殿）
+:::
+
+:::link
+app: ion-equation
+id: cu-nh3-step2
+text: 水酸化銅(Ⅱ)とアンモニア水（過剰：再溶解）
+:::
 
 Cu(OH)₂ は、過剰の NaOH 水溶液には溶けません（両性ではないため）。Cu の炎色反応は**青緑色**です。
 
@@ -209,7 +230,11 @@ level: ★★★
 note: AgCl はアンモニア水に溶けます。
 :::
 
-//app: ion-equation ?rxn=complex-agcl-nh3 「塩化銀とアンモニア（沈殿の再溶解）」
+:::link
+app: ion-equation
+id: complex-agcl-nh3
+text: 塩化銀とアンモニア（沈殿の再溶解）
+:::
 
 :::table
 caption: ハロゲン化銀の色と溶けやすさ

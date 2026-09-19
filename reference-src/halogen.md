@@ -49,12 +49,11 @@ terms:
 
 :::reaction
 left: X₂ ＋ 2e⁻
+arrow: ⇄
 right: 2X⁻
 level: ★★★
-note: （可逆）左から右へ進むとき X₂ は酸化剤、右から左へ進むとき X⁻ は還元剤です。X は F・Cl・Br・I のどれか。
+note: 左から右へ進むとき X₂ は酸化剤、右から左へ進むとき X⁻ は還元剤です。X は F・Cl・Br・I のどれか。
 :::
-
-//⇄ X₂ ＋ 2e⁻ ⇄ 2X⁻（`:::reaction` に arrow: ⇄ が入ったら書き換える）
 
 :::table
 caption: ハロゲンの単体の比較
@@ -312,12 +311,11 @@ terms:
 
 :::reaction
 left: Br₂ ＋ H₂O
+arrow: ⇄
 right: HBr ＋ HBrO
 level: ★☆☆
-note: （可逆）水に溶けるときは Cl₂ と同じ型です。
+note: 水に溶けるときは Cl₂ と同じ型です。
 :::
-
-//⇄ Br₂ ＋ H₂O ⇄ HBr ＋ HBrO（⚠ スライドは s30 では ⇄、練習6の解答 s45 では → と揺れている。ページは ⇄ にそろえる）
 
 臭化銀 AgBr は感光性が強く、かつては銀塩写真（フィルム）に使われていました。光によって 2AgBr → 2Ag ＋ Br₂ の反応が起こり、生じた Ag で像ができます。
 
@@ -373,7 +371,11 @@ to: redox-titration
 text: ヨウ素滴定の量的関係（H₂O₂ の濃度を求める計算）はこちら
 :::
 
-//app: ion-equation/halfreaction q=I2_red,I_ox 「ヨウ素・ヨウ化物イオンの半反応式を組む」
+:::link
+app: ion-equation/halfreaction
+id: I2_red,I_ox
+text: ヨウ素・ヨウ化物イオンの半反応式を組む
+:::
 
 ## 例題
 

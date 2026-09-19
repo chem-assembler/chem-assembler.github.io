@@ -55,13 +55,15 @@ rows:
 
 :::figure
 src: cation-separation-app-tree.png
+shot: url=/muki/tree.html sel=#flow 状態=ページの JS で treeUI.start('read','easy',{ions:['Ag','Cu','Fe3','Zn','Ca','Na']}) として容器を固定し（tree.html は開くたびに抽選）、treePlanFromRun で出した行先へ treeUI.pick／placeIon で全イオンを置いた（提出はしていない）・viewport 1200×1400・deviceScaleFactor 1・256色に減色
 alt: 暗い地の画面に、系統分離の流れが上から下へ一直線に並んだ図。「この容器 Ag⁺ Cu²⁺ Fe³⁺ Zn²⁺ Ca²⁺ Na⁺」から始まり、希塩酸で沈殿 Ag⁺、ろ液に硫化水素で沈殿 Cu²⁺、煮沸・希硝酸・アンモニア水で沈殿 Fe³⁺、硫化水素で沈殿 Zn²⁺、炭酸アンモニウムで沈殿 Ca²⁺、最後のろ液に Na⁺ が残る
 caption: 6種類のイオンを1つずつ沈殿として取り出す流れ。**主流のろ液は1本で、各段で1つずつ沈殿を横へ出していきます。**最後のろ液に残る Na⁺ は、炎色反応で確かめます。
 :::
 
-//撮影: url=/muki/tree.html sel=#flow 状態=ページの JS で treeUI.start('read','easy',{ions:['Ag','Cu','Fe3','Zn','Ca','Na']}) として容器を固定し（tree.html は開くたびに抽選）、treePlanFromRun で出した行先へ treeUI.pick／placeIon で全イオンを置いた（提出はしていない）・viewport 1200×1400・deviceScaleFactor 1・256色に減色
-
-//app: muki/tree 「すべてのイオンを単離する手順を、札を並べて組む」（⚠ 1問を名指しする受け口は無い。入口 /muki/?open=tree）
+:::link
+app: muki/tree
+text: すべてのイオンを単離する手順を、札を並べて組む
+:::
 
 **この6段の順番は必ず覚えてください。**段ごとに加える試薬が決めている陰イオン（Cl⁻ → 酸性の S²⁻ → OH⁻ → 塩基性の S²⁻ → CO₃²⁻）の順で覚えると、沈殿の知識とつながります。
 

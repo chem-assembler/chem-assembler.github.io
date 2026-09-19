@@ -151,7 +151,10 @@ to: cation-separation
 text: 水酸化物の沈殿で Fe³⁺ を分ける手順は系統分離のページへ
 :::
 
-//app: muki/separation.html Fe³⁺ の観察（抽選のため固定できず・撮影していない）
+:::link
+app: muki/separation
+text: 水溶液の色と沈殿で Fe³⁺ を見分ける
+:::
 
 :::section
 anchor: reductant
@@ -181,14 +184,22 @@ note: 酸化剤の半反応式 Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ 
 
 :::figure
 src: iron-app-dichromate-fe.png
+shot: url=/ion-equation/redox.html?rxn=rs2 sel=#schematicWrap 状態=「＋ Fe²⁺（還元剤）」を5回押して Fe²⁺ を6個にしたところ
 alt: 模式図。左に Fe²⁺ が6個並び、それぞれから e⁻ が1個ずつ矢印で右の Cr₂O₇²⁻ と 14H⁺ の枠へ移っている。下に「Cr₂O₇²⁻ 1個と Fe²⁺ 6個でちょうど反応する」とある
 caption: Fe²⁺ 1個が出す e⁻ は1個なので、**e⁻ を6個受け取る Cr₂O₇²⁻ 1個には Fe²⁺ が6個**要ります。
 :::
 
-//撮影: url=/ion-equation/redox.html?rxn=rs2 sel=#schematicWrap 状態=「＋ Fe²⁺（還元剤）」を5回押して Fe²⁺ を6個にしたところ
+:::link
+app: ion-equation/redox
+id: rs2
+text: 二クロム酸カリウムと鉄(Ⅱ)
+:::
 
-//app: ion-equation/redox rxn=rs2 「二クロム酸カリウムと鉄(Ⅱ)」
-//app: ion-equation/redox rxn=rs1 「過マンガン酸カリウムと鉄(Ⅱ)」
+:::link
+app: ion-equation/redox
+id: rs1
+text: 過マンガン酸カリウムと鉄(Ⅱ)
+:::
 
 :::link
 to: transition-oxidizers

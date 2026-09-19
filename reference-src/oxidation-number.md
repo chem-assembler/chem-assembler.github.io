@@ -210,7 +210,11 @@ to: alcohol-oxidation-map
 text: 第1級・第2級・第3級アルコールの酸化の行き先は「アルコールを酸化するとどうなるか」で
 :::
 
-//app: ion-equation/oxidation sp=MnO4- 「酸化数を段階的に決める」
+:::link
+app: ion-equation/oxidation
+id: MnO4-
+text: 酸化数を段階的に決める
+:::
 
 ## 例題
 

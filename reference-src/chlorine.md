@@ -126,13 +126,16 @@ note: 塩素が酸化剤としてはたらくときの半反応式。Cl は安�
 
 :::figure
 src: chlorine-app-cl2-half.png
+shot: url=/ion-equation/halfreaction.html?q=Cl2_red sel=#timeline 状態=開いた直後（何も入れていない）
 alt: Cl₂ と 2Cl⁻ だけが書かれた式に、H₂O・H⁺・e⁻ の数を入れて半反応式を完成させる画面。手順A「H₂O → H⁺ → e⁻」が選ばれている
 caption: 反応の前後（Cl₂ → 2Cl⁻）だけを覚えておき、H₂O・H⁺・e⁻ を順に入れて半反応式にします。この式では O も H も無いので、e⁻ を2個入れるだけです。
 :::
 
-//撮影: url=/ion-equation/halfreaction.html?q=Cl2_red sel=#timeline 状態=開いた直後（何も入れていない）
-
-//app: ion-equation/halfreaction q=Cl2_red 「塩素が酸化剤としてはたらく半反応式を組む」
+:::link
+app: ion-equation/halfreaction
+id: Cl2_red
+text: 塩素が酸化剤としてはたらく半反応式を組む
+:::
 
 ## 金属を酸化する
 
@@ -147,12 +150,11 @@ note: Cl₂ は多くの金属と反応して酸化します。Cu → Cu²⁺ �
 
 :::reaction
 left: Cl₂ ＋ H₂O
+arrow: ⇄
 right: HCl ＋ HClO
 level: ★★★
-note: （可逆）塩素が水に溶けるときの反応。生じた次亜塩素酸 HClO が殺菌・漂白のはたらきをします。
+note: 塩素が水に溶けるときの反応。生じた次亜塩素酸 HClO が殺菌・漂白のはたらきをします。
 :::
-
-//⇄ Cl₂ ＋ H₂O ⇄ HCl ＋ HClO（`:::reaction` に arrow: ⇄ が入ったら書き換える）
 
 この反応では、Cl₂ の2つの Cl 原子のうち1つが −1（Cl⁻）、もう1つが +1（HClO の Cl）になります。Cl₂ が酸化剤と還元剤の両方としてはたらく**自己酸化還元反応**です。Cl₂ を Cl⁻ と Cl⁺ に分け、H₂O を H⁺ と OH⁻ に分けて組み合わせると、右辺の HCl と HClO がすぐに書けます。
 
@@ -293,7 +295,11 @@ to: precipitate
 text: 陰イオンごとに沈む相手と沈殿の色の一覧はこちら
 :::
 
-//app: ion-equation/index rxn=s4 「硝酸銀と塩化ナトリウムの沈殿反応の係数を決める」
+:::link
+app: ion-equation/index
+id: s4
+text: 硝酸銀と塩化ナトリウムの沈殿反応の係数を決める
+:::
 
 :::section
 anchor: oxoacid-cl

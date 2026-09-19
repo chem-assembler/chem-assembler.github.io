@@ -155,11 +155,10 @@ terms:
 
 :::figure
 src: redox-equation-app-kmno4-fe.png
+shot: url=/ion-equation/redox.html?rxn=rs1 sel=#step1 状態=Fe²⁺ の行の倍数の欄に 5 を入れて（fill ＋ input/change）e⁻ がそろった表示にしてから撮った（ion v215・1200px 幅・deviceScaleFactor 1）
 alt: Fe²⁺ → Fe³⁺ ＋ e⁻ に ×5、MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O に ×1 を掛けて、e⁻ がどちらも5個にそろった状態。各式の Fe・Mn の下に酸化数（＋2 → ＋3、＋7 → ＋2）が添えてある
 caption: 過マンガン酸イオン（5価）と鉄(Ⅱ)イオン（1価）。**価数の逆の比 1：5** で e⁻ がそろいます。
 :::
-
-//撮影: url=/ion-equation/redox.html?rxn=rs1 sel=#step1 状態=Fe²⁺ の行の倍数の欄に 5 を入れて（fill ＋ input/change）e⁻ がそろった表示にしてから撮った（ion v215・1200px 幅・deviceScaleFactor 1）
 
 二クロム酸カリウム K₂Cr₂O₇ 水溶液と硫酸鉄(Ⅱ) FeSO₄ 水溶液を、硫酸酸性で反応させます。
 
@@ -249,11 +248,35 @@ to: nitrogen
 text: 硝酸の性質と製法（オストワルト法）は「窒素とその化合物」で
 :::
 
-//app: ion-equation/redox rxn=rs1 「過マンガン酸カリウム × 鉄(Ⅱ)」
-//app: ion-equation/redox rxn=rs2 「二クロム酸カリウム × 鉄(Ⅱ)」
-//app: ion-equation/redox rxn=rs3 「過マンガン酸カリウム × シュウ酸」
-//app: ion-equation/redox rxn=rn1 「銅 × 希硝酸」
-//app: ion-equation/redox rxn=rn2 「銅 × 濃硝酸」
+:::link
+app: ion-equation/redox
+id: rs1
+text: 過マンガン酸カリウム × 鉄(Ⅱ)
+:::
+
+:::link
+app: ion-equation/redox
+id: rs2
+text: 二クロム酸カリウム × 鉄(Ⅱ)
+:::
+
+:::link
+app: ion-equation/redox
+id: rs3
+text: 過マンガン酸カリウム × シュウ酸
+:::
+
+:::link
+app: ion-equation/redox
+id: rn1
+text: 銅 × 希硝酸
+:::
+
+:::link
+app: ion-equation/redox
+id: rn2
+text: 銅 × 濃硝酸
+:::
 
 ## 例題
 

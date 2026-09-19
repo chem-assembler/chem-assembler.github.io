@@ -60,9 +60,23 @@ rows:
 
 **5つの型の名前と、それぞれの「見分ける手がかり」は覚えてください。**反応式そのものは各物質のページで覚えます。そのときに「反応前後の物質の化学式は暗記、係数は型の手順で出す」と分けると、覚える量が減ります。
 
-//app: ion-equation/portal #sr-acid-base 「酸と塩基」（中和・遊離）
-//app: ion-equation/portal #sr-redox 「酸化還元」
-//app: ion-equation/portal #sr-precipitate 「沈殿と溶解」（沈殿・錯イオン）
+:::link
+app: ion-equation/portal
+id: sr-acid-base
+text: 酸と塩基の反応（中和・弱酸の遊離）
+:::
+
+:::link
+app: ion-equation/portal
+id: sr-redox
+text: 酸化還元の反応（e⁻ のやりとり）
+:::
+
+:::link
+app: ion-equation/portal
+id: sr-precipitate
+text: 沈殿と溶解の反応（沈殿・錯イオン）
+:::
 
 :::section
 anchor: how-to-tell
@@ -228,11 +242,10 @@ terms:
 
 :::figure
 src: inorg-reaction-types-app-agcl.png
+shot: url=/ion-equation/?rxn=s4 sel=#recombineWrap 状態=左辺 1,1・右辺 1,1 を入れて「係数どおりに再生」→「組み替える」を押したあと
 alt: AgNO₃ と NaCl のイオンを組み替えて、AgCl と NaNO₃ ができる様子を示したアプリの画面
 caption: 沈殿もイオンの組み換えです。Ag⁺ と Cl⁻ が組んだ AgCl は水に溶けないので沈みます。
 :::
-
-//撮影: url=/ion-equation/?rxn=s4 sel=#recombineWrap 状態=左辺 1,1・右辺 1,1 を入れて「係数どおりに再生」→「組み替える」を押したあと
 
 :::reaction
 left: Ag⁺ ＋ Cl⁻
@@ -308,7 +321,11 @@ lead: 燃焼や化合のように、イオンにならずに分子どうしが�
 
 熱分解（CaCO₃ → CaO ＋ CO₂ など）も、酸化数が変わらない反応です。これは各物質のページで扱います。
 
-//app: ion-equation/portal #sr-molecule 「分子の組み換え」
+:::link
+app: ion-equation/portal
+id: sr-molecule
+text: 分子の組み換え
+:::
 
 :::section
 anchor: range
