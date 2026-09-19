@@ -50,4 +50,3 @@ copper-silver            銅と銀〔無機〕
 nitrogen                 窒素とその化合物〔無機〕
 carbon-silicon           炭素とケイ素〔無機〕
 transition-oxidizers     クロムとマンガン〔無機〕
-sulfuric-acid            硫酸 —— 希硫酸と濃硫酸〔無機〕
