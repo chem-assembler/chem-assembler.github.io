@@ -71,6 +71,10 @@ substance-classification
 atom-structure
 ionic-bond
 covalent-bond
+molecular-shape
+intermolecular-force
+crystal-types
+unit-cell
 acid-base-definition
 acid-base-strength
 ph
