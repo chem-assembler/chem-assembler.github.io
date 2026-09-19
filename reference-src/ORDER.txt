@@ -92,3 +92,4 @@ dissolution
 solubility
 gas-solubility
 colligative
+osmotic-pressure
