@@ -29,12 +29,6 @@ concentration             溶液の濃度 —— 溶液 1L について考える
 chemical-equation         化学反応式のつくり方
 stoichiometry             化学反応の量的関係 —— 係数の比は mol の比
 chemical-laws             化学の基本法則 —— 原子と分子にたどり着くまで
-states-of-matter          物質の三態と熱運動
-vapor-pressure            液体の蒸気圧と沸騰
-gas-laws                  気体の法則と状態方程式 —— 比例と反比例で解く
-gas-mixture               混合気体と分圧 —— 全圧はてんびんで
-gas-with-vapor            水蒸気を含む気体 —— 全部気体と仮定して比べる
-real-gas                  理想気体と実在気体 —— ずれは体積で考える
 dissolution               溶解のしくみ —— 似たものどうしは溶け合う
 solubility                固体の溶解度と再結晶
 gas-solubility            気体の溶解度 —— ヘンリーの法則
