@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
-<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<title>酸化数の決め方 ｜ 化学の参考書</title>
+<meta name="description" content="酸化数は「単体を基準（0）に、原子が失った電子 e⁻ の数」。優先順位の表で決める手順と、電気陰性度から決める道、有機化合物の中の炭素の酸化数まで。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/oxidation-number/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
-<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:title" content="酸化数の決め方 ｜ 化学の参考書">
+<meta property="og:description" content="酸化数は「単体を基準（0）に、原子が失った電子 e⁻ の数」。優先順位の表で決める手順と、電気陰性度から決める道、有機化合物の中の炭素の酸化数まで。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/oxidation-number/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -842,35 +842,73 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
 <main class="wrap">
-<h1>反応の道すじ（反応機構）</h1>
-<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
-<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+<h1>酸化数の決め方</h1>
+<p class="lede">酸化数は「単体を基準（0）に、原子が失った電子 e⁻ の数」。優先順位の表で決める手順と、電気陰性度から決める道、有機化合物の中の炭素の酸化数まで。</p>
+<div><span class="unit-label">酸化還元</span><span class="unit-label">酸化数</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">酸化数とは</a></li><li><a href="#ref-sec-rules" data-ref-anchor="rules">優先順位の表と、決める手順</a></li><li><a href="#ref-sec-electronegativity" data-ref-anchor="electronegativity">電気陰性度から決める —— なぜ H は ＋1、O は −2 なのか</a></li><li><a href="#ref-sec-max" data-ref-anchor="max">最高酸化数</a></li><li><a href="#ref-sec-organic" data-ref-anchor="organic">有機化合物の中の炭素の酸化数</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
-<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
-<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
-<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
-<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
-<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの下の「<b>⚗ 反応させる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+<p class="ref-p">酸化数は、原子が酸化されたか還元されたかを数で表したものです。酸化剤・還元剤の判定と、半反応式の e⁻ の数を決めるときに使います。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/redox-basics/">酸化数が減った原子を含む物質が酸化剤、増えた原子を含む物質が還元剤（「酸化と還元」）</a></p>
+<section class="ref-sec" id="ref-sec-definition"><h4 class="ref-sec-h">酸化数とは</h4><p class="ref-sec-lead">単体の状態を基準（酸化数0）に、原子が失った電子 e⁻ の数です。</p></section>
+<p class="ref-p">「単体の状態を基準（酸化数0）に、原子が失った電子 e⁻ の数」を酸化数といいます。</p>
+<h5 class="ref-h5">単原子イオンの場合</h5>
+<p class="ref-p">単原子イオンの酸化数は、<b>イオンの電荷と一致します</b>。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Na</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na⁺ ＋ e⁻</span></div><p class="ref-note">単体の Na（酸化数 0）の Na 原子は、電子を1個失って Na⁺（酸化数 ＋1）になりました。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cl₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Cl⁻</span></div><p class="ref-note">単体の Cl₂（酸化数 0）の Cl 原子は、電子を1個受け取って Cl⁻（酸化数 −1）になりました。「−1 個失った」と考えるので −1 です。</p></div>
+<h5 class="ref-h5">多原子イオン・化合物の場合</h5>
+<p class="ref-p">多原子イオンや化合物は、「<b>すべての原子が単原子イオンに電離したと（仮想的に）考えたときの電荷</b>」を酸化数とします。そのため、<b>多原子イオンの各原子の酸化数の合計は、イオンの電荷と一致します</b>（化合物なら合計は 0）。</p>
+<p class="ref-p">硫酸イオン SO₄²⁻ なら、S⁶⁺ ＋ 4O²⁻ に電離したと考えます。</p>
+<p class="ref-p">−2（イオンの電荷）＝ 1×(＋6) ＋ 4×(−2)（各原子の酸化数の合計）</p>
+<p class="ref-p">したがって S の酸化数は ＋6 です。</p>
+<section class="ref-sec" id="ref-sec-rules"><h4 class="ref-sec-h">優先順位の表と、決める手順</h4><p class="ref-sec-lead">電解質はまずイオンに分け、表の上から順に確定できる原子を決めます。</p></section>
+<p class="ref-p">酸化数は、次の表の<b>上の行ほど優先</b>して決めます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">酸化数を決める優先順位</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">原子</th><th style="text-align: center;">酸化数</th><th style="text-align: left;">備考</th></tr></thead><tbody><tr><td style="text-align: left;">アルカリ金属</td><td style="text-align: center;">＋1</td><td style="text-align: left;">絶対に ＋1</td></tr><tr><td style="text-align: left;">アルカリ土類金属</td><td style="text-align: center;">＋2</td><td style="text-align: left;">絶対に ＋2。アルカリ土類金属は2族すべてなので、Be・Mg も ＋2</td></tr><tr><td style="text-align: left;">H</td><td style="text-align: center;">＋1</td><td style="text-align: left;">NaH など金属の水素化物の中では H⁻ となっており −1</td></tr><tr><td style="text-align: left;">O</td><td style="text-align: center;">−2</td><td style="text-align: left;">H₂O₂ など過酸化物の中では −1</td></tr><tr><td style="text-align: left;">ハロゲン</td><td style="text-align: center;">−1</td><td style="text-align: left;">F 以外は −1 〜 ＋7 の酸化数をとり、例外はそれなりにある</td></tr></tbody></table></div>
+<p class="ref-p"><b>この表は必ず暗記してください。</b>上から順に当てはめ、確定しない原子は電荷の合計から逆算します。</p>
+<ol class="ref-list"><li>電離できるものは、まず電離する。<div class="ref-li-hang">Cu(NO₃)₂ → Cu²⁺ ＋ 2NO₃⁻</div></li><li>単原子イオンの酸化数は、電荷と一致させる。<div class="ref-li-hang">Cu²⁺ の Cu は ＋2</div></li><li>多原子イオンはさらに単原子イオンに（仮想的に）分け、酸化数がわかる原子から決める。<div class="ref-li-hang">NO₃⁻ → N<span class="ref-blank">○○</span> ＋ 3O²⁻ として、O は −2</div></li><li>イオン全体の電荷を合わせて、残りの原子の酸化数を決める。<div class="ref-li-hang">−1 ＝ (N の酸化数) ＋ 3×(−2) より、N は ＋5</div></li></ol>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/oxidation-number-rules.png" alt="酸化数の決め方の表（アルカリ金属 ＋1、アルカリ土類金属 ＋2、H ＋1、O −2、ハロゲン −1 と、それぞれの例外）と、硝酸銅(Ⅱ)を例に ①電離 ②単原子イオンの電荷 ③わかる原子 ④全体の電荷 の順で N の酸化数 ＋5 を出す図" loading="lazy"><figcaption class="ref-figure-cap">優先順位の表と、Cu(NO₃)₂ の N の酸化数を決める4段。<b>「①電離 → ②単原子イオン → ③わかる原子 → ④全体の電荷」</b>の順です。</figcaption></figure>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">化合物の中の O は、いつでも酸化数 −2 である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">過酸化水素 H₂O₂ のような<b>過酸化物の中の O は −1</b> です。</span></p><p class="ref-mistake-why">表で O より上にある H（＋1）が先に決まるためです。H₂O₂ は H が2個で ＋2、全体は 0 なので、O 2個で −2、つまり O 1個あたり −1 になります。同じ理由で、NaH の H は、表で上にある Na（＋1）が先に決まるので −1 になります。</p></div>
+<section class="ref-sec" id="ref-sec-electronegativity"><h4 class="ref-sec-h">電気陰性度から決める —— なぜ H は ＋1、O は −2 なのか</h4><p class="ref-sec-lead">共有電子対は、少しでも強く引きつけている原子がすべてもっていると判定します。</p></section>
+<p class="ref-p">電気陰性度は「共有結合した原子が共有電子対を引きつける力の強さ」です。<b>酸化数を決めるときは、共有電子対は少しでも強く引きつけている原子がすべてもっている</b>と判定します。</p>
+<p class="ref-p">主な元素の電気陰性度の順は次のとおりです。</p>
+<p class="ref-p">F（4.0）＞ O（3.4）＞ Cl（3.2）＞ N（3.0）＞ C（2.6）など ＞ H（2.2）＞ ふつうの金属 ＞ アルカリ土類金属・アルカリ金属</p>
+<h5 class="ref-h5">水 H₂O の場合</h5>
+<p class="ref-p">O の電気陰性度は 3.4、H は 2.2 なので、O−H の共有電子対は O 側に偏ります。O は両側の H から1個ずつ、合計2個の e⁻ をとったと考えるので<b>酸化数 −2</b>（O²⁻ と同じ状態）、H は自分の e⁻ をとられたので<b>酸化数 ＋1</b>（H⁺ と同じ状態）です。</p>
+<h5 class="ref-h5">単体の酸化数が 0 である理由</h5>
+<p class="ref-p">単体は同じ元素どうし（電気陰性度が等しい）が結合しているので、共有電子対は2つの原子のど真ん中に位置し、それぞれの原子がもっている e⁻ の数は変わりません。そのため<b>単体の原子の酸化数は 0</b> です。</p>
+<h5 class="ref-h5">例外が起こる理由</h5>
+<p class="ref-p">H は非金属元素の中で電気陰性度が事実上最小なので、他の非金属と結合すると e⁻ をとられて ＋1 になります。一方、H は金属より電気陰性度が大きいので、NaH のように<b>金属と結合すると e⁻ を1個とって −1</b> になります。</p>
+<p class="ref-p">過酸化水素 H−O−O−H では、O−H の共有電子対は O 側に偏りますが、O−O の共有電子対は同じ元素どうしなのでど真ん中です。O は H から1個しか e⁻ をとっていないので<b>酸化数 −1</b> になります。</p>
+<p class="ref-p">優先順位の表は丸暗記でも使えますが、<b>電気陰性度の大小から導けるようにしておくと、表に無い化合物にも対応できます</b>。</p>
+<section class="ref-sec" id="ref-sec-max"><h4 class="ref-sec-h">最高酸化数</h4><p class="ref-sec-lead">典型元素の最高酸化数は、価電子の数（族番号の一の位）と一致します。</p></section>
+<p class="ref-p">酸化数は「原子が失った電子の数」なので、価電子をすべて失った状態がいちばん大きい酸化数になります。<b>典型元素の最高酸化数は、価電子の数（族番号の一の位）と一致します</b>。</p>
+<h5 class="ref-h5">具体例 —— 硫黄 S（16族）</h5>
+<p class="ref-p">S は16族なので価電子は6個あり、すべてを他の原子にとられた状態が ＋6（最高酸化数）です。</p>
+<div class="ref-table-wrap"><div class="ref-cap">硫黄の酸化数</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">S の酸化数</th><th style="text-align: left;">物質の例</th></tr></thead><tbody><tr><td style="text-align: center;">−2</td><td style="text-align: left;">H₂S</td></tr><tr><td style="text-align: center;">0</td><td style="text-align: left;">S（単体）</td></tr><tr><td style="text-align: center;">＋4</td><td style="text-align: left;">SO₂、H₂SO₃</td></tr><tr><td style="text-align: center;">＋6</td><td style="text-align: left;">SO₃、H₂SO₄（最高酸化数）</td></tr></tbody></table></div>
+<p class="ref-p">オキソ酸の名前（過〜・亜〜・次亜〜）は、中心原子の酸化数の大小で決まります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/oxoacid/">オキソ酸の名前と中心原子の酸化数は「酸化物とオキソ酸」で</a></p>
+<section class="ref-sec" id="ref-sec-organic"><h4 class="ref-sec-h">有機化合物の中の炭素の酸化数</h4><p class="ref-sec-lead">有機化合物の炭素は、原子ごとに酸化数が違います。結合ごとに電気陰性度で e⁻ の行き先を決めます。</p></section>
+<p class="ref-p">有機化合物は電離しないので、優先順位の表ではなく、<b>結合1本ごとに電気陰性度で共有電子対の行き先を決めて</b>数えます。電気陰性度は H（2.2）＜ C（2.6）＜ O（3.4）です。</p>
+<ul class="ref-list"><li>C−H の共有電子対は C 側に偏っており、C が e⁻ を1個得る（−1）</li><li>C−C の共有電子対はど真ん中に位置し、e⁻ のやりとりはない（0）</li><li>C−O の共有電子対は O 側に偏っており、C が e⁻ を1個失う（＋1）。C=O なら2個失う（＋2）</li></ul>
+<h5 class="ref-h5">具体例 —— 酢酸 CH₃−COOH</h5>
+<p class="ref-p">メチル基の C は、3個の H から合計3個の e⁻ をとっているので<b>酸化数 −3</b>です。カルボキシ基の C は、C=O で2個、C−O で1個、合わせて3個の e⁻ を O にとられているので<b>酸化数 ＋3</b>です。</p>
+<h5 class="ref-h5">アルコールの酸化との関係</h5>
+<p class="ref-p">エタノール CH₃CH₂OH の −OH が付いた C は −1、アセトアルデヒド CH₃CHO の −CHO の C は ＋1、酢酸 CH₃COOH の −COOH の C は ＋3 です。アルコールを酸化すると、<b>−OH が付いた炭素の酸化数が2ずつ増えていきます</b>。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-oxidation-map/">第1級・第2級・第3級アルコールの酸化の行き先は「アルコールを酸化するとどうなるか」で</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/ion-equation/oxidation.html?sp=MnO4-&amp;from=reference&amp;page=oxidation-number">酸化数を段階的に決める</a></p>
+<h5 class="ref-h5">例題</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の物質中の、指定した原子の酸化数を求めよ。<b>(1) SO₄²⁻ の S　(2) NaHSO₄ の S　(3) NaH の H　(4) HClO₃ の Cl　(5) H₂O₂ の O</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) ＋6　(2) ＋6　(3) −1　(4) ＋5　(5) −1</b> です。(1) S⁶⁺ ＋ 4O²⁻ と分けて −2 ＝ (S) ＋ 4×(−2) より ＋6。(2) まず Na⁺ ＋ H⁺ ＋ SO₄²⁻ に電離するので、S は (1) と同じ SO₄²⁻ の中の S で ＋6。(3) Na⁺ ＋ H⁻ に電離するので H は −1（金属と結合した H）。(4) H⁺ ＋ ClO₃⁻ に電離し、ClO₃⁻ → Cl⁵⁺ ＋ 3O²⁻ と分けて ＋5。(5) 2H⁺ ＋ 2O⁻ と分けて −1（過酸化物の O）。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">電気陰性度 H 2.2、C 2.6、O 3.4 を用いて、<b>酢酸 CH₃COOH の2個の炭素原子の酸化数をそれぞれ求めよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>メチル基の C は −3、カルボキシ基の C は ＋3</b> です。メチル基の C は3本の C−H で e⁻ を3個得て −3（C−C はやりとりなし）。カルボキシ基の C は C=O で2個、C−O で1個の e⁻ を失って ＋3（C−C はやりとりなし）です。</p></div></details></div>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/clue-properties/">← 見た目・におい・沸点から当たりを付ける</a>
+<nav class="seq"><a href="/reference/redox-basics/">← 酸化と還元 —— e⁻ のやりとり</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/inorg-reaction-types/">無機の反応は5つの型で読む →</a></nav>
+<a href="/reference/half-reaction/">半反応式の書き方と主な酸化剤・還元剤 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -883,10 +921,58 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>

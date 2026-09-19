@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
-<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<title>ハロゲン —— 並べて比べる ｜ 化学の参考書</title>
+<meta name="description" content="17族のハロゲンを横に並べて比べるページ。単体の状態・色・酸化力、ハロゲン化水素の酸の強さと沸点、ハロゲン化銀の沈殿の色を3つの表にまとめ、フッ素・フッ化水素・臭素・ヨウ素の各論を1枚にしました。塩素と塩化水素は別のページです。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/halogen/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
-<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:title" content="ハロゲン —— 並べて比べる ｜ 化学の参考書">
+<meta property="og:description" content="17族のハロゲンを横に並べて比べるページ。単体の状態・色・酸化力、ハロゲン化水素の酸の強さと沸点、ハロゲン化銀の沈殿の色を3つの表にまとめ、フッ素・フッ化水素・臭素・ヨウ素の各論を1枚にしました。塩素と塩化水素は別のページです。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/halogen/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -842,35 +842,95 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 無機</div></header>
 <main class="wrap">
-<h1>反応の道すじ（反応機構）</h1>
-<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
-<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+<h1>ハロゲン —— 並べて比べる</h1>
+<p class="lede">17族のハロゲンを横に並べて比べるページ。単体の状態・色・酸化力、ハロゲン化水素の酸の強さと沸点、ハロゲン化銀の沈殿の色を3つの表にまとめ、フッ素・フッ化水素・臭素・ヨウ素の各論を1枚にしました。塩素と塩化水素は別のページです。</p>
+<div><span class="unit-label">非金属元素</span><span class="unit-label">ハロゲン</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-atom" data-ref-anchor="atom">ハロゲン原子 —— 1価の陰イオンになりやすい</a></li><li><a href="#ref-sec-simple" data-ref-anchor="simple">ハロゲンの単体 —— 原子半径が小さいほど酸化力が強い</a></li><li><a href="#ref-sec-hx" data-ref-anchor="hx">ハロゲン化水素 —— HF だけが弱酸で、沸点が高い</a></li><li><a href="#ref-sec-agx" data-ref-anchor="agx">ハロゲン化銀 —— AgF だけが水に溶ける</a></li><li><a href="#ref-sec-fluorine" data-ref-anchor="fluorine">フッ素とフッ化水素 —— 最強の酸化剤と、ガラスを溶かす弱酸</a></li><li><a href="#ref-sec-bromine-iodine" data-ref-anchor="bromine-iodine">臭素とヨウ素 —— 液体の単体と、昇華する固体</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
-<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
-<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
-<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
-<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
-<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの下の「<b>⚗ 反応させる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+<p class="ref-p">周期表の17族のフッ素 F・塩素 Cl・臭素 Br・ヨウ素 I を<b>ハロゲン</b>といいます。ハロゲンの知識の多くは、4つを横に並べて比べると覚える量が減ります。このページは比べる表を先に置き、フッ素・臭素・ヨウ素の各論を後に置きます。塩素は分量が多いので別のページにしました。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/chlorine/">塩素と塩化水素（製法・水との反応・さらし粉・オキソ酸）はこちら</a></p>
+<section class="ref-sec" id="ref-sec-atom"><h4 class="ref-sec-h">ハロゲン原子 —— 1価の陰イオンになりやすい</h4><p class="ref-sec-lead">ハロゲンは価電子が7個で、e⁻ を1個受け取って1価の陰イオンになりやすい元素です。電気陰性度は F が全元素で最大、Cl は3番目です。</p></section>
+<p class="ref-p">ハロゲンは価電子が7個なので、e⁻ を1個受け取って貴ガスと同じ電子配置の<b>1価の陰イオン</b>（F⁻・Cl⁻・Br⁻・I⁻）になりやすい元素です。陰性が強く、同じ周期の中で電子親和力・電気陰性度が最大で、イオン化エネルギーは貴ガスに次いで大きくなります。</p>
+<p class="ref-p">電気陰性度は、<b>F ＞ O ＞ Cl ＞ N ＞ …その他の非金属… ＞ H ＞ ふつうの金属 ＞ アルカリ土類金属・アルカリ金属</b> の順です。すべての元素の中で F が最も大きく、Cl は3番目です。この並びは酸化数を決めるときにも使うので、上位の4つ（F・O・Cl・N）は覚えておきましょう。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/periodic-table/">電気陰性度・電子親和力・イオン化エネルギーの周期表での傾向はこちら</a></p>
+<section class="ref-sec" id="ref-sec-simple"><h4 class="ref-sec-h">ハロゲンの単体 —— 原子半径が小さいほど酸化力が強い</h4><p class="ref-sec-lead">単体はすべて二原子分子で酸化剤。状態と色は F₂ から順に 気体・気体・液体・固体、淡黄・黄緑・赤褐・黒紫。酸化力は F₂ ＞ Cl₂ ＞ Br₂ ＞ I₂ です。</p></section>
+<p class="ref-p">ハロゲンは二原子分子の単体 X₂ をつくります。単体は<b>酸化剤</b>、ハロゲン化物イオン X⁻ は<b>還元剤</b>として、次の反応を行き来します。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">X₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2X⁻</span></div><p class="ref-note">左から右へ進むとき X₂ は酸化剤、右から左へ進むとき X⁻ は還元剤です。X は F・Cl・Br・I のどれか。</p></div>
+<div class="ref-table-wrap"><div class="ref-cap">ハロゲンの単体の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">元素</th><th style="text-align: left;">単体</th><th style="text-align: left;">状態（常温）</th><th style="text-align: left;">色</th><th style="text-align: left;">酸化力</th></tr></thead><tbody><tr><td style="text-align: left;">フッ素</td><td style="text-align: left;">F₂</td><td style="text-align: left;">気体</td><td style="text-align: left;">淡黄色</td><td style="text-align: left;">強い</td></tr><tr><td style="text-align: left;">塩素</td><td style="text-align: left;">Cl₂</td><td style="text-align: left;">気体</td><td style="text-align: left;">黄緑色</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">臭素</td><td style="text-align: left;">Br₂</td><td style="text-align: left;">液体</td><td style="text-align: left;">赤褐色</td><td style="text-align: left;">↓</td></tr><tr><td style="text-align: left;">ヨウ素</td><td style="text-align: left;">I₂</td><td style="text-align: left;">固体</td><td style="text-align: left;">黒紫色</td><td style="text-align: left;">弱い</td></tr></tbody></table></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/halogen-simple-table.png" alt="フッ素・塩素・臭素・ヨウ素の単体 F₂・Cl₂・Br₂・I₂ の状態（気体・気体・液体・固体）と色（淡黄色・黄緑色・赤褐色・黒紫色）の表。酸化力は上が強く下が弱い矢印で示されている" loading="lazy"><figcaption class="ref-figure-cap">色は文字の色でも見分けられるようにしてあります。酸化力は上ほど強くなります。</figcaption></figure>
+<p class="ref-p"><b>単体の状態と色はよく登場するので、4つとも必ず暗記してください。</b>「気・気・液・固」「淡黄・黄緑・赤褐・黒紫」と上から唱えれば覚えられます。</p>
+<p class="ref-p">酸化力が原子半径の小さい順になるのは、クーロン力が距離の2乗に反比例するためです。ハロゲンどうしでは有効核電荷が等しいので、距離の影響だけを考えればよく、原子核に近いところへ e⁻ を引き込める小さい原子ほど e⁻ を強く受け取ります。</p>
+<h5 class="ref-h5">酸化力を比べる —— 強い方が勝つ</h5>
+<p class="ref-p">臭化カリウム KBr 水溶液に塩素 Cl₂ を通じると、臭素 Br₂ が遊離します。Cl₂ は右向き（Cl₂ → Cl⁻）、Br₂ は左向き（Br⁻ → Br₂）に反応を進めようとしますが、酸化力は Cl₂ ＞ Br₂ なので Cl₂ が勝ち、反応は右向きに進みます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cl₂ ＋ 2KBr</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2KCl ＋ Br₂</span></div><p class="ref-note">Cl₂ ＋ 2e⁻ → 2Cl⁻ と 2Br⁻ → Br₂ ＋ 2e⁻ を足し、両辺に K⁺ を戻したものです。</p></div>
+<p class="ref-p">逆に、塩化カリウム KCl 水溶液に Br₂ を通じても反応は起こりません。酸化力の弱い Br₂ は、Cl⁻ から e⁻ を奪えないためです。</p>
+<div class="ref-table-wrap"><div class="ref-cap">ハロゲン化カリウム水溶液とハロゲンの単体が反応するか（○ が反応する組み合わせ）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">水溶液 ＼ 加える単体</th><th style="text-align: center;">Cl₂ を加える</th><th style="text-align: center;">Br₂ を加える</th><th style="text-align: center;">I₂ を加える</th></tr></thead><tbody><tr><td style="text-align: left;">KCl 水溶液</td><td style="text-align: center;">−</td><td style="text-align: center;">×</td><td style="text-align: center;">×</td></tr><tr><td style="text-align: left;">KBr 水溶液</td><td style="text-align: center;">○</td><td style="text-align: center;">−</td><td style="text-align: center;">×</td></tr><tr><td style="text-align: left;">KI 水溶液</td><td style="text-align: center;">○</td><td style="text-align: center;">○</td><td style="text-align: center;">−</td></tr></tbody></table></div>
+<p class="ref-p">表を覚える必要はありません。<b>加えた単体の方が、水溶液のイオンのもとの単体より酸化力が強ければ反応する</b>、だけで全部の欄が埋まります。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cl₂ ＋ 2KI</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2KCl ＋ I₂</span></div><p class="ref-note">この反応は、Cl₂ がヨウ化カリウムデンプン紙を青変させる反応（Cl₂ の検出）と同じものです。</p></div>
+<section class="ref-sec" id="ref-sec-hx"><h4 class="ref-sec-h">ハロゲン化水素 —— HF だけが弱酸で、沸点が高い</h4><p class="ref-sec-lead">HCl・HBr・HI は強酸、HF だけが弱酸です。HF は分子間で水素結合するので、分子量の割に沸点が異常に高くなります。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">ハロゲン化水素の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">ハロゲン化水素（水溶液の名前）</th><th style="text-align: left;">化学式</th><th style="text-align: left;">水溶液の酸の強さ</th><th style="text-align: right;">沸点〔℃〕</th></tr></thead><tbody><tr><td style="text-align: left;">フッ化水素（フッ化水素酸）</td><td style="text-align: left;">HF</td><td style="text-align: left;">弱酸</td><td style="text-align: right;">20</td></tr><tr><td style="text-align: left;">塩化水素（塩酸）</td><td style="text-align: left;">HCl</td><td style="text-align: left;">強酸</td><td style="text-align: right;">−85</td></tr><tr><td style="text-align: left;">臭化水素（臭化水素酸）</td><td style="text-align: left;">HBr</td><td style="text-align: left;">強酸</td><td style="text-align: right;">−67</td></tr><tr><td style="text-align: left;">ヨウ化水素（ヨウ化水素酸）</td><td style="text-align: left;">HI</td><td style="text-align: left;">強酸（いちばん強い）</td><td style="text-align: right;">−35</td></tr></tbody></table></div>
+<p class="ref-p">「<b>HF は弱酸、ほかは強酸</b>」「<b>HF は水素結合で沸点が高い</b>」の2点は必ず覚えてください。HCl・HBr・HI はすべて強酸ですが、強さは HI ＞ HBr ＞ HCl です。大きい陰イオンの方が −1 の電荷を広く受け止められて安定になる（非局在化）ためです。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">HF が弱酸なのは、分子間で水素結合するから</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">HF の<b>沸点が高い</b>のは水素結合のためです。<b>弱酸である</b>理由は別の話で、水素結合では説明できません。</span></p><p class="ref-mistake-why">「HF だけが特別」という2つの事実（弱酸・沸点が高い）を1つの理由で片付けたくなるためです。高校では弱酸である理由は問われないので、事実だけを覚えておけば困りません。</p></div>
+<section class="ref-sec" id="ref-sec-agx"><h4 class="ref-sec-h">ハロゲン化銀 —— AgF だけが水に溶ける</h4><p class="ref-sec-lead">Ag⁺ とハロゲン化物イオンの塩は、AgF を除いて水に溶けにくく沈殿します。色は AgCl 白・AgBr 淡黄・AgI 黄。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">ハロゲン化銀の比較</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">ハロゲン化銀</th><th style="text-align: left;">化学式</th><th style="text-align: right;">ハロゲンの電気陰性度</th><th style="text-align: right;">Ag（1.9）との差</th><th style="text-align: left;">沈殿の色</th></tr></thead><tbody><tr><td style="text-align: left;">フッ化銀</td><td style="text-align: left;">AgF</td><td style="text-align: right;">4.0</td><td style="text-align: right;">2.1</td><td style="text-align: left;">沈殿しない（水に溶ける）</td></tr><tr><td style="text-align: left;">塩化銀</td><td style="text-align: left;">AgCl</td><td style="text-align: right;">3.2</td><td style="text-align: right;">1.3</td><td style="text-align: left;">白</td></tr><tr><td style="text-align: left;">臭化銀</td><td style="text-align: left;">AgBr</td><td style="text-align: right;">3.0</td><td style="text-align: right;">1.1</td><td style="text-align: left;">淡黄</td></tr><tr><td style="text-align: left;">ヨウ化銀</td><td style="text-align: left;">AgI</td><td style="text-align: right;">2.7</td><td style="text-align: right;">0.8</td><td style="text-align: left;">黄</td></tr></tbody></table></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/halogen-agx-table.png" alt="フッ化銀 AgF・塩化銀 AgCl・臭化銀 AgBr・ヨウ化銀 AgI の沈殿の色（AgF はなし、白・淡黄・黄）の表。右へ行くほど沈殿しやすいことを矢印で示している" loading="lazy"><figcaption class="ref-figure-cap">F から I へ進むほど、Ag との電気陰性度の差が小さくなって沈殿しやすくなります。</figcaption></figure>
+<p class="ref-p"><b>「AgF は溶ける、AgCl 白・AgBr 淡黄・AgI 黄」は丸暗記してください。</b>沈殿の色を問う問題で繰り返し登場します。</p>
+<p class="ref-p">AgF だけが溶けるのは、F と Ag の電気陰性度の差が大きく、結合がイオン結合に近いためです。差が小さくなるほど結合の性質が共有結合に近づいて電離しにくくなり、沈殿しやすくなります。2つの原子の電気陰性度の差がおよそ 1.7 より大きいとイオン結合、小さいと共有結合になります（厳密な境界ではありません）。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/precipitate/">陰イオンごとに沈む相手と沈殿の色の一覧はこちら</a></p>
+<section class="ref-sec" id="ref-sec-fluorine"><h4 class="ref-sec-h">フッ素とフッ化水素 —— 最強の酸化剤と、ガラスを溶かす弱酸</h4><p class="ref-sec-lead">F₂ は水まで酸化して O₂ を出す最強の酸化剤。HF はホタル石に濃硫酸を加えてつくり、ガラスを溶かします。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">フッ素 F₂ とフッ化水素 HF の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: left;">フッ素 F₂</th><th style="text-align: left;">フッ化水素 HF</th></tr></thead><tbody><tr><td style="text-align: left;">色・におい</td><td style="text-align: left;">淡黄色・特異臭</td><td style="text-align: left;">無色・刺激臭</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">38</td><td style="text-align: left;">20</td></tr><tr><td style="text-align: left;">水への溶解</td><td style="text-align: left;">激しく反応して O₂ を発生する</td><td style="text-align: left;">よく溶ける（極性分子で、しかも酸）</td></tr><tr><td style="text-align: left;">捕集法</td><td style="text-align: left;">−（発生・保存が困難）</td><td style="text-align: left;">下方置換</td></tr><tr><td style="text-align: left;">水溶液の液性</td><td style="text-align: left;">酸性（水に溶けて HF を生じる）</td><td style="text-align: left;">弱酸性</td></tr><tr><td style="text-align: left;">酸化剤／還元剤</td><td style="text-align: left;">極めて強い酸化剤</td><td style="text-align: left;">−</td></tr></tbody></table></div>
+<p class="ref-p">HF の分子量は 20 で空気（平均分子量 28.8）より小さいのに、<b>下方置換</b>で捕集します。HF は2〜5分子が水素結合で会合しているので、空気より重い気体としてふるまうためです。</p>
+<h5 class="ref-h5">フッ素の反応</h5>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">F₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2F⁻</span></div><p class="ref-note">F は17族なので安定な F⁻ になります。極めて強い2価の酸化剤です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2F₂ ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">4HF ＋ O₂↑</span></div><p class="ref-note">F₂ が酸化剤、H₂O が還元剤。2F₂ ＋ 4e⁻ → 4F⁻ と 2H₂O → 4H⁺ ＋ O₂ ＋ 4e⁻ を足したものです。</p></div>
+<p class="ref-p">F₂ が H₂O の O 原子から e⁻ を奪えるのは、電気陰性度が F ＞ O だからです。強力な酸化剤の KMnO₄ でさえ H₂O を酸化せずに水溶液として存在できることと比べると、F₂ の酸化力の強さがわかります。F₂ は貴ガスのキセノン Xe とも反応します。</p>
+<div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">F₂ は最強の酸化剤ですが、HF は酸化剤ではありません。HF の H⁺ が酸化剤としてはたらくのは、イオン化傾向が大きい金属の単体が相手のときだけです（ほかの酸と同じ）。</p></div>
+<h5 class="ref-h5">フッ化水素の製法 —— 揮発性の酸の遊離</h5>
+<p class="ref-p">ホタル石（主成分 CaF₂）に濃硫酸を加えて加熱すると、HF が発生します。揮発性の酸である HF が、不揮発性の酸である H₂SO₄ によって追い出される反応です。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CaF₂ ＋ H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaSO₄ ＋ 2HF↑</span></div><p class="ref-note">「揮発性の酸と塩基の塩 ＋ 不揮発性の酸 → 不揮発性の酸と塩基の塩 ＋ 揮発性の酸」の型。弱酸 HF が強酸 H₂SO₄ に追い出される（弱酸の遊離）と読んでもかまいません。</p></div>
+<p class="ref-p">「<b>濃硫酸が登場する反応は加熱が必要</b>」と覚えておきましょう。塩化ナトリウムに濃硫酸を加えて HCl をつくる反応も同じ型です。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/acid-displacement/">弱酸の遊離・揮発性の酸の遊離の考え方はこちら</a></p>
+<h5 class="ref-h5">フッ化水素とガラス</h5>
+<p class="ref-p">フッ化水素酸（HF の水溶液）はガラスの主成分 SiO₂ を溶かします。そのため、フッ化水素酸はガラスびんではなくポリエチレンの容器に保存します。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">6HF ＋ SiO₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂SiF₆ ＋ 2H₂O</span></div><p class="ref-note">生じる H₂SiF₆ は<b>ヘキサフルオロケイ酸</b>。SiO₂ に対応するオキソ酸（ケイ酸 H₂SiO₃）の O 原子3個を、F 原子6個で置き換えた形です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">SiO₂ ＋ 4HF</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">SiF₄ ＋ 2H₂O</span></div><p class="ref-note">気体の HF とガラスの反応。SiO₂ の O²⁻ 2個が F⁻ 4個と置き換わります。</p></div>
+<p class="ref-p">ヘキサフルオロケイ酸の化学式は、「O 原子1個の −2 を F 原子2個の −1 で置き換える」と考えると、イオンの電荷から組み立てられます。同じ考えで、アルミニウムの溶融塩電解に使う<b>氷晶石 Na₃AlF₆</b> も 3Na⁺ ＋ Al³⁺ ＋ 6F⁻ と電荷を合わせて覚えられます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-industry/">氷晶石を使うアルミニウムの溶融塩電解はこちら</a></p>
+<section class="ref-sec" id="ref-sec-bromine-iodine"><h4 class="ref-sec-h">臭素とヨウ素 —— 液体の単体と、昇華する固体</h4><p class="ref-sec-lead">Br₂ は赤褐色の液体、I₂ は黒紫色で昇華性の固体です。I₂ は弱い酸化剤、I⁻ は弱い還元剤として、ヨウ素滴定やヨウ素デンプン反応に使われます。</p></section>
+<h5 class="ref-h5">臭素</h5>
+<p class="ref-p">臭素 Br₂ は<b>赤褐色の液体</b>です。常温で単体が液体の元素は、臭素 Br と水銀 Hg の2つだけです。無極性分子なので水には溶けにくく、ヘキサンなどの無極性溶媒によく溶けます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">Br₂ ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">HBr ＋ HBrO</span></div><p class="ref-note">水に溶けるときは Cl₂ と同じ型です。</p></div>
+<p class="ref-p">臭化銀 AgBr は感光性が強く、かつては銀塩写真（フィルム）に使われていました。光によって 2AgBr → 2Ag ＋ Br₂ の反応が起こり、生じた Ag で像ができます。</p>
+<h5 class="ref-h5">ヨウ素</h5>
+<p class="ref-p">ヨウ素 I₂ は<b>黒紫色の固体</b>で、分子結晶なので昇華しやすい物質です。昇華性の分子結晶は、ドライアイス・ヨウ素・ナフタレンの3つを覚えておきましょう。</p>
+<p class="ref-p">I₂ は無極性分子で水にはほとんど溶けませんが、ヨウ化カリウム KI 水溶液にはよく溶け、褐色の溶液になります。この褐色は三ヨウ化物イオン I₃⁻ の色で、ヨウ素ヨウ化カリウム溶液はうがい薬に使われています。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">I₂ ＋ I⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">I₃⁻</span></div><p class="ref-note">ヨウ素がヨウ化カリウム水溶液に溶けるときの反応。</p></div>
+<p class="ref-p">I₂ はデンプンと反応して青〜青紫色になります（<b>ヨウ素デンプン反応</b>）。デンプンのらせん構造の中に I₃⁻ が入ると色が出ます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/polysaccharide/">デンプンのらせん構造とヨウ素デンプン反応はこちら</a></p>
+<h5 class="ref-h5">ヨウ素の酸化還元 —— ヨウ素滴定</h5>
+<p class="ref-p">I₂ は弱い酸化剤、ヨウ化物イオン I⁻ は弱い還元剤としてはたらきます。どちらの向きの式も書けるようにしましょう。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">I₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2I⁻</span></div><p class="ref-note">I₂ が酸化剤としてはたらくとき。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2I⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">I₂ ＋ 2e⁻</span></div><p class="ref-note">I⁻ が還元剤としてはたらくとき。O₃ や Cl₂ がヨウ化カリウムデンプン紙を青変させるのは、この反応で I₂ ができるためです。</p></div>
+<p class="ref-p">酸化剤にヨウ素 I₂、還元剤にチオ硫酸ナトリウム Na₂S₂O₃ を使う酸化還元滴定を<b>ヨウ素滴定</b>といいます。指示薬にデンプンを加え、I₂ がなくなってヨウ素デンプン反応の青紫色が消えたところを終点にします。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">I₂ ＋ 2Na₂S₂O₃</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2NaI ＋ Na₂S₄O₆</span></div><p class="ref-note">2S₂O₃²⁻ → S₄O₆²⁻ ＋ 2e⁻ と I₂ ＋ 2e⁻ → 2I⁻ を足し、両辺に 4Na⁺ を戻したもの。<b>Na₂S₂O₃ の半反応式は問題で与えられるので暗記は要りません。</b>与えられた式から組み立てられれば十分です。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/redox-titration/">ヨウ素滴定の量的関係（H₂O₂ の濃度を求める計算）はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/ion-equation/halfreaction.html?q=I2_red,I_ox&amp;from=reference&amp;page=halogen">ヨウ素・ヨウ化物イオンの半反応式を組む</a></p>
+<h5 class="ref-h5">例題</h5>
+<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の組み合わせのうち、反応が起こるものには化学反応式を、起こらないものには × を書け。<b>(1) 塩化カリウム水溶液とヨウ素　(2) 臭化カリウム水溶液と塩素　(3) ヨウ化カリウム水溶液と臭素</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) ×（酸化力は Cl₂ ＞ I₂ なので反応しない）　(2) Cl₂ ＋ 2KBr → 2KCl ＋ Br₂（Cl₂ ＞ Br₂ なので反応する）　(3) Br₂ ＋ 2KI → 2KBr ＋ I₂（Br₂ ＞ I₂ なので反応する）　ハロゲンの単体の酸化力は原子半径が小さいほど強く、Cl₂ ＞ Br₂ ＞ I₂ です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の化学反応式を書け。<b>(1) フッ素が酸化剤としてはたらいた（e⁻ とイオンを含む反応式で）　(2) フッ素が水と反応した　(3) ホタル石に濃硫酸を加えて加熱した　(4) フッ化水素酸がガラスと反応した　(5) フッ化水素がガラスと反応した</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) F₂ ＋ 2e⁻ → 2F⁻　(2) 2F₂ ＋ 2H₂O → 4HF ＋ O₂↑　(3) CaF₂ ＋ H₂SO₄ → CaSO₄ ＋ 2HF↑　(4) 6HF ＋ SiO₂ → H₂SiF₆ ＋ 2H₂O　(5) SiO₂ ＋ 4HF → SiF₄ ＋ 2H₂O　(5) だけ★☆☆、ほかは★★★です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の反応式を書け。<b>(1) ヨウ化カリウム水溶液にヨウ素が溶解した（イオンを含む反応式で）　(2) ヨウ素が酸化剤としてはたらいた（e⁻ とイオンを含む反応式で）　(3) ヨウ化物イオンが還元剤としてはたらいた（e⁻ とイオンを含む反応式で）</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) I₂ ＋ I⁻ → I₃⁻　(2) I₂ ＋ 2e⁻ → 2I⁻　(3) 2I⁻ → I₂ ＋ 2e⁻　(2) と (3) は同じ式の向きを変えただけで、まとめると I₂ ＋ 2e⁻ ⇄ 2I⁻ です。</p></div></details></div>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/clue-properties/">← 見た目・におい・沸点から当たりを付ける</a>
+<nav class="seq"><a href="/reference/oxygen-ozone/">← 酸素・オゾン・過酸化水素</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/inorg-reaction-types/">無機の反応は5つの型で読む →</a></nav>
+<a href="/reference/chlorine/">塩素と塩化水素 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -883,10 +943,58 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>

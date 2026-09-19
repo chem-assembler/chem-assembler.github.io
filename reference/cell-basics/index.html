@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
-<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<title>電池の仕組み —— ダニエル電池 ｜ 化学の参考書</title>
+<meta name="description" content="酸化剤と還元剤の場所を離して、e⁻ の流れを外に取り出すのが電池です。銅樹ができる反応とダニエル電池が同じ反応式であることと、素焼き板の2つの役割をまとめました。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/cell-basics/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
-<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:title" content="電池の仕組み —— ダニエル電池 ｜ 化学の参考書">
+<meta property="og:description" content="酸化剤と還元剤の場所を離して、e⁻ の流れを外に取り出すのが電池です。銅樹ができる反応とダニエル電池が同じ反応式であることと、素焼き板の2つの役割をまとめました。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/cell-basics/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -842,35 +842,60 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
 <main class="wrap">
-<h1>反応の道すじ（反応機構）</h1>
-<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
-<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+<h1>電池の仕組み —— ダニエル電池</h1>
+<p class="lede">酸化剤と還元剤の場所を離して、e⁻ の流れを外に取り出すのが電池です。銅樹ができる反応とダニエル電池が同じ反応式であることと、素焼き板の2つの役割をまとめました。</p>
+<div><span class="unit-label">電池と電気分解</span><span class="unit-label">電池の仕組み</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-principle" data-ref-anchor="principle">電池は酸化剤と還元剤の場所を離した装置</a></li><li><a href="#ref-sec-tree" data-ref-anchor="tree">金属樹の反応を引き離すとダニエル電池になる</a></li><li><a href="#ref-sec-daniell" data-ref-anchor="daniell">ダニエル電池の仕組み</a></li><li><a href="#ref-sec-plate" data-ref-anchor="plate">素焼き板の2つの役割</a></li><li><a href="#ref-sec-positive" data-ref-anchor="positive">どちらが正極になるか</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
-<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
-<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
-<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
-<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
-<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの下の「<b>⚗ 反応させる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+<p class="ref-p">酸化還元反応は、還元剤が放出した e⁻ を酸化剤が受け取る反応です。この e⁻ のやりとりを、導線を通して外に取り出す装置が<b>電池</b>です。酸化剤・還元剤とイオン化傾向は、このページの前提になります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/redox-basics/">酸化剤・還元剤と e⁻ のやりとりの復習はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/ionization-tendency/">イオン化傾向と金属樹の復習はこちら</a></p>
+<section class="ref-sec" id="ref-sec-principle"><h4 class="ref-sec-h">電池は酸化剤と還元剤の場所を離した装置</h4><p class="ref-sec-lead">還元剤が負極、酸化剤が正極になり、e⁻ は負極から導線を通って正極へ流れます。</p></section>
+<p class="ref-p">酸化剤と還元剤を直接ふれさせると、e⁻ はその場で受け渡されて熱になるだけです。<b>2つの場所を離し、間を導線でつなぐ</b>と、e⁻ は導線を通って還元剤から酸化剤へ流れます。この e⁻ の流れが電流です。このように酸化還元反応にともなう e⁻ の流れを外に取り出す装置を<b>電池</b>といいます。</p>
+<p class="ref-p">還元剤は e⁻ を放出するので、e⁻ が出ていく側の電極になります。これを<b>負極</b>といいます。酸化剤は e⁻ を受け取るので、e⁻ が入ってくる側の電極になります。これを<b>正極</b>といいます。</p>
+<p class="ref-p">負極で還元剤としてはたらく物質を<b>負極活物質</b>、正極で酸化剤としてはたらく物質を<b>正極活物質</b>といい、まとめて<b>活物質</b>といいます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">電池の負極と正極</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">項目</th><th style="text-align: center;">負極</th><th style="text-align: center;">正極</th></tr></thead><tbody><tr><td style="text-align: left;">はたらく物質</td><td style="text-align: center;">還元剤（負極活物質）</td><td style="text-align: center;">酸化剤（正極活物質）</td></tr><tr><td style="text-align: left;">e⁻</td><td style="text-align: center;">放出する（出ていく）</td><td style="text-align: center;">受け取る（入ってくる）</td></tr><tr><td style="text-align: left;">起こる反応</td><td style="text-align: center;">酸化される反応</td><td style="text-align: center;">還元される反応</td></tr></tbody></table></div>
+<p class="ref-p"><b>「負極は還元剤、正極は酸化剤」「e⁻ は負極から出て正極にもどる」の2つは必ず覚えてください。</b>電池のどの問題も、ここから考え始めます。</p>
+<section class="ref-sec" id="ref-sec-tree"><h4 class="ref-sec-h">金属樹の反応を引き離すとダニエル電池になる</h4><p class="ref-sec-lead">亜鉛板を Cu²⁺ の水溶液に入れると銅が析出します。この反応の酸化剤と還元剤を別の容器に分けたものがダニエル電池です。</p></section>
+<p class="ref-p">亜鉛板を硫酸銅(Ⅱ)水溶液に入れると、Zn が e⁻ を失って Zn²⁺ として溶けだし、Cu²⁺ が亜鉛板の上で e⁻ を受け取って Cu が析出します（銅樹）。イオン化傾向が Zn ＞ Cu なので、Zn のほうが陽イオンになりやすく、Cu のほうが単体になりやすいためです。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Zn</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Zn²⁺ ＋ 2e⁻</span></div><p class="ref-note">還元剤。亜鉛板から水溶液中へ溶けだします。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu</span></div><p class="ref-note">酸化剤。水溶液中の Cu²⁺ が、板の上で Cu になって析出します。</p></div>
+<p class="ref-p">銅樹では、この2つの反応が<b>同じ亜鉛板の上</b>で起こっています。還元剤の Zn と酸化剤の Cu²⁺ を別々の容器に分け、導線でつなぐと、e⁻ は導線を通って流れるしかなくなります。これが<b>ダニエル電池</b>です。<b>銅樹の生成とダニエル電池は、同じ反応式で書ける同じ原理の反応です。</b></p>
+<section class="ref-sec" id="ref-sec-daniell"><h4 class="ref-sec-h">ダニエル電池の仕組み</h4><p class="ref-sec-lead">硫酸亜鉛水溶液に亜鉛板、硫酸銅(Ⅱ)水溶液に銅板を浸し、素焼き板で仕切ります。負極活物質は Zn、正極活物質は Cu²⁺ です。</p></section>
+<p class="ref-p">ダニエル電池は、硫酸亜鉛 ZnSO₄ 水溶液に亜鉛板を、硫酸銅(Ⅱ) CuSO₄ 水溶液に銅板を浸し、2つの水溶液を素焼き板で仕切った電池です。電池のつくりは、左から負極・電解液・正極の順に化学式で書き、これを電池の構成といいます。</p>
+<p class="ref-p">ダニエル電池の構成は <b>（−）Zn｜ZnSO₄aq｜CuSO₄aq｜Cu（＋）</b> です。負極の Zn が溶けだし、正極の銅板の上に Cu が析出します。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cell-basics-daniell.png" alt="ダニエル電池の模式図。左の硫酸亜鉛水溶液に亜鉛板、右の硫酸銅(Ⅱ)水溶液に銅板があり、間に素焼き板がある。亜鉛板から Zn²⁺ が溶けだし、e⁻ が導線を通って銅板へ流れ、銅板の上で Cu²⁺ が Cu になる。SO₄²⁻ が素焼き板を通って右から左へ移動している" loading="lazy"><figcaption class="ref-figure-cap">亜鉛板（負極）から出た e⁻ は導線を通って銅板（正極）へ流れます。水溶液の中では、<b>素焼き板を SO₄²⁻ が通ることで回路が閉じます</b>。</figcaption></figure>
+<p class="ref-p">放電を続けると、負極側では Zn²⁺ が増え、正極側では Cu²⁺ が減ります。負極側で余った正の電荷と、正極側で余った負の電荷を打ち消すように、主に SO₄²⁻ が素焼き板を通って正極側から負極側へ移動します。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cell-basics-app-daniell.png" alt="アプリ「イオンでみる化学反応式」の電池の画面。硫酸亜鉛水溶液に亜鉛板、硫酸銅(Ⅱ)水溶液に銅板が浸され、間に素焼き板がある。どちらの板が溶けるかを予想する前の状態" loading="lazy"><figcaption class="ref-figure-cap">どちらの板が溶けるかを予想してからつなぐと、e⁻ とイオンの動きが見られます。</figcaption></figure>
+<p class="ref-link-row"><a class="ref-link" href="/ion-equation/battery.html?s=b1&amp;from=reference&amp;page=cell-basics">ダニエル電池を組み立てて、どちらの板が溶けるか予想する</a></p>
+<section class="ref-sec" id="ref-sec-plate"><h4 class="ref-sec-h">素焼き板の2つの役割</h4><p class="ref-sec-lead">素焼き板は電解液が混ざるのを防ぎ、同時にイオンを通して回路をつくります。</p></section>
+<p class="ref-p">素焼き板には、細かい穴が無数に空いています。この穴のおかげで、素焼き板は次の2つの役割を同時に果たします。</p>
+<ol class="ref-list"><li>2つの電解液が混ざるのを（ある程度）防ぐ。<div class="ref-li-hang">混ざると Cu²⁺ が亜鉛板の上で直接 e⁻ を受け取るようになり、電流を取り出せなくなります（金属樹に逆戻り）。</div></li><li>イオンを通して回路をつくる。<div class="ref-li-hang">イオンが通れないと、負極側に陽イオン、正極側に陰イオンが余り、その反発ですぐに反応が止まります。</div></li></ol>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/cell-basics-porous-plate.png" alt="左は素焼き板で仕切ったダニエル電池で、還元剤の Zn と酸化剤の Cu²⁺ が離れている。右は仕切りが無く2つの水溶液が混ざった場合で、Cu²⁺ が亜鉛板の上で直接 e⁻ を受け取っている" loading="lazy"><figcaption class="ref-figure-cap">素焼き板が無いと電解液が混ざり、Cu²⁺ が亜鉛板の上で直接 e⁻ を受け取ってしまいます（金属樹に逆戻り）。</figcaption></figure>
+<p class="ref-p">素焼き板の代わりにガラス板で仕切った場合を考えると、2つ目の役割がよく分かります。ガラス板はイオンを通さないので、負極側には Zn²⁺ が、正極側には SO₄²⁻ が余ります。この電気的な反発で、電池の反応はすぐに止まってしまいます。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">素焼き板は、2つの電解液を完全に分けるための仕切りである</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">素焼き板は<b>イオンを通す</b>仕切りです。混ざるのを防ぐ役割と、イオンの通り道になって回路をつくる役割の両方があります。</span></p><p class="ref-mistake-why">「仕切り」という見た目から、1つ目の役割だけを覚えてしまうためです。★ ガラス板に替えると電流が止まる、と1つ具体例で覚えておけば、2つ目の役割を忘れません。</p></div>
+<section class="ref-sec" id="ref-sec-positive"><h4 class="ref-sec-h">どちらが正極になるか</h4><p class="ref-sec-lead">イオン化傾向が小さい金属（e⁻ を受け取る力が強い側）が正極になります。</p></section>
+<p class="ref-p">2種類の金属でつくった電池では、<b>イオン化傾向が大きい金属が負極、小さい金属が正極</b>になります。イオン化傾向が大きい金属の単体は e⁻ を放出しやすく（還元剤として強い）、イオン化傾向が小さい金属の陽イオンは e⁻ を受け取りやすい（酸化剤として強い）ためです。</p>
+<p class="ref-p">具体例で確かめます。イオン化傾向は Zn ＞ Ni ＞ Cu ＞ Ag なので、Cu と Zn の組み合わせでは Cu が、Cu と Ag の組み合わせでは Ag が、Zn と Ni の組み合わせでは Ni が正極になります。</p>
+<p class="ref-p">ちなみに、亜鉛板と銅板を希硫酸に浸した電池を<b>ボルタ電池</b>といい、構成は（−）Zn｜H₂SO₄aq｜Cu（＋）と書きます。正極では Cu²⁺ ではなく H⁺ が e⁻ を受け取って H₂ が発生します。<b>ボルタ電池は構成が書ければ十分です。</b></p>
+<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">負極・正極と還元剤・酸化剤の対応、ダニエル電池の構成と両極の反応式、素焼き板の2つの役割を覚えます。</p></section>
+<p class="ref-p"><b>ダニエル電池の構成（−）Zn｜ZnSO₄aq｜CuSO₄aq｜Cu（＋）と、両極の反応式2本は必ず書けるようにしてください。</b>反応式は、銅樹の反応式と同じです。</p>
+<p class="ref-p">素焼き板は「混ざるのを防ぐ」「イオンを通して回路をつくる」の2つをセットで説明できるようにしましょう。電池の起電力の値や、標準電極電位の数値は覚えなくても構いません。</p>
+<h5 class="ref-h5">例題</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">素焼き板で仕切った容器の片側に電極Aと水溶液A、もう片側に電極Bと水溶液Bを入れて電池をつくった。次の①〜③で、正極になるのはA・Bのどちらか答えよ。<b>①A：Cu と CuSO₄aq、B：Zn と ZnSO₄aq　②A：Cu と CuSO₄aq、B：Ag と Ag₂SO₄aq　③A：Zn と ZnSO₄aq、B：Ni と NiSO₄aq</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>①A　②B　③B　イオン化傾向は Zn ＞ Ni ＞ Cu ＞ Ag で、<b>イオン化傾向が小さい（e⁻ を受け取る力が強い）金属のほうが正極</b>になります。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ダニエル電池の負極と正極で起こる反応を、e⁻ を含むイオン反応式でそれぞれ書け。また、素焼き板をガラス板に替えると電流がすぐに流れなくなる理由を説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>負極：Zn → Zn²⁺ ＋ 2e⁻　正極：Cu²⁺ ＋ 2e⁻ → Cu　ガラス板はイオンを通さないので、負極側に Zn²⁺（正の電荷）、正極側に SO₄²⁻（負の電荷）が余り、その反発で反応が止まるためです。</p></div></details></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/fuel-cell/">実用電池（一次電池・二次電池）と燃料電池はこちら</a></p>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/clue-properties/">← 見た目・におい・沸点から当たりを付ける</a>
+<nav class="seq"><a href="/reference/ionization-tendency/">← 金属のイオン化傾向</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/inorg-reaction-types/">無機の反応は5つの型で読む →</a></nav>
+<a href="/reference/fuel-cell/">実用電池と燃料電池 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -883,10 +908,58 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>

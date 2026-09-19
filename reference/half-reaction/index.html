@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
-<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<title>半反応式の書き方と主な酸化剤・還元剤 ｜ 化学の参考書</title>
+<meta name="description" content="半反応式は「反応前後の物質だけ暗記して、係数は手順で出す」。書き方その1（H₂O → H⁺ → e⁻）と その2（酸化数 → e⁻ → H⁺ → H₂O）、必ず覚える酸化剤9本・還元剤11本の半反応式。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/half-reaction/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
-<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:title" content="半反応式の書き方と主な酸化剤・還元剤 ｜ 化学の参考書">
+<meta property="og:description" content="半反応式は「反応前後の物質だけ暗記して、係数は手順で出す」。書き方その1（H₂O → H⁺ → e⁻）と その2（酸化数 → e⁻ → H⁺ → H₂O）、必ず覚える酸化剤9本・還元剤11本の半反応式。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/half-reaction/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -842,35 +842,80 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
 <main class="wrap">
-<h1>反応の道すじ（反応機構）</h1>
-<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
-<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+<h1>半反応式の書き方と主な酸化剤・還元剤</h1>
+<p class="lede">半反応式は「反応前後の物質だけ暗記して、係数は手順で出す」。書き方その1（H₂O → H⁺ → e⁻）と その2（酸化数 → e⁻ → H⁺ → H₂O）、必ず覚える酸化剤9本・還元剤11本の半反応式。</p>
+<div><span class="unit-label">酸化還元</span><span class="unit-label">半反応式</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-memorize" data-ref-anchor="memorize">暗記するものと、手順で出すもの</a></li><li><a href="#ref-sec-method1" data-ref-anchor="method1">書き方その1 —— H₂O → H⁺ → e⁻</a></li><li><a href="#ref-sec-method2" data-ref-anchor="method2">書き方その2 —— 酸化数 → e⁻ → H⁺ → H₂O</a></li><li><a href="#ref-sec-oxidizers" data-ref-anchor="oxidizers">主な酸化剤の半反応式</a></li><li><a href="#ref-sec-reducers" data-ref-anchor="reducers">主な還元剤の半反応式</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
-<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
-<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
-<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
-<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
-<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの下の「<b>⚗ 反応させる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+<p class="ref-p">酸化剤・還元剤それぞれが e⁻ をどう受け渡すかを書いたイオン反応式を「半反応式」といいます。酸化還元反応の反応式は、酸化剤と還元剤の半反応式を書いてから、2本を組み合わせてつくります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/redox-basics/">左辺に e⁻ があれば酸化剤、右辺にあれば還元剤（「酸化と還元」）</a></p>
+<section class="ref-sec" id="ref-sec-memorize"><h4 class="ref-sec-h">暗記するものと、手順で出すもの</h4><p class="ref-sec-lead">反応前後の物質の化学式は暗記、係数は手順で出します。</p></section>
+<p class="ref-p">半反応式で<b>暗記が必要なのは、反応前後の物質の化学式だけ</b>です。過マンガン酸イオン MnO₄⁻ が酸性で Mn²⁺ になる、ということは覚えるしかありません。</p>
+<p class="ref-p">一方、H₂O・H⁺・e⁻ の係数は、<b>手順どおりに進めれば必ず出ます</b>。係数まで丸暗記してもよいですが、忘れたときに自分で組み立て直せるようにしておきましょう。</p>
+<section class="ref-sec" id="ref-sec-method1"><h4 class="ref-sec-h">書き方その1 —— H₂O → H⁺ → e⁻</h4><p class="ref-sec-lead">O を H₂O で、H を H⁺ で、電荷を e⁻ で合わせます。</p></section>
+<p class="ref-p">過マンガン酸カリウム KMnO₄ の半反応式を、次の4段で書きます。</p>
+<ol class="ref-list"><li>酸化剤・還元剤の反応前後の物質（暗記）を書く。<div class="ref-li-hang">MnO₄⁻ → Mn²⁺</div></li><li>H₂O で両辺の O 原子の数を合わせる。<div class="ref-li-hang">左辺に O 原子が4個あるので、右辺に 4H₂O を加える：MnO₄⁻ → Mn²⁺ ＋ 4H₂O</div></li><li>H⁺ で両辺の H 原子の数を合わせる。<div class="ref-li-hang">右辺に H 原子が8個あるので、左辺に 8H⁺ を加える：MnO₄⁻ ＋ 8H⁺ → Mn²⁺ ＋ 4H₂O</div></li><li>e⁻ で両辺の電荷を合わせる。<div class="ref-li-hang">左辺の電荷は合計 ＋7、右辺は合計 ＋2 なので、左辺に 5e⁻ を加える</div></li></ol>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mn²⁺ ＋ 4H₂O</span></div><p class="ref-note">完成。Mn の酸化数は ＋7 → ＋2 で5減っており、<b>酸化数の変化と e⁻ の数が対応しています</b>（Mn⁷⁺ ＋ 5e⁻ → Mn²⁺）。</p></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/half-reaction-method1.png" alt="過マンガン酸イオンの半反応式を、1 反応前後の物質、2 H₂O で O を合わせる、3 H⁺ で H を合わせる、4 e⁻ で電荷を合わせる の順に書いていく図。最後に Mn の酸化数 ＋7 と ＋2 の差が 5e⁻ に対応していることを矢印で示している" loading="lazy"><figcaption class="ref-figure-cap">書き方その1。右の枠は各段で<b>何を数えてその数にしたか</b>です。</figcaption></figure>
+<section class="ref-sec" id="ref-sec-method2"><h4 class="ref-sec-h">書き方その2 —— 酸化数 → e⁻ → H⁺ → H₂O</h4><p class="ref-sec-lead">先に酸化数の変化から e⁻ の数を決め、電荷を H⁺ で、O を H₂O で合わせます。</p></section>
+<p class="ref-p">同じ KMnO₄ を、酸化数から書く手順です。</p>
+<ol class="ref-list"><li>酸化剤・還元剤の反応前後の物質（暗記）を書く。<div class="ref-li-hang">MnO₄⁻ → Mn²⁺</div></li><li>酸化数が変化する原子の酸化数を書き、変化に合わせて e⁻ を加える。<div class="ref-li-hang">Mn は ＋7 から ＋2 へ変化しているので、左辺に 5e⁻ を加える：MnO₄⁻ ＋ 5e⁻ → Mn²⁺</div></li><li>H⁺ で両辺の電荷を合わせる。<div class="ref-li-hang">左辺の電荷は合計 −6、右辺は ＋2 なので、左辺に 8H⁺ を加える：MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺</div></li><li>H₂O で両辺の O 原子の数を合わせる。<div class="ref-li-hang">左辺に O 原子が4個あるので、右辺に 4H₂O を加える：MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O</div></li></ol>
+<p class="ref-p">その1とその2は、<b>同じ式にたどり着きます</b>。酸化数がすぐ決まる物質ならその2、酸化数がわかりにくい物質（有機化合物など）ならその1が速いでしょう。どちらか一方を確実に書けるようにしておけば十分です。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/oxidation-number/">その2で使う酸化数の決め方は「酸化数の決め方」で</a></p>
+<section class="ref-sec" id="ref-sec-oxidizers"><h4 class="ref-sec-h">主な酸化剤の半反応式</h4><p class="ref-sec-lead">9本。反応前後の物質は必ず暗記します。</p></section>
+<p class="ref-p">次の9本は<b>必ず暗記してください</b>。表の物質名から、反応後の物質と半反応式が書けるようにしておきましょう。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mn²⁺ ＋ 4H₂O</span></div><p class="ref-note">過マンガン酸カリウム KMnO₄（硫酸酸性）。赤紫色の MnO₄⁻ が、淡赤色の Mn²⁺ になります（薄い水溶液ではほぼ無色に見えます）。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Cr³⁺ ＋ 7H₂O</span></div><p class="ref-note">二クロム酸カリウム K₂Cr₂O₇（硫酸酸性）。赤橙色の Cr₂O₇²⁻ が、緑色の Cr³⁺ になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HNO₃ ＋ 3H⁺ ＋ 3e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NO↑ ＋ 2H₂O</span></div><p class="ref-note">希硝酸 HNO₃。無色の NO が発生します。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HNO₃ ＋ H⁺ ＋ e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NO₂↑ ＋ H₂O</span></div><p class="ref-note">濃硝酸 HNO₃。赤褐色の NO₂ が発生します。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂SO₄ ＋ 2H⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">SO₂↑ ＋ 2H₂O</span></div><p class="ref-note">熱濃硫酸 H₂SO₄。<b>加熱した濃硫酸</b>だけが酸化剤としてはたらきます。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂O₂ ＋ 2H⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O</span></div><p class="ref-note">過酸化水素 H₂O₂（酸性）。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">SO₂ ＋ 4H⁺ ＋ 4e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">S ＋ 2H₂O</span></div><p class="ref-note">二酸化硫黄 SO₂。H₂S のような強い還元剤が相手のときだけ酸化剤になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cl₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Cl⁻</span></div><p class="ref-note">ハロゲンの単体（Cl₂ など）。H⁺ も H₂O も出てこない、液性に関係ない式です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">I₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2I⁻</span></div><p class="ref-note">ヨウ素 I₂。ハロゲンの単体の中では弱い酸化剤です。</p></div>
+<h5 class="ref-h5">酸化力のある酸の、もう1つの書き方</h5>
+<p class="ref-p">希硝酸・濃硝酸・熱濃硫酸の3つを「酸化力のある酸」といいます。これらは<b>陰イオン（NO₃⁻・SO₄²⁻）が酸化剤としてはたらく</b>ので、次のように書いてもかまいません。</p>
+<div class="ref-table-wrap"><div class="ref-cap">酸化力のある酸の半反応式（陰イオンで書いた形）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">酸</th><th style="text-align: left;">半反応式</th></tr></thead><tbody><tr><td style="text-align: left;">希硝酸</td><td style="text-align: left;">NO₃⁻ ＋ 4H⁺ ＋ 3e⁻ → NO ＋ 2H₂O</td></tr><tr><td style="text-align: left;">濃硝酸</td><td style="text-align: left;">NO₃⁻ ＋ 2H⁺ ＋ e⁻ → NO₂ ＋ H₂O</td></tr><tr><td style="text-align: left;">熱濃硫酸</td><td style="text-align: left;">SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O</td></tr></tbody></table></div>
+<p class="ref-p">HNO₃ の形の式の両辺に H⁺ を1個足して打ち消すと、NO₃⁻ の形の式になります。どちらで書いても、組み立てた全体の式は同じになります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/sulfuric-acid/">熱濃硫酸と、酸化力をもたない冷たい濃硫酸の違いは「硫酸 —— 希硫酸と濃硫酸」で</a></p>
+<section class="ref-sec" id="ref-sec-reducers"><h4 class="ref-sec-h">主な還元剤の半反応式</h4><p class="ref-sec-lead">金属の単体を含めて11本。金属イオンの種類と電荷も暗記します。</p></section>
+<p class="ref-p">次の還元剤も<b>必ず暗記してください</b>。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂C₂O₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2CO₂↑ ＋ 2H⁺ ＋ 2e⁻</span></div><p class="ref-note">シュウ酸 H₂C₂O₄（(COOH)₂ とも書く）。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe²⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Fe³⁺ ＋ e⁻</span></div><p class="ref-note">硫酸鉄(Ⅱ) FeSO₄。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Sn²⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Sn⁴⁺ ＋ 2e⁻</span></div><p class="ref-note">塩化スズ(Ⅱ) SnCl₂。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂S</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">S ＋ 2H⁺ ＋ 2e⁻</span></div><p class="ref-note">硫化水素 H₂S。硫黄が析出して、水溶液が白く濁ります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2I⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">I₂ ＋ 2e⁻</span></div><p class="ref-note">ヨウ化カリウム KI。生じた I₂ で水溶液が褐色になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">O₂↑ ＋ 2H⁺ ＋ 2e⁻</span></div><p class="ref-note">過酸化水素 H₂O₂。KMnO₄ のような強い酸化剤が相手のときに還元剤になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">SO₂ ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻</span></div><p class="ref-note">二酸化硫黄 SO₂。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Na</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na⁺ ＋ e⁻</span></div><p class="ref-note">金属の単体（Na など）。金属の単体はすべて還元剤としてはたらきます。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span></div><p class="ref-note">銅。Cu⁺ ではなく <b>Cu²⁺</b> です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Fe²⁺ ＋ 2e⁻</span></div><p class="ref-note">鉄。単体の鉄が溶けるときは Fe³⁺ ではなく <b>Fe²⁺</b> です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Zn</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Zn²⁺ ＋ 2e⁻</span></div><p class="ref-note">亜鉛。</p></div>
+<p class="ref-p"><b>金属イオンの種類や電荷は暗記</b>です。Cu は Cu⁺ ではなく Cu²⁺、単体の Fe は Fe³⁺ ではなく Fe²⁺ になります。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">鉄 Fe が酸に溶けると Fe³⁺ になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">単体の鉄が溶けるときは <b>Fe²⁺</b> になります。Fe²⁺ → Fe³⁺ は、それとは別の還元剤の式です。</span></p><p class="ref-mistake-why">鉄のイオンには Fe²⁺ と Fe³⁺ の2種類があるので、どちらになるかは反応ごとに覚えるしかありません。単体 Fe → Fe²⁺（金属の単体の式）と、Fe²⁺ → Fe³⁺（硫酸鉄(Ⅱ)の式）は別の行として覚えましょう。</p></div>
+<h5 class="ref-h5">酸化剤にも還元剤にもなる物質</h5>
+<p class="ref-p"><b>過酸化水素 H₂O₂ と二酸化硫黄 SO₂ は、酸化剤・還元剤どちらとしてもはたらきます</b>。どちらになるかは相手で決まり、相手が強い酸化剤なら還元剤に、強い還元剤なら酸化剤になります。</p>
+<div class="ref-table-wrap"><div class="ref-cap">2つの顔をもつ物質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">物質</th><th style="text-align: left;">酸化剤のとき（酸化数が減る）</th><th style="text-align: left;">還元剤のとき（酸化数が増える）</th></tr></thead><tbody><tr><td style="text-align: left;">H₂O₂</td><td style="text-align: left;">O は −1 → −2（H₂O になる）</td><td style="text-align: left;">O は −1 → 0（O₂ になる）</td></tr><tr><td style="text-align: left;">SO₂</td><td style="text-align: left;">S は ＋4 → 0（S になる）</td><td style="text-align: left;">S は ＋4 → ＋6（SO₄²⁻ になる）</td></tr></tbody></table></div>
+<p class="ref-p">H₂O₂ はふつうは酸化剤で、還元剤としてはたらくのは KMnO₄ などの強い酸化剤が相手のときに限られます。SO₂ はふつうは還元剤で、酸化剤としてはたらくのは H₂S が相手のときがほとんどです。</p>
+<h5 class="ref-h5">このページに載せていない半反応式</h5>
+<p class="ref-p">オゾン O₃、中性・塩基性での過マンガン酸イオン、電気分解・電池の電極の式は、液性による書き換えのページ・電池と電気分解のページで扱います。すべての半反応式の一覧は、アプリの一覧で見られます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/half-reaction-condition/">塩基性での書き換えと、オゾンの半反応式は「液性による半反応式の書き換え」で</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/ion-equation/halflist.html?from=reference&amp;page=half-reaction">半反応式の一覧</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/ion-equation/halfreaction.html?q=MnO4_red&amp;from=reference&amp;page=half-reaction">過マンガン酸イオンの半反応式を組む</a></p>
+<h5 class="ref-h5">例題</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の酸化剤の半反応式を書け。<b>(1) 二クロム酸カリウム（硫酸酸性）　(2) 熱濃硫酸　(3) 過酸化水素（硫酸酸性）</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O　(2) H₂SO₄ ＋ 2H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O　(3) H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O</b> です。(1) を書き方その1で書くと、Cr₂O₇²⁻ → 2Cr³⁺ のあと、O が7個なので右辺に 7H₂O、H が14個なので左辺に 14H⁺、電荷が左辺 ＋12・右辺 ＋6 なので左辺に 6e⁻ です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の還元剤の半反応式を書け。<b>(1) シュウ酸　(2) 二酸化硫黄　(3) 鉄</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) H₂C₂O₄ → 2CO₂ ＋ 2H⁺ ＋ 2e⁻　(2) SO₂ ＋ 2H₂O → SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻　(3) Fe → Fe²⁺ ＋ 2e⁻</b> です。(2) を書き方その1で書くと、SO₂ → SO₄²⁻ のあと、O が右辺に2個多いので左辺に 2H₂O、H が左辺に4個あるので右辺に 4H⁺、電荷が左辺 0・右辺 ＋2 なので右辺に 2e⁻ です。(3) は Fe³⁺ ではなく Fe²⁺ です。</p></div></details></div>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/clue-properties/">← 見た目・におい・沸点から当たりを付ける</a>
+<nav class="seq"><a href="/reference/oxidation-number/">← 酸化数の決め方</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/inorg-reaction-types/">無機の反応は5つの型で読む →</a></nav>
+<a href="/reference/half-reaction-condition/">液性による半反応式の書き換え →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -883,10 +928,58 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>

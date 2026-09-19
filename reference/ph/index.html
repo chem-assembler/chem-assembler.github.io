@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>反応の道すじ（反応機構） ｜ 化学の参考書</title>
-<meta name="description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<title>pH と水のイオン積 —— 薄めても7を越えない ｜ 化学の参考書</title>
+<meta name="description" content="[H⁺] ＝ 10⁻ᵖᴴ mol/L、[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L、水のイオン積から pH ＋ pOH ＝ 14。強酸・強塩基の pH の出し方と、薄めたときに pH がどう動くか（7 を越えない）まで。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/ph/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="反応の道すじ（反応機構） ｜ 化学の参考書">
-<meta property="og:description" content="付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-mechanisms/">
+<meta property="og:title" content="pH と水のイオン積 —— 薄めても7を越えない ｜ 化学の参考書">
+<meta property="og:description" content="[H⁺] ＝ 10⁻ᵖᴴ mol/L、[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L、水のイオン積から pH ＋ pOH ＝ 14。強酸・強塩基の pH の出し方と、薄めたときに pH がどう動くか（7 を越えない）まで。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/ph/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -842,35 +842,62 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
 <main class="wrap">
-<h1>反応の道すじ（反応機構）</h1>
-<p class="lede">付加・置換・脱離・縮合など、登録済みの反応機構14件を型ごとにまとめた一覧。各行から巻矢印つきのアニメで、電子対がどこへ動くかを1段ずつ追えます。</p>
-<div><span class="unit-label">有機反応</span><span class="unit-label">反応機構</span></div>
+<h1>pH と水のイオン積 —— 薄めても7を越えない</h1>
+<p class="lede">[H⁺] ＝ 10⁻ᵖᴴ mol/L、[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L、水のイオン積から pH ＋ pOH ＝ 14。強酸・強塩基の pH の出し方と、薄めたときに pH がどう動くか（7 を越えない）まで。</p>
+<div><span class="unit-label">酸と塩基</span><span class="unit-label">pH</span></div>
 
 <div class="ref-layout">
-
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">pH と pOH の定義</a></li><li><a href="#ref-sec-kw" data-ref-anchor="kw">水のイオン積と pH ＋ pOH ＝ 14</a></li><li><a href="#ref-sec-scale" data-ref-anchor="scale">酸性・中性・塩基性と pH</a></li><li><a href="#ref-sec-dilution" data-ref-anchor="dilution">薄めたときの pH の変化</a></li><li><a href="#ref-sec-log" data-ref-anchor="log">pH ＝ −log₁₀[H⁺]</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">反応式は「何と何から、何ができたか」しか言いません。ここで見るのは、その途中で<b>どの電子対が、どこからどこへ動いたか</b>です。これを<b>反応機構</b>といいます。</p>
-<p class="ref-p">電子の動きは<b>巻矢印</b>で表します。矢印の<b>根もとが電子を出す側</b>（結合、または非共有電子対）、<b>先が電子を受け取る側</b>です。両羽の矢印は電子2個（電子対）がひとまとまりで動くこと、片羽の矢印は電子1個（ラジカル）が動くことを表し、片羽はラジカル連鎖で進む反応に出てきます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">登録済みの反応機構（14件）</div><table class="ref-mech-table"><thead><tr><th>反応の型</th><th>反応</th></tr></thead><tbody><tr data-rx-id="ethene_br2"><td class="ref-group" rowspan="2">付加反応<span>2 件</span></td><td class="ref-mech-name"><b>エテンへの臭素の付加</b><span class="ref-mech-desc">アルケンの二重結合への求電子付加反応。臭素水の脱色（アルケンの検出反応）として知られています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_br2&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの臭素の付加の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethene_h2o"><td class="ref-mech-name"><b>エテンへの水付加（酸触媒）</b><span class="ref-mech-desc">リン酸などの酸触媒のもと、エテンに水が付加してエタノールが生じる反応。エタノールの工業的製法として教科書で扱われます。触媒のH⁺が最初に付加し、最後に再生する点に注目。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethene_h2o&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エテンへの水付加（酸触媒）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="methane_chlorination"><td class="ref-group" rowspan="1">置換反応<span>1 件</span></td><td class="ref-mech-name"><b>メタンの塩素化（ラジカル置換）</b><span class="ref-mech-desc">光照射下でメタンと塩素が起こす置換反応。ラジカル連鎖反応（開始・成長・停止）の代表例で、片羽の矢印は電子1個の動きを表します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=methane_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="メタンの塩素化（ラジカル置換）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="esterification"><td class="ref-group" rowspan="1">縮合反応<span>1 件</span></td><td class="ref-mech-name"><b>酢酸とエタノールのエステル化</b><span class="ref-mech-desc">カルボン酸とアルコールから、酸触媒のもとでエステルと水が生じる縮合反応（フィッシャーエステル化）。電子の流れがわかるよう簡略化した2段階で表現しています。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=esterification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸とエタノールのエステル化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_nitration"><td class="ref-group" rowspan="3">芳香族置換反応<span>3 件</span></td><td class="ref-mech-name"><b>ベンゼンのニトロ化</b><span class="ref-mech-desc">濃硝酸と濃硫酸から生じたニトロニウムイオン NO₂⁺ がベンゼンを攻撃する求電子置換反応。中間体（アレニウムイオン）を経てニトロベンゼンが生成します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_nitration&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのニトロ化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_sulfonation"><td class="ref-mech-name"><b>ベンゼンのスルホン化</b><span class="ref-mech-desc">ベンゼンを濃硫酸とともに加熱すると、三酸化硫黄SO₃が求電子剤としてベンゼンを攻撃し、ベンゼンスルホン酸が生じます。ニトロ化と同じ「中間体を経て芳香族性が回復する」求電子置換反応です。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_sulfonation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンのスルホン化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="benzene_chlorination"><td class="ref-mech-name"><b>ベンゼンの塩素化</b><span class="ref-mech-desc">鉄触媒（FeCl₃）の存在下、ベンゼンと塩素からクロロベンゼンと塩化水素が生じます。触媒はCl–Cl結合を分極させて塩素を求電子剤として働かせます（図では触媒を省略）。付加ではなく置換になるのは、芳香族性を保つ方が安定なためです。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=benzene_chlorination&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ベンゼンの塩素化の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_e1"><td class="ref-group" rowspan="2">脱離反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの分子内脱水（エテン生成）</b><span class="ref-mech-desc">エタノールを濃硫酸とともに160〜170℃に加熱すると、分子内で水が取れてエテンが生じます。エテンへの水付加のちょうど逆向きの反応です（130〜140℃では分子間脱水でジエチルエーテルが生じる）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_e1&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子内脱水（エテン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_ether"><td class="ref-mech-name"><b>エタノールの分子間脱水（ジエチルエーテル生成）</b><span class="ref-mech-desc">130〜140℃でエタノールに濃硫酸を作用させると、分子間で脱水縮合が起こりジエチルエーテルが生成します（160〜170℃では分子内脱水でエテンが生じます）。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_ether&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの分子間脱水（ジエチルエーテル生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="saponification"><td class="ref-group" rowspan="1">加水分解<span>1 件</span></td><td class="ref-mech-name"><b>酢酸エチルのけん化（塩基による加水分解）</b><span class="ref-mech-desc">エステルを水酸化ナトリウム水溶液と加熱すると、カルボン酸の塩とアルコールに分解されます（けん化）。油脂のけん化はセッケンの製法として教科書で扱われます。OH⁻がカルボニル炭素を直接攻撃します。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=saponification&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="酢酸エチルのけん化（塩基による加水分解）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="ethanol_oxidation"><td class="ref-group" rowspan="2">酸化反応<span>2 件</span></td><td class="ref-mech-name"><b>エタノールの酸化（アセトアルデヒド生成）</b><span class="ref-mech-desc">1級アルコールが酸化されてアルデヒドになる反応の機構版。酸化剤の例として次亜塩素酸 HClO を使い、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。二クロム酸カリウムや加熱した銅による酸化も、酸化剤とのエステルを経て O–H 側と C–H 側の水素が奪われる同じ骨組みで進みます。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=ethanol_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="エタノールの酸化（アセトアルデヒド生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="propanol2_oxidation"><td class="ref-mech-name"><b>2-プロパノールの酸化（アセトン生成）</b><span class="ref-mech-desc">2級アルコールが酸化されてケトンになる反応の機構版。エタノールの酸化と同じく次亜塩素酸 HClO を酸化剤の例にして、O–H と C–H の2つの水素が失われて C=O ができる「脱水素」の流れを見ます。-OH の炭素に残る水素が1つでも酸化は進みますが、できたケトンには C=O の炭素に水素がないため、それ以上酸化されにくくなります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">3 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=propanol2_oxidation&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="2-プロパノールの酸化（アセトン生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="aniline_diazotization"><td class="ref-group" rowspan="2">ジアゾ化・カップリング<span>2 件</span></td><td class="ref-mech-name"><b>アニリンのジアゾ化（ベンゼンジアゾニウム生成）</b><span class="ref-mech-desc">アニリンを亜硝酸ナトリウムと塩酸で処理すると、塩化ベンゼンジアゾニウムが生じる反応（ジアゾ化）。ここでは NaNO₂ + HCl から生じたニトロソニウムイオン NO⁺ を出発点にする（対イオンの Cl⁻ は省略。ニトロ化で NO₂⁺ から始めるのと同じ流儀）。N-ニトロソ化 → 水素の移動 → 水の脱離という流れで、氷冷（5℃以下）で行う理由も最後に確認する。</span><div class="ref-mech-foot"><span class="ref-mech-steps">6 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=aniline_diazotization&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="アニリンのジアゾ化（ベンゼンジアゾニウム生成）の機構を見る">▶ 見る</a></div></td></tr><tr data-rx-id="diazo_coupling"><td class="ref-mech-name"><b>ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）</b><span class="ref-mech-desc">氷冷したベンゼンジアゾニウム塩の水溶液にナトリウムフェノキシド（フェノールを NaOH 水溶液に溶かしたもの）を加えると、橙赤色の p-ヒドロキシアゾベンゼン（p-フェニルアゾフェノール）が生じる反応（ジアゾカップリング）。アゾ染料合成の代表例。フェノキシドの O⁻ が電子を環に押し出すため、攻撃は O の対角（パラ位）の炭素から起こります。</span><div class="ref-mech-foot"><span class="ref-mech-steps">2 段</span><a class="ref-mech-play" href="/assembler/?open=mechanism&amp;id=diazo_coupling&amp;utm_source=reference&amp;utm_medium=internal&amp;utm_campaign=reaction-mechanisms" title="ジアゾカップリング（p-ヒドロキシアゾベンゼン生成）の機構を見る">▶ 見る</a></div></td></tr></tbody></table></div>
-<p class="ref-p">左の列（反応の型）を縦に読んでください。<b>付加</b>は二重結合が開いて両端に付く、<b>置換</b>は付いていたものが外れて別のものが入れ替わる、<b>脱離</b>は隣り合う原子が抜けて二重結合ができる、<b>縮合</b>は2つの分子から水のような小さい分子が取れてつながる —— <b>型のちがいは、生成物だけを見ても付きません</b>。動きを見て初めて分かれます。</p>
-<p class="ref-p">それぞれの反応に付いている「<b>N 段</b>」は、途中にいくつ<b>中間体</b>が挟まるかの目安です。1段で終わる反応はここには1つもなく、どれも「まず電子が動いて不安定なものができ、次にそれが安定なものへ落ち着く」という2段以上の道すじを通ります。</p>
-<p class="ref-p"><b>▶ 見る</b>を押すと、その反応の分子がキャンバスに出て、巻矢印つきで1段ずつ送れます。出てくるのは<b>代表例の分子</b>で、いま自分が描いている分子ではありません。見ている途中の <b>🎯 予測</b> では、主生成物を自分で組み立てて答え合わせもできます。</p>
-<p class="ref-p">いま描いている分子そのものを反応させたいときは、この表ではなくキャンバスの下の「<b>⚗ 反応させる</b>」を使ってください。こちらは代表例ではなく、<b>あなたの分子に試薬を効かせて、できたものをキャンバスの上で組み替えます</b>。</p>
+<p class="ref-p">水溶液が酸性か塩基性か、どのくらい強いかを1つの数で表したものが <b>pH</b> です。pH の計算は「[H⁺] を 10 の何乗で表すか」に尽きます。[H⁺] の出し方（価数と電離度）は前のページで扱っています。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/acid-base-strength/">H⁺ の濃度の求め方（強酸は価数×濃度、弱酸は濃度×電離度）へ</a></p>
+<section class="ref-sec" id="ref-sec-definition"><h4 class="ref-sec-h">pH と pOH の定義</h4><p class="ref-sec-lead">[H⁺] ＝ 10⁻ᵖᴴ mol/L、[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L。10 の肩の数の符号を変えたものが pH・pOH です。</p></section>
+<p class="ref-p">水素イオンのモル濃度を <b>[H⁺]</b>、水酸化物イオンのモル濃度を <b>[OH⁻]</b> と書きます。[H⁺] を対数で表したものが <b>pH</b>、[OH⁻] を対数で表したものが <b>pOH</b> です。計算では次の形で使います。</p>
+<ul class="ref-list"><li><b>[H⁺] ＝ 10⁻ᵖᴴ mol/L</b></li><li><b>[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L</b></li></ul>
+<p class="ref-p">具体例として、[H⁺] ＝ 0.10 mol/L なら 0.10 ＝ 10⁻¹ なので <b>pH ＝ 1</b>、[OH⁻] ＝ 0.0010 mol/L なら 0.0010 ＝ 10⁻³ なので <b>pOH ＝ 3</b> です。0.00…010 の「1 が小数点から何桁目にあるか」がそのまま pH（pOH）になります。</p>
+<p class="ref-p"><b>この2つの式は必ず暗記してください。</b>pH の問題はすべてここから始まります。</p>
+<section class="ref-sec" id="ref-sec-kw"><h4 class="ref-sec-h">水のイオン積と pH ＋ pOH ＝ 14</h4><p class="ref-sec-lead">水の中では [H⁺][OH⁻] ＝ 1.0 × 10⁻¹⁴ (mol/L)² がいつも成り立ちます（25 ℃）。ここから pH ＋ pOH ＝ 14 が出ます。</p></section>
+<p class="ref-p">水の中では、[H⁺] と [OH⁻] の積がいつも一定の値になります。この積を<b>水のイオン積</b>といい、<b>Kw</b> で表します。</p>
+<ul class="ref-list"><li>Kw ＝ [H⁺][OH⁻] ＝ 1.0 × 10⁻¹⁴ (mol/L)²（25 ℃）</li></ul>
+<p class="ref-p">Kw の式に [H⁺] ＝ 10⁻ᵖᴴ、[OH⁻] ＝ 10⁻ᵖᴼᴴ を代入すると、10⁻ᵖᴴ × 10⁻ᵖᴼᴴ ＝ 10⁻⁽ᵖᴴ⁺ᵖᴼᴴ⁾ ＝ 10⁻¹⁴ となるので、</p>
+<ul class="ref-list"><li><b>pH ＋ pOH ＝ 14</b></li></ul>
+<p class="ref-p">がいつも成り立ちます。具体例として、pOH ＝ 3 の水溶液は pH ＝ 14 − 3 ＝ <b>11</b> です。</p>
+<p class="ref-p">水のイオン積の値 10⁻¹⁴ は、ほとんど 0 です。これは、<b>H⁺ と OH⁻ は水の中で共存できず、出会うとすぐに反応して H₂O になる</b>ということを意味しています。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H⁺ ＋ OH⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂O</span></div><p class="ref-note">酸と塩基はすぐに反応します。水のイオン積がほぼ 0 であることの言いかえです。</p></div>
+<section class="ref-sec" id="ref-sec-scale"><h4 class="ref-sec-h">酸性・中性・塩基性と pH</h4><p class="ref-sec-lead">[H⁺] ＞ [OH⁻] なら酸性で pH ＜ 7、等しければ中性で pH ＝ 7、[H⁺] ＜ [OH⁻] なら塩基性で pH ＞ 7 です。pH が1増えると [H⁺] は 1/10 倍になります。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">pH・pOH と [H⁺]・[OH⁻] の対応（25 ℃）</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">pH</th><th style="text-align: center;">pOH</th><th style="text-align: center;">[H⁺]（mol/L）</th><th style="text-align: center;">[OH⁻]（mol/L）</th><th style="text-align: left;">液性</th></tr></thead><tbody><tr><td style="text-align: center;">0</td><td style="text-align: center;">14</td><td style="text-align: center;">10⁰ ＝ 1</td><td style="text-align: center;">10⁻¹⁴</td><td style="text-align: left;">強い酸性</td></tr><tr><td style="text-align: center;">1</td><td style="text-align: center;">13</td><td style="text-align: center;">10⁻¹</td><td style="text-align: center;">10⁻¹³</td><td style="text-align: left;">強い酸性</td></tr><tr><td style="text-align: center;">3</td><td style="text-align: center;">11</td><td style="text-align: center;">10⁻³</td><td style="text-align: center;">10⁻¹¹</td><td style="text-align: left;">弱い酸性</td></tr><tr><td style="text-align: center;">7</td><td style="text-align: center;">7</td><td style="text-align: center;">10⁻⁷</td><td style="text-align: center;">10⁻⁷</td><td style="text-align: left;">中性</td></tr><tr><td style="text-align: center;">11</td><td style="text-align: center;">3</td><td style="text-align: center;">10⁻¹¹</td><td style="text-align: center;">10⁻³</td><td style="text-align: left;">弱い塩基性</td></tr><tr><td style="text-align: center;">13</td><td style="text-align: center;">1</td><td style="text-align: center;">10⁻¹³</td><td style="text-align: center;">10⁻¹</td><td style="text-align: left;">強い塩基性</td></tr><tr><td style="text-align: center;">14</td><td style="text-align: center;">0</td><td style="text-align: center;">10⁻¹⁴</td><td style="text-align: center;">10⁰ ＝ 1</td><td style="text-align: left;">強い塩基性</td></tr></tbody></table></div>
+<ul class="ref-list"><li>酸性　[H⁺] ＞ [OH⁻]　⇒　pH ＜ 7</li><li>中性　[H⁺] ＝ [OH⁻]　⇒　pH ＝ 7</li><li>塩基性　[H⁺] ＜ [OH⁻]　⇒　pH ＞ 7</li></ul>
+<p class="ref-p"><b>pH が1増えると [H⁺] は 1/10 倍、pH が1減ると [H⁺] は 10 倍</b>になります。「pH が小さいほど酸性が強い」と向きを覚えておきましょう。</p>
+<h5 class="ref-h5">強酸・強塩基の pH の出し方</h5>
+<ol class="ref-list"><li>価数と濃度から [H⁺]（塩基なら [OH⁻]）を出す。</li><li>10 の何乗かに直して pH（pOH）を読む。</li><li>塩基なら pH ＝ 14 − pOH で pH にする。</li></ol>
+<p class="ref-p">具体例として、0.0050 mol/L の水酸化カルシウム水溶液は2価の強塩基なので [OH⁻] ＝ 2 × 0.0050 ＝ 0.010 ＝ 10⁻² mol/L、pOH ＝ 2、pH ＝ 14 − 2 ＝ <b>12</b> です。</p>
+<section class="ref-sec" id="ref-sec-dilution"><h4 class="ref-sec-h">薄めたときの pH の変化</h4><p class="ref-sec-lead">酸性の水溶液を 10ⁿ 倍に薄めると pH は n 増え、塩基性の水溶液では n 減ります。ただしどちらも 7 を越えては動きません。</p></section>
+<p class="ref-p">酸性の水溶液を 10 倍に薄めると [H⁺] は 1/10 倍になるので、<b>pH は1増えます</b>（中性の 7 に近づく）。このとき [OH⁻] は 10 倍になり、pOH は1減ります。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ph-dilution-acid.png" alt="pH・pOH・[H⁺]・[OH⁻] を4段に並べた表に、10倍ずつ希釈するごとに pH が +1、pOH が −1、[H⁺] が 1/10 倍、[OH⁻] が 10 倍になる矢印を描き、pH 7 のところで止まることを示した図" loading="lazy"><figcaption class="ref-figure-cap">酸性の水溶液を 10 倍ずつ薄めると <b>pH は1ずつ増えて 7 に近づき、7 を越えません</b>。[H⁺][OH⁻] ＝ 10⁻¹⁴ と pH ＋ pOH ＝ 14 はいつも保たれます。</figcaption></figure>
+<ul class="ref-list"><li>酸性の水溶液を <b>10ⁿ 倍</b>に薄めると、pH は <b>7 を越えない範囲で n 増える</b></li><li>塩基性の水溶液を <b>10ⁿ 倍</b>に薄めると、pH は <b>7 を下回らない範囲で n 減る</b></li></ul>
+<p class="ref-p">具体例として、pH ＝ 1 の塩酸を 1000 倍（10³ 倍）に薄めると pH ＝ 1 ＋ 3 ＝ <b>4</b> です。pH ＝ 4 の塩酸を 10000 倍（10⁴ 倍）に薄めると、計算上は 4 ＋ 4 ＝ 8 ですが、<b>pH は 7 を越えないので pH ＝ 7</b> と答えます。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">pH ＝ 4 の塩酸を 10000 倍に薄めると pH ＝ 8 になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">どれだけ薄めても pH は 7 を越えません。酸性の水溶液を薄めて塩基性になることはないので、<b>pH ＝ 7</b> と答えます。</span></p><p class="ref-mistake-why">「10ⁿ 倍で n 増える」だけを覚えて、機械的に足してしまうためです。★ 薄めると酸から来る H⁺ は減りますが、水そのものからも H⁺ がわずかに生じるので、pH は 7 に近づくだけで越えません。</p></div>
+<p class="ref-p"><b>「10ⁿ 倍で n 動く、ただし 7 は越えない」は必ずセットで覚えてください。</b></p>
+<div class="ref-callout ref-callout-note"><b class="ref-callout-tag">補足</b><p class="ref-callout-text">極端に薄めた酸の pH を正確に求めると、7 よりわずかに小さい値（例えば 6.98 くらい）になります。整数で答える問題では、上のとおり pH ＝ 7 と答えて問題ありません。</p></div>
+<section class="ref-sec" id="ref-sec-log"><h4 class="ref-sec-h">pH ＝ −log₁₀[H⁺]</h4><p class="ref-sec-lead">[H⁺] が 10 のちょうど何乗かで書けないときは、常用対数を使って pH ＝ −log₁₀[H⁺] で求めます。</p></section>
+<p class="ref-p">pH の定義を対数で書くと <b>pH ＝ −log₁₀[H⁺]</b> です。[H⁺] ＝ 10⁻ᵖᴴ と同じことを言っています。</p>
+<p class="ref-p">具体例として、[H⁺] ＝ 0.020 mol/L の水溶液は、log₁₀2 ＝ 0.30 を使って、pH ＝ −log₁₀(2 × 10⁻²) ＝ 2 − log₁₀2 ＝ 2 − 0.30 ＝ <b>1.7</b> です。</p>
+<p class="ref-p"><b>計算では log₁₀2 ＝ 0.30、log₁₀3 ＝ 0.48 が与えられることが多いので、式の変形（積は和になる）だけ使えれば十分です。</b></p>
+<h5 class="ref-h5">例題</h5>
+<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 0.010 mol/L の塩酸の pH を整数で求めよ。(2) 0.10 mol/L の水酸化ナトリウム水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 塩酸は1価の強酸なので [H⁺] ＝ 0.010 ＝ 10⁻² mol/L、<b>pH ＝ 2</b>。(2) NaOH は1価の強塩基なので [OH⁻] ＝ 0.10 ＝ 10⁻¹ mol/L、pOH ＝ 1、pH ＝ 14 − 1 ＝ <b>13</b>。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) 0.050 mol/L の硫酸の pH を整数で求めよ。(2) 0.0050 mol/L の水酸化カルシウム水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 硫酸は2価の強酸なので [H⁺] ＝ 2 × 0.050 ＝ 0.10 ＝ 10⁻¹ mol/L、<b>pH ＝ 1</b>。(2) Ca(OH)₂ は2価の強塩基なので [OH⁻] ＝ 2 × 0.0050 ＝ 0.010 ＝ 10⁻² mol/L、pOH ＝ 2、pH ＝ 14 − 2 ＝ <b>12</b>。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">(1) pH ＝ 1 の塩酸を 1000 倍に薄めた水溶液の pH を整数で求めよ。(2) pH ＝ 12 の水酸化カルシウム水溶液を 1000 倍に薄めた水溶液の pH を整数で求めよ。(3) pH ＝ 4 の塩酸を 10000 倍に薄めた水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 1000 ＝ 10³ なので酸の pH は3大きくなり、pH ＝ 1 ＋ 3 ＝ <b>4</b>。(2) 塩基の pH は3小さくなり、pH ＝ 12 − 3 ＝ <b>9</b>。(3) 10000 ＝ 10⁴ なので 4 ＋ 4 ＝ 8 となりますが、pH は 7 を越えないので <b>pH ＝ 7</b>。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">5.0 × 10⁻⁴ mol/L の水酸化カルシウム水溶液の pH を整数で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>Ca(OH)₂ は2価の強塩基なので [OH⁻] ＝ 2 × 5.0 × 10⁻⁴ ＝ 1.0 × 10⁻³ mol/L、pOH ＝ 3、pH ＝ 14 − 3 ＝ <b>11</b>。</p></div></details></div>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（8問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（8問・測定モード）">▶ 一問一答で解く（8問・測定モード）</button><a class="alt" href="/qa/?codes=org.ali.alkane-chlorination,org.ali.alkene-br2,org.ali.alkene-h2o,org.aro.halogenation,org.aro.nitration,org.aro.sulfonation,org.aroN.diazotization,org.aroN.coupling&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.alkane-chlorination" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/clue-properties/">← 見た目・におい・沸点から当たりを付ける</a>
+<nav class="seq"><a href="/reference/acid-base-strength/">← 酸・塩基の価数と強弱 —— 強酸は3つだけ覚える</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/inorg-reaction-types/">無機の反応は5つの型で読む →</a></nav>
+<a href="/reference/neutralization/">中和反応と量的関係 —— 価数の逆の比で、左から順に書く →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -883,10 +910,58 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
-
+<script>
+(function () {
+  var d = document.querySelector('.ref-toc details');
+  if (!d) return;
+  var wide = window.matchMedia('(min-width: 1000px)');
+  var sync = function () { if (wide.matches) d.open = true; };
+  sync();
+  if (wide.addEventListener) wide.addEventListener('change', sync);
+  var links = {};
+  [].forEach.call(d.querySelectorAll('a[href^="#"]'), function (a) { links[a.getAttribute('href').slice(1)] = a; });
+  var secs = [].filter.call(document.querySelectorAll('.ref-scope [id]'), function (s) { return links[s.id]; });
+  if (!secs.length) return;
+  var box = document.querySelector('.ref-toc');
+  var last = null;
+  /* ⚠ 目次の**行**は learn.js の renderToc が組んだもの（1行も足さない）。
+     ★ ここで足すのは、狭い面で畳んだときの札に出す「いま」の1つだけ ＝ 見え方の話 */
+  var now = null, sm = d.querySelector('summary');
+  if (sm) { now = document.createElement('span'); now.className = 'ref-toc-now'; sm.appendChild(now); }
+  var update = function () {
+    /* 帯の線。★ 画面の高さに合わせるが、背の高い窓で線が下がりすぎないよう頭を抑える */
+    var line = Math.min(180, window.innerHeight * 0.3);
+    var cur = secs[0];
+    for (var i = 0; i < secs.length; i++) {
+      if (secs[i].getBoundingClientRect().top <= line) cur = secs[i]; else break;
+    }
+    if (cur === last) return;
+    last = cur;
+    for (var k in links) links[k].setAttribute('aria-current', k === cur.id ? 'true' : 'false');
+    /* ★ 狭い面では目次が畳まれていて、印が見えない。★★ **畳んだ札のほうに現在地を出す**
+       （「いま何章目か」は、目次を開かないと分からないのでは答えになっていない） */
+    if (now && links[cur.id]) now.textContent = 'いま：' + links[cur.id].textContent;
+    /* ★ 目次自身がはみ出すほど節が多いページでは、現在地を目次の中でも見えるところへ
+       （52ページまで増える前提。⚠ ページ全体はスクロールさせない＝ box の中だけ動かす） */
+    var a = links[cur.id];
+    if (box && a && box.scrollHeight > box.clientHeight + 1) {
+      var t = a.offsetTop - box.clientHeight / 2;
+      box.scrollTop = Math.max(0, t);
+    }
+  };
+  var tick = false;
+  var onScroll = function () {
+    if (tick) return;
+    tick = true;
+    window.requestAnimationFrame(function () { tick = false; update(); });
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onScroll, { passive: true });
+})();
+</script>
 
 </main>
-<footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
-Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
+<footer><div class="wrap">Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
 </body>
 </html>
