@@ -22,6 +22,50 @@ intermolecular-force  分子間力と沸点
 zaitsev               ザイツェフ則 —— 脱水で2つできるとき、どちらが主に生じるか
 steric-hindrance      立体障害 —— 大きな原子団どうしがぶつかって不安定になること
 
+# ── 理論の8単元（2026-09-19・理論の便0 がまとめて登録。表示名は ref-theory-design §3-1 の題）──
+#   ⚠ ドラフトの便（T1〜T8）はここを触らない（書けた行は統合で消す）。並びと束ね方の正は qa/GROUPS.tsv
+#   ★ molecular-shape・intermolecular-force は上に登録済み（有機からリンクされている）
+substance-classification  物質の分類と分離
+atom-structure            原子の構造と電子配置
+ionic-bond                イオンとイオン結合
+covalent-bond             共有結合 —— 電子式と構造式
+crystal-types             金属結合と結晶の4つの型
+unit-cell                 結晶格子 —— 数えて・測って・詰める
+atomic-weight             原子量・分子量・式量 —— てんびんで平均する
+mole                      物質量 —— すべて mol を経由する
+concentration             溶液の濃度 —— 溶液 1L について考える
+chemical-equation         化学反応式のつくり方
+stoichiometry             化学反応の量的関係 —— 係数の比は mol の比
+chemical-laws             化学の基本法則 —— 原子と分子にたどり着くまで
+states-of-matter          物質の三態と熱運動
+vapor-pressure            液体の蒸気圧と沸騰
+gas-laws                  気体の法則と状態方程式 —— 比例と反比例で解く
+gas-mixture               混合気体と分圧 —— 全圧はてんびんで
+gas-with-vapor            水蒸気を含む気体 —— 全部気体と仮定して比べる
+real-gas                  理想気体と実在気体 —— ずれは体積で考える
+dissolution               溶解のしくみ —— 似たものどうしは溶け合う
+solubility                固体の溶解度と再結晶
+gas-solubility            気体の溶解度 —— ヘンリーの法則
+colligative               希薄溶液の性質 —— 蒸気圧降下・沸点上昇・凝固点降下
+osmotic-pressure          浸透圧 —— 気体と同じ式
+colloid                   コロイド
+reaction-enthalpy         反応エンタルピーと熱化学反応式
+heat-measurement          熱量の測定 —— 温度変化のグラフを延ばす
+hess-law                  ヘスの法則 —— エネルギー図の高さで足し引き
+bond-enthalpy             結合エンタルピー
+light-energy              化学反応と光
+reaction-rate             反応速度の表し方 —— 主語と単位
+rate-law                  反応速度式と反応の次数
+activation-energy         反応の速さを変える条件 —— 活性化エネルギーと触媒
+equilibrium-constant      化学平衡と平衡定数 —— 生成物が分子
+le-chatelier              平衡の移動 —— ルシャトリエの原理
+pressure-equilibrium      圧平衡定数と解離度
+weak-acid-equilibrium     弱酸・弱塩基の電離平衡 —— Ka ＝ cα²
+hydrolysis-ph             塩の加水分解と pH —— Kh ＝ ch²
+buffer                    緩衝液 —— 両方そろうと緩衝液
+polyprotic-acid           2段階電離 —— pH は1段目だけ
+solubility-product        溶解度積 —— 沈殿の判定と硫化物の分離
+
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
 #   無機・理論の44枚（inorg-reaction-types 〜 electrolysis-industry）… 7便の原稿がそろったので削除（2026-09-19・統合 ref-inorg-merge）。並びと束ね方の正は qa/GROUPS.tsv
