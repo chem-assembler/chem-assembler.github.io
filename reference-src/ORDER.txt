@@ -93,3 +93,4 @@ solubility
 gas-solubility
 colligative
 osmotic-pressure
+colloid
