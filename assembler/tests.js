@@ -3477,7 +3477,7 @@
     // **答え合わせのボタンが作り直されるクイズと、居座るクイズがある**のが事故の芯で、
     // 居座る3か所（同じ化合物？の2択・立体異性体クイズの3択・同じ？違う？の2択）だけが
     // 自分で消す必要があった。1か所（同じ化合物？）が書き忘れられていた。
-    // QS3〜QS5 は出題プールの分野・範囲（レベル）の絞り込み。
+    // QS3〜QS7 は出題プールの分野・範囲（レベル）の絞り込み（QS6・QS7 は複素環と無機の箱）。
 
     const QUIZ_MARK_CLASSES = ['quiz-choice-right', 'quiz-choice-wrong',
                                'quiz-choice-muted', 'quiz-choice-picked'];
@@ -3573,7 +3573,7 @@
         assert(back.every(({ buttons }) => countMarked(buttons) === 0), '掃除を戻しても塗り分けが残る');
     });
 
-    // 出題プールの絞り込み用の道具（QS3〜QS5 で共有）
+    // 出題プールの絞り込み用の道具（QS3〜QS7 で共有）
     const quizPoolCtx = (c) => {
         const quiz = c.W.quiz, nq = c.W.namingQuiz;
         quiz.buildLibrary();
@@ -3669,8 +3669,11 @@
         // ここは**上限以外の理由で減っていない**ことの確認（上限そのものは QL1〜QL6 が見張る）
         const overRaw = lib.filter(e => e.chainOutsideRing > c.W.QUIZ_CHAIN_MAX).length;
         assert(overRaw > 0, '上限で外れるものが1件も無い＝この差し引きが空回りしている');
-        assert(nAll === lib.length - overRaw,
-            `「すべて」が（全件 − 図が長すぎるもの）でない（${nAll} ≠ ${lib.length}−${overRaw}）`);
+        // v1599 で「無機」（炭素をふくまないもの）も出題プールから外れた（→ QS6）。
+        // 無機は鎖0なので、上限で外れるものと重ならない
+        const inorgRaw = lib.filter(e => e.field === c.W.QUIZ_FIELD_EXCLUDED).length;
+        assert(nAll === lib.length - overRaw - inorgRaw,
+            `「すべて」が（全件 − 図が長すぎるもの − 無機）でない（${nAll} ≠ ${lib.length}−${overRaw}−${inorgRaw}）`);
         assert(nBasic / nAll < 0.5, `「教科書」が全体の半分以上ある（${nBasic}/${nAll}）＝絞れていない`);
         assert(pBasic >= 20, `「教科書」で「違う」に使える組が少なすぎる（${pBasic}組）＝出題が成り立たない`);
 
@@ -3770,6 +3773,111 @@
         setQuizFilters(nq, 'basic', 'all', 'all');
         c.D.getElementById('btn-quiz-close').click();
         c.D.getElementById('btn-naming-close').click();
+    });
+
+    /* ===== QS6・QS7: 分野の「その他」を複素環と無機に分ける（v1599・2026-08-22 ユーザー申し立て） =====
+     *
+     * 「命名クイズ 物質の分類があやしい」。「その他」の中身は分類できないものではなく、
+     * **複素環（環に N・O・S）と無機（炭素をふくまない）**だった（→ quiz.js の QUIZ_FIELDS）。
+     *   QS6 … 「その他」0件・無機が出題プールに入らない・代表の分野
+     *   QS7 … 否定対照: 複素環の判定を前に出すと、ピリジン・β-D-グルコースが移ってしまう
+     *          （＝ QS6 の「芳香族のまま」「天然有機化合物のまま」が空振りでないこと）
+     */
+    const fieldOfName = (lib, name) => {
+        const e = lib.find(x => x.name === name);
+        assert(e, `ライブラリに ${name} が無い（テストの前提が崩れている）`);
+        return e;
+    };
+
+    test('QS6: 「その他」が0件・無機はクイズに出ない・複素環の代表が正しい箱に入る', async (c) => {
+        c.reset();
+        const { quiz, nq } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library;
+
+        // ① 分類器が箱を持っていないものは無い（「その他」は残すが 0 件）
+        assert(W.QUIZ_FIELDS.includes('複素環') && W.QUIZ_FIELDS.includes('無機') &&
+            W.QUIZ_FIELDS.includes('その他'), `分野の箱が足りない（${W.QUIZ_FIELDS.join('・')}）`);
+        const other = lib.filter(e => e.field === 'その他');
+        assert(other.length === 0,
+            `「その他」が ${other.length} 件ある（例: ${other.slice(0, 5).map(e => e.name).join('・')}）`);
+
+        // ② 代表の分野
+        [['フラン', '複素環'], ['ピロール', '複素環'], ['カフェイン', '複素環'],
+         ['ε-カプロラクタム', '複素環'],
+         ['ピリジン', '芳香族'],                                  // 複素環だが教科書は芳香族の章
+         ['β-D-グルコース（β-D-グルコピラノース）', '天然有機化合物'], // 環に O があるが糖
+         ['水', '無機'], ['アンモニア', '無機'], ['過酸化水素', '無機']
+        ].forEach(([n, want]) => {
+            const got = fieldOfName(lib, n).field;
+            assert(got === want, `${n} の分野が ${got}（期待 ${want}）`);
+        });
+
+        // ③ 無機はどの範囲・分野でも出題プールに入らない（お題 stages.json には残る）
+        const inorg = lib.filter(e => e.field === '無機');
+        assert(inorg.length >= 4, `無機が ${inorg.length} 件しかない（テストの前提が崩れている）`);
+        assert((W.STAGES || []).some(s => s.name === '水'), '水がお題から消えた（外すのはクイズだけ）');
+        quiz.open(); nq.open();
+        for (const scope of ['basic', 'named', 'all']) {
+            for (const field of ['all', '無機']) {
+                setQuizFilters(quiz, scope, field, 'all');
+                setQuizFilters(nq, scope, field, 'all');
+                const inQuiz = quiz.poolIndices.filter(i => lib[i].field === '無機');
+                const inNaming = nq.pool.filter(i => nq.library[i].field === '無機');
+                assert(inQuiz.length === 0 && inNaming.length === 0,
+                    `${scope}×${field} で無機が出題プールに入っている（同じ化合物？ ${inQuiz.length} ／ 命名 ${inNaming.length}）`);
+            }
+        }
+        // ④ 外した件数を黙って減らさない（件数の行の内訳に但し書き）
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        const txt = c.D.getElementById('quiz-pool-count').textContent;
+        assert(/炭素をふくまない \d+ 件/.test(txt), `無機を外したことが件数の行に出ていない（${txt}）`);
+        assert(txt.includes('水'), `外した代表の名前が出ていない（${txt}）`);
+
+        // ⑤ 分野の選択肢に説明の文言
+        const opts = [...quiz.fieldEl.options];
+        const hetero = opts.find(o => o.value === '複素環');
+        const inorgOpt = opts.find(o => o.value === '無機');
+        assert(hetero && /N・O・S/.test(hetero.textContent), `複素環の説明が無い（${hetero && hetero.textContent}）`);
+        assert(inorgOpt && /炭素をふくまない/.test(inorgOpt.textContent), `無機の説明が無い（${inorgOpt && inorgOpt.textContent}）`);
+
+        setQuizFilters(quiz, 'basic', 'all', 'all');
+        setQuizFilters(nq, 'basic', 'all', 'all');
+        c.D.getElementById('btn-quiz-close').click();
+        c.D.getElementById('btn-naming-close').click();
+    });
+
+    test('QS7: 否定対照 — 複素環の判定を前に出すと、ピリジンと β-D-グルコースが移ってしまう', async (c) => {
+        c.reset();
+        const { quiz } = quizPoolCtx(c);
+        const W = c.W, lib = quiz.library;
+        // 判定の順を入れ替えた分類器（無機・高分子の次に、環にヘテロ原子があれば複素環とする）
+        const heteroFirst = (mol) => {
+            const real = W.compoundFieldOf(mol);
+            if (real === '無機' || real === '高分子') return real;
+            const ring = W.ringAtomIds(mol);
+            const heteroRing = [...ring].some(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                return a && a.element !== 'C';
+            });
+            return heteroRing ? '複素環' : real;
+        };
+        // ① 入れ替えると QS6 ② の2件が落ちる（＝ QS6 の緑は順番が守っている）
+        const pyr = fieldOfName(lib, 'ピリジン');
+        const glc = fieldOfName(lib, 'β-D-グルコース（β-D-グルコピラノース）');
+        assert(heteroFirst(pyr.mol) === '複素環',
+            `順を入れ替えてもピリジンが ${heteroFirst(pyr.mol)} のまま＝ QS6 の「芳香族のまま」が空振り`);
+        assert(heteroFirst(glc.mol) === '複素環',
+            `順を入れ替えても β-D-グルコースが ${heteroFirst(glc.mol)} のまま＝ QS6 の「天然有機化合物のまま」が空振り`);
+        // ② 本物の分類器と入れ替えた分類器で、差が出るのは芳香族・天然物から移るものだけ
+        //    （本物は「その他」に落ちていたものだけを拾い、他は1件も動かさない）
+        const moved = lib.filter(e => heteroFirst(e.mol) !== e.field);
+        assert(moved.length > 0, '順を入れ替えても1件も動かない＝ この対照が成り立たない');
+        const bad = moved.filter(e => !['芳香族', '天然有機化合物'].includes(e.field));
+        assert(bad.length === 0,
+            `芳香族・天然物以外から移るものがある（${bad.slice(0, 5).map(e => `${e.name}:${e.field}`).join('・')}）`);
+        // ③ 本物の分類器（関数そのもの）はこの2件を動かさない
+        assert(W.compoundFieldOf(pyr.mol) === '芳香族', 'compoundFieldOf(ピリジン) が芳香族でない');
+        assert(W.compoundFieldOf(glc.mol) === '天然有機化合物', 'compoundFieldOf(β-D-グルコース) が天然有機化合物でない');
     });
 
     /* ===== QN: 名簿の検分（C2・2026-08-25・ユーザー決定「115件を全部見直す」） =====

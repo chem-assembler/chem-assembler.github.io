@@ -30,6 +30,7 @@
  * **分野は導出できる**（下の compoundFieldOf）。構造だけで 1059 件を5つに分けられ、
  * 「その他（分類できなかったもの）」は 37 件に収まる。**この37件は画面に出す**
  * （分野の選択肢のラベルに件数を書く）。隠すと分類器の外れが見えなくなる。
+ * （→ 2026-08-22 以降、この「その他」は複素環と無機に分けて 0 件。下の QUIZ_FIELDS の説明）
  *
  * **範囲（高校で扱うか）は導出できない。** 試したのは
  * `findOutOfScopeMotifs` ／ 重原子数の上限 ／ ヘテロ環・縮合環の除外 ／ 官能基の種類数、
@@ -49,7 +50,36 @@
  *   3 すべて … 全1059件（今までの挙動。大学初級・範囲外を含む）
  * **既定は 1**（今までの既定「全部」が、高校範囲外を出していた原因そのもの）。
  */
-const QUIZ_FIELDS = ['脂肪族', '芳香族', '天然有機化合物', '高分子', 'その他'];
+/**
+ * ⚠ **「その他」を受け皿にしない**（2026-08-22・ユーザー申し立て「命名クイズ 物質の分類があやしい」）。
+ *
+ * **実測**: v1448 の「その他」37件を機械で分類したら、**33件は複素環**（環に N・O・S を
+ * ふくむ）で、**残る4件は炭素をふくまない**（水・過酸化水素・アンモニア・亜硝酸）だった。
+ * つまり「分類できなかった」のではなく、**分類器に複素環と無機の箱が無かった**だけ。
+ * v1599 で入れ直したときの実測は「その他」46件 ＝ 複素環33件＋無機13件
+ * （無機は、その後ライブラリに増えた 塩化水素・臭化水素・ヨウ化水素・塩素・臭素・ヨウ素・
+ * 酸素・水酸化ナトリウム・亜硝酸ナトリウム を加えた数）。
+ * 数え直しは `node tools/quiz-scope-census.js --list=複素環`。
+ *
+ * ⚠ **「無機」はクイズに出さない**（→ `entryInQuizScope`）。既定（範囲＝教科書）で
+ * 「この化合物の名前は？」に **H₂O** が出て、選択肢が 水／アセトアニリド／メタクリル酸／
+ * ギ酸メチル になっていた（2026-08-22 実測）。有機化学の命名として紙に印刷できない。
+ * ただし**お題（stages.json）からは外さない** —— 水は操作の練習のお題そのもの。
+ * 外すのはクイズの出題プールだけで、`QUIZ_CHAIN_MAX` と同じ「プールの性質」として持つ。
+ *
+ * ⚠ **「その他」は残す。** 0件になったが、消すと分類器が次に外したときに画面から読めなくなる。
+ */
+const QUIZ_FIELDS = ['脂肪族', '芳香族', '天然有機化合物', '複素環', '高分子', '無機', 'その他'];
+
+/** 分野の選択肢に出す文言（値そのままでは何を指すか読めないものだけ書き足す） */
+const QUIZ_FIELD_LABELS = {
+    '複素環': '複素環（環に N・O・S をふくむ）',
+    '無機': '無機（炭素をふくまない・クイズには出さない）',
+    'その他': 'その他（分類できなかったもの）'
+};
+
+/** クイズの出題プールから丸ごと外す分野（有機化学のクイズとして成立しないもの） */
+const QUIZ_FIELD_EXCLUDED = '無機';
 
 const QUIZ_SCOPE_LEVELS = [
     { value: 'basic', level: 1, label: '教科書（お題と定番）' },
@@ -159,13 +189,23 @@ function quizScopeLevelOf(value) {
  * 分野（大きなくくり）を構造から決める。**名前の字面は見ない**（DESIGN_compound_coverage.md
  * §2 の「数え直すときは名前でなく target で数えること」と同じ流儀）。
  *
- * 順番に意味がある。高分子 → 天然物 → 芳香族 → 脂肪族 の順に見て、
+ * 順番に意味がある。無機 → 高分子 → 天然物 → 芳香族 → 脂肪族 → 複素環 の順に見て、
  * **どれにも当てはまらないものは「その他」として数える**（脂肪族を受け皿にしない）。
  * 受け皿にすると、フラン・ピロール・ラクトン・核酸塩基のような複素環が
  * 「脂肪族」と表示され、分類器が外していることが画面から読めなくなる。
+ *
+ * ⚠ **複素環は最後**（芳香族・脂肪族・天然物より後）。前に置くと、ピリジンが芳香族から、
+ * β-D-グルコース（環の中に O がある）が天然有機化合物から**移ってしまう**——
+ * どちらも教科書がその章で扱うものなので、移すのは別の間違いになる。
+ * 最後に置けば、いままで「その他」に落ちていたものだけを拾う（他は1件も動かない）。
+ * 回帰テスト QS7 が、この順を入れ替えると赤くなることを見ている。
  */
 function compoundFieldOf(mol) {
     if (!mol || !mol.atoms.length) return 'その他';
+    // 無機: 炭素をふくまない（水・過酸化水素・アンモニア・塩化水素・水酸化ナトリウム …）。
+    // **有機化合物ではない**ので分野を分ける前にここで抜く。
+    // クイズの出題プールからも外れる（→ entryInQuizScope）
+    if (!mol.atoms.some(a => a.element === 'C')) return '無機';
     // 高分子: 擬似元素 R（＝「ここから先も同じ繰り返しが続く」印）を含む図。
     // StereoCountQuiz.isPolymerFragment と同じ理由づけで、名前や原子数では判定しない
     if (mol.atoms.some(a => a.element === 'R')) return '高分子';
@@ -203,6 +243,9 @@ function compoundFieldOf(mol) {
         return a && a.element === 'C';
     });
     if (nC > 0 && allCarbonRings) return '脂肪族';
+    // 複素環＝環にヘテロ原子（N・O・S）をふくむ。ここまで来たものは芳香族でも脂肪族でもない
+    // ＝ フラン・ピロール・ラクトン・ラクタム・核酸塩基・カフェインの類
+    if (!allCarbonRings) return '複素環';
     return 'その他';
 }
 
@@ -492,6 +535,10 @@ function buildCompoundLibrary(game) {
  *                      出題側からは渡さない）
  */
 function entryInQuizScope(entry, scopeValue, fieldValue, ignoreSizeCap) {
+    // ⚠ **炭素をふくまないものは、どの絞り込みでも出さない**（2026-08-22）。
+    // 有機化学の命名クイズに H₂O が出るのは分類の話ではなく、そもそも出題として成立しない。
+    // お題（stages.json）からは外していない（→ QUIZ_FIELDS の説明）
+    if (entry.field === QUIZ_FIELD_EXCLUDED) return false;
     if (!ignoreSizeCap && entry.chainOutsideRing > quizChainMax()) return false;
     if (entry.scopeLevel > quizScopeLevelOf(scopeValue || QUIZ_SCOPE_DEFAULT)) return false;
     if (fieldValue && fieldValue !== 'all' && entry.field !== fieldValue) return false;
@@ -551,6 +598,34 @@ function quizOversizedNames(entries, scopeValue, fieldValue, seriesValue) {
         out.push(e.name);
     });
     return out;
+}
+
+/**
+ * いまの絞り込みの中で、**炭素をふくまないという理由だけで外れた**ものの名前（重複は畳む）。
+ *
+ * ⚠ `quizOversizedNames` と同じ「黙って減らさない」ための口。
+ * `entryInQuizScope` を通せない（そこで落としている当のものなので）ため、範囲と系列だけ自前で見る。
+ * **分野は見ない** —— 分野「無機」を選んでいるときも数えられるようにするため。
+ */
+function quizInorganicNames(entries, scopeValue, seriesValue) {
+    const seen = new Set();
+    const out = [];
+    entries.forEach(e => {
+        if (e.field !== QUIZ_FIELD_EXCLUDED) return;
+        if (seriesValue && seriesValue !== 'all' && e.series !== seriesValue) return;
+        if (e.scopeLevel > quizScopeLevelOf(scopeValue || QUIZ_SCOPE_DEFAULT)) return;
+        if (seen.has(e.name)) return;
+        seen.add(e.name);
+        out.push(e.name);
+    });
+    return out;
+}
+
+/** 出題件数の行に足す但し書き（炭素をふくまないもの）。→ quizOversizedNote と同じ形 */
+function quizInorganicNote(names) {
+    if (!names || !names.length) return '';
+    const head = names.slice(0, 2).map(n => n.split('（')[0]).join('・');
+    return ` ／ 炭素をふくまない ${names.length} 件（${head}${names.length > 2 ? ' など' : ''}）は外してある`;
 }
 
 /**
@@ -660,7 +735,7 @@ function populateFieldSelect(selectEl, library) {
     QUIZ_FIELDS.forEach(f => {
         const o = document.createElement('option');
         o.value = f;
-        o.textContent = (f === 'その他' ? 'その他（分類できなかったもの）' : f) + `・${count[f] || 0}件`;
+        o.textContent = (QUIZ_FIELD_LABELS[f] || f) + `・${count[f] || 0}件`;
         selectEl.appendChild(o);
     });
 }
@@ -2340,6 +2415,8 @@ class SameCompoundQuiz {
         this.pairs = this.allPairs.filter(([i, j]) => idxSet.has(i) && idxSet.has(j));
         // 図の長さの上限で外れたもの（数だけ画面に出す。→ QUIZ_CHAIN_MAX）
         this.oversized = quizOversizedNames(this.library, scope, field, filter);
+        // 炭素をふくまないので外れたもの（同じく黙って減らさない。→ QUIZ_FIELDS）
+        this.inorganic = quizInorganicNames(this.library, scope, filter);
         // **絞った結果が空でも全体には戻さない**（戻すと「絞ったのに範囲外が出る」に化ける）。
         // 出題できないときは nextQuestion が断り文を出す
         this.renderPoolCount();
@@ -2353,7 +2430,8 @@ class SameCompoundQuiz {
         this.poolCountEl.innerHTML = n === 0
             ? quizEscape('⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote())
             : quizPoolCountHtml(`いま出題できる: ${n} 件` + quizGroupNote(),
-                `うち「違う」に使える組 ${this.pairs.length} 組` + quizOversizedNote(this.oversized));
+                `うち「違う」に使える組 ${this.pairs.length} 組` + quizOversizedNote(this.oversized) +
+                quizInorganicNote(this.inorganic));
     }
 
     // 互換ラッパー（回帰テストから使用）
@@ -6151,6 +6229,8 @@ class NamingQuiz {
         // basePool（名前が一意に決まるもの）に限って数える＝出題されうるものだけを数える
         this.oversized = quizOversizedNames(
             this.basePool.map(i => this.library[i]), scope, field, filter);
+        // 炭素をふくまないので外れたもの（同じく黙って減らさない。→ QUIZ_FIELDS）
+        this.inorganic = quizInorganicNames(this.basePool.map(i => this.library[i]), scope, filter);
         // **空になっても全体には戻さない**（2026-08-20 に方針を変えた）。
         // 旧実装は保険として basePool へ戻していたが、それは
         // 「高校範囲に絞ったのに範囲外が出る」に化ける ＝ 今回の申し立てそのもの。
@@ -6166,7 +6246,7 @@ class NamingQuiz {
         this.poolCountEl.innerHTML = n === 0
             ? quizEscape('⚠ この組み合わせでは出題できる化合物がありません' + quizGroupNote())
             : quizPoolCountHtml(`いま出題できる: ${n} 件` + quizGroupNote(),
-                quizOversizedNote(this.oversized));
+                quizOversizedNote(this.oversized) + quizInorganicNote(this.inorganic));
     }
 
     /**
@@ -6343,6 +6423,10 @@ if (typeof window !== 'undefined') {
     window.entryInQuizScope = entryInQuizScope;
     window.quizScopeLevelOf = quizScopeLevelOf;
     window.QUIZ_FIELDS = QUIZ_FIELDS;
+    window.QUIZ_FIELD_LABELS = QUIZ_FIELD_LABELS;
+    window.QUIZ_FIELD_EXCLUDED = QUIZ_FIELD_EXCLUDED;
+    window.quizInorganicNames = quizInorganicNames;
+    window.quizInorganicNote = quizInorganicNote;
     window.QUIZ_SCOPE_LEVELS = QUIZ_SCOPE_LEVELS;
     window.QUIZ_SCOPE_DEFAULT = QUIZ_SCOPE_DEFAULT;
     window.QUIZ_NAMED_HEAVY_MAX = QUIZ_NAMED_HEAVY_MAX;
