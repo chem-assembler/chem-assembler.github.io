@@ -187,9 +187,8 @@ note: 水素が還元剤としてはたらくときの半反応式。以下の3�
 :::
 
 :::link
-app: ion-equation/halfreaction
-id: H_ox
-text: 水素が還元剤としてはたらく半反応式を組む
+app: ion-equation/halflist
+text: 半反応式の一覧で、水素が還元剤としてはたらく式を確かめる
 :::
 
 ## 燃焼 —— 水素の検出
