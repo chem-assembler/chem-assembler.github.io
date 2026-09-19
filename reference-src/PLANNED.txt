@@ -25,10 +25,6 @@ steric-hindrance      立体障害 —— 大きな原子団どうしがぶつ�
 # ── 理論の8単元（2026-09-19・理論の便0 がまとめて登録。表示名は ref-theory-design §3-1 の題）──
 #   ⚠ ドラフトの便（T1〜T8）はここを触らない（書けた行は統合で消す）。並びと束ね方の正は qa/GROUPS.tsv
 #   ★ molecular-shape・intermolecular-force は上に登録済み（有機からリンクされている）
-substance-classification  物質の分類と分離
-atom-structure            原子の構造と電子配置
-ionic-bond                イオンとイオン結合
-covalent-bond             共有結合 —— 電子式と構造式
 crystal-types             金属結合と結晶の4つの型
 unit-cell                 結晶格子 —— 数えて・測って・詰める
 atomic-weight             原子量・分子量・式量 —— てんびんで平均する
