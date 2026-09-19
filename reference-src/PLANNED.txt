@@ -27,9 +27,10 @@ oxidation-number      有機化合物中の原子の酸化数の決め方
 # ⓵ 便R2（電池と電気分解）が仮に足した行。便0a が理論・無機の全 id を一括登録したら、重複するこの塊ごと消す
 redox-basics          酸化と還元 —— e⁻ のやりとり
 ionization-tendency   金属のイオン化傾向
-half-reaction         半反応式の書き方と主な酸化剤・還元剤
 half-reaction-condition  液性による書き換え
-electrolysis-industry  電気分解の工業的利用
+alkali-metal          アルカリ金属
+amphoteric-metal      両性金属 —— Al・Zn・Sn・Pb
+copper-silver         銅と銀
 
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
