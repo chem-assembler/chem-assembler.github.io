@@ -1,0 +1,64 @@
+# グループ台帳 —— 無機・理論の「単元 → グループ → 参考書のページ」（2026-09-19・便0a）
+#
+# ★★ なぜ在るか（ref-inorg-design §1 の案C）:
+#   有機は qa の知識項目（問い）を先に作り、参考書がその group ＝ 1ページ（§19-1）に従った。
+#   無機・理論は qa の項目がまだ無いので、**束ね方（group）だけ先にここで決め、qa と参考書の両方が従う**。
+#   ★ 参考書は codes: なしで今すぐ書ける。後で qa が同じ unit・同じ group で項目を作れば、
+#     参考書のページは codes: を1行ずつ足すだけ（作り直しゼロ）。
+#
+# ⚠ 置き場所は qa（知識コードの持ち主）。読み方は tools/reference-md.js の parseGroups（node とブラウザで1本）。
+# 機械で見ていること:
+#   ・参考書: unit が inorg.* / theo.* のページは、この表の行（ページid）に在り、unit・unitLabel・group が一致する
+#     （tools/gen-reference.mjs と assembler の REF28）。ORDER.txt の並びはこの表の「並び」と同じ向き
+#   ・qa: inorg.* / theo.* の項目の group は、この表の同じ unit の group に在る（qa の test.html）
+#   ・★ group に qa の項目が付いたのに、参考書のページが codes: を持っていない → 黄（gen-reference.mjs が一覧を出す）
+#
+# 書き方: unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び（区切りはタブ。# の行と空行は読み飛ばす）
+# ⚠ 1グループ ＝ 1ページ。group の綴りは参考書の前書き group: と qa の group にそのまま使う
+#
+# ── 無機 ──
+inorg.basis	無機の土台	無機の反応の型	inorg-reaction-types	01
+inorg.basis	無機の土台	周期表と元素の性質	periodic-table	02
+inorg.basis	無機の土台	酸化物とオキソ酸	oxoacid	03
+inorg.basis	無機の土台	気体の製法	gas-preparation	04
+inorg.nonmetal	非金属元素	水素と貴ガス	hydrogen-noble-gas	05
+inorg.nonmetal	非金属元素	酸素とオゾン	oxygen-ozone	06
+inorg.nonmetal	非金属元素	ハロゲン	halogen	07
+inorg.nonmetal	非金属元素	塩素	chlorine	08
+inorg.nonmetal	非金属元素	硫黄	sulfur	09
+inorg.nonmetal	非金属元素	硫酸	sulfuric-acid	10
+inorg.nonmetal	非金属元素	窒素	nitrogen	11
+inorg.nonmetal	非金属元素	リン	phosphorus	12
+inorg.nonmetal	非金属元素	炭素とケイ素	carbon-silicon	13
+inorg.metal	金属元素	アルカリ金属	alkali-metal	14
+inorg.metal	金属元素	2族元素	alkaline-earth	15
+inorg.metal	金属元素	両性金属	amphoteric-metal	16
+inorg.metal	金属元素	鉄	iron	17
+inorg.metal	金属元素	銅と銀	copper-silver	18
+inorg.metal	金属元素	クロムとマンガン	transition-oxidizers	19
+inorg.metal	金属元素	錯イオン	complex-ion	20
+inorg.qual	イオンを見分ける	沈殿の生成と色	precipitate	21
+inorg.qual	イオンを見分ける	炎色反応と水溶液の色	flame-color	22
+inorg.qual	イオンを見分ける	系統分離	cation-separation	23
+# ── 理論 ──
+theo.acid-base	酸と塩基	酸と塩基の定義	acid-base-definition	24
+theo.acid-base	酸と塩基	価数と強弱	acid-base-strength	25
+theo.acid-base	酸と塩基	pH	ph	26
+theo.acid-base	酸と塩基	中和	neutralization	27
+theo.acid-base	酸と塩基	塩	salt	28
+theo.acid-base	酸と塩基	弱酸の遊離	acid-displacement	29
+theo.acid-base	酸と塩基	中和滴定	titration	30
+theo.redox	酸化還元	酸化と還元	redox-basics	31
+theo.redox	酸化還元	酸化数	oxidation-number	32
+theo.redox	酸化還元	半反応式	half-reaction	33
+theo.redox	酸化還元	液性による書き換え	half-reaction-condition	34
+theo.redox	酸化還元	酸化還元反応式	redox-equation	35
+theo.redox	酸化還元	酸化還元滴定	redox-titration	36
+theo.redox	酸化還元	イオン化傾向	ionization-tendency	37
+theo.electro	電池と電気分解	電池の仕組み	cell-basics	38
+theo.electro	電池と電気分解	実用電池と燃料電池	fuel-cell	39
+theo.electro	電池と電気分解	鉛蓄電池	lead-storage-battery	40
+theo.electro	電池と電気分解	電気分解で何が反応するか	electrolysis-basics	41
+theo.electro	電池と電気分解	電気分解の反応式	electrolysis-equations	42
+theo.electro	電池と電気分解	電気分解の量的関係	faraday	43
+theo.electro	電池と電気分解	電気分解の工業的利用	electrolysis-industry	44

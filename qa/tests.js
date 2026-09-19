@@ -2905,6 +2905,60 @@ function runLedgerTests(DATA, LEDGER) {
   return results;
 }
 
+/* ---------------------------------------------------------------- グループ台帳（2026-09-19・便0a）
+ * `GROUPS.tsv` ＝ 無機・理論の「unit → group → 参考書のページ」を**問いより先に**決めた台帳
+ * （参考書の設計 ref-inorg-design §1-3 の案C）。qa と参考書の両方がこの綴りに従う。
+ *
+ * ⚠ なぜ要るか: 無機・理論の参考書は `codes:` なしで先に書く。後で qa が項目を作るとき、
+ *   group の綴りが台帳と1字でも違うと「同じグループ ＝ 同じページ」にならず、参考書に `codes:` を足せない。
+ * ★ 読み方の正は `tools/reference-md.js` の parseGroups（assembler の REF28 がそちらで読む）。
+ *   ここは qa の側から見る2つだけ（形と、項目の group が台帳に在るか）。
+ */
+function runGroupTests(DATA, TEXT) {
+  var results = [];
+  var t = function (name, fn) {
+    try { fn(); results.push({ name: name, ok: true }); }
+    catch (e) { results.push({ name: name, ok: false, err: String(e && e.message || e) }); }
+  };
+  var assert = function (c, m) { if (!c) throw new Error(m || "assertion failed"); };
+  var rows = [];
+  String(TEXT || "").replace(/\r\n/g, "\n").split("\n").forEach(function (line) {
+    if (!line.trim() || /^\s*#/.test(line)) return;
+    var c = line.split("\t");
+    rows.push({ unit: c[0], unitLabel: c[1], group: c[2], page: c[3], order: c[4], n: c.length });
+  });
+
+  t("台帳: GROUPS.tsv が読めて、1行5列（unit・unitLabel・group・ページid・並び）", function () {
+    assert(rows.length >= 44, "台帳が " + rows.length + " 行しか読めない（無機23・理論21 のはず。読めていない？）");
+    var bad = rows.filter(function (r) { return r.n !== 5; });
+    assert(!bad.length, "5列でない行: " + bad.slice(0, 3).map(function (r) { return r.page; }).join(" "));
+  });
+
+  t("台帳: unit は inorg.* / theo.* で、1グループ＝1ページ（group もページも重ならない）", function () {
+    var seenG = {}, seenP = {};
+    rows.forEach(function (r) {
+      assert(/^(inorg|theo)\.[a-z0-9-]+$/.test(r.unit), "unit の形が違う: " + r.unit);
+      var g = r.unit + "/" + r.group;
+      assert(!seenG[g], "group が2回: " + g);
+      assert(!seenP[r.page], "ページが2回: " + r.page);
+      seenG[g] = seenP[r.page] = true;
+    });
+  });
+
+  t("台帳: inorg.* / theo.* の項目の group は、台帳の同じ unit に在る", function () {
+    var known = {};
+    rows.forEach(function (r) { known[r.unit + "/" + r.group] = true; });
+    var bad = DATA.patterns.filter(function (p) {
+      var m = /^((inorg|theo)\.[a-z0-9-]+)\./.exec(p.code || "");
+      return m && !known[m[1] + "/" + p.group];
+    }).map(function (p) { return p.code + "（group: " + p.group + "）"; });
+    assert(!bad.length, "台帳に無い group の項目が " + bad.length + " 件: " + bad.slice(0, 3).join(" / ") +
+      "（束ね方は GROUPS.tsv が決める。綴りを合わせるか、台帳に行を足す）");
+  });
+
+  return results;
+}
+
 /* ---------------------------------------------------------------- Lv の根拠の表（2026-09-17）
  * `data/level_matrix.jsonl`（正・手で書くのは override 欄だけ）と `LEVEL_MATRIX.md`（生成物）が、
  * questions.json と食い違っていないか。そして **Lv を書き換える道具が上書きを守るか**。
@@ -3251,6 +3305,7 @@ if (typeof module !== "undefined" && module.exports) {
     runLinkTargetTests: runLinkTargetTests,
     runInventoryTests: runInventoryTests,
     runUsageTests: runUsageTests,
-    runLedgerTests: runLedgerTests
+    runLedgerTests: runLedgerTests,
+    runGroupTests: runGroupTests
   };
 }
