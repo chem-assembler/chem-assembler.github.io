@@ -1135,8 +1135,13 @@ function slTrack(name, params) {
     // ★ **もう記録した項目**を控えから戻す（advance がこれを見て二度目を止める）
     var marked = {};
     (Array.isArray(s.marked) ? s.marked : []).forEach(function (c) { marked[c] = 1; });
+    /* ⚠ 単元の id は v145 で割り直した（carbonyl・aroN・bio・clue が消えた）。
+     *   割り直しの前に控えた続きは**消えた id** を持っていて、そのまま戻すと「もう一度」が
+     *   0問の回になる ＝ いま居る項目の単元に読み替える（単元をまたがない回＝null はそのまま） */
+    var unitId = s.unitId;
+    if (unitId && !DATA.units.some(function (u) { return u.id === unitId; })) unitId = byCode[code].unit;
     session = {
-      unitId: s.unitId, mode: s.mode, scope: s.scope, lv: s.lv,
+      unitId: unitId, mode: s.mode, scope: s.scope, lv: s.lv,
       queue: queue, idx: s.idx, right: s.right, wrong: s.wrong, marked: marked
     };
     /* ★ **両モードとも「出て行ったときの画面」に戻す**（2026-09-09）。
