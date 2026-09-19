@@ -38,6 +38,8 @@ halogen               ハロゲン —— 並べて比べる
 ionization-tendency   金属のイオン化傾向
 nitrogen              窒素とその化合物
 carbon-silicon        炭素とケイ素
+sulfuric-acid         硫酸 —— 希硫酸と濃硫酸
+chlorine              塩素と塩化水素
 
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
