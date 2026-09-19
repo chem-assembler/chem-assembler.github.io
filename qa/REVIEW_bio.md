@@ -966,7 +966,7 @@
 
 ## 46. `org.bio.amino-acid-polyprotic`  ·  アミノ酸  ·  Lv3受験標準  ·  #性質 #計算
 **知識**: 中性アミノ酸は二段階の電離平衡を示すが、側鎖に余分なカルボキシ基やアミノ基をもつ酸性・塩基性アミノ酸は三段階の電離平衡を示す。
-前提: `org.bio.amino-acid-sidechain` , `org.bio.zwitterion-ph` , `theo.acid-base.polyprotic`
+前提: `org.bio.amino-acid-sidechain` , `org.bio.zwitterion-ph` , `theo.ionic-eq.polyprotic`
 
 - [ ] **めくり** <!--k:org.bio.amino-acid-polyprotic#flip h:9e332d2b-->
   - Q: グルタミン酸やリシンは何段階の電離平衡を示すか。中性アミノ酸と比べて段階が増えるのはなぜ？
