@@ -72,6 +72,7 @@ mole
 concentration
 chemical-equation
 stoichiometry
+chemical-laws
 acid-base-definition
 acid-base-strength
 ph
