@@ -67,6 +67,10 @@ complex-ion
 precipitate
 flame-color
 cation-separation
+substance-classification
+atom-structure
+ionic-bond
+covalent-bond
 acid-base-definition
 acid-base-strength
 ph
