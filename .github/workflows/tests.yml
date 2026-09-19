@@ -1,0 +1,107 @@
+# 門番をローカル機の外で回す（2026-09-19・DEVELOPMENT.md「CI」の節）
+#
+# なぜ: assembler の全走は 15〜45 分かかり、ノートPC 1台で並行レーンが順番待ちになっていた。
+# リポジトリは public なので GitHub Actions は無料・無制限。ここで回せば、
+# レーンはブランチを push するだけで全走の結果を受け取れる（手元の機械は空く）。
+#
+# ⚠ これは「コミット前の全テスト合格」の代わりではなく、追加の網。
+#    手元の run-tests.mjs と同じ道具を同じ引数で呼ぶので、結果の読み方も同じ
+#    （合否の行が1行も無ければ「赤」ではなく「起動失敗」＝ DEVELOPMENT.md の同名の節）。
+name: tests
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore: ['**.md', 'docs/**', 'scan/**']
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    # ブラウザ不要の検査（数秒）。落ちたらブラウザの全走を待たずに分かる
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 改行を手元（Windows）と同じ CRLF で展開する
+        # リポジトリの中身は LF。手元は core.autocrlf=true で CRLF に展開しており、
+        # compounds.json・requests.json は「CRLF であること」まで検査している（CLAUDE.md の規約）
+        run: git config --global core.autocrlf true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 規則5・8 は git の履歴と origin/main との差し引きを見る
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 規則8 の比較先を main にする（main 以外のブランチの push のとき）
+        # 規則8は追跡先（@{u}）との差し引きで「push するコミットで版が上がっているか」を見る。
+        # チェックアウトしたブランチには追跡先が無いので、そのままだと黙って飛ばされる
+        if: github.ref != 'refs/heads/main'
+        run: git branch -u origin/main
+      - name: verify-release（版・化け・BOM・死にリンク・規則8）
+        run: node tools/verify-release.js
+      - name: verify-compounds（compounds.json の形・書き戻し事故）
+        run: node tools/verify-compounds.js
+      - name: 構文
+        run: for f in assembler/*.js; do node --check "$f"; done
+
+  browser:
+    # ⚠ Windows で回す。ion-equation は Segoe UI / Yu Gothic UI を指定していて、Linux では別の字形に
+    #   置き換わり「狭い画面で2行に収まる」類の検査が手元と食い違う（2026-09-19 の試走で4件）。
+    #   テストの基準は手元の Windows なので、同じ OS の字幅で測る
+    runs-on: windows-latest
+    timeout-minutes: 90
+    # ⚠ ion-equation・muki は外した。「375px で高さ N px 以内」「32px 以上」の上限が runner の字の描き方で
+    #   1〜2% 超えて毎回落ちる（1913/1900px・31/32px）。毎回赤のメールが来ると本物の赤が読まれなくなる。
+    #   どちらも手元なら数十秒なので、門番は手元の全走のまま
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        page: [assembler, qa, ratio]
+    steps:
+      - name: 改行を手元（Windows）と同じ CRLF で展開する
+        # リポジトリの中身は LF。手元は core.autocrlf=true で CRLF に展開しており、
+        # compounds.json・requests.json は「CRLF であること」まで検査している（CLAUDE.md の規約）
+        run: git config --global core.autocrlf true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: playwright（tools/record のものを借りる ＝ 手元と同じ置き場所）
+        working-directory: tools/record
+        run: npm install --no-audit --no-fund && npx playwright install chromium
+      - name: 全走（${{ matrix.page }}）
+        # サーバーは同じ step の中で立てる（Windows の runner では step をまたぐ裏の処理が残る保証が無い）
+        #
+        # ★ 落ちたテストだけもう一度流す（DEVELOPMENT.md「RX13・ST29 … 1回落ちて再実行で通ったらゆらぎ」の手順を機械でやる）。
+        #   runner は手元より遅く、assembler の全走3回で毎回ちがう1件（QUIZ_UNIFORM・REF11 …）が時間待ちで落ちた。
+        #   流し直しで通れば「ゆらぎ」として警告を出して緑、流し直しでも落ちれば赤。
+        #   ⚠ 合否の行が1行も無いとき（起動失敗）は流し直さずに赤（DEVELOPMENT.md「出力ゼロ・終了コード1」）
+        run: |
+          python -m http.server 8134 --bind 127.0.0.1 >/dev/null 2>&1 &
+          URL=http://127.0.0.1:8134/${{ matrix.page }}/test.html
+          for i in $(seq 1 30); do curl -sf "$URL" >/dev/null && break; sleep 1; done
+          set +e
+          node tools/run-tests.mjs "$URL" | tee full.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          [ "$code" = 0 ] && exit 0
+          ids=$(sed -n '/^--- 失敗 ---$/,$p' full.txt | grep -oE '^  [A-Z_]+[0-9]*[a-z]?:' | tr -d ' :' | paste -sd, -)
+          if [ -z "$ids" ] || [ "${{ matrix.page }}" != assembler ]; then exit "$code"; fi
+          echo "::group::落ちたテストだけ流し直す: $ids"
+          set +e
+          node tools/run-tests.mjs "$URL" --only="$ids" | tee retry.txt
+          rcode=${PIPESTATUS[0]}
+          set -e
+          echo "::endgroup::"
+          # --only= は全部通っても終了コード 3（絞り込みの印）を返す
+          if [ "$rcode" = 3 ]; then
+            echo "::warning title=ゆらぎ::全走で落ちた $ids が、流し直しでは通った（時間待ちの揺れ。続けば直す）"
+            exit 0
+          fi
+          exit 1

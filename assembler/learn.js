@@ -11,6 +11,10 @@ function categorizeMolecule(mol) {
     const order = [
         ['carboxyl', 'カルボン酸'],
         ['carboxylate', 'カルボン酸の塩'],
+        // 酸無水物はエステルより先に見る。**findFunctionalGroups が anhydride を返すようになる前は
+        // -CO-O-CO- が「エステル結合×2」として拾われ、無水酢酸がこの表でも「エステル」に入っていた**
+        // （v1592。アミドがアルデヒドに落ちていた §9.6-2 と同じ形の取り違え）
+        ['anhydride', '酸無水物'],
         ['ester', 'エステル'],
         // アミドはアルデヒドより先に見る。**findFunctionalGroups が アミド を返すようになる前は
         // アミドが aldehyde として拾われ、この表でも「アルデヒド」に入っていた**（§9.6-2）
@@ -448,6 +452,7 @@ class LearnView {
         if (types.has('ketone')) notes.push('・ケトン: アルデヒドと同じカルボニル基を持ちますが、還元性は示しません。');
         if (types.has('carboxyl')) notes.push('・カルボン酸: 弱酸性を示し、アルコールと縮合してエステルになります。');
         if (types.has('ester')) notes.push('・エステル: 加水分解でカルボン酸とアルコールに戻ります（塩基を使う場合がけん化）。');
+        if (types.has('anhydride')) notes.push('・酸無水物 (-CO-O-CO-): カルボン酸2分子から水がとれた形です。エステルと形は似ていますが、加水分解するとアルコールではなくカルボン酸が2つ戻ります（無水酢酸→酢酸2分子、無水フタル酸→フタル酸）。カルボン酸より反応性が高く、アセチル化の試薬に使われます。');
         if (types.has('cc_double')) notes.push('・C=C 二重結合: 付加反応（Br₂・H₂・HBr・H₂O）を起こします。臭素水の脱色で検出できます。');
         if (types.has('cc_triple')) notes.push('・C≡C 三重結合: 付加反応が2段階で進みます。');
         if (types.has('aromatic')) notes.push('・ベンゼン環: 付加より置換が起こりやすい（芳香族性を保つ方が安定）。ニトロ化・スルホン化・ハロゲン化が代表例です。');
@@ -2883,7 +2888,7 @@ class IsomerPractice {
     tidySheet() {
         const r = this.game.tidyAnswerSlots();
         if (r.moved > 0) {
-            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
+            this.game.showToast(`答案 ${r.total}個を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
             return;
         }
         if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
@@ -4723,7 +4728,7 @@ class AlkylPractice {
     tidySheet() {
         const r = this.game.tidyAnswerSlots();
         if (r.moved > 0) {
-            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
+            this.game.showToast(`答案 ${r.total}個を ${r.cols}×${r.rows} に並べ直しました（図の形は変えていません。↩ で戻せます）`);
             return;
         }
         if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');
@@ -5802,7 +5807,7 @@ class StereoIsomerPractice {
     tidySheet() {
         const r = this.game.tidyAnswerSlots();
         if (r.moved > 0) {
-            this.game.showToast(`答案 ${r.total}枚を ${r.cols}×${r.rows} に並べ直しました（図の形も向きも変えていません。↩ で戻せます）`);
+            this.game.showToast(`答案 ${r.total}個を ${r.cols}×${r.rows} に並べ直しました（図の形も向きも変えていません。↩ で戻せます）`);
             return;
         }
         if (r.reason === 'alreadyTidy') this.game.showToast('もう並んでいます。');

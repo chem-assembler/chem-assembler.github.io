@@ -2157,3 +2157,84 @@ R-[CH2-CH(OH)]×3-R    → 2級アルコール×2、1級アルコール    ← �
 > 「はじめに（操作の練習）」を組み替えるときは、**シリーズから外した分子が名前で呼べなくなって
 > いないか**を見ること（v273 でラインナップを教科書基準で組み直した前例がある）。
 > 外すなら、そのとき `compounds.json` の末尾へ移す（追記のみ・§5.1）。
+
+## 22. 酸無水物を「エステル結合×2」と呼んでいた（v1592・2026-09-19）
+
+> 初出はブランチ `claude/trusting-wiles-4bc22b`（v1503・2026-09-03。そこでは §21）。main に
+> 統合されないまま 745 コミット離れたので、**ユーザー決定「ブランチ方式を正にする」**（2026-09-19）で
+> 意図を今の main に当て直した（マージ・cherry-pick はしていない）。その間に main 側は
+> **使う側で局所に振るい落とす回避策**を別に入れていた（下の §22.1）。
+
+`findFunctionalGroups` が **無水酢酸 `CH₃-CO-O-CO-CH₃` に `[{type:'ester'},{type:'ester'}]`** を
+返していた。高校化学では酸無水物はエステルとは**別の分類**（`org.carbonyl.acid-anhydride`）なので、
+これは表示の不具合であり、分類の誤りでもある。
+
+### 22.1 なぜ2件出るのか（原因）と、散っていた回避策
+
+エステルの判定は **カルボニル炭素の側**に立っている ——「`=O` を持つ炭素の隣の `-O-` の先が炭素」。
+`-CO-O-CO-` は**どちらのカルボニル炭素から見てもこの形をしている**ので、
+**中央の O を両側が取り合って2件立つ**。§20.7 と同じ形で、`describeStructure` も同じ取り違えをしていた。
+
+⚠ **使う側が3か所で同じ判定を書き直していた**のが、型が足りていない印だった:
+
+| 場所 | 回避策 |
+|---|---|
+| `chemistry.js` `findCondensableGroups`（縮約表示） | 「酸無水物は対象外」（2026-08-15） |
+| `reactor.js` `isAnhydrideLinkage` | v213 から。`hydrolysis_anhydride` を分け、酸素ごとに畳んでいた |
+| `quiz.js` `isAnhydrideSide` | `?group=ester` から除く |
+
+DEVELOPMENT.md の P12-8 ⑥（v213）は「抽象化が必要になるのは、同じ条件を3つ以上のルールに
+書き写すようになったとき」と書いていた。**これがその3つ目**だった。
+（narrowing の `ALLOT_PARTS` には「酸無水物・不飽和度2・酸素3」が部品として前から載っていた。）
+
+### 22.2 直し方: **中央の O のところで1件だけ数える**
+
+隣のカルボニル炭素の数で3つに分ける（`C-O-C` の枝はもともとエーテルの担当）:
+
+| 隣のカルボニル炭素 | 型 |
+|---|---|
+| 2つ | **`anhydride`（酸無水物）** ← 新設。中央の O ごとに **1件** |
+| 1つ | エステルの `-O-`（炭素側で `ester` として計上ずみ） |
+| 0つ | `ether`（エーテル結合） |
+
+炭素の側は「向こう側もカルボニル炭素なら**何も言わない**」を1条件足すだけ。
+`atomIds` は **`[カルボニルC, =O, 中央の-O-, もう一方のカルボニルC, その=O]`**。
+⚠ **先頭3つの並びを `ester` とそろえてある** —— `reactor.js` の `hydrolysis_anhydride` が
+`const [cId, , oId] = site` で受けているので、並びを変えるとそこが黙って壊れる。
+
+### 22.3 波及（`ester` の使い先を全部洗った結果）
+
+| 使う側 | 前 | 後 |
+|---|---|---|
+| `game.js` `functionalGroupSummary`（⚗この分子の反応） | 「エステル結合×2」 | 「酸無水物（-CO-O-CO-）」（ラベルが変わるだけ。コードは触っていない） |
+| `chemistry.js` `describeStructure` | 「エステル結合 -COO- ×2」 | 「酸無水物 -CO-O-CO- ×1」 |
+| `learn.js` `categorizeMolecule` | 「エステル」 | 「酸無水物」（`ester` より先に見る） |
+| `learn.js` 学習メモ | エステルのメモ | 酸無水物のメモ（**加水分解で戻るのはカルボン酸2つ**） |
+| `narrowing.js` `ester` カード | **当たっていた**（6名） | 当たらない |
+| `narrowing.js` `lactone` カード | **環の4名が当たっていた**（無水フタル酸・無水マレイン酸・無水コハク酸・無水安息香酸 ※） | 当たらない |
+| `narrowing.js` `partsLabel` | 「エステル」／環なら「ラクトン」 | 「酸無水物」（環でもラクトンと呼ばない） |
+| ⚠ `narrowing.js` `NW.hydrolysis`（M12・v1505。**ブランチより後にできた使い先**） | 無水酢酸が「酢酸＋酢酸」を**酸とアルコールの組**として2組返し、`hyd-alc-iodoform`・`hyd-acid-formic-no` に当たっていた | 組を返さない（M12 のカードに当たらない）。コードは変えず注記だけ |
+| `reactor.js` `hydrolysis_anhydride` | `ester` のうち向かい側もカルボニル → 酸素ごとに畳む | `anhydride` をそのまま使う |
+| `reactor.js` `detectEsterLinkages` | `isAnhydrideLinkage` で除外 | 素通りする。`isAmideNitrogen` と同じ二重の防波堤として残した |
+| `quiz.js` `compoundGroupsOf` | `isAnhydrideSide` で除外 | `has('ester')` だけ（件数は変わらない） |
+| `quiz.js` 天然有機化合物の判定（脂肪酸・油脂） | — | 変わらない（環なし・C12 以上の酸無水物はライブラリに0件。酸無水物を油脂と呼ばないのは正しい向き） |
+| `quiz.js` `quizFunctionalKey`（誤答の段1） | 酸無水物のキーが `ester` | `anhydride`。段1は「紛らわしい誤答」（段2以上）の外なので効かない |
+| `chemistry.js` `findCondensableGroups` | 局所の除外 | **そのまま**（`findFunctionalGroups` を使わず自前で形を見る関数なので、型を足しても置き換わらない） |
+| `tools/quiz-size-census.js` の `esters` | — | 出力が main と一致 |
+
+※ 無水安息香酸は環を2つ持つので `NW.ring` が真になり「ラクトン」に当たっていた（酸無水物の O は環に入っていない）。
+
+**実測（node の vm で全ライブラリ 1111 名を main と突き合わせた悉皆）**: 変わったのは
+**酸無水物6名だけ**（無水酢酸・無水プロピオン酸・無水安息香酸・無水フタル酸・無水マレイン酸・無水コハク酸）。
+反応ルールの `detect` は全 1111 名で1件も変わらない。`tools/quiz-group-census.js`・
+`quiz-size-census.js`・`quiz-scope-census.js` の出力は main と1バイトも変わらない。
+
+**やらなかったこと**: クイズの `?group=` の軸に `酸無水物` は足していない（該当6件では練習台にならない）。
+
+### 22.4 検査
+
+- **CF6**（新設）… 酸無水物6名が `anhydride` ×1 で `ester`・`ether` を立てないこと、`atomIds` の並び、
+  画面3か所、絞り込みの `ester`／`lactone`／M12（`NW.hydrolysis`・`hyd-alc-iodoform`）、`partsLabel`、
+  反応（`hydrolysis_anhydride` 1箇所・`hydrolysis_ester` 0）とクイズ（`ester` の軸に入らない）。
+  否定対照は本物のエステル5本（酢酸エチル・安息香酸メチル・ギ酸メチル・γ-ブチロラクトン・PET）とエーテル2本
+- **CF5 (7) の全件突き合わせに `酸無水物 -CO-O-CO- ↔ anhydride` の組を足した**（§20.8 と同じ理由）
