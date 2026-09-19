@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>アルコールを酸化するとどうなるか ｜ 化学の参考書</title>
-<meta name="description" content="第1級はアルデヒドを経てカルボン酸、第2級はケトン、第3級は酸化されない。級で行き先が変わるしくみと、問題文の「おだやかに酸化した」の読み方、半反応式の作り方まで。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/alcohol-oxidation-map/">
+<title>半反応式の書き方と主な酸化剤・還元剤 ｜ 化学の参考書</title>
+<meta name="description" content="半反応式は「反応前後の物質だけ暗記して、係数は手順で出す」。書き方その1（H₂O → H⁺ → e⁻）と その2（酸化数 → e⁻ → H⁺ → H₂O）、必ず覚える酸化剤9本・還元剤11本の半反応式。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/half-reaction/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="アルコールを酸化するとどうなるか ｜ 化学の参考書">
-<meta property="og:description" content="第1級はアルデヒドを経てカルボン酸、第2級はケトン、第3級は酸化されない。級で行き先が変わるしくみと、問題文の「おだやかに酸化した」の読み方、半反応式の作り方まで。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/alcohol-oxidation-map/">
+<meta property="og:title" content="半反応式の書き方と主な酸化剤・還元剤 ｜ 化学の参考書">
+<meta property="og:description" content="半反応式は「反応前後の物質だけ暗記して、係数は手順で出す」。書き方その1（H₂O → H⁺ → e⁻）と その2（酸化数 → e⁻ → H⁺ → H₂O）、必ず覚える酸化剤9本・還元剤11本の半反応式。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/half-reaction/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -843,64 +843,76 @@ a.ref-link::before { content: '→ '; }
 <body>
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
 <main class="wrap">
-<h1>アルコールを酸化するとどうなるか</h1>
-<p class="lede">第1級はアルデヒドを経てカルボン酸、第2級はケトン、第3級は酸化されない。級で行き先が変わるしくみと、問題文の「おだやかに酸化した」の読み方、半反応式の作り方まで。</p>
-<div><span class="unit-label">アルコールとカルボニル化合物</span><span class="unit-label">名前・かたち・酸化の行き先</span></div>
+<h1>半反応式の書き方と主な酸化剤・還元剤</h1>
+<p class="lede">半反応式は「反応前後の物質だけ暗記して、係数は手順で出す」。書き方その1（H₂O → H⁺ → e⁻）と その2（酸化数 → e⁻ → H⁺ → H₂O）、必ず覚える酸化剤9本・還元剤11本の半反応式。</p>
+<div><span class="unit-label">酸化還元</span><span class="unit-label">半反応式</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-primary" data-ref-anchor="primary">第1級アルコールの酸化</a></li><li><a href="#ref-sec-secondary" data-ref-anchor="secondary">第2級アルコールの酸化</a></li><li><a href="#ref-sec-tertiary" data-ref-anchor="tertiary">第3級アルコールの酸化</a></li><li><a href="#ref-sec-summary" data-ref-anchor="summary">アルコール酸化のまとめ</a></li><li><a href="#ref-sec-halfreaction" data-ref-anchor="halfreaction">アルコール酸化の反応式</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-memorize" data-ref-anchor="memorize">暗記するものと、手順で出すもの</a></li><li><a href="#ref-sec-method1" data-ref-anchor="method1">書き方その1 —— H₂O → H⁺ → e⁻</a></li><li><a href="#ref-sec-method2" data-ref-anchor="method2">書き方その2 —— 酸化数 → e⁻ → H⁺ → H₂O</a></li><li><a href="#ref-sec-oxidizers" data-ref-anchor="oxidizers">主な酸化剤の半反応式</a></li><li><a href="#ref-sec-reducers" data-ref-anchor="reducers">主な還元剤の半反応式</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">アルコールを硫酸酸性条件の過マンガン酸カリウム KMnO₄ や二クロム酸カリウムで酸化すると、アルコールの級によって異なる反応を起こします。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-class.png" alt="アルコールの級の図。ヒドロキシ基が付いた炭素を丸で囲み、その炭素に結合している炭素が1個なら1級、2個なら2級、3個なら3級と示している" loading="lazy"><figcaption class="ref-figure-cap">数えるのは、丸で囲んだ炭素に<b>ほかの炭素がいくつ結合しているか</b>だけです。</figcaption></figure>
-<p class="ref-p">「ヒドロキシ基 −OH の結合している炭素原子」に結合している炭素原子の数が、0か1個は第1級、2個は第2級、3個は第3級です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-class/">級の数え方と、もう1つの分け方（価数）は「アルコールの分類」で</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">酸化を含めたアルコールの6つの反応の俯瞰と、沸点・命名は「アルコールの性質・反応」で</a></p>
-<section class="ref-sec" id="ref-sec-primary"><h4 class="ref-sec-h">第1級アルコールの酸化</h4><p class="ref-sec-lead">アルデヒドで止まるか、カルボン酸まで進むかの2段階です。</p></section>
-<p class="ref-p">第1級アルコールは、酸化されるとまずアルデヒド R−CHO になり、さらに酸化されるとカルボン酸になります。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CH₂OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">酸化</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−CHO</span></div><p class="ref-note">第1段。−OH が付いた炭素から水素が2個取れて、C=O ができます。</p></div>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CHO</span><span class="ref-rx-arrow"><span class="ref-rx-over">酸化</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−COOH</span></div><p class="ref-note">第2段。アルデヒドはさらに酸化されてカルボン酸になります。⚠ ここで止めたいときは「おだやかに酸化」します。</p></div>
-<p class="ref-p">アルデヒドは還元性をもつため、銀鏡反応・フェーリング反応を起こします。</p>
-<p class="ref-p">カルボン酸は酸性の物質です。脂肪族ではスルホン酸やフェノール類は登場しませんので、酸性であればカルボン酸と考えることができます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/aldehyde/">銀鏡反応・フェーリング反応（アルデヒドの還元性を見る試験）は「アルデヒドの性質」で</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボン酸が酸性を示すことと、その確かめ方は「カルボン酸」で</a></p>
-<h5 class="ref-h5">メタテクニック</h5>
-<p class="ref-p">問題文に「おだやかに酸化した」とあるときは、反応をアルデヒドで止めたことを意味します。また、過マンガン酸カリウムを用いたときは、ほぼカルボン酸まで反応が進み、二クロム酸カリウムを用いたときは、アルデヒドで反応が止まっていることが多いです。</p>
-<section class="ref-sec" id="ref-sec-secondary"><h4 class="ref-sec-h">第2級アルコールの酸化</h4><p class="ref-sec-lead">ケトンになり、そこで止まります。アルデヒドと同じ分子式ですが、還元性はありません。</p></section>
-<p class="ref-p">第2級アルコールは、酸化されるとケトンになり、そこで反応が止まります。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CH(OH)−R'</span><span class="ref-rx-arrow"><span class="ref-rx-over">酸化</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−CO−R'</span></div><p class="ref-note">両側を炭素にはさまれた C=O ができます。これ以上は酸化されません。</p></div>
-<p class="ref-p">ケトンとアルデヒドは同じ分子式 C<sub>n</sub>H<sub>2n</sub>O をもつ互いに構造異性体の関係ですが、ケトンはアルデヒドと違い還元性をもちません。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">第2級アルコールも、酸化を続ければカルボン酸になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">第2級アルコールの酸化は<b>ケトンで止まります</b>。</span></p><p class="ref-mistake-why">第1級が「アルデヒド → カルボン酸」と2段で進むので、第2級も同じように続くと思いがちです。⚠ 先へ進むには <b>C=O の炭素にまだ水素が残っている</b>ことが要ります。アルデヒドの C=O には水素が1個ありますが、ケトンの C=O は両側とも炭素なので、取れる水素がありません。</p></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/ketone/">ケトンの性質と、アルデヒドとの見分け方は「ケトンの性質」で</a></p>
-<section class="ref-sec" id="ref-sec-tertiary"><h4 class="ref-sec-h">第3級アルコールの酸化</h4><p class="ref-sec-lead">酸化されません。−OH が付いた炭素に、取れる水素がないためです。</p></section>
-<p class="ref-p">第3級アルコールは酸化されにくく、硫酸酸性条件の過マンガン酸カリウムや二クロム酸カリウムとは反応しません。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-oxidation-tertiary.png" alt="2-メチル-2-プロパノールの構造式。中心の炭素にメチル基 CH₃ が3個とヒドロキシ基 OH が1個、合わせて4本の結合が出ていて、中心の炭素には水素が1個もついていない" loading="lazy"><figcaption class="ref-figure-cap">第3級アルコールの例（2-メチル-2-プロパノール）。<b>−OH が付いた炭素に水素が1個もありません</b>。C=O を作るには この炭素から水素が取れなければならないので、反応が起こりません。</figcaption></figure>
-<section class="ref-sec" id="ref-sec-summary"><h4 class="ref-sec-h">アルコール酸化のまとめ</h4><p class="ref-sec-lead">級と行き先の3行。有機の構造決定は、この3行を逆にたどる作業です。</p></section>
-<p class="ref-p">アルコールの級による酸化反応の違いをまとめると次のようになります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">級と、酸化の行き先</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">アルコールの級</th><th style="text-align: left;">酸化するとどうなるか</th></tr></thead><tbody><tr><td style="text-align: center;">第1級</td><td style="text-align: left;">アルデヒド −CHO になり、さらに酸化されるとカルボン酸 −COOH になる</td></tr><tr><td style="text-align: center;">第2級</td><td style="text-align: left;">ケトン（両側を炭素にはさまれた C=O）になり、そこで止まる</td></tr><tr><td style="text-align: center;">第3級</td><td style="text-align: left;">酸化されない</td></tr></tbody></table></div>
-<p class="ref-p"><b>この3行は必ず暗記してください。</b>実際の実験や入試問題では、酸化反応によって何が生じたか調べることにより、もとのアルコールの構造を決定します。</p>
-<p class="ref-link-row"><a class="ref-link" href="/assembler/?open=experiment">🧪 実験モードでアルコールを酸化してみる（エタノール→アセトアルデヒド・2-プロパノール→アセトン・アセトアルデヒド→酢酸）</a></p>
+<p class="ref-p">酸化剤・還元剤それぞれが e⁻ をどう受け渡すかを書いたイオン反応式を「半反応式」といいます。酸化還元反応の反応式は、酸化剤と還元剤の半反応式を書いてから、2本を組み合わせてつくります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/redox-basics/">左辺に e⁻ があれば酸化剤、右辺にあれば還元剤（「酸化と還元」）</a></p>
+<section class="ref-sec" id="ref-sec-memorize"><h4 class="ref-sec-h">暗記するものと、手順で出すもの</h4><p class="ref-sec-lead">反応前後の物質の化学式は暗記、係数は手順で出します。</p></section>
+<p class="ref-p">半反応式で<b>暗記が必要なのは、反応前後の物質の化学式だけ</b>です。過マンガン酸イオン MnO₄⁻ が酸性で Mn²⁺ になる、ということは覚えるしかありません。</p>
+<p class="ref-p">一方、H₂O・H⁺・e⁻ の係数は、<b>手順どおりに進めれば必ず出ます</b>。係数まで丸暗記してもよいですが、忘れたときに自分で組み立て直せるようにしておきましょう。</p>
+<section class="ref-sec" id="ref-sec-method1"><h4 class="ref-sec-h">書き方その1 —— H₂O → H⁺ → e⁻</h4><p class="ref-sec-lead">O を H₂O で、H を H⁺ で、電荷を e⁻ で合わせます。</p></section>
+<p class="ref-p">過マンガン酸カリウム KMnO₄ の半反応式を、次の4段で書きます。</p>
+<ol class="ref-list"><li>酸化剤・還元剤の反応前後の物質（暗記）を書く。<div class="ref-li-hang">MnO₄⁻ → Mn²⁺</div></li><li>H₂O で両辺の O 原子の数を合わせる。<div class="ref-li-hang">左辺に O 原子が4個あるので、右辺に 4H₂O を加える：MnO₄⁻ → Mn²⁺ ＋ 4H₂O</div></li><li>H⁺ で両辺の H 原子の数を合わせる。<div class="ref-li-hang">右辺に H 原子が8個あるので、左辺に 8H⁺ を加える：MnO₄⁻ ＋ 8H⁺ → Mn²⁺ ＋ 4H₂O</div></li><li>e⁻ で両辺の電荷を合わせる。<div class="ref-li-hang">左辺の電荷は合計 ＋7、右辺は合計 ＋2 なので、左辺に 5e⁻ を加える</div></li></ol>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mn²⁺ ＋ 4H₂O</span></div><p class="ref-note">完成。Mn の酸化数は ＋7 → ＋2 で5減っており、<b>酸化数の変化と e⁻ の数が対応しています</b>（Mn⁷⁺ ＋ 5e⁻ → Mn²⁺）。</p></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/half-reaction-method1.png" alt="過マンガン酸イオンの半反応式を、1 反応前後の物質、2 H₂O で O を合わせる、3 H⁺ で H を合わせる、4 e⁻ で電荷を合わせる の順に書いていく図。最後に Mn の酸化数 ＋7 と ＋2 の差が 5e⁻ に対応していることを矢印で示している" loading="lazy"><figcaption class="ref-figure-cap">書き方その1。右の枠は各段で<b>何を数えてその数にしたか</b>です。</figcaption></figure>
+<section class="ref-sec" id="ref-sec-method2"><h4 class="ref-sec-h">書き方その2 —— 酸化数 → e⁻ → H⁺ → H₂O</h4><p class="ref-sec-lead">先に酸化数の変化から e⁻ の数を決め、電荷を H⁺ で、O を H₂O で合わせます。</p></section>
+<p class="ref-p">同じ KMnO₄ を、酸化数から書く手順です。</p>
+<ol class="ref-list"><li>酸化剤・還元剤の反応前後の物質（暗記）を書く。<div class="ref-li-hang">MnO₄⁻ → Mn²⁺</div></li><li>酸化数が変化する原子の酸化数を書き、変化に合わせて e⁻ を加える。<div class="ref-li-hang">Mn は ＋7 から ＋2 へ変化しているので、左辺に 5e⁻ を加える：MnO₄⁻ ＋ 5e⁻ → Mn²⁺</div></li><li>H⁺ で両辺の電荷を合わせる。<div class="ref-li-hang">左辺の電荷は合計 −6、右辺は ＋2 なので、左辺に 8H⁺ を加える：MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺</div></li><li>H₂O で両辺の O 原子の数を合わせる。<div class="ref-li-hang">左辺に O 原子が4個あるので、右辺に 4H₂O を加える：MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O</div></li></ol>
+<p class="ref-p">その1とその2は、<b>同じ式にたどり着きます</b>。酸化数がすぐ決まる物質ならその2、酸化数がわかりにくい物質（有機化合物など）ならその1が速いでしょう。どちらか一方を確実に書けるようにしておけば十分です。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/oxidation-number/">その2で使う酸化数の決め方は「酸化数の決め方」で</a></p>
+<section class="ref-sec" id="ref-sec-oxidizers"><h4 class="ref-sec-h">主な酸化剤の半反応式</h4><p class="ref-sec-lead">9本。反応前後の物質は必ず暗記します。</p></section>
+<p class="ref-p">次の9本は<b>必ず暗記してください</b>。表の物質名から、反応後の物質と半反応式が書けるようにしておきましょう。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mn²⁺ ＋ 4H₂O</span></div><p class="ref-note">過マンガン酸カリウム KMnO₄（硫酸酸性）。赤紫色の MnO₄⁻ が、ほぼ無色の Mn²⁺ になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Cr³⁺ ＋ 7H₂O</span></div><p class="ref-note">二クロム酸カリウム K₂Cr₂O₇（硫酸酸性）。赤橙色の Cr₂O₇²⁻ が、緑色の Cr³⁺ になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HNO₃ ＋ 3H⁺ ＋ 3e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NO↑ ＋ 2H₂O</span></div><p class="ref-note">希硝酸 HNO₃。無色の NO が発生します。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HNO₃ ＋ H⁺ ＋ e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NO₂↑ ＋ H₂O</span></div><p class="ref-note">濃硝酸 HNO₃。赤褐色の NO₂ が発生します。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂SO₄ ＋ 2H⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">SO₂↑ ＋ 2H₂O</span></div><p class="ref-note">熱濃硫酸 H₂SO₄。<b>加熱した濃硫酸</b>だけが酸化剤としてはたらきます。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂O₂ ＋ 2H⁺ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O</span></div><p class="ref-note">過酸化水素 H₂O₂（酸性）。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">SO₂ ＋ 4H⁺ ＋ 4e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">S ＋ 2H₂O</span></div><p class="ref-note">二酸化硫黄 SO₂。H₂S のような強い還元剤が相手のときだけ酸化剤になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cl₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Cl⁻</span></div><p class="ref-note">ハロゲンの単体（Cl₂ など）。H⁺ も H₂O も出てこない、液性に関係ない式です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">I₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2I⁻</span></div><p class="ref-note">ヨウ素 I₂。ハロゲンの単体の中では弱い酸化剤です。</p></div>
+<h5 class="ref-h5">酸化力のある酸の、もう1つの書き方</h5>
+<p class="ref-p">希硝酸・濃硝酸・熱濃硫酸の3つを「酸化力のある酸」といいます。これらは<b>陰イオン（NO₃⁻・SO₄²⁻）が酸化剤としてはたらく</b>ので、次のように書いてもかまいません。</p>
+<div class="ref-table-wrap"><div class="ref-cap">酸化力のある酸の半反応式（陰イオンで書いた形）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">酸</th><th style="text-align: left;">半反応式</th></tr></thead><tbody><tr><td style="text-align: left;">希硝酸</td><td style="text-align: left;">NO₃⁻ ＋ 4H⁺ ＋ 3e⁻ → NO ＋ 2H₂O</td></tr><tr><td style="text-align: left;">濃硝酸</td><td style="text-align: left;">NO₃⁻ ＋ 2H⁺ ＋ e⁻ → NO₂ ＋ H₂O</td></tr><tr><td style="text-align: left;">熱濃硫酸</td><td style="text-align: left;">SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O</td></tr></tbody></table></div>
+<p class="ref-p">HNO₃ の形の式の両辺に H⁺ を1個足して打ち消すと、NO₃⁻ の形の式になります。どちらで書いても、組み立てた全体の式は同じになります。</p>
+<p class="ref-link-row"><span class="ref-link ref-link-soon">熱濃硫酸と、酸化力をもたない冷たい濃硫酸の違いは「硫酸 —— 希硫酸と濃硫酸」で<b class="ref-link-badge">準備中</b></span></p>
+<section class="ref-sec" id="ref-sec-reducers"><h4 class="ref-sec-h">主な還元剤の半反応式</h4><p class="ref-sec-lead">金属の単体を含めて11本。金属イオンの種類と電荷も暗記します。</p></section>
+<p class="ref-p">次の還元剤も<b>必ず暗記してください</b>。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂C₂O₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2CO₂↑ ＋ 2H⁺ ＋ 2e⁻</span></div><p class="ref-note">シュウ酸 H₂C₂O₄（(COOH)₂ とも書く）。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe²⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Fe³⁺ ＋ e⁻</span></div><p class="ref-note">硫酸鉄(Ⅱ) FeSO₄。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Sn²⁺</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Sn⁴⁺ ＋ 2e⁻</span></div><p class="ref-note">塩化スズ(Ⅱ) SnCl₂。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂S</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">S ＋ 2H⁺ ＋ 2e⁻</span></div><p class="ref-note">硫化水素 H₂S。硫黄が析出して、水溶液が白く濁ります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2I⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">I₂ ＋ 2e⁻</span></div><p class="ref-note">ヨウ化カリウム KI。生じた I₂ で水溶液が褐色になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">O₂↑ ＋ 2H⁺ ＋ 2e⁻</span></div><p class="ref-note">過酸化水素 H₂O₂。KMnO₄ のような強い酸化剤が相手のときに還元剤になります。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">SO₂ ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻</span></div><p class="ref-note">二酸化硫黄 SO₂。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Na</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Na⁺ ＋ e⁻</span></div><p class="ref-note">金属の単体（Na など）。金属の単体はすべて還元剤としてはたらきます。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span></div><p class="ref-note">銅。Cu⁺ ではなく <b>Cu²⁺</b> です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Fe</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Fe²⁺ ＋ 2e⁻</span></div><p class="ref-note">鉄。単体の鉄が溶けるときは Fe³⁺ ではなく <b>Fe²⁺</b> です。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Zn</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Zn²⁺ ＋ 2e⁻</span></div><p class="ref-note">亜鉛。</p></div>
+<p class="ref-p"><b>金属イオンの種類や電荷は暗記</b>です。Cu は Cu⁺ ではなく Cu²⁺、単体の Fe は Fe³⁺ ではなく Fe²⁺ になります。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">鉄 Fe が酸に溶けると Fe³⁺ になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">単体の鉄が溶けるときは <b>Fe²⁺</b> になります。Fe²⁺ → Fe³⁺ は、それとは別の還元剤の式です。</span></p><p class="ref-mistake-why">鉄のイオンには Fe²⁺ と Fe³⁺ の2種類があるので、どちらになるかは反応ごとに覚えるしかありません。単体 Fe → Fe²⁺（金属の単体の式）と、Fe²⁺ → Fe³⁺（硫酸鉄(Ⅱ)の式）は別の行として覚えましょう。</p></div>
+<h5 class="ref-h5">酸化剤にも還元剤にもなる物質</h5>
+<p class="ref-p"><b>過酸化水素 H₂O₂ と二酸化硫黄 SO₂ は、酸化剤・還元剤どちらとしてもはたらきます</b>。どちらになるかは相手で決まり、相手が強い酸化剤なら還元剤に、強い還元剤なら酸化剤になります。</p>
+<div class="ref-table-wrap"><div class="ref-cap">2つの顔をもつ物質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">物質</th><th style="text-align: left;">酸化剤のとき（酸化数が減る）</th><th style="text-align: left;">還元剤のとき（酸化数が増える）</th></tr></thead><tbody><tr><td style="text-align: left;">H₂O₂</td><td style="text-align: left;">O は −1 → −2（H₂O になる）</td><td style="text-align: left;">O は −1 → 0（O₂ になる）</td></tr><tr><td style="text-align: left;">SO₂</td><td style="text-align: left;">S は ＋4 → 0（S になる）</td><td style="text-align: left;">S は ＋4 → ＋6（SO₄²⁻ になる）</td></tr></tbody></table></div>
+<p class="ref-p">H₂O₂ はふつうは酸化剤で、還元剤としてはたらくのは KMnO₄ などの強い酸化剤が相手のときに限られます。SO₂ はふつうは還元剤で、酸化剤としてはたらくのは H₂S が相手のときがほとんどです。</p>
+<h5 class="ref-h5">このページに載せていない半反応式</h5>
+<p class="ref-p">オゾン O₃、中性・塩基性での過マンガン酸イオン、電気分解・電池の電極の式は、液性による書き換えのページ・電池と電気分解のページで扱います。すべての半反応式の一覧は、アプリの一覧で見られます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/half-reaction-condition/">塩基性での書き換えと、オゾンの半反応式は「液性による半反応式の書き換え」で</a></p>
 <h5 class="ref-h5">例題</h5>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アルコール A、B、C、D はすべて分子式が C₄H₁₀O で互いに構造異性体である。A、B、C、D に硫酸酸性条件で二クロム酸カリウムを作用させたところ、B は反応しなかったが、A からは E、C からは F、D からは G が生じた。E、F はフェーリング液を還元したが、G は還元しなかった。E は直鎖構造だが、F は枝分かれをもっていた。<b>アルコール A、B、C、D の構造式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>A は 1-ブタノール</b> CH₃CH₂CH₂CH₂OH、<b>B は 2-メチル-2-プロパノール</b> (CH₃)₃C−OH、<b>C は 2-メチル-1-プロパノール</b> (CH₃)₂CH−CH₂OH、<b>D は 2-ブタノール</b> CH₃CH(OH)CH₂CH₃ です。たどり方は3段：① 反応しなかった B は第3級。C₄H₁₀O のアルコール4種のうち第3級は 2-メチル-2-プロパノールだけです。② フェーリング液を還元した E・F はアルデヒドなので、A と C は第1級。還元しなかった G はケトンなので、D は第2級 ＝ 2-ブタノール。③ 残る2つの第1級のうち、E が直鎖なので A は 1-ブタノール、F が枝分かれなので C は 2-メチル-1-プロパノールです。</p></div></details></div>
-<details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-halfreaction"><summary class="ref-adv-sum"><h4 class="ref-sec-h">アルコール酸化の反応式<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">半反応式を書いて酸化剤の半反応式と組み合わせます。酸化還元単元のやり方がそのまま使えます。</p></summary><div class="ref-adv-body"><p class="ref-p">アルコールが酸化される反応式を書くには、まず半反応式を書き、酸化剤の半反応式と組み合わせます。酸化還元単元のやり方がそのまま使えます。</p></div></details>
-<h5 class="ref-h5">半反応式一覧表</h5>
-<div class="ref-table-wrap"><div class="ref-cap">アルコールとカルボニル化合物の半反応式</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">変化</th><th style="text-align: left;">半反応式</th></tr></thead><tbody><tr><td style="text-align: left;">第1級アルコール → アルデヒド</td><td style="text-align: left;">R−CH₂OH → R−CHO ＋ 2H⁺ ＋ 2e⁻</td></tr><tr><td style="text-align: left;">アルデヒド → カルボン酸</td><td style="text-align: left;">R−CHO ＋ H₂O → R−COOH ＋ 2H⁺ ＋ 2e⁻</td></tr><tr><td style="text-align: left;">第1級アルコール → カルボン酸</td><td style="text-align: left;">R−CH₂OH ＋ H₂O → R−COOH ＋ 4H⁺ ＋ 4e⁻</td></tr><tr><td style="text-align: left;">第2級アルコール → ケトン</td><td style="text-align: left;">R−CH(OH)−R' → R−CO−R' ＋ 2H⁺ ＋ 2e⁻</td></tr></tbody></table></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/oxidation-number/">有機化合物の中の炭素は、原子ごとに酸化数が違います（その決め方）</a></p>
-<h5 class="ref-h5">半反応式同士の組み合わせ</h5>
-<p class="ref-p">上の4本のどれかと、酸化剤の半反応式（過マンガン酸カリウム MnO₄⁻ と二クロム酸カリウム Cr₂O₇²⁻ の2本）を組み合わせるので、反応式は全部で 4×2 ＝ 8本つくれます。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">エタノールを硫酸酸性の二クロム酸カリウム水溶液で酸化してアセトアルデヒドを得た。<b>この反応のイオン反応式を書け。</b>（二クロム酸イオンの半反応式は Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>3C₂H₅OH ＋ Cr₂O₇²⁻ ＋ 8H⁺ → 3CH₃CHO ＋ 2Cr³⁺ ＋ 7H₂O</b> です。エタノールの半反応式は C₂H₅OH → CH₃CHO ＋ 2H⁺ ＋ 2e⁻ で、電子を2個出します。相手は6個受け取るので、こちらを3倍して電子の数をそろえ、足し合わせてから両辺の H⁺ を6個ずつ消します。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の酸化剤の半反応式を書け。<b>(1) 二クロム酸カリウム（硫酸酸性）　(2) 熱濃硫酸　(3) 過酸化水素（硫酸酸性）</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O　(2) H₂SO₄ ＋ 2H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O　(3) H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O</b> です。(1) を書き方その1で書くと、Cr₂O₇²⁻ → 2Cr³⁺ のあと、O が7個なので右辺に 7H₂O、H が14個なので左辺に 14H⁺、電荷が左辺 ＋12・右辺 ＋6 なので左辺に 6e⁻ です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の還元剤の半反応式を書け。<b>(1) シュウ酸　(2) 二酸化硫黄　(3) 鉄</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) H₂C₂O₄ → 2CO₂ ＋ 2H⁺ ＋ 2e⁻　(2) SO₂ ＋ 2H₂O → SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻　(3) Fe → Fe²⁺ ＋ 2e⁻</b> です。(2) を書き方その1で書くと、SO₂ → SO₄²⁻ のあと、O が右辺に2個多いので左辺に 2H₂O、H が左辺に4個あるので右辺に 4H⁺、電荷が左辺 0・右辺 ＋2 なので右辺に 2e⁻ です。(3) は Fe³⁺ ではなく Fe²⁺ です。</p></div></details></div>
 </div>
 </div>
 
-<h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（3問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=org.alcohol.oxidation,org.alcohol.oxidation-reagent,org.carbonyl.formula-isomer&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（3問・測定モード）">▶ 一問一答で解く（3問・測定モード）</button><a class="alt" href="/qa/?codes=org.alcohol.oxidation,org.alcohol.oxidation-reagent,org.carbonyl.formula-isomer&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<h2>読みながら組む</h2>
-<div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.alcohol.oxidation" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.alcohol.oxidation" target="_blank" rel="noopener">別のタブで開く</a></div>
-
-<nav class="seq"><a href="/reference/ether/">← エーテルの性質</a>
+<nav class="seq"><a href="/reference/oxidation-number/">← 酸化数の決め方</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/alcohol-dehydration/">アルコールを脱水するとどのアルケンになるか →</a></nav>
+<a href="/reference/half-reaction-condition/">液性による半反応式の書き換え →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;
@@ -963,67 +975,7 @@ document.addEventListener('click', function (e) {
   window.addEventListener('resize', onScroll, { passive: true });
 })();
 </script>
-<script>
-function refAdvSetup(root) {
-    var scope = root || document;
-    if (!scope.querySelectorAll || !scope.querySelectorAll('details.ref-adv').length) return;
 
-    /* ── ① ページ内検索 ──────────────────────────────────────────────
-       ★ 新しいブラウザは**閉じた `<details>` の中まで検索して、見つけたら自分で開く**
-         （`hidden="until-found"` と同じ仕掛け。Chrome 131 / Firefox 139 / Safari 18.4 あたり）。
-       ⚠⚠ **持っていないブラウザでは、発展を開いたまま出す。**
-         ★ 逆（畳んだまま出す）にすると**本文がページ内検索から消える** ＝
-           「事典的に網羅して、引きに来た人が見つけられる」という参考書の目的そのものが壊れる。
-         ★ 開いたまま出しても失うのは初期状態の静けさだけで、畳めることは変わらない
-           ＝ **退避の向きは「見えるほうへ倒す」。**
-       ★ 見分けは `::details-content` の有無 —— 自動で開く仕掛けと同じ版で入った疑似要素。 */
-    var native = false;
-    try { native = !!(window.CSS && CSS.supports && CSS.supports('selector(::details-content)')); } catch (e) { native = false; }
-    if (!native) {
-        Array.prototype.forEach.call(scope.querySelectorAll('details.ref-adv'), function (d) { d.open = true; });
-    }
-
-    /* ── ② 目次・用語の索引から飛んだら開く ────────────────────────────
-       ★ 新しいブラウザは `:target` で自分から開くので、これも古い版のための退避。
-       ⚠ 面B（アプリの資料ペイン）は URL の hash が動かないので、**目次の押しそのもの**も見る。 */
-    var openAt = function (id) {
-        var el = id ? document.getElementById(id) : null;
-        var d = el && el.closest ? el.closest('details.ref-adv') : null;
-        if (d && !d.open) { d.open = true; el.scrollIntoView(); }
-    };
-    if (!scope.__refAdvWired) {
-        scope.__refAdvWired = true;
-        scope.addEventListener('click', function (e) {
-            var a = e.target && e.target.closest ? e.target.closest('.ref-toc a[href^="#"]') : null;
-            if (a) openAt(a.getAttribute('href').slice(1));
-        });
-    }
-    if (!refAdvSetup.wiredWindow) {
-        refAdvSetup.wiredWindow = true;
-        var fromHash = function () {
-            try { openAt(decodeURIComponent((location.hash || '').slice(1))); } catch (e) { /* 壊れた hash は無視 */ }
-        };
-        window.addEventListener('hashchange', fromHash);
-        /* ── ③ 印刷は開いた状態で出す ────────────────────────────────
-           ★ 新しいブラウザは `@media print` の `::details-content` だけで開く（JS を通らない）。
-           ⚠ 古い版のためにここでも開き、**刷り終わったら元に戻す**（画面の状態を変えない）。 */
-        var before = null;
-        window.addEventListener('beforeprint', function () {
-            var all = document.querySelectorAll('details.ref-adv');
-            before = Array.prototype.map.call(all, function (d) { return d.open; });
-            Array.prototype.forEach.call(all, function (d) { d.open = true; });
-        });
-        window.addEventListener('afterprint', function () {
-            if (!before) return;
-            Array.prototype.forEach.call(document.querySelectorAll('details.ref-adv'),
-                function (d, i) { d.open = !!before[i]; });
-            before = null;
-        });
-        fromHash();
-    }
-}
-refAdvSetup(document);
-</script>
 </main>
 <footer><div class="wrap">表は<a href="/assembler/">パズルでみる有機化学</a>が出題データからその場で組んだものです。
 Schoollenz ／ 化学レンズ　·　<a href="/privacy.html">プライバシーポリシー</a></div></footer>
