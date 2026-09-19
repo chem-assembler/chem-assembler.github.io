@@ -24,6 +24,26 @@ zaitsev               ザイツェフ則 —— 脱水で2つできるとき、�
 steric-hindrance      立体障害 —— 大きな原子団どうしがぶつかって不安定になること
 oxidation-number      有機化合物中の原子の酸化数の決め方
 
+# ⚠ 便R1（酸化還元）が仮に足した行（2026-09-19）。便0a の38件の登録と重なったら、そちらを残してこの塊を消す。
+#   ★ R1 の自分のページ（half-reaction ほか）はページを書いたら消す。残りは他の便のページ。
+half-reaction            半反応式の書き方と主な酸化剤・還元剤〔理論〕
+half-reaction-condition  液性による半反応式の書き換え〔理論〕
+redox-equation           酸化還元反応式の組み立て〔理論〕
+redox-titration          酸化還元滴定〔理論〕
+ionization-tendency      金属のイオン化傾向〔理論〕
+transition-oxidizers     クロムとマンガン〔無機〕
+oxygen-ozone             酸素・オゾン・過酸化水素〔無機〕
+halogen                  ハロゲン —— 並べて比べる〔無機〕
+sulfuric-acid            硫酸 —— 希硫酸と濃硫酸〔無機〕
+nitrogen                 窒素とその化合物〔無機〕
+cell-basics              電池の仕組み —— ダニエル電池〔理論〕
+fuel-cell                実用電池と燃料電池〔理論〕
+electrolysis-basics      電気分解で何が反応するか〔理論〕
+electrolysis-equations   電気分解の反応式〔理論〕
+electrolysis-industry    電気分解の工業的利用〔理論〕
+neutralization           中和反応と量的関係〔理論〕
+titration                中和滴定〔理論〕
+
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
 #   general-formula … ⚠ 中身が hydrocarbon-classes の節「一般式と同族体」（#ref-sec-homolog）と
