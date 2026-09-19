@@ -75,6 +75,12 @@ molecular-shape
 intermolecular-force
 crystal-types
 unit-cell
+atomic-weight
+mole
+concentration
+chemical-equation
+stoichiometry
+chemical-laws
 acid-base-definition
 acid-base-strength
 ph
