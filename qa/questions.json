@@ -11,81 +11,123 @@
   },
   "units": [
     {
+      "id": "anal",
+      "name": "元素の確認・元素分析",
+      "category_l": "有機化学",
+      "category_m": "元素分析",
+      "summary": "成分元素の見つけ方と、燃焼の結果から組成式・分子式を出す手順を身につけよう。"
+    },
+    {
       "id": "aliphatic",
       "name": "脂肪族炭化水素",
       "category_l": "有機化学",
       "category_m": "脂肪族炭化水素",
-      "summary": "アルカン・アルケン・アルキン・シクロアルカンと、その異性体・反応（置換／付加）。"
+      "summary": "アルカン・アルケン・アルキンの性質と反応、異性体の数え方と名前をおさえよう。"
     },
     {
       "id": "alcohol",
       "name": "アルコール・エーテル",
       "category_l": "有機化学",
       "category_m": "アルコール・エーテル",
-      "summary": "アルコール（級・価数・沸点・反応：Na／脱水／酸化／ヨードホルム）とエーテル。"
+      "summary": "アルコールの級と反応（Na・脱水・酸化）、エーテルとの違いをおさえよう。"
     },
     {
-      "id": "anal",
-      "name": "元素の確認・元素分析",
+      "id": "aldketone",
+      "name": "アルデヒド・ケトン",
       "category_l": "有機化学",
-      "category_m": "元素分析",
-      "summary": "元素の確認（定性：C/H/N/Cl/S の検出）と元素分析（定量：燃焼→組成式→分子式）。"
+      "category_m": "アルデヒド・ケトン",
+      "summary": "アルデヒドの還元性（銀鏡・フェーリング）と、ケトンとの見分け方をおさえよう。"
     },
     {
-      "id": "carbonyl",
-      "name": "アルデヒド・ケトン／カルボン酸・エステル",
+      "id": "carboxyl",
+      "name": "カルボン酸・エステル",
       "category_l": "有機化学",
-      "category_m": "カルボニル化合物",
-      "summary": "アルデヒド（還元性・銀鏡・フェーリング）とケトン、カルボン酸（酸性・ギ酸・酢酸・酸無水物）、エステル（エステル化・加水分解・けん化）。"
-    },
-    {
-      "id": "aro",
-      "name": "芳香族炭化水素",
-      "category_l": "有機化学",
-      "category_m": "芳香族炭化水素",
-      "summary": "ベンゼンの構造と性質、置換反応（ハロゲン化・ニトロ化・スルホン化）と付加反応、トルエン・キシレン・ナフタレンと側鎖の酸化。"
-    },
-    {
-      "id": "phenol",
-      "name": "フェノール類",
-      "category_l": "有機化学",
-      "category_m": "フェノール類",
-      "summary": "フェノール類の定義と例、弱酸性（炭酸との強弱・塩と遊離）、塩化鉄(III)による検出、置換反応、フェノールの製法（クメン法ほか）。"
-    },
-    {
-      "id": "aroN",
-      "name": "芳香族窒素化合物・芳香族の分離",
-      "category_l": "有機化学",
-      "category_m": "芳香族窒素化合物",
-      "summary": "アニリン（塩基性・酸化・アセチル化）、ジアゾ化とカップリング（アゾ染料）、芳香族カルボン酸（安息香酸・サリチル酸）と、酸・塩基の強弱による分離。"
+      "category_m": "カルボン酸・エステル",
+      "summary": "カルボン酸の酸性とギ酸・酢酸の性質、エステルのでき方と加水分解をおさえよう。"
     },
     {
       "id": "fat",
       "name": "油脂・セッケン",
       "category_l": "有機化学",
       "category_m": "油脂・セッケン",
-      "summary": "油脂の構造（グリセリンと高級脂肪酸のエステル）、脂肪と脂肪油・硬化油、けん化価とヨウ素価、セッケンと合成洗剤のはたらきと違い。"
+      "summary": "油脂のつくりとけん化価・ヨウ素価、セッケンと合成洗剤のはたらきをおさえよう。"
     },
     {
-      "id": "bio",
-      "name": "糖・アミノ酸・タンパク質",
+      "id": "aro",
+      "name": "芳香族炭化水素",
       "category_l": "有機化学",
-      "category_m": "天然高分子",
-      "summary": "糖類・アミノ酸・タンパク質・核酸という、生体をつくる天然高分子とその構成単位について、構造・性質・反応と検出法を扱う。"
+      "category_m": "芳香族炭化水素",
+      "summary": "ベンゼンの置換反応と付加反応、トルエンなど同族体の側鎖の酸化をおさえよう。"
+    },
+    {
+      "id": "phenol",
+      "name": "フェノール類",
+      "category_l": "有機化学",
+      "category_m": "フェノール類",
+      "summary": "フェノールの弱い酸性と塩化鉄(III)による検出、クメン法をおさえよう。"
+    },
+    {
+      "id": "aroAcid",
+      "name": "芳香族カルボン酸",
+      "category_l": "有機化学",
+      "category_m": "芳香族カルボン酸",
+      "summary": "安息香酸とサリチル酸、サリチル酸からできる2つのエステルをおさえよう。"
+    },
+    {
+      "id": "aroNitrogen",
+      "name": "芳香族窒素化合物",
+      "category_l": "有機化学",
+      "category_m": "芳香族窒素化合物",
+      "summary": "アニリンの塩基性と検出、ジアゾ化とカップリングでアゾ染料ができる流れをおさえよう。"
+    },
+    {
+      "id": "aroSep",
+      "name": "芳香族の分離",
+      "category_l": "有機化学",
+      "category_m": "芳香族の分離",
+      "summary": "酸・塩基の強さの違いを使って、芳香族化合物をエーテル層と水層に分けよう。"
+    },
+    {
+      "id": "sugar",
+      "name": "糖",
+      "category_l": "有機化学",
+      "category_m": "糖",
+      "summary": "単糖・二糖・多糖のつくりと還元性、デンプンとセルロースの違いをおさえよう。"
+    },
+    {
+      "id": "aminoAcid",
+      "name": "アミノ酸",
+      "category_l": "有機化学",
+      "category_m": "アミノ酸",
+      "summary": "アミノ酸の双性イオンと等電点、pH で電荷がどう変わるかをおさえよう。"
+    },
+    {
+      "id": "protein",
+      "name": "タンパク質・酵素",
+      "category_l": "有機化学",
+      "category_m": "タンパク質・酵素",
+      "summary": "ペプチド結合と立体構造、変性と呈色反応、酵素のはたらき方をおさえよう。"
+    },
+    {
+      "id": "nucleic",
+      "name": "核酸",
+      "category_l": "有機化学",
+      "category_m": "核酸",
+      "summary": "ヌクレオチドのつくりと DNA・RNA の違い、塩基の組み合わせをおさえよう。"
     },
     {
       "id": "poly",
       "name": "合成高分子",
       "category_l": "有機化学",
       "category_m": "合成高分子",
-      "summary": "単量体が多数結合してできた高分子化合物について、重合のしかた（付加重合・縮合重合など）と構造・性質の関係をおさえ、合成樹脂（プラスチック）・合成繊維・ゴムそれぞれの代表例を原料と結びつけて理解する。"
+      "summary": "付加重合と縮合重合の違い、代表的な樹脂・繊維・ゴムを原料と結びつけよう。"
     },
     {
-      "id": "clue",
-      "name": "手がかりから物質に当たりを付ける",
+      "id": "structure",
+      "name": "構造決定",
       "category_l": "有機化学",
-      "category_m": "同定の手がかり",
-      "summary": "沸点・融点・組成式・見た目といった手がかり1つから物質を名指しする、試験の当たりの付け方。ただし手がかりには使う順番があり、まず分類（官能基・液性・検出）で絞ってから数や物性を使う。組成式から物質を当てにいくのは例外的な手で、一般には効かない。ここだけは確実に正しい知識ではなく「たぶんこれだろう」を扱うので、項目ごとに確度を付けてある。"
+      "category_m": "構造決定",
+      "summary": "手がかりから物質に当たりを付けよう。まず官能基で絞り、数や物性はそのあと。確度の印も見よう。"
     }
   ],
   "patterns": [
@@ -4876,7 +4918,7 @@
     },
     {
       "code": "org.carbonyl.formyl",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "カルボニル化合物（総論）",
       "difficulty": 1,
       "tags": [
@@ -4922,7 +4964,7 @@
     },
     {
       "code": "org.carbonyl.ketone-def",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "カルボニル化合物（総論）",
       "difficulty": 1,
       "tags": [
@@ -4966,7 +5008,7 @@
     },
     {
       "code": "org.carbonyl.formula-isomer",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "カルボニル化合物（総論）",
       "difficulty": 2,
       "tags": [
@@ -5016,7 +5058,7 @@
     },
     {
       "code": "org.carbonyl.aldehyde-oxidation",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "アルデヒド",
       "difficulty": 1,
       "tags": [
@@ -5069,7 +5111,7 @@
     },
     {
       "code": "org.carbonyl.silver-mirror",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "アルデヒド",
       "difficulty": 1,
       "tags": [
@@ -5123,7 +5165,7 @@
     },
     {
       "code": "org.carbonyl.fehling",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "アルデヒド",
       "difficulty": 1,
       "tags": [
@@ -5177,7 +5219,7 @@
     },
     {
       "code": "org.carbonyl.formaldehyde",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "アルデヒド",
       "difficulty": 1,
       "tags": [
@@ -5223,7 +5265,7 @@
     },
     {
       "code": "org.carbonyl.formaldehyde-prep",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "アルデヒド",
       "difficulty": 1,
       "tags": [
@@ -5271,7 +5313,7 @@
     },
     {
       "code": "org.carbonyl.acetaldehyde-prep",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "アルデヒド",
       "difficulty": 1,
       "tags": [
@@ -5319,7 +5361,7 @@
     },
     {
       "code": "org.carbonyl.ketone-no-reduce",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "ケトン",
       "difficulty": 3,
       "tags": [
@@ -5371,7 +5413,7 @@
     },
     {
       "code": "org.carbonyl.acetone-props",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "ケトン",
       "difficulty": 2,
       "tags": [
@@ -5414,7 +5456,7 @@
     },
     {
       "code": "org.carbonyl.acetone-prep",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "ケトン",
       "difficulty": 2,
       "tags": [
@@ -5464,7 +5506,7 @@
     },
     {
       "code": "org.carbonyl.acetone-dry-distill",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "ケトン",
       "difficulty": 2,
       "tags": [
@@ -5504,7 +5546,7 @@
     },
     {
       "code": "org.carbonyl.iodoform-carbonyl",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "ケトン",
       "difficulty": 2,
       "tags": [
@@ -5558,7 +5600,7 @@
     },
     {
       "code": "org.carbonyl.carboxy",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（総論・性質）",
       "difficulty": 1,
       "tags": [
@@ -5607,7 +5649,7 @@
     },
     {
       "code": "org.carbonyl.fatty-acid",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（総論・性質）",
       "difficulty": 2,
       "tags": [
@@ -5653,7 +5695,7 @@
     },
     {
       "code": "org.carbonyl.acidity",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（総論・性質）",
       "difficulty": 2,
       "tags": [
@@ -5703,7 +5745,7 @@
     },
     {
       "code": "org.carbonyl.vs-carbonic",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（総論・性質）",
       "difficulty": 2,
       "tags": [
@@ -5756,7 +5798,7 @@
     },
     {
       "code": "org.carbonyl.salt-strong-acid",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（総論・性質）",
       "difficulty": 2,
       "tags": [
@@ -5802,7 +5844,7 @@
     },
     {
       "code": "org.carbonyl.dimer",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（総論・性質）",
       "difficulty": 3,
       "tags": [
@@ -5846,7 +5888,7 @@
     },
     {
       "code": "org.carbonyl.formic",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 2,
       "tags": [
@@ -5888,7 +5930,7 @@
     },
     {
       "code": "org.carbonyl.formic-reducing",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 2,
       "tags": [
@@ -5941,7 +5983,7 @@
     },
     {
       "code": "org.carbonyl.acetic",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 2,
       "tags": [
@@ -5981,7 +6023,7 @@
     },
     {
       "code": "org.carbonyl.dicarboxylic",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 3,
       "tags": [
@@ -6030,7 +6072,7 @@
     },
     {
       "code": "org.carbonyl.maleic-fumaric",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 3,
       "tags": [
@@ -6079,7 +6121,7 @@
     },
     {
       "code": "org.carbonyl.maleic-anhydride",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 2,
       "tags": [
@@ -6132,7 +6174,7 @@
     },
     {
       "code": "org.carbonyl.acid-anhydride",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 2,
       "tags": [
@@ -6185,7 +6227,7 @@
     },
     {
       "code": "org.carbonyl.acetic-anhydride-props",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 2,
       "tags": [
@@ -6238,7 +6280,7 @@
     },
     {
       "code": "org.carbonyl.lactic",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "カルボン酸（各論）",
       "difficulty": 2,
       "tags": [
@@ -6287,7 +6329,7 @@
     },
     {
       "code": "org.carbonyl.ester-bond",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 1,
       "tags": [
@@ -6335,7 +6377,7 @@
     },
     {
       "code": "org.carbonyl.esterification",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 1,
       "tags": [
@@ -6389,7 +6431,7 @@
     },
     {
       "code": "org.carbonyl.ester-water-origin",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 3,
       "tags": [
@@ -6438,7 +6480,7 @@
     },
     {
       "code": "org.carbonyl.ethyl-acetate",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 1,
       "tags": [
@@ -6481,7 +6523,7 @@
     },
     {
       "code": "org.carbonyl.ester-hydrolysis",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -6534,7 +6576,7 @@
     },
     {
       "code": "org.carbonyl.saponification",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -6587,7 +6629,7 @@
     },
     {
       "code": "org.carbonyl.ester-naming",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -6634,7 +6676,7 @@
     },
     {
       "code": "org.carbonyl.inorganic-ester",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 4,
       "tags": [
@@ -8436,7 +8478,7 @@
     },
     {
       "code": "org.aroN.amino",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "アニリン",
       "difficulty": 1,
       "tags": [
@@ -8485,7 +8527,7 @@
     },
     {
       "code": "org.aroN.aniline-props",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "アニリン",
       "difficulty": 2,
       "tags": [
@@ -8533,7 +8575,7 @@
     },
     {
       "code": "org.aroN.aniline-base",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "アニリン",
       "difficulty": 2,
       "tags": [
@@ -8581,7 +8623,7 @@
     },
     {
       "code": "org.aroN.aniline-prep",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "アニリン",
       "difficulty": 2,
       "tags": [
@@ -8628,7 +8670,7 @@
     },
     {
       "code": "org.aroN.aniline-detect",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "アニリン",
       "difficulty": 2,
       "tags": [
@@ -8673,7 +8715,7 @@
     },
     {
       "code": "org.aroN.acetanilide",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "アニリン",
       "difficulty": 2,
       "tags": [
@@ -8726,7 +8768,7 @@
     },
     {
       "code": "org.aroN.diazotization",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "ジアゾ化とカップリング",
       "difficulty": 1,
       "tags": [
@@ -8776,7 +8818,7 @@
     },
     {
       "code": "org.aroN.diazonium-decomp",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "ジアゾ化とカップリング",
       "difficulty": 2,
       "tags": [
@@ -8824,7 +8866,7 @@
     },
     {
       "code": "org.aroN.coupling",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "ジアゾ化とカップリング",
       "difficulty": 1,
       "tags": [
@@ -8876,7 +8918,7 @@
     },
     {
       "code": "org.aroN.azo-dye",
-      "unit": "aroN",
+      "unit": "aroNitrogen",
       "group": "ジアゾ化とカップリング",
       "difficulty": 1,
       "tags": [
@@ -8922,7 +8964,7 @@
     },
     {
       "code": "org.aroN.benzoic",
-      "unit": "aroN",
+      "unit": "aroAcid",
       "group": "芳香族カルボン酸",
       "difficulty": 1,
       "tags": [
@@ -8971,7 +9013,7 @@
     },
     {
       "code": "org.aroN.salicylic",
-      "unit": "aroN",
+      "unit": "aroAcid",
       "group": "芳香族カルボン酸",
       "difficulty": 2,
       "tags": [
@@ -9025,7 +9067,7 @@
     },
     {
       "code": "org.aroN.aspirin",
-      "unit": "aroN",
+      "unit": "aroAcid",
       "group": "芳香族カルボン酸",
       "difficulty": 2,
       "tags": [
@@ -9078,7 +9120,7 @@
     },
     {
       "code": "org.aroN.methyl-salicylate",
-      "unit": "aroN",
+      "unit": "aroAcid",
       "group": "芳香族カルボン酸",
       "difficulty": 2,
       "tags": [
@@ -9131,7 +9173,7 @@
     },
     {
       "code": "org.aroN.separation-principle",
-      "unit": "aroN",
+      "unit": "aroSep",
       "group": "分離",
       "difficulty": 2,
       "tags": [
@@ -9177,7 +9219,7 @@
     },
     {
       "code": "org.aroN.separation-order",
-      "unit": "aroN",
+      "unit": "aroSep",
       "group": "分離",
       "difficulty": 2,
       "tags": [
@@ -9931,7 +9973,7 @@
     },
     {
       "code": "org.bio.saccharide-def",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "糖類の分類",
       "difficulty": 1,
       "tags": [
@@ -9975,7 +10017,7 @@
     },
     {
       "code": "org.bio.saccharide-class",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "糖類の分類",
       "difficulty": 2,
       "tags": [
@@ -10019,7 +10061,7 @@
     },
     {
       "code": "org.bio.monosaccharide",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 1,
       "tags": [
@@ -10064,7 +10106,7 @@
     },
     {
       "code": "org.bio.glucose-structure",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 1,
       "tags": [
@@ -10117,7 +10159,7 @@
     },
     {
       "code": "org.bio.glucose-chiral",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 2,
       "tags": [
@@ -10166,7 +10208,7 @@
     },
     {
       "code": "org.bio.glucose-ring",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 1,
       "tags": [
@@ -10219,7 +10261,7 @@
     },
     {
       "code": "org.bio.glucose-reducing",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 2,
       "tags": [
@@ -10274,7 +10316,7 @@
     },
     {
       "code": "org.bio.fructose",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 1,
       "tags": [
@@ -10329,7 +10371,7 @@
     },
     {
       "code": "org.bio.fructose-reducing",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 3,
       "tags": [
@@ -10380,7 +10422,7 @@
     },
     {
       "code": "org.bio.alcohol-fermentation",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "単糖類",
       "difficulty": 2,
       "tags": [
@@ -10430,7 +10472,7 @@
     },
     {
       "code": "org.bio.disaccharide-def",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "二糖類",
       "difficulty": 1,
       "tags": [
@@ -10482,7 +10524,7 @@
     },
     {
       "code": "org.bio.maltose",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "二糖類",
       "difficulty": 1,
       "tags": [
@@ -10535,7 +10577,7 @@
     },
     {
       "code": "org.bio.sucrose",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "二糖類",
       "difficulty": 1,
       "tags": [
@@ -10589,7 +10631,7 @@
     },
     {
       "code": "org.bio.invert-sugar",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "二糖類",
       "difficulty": 1,
       "tags": [
@@ -10634,7 +10676,7 @@
     },
     {
       "code": "org.bio.lactose-cellobiose",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "二糖類",
       "difficulty": 2,
       "tags": [
@@ -10689,7 +10731,7 @@
     },
     {
       "code": "org.bio.polysaccharide-def",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -10737,7 +10779,7 @@
     },
     {
       "code": "org.bio.starch",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -10785,7 +10827,7 @@
     },
     {
       "code": "org.bio.starch-iodine",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -10831,7 +10873,7 @@
     },
     {
       "code": "org.bio.starch-hydrolysis",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 2,
       "tags": [
@@ -10877,7 +10919,7 @@
     },
     {
       "code": "org.bio.glycogen",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 3,
       "tags": [
@@ -10923,7 +10965,7 @@
     },
     {
       "code": "org.bio.cellulose",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -10972,7 +11014,7 @@
     },
     {
       "code": "org.bio.cellulose-oh",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 3,
       "tags": [
@@ -11024,7 +11066,7 @@
     },
     {
       "code": "org.bio.nitrocellulose",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 2,
       "tags": [
@@ -11074,7 +11116,7 @@
     },
     {
       "code": "org.bio.cellulose-fiber",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "多糖類",
       "difficulty": 1,
       "tags": [
@@ -11091,14 +11133,14 @@
           "mode": "flip",
           "q": "セルロースからつくる再生繊維2つと半合成繊維1つ。それぞれのつくり方は？",
           "a": "再生繊維＝ビスコースレーヨン（水酸化ナトリウム水溶液と二硫化炭素で処理してビスコースにし、希硫酸中に押し出す）と銅アンモニアレーヨン（シュワイツァー試薬に溶かし、希硫酸中に押し出す）。半合成繊維＝アセテート繊維（無水酢酸でトリアセチルセルロースにしたのち一部を加水分解し、アセトンに溶かして紡糸する）",
-          "supplement": "分かれ目は化学構造が変わったかどうか。再生繊維は溶かすときに分子どうしの結びつき（水素結合）をいったんほどいて紡ぎ直すが、分子そのものはセルロースのまま。半合成繊維はヒドロキシ基がエステルに変わっている。シュワイツァー試薬は水酸化銅(II)を濃アンモニア水に溶かしたもの。"
+          "supplement": "分かれ目は化学構造が変わったかどうか。再生繊維は、溶かすときにセルロースをいったん別の形に変え（ビスコースレーヨンは二硫化炭素と反応させたビスコース、銅アンモニアレーヨンは銅(II)イオンと結びついた形）、希硫酸中でセルロースに戻して紡ぎ直す。できた繊維の分子はセルロースのまま。半合成繊維はヒドロキシ基がエステルに変わっている。シュワイツァー試薬は水酸化銅(II)を濃アンモニア水に溶かしたもの。"
         },
         {
           "mode": "choice",
           "q": "セルロースからつくる繊維について正しいものをすべて選べ。",
           "options": [
             "ビスコースレーヨンと銅アンモニアレーヨンは再生繊維である",
-            "再生繊維は、溶かすときに分子どうしの結びつきをいったんほどくが、分子の化学構造はセルロースのままである",
+            "再生繊維は、溶かすときにセルロースをいったん別の形に変えるが、繊維にするときにセルロースに戻すので、できた繊維の分子はセルロースである",
             "アセテート繊維はヒドロキシ基が酢酸エステルに変えられた半合成繊維である",
             "銅アンモニアレーヨンはシュワイツァー試薬にセルロースを溶かしてつくる",
             "アセテート繊維は再生繊維である",
@@ -11110,7 +11152,7 @@
             2,
             3
           ],
-          "supplement": "分かれ目は化学構造が変わったかどうか。レーヨンは溶かすときに分子どうしの結びつきをいったんほどくが、分子はセルロースのままなので再生繊維、アセテートはヒドロキシ基が酢酸エステルに変わっているので半合成繊維に分類される。無水酢酸を使うのはアセテート繊維のほうで、ビスコースは水酸化ナトリウム水溶液と二硫化炭素で処理してつくる。"
+          "supplement": "分かれ目は化学構造が変わったかどうか。レーヨンは溶かすときにいったん別の形に変えても、繊維にするときにセルロースに戻すので再生繊維、アセテートはヒドロキシ基が酢酸エステルに変わっているので半合成繊維に分類される。無水酢酸を使うのはアセテート繊維のほうで、ビスコースは水酸化ナトリウム水溶液と二硫化炭素で処理してつくる。"
         }
       ],
       "evidence": {
@@ -11120,7 +11162,7 @@
     },
     {
       "code": "org.bio.amino-acid-def",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 1,
       "tags": [
@@ -11176,7 +11218,7 @@
     },
     {
       "code": "org.bio.amino-acid-sidechain",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 2,
       "tags": [
@@ -11227,7 +11269,7 @@
     },
     {
       "code": "org.bio.amino-acid-chirality",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 2,
       "tags": [
@@ -11280,7 +11322,7 @@
     },
     {
       "code": "org.bio.amino-acid-amphoteric",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 1,
       "tags": [
@@ -11334,7 +11376,7 @@
     },
     {
       "code": "org.bio.zwitterion-ph",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 2,
       "tags": [
@@ -11380,7 +11422,7 @@
     },
     {
       "code": "org.bio.isoelectric-point",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 2,
       "tags": [
@@ -11428,7 +11470,7 @@
     },
     {
       "code": "org.bio.amino-acid-crystal",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 3,
       "tags": [
@@ -11471,7 +11513,7 @@
     },
     {
       "code": "org.bio.peptide-bond",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 1,
       "tags": [
@@ -11526,7 +11568,7 @@
     },
     {
       "code": "org.bio.protein-structure",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 2,
       "tags": [
@@ -11574,7 +11616,7 @@
     },
     {
       "code": "org.bio.protein-higher",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 2,
       "tags": [
@@ -11620,7 +11662,7 @@
     },
     {
       "code": "org.bio.protein-classification",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 2,
       "tags": [
@@ -11663,7 +11705,7 @@
     },
     {
       "code": "org.bio.denaturation",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 2,
       "tags": [
@@ -11712,7 +11754,7 @@
     },
     {
       "code": "org.bio.biuret",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 1,
       "tags": [
@@ -11759,7 +11801,7 @@
     },
     {
       "code": "org.bio.xanthoproteic",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 1,
       "tags": [
@@ -11807,7 +11849,7 @@
     },
     {
       "code": "org.bio.protein-sulfur-test",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 2,
       "tags": [
@@ -11854,7 +11896,7 @@
     },
     {
       "code": "org.bio.ninhydrin",
-      "unit": "bio",
+      "unit": "protein",
       "group": "タンパク質",
       "difficulty": 2,
       "tags": [
@@ -11907,7 +11949,7 @@
     },
     {
       "code": "org.bio.enzyme-def",
-      "unit": "bio",
+      "unit": "protein",
       "group": "酵素",
       "difficulty": 2,
       "tags": [
@@ -11954,7 +11996,7 @@
     },
     {
       "code": "org.bio.enzyme-optimum",
-      "unit": "bio",
+      "unit": "protein",
       "group": "酵素",
       "difficulty": 2,
       "tags": [
@@ -12001,7 +12043,7 @@
     },
     {
       "code": "org.bio.enzyme-examples",
-      "unit": "bio",
+      "unit": "protein",
       "group": "酵素",
       "difficulty": 2,
       "tags": [
@@ -12049,7 +12091,7 @@
     },
     {
       "code": "org.bio.nucleotide",
-      "unit": "bio",
+      "unit": "nucleic",
       "group": "核酸",
       "difficulty": 2,
       "tags": [
@@ -12095,7 +12137,7 @@
     },
     {
       "code": "org.bio.dna-rna",
-      "unit": "bio",
+      "unit": "nucleic",
       "group": "核酸",
       "difficulty": 2,
       "tags": [
@@ -12148,7 +12190,7 @@
     },
     {
       "code": "org.bio.base-pair",
-      "unit": "bio",
+      "unit": "nucleic",
       "group": "核酸",
       "difficulty": 2,
       "tags": [
@@ -14214,7 +14256,7 @@
     },
     {
       "code": "org.carbonyl.reduction",
-      "unit": "carbonyl",
+      "unit": "aldketone",
       "group": "カルボニル化合物（総論）",
       "difficulty": 2,
       "tags": [
@@ -14264,7 +14306,7 @@
     },
     {
       "code": "org.carbonyl.ester-valence",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -14310,7 +14352,7 @@
     },
     {
       "code": "org.carbonyl.diester-arrangement",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 4,
       "tags": [
@@ -14356,7 +14398,7 @@
     },
     {
       "code": "org.carbonyl.polyester-hydrolysis",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -14403,7 +14445,7 @@
     },
     {
       "code": "org.carbonyl.lactone",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 2,
       "tags": [
@@ -14449,7 +14491,7 @@
     },
     {
       "code": "org.carbonyl.formate-ester",
-      "unit": "carbonyl",
+      "unit": "carboxyl",
       "group": "エステル",
       "difficulty": 4,
       "tags": [
@@ -14500,7 +14542,7 @@
     },
     {
       "code": "org.bio.glycoside",
-      "unit": "bio",
+      "unit": "sugar",
       "group": "二糖類",
       "difficulty": 4,
       "tags": [
@@ -14710,7 +14752,7 @@
     },
     {
       "code": "org.bio.amino-acid-polyprotic",
-      "unit": "bio",
+      "unit": "aminoAcid",
       "group": "アミノ酸",
       "difficulty": 3,
       "tags": [
@@ -14961,7 +15003,7 @@
     },
     {
       "code": "org.clue.order",
-      "unit": "clue",
+      "unit": "structure",
       "group": "手がかりを使う順番",
       "difficulty": 2,
       "certainty": "確実",
@@ -15013,7 +15055,7 @@
     },
     {
       "code": "org.clue.nitrogen-parity",
-      "unit": "clue",
+      "unit": "structure",
       "group": "数から当たりを付ける",
       "difficulty": 2,
       "certainty": "確実",
@@ -15064,7 +15106,7 @@
     },
     {
       "code": "org.clue.diethyl-ether-bp",
-      "unit": "clue",
+      "unit": "structure",
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
@@ -15116,7 +15158,7 @@
     },
     {
       "code": "org.clue.acetic-mp",
-      "unit": "clue",
+      "unit": "structure",
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
@@ -15167,7 +15209,7 @@
     },
     {
       "code": "org.clue.cho-ratio",
-      "unit": "clue",
+      "unit": "structure",
       "group": "数から当たりを付ける",
       "difficulty": 2,
       "certainty": "たぶん",
@@ -15220,7 +15262,7 @@
     },
     {
       "code": "org.clue.ch2o-ratio",
-      "unit": "clue",
+      "unit": "structure",
       "group": "数から当たりを付ける",
       "difficulty": 2,
       "certainty": "確実",
@@ -15273,7 +15315,7 @@
     },
     {
       "code": "org.clue.nitrobenzene-look",
-      "unit": "clue",
+      "unit": "structure",
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
@@ -15324,7 +15366,7 @@
     },
     {
       "code": "org.clue.aniline-look",
-      "unit": "clue",
+      "unit": "structure",
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
@@ -15374,7 +15416,7 @@
     },
     {
       "code": "org.clue.naphthalene-sublime",
-      "unit": "clue",
+      "unit": "structure",
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
@@ -15425,7 +15467,7 @@
     },
     {
       "code": "org.clue.formaldehyde-gas",
-      "unit": "clue",
+      "unit": "structure",
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
@@ -15476,7 +15518,7 @@
     },
     {
       "code": "org.clue.ester-smell",
-      "unit": "clue",
+      "unit": "structure",
       "group": "見た目・においから当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",
@@ -15526,7 +15568,7 @@
     },
     {
       "code": "org.clue.amino-acid-mp",
-      "unit": "clue",
+      "unit": "structure",
       "group": "沸点・融点から当たりを付ける",
       "difficulty": 3,
       "certainty": "ほぼ確実",
@@ -15573,7 +15615,7 @@
     },
     {
       "code": "org.clue.amino-acid-mw-parity",
-      "unit": "clue",
+      "unit": "structure",
       "group": "数から当たりを付ける",
       "difficulty": 2,
       "certainty": "ほぼ確実",

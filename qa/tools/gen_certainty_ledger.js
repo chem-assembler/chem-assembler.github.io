@@ -1,4 +1,4 @@
-// 確度の付いた項目（clue 単元）を、根拠つきの一覧にして CERTAINTY_LEDGER.md に書き出す。
+// 確度の付いた項目（structure 単元＝構造決定・旧 clue）を、根拠つきの一覧にして CERTAINTY_LEDGER.md に書き出す。
 //
 //   node qa/tools/gen_certainty_ledger.js          … 差分があるかだけ見る
 //   node qa/tools/gen_certainty_ledger.js --write  … 書き出す
@@ -31,7 +31,7 @@ function cell(s) { return String(s || '').replace(/\|/g, '\\|'); }
 var out = [];
 out.push('# 確度の付いた項目の一覧（根拠つき）');
 out.push('');
-out.push('`clue` 単元（手がかりから物質に当たりを付ける）の全項目を、**危ないものから順に**並べたもの。');
+out.push('`structure` 単元（構造決定・旧 `clue`＝手がかりから物質に当たりを付ける）の全項目を、**危ないものから順に**並べたもの。');
 out.push('確度の定義は [TAXONOMY.md §2.8](TAXONOMY.md)、教科書の単純化そのものの目録は');
 out.push('[KNOWLEDGE_CAVEATS.md](KNOWLEDGE_CAVEATS.md) が持つ（あちらは知識の正しさ、こちらは当て方の効き）。');
 out.push('');
