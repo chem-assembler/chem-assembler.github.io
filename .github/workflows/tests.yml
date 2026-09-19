@@ -1,0 +1,68 @@
+# 門番をローカル機の外で回す（2026-09-19・DEVELOPMENT.md「CI」の節）
+#
+# なぜ: assembler の全走は 15〜45 分かかり、ノートPC 1台で並行レーンが順番待ちになっていた。
+# リポジトリは public なので GitHub Actions は無料・無制限。ここで回せば、
+# レーンはブランチを push するだけで全走の結果を受け取れる（手元の機械は空く）。
+#
+# ⚠ これは「コミット前の全テスト合格」の代わりではなく、追加の網。
+#    手元の run-tests.mjs と同じ道具を同じ引数で呼ぶので、結果の読み方も同じ
+#    （合否の行が1行も無ければ「赤」ではなく「起動失敗」＝ DEVELOPMENT.md の同名の節）。
+name: tests
+
+on:
+  push:
+    branches: ['**']
+    paths-ignore: ['**.md', 'docs/**', 'scan/**']
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    # ブラウザ不要の検査（数秒）。落ちたらブラウザの全走を待たずに分かる
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 規則5・8 は git の履歴と origin/main との差し引きを見る
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 規則8 の比較先を main にする（main 以外のブランチの push のとき）
+        # 規則8は追跡先（@{u}）との差し引きで「push するコミットで版が上がっているか」を見る。
+        # チェックアウトしたブランチには追跡先が無いので、そのままだと黙って飛ばされる
+        if: github.ref != 'refs/heads/main'
+        run: git branch -u origin/main
+      - name: verify-release（版・化け・BOM・死にリンク・規則8）
+        run: node tools/verify-release.js
+      - name: verify-compounds（compounds.json の形・書き戻し事故）
+        run: node tools/verify-compounds.js
+      - name: 構文
+        run: for f in assembler/*.js; do node --check "$f"; done
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        page: [assembler, qa, ion-equation, ratio, muki]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 日本語フォント（字幅を測るテストがある）
+        run: sudo apt-get update -q && sudo apt-get install -y -q fonts-noto-cjk
+      - name: playwright（tools/record のものを借りる ＝ 手元と同じ置き場所）
+        working-directory: tools/record
+        run: npm install --no-audit --no-fund && npx playwright install --with-deps chromium
+      - name: 配信サーバー
+        run: |
+          nohup python3 -m http.server 8134 --bind 127.0.0.1 >/dev/null 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8134/${{ matrix.page }}/test.html >/dev/null && break; sleep 1; done
+      - name: 全走（${{ matrix.page }}）
+        run: node tools/run-tests.mjs http://127.0.0.1:8134/${{ matrix.page }}/test.html
