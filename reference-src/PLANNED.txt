@@ -30,3 +30,28 @@ oxidation-number      有機化合物中の原子の酸化数の決め方
 #                     まるごと重なる。★ 1グループ＝1ページの決め（§19）に照らすと別ページにする
 #                     理由が無いので、計画から外して alkane.md のリンクを
 #                     `to: hydrocarbon-classes` へ向け直した（2026-09-11）
+
+# ⚠ I2 便（非金属 H・O・ハロゲン・S のドラフト）が仮に足した行（2026-09-19）。
+#   便0a が全 id をまとめて登録したら、重なる行はこちらを消す（同じ id が2回あると赤になる）。
+half-reaction            半反応式の書き方と主な酸化剤・還元剤〔理論〕
+half-reaction-condition  液性による書き換え〔理論〕
+redox-titration          酸化還元滴定〔理論〕
+ionization-tendency      金属のイオン化傾向〔理論〕
+lead-storage-battery     鉛蓄電池〔理論〕
+electrolysis-equations   電気分解の反応式〔理論〕
+electrolysis-industry    電気分解の工業的利用〔理論〕
+acid-displacement        弱酸の遊離・揮発性の酸の遊離〔理論〕
+neutralization           中和反応と量的関係〔理論〕
+periodic-table           周期表と元素の性質〔無機〕
+gas-preparation          気体の製法・捕集・乾燥の早見〔無機〕
+amphoteric-metal         両性金属〔無機〕
+precipitate              沈殿の生成と色〔無機〕
+copper-silver            銅と銀〔無機〕
+nitrogen                 窒素とその化合物〔無機〕
+carbon-silicon           炭素とケイ素〔無機〕
+transition-oxidizers     クロムとマンガン〔無機〕
+oxygen-ozone             酸素・オゾン・過酸化水素〔無機〕
+halogen                  ハロゲン —— 並べて比べる〔無機〕
+chlorine                 塩素と塩化水素〔無機〕
+sulfur                   硫黄・硫化水素・二酸化硫黄〔無機〕
+sulfuric-acid            硫酸 —— 希硫酸と濃硫酸〔無機〕
