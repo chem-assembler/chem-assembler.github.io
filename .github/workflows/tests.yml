@@ -62,7 +62,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        page: [assembler, qa, ratio]
+        # ★ assembler は4本に分けて並列に流す（2026-09-19・全走1本で約50分 → 1本あたり 1/4）。
+        #   `--shard=i/n` は全件を**連続した区間**で切る（並びを変えない・tests.js の TF4）。
+        #   4本がそろって全部通ったかは、下の shard-gate が件数の合計で確かめる。
+        #   ⚠ 分ける数を変えるときは、ここの4行と shard-gate の SHARDS を一緒に変える
+        include:
+          - { page: assembler, shard: '1/4', key: assembler-1 }
+          - { page: assembler, shard: '2/4', key: assembler-2 }
+          - { page: assembler, shard: '3/4', key: assembler-3 }
+          - { page: assembler, shard: '4/4', key: assembler-4 }
+          - { page: qa, shard: '', key: qa }
+          - { page: ratio, shard: '', key: ratio }
     steps:
       - name: 改行を手元（Windows）と同じ CRLF で展開する
         # リポジトリの中身は LF。手元は core.autocrlf=true で CRLF に展開しており、
@@ -75,7 +85,7 @@ jobs:
       - name: playwright（tools/record のものを借りる ＝ 手元と同じ置き場所）
         working-directory: tools/record
         run: npm install --no-audit --no-fund && npx playwright install chromium
-      - name: 全走（${{ matrix.page }}）
+      - name: 全走（${{ matrix.key }}）
         # サーバーは同じ step の中で立てる（Windows の runner では step をまたぐ裏の処理が残る保証が無い）
         #
         # ★ 落ちたテストだけもう一度流す（DEVELOPMENT.md「RX13・ST29 … 1回落ちて再実行で通ったらゆらぎ」の手順を機械でやる）。
@@ -86,11 +96,15 @@ jobs:
           python -m http.server 8134 --bind 127.0.0.1 >/dev/null 2>&1 &
           URL=http://127.0.0.1:8134/${{ matrix.page }}/test.html
           for i in $(seq 1 30); do curl -sf "$URL" >/dev/null && break; sleep 1; done
+          SHARD_OPT=""
+          [ -n "${{ matrix.shard }}" ] && SHARD_OPT="--shard=${{ matrix.shard }}"
           set +e
-          node tools/run-tests.mjs "$URL" | tee full.txt
+          node tools/run-tests.mjs "$URL" $SHARD_OPT --report=report.json | tee full.txt
           code=${PIPESTATUS[0]}
           set -e
+          # 分割実行は全部通っても終了コード 4（1本の分割は「全テスト合格」ではない ＝ 全体の合否は shard-gate）
           [ "$code" = 0 ] && exit 0
+          [ -n "$SHARD_OPT" ] && [ "$code" = 4 ] && exit 0
           ids=$(sed -n '/^--- 失敗 ---$/,$p' full.txt | grep -oE '^  [A-Z_]+[0-9]*[a-z]?:' | tr -d ' :' | paste -sd, -)
           if [ -z "$ids" ] || [ "${{ matrix.page }}" != assembler ]; then exit "$code"; fi
           echo "::group::落ちたテストだけ流し直す: $ids"
@@ -105,3 +119,40 @@ jobs:
             exit 0
           fi
           exit 1
+      - name: 分割の記録を残す（shard-gate が数える）
+        if: always() && matrix.shard != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.key }}
+          path: report.json
+          if-no-files-found: error
+
+  shard-gate:
+    # ★ assembler の4区間が**そろって**流れたかを確かめる。browser の4本がすべて緑のときだけ走る
+    #   （needs の既定）。見るのは「1〜n の区間が1本ずつある・どれも全件数が同じ・件数の和が全件数」。
+    #   ⚠ これが無いと、matrix の行を1つ消しただけで「一部しか流さない門番」が黙って緑になる
+    needs: browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-assembler-*
+          path: shards
+      - name: 4区間がそろい、件数の和が全件数になっているか
+        env:
+          SHARDS: 4
+        run: |
+          node -e "
+          const fs=require('fs'),path=require('path');const n=Number(process.env.SHARDS);
+          const reps=fs.readdirSync('shards').map(d=>JSON.parse(fs.readFileSync(path.join('shards',d,'report.json'),'utf8')));
+          const bad=m=>{console.error('::error::'+m);process.exit(1)};
+          if(reps.length!==n)bad('分割の記録が '+reps.length+' 本（'+n+' 本のはず）');
+          const seen=new Set(reps.map(r=>r.shard&&r.shard.i));
+          for(let i=1;i<=n;i++)if(!seen.has(i))bad('区間 '+i+'/'+n+' の記録が無い');
+          if(reps.some(r=>!r.shard||r.shard.n!==n))bad('n の違う記録が混じっている');
+          const totals=new Set(reps.map(r=>r.total));if(totals.size!==1)bad('区間ごとに全件数が違う: '+[...totals]);
+          const total=reps[0].total,sum=reps.reduce((s,r)=>s+r.selected,0);
+          if(sum!==total)bad('件数の和 '+sum+' が全件数 '+total+' と合わない');
+          console.log('✅ assembler 全 '+total+' 件を '+n+' 区間で流した（'+reps.map(r=>r.selected).join('+')+'）');
+          "
