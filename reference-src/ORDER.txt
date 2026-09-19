@@ -49,3 +49,4 @@ oxygen-ozone
 halogen
 chlorine
 sulfur
+sulfuric-acid
