@@ -68,6 +68,7 @@ precipitate
 flame-color
 cation-separation
 atomic-weight
+mole
 acid-base-definition
 acid-base-strength
 ph
