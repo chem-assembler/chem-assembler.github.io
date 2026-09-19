@@ -9317,6 +9317,152 @@ async function runReactionLibraryTests() {
   return results;
 }
 
+/* ---- 参考書から来るリンク（2026-09-19・便0b）----
+   参考書（/reference/）の `:::link app: ion-equation/<受け口> id: <id>` が、こちらの実データに在るか。
+   CLAUDE.md「横断の整合性検査は、両方のデータが揃う側に置く」—— 参考書の側はこちらのデータを持たない。
+   ⚠ 受け口の名前はここに1本の表で持つ。台帳（tools/reference-md.js）に受け口を足したら、ここにも足す
+     （知らない名前は赤にする ＝ 検査が黙って素通りしない）。 */
+function refReceiversIon() {
+  const ids = (list) => new Set(list.map((s) => s.id));
+  const stages = ids(STAGES);
+  return {
+    "ion-equation": stages,
+    "ion-equation/index": stages,
+    "ion-equation/redox": ids(REDOX_STAGES),
+    "ion-equation/oxidation": new Set(oxTaskList().map((t) => t.sp)),
+    // ?q=id,id,… ＝ 1つずつ組めるかを見る（関数で持つ）
+    "ion-equation/halfreaction": (id) => id.split(",").every((x) => x.trim() && !!halfBuildTaskOf(x.trim())),
+    "ion-equation/halflist": null,          // 引数を取らない
+    "ion-equation/battery": ids(cellStagesOfKind("battery")),
+    "ion-equation/electrolysis": ids(cellStagesOfKind("electrolysis")),
+    "ion-equation/condition": ids(CONDITION_STAGES),
+    "ion-equation/portal": new Set(CURRICULUM.flatMap((s) => s.units.map((u) => u.id))
+      .concat(STAGE_SERIES.map((s) => s.id))),
+  };
+}
+
+/* reference.json（ページの配列）から、こちら宛てのリンクの問題を拾う。問題が無ければ空配列 */
+function refLinkProblemsIon(pages, recv) {
+  const out = [];
+  let seen = 0;
+  const walk = (o, page) => {
+    if (Array.isArray(o)) { o.forEach((x) => walk(x, page)); return; }
+    if (!o || typeof o !== "object") return;
+    if (o.kind === "link" && typeof o.app === "string" &&
+        (o.app === "ion-equation" || o.app.startsWith("ion-equation/"))) {
+      seen++;
+      const where = page + " → " + o.app + (o.id ? " " + o.id : "");
+      if (!(o.app in recv)) out.push(where + "（受け口の表に無い名前）");
+      else {
+        const r = recv[o.app];
+        const id = o.id == null ? "" : String(o.id);
+        if (r === null) { if (id) out.push(where + "（この受け口は id を取らない）"); }
+        else if (!id) out.push(where + "（id が無い）");
+        else if (typeof r === "function" ? !r(id) : !r.has(id)) out.push(where + "（id が実在しない）");
+      }
+    }
+    for (const v of Object.values(o)) if (v && typeof v === "object") walk(v, page);
+  };
+  (pages || []).forEach((p) => walk(p.blocks || [], p.id || "?"));
+  return { problems: out, seen };
+}
+
+async function runRefLinkTests() {
+  const results = [];
+  const t = async (name, fn) => {
+    try { await fn(); results.push({ name, ok: true }); }
+    catch (e) { results.push({ name, ok: false, err: String(e) }); }
+  };
+  const assert = (cond, msg) => { if (!cond) throw new Error(msg || "assertion failed"); };
+  const recv = refReceiversIon();
+
+  await t("REF1: 受け口の表が空でない（検査の空回り止め）", () => {
+    for (const [k, v] of Object.entries(recv)) {
+      if (v === null || typeof v === "function") continue;
+      assert(v.size > 0, k + " の id が1つも引けない");
+    }
+    assert(recv["ion-equation/redox"].has("rs1"), "redox の rs1 が引けない");
+    assert(recv["ion-equation/portal"].has("u-neutral"), "portal の u-neutral が引けない");
+  });
+
+  await t("REF2: ⚠ 否定対照 — 在る id は通し、無い id・知らない受け口・余計な id は赤にする", () => {
+    const good = [{ id: "p", blocks: [
+      { kind: "link", app: "ion-equation/redox", id: "rs1", text: "x" },
+      { kind: "link", app: "ion-equation/halflist", text: "x" },
+      { kind: "link", app: "ion-equation/portal", id: "u-neutral", text: "x" },
+      { kind: "link", app: "ratio/stoich", id: "no-such", text: "よそのアプリは見ない" },
+      { kind: "link", to: "alcohol", text: "参考書の中のリンクは見ない" },
+    ] }];
+    const g = refLinkProblemsIon(good, recv);
+    assert(g.problems.length === 0 && g.seen === 3, JSON.stringify(g));
+    const bad = [{ id: "p", blocks: [
+      { kind: "link", app: "ion-equation/redox", id: "redox-kmno4-fe2", text: "反応 id では開かない" },
+      { kind: "link", app: "ion-equation/nosuch", id: "x", text: "x" },
+      { kind: "link", app: "ion-equation/halflist", id: "x", text: "x" },
+      { kind: "link", app: "ion-equation/battery", text: "x" },
+      { kind: "link", app: "ion-equation/halfreaction", id: "zz-no-such", text: "x" },
+    ] }];
+    const b = refLinkProblemsIon(bad, recv);
+    assert(b.problems.length === 5, "拾えなかった: " + JSON.stringify(b.problems));
+  });
+
+  await t("REF3: 参考書（../assembler/reference.json）の ion-equation 宛てのリンクの id がすべて実在する", async () => {
+    const res = await fetch("../assembler/reference.json", { cache: "no-store" });
+    assert(res.ok, "../assembler/reference.json を読めない: " + res.status);
+    const pages = await res.json();
+    assert(Array.isArray(pages) && pages.length > 10, "参考書のページが読めていない");
+    const r = refLinkProblemsIon(pages, recv);
+    assert(r.problems.length === 0, r.problems.join(" / "));
+  });
+
+  /* 帯そのもの（header-ui.js）。⚠ 実際にページを開いて測る */
+  const probe = (src, ready) => openProbeFrame(src, ready,
+    "position:absolute; left:-9999px; width:375px; height:700px;");
+  await t("REF4: 参考書から来たら「← 参考書へ戻る」の帯が出て、そのページへ戻る", async () => {
+    const { f, win } = await probe("redox.html?rxn=rs1&from=reference&page=redox-equation",
+      (w) => w.RedoxEq && w.document.querySelector("header"));
+    assert(win, "redox.html を開けない");
+    try {
+      const d = win.document;
+      const a = d.querySelector(".refBack .refBackLink");
+      assert(a, "帯が出ていない");
+      assert(a.textContent === "← 参考書へ戻る", a.textContent);
+      assert(new URL(a.href).pathname.endsWith("/reference/redox-equation/"), a.href);
+      assert(a.target === "_top", "埋め込まれたとき枠の中だけが戻る");
+      assert(!d.querySelector("header .refBack"), "帯がヘッダーの中に入っている（ヘッダーの高さの約束）");
+      assert(d.querySelector("header").nextElementSibling.classList.contains("refBack"), "帯がヘッダーの直後にない");
+      assert(a.getBoundingClientRect().height >= 32, "押す物が 32px 未満");
+      assert(!/[?&]from=/.test(a.getAttribute("href")), "戻り先に from= を付けている");
+      assert(d.querySelectorAll(".refBack").length === 1, "帯が2本出ている");
+    } finally { f.remove(); }
+  });
+
+  await t("REF5: ⚠ page が読めない形なら参考書の索引へ戻す（勝手な URL を作らない）", async () => {
+    for (const bad of ["..%2Fqa", "Redox", "a b", "", "x/../y"]) {
+      const { f, win } = await probe("portal.html?from=reference&page=" + encodeURIComponent(bad),
+        (w) => w.Portal && w.document.querySelector("header"));
+      assert(win, "portal.html を開けない");
+      try {
+        const a = win.document.querySelector(".refBack .refBackLink");
+        assert(a, "「" + bad + "」で帯が出ない（戻り道が消える）");
+        assert(new URL(a.href).pathname.endsWith("/reference/"), bad + " → " + a.href);
+      } finally { f.remove(); }
+    }
+  });
+
+  await t("REF6: ⚠ 否定対照 — 参考書から来ていなければ帯は出ない", async () => {
+    for (const q of ["", "?from=qa&code=x", "?page=redox-equation"]) {
+      const { f, win } = await probe("halflist.html" + q, (w) => w.HalfList && w.document.querySelector("header"));
+      assert(win, "halflist.html を開けない");
+      try {
+        assert(!win.document.querySelector(".refBack"), "「" + q + "」で帯が出ている");
+      } finally { f.remove(); }
+    }
+  });
+
+  return results;
+}
+
 /* ---- 電池モードの UI テスト（battery.html を iframe で駆動） ---- */
 
 async function runBatteryUITests(iframe) {
@@ -11812,7 +11958,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
       iframeHL.contentWindow && iframeHL.contentWindow.HalfList &&
       iframeL.contentWindow.IonLibUI.state().total > 0;   // reactions.json の読み込み待ち
     if (!ready) { setTimeout(startUI, 100); return; }
-    runReactionLibraryTests().then((rlib) =>
+    runReactionLibraryTests().then((rlib) => runRefLinkTests().then((rref) =>
       runUITests(iframe).then((rs1) => runRedoxUITests(iframeR).then((rs2) =>
         runConditionUITests(iframeC).then((rs3) =>
           runPortalUITests(iframeP).then((rs4) =>
@@ -11823,6 +11969,7 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
               runHalfBuildUITests(iframeH).then((rs8) =>
               runHalfListUITests(iframeHL).then((rs10) => {
                 const libOk = render(document.getElementById("results"), rlib, "反応ライブラリ");
+                const refOk = render(document.getElementById("results"), rref, "参考書から来るリンク");
                 const uiEl = document.getElementById("uiresults");
                 const uiOk = render(uiEl, rs1, "UI(イオン反応)");
                 const rOk = render(uiEl, rs2, "UI(酸化還元)");
@@ -11835,10 +11982,10 @@ if (typeof document !== "undefined" && document.getElementById("results")) {
                 const hOk = render(uiEl, rs8, "UI(半反応式)");
                 const hlOk = render(uiEl, rs10, "UI(半反応式の一覧)");
                 const total = document.getElementById("total");
-                const allOk = modelOk && libOk && uiOk && rOk && cOk && pOk && lOk && bOk && eOk && oOk && hOk && hlOk;
+                const allOk = modelOk && libOk && refOk && uiOk && rOk && cOk && pOk && lOk && bOk && eOk && oOk && hOk && hlOk;
                 total.textContent = allOk ? "TOTAL: ALL PASS" : "TOTAL: FAIL";
                 total.className = allOk ? "pass" : "fail";
-              })))))))))));
+              }))))))))))));
   };
   startUI();
 }

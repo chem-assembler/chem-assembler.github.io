@@ -2470,3 +2470,18 @@ main.timelineMain {
 }
 .hbFormBtn:hover { background: #f0f4f8; }
 .hbFormBtn.active { background: #275d8c; border-color: #275d8c; color: #fff; }
+
+/* ---- 参考書から来たときの戻り道（header-ui.js が header の直後に置く・2026-09-19）----
+   ⚠ ヘッダーの外に置くので、ヘッダーの高さ（320×568 で 120px 以下）には効かない。
+   ⚠ 押す物は 32px 以上（タップ標的の検査と同じ下限） */
+.refBack {
+  display: flex; align-items: center;
+  padding: 2px 18px;
+  background: #eef4fb; border-bottom: 1px solid #cfe0f0;
+}
+.refBack .refBackLink {
+  display: inline-flex; align-items: center; min-height: 32px;
+  color: #275d8c; font-weight: bold; text-decoration: none;
+  font-size: calc(13 * var(--fs-u));
+}
+.refBack .refBackLink:hover { text-decoration: underline; }
