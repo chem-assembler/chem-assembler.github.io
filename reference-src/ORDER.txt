@@ -90,3 +90,4 @@ faraday
 electrolysis-industry
 dissolution
 solubility
+gas-solubility
