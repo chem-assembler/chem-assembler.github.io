@@ -49,3 +49,4 @@ fuel-cell
 lead-storage-battery
 electrolysis-basics
 electrolysis-equations
+faraday
