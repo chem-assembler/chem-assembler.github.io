@@ -24,6 +24,22 @@ zaitsev               ザイツェフ則 —— 脱水で2つできるとき、�
 steric-hindrance      立体障害 —— 大きな原子団どうしがぶつかって不安定になること
 oxidation-number      有機化合物中の原子の酸化数の決め方
 
+# ⚠ ref-a1（酸と塩基のドラフト便）が足した行。便0a が同じ id を登録していたら、統合のときにどちらか1行へ
+acid-base-strength    酸・塩基の価数と強弱〔理論〕
+ph                    pH と水のイオン積〔理論〕
+neutralization        中和反応と量的関係〔理論〕
+salt                  塩 —— つくる・もどす・水溶液の性質〔理論〕
+acid-displacement     弱酸の遊離・揮発性の酸の遊離〔理論〕
+titration             中和滴定〔理論〕
+gas-preparation       気体の製法・捕集・乾燥の早見〔無機〕
+sulfur                硫黄・硫化水素・二酸化硫黄〔無機〕
+sulfuric-acid         硫酸 —— 希硫酸と濃硫酸〔無機〕
+chlorine              塩素と塩化水素〔無機〕
+halogen               ハロゲン —— 並べて比べる〔無機〕
+nitrogen              窒素とその化合物〔無機〕
+carbon-silicon        炭素とケイ素〔無機〕
+redox-titration       酸化還元滴定〔理論〕
+
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
 #   general-formula … ⚠ 中身が hydrocarbon-classes の節「一般式と同族体」（#ref-sec-homolog）と
