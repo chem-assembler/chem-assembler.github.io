@@ -92,3 +92,8 @@ electrolysis-basics
 electrolysis-equations
 faraday
 electrolysis-industry
+reaction-enthalpy
+heat-measurement
+hess-law
+bond-enthalpy
+light-energy
