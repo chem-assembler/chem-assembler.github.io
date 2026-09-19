@@ -45,7 +45,6 @@ complex-ion           錯イオン
 titration             中和滴定
 neutralization        中和反応と量的関係
 hydrogen-noble-gas    水素と貴ガス
-cation-separation     金属イオンの系統分離
 
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
