@@ -23,12 +23,6 @@ steric-hindrance      立体障害 —— 大きな原子団どうしがぶつ�
 # ── 理論の8単元（2026-09-19・理論の便0 がまとめて登録。表示名は ref-theory-design §3-1 の題）──
 #   ⚠ ドラフトの便（T1〜T8）はここを触らない（書けた行は統合で消す）。並びと束ね方の正は qa/GROUPS.tsv
 #   ★ molecular-shape・intermolecular-force は上に登録済み（有機からリンクされている）
-atomic-weight             原子量・分子量・式量 —— てんびんで平均する
-mole                      物質量 —— すべて mol を経由する
-concentration             溶液の濃度 —— 溶液 1L について考える
-chemical-equation         化学反応式のつくり方
-stoichiometry             化学反応の量的関係 —— 係数の比は mol の比
-chemical-laws             化学の基本法則 —— 原子と分子にたどり着くまで
 dissolution               溶解のしくみ —— 似たものどうしは溶け合う
 solubility                固体の溶解度と再結晶
 gas-solubility            気体の溶解度 —— ヘンリーの法則
