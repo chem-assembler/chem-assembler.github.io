@@ -84,6 +84,139 @@
     var ALIGNS = ['left', 'center', 'right'];
     /* 型を書かなかった囲みの既定。⚠ **2か所に書かない**（learn.js は tone の語だけを持つ） */
     var DEFAULT_FENCE = { kind: 'callout', tone: 'note' };
+
+    /* ★★ 区分（有機・無機・理論）—— 索引の1段目（設計書 §31-1・2026-09-19 便0a）。
+       ⚠⚠ **前書きに新しいキーを足さない**（校正中の有機46枚の原稿を1文字も触らないため）。
+       ★ 区分は `unit` の頭から引く: `inorg.*` → 無機、`theo.*` → 理論、それ以外（有機の
+         `alcohol` `aliphatic` のような素の名前）→ 有機。**対応表はここの1本だけ**。
+       ⚠ 点を含む `unit` で頭が知らない語なら赤（`calc.ratio` のような綴りを黙って有機にしない）。
+       ★ 並びはこの配列の順（有機 → 無機 → 理論・ユーザー決定 2026-09-10）。 */
+    var DIVISIONS = [
+        { key: 'org', label: '有機' },
+        { key: 'inorg', label: '無機' },
+        { key: 'theo', label: '理論' }
+    ];
+    function divisionOf(unit) {
+        var u = String(unit || '');
+        var dot = u.indexOf('.');
+        if (dot < 0) return 'org';
+        var head = u.slice(0, dot);
+        for (var i = 0; i < DIVISIONS.length; i++) if (DIVISIONS[i].key === head) return head;
+        return null;
+    }
+    function divisionLabel(key) {
+        for (var i = 0; i < DIVISIONS.length; i++) if (DIVISIONS[i].key === key) return DIVISIONS[i].label;
+        return null;
+    }
+
+    /* ★★ 反応式の矢印（設計書 §31-2）。**既定は →**（書かなければ今までどおり）。
+       ⚠ 可逆は `arrow: ⇄`。⛔ `left` / `right` に ⇄ を書く逃げ道は作らない（式が崩れる）——
+         下の checkBlock が直し方まで言って止める。 */
+    var ARROWS = ['→', '⇄'];
+
+    /* ★★ アプリへの「試す」リンクの**受け口の台帳**（設計書 §31-3・ref-inorg-design §6-1）。
+       ⚠⚠ **URL の形を原稿に書かせない**（`open:` と同じ「新しい URL を発明しない」）。
+         原稿は `app: ion-equation/redox` と `id: rs1` の2つだけを書き、URL はここで組む。
+       ★ 1行 ＝ 名前 → { path（ルート絶対）, param（引数の名前。`#` は URL の # の後ろ・null は引数なし）}。
+       ⚠ **行き先を足すのは、受け口が実在してから**（受け側のコードの場所は設計メモ §6-1 の表）。
+       ⚠ **id が相手のデータに実在するかは、ここでは見ない** —— 受け口の持ち主のアプリの
+         test.html が `reference.json` を読んで見る（CLAUDE.md「横断の整合性検査は両方のデータが揃う側に置く」）。 */
+    /* ⚠⚠ **名前は受け側（便0b）の表とそろえてある**: ion-equation/tests.js の `refReceiversIon`・
+         ratio/tests.js・muki/tests.js の `refReceivers`。足す・消すときは**3つの表も同時に**。
+       ⚠ id の要否も受け側に合わせる —— 引数を取る受け口は **id が必須**（無いと受け側の検査が赤）。
+         省略してよいのは `opt: true` の1つだけ（muki/akinator の ?deck= ＝ 既定のデッキ）。
+       ★ `ion-equation` と `ion-equation/index`、`muki` と `muki/index` は同じもの（受け側の表にどちらも在る） */
+    var APP_TARGETS = {
+        'ion-equation': { path: '/ion-equation/', param: 'rxn' },
+        'ion-equation/index': { path: '/ion-equation/', param: 'rxn' },
+        'ion-equation/redox': { path: '/ion-equation/redox.html', param: 'rxn' },
+        'ion-equation/oxidation': { path: '/ion-equation/oxidation.html', param: 'sp' },
+        'ion-equation/halfreaction': { path: '/ion-equation/halfreaction.html', param: 'q' },
+        'ion-equation/halflist': { path: '/ion-equation/halflist.html', param: null },
+        'ion-equation/battery': { path: '/ion-equation/battery.html', param: 's' },
+        'ion-equation/electrolysis': { path: '/ion-equation/electrolysis.html', param: 's' },
+        'ion-equation/condition': { path: '/ion-equation/condition.html', param: 's' },
+        'ion-equation/portal': { path: '/ion-equation/portal.html', param: '#' },
+        'muki': { path: '/muki/', param: 'open' },
+        'muki/index': { path: '/muki/', param: 'open' },
+        'muki/separation': { path: '/muki/separation.html', param: null },
+        'muki/tree': { path: '/muki/tree.html', param: null },
+        'muki/snake': { path: '/muki/snake.html', param: null },
+        'muki/akinator': { path: '/muki/akinator.html', param: 'deck', opt: true },
+        'ratio/stoich': { path: '/ratio/stoich.html', param: 'r' },
+        'ratio/titration': { path: '/ratio/titration.html', param: null }
+    };
+    /* 受け口へ渡す id の綴り。⚠ `MnO4-`（化学式）・`MnO4_red,Fe2_ox`（半反応式の列）・`u-gas` を受ける */
+    var APP_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.,+-]*$/;
+    /* ★ 戻り道（CLAUDE.md「アプリ横断のリンクは往復にする」）。**自分が誰かだけ**送る ——
+       どこへ戻すか（`/reference/<page>/`）は受け側の帯が決める。 */
+    var APP_FROM = 'from=reference';
+
+    /** `app:` と `id:` から href を組む（ルート絶対）。pageId は戻り道のため */
+    function appHref(app, id, pageId) {
+        var t = APP_TARGETS[app];
+        var from = APP_FROM + (pageId ? '&page=' + encodeURIComponent(pageId) : '');
+        if (t.param === '#') return t.path + '?' + from + (id ? '#' + id : '');
+        return t.path + '?' + (id ? t.param + '=' + encodeURIComponent(id).replace(/%2C/g, ',') + '&' : '') + from;
+    }
+
+    /* ★★ アプリの画面の切り取り（`:::figure` の `shot:`・設計書 §31-4）。
+       `shot: url=/ion-equation/electrolysis.html?s=e3 sel=#cell-svg wait=800 scale=1 状態=…`
+       ⚠ 焼くのは `tools/gen-app-figure.mjs`（`gen:` の `gen-figure.mjs` とは別物・同じ図に両方は書けない）。
+       ★ `状態=` は**撮る人のための覚え書き**（何をしてから撮ったか）で、道具は読むだけで何もしない。
+       ⚠ `sel=` には空白を含むセレクタも書ける（次の `キー=` の手前までが値）。 */
+    var SHOT_KEYS = ['url', 'sel', 'wait', 'scale', '状態'];
+    var SHOT_URL_RE = /^\/(ion-equation|muki|ratio|assembler)\/[^\s]*$/;
+    function parseShot(text, where) {
+        var s = String(text).trim();
+        var re = /(^|\s)(url|sel|wait|scale|状態)=/g, cuts = [], m;
+        while ((m = re.exec(s))) cuts.push({ key: m[2], at: m.index + m[1].length, from: m.index + m[0].length });
+        if (!cuts.length || cuts[0].at !== 0) {
+            fail(where, ':::figure の shot は「url=… sel=…」の形で書きます（いまは「' + s.slice(0, 60) + '」）'
+                + '\n    ★ 書けるのは ' + SHOT_KEYS.map(function (k) { return k + '='; }).join(' / '));
+        }
+        var out = {};
+        cuts.forEach(function (c, i) {
+            if (Object.prototype.hasOwnProperty.call(out, c.key)) fail(where, ':::figure の shot に「' + c.key + '=」が2回あります');
+            out[c.key] = s.slice(c.from, i + 1 < cuts.length ? cuts[i + 1].at : s.length).trim();
+        });
+        if (!out.url || !SHOT_URL_RE.test(out.url)) {
+            fail(where, ':::figure の shot の url= は自分たちのアプリのパスをルートから書きます'
+                + '（/ion-equation/ /muki/ /ratio/ /assembler/ のどれかで始まる・空白なし。いまは「' + (out.url || '') + '」）');
+        }
+        if (!out.sel) fail(where, ':::figure の shot に sel=（撮る要素の CSS セレクタ）がありません（⚠ 画面全体は撮らない）');
+        if (out.wait !== undefined && !/^\d{1,5}$/.test(out.wait)) fail(where, ':::figure の shot の wait= はミリ秒の整数です（いまは「' + out.wait + '」）');
+        if (out.scale !== undefined && out.scale !== '1' && out.scale !== '2') fail(where, ':::figure の shot の scale= は 1 か 2 です（いまは「' + out.scale + '」）');
+        return out;
+    }
+
+    /* ★★ グループ台帳（`qa/GROUPS.tsv`・設計書 §31-5・ref-inorg-design §1-3 の案C）。
+       ⚠ **置き場所は qa**（コードの持ち主は qa）。ここは読み方だけを持つ（node とブラウザで1本）。
+       1行 ＝ `domain.unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び`。`#` の行と空行は読み飛ばす。 */
+    function parseGroups(text) {
+        var rows = [];
+        normalize(text).split('\n').forEach(function (line, i) {
+            if (!line.trim() || /^\s*#/.test(line)) return;
+            var c = line.split('\t');
+            var where = 'qa/GROUPS.tsv:' + (i + 1);
+            if (c.length !== 5) fail(where, '列が ' + c.length + ' 個です（unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び の5列。区切りはタブ）');
+            var r = { unit: c[0].trim(), unitLabel: c[1].trim(), group: c[2].trim(), page: c[3].trim(), order: c[4].trim() };
+            if (!/^(inorg|theo|calc|org)\.[a-z0-9-]+$/.test(r.unit)) fail(where, 'unit は「domain.unit」の形です（いまは「' + r.unit + '」）');
+            if (!/^[a-z0-9][a-z0-9-]*$/.test(r.page)) fail(where, 'ページid は英小文字・数字・ハイフンです（いまは「' + r.page + '」）');
+            if (!/^\d{2,3}$/.test(r.order)) fail(where, '並びは2〜3桁の数です（いまは「' + r.order + '」）');
+            if (!r.unitLabel || !r.group) fail(where, 'unitLabel と group は空にできません');
+            rows.push(r);
+        });
+        var seen = {};
+        rows.forEach(function (r) {
+            ['page', 'group', 'order'].forEach(function (k) {
+                var key = k + ':' + (k === 'group' ? r.unit + '/' : '') + r[k];
+                if (seen[key]) fail('qa/GROUPS.tsv', '「' + r[k] + '」が2回あります（' + k + ' は1行に1つ・1グループ＝1ページ）');
+                seen[key] = true;
+            });
+        });
+        return rows;
+    }
     var BLOCK_SPECS = {
         /* 節の見出し。`anchor` が `id="ref-sec-<anchor>"` になり、目次と用語の索引の行き先になる。
            ⚠ `lead`（この節で分かること）は**必須** —— 検索から着地した人が最初に読む1行なので、
@@ -101,10 +234,14 @@
               ⚠ 任意 —— スライドから切った図には無い。★ 書いてあれば「この図は何の分子か」を
                 原稿が名乗っていることになり、焼くたびに `iupacName` で突き合わせられる
                 ＝ `:::table` の `source`（行がどこから来たか）と同じ役目。 */
-        figure: { order: ['src', 'gen', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'] },
+        /* ★★ `shot` は **アプリの画面を切り取って焼くための指定**（`tools/gen-app-figure.mjs`・§31-4）。
+           ⚠ `raw` ＝ 記法も「使えない文字」の検査も通さない（URL の `&`・セレクタの `>` を書くため）。
+             ★ 画面には出さない欄なので、素通ししても本文に生の記号は出ない。 */
+        figure: { order: ['src', 'gen', 'shot', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'], raw: ['shot'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
-           `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒） */
-        reaction: { order: ['left', 'over', 'under', 'right', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], enum: { level: LEVELS } },
+           `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒）。
+           ★ `arrow` は矢印そのもの（§31-2）。**書かなければ →**（有機46枚は1文字も変わらない） */
+        reaction: { order: ['left', 'over', 'under', 'arrow', 'right', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], enum: { level: LEVELS, arrow: ARROWS } },
         /* ★★ 手で書く表（機械が行を作れないもの）。セルは ` | ` で切る。
            ⚠⚠ **`source` は必須。** `REF5` は「行データの欄（`rows` ほか）を持たない」を
               **著作権の守り**として掛けている（手打ちの表が構造上存在できなければ転写事故は起きない）。
@@ -165,7 +302,10 @@
                        ester / acid）。名前を2つにしないため、原稿も URL も同じ `cls` を使う。
            ⚠ **行き先が実在するかはここでは見ない**（このファイルは node とブラウザで共有していて、
               ディレクトリも `game.js` も読めない）。★ 見るのは `gen-reference.mjs` と `REF21`。 */
-        link: { order: ['to', 'open', 'formula', 'cls', 'text'], req: ['text'], list: [], prose: ['text'] },
+        /* ★★ `app:` … **ほかのアプリの受け口**へ（§31-3・2026-09-19 便0a）。値は上の `APP_TARGETS` の名前だけ。
+                       `id:` はその受け口に渡す1つの値（`rxn=` `s=` `q=` `sp=` `r=` `deck=` や `#` の後ろ）。
+           ⚠ `href` は**書く欄ではない**（`soon` と同じく読むときに焼き込む。原稿に書いたら「知らないキー」）。 */
+        link: { order: ['to', 'open', 'formula', 'cls', 'app', 'id', 'text'], req: ['text'], list: [], prose: ['text'] },
 
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
@@ -248,6 +388,7 @@
      *     ブロックだけを見て描ける純粋な関数に保つ。
      * ⚠ 一覧を渡さずに `to:` のリンクを読むと**その場で赤**（黙って全部「準備中」にしない）。 */
     var CTX = null;
+    var CTX_PAGE = null;
 
     function fail(where, msg) { throw new Error(where + ': ' + msg); }
 
@@ -439,6 +580,11 @@
             if (PAGE_KEYS.indexOf(k) < 0) fail(where, '前書きに知らないキー「' + k + '」があります（書けるのは ' + PAGE_KEYS.join(' / ') + '）');
         });
         if (!/^[a-z0-9][a-z0-9-]*$/.test(page.id)) fail(where, 'id は英小文字・数字・ハイフンで書きます（いまは「' + page.id + '」）');
+        /* ★ 区分（§31-1）。⚠ 頭の語が知らないものは赤 —— 黙って有機の索引に混ぜない */
+        if (!divisionOf(page.unit)) {
+            fail(where, 'unit「' + page.unit + '」の区分が読めません（点の前は '
+                + DIVISIONS.map(function (d) { return d.key; }).join(' / ') + ' のどれか。有機は点を付けない素の名前でもよい）');
+        }
         if (page.why.length < 20) fail(where, 'why（この表を作った理由）が短すぎます。書けないなら、その表はどこかから持ってきています（設計書 §1-2）');
         /* ★ `summary` は **検索結果に出る文**（`<meta name="description">`・索引のカード・OGP）。
            ⚠ 長さを見るのは体裁のためではない —— 短すぎると何のページか伝わらず、
@@ -451,7 +597,10 @@
             fail(where, 'video は YouTube の動画ID を書きます（英数字と - _ だけ。いまは「' + page.video + '」）');
         }
 
+        /* ★ いま読んでいるページの id。`app:` のリンクに戻り道（`&page=`）を焼き込むため（§31-3） */
+        CTX_PAGE = page.id;
         page.blocks = parseBody(lines.slice(end + 1), where, end + 1);
+        CTX_PAGE = null;
         /* ⚠ **JSON には出さない**（`serialize` は PAGE_KEYS ＋ why ＋ blocks しか書かない）。
            ★ 生成器と `REF20` が「書いたメモが消えていないこと」をここから数える */
         page.memos = memos;
@@ -594,7 +743,8 @@
             var v = kv[k], at = where + ' の ' + k;
             /* ★ 記法を通すかどうかは `prose` で決まる。**配列の要素にも通す** ——
                通さないと `items:` と `rows:` の中で強調も下付きも書けない（設計書 §19-3 ②） */
-            var conv = spec.prose.indexOf(k) >= 0 ? inline : plain;
+            var conv = (spec.raw || []).indexOf(k) >= 0 ? function (s) { return s; }
+                : spec.prose.indexOf(k) >= 0 ? inline : plain;
             if (Array.isArray(v)) {
                 if (spec.list.indexOf(k) < 0) fail(where, ':::' + kind + ' の「' + k + '」は1行の値です');
                 block[k] = v.map(function (s) { return conv(s, at); });
@@ -645,6 +795,28 @@
                     + '（例: メタンの正四面体構造。手前の結合をくさび、奥の結合を破線で描いた図）'
                     + '\n    ⚠ caption と同じ文にしないこと（caption は図の外に出るので、読み上げが二重になります）');
             }
+            /* ★★ アプリの画面の切り取り（§31-4） */
+            if (Object.prototype.hasOwnProperty.call(b, 'shot')) {
+                if (Object.prototype.hasOwnProperty.call(b, 'gen')) {
+                    fail(where, ':::figure に gen:（分子を焼く）と shot:（アプリの画面を切り取る）の両方があります'
+                        + '\n    ★ 1枚の図の焼き方は1つだけです。どちらかを消してください');
+                }
+                parseShot(b.shot, where);
+                /* ⚠ 名前でスライド由来・作図器由来と見分ける（`<ページid>-app-<中身>.png`） */
+                if (b.src.indexOf('-app-') < 0) {
+                    fail(where, ':::figure の shot: で撮る図の src は「<ページid>-app-<中身>.png」の名前にします（いまは「' + b.src + '」）'
+                        + '\n    ★ -app- が入っていれば、スライドから切った図・分子を焼いた図と名前で見分けられます');
+                }
+            }
+        }
+        if (b.kind === 'reaction') {
+            /* ⛔ 可逆の矢印を式の中に書く逃げ道を作らない（§31-2） */
+            ['left', 'right', 'over', 'under'].forEach(function (k) {
+                if (b[k] && /[⇄⇌⇆]/.test(b[k])) {
+                    fail(where, ':::reaction の ' + k + ' に可逆の矢印があります「' + b[k].slice(0, 40) + '」'
+                        + '\n    ★ 直し方: 式を left と right に分けて、矢印は「arrow: ⇄」の1行で書きます');
+                }
+            });
         }
         if (b.kind === 'table') {
             /* ⚠ 行の出どころ。★ 短い語（「スライド」）で済ませられないよう長さを見る */
@@ -747,12 +919,39 @@
         if (b.kind === 'link') {
             /* ⚠ **どちらか片方だけ。** 両方書くと「ページへ飛ぶのかアプリへ飛ぶのか」が
                リンク1本で2通りになり、画面では**片方が黙って無視される**形で出る */
-            var has = ['to', 'open'].filter(function (k) { return Object.prototype.hasOwnProperty.call(b, k); });
+            var has = ['to', 'open', 'app'].filter(function (k) { return Object.prototype.hasOwnProperty.call(b, k); });
             if (has.length !== 1) {
-                fail(where, ':::link は「to:（参考書のページ id）」か「open:（アプリの行き先）」の'
-                    + (has.length ? 'どちらか片方だけを書きます（いまは両方あります）' : 'どちらかが要ります')
+                fail(where, ':::link は「to:（参考書のページ id）」「open:（パズルでみる有機化学の行き先）」'
+                    + '「app:（ほかのアプリの受け口）」の'
+                    + (has.length ? 'どれか1つだけを書きます（いまは ' + has.join(' と ') + ' があります）' : 'どれかが要ります')
                     + '\n    ★ 直し方: 参考書の別のページへ飛ぶなら「to: alkane-naming」、'
-                    + 'アプリで試させるなら「open: isomer」のように書きます');
+                    + '有機のアプリで試させるなら「open: isomer」、'
+                    + 'ほかのアプリなら「app: ion-equation/redox」と「id: rs1」のように書きます');
+            }
+            /* ★★ ほかのアプリの受け口（§31-3）。⚠ 名前は台帳（APP_TARGETS）にあるものだけ */
+            if (Object.prototype.hasOwnProperty.call(b, 'id') && !b.app) {
+                fail(where, ':::link の id は app: と一緒に書きます（受け口に渡す値です）');
+            }
+            if (b.app) {
+                var tgt = Object.prototype.hasOwnProperty.call(APP_TARGETS, b.app) ? APP_TARGETS[b.app] : null;
+                if (!tgt) {
+                    fail(where, ':::link の app「' + b.app + '」は受け口の台帳にありません'
+                        + '\n    ★ 書けるのは ' + Object.keys(APP_TARGETS).join(' / ')
+                        + '\n    ⚠ URL は書きません。新しい受け口が要るなら、先に受け側のアプリに作ってから tools/reference-md.js の APP_TARGETS に足します');
+                }
+                if (!Object.prototype.hasOwnProperty.call(b, 'id') && tgt.param && !tgt.opt) {
+                    fail(where, ':::link の app「' + b.app + '」には id: が要ります（受け口に渡す値。'
+                        + (tgt.param === '#' ? 'URL の # の後ろ' : '?' + tgt.param + '=') + ' に入ります）');
+                }
+                if (Object.prototype.hasOwnProperty.call(b, 'id')) {
+                    if (!tgt.param) {
+                        fail(where, ':::link の app「' + b.app + '」は引数を受けないページです（id: を消してください）');
+                    }
+                    if (!APP_ID_RE.test(b.id)) {
+                        fail(where, ':::link の id は受け口に渡す値です（英数字と _ . , + - だけ。いまは「' + b.id + '」）');
+                    }
+                }
+                b.href = appHref(b.app, b.id, CTX_PAGE);
             }
             if (b.to && !ANCHOR_RE.test(b.to)) {
                 fail(where, ':::link の to は参考書のページ id です（英小文字・数字・ハイフン。いまは「' + b.to + '」）');
@@ -853,6 +1052,15 @@
         DEFAULT_FENCE: DEFAULT_FENCE,
         CELL_SEP: CELL_SEP,
         FIGURE_DIR: '/reference-img/',
+        DIVISIONS: DIVISIONS,
+        divisionOf: divisionOf,
+        divisionLabel: divisionLabel,
+        ARROWS: ARROWS,
+        APP_TARGETS: APP_TARGETS,
+        appHref: appHref,
+        SHOT_KEYS: SHOT_KEYS,
+        parseShot: parseShot,
+        parseGroups: parseGroups,
         parsePage: parsePage,
         serialize: serialize,
         expectedLineCount: expectedLineCount,

@@ -6453,6 +6453,12 @@ const REF_APP_DIR = '/assembler/';
    淡いだけだと「押しても何も起きない壊れたリンク」に見える（`REF21` がこの語を見張る）。 */
 const REF_LINK_SOON = '準備中';
 
+/* ★★ 区分（§31-1）。**有機のページか**だけを知る。⚠ 対応表の正は書式（tools/reference-md.js の
+   `divisionOf`）で、ここは面Bの絞り込みに要る1問だけ。★ 割れていないことは `REF28` が突き合わせる */
+function refIsOrganic(page) {
+    return !/^(inorg|theo)\./.test(String((page && page.unit) || ''));
+}
+
 /* ★★ 例題（`:::exercise`・設計書 §22）—— **読者が自分で解く**もの。
    ⚠⚠ **解答はページを開いた瞬間に見えてはいけない**（ユーザー指示）ので、`<details>` に入れる。
       ★ `<details>` は素の HTML なので **JS を1行も要らない** ＝ 面A（静的に焼いたページ）でも
@@ -6611,7 +6617,10 @@ class ReferenceBook {
             return 0;
         }
         box.innerHTML = '';
-        this.pages.forEach(p => {
+        /* ⚠⚠ **有機だけを並べる**（§31-1・2026-09-19）。資料ペインの売りは「読みながら組む」で、
+           無機・理論のページは組めない。★ 無機・理論は面A（/reference/）で読む */
+        const shown = this.pages.filter(refIsOrganic);
+        shown.forEach(p => {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'ref-index-btn';
@@ -6621,7 +6630,7 @@ class ReferenceBook {
             b.addEventListener('click', () => this.open(p.id));
             box.appendChild(b);
         });
-        return this.pages.length;
+        return shown.length;
     }
 
     async open(pageId) {
@@ -6969,7 +6978,8 @@ class ReferenceBook {
         over.textContent = block.over || '';
         const bar = document.createElement('span');
         bar.className = 'ref-rx-bar';
-        bar.textContent = '→';
+        /* ★ 可逆は `arrow: ⇄`（§31-2）。⚠ 書かなければ → ＝ 綴りの一覧は書式（ARROWS）の1本 */
+        bar.textContent = block.arrow || '→';
         const under = document.createElement('span');
         under.className = 'ref-rx-under';
         under.textContent = block.under || '';
@@ -7164,7 +7174,12 @@ class ReferenceBook {
         const a = document.createElement('a');
         a.className = 'ref-link';
         let search = null;
-        if (block.to) {
+        if (block.app) {
+            /* ★★ ほかのアプリの受け口（§31-3）。⚠ **URL はここで組まない** ——
+               書式（tools/reference-md.js の APP_TARGETS）が読むときに `href` を焼き込んである
+               （受け口の台帳を2か所に持たない）。 */
+            a.href = block.href;
+        } else if (block.to) {
             a.href = REF_PAGE_DIR + block.to + '/';
         } else {
             /* ⚠ 並びは受け口の綴りに合わせる（`?open=isomer&formula=C4H8O2&cls=ester`）。
@@ -7181,7 +7196,16 @@ class ReferenceBook {
            面Aとして焼かれることもできる。★ 焼くときに listener は消える（outerHTML に出ない）。 */
         a.addEventListener('click', (e) => {
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;   // 別タブ・別窓は邪魔しない
-            if (block.to) { e.preventDefault(); this.open(block.to); return; }
+            /* ⚠ 面Bはパズルの画面の中。**ほかのアプリ・無機/理論のページへは別のタブで開く**
+               （同じタブで移ると組みかけの分子が消える。面Bの資料ペインは有機だけ・§31-1） */
+            if (block.app) { e.preventDefault(); window.open(a.href, '_blank', 'noopener'); return; }
+            if (block.to) {
+                e.preventDefault();
+                const target = this.pageById(block.to);
+                if (target && !refIsOrganic(target)) { window.open(a.href, '_blank', 'noopener'); return; }
+                this.open(block.to);
+                return;
+            }
             if (typeof window.applyOpenParam === 'function') { e.preventDefault(); window.applyOpenParam(search); }
         });
         box.appendChild(a);
@@ -7694,6 +7718,7 @@ if (typeof window !== 'undefined') {
     window.REF_PAGE_DIR = REF_PAGE_DIR;
     window.REF_APP_DIR = REF_APP_DIR;
     window.REF_LINK_SOON = REF_LINK_SOON;
+    window.refIsOrganic = refIsOrganic;
     /* ★ 例題の決めごと（§22）。`REF23` が「解答が閉じている」「札の言葉が在る」ことを、この口から見る */
     window.REF_EXERCISE_TAG = REF_EXERCISE_TAG;
     window.REF_EXERCISE_OPEN = REF_EXERCISE_OPEN;
