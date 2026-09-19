@@ -95,15 +95,28 @@ note: 酸化剤の半反応式と Fe²⁺ → Fe³⁺ ＋ e⁻ を5倍して足�
 
 :::figure
 src: transition-oxidizers-app-kmno4-fe.png
+shot: url=/ion-equation/redox.html?rxn=rs1 sel=#schematicWrap 状態=「＋ Fe²⁺（還元剤）」を4回押して Fe²⁺ を5個にしたところ
 alt: 模式図。左に Fe²⁺ が5個並び、それぞれから e⁻ が1個ずつ矢印で右の MnO₄⁻ と 8H⁺ の枠へ移っている。下に「MnO₄⁻ 1個と Fe²⁺ 5個でちょうど反応する」とある
 caption: MnO₄⁻ 1個が受け取る e⁻ は5個。**還元剤が出す e⁻ と酸化剤が受け取る e⁻ の数をそろえる**と、係数が決まります。
 :::
 
-//撮影: url=/ion-equation/redox.html?rxn=rs1 sel=#schematicWrap 状態=「＋ Fe²⁺（還元剤）」を4回押して Fe²⁺ を5個にしたところ
+:::link
+app: ion-equation/redox
+id: rs1
+text: 過マンガン酸カリウムと鉄(Ⅱ)
+:::
 
-//app: ion-equation/redox rxn=rs1 「過マンガン酸カリウムと鉄(Ⅱ)」
-//app: ion-equation/redox rxn=rs3 「過マンガン酸カリウムとシュウ酸」
-//app: ion-equation halfreaction.html?q=MnO4_red 「過マンガン酸イオンの半反応式を組む」
+:::link
+app: ion-equation/redox
+id: rs3
+text: 過マンガン酸カリウムとシュウ酸
+:::
+
+:::link
+app: ion-equation/halfreaction
+id: MnO4_red
+text: 過マンガン酸イオンの半反応式を組む
+:::
 
 MnO₄⁻ の赤紫色は、反応してしまうとほぼ無色になるので、**KMnO₄ 自身が指示薬になります**。滴定で赤紫色が消えなくなったところが終点です。
 
@@ -175,7 +188,11 @@ to: iron
 text: 二クロム酸カリウムと Fe²⁺ の反応（Fe²⁺ が6個）は鉄のページへ
 :::
 
-//app: ion-equation/redox rxn=rs2 「二クロム酸カリウムと鉄(Ⅱ)」
+:::link
+app: ion-equation/redox
+id: rs2
+text: 二クロム酸カリウムと鉄(Ⅱ)
+:::
 
 ## クロム酸イオンと二クロム酸イオンの平衡
 
@@ -183,12 +200,11 @@ text: 二クロム酸カリウムと Fe²⁺ の反応（Fe²⁺ が6個）は�
 
 :::reaction
 left: 2CrO₄²⁻ ＋ 2H⁺
+arrow: ⇄
 right: Cr₂O₇²⁻ ＋ H₂O
 level: ★★☆
-note: （可逆）酸性では右、塩基性では左に片寄ります。
+note: 酸性では右、塩基性では左に片寄ります。
 :::
-
-//⇄ 2CrO₄²⁻ ＋ 2H⁺ ⇄ Cr₂O₇²⁻ ＋ H₂O（便0a で arrow: ⇄ が入ったら直す）
 
 :::mistake
 wrong: クロム酸イオン（黄色）が二クロム酸イオン（橙赤色）に変わるのは、酸化還元反応である。

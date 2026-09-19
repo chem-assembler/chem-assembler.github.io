@@ -182,19 +182,27 @@ level: ★★★
 
 :::figure
 src: alkali-metal-app-na2co3-hcl.png
+shot: url=/ion-equation/?rxn=s6 sel=svg#beaker 状態=左辺・右辺の係数を 1・2・2・1・1 に合わせて「▶ 係数どおりに再生」を押し、12秒待ってから撮影
 alt: ビーカーの模式図。水中に Na⁺ 2個・Cl⁻ 2個・H₂O 1個が残り、CO₂ 1分子が水面の上へ抜けている
 caption: Na₂CO₃ ＋ 2HCl の反応のあと。**CO₃²⁻ が H⁺ 2個を受け取り、CO₂ として水の外へ出ていく**一方、Na⁺ と Cl⁻ はイオンのまま残ります。
 :::
-
-//撮影: url=/ion-equation/?rxn=s6 sel=svg#beaker 状態=左辺・右辺の係数を 1・2・2・1・1 に合わせて「▶ 係数どおりに再生」を押し、12秒待ってから撮影
 
 :::link
 to: acid-displacement
 text: 弱酸の遊離の考え方は弱酸の遊離・揮発性の酸の遊離のページへ
 :::
 
-//app: ion-equation ?rxn=s6 「炭酸ナトリウムと塩酸」
-//app: ion-equation ?rxn=s12 「炭酸ナトリウムと塩酸（酸性塩をつくる）」
+:::link
+app: ion-equation
+id: s6
+text: 炭酸ナトリウムと塩酸
+:::
+
+:::link
+app: ion-equation
+id: s12
+text: 炭酸ナトリウムと塩酸（酸性塩をつくる）
+:::
 
 炭酸水素ナトリウムは、**加熱するだけで分解**して二酸化炭素を出します。炭酸ナトリウムは加熱しても分解しません。この違いで2つを区別できます。
 
@@ -282,7 +290,10 @@ to: flame-color
 text: ほかの元素の炎色反応は炎色反応と水溶液の色のページへ
 :::
 
-//app: muki/separation.html 炎色反応の札（Na⁺・K⁺）
+:::link
+app: muki/separation
+text: 炎色反応の札で Na⁺・K⁺ を見分ける
+:::
 
 ## 例題
 

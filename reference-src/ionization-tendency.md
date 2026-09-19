@@ -66,12 +66,11 @@ terms:
 
 :::reaction
 left: Cu
+arrow: ⇄
 right: Cu²⁺ ＋ 2e⁻
 level: ★★★
-note: （可逆）右向きは単体 Cu が還元剤、左向きは Cu²⁺ が酸化剤としてはたらく反応です。
+note: 右向きは単体 Cu が還元剤、左向きは Cu²⁺ が酸化剤としてはたらく反応です。
 :::
-
-//⇄ 上の式は Cu ⇄ Cu²⁺ ＋ 2e⁻（スライド 電気分解の基本１ s8・無機の基本１ p.43）。`:::reaction` に ⇄ の欄が入ったら arrow を付ける
 
 :::table
 caption: イオン化傾向の大小と、単体・陽イオンの性質
@@ -237,10 +236,29 @@ advanced: true
 
 王水が金を溶かすのは、単に酸化力が強いからではありません。濃塩酸から供給される多量の Cl⁻ が、生じた金(Ⅲ)イオンと安定な錯イオン [AuCl₄]⁻ をつくるため、金がイオンになる反応が進みやすくなります。
 
-//app: ion-equation/redox rxn=r1 「亜鉛 × 銅(Ⅱ)イオン」
-//app: ion-equation/redox rxn=r2 「銅 × 銀イオン（銀樹）」
-//app: ion-equation/redox rxn=r3 「亜鉛 × 塩酸（水素発生）」
-//app: ion-equation/redox rxn=r4 「アルミニウム × 銅(Ⅱ)イオン（2:3）」
+:::link
+app: ion-equation/redox
+id: r1
+text: 亜鉛 × 銅(Ⅱ)イオン
+:::
+
+:::link
+app: ion-equation/redox
+id: r2
+text: 銅 × 銀イオン（銀樹）
+:::
+
+:::link
+app: ion-equation/redox
+id: r3
+text: 亜鉛 × 塩酸（水素発生）
+:::
+
+:::link
+app: ion-equation/redox
+id: r4
+text: アルミニウム × 銅(Ⅱ)イオン（2:3）
+:::
 
 ## 例題
 

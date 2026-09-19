@@ -186,7 +186,11 @@ level: ★★★
 note: 水素が還元剤としてはたらくときの半反応式。以下の3本はすべてこの式と相手の式を足したものです。
 :::
 
-//app: ion-equation/halfreaction q=H_ox 「水素が還元剤としてはたらく半反応式を組む」（⚠ 設計メモ §3 の `H2_ox` は実在しない。実在する id は `H_ox`）
+:::link
+app: ion-equation/halfreaction
+id: H_ox
+text: 水素が還元剤としてはたらく半反応式を組む
+:::
 
 ## 燃焼 —— 水素の検出
 
@@ -205,7 +209,11 @@ alt: O₂ ＋ 4e⁻ → 2O²⁻ と 2H₂ → 4H⁺ ＋ 4e⁻ を足して 2H₂
 caption: 空気中の反応なので、O は H⁺ や H₂O を加えずに安定な O²⁻ として書きます。燃焼反応では H₂O や CO₂ ができます。
 :::
 
-//app: ion-equation/index rxn=combustion-h2-o2 「水素の燃焼の係数を決める」
+:::link
+app: ion-equation/index
+id: combustion-h2-o2
+text: 水素の燃焼の係数を決める
+:::
 
 ## 金属の酸化物を還元する
 

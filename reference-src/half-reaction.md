@@ -321,8 +321,16 @@ to: half-reaction-condition
 text: 塩基性での書き換えと、オゾンの半反応式は「液性による半反応式の書き換え」で
 :::
 
-//app: ion-equation/halflist 「半反応式の一覧」
-//app: ion-equation/halfreaction q=MnO4_red 「過マンガン酸イオンの半反応式を組む」
+:::link
+app: ion-equation/halflist
+text: 半反応式の一覧
+:::
+
+:::link
+app: ion-equation/halfreaction
+id: MnO4_red
+text: 過マンガン酸イオンの半反応式を組む
+:::
 
 ## 例題
 

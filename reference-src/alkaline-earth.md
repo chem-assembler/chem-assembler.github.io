@@ -162,12 +162,11 @@ note: CO₂ の検出反応です（石灰水の白濁）。
 
 :::reaction
 left: CaCO₃ ＋ CO₂ ＋ H₂O
+arrow: ⇄
 right: Ca(HCO₃)₂
 level: ★★★
-note: （可逆）加熱したり CO₂ が抜けたりすると左へもどり、CaCO₃ が再び沈殿します。
+note: 加熱したり CO₂ が抜けたりすると左へもどり、CaCO₃ が再び沈殿します。
 :::
-
-//⇄ CaCO₃ ＋ CO₂ ＋ H₂O ⇄ Ca(HCO₃)₂（便0a で arrow: ⇄ が入ったら直す）
 
 :::reaction
 left: CaCO₃ ＋ 2HCl
@@ -222,14 +221,22 @@ note: 白色沈殿。ただし BaSO₄ よりはよく溶けるので、うす�
 
 :::figure
 src: alkaline-earth-app-baso4.png
+shot: url=/ion-equation/?rxn=s5 sel=svg#beaker 状態=係数を 1・1・1・2 に合わせて「▶ 係数どおりに再生」を押し、12秒待ってから撮影
 alt: ビーカーの模式図。Ba²⁺ と SO₄²⁻ が組になって底に沈み、Na⁺ 2個と Cl⁻ 2個は水中に残っている
 caption: BaCl₂ ＋ Na₂SO₄ の反応のあと。**Ba²⁺ と SO₄²⁻ だけが組になって底に沈み**、Na⁺ と Cl⁻ はイオンのまま残ります。
 :::
 
-//撮影: url=/ion-equation/?rxn=s5 sel=svg#beaker 状態=係数を 1・1・1・2 に合わせて「▶ 係数どおりに再生」を押し、12秒待ってから撮影
+:::link
+app: ion-equation
+id: s5
+text: 塩化バリウムと硫酸ナトリウム（沈殿）
+:::
 
-//app: ion-equation ?rxn=s5 「塩化バリウムと硫酸ナトリウム（沈殿）」
-//app: ion-equation ?rxn=s8 「硫酸と水酸化バリウム（中和＋沈殿）」
+:::link
+app: ion-equation
+id: s8
+text: 硫酸と水酸化バリウム（中和＋沈殿）
+:::
 
 硫酸バリウムは、胃や腸の**X線造影剤**に使われます。バリウムのイオンは体に有害ですが、BaSO₄ は水にも胃酸（塩酸）にも溶けないので、Ba²⁺ として体に吸収されないためです。
 
@@ -238,12 +245,12 @@ caption: BaCl₂ ＋ Na₂SO₄ の反応のあと。**Ba²⁺ と SO₄²⁻ �
 :::reaction
 left: CaSO₄・2H₂O
 over: 加熱
+arrow: ⇄
 right: CaSO₄・½H₂O ＋ ³⁄₂H₂O
 level: ★☆☆
-note: （可逆）水で練ると左へもどります。式は書けなくても構いません。「焼きセッコウは半水和物」だけ覚えておけば十分です。
+note: 水で練ると左へもどります。式は書けなくても構いません。「焼きセッコウは半水和物」だけ覚えておけば十分です。
 :::
 
-//⇄ CaSO₄・2H₂O ⇄ CaSO₄・½H₂O ＋ ³⁄₂H₂O（便0a で arrow: ⇄ が入ったら直す）
 //⚠ スライド 無機の基本６ s22 の焼きセッコウは「CaSO₄・H₂O」、式は「CaSO₄・2H₂O ⇄ CaSO₄・H₂O ＋ H₂O」、注記は「硫酸バリウム CaSO₄ はセッコウとして…」になっています。教科書どおり半水和物 CaSO₄・½H₂O と「硫酸カルシウム」で書きました。
 
 炭酸イオン CO₃²⁻ も、Ba²⁺・Ca²⁺ と白色沈殿（BaCO₃・CaCO₃）をつくります。こちらは**塩酸に溶けて CO₂ を出す**ので、塩酸に溶けない硫酸塩と見分けられます。
@@ -258,7 +265,10 @@ to: cation-separation
 text: 炭酸塩の沈殿を使って Ca²⁺・Ba²⁺ を分ける手順は系統分離のページへ
 :::
 
-//app: muki/tree.html 系統分離（炭酸アンモニウムで Ca²⁺・Ba²⁺ を沈める段）
+:::link
+app: muki/tree
+text: 系統分離で、炭酸アンモニウムで Ca²⁺・Ba²⁺ を沈める段を試す
+:::
 
 :::section
 anchor: range

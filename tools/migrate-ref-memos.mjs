@@ -149,14 +149,15 @@ function migrate(id, text) {
         out[e.at] = e.strip;
         if (e.strip.trim() === '' && !fs.some(f => f.start <= e.at && e.at <= f.end)) drop.add(e.at);
         if (e.kind === 'app') {
-            inserts.push({ after: e.after, lines: [''].concat(e.blk) });
+            inserts.push({ after: e.after, lines: [''].concat(e.blk), seq: e.at });
         } else if (e.kind === 'arrow') {
             const f = e.fence;
             if (f.start === f.end) {
                 out[f.start] = out[f.start].replace(/(\s)right:/, '$1arrow: ⇄ right:').replace(/\s*（可逆）/, '').replace(/\s+note:\s*(?=:::\s*$)/, ' ');
             } else {
                 for (let k = f.start; k <= f.end; k++) {
-                    if (/^\s*note:/.test(out[k])) out[k] = out[k].replace(/\s*（可逆）\s*/, '');
+                    /* ⚠ 「note: （可逆）…」の「note:」の後ろの空白は残す */
+                    if (/^\s*note:/.test(out[k])) out[k] = out[k].replace(/\s*（可逆）\s*/, ' ').replace(/^(\s*note:)\s*/, '$1 ').replace(/\s+$/, '');
                     if (/^\s*note:\s*$/.test(out[k])) drop.add(k);
                 }
                 const r = out.findIndex((l, k) => k >= f.start && k <= f.end && /^\s*right:/.test(l));
@@ -169,7 +170,9 @@ function migrate(id, text) {
             inserts.push({ after: s, lines: ['shot: ' + e.shot] });
         }
     });
-    inserts.sort((a, b) => b.after - a.after).forEach(ins => out.splice(ins.after + 1, 0, ...ins.lines));
+    /* ⚠ 同じ段落の後ろに複数のリンクを置くときは、メモの順を保つ（後ろのメモから先に差し込む。
+         同順位のまま splice すると、3本並んだ //app: が逆順の :::link になっていた） */
+    inserts.sort((a, b) => b.after - a.after || (b.seq || 0) - (a.seq || 0)).forEach(ins => out.splice(ins.after + 1, 0, ...ins.lines));
     // 空になったメモだけの行を落とす（挿入で番号がずれるので、中身の一致で落とす）
     const res = [];
     const keepIdx = new Set();

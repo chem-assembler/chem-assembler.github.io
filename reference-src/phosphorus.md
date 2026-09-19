@@ -155,8 +155,17 @@ note: H⁺ も OH⁻ も6個ずつなので、生じる H₂O も6個です。
 
 水酸化ナトリウムとは、加える量によって1段目・2段目・3段目の塩ができます（NaH₂PO₄ → Na₂HPO₄ → Na₃PO₄）。
 
-//app: ion-equation/ rxn=s14 「リン酸と水酸化ナトリウム 1:1（三段中和の1段目）」
-//app: ion-equation/ rxn=s16 「リン酸と水酸化ナトリウム 1:3（三段中和の3段目・正塩）」
+:::link
+app: ion-equation
+id: s14
+text: リン酸と水酸化ナトリウム 1:1（三段中和の1段目）
+:::
+
+:::link
+app: ion-equation
+id: s16
+text: リン酸と水酸化ナトリウム 1:3（三段中和の3段目・正塩）
+:::
 
 :::link
 to: neutralization

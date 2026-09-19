@@ -261,8 +261,17 @@ to: gas-preparation
 text: 気体の製法・捕集・乾燥を横に並べた早見表へ
 :::
 
-//app: ion-equation/index rxn=s10 「亜硫酸ナトリウム × 塩酸（気体発生）」
-//app: ion-equation/portal #u-gas 「気体の発生・弱酸の遊離」
+:::link
+app: ion-equation/index
+id: s10
+text: 亜硫酸ナトリウム × 塩酸（気体発生）
+:::
+
+:::link
+app: ion-equation/portal
+id: u-gas
+text: 気体の発生・弱酸の遊離
+:::
 
 ## 例題
 

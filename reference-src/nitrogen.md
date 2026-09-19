@@ -117,12 +117,11 @@ text: 気体を並べて比べる捕集法と乾燥剤の早見のページへ
 
 :::reaction
 left: NH₃ ＋ H₂O
+arrow: ⇄
 right: NH₄⁺ ＋ OH⁻
 level: ★★★
-note: （可逆）弱塩基なので、電離はごく一部です。
+note: 弱塩基なので、電離はごく一部です。
 :::
-
-//⇄ この式は可逆。便0a で :::reaction に arrow: が入ったら ⇄ に直す
 
 アンモニウムイオン NH₄⁺ は、NH₃ の N がもつ非共有電子対を H⁺ に与えてできる、**配位結合**をもつイオンです。
 
@@ -181,12 +180,11 @@ note: 無色 → 赤褐色。NO の検出に使います。
 
 :::reaction
 left: 2NO₂
+arrow: ⇄
 right: N₂O₄
 level: ★★☆
-note: （可逆）赤褐色の NO₂ と無色の N₂O₄ の平衡です。化学平衡の単元で、温度を変えると色が変わる例としてよく登場します。
+note: 赤褐色の NO₂ と無色の N₂O₄ の平衡です。化学平衡の単元で、温度を変えると色が変わる例としてよく登場します。
 :::
-
-//⇄ この式は可逆。便0a で arrow: が入ったら ⇄ に直す
 
 一酸化窒素は、エンジンの中のような高温で窒素と酸素が直接反応しても生じます。NO や NO₂ などをまとめて NOₓ（ノックス）と呼び、大気汚染や酸性雨の原因になります。
 
@@ -243,16 +241,24 @@ level: ★★★
 note: 濃硝酸の半反応式を2倍して、銅の半反応式と足します。
 :::
 
-//app: ion-equation/redox rxn=rn1 「銅と希硝酸の反応式を、半反応式から組み立てる」
-//app: ion-equation/redox rxn=rn2 「銅と濃硝酸の反応式を、半反応式から組み立てる」
+:::link
+app: ion-equation/redox
+id: rn1
+text: 銅と希硝酸の反応式を、半反応式から組み立てる
+:::
+
+:::link
+app: ion-equation/redox
+id: rn2
+text: 銅と濃硝酸の反応式を、半反応式から組み立てる
+:::
 
 :::figure
 src: nitrogen-app-rn1.png
+shot: url=/ion-equation/redox.html?rxn=rn1 sel=#acidSourceWrap 状態=開いた直後（何も操作していない）・viewport 1200・deviceScaleFactor 1
 alt: 「この H⁺ は誰が出す？」という枠。H⁺ と NO₃⁻ の組が4つ並び、左の1組は酸化剤になる NO₃⁻ と一緒に来たもの、右の3組は H⁺ が足りないので HNO₃ を足した分で、その NO₃⁻ は傍観イオンと書かれている
 caption: 希硝酸の半反応式が要る H⁺ 4個のうち、酸化剤の NO₃⁻ と一緒に来るのは1個だけ。残り3個は HNO₃ を足してまかない、その NO₃⁻ は**反応しないまま残る**（傍観イオン）ことが見えます。
 :::
-
-//撮影: url=/ion-equation/redox.html?rxn=rn1 sel=#acidSourceWrap 状態=開いた直後（何も操作していない）・viewport 1200・deviceScaleFactor 1
 
 :::link
 to: redox-equation
@@ -292,14 +298,17 @@ terms:
 left: N₂ ＋ 3H₂
 over: Fe₃O₄ を主成分とする触媒
 under: 高温・高圧
+arrow: ⇄
 right: 2NH₃
 level: ★★★
-note: （可逆）化学平衡の単元で、圧力と温度の条件を選ぶ例としてよく登場します。
+note: 化学平衡の単元で、圧力と温度の条件を選ぶ例としてよく登場します。
 :::
 
-//⇄ この式は可逆。便0a で arrow: が入ったら ⇄ に直す
-
-//app: ion-equation/ rxn=synthesis-nh3 「アンモニアの合成を、原子の組み換えとして係数を合わせる」
+:::link
+app: ion-equation
+id: synthesis-nh3
+text: アンモニアの合成を、原子の組み換えとして係数を合わせる
+:::
 
 ## オストワルト法
 

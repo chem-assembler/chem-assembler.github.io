@@ -222,12 +222,11 @@ O₃ は折れ線形の極性分子で、構造式の中に**配位結合**を1�
 :::reaction
 left: 3O₂
 over: 無声放電
+arrow: ⇄
 right: 2O₃
 level: ★★☆
-note: （可逆）O₃ は不安定で、O₂ との間で可逆反応が起こります。
+note: O₃ は不安定で、O₂ との間で可逆反応が起こります。
 :::
-
-//⇄ 3O₂ ⇄ 2O₃（`:::reaction` に arrow: ⇄ が入ったら書き換える）
 
 ## 酸化剤としての反応 —— 液性で書き分ける
 
@@ -257,13 +256,16 @@ caption: 両辺に OH⁻ を2個ずつ足すと、左辺の 2H⁺ は 2H₂O に
 
 :::figure
 src: oxygen-ozone-app-o3-basic.png
+shot: url=/ion-equation/condition.html?s=b3 sel=#timeline 状態=開いた直後（何も操作していない。OH⁻ の数は 0）
 alt: 酸性条件の半反応式 O₃ ＋ 2H⁺ ＋ 2e⁻ → O₂ ＋ H₂O を出発点にし、両辺に OH⁻ を足して書き直す画面。H⁺ が2個残っていて、OH⁻ があと2個必要だと示している
 caption: 同じ書き換えを、足す OH⁻ の数を自分で決めながら進める画面です。H⁺ が2個残っているあいだは、塩基性の式になりません。
 :::
 
-//撮影: url=/ion-equation/condition.html?s=b3 sel=#timeline 状態=開いた直後（何も操作していない。OH⁻ の数は 0）
-
-//app: ion-equation/condition s=b3 「オゾンの半反応式を酸性から塩基性に書き換える」
+:::link
+app: ion-equation/condition
+id: b3
+text: オゾンの半反応式を酸性から塩基性に書き換える
+:::
 
 :::link
 to: half-reaction-condition

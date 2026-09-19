@@ -114,12 +114,11 @@ note: （可逆）1段階目の電離。
 
 :::reaction
 left: HS⁻
+arrow: ⇄
 right: H⁺ ＋ S²⁻
 level: ★★★
-note: （可逆）2段階目の電離。
+note: 2段階目の電離。
 :::
-
-//⇄ H₂S ⇄ H⁺ ＋ HS⁻ ／ HS⁻ ⇄ H⁺ ＋ S²⁻（⚠ スライド s10・s38 は → で書いている。弱酸の電離なので ⇄ にそろえるかは校正で判断。`:::reaction` に arrow: ⇄ が入ったら書き換える）
 
 ## 【還元剤】単体の S になる
 
@@ -173,7 +172,10 @@ to: precipitate
 text: 陰イオンごとに沈む相手と沈殿の色の一覧はこちら
 :::
 
-//app: muki/tree 「硫化物で分ける系統分離の樹を試す」（⚠ tree.html は開くたびに抽選。1問を名指しする口は無い）
+:::link
+app: muki/tree
+text: 硫化物で分ける系統分離の樹を試す
+:::
 
 :::figure
 src: sulfur-sulfide-ionization.png
@@ -221,7 +223,11 @@ level: ★★★
 note: 亜硫酸ナトリウムに希硫酸を加える。弱酸の H₂SO₃ が強酸の H₂SO₄ に追い出される反応です。気体の SO₂ が出るので、右辺は H₂SO₃ ではなく H₂O ＋ SO₂ と書きます。
 :::
 
-//app: ion-equation/index rxn=s10 「亜硫酸ナトリウムと塩酸で SO₂ を発生させる（塩酸の版）」
+:::link
+app: ion-equation/index
+id: s10
+text: 亜硫酸ナトリウムと塩酸で SO₂ を発生させる（塩酸の版）
+:::
 
 :::reaction
 left: Cu ＋ 2H₂SO₄
@@ -249,12 +255,11 @@ note: （可逆）SO₂ が水に溶けて弱酸性を示す反応。
 
 :::reaction
 left: HSO₃⁻
+arrow: ⇄
 right: H⁺ ＋ SO₃²⁻
 level: ★★★
-note: （可逆）亜硫酸の2段階目の電離。
+note: 亜硫酸の2段階目の電離。
 :::
-
-//⇄ SO₂ ＋ H₂O ⇄ H⁺ ＋ HSO₃⁻ ／ HSO₃⁻ ⇄ H⁺ ＋ SO₃²⁻（`:::reaction` に arrow: ⇄ が入ったら書き換える）
 
 実際には、水溶液中の SO₂ は H₂SO₃ にはならず SO₂ のまま存在していると考えられています（H₂SO₃ という分子は存在しない）。それでも H₂SO₃ があると仮定した方が、反応が理解しやすくなります。
 
@@ -314,13 +319,16 @@ note: SO₂ が酸化剤としてはたらくときの半反応式。
 
 :::figure
 src: sulfur-app-so2-half.png
+shot: url=/ion-equation/halfreaction.html?q=SO2_red sel=#timeline 状態=開いた直後（何も入れていない）
 alt: SO₂ と S だけが書かれた式に、H₂O・H⁺・e⁻ の数を入れて半反応式を完成させる画面。手順A「H₂O → H⁺ → e⁻」が選ばれている
 caption: 「SO₂ は S になる」とだけ覚えておき、O を H₂O で、H を H⁺ で、電荷を e⁻ で合わせます。
 :::
 
-//撮影: url=/ion-equation/halfreaction.html?q=SO2_red sel=#timeline 状態=開いた直後（何も入れていない）
-
-//app: ion-equation/halfreaction q=SO2_red,SO2_ox 「二酸化硫黄が酸化剤・還元剤としてはたらく半反応式を組む」
+:::link
+app: ion-equation/halfreaction
+id: SO2_red,SO2_ox
+text: 二酸化硫黄が酸化剤・還元剤としてはたらく半反応式を組む
+:::
 
 :::reaction
 left: 2H₂S ＋ SO₂

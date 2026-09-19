@@ -156,15 +156,28 @@ note: 過剰の NaOH。
 
 :::figure
 src: amphoteric-metal-app-aloh3.png
+shot: url=/ion-equation/?rxn=amphoteric-aloh3-naoh sel=svg#beaker 状態=係数を 1・4・1・3 に合わせて「▶ 係数どおりに再生」を押し、14秒待ってから撮影
 alt: ビーカーの模式図。Al³⁺ を中心に OH⁻ が4個取り囲んだ [Al(OH)₄]⁻ が1個、そのまわりに Na⁺ 4個と Cl⁻ 3個が散らばっている
 caption: AlCl₃ に NaOH を4個ぶん加えたあと。**Al³⁺ のまわりを OH⁻ が4個囲んだ [Al(OH)₄]⁻** になって、沈殿が水に溶けています。
 :::
 
-//撮影: url=/ion-equation/?rxn=amphoteric-aloh3-naoh sel=svg#beaker 状態=係数を 1・4・1・3 に合わせて「▶ 係数どおりに再生」を押し、14秒待ってから撮影
+:::link
+app: ion-equation
+id: amphoteric-al-step1
+text: 塩化アルミニウムと水酸化ナトリウム（少量：沈殿）
+:::
 
-//app: ion-equation ?rxn=amphoteric-al-step1 「塩化アルミニウムと水酸化ナトリウム（少量：沈殿）」
-//app: ion-equation ?rxn=amphoteric-al-step2 「水酸化アルミニウムと水酸化ナトリウム（過剰：再溶解）」
-//app: ion-equation portal.html#u-amphoteric 「両性水酸化物」の単元
+:::link
+app: ion-equation
+id: amphoteric-al-step2
+text: 水酸化アルミニウムと水酸化ナトリウム（過剰：再溶解）
+:::
+
+:::link
+app: ion-equation/portal
+id: u-amphoteric
+text: 両性水酸化物の反応をまとめて試す
+:::
 
 両性水酸化物は**酸にも溶けます**（塩基なので中和します）。
 

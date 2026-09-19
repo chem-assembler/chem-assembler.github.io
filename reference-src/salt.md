@@ -184,30 +184,27 @@ terms:
 
 :::reaction
 left: CH₃COO⁻ ＋ H₂O
+arrow: ⇄
 right: CH₃COOH ＋ OH⁻
 level: ★★★
-note: （可逆）酢酸の電離の逆反応の式に、H⁺ を H₂O が供給したと考えて両辺に OH⁻ を加えた形です。ごく一部しか起こりません。
+note: 酢酸の電離の逆反応の式に、H⁺ を H₂O が供給したと考えて両辺に OH⁻ を加えた形です。ごく一部しか起こりません。
 :::
-
-//⇄ CH₃COO⁻ ＋ H₂O ⇄ CH₃COOH ＋ OH⁻。:::reaction に arrow: が入ったら ⇄ に直す
 
 :::reaction
 left: HCO₃⁻ ＋ H₂O
+arrow: ⇄
 right: H₂CO₃ ＋ OH⁻
 level: ★★☆
-note: （可逆）NaHCO₃ の水溶液が塩基性になる理由です。H₂CO₃ の電離の逆反応に、H⁺ を H₂O が供給したと考えます。
+note: NaHCO₃ の水溶液が塩基性になる理由です。H₂CO₃ の電離の逆反応に、H⁺ を H₂O が供給したと考えます。
 :::
-
-//⇄ HCO₃⁻ ＋ H₂O ⇄ H₂CO₃ ＋ OH⁻。:::reaction に arrow: が入ったら ⇄ に直す
 
 :::reaction
 left: NH₄⁺ ＋ H₂O
+arrow: ⇄
 right: NH₃ ＋ H₃O⁺
 level: ★★★
-note: （可逆）NH₄Cl の水溶液が酸性になる理由です。NH₃ の電離の逆反応に、OH⁻ を H₂O が供給したと考えて両辺に H⁺ を加えます。問題文に「水分子と反応する」とあれば、左辺に H₂O を書きます。
+note: NH₄Cl の水溶液が酸性になる理由です。NH₃ の電離の逆反応に、OH⁻ を H₂O が供給したと考えて両辺に H⁺ を加えます。問題文に「水分子と反応する」とあれば、左辺に H₂O を書きます。
 :::
-
-//⇄ NH₄⁺ ＋ H₂O ⇄ NH₃ ＋ H₃O⁺。:::reaction に arrow: が入ったら ⇄ に直す
 
 **加水分解の式は丸暗記しなくて構いません**。「弱酸（弱塩基）の電離の逆反応を書き、H⁺（OH⁻）を H₂O が出したと考えて両辺に同じイオンを足す」という1つの手順で書けます。この手順は、弱酸の遊離とまったく同じです。
 
@@ -216,7 +213,11 @@ to: acid-displacement
 text: 弱酸の遊離と加水分解が同じ仕組みであることは、遊離のページへ
 :::
 
-//app: ion-equation/portal #u-weak 「弱酸・弱塩基と塩の加水分解（電離平衡）」
+:::link
+app: ion-equation/portal
+id: u-weak
+text: 弱酸・弱塩基と塩の加水分解（電離平衡）
+:::
 
 ## 例題
 

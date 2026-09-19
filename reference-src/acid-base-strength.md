@@ -175,12 +175,11 @@ note: 2価の弱酸。シュウ酸は H₂C₂O₄ と書くこともありま�
 
 :::reaction
 left: CH₃COOH
+arrow: ⇄
 right: CH₃COO⁻ ＋ H⁺
 level: ★★★
-note: （可逆）1価の弱酸。一部しか電離しないので、ふつうは ⇄ で書きます。
+note: 1価の弱酸。一部しか電離しないので、ふつうは ⇄ で書きます。
 :::
-
-//⇄ CH₃COOH ⇄ CH₃COO⁻ ＋ H⁺。:::reaction に arrow: が入ったら ⇄ に直す
 
 :::reaction
 left: Ca(OH)₂
@@ -191,12 +190,11 @@ note: 2価の強塩基。
 
 :::reaction
 left: NH₃ ＋ H₂O
+arrow: ⇄
 right: NH₄⁺ ＋ OH⁻
 level: ★★★
-note: （可逆）1価の弱塩基。NH₃ は OH を持たないので、水と反応して OH⁻ を生じる形で書きます。
+note: 1価の弱塩基。NH₃ は OH を持たないので、水と反応して OH⁻ を生じる形で書きます。
 :::
-
-//⇄ NH₃ ＋ H₂O ⇄ NH₄⁺ ＋ OH⁻。:::reaction に arrow: が入ったら ⇄ に直す
 
 ## 酢酸とシュウ酸の書き方
 
