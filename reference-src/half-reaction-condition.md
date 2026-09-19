@@ -81,6 +81,14 @@ level: ★★★
 note: 中・塩基性。上の式の両辺に 2OH⁻ を足して導きます。
 :::
 
+:::figure
+src: half-reaction-condition-app-cathode.png
+alt: 2H⁺ ＋ 2e⁻ → H₂ の両辺に 2OH⁻ を足し、H⁺ と OH⁻ が結びついて H₂O になって 2e⁻ ＋ 2H₂O → H₂ ＋ 2OH⁻ になる筆算と、H⁺ 2個と OH⁻ 2個が組になって H₂O 2個になる模式図
+caption: 酸性の式にある H⁺ は2個なので、同じ数の OH⁻ を両辺に足すと、左辺の H⁺ はすべて H₂O になります。
+:::
+
+//撮影: url=/ion-equation/condition.html?s=b1 sel=#step2 状態=「両辺に OH⁻ を足す」の ＋ を2回押して完成させてから撮った（ion v215・1200px 幅・deviceScaleFactor 1）
+
 逆に、2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻ の両辺に 2H⁺ を足せば、酸性の式に戻ります。**2つの反応式は本質的には同じ**です。
 
 ## 具体例 —— 電気分解の陽極

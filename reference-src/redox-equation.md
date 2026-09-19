@@ -127,6 +127,16 @@ terms:
 - 硫酸酸性
 :::
 
+過マンガン酸カリウムと鉄(Ⅱ)イオンなら、5価の酸化剤と1価の還元剤なので、Fe²⁺ の式を5倍すると e⁻ がそろいます。
+
+:::figure
+src: redox-equation-app-kmno4-fe.png
+alt: Fe²⁺ → Fe³⁺ ＋ e⁻ に ×5、MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O に ×1 を掛けて、e⁻ がどちらも5個にそろった状態。各式の Fe・Mn の下に酸化数（＋2 → ＋3、＋7 → ＋2）が添えてある
+caption: 過マンガン酸イオン（5価）と鉄(Ⅱ)イオン（1価）。**価数の逆の比 1：5** で e⁻ がそろいます。
+:::
+
+//撮影: url=/ion-equation/redox.html?rxn=rs1 sel=#step1 状態=Fe²⁺ の行の倍数の欄に 5 を入れて（fill ＋ input/change）e⁻ がそろった表示にしてから撮った（ion v215・1200px 幅・deviceScaleFactor 1）
+
 二クロム酸カリウム K₂Cr₂O₇ 水溶液と硫酸鉄(Ⅱ) FeSO₄ 水溶液を、硫酸酸性で反応させます。
 
 :::list
