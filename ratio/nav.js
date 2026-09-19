@@ -69,6 +69,30 @@
     return det;
   }
 
+  /* 参考書から来たときの戻り道（2026-09-19・便0b）。CLAUDE.md「アプリ横断のリンクは往復にする」。
+     参考書の :::link は `?from=reference&page=<ページid>` を付けて来る。5モードが読むここに1か所。
+     ⚠ 知ってよいのは相手の URL の形（`/reference/<ページid>/`）だけ。読めない page は索引へ戻す。
+     ⚠ ヘッダーには足さない（モードのヘッダーは導線だけ、の約束）。ヘッダーの直後に細い帯で置く。
+     ⚠ `_top` ＝ 埋め込まれていても、タブごと参考書へ戻す（qa の帯と同じ）。 */
+  function refBack() {
+    try {
+      var p = new URLSearchParams(location.search);
+      var header = document.querySelector('header');
+      if (p.get('from') !== 'reference' || !header || document.querySelector('.refBack')) return null;
+      var page = p.get('page') || '';
+      var band = document.createElement('div');
+      band.className = 'refBack';
+      var a = document.createElement('a');
+      a.className = 'refBackLink';
+      a.href = '../reference/' + (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(page) ? page + '/' : '');
+      a.target = '_top';
+      a.textContent = '← 参考書へ戻る';
+      band.appendChild(a);
+      header.parentNode.insertBefore(band, header.nextSibling);
+      return band;
+    } catch (e) { return null; }   // 戻り道が作れなくても本体は動かす
+  }
+
   // テスト・デバッグ用（**build の前に公開する**。組み立てで例外が出ても
   // 「導線が読み込めていない」ことが分かるようにしておく）
   window.ChemRatioNav = {
@@ -77,5 +101,6 @@
     here: fileName
   };
 
+  refBack();
   build();
 })();

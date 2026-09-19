@@ -944,3 +944,16 @@ footer.siteFoot a {
   table.stoich td.sc input.num { min-height: 34px; }
   input.xBox { min-height: 32px; }
 }
+
+/* ---- 参考書から来たときの戻り道（nav.js が header の直後に置く・2026-09-19）----
+   ⚠ ヘッダーの外に置く（モードのヘッダーは導線だけ）。押す物は 32px 以上 */
+.refBack {
+  display: flex; align-items: center;
+  padding: 2px 18px;
+  background: #eef4fb; border-bottom: 1px solid #cfe0f0;
+}
+.refBack .refBackLink {
+  display: inline-flex; align-items: center; min-height: 32px;
+  color: #275d8c; font-weight: bold; text-decoration: none; font-size: 13px;
+}
+.refBack .refBackLink:hover { text-decoration: underline; }

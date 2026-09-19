@@ -889,11 +889,14 @@
   /* 反応インデックス（ion-equation の library.html）からのディープリンク。
      stoich.html?r=<反応ID> で、その反応の問題を開く。
      同じ反応式の問題が複数あるときは最初のもの（導入用）を開く。 */
-  var linked = new URLSearchParams(location.search).get('r');
+  var linkQ = new URLSearchParams(location.search);
+  var linked = linkQ.get('r');
   var start = 0, cameFromIndex = false;
   if (linked) {
     var i = R.findIndex(function (p) { return p.id === linked; });
-    if (i >= 0) { start = i; cameFromIndex = true; }
+    // ⚠ 参考書も ?r= で来る（2026-09-19）。そのときの戻り道は nav.js の帯が出すので、
+    //    「索引から来ました」とは言わない（押した覚えのない行き先へ戻すことになる）
+    if (i >= 0) { start = i; cameFromIndex = linkQ.get('from') !== 'reference'; }
   }
   setProblem(start);
 
