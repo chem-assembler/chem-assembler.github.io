@@ -34,6 +34,9 @@ redox-equation        酸化還元反応式の組み立て
 precipitate           沈殿の生成と色
 complex-ion           錯イオン
 amphoteric-metal      両性金属 —— Al・Zn・Sn・Pb
+alkali-metal          アルカリ金属
+halogen               ハロゲン —— 並べて比べる
+ionization-tendency   金属のイオン化傾向
 
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）
