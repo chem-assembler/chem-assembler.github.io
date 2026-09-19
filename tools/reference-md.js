@@ -192,15 +192,19 @@
 
     /* ★★ グループ台帳（`qa/GROUPS.tsv`・設計書 §31-5・ref-inorg-design §1-3 の案C）。
        ⚠ **置き場所は qa**（コードの持ち主は qa）。ここは読み方だけを持つ（node とブラウザで1本）。
-       1行 ＝ `domain.unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び`。`#` の行と空行は読み飛ばす。 */
+       1行 ＝ `domain.unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び ␉ 課程`。`#` の行と空行は読み飛ばす。
+       ★ 6列目 `課程`（2026-09-19 理論の便0・ref-theory-design §1-4）は `basic`（化学基礎）／`adv`（化学）。
+         ratio の portal.js の course と同じ綴り。⚠ 5列の行（課程を書いていない）と空欄は「未設定」として通す。 */
+    var COURSES = ['basic', 'adv'];
     function parseGroups(text) {
         var rows = [];
         normalize(text).split('\n').forEach(function (line, i) {
             if (!line.trim() || /^\s*#/.test(line)) return;
             var c = line.split('\t');
             var where = 'qa/GROUPS.tsv:' + (i + 1);
-            if (c.length !== 5) fail(where, '列が ' + c.length + ' 個です（unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び の5列。区切りはタブ）');
-            var r = { unit: c[0].trim(), unitLabel: c[1].trim(), group: c[2].trim(), page: c[3].trim(), order: c[4].trim() };
+            if (c.length !== 5 && c.length !== 6) fail(where, '列が ' + c.length + ' 個です（unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び ␉ 課程 の5列か6列。区切りはタブ）');
+            var r = { unit: c[0].trim(), unitLabel: c[1].trim(), group: c[2].trim(), page: c[3].trim(), order: c[4].trim(), course: c.length === 6 ? c[5].trim() : '' };
+            if (r.course && COURSES.indexOf(r.course) < 0) fail(where, '課程は ' + COURSES.join(' / ') + ' のどれかです（空欄は未設定。いまは「' + r.course + '」）');
             if (!/^(inorg|theo|calc|org)\.[a-z0-9-]+$/.test(r.unit)) fail(where, 'unit は「domain.unit」の形です（いまは「' + r.unit + '」）');
             if (!/^[a-z0-9][a-z0-9-]*$/.test(r.page)) fail(where, 'ページid は英小文字・数字・ハイフンです（いまは「' + r.page + '」）');
             if (!/^\d{2,3}$/.test(r.order)) fail(where, '並びは2〜3桁の数です（いまは「' + r.order + '」）');

@@ -2925,13 +2925,17 @@ function runGroupTests(DATA, TEXT) {
   String(TEXT || "").replace(/\r\n/g, "\n").split("\n").forEach(function (line) {
     if (!line.trim() || /^\s*#/.test(line)) return;
     var c = line.split("\t");
-    rows.push({ unit: c[0], unitLabel: c[1], group: c[2], page: c[3], order: c[4], n: c.length });
+    rows.push({ unit: c[0], unitLabel: c[1], group: c[2], page: c[3], order: c[4], course: c.length === 6 ? c[5].trim() : "", n: c.length });
   });
 
-  t("台帳: GROUPS.tsv が読めて、1行5列（unit・unitLabel・group・ページid・並び）", function () {
+  // ★ 6列目 `課程`（basic ＝ 化学基礎／adv ＝ 化学）は 2026-09-19 理論の便0 で足した（ref-theory-design §1-4）。
+  //   5列の行・空欄は「未設定」として通す（読み方の正は tools/reference-md.js の parseGroups と同じ）
+  t("台帳: GROUPS.tsv が読めて、1行5列か6列（unit・unitLabel・group・ページid・並び・課程）", function () {
     assert(rows.length >= 44, "台帳が " + rows.length + " 行しか読めない（無機23・理論21 のはず。読めていない？）");
-    var bad = rows.filter(function (r) { return r.n !== 5; });
-    assert(!bad.length, "5列でない行: " + bad.slice(0, 3).map(function (r) { return r.page; }).join(" "));
+    var bad = rows.filter(function (r) { return r.n !== 5 && r.n !== 6; });
+    assert(!bad.length, "5列か6列でない行: " + bad.slice(0, 3).map(function (r) { return r.page; }).join(" "));
+    var badC = rows.filter(function (r) { return r.course && r.course !== "basic" && r.course !== "adv"; });
+    assert(!badC.length, "課程が basic / adv でない行: " + badC.slice(0, 3).map(function (r) { return r.page + "（" + r.course + "）"; }).join(" "));
   });
 
   t("台帳: unit は inorg.* / theo.* で、1グループ＝1ページ（group もページも重ならない）", function () {
