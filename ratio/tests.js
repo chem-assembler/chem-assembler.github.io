@@ -3057,7 +3057,11 @@
   function refReceivers() {
     return {
       'ratio/stoich': new Set(M.REACTIONS.map(function (p) { return p.id; })),
-      'ratio/titration': null      // 引数を取らない
+      'ratio/titration': null,     // 引数を取らない
+      // ★ 理論の便0（2026-09-19）で tools/reference-md.js の APP_TARGETS に足した3つ。どれも引数を取らない
+      'ratio/proportion': null,
+      'ratio/balance': null,
+      'ratio/thermo': null
     };
   }
 
