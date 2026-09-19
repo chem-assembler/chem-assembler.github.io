@@ -23,12 +23,6 @@ steric-hindrance      立体障害 —— 大きな原子団どうしがぶつ�
 # ── 理論の8単元（2026-09-19・理論の便0 がまとめて登録。表示名は ref-theory-design §3-1 の題）──
 #   ⚠ ドラフトの便（T1〜T8）はここを触らない（書けた行は統合で消す）。並びと束ね方の正は qa/GROUPS.tsv
 #   ★ molecular-shape・intermolecular-force は上に登録済み（有機からリンクされている）
-dissolution               溶解のしくみ —— 似たものどうしは溶け合う
-solubility                固体の溶解度と再結晶
-gas-solubility            気体の溶解度 —— ヘンリーの法則
-colligative               希薄溶液の性質 —— 蒸気圧降下・沸点上昇・凝固点降下
-osmotic-pressure          浸透圧 —— 気体と同じ式
-colloid                   コロイド
 
 # ⚠ 消した行（消した理由を残す。同じ id をまた足すときの判断材料になる）:
 #   alcohol         … reference-src/alcohol.md を書いたので削除（2026-09-11）

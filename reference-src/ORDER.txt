@@ -108,6 +108,12 @@ gas-laws
 gas-mixture
 gas-with-vapor
 real-gas
+dissolution
+solubility
+gas-solubility
+colligative
+osmotic-pressure
+colloid
 reaction-enthalpy
 heat-measurement
 hess-law
