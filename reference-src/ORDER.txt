@@ -69,6 +69,7 @@ flame-color
 cation-separation
 substance-classification
 atom-structure
+ionic-bond
 acid-base-definition
 acid-base-strength
 ph
