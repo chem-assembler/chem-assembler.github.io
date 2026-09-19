@@ -130,24 +130,24 @@
 #### 6.1b CI（GitHub Actions・2026-09-19）—— ブランチを push すれば全走の結果が返る
 
 **手元の全走は 15〜45 分かかり、ノートPC 1台で並行レーンが順番待ちになっていた。** リポジトリは public なので
-Actions は無料。 が **どのブランチの push でも**（ だけの変更は除く）走る:
+Actions は無料。`.github/workflows/tests.yml` が **どのブランチの push でも**（`.md` だけの変更は除く）走る:
 
 | ジョブ | 中身 | 所要（実測） |
 |---|---|---|
-| （Linux） | （main 以外のブランチは **規則8を origin/main との差し引き**で）・・構文 | 15 秒 |
-| （**Windows**） |  で assembler / qa / ratio / ion-equation / muki の全走 | assembler 50 分・他は 1 分 |
+| `verify`（Linux） | `verify-release.js`（main 以外のブランチは **規則8を origin/main との差し引き**で）・`verify-compounds.js`・構文 | 15 秒 |
+| `browser`（**Windows**） | `run-tests.mjs` で assembler / qa / ratio / ion-equation / muki の全走 | assembler 50 分・他は 1 分 |
 
-- ★ **レーンの使い方**: 自分のブランチを  する →  /  で読む。
+- ★ **レーンの使い方**: 自分のブランチを `git push -u origin <branch>` する → `gh run list --branch <branch>` と `gh run view <id>` で読む。
   **手元の機械で 45 分待たなくてよい**（その間、手元のブラウザと CPU は他のレーンが使える）
-- ⚠ **手元の全走の代わりにしない**のは今までどおり。CI は追加の網で、**統合の前の最後の砦は統合側の全走**
+- ⚠ **手元の全走の代わりにはしない**のは今までどおり。CI は追加の網で、**統合の前の最後の砦は統合側の全走**
 - ⚠ **ブラウザは Windows で回す。** ion-equation は Segoe UI / Yu Gothic UI を指定していて、Linux では字形が変わり
-  「2行に収まる」類の検査が4件食い違った。Windows に移すと assembler・qa・ratio は手元と同じく全合格
-- ⚠ **ion-equation・muki は CI では赤にしない**（）。「375px で高さ N px 以内」「32px 以上」の上限が
+  「2行に収まる」類の検査が4件食い違った。Windows に移すと assembler・qa・ratio は手元と同じく全合格した
+- ⚠ **ion-equation・muki は CI では赤にしない**（`continue-on-error`）。「375px で高さ N px 以内」「32px 以上」の上限が
   runner の字の描き方で 1〜2% 超える（1913/1900px・31/32px）。どちらも手元なら数十秒なので、**門番は手元の全走のまま**
-- ⚠ **改行は CRLF で展開する**（）。リポジトリの中身は LF で、 などは
+- ⚠ **改行は CRLF で展開する**（`core.autocrlf true`）。リポジトリの中身は LF で、`compounds.json` などは
   「CRLF であること」まで検査しているので、Linux の既定（LF）のままだと形の検査が落ちる
 - 試走で分かったこと: v1583 の main でも OV5・OV7（立体の回す出題）は**出題の偶然で落ちる**（手元で6回中2回）。
-  CI で OV が赤でも、まず  を何回か回してゆらぎか確かめる
+  CI で OV が赤でも、まず `--only=OV` を何回か回してゆらぎか確かめる
 
 ### 6.2 回帰チェックリスト（該当領域を修正した場合）
 
