@@ -43,7 +43,7 @@ copper-silver         銅と銀
 transition-oxidizers  クロムとマンガン
 complex-ion           錯イオン
 titration             中和滴定
-phosphorus            リンとその化合物
+neutralization        中和反応と量的関係
 carbon-silicon        炭素とケイ素
 precipitate           沈殿の生成と色
 flame-color           炎色反応と水溶液の色
