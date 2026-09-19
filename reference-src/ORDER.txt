@@ -70,6 +70,7 @@ cation-separation
 atomic-weight
 mole
 concentration
+chemical-equation
 acid-base-definition
 acid-base-strength
 ph
