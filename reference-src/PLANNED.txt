@@ -50,7 +50,6 @@ copper-silver            銅と銀〔無機〕
 nitrogen                 窒素とその化合物〔無機〕
 carbon-silicon           炭素とケイ素〔無機〕
 transition-oxidizers     クロムとマンガン〔無機〕
-oxygen-ozone             酸素・オゾン・過酸化水素〔無機〕
 halogen                  ハロゲン —— 並べて比べる〔無機〕
 chlorine                 塩素と塩化水素〔無機〕
 sulfur                   硫黄・硫化水素・二酸化硫黄〔無機〕
