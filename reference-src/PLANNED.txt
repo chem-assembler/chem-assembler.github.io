@@ -25,7 +25,6 @@ steric-hindrance      立体障害 —— 大きな原子団どうしがぶつ�
 oxidation-number      有機化合物中の原子の酸化数の決め方
 
 # ⚠ ref-a1（酸と塩基のドラフト便）が足した行。便0a が同じ id を登録していたら、統合のときにどちらか1行へ
-ph                    pH と水のイオン積〔理論〕
 neutralization        中和反応と量的関係〔理論〕
 salt                  塩 —— つくる・もどす・水溶液の性質〔理論〕
 acid-displacement     弱酸の遊離・揮発性の酸の遊離〔理論〕
