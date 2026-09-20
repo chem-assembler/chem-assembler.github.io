@@ -80,7 +80,12 @@ caption: セッケンのもとになる**ステアリン酸**。この −COOH �
 
 //図: ⚠ 本当はステアリン酸ナトリウム（セッケン）そのものを描きたいが、gen-figure で焼くとアプリの renderStandardFigure が止まる（learn.js 4004行・undefined の x を読む）。直るまでステアリン酸で代用
 
-//図: セッケンの分子を「丸い頭（親水基）＋長い棒（疎水基）」の記号で描き、構造式のどこにあたるかを並べて示す図。記号図なので作図器では描けない
+:::figure
+src: soap-molecule-symbol.png
+svg: soap-molecule-symbol.svg
+alt: 上にセッケンの示性式 C17H35-COO-Na+ を書き、左半分に疎水基、右半分に親水基と括弧で示した図。その下に、同じ向きで長い棒と丸い頭からなる記号が描いてある
+caption: 以降の図では、この**長い棒と丸い頭**でセッケン1分子を表します。棒が油側、頭が水側です。
+:::
 
 :::example
 stageId: stearic-acid
