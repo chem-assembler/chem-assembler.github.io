@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="380" viewBox="0 0 860 380" role="img">
+  <!-- 電気泳動の装置。中央に置いたアミノ酸が、陽イオンは陰極（−）へ、陰イオンは陽極（＋）へ動く。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 左が陰極（−）・右が陽極（＋）。電源の短い線が −、長い線が ＋。 -->
+  <style>
+    .vessel { fill: #eaf3fb; stroke: #333; stroke-width: 2.5; }
+    .rod { fill: #555; stroke: #333; stroke-width: 2; }
+    .wire { stroke: #333; stroke-width: 2.5; fill: none; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 14px; fill: #444; }
+    .red { fill: #c62828; }
+    .blue { fill: #1565c0; }
+    .purple { fill: #6a1b9a; }
+  </style>
+
+  <!-- 電源 -->
+  <path class="wire" d="M 148 176 L 148 95 L 414 95 M 712 176 L 712 95 L 440 95" />
+  <path class="wire" d="M 420 82 L 420 108" stroke-width="3" />
+  <path class="wire" d="M 434 72 L 434 118" stroke-width="3" />
+  <text class="small" x="410" y="66" text-anchor="end">−</text>
+  <text class="small" x="446" y="66">＋</text>
+  <text class="lab" x="470" y="128">電源</text>
+
+  <!-- 容器と電極 -->
+  <rect class="vessel" x="110" y="200" width="640" height="104" rx="6" />
+  <rect class="rod" x="140" y="176" width="16" height="96" rx="3" />
+  <rect class="rod" x="704" y="176" width="16" height="96" rx="3" />
+  <text class="lab red" x="148" y="342" text-anchor="middle">陰極（−）</text>
+  <text class="lab blue" x="712" y="342" text-anchor="middle">陽極（＋）</text>
+
+  <!-- 試料 -->
+  <rect x="418" y="206" width="20" height="18" rx="4" fill="#6a1b9a" />
+  <path class="wire" d="M 428 202 L 428 192" stroke="#6a1b9a" stroke-width="1.5" />
+  <text class="lab purple" x="428" y="184" text-anchor="middle">アミノ酸の水溶液を置く</text>
+
+  <!-- 動く向き -->
+  <path class="wire" d="M 400 250 L 244 250" stroke="#c62828" />
+  <polygon points="234,250 248,244 248,256" fill="#c62828" />
+  <text class="lab red" x="320" y="240" text-anchor="middle">陽イオン</text>
+
+  <path class="wire" d="M 456 250 L 612 250" stroke="#1565c0" />
+  <polygon points="622,250 608,244 608,256" fill="#1565c0" />
+  <text class="lab blue" x="536" y="240" text-anchor="middle">陰イオン</text>
+
+  <text class="small purple" x="428" y="292" text-anchor="middle">双性イオンは動かない</text>
+</svg>
