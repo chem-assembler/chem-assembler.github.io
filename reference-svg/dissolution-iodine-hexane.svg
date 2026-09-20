@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="378" viewBox="0 0 820 378" role="img">
+  <!-- 水とヘキサンの2層にヨウ素。振るとヨウ素は無極性のヘキサン層へ移る。
+       ⚠ ヘキサンは水より軽いので **上** の層（向きを間違えない）。
+       ⚠ 色だけで読ませないよう、色の名前（無色・うすい褐色・赤紫）を文字でも書いた。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <clipPath id="tubeA"><path d="M 200 100 L 200 300 A 45 45 0 0 0 290 300 L 290 100 Z" /></clipPath>
+    <clipPath id="tubeB"><path d="M 520 100 L 520 300 A 45 45 0 0 0 610 300 L 610 100 Z" /></clipPath>
+  </defs>
+  <style>
+    .glass { fill: none; stroke: #333; stroke-width: 2.5; }
+    .face { stroke: #999; stroke-width: 1.5; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .tiny { font-size: 13px; fill: #777; }
+  </style>
+
+  <!-- 振る前 -->
+  <text class="lab" x="245" y="76" text-anchor="middle">振る前</text>
+  <rect clip-path="url(#tubeA)" x="200" y="120" width="90" height="70" fill="#f7f7f7" />
+  <rect clip-path="url(#tubeA)" x="200" y="190" width="90" height="165" fill="#e6d1a4" />
+  <path class="face" d="M 200 120 L 290 120 M 200 190 L 290 190" />
+  <path class="glass" d="M 200 100 L 200 300 A 45 45 0 0 0 290 300 L 290 100" />
+  <ellipse cx="245" cy="100" rx="45" ry="7" class="glass" />
+
+  <text class="small" x="190" y="152" text-anchor="end">ヘキサン</text>
+  <text class="tiny" x="190" y="171" text-anchor="end">（無極性）</text>
+  <text class="small" x="190" y="248" text-anchor="end">水</text>
+  <text class="tiny" x="190" y="267" text-anchor="end">（極性）</text>
+  <text class="small" x="302" y="152">無色</text>
+  <text class="small" x="302" y="248">うすい褐色</text>
+
+  <!-- 操作 -->
+  <text class="small" x="452" y="196" text-anchor="middle">よく振る</text>
+  <path d="M 400 218 L 495 218" stroke="#333" stroke-width="2" fill="none" />
+  <polygon points="505,218 491,213 491,223" fill="#333" />
+
+  <!-- 振ったあと -->
+  <text class="lab" x="565" y="76" text-anchor="middle">よく振ったあと</text>
+  <rect clip-path="url(#tubeB)" x="520" y="120" width="90" height="70" fill="#a63a96" />
+  <rect clip-path="url(#tubeB)" x="520" y="190" width="90" height="165" fill="#f8f4ec" />
+  <path class="face" d="M 520 120 L 610 120 M 520 190 L 610 190" />
+  <path class="glass" d="M 520 100 L 520 300 A 45 45 0 0 0 610 300 L 610 100" />
+  <ellipse cx="565" cy="100" rx="45" ry="7" class="glass" />
+
+  <text class="small" x="622" y="152" fill="#8e2a80">赤紫になる</text>
+  <text class="small" x="622" y="248">ほぼ無色になる</text>
+
+  <!-- ヨウ素の移動 -->
+  <path d="M 565 240 L 565 172" stroke="#8e2a80" stroke-width="2.5" fill="none" stroke-dasharray="7 4" />
+  <polygon points="565,162 558,176 572,176" fill="#8e2a80" />
+  <text class="small" x="580" y="212" fill="#8e2a80">I₂</text>
+</svg>
