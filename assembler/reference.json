@@ -3266,6 +3266,7 @@
 {"kind":"text","text":"途中で回収して使い回す物質（NaHCO₃・NH₄Cl・NH₃・CO₂・CaO・Ca(OH)₂）が両辺で消えるように足し合わせます。① を2倍し、②〜⑤ をそのまま足すと次の式が残ります。"},
 {"kind":"reaction","left":"2NaCl ＋ CaCO₃","right":"Na₂CO₃ ＋ CaCl₂","level":"★★★","note":"①×2 ＋ ② ＋ ③ ＋ ④ ＋ ⑤。原料2つと生成物2つだけが残ります。"},
 {"kind":"text","text":"<b>全体の式と、① ② の2本は必ず書けるようにしてください。</b> ③〜⑤ は、①② で使った NH₃ と CO₂ を「どこから補うか」を考えれば出てくる式なので、丸暗記しなくても構いません。全体の式は、原料（NaCl と CaCO₃）と、ほしい物（Na₂CO₃）を覚えていれば、余りが CaCl₂ になると分かります。"},
+{"kind":"figure","src":"solvay-flow.png","svg":"solvay-flow.svg","alt":"アンモニアソーダ法の流れ図。左の列は NaCl の飽和水溶液から ①②を経て Na₂CO₃ へ、右の列は石灰石 CaCO₃ から ③④⑤を経て CaCl₂ へ進む。②と③で出た CO₂、⑤で追い出した NH₃、①でできた NH₄Cl は点線の矢印で工程の中を戻っている","caption":"実線をたどると、入っていくのは <b>NaCl と CaCO₃ だけ</b>、出てくるのは <b>Na₂CO₃ と CaCl₂ だけ</b>です。点線の分が両辺で消えるので、全体の式が 2NaCl ＋ CaCO₃ → Na₂CO₃ ＋ CaCl₂ になります。"},
 {"kind":"section","anchor":"range","title":"覚える範囲","lead":"単体と水の反応、NaOH と CO₂、炭酸塩・炭酸水素塩の3本、アンモニアソーダ法の3本です。"},
 {"kind":"heading","title":"必ず覚えるもの（★★★）"},
 {"kind":"list","items":["2Na ＋ 2H₂O → 2NaOH ＋ H₂","2NaOH ＋ CO₂ → Na₂CO₃ ＋ H₂O","Na₂CO₃ ＋ 2HCl → 2NaCl ＋ H₂O ＋ CO₂","2NaHCO₃ → Na₂CO₃ ＋ H₂O ＋ CO₂（加熱）","アンモニアソーダ法の ①・② と全体の式"]},
