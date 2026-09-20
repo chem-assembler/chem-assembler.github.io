@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="392" viewBox="0 48 880 392" role="img">
+  <!-- NaCl の結晶が水に溶けるようす。Na+ には水分子の O 側、Cl- には H 側が向く。
+       ⚠ 水分子は <defs> の1つを回して置いている（回すと文字が逆さになるので、O・H・δ の札は
+          左下の見本の1個だけに付けた）。図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <g id="water">
+      <line x1="0" y1="0" x2="-14" y2="16" stroke="#888" stroke-width="3" />
+      <line x1="0" y1="0" x2="14" y2="16" stroke="#888" stroke-width="3" />
+      <circle cx="-14" cy="16" r="8" fill="#fff" stroke="#777" stroke-width="1.3" />
+      <circle cx="14" cy="16" r="8" fill="#fff" stroke="#777" stroke-width="1.3" />
+      <circle cx="0" cy="0" r="13" fill="#fce4ec" stroke="#c62828" stroke-width="1.6" />
+    </g>
+  </defs>
+  <style>
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .ion { font-size: 13px; fill: #222; }
+    .na { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
+    .cl { fill: #c8e6c9; stroke: #2e7d32; stroke-width: 1.6; }
+  </style>
+
+  <!-- 結晶（Na+ と Cl- が交互に並ぶ。右上の1か所は抜けたあと） -->
+  <rect x="38" y="78" width="204" height="204" rx="6" fill="#fafafa" stroke="#ddd" />
+  <circle class="cl" cx="70" cy="110" r="24" /><text class="ion" x="70" y="115" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="116" cy="110" r="16" /><text class="ion" x="116" y="115" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="162" cy="110" r="24" /><text class="ion" x="162" y="115" text-anchor="middle">Cl⁻</text>
+  <circle cx="208" cy="110" r="16" fill="none" stroke="#1565c0" stroke-width="1.5" stroke-dasharray="4 4" />
+
+  <circle class="na" cx="70" cy="156" r="16" /><text class="ion" x="70" y="161" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="116" cy="156" r="24" /><text class="ion" x="116" y="161" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="162" cy="156" r="16" /><text class="ion" x="162" y="161" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="208" cy="156" r="24" /><text class="ion" x="208" y="161" text-anchor="middle">Cl⁻</text>
+
+  <circle class="cl" cx="70" cy="202" r="24" /><text class="ion" x="70" y="207" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="116" cy="202" r="16" /><text class="ion" x="116" y="207" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="162" cy="202" r="24" /><text class="ion" x="162" y="207" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="208" cy="202" r="16" /><text class="ion" x="208" y="207" text-anchor="middle">Na⁺</text>
+
+  <circle class="na" cx="70" cy="248" r="16" /><text class="ion" x="70" y="253" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="116" cy="248" r="24" /><text class="ion" x="116" y="253" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="162" cy="248" r="16" /><text class="ion" x="162" y="253" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="208" cy="248" r="24" /><text class="ion" x="208" y="253" text-anchor="middle">Cl⁻</text>
+
+  <text class="lab" x="140" y="308" text-anchor="middle">NaCl の結晶</text>
+
+  <!-- 表面から水の中へ -->
+  <text class="small" x="252" y="174">表面からばらばらに</text>
+  <path d="M 252 192 L 424 192" stroke="#333" stroke-width="2" fill="none" />
+  <polygon points="434,192 420,187 420,197" fill="#333" />
+
+  <!-- Na+ の水和（O 側が内を向く） -->
+  <use href="#water" transform="translate(547,190) rotate(-90)" />
+  <use href="#water" transform="translate(505,232) rotate(0)" />
+  <use href="#water" transform="translate(463,190) rotate(90)" />
+  <use href="#water" transform="translate(505,148) rotate(180)" />
+  <circle class="na" cx="505" cy="190" r="16" /><text class="ion" x="505" y="195" text-anchor="middle">Na⁺</text>
+  <text class="small" x="505" y="302" text-anchor="middle" fill="#1565c0">Na⁺ には O 側（δ−）が向く</text>
+
+  <!-- Cl- の水和（H 側が内を向く） -->
+  <use href="#water" transform="translate(781,190) rotate(90)" />
+  <use href="#water" transform="translate(725,246) rotate(180)" />
+  <use href="#water" transform="translate(669,190) rotate(270)" />
+  <use href="#water" transform="translate(725,134) rotate(0)" />
+  <circle class="cl" cx="725" cy="190" r="24" /><text class="ion" x="725" y="195" text-anchor="middle">Cl⁻</text>
+  <text class="small" x="725" y="302" text-anchor="middle" fill="#2e7d32">Cl⁻ には H 側（δ＋）が向く</text>
+
+  <!-- 見本の水分子（回していないので札を付けられる） -->
+  <line x1="120" y1="372" x2="106" y2="388" stroke="#888" stroke-width="3" />
+  <line x1="120" y1="372" x2="134" y2="388" stroke="#888" stroke-width="3" />
+  <circle cx="106" cy="388" r="8" fill="#fff" stroke="#777" stroke-width="1.3" />
+  <circle cx="134" cy="388" r="8" fill="#fff" stroke="#777" stroke-width="1.3" />
+  <circle cx="120" cy="372" r="13" fill="#fce4ec" stroke="#c62828" stroke-width="1.6" />
+  <text class="small" x="96" y="366" text-anchor="end" fill="#c62828">O（δ−）</text>
+  <text class="small" x="152" y="398" fill="#555">H（δ＋）</text>
+  <text class="small" x="240" y="382">水分子は極性分子 —— 向きをそろえてとり囲む</text>
+</svg>
