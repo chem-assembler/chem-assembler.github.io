@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="360" viewBox="0 0 820 360" role="img">
+  <!-- H2O の共有電子対の偏りと酸化数。電気陰性度の大きい O が共有電子対をすべてもつと数える → O は −2、H は ＋1。
+       点は電子（黒い2個1組が電子対）。破線の囲みは「O のものと数える範囲」。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .bond { stroke: #333; stroke-width: 2.5; fill: none; }
+    .atom { font-size: 34px; fill: #222; text-anchor: middle; }
+    .top { font-size: 18px; fill: #222; text-anchor: middle; }
+    .bot { font-size: 17px; fill: #333; text-anchor: middle; }
+    .ox { font-size: 17px; fill: #6a1b9a; }
+    .lead { stroke: #6a1b9a; stroke-width: 1.4; fill: none; }
+    .e { fill: #222; }
+  </style>
+
+  <text class="top" x="410" y="36">電気陰性度 O（3.4）＞ H（2.2）</text>
+
+  <!-- 結合 -->
+  <path class="bond" d="M 392 180 L 300 241" />
+  <path class="bond" d="M 428 180 L 520 241" />
+
+  <!-- 原子 -->
+  <text class="atom" x="410" y="172">O</text>
+  <text class="atom" x="280" y="270">H</text>
+  <text class="atom" x="540" y="270">H</text>
+
+  <!-- 非共有電子対 -->
+  <circle class="e" cx="374" cy="124" r="4.5" /><circle class="e" cx="386" cy="112" r="4.5" />
+  <circle class="e" cx="434" cy="112" r="4.5" /><circle class="e" cx="446" cy="124" r="4.5" />
+
+  <!-- 共有電子対（O 側に寄せて描く） -->
+  <circle class="e" cx="368" cy="205" r="4.5" /><circle class="e" cx="360" cy="193" r="4.5" />
+  <circle class="e" cx="452" cy="205" r="4.5" /><circle class="e" cx="460" cy="193" r="4.5" />
+
+  <!-- O のものと数える範囲 -->
+  <circle cx="410" cy="170" r="86" fill="none" stroke="#6a1b9a" stroke-width="2" stroke-dasharray="7 6" />
+
+  <!-- 酸化数 -->
+  <text class="ox" x="504" y="112">酸化数 −2</text>
+  <path class="lead" d="M 498 118 L 478 132" />
+  <text class="ox" x="120" y="302">酸化数 ＋1</text>
+  <path class="lead" d="M 216 296 L 252 280" />
+  <text class="ox" x="600" y="302">酸化数 ＋1</text>
+  <path class="lead" d="M 594 296 L 562 280" />
+
+  <text class="bot" x="410" y="342">共有電子対は、強く引きつけるほうがすべてもつと数える</text>
+</svg>
