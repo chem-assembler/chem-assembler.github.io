@@ -55727,7 +55727,7 @@
             assert(res.ok, `${p.id}: 図が読めない（${url}・HTTP ${res.status}）`
                 + '。reference-img/ に在るか、_config.yml で除外していないか');
             assert(/^image\//.test(res.headers.get('content-type') || ''),
-                `${p.id}: ${url} が画像として返ってこない（${res.headers.get('content-type')}）`);
+                `${p.id}: ${url} が画像として返ってこない（${res.headers.get('content-type')}）`);
             /* ★ `svg:` の図は **ソース（reference-svg/）が正**・PNG は生成物（2026-09-21）。
                ソースが消えた PNG は、次の焼き直しで作り直せない ＝ 直せない図になる。 */
             if (b.svg) {
@@ -61640,7 +61640,7 @@
         await 確かめる('パズル', 'puzzle', /組み立てよう/, () => g.currentMode === 'free');
 
         c.reset(); g.setMode('free'); g.summonMolecule('安息香酸'); g.startSeparation();
-        await 確かめる('分液', 'sep', /分液.*層に分けよう/, () => !g.separationActive);
+        await 確かめる('分液', 'sep', /分液.*適切な試薬を選んで分離しよう/, () => !g.separationActive);
 
         rxFreeCanvasWithMolecule(c); rxTurnOnMoleculeSelect(c);
         await 確かめる('分子選び', 'reaction-select', /反応させる分子.*タップしよう/, () => !g.reactionSelectMode);

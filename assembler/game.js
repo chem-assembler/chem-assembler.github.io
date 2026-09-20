@@ -3681,7 +3681,7 @@ class Game {
         if (this.separationActive) {
             return {
                 mode: 'sep', icon: '🧪',
-                task: '<b>分液</b>　瓶をかけて、層に分けよう',
+                task: '<b>分液</b>　適切な試薬を選んで分離しよう',
                 stop: 'やめる', stopTitle: '分液をやめて水面の帯を下ろします（塩になった印は消えません）',
                 onStop: click('btn-sep-end')
             };
@@ -8106,7 +8106,7 @@ class Game {
         if (note) {
             note.textContent = this.separationFocusId
                 ? '1件だけを拡大しています。ほかの札を押すと切り替わり、「全体を見る」で並べて表示に戻ります。'
-                : '瓶を押すと、キャンバスの全部の成分に順にかかります。効いたものだけが層を移ります。';
+                : '試薬を選ぶと抽出を行います。効いたものだけが層を移ります。';
         }
         const back = document.getElementById('btn-sep-all');
         if (back) back.classList.toggle('hidden', !this.separationFocusId);
@@ -10223,7 +10223,7 @@ class Game {
             this._questNowText = now.textContent;
             now.title = this._questDone
                 ? '目標の分子がキャンバスにあります。別の課題へ移るか、↻ はじめから でもう一度たどれます'
-                : 'いまキャンバスにある分子です（効かない瓶を押しても、ここは変わりません）';
+                : 'いまキャンバスにある分子です';
             now.classList.toggle('q-cleared', !!this._questDone);
         }
         this.setWorkPane('ws-quest', true);
