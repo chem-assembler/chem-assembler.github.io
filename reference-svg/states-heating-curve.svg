@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="436" viewBox="0 0 820 436" role="img">
+  <!-- 水の加熱曲線（1.013×10^5 Pa）。平らな2区間では温度が上がらない。
+       ⚠ 横軸の長さは目安で、融解と蒸発の熱量の比を表してはいない（比は本文の表で扱う）。
+       状態変化中の区間は赤にしたが、色だけに頼らないよう「融解」「沸騰」の札と下の帯を付けた。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .up { stroke: #1565c0; stroke-width: 3.5; fill: none; }
+    .flat { stroke: #c62828; stroke-width: 4; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .tick { font-size: 15px; fill: #555; }
+  </style>
+
+  <!-- 軸 -->
+  <path class="ax" d="M 110 90 L 110 380 L 760 380" />
+  <polygon points="110,80 105,94 115,94" fill="#333" />
+  <polygon points="770,380 756,375 756,385" fill="#333" />
+  <text class="lab" x="26" y="60">温度（℃）</text>
+  <text class="small" x="752" y="370" text-anchor="end">加熱時間（加えた熱）</text>
+
+  <!-- 0℃ と 100℃ -->
+  <path class="grid" d="M 110 330 L 700 330 M 110 180 L 700 180" />
+  <text class="tick" x="100" y="336" text-anchor="end">0</text>
+  <text class="tick" x="100" y="186" text-anchor="end">100</text>
+
+  <!-- 区切り -->
+  <path class="grid" d="M 180 330 L 180 380 M 300 330 L 300 380 M 430 180 L 430 380 M 640 180 L 640 380" />
+
+  <!-- 曲線 -->
+  <path class="up" d="M 110 360 L 180 330" />
+  <path class="flat" d="M 180 330 L 300 330" />
+  <path class="up" d="M 300 330 L 430 180" />
+  <path class="flat" d="M 430 180 L 640 180" />
+  <path class="up" d="M 640 180 L 710 134" />
+
+  <text class="small" x="240" y="308" text-anchor="middle" fill="#c62828">融解</text>
+  <text class="small" x="535" y="160" text-anchor="middle" fill="#c62828">沸騰</text>
+
+  <text class="small" x="140" y="120">平らな区間では温度が上がらない。</text>
+  <text class="small" x="140" y="144">加えた熱が状態変化だけに使われる。</text>
+
+  <!-- 下の帯（どの状態か） -->
+  <path class="ax" d="M 110 386 L 110 394 M 180 386 L 180 394 M 300 386 L 300 394 M 430 386 L 430 394 M 640 386 L 640 394 M 710 386 L 710 394" stroke-width="1.5" />
+  <text class="small" x="145" y="414" text-anchor="middle">氷</text>
+  <text class="small" x="240" y="414" text-anchor="middle">氷と水</text>
+  <text class="small" x="365" y="414" text-anchor="middle">水</text>
+  <text class="small" x="535" y="414" text-anchor="middle">水と水蒸気</text>
+  <text class="small" x="675" y="414" text-anchor="middle">水蒸気</text>
+</svg>
