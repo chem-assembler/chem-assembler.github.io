@@ -46,7 +46,7 @@
     <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
     <meta name="twitter:card" content="summary_large_image">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1602">
+    <link rel="stylesheet" href="style.css?v=1603">
     <script>
         // 予期しないJSエラーはUIをブロックするalertではなく、画面内トーストとconsoleに出す（開発方針 3.4章）
         window.onerror = function(message, source, lineno, colno, error) {
@@ -70,7 +70,7 @@
                  ヘッダーに残っていたころは PC で 29px と 32px の床を割っており、
                  モバイル横では「右上に浮く❓」のためにリボンの上端を 32px 下げていた。
                  id は据え置き ＝ tutorial.js が id で結んでいるので配線は無傷 -->
-            <div class="version">v1602</div>
+            <div class="version">v1603</div>
         </header>
 
         <!-- 右パネルのシート（`#sheet-backdrop`）は**消した**（第5段）。
@@ -96,7 +96,7 @@
                         その止めが**機能を1つ足すたびに緩む**形になる。実測で赤くなって気づいた -->
                 <div id="palette-tabs" class="palette-tabs hidden" role="tablist">
                     <button id="btn-palette-draw" class="palette-tab active" data-palette="draw" role="tab" aria-selected="true" title="原子・環・官能基を置いて分子を組み立てます">✏️ 作図</button>
-                    <button id="btn-palette-exp" class="palette-tab" data-palette="exp" role="tab" aria-selected="false" title="試薬の瓶を選んで、キャンバスの分子にかけます">🧪 実験</button>
+                    <button id="btn-palette-exp" class="palette-tab" data-palette="exp" role="tab" aria-selected="false" title="試薬を選んで、キャンバスの分子にかけます">🧪 実験</button>
                 </div>
                 <!-- 並びは**使う順路**（DESIGN_entry_points.md A-1）: 原子を置く → 環・官能基を足す
                      → 作図の道具 → 仕上げの印。機能が増えた順に置いていた旧並びでは、
@@ -186,9 +186,9 @@
                          ★ 押すと水面の帯が出て、瓶が**キャンバスの全成分に順にかかる**ようになる
                            （`applyToMixture`）。試薬の順は固定しない（D-I10。教科書順は入試64件中3件）。 -->
                     <button id="btn-sep-start" class="view-btn exp-quest-open"
-                            title="水面の帯を出して、混合物に瓶をかけられるようにします">🧪 分液を始める</button>
+                            title="画面をエーテル層と水層に分割し、使用する試薬を選べます">🧪 分液を始める</button>
                     <h3>試薬をかける</h3>
-                    <p id="exp-lede" class="exp-lede">瓶を選ぶと、キャンバスの分子にかけます。<b>効かない瓶も押せます</b> —— 効かなかった理由が返ります。</p>
+                    <p id="exp-lede" class="exp-lede">試薬を選ぶと、キャンバスの分子にかけます。<b>効かない試薬も押せます</b> —— 効かなかった理由が返ります。</p>
                     <div id="exp-reagents-grid" class="rg-grid"></div>
                     <div id="exp-reagent-note" class="exp-note"></div>
                 </div>
@@ -2261,19 +2261,19 @@
     </div>
 
     <!-- スクリプトの読み込み -->
-    <script src="chemistry.js?v=1602"></script>
+    <script src="chemistry.js?v=1603"></script>
     <!-- 行き止まりの報告（v1420）。**反応の外**に置く汎用の仕組み ——
          「押したのに何も起きない」は反応まわり以外でも起きるので、
          何を書き写すか・どこへ送るか・貼り先の案内の1行を、ここ1か所にまとめてある -->
-    <script src="deadend.js?v=1602"></script>
-    <script src="game.js?v=1602"></script>
-    <script src="reaction.js?v=1602"></script>
-    <script src="quiz.js?v=1602"></script>
-    <script src="stereo.js?v=1602"></script>
-    <script src="reactor.js?v=1602"></script>
-    <script src="narrowing.js?v=1602"></script>
-    <script src="learn.js?v=1602"></script>
-    <script src="tutorial.js?v=1602"></script>
-    <script src="rec.js?v=1602"></script>
+    <script src="deadend.js?v=1603"></script>
+    <script src="game.js?v=1603"></script>
+    <script src="reaction.js?v=1603"></script>
+    <script src="quiz.js?v=1603"></script>
+    <script src="stereo.js?v=1603"></script>
+    <script src="reactor.js?v=1603"></script>
+    <script src="narrowing.js?v=1603"></script>
+    <script src="learn.js?v=1603"></script>
+    <script src="tutorial.js?v=1603"></script>
+    <script src="rec.js?v=1603"></script>
 </body>
 </html>
