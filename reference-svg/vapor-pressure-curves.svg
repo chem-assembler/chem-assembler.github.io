@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="430" viewBox="0 0 800 430" role="img">
+  <!-- 水・エタノール・ジエチルエーテルの蒸気圧曲線。外圧 1.013×10^5 Pa と交わる温度が沸点。
+       ⚠ 目盛りは実測値から取った（25℃ でエーテル 7.1×10^4・エタノール 7.9×10^3・水 3.2×10^3 の順を守る）。
+       沸点は エーテル 34.6℃・エタノール 78℃・水 100℃。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .grid { stroke: #ddd; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .atm { stroke: #c62828; stroke-width: 2; stroke-dasharray: 7 4; fill: none; }
+    .w { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .e { stroke: #2e7d32; stroke-width: 3; fill: none; }
+    .et { stroke: #6a1b9a; stroke-width: 3; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .tick { font-size: 13px; fill: #666; }
+  </style>
+
+  <!-- 軸 -->
+  <path class="ax" d="M 150 50 L 150 380 L 700 380" />
+  <polygon points="150,40 145,54 155,54" fill="#333" />
+  <polygon points="710,380 696,375 696,385" fill="#333" />
+  <text class="small" x="28" y="44">蒸気圧（Pa）</text>
+  <text class="small" x="706" y="376">温度（℃）</text>
+
+  <!-- 外圧の高さ -->
+  <path class="atm" d="M 150 150 L 690 150" />
+  <text class="tick" x="140" y="155" text-anchor="end">1.013×10⁵</text>
+  <text class="tick" x="140" y="271" text-anchor="end">5×10⁴</text>
+  <text class="tick" x="140" y="385" text-anchor="end">0</text>
+  <path class="grid" d="M 150 266 L 690 266" />
+  <text class="tick" x="158" y="143" fill="#c62828">外圧（大気圧）</text>
+
+  <!-- 沸点の位置 -->
+  <path class="grid" d="M 306 150 L 306 380 M 501 150 L 501 380 M 600 150 L 600 380" />
+  <text class="tick" x="306" y="400" text-anchor="middle">35</text>
+  <text class="tick" x="501" y="400" text-anchor="middle">78</text>
+  <text class="tick" x="600" y="400" text-anchor="middle">100</text>
+
+  <!-- ジエチルエーテル（分子間力が弱い＝いちばん左） -->
+  <polyline class="et" points="150,324 195,293 240,247 285,185 306,150 352,73" />
+  <circle cx="306" cy="150" r="5" fill="#6a1b9a" />
+  <text class="small" x="362" y="70" fill="#6a1b9a">ジエチルエーテル</text>
+
+  <!-- エタノール -->
+  <polyline class="e" points="150,376 240,367 330,339 420,273 465,217 501,150 546,62" />
+  <circle cx="501" cy="150" r="5" fill="#2e7d32" />
+  <text class="small" x="556" y="60" fill="#2e7d32">エタノール</text>
+
+  <!-- 水（水素結合が強い＝いちばん右） -->
+  <polyline class="w" points="150,379 240,375 330,363 420,335 510,272 555,221 600,150 622,105" />
+  <circle cx="600" cy="150" r="5" fill="#1565c0" />
+  <text class="small" x="632" y="102" fill="#1565c0">水</text>
+
+  <text class="small" x="440" y="352">交わる温度が沸点</text>
+</svg>
