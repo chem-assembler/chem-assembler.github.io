@@ -68,6 +68,13 @@ alt: 過マンガン酸イオンの半反応式を、1 反応前後の物質、2
 caption: 書き方その1。右の枠は各段で**何を数えてその数にしたか**です。
 :::
 
+:::link
+app: ion-equation/halfreaction
+id: MnO4_red
+embed: true
+text: 同じ式の係数を、この下で自分で決めてみよう
+:::
+
 :::section
 anchor: method2
 title: 書き方その2 —— 酸化数 → e⁻ → H⁺ → H₂O
@@ -323,13 +330,8 @@ text: 塩基性での書き換えと、オゾンの半反応式は「液性に�
 
 :::link
 app: ion-equation/halflist
-text: 半反応式の一覧
-:::
-
-:::link
-app: ion-equation/halfreaction
-id: MnO4_red
-text: 過マンガン酸イオンの半反応式を組む
+embed: true
+text: ここに出していない式もふくめて、一覧で見てみよう
 :::
 
 ## 例題

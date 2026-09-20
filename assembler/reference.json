@@ -4844,6 +4844,7 @@
 {"kind":"list","ordered":true,"items":["酸化剤・還元剤の反応前後の物質（暗記）を書く。","　MnO₄⁻ → Mn²⁺","H₂O で両辺の O 原子の数を合わせる。","　左辺に O 原子が4個あるので、右辺に 4H₂O を加える：MnO₄⁻ → Mn²⁺ ＋ 4H₂O","H⁺ で両辺の H 原子の数を合わせる。","　右辺に H 原子が8個あるので、左辺に 8H⁺ を加える：MnO₄⁻ ＋ 8H⁺ → Mn²⁺ ＋ 4H₂O","e⁻ で両辺の電荷を合わせる。","　左辺の電荷は合計 ＋7、右辺は合計 ＋2 なので、左辺に 5e⁻ を加える"]},
 {"kind":"reaction","left":"MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻","right":"Mn²⁺ ＋ 4H₂O","level":"★★★","note":"完成。Mn の酸化数は ＋7 → ＋2 で5減っており、<b>酸化数の変化と e⁻ の数が対応しています</b>（Mn⁷⁺ ＋ 5e⁻ → Mn²⁺）。"},
 {"kind":"figure","src":"half-reaction-method1.png","alt":"過マンガン酸イオンの半反応式を、1 反応前後の物質、2 H₂O で O を合わせる、3 H⁺ で H を合わせる、4 e⁻ で電荷を合わせる の順に書いていく図。最後に Mn の酸化数 ＋7 と ＋2 の差が 5e⁻ に対応していることを矢印で示している","caption":"書き方その1。右の枠は各段で<b>何を数えてその数にしたか</b>です。"},
+{"kind":"link","app":"ion-equation/halfreaction","id":"MnO4_red","embed":true,"text":"同じ式の係数を、この下で自分で決めてみよう","href":"/ion-equation/halfreaction.html?q=MnO4_red&from=reference&page=half-reaction","embedHref":"/ion-equation/halfreaction.html?q=MnO4_red&embed=1&from=reference&page=half-reaction"},
 {"kind":"section","anchor":"method2","title":"書き方その2 —— 酸化数 → e⁻ → H⁺ → H₂O","lead":"先に酸化数の変化から e⁻ の数を決め、電荷を H⁺ で、O を H₂O で合わせます。","terms":["書き方その2"]},
 {"kind":"text","text":"同じ KMnO₄ を、酸化数から書く手順です。"},
 {"kind":"list","ordered":true,"items":["酸化剤・還元剤の反応前後の物質（暗記）を書く。","　MnO₄⁻ → Mn²⁺","酸化数が変化する原子の酸化数を書き、変化に合わせて e⁻ を加える。","　Mn は ＋7 から ＋2 へ変化しているので、左辺に 5e⁻ を加える：MnO₄⁻ ＋ 5e⁻ → Mn²⁺","H⁺ で両辺の電荷を合わせる。","　左辺の電荷は合計 −6、右辺は ＋2 なので、左辺に 8H⁺ を加える：MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺","H₂O で両辺の O 原子の数を合わせる。","　左辺に O 原子が4個あるので、右辺に 4H₂O を加える：MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O"]},
@@ -4887,8 +4888,7 @@
 {"kind":"heading","title":"このページに載せていない半反応式"},
 {"kind":"text","text":"オゾン O₃、中性・塩基性での過マンガン酸イオン、電気分解・電池の電極の式は、液性による書き換えのページ・電池と電気分解のページで扱います。すべての半反応式の一覧は、アプリの一覧で見られます。"},
 {"kind":"link","to":"half-reaction-condition","text":"塩基性での書き換えと、オゾンの半反応式は「液性による半反応式の書き換え」で"},
-{"kind":"link","app":"ion-equation/halflist","text":"半反応式の一覧","href":"/ion-equation/halflist.html?from=reference&page=half-reaction"},
-{"kind":"link","app":"ion-equation/halfreaction","id":"MnO4_red","text":"過マンガン酸イオンの半反応式を組む","href":"/ion-equation/halfreaction.html?q=MnO4_red&from=reference&page=half-reaction"},
+{"kind":"link","app":"ion-equation/halflist","embed":true,"text":"ここに出していない式もふくめて、一覧で見てみよう","href":"/ion-equation/halflist.html?from=reference&page=half-reaction","embedHref":"/ion-equation/halflist.html?embed=1&from=reference&page=half-reaction"},
 {"kind":"heading","title":"例題"},
 {"kind":"exercise","source":"slides:無機の基本１「無機の前に復習すべきこと」p.64-65（練習8）","prompt":"次の酸化剤の半反応式を書け。<b>(1) 二クロム酸カリウム（硫酸酸性）　(2) 熱濃硫酸　(3) 過酸化水素（硫酸酸性）</b>","answer":"<b>(1) Cr₂O₇²⁻ ＋ 14H⁺ ＋ 6e⁻ → 2Cr³⁺ ＋ 7H₂O　(2) H₂SO₄ ＋ 2H⁺ ＋ 2e⁻ → SO₂ ＋ 2H₂O　(3) H₂O₂ ＋ 2H⁺ ＋ 2e⁻ → 2H₂O</b> です。(1) を書き方その1で書くと、Cr₂O₇²⁻ → 2Cr³⁺ のあと、O が7個なので右辺に 7H₂O、H が14個なので左辺に 14H⁺、電荷が左辺 ＋12・右辺 ＋6 なので左辺に 6e⁻ です。"},
 {"kind":"exercise","source":"slides:無機の基本１「無機の前に復習すべきこと」p.66-67（練習9）","prompt":"次の還元剤の半反応式を書け。<b>(1) シュウ酸　(2) 二酸化硫黄　(3) 鉄</b>","answer":"<b>(1) H₂C₂O₄ → 2CO₂ ＋ 2H⁺ ＋ 2e⁻　(2) SO₂ ＋ 2H₂O → SO₄²⁻ ＋ 4H⁺ ＋ 2e⁻　(3) Fe → Fe²⁺ ＋ 2e⁻</b> です。(2) を書き方その1で書くと、SO₂ → SO₄²⁻ のあと、O が右辺に2個多いので左辺に 2H₂O、H が左辺に4個あるので右辺に 4H⁺、電荷が左辺 0・右辺 ＋2 なので右辺に 2e⁻ です。(3) は Fe³⁺ ではなく Fe²⁺ です。"}

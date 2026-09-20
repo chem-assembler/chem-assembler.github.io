@@ -255,6 +255,16 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
 .embed button:hover{filter:brightness(1.12)}
 .embed iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
 .embed .alt{display:inline-block;margin-top:10px;margin-left:14px;color:var(--accent);font-size:13.5px}
+/* ★★ 本文の中に置く部品（:::link の embed: true ・DESIGN_reference_centric.md §2-4）。
+   ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
+   ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
+     素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+.embed-app{margin:22px 0}
+.embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
+.embed-app .embed-run{margin:0}
+.embed-app .alt{margin-left:0}
+/* ⚠ 釦の文は原稿の text: そのもの ＝ **強調 <b> が入りうる**（上の .embed b は箱の題のための指定） */
+.embed-app button b{display:inline;font-size:inherit;margin:0}
 /* ★★ 2カラム（設計書 §19-1・ユーザー承認）——「検索から飛んできたけど自分が欲しい情報が
    どこにあるかわからない」を避けるための目次。⚠ **狭い面では上の折りたたみに落とす**（同じ markup）。
    ⚠ markup は learn.js の renderToc が組んだもの ＝ 面A側に2本目の目次を持たない（§19-6） */
@@ -626,6 +636,39 @@ document.addEventListener('click', function (e) {
 });
 </script>`;
 
+/* ★★ 子（ion）が送ってくる高さを受ける（DESIGN_reference_centric.md §2-4 (6)）。
+ *
+ * ★ **親は子を知らなくてよい** —— 受け口は1つだけ持ち、`origin` と `type` と `v` を見て、
+ *   **`e.source` に一致する iframe** を自分で引く（1ページに部品が2つあっても混ざらない）。
+ * ⚠ 知らない `v` は黙って捨てる ＝ 子を先に上げても親は壊れない（伸びないだけ）。
+ * ⚠⚠ **差が 1px 以下なら無視**（§7 #3b）—— iframe が伸びて親に縦スクロールバーが出ると
+ *   幅が 15px ほど縮み、折り返しで高さが変わる。1〜2往復で収まるが、1px の往復は止める。
+ * ★ 比べるのは**最後に当てた高さ**（`dataset.embedH`）—— `clientHeight` は枠と box-sizing で
+ *   1px ずれるので、当てた値どうしで比べる。
+ *
+ * ★ 引くのは `.embed iframe` **全部**（`.embed-app` に絞らない）—— 一問一答の箱（`/qa/`）は
+ *   いま 640px 固定だが、⚠ **qa が高さを送り始めた日に、この受け口のまま自然に伸びる**（§4 の段1）。
+ *   そのときは下の「埋め込みが在るページだけに置く」条件を外せばよい（受け口は1つのまま）。
+ */
+const EMBED_MSG_JS = `<script>
+window.addEventListener('message', function (e) {
+  if (e.origin !== location.origin) return;
+  var d = e.data;
+  if (!d || d.type !== 'slz-embed' || d.v !== 1) return;
+  var h = Math.ceil(d.h);
+  if (!(h > 0)) return;
+  var fs = document.querySelectorAll('.embed iframe');
+  for (var i = 0; i < fs.length; i++) {
+    if (fs[i].contentWindow !== e.source) continue;
+    var prev = parseFloat(fs[i].dataset.embedH);
+    if (prev === prev && Math.abs(prev - h) <= 1) return;
+    fs[i].dataset.embedH = h;
+    fs[i].style.height = h + 'px';
+    return;
+  }
+});
+</script>`;
+
 /* ★ 目次の器（§19-6）。⚠ **中身は `learn.js` の `renderToc` が組んだもの**で、ここは2つだけやる:
  *   ① 広い画面では `<details>` を開く（閉じていると中身が描かれないので、追従の目次にならない）
  *   ② いま読んでいる節を光らせる
@@ -705,6 +748,25 @@ function advJs() {
     return '<script>\n' + m[0] + '\nrefAdvSetup(document);\n</script>';
 }
 
+/* ★★ 本文の中の部品（`:::link` の `embed: true`・DESIGN_reference_centric.md §2-4・段1）。
+ *
+ * ★ 釦の文は**原稿の `text:` そのもの**（先生の声掛け）。⚠ 押すまで iframe を作らない（(5)）。
+ * ★ URL は**書式が台帳から焼いたもの**を使う（`embedHref` ＝ 素の `href` ＋ `embed=1`）＝
+ *   ⛔ ここで URL を組み立てない（台帳を2か所に持たない）。
+ * ★ 部品の下の「▶ 大きな画面で開く」は **`embed=1` を外した同じ URL・同じタブ**（(4)）——
+ *   そちらでは子の「← 参考書へ戻る」の帯が効くので、往復は既存の約束のまま。
+ * ⚠ 釦は `.embed-run` の中に置く（`EMBED_JS` は**釦の親**に iframe を挿すので、
+ *   これで iframe は「▶ 大きな画面で開く」の**上**に入る）。
+ */
+function appEmbedBox(b) {
+    const plain = String(b.text).replace(/<[^>]*>/g, '');
+    return `<div class="embed embed-app">`
+        + `<div class="embed-run"><button type="button" data-embed="${amp(b.embedHref)}"`
+        + ` data-embed-title="${esc(plain)}">${b.text}</button></div>`
+        + `<a class="alt" href="${amp(b.href)}">▶ 大きな画面で開く</a>`
+        + `</div>`;
+}
+
 function embedBox(label, lead, src, alt) {
     return `<div class="embed"><b>${esc(label)}</b><p>${esc(lead)}</p>`
         + `<button type="button" data-embed="${amp(src)}" data-embed-title="${esc(label)}">${esc(label)}</button>`
@@ -743,6 +805,20 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
        無機・理論の「試す」は本文の `:::link app:` が受け持つ */
     const appSrc = codes.length && isOrg ? `/assembler/?open=reference&code=${encodeURIComponent(codes[0])}` : '';
 
+    /* ★★ 本文の中の部品（`embed: true`）を、目印（`data-embed-slot`）の所へ焼く。
+       ⚠ 目印を置くのはブラウザ側（下の収集）—— **あちらの出力に `<button>` が在ると生成器が止まる**ので、
+         押しものになるのはここ（node 側）だけ。 */
+    const embedLinks = (p.blocks || []).filter(b => b.kind === 'link' && b.embed);
+    let blocks = blocksHtml.join('\n');
+    embedLinks.forEach((b, n) => {
+        const slot = `<div data-embed-slot="${n}"></div>`;
+        if (blocks.indexOf(slot) < 0) {
+            console.error(`❌ ${p.id}: embed: true の :::link（app: ${b.app}）の置き場所が本文に見つかりません`);
+            process.exit(1);
+        }
+        blocks = blocks.replace(slot, appEmbedBox(b));
+    });
+
     const body = `<h1>${esc(p.title)}</h1>
 <p class="lede">${esc(p.summary)}</p>
 <div><span class="unit-label">${esc(p.unitLabel)}</span><span class="unit-label">${esc(p.group)}</span></div>
@@ -750,7 +826,7 @@ ${video}
 <div class="ref-layout">
 ${tocHtml || ''}
 <div class="ref-scope">
-${blocksHtml.join('\n')}
+${blocks}
 </div>
 </div>
 ${codes.length ? `
@@ -766,6 +842,7 @@ ${embedBox('▶ アプリの中で開く', 'このページを資料ペインに
 <a href="/reference/terms/">用語から引く</a>
 ${next ? `<a href="/reference/${next.id}/">${esc(next.title)} →</a>` : ''}</nav>
 ${EMBED_JS}
+${embedLinks.length ? EMBED_MSG_JS : ''}
 ${tocHtml ? TOC_JS : ''}
 ${(p.blocks || []).some(b => b.kind === 'section' && b.advanced) ? advJs() : ''}`;
 
@@ -895,7 +972,22 @@ for (const p of pages) {
             return { error: '`codes` の無いページに :::example（▶ 組んでみる）があります'
                 + '（着地先を名乗れません。例題は知識項目をもつページへ置いてください）' };
         }
-        for (const el of built.els) {
+        /* ★★ 本文の中に埋める `:::link`（`embed: true`）。面Bは今までどおりの `<a>` のままで、
+           **面Aだけ**が「押してから iframe を挿す箱」になる。
+           ⚠ ここでは**目印の空箱**を置くだけ（箱は `<button>` を持つので、焼くのは node 側）。
+           ★ どのリンクかは**焼き込まれた素の href** で引く（本文の綴りに頼らない）。 */
+        const embedLinks = (page.blocks || []).filter((b) => b.kind === 'link' && b.embed);
+        for (let el of built.els) {
+            for (let n = 0; n < embedLinks.length; n++) {
+                const href = embedLinks[n].href;
+                const a = (el.matches('a.ref-link') && el.getAttribute('href') === href)
+                    ? el : el.querySelector('a.ref-link[href="' + href + '"]');
+                if (!a) continue;
+                const row = a.closest('.ref-link-row') || a;
+                const slot = document.createElement('div');
+                slot.setAttribute('data-embed-slot', String(n));
+                if (row === el) el = slot; else row.parentNode.replaceChild(slot, row);
+            }
             /* ★ 押しもの → リンク。**静的なページに、押しても何も起きないボタンを残さない** */
             el.querySelectorAll('button').forEach((btn) => {
                 const a = document.createElement('a');

@@ -132,8 +132,13 @@
         'ion-equation/index': { path: '/ion-equation/', param: 'rxn' },
         'ion-equation/redox': { path: '/ion-equation/redox.html', param: 'rxn' },
         'ion-equation/oxidation': { path: '/ion-equation/oxidation.html', param: 'sp' },
-        'ion-equation/halfreaction': { path: '/ion-equation/halfreaction.html', param: 'q' },
-        'ion-equation/halflist': { path: '/ion-equation/halflist.html', param: null },
+        /* ★★ `embeddable: true` ＝ **参考書のページの中に iframe で置いてよい受け口**
+             （DESIGN_reference_centric.md §2-4・段1）。⚠ **受け側（ion-equation/tests.js の
+             `refReceiversIon`）の `embeddable` の写し**で、3表同時の既存規約に4つめとして乗る。
+           ⚠ 足してよいのは、子が `embed=1` の3点（看板を隠す・高さを送る・帯を作らない）を
+             実装している受け口だけ。それ以外に `embed: true` を書いたら赤にする（下の checkBlock）。 */
+        'ion-equation/halfreaction': { path: '/ion-equation/halfreaction.html', param: 'q', embeddable: true },
+        'ion-equation/halflist': { path: '/ion-equation/halflist.html', param: null, embeddable: true },
         'ion-equation/battery': { path: '/ion-equation/battery.html', param: 's' },
         'ion-equation/electrolysis': { path: '/ion-equation/electrolysis.html', param: 's' },
         'ion-equation/condition': { path: '/ion-equation/condition.html', param: 's' },
@@ -158,10 +163,13 @@
        どこへ戻すか（`/reference/<page>/`）は受け側の帯が決める。 */
     var APP_FROM = 'from=reference';
 
-    /** `app:` と `id:` から href を組む（ルート絶対）。pageId は戻り道のため */
-    function appHref(app, id, pageId) {
+    /** `app:` と `id:` から href を組む（ルート絶対）。pageId は戻り道のため。
+     *  ★ `embed` が真なら **`embed=1` を足すだけ**（DESIGN_reference_centric.md §2-4 (1)）——
+     *    ⛔ 埋め込み専用の引数は作らない。⛔ `?v=` も付けない（§2-6）。
+     *  ⚠ 素の href（`embed` なし）は**残す** —— 面Bのリンクと「▶ 大きな画面で開く」がそれを使う。 */
+    function appHref(app, id, pageId, embed) {
         var t = APP_TARGETS[app];
-        var from = APP_FROM + (pageId ? '&page=' + encodeURIComponent(pageId) : '');
+        var from = (embed ? 'embed=1&' : '') + APP_FROM + (pageId ? '&page=' + encodeURIComponent(pageId) : '');
         if (t.param === '#') return t.path + '?' + from + (id ? '#' + id : '');
         return t.path + '?' + (id ? t.param + '=' + encodeURIComponent(id).replace(/%2C/g, ',') + '&' : '') + from;
     }
@@ -325,7 +333,11 @@
         /* ★★ `app:` … **ほかのアプリの受け口**へ（§31-3・2026-09-19 便0a）。値は上の `APP_TARGETS` の名前だけ。
                        `id:` はその受け口に渡す1つの値（`rxn=` `s=` `q=` `sp=` `r=` `deck=` や `#` の後ろ）。
            ⚠ `href` は**書く欄ではない**（`soon` と同じく読むときに焼き込む。原稿に書いたら「知らないキー」）。 */
-        link: { order: ['to', 'open', 'formula', 'cls', 'app', 'id', 'text'], req: ['text'], list: [], prose: ['text'] },
+        /* ★★ `embed: true` … **そのページの中で開く**（iframe・DESIGN_reference_centric.md §2-4・段1）。
+                       押すまで iframe を作らないのは面Aの生成器の仕事で、ここは「埋めてよい相手か」だけを見る。
+           ⚠ 付けてよいのは `app:` の行き先が `embeddable` の受け口のときだけ（それ以外は赤）。
+           ⚠ `embedHref` も**書く欄ではない**（`href` と同じく読むときに焼き込む）。 */
+        link: { order: ['to', 'open', 'formula', 'cls', 'app', 'id', 'embed', 'text'], req: ['text'], list: [], prose: ['text'], bool: ['embed'] },
 
         stageTable: { order: ['variant', 'series', 'source', 'caption'], req: ['series', 'source', 'caption'], list: ['series'], prose: ['caption'] },
         mechanismTable: { order: ['source', 'caption'], req: ['source', 'caption'], list: [], prose: ['caption'] },
@@ -972,6 +984,27 @@
                     }
                 }
                 b.href = appHref(b.app, b.id, CTX_PAGE);
+            }
+            /* ★★ 埋め込み（`embed: true`・DESIGN_reference_centric.md §2-4）。
+               ⚠⚠ **相手が `embed=1` を知らないと、参考書の中に看板と帯がもう1枚出る**（しかも
+                 中のリンクは iframe の中で開く）＝ 埋めてよい受け口は台帳が名指しする。 */
+            if (Object.prototype.hasOwnProperty.call(b, 'embed')) {
+                if (b.embed !== true) {
+                    fail(where, ':::link の embed は true のときだけ書きます（埋め込まないなら embed: の行ごと消します）');
+                }
+                if (!b.app) {
+                    fail(where, ':::link の embed: true は app:（ほかのアプリの受け口）と一緒に書きます'
+                        + '\n    ★ 参考書のページ（to:）や有機のアプリ（open:）は、そのページの中には埋め込めません');
+                }
+                if (!tgt || !tgt.embeddable) {
+                    fail(where, ':::link の app「' + b.app + '」は、ページの中に埋め込める受け口ではありません'
+                        + '\n    ★ 埋め込めるのは ' + Object.keys(APP_TARGETS).filter(function (k) { return APP_TARGETS[k].embeddable; }).join(' / ')
+                        + '\n    ⚠ 埋め込む相手には「看板を隠す・高さを親に送る・戻る帯を作らない」（embed=1）が要ります。'
+                        + '先に受け側のアプリに作ってから、APP_TARGETS に embeddable: true を足します');
+                }
+                /* ★ 焼き込むのは**素の href に `embed=1` を足しただけ**のもの（§2-4 (1)）。
+                   ⚠ `href`（素のまま）も残す —— 部品の下の「▶ 大きな画面で開く」がそれを使う。 */
+                b.embedHref = appHref(b.app, b.id, CTX_PAGE, true);
             }
             if (b.to && !ANCHOR_RE.test(b.to)) {
                 fail(where, ':::link の to は参考書のページ id です（英小文字・数字・ハイフン。いまは「' + b.to + '」）');

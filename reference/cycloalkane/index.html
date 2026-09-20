@@ -99,6 +99,16 @@ border:0;padding:11px 20px;border-radius:8px;cursor:pointer;font-family:inherit}
 .embed button:hover{filter:brightness(1.12)}
 .embed iframe{width:100%;height:640px;border:1px solid var(--line);border-radius:10px;margin-top:12px;background:#fff}
 .embed .alt{display:inline-block;margin-top:10px;margin-left:14px;color:var(--accent);font-size:13.5px}
+/* ★★ 本文の中に置く部品（:::link の embed: true ・DESIGN_reference_centric.md §2-4）。
+   ⚠ 高さは子が送ってくる（slz-embed）ので、ここの height は**届くまでの仮の高さ**。
+   ⚠⚠ width:1px;min-width:100% は iOS Safari 避け（§7 #3c）——
+     素の width:100% だと、中に横スクロールの式がある子で **iframe 自身が横に広がる**。 */
+.embed-app{margin:22px 0}
+.embed-app iframe{width:1px;min-width:100%;height:420px;margin-top:0}
+.embed-app .embed-run{margin:0}
+.embed-app .alt{margin-left:0}
+/* ⚠ 釦の文は原稿の text: そのもの ＝ **強調 <b> が入りうる**（上の .embed b は箱の題のための指定） */
+.embed-app button b{display:inline;font-size:inherit;margin:0}
 /* ★★ 2カラム（設計書 §19-1・ユーザー承認）——「検索から飛んできたけど自分が欲しい情報が
    どこにあるかわからない」を避けるための目次。⚠ **狭い面では上の折りたたみに落とす**（同じ markup）。
    ⚠ markup は learn.js の renderToc が組んだもの ＝ 面A側に2本目の目次を持たない（§19-6） */
@@ -900,6 +910,7 @@ document.addEventListener('click', function (e) {
   b.remove();
 });
 </script>
+
 <script>
 (function () {
   var d = document.querySelector('.ref-toc details');

@@ -55377,7 +55377,48 @@
             assert(!built.unknown.length, `${where}: learn.js が「${built.unknown.join('・')}」を描けない`);
             assert(got.length === built.els.length,
                 `${where}: 上端の要素が ${got.length} 個で、アプリが並べた ${built.els.length} 個と違う（焼き直し忘れ？）`);
+            /* ★★ 本文に埋める `:::link`（`embed: true`・DESIGN_reference_centric.md §2-4・段1）。
+               ⚠ 面Bは今までどおりの `<a>`・**面Aだけ**が「押してから iframe を挿す箱」になるので、
+                 この1種だけは字づらでは比べられない（比べるのは下の⑥）。 */
+            const embedByHref = new Map();
+            (p.blocks || []).filter(b => b.kind === 'link' && b.embed).forEach(b => embedByHref.set(b.href, b));
             built.els.forEach((live, i) => {
+                const liveLink = live.className === 'ref-link-row' ? live.querySelector('a.ref-link') : null;
+                const emb = liveLink ? embedByHref.get(liveLink.getAttribute('href')) : null;
+                if (emb) {
+                    assert(got[i].classList.contains('embed-app'),
+                        `${where} の ${i + 1} 番目: embed: true の :::link が箱になっていない（焼き直し忘れ？ いまは ${got[i].tagName.toLowerCase()}.${got[i].className}）`);
+                    const btn = got[i].querySelector('button[data-embed]');
+                    assert(btn, `${where}: 埋め込みの箱に押しものが無い`);
+                    /* ★ URL は**台帳から組んだもの**（原稿に URL を書かない・§2-4 (1)）。
+                       ⚠ 手で書き換えても、台帳を変えて焼き忘れてもここが赤くなる。 */
+                    const want = RM.appHref(emb.app, emb.id, p.id, true);
+                    assert(btn.getAttribute('data-embed') === want,
+                        `${where}: 埋め込みの URL が台帳と違う\n    焼いたもの: ${btn.getAttribute('data-embed')}\n    台帳から  : ${want}`);
+                    assert(/[?&]embed=1(&|$)/.test(want), `${where}: 埋め込みの URL に embed=1 が付いていない（${want}）`);
+                    assert(want.indexOf('?v=') < 0 && want.indexOf('&v=') < 0,
+                        `${where}: 埋め込みの URL に ?v= が付いている（親は子の版を知らなくてよい・§2-6）: ${want}`);
+                    /* ★★ 足したのは `embed=1` だけ（⛔ 埋め込み専用の引数を作らない・§2-4 (1)） */
+                    assert(want.replace('embed=1&', '') === emb.href,
+                        `${where}: 埋め込みの URL が「素の URL ＋ embed=1」になっていない\n    素: ${emb.href}\n    埋: ${want}`);
+                    assert(flat(btn.textContent) === flat(live.textContent),
+                        `${where}: 釦の文が原稿の text: と違う\n    焼いたもの: ${flat(btn.textContent)}\n    原稿から  : ${flat(live.textContent)}`);
+                    /* ★ 部品の下の「▶ 大きな画面で開く」＝ **embed=1 を外した同じ URL・同じタブ**（§2-4 (4)） */
+                    const alt = got[i].querySelector('a.alt');
+                    assert(alt && alt.getAttribute('href') === emb.href,
+                        `${where}: 「大きな画面で開く」が素の URL を指していない（${alt && alt.getAttribute('href')}）`);
+                    assert(!alt.hasAttribute('target'),
+                        `${where}: 「大きな画面で開く」が別のタブで開く（同じタブで開き、子の「← 参考書へ戻る」で戻る）`);
+                    /* ⚠⚠ **押す前は iframe を作らない**（§2-4 (5)）—— 置いただけで子の page_view が飛ぶ */
+                    assert(!got[i].querySelector('iframe'),
+                        `${where}: 押す前から iframe が置かれている（開いてもいないアプリの利用が数えられる）`);
+                    return;
+                }
+                /* ★ 否定対照: `embed: true` の無い `:::link` は今までどおりの `<a>` のまま */
+                if (liveLink) {
+                    assert(!got[i].querySelector('[data-embed]'),
+                        `${where} の ${i + 1} 番目: embed: true の無い :::link が埋め込みの箱になっている`);
+                }
                 if (live.className === 'ref-p') {
                     assert(flat(got[i].innerHTML) === flat(live.innerHTML),
                         `${where} の ${i + 1} 番目の段落が原稿と違う（生成物を手で直したか、直して焼き忘れたか）\n`
@@ -55392,9 +55433,13 @@
                     + '    ★ stages.json / reactions.json を直したら node tools/gen-reference-pages.mjs で焼き直すこと');
             });
 
-            // ⚠ 静的なページに、押しても何も起きないボタンを残さない
-            assert(!doc.querySelector('.ref-scope button'),
+            /* ⚠ 静的なページに、押しても何も起きないボタンを残さない。
+               ★ 例外は埋め込みの釦（`button[data-embed]`）だけ —— こちらは面Aの `EMBED_JS` が受ける。 */
+            assert(!doc.querySelector('.ref-scope button:not([data-embed])'),
                 `${where}: 本文に <button> が残っている（静的なページでは押しても何も起きない）`);
+            // ⚠⚠ 押す前は iframe が1つも無い（本文のどこにも・§2-4 (5)）
+            assert(!doc.querySelector('.ref-scope iframe'),
+                `${where}: 本文に iframe が焼き込まれている（押してから読み込む）`);
 
             /* ── ④ 埋め込みの行き先が、原稿の codes そのものであること ──
                ⚠ URL を手で書き換えても赤（`REF17` ④ は「qa に実在するか」で、こちらは「原稿と同じか」）。 */
@@ -55444,6 +55489,113 @@
            **原稿に1件入れて焼いて実測してある**（設計書 §17-9 の positive control）。
            ⚠ ここに「1件も無いこと」を書き足さない —— 動画が1本できた日に、
              直っているのに赤くなる検査になる。 */
+
+        /* ══ ⑥ ★★ 埋め込んだ部品を**実ブラウザで**動かす（DESIGN_reference_centric.md §2-7 の4行目）══
+         *
+         * ★ 見るのは3つ:
+         *   (a) **押すまで iframe が無く**、押すと**台帳から組んだ URL**（`embed=1` 付き）で入る
+         *   (b) 親が子の高さを受けて iframe を伸ばす（§2-4 (6)）。**差が 1px 以下なら動かさない**
+         *   (c) 否定対照 —— 知らない `v`・**自分の iframe でない送り主**の message は捨てる
+         *
+         * ⚠⚠ **子（ion）が `embed=1` を実装していなくても通る形にしてある。**
+         *   高さの約束の子側（看板を隠す・高さを送る・帯を作らない）は **ion の test.html の仕事**（§2-7 の1行目）。
+         *   ★ ここは**器**を見る便なので、(b)(c) は**子の realm から postMessage を打って**確かめる
+         *     （`e.source` は打った realm になるので、親の「自分の iframe か」の判定を素通りしない）。
+         *   ★ 子がもう自分で送っているときは、それも突き合わせる（下の「子が送ってきたら」）。
+         */
+        const embPages = pages.filter(p => (p.blocks || []).some(b => b.kind === 'link' && b.embed));
+        assert(embPages.length >= 1,
+            '本文に埋め込んだ部品（:::link の embed: true）が1枚も無い'
+            + '（段1で half-reaction に係数決定と一覧を埋めた。消したならこの検査も畳むこと）');
+        {
+            const p = embPages[0];
+            const emb = (p.blocks || []).filter(b => b.kind === 'link' && b.embed)[0];
+            const f = document.createElement('iframe');
+            /* ⚠ **画面の中に置く** —— `EMBED_JS` が挿す iframe は `loading="lazy"` なので、
+               画面の外に追いやると読み込みが始まらない（見えないようにするのは opacity で）。 */
+            f.style.cssText = 'position:fixed; left:0; top:0; width:900px; height:780px; opacity:0; pointer-events:none; border:0; z-index:-1;';
+            f.src = `../reference/${p.id}/index.html` + FRESH();
+            document.body.appendChild(f);
+            const wait = async (cond, what, ms = 20000) => {
+                for (let i = 0; i < ms / 50; i++) {
+                    if (cond()) return true;
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                assert(false, `${what}（${ms}ms 待っても起きない）`);
+            };
+            try {
+                await wait(() => f.contentDocument && f.contentDocument.readyState === 'complete' && f.contentDocument.querySelector('.embed-app'),
+                    `/reference/${p.id}/ が開かない`);
+                const D = f.contentDocument;
+                const box = D.querySelector('.embed-app');
+                // (a) 押す前
+                assert(!box.querySelector('iframe'), '押す前から iframe が入っている');
+                const btn = box.querySelector('button[data-embed]');
+                assert(btn, '埋め込みの釦が無い');
+                box.scrollIntoView();
+                btn.click();
+                const inner = box.querySelector('iframe');
+                assert(inner, '釦を押しても iframe が入らない（EMBED_JS が読まれていない？）');
+                assert(!box.querySelector('button'), '釦が残ったまま（2つ目の iframe が入る）');
+                assert(inner.getAttribute('src') === emb.embedHref,
+                    `入った iframe の URL が原稿と台帳から組んだものと違う\n    入った: ${inner.getAttribute('src')}\n    台帳から: ${emb.embedHref}`);
+                assert(/[?&]embed=1(&|$)/.test(inner.getAttribute('src')), 'embed=1 が付いていない');
+                await wait(() => inner.contentDocument && inner.contentDocument.readyState === 'complete'
+                    && inner.contentWindow.location.pathname.indexOf('.html') > 0, '埋め込んだ子のページが開かない');
+
+                /* ★ 子がもう `embed=1` を知っていれば、放っておいても高さが来る（§2-4 (2)②）。
+                   ⚠ 来ない版でも赤にしない —— 子の約束は子の test.html が見る。 */
+                let 子から = false;
+                for (let i = 0; i < 30 && !子から; i++) {
+                    子から = !!inner.dataset.embedH;
+                    if (!子から) await new Promise(r => setTimeout(r, 50));
+                }
+                if (子から) {
+                    const h = parseFloat(inner.dataset.embedH);
+                    const doch = inner.contentDocument.documentElement.scrollHeight;
+                    assert(Math.abs(h - doch) <= 8,
+                        `子が送ってきた高さ ${h}px が、子の中身の高さ ${doch}px と合っていない`);
+                    assert(Math.abs(parseFloat(inner.style.height) - h) <= 1,
+                        `親が iframe を ${h}px に伸ばしていない（いまは ${inner.style.height}）`);
+                }
+
+                /* (b)(c) 親の受け口そのもの。⚠ **子の realm から打つ**（`e.source` を偽れない）。
+                   ★ 打つ相手は**まだ押していない2つ目の箱**に足した空の iframe ——
+                     本物の子（上）は自分で高さを送るかもしれず、値を決め打ちできない。 */
+                const boxes = [...D.querySelectorAll('.embed-app')];
+                const host = boxes[1] || boxes[0];
+                const probe = D.createElement('iframe');
+                probe.src = 'about:blank';
+                host.appendChild(probe);
+                await wait(() => probe.contentWindow && probe.contentDocument
+                    && probe.contentDocument.readyState === 'complete', '検査用の空の iframe が開かない');
+                /* ⚠ `about:blank` の realm では `location.origin` が `"null"`（出どころは親から継ぐが
+                   URL には出ない）ので、宛先は**こちらの origin を渡す**。受け取る側から見た
+                   `e.origin` は継いだ origin ＝ 親と同じ（親の `e.origin === location.origin` を素通りしない）。 */
+                const send = (msg) => probe.contentWindow.eval(
+                    'parent.postMessage(' + JSON.stringify(msg) + ', ' + JSON.stringify(location.origin) + ')');
+                send({ type: 'slz-embed', v: 1, h: 1234 });
+                await wait(() => probe.style.height === '1234px', '親が高さ 1234px を当てていない');
+                // ⚠ 1px 以下の差は無視（縦スクロールバーの出入りで往復するのを止める・§7 #3b）
+                send({ type: 'slz-embed', v: 1, h: 1235 });
+                await new Promise(r => setTimeout(r, 120));
+                assert(probe.style.height === '1234px', `1px の差で高さを動かした（いまは ${probe.style.height}）`);
+                send({ type: 'slz-embed', v: 1, h: 1500 });
+                await wait(() => probe.style.height === '1500px', '2px 以上の差で高さを当て直していない');
+                // 否定対照①: 知らない版は捨てる（子を先に上げても親は壊れない・伸びないだけ）
+                send({ type: 'slz-embed', v: 2, h: 300 });
+                // 否定対照②: 自分の iframe でない送り主（ここ＝ test.html の window）は捨てる
+                f.contentWindow.postMessage({ type: 'slz-embed', v: 1, h: 301 }, location.origin);
+                // 否定対照③: 知らない type は捨てる
+                send({ type: 'slz-resize', v: 1, h: 302 });
+                await new Promise(r => setTimeout(r, 150));
+                assert(probe.style.height === '1500px',
+                    `捨てるはずの message で高さが動いた（いまは ${probe.style.height}）`);
+                probe.remove();
+            } finally {
+                f.remove();
+            }
+        }
     });
 
     /* ===== REF19: 広げた器（見出し・箇条書き・図・反応式・手で書く表・注意書き）・v1525 =====
@@ -56883,6 +57035,36 @@
         assert(!red(':::link app: muki/akinator text: 無機のアキネーターで遊んでみよう :::'), 'muki/akinator は ?deck= を省略してよい');
         assert(/どれか1つだけ/.test(red(':::link to: ph app: muki/tree text: 系統分離の樹を開いてみよう :::')), '否定対照: to と app の両方が通った');
         assert(/知らないキー/.test(red(':::link\napp: muki/tree\nhref: /x\ntext: 系統分離の樹を開いてみよう\n:::')), '否定対照: href を原稿に書けた');
+
+        /* ★★ 埋め込み（`embed: true`・DESIGN_reference_centric.md §2-4・段1）。
+           ⚠⚠ 付けてよいのは **`embeddable` の受け口**だけ —— 相手が `embed=1` を知らないと、
+             参考書のページの中に看板と帯がもう1枚出る（しかも中のリンクは iframe の中で開く）。
+           ★ 台帳の `embeddable` は**受け側（ion-equation/tests.js の `refReceiversIon`）の写し**で、
+             3表同時の既存規約に4つめとして乗る ＝ 突き合わせるのは ion の test.html。 */
+        const embeddable = Object.keys(RM.APP_TARGETS).filter(k => RM.APP_TARGETS[k].embeddable);
+        assert(embeddable.length >= 2,
+            `埋め込める受け口が ${embeddable.length} 件しか無い（段1は halfreaction と halflist の2つ）`);
+        const emb = parse(':::link\napp: ion-equation/halfreaction\nid: MnO4_red\nembed: true\n'
+            + 'text: 過マンガン酸イオンの係数を自分で決めてみよう\n:::');
+        assert(emb.embed === true, 'embed: true が読めていない');
+        /* ★ 足すのは `embed=1` だけ（⛔ 埋め込み専用の引数を作らない）。⛔ `?v=` も付けない（§2-6） */
+        assert(emb.embedHref === '/ion-equation/halfreaction.html?q=MnO4_red&embed=1&from=reference&page=zz-ref28',
+            `embedHref が違う: ${emb.embedHref}`);
+        assert(emb.href === '/ion-equation/halfreaction.html?q=MnO4_red&from=reference&page=zz-ref28',
+            `埋め込みでも素の href を残していない（「▶ 大きな画面で開く」が使う）: ${emb.href}`);
+        assert(emb.embedHref.replace('embed=1&', '') === emb.href, '埋め込みの URL が「素の URL ＋ embed=1」でない');
+        assert(emb.embedHref === RM.appHref(emb.app, emb.id, 'zz-ref28', true), 'appHref(…, true) と焼き込みが割れている');
+        const embList = parse(':::link\napp: ion-equation/halflist\nembed: true\ntext: 半反応式を一覧で見てみよう\n:::');
+        assert(embList.embedHref === '/ion-equation/halflist.html?embed=1&from=reference&page=zz-ref28',
+            `引数の無い受け口の embedHref が違う: ${embList.embedHref}`);
+        assert(/埋め込める受け口ではありません/.test(red(':::link app: ion-equation/redox id: rs1 embed: true text: 酸化還元の反応式を組み立ててみよう :::')),
+            '否定対照: embeddable でない受け口に embed: true が通った');
+        assert(/app:（ほかのアプリの受け口）と一緒に/.test(red(':::link to: ph embed: true text: 水素イオン濃度と pH のページへ :::')),
+            '否定対照: 参考書のページ（to:）に embed: true が通った');
+        assert(/true のときだけ/.test(red(':::link app: ion-equation/halflist embed: false text: 半反応式を一覧で見てみよう :::')),
+            '否定対照: embed: false が通った（埋めないなら行ごと消す）');
+        // ★ 否定対照: `embed:` を書かなければ今までどおり（`embedHref` を持たない ＝ ふつうの <a>）
+        assert(!('embed' in ln) && !('embedHref' in ln), 'embed を書いていない :::link に埋め込みの欄が付いた');
         // 受け口のページが配信されている（台帳の path の綴り違い）
         for (const [name, t] of Object.entries(RM.APP_TARGETS)) {
             const res = await fetch('..' + t.path + FRESH());
