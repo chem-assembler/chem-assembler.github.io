@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="360" viewBox="0 0 860 360" role="img">
+  <!-- 左: 三次構造（1本の鎖が折りたたまれ、離れた場所どうしがジスルフィド結合で留まる）
+       右: 四次構造（三次構造のかたまりがいくつか集まる）
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ch { stroke: #1565c0; stroke-width: 4; fill: none; stroke-linecap: round; }
+    .thin { stroke: #1565c0; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+    .ss { stroke: #2e7d32; stroke-width: 4; fill: none; }
+    .blob { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2.5; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .green { fill: #2e7d32; }
+    .divider { stroke: #bbb; stroke-width: 1; stroke-dasharray: 5 5; }
+    .lead { stroke: #666; stroke-width: 1.2; fill: none; }
+  </style>
+
+  <!-- 三次構造 -->
+  <path class="ch" d="M 96 104 C 140 62, 212 70, 224 112 C 236 152, 176 162, 168 198
+                      C 160 234, 214 252, 256 234 C 288 220, 298 186, 286 156" />
+  <path class="ss" d="M 224 112 L 256 234" />
+  <circle class="green" cx="224" cy="112" r="5" />
+  <circle class="green" cx="256" cy="234" r="5" />
+  <text class="small green" x="196" y="300" text-anchor="middle">離れた場所がジスルフィド結合 −S−S− で留まる</text>
+  <text class="lab" x="196" y="336" text-anchor="middle">三次構造（折りたたみ）</text>
+
+  <path class="divider" d="M 400 50 L 400 310" />
+
+  <!-- 四次構造 -->
+  <ellipse class="blob" cx="560" cy="134" rx="62" ry="50" />
+  <path class="thin" d="M 528 124 C 546 106, 578 110, 586 128 C 592 144, 556 146, 552 158" />
+  <ellipse class="blob" cx="690" cy="134" rx="62" ry="50" />
+  <path class="thin" d="M 658 124 C 676 106, 708 110, 716 128 C 722 144, 686 146, 682 158" />
+  <ellipse class="blob" cx="560" cy="238" rx="62" ry="50" />
+  <path class="thin" d="M 528 228 C 546 210, 578 214, 586 232 C 592 248, 556 250, 552 262" />
+  <ellipse class="blob" cx="690" cy="238" rx="62" ry="50" />
+  <path class="thin" d="M 658 228 C 676 210, 708 214, 716 232 C 722 248, 686 250, 682 262" />
+
+  <path class="lead" d="M 612 76 L 586 100" />
+  <text class="small" x="625" y="62" text-anchor="middle">1つが三次構造のかたまり ＝ サブユニット</text>
+  <text class="lab" x="625" y="336" text-anchor="middle">四次構造（サブユニットの集まり）</text>
+</svg>
