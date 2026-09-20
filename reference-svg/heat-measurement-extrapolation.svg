@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="430" viewBox="0 0 840 430" role="img">
+  <!-- 熱量の測定：下がっていく直線を混ぜた時刻まで延ばして最高温度を読む。
+       本文の具体例に合わせた（はじめ 20.0℃・温度計の最高 29.8℃・延ばした先 30.6℃・Δt＝10.6K）。
+       ⚠ 下がる直線の傾きは、1分で 0.8℃ 逃げる（29.8→30.6 の差）ようにそろえてある。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .grid { stroke: #ddd; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .mes { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .ext { stroke: #c62828; stroke-width: 2.5; stroke-dasharray: 7 5; fill: none; }
+    .small { font-size: 15px; fill: #444; }
+    .tick { font-size: 13px; fill: #666; }
+  </style>
+
+  <!-- 軸 -->
+  <path class="ax" d="M 150 60 L 150 380 L 710 380" />
+  <polygon points="150,50 145,64 155,64" fill="#333" />
+  <polygon points="720,380 706,375 706,385" fill="#333" />
+  <text class="small" x="28" y="44">温度（℃）</text>
+  <text class="small" x="726" y="374">時間（分）</text>
+
+  <!-- 目盛り -->
+  <path class="grid" d="M 150 338 L 690 338 M 230 106 L 690 106 M 230 106 L 230 380" />
+  <text class="tick" x="140" y="343" text-anchor="end">20.0</text>
+  <text class="tick" x="140" y="128" text-anchor="end">29.8</text>
+  <text class="tick" x="140" y="110" text-anchor="end">30.6</text>
+  <path class="ax" d="M 230 380 L 230 386 M 310 380 L 310 386 M 390 380 L 390 386 M 470 380 L 470 386 M 550 380 L 550 386 M 630 380 L 630 386" stroke-width="1.5" />
+  <text class="tick" x="230" y="402" text-anchor="middle">0</text>
+  <text class="tick" x="310" y="402" text-anchor="middle">1</text>
+  <text class="tick" x="390" y="402" text-anchor="middle">2</text>
+  <text class="tick" x="470" y="402" text-anchor="middle">3</text>
+  <text class="tick" x="550" y="402" text-anchor="middle">4</text>
+  <text class="tick" x="630" y="402" text-anchor="middle">5</text>
+  <text class="tick" x="230" y="422" text-anchor="middle">混ぜた時刻</text>
+
+  <!-- 測った温度 -->
+  <path class="mes" d="M 150 338 L 230 338 C 252 322, 276 206, 310 123" />
+  <path class="mes" d="M 310 123 L 630 194" />
+  <text class="small" x="160" y="328">はじめ</text>
+
+  <!-- 延長 -->
+  <path class="ext" d="M 310 123 L 230 106" />
+  <circle cx="310" cy="123" r="5" fill="#1565c0" />
+  <circle cx="230" cy="106" r="6" fill="#c62828" />
+  <text class="small" x="326" y="114" style="fill:#1565c0">温度計の最高 29.8℃</text>
+  <text class="small" x="208" y="84" style="fill:#c62828">延ばした先 30.6℃</text>
+  <text class="small" x="352" y="268" style="fill:#c62828">この直線を 0 分まで延ばす</text>
+  <path d="M 420 256 L 452 168" style="stroke:#c62828;stroke-width:1.5;fill:none" />
+
+  <!-- 温度変化 -->
+  <path class="ax" d="M 690 106 L 690 338" stroke="#6a1b9a" stroke-width="2" />
+  <polygon points="690,106 685,118 695,118" fill="#6a1b9a" />
+  <polygon points="690,338 685,326 695,326" fill="#6a1b9a" />
+  <text class="small" x="702" y="228" fill="#6a1b9a">Δt ＝ 10.6 K</text>
+</svg>
