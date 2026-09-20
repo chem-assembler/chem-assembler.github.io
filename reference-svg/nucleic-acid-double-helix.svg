@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="440" viewBox="0 0 600 440" role="img">
+  <!-- 二重らせん。2本の鎖がねじれ、そのあいだを塩基対が橋のように結ぶ。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .s1 { stroke: #1565c0; stroke-width: 5; fill: none; stroke-linecap: round; }
+    .s2 { stroke: #c62828; stroke-width: 5; fill: none; stroke-linecap: round; }
+    .rung { stroke: #2e7d32; stroke-width: 2.5; fill: none; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+  </style>
+
+  <!-- 塩基対（先に描いて鎖の下に置く） -->
+  <path class="rung" d="M 166 65 L 294 65 M 140 90 L 320 90 M 166 115 L 294 115
+                        M 166 165 L 294 165 M 140 190 L 320 190 M 166 215 L 294 215
+                        M 166 265 L 294 265 M 140 290 L 320 290 M 166 315 L 294 315
+                        M 166 365 L 294 365" />
+
+  <!-- 鎖②（奥） -->
+  <path class="s2" d="M 230 40
+                      C 170 45, 140 62, 140 90 C 140 118, 170 135, 230 140
+                      C 290 145, 320 162, 320 190 C 320 218, 290 235, 230 240
+                      C 170 245, 140 262, 140 290 C 140 318, 170 335, 230 340
+                      C 290 345, 320 362, 320 390" />
+
+  <!-- 鎖①（手前。白い縁取りを下に敷いて、交差で鎖②が奥を通るように見せる） -->
+  <path stroke="#fff" stroke-width="13" fill="none" stroke-linecap="round"
+        d="M 230 40
+                      C 290 45, 320 62, 320 90 C 320 118, 290 135, 230 140
+                      C 170 145, 140 162, 140 190 C 140 218, 170 235, 230 240
+                      C 290 245, 320 262, 320 290 C 320 318, 290 335, 230 340
+                      C 170 345, 140 362, 140 390" />
+  <path class="s1" d="M 230 40
+                      C 290 45, 320 62, 320 90 C 320 118, 290 135, 230 140
+                      C 170 145, 140 162, 140 190 C 140 218, 170 235, 230 240
+                      C 290 245, 320 262, 320 290 C 320 318, 290 335, 230 340
+                      C 170 345, 140 362, 140 390" />
+  <path class="lead" d="M 352 92 L 326 92" />
+  <text class="lab" x="360" y="98">糖とリン酸の鎖 2本</text>
+  <path class="lead" d="M 352 190 L 326 190" />
+  <text class="lab" x="360" y="196">塩基対（水素結合）</text>
+  <text class="small" x="360" y="222">A−T・G−C の組み合わせだけ</text>
+
+  <text class="lab" x="230" y="424" text-anchor="middle">ねじれて二重らせんになる</text>
+</svg>
