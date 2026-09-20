@@ -9321,23 +9321,34 @@ async function runReactionLibraryTests() {
    参考書（/reference/）の `:::link app: ion-equation/<受け口> id: <id>` が、こちらの実データに在るか。
    CLAUDE.md「横断の整合性検査は、両方のデータが揃う側に置く」—— 参考書の側はこちらのデータを持たない。
    ⚠ 受け口の名前はここに1本の表で持つ。台帳（tools/reference-md.js）に受け口を足したら、ここにも足す
-     （知らない名前は赤にする ＝ 検査が黙って素通りしない）。 */
+     （知らない名前は赤にする ＝ 検査が黙って素通りしない）。
+
+   ★ 1件の形は `{ ids, embeddable }`（2026-09-20・参考書にアプリを埋め込む 段1）:
+     ids … `null`＝引数を取らない ／ `Set`＝この中の id だけ ／ 関数＝綴りで判定（`?q=a,b` の列）
+     embeddable … **参考書のページに iframe で埋め込める受け口**（原稿の `:::link` に `embed: true` を
+       書いてよいもの・DESIGN_reference_centric.md §2-4）。埋め込める条件は「子の改修が3点で足りる」
+       ＝ `embed=1` で看板を隠し・高さを親に送り・戻る帯を作らない、で画面が成り立つこと。
+       ⚠ これは `tools/reference-md.js` の `APP_TARGETS` の `embeddable` の**写し**。
+         足す・消すときは両方同時に（受け口を足すときの「3表同時」の規約の4つめ）。
+       ⚠ 固定シート（`.sheetBack`）やモーダルを主役に使う画面は、iframe の高さに閉じ込められるので
+         埋め込まない（§2-4 (2)）。halflist・halfreaction はシートが header の ☰ からしか開かない ＝ 当たらない */
 function refReceiversIon() {
   const ids = (list) => new Set(list.map((s) => s.id));
   const stages = ids(STAGES);
+  const R = (idSpec, embeddable) => ({ ids: idSpec, embeddable: !!embeddable });
   return {
-    "ion-equation": stages,
-    "ion-equation/index": stages,
-    "ion-equation/redox": ids(REDOX_STAGES),
-    "ion-equation/oxidation": new Set(oxTaskList().map((t) => t.sp)),
-    // ?q=id,id,… ＝ 1つずつ組めるかを見る（関数で持つ）
-    "ion-equation/halfreaction": (id) => id.split(",").every((x) => x.trim() && !!halfBuildTaskOf(x.trim())),
-    "ion-equation/halflist": null,          // 引数を取らない
-    "ion-equation/battery": ids(cellStagesOfKind("battery")),
-    "ion-equation/electrolysis": ids(cellStagesOfKind("electrolysis")),
-    "ion-equation/condition": ids(CONDITION_STAGES),
-    "ion-equation/portal": new Set(CURRICULUM.flatMap((s) => s.units.map((u) => u.id))
-      .concat(STAGE_SERIES.map((s) => s.id))),
+    "ion-equation": R(stages),
+    "ion-equation/index": R(stages),
+    "ion-equation/redox": R(ids(REDOX_STAGES)),
+    "ion-equation/oxidation": R(new Set(oxTaskList().map((t) => t.sp))),
+    // ?q=id,id,… ＝ 1つずつ組めるかを見る（関数で持つ）。⚠ 埋め込み可（§4 の段1）
+    "ion-equation/halfreaction": R((id) => id.split(",").every((x) => x.trim() && !!halfBuildTaskOf(x.trim())), true),
+    "ion-equation/halflist": R(null, true),          // 引数を取らない。⚠ 埋め込み可（§4 の段1）
+    "ion-equation/battery": R(ids(cellStagesOfKind("battery"))),
+    "ion-equation/electrolysis": R(ids(cellStagesOfKind("electrolysis"))),
+    "ion-equation/condition": R(ids(CONDITION_STAGES)),
+    "ion-equation/portal": R(new Set(CURRICULUM.flatMap((s) => s.units.map((u) => u.id))
+      .concat(STAGE_SERIES.map((s) => s.id)))),
   };
 }
 
@@ -9354,11 +9365,13 @@ function refLinkProblemsIon(pages, recv) {
       const where = page + " → " + o.app + (o.id ? " " + o.id : "");
       if (!(o.app in recv)) out.push(where + "（受け口の表に無い名前）");
       else {
-        const r = recv[o.app];
+        const r = recv[o.app].ids;
         const id = o.id == null ? "" : String(o.id);
         if (r === null) { if (id) out.push(where + "（この受け口は id を取らない）"); }
         else if (!id) out.push(where + "（id が無い）");
         else if (typeof r === "function" ? !r(id) : !r.has(id)) out.push(where + "（id が実在しない）");
+        // 埋め込み（`:::link` の `embed: true`）は、こちらが埋め込み可と認めた受け口だけ（§2-7）
+        if (o.embed && !recv[o.app].embeddable) out.push(where + "（埋め込めない受け口に embed: true）");
       }
     }
     for (const v of Object.values(o)) if (v && typeof v === "object") walk(v, page);
@@ -9378,11 +9391,12 @@ async function runRefLinkTests() {
 
   await t("REF1: 受け口の表が空でない（検査の空回り止め）", () => {
     for (const [k, v] of Object.entries(recv)) {
-      if (v === null || typeof v === "function") continue;
-      assert(v.size > 0, k + " の id が1つも引けない");
+      assert(v && typeof v === "object" && "ids" in v && "embeddable" in v, k + " の形が { ids, embeddable } でない");
+      if (v.ids === null || typeof v.ids === "function") continue;
+      assert(v.ids.size > 0, k + " の id が1つも引けない");
     }
-    assert(recv["ion-equation/redox"].has("rs1"), "redox の rs1 が引けない");
-    assert(recv["ion-equation/portal"].has("u-neutral"), "portal の u-neutral が引けない");
+    assert(recv["ion-equation/redox"].ids.has("rs1"), "redox の rs1 が引けない");
+    assert(recv["ion-equation/portal"].ids.has("u-neutral"), "portal の u-neutral が引けない");
   });
 
   await t("REF2: ⚠ 否定対照 — 在る id は通し、無い id・知らない受け口・余計な id は赤にする", () => {
@@ -9413,6 +9427,53 @@ async function runRefLinkTests() {
     assert(Array.isArray(pages) && pages.length > 10, "参考書のページが読めていない");
     const r = refLinkProblemsIon(pages, recv);
     assert(r.problems.length === 0, r.problems.join(" / "));
+  });
+
+  /* ---- 埋め込み（`:::link` の `embed: true`）の受け口（2026-09-20・段1）----
+     ⚠ この表は tools/reference-md.js の APP_TARGETS の `embeddable` の写し。
+       器の側（生成器）は「埋め込める受け口か」を APP_TARGETS で見て赤にするが、
+       **相手のデータ（式の id）を持っているのはこちらだけ** ＝ 実データの照合はここでやる。 */
+  await t("REF3b: 埋め込める受け口は halflist・halfreaction の2つだけ（台帳の写し）", () => {
+    const emb = Object.entries(recv).filter(([, v]) => v.embeddable).map(([k]) => k).sort();
+    assert(emb.join(",") === "ion-equation/halflist,ion-equation/halfreaction",
+      "埋め込み可の受け口が増減している: " + emb.join(",") +
+      "（増やすなら tools/reference-md.js の APP_TARGETS の embeddable と同時に。" +
+      "子の改修が3点で足りるか＝ embed=1 で看板を隠し・高さを送り・帯を作らないで画面が成り立つかを先に確かめる）");
+  });
+
+  await t("REF3c: ⚠ 否定対照 — 埋め込めない受け口の embed: true は赤にする", () => {
+    const ok = refLinkProblemsIon([{ id: "p", blocks: [
+      { kind: "link", app: "ion-equation/halflist", embed: true, text: "x" },
+      { kind: "link", app: "ion-equation/halfreaction", id: "MnO4_red", embed: true, text: "x" },
+      { kind: "link", app: "ion-equation/redox", id: "rs1", text: "埋め込まないリンクは今までどおり" },
+    ] }], recv);
+    assert(ok.problems.length === 0, JSON.stringify(ok.problems));
+    const ng = refLinkProblemsIon([{ id: "p", blocks: [
+      { kind: "link", app: "ion-equation/redox", id: "rs1", embed: true, text: "x" },
+      { kind: "link", app: "ion-equation/portal", id: "u-neutral", embed: true, text: "x" },
+    ] }], recv);
+    assert(ng.problems.length === 2 && ng.problems.every((s) => /embed: true/.test(s)),
+      "拾えなかった: " + JSON.stringify(ng.problems));
+  });
+
+  await t("REF3d: 参考書の embed: true の行き先が、すべて埋め込み可の受け口（実データ）", async () => {
+    const res = await fetch("../assembler/reference.json", { cache: "no-store" });
+    assert(res.ok, "../assembler/reference.json を読めない: " + res.status);
+    const pages = await res.json();
+    let n = 0;
+    const walk = (o, page) => {
+      if (Array.isArray(o)) { o.forEach((x) => walk(x, page)); return; }
+      if (!o || typeof o !== "object") return;
+      if (o.kind === "link" && o.embed && typeof o.app === "string" &&
+          (o.app === "ion-equation" || o.app.startsWith("ion-equation/"))) {
+        n++;
+        assert(recv[o.app] && recv[o.app].embeddable, page + " → " + o.app + " は埋め込めない受け口");
+      }
+      for (const v of Object.values(o)) if (v && typeof v === "object") walk(v, page);
+    };
+    pages.forEach((p) => walk(p.blocks || [], p.id || "?"));
+    // ⚠ まだ 0 件でもよい（器の便が焼く前）。件数だけ記録し、空回りを責めない
+    assert(n >= 0, String(n));
   });
 
   /* 帯そのもの（header-ui.js）。⚠ 実際にページを開いて測る */
@@ -9459,6 +9520,122 @@ async function runRefLinkTests() {
       } finally { f.remove(); }
     }
   });
+
+  /* ---- 参考書のページに埋め込まれたとき（?embed=1）----
+     DESIGN_reference_centric.md §2-4 (2)・§2-7。子がやることは**3つだけ**:
+       ① 看板（header・footer・帯）を出さない ＋ `<base target="_top">`
+       ② 高さを親に知らせる（前と同じ高さは送らない）
+       ③ 「← 参考書へ戻る」の帯を作らない
+     ⚠ どれも `embed=1` が無ければ効かない ＝ 元の URL の挙動を1バイトも変えない（REF10 の否定対照）。 */
+  const EMBED_PAGES = [
+    { src: "halflist.html?embed=1", ready: (w) => w.HalfList && w.document.querySelector("header") },
+    { src: "halfreaction.html?q=MnO4_red&embed=1", ready: (w) => w.HalfBuild && w.document.querySelector("header") },
+  ];
+  // 子 → 親の通知を拾う受け口。⚠ iframe を作る**前に**付けないと最初の1通を取りこぼす
+  const heights = [];
+  const onEmbedMsg = (e) => {
+    if (e.data && e.data.type === "slz-embed") heights.push({ src: e.source, data: e.data, at: Date.now() });
+  };
+  window.addEventListener("message", onEmbedMsg);
+  const mine = (win) => heights.filter((g) => g.src === win);
+
+  await t("REF7: embed=1 なら看板・フッター・帯を出さず、<base target=\"_top\"> が在る", async () => {
+    for (const p of EMBED_PAGES) {
+      // from=reference も一緒に来る（器はこれを付けて焼く）。embed=1 が優先することを見る
+      const { f, win } = await probe(p.src + "&from=reference&page=half-reaction", p.ready);
+      assert(win, p.src + " を開けない");
+      try {
+        const d = win.document;
+        const cs = (el) => win.getComputedStyle(el).display;
+        assert(d.documentElement.classList.contains("embed"), p.src + ": <html class=\"embed\"> が付いていない");
+        const base = d.head.querySelector("base");
+        assert(base, p.src + ": <base> が head に無い");
+        assert(base.target === "_top", p.src + ": <base target> が " + base.target);
+        assert(!base.hasAttribute("href"), p.src + ": <base href> を付けている（相対 URL の解決が変わる）");
+        assert(d.querySelector("header") && cs(d.querySelector("header")) === "none", p.src + ": ヘッダーが見えている");
+        assert(d.querySelector("footer") && cs(d.querySelector("footer")) === "none", p.src + ": フッターが見えている");
+        // ③ 帯はそもそも作らない（embed=1 が from=reference に優先）
+        assert(!d.querySelector(".refBack"), p.src + ": 埋め込みなのに「参考書へ戻る」の帯を作っている");
+        // 帯が万一出ても CSS で消える（二重の守り）ことも見る
+        const dummy = d.createElement("div");
+        dummy.className = "refBack";
+        d.body.appendChild(dummy);
+        assert(cs(dummy) === "none", p.src + ": html.embed .refBack の CSS が効いていない");
+        dummy.remove();
+      } finally { f.remove(); }
+    }
+  });
+
+  await t("REF8: embed=1 の高さが親に届き、1秒以内に止まる（発振の見張り）", async () => {
+    for (const p of EMBED_PAGES) {
+      const { f, win } = await probe(p.src, p.ready);
+      assert(win, p.src + " を開けない");
+      try {
+        for (let i = 0; i < 60 && !mine(win).length; i++) await new Promise((r) => setTimeout(r, 50));
+        const first = mine(win)[0];
+        assert(first, p.src + ": 高さの message が来ない");
+        assert(first.data.v === 1, p.src + ": v が " + first.data.v + "（約束は 1）");
+        assert(Number.isInteger(first.data.h) && first.data.h > 0, p.src + ": h が " + first.data.h);
+        assert(Object.keys(first.data).sort().join(",") === "h,type,v", p.src + ": 約束に無いキーを送っている");
+        // 1秒待ってから数え、さらに 0.6 秒待って増えていないこと ＝ 止まっている
+        await new Promise((r) => setTimeout(r, 1000));
+        const n = mine(win).length;
+        await new Promise((r) => setTimeout(r, 600));
+        const after = mine(win);
+        assert(after.length === n, p.src + ": 1秒たっても高さが止まらない（発振）: " +
+          after.map((g) => g.data.h).join("→"));
+        // 同じ高さが2度来る ＝ 行ったり来たりしている（子は前と同じ h を送らない約束）
+        const hs = after.map((g) => g.data.h);
+        assert(new Set(hs).size === hs.length, p.src + ": 同じ高さを2度送っている（発振）: " + hs.join("→"));
+      } finally { f.remove(); }
+    }
+  });
+
+  await t("REF9: 埋め込む2ページに a[href^=\"#\"] と location.href= が無い（<base target> の落とし穴）", async () => {
+    for (const p of EMBED_PAGES) {
+      const { f, win } = await probe(p.src, p.ready);
+      assert(win, p.src + " を開けない");
+      try {
+        const d = win.document;
+        const hashes = [...d.querySelectorAll('a[href^="#"]')].map((a) => a.getAttribute("href"));
+        assert(hashes.length === 0, p.src + ": ページ内リンクがある（_top ごと飛ぶ）: " + hashes.join(" "));
+        // このページが読む JS を源文で見る（後から足される遷移も拾う）。
+        // ⚠ 外部（GA の gtag.js）は自分たちの持ち物ではないので見ない
+        const srcs = [...d.querySelectorAll("script[src]")].map((s) => s.getAttribute("src"))
+          .filter((s) => !/^(https?:)?\/\//.test(s));
+        assert(srcs.length >= 3, p.src + ": 読んでいる js が拾えていない（検査の空回り）");
+        for (const s of srcs) {
+          const res = await fetch(s, { cache: "no-store" });
+          assert(res.ok, s + " を読めない: " + res.status);
+          const code = await res.text();
+          assert(!/location\s*\.\s*href\s*=[^=]/.test(code), s + ": location.href への代入がある（_top の外へ出る）");
+          assert(!/location\s*\.\s*(assign|replace)\s*\(/.test(code), s + ": location.assign/replace がある");
+          assert(!/window\s*\.\s*location\s*=[^=]/.test(code), s + ": window.location への代入がある");
+        }
+      } finally { f.remove(); }
+    }
+  });
+
+  await t("REF10: ⚠ 否定対照 — embed が無ければ看板は在り・帯は出て・高さは送らない", async () => {
+    for (const p of EMBED_PAGES) {
+      const bare = p.src.replace(/[?&]embed=1/, (m) => (m[0] === "?" ? "?" : "")).replace(/\?$/, "");
+      assert(!/embed/.test(bare), "検査用の URL の作り方が違う: " + bare);
+      const { f, win } = await probe(bare + (bare.includes("?") ? "&" : "?") + "from=reference&page=half-reaction", p.ready);
+      assert(win, bare + " を開けない");
+      try {
+        const d = win.document;
+        assert(!d.documentElement.classList.contains("embed"), bare + ": embed が無いのに class が付いた");
+        assert(!d.head.querySelector("base"), bare + ": embed が無いのに <base> が入った");
+        assert(win.getComputedStyle(d.querySelector("header")).display !== "none", bare + ": ヘッダーが消えた");
+        assert(win.getComputedStyle(d.querySelector("footer")).display !== "none", bare + ": フッターが消えた");
+        const a = d.querySelector(".refBack .refBackLink");
+        assert(a && a.textContent === "← 参考書へ戻る", bare + ": 参考書から来たのに帯が出ない");
+        await new Promise((r) => setTimeout(r, 800));
+        assert(mine(win).length === 0, bare + ": embed が無いのに高さを送っている");
+      } finally { f.remove(); }
+    }
+  });
+  window.removeEventListener("message", onEmbedMsg);
 
   return results;
 }

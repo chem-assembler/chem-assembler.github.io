@@ -2485,3 +2485,13 @@ main.timelineMain {
   font-size: calc(13 * var(--fs-u));
 }
 .refBack .refBackLink:hover { text-decoration: underline; }
+
+/* ---- 参考書のページに埋め込まれたとき（?embed=1・DESIGN_reference_centric.md §2-4 (2) ①）----
+   看板（ヘッダー）・フッター・「← 参考書へ戻る」の帯を出さない。
+   ・ヘッダーを出すと、参考書のページの見出しと二重の看板になる
+   ・帯は header の**外**なので header を隠しても消えない。親のページの中で「参考書へ戻る」は無意味
+     （帯はそもそも作らない ＝ header-ui.js 側でも止めている。ここは念のための二重の守り）
+   ⚠ クラスを付けるのは各 HTML の head の同期な1行。ここで判定しない（描いてから消すとちらつく） */
+html.embed header,
+html.embed footer,
+html.embed .refBack { display: none; }
