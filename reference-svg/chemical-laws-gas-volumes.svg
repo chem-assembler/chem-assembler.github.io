@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="372" viewBox="0 0 820 372" role="img">
+  <!-- 水素 1 体積 ＋ 塩素 1 体積 → 塩化水素 2 体積。
+       (a) 原子だけで考えると原子が半分に割れる／(b) 分子で考えると割れずに済む。
+       ⚠ 同じ体積の箱には同じ数の粒子、という前提を見せる図なので、箱の大きさは全部そろえる。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .box { fill: #fcfcfc; stroke: #333; stroke-width: 2; }
+    .h { fill: #e3f2fd; stroke: #1565c0; stroke-width: 1.8; }
+    .cl { fill: #c8e6c9; stroke: #2e7d32; stroke-width: 1.8; }
+    .bond { stroke: #555; stroke-width: 3; }
+    .cut { stroke: #c62828; stroke-width: 2; stroke-dasharray: 4 3; fill: none; }
+    .at { font-size: 12px; fill: #222; }
+    .half { font-size: 13px; fill: #c62828; }
+    .head { font-size: 16px; fill: #222; }
+    .row { font-size: 17px; }
+    .op { font-size: 26px; fill: #333; }
+  </style>
+
+  <!-- 見出し -->
+  <text class="head" x="145" y="40" text-anchor="middle">水素 1 体積</text>
+  <text class="head" x="305" y="40" text-anchor="middle">塩素 1 体積</text>
+  <text class="head" x="590" y="40" text-anchor="middle">塩化水素 2 体積</text>
+
+  <!-- (a) 原子だけで考えると -->
+  <text class="row" x="90" y="74" style="fill:#c62828">(a) 原子だけで考えると —— 原子が半分に割れてしまう</text>
+  <rect class="box" x="90" y="82" width="110" height="110" />
+  <rect class="box" x="250" y="82" width="110" height="110" />
+  <rect class="box" x="470" y="82" width="110" height="110" />
+  <rect class="box" x="600" y="82" width="110" height="110" />
+  <text class="op" x="225" y="146" text-anchor="middle">＋</text>
+  <text class="op" x="415" y="146" text-anchor="middle">→</text>
+
+  <circle class="h" cx="145" cy="132" r="18" /><text class="at" x="145" y="137" text-anchor="middle">H</text>
+  <circle class="cl" cx="305" cy="132" r="22" /><text class="at" x="305" y="137" text-anchor="middle">Cl</text>
+
+  <path class="h" d="M 508 114 A 18 18 0 0 0 508 150 Z" />
+  <path class="cut" d="M 508 112 L 508 152" />
+  <text class="half" x="502" y="176" text-anchor="middle">½ H</text>
+  <path class="cl" d="M 552 110 A 22 22 0 0 0 552 154 Z" />
+  <path class="cut" d="M 552 108 L 552 156" />
+  <text class="half" x="546" y="176" text-anchor="middle">½ Cl</text>
+
+  <path class="h" d="M 638 114 A 18 18 0 0 0 638 150 Z" />
+  <path class="cut" d="M 638 112 L 638 152" />
+  <text class="half" x="632" y="176" text-anchor="middle">½ H</text>
+  <path class="cl" d="M 682 110 A 22 22 0 0 0 682 154 Z" />
+  <path class="cut" d="M 682 108 L 682 156" />
+  <text class="half" x="676" y="176" text-anchor="middle">½ Cl</text>
+
+  <!-- (b) 分子で考えると -->
+  <text class="row" x="90" y="228" style="fill:#2e7d32">(b) 分子 H₂・Cl₂ で考えると —— 割れずに説明できる</text>
+  <rect class="box" x="90" y="236" width="110" height="110" />
+  <rect class="box" x="250" y="236" width="110" height="110" />
+  <rect class="box" x="470" y="236" width="110" height="110" />
+  <rect class="box" x="600" y="236" width="110" height="110" />
+  <text class="op" x="225" y="300" text-anchor="middle">＋</text>
+  <text class="op" x="415" y="300" text-anchor="middle">→</text>
+
+  <path class="bond" d="M 130 291 L 160 291" />
+  <circle class="h" cx="130" cy="291" r="16" /><text class="at" x="130" y="296" text-anchor="middle">H</text>
+  <circle class="h" cx="160" cy="291" r="16" /><text class="at" x="160" y="296" text-anchor="middle">H</text>
+
+  <path class="bond" d="M 286 291 L 324 291" />
+  <circle class="cl" cx="286" cy="291" r="20" /><text class="at" x="286" y="296" text-anchor="middle">Cl</text>
+  <circle class="cl" cx="324" cy="291" r="20" /><text class="at" x="324" y="296" text-anchor="middle">Cl</text>
+
+  <path class="bond" d="M 508 291 L 542 291" />
+  <circle class="h" cx="508" cy="291" r="16" /><text class="at" x="508" y="296" text-anchor="middle">H</text>
+  <circle class="cl" cx="542" cy="291" r="20" /><text class="at" x="542" y="296" text-anchor="middle">Cl</text>
+
+  <path class="bond" d="M 638 291 L 672 291" />
+  <circle class="h" cx="638" cy="291" r="16" /><text class="at" x="638" y="296" text-anchor="middle">H</text>
+  <circle class="cl" cx="672" cy="291" r="20" /><text class="at" x="672" y="296" text-anchor="middle">Cl</text>
+</svg>
