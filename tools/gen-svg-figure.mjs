@@ -1,0 +1,135 @@
+/**
+ * 参考書の図を **SVG のソース（`reference-svg/*.svg`）から焼く**（`reference-img/<同じ名>.png`）。
+ *
+ *   node tools/gen-svg-figure.mjs              … 原稿の `svg:` を全部焼く
+ *   node tools/gen-svg-figure.mjs colligative  … そのページの図だけ
+ *   node tools/gen-svg-figure.mjs --check      … 焼かずに「ソースが在るか・PNG が在るか」だけ見る（ブラウザ不要）
+ *
+ * ★★ なぜ在るか（2026-09-21）: スライドにも作図器にも出どころが無い図が **30枚ほど**残った
+ *    （装置の絵・模式図・グラフ）。`gen-figure.mjs` は分子しか描けず、`clip-pdf.py` は出どころが要る。
+ *    画像を直接置くと **差分が読めず、あとから1文字も直せない**。
+ *    ★ **図の正を SVG のソース（文字）で持てば**、差分が読めて・レーン（文字だけを書く便）でも描けて・
+ *      あとから線を1本足せる。**PNG は生成物**（`reference-img/` に焼く。面Aは今までどおり PNG を指す）。
+ *
+ * ⚠ 原稿の書き方（`reference-md.js` が見る）:
+ *
+ *      :::figure
+ *      src: colligative-cooling-curve.png      ← svg: と同じ名の .png（機械が突き合わせる）
+ *      svg: colligative-cooling-curve.svg      ← reference-svg/ の中のファイル名だけ
+ *      alt: …
+ *      caption: …
+ *      :::
+ *
+ * ⚠ SVG の決めごと（焼く前に見る）:
+ *   - `width` と `height` を px で持つ（`viewBox` だけだと大きさが決まらない）。幅は 1200px 以下
+ *   - **外の資産を読まない**（`<image>`・`@import`・`xlink:href` の外部参照・web フォント）。
+ *     焼くのは手元のブラウザなので、外を読む図は焼く人の環境で見た目が変わる
+ *   - 文字は日本語が出る指定で（`font-family` は `system-ui, sans-serif` を既定に）。
+ *     ⚠ 焼いたあとは**必ず目で見る**（文字が枠からはみ出していないか）
+ */
+import { createRequire } from 'node:module';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const require = createRequire(import.meta.url);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(HERE, '..');
+const SRC = path.join(ROOT, 'reference-src');
+const SVG = path.join(ROOT, 'reference-svg');
+const IMG = path.join(ROOT, 'reference-img');
+const RM = require('./reference-md.js');
+
+const args = process.argv.slice(2);
+const CHECK = args.includes('--check');
+const ONLY = args.filter(a => !a.startsWith('--'));
+const WARN_BYTES = 100 * 1024;   // 1枚 100KB を超えたら切り直しを促す（止めない）
+const MAX_W = 1200;
+
+/** 原稿から `svg:` を持つ図を集める */
+function collect() {
+    const ids = RM.normalize(readFileSync(path.join(SRC, 'ORDER.txt'), 'utf8')).split('\n')
+        .map(s => s.trim()).filter(s => s && !s.startsWith('#'));
+    const jobs = [];
+    ids.forEach(id => {
+        if (ONLY.length && !ONLY.includes(id)) return;
+        const where = `reference-src/${id}.md`;
+        const page = RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), where, { pages: ids });
+        const walk = (blocks) => (blocks || []).forEach(b => {
+            if (b && b.kind === 'figure' && b.svg) jobs.push({ id, src: b.src, svg: b.svg, where });
+            if (b && Array.isArray(b.blocks)) walk(b.blocks);
+        });
+        walk(page.blocks);
+    });
+    return jobs;
+}
+
+/** 焼く前に見る（外の資産を読まないこと・大きさが在ること） */
+function checkSvg(text, file) {
+    const bad = [];
+    if (/<image\b/i.test(text)) bad.push('<image>（外の画像）');
+    if (/@import/i.test(text)) bad.push('@import');
+    if (/href\s*=\s*["']https?:/i.test(text)) bad.push('http(s) の参照');
+    if (/<script\b/i.test(text)) bad.push('<script>');
+    if (bad.length) throw new Error(`${file}: 外の資産を読んでいます（${bad.join(' / ')}）。図は1つのファイルで完結させてください`);
+    const w = /<svg[^>]*\swidth\s*=\s*["'](\d+(?:\.\d+)?)/i.exec(text);
+    const h = /<svg[^>]*\sheight\s*=\s*["'](\d+(?:\.\d+)?)/i.exec(text);
+    if (!w || !h) throw new Error(`${file}: <svg> に width と height（px）がありません（viewBox だけでは大きさが決まりません）`);
+    if (Number(w[1]) > MAX_W) throw new Error(`${file}: 幅が ${w[1]}px です（${MAX_W}px 以下にしてください）`);
+    return { w: Number(w[1]), h: Number(h[1]) };
+}
+
+async function main() {
+    const jobs = collect();
+    if (!jobs.length) { console.log('svg: の図はありません'); return; }
+    if (!existsSync(SVG)) mkdirSync(SVG);
+
+    const missing = [];
+    jobs.forEach(j => {
+        const p = path.join(SVG, j.svg);
+        if (!existsSync(p)) missing.push(`${j.where}: reference-svg/${j.svg} がありません（svg: の図のソース）`);
+    });
+    if (missing.length) {
+        missing.forEach(m => console.error('❌ ' + m));
+        process.exit(1);
+    }
+
+    if (CHECK) {
+        let ng = 0;
+        jobs.forEach(j => {
+            try { checkSvg(readFileSync(path.join(SVG, j.svg), 'utf8'), j.svg); } catch (e) { console.error('❌ ' + e.message); ng++; }
+            if (!existsSync(path.join(IMG, j.src))) { console.error(`❌ ${j.where}: reference-img/${j.src} をまだ焼いていません`); ng++; }
+        });
+        if (ng) process.exit(1);
+        console.log(`✅ ${jobs.length} 枚とも、ソース（reference-svg/）と焼いたもの（reference-img/）がそろっています`);
+        return;
+    }
+
+    const { chromium } = require('./record/node_modules/playwright');
+    const browser = await chromium.launch();
+    try {
+        for (const j of jobs) {
+            const text = readFileSync(path.join(SVG, j.svg), 'utf8');
+            const size = checkSvg(text, j.svg);
+            const pg = await browser.newPage({ viewport: { width: Math.ceil(size.w), height: Math.ceil(size.h) } });
+            try {
+                /* ⚠ `file://` で開かない（同じ環境でも相対の参照が効いてしまう）。
+                   本文に直接置いて、外を読まない図だけが焼ける状態にする */
+                await pg.setContent(`<!doctype html><meta charset="utf-8">
+<style>html,body{margin:0;padding:0;background:#fff}
+svg{display:block;font-family:system-ui,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif}</style>
+${text}`, { waitUntil: 'load' });
+                const el = pg.locator('svg');
+                const buf = await el.screenshot({ type: 'png' });
+                writeFileSync(path.join(IMG, j.src), buf);
+                const kb = buf.length / 1024;
+                console.log(`   ✅ ${j.src}  ${size.w}x${size.h}  ${kb.toFixed(0)}KB  ← reference-svg/${j.svg}（${j.id}）`
+                    + (kb > WARN_BYTES / 1024 ? '  ⚠ 100KB 超' : ''));
+            } finally { await pg.close(); }
+        }
+    } finally { await browser.close(); }
+    console.log(`✅ ${jobs.length} 枚を reference-img/ に焼きました`);
+    console.log('   ⚠ 焼いたら**目で見る**（文字が枠からはみ出していないか）。そのあと gen-reference.mjs と gen-reference-pages.mjs');
+}
+
+await main();

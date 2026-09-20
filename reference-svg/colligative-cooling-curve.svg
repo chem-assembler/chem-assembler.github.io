@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="440" viewBox="0 0 820 440" role="img">
+  <!-- 冷却曲線（純溶媒と溶液）。凝固点降下 Δtf は「右下がりの直線を左へ延長した高さ」で読む。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ★ 文字は枠の中に収める（右の凡例は目盛り線の上・グラフの外に出さない）。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .pure { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .soln { stroke: #c62828; stroke-width: 3; fill: none; }
+    .ext { stroke: #c62828; stroke-width: 2; stroke-dasharray: 6 5; fill: none; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .blue { fill: #1565c0; }
+    .red { fill: #c62828; }
+  </style>
+
+  <!-- 軸 -->
+  <path class="ax" d="M 96 46 L 96 366 L 690 366" />
+  <polygon points="96,36 91,50 101,50" fill="#333" />
+  <polygon points="700,366 686,361 686,371" fill="#333" />
+  <text class="lab" x="28" y="40">温度</text>
+  <text class="lab" x="640" y="398">時間</text>
+
+  <!-- 凝固点の高さ -->
+  <path class="grid" d="M 96 150 L 600 150" />
+  <path class="grid" d="M 96 216 L 600 216" />
+  <text class="small blue" x="404" y="142">純溶媒の凝固点</text>
+  <text class="small red" x="416" y="238">溶液の凝固点</text>
+
+  <!-- 純溶媒: 冷却 → 過冷却の谷 → 上がって水平 -->
+  <path class="pure" d="M 106 76 C 152 112, 176 140, 204 170 C 214 181, 227 179, 235 167 C 243 156, 250 151, 262 150 L 430 150 C 466 150, 494 176, 528 224" />
+  <text class="small blue" x="182" y="96">純溶媒</text>
+
+  <!-- 溶液: 冷却 → 過冷却の谷 → 右下がり -->
+  <path class="soln" d="M 122 96 C 172 144, 206 192, 248 238 C 260 250, 274 248, 282 235 C 290 223, 298 217, 314 216 L 462 238 C 500 246, 532 270, 564 302" />
+  <text class="small red" x="300" y="330">溶液 —— 凝固が進むと残りが濃くなり、凝固点が下がり続ける</text>
+
+  <!-- 過冷却（谷を指す） -->
+  <text class="small" x="150" y="196">過冷却</text>
+  <path class="ax" d="M 200 190 L 234 176" stroke="#666" stroke-width="1.5" />
+
+  <!-- 右下がりの直線を左へ延長して凝固点を読む -->
+  <path class="ext" d="M 462 238 L 314 216 L 268 209" />
+  <circle cx="268" cy="209" r="5" class="red" />
+  <text class="small red" x="120" y="268">延長して読む →</text>
+  <path class="ax" d="M 246 262 L 262 218" stroke="#c62828" stroke-width="1.5" />
+
+  <!-- 凝固点降下 Δtf -->
+  <path class="ax" d="M 612 150 L 612 216" stroke="#6a1b9a" stroke-width="2" />
+  <polygon points="612,150 607,162 617,162" fill="#6a1b9a" />
+  <polygon points="612,216 607,204 617,204" fill="#6a1b9a" />
+  <text class="lab" x="626" y="190" fill="#6a1b9a">Δt&#8202;f</text>
+</svg>

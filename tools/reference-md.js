@@ -265,7 +265,12 @@
         /* ★★ `shot` は **アプリの画面を切り取って焼くための指定**（`tools/gen-app-figure.mjs`・§31-4）。
            ⚠ `raw` ＝ 記法も「使えない文字」の検査も通さない（URL の `&`・セレクタの `>` を書くため）。
              ★ 画面には出さない欄なので、素通ししても本文に生の記号は出ない。 */
-        figure: { order: ['src', 'gen', 'shot', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'], raw: ['shot'] },
+        /* ★★ `svg:` （2026-09-21）—— **図の正を文字（SVG のソース）で持つ**。
+           ★ なぜ: スライドに無い図（装置の絵・模式図・グラフ）が 30枚 ほど残るが、作図器は分子しか描けない。
+             画像を直接置くと**差分が読めず、直しもできない**。SVG なら文字なので、
+             レーンも描けるし、後から 1 行直せる。**PNG は生成物**（`tools/gen-svg-figure.mjs`）。
+           ⚠ `svg:` は `reference-svg/` の中の**ファイル名だけ**。`src` はその名の `.png`。 */
+        figure: { order: ['src', 'gen', 'shot', 'svg', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'], raw: ['shot'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒）。
            ★ `arrow` は矢印そのもの（§31-2）。**書かなければ →**（有機46枚は1文字も変わらない） */
@@ -392,6 +397,8 @@
 
     /* 図のファイル名。⚠ **名前だけ**（`/` も `..` も許さない）。置き場所を .md 側から動かせない形にする */
     var FIGURE_SRC_RE = /^[a-z0-9][a-z0-9-]*\.png$/;
+    /* 図のソース（SVG）のファイル名。置き場所は `reference-svg/` 固定（src と同じ理由） */
+    var FIGURE_SVG_RE = /^[a-z0-9][a-z0-9-]*\.svg$/;
     /* 節のアンカー。⚠ URL の `#` の後ろに出るので、英小文字・数字・ハイフンだけ */
     var ANCHOR_RE = /^[a-z0-9][a-z0-9-]*$/;
     /* 手で書く表のセルの区切り */
@@ -826,6 +833,22 @@
                     + '\n    ★ 直し方: 「図」ではなく、何が描いてあるかを1文で書きます'
                     + '（例: メタンの正四面体構造。手前の結合をくさび、奥の結合を破線で描いた図）'
                     + '\n    ⚠ caption と同じ文にしないこと（caption は図の外に出るので、読み上げが二重になります）');
+            }
+            /* ★★ SVG のソースから焼く図（2026-09-21） */
+            if (Object.prototype.hasOwnProperty.call(b, 'svg')) {
+                if (Object.prototype.hasOwnProperty.call(b, 'gen') || Object.prototype.hasOwnProperty.call(b, 'shot')) {
+                    fail(where, ':::figure に svg: と gen:/shot: の両方があります'
+                        + '    ★ 1枚の図の焼き方は1つだけです');
+                }
+                if (!FIGURE_SVG_RE.test(b.svg)) {
+                    fail(where, ':::figure の svg: は reference-svg/ の中のファイル名だけを書きます'
+                        + '（英小文字・数字・ハイフン ＋ .svg。いまは「' + b.svg + '」）');
+                }
+                if (b.src !== b.svg.replace(/\.svg$/, '.png')) {
+                    fail(where, ':::figure の src は svg: と同じ名の .png にします'
+                        + '（svg: ' + b.svg + ' なら src: ' + b.svg.replace(/\.svg$/, '.png') + '。いまは「' + b.src + '」）'
+                        + '    ★ 名前をそろえると、焼き直しのときにどの PNG がどのソースから来たかを名前だけで追えます');
+                }
             }
             /* ★★ アプリの画面の切り取り（§31-4） */
             if (Object.prototype.hasOwnProperty.call(b, 'shot')) {

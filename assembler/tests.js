@@ -55727,7 +55727,20 @@
             assert(res.ok, `${p.id}: 図が読めない（${url}・HTTP ${res.status}）`
                 + '。reference-img/ に在るか、_config.yml で除外していないか');
             assert(/^image\//.test(res.headers.get('content-type') || ''),
-                `${p.id}: ${url} が画像として返ってこない（${res.headers.get('content-type')}）`);
+                `${p.id}: ${url} が画像として返ってこない（${res.headers.get('content-type')}）`);
+            /* ★ `svg:` の図は **ソース（reference-svg/）が正**・PNG は生成物（2026-09-21）。
+               ソースが消えた PNG は、次の焼き直しで作り直せない ＝ 直せない図になる。 */
+            if (b.svg) {
+                assert(b.src === b.svg.replace(/\.svg$/, '.png'),
+                    `${p.id}: svg: と src: の名前がそろっていない（${b.svg} / ${b.src}）`);
+                const sv = await fetch('../reference-svg/' + b.svg + FRESH());
+                assert(sv.ok, `${p.id}: 図のソースが読めない（reference-svg/${b.svg}・HTTP ${sv.status}）` +
+                    '。PNG は生成物なので、ソースが無いと直せない');
+                const svText = await sv.text();
+                assert(/<svg[\s>]/.test(svText), `${p.id}: reference-svg/${b.svg} が SVG ではない`);
+                assert(!/<image|@import|<script/i.test(svText) && !/href\s*=\s*["']https?:/i.test(svText),
+                    `${p.id}: reference-svg/${b.svg} が外の資産を読んでいる（焼く人の環境で見た目が変わる）`);
+            }
         }
 
         /* ── ⑤ 面Aの目次は **renderToc から焼いたもの** ──

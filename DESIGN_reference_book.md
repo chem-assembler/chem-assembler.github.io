@@ -3981,6 +3981,40 @@ caption: …
 - 撮るのは `node tools/gen-app-figure.mjs --port=<ポート> [ページid]`（`--check` は在るかだけ）。
   ⚠ **同じ URL を2回撮って1バイトでも違えば赤** ＝ 抽選の画面（muki の tree / separation / snake）を黙って焼かない（実測で赤になった）。
 
+### 31-4b. 図を SVG のソースから焼く `svg:`（`:::figure`・2026-09-21）
+
+```
+:::figure
+src: colligative-cooling-curve.png      ← svg: と同じ名の .png
+svg: colligative-cooling-curve.svg      ← reference-svg/ の中のファイル名だけ
+alt: …
+caption: …
+:::
+```
+- ★ **図の正は `reference-svg/<名>.svg`**（文字）。`reference-img/<名>.png` は**生成物**。
+  焼くのは `node tools/gen-svg-figure.mjs [ページid]`（`--check` は「ソースと PNG がそろっているか」だけを見る・ブラウザ不要）。
+- ★ **なぜ**: スライドにも作図器にも出どころが無い図（装置の絵・模式図・グラフ）が 30枚 ほどある。
+  画像を直接置くと**差分が読めず、あとから1行も直せない**。SVG なら文字なのでレーンでも描け、あとから直せる。
+- ⚠ SVG の決めごと（焼く前に道具が見る）: `<svg>` に `width`・`height`（px・幅は 1200 以下）を持つ。
+  **外の資産を読まない**（`<image>`・`@import`・`<script>`・http の参照）。文字は既定の `system-ui` 系で出る。
+- ⚠ `gen:`（分子を焼く）・`shot:`（アプリの画面）とは**同じ図に両方書けない**。1枚の焼き方は1つ。
+- ⚠ 焼いたら**目で見る**（文字が枠からはみ出ていないか）。`REF17` が「ソースが存在し、外を読まない」を見張る。
+
+### 31-4c. 参考書の中にアプリを埋め込む `embed: true`（`:::link`・2026-09-20）
+
+```
+:::link
+app: ion-equation/halfreaction
+id: MnO4_red
+embed: true
+text: 同じ式の係数を、この下で自分で決めてみよう
+:::
+```
+- ★ 面A はこれを**釜（押すと iframe を挿す）**に焼く。URL は台帳から組み、`embed=1` が付く（`?v=` は付けない）。
+- ⚠ 書けるのは台帳で `embeddable` の受け口だけ（いまは `ion-equation/halflist`・`halfreaction`）。それ以外は赤。
+- ⚠ **長い部品は埋めない**。実機（375×812）で測って決める —— 半反応式の一覧は 9.4画面になったのでリンクのままにした（設計 `DESIGN_reference_centric.md` §4 段1）。
+- 設計の正は `DESIGN_reference_centric.md` §2-4。
+
 ### 31-5. グループ台帳 `qa/GROUPS.tsv`
 
 - 無機・理論の「unit → group → ページ id」を **問いより先に**決めた表（ref-inorg-design §1-3 の案C）。44行。置き場所は qa（コードの持ち主）。
