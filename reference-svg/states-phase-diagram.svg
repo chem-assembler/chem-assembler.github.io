@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="400" viewBox="0 0 860 400" role="img">
+  <!-- 水と二酸化炭素の状態図。1.013×10^5 Pa の横線をたどると、温めたときの変化が読める。
+       ⚠ 水の融解曲線は左に傾く（押すと融点が下がる）。CO2 は右に傾く。ここを間違えない。
+       ⚠ CO2 の三重点（5.3×10^5 Pa）は 1.013×10^5 Pa より上なので、横線は液体の領域を通らない＝昇華。
+       ⚠ 目盛りの間隔は目安で、圧力・温度の比を表してはいない（値は本文の表で扱う）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .drop { stroke: #ddd; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .atm { stroke: #c62828; stroke-width: 2; stroke-dasharray: 7 4; fill: none; }
+    .b { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .tiny { font-size: 13px; fill: #666; }
+    .pt { fill: #6a1b9a; }
+  </style>
+
+  <!-- ===== 水 ===== -->
+  <text class="tiny" x="88" y="44">圧力（Pa）</text>
+  <path class="drop" d="M 168 225 L 168 330 M 235 225 L 235 330 M 370 110 L 370 330" />
+  <path class="ax" d="M 90 50 L 90 330 L 440 330" />
+
+  <path class="b" d="M 170 265 C 162 200, 156 130, 150 60" />
+  <path class="b" d="M 170 265 Q 200 243 235 225 C 285 199, 345 168, 370 110" />
+  <path class="b" d="M 170 265 C 145 285, 120 305, 95 330" />
+
+  <path class="atm" d="M 90 225 L 420 225" />
+  <text class="tiny" x="416" y="218" text-anchor="end" fill="#c62828">1.013×10⁵ Pa</text>
+
+  <text class="small" x="118" y="146">固体</text>
+  <text class="small" x="256" y="150">液体</text>
+  <text class="small" x="330" y="292">気体</text>
+
+  <circle class="pt" cx="170" cy="265" r="5" />
+  <text class="tiny" x="182" y="290" fill="#6a1b9a">三重点</text>
+  <circle class="pt" cx="370" cy="110" r="5" />
+  <text class="tiny" x="358" y="100" text-anchor="end" fill="#6a1b9a">臨界点</text>
+
+  <circle cx="168" cy="225" r="4" fill="#c62828" />
+  <circle cx="235" cy="225" r="4" fill="#c62828" />
+  <text class="tiny" x="168" y="350" text-anchor="middle">0</text>
+  <text class="tiny" x="235" y="350" text-anchor="middle">100</text>
+  <text class="tiny" x="370" y="350" text-anchor="middle">374</text>
+  <text class="tiny" x="424" y="322" text-anchor="end">温度（℃）</text>
+  <text class="lab" x="255" y="382" text-anchor="middle">水 H₂O</text>
+
+  <!-- ===== 二酸化炭素 ===== -->
+  <text class="tiny" x="518" y="44">圧力（Pa）</text>
+  <path class="drop" d="M 580 245 L 580 330 M 620 180 L 620 330 M 790 105 L 790 330" />
+  <path class="ax" d="M 520 50 L 520 330 L 845 330" />
+
+  <path class="b" d="M 620 180 C 625 140, 631 100, 636 60" />
+  <path class="b" d="M 620 180 C 660 160, 720 145, 790 105" />
+  <path class="b" d="M 620 180 Q 600 214 580 245 C 562 275, 542 305, 525 330" />
+
+  <path class="atm" d="M 520 245 L 830 245" />
+  <text class="tiny" x="826" y="238" text-anchor="end" fill="#c62828">1.013×10⁵ Pa</text>
+
+  <text class="small" x="548" y="130">固体</text>
+  <text class="small" x="682" y="122">液体</text>
+  <text class="small" x="740" y="296">気体</text>
+
+  <circle class="pt" cx="620" cy="180" r="5" />
+  <text class="tiny" x="632" y="206" fill="#6a1b9a">三重点</text>
+  <circle class="pt" cx="790" cy="105" r="5" />
+  <text class="tiny" x="778" y="96" text-anchor="end" fill="#6a1b9a">臨界点</text>
+
+  <circle cx="580" cy="245" r="4" fill="#c62828" />
+  <text class="tiny" x="580" y="350" text-anchor="middle">−78</text>
+  <text class="tiny" x="622" y="350" text-anchor="middle">−57</text>
+  <text class="tiny" x="790" y="350" text-anchor="middle">31</text>
+  <text class="tiny" x="830" y="322" text-anchor="end">温度（℃）</text>
+  <text class="lab" x="680" y="382" text-anchor="middle">二酸化炭素 CO₂</text>
+</svg>
