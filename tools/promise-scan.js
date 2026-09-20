@@ -4,6 +4,7 @@
  *   node tools/promise-scan.js                       … 前回からの差分（状態は下の --state）
  *   node tools/promise-scan.js --since=2026-09-21    … 日付を指定
  *   node tools/promise-scan.js --all                 … 全期間（初回の棚卸し用・重い）
+ *   node tools/promise-scan.js --session             … ★ **いま閉じようとしているセッションの分だけ**（数秒）
  *   node tools/promise-scan.js --out=<path>          … 書き出し先（既定は STATUS/archive/…）
  *
  * ★ **なぜ要るか**（2026-09-21 の棚卸し）: 会話の中だけで決まった仕事は、ブランチにもファイルにも
@@ -14,6 +15,12 @@
  * ⚠ **これは「見つける」道具で、「直す」道具ではない。** 出てきた行は人が見て、
  *   台帳へ足すか `skip` と判断する。⚠ 会話の記録はユーザーの私的な作業記録なので、
  *   **書き出し先はリポジトリの外**（既定は `STATUS/archive/promise-scan/`）。
+ *
+ * ★ **いちばん安いのは `--session`**（2026-09-21・ユーザーとの検討）。頻度を上げても
+ *   「1件見つけるのに読む行数」は変わらない（実測で約65行に1件）。効くのは**気づくまでの時間**だけ。
+ *   ⚠ **後から探すと1件に何分もかかる**（発言を読み、コードを見て、STATUS を引く）。
+ *   **言った本人がその場で書けば1行で済む** ―― だからセッションを閉じる前にこれを走らせ、
+ *   出た行を台帳へ入れるか「仕事ではない」と流すかを、会話を覚えているうちに決める。
  *
  * 読む場所: `~/.claude/projects/<プロジェクト>/*.jsonl`（本体のセッションのみ。
  * サブエージェント＝レーンの発言は「約束」ではなく作業報告なので見ない）。
@@ -30,6 +37,7 @@ const STATE = path.join(STATUS, 'archive', 'promise-scan', 'state.json');
 
 const arg = (k, d) => { const a = process.argv.find(x => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; };
 const all = process.argv.includes('--all');
+const sessionOnly = process.argv.includes('--session');
 
 // 「これからやる」と読める言い回しだけに絞る（報告・一般論は落とす）
 const WANT = /(あとで|後で|後回し|保留|次の便で|いずれ|そのうち|宿題|TODO|未着手|未実装|積み残)/;
@@ -51,16 +59,23 @@ function readLines(file) {
     return out;
 }
 
-const since = all ? '0000-00-00'
+const since = (all || sessionOnly) ? '0000-00-00'
     : arg('since', (fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')).last : null)
         || new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10));
 
 if (!fs.existsSync(TRANSCRIPTS)) { console.log(`会話の記録が見つかりません: ${TRANSCRIPTS}`); process.exit(1); }
 
+// `--session` … いちばん新しく書かれた記録＝いま動いているセッションだけを見る
+let files = fs.readdirSync(TRANSCRIPTS).filter(f => f.endsWith('.jsonl'));
+if (sessionOnly) {
+    files = files.map(f => ({ f, t: fs.statSync(path.join(TRANSCRIPTS, f)).mtimeMs }))
+        .sort((a, b) => b.t - a.t).slice(0, 1).map(x => x.f);
+    console.log(`このセッションの記録だけを見ます: ${files[0]}`);
+}
+
 const rows = [];
 let newest = since;
-for (const f of fs.readdirSync(TRANSCRIPTS)) {
-    if (!f.endsWith('.jsonl')) continue;                 // 本体のセッションだけ（サブエージェントは配下の別フォルダ）
+for (const f of files) {
     let lastUser = '';
     for (const ln of readLines(path.join(TRANSCRIPTS, f))) {
         if (!WANT.test(ln)) continue;

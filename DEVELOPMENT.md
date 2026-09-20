@@ -1700,7 +1700,8 @@ node tools/issues.js find ヨードホルム      # ★ 着手の前に必ず引
 node tools/issues.js list --state=open      # 一覧（--area=assembler などで絞る）
 node tools/issues.js add --area=assembler --title="…" --evidence="file:line" --source="いつ・誰が"
 node tools/issues.js check                  # 形と重複（verify-release が呼ぶ）
-node tools/promise-scan.js                  # 月1回。会話の約束のうち台帳に無いものを出す
+node tools/promise-scan.js --session        # ★ セッションを閉じる前に（数秒・いちばん安い）
+node tools/promise-scan.js                  # 月1回の網。会話の約束のうち台帳に無いものを出す
 ```
 
 - **役割の分け方**: `STATUS/` ＝ 現在地の物語 ／ DEVELOPMENT.md・DESIGN_ ＝ 方針 ／ **台帳 ＝ 仕事の一覧**。
@@ -1709,6 +1710,10 @@ node tools/promise-scan.js                  # 月1回。会話の約束のうち
   書きながら `I-####` を添えていない行を**赤で止める**。⚠ 台帳を作る前からある 314 行は
   `tools/issues-baseline.json` に控えて見逃す。基準を取り直すのは**その行を台帳へ移し終えたときだけ**
 - **二重対処を止める**: 直したらコミットの本文に `I-0042` を書く。`git log --grep=I-0042` で前の試みが引ける
+- **3層で見る**（2026-09-21・ユーザーとの検討）: ⚠ **頻度を上げても「1件見つけるのに読む行数」は変わらない**
+  （実測で約65行に1件）。効くのは気づくまでの時間だけで、手間は減らない。だから場所を前へ:
+  ① **セッションを閉じる前**に `--session`（会話を覚えている本人がやるので1件1行で済む） ②**週1回**の網
+  ③**月1回**は件数ではなく**取りこぼし率**を見る（下がらなければ受け皿の作り方を疑う）
 - ⚠ **公開リポジトリに置く。** 就業上の制約・収益の話など公開できないものは台帳に書かず `STATUS/` 側へ
 
 #### ★ 未統合の一覧 `tools/triage-unmerged.js`（2026-09-19）—— セッションの始めに走らせる
