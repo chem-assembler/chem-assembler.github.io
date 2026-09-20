@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="350" viewBox="0 0 820 350" role="img">
+  <!-- 金属の3つの結晶格子。球は位置を見せるための小さい球で、実際は接している。
+       ⚠ 数え方の色分け: 青＝頂点（1／8 個）・橙＝面の中心（1／2 個）・紫＝内部（1 個）。
+       ⚠ 六方最密構造は六角柱で描いてある（六角柱では 6 個・単位格子では 2 個。本文の表と同じ）。
+       ⚠ 中ほどの 3 個は、そのまま投影すると六角柱の奥の頂点と重なって読めないので、
+          中心寄りに置いてある（位置関係を見せるための図）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .e { stroke: #666; stroke-width: 2; fill: none; }
+    .hid { stroke: #bbb; stroke-width: 1.5; stroke-dasharray: 5 4; fill: none; }
+    .v { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
+    .f { fill: #fae3c8; stroke: #ef6c00; stroke-width: 1.6; }
+    .i { fill: #e1bee7; stroke: #6a1b9a; stroke-width: 1.6; }
+    .name { font-size: 17px; fill: #222; }
+    .cnt { font-size: 15px; fill: #444; }
+    .frac { font-size: 14px; fill: #444; }
+  </style>
+
+  <!-- ===== 体心立方格子 ===== -->
+  <path class="hid" d="M 112 216 L 217 216 M 112 216 L 112 111 M 112 216 L 70 250" />
+  <path class="e" d="M 70 250 L 175 250 L 175 145 L 70 145 Z" />
+  <path class="e" d="M 217 216 L 217 111 L 112 111" />
+  <path class="e" d="M 175 250 L 217 216 M 175 145 L 217 111 M 70 145 L 112 111" />
+  <circle class="i" cx="144" cy="181" r="13" />
+  <circle class="v" cx="70" cy="250" r="13" /><circle class="v" cx="175" cy="250" r="13" />
+  <circle class="v" cx="175" cy="145" r="13" /><circle class="v" cx="70" cy="145" r="13" />
+  <circle class="v" cx="112" cy="216" r="13" /><circle class="v" cx="217" cy="216" r="13" />
+  <circle class="v" cx="217" cy="111" r="13" /><circle class="v" cx="112" cy="111" r="13" />
+  <text class="frac" x="52" y="276" style="fill:#1565c0">1／8</text>
+  <text class="frac" x="162" y="176" style="fill:#6a1b9a">1</text>
+  <text class="name" x="144" y="302" text-anchor="middle">体心立方格子</text>
+  <text class="cnt" x="144" y="328" text-anchor="middle">1／8 × 8 ＋ 1 ＝ 2 個</text>
+
+  <!-- ===== 面心立方格子 ===== -->
+  <path class="hid" d="M 372 216 L 477 216 M 372 216 L 372 111 M 372 216 L 330 250" />
+  <path class="e" d="M 330 250 L 435 250 L 435 145 L 330 145 Z" />
+  <path class="e" d="M 477 216 L 477 111 L 372 111" />
+  <path class="e" d="M 435 250 L 477 216 M 435 145 L 477 111 M 330 145 L 372 111" />
+  <circle class="f" cx="425" cy="164" r="13" /><circle class="f" cx="351" cy="181" r="13" />
+  <circle class="f" cx="456" cy="181" r="13" /><circle class="f" cx="404" cy="233" r="13" />
+  <circle class="f" cx="404" cy="128" r="13" /><circle class="f" cx="383" cy="198" r="13" />
+  <circle class="v" cx="330" cy="250" r="13" /><circle class="v" cx="435" cy="250" r="13" />
+  <circle class="v" cx="435" cy="145" r="13" /><circle class="v" cx="330" cy="145" r="13" />
+  <circle class="v" cx="372" cy="216" r="13" /><circle class="v" cx="477" cy="216" r="13" />
+  <circle class="v" cx="477" cy="111" r="13" /><circle class="v" cx="372" cy="111" r="13" />
+  <text class="frac" x="312" y="276" style="fill:#1565c0">1／8</text>
+  <text class="frac" x="474" y="176" style="fill:#ef6c00">1／2</text>
+  <text class="name" x="404" y="302" text-anchor="middle">面心立方格子</text>
+  <text class="cnt" x="404" y="328" text-anchor="middle">1／8 × 8 ＋ 1／2 × 6 ＝ 4 個</text>
+
+  <!-- ===== 六方最密構造 ===== -->
+  <path class="e" d="M 763 124 L 724 157 L 646 157 L 607 124 L 646 91 L 724 91 Z" />
+  <path class="e" d="M 763 240 L 724 273 L 646 273 L 607 240 L 646 207 L 724 207 Z" />
+  <path class="e" d="M 763 124 L 763 240 M 724 157 L 724 273 M 646 157 L 646 273 M 607 124 L 607 240" />
+  <path class="hid" d="M 646 91 L 646 207 M 724 91 L 724 207" />
+  <circle class="i" cx="712" cy="189" r="10" /><circle class="i" cx="658" cy="189" r="10" />
+  <circle class="i" cx="685" cy="167" r="10" />
+  <circle class="f" cx="685" cy="124" r="11" /><circle class="f" cx="685" cy="240" r="11" />
+  <circle class="v" cx="763" cy="124" r="11" /><circle class="v" cx="724" cy="157" r="11" />
+  <circle class="v" cx="646" cy="157" r="11" /><circle class="v" cx="607" cy="124" r="11" />
+  <circle class="v" cx="646" cy="91" r="11" /><circle class="v" cx="724" cy="91" r="11" />
+  <circle class="v" cx="763" cy="240" r="11" /><circle class="v" cx="724" cy="273" r="11" />
+  <circle class="v" cx="646" cy="273" r="11" /><circle class="v" cx="607" cy="240" r="11" />
+  <circle class="v" cx="646" cy="207" r="11" /><circle class="v" cx="724" cy="207" r="11" />
+  <text class="name" x="685" y="302" text-anchor="middle">六方最密構造</text>
+  <text class="cnt" x="685" y="328" text-anchor="middle">六角柱で 6 個（単位格子は 2 個）</text>
+</svg>
