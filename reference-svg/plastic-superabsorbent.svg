@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="370" viewBox="0 0 880 370" role="img">
+  <!-- 高吸水性樹脂。水を吸うと −COONa が電離し、−COO⁻ どうしの反発で網目が広がって水をかかえこむ。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .net { stroke: #6a1b9a; stroke-width: 2.5; fill: none; }
+    .arw { stroke: #333; stroke-width: 2.5; fill: none; }
+    .rep { stroke: #c62828; stroke-width: 2; fill: none; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 14px; fill: #444; }
+    .ion { font-size: 13px; fill: #c62828; }
+    .w { fill: #1565c0; }
+  </style>
+
+  <!-- 乾いているとき -->
+  <path class="net" d="M 60 100 Q 95 92 130 100 Q 165 108 200 100
+                       M 60 140 Q 95 132 130 140 Q 165 148 200 140
+                       M 60 180 Q 95 172 130 180 Q 165 188 200 180
+                       M 60 220 Q 95 212 130 220 Q 165 228 200 220
+                       M 70 90 Q 62 125 70 160 Q 78 195 70 230
+                       M 110 90 Q 102 125 110 160 Q 118 195 110 230
+                       M 150 90 Q 142 125 150 160 Q 158 195 150 230
+                       M 190 90 Q 182 125 190 160 Q 198 195 190 230" />
+  <text class="ion" x="130" y="252" text-anchor="middle">−COONa が並んでいる</text>
+  <text class="lab" x="130" y="292" text-anchor="middle">乾いているとき</text>
+
+  <path class="arw" d="M 250 170 L 350 170" />
+  <polygon points="360,170 346,164 346,176" fill="#333" />
+  <text class="lab" x="305" y="152" text-anchor="middle">水を吸う</text>
+
+  <!-- 水を吸ったとき -->
+  <path class="net" d="M 420 70 Q 505 58 590 70 Q 675 82 760 70
+                       M 420 140 Q 505 128 590 140 Q 675 152 760 140
+                       M 420 210 Q 505 198 590 210 Q 675 222 760 210
+                       M 420 280 Q 505 268 590 280 Q 675 292 760 280
+                       M 440 60 Q 428 130 440 200 Q 452 270 440 290
+                       M 520 60 Q 508 130 520 200 Q 532 270 520 290
+                       M 600 60 Q 588 130 600 200 Q 612 270 600 290
+                       M 680 60 Q 668 130 680 200 Q 692 270 680 290
+                       M 740 60 Q 728 130 740 200 Q 752 270 740 290" />
+
+  <circle class="w" cx="470" cy="106" r="5" /><circle class="w" cx="556" cy="120" r="5" />
+  <circle class="w" cx="636" cy="100" r="5" /><circle class="w" cx="712" cy="118" r="5" />
+  <circle class="w" cx="486" cy="176" r="5" /><circle class="w" cx="566" cy="188" r="5" />
+  <circle class="w" cx="646" cy="170" r="5" /><circle class="w" cx="716" cy="184" r="5" />
+  <circle class="w" cx="478" cy="246" r="5" /><circle class="w" cx="562" cy="256" r="5" />
+  <circle class="w" cx="644" cy="240" r="5" /><circle class="w" cx="714" cy="252" r="5" />
+
+  <text class="ion" x="462" y="60">−COO⁻</text>
+  <text class="ion" x="626" y="60">−COO⁻</text>
+  <text class="ion" x="546" y="308">−COO⁻</text>
+
+  <path class="rep" d="M 560 44 L 524 44 M 560 44 L 596 44" />
+  <polygon points="516,44 530,38 530,50" fill="#c62828" />
+  <polygon points="604,44 590,38 590,50" fill="#c62828" />
+  <text class="ion" x="560" y="30" text-anchor="middle">反発して広がる</text>
+
+  <circle class="w" cx="800" cy="170" r="5" />
+  <text class="small" x="814" y="176">水</text>
+
+  <text class="lab" x="590" y="340" text-anchor="middle">水を吸ったとき</text>
+</svg>
