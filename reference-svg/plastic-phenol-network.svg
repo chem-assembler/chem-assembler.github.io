@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="400" viewBox="0 0 820 400" role="img">
+  <!-- フェノール樹脂の網目。ベンゼン環どうしが −CH2− の橋でつながり、1つの環から最大3方向へ広がる。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 構造式そのものではなく、橋のかかり方を見せる模式図。 -->
+  <style>
+    .ring { fill: #fff; stroke: #333; stroke-width: 2.5; }
+    .inner { fill: none; stroke: #333; stroke-width: 2; }
+    .bond { stroke: #333; stroke-width: 2; fill: none; }
+    .br { stroke: #e65100; stroke-width: 3; fill: none; }
+    .oh { font-size: 16px; fill: #222; }
+    .ch2 { font-size: 15px; fill: #e65100; }
+    .small { font-size: 15px; fill: #444; }
+    .lead { stroke: #666; stroke-width: 1.2; fill: none; }
+  </style>
+
+  <!-- 橋（−CH2−） -->
+  <path class="br" d="M 196 120 L 374 120 M 426 120 L 604 120 M 311 280 L 489 280
+                      M 189 135 L 266 265 M 415 146 L 496 254 M 611 146 L 530 254" />
+  <text class="ch2" x="285" y="112" text-anchor="middle">CH₂</text>
+  <text class="ch2" x="515" y="112" text-anchor="middle">CH₂</text>
+  <text class="ch2" x="400" y="274" text-anchor="middle">CH₂</text>
+  <text class="ch2" x="146" y="206">CH₂</text>
+  <text class="ch2" x="384" y="212">CH₂</text>
+  <text class="ch2" x="592" y="202">CH₂</text>
+
+  <!-- 環（上の段） -->
+  <polygon class="ring" points="170,90 196,105 196,135 170,150 144,135 144,105" />
+  <circle class="inner" cx="170" cy="120" r="16" />
+  <path class="bond" d="M 170 90 L 170 72" />
+  <text class="oh" x="170" y="66" text-anchor="middle">OH</text>
+
+  <polygon class="ring" points="400,90 426,105 426,135 400,150 374,135 374,105" />
+  <circle class="inner" cx="400" cy="120" r="16" />
+  <path class="bond" d="M 400 90 L 400 72" />
+  <text class="oh" x="400" y="66" text-anchor="middle">OH</text>
+
+  <polygon class="ring" points="630,90 656,105 656,135 630,150 604,135 604,105" />
+  <circle class="inner" cx="630" cy="120" r="16" />
+  <path class="bond" d="M 630 90 L 630 72" />
+  <text class="oh" x="630" y="66" text-anchor="middle">OH</text>
+
+  <!-- 環（下の段） -->
+  <polygon class="ring" points="285,250 311,265 311,295 285,310 259,295 259,265" />
+  <circle class="inner" cx="285" cy="280" r="16" />
+  <path class="bond" d="M 285 310 L 285 328" />
+  <text class="oh" x="285" y="346" text-anchor="middle">OH</text>
+
+  <polygon class="ring" points="515,250 541,265 541,295 515,310 489,295 489,265" />
+  <circle class="inner" cx="515" cy="280" r="16" />
+  <path class="bond" d="M 515 310 L 515 328" />
+  <text class="oh" x="515" y="346" text-anchor="middle">OH</text>
+
+  <path class="br" d="M 144 120 L 104 120 M 656 120 L 696 120 M 259 295 L 219 330" />
+  <text class="small" x="704" y="126">まだ続く</text>
+
+  <text class="small" x="40" y="386">1つの環から最大3方向へ −CH₂− の橋がかかるので、平面ではなく立体の網目になる</text>
+</svg>
