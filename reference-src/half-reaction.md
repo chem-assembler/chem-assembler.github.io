@@ -330,7 +330,6 @@ text: 塩基性での書き換えと、オゾンの半反応式は「液性に�
 
 :::link
 app: ion-equation/halflist
-embed: true
 text: ここに出していない式もふくめて、一覧で見てみよう
 :::
 
