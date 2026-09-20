@@ -875,6 +875,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">断熱容器（発泡ポリスチレンのコップ）を使っても、測っている間に熱は少しずつ周りへ逃げます。そのため、<b>温度計の最高値は、本当に上がるはずだった温度より低く</b>なります。</p>
 <p class="ref-p">そこで、次の手順で温度変化を読みます。</p>
 <ol class="ref-list"><li>時間を横軸、温度を縦軸にとって、測った温度をグラフにする。</li><li>最高温度を過ぎてから温度がゆっくり下がっていく部分を、直線とみなす。</li><li>その直線を、<b>反応を始めた時刻（溶かし始めた時刻・混ぜた時刻）まで延ばす。</b><div class="ref-li-hang">延ばした先の温度を「逃げなかった場合の最高温度」とします。</div></li><li>温度変化 ＝（延ばした先の温度）−（はじめの温度）。</li></ol>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/heat-measurement-extrapolation.png" alt="横軸が時間、縦軸が温度のグラフ。20.0℃ の水が混ぜた時刻から立ち上がり、29.8℃ を最高としてそのあとゆっくり直線的に下がる。下がる直線を点線で混ぜた時刻まで延ばした先が 30.6℃ で、はじめの温度との差 10.6 K が温度変化" loading="lazy"><figcaption class="ref-figure-cap">使うのは温度計が示した 29.8℃ ではなく、<b>延ばした先の 30.6℃</b> です。混ぜてから最高温度に届くまでのあいだにも、熱は逃げ続けているからです。</figcaption></figure>
 <p class="ref-p">延ばした点は、「一瞬で反応が終わり、熱がまったく逃げなかったとしたら」の温度にあたります。下がっていく直線の傾きが、逃げていく熱の速さを表しているためです。</p>
 <p class="ref-p">具体例2で、はじめ 20.0℃ の水に溶質を入れたところ、最高温度は 29.8℃ で、下がる直線を 0 分まで延ばすと 30.6℃ でした。使う温度変化は 30.6 − 20.0 ＝ 10.6K です。29.8 − 20.0 ＝ 9.8K を使うと、逃げた分だけ熱量を小さく見積もってしまいます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">温度計が示した最高温度から、はじめの温度を引いて温度変化にする</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">最高温度を過ぎて下がっていく直線を、<b>反応を始めた時刻まで延ばした点</b>の温度を使います。</span></p><p class="ref-mistake-why">温度計の最高値は、それまでに逃げた熱の分だけ低くなっています。★ 問題にグラフが付いていたら、まず「延ばす直線」を探します。</p></div>
