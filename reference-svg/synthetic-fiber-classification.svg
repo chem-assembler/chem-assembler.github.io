@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="400" viewBox="0 0 880 400" role="img">
+  <!-- 繊維の分類の樹形図。天然繊維／化学繊維（再生・半合成・合成）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .b0 { fill: #eeeeee; stroke: #333; stroke-width: 2; }
+    .b1 { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
+    .b2 { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2; }
+    .ln { stroke: #333; stroke-width: 2; fill: none; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+  </style>
+
+  <path class="ln" d="M 120 191 L 135 191 M 135 99 L 135 284 M 135 99 L 150 99 M 135 284 L 150 284" />
+  <path class="ln" d="M 290 99 L 310 99 M 310 64 L 310 134 M 310 64 L 330 64 M 310 134 L 330 134" />
+  <path class="ln" d="M 290 284 L 310 284 M 310 214 L 310 354 M 310 214 L 330 214 M 310 284 L 330 284 M 310 354 L 330 354" />
+
+  <rect class="b0" x="30" y="171" width="90" height="40" rx="6" />
+  <text class="lab" x="75" y="197" text-anchor="middle">繊維</text>
+
+  <rect class="b1" x="150" y="79" width="140" height="40" rx="6" />
+  <text class="lab" x="220" y="105" text-anchor="middle">天然繊維</text>
+  <rect class="b1" x="150" y="264" width="140" height="40" rx="6" />
+  <text class="lab" x="220" y="290" text-anchor="middle">化学繊維</text>
+
+  <rect class="b2" x="330" y="44" width="140" height="40" rx="6" />
+  <text class="lab" x="400" y="70" text-anchor="middle">植物繊維</text>
+  <text class="small" x="486" y="66">セルロース —— 綿・麻</text>
+
+  <rect class="b2" x="330" y="114" width="140" height="40" rx="6" />
+  <text class="lab" x="400" y="140" text-anchor="middle">動物繊維</text>
+  <text class="small" x="486" y="136">タンパク質 —— 絹・羊毛</text>
+
+  <rect class="b2" x="330" y="194" width="140" height="40" rx="6" />
+  <text class="lab" x="400" y="220" text-anchor="middle">再生繊維</text>
+  <text class="small" x="486" y="210">セルロースを溶かしてもどす</text>
+  <text class="small" x="486" y="232">レーヨン</text>
+
+  <rect class="b2" x="330" y="264" width="140" height="40" rx="6" />
+  <text class="lab" x="400" y="290" text-anchor="middle">半合成繊維</text>
+  <text class="small" x="486" y="280">セルロースの一部を変える</text>
+  <text class="small" x="486" y="302">アセテート</text>
+
+  <rect class="b2" x="330" y="334" width="140" height="40" rx="6" />
+  <text class="lab" x="400" y="360" text-anchor="middle">合成繊維</text>
+  <text class="small" x="486" y="350">石油などからつくった単量体</text>
+  <text class="small" x="486" y="372">ナイロン・ポリエステル・アクリル繊維・ビニロン</text>
+</svg>
