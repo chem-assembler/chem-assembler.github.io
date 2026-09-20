@@ -21,6 +21,7 @@
  *   8. **これから push するコミットで、触ったアプリの版が上がっているか**（規則5の死角を塞ぐ）
  *   9. **傍用問題集・教科書の中身が公開物に混ざっていないか**（著作権。入試問題とは扱いが違う）
  *  10. **参考書の生成物（assembler/reference.json）が原稿（reference-src/*.md）と一致しているか**
+ *  12. **文書に「未着手・保留・あとで」と書くなら、課題台帳の id（I-####）を添えているか**
  *      （正は .md。ブラウザの `REF17` では見えない「原稿の足し忘れ・余り」をここで塞ぐ）
  *
  * 終了コード 0 = 合格、1 = 問題あり
@@ -519,6 +520,39 @@ textFiles.filter(rel => rel.startsWith('qa/') && !rel.startsWith('qa/tools/') &&
             problems.push('参考書の本文: assembler/reference.json が reference-src/*.md と一致しません'
                 + '（reference.json は生成物です。原稿を直してから `node tools/gen-reference.mjs`）'
                 + (out.length ? '\n    ' + out.join('\n    ') : ''));
+        }
+    }
+}
+
+/* 規則12. 文書の「書きっぱなしの約束」（2026-09-21）
+ *
+ * ★ **なぜ機械で止めるか**: 7/30〜9/20 の会話から「あとで・保留・宿題」の行 1,112件を調べたら、
+ *   **17件がどこにも残っていなかった**（`STATUS/archive/2026-09-21-棚卸し/`）。うち11件は
+ *   「設計書・発注書・コード内コメントにだけ書いた」型。⚠ **受け皿が多いほど失われる** ——
+ *   どこに書いても「書いた」ことになるので、書き手は満足し、読み手は見つけられない。
+ *   ⚠ さらに高くつくのは**同じ件を何度もやり直すこと**（加硫の直しは2回・酸無水物は回避策と本修正が別々）。
+ *
+ * ★ 求めるのは1つだけ: **`tools/issues.jsonl` の id を同じ行に書く。**
+ *   そうすれば `node tools/issues.js find <語>` と `git log --grep=I-0042` で前の試みが引ける。
+ * ⚠ **台帳を作る前からある行は見逃す**（`tools/issues-baseline.json`）。基準を取り直してよいのは
+ *   「そこに載っている行を台帳へ移し終えたとき」だけ。 */
+{
+    const issuesJs = path.join(ROOT, 'tools', 'issues.js');
+    if (fs.existsSync(issuesJs)) {
+        try {
+            const out = execSync(`"${process.execPath}" "${issuesJs}" scan`, { cwd: ROOT, encoding: 'utf8' });
+            const lines = out.trim().split('\n').filter(l => l && !l.startsWith('——'));
+            lines.slice(0, 20).forEach(l => problems.push(`書きっぱなしの約束: ${l.trim()}`
+                + '（台帳の id を同じ行に書くこと: node tools/issues.js find <語>）'));
+            if (lines.length > 20) problems.push(`書きっぱなしの約束: ほか ${lines.length - 20} 行`);
+        } catch (e) {
+            problems.push('規則12 の検査を走らせられません: ' + String(e.message).split('\n')[0]);
+        }
+        try {
+            execSync(`"${process.execPath}" "${issuesJs}" check`, { cwd: ROOT, encoding: 'utf8' });
+        } catch (e) {
+            problems.push('課題台帳（tools/issues.jsonl）の形が壊れています: '
+                + ((e.stdout || '') + (e.stderr || '')).trim().split('\n').slice(1, 4).join(' / '));
         }
     }
 }
