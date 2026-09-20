@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" role="img">
+  <!-- 二次構造。左: α-ヘリックス（らせん・ひと巻きごとに水素結合）／右: β-シート（鎖が並び、あいだを水素結合）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ch { stroke: #1565c0; stroke-width: 4; fill: none; stroke-linecap: round; }
+    .hb { stroke: #c62828; stroke-width: 2; stroke-dasharray: 4 4; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .red { fill: #c62828; }
+    .lead { stroke: #666; stroke-width: 1.2; fill: none; }
+    .divider { stroke: #bbb; stroke-width: 1; stroke-dasharray: 5 5; }
+  </style>
+
+  <!-- α-ヘリックス -->
+  <path class="hb" d="M 120 78 L 120 112 M 120 128 L 120 162 M 120 178 L 120 212 M 120 228 L 120 262" />
+  <path class="ch" d="M 120 70 C 190 70, 190 120, 120 120 C 50 120, 50 170, 120 170
+                      C 190 170, 190 220, 120 220 C 50 220, 50 270, 120 270" />
+  <path class="lead" d="M 196 145 L 132 145" stroke="#c62828" />
+  <text class="small red" x="204" y="150">水素結合</text>
+  <text class="lab" x="120" y="316" text-anchor="middle">α-ヘリックス（らせん）</text>
+
+  <path class="divider" d="M 340 50 L 340 290" />
+
+  <!-- β-シート -->
+  <path class="hb" d="M 420 140 L 420 228 M 496 140 L 496 228 M 572 140 L 572 228
+                      M 648 140 L 648 228 M 724 140 L 724 228 M 800 140 L 800 228" />
+  <path class="ch" d="M 420 134 L 458 106 L 496 134 L 534 106 L 572 134 L 610 106 L 648 134 L 686 106 L 724 134 L 762 106 L 800 134" />
+  <path class="ch" d="M 420 234 L 458 206 L 496 234 L 534 206 L 572 234 L 610 206 L 648 234 L 686 206 L 724 234 L 762 206 L 800 234" />
+  <path class="lead" d="M 606 96 L 578 146" stroke="#c62828" />
+  <text class="small red" x="612" y="92">水素結合</text>
+  <text class="lab" x="610" y="316" text-anchor="middle">β-シート（鎖が並んでひだになる）</text>
+</svg>
