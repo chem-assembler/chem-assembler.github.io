@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="430" viewBox="0 0 820 430" role="img">
+  <!-- 分液漏斗。上がエーテル層（水より軽い）、下が水層。コックは下に付いていて水層から出す。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .glass { fill: none; stroke: #333; stroke-width: 2.5; }
+    .ether { fill: #fff3e0; }
+    .water { fill: #e3f0fb; }
+    .face { fill: #ddd; stroke: #333; stroke-width: 2; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+  </style>
+
+  <clipPath id="pear">
+    <path d="M 218 70 L 218 110 C 218 130, 150 150, 150 220 C 150 290, 200 320, 250 345
+             C 300 320, 350 290, 350 220 C 350 150, 282 130, 282 110 L 282 70 Z" />
+  </clipPath>
+
+  <!-- 中身（上: エーテル層 / 下: 水層） -->
+  <rect class="ether" x="140" y="120" width="220" height="112" clip-path="url(#pear)" />
+  <rect class="water" x="140" y="232" width="220" height="130" clip-path="url(#pear)" />
+
+  <!-- ガラス -->
+  <path class="glass" d="M 218 70 L 218 110 C 218 130, 150 150, 150 220 C 150 290, 200 320, 250 345
+                         C 300 320, 350 290, 350 220 C 350 150, 282 130, 282 110 L 282 70" />
+  <rect class="face" x="208" y="50" width="84" height="22" rx="6" />
+  <text class="small" x="250" y="40" text-anchor="middle">栓</text>
+
+  <!-- 界面 -->
+  <path d="M 152 232 L 348 232" stroke="#333" stroke-width="2.5" fill="none" />
+
+  <text class="lab" x="250" y="185" text-anchor="middle">エーテル層</text>
+  <text class="lab" x="250" y="280" text-anchor="middle">水層</text>
+
+  <!-- 脚とコック -->
+  <path class="glass" d="M 242 344 L 242 396 M 258 344 L 258 396" />
+  <circle class="face" cx="250" cy="366" r="15" />
+  <path class="glass" d="M 226 366 L 274 366" stroke-width="3" />
+
+  <!-- 注記 -->
+  <path class="lead" d="M 348 176 L 392 176" />
+  <text class="lab" x="400" y="170">エーテル層 —— 水より軽いので上</text>
+  <text class="small" x="400" y="196">中性の物質と、塩になっていない物質が残る</text>
+
+  <path class="lead" d="M 348 262 L 392 262" />
+  <text class="lab" x="400" y="270">水層 —— 塩になった物質が移る</text>
+  <text class="small" x="400" y="296">酸を加えて塩にしたアニリンなど</text>
+
+  <path class="lead" d="M 268 380 L 392 380" />
+  <text class="small" x="400" y="386">コックを開けると、下の水層から出てくる</text>
+</svg>
