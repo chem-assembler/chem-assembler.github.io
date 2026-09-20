@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="360" viewBox="0 0 760 360" role="img">
+  <!-- 相補的塩基対 A−T（水素結合2本）と G−C（3本）。塩基の形は模式（環2つ＝A・G、環1つ＝T・C）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 構造式そのものは作図器の仕事。ここは「2本の鎖のあいだで相手が決まる」ことだけを見せる。 -->
+  <style>
+    .chain { fill: #eee; stroke: #bbb; stroke-width: 1.5; }
+    .pur { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2.5; }
+    .pyr { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2.5; }
+    .inner { stroke: #1565c0; stroke-width: 2; fill: none; }
+    .link { stroke: #333; stroke-width: 2; fill: none; }
+    .hb { stroke: #c62828; stroke-width: 2.5; stroke-dasharray: 4 5; fill: none; }
+    .sym { font-size: 26px; }
+    .small { font-size: 15px; fill: #444; }
+    .red { fill: #c62828; }
+  </style>
+
+  <rect class="chain" x="60" y="52" width="18" height="276" rx="6" />
+  <rect class="chain" x="682" y="52" width="18" height="276" rx="6" />
+  <text class="small" x="69" y="38" text-anchor="middle">鎖①</text>
+  <text class="small" x="691" y="38" text-anchor="middle">鎖②</text>
+
+  <!-- A − T -->
+  <path class="link" d="M 78 110 L 166 110 M 530 110 L 682 110" />
+  <polygon class="pur" points="196,78 226,96 256,86 276,110 256,134 226,124 196,142 168,124 168,96" />
+  <path class="inner" d="M 226 96 L 226 124" />
+  <text class="sym" x="212" y="120" text-anchor="middle" fill="#1565c0">A</text>
+  <text class="small" x="222" y="176" text-anchor="middle">アデニン</text>
+
+  <polygon class="pyr" points="498,78 528,96 528,124 498,142 470,124 470,96" />
+  <text class="sym" x="499" y="120" text-anchor="middle" fill="#2e7d32">T</text>
+  <text class="small" x="499" y="176" text-anchor="middle">チミン</text>
+
+  <path class="hb" d="M 288 98 L 462 98 M 288 122 L 462 122" />
+  <text class="small red" x="376" y="72" text-anchor="middle">水素結合 2本</text>
+
+  <!-- G − C -->
+  <path class="link" d="M 78 262 L 166 262 M 530 262 L 682 262" />
+  <polygon class="pur" points="196,230 226,248 256,238 276,262 256,286 226,276 196,294 168,276 168,248" />
+  <path class="inner" d="M 226 248 L 226 276" />
+  <text class="sym" x="212" y="272" text-anchor="middle" fill="#1565c0">G</text>
+  <text class="small" x="222" y="328" text-anchor="middle">グアニン</text>
+
+  <polygon class="pyr" points="498,230 528,248 528,276 498,294 470,276 470,248" />
+  <text class="sym" x="499" y="272" text-anchor="middle" fill="#2e7d32">C</text>
+  <text class="small" x="499" y="328" text-anchor="middle">シトシン</text>
+
+  <path class="hb" d="M 288 242 L 462 242 M 288 262 L 462 262 M 288 282 L 462 282" />
+  <text class="small red" x="376" y="224" text-anchor="middle">水素結合 3本</text>
+</svg>
