@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="450" viewBox="0 0 880 450" role="img">
+  <!-- アンモニアソーダ法（ソルベー法）の物質の流れ。
+       左＝ナトリウムの流れ（NaCl → NaHCO3 → Na2CO3）／右＝カルシウムの流れ（CaCO3 → CaO → Ca(OH)2 → CaCl2）。
+       点線＝工程の中で回収して使い回すもの（CO2・NH3・NH4Cl）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="ad" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#333" /></marker>
+    <marker id="ab" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#1565c0" /></marker>
+    <marker id="ag" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#2e7d32" /></marker>
+    <marker id="ap" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#6a1b9a" /></marker>
+  </defs>
+  <style>
+    .box { fill: #fff; stroke: #333; stroke-width: 2; }
+    .edge { fill: #eceff1; stroke: #333; stroke-width: 3; }
+    .t { font-size: 17px; fill: #222; text-anchor: middle; }
+    .tb { font-size: 19px; fill: #222; text-anchor: middle; }
+    .tag { font-size: 15px; fill: #555; }
+    .note { font-size: 15px; fill: #555; }
+    .flow { stroke: #333; stroke-width: 2.5; fill: none; marker-end: url(#ad); }
+    .co2 { stroke: #1565c0; stroke-width: 2; fill: none; stroke-dasharray: 7 5; marker-end: url(#ab); }
+    .co2p { stroke: #1565c0; stroke-width: 2; fill: none; stroke-dasharray: 7 5; }
+    .nh3 { stroke: #2e7d32; stroke-width: 2; fill: none; stroke-dasharray: 7 5; marker-end: url(#ag); }
+    .nh4 { stroke: #6a1b9a; stroke-width: 2; fill: none; stroke-dasharray: 7 5; }
+    .nh4e { stroke: #6a1b9a; stroke-width: 2; fill: none; stroke-dasharray: 7 5; marker-end: url(#ap); }
+    .cb { fill: #1565c0; } .cg { fill: #2e7d32; } .cp { fill: #6a1b9a; }
+  </style>
+
+  <!-- ===== 左: ナトリウムの流れ ===== -->
+  <text class="tag" x="80" y="22">原料</text>
+  <rect class="edge" x="80" y="30" width="240" height="56" rx="10" />
+  <text class="tb" x="200" y="64">NaCl の飽和水溶液</text>
+
+  <rect class="box" x="80" y="128" width="240" height="56" rx="10" />
+  <text class="t" x="200" y="150">① NH₃ と CO₂ を吹き込む</text>
+  <text class="t" x="200" y="172">NaHCO₃ が沈殿する</text>
+
+  <rect class="box" x="80" y="226" width="240" height="56" rx="10" />
+  <text class="t" x="200" y="260">② NaHCO₃ を取り出して加熱</text>
+
+  <text class="tag" x="80" y="318">製品</text>
+  <rect class="edge" x="80" y="324" width="240" height="56" rx="10" />
+  <text class="tb" x="200" y="358">Na₂CO₃</text>
+
+  <path class="flow" d="M 200 86 L 200 126" />
+  <path class="flow" d="M 200 184 L 200 224" />
+  <path class="flow" d="M 200 282 L 200 322" />
+
+  <!-- ===== 右: カルシウムの流れ ===== -->
+  <text class="tag" x="610" y="22">原料</text>
+  <rect class="edge" x="610" y="30" width="240" height="56" rx="10" />
+  <text class="tb" x="730" y="64">CaCO₃（石灰石）</text>
+
+  <rect class="box" x="610" y="128" width="240" height="56" rx="10" />
+  <text class="t" x="730" y="150">③ 石灰石を熱分解する</text>
+  <text class="t" x="730" y="172">CaO と CO₂ ができる</text>
+
+  <rect class="box" x="610" y="226" width="240" height="56" rx="10" />
+  <text class="t" x="730" y="248">④ CaO に水を加える</text>
+  <text class="t" x="730" y="270">Ca(OH)₂ になる</text>
+
+  <rect class="box" x="610" y="324" width="240" height="56" rx="10" />
+  <text class="t" x="730" y="346">⑤ Ca(OH)₂ ＋ NH₄Cl</text>
+  <text class="t" x="730" y="368">NH₃ を追い出す</text>
+
+  <path class="flow" d="M 730 86 L 730 126" />
+  <path class="flow" d="M 730 184 L 730 224" />
+  <path class="flow" d="M 730 282 L 730 322" />
+  <path class="flow" d="M 730 380 L 730 400" />
+  <text class="tag" x="662" y="424">CaCl₂（副産物）</text>
+
+  <!-- ===== 回収して使い回すもの（点線） ===== -->
+  <!-- ② の CO₂ → ①（左まわり） -->
+  <path class="co2" d="M 80 254 C 36 240, 36 188, 74 170" />
+  <text class="note cb" transform="rotate(-90 30 236)" x="30" y="236">CO₂</text>
+
+  <!-- ③ の CO₂ → ①（上まわり・不足分を補う） -->
+  <path class="co2" d="M 610 140 L 400 140 L 400 102 L 240 102 L 240 124" />
+  <text class="note cb" x="428" y="130">CO₂</text>
+
+  <!-- ① の NH₄Cl → ⑤ -->
+  <path class="nh4" d="M 320 176 L 390 176 L 390 340 L 486 340" />
+  <path class="nh4e" d="M 514 340 L 606 340" />
+  <text class="note cp" x="398" y="208">NH₄Cl</text>
+
+  <!-- ⑤ で回収した NH₃ → ① -->
+  <path class="nh3" d="M 610 364 L 500 364 L 500 150 L 324 150" />
+  <text class="note cg" x="508" y="262">NH₃</text>
+
+  <text class="note" x="60" y="428">点線 ＝ 工程の中で回収して、もう一度使うもの</text>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="380" viewBox="0 0 700 380" role="img">
+  <!-- 黄リン P4 の分子。4個の P が正四面体の頂点にあり、P-P 結合は6本（どの2個もつながっている）。
+       点線は奥側の原子につながる結合。⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .b { stroke: #333; stroke-width: 6; fill: none; stroke-linecap: round; }
+    .bb { stroke: #999; stroke-width: 5; fill: none; stroke-dasharray: 9 7; stroke-linecap: round; }
+    .at { fill: #ffe0b2; stroke: #333; stroke-width: 2.5; }
+    .atb { fill: #f5f5f5; stroke: #999; stroke-width: 2.5; }
+    .sym { font-size: 20px; fill: #222; text-anchor: middle; }
+    .symb { font-size: 20px; fill: #777; text-anchor: middle; }
+    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
+    .note { font-size: 17px; fill: #333; }
+  </style>
+
+  <text class="ttl" x="230" y="44">黄リン P₄</text>
+
+  <!-- 奥の原子へつながる結合 -->
+  <path class="bb" d="M 230 112 L 230 178" />
+  <path class="bb" d="M 152 268 L 208 212" />
+  <path class="bb" d="M 308 268 L 252 212" />
+  <!-- 手前の結合 -->
+  <path class="b" d="M 214 112 L 146 258" />
+  <path class="b" d="M 246 112 L 314 258" />
+  <path class="b" d="M 152 280 L 308 280" />
+
+  <!-- 原子 -->
+  <circle class="atb" cx="230" cy="200" r="20" />
+  <text class="symb" x="230" y="207">P</text>
+  <circle class="at" cx="230" cy="90" r="22" />
+  <text class="sym" x="230" y="97">P</text>
+  <circle class="at" cx="130" cy="280" r="22" />
+  <text class="sym" x="130" y="287">P</text>
+  <circle class="at" cx="330" cy="280" r="22" />
+  <text class="sym" x="330" y="287">P</text>
+
+  <!-- 注記 -->
+  <text class="note" x="416" y="150">4個の P が正四面体の頂点にある</text>
+  <text class="note" x="416" y="186">P−P の結合は6本</text>
+  <text class="note" x="416" y="222">（どの2個の P もつながっている）</text>
+  <text class="note" x="416" y="272" fill="#777">点線は奥側の P につながる結合</text>
+</svg>

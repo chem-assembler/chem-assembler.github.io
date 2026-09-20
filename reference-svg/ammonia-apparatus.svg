@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="440" viewBox="0 0 880 440" role="img">
+  <!-- アンモニアの発生装置。NH4Cl と Ca(OH)2 の固体を加熱 → ソーダ石灰で乾燥 → 上方置換。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ★ 化学の要点: 試験管の口を下げる（生じた水が加熱部へ戻らない）／捕集びんは口を下に向け、
+         管の先を奥まで入れる（上方置換）。 -->
+  <style>
+    .glass { stroke: #333; stroke-width: 3; fill: none; }
+    .pipe { stroke: #333; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+    .blue { fill: #1565c0; }
+  </style>
+
+  <!-- ===== 加熱する試験管（口を下げて傾ける） ===== -->
+  <g transform="rotate(14 200 140)">
+    <path class="glass" d="M 322 114 L 140 114 A 26 26 0 0 0 140 166 L 322 166" fill="#fff" />
+    <!-- 固体の混合物（下側にたまる） -->
+    <path d="M 144 166 L 234 166 L 236 152 C 212 146, 172 148, 146 157 Z" fill="#cfcfcf" stroke="#8a8a8a" stroke-width="1.5" />
+    <circle cx="168" cy="160" r="2.4" fill="#8a8a8a" />
+    <circle cx="192" cy="158" r="2.4" fill="#8a8a8a" />
+    <circle cx="214" cy="160" r="2.4" fill="#8a8a8a" />
+    <!-- ゴム栓 -->
+    <path d="M 298 117 L 324 108 L 324 172 L 298 163 Z" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+    <!-- ガラス管 -->
+    <path class="pipe" d="M 306 140 L 420 140" />
+  </g>
+
+  <!-- ===== バーナー ===== -->
+  <path d="M 172 224 C 168 204, 184 200, 182 174 C 196 194, 202 208, 198 224 Z" fill="none" stroke="#c62828" stroke-width="2.5" />
+  <rect x="176" y="224" width="18" height="42" fill="none" stroke="#333" stroke-width="2.5" />
+  <path d="M 162 266 L 208 266 L 220 284 L 150 284 Z" fill="none" stroke="#333" stroke-width="2.5" />
+  <text class="small" x="236" y="258">加熱</text>
+
+  <!-- ===== 捕集びん（口を下に向ける） ===== -->
+  <path class="glass" d="M 718 306 L 718 160 A 52 52 0 0 1 822 160 L 822 306" fill="#fff" />
+
+  <!-- ===== 導管と乾燥管 ===== -->
+  <path class="pipe" d="M 413 193 C 436 226, 448 268, 452 300 C 455 318, 458 330, 472 330" />
+  <path class="glass" d="M 490 306 L 640 306 M 490 354 L 640 354" />
+  <path class="glass" d="M 490 306 A 24 24 0 0 0 490 354 M 640 306 A 24 24 0 0 1 640 354" />
+  <path class="pipe" d="M 470 330 L 492 330 M 638 330 L 752 330 Q 770 330 770 312 L 770 172" />
+  <!-- ソーダ石灰の粒 -->
+  <g fill="#cfd8dc" stroke="#78909c" stroke-width="1.2">
+    <circle cx="508" cy="320" r="8" /><circle cx="528" cy="338" r="8" /><circle cx="548" cy="318" r="8" />
+    <circle cx="568" cy="336" r="8" /><circle cx="588" cy="320" r="8" /><circle cx="608" cy="338" r="8" />
+    <circle cx="524" cy="318" r="6" /><circle cx="560" cy="340" r="6" /><circle cx="600" cy="318" r="6" />
+    <circle cx="620" cy="324" r="6" /><circle cx="540" cy="336" r="6" /><circle cx="580" cy="340" r="6" />
+  </g>
+
+  <!-- ===== 気体の流れ ===== -->
+  <polygon points="447 284 440 268 453 269" fill="#1565c0" />
+  <polygon points="712 330 698 324 698 336" fill="#1565c0" />
+  <polygon points="770 224 763 240 777 240" fill="#1565c0" />
+  <text class="lab blue" x="430" y="166">NH₃</text>
+
+  <!-- ===== 注記 ===== -->
+  <text class="lab" x="30" y="62">NH₄Cl ＋ Ca(OH)₂</text>
+  <path class="lead" d="M 150 74 L 178 104" />
+  <text class="lab" x="348" y="112">口を下げる</text>
+  <path class="lead" d="M 362 124 L 336 156" />
+  <text class="lab" x="506" y="164">上方置換で集める</text>
+  <text class="small" x="506" y="192">空気より軽い</text>
+  <path class="lead" d="M 678 182 L 706 204" />
+  <polygon points="714 210 697 205 705 195" fill="#666" />
+  <text class="small" x="496" y="386">ソーダ石灰（乾燥）</text>
+</svg>

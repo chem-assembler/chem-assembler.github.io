@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="420" viewBox="0 0 880 420" role="img">
+  <!-- ダイヤモンドと黒鉛の構造の違い。左＝1個の C に4本の共有結合（正四面体がどこまでも続く立体網目）、
+       右＝1個の C に3本（六角形の平面の層が重なる）。4個目の価電子が層の中を動くことを矢印で示す。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <g id="hex">
+      <path d="M 40 0 L 20 34.6 L -20 34.6 L -40 0 L -20 -34.6 L 20 -34.6 Z" />
+    </g>
+    <marker id="me" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#1565c0" /></marker>
+  </defs>
+  <style>
+    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
+    .cap { font-size: 16px; fill: #333; text-anchor: middle; }
+    .bond { stroke: #333; stroke-width: 3; fill: none; }
+    .back { stroke: #333; stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+    .cont { stroke: #aaa; stroke-width: 2; fill: none; }
+    .at { fill: #eceff1; stroke: #333; stroke-width: 2.5; }
+    .sheet { fill: none; stroke: #333; stroke-width: 2; }
+    .weak { stroke: #bbb; stroke-width: 1.6; fill: none; stroke-dasharray: 3 5; }
+    .note { font-size: 15px; fill: #555; }
+    .e { font-size: 15px; fill: #1565c0; }
+  </style>
+
+  <text class="ttl" x="215" y="36">ダイヤモンド</text>
+  <text class="ttl" x="530" y="36">黒鉛</text>
+
+  <!-- ===== ダイヤモンド: 正四面体の単位 ===== -->
+  <path class="cont" d="M 215 118 L 215 82 M 215 118 L 180 92 M 215 118 L 252 94" />
+  <path class="cont" d="M 152 248 L 116 268 M 152 248 L 120 224 M 152 248 L 158 290" />
+  <path class="cont" d="M 278 248 L 314 268 M 278 248 L 312 226 M 278 248 L 272 290" />
+  <path class="cont" d="M 215 238 L 188 258 M 215 238 L 244 258" />
+  <path class="bond" d="M 215 190 L 215 122" />
+  <path class="bond" d="M 215 190 L 156 246" />
+  <path class="bond" d="M 215 190 L 274 246" />
+  <path class="back" d="M 215 190 L 215 236" />
+  <circle class="at" cx="215" cy="190" r="14" />
+  <circle class="at" cx="215" cy="118" r="12" />
+  <circle class="at" cx="152" cy="248" r="12" />
+  <circle class="at" cx="278" cy="248" r="12" />
+  <circle class="at" cx="215" cy="238" r="10" />
+  <text class="note" x="246" y="178">C</text>
+  <text class="cap" x="215" y="330">C 1個から結合が4本</text>
+  <text class="cap" x="215" y="358">同じつながりが立体に続く</text>
+
+  <!-- ===== 黒鉛: 六角形の層が3枚 ===== -->
+  <g class="sheet">
+    <g transform="matrix(1,0,0.5,0.5,470,120)">
+      <use href="#hex" /><use href="#hex" x="60" y="34.6" /><use href="#hex" x="120" /><use href="#hex" x="60" y="-34.6" />
+    </g>
+    <g transform="matrix(1,0,0.5,0.5,470,208)">
+      <use href="#hex" /><use href="#hex" x="60" y="34.6" /><use href="#hex" x="120" /><use href="#hex" x="60" y="-34.6" />
+    </g>
+    <g transform="matrix(1,0,0.5,0.5,470,296)">
+      <use href="#hex" /><use href="#hex" x="60" y="34.6" /><use href="#hex" x="120" /><use href="#hex" x="60" y="-34.6" />
+    </g>
+  </g>
+  <path class="weak" d="M 470 100 L 470 330 M 550 100 L 550 330 M 630 100 L 630 330" />
+
+  <!-- 層どうしは弱い力 -->
+  <text class="note" x="700" y="176">層どうしは弱い力</text>
+  <path d="M 694 171 L 648 162" stroke="#666" stroke-width="1.4" fill="none" />
+
+  <!-- 4個目の価電子が層の中を動く -->
+  <path d="M 420 70 L 566 70" stroke="#1565c0" stroke-width="2.5" fill="none" marker-end="url(#me)" />
+  <circle cx="438" cy="70" r="4" fill="#1565c0" />
+  <circle cx="476" cy="70" r="4" fill="#1565c0" />
+  <circle cx="514" cy="70" r="4" fill="#1565c0" />
+  <text class="e" x="578" y="76">4個目の価電子が層の中を動く</text>
+
+  <text class="cap" x="530" y="368">C 1個から結合は3本・六角形の平面の層</text>
+</svg>

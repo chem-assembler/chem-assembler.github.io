@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="430" viewBox="0 0 860 430" role="img">
+  <!-- 弱酸の遊離（相手が HCl）と 塩の加水分解（相手が H2O）で、CH3COO- が CH3COOH に戻る割合がどれだけ違うかを
+       同じ数の粒で並べた模式図。左は8個とも戻る、右は8個のうち1個だけ（平衡は大きく左）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .beaker { fill: none; stroke: #333; stroke-width: 3; }
+    .water { fill: #eaf3fb; stroke: none; }
+    .surf { stroke: #90caf9; stroke-width: 2; fill: none; }
+    .ttl { font-size: 18px; fill: #222; text-anchor: middle; }
+    .note { font-size: 16px; fill: #333; text-anchor: middle; }
+    .foot { font-size: 14px; fill: #666; text-anchor: middle; }
+    .p { font-size: 15px; text-anchor: middle; fill: #222; }
+  </style>
+
+  <!-- ===== 左: 相手が HCl ===== -->
+  <text class="ttl" x="225" y="34">H⁺ をくれる相手が HCl（強酸）のとき</text>
+  <path class="water" d="M 42 92 L 42 344 Q 42 358 58 358 L 392 358 Q 408 358 408 344 L 408 92 Z" />
+  <path class="beaker" d="M 40 58 L 40 344 Q 40 360 56 360 L 394 360 Q 410 360 410 344 L 410 58" />
+  <path class="surf" d="M 42 92 L 408 92" />
+
+  <g>
+    <rect x="72" y="135" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="120" y="155">CH₃COOH</text>
+    <rect x="177" y="135" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="225" y="155">CH₃COOH</text>
+    <rect x="282" y="135" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="330" y="155">CH₃COOH</text>
+    <rect x="72" y="200" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="120" y="220">CH₃COOH</text>
+    <rect x="177" y="200" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="225" y="220">CH₃COOH</text>
+    <rect x="282" y="200" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="330" y="220">CH₃COOH</text>
+    <rect x="124" y="265" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="172" y="285">CH₃COOH</text>
+    <rect x="230" y="265" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+    <text class="p" x="278" y="285">CH₃COOH</text>
+  </g>
+  <text class="note" x="225" y="390">8個とも CH₃COOH に戻る</text>
+
+  <!-- ===== 右: 相手が H₂O ===== -->
+  <text class="ttl" x="635" y="34">H⁺ をくれる相手が H₂O のとき</text>
+  <path class="water" d="M 452 92 L 452 344 Q 452 358 468 358 L 802 358 Q 818 358 818 344 L 818 92 Z" />
+  <path class="beaker" d="M 450 58 L 450 344 Q 450 360 466 360 L 804 360 Q 820 360 820 344 L 820 58" />
+  <path class="surf" d="M 452 92 L 818 92" />
+
+  <g fill="#e8f1fb" stroke="#1565c0" stroke-width="2">
+    <rect x="482" y="135" width="96" height="30" rx="15" />
+    <rect x="587" y="135" width="96" height="30" rx="15" />
+    <rect x="692" y="135" width="96" height="30" rx="15" />
+    <rect x="482" y="200" width="96" height="30" rx="15" />
+    <rect x="587" y="200" width="96" height="30" rx="15" />
+    <rect x="692" y="200" width="96" height="30" rx="15" />
+    <rect x="482" y="265" width="96" height="30" rx="15" />
+  </g>
+  <text class="p" x="530" y="155">CH₃COO⁻</text>
+  <text class="p" x="635" y="155">CH₃COO⁻</text>
+  <text class="p" x="740" y="155">CH₃COO⁻</text>
+  <text class="p" x="530" y="220">CH₃COO⁻</text>
+  <text class="p" x="635" y="220">CH₃COO⁻</text>
+  <text class="p" x="740" y="220">CH₃COO⁻</text>
+  <text class="p" x="530" y="285">CH₃COO⁻</text>
+
+  <rect x="587" y="265" width="96" height="30" rx="15" fill="#fff" stroke="#c62828" stroke-width="2" />
+  <text class="p" x="635" y="285">CH₃COOH</text>
+  <rect x="712" y="265" width="56" height="30" rx="15" fill="#e9f5ea" stroke="#2e7d32" stroke-width="2" />
+  <text class="p" x="740" y="285">OH⁻</text>
+  <path d="M 583 256 L 583 302 Q 583 310 591 310 L 776 310 Q 784 310 784 302 L 784 256" fill="none" stroke="#6a1b9a" stroke-width="2" stroke-dasharray="6 5" />
+  <text class="p" x="680" y="332" fill="#6a1b9a">できたのはこの1組だけ</text>
+  <text class="note" x="635" y="390">8個のうち1個しか反応しない</text>
+
+  <text class="foot" x="430" y="418">Na⁺ と Cl⁻ は反応しないので描いていません</text>
+</svg>
