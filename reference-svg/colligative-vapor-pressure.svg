@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="440" viewBox="0 0 860 440" role="img">
+  <!-- 蒸気圧曲線（純溶媒と溶液）。蒸気圧が下がる → 外圧に届くのに高い温度が要る → 沸点上昇。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .pure { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .soln { stroke: #c62828; stroke-width: 3; fill: none; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .blue { fill: #1565c0; }
+    .red { fill: #c62828; }
+  </style>
+
+  <!-- 軸 -->
+  <path class="ax" d="M 120 46 L 120 372 L 760 372" />
+  <polygon points="120,36 115,50 125,50" fill="#333" />
+  <polygon points="770,372 756,367 756,377" fill="#333" />
+  <text class="lab" x="26" y="40">蒸気圧</text>
+  <text class="lab" x="716" y="402">温度</text>
+
+  <!-- 外圧（大気圧）の高さ -->
+  <path class="grid" d="M 120 130 L 700 130" />
+  <text class="small" x="128" y="122">外圧 1.013 × 10⁵ Pa</text>
+
+  <!-- 純溶媒 -->
+  <path class="pure" d="M 150 352 C 270 348, 360 328, 425 288 C 470 260, 505 196, 522 130 C 530 100, 536 80, 543 60" />
+  <text class="small blue" x="556" y="72">純溶媒</text>
+
+  <!-- 溶液（同じ温度でつねに下） -->
+  <path class="soln" d="M 150 360 C 272 357, 368 342, 440 306 C 492 281, 575 200, 592 130 C 600 102, 606 82, 613 62" />
+  <text class="small red" x="626" y="74">溶液</text>
+
+  <!-- 蒸気圧降下（同じ温度での下がり幅） -->
+  <path class="ax" d="M 480 226 L 480 292" stroke="#6a1b9a" stroke-width="2" />
+  <polygon points="480,226 475,238 485,238" fill="#6a1b9a" />
+  <polygon points="480,292 475,280 485,280" fill="#6a1b9a" />
+  <text class="small" x="292" y="266" fill="#6a1b9a">蒸気圧降下</text>
+  <path class="lead" d="M 382 260 L 472 258" stroke="#6a1b9a" />
+
+  <!-- 沸点（外圧と等しくなる温度） -->
+  <path class="grid" d="M 520 130 L 520 372" />
+  <path class="grid" d="M 592 130 L 592 372" />
+  <circle cx="520" cy="130" r="5" class="blue" />
+  <circle cx="592" cy="130" r="5" class="red" />
+  <text class="small blue" x="512" y="394" text-anchor="end">純溶媒の沸点</text>
+  <text class="small red" x="600" y="394">溶液の沸点</text>
+
+  <!-- 沸点上昇 Δtb -->
+  <path class="ax" d="M 520 418 L 592 418" stroke="#6a1b9a" stroke-width="2" />
+  <polygon points="520,418 532,413 532,423" fill="#6a1b9a" />
+  <polygon points="592,418 580,413 580,423" fill="#6a1b9a" />
+  <text class="lab" x="606" y="425" fill="#6a1b9a">Δt&#8202;b</text>
+</svg>
