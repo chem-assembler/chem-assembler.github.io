@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420" role="img">
+  <!-- 乳化。油の粒に疎水基が入り込み、親水基が外を向いた粒になって水の中に散らばる。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 油は「溶けた」のではなく、包まれて散っているだけ。 -->
+  <style>
+    .tail { stroke: #e65100; stroke-width: 7; stroke-linecap: round; fill: none; }
+    .head { fill: #1565c0; }
+    .oil { fill: #ffe0b2; stroke: #e65100; stroke-width: 2; }
+    .water { fill: #eaf3fb; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <rect class="water" x="20" y="30" width="420" height="370" rx="10" />
+  <text class="small" x="40" y="60">水の中</text>
+
+  <circle class="oil" cx="230" cy="215" r="72" />
+  <text class="lab" x="230" y="222" text-anchor="middle">油の粒</text>
+
+  <g transform="rotate(0 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(24 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(48 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(72 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(96 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(120 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(144 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(168 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(192 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(216 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(240 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(264 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(288 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(312 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+  <g transform="rotate(336 230 215)"><path class="tail" d="M 230 176 L 230 146" /><circle class="head" cx="230" cy="131" r="10" /></g>
+
+  <path class="lead" d="M 490 150 L 300 186" />
+  <text class="lab" x="500" y="146">疎水基は油の中に入り込む</text>
+  <text class="small" x="500" y="174">油になじむ部分どうしが引き合う</text>
+
+  <path class="lead" d="M 490 262 L 346 232" />
+  <text class="lab" x="500" y="258">親水基は外（水のほう）を向く</text>
+  <text class="small" x="500" y="286">だから油の粒のまま水の中に散らばれる</text>
+
+  <text class="small" x="460" y="348">⚠ 溶けたのではなく、包まれて散っているだけ</text>
+</svg>
