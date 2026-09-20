@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="740" height="460" viewBox="0 0 740 460" role="img">
+  <!-- イオン交換樹脂を詰めたカラム。上から水溶液を流し、下から出てくる液を受ける。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 陽イオン交換樹脂の例。入った Na⁺ のぶんだけ H⁺ が出てくる。 -->
+  <style>
+    .glass { fill: none; stroke: #333; stroke-width: 2.5; }
+    .liq { fill: #d6e9f8; }
+    .bead { fill: #ffe0b2; stroke: #e65100; stroke-width: 1.5; }
+    .face { fill: #ddd; stroke: #333; stroke-width: 2; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+    .ion { font-size: 15px; fill: #c62828; }
+  </style>
+
+  <!-- 上の液 -->
+  <polygon class="liq" points="154,84 276,84 248,112 182,112" />
+  <path class="glass" d="M 150 70 L 180 110 L 180 336 M 280 70 L 250 110 L 250 336" />
+
+  <!-- 樹脂の粒 -->
+  <rect class="liq" x="180" y="112" width="70" height="224" />
+  <circle class="bead" cx="194" cy="126" r="8" /><circle class="bead" cx="214" cy="126" r="8" /><circle class="bead" cx="234" cy="126" r="8" />
+  <circle class="bead" cx="204" cy="148" r="8" /><circle class="bead" cx="224" cy="148" r="8" />
+  <circle class="bead" cx="194" cy="170" r="8" /><circle class="bead" cx="214" cy="170" r="8" /><circle class="bead" cx="234" cy="170" r="8" />
+  <circle class="bead" cx="204" cy="192" r="8" /><circle class="bead" cx="224" cy="192" r="8" />
+  <circle class="bead" cx="194" cy="214" r="8" /><circle class="bead" cx="214" cy="214" r="8" /><circle class="bead" cx="234" cy="214" r="8" />
+  <circle class="bead" cx="204" cy="236" r="8" /><circle class="bead" cx="224" cy="236" r="8" />
+  <circle class="bead" cx="194" cy="258" r="8" /><circle class="bead" cx="214" cy="258" r="8" /><circle class="bead" cx="234" cy="258" r="8" />
+  <circle class="bead" cx="204" cy="280" r="8" /><circle class="bead" cx="224" cy="280" r="8" />
+  <circle class="bead" cx="194" cy="302" r="8" /><circle class="bead" cx="214" cy="302" r="8" /><circle class="bead" cx="234" cy="302" r="8" />
+  <circle class="bead" cx="204" cy="324" r="8" /><circle class="bead" cx="224" cy="324" r="8" />
+
+  <!-- 脚とコック -->
+  <path class="glass" d="M 180 336 L 207 336 L 207 388 M 250 336 L 223 336 L 223 388" />
+  <circle class="face" cx="215" cy="362" r="13" />
+  <path class="glass" d="M 198 362 L 232 362" stroke-width="3" />
+
+  <!-- 受けるビーカー -->
+  <path class="glass" d="M 160 398 L 160 448 L 272 448 L 272 398" />
+  <rect class="liq" x="162" y="422" width="108" height="25" />
+
+  <!-- 注記 -->
+  <path class="lead" d="M 330 82 L 286 82" />
+  <text class="lab" x="338" y="88">塩化ナトリウム水溶液を流す</text>
+  <text class="ion" x="338" y="114">Na⁺ と Cl⁻ が入っていく</text>
+
+  <path class="lead" d="M 330 214 L 258 214" />
+  <text class="lab" x="338" y="220">陽イオン交換樹脂の粒</text>
+  <text class="ion" x="338" y="246">Na⁺ は樹脂につかまり、</text>
+  <text class="ion" x="338" y="268">代わりに H⁺ が出ていく</text>
+
+  <path class="lead" d="M 330 424 L 280 424" />
+  <text class="lab" x="338" y="430">出てくる液は塩酸</text>
+</svg>
