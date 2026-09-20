@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="375" viewBox="0 0 860 375" role="img">
+  <!-- イオン交換樹脂の骨組み。ポリスチレンの鎖2本を、ジビニルベンゼン由来の環が橋でつないで網目にし、
+       環にスルホ基 −SO3H が付く（陽イオン交換樹脂）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 構造式そのものではなく、橋かけと官能基の付き方を見せる模式図。 -->
+  <style>
+    .chain { stroke: #333; stroke-width: 3; fill: none; }
+    .ring { fill: #fff; stroke: #333; stroke-width: 2; }
+    .inner { fill: none; stroke: #333; stroke-width: 1.5; }
+    .bond { stroke: #333; stroke-width: 2; fill: none; }
+    .bridge { stroke: #2e7d32; stroke-width: 3; fill: none; }
+    .lab { font-size: 16px; fill: #222; }
+    .small { font-size: 14px; fill: #444; }
+    .so3 { font-size: 14px; fill: #c62828; }
+    .grn { fill: #2e7d32; }
+  </style>
+
+  <polyline class="chain" points="60,96 100,84 140,96 180,84 220,96 260,84 300,96 340,84 380,96 420,84 460,96 500,84 540,96 580,84 620,96 660,84 700,96 740,84 780,96" />
+  <polyline class="chain" points="60,276 100,264 140,276 180,264 220,276 260,264 300,276 340,264 380,276 420,264 460,276 500,264 540,276 580,264 620,276 660,264 700,276 740,264 780,276" />
+  <text class="small" x="60" y="62">ポリスチレンの鎖</text>
+  <text class="small" x="60" y="312">ポリスチレンの鎖</text>
+
+  <!-- 上の鎖からぶら下がる環 -->
+  <path class="bond" d="M 180 84 L 180 128 M 300 96 L 300 128 M 580 84 L 580 128 M 700 96 L 700 128" />
+  <polygon class="ring" points="180,128 199,139 199,161 180,172 161,161 161,139" />
+  <circle class="inner" cx="180" cy="150" r="11" />
+  <polygon class="ring" points="300,128 319,139 319,161 300,172 281,161 281,139" />
+  <circle class="inner" cx="300" cy="150" r="11" />
+  <polygon class="ring" points="580,128 599,139 599,161 580,172 561,161 561,139" />
+  <circle class="inner" cx="580" cy="150" r="11" />
+  <polygon class="ring" points="700,128 719,139 719,161 700,172 681,161 681,139" />
+  <circle class="inner" cx="700" cy="150" r="11" />
+  <text class="so3" x="204" y="156">−SO₃H</text>
+  <text class="so3" x="324" y="156">−SO₃H</text>
+  <text class="so3" x="604" y="156">−SO₃H</text>
+  <text class="so3" x="724" y="156">−SO₃H</text>
+
+  <!-- 下の鎖からぶら下がる環 -->
+  <path class="bond" d="M 240 276 L 240 232 M 500 264 L 500 232 M 660 264 L 660 232" />
+  <polygon class="ring" points="240,188 259,199 259,221 240,232 221,221 221,199" />
+  <circle class="inner" cx="240" cy="210" r="11" />
+  <polygon class="ring" points="500,188 519,199 519,221 500,232 481,221 481,199" />
+  <circle class="inner" cx="500" cy="210" r="11" />
+  <polygon class="ring" points="660,188 679,199 679,221 660,232 641,221 641,199" />
+  <circle class="inner" cx="660" cy="210" r="11" />
+  <text class="so3" x="264" y="216">−SO₃H</text>
+  <text class="so3" x="524" y="216">−SO₃H</text>
+  <text class="so3" x="684" y="216">−SO₃H</text>
+
+  <!-- ジビニルベンゼンの橋 -->
+  <path class="bridge" d="M 420 84 L 420 158 M 420 202 L 420 264" />
+  <polygon class="ring" points="420,158 439,169 439,191 420,202 401,191 401,169" stroke="#2e7d32" />
+  <circle class="inner" cx="420" cy="180" r="11" stroke="#2e7d32" />
+  <text class="lab grn" x="420" y="330" text-anchor="middle">2本の鎖をつないでいる環がジビニルベンゼン（橋かけ）</text>
+
+  <text class="small" x="420" y="362" text-anchor="middle">−SO₃H の H⁺ が、水溶液の陽イオンと入れかわる</text>
+</svg>

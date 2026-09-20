@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="290" viewBox="0 0 820 290" role="img">
+  <!-- セッケンの分子を「長い棒（疎水基）＋丸い頭（親水基）」の記号に置きかえる図。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 記号の向きは示性式と同じ（左が炭化水素の鎖、右が −COO⁻Na⁺）。 -->
+  <style>
+    .f { font-size: 30px; fill: #222; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .brace { stroke: #333; stroke-width: 2; fill: none; }
+    .drop { stroke: #999; stroke-width: 1.5; stroke-dasharray: 5 5; fill: none; }
+    .tail { stroke: #e65100; stroke-width: 14; stroke-linecap: round; fill: none; }
+  </style>
+
+  <text class="f" x="290" y="62" text-anchor="middle">C₁₇H₃₅−</text>
+  <text class="f" x="520" y="62" text-anchor="middle">COO⁻Na⁺</text>
+
+  <path class="brace" d="M 196 78 L 196 90 L 384 90 L 384 78" />
+  <text class="lab" x="290" y="116" text-anchor="middle">疎水基（油になじむ）</text>
+  <path class="brace" d="M 436 78 L 436 90 L 604 90 L 604 78" />
+  <text class="lab" x="520" y="116" text-anchor="middle">親水基（水になじむ）</text>
+
+  <path class="drop" d="M 290 130 L 290 178" />
+  <path class="drop" d="M 520 130 L 520 168" />
+
+  <!-- 記号 -->
+  <path class="tail" d="M 180 210 L 448 210" />
+  <circle cx="492" cy="210" r="30" fill="#1565c0" />
+
+  <text class="small" x="300" y="266" text-anchor="middle">長い棒に置きかえる</text>
+  <text class="small" x="566" y="266" text-anchor="middle">丸い頭に置きかえる</text>
+</svg>

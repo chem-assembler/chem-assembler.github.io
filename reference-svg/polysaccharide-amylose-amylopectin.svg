@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="360" viewBox="0 0 880 360" role="img">
+  <!-- 左: アミロース（枝分かれが無く、らせんに巻く）／右: アミロペクチン（枝分かれが多い）。
+       ○ の1つがグルコース1個。⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .thread { stroke: #90a4ae; stroke-width: 2; fill: none; }
+    .beads { stroke: #1565c0; stroke-width: 15; stroke-linecap: round; stroke-dasharray: 0.1 17; fill: none; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .divider { stroke: #bbb; stroke-width: 1; stroke-dasharray: 5 5; }
+  </style>
+
+  <circle cx="40" cy="36" r="8" fill="#1565c0" />
+  <text class="small" x="56" y="42">＝ グルコース1個</text>
+
+  <!-- アミロース -->
+  <path class="thread" d="M 150 78 C 205 78, 205 126, 150 126 C 95 126, 95 174, 150 174
+                          C 205 174, 205 222, 150 222 C 95 222, 95 270, 150 270" />
+  <path class="beads" d="M 150 78 C 205 78, 205 126, 150 126 C 95 126, 95 174, 150 174
+                         C 205 174, 205 222, 150 222 C 95 222, 95 270, 150 270" />
+  <text class="lab" x="150" y="312" text-anchor="middle">アミロース</text>
+  <text class="small" x="150" y="338" text-anchor="middle">枝分かれが無く、らせんに巻く</text>
+
+  <path class="divider" d="M 330 50 L 330 290" />
+
+  <!-- アミロペクチン -->
+  <path class="thread" d="M 440 106 C 520 90, 556 124, 620 108 C 684 92, 744 124, 820 106
+                          M 522 110 C 532 150, 502 168, 512 206
+                          M 664 114 C 674 152, 704 166, 696 206
+                          M 512 186 C 474 196, 456 218, 460 250" />
+  <path class="beads" d="M 440 106 C 520 90, 556 124, 620 108 C 684 92, 744 124, 820 106
+                         M 522 110 C 532 150, 502 168, 512 206
+                         M 664 114 C 674 152, 704 166, 696 206
+                         M 512 186 C 474 196, 456 218, 460 250" />
+  <text class="lab" x="630" y="312" text-anchor="middle">アミロペクチン</text>
+  <text class="small" x="630" y="338" text-anchor="middle">ところどころで枝分かれする</text>
+</svg>

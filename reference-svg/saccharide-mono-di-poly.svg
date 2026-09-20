@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="250" viewBox="0 0 860 250" role="img">
+  <!-- 単糖・二糖・多糖。丸1つが単糖1個。右へ縮合でつながり、左へ加水分解で切れる。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .beads { stroke: #1565c0; stroke-width: 18; stroke-linecap: round; stroke-dasharray: 0.1 19; fill: none; }
+    .arw { stroke: #333; stroke-width: 2.5; fill: none; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .op { font-size: 15px; fill: #c62828; }
+  </style>
+
+  <!-- 単糖 -->
+  <circle cx="120" cy="80" r="9" fill="#1565c0" />
+  <text class="lab" x="120" y="150" text-anchor="middle">単糖</text>
+  <text class="small" x="120" y="176" text-anchor="middle">それ以上分解できない</text>
+
+  <path class="arw" d="M 210 66 L 310 66" />
+  <polygon points="320,66 306,60 306,72" fill="#333" />
+  <path class="arw" d="M 320 100 L 220 100" />
+  <polygon points="210,100 224,94 224,106" fill="#333" />
+  <text class="op" x="265" y="52" text-anchor="middle">縮合（水がとれる）</text>
+  <text class="op" x="265" y="124" text-anchor="middle">加水分解</text>
+
+  <!-- 二糖 -->
+  <circle cx="421" cy="80" r="9" fill="#1565c0" />
+  <circle cx="439" cy="80" r="9" fill="#1565c0" />
+  <text class="lab" x="430" y="150" text-anchor="middle">二糖</text>
+  <text class="small" x="430" y="176" text-anchor="middle">単糖が2個</text>
+
+  <path class="arw" d="M 520 66 L 620 66" />
+  <polygon points="630,66 616,60 616,72" fill="#333" />
+  <path class="arw" d="M 630 100 L 530 100" />
+  <polygon points="520,100 534,94 534,106" fill="#333" />
+  <text class="op" x="575" y="52" text-anchor="middle">縮合（水がとれる）</text>
+  <text class="op" x="575" y="124" text-anchor="middle">加水分解</text>
+
+  <!-- 多糖 -->
+  <path class="beads" d="M 690 86 C 716 70, 740 96, 766 80 C 784 70, 796 88, 810 82" />
+  <text class="lab" x="750" y="150" text-anchor="middle">多糖</text>
+  <text class="small" x="750" y="176" text-anchor="middle">単糖が多数</text>
+</svg>

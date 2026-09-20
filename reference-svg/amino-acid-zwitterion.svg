@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="270" viewBox="0 0 840 270" role="img">
+  <!-- グリシンの中性の形 → 双性イオン。分子の中で H⁺ が −COOH から −NH₂ へ移る。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .f { font-size: 24px; fill: #222; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .arw { stroke: #333; stroke-width: 2.5; fill: none; }
+    .move { stroke: #c62828; stroke-width: 2.5; fill: none; }
+    .red { fill: #c62828; }
+    .blue { fill: #1565c0; }
+  </style>
+
+  <!-- 中性の形 -->
+  <text class="f" x="170" y="158" text-anchor="middle">H₂N−CH₂−COOH</text>
+  <text class="lab" x="170" y="196" text-anchor="middle">中性の形</text>
+
+  <!-- 分子の中を H+ が移る -->
+  <path class="move" d="M 250 132 C 240 96, 110 96, 100 130" />
+  <polygon points="98,140 92,126 105,126" fill="#c62828" />
+  <text class="lab red" x="176" y="92" text-anchor="middle">H⁺ が移る</text>
+
+  <!-- 矢印 -->
+  <path class="arw" d="M 310 150 L 480 150" />
+  <polygon points="490,150 476,144 476,156" fill="#333" />
+
+  <!-- 双性イオン -->
+  <text class="f" x="660" y="158" text-anchor="middle">H₃N<tspan class="red">⁺</tspan>−CH₂−COO<tspan class="blue">⁻</tspan></text>
+  <text class="lab" x="660" y="196" text-anchor="middle">双性イオン</text>
+  <text class="small" x="660" y="222" text-anchor="middle">＋と − が1つずつ ＝ 電荷の合計は0</text>
+</svg>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" viewBox="0 0 880 300" role="img">
+  <!-- ポリヌクレオチドの鎖: 糖（五角形）とリン酸（円）が交互に並んだ背骨から、塩基が枝のように下に出る。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .p { fill: #f3e5f5; stroke: #6a1b9a; stroke-width: 2; }
+    .s { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2; }
+    .b { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
+    .bond { stroke: #333; stroke-width: 2.5; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .sym { font-size: 20px; }
+  </style>
+
+  <!-- 背骨の結合（左右は続きを表す） -->
+  <path class="bond" d="M 40 110 L 880 110" stroke-dasharray="0" />
+
+  <!-- リン酸 -->
+  <circle class="p" cx="100" cy="110" r="22" />
+  <text class="sym" x="100" y="117" text-anchor="middle" fill="#6a1b9a">P</text>
+  <circle class="p" cx="275" cy="110" r="22" />
+  <text class="sym" x="275" y="117" text-anchor="middle" fill="#6a1b9a">P</text>
+  <circle class="p" cx="450" cy="110" r="22" />
+  <text class="sym" x="450" y="117" text-anchor="middle" fill="#6a1b9a">P</text>
+  <circle class="p" cx="625" cy="110" r="22" />
+  <text class="sym" x="625" y="117" text-anchor="middle" fill="#6a1b9a">P</text>
+  <circle class="p" cx="800" cy="110" r="22" />
+  <text class="sym" x="800" y="117" text-anchor="middle" fill="#6a1b9a">P</text>
+
+  <!-- 五炭糖と、そこから下に出る塩基 -->
+  <polygon class="s" points="187,78 219,101 207,139 167,139 155,101" />
+  <text class="small" x="187" y="115" text-anchor="middle" fill="#1565c0">糖</text>
+  <path class="bond" d="M 187 139 L 187 176" />
+  <rect class="b" x="161" y="176" width="52" height="42" rx="7" />
+  <text class="sym" x="187" y="204" text-anchor="middle" fill="#2e7d32">A</text>
+
+  <polygon class="s" points="362,78 394,101 382,139 342,139 330,101" />
+  <text class="small" x="362" y="115" text-anchor="middle" fill="#1565c0">糖</text>
+  <path class="bond" d="M 362 139 L 362 176" />
+  <rect class="b" x="336" y="176" width="52" height="42" rx="7" />
+  <text class="sym" x="362" y="204" text-anchor="middle" fill="#2e7d32">T</text>
+
+  <polygon class="s" points="537,78 569,101 557,139 517,139 505,101" />
+  <text class="small" x="537" y="115" text-anchor="middle" fill="#1565c0">糖</text>
+  <path class="bond" d="M 537 139 L 537 176" />
+  <rect class="b" x="511" y="176" width="52" height="42" rx="7" />
+  <text class="sym" x="537" y="204" text-anchor="middle" fill="#2e7d32">G</text>
+
+  <polygon class="s" points="712,78 744,101 732,139 692,139 680,101" />
+  <text class="small" x="712" y="115" text-anchor="middle" fill="#1565c0">糖</text>
+  <path class="bond" d="M 712 139 L 712 176" />
+  <rect class="b" x="686" y="176" width="52" height="42" rx="7" />
+  <text class="sym" x="712" y="204" text-anchor="middle" fill="#2e7d32">C</text>
+
+  <text class="lab" x="40" y="48">糖とリン酸が交互 ＝ 背骨</text>
+  <text class="lab" x="40" y="264">塩基は枝のように出る（並び方は DNA ごとに違う）</text>
+</svg>

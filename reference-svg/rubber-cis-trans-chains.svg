@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="330" viewBox="0 0 880 330" role="img">
+  <!-- 左: シス形（天然ゴム）は鎖が丸まる／右: トランス形（グタペルカ）は鎖がそろって並ぶ。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .c1 { stroke: #1565c0; stroke-width: 4; fill: none; stroke-linecap: round; }
+    .c2 { stroke: #6a1b9a; stroke-width: 4; fill: none; stroke-linecap: round; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .divider { stroke: #bbb; stroke-width: 1; stroke-dasharray: 5 5; }
+  </style>
+
+  <!-- シス形: 丸まる -->
+  <path class="c1" d="M 56 186 C 34 136, 96 104, 120 136 C 142 166, 90 196, 80 164
+                      C 70 132, 122 88, 164 114 C 202 138, 168 192, 200 202 C 232 212, 254 174, 292 182" />
+  <path class="c2" d="M 72 230 C 116 244, 130 200, 158 184 C 190 166, 226 190, 214 156
+                      C 204 126, 252 110, 286 134 C 306 148, 298 172, 316 178" />
+  <text class="lab" x="180" y="272" text-anchor="middle">シス形（天然ゴム）</text>
+  <text class="small" x="180" y="298" text-anchor="middle">鎖が丸まる → 引っぱると伸び、戻る</text>
+
+  <path class="divider" d="M 400 50 L 400 250" />
+
+  <!-- トランス形: そろって並ぶ -->
+  <polyline class="c1" points="470,110 500,102 530,110 560,102 590,110 620,102 650,110 680,102 710,110 740,102 770,110 800,102 830,110" />
+  <polyline class="c2" points="470,160 500,152 530,160 560,152 590,160 620,152 650,160 680,152 710,160 740,152 770,160 800,152 830,160" />
+  <polyline class="c1" points="470,210 500,202 530,210 560,202 590,210 620,202 650,210 680,202 710,210 740,202 770,210 800,202 830,210" />
+  <text class="lab" x="650" y="272" text-anchor="middle">トランス形（グタペルカ）</text>
+  <text class="small" x="650" y="298" text-anchor="middle">鎖がそろって並ぶ → 硬く、弾性がほとんど無い</text>
+</svg>

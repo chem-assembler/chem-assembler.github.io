@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420" role="img">
+  <!-- ミセルの断面。疎水基（棒）が内側、親水基（頭）が外側。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 向きを逆に描かないこと（内側が疎水基）。 -->
+  <style>
+    .tail { stroke: #e65100; stroke-width: 7; stroke-linecap: round; fill: none; }
+    .head { fill: #1565c0; }
+    .core { fill: #fff3e0; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <circle class="core" cx="240" cy="210" r="52" />
+
+  <g transform="rotate(0 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(22.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(45 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(67.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(90 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(112.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(135 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(157.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(180 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(202.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(225 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(247.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(270 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(292.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(315 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+  <g transform="rotate(337.5 240 210)"><path class="tail" d="M 240 160 L 240 115" /><circle class="head" cx="240" cy="98" r="11" /></g>
+
+  <text class="lab" x="240" y="206" text-anchor="middle">内側は</text>
+  <text class="lab" x="240" y="230" text-anchor="middle">疎水基</text>
+
+  <path class="lead" d="M 430 196 L 366 208" />
+  <text class="lab" x="440" y="192">外側は親水基（丸い頭）</text>
+  <text class="small" x="440" y="220">水のほうを向いているので、水の中に散らばれる</text>
+
+  <path class="lead" d="M 430 292 L 320 258" />
+  <text class="lab" x="440" y="298">中は油になじむ部分の集まり</text>
+  <text class="small" x="440" y="326">粒の大きさはコロイド粒子ほど</text>
+</svg>

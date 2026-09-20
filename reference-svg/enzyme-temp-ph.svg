@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="400" viewBox="0 0 900 400" role="img">
+  <!-- 左: 温度と反応速度（最適温度で山、その先は変性で急に落ちる）
+       右: pH と反応速度（酵素ごとに山の位置が違う。ペプシン約2・トリプシン約8）
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .c1 { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .c2 { stroke: #c62828; stroke-width: 3; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .blue { fill: #1565c0; }
+    .red { fill: #c62828; }
+  </style>
+
+  <!-- ── 左: 温度 ── -->
+  <path class="ax" d="M 70 60 L 70 330 L 366 330" />
+  <text class="small" x="70" y="48">反応速度</text>
+  <text class="small" x="362" y="380" text-anchor="end">温度〔℃〕</text>
+  <text class="small" x="80" y="350" text-anchor="middle">0</text>
+  <text class="small" x="148" y="350" text-anchor="middle">20</text>
+  <text class="small" x="215" y="350" text-anchor="middle">40</text>
+  <text class="small" x="282" y="350" text-anchor="middle">60</text>
+  <text class="small" x="350" y="350" text-anchor="middle">80</text>
+
+  <path class="grid" d="M 210 120 L 210 330" />
+  <path class="c1" d="M 82 320 C 130 308, 166 280, 190 200 C 198 172, 202 130, 210 116 C 220 132, 226 180, 236 232 C 246 282, 258 312, 276 322 L 350 325" />
+  <text class="small blue" x="210" y="104" text-anchor="middle">最適温度</text>
+  <text class="small red" x="252" y="168">高温で変性して失活</text>
+
+  <!-- ── 右: pH ── -->
+  <path class="ax" d="M 490 60 L 490 330 L 862 330" />
+  <text class="small" x="490" y="48">反応速度</text>
+  <text class="small" x="858" y="380" text-anchor="end">pH</text>
+  <text class="small" x="500" y="350" text-anchor="middle">0</text>
+  <text class="small" x="550" y="350" text-anchor="middle">2</text>
+  <text class="small" x="675" y="350" text-anchor="middle">7</text>
+  <text class="small" x="700" y="350" text-anchor="middle">8</text>
+  <text class="small" x="850" y="350" text-anchor="middle">14</text>
+
+  <path class="c2" d="M 502 320 C 520 296, 534 170, 550 116 C 566 170, 582 296, 604 320" />
+  <text class="small red" x="550" y="104" text-anchor="middle">ペプシン（胃液）</text>
+
+  <path class="c1" d="M 640 320 C 660 296, 682 170, 700 116 C 718 170, 740 296, 764 320" />
+  <text class="small blue" x="702" y="104" text-anchor="middle">トリプシン（すい液）</text>
+</svg>
