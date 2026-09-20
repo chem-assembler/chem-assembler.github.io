@@ -6443,6 +6443,7 @@
 {"kind":"text","text":"CH₃COO⁻ は H⁺ とくっついて CH₃COOH に戻りやすいイオンです。H⁺ をくれる相手が HCl なら弱酸の遊離、H₂O なら加水分解になります。<b>どちらも弱酸の電離の逆反応で、同じ仕組み</b>です。"},
 {"kind":"table","caption":"同じ電離の逆反応から、遊離と加水分解が出てくる","source":"slides:速度平衡の基本５ s13・s15 の2通りの組み立てを並べた","head":["H⁺（OH⁻）をくれる相手","両辺に足すイオン","できる式","名前"],"align":"left | left | left | left","rows":["HCl（強酸） | Cl⁻（と Na⁺） | CH₃COONa ＋ HCl → CH₃COOH ＋ NaCl | 弱酸の遊離","H₂O | OH⁻ | CH₃COO⁻ ＋ H₂O ⇄ CH₃COOH ＋ OH⁻ | 弱酸の塩の加水分解","NaOH（強塩基） | Na⁺（と Cl⁻） | NH₄Cl ＋ NaOH → NH₃ ＋ H₂O ＋ NaCl | 弱塩基の遊離","H₂O | H⁺ | NH₄⁺ ＋ H₂O ⇄ NH₃ ＋ H₃O⁺ | 弱塩基の塩の加水分解"]},
 {"kind":"text","text":"H⁺ を強酸からもらうのは楽ですが、水から奪うのは大変です。水はごくわずかしか電離していないためです。このため<b>加水分解は平衡がかなり左に偏った反応</b>で、ごく一部の CH₃COO⁻ しか反応しません。"},
+{"kind":"figure","src":"hydrolysis-extent.png","svg":"hydrolysis-extent.svg","alt":"同じ数の CH₃COO⁻ を入れた2つのビーカーの模式図。相手が HCl の左では8個とも CH₃COOH になっているが、相手が水の右では CH₃COO⁻ が7個残り、CH₃COOH と OH⁻ の組が1つできているだけ","caption":"相手が水でも起こる反応は同じですが、<b>進む度合いがまるで違います</b>。水はごくわずかしか電離していないので、H⁺ をもらえる CH₃COO⁻ はごく一部です。"},
 {"kind":"link","to":"acid-displacement","text":"弱酸の遊離と加水分解が同じ仕組みであることは、遊離のページへ"},
 {"kind":"section","anchor":"kh","title":"加水分解定数 —— Kh ＝ ch²","lead":"加水分解の平衡定数を加水分解定数 Kh といいます。塩の濃度を c、加水分解する割合（加水分解度）を h として3行の表を書くと、h ≪ 1 のとき Kh ＝ ch² です。","terms":["加水分解定数","加水分解度"]},
 {"kind":"text","text":"弱酸の電離のときの α を h に置き換えるだけで、同じ3行表が書けます。CH₃COONa はすべて電離するので、CH₃COO⁻ の濃度ははじめ c mol/L です。"},
