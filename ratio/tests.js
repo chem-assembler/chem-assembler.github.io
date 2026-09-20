@@ -3061,7 +3061,8 @@
       // ★ 理論の便0（2026-09-19）で tools/reference-md.js の APP_TARGETS に足した3つ。どれも引数を取らない
       'ratio/proportion': null,
       'ratio/balance': null,
-      'ratio/thermo': null
+      // ★ thermo は 2026-09-20 に `?h=` を足した（id を渡しても渡さなくてもよい）
+      'ratio/thermo': new Set(M.THERMO.map(function (p) { return p.id; }))
     };
   }
 
@@ -3154,7 +3155,18 @@
           var dl = document.getElementById('appLinked').contentDocument;
           ok('REF6: ⚠ 否定対照 — 参考書から来ていなければ帯は出ない（stoich.html?r=r14）',
             !!dl && !dl.querySelector('.refBack') && !dl.getElementById('fromBox').hidden, uiOut);
-          done();
+          // 熱化学の ?h=（2026-09-20）。参考書が問を名指しでき、図の撮影も URL だけで決まる
+          refProbe('thermo.html?h=h4', 'ChemThermoApp', function (w3, d3) {
+            ok('REF7: ?h= で指定された問題が開く（h4 ＝ 問4）',
+              !!w3 && w3.ChemThermoApp.state.idx === 3 &&
+              !!d3 && d3.getElementById('qTitle').textContent.indexOf('問4') === 0, uiOut);
+            refProbe('thermo.html?h=no-such', 'ChemThermoApp', function (w4, d4) {
+              ok('REF7-2: ⚠ 否定対照 — 当たらない id なら黙って問1 から始める',
+                !!w4 && w4.ChemThermoApp.state.idx === 0 &&
+                !!d4 && d4.getElementById('qTitle').textContent.indexOf('問1') === 0, uiOut);
+              done();
+            });
+          });
         });
       });
     });

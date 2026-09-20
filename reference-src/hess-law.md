@@ -110,8 +110,18 @@ rows:
 - CO₂(気) | −394 | 基準から 394 下りる
 :::
 
-//図: ratio/thermo の問2（h2）の #chart。⚠ thermo.html は開くと問1 になる ＝ 問2 のボタンを押してから撮る（gen-app-figure の shot: は押せない。統合側で撮る）
-//app: ratio/thermo 「準位を置いてヘスの法則を解く」
+:::figure
+src: hess-law-app-co.png
+shot: url=/ratio/thermo.html?h=h2 sel=#chart wait=1000 act=ChemThermoApp.placeAll() 状態=?h=h2 で開き、準位を置いた形（placeAll）
+alt: エネルギー図の縦軸に3本の準位。いちばん上が C(黒鉛) ＋ O₂ で 0、その下が CO ＋ ½O₂、いちばん下が CO₂ で −394。求める CO の高さには ? の矢印が付いている
+caption: アプリでも同じ図を組み立てられます。**準位の高さを置いてから、矢印の向きで符号を決める**のが解き方の芯です。
+:::
+
+:::link
+app: ratio/thermo
+id: h2
+text: 準位を置いてヘスの法則を解く（問2・CO の生成エンタルピー）
+:::
 
 :::mistake
 wrong: 「ヘスの法則は ΔH を足す法則」と覚えて、CO の生成エンタルピーを (−394) ＋ (−283) ＝ −677kJ とする
@@ -153,7 +163,12 @@ items:
 - x ＝ −966 −（−75）＝ **−891kJ**。
 :::
 
-//図: ratio/thermo の問3（h3）の #chart（単体の組がいちばん上・その下に CH₄ ＋ 2O₂、いちばん下に CO₂ ＋ 2H₂O）。問3 を押してから撮る
+:::figure
+src: hess-law-app-methane.png
+shot: url=/ratio/thermo.html?h=h3 sel=#chart wait=1000 act=ChemThermoApp.placeAll() 状態=?h=h3 で開き、準位を置いた形（placeAll）
+alt: 単体の組 C(黒鉛) ＋ 2H₂ ＋ 2O₂ がいちばん上で 0、その下に CH₄ ＋ 2O₂、いちばん下に CO₂ ＋ 2H₂O。求める燃焼エンタルピーに ? の矢印が付いている
+caption: 生成エンタルピーから燃焼エンタルピーを出す問題も、**単体の組を 0 に置く**と同じ図になります。
+:::
 
 ⚠ **係数の分だけ生成エンタルピーを掛けます。** H₂O は 2mol できるので、−286 を2倍します。
 

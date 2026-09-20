@@ -114,8 +114,18 @@ level: ★★★
 note: 切るのに 679kJ 要り、できるときに 864kJ 出るので、差し引き 185kJ の発熱です。
 :::
 
-//図: ratio/thermo の問4（h4）の #chart（H₂ ＋ Cl₂ が 0、2H ＋ 2Cl が ＋679、2HCl が −185）。開くと問1 になるので、問4 を押してから撮る（統合側）
-//app: ratio/thermo 「原子を上に置いて結合エンタルピーから解く」
+:::figure
+src: bond-enthalpy-app-hcl.png
+shot: url=/ratio/thermo.html?h=h4 sel=#chart wait=1000 act=ChemThermoApp.placeAll() 状態=?h=h4 で開き、準位を置いた形（placeAll）
+alt: エネルギー図。H₂ ＋ Cl₂ が 0、いちばん上にばらばらの原子 2H ＋ 2Cl が ＋679、いちばん下に 2HCl が −185
+caption: **原子をいちばん上に置く**のがこの型の図です。上りが結合を切るぶん、下りが結合ができるぶんになります。
+:::
+
+:::link
+app: ratio/thermo
+id: h4
+text: 原子を上に置いて結合エンタルピーから解く（問4・HCl の生成）
+:::
 
 この図から、次の関係が出てきます。
 

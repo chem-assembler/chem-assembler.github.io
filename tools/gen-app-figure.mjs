@@ -23,6 +23,7 @@
  * | `sel=`   | ★ 必須。撮る要素の CSS セレクタ。⚠ **画面全体は撮らない**（ヘッダーの版番号が写り、版が上がるたびに古く見える） |
  * | `wait=`  | 開いてから撮るまでの待ち（ミリ秒・既定 800）。アニメが止まるまで |
  * | `scale=` | 1（既定）か 2（細かい図だけ） |
+ * | `act=`   | 撮る前に1手だけ呼ぶ、アプリのデバッグ用の口（例 `ChemThermoApp.placeAll()`。空白なしの1文） |
  * | `状態=`  | 撮る人の覚え書き（何をしてから撮ったか）。⚠ 道具は読むだけで何もしない |
  *
  * ⚠ **状態を URL で1つに決められる画面だけ**を撮る。ion-equation は `?rxn=` `?s=` `?q=` `?sp=` で決まる。
@@ -87,6 +88,15 @@ async function shoot(jobs) {
                     const res = await pg.goto(url, { waitUntil: 'networkidle' });
                     if (!res || !res.ok()) throw new Error(`${s.url} が開けません（HTTP ${res && res.status()}）`);
                     await pg.waitForTimeout(Number(s.wait || 800));
+                    /* `act=` —— 撮る前にアプリ自身のデバッグ用の口を1手だけ呼ぶ
+                       （例: ChemThermoApp.placeAll()。形は reference-md.js の SHOT_ACT_RE が見る） */
+                    if (s.act) {
+                        await pg.evaluate((code) => {
+                            // eslint-disable-next-line no-new-func
+                            return Function('"use strict"; return (window.' + code + ');')();
+                        }, s.act);
+                        await pg.waitForTimeout(300);
+                    }
                     const loc = pg.locator(s.sel);
                     const n = await loc.count();
                     if (n !== 1) throw new Error(`sel=${s.sel} に当たる要素が ${n} 個です（1つに絞ってください）`);

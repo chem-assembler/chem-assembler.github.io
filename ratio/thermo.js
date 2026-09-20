@@ -368,7 +368,19 @@
     if (state.idx < H.length - 1) setProblem(state.idx + 1);
   };
 
-  setProblem(0);
+  /* 参考書（/reference/hess-law/ など）からのディープリンク。
+     thermo.html?h=<問題ID> で、その問題を開く（stoich.js の ?r= と同じ形）。
+     ⚠ 当たらない id のときは黙って問1 から始める —— 参考書の側の綴り違いで
+        画面が壊れるより、いつもの入口が開くほうがよい（検査は ratio/tests.js の refReceivers）。
+     ★ 受け口を足した理由は2つ: 参考書が「この問を試す」と名指しできること、
+        図の撮影（tools/gen-app-figure.mjs）が URL だけで状態を決められること。 */
+  var linkedH = new URLSearchParams(location.search).get('h');
+  var startIdx = 0;
+  if (linkedH) {
+    var hi = H.findIndex(function (p) { return p.id === linkedH; });
+    if (hi >= 0) startIdx = hi;
+  }
+  setProblem(startIdx);
 
   // テスト・デバッグ用
   window.ChemThermoApp = {

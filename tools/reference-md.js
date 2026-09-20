@@ -149,7 +149,8 @@
         /* ★ 理論の便0（2026-09-19・ref-theory-design §6-1）: 3つとも引数を取らない（開くと最初の問題） */
         'ratio/proportion': { path: '/ratio/proportion.html', param: null },
         'ratio/balance': { path: '/ratio/balance.html', param: null },
-        'ratio/thermo': { path: '/ratio/thermo.html', param: null }
+        /* ★ thermo は 2026-09-20 に `?h=` を足した（h1〜h6。参考書が問を名指しでき、図の撮影も URL だけで決まる） */
+        'ratio/thermo': { path: '/ratio/thermo.html', param: 'h', opt: true }
     };
     /* 受け口へ渡す id の綴り。⚠ `MnO4-`（化学式）・`MnO4_red,Fe2_ox`（半反応式の列）・`u-gas` を受ける */
     var APP_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_.,+-]*$/;
@@ -170,11 +171,17 @@
        ⚠ 焼くのは `tools/gen-app-figure.mjs`（`gen:` の `gen-figure.mjs` とは別物・同じ図に両方は書けない）。
        ★ `状態=` は**撮る人のための覚え書き**（何をしてから撮ったか）で、道具は読むだけで何もしない。
        ⚠ `sel=` には空白を含むセレクタも書ける（次の `キー=` の手前までが値）。 */
-    var SHOT_KEYS = ['url', 'sel', 'wait', 'scale', '状態'];
+    var SHOT_KEYS = ['url', 'sel', 'wait', 'scale', 'act', '状態'];
+    /* `act=` は「撮る前に1手だけ呼ぶ」—— アプリ自身のデバッグ用の口（window.Chem…App.…）だけ。
+       ★ なぜ要るか: 熟化学の問2〜4 は学習者が準位を置いてから図ができるので、
+       開いた直後を撮ると土台しか写らない（2026-09-20 実測）。
+       ⚠ 条件: `window.<アプリの口>.<関数>(引数)` の1文だけ（空白なし）。
+       同じ URL ・同じ act で 2 回撮って 1 バイトでも違えば赤なのは変わらない（抽選の画面を黙って焼かない）。 */
+    var SHOT_ACT_RE = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)+\([^()\s]*\)$/;
     var SHOT_URL_RE = /^\/(ion-equation|muki|ratio|assembler)\/[^\s]*$/;
     function parseShot(text, where) {
         var s = String(text).trim();
-        var re = /(^|\s)(url|sel|wait|scale|状態)=/g, cuts = [], m;
+        var re = /(^|\s)(url|sel|wait|scale|act|状態)=/g, cuts = [], m;
         while ((m = re.exec(s))) cuts.push({ key: m[2], at: m.index + m[1].length, from: m.index + m[0].length });
         if (!cuts.length || cuts[0].at !== 0) {
             fail(where, ':::figure の shot は「url=… sel=…」の形で書きます（いまは「' + s.slice(0, 60) + '」）'
@@ -192,6 +199,10 @@
         if (!out.sel) fail(where, ':::figure の shot に sel=（撮る要素の CSS セレクタ）がありません（⚠ 画面全体は撮らない）');
         if (out.wait !== undefined && !/^\d{1,5}$/.test(out.wait)) fail(where, ':::figure の shot の wait= はミリ秒の整数です（いまは「' + out.wait + '」）');
         if (out.scale !== undefined && out.scale !== '1' && out.scale !== '2') fail(where, ':::figure の shot の scale= は 1 か 2 です（いまは「' + out.scale + '」）');
+        if (out.act !== undefined && !SHOT_ACT_RE.test(out.act)) {
+            fail(where, ':::figure の shot の act= は「ChemThermoApp.placeAll()」のような1文だけです'
+                + '（アプリのデバッグ用の口を1つ呼ぶ・空白なし。いまは「' + out.act + '」）');
+        }
         return out;
     }
 
