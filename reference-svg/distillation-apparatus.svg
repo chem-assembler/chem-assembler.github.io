@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="420" viewBox="0 0 860 420" role="img">
+  <!-- 蒸留の装置（海水 → 純水）。本文の「4つの約束」がそのまま読めるように札を付けた。
+       ⚠ 向きの約束: 温度計の球部は枝の付け根／液量は半分以下＋沸騰石／
+          冷却水は下（受け器側）から入れて上（フラスコ側）から出す／受け器は密栓しない。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <clipPath id="bulb"><circle cx="200" cy="258" r="54" /></clipPath>
+  </defs>
+  <style>
+    .glass { fill: none; stroke: #555; stroke-width: 2.5; }
+    .to { stroke: #555; stroke-width: 15; fill: none; stroke-linecap: round; }
+    .ti { stroke: #fff; stroke-width: 10; fill: none; stroke-linecap: round; }
+    .liq { fill: #ddeefb; }
+    .lab { font-size: 15px; fill: #333; }
+    .lead { stroke: #999; stroke-width: 1.2; fill: none; }
+  </style>
+
+  <!-- 冷却器（軸に沿って描いてから傾ける） -->
+  <g transform="rotate(18.4 318 206)">
+    <path class="to" d="M 318 206 L 618 206" />
+    <path class="ti" d="M 318 206 L 618 206" />
+    <rect x="360" y="184" width="210" height="44" rx="6" fill="#ddeefb" stroke="#555" stroke-width="2.5" />
+    <path class="to" d="M 318 206 L 618 206" stroke-width="15" />
+    <path class="ti" d="M 318 206 L 618 206" />
+    <path d="M 390 186 L 378 150" style="stroke:#555;stroke-width:11;fill:none;stroke-linecap:round" />
+    <path d="M 390 186 L 378 150" style="stroke:#fff;stroke-width:6;fill:none;stroke-linecap:round" />
+    <path d="M 545 226 L 557 262" style="stroke:#555;stroke-width:11;fill:none;stroke-linecap:round" />
+    <path d="M 545 226 L 557 262" style="stroke:#fff;stroke-width:6;fill:none;stroke-linecap:round" />
+  </g>
+
+  <!-- 枝（フラスコ → 冷却器） -->
+  <path class="to" d="M 208 172 L 322 208" />
+  <path class="ti" d="M 208 172 L 322 208" />
+
+  <!-- 枝付きフラスコ -->
+  <circle cx="200" cy="258" r="54" fill="#fff" stroke="#555" stroke-width="2.5" />
+  <rect clip-path="url(#bulb)" class="liq" x="146" y="268" width="108" height="48" />
+  <path clip-path="url(#bulb)" d="M 146 268 L 254 268" style="stroke:#7aa7c7;stroke-width:1.5;fill:none" />
+  <circle cx="184" cy="300" r="4" fill="#9e9e9e" /><circle cx="200" cy="305" r="4" fill="#9e9e9e" />
+  <circle cx="215" cy="299" r="4" fill="#9e9e9e" />
+  <rect x="185" y="126" width="30" height="96" fill="#fff" stroke="#555" stroke-width="2.5" />
+  <rect x="178" y="118" width="44" height="18" rx="3" fill="#bdbdbd" stroke="#555" stroke-width="1.5" />
+
+  <!-- 温度計 -->
+  <rect x="196" y="52" width="9" height="118" fill="#fff" stroke="#555" stroke-width="1.8" />
+  <circle cx="200" cy="172" r="7" fill="#c62828" />
+
+  <!-- 加熱 -->
+  <path d="M 200 318 C 186 336, 190 352, 200 360 C 210 352, 214 336, 200 318 Z" fill="#ef6c00" />
+  <rect x="172" y="360" width="56" height="10" rx="3" fill="#9e9e9e" />
+
+  <!-- 受け器（三角フラスコ・密栓しない） -->
+  <path class="glass" d="M 606 314 L 606 332 L 578 402 L 668 402 L 640 332 L 640 314" />
+  <path class="liq" d="M 588 378 L 658 378 L 668 402 L 578 402 Z" />
+  <path class="glass" d="M 606 314 L 606 332 L 578 402 L 668 402 L 640 332 L 640 314" />
+
+  <!-- 札 -->
+  <text class="lab" x="186" y="60" text-anchor="end">温度計</text>
+  <path class="lead" d="M 190 56 L 196 56" />
+  <text class="lab" x="176" y="160" text-anchor="end">球部は枝の付け根に</text>
+  <path class="lead" d="M 180 156 L 194 168" />
+  <text class="lab" x="140" y="250" text-anchor="end">枝付きフラスコ</text>
+  <path class="lead" d="M 144 246 L 152 248" />
+  <text class="lab" x="140" y="296" text-anchor="end">液量は半分以下</text>
+  <path class="lead" d="M 144 292 L 162 284" />
+  <text class="lab" x="140" y="322" text-anchor="end">沸騰石を入れる</text>
+  <path class="lead" d="M 144 318 L 178 303" />
+
+  <text class="lab" x="470" y="132" text-anchor="middle">リービッヒ冷却器</text>
+  <path class="lead" d="M 470 140 L 462 222" />
+  <text class="lab" x="392" y="166" text-anchor="middle" style="fill:#1565c0">冷却水 出</text>
+  <text class="lab" x="528" y="352" text-anchor="middle" style="fill:#1565c0">冷却水 入</text>
+  <path d="M 528 338 L 528 316" style="stroke:#1565c0;stroke-width:2;fill:none" />
+  <polygon points="528,306 522,320 534,320" fill="#1565c0" />
+  <path d="M 392 196 L 392 182" style="stroke:#1565c0;stroke-width:2;fill:none" />
+  <polygon points="392,172 386,186 398,186" fill="#1565c0" />
+
+  <text class="lab" x="688" y="356">受け器（密栓しない）</text>
+  <path class="lead" d="M 684 352 L 664 366" />
+  <text class="lab" x="688" y="380">純水がたまる</text>
+</svg>
