@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="380" viewBox="0 0 800 380" role="img">
+  <!-- イオン結晶のへき開。ふつうは ＋ と − が向き合うが、1つぶんずらすと同符号が向き合って反発する。
+       ⚠ ずらす量は格子の1目ぶん（半端にずらすと同符号が向き合わない）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .na { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
+    .cl { fill: #c8e6c9; stroke: #2e7d32; stroke-width: 1.6; }
+    .ion { font-size: 12px; fill: #222; }
+    .title { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+  </style>
+
+  <!-- ===== ふつうの並び ===== -->
+  <text class="title" x="60" y="58">ふつうは ＋ と − が向き合う</text>
+
+  <circle class="cl" cx="100" cy="130" r="24" /><text class="ion" x="100" y="135" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="156" cy="130" r="16" /><text class="ion" x="156" y="135" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="212" cy="130" r="24" /><text class="ion" x="212" y="135" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="268" cy="130" r="16" /><text class="ion" x="268" y="135" text-anchor="middle">Na⁺</text>
+
+  <circle class="na" cx="100" cy="186" r="16" /><text class="ion" x="100" y="191" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="156" cy="186" r="24" /><text class="ion" x="156" y="191" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="212" cy="186" r="16" /><text class="ion" x="212" y="191" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="268" cy="186" r="24" /><text class="ion" x="268" y="191" text-anchor="middle">Cl⁻</text>
+
+  <circle class="cl" cx="100" cy="242" r="24" /><text class="ion" x="100" y="247" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="156" cy="242" r="16" /><text class="ion" x="156" y="247" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="212" cy="242" r="24" /><text class="ion" x="212" y="247" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="268" cy="242" r="16" /><text class="ion" x="268" y="247" text-anchor="middle">Na⁺</text>
+
+  <circle class="na" cx="100" cy="298" r="16" /><text class="ion" x="100" y="303" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="156" cy="298" r="24" /><text class="ion" x="156" y="303" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="212" cy="298" r="16" /><text class="ion" x="212" y="303" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="268" cy="298" r="24" /><text class="ion" x="268" y="303" text-anchor="middle">Cl⁻</text>
+
+  <text class="small" x="184" y="362" text-anchor="middle">引き合っていて動かない</text>
+
+  <!-- ===== 1つぶんずらす ===== -->
+  <text class="title" x="440" y="58">1つぶんずらすと同符号が向き合う</text>
+  <path d="M 520 88 L 636 88" style="stroke:#c62828;stroke-width:2.5;fill:none" />
+  <polygon points="646,88 632,83 632,93" fill="#c62828" />
+  <text class="small" x="656" y="93" style="fill:#c62828">強い力</text>
+
+  <circle class="cl" cx="516" cy="130" r="24" /><text class="ion" x="516" y="135" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="572" cy="130" r="16" /><text class="ion" x="572" y="135" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="628" cy="130" r="24" /><text class="ion" x="628" y="135" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="684" cy="130" r="16" /><text class="ion" x="684" y="135" text-anchor="middle">Na⁺</text>
+
+  <circle class="na" cx="516" cy="186" r="16" /><text class="ion" x="516" y="191" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="572" cy="186" r="24" /><text class="ion" x="572" y="191" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="628" cy="186" r="16" /><text class="ion" x="628" y="191" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="684" cy="186" r="24" /><text class="ion" x="684" y="191" text-anchor="middle">Cl⁻</text>
+
+  <path d="M 436 214 L 700 214" style="stroke:#c62828;stroke-width:1.5;stroke-dasharray:6 4;fill:none" />
+
+  <circle class="cl" cx="460" cy="242" r="24" /><text class="ion" x="460" y="247" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="516" cy="242" r="16" /><text class="ion" x="516" y="247" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="572" cy="242" r="24" /><text class="ion" x="572" y="247" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="628" cy="242" r="16" /><text class="ion" x="628" y="247" text-anchor="middle">Na⁺</text>
+
+  <circle class="na" cx="460" cy="298" r="16" /><text class="ion" x="460" y="303" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="516" cy="298" r="24" /><text class="ion" x="516" y="303" text-anchor="middle">Cl⁻</text>
+  <circle class="na" cx="572" cy="298" r="16" /><text class="ion" x="572" y="303" text-anchor="middle">Na⁺</text>
+  <circle class="cl" cx="628" cy="298" r="24" /><text class="ion" x="628" y="303" text-anchor="middle">Cl⁻</text>
+
+  <!-- 向き合った同符号（反発する組） -->
+  <rect x="492" y="166" width="48" height="100" rx="24" style="fill:none;stroke:#c62828;stroke-width:2;stroke-dasharray:5 4" />
+  <text class="small" x="486" y="158" text-anchor="end" style="fill:#c62828">同符号</text>
+
+  <text class="small" x="584" y="338" text-anchor="middle" style="fill:#c62828">向き合った同符号どうしが反発する</text>
+  <text class="small" x="584" y="362" text-anchor="middle">→ この面に沿って割れる（へき開）</text>
+</svg>
