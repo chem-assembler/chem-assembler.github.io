@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="390" viewBox="0 0 820 390" role="img">
+  <!-- リン脂質の2層の膜。頭（親水基）が両側の水、しっぽ（疎水基・2本）が内側で向かい合う。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .tail { stroke: #e65100; stroke-width: 5; stroke-linecap: round; fill: none; }
+    .head { fill: #1565c0; }
+    .water { fill: #eaf3fb; }
+    .inner { fill: #fff8f0; }
+    .lab { font-size: 16px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <rect class="water" x="20" y="26" width="590" height="104" rx="8" />
+  <rect class="inner" x="20" y="130" width="590" height="140" />
+  <rect class="water" x="20" y="270" width="590" height="104" rx="8" />
+  <text class="small" x="34" y="52">水</text>
+  <text class="small" x="34" y="364">水</text>
+
+  <g><circle class="head" cx="70" cy="116" r="11" /><path class="tail" d="M 64 128 L 64 196 M 76 128 L 76 196" /></g>
+  <g><circle class="head" cx="114" cy="116" r="11" /><path class="tail" d="M 108 128 L 108 196 M 120 128 L 120 196" /></g>
+  <g><circle class="head" cx="158" cy="116" r="11" /><path class="tail" d="M 152 128 L 152 196 M 164 128 L 164 196" /></g>
+  <g><circle class="head" cx="202" cy="116" r="11" /><path class="tail" d="M 196 128 L 196 196 M 208 128 L 208 196" /></g>
+  <g><circle class="head" cx="246" cy="116" r="11" /><path class="tail" d="M 240 128 L 240 196 M 252 128 L 252 196" /></g>
+  <g><circle class="head" cx="290" cy="116" r="11" /><path class="tail" d="M 284 128 L 284 196 M 296 128 L 296 196" /></g>
+  <g><circle class="head" cx="334" cy="116" r="11" /><path class="tail" d="M 328 128 L 328 196 M 340 128 L 340 196" /></g>
+  <g><circle class="head" cx="378" cy="116" r="11" /><path class="tail" d="M 372 128 L 372 196 M 384 128 L 384 196" /></g>
+  <g><circle class="head" cx="422" cy="116" r="11" /><path class="tail" d="M 416 128 L 416 196 M 428 128 L 428 196" /></g>
+  <g><circle class="head" cx="466" cy="116" r="11" /><path class="tail" d="M 460 128 L 460 196 M 472 128 L 472 196" /></g>
+  <g><circle class="head" cx="510" cy="116" r="11" /><path class="tail" d="M 504 128 L 504 196 M 516 128 L 516 196" /></g>
+  <g><circle class="head" cx="554" cy="116" r="11" /><path class="tail" d="M 548 128 L 548 196 M 560 128 L 560 196" /></g>
+
+  <g><circle class="head" cx="70" cy="284" r="11" /><path class="tail" d="M 64 272 L 64 204 M 76 272 L 76 204" /></g>
+  <g><circle class="head" cx="114" cy="284" r="11" /><path class="tail" d="M 108 272 L 108 204 M 120 272 L 120 204" /></g>
+  <g><circle class="head" cx="158" cy="284" r="11" /><path class="tail" d="M 152 272 L 152 204 M 164 272 L 164 204" /></g>
+  <g><circle class="head" cx="202" cy="284" r="11" /><path class="tail" d="M 196 272 L 196 204 M 208 272 L 208 204" /></g>
+  <g><circle class="head" cx="246" cy="284" r="11" /><path class="tail" d="M 240 272 L 240 204 M 252 272 L 252 204" /></g>
+  <g><circle class="head" cx="290" cy="284" r="11" /><path class="tail" d="M 284 272 L 284 204 M 296 272 L 296 204" /></g>
+  <g><circle class="head" cx="334" cy="284" r="11" /><path class="tail" d="M 328 272 L 328 204 M 340 272 L 340 204" /></g>
+  <g><circle class="head" cx="378" cy="284" r="11" /><path class="tail" d="M 372 272 L 372 204 M 384 272 L 384 204" /></g>
+  <g><circle class="head" cx="422" cy="284" r="11" /><path class="tail" d="M 416 272 L 416 204 M 428 272 L 428 204" /></g>
+  <g><circle class="head" cx="466" cy="284" r="11" /><path class="tail" d="M 460 272 L 460 204 M 472 272 L 472 204" /></g>
+  <g><circle class="head" cx="510" cy="284" r="11" /><path class="tail" d="M 504 272 L 504 204 M 516 272 L 516 204" /></g>
+  <g><circle class="head" cx="554" cy="284" r="11" /><path class="tail" d="M 548 272 L 548 204 M 560 272 L 560 204" /></g>
+
+  <path class="lead" d="M 630 112 L 580 116" />
+  <text class="lab" x="638" y="118">頭は水のほう</text>
+  <path class="lead" d="M 630 200 L 580 200" />
+  <text class="lab" x="638" y="206">しっぽは内側どうし</text>
+  <path class="lead" d="M 630 288 L 580 284" />
+  <text class="lab" x="638" y="294">反対側も水のほう</text>
+</svg>
