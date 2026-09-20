@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="330" viewBox="0 0 940 330" role="img">
+  <!-- 陽イオン ⇄ 双性イオン ⇄ 陰イオン。下に pH の向き（左が酸性側）と電気泳動での動きを添えた。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 陽イオンは陰極へ、陰イオンは陽極へ。等電点ではどちらへも動かない。 -->
+  <style>
+    .f { font-size: 21px; fill: #222; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 14px; fill: #444; }
+    .arw { stroke: #333; stroke-width: 2.5; fill: none; }
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .red { fill: #c62828; }
+    .blue { fill: #1565c0; }
+    .purple { fill: #6a1b9a; }
+  </style>
+
+  <text class="lab red" x="155" y="108" text-anchor="middle">陽イオン</text>
+  <text class="lab purple" x="470" y="108" text-anchor="middle">双性イオン</text>
+  <text class="lab blue" x="785" y="108" text-anchor="middle">陰イオン</text>
+
+  <text class="f" x="155" y="160" text-anchor="middle">R−CH(NH₃⁺)−COOH</text>
+  <text class="f" x="470" y="160" text-anchor="middle">R−CH(NH₃⁺)−COO⁻</text>
+  <text class="f" x="785" y="160" text-anchor="middle">R−CH(NH₂)−COO⁻</text>
+
+  <path class="arw" d="M 278 146 L 348 146 M 278 166 L 348 166" />
+  <polygon points="356,146 342,140 342,152" fill="#333" />
+  <polygon points="270,166 284,160 284,172" fill="#333" />
+  <path class="arw" d="M 593 146 L 663 146 M 593 166 L 663 166" />
+  <polygon points="671,146 657,140 657,152" fill="#333" />
+  <polygon points="585,166 599,160 599,172" fill="#333" />
+
+  <text class="small" x="313" y="132" text-anchor="middle">H⁺ を放す →</text>
+  <text class="small" x="313" y="190" text-anchor="middle">← H⁺ を受け取る</text>
+  <text class="small" x="628" y="132" text-anchor="middle">H⁺ を放す →</text>
+  <text class="small" x="628" y="190" text-anchor="middle">← H⁺ を受け取る</text>
+
+  <!-- pH の向き -->
+  <path class="ax" d="M 80 244 L 860 244" />
+  <polygon points="70,244 84,238 84,250" fill="#333" />
+  <polygon points="870,244 856,238 856,250" fill="#333" />
+  <path class="ax" d="M 470 236 L 470 252" />
+  <text class="small" x="470" y="228" text-anchor="middle">等電点</text>
+  <text class="small" x="80" y="270">酸性側（pH 小）</text>
+  <text class="small" x="860" y="270" text-anchor="end">塩基性側（pH 大）</text>
+
+  <!-- 電気泳動 -->
+  <text class="lab red" x="155" y="308" text-anchor="middle">陰極（−）へ動く</text>
+  <text class="lab purple" x="470" y="308" text-anchor="middle">どちらへも動かない</text>
+  <text class="lab blue" x="785" y="308" text-anchor="middle">陽極（＋）へ動く</text>
+</svg>
