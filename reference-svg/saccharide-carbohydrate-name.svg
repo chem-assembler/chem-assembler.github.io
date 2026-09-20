@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="240" viewBox="0 0 820 240" role="img">
+  <!-- 「炭水化物」という呼び名の由来。C6H12O6 を C6(H2O)6 と書き直せることを見せる。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ⚠ 実際に水の分子が入っているわけではない、を必ず添える。 -->
+  <style>
+    .f { font-size: 36px; fill: #222; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .arw { stroke: #333; stroke-width: 2.5; fill: none; }
+    .brace { stroke: #1565c0; stroke-width: 2; fill: none; }
+    .blue { fill: #1565c0; }
+    .red { fill: #c62828; }
+  </style>
+
+  <text class="f" x="160" y="108" text-anchor="middle">C₆H₁₂O₆</text>
+  <text class="small" x="160" y="146" text-anchor="middle">グルコースの分子式</text>
+
+  <path class="arw" d="M 300 96 L 372 96" />
+  <polygon points="382,96 368,90 368,102" fill="#333" />
+  <text class="small" x="341" y="78" text-anchor="middle">書き直す</text>
+
+  <text class="f" x="560" y="108" text-anchor="middle">C₆<tspan class="blue">(H₂O)₆</tspan></text>
+
+  <path class="brace" d="M 542 122 L 542 134 L 638 134 L 638 122" />
+  <text class="small blue" x="590" y="158" text-anchor="middle">水 H₂O が6個ぶん</text>
+
+  <text class="lab" x="410" y="200" text-anchor="middle">炭素と水でできているように見える ＝ <tspan font-weight="bold">炭水化物</tspan></text>
+  <text class="small red" x="410" y="226" text-anchor="middle">⚠ 分子の中に水が入っているわけではない</text>
+</svg>
