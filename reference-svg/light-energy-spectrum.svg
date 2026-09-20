@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="320" viewBox="0 0 820 320" role="img">
+  <!-- 光の波長とエネルギーの帯。左ほど波長が短くエネルギーが大きい。
+       本文の値: 可視光線は約 380〜780nm、1mol あたり 紫 約300kJ・赤 約150kJ。
+       ⚠ 色だけに頼らないよう、境の波長と両端のエネルギーを文字で入れた。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .band { stroke: none; }
+    .edge { fill: none; stroke: #555; stroke-width: 1.5; }
+    .name { font-size: 17px; fill: #222; }
+    .small { font-size: 14px; fill: #555; }
+    .tick { font-size: 13px; fill: #666; }
+  </style>
+
+  <!-- 帯 -->
+  <rect class="band" x="90" y="120" width="160" height="56" fill="#d1c4e9" />
+  <rect class="band" x="250" y="120" width="45" height="56" fill="#7b1fa2" />
+  <rect class="band" x="295" y="120" width="45" height="56" fill="#3949ab" />
+  <rect class="band" x="340" y="120" width="45" height="56" fill="#2e7d32" />
+  <rect class="band" x="385" y="120" width="45" height="56" fill="#f9a825" />
+  <rect class="band" x="430" y="120" width="45" height="56" fill="#ef6c00" />
+  <rect class="band" x="475" y="120" width="45" height="56" fill="#c62828" />
+  <rect class="band" x="520" y="120" width="240" height="56" fill="#ffccbc" />
+  <rect class="edge" x="90" y="120" width="670" height="56" />
+  <path class="edge" d="M 250 120 L 250 176 M 520 120 L 520 176" />
+
+  <text class="name" x="170" y="108" text-anchor="middle">紫外線</text>
+  <text class="name" x="385" y="108" text-anchor="middle">可視光線</text>
+  <text class="name" x="640" y="108" text-anchor="middle">赤外線</text>
+
+  <!-- 境の波長 -->
+  <path class="edge" d="M 250 176 L 250 190 M 520 176 L 520 190" />
+  <text class="tick" x="250" y="208" text-anchor="middle">380 nm</text>
+  <text class="tick" x="520" y="208" text-anchor="middle">780 nm</text>
+
+  <!-- 両端のエネルギー（1mol あたり） -->
+  <text class="small" x="272" y="232" text-anchor="middle" style="fill:#6a1b9a">紫 ≒ 300 kJ/mol</text>
+  <text class="small" x="498" y="232" text-anchor="middle" style="fill:#c62828">赤 ≒ 150 kJ/mol</text>
+
+  <!-- 波長の向き -->
+  <path d="M 90 264 L 750 264" style="stroke:#333;stroke-width:2;fill:none" />
+  <polygon points="760,264 746,259 746,269" fill="#333" />
+  <text class="small" x="742" y="256" text-anchor="end">波長が長くなる</text>
+
+  <!-- エネルギーの向き -->
+  <path d="M 760 298 L 100 298" style="stroke:#c62828;stroke-width:2;fill:none" />
+  <polygon points="90,298 104,293 104,303" fill="#c62828" />
+  <text class="small" x="108" y="290" style="fill:#c62828">エネルギーが大きくなる</text>
+</svg>
