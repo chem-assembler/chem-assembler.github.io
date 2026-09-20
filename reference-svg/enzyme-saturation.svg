@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="400" viewBox="0 0 820 400" role="img">
+  <!-- 基質の濃度と反応速度。低濃度では比例（破線の直線に沿う）、高濃度では頭打ち。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+    .cv { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .tan { stroke: #6a1b9a; stroke-width: 2; stroke-dasharray: 7 5; fill: none; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .blue { fill: #1565c0; }
+    .purple { fill: #6a1b9a; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <path class="ax" d="M 90 60 L 90 330 L 720 330" />
+  <text class="small" x="90" y="48">反応速度</text>
+  <text class="small" x="716" y="368" text-anchor="end">基質の濃度</text>
+
+  <!-- 頭打ちの高さ -->
+  <path class="grid" d="M 90 106 L 700 106" />
+
+  <!-- 低濃度での接線（比例の目安） -->
+  <path class="tan" d="M 92 320 L 246 74" />
+  <text class="small purple" x="140" y="150">比例の目安</text>
+
+  <!-- 飽和曲線 -->
+  <path class="cv" d="M 92 320 C 134 268, 168 216, 214 184 C 286 134, 382 116, 480 111 L 700 108" />
+
+  <text class="small blue" x="150" y="290">はじめは濃度に比例</text>
+  <text class="small blue" x="400" y="160">やがて頭打ち —— 酵素がすべて基質と結びつく</text>
+  <path class="lead" d="M 470 144 L 470 126" stroke="#1565c0" />
+  <polygon points="470,116 465,130 475,130" fill="#1565c0" />
+</svg>
