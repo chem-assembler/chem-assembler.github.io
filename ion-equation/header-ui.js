@@ -11,17 +11,51 @@
    ここは見た目だけを扱う。化学の判断もステージの中身も一切持たない
    （「.strip の中に子要素が並ぶ」「開いているものに .active が付く」という DOM の約束だけに依存）。 */
 (() => {
+  /* ---- 参考書のページに埋め込まれているか（?embed=1）----
+     DESIGN_reference_centric.md §2-4 (2)。子がやることは**3つだけ**で、そのうち
+     ① `<html class="embed">` と `<base target="_top">` は各 HTML の head の同期な1行が持つ
+        （ここは body の末尾で読むので、描いてから消すとちらつく）。
+     ここが持つのは ②（高さを親に知らせる）と ③（「← 参考書へ戻る」の帯を作らない）。
+     ⚠ `embed=1` が無ければ**1バイトも挙動を変えない**（元の URL は今までどおり）。 */
+  let embedded = false;
+  try { embedded = new URLSearchParams(location.search).get("embed") === "1"; } catch (e) { /* 何もしない */ }
+
+  /* ② 高さを親に知らせる（§2-4 (2)②・(6)）。
+     親は iframe を中身の高さに合わせる ＝ **iframe の中にスクロールを作らない**
+     （スマホ縦の二重スクロールが一番の事故）。
+     約束: 子 → 親 `{ type: 'slz-embed', v: 1, h: <整数 px> }` を `location.origin` 宛てに。親 → 子は無し。
+     ⚠ **前と同じ h は送らない**（発振の見張りが効くようにする。ion の test.html が
+        「1秒以内に止まる・同じ高さが2度来ない」を見ている）。
+     ⚠ 測るのは `documentElement` の**外枠の高さ**。`scrollHeight` は「viewport か中身の大きい方」なので、
+        親が伸ばすたびに一緒に育って輪が閉じる。 */
+  if (embedded && window.parent !== window && typeof ResizeObserver === "function") {
+    let sent = -1;
+    const tell = () => {
+      const h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+      if (h === sent || !(h > 0)) return;
+      sent = h;
+      try { parent.postMessage({ type: "slz-embed", v: 1, h }, location.origin); } catch (e) { /* 送れなくても本体は動かす */ }
+    };
+    try {
+      new ResizeObserver(tell).observe(document.documentElement);
+      tell();
+    } catch (e) { /* 観測できない環境では高さを送らないだけ（親は既定の高さのまま） */ }
+  }
+
   /* ---- 参考書から来たときの戻り道（2026-09-19・参考書を無機・理論へ広げる 便0b）----
      CLAUDE.md「アプリ横断のリンクは往復にする」。参考書（/reference/）の `:::link app:` は
      `?from=reference&page=<ページid>` を付けて来る。ここは**全ページが読む**ので1か所で効く。
      ⚠ 知ってよいのは相手の URL の形（`/reference/<ページid>/`）だけ。ページの一覧は持たない。
      ⚠ page が読めない形なら索引（`/reference/`）へ戻す（行き止まりにしない・勝手な URL を作らない）。
      ⚠ ヘッダーの中には入れない（320×568 でヘッダー 120px 以下の約束）。ヘッダーの直後に細い帯で置く。
-     ⚠ `_top` ＝ どこかに埋め込まれていても、枠ではなくタブごと参考書へ戻す（qa の帯と同じ）。 */
+     ⚠ `_top` ＝ どこかに埋め込まれていても、枠ではなくタブごと参考書へ戻す（qa の帯と同じ）。
+     ⚠ ③ **`embed=1` のときは帯を作らない**（§2-4 (2)③。`embed=1` が `from=reference` に優先）。
+        参考書のページの中に居るのだから「参考書へ戻る」は無意味。
+        ⚠ 帯は header の**外**なので、CSS で header を隠しても消えない ＝ ここで止める。 */
   try {
     const p = new URLSearchParams(location.search);
     const head = document.querySelector("header");
-    if (p.get("from") === "reference" && head && !document.querySelector(".refBack")) {
+    if (!embedded && p.get("from") === "reference" && head && !document.querySelector(".refBack")) {
       const page = p.get("page") || "";
       const band = document.createElement("div");
       band.className = "refBack";
