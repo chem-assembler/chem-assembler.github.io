@@ -45,7 +45,8 @@ function load() {
 
 // 1行1件で書き戻す（compounds.json と同じ考え方＝差分が「足した件数」になる）
 function save(rows) {
-    fs.writeFileSync(LEDGER, rows.map(r => JSON.stringify(r)).join('\n') + '\n', 'utf8');
+    // 改行は CRLF（リポジトリの規約。core.autocrlf=true なので LF で書くと次の checkout で全行が差分になる）
+    fs.writeFileSync(LEDGER, rows.map(r => JSON.stringify(r)).join('\r\n') + '\r\n', 'utf8');
 }
 
 const nextId = (rows) => 'I-' + String(rows.reduce((m, r) => Math.max(m, Number(String(r.id).slice(2)) || 0), 0) + 1).padStart(4, '0');
