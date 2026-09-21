@@ -35,3 +35,13 @@ docs/
 past-exams/**/solutions/
 past-exams/_private/
 past-exams/
+
+# ⛔⛔ 紙の資料のスキャン（著作物）。**リポジトリに入れない**
+#    2026-09-21: `git add -A` で11本が公開リポジトリへ入り、push まで行った（3度目）。
+#    tip からは消したが履歴には残る。⚠ コミットは `git add <パス>` で1つずつ指す。
+scan/
+# 端末ごとの設定の控え（共有しない）
+.claude/settings.backup-*.json
+.claude/settings.local*.json
+# 収録の中間ファイル（tools/record の下も）
+tools/record/video-scripts/out/
