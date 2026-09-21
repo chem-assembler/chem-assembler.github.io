@@ -4882,6 +4882,26 @@ const RULE_PHASE = {
     liberate_co2: { phase: 'ether', note: '' },
     amine_liberate_naoh: { phase: 'ether', note: '' }
 };
+
+/* 分液の面で出す試薬 ＝ **上の表に載っている反応が使う試薬だけ**（I-0032・v1604）。
+ *
+ * ★ ユーザーの指摘（2026-09-21）:「分液モード時、使える試薬がどれかわかりにくい。
+ *   通常の実験モードと異なり、使える試薬は限定させた方がよい（総当たりで調べることが
+ *   無意味なため）」。分液の漏斗の中で意味があるのは**層を動かす操作**だけで、
+ *   27本を総当たりしても「効きません」が26回返るだけ ＝ 何も学べない時間になる。
+ * ⚠ **実験モードでは今までどおり27本全部出す。**「効かない瓶も押せて理由が返る」は
+ *   実験モードの良さ（ユーザーの言葉）なので、絞るのは分液の面を開いているあいだだけ。
+ * ★★ **5本を定数で書き写さない。** どの瓶を出すかは「層を動かす反応があるか」で決まり、
+ *   その表は `RULE_PHASE` ここ1つ（§4-5 #3 の約束）。表に1行足したら出る瓶も自然に増える
+ *   ——「使える試薬の一覧」を別に持つと、**表を増やしたのに瓶が出ない**形で静かに壊れる。 */
+function phaseReagentIds() {
+    const ids = new Set();
+    Object.keys(RULE_PHASE).forEach(ruleId => {
+        const rule = REACTION_RULES.find(r => r.id === ruleId);
+        ruleReagentIds(rule).forEach(id => ids.add(id));
+    });
+    return ids;
+}
 // 2本に共通の説明（どちらも同じものに効く。違うのは強さの既定と、ふつうどちらを使うか）
 const OXIDANT_ACTS = '1級・2級アルコールとアルデヒド、芳香族の側鎖（環に直結した -CH₃）、' +
     '炭化水素の C=C（酸化開裂）です';
@@ -10611,21 +10631,43 @@ class Reactor {
     renderReagents() {
         (this.reagentGridIds || ['exp-reagents-grid'])
             .forEach(id => this.renderReagentsInto(document.getElementById(id)));
+        // 絞り込みで札を組み直すと、選んでいた瓶の印が消える（押した瓶が分かるようにする）
+        this.markSelectedReagent();
+    }
+
+    /**
+     * いま棚に出す瓶（I-0032・v1604）。
+     *
+     * ★ **分液の面を開いているあいだだけ絞る**（`phaseReagentIds` ＝ `RULE_PHASE` から導く）。
+     *   ⚠ 絞り方は**この1か所だけ**に置く ＝ 「出す瓶」と「押したときの振る舞い」
+     *   （`onReagentClick` の混合物への適用）が別の条件で判断されることを避ける。
+     * ⚠ 分液でないときは `REAGENTS` をそのまま返す（27本・実験モードは今までどおり）。
+     */
+    reagentsForPalette() {
+        if (!this.game || !this.game.separationActive) return REAGENTS;
+        const allow = phaseReagentIds();
+        return REAGENTS.filter(rg => allow.has(rg.id));
     }
 
     renderReagentsInto(el) {
         if (!el) return;
         el.innerHTML = '';
         let kind = null;
-        REAGENTS.forEach(rg => {
-            if (rg.kind !== kind) {
+        const sep = !!(this.game && this.game.separationActive);
+        this.reagentsForPalette().forEach((rg, i) => {
+            /* 見出しは**中身に合う言葉**にする。
+             * ★ 分液では**区分を割らない**（見出しは1つ）。棚に並ぶ瓶はどれも層を動かすもので、
+             *   ⚠ NaHCO₃ は実験の棚では『調べるもの』（泡で -COOH を見る瓶）だが、
+             *   漏斗の中では塩にして水層へ落とす瓶として働く（`onReagentClick` が混合物へ回す）。
+             *   同じ瓶を2つの見出しで呼ぶと、**いまどちらの読みの話か**が画面から消える。 */
+            if (sep ? i === 0 : rg.kind !== kind) {
                 kind = rg.kind;
                 const h = document.createElement('div');
                 h.className = 'rg-group';
-                h.dataset.kind = kind;
-                h.textContent = kind === 'detect'
-                    ? '調べるもの（構造は変わりません）'
-                    : '変えるもの';
+                h.dataset.kind = sep ? 'phase' : kind;
+                h.textContent = sep
+                    ? '層を移すもの —— 酸と塩基で、水層と有機層を行き来させよう'
+                    : (kind === 'detect' ? '調べるもの（構造は変わりません）' : '変えるもの');
                 el.appendChild(h);
             }
             const b = document.createElement('button');
@@ -14287,6 +14329,8 @@ if (typeof window !== 'undefined') {
      *   ★ こちらから呼べるように出しておく（乗り換えは narrowing.js 側の仕事）。 */
     window.reducingCarbonylAtoms = reducingCarbonylAtoms;
     window.RULE_PHASE = RULE_PHASE;             // ルール → 層の対応表（SEP 群が読む）
+    // 分液の棚に出す瓶（SEP11 が「表から導いているか」を読む・I-0032）
+    window.phaseReagentIds = phaseReagentIds;
     // 水層の粒が相方のそばで読めるか（SEP9 が読む・v1569）
     window.counterIonOwners = counterIonOwners;
     window.counterIonReadsClearly = counterIonReadsClearly;

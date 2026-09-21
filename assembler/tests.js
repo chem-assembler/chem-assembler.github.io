@@ -59877,6 +59877,93 @@
         return '水層（HCl）→（NaOH）→ ↩ で（HCl）／（NaHCO₃）も同じ道／帯の行数は不変';
     });
 
+    test('SEP11: 分液の棚には層を移せる瓶だけが出る（表から導く・否定対照つき）', async (c) => {
+        /* 2026-09-21・ユーザー「分液モード時、使える試薬がどれかわかりにくい。通常の実験モードと
+         * 異なり、使える試薬は限定させた方がよい（総当たりで調べることが無意味なため）」（I-0032）。
+         * ★ 見るのは5つ:
+         *   ① 分液を始める前は27本のまま ＝ **実験モードの良さを削っていない**
+         *      （「効かない瓶も押せて理由が返る」はユーザーの言葉で、あちらの取り柄）
+         *   ② 始めると `RULE_PHASE` から導いた瓶だけになる
+         *   ③ 見出しが「層を移すもの」に変わる（「変えるもの」では何の棚か読めない）
+         *   ④ やめると27本に戻る
+         *   ⑤ ★★否定対照: **絞り方を止めると、分液のままでも27本出る** ＝ 5本は絞り方の結果で
+         *      あって、「分液では棚が短くなる別の理由」（描き直しの失敗など）ではない
+         * ⚠ 期待する瓶は**テスト側でも表から導く**（`RULE_PHASE` → ルール → reagentId）。
+         *   id を書き写すと、層を動かす反応を足したときに**テストだけが古くなる**。 */
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, R = W.reactor;
+        const shelf = () => [...D.querySelectorAll('#exp-reagents-grid .rg-bottle')]
+            .map(b => b.dataset.reagent);
+        const heads = () => [...D.querySelectorAll('#exp-reagents-grid .rg-group')]
+            .map(h => h.textContent);
+        const all = W.REAGENTS.map(r => r.id);
+
+        // 層を動かす反応が使う瓶 ＝ 分液の棚に出るべきもの（表から導く）
+        const want = [...new Set(Object.keys(W.RULE_PHASE).reduce((acc, id) => {
+            const rule = W.REACTION_RULES.find(r => r.id === id);
+            assert(rule, `RULE_PHASE の ${id} が REACTION_RULES に無い`);
+            return acc.concat(W.ruleReagentIds(rule));
+        }, []))];
+        assert(want.length >= 5, `層を動かす瓶が表から引けない（${want.join(',')}）`);
+        want.forEach(id => assert(all.includes(id), `表が指す瓶 ${id} が REAGENTS に無い`));
+        assert(want.length < all.length, '層を動かす瓶が全部の瓶と同じ数（絞る意味が無い）');
+        // 実装の導き方とテストの導き方が同じ答えになる（`phaseReagentIds` が表を読んでいる証拠）
+        assert([...W.phaseReagentIds()].sort().join(',') === [...want].sort().join(','),
+            `実装の phaseReagentIds（${[...W.phaseReagentIds()].join(',')}）と` +
+            `表から導いた並び（${want.join(',')}）が食い違う`);
+
+        // ---- ① 分液を始める前（実験モード）は全部出る
+        sepSetup(c, ['安息香酸', 'ニトロベンゼン']);
+        assert(shelf().join(',') === all.join(','),
+            `実験モードの棚が REAGENTS と一致しない（${shelf().length} / ${all.length}本）`);
+        assert(heads().some(t => t === '変えるもの'), `実験モードの見出しが変わった（${heads().join(' / ')}）`);
+
+        // ---- ② 分液を始めると層を移せる瓶だけ（★ 呼び直しは startSeparation が自分で済ませる）
+        g.startSeparation();
+        assert(shelf().join(',') === all.filter(id => want.includes(id)).join(','),
+            `分液の棚が層を移せる瓶と一致しない（出ている: ${shelf().join(',') || 'なし'}）`);
+        assert(shelf().length === want.length, `分液の棚が ${shelf().length}本（${want.length}本を期待）`);
+        // 出ている瓶はどれも「押せば層が動く」（＝ 総当たりが無意味にならない）
+        shelf().forEach(id => {
+            const r = W.REAGENTS.find(x => x.id === id);
+            assert(W.REACTION_RULES.some(rule => W.ruleUsesReagent(rule, id) && !rule.info &&
+                W.RULE_PHASE[rule.id]), `棚の ${r.name} は層を動かす反応を持っていない`);
+        });
+        /* ---- ③ 見出しは中身に合う言葉。**1つだけ**にする
+         * ⚠ NaHCO₃ は実験の棚では『調べるもの』（泡で -COOH を見る瓶）なのに、漏斗の中では
+         *   塩にして水層へ落とす瓶として働く。区分を割ると同じ瓶が2つの見出しで呼ばれ、
+         *   **いまどちらの読みの話か**が画面から消える（実測でここが最初に赤くなった）。 */
+        assert(shelf().some(id => W.REAGENTS.find(r => r.id === id).kind === 'detect'),
+            '前提が変わった: 分液の棚に『調べるもの』の瓶（NaHCO₃）が居ない');
+        assert(heads().length === 1 && /^層を移すもの/.test(heads()[0]),
+            `分液の見出しが「層を移すもの」1つでない（${heads().join(' / ') || 'なし'}）`);
+        assert(!heads().some(t => t === '変えるもの' || /調べるもの/.test(t)),
+            `分液なのに実験モードの見出しが残っている（${heads().join(' / ')}）`);
+
+        // ---- ④ やめると全部に戻る（実験モードの本数は1本も減っていない）
+        g.endSeparation();
+        assert(shelf().join(',') === all.join(','),
+            `分液をやめても棚が戻らない（${shelf().length} / ${all.length}本）`);
+        assert(heads().some(t => t === '変えるもの'), `やめても見出しが戻らない（${heads().join(' / ')}）`);
+
+        // ---- ⑤ ★★否定対照: 絞り方を止めれば、分液のままでも27本出る
+        g.startSeparation();
+        assert(shelf().length === want.length, '否定対照の前に棚が絞られていない');
+        const keep = R.reagentsForPalette;
+        R.reagentsForPalette = () => W.REAGENTS;     // 絞り方だけを止める
+        R.renderReagents();
+        const 止めた = shelf();
+        R.reagentsForPalette = keep;
+        R.renderReagents();
+        assert(止めた.join(',') === all.join(','),
+            `★ 絞り方を止めても棚が ${止めた.length}本（${all.length}本出るはず）` +
+            ' ＝ 棚が短いのは絞り方のせいではない（描き直しの失敗などを見落としている）');
+        assert(shelf().length === want.length, '絞り方を戻しても棚が絞られない');
+        const 見出し = heads()[0] || '—';
+        c.reset();
+        return `実験 ${all.length}本／分液 ${want.length}本（${want.join('・')}）／見出し「${見出し}」`;
+    });
+
     /* ============================================================================
      * DH: ★★ 「A を脱水するとできるアルケンを書き出す」（v1516・ユーザー原文 2026-09-03）
      *

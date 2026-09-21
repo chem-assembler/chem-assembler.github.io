@@ -7895,6 +7895,15 @@ class Game {
             window.reactionPlayer.exit();
         }
         if (pane) pane.classList.toggle('hidden', !on);
+        /* ★ 分液の出入りで**試薬の棚を組み直す**（I-0032・v1604）。
+         *   分液のあいだは層を移せる瓶だけを出すので、始めた・やめたの両方で描き直しが要る。
+         * ⚠ **呼ぶ場所はここ1つ。** `startSeparation` / `endSeparation` の両方が
+         *   この行を通る（どちらも `setWorkPane('ws-sep', …)` で面を出し入れする）ので、
+         *   2か所に書いて片方だけ直す形にしない。`separationActive` はここへ来る前に
+         *   もう切り替わっている ＝ 棚は必ず今の状態で組まれる */
+        if (paneId === 'ws-sep' && window.reactor && window.reactor.renderReagents) {
+            window.reactor.renderReagents();
+        }
         const strip = document.getElementById('work-strip');
         if (!strip) return;
         const any = [...strip.querySelectorAll('.ws-pane')].some(p => !p.classList.contains('hidden'));
