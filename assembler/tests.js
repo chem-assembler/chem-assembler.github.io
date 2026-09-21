@@ -26156,8 +26156,13 @@
             const dx = p.x - cx, dy = p.y - cy;
             return { x: cx + dx * cs - dy * sn, y: cy + dx * sn + dy * cs };
         };
+        /* ★ **「回る出題を5件見る」まで引く**（2026-09-21・v1604）。
+         * ⚠ 直す前は「120回のうち先頭40件」を見て `spun >= 5` を要求していたので、
+         *   抽選のめぐり合わせで回る出題が4件しか入らないと落ちていた（実測で再現）。
+         *   ＝ 落ちても実装については何も言っていない。**見たい出題がそろうまで引く**形にする。
+         * ⚠ 300回引いても5件そろわなければ赤のまま（回る出題が本当に減ったのなら知りたい）。 */
         let n = 0, spun = 0;
-        for (let i = 0; i < 120 && n < 40; i++) {
+        for (let i = 0; i < 300 && (n < 40 || spun < 5); i++) {
             q.nextQuestion();
             if (!q.current) continue;
             const plan = q.overlayPlan();
@@ -26180,7 +26185,7 @@
             assert(worst < 2, `回した影が重ね位置に乗らない（最大 ${worst.toFixed(1)}px・${q.current.nameA}）`);
         }
         assert(n >= 20, `検査できた出題が少なすぎる（${n}件）`);
-        assert(spun >= 5, `回す出題が集まらない（${spun}件）`);
+        assert(spun >= 5, `回す出題が集まらない（300回引いて ${spun}件・検査できたのは ${n}件）`);
         D.getElementById('sq-mode').value = 'pair';
     });
 
@@ -26269,14 +26274,53 @@
         q.build();
         D.getElementById('sq-mode').value = 'wedge';
         const btn = D.getElementById('btn-sq-overlay');
-        let plan = null;
+        // くさび（polygon）の重心。★ 出題を選ぶ段でも、最後の検算でも**同じ物差し**を使う
+        const cen = (el) => {
+            const pts = el.getAttribute('points').trim().split(/\s+/).map(s => s.split(',').map(Number));
+            return { x: pts.reduce((s, p) => s + p[0], 0) / pts.length,
+                     y: pts.reduce((s, p) => s + p[1], 0) / pts.length };
+        };
+        // 影のくさびは「図Bの座標 →（tx,ty）平行移動 →（cx,cy）で angle 回転」で図Aの紙の上に来る
+        const toA = (p, deg, geo) => {
+            const r = deg * Math.PI / 180, cs = Math.cos(r), sn = Math.sin(r);
+            const dx = p.x + geo.tx - geo.cx, dy = p.y + geo.ty - geo.cy;
+            return { x: geo.cx + dx * cs - dy * sn, y: geo.cy + dx * sn + dy * cs };
+        };
+        // deg 回して置いたとき「図Aのくさびからいちばん遠いくさび」の距離（乗っていないほど大きい）
+        const gapOf = (pts, deg, geo, aWedges) => pts.reduce((m, p) => {
+            const t = toA(p, deg, geo);
+            return Math.max(m, Math.min(...aWedges.map(w => Math.hypot(w.x - t.x, w.y - t.y))));
+        }, 0);
+        /* ★★ 出題は抽選なので、**「回さないとずれる出題」だけを選ぶ**（2026-09-21・v1604）。
+         *
+         * ⚠ **直す前の症状**: 全件を流すたび約1/3の確率で、下の否定対照が
+         *   「回さなくてもくさびが合う: 10.5px」で落ちていた。原因はテストの中身ではなく**抽選**で、
+         *   **くさびの並びが回転に対して対称な分子**を引くと 0° のままでも影のくさびが
+         *   図Aのくさびに重なり、否定対照（`rawWorst > 20`）がそもそも測れない。
+         *   ＝ 落ちても直したい事柄（くさびが一緒に回るか）については何も言っていない。
+         * ⚠ **閾値を下げる・否定対照を外すのは禁止**（それでは「回っている」ことの証明が消える）。
+         *   ★ 代わりに**測れる出題に限る**。300回引いても見つからなければ赤のままにする
+         *   —— 抽選の池が対称な出題ばかりになったら、それはこちらが知りたいことだから。 */
+        let plan = null, pickedRaw = 0;
         for (let i = 0; i < 300 && !plan; i++) {
             q.nextQuestion();
             if (!q.current) continue;
             const p = q.overlayPlan();
-            if (p && p.turns > 0 && p.mismatch === 0 && p.rms < 2) plan = p;
+            if (!(p && p.turns > 0 && p.mismatch === 0 && p.rms < 2)) continue;
+            const g0 = q.overlayGhostGeometry();
+            if (!g0) continue;
+            /* ⚠ 影はまだ描かれていない（押す前）ので、素になる**図Bのくさび**を測る。
+             *   影の中身は `_dispMolB` をそのまま描いたものなので座標は図Bと同じ
+             *   （その一致は下で `pickedRaw` と突き合わせて確かめる）。 */
+            const aW = [...D.querySelectorAll('#sq-svg-a .quiz-bonds polygon')].map(cen);
+            const bW = [...D.querySelectorAll('#sq-svg-b .quiz-bonds polygon')].map(cen);
+            if (!aW.length || aW.length !== bW.length) continue;
+            const raw = gapOf(bW, 0, g0, aW);
+            if (raw <= 20) continue;          // 回さなくても合う ＝ 否定対照が測れない出題
+            plan = p; pickedRaw = raw;
         }
-        assert(plan, 'くさび図モードで「回すと重なる」出題が見つからない');
+        assert(plan, 'くさび図モードで「回さないとずれる／回すと重なる」出題が' +
+            '300回引いても見つからない（抽選の池が対称な出題ばかりになっていないか）');
         const wedgesB = D.querySelectorAll('#sq-svg-b .quiz-bonds polygon').length;
         assert(wedgesB > 0, '図Bに手前のくさびが描かれていない（前提が崩れた）');
         q.answer(q.current.rel);
@@ -26296,18 +26340,7 @@
         //   開かずに動かすので、描画の箱はどれも 0 になって「動いていない」ように見える
         const angleOf = () => parseFloat(/rotate\(([-\d.]+)/
             .exec(D.querySelector('#sq-svg-a .sq-overlay-spin').getAttribute('transform'))[1]);
-        const cen = (el) => {
-            const pts = el.getAttribute('points').trim().split(/\s+/).map(s => s.split(',').map(Number));
-            return { x: pts.reduce((s, p) => s + p[0], 0) / pts.length,
-                     y: pts.reduce((s, p) => s + p[1], 0) / pts.length };
-        };
-        // 影のくさびは「図Bの座標 →（tx,ty）平行移動 →（cx,cy）で angle 回転」で図Aの紙の上に来る
         const geo = q.overlayGhostGeometry();
-        const toA = (p, deg) => {
-            const r = deg * Math.PI / 180, cs = Math.cos(r), sn = Math.sin(r);
-            const dx = p.x + geo.tx - geo.cx, dy = p.y + geo.ty - geo.cy;
-            return { x: geo.cx + dx * cs - dy * sn, y: geo.cy + dx * sn + dy * cs };
-        };
         const svgA = D.getElementById('sq-svg-a');
         const aWedges = [...svgA.querySelectorAll('.quiz-bonds polygon')].map(cen);
         assert(aWedges.length === ghostWedges.length, '図Aと影でくさびの数が違う');
@@ -26328,11 +26361,18 @@
             Math.max(m, nearest({ x: p.x + plan.dx, y: p.y + plan.dy })), 0);
         assert(worst < 14, `回したくさびが図Aのくさびに乗らない（最大 ${worst.toFixed(1)}px）`);
         // 否定対照: 回さずに（0°のまま）重ねたら、くさびは図Aのくさびに乗らない
-        const rawWorst = before.reduce((m, p) => Math.max(m, nearest(toA(p, 0))), 0);
+        //   ★ 出題を選ぶ段で `pickedRaw > 20` を確かめてあるので、ここは**必ず測れる**
+        const rawWorst = gapOf(before, 0, geo, aWedges);
         assert(rawWorst > 20,
             `否定対照が成立しない（回さなくてもくさびが合う: ${rawWorst.toFixed(1)}px）`);
+        /* ★ 選ぶ段で測った値（図Bのくさび）と、ここで測った値（影のくさび）が一致する
+         *   ＝ 「影の中身は回す前の図Bそのもの」という前提そのものの検査。
+         *   食い違えば出題の選び方が別のものを見ていることになるので、そこで赤にする */
+        assert(Math.abs(rawWorst - pickedRaw) < 2,
+            `選ぶ段の測り（${pickedRaw.toFixed(1)}px・図Bのくさび）と影の測り（${
+                rawWorst.toFixed(1)}px）が食い違う ＝ 影が図Bそのものではない`);
         // 念のため: 回した位置なら乗る（＝回転が効いていることを、描き直しとは別に確かめる）
-        const spinWorst = before.reduce((m, p) => Math.max(m, nearest(toA(p, geo.angle))), 0);
+        const spinWorst = gapOf(before, geo.angle, geo, aWedges);
         assert(spinWorst < 14, `回した先が図Aに合わない（最大 ${spinWorst.toFixed(1)}px）`);
         // ⑤ 否定対照: くさびを出さないモードの影にはくさびを描かない（影は骨格だけ）
         q.clearOverlay();
