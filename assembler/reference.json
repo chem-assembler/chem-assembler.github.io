@@ -1471,6 +1471,8 @@
 {"kind":"text","text":"<b>「α形とβ形の違いは、1位の −OH の向きだけ」</b>と覚えましょう。この1か所の違いが、多糖類ではデンプンとセルロースの違いになります。"},
 {"kind":"figure","src":"saccharide-alpha-glucose.png","gen":"name=α-D-グルコース（α-D-グルコピラノース） plain","alt":"α-D-グルコースの環状構造式を直交で描いた図。酸素1個と炭素5個の六員環に、OH が4個と CH2OH が1個付いている","caption":"<b>α-グルコース</b>。酸素1個と炭素5個の六員環に、−OH が4個と −CH₂OH が1個付いています。"},
 {"kind":"figure","src":"saccharide-beta-glucose.png","gen":"name=β-D-グルコース（β-D-グルコピラノース） plain","alt":"β-D-グルコースの環状構造式を直交で描いた図。原子のつながりは α-グルコースの図と同じ","caption":"<b>β-グルコース</b>。原子のつながりは α形と同じで、違うのは1位の −OH の向きだけです。"},
+{"kind":"figure","src":"saccharide-alpha-glucose-haworth.png","gen":"name=α-D-グルコース（α-D-グルコピラノース） haworth","mark":["kind=囲む at=C1-OH count=1"],"alt":"α-グルコースをハース式で描いた図。環の右端の1位の炭素から下へ伸びた OH が破線の丸で囲まれている","caption":"<b>α-グルコース</b>をハース式で描くと、囲んだ1位の −OH は環の<b>下側</b>を向いています。"},
+{"kind":"figure","src":"saccharide-beta-glucose-haworth.png","gen":"name=β-D-グルコース（β-D-グルコピラノース） haworth","mark":["kind=囲む at=C1-OH count=1"],"alt":"β-グルコースをハース式で描いた図。環の右端の1位の炭素から上へ伸びた OH が破線の丸で囲まれている","caption":"<b>β-グルコース</b>では、同じ1位の −OH が環の<b>上側</b>を向いています。ほかの部分は α形と同じです。"},
 {"kind":"example","stageId":"beta-d-glucose","lead":"β-グルコースを組んで、六員環のどこに酸素が入るかを手で確かめます。","note":"環の中の酸素は、もとは5位の炭素の −OH の酸素です。1位の炭素には −OH が付いています。"},
 {"kind":"link","to":"polysaccharide","text":"α形がつながるとデンプン、β形がつながるとセルロースになる話は多糖類のページへ"},
 {"kind":"section","anchor":"equilibrium","title":"水溶液中の平衡と還元性","lead":"水溶液中では α形・鎖状構造・β形の3つが平衡になって共存しています。開いた鎖状構造のホルミル基が還元性を示します。","terms":["平衡","還元性","銀鏡反応","フェーリング液の還元"]},
