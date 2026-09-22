@@ -5,6 +5,12 @@ unitLabel: 化学反応とエネルギー
 group: 反応エンタルピー
 title: 反応エンタルピーと熱化学反応式
 summary: 化学反応で出入りする熱は、反応の前後のエンタルピーの差 ΔH ＝（反応後）−（反応前）で表します。発熱反応は ΔH が負、吸熱反応は ΔH が正です。化学反応式の右に ΔH を添えて書き、燃焼・生成・中和・溶解のエンタルピーは着目する物質 1mol あたりの値で表します。
+codes:
+  - theo.thermo.delta-h-sign
+  - theo.thermo.equation-writing
+  - theo.thermo.named-enthalpy
+  - theo.thermo.element-zero
+  - theo.thermo.neutralization-dissolution
 source:
   - textbook:R5化学Vol.1-2編（1章1節 反応とエンタルピー変化：ΔH の定義と符号、反応エンタルピーの表し方の手順、燃焼・中和・溶解・生成エンタルピー、表1〜3の値）
   - slides:速度平衡の基本２「化学平衡と平衡定数」s4（エネルギー図で「反応前から反応後にかけてエネルギーが下がった分が熱として放出される・反応エンタルピーはマイナス」）

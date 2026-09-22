@@ -11,6 +11,7 @@ codes:
   - org.bio.monosaccharide
   - org.bio.glucose-structure
   - org.bio.glucose-ring
+  - org.bio.glucose-chiral
   - org.bio.glucose-reducing
   - org.bio.fructose
   - org.bio.alcohol-fermentation
@@ -160,7 +161,7 @@ caption: 囲んだ4個が**不斉炭素原子**です。両端の炭素は囲ま
 :::
 
 :::link
-to: alkane-isomers
+to: stereoisomers
 text: 不斉炭素原子と立体異性体の数え方は異性体のページへ
 :::
 

@@ -67,9 +67,9 @@ Lv の基準は [DESIGN_difficulty_frequency.md](DESIGN_difficulty_frequency.md)
 そのあと `data/exam_usage.jsonl` が広がった（1年ぶん → 2年ぶん）ので、今のデータで数え直すと違う。一覧の入試の欄は「②古い値→今の値」と並べて書く（表では `asToolNow`）。
 ⚠ **入試は Lv の規則に入らない**（入試→Lv は規則なし）ので、Lv にも目安にも効かない。**questions.json の値はこの表では変えない。**
 
-## 全項目（319件）
+## 全項目（736件）
 
-Lv の分布: Lv1 104件・Lv2 174件・Lv3 31件・Lv4 10件
+Lv の分布: Lv1 192件・Lv2 499件・Lv3 33件・Lv4 12件
 
 ### anal（元素の確認・元素分析・18件）
 
@@ -94,7 +94,7 @@ Lv の分布: Lv1 104件・Lv2 174件・Lv3 31件・Lv4 10件
 | `org.anal.equivalent-h` | 機器分析 | 3 | 発展欄 | ≥2 | 未登場 | — | ①未 ②6→7 |  | 3 | 2〜4 |  | 3 |
 | `org.anal.mw-from-solution` | 元素分析（定量） | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②4→13 |  | 2 | 1〜2 |  | 2 |
 
-### aliphatic（脂肪族炭化水素・72件）
+### aliphatic（脂肪族炭化水素・81件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -170,6 +170,15 @@ Lv の分布: Lv1 104件・Lv2 174件・Lv3 31件・Lv4 10件
 | `org.ali.enantiomer-props` | 異性体・命名 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②1→4 |  | 2 | 1〜2 |  | 2 |
 | `org.ali.ozonolysis-reconstruct` | アルケン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②12→20 |  | 2 | 1〜2 |  | 2 |
 | `org.ali.alkane-branch-bp` | アルカン | 3 | 発展欄 | ≥2 | 未登場 | — | ①未 ②5→11 |  | 3 | 2〜4 |  | 3 |
+| `org.ali.cis-trans-props` | 異性体・命名 | 2 | 本文（弱） | — | 基本 | ≤2 | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.optical-rotation` | 異性体・命名 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.tartaric-stereo` | 異性体・命名 | 3 | 発展欄 | ≥2 | 発展 | ≥3 | ①未 ②0 |  | 3 | 3〜4 |  | 3 |
+| `org.ali.organic-def` | 有機化合物の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `org.ali.organic-properties` | 有機化合物の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `org.ali.organic-diversity` | 有機化合物の特徴 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.formula-kinds` | 有機化合物の表し方 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `org.ali.rational-formula` | 有機化合物の表し方 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.formula-same-molecular` | 有機化合物の表し方 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
 
 ### alcohol（アルコール・エーテル・19件）
 
@@ -475,6 +484,494 @@ Lv の分布: Lv1 104件・Lv2 174件・Lv3 31件・Lv4 10件
 | `org.clue.amino-acid-mp` | 沸点・融点から当たりを付ける | 3 | 本文（弱） | — | 未登場 | — | ①未 ②0 |  | 3 | 1〜4 |  | 3 |
 | `org.clue.amino-acid-mw-parity` | 数から当たりを付ける | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
+### inorgBasis（無機の土台・20件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `inorg.basis.five-types` | 無機の反応の型 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.redox-first` | 無機の反応の型 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.displacement` | 無機の反応の型 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.complex-dissolve` | 無機の反応の型 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.typical-transition` | 周期表と元素の性質 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.basis.named-groups` | 周期表と元素の性質 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.basis.electropositive` | 周期表と元素の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.max-elements` | 周期表と元素の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.three-values` | 周期表と元素の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.oxide-class` | 酸化物とオキソ酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.max-oxidation` | 酸化物とオキソ酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.oxide-water` | 酸化物とオキソ酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.oxide-neutralization` | 酸化物とオキソ酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.oxoacid-naming` | 酸化物とオキソ酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.period3-acidity` | 酸化物とオキソ酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.gas-color` | 気体の製法 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.basis.gas-prep-type` | 気体の製法 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.gas-heating` | 気体の製法 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.gas-collection` | 気体の製法 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.basis.drying-agent` | 気体の製法 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### inorgNonmetal（非金属元素・42件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `inorg.nonmetal.noble-gas-props` | 水素と貴ガス | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.nonmetal.noble-gas-uses` | 水素と貴ガス | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.hydrogen-prep` | 水素と貴ガス | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.hydrogen-reductant` | 水素と貴ガス | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.oxygen-oxidant` | 酸素とオゾン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.oxygen-prep` | 酸素とオゾン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.h2o2-dual` | 酸素とオゾン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.ozone` | 酸素とオゾン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.ozone-half` | 酸素とオゾン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.halogen-state` | ハロゲン | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.nonmetal.halogen-oxidizing` | ハロゲン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.hydrogen-halide` | ハロゲン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.silver-halide` | ハロゲン | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.nonmetal.fluorine` | ハロゲン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.iodine` | ハロゲン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.chlorine-prep` | 塩素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.chlorine-washing` | 塩素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.chlorine-water` | 塩素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.hcl-prep` | 塩素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.hcl-roles` | 塩素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.chlorine-oxoacid` | 塩素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.sulfur-allotrope` | 硫黄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.h2s` | 硫黄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.sulfide-precipitate` | 硫黄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.so2-redox` | 硫黄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.dilute-sulfuric` | 硫酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.hot-conc-sulfuric` | 硫酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.conc-sulfuric` | 硫酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.contact-process` | 硫酸 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.ammonia` | 窒素 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.nonmetal.no-no2` | 窒素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.nitric-acid` | 窒素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.passivation-aqua-regia` | 窒素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.haber-ostwald` | 窒素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.phosphorus-allotrope` | リン | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.nonmetal.p4o10` | リン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.phosphoric-acid` | リン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.carbon-allotrope` | 炭素とケイ素 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.nonmetal.co` | 炭素とケイ素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.co2` | 炭素とケイ素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.sio2` | 炭素とケイ素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.nonmetal.silica-gel` | 炭素とケイ素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### inorgMetal（金属元素・41件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `inorg.metal.alkali-water` | アルカリ金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alkali-storage-prep` | アルカリ金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alkali-reactivity` | アルカリ金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.deliquescence-efflorescence` | アルカリ金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.carbonate-bicarbonate` | アルカリ金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.solvay` | アルカリ金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alkaline-earth-def` | 2族元素 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.metal.mg-vs-ca` | 2族元素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.calcium-compounds` | 2族元素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.limewater-co2` | 2族元素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.barium-sulfate` | 2族元素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.gypsum` | 2族元素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.amphoteric-elements` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.amphoteric-naoh` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.passivation` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.amphoteric-hydroxide` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.aluminium-production` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alum` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.iron-smelting` | 鉄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.iron-dilute-acid` | 鉄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.iron-ion-color` | 鉄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.iron-ion-test` | 鉄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.iron-fe2-reductant` | 鉄 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.copper-oxidizing-acid` | 銅と銀 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.silver-tree` | 銅と銀 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.copper-ion` | 銅と銀 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.copper-sulfate-hydrate` | 銅と銀 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.silver-ion` | 銅と銀 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.silver-halide` | 銅と銀 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.mn-cr-colors` | クロムとマンガン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.permanganate` | クロムとマンガン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.mno2-roles` | クロムとマンガン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.chromate-dichromate` | クロムとマンガン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.chromate-precipitate` | クロムとマンガン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.complex-structure` | 錯イオン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.complex-naming` | 錯イオン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.complex-shape` | 錯イオン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.complex-redissolve` | 錯イオン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alloy-def` | 合金 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.metal.alloy-examples` | 合金 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alloy-functional` | 合金 | 2 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 2 | 2〜4 |  | 2 |
+
+### inorgQual（イオンを見分ける・13件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `inorg.qual.soluble-salts` | 沈殿の生成と色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.chloride-sulfate-ppt` | 沈殿の生成と色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.sulfate-vs-carbonate` | 沈殿の生成と色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.hydroxide-colors` | 沈殿の生成と色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.sulfide-ph` | 沈殿の生成と色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.sulfide-colors` | 沈殿の生成と色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.flame-colors` | 炎色反応と水溶液の色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.flame-procedure` | 炎色反応と水溶液の色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.solution-colors` | 炎色反応と水溶液の色 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.separation-order` | 系統分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.separation-h2s-twice` | 系統分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.separation-nitric-acid` | 系統分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.qual.separation-within-group` | 系統分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoLife（化学と人間生活・9件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.life.property-use` | 化学の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.structure-property` | 化学の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.mix-danger` | 化学の特徴 | 2 | 見あたらない | — | 未登場 | — | ①未 ②0 |  | 2 | 1〜4 |  | 2 |
+| `theo.life.bond-material` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.reaction-in-life` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.recycle-resource` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.industry-catalyst` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.haber-issue` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.atom-economy` | 化学が果たす役割 | 2 | 見あたらない | — | 未登場 | — | ①未 ②0 |  | 2 | 1〜4 |  | 2 |
+
+### theoStructure（物質の構造・42件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.structure.substance-class` | 物質の分類と分離 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.element-vs-substance` | 物質の分類と分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.allotrope` | 物質の分類と分離 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.separation-method` | 物質の分類と分離 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.distillation-setup` | 物質の分類と分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.particle-count` | 原子の構造と電子配置 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.isotope` | 原子の構造と電子配置 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.radioactive-decay` | 原子の構造と電子配置 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.electron-shell` | 原子の構造と電子配置 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.valence-electron` | 原子の構造と電子配置 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.stable-config` | 原子の構造と電子配置 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.ion-charge` | イオン結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.ion-name` | イオン結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.polyatomic-ion` | イオン結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.composition-formula` | イオン結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.ionic-crystal` | イオン結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.valence` | 共有結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.electron-pair-count` | 共有結合 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.structural-formula` | 共有結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.coordinate-bond` | 共有結合 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.molecular-shape` | 分子の形と極性 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.electron-domain` | 分子の形と極性 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.bond-angle-order` | 分子の形と極性 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.electronegativity` | 分子の形と極性 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.molecular-polarity` | 分子の形と極性 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.imf-kinds` | 分子間力 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.hydrogen-bond` | 分子間力 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.bp-comparison` | 分子間力 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.hydride-bp` | 分子間力 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.molecular-crystal` | 分子間力 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.metallic-bond` | 結晶の種類 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.crystal-conductivity` | 結晶の種類 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.crystal-classify` | 結晶の種類 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.crystal-mp` | 結晶の種類 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.unit-cell-count` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.coordination-packing` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.radius-edge` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.ionic-lattice` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.crystal-density` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.amorphous` | 結晶の種類 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.element-test` | 物質の分類と分離 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.element-test-infer` | 物質の分類と分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoMole（物質量と化学反応式・25件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.mole.relative-mass` | 原子量と分子量 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.atomic-weight` | 原子量と分子量 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.isotope-average` | 原子量と分子量 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.formula-weight` | 原子量と分子量 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.mol-def` | 物質量 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.molar-quantities` | 物質量 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.conversion-via-mol` | 物質量 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.atoms-in-molecule` | 物質量 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.empirical-formula` | 物質量 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.concentration-def` | 溶液の濃度 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.molarity` | 溶液の濃度 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.concentration-convert` | 溶液の濃度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.mixing-dilution` | 溶液の濃度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.molality` | 溶液の濃度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.equation-rules` | 化学反応式 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.coefficient-method` | 化学反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.combustion-equation` | 化学反応式 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.ionic-equation` | 化学反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.coefficient-ratio` | 量的関係 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.three-row-table` | 量的関係 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.limiting-reactant` | 量的関係 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.gas-volume-ratio` | 量的関係 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.basic-laws` | 化学の基本法則 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.mole.definite-multiple` | 化学の基本法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.mole.gas-reaction-molecule` | 化学の基本法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoAcidBase（酸と塩基・31件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.acid-base.acid-base-properties` | 酸と塩基の定義 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.acid-base.arrhenius` | 酸と塩基の定義 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.acid-base.bronsted` | 酸と塩基の定義 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.bronsted-role` | 酸と塩基の定義 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.valence` | 価数と強弱 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.acid-base.strong-weak` | 価数と強弱 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.acid-base.ionization-degree` | 価数と強弱 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.h-concentration` | 価数と強弱 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.ph-def` | pH | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.acid-base.water-ion-product` | pH | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.ph-dilution` | pH | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.ph-log` | pH | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.neutralization-def` | 中和 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.acid-base.neutralization-ratio` | 中和 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.neutralization-equation` | 中和 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.neutralization-calc` | 中和 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.back-titration` | 中和 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.salt-classification` | 塩 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.salt-restore` | 塩 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.salt-solution` | 塩 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.salt-hydrolysis` | 塩 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.weak-acid-displacement` | 弱酸の遊離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.gas-by-displacement` | 弱酸の遊離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.weak-base-displacement` | 弱酸の遊離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.volatile-acid` | 弱酸の遊離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.titration-apparatus` | 中和滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.titration-rinse` | 中和滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.approx-ph` | 中和滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.indicator` | 中和滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.titration-curve` | 中和滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.acid-base.two-step-neutralization` | 中和滴定 | 3 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 3 | 2〜4 |  | 3 |
+
+### theoRedox（酸化還元・31件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.redox.agent-def` | 酸化と還元 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.redox.role-table` | 酸化と還元 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.redox.oxnum-judge` | 酸化と還元 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.o-h-definition` | 酸化と還元 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.oxnum-def` | 酸化数 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.redox.oxnum-priority` | 酸化数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.oxnum-calc` | 酸化数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.oxnum-electroneg` | 酸化数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.oxnum-organic` | 酸化数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.max-oxnum` | 酸化数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.half-method` | 半反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.half-electron` | 半反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.oxidizer-products` | 半反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.reducer-products` | 半反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.dual-role` | 半反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.basic-rewrite` | 液性による書き換え | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.water-half` | 液性による書き換え | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.ozone-half` | 液性による書き換え | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.mno4-neutral` | 液性による書き換え | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.valence` | 酸化還元反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.inverse-ratio` | 酸化還元反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.assemble` | 酸化還元反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.copper-acids` | 酸化還元反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.titration-relation` | 酸化還元滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.kmno4-titration` | 酸化還元滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.iodometry` | 酸化還元滴定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.ionization-series` | イオン化傾向 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.redox.ionization-meaning` | イオン化傾向 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.metal-tree` | イオン化傾向 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.metal-water-acid` | イオン化傾向 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.redox.passivation` | イオン化傾向 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoElectro（電池と電気分解・26件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.electro.cell-poles` | 電池の仕組み | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.electro.daniell` | 電池の仕組み | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.porous-plate` | 電池の仕組み | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.which-positive` | 電池の仕組み | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.primary-secondary` | 実用電池と燃料電池 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.electro.fuel-cell-acid` | 実用電池と燃料電池 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.fuel-cell-alkaline` | 実用電池と燃料電池 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.lead-discharge` | 鉛蓄電池 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.lead-equations` | 鉛蓄電池 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.lead-mass` | 鉛蓄電池 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.lead-charge` | 鉛蓄電池 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.anode-cathode` | 電気分解で何が反応するか | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.electro.anode-priority` | 電気分解で何が反応するか | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.cathode-priority` | 電気分解で何が反応するか | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.priority-why` | 電気分解で何が反応するか | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.electrode-equations` | 電気分解の反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.metal-halogen-eq` | 電気分解の反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.write-rule` | 電気分解の反応式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.faraday-constant` | 電気分解の量的関係 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.faraday-steps` | 電気分解の量的関係 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.align-electrons` | 電気分解の量的関係 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.series-circuit` | 電気分解の量的関係 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.parallel-circuit` | 電気分解の量的関係 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.ion-exchange-membrane` | 電気分解の工業的利用 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.copper-refining` | 電気分解の工業的利用 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.electro.molten-salt` | 電気分解の工業的利用 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoState（物質の状態・26件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.state.absolute-temperature` | 三態と状態変化 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.three-states` | 三態と状態変化 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.phase-change` | 三態と状態変化 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.heating-curve` | 三態と状態変化 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.phase-diagram` | 三態と状態変化 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.vapor-liquid-equilibrium` | 蒸気圧と沸騰 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.vapor-pressure-property` | 蒸気圧と沸騰 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.vapor-pressure-max` | 蒸気圧と沸騰 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.vapor-pressure-curve` | 蒸気圧と沸騰 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.boiling-point` | 蒸気圧と沸騰 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.boyle-charles` | 気体の法則 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.ideal-gas-law` | 気体の法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.molar-volume` | 気体の法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.gas-molar-mass` | 気体の法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.partial-pressure` | 混合気体 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.mole-fraction` | 混合気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.component-volume` | 混合気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.mixing-gases` | 混合気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.pressure-table` | 水蒸気を含む気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.vapor-assume` | 水蒸気を含む気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.water-displacement` | 水蒸気を含む気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.ideal-gas` | 実在気体 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.state.real-gas-deviation` | 実在気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.compressibility` | 実在気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.gas-pressure` | 三態と状態変化 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.pressure-units` | 三態と状態変化 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoSolution（溶液・28件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.solution.hydration` | 溶解のしくみ | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.like-dissolves-like` | 溶解のしくみ | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.hydrophilic-group` | 溶解のしくみ | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.electrolyte` | 溶解のしくみ | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.solution.solubility-def` | 固体の溶解度 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.solution.solubility-curve` | 固体の溶解度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.recrystallization` | 固体の溶解度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.evaporation` | 固体の溶解度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.hydrate` | 固体の溶解度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.gas-temperature` | 気体の溶解度 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.solution.henry` | 気体の溶解度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.henry-volume` | 気体の溶解度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.gas-daily-life` | 気体の溶解度 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.vapor-pressure-lowering` | 希薄溶液の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.colligative` | 希薄溶液の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.particle-count` | 希薄溶液の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.cooling-curve` | 希薄溶液の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.freezing-molar-mass` | 希薄溶液の性質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.association` | 希薄溶液の性質 | 4 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 4 | 2〜4 |  | 4 |
+| `theo.solution.osmosis` | 浸透圧 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.solution.van-t-hoff` | 浸透圧 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.osmotic-molar-mass` | 浸透圧 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.colloid-size` | コロイド | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.solution.colloid-kinds` | コロイド | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.iron-colloid` | コロイド | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.colloid-properties` | コロイド | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.coagulation` | コロイド | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.solution.salting-out` | コロイド | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoThermo（化学反応とエネルギー・25件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.thermo.delta-h-sign` | 反応エンタルピー | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.thermo.equation-writing` | 反応エンタルピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.named-enthalpy` | 反応エンタルピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.element-zero` | 反応エンタルピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.neutralization-dissolution` | 反応エンタルピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.heat-quantity` | 熱量の測定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.extrapolation` | 熱量の測定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.heat-to-enthalpy` | 熱量の測定 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.hess-law` | ヘスの法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.hess-diagram` | ヘスの法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.from-formation` | ヘスの法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.hess-algebra` | ヘスの法則 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.bond-enthalpy` | 結合エンタルピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.bond-calc` | 結合エンタルピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.bond-gas-only` | 結合エンタルピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.light-wavelength` | 化学反応と光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.photochemical` | 化学反応と光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.photosynthesis` | 化学反応と光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.chemiluminescence` | 化学反応と光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.entropy-def` | エントロピー | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.thermo.entropy-sign` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.two-tendencies` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.entropy-temperature` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.spontaneous-vs-rate` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.gibbs-energy` | エントロピー | 4 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 4 | 2〜4 |  | 4 |
+
+### theoKinetics（反応の速さ・13件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.kinetics.rate-expression` | 反応速度の表し方 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.rate-ratio` | 反応速度の表し方 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.average-rate` | 反応速度の表し方 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.rate-determining` | 反応速度式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.rate-equation` | 反応速度式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.first-order-exception` | 反応速度式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.order-from-data` | 反応速度式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.first-order-data` | 反応速度式 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.rate-factors` | 活性化エネルギー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.temperature` | 活性化エネルギー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.transition-state` | 活性化エネルギー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.catalyst` | 活性化エネルギー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.kinetics.catalyst-kinds` | 活性化エネルギー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoEquilibrium（化学平衡・15件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.equilibrium.equilibrium-state` | 平衡定数 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.equilibrium.constant-expression` | 平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.solid-water` | 平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.k-calculation` | 平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.mol-shortcut` | 平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.distribution` | 平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.le-chatelier` | 平衡の移動 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.pressure-shift` | 平衡の移動 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.inert-gas` | 平衡の移動 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.catalyst-temperature` | 平衡の移動 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.volume-trap` | 平衡の移動 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.haber-bosch` | 平衡の移動 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.kp-kc` | 圧平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.dissociation` | 圧平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.equilibrium.dissociation-approx` | 圧平衡定数 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### theoIonicEq（電離平衡・21件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.ionic-eq.ionization-constant` | 弱酸の電離平衡 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.ka-c-alpha` | 弱酸の電離平衡 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.weak-ph` | 弱酸の電離平衡 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.weak-dilution` | 弱酸の電離平衡 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.hydrolysis-equation` | 塩の加水分解 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.hydrolysis-constant` | 塩の加水分解 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.ka-kh-kw` | 塩の加水分解 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.salt-ph` | 塩の加水分解 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.buffer-mechanism` | 緩衝液 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.buffer-pair` | 緩衝液 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.buffer-ph` | 緩衝液 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.buffer-titration` | 緩衝液 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.polyprotic` | 2段階電離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.k1k2` | 2段階電離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.second-step` | 2段階電離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.ksp` | 溶解度積 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.precipitation-judge` | 溶解度積 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.ksp-saturated` | 溶解度積 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.mohr` | 溶解度積 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.common-ion` | 溶解度積 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.ionic-eq.sulfide` | 溶解度積 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
 ---
 
-生成元: `qa/questions.json`（319件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`
+生成元: `qa/questions.json`（736件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`

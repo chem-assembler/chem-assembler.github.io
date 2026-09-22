@@ -5,6 +5,12 @@ unitLabel: 物質の構造
 group: 結晶格子
 title: 結晶格子 —— 数えて・測って・詰める
 summary: 単位格子の問題は、中の原子を数える・原子が接している方向で半径と辺の長さを結ぶ・原子の体積や質量を詰めて充塡率と密度を出す、の3段です。体心立方・面心立方・六方最密と、NaCl 型・CsCl 型を扱います。
+codes:
+  - theo.structure.unit-cell-count
+  - theo.structure.coordination-packing
+  - theo.structure.radius-edge
+  - theo.structure.ionic-lattice
+  - theo.structure.crystal-density
 source:
   - textbook:化学基礎 2編2章（イオン結晶の構造・金属結晶の構造・結晶構造と充塡率）
   - textbook:R5化学Vol.1-1編 4章（固体の構造・金属結晶の構造・最密構造の積み重ね方）

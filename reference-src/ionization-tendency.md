@@ -5,6 +5,12 @@ unitLabel: 酸化還元
 group: イオン化傾向
 title: 金属のイオン化傾向
 summary: 金属の単体が水溶液中で e⁻ を失って陽イオンになる起こりやすさがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。
+codes:
+  - theo.redox.ionization-series
+  - theo.redox.ionization-meaning
+  - theo.redox.metal-tree
+  - theo.redox.metal-water-acid
+  - theo.redox.passivation
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」p.42-45・p.71-75（練習11）
   - slides:電池の基本１「電池の仕組み」s5-6

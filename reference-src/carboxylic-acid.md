@@ -192,7 +192,7 @@ caption: 左の**マレイン酸**（シス形）は**分子内**で水素結合
 :::
 
 :::link
-to: alkane-isomers
+to: stereoisomers
 text: シス−トランス異性体そのものの数え方は異性体のページへ
 :::
 

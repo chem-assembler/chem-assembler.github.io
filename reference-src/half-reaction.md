@@ -5,6 +5,12 @@ unitLabel: 酸化還元
 group: 半反応式
 title: 半反応式の書き方と主な酸化剤・還元剤
 summary: 半反応式は「反応前後の物質だけ暗記して、係数は手順で出す」。書き方その1（H₂O → H⁺ → e⁻）と その2（酸化数 → e⁻ → H⁺ → H₂O）、必ず覚える酸化剤9本・還元剤11本の半反応式。
+codes:
+  - theo.redox.half-method
+  - theo.redox.half-electron
+  - theo.redox.oxidizer-products
+  - theo.redox.reducer-products
+  - theo.redox.dual-role
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」p.34-35・p.38-39・p.64-67（練習8・9）
   - slides:無機の基本５「ハロゲン」s32（I₂ ＋ 2e⁻ → 2I⁻）

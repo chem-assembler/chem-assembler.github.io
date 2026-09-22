@@ -5,6 +5,13 @@ unitLabel: 金属元素
 group: 両性金属
 title: 両性金属 —— Al・Zn・Sn・Pb
 summary: 酸にも強塩基にも溶ける金属（Al・Zn・Sn・Pb）の単体・酸化物・水酸化物の反応と、過剰の NaOH・過剰の NH₃ で沈殿が溶けるかどうかの見分け方です。
+codes:
+  - inorg.metal.amphoteric-elements
+  - inorg.metal.amphoteric-naoh
+  - inorg.metal.passivation
+  - inorg.metal.amphoteric-hydroxide
+  - inorg.metal.aluminium-production
+  - inorg.metal.alum
 source:
   - slides:無機の基本４「酸素」s14（両性元素 Al・Zn・Sn・Pb、「あ あ すん なり」、1族・2族以外の典型金属は両性と考えてよい）
   - slides:無機の基本３「水素」s10（Al・Zn に NaOH 水溶液でも水素が発生する）

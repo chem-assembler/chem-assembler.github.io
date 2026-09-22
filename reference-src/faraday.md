@@ -5,6 +5,12 @@ unitLabel: 電池と電気分解
 group: 電気分解の量的関係
 title: 電気分解の量的関係 —— 電気量と直列・並列
 summary: 電気量〔C〕は電流〔A〕×時間〔s〕で、e⁻ 1mol は 96500C です。直列回路ではどこでも e⁻ の物質量が等しく、並列回路では分かれた電流の e⁻ の合計が、分かれる前の e⁻ に等しくなります。
+codes:
+  - theo.electro.faraday-constant
+  - theo.electro.faraday-steps
+  - theo.electro.align-electrons
+  - theo.electro.series-circuit
+  - theo.electro.parallel-circuit
 source:
   - slides:電気分解の基本３「電気量と直列並列」s11〜s36
   - slides:電気分解の基本３「電気分解の法則」s3（ファラデー定数は電気素量とアボガドロ数の積）

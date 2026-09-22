@@ -5,6 +5,11 @@ unitLabel: 無機の土台
 group: 無機の反応の型
 title: 無機の反応は5つの型で読む
 summary: 無機の反応式は、中和・遊離・酸化還元・沈殿・錯イオンの5つの型のどれかに当てはまります。型を見分けて、型ごとの書き方のページへ進むための入口です。
+codes:
+  - inorg.basis.five-types
+  - inorg.basis.redox-first
+  - inorg.basis.displacement
+  - inorg.basis.complex-dissolve
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」s12-28（中和・遊離の型）・s30-45（酸化還元の型）・練習５ s56-58
   - slides:無機の基本５「ハロゲン」s27（沈殿 Ag⁺ ＋ Cl⁻）

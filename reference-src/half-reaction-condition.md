@@ -5,6 +5,11 @@ unitLabel: 酸化還元
 group: 液性による書き換え
 title: 液性による半反応式の書き換え
 summary: 中・塩基性の水溶液には H⁺ が存在しないので、半反応式の H⁺ を OH⁻ で打ち消して H₂O に書き換えます。水の4本の式、オゾン・過酸化水素・過マンガン酸イオンの塩基性での式まで。
+codes:
+  - theo.redox.basic-rewrite
+  - theo.redox.water-half
+  - theo.redox.ozone-half
+  - theo.redox.mno4-neutral
 source:
   - slides:電気分解の基本２「反応式のつくり方」p.18-25
   - slides:電池の基本２「実用電池と燃料電池」s7-8

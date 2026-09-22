@@ -5,6 +5,11 @@ unitLabel: 化学反応とエネルギー
 group: 化学反応と光
 title: 化学反応と光
 summary: 化学反応では、熱だけでなく光としてエネルギーが出入りすることがあります。光を吸収して進む反応を光化学反応（水素と塩素・臭化銀の感光・光合成）、反応のエネルギー差が光として出る現象を化学発光（ルミノール）といいます。
+codes:
+  - theo.thermo.light-wavelength
+  - theo.thermo.photochemical
+  - theo.thermo.photosynthesis
+  - theo.thermo.chemiluminescence
 source:
   - textbook:R5化学Vol.1-2編（1章3節 光とエネルギー：光の波長と分類、波長が短いほどエネルギーが大きい、化学発光とルミノール、NO ＋ O₃ の発光、光合成の ΔH ＝ ＋2803kJ）
   - textbook:R5化学Vol.1-3編（1章 反応速度を変えるほかの要因：光化学反応の定義、O₂ からオゾンができる反応、濃硝酸・硝酸銀を褐色びんに入れる理由）

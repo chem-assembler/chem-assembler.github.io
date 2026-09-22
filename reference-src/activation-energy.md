@@ -5,6 +5,12 @@ unitLabel: 反応の速さ
 group: 活性化エネルギー
 title: 反応の速さを変える条件 —— 活性化エネルギーと触媒
 summary: 反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギー以上のエネルギーをもつ分子の割合が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。
+codes:
+  - theo.kinetics.rate-factors
+  - theo.kinetics.temperature
+  - theo.kinetics.transition-state
+  - theo.kinetics.catalyst
+  - theo.kinetics.catalyst-kinds
 source:
   - slides:速度平衡の基本１「反応の速度」s13-17
   - slides:速度平衡の基本２「化学平衡と平衡定数」s4（復習問題）

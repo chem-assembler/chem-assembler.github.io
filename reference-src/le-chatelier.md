@@ -5,6 +5,13 @@ unitLabel: 化学平衡
 group: 平衡の移動
 title: 平衡の移動 —— ルシャトリエの原理
 summary: 平衡状態で温度・圧力・濃度を変えると、その変化を打ち消す方向に平衡が移動します。Ar を加えるときは体積一定か圧力一定かで結論が分かれ、触媒は平衡を移動させません。体積 V には原理を当てず、V の変化で起こる圧力の変化に当てます。
+codes:
+  - theo.equilibrium.le-chatelier
+  - theo.equilibrium.pressure-shift
+  - theo.equilibrium.inert-gas
+  - theo.equilibrium.catalyst-temperature
+  - theo.equilibrium.volume-trap
+  - theo.equilibrium.haber-bosch
 source:
   - slides:速度平衡の基本３「平衡移動とルシャトリエの原理」s4-19
   - textbook:R5化学Vol.1-3編（ルシャトリエの原理・ハーバー・ボッシュ法の条件）

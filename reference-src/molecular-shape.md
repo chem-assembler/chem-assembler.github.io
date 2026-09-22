@@ -5,6 +5,12 @@ unitLabel: 物質の構造
 group: 分子の形と極性
 title: 分子の形と極性 —— 電子対の反発
 summary: 分子の形は、中心の原子のまわりにある電子のまとまりの数で決まります。2組なら直線、3組なら正三角形、4組なら正四面体の向きに散ります。形が決まれば、結合の極性が打ち消し合うかどうか ＝ 分子の極性も決まります。
+codes:
+  - theo.structure.molecular-shape
+  - theo.structure.electron-domain
+  - theo.structure.bond-angle-order
+  - theo.structure.electronegativity
+  - theo.structure.molecular-polarity
 source:
   - textbook:化学基礎 2編2章（分子の形の表・PLUS 電子対と分子の形・電気陰性度と分子の極性）
   - slides:有機の基本2-2「アルカンの性質」（メタンの正四面体・電子対の反発・無極性の図）

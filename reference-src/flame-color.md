@@ -5,6 +5,10 @@ unitLabel: イオンを見分ける
 group: 炎色反応と水溶液の色
 title: 炎色反応と水溶液の色
 summary: 沈殿をつくらないアルカリ金属のイオンは、炎の色で見分けます。色が出るのは Li・Na・K・Ca・Sr・Ba・Cu の7元素だけ。あわせて、色のついたイオン（水溶液の色）をまとめました。
+codes:
+  - inorg.qual.flame-colors
+  - inorg.qual.flame-procedure
+  - inorg.qual.solution-colors
 source:
   - muki:separation-model.js SEP_IONS の flame・SEP_OPS の flame（白金線・外炎・色が出るのは7元素だけ）
   - muki:akinator-deck-muki1.js FLAME（Ba の黄緑色）

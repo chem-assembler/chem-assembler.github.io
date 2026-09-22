@@ -5,6 +5,13 @@ unitLabel: イオンを見分ける
 group: 沈殿の生成と色
 title: 沈殿の生成と色
 summary: どの陰イオンが、どの陽イオンと沈殿をつくるかを、陰イオンごとに並べました。色と「酸に溶けるか」も一緒に覚えます。硫化物だけは、液性で沈むかどうかが変わります。
+codes:
+  - inorg.qual.soluble-salts
+  - inorg.qual.chloride-sulfate-ppt
+  - inorg.qual.sulfate-vs-carbonate
+  - inorg.qual.hydroxide-colors
+  - inorg.qual.sulfide-ph
+  - inorg.qual.sulfide-colors
 source:
   - slides:無機の基本５「ハロゲン」s12（ハロゲン化銀の比較）・s27（Ag⁺＋Cl⁻、Pb²⁺＋2Cl⁻）・練習５
   - slides:無機の基本６「硫黄」s11（硫化物の沈殿と色・イオン化傾向と沈殿しやすさ）・s22（BaSO₄・CaSO₄）・練習１（沈殿の色）

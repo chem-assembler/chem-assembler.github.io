@@ -5,6 +5,13 @@ unitLabel: 物質の構造
 group: 原子の構造と電子配置
 title: 原子の構造と電子配置
 summary: 原子は陽子・中性子の原子核と、まわりの電子でできています。陽子の数が原子番号、陽子と中性子の数の和が質量数。電子は内側の電子殻（K・L・M…）から順に入り、定員は 2n² 個。最外殻の電子（価電子）の数が原子の性質を決め、貴ガスと同じ電子配置（閉殻・オクテット）が安定です。
+codes:
+  - theo.structure.particle-count
+  - theo.structure.isotope
+  - theo.structure.radioactive-decay
+  - theo.structure.electron-shell
+  - theo.structure.valence-electron
+  - theo.structure.stable-config
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」s4（電子殻と電子配置・安定な電子配置）
   - textbook:化学基礎_031-090_2編（原子の構造・同位体・放射性同位体と半減期・電子配置）

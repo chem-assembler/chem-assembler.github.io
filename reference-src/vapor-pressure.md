@@ -5,6 +5,12 @@ unitLabel: 物質の状態
 group: 蒸気圧と沸騰
 title: 液体の蒸気圧と沸騰
 summary: 密閉した容器の中で液体と蒸気が共存しているとき、蒸気の圧力は温度だけで決まる値（飽和蒸気圧）になります。飽和蒸気圧はその温度での蒸気の分圧の最大値で、液体の量や容器の体積には関係しません。蒸気圧が外圧に等しくなる温度が沸点です。
+codes:
+  - theo.state.vapor-liquid-equilibrium
+  - theo.state.vapor-pressure-property
+  - theo.state.vapor-pressure-max
+  - theo.state.vapor-pressure-curve
+  - theo.state.boiling-point
 source:
   - slides:気体の基本２「混合気体と水蒸気圧」s19（飽和蒸気圧は H₂O の分圧の最大値）・s21（液体の水が存在するとき上の空間には飽和蒸気圧の H₂O が存在する）
   - slides:気体の基本３「理想気体と実在気体」s3〜5（水滴が生じた ＝ 飽和蒸気圧に達している）

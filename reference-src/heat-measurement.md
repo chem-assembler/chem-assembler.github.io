@@ -5,6 +5,10 @@ unitLabel: 化学反応とエネルギー
 group: 熱量の測定
 title: 熱量の測定 —— 温度変化のグラフを延ばす
 summary: 熱量は「質量 × 比熱 × 温度変化」で求めます。温度変化は、逃げた熱を補うため、グラフの直線部分を反応を始めた時刻まで延ばして読みます。求めた熱量を着目する物質 1mol あたりに直し、発熱なら負の符号を付けたものが反応エンタルピーです。
+codes:
+  - theo.thermo.heat-quantity
+  - theo.thermo.extrapolation
+  - theo.thermo.heat-to-enthalpy
 source:
   - textbook:R5化学Vol.1-2編（1章1節 温度と熱量の関係：比熱、熱量 ＝ 質量 × 比熱 × 温度変化、放冷のグラフを延ばして真の最高温度を求める例、ヘスの法則を検証する実験の器具）
   - app:ratio/proportion（1mol あたりに直す主語付きの比例式。ratio の流儀）

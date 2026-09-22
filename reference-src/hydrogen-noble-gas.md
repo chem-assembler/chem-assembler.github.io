@@ -5,6 +5,11 @@ unitLabel: 非金属元素
 group: 水素と貴ガス
 title: 水素と貴ガス
 summary: 反応しない貴ガスと、還元剤としてはたらく水素のまとめ。貴ガスの性質と利用、水素の性質表・実験室的製法2本（★★★）・工業的製法・還元剤としての反応を、半反応式から組み立てる形で1枚にしました。
+codes:
+  - inorg.nonmetal.noble-gas-props
+  - inorg.nonmetal.noble-gas-uses
+  - inorg.nonmetal.hydrogen-prep
+  - inorg.nonmetal.hydrogen-reductant
 source:
   - slides:無機の基本３「貴ガスと水素」s5・s8-15（練習は s20-23）
   - textbook:R5化学Vol.2-4編（貴ガスの性質の確認）

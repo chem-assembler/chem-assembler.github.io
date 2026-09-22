@@ -5,6 +5,12 @@ unitLabel: 非金属元素
 group: 窒素
 title: 窒素とその化合物
 summary: 窒素 N₂・アンモニア NH₃・一酸化窒素 NO・二酸化窒素 NO₂・硝酸 HNO₃ の性質と製法です。アンモニアはハーバー・ボッシュ法、硝酸はオストワルト法でつくり、硝酸は酸と酸化剤の2つの顔をもちます。
+codes:
+  - inorg.nonmetal.ammonia
+  - inorg.nonmetal.no-no2
+  - inorg.nonmetal.nitric-acid
+  - inorg.nonmetal.passivation-aqua-regia
+  - inorg.nonmetal.haber-ostwald
 source:
   - slides:無機の基本４「酸素と酸化物」s29（3NO₂＋H₂O の式）
   - slides:無機の基本１「無機の前に復習すべきこと」p.10（NH₄⁺ の配位結合）・p.17（強酸は3つ）・p.38（希硝酸・濃硝酸の半反応式）・練習５（NH₄Cl と塩基の反応）

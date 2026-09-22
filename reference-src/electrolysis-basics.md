@@ -5,6 +5,11 @@ unitLabel: 電池と電気分解
 group: 電気分解で何が反応するか
 title: 電気分解で何が反応するか —— 陽極と陰極の優先順位
 summary: 外部の電源で e⁻ を押し付けたり奪ったりして、無理やり酸化還元反応を起こすのが電気分解です。陽極は4段、陰極は2段の優先順位で、どの物質が反応するかが決まります。
+codes:
+  - theo.electro.anode-cathode
+  - theo.electro.anode-priority
+  - theo.electro.cathode-priority
+  - theo.electro.priority-why
 source:
   - slides:電気分解の基本１「電気分解の仕組み」s3〜s27
   - textbook:R5化学Vol.1-2編（電気分解の定義、Zn²⁺・Ni²⁺・Fe²⁺ の陰極での析出が条件で変わること）

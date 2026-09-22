@@ -5,6 +5,11 @@ unitLabel: イオンを見分ける
 group: 系統分離
 title: 金属イオンの系統分離
 summary: 何種類もの金属イオンが混ざった水溶液から、試薬を決まった順に加えて1種類ずつ沈殿として取り出す操作です。試薬の順番と、その順番である理由をセットで覚えます。
+codes:
+  - inorg.qual.separation-order
+  - inorg.qual.separation-h2s-twice
+  - inorg.qual.separation-nitric-acid
+  - inorg.qual.separation-within-group
 source:
   - muki:tree-model.js TREE_OPS・TREE_RULES・TREE_GROUP・TREE_SUBOPS（型A の操作・反応の表・属の中の割り方）
   - muki:separation-model.js SEP_TABLE（熱水・アンモニア水での見分け）

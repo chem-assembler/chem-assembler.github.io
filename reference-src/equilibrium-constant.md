@@ -5,6 +5,13 @@ unitLabel: 化学平衡
 group: 平衡定数
 title: 化学平衡と平衡定数 —— 生成物が分子
 summary: 正反応と逆反応の速度が等しくなった状態が平衡状態です。平衡定数 K は生成物（右辺）の濃度の係数乗の積を分子に置いた分数で、温度だけで決まります。両辺の分子の数が等しい反応では、濃度の代わりに mol を代入してよいです。
+codes:
+  - theo.equilibrium.equilibrium-state
+  - theo.equilibrium.constant-expression
+  - theo.equilibrium.solid-water
+  - theo.equilibrium.k-calculation
+  - theo.equilibrium.mol-shortcut
+  - theo.equilibrium.distribution
 source:
   - slides:速度平衡の基本２「化学平衡と平衡定数」s5-19
   - textbook:R5化学Vol.1-3編（可逆反応と平衡状態・化学平衡の法則）

@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="366" viewBox="0 44 880 366" role="img">
+  <!-- 固体・液体・気体の粒子の並びと、エントロピー（乱雑さ）の大小。
+       固体は格子に並べ、液体は少しずつずらして詰め、気体はまばらに置いて動く向きの尾を付けた。
+       ⚠ 粒子の数は3つでそろえていない（模式図。気体の箱に同じ数を入れると「まばら」が見えない）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .box { fill: #fafafa; stroke: #bbb; stroke-width: 1.5; }
+    .p { fill: #bbdefb; stroke: #1565c0; stroke-width: 1.6; }
+    .tail { stroke: #90a4ae; stroke-width: 2.5; stroke-linecap: round; }
+    .lab { font-size: 20px; fill: #222; font-weight: bold; }
+    .small { font-size: 15px; fill: #444; }
+    .arrow { stroke: #333; stroke-width: 2; fill: none; }
+    .big { stroke: #c62828; stroke-width: 4; fill: none; }
+    .bigtxt { font-size: 18px; fill: #c62828; font-weight: bold; }
+  </style>
+
+  <!-- 固体：規則正しく並ぶ -->
+  <rect class="box" x="30" y="60" width="240" height="220" rx="6" />
+  <g>
+    <circle class="p" cx="78" cy="98" r="13" /><circle class="p" cx="114" cy="98" r="13" /><circle class="p" cx="150" cy="98" r="13" /><circle class="p" cx="186" cy="98" r="13" /><circle class="p" cx="222" cy="98" r="13" />
+    <circle class="p" cx="78" cy="134" r="13" /><circle class="p" cx="114" cy="134" r="13" /><circle class="p" cx="150" cy="134" r="13" /><circle class="p" cx="186" cy="134" r="13" /><circle class="p" cx="222" cy="134" r="13" />
+    <circle class="p" cx="78" cy="170" r="13" /><circle class="p" cx="114" cy="170" r="13" /><circle class="p" cx="150" cy="170" r="13" /><circle class="p" cx="186" cy="170" r="13" /><circle class="p" cx="222" cy="170" r="13" />
+    <circle class="p" cx="78" cy="206" r="13" /><circle class="p" cx="114" cy="206" r="13" /><circle class="p" cx="150" cy="206" r="13" /><circle class="p" cx="186" cy="206" r="13" /><circle class="p" cx="222" cy="206" r="13" />
+    <circle class="p" cx="78" cy="242" r="13" /><circle class="p" cx="114" cy="242" r="13" /><circle class="p" cx="150" cy="242" r="13" /><circle class="p" cx="186" cy="242" r="13" /><circle class="p" cx="222" cy="242" r="13" />
+  </g>
+  <text class="lab" x="150" y="308" text-anchor="middle">固体</text>
+  <text class="small" x="150" y="332" text-anchor="middle">決まった位置に規則正しく並ぶ</text>
+
+  <!-- 液体：寄り集まっているが並びはくずれている -->
+  <rect class="box" x="320" y="60" width="240" height="220" rx="6" />
+  <g>
+    <circle class="p" cx="388" cy="147" r="13" /><circle class="p" cx="419" cy="153" r="13" /><circle class="p" cx="455" cy="149" r="13" /><circle class="p" cx="487" cy="154" r="13" />
+    <circle class="p" cx="350" cy="186" r="13" /><circle class="p" cx="385" cy="181" r="13" /><circle class="p" cx="452" cy="183" r="13" /><circle class="p" cx="489" cy="186" r="13" /><circle class="p" cx="522" cy="181" r="13" />
+    <circle class="p" cx="352" cy="219" r="13" /><circle class="p" cx="387" cy="221" r="13" /><circle class="p" cx="418" cy="215" r="13" /><circle class="p" cx="453" cy="220" r="13" /><circle class="p" cx="486" cy="216" r="13" /><circle class="p" cx="519" cy="221" r="13" />
+    <circle class="p" cx="349" cy="252" r="13" /><circle class="p" cx="384" cy="255" r="13" /><circle class="p" cx="421" cy="251" r="13" /><circle class="p" cx="455" cy="254" r="13" /><circle class="p" cx="488" cy="250" r="13" /><circle class="p" cx="523" cy="253" r="13" />
+  </g>
+  <text class="lab" x="440" y="308" text-anchor="middle">液体</text>
+  <text class="small" x="440" y="332" text-anchor="middle">寄り集まったまま位置を変える</text>
+
+  <!-- 気体：まばらに飛び回る（尾は動いてきた向き） -->
+  <rect class="box" x="610" y="60" width="240" height="220" rx="6" />
+  <g>
+    <line class="tail" x1="632" y1="98" x2="614" y2="98" />
+    <line class="tail" x1="753" y1="99" x2="767" y2="113" />
+    <line class="tail" x1="809" y1="139" x2="795" y2="153" />
+    <line class="tail" x1="700" y1="152" x2="700" y2="134" />
+    <line class="tail" x1="806" y1="192" x2="824" y2="192" />
+    <line class="tail" x1="651" y1="225" x2="637" y2="211" />
+    <line class="tail" x1="745" y1="266" x2="745" y2="276" />
+    <line class="tail" x1="656" y1="150" x2="638" y2="150" />
+  </g>
+  <g>
+    <circle class="p" cx="648" cy="98" r="13" /><circle class="p" cx="742" cy="88" r="13" /><circle class="p" cx="820" cy="128" r="13" />
+    <circle class="p" cx="700" cy="168" r="13" /><circle class="p" cx="790" cy="192" r="13" /><circle class="p" cx="662" cy="236" r="13" />
+    <circle class="p" cx="745" cy="250" r="13" /><circle class="p" cx="672" cy="150" r="13" />
+  </g>
+  <text class="lab" x="730" y="308" text-anchor="middle">気体</text>
+  <text class="small" x="730" y="332" text-anchor="middle">ばらばらに広がって飛び回る</text>
+
+  <!-- 状態変化の矢印 -->
+  <path class="arrow" d="M 276 170 L 306 170" /><polygon points="316,170 304,164 304,176" fill="#333" />
+  <text class="small" x="296" y="156" text-anchor="middle">融解</text>
+  <path class="arrow" d="M 566 170 L 596 170" /><polygon points="606,170 594,164 594,176" fill="#333" />
+  <text class="small" x="586" y="156" text-anchor="middle">蒸発</text>
+
+  <!-- エントロピーの向き -->
+  <path class="big" d="M 60 372 L 800 372" /><polygon points="826,372 800,361 800,383" fill="#c62828" />
+  <text class="bigtxt" x="60" y="400">小</text>
+  <text class="bigtxt" x="440" y="360" text-anchor="middle">エントロピー（乱雑さ）が大きくなる</text>
+  <text class="bigtxt" x="800" y="400" text-anchor="middle">大</text>
+</svg>

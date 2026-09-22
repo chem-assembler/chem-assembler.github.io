@@ -5,6 +5,10 @@ unitLabel: 電池と電気分解
 group: 電気分解の反応式
 title: 電気分解の反応式 —— 金属・ハロゲン化物イオン・水関係
 summary: 電気分解で反応する物質は、金属・ハロゲン化物イオン・水関係の3つに分けられます。金属とハロゲンはイオンの電荷と単体の化学式から、水関係は「H₂O の係数は2、気体の係数は1」と液性の書き換えで書けます。
+codes:
+  - theo.electro.electrode-equations
+  - theo.electro.metal-halogen-eq
+  - theo.electro.write-rule
 source:
   - slides:電気分解の基本２「反応式のつくり方」s11〜s30
   - slides:電気分解の基本３「電気量と直列並列」s3〜s4「復習」（反応式の練習）

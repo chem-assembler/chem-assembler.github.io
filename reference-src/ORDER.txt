@@ -1,9 +1,12 @@
+organic-features
 functional-groups
+organic-formulas
 hydrocarbon-classes
 alkane
 alkane-naming
 numeral-prefix
 alkane-isomers
+stereoisomers
 alkene
 alkyne
 cycloalkane
@@ -64,9 +67,11 @@ iron
 copper-silver
 transition-oxidizers
 complex-ion
+alloy
 precipitate
 flame-color
 cation-separation
+chemistry-and-life
 substance-classification
 atom-structure
 ionic-bond
@@ -95,6 +100,7 @@ half-reaction-condition
 redox-equation
 redox-titration
 ionization-tendency
+chemistry-world
 cell-basics
 fuel-cell
 lead-storage-battery
@@ -119,6 +125,7 @@ heat-measurement
 hess-law
 bond-enthalpy
 light-energy
+entropy
 reaction-rate
 rate-law
 activation-energy
@@ -130,3 +137,4 @@ hydrolysis-ph
 buffer
 polyprotic-acid
 solubility-product
+chemistry-role

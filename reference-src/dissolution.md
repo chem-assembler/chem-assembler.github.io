@@ -5,6 +5,11 @@ unitLabel: 溶液
 group: 溶解のしくみ
 title: 溶解のしくみ —— 似たものどうしは溶け合う
 summary: 溶質・溶媒・溶液の言葉、イオン結晶が水に溶けるしくみ（水和）、分子が溶けるかどうかは極性で決まること（親水基と疎水基）、電解質と非電解質の見分け方まで。
+codes:
+  - theo.solution.hydration
+  - theo.solution.like-dissolves-like
+  - theo.solution.hydrophilic-group
+  - theo.solution.electrolyte
 source:
   - textbook:R5化学Vol.1-1編 3章1節（溶解のしくみ p.44〜45）
   - textbook:化学基礎_031-090_2編（極性・水素結合）

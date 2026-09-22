@@ -5,6 +5,11 @@ unitLabel: 酸化還元
 group: 酸化と還元
 title: 酸化と還元 —— e⁻ のやりとり
 summary: 酸化還元反応は、還元剤が放出した電子 e⁻ を酸化剤が受け取る反応です。酸化剤・還元剤の役割の対応表と、酸化数の増減で酸化還元反応かどうかを見分ける方法まで。
+codes:
+  - theo.redox.agent-def
+  - theo.redox.role-table
+  - theo.redox.oxnum-judge
+  - theo.redox.o-h-definition
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」p.30・p.31・p.33
   - slides:電池の基本１「電池の仕組み」s3-4（酸化還元の復習）

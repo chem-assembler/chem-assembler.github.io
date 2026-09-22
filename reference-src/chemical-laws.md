@@ -5,6 +5,10 @@ unitLabel: 物質量と化学反応式
 group: 化学の基本法則
 title: 化学の基本法則 —— 原子と分子にたどり着くまで
 summary: 質量保存の法則・定比例の法則から原子説が生まれ、原子説で倍数比例の法則が説明されました。気体反応の法則は原子説と食い違い、それを解いたのがアボガドロの分子説です。どの法則がどの考えにつながったかの順で覚えます。
+codes:
+  - theo.mole.basic-laws
+  - theo.mole.definite-multiple
+  - theo.mole.gas-reaction-molecule
 source:
   - textbook:化学基礎_091-191_3編（化学史「化学の基本法則と原子説・分子説」・一定組成の法則／倍数組成の法則の呼び名）
 singleSource: false
