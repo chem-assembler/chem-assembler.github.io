@@ -9702,6 +9702,61 @@
             'parseFormula が C2F4 を受け付けない（supported に F が無い）');
     });
 
+    test('EL5: ケイ素 Si をモデルに足した（価標4・CIP・色・2文字の元素・名前を出さない。EL4 の隣・I-0014）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        // (1) 価標は4（炭素と同じ手の数。⚠ ハロゲンではない）
+        assert(W.VALENCIES && W.VALENCIES.Si === 4, 'ケイ素の価標が4でない');
+        // (2) テトラメチルシラン Si(CH₃)₄ … Si に自動水素は生えず、分子式は C₄H₁₂Si
+        const tms = new W.Molecule();
+        const si = tms.addAtom('Si', 400, 300);
+        [[400, 258], [400, 342], [358, 300], [442, 300]].forEach(([x, y]) =>
+            tms.addBond(si.id, tms.addAtom('C', x, y).id, 1));
+        assert(tms.getFreeValency(si.id) === 0, 'Si(CH₃)₄ のケイ素に自動水素が生えている');
+        assert(tms.atoms.every(a => W.isValencyValid(tms, a.id)), 'Si(CH₃)₄ の価標が不正');
+        assert(g.computeMolecularFormula(tms) === 'C₄H₁₂Si',
+            `Si(CH₃)₄ の分子式が違う（${g.computeMolecularFormula(tms)}）`);
+        // 単独の Si は SiH₄（空き価標4）
+        const sh = new W.Molecule();
+        const s1 = sh.addAtom('Si', 400, 300);
+        assert(sh.getFreeValency(s1.id) === 4, `単独の Si の空き価標が4でない（${sh.getFreeValency(s1.id)}）`);
+        // (3) 名前は出さない（高校の有機で Si の命名は扱わない。iupacNameDetail の門番で null）
+        assert(W.iupacName(tms) === null, `Si(CH₃)₄ に系統名が付いた（${W.iupacName(tms)}）`);
+        // (4) CIP の原子番号を持つ。CH₃-CH(SiH₃)-CH₂-CH₃ は不斉炭素を1つ持ち、Si(14) が最優先。
+        //     **原子番号表に無いと分子ごと null に落ちる**
+        const m = new W.Molecule();
+        const bc = [];
+        for (let k = 0; k < 4; k++) {
+            const a = m.addAtom('C', 358 + k * 42, 300);
+            if (k) m.addBond(bc[k - 1].id, a.id, 1);
+            bc.push(a);
+        }
+        const sx = m.addAtom('Si', 400, 258);
+        m.addBond(bc[1].id, sx.id, 1);
+        assert(m.isAsymmetricCarbon(bc[1].id), 'CH₃-CH(SiH₃)-C₂H₅ の不斉炭素を検出できない');
+        const rank = W.cipRank(m, bc[1].id);
+        assert(rank && rank[0] === sx.id, 'CIP でケイ素が最優先になっていない（原子番号表に Si が無い）');
+        // (5) 色が引ける。S の黄・Cl の緑・C の銀と違う色であること
+        const cssVar = (n) => W.getComputedStyle(D.documentElement).getPropertyValue(n).trim().toLowerCase();
+        assert(/^#[0-9a-f]{3,8}$/.test(cssVar('--color-si')), `--color-si が定義されていない（"${cssVar('--color-si')}"）`);
+        ['--color-s', '--color-cl', '--color-c', '--color-f', '--color-o'].forEach(v =>
+            assert(cssVar('--color-si') !== cssVar(v), `ケイ素と ${v} の色が同じ`));
+        // (6) 立体ビューが **2文字の元素として** 読む。`/^(Cl|Br)/` に Si が無いと `S` と読まれて硫黄の色になる
+        const SV = W.stereoView && W.stereoView.constructor;
+        assert(SV && /--color-si\b/.test(SV.colorOf('Si')), `立体ビューが Si を硫黄と取り違えた（${SV && SV.colorOf('Si')}）`);
+        assert(/--color-si\b/.test(SV.colorOf('SiH3')), `立体ビューが SiH3 を硫黄と取り違えた（${SV.colorOf('SiH3')}）`);
+        assert(/--color-s\)/.test(SV.colorOf('S')) && /--color-s\)/.test(SV.colorOf('SH')),
+            `立体ビューの S が硫黄の色でなくなった（${SV.colorOf('S')} / ${SV.colorOf('SH')}）`);
+        // (7) describeStructure が数える（「ケイ素 Si ×1」）
+        const desc = W.describeStructure(tms) || [];
+        assert(desc.some(s => s === 'ケイ素 Si ×1'),
+            `describeStructure がケイ素を数えていない（${desc.join(' / ')}）`);
+        // (8) パレットには出さない（I・Na・F と同じ扱い）
+        assert(!D.querySelector('.atom-palette [data-atom="Si"]'), '原子パレットにケイ素が出ている');
+        // (9) 分子式の入力は Si を**受けない**（異性体の数え上げに Si を入れる入口を作らない）
+        assert(W.isomerPractice.parseFormula('SiH4') === null && W.isomerPractice.parseFormula('C2H8Si') === null,
+            'parseFormula が Si を受け付けた（異性体の数え上げに Si が入り込む）');
+    });
+
     // ===== AK. アルキル基の書き出し練習（W3 で答案用紙化。DESIGN_isomer_practice.md §14）=====
     //
     // ★ 器が変わった: 「1つ描いて登録」は W3 で捨て、**キャンバスそのものが答案用紙**になった。
