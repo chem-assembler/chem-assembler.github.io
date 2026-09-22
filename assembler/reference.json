@@ -1511,6 +1511,7 @@
 {"kind":"reaction","left":"2C₆H₁₂O₆","right":"C₁₂H₂₂O₁₁ ＋ H₂O","level":"★★☆","note":"二糖ができる縮合。逆向きに水を加えて切るのが加水分解です。"},
 {"kind":"text","text":"<b>「二糖の分子式は C₁₂H₂₂O₁₁、分子量は342」は覚えておきましょう。</b>忘れても、上の引き算で毎回出せます。"},
 {"kind":"figure","src":"disaccharide-maltose.png","gen":"name=マルトース（麦芽糖） plain","alt":"マルトースの構造式を直交で描いた図。六員環2つが、1個の酸素原子を間にはさんでつながっている","caption":"<b>マルトース</b>。グルコースの六員環2つが、酸素原子1個をはさんでつながっています（グリコシド結合）。"},
+{"kind":"figure","src":"disaccharide-glycosidic-bond.png","svg":"disaccharide-glycosidic-bond.svg","alt":"マルトースの構造式で、2つの六員環をつなぐ酸素原子1個を破線の丸で囲んだ図","caption":"囲んだ酸素1個が、とれた水の分を差し引いた残りです。<b>C₆H₁₂O₆ が2つで C₁₂H₂₄O₁₂、H₂O が1つ抜けて C₁₂H₂₂O₁₁</b> になります。"},
 {"kind":"link","to":"saccharide","text":"単糖の環状構造（α形・β形）と還元性の出どころは単糖類のページへ"},
 {"kind":"section","anchor":"four","title":"4つの二糖","lead":"マルトース・スクロース・ラクトース・セロビオースを、構成する単糖・分解する酵素・還元性で並べます。","terms":["マルトース","スクロース","ラクトース","セロビオース"]},
 {"kind":"table","caption":"代表的な二糖","source":"qa:org.bio.maltose・org.bio.sucrose・org.bio.lactose-cellobiose の構成単糖と酵素、org.bio.disaccharide-def の還元性を並べた（セロビアーゼは骨子の第2部で足したもの）","head":["名称","構成する単糖","加水分解する酵素","還元性"],"align":"left | left | left | center","rows":["マルトース（麦芽糖） | グルコース ＋ グルコース | マルターゼ | あり","スクロース（ショ糖） | グルコース ＋ フルクトース | スクラーゼ（インベルターゼ） | <b>なし</b>","ラクトース（乳糖） | グルコース ＋ ガラクトース | ラクターゼ | あり","セロビオース | グルコース ＋ グルコース | セロビアーゼ | あり"]},

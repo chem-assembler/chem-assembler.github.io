@@ -51,7 +51,12 @@ alt: マルトースの構造式を直交で描いた図。六員環2つが、1�
 caption: **マルトース**。グルコースの六員環2つが、酸素原子1個をはさんでつながっています（グリコシド結合）。
 :::
 
-//図: マルトースの構造式で、グリコシド結合の −O− に印を付けた図（作図器＋印）
+:::figure
+src: disaccharide-glycosidic-bond.png
+svg: disaccharide-glycosidic-bond.svg
+alt: マルトースの構造式で、2つの六員環をつなぐ酸素原子1個を破線の丸で囲んだ図
+caption: 囲んだ酸素1個が、とれた水の分を差し引いた残りです。**C₆H₁₂O₆ が2つで C₁₂H₂₄O₁₂、H₂O が1つ抜けて C₁₂H₂₂O₁₁** になります。
+:::
 
 :::link
 to: saccharide
