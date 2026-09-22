@@ -3897,7 +3897,7 @@ class Game {
         }
         if (this.selectedTool === 'erase') return { icon: '🧽', label: '消しゴム' };
         if (this.selectedTool === 'bond') return { icon: '／', label: '結合をつなぐ' };
-        const names = { C: '炭素', O: '酸素', N: '窒素', Cl: '塩素', S: '硫黄', Br: '臭素', I: 'ヨウ素', K: 'カリウム', F: 'フッ素' };
+        const names = { C: '炭素', O: '酸素', N: '窒素', Cl: '塩素', S: '硫黄', Br: '臭素', I: 'ヨウ素', K: 'カリウム', F: 'フッ素', Si: 'ケイ素' };
         const el = this.selectedAtomType || 'C';
         return { icon: el, label: `${names[el] || el}を置く` };
     }

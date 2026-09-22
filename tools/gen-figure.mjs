@@ -126,7 +126,7 @@ const PAPER_CSS = `
 #figbake{
   background:#fff; padding:0; margin:0; position:fixed; left:0; top:0; z-index:99999;
   --color-c:#333a45; --color-o:#b52d20; --color-n:#2456b8; --color-cl:#1e7a45;
-  --color-s:#7d6200; --color-br:#8a4b00; --color-h:#6b7482; --color-f:#1d7a6e;
+  --color-s:#7d6200; --color-br:#8a4b00; --color-h:#6b7482; --color-f:#1d7a6e; --color-si:#4f7a1e;
   --color-cyan:#0d6c78; --neon-orange:#b4680a; --neon-pink:#a3246a;
 }
 #figbake svg{ display:block; background:#fff; }
