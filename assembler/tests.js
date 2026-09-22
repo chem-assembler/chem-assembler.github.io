@@ -53019,6 +53019,59 @@
         c.reset();
     });
 
+    /* ★ **共重合の置換基は全部が同じ側（真下）**（v1606・I-0053・ユーザー決定「他と揃えて↓でよいです」）。
+     *
+     * ⚠ **なぜ検査が要るか**: 直す前は `i % 2 ? -1 : 1` で単量体ごとに上下交互だった。
+     *   付加重合は v1593 で「そのまま → 同じ側（真下）→ 1つおき」に移り、登録済みの
+     *   `polyvinyl-alcohol`（主鎖 y=300 に -OH が y=342 ＝真下）へ揃えたのに、
+     *   **共重合だけが交互のまま取り残されていた**（reactor.js の注記にそう書いてあった）。
+     *   ＝ 書いてあるだけでは戻る。ここで数える。
+     * ⚠ 見るのは**向きだけ**で、つながり方は RXF7 が見ている（二重持ちにしない）。 */
+    test('RXF25: 共重合の置換基は全部が同じ側（真下）に出る（I-0053）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const rule = W.REACTION_RULES.find(r => r.id === 'copolymerization');
+        const mol = trSetup(c, ['スチレン', '1,3-ブタジエン', 'スチレン', '1,3-ブタジエン']);
+        const sites = rule.detect(mol);
+        assert(sites.length === 1, `共重合の箇所が ${sites.length} 件（1件を期待）`);
+        g.saveState();
+        rule.apply(g, sites[0]);
+        g.updateDrawing();
+
+        // 芳香環の炭素＝スチレンのフェニル基。環ごとに重心を出す
+        // ⚠ 鍵の文字列を割らない（原子 ID は乱数で `_` を含みうる）。結合の側から拾う
+        const aromKeys = W.findAromaticBondKeys(mol);
+        const arom = new Set();
+        mol.bonds.forEach(b => {
+            if (aromKeys.has([b.atomId1, b.atomId2].sort().join('_'))) { arom.add(b.atomId1); arom.add(b.atomId2); }
+        });
+        const ringAtoms = mol.atoms.filter(a => arom.has(a.id));
+        assert(ringAtoms.length === 12, `芳香環の炭素が ${ringAtoms.length} 個（スチレン2個ぶん＝12個を期待）`);
+        // 主鎖＝芳香環でない炭素（R も除く）
+        const chain = mol.atoms.filter(a => a.element === 'C' && !arom.has(a.id));
+        assert(chain.length >= 8, `主鎖の炭素が ${chain.length} 個（8個以上を期待）`);
+        const chainY = chain.reduce((s, a) => s + a.y, 0) / chain.length;
+
+        // 環を2つに分ける（同じ環の原子どうしは近い）
+        const rings = [];
+        ringAtoms.forEach(a => {
+            const near = rings.find(r => r.some(b => Math.hypot(b.x - a.x, b.y - a.y) < 120));
+            if (near) near.push(a); else rings.push([a]);
+        });
+        assert(rings.length === 2, `環が ${rings.length} 組に分かれた（2組を期待）`);
+        const sides = rings.map(r => (r.reduce((s, a) => s + a.y, 0) / r.length) - chainY);
+
+        // ★ 2つとも主鎖より下（SVG は +y が下）
+        assert(sides.every(d => d > 0),
+            `フェニル基が主鎖より下に出ていない（主鎖 y=${chainY.toFixed(1)} からの差: ${sides.map(d => d.toFixed(1)).join(' / ')}）`);
+        // ★ 否定対照 ── 直す前は上下に割れていた。**同じ側**であることまで見る
+        assert(sides[0] * sides[1] > 0,
+            `フェニル基が上下に割れている（＝交互のまま。差: ${sides.map(d => d.toFixed(1)).join(' / ')}）`);
+        const note = `フェニル基2つとも主鎖の下（主鎖 y=${chainY.toFixed(1)} からの差 ${sides.map(d => '+' + d.toFixed(1)).join(' / ')}）`;
+        c.reset();
+        return note;
+    });
+
     /* =====================================================================
      * REF: 📖 資料（参考書） —— DESIGN_reference_book.md / DEVELOPMENT.md「B. 参考書化」
      *
