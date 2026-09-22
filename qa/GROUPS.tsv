@@ -109,3 +109,7 @@ theo.ionic-eq	電離平衡	塩の加水分解	hydrolysis-ph	83	adv
 theo.ionic-eq	電離平衡	緩衝液	buffer	84	adv
 theo.ionic-eq	電離平衡	2段階電離	polyprotic-acid	85	adv
 theo.ionic-eq	電離平衡	溶解度積	solubility-product	86	adv
+# ── 化学と人間生活（序章・終章の読み物・2026-09-23 ref-intro 便）──
+#   ⚠ chemistry-and-life は教科書の流れでは理論の先頭（substance-classification の前）が正しい位置。
+#     並びの 23 と 24 の間に隙間が無いので、いまは末尾に置いた（振り直しは統合側）
+theo.life	化学と人間生活	化学の特徴	chemistry-and-life	87	basic
