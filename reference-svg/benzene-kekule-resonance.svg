@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="320" viewBox="0 0 880 320" role="img">
+  <!-- 二重結合の置き方が2通りある（ケクレ式①②）。両矢印で結び、実際はその中間であることを
+       円で表した環で示す。⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ring { stroke: #333; stroke-width: 2.5; fill: none; stroke-linejoin: round; }
+    .dbl { stroke: #333; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+    .circ { stroke: #1565c0; stroke-width: 2.5; fill: none; }
+    .arrow { stroke: #6a1b9a; stroke-width: 2.5; fill: none; }
+    .arrow2 { stroke: #1565c0; stroke-width: 2.5; fill: none; }
+    .lab { font-size: 17px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .note { font-size: 16px; fill: #1565c0; }
+    .purple { fill: #6a1b9a; }
+  </style>
+
+  <!-- ケクレ式①（中心 140,150・R=58） -->
+  <polygon class="ring" points="140,92 190,121 190,179 140,208 90,179 90,121" />
+  <path class="dbl" d="M 146.1 107.1 L 174.3 123.3" />
+  <path class="dbl" d="M 174.3 176.7 L 146.1 192.9" />
+  <path class="dbl" d="M 99.6 166.3 L 99.6 133.7" />
+  <text class="lab" x="140" y="250" text-anchor="middle">ケクレ式 ①</text>
+
+  <!-- 両矢印 -->
+  <text class="small purple" x="248" y="68" text-anchor="middle">どちらか一方には決められない</text>
+  <path class="arrow" d="M 222 150 L 274 150" />
+  <polygon points="214,150 228,144 228,156" fill="#6a1b9a" />
+  <polygon points="282,150 268,144 268,156" fill="#6a1b9a" />
+
+  <!-- ケクレ式②（中心 355,150・R=58） -->
+  <polygon class="ring" points="355,92 405,121 405,179 355,208 305,179 305,121" />
+  <path class="dbl" d="M 395.4 133.7 L 395.4 166.3" />
+  <path class="dbl" d="M 348.9 192.9 L 320.7 176.7" />
+  <path class="dbl" d="M 320.7 123.3 L 348.9 107.1" />
+  <text class="lab" x="355" y="250" text-anchor="middle">ケクレ式 ②</text>
+
+  <!-- 実際はこの中間 -->
+  <text class="note" x="492" y="130" text-anchor="middle">実際はこの中間</text>
+  <path class="arrow2" d="M 440 154 L 532 154" />
+  <polygon points="542,154 528,148 528,160" fill="#1565c0" />
+
+  <!-- 実際のベンゼン（中心 610,150・R=58） -->
+  <polygon class="ring" points="610,92 660,121 660,179 610,208 560,179 560,121" />
+  <circle class="circ" cx="610" cy="150" r="34" />
+  <text class="lab" x="610" y="250" text-anchor="middle">実際のベンゼン</text>
+  <text class="small" x="610" y="292" text-anchor="middle">C−C は6本とも同じ長さ —— 単結合と二重結合の中間</text>
+</svg>
