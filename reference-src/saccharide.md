@@ -11,6 +11,7 @@ codes:
   - org.bio.monosaccharide
   - org.bio.glucose-structure
   - org.bio.glucose-ring
+  - org.bio.glucose-chiral
   - org.bio.glucose-reducing
   - org.bio.fructose
   - org.bio.alcohol-fermentation
