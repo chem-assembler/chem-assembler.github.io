@@ -5,6 +5,13 @@ unitLabel: 酸化還元
 group: 酸化数
 title: 酸化数の決め方
 summary: 酸化数は「単体を基準（0）に、原子が失った電子 e⁻ の数」。優先順位の表で決める手順と、電気陰性度から決める道、有機化合物の中の炭素の酸化数まで。
+codes:
+  - theo.redox.oxnum-def
+  - theo.redox.oxnum-priority
+  - theo.redox.oxnum-calc
+  - theo.redox.oxnum-electroneg
+  - theo.redox.oxnum-organic
+  - theo.redox.max-oxnum
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」p.31・p.32・p.62-63（練習7）
   - slides:無機の基本４「酸素と酸化物」s17-23・s43-44（練習3）

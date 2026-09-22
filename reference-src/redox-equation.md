@@ -5,6 +5,11 @@ unitLabel: 酸化還元
 group: 酸化還元反応式
 title: 酸化還元反応式の組み立て
 summary: 酸化剤と還元剤の半反応式を整数倍して e⁻ をそろえて足し、省略されているイオンを両辺に戻して化学反応式にします。酸化剤・還元剤の価数と「価数の逆の比」、硝酸のように H⁺ も自分で出す酸まで。
+codes:
+  - theo.redox.valence
+  - theo.redox.inverse-ratio
+  - theo.redox.assemble
+  - theo.redox.copper-acids
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」p.36-37・p.40-41・p.68-70（練習10）・p.74（練習11(3)）
   - slides:無機の基本５「ハロゲン」s5-6（K₂Cr₂O₇ と H₂O₂）
