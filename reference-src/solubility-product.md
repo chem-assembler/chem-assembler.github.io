@@ -41,8 +41,12 @@ AgCl が飽和しているときは、**沈殿の量に関係なく** [Ag⁺][Cl
 
 Ksp の単位は式の形で変わります。AgCl は mol²/L²、Ag₂CrO₄（Ksp ＝ [Ag⁺]²[CrO₄²⁻]）は mol³/L³ です。**単位は毎回、式から書くようにしましょう**。
 
-//図: 速7 PDF p.6（沈殿と水溶液中の Ag⁺・Cl⁻ の模式図）を焼きたい
-//図の便 B（2026-09-19）: スピーカーの印がビーカーの中の沈殿の粒に重なっていて、四角の範囲では外せないので焼かなかった。音声の印を消して書き出し直すか、描き直す
+:::figure
+src: solubility-product-saturated.png
+svg: solubility-product-saturated.svg
+alt: 沈殿の量だけが違う2つのビーカーを並べた模式図。どちらも底に AgCl の固体があり、溶液中の Ag+ と Cl- はどちらも3個ずつ描かれている
+caption: 沈殿の量を変えても、溶けているイオンの数は変わりません。だから**固体の濃度は式に入れない**のです。
+:::
 
 :::link
 to: equilibrium-constant

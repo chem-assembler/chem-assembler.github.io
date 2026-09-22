@@ -6620,6 +6620,7 @@
 {"kind":"reaction","left":"AgCl（固）","arrow":"⇄","right":"Ag⁺ ＋ Cl⁻","level":"★★★","note":"塩化銀の溶解平衡。Ksp ＝ [Ag⁺][Cl⁻] ＝ 1.8 × 10⁻¹⁰ mol²/L²（25 ℃）"},
 {"kind":"text","text":"AgCl が飽和しているときは、<b>沈殿の量に関係なく</b> [Ag⁺][Cl⁻] ＝ 1.8 × 10⁻¹⁰ mol²/L² が成り立っています。沈殿が多くても少なくても、固体の濃度は平衡定数の式に入れないためです。"},
 {"kind":"text","text":"Ksp の単位は式の形で変わります。AgCl は mol²/L²、Ag₂CrO₄（Ksp ＝ [Ag⁺]²[CrO₄²⁻]）は mol³/L³ です。<b>単位は毎回、式から書くようにしましょう</b>。"},
+{"kind":"figure","src":"solubility-product-saturated.png","svg":"solubility-product-saturated.svg","alt":"沈殿の量だけが違う2つのビーカーを並べた模式図。どちらも底に AgCl の固体があり、溶液中の Ag+ と Cl- はどちらも3個ずつ描かれている","caption":"沈殿の量を変えても、溶けているイオンの数は変わりません。だから<b>固体の濃度は式に入れない</b>のです。"},
 {"kind":"link","to":"equilibrium-constant","text":"平衡定数の式に固体を入れない理由は、平衡定数のページへ"},
 {"kind":"section","anchor":"judge","title":"沈殿するかの判定 —— 積と Ksp を比べる","lead":"すべて溶けたと仮定したときのイオンの濃度の積を Ksp と比べます。Ksp より大きければ沈殿し、等しければ飽和、小さければ沈殿しません。","terms":["沈殿の判定"]},
 {"kind":"table","caption":"イオンの濃度の積と Ksp の比べ方（AgCl の例）","source":"slides:速度平衡の基本７ s7 の3行を並べた","head":["積と Ksp","判定","そのあと"],"align":"left | left | left","rows":["[Ag⁺][Cl⁻] ＞ Ksp | <b>沈殿する</b> | 積が Ksp に等しくなるまで沈殿する","[Ag⁺][Cl⁻] ＝ Ksp | 飽和溶液 | ちょうど溶けきった状態","[Ag⁺][Cl⁻] ＜ Ksp | <b>沈殿しない</b> | まだ溶かせる"]},
