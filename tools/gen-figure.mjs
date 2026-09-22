@@ -35,6 +35,46 @@
  * | `circle`        | 紙の図の型をやめて、アプリの丸の図で焼く（v1562 までの見た目）。⚠ `numbered` は紙の図の型と組めないので、書かなくても丸の図になる |
  * | `haworth`       | ★ **糖をハース式で描く**（v1549）。登録の座標（名前から呼び出したときの形）をそのまま描く ＝ **1位の −OH の上下（α/β）が図に出る**。⚠ 登録済みの名前だけ・糖の環（`haworthSugarCycles`）が無ければ赤。中身は `learn.js` の `ipHaworthFigure` |
  *
+ * ★★ **図に印を重ねる**（v1609・I-0082・`DESIGN_figure_marks.md` 段1）—— `:::figure` に `mark:` を1行1つ:
+ *
+ *      :::figure
+ *      src: disaccharide-glycosidic-bond.png
+ *      gen: name=マルトース（麦芽糖） haworth
+ *      mark: kind=囲む at=グリコシド結合 label=グリコシド結合
+ *      :::
+ *
+ *   | | 意味 |
+ *   |---|---|
+ *   | `kind=` | `囲む`（破線の楕円）／`枠`（破線の四角）／`文字`（短い文字を置く）。★ 段1 はこの3つだけ |
+ *   | `at=`   | **どこに**。化学の言葉が主（`不斉炭素`・`グリコシド結合`・`カルボキシ基`…）、位置番号が補助（`C1-OH`・`環C2`・`C3-C4`） |
+ *   | `label=`| 添える文字（`kind=文字` では必須）。⚠ **置き場所は作図器が計算する**（原稿に座標は書かせない） |
+ *   | `count=`| 期待する個数。★ 合わなければ赤 ＝ **数が変わったことに気づける** |
+ *   | `color=`| 既定は紫 `#6a1b9a`。⚠ 色だけに意味を持たせない |
+ *
+ *   ⚠⚠ **`at=` が0個に当たったら赤で止まる**（印の無い図が黙って焼けるのを防ぐ・設計 §3）。
+ *   ⚠ 当てるのも描くのも **アプリの `assembler/quiz.js`**（`figureMarkHits` / `drawFigureMarks`）。
+ *     この道具は `mark:` を**読んで渡すだけ**。★ 当て方は**実装済みの判定をそのまま読む**（新しい化学判定を書かない）
+ *
+ * ★★ **1枚に分子を複数並べる**（v1610・`DESIGN_figure_marks.md` 段2）—— `gen:` を複数行（1行 ＝ 1分子・横一列）:
+ *
+ *      :::figure
+ *      src: benzene-kekule-resonance.png
+ *      gen: name=ベンゼン plain kekule=1
+ *      gen: name=ベンゼン plain kekule=2
+ *      between: kind=両矢印 label=実際はこの中間
+ *      :::
+ *
+ *   | | 意味 |
+ *   |---|---|
+ *   | `between:` | 分子と分子の間を結ぶ。`kind=` は `両矢印`・`矢印`・`破線`。`at=1 to=2`（分子だけ ＝ すき間に引く）か
+ *                  `at=1:ニトロ基 to=2:フェノール性ヒドロキシ基`（場所まで ＝ その2か所を結ぶ）。`矢印`・`破線` は `to=` 必須。
+ *                  `両矢印` は分子が2つだけなら `at=`/`to=` を省ける。既定の色は墨（化学の記号そのものなので） |
+ *   | `kekule=`  | `1` ＝ 登録の並び・`2` ＝ ベンゼン環の単結合と二重結合を入れ替えたもの（孤立したベンゼン環だけ） |
+ *   | `mark:`    | 分子が2つ以上なら `at=2:ニトロ基` のように**何番目の分子か**を付ける。`破線`・`矢印`（1つの分子の中の2か所・`to=` 必須）も書ける |
+ *
+ *   ⚠ 並べるのも線を引くのも **アプリの `composeFigureRow`**（`assembler/quiz.js`）。この道具は1分子ずつ描かせて渡すだけ。
+ *   ⚠ 大きさは**そろえ直さない**（どの分子も同じ座標の単位 ＝ 結合の長さは1分子の図と同じ）。原稿に座標は書かせない
+ *
  * ★ **原稿に書かずに1枚だけ焼く**（v1549。原稿の校正中に新しい図を用意する口）:
  *
  *      node tools/gen-figure.mjs --port=8811 --src=saccharide-alpha-glucose-haworth.png --gen="name=α-D-グルコース（α-D-グルコピラノース） haworth"
@@ -106,7 +146,7 @@ const PAPER_CSS = `
 #figbake{
   background:#fff; padding:0; margin:0; position:fixed; left:0; top:0; z-index:99999;
   --color-c:#333a45; --color-o:#b52d20; --color-n:#2456b8; --color-cl:#1e7a45;
-  --color-s:#7d6200; --color-br:#8a4b00; --color-h:#6b7482; --color-f:#1d7a6e;
+  --color-s:#7d6200; --color-br:#8a4b00; --color-h:#6b7482; --color-f:#1d7a6e; --color-si:#4f7a1e;
   --color-cyan:#0d6c78; --neon-orange:#b4680a; --neon-pink:#a3246a;
 }
 #figbake svg{ display:block; background:#fff; }
@@ -133,10 +173,51 @@ function collect() {
         const page = RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), `reference-src/${id}.md`, { pages: ids });
         (page.blocks || []).forEach(b => {
             if (b.kind !== 'figure' || !b.gen) return;
-            const spec = parseGen(b.gen, `reference-src/${id}.md`);
+            const where = `reference-src/${id}.md`;
+            /* ★★ 段2: `gen:` は何行でも（1行 ＝ 1分子・横一列）。⚠ 1行なら reference-md.js が文字列のまま返す */
+            const gens = Array.isArray(b.gen) ? b.gen : [b.gen];
+            const specs = gens.map(gt => parseGen(gt, where));
             // ★ 原稿の図は既定で紙の図の型（v1562）。⚠ numbered（主鎖の帯と C₁ の添え字）は丸の図の上で合わせてあるので丸の図のまま
-            if (!spec.circle && !spec.numbered && !spec.paper) { spec.paper = true; spec.paperByDefault = true; }
-            jobs.push({ id, src: b.src, gen: b.gen, spec });
+            specs.forEach(spec => { if (!spec.circle && !spec.numbered && !spec.paper) { spec.paper = true; spec.paperByDefault = true; } });
+            /* ★★ 図に重ねる印（v1609・`mark:`・DESIGN_figure_marks.md 段1）。
+               ⚠ 読むだけ —— **描くのはアプリ**（`assembler/quiz.js` の `drawFigureMarks`）。
+                 ここに作図を書くと、アプリの図と参考書の図が別々に育つ（この道具の冒頭の但し書き）。
+               ⚠ 書式の検査は `reference-md.js` の `parseMark`（node もブラウザも同じ1本）。
+               ★ 段2: `at=2:ニトロ基` の `2:` で**どの分子の印か**を振り分ける（書かなければ 1 番目 ＝ 1分子の図） */
+            specs.forEach(spec => { spec.marks = []; });
+            (b.mark || []).forEach(s => {
+                const mk = RM.parseMark(s, where);
+                const k = (mk.part || 1) - 1;
+                if (!specs[k]) throw new Error(`${where} の ${b.src}: mark の at=${mk.at} は ${k + 1} 番目の分子を指していますが、gen: は ${specs.length} 行です`);
+                const strip = (v) => (v == null ? v : String(v).replace(/^\d{1,2}:/, ''));
+                specs[k].marks.push(Object.assign({}, mk, { at: strip(mk.at), to: strip(mk.to) }));
+            });
+            specs.forEach(spec => {
+                if (spec.marks.length && !spec.paper) {
+                    throw new Error(`${where} の ${b.src}: mark: は紙の図にだけ重ねられます`
+                        + '（gen に circle / numbered を書いた図には、まだ印を付けられません）');
+                }
+            });
+            /* ★★ 段2: 分子と分子の間（`between:`）。⚠ 読むだけ —— 並べるのも線を引くのも**アプリ**（`composeFigureRow`） */
+            const between = (b.between || []).map(s => RM.parseBetween(s, where));
+            if (specs.length > 1) {
+                specs.forEach((spec, i) => {
+                    if (!spec.paper) {
+                        throw new Error(`${where} の ${b.src}: 分子を並べる図は紙の図の型だけで描けます（${i + 1} 番目の gen: に circle / numbered があります）`);
+                    }
+                    spec.figurePart = true;
+                    spec.anchors = [];
+                });
+                // 場所まで指す between の端は、その分子を描くときに当てておく（0個なら赤）
+                between.forEach(bw => [bw.from, bw.dest].forEach(r => {
+                    if (!r || r.place === null) return;
+                    if (!specs[r.n - 1]) throw new Error(`${where} の ${b.src}: between が ${r.n} 番目の分子を指していますが、gen: は ${specs.length} 行です`);
+                    if (!specs[r.n - 1].anchors.includes(r.place)) specs[r.n - 1].anchors.push(r.place);
+                }));
+            } else if (between.length) {
+                throw new Error(`${where} の ${b.src}: between: は gen: を2行以上書いた図にだけ書けます`);
+            }
+            jobs.push({ id, src: b.src, gen: gens.join(' ＋ '), spec: specs[0], parts: specs.length > 1 ? specs : null, between });
         });
     });
     return jobs;
@@ -151,6 +232,13 @@ function parseGen(text, where) {
         if (tok === 'haworth') { spec.haworth = true; return; }
         if (tok === 'paper') { spec.paper = true; return; }
         if (tok === 'circle') { spec.circle = true; return; }
+        /* ★ ケクレ式2つを描き分ける（段2・設計 §5）。1 ＝ 登録の並び・2 ＝ 環の単結合と二重結合を入れ替えたもの */
+        const kk = /^kekule=(.*)$/.exec(tok);
+        if (kk) {
+            if (kk[1] !== '1' && kk[1] !== '2') throw new Error(`${where}: gen の kekule= は 1 か 2 です（いまは「${kk[1]}」）`);
+            spec.kekule = kk[1];
+            return;
+        }
         const g = /^(condense|expand)=(.+)$/.exec(tok);
         if (g) {
             const keys = g[2].split(',').map(s => s.trim()).filter(Boolean);
@@ -162,7 +250,7 @@ function parseGen(text, where) {
         }
         const m = /^(name|formula|chain|subs)=(.+)$/.exec(tok);
         if (!m) throw new Error(`${where}: :::figure の gen に読めない語「${tok}」があります`
-            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand=）');
+            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule=）');
         spec[m[1]] = m[2];
     });
     if (!spec.name) throw new Error(`${where}: :::figure の gen に name= がありません（図が何の分子かを名乗ってください）`);
@@ -174,6 +262,7 @@ function parseGen(text, where) {
     if (spec.paper && spec.numbered) throw new Error(`${where}: gen の paper に numbered はまだ付けられません（主鎖の帯は丸の図の上で合わせてある）`);
     if (spec.haworth && spec.numbered) throw new Error(`${where}: gen の haworth に numbered は付けられません（主鎖の帯はハース環に出せない）`);
     if (spec.haworth && (spec.formula || spec.chain)) throw new Error(`${where}: gen の haworth は登録済みの名前だけで使えます（formula= / chain= は組めない）`);
+    if (spec.kekule && (spec.circle || spec.numbered)) throw new Error(`${where}: gen の kekule= は紙の図の型でだけ描けます（circle / numbered とは組めない）`);
     return spec;
 }
 
@@ -203,8 +292,10 @@ async function bake(jobs) {
 
     if (!existsSync(IMG)) mkdirSync(IMG, { recursive: true });
     const done = [];
-    for (const job of jobs) {
-        const bakeOne = (spec) => pg.evaluate(({ spec, OUT_W, MAX_H, FIT_W }) => {
+    /* ★ 分子を決める道（①）を**ページに1つだけ**置く（段2: 1枚に分子を複数並べる図が、1分子ずつ同じ道を通るように）。
+       ⚠ 中身は v1609 までの ① そのまま（場所を関数へ移しただけ） */
+    await pg.evaluate(() => {
+        window.__figResolve = (spec) => {
             /* ── ① 分子を決める（★ 道は3つ。どれも最後に名前で照合する）──────────── */
             const g = window.game;
             const lib = (window.COMPOUNDS || []).concat(window.STAGES || []);
@@ -272,28 +363,78 @@ async function bake(jobs) {
                 const got = window.iupacName(mol);
                 if (got !== spec.name) return { error: `組んだ分子の名前が「${got}」で、gen の name=「${spec.name}」と違います` };
             }
-
+            return { mol, via };
+        };
+    });
+    for (const job of jobs) {
+        const bakeOne = (spec, parts, between) => pg.evaluate(({ spec, parts, between, OUT_W, MAX_H, FIT_W }) => {
+            const g = window.game;
             /* ── ② アプリの描画をそのまま呼ぶ（★ ここに作図を書かない）──────────── */
             document.getElementById('figbake')?.remove();
             const box = document.createElement('div');
             box.id = 'figbake';
             const NS = 'http://www.w3.org/2000/svg';
-            const svg = document.createElementNS(NS, 'svg');
-            svg.id = 'figbake-svg';
-            ['quiz-bonds', 'quiz-atoms'].forEach(c => {
-                const gg = document.createElementNS(NS, 'g');
-                gg.setAttribute('class', c);
-                svg.appendChild(gg);
-            });
-            box.appendChild(svg);
+            const makeSvg = (id) => {
+                const s = document.createElementNS(NS, 'svg');
+                s.id = id;
+                ['quiz-bonds', 'quiz-atoms'].forEach(c => {
+                    const gg = document.createElementNS(NS, 'g');
+                    gg.setAttribute('class', c);
+                    s.appendChild(gg);
+                });
+                box.appendChild(s);
+                return s;
+            };
             document.body.appendChild(box);
-            /* ★ 書き出し練習の答え合わせに出るのと**同じ関数**。`this` は `game` を持つ物だけでよい */
-            IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svg.id, mol, !!spec.numbered,
-                { paper: !!spec.paper, condense: spec.condense || [], expand: spec.expand || [] });
-            /* ★ 素の位置番号（`1 2 3 …`）だけを消す。⚠ 元素記号（`.svg-atom-text`）は残す
-               ＝ 形にも結合にも触っていない（描いたあとで文字を1種類だけ取り去るだけ） */
-            if (spec.plain) {
-                svg.querySelectorAll('.quiz-atoms > text:not(.svg-atom-text)').forEach(t => t.remove());
+            /* 1分子を1つの svg へ描く（★ 書き出し練習の答え合わせに出るのと**同じ関数**。`this` は `game` を持つ物だけでよい）。
+               ⚠ 印（`marks`）・between の端（`anchors`）が1つも当たらなければ**ここで投げる** ＝ 印の無い図を焼かない（設計 §3）。
+               ★ 投げたものは `error` にして返す（呼び手が赤で止める。焼き上がりは1枚も出ない） */
+            const drawOne = (sp, svgEl, where) => {
+                const res = window.__figResolve(sp);
+                if (res.error) return { error: where + res.error };
+                if (sp.kekule && !sp.paper) return { error: where + 'kekule= は紙の図の型でだけ描けます（--src= の1枚焼きでは paper を書きます）' };
+                try {
+                    IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svgEl.id, res.mol, !!sp.numbered,
+                        Object.assign({ paper: !!sp.paper, condense: sp.condense || [], expand: sp.expand || [], marks: sp.marks || [] },
+                            sp.kekule ? { kekule: sp.kekule } : {},
+                            sp.figurePart ? { figurePart: true, anchors: sp.anchors || [] } : {}));
+                } catch (e) {
+                    return { error: where + ((e && e.message) || String(e)) };
+                }
+                /* ★ 素の位置番号（`1 2 3 …`）だけを消す。⚠ 元素記号（`.svg-atom-text`）は残す
+                   ＝ 形にも結合にも触っていない（描いたあとで文字を1種類だけ取り去るだけ） */
+                if (sp.plain) {
+                    svgEl.querySelectorAll('.quiz-atoms > text:not(.svg-atom-text)').forEach(t => t.remove());
+                }
+                return res;
+            };
+            let svg, mol, via;
+            if (!parts) {
+                svg = makeSvg('figbake-svg');
+                const r1 = drawOne(spec, svg, '');
+                if (r1.error) return { error: r1.error };
+                mol = r1.mol; via = r1.via;
+            } else {
+                /* ★★ 段2: 1分子ずつ描いてから、アプリの `composeFigureRow` が横一列に並べて between を引く */
+                if (typeof composeFigureRow !== 'function') return { error: 'アプリに composeFigureRow がありません（v1610 より古い版を配信している）' };
+                const subs = [], vias = [];
+                let atoms = 0;
+                for (let i = 0; i < parts.length; i++) {
+                    const s = makeSvg('figbake-part-' + (i + 1));
+                    const ri = drawOne(parts[i], s, `${i + 1} 番目の gen:（${parts[i].name}）: `);
+                    if (ri.error) return { error: ri.error };
+                    subs.push(s); vias.push(ri.via); atoms += ri.mol.atoms.length;
+                }
+                svg = document.createElementNS(NS, 'svg');
+                svg.id = 'figbake-svg';
+                box.appendChild(svg);
+                try {
+                    composeFigureRow(svg, subs, between);
+                } catch (e) {
+                    return { error: (e && e.message) || String(e) };
+                }
+                subs.forEach(s => s.remove());
+                mol = { atoms: { length: atoms } }; via = vias.join(' ＋ ');
             }
 
             /* ── ③ 大きさを決める（viewBox は renderMoleculeIntoSvg が付けている）──── */
@@ -305,14 +446,18 @@ async function bake(jobs) {
             if (h > MAX_H) { h = MAX_H; w = Math.round(MAX_H * vb[2] / vb[3]); }
             svg.style.width = (w / 2) + 'px';
             svg.style.height = (h / 2) + 'px';
-            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length };
-        }, { spec, OUT_W, MAX_H, FIT_W });
-        let r = await bakeOne(job.spec);
+            const markWarn = svg.dataset.markWarn ? JSON.parse(svg.dataset.markWarn) : [];
+            const nMarks = (parts || [spec]).reduce((s, sp) => s + (sp.marks || []).length, 0) + (between || []).length;
+            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn };
+        }, { spec, parts: parts || null, between: between || [], OUT_W, MAX_H, FIT_W });
+        let r = await bakeOne(job.spec, job.parts, job.between);
         /* ★ 紙の図の型は字の長さぶん価標を伸ばすので、長い鎖（ステアリン酸 C₁₈）は横に伸びて床 9:1 を超える（v1562 実測 10.1:1）。
            ⚠ 鎖を (CH₂)₁₆ に畳むかはユーザーの判断待ちなので、ここでは決めない ——
            **原稿の既定で紙の図になっている図だけ**、平たすぎたら丸の図（v1562 までの見た目）で焼き直して、そのことを出力に書く。
            `paper` を明示した図（--src= の1枚焼き）は今までどおり赤で止める */
-        if (!r.error && r.aspect > ASPECT_WARN && job.spec.paperByDefault) {
+        /* ⚠ 印のある図は**丸の図へ落とさない** —— 落とすと印が黙って消える（印は紙の図にだけ描く）。
+           平たすぎれば下の床（ASPECT_WARN）で赤に止まる ＝ 気づける */
+        if (!r.error && r.aspect > ASPECT_WARN && job.spec.paperByDefault && !(job.spec.marks || []).length && !job.parts) {
             const flat = r.aspect;
             r = await bakeOne(Object.assign({}, job.spec, { paper: false, condense: undefined, expand: undefined }));
             if (!r.error) r.fellBack = `紙の図は ${flat.toFixed(1)}:1 で平たすぎるので丸の図`;
@@ -336,8 +481,11 @@ async function bake(jobs) {
         writeFileSync(path.join(outDir, job.src), buf);
         done.push({ ...job, ...r, bytes: buf.length });
         console.log(`   ✅ ${job.src}  ${r.w}x${r.h}  ${(buf.length / 1024).toFixed(0)}KB`
-            + `  ← ${job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`
+            + `  ← ${job.parts ? job.parts.map(p => p.name).join(' ＋ ') : job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`
+            + (r.marks ? `  ＋印 ${r.marks} 本` : '')
             + (r.fellBack ? `  ⚠ ${r.fellBack}` : (job.spec.paper ? '  （紙の図）' : '  （丸の図）')));
+        // ⚠ 黄（設計 §6）: 焼いた絵を人が見る前に、重なりだけは言っておく
+        (r.markWarn || []).forEach(w => console.log(`      ⚠ ${w}`));
     }
     await browser.close();
     return done;

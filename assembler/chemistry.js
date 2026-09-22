@@ -25,6 +25,17 @@ const VALENCIES = {
     // 分子ごと null を返す）。命名側（IUPAC_HALOGEN の 'フルオロ'）はもともと F を持っていたので変更なし。
     // **I・Na と同じくパレットには出さない**（上の I のコメントにある画面の幅の理由がそのまま当たる）
     'F': 1,
+    // Si = シリコーン（ポリジメチルシロキサン）のために足した元素（価標4・2026-09-23・I-0014）。
+    // ⚠ **F と違ってハロゲンではない**。炭素と同じ4本の手を持つが、**炭素としても扱わない**:
+    //   コードの中の `element === 'C'` はすべて「炭素骨格」の意味で書かれている（命名・最長鎖・
+    //   芳香環・官能基）ので、Si は「そのどれでもない原子」として素通りさせるのが安全側。
+    //   - ハロゲンの並び（'F' || 'Cl' || 'Br' || 'I'）には**入れない**
+    //   - 命名は `iupacNameDetail` の門番（C・O・ハロゲン以外があれば null）で**名前を出さない**
+    //   - 分子式の入力（learn.js `parseFormula` の supported）には**入れない** ＝ 異性体の数え上げに
+    //     Si が入り込む入口を作らない（高校の有機で Si の異性体・命名は扱わない）
+    // 色（style.css の --color-si・stereo.js の対応表）と CIP の原子番号（Si:14）は同時に入れる。
+    // **I・Na・F と同じくパレットには出さない**
+    'Si': 4,
     'S': 6,
     'H': 1,
     // Na = カルボン酸の塩（-COONa）を書くための元素（価標1）。**イオンや電荷はモデルに持ち込まない**:
@@ -3360,7 +3371,7 @@ function isFischerOriented(mol) {
 // （ハースの担当）・R（アルキル基の付け根）を含む図・順位が同点のまま尽きる場合。
 
 // CIP 規則1a で使う原子番号。アプリに置ける元素だけ持つ（R は擬似元素なので載せない）
-const CIP_ATOMIC_NUMBER = { H: 1, C: 6, N: 7, O: 8, F: 9, Na: 11, S: 16, Cl: 17, Br: 35, I: 53, K: 19 };
+const CIP_ATOMIC_NUMBER = { H: 1, C: 6, N: 7, O: 8, F: 9, Na: 11, Si: 14, S: 16, Cl: 17, Br: 35, I: 53, K: 19 };
 
 /**
  * CIP 順位づけ用の階層木（hierarchical digraph）を作る（発注書の要件2）。
@@ -3903,6 +3914,9 @@ function describeStructure(mol) {
     const br = heavy.filter(a => a.element === 'Br').length;
     const i = heavy.filter(a => a.element === 'I').length;
     const s = heavy.filter(a => a.element === 'S').length;
+    // ケイ素（シリコーンの主鎖。I-0014）。ハロゲンではないので上の並びとは別に数える
+    const si = heavy.filter(a => a.element === 'Si').length;
+    if (si) points.push(`ケイ素 Si ×${si}`);
     if (f) points.push(`フッ素 F ×${f}`);
     if (cl) points.push(`塩素 Cl ×${cl}`);
     if (br) points.push(`臭素 Br ×${br}`);

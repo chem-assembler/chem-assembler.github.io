@@ -151,7 +151,13 @@ alt: D-グルコースの鎖状構造式。炭素6個の鎖の一端がホルミ
 caption: 鎖の一端が**ホルミル基**。間の4個の炭素が不斉炭素原子です。
 :::
 
-//図: 鎖状構造の不斉炭素原子4個に印を付けた図（作図器＋印）。いまは印の無い構造式だけ
+:::figure
+src: saccharide-glucose-chain-asymmetric.png
+gen: name=D-グルコース（鎖状） plain
+mark: kind=囲む at=不斉炭素 count=4
+alt: D-グルコースの鎖状構造式で、両端の CHO と CH2OH の炭素を除いた、まん中の炭素4個がそれぞれ破線の丸で囲まれている図
+caption: 囲んだ4個が**不斉炭素原子**です。両端の炭素は囲まれていません。
+:::
 
 :::link
 to: alkane-isomers
@@ -188,9 +194,31 @@ alt: β-D-グルコースの環状構造式を直交で描いた図。原子の�
 caption: **β-グルコース**。原子のつながりは α形と同じで、違うのは1位の −OH の向きだけです。
 :::
 
-//図: ⚠ 上の2枚は作図器の直交の図なので、1位の −OH が上か下かが見えない。α形とβ形を見分けるには、環を斜めに置いて上下を描き分けた図（ハース式）が要る。作図器では描けない
+:::figure
+src: saccharide-alpha-glucose-haworth.png
+gen: name=α-D-グルコース（α-D-グルコピラノース） haworth
+mark: kind=囲む at=C1-OH count=1
+alt: α-グルコースをハース式で描いた図。環の右端の1位の炭素から下へ伸びた OH が破線の丸で囲まれている
+caption: **α-グルコース**をハース式で描くと、囲んだ1位の −OH は環の**下側**を向いています。
+:::
 
-//図: 鎖状構造が巻き込んで環になる途中を矢印で見せる図。作図器は完成形しか出せないので描けない
+:::figure
+src: saccharide-beta-glucose-haworth.png
+gen: name=β-D-グルコース（β-D-グルコピラノース） haworth
+mark: kind=囲む at=C1-OH count=1
+alt: β-グルコースをハース式で描いた図。環の右端の1位の炭素から上へ伸びた OH が破線の丸で囲まれている
+caption: **β-グルコース**では、同じ1位の −OH が環の**上側**を向いています。ほかの部分は α形と同じです。
+:::
+
+:::figure
+src: saccharide-glucose-ring-closure.png
+gen: name=D-グルコース（鎖状） plain
+gen: name=α-D-グルコース（α-D-グルコピラノース） plain
+mark: kind=囲む at=2:環の酸素 label=もとは5位の −OH の O
+between: kind=矢印 at=1 to=2 label=環になる
+alt: 左に鎖状のグルコース、右に環状のα-グルコースを置き、「環になる」と書いた矢印でつないだ図。環の中の O が点線の丸で囲まれている
+caption: 5位の −OH の O が1位の C に結合すると、鎖が巻き込んで**六員環**になります。環の中の O は、もとは5位の −OH の O です。
+:::
 
 :::example
 stageId: beta-d-glucose

@@ -214,6 +214,142 @@
         return out;
     }
 
+    /* ★★ 図に重ねる印（`:::figure` の `mark:`・DESIGN_figure_marks.md §4・段1）。
+         mark: kind=囲む at=グリコシド結合 label=グリコシド結合 count=1
+       ⚠ **1行に1つ・何本でも書ける**（下の `multi` のキー）。★ 描くのは**アプリの SVG**
+         （`assembler/quiz.js` の `drawPaperMolecule`）で、この道具は**読んで渡すだけ** ——
+         作図を2本にしないための決まり（設計 §1・I-0081）。
+       ★ `at=` は**化学の言葉で指す**のが主（`不斉炭素`・`グリコシド結合`・`カルボキシ基`）、
+         位置番号（`C1-OH`・`環C2`・`C3-C4`）が補助（設計 §3）。⚠ **原稿に座標は書かせない** ——
+         囲みの大きさも `label=` の置き場所も作図器が計算する（設計 §4）。
+       ⚠ `at=` が0個に当たったら**焼くときに赤**（設計 §3）。`count=` は期待する個数で、
+         合わなければ赤 ＝ **数が変わったことに気づける**。 */
+    var MARK_KEYS = ['kind', 'at', 'to', 'label', 'count', 'color'];
+    /* 段1 の3つ ＋ 段2 の `破線`・`矢印`（**1つの分子の中**の2か所を結ぶ。分子内の水素結合など）。
+       ⚠ 分子と分子の**間**を結ぶのは `mark:` ではなく `between:`（下の parseBetween・設計 §5） */
+    var MARK_KINDS = ['囲む', '枠', '文字', '破線', '矢印'];
+    /* `to=`（もう一方の端）が要る印 */
+    var MARK_LINK_KINDS = ['破線', '矢印'];
+    var MARK_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+    /* 「キー=値 キー=値 …」を切る（`mark:` と `between:` で同じ1本）。⚠ 値に空白を含んでよい（次の `キー=` の手前まで） */
+    function cutKeyVals(text, keys, what, where) {
+        var s = String(text).trim();
+        var re = new RegExp('(^|\\s)(' + keys.join('|') + ')=', 'g'), cuts = [], m;
+        while ((m = re.exec(s))) cuts.push({ key: m[2], at: m.index + m[1].length, from: m.index + m[0].length });
+        if (!cuts.length || cuts[0].at !== 0) {
+            fail(where, ':::figure の ' + what + ' は「kind=… at=…」の形で書きます（いまは「' + s.slice(0, 60) + '」）'
+                + '\n    ★ 書けるのは ' + keys.map(function (k) { return k + '='; }).join(' / '));
+        }
+        var out = {};
+        cuts.forEach(function (c, i) {
+            if (Object.prototype.hasOwnProperty.call(out, c.key)) fail(where, ':::figure の ' + what + ' に「' + c.key + '=」が2回あります');
+            out[c.key] = s.slice(c.from, i + 1 < cuts.length ? cuts[i + 1].at : s.length).trim();
+        });
+        return out;
+    }
+    /* ★ 何番目の分子か（`2:ニトロ基`・`2`）を切り出す（設計 §5）。`n` は数・`place` は無ければ null。
+       ⚠ `1:` の後ろが空（`at=1:`）は書き損じなので赤 */
+    function splitFigureRef(v, what, where) {
+        var m = /^(\d{1,2}):(.*)$/.exec(v);
+        if (m) {
+            if (!m[2].trim()) fail(where, ':::figure の ' + what + ' の「' + v + '」は「' + m[1] + ':」の後ろが空です（場所を書くか、「' + m[1] + '」だけにします）');
+            return { n: parseInt(m[1], 10), place: m[2].trim() };
+        }
+        if (/^\d{1,2}$/.test(v)) return { n: parseInt(v, 10), place: null };
+        return { n: null, place: v };
+    }
+    function checkColor(out, what, where) {
+        if (out.color !== undefined && !MARK_COLOR_RE.test(out.color)) {
+            fail(where, ':::figure の ' + what + ' の color= は #6a1b9a の形で書きます（いまは「' + out.color + '」）'
+                + '\n    ⚠ 色だけに意味を持たせないこと（形か文字でも分かるように・設計 §4）');
+        }
+    }
+    function parseMark(text, where) {
+        var out = cutKeyVals(text, MARK_KEYS, 'mark', where);
+        /* ⚠ 綴り違いを黙って無視しない（設計 §6）—— 通すと「印の指定が在るのに何も出ない図」ができる */
+        if (MARK_KINDS.indexOf(out.kind) < 0) {
+            fail(where, ':::figure の mark の kind= は ' + MARK_KINDS.join(' / ') + ' のどれかです（いまは「' + (out.kind || '') + '」）'
+                + '\n    ★ 分子と分子の間を結ぶのは mark: ではなく between: です（DESIGN_figure_marks.md §5）');
+        }
+        if (!out.at) fail(where, ':::figure の mark に at=（どこに付けるか）がありません'
+            + '\n    ★ 化学の言葉で指します（at=不斉炭素 / at=グリコシド結合 / at=カルボキシ基）。位置番号（at=C1-OH / at=環C2）は補助です');
+        if (out.kind === '文字' && !out.label) {
+            fail(where, ':::figure の mark に kind=文字 と書いたら label=（置く文字）が要ります');
+        }
+        /* ★ 段2: `破線`・`矢印` は2か所を結ぶので `to=` が要る（設計 §6）。⚠ 他の印に `to=` は書けない（黙って捨てない） */
+        if (MARK_LINK_KINDS.indexOf(out.kind) >= 0 && !out.to) {
+            fail(where, ':::figure の mark に kind=' + out.kind + ' と書いたら to=（もう一方の端）が要ります'
+                + '\n    ★ 例: mark: kind=破線 at=フェノール性ヒドロキシ基 to=ニトロ基');
+        }
+        if (MARK_LINK_KINDS.indexOf(out.kind) < 0 && out.to !== undefined) {
+            fail(where, ':::figure の mark の to= は kind=' + MARK_LINK_KINDS.join(' / ') + ' にだけ書けます（いまは kind=' + out.kind + '）');
+        }
+        /* ★ 分子を複数並べた図では `at=2:ニトロ基` のように何番目かを付ける（数え合わせは checkBlock が gen: の数と突き合わせる）。
+           ⚠ 印は**1つの分子の中**のものなので、`at=` と `to=` は同じ分子でなければならない */
+        var a = splitFigureRef(out.at, 'mark の at=', where);
+        if (a.place === null) fail(where, ':::figure の mark の at=「' + out.at + '」に場所がありません（「' + a.n + ':カルボキシ基」のように書きます）');
+        out.part = a.n;
+        if (out.to !== undefined) {
+            var t = splitFigureRef(out.to, 'mark の to=', where);
+            if (t.place === null) fail(where, ':::figure の mark の to=「' + out.to + '」に場所がありません');
+            if (t.n !== a.n) {
+                fail(where, ':::figure の mark の at=「' + out.at + '」と to=「' + out.to + '」が別の分子を指しています'
+                    + '\n    ★ 分子と分子の間を結ぶのは between: です（mark: は1つの分子の中の印）');
+            }
+        }
+        if (out.count !== undefined && !/^\d{1,3}$/.test(out.count)) {
+            fail(where, ':::figure の mark の count= は個数（整数）です（いまは「' + out.count + '」）');
+        }
+        checkColor(out, 'mark', where);
+        return out;
+    }
+
+    /* ★★ 分子と分子の間を結ぶもの（`:::figure` の `between:`・DESIGN_figure_marks.md §5・段2）。
+         gen: name=ベンゼン plain kekule=1
+         gen: name=ベンゼン plain kekule=2
+         between: kind=両矢印 label=実際はこの中間
+       ⚠ **1行に1つ・何本でも書ける**（`mark:` と同じ `multi` のキー）。★ 描くのは**アプリの SVG**
+         （`assembler/quiz.js` の `composeFigureRow`）で、この道具は読んで渡すだけ。
+       ★ `at=` / `to=` は **何番目の分子か**（`1`・`2`）か、**その分子のどこか**（`1:フェノール性ヒドロキシ基`）。
+         場所の指し方は `mark:` と同じ（化学の言葉が主・位置番号が補助）。
+         ・分子だけ（`at=1 to=2`）… 2つの分子の**間のすき間**に矢印・破線を引く（共鳴・反応の矢印）
+         ・場所まで（`at=1:… to=2:…`）… その2か所を結ぶ（2分子の水素結合）
+       ⚠ `kind=矢印`・`破線` は `to=` が要る（向き・もう一方の端）。`両矢印` は向きが無いので、
+         **分子が2つだけなら** `at=` / `to=` を省ける（1 と 2 の間）。 */
+    var BETWEEN_KEYS = ['kind', 'at', 'to', 'label', 'color'];
+    var BETWEEN_KINDS = ['両矢印', '矢印', '破線'];
+    function parseBetween(text, where) {
+        var out = cutKeyVals(text, BETWEEN_KEYS, 'between', where);
+        if (BETWEEN_KINDS.indexOf(out.kind) < 0) {
+            fail(where, ':::figure の between の kind= は ' + BETWEEN_KINDS.join(' / ') + ' のどれかです（いまは「' + (out.kind || '') + '」）');
+        }
+        if (out.kind !== '両矢印' && !out.to) {
+            fail(where, ':::figure の between に kind=' + out.kind + ' と書いたら to=（' + (out.kind === '矢印' ? '矢印の向かう先' : 'もう一方の端')
+                + '）が要ります\n    ★ 例: between: kind=' + out.kind + ' at=1 to=2（分子の間）／at=1:ニトロ基 to=2:フェノール性ヒドロキシ基（その2か所）');
+        }
+        if (!!out.at !== !!out.to) {
+            fail(where, ':::figure の between の at= と to= は組で書きます（いまは ' + (out.at ? 'at=' : 'to=') + ' だけ）');
+        }
+        if (out.at) {
+            var a = splitFigureRef(out.at, 'between の at=', where), t = splitFigureRef(out.to, 'between の to=', where);
+            if (a.n === null || t.n === null) {
+                fail(where, ':::figure の between の at= / to= には何番目の分子かを書きます（at=1 to=2 / at=1:ニトロ基 to=2:ヒドロキシ基。いまは at=' + out.at + ' to=' + out.to + '）');
+            }
+            if ((a.place === null) !== (t.place === null)) {
+                fail(where, ':::figure の between の at= と to= は「分子だけ」か「場所まで」かをそろえます（いまは at=' + out.at + ' to=' + out.to + '）');
+            }
+            if (a.n === t.n) {
+                fail(where, ':::figure の between の at= と to= が同じ分子（' + a.n + '）です'
+                    + '\n    ★ 1つの分子の中の2か所を結ぶなら mark: kind=' + (out.kind === '両矢印' ? '矢印' : out.kind) + ' at=… to=… です');
+            }
+            out.from = a; out.dest = t;
+        } else {
+            out.from = null; out.dest = null;
+        }
+        checkColor(out, 'between', where);
+        return out;
+    }
+
     /* ★★ グループ台帳（`qa/GROUPS.tsv`・設計書 §31-5・ref-inorg-design §1-3 の案C）。
        ⚠ **置き場所は qa**（コードの持ち主は qa）。ここは読み方だけを持つ（node とブラウザで1本）。
        1行 ＝ `domain.unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び ␉ 課程`。`#` の行と空行は読み飛ばす。
@@ -270,7 +406,13 @@
              画像を直接置くと**差分が読めず、直しもできない**。SVG なら文字なので、
              レーンも描けるし、後から 1 行直せる。**PNG は生成物**（`tools/gen-svg-figure.mjs`）。
            ⚠ `svg:` は `reference-svg/` の中の**ファイル名だけ**。`src` はその名の `.png`。 */
-        figure: { order: ['src', 'gen', 'shot', 'svg', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'], raw: ['shot'] },
+        /* ★★ `mark:` は**図に重ねる印**（DESIGN_figure_marks.md・段1）。⚠ `multi` ＝ **同じキーを何行でも書ける**
+           （印は1枚の図に何本でも付く）。`raw` ＝ 記法を通さない（`at=` の綴りをそのまま作図器へ渡す）。
+           ⚠ `mark:` は `gen:` と組でしか書けない（印だけの図はありえない・下の checkBlock）。 */
+        /* ★★ 段2（DESIGN_figure_marks.md §5）: **`gen:` も何行でも**（1行 ＝ 1分子・横一列）・分子の間を結ぶ `between:`。
+           ⚠ `gen:` は**1行なら今までどおり文字列**（`oneScalar`）＝ 既存の図の reference.json は1文字も変わらない。
+             2行以上のときだけ並びになる */
+        figure: { order: ['src', 'gen', 'shot', 'svg', 'mark', 'between', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], multi: ['gen', 'mark', 'between'], oneScalar: ['gen'], prose: ['caption'], raw: ['shot', 'mark', 'between'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒）。
            ★ `arrow` は矢印そのもの（§31-2）。**書かなければ →**（有機46枚は1文字も変わらない） */
@@ -472,12 +614,13 @@
      *
      * 返り値 `{ lead, parts }` … `lead` は最初のキーより前にある文字（ふつうは空）。
      */
-    function splitPacked(text, allowed, used) {
+    function splitPacked(text, allowed, used, multi) {
         var re = /(^|\s)([A-Za-z][A-Za-z0-9]*):(?=\s|$)/g;
         var cuts = [], m;
         while ((m = re.exec(text))) {
             var key = m[2];
-            if (allowed.indexOf(key) < 0 || used[key]) continue;
+            /* ★ `multi` のキー（`:::figure` の `mark`）だけは2回目以降も切れ目にする ＝ 何行でも書ける */
+            if (allowed.indexOf(key) < 0 || (used[key] && (multi || []).indexOf(key) < 0)) continue;
             used[key] = true;
             var at = m.index + m[1].length;
             cuts.push({ key: key, at: at, from: at + key.length + 1 });
@@ -515,10 +658,22 @@
          - 値                ← ★ 字下げは要らない（2字下げでもよい）。★ 空行が挟まってもよい
          - 値
        ★ **1行に詰めて書いてもよい**（`anchor: formula title: 一般式`）。切れ目の決め方は splitPacked。 */
-    function parseKV(lines, where, allowed, kind, hang) {
+    function parseKV(lines, where, allowed, kind, hang, multi) {
         var out = {}, order = [], used = {}, curList = null;
+        var isMulti = function (key) { return (multi || []).indexOf(key) >= 0; };
         var put = function (key, val) {
             order.push(key);
+            /* ★ 何行でも書けるキー（`mark`）は**書いた順に溜める**。⚠ 1行に1つ（値の無い形は書けない） */
+            if (isMulti(key)) {
+                if (val === '') {
+                    fail(where, '「' + key + ':」の後に値がありません'
+                        + '\n    ★ 直し方: 「' + key + ': kind=… at=…」のように1行で書きます（何行でも書けます）');
+                }
+                if (!Object.prototype.hasOwnProperty.call(out, key)) out[key] = [];
+                out[key].push(val);
+                curList = null;
+                return;
+            }
             if (val === '') { out[key] = []; curList = key; }
             else { out[key] = val; curList = null; }
         };
@@ -533,7 +688,7 @@
                         + '\n    → ' + line.trim().slice(0, 60)
                         + '\n    ★ 直し方: 並びの前の行に「' + allowed[0] + ':」のようにキーだけを書きます');
                 }
-                seg = splitPacked(im[1], allowed, used);
+                seg = splitPacked(im[1], allowed, used, multi);
                 if (seg.lead) out[curList].push(seg.lead);
                 else if (!seg.parts.length) fail(where, '「- 」だけの行があります');
             } else if (curList && (hang || []).indexOf(curList) >= 0
@@ -547,7 +702,7 @@
                 out[curList].push(HANG_MARK + line.trim());
                 continue;
             } else {
-                seg = splitPacked(line.trim(), allowed, used);
+                seg = splitPacked(line.trim(), allowed, used, multi);
                 if (!seg.parts.length || seg.lead) kvLineFail(where, line, allowed, used, kind);
             }
             seg.parts.forEach(function (p) { put(p.key, p.value); });
@@ -766,7 +921,7 @@
     function buildBlock(kind, inner, where) {
         var spec = BLOCK_SPECS[kind];
         if (!spec) fail(where, '「:::' + kind + '」は描けない種類です（書けるのは ' + KINDS.join(' / ') + '）');
-        var kv = parseKV(inner, where + ' の :::' + kind, spec.order, kind, spec.hang).map;
+        var kv = parseKV(inner, where + ' の :::' + kind, spec.order, kind, spec.hang, spec.multi).map;
         /* ★ 題の語尾の「（発展）」を印へ寄せる（節と小見出しだけ）。⚠ 両方書いてあっても矛盾しない */
         if ((kind === 'section' || kind === 'heading') && typeof kv.title === 'string') {
             var folded = foldAdvanced(kv.title);
@@ -785,8 +940,11 @@
             var conv = (spec.raw || []).indexOf(k) >= 0 ? function (s) { return s; }
                 : spec.prose.indexOf(k) >= 0 ? inline : plain;
             if (Array.isArray(v)) {
-                if (spec.list.indexOf(k) < 0) fail(where, ':::' + kind + ' の「' + k + '」は1行の値です');
+                /* ★ `multi` のキー（`mark`）は「1行1つを何行でも」＝ 並びとして持つ（`- 値` の list とは書き方が違う） */
+                if (spec.list.indexOf(k) < 0 && (spec.multi || []).indexOf(k) < 0) fail(where, ':::' + kind + ' の「' + k + '」は1行の値です');
                 block[k] = v.map(function (s) { return conv(s, at); });
+                /* ★ 1行なら文字列のまま（`:::figure` の `gen`）＝ 1分子の図は段2の前と同じ形 */
+                if ((spec.oneScalar || []).indexOf(k) >= 0 && block[k].length === 1) block[k] = block[k][0];
             } else if (bools.indexOf(k) >= 0) {
                 if (v !== 'true' && v !== 'false') fail(where, ':::' + kind + ' の「' + k + '」は true か false です（いまは「' + v + '」）');
                 block[k] = (v === 'true');
@@ -849,6 +1007,57 @@
                         + '（svg: ' + b.svg + ' なら src: ' + b.svg.replace(/\.svg$/, '.png') + '。いまは「' + b.src + '」）'
                         + '    ★ 名前をそろえると、焼き直しのときにどの PNG がどのソースから来たかを名前だけで追えます');
                 }
+            }
+            /* ★★ 図に重ねる印（DESIGN_figure_marks.md 段1）。
+               ⚠ **`gen:` の無い図には書けない** —— 印だけの図はありえないし、スライドから切った画像に
+                 「印を付けたつもり」の行が残ると、**印の無い図が黙って配られる**（設計 §1 の事故そのもの）。 */
+            if (Object.prototype.hasOwnProperty.call(b, 'mark')) {
+                if (!Object.prototype.hasOwnProperty.call(b, 'gen')) {
+                    fail(where, ':::figure に mark: がありますが gen: がありません'
+                        + '\n    ★ 印は作図器で焼く図（gen:）にだけ重ねられます（スライドから切った画像・svg: の図には付けられません）');
+                }
+                b.mark.forEach(function (s) { parseMark(s, where); });
+            }
+            /* ★★ 分子を複数並べる図（段2・設計 §5）。⚠ 数え合わせはここで ＝ **焼く前に**（gen-reference も gen-figure も）赤 */
+            var nGen = Array.isArray(b.gen) ? b.gen.length : (Object.prototype.hasOwnProperty.call(b, 'gen') ? 1 : 0);
+            var outOfRange = function (n, what) {
+                if (n !== null && (n < 1 || n > nGen)) {
+                    fail(where, ':::figure の ' + what + ' が ' + n + ' 番目の分子を指していますが、gen: は ' + nGen + ' 行（分子 ' + nGen + ' つ）です'
+                        + '\n    ★ 何番目かは gen: を書いた順に 1・2・… と数えます');
+                }
+            };
+            (b.mark || []).forEach(function (s) {
+                var mk = parseMark(s, where);
+                /* ⚠ 分子が2つ以上なら、印がどの分子のものかを必ず書く（黙って1番目に付けない） */
+                if (nGen >= 2 && mk.part === null) {
+                    fail(where, ':::figure に分子が ' + nGen + ' つあるので、mark の at= に何番目の分子かを付けます（いまは at=' + mk.at + '）'
+                        + '\n    ★ 例: at=1:' + mk.at);
+                }
+                outOfRange(mk.part, 'mark の at=「' + mk.at + '」');
+            });
+            if (Object.prototype.hasOwnProperty.call(b, 'between')) {
+                if (nGen < 2) {
+                    fail(where, ':::figure に between: がありますが、gen: が ' + nGen + ' 行です'
+                        + '\n    ★ between: は分子と分子の間を結ぶもの。gen: を2行以上（1行 ＝ 1分子）書きます'
+                        + '\n    ★ 1つの分子の中の2か所を結ぶなら mark: kind=破線（または 矢印） at=… to=… です');
+                }
+                b.between.forEach(function (s) {
+                    var bw = parseBetween(s, where);
+                    if (!bw.from) {
+                        if (nGen !== 2) {
+                            fail(where, ':::figure の between: kind=' + bw.kind + ' に at= / to= がありません。分子が ' + nGen + ' つあるので、どの間かを書きます'
+                                + '\n    ★ 例: between: kind=' + bw.kind + ' at=1 to=2');
+                        }
+                        return;
+                    }
+                    outOfRange(bw.from.n, 'between の at=「' + bw.at + '」');
+                    outOfRange(bw.dest.n, 'between の to=「' + bw.to + '」');
+                    /* ⚠ 分子だけを指す矢印は**すき間**に引く ＝ 隣どうしでないと間の分子を貫く */
+                    if (bw.from.place === null && Math.abs(bw.from.n - bw.dest.n) !== 1) {
+                        fail(where, ':::figure の between: at=' + bw.at + ' to=' + bw.to + ' は隣どうしの分子ではありません'
+                            + '（間の分子を貫いてしまいます。横一列の隣どうしだけ結べます）');
+                    }
+                });
             }
             /* ★★ アプリの画面の切り取り（§31-4） */
             if (Object.prototype.hasOwnProperty.call(b, 'shot')) {
@@ -1136,6 +1345,11 @@
         appHref: appHref,
         SHOT_KEYS: SHOT_KEYS,
         parseShot: parseShot,
+        MARK_KEYS: MARK_KEYS,
+        MARK_KINDS: MARK_KINDS,
+        parseMark: parseMark,
+        BETWEEN_KINDS: BETWEEN_KINDS,
+        parseBetween: parseBetween,
         parseGroups: parseGroups,
         parsePage: parsePage,
         serialize: serialize,

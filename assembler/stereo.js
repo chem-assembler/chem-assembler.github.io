@@ -3624,10 +3624,12 @@ class StereoView {
     // ===== SVG 小道具 =====
 
     static colorOf(label) {
-        const el = /^(Cl|Br)/.test(label) ? label.slice(0, 2) : label.slice(0, 1);
+        // ⚠ 2文字の元素はここで名指しする。**Si を落とすと先頭の1文字 `S` と読まれて硫黄の黄色になる**
+        //   （2026-09-23・I-0014）
+        const el = /^(Cl|Br|Si)/.test(label) ? label.slice(0, 2) : label.slice(0, 1);
         const map = { C: '--color-c', O: '--color-o', N: '--color-n', H: '--color-h',
                       S: '--color-s', Cl: '--color-cl', Br: '--color-br', I: '--color-i',
-                      F: '--color-f' };
+                      F: '--color-f', Si: '--color-si' };
         return `var(${map[el] || '--color-c'})`;
     }
 
