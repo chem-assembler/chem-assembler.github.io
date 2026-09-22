@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="400" viewBox="0 0 860 400" role="img">
+  <!-- pH を左右にとった数直線。右へ行くほど [S2-] が大きくなり、沈殿する硫化物が増える。
+       CuS は Ksp がとても小さいので全域で沈殿し、ZnS はある pH から先でしか沈殿しない。
+       ⚠ PDF の「CdS」2か所は CuS の誤り（原稿の注記）。本文・例題とも CuS なので CuS で描いた。
+       ⚠ 境目の pH に数値は入れない（金属イオンの濃度と [H2S] で動くため。値は例題で出す）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2.5; fill: none; }
+    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
+    .axlab { font-size: 19px; fill: #222; text-anchor: end; }
+    .end { font-size: 15px; fill: #666; }
+    .bar { font-size: 17px; }
+    .region { font-size: 17px; fill: #222; text-anchor: middle; }
+    .note { font-size: 16px; fill: #333; text-anchor: middle; }
+    .div { stroke: #333; stroke-width: 2; stroke-dasharray: 7 5; fill: none; }
+  </style>
+
+  <text class="ttl" x="430" y="44">硫化物はどの pH で沈殿するか</text>
+
+  <!-- pH の数直線 -->
+  <path class="ax" d="M 80 110 L 790 110" />
+  <polygon points="802 110, 786 104, 786 116" fill="#333" />
+  <text class="axlab" x="62" y="117">pH</text>
+  <text class="end" x="96" y="96">小さい（強い酸性）</text>
+  <text class="end" x="786" y="96" text-anchor="end">大きい（中性・塩基性）</text>
+
+  <!-- [S2-] は右へ行くほど大きい -->
+  <polygon points="80 168, 790 152, 790 188, 80 172" fill="#ede7f6" stroke="#6a1b9a" stroke-width="2" />
+  <text class="axlab" x="62" y="177">[S²⁻]</text>
+  <text x="690" y="177" font-size="15" fill="#4a148c" text-anchor="middle">大きくなる</text>
+
+  <!-- CuS は全域で沈殿 -->
+  <rect x="80" y="228" width="710" height="30" rx="6" fill="#fdecea" stroke="#c62828" stroke-width="2" />
+  <text class="bar" x="98" y="249" fill="#c62828">CuS —— どこでも沈殿する</text>
+
+  <!-- ZnS は境目から右だけ -->
+  <rect x="440" y="272" width="350" height="30" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2" />
+  <text class="bar" x="458" y="293" fill="#2e7d32">ZnS —— ここから沈殿する</text>
+
+  <!-- 境目 -->
+  <path class="div" d="M 440 92 L 440 318" />
+
+  <!-- 2つの範囲 -->
+  <text class="region" x="255" y="344">CuS だけ沈殿</text>
+  <text class="region" x="615" y="344">CuS と ZnS の両方が沈殿</text>
+
+  <text class="note" x="430" y="382">酸性にするほど [S²⁻] が小さくなり、Ksp がとびぬけて小さい CuS だけが沈殿する</text>
+</svg>

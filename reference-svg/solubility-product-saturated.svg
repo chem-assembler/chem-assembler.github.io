@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="450" viewBox="0 0 880 450" role="img">
+  <!-- 飽和した AgCl の水溶液。沈殿の量だけを変えた2つのビーカーを並べ、
+       溶けている Ag+ と Cl- の数はどちらも同じ ＝ [Ag+][Cl-] は沈殿の量に関係しない、を見せる。
+       固体の濃度は平衡定数の式に入れない、の絵での言い方。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .beaker { fill: none; stroke: #333; stroke-width: 3; }
+    .water { fill: #eaf3fb; stroke: none; }
+    .surf { stroke: #90caf9; stroke-width: 2; fill: none; }
+    .solid { fill: #cfd8dc; stroke: #607d8b; stroke-width: 2; }
+    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
+    .note { font-size: 17px; fill: #333; text-anchor: middle; }
+    .key { font-size: 20px; fill: #6a1b9a; text-anchor: middle; }
+    .ion { font-size: 13px; fill: #fff; text-anchor: middle; }
+    .solidlab { font-size: 14px; fill: #37474f; text-anchor: middle; }
+    .eq { stroke: #6a1b9a; stroke-width: 2.5; fill: none; }
+    .eqlab { font-size: 14px; fill: #6a1b9a; }
+  </style>
+
+  <!-- ================= 左: 沈殿が多い ================= -->
+  <text class="ttl" x="230" y="44">沈殿が多い</text>
+  <path class="water" d="M 42 126 L 42 356 Q 42 370 58 370 L 402 370 Q 418 370 418 356 L 418 126 Z" />
+  <path class="solid" d="M 52 366 Q 86 308 150 306 Q 205 292 252 302 Q 320 294 372 310 Q 400 322 408 366 Z" />
+  <text class="solidlab" x="236" y="344">AgCl（固）</text>
+  <path class="beaker" d="M 40 90 L 40 356 Q 40 372 56 372 L 404 372 Q 420 372 420 356 L 420 90" />
+  <path class="surf" d="M 42 126 L 418 126" />
+
+  <g>
+    <circle cx="120" cy="170" r="17" fill="#1565c0" /><text class="ion" x="120" y="175">Ag⁺</text>
+    <circle cx="270" cy="165" r="17" fill="#1565c0" /><text class="ion" x="270" y="170">Ag⁺</text>
+    <circle cx="350" cy="215" r="17" fill="#1565c0" /><text class="ion" x="350" y="220">Ag⁺</text>
+    <circle cx="195" cy="220" r="17" fill="#2e7d32" /><text class="ion" x="195" y="225">Cl⁻</text>
+    <circle cx="316" cy="265" r="17" fill="#2e7d32" /><text class="ion" x="316" y="270">Cl⁻</text>
+    <circle cx="150" cy="255" r="17" fill="#2e7d32" /><text class="ion" x="150" y="260">Cl⁻</text>
+  </g>
+
+  <!-- 溶解平衡 -->
+  <path class="eq" d="M 80 312 L 80 268" />
+  <polygon points="80 262, 74 276, 86 276" fill="#6a1b9a" />
+  <polygon points="80 318, 74 304, 86 304" fill="#6a1b9a" />
+  <text class="eqlab" x="94" y="278">溶ける</text>
+  <text class="eqlab" x="94" y="312">沈む</text>
+
+  <!-- ================= 右: 沈殿が少ない ================= -->
+  <text class="ttl" x="650" y="44">沈殿が少ない</text>
+  <path class="water" d="M 462 126 L 462 356 Q 462 370 478 370 L 822 370 Q 838 370 838 356 L 838 126 Z" />
+  <path class="solid" d="M 480 366 Q 528 334 592 338 Q 662 326 730 336 Q 792 342 820 366 Z" />
+  <text class="solidlab" x="650" y="358">AgCl（固）</text>
+  <path class="beaker" d="M 460 90 L 460 356 Q 460 372 476 372 L 824 372 Q 840 372 840 356 L 840 90" />
+  <path class="surf" d="M 462 126 L 838 126" />
+
+  <g>
+    <circle cx="540" cy="170" r="17" fill="#1565c0" /><text class="ion" x="540" y="175">Ag⁺</text>
+    <circle cx="690" cy="165" r="17" fill="#1565c0" /><text class="ion" x="690" y="170">Ag⁺</text>
+    <circle cx="770" cy="215" r="17" fill="#1565c0" /><text class="ion" x="770" y="220">Ag⁺</text>
+    <circle cx="615" cy="220" r="17" fill="#2e7d32" /><text class="ion" x="615" y="225">Cl⁻</text>
+    <circle cx="736" cy="265" r="17" fill="#2e7d32" /><text class="ion" x="736" y="270">Cl⁻</text>
+    <circle cx="570" cy="255" r="17" fill="#2e7d32" /><text class="ion" x="570" y="260">Cl⁻</text>
+  </g>
+
+  <path class="eq" d="M 500 344 L 500 300" />
+  <polygon points="500 294, 494 308, 506 308" fill="#6a1b9a" />
+  <polygon points="500 350, 494 336, 506 336" fill="#6a1b9a" />
+
+  <!-- ================= 下の一言 ================= -->
+  <text class="note" x="440" y="408">溶けている Ag⁺ と Cl⁻ の数は、沈殿の量が違ってもどちらも同じ</text>
+  <text class="key" x="440" y="438">[Ag⁺][Cl⁻] ＝ Ksp</text>
+</svg>
