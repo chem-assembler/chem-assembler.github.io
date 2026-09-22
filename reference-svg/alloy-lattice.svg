@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="320" viewBox="0 0 600 320" role="img">
+  <!-- 純金属と合金の結晶の模式図。純金属は同じ大きさの原子が並び、力を加えると原子の面がずれやすい。
+       合金は大きさの違う原子が混ざり、面のずれが妨げられて硬く強くなる。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c62828" />
+    </marker>
+  </defs>
+  <style>
+    .box { fill: #fafafa; stroke: #999; stroke-width: 1.5; }
+    .a { fill: #9fb4c7; stroke: #4a6378; stroke-width: 1.5; }
+    .b { fill: #f0a868; stroke: #b0601c; stroke-width: 1.5; }
+    .slip { stroke: #c62828; stroke-width: 1.5; stroke-dasharray: 6 4; fill: none; }
+    .force { stroke: #c62828; stroke-width: 3; fill: none; }
+    .cap { font-family: system-ui, sans-serif; font-size: 17px; fill: #222; }
+    .small { font-family: system-ui, sans-serif; font-size: 14px; fill: #444; }
+    .red { font-family: system-ui, sans-serif; font-size: 14px; fill: #c62828; }
+  </style>
+
+  <!-- 純金属 -->
+  <rect class="box" x="25" y="50" width="220" height="165" rx="6" />
+  <g class="a">
+    <circle cx="45" cy="70" r="14" /><circle cx="75" cy="70" r="14" /><circle cx="105" cy="70" r="14" /><circle cx="135" cy="70" r="14" /><circle cx="165" cy="70" r="14" /><circle cx="195" cy="70" r="14" /><circle cx="225" cy="70" r="14" />
+    <circle cx="45" cy="100" r="14" /><circle cx="75" cy="100" r="14" /><circle cx="105" cy="100" r="14" /><circle cx="135" cy="100" r="14" /><circle cx="165" cy="100" r="14" /><circle cx="195" cy="100" r="14" /><circle cx="225" cy="100" r="14" />
+    <circle cx="45" cy="130" r="14" /><circle cx="75" cy="130" r="14" /><circle cx="105" cy="130" r="14" /><circle cx="135" cy="130" r="14" /><circle cx="165" cy="130" r="14" /><circle cx="195" cy="130" r="14" /><circle cx="225" cy="130" r="14" />
+    <circle cx="45" cy="160" r="14" /><circle cx="75" cy="160" r="14" /><circle cx="105" cy="160" r="14" /><circle cx="135" cy="160" r="14" /><circle cx="165" cy="160" r="14" /><circle cx="195" cy="160" r="14" /><circle cx="225" cy="160" r="14" />
+    <circle cx="45" cy="190" r="14" /><circle cx="75" cy="190" r="14" /><circle cx="105" cy="190" r="14" /><circle cx="135" cy="190" r="14" /><circle cx="165" cy="190" r="14" /><circle cx="195" cy="190" r="14" /><circle cx="225" cy="190" r="14" />
+  </g>
+  <path class="slip" d="M 25 115 L 245 115" />
+  <path class="force" marker-end="url(#ah)" d="M 95 36 L 175 36" />
+  <text class="red" x="85" y="41" text-anchor="end">力</text>
+  <text class="cap" x="135" y="244" text-anchor="middle">純金属</text>
+  <text class="small" x="135" y="268" text-anchor="middle">同じ大きさの原子が並ぶ</text>
+  <text class="small" x="135" y="290" text-anchor="middle">原子の面がずれやすい（軟らかい）</text>
+
+  <!-- 合金 -->
+  <rect class="box" x="335" y="50" width="220" height="165" rx="6" />
+  <g class="a">
+    <circle cx="355" cy="70" r="14" /><circle cx="385" cy="70" r="14" /><circle cx="445" cy="70" r="14" /><circle cx="475" cy="70" r="14" /><circle cx="505" cy="70" r="14" /><circle cx="535" cy="70" r="14" />
+    <circle cx="355" cy="100" r="14" /><circle cx="385" cy="100" r="14" /><circle cx="415" cy="100" r="14" /><circle cx="475" cy="100" r="14" /><circle cx="505" cy="100" r="14" /><circle cx="535" cy="100" r="14" />
+    <circle cx="355" cy="130" r="14" /><circle cx="385" cy="130" r="14" /><circle cx="415" cy="130" r="14" /><circle cx="445" cy="130" r="14" /><circle cx="475" cy="130" r="14" /><circle cx="535" cy="130" r="14" />
+    <circle cx="355" cy="160" r="14" /><circle cx="415" cy="160" r="14" /><circle cx="445" cy="160" r="14" /><circle cx="475" cy="160" r="14" /><circle cx="505" cy="160" r="14" /><circle cx="535" cy="160" r="14" />
+    <circle cx="355" cy="190" r="14" /><circle cx="385" cy="190" r="14" /><circle cx="415" cy="190" r="14" /><circle cx="475" cy="190" r="14" /><circle cx="505" cy="190" r="14" /><circle cx="535" cy="190" r="14" />
+  </g>
+  <g class="b">
+    <circle cx="415" cy="70" r="17" />
+    <circle cx="445" cy="100" r="17" />
+    <circle cx="505" cy="130" r="17" />
+    <circle cx="385" cy="160" r="17" />
+    <circle cx="445" cy="190" r="17" />
+  </g>
+  <path class="slip" d="M 335 115 L 555 115" />
+  <path class="force" marker-end="url(#ah)" d="M 405 36 L 485 36" />
+  <text class="red" x="395" y="41" text-anchor="end">力</text>
+  <text class="cap" x="445" y="244" text-anchor="middle">合金</text>
+  <text class="small" x="445" y="268" text-anchor="middle">大きさの違う原子が混ざる</text>
+  <text class="small" x="445" y="290" text-anchor="middle">面のずれが妨げられる（硬く強い）</text>
+</svg>
