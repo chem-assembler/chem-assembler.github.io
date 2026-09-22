@@ -5,6 +5,11 @@ unitLabel: 電離平衡
 group: 緩衝液
 title: 緩衝液 —— 両方そろうと緩衝液
 summary: 弱酸とその塩（弱塩基とその塩）の混合水溶液は、酸や塩基を少し加えても pH がほとんど変わりません。仕組みは2本の反応式で説明でき、pH は電離定数の式に濃度の比（mol の比）を代入して求めます。
+codes:
+  - theo.ionic-eq.buffer-mechanism
+  - theo.ionic-eq.buffer-pair
+  - theo.ionic-eq.buffer-ph
+  - theo.ionic-eq.buffer-titration
 source:
   - slides:速度平衡の基本６「緩衝液」s8-17・練習1〜2 s19-21
   - slides:速度平衡の基本７「溶解平衡」s4-5（復習問題）

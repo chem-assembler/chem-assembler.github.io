@@ -5,6 +5,10 @@ unitLabel: 電離平衡
 group: 2段階電離
 title: 2段階電離 —— pH は1段目だけ
 summary: 炭酸や硫化水素のような2価の弱酸は2段階で電離し、2段目は1段目よりずっと起こりにくくなります。pH は1段目だけで1価の弱酸と同じように求め、2価の陰イオンの濃度は K₁K₂ を使って求めます。
+codes:
+  - theo.ionic-eq.polyprotic
+  - theo.ionic-eq.k1k2
+  - theo.ionic-eq.second-step
 source:
   - slides:速度平衡の標準問題演習「二段階電離」s3-20（練習1〜3）
   - slides:速度平衡の標準問題演習「硫化物沈殿の溶解度積」s4（硫化水素の K₁・K₂）

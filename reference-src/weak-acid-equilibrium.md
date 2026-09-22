@@ -5,6 +5,11 @@ unitLabel: 電離平衡
 group: 弱酸の電離平衡
 title: 弱酸・弱塩基の電離平衡 —— Ka ＝ cα²
 summary: 弱酸・弱塩基は水溶液の中で電離平衡になっています。3行の表から Ka ＝ cα² を導き、[H⁺] ＝ √(cKa) で pH を出します。薄めると電離度は大きくなり、10倍に薄めると pH は 0.5 だけ7に近づきます。
+codes:
+  - theo.ionic-eq.ionization-constant
+  - theo.ionic-eq.ka-c-alpha
+  - theo.ionic-eq.weak-ph
+  - theo.ionic-eq.weak-dilution
 source:
   - slides:速度平衡の基本４「弱酸の電離平衡」s4-14・練習1〜3 s16-20
   - textbook:R5化学Vol.1-3編（電離定数の値・水の濃度を含めて Ka を定める説明）
