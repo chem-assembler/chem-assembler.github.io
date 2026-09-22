@@ -5,6 +5,11 @@ unitLabel: 物質の構造
 group: 結晶の種類
 title: 金属結合と結晶の4つの型
 summary: 結晶は、粒子をつなぐ力でイオン結晶・共有結合の結晶・分子結晶・金属結晶の4つに分かれます。化学式の元素から型を決めれば、融点・電気の通しやすさ・硬さが1枚の表から読めます。
+codes:
+  - theo.structure.metallic-bond
+  - theo.structure.crystal-conductivity
+  - theo.structure.crystal-classify
+  - theo.structure.crystal-mp
 source:
   - textbook:化学基礎 2編2章（金属結合・金属の性質・化学結合と物質の分類・結晶の融点）
   - textbook:R5化学Vol.1-1編 1章・4章（粒子の間の力の強さの順・結晶の種類）

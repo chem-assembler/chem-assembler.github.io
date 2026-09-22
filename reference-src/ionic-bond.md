@@ -5,6 +5,12 @@ unitLabel: 物質の構造
 group: イオン結合
 title: イオンとイオン結合
 summary: 原子は電子を失ったり受け取ったりして、貴ガスと同じ電子配置のイオンになります。陽イオンと陰イオンはクーロン力で引き合ってイオン結合をつくり、物質は組成式で表します。組成式は電荷の合計が0になる比で書き、陰イオン → 陽イオンの順に読みます。
+codes:
+  - theo.structure.ion-charge
+  - theo.structure.ion-name
+  - theo.structure.polyatomic-ion
+  - theo.structure.composition-formula
+  - theo.structure.ionic-crystal
 source:
   - textbook:化学基礎_031-090_2編（イオンの生成・単原子イオンと多原子イオン・イオンの名称・イオン結合・組成式の書き方と読み方・イオン結晶の性質）
 singleSource: true

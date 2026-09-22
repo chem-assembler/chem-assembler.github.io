@@ -5,6 +5,12 @@ unitLabel: 物質の構造
 group: 物質の分類と分離
 title: 物質の分類と分離
 summary: 物質は、混ざっているか（純物質・混合物）、何種類の元素からできているか（単体・化合物）の2段で分けます。同じ元素の単体どうしは同素体（S・C・O・P の4つ）。混合物は「何が違うか」（粒の大きさ・沸点・溶けやすさ・昇華しやすさ）を見て分離の方法を選びます。
+codes:
+  - theo.structure.substance-class
+  - theo.structure.element-vs-substance
+  - theo.structure.allotrope
+  - theo.structure.separation-method
+  - theo.structure.distillation-setup
 source:
   - textbook:化学基礎_000-030_巻頭+1編（物質の成分・純物質と混合物・分離と精製・単体と化合物・同素体）
 singleSource: true

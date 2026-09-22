@@ -5,6 +5,11 @@ unitLabel: 物質の構造
 group: 共有結合
 title: 共有結合 —— 電子式と構造式
 summary: 非金属の原子どうしは、不対電子を出し合って共有電子対をつくり、どちらも貴ガスと同じ電子配置になります。原子価（H1・O2・N3・C4）の数だけ結合の手をつなげば構造式、手を共有電子対に直して非共有電子対を足せば電子式。配位結合（H₃O⁺・NH₄⁺）まで。
+codes:
+  - theo.structure.valence
+  - theo.structure.electron-pair-count
+  - theo.structure.structural-formula
+  - theo.structure.coordinate-bond
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」s4〜10（原子価と電子式と構造式・構造式の書き方・電子式の書き方・配位結合）・練習1 s47〜49
   - textbook:化学基礎_031-090_2編（共有結合・分子式・構造式・電子式・配位結合）
