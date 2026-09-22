@@ -151,7 +151,13 @@ alt: D-グルコースの鎖状構造式。炭素6個の鎖の一端がホルミ
 caption: 鎖の一端が**ホルミル基**。間の4個の炭素が不斉炭素原子です。
 :::
 
-//図: 鎖状構造の不斉炭素原子4個に印を付けた図（作図器＋印）。いまは印の無い構造式だけ
+:::figure
+src: saccharide-glucose-chain-asymmetric.png
+gen: name=D-グルコース（鎖状） plain
+mark: kind=囲む at=不斉炭素 count=4
+alt: D-グルコースの鎖状構造式で、両端の CHO と CH2OH の炭素を除いた、まん中の炭素4個がそれぞれ破線の丸で囲まれている図
+caption: 囲んだ4個が**不斉炭素原子**です。両端の炭素は囲まれていません。
+:::
 
 :::link
 to: alkane-isomers
