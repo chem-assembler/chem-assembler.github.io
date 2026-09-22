@@ -256,7 +256,13 @@ terms:
 
 **この理由は覚えなくて構いませんが、「o- 体だけ沸点が低い」という結果を問題文で見たら、分子内水素結合を思い出せるようにしておきましょう。**
 
-//図: o-ニトロフェノールの分子内水素結合を点線で示した図。⚠ 作図器では水素結合の点線が引けない（新規作図）
+:::figure
+src: aromatic-homologs-o-nitrophenol-hbond.png
+gen: name=o-ニトロフェノール paper plain expand=NO2
+mark: kind=破線 at=フェノール性ヒドロキシ基 to=ニトロ基 label=水素結合
+alt: o-ニトロフェノールの構造式で、隣り合う −OH の H と −NO₂ の O が点線で結ばれ、「水素結合」と書いてある図
+caption: o-ニトロフェノールでは、隣り合う **−OH の H** と **−NO₂ の O** が同じ分子の中で水素結合します（点線）。
+:::
 
 :::link
 to: intermolecular-force
