@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="320" viewBox="0 0 760 320" role="img">
+  <!-- テフロン（ポリテトラフルオロエチレン）の鎖。C が6個 ＝ 繰り返し単位 ［CF₂−CF₂］ が3つぶん。
+       ★ F を緑にして、鎖が F に包まれていることを見せる（色だけに頼らないよう、文字と下の一行でも分かる）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .bond { stroke: #333; stroke-width: 2.5; fill: none; }
+    .atom { font-size: 26px; fill: #222; }
+    .f { font-size: 24px; fill: #2e7d32; }
+    .cont { font-size: 26px; fill: #888; }
+    .lab { font-size: 16px; fill: #333; }
+    .name { font-size: 18px; fill: #222; }
+  </style>
+
+  <!-- 主鎖 -->
+  <text class="cont" x="70" y="169" text-anchor="middle">…</text>
+  <path class="bond" d="M 86 160 L 114 160" />
+  <path class="bond" d="M 146 160 L 214 160" />
+  <path class="bond" d="M 246 160 L 314 160" />
+  <path class="bond" d="M 346 160 L 414 160" />
+  <path class="bond" d="M 446 160 L 514 160" />
+  <path class="bond" d="M 546 160 L 614 160" />
+  <path class="bond" d="M 646 160 L 674 160" />
+  <text class="cont" x="690" y="169" text-anchor="middle">…</text>
+
+  <!-- 炭素6個と、上下のフッ素 -->
+  <g>
+    <text class="atom" x="130" y="169" text-anchor="middle">C</text>
+    <path class="bond" d="M 130 144 L 130 116" />
+    <text class="f" x="130" y="106" text-anchor="middle">F</text>
+    <path class="bond" d="M 130 176 L 130 204" />
+    <text class="f" x="130" y="230" text-anchor="middle">F</text>
+  </g>
+  <g>
+    <text class="atom" x="230" y="169" text-anchor="middle">C</text>
+    <path class="bond" d="M 230 144 L 230 116" />
+    <text class="f" x="230" y="106" text-anchor="middle">F</text>
+    <path class="bond" d="M 230 176 L 230 204" />
+    <text class="f" x="230" y="230" text-anchor="middle">F</text>
+  </g>
+  <g>
+    <text class="atom" x="330" y="169" text-anchor="middle">C</text>
+    <path class="bond" d="M 330 144 L 330 116" />
+    <text class="f" x="330" y="106" text-anchor="middle">F</text>
+    <path class="bond" d="M 330 176 L 330 204" />
+    <text class="f" x="330" y="230" text-anchor="middle">F</text>
+  </g>
+  <g>
+    <text class="atom" x="430" y="169" text-anchor="middle">C</text>
+    <path class="bond" d="M 430 144 L 430 116" />
+    <text class="f" x="430" y="106" text-anchor="middle">F</text>
+    <path class="bond" d="M 430 176 L 430 204" />
+    <text class="f" x="430" y="230" text-anchor="middle">F</text>
+  </g>
+  <g>
+    <text class="atom" x="530" y="169" text-anchor="middle">C</text>
+    <path class="bond" d="M 530 144 L 530 116" />
+    <text class="f" x="530" y="106" text-anchor="middle">F</text>
+    <path class="bond" d="M 530 176 L 530 204" />
+    <text class="f" x="530" y="230" text-anchor="middle">F</text>
+  </g>
+  <g>
+    <text class="atom" x="630" y="169" text-anchor="middle">C</text>
+    <path class="bond" d="M 630 144 L 630 116" />
+    <text class="f" x="630" y="106" text-anchor="middle">F</text>
+    <path class="bond" d="M 630 176 L 630 204" />
+    <text class="f" x="630" y="230" text-anchor="middle">F</text>
+  </g>
+
+  <text class="lab" x="380" y="66" text-anchor="middle">C の手4本のうち2本が F —— 鎖の外側は F だけ</text>
+  <text class="name" x="380" y="284" text-anchor="middle">ポリテトラフルオロエチレン（テフロン）</text>
+</svg>
