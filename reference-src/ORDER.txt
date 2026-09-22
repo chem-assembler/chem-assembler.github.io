@@ -67,6 +67,7 @@ iron
 copper-silver
 transition-oxidizers
 complex-ion
+alloy
 precipitate
 flame-color
 cation-separation

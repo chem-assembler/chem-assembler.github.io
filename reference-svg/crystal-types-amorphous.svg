@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="330" viewBox="0 0 560 330" role="img">
+  <!-- 結晶と非晶質（アモルファス）の粒子の並びの模式図。左は規則正しい格子、右は同じ粒子が不規則に並ぶ。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .box { fill: #fafafa; stroke: #999; stroke-width: 1.5; }
+    .p { fill: #5c8fc9; stroke: #2e5f95; stroke-width: 1.5; }
+    .cap { font-family: system-ui, sans-serif; font-size: 17px; fill: #222; }
+    .small { font-family: system-ui, sans-serif; font-size: 14px; fill: #555; }
+  </style>
+
+  <!-- 結晶 -->
+  <rect class="box" x="26" y="40" width="228" height="228" rx="6" />
+  <g class="p">
+    <circle cx="50" cy="64" r="10" /><circle cx="86" cy="64" r="10" /><circle cx="122" cy="64" r="10" /><circle cx="158" cy="64" r="10" /><circle cx="194" cy="64" r="10" /><circle cx="230" cy="64" r="10" />
+    <circle cx="50" cy="100" r="10" /><circle cx="86" cy="100" r="10" /><circle cx="122" cy="100" r="10" /><circle cx="158" cy="100" r="10" /><circle cx="194" cy="100" r="10" /><circle cx="230" cy="100" r="10" />
+    <circle cx="50" cy="136" r="10" /><circle cx="86" cy="136" r="10" /><circle cx="122" cy="136" r="10" /><circle cx="158" cy="136" r="10" /><circle cx="194" cy="136" r="10" /><circle cx="230" cy="136" r="10" />
+    <circle cx="50" cy="172" r="10" /><circle cx="86" cy="172" r="10" /><circle cx="122" cy="172" r="10" /><circle cx="158" cy="172" r="10" /><circle cx="194" cy="172" r="10" /><circle cx="230" cy="172" r="10" />
+    <circle cx="50" cy="208" r="10" /><circle cx="86" cy="208" r="10" /><circle cx="122" cy="208" r="10" /><circle cx="158" cy="208" r="10" /><circle cx="194" cy="208" r="10" /><circle cx="230" cy="208" r="10" />
+    <circle cx="50" cy="244" r="10" /><circle cx="86" cy="244" r="10" /><circle cx="122" cy="244" r="10" /><circle cx="158" cy="244" r="10" /><circle cx="194" cy="244" r="10" /><circle cx="230" cy="244" r="10" />
+  </g>
+  <text class="cap" x="140" y="26" text-anchor="middle">結晶</text>
+  <text class="small" x="140" y="294" text-anchor="middle">粒子が規則正しく並ぶ</text>
+  <text class="small" x="140" y="316" text-anchor="middle">決まった融点で一斉に融ける</text>
+
+  <!-- 非晶質 -->
+  <rect class="box" x="306" y="40" width="228" height="228" rx="6" />
+  <g class="p">
+    <circle cx="330" cy="64" r="10" /><circle cx="365" cy="75" r="10" /><circle cx="398" cy="62" r="10" /><circle cx="436" cy="80" r="10" /><circle cx="470" cy="66" r="10" /><circle cx="508" cy="84" r="10" />
+    <circle cx="342" cy="104" r="10" /><circle cx="381" cy="110" r="10" /><circle cx="414" cy="96" r="10" /><circle cx="452" cy="114" r="10" /><circle cx="490" cy="120" r="10" />
+    <circle cx="326" cy="140" r="10" /><circle cx="362" cy="146" r="10" /><circle cx="398" cy="132" r="10" /><circle cx="430" cy="150" r="10" /><circle cx="468" cy="148" r="10" /><circle cx="510" cy="156" r="10" />
+    <circle cx="344" cy="176" r="10" /><circle cx="382" cy="182" r="10" /><circle cx="414" cy="170" r="10" /><circle cx="452" cy="186" r="10" /><circle cx="488" cy="188" r="10" />
+    <circle cx="330" cy="208" r="10" /><circle cx="366" cy="216" r="10" /><circle cx="402" cy="204" r="10" /><circle cx="436" cy="222" r="10" /><circle cx="474" cy="216" r="10" /><circle cx="510" cy="226" r="10" />
+    <circle cx="340" cy="246" r="10" /><circle cx="386" cy="248" r="10" /><circle cx="420" cy="240" r="10" /><circle cx="456" cy="252" r="10" /><circle cx="494" cy="252" r="10" />
+  </g>
+  <text class="cap" x="420" y="26" text-anchor="middle">非晶質（アモルファス）</text>
+  <text class="small" x="420" y="294" text-anchor="middle">並び方に規則性が無い</text>
+  <text class="small" x="420" y="316" text-anchor="middle">温めると少しずつ軟らかくなる</text>
+</svg>
