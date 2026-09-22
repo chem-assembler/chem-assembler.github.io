@@ -61061,19 +61061,25 @@
         assert(threw(() => RM.parseMark('kind=囲む label=x', 'テスト')), '★否定対照 at= の無い mark が通ってしまう');
         assert(threw(() => RM.parseMark('kind=文字 at=環C2', 'テスト')), '★否定対照 label= の無い kind=文字 が通ってしまう');
         assert(threw(() => RM.parseMark('kind=囲む at=不斉炭素 count=よっつ', 'テスト')), '★否定対照 count= に数でない値が通ってしまう');
-        {   // ⚠ `gen:` の無い図に `mark:` は書けない（印だけの図はありえない）
-            const page = (fig) => '---\nid: t\nunit: org.x\nunitLabel: 試\ngroup: 試\ntitle: 試し\n'
-                + 'summary: 印の書式を試すページです。\nsource:\n- 試し\nwhy: 試しに作ったページ\n---\n\n'
-                + ':::section\nanchor: a\ntitle: 試し\nlead: 試すだけの節です。\n:::\n\n' + fig;
-            const ok = ':::figure\nsrc: a.png\ngen: name=マルトース（麦芽糖） haworth\n'
-                + 'mark: kind=囲む at=グリコシド結合\nmark: kind=文字 at=環の酸素 label=O\n'
-                + 'alt: 試しの図です\ncaption: 試しの図。\n:::\n';
-            const got = RM.parsePage(page(ok), 'テスト', { pages: ['t'] });
-            const fig = got.blocks.find(b => b.kind === 'figure');
-            assert(fig && Array.isArray(fig.mark) && fig.mark.length === 2,
-                `mark: を2行書いたのに ${fig && JSON.stringify(fig.mark)}（★ 何行でも書けること）`);
-            const noGen = ':::figure\nsrc: a.png\nmark: kind=囲む at=グリコシド結合\nalt: 試しの図です\ncaption: 試しの図。\n:::\n';
-            assert(threw(() => RM.parsePage(page(noGen), 'テスト', { pages: ['t'] })),
+        {   // ★ 本物の原稿（disaccharide.md）を読んで、印の行だけを書き換えて試す
+            //   ⚠ 前書きを手で組むと、前書きの決まりが増えるたびにこのテストが別の理由で落ちる
+            const FRESH = () => '?nocache=' + Date.now() + Math.random();
+            const ids = RM.normalize(await (await fetch('../reference-src/ORDER.txt' + FRESH())).text()).split('\n')
+                .map(s => s.trim()).filter(s => s && !s.startsWith('#'));
+            const src = await (await fetch('../reference-src/disaccharide.md' + FRESH())).text();
+            const MARK = 'mark: kind=囲む at=グリコシド結合 label=グリコシド結合 count=1';
+            const GEN = 'gen: name=マルトース（麦芽糖） haworth';
+            assert(src.includes(MARK) && src.includes(GEN), 'テスト前提: disaccharide.md のグリコシド結合の図の行が変わった');
+            const figOf = (text) => RM.parsePage(text, 'テスト', { pages: ids }).blocks
+                .find(b => b.kind === 'figure' && b.src === 'disaccharide-glycosidic-bond.png');
+            const one = figOf(src);
+            assert(one && JSON.stringify(one.mark) === JSON.stringify([MARK.slice('mark: '.length)]),
+                `原稿の mark: が ${one && JSON.stringify(one.mark)} で読まれた`);
+            const two = figOf(src.replace(MARK, MARK + '\nmark: kind=文字 at=環の酸素 label=O'));
+            assert(two && Array.isArray(two.mark) && two.mark.length === 2,
+                `mark: を2行書いたのに ${two && JSON.stringify(two.mark)}（★ 何行でも書けること）`);
+            // ⚠ `gen:` の無い図に `mark:` は書けない（印だけの図はありえない）
+            assert(threw(() => figOf(src.replace(GEN + '\n', '').replace(GEN + '\r\n', ''))),
                 '★否定対照 gen: の無い図に mark: が書けてしまう（印だけの図はありえない）');
         }
         return 'グリコシド結合1・不斉炭素4・C1-OH・環C1〜6・C3-C4 が当たる／囲む・枠・文字が描かれる／'
