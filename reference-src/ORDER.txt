@@ -122,6 +122,7 @@ heat-measurement
 hess-law
 bond-enthalpy
 light-energy
+entropy
 reaction-rate
 rate-law
 activation-energy
