@@ -5,6 +5,10 @@ unitLabel: 化学平衡
 group: 圧平衡定数
 title: 圧平衡定数と解離度
 summary: 気体の反応では、濃度の代わりに分圧で表した圧平衡定数 Kp を使います。Kp と Kc は「両辺の分子の数の差」の分の RT で書き換えます。N₂O₄ の解離度 α を使うと Kp ＝ 4pα²／(1 − α) で、全圧 P で表すと Kp ＝ 4α²P／(1 − α²) です。
+codes:
+  - theo.equilibrium.kp-kc
+  - theo.equilibrium.dissociation
+  - theo.equilibrium.dissociation-approx
 source:
   - slides:速度平衡の標準問題演習「解離度と圧平衡定数」s3-16
   - textbook:R5化学Vol.1-3編（圧平衡定数・濃度平衡定数）

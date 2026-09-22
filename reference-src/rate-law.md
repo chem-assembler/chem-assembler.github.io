@@ -5,6 +5,12 @@ unitLabel: 反応の速さ
 group: 反応速度式
 title: 反応速度式と反応の次数
 summary: 反応速度は反応物の濃度の係数乗の積に比例し、v ＝ k[A]ᵃ[B]ᵇ と表せます（k は反応速度定数）。例外は H₂O₂ と N₂O₅ の分解（1次反応）の2つだけ覚えます。次数は本来実験で決めるもので、実験の表から次数と k を求めます。
+codes:
+  - theo.kinetics.rate-determining
+  - theo.kinetics.rate-equation
+  - theo.kinetics.first-order-exception
+  - theo.kinetics.order-from-data
+  - theo.kinetics.first-order-data
 source:
   - slides:速度平衡の基本１「反応の速度」s7-12・練習 s20-22
   - textbook:R5化学Vol.1-3編（反応速度式・反応の次数）

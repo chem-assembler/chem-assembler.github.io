@@ -5,6 +5,11 @@ unitLabel: 電離平衡
 group: 塩の加水分解
 title: 塩の加水分解と pH —— Kh ＝ ch²
 summary: 弱酸の塩・弱塩基の塩の水溶液の pH は、加水分解の平衡定数 Kh を使って求めます。弱酸のときと同じ3行の表から Kh ＝ ch² を導き、KaKh ＝ Kw で Kh を出して代入します。
+codes:
+  - theo.ionic-eq.hydrolysis-equation
+  - theo.ionic-eq.hydrolysis-constant
+  - theo.ionic-eq.ka-kh-kw
+  - theo.ionic-eq.salt-ph
 source:
   - slides:速度平衡の基本５「塩の電離平衡」s9-22・練習 s24
   - slides:速度平衡の基本６「緩衝液」s4・s7（復習問題・加水分解度と電離度の比較）

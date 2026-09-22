@@ -5,6 +5,13 @@ unitLabel: 溶液
 group: 希薄溶液の性質
 title: 希薄溶液の性質 —— 蒸気圧降下・沸点上昇・凝固点降下
 summary: 不揮発性の物質を溶かすと、蒸気圧が下がり、沸点が上がり、凝固点が下がる。上がり下がりの幅は溶質の種類によらず、溶けている粒子の質量モル濃度に比例する（Δt ＝ K·m）。電解質は電離したあとの粒子の数で数える。冷却曲線からの凝固点の読み方と、分子量の求め方まで。
+codes:
+  - theo.solution.vapor-pressure-lowering
+  - theo.solution.colligative
+  - theo.solution.particle-count
+  - theo.solution.cooling-curve
+  - theo.solution.freezing-molar-mass
+  - theo.solution.association
 source:
   - textbook:R5化学Vol.1-1編 3章2節（蒸気圧降下と沸点上昇 p.54〜55・凝固点降下 p.56〜57・分子量 p.58）
   - book:化学の新研究2023 p.184〜185（冷却曲線の外挿・過冷却）

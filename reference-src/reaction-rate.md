@@ -5,6 +5,10 @@ unitLabel: 反応の速さ
 group: 反応速度の表し方
 title: 反応速度の表し方 —— 主語と単位
 summary: 反応の速さは、時間あたりの反応物の減少量または生成物の生成量で表します。同じ反応でも、どの物質に着目するか（主語）と、mol か mol/L か・min か s か（単位）で数値が変わります。着目する物質を変えたときの速度の比は、反応式の係数の比です。
+codes:
+  - theo.kinetics.rate-expression
+  - theo.kinetics.rate-ratio
+  - theo.kinetics.average-rate
 source:
   - slides:速度平衡の基本１「反応の速度」s4-6・練習(3) s20-21
   - textbook:R5化学Vol.1-3編（反応速度の表し方・平均の反応速度）

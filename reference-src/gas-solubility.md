@@ -5,6 +5,11 @@ unitLabel: 溶液
 group: 気体の溶解度
 title: 気体の溶解度 —— ヘンリーの法則
 summary: 気体は低温・高圧ほどよく溶ける。溶ける量（mol・g）は、その気体の分圧と水の量に比例する（ヘンリーの法則）。溶けた気体の体積は「溶かしたときの圧力で測ると一定」「決まった圧力に直すと比例」。どちらも気体の法則の「比例・反比例」で説明できる。
+codes:
+  - theo.solution.gas-temperature
+  - theo.solution.henry
+  - theo.solution.henry-volume
+  - theo.solution.gas-daily-life
 source:
   - textbook:R5化学Vol.1-1編 3章1節（気体の溶解度・ヘンリーの法則 p.51〜52）
   - slides:気体の基本１「気体の状態方程式」s8-11（公式は使わない・＝の逆側は比例、同じ側は反比例）

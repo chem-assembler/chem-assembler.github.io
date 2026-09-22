@@ -5,6 +5,13 @@ unitLabel: 電離平衡
 group: 溶解度積
 title: 溶解度積 —— 沈殿の判定と硫化物の分離
 summary: 沈殿しやすい塩の飽和溶液では、イオンの濃度の積が溶解度積 Ksp という一定の値になります。Ksp と比べて沈殿するかを判定し、飽和溶液の濃度、共通イオン効果、モール法、硫化物の分離（K₁K₂ と Ksp）まで扱います。
+codes:
+  - theo.ionic-eq.ksp
+  - theo.ionic-eq.precipitation-judge
+  - theo.ionic-eq.ksp-saturated
+  - theo.ionic-eq.mohr
+  - theo.ionic-eq.common-ion
+  - theo.ionic-eq.sulfide
 source:
   - slides:速度平衡の基本７「溶解平衡」s6-16・練習1〜2 s18-20
   - slides:速度平衡の標準問題演習「硫化物沈殿の溶解度積」s3-20（練習1〜2）

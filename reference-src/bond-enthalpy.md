@@ -5,6 +5,10 @@ unitLabel: 化学反応とエネルギー
 group: 結合エンタルピー
 title: 結合エンタルピー
 summary: 気体分子の共有結合 1mol を切って原子にするのに必要なエネルギーを結合エンタルピーといいます。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。
+codes:
+  - theo.thermo.bond-enthalpy
+  - theo.thermo.bond-calc
+  - theo.thermo.bond-gas-only
 source:
   - textbook:R5化学Vol.1-2編（1章2節 結合エンタルピー：定義、H−H 436kJ/mol、CH₄ の 1664kJ から C−H 416kJ/mol、表4の値、H₂ ＋ Cl₂ → 2HCl の図と −185kJ、反応物・生成物がともに気体のときだけ成り立つこと）
   - app:ratio/thermo（h4 結合エンタルピーから反応エンタルピー・h5 その逆問題。反応物を基準 0 にし、原子を上・生成物を下に置く図）

@@ -5,6 +5,13 @@ unitLabel: 溶液
 group: コロイド
 title: コロイド
 summary: 直径 1 nm〜1 μm の粒子が散らばった状態がコロイド。ろ紙は通るが半透膜は通らない大きさから、チンダル現象・ブラウン運動・透析・電気泳動が出てくる。疎水コロイドの凝析、親水コロイドの塩析、保護コロイドまで。FeO(OH) で通す。
+codes:
+  - theo.solution.colloid-size
+  - theo.solution.colloid-kinds
+  - theo.solution.iron-colloid
+  - theo.solution.colloid-properties
+  - theo.solution.coagulation
+  - theo.solution.salting-out
 source:
   - textbook:R5化学Vol.1-1編 3章3節（コロイド粒子 p.62・分類 p.63・コロイド溶液の性質 p.64〜65・疎水コロイドと親水コロイド p.66〜67）
   - book:化学の新研究2023 p.199（コロイド粒子の大きさの2通りの定義）・p.203（ブラウン運動）・p.207（粒子の電荷の由来・凝析力）
