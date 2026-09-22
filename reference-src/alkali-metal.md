@@ -5,6 +5,13 @@ unitLabel: 金属元素
 group: アルカリ金属
 title: アルカリ金属 —— ナトリウムとその化合物
 summary: 1族の金属（Li・Na・K）の単体と、NaOH・Na₂CO₃・NaHCO₃ の性質と反応、アンモニアソーダ法の5本の式のまとめです。
+codes:
+  - inorg.metal.alkali-water
+  - inorg.metal.alkali-storage-prep
+  - inorg.metal.alkali-reactivity
+  - inorg.metal.deliquescence-efflorescence
+  - inorg.metal.carbonate-bicarbonate
+  - inorg.metal.solvay
 source:
   - textbook:R5化学Vol.2-4編3章（アルカリ金属の単体・化合物・アンモニアソーダ法の事実の確認）
   - muki:separation-model.js（炎色の色名 Na 黄色・K 赤紫色）
