@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="380" viewBox="0 0 840 380" role="img">
+  <!-- トルエンの環に o（2・6）・m（3・5）・p（4）を置き、入りやすい o と p を赤、入りにくい m を灰で塗り分ける。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ★ 色だけに意味を持たせない（o・m・p の文字と、右の説明でも分かるようにする）。 -->
+  <style>
+    .ring { stroke: #333; stroke-width: 2.5; fill: none; stroke-linejoin: round; }
+    .dbl { stroke: #333; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+    .bond { stroke: #333; stroke-width: 2.5; fill: none; }
+    .hot { fill: #fbe3e3; stroke: #c62828; stroke-width: 2.5; }
+    .cold { fill: #f0f0f0; stroke: #999; stroke-width: 2.5; }
+    .hotT { font-size: 20px; fill: #c62828; }
+    .coldT { font-size: 20px; fill: #666; }
+    .atom { font-size: 21px; fill: #222; }
+    .num { font-size: 14px; fill: #666; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 16px; fill: #333; }
+  </style>
+
+  <text class="lab" x="24" y="34">トルエン</text>
+
+  <!-- ベンゼン環（中心 250,200・R=92） -->
+  <polygon class="ring" points="250,108 330,154 330,246 250,292 170,246 170,154" />
+  <path class="dbl" d="M 259.6 131.9 L 304.5 157.7" />
+  <path class="dbl" d="M 304.5 242.3 L 259.6 268.1" />
+  <path class="dbl" d="M 185.9 225.8 L 185.9 174.2" />
+
+  <!-- メチル基（1位） -->
+  <path class="bond" d="M 250 108 L 250 76" />
+  <text class="atom" x="250" y="66" text-anchor="middle">CH₃</text>
+  <text class="num" x="276" y="99" text-anchor="middle">1</text>
+
+  <!-- o（2・6） -->
+  <circle class="hot" cx="330" cy="154" r="20" />
+  <text class="hotT" x="330" y="161" text-anchor="middle">o</text>
+  <text class="num" x="368" y="148" text-anchor="middle">2</text>
+  <circle class="hot" cx="170" cy="154" r="20" />
+  <text class="hotT" x="170" y="161" text-anchor="middle">o</text>
+  <text class="num" x="132" y="148" text-anchor="middle">6</text>
+
+  <!-- m（3・5） -->
+  <circle class="cold" cx="330" cy="246" r="20" />
+  <text class="coldT" x="330" y="253" text-anchor="middle">m</text>
+  <text class="num" x="368" y="256" text-anchor="middle">3</text>
+  <circle class="cold" cx="170" cy="246" r="20" />
+  <text class="coldT" x="170" y="253" text-anchor="middle">m</text>
+  <text class="num" x="132" y="256" text-anchor="middle">5</text>
+
+  <!-- p（4） -->
+  <circle class="hot" cx="250" cy="292" r="20" />
+  <text class="hotT" x="250" y="299" text-anchor="middle">p</text>
+  <text class="num" x="250" y="336" text-anchor="middle">4</text>
+
+  <!-- 説明 -->
+  <circle class="hot" cx="446" cy="146" r="14" />
+  <text class="small" x="472" y="153">o（2・6）と p（4）—— 入りやすい</text>
+  <circle class="cold" cx="446" cy="200" r="14" />
+  <text class="small" x="472" y="207">m（3・5）—— ほとんど入らない</text>
+  <text class="small" x="432" y="292">3つとも置換されると 2,4,6 の位置</text>
+</svg>

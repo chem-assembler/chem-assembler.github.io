@@ -1159,6 +1159,7 @@
 {"kind":"text","text":"たとえば、トルエン C₆H₅CH₃ をニトロ化すると、<b>o-ニトロトルエンと p-ニトロトルエンが主に</b>でき、m 体は少ししかできません。メチル基は o と p の位置に次の置換基を呼び込むはたらき（<b>o,p 配向性</b>）をもつためです。"},
 {"kind":"reaction","left":"C₆H₅CH₃ ＋ 3HNO₃","over":"濃硫酸","under":"加熱","right":"C₆H₂(CH₃)(NO₂)₃ ＋ 3H₂O","level":"★☆☆","note":"2,4,6-トリニトロトルエン（TNT）ができます。メチル基から見て o・p・o の3か所に入るので、位置番号が 2,4,6 になります。"},
 {"kind":"text","text":"<b>配向性をもつ基の一覧は覚えなくて構いません。</b>「トルエンなら o と p に入る」ことと、TNT という名前が分かれば十分です。フェノールの臭素化で 2,4,6 の位置に入るのも、同じ理由です。"},
+{"kind":"figure","src":"benzene-substitution-orientation.png","svg":"benzene-substitution-orientation.svg","alt":"トルエンの環の5か所に o・m・p の印を置き、o と p を赤、m を灰で塗り分けた図","caption":"どれもメチル基から見た位置の呼び名です。赤い3か所が埋まると位置番号が 2,4,6 —— <b>TNT の名前の数字</b>になります。"},
 {"kind":"heading","title":"例題"},
 {"kind":"text","text":"紙に書いて解いてみてください。答え合わせは「解答を見る」から。"},
 {"kind":"exercise","source":"draft:reference-outline/aromatic.md の benzene-substitution の例題1（ニトロ化の反応式とニトロベンゼンの密度から作った問い。どの本の問題も見ていない）","prompt":"ベンゼンに混酸を加えて約 60℃ に温めたときの反応式を書け。また、生成物を水と混ぜると、上の層と下の層のどちらに来るか。","answer":"C₆H₆ ＋ HNO₃ → C₆H₅NO₂ ＋ H₂O です。ニトロベンゼンは<b>水より重い</b>ので、<b>下の層</b>に来ます。"},
