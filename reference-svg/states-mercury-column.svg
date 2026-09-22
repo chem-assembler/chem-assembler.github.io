@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="430" viewBox="0 0 520 430" role="img">
+  <!-- 水銀柱による大気圧の測定（トリチェリの実験）。一端を閉じたガラス管に水銀を満たして水銀だめに倒立させると、
+       水銀面から 760 mm の高さで止まり、上の部分は真空になる。大気圧が水銀面を押す力と、水銀柱の重さによる圧力がつり合う。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1565c0" />
+    </marker>
+    <marker id="dm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333" />
+    </marker>
+  </defs>
+  <style>
+    .glass { fill: none; stroke: #333; stroke-width: 2.5; }
+    .hg { fill: #b0b8bf; }
+    .vac { fill: #ffffff; }
+    .lead { stroke: #555; stroke-width: 1.2; fill: none; }
+    .push { stroke: #1565c0; stroke-width: 3; fill: none; }
+    .dim { stroke: #333; stroke-width: 1.5; fill: none; }
+    .guide { stroke: #777; stroke-width: 1.2; stroke-dasharray: 4 3; fill: none; }
+    .cap { font-family: system-ui, sans-serif; font-size: 16px; fill: #222; }
+    .small { font-family: system-ui, sans-serif; font-size: 14px; fill: #444; }
+    .blue { font-family: system-ui, sans-serif; font-size: 15px; fill: #1565c0; }
+  </style>
+
+  <!-- 水銀だめの水銀 -->
+  <rect class="hg" x="62" y="330" width="336" height="58" />
+  <!-- 管の中：上は真空、下は水銀柱 -->
+  <rect class="vac" x="201" y="48" width="28" height="72" />
+  <rect class="hg" x="201" y="120" width="28" height="252" />
+  <!-- ガラスの器 -->
+  <path class="glass" d="M 60 300 L 60 390 L 400 390 L 400 300" />
+  <path class="glass" d="M 200 372 L 200 62 A 15 15 0 0 1 230 62 L 230 372" />
+
+  <!-- 高さの寸法（水銀面から柱の上端まで） -->
+  <path class="guide" d="M 166 120 L 200 120" />
+  <path class="guide" d="M 166 330 L 200 330" />
+  <path class="dim" marker-start="url(#dm)" marker-end="url(#dm)" d="M 172 124 L 172 326" />
+  <text class="cap" x="164" y="230" text-anchor="end">760 mm</text>
+
+  <!-- 真空と水銀柱の札 -->
+  <path class="lead" d="M 222 84 L 262 84" />
+  <text class="small" x="268" y="89">真空（トリチェリーの真空）</text>
+  <path class="lead" d="M 222 190 L 262 190" />
+  <text class="small" x="268" y="187">水銀柱</text>
+  <text class="small" x="268" y="206">（重さで下の面を押す）</text>
+
+  <!-- 大気圧が水銀面を押す -->
+  <text class="blue" x="340" y="252" text-anchor="middle">大気圧</text>
+  <text class="blue" x="340" y="272" text-anchor="middle">1.013×10⁵ Pa（1 atm）</text>
+  <path class="push" marker-end="url(#ah)" d="M 310 282 L 310 324" />
+  <path class="push" marker-end="url(#ah)" d="M 370 282 L 370 324" />
+  <path class="push" marker-end="url(#ah)" d="M 90 282 L 90 324" />
+  <path class="push" marker-end="url(#ah)" d="M 130 282 L 130 324" />
+
+  <text class="small" x="230" y="414" text-anchor="middle">水銀だめ</text>
+</svg>
