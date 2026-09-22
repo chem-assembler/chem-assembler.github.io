@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="450" viewBox="0 0 880 450" role="img">
+  <!-- 弱酸を薄めると電離度 α が大きくなる理由を、粒の混み具合で見せる模式図。
+       左＝濃い（粒がぎっしり。電離した H+ はすぐ CH3COO- に出会って戻る ＝ 電離している割合が小さい）。
+       右＝薄い（同じ大きさの器に粒が少ない。H+ は相手に出会いにくく、電離したままでいる ＝ 割合が大きい）。
+       ⚠ 数の比は「向き」を見せるためのもの。α ＝ √(Ka／c) の値を読ませる図ではない。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .beaker { fill: none; stroke: #333; stroke-width: 3; }
+    .water { fill: #eaf3fb; stroke: none; }
+    .surf { stroke: #90caf9; stroke-width: 2; fill: none; }
+    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
+    .note { font-size: 17px; fill: #333; text-anchor: middle; }
+    .key { font-size: 17px; fill: #6a1b9a; text-anchor: middle; }
+    .p { font-size: 13px; text-anchor: middle; fill: #222; }
+    .acid { fill: #fff; stroke: #c62828; stroke-width: 2; }
+    .anion { fill: #e8f1fb; stroke: #1565c0; stroke-width: 2; }
+    .far { stroke: #6a1b9a; stroke-width: 2; stroke-dasharray: 7 6; fill: none; }
+  </style>
+
+  <!-- ================= 左: 濃い ================= -->
+  <text class="ttl" x="230" y="44">濃い（c が大きい）</text>
+  <path class="water" d="M 42 138 L 42 356 Q 42 370 58 370 L 402 370 Q 418 370 418 356 L 418 138 Z" />
+  <path class="beaker" d="M 40 100 L 40 356 Q 40 372 56 372 L 404 372 Q 420 372 420 356 L 420 100" />
+  <path class="surf" d="M 42 138 L 418 138" />
+
+  <g class="acid">
+    <rect x="62" y="162" width="70" height="26" rx="13" />
+    <rect x="148" y="162" width="70" height="26" rx="13" />
+    <rect x="234" y="162" width="70" height="26" rx="13" />
+    <rect x="320" y="162" width="70" height="26" rx="13" />
+    <rect x="62" y="210" width="70" height="26" rx="13" />
+    <rect x="148" y="210" width="70" height="26" rx="13" />
+    <rect x="62" y="258" width="70" height="26" rx="13" />
+    <rect x="148" y="258" width="70" height="26" rx="13" />
+    <rect x="234" y="258" width="70" height="26" rx="13" />
+    <rect x="320" y="258" width="70" height="26" rx="13" />
+    <rect x="105" y="306" width="70" height="26" rx="13" />
+    <rect x="191" y="306" width="70" height="26" rx="13" />
+    <rect x="277" y="306" width="70" height="26" rx="13" />
+  </g>
+  <g class="p">
+    <text x="97" y="180">CH₃COOH</text><text x="183" y="180">CH₃COOH</text>
+    <text x="269" y="180">CH₃COOH</text><text x="355" y="180">CH₃COOH</text>
+    <text x="97" y="228">CH₃COOH</text><text x="183" y="228">CH₃COOH</text>
+    <text x="97" y="276">CH₃COOH</text><text x="183" y="276">CH₃COOH</text>
+    <text x="269" y="276">CH₃COOH</text><text x="355" y="276">CH₃COOH</text>
+    <text x="140" y="324">CH₃COOH</text><text x="226" y="324">CH₃COOH</text>
+    <text x="312" y="324">CH₃COOH</text>
+  </g>
+  <!-- 電離した1組（となり合っている） -->
+  <rect class="anion" x="238" y="210" width="72" height="26" rx="13" />
+  <text class="p" x="274" y="228">CH₃COO⁻</text>
+  <circle cx="342" cy="223" r="15" fill="#c62828" />
+  <text class="p" x="342" y="228" fill="#fff">H⁺</text>
+
+  <!-- ================= 右: 薄い ================= -->
+  <text class="ttl" x="650" y="44">薄い（c が小さい）</text>
+  <path class="water" d="M 462 138 L 462 356 Q 462 370 478 370 L 822 370 Q 838 370 838 356 L 838 138 Z" />
+  <path class="beaker" d="M 460 100 L 460 356 Q 460 372 476 372 L 824 372 Q 840 372 840 356 L 840 100" />
+  <path class="surf" d="M 462 138 L 838 138" />
+
+  <g class="acid">
+    <rect x="496" y="168" width="70" height="26" rx="13" />
+    <rect x="712" y="306" width="70" height="26" rx="13" />
+  </g>
+  <g class="p">
+    <text x="531" y="186">CH₃COOH</text>
+    <text x="747" y="324">CH₃COOH</text>
+  </g>
+  <!-- 電離した1組（遠く離れている） -->
+  <rect class="anion" x="500" y="288" width="72" height="26" rx="13" />
+  <text class="p" x="536" y="306">CH₃COO⁻</text>
+  <circle cx="770" cy="212" r="15" fill="#c62828" />
+  <text class="p" x="770" y="217" fill="#fff">H⁺</text>
+  <path class="far" d="M 578 292 L 748 222" />
+
+  <!-- ================= 下の一言 ================= -->
+  <text class="note" x="230" y="406">ぎっしり ＝ H⁺ はすぐ相手に出会って戻る</text>
+  <text class="key" x="230" y="434">電離度 α は小さい</text>
+  <text class="note" x="650" y="406">まばら ＝ H⁺ は相手に出会えず電離したまま</text>
+  <text class="key" x="650" y="434">電離度 α は大きい</text>
+</svg>
