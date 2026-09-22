@@ -5,6 +5,11 @@ unitLabel: 物質量と化学反応式
 group: 原子量と分子量
 title: 原子量・分子量・式量 —— てんびんで平均する
 summary: 原子の質量は ¹²C 1個を 12 とした相対質量で表します。元素の原子量は、同位体の相対質量を存在比で重みづけた平均（加重平均）で、てんびんの支点として「多い方に近い」点に来ます。分子量・式量は原子量の和です。
+codes:
+  - theo.mole.relative-mass
+  - theo.mole.atomic-weight
+  - theo.mole.isotope-average
+  - theo.mole.formula-weight
 source:
   - slides:物質量練習帳解答 No.7（原子量）・No.8(4)(5)（平均分子量）・No.9(1)（組成と原子量）
   - slides:気体の基本２「混合気体」s15-16（てんびんで加重平均・てんびんで求められる理由）

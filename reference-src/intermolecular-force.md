@@ -5,6 +5,12 @@ unitLabel: 物質の構造
 group: 分子間力
 title: 分子間力と沸点
 summary: 分子どうしを引きつける力が分子間力で、ファンデルワールス力と水素結合があります。沸点は「水素結合があるか → 分子量 → 極性」の順に見れば比べられます。分子結晶の性質や、実在気体のずれも同じ力で説明できます。
+codes:
+  - theo.structure.imf-kinds
+  - theo.structure.hydrogen-bond
+  - theo.structure.bp-comparison
+  - theo.structure.hydride-bp
+  - theo.structure.molecular-crystal
 source:
   - textbook:化学基礎 2編2章（分子間力・水素結合・ファンデルワールス力・分子結晶）
   - textbook:R5化学Vol.1-1編 1章（状態変化と分子間力・水素化合物の沸点・粒子間の力の強さの順）

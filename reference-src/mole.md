@@ -5,6 +5,12 @@ unitLabel: 物質量と化学反応式
 group: 物質量
 title: 物質量 —— すべて mol を経由する
 summary: 6.0×10²³ 個の集まりが 1mol です。1mol には「分子量に g をつけた質量」「6.0×10²³ 個」「気体なら標準状態で 22.4L」の3つの顔があり、換算は主語をつけた比例式を倍率で解いて、必ず mol を経由します。
+codes:
+  - theo.mole.mol-def
+  - theo.mole.molar-quantities
+  - theo.mole.conversion-via-mol
+  - theo.mole.atoms-in-molecule
+  - theo.mole.empirical-formula
 source:
   - slides:物質量練習帳解答 No.1〜No.5・No.8(1)〜(3)・No.9(2)（解き方の流儀は _toc-theory-D.txt「解き方の流儀」1〜4）
   - textbook:化学基礎_091-191_3編（アボガドロ定数・モル質量・モル体積・標準状態 0℃・1.013×10⁵Pa）

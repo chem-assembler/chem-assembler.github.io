@@ -5,6 +5,11 @@ unitLabel: 物質量と化学反応式
 group: 量的関係
 title: 化学反応の量的関係 —— 係数の比は mol の比
 summary: 化学反応式の係数の比は、反応する物質の mol の比です。反応前・変化量・反応後の3行の表を書き、変化量を「係数 × 倍率」で埋めます。過不足は「mol ÷ 係数」の小さい方で反応が止まります。気体どうしなら体積のまま計算できます。
+codes:
+  - theo.mole.coefficient-ratio
+  - theo.mole.three-row-table
+  - theo.mole.limiting-reactant
+  - theo.mole.gas-volume-ratio
 source:
   - slides:気体の基本２「混合気体」s17-19（反応前・変化量・反応後の3行を Pa で書く）
   - slides:速度平衡の基本２「化学平衡と平衡定数」の3行表の型（反応前・変化量・反応後）

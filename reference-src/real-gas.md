@@ -5,6 +5,10 @@ unitLabel: 物質の状態
 group: 実在気体
 title: 理想気体と実在気体 —— ずれは体積で考える
 summary: 実在気体には分子間力と分子自身の体積があり、PV ＝ nRT から少しずれます。ずれは気体の体積 V で考え、分子間力は V を小さく（低温で大）、分子の体積は V を大きく（高圧で大）します。高温・低圧ほど理想気体に近づきます。
+codes:
+  - theo.state.ideal-gas
+  - theo.state.real-gas-deviation
+  - theo.state.compressibility
 source:
   - slides:気体の基本３「理想気体と実在気体」s6〜15（違いの表・分子間力と分子の体積の影響・まとめ表・実在気体のモル体積・Z＝PV/nRT・Z-P と Z-T のグラフ）
   - slides:気体の基本３「理想気体と実在気体」s17〜22（練習1・2）
