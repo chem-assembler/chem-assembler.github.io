@@ -151,7 +151,12 @@ alt: D-グルコースの鎖状構造式。炭素6個の鎖の一端がホルミ
 caption: 鎖の一端が**ホルミル基**。間の4個の炭素が不斉炭素原子です。
 :::
 
-//図: 鎖状構造の不斉炭素原子4個に印を付けた図（作図器＋印）。いまは印の無い構造式だけ
+:::figure
+src: saccharide-chiral-carbons.png
+svg: saccharide-chiral-carbons.svg
+alt: 鎖状グルコースの示性式を横一列に書き、まん中の CHOH 4個を破線の丸で囲んだ図。両端の CH2OH と CHO には囲みがない
+caption: 4個あるので、立体異性体は 2⁴ ＝ **16種類**あります。そのうちの1つがグルコースです。
+:::
 
 :::link
 to: alkane-isomers
