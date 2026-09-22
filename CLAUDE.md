@@ -120,6 +120,15 @@ test.html / audit.html の見出し）。リンク切れとキャッシュ事故
   更新もれは `node tools/verify-release.js` が検出する（ion-equation / ratio も同じ規約として一緒に検査される）。
 - 1修正=1コミット。修正ごとにブラウザで実際に検証し、検証内容をコミットメッセージに記録
 - **コミット前に test.html を開いて全テスト合格を確認**（これが実質的な品質保証の要）。
+  - ⚠⚠ **Browser ペインで開かない。`node tools/run-tests.mjs <test.html の URL>` を使う**
+    （ヘッドレス Playwright・終了コード 0 が「コミットして良い」）。ペインは**非表示だと
+    `document.hidden` になり、5分ほどで Chrome の intensive throttling が効いて `setTimeout` が
+    分単位に落ちる** ＝ 待ちの多いテストで**止まったように見える**（コードは正常）。
+    さらに**ペインの幅（約900px）では 1280px・900px 以上を見る検査が走れず落ちる**
+    （IW17・IW30・TAP1 は「iframe が 1280px 近くにならず（867px）」と自分で言う）。
+    ⛔ **この落ち方を「環境のせい」と読んで進めない。ヘッドレスで通してから判断する**
+    （2026-09-22 に統合セッションが1時間かけて 830/933 まで手で見ていた）
+  - 速くしたいときは CI と同じ4分割: `--shard=1/4 --report=s1.json` を4本（分割は終了コード 4）
   **`/qa/` にも test.html + tests.js がある**（2026-08-05 新設）。データの事故（重複コード・正解添字の
   ずれ・Markdown 記法の混入・下付き文字のもれ）と**版の同期**を検査する。
   とくに **`qa/app.js` 内の `questions.json?v=NN` は `verify-release.js` の死角**（.html しか見ない）なので、
