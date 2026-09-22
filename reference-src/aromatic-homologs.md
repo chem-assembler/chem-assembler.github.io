@@ -256,7 +256,12 @@ terms:
 
 **この理由は覚えなくて構いませんが、「o- 体だけ沸点が低い」という結果を問題文で見たら、分子内水素結合を思い出せるようにしておきましょう。**
 
-//図: o-ニトロフェノールの分子内水素結合を点線で示した図。⚠ 作図器では水素結合の点線が引けない（新規作図）
+:::figure
+src: aromatic-homologs-intramolecular-hbond.png
+svg: aromatic-homologs-intramolecular-hbond.svg
+alt: 左に o-ニトロフェノール、右に p-ニトロフェノールを2分子並べ、水素結合を赤い点線で描いた図
+caption: −OH の H は、となりにある −NO₂ の O とだけなら分子の中で届きます。p- 体では届かないので、相手は別の分子になります。
+:::
 
 :::link
 to: intermolecular-force
