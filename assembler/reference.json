@@ -3921,6 +3921,8 @@
 {"kind":"text","text":"具体例として、二酸化炭素 CO₂ を組み立ててみましょう。パーツは C（4本）・O（2本）・O（2本）です。C の4本の手を、2本ずつ左右の O につなぐと、どちらの O も2本の手をすべて使い切ります。よって構造式は <b>O＝C＝O</b> です。"},
 {"kind":"figure","src":"covalent-bond-carbon-dioxide.png","gen":"name=二酸化炭素 plain","alt":"二酸化炭素の構造式。中央の C 原子から左右の O 原子へ、それぞれ二重線でつながっている","caption":"二酸化炭素 CO₂。C の4本の手を、2本ずつ左右の O につなぎます（二重結合が2つ）。"},
 {"kind":"text","text":"同じように、アンモニア NH₃ は N（3本）の手すべてに H を、メタン CH₄ は C（4本）の手すべてに H をつなぎます。"},
+{"kind":"figure","src":"covalent-bond-ammonia.png","gen":"name=アンモニア paper plain expand=H","alt":"アンモニアの構造式。中央の N 原子から右・下・左へ線が1本ずつ伸び、その先にそれぞれ H 原子が書かれている","caption":"アンモニア NH₃。N の3本の手に H を1つずつつなぐと、N も H も手が余りません。"},
+{"kind":"figure","src":"covalent-bond-methane.png","gen":"name=メタン paper plain expand=H","alt":"メタンの構造式。中央の C 原子から上・右・下・左へ線が1本ずつ伸び、その先にそれぞれ H 原子が書かれている","caption":"メタン CH₄。C の4本の手すべてに H をつなぎます。H は手が1本なので、これ以上つなげません。"},
 {"kind":"text","text":"構造式は原子のつながり方だけを表したもので、分子の実際の形（折れ線・三角錐・正四面体）は表していません。分子の形は別のページで扱います。"},
 {"kind":"link","to":"molecular-shape","text":"分子の形（電子対の反発）へ"},
 {"kind":"link","open":"free","text":"パズルでみる有機化学で、手と手をつないで分子を組み立てる"},

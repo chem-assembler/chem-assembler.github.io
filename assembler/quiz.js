@@ -1609,6 +1609,8 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) 
  *   ② 環の炭素は文字を書かない（骨格の頂点）。環の O・N は書く
  *   ③ 原子団の既定: **−NO₂・−SO₃H は文字1つにまとめる**、**−COOH・−CHO は C=O を線で描く**（ユーザー決定）。
  *      `opts.condense`（例 ['COOH','CHO']）でまとめる側へ、`opts.expand`（例 ['NO2']）で線で描く側へ上書きできる
+ *   ④ `opts.expand` に **'H'** を入れると、①の「水素をまとめる」をやめて **H を1つずつ原子として描く**
+ *      （NH₃・CH₄ のように重原子が1つの分子は、まとめると文字1つになって構造式にならない）
  * ⚠ エステル（COO・HCOO）は検出されても**まとめない**（重原子どうしの結合は線で描く原則）
  */
 /* ★★ **教科書を測って決めた比**（v1550・数研出版 R5化学 Vol.2 の PDF をベクタと画素で測った。数値の出どころは
@@ -1652,6 +1654,15 @@ const PAPER_GROUP_KEY = { 'NO₂': 'NO2', 'SO₃H': 'SO3H', 'COOH': 'COOH', 'CHO
 const PAPER_GROUP_REVERSED = { 'NO₂': 'O₂N', 'SO₃H': 'HO₃S', 'SO₃': 'O₃S', 'COOH': 'HOOC', 'CHO': 'OHC' };
 const PAPER_SUBSCRIPTS = '₀₁₂₃₄₅₆₇₈₉';
 
+/** 紙の図で「価標1本ぶん」と見なす長さ（結合長の中央値。結合が1本も無い分子は既定の 46） */
+function paperBondUnit(mol) {
+    const lens = mol.bonds.map(bd => {
+        const p = mol.atoms.find(a => a.id === bd.atomId1), q = mol.atoms.find(a => a.id === bd.atomId2);
+        return Math.hypot(p.x - q.x, p.y - q.y);
+    }).filter(l => l > 1e-6).sort((p, q) => p - q);
+    return lens.length ? lens[Math.floor(lens.length / 2)] : 46;
+}
+
 function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     const NS = 'http://www.w3.org/2000/svg';
     const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
@@ -1666,11 +1677,7 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     //   ホルムアルデヒド（R が無い）は C=O と直角の左右に H を2つ。
     //   ⚠ `condense=CHO`（1つの文字「CHO」にまとめる上書き）のときは足さない ＝ 今までどおりの道が使える
     if (!want.has('CHO')) {
-        const heavyLens = mol.bonds.map(bd => {
-            const p = mol.atoms.find(a => a.id === bd.atomId1), q = mol.atoms.find(a => a.id === bd.atomId2);
-            return Math.hypot(p.x - q.x, p.y - q.y);
-        }).filter(l => l > 1e-6).sort((p, q) => p - q);
-        const L0 = heavyLens.length ? heavyLens[Math.floor(heavyLens.length / 2)] : 46;
+        const L0 = paperBondUnit(mol);
         const inRing = typeof _ringAtomIds === 'function' ? _ringAtomIds(mol) : new Set();
         mol.atoms.filter(c => c.element === 'C' && !inRing.has(c.id) && !c.charge).forEach(c => {
             const nbs = mol.getNeighbors(c.id);
@@ -1697,6 +1704,26 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
                 const h = mol.addAtom('H', c.x + dx * L0, c.y + dy * L0);
                 mol.addBond(c.id, h.id, 1);
             });
+        });
+    }
+
+    /* ★ `expand=H` … **水素をまとめず、1つずつ原子として描く**（v1608・I-0082 の前さばき）。
+     *   紙の図は水素を元素記号へまとめるので、重原子が1つの分子（NH₃・CH₄・H₂O）は**文字1つ**になり、
+     *   「手と手をつないで構造式にする」ページの図として使えない（参考書 covalent-bond）。
+     *   ⚠ 上の −CHO の例外と**同じ道**を広げただけ: `mol` は紙の図のために作った写しなので、
+     *     H を**本物の原子として足してよい**（登録にもアプリの画面にも触らない）。
+     *   ★ 置き場所は**丸の図の計算をそのまま借りる**（`calculateHydrogens` ＝ N の周りに 右・下・左、C は十字）。
+     *     ⚠ 借りるのは**向きだけ**。丸の図は H を 16px に置くが、紙の図は字が大きいので
+     *     価標1本ぶん（`paperBondUnit`）離す ＝ 下の物差し B も 46 のまま動かない
+     *   ⚠ `expand` に 'H' を書いた図だけが通る道。書かなければ1本の線も変わらない */
+    if (opts && opts.expand && opts.expand.includes('H')) {
+        const L = paperBondUnit(mol);
+        mol.calculateHydrogens().forEach(h => {
+            const p = mol.atoms.find(a => a.id === h.parentId);
+            if (!p) return;
+            const dx = h.x - p.x, dy = h.y - p.y, d = Math.hypot(dx, dy) || 1;
+            const at = mol.addAtom('H', p.x + dx / d * L, p.y + dy / d * L);
+            mol.addBond(p.id, at.id, 1);
         });
     }
 

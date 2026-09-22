@@ -71,7 +71,7 @@
  *                  8 が 375px の実測（帯の増分 ≦ 50px・押しものが画面の中・出発物が帯の裏に入らない） |
  * | F   | 1〜12  | 名称判定・IUPAC 系統名・クイズ・エクスポート |
  * | FG  | 1〜3   | 図が無いせいで届かなかった着地点（C₉H₁₂ の名称・ナトリウムエトキシド・PET） |
- * | FGT | 1〜3   | ★ **参考書の図を焼く経路**（v1549・`tools/gen-figure.mjs` が呼ぶアプリの関数）。1 が塩（結合でつながらない成分）＝ 22件が丸の図・紙の図とも描け、粒が反対の電荷の近くに置かれる。**否定対照は2つ**＝ 成分を置く口を塞ぐと塩が実際に落ちる／電荷の無い 120件の図は口の有無で1本も変わらない。2 がハース式（`ipHaworthFigure`）＝ グルコース・ガラクトース・フルクトフラノースの α/β で1位の −OH が下／上。**否定対照は直交の図では α とβ が同じ図**。3 が紙の図の型（丸を描かず H をまとめる・−NO₂/−SO₃H は文字・−COOH/−CHO は C=O を線・condense/expand の上書き・芳香環は正六角形）。**否定対照は opts を渡さない既定の図が丸のまま** |
+ * | FGT | 1〜4   | ★ **参考書の図を焼く経路**（v1549・`tools/gen-figure.mjs` が呼ぶアプリの関数）。1 が塩（結合でつながらない成分）＝ 22件が丸の図・紙の図とも描け、粒が反対の電荷の近くに置かれる。**否定対照は2つ**＝ 成分を置く口を塞ぐと塩が実際に落ちる／電荷の無い 120件の図は口の有無で1本も変わらない。2 がハース式（`ipHaworthFigure`）＝ グルコース・ガラクトース・フルクトフラノースの α/β で1位の −OH が下／上。**否定対照は直交の図では α とβ が同じ図**。3 が紙の図の型（丸を描かず H をまとめる・−NO₂/−SO₃H は文字・−COOH/−CHO は C=O を線・condense/expand の上書き・芳香環は正六角形）。**否定対照は opts を渡さない既定の図が丸のまま**。4 が `expand=H`（水素をまとめず1つずつ原子として描く ＝ NH₃・CH₄ が文字1つにならない）。**否定対照は2つ**＝ 書かなければ今までどおり「NH₃」「CH₄」の文字1つ／`gen:` の読み手が `paper` 無しの `expand=H` と `condense=H` を赤で止める |
  * | FR  | 1      | ハース環（フラノース）モジュール |
  * | FZ  | 1〜4   | ★ **夜間監査のファズが「反応の面」に届いているか**（v1502・DESIGN_review_pack2.md §4-3／発注書 B）。定期レビューの実測で **49本の反応のうち16本にファズが1回も届いていなかった**（相手が要る反応が中心。`summon` は 1,145件から一様に1件しか引かないので同じ単量体がそろわない）。手当ては `audit.js` 側（「相手を並べる組」の枝＋到達本数・空振り率の記録）で、ここはそれが空振りしていないことの見張り。1 が題材の表の二重持ち（tests.js の `CV_PAIR_SAMPLES` と audit.js の `PAIR_SAMPLES`）が食い違わないこと・**2 が本体**＝ 監査の題材を並べると届いていなかった 16 本のボタンが実際に生えること（★否定対照 = 相手を並べなければ生えない・空のキャンバスでは 0 本）・3 が「監査が出す数」の作り＝ **回数ではなく本数**（1本に1万回届いても `rulesApplied` は 1）と率の分母（★否定対照 = 1回も引かなければ率は null）・**4 は札の選び方**＝ 「組」を足すだけでは 0回が 14→10 本にしか減らなかった（同じ種300個の A/B の実測）ので、半分の確率で「まだ届いていない札」を選ぶ誘導を足した。その物差し（届いた回数 → 押した回数）を純関数で単体検査する（★否定対照 = `?noguide=1` で一様な乱数に戻る・乱数が外れた回も一様） |
  * | FV  | 1〜3   | 🔍「全体表示」が合わせる先（v1402・ユーザー申し立て「分子を呼び出して表示したとき、全体表示、でそれらの分子が枠内に入らない」）。`fitCanvasToTarget()` は名前のとおり**お題**に合わせる関数で、🧪自由にはお題が無い ＝ 範囲が (400,300) の1点に潰れて視野がそこへ飛んでいた（実測 160原子中 12個）。1 が本体（自由・学習で描いたもの全体に合う。呼び終えた直後と、画面外へ飛ばしてからの2通り）・**2 は否定対照**＝ 🧩パズルは今までどおりお題に合わせる（viewBox の実数で固定。自由の直しがパズルへ漏れると赤）・**3 も否定対照**＝ 空のキャンバスでも視野が1点に潰れない／お題の視野を借りに行かない |
@@ -60871,6 +60871,74 @@
         } finally {
             svg.remove();
         }
+    });
+
+    /* ★★ FGT4: 紙の図の `expand=H`（v1608・I-0082 の前さばき）。
+     *   紙の図は水素を元素記号へまとめるので、**重原子が1つの分子**（NH₃・CH₄）は文字1つ「NH₃」になり、
+     *   「手と手をつないで構造式にする」ページ（参考書 covalent-bond）の図に使えなかった。
+     *   ⚠ 否定対照を2つ持つ —— ① 書かなければ今までどおり文字1つ（＝他の 65 枚の図に漏れない）／
+     *     ② `gen:` の読み手（`tools/gen-figure.mjs`）が `paper` 無しの `expand=H` と `condense=H` を赤で止める */
+    test('FGT4: 紙の図の expand=H は水素を1つずつ原子として描く（NH₃・CH₄・酢酸。★否定対照: 書かなければ文字1つ／gen は paper 無しの expand=H を止める）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        const svg = ipFigureSvg(c, 'fgt4-fig');
+        const paperOf = (name, extra) => {
+            const e = fgtEntry(W, name);
+            assert(e, `テスト前提: 登録に「${name}」が無い`);
+            const m = g.createTargetFromData({ target: e.target });
+            ip.renderStandardFigure(svg.id, m, false, Object.assign({ paper: true }, extra || {}));
+            return {
+                labels: [...svg.querySelectorAll('.svg-paper-label')].map(t => t.getAttribute('data-label')).sort(),
+                lines: [...svg.querySelectorAll('.quiz-bonds line.svg-bond-ink')].map(l => Math.hypot(
+                    +l.getAttribute('x2') - +l.getAttribute('x1'), +l.getAttribute('y2') - +l.getAttribute('y1'))),
+                circles: svg.querySelectorAll('.quiz-atoms circle').length
+            };
+        };
+        const same = (got, want, what) => assert(JSON.stringify(got) === JSON.stringify([...want].sort()),
+            `${what} の文字が ${JSON.stringify(got)}（${JSON.stringify([...want].sort())} のはず）`);
+        try {
+            // ★ アンモニア: N の周り（右・下・左）に H が3つ。価標も3本 ＝ 文字1つに縮んでいない
+            const nh3 = paperOf('アンモニア', { expand: ['H'] });
+            same(nh3.labels, ['N', 'H', 'H', 'H'], 'アンモニア（expand=H）');
+            assert(nh3.lines.length === 3, `アンモニア（expand=H）の価標が ${nh3.lines.length} 本（3本のはず）`);
+            assert(nh3.circles === 0, `紙の図に丸が ${nh3.circles} 個描かれている`);
+            // ★ H は**価標1本ぶん**離す（丸の図の 16px のままだと字が N に重なる）＝ 見えている線に長さが残る
+            assert(Math.min(...nh3.lines) > 1, `アンモニアの価標が見えていない（いちばん短い線 ${Math.min(...nh3.lines).toFixed(1)}）`);
+            // ★ メタン: C の上下左右に H が4つ
+            const ch4 = paperOf('メタン', { expand: ['H'] });
+            same(ch4.labels, ['C', 'H', 'H', 'H', 'H'], 'メタン（expand=H）');
+            assert(ch4.lines.length === 4, `メタン（expand=H）の価標が ${ch4.lines.length} 本（4本のはず）`);
+            // ★ 重原子が2つ以上でも効く。酢酸 CH₃COOH の H は 4 個（−CH₃ の3つと −OH の1つ）で、
+            //   ⚠ 上の −CHO の例外と二重に足されない（H が5個になっていたら二重）
+            const aa = paperOf('酢酸', { expand: ['H'] });
+            same(aa.labels, ['C', 'C', 'O', 'O', 'H', 'H', 'H', 'H'], '酢酸（expand=H）');
+
+            // ★★ 否定対照①: expand=H を書かなければ今までどおり（文字1つ・価標0本）
+            same(paperOf('アンモニア').labels, ['NH₃'], '★否定対照 アンモニア（既定）');
+            assert(paperOf('アンモニア').lines.length === 0, '★否定対照 アンモニア（既定）に価標が描かれた');
+            same(paperOf('メタン').labels, ['CH₄'], '★否定対照 メタン（既定）');
+            same(paperOf('酢酸').labels, ['H₃C', 'C', 'O', 'OH'], '★否定対照 酢酸（既定 ＝ FGT3 と同じ）');
+        } finally {
+            svg.remove();
+        }
+
+        /* ★★ 否定対照②: `gen:` の読み手の門番（`tools/gen-figure.mjs` の parseGen）。
+         *   ⚠ node の ESM なのでここからは import できない。**原稿から parseGen だけを切り出して動かす**
+         *   （text 検査ではなく実際に呼ぶ ＝ 門が外れたら赤くなる） */
+        const src = await (await fetch('../tools/gen-figure.mjs')).text();
+        const cs = src.slice(src.indexOf('const PAPER_GROUP_KEYS'),
+            src.indexOf('\n', src.indexOf('const PAPER_EXPAND_KEYS')));
+        const fn = src.slice(src.indexOf('function parseGen'), src.indexOf('\n}', src.indexOf('function parseGen')) + 2);
+        assert(cs.includes('PAPER_EXPAND_KEYS') && fn.includes('spec.paper'),
+            'tools/gen-figure.mjs から parseGen を切り出せない（関数の形が変わった）');
+        const parseGen = new Function(cs + '\n' + fn + '\nreturn parseGen;')();
+        const threw = (text) => { try { parseGen(text, 'テスト'); return null; } catch (e) { return e.message; } };
+        assert(JSON.stringify(parseGen('name=アンモニア paper plain expand=H', 'テスト').expand) === '["H"]',
+            'gen の expand=H が読めない');
+        assert(threw('name=アンモニア plain expand=H'), '★否定対照 paper 無しの expand=H が通ってしまう');
+        assert(threw('name=アンモニア paper condense=H'), '★否定対照 condense=H が通ってしまう（まとめるのは既定なので書けない）');
+        assert(!threw('name=ニトロベンゼン paper expand=NO2'), '今までの expand=NO2 が通らなくなった');
+        return 'NH₃ は N＋H3・CH₄ は C＋H4・酢酸は H4 個／既定は NH₃・CH₄ の文字1つ／paper 無しの expand=H と condense=H は赤';
     });
 
     test('ION2: 正準コードのラベルは電荷を明示する（N(4) と N⁺(4) が割れる・不斉判定も電荷を見る）', async (c) => {

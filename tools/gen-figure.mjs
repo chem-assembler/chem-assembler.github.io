@@ -76,6 +76,9 @@ const ONE_GEN = (args.find(a => a.startsWith('--gen=')) || '').slice('--gen='.le
 const OUT_DIR = (args.find(a => a.startsWith('--out=')) || '').slice('--out='.length);
 /* 紙の図の型で「まとめる／線で描く」を上書きできる原子団（quiz.js の PAPER_GROUP_KEY と同じ綴り） */
 const PAPER_GROUP_KEYS = ['COOH', 'CHO', 'NO2', 'SO3H'];
+/* ★ `expand=` だけに書ける `H` ＝「水素をまとめず、1つずつ原子として描く」（v1608）。
+   ⚠ `condense=H` は書けない ―― 水素をまとめるのは紙の図の既定なので、指定する意味が無い */
+const PAPER_EXPAND_KEYS = [...PAPER_GROUP_KEYS, 'H'];
 
 /* 焼く大きさ。★ 既存56枚（幅 1150px 前後）に合わせる ＝ 本文の幅 572px の2倍。
    ⚠ 縦長の分子で高さが伸びすぎないように、天井も持つ */
@@ -151,8 +154,9 @@ function parseGen(text, where) {
         const g = /^(condense|expand)=(.+)$/.exec(tok);
         if (g) {
             const keys = g[2].split(',').map(s => s.trim()).filter(Boolean);
-            const bad = keys.filter(k => !PAPER_GROUP_KEYS.includes(k));
-            if (bad.length) throw new Error(`${where}: gen の ${g[1]}= に知らない原子団「${bad.join(',')}」があります（書けるのは ${PAPER_GROUP_KEYS.join(' / ')}）`);
+            const ok = g[1] === 'expand' ? PAPER_EXPAND_KEYS : PAPER_GROUP_KEYS;
+            const bad = keys.filter(k => !ok.includes(k));
+            if (bad.length) throw new Error(`${where}: gen の ${g[1]}= に知らない原子団「${bad.join(',')}」があります（書けるのは ${ok.join(' / ')}）`);
             spec[g[1]] = keys;
             return;
         }
