@@ -5,6 +5,12 @@ unitLabel: 非金属元素
 group: 酸素とオゾン
 title: 酸素・オゾン・過酸化水素
 summary: 酸素を含む3つの物質のまとめ。O₂ の性質表と酸化剤としての反応、実験室的製法3通り、過酸化水素 H₂O₂ の「酸化剤にも還元剤にもなる」2つの顔、オゾン O₃ の性質と、酸性・塩基性での半反応式の書き分け、ヨウ化カリウムデンプン紙での検出を1枚にしました。
+codes:
+  - inorg.nonmetal.oxygen-oxidant
+  - inorg.nonmetal.oxygen-prep
+  - inorg.nonmetal.h2o2-dual
+  - inorg.nonmetal.ozone
+  - inorg.nonmetal.ozone-half
 source:
   - slides:無機の基本４「酸素と酸化物」s6-13（練習は s45-52）
   - textbook:R5化学Vol.2-4編（過酸化水素の性質の確認）

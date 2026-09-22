@@ -5,6 +5,13 @@ unitLabel: 非金属元素
 group: ハロゲン
 title: ハロゲン —— 並べて比べる
 summary: 17族のハロゲンを横に並べて比べるページ。単体の状態・色・酸化力、ハロゲン化水素の酸の強さと沸点、ハロゲン化銀の沈殿の色を3つの表にまとめ、フッ素・フッ化水素・臭素・ヨウ素の各論を1枚にしました。塩素と塩化水素は別のページです。
+codes:
+  - inorg.nonmetal.halogen-state
+  - inorg.nonmetal.halogen-oxidizing
+  - inorg.nonmetal.hydrogen-halide
+  - inorg.nonmetal.silver-halide
+  - inorg.nonmetal.fluorine
+  - inorg.nonmetal.iodine
 source:
   - slides:無機の基本５「ハロゲン」s7-17・s30-32（練習は s34-37・s46-47）
 singleSource: true

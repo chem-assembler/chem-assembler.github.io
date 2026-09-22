@@ -5,6 +5,12 @@ unitLabel: 非金属元素
 group: 炭素とケイ素
 title: 炭素とケイ素
 summary: 14族の炭素とケイ素の単体と化合物です。炭素は同素体・一酸化炭素 CO・二酸化炭素 CO₂、ケイ素は単体（半導体）・二酸化ケイ素 SiO₂・水ガラス・シリカゲルの順に見ます。
+codes:
+  - inorg.nonmetal.carbon-allotrope
+  - inorg.nonmetal.co
+  - inorg.nonmetal.co2
+  - inorg.nonmetal.sio2
+  - inorg.nonmetal.silica-gel
 source:
   - slides:無機の基本４「酸素と酸化物」s27（CO₂＋H₂O）・s31（CO₂＋2NaOH）・s32（SiO₂＋2NaOH、SiO₂ は水と反応しない）
   - slides:無機の基本６「硫黄」s28（HCOOH→CO＋H₂O、濃硫酸の脱水作用）

@@ -5,6 +5,12 @@ unitLabel: 無機の土台
 group: 気体の製法
 title: 気体の製法・捕集・乾燥の早見
 summary: 無機で出てくる気体を横に並べて、製法の型・加熱の要否・捕集法・乾燥剤の選び方を1枚で見比べます。気体ごとの性質と反応は、それぞれの物質のページで扱います。
+codes:
+  - inorg.basis.gas-color
+  - inorg.basis.gas-prep-type
+  - inorg.basis.gas-heating
+  - inorg.basis.gas-collection
+  - inorg.basis.drying-agent
 source:
   - slides:無機の基本３「貴ガスと水素」s8-10（H₂ の性質表と製法）
   - slides:無機の基本４「酸素と酸化物」s6・s8-9・s11（O₂・O₃ の性質表と製法）
