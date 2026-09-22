@@ -5,6 +5,10 @@ unitLabel: 化学と人間生活
 group: 化学の特徴
 title: 化学と人間生活
 summary: 身のまわりの製品は、物質の性質のうち都合のよいものを選んで使っています。化学は、その性質を原子・分子・イオンという粒子の種類とつながり方で説明する学問です。同じ性質が便利さにも危険にもなることを、洗剤の「混ぜるな危険」で確かめます。
+codes:
+  - theo.life.property-use
+  - theo.life.structure-property
+  - theo.life.mix-danger
 source:
   - textbook:化学基礎_000-030_巻頭+1編（序編1章 化学とは何か p.6〜11・身のまわりのさまざまな物質）
   - textbook:R5化学Vol.1-1編（0編 人間生活のなかの化学 p.6〜8・身のまわりの製品と材料）
