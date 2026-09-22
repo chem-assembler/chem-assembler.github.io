@@ -16,6 +16,7 @@ codes:
   - org.ali.alkane-combustion
   - org.ali.methane-props
   - org.ali.methane-prep
+  - org.ali.alkyl-count
 source:
   - slides:有機の基本2-2「アルカンの性質」（14枚）
 singleSource: true

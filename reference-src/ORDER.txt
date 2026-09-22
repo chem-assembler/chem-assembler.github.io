@@ -4,6 +4,7 @@ alkane
 alkane-naming
 numeral-prefix
 alkane-isomers
+stereoisomers
 alkene
 alkyne
 cycloalkane
