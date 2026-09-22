@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="460" viewBox="0 0 880 460" role="img">
+  <!-- マルトースとスクロースを、環の形とつなぎ目だけに減らして並べる（-OH や -CH2OH は省く）。
+       見せたいのは「環が開ける所（グルコースの1位・フルクトースの2位）が残っているか、ふさがっているか」の1か所だけ。
+       マルトース = α-1,4 でつながり、右の環の1位が -OH のまま残る。
+       スクロース = グルコースの1位とフルクトースの2位どうしなので、どちらも残らない。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .bond { stroke: #333; stroke-width: 2.5; fill: none; }
+    .atom { font-size: 17px; fill: #222; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 5; }
+    .num { font-size: 14px; fill: #888; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 4; }
+    .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
+    .name { font-size: 15px; fill: #666; text-anchor: middle; }
+    .hl { stroke: #6a1b9a; stroke-width: 3.5; fill: none; }
+    .mark { fill: none; stroke: #6a1b9a; stroke-width: 2.5; stroke-dasharray: 6 4; }
+    .cap { font-size: 16px; fill: #6a1b9a; text-anchor: middle; }
+    .lead { stroke: #6a1b9a; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <!-- ================== マルトース ================== -->
+  <text class="ttl" x="430" y="36">マルトース（還元性あり）</text>
+
+  <!-- 左の環 -->
+  <path class="bond" d="M 328 130 L 312 102" />
+  <path class="bond" d="M 296 88 L 256 88" />
+  <path class="bond" d="M 328 130 L 304 172 L 256 172 L 232 130 L 256 88" />
+  <text class="atom" x="304" y="95">O</text>
+  <!-- 右の環 -->
+  <path class="bond" d="M 544 130 L 528 102" />
+  <path class="bond" d="M 512 88 L 472 88" />
+  <path class="bond" d="M 544 130 L 520 172 L 472 172 L 448 130 L 472 88" />
+  <text class="atom" x="520" y="95">O</text>
+  <!-- つなぎの -O- -->
+  <path class="bond" d="M 328 130 L 372 130" />
+  <path class="bond" d="M 404 130 L 448 130" />
+  <text class="atom" x="388" y="136">O</text>
+
+  <!-- 残った 1位の -OH（ここが開ける） -->
+  <path class="hl" d="M 544 130 L 574 130" />
+  <text class="atom" x="596" y="136" fill="#6a1b9a">OH</text>
+  <text class="num" x="528" y="136">1</text>
+  <ellipse class="mark" cx="588" cy="130" rx="46" ry="26" />
+  <path class="lead" d="M 588 82 L 588 104" />
+  <text class="cap" x="588" y="70">1位が −OH のまま残る</text>
+
+  <text class="name" x="280" y="200">グルコース</text>
+  <text class="name" x="496" y="200">グルコース</text>
+
+  <!-- ================== スクロース ================== -->
+  <text class="ttl" x="430" y="262">スクロース（還元性なし）</text>
+
+  <!-- 左の環（グルコース・六員環） -->
+  <path class="bond" d="M 328 354 L 312 326" />
+  <path class="bond" d="M 296 312 L 256 312" />
+  <path class="bond" d="M 328 354 L 304 396 L 256 396 L 232 354 L 256 312" />
+  <text class="atom" x="304" y="319">O</text>
+  <!-- 右の環（フルクトース・五員環） -->
+  <path class="bond" d="M 448 354 L 466 329" />
+  <path class="bond" d="M 497 311 L 535 326" />
+  <path class="bond" d="M 535 326 L 535 382 L 481 400 L 448 354" />
+  <text class="atom" x="481" y="315">O</text>
+  <!-- つなぎの -O-（開ける所どうし） -->
+  <path class="hl" d="M 328 354 L 372 354" />
+  <path class="hl" d="M 404 354 L 448 354" />
+  <text class="atom" x="388" y="360" fill="#6a1b9a">O</text>
+
+  <!-- 番号は囲みの外に出す（中に置くと白ふちが破線を食う） -->
+  <text class="num" x="338" y="320">1</text>
+  <text class="num" x="438" y="320">2</text>
+  <ellipse class="mark" cx="388" cy="354" rx="78" ry="28" />
+  <path class="lead" d="M 388 302 L 388 326" />
+  <text class="cap" x="388" y="290">1位と2位どうしでつながる</text>
+
+  <text class="name" x="280" y="424">グルコース</text>
+  <text class="name" x="496" y="424">フルクトース</text>
+</svg>
