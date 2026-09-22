@@ -5,6 +5,10 @@ unitLabel: 電池と電気分解
 group: 電気分解の工業的利用
 title: 電気分解の工業的利用 —— イオン交換膜法・銅の電解精錬・溶融塩電解
 summary: 水酸化ナトリウムの製造（イオン交換膜法）、純銅の製造（銅の電解精錬）、アルミニウムの製造（溶融塩電解）の3つは、どれも電気分解の優先順位で説明できます。
+codes:
+  - theo.electro.ion-exchange-membrane
+  - theo.electro.copper-refining
+  - theo.electro.molten-salt
 source:
   - slides:電気分解の応用１「イオン交換膜法，銅の電解精錬，溶融塩電解」(1) s1〜s10（新版）
   - textbook:R5化学Vol.1-2編（イオン交換膜法の両極の式、銅の電解精錬の条件と陽極泥、アルミニウムの溶融塩電解の氷晶石と両極の式、電気めっき）

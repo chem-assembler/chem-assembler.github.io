@@ -5,6 +5,10 @@ unitLabel: 電池と電気分解
 group: 実用電池と燃料電池
 title: 実用電池と燃料電池
 summary: 実用電池は一次電池と二次電池に分かれます。仕組みまで覚えるのは鉛蓄電池と燃料電池だけです。燃料電池はリン酸型の式から、H⁺ を OH⁻ で中和してアルカリ型の式をつくります。
+codes:
+  - theo.electro.primary-secondary
+  - theo.electro.fuel-cell-acid
+  - theo.electro.fuel-cell-alkaline
 source:
   - slides:電池の基本２「実用電池と燃料電池」s4〜s12
   - slides:電池の基本３「鉛蓄電池」s4「復習」（燃料電池の電子の物質量）

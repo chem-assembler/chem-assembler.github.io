@@ -5,6 +5,11 @@ unitLabel: 電池と電気分解
 group: 電池の仕組み
 title: 電池の仕組み —— ダニエル電池
 summary: 酸化剤と還元剤の場所を離して、e⁻ の流れを外に取り出すのが電池です。銅樹ができる反応とダニエル電池が同じ反応式であることと、素焼き板の2つの役割をまとめました。
+codes:
+  - theo.electro.cell-poles
+  - theo.electro.daniell
+  - theo.electro.porous-plate
+  - theo.electro.which-positive
 source:
   - slides:電池の基本１「電池の仕組み」s3〜s13
   - textbook:R5化学Vol.1-2編（電池の構成の書き方・一次電池と二次電池の定義・ボルタ電池の構成）
