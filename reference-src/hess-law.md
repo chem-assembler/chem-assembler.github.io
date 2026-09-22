@@ -5,6 +5,11 @@ unitLabel: 化学反応とエネルギー
 group: ヘスの法則
 title: ヘスの法則 —— エネルギー図の高さで足し引き
 summary: 反応エンタルピーは、反応の経路によらず、はじめと終わりの状態だけで決まります（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。
+codes:
+  - theo.thermo.hess-law
+  - theo.thermo.hess-diagram
+  - theo.thermo.from-formation
+  - theo.thermo.hess-algebra
 source:
   - textbook:R5化学Vol.1-2編（1章2節 ヘスの法則：NaOH（固）と塩酸の2つの経路、CO の生成エンタルピーを C と CO の燃焼から求める例、生成エンタルピーと反応エンタルピーの関係式、表3の値）
   - app:ratio/thermo（h2 ヘスの法則・h3 生成エンタルピーから燃焼エンタルピー・h6 同素体。準位を置いて高さの差をとる解き方）
