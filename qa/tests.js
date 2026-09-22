@@ -177,10 +177,12 @@ function runDataTests(DATA) {
   // ★ 2026-09-23 無機4・理論11 を収録して 17 → 32 単元に。**有機の17単元の並び（ユーザー決定）は崩さず、
   //   その後ろに足した**。無機・理論の並びは**参考書の ORDER.txt の順**（無機 → 理論）にそろえた
   //   ＝ 参考書でページを読む順と、一問一答の単元の順が同じになる
-  t("単元: 32単元（有機17・無機4・理論11）が並び順どおりで、旧 id が残っていない", function () {
+  //   ★ theoLife（化学と人間生活・2026-09-23）は理論の先頭。参考書でも序章が理論の先頭にあるため
+  t("単元: 33単元（有機17・無機4・理論12）が並び順どおりで、旧 id が残っていない", function () {
     var want = ["anal", "aliphatic", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
       "aroAcid", "aroNitrogen", "aroSep", "sugar", "aminoAcid", "protein", "nucleic", "poly", "structure",
       "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual",
+      "theoLife",
       "theoStructure", "theoMole", "theoAcidBase", "theoRedox", "theoElectro", "theoState",
       "theoSolution", "theoThermo", "theoKinetics", "theoEquilibrium", "theoIonicEq"];
     var got = units.map(function (u) { return u.id; });

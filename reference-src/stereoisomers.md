@@ -14,6 +14,9 @@ codes:
   - org.ali.chirality-ring
   - org.ali.enantiomer-props
   - org.ali.meso
+  - org.ali.cis-trans-props
+  - org.ali.optical-rotation
+  - org.ali.tartaric-stereo
 source:
   - slides:有機の基本1-2「有機化合物の表し方」s3〜s9（異性体の分類・シス－トランス異性体・鏡像異性体・練習1〜2）
   - textbook:R5化学Vol.2-5編（立体異性体の定義 p.107・シス－トランス異性体 p.125・鏡像異性体と旋光性 p.158〜159）
@@ -30,7 +33,6 @@ to: alkane-isomers
 text: つながり方が違う異性体（構造異性体）と、その書き出しの手順は「同じ分子式で、別の分子」に
 :::
 
-//qa: パック qa/packs/ref-stereo.json の3項目（org.ali.cis-trans-props・org.ali.optical-rotation・org.ali.tartaric-stereo）は、questions.json に入った時点で前書きの codes: に足す。中身はこのページのシス－トランスの性質・旋光性・メソ体の節に書いてある
 
 :::section
 anchor: what

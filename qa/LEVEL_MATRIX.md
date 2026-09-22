@@ -67,9 +67,9 @@ Lv の基準は [DESIGN_difficulty_frequency.md](DESIGN_difficulty_frequency.md)
 そのあと `data/exam_usage.jsonl` が広がった（1年ぶん → 2年ぶん）ので、今のデータで数え直すと違う。一覧の入試の欄は「②古い値→今の値」と並べて書く（表では `asToolNow`）。
 ⚠ **入試は Lv の規則に入らない**（入試→Lv は規則なし）ので、Lv にも目安にも効かない。**questions.json の値はこの表では変えない。**
 
-## 全項目（704件）
+## 全項目（728件）
 
-Lv の分布: Lv1 180件・Lv2 481件・Lv3 32件・Lv4 11件
+Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 
 ### anal（元素の確認・元素分析・18件）
 
@@ -94,7 +94,7 @@ Lv の分布: Lv1 180件・Lv2 481件・Lv3 32件・Lv4 11件
 | `org.anal.equivalent-h` | 機器分析 | 3 | 発展欄 | ≥2 | 未登場 | — | ①未 ②6→7 |  | 3 | 2〜4 |  | 3 |
 | `org.anal.mw-from-solution` | 元素分析（定量） | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②4→13 |  | 2 | 1〜2 |  | 2 |
 
-### aliphatic（脂肪族炭化水素・72件）
+### aliphatic（脂肪族炭化水素・81件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -170,6 +170,15 @@ Lv の分布: Lv1 180件・Lv2 481件・Lv3 32件・Lv4 11件
 | `org.ali.enantiomer-props` | 異性体・命名 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②1→4 |  | 2 | 1〜2 |  | 2 |
 | `org.ali.ozonolysis-reconstruct` | アルケン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②12→20 |  | 2 | 1〜2 |  | 2 |
 | `org.ali.alkane-branch-bp` | アルカン | 3 | 発展欄 | ≥2 | 未登場 | — | ①未 ②5→11 |  | 3 | 2〜4 |  | 3 |
+| `org.ali.cis-trans-props` | 異性体・命名 | 2 | 本文（弱） | — | 基本 | ≤2 | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.optical-rotation` | 異性体・命名 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.tartaric-stereo` | 異性体・命名 | 3 | 発展欄 | ≥2 | 発展 | ≥3 | ①未 ②0 |  | 3 | 3〜4 |  | 3 |
+| `org.ali.organic-def` | 有機化合物の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `org.ali.organic-properties` | 有機化合物の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `org.ali.organic-diversity` | 有機化合物の特徴 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.formula-kinds` | 有機化合物の表し方 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `org.ali.rational-formula` | 有機化合物の表し方 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `org.ali.formula-same-molecular` | 有機化合物の表し方 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
 
 ### alcohol（アルコール・エーテル・19件）
 
@@ -608,6 +617,20 @@ Lv の分布: Lv1 180件・Lv2 481件・Lv3 32件・Lv4 11件
 | `inorg.qual.separation-nitric-acid` | 系統分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `inorg.qual.separation-within-group` | 系統分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
+### theoLife（化学と人間生活・9件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.life.property-use` | 化学の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.structure-property` | 化学の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.mix-danger` | 化学の特徴 | 2 | 見あたらない | — | 未登場 | — | ①未 ②0 |  | 2 | 1〜4 |  | 2 |
+| `theo.life.bond-material` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.reaction-in-life` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.recycle-resource` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.industry-catalyst` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.haber-issue` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.atom-economy` | 化学が果たす役割 | 2 | 見あたらない | — | 未登場 | — | ①未 ②0 |  | 2 | 1〜4 |  | 2 |
+
 ### theoStructure（物質の構造・39件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
@@ -847,7 +870,7 @@ Lv の分布: Lv1 180件・Lv2 481件・Lv3 32件・Lv4 11件
 | `theo.solution.coagulation` | コロイド | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.solution.salting-out` | コロイド | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
-### theoThermo（化学反応とエネルギー・19件）
+### theoThermo（化学反応とエネルギー・25件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -870,6 +893,12 @@ Lv の分布: Lv1 180件・Lv2 481件・Lv3 32件・Lv4 11件
 | `theo.thermo.photochemical` | 化学反応と光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.thermo.photosynthesis` | 化学反応と光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.thermo.chemiluminescence` | 化学反応と光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.entropy-def` | エントロピー | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.thermo.entropy-sign` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.two-tendencies` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.entropy-temperature` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.spontaneous-vs-rate` | エントロピー | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.thermo.gibbs-energy` | エントロピー | 4 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 4 | 2〜4 |  | 4 |
 
 ### theoKinetics（反応の速さ・13件）
 
@@ -937,4 +966,4 @@ Lv の分布: Lv1 180件・Lv2 481件・Lv3 32件・Lv4 11件
 
 ---
 
-生成元: `qa/questions.json`（704件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`
+生成元: `qa/questions.json`（728件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`
