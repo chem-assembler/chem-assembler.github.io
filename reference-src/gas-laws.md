@@ -5,6 +5,11 @@ unitLabel: 物質の状態
 group: 気体の法則
 title: 気体の法則と状態方程式 —— 比例と反比例で解く
 summary: 気体の P・V・n・T は PV ＝ nRT で結ばれます。「＝ の逆側は比例・同じ側は反比例」と読み、0℃ なら 22.4L、それ以外なら 300K・1.0×10⁵Pa の 24.9L を基準にして、代入せずに比で解きます。
+codes:
+  - theo.state.boyle-charles
+  - theo.state.ideal-gas-law
+  - theo.state.molar-volume
+  - theo.state.gas-molar-mass
 source:
   - slides:気体の基本１「気体の状態方程式」s3〜26（法則 s3〜11・計算例1〜5 s12〜25・まとめ s26）
   - slides:気体の基本１「気体の状態方程式」s28〜35（練習1〜4。問題文と数値は pptx を正とした）

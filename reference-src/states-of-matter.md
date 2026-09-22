@@ -5,6 +5,12 @@ unitLabel: 物質の状態
 group: 三態と状態変化
 title: 物質の三態と熱運動
 summary: 物質の状態は、粒子どうしが引き合う力と、粒子の熱運動の大小で決まります。状態変化の6つの名前、状態が変わる間は温度が一定になる加熱曲線、温度と圧力から状態を読む状態図をまとめます。
+codes:
+  - theo.state.absolute-temperature
+  - theo.state.three-states
+  - theo.state.phase-change
+  - theo.state.heating-curve
+  - theo.state.phase-diagram
 source:
   - textbook:化学基礎_000-030_巻頭+1編（物質の三態・状態間の変化・昇華と凝華・加熱曲線）
   - textbook:R5化学Vol.1-1編（熱運動と拡散・絶対温度 T＝t＋273・融解と蒸発・状態図・三重点と臨界点・水と二酸化炭素の状態図の数値）

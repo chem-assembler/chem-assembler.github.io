@@ -5,6 +5,10 @@ unitLabel: 物質の状態
 group: 水蒸気を含む気体
 title: 水蒸気を含む気体 —— 全部気体と仮定して比べる
 summary: 水を含む気体の計算は、まず水がすべて気体だと仮定した分圧を出し、飽和蒸気圧と比べます。超えていれば超えた分は液体で、水蒸気の分圧は飽和蒸気圧に等しくなります。同じ容器の反応は、mol の代わりに Pa で3行の表を書けます。
+codes:
+  - theo.state.pressure-table
+  - theo.state.vapor-assume
+  - theo.state.water-displacement
 source:
   - slides:気体の基本２「混合気体と水蒸気圧」s17〜22（計算例3 燃焼後の圧力・計算例4 水上置換）
   - slides:気体の基本２「混合気体と水蒸気圧」s32〜35（練習4。本文の誤記は §3-9 のとおり直した）

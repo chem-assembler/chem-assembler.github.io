@@ -5,6 +5,11 @@ unitLabel: 物質の状態
 group: 混合気体
 title: 混合気体と分圧 —— 全圧はてんびんで
 summary: 混合気体の全圧は成分気体の分圧の和で、分圧は物質量に比例します。成分気体はどれも混合気体と同じ体積を共有します。コックを開く問題の全圧や平均分子量は、「多い方に近い」てんびんで加重平均として求められます。
+codes:
+  - theo.state.partial-pressure
+  - theo.state.mole-fraction
+  - theo.state.component-volume
+  - theo.state.mixing-gases
 source:
   - slides:気体の基本２「混合気体と水蒸気圧」s3〜16（復習・分圧の法則・分圧は物質量に比例・モル分率・混合気体の体積・計算例1〜2・てんびん）
   - slides:気体の基本２「混合気体と水蒸気圧」s24〜31（練習1〜3。本文の誤記は §3-9 のとおり直した）
