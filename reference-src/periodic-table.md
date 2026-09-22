@@ -5,6 +5,12 @@ unitLabel: 無機の土台
 group: 周期表と元素の性質
 title: 周期表と元素の性質
 summary: 典型元素と遷移元素、陽性と陰性、イオン化エネルギー・電子親和力・電気陰性度を、周期表の位置とクーロン力で説明します。
+codes:
+  - inorg.basis.typical-transition
+  - inorg.basis.named-groups
+  - inorg.basis.electropositive
+  - inorg.basis.max-elements
+  - inorg.basis.three-values
 source:
   - slides:無機の基本２「周期律と周期表」s3-16（第1部）・s18-21（練習１・２）
   - slides:無機の基本３「貴ガスと水素」s3-4（復習問題）
