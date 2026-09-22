@@ -983,7 +983,7 @@ function ipUnsaturation(heavy, h) {
     heavy.forEach(el => {
         if (el === 'C') c++;
         else if (el === 'N') n++;
-        else if (el === 'Cl' || el === 'Br') x++;
+        else if (el === 'F' || el === 'Cl' || el === 'Br') x++;
     });
     return (2 * c + 2 + n - h - x) / 2;
 }
@@ -993,7 +993,7 @@ function ipSaturatedH(heavy) {
     heavy.forEach(el => {
         if (el === 'C') c++;
         else if (el === 'N') n++;
-        else if (el === 'Cl' || el === 'Br') x++;
+        else if (el === 'F' || el === 'Cl' || el === 'Br') x++;
     });
     return 2 * c + 2 + n - x;
 }
@@ -1019,8 +1019,10 @@ function ipFormulaLabel(heavy, h) {
 // 減らす1個は下の優先順で選ぶ。**この規則で「必ず種類が減る」ことは全数で確かめてある**
 // （不飽和度0・重原子6個以下で20種を超える式は271件あり、271件すべてで減る）。
 // ただし**20種以下に収まるとは限らない**ので、断り文は「減ります」までにして開けるとは言わない
-const IP_HETERO_DROP_ORDER = ['O', 'N', 'S', 'Cl', 'Br'];
-const IP_ELEMENT_NAMES = { O: '酸素', N: '窒素', S: '硫黄', Cl: '塩素', Br: '臭素' };
+// ⚠ F は**末尾に足す**（2026-09-22・I-0014）。既存の式は F を1つも含まないので順位のどこに
+//   入れても既存の振る舞いは変わらないが、「全数で確かめた271件」の並びをずらさないため末尾にする
+const IP_HETERO_DROP_ORDER = ['O', 'N', 'S', 'Cl', 'Br', 'F'];
+const IP_ELEMENT_NAMES = { O: '酸素', N: '窒素', S: '硫黄', Cl: '塩素', Br: '臭素', F: 'フッ素' };
 // 鎖の「途中」に入れる（＝置き場所を増やす）ヘテロ原子と、その見せ方
 const IP_INCHAIN_HETERO = { O: ['酸素', '-O-', '-OH'], N: ['窒素', '-NH-', '-NH₂'], S: ['硫黄', '-S-', '-SH'] };
 
@@ -2404,7 +2406,10 @@ class IsomerPractice {
         if (!str) return null;
         const s = String(str).replace(/\s+/g, '');
         if (!s) return null;
-        const supported = new Set(['C', 'H', 'O', 'N', 'Cl', 'Br', 'S']);
+        // ⚠ **ここは VALENCIES の写しではない**（モデルにある I・Na・K はわざと載せていない…
+        //   ように見えるが、I が抜けているのは v550 の取りこぼし。I-0014 の便では直さず報告だけした）。
+        //   F は追加した（テフロン C₂F₄ を紙の図で焼くのに要る・2026-09-22・I-0014）
+        const supported = new Set(['C', 'H', 'O', 'N', 'F', 'Cl', 'Br', 'S']);
         const re = /([A-Z][a-z]?)(\d*)/g;
         const counts = {};
         let m, consumed = 0;

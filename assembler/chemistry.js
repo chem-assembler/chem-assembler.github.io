@@ -18,6 +18,13 @@ const VALENCIES = {
     // 265→310px（+45px）伸び、その後ろの環・官能基が同じだけ画面外へ動く（DESIGN_entry_points.md A-1）。
     // I は「ヨードホルム反応の生成物」と「名称から呼び出す CHI₃」として現れれば単元が成立する
     'I': 1,
+    // F = テフロン（テトラフルオロエチレン）とフッ素化合物のために足した元素（価標1・2026-09-22・I-0014）。
+    // I とまったく同じ手順で入れる: 価標だけでは済まず、色（style.css の --color-f・stereo.js の対応表）と
+    // CIP の原子番号（CIP_ATOMIC_NUMBER の F:9）を同時に入れる（開発方針 4章5）。
+    // **落とすと F を含む分子の R/S が黙って出なくなる**（cipRank は表に無い元素が1つでもあると
+    // 分子ごと null を返す）。命名側（IUPAC_HALOGEN の 'フルオロ'）はもともと F を持っていたので変更なし。
+    // **I・Na と同じくパレットには出さない**（上の I のコメントにある画面の幅の理由がそのまま当たる）
+    'F': 1,
     'S': 6,
     'H': 1,
     // Na = カルボン酸の塩（-COONa）を書くための元素（価標1）。**イオンや電荷はモデルに持ち込まない**:
@@ -457,6 +464,11 @@ const CONTEXTUAL_VALENCY_ELEMENTS = ['S', 'N'];
  * ★ 結合を持たず「粒」としてだけ現れる対イオン（DESIGN_ion_layer.md §3-3・D-I5）。
  * 電荷を持てば価標 0 ＝ 自動水素が生えず（NaH・HCl の図にならない）、結合も許さない。
  * ⚠ 電荷の無い Na・K は価標 1 のまま（手で -COONa を組んだ古い図が壊れないように）。
+ * ⚠ **F は意図して入れていない**（2026-09-22・I-0014）。有機化学で F⁻ の粒が現れる場面が無い
+ *   （アミンのフッ化水素酸塩・その分液は高校で扱わない）＝ 寄せる相方がデータに1件も無く、
+ *   足しても死んだ枝になる。**万一 charge -1 の F が現れても価標は 0 になる**
+ *   （`chargedValency` の一般則 base + charge = 1 − 1 = 0）ので、自動水素が生える事故は起きない。
+ *   この表が効くのは主に `game.js attachCounterIons` の「粒として相方に寄せる見せ方」。
  */
 const MONATOMIC_ION_ELEMENTS = ['Na', 'K', 'Cl', 'Br', 'I'];
 
@@ -894,7 +906,7 @@ function benzeneSubUnsaturation(S, hs) {
     S.forEach(e => {
         if (e === 'C') c++;
         else if (e === 'N') n++;
-        else if (e === 'Cl' || e === 'Br' || e === 'I') x++;
+        else if (e === 'F' || e === 'Cl' || e === 'Br' || e === 'I') x++;
     });
     return (2 * c + 2 + n - hs - 1 - x) / 2;
 }
@@ -1731,7 +1743,7 @@ function findFunctionalGroups(mol) {
             //   別の誤りに置き換わるだけになる。塩化アシルも高校ではケトンに分類しない。
             //   **「アルデヒドではない」は R の中身によらず確実に言えるが、「ケトンである」は言えない**
             //   ——言えることだけを返し、言えないものは黙るのがこの関数の安全側（§18.1 の申し送り）
-        } else if (a.element === 'Cl' || a.element === 'Br' || a.element === 'I') {
+        } else if (a.element === 'F' || a.element === 'Cl' || a.element === 'Br' || a.element === 'I') {
             // ハロゲン化物 -X（クロロシクロヘキサン・ヨードホルム）。§9.6-2 の補正B。
             // ハロゲンだけを持つ分子が「官能基にあてはまらない」で範囲外に落ちていた
             const nb = heavyNb(a.id);
@@ -1891,7 +1903,7 @@ function findOutOfScopeMotifs(mol) {
     // ①（ヘテロ原子どうしの結合）で見るヘテロ原子。こちらは S とハロゲンも含む
     // （DESIGN_compound_coverage.md §9.6-1。いままで H₂N-SH・H₂N-Cl・HS-SH・H₂N-Br が
     //  普通の分類へ流れていた）
-    const isHeteroForBond = (el) => isHetero(el) || el === 'S' || el === 'Cl' || el === 'Br' || el === 'I';
+    const isHeteroForBond = (el) => isHetero(el) || el === 'S' || el === 'F' || el === 'Cl' || el === 'Br' || el === 'I';
 
     // ニトロ基の N とスルホ基の S は、それぞれ N-O・S-O を持つのが正しい姿なので
     // ヘテロ原子どうしの検査から外す（許してよいヘテロ間結合はこの2つだけ）
@@ -3348,7 +3360,7 @@ function isFischerOriented(mol) {
 // （ハースの担当）・R（アルキル基の付け根）を含む図・順位が同点のまま尽きる場合。
 
 // CIP 規則1a で使う原子番号。アプリに置ける元素だけ持つ（R は擬似元素なので載せない）
-const CIP_ATOMIC_NUMBER = { H: 1, C: 6, N: 7, O: 8, Na: 11, S: 16, Cl: 17, Br: 35, I: 53, K: 19 };
+const CIP_ATOMIC_NUMBER = { H: 1, C: 6, N: 7, O: 8, F: 9, Na: 11, S: 16, Cl: 17, Br: 35, I: 53, K: 19 };
 
 /**
  * CIP 順位づけ用の階層木（hierarchical digraph）を作る（発注書の要件2）。
@@ -3886,10 +3898,12 @@ function describeStructure(mol) {
     if (nh2) points.push(`アミノ基 -NH2 ×${nh2}`);
     if (no2) points.push(`ニトロ基 -NO2 ×${no2}`);
 
+    const f = heavy.filter(a => a.element === 'F').length;
     const cl = heavy.filter(a => a.element === 'Cl').length;
     const br = heavy.filter(a => a.element === 'Br').length;
     const i = heavy.filter(a => a.element === 'I').length;
     const s = heavy.filter(a => a.element === 'S').length;
+    if (f) points.push(`フッ素 F ×${f}`);
     if (cl) points.push(`塩素 Cl ×${cl}`);
     if (br) points.push(`臭素 Br ×${br}`);
     if (i) points.push(`ヨウ素 I ×${i}`);

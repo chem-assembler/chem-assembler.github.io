@@ -9645,6 +9645,63 @@
         assert(ammonium === 0, `ライブラリにアンモニウム型 N(4) が ${ammonium} 件ある（0件の想定）`);
     });
 
+    test('EL4: フッ素 F をモデルに足した（価標・自動水素・分子式・系統名・色・CIP。EL1 の写し・I-0014）', async (c) => {
+        const g = c.game, W = c.W, D = c.D;
+        // (1) 価標は1（Cl・Br・I と同じ末端ハロゲン）
+        assert(W.VALENCIES && W.VALENCIES.F === 1, 'フッ素の価標が1でない');
+        // (2) テトラフルオロエチレン CF₂=CF₂ … 自動水素は1つも生えない・価標は妥当
+        const tfe = new W.Molecule();
+        const c1 = tfe.addAtom('C', 379, 300), c2 = tfe.addAtom('C', 421, 300);
+        tfe.addBond(c1.id, c2.id, 2);
+        [[379, 258], [379, 342], [421, 258], [421, 342]].forEach(([x, y], k) =>
+            tfe.addBond(k < 2 ? c1.id : c2.id, tfe.addAtom('F', x, y).id, 1));
+        assert(tfe.getFreeValency(c1.id) === 0 && tfe.getFreeValency(c2.id) === 0,
+            'CF₂=CF₂ の炭素に自動水素が生えている');
+        tfe.atoms.filter(a => a.element === 'F').forEach(a =>
+            assert(tfe.getFreeValency(a.id) === 0, 'フッ素に自動水素が生えている'));
+        assert(tfe.atoms.every(a => W.isValencyValid(tfe, a.id)), 'CF₂=CF₂ の価標が不正');
+        assert(g.computeMolecularFormula(tfe) === 'C₂F₄',
+            `CF₂=CF₂ の分子式が違う（${g.computeMolecularFormula(tfe)}）`);
+        // 命名は IUPAC_HALOGEN の 'フルオロ' がもともと持っていた経路をそのまま使う
+        assert(W.iupacName(tfe) === '1,1,2,2-テトラフルオロエテン',
+            `CF₂=CF₂ の系統名が違う（${W.iupacName(tfe)}）`);
+        // (3) 色が引ける。描画は元素記号を小文字にした CSS 変数をそのまま引くので、
+        //     未定義だと文字も丸も色が落ちる。**ハロゲン4色が同じ図に並ぶ**ので互いに違う色であること
+        const cssVar = (n) => W.getComputedStyle(D.documentElement).getPropertyValue(n).trim().toLowerCase();
+        assert(/^#[0-9a-f]{3,8}$/.test(cssVar('--color-f')), `--color-f が定義されていない（"${cssVar('--color-f')}"）`);
+        ['--color-cl', '--color-br', '--color-i', '--color-n'].forEach(v =>
+            assert(cssVar('--color-f') !== cssVar(v), `フッ素と ${v} の色が同じ`));
+        // 立体ビューの対応表も同じ変数を引くこと（ここを落とすとくさび図でだけ色が落ちる）。
+        // colorOf は静的メソッドなので、window に出ている実体から constructor 越しに呼ぶ
+        const SV = W.stereoView && W.stereoView.constructor;
+        assert(SV && /--color-f/.test(SV.colorOf('F')),
+            `立体ビューがフッ素の色を引けない（${SV && SV.colorOf('F')}）`);
+        // (4) CIP の原子番号を持つ。2-フルオロブタン CH₃-CHF-CH₂-CH₃ は不斉炭素を1つ持ち、
+        //     F(9) が炭素より優先される。**原子番号表に無いと分子ごと null に落ちる**
+        const fb = new W.Molecule();
+        const bc = [];
+        for (let k = 0; k < 4; k++) {
+            const a = fb.addAtom('C', 358 + k * 42, 300);
+            if (k) fb.addBond(bc[k - 1].id, a.id, 1);
+            bc.push(a);
+        }
+        const fl = fb.addAtom('F', 400, 258);
+        fb.addBond(bc[1].id, fl.id, 1);
+        assert(fb.isAsymmetricCarbon(bc[1].id), '2-フルオロブタンの不斉炭素を検出できない');
+        const rank = W.cipRank(fb, bc[1].id);
+        assert(rank && rank[0] === fl.id, 'CIP でフッ素が最優先になっていない（原子番号表に F が無い）');
+        // (5) describeStructure が数える（「フッ素 F ×4」）
+        const desc = W.describeStructure(tfe) || [];
+        assert(desc.some(s => s === 'フッ素 F ×4'),
+            `describeStructure がフッ素を数えていない（${desc.join(' / ')}）`);
+        // (6) パレットには出さない（I・Na と同じ扱い。DESIGN_entry_points.md A-1 の順路を伸ばさないため）
+        assert(!D.querySelector('.atom-palette [data-atom="F"]'), '原子パレットにフッ素が出ている');
+        // (7) 紙の図の分子式入力が F を受ける（テフロンの単量体 C₂F₄ を焼くのに要る）
+        const p = W.isomerPractice.parseFormula('C2F4');
+        assert(p && p.h === 0 && p.heavy.filter(e => e === 'F').length === 4,
+            'parseFormula が C2F4 を受け付けない（supported に F が無い）');
+    });
+
     // ===== AK. アルキル基の書き出し練習（W3 で答案用紙化。DESIGN_isomer_practice.md §14）=====
     //
     // ★ 器が変わった: 「1つ描いて登録」は W3 で捨て、**キャンバスそのものが答案用紙**になった。

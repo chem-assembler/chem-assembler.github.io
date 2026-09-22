@@ -1858,6 +1858,41 @@ node tools/triage-unmerged.js --all    # 判定済みも表示
 **ツールの立体コードの組み立てがアプリ（`_mapStereoToMol` ＋ `isFischerOriented` の門番）とずれている**
 のが原因と見られる。ツール側を直す話なので別項目。
 
+### フッ素レーン（2026-09-22・v1607）: 元素 F をモデルに足した（I-0014・上のヨウ素レーンの写し）
+
+`DESIGN_figure_marks.md` の「元素を足せば焼ける」2枚（**テフロン**・シリコーン）のうち F 側。
+**直した所は上の v550 の5か所＋ハロゲンを数え上げている4か所**で、合わせて9か所:
+
+| 所 | 中身 |
+|---|---|
+| `chemistry.js` `VALENCIES` | `'F': 1` |
+| `chemistry.js` `CIP_ATOMIC_NUMBER` | `F: 9` ⚠ **落とすと F を含む分子の R/S が黙って出なくなる**（`cipRank` は表に無い元素が1つでもあると分子ごと null） |
+| `style.css` | `--color-f: #17d3e0`（**シアン**。ハロゲン4色が同じ図に並ぶので、Cl の緑・Br の茶・I の青紫・N の青のどれとも色相を離した。180° 付近はこのアプリで誰も使っていなかった唯一の帯） |
+| `stereo.js` `colorOf` | `F: '--color-f'`（ここを落とすと**くさび図でだけ**色が落ちる） |
+| `chemistry.js` `describeStructure` | 「フッ素 F ×n」 |
+| `chemistry.js` `benzeneSubUnsaturation` / 官能基の `halide` / `isHeteroForBond` | ハロゲンの並びに F |
+| `learn.js` `ipUnsaturation` / `ipSaturatedH` / `IP_HETERO_DROP_ORDER`＋`IP_ELEMENT_NAMES` | 同上（F は**末尾に足す**＝「全数で確かめた271件」の並びをずらさない） |
+| `learn.js` `parseFormula` の `supported` | `'F'`（テフロンの単量体 C₂F₄ を紙の図で焼くのに要る） |
+| `game.js` の元素名 | `F: 'フッ素'` |
+
+**命名（`IUPAC_HALOGEN`）はもともと `F: 'フルオロ'` を持っていた**ので変更なし
+（CF₂=CF₂ が `1,1,2,2-テトラフルオロエテン` と出る）。**パレットには出さない**（I・Na と同じ）。
+
+**足さないと決めた2か所**（どちらも足りないのではなく、足すと害があるか死に枝になる）:
+
+1. **`MONATOMIC_ION_ELEMENTS` に F は入れない。** 有機化学で F⁻ の粒が現れる場面が無い
+   （アミンのフッ化水素酸塩とその分液は高校で扱わない）＝ 寄せる相方がデータに1件も無い。
+   **万一 charge −1 の F が現れても価標は 0 になる**（`chargedValency` の一般則 1 + (−1) = 0）ので、
+   自動水素が生える事故は起きない。この表が効くのは主に `game.js attachCounterIons` の見せ方。
+2. **`RX_HALOGENS`（脱ハロゲン化水素）に F は入れない。** C–F からの −HF 脱離は教科書に無く、
+   足すと「1-フルオロプロパン → プロペン」という習わない札が出る。
+   **載せないことで、F を含む分子は同関数の門番（炭化水素とハロゲンだけ）で丸ごと落ちる＝安全側。**
+   `ringDirector`（配向性の解説）に足さないのも同じ理由で、知らない元素だと null を返す＝黙るだけ。
+
+**副作用の検査**: `tools/dump-canonical.js` で stages+compounds **全1,171件**（compounds 1,051／stages 120）の
+正準コード・立体コード・分子式・系統名・各原子の空き価標・官能基を、F を足す前と、足した後の
+2回書き出して diff → **0行**（I-0014）。新規 EL4
+
 ### chemistry.js レーン（2026-08-04・v620〜v625）: 数え上げが置いていった6項目のうち4つ
 
 `DESIGN_compound_coverage.md` **§9.6**（数え上げレーンが「実装しない」として置いていった提案）の
