@@ -67,9 +67,9 @@ Lv の基準は [DESIGN_difficulty_frequency.md](DESIGN_difficulty_frequency.md)
 そのあと `data/exam_usage.jsonl` が広がった（1年ぶん → 2年ぶん）ので、今のデータで数え直すと違う。一覧の入試の欄は「②古い値→今の値」と並べて書く（表では `asToolNow`）。
 ⚠ **入試は Lv の規則に入らない**（入試→Lv は規則なし）ので、Lv にも目安にも効かない。**questions.json の値はこの表では変えない。**
 
-## 全項目（728件）
+## 全項目（736件）
 
-Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
+Lv の分布: Lv1 192件・Lv2 499件・Lv3 33件・Lv4 12件
 
 ### anal（元素の確認・元素分析・18件）
 
@@ -556,7 +556,7 @@ Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 | `inorg.nonmetal.sio2` | 炭素とケイ素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `inorg.nonmetal.silica-gel` | 炭素とケイ素 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
-### inorgMetal（金属元素・38件）
+### inorgMetal（金属元素・41件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -598,6 +598,9 @@ Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 | `inorg.metal.complex-naming` | 錯イオン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `inorg.metal.complex-shape` | 錯イオン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `inorg.metal.complex-redissolve` | 錯イオン | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alloy-def` | 合金 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.metal.alloy-examples` | 合金 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alloy-functional` | 合金 | 2 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 2 | 2〜4 |  | 2 |
 
 ### inorgQual（イオンを見分ける・13件）
 
@@ -631,7 +634,7 @@ Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 | `theo.life.haber-issue` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.life.atom-economy` | 化学が果たす役割 | 2 | 見あたらない | — | 未登場 | — | ①未 ②0 |  | 2 | 1〜4 |  | 2 |
 
-### theoStructure（物質の構造・39件）
+### theoStructure（物質の構造・42件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -674,6 +677,9 @@ Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 | `theo.structure.radius-edge` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.structure.ionic-lattice` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.structure.crystal-density` | 結晶格子 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.amorphous` | 結晶の種類 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.structure.element-test` | 物質の分類と分離 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.structure.element-test-infer` | 物質の分類と分離 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
 ### theoMole（物質量と化学反応式・25件）
 
@@ -808,7 +814,7 @@ Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 | `theo.electro.copper-refining` | 電気分解の工業的利用 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.electro.molten-salt` | 電気分解の工業的利用 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
-### theoState（物質の状態・24件）
+### theoState（物質の状態・26件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -836,6 +842,8 @@ Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 | `theo.state.ideal-gas` | 実在気体 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
 | `theo.state.real-gas-deviation` | 実在気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.state.compressibility` | 実在気体 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.gas-pressure` | 三態と状態変化 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.state.pressure-units` | 三態と状態変化 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
 ### theoSolution（溶液・28件）
 
@@ -966,4 +974,4 @@ Lv の分布: Lv1 190件・Lv2 493件・Lv3 33件・Lv4 12件
 
 ---
 
-生成元: `qa/questions.json`（728件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`
+生成元: `qa/questions.json`（736件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`
