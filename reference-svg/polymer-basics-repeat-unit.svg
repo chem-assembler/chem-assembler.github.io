@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" viewBox="0 0 880 300" role="img">
+  <!-- 単量体（エチレン）→ 重合 → 重合体の鎖。鎖には CH₂ を6個（＝繰り返し単位3つぶん）並べ、
+       まん中の1単位を赤い枠で囲む。枠の左右の辺が結合のまん中を通るのは、単位の切れ目だから。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .bond { stroke: #333; stroke-width: 2.5; fill: none; }
+    .atom { font-size: 24px; fill: #222; }
+    .cont { font-size: 24px; fill: #888; }
+    .arrow { stroke: #1565c0; stroke-width: 2.5; fill: none; }
+    .box { stroke: #c62828; stroke-width: 2.5; fill: none; }
+    .red { fill: #c62828; }
+    .name { font-size: 17px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .blue { fill: #1565c0; }
+  </style>
+
+  <!-- 単量体 -->
+  <text class="atom" x="100" y="168" text-anchor="middle">CH₂=CH₂</text>
+  <text class="small" x="100" y="200" text-anchor="middle">単量体（エチレン）</text>
+
+  <!-- 重合 -->
+  <text class="small blue" x="235" y="142" text-anchor="middle">重合</text>
+  <path class="arrow" d="M 195 160 L 265 160" />
+  <polygon points="275,160 261,154 261,166" fill="#1565c0" />
+
+  <!-- 重合体の鎖（CH₂ ×6 ＝ 3単位） -->
+  <text class="cont" x="310" y="168" text-anchor="middle">…</text>
+  <path class="bond" d="M 325 160 L 345 160" />
+  <text class="atom" x="370" y="168" text-anchor="middle">CH₂</text>
+  <path class="bond" d="M 395 160 L 421 160" />
+  <text class="atom" x="446" y="168" text-anchor="middle">CH₂</text>
+  <path class="bond" d="M 471 160 L 497 160" />
+  <text class="atom" x="522" y="168" text-anchor="middle">CH₂</text>
+  <path class="bond" d="M 547 160 L 573 160" />
+  <text class="atom" x="598" y="168" text-anchor="middle">CH₂</text>
+  <path class="bond" d="M 623 160 L 649 160" />
+  <text class="atom" x="674" y="168" text-anchor="middle">CH₂</text>
+  <path class="bond" d="M 699 160 L 725 160" />
+  <text class="atom" x="750" y="168" text-anchor="middle">CH₂</text>
+  <path class="bond" d="M 775 160 L 795 160" />
+  <text class="cont" x="810" y="168" text-anchor="middle">…</text>
+
+  <!-- まん中の1単位を囲む -->
+  <rect class="box" x="486" y="132" width="148" height="56" rx="6" />
+  <text class="small red" x="560" y="118" text-anchor="middle">繰り返し単位</text>
+
+  <text class="name" x="560" y="230" text-anchor="middle">重合体（ポリエチレン）</text>
+  <text class="small" x="560" y="262" text-anchor="middle">この単位が n 個つながる ＝ 重合度 n</text>
+</svg>
