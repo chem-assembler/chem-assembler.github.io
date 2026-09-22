@@ -5,6 +5,12 @@ unitLabel: 物質量と化学反応式
 group: 溶液の濃度
 title: 溶液の濃度 —— 溶液 1L について考える
 summary: 濃度には質量パーセント濃度・モル濃度・質量モル濃度の3つがあります。モル濃度を問われたら溶液 1L について考え、密度で質量と体積をつなぎます。混合と希釈は、てんびんで「多い方に近い」を使います。
+codes:
+  - theo.mole.concentration-def
+  - theo.mole.molarity
+  - theo.mole.concentration-convert
+  - theo.mole.mixing-dilution
+  - theo.mole.molality
 source:
   - slides:物質量練習帳解答 No.6（濃度）・No.10（濃度の変換）・No.11（溶液の混合・希釈）
   - textbook:化学基礎_091-191_3編（質量パーセント濃度・モル濃度・メスフラスコによる調製）

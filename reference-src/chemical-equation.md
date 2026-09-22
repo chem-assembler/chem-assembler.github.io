@@ -5,6 +5,11 @@ unitLabel: 物質量と化学反応式
 group: 化学反応式
 title: 化学反応式のつくり方
 summary: 化学反応式は、反応物を左辺・生成物を右辺に書き、両辺で原子の種類と数がそろうように係数をつけた式です。係数は、いちばん複雑な物質を 1 とおいて順に合わせる目算法で決め、決まらないときは未定係数法を使います。
+codes:
+  - theo.mole.equation-rules
+  - theo.mole.coefficient-method
+  - theo.mole.combustion-equation
+  - theo.mole.ionic-equation
 source:
   - textbook:化学基礎_091-191_3編（化学反応式の書き方・目算法の手順・未定係数法・イオンを含む化学反応式）
   - app:ion-equation/index
