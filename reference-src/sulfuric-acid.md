@@ -5,6 +5,11 @@ unitLabel: 非金属元素
 group: 硫酸
 title: 硫酸 —— 希硫酸と濃硫酸
 summary: 酸化数 +6 の硫黄の化合物のまとめ。三酸化硫黄、希硫酸の5つの性質（2価の強酸・弱酸の遊離・金属の溶解・硫酸塩の沈殿・鉛蓄電池）、濃硫酸の5つの性質（不揮発性・熱濃硫酸の酸化力・溶解熱・吸湿・脱水）、接触法と量の計算を1枚にしました。
+codes:
+  - inorg.nonmetal.dilute-sulfuric
+  - inorg.nonmetal.hot-conc-sulfuric
+  - inorg.nonmetal.conc-sulfuric
+  - inorg.nonmetal.contact-process
 source:
   - slides:無機の基本６「硫黄」s18-31（練習は s33-36・s45-53）
 singleSource: true
