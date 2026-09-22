@@ -1893,6 +1893,37 @@ node tools/triage-unmerged.js --all    # 判定済みも表示
 正準コード・立体コード・分子式・系統名・各原子の空き価標・官能基を、F を足す前と、足した後の
 2回書き出して diff → **0行**（I-0014）。新規 EL4
 
+### ケイ素レーン（2026-09-23・v1610）: 元素 Si を足し、テフロン・シリコーンを登録して図を焼いた（I-0014）
+
+`DESIGN_figure_marks.md` 0b の残り。**Si は F と違い4価でハロゲンではない**ので、
+F のように「ハロゲンの並びに足す」ではなく、1か所ずつ入れるかどうかを決めた。
+
+| 所 | 中身 |
+|---|---|
+| `chemistry.js` `VALENCIES` | `'Si': 4` |
+| `chemistry.js` `CIP_ATOMIC_NUMBER` | `Si: 14`（落とすと Si を含む分子の R/S が黙って null） |
+| `style.css` / `tools/gen-figure.mjs` の紙の色 | `--color-si: #8ed04a`（黄緑）／紙 `#4f7a1e`。元素の色で空いていた一番広い帯（S の黄 48° と Cl の緑 145° のあいだ）の真ん中 |
+| `stereo.js` `colorOf` | **2文字の元素の切り出し `/^(Cl|Br)/` に Si**。落とすと先頭1文字の `S` と読まれて硫黄の色になる（同じ型の切り出しは assembler に他に無い） |
+| `chemistry.js` `describeStructure` | 「ケイ素 Si ×n」（ハロゲンの並びとは別枠） |
+| `game.js` の元素名 | `Si: 'ケイ素'` |
+
+**入れないと決めた所**:
+1. **ハロゲンの並び**（`benzeneSubUnsaturation`・`halide`・`isHeteroForBond`・learn.js の `ip*`）… ハロゲンではない
+2. **`element === 'C'` の判定**（命名・最長鎖・芳香環・官能基）… どれも「炭素骨格」の意味なので Si は素通りさせる。
+   命名は `iupacNameDetail` の門番（C・O・ハロゲン以外があれば null）で**名前を出さない**
+3. **learn.js `parseFormula` の `supported`** … 入れると異性体の数え上げに Si が4価の原子として入り、
+   名前の出ない異性体が並ぶ。シリコーンの図は登録名から呼ぶので要らない（EL5 が「受けない」を固定）
+4. `MONATOMIC_ION_ELEMENTS`・`RX_HALOGENS` … Si はイオンの粒にも脱離の相手にもならない
+
+**登録**（`compounds.json` 末尾に2件・既存の高分子の流儀＝両端 R・主鎖6原子・42px）:
+`ポリテトラフルオロエチレン（テフロン）` `[CF2-CF2]n` → 画面の式 (C₂F₄)ₙ ／
+`シリコーン（ポリジメチルシロキサン）` `[Si(CH3)2-O]n` → (C₂H₆OSi)ₙ。
+シリコーンの Si-O-Si はエーテルと読まれず、反応の札も1つも出ない（EL6）。
+
+**図**: `plastic-ptfe.png`・`rubber-silicone.png`（紙の図・`plain`）。
+
+**副作用の検査**: `tools/dump-canonical.js` で全1,171件（compounds 1,051／stages 120）を前後で diff → **0行**（I-0014）。新規 EL5・EL6
+
 ### chemistry.js レーン（2026-08-04・v620〜v625）: 数え上げが置いていった6項目のうち4つ
 
 `DESIGN_compound_coverage.md` **§9.6**（数え上げレーンが「実装しない」として置いていった提案）の
