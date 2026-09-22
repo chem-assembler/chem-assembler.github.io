@@ -5,6 +5,11 @@ unitLabel: 酸と塩基
 group: 価数と強弱
 title: 酸・塩基の価数と強弱 —— 強酸は3つだけ覚える
 summary: 1個の酸が出す H⁺ の数が価数、どれだけの割合が電離するかが電離度と強弱。代表的な酸・塩基を「価数×強弱」の表で覚え、電離の式が書けるようにします。H⁺ の濃度の出し方まで。
+codes:
+  - theo.acid-base.valence
+  - theo.acid-base.strong-weak
+  - theo.acid-base.ionization-degree
+  - theo.acid-base.h-concentration
 source:
   - slides:酸塩基の基本２「酸と塩基の価数と強弱」p.6〜12・練習1〜3 p.14〜18
   - slides:無機の基本１「無機の前に復習すべきこと」p.14〜17

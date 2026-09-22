@@ -5,6 +5,12 @@ unitLabel: 酸と塩基
 group: 中和
 title: 中和反応と量的関係 —— 価数の逆の比で、左から順に書く
 summary: 中和は H⁺ と OH⁻ が結びついて H₂O になり、残ったイオンが塩になる「イオンの組み換え」。酸と塩基は価数の逆の比で完全に中和するので、反応式は係数ごと左から順に書けます。濃度・体積からの計算と、気体を吸収させてから滴定する逆滴定まで。
+codes:
+  - theo.acid-base.neutralization-def
+  - theo.acid-base.neutralization-ratio
+  - theo.acid-base.neutralization-equation
+  - theo.acid-base.neutralization-calc
+  - theo.acid-base.back-titration
 source:
   - slides:酸塩基の基本４「中和反応と塩の性質」p.6〜10・練習1 p.16
   - slides:無機の基本１「無機の前に復習すべきこと」p.13・p.18〜20・練習2 p.51

@@ -5,6 +5,11 @@ unitLabel: 酸と塩基
 group: 酸と塩基の定義
 title: 酸と塩基の定義 —— アレニウスとブレンステッド・ローリー
 summary: 酸の本体は H⁺、塩基の本体は OH⁻。ふだんはアレニウスの定義で考え、指示されたときだけブレンステッド・ローリーの定義で H⁺ のやりとりを見ます。H₂O や HCO₃⁻ が相手によって酸にも塩基にもなることまで。
+codes:
+  - theo.acid-base.acid-base-properties
+  - theo.acid-base.arrhenius
+  - theo.acid-base.bronsted
+  - theo.acid-base.bronsted-role
 source:
   - slides:酸塩基の基本１「酸と塩基の定義」p.4〜13・練習1 p.15
   - slides:酸塩基の基本２「酸と塩基の価数と強弱」p.4（復習1）

@@ -5,6 +5,11 @@ unitLabel: 酸と塩基
 group: 弱酸の遊離
 title: 弱酸の遊離・揮発性の酸の遊離 —— 陰イオンが H⁺ とくっつく
 summary: 弱酸の塩に強酸を加えると弱酸が、弱塩基の塩に強塩基を加えると弱塩基が遊離します。原因は「弱酸の陰イオンが H⁺ とくっつきたがる」ことで、塩の加水分解と同じ仕組みです。不揮発性の酸で揮発性の酸を追い出す反応も同じ型で書けます。気体の製法の多くがここに入ります。
+codes:
+  - theo.acid-base.weak-acid-displacement
+  - theo.acid-base.gas-by-displacement
+  - theo.acid-base.weak-base-displacement
+  - theo.acid-base.volatile-acid
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」p.24〜28・練習5 p.56〜58
   - slides:無機の基本５「ハロゲン」s16・s25
