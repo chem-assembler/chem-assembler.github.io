@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="450" viewBox="0 0 780 450" role="img">
+  <!-- 飽和溶液では [Ag+][Cl-] ＝ Ksp（一定）なので、[Ag+] と [Cl-] は反比例する。
+       その曲線でグラフが2つに分かれる: 上側＝積が Ksp より大きい（沈殿する）／下側＝小さい（沈殿しない）。
+       曲線そのものが飽和。★ 軸は目盛りを打たない（形だけを見せる図）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .curve { stroke: #6a1b9a; stroke-width: 3.5; fill: none; }
+    .lab { font-size: 19px; fill: #222; }
+    .big { font-size: 21px; }
+    .sub { font-size: 16px; }
+    .red { fill: #c62828; }
+    .blue { fill: #1565c0; }
+    .note { font-size: 16px; fill: #333; }
+  </style>
+
+  <!-- 領域の地色（薄く。色だけに意味は持たせず、文字でも書く） -->
+  <path fill="#fdecea" stroke="none"
+        d="M 129 50 L 133 76 L 138 101 L 144 123 L 151 147 L 159 170 L 168 189 L 181 210 L 195 229 L 212 246 L 234 262 L 256 275 L 283 286 L 318 297 L 362 307 L 415 315 L 486 323 L 565 329 L 627 332 L 700 336 L 700 50 Z" />
+  <path fill="#eef5fb" stroke="none"
+        d="M 129 50 L 133 76 L 138 101 L 144 123 L 151 147 L 159 170 L 168 189 L 181 210 L 195 229 L 212 246 L 234 262 L 256 275 L 283 286 L 318 297 L 362 307 L 415 315 L 486 323 L 565 329 L 627 332 L 700 336 L 700 360 L 82 360 L 82 50 Z" />
+
+  <!-- 反比例の曲線（＝飽和） -->
+  <path class="curve"
+        d="M 129 50 L 133 76 L 138 101 L 144 123 L 151 147 L 159 170 L 168 189 L 181 210 L 195 229 L 212 246 L 234 262 L 256 275 L 283 286 L 318 297 L 362 307 L 415 315 L 486 323 L 565 329 L 627 332 L 700 336" />
+
+  <!-- 軸 -->
+  <path class="ax" d="M 80 56 L 80 360 L 718 360" />
+  <polygon points="80 46, 75 60, 85 60" fill="#333" />
+  <polygon points="728 360, 714 355, 714 365" fill="#333" />
+  <text class="lab" x="22" y="40">[Ag⁺]</text>
+  <text class="lab" x="676" y="392">[Cl⁻]</text>
+
+  <!-- 上側の領域 -->
+  <text class="lab big red" x="380" y="146">沈殿する</text>
+  <text class="lab sub red" x="380" y="176">[Ag⁺][Cl⁻] ＞ Ksp</text>
+
+  <!-- 下側の領域 -->
+  <text class="lab big blue" x="150" y="306">沈殿しない</text>
+  <text class="lab sub blue" x="150" y="334">[Ag⁺][Cl⁻] ＜ Ksp</text>
+
+  <!-- 曲線の意味（凡例） -->
+  <path class="curve" d="M 210 420 L 262 420" />
+  <text class="note" x="274" y="426">曲線の上が飽和溶液（[Ag⁺][Cl⁻] ＝ Ksp）</text>
+</svg>
