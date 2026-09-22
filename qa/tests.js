@@ -23,7 +23,10 @@ var TAGS = [
   // 化合物（TAXONOMY §2.5「以降の単元で拡張」）
   "アルカン", "アルケン", "アルキン", "シクロアルカン"
 ];
-var CODE_RE = /^org\.[a-zA-Z]+\.[a-z0-9-]+$/;
+/* ★ 2026-09-23 に無機・理論（inorg.*・theo.*）を収録したので広げた（以前は org.* だけ）。
+ *   unit の部分にハイフンを許す ＝ `theo.acid-base.*`・`theo.ionic-eq.*`（TAXONOMY §1 の予約済みの綴り）。
+ *   ⚠ calc.* は領域跨ぎの前提（req）としてだけ現れ、項目のコードにはまだ無い */
+var CODE_RE = /^(org|inorg|theo)\.[a-zA-Z][a-zA-Z-]*\.[a-z0-9-]+$/;
 
 // ★ 飛び道具の札で使ってはいけない「組む」系の動詞（2026-09-10）。
 //
@@ -171,9 +174,15 @@ function runDataTests(DATA) {
   //   ホームのカードも習得マップの行もこの配列の順に出るので、配列の順＝画面の順。
   //   ⚠ 旧 id（carbonyl・aroN・bio・clue）は消した。項目コード（org.carbonyl.* など）は学習記録の
   //   キーなので変えていない ＝ コードの接頭辞と単元の id は一致しない
-  t("単元: 17単元がユーザーの並び順どおりで、旧 id が残っていない", function () {
+  // ★ 2026-09-23 無機4・理論11 を収録して 17 → 32 単元に。**有機の17単元の並び（ユーザー決定）は崩さず、
+  //   その後ろに足した**。無機・理論の並びは**参考書の ORDER.txt の順**（無機 → 理論）にそろえた
+  //   ＝ 参考書でページを読む順と、一問一答の単元の順が同じになる
+  t("単元: 32単元（有機17・無機4・理論11）が並び順どおりで、旧 id が残っていない", function () {
     var want = ["anal", "aliphatic", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
-      "aroAcid", "aroNitrogen", "aroSep", "sugar", "aminoAcid", "protein", "nucleic", "poly", "structure"];
+      "aroAcid", "aroNitrogen", "aroSep", "sugar", "aminoAcid", "protein", "nucleic", "poly", "structure",
+      "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual",
+      "theoStructure", "theoMole", "theoAcidBase", "theoRedox", "theoElectro", "theoState",
+      "theoSolution", "theoThermo", "theoKinetics", "theoEquilibrium", "theoIonicEq"];
     var got = units.map(function (u) { return u.id; });
     assert(got.join(",") === want.join(","), "単元の並びが違う: " + got.join(","));
     ["carbonyl", "aroN", "bio", "clue"].forEach(function (old) {
@@ -222,6 +231,14 @@ function runDataTests(DATA) {
     "theo.ionic-eq.polyprotic": "多段階の電離平衡（酸性・塩基性アミノ酸で使う）",
     "theo.solution.colligative": "希薄溶液の性質（浸透圧・凝固点降下。構造決定で分子量を出すのに使う）"
   };
+  // ★ 実体化を**見届けた**もの（2026-09-23 に理論を収録して中身が入った）。
+  //   合図どおり「そちらの単元からこちらの項目へ辿れる仕掛け」を張る宿題は **I-0101** に置いた
+  //   （qa の画面 app.js はまだ req をどこにも使っていない ＝ 仕掛けは画面の新機能として作る）。
+  //   ⚠ ここに無いコードが実体化したら、下の検査は**引き続き鳴る**（合図そのものは黙らせていない）
+  var MATERIALIZED_ACK = {
+    "theo.ionic-eq.polyprotic": "I-0101",
+    "theo.solution.colligative": "I-0101"
+  };
   t("req: 領域を跨ぐ前提が既知のものだけで、まだ実体化していない", function () {
     var seen = {};
     patterns.forEach(function (p) {
@@ -238,7 +255,7 @@ function runDataTests(DATA) {
     assert(!gone.length, "★領域跨ぎの前提が使われなくなった: " + gone.join(" / ") +
       " → KNOWN_FORWARD から外す");
     // 実体化したら鳴らす（相互参照を張る合図）
-    var real = now.filter(function (r) { return codes.indexOf(r) >= 0; });
+    var real = now.filter(function (r) { return codes.indexOf(r) >= 0 && !MATERIALIZED_ACK[r]; });
     assert(!real.length, "★" + real.join(" / ") + " が実体化した（" +
       real.map(function (r) { return KNOWN_FORWARD[r]; }).join(" / ") +
       "）。**その単元からこちらの項目へ辿れる仕掛けを張る**（" +
@@ -415,7 +432,11 @@ function runDataTests(DATA) {
     "cyclo", "ethyl", "methyl", "bromo", "chloro", "sec", "tert", "cis", "trans",
     "ane", "ene", "yne", "anol", "ol", "al",
     // 略号・単位
-    "PLUS", "DNA", "RNA", "PET", "PVC", "TNT", "ppm", "pH", "mol", "mL", "Lv"
+    "PLUS", "DNA", "RNA", "PET", "PVC", "TNT", "ppm", "pH", "mol", "mL", "Lv",
+    // ★ 2026-09-23 理論を収録して足した。log は pH の定義そのもの（常用対数）で、言い換えると
+    //   与件が読みにくくなる（qa-b・qa-e の便が「2 ＝ 10⁰·³⁰」などに書き換えていた）。
+    //   min は反応速度の単位 mol/(L·min)（参考書のページの単位のまま）
+    "log", "min"
   ];
   t("整形: 日本語の中に英単語が残っていない（元素記号・命名法の綴りは除く）", function () {
     var bad = [];
@@ -2838,9 +2859,16 @@ function runUsageTests(DATA, USAGE_TEXT) {
     assert(!bad.length, "知らない via: " + bad.slice(0, 3).join(", "));
   });
 
-  t("出題実績: 実績のある項目が qa の半分以上ある（生成が空振りしていない）", function () {
-    assert(rows.length > DATA.patterns.length / 2,
-      "実績のある項目が " + rows.length + " / " + DATA.patterns.length + " しかない");
+  /* ★ 2026-09-23 無機・理論（385項目）を収録したので、母数を**有機だけ**にした。
+   *   入試の出題実績は**有機の入試問題の分析から作っている**（無機・理論の入試の索引はまだ無い ＝ I-0016）。
+   *   無機・理論を母数に入れると、生成器が正しく動いていても半分を割る（実測 276 / 704）。
+   *   ⚠ 狙い（生成器が黙って空振りしていないか）は変えていない ——有機の中で半分を割れば今までどおり鳴る。
+   *   ⏭ 無機・理論の索引ができたら、母数を全項目に戻す（I-0016） */
+  t("出題実績: 実績のある項目が有機の qa の半分以上ある（生成が空振りしていない）", function () {
+    var org = DATA.patterns.filter(function (p) { return p.code.indexOf("org.") === 0; }).length;
+    var orgRows = rows.filter(function (r) { return String(r.code || "").indexOf("org.") === 0; }).length;
+    assert(orgRows > org / 2,
+      "有機で実績のある項目が " + orgRows + " / " + org + " しかない（全体 " + rows.length + " / " + DATA.patterns.length + "）");
   });
 
   return results;
@@ -3141,7 +3169,8 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC, USAGE_TEXT) {
     assert(text.indexOf("gen_level_matrix.js") >= 0 && text.indexOf("手で直さない") >= 0, "生成物である旨が書かれていない");
     var lines = {};
     text.split(/\r?\n/).forEach(function (l) {
-      var m = l.match(/^\| `(org\.[a-zA-Z]+\.[a-z0-9-]+)` \| .* \| (\d) \|$/);
+      // ★ 2026-09-23 無機・理論（inorg.*・theo.*）も拾う。unit の部分のハイフン（acid-base・ionic-eq）も許す
+      var m = l.match(/^\| `((?:org|inorg|theo)\.[a-zA-Z][a-zA-Z-]*\.[a-z0-9-]+)` \| .* \| (\d) \|$/);
       if (m && l.split(" | ").length >= 10) lines[m[1]] = +m[2];
     });
     var bad = DATA.patterns.filter(function (p) { return lines[p.code] !== p.difficulty; })
@@ -3270,7 +3299,7 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC, USAGE_TEXT) {
     var scan = function (md) {
       var seen = {}, errs = [];
       md.split(/\r?\n/).forEach(function (l) {
-        var m = l.match(/^\| `(org\.[a-zA-Z]+\.[a-z0-9-]+)` \| /);
+        var m = l.match(/^\| `((?:org|inorg|theo)\.[a-zA-Z][a-zA-Z-]*\.[a-z0-9-]+)` \| /);   // ★ 2026-09-23 無機・理論も
         if (!m) return;
         var cells = l.split(" | ");
         if (cells.length < 13) return;   // 全項目の表だけ（13欄）
