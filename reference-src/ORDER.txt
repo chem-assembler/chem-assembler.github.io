@@ -70,6 +70,7 @@ complex-ion
 precipitate
 flame-color
 cation-separation
+chemistry-and-life
 substance-classification
 atom-structure
 ionic-bond
@@ -98,6 +99,7 @@ half-reaction-condition
 redox-equation
 redox-titration
 ionization-tendency
+chemistry-world
 cell-basics
 fuel-cell
 lead-storage-battery
@@ -134,6 +136,4 @@ hydrolysis-ph
 buffer
 polyprotic-acid
 solubility-product
-chemistry-and-life
-chemistry-world
 chemistry-role
