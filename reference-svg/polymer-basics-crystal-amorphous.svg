@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="380" viewBox="0 0 880 380" role="img">
+  <!-- 高分子の固体の模式図。左半分は鎖がそろって並ぶ結晶部分、右半分は不規則にからまる非晶部分。
+       ★ 1本の鎖が左右どちらにもまたがるように描く（別々の粒が混ざっているのではない）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    .c1 { stroke: #1565c0; stroke-width: 3.5; fill: none; stroke-linecap: round; }
+    .c2 { stroke: #6a1b9a; stroke-width: 3.5; fill: none; stroke-linecap: round; }
+    .frame { stroke: #333; stroke-width: 2; fill: none; }
+    .zone { fill: #e3f0fb; }
+    .divider { stroke: #999; stroke-width: 1.5; stroke-dasharray: 6 5; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+  </style>
+
+  <!-- 枠と結晶部分の地 -->
+  <rect class="zone" x="41" y="51" width="359" height="248" />
+  <rect class="frame" x="40" y="50" width="800" height="250" rx="4" />
+  <path class="divider" d="M 400 50 L 400 300" />
+
+  <!-- 鎖5本。左はそろって並び、右はからまる -->
+  <path class="c1" d="M 60 90 L 400 90 C 450 90, 460 150, 510 170 C 555 188, 575 120, 615 100 C 660 78, 665 150, 705 170 C 745 190, 770 110, 820 96" />
+  <path class="c2" d="M 60 132 L 400 132 C 445 132, 455 80, 500 72 C 545 64, 570 140, 610 160 C 650 180, 660 110, 700 96 C 745 80, 780 140, 820 150" />
+  <path class="c1" d="M 60 174 L 400 174 C 450 174, 455 235, 505 250 C 550 263, 580 190, 620 200 C 660 210, 665 270, 710 262 C 755 254, 775 200, 820 210" />
+  <path class="c2" d="M 60 216 L 400 216 C 445 216, 450 160, 495 150 C 540 140, 565 230, 605 245 C 645 260, 670 210, 712 205 C 755 200, 780 250, 820 260" />
+  <path class="c1" d="M 60 258 L 400 258 C 450 258, 470 280, 520 278 C 570 276, 585 215, 630 222 C 675 229, 690 285, 735 280 C 775 276, 795 245, 820 250" />
+
+  <text class="lab" x="220" y="336" text-anchor="middle">結晶部分</text>
+  <text class="small" x="220" y="364" text-anchor="middle">鎖がそろって並ぶ</text>
+  <text class="lab" x="620" y="336" text-anchor="middle">非晶部分</text>
+  <text class="small" x="620" y="364" text-anchor="middle">鎖が不規則にからまる</text>
+</svg>
