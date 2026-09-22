@@ -5,6 +5,10 @@ unitLabel: 酸化還元
 group: 酸化還元滴定
 title: 酸化還元滴定
 summary: 濃度がわかっている酸化剤（還元剤）で、濃度がわからない還元剤（酸化剤）の濃度を求める操作です。e⁻ の物質量の等式で解くこと、KMnO₄ は自分が指示薬になること、ヨウ素滴定の2段の反応まで。
+codes:
+  - theo.redox.titration-relation
+  - theo.redox.kmno4-titration
+  - theo.redox.iodometry
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」p.37（価数と量的関係）
   - slides:無機の基本５「ハロゲン」s32・s48-51（練習8・ヨウ素滴定）

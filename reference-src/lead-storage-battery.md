@@ -5,6 +5,11 @@ unitLabel: 電池と電気分解
 group: 鉛蓄電池
 title: 鉛蓄電池 —— 反応式のストーリーと質量の変化
 summary: 鉛蓄電池の両極の式は「Pb²⁺ になって溶けだそうとする → SO₄²⁻ と沈殿して極板に付く」の順に組み立てられます。e⁻ 2mol あたり、負極は 96g・正極は 64g 重くなり、電解液は H₂SO₄ が 2mol 減って H₂O が 2mol 増えます。
+codes:
+  - theo.electro.lead-discharge
+  - theo.electro.lead-equations
+  - theo.electro.lead-mass
+  - theo.electro.lead-charge
 source:
   - slides:電池の基本３「鉛蓄電池」s4〜s17
   - textbook:R5化学Vol.1-2編（鉛蓄電池の構成・両極の式・充電のつなぎ方・起電力 約2.0V）
