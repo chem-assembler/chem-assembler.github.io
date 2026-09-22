@@ -5,6 +5,10 @@ unitLabel: 溶液
 group: 浸透圧
 title: 浸透圧 —— 気体と同じ式
 summary: 半透膜を通って溶媒が溶液側へ移るのを止める圧力が浸透圧。ΠV ＝ nRT（Π ＝ cRT）は気体と同じ式なので、準標準状態（1 mol・24.9 L・1.0 × 10⁵ Pa）から比例・反比例で解ける。液面差の換算と分子量の決定まで。
+codes:
+  - theo.solution.osmosis
+  - theo.solution.van-t-hoff
+  - theo.solution.osmotic-molar-mass
 source:
   - slides:速度平衡の標準問題演習「解離度と圧平衡定数」s3（【復習】浸透圧 ΠV ＝ nRT → Π ＝ cRT）
   - slides:気体の基本１「気体の状態方程式」s8-11・s20-22（公式は使わない・準標準状態を基準に比例で解く）

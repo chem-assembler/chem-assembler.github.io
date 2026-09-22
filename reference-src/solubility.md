@@ -5,6 +5,12 @@ unitLabel: 溶液
 group: 固体の溶解度
 title: 固体の溶解度と再結晶
 summary: 溶解度は「水 100 g に溶ける溶質の g」。飽和溶液は「水 100 g ＋ 溶質 S g」の組で考え、析出する量は主語付きの比例式を倍率で解く。水和水をもつ結晶（CuSO₄・5H₂O）は、結晶を無水塩と水に分けてから同じ組に入れる。
+codes:
+  - theo.solution.solubility-def
+  - theo.solution.solubility-curve
+  - theo.solution.recrystallization
+  - theo.solution.evaporation
+  - theo.solution.hydrate
 source:
   - textbook:R5化学Vol.1-1編 3章1節（固体の溶解度 p.47・再結晶 p.48・水和物 p.49）
   - slides:物質量練習帳（主語付きの比例式を倍率で解く流儀）
