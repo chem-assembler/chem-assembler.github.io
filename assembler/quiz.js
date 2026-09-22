@@ -1732,10 +1732,31 @@ function _figMarkNumbers(mol) {
             return { kind: 'sugar', byLabel, chain: null };
         }
     }
-    const chain = (typeof findLongestCarbonChain === 'function' ? findLongestCarbonChain(mol) : []) || [];
+    /* ⚠⚠ **主鎖の番号は命名の番号に合わせる**（I-0098・mark2 便の報告 2026-09-23）。
+     *   もとは `findLongestCarbonChain` の並びをそのまま 1,2,3… と数えていた。あの関数は**最長の鎖を
+     *   見つけるだけで、どちらの端から数えるかを決めていない** ＝ 鎖状グルコースで `at=C5-OH` が
+     *   **実際の2位の −OH に当たった**。しかも1個には当たるので「0個なら赤」で止まらず、**黙って外れる**。
+     *   設計 §3 はもともと「既存の番号付け（`numbered` が描いているもの）」＝ `iupacNameDetail().mainChain`
+     *   （番号 k の炭素 = mainChain[k-1]）に合わせると書いていた。
+     * ★ 命名できない分子（両端が R の高分子など）は最長の鎖に落とすが、**向きが決まっていない**ことを
+     *   `directionKnown: false` で呼ぶ側へ渡す。呼ぶ側は**向きで結果が変わる指し方を赤で止める**。 */
+    let chain = null, directionKnown = false;
+    if (typeof iupacNameDetail === 'function') {
+        try {
+            const d = iupacNameDetail(mol);
+            if (d && Array.isArray(d.mainChain) && d.mainChain.length) { chain = d.mainChain; directionKnown = true; }
+        } catch (e) { /* 命名できない分子 ＝ 下の最長の鎖へ */ }
+    }
+    if (!chain) chain = (typeof findLongestCarbonChain === 'function' ? findLongestCarbonChain(mol) : []) || [];
     const byLabel = new Map();
     chain.forEach((id, i) => byLabel.set(String(i + 1), [id]));
-    return { kind: 'chain', byLabel, chain };
+    return { kind: 'chain', byLabel, chain, directionKnown };
+}
+
+/* 主鎖の向きが決まっていないとき、その指し方が**両端のどちらから数えても同じ原子**を指すか（I-0098）。
+ * 長さ L の鎖で、位置 k は L+1−k と同じ原子 ⇔ ちょうど真ん中。範囲 n〜m は n+m = L+1 のとき両端から同じ。 */
+function _figChainDirectionFree(n, m, L) {
+    return n + m === L + 1;
 }
 
 /**
@@ -1836,12 +1857,25 @@ function figureMarkHits(mol, at) {
         }
         const n = parseInt(rg[1], 10), m = parseInt(rg[2], 10);
         if (!(n >= 1 && m > n && m <= num.chain.length)) return [];
+        // ⚠ 向きが決まっていない鎖では、両端から同じ範囲になる指し方だけを通す（I-0098）
+        if (!num.directionKnown && !_figChainDirectionFree(n, m, num.chain.length)) {
+            throw new Error(`印の at=${spec} は、この分子では主鎖のどちらの端から数えるか決まらないので指せません`
+                + `（命名の番号が無い分子です。両端から同じ範囲になる C${num.chain.length + 1 - m}-C${num.chain.length + 1 - n} のような対称な書き方か、意味で指してください）`);
+        }
         return [{ ids: num.chain.slice(n - 1, m) }];
     }
     // ⑧ 位置番号（`at=C1` / `at=C4′` / `at=C1-OH`）
     const cm = /^C(\d+)(′?)(-OH)?$/.exec(spec);
     if (cm) {
         const num = _figMarkNumbers(mol);
+        // ⚠ 向きが決まっていない鎖では、真ん中の炭素しか指せない（I-0098。1個に当たって黙って外れるのを止める）
+        if (num.kind === 'chain' && !num.directionKnown) {
+            const k = parseInt(cm[1], 10);
+            if (!_figChainDirectionFree(k, k, num.chain.length)) {
+                throw new Error(`印の at=${spec} は、この分子では主鎖のどちらの端から数えるか決まらないので指せません`
+                    + `（命名の番号が無い分子です。意味で指してください）`);
+            }
+        }
         const carbons = num.byLabel.get(cm[1] + cm[2]) || [];
         if (!cm[3]) return carbons.map(id => ({ ids: [id] }));
         // `-OH` ＝ その炭素に付いた、水素を持つ酸素（環の中の O は数えない）

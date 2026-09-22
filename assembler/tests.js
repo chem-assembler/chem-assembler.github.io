@@ -61173,6 +61173,52 @@
             + '0個・count 違い・知らない kind・gen 無しの mark は赤／書かなければ印なし';
     });
 
+    /* ★ **印の主鎖の番号は命名の番号に合わせる**（I-0098・mark2 便の報告 2026-09-23）。
+     *
+     * ⚠⚠ **なぜ要るか**: もとは `findLongestCarbonChain` の並びをそのまま 1,2,3… と数えていた。
+     *   あの関数は最長の鎖を見つけるだけで**どちらの端から数えるかを決めていない** ＝ 鎖状グルコースで
+     *   `at=C5-OH` が**実際の2位の −OH に当たった**。しかも**1個には当たる**ので「0個なら赤」で止まらず、
+     *   **黙って違う原子に印が付く**。FGT5 はポリエチレンの `C3-C4`（6個の鎖の真ん中 ＝ 両端から同じ）
+     *   しか見ていなかったので、この外れを捕まえられなかった。
+     * ★ 答えは印の仕組みとは**別の道**で決める。
+     * ⚠ 当初は鎖状グルコースで正しい向きを確かめるつもりだったが、**`iupacNameDetail` は鎖状グルコースに
+     *   主鎖の番号を付けない**（実測）。直した後はそこで**推測せず赤で止まる** ＝ それ自体が I-0098 の核心
+     *   （黙って外れる）を止めた証拠なので、グルコースは否定対照に回した。 */
+    test('FGT7: 印の主鎖の番号は命名の番号（★否定対照: 命名の番号が無い鎖で、向きで変わる指し方は赤）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+
+        // ---- ① 命名の番号が付く非対称な鎖: 1-ブタノール。C1 は −OH の付いた炭素（OH の付いていない端が C4）
+        g.summonMolecule('1-ブタノール');
+        let mol = g.userMolecule;
+        const h1 = W.figureMarkHits(mol, 'C1-OH');
+        assert(h1.length === 1,
+            `1-ブタノールで at=C1-OH が ${h1.length} 個（1個を期待。★ 0個なら主鎖を逆向きに数えている ＝ I-0098 が戻った）`);
+        const onC = mol.getNeighbors(h1[0].ids[0]).find(n => n.atom.element === 'C').atom;
+        // −OH の付いた炭素は鎖の端（ほかの炭素と1本だけ）＝ 1位
+        assert(mol.getNeighbors(onC.id).filter(n => n.atom.element === 'C').length === 1,
+            'at=C1-OH が鎖の端の炭素の −OH でない');
+        // C4 には −OH が無い（逆向きなら C4-OH に当たってしまう）
+        assert(W.figureMarkHits(mol, 'C4-OH').length === 0,
+            '1-ブタノールで at=C4-OH が当たった（★ 主鎖を逆向きに数えている）');
+
+        // ---- ② ★ 否定対照: 命名の番号が付かない鎖（鎖状グルコース）では、向きで変わる指し方を**赤で止める**
+        //   直す前はここで**黙って実際の2位**に印が付いていた
+        c.reset();
+        g.summonMolecule('D-グルコース（鎖状）');
+        mol = g.userMolecule;
+        let threw = false;
+        try { W.figureMarkHits(mol, 'C5-OH'); } catch (e) { threw = /どちらの端から数えるか決まらない/.test(e.message); }
+        assert(threw, '鎖状グルコースで at=C5-OH が赤で止まらない（★ 黙って外れる I-0098 が戻った）');
+
+        // ---- ③ 両端から同じかの判定
+        assert(W._figChainDirectionFree(3, 4, 6) === true, 'C3-C4（6個の鎖の真ん中）を両端から同じと判定できない');
+        assert(W._figChainDirectionFree(2, 2, 6) === false, 'C2（6個の鎖）を両端から同じと誤判定した');
+        assert(W._figChainDirectionFree(1, 2, 6) === false, 'C1-C2（6個の鎖）を両端から同じと誤判定した');
+        c.reset();
+        return '1-ブタノールで C1-OH ＝ 端の −OH・C4-OH は0個／命名の番号の無い鎖状グルコースは C5-OH を赤で止める';
+    });
+
     test('ION2: 正準コードのラベルは電荷を明示する（N(4) と N⁺(4) が割れる・不斉判定も電荷を見る）', async (c) => {
         const W = c.W;
         const q = [[0, 1], [0, 2], [0, 3], [0, 4]];
