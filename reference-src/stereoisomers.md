@@ -30,6 +30,8 @@ to: alkane-isomers
 text: つながり方が違う異性体（構造異性体）と、その書き出しの手順は「同じ分子式で、別の分子」に
 :::
 
+//qa: パック qa/packs/ref-stereo.json の3項目（org.ali.cis-trans-props・org.ali.optical-rotation・org.ali.tartaric-stereo）は、questions.json に入った時点で前書きの codes: に足す。中身はこのページのシス－トランスの性質・旋光性・メソ体の節に書いてある
+
 :::section
 anchor: what
 title: 立体異性体とは —— 構造異性体との違い
