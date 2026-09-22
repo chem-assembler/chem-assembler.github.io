@@ -98,6 +98,7 @@ theo.thermo	化学反応とエネルギー	熱量の測定	heat-measurement	72	a
 theo.thermo	化学反応とエネルギー	ヘスの法則	hess-law	73	adv
 theo.thermo	化学反応とエネルギー	結合エンタルピー	bond-enthalpy	74	adv
 theo.thermo	化学反応とエネルギー	化学反応と光	light-energy	75	adv
+theo.thermo	化学反応とエネルギー	エントロピー	entropy	075	adv
 theo.kinetics	反応の速さ	反応速度の表し方	reaction-rate	76	adv
 theo.kinetics	反応の速さ	反応速度式	rate-law	77	adv
 theo.kinetics	反応の速さ	活性化エネルギー	activation-energy	78	adv
