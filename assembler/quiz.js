@@ -1526,6 +1526,9 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) 
     const atomsGroup = svg.querySelector('.quiz-atoms');
     bondsGroup.innerHTML = '';
     atomsGroup.innerHTML = '';
+    // ★ 図に重ねた印（`mark:`・v1609）も消す。⚠ 印は `.quiz-bonds` / `.quiz-atoms` の外に置くので、
+    //   ここで消さないと同じ svg に描き直すたびに古い印が積み上がる
+    svg.querySelectorAll('.quiz-marks').forEach(n => n.remove());
     // ★ 紙の図の型（v1549・参考書の図を焼く道具だけが渡す）。アプリの画面はここを通らない
     if (paper) {
         const pm = game.createTargetFromData({ target });
@@ -1663,9 +1666,375 @@ function paperBondUnit(mol) {
     return lens.length ? lens[Math.floor(lens.length / 2)] : 46;
 }
 
+/* ============================================================================
+ * ★★ 図に重ねる印（`:::figure` の `mark:`・v1609・I-0082・DESIGN_figure_marks.md 段1）
+ *
+ * **なぜここに書くか**: 参考書の図はアプリの描画を撮ったもの（`tools/gen-figure.mjs` は
+ * 画面を撮るだけ）。印を焼く道具の側に描くと、**アプリの図と参考書の図で作図が2本**になる（§1・I-0081）。
+ *
+ * ★★ **どの原子かは「化学の言葉」で指す**（設計 §3）。原子IDは乱数なので原稿に書けず、
+ *   画素で書くと登録の座標を直すたびに黙ってずれる。だから
+ *   **当てるのは実装済みの判定をそのまま読むだけ** —— `findFunctionalGroups` /
+ *   `isAsymmetricCarbon` / `haworthSugarCycles` + `haworthRingBridge` / `haworthCarbonNumbers` /
+ *   `findAromaticBondKeys` / `findLongestCarbonChain`。
+ *   ⚠⚠ **印のために化学の判定を新しく書かない**（アプリの判定と2本になって食い違う）。
+ *
+ * ⚠ **0個に当たったら赤**（`planFigureMarks` が投げる）。黄にすると**印の無い図が黙って焼ける**
+ *   ＝ 2026-09-22 の事故そのもの（図は出るので、見る人は「そういう図なんだ」と思う）。
+ * ========================================================================== */
+/* 既定の色（設計 §4）。⚠ **色だけに意味を持たせない** ＝ 形（囲み・枠）か文字でも分かるようにする */
+const FIGURE_MARK_COLOR = '#6a1b9a';
+/* ★ 原稿に書く官能基の名前 → `findFunctionalGroups` の type。
+   ⚠ ここは**綴りの対応表だけ**（判定は向こう側が持つ）。
+   ⚠ 対応する type の無い言葉（「グリコシド結合」など）は下の別の道で当てる */
+const FIGURE_MARK_GROUPS = {
+    'カルボキシ基': ['carboxyl'],
+    'カルボン酸イオン': ['carboxylate_ion'],
+    'カルボン酸の塩': ['carboxylate'],
+    'エステル結合': ['ester'],
+    'エーテル結合': ['ether'],
+    'アミド結合': ['amide'],
+    'アルデヒド基': ['aldehyde'],
+    'ケトン': ['ketone'],
+    'ニトロ基': ['nitro'],
+    'ニトリル': ['nitrile'],
+    'ジアゾニオ基': ['diazonium'],
+    'スルホ基': ['sulfo'],
+    'スルホン酸の塩': ['sulfonate'],
+    '酸無水物': ['anhydride'],
+    'フェノール性ヒドロキシ基': ['phenol'],
+    'エノール': ['enol'],
+    'ハロゲン': ['halide'],
+    'ヒドロキシ基': ['alcohol0', 'alcohol1', 'alcohol2', 'alcohol3'],
+    'アミノ基': ['amine1', 'amine2', 'amine3'],
+    'アンモニウム': ['ammonium'],
+    'C=C二重結合': ['cc_double'],
+    'C≡C三重結合': ['cc_triple']
+};
+
+/** その分子のハース糖の環（判定は `haworthSugarCycles` そのまま。無ければ空） */
+function _figMarkSugarCycles(mol) {
+    if (typeof haworthSugarCycles !== 'function') return [];
+    try { return haworthSugarCycles(mol) || []; } catch (e) { return []; }
+}
+
+/** ★ 位置番号の台帳。糖の環が読めれば `haworthCarbonNumbers`、読めなければ主鎖（`findLongestCarbonChain`） */
+function _figMarkNumbers(mol) {
+    if (typeof haworthCarbonNumbers === 'function') {
+        let r = null;
+        try { r = haworthCarbonNumbers(mol); } catch (e) { r = null; }
+        if (r && r.ok) {
+            const byLabel = new Map();
+            r.labels.forEach((v, id) => {
+                if (!byLabel.has(v)) byLabel.set(v, []);
+                byLabel.get(v).push(id);
+            });
+            return { kind: 'sugar', byLabel, chain: null };
+        }
+    }
+    const chain = (typeof findLongestCarbonChain === 'function' ? findLongestCarbonChain(mol) : []) || [];
+    const byLabel = new Map();
+    chain.forEach((id, i) => byLabel.set(String(i + 1), [id]));
+    return { kind: 'chain', byLabel, chain };
+}
+
+/**
+ * ★ 芳香環の位置番号（設計 §3 の「補助」）。トルエンの o・m・p ＝ 環の2位・4位・6位。
+ * **1位は置換基の付いた環炭素**（1つだけのとき）。2位から先は**描かれた図の時計回り**にたどる。
+ * ⚠ 向きを図から決めるのは、原子IDが乱数で並びに頼れないから（`chem-atom-id-hazard`）。
+ *   ★ 印は見た目のものなので、**読む人が見ている図の時計回り**が素直（o は左右どちらも o）。
+ */
+function _figMarkAromaticRing(mol) {
+    if (typeof findAromaticBondKeys !== 'function') return null;
+    const keys = findAromaticBondKeys(mol);
+    if (!keys || !keys.size) return null;
+    /* ⚠ 結合のキーから原子IDを切り出さないこと —— **原子IDそのものに `_` が入っている**
+       （`atom_xxxxxxxxx`・`chem-atom-id-hazard`）。結合をたどってキーと突き合わせる
+       （`findFunctionalGroups` が芳香環の原子を集めるのと同じ手つき） */
+    const ids = new Set();
+    mol.bonds.forEach(b => {
+        const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+        if (keys.has(k)) { ids.add(b.atomId1); ids.add(b.atomId2); }
+    });
+    if (ids.size !== 6) return null;                       // 環が2つ以上（ナフタレン・ビフェニル）は段1では扱わない
+    const list = [...ids].map(id => mol.atoms.find(a => a.id === id)).filter(Boolean);
+    if (list.length !== 6) return null;
+    const cx = list.reduce((s, a) => s + a.x, 0) / list.length;
+    const cy = list.reduce((s, a) => s + a.y, 0) / list.length;
+    // 角度の昇順 ＝ 画面の時計回り（SVG は y が下向き）
+    const ring = list.slice().sort((p, q) => Math.atan2(p.y - cy, p.x - cx) - Math.atan2(q.y - cy, q.x - cx));
+    const subs = ring.filter(a => mol.getNeighbors(a.id).some(n => n.atom.element !== 'H' && !ids.has(n.atom.id)));
+    if (subs.length !== 1) return null;                    // 置換基が0個・2個以上 ＝ 1位が決まらない
+    const start = ring.indexOf(subs[0]);
+    return ring.slice(start).concat(ring.slice(0, start)).map(a => a.id);
+}
+
+/**
+ * `at=` の1つを当てる。戻り値は**当たった所の並び**（1つ ＝ 印1つぶん）。
+ * ⚠ 0個のときは空配列を返し、**赤にするのは呼び手**（`planFigureMarks`）。
+ */
+function figureMarkHits(mol, at) {
+    const spec = String(at == null ? '' : at).trim();
+    const atomIds = (ids) => ({ ids: ids.filter(id => mol.atoms.some(a => a.id === id)) });
+
+    // ① 官能基（`findFunctionalGroups` を読むだけ）
+    if (FIGURE_MARK_GROUPS[spec]) {
+        const types = FIGURE_MARK_GROUPS[spec];
+        const found = typeof findFunctionalGroups === 'function' ? findFunctionalGroups(mol) : [];
+        return found.filter(g => types.indexOf(g.type) >= 0 && g.atomIds && g.atomIds.length)
+            .map(g => atomIds(g.atomIds.slice()));
+    }
+    // ② 不斉炭素（`mol.isAsymmetricCarbon` をそのまま）
+    if (spec === '不斉炭素') {
+        return mol.atoms.filter(a => a.element === 'C' && mol.isAsymmetricCarbon(a.id)).map(a => ({ ids: [a.id] }));
+    }
+    // ③ ベンゼン環（`findAromaticBondKeys` の環をまるごと1つ）
+    if (spec === 'ベンゼン環') {
+        const ring = _figMarkAromaticRing(mol);
+        return ring ? [{ ids: ring }] : [];
+    }
+    // ④ グリコシド結合（`haworthRingBridge` の橋の原子 ＝ 2つの環をつなぐ酸素）
+    if (spec === 'グリコシド結合') {
+        const cycles = _figMarkSugarCycles(mol);
+        const hits = [];
+        for (let i = 0; i < cycles.length; i++) {
+            for (let j = i + 1; j < cycles.length; j++) {
+                const br = typeof haworthRingBridge === 'function' ? haworthRingBridge(mol, cycles[i], cycles[j]) : null;
+                if (br) hits.push({ ids: [br.atom.id] });
+            }
+        }
+        return hits;
+    }
+    // ⑤ 環の酸素（ハース環の中の O）
+    if (spec === '環の酸素') {
+        const hits = [];
+        _figMarkSugarCycles(mol).forEach(cyc => {
+            cyc.forEach(id => {
+                const a = mol.atoms.find(x => x.id === id);
+                if (a && a.element === 'O') hits.push({ ids: [a.id] });
+            });
+        });
+        return hits;
+    }
+    // ⑥ 芳香環の位置番号（`at=環C2`）
+    const ar = /^環C(\d+)$/.exec(spec);
+    if (ar) {
+        const ring = _figMarkAromaticRing(mol);
+        const n = parseInt(ar[1], 10);
+        if (!ring) return [];
+        if (!(n >= 1 && n <= ring.length)) {
+            throw new Error(`印の at=${spec} は環の位置（環C1〜環C${ring.length}）の外です`);
+        }
+        return [{ ids: [ring[n - 1]] }];
+    }
+    // ⑦ 位置番号の範囲（`at=C3-C4` ＝ 主鎖の3番目から4番目まで。繰り返し単位を枠で囲む）
+    const rg = /^C(\d+)-C(\d+)$/.exec(spec);
+    if (rg) {
+        const num = _figMarkNumbers(mol);
+        if (num.kind !== 'chain') {
+            throw new Error(`印の at=${spec}（位置番号の範囲）は主鎖の番号でだけ書けます（この分子は糖の環の番号です）`);
+        }
+        const n = parseInt(rg[1], 10), m = parseInt(rg[2], 10);
+        if (!(n >= 1 && m > n && m <= num.chain.length)) return [];
+        return [{ ids: num.chain.slice(n - 1, m) }];
+    }
+    // ⑧ 位置番号（`at=C1` / `at=C4′` / `at=C1-OH`）
+    const cm = /^C(\d+)(′?)(-OH)?$/.exec(spec);
+    if (cm) {
+        const num = _figMarkNumbers(mol);
+        const carbons = num.byLabel.get(cm[1] + cm[2]) || [];
+        if (!cm[3]) return carbons.map(id => ({ ids: [id] }));
+        // `-OH` ＝ その炭素に付いた、水素を持つ酸素（環の中の O は数えない）
+        const ringIds = typeof _ringAtomIds === 'function' ? _ringAtomIds(mol) : new Set();
+        const hits = [];
+        carbons.forEach(id => {
+            mol.getNeighbors(id).forEach(nb => {
+                const o = nb.atom;
+                if (o.element !== 'O' || nb.type !== 1 || ringIds.has(o.id)) return;
+                if (mol.getFreeValency(o.id) < 1) return;   // -O- は OH ではない
+                hits.push({ ids: [o.id] });
+            });
+        });
+        return hits;
+    }
+    throw new Error(`印の at=「${spec}」を知りません`
+        + `（書けるのは ${Object.keys(FIGURE_MARK_GROUPS).join(' / ')} / 不斉炭素 / ベンゼン環 / グリコシド結合 / 環の酸素`
+        + ' / 環C<番号> / C<番号> / C<番号>-OH / C<番号>-C<番号>）');
+}
+
+/**
+ * 原稿の `mark:` の並びを**当てて**から返す（描くのは後）。
+ * ⚠ **当てるのは座標を動かす前**（価標を伸ばす・水素を足す前）の分子。
+ *   ★ 印は原子IDで持ち回るので、そのあと座標が動いても付いてくる。
+ */
+function planFigureMarks(mol, marks) {
+    return (marks || []).map(m => {
+        const kind = String(m.kind || '').trim();
+        if (['囲む', '枠', '文字'].indexOf(kind) < 0) {
+            throw new Error(`印の kind=「${kind}」を知りません（書けるのは 囲む / 枠 / 文字）`);
+        }
+        if (kind === '文字' && !m.label) throw new Error('印の kind=文字 には label=（置く文字）が要ります');
+        const hits = figureMarkHits(mol, m.at);
+        if (!hits.length) {
+            throw new Error(`印の at=「${m.at}」がこの分子で1つも当たりません`
+                + '（当たらない印を黙って捨てると、印の無い図がそのまま焼けます）');
+        }
+        if (m.count !== undefined && m.count !== null && m.count !== '') {
+            const want = parseInt(m.count, 10);
+            if (hits.length !== want) {
+                throw new Error(`印の at=「${m.at}」は ${hits.length} 個に当たりました（count=${want} と違います）`);
+            }
+        }
+        return { kind, at: m.at, label: m.label || '', color: m.color || FIGURE_MARK_COLOR, hits };
+    });
+}
+
+/**
+ * 印を描く。★ **置き場所は作図器が決める**（設計 §4）—— 囲みの大きさは当たった所の文字の箱から、
+ * `label=` は**分子の重心から見て外側**へ出す。⚠ 原稿に座標を書かせない。
+ * 戻り値: { minX, minY, maxX, maxY, warnings }（枠の広げ方と、重なりの申し送り）
+ */
+function drawFigureMarks(plan, ctx) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const { mol, byId, ext, hostOf, capH, B, group } = ctx;
+    const fs = capH / PAPER_CAP_EM;
+    const stroke = Math.max(B * 0.025, 0.6);
+    const dash = `${(B * 0.10).toFixed(2)} ${(B * 0.07).toFixed(2)}`;
+    const gap = capH * 0.45;
+    const box = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+    const warnings = [];
+    const taken = [];                                  // 置いた文字の箱（重なりを見る）
+    ext.forEach((e, id) => {
+        const a = byId.get(id);
+        if (a) taken.push({ what: '原子の文字', x1: a.x - e.L, y1: a.y - e.up, x2: a.x + e.R, y2: a.y + e.down });
+    });
+    const grow = (x1, y1, x2, y2) => {
+        box.minX = Math.min(box.minX, x1); box.minY = Math.min(box.minY, y1);
+        box.maxX = Math.max(box.maxX, x2); box.maxY = Math.max(box.maxY, y2);
+    };
+    // 分子の重心（文字を外へ出す向きを決める物差し）
+    const shown = mol.atoms.filter(a => byId.has(a.id) && (ext.has(a.id) || !hostOf.has(a.id)));
+    const gx = shown.reduce((s, a) => s + a.x, 0) / (shown.length || 1);
+    const gy = shown.reduce((s, a) => s + a.y, 0) / (shown.length || 1);
+
+    /** 当たった所が図の上で占める四角（★ まとめた原子団は、その文字の箱で測る） */
+    const hitBox = (hit) => {
+        let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+        hit.ids.forEach(id => {
+            const shownId = hostOf.has(id) ? hostOf.get(id) : id;
+            const a = byId.get(shownId);
+            if (!a) return;
+            const e = ext.get(shownId);
+            const L = e ? e.L : capH * 0.30, R = e ? e.R : capH * 0.30;
+            const U = e ? e.up : capH * 0.30, D = e ? e.down : capH * 0.30;
+            x1 = Math.min(x1, a.x - L); x2 = Math.max(x2, a.x + R);
+            y1 = Math.min(y1, a.y - U); y2 = Math.max(y2, a.y + D);
+        });
+        return x1 === Infinity ? null : { x1, y1, x2, y2 };
+    };
+    /** 当たった所の**原子の中心**（★ 文字の箱ではなく中心で向きを決める。
+        ⚠ 箱で決めると `CH₂` の下付きのぶんだけ右へ寄り、横一直線の分子で「真下」が「真横」になる） */
+    const hitCenter = (hit) => {
+        const pts = hit.ids.map(id => byId.get(hostOf.has(id) ? hostOf.get(id) : id)).filter(Boolean);
+        if (!pts.length) return null;
+        return [pts.reduce((s, a) => s + a.x, 0) / pts.length, pts.reduce((s, a) => s + a.y, 0) / pts.length];
+    };
+    /** 外向き（分子の重心から見て）。★ 重心の近く（横一直線の分子のまん中など）は**下**へ出す */
+    const outward = (cx, cy) => {
+        const dx = cx - gx, dy = cy - gy, d = Math.hypot(dx, dy);
+        return d < B * 0.3 ? [0, 1] : [dx / d, dy / d];
+    };
+    const hitsAny = (b) => taken.find(o => b.x1 < o.x2 && o.x1 < b.x2 && b.y1 < o.y2 && o.y1 < b.y2);
+    /** 文字を置く（★ 置き場所はここが決める・原稿に座標は書かせない）。
+        ⚠ 他の文字に当たったら、同じ向きへ**ずらして空いた所を探す**。それでも当たったら黄で申し送る */
+    const putText = (text, cx, cy, ux, uy, color) => {
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('class', 'svg-figure-mark svg-figure-mark-text');
+        t.setAttribute('fill', color);
+        t.setAttribute('text-anchor', 'middle');
+        t.style.fontSize = fs + 'px';
+        t.textContent = text;
+        group.appendChild(t);
+        let w = 0;
+        try { w = t.getComputedTextLength(); } catch (e) { w = 0; }
+        if (!w) w = [...text].reduce((s, ch) => s + (/[\x20-\x7e]/.test(ch) ? 0.58 : 1.0) * fs, 0);
+        const boxAt = (x, y) => ({ what: `印の文字「${text}」`, x1: x - w / 2, y1: y - capH / 2, x2: x + w / 2, y2: y + capH / 2 });
+        let b = boxAt(cx, cy);
+        for (let i = 0; i < 4 && hitsAny(b); i++) {
+            cx += ux * capH * 0.75; cy += uy * capH * 0.75;
+            b = boxAt(cx, cy);
+        }
+        t.setAttribute('x', cx);
+        t.setAttribute('y', cy + capH / 2);
+        const o = hitsAny(b);
+        if (o) warnings.push(`${b.what} が ${o.what} と重なっています`);
+        taken.push(b);
+        grow(b.x1, b.y1, b.x2, b.y2);
+        return b;
+    };
+
+    plan.forEach(m => {
+        m.hits.forEach(hit => {
+            const hb = hitBox(hit);
+            const hc = hitCenter(hit);
+            if (!hb || !hc) return;
+            const cx = (hb.x1 + hb.x2) / 2, cy = (hb.y1 + hb.y2) / 2;
+            const [ux, uy] = outward(hc[0], hc[1]);     // ★ 向きは原子の中心で決める（文字の箱の偏りを入れない）
+            let half = [0, 0];                          // 印そのものが中心から広がる量（文字を外へ出す物差し）
+            if (m.kind === '囲む') {
+                const pad = capH * 0.34;
+                const rx = Math.max((hb.x2 - hb.x1) / 2 + pad, capH * 0.62);
+                const ry = Math.max((hb.y2 - hb.y1) / 2 + pad, capH * 0.62);
+                const el = document.createElementNS(NS, 'ellipse');
+                el.setAttribute('class', 'svg-figure-mark');
+                el.setAttribute('cx', cx); el.setAttribute('cy', cy);
+                el.setAttribute('rx', rx); el.setAttribute('ry', ry);
+                el.setAttribute('fill', 'none');
+                el.setAttribute('stroke', m.color);
+                el.setAttribute('stroke-width', stroke);
+                el.setAttribute('stroke-dasharray', dash);
+                group.appendChild(el);
+                grow(cx - rx - stroke, cy - ry - stroke, cx + rx + stroke, cy + ry + stroke);
+                half = [rx, ry];
+            } else if (m.kind === '枠') {
+                const pad = capH * 0.40;
+                const x1 = hb.x1 - pad, y1 = hb.y1 - pad, x2 = hb.x2 + pad, y2 = hb.y2 + pad;
+                const r = document.createElementNS(NS, 'rect');
+                r.setAttribute('class', 'svg-figure-mark');
+                r.setAttribute('x', x1); r.setAttribute('y', y1);
+                r.setAttribute('width', x2 - x1); r.setAttribute('height', y2 - y1);
+                r.setAttribute('rx', capH * 0.25);
+                r.setAttribute('fill', 'none');
+                r.setAttribute('stroke', m.color);
+                r.setAttribute('stroke-width', stroke);
+                r.setAttribute('stroke-dasharray', dash);
+                group.appendChild(r);
+                grow(x1 - stroke, y1 - stroke, x2 + stroke, y2 + stroke);
+                half = [(x2 - x1) / 2, (y2 - y1) / 2];
+            } else {                                    // 文字（印そのものが文字）
+                const reach = Math.abs(ux) * ((hb.x2 - hb.x1) / 2) + Math.abs(uy) * ((hb.y2 - hb.y1) / 2);
+                const d = reach + gap + capH * 0.55;
+                putText(m.label, hc[0] + ux * d, hc[1] + uy * d, ux, uy, m.color);
+                return;
+            }
+            if (m.label) {
+                const reach = Math.abs(ux) * half[0] + Math.abs(uy) * half[1];
+                const d = reach + gap + capH * 0.55;
+                putText(m.label, cx + ux * d, cy + uy * d, ux, uy, m.color);
+            }
+        });
+    });
+    return Object.assign(box, { warnings });
+}
+
 function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     const NS = 'http://www.w3.org/2000/svg';
     const sub = (n) => String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+    /* ★★ 印（`mark:`）は**いちばん先に当てる**（v1609）。下の −CHO の例外と `expand=H` は
+       紙の図のために水素を足すので、そのあとで当てると不斉炭素の判定が足した H を見てしまう。
+       ⚠ 当たった所は**原子ID**で持つので、このあと価標を伸ばして座標が動いても印は付いてくる。
+       ⚠ 当たらなければここで投げる ＝ **焼く前に赤**（設計 §3） */
+    const markPlan = (opts && opts.marks && opts.marks.length) ? planFigureMarks(mol, opts.marks) : null;
     const want = new Set(PAPER_DEFAULT_CONDENSE);
     ((opts && opts.condense) || []).forEach(k => want.add(k));
     ((opts && opts.expand) || []).forEach(k => want.delete(k));
@@ -1736,12 +2105,13 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     // 原子団をまとめる（⚠ 検出は findCondensableGroups そのもの。ここで決めるのは「どれをまとめるか」だけ）
     const hidden = new Set();
     const groupAt = new Map();   // 根の原子 id → { label, anchorId }
+    const hostOf = new Map();    // まとめて消えた原子 id → その文字を書く根の原子 id（★ 印はこの文字の箱で測る）
     (typeof findCondensableGroups === 'function' ? findCondensableGroups(mol) : []).forEach(gr => {
         const key = PAPER_GROUP_KEY[gr.label];
         if (!key || !want.has(key) || gr.anchorIds.length !== 1) return;
         if (gr.memberIds.some(id => hidden.has(id) || groupAt.has(id))) return;   // 重なる検出は先勝ち
         const rootId = gr.memberIds[0];
-        gr.memberIds.slice(1).forEach(id => hidden.add(id));
+        gr.memberIds.slice(1).forEach(id => { hidden.add(id); hostOf.set(id, rootId); });
         // ★ まとめた中の電荷（スルホン酸の塩の O⁻）は文字の側へ移す。⚠ 移さないと隠した O と一緒に印が消える
         //   （−SO₃H の H は O⁻ には無いので、電荷があれば `SO₃` と書いて印を添える ＝ −SO₃⁻）
         const charge = gr.memberIds.reduce((s, id) => s + (byId.get(id).charge || 0), 0);
@@ -2142,6 +2512,26 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         l.setAttribute('stroke-linecap', 'round');
         l.classList.add('svg-paper-line');
     });
+
+    /* ── ⑤ 印を重ねる（v1609・`mark:`）──
+       ★ 価標を伸ばしたあとの座標で描き、**印のぶんまで viewBox を広げる** ＝ はみ出しようがない。
+       ⚠ 印は `.quiz-bonds` / `.quiz-atoms` の外（`.quiz-marks`）に置く —— 参考書の `plain`（素の位置番号を消す
+         後処理）が `.quiz-atoms > text` を消すので、中に置くと**印の文字だけが黙って消える** */
+    if (markPlan && markPlan.length) {
+        const marks = document.createElementNS(NS, 'g');
+        marks.setAttribute('class', 'quiz-marks');
+        svg.appendChild(marks);
+        const r = drawFigureMarks(markPlan, { mol, byId, ext, hostOf, capH, B, group: marks });
+        if (r.minX < Infinity) {
+            minX = Math.min(minX, r.minX); maxX = Math.max(maxX, r.maxX);
+            minY = Math.min(minY, r.minY); maxY = Math.max(maxY, r.maxY);
+        }
+        // ⚠ 重なりは**黄**（焼いた絵を人が見る前に気づくための申し送り・設計 §6）。読み手は gen-figure.mjs
+        if (r.warnings.length) svg.dataset.markWarn = JSON.stringify(r.warnings);
+        else delete svg.dataset.markWarn;
+    } else if (svg.dataset) {
+        delete svg.dataset.markWarn;
+    }
 
     const pad = 30;
     svg.setAttribute('viewBox', `${minX - pad} ${minY - pad} ${(maxX - minX) + pad * 2} ${(maxY - minY) + pad * 2}`);
@@ -6437,6 +6827,10 @@ if (typeof window !== 'undefined') {
     window.condenseChainForDisplay = condenseChainForDisplay;
     window.findCondensableChainRuns = findCondensableChainRuns;
     window.renderMoleculeIntoSvg = renderMoleculeIntoSvg;
+    // 図に重ねる印（v1609・I-0082）。★ FGT5 が「当てる」ところだけを直に呼べるように
+    window.figureMarkHits = figureMarkHits;
+    window.planFigureMarks = planFigureMarks;
+    window.FIGURE_MARK_GROUPS = FIGURE_MARK_GROUPS;
     window.transformCompoundDepiction = transformCompoundDepiction;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;

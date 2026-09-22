@@ -60941,6 +60941,145 @@
         return 'NH₃ は N＋H3・CH₄ は C＋H4・酢酸は H4 個／既定は NH₃・CH₄ の文字1つ／paper 無しの expand=H と condense=H は赤';
     });
 
+    /* ★★ FGT5: 図に重ねる印（`mark:`・v1609・I-0082・DESIGN_figure_marks.md 段1）。
+     *   ⚠ 印の当て方は**実装済みの判定を読むだけ**（`findFunctionalGroups` / `isAsymmetricCarbon` /
+     *     `haworthRingBridge` / `haworthCarbonNumbers` / `findAromaticBondKeys` / `findLongestCarbonChain`）。
+     *     ここが戻ると「化学の言葉で指す」が壊れる ＝ 原稿の `at=` が当たらなくなる。
+     *   ⚠⚠ 否定対照を4つ持つ —— ① 0個に当たったら**赤**（黄にすると印の無い図が黙って焼ける・設計 §3）／
+     *     ② `count=` が合わなければ赤（数が変わったことに気づける）／③ `mark:` を書かなければ印は1つも描かれない／
+     *     ④ 原稿の書式（`reference-md.js`）が知らない `kind=` と、`gen:` の無い `mark:` を止める */
+    test('FGT5: 図に重ねる印（mark: の 囲む・枠・文字）は化学の言葉で当てる（★否定対照4つ: 0個で赤／count 違いで赤／書かなければ印なし／書式の門番）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        const molOf = (name) => {
+            const e = fgtEntry(W, name);
+            assert(e, `テスト前提: 登録に「${name}」が無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        const hits = (name, at) => W.figureMarkHits(molOf(name), at);
+
+        // ── ① 主の道: 化学の言葉で指す ──────────────────────────────
+        assert(hits('マルトース（麦芽糖）', 'グリコシド結合').length === 1,
+            `マルトースの グリコシド結合 が ${hits('マルトース（麦芽糖）', 'グリコシド結合').length} 個（2つの環をつなぐ酸素1個のはず）`);
+        assert(hits('スクロース（ショ糖）', 'グリコシド結合').length === 1,
+            'スクロースの グリコシド結合 が1個に当たらない（六員環と五員環の橋）');
+        {   // ★ 当たったのは**環でない酸素**（橋そのもの）
+            const m = molOf('マルトース（麦芽糖）');
+            const id = W.figureMarkHits(m, 'グリコシド結合')[0].ids[0];
+            const o = m.atoms.find(a => a.id === id);
+            assert(o && o.element === 'O', `グリコシド結合に当たったのが ${o && o.element}（O のはず）`);
+            assert(m.getNeighbors(o.id).filter(n => n.atom.element === 'C').length === 2,
+                'グリコシド結合の O が炭素2つに挟まれていない');
+        }
+        assert(hits('D-グルコース（鎖状）', '不斉炭素').length === 4,
+            `鎖状グルコースの不斉炭素が ${hits('D-グルコース（鎖状）', '不斉炭素').length} 個（4個のはず）`);
+        assert(hits('酢酸', 'カルボキシ基').length === 1, '酢酸のカルボキシ基が1個に当たらない');
+        assert(hits('マルトース（麦芽糖）', '環の酸素').length === 2, 'マルトースの環の酸素が2個に当たらない');
+
+        // ── ② 補助の道: 位置番号 ────────────────────────────────────
+        assert(hits('α-D-グルコース（α-D-グルコピラノース）', 'C1-OH').length === 1,
+            `α-D-グルコースの C1-OH が ${hits('α-D-グルコース（α-D-グルコピラノース）', 'C1-OH').length} 個（アノマー炭素の -OH 1個のはず）`);
+        {   // ★ 芳香環の位置番号: 1位 ＝ 置換基の付いた炭素。2位・6位は隣（o）・4位は向かい（p）
+            const m = molOf('トルエン');
+            const ring = [1, 2, 3, 4, 5, 6].map(n => W.figureMarkHits(m, '環C' + n));
+            ring.forEach((h, i) => assert(h.length === 1, `トルエンの 環C${i + 1} が ${h.length} 個`));
+            const id = (n) => ring[n - 1][0].ids[0];
+            const nb = (x, y) => m.getNeighbors(x).some(n => n.atom.id === y);
+            assert(m.getNeighbors(id(1)).some(n => n.atom.element === 'C' && !ring.some(h => h[0].ids[0] === n.atom.id)),
+                '環C1 に環の外の炭素（メチル基）が付いていない ＝ 1位が置換基の炭素になっていない');
+            assert(nb(id(1), id(2)) && nb(id(1), id(6)), '環C2・環C6 が 環C1 の隣になっていない（o の位置）');
+            assert(nb(id(3), id(2)) && nb(id(3), id(4)), '環C3 が 環C2 と 環C4 の間にない');
+            assert(!nb(id(1), id(4)), '環C4 が 環C1 の隣になっている（p は向かい側）');
+        }
+        {   // ★ 主鎖の範囲（繰り返し単位を枠で囲む）
+            const h = hits('ポリエチレン', 'C3-C4');
+            assert(h.length === 1 && h[0].ids.length === 2, `ポリエチレンの C3-C4 が ${h.length} 個・原子 ${h[0] && h[0].ids.length} 個`);
+            const m = molOf('ポリエチレン');
+            const got = W.figureMarkHits(m, 'C3-C4')[0].ids.map(x => m.atoms.find(a => a.id === x));
+            assert(got.every(a => a.element === 'C'), 'C3-C4 に炭素でない原子が入っている');
+            assert(m.getBond(got[0].id, got[1].id), 'C3-C4 の2原子がつながっていない（主鎖の並びが壊れている）');
+        }
+
+        // ── ③★★ 否定対照①: 0個に当たったら赤（印の無い図を黙って焼かない）──
+        const threw = (fn) => { try { fn(); return null; } catch (e) { return e.message; } };
+        assert(threw(() => W.planFigureMarks(molOf('プロパン'), [{ kind: '囲む', at: 'カルボキシ基' }])),
+            '★否定対照 アルカンに at=カルボキシ基 が通ってしまう（0個に当たっても赤にならない）');
+        assert(threw(() => W.planFigureMarks(molOf('プロパン'), [{ kind: '囲む', at: 'グリコシド結合' }])),
+            '★否定対照 糖でない分子に at=グリコシド結合 が通ってしまう');
+        assert(threw(() => W.planFigureMarks(molOf('トルエン'), [{ kind: '文字', at: '環C7', label: 'x' }])),
+            '★否定対照 環の外の位置番号（環C7）が通ってしまう');
+        assert(threw(() => W.planFigureMarks(molOf('酢酸'), [{ kind: '囲む', at: 'カルボキシル基' }])),
+            '★否定対照 知らない言葉（カルボキシル基）が通ってしまう ＝ 綴り違いが黙って捨てられる');
+        // ★★ 否定対照②: count= が合わなければ赤
+        assert(!threw(() => W.planFigureMarks(molOf('D-グルコース（鎖状）'), [{ kind: '囲む', at: '不斉炭素', count: '4' }])),
+            '不斉炭素 count=4 が通らない（鎖状グルコースは4個）');
+        assert(threw(() => W.planFigureMarks(molOf('D-グルコース（鎖状）'), [{ kind: '囲む', at: '不斉炭素', count: '3' }])),
+            '★否定対照 count=3 が通ってしまう（数が変わっても気づけない）');
+        assert(threw(() => W.planFigureMarks(molOf('酢酸'), [{ kind: '丸', at: 'カルボキシ基' }])),
+            '★否定対照 知らない kind=丸 が通ってしまう');
+
+        // ── ④ 実際に描く（3つの kind とも）★★ 否定対照③: 書かなければ印は1つも出ない ──
+        const svg = ipFigureSvg(c, 'fgt5-fig');
+        const draw = (name, marks) => {
+            ip.renderStandardFigure(svg.id, molOf(name), false, { paper: true, marks: marks || [] });
+            return {
+                ellipse: svg.querySelectorAll('.quiz-marks ellipse').length,
+                rect: svg.querySelectorAll('.quiz-marks rect').length,
+                text: [...svg.querySelectorAll('.quiz-marks text')].map(t => t.textContent),
+                group: svg.querySelectorAll('.quiz-marks').length,
+                inAtoms: svg.querySelectorAll('.quiz-atoms .svg-figure-mark').length
+            };
+        };
+        try {
+            const circled = draw('マルトース（麦芽糖）', [{ kind: '囲む', at: 'グリコシド結合', label: 'グリコシド結合', count: '1' }]);
+            assert(circled.ellipse === 1, `囲む の楕円が ${circled.ellipse} 個`);
+            assert(circled.text.join('') === 'グリコシド結合', `囲む の label が ${JSON.stringify(circled.text)}`);
+            // ⚠ 印は `.quiz-atoms` の外に置く（参考書の `plain` が `.quiz-atoms > text` を消すため）
+            assert(circled.inAtoms === 0, '印が .quiz-atoms の中に置かれている（plain の後処理で消える置き場所）');
+            const framed = draw('ポリエチレン', [{ kind: '枠', at: 'C3-C4', label: '繰り返し単位', count: '1' }]);
+            assert(framed.rect === 1 && framed.ellipse === 0, `枠 の四角が ${framed.rect} 個・楕円 ${framed.ellipse} 個`);
+            assert(framed.text.join('') === '繰り返し単位', `枠 の label が ${JSON.stringify(framed.text)}`);
+            const lettered = draw('トルエン', [2, 6].map(n => ({ kind: '文字', at: '環C' + n, label: 'o' }))
+                .concat([{ kind: '文字', at: '環C4', label: 'p' }]));
+            assert(lettered.text.join('') === 'oop', `文字 の中身が ${JSON.stringify(lettered.text)}（o・o・p のはず）`);
+            assert(lettered.ellipse === 0 && lettered.rect === 0, '文字 の印で囲みや枠まで描かれている');
+            // ★★ 否定対照③: mark: を書かなければ印は1つも描かれない（他の 68 枚の図に漏れない）
+            const bare = draw('マルトース（麦芽糖）', []);
+            assert(bare.group === 0 && bare.ellipse === 0 && bare.rect === 0 && bare.text.length === 0,
+                `★否定対照 印を書かない図に印が ${bare.group} 組 描かれた`);
+        } finally {
+            svg.remove();
+        }
+
+        // ── ⑤★★ 否定対照④: 原稿の書式の門番（reference-md.js。node とブラウザで同じ1本）──
+        const RM = window.ReferenceMd;
+        assert(RM && typeof RM.parseMark === 'function', 'ReferenceMd.parseMark が居ない');
+        assert(RM.parseMark('kind=囲む at=グリコシド結合 label=グリコシド結合 count=1', 'テスト').at === 'グリコシド結合',
+            'mark の行が読めない');
+        assert(threw(() => RM.parseMark('kind=丸 at=グリコシド結合', 'テスト')),
+            '★否定対照 知らない kind=丸 を原稿の書式が通してしまう');
+        assert(threw(() => RM.parseMark('kind=囲む label=x', 'テスト')), '★否定対照 at= の無い mark が通ってしまう');
+        assert(threw(() => RM.parseMark('kind=文字 at=環C2', 'テスト')), '★否定対照 label= の無い kind=文字 が通ってしまう');
+        assert(threw(() => RM.parseMark('kind=囲む at=不斉炭素 count=よっつ', 'テスト')), '★否定対照 count= に数でない値が通ってしまう');
+        {   // ⚠ `gen:` の無い図に `mark:` は書けない（印だけの図はありえない）
+            const page = (fig) => '---\nid: t\nunit: org.x\nunitLabel: 試\ngroup: 試\ntitle: 試し\n'
+                + 'summary: 印の書式を試すページです。\nsource:\n- 試し\nwhy: 試しに作ったページ\n---\n\n'
+                + ':::section\nanchor: a\ntitle: 試し\nlead: 試すだけの節です。\n:::\n\n' + fig;
+            const ok = ':::figure\nsrc: a.png\ngen: name=マルトース（麦芽糖） haworth\n'
+                + 'mark: kind=囲む at=グリコシド結合\nmark: kind=文字 at=環の酸素 label=O\n'
+                + 'alt: 試しの図です\ncaption: 試しの図。\n:::\n';
+            const got = RM.parsePage(page(ok), 'テスト', { pages: ['t'] });
+            const fig = got.blocks.find(b => b.kind === 'figure');
+            assert(fig && Array.isArray(fig.mark) && fig.mark.length === 2,
+                `mark: を2行書いたのに ${fig && JSON.stringify(fig.mark)}（★ 何行でも書けること）`);
+            const noGen = ':::figure\nsrc: a.png\nmark: kind=囲む at=グリコシド結合\nalt: 試しの図です\ncaption: 試しの図。\n:::\n';
+            assert(threw(() => RM.parsePage(page(noGen), 'テスト', { pages: ['t'] })),
+                '★否定対照 gen: の無い図に mark: が書けてしまう（印だけの図はありえない）');
+        }
+        return 'グリコシド結合1・不斉炭素4・C1-OH・環C1〜6・C3-C4 が当たる／囲む・枠・文字が描かれる／'
+            + '0個・count 違い・知らない kind・gen 無しの mark は赤／書かなければ印なし';
+    });
+
     test('ION2: 正準コードのラベルは電荷を明示する（N(4) と N⁺(4) が割れる・不斉判定も電荷を見る）', async (c) => {
         const W = c.W;
         const q = [[0, 1], [0, 2], [0, 3], [0, 4]];

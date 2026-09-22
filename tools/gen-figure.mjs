@@ -35,6 +35,26 @@
  * | `circle`        | 紙の図の型をやめて、アプリの丸の図で焼く（v1562 までの見た目）。⚠ `numbered` は紙の図の型と組めないので、書かなくても丸の図になる |
  * | `haworth`       | ★ **糖をハース式で描く**（v1549）。登録の座標（名前から呼び出したときの形）をそのまま描く ＝ **1位の −OH の上下（α/β）が図に出る**。⚠ 登録済みの名前だけ・糖の環（`haworthSugarCycles`）が無ければ赤。中身は `learn.js` の `ipHaworthFigure` |
  *
+ * ★★ **図に印を重ねる**（v1609・I-0082・`DESIGN_figure_marks.md` 段1）—— `:::figure` に `mark:` を1行1つ:
+ *
+ *      :::figure
+ *      src: disaccharide-glycosidic-bond.png
+ *      gen: name=マルトース（麦芽糖） haworth
+ *      mark: kind=囲む at=グリコシド結合 label=グリコシド結合
+ *      :::
+ *
+ *   | | 意味 |
+ *   |---|---|
+ *   | `kind=` | `囲む`（破線の楕円）／`枠`（破線の四角）／`文字`（短い文字を置く）。★ 段1 はこの3つだけ |
+ *   | `at=`   | **どこに**。化学の言葉が主（`不斉炭素`・`グリコシド結合`・`カルボキシ基`…）、位置番号が補助（`C1-OH`・`環C2`・`C3-C4`） |
+ *   | `label=`| 添える文字（`kind=文字` では必須）。⚠ **置き場所は作図器が計算する**（原稿に座標は書かせない） |
+ *   | `count=`| 期待する個数。★ 合わなければ赤 ＝ **数が変わったことに気づける** |
+ *   | `color=`| 既定は紫 `#6a1b9a`。⚠ 色だけに意味を持たせない |
+ *
+ *   ⚠⚠ **`at=` が0個に当たったら赤で止まる**（印の無い図が黙って焼けるのを防ぐ・設計 §3）。
+ *   ⚠ 当てるのも描くのも **アプリの `assembler/quiz.js`**（`figureMarkHits` / `drawFigureMarks`）。
+ *     この道具は `mark:` を**読んで渡すだけ**。★ 当て方は**実装済みの判定をそのまま読む**（新しい化学判定を書かない）
+ *
  * ★ **原稿に書かずに1枚だけ焼く**（v1549。原稿の校正中に新しい図を用意する口）:
  *
  *      node tools/gen-figure.mjs --port=8811 --src=saccharide-alpha-glucose-haworth.png --gen="name=α-D-グルコース（α-D-グルコピラノース） haworth"
@@ -136,6 +156,15 @@ function collect() {
             const spec = parseGen(b.gen, `reference-src/${id}.md`);
             // ★ 原稿の図は既定で紙の図の型（v1562）。⚠ numbered（主鎖の帯と C₁ の添え字）は丸の図の上で合わせてあるので丸の図のまま
             if (!spec.circle && !spec.numbered && !spec.paper) { spec.paper = true; spec.paperByDefault = true; }
+            /* ★★ 図に重ねる印（v1609・`mark:`・DESIGN_figure_marks.md 段1）。
+               ⚠ 読むだけ —— **描くのはアプリ**（`assembler/quiz.js` の `drawFigureMarks`）。
+                 ここに作図を書くと、アプリの図と参考書の図が別々に育つ（この道具の冒頭の但し書き）。
+               ⚠ 書式の検査は `reference-md.js` の `parseMark`（node もブラウザも同じ1本） */
+            spec.marks = (b.mark || []).map(s => RM.parseMark(s, `reference-src/${id}.md`));
+            if (spec.marks.length && !spec.paper) {
+                throw new Error(`reference-src/${id}.md の ${b.src}: mark: は紙の図にだけ重ねられます`
+                    + '（gen に circle / numbered を書いた図には、まだ印を付けられません）');
+            }
             jobs.push({ id, src: b.src, gen: b.gen, spec });
         });
     });
@@ -288,8 +317,14 @@ async function bake(jobs) {
             box.appendChild(svg);
             document.body.appendChild(box);
             /* ★ 書き出し練習の答え合わせに出るのと**同じ関数**。`this` は `game` を持つ物だけでよい */
-            IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svg.id, mol, !!spec.numbered,
-                { paper: !!spec.paper, condense: spec.condense || [], expand: spec.expand || [] });
+            /* ⚠ 印（`marks`）が1つも当たらなければ**ここで投げる** ＝ 印の無い図を焼かない（設計 §3）。
+               ★ 投げたものは `error` にして返す（呼び手が赤で止める。焼き上がりは1枚も出ない） */
+            try {
+                IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svg.id, mol, !!spec.numbered,
+                    { paper: !!spec.paper, condense: spec.condense || [], expand: spec.expand || [], marks: spec.marks || [] });
+            } catch (e) {
+                return { error: (e && e.message) || String(e) };
+            }
             /* ★ 素の位置番号（`1 2 3 …`）だけを消す。⚠ 元素記号（`.svg-atom-text`）は残す
                ＝ 形にも結合にも触っていない（描いたあとで文字を1種類だけ取り去るだけ） */
             if (spec.plain) {
@@ -305,14 +340,17 @@ async function bake(jobs) {
             if (h > MAX_H) { h = MAX_H; w = Math.round(MAX_H * vb[2] / vb[3]); }
             svg.style.width = (w / 2) + 'px';
             svg.style.height = (h / 2) + 'px';
-            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length };
+            const markWarn = svg.dataset.markWarn ? JSON.parse(svg.dataset.markWarn) : [];
+            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: (spec.marks || []).length, markWarn };
         }, { spec, OUT_W, MAX_H, FIT_W });
         let r = await bakeOne(job.spec);
         /* ★ 紙の図の型は字の長さぶん価標を伸ばすので、長い鎖（ステアリン酸 C₁₈）は横に伸びて床 9:1 を超える（v1562 実測 10.1:1）。
            ⚠ 鎖を (CH₂)₁₆ に畳むかはユーザーの判断待ちなので、ここでは決めない ——
            **原稿の既定で紙の図になっている図だけ**、平たすぎたら丸の図（v1562 までの見た目）で焼き直して、そのことを出力に書く。
            `paper` を明示した図（--src= の1枚焼き）は今までどおり赤で止める */
-        if (!r.error && r.aspect > ASPECT_WARN && job.spec.paperByDefault) {
+        /* ⚠ 印のある図は**丸の図へ落とさない** —— 落とすと印が黙って消える（印は紙の図にだけ描く）。
+           平たすぎれば下の床（ASPECT_WARN）で赤に止まる ＝ 気づける */
+        if (!r.error && r.aspect > ASPECT_WARN && job.spec.paperByDefault && !(job.spec.marks || []).length) {
             const flat = r.aspect;
             r = await bakeOne(Object.assign({}, job.spec, { paper: false, condense: undefined, expand: undefined }));
             if (!r.error) r.fellBack = `紙の図は ${flat.toFixed(1)}:1 で平たすぎるので丸の図`;
@@ -337,7 +375,10 @@ async function bake(jobs) {
         done.push({ ...job, ...r, bytes: buf.length });
         console.log(`   ✅ ${job.src}  ${r.w}x${r.h}  ${(buf.length / 1024).toFixed(0)}KB`
             + `  ← ${job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`
+            + (r.marks ? `  ＋印 ${r.marks} 本` : '')
             + (r.fellBack ? `  ⚠ ${r.fellBack}` : (job.spec.paper ? '  （紙の図）' : '  （丸の図）')));
+        // ⚠ 黄（設計 §6）: 焼いた絵を人が見る前に、重なりだけは言っておく
+        (r.markWarn || []).forEach(w => console.log(`      ⚠ ${w}`));
     }
     await browser.close();
     return done;

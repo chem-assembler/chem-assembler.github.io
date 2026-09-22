@@ -194,7 +194,17 @@ note: 2,4,6-トリニトロトルエン（TNT）ができます。メチル基�
 
 **配向性をもつ基の一覧は覚えなくて構いません。**「トルエンなら o と p に入る」ことと、TNT という名前が分かれば十分です。フェノールの臭素化で 2,4,6 の位置に入るのも、同じ理由です。
 
-//図: トルエンの o・m・p の位置を塗り分けた図。⚠ 作図器で位置を塗り分ける生成器は無い（講義用作図）
+:::figure
+src: benzene-substitution-toluene-omp.png
+gen: name=トルエン plain
+mark: kind=文字 at=環C2 label=o
+mark: kind=文字 at=環C6 label=o
+mark: kind=文字 at=環C3 label=m
+mark: kind=文字 at=環C5 label=m
+mark: kind=文字 at=環C4 label=p
+alt: トルエンの構造式で、メチル基の付いた炭素の両隣に o、その次の2か所に m、向かい側の1か所に p と書き添えた図
+caption: メチル基の付いた炭素から見て、両隣が **o（オルト）**、1つ飛ばしが **m（メタ）**、向かい側が **p（パラ）** です。トルエンのニトロ化では o と p に入ります。
+:::
 
 ## 例題
 

@@ -214,6 +214,53 @@
         return out;
     }
 
+    /* ★★ 図に重ねる印（`:::figure` の `mark:`・DESIGN_figure_marks.md §4・段1）。
+         mark: kind=囲む at=グリコシド結合 label=グリコシド結合 count=1
+       ⚠ **1行に1つ・何本でも書ける**（下の `multi` のキー）。★ 描くのは**アプリの SVG**
+         （`assembler/quiz.js` の `drawPaperMolecule`）で、この道具は**読んで渡すだけ** ——
+         作図を2本にしないための決まり（設計 §1・I-0081）。
+       ★ `at=` は**化学の言葉で指す**のが主（`不斉炭素`・`グリコシド結合`・`カルボキシ基`）、
+         位置番号（`C1-OH`・`環C2`・`C3-C4`）が補助（設計 §3）。⚠ **原稿に座標は書かせない** ——
+         囲みの大きさも `label=` の置き場所も作図器が計算する（設計 §4）。
+       ⚠ `at=` が0個に当たったら**焼くときに赤**（設計 §3）。`count=` は期待する個数で、
+         合わなければ赤 ＝ **数が変わったことに気づける**。 */
+    var MARK_KEYS = ['kind', 'at', 'label', 'count', 'color'];
+    /* 段1 の印は3つだけ。`破線`・`矢印` は段2（分子を複数並べる回・設計 §5/§7） */
+    var MARK_KINDS = ['囲む', '枠', '文字'];
+    var MARK_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+    function parseMark(text, where) {
+        var s = String(text).trim();
+        var re = /(^|\s)(kind|at|label|count|color)=/g, cuts = [], m;
+        while ((m = re.exec(s))) cuts.push({ key: m[2], at: m.index + m[1].length, from: m.index + m[0].length });
+        if (!cuts.length || cuts[0].at !== 0) {
+            fail(where, ':::figure の mark は「kind=… at=…」の形で書きます（いまは「' + s.slice(0, 60) + '」）'
+                + '\n    ★ 書けるのは ' + MARK_KEYS.map(function (k) { return k + '='; }).join(' / '));
+        }
+        var out = {};
+        cuts.forEach(function (c, i) {
+            if (Object.prototype.hasOwnProperty.call(out, c.key)) fail(where, ':::figure の mark に「' + c.key + '=」が2回あります');
+            out[c.key] = s.slice(c.from, i + 1 < cuts.length ? cuts[i + 1].at : s.length).trim();
+        });
+        /* ⚠ 綴り違いを黙って無視しない（設計 §6）—— 通すと「印の指定が在るのに何も出ない図」ができる */
+        if (MARK_KINDS.indexOf(out.kind) < 0) {
+            fail(where, ':::figure の mark の kind= は ' + MARK_KINDS.join(' / ') + ' のどれかです（いまは「' + (out.kind || '') + '」）'
+                + '\n    ★ 破線・矢印・分子を複数並べる図は段2（DESIGN_figure_marks.md §7）でまだ描けません');
+        }
+        if (!out.at) fail(where, ':::figure の mark に at=（どこに付けるか）がありません'
+            + '\n    ★ 化学の言葉で指します（at=不斉炭素 / at=グリコシド結合 / at=カルボキシ基）。位置番号（at=C1-OH / at=環C2）は補助です');
+        if (out.kind === '文字' && !out.label) {
+            fail(where, ':::figure の mark に kind=文字 と書いたら label=（置く文字）が要ります');
+        }
+        if (out.count !== undefined && !/^\d{1,3}$/.test(out.count)) {
+            fail(where, ':::figure の mark の count= は個数（整数）です（いまは「' + out.count + '」）');
+        }
+        if (out.color !== undefined && !MARK_COLOR_RE.test(out.color)) {
+            fail(where, ':::figure の mark の color= は #6a1b9a の形で書きます（いまは「' + out.color + '」）'
+                + '\n    ⚠ 色だけに意味を持たせないこと（形か文字でも分かるように・設計 §4）');
+        }
+        return out;
+    }
+
     /* ★★ グループ台帳（`qa/GROUPS.tsv`・設計書 §31-5・ref-inorg-design §1-3 の案C）。
        ⚠ **置き場所は qa**（コードの持ち主は qa）。ここは読み方だけを持つ（node とブラウザで1本）。
        1行 ＝ `domain.unit ␉ unitLabel ␉ group ␉ ページid ␉ 並び ␉ 課程`。`#` の行と空行は読み飛ばす。
@@ -270,7 +317,10 @@
              画像を直接置くと**差分が読めず、直しもできない**。SVG なら文字なので、
              レーンも描けるし、後から 1 行直せる。**PNG は生成物**（`tools/gen-svg-figure.mjs`）。
            ⚠ `svg:` は `reference-svg/` の中の**ファイル名だけ**。`src` はその名の `.png`。 */
-        figure: { order: ['src', 'gen', 'shot', 'svg', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], prose: ['caption'], raw: ['shot'] },
+        /* ★★ `mark:` は**図に重ねる印**（DESIGN_figure_marks.md・段1）。⚠ `multi` ＝ **同じキーを何行でも書ける**
+           （印は1枚の図に何本でも付く）。`raw` ＝ 記法を通さない（`at=` の綴りをそのまま作図器へ渡す）。
+           ⚠ `mark:` は `gen:` と組でしか書けない（印だけの図はありえない・下の checkBlock）。 */
+        figure: { order: ['src', 'gen', 'shot', 'svg', 'mark', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], multi: ['mark'], prose: ['caption'], raw: ['shot', 'mark'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒）。
            ★ `arrow` は矢印そのもの（§31-2）。**書かなければ →**（有機46枚は1文字も変わらない） */
@@ -472,12 +522,13 @@
      *
      * 返り値 `{ lead, parts }` … `lead` は最初のキーより前にある文字（ふつうは空）。
      */
-    function splitPacked(text, allowed, used) {
+    function splitPacked(text, allowed, used, multi) {
         var re = /(^|\s)([A-Za-z][A-Za-z0-9]*):(?=\s|$)/g;
         var cuts = [], m;
         while ((m = re.exec(text))) {
             var key = m[2];
-            if (allowed.indexOf(key) < 0 || used[key]) continue;
+            /* ★ `multi` のキー（`:::figure` の `mark`）だけは2回目以降も切れ目にする ＝ 何行でも書ける */
+            if (allowed.indexOf(key) < 0 || (used[key] && (multi || []).indexOf(key) < 0)) continue;
             used[key] = true;
             var at = m.index + m[1].length;
             cuts.push({ key: key, at: at, from: at + key.length + 1 });
@@ -515,10 +566,22 @@
          - 値                ← ★ 字下げは要らない（2字下げでもよい）。★ 空行が挟まってもよい
          - 値
        ★ **1行に詰めて書いてもよい**（`anchor: formula title: 一般式`）。切れ目の決め方は splitPacked。 */
-    function parseKV(lines, where, allowed, kind, hang) {
+    function parseKV(lines, where, allowed, kind, hang, multi) {
         var out = {}, order = [], used = {}, curList = null;
+        var isMulti = function (key) { return (multi || []).indexOf(key) >= 0; };
         var put = function (key, val) {
             order.push(key);
+            /* ★ 何行でも書けるキー（`mark`）は**書いた順に溜める**。⚠ 1行に1つ（値の無い形は書けない） */
+            if (isMulti(key)) {
+                if (val === '') {
+                    fail(where, '「' + key + ':」の後に値がありません'
+                        + '\n    ★ 直し方: 「' + key + ': kind=… at=…」のように1行で書きます（何行でも書けます）');
+                }
+                if (!Object.prototype.hasOwnProperty.call(out, key)) out[key] = [];
+                out[key].push(val);
+                curList = null;
+                return;
+            }
             if (val === '') { out[key] = []; curList = key; }
             else { out[key] = val; curList = null; }
         };
@@ -533,7 +596,7 @@
                         + '\n    → ' + line.trim().slice(0, 60)
                         + '\n    ★ 直し方: 並びの前の行に「' + allowed[0] + ':」のようにキーだけを書きます');
                 }
-                seg = splitPacked(im[1], allowed, used);
+                seg = splitPacked(im[1], allowed, used, multi);
                 if (seg.lead) out[curList].push(seg.lead);
                 else if (!seg.parts.length) fail(where, '「- 」だけの行があります');
             } else if (curList && (hang || []).indexOf(curList) >= 0
@@ -547,7 +610,7 @@
                 out[curList].push(HANG_MARK + line.trim());
                 continue;
             } else {
-                seg = splitPacked(line.trim(), allowed, used);
+                seg = splitPacked(line.trim(), allowed, used, multi);
                 if (!seg.parts.length || seg.lead) kvLineFail(where, line, allowed, used, kind);
             }
             seg.parts.forEach(function (p) { put(p.key, p.value); });
@@ -766,7 +829,7 @@
     function buildBlock(kind, inner, where) {
         var spec = BLOCK_SPECS[kind];
         if (!spec) fail(where, '「:::' + kind + '」は描けない種類です（書けるのは ' + KINDS.join(' / ') + '）');
-        var kv = parseKV(inner, where + ' の :::' + kind, spec.order, kind, spec.hang).map;
+        var kv = parseKV(inner, where + ' の :::' + kind, spec.order, kind, spec.hang, spec.multi).map;
         /* ★ 題の語尾の「（発展）」を印へ寄せる（節と小見出しだけ）。⚠ 両方書いてあっても矛盾しない */
         if ((kind === 'section' || kind === 'heading') && typeof kv.title === 'string') {
             var folded = foldAdvanced(kv.title);
@@ -785,7 +848,8 @@
             var conv = (spec.raw || []).indexOf(k) >= 0 ? function (s) { return s; }
                 : spec.prose.indexOf(k) >= 0 ? inline : plain;
             if (Array.isArray(v)) {
-                if (spec.list.indexOf(k) < 0) fail(where, ':::' + kind + ' の「' + k + '」は1行の値です');
+                /* ★ `multi` のキー（`mark`）は「1行1つを何行でも」＝ 並びとして持つ（`- 値` の list とは書き方が違う） */
+                if (spec.list.indexOf(k) < 0 && (spec.multi || []).indexOf(k) < 0) fail(where, ':::' + kind + ' の「' + k + '」は1行の値です');
                 block[k] = v.map(function (s) { return conv(s, at); });
             } else if (bools.indexOf(k) >= 0) {
                 if (v !== 'true' && v !== 'false') fail(where, ':::' + kind + ' の「' + k + '」は true か false です（いまは「' + v + '」）');
@@ -849,6 +913,16 @@
                         + '（svg: ' + b.svg + ' なら src: ' + b.svg.replace(/\.svg$/, '.png') + '。いまは「' + b.src + '」）'
                         + '    ★ 名前をそろえると、焼き直しのときにどの PNG がどのソースから来たかを名前だけで追えます');
                 }
+            }
+            /* ★★ 図に重ねる印（DESIGN_figure_marks.md 段1）。
+               ⚠ **`gen:` の無い図には書けない** —— 印だけの図はありえないし、スライドから切った画像に
+                 「印を付けたつもり」の行が残ると、**印の無い図が黙って配られる**（設計 §1 の事故そのもの）。 */
+            if (Object.prototype.hasOwnProperty.call(b, 'mark')) {
+                if (!Object.prototype.hasOwnProperty.call(b, 'gen')) {
+                    fail(where, ':::figure に mark: がありますが gen: がありません'
+                        + '\n    ★ 印は作図器で焼く図（gen:）にだけ重ねられます（スライドから切った画像・svg: の図には付けられません）');
+                }
+                b.mark.forEach(function (s) { parseMark(s, where); });
             }
             /* ★★ アプリの画面の切り取り（§31-4） */
             if (Object.prototype.hasOwnProperty.call(b, 'shot')) {
@@ -1136,6 +1210,9 @@
         appHref: appHref,
         SHOT_KEYS: SHOT_KEYS,
         parseShot: parseShot,
+        MARK_KEYS: MARK_KEYS,
+        MARK_KINDS: MARK_KINDS,
+        parseMark: parseMark,
         parseGroups: parseGroups,
         parsePage: parsePage,
         serialize: serialize,
