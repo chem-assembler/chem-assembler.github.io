@@ -1,5 +1,6 @@
 organic-features
 functional-groups
+organic-formulas
 hydrocarbon-classes
 alkane
 alkane-naming
