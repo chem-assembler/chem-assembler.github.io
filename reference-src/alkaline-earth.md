@@ -5,6 +5,13 @@ unitLabel: 金属元素
 group: 2族元素
 title: 2族元素 —— マグネシウム・カルシウム・バリウム
 summary: 2族の単体の反応と、カルシウムの化合物（石灰石・生石灰・消石灰・セッコウ）のつながり、硫酸塩と炭酸塩の沈殿のまとめです。
+codes:
+  - inorg.metal.alkaline-earth-def
+  - inorg.metal.mg-vs-ca
+  - inorg.metal.calcium-compounds
+  - inorg.metal.limewater-co2
+  - inorg.metal.barium-sulfate
+  - inorg.metal.gypsum
 source:
   - textbook:R5化学Vol.2-4編3章（アルカリ土類金属の単体・化合物・炎色・焼きセッコウの組成）
   - slides:無機の基本６「硫黄」s22（Ba²⁺・Ca²⁺ と SO₄²⁻ の沈殿 ★★★、セッコウ ★☆☆）

@@ -5,6 +5,11 @@ unitLabel: 酸と塩基
 group: pH
 title: pH と水のイオン積 —— 薄めても7を越えない
 summary: [H⁺] ＝ 10⁻ᵖᴴ mol/L、[OH⁻] ＝ 10⁻ᵖᴼᴴ mol/L、水のイオン積から pH ＋ pOH ＝ 14。強酸・強塩基の pH の出し方と、薄めたときに pH がどう動くか（7 を越えない）まで。
+codes:
+  - theo.acid-base.ph-def
+  - theo.acid-base.water-ion-product
+  - theo.acid-base.ph-dilution
+  - theo.acid-base.ph-log
 source:
   - slides:酸塩基の基本３「pHの計算」p.4〜10・練習1〜3 p.12〜14
   - slides:酸塩基の基本４「中和反応と塩の性質」p.4（復習）

@@ -5,6 +5,12 @@ unitLabel: 金属元素
 group: クロムとマンガン
 title: クロムとマンガン —— 酸化数で色が変わる
 summary: マンガン（MnO₄⁻・MnO₂・Mn²⁺）とクロム（Cr₂O₇²⁻・CrO₄²⁻・Cr³⁺）の化合物を、酸化数と色で並べたまとめです。酸化剤としての半反応式と、クロム酸イオンと二クロム酸イオンの平衡も扱います。
+codes:
+  - inorg.metal.mn-cr-colors
+  - inorg.metal.permanganate
+  - inorg.metal.mno2-roles
+  - inorg.metal.chromate-dichromate
+  - inorg.metal.chromate-precipitate
 source:
   - textbook:R5化学Vol.2-4編4章（クロム・マンガンの単体と化合物の色、KMnO₄ の半反応式、クロム酸イオンと二クロム酸イオンの平衡、3価クロムの両性）
   - ion:REDOX_STAGES rs1・rs2・rs3（過マンガン酸カリウム・二クロム酸カリウムと還元剤）

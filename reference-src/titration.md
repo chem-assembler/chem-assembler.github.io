@@ -5,6 +5,13 @@ unitLabel: 酸と塩基
 group: 中和滴定
 title: 中和滴定 —— 器具・滴定曲線・指示薬
 summary: 濃度のわからない酸（塩基）の濃度を、中和を使って決める実験。4つの器具の用途と共洗いの有無、酸・塩基のおおよその pH（強酸1・弱酸3・弱塩基11・強塩基13）から描く滴定曲線、指示薬の選び方（PP・MO は外側が赤）まで。
+codes:
+  - theo.acid-base.titration-apparatus
+  - theo.acid-base.titration-rinse
+  - theo.acid-base.approx-ph
+  - theo.acid-base.indicator
+  - theo.acid-base.titration-curve
+  - theo.acid-base.two-step-neutralization
 source:
   - slides:酸塩基の基本６「中和滴定実験」p.4〜14・練習1〜3 p.16〜18
   - textbook:R5化学基礎 3編2章（指示薬の変色域・Na₂CO₃ の二段階中和）

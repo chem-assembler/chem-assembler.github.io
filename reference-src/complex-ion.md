@@ -5,6 +5,11 @@ unitLabel: 金属元素
 group: 錯イオン
 title: 錯イオン —— 配位数・名前・形
 summary: 金属イオンに NH₃・OH⁻・CN⁻ などが配位結合した錯イオンの、名前の付け方・配位数と形・色と、沈殿が過剰の NH₃ や NaOH で溶ける2つの型のまとめです。
+codes:
+  - inorg.metal.complex-structure
+  - inorg.metal.complex-naming
+  - inorg.metal.complex-shape
+  - inorg.metal.complex-redissolve
 source:
   - textbook:R5化学Vol.2-4編4章（錯イオンの定義・配位子と数詞・主な錯イオン5種の名前・形・配位数）
   - muki:separation-model.js（SEP_COMPLEXES の錯イオン6種と色、過剰の NH₃・NaOH で溶けるかどうか）

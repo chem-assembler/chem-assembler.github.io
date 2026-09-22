@@ -5,6 +5,13 @@ unitLabel: 金属元素
 group: 銅と銀
 title: 銅と銀 —— 酸化力のある酸に溶ける金属
 summary: 11族の銅と銀の単体（酸化力のある酸との反応・銀樹）と、Cu²⁺・Ag⁺ の沈殿と錯イオン、ハロゲン化銀の色と感光性のまとめです。
+codes:
+  - inorg.metal.copper-oxidizing-acid
+  - inorg.metal.silver-tree
+  - inorg.metal.copper-ion
+  - inorg.metal.copper-sulfate-hydrate
+  - inorg.metal.silver-ion
+  - inorg.metal.silver-halide
 source:
   - textbook:R5化学Vol.2-4編4章（銅・銀の単体と化合物、Cu²⁺・Ag⁺ の反応、ハロゲン化銀）
   - ion:REDOX_STAGES r2・rn1・rn2（銀樹、銅と希硝酸・濃硝酸）

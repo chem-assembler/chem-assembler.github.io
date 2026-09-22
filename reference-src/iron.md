@@ -5,6 +5,12 @@ unitLabel: 金属元素
 group: 鉄
 title: 鉄 —— 製錬と Fe²⁺・Fe³⁺ の見分け方
 summary: 鉄の製錬（溶鉱炉と転炉）、単体と酸の反応、Fe²⁺ と Fe³⁺ の色・沈殿・検出反応の見分け方、還元剤としての Fe²⁺ のまとめです。
+codes:
+  - inorg.metal.iron-smelting
+  - inorg.metal.iron-dilute-acid
+  - inorg.metal.iron-ion-color
+  - inorg.metal.iron-ion-test
+  - inorg.metal.iron-fe2-reductant
 source:
   - textbook:R5化学Vol.2-4編4章（鉄の製錬・単体・Fe²⁺ と Fe³⁺ の反応・FeO(OH) の表記・ターンブルブルーとプルシアンブルーが同一組成）
   - muki:chemistry.js（Fe(OH)₂ 緑白色・FeS は塩基性のみ・Fe²⁺ 淡緑色）

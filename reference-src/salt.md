@@ -5,6 +5,11 @@ unitLabel: 酸と塩基
 group: 塩
 title: 塩 —— つくる・もどす・水溶液の性質
 summary: 塩は H⁺ を含むか OH⁻ を含むかで正塩・酸性塩・塩基性塩に分けますが、この分類は水溶液の液性とは直接関係ありません。塩をイオンに分けてもとの酸と塩基を復元すれば、中和の反応式も液性（「強い方が勝つ」）も決まります。加水分解の式まで。
+codes:
+  - theo.acid-base.salt-classification
+  - theo.acid-base.salt-restore
+  - theo.acid-base.salt-solution
+  - theo.acid-base.salt-hydrolysis
 source:
   - slides:酸塩基の基本４「中和反応と塩の性質」p.11〜14・練習2〜3 p.17〜18
   - slides:無機の基本１「無機の前に復習すべきこと」p.21〜23・p.26・練習3〜4・6 p.52〜55・p.59〜61
