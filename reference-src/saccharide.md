@@ -210,7 +210,15 @@ alt: β-グルコースをハース式で描いた図。環の右端の1位の�
 caption: **β-グルコース**では、同じ1位の −OH が環の**上側**を向いています。ほかの部分は α形と同じです。
 :::
 
-//図: 鎖状構造が巻き込んで環になる途中を矢印で見せる図。作図器は完成形しか出せないので描けない
+:::figure
+src: saccharide-glucose-ring-closure.png
+gen: name=D-グルコース（鎖状） plain
+gen: name=α-D-グルコース（α-D-グルコピラノース） plain
+mark: kind=囲む at=2:環の酸素 label=もとは5位の −OH の O
+between: kind=矢印 at=1 to=2 label=環になる
+alt: 左に鎖状のグルコース、右に環状のα-グルコースを置き、「環になる」と書いた矢印でつないだ図。環の中の O が点線の丸で囲まれている
+caption: 5位の −OH の O が1位の C に結合すると、鎖が巻き込んで**六員環**になります。環の中の O は、もとは5位の −OH の O です。
+:::
 
 :::example
 stageId: beta-d-glucose

@@ -1870,14 +1870,25 @@ function figureMarkHits(mol, at) {
 function planFigureMarks(mol, marks) {
     return (marks || []).map(m => {
         const kind = String(m.kind || '').trim();
-        if (['囲む', '枠', '文字'].indexOf(kind) < 0) {
-            throw new Error(`印の kind=「${kind}」を知りません（書けるのは 囲む / 枠 / 文字）`);
+        if (FIGURE_MARK_KINDS.indexOf(kind) < 0) {
+            throw new Error(`印の kind=「${kind}」を知りません（書けるのは ${FIGURE_MARK_KINDS.join(' / ')}）`);
         }
         if (kind === '文字' && !m.label) throw new Error('印の kind=文字 には label=（置く文字）が要ります');
+        const link = FIGURE_LINK_KINDS.indexOf(kind) >= 0;
+        // ★ 段2: 破線・矢印は2か所を結ぶ ＝ `to=` が要る（設計 §6 の赤）
+        if (link && !m.to) throw new Error(`印の kind=${kind} には to=（もう一方の端）が要ります`);
         const hits = figureMarkHits(mol, m.at);
         if (!hits.length) {
             throw new Error(`印の at=「${m.at}」がこの分子で1つも当たりません`
                 + '（当たらない印を黙って捨てると、印の無い図がそのまま焼けます）');
+        }
+        let toHits = null;
+        if (link) {
+            toHits = figureMarkHits(mol, m.to);
+            if (!toHits.length) {
+                throw new Error(`印の to=「${m.to}」がこの分子で1つも当たりません`
+                    + '（当たらない印を黙って捨てると、印の無い図がそのまま焼けます）');
+            }
         }
         if (m.count !== undefined && m.count !== null && m.count !== '') {
             const want = parseInt(m.count, 10);
@@ -1885,8 +1896,170 @@ function planFigureMarks(mol, marks) {
                 throw new Error(`印の at=「${m.at}」は ${hits.length} 個に当たりました（count=${want} と違います）`);
             }
         }
-        return { kind, at: m.at, label: m.label || '', color: m.color || FIGURE_MARK_COLOR, hits };
+        return { kind, at: m.at, to: m.to || '', label: m.label || '', color: m.color || FIGURE_MARK_COLOR, hits, toHits };
     });
+}
+
+/* ============================================================================
+ * ★★ 2か所を結ぶ印（段2・`mark: kind=破線/矢印` と `between:`）
+ *
+ * 当て方は上の `figureMarkHits` そのもの（化学の言葉で指す）。ここで決めるのは**線の端をどこに置くか**だけ:
+ *   ① 当たった原子（まとめて消えた原子はその文字の根）＋ 当たったのが**ヘテロ原子なら**、それにだけ付いた末端のヘテロ原子
+ *      （`ニトロ基` の判定は N だけを返すので、水素結合の相手の O はここで拾う。炭素に当たったときは広げない）
+ *   ② ヘテロ原子（C・H 以外）があればそれだけを候補にする（水素結合は O・N どうし）
+ *   ③ 両端の候補から**いちばん近い組**を選ぶ（o-ニトロフェノールなら −OH の O と、近いほうの −NO₂ の O）
+ * ⚠ ここは**図の上の位置の選び方**で、化学の判定ではない（判定は `findFunctionalGroups` が持つ）。
+ * ========================================================================== */
+const FIGURE_MARK_KINDS = ['囲む', '枠', '文字', '破線', '矢印'];
+const FIGURE_LINK_KINDS = ['破線', '矢印'];
+/* 分子と分子の間を結ぶもの（`between:`）の既定の色は**墨**（⚠ 共鳴の ↔・反応の → は化学の記号そのもので、
+   後から重ねた「印」ではない）。印（`mark:`）の既定は紫のまま */
+const FIGURE_BETWEEN_INK = '#1c222d';
+
+/** 当たった所の、線の端の候補（図の上の点と、その文字が占める幅） */
+function figureLinkCandidates(mol, hits, look) {
+    const out = [], seen = new Set();
+    const add = (id) => {
+        const shownId = look.hostOf.has(id) ? look.hostOf.get(id) : id;
+        if (seen.has(shownId)) return;
+        const a = look.byId.get(shownId);
+        if (!a) return;
+        seen.add(shownId);
+        const e = look.ext.get(shownId);
+        const r = look.capH * 0.30;
+        out.push({ el: a.element, x: a.x, y: a.y, L: e ? e.L : r, R: e ? e.R : r, U: e ? e.up : r, D: e ? e.down : r, text: !!e });
+    };
+    hits.forEach(hit => hit.ids.forEach(id => {
+        add(id);
+        // ⚠ 広げるのは**ヘテロ原子に当たったときだけ**（ニトロ基の N → その O）。
+        //   炭素に当たったとき（`at=C1`）に C=O の O まで広げると、C を指したはずの矢印が O へ向く
+        const self = mol.atoms.find(a => a.id === id);
+        if (!self || self.element === 'C' || self.element === 'H') return;
+        mol.getNeighbors(id).forEach(nb => {
+            const o = nb.atom;
+            if (o.element === 'C' || o.element === 'H') return;
+            if (mol.getNeighbors(o.id).filter(x => x.atom.element !== 'H').length === 1) add(o.id);
+        });
+    }));
+    const hetero = out.filter(p => p.el !== 'C' && p.el !== 'H');
+    return hetero.length ? hetero : out;
+}
+
+/** 両端の候補から、いちばん近い組を選んで**文字の縁で止めた**線分を返す */
+function figureLinkSegment(ca, cb, gap) {
+    let best = null;
+    ca.forEach(p => cb.forEach(q => {
+        const d = Math.hypot(p.x - q.x, p.y - q.y);
+        if (d > 1e-6 && (!best || d < best.d)) best = { p, q, d };
+    }));
+    if (!best) return null;
+    const { p, q, d } = best;
+    const ux = (q.x - p.x) / d, uy = (q.y - p.y) / d;
+    // 原子の中心から、文字の箱（＋すき間）の縁まで（向き u に進んで箱を出る距離）
+    const exit = (c, sx, sy) => {
+        const tx = sx > 1e-9 ? (c.R + gap) / sx : sx < -1e-9 ? (c.L + gap) / -sx : Infinity;
+        const ty = sy > 1e-9 ? (c.D + gap) / sy : sy < -1e-9 ? (c.U + gap) / -sy : Infinity;
+        return Math.min(tx, ty);
+    };
+    const t1 = exit(p, ux, uy), t2 = exit(q, -ux, -uy);
+    if (t1 + t2 >= d) return { P: [p.x, p.y], Q: [q.x, q.y], short: true, ends: [p, q] };
+    return { P: [p.x + ux * t1, p.y + uy * t1], Q: [q.x - ux * t2, q.y - uy * t2], short: false, ends: [p, q] };
+}
+
+/**
+ * 線を1本描く（破線・矢印・両矢印）。⚠ `<line>` は使わない —— 参考書を焼く道具の紙の色
+ * （`#figbake line{…!important}`）が結合線用に全部の line を淡い色へ読み替えるので、印の線まで消える。
+ * `bow` は線の中点を横へふくらませる量（0 ＝ まっすぐ・`[nx,ny]` の向き）。
+ * 戻り値: { box, mid, normal } … 占めた範囲・中点・ふくらませた側の向き（文字を置くのに使う）
+ */
+function drawFigureLink(group, seg, style) {
+    const NS = 'http://www.w3.org/2000/svg';
+    let [x1, y1] = seg.P, [x2, y2] = seg.Q;
+    const dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 1;
+    const nx = style.normal ? style.normal[0] : -dy / d, ny = style.normal ? style.normal[1] : dx / d;
+    const bow = style.bow || 0;
+    const cx = (x1 + x2) / 2 + nx * bow * 2, cy = (y1 + y2) / 2 + ny * bow * 2;   // 2次ベジェの制御点（中点のふくらみ ＝ bow）
+    const hl = style.head, hw = style.head * 0.42;
+    const box = { minX: Math.min(x1, x2, cx), minY: Math.min(y1, y2, cy), maxX: Math.max(x1, x2, cx), maxY: Math.max(y1, y2, cy) };
+    const head = (tx, ty, fx, fy) => {                  // 先端 (tx,ty)・向き (fx,fy) から来る
+        const l = Math.hypot(fx, fy) || 1, ux = fx / l, uy = fy / l;
+        const bx = tx - ux * hl, by = ty - uy * hl;
+        const poly = document.createElementNS(NS, 'polygon');
+        poly.setAttribute('class', 'svg-figure-mark svg-figure-mark-head');
+        poly.setAttribute('points', [[tx, ty], [bx - uy * hw, by + ux * hw], [bx + uy * hw, by - ux * hw]]
+            .map(pt => pt.map(v => v.toFixed(2)).join(',')).join(' '));
+        poly.setAttribute('fill', style.color);
+        group.appendChild(poly);
+        // ⚠ 線は矢じりの根元で止める（先端から線が突き出さない）
+        return [tx - ux * hl * 0.8, ty - uy * hl * 0.8];
+    };
+    if (style.headEnd) [x2, y2] = head(x2, y2, x2 - cx, y2 - cy);
+    if (style.headStart) [x1, y1] = head(x1, y1, x1 - cx, y1 - cy);
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('class', 'svg-figure-mark svg-figure-mark-link');
+    path.setAttribute('d', bow
+        ? `M${x1.toFixed(2)},${y1.toFixed(2)} Q${cx.toFixed(2)},${cy.toFixed(2)} ${x2.toFixed(2)},${y2.toFixed(2)}`
+        : `M${x1.toFixed(2)},${y1.toFixed(2)} L${x2.toFixed(2)},${y2.toFixed(2)}`);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', style.color);
+    path.setAttribute('stroke-width', style.width);
+    path.setAttribute('stroke-linecap', 'round');
+    if (style.dash) path.setAttribute('stroke-dasharray', style.dash);
+    group.appendChild(path);
+    const pad = hw + style.width;
+    const mid = [(seg.P[0] + seg.Q[0]) / 4 + cx / 2, (seg.P[1] + seg.Q[1]) / 4 + cy / 2];   // ベジェの t=0.5
+    return { box: { minX: box.minX - pad, minY: box.minY - pad, maxX: box.maxX + pad, maxY: box.maxY + pad }, mid, normal: [nx, ny] };
+}
+
+/** 線分（またはふくらませた線）が箱に当たるか（端の2つの箱は除いて呼ぶ） */
+function figureLinkCrosses(seg, bow, normal, boxes) {
+    const [x1, y1] = seg.P, [x2, y2] = seg.Q;
+    const cx = (x1 + x2) / 2 + normal[0] * bow * 2, cy = (y1 + y2) / 2 + normal[1] * bow * 2;
+    for (let i = 1; i < 20; i++) {
+        const t = i / 20, s = 1 - t;
+        const x = s * s * x1 + 2 * s * t * cx + t * t * x2, y = s * s * y1 + 2 * s * t * cy + t * t * y2;
+        const o = boxes.find(b => x > b.x1 && x < b.x2 && y > b.y1 && y < b.y2);
+        if (o) return o;
+    }
+    return null;
+}
+
+/**
+ * ★ `kind=` の意味で**当てるだけ**（`between:` の `at=2:ニトロ基` の「ニトロ基」）。
+ * 描くのは合成したあと（`composeFigureRow`）なので、ここでは当てて、0個なら赤にするだけ。
+ */
+function planFigureAnchors(mol, places) {
+    return (places || []).map(at => {
+        const hits = figureMarkHits(mol, at);
+        if (!hits.length) {
+            throw new Error(`between の「${at}」がこの分子で1つも当たりません`
+                + '（当たらない線を黙って捨てると、結んだはずの図が線なしで焼けます）');
+        }
+        return { at, hits };
+    });
+}
+
+/**
+ * ★ `kekule=1` / `kekule=2`（段2・設計 §5）—— ベンゼン環のケクレ式2つを描き分ける。
+ *   1 ＝ 登録の並びのまま・2 ＝ 環の単結合と二重結合を**入れ替えた**もう一方。
+ * ⚠ 環は `findAromaticBondKeys`（実装済みの判定）で拾う。入れ替えてよいのは**孤立したベンゼン環**だけ
+ *   （縮合環は原子が環の結合を3本持つので、入れ替えると二重結合が2本付く原子ができる）→ 赤。
+ * ⚠ `mol` は紙の図のために作った写し（`drawPaperMolecule` の中）なので、書き換えてよい。
+ */
+function applyFigureKekule(mol, n) {
+    const k = String(n);
+    if (k !== '1' && k !== '2') throw new Error(`kekule=${n} は 1 か 2 です`);
+    const keys = typeof findAromaticBondKeys === 'function' ? findAromaticBondKeys(mol) : new Set();
+    const keyOf = (b) => (b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`);
+    const ring = mol.bonds.filter(b => keys.has(keyOf(b)));
+    if (!ring.length) throw new Error(`kekule=${k} はベンゼン環のある分子にだけ書けます（この分子には芳香環がありません）`);
+    const deg = new Map();
+    ring.forEach(b => [b.atomId1, b.atomId2].forEach(id => deg.set(id, (deg.get(id) || 0) + 1)));
+    if ([...deg.values()].some(v => v !== 2)) {
+        throw new Error(`kekule=${k} は孤立したベンゼン環だけに書けます（縮合環は単結合と二重結合を入れ替えられません）`);
+    }
+    if (k === '2') ring.forEach(b => { b.type = b.type === 2 ? 1 : 2; });
+    return ring.length;
 }
 
 /**
@@ -1974,6 +2147,39 @@ function drawFigureMarks(plan, ctx) {
     };
 
     plan.forEach(m => {
+        /* ★ 段2: 2か所を結ぶ印（破線・矢印）。**1本だけ**引く（当たりが複数でも、いちばん近い組）。
+           ★ まっすぐ引いて途中の文字に当たるなら、分子の外側へ**ふくらませる**（曲げ方は作図器が決める・設計 §4） */
+        if (FIGURE_LINK_KINDS.indexOf(m.kind) >= 0) {
+            const look = { byId, ext, hostOf, capH };
+            const seg = figureLinkSegment(figureLinkCandidates(mol, m.hits, look), figureLinkCandidates(mol, m.toHits, look), capH * 0.22);
+            if (!seg || seg.short) {
+                warnings.push(`印 ${m.kind}（${m.at} → ${m.to}）の両端が近すぎて線が引けません`);
+                return;
+            }
+            const inside = (b, e) => e.x > b.x1 && e.x < b.x2 && e.y > b.y1 && e.y < b.y2;
+            const others = taken.filter(b => !seg.ends.some(e => inside(b, e)));
+            const d = Math.hypot(seg.Q[0] - seg.P[0], seg.Q[1] - seg.P[1]);
+            let normal = [-(seg.Q[1] - seg.P[1]) / d, (seg.Q[0] - seg.P[0]) / d];
+            const mx = (seg.P[0] + seg.Q[0]) / 2, my = (seg.P[1] + seg.Q[1]) / 2;
+            if ((mx - gx) * normal[0] + (my - gy) * normal[1] < 0) normal = [-normal[0], -normal[1]];
+            let bow = 0, hit = figureLinkCrosses(seg, 0, normal, others);
+            for (let k = 1; hit && k <= 6; k++) {
+                bow = B * 0.35 * k;
+                hit = figureLinkCrosses(seg, bow, normal, others);
+            }
+            if (hit) warnings.push(`印 ${m.kind}（${m.at} → ${m.to}）が ${hit.what} を横切っています`);
+            const r = drawFigureLink(group, seg, {
+                color: m.color, width: stroke, head: capH * 0.55, bow, normal,
+                dash: m.kind === '破線' ? `${(capH * 0.22).toFixed(2)} ${(capH * 0.16).toFixed(2)}` : null,
+                headEnd: m.kind === '矢印'
+            });
+            grow(r.box.minX, r.box.minY, r.box.maxX, r.box.maxY);
+            if (m.label) {
+                const off = capH * 0.55 + gap;
+                putText(m.label, r.mid[0] + r.normal[0] * off, r.mid[1] + r.normal[1] * off, r.normal[0], r.normal[1], m.color);
+            }
+            return;
+        }
         m.hits.forEach(hit => {
             const hb = hitBox(hit);
             const hc = hitCenter(hit);
@@ -2034,7 +2240,11 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
        紙の図のために水素を足すので、そのあとで当てると不斉炭素の判定が足した H を見てしまう。
        ⚠ 当たった所は**原子ID**で持つので、このあと価標を伸ばして座標が動いても印は付いてくる。
        ⚠ 当たらなければここで投げる ＝ **焼く前に赤**（設計 §3） */
+    /* ★ ケクレ式の描き分け（段2・`kekule=`）は印より先 ＝ `C=C二重結合` の印が入れ替えたあとの結合に当たる */
+    if (opts && opts.kekule != null) applyFigureKekule(mol, opts.kekule);
     const markPlan = (opts && opts.marks && opts.marks.length) ? planFigureMarks(mol, opts.marks) : null;
+    /* ★ 段2: 分子と分子の間の線（`between:`）の端。印と同じく**いちばん先に当てる**（0個なら赤） */
+    const anchorPlan = (opts && opts.anchors && opts.anchors.length) ? planFigureAnchors(mol, opts.anchors) : null;
     const want = new Set(PAPER_DEFAULT_CONDENSE);
     ((opts && opts.condense) || []).forEach(k => want.add(k));
     ((opts && opts.expand) || []).forEach(k => want.delete(k));
@@ -2532,9 +2742,167 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
     } else if (svg.dataset) {
         delete svg.dataset.markWarn;
     }
+    /* ★ 段2: 横一列に並べる図の1つ（`opts.figurePart`）は、合成する側（`composeFigureRow`）へ
+       **物差し**（価標1本・大文字の高さ）と **between の端の候補**（価標を伸ばしたあとの座標）を渡す。
+       ⚠ 1分子の図（`figurePart` なし）には何も足さない ＝ 今までの図は1文字も変わらない */
+    if (opts && opts.figurePart) {
+        svg.dataset.figScale = JSON.stringify({ B, capH });
+        const look = { byId, ext, hostOf, capH };
+        svg.dataset.figAnchors = JSON.stringify((anchorPlan || []).map(a => ({ at: a.at, cands: figureLinkCandidates(mol, a.hits, look) })));
+    }
 
     const pad = 30;
     svg.setAttribute('viewBox', `${minX - pad} ${minY - pad} ${(maxX - minX) + pad * 2} ${(maxY - minY) + pad * 2}`);
+}
+
+/**
+ * ★★ 1枚に分子を**横一列**に並べ、間を `between:` で結ぶ（段2・DESIGN_figure_marks.md §5）。
+ *
+ *   parts … 1分子ずつ `drawPaperMolecule` で描いた svg（`opts.figurePart` 付き ＝ 物差しと線の端の候補を持つ）
+ *   links … 原稿の `between:` を読んだもの `{ kind, from:{n,place}|null, dest:{n,place}|null, label, color }`
+ *           （書式の検査は `tools/reference-md.js` の parseBetween。ここでも数え合わせだけは見直す）
+ *
+ * ★ **大きさはそろえ直さない** —— どの分子も同じ座標の単位（価標1本 ≒ 46）で描かれているので、
+ *   そのまま並べれば結合の長さは1分子の図と同じ（`gen-figure.mjs` の「本のどのページでも結合の長さを同じにする」）。
+ * ★ 並べ方・すき間・矢印の長さ・文字の置き場所は**ここが決める**（原稿に座標を書かせない・設計 §4）:
+ *   ・分子は縦の中央をそろえて左から順に置く
+ *   ・分子だけを指す線（`at=1 to=2`）は、その2つの**すき間**に横に引く。すき間は文字が収まる幅まで広げる
+ *   ・場所まで指す線（`at=1:… to=2:…`）は、その2か所のいちばん近い組を結ぶ
+ * ⚠ 描き終えた parts の中身は svg へ**移す**（parts は空になる）。
+ * 戻り値: { warnings }（重なりの申し送り・設計 §6 の黄）
+ */
+function composeFigureRow(svg, parts, links) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const PAD = 30;
+    if (!parts || parts.length < 2) throw new Error('横一列に並べるには分子が2つ以上要ります');
+    const info = parts.map((p, i) => {
+        const vb = (p.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+        if (vb.length !== 4 || !(vb[2] > 0)) throw new Error(`${i + 1} 番目の分子の viewBox が取れません`);
+        if (!p.dataset.figScale) throw new Error(`${i + 1} 番目の分子が紙の図の型（figurePart）で描かれていません`);
+        return {
+            svg: p, x1: vb[0] + PAD, y1: vb[1] + PAD, x2: vb[0] + vb[2] - PAD, y2: vb[1] + vb[3] - PAD,
+            sc: JSON.parse(p.dataset.figScale),
+            anchors: JSON.parse(p.dataset.figAnchors || '[]'),
+            warn: p.dataset.markWarn ? JSON.parse(p.dataset.markWarn) : []
+        };
+    });
+    const n = info.length;
+    const B = info.reduce((s, p) => s + p.sc.B, 0) / n;
+    const capH = info.reduce((s, p) => s + p.sc.capH, 0) / n;
+    const fs = capH / PAPER_CAP_EM;
+    const ink = PAPER_WIDTH_PER_BOND * B;
+    const margin = capH * 0.7;                          // 分子の縁と矢印の端のすき間
+    const warnings = [];
+    info.forEach((p, i) => p.warn.forEach(w => warnings.push(`${i + 1} 番目の分子: ${w}`)));
+
+    const text = (s, x, y, color) => {
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('class', 'svg-figure-mark svg-figure-mark-text');
+        t.setAttribute('fill', color);
+        t.setAttribute('text-anchor', 'middle');
+        t.style.fontSize = fs + 'px';
+        t.textContent = s;
+        if (x != null) { t.setAttribute('x', x); t.setAttribute('y', y); }
+        return t;
+    };
+    const measure = (s) => {
+        const t = text(s, null, null, '#000');
+        svg.appendChild(t);
+        let w = 0;
+        try { w = t.getComputedTextLength(); } catch (e) { w = 0; }
+        t.remove();
+        return w || [...s].reduce((a, ch) => a + (/[\x20-\x7e]/.test(ch) ? 0.58 : 1.0) * fs, 0);
+    };
+
+    // ── 線を読みそろえる（両矢印の省略 ＝ 1 と 2 の間）──
+    const plan = (links || []).map(l => {
+        const from = l.from || { n: 1, place: null }, dest = l.dest || { n: 2, place: null };
+        [from, dest].forEach(r => {
+            if (!(r.n >= 1 && r.n <= n)) throw new Error(`between が ${r.n} 番目の分子を指していますが、分子は ${n} つです`);
+        });
+        if (from.n === dest.n) throw new Error(`between の両端が同じ分子（${from.n}）です（1つの分子の中なら mark: です）`);
+        const gapLink = from.place === null;
+        if (gapLink && Math.abs(from.n - dest.n) !== 1) throw new Error(`between の ${from.n} と ${dest.n} は隣どうしではありません`);
+        return { kind: l.kind, from, dest, label: l.label || '', color: l.color || FIGURE_BETWEEN_INK, gap: gapLink ? Math.min(from.n, dest.n) - 1 : -1 };
+    });
+    plan.forEach(l => {
+        if (['両矢印', '矢印', '破線'].indexOf(l.kind) < 0) throw new Error(`between の kind=「${l.kind}」を知りません（書けるのは 両矢印 / 矢印 / 破線）`);
+    });
+
+    // ── すき間の幅（線と文字が収まるまで広げる）──
+    const gaps = [];
+    for (let g = 0; g < n - 1; g++) {
+        const here = plan.filter(l => l.gap === g);
+        if (here.length > 1) throw new Error(`${g + 1} 番目と ${g + 2} 番目の分子の間に線が ${here.length} 本あります（すき間には1本だけ）`);
+        gaps.push(here.length ? Math.max(B * 1.6, here[0].label ? measure(here[0].label) + capH : 0) + margin * 2 : B * 1.2);
+    }
+    let x = 0;
+    info.forEach((p, i) => {
+        p.dx = x - p.x1;
+        p.dy = -(p.y1 + p.y2) / 2;                       // 縦の中央をそろえる（中央の線 y=0）
+        x += (p.x2 - p.x1) + (i < n - 1 ? gaps[i] : 0);
+    });
+
+    // ── 分子を移す ──
+    const box = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+    const grow = (x1, y1, x2, y2) => {
+        box.minX = Math.min(box.minX, x1); box.minY = Math.min(box.minY, y1);
+        box.maxX = Math.max(box.maxX, x2); box.maxY = Math.max(box.maxY, y2);
+    };
+    info.forEach((p, i) => {
+        const g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'quiz-figure-part');
+        g.setAttribute('data-part', String(i + 1));
+        g.setAttribute('transform', `translate(${p.dx.toFixed(2)},${p.dy.toFixed(2)})`);
+        while (p.svg.firstChild) g.appendChild(p.svg.firstChild);
+        svg.appendChild(g);
+        grow(p.x1 + p.dx, p.y1 + p.dy, p.x2 + p.dx, p.y2 + p.dy);
+    });
+
+    // ── 線を引く ──
+    const group = document.createElementNS(NS, 'g');
+    group.setAttribute('class', 'quiz-marks quiz-figure-between');
+    svg.appendChild(group);
+    const dash = `${(capH * 0.22).toFixed(2)} ${(capH * 0.16).toFixed(2)}`;
+    plan.forEach(l => {
+        const style = { color: l.color, width: ink, head: capH * 0.55, dash: l.kind === '破線' ? dash : null,
+            headEnd: l.kind !== '破線', headStart: l.kind === '両矢印' };
+        let seg, labelAt;
+        if (l.gap >= 0) {
+            const a = info[l.gap], b = info[l.gap + 1];
+            const xa = a.x2 + a.dx + margin, xb = b.x1 + b.dx - margin;
+            // ★ 矢印は from → dest の向き（右から左へも引ける）
+            seg = l.from.n < l.dest.n ? { P: [xa, 0], Q: [xb, 0] } : { P: [xb, 0], Q: [xa, 0] };
+            const r = drawFigureLink(group, seg, style);
+            grow(r.box.minX, r.box.minY, r.box.maxX, r.box.maxY);
+            labelAt = [(xa + xb) / 2, -capH * 0.65];
+        } else {
+            const cands = (r) => {
+                const p = info[r.n - 1];
+                const an = p.anchors.find(a => a.at === r.place);
+                if (!an) throw new Error(`${r.n} 番目の分子に between の端「${r.place}」が渡されていません`);
+                return an.cands.map(c => Object.assign({}, c, { x: c.x + p.dx, y: c.y + p.dy }));
+            };
+            seg = figureLinkSegment(cands(l.from), cands(l.dest), capH * 0.22);
+            if (!seg || seg.short) throw new Error(`between（${l.from.n}:${l.from.place} → ${l.dest.n}:${l.dest.place}）の両端が近すぎて線が引けません`);
+            const d = Math.hypot(seg.Q[0] - seg.P[0], seg.Q[1] - seg.P[1]);
+            let nrm = [-(seg.Q[1] - seg.P[1]) / d, (seg.Q[0] - seg.P[0]) / d];
+            if (nrm[1] > 0) nrm = [-nrm[0], -nrm[1]];         // 文字は上側へ
+            const r = drawFigureLink(group, seg, Object.assign(style, { normal: nrm }));
+            grow(r.box.minX, r.box.minY, r.box.maxX, r.box.maxY);
+            labelAt = [r.mid[0] + nrm[0] * capH * 0.9, r.mid[1] + nrm[1] * capH * 0.9 + capH / 2];
+        }
+        if (l.label) {
+            const w = measure(l.label);
+            group.appendChild(text(l.label, labelAt[0], labelAt[1], l.color));
+            grow(labelAt[0] - w / 2, labelAt[1] - capH * 1.05, labelAt[0] + w / 2, labelAt[1] + capH * 0.3);
+        }
+    });
+
+    svg.setAttribute('viewBox', `${box.minX - PAD} ${box.minY - PAD} ${(box.maxX - box.minX) + PAD * 2} ${(box.maxY - box.minY) + PAD * 2}`);
+    if (warnings.length) svg.dataset.markWarn = JSON.stringify(warnings);
+    else delete svg.dataset.markWarn;
+    return { warnings };
 }
 
 /**
@@ -6831,6 +7199,10 @@ if (typeof window !== 'undefined') {
     window.figureMarkHits = figureMarkHits;
     window.planFigureMarks = planFigureMarks;
     window.FIGURE_MARK_GROUPS = FIGURE_MARK_GROUPS;
+    // 段2（v1610）: 分子を横一列に並べる・ケクレ式の描き分け。★ gen-figure.mjs と FGT6 が呼ぶ
+    window.composeFigureRow = composeFigureRow;
+    window.applyFigureKekule = applyFigureKekule;
+    window.planFigureAnchors = planFigureAnchors;
     window.transformCompoundDepiction = transformCompoundDepiction;
     window.reshapeGeometryForDisplay = reshapeGeometryForDisplay;
     window.rotateTargetInPlane = rotateTargetInPlane;
