@@ -9757,6 +9757,38 @@
             'parseFormula が Si を受け付けた（異性体の数え上げに Si が入り込む）');
     });
 
+    test('EL6: テフロンとシリコーンの登録（名前が引ける・繰り返し単位の式・反応が勝手に出ない。I-0014）', async (c) => {
+        const g = c.game, W = c.W;
+        const cases = [
+            ['ポリテトラフルオロエチレン（テフロン）', '(C₂F₄)ₙ'],
+            ['シリコーン（ポリジメチルシロキサン）', '(C₂H₆OSi)ₙ'],
+        ];
+        cases.forEach(([nm, formula]) => {
+            const entry = W.COMPOUNDS.find(e => e.name === nm);
+            assert(entry, `${nm} が compounds.json に無い`);
+            const mol = g.createTargetFromData({ target: entry.target });
+            assert(mol.atoms.every(a => W.isValencyValid(mol, a.id)), `${nm} の価標が不正`);
+            assert(g.lookupCompoundName(mol) === nm, `${nm} が名前で引けない（${g.lookupCompoundName(mol)}）`);
+            // 高分子は「(繰り返し単位)ₙ」で書く（polymerRepeatUnit。Si も単位の元素に数える）
+            assert(g.computeMolecularFormula(mol) === formula,
+                `${nm} の分子式が ${formula} でない（${g.computeMolecularFormula(mol)}）`);
+            // 系統名は出さない（R を含む高分子・Si は命名器の外）
+            assert(W.iupacName(mol) === null, `${nm} に系統名が付いた（${W.iupacName(mol)}）`);
+        });
+        // シリコーンの Si は自動水素を持たず（4本とも使う）、メチルの C は3つずつ
+        const sil = g.createTargetFromData({ target: W.COMPOUNDS.find(e => e.name === cases[1][0]).target });
+        sil.atoms.filter(a => a.element === 'Si').forEach(a =>
+            assert(sil.getFreeValency(a.id) === 0, 'シリコーンの Si に自動水素が生えている'));
+        // ⚠ Si-O-Si を「エーテル結合」と読まない（エーテルは C-O-C）。反応の札も出ない
+        //   （シリコーンは高校で反応を扱わない。出るならどこかが Si を C と取り違えている）
+        assert(!W.findFunctionalGroups(sil).some(x => x.type === 'ether'), 'シリコーンの Si-O-Si がエーテル結合として拾われた');
+        const fired = W.REACTION_RULES.filter(rule => {
+            if (rule.info) return false;
+            try { return (rule.detect(sil) || []).length > 0; } catch (e) { return false; }
+        }).map(r => r.id);
+        assert(fired.length === 0, `シリコーンに反応の札が出る（${fired.join(', ')}）`);
+    });
+
     // ===== AK. アルキル基の書き出し練習（W3 で答案用紙化。DESIGN_isomer_practice.md §14）=====
     //
     // ★ 器が変わった: 「1つ描いて登録」は W3 で捨て、**キャンバスそのものが答案用紙**になった。
