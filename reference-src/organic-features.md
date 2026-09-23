@@ -9,6 +9,10 @@ codes:
   - org.ali.organic-def
   - org.ali.organic-properties
   - org.ali.organic-diversity
+  - org.ali.organic-mp-reason
+  - org.ali.organic-slow-reaction
+  - org.ali.organic-exceptions
+  - org.ali.organic-organize
 source:
   - slides:有機の基本1-1「有機化合物の特徴」s2
   - textbook:R5化学Vol.2-5編（1章1節 A 有機化合物の多様性と特徴）
