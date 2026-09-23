@@ -11,235 +11,733 @@
   },
   "units": [
     {
+      "id": "sec-chemistry-and-life",
+      "name": "化学と人間生活",
+      "category_l": "理論化学",
+      "category_m": "化学と人間生活",
+      "summary": "身のまわりの物質がどの性質を生かして使われているかを言えるようにしよう。",
+      "course": "basic",
+      "part": "序章 化学と人間生活"
+    },
+    {
+      "id": "sec-substance-classification",
+      "name": "純物質と混合物・元素・成分元素の確認",
+      "category_l": "理論化学",
+      "category_m": "純物質と混合物・元素・成分元素の確認",
+      "summary": "純物質と混合物、単体と化合物、同素体を見分け、分離の方法と成分元素の確かめ方をおさえよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-states-of-matter",
+      "name": "熱運動と物質の三態",
+      "category_l": "理論化学",
+      "category_m": "熱運動と物質の三態",
+      "summary": "粒子の熱運動と、固体・液体・気体の違い、状態変化の名前をおさえよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-atom-structure",
+      "name": "原子の構造と電子配置",
+      "category_l": "理論化学",
+      "category_m": "原子の構造と電子配置",
+      "summary": "陽子・中性子・電子の数と同位体、電子殻への電子の入り方をおさえよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-periodic-table",
+      "name": "元素の周期表",
+      "category_l": "理論化学",
+      "category_m": "元素の周期表",
+      "summary": "周期表の並びと、イオン化エネルギー・電子親和力・電気陰性度の傾向をおさえよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-ionic-bond",
+      "name": "イオンとイオン結合",
+      "category_l": "理論化学",
+      "category_m": "イオンとイオン結合",
+      "summary": "イオンのでき方と名前、イオン結合と組成式の書き方をおさえよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-covalent-bond",
+      "name": "共有結合と分子",
+      "category_l": "理論化学",
+      "category_m": "共有結合と分子",
+      "summary": "電子式・構造式、配位結合、分子の形と極性をおさえよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-intermolecular-force",
+      "name": "分子間力",
+      "category_l": "理論化学",
+      "category_m": "分子間力",
+      "summary": "ファンデルワールス力と水素結合が、沸点の高さをどう決めるかをおさえよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-crystal-types",
+      "name": "金属結合と結晶の分類",
+      "category_l": "理論化学",
+      "category_m": "金属結合と結晶の分類",
+      "summary": "金属結合と4種類の結晶を、融点や電気の通し方で比べられるようにしよう。",
+      "course": "basic",
+      "part": "第1編 物質の構成"
+    },
+    {
+      "id": "sec-atomic-weight",
+      "name": "原子量・分子量・式量",
+      "category_l": "理論化学",
+      "category_m": "原子量・分子量・式量",
+      "summary": "相対質量と原子量、分子量・式量の出し方をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-mole",
+      "name": "物質量",
+      "category_l": "理論化学",
+      "category_m": "物質量",
+      "summary": "mol と粒子の数・質量・気体の体積を行き来できるようにしよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-concentration",
+      "name": "溶液の濃度",
+      "category_l": "理論化学",
+      "category_m": "溶液の濃度",
+      "summary": "質量パーセント濃度とモル濃度を、互いに換算できるようにしよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-chemical-equation",
+      "name": "化学反応式",
+      "category_l": "理論化学",
+      "category_m": "化学反応式",
+      "summary": "係数の決め方と、イオン反応式の書き方をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-stoichiometry",
+      "name": "化学反応の量的関係・化学の基本法則",
+      "category_l": "理論化学",
+      "category_m": "化学反応の量的関係・化学の基本法則",
+      "summary": "反応式の係数から量を求め、化学の基本法則を説明できるようにしよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-acid-base-definition",
+      "name": "酸と塩基",
+      "category_l": "理論化学",
+      "category_m": "酸と塩基",
+      "summary": "酸・塩基の定義と、価数・電離度による強弱をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-ph",
+      "name": "水の電離と pH",
+      "category_l": "理論化学",
+      "category_m": "水の電離と pH",
+      "summary": "水のイオン積と pH の求め方をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-neutralization",
+      "name": "中和と塩",
+      "category_l": "理論化学",
+      "category_m": "中和と塩",
+      "summary": "中和反応と塩の分類、塩の水溶液の性質、弱酸の遊離をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-titration",
+      "name": "中和滴定",
+      "category_l": "理論化学",
+      "category_m": "中和滴定",
+      "summary": "滴定の器具と操作、滴定曲線と指示薬の選び方をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-redox-basics",
+      "name": "酸化と還元・酸化数",
+      "category_l": "理論化学",
+      "category_m": "酸化と還元・酸化数",
+      "summary": "酸化・還元の定義と、酸化数の決め方をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-half-reaction",
+      "name": "酸化剤と還元剤",
+      "category_l": "理論化学",
+      "category_m": "酸化剤と還元剤",
+      "summary": "半反応式の作り方と、酸化還元反応式・酸化還元滴定をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-ionization-tendency",
+      "name": "金属のイオン化傾向",
+      "category_l": "理論化学",
+      "category_m": "金属のイオン化傾向",
+      "summary": "イオン化列と、金属と水・酸との反応の違いをおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-cell-basics",
+      "name": "酸化還元反応の応用（電池・電気分解）",
+      "category_l": "理論化学",
+      "category_m": "酸化還元反応の応用（電池・電気分解）",
+      "summary": "電池のしくみと、酸化還元が暮らしで使われている例をおさえよう。",
+      "course": "basic",
+      "part": "第2編 物質の変化"
+    },
+    {
+      "id": "sec-chemistry-world",
+      "name": "化学が拓く世界",
+      "category_l": "理論化学",
+      "category_m": "化学が拓く世界",
+      "summary": "学んだ化学が、暮らしと社会の課題にどう役立っているかを見渡そう。",
+      "course": "basic",
+      "part": "終章 化学が拓く世界"
+    },
+    {
+      "id": "sec-vapor-pressure",
+      "name": "蒸気圧と沸騰",
+      "category_l": "理論化学",
+      "category_m": "蒸気圧と沸騰",
+      "summary": "気液平衡と蒸気圧、沸騰の条件と状態図の読み方をおさえよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-gas-laws",
+      "name": "気体の法則",
+      "category_l": "理論化学",
+      "category_m": "気体の法則",
+      "summary": "ボイル・シャルルの法則と気体の状態方程式を使えるようにしよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-gas-mixture",
+      "name": "混合気体と分圧",
+      "category_l": "理論化学",
+      "category_m": "混合気体と分圧",
+      "summary": "分圧の法則と、水蒸気を含む気体の扱い方をおさえよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-real-gas",
+      "name": "理想気体と実在気体",
+      "category_l": "理論化学",
+      "category_m": "理想気体と実在気体",
+      "summary": "実在気体が理想気体からずれる理由と、ずれが小さくなる条件をおさえよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-dissolution",
+      "name": "溶解のしくみ",
+      "category_l": "理論化学",
+      "category_m": "溶解のしくみ",
+      "summary": "極性と溶けやすさ、水和のしくみをおさえよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-solubility",
+      "name": "固体・気体の溶解度",
+      "category_l": "理論化学",
+      "category_m": "固体・気体の溶解度",
+      "summary": "溶解度曲線と再結晶、ヘンリーの法則を使えるようにしよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-colligative",
+      "name": "希薄溶液の性質",
+      "category_l": "理論化学",
+      "category_m": "希薄溶液の性質",
+      "summary": "蒸気圧降下・沸点上昇・凝固点降下・浸透圧を計算できるようにしよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-colloid",
+      "name": "コロイド",
+      "category_l": "理論化学",
+      "category_m": "コロイド",
+      "summary": "コロイドの種類と、チンダル現象・凝析・塩析などの性質をおさえよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-unit-cell",
+      "name": "結晶の構造・非晶質",
+      "category_l": "理論化学",
+      "category_m": "結晶の構造・非晶質",
+      "summary": "単位格子と配位数・充填率、非晶質との違いをおさえよう。",
+      "course": "adv",
+      "part": "第1編 物質の状態"
+    },
+    {
+      "id": "sec-reaction-enthalpy",
+      "name": "反応エンタルピーと熱量",
+      "category_l": "理論化学",
+      "category_m": "反応エンタルピーと熱量",
+      "summary": "反応エンタルピーの表し方と、熱量の測り方をおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-hess-law",
+      "name": "ヘスの法則と結合エンタルピー",
+      "category_l": "理論化学",
+      "category_m": "ヘスの法則と結合エンタルピー",
+      "summary": "ヘスの法則と結合エンタルピーで、反応エンタルピーを求められるようにしよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-light-energy",
+      "name": "化学反応と光",
+      "category_l": "理論化学",
+      "category_m": "化学反応と光",
+      "summary": "光を出す反応・光で進む反応をおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-entropy",
+      "name": "エントロピー",
+      "category_l": "理論化学",
+      "category_m": "エントロピー",
+      "summary": "反応が自然に進む向きを、エンタルピーとエントロピーで考えよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-fuel-cell",
+      "name": "電池",
+      "category_l": "理論化学",
+      "category_m": "電池",
+      "summary": "ダニエル電池から燃料電池まで、実用電池の電極反応をおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-electrolysis-basics",
+      "name": "電気分解",
+      "category_l": "理論化学",
+      "category_m": "電気分解",
+      "summary": "電極で何が反応するかと、ファラデーの法則・工業的な利用をおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-reaction-rate",
+      "name": "反応の速さ",
+      "category_l": "理論化学",
+      "category_m": "反応の速さ",
+      "summary": "反応速度の表し方と、速度式の求め方をおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-activation-energy",
+      "name": "活性化エネルギーと触媒",
+      "category_l": "理論化学",
+      "category_m": "活性化エネルギーと触媒",
+      "summary": "活性化エネルギーと、温度・触媒が速さを変えるしくみをおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-equilibrium-constant",
+      "name": "化学平衡と平衡定数",
+      "category_l": "理論化学",
+      "category_m": "化学平衡と平衡定数",
+      "summary": "平衡定数と圧平衡定数を式で表し、計算できるようにしよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-le-chatelier",
+      "name": "平衡の移動",
+      "category_l": "理論化学",
+      "category_m": "平衡の移動",
+      "summary": "ルシャトリエの原理で、条件を変えたときの平衡の向きを判断しよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-weak-acid-equilibrium",
+      "name": "電離平衡",
+      "category_l": "理論化学",
+      "category_m": "電離平衡",
+      "summary": "弱酸・弱塩基の電離定数と、電離度・pH の求め方をおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-hydrolysis-ph",
+      "name": "塩の加水分解と緩衝液",
+      "category_l": "理論化学",
+      "category_m": "塩の加水分解と緩衝液",
+      "summary": "塩の水溶液の pH と、緩衝液がはたらくしくみをおさえよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-solubility-product",
+      "name": "溶解度積",
+      "category_l": "理論化学",
+      "category_m": "溶解度積",
+      "summary": "溶解度積で、沈殿ができるかどうかを判定できるようにしよう。",
+      "course": "adv",
+      "part": "第2編 物質の変化と平衡"
+    },
+    {
+      "id": "sec-inorg-reaction-types",
+      "name": "周期表と元素の性質",
+      "category_l": "無機化学",
+      "category_m": "周期表と元素の性質",
+      "summary": "無機の反応の型と、酸化物・オキソ酸の性質をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-hydrogen-noble-gas",
+      "name": "水素と貴ガス",
+      "category_l": "無機化学",
+      "category_m": "水素と貴ガス",
+      "summary": "水素と貴ガスの性質と製法をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-oxygen-ozone",
+      "name": "酸素とオゾン",
+      "category_l": "無機化学",
+      "category_m": "酸素とオゾン",
+      "summary": "酸素とオゾン、過酸化水素の性質と反応をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-halogen",
+      "name": "ハロゲン",
+      "category_l": "無機化学",
+      "category_m": "ハロゲン",
+      "summary": "ハロゲンの単体と化合物、塩素の製法と反応をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-sulfur",
+      "name": "硫黄",
+      "category_l": "無機化学",
+      "category_m": "硫黄",
+      "summary": "硫黄の単体と化合物、硫酸の製法と性質をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-nitrogen",
+      "name": "窒素とリン",
+      "category_l": "無機化学",
+      "category_m": "窒素とリン",
+      "summary": "アンモニア・硝酸の製法と性質、リンの化合物をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-carbon-silicon",
+      "name": "炭素とケイ素",
+      "category_l": "無機化学",
+      "category_m": "炭素とケイ素",
+      "summary": "炭素とケイ素の単体と化合物の性質をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-gas-preparation",
+      "name": "気体の製法と性質",
+      "category_l": "無機化学",
+      "category_m": "気体の製法と性質",
+      "summary": "気体の実験室的製法と、捕集・乾燥のしかたをおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-alkali-metal",
+      "name": "アルカリ金属",
+      "category_l": "無機化学",
+      "category_m": "アルカリ金属",
+      "summary": "ナトリウムとその化合物の性質、アンモニアソーダ法をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-alkaline-earth",
+      "name": "2族元素",
+      "category_l": "無機化学",
+      "category_m": "2族元素",
+      "summary": "カルシウムなど2族元素とその化合物の性質をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-amphoteric-metal",
+      "name": "アルミニウム・亜鉛・スズ・鉛",
+      "category_l": "無機化学",
+      "category_m": "アルミニウム・亜鉛・スズ・鉛",
+      "summary": "両性金属の反応と、スズ・鉛の性質をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-alloy",
+      "name": "合金",
+      "category_l": "無機化学",
+      "category_m": "合金",
+      "summary": "代表的な合金の成分と用途をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-complex-ion",
+      "name": "遷移元素の特徴と錯イオン",
+      "category_l": "無機化学",
+      "category_m": "遷移元素の特徴と錯イオン",
+      "summary": "遷移元素の共通の性質と、錯イオンの名前・形・色をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-iron",
+      "name": "鉄",
+      "category_l": "無機化学",
+      "category_m": "鉄",
+      "summary": "鉄の製錬と、鉄のイオンの反応・見分け方をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-copper-silver",
+      "name": "銅と銀",
+      "category_l": "無機化学",
+      "category_m": "銅と銀",
+      "summary": "銅と銀の単体と化合物の性質・反応をおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-transition-oxidizers",
+      "name": "クロムとマンガン",
+      "category_l": "無機化学",
+      "category_m": "クロムとマンガン",
+      "summary": "クロム・マンガンの化合物の色と、酸化剤としてのはたらきをおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-precipitate",
+      "name": "金属イオンの沈殿と炎色反応",
+      "category_l": "無機化学",
+      "category_m": "金属イオンの沈殿と炎色反応",
+      "summary": "沈殿の色と溶け方、炎色反応で金属イオンを見分けられるようにしよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
+      "id": "sec-cation-separation",
+      "name": "金属イオンの系統分離",
+      "category_l": "無機化学",
+      "category_m": "金属イオンの系統分離",
+      "summary": "試薬を加える順と、各段で分かれるイオンをおさえよう。",
+      "course": "adv",
+      "part": "第3編 無機物質"
+    },
+    {
       "id": "anal",
       "name": "元素の確認・元素分析",
       "category_l": "有機化学",
       "category_m": "元素分析",
-      "summary": "成分元素の見つけ方と、燃焼の結果から組成式・分子式を出す手順を身につけよう。"
+      "summary": "成分元素の見つけ方と、燃焼の結果から組成式・分子式を出す手順を身につけよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "aliphatic",
       "name": "脂肪族炭化水素",
       "category_l": "有機化学",
       "category_m": "脂肪族炭化水素",
-      "summary": "アルカン・アルケン・アルキンの性質と反応、異性体の数え方と名前をおさえよう。"
+      "summary": "アルカン・アルケン・アルキンの性質と反応、異性体の数え方と名前をおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "alcohol",
       "name": "アルコール・エーテル",
       "category_l": "有機化学",
       "category_m": "アルコール・エーテル",
-      "summary": "アルコールの級と反応（Na・脱水・酸化）、エーテルとの違いをおさえよう。"
+      "summary": "アルコールの級と反応（Na・脱水・酸化）、エーテルとの違いをおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "aldketone",
       "name": "アルデヒド・ケトン",
       "category_l": "有機化学",
       "category_m": "アルデヒド・ケトン",
-      "summary": "アルデヒドの還元性（銀鏡・フェーリング）と、ケトンとの見分け方をおさえよう。"
+      "summary": "アルデヒドの還元性（銀鏡・フェーリング）と、ケトンとの見分け方をおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "carboxyl",
       "name": "カルボン酸・エステル",
       "category_l": "有機化学",
       "category_m": "カルボン酸・エステル",
-      "summary": "カルボン酸の酸性とギ酸・酢酸の性質、エステルのでき方と加水分解をおさえよう。"
+      "summary": "カルボン酸の酸性とギ酸・酢酸の性質、エステルのでき方と加水分解をおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "fat",
       "name": "油脂・セッケン",
       "category_l": "有機化学",
       "category_m": "油脂・セッケン",
-      "summary": "油脂のつくりとけん化価・ヨウ素価、セッケンと合成洗剤のはたらきをおさえよう。"
+      "summary": "油脂のつくりとけん化価・ヨウ素価、セッケンと合成洗剤のはたらきをおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "aro",
       "name": "芳香族炭化水素",
       "category_l": "有機化学",
       "category_m": "芳香族炭化水素",
-      "summary": "ベンゼンの置換反応と付加反応、トルエンなど同族体の側鎖の酸化をおさえよう。"
+      "summary": "ベンゼンの置換反応と付加反応、トルエンなど同族体の側鎖の酸化をおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "phenol",
       "name": "フェノール類",
       "category_l": "有機化学",
       "category_m": "フェノール類",
-      "summary": "フェノールの弱い酸性と塩化鉄(III)による検出、クメン法をおさえよう。"
+      "summary": "フェノールの弱い酸性と塩化鉄(III)による検出、クメン法をおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "aroAcid",
       "name": "芳香族カルボン酸",
       "category_l": "有機化学",
       "category_m": "芳香族カルボン酸",
-      "summary": "安息香酸とサリチル酸、サリチル酸からできる2つのエステルをおさえよう。"
+      "summary": "安息香酸とサリチル酸、サリチル酸からできる2つのエステルをおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "aroNitrogen",
       "name": "芳香族窒素化合物",
       "category_l": "有機化学",
       "category_m": "芳香族窒素化合物",
-      "summary": "アニリンの塩基性と検出、ジアゾ化とカップリングでアゾ染料ができる流れをおさえよう。"
+      "summary": "アニリンの塩基性と検出、ジアゾ化とカップリングでアゾ染料ができる流れをおさえよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "aroSep",
       "name": "芳香族の分離",
       "category_l": "有機化学",
       "category_m": "芳香族の分離",
-      "summary": "酸・塩基の強さの違いを使って、芳香族化合物をエーテル層と水層に分けよう。"
-    },
-    {
-      "id": "sugar",
-      "name": "糖",
-      "category_l": "有機化学",
-      "category_m": "糖",
-      "summary": "単糖・二糖・多糖のつくりと還元性、デンプンとセルロースの違いをおさえよう。"
-    },
-    {
-      "id": "aminoAcid",
-      "name": "アミノ酸",
-      "category_l": "有機化学",
-      "category_m": "アミノ酸",
-      "summary": "アミノ酸の双性イオンと等電点、pH で電荷がどう変わるかをおさえよう。"
-    },
-    {
-      "id": "protein",
-      "name": "タンパク質・酵素",
-      "category_l": "有機化学",
-      "category_m": "タンパク質・酵素",
-      "summary": "ペプチド結合と立体構造、変性と呈色反応、酵素のはたらき方をおさえよう。"
-    },
-    {
-      "id": "nucleic",
-      "name": "核酸",
-      "category_l": "有機化学",
-      "category_m": "核酸",
-      "summary": "ヌクレオチドのつくりと DNA・RNA の違い、塩基の組み合わせをおさえよう。"
-    },
-    {
-      "id": "poly",
-      "name": "合成高分子",
-      "category_l": "有機化学",
-      "category_m": "合成高分子",
-      "summary": "付加重合と縮合重合の違い、代表的な樹脂・繊維・ゴムを原料と結びつけよう。"
+      "summary": "酸・塩基の強さの違いを使って、芳香族化合物をエーテル層と水層に分けよう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
       "id": "structure",
       "name": "構造決定",
       "category_l": "有機化学",
       "category_m": "構造決定",
-      "summary": "手がかりから物質に当たりを付けよう。まず官能基で絞り、数や物性はそのあと。確度の印も見よう。"
+      "summary": "手がかりから物質に当たりを付けよう。まず官能基で絞り、数や物性はそのあと。確度の印も見よう。",
+      "course": "adv",
+      "part": "第4編 有機化合物"
     },
     {
-      "id": "inorgBasis",
-      "name": "無機の土台",
-      "category_l": "無機化学",
-      "category_m": "無機の土台",
-      "summary": "反応の5つの型・周期表の傾向・酸化物とオキソ酸・気体の製法の決まりをおさえて、無機の各論を型で読めるようにしよう。"
+      "id": "sugar",
+      "name": "糖",
+      "category_l": "有機化学",
+      "category_m": "糖",
+      "summary": "単糖・二糖・多糖のつくりと還元性、デンプンとセルロースの違いをおさえよう。",
+      "course": "adv",
+      "part": "第5編 高分子化合物"
     },
     {
-      "id": "inorgNonmetal",
-      "name": "非金属元素",
-      "category_l": "無機化学",
-      "category_m": "非金属元素",
-      "summary": "水素・貴ガスからハロゲン・硫黄・窒素・リン・炭素とケイ素まで、非金属元素の単体と化合物の性質と製法をおさえよう。"
+      "id": "aminoAcid",
+      "name": "アミノ酸",
+      "category_l": "有機化学",
+      "category_m": "アミノ酸",
+      "summary": "アミノ酸の双性イオンと等電点、pH で電荷がどう変わるかをおさえよう。",
+      "course": "adv",
+      "part": "第5編 高分子化合物"
     },
     {
-      "id": "inorgMetal",
-      "name": "金属元素",
-      "category_l": "無機化学",
-      "category_m": "金属元素",
-      "summary": "アルカリ金属から鉄・銅・クロム、錯イオンまで、金属の単体と化合物の性質と反応をおさえよう。"
+      "id": "protein",
+      "name": "タンパク質・酵素",
+      "category_l": "有機化学",
+      "category_m": "タンパク質・酵素",
+      "summary": "ペプチド結合と立体構造、変性と呈色反応、酵素のはたらき方をおさえよう。",
+      "course": "adv",
+      "part": "第5編 高分子化合物"
     },
     {
-      "id": "inorgQual",
-      "name": "イオンを見分ける",
-      "category_l": "無機化学",
-      "category_m": "イオンを見分ける",
-      "summary": "沈殿の色・炎色反応・系統分離を使って、水溶液の中の金属イオンを見分けよう。"
+      "id": "nucleic",
+      "name": "核酸",
+      "category_l": "有機化学",
+      "category_m": "核酸",
+      "summary": "ヌクレオチドのつくりと DNA・RNA の違い、塩基の組み合わせをおさえよう。",
+      "course": "adv",
+      "part": "第5編 高分子化合物"
     },
     {
-      "id": "theoLife",
-      "name": "化学と人間生活",
+      "id": "poly",
+      "name": "合成高分子",
+      "category_l": "有機化学",
+      "category_m": "合成高分子",
+      "summary": "付加重合と縮合重合の違い、代表的な樹脂・繊維・ゴムを原料と結びつけよう。",
+      "course": "adv",
+      "part": "第5編 高分子化合物"
+    },
+    {
+      "id": "sec-chemistry-role",
+      "name": "化学が果たす役割",
       "category_l": "理論化学",
-      "category_m": "化学と人間生活",
-      "summary": "身のまわりの物質がどの性質を生かして使われているかを言い、学んだ化学が暮らしと未来をどう支えているかを見渡そう。"
-    },
-    {
-      "id": "theoStructure",
-      "name": "物質の構造",
-      "category_l": "理論化学",
-      "category_m": "物質の構造",
-      "summary": "原子の中身から結合・分子の形・結晶まで、物質が何でどうつながっているかを言えるようにしよう。"
-    },
-    {
-      "id": "theoMole",
-      "name": "物質量と化学反応式",
-      "category_l": "理論化学",
-      "category_m": "物質量と化学反応式",
-      "summary": "粒の数を mol で数え、化学反応式の係数から量の関係を読めるようにしよう。"
-    },
-    {
-      "id": "theoAcidBase",
-      "name": "酸と塩基",
-      "category_l": "理論化学",
-      "category_m": "酸と塩基",
-      "summary": "酸と塩基の定義と強弱から、pH・中和・塩・中和滴定まで使いこなそう。"
-    },
-    {
-      "id": "theoRedox",
-      "name": "酸化還元",
-      "category_l": "理論化学",
-      "category_m": "酸化還元",
-      "summary": "電子 e⁻ のやりとりで酸化剤と還元剤を見分け、半反応式から反応式と滴定の計算まで組み立てよう。"
-    },
-    {
-      "id": "theoElectro",
-      "name": "電池と電気分解",
-      "category_l": "理論化学",
-      "category_m": "電池と電気分解",
-      "summary": "電池と電気分解を酸化還元の目で読み、電極の反応と流れた電気量の関係をつかもう。"
-    },
-    {
-      "id": "theoState",
-      "name": "物質の状態",
-      "category_l": "理論化学",
-      "category_m": "物質の状態",
-      "summary": "三態の変化と蒸気圧、気体の法則と実在気体のずれを、分子の動きで説明できるようにしよう。"
-    },
-    {
-      "id": "theoSolution",
-      "name": "溶液",
-      "category_l": "理論化学",
-      "category_m": "溶液",
-      "summary": "溶けるしくみ・溶解度・希薄溶液の性質・コロイドを、粒子の数と大きさから説明できるようにしよう。"
-    },
-    {
-      "id": "theoThermo",
-      "name": "化学反応とエネルギー",
-      "category_l": "理論化学",
-      "category_m": "化学反応とエネルギー",
-      "summary": "ΔH の符号とエネルギー図をもとに、熱量計・ヘスの法則・結合エンタルピーを使って反応の熱を求められるようにしよう。"
-    },
-    {
-      "id": "theoKinetics",
-      "name": "反応の速さ",
-      "category_l": "理論化学",
-      "category_m": "反応の速さ",
-      "summary": "反応速度を主語と単位つきで表し、濃度・温度・触媒で速さが変わるわけを説明できるようにしよう。"
-    },
-    {
-      "id": "theoEquilibrium",
-      "name": "化学平衡",
-      "category_l": "理論化学",
-      "category_m": "化学平衡",
-      "summary": "平衡定数を3行の表から求め、条件を変えたときに平衡がどちらへ動くかを判断できるようにしよう。"
-    },
-    {
-      "id": "theoIonicEq",
-      "name": "電離平衡",
-      "category_l": "理論化学",
-      "category_m": "電離平衡",
-      "summary": "電離定数・加水分解定数・溶解度積を3行の表から立て、弱酸・塩・緩衝液の pH や沈殿の有無を求められるようにしよう。"
+      "category_m": "化学が果たす役割",
+      "summary": "工業的製法や新しい材料など、化学が社会で果たす役割を見渡そう。",
+      "course": "adv",
+      "part": "終章 化学が果たす役割"
     }
   ],
   "patterns": [
@@ -16187,7 +16685,7 @@
     },
     {
       "code": "inorg.basis.five-types",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "無機の反応の型",
       "difficulty": 2,
       "tags": [
@@ -16233,7 +16731,7 @@
     },
     {
       "code": "inorg.basis.redox-first",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "無機の反応の型",
       "difficulty": 2,
       "tags": [
@@ -16279,7 +16777,7 @@
     },
     {
       "code": "inorg.basis.displacement",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "無機の反応の型",
       "difficulty": 2,
       "tags": [
@@ -16326,14 +16824,14 @@
     },
     {
       "code": "inorg.basis.complex-dissolve",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "無機の反応の型",
       "difficulty": 2,
       "tags": [
         "反応",
         "分類"
       ],
-      "knowledge": "錯イオンの反応は、沈殿がいったんでき、試薬（アンモニア水・水酸化ナトリウム水溶液）を過剰に加えると溶ける、という2段で出てくる。",
+      "knowledge": "金属イオンの水溶液にアンモニア水や水酸化ナトリウム水溶液を少しずつ加えると、まず水酸化物（Ag⁺ では酸化物）の沈殿ができ、さらに過剰に加えると錯イオンになって沈殿が溶けるものがある。",
       "variants": [
         {
           "mode": "flip",
@@ -16371,7 +16869,7 @@
     },
     {
       "code": "inorg.basis.typical-transition",
-      "unit": "inorgBasis",
+      "unit": "sec-periodic-table",
       "group": "周期表と元素の性質",
       "difficulty": 1,
       "tags": [
@@ -16417,7 +16915,7 @@
     },
     {
       "code": "inorg.basis.named-groups",
-      "unit": "inorgBasis",
+      "unit": "sec-periodic-table",
       "group": "周期表と元素の性質",
       "difficulty": 1,
       "tags": [
@@ -16460,7 +16958,7 @@
     },
     {
       "code": "inorg.basis.electropositive",
-      "unit": "inorgBasis",
+      "unit": "sec-periodic-table",
       "group": "周期表と元素の性質",
       "difficulty": 2,
       "tags": [
@@ -16470,7 +16968,7 @@
       "variants": [
         {
           "mode": "flip",
-          "q": "同じ族では下の元素ほど陽性が強い。その理由をクーロン力で説明せよ。",
+          "q": "周期表の同じ族では、下の元素ほど陽性が強い。その理由をクーロン力で説明せよ。",
           "a": "下の元素ほど最外殻が原子核から遠く、有効核電荷は同じなので、最外殻電子を引きつける力が弱く、電子を失いやすいから",
           "supplement": "クーロン力は電荷の積に比例し、距離の2乗に反比例する。Na（最外殻は M殻）は Li（最外殻は L殻）より最外殻電子が原子核から遠い。原子核の電荷は Na の +11 のほうが大きいが、内側の電子に打ち消されて、どちらも実質 +1（有効核電荷）なので、距離だけを比べればよい。同じ周期では右ほど原子核の電荷が大きく、最外殻電子を強く引きつけるので陰性が強い。"
         },
@@ -16504,7 +17002,7 @@
     },
     {
       "code": "inorg.basis.max-elements",
-      "unit": "inorgBasis",
+      "unit": "sec-periodic-table",
       "group": "周期表と元素の性質",
       "difficulty": 2,
       "tags": [
@@ -16547,7 +17045,7 @@
     },
     {
       "code": "inorg.basis.three-values",
-      "unit": "inorgBasis",
+      "unit": "sec-periodic-table",
       "group": "周期表と元素の性質",
       "difficulty": 2,
       "tags": [
@@ -16593,7 +17091,7 @@
     },
     {
       "code": "inorg.basis.oxide-class",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "酸化物とオキソ酸",
       "difficulty": 2,
       "tags": [
@@ -16637,7 +17135,7 @@
     },
     {
       "code": "inorg.basis.max-oxidation",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "酸化物とオキソ酸",
       "difficulty": 2,
       "tags": [
@@ -16684,9 +17182,9 @@
     },
     {
       "code": "inorg.basis.oxide-water",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "酸化物とオキソ酸",
-      "difficulty": 2,
+      "difficulty": 3,
       "tags": [
         "反応"
       ],
@@ -16730,7 +17228,7 @@
     },
     {
       "code": "inorg.basis.oxide-neutralization",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "酸化物とオキソ酸",
       "difficulty": 2,
       "tags": [
@@ -16774,7 +17272,7 @@
     },
     {
       "code": "inorg.basis.oxoacid-naming",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "酸化物とオキソ酸",
       "difficulty": 2,
       "tags": [
@@ -16817,7 +17315,7 @@
     },
     {
       "code": "inorg.basis.period3-acidity",
-      "unit": "inorgBasis",
+      "unit": "sec-inorg-reaction-types",
       "group": "酸化物とオキソ酸",
       "difficulty": 2,
       "tags": [
@@ -16862,7 +17360,7 @@
     },
     {
       "code": "inorg.basis.gas-color",
-      "unit": "inorgBasis",
+      "unit": "sec-gas-preparation",
       "group": "気体の製法",
       "difficulty": 1,
       "tags": [
@@ -16908,7 +17406,7 @@
     },
     {
       "code": "inorg.basis.gas-prep-type",
-      "unit": "inorgBasis",
+      "unit": "sec-gas-preparation",
       "group": "気体の製法",
       "difficulty": 2,
       "tags": [
@@ -16919,7 +17417,7 @@
       "variants": [
         {
           "mode": "flip",
-          "q": "銅に希硝酸を加えて一酸化窒素を発生させる反応と、石灰石に希塩酸を加えて二酸化炭素を発生させる反応は、それぞれどの型か。",
+          "q": "銅に希硝酸を加えて一酸化窒素を発生させる反応と、石灰石に希塩酸を加えて二酸化炭素を発生させる反応は、それぞれ無機の反応の5つの型（中和・弱酸の遊離・酸化還元・沈殿・錯イオン）のどれにあたるか。",
           "a": "銅と希硝酸は酸化還元、石灰石と希塩酸は弱酸の遊離",
           "supplement": "銅は単体なので酸化数が変わる（0 → +2）。3Cu ＋ 8HNO₃ → 3Cu(NO₃)₂ ＋ 4H₂O ＋ 2NO。石灰石は CaCO₃ ＋ 2HCl → CaCl₂ ＋ H₂O ＋ CO₂ で、弱酸の H₂CO₃ が追い出され、分解しやすいので H₂O ＋ CO₂ と書く。遊離は試薬の陰イオンと H⁺ を組み換えるだけで1行で書け、酸化還元は半反応式を2本書いてから足す。"
         },
@@ -16953,7 +17451,7 @@
     },
     {
       "code": "inorg.basis.gas-heating",
-      "unit": "inorgBasis",
+      "unit": "sec-gas-preparation",
       "group": "気体の製法",
       "difficulty": 2,
       "tags": [
@@ -16964,9 +17462,9 @@
       "variants": [
         {
           "mode": "flip",
-          "q": "気体の実験室的製法で加熱が必要になるのはどんな反応か。3つの規則で答えよ。",
+          "q": "気体の実験室的製法で加熱が必要になるのはどんな場合か。3つ挙げよ。",
           "a": "濃硫酸を使う反応、固体どうしの反応、MnO₂ と濃塩酸の反応（例外として覚える）",
-          "supplement": "濃硫酸を使う反応は HCl・HF・SO₂（熱濃硫酸と銅）・CO（ギ酸と濃硫酸）。固体どうしの反応は NH₄Cl と Ca(OH)₂、KClO₃ と MnO₂。MnO₂ と濃塩酸は、本来は Cl₂ のほうが MnO₂ より酸化力が強いので逆向きに進みたい反応で、濃い塩酸を使い、加熱して Cl₂ を追い出すことで進めている。この3つの規則を覚えれば、加熱の要否を個別に覚えなくてよい。"
+          "supplement": "濃硫酸を使う反応は HCl・HF・SO₂（熱濃硫酸と銅）・CO（ギ酸と濃硫酸）。固体どうしの反応は NH₄Cl と Ca(OH)₂、KClO₃ と MnO₂。MnO₂ と濃塩酸は、本来は Cl₂ のほうが MnO₂ より酸化力が強いので逆向きに進みたい反応で、濃い塩酸を使い、加熱して Cl₂ を追い出すことで進めている。この3つを覚えれば、加熱の要否を個別に覚えなくてよい。"
         },
         {
           "mode": "choice",
@@ -17000,7 +17498,7 @@
     },
     {
       "code": "inorg.basis.gas-collection",
-      "unit": "inorgBasis",
+      "unit": "sec-gas-preparation",
       "group": "気体の製法",
       "difficulty": 2,
       "tags": [
@@ -17043,7 +17541,7 @@
     },
     {
       "code": "inorg.basis.drying-agent",
-      "unit": "inorgBasis",
+      "unit": "sec-gas-preparation",
       "group": "気体の製法",
       "difficulty": 2,
       "tags": [
@@ -17088,7 +17586,7 @@
     },
     {
       "code": "inorg.nonmetal.noble-gas-props",
-      "unit": "inorgNonmetal",
+      "unit": "sec-hydrogen-noble-gas",
       "group": "水素と貴ガス",
       "difficulty": 1,
       "tags": [
@@ -17133,7 +17631,7 @@
     },
     {
       "code": "inorg.nonmetal.noble-gas-uses",
-      "unit": "inorgNonmetal",
+      "unit": "sec-hydrogen-noble-gas",
       "group": "水素と貴ガス",
       "difficulty": 2,
       "tags": [
@@ -17178,7 +17676,7 @@
     },
     {
       "code": "inorg.nonmetal.hydrogen-prep",
-      "unit": "inorgNonmetal",
+      "unit": "sec-hydrogen-noble-gas",
       "group": "水素と貴ガス",
       "difficulty": 2,
       "tags": [
@@ -17224,7 +17722,7 @@
     },
     {
       "code": "inorg.nonmetal.hydrogen-reductant",
-      "unit": "inorgNonmetal",
+      "unit": "sec-hydrogen-noble-gas",
       "group": "水素と貴ガス",
       "difficulty": 2,
       "tags": [
@@ -17269,7 +17767,7 @@
     },
     {
       "code": "inorg.nonmetal.oxygen-oxidant",
-      "unit": "inorgNonmetal",
+      "unit": "sec-oxygen-ozone",
       "group": "酸素とオゾン",
       "difficulty": 2,
       "tags": [
@@ -17316,7 +17814,7 @@
     },
     {
       "code": "inorg.nonmetal.oxygen-prep",
-      "unit": "inorgNonmetal",
+      "unit": "sec-oxygen-ozone",
       "group": "酸素とオゾン",
       "difficulty": 2,
       "tags": [
@@ -17359,7 +17857,7 @@
     },
     {
       "code": "inorg.nonmetal.h2o2-dual",
-      "unit": "inorgNonmetal",
+      "unit": "sec-oxygen-ozone",
       "group": "酸素とオゾン",
       "difficulty": 2,
       "tags": [
@@ -17404,7 +17902,7 @@
     },
     {
       "code": "inorg.nonmetal.ozone",
-      "unit": "inorgNonmetal",
+      "unit": "sec-oxygen-ozone",
       "group": "酸素とオゾン",
       "difficulty": 2,
       "tags": [
@@ -17451,7 +17949,7 @@
     },
     {
       "code": "inorg.nonmetal.ozone-half",
-      "unit": "inorgNonmetal",
+      "unit": "sec-oxygen-ozone",
       "group": "酸素とオゾン",
       "difficulty": 2,
       "tags": [
@@ -17495,7 +17993,7 @@
     },
     {
       "code": "inorg.nonmetal.halogen-state",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "ハロゲン",
       "difficulty": 1,
       "tags": [
@@ -17540,7 +18038,7 @@
     },
     {
       "code": "inorg.nonmetal.halogen-oxidizing",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "ハロゲン",
       "difficulty": 2,
       "tags": [
@@ -17584,7 +18082,7 @@
     },
     {
       "code": "inorg.nonmetal.hydrogen-halide",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "ハロゲン",
       "difficulty": 2,
       "tags": [
@@ -17628,7 +18126,7 @@
     },
     {
       "code": "inorg.nonmetal.silver-halide",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "ハロゲン",
       "difficulty": 1,
       "tags": [
@@ -17673,7 +18171,7 @@
     },
     {
       "code": "inorg.nonmetal.fluorine",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "ハロゲン",
       "difficulty": 2,
       "tags": [
@@ -17721,7 +18219,7 @@
     },
     {
       "code": "inorg.nonmetal.iodine",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "ハロゲン",
       "difficulty": 2,
       "tags": [
@@ -17765,7 +18263,7 @@
     },
     {
       "code": "inorg.nonmetal.chlorine-prep",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "塩素",
       "difficulty": 2,
       "tags": [
@@ -17811,7 +18309,7 @@
     },
     {
       "code": "inorg.nonmetal.chlorine-washing",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "塩素",
       "difficulty": 2,
       "tags": [
@@ -17854,7 +18352,7 @@
     },
     {
       "code": "inorg.nonmetal.chlorine-water",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "塩素",
       "difficulty": 2,
       "tags": [
@@ -17901,7 +18399,7 @@
     },
     {
       "code": "inorg.nonmetal.hcl-prep",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "塩素",
       "difficulty": 2,
       "tags": [
@@ -17945,7 +18443,7 @@
     },
     {
       "code": "inorg.nonmetal.hcl-roles",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "塩素",
       "difficulty": 2,
       "tags": [
@@ -17992,7 +18490,7 @@
     },
     {
       "code": "inorg.nonmetal.chlorine-oxoacid",
-      "unit": "inorgNonmetal",
+      "unit": "sec-halogen",
       "group": "塩素",
       "difficulty": 2,
       "tags": [
@@ -18037,7 +18535,7 @@
     },
     {
       "code": "inorg.nonmetal.sulfur-allotrope",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫黄",
       "difficulty": 2,
       "tags": [
@@ -18080,7 +18578,7 @@
     },
     {
       "code": "inorg.nonmetal.h2s",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫黄",
       "difficulty": 2,
       "tags": [
@@ -18128,7 +18626,7 @@
     },
     {
       "code": "inorg.nonmetal.sulfide-precipitate",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫黄",
       "difficulty": 2,
       "tags": [
@@ -18174,7 +18672,7 @@
     },
     {
       "code": "inorg.nonmetal.so2-redox",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫黄",
       "difficulty": 2,
       "tags": [
@@ -18221,7 +18719,7 @@
     },
     {
       "code": "inorg.nonmetal.dilute-sulfuric",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫酸",
       "difficulty": 2,
       "tags": [
@@ -18267,7 +18765,7 @@
     },
     {
       "code": "inorg.nonmetal.hot-conc-sulfuric",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫酸",
       "difficulty": 2,
       "tags": [
@@ -18312,7 +18810,7 @@
     },
     {
       "code": "inorg.nonmetal.conc-sulfuric",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫酸",
       "difficulty": 2,
       "tags": [
@@ -18357,7 +18855,7 @@
     },
     {
       "code": "inorg.nonmetal.contact-process",
-      "unit": "inorgNonmetal",
+      "unit": "sec-sulfur",
       "group": "硫酸",
       "difficulty": 2,
       "tags": [
@@ -18402,7 +18900,7 @@
     },
     {
       "code": "inorg.nonmetal.ammonia",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "窒素",
       "difficulty": 1,
       "tags": [
@@ -18450,7 +18948,7 @@
     },
     {
       "code": "inorg.nonmetal.no-no2",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "窒素",
       "difficulty": 2,
       "tags": [
@@ -18494,7 +18992,7 @@
     },
     {
       "code": "inorg.nonmetal.nitric-acid",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "窒素",
       "difficulty": 2,
       "tags": [
@@ -18539,7 +19037,7 @@
     },
     {
       "code": "inorg.nonmetal.passivation-aqua-regia",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "窒素",
       "difficulty": 2,
       "tags": [
@@ -18585,7 +19083,7 @@
     },
     {
       "code": "inorg.nonmetal.haber-ostwald",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "窒素",
       "difficulty": 2,
       "tags": [
@@ -18631,7 +19129,7 @@
     },
     {
       "code": "inorg.nonmetal.phosphorus-allotrope",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "リン",
       "difficulty": 1,
       "tags": [
@@ -18674,7 +19172,7 @@
     },
     {
       "code": "inorg.nonmetal.p4o10",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "リン",
       "difficulty": 2,
       "tags": [
@@ -18719,7 +19217,7 @@
     },
     {
       "code": "inorg.nonmetal.phosphoric-acid",
-      "unit": "inorgNonmetal",
+      "unit": "sec-nitrogen",
       "group": "リン",
       "difficulty": 2,
       "tags": [
@@ -18763,7 +19261,7 @@
     },
     {
       "code": "inorg.nonmetal.carbon-allotrope",
-      "unit": "inorgNonmetal",
+      "unit": "sec-carbon-silicon",
       "group": "炭素とケイ素",
       "difficulty": 1,
       "tags": [
@@ -18809,7 +19307,7 @@
     },
     {
       "code": "inorg.nonmetal.co",
-      "unit": "inorgNonmetal",
+      "unit": "sec-carbon-silicon",
       "group": "炭素とケイ素",
       "difficulty": 2,
       "tags": [
@@ -18854,7 +19352,7 @@
     },
     {
       "code": "inorg.nonmetal.co2",
-      "unit": "inorgNonmetal",
+      "unit": "sec-carbon-silicon",
       "group": "炭素とケイ素",
       "difficulty": 2,
       "tags": [
@@ -18900,7 +19398,7 @@
     },
     {
       "code": "inorg.nonmetal.sio2",
-      "unit": "inorgNonmetal",
+      "unit": "sec-carbon-silicon",
       "group": "炭素とケイ素",
       "difficulty": 2,
       "tags": [
@@ -18947,7 +19445,7 @@
     },
     {
       "code": "inorg.nonmetal.silica-gel",
-      "unit": "inorgNonmetal",
+      "unit": "sec-carbon-silicon",
       "group": "炭素とケイ素",
       "difficulty": 2,
       "tags": [
@@ -18991,7 +19489,7 @@
     },
     {
       "code": "inorg.metal.alkali-water",
-      "unit": "inorgMetal",
+      "unit": "sec-alkali-metal",
       "group": "アルカリ金属",
       "difficulty": 2,
       "tags": [
@@ -19036,7 +19534,7 @@
     },
     {
       "code": "inorg.metal.alkali-storage-prep",
-      "unit": "inorgMetal",
+      "unit": "sec-alkali-metal",
       "group": "アルカリ金属",
       "difficulty": 2,
       "tags": [
@@ -19080,7 +19578,7 @@
     },
     {
       "code": "inorg.metal.alkali-reactivity",
-      "unit": "inorgMetal",
+      "unit": "sec-alkali-metal",
       "group": "アルカリ金属",
       "difficulty": 2,
       "tags": [
@@ -19125,7 +19623,7 @@
     },
     {
       "code": "inorg.metal.deliquescence-efflorescence",
-      "unit": "inorgMetal",
+      "unit": "sec-alkali-metal",
       "group": "アルカリ金属",
       "difficulty": 2,
       "tags": [
@@ -19169,7 +19667,7 @@
     },
     {
       "code": "inorg.metal.carbonate-bicarbonate",
-      "unit": "inorgMetal",
+      "unit": "sec-alkali-metal",
       "group": "アルカリ金属",
       "difficulty": 2,
       "tags": [
@@ -19216,7 +19714,7 @@
     },
     {
       "code": "inorg.metal.solvay",
-      "unit": "inorgMetal",
+      "unit": "sec-alkali-metal",
       "group": "アルカリ金属",
       "difficulty": 2,
       "tags": [
@@ -19260,7 +19758,7 @@
     },
     {
       "code": "inorg.metal.alkaline-earth-def",
-      "unit": "inorgMetal",
+      "unit": "sec-alkaline-earth",
       "group": "2族元素",
       "difficulty": 1,
       "tags": [
@@ -19303,7 +19801,7 @@
     },
     {
       "code": "inorg.metal.mg-vs-ca",
-      "unit": "inorgMetal",
+      "unit": "sec-alkaline-earth",
       "group": "2族元素",
       "difficulty": 2,
       "tags": [
@@ -19350,7 +19848,7 @@
     },
     {
       "code": "inorg.metal.calcium-compounds",
-      "unit": "inorgMetal",
+      "unit": "sec-alkaline-earth",
       "group": "2族元素",
       "difficulty": 2,
       "tags": [
@@ -19397,7 +19895,7 @@
     },
     {
       "code": "inorg.metal.limewater-co2",
-      "unit": "inorgMetal",
+      "unit": "sec-alkaline-earth",
       "group": "2族元素",
       "difficulty": 2,
       "tags": [
@@ -19442,7 +19940,7 @@
     },
     {
       "code": "inorg.metal.barium-sulfate",
-      "unit": "inorgMetal",
+      "unit": "sec-alkaline-earth",
       "group": "2族元素",
       "difficulty": 2,
       "tags": [
@@ -19487,7 +19985,7 @@
     },
     {
       "code": "inorg.metal.gypsum",
-      "unit": "inorgMetal",
+      "unit": "sec-alkaline-earth",
       "group": "2族元素",
       "difficulty": 2,
       "tags": [
@@ -19531,7 +20029,7 @@
     },
     {
       "code": "inorg.metal.amphoteric-elements",
-      "unit": "inorgMetal",
+      "unit": "sec-amphoteric-metal",
       "group": "両性金属",
       "difficulty": 2,
       "tags": [
@@ -19577,7 +20075,7 @@
     },
     {
       "code": "inorg.metal.amphoteric-naoh",
-      "unit": "inorgMetal",
+      "unit": "sec-amphoteric-metal",
       "group": "両性金属",
       "difficulty": 2,
       "tags": [
@@ -19620,7 +20118,7 @@
     },
     {
       "code": "inorg.metal.passivation",
-      "unit": "inorgMetal",
+      "unit": "sec-amphoteric-metal",
       "group": "両性金属",
       "difficulty": 2,
       "tags": [
@@ -19664,7 +20162,7 @@
     },
     {
       "code": "inorg.metal.amphoteric-hydroxide",
-      "unit": "inorgMetal",
+      "unit": "sec-amphoteric-metal",
       "group": "両性金属",
       "difficulty": 2,
       "tags": [
@@ -19710,7 +20208,7 @@
     },
     {
       "code": "inorg.metal.aluminium-production",
-      "unit": "inorgMetal",
+      "unit": "sec-amphoteric-metal",
       "group": "両性金属",
       "difficulty": 2,
       "tags": [
@@ -19754,7 +20252,7 @@
     },
     {
       "code": "inorg.metal.alum",
-      "unit": "inorgMetal",
+      "unit": "sec-amphoteric-metal",
       "group": "両性金属",
       "difficulty": 2,
       "tags": [
@@ -19798,7 +20296,7 @@
     },
     {
       "code": "inorg.metal.iron-smelting",
-      "unit": "inorgMetal",
+      "unit": "sec-iron",
       "group": "鉄",
       "difficulty": 2,
       "tags": [
@@ -19844,7 +20342,7 @@
     },
     {
       "code": "inorg.metal.iron-dilute-acid",
-      "unit": "inorgMetal",
+      "unit": "sec-iron",
       "group": "鉄",
       "difficulty": 2,
       "tags": [
@@ -19887,7 +20385,7 @@
     },
     {
       "code": "inorg.metal.iron-ion-color",
-      "unit": "inorgMetal",
+      "unit": "sec-iron",
       "group": "鉄",
       "difficulty": 2,
       "tags": [
@@ -19934,7 +20432,7 @@
     },
     {
       "code": "inorg.metal.iron-ion-test",
-      "unit": "inorgMetal",
+      "unit": "sec-iron",
       "group": "鉄",
       "difficulty": 2,
       "tags": [
@@ -19977,7 +20475,7 @@
     },
     {
       "code": "inorg.metal.iron-fe2-reductant",
-      "unit": "inorgMetal",
+      "unit": "sec-iron",
       "group": "鉄",
       "difficulty": 2,
       "tags": [
@@ -20022,7 +20520,7 @@
     },
     {
       "code": "inorg.metal.copper-oxidizing-acid",
-      "unit": "inorgMetal",
+      "unit": "sec-copper-silver",
       "group": "銅と銀",
       "difficulty": 2,
       "tags": [
@@ -20068,7 +20566,7 @@
     },
     {
       "code": "inorg.metal.silver-tree",
-      "unit": "inorgMetal",
+      "unit": "sec-copper-silver",
       "group": "銅と銀",
       "difficulty": 2,
       "tags": [
@@ -20112,7 +20610,7 @@
     },
     {
       "code": "inorg.metal.copper-ion",
-      "unit": "inorgMetal",
+      "unit": "sec-copper-silver",
       "group": "銅と銀",
       "difficulty": 2,
       "tags": [
@@ -20159,7 +20657,7 @@
     },
     {
       "code": "inorg.metal.copper-sulfate-hydrate",
-      "unit": "inorgMetal",
+      "unit": "sec-copper-silver",
       "group": "銅と銀",
       "difficulty": 2,
       "tags": [
@@ -20204,7 +20702,7 @@
     },
     {
       "code": "inorg.metal.silver-ion",
-      "unit": "inorgMetal",
+      "unit": "sec-copper-silver",
       "group": "銅と銀",
       "difficulty": 2,
       "tags": [
@@ -20251,7 +20749,7 @@
     },
     {
       "code": "inorg.metal.silver-halide",
-      "unit": "inorgMetal",
+      "unit": "sec-copper-silver",
       "group": "銅と銀",
       "difficulty": 2,
       "tags": [
@@ -20295,7 +20793,7 @@
     },
     {
       "code": "inorg.metal.mn-cr-colors",
-      "unit": "inorgMetal",
+      "unit": "sec-transition-oxidizers",
       "group": "クロムとマンガン",
       "difficulty": 2,
       "tags": [
@@ -20342,7 +20840,7 @@
     },
     {
       "code": "inorg.metal.permanganate",
-      "unit": "inorgMetal",
+      "unit": "sec-transition-oxidizers",
       "group": "クロムとマンガン",
       "difficulty": 2,
       "tags": [
@@ -20389,7 +20887,7 @@
     },
     {
       "code": "inorg.metal.mno2-roles",
-      "unit": "inorgMetal",
+      "unit": "sec-transition-oxidizers",
       "group": "クロムとマンガン",
       "difficulty": 2,
       "tags": [
@@ -20433,7 +20931,7 @@
     },
     {
       "code": "inorg.metal.chromate-dichromate",
-      "unit": "inorgMetal",
+      "unit": "sec-transition-oxidizers",
       "group": "クロムとマンガン",
       "difficulty": 2,
       "tags": [
@@ -20477,7 +20975,7 @@
     },
     {
       "code": "inorg.metal.chromate-precipitate",
-      "unit": "inorgMetal",
+      "unit": "sec-transition-oxidizers",
       "group": "クロムとマンガン",
       "difficulty": 2,
       "tags": [
@@ -20521,7 +21019,7 @@
     },
     {
       "code": "inorg.metal.complex-structure",
-      "unit": "inorgMetal",
+      "unit": "sec-complex-ion",
       "group": "錯イオン",
       "difficulty": 2,
       "tags": [
@@ -20565,7 +21063,7 @@
     },
     {
       "code": "inorg.metal.complex-naming",
-      "unit": "inorgMetal",
+      "unit": "sec-complex-ion",
       "group": "錯イオン",
       "difficulty": 2,
       "tags": [
@@ -20610,7 +21108,7 @@
     },
     {
       "code": "inorg.metal.complex-shape",
-      "unit": "inorgMetal",
+      "unit": "sec-complex-ion",
       "group": "錯イオン",
       "difficulty": 2,
       "tags": [
@@ -20653,7 +21151,7 @@
     },
     {
       "code": "inorg.metal.complex-redissolve",
-      "unit": "inorgMetal",
+      "unit": "sec-complex-ion",
       "group": "錯イオン",
       "difficulty": 2,
       "tags": [
@@ -20700,7 +21198,7 @@
     },
     {
       "code": "inorg.metal.alloy-def",
-      "unit": "inorgMetal",
+      "unit": "sec-alloy",
       "group": "合金",
       "difficulty": 1,
       "tags": [
@@ -20744,7 +21242,7 @@
     },
     {
       "code": "inorg.metal.alloy-examples",
-      "unit": "inorgMetal",
+      "unit": "sec-alloy",
       "group": "合金",
       "difficulty": 2,
       "tags": [
@@ -20790,7 +21288,7 @@
     },
     {
       "code": "inorg.metal.alloy-functional",
-      "unit": "inorgMetal",
+      "unit": "sec-alloy",
       "group": "合金",
       "difficulty": 2,
       "tags": [
@@ -20832,7 +21330,7 @@
     },
     {
       "code": "inorg.qual.soluble-salts",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "沈殿の生成と色",
       "difficulty": 2,
       "tags": [
@@ -20877,7 +21375,7 @@
     },
     {
       "code": "inorg.qual.chloride-sulfate-ppt",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "沈殿の生成と色",
       "difficulty": 2,
       "tags": [
@@ -20924,7 +21422,7 @@
     },
     {
       "code": "inorg.qual.sulfate-vs-carbonate",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "沈殿の生成と色",
       "difficulty": 2,
       "tags": [
@@ -20968,7 +21466,7 @@
     },
     {
       "code": "inorg.qual.hydroxide-colors",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "沈殿の生成と色",
       "difficulty": 2,
       "tags": [
@@ -21015,7 +21513,7 @@
     },
     {
       "code": "inorg.qual.sulfide-ph",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "沈殿の生成と色",
       "difficulty": 2,
       "tags": [
@@ -21060,7 +21558,7 @@
     },
     {
       "code": "inorg.qual.sulfide-colors",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "沈殿の生成と色",
       "difficulty": 2,
       "tags": [
@@ -21104,7 +21602,7 @@
     },
     {
       "code": "inorg.qual.flame-colors",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "炎色反応と水溶液の色",
       "difficulty": 2,
       "tags": [
@@ -21149,7 +21647,7 @@
     },
     {
       "code": "inorg.qual.flame-procedure",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "炎色反応と水溶液の色",
       "difficulty": 2,
       "tags": [
@@ -21194,7 +21692,7 @@
     },
     {
       "code": "inorg.qual.solution-colors",
-      "unit": "inorgQual",
+      "unit": "sec-precipitate",
       "group": "炎色反応と水溶液の色",
       "difficulty": 2,
       "tags": [
@@ -21239,7 +21737,7 @@
     },
     {
       "code": "inorg.qual.separation-order",
-      "unit": "inorgQual",
+      "unit": "sec-cation-separation",
       "group": "系統分離",
       "difficulty": 2,
       "tags": [
@@ -21286,7 +21784,7 @@
     },
     {
       "code": "inorg.qual.separation-h2s-twice",
-      "unit": "inorgQual",
+      "unit": "sec-cation-separation",
       "group": "系統分離",
       "difficulty": 2,
       "tags": [
@@ -21330,7 +21828,7 @@
     },
     {
       "code": "inorg.qual.separation-nitric-acid",
-      "unit": "inorgQual",
+      "unit": "sec-cation-separation",
       "group": "系統分離",
       "difficulty": 2,
       "tags": [
@@ -21375,7 +21873,7 @@
     },
     {
       "code": "inorg.qual.separation-within-group",
-      "unit": "inorgQual",
+      "unit": "sec-cation-separation",
       "group": "系統分離",
       "difficulty": 2,
       "tags": [
@@ -21420,7 +21918,7 @@
     },
     {
       "code": "theo.life.property-use",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-and-life",
       "group": "化学の特徴",
       "difficulty": 1,
       "tags": [
@@ -21465,7 +21963,7 @@
     },
     {
       "code": "theo.life.structure-property",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-and-life",
       "group": "化学の特徴",
       "difficulty": 1,
       "tags": [
@@ -21509,7 +22007,7 @@
     },
     {
       "code": "theo.life.mix-danger",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-and-life",
       "group": "化学の特徴",
       "difficulty": 2,
       "tags": [
@@ -21555,7 +22053,7 @@
     },
     {
       "code": "theo.life.bond-material",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-world",
       "group": "化学が拓く世界",
       "difficulty": 1,
       "tags": [
@@ -21601,7 +22099,7 @@
     },
     {
       "code": "theo.life.reaction-in-life",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-world",
       "group": "化学が拓く世界",
       "difficulty": 1,
       "tags": [
@@ -21646,7 +22144,7 @@
     },
     {
       "code": "theo.life.recycle-resource",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-world",
       "group": "化学が拓く世界",
       "difficulty": 1,
       "tags": [
@@ -21690,7 +22188,7 @@
     },
     {
       "code": "theo.life.industry-catalyst",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-role",
       "group": "化学が果たす役割",
       "difficulty": 2,
       "tags": [
@@ -21734,7 +22232,7 @@
     },
     {
       "code": "theo.life.haber-issue",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-role",
       "group": "化学が果たす役割",
       "difficulty": 2,
       "tags": [
@@ -21780,7 +22278,7 @@
     },
     {
       "code": "theo.life.atom-economy",
-      "unit": "theoLife",
+      "unit": "sec-chemistry-role",
       "group": "化学が果たす役割",
       "difficulty": 2,
       "tags": [
@@ -21823,7 +22321,7 @@
     },
     {
       "code": "theo.structure.substance-class",
-      "unit": "theoStructure",
+      "unit": "sec-substance-classification",
       "group": "物質の分類と分離",
       "difficulty": 1,
       "tags": [
@@ -21867,7 +22365,7 @@
     },
     {
       "code": "theo.structure.element-vs-substance",
-      "unit": "theoStructure",
+      "unit": "sec-substance-classification",
       "group": "物質の分類と分離",
       "difficulty": 2,
       "tags": [
@@ -21909,7 +22407,7 @@
     },
     {
       "code": "theo.structure.allotrope",
-      "unit": "theoStructure",
+      "unit": "sec-substance-classification",
       "group": "物質の分類と分離",
       "difficulty": 1,
       "tags": [
@@ -21955,7 +22453,7 @@
     },
     {
       "code": "theo.structure.separation-method",
-      "unit": "theoStructure",
+      "unit": "sec-substance-classification",
       "group": "物質の分類と分離",
       "difficulty": 1,
       "tags": [
@@ -21998,7 +22496,7 @@
     },
     {
       "code": "theo.structure.distillation-setup",
-      "unit": "theoStructure",
+      "unit": "sec-substance-classification",
       "group": "物質の分類と分離",
       "difficulty": 2,
       "tags": [
@@ -22041,7 +22539,7 @@
     },
     {
       "code": "theo.structure.particle-count",
-      "unit": "theoStructure",
+      "unit": "sec-atom-structure",
       "group": "原子の構造と電子配置",
       "difficulty": 1,
       "tags": [
@@ -22086,7 +22584,7 @@
     },
     {
       "code": "theo.structure.isotope",
-      "unit": "theoStructure",
+      "unit": "sec-atom-structure",
       "group": "原子の構造と電子配置",
       "difficulty": 1,
       "tags": [
@@ -22129,7 +22627,7 @@
     },
     {
       "code": "theo.structure.radioactive-decay",
-      "unit": "theoStructure",
+      "unit": "sec-atom-structure",
       "group": "原子の構造と電子配置",
       "difficulty": 2,
       "tags": [
@@ -22175,7 +22673,7 @@
     },
     {
       "code": "theo.structure.electron-shell",
-      "unit": "theoStructure",
+      "unit": "sec-atom-structure",
       "group": "原子の構造と電子配置",
       "difficulty": 1,
       "tags": [
@@ -22218,7 +22716,7 @@
     },
     {
       "code": "theo.structure.valence-electron",
-      "unit": "theoStructure",
+      "unit": "sec-atom-structure",
       "group": "原子の構造と電子配置",
       "difficulty": 1,
       "tags": [
@@ -22264,7 +22762,7 @@
     },
     {
       "code": "theo.structure.stable-config",
-      "unit": "theoStructure",
+      "unit": "sec-atom-structure",
       "group": "原子の構造と電子配置",
       "difficulty": 1,
       "tags": [
@@ -22308,7 +22806,7 @@
     },
     {
       "code": "theo.structure.ion-charge",
-      "unit": "theoStructure",
+      "unit": "sec-ionic-bond",
       "group": "イオン結合",
       "difficulty": 1,
       "tags": [
@@ -22352,7 +22850,7 @@
     },
     {
       "code": "theo.structure.ion-name",
-      "unit": "theoStructure",
+      "unit": "sec-ionic-bond",
       "group": "イオン結合",
       "difficulty": 1,
       "tags": [
@@ -22396,7 +22894,7 @@
     },
     {
       "code": "theo.structure.polyatomic-ion",
-      "unit": "theoStructure",
+      "unit": "sec-ionic-bond",
       "group": "イオン結合",
       "difficulty": 1,
       "tags": [
@@ -22440,7 +22938,7 @@
     },
     {
       "code": "theo.structure.composition-formula",
-      "unit": "theoStructure",
+      "unit": "sec-ionic-bond",
       "group": "イオン結合",
       "difficulty": 1,
       "tags": [
@@ -22486,7 +22984,7 @@
     },
     {
       "code": "theo.structure.ionic-crystal",
-      "unit": "theoStructure",
+      "unit": "sec-ionic-bond",
       "group": "イオン結合",
       "difficulty": 1,
       "tags": [
@@ -22531,7 +23029,7 @@
     },
     {
       "code": "theo.structure.valence",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "共有結合",
       "difficulty": 1,
       "tags": [
@@ -22577,7 +23075,7 @@
     },
     {
       "code": "theo.structure.electron-pair-count",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "共有結合",
       "difficulty": 2,
       "tags": [
@@ -22620,7 +23118,7 @@
     },
     {
       "code": "theo.structure.structural-formula",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "共有結合",
       "difficulty": 1,
       "tags": [
@@ -22664,7 +23162,7 @@
     },
     {
       "code": "theo.structure.coordinate-bond",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "共有結合",
       "difficulty": 1,
       "tags": [
@@ -22707,7 +23205,7 @@
     },
     {
       "code": "theo.structure.molecular-shape",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "分子の形と極性",
       "difficulty": 1,
       "tags": [
@@ -22751,7 +23249,7 @@
     },
     {
       "code": "theo.structure.electron-domain",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "分子の形と極性",
       "difficulty": 2,
       "tags": [
@@ -22797,7 +23295,7 @@
     },
     {
       "code": "theo.structure.bond-angle-order",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "分子の形と極性",
       "difficulty": 2,
       "tags": [
@@ -22840,7 +23338,7 @@
     },
     {
       "code": "theo.structure.electronegativity",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "分子の形と極性",
       "difficulty": 1,
       "tags": [
@@ -22884,7 +23382,7 @@
     },
     {
       "code": "theo.structure.molecular-polarity",
-      "unit": "theoStructure",
+      "unit": "sec-covalent-bond",
       "group": "分子の形と極性",
       "difficulty": 1,
       "tags": [
@@ -22930,7 +23428,7 @@
     },
     {
       "code": "theo.structure.imf-kinds",
-      "unit": "theoStructure",
+      "unit": "sec-intermolecular-force",
       "group": "分子間力",
       "difficulty": 1,
       "tags": [
@@ -22974,7 +23472,7 @@
     },
     {
       "code": "theo.structure.hydrogen-bond",
-      "unit": "theoStructure",
+      "unit": "sec-intermolecular-force",
       "group": "分子間力",
       "difficulty": 1,
       "tags": [
@@ -23018,7 +23516,7 @@
     },
     {
       "code": "theo.structure.bp-comparison",
-      "unit": "theoStructure",
+      "unit": "sec-intermolecular-force",
       "group": "分子間力",
       "difficulty": 2,
       "tags": [
@@ -23064,7 +23562,7 @@
     },
     {
       "code": "theo.structure.hydride-bp",
-      "unit": "theoStructure",
+      "unit": "sec-intermolecular-force",
       "group": "分子間力",
       "difficulty": 2,
       "tags": [
@@ -23108,7 +23606,7 @@
     },
     {
       "code": "theo.structure.molecular-crystal",
-      "unit": "theoStructure",
+      "unit": "sec-intermolecular-force",
       "group": "分子間力",
       "difficulty": 1,
       "tags": [
@@ -23151,7 +23649,7 @@
     },
     {
       "code": "theo.structure.metallic-bond",
-      "unit": "theoStructure",
+      "unit": "sec-crystal-types",
       "group": "結晶の種類",
       "difficulty": 1,
       "tags": [
@@ -23195,7 +23693,7 @@
     },
     {
       "code": "theo.structure.crystal-conductivity",
-      "unit": "theoStructure",
+      "unit": "sec-crystal-types",
       "group": "結晶の種類",
       "difficulty": 1,
       "tags": [
@@ -23238,7 +23736,7 @@
     },
     {
       "code": "theo.structure.crystal-classify",
-      "unit": "theoStructure",
+      "unit": "sec-crystal-types",
       "group": "結晶の種類",
       "difficulty": 1,
       "tags": [
@@ -23284,7 +23782,7 @@
     },
     {
       "code": "theo.structure.crystal-mp",
-      "unit": "theoStructure",
+      "unit": "sec-crystal-types",
       "group": "結晶の種類",
       "difficulty": 2,
       "tags": [
@@ -23327,7 +23825,7 @@
     },
     {
       "code": "theo.structure.unit-cell-count",
-      "unit": "theoStructure",
+      "unit": "sec-unit-cell",
       "group": "結晶格子",
       "difficulty": 2,
       "tags": [
@@ -23371,7 +23869,7 @@
     },
     {
       "code": "theo.structure.coordination-packing",
-      "unit": "theoStructure",
+      "unit": "sec-unit-cell",
       "group": "結晶格子",
       "difficulty": 2,
       "tags": [
@@ -23414,7 +23912,7 @@
     },
     {
       "code": "theo.structure.radius-edge",
-      "unit": "theoStructure",
+      "unit": "sec-unit-cell",
       "group": "結晶格子",
       "difficulty": 2,
       "tags": [
@@ -23457,7 +23955,7 @@
     },
     {
       "code": "theo.structure.ionic-lattice",
-      "unit": "theoStructure",
+      "unit": "sec-unit-cell",
       "group": "結晶格子",
       "difficulty": 2,
       "tags": [
@@ -23503,7 +24001,7 @@
     },
     {
       "code": "theo.structure.crystal-density",
-      "unit": "theoStructure",
+      "unit": "sec-unit-cell",
       "group": "結晶格子",
       "difficulty": 2,
       "tags": [
@@ -23547,7 +24045,7 @@
     },
     {
       "code": "theo.structure.amorphous",
-      "unit": "theoStructure",
+      "unit": "sec-crystal-types",
       "group": "結晶の種類",
       "difficulty": 2,
       "tags": [
@@ -23591,7 +24089,7 @@
     },
     {
       "code": "theo.structure.element-test",
-      "unit": "theoStructure",
+      "unit": "sec-substance-classification",
       "group": "物質の分類と分離",
       "difficulty": 1,
       "tags": [
@@ -23637,7 +24135,7 @@
     },
     {
       "code": "theo.structure.element-test-infer",
-      "unit": "theoStructure",
+      "unit": "sec-substance-classification",
       "group": "物質の分類と分離",
       "difficulty": 2,
       "tags": [
@@ -23680,7 +24178,7 @@
     },
     {
       "code": "theo.mole.relative-mass",
-      "unit": "theoMole",
+      "unit": "sec-atomic-weight",
       "group": "原子量と分子量",
       "difficulty": 1,
       "tags": [
@@ -23724,7 +24222,7 @@
     },
     {
       "code": "theo.mole.atomic-weight",
-      "unit": "theoMole",
+      "unit": "sec-atomic-weight",
       "group": "原子量と分子量",
       "difficulty": 1,
       "tags": [
@@ -23768,7 +24266,7 @@
     },
     {
       "code": "theo.mole.isotope-average",
-      "unit": "theoMole",
+      "unit": "sec-atomic-weight",
       "group": "原子量と分子量",
       "difficulty": 2,
       "tags": [
@@ -23811,7 +24309,7 @@
     },
     {
       "code": "theo.mole.formula-weight",
-      "unit": "theoMole",
+      "unit": "sec-atomic-weight",
       "group": "原子量と分子量",
       "difficulty": 1,
       "tags": [
@@ -23857,7 +24355,7 @@
     },
     {
       "code": "theo.mole.mol-def",
-      "unit": "theoMole",
+      "unit": "sec-mole",
       "group": "物質量",
       "difficulty": 1,
       "tags": [
@@ -23900,7 +24398,7 @@
     },
     {
       "code": "theo.mole.molar-quantities",
-      "unit": "theoMole",
+      "unit": "sec-mole",
       "group": "物質量",
       "difficulty": 1,
       "tags": [
@@ -23945,7 +24443,7 @@
     },
     {
       "code": "theo.mole.conversion-via-mol",
-      "unit": "theoMole",
+      "unit": "sec-mole",
       "group": "物質量",
       "difficulty": 2,
       "tags": [
@@ -23991,7 +24489,7 @@
     },
     {
       "code": "theo.mole.atoms-in-molecule",
-      "unit": "theoMole",
+      "unit": "sec-mole",
       "group": "物質量",
       "difficulty": 1,
       "tags": [
@@ -24034,7 +24532,7 @@
     },
     {
       "code": "theo.mole.empirical-formula",
-      "unit": "theoMole",
+      "unit": "sec-mole",
       "group": "物質量",
       "difficulty": 2,
       "tags": [
@@ -24078,7 +24576,7 @@
     },
     {
       "code": "theo.mole.concentration-def",
-      "unit": "theoMole",
+      "unit": "sec-concentration",
       "group": "溶液の濃度",
       "difficulty": 1,
       "tags": [
@@ -24124,7 +24622,7 @@
     },
     {
       "code": "theo.mole.molarity",
-      "unit": "theoMole",
+      "unit": "sec-concentration",
       "group": "溶液の濃度",
       "difficulty": 1,
       "tags": [
@@ -24168,7 +24666,7 @@
     },
     {
       "code": "theo.mole.concentration-convert",
-      "unit": "theoMole",
+      "unit": "sec-concentration",
       "group": "溶液の濃度",
       "difficulty": 2,
       "tags": [
@@ -24212,7 +24710,7 @@
     },
     {
       "code": "theo.mole.mixing-dilution",
-      "unit": "theoMole",
+      "unit": "sec-concentration",
       "group": "溶液の濃度",
       "difficulty": 2,
       "tags": [
@@ -24258,7 +24756,7 @@
     },
     {
       "code": "theo.mole.molality",
-      "unit": "theoMole",
+      "unit": "sec-concentration",
       "group": "溶液の濃度",
       "difficulty": 2,
       "tags": [
@@ -24301,7 +24799,7 @@
     },
     {
       "code": "theo.mole.equation-rules",
-      "unit": "theoMole",
+      "unit": "sec-chemical-equation",
       "group": "化学反応式",
       "difficulty": 1,
       "tags": [
@@ -24344,7 +24842,7 @@
     },
     {
       "code": "theo.mole.coefficient-method",
-      "unit": "theoMole",
+      "unit": "sec-chemical-equation",
       "group": "化学反応式",
       "difficulty": 2,
       "tags": [
@@ -24389,7 +24887,7 @@
     },
     {
       "code": "theo.mole.combustion-equation",
-      "unit": "theoMole",
+      "unit": "sec-chemical-equation",
       "group": "化学反応式",
       "difficulty": 1,
       "tags": [
@@ -24434,7 +24932,7 @@
     },
     {
       "code": "theo.mole.ionic-equation",
-      "unit": "theoMole",
+      "unit": "sec-chemical-equation",
       "group": "化学反応式",
       "difficulty": 2,
       "tags": [
@@ -24477,7 +24975,7 @@
     },
     {
       "code": "theo.mole.coefficient-ratio",
-      "unit": "theoMole",
+      "unit": "sec-stoichiometry",
       "group": "量的関係",
       "difficulty": 1,
       "tags": [
@@ -24523,7 +25021,7 @@
     },
     {
       "code": "theo.mole.three-row-table",
-      "unit": "theoMole",
+      "unit": "sec-stoichiometry",
       "group": "量的関係",
       "difficulty": 1,
       "tags": [
@@ -24566,7 +25064,7 @@
     },
     {
       "code": "theo.mole.limiting-reactant",
-      "unit": "theoMole",
+      "unit": "sec-stoichiometry",
       "group": "量的関係",
       "difficulty": 2,
       "tags": [
@@ -24612,7 +25110,7 @@
     },
     {
       "code": "theo.mole.gas-volume-ratio",
-      "unit": "theoMole",
+      "unit": "sec-stoichiometry",
       "group": "量的関係",
       "difficulty": 2,
       "tags": [
@@ -24656,7 +25154,7 @@
     },
     {
       "code": "theo.mole.basic-laws",
-      "unit": "theoMole",
+      "unit": "sec-stoichiometry",
       "group": "化学の基本法則",
       "difficulty": 1,
       "tags": [
@@ -24702,7 +25200,7 @@
     },
     {
       "code": "theo.mole.definite-multiple",
-      "unit": "theoMole",
+      "unit": "sec-stoichiometry",
       "group": "化学の基本法則",
       "difficulty": 2,
       "tags": [
@@ -24746,7 +25244,7 @@
     },
     {
       "code": "theo.mole.gas-reaction-molecule",
-      "unit": "theoMole",
+      "unit": "sec-stoichiometry",
       "group": "化学の基本法則",
       "difficulty": 2,
       "tags": [
@@ -24790,7 +25288,7 @@
     },
     {
       "code": "theo.acid-base.acid-base-properties",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "酸と塩基の定義",
       "difficulty": 1,
       "tags": [
@@ -24834,7 +25332,7 @@
     },
     {
       "code": "theo.acid-base.arrhenius",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "酸と塩基の定義",
       "difficulty": 1,
       "tags": [
@@ -24877,7 +25375,7 @@
     },
     {
       "code": "theo.acid-base.bronsted",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "酸と塩基の定義",
       "difficulty": 2,
       "tags": [
@@ -24924,7 +25422,7 @@
     },
     {
       "code": "theo.acid-base.bronsted-role",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "酸と塩基の定義",
       "difficulty": 2,
       "tags": [
@@ -24968,7 +25466,7 @@
     },
     {
       "code": "theo.acid-base.valence",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "価数と強弱",
       "difficulty": 1,
       "tags": [
@@ -25012,7 +25510,7 @@
     },
     {
       "code": "theo.acid-base.strong-weak",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "価数と強弱",
       "difficulty": 1,
       "tags": [
@@ -25058,7 +25556,7 @@
     },
     {
       "code": "theo.acid-base.ionization-degree",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "価数と強弱",
       "difficulty": 2,
       "tags": [
@@ -25103,7 +25601,7 @@
     },
     {
       "code": "theo.acid-base.h-concentration",
-      "unit": "theoAcidBase",
+      "unit": "sec-acid-base-definition",
       "group": "価数と強弱",
       "difficulty": 2,
       "tags": [
@@ -25149,7 +25647,7 @@
     },
     {
       "code": "theo.acid-base.ph-def",
-      "unit": "theoAcidBase",
+      "unit": "sec-ph",
       "group": "pH",
       "difficulty": 1,
       "tags": [
@@ -25194,7 +25692,7 @@
     },
     {
       "code": "theo.acid-base.water-ion-product",
-      "unit": "theoAcidBase",
+      "unit": "sec-ph",
       "group": "pH",
       "difficulty": 2,
       "tags": [
@@ -25240,7 +25738,7 @@
     },
     {
       "code": "theo.acid-base.ph-dilution",
-      "unit": "theoAcidBase",
+      "unit": "sec-ph",
       "group": "pH",
       "difficulty": 2,
       "tags": [
@@ -25283,7 +25781,7 @@
     },
     {
       "code": "theo.acid-base.ph-log",
-      "unit": "theoAcidBase",
+      "unit": "sec-ph",
       "group": "pH",
       "difficulty": 2,
       "tags": [
@@ -25327,7 +25825,7 @@
     },
     {
       "code": "theo.acid-base.neutralization-def",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "中和",
       "difficulty": 1,
       "tags": [
@@ -25371,7 +25869,7 @@
     },
     {
       "code": "theo.acid-base.neutralization-ratio",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "中和",
       "difficulty": 2,
       "tags": [
@@ -25417,7 +25915,7 @@
     },
     {
       "code": "theo.acid-base.neutralization-equation",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "中和",
       "difficulty": 2,
       "tags": [
@@ -25460,7 +25958,7 @@
     },
     {
       "code": "theo.acid-base.neutralization-calc",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "中和",
       "difficulty": 2,
       "tags": [
@@ -25504,7 +26002,7 @@
     },
     {
       "code": "theo.acid-base.back-titration",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "中和",
       "difficulty": 2,
       "tags": [
@@ -25548,7 +26046,7 @@
     },
     {
       "code": "theo.acid-base.salt-classification",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "塩",
       "difficulty": 2,
       "tags": [
@@ -25591,7 +26089,7 @@
     },
     {
       "code": "theo.acid-base.salt-restore",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "塩",
       "difficulty": 2,
       "tags": [
@@ -25637,7 +26135,7 @@
     },
     {
       "code": "theo.acid-base.salt-solution",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "塩",
       "difficulty": 2,
       "tags": [
@@ -25683,7 +26181,7 @@
     },
     {
       "code": "theo.acid-base.salt-hydrolysis",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "塩",
       "difficulty": 2,
       "tags": [
@@ -25727,7 +26225,7 @@
     },
     {
       "code": "theo.acid-base.weak-acid-displacement",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "弱酸の遊離",
       "difficulty": 2,
       "tags": [
@@ -25771,7 +26269,7 @@
     },
     {
       "code": "theo.acid-base.gas-by-displacement",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "弱酸の遊離",
       "difficulty": 2,
       "tags": [
@@ -25815,7 +26313,7 @@
     },
     {
       "code": "theo.acid-base.weak-base-displacement",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "弱酸の遊離",
       "difficulty": 2,
       "tags": [
@@ -25860,7 +26358,7 @@
     },
     {
       "code": "theo.acid-base.volatile-acid",
-      "unit": "theoAcidBase",
+      "unit": "sec-neutralization",
       "group": "弱酸の遊離",
       "difficulty": 2,
       "tags": [
@@ -25904,7 +26402,7 @@
     },
     {
       "code": "theo.acid-base.titration-apparatus",
-      "unit": "theoAcidBase",
+      "unit": "sec-titration",
       "group": "中和滴定",
       "difficulty": 2,
       "tags": [
@@ -25948,7 +26446,7 @@
     },
     {
       "code": "theo.acid-base.titration-rinse",
-      "unit": "theoAcidBase",
+      "unit": "sec-titration",
       "group": "中和滴定",
       "difficulty": 2,
       "tags": [
@@ -25991,7 +26489,7 @@
     },
     {
       "code": "theo.acid-base.approx-ph",
-      "unit": "theoAcidBase",
+      "unit": "sec-titration",
       "group": "中和滴定",
       "difficulty": 2,
       "tags": [
@@ -26038,7 +26536,7 @@
     },
     {
       "code": "theo.acid-base.indicator",
-      "unit": "theoAcidBase",
+      "unit": "sec-titration",
       "group": "中和滴定",
       "difficulty": 2,
       "tags": [
@@ -26084,7 +26582,7 @@
     },
     {
       "code": "theo.acid-base.titration-curve",
-      "unit": "theoAcidBase",
+      "unit": "sec-titration",
       "group": "中和滴定",
       "difficulty": 2,
       "tags": [
@@ -26131,7 +26629,7 @@
     },
     {
       "code": "theo.acid-base.two-step-neutralization",
-      "unit": "theoAcidBase",
+      "unit": "sec-titration",
       "group": "中和滴定",
       "difficulty": 3,
       "tags": [
@@ -26176,7 +26674,7 @@
     },
     {
       "code": "theo.redox.agent-def",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化と還元",
       "difficulty": 1,
       "tags": [
@@ -26221,7 +26719,7 @@
     },
     {
       "code": "theo.redox.role-table",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化と還元",
       "difficulty": 1,
       "tags": [
@@ -26265,7 +26763,7 @@
     },
     {
       "code": "theo.redox.oxnum-judge",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化と還元",
       "difficulty": 2,
       "tags": [
@@ -26312,7 +26810,7 @@
     },
     {
       "code": "theo.redox.o-h-definition",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化と還元",
       "difficulty": 2,
       "tags": [
@@ -26355,7 +26853,7 @@
     },
     {
       "code": "theo.redox.oxnum-def",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化数",
       "difficulty": 1,
       "tags": [
@@ -26399,7 +26897,7 @@
     },
     {
       "code": "theo.redox.oxnum-priority",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化数",
       "difficulty": 2,
       "tags": [
@@ -26445,7 +26943,7 @@
     },
     {
       "code": "theo.redox.oxnum-calc",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化数",
       "difficulty": 2,
       "tags": [
@@ -26489,7 +26987,7 @@
     },
     {
       "code": "theo.redox.oxnum-electroneg",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化数",
       "difficulty": 2,
       "tags": [
@@ -26532,7 +27030,7 @@
     },
     {
       "code": "theo.redox.oxnum-organic",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化数",
       "difficulty": 2,
       "tags": [
@@ -26579,7 +27077,7 @@
     },
     {
       "code": "theo.redox.max-oxnum",
-      "unit": "theoRedox",
+      "unit": "sec-redox-basics",
       "group": "酸化数",
       "difficulty": 2,
       "tags": [
@@ -26622,7 +27120,7 @@
     },
     {
       "code": "theo.redox.half-method",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "半反応式",
       "difficulty": 2,
       "tags": [
@@ -26667,7 +27165,7 @@
     },
     {
       "code": "theo.redox.half-electron",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "半反応式",
       "difficulty": 2,
       "tags": [
@@ -26710,7 +27208,7 @@
     },
     {
       "code": "theo.redox.oxidizer-products",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "半反応式",
       "difficulty": 2,
       "tags": [
@@ -26757,7 +27255,7 @@
     },
     {
       "code": "theo.redox.reducer-products",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "半反応式",
       "difficulty": 2,
       "tags": [
@@ -26802,7 +27300,7 @@
     },
     {
       "code": "theo.redox.dual-role",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "半反応式",
       "difficulty": 2,
       "tags": [
@@ -26847,7 +27345,7 @@
     },
     {
       "code": "theo.redox.basic-rewrite",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "液性による書き換え",
       "difficulty": 2,
       "tags": [
@@ -26890,7 +27388,7 @@
     },
     {
       "code": "theo.redox.water-half",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "液性による書き換え",
       "difficulty": 2,
       "tags": [
@@ -26936,7 +27434,7 @@
     },
     {
       "code": "theo.redox.ozone-half",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "液性による書き換え",
       "difficulty": 2,
       "tags": [
@@ -26981,7 +27479,7 @@
     },
     {
       "code": "theo.redox.mno4-neutral",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "液性による書き換え",
       "difficulty": 2,
       "tags": [
@@ -27024,7 +27522,7 @@
     },
     {
       "code": "theo.redox.valence",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "酸化還元反応式",
       "difficulty": 2,
       "tags": [
@@ -27070,7 +27568,7 @@
     },
     {
       "code": "theo.redox.inverse-ratio",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "酸化還元反応式",
       "difficulty": 2,
       "tags": [
@@ -27112,7 +27610,7 @@
     },
     {
       "code": "theo.redox.assemble",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "酸化還元反応式",
       "difficulty": 2,
       "tags": [
@@ -27156,7 +27654,7 @@
     },
     {
       "code": "theo.redox.copper-acids",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "酸化還元反応式",
       "difficulty": 2,
       "tags": [
@@ -27199,7 +27697,7 @@
     },
     {
       "code": "theo.redox.titration-relation",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "酸化還元滴定",
       "difficulty": 2,
       "tags": [
@@ -27242,7 +27740,7 @@
     },
     {
       "code": "theo.redox.kmno4-titration",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "酸化還元滴定",
       "difficulty": 2,
       "tags": [
@@ -27288,7 +27786,7 @@
     },
     {
       "code": "theo.redox.iodometry",
-      "unit": "theoRedox",
+      "unit": "sec-half-reaction",
       "group": "酸化還元滴定",
       "difficulty": 2,
       "tags": [
@@ -27333,7 +27831,7 @@
     },
     {
       "code": "theo.redox.ionization-series",
-      "unit": "theoRedox",
+      "unit": "sec-ionization-tendency",
       "group": "イオン化傾向",
       "difficulty": 1,
       "tags": [
@@ -27377,7 +27875,7 @@
     },
     {
       "code": "theo.redox.ionization-meaning",
-      "unit": "theoRedox",
+      "unit": "sec-ionization-tendency",
       "group": "イオン化傾向",
       "difficulty": 2,
       "tags": [
@@ -27419,7 +27917,7 @@
     },
     {
       "code": "theo.redox.metal-tree",
-      "unit": "theoRedox",
+      "unit": "sec-ionization-tendency",
       "group": "イオン化傾向",
       "difficulty": 2,
       "tags": [
@@ -27463,7 +27961,7 @@
     },
     {
       "code": "theo.redox.metal-water-acid",
-      "unit": "theoRedox",
+      "unit": "sec-ionization-tendency",
       "group": "イオン化傾向",
       "difficulty": 2,
       "tags": [
@@ -27510,7 +28008,7 @@
     },
     {
       "code": "theo.redox.passivation",
-      "unit": "theoRedox",
+      "unit": "sec-ionization-tendency",
       "group": "イオン化傾向",
       "difficulty": 2,
       "tags": [
@@ -27552,7 +28050,7 @@
     },
     {
       "code": "theo.electro.cell-poles",
-      "unit": "theoElectro",
+      "unit": "sec-cell-basics",
       "group": "電池の仕組み",
       "difficulty": 1,
       "tags": [
@@ -27599,7 +28097,7 @@
     },
     {
       "code": "theo.electro.daniell",
-      "unit": "theoElectro",
+      "unit": "sec-cell-basics",
       "group": "電池の仕組み",
       "difficulty": 2,
       "tags": [
@@ -27646,7 +28144,7 @@
     },
     {
       "code": "theo.electro.porous-plate",
-      "unit": "theoElectro",
+      "unit": "sec-cell-basics",
       "group": "電池の仕組み",
       "difficulty": 2,
       "tags": [
@@ -27688,7 +28186,7 @@
     },
     {
       "code": "theo.electro.which-positive",
-      "unit": "theoElectro",
+      "unit": "sec-cell-basics",
       "group": "電池の仕組み",
       "difficulty": 2,
       "tags": [
@@ -27732,7 +28230,7 @@
     },
     {
       "code": "theo.electro.primary-secondary",
-      "unit": "theoElectro",
+      "unit": "sec-fuel-cell",
       "group": "実用電池と燃料電池",
       "difficulty": 1,
       "tags": [
@@ -27777,7 +28275,7 @@
     },
     {
       "code": "theo.electro.fuel-cell-acid",
-      "unit": "theoElectro",
+      "unit": "sec-fuel-cell",
       "group": "実用電池と燃料電池",
       "difficulty": 2,
       "tags": [
@@ -27824,7 +28322,7 @@
     },
     {
       "code": "theo.electro.fuel-cell-alkaline",
-      "unit": "theoElectro",
+      "unit": "sec-fuel-cell",
       "group": "実用電池と燃料電池",
       "difficulty": 2,
       "tags": [
@@ -27866,7 +28364,7 @@
     },
     {
       "code": "theo.electro.lead-discharge",
-      "unit": "theoElectro",
+      "unit": "sec-fuel-cell",
       "group": "鉛蓄電池",
       "difficulty": 2,
       "tags": [
@@ -27911,7 +28409,7 @@
     },
     {
       "code": "theo.electro.lead-equations",
-      "unit": "theoElectro",
+      "unit": "sec-fuel-cell",
       "group": "鉛蓄電池",
       "difficulty": 2,
       "tags": [
@@ -27954,7 +28452,7 @@
     },
     {
       "code": "theo.electro.lead-mass",
-      "unit": "theoElectro",
+      "unit": "sec-fuel-cell",
       "group": "鉛蓄電池",
       "difficulty": 2,
       "tags": [
@@ -27998,7 +28496,7 @@
     },
     {
       "code": "theo.electro.lead-charge",
-      "unit": "theoElectro",
+      "unit": "sec-fuel-cell",
       "group": "鉛蓄電池",
       "difficulty": 2,
       "tags": [
@@ -28044,7 +28542,7 @@
     },
     {
       "code": "theo.electro.anode-cathode",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解で何が反応するか",
       "difficulty": 1,
       "tags": [
@@ -28087,7 +28585,7 @@
     },
     {
       "code": "theo.electro.anode-priority",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解で何が反応するか",
       "difficulty": 2,
       "tags": [
@@ -28133,7 +28631,7 @@
     },
     {
       "code": "theo.electro.cathode-priority",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解で何が反応するか",
       "difficulty": 2,
       "tags": [
@@ -28177,7 +28675,7 @@
     },
     {
       "code": "theo.electro.priority-why",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解で何が反応するか",
       "difficulty": 2,
       "tags": [
@@ -28221,7 +28719,7 @@
     },
     {
       "code": "theo.electro.electrode-equations",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の反応式",
       "difficulty": 2,
       "tags": [
@@ -28267,7 +28765,7 @@
     },
     {
       "code": "theo.electro.metal-halogen-eq",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の反応式",
       "difficulty": 2,
       "tags": [
@@ -28309,7 +28807,7 @@
     },
     {
       "code": "theo.electro.write-rule",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の反応式",
       "difficulty": 2,
       "tags": [
@@ -28353,7 +28851,7 @@
     },
     {
       "code": "theo.electro.faraday-constant",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の量的関係",
       "difficulty": 2,
       "tags": [
@@ -28395,7 +28893,7 @@
     },
     {
       "code": "theo.electro.faraday-steps",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の量的関係",
       "difficulty": 2,
       "tags": [
@@ -28439,7 +28937,7 @@
     },
     {
       "code": "theo.electro.align-electrons",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の量的関係",
       "difficulty": 2,
       "tags": [
@@ -28483,7 +28981,7 @@
     },
     {
       "code": "theo.electro.series-circuit",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の量的関係",
       "difficulty": 2,
       "tags": [
@@ -28525,7 +29023,7 @@
     },
     {
       "code": "theo.electro.parallel-circuit",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の量的関係",
       "difficulty": 2,
       "tags": [
@@ -28569,7 +29067,7 @@
     },
     {
       "code": "theo.electro.ion-exchange-membrane",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の工業的利用",
       "difficulty": 2,
       "tags": [
@@ -28615,7 +29113,7 @@
     },
     {
       "code": "theo.electro.copper-refining",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の工業的利用",
       "difficulty": 2,
       "tags": [
@@ -28657,7 +29155,7 @@
     },
     {
       "code": "theo.electro.molten-salt",
-      "unit": "theoElectro",
+      "unit": "sec-electrolysis-basics",
       "group": "電気分解の工業的利用",
       "difficulty": 2,
       "tags": [
@@ -28703,7 +29201,7 @@
     },
     {
       "code": "theo.state.absolute-temperature",
-      "unit": "theoState",
+      "unit": "sec-states-of-matter",
       "group": "三態と状態変化",
       "difficulty": 1,
       "tags": [
@@ -28747,7 +29245,7 @@
     },
     {
       "code": "theo.state.three-states",
-      "unit": "theoState",
+      "unit": "sec-states-of-matter",
       "group": "三態と状態変化",
       "difficulty": 1,
       "tags": [
@@ -28790,7 +29288,7 @@
     },
     {
       "code": "theo.state.phase-change",
-      "unit": "theoState",
+      "unit": "sec-states-of-matter",
       "group": "三態と状態変化",
       "difficulty": 1,
       "tags": [
@@ -28836,7 +29334,7 @@
     },
     {
       "code": "theo.state.heating-curve",
-      "unit": "theoState",
+      "unit": "sec-states-of-matter",
       "group": "三態と状態変化",
       "difficulty": 2,
       "tags": [
@@ -28882,7 +29380,7 @@
     },
     {
       "code": "theo.state.phase-diagram",
-      "unit": "theoState",
+      "unit": "sec-states-of-matter",
       "group": "三態と状態変化",
       "difficulty": 2,
       "tags": [
@@ -28926,7 +29424,7 @@
     },
     {
       "code": "theo.state.vapor-liquid-equilibrium",
-      "unit": "theoState",
+      "unit": "sec-vapor-pressure",
       "group": "蒸気圧と沸騰",
       "difficulty": 1,
       "tags": [
@@ -28969,7 +29467,7 @@
     },
     {
       "code": "theo.state.vapor-pressure-property",
-      "unit": "theoState",
+      "unit": "sec-vapor-pressure",
       "group": "蒸気圧と沸騰",
       "difficulty": 2,
       "tags": [
@@ -29015,7 +29513,7 @@
     },
     {
       "code": "theo.state.vapor-pressure-max",
-      "unit": "theoState",
+      "unit": "sec-vapor-pressure",
       "group": "蒸気圧と沸騰",
       "difficulty": 2,
       "tags": [
@@ -29059,7 +29557,7 @@
     },
     {
       "code": "theo.state.vapor-pressure-curve",
-      "unit": "theoState",
+      "unit": "sec-vapor-pressure",
       "group": "蒸気圧と沸騰",
       "difficulty": 2,
       "tags": [
@@ -29105,7 +29603,7 @@
     },
     {
       "code": "theo.state.boiling-point",
-      "unit": "theoState",
+      "unit": "sec-vapor-pressure",
       "group": "蒸気圧と沸騰",
       "difficulty": 1,
       "tags": [
@@ -29149,7 +29647,7 @@
     },
     {
       "code": "theo.state.boyle-charles",
-      "unit": "theoState",
+      "unit": "sec-gas-laws",
       "group": "気体の法則",
       "difficulty": 1,
       "tags": [
@@ -29193,7 +29691,7 @@
     },
     {
       "code": "theo.state.ideal-gas-law",
-      "unit": "theoState",
+      "unit": "sec-gas-laws",
       "group": "気体の法則",
       "difficulty": 2,
       "tags": [
@@ -29236,7 +29734,7 @@
     },
     {
       "code": "theo.state.molar-volume",
-      "unit": "theoState",
+      "unit": "sec-gas-laws",
       "group": "気体の法則",
       "difficulty": 2,
       "tags": [
@@ -29282,7 +29780,7 @@
     },
     {
       "code": "theo.state.gas-molar-mass",
-      "unit": "theoState",
+      "unit": "sec-gas-laws",
       "group": "気体の法則",
       "difficulty": 2,
       "tags": [
@@ -29326,7 +29824,7 @@
     },
     {
       "code": "theo.state.partial-pressure",
-      "unit": "theoState",
+      "unit": "sec-gas-mixture",
       "group": "混合気体",
       "difficulty": 1,
       "tags": [
@@ -29369,7 +29867,7 @@
     },
     {
       "code": "theo.state.mole-fraction",
-      "unit": "theoState",
+      "unit": "sec-gas-mixture",
       "group": "混合気体",
       "difficulty": 2,
       "tags": [
@@ -29413,7 +29911,7 @@
     },
     {
       "code": "theo.state.component-volume",
-      "unit": "theoState",
+      "unit": "sec-gas-mixture",
       "group": "混合気体",
       "difficulty": 2,
       "tags": [
@@ -29458,7 +29956,7 @@
     },
     {
       "code": "theo.state.mixing-gases",
-      "unit": "theoState",
+      "unit": "sec-gas-mixture",
       "group": "混合気体",
       "difficulty": 2,
       "tags": [
@@ -29501,7 +29999,7 @@
     },
     {
       "code": "theo.state.pressure-table",
-      "unit": "theoState",
+      "unit": "sec-gas-mixture",
       "group": "水蒸気を含む気体",
       "difficulty": 2,
       "tags": [
@@ -29547,7 +30045,7 @@
     },
     {
       "code": "theo.state.vapor-assume",
-      "unit": "theoState",
+      "unit": "sec-gas-mixture",
       "group": "水蒸気を含む気体",
       "difficulty": 2,
       "tags": [
@@ -29591,7 +30089,7 @@
     },
     {
       "code": "theo.state.water-displacement",
-      "unit": "theoState",
+      "unit": "sec-gas-mixture",
       "group": "水蒸気を含む気体",
       "difficulty": 2,
       "tags": [
@@ -29635,7 +30133,7 @@
     },
     {
       "code": "theo.state.ideal-gas",
-      "unit": "theoState",
+      "unit": "sec-real-gas",
       "group": "実在気体",
       "difficulty": 1,
       "tags": [
@@ -29679,7 +30177,7 @@
     },
     {
       "code": "theo.state.real-gas-deviation",
-      "unit": "theoState",
+      "unit": "sec-real-gas",
       "group": "実在気体",
       "difficulty": 2,
       "tags": [
@@ -29723,7 +30221,7 @@
     },
     {
       "code": "theo.state.compressibility",
-      "unit": "theoState",
+      "unit": "sec-real-gas",
       "group": "実在気体",
       "difficulty": 2,
       "tags": [
@@ -29769,7 +30267,7 @@
     },
     {
       "code": "theo.state.gas-pressure",
-      "unit": "theoState",
+      "unit": "sec-states-of-matter",
       "group": "三態と状態変化",
       "difficulty": 2,
       "tags": [
@@ -29813,7 +30311,7 @@
     },
     {
       "code": "theo.state.pressure-units",
-      "unit": "theoState",
+      "unit": "sec-states-of-matter",
       "group": "三態と状態変化",
       "difficulty": 2,
       "tags": [
@@ -29859,7 +30357,7 @@
     },
     {
       "code": "theo.solution.hydration",
-      "unit": "theoSolution",
+      "unit": "sec-dissolution",
       "group": "溶解のしくみ",
       "difficulty": 2,
       "tags": [
@@ -29903,7 +30401,7 @@
     },
     {
       "code": "theo.solution.like-dissolves-like",
-      "unit": "theoSolution",
+      "unit": "sec-dissolution",
       "group": "溶解のしくみ",
       "difficulty": 2,
       "tags": [
@@ -29949,7 +30447,7 @@
     },
     {
       "code": "theo.solution.hydrophilic-group",
-      "unit": "theoSolution",
+      "unit": "sec-dissolution",
       "group": "溶解のしくみ",
       "difficulty": 2,
       "tags": [
@@ -29992,7 +30490,7 @@
     },
     {
       "code": "theo.solution.electrolyte",
-      "unit": "theoSolution",
+      "unit": "sec-dissolution",
       "group": "溶解のしくみ",
       "difficulty": 1,
       "tags": [
@@ -30037,7 +30535,7 @@
     },
     {
       "code": "theo.solution.solubility-def",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "固体の溶解度",
       "difficulty": 1,
       "tags": [
@@ -30081,7 +30579,7 @@
     },
     {
       "code": "theo.solution.solubility-curve",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "固体の溶解度",
       "difficulty": 2,
       "tags": [
@@ -30127,7 +30625,7 @@
     },
     {
       "code": "theo.solution.recrystallization",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "固体の溶解度",
       "difficulty": 2,
       "tags": [
@@ -30171,7 +30669,7 @@
     },
     {
       "code": "theo.solution.evaporation",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "固体の溶解度",
       "difficulty": 2,
       "tags": [
@@ -30213,7 +30711,7 @@
     },
     {
       "code": "theo.solution.hydrate",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "固体の溶解度",
       "difficulty": 2,
       "tags": [
@@ -30257,7 +30755,7 @@
     },
     {
       "code": "theo.solution.gas-temperature",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "気体の溶解度",
       "difficulty": 1,
       "tags": [
@@ -30300,7 +30798,7 @@
     },
     {
       "code": "theo.solution.henry",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "気体の溶解度",
       "difficulty": 2,
       "tags": [
@@ -30345,7 +30843,7 @@
     },
     {
       "code": "theo.solution.henry-volume",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "気体の溶解度",
       "difficulty": 2,
       "tags": [
@@ -30389,7 +30887,7 @@
     },
     {
       "code": "theo.solution.gas-daily-life",
-      "unit": "theoSolution",
+      "unit": "sec-solubility",
       "group": "気体の溶解度",
       "difficulty": 2,
       "tags": [
@@ -30432,7 +30930,7 @@
     },
     {
       "code": "theo.solution.vapor-pressure-lowering",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "希薄溶液の性質",
       "difficulty": 2,
       "tags": [
@@ -30474,7 +30972,7 @@
     },
     {
       "code": "theo.solution.colligative",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "希薄溶液の性質",
       "difficulty": 2,
       "tags": [
@@ -30520,7 +31018,7 @@
     },
     {
       "code": "theo.solution.particle-count",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "希薄溶液の性質",
       "difficulty": 2,
       "tags": [
@@ -30566,7 +31064,7 @@
     },
     {
       "code": "theo.solution.cooling-curve",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "希薄溶液の性質",
       "difficulty": 2,
       "tags": [
@@ -30610,7 +31108,7 @@
     },
     {
       "code": "theo.solution.freezing-molar-mass",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "希薄溶液の性質",
       "difficulty": 2,
       "tags": [
@@ -30654,7 +31152,7 @@
     },
     {
       "code": "theo.solution.association",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "希薄溶液の性質",
       "difficulty": 4,
       "tags": [
@@ -30696,7 +31194,7 @@
     },
     {
       "code": "theo.solution.osmosis",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "浸透圧",
       "difficulty": 1,
       "tags": [
@@ -30741,7 +31239,7 @@
     },
     {
       "code": "theo.solution.van-t-hoff",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "浸透圧",
       "difficulty": 2,
       "tags": [
@@ -30785,7 +31283,7 @@
     },
     {
       "code": "theo.solution.osmotic-molar-mass",
-      "unit": "theoSolution",
+      "unit": "sec-colligative",
       "group": "浸透圧",
       "difficulty": 2,
       "tags": [
@@ -30829,7 +31327,7 @@
     },
     {
       "code": "theo.solution.colloid-size",
-      "unit": "theoSolution",
+      "unit": "sec-colloid",
       "group": "コロイド",
       "difficulty": 1,
       "tags": [
@@ -30876,7 +31374,7 @@
     },
     {
       "code": "theo.solution.colloid-kinds",
-      "unit": "theoSolution",
+      "unit": "sec-colloid",
       "group": "コロイド",
       "difficulty": 2,
       "tags": [
@@ -30920,7 +31418,7 @@
     },
     {
       "code": "theo.solution.iron-colloid",
-      "unit": "theoSolution",
+      "unit": "sec-colloid",
       "group": "コロイド",
       "difficulty": 2,
       "tags": [
@@ -30965,7 +31463,7 @@
     },
     {
       "code": "theo.solution.colloid-properties",
-      "unit": "theoSolution",
+      "unit": "sec-colloid",
       "group": "コロイド",
       "difficulty": 2,
       "tags": [
@@ -31008,7 +31506,7 @@
     },
     {
       "code": "theo.solution.coagulation",
-      "unit": "theoSolution",
+      "unit": "sec-colloid",
       "group": "コロイド",
       "difficulty": 2,
       "tags": [
@@ -31051,7 +31549,7 @@
     },
     {
       "code": "theo.solution.salting-out",
-      "unit": "theoSolution",
+      "unit": "sec-colloid",
       "group": "コロイド",
       "difficulty": 2,
       "tags": [
@@ -31097,7 +31595,7 @@
     },
     {
       "code": "theo.thermo.delta-h-sign",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "反応エンタルピー",
       "difficulty": 1,
       "tags": [
@@ -31140,7 +31638,7 @@
     },
     {
       "code": "theo.thermo.equation-writing",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "反応エンタルピー",
       "difficulty": 2,
       "tags": [
@@ -31184,7 +31682,7 @@
     },
     {
       "code": "theo.thermo.named-enthalpy",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "反応エンタルピー",
       "difficulty": 2,
       "tags": [
@@ -31229,7 +31727,7 @@
     },
     {
       "code": "theo.thermo.element-zero",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "反応エンタルピー",
       "difficulty": 2,
       "tags": [
@@ -31275,7 +31773,7 @@
     },
     {
       "code": "theo.thermo.neutralization-dissolution",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "反応エンタルピー",
       "difficulty": 2,
       "tags": [
@@ -31322,7 +31820,7 @@
     },
     {
       "code": "theo.thermo.heat-quantity",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "熱量の測定",
       "difficulty": 2,
       "tags": [
@@ -31365,7 +31863,7 @@
     },
     {
       "code": "theo.thermo.extrapolation",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "熱量の測定",
       "difficulty": 2,
       "tags": [
@@ -31409,7 +31907,7 @@
     },
     {
       "code": "theo.thermo.heat-to-enthalpy",
-      "unit": "theoThermo",
+      "unit": "sec-reaction-enthalpy",
       "group": "熱量の測定",
       "difficulty": 2,
       "tags": [
@@ -31451,7 +31949,7 @@
     },
     {
       "code": "theo.thermo.hess-law",
-      "unit": "theoThermo",
+      "unit": "sec-hess-law",
       "group": "ヘスの法則",
       "difficulty": 2,
       "tags": [
@@ -31493,7 +31991,7 @@
     },
     {
       "code": "theo.thermo.hess-diagram",
-      "unit": "theoThermo",
+      "unit": "sec-hess-law",
       "group": "ヘスの法則",
       "difficulty": 2,
       "tags": [
@@ -31537,7 +32035,7 @@
     },
     {
       "code": "theo.thermo.from-formation",
-      "unit": "theoThermo",
+      "unit": "sec-hess-law",
       "group": "ヘスの法則",
       "difficulty": 2,
       "tags": [
@@ -31581,7 +32079,7 @@
     },
     {
       "code": "theo.thermo.hess-algebra",
-      "unit": "theoThermo",
+      "unit": "sec-hess-law",
       "group": "ヘスの法則",
       "difficulty": 2,
       "tags": [
@@ -31627,7 +32125,7 @@
     },
     {
       "code": "theo.thermo.bond-enthalpy",
-      "unit": "theoThermo",
+      "unit": "sec-hess-law",
       "group": "結合エンタルピー",
       "difficulty": 2,
       "tags": [
@@ -31671,7 +32169,7 @@
     },
     {
       "code": "theo.thermo.bond-calc",
-      "unit": "theoThermo",
+      "unit": "sec-hess-law",
       "group": "結合エンタルピー",
       "difficulty": 2,
       "tags": [
@@ -31713,7 +32211,7 @@
     },
     {
       "code": "theo.thermo.bond-gas-only",
-      "unit": "theoThermo",
+      "unit": "sec-hess-law",
       "group": "結合エンタルピー",
       "difficulty": 2,
       "tags": [
@@ -31759,7 +32257,7 @@
     },
     {
       "code": "theo.thermo.light-wavelength",
-      "unit": "theoThermo",
+      "unit": "sec-light-energy",
       "group": "化学反応と光",
       "difficulty": 2,
       "tags": [
@@ -31805,7 +32303,7 @@
     },
     {
       "code": "theo.thermo.photochemical",
-      "unit": "theoThermo",
+      "unit": "sec-light-energy",
       "group": "化学反応と光",
       "difficulty": 2,
       "tags": [
@@ -31851,7 +32349,7 @@
     },
     {
       "code": "theo.thermo.photosynthesis",
-      "unit": "theoThermo",
+      "unit": "sec-light-energy",
       "group": "化学反応と光",
       "difficulty": 2,
       "tags": [
@@ -31894,7 +32392,7 @@
     },
     {
       "code": "theo.thermo.chemiluminescence",
-      "unit": "theoThermo",
+      "unit": "sec-light-energy",
       "group": "化学反応と光",
       "difficulty": 2,
       "tags": [
@@ -31939,7 +32437,7 @@
     },
     {
       "code": "theo.thermo.entropy-def",
-      "unit": "theoThermo",
+      "unit": "sec-entropy",
       "group": "エントロピー",
       "difficulty": 1,
       "tags": [
@@ -31982,7 +32480,7 @@
     },
     {
       "code": "theo.thermo.entropy-sign",
-      "unit": "theoThermo",
+      "unit": "sec-entropy",
       "group": "エントロピー",
       "difficulty": 2,
       "tags": [
@@ -32027,7 +32525,7 @@
     },
     {
       "code": "theo.thermo.two-tendencies",
-      "unit": "theoThermo",
+      "unit": "sec-entropy",
       "group": "エントロピー",
       "difficulty": 2,
       "tags": [
@@ -32073,7 +32571,7 @@
     },
     {
       "code": "theo.thermo.entropy-temperature",
-      "unit": "theoThermo",
+      "unit": "sec-entropy",
       "group": "エントロピー",
       "difficulty": 2,
       "tags": [
@@ -32116,7 +32614,7 @@
     },
     {
       "code": "theo.thermo.spontaneous-vs-rate",
-      "unit": "theoThermo",
+      "unit": "sec-entropy",
       "group": "エントロピー",
       "difficulty": 2,
       "tags": [
@@ -32160,7 +32658,7 @@
     },
     {
       "code": "theo.thermo.gibbs-energy",
-      "unit": "theoThermo",
+      "unit": "sec-entropy",
       "group": "エントロピー",
       "difficulty": 4,
       "tags": [
@@ -32206,7 +32704,7 @@
     },
     {
       "code": "theo.kinetics.rate-expression",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度の表し方",
       "difficulty": 2,
       "tags": [
@@ -32250,7 +32748,7 @@
     },
     {
       "code": "theo.kinetics.rate-ratio",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度の表し方",
       "difficulty": 2,
       "tags": [
@@ -32292,7 +32790,7 @@
     },
     {
       "code": "theo.kinetics.average-rate",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度の表し方",
       "difficulty": 2,
       "tags": [
@@ -32338,7 +32836,7 @@
     },
     {
       "code": "theo.kinetics.rate-determining",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度式",
       "difficulty": 2,
       "tags": [
@@ -32380,7 +32878,7 @@
     },
     {
       "code": "theo.kinetics.rate-equation",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度式",
       "difficulty": 2,
       "tags": [
@@ -32424,7 +32922,7 @@
     },
     {
       "code": "theo.kinetics.first-order-exception",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度式",
       "difficulty": 2,
       "tags": [
@@ -32469,7 +32967,7 @@
     },
     {
       "code": "theo.kinetics.order-from-data",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度式",
       "difficulty": 2,
       "tags": [
@@ -32513,7 +33011,7 @@
     },
     {
       "code": "theo.kinetics.first-order-data",
-      "unit": "theoKinetics",
+      "unit": "sec-reaction-rate",
       "group": "反応速度式",
       "difficulty": 2,
       "tags": [
@@ -32560,7 +33058,7 @@
     },
     {
       "code": "theo.kinetics.rate-factors",
-      "unit": "theoKinetics",
+      "unit": "sec-activation-energy",
       "group": "活性化エネルギー",
       "difficulty": 2,
       "tags": [
@@ -32604,7 +33102,7 @@
     },
     {
       "code": "theo.kinetics.temperature",
-      "unit": "theoKinetics",
+      "unit": "sec-activation-energy",
       "group": "活性化エネルギー",
       "difficulty": 2,
       "tags": [
@@ -32646,7 +33144,7 @@
     },
     {
       "code": "theo.kinetics.transition-state",
-      "unit": "theoKinetics",
+      "unit": "sec-activation-energy",
       "group": "活性化エネルギー",
       "difficulty": 2,
       "tags": [
@@ -32692,7 +33190,7 @@
     },
     {
       "code": "theo.kinetics.catalyst",
-      "unit": "theoKinetics",
+      "unit": "sec-activation-energy",
       "group": "活性化エネルギー",
       "difficulty": 2,
       "tags": [
@@ -32736,7 +33234,7 @@
     },
     {
       "code": "theo.kinetics.catalyst-kinds",
-      "unit": "theoKinetics",
+      "unit": "sec-activation-energy",
       "group": "活性化エネルギー",
       "difficulty": 2,
       "tags": [
@@ -32783,7 +33281,7 @@
     },
     {
       "code": "theo.equilibrium.equilibrium-state",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "平衡定数",
       "difficulty": 1,
       "tags": [
@@ -32825,7 +33323,7 @@
     },
     {
       "code": "theo.equilibrium.constant-expression",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "平衡定数",
       "difficulty": 2,
       "tags": [
@@ -32871,7 +33369,7 @@
     },
     {
       "code": "theo.equilibrium.solid-water",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "平衡定数",
       "difficulty": 2,
       "tags": [
@@ -32917,7 +33415,7 @@
     },
     {
       "code": "theo.equilibrium.k-calculation",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "平衡定数",
       "difficulty": 2,
       "tags": [
@@ -32963,7 +33461,7 @@
     },
     {
       "code": "theo.equilibrium.mol-shortcut",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "平衡定数",
       "difficulty": 2,
       "tags": [
@@ -33006,7 +33504,7 @@
     },
     {
       "code": "theo.equilibrium.distribution",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "平衡定数",
       "difficulty": 2,
       "tags": [
@@ -33048,7 +33546,7 @@
     },
     {
       "code": "theo.equilibrium.le-chatelier",
-      "unit": "theoEquilibrium",
+      "unit": "sec-le-chatelier",
       "group": "平衡の移動",
       "difficulty": 2,
       "tags": [
@@ -33092,7 +33590,7 @@
     },
     {
       "code": "theo.equilibrium.pressure-shift",
-      "unit": "theoEquilibrium",
+      "unit": "sec-le-chatelier",
       "group": "平衡の移動",
       "difficulty": 2,
       "tags": [
@@ -33134,7 +33632,7 @@
     },
     {
       "code": "theo.equilibrium.inert-gas",
-      "unit": "theoEquilibrium",
+      "unit": "sec-le-chatelier",
       "group": "平衡の移動",
       "difficulty": 2,
       "tags": [
@@ -33176,7 +33674,7 @@
     },
     {
       "code": "theo.equilibrium.catalyst-temperature",
-      "unit": "theoEquilibrium",
+      "unit": "sec-le-chatelier",
       "group": "平衡の移動",
       "difficulty": 2,
       "tags": [
@@ -33220,7 +33718,7 @@
     },
     {
       "code": "theo.equilibrium.volume-trap",
-      "unit": "theoEquilibrium",
+      "unit": "sec-le-chatelier",
       "group": "平衡の移動",
       "difficulty": 2,
       "tags": [
@@ -33264,7 +33762,7 @@
     },
     {
       "code": "theo.equilibrium.haber-bosch",
-      "unit": "theoEquilibrium",
+      "unit": "sec-le-chatelier",
       "group": "平衡の移動",
       "difficulty": 2,
       "tags": [
@@ -33311,7 +33809,7 @@
     },
     {
       "code": "theo.equilibrium.kp-kc",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "圧平衡定数",
       "difficulty": 2,
       "tags": [
@@ -33353,7 +33851,7 @@
     },
     {
       "code": "theo.equilibrium.dissociation",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "圧平衡定数",
       "difficulty": 2,
       "tags": [
@@ -33397,7 +33895,7 @@
     },
     {
       "code": "theo.equilibrium.dissociation-approx",
-      "unit": "theoEquilibrium",
+      "unit": "sec-equilibrium-constant",
       "group": "圧平衡定数",
       "difficulty": 2,
       "tags": [
@@ -33443,7 +33941,7 @@
     },
     {
       "code": "theo.ionic-eq.ionization-constant",
-      "unit": "theoIonicEq",
+      "unit": "sec-weak-acid-equilibrium",
       "group": "弱酸の電離平衡",
       "difficulty": 2,
       "tags": [
@@ -33487,7 +33985,7 @@
     },
     {
       "code": "theo.ionic-eq.ka-c-alpha",
-      "unit": "theoIonicEq",
+      "unit": "sec-weak-acid-equilibrium",
       "group": "弱酸の電離平衡",
       "difficulty": 2,
       "tags": [
@@ -33533,7 +34031,7 @@
     },
     {
       "code": "theo.ionic-eq.weak-ph",
-      "unit": "theoIonicEq",
+      "unit": "sec-weak-acid-equilibrium",
       "group": "弱酸の電離平衡",
       "difficulty": 2,
       "tags": [
@@ -33575,7 +34073,7 @@
     },
     {
       "code": "theo.ionic-eq.weak-dilution",
-      "unit": "theoIonicEq",
+      "unit": "sec-weak-acid-equilibrium",
       "group": "弱酸の電離平衡",
       "difficulty": 2,
       "tags": [
@@ -33617,7 +34115,7 @@
     },
     {
       "code": "theo.ionic-eq.hydrolysis-equation",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "塩の加水分解",
       "difficulty": 2,
       "tags": [
@@ -33659,7 +34157,7 @@
     },
     {
       "code": "theo.ionic-eq.hydrolysis-constant",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "塩の加水分解",
       "difficulty": 2,
       "tags": [
@@ -33705,7 +34203,7 @@
     },
     {
       "code": "theo.ionic-eq.ka-kh-kw",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "塩の加水分解",
       "difficulty": 2,
       "tags": [
@@ -33747,7 +34245,7 @@
     },
     {
       "code": "theo.ionic-eq.salt-ph",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "塩の加水分解",
       "difficulty": 2,
       "tags": [
@@ -33791,7 +34289,7 @@
     },
     {
       "code": "theo.ionic-eq.buffer-mechanism",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "緩衝液",
       "difficulty": 2,
       "tags": [
@@ -33833,7 +34331,7 @@
     },
     {
       "code": "theo.ionic-eq.buffer-pair",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "緩衝液",
       "difficulty": 2,
       "tags": [
@@ -33880,7 +34378,7 @@
     },
     {
       "code": "theo.ionic-eq.buffer-ph",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "緩衝液",
       "difficulty": 2,
       "tags": [
@@ -33924,7 +34422,7 @@
     },
     {
       "code": "theo.ionic-eq.buffer-titration",
-      "unit": "theoIonicEq",
+      "unit": "sec-hydrolysis-ph",
       "group": "緩衝液",
       "difficulty": 2,
       "tags": [
@@ -33971,7 +34469,7 @@
     },
     {
       "code": "theo.ionic-eq.polyprotic",
-      "unit": "theoIonicEq",
+      "unit": "sec-weak-acid-equilibrium",
       "group": "2段階電離",
       "difficulty": 2,
       "tags": [
@@ -34016,7 +34514,7 @@
     },
     {
       "code": "theo.ionic-eq.k1k2",
-      "unit": "theoIonicEq",
+      "unit": "sec-weak-acid-equilibrium",
       "group": "2段階電離",
       "difficulty": 2,
       "tags": [
@@ -34062,7 +34560,7 @@
     },
     {
       "code": "theo.ionic-eq.second-step",
-      "unit": "theoIonicEq",
+      "unit": "sec-weak-acid-equilibrium",
       "group": "2段階電離",
       "difficulty": 2,
       "tags": [
@@ -34104,7 +34602,7 @@
     },
     {
       "code": "theo.ionic-eq.ksp",
-      "unit": "theoIonicEq",
+      "unit": "sec-solubility-product",
       "group": "溶解度積",
       "difficulty": 2,
       "tags": [
@@ -34146,7 +34644,7 @@
     },
     {
       "code": "theo.ionic-eq.precipitation-judge",
-      "unit": "theoIonicEq",
+      "unit": "sec-solubility-product",
       "group": "溶解度積",
       "difficulty": 2,
       "tags": [
@@ -34190,7 +34688,7 @@
     },
     {
       "code": "theo.ionic-eq.ksp-saturated",
-      "unit": "theoIonicEq",
+      "unit": "sec-solubility-product",
       "group": "溶解度積",
       "difficulty": 2,
       "tags": [
@@ -34232,7 +34730,7 @@
     },
     {
       "code": "theo.ionic-eq.mohr",
-      "unit": "theoIonicEq",
+      "unit": "sec-solubility-product",
       "group": "溶解度積",
       "difficulty": 2,
       "tags": [
@@ -34277,7 +34775,7 @@
     },
     {
       "code": "theo.ionic-eq.common-ion",
-      "unit": "theoIonicEq",
+      "unit": "sec-solubility-product",
       "group": "溶解度積",
       "difficulty": 2,
       "tags": [
@@ -34322,7 +34820,7 @@
     },
     {
       "code": "theo.ionic-eq.sulfide",
-      "unit": "theoIonicEq",
+      "unit": "sec-solubility-product",
       "group": "溶解度積",
       "difficulty": 2,
       "tags": [

@@ -205,9 +205,12 @@ function slTrack(name, params) {
     });
   }
 
-  // ---------- 分野（有機・無機・理論） ----------
-  // 単元の category_l（「有機化学」など）から「化学」を落とした名前で束ねる。並びはデータの順（参考書の目次と同じ）
-  function domainOf(u) { return String(u.category_l || '').replace(/化学$/, '') || 'その他'; }
+  // ---------- 科目（化学基礎・化学）と編 ----------
+  // ★ 2026-09-23: 単元は教科書の章立て（参考書の目次 reference-src/TOC.txt と同じ節）。
+  //   タブは科目、タブの中は編の見出しで区切る。⚠ 前は分野（有機・無機・理論）で、
+  //   無機が4単元・有機が17単元と粒度がそろっていなかった（ユーザー指摘）。並びはデータの順（教科書順）
+  var COURSE_NAME = { basic: '化学基礎', adv: '化学' };
+  function domainOf(u) { return COURSE_NAME[u.course] || 'その他'; }
   function domainList() {
     var out = [];
     DATA.units.forEach(function (u) { if (out.indexOf(domainOf(u)) < 0) out.push(domainOf(u)); });
@@ -251,6 +254,7 @@ function slTrack(name, params) {
       });
     });
 
+    var lastPart = null;
     DATA.units.forEach(function (u) {
       var ps = patternsOf(u.id);
       var total = ps.length;
@@ -259,8 +263,16 @@ function slTrack(name, params) {
       var started = ps.filter(function (p) { return rec(p.code).seen > 0; }).length;
       var pct = total ? Math.round((mastered / total) * 100) : 0;
 
+      // 編の変わり目に見出し（同じ科目の中で）。⚠ 単元カードは .unit ＝ 見出しは数えない
+      if (u.part && u.part !== lastPart) {
+        lastPart = u.part;
+        var ph = document.createElement('h3');
+        ph.className = 'part-head' + (domainOf(u) === curDomain ? '' : ' hidden');
+        ph.textContent = u.part;
+        host.appendChild(ph);
+      }
       var el = document.createElement('div');
-      // 選んでいない分野のカードは隠すだけ（DOM には残す ＝ 飛び道具・テストがボタンを引ける）
+      // 選んでいない科目のカードは隠すだけ（DOM には残す ＝ 飛び道具・テストがボタンを引ける）
       el.className = 'unit' + (domainOf(u) === curDomain ? '' : ' hidden');
       el.setAttribute('data-domain', domainOf(u));
       el.innerHTML =
@@ -347,10 +359,11 @@ function slTrack(name, params) {
     });
     var lastDom = null;
     DATA.units.forEach(function (u) {
-      // 分野の変わり目に1行の見出し（有機・無機・理論が1本の列に続いて見えないように）
-      if (domainOf(u) !== lastDom) {
-        lastDom = domainOf(u);
-        html += '<div class="gd">' + esc(lastDom) + '</div>';
+      // 科目・編の変わり目に1行の見出し（化学基礎 ／ 第1編 物質の構成）
+      var dk = domainOf(u) + ' ／ ' + (u.part || '');
+      if (dk !== lastDom) {
+        lastDom = dk;
+        html += '<div class="gd">' + esc(dk) + '</div>';
       }
       html += '<div class="gr">' + esc(u.name) + '</div>';
       [1, 2, 3, 4].forEach(function (lv) {
@@ -1280,7 +1293,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=150')
+  fetch('data/exam_usage.jsonl?v=151')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -1295,7 +1308,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=150')
+  fetch('questions.json?v=151')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {

@@ -178,16 +178,32 @@ function runDataTests(DATA) {
   //   その後ろに足した**。無機・理論の並びは**参考書の ORDER.txt の順**（無機 → 理論）にそろえた
   //   ＝ 参考書でページを読む順と、一問一答の単元の順が同じになる
   //   ★ theoLife（化学と人間生活・2026-09-23）は理論の先頭。参考書でも序章が理論の先頭にあるため
-  t("単元: 33単元（有機17・無機4・理論12）が並び順どおりで、旧 id が残っていない", function () {
-    var want = ["anal", "aliphatic", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
-      "aroAcid", "aroNitrogen", "aroSep", "sugar", "aminoAcid", "protein", "nucleic", "poly", "structure",
-      "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual",
-      "theoLife",
-      "theoStructure", "theoMole", "theoAcidBase", "theoRedox", "theoElectro", "theoState",
-      "theoSolution", "theoThermo", "theoKinetics", "theoEquilibrium", "theoIonicEq"];
+  // ★★ 2026-09-23 夜: 単元を**教科書の章立て**に組み直した（ユーザー「化学基礎・化学の区別を明確に」
+  //   「無機と有機で粒度が異なる・無機の単元が少なすぎる」「無機の土台という単元が不適」）。
+  //   無機・理論の単元 ＝ 参考書の目次（reference-src/TOC.txt）の節。id は「sec-<節の本体の先頭ページ id>」。
+  //   並びは教科書順（化学基礎 → 化学）。有機の17単元（ユーザー決定の並び）は第4編・第5編の位置にそのまま入る。
+  //   ★ 組み直しの道具は scratchpad の qa-units.js（統合セッション）。項目コードは学習記録のキーなので変えていない
+  t("単元: 教科書の章立て（科目・編つき）で、有機17単元の並びが崩れず、旧 id が残っていない", function () {
+    var ORG = ["anal", "aliphatic", "alcohol", "aldketone", "carboxyl", "fat", "aro", "phenol",
+      "aroAcid", "aroNitrogen", "aroSep", "structure", "sugar", "aminoAcid", "protein", "nucleic", "poly"];
     var got = units.map(function (u) { return u.id; });
-    assert(got.join(",") === want.join(","), "単元の並びが違う: " + got.join(","));
-    ["carbonyl", "aroN", "bio", "clue"].forEach(function (old) {
+    assert(got.filter(function (id) { return ORG.indexOf(id) >= 0; }).join(",") === ORG.join(","),
+      "有機の単元の並びが違う: " + got.filter(function (id) { return ORG.indexOf(id) >= 0; }).join(","));
+    units.forEach(function (u) {
+      assert(u.course === "basic" || u.course === "adv", u.id + ": course（科目）が basic / adv でない");
+      assert(u.part, u.id + ": part（編）が無い");
+      assert(ORG.indexOf(u.id) >= 0 || /^sec-[a-z0-9-]+$/.test(u.id), u.id + ": 無機・理論の単元 id が sec-… でない");
+    });
+    // 科目は化学基礎 → 化学の順に1回ずつ（行ったり来たりしない）
+    var cs = []; units.forEach(function (u) { if (cs[cs.length - 1] !== u.course) cs.push(u.course); });
+    assert(cs.join(",") === "basic,adv", "科目の並びが 化学基礎 → 化学 でない: " + cs.join(","));
+    // 同じ編は連続する
+    var ps = []; units.forEach(function (u) { var k = u.course + "/" + u.part; if (ps[ps.length - 1] !== k) ps.push(k); });
+    var dup = ps.filter(function (k, i) { return ps.indexOf(k) !== i; });
+    assert(!dup.length, "同じ編が離れて2回出る: " + dup.join(","));
+    ["carbonyl", "aroN", "bio", "clue", "inorgBasis", "inorgNonmetal", "inorgMetal", "inorgQual", "theoLife",
+      "theoStructure", "theoMole", "theoAcidBase", "theoRedox", "theoElectro", "theoState",
+      "theoSolution", "theoThermo", "theoKinetics", "theoEquilibrium", "theoIonicEq"].forEach(function (old) {
       assert(!patterns.some(function (p) { return p.unit === old; }), "旧 id が項目に残っている: " + old);
     });
   });
@@ -1436,7 +1452,8 @@ function runUiTests(doc, DATA) {
     setWidth(BASE_W);
 
     function unitCards() {
-      return Array.prototype.slice.call(d.getElementById("unit-list").children);
+      // ⚠ 2026-09-23 から #unit-list には編の見出し（h3.part-head）も並ぶ ＝ カードは .unit だけ
+      return Array.prototype.slice.call(d.querySelectorAll("#unit-list > .unit"));
     }
     function btnIn(card, label) {
       return Array.prototype.slice.call(card.querySelectorAll("button")).filter(function (b) {
@@ -1458,34 +1475,42 @@ function runUiTests(doc, DATA) {
         "単元カード " + unitCards().length + "枚 ≠ データの単元数 " + DATA.units.length);
     });
 
-    // 2026-09-23: 33単元が1列に続き、無機・理論が有機の下にぶらさがって見えた → 分野のタブで分ける
-    t("ホーム: 分野のタブ（有機・無機・理論）で、その分野の単元カードだけが見える", function () {
+    // 2026-09-23: 33単元が1列に続き、無機・理論が有機の下にぶらさがって見えた → タブで分ける。
+    //   同じ日のうちに、タブは科目（化学基礎・化学）・単元は教科書の節に（ユーザー「区別を明確に」「粒度が異なる」）
+    t("ホーム: 科目のタブ（化学基礎・化学）で、その科目の単元カードだけが見え、編の見出しで区切られる", function () {
       var tabs = Array.prototype.slice.call(d.querySelectorAll("#domain-tabs button[data-domain]"));
       var names = tabs.map(function (b) { return b.getAttribute("data-domain"); });
-      assert(names.join(",") === "有機,無機,理論", "タブの並びが違う: " + names.join(","));
+      assert(names.join(",") === "化学基礎,化学", "タブの並びが違う: " + names.join(","));
+      var COURSE = { "化学基礎": "basic", "化学": "adv" };
       var KEY = "slz-qa-domain", saved = null;
       try { saved = d.defaultView.localStorage.getItem(KEY); } catch (e) {}
       try {
         names.forEach(function (name) {
           d.querySelector('#domain-tabs button[data-domain="' + name + '"]').click();
           var shown = unitCards().filter(function (c) { return !c.classList.contains("hidden"); });
-          var want = DATA.units.filter(function (u) { return u.category_l === name + "化学"; }).length;
+          var want = DATA.units.filter(function (u) { return u.course === COURSE[name]; }).length;
           assert(want > 0 && shown.length === want, name + ": 見えるカード " + shown.length + "枚 ≠ " + want);
           assert(shown.every(function (c) { return c.getAttribute("data-domain") === name; }),
             name + ": 別の分野のカードが見えている");
           var on = d.querySelector("#domain-tabs .is-on");
           assert(on && on.getAttribute("data-domain") === name, name + ": 選んだタブが塗られていない");
+          var heads = Array.prototype.slice.call(d.querySelectorAll("#unit-list > .part-head:not(.hidden)")).map(function (h) { return h.textContent; });
+          var wantHeads = [];
+          DATA.units.forEach(function (u) { if (u.course === COURSE[name] && wantHeads.indexOf(u.part) < 0) wantHeads.push(u.part); });
+          assert(heads.join(",") === wantHeads.join(","), name + ": 編の見出しが違う: " + heads.join(","));
         });
-        // 習得マップ: 分野の見出しが3つ（有機・無機・理論が1本の列に続かない）
+        // 習得マップ: 科目 ／ 編 の見出し（編の数だけ）
         d.getElementById("btn-map").click();
         var gd = Array.prototype.slice.call(d.querySelectorAll("#map-host .gd")).map(function (e) { return e.textContent; });
-        assert(gd.join(",") === "有機,無機,理論", "習得マップの分野の見出しが違う: " + gd.join(","));
+        var wantGd = [];
+        DATA.units.forEach(function (u) { var k = (u.course === "basic" ? "化学基礎" : "化学") + " ／ " + u.part; if (wantGd.indexOf(k) < 0) wantGd.push(k); });
+        assert(gd.join(",") === wantGd.join(","), "習得マップの見出しが違う: " + gd.join(","));
         d.getElementById("btn-map-back").click();
       } finally {
         try {
           if (saved === null) d.defaultView.localStorage.removeItem(KEY); else d.defaultView.localStorage.setItem(KEY, saved);
         } catch (e) {}
-        var first = d.querySelector('#domain-tabs button[data-domain="' + (saved || "有機") + '"]');
+        var first = d.querySelector('#domain-tabs button[data-domain="' + (saved || "化学基礎") + '"]');
         if (first) first.click();
       }
     });
@@ -3113,7 +3138,9 @@ function runLevelMatrixTests(DATA, ROWS, MD, RULES, TOOL_SRC, USAGE_TEXT) {
     ["org.bio.isoelectric-point", 1, 2, "2026-09-19", /v119/],
     ["org.bio.fructose", 2, 1, "2026-09-19", /v139/],
     ["org.bio.fructose-reducing", 2, 3, "2026-09-19", /v139/],
-    ["org.bio.glucose-structure", 2, 1, "2026-09-19", /v141/]
+    ["org.bio.glucose-structure", 2, 1, "2026-09-19", /v141/],
+    // qa v151 で1件（NO₂ と水。2026-09-23 のユーザー指摘「後半は難易度2ではない」）
+    ["inorg.basis.oxide-water", 2, 3, "2026-09-23", /qa v151/]
   ];
   /** 上書きの記録を OVERRIDES と突き合わせ、問題点の一覧を返す（否定対照でも同じ関数を使う） */
   function overrideProblems(rs) {
