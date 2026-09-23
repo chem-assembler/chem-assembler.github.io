@@ -35,6 +35,8 @@
  * | `circle`        | 紙の図の型をやめて、アプリの丸の図で焼く（v1562 までの見た目）。⚠ `numbered` は紙の図の型と組めないので、書かなくても丸の図になる |
  * | `haworth`       | ★ **糖をハース式で描く**（v1549）。登録の座標（名前から呼び出したときの形）をそのまま描く ＝ **1位の −OH の上下（α/β）が図に出る**。⚠ 登録済みの名前だけ・糖の環（`haworthSugarCycles`）が無ければ赤。中身は `learn.js` の `ipHaworthFigure` |
  * | `fischer=<R/S>` | ★ **フィッシャー投影で描く**（v1617・I-0104）。不斉炭素の R・S を**上から**並べて書く（`fischer=RR`・メソ体は `fischer=RS`）。登録の図をアプリのフィッシャーの操作（`fischerOpRotate90/180` で縦に起こし、`fischerOpMirror` で左右を入れ替える ＝ 練習・タイムアタックと同じ関数）で作り、`assignRSDescriptor` の読みが一致する図を選ぶ。酸化された端（COOH・CHO）が上。不斉炭素の H だけを線で描く（十字の4本目）。⚠ 登録済みの名前だけ・紙の図の型だけ。作れなければ赤（作れた読みを並べて出す）。⚠ **D/L はアプリが酒石酸で断定しない**（`assignDLDescriptor`）ので、原稿は R・S で指す |
+ * | `vinyl` | ★ **環に含まれない C=C のまわりを ±120° に開いて描く**（v1618・I-0112）。アプリが名前から呼び出したときの整形（C-4・`game.reshapeDoubleBond`）を、渡す前の座標に当てるだけ。登録が横一直線の 1-ブテンのような分子を、教科書の形（二重結合の平面が見える形）で描く。⚠ **C=C の幾何（シス・トランス）が変わったら赤**（整形が立体を書き換えてはいけない）。紙の図の型だけ |
+ * | `flip=v` / `flip=h` | ★ **登録の図を裏返して描く**（v1618・I-0112）。`v` は上下・`h` は左右。紙の図の型が登録の座標をそのまま使うので、渡す前に座標を裏返すだけ（⚠ 作図は書かない）。同じ分子を2通りに描いて「裏返すと重なる」を見せる図（1-ブテンのエチル基が上か下か）に使う。⚠ 紙の図の型だけ（circle・numbered・haworth・fischer・stereo とは組めない） |
  * | `stereo=wedge` / `stereo=mirror` | ★ **くさび図**（v1617・I-0104）。**アプリの「🧊 立体で見る」の絵そのもの**（`stereo.js` の StereoView。縦＝奥の破線のくさび・横＝手前のくさび）を写して撮る。`mirror` は「🪞 鏡像と並べる」を押した状態（まん中の破線が鏡）。消すのは画面用の見出し（「あなたの分子」「🪞 鏡像」）だけ。⚠ 中心の炭素の上下左右は**登録の図の並びのまま** ＝ 主鎖を縦に描いた登録（`D-乳酸`）を名指すと COOH が上になる（横に描いた `乳酸` は OH が上）。登録の図が十字として読めない（立体ビューの並びが仮になる）ときは赤。`name=` とだけ組める（`mark:`・2行目の `gen:` も不可） |
  *
  * ★★ **図に印を重ねる**（v1609・I-0082・`DESIGN_figure_marks.md` 段1）—— `:::figure` に `mark:` を1行1つ:
@@ -246,6 +248,7 @@ function parseGen(text, where) {
         if (tok === 'haworth') { spec.haworth = true; return; }
         if (tok === 'paper') { spec.paper = true; return; }
         if (tok === 'circle') { spec.circle = true; return; }
+        if (tok === 'vinyl') { spec.vinyl = true; return; }
         /* ★ ケクレ式2つを描き分ける（段2・設計 §5）。1 ＝ 登録の並び・2 ＝ 環の単結合と二重結合を入れ替えたもの */
         const kk = /^kekule=(.*)$/.exec(tok);
         if (kk) {
@@ -269,6 +272,13 @@ function parseGen(text, where) {
             spec.stereo = st[1];
             return;
         }
+        /* ★ 裏返し（v1618・I-0112） */
+        const fl = /^flip=(.*)$/.exec(tok);
+        if (fl) {
+            if (fl[1] !== 'v' && fl[1] !== 'h') throw new Error(`${where}: gen の flip= は v（上下）か h（左右）です（いまは「${fl[1]}」）`);
+            spec.flip = fl[1];
+            return;
+        }
         const fi = /^fischer=(.*)$/.exec(tok);
         if (fi) {
             if (!/^[RS]{1,4}$/.test(fi[1])) throw new Error(`${where}: gen の fischer= は不斉炭素の R・S を上から並べて書きます（例 fischer=RR。いまは「${fi[1]}」）`);
@@ -277,7 +287,7 @@ function parseGen(text, where) {
         }
         const m = /^(name|formula|chain|subs)=(.+)$/.exec(tok);
         if (!m) throw new Error(`${where}: :::figure の gen に読めない語「${tok}」があります`
-            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule= / stereo= / fischer=）');
+            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule= / stereo= / fischer= / flip= / vinyl）');
         spec[m[1]] = m[2];
     });
     if (!spec.name) throw new Error(`${where}: :::figure の gen に name= がありません（図が何の分子かを名乗ってください）`);
@@ -295,6 +305,8 @@ function parseGen(text, where) {
         const extra = ['formula', 'chain', 'numbered', 'plain', 'haworth', 'circle', 'kekule', 'condense', 'expand', 'fischer'].filter(k => spec[k]);
         if (extra.length) throw new Error(`${where}: gen の stereo= は name= とだけ組めます（${extra.join(' / ')} は書けない）`);
     }
+    if (spec.vinyl && (spec.circle || spec.numbered || spec.haworth || spec.fischer || spec.stereo)) throw new Error(`${where}: gen の vinyl は紙の図の型でだけ描けます（circle / numbered / haworth / fischer= / stereo= とは組めない）`);
+    if (spec.flip && (spec.circle || spec.numbered || spec.haworth || spec.fischer || spec.stereo)) throw new Error(`${where}: gen の flip= は紙の図の型でだけ描けます（circle / numbered / haworth / fischer= / stereo= とは組めない）`);
     if (spec.fischer && (spec.formula || spec.chain)) throw new Error(`${where}: gen の fischer= は登録済みの名前だけで使えます（formula= / chain= は組めない）`);
     if (spec.fischer && (spec.circle || spec.numbered || spec.haworth || spec.kekule)) throw new Error(`${where}: gen の fischer= は紙の図の型でだけ描けます（circle / numbered / haworth / kekule とは組めない）`);
     return spec;
@@ -446,6 +458,33 @@ async function bake(jobs) {
             if (!entry) {
                 const got = window.iupacName(mol);
                 if (got !== spec.name) return { error: `組んだ分子の名前が「${got}」で、gen の name=「${spec.name}」と違います` };
+            }
+            /* ★ 裏返し（v1618・I-0112）: 紙の図の型は登録の座標をそのまま使う（learn.js の renderStandardFigure の
+               ipCoordsUsable の道）ので、渡す前に座標を裏返すだけ。⚠ 作図はここに書かない */
+            if (spec.vinyl) {
+                if (typeof g.reshapeDoubleBond !== 'function') return { error: 'アプリに game.reshapeDoubleBond がありません（古い版を配信している）' };
+                const geo0 = typeof readBondGeoFromCoords === 'function' ? JSON.stringify(readBondGeoFromCoords(mol)) : null;
+                const inRing = (typeof ringAtomIdsOf === 'function') ? ringAtomIdsOf(mol) : new Set();
+                const saved = g.userMolecule;
+                g.userMolecule = mol;   // reshapeDoubleBond は userMolecule を見る（quiz.js の reshapeGeometryForDisplay と同じ借り方）
+                let n = 0;
+                try {
+                    mol.bonds.filter(b => b.type === 2).forEach(b => {
+                        const a1 = mol.atoms.find(a => a.id === b.atomId1), a2 = mol.atoms.find(a => a.id === b.atomId2);
+                        if (a1.element !== 'C' || a2.element !== 'C' || (inRing.has(a1.id) && inRing.has(a2.id))) return;
+                        const subs = (id, other) => mol.getNeighbors(id).filter(x => x.atom.id !== other && x.atom.element !== 'H').map(x => x.atom);
+                        g.reshapeDoubleBond(b, subs(b.atomId1, b.atomId2), subs(b.atomId2, b.atomId1));
+                        n++;
+                    });
+                } finally { g.userMolecule = saved; }
+                if (!n) return { error: `vinyl: 「${spec.name}」に環の外の C=C がありません` };
+                if (geo0 !== null && JSON.stringify(readBondGeoFromCoords(mol)) !== geo0) return { error: `vinyl: 整形で「${spec.name}」のシス・トランスが変わりました（整形は立体を書き換えてはいけない）` };
+                mol._ipFixedLayout = false;
+                via += '・C=C を ±120° に';
+            }
+            if (spec.flip) {
+                mol.atoms.forEach(a => { if (spec.flip === 'v') a.y = -a.y; else a.x = -a.x; });
+                via += spec.flip === 'v' ? '・上下を裏返し' : '・左右を裏返し';
             }
             return { mol, via };
         };
