@@ -9,6 +9,9 @@ codes:
   - org.aroN.separation-principle
   - org.aroN.separation-order
   - org.phenol.separation
+  - org.aroN.separatory-funnel
+  - org.aroN.separation-recover
+  - org.aroN.separation-four
 source:
   - qa:芳香族窒素化合物/分離、フェノール類/酸性と塩
   - compounds:アニリン塩酸塩・安息香酸ナトリウム・ナトリウムフェノキシド・ニトロベンゼン
