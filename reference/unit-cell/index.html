@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-2">第1編 物質の状態</a></div></header>
 <main class="wrap">
 <h1>結晶格子 —— 数えて・測って・詰める</h1>
 <p class="lede">単位格子の問題は、中の原子を数える・原子が接している方向で半径と辺の長さを結ぶ・原子の体積や質量を詰めて充塡率と密度を出す、の3段です。体心立方・面心立方・六方最密と、NaCl 型・CsCl 型を扱います。</p>
-<div><span class="unit-label">物質の構造</span><span class="unit-label">結晶格子</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第1編 物質の状態</span><span class="unit-label">結晶の構造・非晶質</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-count" data-ref-anchor="count">数える —— 単位格子の中の原子の数</a></li><li><a href="#ref-sec-measure" data-ref-anchor="measure">測る —— 半径と1辺の長さを結ぶ</a></li><li><a href="#ref-sec-pack" data-ref-anchor="pack">詰める —— 充塡率と密度</a></li></ul></details></nav>
@@ -906,10 +928,10 @@ a.ref-link::before { content: '→ '; }
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（5問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.structure.unit-cell-count,theo.structure.coordination-packing,theo.structure.radius-edge,theo.structure.ionic-lattice,theo.structure.crystal-density&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（5問・測定モード）">▶ 一問一答で解く（5問・測定モード）</button><a class="alt" href="/qa/?codes=theo.structure.unit-cell-count,theo.structure.coordination-packing,theo.structure.radius-edge,theo.structure.ionic-lattice,theo.structure.crystal-density&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/crystal-types/">← 金属結合と結晶の4つの型</a>
+<nav class="seq"><a href="/reference/colloid/">← コロイド</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/atomic-weight/">原子量・分子量・式量 —— てんびんで平均する →</a></nav>
+<a href="/reference/reaction-enthalpy/">反応エンタルピーと熱化学反応式 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

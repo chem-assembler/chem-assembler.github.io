@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-5">第4編 有機化合物</a></div></header>
 <main class="wrap">
 <h1>フェノール類 —— 同じ −OH でも環に付くと酸になる</h1>
 <p class="lede">−OH がベンゼン環に直接付いたフェノール類の定義・例・性質と、弱い酸性のまとめ。「炭酸より弱い」の1行で、NaOH・NaHCO₃・CO₂ の3つへの応じ方が決まることを見比べられます。</p>
-<div><span class="unit-label">フェノール類</span><span class="unit-label">定義・例・性質、酸性と塩</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第4編 有機化合物</span><span class="unit-label">フェノール類</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-def" data-ref-anchor="def">フェノール類とは</a></li><li><a href="#ref-sec-examples" data-ref-anchor="examples">主なフェノール類</a></li><li><a href="#ref-sec-props" data-ref-anchor="props">フェノールの性質</a></li><li><a href="#ref-sec-acidity" data-ref-anchor="acidity">弱い酸性 —— アルコールとの決定的な違い</a></li><li><a href="#ref-sec-carbonic" data-ref-anchor="carbonic">炭酸より弱い酸</a></li><li><a href="#ref-sec-sodium" data-ref-anchor="sodium">ナトリウムとの反応</a></li></ul></details></nav>

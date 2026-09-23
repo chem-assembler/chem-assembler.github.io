@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#basic">化学基礎</a> ／ <a href="/reference/#basic-3">第2編 物質の変化</a></div></header>
 <main class="wrap">
 <h1>化学反応の量的関係 —— 係数の比は mol の比</h1>
 <p class="lede">化学反応式の係数の比は、反応する物質の mol の比です。反応前・変化量・反応後の3行の表を書き、変化量を「係数 × 倍率」で埋めます。過不足は「mol ÷ 係数」の小さい方で反応が止まります。気体どうしなら体積のまま計算できます。</p>
-<div><span class="unit-label">物質量と化学反応式</span><span class="unit-label">量的関係</span></div>
+<div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">第2編 物質の変化</span><span class="unit-label">化学反応の量的関係・化学の基本法則</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-ratio" data-ref-anchor="ratio">係数の比 ＝ 分子の数の比 ＝ mol の比</a></li><li><a href="#ref-sec-three-rows" data-ref-anchor="three-rows">3行の表 —— 変化量は「係数 × 倍率」</a></li><li><a href="#ref-sec-units" data-ref-anchor="units">g や L で与えられたら —— まず mol にそろえる</a></li><li><a href="#ref-sec-limiting" data-ref-anchor="limiting">過不足 —— 「mol ÷ 係数」の小さい方で止まる</a></li><li><a href="#ref-sec-gas" data-ref-anchor="gas">気体どうしは体積のまま計算できる</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>

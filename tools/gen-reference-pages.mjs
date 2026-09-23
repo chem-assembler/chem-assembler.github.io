@@ -37,6 +37,15 @@ const SRC = path.join(ROOT, 'reference-src');
 const OUT = path.join(ROOT, 'reference');
 const ORIGIN = 'https://chem.schoollenz.com';
 const RM = require('./reference-md.js');
+/* ★★ 目次は教科書の章立て（reference-src/TOC.txt・2026-09-23）。索引・パンくず・ページの札はここから引く */
+const TOC_ROWS = RM.parseToc(readFileSync(path.join(ROOT, 'reference-src', 'TOC.txt'), 'utf8'));
+const TOC_HOME = RM.tocHome(TOC_ROWS);
+/* 編の見出しの行き先（索引の中の id）。科目＋編の並び番号で振る ＝ 編の名前を URL に入れない */
+const PART_ANCHOR = new Map();
+TOC_ROWS.forEach(r => {
+    const k = r.course + '/' + r.part;
+    if (!PART_ANCHOR.has(k)) PART_ANCHOR.set(k, r.course + '-' + ([...PART_ANCHOR.keys()].filter(x => x.startsWith(r.course + '/')).length + 1));
+});
 
 const args = process.argv.slice(2);
 const CHECK = args.includes('--check');
@@ -229,6 +238,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -779,13 +810,15 @@ function embedBox(label, lead, src, alt) {
  * ========================================================================== */
 function referencePage(p, blocksHtml, tocHtml, prev, next) {
     const utm = `&utm_source=reference&utm_medium=internal&utm_campaign=${p.id}`;
-    /* ★★ 区分で出し分ける（§31-1）。⚠ 有機のページは今までどおり（1バイトも変えない）。
-       無機・理論は assembler を通らない —— 「化学レンズ ／ 参考書 ／ 無機」 */
+    /* ★★ パンくずは教科書の章立て（2026-09-23）: 化学レンズ ／ 参考書 ／ 科目 ／ 編。
+       ⚠ 前は区分（有機・無機・理論）で出し分けていた。中身の出し分け（有機のフッターなど）は isOrg のまま */
     const div = RM.divisionOf(p.unit);
     const isOrg = div === 'org';
-    const crumb = isOrg
-        ? `<a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a>`
-        : `<a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ ${esc(RM.divisionLabel(div))}`;
+    const home = TOC_HOME[p.id];
+    const course = RM.COURSE_LABELS[home.course];
+    const crumb = `<a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ `
+        + `<a href="/reference/#${home.course}">${esc(course)}</a> ／ `
+        + `<a href="/reference/#${PART_ANCHOR.get(home.course + '/' + home.part)}">${esc(home.part)}</a>`;
 
     /* ★ 動画は `video:` が在るページだけ。⚠ 無ければ**枠そのものを出さない**（`REF18` ⑤） */
     const video = p.video
@@ -821,7 +854,7 @@ function referencePage(p, blocksHtml, tocHtml, prev, next) {
 
     const body = `<h1>${esc(p.title)}</h1>
 <p class="lede">${esc(p.summary)}</p>
-<div><span class="unit-label">${esc(p.unitLabel)}</span><span class="unit-label">${esc(p.group)}</span></div>
+<div><span class="unit-label course-${home.course}">${esc(course)}</span><span class="unit-label">${esc(home.part)}</span><span class="unit-label">${esc(home.section)}</span></div>
 ${video}
 <div class="ref-layout">
 ${tocHtml || ''}
@@ -895,33 +928,44 @@ function termsPage(pages) {
     });
 }
 
-/* ★ 索引は **区分 → `unit` → `group` の3階層**（§31-1・2026-09-19。前は unit → group の2階層）。
-   ⚠ **並びは ORDER.txt のまま**（順を発明しない）。区分の順（有機 → 無機 → 理論）は
-     `gen-reference.mjs` が ORDER.txt の側で守らせている ＝ ここで並べ替えない */
+/* ★★ 索引は **教科書の章立て**: 科目（化学基礎／化学）→ 編 → 節 → ページ（reference-src/TOC.txt・2026-09-23）。
+   ⚠ 前は 区分（有機・無機・理論）→ unit → group。有機と無機で単元の粒度がそろわず、
+     化学基礎と化学の区別も見えなかった（ユーザー指摘）。
+   ★ 並びは TOC.txt のまま（ORDER.txt と同じ順であることは gen-reference.mjs が守らせている）。
+   ★ 再掲（+）は「→ 〇〇で扱います」の細い行で出す ＝ 化学の人が電池の節を開いても空にならない */
 function indexPage(pages) {
-    const divs = [];
-    pages.forEach(p => {
-        const key = RM.divisionOf(p.unit);
-        let d = divs.find(x => x.key === key);
-        if (!d) { d = { key, label: RM.divisionLabel(key), units: [] }; divs.push(d); }
-        let u = d.units.find(x => x.unit === p.unit);
-        if (!u) { u = { unit: p.unit, label: p.unitLabel, groups: [] }; d.units.push(u); }
-        let g = u.groups.find(x => x.name === p.group);
-        if (!g) { g = { name: p.group, pages: [] }; u.groups.push(g); }
-        g.pages.push(p);
+    const byId = new Map(pages.map(p => [p.id, p]));
+    const courses = [];
+    TOC_ROWS.forEach(r => {
+        let c = courses.find(x => x.key === r.course);
+        if (!c) { c = { key: r.course, parts: [] }; courses.push(c); }
+        let pt = c.parts.find(x => x.name === r.part);
+        if (!pt) { pt = { name: r.part, anchor: PART_ANCHOR.get(r.course + '/' + r.part), rows: [] }; c.parts.push(pt); }
+        pt.rows.push(r);
     });
+    const li = x => {
+        const p = byId.get(x.id);
+        if (!x.ref) return `<li><a href="/reference/${p.id}/"><b>${esc(p.title)}</b><span>${esc(p.summary)}</span></a></li>`;
+        const h = TOC_HOME[p.id];
+        return `<li class="ref"><a href="/reference/${p.id}/"><b>${esc(p.title)}</b>`
+            + `<span>→ ${esc(RM.COURSE_LABELS[h.course])}「${esc(h.section)}」で扱います</span></a></li>`;
+    };
+    const jump = courses.map(c => `<div class="toc-jump"><a class="toc-course course-${c.key}" href="#${c.key}">${esc(RM.COURSE_LABELS[c.key])}</a>`
+        + c.parts.map(pt => `<a href="#${pt.anchor}">${esc(pt.name)}</a>`).join('') + '</div>').join('\n');
     const body = `<h1>化学の参考書</h1>
 <p class="lede">1つの分子や1本の反応式を見ているだけでは規則にならないことを、<b>並べて</b>読むページです。
-有機・無機・理論の順に並んでいます。
+<b>教科書の章立て</b>（化学基礎 → 化学）の順に並んでいます。
 読んだあとは、同じ画面から一問一答やアプリで試せます。</p>
 <nav class="seq"><a href="/reference/terms/">用語から引く（マルコフニコフ則・置換反応…）</a></nav>
-${divs.map(d => `<h2>${esc(d.label)}</h2>\n` + d.units.map(u => `<h3>${esc(u.label)}</h3>\n` + u.groups.map(g =>
-        `<h4>${esc(g.name)}</h4>\n<ul class="idx">` + g.pages.map(p =>
-            `<li><a href="/reference/${p.id}/"><b>${esc(p.title)}</b><span>${esc(p.summary)}</span></a></li>`
-        ).join('') + '</ul>').join('\n')).join('\n')).join('\n')}`;
+<nav class="toc-nav">
+${jump}
+</nav>
+${courses.map(c => `<h2 id="${c.key}" class="course-head course-${c.key}">${esc(RM.COURSE_LABELS[c.key])}</h2>\n`
+        + c.parts.map(pt => `<h3 id="${pt.anchor}" class="part-head">${esc(pt.name)}</h3>\n` + pt.rows.map(r =>
+            `<h4>${esc(r.section)}</h4>\n<ul class="idx">` + r.pages.map(li).join('') + '</ul>').join('\n')).join('\n')).join('\n')}`;
     return page({
         title: '化学の参考書 ｜ 化学レンズ',
-        desc: '化学を「1つだけでは見えない規則」の側から、並べて読む参考書。有機・無機・理論の順に並び、有機の表はアプリが出題データから数え上げたものです。',
+        desc: '化学基礎・化学の全単元を、教科書の章立ての順に並べた参考書。「1つだけでは見えない規則」を並べて読み、その場で一問一答やアプリで試せます。',
         canonical: `${ORIGIN}/reference/`,
         crumb: '<a href="/">化学レンズ</a> ／ 参考書',
         body,

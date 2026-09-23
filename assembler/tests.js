@@ -53365,7 +53365,9 @@
         /* ⚠ **ページの名前を検査に書き写さない**（v1525）。索引の1番目は `reference.json` の
            1番目（＝ `ORDER.txt` の1行目）なので、ページを1枚足すたびに検査を直すのは筋が悪い
            —— 実際、6枚目を足したときにここだけ赤くなった。★ 物差しは原稿の側に置く。 */
-        const first = (await refPagesJson())[0];
+        /* ⚠ 2026-09-23 から reference.json の並びは教科書の章立て（化学基礎が先）で、1枚目は有機ではない。
+             面B（資料ペイン）は有機だけ ＝ 索引の1番目は **有機のページの1枚目** */
+        const first = (await refPagesJson()).filter(p => W.refIsOrganic(p))[0];
         assert(D.querySelector('#ref-body h3').textContent.indexOf(first.title) >= 0,
             `ページの見出しが出ていない（索引の1番目は「${first.title}」のはず）`);
 
@@ -55565,24 +55567,15 @@
            ⚠ `REF17` が「reference.json の並び ＝ ORDER.txt」を見ているので、
              ここは reference.json を物差しにすれば **原稿の並びを見ていることになる**
              （物差しを2本にしない）。 */
-        /* ★ v1596（§31-1）から **区分 → unit → group** の3階層。区分の対応表は書式の1本（RM.divisionOf） */
+        /* ★ 2026-09-23 から **教科書の章立て**: 科目 → 編 → 節 → ページ（reference-src/TOC.txt）。
+           索引のリンクは TOC.txt を上から読んだ順（再掲 + も含む）。本体だけを読んだ順は ORDER.txt ＝ reference.json の順 */
         const RM = window.ReferenceMd;
-        assert(RM && typeof RM.divisionOf === 'function', 'ReferenceMd.divisionOf が居ない');
+        assert(RM && typeof RM.parseToc === 'function', 'ReferenceMd.parseToc が居ない');
+        const tocRows = RM.parseToc(await grab('../reference-src/TOC.txt', '参考書の目次（TOC.txt）'));
+        assert(RM.tocOrder(tocRows).join(',') === pages.map(p => p.id).join(','),
+            '目次（TOC.txt）の本体の順と reference.json の順が違う（node tools/gen-reference.mjs）');
         const wantIndex = [];
-        {
-            const divs = [];
-            pages.forEach(p => {
-                const k = RM.divisionOf(p.unit);
-                let d = divs.find(x => x.key === k);
-                if (!d) { d = { key: k, units: [] }; divs.push(d); }
-                let u = d.units.find(x => x.unit === p.unit);
-                if (!u) { u = { unit: p.unit, groups: [] }; d.units.push(u); }
-                let g = u.groups.find(x => x.name === p.group);
-                if (!g) { g = { name: p.group, ids: [] }; u.groups.push(g); }
-                g.ids.push(p.id);
-            });
-            divs.forEach(d => d.units.forEach(u => u.groups.forEach(g => g.ids.forEach(id => wantIndex.push(id)))));
-        }
+        tocRows.forEach(r => r.pages.forEach(x => wantIndex.push(x.id)));
         const idx = parse(await grab('../reference/index.html', '参考書の索引'));
         const gotIndex = [...idx.querySelectorAll('.idx a[href]')]
             .map(a => (a.getAttribute('href').match(/\/reference\/([a-z0-9-]+)\//) || [])[1]);

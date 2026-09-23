@@ -381,6 +381,45 @@
         });
         return rows;
     }
+
+    /* ★★ 目次（`reference-src/TOC.txt`・2026-09-23）—— 教科書の章立てで 科目 → 編 → 節 → ページ。
+       1行 ＝ `科目 ␉ 編 ␉ 節 ␉ ページ（空白区切り）`。ページの頭の `+` は再掲（本体は別の節）。
+       ⚠ 読むだけ。「本体がちょうど1回」「ORDER.txt と同じ順」は gen-reference.mjs が見る
+         （ディレクトリを読めるのはあちらだけ）。ブラウザ（assembler の検査）でも同じ関数で読む */
+    var COURSE_LABELS = { basic: '化学基礎', adv: '化学' };
+    function parseToc(text) {
+        var rows = [];
+        normalize(text).split('\n').forEach(function (line, i) {
+            if (!line.trim() || /^\s*#/.test(line)) return;
+            var c = line.split('\t');
+            var where = 'reference-src/TOC.txt:' + (i + 1);
+            if (c.length !== 4) fail(where, '列が ' + c.length + ' 個です（科目 ␉ 編 ␉ 節 ␉ ページ の4列。区切りはタブ）');
+            var r = { course: c[0].trim(), part: c[1].trim(), section: c[2].trim(), pages: [] };
+            if (!COURSE_LABELS[r.course]) fail(where, '科目は basic（化学基礎）か adv（化学）です（いまは「' + r.course + '」）');
+            if (!r.part || !r.section) fail(where, '編と節は空にできません');
+            c[3].trim().split(/\s+/).forEach(function (tok) {
+                var ref = tok.charAt(0) === '+';
+                var id = ref ? tok.slice(1) : tok;
+                if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) fail(where, 'ページid は英小文字・数字・ハイフンです（いまは「' + tok + '」）');
+                r.pages.push({ id: id, ref: ref });
+            });
+            rows.push(r);
+        });
+        if (!rows.length) fail('reference-src/TOC.txt', '目次が空です');
+        return rows;
+    }
+    /* 本体（`+` の付かないページ）を上から読んだ順 ＝ ORDER.txt と同じでなければならない順 */
+    function tocOrder(rows) {
+        var out = [];
+        rows.forEach(function (r) { r.pages.forEach(function (p) { if (!p.ref) out.push(p.id); }); });
+        return out;
+    }
+    /* ページ id → 本体のある行（科目・編・節）。パンくずと面Aのページの見出しに使う */
+    function tocHome(rows) {
+        var m = {};
+        rows.forEach(function (r) { r.pages.forEach(function (p) { if (!p.ref) m[p.id] = r; }); });
+        return m;
+    }
     var BLOCK_SPECS = {
         /* 節の見出し。`anchor` が `id="ref-sec-<anchor>"` になり、目次と用語の索引の行き先になる。
            ⚠ `lead`（この節で分かること）は**必須** —— 検索から着地した人が最初に読む1行なので、
@@ -1351,6 +1390,10 @@
         BETWEEN_KINDS: BETWEEN_KINDS,
         parseBetween: parseBetween,
         parseGroups: parseGroups,
+        COURSE_LABELS: COURSE_LABELS,
+        parseToc: parseToc,
+        tocOrder: tocOrder,
+        tocHome: tocHome,
         parsePage: parsePage,
         serialize: serialize,
         expectedLineCount: expectedLineCount,

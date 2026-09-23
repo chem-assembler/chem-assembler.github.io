@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#basic">化学基礎</a> ／ <a href="/reference/#basic-4">終章 化学が拓く世界</a></div></header>
 <main class="wrap">
 <h1>化学が拓く世界 —— 化学基礎を暮らしで振り返る</h1>
 <p class="lede">化学基礎で学んだ「結合の種類」と「反応の種類」が、暮らしのどこで使われているかを振り返ります。材料は結合の型から性質を読み、電池・金属の製錬・酸化防止剤は酸化還元、胃薬は中和で説明できます。最後に、限りある資源をリサイクルで使い続ける話をします。</p>
-<div><span class="unit-label">化学と人間生活</span><span class="unit-label">化学が拓く世界</span></div>
+<div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">終章 化学が拓く世界</span><span class="unit-label">化学が拓く世界</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-materials" data-ref-anchor="materials">結合の型から材料を選ぶ</a></li><li><a href="#ref-sec-reactions" data-ref-anchor="reactions">反応の種類を暮らしに使う</a></li><li><a href="#ref-sec-resources" data-ref-anchor="resources">限りある資源を使い続ける</a></li></ul></details></nav>
@@ -895,10 +917,10 @@ a.ref-link::before { content: '→ '; }
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（3問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.life.bond-material,theo.life.reaction-in-life,theo.life.recycle-resource&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（3問・測定モード）">▶ 一問一答で解く（3問・測定モード）</button><a class="alt" href="/qa/?codes=theo.life.bond-material,theo.life.reaction-in-life,theo.life.recycle-resource&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/ionization-tendency/">← 金属のイオン化傾向</a>
+<nav class="seq"><a href="/reference/cell-basics/">← 電池の仕組み —— ダニエル電池</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/cell-basics/">電池の仕組み —— ダニエル電池 →</a></nav>
+<a href="/reference/vapor-pressure/">液体の蒸気圧と沸騰 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

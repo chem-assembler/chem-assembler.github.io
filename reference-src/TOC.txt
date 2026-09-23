@@ -1,0 +1,113 @@
+# 参考書の目次 —— 教科書の章立て（2026-09-23・ユーザー「化学基礎・化学の区別を明確に」「無機と有機で粒度が異なる」）
+#
+# ★★ 目次の骨組みは教科書。科目（化学基礎／化学）→ 編 → 節 → ページ。
+#   節は教科書6冊（化学基礎 数研・啓林館・実教／化学 数研・実教・第一）の目次を突き合わせた統合表の節
+#   （統合表は私的な作業用で、リポジトリには置かない）。無機も有機も「節」でそろえるので粒度がそろう。
+#   ⚠ 前の決め（2026-09-10「有機 → 無機 → 理論」の3区分）はこれで置き換えた。
+#
+# ★ **並びの正はこのファイル**。ORDER.txt（前へ／次へ・reference.json の並び）は、
+#   このファイルの「本体」を上から読んだ順と同じでなければならない（tools/gen-reference.mjs が赤で止める）。
+#
+# 書き方（区切りはタブ。# の行と空行は読み飛ばす）:
+#   科目 ␉ 編 ␉ 節 ␉ ページ（空白区切り）
+#   - 科目は basic（化学基礎）か adv（化学）
+#   - ページの頭に + を付けると **再掲**（本体は別の節にある）。目次には「→ 別の節で扱う」として並ぶ
+#     ★ 1ページは本体として**ちょうど1回**。化学基礎と化学の両方で扱う節（電池・pH など）は、
+#       主に扱う側を本体にし、もう一方に再掲する
+#
+# ── 化学基礎 ──
+basic	序章 化学と人間生活	化学と人間生活	chemistry-and-life
+basic	第1編 物質の構成	純物質と混合物・元素・成分元素の確認	substance-classification
+basic	第1編 物質の構成	熱運動と物質の三態	states-of-matter
+basic	第1編 物質の構成	原子の構造と電子配置	atom-structure
+basic	第1編 物質の構成	元素の周期表	periodic-table
+basic	第1編 物質の構成	イオンとイオン結合	ionic-bond
+basic	第1編 物質の構成	共有結合と分子	covalent-bond molecular-shape
+basic	第1編 物質の構成	分子間力	intermolecular-force
+basic	第1編 物質の構成	金属結合と結晶の分類	crystal-types
+basic	第2編 物質の変化	原子量・分子量・式量	atomic-weight
+basic	第2編 物質の変化	物質量	mole
+basic	第2編 物質の変化	溶液の濃度	concentration
+basic	第2編 物質の変化	化学反応式	chemical-equation
+basic	第2編 物質の変化	化学反応の量的関係・化学の基本法則	stoichiometry chemical-laws
+basic	第2編 物質の変化	酸と塩基	acid-base-definition acid-base-strength
+basic	第2編 物質の変化	水の電離と pH	ph
+basic	第2編 物質の変化	中和と塩	neutralization salt acid-displacement
+basic	第2編 物質の変化	中和滴定	titration
+basic	第2編 物質の変化	酸化と還元・酸化数	redox-basics oxidation-number
+basic	第2編 物質の変化	酸化剤と還元剤	half-reaction half-reaction-condition redox-equation redox-titration
+basic	第2編 物質の変化	金属のイオン化傾向	ionization-tendency
+basic	第2編 物質の変化	酸化還元反応の応用（電池・電気分解）	cell-basics +electrolysis-basics
+basic	終章 化学が拓く世界	化学が拓く世界	chemistry-world
+# ── 化学 ──
+adv	序章 化学と物質	化学と人間生活	+chemistry-and-life
+adv	第1編 物質の状態	物質の三態と状態変化・気体の圧力	+states-of-matter +intermolecular-force
+adv	第1編 物質の状態	蒸気圧と沸騰	vapor-pressure
+adv	第1編 物質の状態	気体の法則	gas-laws
+adv	第1編 物質の状態	混合気体と分圧	gas-mixture gas-with-vapor
+adv	第1編 物質の状態	理想気体と実在気体	real-gas
+adv	第1編 物質の状態	溶解のしくみ	dissolution
+adv	第1編 物質の状態	固体・気体の溶解度	solubility gas-solubility
+adv	第1編 物質の状態	希薄溶液の性質	colligative osmotic-pressure
+adv	第1編 物質の状態	コロイド	colloid
+adv	第1編 物質の状態	結晶の構造・非晶質	unit-cell +crystal-types
+adv	第2編 物質の変化と平衡	反応エンタルピーと熱量	reaction-enthalpy heat-measurement
+adv	第2編 物質の変化と平衡	ヘスの法則と結合エンタルピー	hess-law bond-enthalpy
+adv	第2編 物質の変化と平衡	化学反応と光	light-energy
+adv	第2編 物質の変化と平衡	エントロピー	entropy
+adv	第2編 物質の変化と平衡	電池	+cell-basics fuel-cell lead-storage-battery
+adv	第2編 物質の変化と平衡	電気分解	electrolysis-basics electrolysis-equations faraday electrolysis-industry
+adv	第2編 物質の変化と平衡	反応の速さ	reaction-rate rate-law
+adv	第2編 物質の変化と平衡	活性化エネルギーと触媒	activation-energy
+adv	第2編 物質の変化と平衡	化学平衡と平衡定数	equilibrium-constant pressure-equilibrium
+adv	第2編 物質の変化と平衡	平衡の移動	le-chatelier
+adv	第2編 物質の変化と平衡	電離平衡	weak-acid-equilibrium polyprotic-acid +ph
+adv	第2編 物質の変化と平衡	塩の加水分解と緩衝液	hydrolysis-ph buffer
+adv	第2編 物質の変化と平衡	溶解度積	solubility-product
+adv	第3編 無機物質	周期表と元素の性質	+periodic-table inorg-reaction-types oxoacid
+adv	第3編 無機物質	水素と貴ガス	hydrogen-noble-gas
+adv	第3編 無機物質	酸素とオゾン	oxygen-ozone
+adv	第3編 無機物質	ハロゲン	halogen chlorine
+adv	第3編 無機物質	硫黄	sulfur sulfuric-acid
+adv	第3編 無機物質	窒素とリン	nitrogen phosphorus
+adv	第3編 無機物質	炭素とケイ素	carbon-silicon
+adv	第3編 無機物質	気体の製法と性質	gas-preparation
+adv	第3編 無機物質	アルカリ金属	alkali-metal
+adv	第3編 無機物質	2族元素	alkaline-earth
+adv	第3編 無機物質	アルミニウム・亜鉛・スズ・鉛	amphoteric-metal
+adv	第3編 無機物質	合金	alloy
+adv	第3編 無機物質	遷移元素の特徴と錯イオン	complex-ion
+adv	第3編 無機物質	鉄	iron
+adv	第3編 無機物質	銅と銀	copper-silver
+adv	第3編 無機物質	クロムとマンガン	transition-oxidizers
+adv	第3編 無機物質	金属イオンの沈殿と炎色反応	precipitate flame-color
+adv	第3編 無機物質	金属イオンの系統分離	cation-separation
+adv	第3編 無機物質	無機化学工業	+sulfuric-acid +nitrogen +alkali-metal +iron +electrolysis-industry
+adv	第4編 有機化合物	有機化合物の特徴	organic-features
+adv	第4編 有機化合物	炭化水素の分類と官能基	hydrocarbon-classes functional-groups
+adv	第4編 有機化合物	有機化合物の表し方	organic-formulas
+adv	第4編 有機化合物	構造異性体	alkane-isomers
+adv	第4編 有機化合物	立体異性体	stereoisomers
+adv	第4編 有機化合物	元素分析と構造式の決定	element-detection elemental-analysis clue-order clue-properties
+adv	第4編 有機化合物	アルカンとシクロアルカン	alkane alkane-naming numeral-prefix cycloalkane
+adv	第4編 有機化合物	アルケンとアルキン	alkene alkyne
+adv	第4編 有機化合物	アルコールとエーテル	alcohol alcohol-class ether alcohol-oxidation-map alcohol-dehydration
+adv	第4編 有機化合物	アルデヒドとケトン	aldehyde ketone iodoform
+adv	第4編 有機化合物	カルボン酸	carboxylic-acid
+adv	第4編 有機化合物	エステル・油脂・セッケン	ester esterification fat soap
+adv	第4編 有機化合物	芳香族炭化水素	benzene benzene-substitution aromatic-homologs
+adv	第4編 有機化合物	フェノール類	phenol phenol-reactions
+adv	第4編 有機化合物	芳香族カルボン酸	aromatic-carboxylic-acid
+adv	第4編 有機化合物	芳香族アミンとアゾ化合物	aniline
+adv	第4編 有機化合物	芳香族化合物の分離	aromatic-separation
+adv	第4編 有機化合物	有機反応のしくみ（発展）	reaction-mechanisms
+adv	第5編 高分子化合物	高分子化合物の特徴	polymer-basics
+adv	第5編 高分子化合物	単糖と二糖	saccharide disaccharide
+adv	第5編 高分子化合物	多糖	polysaccharide
+adv	第5編 高分子化合物	アミノ酸	amino-acid
+adv	第5編 高分子化合物	タンパク質と酵素	protein enzyme
+adv	第5編 高分子化合物	核酸	nucleic-acid
+adv	第5編 高分子化合物	合成繊維	synthetic-fiber
+adv	第5編 高分子化合物	合成樹脂と機能性高分子	plastic
+adv	第5編 高分子化合物	ゴム	rubber
+adv	終章 化学が果たす役割	化学が果たす役割	chemistry-role

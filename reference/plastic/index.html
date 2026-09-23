@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-6">第5編 高分子化合物</a></div></header>
 <main class="wrap">
 <h1>合成樹脂 —— 鎖状のプラスチックと、網目のプラスチック</h1>
 <p class="lede">鎖状の熱可塑性樹脂（ポリエチレン・ビニル系・PVA・PMMA・PET）と、網目の熱硬化性樹脂（フェノール樹脂・尿素樹脂・アルキド樹脂）、橋かけで機能をもたせた高吸水性樹脂とイオン交換樹脂、生分解性とリサイクルまでを1枚にしました。</p>
-<div><span class="unit-label">合成高分子</span><span class="unit-label">合成樹脂</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第5編 高分子化合物</span><span class="unit-label">合成樹脂と機能性高分子</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（13節）</summary><ul><li><a href="#ref-sec-two-kinds" data-ref-anchor="two-kinds">熱可塑性樹脂と熱硬化性樹脂</a></li><li><a href="#ref-sec-polyethylene" data-ref-anchor="polyethylene">ポリエチレン</a></li><li><a href="#ref-sec-vinyl" data-ref-anchor="vinyl">ビニル化合物からできる樹脂</a></li><li><a href="#ref-sec-pva" data-ref-anchor="pva">ポリ酢酸ビニルとポリビニルアルコール</a></li><li><a href="#ref-sec-pmma-teflon" data-ref-anchor="pmma-teflon">ポリメタクリル酸メチルとテフロン</a></li><li><a href="#ref-sec-pet" data-ref-anchor="pet">ポリエチレンテレフタラート（PET）</a></li><li><a href="#ref-sec-network" data-ref-anchor="network">橋かけで網目にする</a></li><li><a href="#ref-sec-phenol-resin" data-ref-anchor="phenol-resin">フェノール樹脂</a></li><li><a href="#ref-sec-amino-alkyd" data-ref-anchor="amino-alkyd">尿素樹脂・メラミン樹脂・アルキド樹脂</a></li><li><a href="#ref-sec-superabsorbent" data-ref-anchor="superabsorbent">高吸水性樹脂</a></li><li><a href="#ref-sec-ion-exchange" data-ref-anchor="ion-exchange">イオン交換樹脂</a></li><li><a href="#ref-sec-conducting" data-ref-anchor="conducting">導電性高分子</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li><li><a href="#ref-sec-biodegradable" data-ref-anchor="biodegradable">生分解性高分子とリサイクル</a></li></ul></details></nav>
@@ -905,6 +927,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-pet"><h4 class="ref-sec-h">ポリエチレンテレフタラート（PET）</h4><p class="ref-sec-lead">テレフタル酸とエチレングリコールの縮合重合でできます。エステル結合でつながったポリエステルで、ペットボトルや繊維になります。</p></section>
 <p class="ref-p">テレフタル酸とエチレングリコールを縮合重合させると、<b>ポリエチレンテレフタラート（PET）</b>ができます。<b>単量体どうしはエステル結合でつながる</b>ので、ポリエステルの一種です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n HOOC−C₆H₄−COOH ＋ n HO−CH₂CH₂−OH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CO−C₆H₄−CO−O−CH₂CH₂−O］ₙ ＋ 2n H₂O</span></div><p class="ref-note">鎖状の縮合重合体なので熱可塑性で、溶かして成形し直せます。ペットボトルの PET です。</p></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/plastic-pet-chain.png" alt="ポリエチレンテレフタラートの鎖の構造式。ベンゼン環の両側にカルボニル基があり、その先が酸素を介して CH₂−CH₂ につながる並びが、斜めに3回くり返されている。両端は R" loading="lazy"><figcaption class="ref-figure-cap">PET の鎖（繰り返し単位3つぶん）。ベンゼン環と −CH₂CH₂− が、<b>エステル結合 −CO−O−</b>（破線の丸）で交互につながっています。</figcaption></figure>
 <p class="ref-p">テレフタル酸は、p-キシレンの2本のメチル基を酸化してつくります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-homologs/">ベンゼン環の側鎖を酸化してカルボン酸にする反応</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/synthetic-fiber/">PET を繊維にしたポリエステル繊維（合成繊維の一覧）</a></p>
@@ -974,10 +997,10 @@ a.ref-link::before { content: '→ '; }
 <h2>読みながら組む</h2>
 <div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.poly.thermoplastic-thermoset" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.poly.thermoplastic-thermoset" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/polymer-basics/">← 高分子 —— 単量体がつながってできたもの</a>
+<nav class="seq"><a href="/reference/synthetic-fiber/">← 合成繊維 —— ナイロン・アクリル・ビニロン</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/synthetic-fiber/">合成繊維 —— ナイロン・アクリル・ビニロン →</a></nav>
+<a href="/reference/rubber/">ゴム —— 主鎖に残った二重結合がすべてを決める →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-5">第4編 有機化合物</a></div></header>
 <main class="wrap">
 <h1>芳香族化合物の分離</h1>
 <p class="lede">分液漏斗で芳香族化合物を分ける操作のまとめ。「塩にすると水層へ、遊離させるとエーテル層へ」の1行と、酸の強さの差を使って NaHCO₃ → NaOH の順に分ける理由を、4成分の例で追えます。</p>
-<div><span class="unit-label">芳香族窒素化合物・芳香族の分離</span><span class="unit-label">分離</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第4編 有機化合物</span><span class="unit-label">芳香族化合物の分離</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-principle" data-ref-anchor="principle">原理は1行</a></li><li><a href="#ref-sec-base" data-ref-anchor="base">塩基性の物質（アニリン）を分ける</a></li><li><a href="#ref-sec-acid" data-ref-anchor="acid">酸性の物質を強さの差で2段に分ける</a></li><li><a href="#ref-sec-four" data-ref-anchor="four">4成分を分けてみる</a></li></ul></details></nav>
@@ -872,6 +894,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-base"><h4 class="ref-sec-h">塩基性の物質（アニリン）を分ける</h4><p class="ref-sec-lead">塩酸を加えると、アニリンだけが塩になって水層へ移ります。</p></section>
 <p class="ref-p">混合物のエーテル溶液に<b>塩酸</b>を加えて振ると、塩基性のアニリンだけが中和されて<b>アニリン塩酸塩</b>になり、<b>水層へ</b>移ります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅NH₂ ＋ HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅NH₃Cl</span></div><p class="ref-note">アニリンが塩になって水層へ移ります。酸性の物質と中性の物質はエーテル層に残ります。</p></div>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-separation-aniline-salt.png" alt="左にアニリン、右にアニリン塩酸塩の構造式を並べ、間を「＋HCl」の矢印でつないだ図。アミノ基 −NH₂ が −NH₃⁺ になり、そばに Cl⁻ がある" loading="lazy"><figcaption class="ref-figure-cap">アミノ基 −NH₂ が H⁺ を受け取って <b>−NH₃⁺</b> になり、Cl⁻ と組んだ塩になります。<b>イオンになったので水に溶け</b>、水層へ移ります。</figcaption></figure>
 <p class="ref-p">取り出した水層に NaOH 水溶液を加えると、アニリンが遊離します。そこにエーテルを加えて振れば、アニリンを<b>エーテル層へ戻して</b>取り出せます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅NH₃Cl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅NH₂ ＋ NaCl ＋ H₂O</span></div><p class="ref-note">アニリンが遊離して、エーテル層へ戻せるようになります。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aniline/">アニリンの塩基性と塩のでき方は、アニリンのページへ</a></p>
@@ -906,10 +929,10 @@ a.ref-link::before { content: '→ '; }
 <h2>読みながら組む</h2>
 <div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.aroN.separation-principle" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.aroN.separation-principle" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/aromatic-carboxylic-acid/">← 芳香族カルボン酸とサリチル酸</a>
+<nav class="seq"><a href="/reference/aniline/">← アニリンとアゾ化合物</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/saccharide/">糖類の分類と単糖類 →</a></nav>
+<a href="/reference/reaction-mechanisms/">反応の道すじ（反応機構） →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

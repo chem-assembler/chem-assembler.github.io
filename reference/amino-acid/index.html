@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-6">第5編 高分子化合物</a></div></header>
 <main class="wrap">
 <h1>アミノ酸</h1>
 <p class="lede">アミノ酸は1つの分子の中にアミノ基とカルボキシ基、つまり塩基と酸を両方もちます。α-アミノ酸の一般式と側鎖による分類、不斉炭素原子、双性イオン、pH で入れかわる3つの形、等電点と電気泳動までを1枚にしました。</p>
-<div><span class="unit-label">糖・アミノ酸・タンパク質</span><span class="unit-label">アミノ酸とタンパク質</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第5編 高分子化合物</span><span class="unit-label">アミノ酸</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（9節）</summary><ul><li><a href="#ref-sec-general" data-ref-anchor="general">α-アミノ酸の一般式</a></li><li><a href="#ref-sec-sidechain" data-ref-anchor="sidechain">側鎖による分類</a></li><li><a href="#ref-sec-chirality" data-ref-anchor="chirality">不斉炭素原子</a></li><li><a href="#ref-sec-zwitterion" data-ref-anchor="zwitterion">両性の化合物と双性イオン</a></li><li><a href="#ref-sec-crystal" data-ref-anchor="crystal">アミノ酸の結晶の性質</a></li><li><a href="#ref-sec-ph" data-ref-anchor="ph">pH で3つの形が入れかわる</a></li><li><a href="#ref-sec-isoelectric" data-ref-anchor="isoelectric">等電点と電気泳動</a></li><li><a href="#ref-sec-ninhydrin" data-ref-anchor="ninhydrin">アミノ酸の検出</a></li><li><a href="#ref-sec-polyprotic" data-ref-anchor="polyprotic">酸性・塩基性アミノ酸の電離と、片方だけ反応させる手</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
@@ -878,6 +900,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">α-アミノ酸の α位の炭素には、<b>H・−NH₂・−COOH・R</b> の4つが結合しています。R が H 以外なら4つがすべて違うので、この炭素は<b>不斉炭素原子</b>になり、<b>鏡像異性体</b>が存在します。</p>
 <p class="ref-p">グリシンは R が H なので、H が2個付くことになり、不斉炭素原子をもちません。<b>「α-アミノ酸のうち、不斉炭素原子をもたないのはグリシンだけ」</b>と覚えましょう。</p>
 <p class="ref-p">天然のタンパク質をつくるアミノ酸は、鏡像異性体のうち L形とよばれる片方だけです。L形と D形の見分け方は覚えなくて構いません。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-alanine-asymmetric.png" alt="左にアラニン、右にグリシンの構造式。アラニンの α位の炭素（不斉炭素原子）が破線の丸で囲まれている。グリシンの α位の炭素には H が2個付いている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>アラニン</b>は α位の炭素に H・−NH₂・−COOH・−CH₃ の4つの違うものが付くので不斉炭素原子（囲み）。右の<b>グリシン</b>は H が2個なので、不斉炭素原子がありません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/stereoisomers/">不斉炭素原子と鏡像異性体そのものは立体異性体のページへ</a></p>
 <section class="ref-sec" id="ref-sec-zwitterion"><h4 class="ref-sec-h">両性の化合物と双性イオン</h4><p class="ref-sec-lead">アミノ酸は酸とも塩基とも反応して塩をつくります。結晶中や水溶液中では、−COO⁻ と −NH₃⁺ を1分子にあわせもつ双性イオンになっています。</p></section>
 <p class="ref-p">アミノ酸の −NH₂ は塩基、−COOH は酸としてはたらきます。だからアミノ酸は、<b>塩酸とも水酸化ナトリウムとも反応して塩をつくります</b>。</p>

@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-3">第2編 物質の変化と平衡</a></div></header>
 <main class="wrap">
 <h1>平衡の移動 —— ルシャトリエの原理</h1>
 <p class="lede">平衡状態で温度・圧力・濃度を変えると、その変化を打ち消す方向に平衡が移動します。Ar を加えるときは体積一定か圧力一定かで結論が分かれ、触媒は平衡を移動させません。体積 V には原理を当てず、V の変化で起こる圧力の変化に当てます。</p>
-<div><span class="unit-label">化学平衡</span><span class="unit-label">平衡の移動</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第2編 物質の変化と平衡</span><span class="unit-label">平衡の移動</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-principle" data-ref-anchor="principle">ルシャトリエの原理 —— 変化を打ち消す方向へ</a></li><li><a href="#ref-sec-pressure" data-ref-anchor="pressure">圧力の変化 —— 分子の数で決まる</a></li><li><a href="#ref-sec-argon" data-ref-anchor="argon">反応しない気体（Ar）を加える —— 体積一定か圧力一定か</a></li><li><a href="#ref-sec-catalyst-reason" data-ref-anchor="catalyst-reason">触媒と、平衡が移動する理由</a></li><li><a href="#ref-sec-haber-bosch" data-ref-anchor="haber-bosch">ハーバー・ボッシュ法 —— 平衡論と速度論</a></li></ul></details></nav>
@@ -911,10 +933,10 @@ a.ref-link::before { content: '→ '; }
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（6問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.equilibrium.le-chatelier,theo.equilibrium.pressure-shift,theo.equilibrium.inert-gas,theo.equilibrium.catalyst-temperature,theo.equilibrium.volume-trap,theo.equilibrium.haber-bosch&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（6問・測定モード）">▶ 一問一答で解く（6問・測定モード）</button><a class="alt" href="/qa/?codes=theo.equilibrium.le-chatelier,theo.equilibrium.pressure-shift,theo.equilibrium.inert-gas,theo.equilibrium.catalyst-temperature,theo.equilibrium.volume-trap,theo.equilibrium.haber-bosch&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/equilibrium-constant/">← 化学平衡と平衡定数 —— 生成物が分子</a>
+<nav class="seq"><a href="/reference/pressure-equilibrium/">← 圧平衡定数と解離度</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/pressure-equilibrium/">圧平衡定数と解離度 →</a></nav>
+<a href="/reference/weak-acid-equilibrium/">弱酸・弱塩基の電離平衡 —— Ka ＝ cα² →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

@@ -110,7 +110,8 @@ function checkLinks(pages, planned) {
 /* ★★ 区分とグループ台帳（設計書 §31-1・§31-5・2026-09-19 便0a）。⚠ ディレクトリと qa を読めるのはここだけ。
  *
  * 見るのは4つ:
- *   ① ORDER.txt の並びが **区分の順**（有機 → 無機 → 理論）を崩していない
+ *   ① ★ 目次（reference-src/TOC.txt）: 本体がどのページにもちょうど1回・再掲の先が在る・
+ *      ORDER.txt が目次の本体を上から読んだ順と同じ（2026-09-23。前は「区分の順 有機 → 無機 → 理論」）
  *   ② `inorg.*` / `theo.*` のページは **qa/GROUPS.tsv の自分の行**と unit・unitLabel・group が一致する
  *      （⚠ 綴りが1字違うと、後で qa が項目を作ったときに「同じグループ」にならない）
  *   ③ 台帳のページは **書けているか、PLANNED.txt に居る**（＝ 他の便が `to:` で名指しできる）
@@ -119,17 +120,31 @@ function checkLinks(pages, planned) {
  *      ページを書く人と qa を作る人が別の便なので、どちらかが先に進むのは普通のこと）
  */
 const GROUPS = path.join(ROOT, 'qa', 'GROUPS.tsv');
-function checkDivisions(pages, planned) {
-    const rank = k => RM.DIVISIONS.findIndex(d => d.key === k);
-    let last = 0, lastId = null;
-    pages.forEach(p => {
-        const r = rank(RM.divisionOf(p.unit));
-        if (r < last) {
-            throw new Error(`reference-src/ORDER.txt: 「${p.id}」（${RM.divisionLabel(RM.divisionOf(p.unit))}）が`
-                + `「${lastId}」より後ろにあります。索引は区分ごとに ${RM.DIVISIONS.map(d => d.label).join(' → ')} の順に並べます`);
+const TOC = path.join(SRC, 'TOC.txt');
+function checkToc(pages) {
+    if (!existsSync(TOC)) throw new Error('reference-src/TOC.txt（目次）がありません');
+    const rows = RM.parseToc(readFileSync(TOC, 'utf8'));
+    const live = new Set(pages.map(p => p.id));
+    const seen = new Map();
+    rows.forEach(r => r.pages.forEach(x => {
+        if (!live.has(x.id)) throw new Error(`reference-src/TOC.txt: 「${r.section}」の ${x.ref ? '+' : ''}${x.id} は原稿がありません`);
+        if (!x.ref) {
+            if (seen.has(x.id)) throw new Error(`reference-src/TOC.txt: ${x.id} の本体が2回あります（「${seen.get(x.id)}」と「${r.section}」）。2回目は + を付けて再掲にします`);
+            seen.set(x.id, r.section);
         }
-        last = r; lastId = p.id;
-    });
+    }));
+    const lost = pages.filter(p => !seen.has(p.id)).map(p => p.id);
+    if (lost.length) throw new Error(`reference-src/TOC.txt: 目次に本体が無いページ: ${lost.join(', ')}（教科書の節の行に1つ足します）`);
+    const want = RM.tocOrder(rows), got = pages.map(p => p.id);
+    const i = want.findIndex((id, k) => id !== got[k]);
+    if (i >= 0) {
+        throw new Error(`reference-src/ORDER.txt の ${i + 1} 行目が「${got[i]}」で、目次（TOC.txt）の順では「${want[i]}」です
+`
+            + '   ★ 並びの正は TOC.txt。ORDER.txt は目次の本体を上から読んだ順に書きます');
+    }
+}
+function checkDivisions(pages, planned) {
+    checkToc(pages);
     if (!existsSync(GROUPS)) throw new Error('qa/GROUPS.tsv（グループ台帳）がありません');
     const rows = RM.parseGroups(readFileSync(GROUPS, 'utf8'));
     const byPage = new Map(rows.map(r => [r.page, r]));

@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/assembler/">パズルでみる有機化学</a> ／ <a href="/reference/">参考書</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-5">第4編 有機化合物</a></div></header>
 <main class="wrap">
 <h1>炭化水素の分類と一般式</h1>
 <p class="lede">炭化水素を6つのグループに分ける線の引き方と、それぞれの一般式。一般式は暗記しなくても、アルカンを基準に「二重結合で−2、三重結合で−4、環で−2」から組み立てられます。</p>
-<div><span class="unit-label">脂肪族炭化水素</span><span class="unit-label">分類・一般式</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第4編 有機化合物</span><span class="unit-label">炭化水素の分類と官能基</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-what" data-ref-anchor="what">まず2本の線を引く</a></li><li><a href="#ref-sec-classes" data-ref-anchor="classes">6つのグループと一般式</a></li><li><a href="#ref-sec-suffix" data-ref-anchor="suffix">名前のつくり方 —— 語尾と語頭</a></li><li><a href="#ref-sec-homolog" data-ref-anchor="homolog">一般式と同族体</a></li><li><a href="#ref-sec-why" data-ref-anchor="why">なぜ水素の数が減るのか</a></li></ul></details></nav>
@@ -906,10 +928,10 @@ a.ref-link::before { content: '→ '; }
 <h2>読みながら組む</h2>
 <div class="embed"><b>▶ アプリの中で開く</b><p>このページを資料ペインに開いた状態のアプリです。左で表を読みながら、右で分子を組めます。</p><button type="button" data-embed="/assembler/?open=reference&amp;code=org.ali.class-hydrocarbon" data-embed-title="▶ アプリの中で開く">▶ アプリの中で開く</button><a class="alt" href="/assembler/?open=reference&amp;code=org.ali.class-hydrocarbon" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/organic-formulas/">← 有機化合物の表し方 —— 分子式・構造式・示性式</a>
+<nav class="seq"><a href="/reference/organic-features/">← 有機化合物の特徴 —— 無機化合物と比べる</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/alkane/">アルカン —— 単結合だけでできた炭化水素 →</a></nav>
+<a href="/reference/functional-groups/">官能基 —— 性質を決めるパーツ →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

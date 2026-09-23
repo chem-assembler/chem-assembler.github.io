@@ -73,6 +73,28 @@ box-shadow:0 1px 2px rgba(32,36,43,.05)}
 .idx a:hover{border-color:var(--accent)}
 .idx b{display:block;font-size:16.5px;margin-bottom:5px}
 .idx span{display:block;font-size:13.5px;color:var(--dim);line-height:1.75}
+/* 再掲の行（本体は別の節）。細く・薄く ＝ 本体と見分ける */
+.idx li.ref{background:transparent;box-shadow:none;border-style:dashed}
+.idx li.ref a{padding:9px 17px}
+.idx li.ref b{font-size:14.5px;margin-bottom:2px;font-weight:600}
+.idx li.ref span{font-size:12.5px}
+/* 科目の見出し（化学基礎／化学）。★ 区別を色でも見せる（2026-09-23 ユーザー「区別を明確に」） */
+.course-head{font-size:24px;margin:56px 0 6px;padding:10px 16px;border:0;border-radius:12px;color:#fff}
+.course-head.course-basic{background:#2f7d6d}
+.course-head.course-adv{background:#3d5a99}
+.unit-label.course-basic{background:#2f7d6d;border-color:#2f7d6d;color:#fff}
+.unit-label.course-adv{background:#3d5a99;border-color:#3d5a99;color:#fff}
+/* 目次の先頭の飛び先（科目 → 編） */
+.toc-nav{margin:0 0 8px}
+.toc-jump{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px}
+.toc-jump a{font-size:13px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:var(--panel)}
+.toc-jump a.toc-course{color:#fff;font-weight:700;border:0}
+.toc-jump a.course-basic{background:#2f7d6d}
+.toc-jump a.course-adv{background:#3d5a99}
+h2[id],h3[id]{scroll-margin-top:12px}
+/* 編の見出し（索引）。節（h4）より一段強く */
+.part-head{font-size:19px;color:var(--fg);margin:36px 0 4px;padding:0 0 6px;border-bottom:2px solid var(--line)}
+.course-head + .part-head{margin-top:18px}
 /* ── 本文の組み（★ 実測して決めた。設計書 §20-2）─────────────────────────
    ⚠ 前は 15.5px / 572px ＝ 1行 36.9 字で、**字数はもう範囲の中**だった
      ＝ 「読みにくい」の主因は行長ではない。★ 大きさを上げ、
@@ -852,11 +874,11 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ 理論</div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-2">第1編 物質の状態</a></div></header>
 <main class="wrap">
 <h1>液体の蒸気圧と沸騰</h1>
 <p class="lede">密閉した容器の中で液体と蒸気が共存しているとき、蒸気の圧力は温度だけで決まる値（飽和蒸気圧）になります。飽和蒸気圧はその温度での蒸気の分圧の最大値で、液体の量や容器の体積には関係しません。蒸気圧が外圧に等しくなる温度が沸点です。</p>
-<div><span class="unit-label">物質の状態</span><span class="unit-label">蒸気圧と沸騰</span></div>
+<div><span class="unit-label course-adv">化学</span><span class="unit-label">第1編 物質の状態</span><span class="unit-label">蒸気圧と沸騰</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-equilibrium" data-ref-anchor="equilibrium">気液平衡と飽和蒸気圧</a></li><li><a href="#ref-sec-maximum" data-ref-anchor="maximum">飽和蒸気圧は分圧の最大値</a></li><li><a href="#ref-sec-curve" data-ref-anchor="curve">蒸気圧曲線 —— 温度が上がると蒸気圧は上がる</a></li><li><a href="#ref-sec-boiling" data-ref-anchor="boiling">沸騰と沸点 —— 蒸気圧が外圧に届いたとき</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
@@ -904,7 +926,7 @@ a.ref-link::before { content: '→ '; }
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（5問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.state.vapor-liquid-equilibrium,theo.state.vapor-pressure-property,theo.state.vapor-pressure-max,theo.state.vapor-pressure-curve,theo.state.boiling-point&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（5問・測定モード）">▶ 一問一答で解く（5問・測定モード）</button><a class="alt" href="/qa/?codes=theo.state.vapor-liquid-equilibrium,theo.state.vapor-pressure-property,theo.state.vapor-pressure-max,theo.state.vapor-pressure-curve,theo.state.boiling-point&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/states-of-matter/">← 物質の三態と熱運動</a>
+<nav class="seq"><a href="/reference/chemistry-world/">← 化学が拓く世界 —— 化学基礎を暮らしで振り返る</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
 <a href="/reference/gas-laws/">気体の法則と状態方程式 —— 比例と反比例で解く →</a></nav>
