@@ -3629,6 +3629,22 @@ html:not(.rec-short) #mobile-name-chip { display: none !important; }
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */

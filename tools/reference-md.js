@@ -425,11 +425,13 @@
         /* 節の見出し。`anchor` が `id="ref-sec-<anchor>"` になり、目次と用語の索引の行き先になる。
            ⚠ `lead`（この節で分かること）は**必須** —— 検索から着地した人が最初に読む1行なので、
               「見出しだけ在って何の節か分からない」を作らない（設計書 §19-1） */
-        section: { order: ['anchor', 'title', 'advanced', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'], bool: ['advanced'] },
+        /* ★ `course: adv`（v1622・2026-09-23 ユーザー「化学」の札を新設）＝ **化学（科目）の範囲**の節。化学基礎だけの人は読み飛ばせる。
+           ⚠ `advanced`（高校の範囲の外）とは別の印。⛔ 混ぜない（化学の範囲は高校の範囲の中） */
+        section: { order: ['anchor', 'title', 'advanced', 'course', 'lead', 'terms'], req: ['anchor', 'title', 'lead'], list: ['terms'], prose: ['lead'], bool: ['advanced'], enum: { course: ['adv'] } },
         /* ★ 節の下の小見出し（§20-5）。**本文では `## タイトル` と書ける**（`:::heading` と同じもの）。
            ⚠ **アンカーは持たない** —— 綴りは `#ref-sec-<anchor>` の1つだけ、という §19-2 の決めを
               増やさないため。★ だから**目次（`renderToc`）にも出さない**（目次の行き先は節だけ）。 */
-        heading: { order: ['title', 'advanced'], req: ['title'], list: [], prose: ['title'], bool: ['advanced'] },
+        heading: { order: ['title', 'advanced', 'course'], req: ['title'], list: [], prose: ['title'], bool: ['advanced'], enum: { course: ['adv'] } },
         /* 箇条書き。`ordered: true` で番号つき（素材の「手順 S1〜Sn」用） */
         list: { order: ['ordered', 'items'], req: ['items'], list: ['items'], listOnly: ['items'], prose: ['items'], bool: ['ordered'], hang: ['items'] },
         /* 図。⚠ `src` は **`reference-img/` の中のファイル名だけ**（パスも .. も書けない）。

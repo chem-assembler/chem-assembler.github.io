@@ -6369,6 +6369,15 @@ const REF_ADVANCED_WORD = '発展';
 /* 発展の印の札を1つ作る。★ **記号だけにしない**（`level` と同じ約束）。
    ⚠ 節の目次では `<a>` の**外**に置く —— `REF19` が「目次の文字 ＝ 節の題」で見ているので、
      中に入れると目次の文字が「題＋発展」になって節と食い違う。 */
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。発展の札（範囲の外）とは別の色・別の言葉 */
+function refCourseTag() {
+    const t = document.createElement('b');
+    t.className = 'ref-course-tag';
+    t.textContent = '化学';
+    t.title = '化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。';
+    return t;
+}
+
 function refAdvancedTag() {
     const t = document.createElement('b');
     t.className = 'ref-adv-tag';
@@ -6877,6 +6886,7 @@ class ReferenceBook {
         const h = document.createElement('h4');
         h.className = 'ref-sec-h';
         h.textContent = block.title;
+        if (block.course === 'adv') h.appendChild(refCourseTag());
         if (block.advanced) h.appendChild(refAdvancedTag());
         frag.appendChild(h);
         const lead = document.createElement('p');
@@ -6897,6 +6907,7 @@ class ReferenceBook {
         const h = document.createElement('h5');
         h.className = 'ref-h5' + (block.advanced ? ' ref-h5-advanced' : '');
         h.innerHTML = block.title;
+        if (block.course === 'adv') h.appendChild(refCourseTag());
         if (block.advanced) h.appendChild(refAdvancedTag());
         return h;
     }
@@ -7248,6 +7259,7 @@ class ReferenceBook {
             li.appendChild(a);
             /* ★★ 発展の節は**目次にも同じ印**を出す（語尾に「（発展）」と書いていた頃は
                目次と連動していなかった）。⚠ 印は `<a>` の外（`REF19` の突き合わせを壊さない） */
+            if (s.course === 'adv') li.appendChild(refCourseTag());
             if (s.advanced) li.appendChild(refAdvancedTag());
             ul.appendChild(li);
         });

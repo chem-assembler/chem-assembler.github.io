@@ -447,6 +447,8 @@ const LIGHT_OVERRIDE = [
        ⚠⚠ **この4つは前から読み替えてあったのに、名簿には載っていなかった**（2026-09-11）——
          `DARK_ASSUMING` が `#7fd6a4` を知らなかったので検査を素通りしていた（下で足した）。 */
     'ref-adv-tag', 'ref-sec-advanced', 'ref-h5-advanced', 'ref-adv', 'ref-adv-sum',
+    /* ★ 化学（科目）の範囲の札（v1622）。暗い地の #8fb8ff は明るい地で読めないので読み替える */
+    'ref-course-tag',
 ];
 /* ★ 明るい地でも**そのままでよい**もの（⚠ 1件ずつ理由を書く。書けないなら読み替える側） */
 const LIGHT_KEEP = {
@@ -507,6 +509,8 @@ const LIGHT_CSS = `
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -583,7 +587,7 @@ const touches = (light, c) => new RegExp('\\.' + c + '(?![A-Za-z0-9_-])').test(l
  *     —— **消えるのではなく、ほとんど変わらない**（画面は「それらしく」見える）。
  *   ★ そこで **透け（小数の α）を持つ `rgba()` を全部**見る。
  * ⚠ 明るいパステル（`#7fd6a4` ＝ 発展の緑）も足した。白地で 1.9:1 ＝ 読めない。 */
-const DARK_ASSUMING = /rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0?\.\d+\s*\)|#e0b0ff|#ffd166|#7fd6a4|#7ef\b|#fff\b|#ffffff\b/i;
+const DARK_ASSUMING = /rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0?\.\d+\s*\)|#e0b0ff|#ffd166|#7fd6a4|#8fb8ff|#7ef\b|#fff\b|#ffffff\b/i;
 
 function checkLightCoverage(extracted, light) {
     const bad = [];
