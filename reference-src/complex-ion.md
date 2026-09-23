@@ -10,6 +10,11 @@ codes:
   - inorg.metal.complex-naming
   - inorg.metal.complex-shape
   - inorg.metal.complex-redissolve
+  - inorg.metal.ligand-names
+  - inorg.metal.coordination-rule
+  - inorg.metal.complex-color
+  - inorg.metal.central-oxidation
+  - inorg.metal.thiosulfate-agbr
 source:
   - textbook:R5化学Vol.2-4編4章（錯イオンの定義・配位子と数詞・主な錯イオン5種の名前・形・配位数）
   - muki:separation-model.js（SEP_COMPLEXES の錯イオン6種と色、過剰の NH₃・NaOH で溶けるかどうか）
