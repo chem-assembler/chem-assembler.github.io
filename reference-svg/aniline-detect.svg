@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="430" viewBox="0 0 720 430" role="img">
+  <!-- アニリンの検出。さらし粉水溶液 → 赤紫／硫酸酸性の二クロム酸カリウム → 黒（アニリンブラック）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ★ 色だけに頼らない: 試験管の下に色の名前を文字で添える。 -->
+  <style>
+    .glass { stroke: #333; stroke-width: 3; fill: none; }
+    .lab { font-size: 20px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .res { font-size: 21px; font-weight: bold; }
+    .mid { text-anchor: middle; }
+  </style>
+
+  <text class="lab mid" x="360" y="30">アニリンの水溶液に加える</text>
+
+  <!-- ===== 加えるもの ===== -->
+  <text class="lab mid" x="200" y="72">さらし粉水溶液</text>
+  <text class="lab mid" x="520" y="72">二クロム酸カリウム</text>
+  <text class="small mid" x="520" y="94">（硫酸酸性）</text>
+
+  <!-- ===== スポイト ===== -->
+  <rect x="189" y="104" width="22" height="30" rx="10" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+  <path d="M 195 134 L 195 160 L 200 168 L 205 160 L 205 134" fill="#fff" stroke="#333" stroke-width="2" />
+  <path d="M 200 176 C 196 182, 196 188, 200 189 C 204 188, 204 182, 200 176 Z" fill="#e6eef0" stroke="#666" stroke-width="1.2" />
+
+  <rect x="509" y="104" width="22" height="30" rx="10" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+  <path d="M 515 134 L 515 160 L 520 168 L 525 160 L 525 134" fill="#fff" stroke="#333" stroke-width="2" />
+  <path d="M 520 176 C 516 182, 516 188, 520 189 C 524 188, 524 182, 520 176 Z" fill="#e8892a" stroke="#a0561a" stroke-width="1.2" />
+
+  <!-- ===== 試験管1: 赤紫 ===== -->
+  <path d="M 174 262 L 174 318 A 26 26 0 0 0 226 318 L 226 262 Z" fill="#a8286e" />
+  <path class="glass" d="M 168 196 L 174 200 L 174 318 A 26 26 0 0 0 226 318 L 226 200 L 232 196" />
+  <text class="res mid" x="200" y="382" fill="#a8286e">赤紫</text>
+
+  <!-- ===== 試験管2: 黒（アニリンブラック） ===== -->
+  <path d="M 494 262 L 494 318 A 26 26 0 0 0 546 318 L 546 262 Z" fill="#2b2b2b" />
+  <path class="glass" d="M 488 196 L 494 200 L 494 318 A 26 26 0 0 0 546 318 L 546 200 L 552 196" />
+  <text class="res mid" x="520" y="382" fill="#222">黒</text>
+  <text class="small mid" x="520" y="408">（アニリンブラック）</text>
+</svg>

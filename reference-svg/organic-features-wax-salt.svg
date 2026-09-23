@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="480" viewBox="0 0 880 480" role="img">
+  <!-- ろう（パラフィン・有機化合物）と食塩（NaCl・無機化合物）を、融ける温度・水・火の3つで比べる模式図。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ★ 中身は本文の「具体例で比べてみましょう」の段落だけ（ろう 60℃ほど・食塩 801℃・水・燃えるか）。
+         本文の比較表（9行）は写していない。
+       ★ 色だけに頼らない: ろう＝青・食塩＝赤だが、どこでも名前を文字で添える。 -->
+  <style>
+    .ax { stroke: #333; stroke-width: 2; fill: none; }
+    .tick { stroke: #333; stroke-width: 1.5; fill: none; }
+    .glass { stroke: #333; stroke-width: 2.5; fill: none; stroke-linejoin: round; }
+    .div { stroke: #bbb; stroke-width: 1.5; stroke-dasharray: 5 5; fill: none; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 15px; fill: #444; }
+    .name { font-size: 23px; font-weight: bold; }
+    .res { font-size: 20px; font-weight: bold; fill: #222; }
+    .mid { text-anchor: middle; }
+    .blue { fill: #1565c0; }
+    .red { fill: #c62828; }
+  </style>
+
+  <!-- ===== 融ける温度（0〜900℃ の目盛り。1℃ ＝ 0.711px、0℃ が x=210） ===== -->
+  <text class="lab" x="30" y="96">融ける温度</text>
+  <path class="ax" d="M 210 90 L 850 90" />
+  <g class="tick">
+    <path d="M 210 90 L 210 98" /><path d="M 281 90 L 281 96" /><path d="M 352 90 L 352 98" />
+    <path d="M 423 90 L 423 96" /><path d="M 494 90 L 494 98" /><path d="M 566 90 L 566 96" />
+    <path d="M 637 90 L 637 98" /><path d="M 708 90 L 708 96" /><path d="M 779 90 L 779 98" />
+    <path d="M 850 90 L 850 96" />
+  </g>
+  <text class="small mid" x="210" y="116">0</text>
+  <text class="small mid" x="352" y="116">200</text>
+  <text class="small mid" x="494" y="116">400</text>
+  <text class="small mid" x="637" y="116">600</text>
+  <text class="small mid" x="779" y="116">800</text>
+  <text class="small" x="840" y="116">℃</text>
+  <!-- ろう 約60℃ → x = 210 + 60 × 0.711 ≒ 253 -->
+  <polygon points="253,88 245,72 261,72" fill="#1565c0" />
+  <text class="lab mid blue" x="253" y="60">ろう 約60℃</text>
+  <!-- 食塩 801℃ → x = 210 + 801 × 0.711 ≒ 780 -->
+  <polygon points="780,88 772,72 788,72" fill="#c62828" />
+  <text class="lab mid red" x="780" y="60">食塩 801℃</text>
+
+  <!-- ===== 表の枠 ===== -->
+  <path class="div" d="M 20 140 L 860 140" />
+  <text class="lab mid" x="390" y="170">水に入れる</text>
+  <text class="lab mid" x="700" y="170">火をつける</text>
+  <path class="div" d="M 20 320 L 860 320" />
+  <path class="div" d="M 545 150 L 545 470" />
+
+  <!-- 行の見出し -->
+  <text class="name blue" x="40" y="250">ろう</text>
+  <text class="small" x="40" y="276">有機化合物</text>
+  <text class="name red" x="40" y="400">食塩</text>
+  <text class="small" x="40" y="426">無機化合物</text>
+
+  <!-- ===== ろう × 水: 溶けずに残る ===== -->
+  <path d="M 267 218 L 267 294 Q 267 300 273 300 L 327 300 Q 333 300 333 294 L 333 218 Z" fill="#dbe9f7" />
+  <rect x="283" y="210" width="34" height="16" rx="4" fill="#f5efd6" stroke="#8a7f5a" stroke-width="1.5" />
+  <path class="glass" d="M 262 188 L 267 193 L 267 294 Q 267 300 273 300 L 327 300 Q 333 300 333 294 L 333 193 L 338 188" />
+  <text class="res" x="370" y="252">溶けない</text>
+
+  <!-- ===== ろう × 火: 燃える ===== -->
+  <rect x="598" y="238" width="24" height="62" fill="#f5efd6" stroke="#8a7f5a" stroke-width="1.5" />
+  <path d="M 610 238 L 610 226" stroke="#333" stroke-width="2" />
+  <path d="M 610 188 C 598 204, 600 222, 610 226 C 620 222, 622 204, 610 188 Z" fill="#ffd27a" stroke="#e8892a" stroke-width="2" />
+  <text class="res" x="660" y="244">燃える</text>
+  <text class="small" x="660" y="270">CO₂ と H₂O ができる</text>
+
+  <!-- ===== 食塩 × 水: 溶ける ===== -->
+  <path d="M 267 368 L 267 444 Q 267 450 273 450 L 327 450 Q 333 450 333 444 L 333 368 Z" fill="#dbe9f7" />
+  <path class="glass" d="M 262 338 L 267 343 L 267 444 Q 267 450 273 450 L 327 450 Q 333 450 333 444 L 333 343 L 338 338" />
+  <text class="res" x="370" y="402">溶ける</text>
+  <text class="small" x="370" y="428">（見えなくなる）</text>
+
+  <!-- ===== 食塩 × 火: 燃えない（皿の下から加熱しても、食塩に炎は立たない） ===== -->
+  <path d="M 586 404 L 594 386 L 602 380 L 612 376 L 622 380 L 628 388 L 634 404 Z" fill="#f7f7f7" stroke="#888" stroke-width="1.5" />
+  <path d="M 574 404 Q 610 416 646 404" fill="none" stroke="#333" stroke-width="2.5" />
+  <path d="M 610 418 C 600 432, 602 446, 610 452 C 618 446, 620 432, 610 418 Z" fill="#ffd27a" stroke="#e8892a" stroke-width="2" />
+  <text class="res" x="660" y="402">燃えない</text>
+</svg>

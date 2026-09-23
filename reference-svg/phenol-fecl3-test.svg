@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="450" viewBox="0 0 820 450" role="img">
+  <!-- 塩化鉄(III) の呈色。フェノール（紫）・サリチル酸（赤紫）は呈色し、ベンジルアルコールは呈色しない。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ★ 色だけに頼らない: 試験管の下に色の名前を文字で添える。
+       ★ 分子の構造式は描かない（作図器の仕事）。見せるのは「−OH が環に直接付くかどうか」で分かれることだけ。 -->
+  <style>
+    .glass { stroke: #333; stroke-width: 3; fill: none; }
+    .lab { font-size: 20px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .res { font-size: 21px; font-weight: bold; }
+    .mid { text-anchor: middle; }
+    .div { stroke: #bbb; stroke-width: 1.5; stroke-dasharray: 5 5; fill: none; }
+    .brace { stroke: #666; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <text class="lab mid" x="410" y="30">どれも 塩化鉄(III) 水溶液 を加える</text>
+
+  <!-- ===== スポイト（3本共通） ===== -->
+  <g id="drop">
+    <rect x="159" y="46" width="22" height="30" rx="10" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+    <path d="M 165 76 L 165 102 L 170 110 L 175 102 L 175 76" fill="#fff" stroke="#333" stroke-width="2" />
+    <path d="M 170 118 C 166 124, 166 130, 170 131 C 174 130, 174 124, 170 118 Z" fill="#e8c34a" stroke="#a07f1c" stroke-width="1.2" />
+  </g>
+  <use href="#drop" x="220" />
+  <use href="#drop" x="480" />
+
+  <!-- ===== 試験管1: フェノール → 紫 ===== -->
+  <path d="M 144 210 L 144 276 A 26 26 0 0 0 196 276 L 196 210 Z" fill="#6a2c91" />
+  <path class="glass" d="M 138 138 L 144 142 L 144 276 A 26 26 0 0 0 196 276 L 196 142 L 202 138" />
+  <text class="lab mid" x="170" y="340">フェノール</text>
+  <text class="res mid" x="170" y="372" fill="#6a1b9a">紫</text>
+
+  <!-- ===== 試験管2: サリチル酸 → 赤紫 ===== -->
+  <path d="M 364 210 L 364 276 A 26 26 0 0 0 416 276 L 416 210 Z" fill="#a8286e" />
+  <path class="glass" d="M 358 138 L 364 142 L 364 276 A 26 26 0 0 0 416 276 L 416 142 L 422 138" />
+  <text class="lab mid" x="390" y="340">サリチル酸</text>
+  <text class="res mid" x="390" y="372" fill="#a8286e">赤紫</text>
+
+  <!-- 区切り -->
+  <path class="div" d="M 520 60 L 520 420" />
+
+  <!-- ===== 試験管3: ベンジルアルコール → 呈色しない ===== -->
+  <path d="M 624 210 L 624 276 A 26 26 0 0 0 676 276 L 676 210 Z" fill="#f3dc86" />
+  <path class="glass" d="M 618 138 L 624 142 L 624 276 A 26 26 0 0 0 676 276 L 676 142 L 682 138" />
+  <text class="lab mid" x="650" y="340">ベンジルアルコール</text>
+  <text class="res mid" x="650" y="372" fill="#333">呈色しない</text>
+  <text class="small mid" x="650" y="396">（塩化鉄(III) の色のまま）</text>
+
+  <!-- ===== 規則（下の帯） ===== -->
+  <path class="brace" d="M 130 408 L 130 416 L 430 416 L 430 408" />
+  <text class="small mid" x="280" y="440">−OH が環に直接付いている（フェノール類）</text>
+  <path class="brace" d="M 570 408 L 570 416 L 730 416 L 730 408" />
+  <text class="small mid" x="650" y="440">−OH は環に直接付いていない</text>
+</svg>
