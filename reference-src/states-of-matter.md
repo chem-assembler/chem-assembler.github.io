@@ -13,6 +13,19 @@ codes:
   - theo.state.phase-diagram
   - theo.state.gas-pressure
   - theo.state.pressure-units
+  - theo.state.diffusion
+  - theo.state.speed-distribution
+  - theo.state.pressure-conversion
+  - theo.state.mercury-density
+  - theo.state.piston-balance
+  - theo.state.melting-boiling-point
+  - theo.state.physical-change
+  - theo.state.phase-change-example
+  - theo.state.phase-enthalpy-def
+  - theo.state.vaporization-larger
+  - theo.state.heating-calc
+  - theo.state.phase-diagram-curves
+  - theo.state.ice-pressure-mp
 source:
   - textbook:化学基礎_000-030_巻頭+1編（物質の三態・状態間の変化・昇華と凝華・加熱曲線）
   - textbook:R5化学Vol.1-1編（熱運動と拡散・絶対温度 T＝t＋273・融解と蒸発・状態図・三重点と臨界点・水と二酸化炭素の状態図の数値）
