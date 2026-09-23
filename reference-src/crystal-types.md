@@ -11,6 +11,10 @@ codes:
   - theo.structure.crystal-classify
   - theo.structure.crystal-mp
   - theo.structure.amorphous
+  - theo.structure.crystal-particle-force
+  - theo.structure.crystal-hardness
+  - theo.structure.non-molecular-formula
+  - theo.structure.amorphous-reason
 source:
   - textbook:化学基礎 2編2章（金属結合・金属の性質・化学結合と物質の分類・結晶の融点）
   - textbook:R5化学Vol.1-1編 1章・4章（粒子の間の力の強さの順・結晶の種類・結晶と非晶質（ガラス・アモルファスシリコン））
