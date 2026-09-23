@@ -56313,7 +56313,9 @@
             '「:///」（3本の斜線の URL）がメモとして切られた');
         /* ★ いま在る原稿にも、メモが本文へ漏れていないこと（実データ側の確かめ） */
         const live = JSON.parse(await (await fetch('reference.json?nocache=' + Date.now())).text());
-        live.forEach(p => (p.blocks || []).forEach(b => assert(JSON.stringify(b).indexOf('//') < 0,
+        // ⚠ 出典の URL 欄（creditUrl・licenseUrl）は https:// を持つのが当たり前なので外して見る（2026-09-24）
+        const noUrl = (b) => { const c = Object.assign({}, b); delete c.creditUrl; delete c.licenseUrl; return c; };
+        live.forEach(p => (p.blocks || []).forEach(b => assert(JSON.stringify(noUrl(b)).indexOf('//') < 0,
             `${p.id}: 本文に「//」が残っている（著者メモが画面に出る）: ${JSON.stringify(b).slice(0, 80)}`)));
 
         /* ── ③ 型を書かない囲みの既定 ── */
@@ -56353,6 +56355,13 @@
         red('# ページの題\n', '本文の h1');
         /* ⚠ 図の alt は「画像が出ない人が読む文」。★ 「図」で済ませたときに**何を書くか**まで言うこと */
         red(':::figure\nsrc: alkane-substitution.png\nalt: 図\ncaption: 説明の文です。\n:::\n', '図の alt が短い');
+        /* ★ 出典の4欄（他人の写真・2026-09-24）。欠け・http・知らないライセンス名・出典なしの .jpg は赤 */
+        const cr = (lines) => ':::figure\nsrc: phenol-crystal.jpg\nalt: 無色の結晶の写真です\ncaption: 説明の文です。\n' + lines + ':::\n';
+        const credit4 = 'credit: 撮った人\ncreditUrl: https://example.org/a\nlicense: CC BY-SA 3.0\nlicenseUrl: https://creativecommons.org/licenses/by-sa/3.0/\n';
+        red(cr('credit: 撮った人\nlicense: CC BY-SA 3.0\n'), '出典の欄が欠けている');
+        red(cr(credit4.replace('https://example.org/a', 'http://example.org/a')), '出典の URL が https でない');
+        red(cr(credit4.replace('CC BY-SA 3.0', 'CC-BY-SA3.0')), '知らないライセンスの綴り');
+        red(cr('').replace('phenol-crystal.jpg', 'x-photo.jpg'), '出典の無い .jpg');
         /* ⚠⚠ 実際に起きた形 —— 見出しのつもりの素の1行が、**赤にならずに段落として画面に出た**。
            ★ 実測で線を引いた（6ページ45段落のうち句点なしはその1行だけ・次に短い段落は55字）。
            ⚠ **拾って勝手に見出しにしない**（どちらのつもりかは書いた人しか知らない）＝ 断って直し方を見せる。 */

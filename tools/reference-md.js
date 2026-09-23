@@ -455,7 +455,12 @@
         /* ★★ 段2（DESIGN_figure_marks.md §5）: **`gen:` も何行でも**（1行 ＝ 1分子・横一列）・分子の間を結ぶ `between:`。
            ⚠ `gen:` は**1行なら今までどおり文字列**（`oneScalar`）＝ 既存の図の reference.json は1文字も変わらない。
              2行以上のときだけ並びになる */
-        figure: { order: ['src', 'gen', 'shot', 'svg', 'mark', 'between', 'alt', 'caption'], req: ['src', 'alt', 'caption'], list: [], multi: ['gen', 'mark', 'between'], oneScalar: ['gen'], prose: ['caption'], raw: ['shot', 'mark', 'between'] },
+        /* ★★ 出典の4欄（2026-09-24・ユーザー「出典表示つきで置いてください」）。**他人の写真**（Wikimedia Commons の
+           CC BY-SA など）を置くときだけ書く。`credit`（撮影者・入手元）・`creditUrl`（元のページ）・`license`（名前）・
+           `licenseUrl`（ライセンスの本文）。⚠ 4つそろえて書く（1つでも欠けると表示の条件を満たさない）。
+           ★ 図の下に「写真: <credit> ／ <license>」をリンクつきで出す（learn.js の renderFigure ＝ 面A・面B 共通）。
+           ⚠ URL は `raw`（記法も文字の検査も通さない）。画面には textContent と href でしか出さない */
+        figure: { order: ['src', 'gen', 'shot', 'svg', 'mark', 'between', 'alt', 'caption', 'credit', 'creditUrl', 'license', 'licenseUrl'], req: ['src', 'alt', 'caption'], list: [], multi: ['gen', 'mark', 'between'], oneScalar: ['gen'], prose: ['caption'], raw: ['shot', 'mark', 'between', 'creditUrl', 'licenseUrl'] },
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒）。
            ★ `arrow` は矢印そのもの（§31-2）。**書かなければ →**（有機46枚は1文字も変わらない） */
@@ -582,6 +587,10 @@
 
     /* 図のファイル名。⚠ **名前だけ**（`/` も `..` も許さない）。置き場所を .md 側から動かせない形にする */
     var FIGURE_SRC_RE = /^[a-z0-9][a-z0-9-]*\.png$/;
+    /* 出典つきの写真（他人の写真を加工せずに置く）だけ .jpg を許す（2026-09-24） */
+    var FIGURE_PHOTO_RE = /^[a-z0-9][a-z0-9-]*\.jpg$/;
+    /* 出典の license に書ける名前（綴りを1つに決める） */
+    var FIGURE_LICENSES = ['CC BY-SA 3.0', 'CC BY-SA 4.0', 'CC BY 3.0', 'CC BY 4.0', 'CC0', 'パブリックドメイン'];
     /* 図のソース（SVG）のファイル名。置き場所は `reference-svg/` 固定（src と同じ理由） */
     var FIGURE_SVG_RE = /^[a-z0-9][a-z0-9-]*\.svg$/;
     /* 節のアンカー。⚠ URL の `#` の後ろに出るので、英小文字・数字・ハイフンだけ */
@@ -1024,9 +1033,29 @@
         if (b.kind === 'figure') {
             /* ⚠ **パスを書かせない。** 置き場所（reference-img/）を .md 側から動かせると、
                面Aと面Bで別の場所を指す図ができる（設計書 §19-4） */
-            if (!FIGURE_SRC_RE.test(b.src)) {
+            /* ★ 出典の4欄（他人の写真）。4つそろっているか・URL は https か・ライセンスは知っている名前か */
+            var CREDIT_KEYS = ['credit', 'creditUrl', 'license', 'licenseUrl'];
+            var hasCredit = CREDIT_KEYS.filter(function (k) { return Object.prototype.hasOwnProperty.call(b, k); });
+            if (hasCredit.length && hasCredit.length < CREDIT_KEYS.length) {
+                fail(where, ':::figure の出典は ' + CREDIT_KEYS.join(' / ') + ' の4つをそろえて書きます（いまは ' + hasCredit.join(' / ') + ' だけ）'
+                    + '\n    ★ 直し方: 作者（credit）・元のページ（creditUrl）・ライセンスの名前（license）・ライセンスの本文（licenseUrl）を全部書きます。どれかが欠けると表示の条件を満たしません');
+            }
+            if (hasCredit.length) {
+                ['creditUrl', 'licenseUrl'].forEach(function (k) {
+                    if (!/^https:\/\/[^\s<>"]+$/.test(b[k])) {
+                        fail(where, ':::figure の ' + k + ' は https:// で始まる URL を1つだけ書きます（いまは「' + b[k] + '」）'
+                            + '\n    ★ 直し方: http:// なら https:// に直し、空白や説明の文を URL の後ろに付けません');
+                    }
+                });
+                if (FIGURE_LICENSES.indexOf(b.license) < 0) {
+                    fail(where, ':::figure の license は ' + FIGURE_LICENSES.join(' / ') + ' のどれかです（いまは「' + b.license + '」）'
+                        + '\n    ★ 直し方: 上の名前の綴りのとおりに書きます。⚠ 名前を1つに決めておかないと、同じライセンスが違う綴りで並びます');
+                }
+            }
+            /* ⚠ .jpg は**出典つきの写真だけ**（元のファイルを加工せずに置くため。変換も加工にあたりうる） */
+            if (!(FIGURE_SRC_RE.test(b.src) || (hasCredit.length && FIGURE_PHOTO_RE.test(b.src)))) {
                 fail(where, ':::figure の src は reference-img/ の中のファイル名だけを書きます'
-                    + '（英小文字・数字・ハイフン ＋ .png。パスや .. は書けません。いまは「' + b.src + '」）');
+                    + '（英小文字・数字・ハイフン ＋ .png。出典の4欄を書いた写真だけ .jpg も可。パスや .. は書けません。いまは「' + b.src + '」）');
             }
             /* ⚠ `alt` は**画像が出ない人が読む文**。空でも「図」でもなく、中身を言うこと */
             if (b.alt.length < 6) {

@@ -212,6 +212,8 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
 .ref-scope .ref-figure-cap{font-size:13.5px}
+.ref-scope .ref-figure-credit{font-size:12px;margin:2px 0 0}
+.ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
 .ref-scope .ref-rx-eq{font-size:17.5px}
 .ref-scope .ref-hand-table{font-size:15px}
@@ -625,6 +627,9 @@ footer a:hover{color:var(--brand)}
     border: 1px solid var(--border-color);
 }
 .ref-figure-cap { font-size: 11.5px; color: var(--text-muted); margin: 5px 0 0; line-height: 1.6; }
+/* 出典（他人の写真・2026-09-24）。キャプションより一段小さく、リンクは下線で分かるように */
+.ref-figure-credit { font-size: 10.5px; color: var(--text-muted); margin: 2px 0 0; line-height: 1.5; }
+.ref-figure-credit a { color: inherit; text-decoration: underline; }
 /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・§19-5） */
 .ref-rx {
     margin: 0 0 14px;
@@ -915,6 +920,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-carboxylic-acid/">カルボン酸とフェノール類の両方の性質をもつサリチル酸のページへ</a></p>
 <section class="ref-sec" id="ref-sec-props"><h4 class="ref-sec-h">フェノールの性質</h4><p class="ref-sec-lead">特有のにおいをもつ無色の結晶。水に少し溶け、皮膚をおかします。</p></section>
 <p class="ref-p">フェノールは、<b>特有のにおいをもつ無色の結晶</b>です。水には<b>少しだけ</b>溶け、有機溶媒にはよく溶けます。<b>有毒で、皮膚をおかします</b>。</p>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-crystal.jpg" alt="試験管の底にたまった、無色で透明なフェノールの結晶の写真。細かい粒状の結晶がたくさん集まっている" loading="lazy"><figcaption class="ref-figure-cap">フェノールの結晶。無色ですが、空気中に置くと酸化されて、しだいに赤みを帯びてきます。</figcaption><p class="ref-figure-credit">写真: <a href="https://commons.wikimedia.org/wiki/File:Phenol_2_grams.jpg" target="_blank" rel="noopener noreferrer">W. Oelen（Wikimedia Commons）</a> ／ <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.ja" target="_blank" rel="noopener noreferrer">CC BY-SA 3.0</a></p></figure>
 <section class="ref-sec" id="ref-sec-acidity"><h4 class="ref-sec-h">弱い酸性 —— アルコールとの決定的な違い</h4><p class="ref-sec-lead">フェノール類の水溶液はごく弱い酸性を示します。アルコールの −OH は中性です。</p></section>
 <p class="ref-p">フェノール類は、水溶液中で −OH の H がわずかに電離するので、<b>ごく弱い酸性</b>を示します。同じ −OH をもつ<b>アルコールは中性</b>で、ここがフェノール類とアルコールの決定的な違いです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅OH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅O⁻ ＋ H⁺</span></div><p class="ref-note">ごくわずかに電離します。電離する度合いは、酢酸などのカルボン酸よりもずっと小さいです。</p></div>

@@ -6311,6 +6311,7 @@
 {"kind":"link","to":"aromatic-carboxylic-acid","text":"カルボン酸とフェノール類の両方の性質をもつサリチル酸のページへ"},
 {"kind":"section","anchor":"props","title":"フェノールの性質","lead":"特有のにおいをもつ無色の結晶。水に少し溶け、皮膚をおかします。","terms":["無色の結晶"]},
 {"kind":"text","text":"フェノールは、<b>特有のにおいをもつ無色の結晶</b>です。水には<b>少しだけ</b>溶け、有機溶媒にはよく溶けます。<b>有毒で、皮膚をおかします</b>。"},
+{"kind":"figure","src":"phenol-crystal.jpg","alt":"試験管の底にたまった、無色で透明なフェノールの結晶の写真。細かい粒状の結晶がたくさん集まっている","caption":"フェノールの結晶。無色ですが、空気中に置くと酸化されて、しだいに赤みを帯びてきます。","credit":"W. Oelen（Wikimedia Commons）","creditUrl":"https://commons.wikimedia.org/wiki/File:Phenol_2_grams.jpg","license":"CC BY-SA 3.0","licenseUrl":"https://creativecommons.org/licenses/by-sa/3.0/deed.ja"},
 {"kind":"section","anchor":"acidity","title":"弱い酸性 —— アルコールとの決定的な違い","lead":"フェノール類の水溶液はごく弱い酸性を示します。アルコールの −OH は中性です。","terms":["弱酸","ナトリウムフェノキシド"]},
 {"kind":"text","text":"フェノール類は、水溶液中で −OH の H がわずかに電離するので、<b>ごく弱い酸性</b>を示します。同じ −OH をもつ<b>アルコールは中性</b>で、ここがフェノール類とアルコールの決定的な違いです。"},
 {"kind":"reaction","left":"C₆H₅OH","right":"C₆H₅O⁻ ＋ H⁺","level":"★★☆","note":"ごくわずかに電離します。電離する度合いは、酢酸などのカルボン酸よりもずっと小さいです。"},

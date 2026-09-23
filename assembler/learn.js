@@ -6962,6 +6962,25 @@ class ReferenceBook {
         cap.className = 'ref-figure-cap';
         cap.innerHTML = block.caption;
         fig.appendChild(cap);
+        /* ★ 出典（他人の写真・2026-09-24）。「写真: <作者> ／ <ライセンス>」をリンクつきで。
+           ⚠ innerHTML を使わない（原稿の文字をそのまま textContent と href で出す） */
+        if (block.credit && block.creditUrl && block.license && block.licenseUrl) {
+            const cr = document.createElement('p');
+            cr.className = 'ref-figure-credit';
+            const link = (text, href) => {
+                const a = document.createElement('a');
+                a.href = href;
+                a.textContent = text;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                return a;
+            };
+            cr.appendChild(document.createTextNode('写真: '));
+            cr.appendChild(link(block.credit, block.creditUrl));
+            cr.appendChild(document.createTextNode(' ／ '));
+            cr.appendChild(link(block.license, block.licenseUrl));
+            fig.appendChild(cr);
+        }
         return fig;
     }
 

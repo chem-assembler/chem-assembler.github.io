@@ -101,7 +101,16 @@ terms:
 
 フェノールは、**特有のにおいをもつ無色の結晶**です。水には**少しだけ**溶け、有機溶媒にはよく溶けます。**有毒で、皮膚をおかします**。
 
-//図: フェノールの結晶の写真（ユーザーの講義スライドに芳香族の写真は無い）
+//焼成: Wikimedia Commons「Phenol 2 grams.jpg」（W. Oelen・CC BY-SA 3.0・500×500）を加工せずに置いた（2026-09-24 ユーザー了承「出典表示つきで置いてください」）
+:::figure
+src: phenol-crystal.jpg
+alt: 試験管の底にたまった、無色で透明なフェノールの結晶の写真。細かい粒状の結晶がたくさん集まっている
+caption: フェノールの結晶。無色ですが、空気中に置くと酸化されて、しだいに赤みを帯びてきます。
+credit: W. Oelen（Wikimedia Commons）
+creditUrl: https://commons.wikimedia.org/wiki/File:Phenol_2_grams.jpg
+license: CC BY-SA 3.0
+licenseUrl: https://creativecommons.org/licenses/by-sa/3.0/deed.ja
+:::
 
 :::section
 anchor: acidity
