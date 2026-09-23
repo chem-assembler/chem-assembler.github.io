@@ -3582,6 +3582,54 @@ function straightChainSpot(mol, backbone, pendants, G) {
  * ⚠ **硫黄1個だった v1484 までは 2歩**（中点1つ）。**v1487 で 3歩**になった ―― 実際の架橋は
  * モノ／ジ／ポリスルフィドとさまざまで、その代表としてジ（-S-S-）を描くことにしたため。
  */
+/**
+ * ★ 加硫の1本目で、相手の鎖のどの C=C に橋を架けるかを**鎖がそろって重なる**ものに選び直す（I-0077・2026-09-23）。
+ *
+ * **症状**（v1623 の実測）: 2本の鎖を左右に並べると、いちばん近い組は「左の鎖の右端 × 右の鎖の左端」。
+ *   `stackChainsForBridge` はその2つだけを縦にそろえるので、鎖は2単位ずれて重なり、
+ *   **2本目・3本目の橋がどれも長い斜め線**になっていた（C…C 348〜557px ＝ 縦の橋の 1.4〜2.2倍）。
+ * ★ 選び直すのは**相手の鎖の側だけ**（`ca`・`ca2` は選んだまま）。鎖の R は「この先も同じ単位が続く」
+ *   印なので、相手の鎖のどの単位の C=C も化学としては同じ ＝ どれに架けても同じ加硫ゴムになる。
+ * ⚠ **1本目だけ**（すでに1分子なら null。動かすと架けた橋が伸びる）。
+ * ⚠ 数えるのは「寄せたあと x がそろう C=C の組」の数。元の組より多いときだけ選び直す（同点なら選んだまま）。
+ * @returns { cb, cb2 } または null
+ */
+function inRegisterPartner(mol, caId, ca2Id, cbId, cb2Id) {
+    const compB = componentOf(mol, cbId);
+    if (compB.has(caId)) return null;
+    const compA = componentOf(mol, caId);
+    const G = bondStep(mol);
+    if (!(G > 1)) return null;
+    const at = new Map(mol.atoms.map(a => [a.id, a]));
+    const mids = (comp) => mol.bonds
+        .filter(b => b.type === 2 && comp.has(b.atomId1) && comp.has(b.atomId2))
+        .map(b => (at.get(b.atomId1).x + at.get(b.atomId2).x) / 2);
+    const xa = mids(compA), xb = mids(compB);
+    const ca = at.get(caId);
+    const score = (p) => {
+        // ⚠ 格子への丸めは入れない（鎖が格子から外れて置かれていると、丸めの分だけ全部の組がずれて数えられない）
+        const dx = ca.x - at.get(p.cb).x;
+        return xa.filter(x => xb.some(y => Math.abs(x - (y + dx)) < G * 0.35)).length;
+    };
+    /* 候補は相手の鎖の C=C 全部（`vulcanizablePairs` は**いまの配置で**硫黄の席が空く組しか返さないので、
+     * 寄せる前の横並びでは遠い単位が候補に入らない）。向きは ca→ca2 と同じ向きになる端を cb にする */
+    const ca2 = at.get(ca2Id);
+    const sgn = Math.sign(ca2.x - ca.x);
+    const cands = mol.bonds
+        .filter(b => b.type === 2 && compB.has(b.atomId1) && compB.has(b.atomId2) &&
+            at.get(b.atomId1).element === 'C' && at.get(b.atomId2).element === 'C')
+        .map(b => {
+            const [p, q] = [at.get(b.atomId1), at.get(b.atomId2)];
+            return Math.sign(q.x - p.x) === sgn ? { cb: p.id, cb2: q.id } : { cb: q.id, cb2: p.id };
+        });
+    const same = (p) => new Set([p.cb, p.cb2, cbId, cb2Id]).size === 2;
+    const orig = cands.find(same);
+    let best = orig || null, bestScore = orig ? score(orig) : -1;
+    cands.forEach(p => { const s = score(p); if (s > bestScore) { best = p; bestScore = s; } });
+    if (!best || best === orig || same(best)) return null;
+    return { cb: best.cb, cb2: best.cb2 };
+}
+
 function stackChainsForBridge(mol, caId, cbId) {
     const ca = mol.atoms.find(a => a.id === caId);
     const cb = mol.atoms.find(a => a.id === cbId);
@@ -6645,10 +6693,19 @@ const REACTION_RULES = [
              * ⚠ 置けなければ座標は1つも動かず、今までどおりの絵になるだけ。
              * ⚠ 寄せると座標が変わるので、**硫黄の席は寄せたあとに取り直す**。 */
             const before = new Map(mol.atoms.map(a => [a.id, { x: a.x, y: a.y }]));
-            stackChainsForBridge(mol, ca, cb);
+            // ★ 1本目は相手の鎖の C=C を「鎖がそろって重なる」ものに選び直す（I-0077・`inRegisterPartner` の注記）
+            //   `reactor._inRegister = false` で今までどおり（否定対照）
+            const R0 = (typeof window !== 'undefined') ? window.reactor : null;
+            const reg = (R0 && R0._inRegister === false) ? null : inRegisterPartner(mol, ca, ca2, cb, cb2);
+            const [pb, pb2] = reg ? [reg.cb, reg.cb2] : [cb, cb2];
+            let [useB, useB2] = [pb, pb2];
+            // 選び直した相手で寄せられなければ、選んだ組のまま今までどおり寄せる
+            if (!stackChainsForBridge(mol, ca, pb) && reg) { useB = cb; useB2 = cb2; stackChainsForBridge(mol, ca, cb); }
             // detect が返した組をそのまま使う（置ける位置は detect 側で確かめてある）
-            const findBest = () => vulcanizablePairs(mol)
-                .find(p => p.ca === ca && p.ca2 === ca2 && p.cb === cb && p.cb2 === cb2);
+            // ⚠ 選び直した組は、`vulcanizablePairs` が逆の向き（相手の鎖の側を ca）で返すことがあるので、4原子の集合で引き当てる
+            const sameSet = (p, ids) => { const k = new Set([p.ca, p.ca2, p.cb, p.cb2]); return ids.every(id => k.has(id)); };
+            const findBest = () => vulcanizablePairs(mol).find(p => sameSet(p, [ca, ca2, useB, useB2])) ||
+                vulcanizablePairs(mol).find(p => p.ca === ca && p.ca2 === ca2 && p.cb === cb && p.cb2 === cb2);
             let best = findBest();
             if (!best) {
                 // 寄せたせいで席が無くなることは（①②③の検査があるので）無いはずだが、
@@ -11765,6 +11822,8 @@ class Reactor {
             else g.showToast('この反応は実行できませんでした: ' + e.message);
             return;
         }
+        // ★ 並べた単量体をつなぐ反応は、生成物を単量体が並んでいた場所へ戻す（I-0077・`settleInPlace` の注記）
+        if (rule.wholeCanvas) this.settleInPlace(before, g.userMolecule);
         /* 「効くが、ふつうはそちらを使わない」の一言を**結果に添える**（v1428・同書 §12-3）。
          * ⚠ `apply` の外で足す ——「どの瓶から来たか」は反応の中身ではないので、
          *   `apply` に瓶ごとの分岐を1つも入れないまま言える（§12-1 の約束）。 */
@@ -12054,6 +12113,112 @@ class Reactor {
      * `apply` のあとに呼ぶ。`reuse` の付け替えだけは `mol` の id を書き換える（元素・結合・電荷は触らない）。
      * @returns { before, after, transient, renames, counts, hGap } または null（表に無い／収支が合わない ＝ 今までどおり）
      */
+    /**
+     * ★★ 並べた単量体をつないだ生成物を、**単量体が並んでいた場所へ戻す**（I-0077・2026-09-23）。
+     *
+     * ユーザーの原則「反応の前後の変化は、できるだけ結合のみの最小限にする」。
+     * **症状**（v1622 の実測・3個並べて重合）: イソプレンは左の単量体が右端へ行き（並びが左右反転）、
+     *   鎖全体が最大 826px 右へずれた。エチレン・スチレンも左の単量体が右へ 84〜270px 寄った。
+     *   ⚠ 原因は各 `apply` が**1個目の単量体を起点に鎖を伸ばす**（`planAttachment`・`linkVinylUnits`・
+     *   `layoutDieneChain`）ことで、伸びる向きが単量体の頭尾で決まり、画面の並びを見ていないこと。
+     * ★ 直し方: `apply` の中身（鎖の形・置換基の倒し方・シス形）には1つも触らず、できた生成物を
+     *   **剛体として**動かす ＝ 「そのまま」「左右の鏡映」「180° 回転」＋平行移動のうち、**各単量体の重心が
+     *   反応前の重心にいちばん近くなるもの**を採る（最小二乗）。
+     *   - 鏡映は左右だけ（上下を返すと PM15 の「置換基は真下」が上になる）。E/Z は鏡映で変わらない
+     *   - ⚠ フィッシャー投影やハース環の立体を持つ分子は**鏡映しない**（座標から読む立体が反転する）。
+     *     その代わりに **180° 回転**を試す（回転は立体を保つ）。スチレンの CH は座標から読むと
+     *     不斉中心になるので、SBR（共重合）はこちらで並びが戻る
+     *   - 平行移動は1原子が格子に乗るように丸める
+     *   - 動かした先で**ほかの分子に重なるなら動かさない**（今までどおりの図になるだけ）
+     * `_settleInPlace = false` で今までどおり（否定対照）。
+     * @returns 動かしたら { shape: 'none'|'mirror'|'rotate', dx, dy }、動かさなければ null
+     */
+    settleInPlace(before, mol) {
+        if (this._settleInPlace === false) return null;
+        const G = (typeof GRID_SIZE !== 'undefined') ? GRID_SIZE : 42;
+        // 反応前の成分（＝ 並べた単量体1個ずつ）
+        const parent = new Map(before.atoms.map(a => [a.id, a.id]));
+        const find = (x) => { while (parent.get(x) !== x) { parent.set(x, parent.get(parent.get(x))); x = parent.get(x); } return x; };
+        before.bonds.forEach(b => {
+            if (!parent.has(b.atomId1) || !parent.has(b.atomId2)) return;
+            const r1 = find(b.atomId1), r2 = find(b.atomId2);
+            if (r1 !== r2) parent.set(r1, r2);
+        });
+        const bPos = new Map(before.atoms.map(a => [a.id, a]));
+        const atomById = new Map(mol.atoms.map(a => [a.id, a]));
+        const done = new Set();
+        let moved = null;
+        mol.atoms.forEach(start => {
+            if (done.has(start.id)) return;
+            const comp = componentOf(mol, start.id);
+            comp.forEach(id => done.add(id));
+            // 反応前の成分ごとに、前と後の重心を集める
+            const units = new Map();
+            comp.forEach(id => {
+                const b = bPos.get(id);
+                if (!b) return;
+                const a = atomById.get(id);
+                const k = find(id);
+                if (!units.has(k)) units.set(k, { bx: 0, by: 0, ax: 0, ay: 0, n: 0 });
+                const u = units.get(k);
+                u.bx += b.x; u.by += b.y; u.ax += a.x; u.ay += a.y; u.n++;
+            });
+            if (units.size < 2) return; // 2個以上がつながった生成物だけ
+            const P = [], Q = [];
+            units.forEach(u => { P.push([u.bx / u.n, u.by / u.n]); Q.push([u.ax / u.n, u.ay / u.n]); });
+            const atoms = [...comp].map(id => atomById.get(id));
+            const cx = atoms.reduce((s, a) => s + a.x, 0) / atoms.length;
+            const cy = atoms.reduce((s, a) => s + a.y, 0) / atoms.length;
+            const sub = new Molecule();
+            const idMap = new Map();
+            atoms.forEach(a => { const na = sub.addAtom(a.element, a.x, a.y); copyAtomMarks(na, a); idMap.set(a.id, na.id); });
+            mol.bonds.forEach(b => {
+                if (idMap.has(b.atomId1) && idMap.has(b.atomId2)) sub.addBond(idMap.get(b.atomId1), idMap.get(b.atomId2), b.type);
+            });
+            const chiral = atoms.some(a => a.haworthFace === 1 || a.haworthFace === -1) ||
+                (typeof readAtomParityFromFischer === 'function' && Object.keys(readAtomParityFromFischer(sub) || {}).length > 0);
+            const mean = (arr) => [arr.reduce((s, p) => s + p[0], 0) / arr.length, arr.reduce((s, p) => s + p[1], 0) / arr.length];
+            // 形の変え方: そのまま／左右の鏡映／180° 回転（回転は立体を保つので、鏡映できない分子の代わり）
+            const shapes = {
+                none: (x, y) => [x, y],
+                mirror: (x, y) => [2 * cx - x, y],
+                rotate: (x, y) => [2 * cx - x, 2 * cy - y]
+            };
+            const plan = (kind) => {
+                const Qm = Q.map(([x, y]) => shapes[kind](x, y));
+                const mp = mean(P), mq = mean(Qm);
+                const t = [mp[0] - mq[0], mp[1] - mq[1]];
+                const cost = Qm.reduce((s, q, i) => s + (q[0] + t[0] - P[i][0]) ** 2 + (q[1] + t[1] - P[i][1]) ** 2, 0);
+                return { kind, t, cost };
+            };
+            let best = plan('none');
+            // 鏡映を先に試す（上下を保つ ＝ PM15 の「置換基は真下」が崩れない）。回転は鏡映できないときだけ
+            for (const kind of chiral ? ['rotate'] : ['mirror', 'rotate']) {
+                const m = plan(kind);
+                if (m.cost < best.cost * 0.8 && (best.kind === 'none' || m.cost < best.cost)) { best = m; break; }
+            }
+            // 格子に乗せる（最初の原子を基準に平行移動を丸める）
+            const ref = atoms[0];
+            const [r0x, r0y] = shapes[best.kind](ref.x, ref.y);
+            const rx = r0x + best.t[0], ry = r0y + best.t[1];
+            best.t[0] += Math.round(rx / G) * G - rx;
+            best.t[1] += Math.round(ry / G) * G - ry;
+            const to = (a) => { const [x, y] = shapes[best.kind](a.x, a.y); return [x + best.t[0], y + best.t[1]]; };
+            const shift = atoms.reduce((m, a) => { const [x, y] = to(a); return Math.max(m, Math.hypot(x - a.x, y - a.y)); }, 0);
+            if (shift < 1) return;
+            // 動かした先でほかの分子に重なるなら動かさない
+            const others = mol.atoms.filter(a => !comp.has(a.id));
+            const clash = atoms.some(a => {
+                const [x, y] = to(a);
+                return others.some(o => Math.hypot(o.x - x, o.y - y) < G * 0.75);
+            });
+            if (clash) return;
+            atoms.forEach(a => { const [x, y] = to(a); a.x = x; a.y = y; });
+            moved = { shape: best.kind, dx: Math.round(best.t[0]), dy: Math.round(best.t[1]) };
+        });
+        return moved;
+    }
+
     /**
      * ★★ 重合の鎖の端の R を、反応前の図に「鎖の続き」として置く（v1574・ユーザー決定 2026-09-17「7.進める」）。
      *

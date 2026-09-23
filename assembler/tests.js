@@ -30418,6 +30418,106 @@
         });
     });
 
+    /* ===== PM18・PM19: 反応の前後で分子を動かしすぎない（I-0077・ユーザー原則
+     *   「反応の前後の変化は、できるだけ結合のみの最小限にする」） ===== */
+    const unitCentroids = (g, W, names, ruleId, opts = {}) => {
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+        g.updateDrawing();
+        names.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+        const mol = g.userMolecule;
+        const units = [], seen = new Set();
+        mol.atoms.forEach(a => {
+            if (seen.has(a.id)) return;
+            const ids = [...g.moleculeAtomIdsOf(a.id)];
+            ids.forEach(i => seen.add(i));
+            units.push(ids);
+        });
+        const cx = (ids) => {
+            const at = ids.map(i => g.userMolecule.atoms.find(a => a.id === i)).filter(Boolean);
+            return at.reduce((s, a) => s + a.x, 0) / at.length;
+        };
+        const before = units.map(cx);
+        const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+        const sites = rule.detect(mol);
+        assert(sites.length, `${names[0]} ほか: ${ruleId} の箇所が無い`);
+        W.reactor._settleInPlace = opts.off ? false : undefined;
+        try { W.reactor.execute(rule, sites[0]); } finally { W.reactor._settleInPlace = undefined; }
+        const after = units.map(cx);
+        return { before, after, shift: Math.max(...after.map((x, i) => Math.abs(x - before[i]))) };
+    };
+    const ascending = (xs) => xs.every((x, i) => i === 0 || x > xs[i - 1]);
+
+    test('PM18: 並べた単量体をつなぐと、左右の並びはそのままで、鎖は単量体が並んでいた場所に残る（I-0077。否定対照: 戻す処理を止めるとイソプレンは左右が入れ替わり 800px 右へずれる）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const G = W.GRID_SIZE;
+        const cases = [
+            [['イソプレン', 'イソプレン', 'イソプレン'], 'diene_polymerization'],
+            [['クロロプレン', 'クロロプレン', 'クロロプレン'], 'diene_polymerization'],
+            [['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'], 'addition_polymerization'],
+            [['スチレン', 'スチレン', 'スチレン'], 'addition_polymerization'],
+            [['酢酸ビニル', '酢酸ビニル', '酢酸ビニル'], 'addition_polymerization'],
+            [['スチレン', '1,3-ブタジエン', 'スチレン'], 'copolymerization'],
+            [['アジピン酸', 'ヘキサメチレンジアミン', 'アジピン酸', 'ヘキサメチレンジアミン'], 'condensation_polymerization']
+        ];
+        cases.forEach(([names, ruleId]) => {
+            const r = unitCentroids(g, W, names, ruleId);
+            assert(ascending(r.before), `${names[0]}: 呼び出しが左から右へ並んでいない（前提）`);
+            assert(ascending(r.after),
+                `${names.join('・')} の ${ruleId}: 反応後に単量体の左右の並びが変わった（${r.after.map(Math.round).join(', ')}）`);
+            // 鎖は単量体の間隔より縮むので、そのぶん（端の単位で約6刻み）までは動いてよい
+            assert(r.shift < G * 6.5,
+                `${names.join('・')} の ${ruleId}: 単量体が ${Math.round(r.shift)}px 動いた（${Math.round(G * 6.5)}px 未満のはず）`);
+        });
+        // 否定対照: 戻す処理を止めると、今までどおり左右が入れ替わって大きくずれる（＝ 上の検査が効いている）
+        const off = unitCentroids(g, W, ['イソプレン', 'イソプレン', 'イソプレン'], 'diene_polymerization', { off: true });
+        assert(!ascending(off.after) && off.shift > G * 10,
+            `否定対照が効かない（止めても並び ${off.after.map(Math.round).join(', ')}・${Math.round(off.shift)}px）`);
+        // 名前（＝ 正準コード）は戻す処理の有無で変わらない（座標しか触らない）
+        const on = unitCentroids(g, W, ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'], 'addition_polymerization');
+        const codeOn = W.canonicalCode(g.userMolecule);
+        unitCentroids(g, W, ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'], 'addition_polymerization', { off: true });
+        assert(on && codeOn === W.canonicalCode(g.userMolecule), '戻す処理で正準コードが変わった');
+        c.reset();
+    });
+
+    test('PM19: 加硫を続けて押しても、橋はどれも2本の鎖のあいだに縦に短く架かる（I-0077・I-0073。否定対照: 1本目の相手を選び直さないと2本目から斜めの長い線になる）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        const bridge = (pair, off) => {
+            g.setMode('free');
+            g.userMolecule = new W.Molecule(); g.history = []; g.redoStack = [];
+            g.updateDrawing();
+            pair.forEach(n => assert(g.summonMolecule(n), `${n} が呼び出せない`));
+            W.reactor._inRegister = off ? false : undefined;
+            let n = 0;
+            try {
+                for (let k = 0; k < 5; k++) {
+                    const s = vul.detect(g.userMolecule);
+                    if (!s.length) break;
+                    W.reactor.execute(vul, s[0]);
+                    n++;
+                }
+            } finally { W.reactor._inRegister = undefined; }
+            const m = g.userMolecule;
+            const at = (id) => m.atoms.find(a => a.id === id);
+            const lens = m.bonds.filter(b => at(b.atomId1).element === 'S' || at(b.atomId2).element === 'S')
+                .map(b => Math.hypot(at(b.atomId1).x - at(b.atomId2).x, at(b.atomId1).y - at(b.atomId2).y));
+            return { n, longest: Math.max(...lens), S: m.atoms.filter(a => a.element === 'S').length };
+        };
+        [['ポリイソプレン', 'ポリイソプレン'], ['ポリ1,3-ブタジエン', 'ポリ1,3-ブタジエン'],
+         ['ポリクロロプレン', 'ポリクロロプレン'], ['ポリイソプレン', 'ポリ1,3-ブタジエン']].forEach(pair => {
+            const r = bridge(pair);
+            assert(r.n === 3 && r.S === 6, `${pair.join('＋')}: 橋が ${r.n} 本（3単位どうしで3本のはず）`);
+            assert(r.longest < 100, `${pair.join('＋')}: いちばん長い S の結合が ${Math.round(r.longest)}px（斜めの長い線）`);
+        });
+        const off = bridge(['ポリ1,3-ブタジエン', 'ポリ1,3-ブタジエン'], true);
+        assert(off.longest > 150, `否定対照が効かない（選び直さなくても最長 ${Math.round(off.longest)}px）`);
+        c.reset();
+    });
+
     /* ===== PU1〜PU3: 高分子の分子式を「(繰り返し単位)ₙ」で出す =====
      *
      * 発注は video-scripts/ORDER_polymer_formula_2026-09-07.md（ユーザー原文
@@ -30680,8 +30780,14 @@
             assert(heavyNb.length >= 2, `橋の足場 C(${Math.round(a.x)},${Math.round(a.y)}) が鎖の端`);
             assert(!heavyNb.some(n => n.atom.element === 'R'),
                 `橋の足場 C(${Math.round(a.x)},${Math.round(a.y)}) が R の隣＝鎖の末端に架かっている`);
-            assert(sites[0].includes(a.id), '橋の足場が detect の返した箇所に無い');
         });
+        /* 足場: 選んだ側（sites[0] の ca・ca2）はそのまま。相手の鎖の側は、1本目に限り
+         * 「鎖がそろって重なる」C=C に選び直してよい（I-0077・`inRegisterPartner`）——
+         * ただし**選んだ相手と同じ鎖**の上であること */
+        assert(nbs.some(a => sites[0].slice(0, 2).includes(a.id)), '選んだ側の C=C に橋が架かっていない');
+        const beforeChainOf = (id) => before.findIndex(cs => cs.some(a => a.id === id));
+        assert(nbs.some(a => beforeChainOf(a.id) === beforeChainOf(sites[0][2])),
+            '橋の相手側の足場が、選んだ相手の鎖の上に無い');
         // 足場は別々の鎖（＝橋が鎖どうしを結んでいる）
         const chainIdx = (id) => after.findIndex(cs => cs.some(a => a.id === id));
         assert(chainIdx(nbs[0].id) >= 0 && chainIdx(nbs[1].id) >= 0 &&
