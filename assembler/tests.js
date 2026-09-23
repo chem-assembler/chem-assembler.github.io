@@ -30373,6 +30373,51 @@
         c.reset();
     });
 
+    test('PM17: 「ポリ○○」を名前で呼び出せ（I-0075）、ゴムの鎖が1本なら加硫の札が出て、押すと2本目を呼んで箇所選びまで進む（I-0076。否定対照: 単量体・ポリスチレン・架空の名前）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D;
+        const count = (el) => g.userMolecule.atoms.filter(a => a.element === el).length;
+        // ① 5つとも呼べる ＝ 単量体3個ぶんの C と両端の R（LB23 の「3単位＋両端 R」の規約）
+        [['ポリイソプレン', 'イソプレン'], ['ポリ1,3-ブタジエン', '1,3-ブタジエン'],
+         ['ポリクロロプレン', 'クロロプレン'], ['ポリスチレン', 'スチレン'],
+         ['ポリメタクリル酸メチル', 'メタクリル酸メチル']].forEach(([poly, mono]) => {
+            const m = g.resolveCompound(mono);
+            assert(m, `${mono} がライブラリに無い（呼び出しの前提）`);
+            const monoC = m.mol.atoms.filter(a => a.element === 'C').length;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            assert(g.summonMolecule(poly), `${poly} を名前で呼び出せない`);
+            assert(count('R') === 2, `${poly} の両端の R が ${count('R')} 個`);
+            assert(count('C') === monoC * 3, `${poly} の C が ${count('C')} 個（単量体3個なら ${monoC * 3}）`);
+            assert(g.summonNames.includes(poly), `${poly} が名前の候補（補完）に無い`);
+        });
+        // 否定対照: 重合しない単量体の「ポリ○○」は作らない（架空の高分子を出さない）
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        assert(!g.buildPolymerByName('ポリエタノール'), '重合しない分子の「ポリ○○」が作られた');
+        assert(g.userMolecule.atoms.length === 0, '作れなかったのにキャンバスが変わった');
+
+        // ② 鎖が1本 → 加硫の札が出る（硫黄の瓶で空振りしたときも同じ札）
+        const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
+        const btns = partnerSetup(c, 'ポリイソプレン').filter(b => b.dataset.rule === 'vulcanization');
+        assert(btns.length === 1, `ポリイソプレン1本で加硫の札が ${btns.length} 枚`);
+        assert(btns[0].dataset.partner === 'ポリイソプレン', `呼ぶ鎖が ${btns[0].dataset.partner}`);
+        assert(W.findPartnerHints(g, null, ['vulcanization']).length === 1, '硫黄の瓶の空振りに札が出ない');
+        // ③ 押す → 2本目が並び、加硫の箇所が生える（9箇所 ＝ 箇所選びで止まる）
+        btns[0].click();
+        assert(count('R') === 4, `押したあとの鎖が ${count('R') / 2} 本`);
+        assert(vul.detect(g.userMolecule).length > 0, '2本並べても加硫の箇所が無い');
+        assert(D.getElementById('molecule-modal').classList.contains('hidden'), '押したあとモーダルが閉じない');
+        // 並べ終えたら札は出ない（もう押せる人に「呼びなさい」と言わない）
+        assert(!W.findPartnerHints(g, null).some(h => h.ruleId === 'vulcanization'), '2本あるのにまだ札が出る');
+        partnerCleanup(c);
+
+        // ④ 否定対照: 単量体・C=C の残らない高分子には出さない
+        ['イソプレン', 'ポリスチレン'].forEach(name => {
+            const b = partnerSetup(c, name).filter(x => x.dataset.rule === 'vulcanization');
+            assert(b.length === 0, `${name} に加硫の札が出た`);
+            partnerCleanup(c);
+        });
+    });
+
     /* ===== PU1〜PU3: 高分子の分子式を「(繰り返し単位)ₙ」で出す =====
      *
      * 発注は video-scripts/ORDER_polymer_formula_2026-09-07.md（ユーザー原文

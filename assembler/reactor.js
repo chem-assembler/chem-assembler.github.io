@@ -9147,7 +9147,66 @@ function findPartnerHints(game, baseIds, ruleIds) {
     });
     findSelfPartnerHints(game, baseIds, ruleIds, seenRules, hits);
     findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits);
+    findVulcanizePartnerHints(game, baseIds, ruleIds, seenRules, hits);
     return hits;
+}
+
+/* ==========================================================================
+ * ★ 加硫の入口（I-0076・2026-09-23）。ユーザーの報告「重合したあと加硫が出ない。理由も見えない」。
+ *
+ * 加硫は**2本の鎖のあいだ**に橋を架ける（`vulcanizablePairs` の注記）ので、鎖が1本だけでは
+ * 箇所が0 ＝ 反応の一覧に出ない。理由は硫黄の瓶の `miss` にしか書いていなかった。
+ * ★ ここでは縮合重合の入口（`findCoPolymerHints`）と同じ3点セットに乗せて、
+ *   「もう1本鎖を呼び出す → 加硫」の札を出す。呼ぶ名前は `ポリ○○`（`buildPolymerByName`
+ *   が単量体3個を 1,4-付加重合して作る。I-0075）。
+ * ⚠ 呼ぶ鎖は、いまの鎖と**同じ高分子**を優先する（正準コードで一致を見る）。
+ *   一致しなければ Cl を含むならポリクロロプレン、それ以外はポリイソプレン（天然ゴム）。
+ * ⚠ 出るかどうかを決めるのは `vulcanization.detect`（化学の判定）で、名前ではない。
+ * ========================================================================== */
+const VULCANIZE_RULE = 'vulcanization';
+const VULCANIZE_PARTNERS = ['ポリイソプレン', 'ポリ1,3-ブタジエン', 'ポリクロロプレン'];
+
+function findVulcanizePartnerHints(game, baseIds, ruleIds, seenRules, hits) {
+    if (seenRules.has(VULCANIZE_RULE)) return;
+    if (ruleIds && !ruleIds.includes(VULCANIZE_RULE)) return;
+    if (typeof game.buildPolymerByName !== 'function') return;
+    const rule = REACTION_RULES.find(r => r.id === VULCANIZE_RULE);
+    if (!rule || rule.info) return;
+    const mol = game.userMolecule;
+    // もう押せる人には出さない（§15 と同じ約束）
+    try { if (rule.detect(mol).length > 0) return; } catch (e) { return; }
+    const base = new Molecule();
+    copyMoleculeInto(base, mol, baseIds, 0);
+    // 鎖（両端の R）に C=C が残っているときだけ ＝ 単量体やふつうのアルケンには出さない
+    if (!base.atoms.some(a => a.element === 'R')) return;
+    if (!base.bonds.some(b => b.type === 2)) return;
+    let order = VULCANIZE_PARTNERS.slice();
+    const code = canonicalCode(base);
+    const built = new Map();
+    const build = (n) => {
+        if (!built.has(n)) built.set(n, game.buildPolymerByName(n));
+        return built.get(n);
+    };
+    const same = order.find(n => { const b = build(n); return b && canonicalCode(b.mol) === code; });
+    const fallback = base.atoms.some(a => a.element === 'Cl') ? 'ポリクロロプレン' : 'ポリイソプレン';
+    order = [...new Set([same, fallback].filter(Boolean))];
+    for (const name of order) {
+        const entry = build(name);
+        if (!entry) continue;
+        const trial = new Molecule();
+        const mine = copyMoleculeInto(trial, mol, baseIds, 0);
+        const maxX = Math.max(...trial.atoms.map(a => a.x), 0);
+        const minX = Math.min(...entry.mol.atoms.map(a => a.x), 0);
+        const theirs = copyMoleculeInto(trial, entry.mol, null, maxX - minX + 84);
+        let sites = [];
+        try { sites = rule.detect(trial) || []; } catch (e) { continue; }
+        const crossing = sites.filter(s => Array.isArray(s) &&
+            s.some(x => mine.has(x)) && s.some(x => theirs.has(x)));
+        if (!crossing.length) continue;
+        seenRules.add(VULCANIZE_RULE);
+        hits.push({ name, label: rule.label, ruleId: VULCANIZE_RULE, siteCount: crossing.length });
+        return; // 1つの反応につき候補は1つまで
+    }
 }
 
 /* ==========================================================================

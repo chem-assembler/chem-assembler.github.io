@@ -8964,7 +8964,7 @@ class Game {
         // ⚠ ここは**名前の集合**であって、画面に出る並びではない（v1526）。表示名の昇順のまま
         //   置いておく ＝ 使う側は `includes()`（下の「候補と完全一致したか」）のように
         //   **並びに用が無い**。画面の並びを決めるのは `summonCandidates`（規則はそこの上）
-        this.summonNames = [...new Set(this.getCompoundLibrary().map(e => e.name))].sort();
+        this.summonNames = [...new Set(this.getCompoundLibrary().map(e => e.name).concat(this.polymerSummonNames()))].sort();
         this._summonKeys = null;   // 名前が入れ替わったら物差しも作り直す
         // ★ 確定の受け口の履歴（**消さない**。同じ道を2度掘らないための記録）。
         //   ① `change` 1本だけだったころの実発生: **名前を打ち切ってから、先頭に出た
@@ -9135,9 +9135,67 @@ class Game {
 
     // ライブラリの化合物を名称からキャンバスへ配置する。既存分子の右側の空き位置へ
     // グリッド倍数の平行移動で置く（既存原子は動かさない）。1呼び出し=1 Undo
+    /**
+     * ★ 「ポリ○○」の呼び出し（v1623・I-0075 ユーザー要望「ポリ○○ で化合物を呼び出せるように」）。
+     * 登録に無い「ポリ＋単量体名」は、**単量体を3つ並べて、反応実行モードと同じ規則で重合させた鎖**を返す。
+     *   ・共役ジエン（イソプレン・1,3-ブタジエン・クロロプレン）は 1,4-付加重合（`diene_polymerization`）
+     *   ・C=C が1本の単量体は付加重合（`addition_polymerization`）
+     *   ⚠ 作図・結合の組み換えはここに書かない ——規則の `apply` をそのまま使う（両端の R も規則が付ける）。
+     *     ＝ 呼び出した鎖と、手で並べて重合させた鎖は同じ物（加硫などの次の反応がそのまま効く）
+     *   ⚠ `apply` は `game.userMolecule` を見るので、一時的に作業用の分子へ差し替えて戻す
+     * 作れなければ null（呼び出し側は「ライブラリにありません」を出す）
+     */
+    buildPolymerByName(name) {
+        const m = /^ポリ(.+)$/.exec(String(name == null ? '' : name).trim());
+        if (!m || typeof REACTION_RULES === 'undefined') return null;
+        const mon = this.resolveCompound(m[1]);
+        if (!mon) return null;
+        const src = mon.mol;
+        const xs = src.atoms.map(a => a.x);
+        const step = Math.round((Math.max(...xs) - Math.min(...xs) + GRID_SIZE * 2) / GRID_SIZE) * GRID_SIZE;
+        const tmp = new Molecule();
+        for (let k = 0; k < 3; k++) {
+            const idMap = new Map();
+            src.atoms.forEach(a => {
+                const na = tmp.addAtom(a.element, a.x + k * step, a.y);
+                copyAtomMarks(na, a);
+                idMap.set(a.id, na.id);
+            });
+            src.bonds.forEach(b => tmp.addBond(idMap.get(b.atomId1), idMap.get(b.atomId2), b.type));
+        }
+        const saved = this.userMolecule;
+        this.userMolecule = tmp;
+        let done = false;
+        try {
+            for (const id of ['diene_polymerization', 'addition_polymerization']) {
+                const rule = REACTION_RULES.find(r => r.id === id);
+                const sites = rule ? rule.detect(tmp) : [];
+                if (!sites.length) continue;
+                rule.apply(this, sites[0]);
+                done = true;
+                break;
+            }
+        } catch (e) {
+            console.warn('ポリ○○ の呼び出しに失敗:', name, e);
+            done = false;
+        } finally {
+            this.userMolecule = saved;
+        }
+        return done ? { name: String(name).trim(), mol: tmp } : null;
+    }
+
+    /* 候補の一覧に出す「ポリ○○」（高校・受験で出る合成高分子のうち、登録に無いもの）。
+       ⚠ 全部のアルケンに「ポリ」を付けると候補が意味の無い名前で埋まるので、名前を挙げたものだけ。
+         挙げていない「ポリ＋単量体名」も、打ち込めば `buildPolymerByName` が作る */
+    polymerSummonNames() {
+        const lib = new Set(this.getCompoundLibrary().map(e => e.name));
+        return ['ポリイソプレン', 'ポリ1,3-ブタジエン', 'ポリクロロプレン', 'ポリスチレン', 'ポリメタクリル酸メチル']
+            .filter(n => !lib.has(n) && this.resolveCompound(n.replace(/^ポリ/, '')));
+    }
+
     summonMolecule(name) {
         // 完全一致だけでなく、主名・別名でも引く（§9.6-10。`エチレン` で `エチレン（エテン）` が出る）
-        const entry = this.resolveCompound(name);
+        const entry = this.resolveCompound(name) || this.buildPolymerByName(name);
         if (!entry) {
             this.showToast('その名称はライブラリにありません。候補から選んでください。');
             return false;
