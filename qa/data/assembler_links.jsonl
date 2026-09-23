@@ -711,9 +711,6 @@
 {"code":"org.ali.formula-kinds","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
 {"code":"org.ali.rational-formula","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
 {"code":"org.ali.formula-same-molecular","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
-{"code":"theo.life.property-use","kind":"reference","label":"資料「化学と人間生活」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-and-life に載っている）"}
-{"code":"theo.life.structure-property","kind":"reference","label":"資料「化学と人間生活」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-and-life に載っている）"}
-{"code":"theo.life.mix-danger","kind":"reference","label":"資料「化学と人間生活」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-and-life に載っている）"}
 {"code":"theo.life.bond-material","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
 {"code":"theo.life.reaction-in-life","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
 {"code":"theo.life.recycle-resource","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
@@ -734,8 +731,6 @@
 {"code":"theo.structure.element-test-infer","kind":"reference","label":"資料「物質の分類と分離」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ substance-classification に載っている）"}
 {"code":"theo.state.gas-pressure","kind":"reference","label":"資料「物質の三態と熱運動」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ states-of-matter に載っている）"}
 {"code":"theo.state.pressure-units","kind":"reference","label":"資料「物質の三態と熱運動」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ states-of-matter に載っている）"}
-{"code":"theo.life.identify-by-property","kind":"reference","label":"資料「化学と人間生活」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-and-life に載っている）"}
-{"code":"theo.life.material-examples","kind":"reference","label":"資料「化学と人間生活」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-and-life に載っている）"}
 {"code":"theo.structure.pure-mixture-bp","kind":"reference","label":"資料「物質の分類と分離」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ substance-classification に載っている）"}
 {"code":"theo.structure.compound-decompose","kind":"reference","label":"資料「物質の分類と分離」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ substance-classification に載っている）"}
 {"code":"theo.structure.separation-example","kind":"reference","label":"資料「物質の分類と分離」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ substance-classification に載っている）"}

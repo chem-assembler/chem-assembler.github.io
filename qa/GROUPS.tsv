@@ -114,6 +114,6 @@ theo.ionic-eq	電離平衡	溶解度積	solubility-product	166	adv
 # ── 化学と人間生活（序章・終章の読み物・2026-09-23 ref-intro 便）──
 #   ⚠ chemistry-and-life は教科書の流れでは理論の先頭（substance-classification の前）が正しい位置。
 #     並びの 23 と 24 の間に隙間が無いので、いまは末尾に置いた（振り直しは統合側）
-theo.life	化学と人間生活	化学の特徴	chemistry-and-life	100	basic
-theo.life	化学と人間生活	化学が拓く世界	chemistry-world	131	basic
-theo.life	化学と人間生活	化学が果たす役割	chemistry-role	239	adv
+theo.life	化学と暮らし	化学とは何か	what-is-chemistry	100	basic
+theo.life	化学と暮らし	化学が拓く世界	chemistry-world	131	basic
+theo.life	化学と暮らし	化学が果たす役割	chemistry-role	239	adv

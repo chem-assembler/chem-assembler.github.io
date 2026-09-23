@@ -68,19 +68,9 @@ Lv の基準は [DESIGN_difficulty_frequency.md](DESIGN_difficulty_frequency.md)
 そのあと `data/exam_usage.jsonl` が広がった（1年ぶん → 2年ぶん）ので、今のデータで数え直すと違う。一覧の入試の欄は「②古い値→今の値」と並べて書く（表では `asToolNow`）。
 ⚠ **入試は Lv の規則に入らない**（入試→Lv は規則なし）ので、Lv にも目安にも効かない。**questions.json の値はこの表では変えない。**
 
-## 全項目（882件）
+## 全項目（877件）
 
-Lv の分布: Lv1 231件・Lv2 600件・Lv3 37件・Lv4 14件
-
-### sec-chemistry-and-life（化学と人間生活・5件）
-
-| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
-|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
-| `theo.life.property-use` | 化学の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `theo.life.structure-property` | 化学の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `theo.life.mix-danger` | 化学の特徴 | 2 | 見あたらない | — | 未登場 | — | ①未 ②0 |  | 2 | 1〜4 |  | 2 |
-| `theo.life.identify-by-property` | 化学の特徴 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `theo.life.material-examples` | 化学の特徴 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+Lv の分布: Lv1 228件・Lv2 598件・Lv3 37件・Lv4 14件
 
 ### sec-substance-classification（純物質と混合物・元素・成分元素の確認・11件）
 
@@ -386,7 +376,7 @@ Lv の分布: Lv1 231件・Lv2 600件・Lv3 37件・Lv4 14件
 | `theo.electro.charge-balance` | 電池の仕組み | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.electro.positive-reason` | 電池の仕組み | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
-### sec-chemistry-world（化学が拓く世界・5件）
+### sec-chemistry-world（化学基礎を暮らしで振り返る・5件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -1347,7 +1337,7 @@ Lv の分布: Lv1 231件・Lv2 600件・Lv3 37件・Lv4 14件
 | `org.poly.monomer-from-repeat-unit` | 高分子の総論 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `org.poly.condensation-water-count` | 高分子の総論 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
-### sec-chemistry-role（化学が果たす役割・7件）
+### sec-chemistry-role（化学と社会・7件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
@@ -1361,4 +1351,4 @@ Lv の分布: Lv1 231件・Lv2 600件・Lv3 37件・Lv4 14件
 
 ---
 
-生成元: `qa/questions.json`（882件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`
+生成元: `qa/questions.json`（877件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`

@@ -52,12 +52,10 @@ note: 結合を切るにはエネルギーが要るので、ΔH はいつも正�
 
 :::figure
 src: bond-enthalpy-methane.png
-gen: name=メタン plain circle
+gen: name=メタン plain paper expand=H
 alt: メタンの分子の図。中心の炭素 C の丸の上下左右に、水素 H の丸が1個ずつ、合計4個くっついている
 caption: メタン CH₄。C に H が4個つながっているので、**C−H 結合は4本**あります。結合の数は、構造を描いて数えるのが確実です。
 :::
-
-//図: 紙の図の型（paper）はメタンを CH₄ の文字で描いてしまうので、丸の図（circle）で焼いた。線で描いた構造式のほうがよければ第2周で差し替え
 
 :::table
 caption: おもな結合エンタルピー（kJ/mol）

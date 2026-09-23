@@ -1,4 +1,4 @@
-chemistry-and-life
+what-is-chemistry
 substance-classification
 states-of-matter
 atom-structure
