@@ -10,6 +10,8 @@ codes:
   - inorg.nonmetal.noble-gas-uses
   - inorg.nonmetal.hydrogen-prep
   - inorg.nonmetal.hydrogen-reductant
+  - inorg.nonmetal.hydrogen-props
+  - inorg.nonmetal.hydride-ion
 source:
   - slides:無機の基本３「貴ガスと水素」s5・s8-15（練習は s20-23）
   - textbook:R5化学Vol.2-4編（貴ガスの性質の確認）
