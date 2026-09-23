@@ -46,7 +46,7 @@
 <meta property="og:image:alt" content="化学レンズ（SchoolLenz）— 大学受験の化学を、見えるように。無料・広告なし・ログイン不要">
 <meta name="twitter:card" content="summary_large_image">
 <!-- qa (一問一答)  v55  (2026-08-10)  回帰テストの計測送信を止めた -->
-<link rel="stylesheet" href="style.css?v=148">
+<link rel="stylesheet" href="style.css?v=149">
 </head>
 <body>
 <div class="wrap">
@@ -55,7 +55,7 @@
          ⚠ 横並びのリンクはこの2本まで。ほかのアプリと同じく「🏠 化学レンズ」と書く -->
     <a class="back" href="../" aria-label="化学レンズのトップへ戻る">🏠 化学レンズ</a>
     <a class="brand" id="nav-home" href="./" aria-label="一問一答の単元一覧へ"><b>一問一答</b><span class="dom">化学</span></a>
-    <span class="version">v148</span>
+    <span class="version">v149</span>
   </div>
 </div>
 
@@ -71,6 +71,9 @@
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
       習得マップ（単元 × 難易度）
     </button>
+    <!-- 分野の切り替え（有機・無機・理論）。33単元を1列に並べると、無機・理論が有機の続きに見えた（2026-09-23）。
+         ⚠ #unit-list の外に置く ＝ #unit-list の子は単元カードだけ（tests.js が枚数を数える） -->
+    <div id="domain-tabs" class="domain-tabs" role="tablist" aria-label="分野"></div>
     <div id="unit-list"></div>
   </section>
 
@@ -112,7 +115,7 @@
 
 <div class="wrap"><footer>Schoollenz ／ 化学レンズ — 一問一答　·　<a href="/privacy.html" style="color:inherit">プライバシーポリシー</a></footer></div>
 
-<script src="app.js?v=148"></script>
-<script src="report.js?v=148"></script>
+<script src="app.js?v=149"></script>
+<script src="report.js?v=149"></script>
 </body>
 </html>

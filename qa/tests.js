@@ -1458,6 +1458,38 @@ function runUiTests(doc, DATA) {
         "単元カード " + unitCards().length + "枚 ≠ データの単元数 " + DATA.units.length);
     });
 
+    // 2026-09-23: 33単元が1列に続き、無機・理論が有機の下にぶらさがって見えた → 分野のタブで分ける
+    t("ホーム: 分野のタブ（有機・無機・理論）で、その分野の単元カードだけが見える", function () {
+      var tabs = Array.prototype.slice.call(d.querySelectorAll("#domain-tabs button[data-domain]"));
+      var names = tabs.map(function (b) { return b.getAttribute("data-domain"); });
+      assert(names.join(",") === "有機,無機,理論", "タブの並びが違う: " + names.join(","));
+      var KEY = "slz-qa-domain", saved = null;
+      try { saved = d.defaultView.localStorage.getItem(KEY); } catch (e) {}
+      try {
+        names.forEach(function (name) {
+          d.querySelector('#domain-tabs button[data-domain="' + name + '"]').click();
+          var shown = unitCards().filter(function (c) { return !c.classList.contains("hidden"); });
+          var want = DATA.units.filter(function (u) { return u.category_l === name + "化学"; }).length;
+          assert(want > 0 && shown.length === want, name + ": 見えるカード " + shown.length + "枚 ≠ " + want);
+          assert(shown.every(function (c) { return c.getAttribute("data-domain") === name; }),
+            name + ": 別の分野のカードが見えている");
+          var on = d.querySelector("#domain-tabs .is-on");
+          assert(on && on.getAttribute("data-domain") === name, name + ": 選んだタブが塗られていない");
+        });
+        // 習得マップ: 分野の見出しが3つ（有機・無機・理論が1本の列に続かない）
+        d.getElementById("btn-map").click();
+        var gd = Array.prototype.slice.call(d.querySelectorAll("#map-host .gd")).map(function (e) { return e.textContent; });
+        assert(gd.join(",") === "有機,無機,理論", "習得マップの分野の見出しが違う: " + gd.join(","));
+        d.getElementById("btn-map-back").click();
+      } finally {
+        try {
+          if (saved === null) d.defaultView.localStorage.removeItem(KEY); else d.defaultView.localStorage.setItem(KEY, saved);
+        } catch (e) {}
+        var first = d.querySelector('#domain-tabs button[data-domain="' + (saved || "有機") + '"]');
+        if (first) first.click();
+      }
+    });
+
     t("ホーム: 各カードに知識項目数が表示され、0件のカードがない", function () {
       unitCards().forEach(function (c) {
         var m = c.textContent.match(/知識項目\s*(\d+)/);

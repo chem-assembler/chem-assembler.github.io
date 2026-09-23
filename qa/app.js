@@ -205,10 +205,52 @@ function slTrack(name, params) {
     });
   }
 
+  // ---------- 分野（有機・無機・理論） ----------
+  // 単元の category_l（「有機化学」など）から「化学」を落とした名前で束ねる。並びはデータの順（参考書の目次と同じ）
+  function domainOf(u) { return String(u.category_l || '').replace(/化学$/, '') || 'その他'; }
+  function domainList() {
+    var out = [];
+    DATA.units.forEach(function (u) { if (out.indexOf(domainOf(u)) < 0) out.push(domainOf(u)); });
+    return out;
+  }
+  // 選んだ分野は端末に覚えておく（表示の好みだけ ＝ 学習の記録 STORE_KEY とは別のキー）
+  var DOMAIN_KEY = 'slz-qa-domain';
+  var curDomain = null;
+  var domainFollowed = null;   // 分野を合わせ終えた演習の回
+  try { curDomain = localStorage.getItem(DOMAIN_KEY); } catch (e) {}
+  function setDomain(d) {
+    curDomain = d;
+    try { localStorage.setItem(DOMAIN_KEY, d); } catch (e) {}
+  }
+
   // ---------- ホーム ----------
   function renderHome() {
     var host = $('unit-list');
     host.innerHTML = '';
+    var doms = domainList();
+    // 演習から戻ったときは、いま解いていた単元の分野を開く（別の分野のタブに戻ると見失う）
+    //   追うのは同じ回につき1度だけ（そのあとタブで選び直したら、そちらを優先する）
+    if (session && session !== domainFollowed) {
+      domainFollowed = session;
+      var su = DATA.units.filter(function (x) { return x.id === session.unitId; })[0];
+      if (su) setDomain(domainOf(su));
+    }
+    if (doms.indexOf(curDomain) < 0) curDomain = doms[0];
+
+    var tabs = $('domain-tabs');
+    tabs.innerHTML = doms.map(function (d) {
+      var n = DATA.units.filter(function (u) { return domainOf(u) === d; }).length;
+      var on = d === curDomain;
+      return '<button role="tab" aria-selected="' + on + '" class="dt' + (on ? ' is-on' : '') +
+        '" data-domain="' + esc(d) + '">' + esc(d) + '<span>' + n + '単元</span></button>';
+    }).join('');
+    Array.prototype.forEach.call(tabs.querySelectorAll('button[data-domain]'), function (b) {
+      b.addEventListener('click', function () {
+        setDomain(b.getAttribute('data-domain'));
+        renderHome();
+      });
+    });
+
     DATA.units.forEach(function (u) {
       var ps = patternsOf(u.id);
       var total = ps.length;
@@ -218,7 +260,9 @@ function slTrack(name, params) {
       var pct = total ? Math.round((mastered / total) * 100) : 0;
 
       var el = document.createElement('div');
-      el.className = 'unit';
+      // 選んでいない分野のカードは隠すだけ（DOM には残す ＝ 飛び道具・テストがボタンを引ける）
+      el.className = 'unit' + (domainOf(u) === curDomain ? '' : ' hidden');
+      el.setAttribute('data-domain', domainOf(u));
       el.innerHTML =
         '<h2>' + esc(u.name) + '</h2>' +
         '<p class="u-sum">' + esc(u.summary || '') + '</p>' +
@@ -301,7 +345,13 @@ function slTrack(name, params) {
     [1, 2, 3, 4].forEach(function (lv) {
       html += '<div class="gh lv' + lv + '">Lv' + lv + '<span>' + DIFF_NAMES[lv] + '</span></div>';
     });
+    var lastDom = null;
     DATA.units.forEach(function (u) {
+      // 分野の変わり目に1行の見出し（有機・無機・理論が1本の列に続いて見えないように）
+      if (domainOf(u) !== lastDom) {
+        lastDom = domainOf(u);
+        html += '<div class="gd">' + esc(lastDom) + '</div>';
+      }
       html += '<div class="gr">' + esc(u.name) + '</div>';
       [1, 2, 3, 4].forEach(function (lv) {
         var ps = bucket(u.id, lv);
@@ -1230,7 +1280,7 @@ function slTrack(name, params) {
   // 出題実績（data/exam_usage.jsonl）は**無くても動く**ようにする。
   // 入試問題の解析レーンが生成する外部の資産で、こちらの都合で欠けることがある。
   // 読めなければ「実績の帯を出さない」だけにして、暗記めくり本体は止めない
-  fetch('data/exam_usage.jsonl?v=148')
+  fetch('data/exam_usage.jsonl?v=149')
     .then(function (r) { return r.ok ? r.text() : ''; })
     .then(function (t) {
       t.split('\n').forEach(function (line) {
@@ -1245,7 +1295,7 @@ function slTrack(name, params) {
     })
     .catch(function () { /* 実績が無くても本体は動く */ });
 
-  fetch('questions.json?v=148')
+  fetch('questions.json?v=149')
     .then(function (r) { if (!r.ok) throw new Error('load failed: ' + r.status); return r.json(); })
     .then(function (json) { DATA = json; renderHome(); landOnCode(); })
     .catch(function (err) {

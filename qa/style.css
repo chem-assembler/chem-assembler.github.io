@@ -72,6 +72,15 @@ a.brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* ---- 習得マップ（単元 × 難易度） ---- */
 .go-map{width:100%;margin:0 0 20px;justify-content:flex-start}
 .go-map svg{width:15px;height:15px;color:var(--accent)}
+/* 分野の切り替え（有機・無機・理論）。3つを同じ幅で並べ、選んだものだけ塗る */
+.domain-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 18px;padding:5px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius)}
+.domain-tabs:empty{display:none}
+.dt{font:inherit;font-size:15px;font-weight:800;color:var(--ink-soft);background:transparent;border:0;border-radius:11px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;transition:background .15s,color .15s}
+.dt span{font-size:11px;font-weight:700;color:var(--ink-faint)}
+.dt:hover{color:var(--ink)}
+.dt.is-on{background:var(--surface);color:var(--accent-ink);box-shadow:var(--shadow)}
+.dt.is-on span{color:var(--accent-ink);opacity:.8}
+.dt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* 4状態の色（2026-09-19）。ここだけで決めて、点・凡例・横棒・一覧が同じ色を使う。
    未着手＝塗りなし／着手中＝橙／間違えた＝赤／どちらも正解＝緑。
@@ -116,6 +125,7 @@ a.brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .gh{font-size:11.5px;font-weight:800;letter-spacing:.03em;color:var(--ink-faint);text-align:center;padding:2px 0 4px}
 .gh span{display:block;font-size:10px;font-weight:700;opacity:.8}
 .gh.lv1{color:var(--yuki)}.gh.lv2{color:var(--accent)}.gh.lv3{color:var(--warn)}.gh.lv4{color:var(--bad)}
+.gd{grid-column:1/-1;font-size:13px;font-weight:800;color:var(--accent-ink);border-bottom:2px solid var(--line);padding:14px 0 4px;margin-bottom:2px}
 .gr{display:flex;align-items:center;font-size:12px;font-weight:700;color:var(--ink-soft);line-height:1.35;padding-right:4px}
 .gc{position:relative;display:block;width:100%;min-height:54px;text-align:left;padding:8px 8px 6px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;transition:border-color .15s,transform .12s,box-shadow .2s}
 .gc:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow)}
