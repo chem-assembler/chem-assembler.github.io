@@ -8,6 +8,11 @@ summary: 重曹・生石灰・塩化カルシウム・漂白剤など、家庭�
 codes:
   - theo.life.reaction-in-life
   - theo.life.antioxidant
+  - theo.life.home-uses-na-ca
+  - theo.life.home-uses-oxidizer
+  - theo.life.familiar-gas-uses
+  - theo.life.white-powder-id
+  - theo.life.ph-familiar-order
 source:
   - textbook:化学基礎_031-090_2編（イオンからなる物質・分子からなる物質の主な物質とその用途）
   - textbook:化学基礎_091-191_3編（身のまわりの酸・塩基の液性と pH の図・身のまわりの酸化剤・還元剤・炎色反応）

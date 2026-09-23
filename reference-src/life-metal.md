@@ -14,6 +14,11 @@ codes:
   - inorg.metal.nichrome
   - inorg.metal.plating-not-alloy
   - theo.life.recycle-resource
+  - theo.life.iron-rust-condition
+  - theo.life.metal-use
+  - theo.life.metal-refining
+  - theo.life.tin-zinc-plating
+  - theo.life.gold-property
 source:
   - textbook:化学基礎_031-090_2編（金属の性質と利用の表・合金の定義と種類の表・レアメタルと都市鉱山・金属とその用途の写真）
   - textbook:化学基礎_091-191_3編（金属の製錬：鉄・銅・アルミニウム、アルミニウムの再生、不動態、金属の腐食とめっきの囲み）

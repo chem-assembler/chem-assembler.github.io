@@ -8,6 +8,10 @@ summary: 材料の性質は結合の型でおおよそ決まります。ケイ�
 codes:
   - theo.life.bond-material
   - theo.life.ceramics
+  - theo.life.si-vs-sio2
+  - theo.life.cement-glass-raw
+  - theo.life.glass-kinds
+  - theo.life.plaster-co2
 source:
   - textbook:化学基礎_031-090_2編（イオン結晶・分子からなる物質の主な物質とその用途・セラミックスと半導体・ファインセラミックス）
   - textbook:R5化学Vol.2-4編 2章7節（ケイ素の単体・二酸化ケイ素・水ガラスとシリカゲル）・3章（水酸化カルシウムの用途・炭酸カルシウムの利用）・図説「無機物質と人間生活」の陶磁器とガラスの種類の表

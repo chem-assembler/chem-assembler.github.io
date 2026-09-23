@@ -32,6 +32,7 @@ cell-basics
 life-metal
 life-ceramics
 life-household
+life-energy
 chemistry-world
 vapor-pressure
 gas-laws
