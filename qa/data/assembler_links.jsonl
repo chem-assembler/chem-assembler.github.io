@@ -713,7 +713,7 @@
 {"code":"org.ali.formula-same-molecular","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
 {"code":"theo.life.bond-material","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
 {"code":"theo.life.reaction-in-life","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
-{"code":"theo.life.recycle-resource","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
+{"code":"theo.life.recycle-resource","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
 {"code":"theo.life.industry-catalyst","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
 {"code":"theo.life.haber-issue","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
 {"code":"theo.life.atom-economy","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
@@ -723,9 +723,9 @@
 {"code":"theo.thermo.entropy-temperature","kind":"reference","label":"資料「化学反応が自然に進む向き」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ entropy に載っている）"}
 {"code":"theo.thermo.spontaneous-vs-rate","kind":"reference","label":"資料「化学反応が自然に進む向き」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ entropy に載っている）"}
 {"code":"theo.thermo.gibbs-energy","kind":"reference","label":"資料「化学反応が自然に進む向き」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ entropy に載っている）"}
-{"code":"inorg.metal.alloy-def","kind":"reference","label":"資料「合金」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ alloy に載っている）"}
-{"code":"inorg.metal.alloy-examples","kind":"reference","label":"資料「合金」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ alloy に載っている）"}
-{"code":"inorg.metal.alloy-functional","kind":"reference","label":"資料「合金」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ alloy に載っている）"}
+{"code":"inorg.metal.alloy-def","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
+{"code":"inorg.metal.alloy-examples","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
+{"code":"inorg.metal.alloy-functional","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
 {"code":"theo.structure.amorphous","kind":"reference","label":"資料「金属結合と結晶の4つの型」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ crystal-types に載っている）"}
 {"code":"theo.structure.element-test","kind":"reference","label":"資料「物質の分類と分離」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ substance-classification に載っている）"}
 {"code":"theo.structure.element-test-infer","kind":"reference","label":"資料「物質の分類と分離」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ substance-classification に載っている）"}
@@ -836,10 +836,10 @@
 {"code":"inorg.nonmetal.amorphous-carbon","kind":"reference","label":"資料「炭素とケイ素」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ carbon-silicon に載っている）"}
 {"code":"inorg.nonmetal.co-toxicity","kind":"reference","label":"資料「炭素とケイ素」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ carbon-silicon に載っている）"}
 {"code":"inorg.nonmetal.sio2-na2co3","kind":"reference","label":"資料「炭素とケイ素」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ carbon-silicon に載っている）"}
-{"code":"inorg.metal.alloy-mixture","kind":"reference","label":"資料「合金」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ alloy に載っている）"}
-{"code":"inorg.metal.stainless","kind":"reference","label":"資料「合金」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ alloy に載っている）"}
-{"code":"inorg.metal.nichrome","kind":"reference","label":"資料「合金」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ alloy に載っている）"}
-{"code":"inorg.metal.plating-not-alloy","kind":"reference","label":"資料「合金」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ alloy に載っている）"}
+{"code":"inorg.metal.alloy-mixture","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
+{"code":"inorg.metal.stainless","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
+{"code":"inorg.metal.nichrome","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
+{"code":"inorg.metal.plating-not-alloy","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
 {"code":"inorg.metal.ligand-names","kind":"reference","label":"資料「錯イオン」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ complex-ion に載っている）"}
 {"code":"inorg.metal.coordination-rule","kind":"reference","label":"資料「錯イオン」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ complex-ion に載っている）"}
 {"code":"inorg.metal.complex-color","kind":"reference","label":"資料「錯イオン」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ complex-ion に載っている）"}

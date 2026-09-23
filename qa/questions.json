@@ -200,6 +200,15 @@
       "part": "酸化と還元"
     },
     {
+      "id": "sec-life-metal",
+      "name": "暮らしの中の金属",
+      "category_l": "理論化学",
+      "category_m": "暮らしの中の金属",
+      "summary": "金属の使いみち・製錬・さびの防ぎ方・合金の成分を、性質と結びつけて言えるようにしよう。",
+      "course": "basic",
+      "part": "化学と人間生活"
+    },
+    {
       "id": "sec-chemistry-world",
       "name": "化学基礎を暮らしで振り返る",
       "category_l": "理論化学",
@@ -502,15 +511,6 @@
       "category_l": "無機化学",
       "category_m": "アルミニウム・亜鉛・スズ・鉛",
       "summary": "両性金属の反応と、スズ・鉛の性質をおさえよう。",
-      "course": "adv",
-      "part": "金属元素"
-    },
-    {
-      "id": "sec-alloy",
-      "name": "合金",
-      "category_l": "無機化学",
-      "category_m": "合金",
-      "summary": "代表的な合金の成分と用途をおさえよう。",
       "course": "adv",
       "part": "金属元素"
     },
@@ -24181,8 +24181,8 @@
     },
     {
       "code": "inorg.metal.alloy-def",
-      "unit": "sec-alloy",
-      "group": "合金",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 1,
       "tags": [
         "性質"
@@ -24220,13 +24220,13 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「合金」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {
       "code": "inorg.metal.alloy-examples",
-      "unit": "sec-alloy",
-      "group": "合金",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 2,
       "tags": [
         "身のまわり"
@@ -24266,13 +24266,13 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「合金」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {
       "code": "inorg.metal.alloy-functional",
-      "unit": "sec-alloy",
-      "group": "合金",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 2,
       "tags": [
         "身のまわり"
@@ -24308,13 +24308,13 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「合金」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {
       "code": "inorg.metal.alloy-mixture",
-      "unit": "sec-alloy",
-      "group": "合金",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 1,
       "tags": [
         "分類"
@@ -24352,13 +24352,13 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「合金」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {
       "code": "inorg.metal.stainless",
-      "unit": "sec-alloy",
-      "group": "合金",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 2,
       "tags": [
         "性質",
@@ -24395,13 +24395,13 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「合金」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {
       "code": "inorg.metal.nichrome",
-      "unit": "sec-alloy",
-      "group": "合金",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 2,
       "tags": [
         "身のまわり"
@@ -24437,13 +24437,13 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「合金」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {
       "code": "inorg.metal.plating-not-alloy",
-      "unit": "sec-alloy",
-      "group": "合金",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 1,
       "tags": [
         "分類",
@@ -24480,7 +24480,7 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「合金」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {
@@ -25208,8 +25208,8 @@
     },
     {
       "code": "theo.life.recycle-resource",
-      "unit": "sec-chemistry-world",
-      "group": "化学が拓く世界",
+      "unit": "sec-life-metal",
+      "group": "暮らしの中の金属",
       "difficulty": 1,
       "tags": [
         "身のまわり",
@@ -25247,7 +25247,7 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「化学が拓く世界」を開く"
+        "label": "資料「暮らしの中の金属」を開く"
       }
     },
     {

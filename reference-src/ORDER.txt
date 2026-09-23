@@ -29,6 +29,7 @@ redox-equation
 redox-titration
 ionization-tendency
 cell-basics
+life-metal
 chemistry-world
 vapor-pressure
 gas-laws
@@ -80,7 +81,6 @@ gas-preparation
 alkali-metal
 alkaline-earth
 amphoteric-metal
-alloy
 complex-ion
 iron
 copper-silver

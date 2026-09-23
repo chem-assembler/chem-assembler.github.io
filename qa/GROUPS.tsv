@@ -23,7 +23,7 @@
 #
 # ── 無機 ──
 inorg.basis	無機の土台	無機の反応の型	inorg-reaction-types	167	adv
-inorg.basis	無機の土台	周期表と元素の性質	periodic-table	104	basic
+inorg.basis	無機の土台	周期表と元素の性質	periodic-table	99	basic
 inorg.basis	無機の土台	酸化物とオキソ酸	oxoacid	168	adv
 inorg.basis	無機の土台	気体の製法	gas-preparation	178	adv
 inorg.nonmetal	非金属元素	水素と貴ガス	hydrogen-noble-gas	169	adv
@@ -42,47 +42,46 @@ inorg.metal	金属元素	鉄	iron	184	adv
 inorg.metal	金属元素	銅と銀	copper-silver	185	adv
 inorg.metal	金属元素	クロムとマンガン	transition-oxidizers	186	adv
 inorg.metal	金属元素	錯イオン	complex-ion	183	adv
-inorg.metal	金属元素	合金	alloy	182	adv
 inorg.qual	イオンを見分ける	沈殿の生成と色	precipitate	187	adv
 inorg.qual	イオンを見分ける	炎色反応と水溶液の色	flame-color	188	adv
 inorg.qual	イオンを見分ける	系統分離	cation-separation	189	adv
 # ── 理論 ──
-theo.structure	物質の構造	物質の分類と分離	substance-classification	101	basic
-theo.structure	物質の構造	原子の構造と電子配置	atom-structure	103	basic
-theo.structure	物質の構造	イオン結合	ionic-bond	105	basic
-theo.structure	物質の構造	共有結合	covalent-bond	106	basic
-theo.structure	物質の構造	分子の形と極性	molecular-shape	107	basic
-theo.structure	物質の構造	分子間力	intermolecular-force	108	basic
-theo.structure	物質の構造	結晶の種類	crystal-types	109	basic
+theo.structure	物質の構造	物質の分類と分離	substance-classification	96	basic
+theo.structure	物質の構造	原子の構造と電子配置	atom-structure	98	basic
+theo.structure	物質の構造	イオン結合	ionic-bond	100	basic
+theo.structure	物質の構造	共有結合	covalent-bond	101	basic
+theo.structure	物質の構造	分子の形と極性	molecular-shape	102	basic
+theo.structure	物質の構造	分子間力	intermolecular-force	103	basic
+theo.structure	物質の構造	結晶の種類	crystal-types	104	basic
 theo.structure	物質の構造	結晶格子	unit-cell	143	adv
-theo.mole	物質量と化学反応式	原子量と分子量	atomic-weight	110	basic
-theo.mole	物質量と化学反応式	物質量	mole	111	basic
-theo.mole	物質量と化学反応式	溶液の濃度	concentration	112	basic
-theo.mole	物質量と化学反応式	化学反応式	chemical-equation	113	basic
-theo.mole	物質量と化学反応式	量的関係	stoichiometry	114	basic
-theo.mole	物質量と化学反応式	化学の基本法則	chemical-laws	115	basic
-theo.acid-base	酸と塩基	酸と塩基の定義	acid-base-definition	116	basic
-theo.acid-base	酸と塩基	価数と強弱	acid-base-strength	117	basic
-theo.acid-base	酸と塩基	pH	ph	118	basic
-theo.acid-base	酸と塩基	中和	neutralization	119	basic
-theo.acid-base	酸と塩基	塩	salt	120	basic
-theo.acid-base	酸と塩基	弱酸の遊離	acid-displacement	121	basic
-theo.acid-base	酸と塩基	中和滴定	titration	122	basic
-theo.redox	酸化還元	酸化と還元	redox-basics	123	basic
-theo.redox	酸化還元	酸化数	oxidation-number	124	basic
-theo.redox	酸化還元	半反応式	half-reaction	125	basic
-theo.redox	酸化還元	液性による書き換え	half-reaction-condition	126	basic
-theo.redox	酸化還元	酸化還元反応式	redox-equation	127	basic
-theo.redox	酸化還元	酸化還元滴定	redox-titration	128	basic
-theo.redox	酸化還元	イオン化傾向	ionization-tendency	129	basic
-theo.electro	電池と電気分解	電池の仕組み	cell-basics	130	basic
+theo.mole	物質量と化学反応式	原子量と分子量	atomic-weight	105	basic
+theo.mole	物質量と化学反応式	物質量	mole	106	basic
+theo.mole	物質量と化学反応式	溶液の濃度	concentration	107	basic
+theo.mole	物質量と化学反応式	化学反応式	chemical-equation	108	basic
+theo.mole	物質量と化学反応式	量的関係	stoichiometry	109	basic
+theo.mole	物質量と化学反応式	化学の基本法則	chemical-laws	110	basic
+theo.acid-base	酸と塩基	酸と塩基の定義	acid-base-definition	111	basic
+theo.acid-base	酸と塩基	価数と強弱	acid-base-strength	112	basic
+theo.acid-base	酸と塩基	pH	ph	113	basic
+theo.acid-base	酸と塩基	中和	neutralization	114	basic
+theo.acid-base	酸と塩基	塩	salt	115	basic
+theo.acid-base	酸と塩基	弱酸の遊離	acid-displacement	116	basic
+theo.acid-base	酸と塩基	中和滴定	titration	117	basic
+theo.redox	酸化還元	酸化と還元	redox-basics	118	basic
+theo.redox	酸化還元	酸化数	oxidation-number	119	basic
+theo.redox	酸化還元	半反応式	half-reaction	120	basic
+theo.redox	酸化還元	液性による書き換え	half-reaction-condition	121	basic
+theo.redox	酸化還元	酸化還元反応式	redox-equation	122	basic
+theo.redox	酸化還元	酸化還元滴定	redox-titration	123	basic
+theo.redox	酸化還元	イオン化傾向	ionization-tendency	124	basic
+theo.electro	電池と電気分解	電池の仕組み	cell-basics	125	basic
 theo.electro	電池と電気分解	実用電池と燃料電池	fuel-cell	150	adv
 theo.electro	電池と電気分解	鉛蓄電池	lead-storage-battery	151	adv
 theo.electro	電池と電気分解	電気分解で何が反応するか	electrolysis-basics	152	adv
 theo.electro	電池と電気分解	電気分解の反応式	electrolysis-equations	153	adv
 theo.electro	電池と電気分解	電気分解の量的関係	faraday	154	adv
 theo.electro	電池と電気分解	電気分解の工業的利用	electrolysis-industry	155	adv
-theo.state	物質の状態	三態と状態変化	states-of-matter	102	basic
+theo.state	物質の状態	三態と状態変化	states-of-matter	97	basic
 theo.state	物質の状態	蒸気圧と沸騰	vapor-pressure	132	adv
 theo.state	物質の状態	気体の法則	gas-laws	133	adv
 theo.state	物質の状態	混合気体	gas-mixture	134	adv
@@ -114,6 +113,9 @@ theo.ionic-eq	電離平衡	溶解度積	solubility-product	166	adv
 # ── 化学と人間生活（序章・終章の読み物・2026-09-23 ref-intro 便）──
 #   ⚠ chemistry-and-life は教科書の流れでは理論の先頭（substance-classification の前）が正しい位置。
 #     並びの 23 と 24 の間に隙間が無いので、いまは末尾に置いた（振り直しは統合側）
-theo.life	化学と暮らし	化学のものの見方	what-is-chemistry	100	basic
+theo.life	化学と暮らし	化学のものの見方	what-is-chemistry	95	basic
+#   ★ 2026-09-23 便 life-draft: 化学基礎の終わりに「化学と人間生活」の部（5ページ）を置いた。並びの隙間を作るため、
+#     95〜125 は前の 100〜130 を 5 ずつ詰めたもの（並びは向きだけを見る数なので、値そのものに意味は無い）
+theo.life	化学と人間生活	暮らしの中の金属	life-metal	126	basic
 theo.life	化学と暮らし	化学が拓く世界	chemistry-world	131	basic
 theo.life	化学と暮らし	化学が果たす役割	chemistry-role	239	adv

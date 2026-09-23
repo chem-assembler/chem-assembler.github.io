@@ -3036,12 +3036,21 @@ function runGroupTests(DATA, TEXT) {
     });
   });
 
+  /* ★ 別の単元のページへ移した項目（2026-09-23 便 life-draft）。**コードは学習記録の主キーなので変えない**ため、
+   *   コードの頭（inorg.metal）と、いま居るグループの unit（theo.life）が食い違う。その食い違いを名簿で1件ずつ許す。
+   *   ⚠ 名簿に無い項目は今までどおり「コードの頭の unit」に group が在ること（黙って何でも通す形にはしない） */
+  var MOVED_UNIT = {
+    "inorg.metal.alloy-def": "theo.life", "inorg.metal.alloy-examples": "theo.life",
+    "inorg.metal.alloy-functional": "theo.life", "inorg.metal.alloy-mixture": "theo.life",
+    "inorg.metal.stainless": "theo.life", "inorg.metal.nichrome": "theo.life",
+    "inorg.metal.plating-not-alloy": "theo.life"
+  };
   t("台帳: inorg.* / theo.* の項目の group は、台帳の同じ unit に在る", function () {
     var known = {};
     rows.forEach(function (r) { known[r.unit + "/" + r.group] = true; });
     var bad = DATA.patterns.filter(function (p) {
       var m = /^((inorg|theo)\.[a-z0-9-]+)\./.exec(p.code || "");
-      return m && !known[m[1] + "/" + p.group];
+      return m && !known[(MOVED_UNIT[p.code] || m[1]) + "/" + p.group];
     }).map(function (p) { return p.code + "（group: " + p.group + "）"; });
     assert(!bad.length, "台帳に無い group の項目が " + bad.length + " 件: " + bad.slice(0, 3).join(" / ") +
       "（束ね方は GROUPS.tsv が決める。綴りを合わせるか、台帳に行を足す）");
