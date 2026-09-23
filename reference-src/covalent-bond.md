@@ -10,6 +10,11 @@ codes:
   - theo.structure.electron-pair-count
   - theo.structure.structural-formula
   - theo.structure.coordinate-bond
+  - theo.structure.covalent-def
+  - theo.structure.atom-electron-dot
+  - theo.structure.bond-multiplicity
+  - theo.structure.pair-count-scope
+  - theo.structure.electron-formula-octet
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」s4〜10（原子価と電子式と構造式・構造式の書き方・電子式の書き方・配位結合）・練習1 s47〜49
   - textbook:化学基礎_031-090_2編（共有結合・分子式・構造式・電子式・配位結合）

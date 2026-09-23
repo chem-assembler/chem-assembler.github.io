@@ -11,6 +11,8 @@ codes:
   - theo.structure.bond-angle-order
   - theo.structure.electronegativity
   - theo.structure.molecular-polarity
+  - theo.structure.formula-not-shape
+  - theo.structure.shape-naming
 source:
   - textbook:化学基礎 2編2章（分子の形の表・PLUS 電子対と分子の形・電気陰性度と分子の極性）
   - slides:有機の基本2-2「アルカンの性質」（メタンの正四面体・電子対の反発・無極性の図）
