@@ -8,16 +8,16 @@
   </defs>
   <style>
     text { font-family: system-ui, sans-serif; }
-    .ttl { font-size: 21px; fill: #222; text-anchor: middle; font-weight: bold; }
-    .sub { font-size: 15px; fill: #555; text-anchor: middle; }
+    .ttl { font-size: 22px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .sub { font-size: 19px; fill: #555; text-anchor: middle; }
     .blk { fill: #e3f2fd; stroke: #1565c0; stroke-width: 2; }
     .base { fill: #1565c0; stroke: #0d47a1; stroke-width: 2; }
-    .bt { font-size: 17px; fill: #0d47a1; text-anchor: middle; }
-    .bw { font-size: 17px; fill: #fff; text-anchor: middle; font-weight: bold; }
+    .bt { font-size: 19px; fill: #0d47a1; text-anchor: middle; }
+    .bw { font-size: 20px; fill: #fff; text-anchor: middle; font-weight: bold; }
     .obj { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2.5; }
-    .ot { font-size: 18px; fill: #1b5e20; text-anchor: middle; font-weight: bold; }
+    .ot { font-size: 20px; fill: #1b5e20; text-anchor: middle; font-weight: bold; }
     .fld { fill: #fff; stroke: #777; stroke-width: 1.8; }
-    .ft { font-size: 16px; fill: #333; text-anchor: middle; }
+    .ft { font-size: 19px; fill: #333; text-anchor: middle; }
     .arw { stroke: #555; stroke-width: 2.2; fill: none; }
     .sep { stroke: #ccc; stroke-width: 1.5; stroke-dasharray: 6 5; }
   </style>

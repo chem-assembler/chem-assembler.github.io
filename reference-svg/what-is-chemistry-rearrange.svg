@@ -9,11 +9,11 @@
     text { font-family: system-ui, sans-serif; }
     .h { fill: #fff; stroke: #555; stroke-width: 2.5; }
     .o { fill: #ef5350; stroke: #b71c1c; stroke-width: 2.5; }
-    .ht { font-size: 17px; fill: #333; text-anchor: middle; }
-    .ot { font-size: 20px; fill: #fff; text-anchor: middle; font-weight: bold; }
-    .ttl { font-size: 19px; fill: #222; text-anchor: middle; font-weight: bold; }
-    .eq { font-size: 20px; fill: #333; text-anchor: middle; }
-    .cnt { font-size: 17px; fill: #1565c0; text-anchor: middle; }
+    .ht { font-size: 19px; fill: #333; text-anchor: middle; }
+    .ot { font-size: 21px; fill: #fff; text-anchor: middle; font-weight: bold; }
+    .ttl { font-size: 21px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .eq { font-size: 21px; fill: #333; text-anchor: middle; }
+    .cnt { font-size: 19px; fill: #1565c0; text-anchor: middle; }
     .box { fill: #f5f7fa; stroke: #cfd8dc; stroke-width: 1.5; }
     .arw { stroke: #333; stroke-width: 3; fill: none; }
   </style>

@@ -141,6 +141,10 @@ const MAX_H = 760;
  *   572 × 46（結合1本の単位）÷ 400 ＝ **結合 約66px** —— これが本の中の結合の長さ。
  * ⚠ 400単位より広い分子（長い鎖）はそのまま縮む ＝ 天井ではなく床。 */
 const FIT_W = 400;
+/* 公開ページの本文の幅（図はこの幅いっぱいに出る）。字の大きさの見積もり（minText）に使う */
+const BODY_W = 680;
+/* 図の中の字の床（最終的な見た目・パソコン幅）。下回ったら黄で申し送る（2026-09-24） */
+const MIN_TEXT = Number((process.argv.find(a => a.startsWith('--min-text=')) || '').split('=')[1] || 14);
 /* ⚠ `gen-reference.mjs` の `MAX_ASPECT`（10:1）に**余裕を持って**収まること。
    ★ ここで止めれば、焼いてから生成で止まるより1手早い */
 const ASPECT_WARN = 9;
@@ -537,7 +541,7 @@ async function bake(jobs) {
         };
     });
     for (const job of jobs) {
-        const bakeOne = (spec, parts, between) => pg.evaluate(({ spec, parts, between, OUT_W, MAX_H, FIT_W }) => {
+        const bakeOne = (spec, parts, between) => pg.evaluate(({ spec, parts, between, OUT_W, MAX_H, FIT_W, BODY_W }) => {
             const g = window.game;
             /* ── ② アプリの描画をそのまま呼ぶ（★ ここに作図を書かない）──────────── */
             document.getElementById('figbake')?.remove();
@@ -671,8 +675,18 @@ async function bake(jobs) {
             svg.style.height = (h / 2) + 'px';
             const markWarn = svg.dataset.markWarn ? JSON.parse(svg.dataset.markWarn) : [];
             const nMarks = (parts || [spec]).reduce((s, sp) => s + (sp.marks || []).length, 0) + (between || []).length;
-            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn };
-        }, { spec, parts: parts || null, between: between || [], OUT_W, MAX_H, FIT_W });
+            /* ★ 最終的な見た目の字の大きさ（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
+               図は公開ページで本文の幅 BODY_W（680px）いっぱいに出るので、SVG の字 f は f × BODY_W ÷ viewBox の幅 に見える。
+               ⚠ 位置番号など消す字（plain）は数えない。いちばん小さい字（下付き・印の文字を含む）を返す */
+            let minFont = Infinity;
+            svg.querySelectorAll('text, tspan').forEach(t => {
+                if (!t.textContent.trim()) return;
+                const f = parseFloat(getComputedStyle(t).fontSize);
+                if (f > 0 && f < minFont) minFont = f;
+            });
+            const minText = isFinite(minFont) ? minFont * BODY_W / vb[2] : null;
+            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn, minText };
+        }, { spec, parts: parts || null, between: between || [], OUT_W, MAX_H, FIT_W, BODY_W });
         let r = await bakeOne(job.spec, job.parts, job.between);
         /* ★ 紙の図の型は字の長さぶん価標を伸ばすので、長い鎖（ステアリン酸 C₁₈）は横に伸びて床 9:1 を超える（v1562 実測 10.1:1）。
            ⚠ 鎖を (CH₂)₁₆ に畳むかはユーザーの判断待ちなので、ここでは決めない ——
@@ -706,6 +720,7 @@ async function bake(jobs) {
         console.log(`   ✅ ${job.src}  ${r.w}x${r.h}  ${(buf.length / 1024).toFixed(0)}KB`
             + `  ← ${job.parts ? job.parts.map(p => p.name).join(' ＋ ') : job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`
             + (r.marks ? `  ＋印 ${r.marks} 本` : '')
+            + (r.minText ? `  字 ${r.minText.toFixed(1)}px${r.minText < MIN_TEXT ? ' ⚠床' + MIN_TEXT + '未満' : ''}` : '')
             + (r.fellBack ? `  ⚠ ${r.fellBack}` : (job.spec.stereo ? '  （立体ビューのくさび図）' : job.spec.paper ? '  （紙の図）' : '  （丸の図）')));
         // ⚠ 黄（設計 §6）: 焼いた絵を人が見る前に、重なりだけは言っておく
         (r.markWarn || []).forEach(w => console.log(`      ⚠ ${w}`));

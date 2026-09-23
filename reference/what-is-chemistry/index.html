@@ -106,7 +106,7 @@ h2[id],h3[id]{scroll-margin-top:12px}
    広い読み物では「C の数」の列が 250px になって数字と名称が離れる） */
 .ref-scope .ref-table{font-size:15px;width:auto}
 .ref-scope .ref-mech-table,.ref-scope .ref-map-table{font-size:15px}
-.ref-scope .ref-cap{font-size:13.5px;margin-bottom:8px}
+.ref-scope .ref-cap{font-size:14.5px;margin-bottom:8px}
 .ref-scope .ref-table-wrap{margin-bottom:28px}
 .ref-scope .ref-example{font-size:15.5px}
 .ref-scope .ref-example h4{font-size:16px}
@@ -211,8 +211,15 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
-.ref-scope .ref-figure-cap{font-size:13.5px}
-.ref-scope .ref-figure-credit{font-size:12px;margin:2px 0 0}
+.ref-scope .ref-figure-cap{font-size:14.5px}
+.ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
+   アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
+   ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
+.ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
+.ref-scope .ref-rx-level{font-size:14px}
+.ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+.ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
 .ref-scope .ref-rx-eq{font-size:17.5px}
@@ -932,7 +939,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-history"><h4 class="ref-sec-h">原子の考え方は意外と新しい</h4><p class="ref-sec-lead">物質に最小の単位があるという考えは紀元前からありましたが、近代的な原子の考え方は、19世紀はじめのドルトンの原子説から始まりました。</p></section>
 <p class="ref-p">物質を細かく分けていくと、それ以上分けられない粒にたどりつく ―― この考えは、紀元前5世紀ごろの古代ギリシャにすでにありました。デモクリトスらは、その粒を「アトモス」（それ以上分けられないもの）とよびました。原子（アトム）という言葉のもとです。</p>
 <p class="ref-p">ただし、これは実験で確かめられた考えではありませんでした。実験の結果をもとに、「物質は、元素ごとに決まった原子からできている」とする<b>原子説</b>を示したのは、19世紀のはじめ（1803年ごろ）のドルトンです。<b>近代的な原子の考え方には、まだ200年あまりの歴史しかありません。</b>意外と新しいと思いませんか。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/what-is-chemistry-timeline.png" alt="左から右へ進む年表。紀元前5世紀ごろのデモクリトス「アトモス」、中世の錬金術、1774年ごろのラボアジエの質量保存の法則、1803年ごろのドルトンの原子説、1869年のメンデレーエフの周期表、1897年の電子の発見、1913年のボーアの原子モデル、1920年代の量子力学が並ぶ。ラボアジエから電子の発見までの上に「高校化学のおもな範囲（19世紀までの化学）」、ボーアの原子モデルの上に「＋ ボーアのモデル」の帯がある。間隔は年代に比例していない" loading="lazy"><figcaption class="ref-figure-cap">原子の考え方の歩み（間隔は年代に比例していません）。高校の化学は、おもに19世紀までに形づくられた化学に、ボーアの原子モデルを加えて組み立てられています。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/what-is-chemistry-timeline.png" alt="上から下へ時代が進む年表。紀元前5世紀ごろのデモクリトス「アトモス」、中世の錬金術、1774年ごろのラボアジエの質量保存の法則、1803年ごろのドルトンの原子説、1869年のメンデレーエフの周期表、1897年の電子の発見、1913年のボーアの原子モデル、1920年代の量子力学が並ぶ。ラボアジエから電子の発見までの右に「高校化学のおもな範囲（19世紀までの化学）」、ボーアの原子モデルの右に「＋ 高校で使う原子のモデル」の帯がある。間隔は年代に比例していない" loading="lazy"><figcaption class="ref-figure-cap">原子の考え方の歩み（間隔は年代に比例していません）。高校の化学は、おもに19世紀までに形づくられた化学に、ボーアの原子モデルを加えて組み立てられています。</figcaption></figure>
 <p class="ref-p">高校の化学で学ぶのは、おもに19世紀の終わりまでに形づくられた化学です。原子のつくりについては、20世紀のはじめに示された<b>ボーアの原子モデル</b>（原子核のまわりを、電子が決まった道すじで回っているという描き方）を使って考えます。</p>
 <details class="ref-adv ref-sec ref-sec-advanced" id="ref-sec-beyond-atom"><summary class="ref-adv-sum"><h4 class="ref-sec-h">原子より小さな世界<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h4><p class="ref-sec-lead">原子はさらに小さな粒子からできていて、その世界は量子論という考え方で説明されます。高校の化学では、ここには大きく立ち入りません。</p></summary><div class="ref-adv-body"><p class="ref-p">現在では、原子もさらに小さな粒子に分けられることが分かっています。原子は原子核と電子からでき、原子核の陽子や中性子は、さらに小さなクォークという粒子からできています。このように、それ以上分けられないと考えられている粒子を<b>素粒子</b>といいます。素粒子を扱うのは、おもに物理学や、物理学と化学の中間にあたる<b>物理化学</b>の分野です。</p><p class="ref-p">また、20世紀に入ると、電子のような小さな粒子のふるまいは、ふだん目にする物体とはまったく違う<b>量子論</b>という考え方で説明されるようになりました。実際の電子は、ボーアのモデルのように決まった円の上を回っているわけではありません。「シュレーディンガーの猫」や「不確定性原理」という言葉を聞いたことがあるかもしれませんが、これらも量子論の話です。高校で学ぶには難しすぎるので、高校の化学では、ボーアのモデルで説明できる範囲にとどめます。</p></div></details>
 <section class="ref-sec" id="ref-sec-electron"><h4 class="ref-sec-h">化学反応は電子の奪い合い</h4><p class="ref-sec-lead">原子核の陽子（＋）は電子（−）を引きつけます。この力をクーロン力といい、化学反応はこの力で説明できます。</p></section>

@@ -106,7 +106,7 @@ h2[id],h3[id]{scroll-margin-top:12px}
    広い読み物では「C の数」の列が 250px になって数字と名称が離れる） */
 .ref-scope .ref-table{font-size:15px;width:auto}
 .ref-scope .ref-mech-table,.ref-scope .ref-map-table{font-size:15px}
-.ref-scope .ref-cap{font-size:13.5px;margin-bottom:8px}
+.ref-scope .ref-cap{font-size:14.5px;margin-bottom:8px}
 .ref-scope .ref-table-wrap{margin-bottom:28px}
 .ref-scope .ref-example{font-size:15.5px}
 .ref-scope .ref-example h4{font-size:16px}
@@ -211,8 +211,15 @@ box-shadow:inset 3px 0 0 var(--accent)}
 .ref-scope .ref-adv-sum>.ref-sec-h{font-size:21px}
 .ref-scope .ref-list{font-size:16px;line-height:1.9;margin-bottom:20px}
 .ref-scope .ref-figure{margin:0 0 24px}
-.ref-scope .ref-figure-cap{font-size:13.5px}
-.ref-scope .ref-figure-credit{font-size:12px;margin:2px 0 0}
+.ref-scope .ref-figure-cap{font-size:14.5px}
+.ref-scope .ref-figure-credit{font-size:14px;margin:2px 0 0}
+/* ★ 図表の字の床 14px（2026-09-24 ユーザー「図表の最低フォントサイズを上げてください（最終的な見た目）」）。
+   アプリの資料ペインは幅が狭いので小さい字のまま、面A（このページ）でだけ上げる。
+   ⚠ 寸法だけ（色は LIGHT_CSS の段）。図の中の字は gen-figure / gen-svg-figure が同じ床で見張る */
+.ref-scope .ref-rx-over,.ref-scope .ref-rx-under{font-size:14px}
+.ref-scope .ref-rx-level{font-size:14px}
+.ref-scope .ref-mech-desc,.ref-scope .ref-mech-steps{font-size:14px}
+.ref-scope .ref-table td.ref-group span,.ref-scope .ref-mech-table td.ref-group span,.ref-scope .ref-map-table td.ref-group span{font-size:14px}
 .ref-scope .ref-figure-credit a{color:inherit;text-decoration:underline}
 .ref-scope .ref-rx{margin:0 0 24px;padding:15px 17px}
 .ref-scope .ref-rx-eq{font-size:17.5px}
