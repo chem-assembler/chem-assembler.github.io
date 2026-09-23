@@ -9,6 +9,8 @@ codes:
   - org.bio.enzyme-def
   - org.bio.enzyme-optimum
   - org.bio.enzyme-examples
+  - org.bio.enzyme-optimum-ph
+  - org.bio.enzyme-saturation
 source:
   - qa:org.bio.enzyme-def・org.bio.enzyme-optimum・org.bio.enzyme-examples
   - compounds:ラクトース（乳糖）
