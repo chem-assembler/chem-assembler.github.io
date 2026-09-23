@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -897,7 +915,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">鉄を希硫酸に溶かすと Fe³⁺ になり、硫酸鉄(Ⅲ) Fe₂(SO₄)₃ ができる。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">希塩酸・希硫酸で生じるのは <b>Fe²⁺</b>（FeSO₄・FeCl₂）です。</span></p><p class="ref-mistake-why">H⁺ は Fe を Fe²⁺ まで酸化する力しかないためです。Fe³⁺ にするには、塩素や過酸化水素・硝酸などの、もっと強い酸化剤が要ります。</p></div>
 <p class="ref-p">鉄は<b>濃硝酸には溶けません</b>。表面に緻密な酸化被膜ができる<b>不動態</b>になるためです（Al・Ni も同じ）。</p>
 <p class="ref-p">鉄は湿った空気中で酸化されて、<b>赤さび</b>（主成分は酸化水酸化鉄(Ⅲ) や Fe₂O₃ の水和物）を生じます。一方、鉄を空気中で強く熱すると、表面に黒色の Fe₃O₄（<b>黒さび</b>）ができます。黒さびは内部を守るので、鉄器の表面処理に使われます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/ionization-tendency/">鉄を亜鉛やスズでめっきする理由（トタン・ブリキ）はイオン化傾向のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/life-metal/">鉄を亜鉛やスズでめっきする理由（トタン・ブリキ）は暮らしの中の金属のページへ</a></p>
 <section class="ref-sec" id="ref-sec-ions"><h4 class="ref-sec-h">Fe²⁺ と Fe³⁺ の見分け方</h4><p class="ref-sec-lead">水溶液の色・水酸化物の色・3つの試薬（K₃[Fe(CN)₆]・K₄[Fe(CN)₆]・KSCN）で見分けます。</p></section>
 <div class="ref-table-wrap"><div class="ref-cap">Fe²⁺ と Fe³⁺ を見分ける</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">加えるもの</th><th style="text-align: left;">Fe²⁺（淡緑色の水溶液）</th><th style="text-align: left;">Fe³⁺（黄褐色の水溶液）</th></tr></thead><tbody><tr><td style="text-align: left;">NaOH 水溶液・アンモニア水</td><td style="text-align: left;">Fe(OH)₂ の<b>緑白色沈殿</b></td><td style="text-align: left;">FeO(OH) の<b>赤褐色沈殿</b></td></tr><tr><td style="text-align: left;">ヘキサシアニド鉄(Ⅲ)酸カリウム K₃[Fe(CN)₆]</td><td style="text-align: left;"><b>濃青色沈殿</b></td><td style="text-align: left;">褐色の溶液（沈殿しない）</td></tr><tr><td style="text-align: left;">ヘキサシアニド鉄(Ⅱ)酸カリウム K₄[Fe(CN)₆]</td><td style="text-align: left;">青白色沈殿</td><td style="text-align: left;"><b>濃青色沈殿</b></td></tr><tr><td style="text-align: left;">チオシアン酸カリウム KSCN</td><td style="text-align: left;">変化しない</td><td style="text-align: left;"><b>血赤色の溶液</b></td></tr><tr><td style="text-align: left;">硫化水素（酸性）</td><td style="text-align: left;">沈殿しない（塩基性なら FeS の黒色沈殿）</td><td style="text-align: left;">Fe²⁺ に還元され、S の淡黄色の濁り</td></tr></tbody></table></div>
 <p class="ref-p"><b>覚え方は「数字が違えば濃青色」です。</b>Fe²⁺ には鉄(Ⅲ)の K₃[Fe(CN)₆]、Fe³⁺ には鉄(Ⅱ)の K₄[Fe(CN)₆] を加えたときに濃青色沈殿ができます。KSCN で血赤色になるのは Fe³⁺ だけです。この3つの組は<b>必ず暗記してください。</b></p>

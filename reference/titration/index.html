@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -883,7 +901,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-apparatus" data-ref-anchor="apparatus">器具と使い方</a></li><li><a href="#ref-sec-approx-ph" data-ref-anchor="approx-ph">酸・塩基のおおよその pH</a></li><li><a href="#ref-sec-curve" data-ref-anchor="curve">滴定曲線</a></li><li><a href="#ref-sec-indicator" data-ref-anchor="indicator">指示薬の選び方</a></li><li><a href="#ref-sec-two-step" data-ref-anchor="two-step">炭酸ナトリウムの二段階中和</a><b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">濃度が正確にわかっている酸（塩基）を使って、濃度のわからない塩基（酸）の濃度を中和反応から求める操作を<b>中和滴定</b>といいます。量の式は中和のページと同じで、このページでは実験の器具・滴定曲線・指示薬を見ていきます。</p>
+<p class="ref-p">酸と塩基は、酸の H⁺ と塩基の OH⁻ が過不足なく結びつく量どうしで中和します。そこで、濃さを正確に知っている酸をビュレットから少しずつ加え、相手の塩基がちょうど中和されるまでの体積を読めば、塩基の濃さが逆算できます（酸と塩基を入れ替えても同じです）。この実験が<b>中和滴定</b>です。量の式は中和のページと同じで、このページでは実験の器具・滴定曲線・指示薬を見ていきます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/neutralization/">中和の量的関係と計算の式（価数 × mol/L × 体積）へ</a></p>
 <section class="ref-sec" id="ref-sec-apparatus"><h4 class="ref-sec-h">器具と使い方</h4><p class="ref-sec-lead">メスフラスコで正確に薄め、ホールピペットで正確に測りとり、コニカルビーカーの中でビュレットから滴下して中和させます。</p></section>
 <p class="ref-p">中和滴定で使う器具は4つです。<b>用途で言い切れるようにしてください。</b></p>
@@ -906,7 +924,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">中和点ではちょうど中和しきっているので、酸性塩・塩基性塩は考えなくて構いません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/salt/">塩の水溶液の性質（強い方が勝つ）は、塩のページへ</a></p>
 <section class="ref-sec" id="ref-sec-curve"><h4 class="ref-sec-h">滴定曲線</h4><p class="ref-sec-lead">滴定曲線は、コニカルビーカーの水溶液の pH から始まり、ビュレットで滴下する水溶液の pH に近づいて終わります。中和点の近くで pH が一気に変わります（pH ジャンプ）。</p></section>
-<p class="ref-p">滴下した体積を横軸、コニカルビーカーの中の pH を縦軸にとったグラフを<b>滴定曲線</b>といいます。具体例として、塩酸に水酸化ナトリウム水溶液を滴下したときの曲線を見ます。</p>
+<p class="ref-p">ビュレットから1滴ずつ加えるたびに、コニカルビーカーの中の pH は少しずつ変わっていきます。加えた体積（横軸）に対して pH（縦軸）がどう動くかを描いた線が<b>滴定曲線</b>です。まずは、塩酸へ水酸化ナトリウム水溶液を加えていく場合で見てみましょう。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/titration-curve-hcl-naoh.png" alt="横軸に滴下した水酸化ナトリウム水溶液の体積、縦軸に pH をとった滴定曲線。pH 1 付近から始まり、中和点付近で pH が一気に上がって pH 7 を通り、pH 13 に近づいていく" loading="lazy"><figcaption class="ref-figure-cap">塩酸（強酸）に水酸化ナトリウム水溶液（強塩基）を滴下したときの滴定曲線。<b>pH 1 から始まり、中和点（NaCl 水溶液・pH 7）で一気に変わり、pH 13 に近づきます</b>。</figcaption></figure>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCl ＋ NaOH</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O</span></div><p class="ref-note">中和点では NaCl 水溶液になっているので pH 7 です。</p></div>
 <p class="ref-p">滴定曲線は、次の3つを押さえれば描けます。</p>
@@ -924,7 +942,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の酸と塩基の組み合わせで中和滴定を行うとき、指示薬としてフェノールフタレイン（PP）・メチルオレンジ（MO）がそれぞれ使えるか（○）、使えないか（×）答えよ。(1) HCl と Ca(OH)₂　(2) H₂SO₄ と NH₃　(3) CH₃COOH と KOH　(4) (COOH)₂ と NaOH　(5) HNO₃ と Ba(OH)₂</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>PP は弱塩基に、MO は弱酸に使えません。(1) 強酸と強塩基：<b>PP ○・MO ○</b>　(2) 強酸と弱塩基：<b>PP ×・MO ○</b>　(3) 弱酸と強塩基：<b>PP ○・MO ×</b>　(4) 弱酸と強塩基：<b>PP ○・MO ×</b>　(5) 強酸と強塩基：<b>PP ○・MO ○</b></p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.10 mol/L の酢酸 10 mL に 0.10 mol/L の水酸化ナトリウム水溶液を滴下したときの滴定曲線の概形を説明せよ（始まりの pH・中和点の液性と体積・終わりの pH）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>酢酸は弱酸なので <b>pH 3 くらいから始まり</b>、NaOH は強塩基なので <b>pH 13 くらいに近づいて終わります</b>。中和点は酢酸ナトリウム水溶液（弱酸 ＋ 強塩基の塩）なので<b>塩基性側</b>です。中和に要する体積は 1 × 0.10 × 10 ＝ 1 × 0.10 × x より <b>10 mL</b> です。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.10 mol/L の水酸化ナトリウム水溶液 10 mL に 0.10 mol/L のシュウ酸を滴下したときの滴定曲線の概形を説明せよ（始まりの pH・中和点の液性と体積・終わりの pH）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>NaOH は強塩基なので <b>pH 13 くらいから始まり</b>、シュウ酸は弱酸なので <b>pH 3 くらいに近づいて終わります</b>。中和点はシュウ酸ナトリウム水溶液（弱酸 ＋ 強塩基の塩）なので<b>塩基性側</b>です。シュウ酸は2価なので 2 × 0.10 × x ＝ 1 × 0.10 × 10 より <b>5.0 mL</b> です。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">NaOH と Na₂CO₃ を含む混合水溶液 20.0 mL を 0.10 mol/L の塩酸で滴定した。フェノールフタレインの赤色が消えるまでに 30.0 mL、続けてメチルオレンジを加えて赤色になるまでにさらに 10.0 mL を要した。混合水溶液中の NaOH と Na₂CO₃ の濃度を求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>2段目の 10.0 mL は NaHCO₃ ＋ HCl の分で、NaHCO₃ は Na₂CO₃ と同じ物質量なので、Na₂CO₃ は 0.10 × 10.0/1000 ＝ 1.0 × 10⁻³ mol。1段目の 30.0 mL のうち 10.0 mL が Na₂CO₃ の分なので、NaOH は 0.10 × 20.0/1000 ＝ 2.0 × 10⁻³ mol。20.0 mL 中なので <b>NaOH 0.10 mol/L、Na₂CO₃ 5.0 × 10⁻² mol/L</b></p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水酸化ナトリウムと炭酸ナトリウムが溶けた水溶液 10.0 mL をコニカルビーカーにはかりとり、指示薬にフェノールフタレインを使って 0.10 mol/L 塩酸を滴下すると、24.0 mL で赤色が消えた。そこへメチルオレンジを加えて滴下を続けると、赤色に変わるまでにあと 8.0 mL かかった。はじめの水溶液に含まれていた NaOH と Na₂CO₃ のモル濃度を、それぞれ求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>2段目の 8.0 mL は NaHCO₃ ＋ HCl の分で、NaHCO₃ は Na₂CO₃ と同じ物質量なので、Na₂CO₃ は 0.10 × 8.0/1000 ＝ 8.0 × 10⁻⁴ mol。1段目の 24.0 mL のうち 8.0 mL が Na₂CO₃ → NaHCO₃ の分なので、NaOH は 0.10 × 16.0/1000 ＝ 1.6 × 10⁻³ mol。10.0 mL 中なので <b>NaOH 0.16 mol/L、Na₂CO₃ 8.0 × 10⁻² mol/L</b></p></div></details></div>
 </div>
 </div>
 

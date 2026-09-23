@@ -868,3 +868,25 @@
 {"code":"org.ali.formula-use","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
 {"code":"org.ali.rational-to-molecular","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
 {"code":"org.ali.structural-formula-valence","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
+{"code":"theo.life.iron-rust-condition","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている）"}
+{"code":"theo.life.metal-use","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている）"}
+{"code":"theo.life.metal-refining","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている）"}
+{"code":"theo.life.tin-zinc-plating","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている）"}
+{"code":"theo.life.gold-property","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている）"}
+{"code":"theo.life.si-vs-sio2","kind":"reference","label":"資料「ガラスとセラミックス」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-ceramics に載っている）"}
+{"code":"theo.life.cement-glass-raw","kind":"reference","label":"資料「ガラスとセラミックス」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-ceramics に載っている）"}
+{"code":"theo.life.glass-kinds","kind":"reference","label":"資料「ガラスとセラミックス」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-ceramics に載っている）"}
+{"code":"theo.life.plaster-co2","kind":"reference","label":"資料「ガラスとセラミックス」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-ceramics に載っている）"}
+{"code":"theo.life.home-uses-na-ca","kind":"reference","label":"資料「台所と薬箱の物質」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-household に載っている）"}
+{"code":"theo.life.home-uses-oxidizer","kind":"reference","label":"資料「台所と薬箱の物質」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-household に載っている）"}
+{"code":"theo.life.familiar-gas-uses","kind":"reference","label":"資料「台所と薬箱の物質」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-household に載っている）"}
+{"code":"theo.life.white-powder-id","kind":"reference","label":"資料「台所と薬箱の物質」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-household に載っている）"}
+{"code":"theo.life.ph-familiar-order","kind":"reference","label":"資料「台所と薬箱の物質」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-household に載っている）"}
+{"code":"theo.life.city-gas-methane","kind":"reference","label":"資料「燃料・電池・光」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-energy に載っている）"}
+{"code":"theo.life.petroleum-fraction","kind":"reference","label":"資料「燃料・電池・光」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-energy に載っている）"}
+{"code":"theo.life.dry-cell-mno2","kind":"reference","label":"資料「燃料・電池・光」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-energy に載っている）"}
+{"code":"theo.life.chemiluminescence-examples","kind":"reference","label":"資料「燃料・電池・光」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-energy に載っている）"}
+{"code":"theo.life.chlorine-bleach-acid","kind":"reference","label":"資料「薬品を安全に扱う」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-safety に載っている）"}
+{"code":"theo.life.home-hazard","kind":"reference","label":"資料「薬品を安全に扱う」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-safety に載っている）"}
+{"code":"theo.life.sulfuric-dilution","kind":"reference","label":"資料「薬品を安全に扱う」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-safety に載っている）"}
+{"code":"theo.life.reagent-storage","kind":"reference","label":"資料「薬品を安全に扱う」を開く","note":"2026-09-23 化学と人間生活の章を書いたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-safety に載っている）"}

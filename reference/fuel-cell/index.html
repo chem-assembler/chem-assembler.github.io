@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -886,15 +904,15 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">電池は、実際に使われている<b>実用電池</b>を中心に、たくさんの種類が知られています。ただし、仕組みまで覚えておかないと解けない問題が出るのは、<b>鉛蓄電池と燃料電池の2つだけ</b>です。このページでは実用電池を一覧でおさえ、燃料電池の反応式をつくれるようにします。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/cell-basics/">電池の仕組み（負極は還元剤・正極は酸化剤）はこちら</a></p>
 <section class="ref-sec" id="ref-sec-practical"><h4 class="ref-sec-h">一次電池と二次電池</h4><p class="ref-sec-lead">充電できない使い切りの電池を一次電池、充電してくり返し使える電池を二次電池（蓄電池）といいます。</p></section>
-<p class="ref-p">電池から電流を取り出すことを<b>放電</b>といいます。放電を続けると、電池の起電力はしだいに下がります。</p>
-<p class="ref-p">放電したあと元にもどせない、使い切りの電池を<b>一次電池</b>といいます。代表例は<b>マンガン乾電池</b>です。</p>
-<p class="ref-p">外部の電源から放電のときと逆向きに電流を流すと、起電力を回復させられる電池を<b>二次電池</b>または<b>蓄電池</b>といい、この操作を<b>充電</b>といいます。代表例は<b>鉛蓄電池</b>と<b>リチウムイオン電池</b>です。</p>
+<p class="ref-p">電池をつないで電流を使うことが<b>放電</b>です。使い続けるうちに、電池の起電力は少しずつ落ちていきます。</p>
+<p class="ref-p">使い切ったら元にもどせない電池が<b>一次電池</b>です。代表例は<b>マンガン乾電池</b>です。</p>
+<p class="ref-p">一方、外の電源につないで放電とは逆向きに電流を流し込むと、起電力が戻る電池もあります。これが<b>二次電池</b>（<b>蓄電池</b>）で、電流を流し込んで戻す操作を<b>充電</b>とよびます。代表例は<b>鉛蓄電池</b>と<b>リチウムイオン電池</b>です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">主な実用電池</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">電池</th><th style="text-align: center;">種類</th><th style="text-align: center;">負極活物質</th><th style="text-align: center;">電解質</th><th style="text-align: center;">正極活物質</th></tr></thead><tbody><tr><td style="text-align: left;">マンガン乾電池</td><td style="text-align: center;">一次電池</td><td style="text-align: center;">Zn</td><td style="text-align: center;">ZnCl₂・NH₄Cl</td><td style="text-align: center;">MnO₂</td></tr><tr><td style="text-align: left;">アルカリマンガン乾電池</td><td style="text-align: center;">一次電池</td><td style="text-align: center;">Zn</td><td style="text-align: center;">KOH</td><td style="text-align: center;">MnO₂</td></tr><tr><td style="text-align: left;"><b>鉛蓄電池</b></td><td style="text-align: center;">二次電池</td><td style="text-align: center;">Pb</td><td style="text-align: center;">H₂SO₄</td><td style="text-align: center;">PbO₂</td></tr><tr><td style="text-align: left;">リチウムイオン電池</td><td style="text-align: center;">二次電池</td><td style="text-align: center;">Li を含む黒鉛（LiC₆）</td><td style="text-align: center;">リチウムの塩（有機溶媒）</td><td style="text-align: center;">LiCoO₂ など</td></tr><tr><td style="text-align: left;"><b>燃料電池（リン酸形）</b></td><td style="text-align: center;">——</td><td style="text-align: center;">H₂</td><td style="text-align: center;">H₃PO₄</td><td style="text-align: center;">O₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>表のうち、鉛蓄電池と燃料電池の行は必ず覚えてください。</b>ほかの電池は、たまにマンガン乾電池（−）Zn｜ZnCl₂aq，NH₄Claq｜MnO₂（＋）の構成が問われる程度です。<b>「マンガン乾電池は正極が MnO₂、負極が Zn」まで覚えておけば十分でしょう。</b></p>
 <p class="ref-p">リチウムイオン電池は広く使われているので、教科書・参考書に難しい反応式まで載っています。ですが、出題されるときは電池の原理の理解や読解力を問う形になるので、<b>反応式を暗記する必要はありません</b>。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/lead-storage-battery/">鉛蓄電池の反応式と質量の変化はこちら</a></p>
 <section class="ref-sec" id="ref-sec-fuel"><h4 class="ref-sec-h">燃料電池の仕組み</h4><p class="ref-sec-lead">燃料（還元剤）の H₂ と、酸化剤の O₂ を別々の電極に送り込んで電気を取り出します。全体では H₂ の燃焼と同じ反応です。</p></section>
-<p class="ref-p">燃料（還元剤）と酸素（酸化剤）を反応させて、燃焼の熱の代わりに電気エネルギーを取り出す装置を<b>燃料電池</b>といいます。代表的なのは、燃料に水素 H₂、電解液にリン酸 H₃PO₄ 水溶液を使う<b>リン酸形燃料電池</b>です。電極には、気体が通れるように細かい穴の空いた<b>多孔質電極</b>を使います。</p>
+<p class="ref-p">燃料を燃やすと、そのエネルギーは熱になって出ていきます。同じ燃料（還元剤）と酸素（酸化剤）の反応を、燃やさずに電極の上で進めれば、エネルギーを熱ではなく電気として受け取れます。このしくみの電池が<b>燃料電池</b>です。代表的なのは、燃料に水素 H₂、電解液にリン酸 H₃PO₄ 水溶液を使う<b>リン酸形燃料電池</b>です。電極には、気体が通れるように細かい穴の空いた<b>多孔質電極</b>を使います。</p>
 <p class="ref-p">リン酸形燃料電池の構成は <b>（−）H₂｜H₃PO₄aq｜O₂（＋）</b> です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fuel-cell-phosphoric.png" alt="リン酸形燃料電池の模式図。左の多孔質電極に H₂ が送り込まれ、H⁺ となって電解液に溶け込み、e⁻ は導線を通って右の電極へ流れる。右の多孔質電極には O₂ が送り込まれ、H⁺ と e⁻ と反応して H₂O ができる" loading="lazy"><figcaption class="ref-figure-cap">負極では H₂ が H⁺ になって電解液に溶け込み、e⁻ が正極へ流れます。正極では O₂・H⁺・e⁻ が反応して H₂O ができます。</figcaption></figure>
 <p class="ref-p">負極では、H₂ が e⁻ を放出して H⁺ となり、電解液に溶け込みます。正極では、O₂ が電解液中の H⁺ と導線から来た e⁻ を受け取って、H₂O になります。</p>

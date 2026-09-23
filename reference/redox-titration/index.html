@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>酸化還元滴定 ｜ 化学の参考書</title>
-<meta name="description" content="濃度がわかっている酸化剤（還元剤）で、濃度がわからない還元剤（酸化剤）の濃度を求める操作です。e⁻ の物質量の等式で解くこと、KMnO₄ は自分が指示薬になること、ヨウ素滴定の2段の反応まで。">
+<meta name="description" content="濃さの決まった酸化剤（または還元剤）を少しずつ加え、相手の濃さを割り出す実験です。e⁻ の物質量の等式で解くこと、KMnO₄ は自分が指示薬になること、ヨウ素滴定の2段の反応まで。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/redox-titration/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="酸化還元滴定 ｜ 化学の参考書">
-<meta property="og:description" content="濃度がわかっている酸化剤（還元剤）で、濃度がわからない還元剤（酸化剤）の濃度を求める操作です。e⁻ の物質量の等式で解くこと、KMnO₄ は自分が指示薬になること、ヨウ素滴定の2段の反応まで。">
+<meta property="og:description" content="濃さの決まった酸化剤（または還元剤）を少しずつ加え、相手の濃さを割り出す実験です。e⁻ の物質量の等式で解くこと、KMnO₄ は自分が指示薬になること、ヨウ素滴定の2段の反応まで。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/redox-titration/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,13 +895,13 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#basic">化学基礎</a> ／ <a href="/reference/#basic-6">酸化と還元</a></div></header>
 <main class="wrap">
 <h1>酸化還元滴定</h1>
-<p class="lede">濃度がわかっている酸化剤（還元剤）で、濃度がわからない還元剤（酸化剤）の濃度を求める操作です。e⁻ の物質量の等式で解くこと、KMnO₄ は自分が指示薬になること、ヨウ素滴定の2段の反応まで。</p>
+<p class="lede">濃さの決まった酸化剤（または還元剤）を少しずつ加え、相手の濃さを割り出す実験です。e⁻ の物質量の等式で解くこと、KMnO₄ は自分が指示薬になること、ヨウ素滴定の2段の反応まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸化と還元</span><span class="unit-label">酸化剤と還元剤</span></div>
 
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（3節）</summary><ul><li><a href="#ref-sec-relation" data-ref-anchor="relation">終点で成り立つ関係</a></li><li><a href="#ref-sec-kmno4" data-ref-anchor="kmno4">過マンガン酸カリウムによる滴定</a></li><li><a href="#ref-sec-iodine" data-ref-anchor="iodine">ヨウ素滴定</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">酸化還元反応の量的関係を使うと、濃度が正確にわかっている酸化剤（または還元剤）の水溶液を使って、濃度がわからない還元剤（または酸化剤）の濃度を求められます。この操作を「酸化還元滴定」といいます。</p>
+<p class="ref-p">酸化剤と還元剤は、e⁻ の数がちょうど釣り合う量どうしで反応します。そこで、濃さを正確に知っている酸化剤の水溶液をビュレットから加えていき、相手の還元剤がちょうど使い切られるまでの体積を読めば、還元剤の濃さが逆算できます（酸化剤と還元剤を入れ替えても同じです）。これが「酸化還元滴定」です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/redox-equation/">酸化剤と還元剤は価数の逆の比で反応する（「酸化還元反応式の組み立て」）</a></p>
 <p class="ref-p">用いる器具と操作法は、中和滴定とほぼ同じです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/titration/">ビュレット・ホールピペットの使い方と共洗いは「中和滴定」で</a></p>
@@ -900,15 +918,15 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">還元剤の水溶液に KMnO₄ 水溶液を滴下すると、還元剤が残っているあいだは赤紫色がすぐに消えます。還元剤がなくなると、<b>滴下した KMnO₄ の赤紫色が消えずに残ります</b>。ここが終点です。<b>KMnO₄ は自分自身が指示薬の役目をする</b>ので、別の指示薬を加える必要がありません。</p>
 <h5 class="ref-h5">硫酸で酸性にする理由</h5>
 <p class="ref-p">MnO₄⁻ が Mn²⁺ まで還元されるには H⁺ が必要なので、水溶液を酸性にします。このとき<b>使うのは希硫酸で、塩酸や硝酸は使いません</b>。</p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">酸性にするだけなら、塩酸や硝酸を加えてもよい</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">KMnO₄ の滴定では、<b>希硫酸</b>で酸性にします。</span></p><p class="ref-mistake-why">塩酸を使うと、塩化物イオン Cl⁻ が KMnO₄ に酸化されてしまい（Cl⁻ 自身が還元剤としてはたらく）、KMnO₄ の消費量が多くなります。硝酸はそれ自身が酸化剤としてはたらくので、本来の酸化剤と還元剤の反応を妨げます。硫酸は酸化剤にも還元剤にもならない（熱濃硫酸を除く）ので、H⁺ を出すだけの役に徹します。</p></div>
-<p class="ref-p">KMnO₄ 水溶液は光に対して不安定なので、滴定には光を通しにくい褐色のビュレットを使います。</p>
+<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">酸性にするだけなら、塩酸や硝酸を加えてもよい</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">KMnO₄ の滴定では、<b>希硫酸</b>で酸性にします。</span></p><p class="ref-mistake-why">塩酸を使うと、塩化物イオン Cl⁻ が KMnO₄ に酸化されてしまい（Cl⁻ 自身が還元剤としてはたらく）、KMnO₄ の消費量が多くなります。硝酸を使うと、硝酸まで酸化剤として還元剤から e⁻ を受け取ってしまい、KMnO₄ が受け取るはずの e⁻ が横取りされます。どちらも滴下量が本当の値からずれます。硫酸は酸化剤にも還元剤にもならない（熱濃硫酸を除く）ので、H⁺ を出すだけの役に徹します。</p></div>
+<p class="ref-p">KMnO₄ 水溶液は光が当たると少しずつ分解します。そのため、ビュレットは茶色いガラスでできた褐色ビュレットを選びます。</p>
 <h5 class="ref-h5">具体例 —— シュウ酸で KMnO₄ 水溶液の濃度を決める</h5>
 <p class="ref-p">濃度 0.0500 mol/L のシュウ酸 (COOH)₂ 水溶液 10.0 mL をとり、希硫酸を加えて温め、濃度不明の KMnO₄ 水溶液で滴定したところ、8.00 mL 加えたところで赤紫色が消えなくなったとします。</p>
 <ol class="ref-list"><li>酸化剤と還元剤の価数を半反応式から読む。<div class="ref-li-hang">KMnO₄ は5価（MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻ → Mn²⁺ ＋ 4H₂O）、シュウ酸は2価（H₂C₂O₄ → 2CO₂ ＋ 2H⁺ ＋ 2e⁻）</div></li><li>それぞれの物質量を、濃度 × 体積で表す。<div class="ref-li-hang">KMnO₄ は x × 8.00/1000 mol、シュウ酸は 0.0500 × 10.0/1000 mol</div></li><li>e⁻ の物質量の等式を立てて解く。<div class="ref-li-hang">x × 8.00/1000 × 5 ＝ 0.0500 × 10.0/1000 × 2 より、x ＝ 0.0250 mol/L</div></li></ol>
 <p class="ref-p">シュウ酸と KMnO₄ の反応は常温ではゆっくりなので、シュウ酸の水溶液を約 60℃ に温めてから滴定します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2KMnO₄ ＋ 5(COOH)₂ ＋ 3H₂SO₄</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2MnSO₄ ＋ K₂SO₄ ＋ 10CO₂↑ ＋ 8H₂O</span></div><p class="ref-note">KMnO₄：シュウ酸 ＝ 2：5（価数5と2の逆の比）。イオン反応式は 2MnO₄⁻ ＋ 5H₂C₂O₄ ＋ 6H⁺ → 2Mn²⁺ ＋ 10CO₂ ＋ 8H₂O。</p></div>
 <h5 class="ref-h5 ref-h5-advanced">温める温度と、途中から反応が速くなるわけ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
-<p class="ref-p">温めすぎると KMnO₄ が分解し始めるので、80℃ を超えないようにします。また、滴定の最初は赤紫色がなかなか消えませんが、いったん反応が始まると色がすぐに消えるようになります。生じた Mn²⁺ がこの反応を速める触媒としてはたらくためです（<b>自触媒作用</b>）。</p>
+<p class="ref-p">ただし熱くしすぎてはいけません。80℃ あたりを超えると KMnO₄ そのものが壊れはじめ、滴下量が狂います。また、滴定の最初は赤紫色がなかなか消えませんが、いったん反応が始まると色がすぐに消えるようになります。生じた Mn²⁺ がこの反応を速める触媒としてはたらくためです（<b>自触媒作用</b>）。</p>
 <section class="ref-sec" id="ref-sec-iodine"><h4 class="ref-sec-h">ヨウ素滴定</h4><p class="ref-sec-lead">測りたい酸化剤を、同じ物質量の I₂ に置き換えてから、チオ硫酸ナトリウムで滴定します。</p></section>
 <p class="ref-p">酸化剤にヨウ素 I₂、還元剤にチオ硫酸ナトリウム Na₂S₂O₃ を使う酸化還元滴定を「ヨウ素滴定」といいます。指示薬としてデンプンを加え、<b>I₂ がなくなってヨウ素デンプン反応の青紫色が消えるところを終点</b>とします。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">I₂ ＋ 2e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2I⁻</span></div><p class="ref-note">ヨウ素は弱い酸化剤です。</p></div>
@@ -922,7 +940,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">1段目で加える KI と硫酸は、<b>H₂O₂ がすべて反応する量を過剰に加えればよい</b>ので、量は正確でなくてかまいません。問題文でも、そうした量は有効数字1桁で与えられていることが多いです。</p>
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">濃度未知の過酸化水素水 10 mL に、1 mol/L のヨウ化カリウム水溶液 10 mL と 2 mol/L の硫酸 3 mL を加えて、過酸化水素が完全になくなるまで反応させた。その後、指示薬を加え、0.10 mol/L のチオ硫酸ナトリウム水溶液を滴下したところ、12 mL で終点となった。ただし、チオ硫酸イオンの半反応式は 2S₂O₃²⁻ → S₄O₆²⁻ ＋ 2e⁻ である。<b>(1) はじめの反応の化学反応式を書け。(2) 加えた指示薬の名称と、終点での色の変化を答えよ。(3) 過酸化水素水の濃度〔mol/L〕を有効数字2桁で求めよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(1) H₂O₂ ＋ H₂SO₄ ＋ 2KI → 2H₂O ＋ I₂ ＋ K₂SO₄　(2) デンプン、青紫色から無色　(3) 0.060 mol/L</b> です。(3) 終点までに加えた Na₂S₂O₃ は 0.10 mol/L × 12 mL ＝ 1.2 mmol。I₂ ＋ 2S₂O₃²⁻ → 2I⁻ ＋ S₄O₆²⁻ より I₂ は 0.60 mmol。1段目の式より H₂O₂ と I₂ は等 mol なので、H₂O₂ も 0.60 mmol。これが 10 mL に含まれていたので、0.60 mmol ÷ 10 mL ＝ 0.060 mol/L です。</p><img class="ref-figure-img" src="/reference-img/redox-titration-iodine-mol.png" alt="1本目の式 H₂O₂ ＋ H₂SO₄ ＋ 2KI → 2H₂O ＋ I₂ ＋ K₂SO₄ と2本目の式 I₂ ＋ 2S₂O₃²⁻ → 2I⁻ ＋ S₄O₆²⁻ を並べ、Na₂S₂O₃ 1.2 mmol → I₂ 0.6 mmol → H₂O₂ 0.6 mmol と係数の比でたどり、0.6 mmol：10 mL ＝ 0.06 mol：1 L から 0.060 mol/L を出す図" loading="lazy"></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">濃度不明の過酸化水素水 20.0 mL を希硫酸で酸性にし、0.0200 mol/L の過マンガン酸カリウム水溶液で滴定したところ、16.0 mL 加えたところで薄い赤紫色が消えなくなった。<b>過酸化水素水のモル濃度を有効数字3桁で求めよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>0.0400 mol/L</b> です。KMnO₄ は5価の酸化剤、H₂O₂ は2価の還元剤なので、e⁻ の物質量の等式は 0.0200 × 16.0/1000 × 5 ＝ x × 20.0/1000 × 2。左辺は 1.60×10⁻³ mol、右辺は x × 4.00×10⁻² なので、x ＝ 0.0400 mol/L です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">コニカルビーカーに過酸化水素水を 25.0 mL はかりとり、希硫酸を加えて酸性にした。ここへビュレットから 0.0100 mol/L の KMnO₄ 水溶液を少しずつ加えていくと、18.0 mL 加えた時点で、振り混ぜても淡い赤紫色が残るようになった。<b>この過酸化水素水の濃度は何 mol/L か。有効数字3桁で答えよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>0.0180 mol/L</b> です。KMnO₄ は5価の酸化剤、H₂O₂ は2価の還元剤なので、e⁻ の物質量の等式は 0.0100 × 18.0/1000 × 5 ＝ x × 25.0/1000 × 2。左辺は 9.00×10⁻⁴ mol、右辺は x × 5.00×10⁻² なので、x ＝ 0.0180 mol/L です。</p></div></details></div>
 </div>
 </div>
 

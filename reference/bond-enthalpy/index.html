@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>結合エンタルピー ｜ 化学の参考書</title>
-<meta name="description" content="気体分子の共有結合 1mol を切って原子にするのに必要なエネルギーを結合エンタルピーといいます。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。">
+<meta name="description" content="結合エンタルピーは、気体の分子で結合 1mol をばらばらの原子に引き離すのに要るエネルギーです。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/bond-enthalpy/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="結合エンタルピー ｜ 化学の参考書">
-<meta property="og:description" content="気体分子の共有結合 1mol を切って原子にするのに必要なエネルギーを結合エンタルピーといいます。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。">
+<meta property="og:description" content="結合エンタルピーは、気体の分子で結合 1mol をばらばらの原子に引き離すのに要るエネルギーです。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/bond-enthalpy/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,7 +895,7 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-4">化学反応とエネルギー</a></div></header>
 <main class="wrap">
 <h1>結合エンタルピー</h1>
-<p class="lede">気体分子の共有結合 1mol を切って原子にするのに必要なエネルギーを結合エンタルピーといいます。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。</p>
+<p class="lede">結合エンタルピーは、気体の分子で結合 1mol をばらばらの原子に引き離すのに要るエネルギーです。原子の状態をいちばん上に置いたエネルギー図を描くと、反応エンタルピー ＝（反応物の結合エンタルピーの和）−（生成物の結合エンタルピーの和）で求められます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">化学反応とエネルギー</span><span class="unit-label">ヘスの法則と結合エンタルピー</span></div>
 
 <div class="ref-layout">
@@ -885,8 +903,8 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">化学反応では、反応物の結合が切れて、生成物の新しい結合ができます。このページでは、結合を切るのに要るエネルギーから反応エンタルピーを求める方法を扱います。どの経路を通っても高さの差は同じ、というヘスの法則をそのまま使います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/hess-law/">準位を置いて高さの差をとる（ヘスの法則）はこちら</a></p>
-<section class="ref-sec" id="ref-sec-define"><h4 class="ref-sec-h">結合エンタルピーとは</h4><p class="ref-sec-lead">気体分子の中の共有結合を切るのに必要なエネルギーを、結合 1mol あたりで表したものが結合エンタルピーです。結合を切るときは ＋、できるときは − です。</p></section>
-<p class="ref-p">気体分子の中の共有結合を切るのに必要なエネルギーを、その結合の<b>結合エンタルピー</b>（結合エネルギー）といいます。結合 1mol あたりの値で、単位は kJ/mol です。</p>
+<section class="ref-sec" id="ref-sec-define"><h4 class="ref-sec-h">結合エンタルピーとは</h4><p class="ref-sec-lead">結合は、エネルギーを注ぎ込まないと切れません。その量を結合 1mol あたりで表したのが結合エンタルピーで、切るときは ＋、できるときは − の向きに出入りします。</p></section>
+<p class="ref-p"><b>結合エンタルピー</b>（結合エネルギー）は、結合の強さを表す物差しです。気体の分子で、ある結合 1mol を切り離して原子にするのに要るエネルギーの量で表し、単位は kJ/mol です。</p>
 <p class="ref-p">具体例1で、水素分子 H₂ 1mol をばらばらの水素原子 2mol にするには 436kJ が要ります。H−H の結合エンタルピーは 436kJ/mol です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂(気)</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H(気)　ΔH ＝ ＋436 kJ</span></div><p class="ref-note">結合を切るにはエネルギーが要るので、ΔH はいつも正です。</p></div>
 <p class="ref-p">逆に、水素原子 2mol が結合して H₂ 1mol ができるときは、436kJ が放出されます（ΔH ＝ −436kJ）。<b>結合を切るときは ＋、結合ができるときは −</b> です。結合ができると原子どうしが安定になり、その分のエネルギーが外に出るためです。</p>

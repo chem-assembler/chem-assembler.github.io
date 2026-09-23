@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -932,7 +950,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/condition.html?s=b1&amp;from=reference&amp;page=half-reaction-condition">水の電気分解・陰極（H₂ が出る側）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/condition.html?s=b3&amp;from=reference&amp;page=half-reaction-condition">オゾンが酸化剤としてはたらくとき</a></p>
 <h5 class="ref-h5">例題</h5>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">オゾンが、湿らせたヨウ化カリウムデンプン紙を青変させた。<b>この反応の化学反応式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>O₃ ＋ 2KI ＋ H₂O → I₂ ＋ 2KOH ＋ O₂</b> です。酸を加えていないので、O₃ は中・塩基性の式 O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ ではたらきます。還元剤の式 2I⁻ → I₂ ＋ 2e⁻ と足すと O₃ ＋ 2I⁻ ＋ H₂O → I₂ ＋ 2OH⁻ ＋ O₂。両辺に 2K⁺ を加えて KI と KOH に組みます。生じた I₂ がデンプンと反応して青〜青紫色になります。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水で湿らせたヨウ化カリウムデンプン紙をオゾンにさらすと、紙が青紫色に変わった。<b>この反応の化学反応式を書け。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>O₃ ＋ 2KI ＋ H₂O → I₂ ＋ 2KOH ＋ O₂</b> です。酸を加えていないので、O₃ は中・塩基性の式 O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ ではたらきます。還元剤の式 2I⁻ → I₂ ＋ 2e⁻ と足すと O₃ ＋ 2I⁻ ＋ H₂O → I₂ ＋ 2OH⁻ ＋ O₂。両辺に 2K⁺ を加えて KI と KOH に組みます。生じた I₂ がデンプンと反応して青〜青紫色になります。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">リン酸形燃料電池の正極の式 O₂ ＋ 4H⁺ ＋ 4e⁻ → 2H₂O を、<b>電解液が KOH 水溶液（アルカリ形）の場合の式に書き換えよ。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>O₂ ＋ 2H₂O ＋ 4e⁻ → 4OH⁻</b> です。左辺の H⁺ の数だけ両辺に 4OH⁻ を足すと O₂ ＋ 4H₂O ＋ 4e⁻ → 2H₂O ＋ 4OH⁻ になり、両辺にある 2H₂O を消します。</p></div></details></div>
 </div>
 </div>

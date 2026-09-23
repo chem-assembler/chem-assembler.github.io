@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -883,7 +901,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-what" data-ref-anchor="what">ケトンはどんな化合物か</a></li><li><a href="#ref-sec-naming" data-ref-anchor="naming">ケトンの命名</a></li><li><a href="#ref-sec-distinguish" data-ref-anchor="distinguish">アルデヒドとの区別 —— 還元性がない</a></li><li><a href="#ref-sec-iodoform" data-ref-anchor="iodoform">ケトンとヨードホルム反応</a></li><li><a href="#ref-sec-acetone" data-ref-anchor="acetone">アセトン</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">カルボニル基 C=O の炭素の<b>両側に炭化水素基が結合した</b>化合物を<b>ケトン</b>といいます。示性式は <b>R−CO−R'</b> と書き、いちばん簡単なものが<b>アセトン</b> CH₃COCH₃ です。</p>
+<p class="ref-p">カルボニル基 C=O が炭素鎖の途中にあり、<b>両側を炭化水素基にはさまれている</b>化合物 —— これが<b>ケトン</b>です。示性式は <b>R−CO−R'</b> と書き、いちばん簡単なものが<b>アセトン</b> CH₃COCH₃ です。</p>
 <section class="ref-sec" id="ref-sec-what"><h4 class="ref-sec-h">ケトンはどんな化合物か</h4><p class="ref-sec-lead">アルデヒドと同じ一般式 C<sub>n</sub>H<sub>2n</sub>O。2級アルコールを酸化するとできて、そこから先へは進みません。</p></section>
 <p class="ref-p">鎖式で飽和のケトンの一般式は <b>C<sub>n</sub>H<sub>2n</sub>O</b> で、アルデヒドとまったく同じです。n=3 を代入すると C₃H₆O で、これがアセトンの分子式です。同じ C₃H₆O をもつアルデヒドはプロピオンアルデヒド CH₃CH₂CHO で、<b>この2つは互いに構造異性体</b>です。</p>
 <p class="ref-p">アルデヒドとケトンをまとめて<b>カルボニル化合物</b>とよびます。構造上の違いは、<b>カルボニル基が鎖の端にあるか（アルデヒド）、端以外にあるか（ケトン）</b>の1点だけです。</p>

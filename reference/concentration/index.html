@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -926,7 +944,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">水酸化ナトリウム NaOH（式量 40）240g を水に溶かして 6.0L にした水溶液のモル濃度を求めよ。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>1.0mol/L。溶液 1L について考えると、240g : 6.0L ＝ □g : 1L で、×1/6 して 40g。NaOH は 1mol で 40g なので、溶液 1L に 1.0mol。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">密度 1.83g/cm³、質量パーセント濃度 98% の濃硫酸（H₂SO₄ の分子量 98）のモル濃度を求めよ。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>18mol/L。溶液 1L ＝ 1000cm³ は 1.83 × 1000 ＝ 1830g。H₂SO₄ はその 98% で 1830 × 98/100 ＝ 18.3 × 98 g。H₂SO₄ 1mol : 98g ＝ □mol : 18.3 × 98 g で、□ ＝ 18.3 ≒ 18mol。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.012mol/L の塩酸 100mL と 0.0070mol/L の塩酸 25mL を混合した溶液のモル濃度を求めよ。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>0.011mol/L。0.0070 と 0.012 のてんびんで、おもりは 25mL : 100mL ＝ 1 : 4、ウデは 4 : 1。あいだの 0.005 を 4 : 1 に分けて、0.0070 ＋ 0.005 × 4/5 ＝ 0.011。多い 0.012 の方に近いことを確かめます。（別解 0.00120 ＋ 0.000175 ＝ 0.001375mol、125mL で 0.011mol/L）</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">6.0mol/L の硫酸を水で薄めて、1.2mol/L の硫酸を 2.0L つくりたい。6.0mol/L の硫酸は何 mL 必要か。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>4.0×10²mL。「0mol/L（純水）と 6.0mol/L を混ぜて 1.2mol/L にする」と読み替えると、0 と 6.0 のあいだを 1 : 4 に分ける点なので、純水 : 6.0mol/L ＝ 4 : 1。6.0mol/L は全体の 1/5 で、2000 × 1/5 ＝ 400mL。（別解 必要な H₂SO₄ 2.4mol を 6.0mol/L からとると 400mL）</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">6.0mol/L の硫酸を水で薄めて、1.2mol/L の硫酸を 2.0L つくりたい。6.0mol/L の硫酸を何 mL はかりとればよいか。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>4.0×10²mL。「0mol/L（純水）と 6.0mol/L を混ぜて 1.2mol/L にする」と読み替えると、0 と 6.0 のあいだを 1 : 4 に分ける点なので、純水 : 6.0mol/L ＝ 4 : 1。6.0mol/L は全体の 1/5 で、2000 × 1/5 ＝ 400mL。（別解 必要な H₂SO₄ 2.4mol を 6.0mol/L からとると 400mL）</p></div></details></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/stoichiometry/">濃度を使う反応の量の計算は、化学反応の量的関係のページへ</a></p>
 </div>
 </div>

@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -891,15 +909,15 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">粒子の大きさと、ろ紙・半透膜を通るか</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">区分</th><th style="text-align: center;">粒子の直径</th><th style="text-align: center;">ろ紙</th><th style="text-align: center;">半透膜（セロハン膜）</th></tr></thead><tbody><tr><td style="text-align: left;">真の溶液（イオン・分子）</td><td style="text-align: center;">1 nm より小さい</td><td style="text-align: center;">通る</td><td style="text-align: center;">通る</td></tr><tr><td style="text-align: left;">コロイド溶液（コロイド粒子）</td><td style="text-align: center;">1 nm〜1 μm</td><td style="text-align: center;">通る</td><td style="text-align: center;"><b>通らない</b></td></tr><tr><td style="text-align: left;">沈殿・懸濁（大きな粒子）</td><td style="text-align: center;">1 μm より大きい</td><td style="text-align: center;">通らない</td><td style="text-align: center;">通らない</td></tr></tbody></table></div>
 <p class="ref-p"><b>「ろ紙は通るが、半透膜は通らない」は必ず覚えてください。</b>透析のしくみは、この1行そのものです。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">コロイド粒子の大きさの上限は、1 μm（10⁻⁶ m）とする書き方のほかに、100 nm（10⁻⁷ m）とする書き方もあります。下限の 1 nm（10⁻⁹ m）はどちらも同じです。問題では「1 nm〜1 μm 程度」と答えれば十分です。</p></div>
-<section class="ref-sec" id="ref-sec-kinds"><h4 class="ref-sec-h">コロイドの分け方</h4><p class="ref-sec-lead">粒子のでき方で、分散コロイド・分子コロイド・会合コロイドの3つに分けます。流動性のあるものをゾル、固まったものをゲルといいます。</p></section>
-<p class="ref-p">コロイド粒子として散らばっている物質を<b>分散質</b>、散らばらせている物質を<b>分散媒</b>といいます。具体例として、牛乳では脂肪やタンパク質が分散質、水が分散媒です。</p>
+<section class="ref-sec" id="ref-sec-kinds"><h4 class="ref-sec-h">コロイドの分け方</h4><p class="ref-sec-lead">粒子がどうやってできたかで、コロイドは3種類（分散・分子・会合の各コロイド）に分かれます。さらさら流れる状態がゾル、固まった状態がゲルです。</p></section>
+<p class="ref-p">散らばっている側、つまりコロイド粒子になっている物質が<b>分散質</b>、それを受け止めて全体に広げている側の物質が<b>分散媒</b>です。具体例として、牛乳では脂肪やタンパク質が分散質、水が分散媒です。</p>
 <p class="ref-p">コロイド粒子は、でき方で3つに分けられます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">コロイド粒子のでき方による分類</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">種類</th><th style="text-align: left;">粒子のでき方</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">分散コロイド</td><td style="text-align: left;">水に溶けない物質が細かい粒になって散らばる</td><td style="text-align: left;">硫黄・金・酸化水酸化鉄(Ⅲ) FeO(OH)</td></tr><tr><td style="text-align: left;">分子コロイド</td><td style="text-align: left;">分子1個がそもそもコロイド粒子の大きさ</td><td style="text-align: left;">デンプン・タンパク質</td></tr><tr><td style="text-align: left;">会合コロイド</td><td style="text-align: left;">多数の分子が集まって1つの粒子になる（ミセル）</td><td style="text-align: left;">セッケン水</td></tr></tbody></table></div>
 <p class="ref-p">セッケンのような分子は、ある濃度以上になると、疎水基を内側、親水基を外側に向けて集まり、1つの粒子になります。この粒子を<b>ミセル</b>といいます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/soap/">セッケンの親水基・疎水基とミセルへ</a></p>
-<p class="ref-p">流動性のあるコロイド溶液を<b>ゾル</b>、ゾルが流動性を失って固まったものを<b>ゲル</b>といいます。具体例として、寒天を温水に溶かした液はゾル、冷やして固まったところてんはゲルです。乾燥させたゲル（シリカゲルなど）を<b>キセロゲル</b>といいます。</p>
-<section class="ref-sec" id="ref-sec-iron-colloid"><h4 class="ref-sec-h">酸化水酸化鉄(Ⅲ)のコロイドのつくり方</h4><p class="ref-sec-lead">塩化鉄(Ⅲ)の水溶液を沸騰した水に加えると、赤褐色の酸化水酸化鉄(Ⅲ) FeO(OH) のコロイド溶液ができます。</p></section>
-<p class="ref-p">塩化鉄(Ⅲ) FeCl₃ の水溶液を沸騰した水に少しずつ加えると、次の反応が起こり、<b>赤褐色の酸化水酸化鉄(Ⅲ) FeO(OH) のコロイド溶液</b>ができます。このページの性質は、すべてこのコロイドで確かめられます。</p>
+<p class="ref-p">コロイドには、液体のようにさらさら流れる状態と、全体がぷるんと固まって流れなくなった状態があります。流れる状態を<b>ゾル</b>、固まった状態を<b>ゲル</b>とよびます。寒天でいえば、温水に溶かした液がゾル、冷えて固まったところてんがゲルです。乾燥させたゲル（シリカゲルなど）を<b>キセロゲル</b>といいます。</p>
+<section class="ref-sec" id="ref-sec-iron-colloid"><h4 class="ref-sec-h">酸化水酸化鉄(Ⅲ)のコロイドのつくり方</h4><p class="ref-sec-lead">沸騰している水に塩化鉄(Ⅲ)の水溶液を垂らすと、赤褐色の酸化水酸化鉄(Ⅲ) FeO(OH) がコロイド粒子になって生じます。</p></section>
+<p class="ref-p">沸騰させた水へ塩化鉄(Ⅲ) FeCl₃ の水溶液を少しずつ落としていくと、次の反応で<b>赤褐色の酸化水酸化鉄(Ⅲ) FeO(OH) のコロイド</b>が生じます。このページの性質は、すべてこのコロイドで確かめられます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">FeCl₃ ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">FeO(OH) ＋ 3HCl</span></div><p class="ref-note">沸騰水に加えます。できたコロイド溶液には、コロイド粒子のほかに H⁺ と Cl⁻ が残っています（あとで透析で除きます）。</p></div>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">塩化鉄(Ⅲ)を沸騰水に加えてできるコロイドは、水酸化鉄(Ⅲ) Fe(OH)₃ である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">2023 年からの教科書では、<b>酸化水酸化鉄(Ⅲ) FeO(OH)</b> と書きます。</span></p><p class="ref-mistake-why">古い本では「水酸化鉄(Ⅲ) Fe(OH)₃」と書かれていたためです。実際は決まった組成をもたないので、問題文でどちらの式が出てきても、同じ赤褐色のコロイドのことです。答案は FeO(OH) で書きましょう。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/iron/">鉄(Ⅲ)イオンと赤褐色の FeO(OH) へ</a></p>
@@ -913,7 +931,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">凝析を起こしやすいのは、<b>コロイド粒子と反対符号で、価数の大きいイオン</b>です。具体例として、正コロイドの FeO(OH) には、Cl⁻ より SO₄²⁻、SO₄²⁻ より PO₄³⁻ のほうが少ない量で凝析を起こします。負コロイドの粘土には、Na⁺ より Mg²⁺、Mg²⁺ より Al³⁺ のほうが効きます。</p>
 <ul class="ref-list"><li>正コロイドを凝析させる力　Cl⁻ ＜ SO₄²⁻ ＜ PO₄³⁻</li><li>負コロイドを凝析させる力　Na⁺ ＜ Mg²⁺・Ca²⁺ ＜ Al³⁺</li></ul>
 <p class="ref-p"><b>「反対符号で、価数の大きいイオンほど効く」は必ず覚えてください。</b>浄水場で濁った水に硫酸アルミニウムを加えるのは、負に帯電した粘土の粒子を Al³⁺ で、正に帯電した粒子を SO₄²⁻ で、少しの量でまとめて凝析させられるためです。川の水が海に出るところで泥がたまって三角州ができるのも、海水の陽イオンによる凝析です。</p>
-<p class="ref-p">疎水コロイドに親水コロイドを加えると、親水コロイドが疎水コロイドの粒子のまわりを包んで、凝析しにくくなります。このようなはたらきをする親水コロイドを<b>保護コロイド</b>といいます。具体例として、墨汁のにかわ、インクのアラビアゴムがあります。</p>
+<p class="ref-p">疎水コロイドの液に親水コロイドを混ぜておくと、親水コロイドの粒子が疎水コロイドの粒子を外側からくるみ、電解質を加えても沈みにくくなります。守り役として加える親水コロイドのことを<b>保護コロイド</b>とよびます。具体例として、墨汁のにかわ、インクのアラビアゴムがあります。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">塩析は、少量の電解質で起こる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">少量の電解質で沈殿するのは疎水コロイドの<b>凝析</b>です。親水コロイドの<b>塩析</b>には、<b>多量</b>の電解質が必要です。</span></p><p class="ref-mistake-why">「塩」という字から、少しの塩でも起こると思いこむためです。親水コロイドは水和水に包まれているので、電荷を打ち消しただけでは沈殿せず、水和水を奪うほど大量のイオンが要ります。</p></div>
 <p class="ref-p"><b>凝析・塩析・保護コロイドの3つは、上の比較表の形でセットで覚えましょう。</b>どれも「疎水か親水か」の見分けから出てきます。</p>
 <h5 class="ref-h5">例題</h5>

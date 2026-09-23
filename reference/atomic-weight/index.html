@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,8 +903,8 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">原子には陽子・中性子・電子があり、同じ元素でも中性子の数が違う<b>同位体</b>があることは、原子の構造のページで見ました。このページでは、原子1個の質量をどんな数で表すかを決め、同位体が混ざっている元素の「平均の重さ」＝原子量を求めます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/atom-structure/">同位体と質量数の復習はこちら</a></p>
-<section class="ref-sec" id="ref-sec-relative-mass"><h4 class="ref-sec-h">原子の相対質量 —— ¹²C を 12 とする</h4><p class="ref-sec-lead">原子1個の質量はとても小さいので、¹²C 原子1個の質量をちょうど 12 と決め、それとの比で表します。これを原子の相対質量といいます。</p></section>
-<p class="ref-p">¹²C 原子1個の質量は約 1.99×10⁻²³ g です。このままでは計算に使いにくいので、「<b>¹²C 原子1個の質量を 12 とする</b>」という基準を決め、ほかの原子の質量をこれとの比で表します。この値を<b>原子の相対質量</b>といいます。</p>
+<section class="ref-sec" id="ref-sec-relative-mass"><h4 class="ref-sec-h">原子の相対質量 —— ¹²C を 12 とする</h4><p class="ref-sec-lead">原子1個はとても軽いので、¹²C 原子1個をちょうど 12 とおいた物差しで重さを比べます。この物差しで測った値が原子の相対質量です。</p></section>
+<p class="ref-p">¹²C 原子1個の質量は約 1.99×10⁻²³ g です。こんなに小さな数を毎回書くのは大変です。そこで ¹²C を物差しにして、「<b>¹²C 原子1個の質量を 12 とする</b>」と決めます。ほかの原子は「¹²C の何倍の重さか」を 12 に掛けた数で表し、これを<b>原子の相対質量</b>とよびます。</p>
 <p class="ref-p">相対質量は質量の「比」なので、<b>単位はありません</b>。</p>
 <div class="ref-table-wrap"><div class="ref-cap">原子の相対質量と質量数</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">原子</th><th style="text-align: right;">質量数</th><th style="text-align: right;">相対質量</th></tr></thead><tbody><tr><td style="text-align: left;">¹H</td><td style="text-align: right;">1</td><td style="text-align: right;">1.0078</td></tr><tr><td style="text-align: left;">¹²C</td><td style="text-align: right;">12</td><td style="text-align: right;">12（基準・ちょうど）</td></tr><tr><td style="text-align: left;">¹⁶O</td><td style="text-align: right;">16</td><td style="text-align: right;">15.995</td></tr><tr><td style="text-align: left;">³⁵Cl</td><td style="text-align: right;">35</td><td style="text-align: right;">34.969</td></tr><tr><td style="text-align: left;">³⁷Cl</td><td style="text-align: right;">37</td><td style="text-align: right;">36.966</td></tr></tbody></table></div>
 <p class="ref-p">表のとおり、<b>相対質量は質量数にごく近い値</b>になります。陽子と中性子の質量がほぼ等しく、電子の質量はそれらの約 1840 分の 1 しかないためです。</p>
@@ -915,7 +933,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">右辺の m を p ＋ q 倍（＝1倍）に書き直すと、mp ＋ mq ＝ ap ＋ bq となり、移項すると (m − a)p ＝ (b − m)q が得られます。</p>
 <p class="ref-p">(m − a) は a から支点までのウデ、(b − m) は支点から b までのウデです。つまり、<b>加重平均の式は「（ウデの長さ）×（おもりの重さ）が左右で等しい」というてんびんのつり合いの式と同じ</b>です。だから支点が平均になります。</p>
 <section class="ref-sec" id="ref-sec-molecular-weight"><h4 class="ref-sec-h">分子量と式量 —— 原子量の和</h4><p class="ref-sec-lead">分子量は分子を構成する原子の原子量の和、式量は組成式やイオンの式に含まれる原子の原子量の和です。どちらも単位はありません。</p></section>
-<p class="ref-p">原子量と同じ基準（¹²C ＝ 12）で表した分子の相対質量を<b>分子量</b>といいます。分子量は、分子式に含まれる原子の原子量を足せば求まります。</p>
+<p class="ref-p">原子量と同じ ¹²C ＝ 12 の物差しで、分子1個の重さを表した数が<b>分子量</b>です。分子量は、分子式に含まれる原子の原子量を足せば求まります。</p>
 <p class="ref-p">分子をつくらない物質（イオンからなる物質・金属）では、組成式やイオンの式に含まれる原子の原子量の和を<b>式量</b>といいます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">分子量・式量の計算（H＝1.0、C＝12、O＝16、Na＝23、Cl＝35.5、S＝32、Cu＝63.5）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">物質</th><th style="text-align: left;">使う名前</th><th style="text-align: left;">計算</th><th style="text-align: right;">値</th></tr></thead><tbody><tr><td style="text-align: left;">水 H₂O</td><td style="text-align: left;">分子量</td><td style="text-align: left;">1.0 × 2 ＋ 16</td><td style="text-align: right;">18</td></tr><tr><td style="text-align: left;">二酸化炭素 CO₂</td><td style="text-align: left;">分子量</td><td style="text-align: left;">12 ＋ 16 × 2</td><td style="text-align: right;">44</td></tr><tr><td style="text-align: left;">塩化ナトリウム NaCl</td><td style="text-align: left;">式量</td><td style="text-align: left;">23 ＋ 35.5</td><td style="text-align: right;">58.5</td></tr><tr><td style="text-align: left;">硫酸イオン SO₄²⁻</td><td style="text-align: left;">式量</td><td style="text-align: left;">32 ＋ 16 × 4</td><td style="text-align: right;">96</td></tr><tr><td style="text-align: left;">銅 Cu</td><td style="text-align: left;">式量</td><td style="text-align: left;">原子量そのまま</td><td style="text-align: right;">63.5</td></tr></tbody></table></div>
 <p class="ref-p">イオンの式量は、電子の出入りを無視して原子量を足すだけで構いません。電子の質量は原子に比べてとても小さいためです。金属は元素記号がそのまま組成式なので、<b>原子量がそのまま式量</b>になります。</p>

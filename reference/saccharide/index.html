@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -933,7 +951,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">フルクトースはケトースでホルミル基をもたないので、還元性を示さない</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">フルクトースも<b>還元性を示します</b>。塩基性の水溶液中で、一部がホルミル基をもつ構造に変わるためです。</span></p><p class="ref-mistake-why">「還元性 ＝ ホルミル基」を逆向きに使って「ホルミル基が無い ＝ 還元性が無い」としてしまうためです。★ <b>単糖はすべて還元性を示す</b>、と覚えておけば迷いません。</p></div>
 <p class="ref-p"><b>「単糖はすべて還元性を示す」と覚えてください。</b>変わる仕組みの名前や途中の構造は、覚える必要はありません。</p>
 <section class="ref-sec" id="ref-sec-fermentation"><h4 class="ref-sec-h">アルコール発酵</h4><p class="ref-sec-lead">酵母のもつ酵素群チマーゼで、グルコースはエタノールと二酸化炭素に分解されます。</p></section>
-<p class="ref-p">グルコースやフルクトースなどの単糖に<b>酵母</b>を加えておくと、酵母がもつ酵素群<b>チマーゼ</b>のはたらきで、<b>エタノールと二酸化炭素</b>が生じます。これを<b>アルコール発酵</b>といいます。</p>
+<p class="ref-p">グルコースやフルクトースなどの単糖の液に<b>酵母</b>を入れておくと、糖が<b>エタノールと二酸化炭素</b>に分かれていきます。はたらいているのは、酵母の中にある一群の酵素<b>チマーゼ</b>です。この変化を<b>アルコール発酵</b>と呼びます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₁₂O₆</span><span class="ref-rx-arrow"><span class="ref-rx-over">チマーゼ</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2C₂H₅OH ＋ 2CO₂</span></div><p class="ref-note">係数の2と2は、左右で炭素6個・水素12個・酸素6個を合わせればその場で出てきます。</p></div>
 <p class="ref-p"><b>この反応式は暗記してください。</b>係数を忘れても、C₂H₅OH と CO₂ ができることさえ覚えていれば、原子の数を合わせて係数を出せます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/enzyme/">チマーゼなど、糖を分解する酵素の一覧は酵素のページへ</a></p>

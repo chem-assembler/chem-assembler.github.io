@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -919,7 +937,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s5&amp;from=reference&amp;page=alkaline-earth">塩化バリウムと硫酸ナトリウム（沈殿）</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/?rxn=s8&amp;from=reference&amp;page=alkaline-earth">硫酸と水酸化バリウム（中和＋沈殿）</a></p>
 <p class="ref-p">硫酸バリウムは、胃や腸の<b>X線造影剤</b>に使われます。バリウムのイオンは体に有害ですが、BaSO₄ は水にも胃酸（塩酸）にも溶けないので、Ba²⁺ として体に吸収されないためです。</p>
-<p class="ref-p">硫酸カルシウムは天然には二水和物 CaSO₄・2H₂O（<b>セッコウ</b>）として存在します。セッコウを約 140℃ に加熱すると水和水の一部を失って、半水和物の<b>焼きセッコウ</b> CaSO₄・½H₂O になります。焼きセッコウを水で練ると、体積をやや増しながらセッコウにもどって固まるので、建材やセッコウ像に使われます。</p>
+<p class="ref-p">天然で見つかる硫酸カルシウムは、水和水を2つもつ CaSO₄・2H₂O の形で、これが<b>セッコウ</b>です。セッコウを約 140℃ に加熱すると水和水の一部を失って、半水和物の<b>焼きセッコウ</b> CaSO₄・½H₂O になります。焼きセッコウを水で練ると、体積をやや増しながらセッコウにもどって固まるので、建材やセッコウ像に使われます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">CaSO₄・2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">加熱</span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CaSO₄・½H₂O ＋ ³⁄₂H₂O</span></div><p class="ref-note">水で練ると左へもどります。式は書けなくても構いません。「焼きセッコウは半水和物」だけ覚えておけば十分です。</p></div>
 <p class="ref-p">炭酸イオン CO₃²⁻ も、Ba²⁺・Ca²⁺ と白色沈殿（BaCO₃・CaCO₃）をつくります。こちらは<b>塩酸に溶けて CO₂ を出す</b>ので、塩酸に溶けない硫酸塩と見分けられます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/precipitate/">陰イオンごとに沈む相手の一覧は沈殿の生成と色のページへ</a></p>

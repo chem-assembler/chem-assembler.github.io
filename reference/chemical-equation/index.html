@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,9 +903,9 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">物質量のページでは、粒子の数を mol で数えました。化学反応では、原子どうしの結びつきが組み換わるだけで、<b>原子そのものは増えも減りもしません</b>。このページでは、その「原子の数の保存」を式に書き表す化学反応式のつくり方を扱います。係数が正しく書ければ、次のページで反応の量が計算できます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/mole/">物質量（mol は数の単位）の復習はこちら</a></p>
-<section class="ref-sec" id="ref-sec-rules"><h4 class="ref-sec-h">化学反応式の書き方 —— 約束は3つ</h4><p class="ref-sec-lead">反応物を左辺、生成物を右辺に書いて矢印で結び、両辺で原子の種類と数が等しくなるように係数をつけます。反応の前後で変わらない物質は書きません。</p></section>
-<p class="ref-p">化学反応を化学式で表した式を<b>化学反応式</b>（反応式）といいます。反応する物質を<b>反応物</b>、できる物質を<b>生成物</b>といいます。書き方の約束は3つだけです。</p>
-<ol class="ref-list"><li>反応物の化学式を左辺、生成物の化学式を右辺に書き、→ で結ぶ。</li><li>両辺で各原子の種類と数が等しくなるように、化学式の前に<b>係数</b>をつける。係数は最も簡単な整数比にし、1 は省略する。</li><li>反応の前後で変化しない物質（溶媒の水・触媒）は式に書かない。</li></ol>
+<section class="ref-sec" id="ref-sec-rules"><h4 class="ref-sec-h">化学反応式の書き方 —— 約束は3つ</h4><p class="ref-sec-lead">反応前の物質を左、反応後の物質を右に置いて矢印でつなぎ、どの原子も左右で同じ個数になるよう係数で調整します。反応しても変わらずに残る物質は書きません。</p></section>
+<p class="ref-p">どの物質がどれだけ反応して、何ができるか。それを化学式だけで書き表したものが<b>化学反応式</b>（反応式）です。反応に使われる側の物質を<b>反応物</b>、反応でできる側の物質を<b>生成物</b>とよびます。書き方の約束は3つだけです。</p>
+<ol class="ref-list"><li>反応物の化学式を左辺、生成物の化学式を右辺に書き、→ で結ぶ。</li><li>左辺と右辺で、どの原子も同じ個数になるように、化学式の前に<b>係数</b>を置く。係数はこれ以上割れない整数の組にそろえ、1 は書かない。</li><li>反応の前後で変化しない物質（溶媒の水・触媒）は式に書かない。</li></ol>
 <p class="ref-p">具体例1で、メタン CH₄ の燃焼を見ます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ 2O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ 2H₂O</span></div><p class="ref-note">左辺は C 1・H 4・O 4、右辺も C 1・H 4・O 4。原子の種類と数が両辺でそろっています。</p></div>
 <p class="ref-p">触媒は式に書かない代わりに、→ の上に書き添えることがあります（例：過酸化水素の分解の MnO₂）。</p>
@@ -915,7 +933,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">★ この反応は酸化還元反応です。<b>酸化還元の式は、半反応式を組み合わせる方がずっと速く書けます。</b>未定係数法は「どんな式でも最後は必ず解ける」安全網として知っておけば十分です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/redox-equation/">酸化還元の反応式は、半反応式から組み立てるページへ</a></p>
 <section class="ref-sec" id="ref-sec-ionic"><h4 class="ref-sec-h">イオンを含む反応式 —— 電荷もそろえる</h4><p class="ref-sec-lead">反応に関係したイオンだけを書いたイオン反応式では、原子の数に加えて、両辺の電荷の合計も等しくします。</p></section>
-<p class="ref-p">硝酸銀水溶液に塩化ナトリウム水溶液を加えると、塩化銀の白い沈殿ができます。このとき実際に反応しているのは Ag⁺ と Cl⁻ だけで、Na⁺ と NO₃⁻ は水溶液中にイオンのまま残っています。反応したイオンだけで書いた式を<b>イオン反応式</b>といいます。</p>
+<p class="ref-p">硝酸銀水溶液と食塩水を混ぜると、白い塩化銀 AgCl が沈殿します。このとき実際に反応しているのは Ag⁺ と Cl⁻ だけで、Na⁺ と NO₃⁻ は水溶液中にイオンのまま残っています。反応したイオンだけで書いた式を<b>イオン反応式</b>といいます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Ag⁺ ＋ Cl⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">AgCl</span></div><p class="ref-note">左辺の電荷は ＋1 と −1 で合計 0、右辺も 0。原子の数と電荷の両方がそろっています。</p></div>
 <p class="ref-p">イオン反応式では、<b>原子の数に加えて電荷の合計も両辺でそろえる</b>のが4つめの約束です。どのイオンが反応に関係するかの見分け方は、イオン反応式を組み立てるアプリで練習できます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/portal.html?from=reference&amp;page=chemical-equation#sr-precipitate">沈殿のできる反応を、イオンを組み合わせて書いてみよう</a></p>
@@ -925,7 +943,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">どの物質とどの物質が反応して何ができるか（反応物と生成物）は、このページでは覚えません。それは無機・有機の各ページで、反応ごとに覚える範囲を示しています。</p>
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">エタノール C₂H₆O が完全燃焼して、二酸化炭素と水ができる反応を化学反応式で表せ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C₂H₆O ＋ 3O₂ → 2CO₂ ＋ 3H₂O。C₂H₆O を 1 とおくと、C から CO₂ は 2、H から H₂O は 3。右辺の O は 2 × 2 ＋ 3 ＝ 7 で、左辺はエタノールに O が1個あるので、O₂ から 6 個 ＝ O₂ の係数 3。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アルミニウムが塩酸に溶けて、塩化アルミニウム AlCl₃ と水素が発生する反応を化学反応式で表せ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>2Al ＋ 6HCl → 2AlCl₃ ＋ 3H₂。AlCl₃ を 1 とおくと、Al は 1、Cl から HCl は 3。H は左辺 3 個なので H₂ は 3/2。全体を2倍して分母をはらいます。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">アルミニウムの粉末を酸素の中で燃やすと、酸化アルミニウム Al₂O₃ ができる。この変化を化学反応式で書け。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>4Al ＋ 3O₂ → 2Al₂O₃。Al₂O₃ を 1 とおくと、Al は 2。O は右辺 3 個なので O₂ は 3/2。全体を2倍して分母をはらいます。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">銅と濃硝酸が反応して、硝酸銅(Ⅱ)・二酸化窒素 NO₂・水ができる反応を化学反応式で表せ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>Cu ＋ 4HNO₃ → Cu(NO₃)₂ ＋ 2NO₂ ＋ 2H₂O。a Cu ＋ b HNO₃ → c Cu(NO₃)₂ ＋ d NO₂ ＋ e H₂O とおくと、Cu：a ＝ c、H：b ＝ 2e、N：b ＝ 2c ＋ d、O：3b ＝ 6c ＋ 2d ＋ e。a ＝ c ＝ 1 とすると d ＝ b − 2、e ＝ b/2 で、3b ＝ 6 ＋ 2(b − 2) ＋ b/2 より b ＝ 4、d ＝ 2、e ＝ 2。</p></div></details></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/stoichiometry/">次は、係数を使って反応の量を計算する、化学反応の量的関係のページへ</a></p>
 </div>

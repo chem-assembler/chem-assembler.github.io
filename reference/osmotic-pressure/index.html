@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,9 +903,9 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">キュウリに塩をふってしばらく置くと、水が出てしなびます。細胞の膜を通って、水が濃い側へ移るためです。この水の移動を止めるのに要る圧力が<b>浸透圧</b>で、その式は<b>気体の状態方程式とまったく同じ形</b>をしています。計算は気体のページと同じく、比例と反比例で解きます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/gas-laws/">気体の法則を準標準状態から比例・反比例で解く方法へ</a></p>
-<section class="ref-sec" id="ref-sec-osmosis"><h4 class="ref-sec-h">半透膜と浸透</h4><p class="ref-sec-lead">溶媒は通すが溶質は通さない膜を半透膜といいます。半透膜で純水と溶液を仕切ると、水が溶液側へ移ります。これを浸透といいます。</p></section>
-<p class="ref-p">セロハン膜は、水のような小さい分子は通しますが、デンプンのような大きい分子は通しません。このように、<b>溶液中のある成分は通し、ほかの成分は通さない膜</b>を<b>半透膜</b>といいます。</p>
-<p class="ref-p">U字管の真ん中を半透膜で仕切り、片側に純水、もう片側に溶液を入れて置いておくと、水分子が半透膜を通って溶液側へ移ります。この現象を<b>浸透</b>といいます。</p>
+<section class="ref-sec" id="ref-sec-osmosis"><h4 class="ref-sec-h">半透膜と浸透</h4><p class="ref-sec-lead">水は通れても、溶けている粒子は通れない。そんなふるいのような膜が半透膜です。半透膜をはさんで純水と溶液を置くと、水が溶液のほうへしみ込んでいきます（浸透）。</p></section>
+<p class="ref-p">セロハン膜は、水のような小さい分子は通しますが、デンプンのような大きい分子は通しません。このように、<b>溶液の中の粒子を大きさなどでふるい分け、通すものと通さないものがある膜</b>が<b>半透膜</b>です。</p>
+<p class="ref-p">U字管の真ん中を半透膜で仕切り、片側に純水、もう片側に溶液を入れて置いておくと、水分子が膜をくぐり抜けて、溶液のほうへしみ込んでいきます。この現象が<b>浸透</b>です。</p>
 <p class="ref-p">水が移ると、溶液側の液面が上がり、純水側の液面が下がって、液面に差がつきます。差はやがてそれ以上変わらなくなります。</p>
 <p class="ref-p">この液面の差をなくすには、溶液側の液面に余分な圧力を加えなければなりません。<b>この圧力を溶液の浸透圧</b>といい、Π（パイ）で表します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/osmotic-pressure-utube.png" alt="半透膜で真ん中を仕切った U 字管を3つ並べた図。左は純水、右は溶質の粒を描いた溶液。①は液面が同じ高さ、②は溶液側の液面が上がって差がつき、③は溶液側にピストンで圧力 Π を加えて液面をそろえている" loading="lazy"><figcaption class="ref-figure-cap">浸透圧は「溶液が吸い上げる力」ではなく、<b>上がろうとするのを押さえ込むのに要る圧力</b>です。③ のように液面をそろえたときの圧力で測ります。</figcaption></figure>
@@ -895,7 +913,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-van-t-hoff"><h4 class="ref-sec-h">ΠV ＝ nRT —— 気体と同じ式</h4><p class="ref-sec-lead">希薄溶液の浸透圧 Π は、溶液の体積 V、溶質の物質量 n、絶対温度 T を使って ΠV ＝ nRT と書けます。R は気体定数そのものです。</p></section>
 <p class="ref-p">希薄溶液の浸透圧 Π〔Pa〕は、溶液の体積 V〔L〕、溶質の物質量 n〔mol〕、絶対温度 T〔K〕を使って、次の式で表されます。これを<b>ファントホッフの法則</b>といいます。</p>
 <ul class="ref-list"><li><b>ΠV ＝ nRT</b>　（R ＝ 8.3 × 10³ Pa·L/(K·mol)、気体定数と同じ値）</li><li>両辺を V で割ると、<b>Π ＝ (n/V)RT ＝ cRT</b>　（c：溶液のモル濃度 mol/L）</li></ul>
-<p class="ref-p">n/V は「溶液 1 L あたりの溶質の mol」なので、モル濃度 c そのものです。したがって、<b>浸透圧はモル濃度と絶対温度に比例し、溶媒や溶質の種類には関係しません。</b></p>
+<p class="ref-p">n/V は「溶液 1 L あたりの溶質の mol」なので、モル濃度 c そのものです。したがって、<b>浸透圧を決めるのはモル濃度と絶対温度だけです。どちらかを2倍にすれば浸透圧も2倍になり、溶媒や溶質が何であるかは効いてきません。</b></p>
 <p class="ref-p"><b>気体の状態方程式と同じ形になるのは、溶液の中の溶質の粒子を、容器の中の気体分子と同じように見なせるため</b>です。気体では容器の壁にぶつかる分子が圧力をつくり、溶液では半透膜を通り抜けられない溶質の粒子が浸透圧をつくります。</p>
 <p class="ref-p"><b>「浸透圧は気体と同じ式」と覚えておけば、新しく覚えることはありません。</b>濃度は質量モル濃度ではなく、<b>モル濃度（溶液 1 L あたり）</b>を使うことだけ注意しましょう。沸点上昇・凝固点降下とは濃度の種類が違います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/colligative/">沸点上昇・凝固点降下（質量モル濃度を使う）へ</a></p>

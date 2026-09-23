@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -905,10 +923,10 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">「非共有電子対が多いほど結合角は狭い」ので、結合角の大きい順は <b>CH₄ ＞ NH₃ ＞ H₂O</b> です。この順は、数値を覚えていなくても理由から出せます。</p>
 <p class="ref-p">電子対の反発で分子の形を説明するこの考え方は、VSEPR（原子価殻電子対反発）則と呼ばれます。名前を覚える必要はありません。</p>
 <h5 class="ref-h5 ref-h5-advanced">反発だけでは説明できない形<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
-<p class="ref-p">電子対の反発で説明できるのは「多くの分子」で、すべてではありません。たとえばテトラアンミン銅(Ⅱ)イオン [Cu(NH₃)₄]²⁺ は、配位子が4つあるのに正四面体ではなく<b>正方形</b>です。錯イオンの形は、反発から導くのではなく<b>イオンごとに覚えます</b>。</p>
+<p class="ref-p">電子対の反発で説明できるのは「多くの分子」で、すべてではありません。テトラアンミン銅(Ⅱ)イオン [Cu(NH₃)₄]²⁺ がその例外で、配位子が4つあるのに正四面体ではなく<b>正方形</b>です。錯イオンの形は、反発から導くのではなく<b>イオンごとに覚えます</b>。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/complex-ion/">錯イオンの形（直線・正方形・正四面体・正八面体）は、錯イオンのページへ</a></p>
 <section class="ref-sec" id="ref-sec-polarity"><h4 class="ref-sec-h">形から極性を決める</h4><p class="ref-sec-lead">異なる原子の共有結合には電荷の偏り（結合の極性）があります。分子全体の極性は、結合の極性が形によって打ち消されるかどうかで決まります。</p></section>
-<p class="ref-p">原子が共有電子対を引き寄せる強さを数値で表したものを<b>電気陰性度</b>といいます。フッ素 F が最大で、貴ガスを除くと周期表の右上の元素ほど大きくなります。</p>
+<p class="ref-p">結合している2つの原子は、あいだの共有電子対を自分の側へ引っぱり合っています。その引っぱる強さを原子ごとに数で表したのが<b>電気陰性度</b>です。フッ素 F が最大で、貴ガスを除くと周期表の右上の元素ほど大きくなります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/periodic-table/">電気陰性度が周期表の上でどう変わるかは、周期表のページへ</a></p>
 <p class="ref-p">電気陰性度の違う2つの原子が共有結合すると、共有電子対は電気陰性度の大きい原子の方へ引き寄せられ、そちらがわずかに負（δ−）、相手がわずかに正（δ＋）の電荷を帯びます。このような電荷の偏りを「<b>結合に極性がある</b>」といいます。同じ原子どうしの結合（H−H・Cl−Cl）には極性がありません。</p>
 <p class="ref-p">分子全体として電荷の偏りをもつ分子を<b>極性分子</b>、もたない分子を<b>無極性分子</b>といいます。原子が2個の分子なら、結合の極性がそのまま分子の極性です（HCl は極性分子、H₂ は無極性分子）。原子が3個以上になると、<b>形</b>が効いてきます。</p>

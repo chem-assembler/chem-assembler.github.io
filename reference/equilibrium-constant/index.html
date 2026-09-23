@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>化学平衡と平衡定数 —— 生成物が分子 ｜ 化学の参考書</title>
-<meta name="description" content="正反応と逆反応の速度が等しくなった状態が平衡状態です。平衡定数 K は生成物（右辺）の濃度の係数乗の積を分子に置いた分数で、温度だけで決まります。両辺の分子の数が等しい反応では、濃度の代わりに mol を代入してよいです。">
+<meta name="description" content="行き（正反応）と帰り（逆反応）が同じ速さで進み、濃度が動かなくなった状態が平衡状態です。平衡定数 K は生成物（右辺）の濃度の係数乗の積を分子に置いた分数で、温度だけで決まります。両辺の分子の数が等しい反応では、濃度の代わりに mol を代入してよいです。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/equilibrium-constant/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="化学平衡と平衡定数 —— 生成物が分子 ｜ 化学の参考書">
-<meta property="og:description" content="正反応と逆反応の速度が等しくなった状態が平衡状態です。平衡定数 K は生成物（右辺）の濃度の係数乗の積を分子に置いた分数で、温度だけで決まります。両辺の分子の数が等しい反応では、濃度の代わりに mol を代入してよいです。">
+<meta property="og:description" content="行き（正反応）と帰り（逆反応）が同じ速さで進み、濃度が動かなくなった状態が平衡状態です。平衡定数 K は生成物（右辺）の濃度の係数乗の積を分子に置いた分数で、温度だけで決まります。両辺の分子の数が等しい反応では、濃度の代わりに mol を代入してよいです。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/equilibrium-constant/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,7 +895,7 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-6">反応速度と化学平衡</a></div></header>
 <main class="wrap">
 <h1>化学平衡と平衡定数 —— 生成物が分子</h1>
-<p class="lede">正反応と逆反応の速度が等しくなった状態が平衡状態です。平衡定数 K は生成物（右辺）の濃度の係数乗の積を分子に置いた分数で、温度だけで決まります。両辺の分子の数が等しい反応では、濃度の代わりに mol を代入してよいです。</p>
+<p class="lede">行き（正反応）と帰り（逆反応）が同じ速さで進み、濃度が動かなくなった状態が平衡状態です。平衡定数 K は生成物（右辺）の濃度の係数乗の積を分子に置いた分数で、温度だけで決まります。両辺の分子の数が等しい反応では、濃度の代わりに mol を代入してよいです。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">反応速度と化学平衡</span><span class="unit-label">化学平衡と平衡定数</span></div>
 
 <div class="ref-layout">
@@ -885,8 +903,8 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">反応の速さのページでは、反応が一方向に進む速さを考えました。このページでは、右向きと左向きの反応が<b>同時に起こる</b>反応が、最後にどのような状態で落ち着くか（<b>化学平衡</b>）と、その状態を1つの数で表す<b>平衡定数</b>を見ていきます。平衡定数の式は、反応速度式から導きます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/rate-law/">反応速度式 v ＝ k[A]ᵃ[B]ᵇ へ</a></p>
-<section class="ref-sec" id="ref-sec-equilibrium"><h4 class="ref-sec-h">可逆反応と平衡状態</h4><p class="ref-sec-lead">右向きにも左向きにも進む反応を可逆反応といいます。可逆反応の正反応と逆反応の速度が等しくなり、見かけ上反応が止まった状態を平衡状態（化学平衡）といいます。</p></section>
-<p class="ref-p">右向き（→）の反応を<b>正反応</b>、左向き（←）の反応を<b>逆反応</b>といい、両方向に進む反応を<b>可逆反応</b>といいます。可逆反応は ⇄ で書きます。一方、燃焼のように一方向にしか進まない反応を<b>不可逆反応</b>といいます。</p>
+<section class="ref-sec" id="ref-sec-equilibrium"><h4 class="ref-sec-h">可逆反応と平衡状態</h4><p class="ref-sec-lead">行きも帰りも起こる反応が可逆反応です。行き（正反応）と帰り（逆反応）の速さがそろうと、濃度がもう変わらなくなり、反応が止まったように見えます。この状態が平衡状態（化学平衡）です。</p></section>
+<p class="ref-p">式の左から右へ進む向き（→）が<b>正反応</b>、右から左へ戻る向き（←）が<b>逆反応</b>です。どちらの向きにも進める反応を<b>可逆反応</b>とよび、⇄ の記号で書きます。これに対し、燃焼のように進んだら戻らない反応は<b>不可逆反応</b>です。</p>
 <p class="ref-p">具体例として、H₂ と I₂ を同じ物質量ずつ密閉容器に入れると、HI が生じ、やがて平衡状態に達します。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂ ＋ I₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2HI</span></div><p class="ref-note">平衡の説明で最もよく使われる反応です。両辺の分子の数が 2個 ＝ 2個 で等しいことを覚えておくと、あとで計算が楽になります。</p></div>
 <p class="ref-p">はじめは HI が無いので、正反応の速度 v₁ は大きく、逆反応の速度 v₂ は0です。H₂・I₂ が減るにつれて v₁ は小さくなり、HI が増えるにつれて v₂ は大きくなります。やがて <b>v₁ ＝ v₂</b> になると、各物質の濃度はそれ以上変わらなくなります。これが平衡状態です。</p>

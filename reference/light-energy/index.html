@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,14 +903,14 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">化学反応で出入りするエネルギーは、熱だけではありません。このページでは、<b>光を吸収して進む反応</b>と、<b>光を出す反応</b>を扱います。エネルギーの高い状態を上、低い状態を下に描くエネルギー図の見方は、反応エンタルピーのページと同じです。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">エネルギー図の見方（上が高エネルギー）と ΔH はこちら</a></p>
-<section class="ref-sec" id="ref-sec-light"><h4 class="ref-sec-h">光のエネルギー</h4><p class="ref-sec-lead">光は波長によって紫外線・可視光線・赤外線に分かれます。波長が短いほど、光のエネルギーは大きくなります。</p></section>
+<section class="ref-sec" id="ref-sec-light"><h4 class="ref-sec-h">光のエネルギー</h4><p class="ref-sec-lead">光は波長の長さで紫外線・可視光線・赤外線に分かれます。波が細かい（波長の短い）光ほど、大きなエネルギーを運びます。</p></section>
 <p class="ref-p">光は波長によって、<b>紫外線</b>（約 380nm より短い）・<b>可視光線</b>（約 380〜780nm）・<b>赤外線</b>（約 780nm より長い）に分かれます。可視光線の中では、紫が短く、赤が長い波長です。</p>
-<p class="ref-p"><b>波長が短いほど、光のエネルギーは大きくなります。</b>紫外線が日焼けを起こすのに、赤外線は温めるだけなのは、紫外線のエネルギーのほうが大きいためです。</p>
+<p class="ref-p"><b>波長の短い光ほど、1つ1つが大きなエネルギーを運びます。</b>紫外線が日焼けを起こすのに、赤外線は温めるだけなのは、紫外線のエネルギーのほうが大きいためです。</p>
 <p class="ref-p">具体例1で、可視光線のエネルギーを 1mol あたりに直すと、赤い光で約 150kJ、紫の光で約 300kJ です。Cl−Cl の結合エンタルピー 243kJ/mol と同じくらいの大きさなので、<b>可視光線や紫外線を吸収すると、結合が切れることがあります。</b></p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/light-energy-spectrum.png" alt="横に伸びた帯。左が紫外線、中央が紫から赤へ変わる可視光線、右が赤外線で、境は 380 nm と 780 nm。帯の下に、右へ向かう「波長が長くなる」の矢印と、左へ向かう「エネルギーが大きくなる」の矢印がある" loading="lazy"><figcaption class="ref-figure-cap">波長とエネルギーは<b>向きが逆</b>です。左（紫外線側）ほどエネルギーが大きく、結合を切るだけの力を持ちます。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-absorb"><h4 class="ref-sec-h">光を吸収して進む反応 —— 光化学反応</h4><p class="ref-sec-lead">光を吸収することで起こる反応や、光で速くなる反応を光化学反応といいます。水素と塩素・臭化銀の感光・光合成・オゾンの生成が代表です。</p></section>
 <p class="ref-p">光を吸収することで起こる反応、光によって速くなる反応を<b>光化学反応</b>といいます。分子が光のエネルギーを受け取って、エネルギーの高い状態になるためです。</p>
-<p class="ref-p">具体例2で、水素と塩素の混合気体は、暗い所ではほとんど反応しません。ところが強い光を当てると、爆発的に反応して塩化水素ができます。<b>塩素分子が光を吸収して塩素原子に分かれ</b>、それが反応の口火になるためです。</p>
+<p class="ref-p">具体例2で、水素と塩素の混合気体は、暗い所ではほとんど反応しません。ところが強い光を浴びせたとたん、一気に反応が走って塩化水素ができ、爆発することもあります。<b>塩素分子が光を吸収して塩素原子に分かれ</b>、それが反応の口火になるためです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂ ＋ Cl₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2HCl</span></div><p class="ref-note">暗所ではほとんど進まず、光を当てると爆発的に進みます。</p></div>
 <p class="ref-p">具体例3で、臭化銀 AgBr は光が当たると分解して、銀が析出します。このように光で変化する性質を<b>感光性</b>といい、写真のフィルムに使われてきました。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2AgBr</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2Ag ＋ Br₂</span></div><p class="ref-note">析出した銀の細かい粒が黒く見えます。塩化銀 AgCl も同じように光で分解します。</p></div>
@@ -904,7 +922,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">6CO₂(気) ＋ 6H₂O(液)</span><span class="ref-rx-arrow"><span class="ref-rx-over">光</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₁₂O₆(固) ＋ 6O₂(気)　ΔH ＝ ＋2803 kJ</span></div><p class="ref-note">吸熱反応です。足りないエネルギーを光から受け取って、エネルギー図を上に登ります。</p></div>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">光合成は光を浴びて進むので、エネルギーを出す反応（発熱反応）である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">光合成は<b>吸熱反応</b>（ΔH ＝ ＋2803kJ）です。光のエネルギーを吸収して、エネルギーの低い CO₂ と H₂O から、エネルギーの高い糖をつくります。</span></p><p class="ref-mistake-why">逆向きの反応（糖の燃焼・呼吸）が発熱反応なので、そちらと取り違えやすいのです。★ エネルギー図で、CO₂ ＋ H₂O が下、糖 ＋ O₂ が上にあることを描けば、光合成が上り坂だと分かります。</p></div>
 <section class="ref-sec" id="ref-sec-emit"><h4 class="ref-sec-h">光を出す反応 —— 化学発光</h4><p class="ref-sec-lead">反応物と生成物のエネルギーの差（またはその一部）が光として出る現象を化学発光といいます。ルミノール反応が代表です。</p></section>
-<p class="ref-p">反応物と生成物のエネルギーの差、またはその一部が、熱ではなく光として出る現象を<b>化学発光</b>といいます。エネルギー図を下りるときに、下りた分を光として出す反応です。</p>
+<p class="ref-p">反応でエネルギー図を下りるとき、ふつうは下りた分が熱になって出ていきます。その分の全部または一部を、熱の代わりに光として出す反応があり、これを<b>化学発光</b>とよびます。</p>
 <p class="ref-p"><b>出てくる光の色は、エネルギーの差で決まります。</b>差が大きいほど波長の短い光（青・紫の側）、差が小さいほど波長の長い光（赤の側）になります。</p>
 <p class="ref-p">具体例6で、<b>ルミノール</b>を塩基性の水溶液にし、過酸化水素 H₂O₂ を加えて酸化すると、青白い光を出します。この反応は鉄を含む物質が触媒になるので、血液の鉄（ヘモグロビン）で光ることを利用して、血痕を探すのに使われます。これを<b>ルミノール反応</b>といいます。</p>
 <p class="ref-p">具体例7で、一酸化窒素 NO とオゾン O₃ が反応するときも光が出ます。この発光を測って、空気中のわずかな NO の濃度を調べる装置があります。</p>
@@ -917,7 +935,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(ア)〜(オ)のうち、<b>光を吸収して進む反応</b>と、<b>化学発光</b>を、それぞれすべて選べ。(ア) 水素と塩素の混合気体に強い光を当てる　(イ) ルミノールの塩基性水溶液に過酸化水素水を加える　(ウ) 臭化銀に光を当てる　(エ) 緑色植物が CO₂ と H₂O からグルコースをつくる　(オ) 塩酸と水酸化ナトリウム水溶液を混ぜる</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>光を吸収して進む反応：(ア)・(ウ)・(エ)</b>、<b>化学発光：(イ)</b>。(オ) の中和は熱を出す発熱反応で、光とはかかわりません。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">CO₂（気）、H₂O（液）、C₆H₁₂O₆（固）の生成エンタルピーをそれぞれ −394kJ/mol、−286kJ/mol、−1273kJ/mol とする。<b>6CO₂(気) ＋ 6H₂O(液) → C₆H₁₂O₆(固) ＋ 6O₂(気) の ΔH は何 kJ か。また、この反応は発熱反応か、吸熱反応か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>＋2807kJ、吸熱反応</b>。単体の組を 0 とすると、反応物の高さは 6×(−394) ＋ 6×(−286) ＝ −4080、生成物の高さは −1273 ＋ 0 ＝ −1273。ΔH ＝ −1273 −（−4080）＝ ＋2807kJ。正なので吸熱反応で、足りないエネルギーは光から受け取ります（値を丸めずに計算すると ＋2803kJ）。</p></div></details></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/hess-law/">生成エンタルピーから反応エンタルピーを求める方法はこちら</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/hess-law/">生成エンタルピーで反応エンタルピーを出す方法はこちら</a></p>
 </div>
 </div>
 

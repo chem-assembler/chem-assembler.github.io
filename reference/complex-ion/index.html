@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -883,7 +901,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-layout">
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">錯イオンのつくり —— 中心の金属イオンと配位子</a></li><li><a href="#ref-sec-naming" data-ref-anchor="naming">錯イオンの名前の付け方</a></li><li><a href="#ref-sec-shape" data-ref-anchor="shape">配位数と形・色</a></li><li><a href="#ref-sec-dissolve" data-ref-anchor="dissolve">沈殿が錯イオンになって溶ける2つの型</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">硫酸銅(Ⅱ) 水溶液にアンモニア水を過剰に加えると、深青色の水溶液になります。これは、Cu²⁺ に NH₃ 分子が4個結びついて、<b>[Cu(NH₃)₄]²⁺</b> というイオンができたためです。このように、金属イオンに分子や陰イオンが<b>配位結合</b>してできたイオンを<b>錯イオン</b>といいます。</p>
+<p class="ref-p">硫酸銅(Ⅱ) 水溶液にアンモニア水を過剰に加えると、深青色の水溶液になります。これは、Cu²⁺ に NH₃ 分子が4個結びついて、<b>[Cu(NH₃)₄]²⁺</b> というイオンができたためです。中心に金属イオンが1つあり、そのまわりに分子や陰イオンが<b>配位結合</b>でつながったもの —— これが<b>錯イオン</b>です。[Cu(NH₃)₄]²⁺ はその代表です。</p>
 <section class="ref-sec" id="ref-sec-definition"><h4 class="ref-sec-h">錯イオンのつくり —— 中心の金属イオンと配位子</h4><p class="ref-sec-lead">非共有電子対をもつ分子や陰イオン（配位子）が、中心の金属イオンに配位結合します。結びついた配位子の数を配位数といいます。</p></section>
 <p class="ref-p">NH₃ の N 原子には<b>非共有電子対</b>が1組あります。この電子対を Cu²⁺ に一方的に提供して結合するのが<b>配位結合</b>です。配位結合する分子や陰イオンを<b>配位子</b>、1つの金属イオンに結合した配位子の数を<b>配位数</b>といいます。[Cu(NH₃)₄]²⁺ なら、配位子は NH₃、配位数は4です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/complex-ion-app-cu-nh3.png" alt="ビーカーの模式図。中央の Cu のまわりを NH₃ が4個取り囲んだ粒（電荷 2+）が1個あり、離れたところに SO₄²⁻ が1個ある" loading="lazy"><figcaption class="ref-figure-cap">CuSO₄ に NH₃ を4個ぶん加えたあと。<b>Cu²⁺ のまわりを NH₃ 4個が取り囲んで [Cu(NH₃)₄]²⁺</b> になり、SO₄²⁻ は反応に加わらずに残ります。</figcaption></figure>
@@ -918,7 +936,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">両性金属の水酸化物が過剰の NaOH に溶ける式は両性金属のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/cation-separation/">この2つの型を使って金属イオンを分ける手順は系統分離のページへ</a></p>
 <h5 class="ref-h5 ref-h5-advanced">チオ硫酸ナトリウムで溶ける臭化銀<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
-<p class="ref-p">臭化銀 AgBr はアンモニア水にはわずかにしか溶けませんが、チオ硫酸ナトリウム Na₂S₂O₃ 水溶液にはよく溶けます。チオ硫酸イオン S₂O₃²⁻ が配位子になって錯イオンをつくるためです。写真の現像で、光が当たらずに残った AgBr を取り除くのに使われてきました。</p>
+<p class="ref-p">臭化銀 AgBr は、アンモニア水に入れてもほとんど溶けません。ところが、チオ硫酸ナトリウム Na₂S₂O₃ の水溶液に入れると溶けていきます。チオ硫酸イオン S₂O₃²⁻ が Ag⁺ に配位して、水に溶ける錯イオンに変わるからです。フィルム写真では、現像したあとの<b>定着</b>という工程で、光が当たらずに残った AgBr をこの反応で溶かして取り除いてきました。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">AgBr ＋ 2S₂O₃²⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">[Ag(S₂O₃)₂]³⁻ ＋ Br⁻</span></div><p class="ref-note">ビス(チオスルファト)銀(Ⅰ)酸イオン。名前も式も覚えなくて構いません。</p></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">名前の付け方、Ag・Cu・Zn のアンミン錯イオンの配位数・形・色、過剰の NH₃ と NaOH で溶ける組み合わせです。</p></section>
 <h5 class="ref-h5">必ず覚えるもの（★★★）</h5>
@@ -933,7 +951,7 @@ a.ref-link::before { content: '→ '; }
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（9問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=inorg.metal.complex-structure,inorg.metal.complex-naming,inorg.metal.complex-shape,inorg.metal.complex-redissolve,inorg.metal.ligand-names,inorg.metal.coordination-rule,inorg.metal.complex-color,inorg.metal.central-oxidation,inorg.metal.thiosulfate-agbr&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（9問・測定モード）">▶ 一問一答で解く（9問・測定モード）</button><a class="alt" href="/qa/?codes=inorg.metal.complex-structure,inorg.metal.complex-naming,inorg.metal.complex-shape,inorg.metal.complex-redissolve,inorg.metal.ligand-names,inorg.metal.coordination-rule,inorg.metal.complex-color,inorg.metal.central-oxidation,inorg.metal.thiosulfate-agbr&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/alloy/">← 合金 —— 混ぜると性質が変わる</a>
+<nav class="seq"><a href="/reference/amphoteric-metal/">← 両性金属 —— Al・Zn・Sn・Pb</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
 <a href="/reference/iron/">鉄 —— 製錬と Fe²⁺・Fe³⁺ の見分け方 →</a></nav>

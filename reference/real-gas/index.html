@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -900,7 +918,7 @@ a.ref-link::before { content: '→ '; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/real-gas-molecular-volume.png" alt="左に理想気体の容器（分子は大きさのない点）、右に実在気体の容器（分子は大きさのある粒）を並べた図。実在気体の容器は一回り大きな枠で囲まれ「実在気体の体積 V」と書かれ、容器の横に分子を寄せ集めた小さな四角が「気体分子の体積」として添えられている" loading="lazy"><figcaption class="ref-figure-cap">実在気体の体積 V には、分子が動き回る空間に加えて、分子自身の体積のぶんが上乗せされます。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/real-gas-molecular-volume-pressure.png" alt="同じ大きさの容器を低圧と高圧で並べた図。低圧の容器には分子がまばらで、横に添えた「気体分子の体積」の四角は小さい。高圧の容器には分子がびっしり詰まっていて、「気体分子の体積」の四角も大きい" loading="lazy"><figcaption class="ref-figure-cap">高圧ほど同じ容器に分子が多く入るので、分子自身の体積が占める割合が大きくなります。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">実在気体が理想気体からずれる2つの原因</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">原因</th><th style="text-align: left;">気体の体積 V への影響</th><th style="text-align: left;">影響が大きくなる条件</th></tr></thead><tbody><tr><td style="text-align: left;">分子間力</td><td style="text-align: left;">V を小さくする</td><td style="text-align: left;">低温ほど大きい</td></tr><tr><td style="text-align: left;">分子自身の体積</td><td style="text-align: left;">V を大きくする</td><td style="text-align: left;">高圧ほど大きい</td></tr></tbody></table></div>
-<p class="ref-p">2つの影響がどちらも小さくなるのは、<b>高温・低圧</b>のときです。<b>実在気体は、高温・低圧ほど理想気体に近づきます。</b>この結論と、表の2行（分子間力は V を小さく・低温で大、分子の体積は V を大きく・高圧で大）は必ず覚えてください。</p>
+<p class="ref-p">2つの影響がどちらも小さくなるのは、<b>高温・低圧</b>のときです。<b>温度を上げ、圧力を下げるほど、実在気体のふるまいは理想気体に近くなります。</b>この結論と、表の2行（分子間力は V を小さく・低温で大、分子の体積は V を大きく・高圧で大）は必ず覚えてください。</p>
 <p class="ref-p">「高圧」の目安は、だいたい 100気圧（10⁷Pa）以上です。1気圧（10⁵Pa）くらいでは分子自身の体積の影響は小さく、ずれはほとんど分子間力で決まります。</p>
 <section class="ref-sec" id="ref-sec-molar-volume"><h4 class="ref-sec-h">実在気体の 1mol の体積</h4><p class="ref-sec-lead">0℃・1.013×10⁵Pa での 1mol の体積は、分子間力の大きい気体ほど理想気体の 22.41L より小さくなります。</p></section>
 <p class="ref-p">標準状態（0℃・1.013×10⁵Pa）で、実在気体 1mol の体積を測ると、理想気体の 22.41L から少しずれます。この圧力では分子自身の体積の影響は小さいので、<b>分子間力が大きい気体ほど体積が小さく</b>なります。</p>

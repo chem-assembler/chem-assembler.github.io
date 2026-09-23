@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -884,8 +902,8 @@ a.ref-link::before { content: '→ '; }
 <nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-fecl3" data-ref-anchor="fecl3">塩化鉄(III) で呈色する</a></li><li><a href="#ref-sec-substitution" data-ref-anchor="substitution">ベンゼンより置換されやすい</a></li><li><a href="#ref-sec-methyl" data-ref-anchor="methyl">メチル化するとエーテルになる</a></li><li><a href="#ref-sec-cumene" data-ref-anchor="cumene">フェノールのつくり方① クメン法</a></li><li><a href="#ref-sec-old-routes" data-ref-anchor="old-routes">フェノールのつくり方② 昔の2つの方法</a></li><li><a href="#ref-sec-uses" data-ref-anchor="uses">フェノールの用途</a></li></ul></details></nav>
 <div class="ref-scope">
 <p class="ref-p">フェノール類は、−OH が付いたことで<b>ベンゼンよりも置換反応を起こしやすく</b>なっています。このページでは、フェノール類を見分ける反応、環で起こる置換反応、そしてフェノールのつくり方を見ていきます。</p>
-<section class="ref-sec" id="ref-sec-fecl3"><h4 class="ref-sec-h">塩化鉄(III) で呈色する</h4><p class="ref-sec-lead">フェノール類に塩化鉄(III) 水溶液を加えると、青紫〜赤紫に呈色します。フェノール類の検出に使います。</p></section>
-<p class="ref-p">フェノール類の水溶液に<b>塩化鉄(III) FeCl₃ 水溶液</b>を加えると、<b>青紫〜赤紫色</b>に呈色します。フェノールなら紫、サリチル酸なら赤紫です。</p>
+<section class="ref-sec" id="ref-sec-fecl3"><h4 class="ref-sec-h">塩化鉄(III) で呈色する</h4><p class="ref-sec-lead">塩化鉄(III) 水溶液を少し加えて青紫〜赤紫に色づけば、フェノール類だと判定できます。</p></section>
+<p class="ref-p">フェノール類を見分ける試薬が<b>塩化鉄(III) FeCl₃ 水溶液</b>です。少し加えるだけで、液が<b>青紫〜赤紫色</b>に色づきます。フェノールなら紫、サリチル酸なら赤紫です。</p>
 <p class="ref-p"><b>「フェノール類は塩化鉄(III) で呈色する」は必ず覚えてください。</b>−OH が環に直接付いているかどうかの試験なので、アルコール（ベンジルアルコールも含む）は呈色しません。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/phenol-fecl3-test.png" alt="3本の試験管に塩化鉄(III) 水溶液を1滴ずつ加えた模式図。フェノールの試験管は紫、サリチル酸は赤紫になり、ベンジルアルコールの試験管は塩化鉄(III) の黄色のまま変わらない" loading="lazy"><figcaption class="ref-figure-cap">ベンジルアルコールもベンゼン環と −OH をもちますが、−OH は CH₂ を挟んで付いているので、性質はアルコールの仲間です。<b>呈色するかどうかは、環があるかではなく、−OH が環に直接付いているかで決まります。</b></figcaption></figure>
 <section class="ref-sec" id="ref-sec-substitution"><h4 class="ref-sec-h">ベンゼンより置換されやすい</h4><p class="ref-sec-lead">フェノールは触媒なしで臭素水と反応し、3か所に Br が入った白色沈殿ができます。</p></section>
@@ -906,7 +924,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/ether/">エーテルの性質（ナトリウムと反応しない）はエーテルのページへ</a></p>
 <section class="ref-sec" id="ref-sec-cumene"><h4 class="ref-sec-h">フェノールのつくり方① クメン法</h4><p class="ref-sec-lead">ベンゼンとプロペンからクメンをつくり、酸化・分解すると、フェノールとアセトンが同時にできます。</p></section>
 <p class="ref-p">現在、工業的にフェノールをつくっているのは<b>クメン法</b>です。次の3段で進みます。</p>
-<ol class="ref-list"><li>ベンゼンにプロペンを付加させて、クメン（イソプロピルベンゼン）をつくる。</li><li>クメンを空気中の酸素で酸化して、クメンヒドロペルオキシドにする。</li><li>クメンヒドロペルオキシドを希硫酸で分解すると、フェノールとアセトンができる。</li></ol>
+<ol class="ref-list"><li>ベンゼンにプロペンを付加させて、クメン（イソプロピルベンゼン）をつくる。</li><li>クメンを空気中の酸素で酸化して、クメンヒドロペルオキシドにする。</li><li>最後に希硫酸をはたらかせると、クメンヒドロペルオキシドが2つに割れて、フェノールとアセトンになる。</li></ol>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₆ ＋ CH₂=CHCH₃</span><span class="ref-rx-arrow"><span class="ref-rx-over">触媒</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅CH(CH₃)₂</span></div><p class="ref-note">①クメン（イソプロピルベンゼン）ができます。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅CH(CH₃)₂ ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅C(CH₃)₂OOH</span></div><p class="ref-note">②クメンヒドロペルオキシドができます。−O−O−H の部分をもつ化合物です。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅C(CH₃)₂OOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">希硫酸</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅OH ＋ CH₃COCH₃</span></div><p class="ref-note">③フェノールとアセトンが同時にできます。</p></div>

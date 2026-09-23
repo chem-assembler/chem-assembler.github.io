@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,13 +903,13 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">コップの水は放っておくと少しずつ減りますが、ふたをした容器の水はいつまでたっても減りません。このページでは、その理由である気液平衡と飽和蒸気圧を見て、沸騰が起こる条件をまとめます。ここで扱う「液体の上の空間は飽和蒸気圧」という考え方は、水蒸気を含む気体の計算でそのまま使います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">蒸発・凝縮の名前と、状態図の蒸気圧曲線はこちら</a></p>
-<section class="ref-sec" id="ref-sec-equilibrium"><h4 class="ref-sec-h">気液平衡と飽和蒸気圧</h4><p class="ref-sec-lead">密閉容器では、蒸発する分子の数と凝縮する分子の数がやがて等しくなります。このときの蒸気の圧力を飽和蒸気圧（蒸気圧）といいます。</p></section>
+<section class="ref-sec" id="ref-sec-equilibrium"><h4 class="ref-sec-h">気液平衡と飽和蒸気圧</h4><p class="ref-sec-lead">ふたをした容器では、液面から飛び出す分子と液面へ戻る分子がやがて同じ数になり、蒸気の圧力が一定の値で止まります。その値が飽和蒸気圧（蒸気圧）です。</p></section>
 <p class="ref-p">液体の表面では、熱運動の激しい分子が周りの分子との引き合いを振り切って外へ飛び出しています（蒸発）。一方、蒸気中の分子の一部は液面にぶつかって液体に戻ります（凝縮）。</p>
 <p class="ref-p">温度を一定にした密閉容器に液体を入れると、次の順に変化します。</p>
-<ol class="ref-list"><li>はじめは蒸気中の分子が少ないので、蒸発する分子の数の方が多い。</li><li>蒸気中の分子が増えるにつれて、凝縮する分子の数も増える。</li><li>やがて、蒸発する分子の数と凝縮する分子の数が等しくなる。<div class="ref-li-hang">見かけ上、蒸発も凝縮も止まったように見えます。この状態を<b>気液平衡</b>といいます。</div></li></ol>
-<p class="ref-p">気液平衡のときの蒸気の圧力を、その液体の<b>飽和蒸気圧</b>、または単に<b>蒸気圧</b>といいます。ふたをした容器の水が減らなくなるのは、蒸気が飽和蒸気圧に達して気液平衡になったためです。</p>
+<ol class="ref-list"><li>はじめ、液面の上にはまだ分子がほとんどないので、液面から飛び出す分子のほうが、戻ってくる分子よりずっと多い。</li><li>上の空間に分子がたまってくると、液面にぶつかって液体へ戻る分子もだんだん増えていく。</li><li>やがて、一定時間に飛び出す数と戻る数がつり合う。<div class="ref-li-hang">見かけ上、蒸発も凝縮も止まったように見えます。この状態を<b>気液平衡</b>といいます。</div></li></ol>
+<p class="ref-p">気液平衡に落ち着いたときの蒸気の圧力は、液体の種類と温度で決まる値になります。これがその液体の<b>飽和蒸気圧</b>で、略して<b>蒸気圧</b>ともよびます。ふたをした容器の水が減らなくなるのは、蒸気が飽和蒸気圧に達して気液平衡になったためです。</p>
 <p class="ref-p">飽和蒸気圧には、次の3つの性質があります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">飽和蒸気圧の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">性質</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;">温度が決まれば、物質ごとに1つの値に決まる</td><td style="text-align: left;">蒸発する分子の数は、液面の面積あたりで温度だけで決まるため</td></tr><tr><td style="text-align: left;">液体の量や、容器（気体の部分）の体積には関係しない</td><td style="text-align: left;">体積を変えても、蒸発か凝縮が進んで同じ圧力に戻るため</td></tr><tr><td style="text-align: left;">ほかの気体（空気など）が共存していても変わらない</td><td style="text-align: left;">分圧はほかの気体と無関係に決まるため</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">飽和蒸気圧の性質</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">性質</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;">温度が決まれば、物質ごとに1つの値に決まる</td><td style="text-align: left;">蒸発する分子の数は、液面の面積あたりで温度だけで決まるため</td></tr><tr><td style="text-align: left;">液体の量や、容器（気体の部分）の体積には関係しない</td><td style="text-align: left;">体積を変えても、蒸発か凝縮が進んで同じ圧力に戻るため</td></tr><tr><td style="text-align: left;">空気などほかの気体が混ざっていても同じ値のまま</td><td style="text-align: left;">分圧はほかの気体と無関係に決まるため</td></tr></tbody></table></div>
 <p class="ref-p">★ 2つ目の性質が、計算でいちばん大切です。気液平衡のまま体積を小さくすると、蒸気が凝縮して液体が増え、蒸気の圧力は飽和蒸気圧のまま変わりません。体積を大きくすると、液体が蒸発して蒸気が増え、やはり飽和蒸気圧のままです。<b>液体が残っている限り、蒸気の圧力は飽和蒸気圧から動きません。</b></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">水と水蒸気が共存している容器の体積を半分にすると、水蒸気の圧力は2倍になる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">液体の水が残っている限り、水蒸気の圧力は飽和蒸気圧のまま変わりません。増えるはずの分の水蒸気が凝縮して、液体の水が増えます。</span></p><p class="ref-mistake-why">「P と V は反比例」を、気液平衡にある蒸気にも当てはめてしまうためです。反比例が使えるのは、物質量 n が変わらない気体だけです。液体と共存している蒸気は、凝縮や蒸発で n が変わります。</p></div>
 <section class="ref-sec" id="ref-sec-maximum"><h4 class="ref-sec-h">飽和蒸気圧は分圧の最大値</h4><p class="ref-sec-lead">蒸気の分圧は、飽和蒸気圧より大きくなることはできません。超えた分は液体になります。</p></section>
@@ -902,16 +920,16 @@ a.ref-link::before { content: '→ '; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/vapor-pressure-compare.png" alt="0.8×10⁵Pa ＞ 0.036×10⁵Pa の不等式。左の 0.8×10⁵Pa の下に「生じた H₂O がすべて気体になったと仮定したときの H₂O の分圧」、右の 0.036×10⁵Pa の下に「H₂O の飽和蒸気圧（H₂O の分圧の最大値）」と書かれている" loading="lazy"><figcaption class="ref-figure-cap">飽和蒸気圧は、水蒸気の分圧がとれる最大値です。すべて気体と仮定した分圧がこれを超えたら、超えた分は液体の水になります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/gas-with-vapor/">「すべて気体と仮定して飽和蒸気圧と比べる」計算の手順はこちら</a></p>
 <section class="ref-sec" id="ref-sec-curve"><h4 class="ref-sec-h">蒸気圧曲線 —— 温度が上がると蒸気圧は上がる</h4><p class="ref-sec-lead">温度が高いほど、分子の運動エネルギーが大きくなり、液体から飛び出す分子が増えるので、飽和蒸気圧は高くなります。</p></section>
-<p class="ref-p">液体の飽和蒸気圧と温度の関係を示したグラフを<b>蒸気圧曲線</b>といいます。温度が上がると、液体の中で大きな運動エネルギーをもつ分子の割合が増えるので、飽和蒸気圧は急に高くなります。</p>
+<p class="ref-p">温度を横軸、飽和蒸気圧を縦軸にとって描いた線が<b>蒸気圧曲線</b>です。液体を温めると、液面から飛び出せるほど勢いのある分子が一気に増えるため、飽和蒸気圧は温度とともに急に高くなります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">水の飽和蒸気圧</div><table class="ref-hand-table"><thead><tr><th style="text-align: right;">温度〔℃〕</th><th style="text-align: right;">飽和蒸気圧〔Pa〕</th></tr></thead><tbody><tr><td style="text-align: right;">0</td><td style="text-align: right;">6.1×10²</td></tr><tr><td style="text-align: right;">20</td><td style="text-align: right;">2.3×10³</td></tr><tr><td style="text-align: right;">27</td><td style="text-align: right;">3.6×10³</td></tr><tr><td style="text-align: right;">40</td><td style="text-align: right;">7.4×10³</td></tr><tr><td style="text-align: right;">60</td><td style="text-align: right;">2.0×10⁴</td></tr><tr><td style="text-align: right;">80</td><td style="text-align: right;">4.7×10⁴</td></tr><tr><td style="text-align: right;">100</td><td style="text-align: right;">1.013×10⁵</td></tr></tbody></table></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/vapor-pressure-curves.png" alt="横軸が温度、縦軸が蒸気圧のグラフ。ジエチルエーテル・エタノール・水の3本の曲線が左からこの順に並び、外圧 1.013×10⁵ Pa の横線とそれぞれ 35℃・78℃・100℃ で交わる" loading="lazy"><figcaption class="ref-figure-cap">同じ温度で比べると、分子間力が弱いものほど曲線が<b>上（左）</b>にあります。その曲線が外圧の高さに早く届くので、沸点も低くなります。</figcaption></figure>
 <p class="ref-p">27℃（300K）の水の飽和蒸気圧 3.6×10³Pa は、1.0×10⁵Pa のおよそ 4% です。常温付近の水の飽和蒸気圧は、大気圧に比べてずっと小さいことを感覚として持っておきましょう。</p>
 <p class="ref-p">同じ温度で比べると、分子間力が強い液体ほど分子が飛び出しにくいので、飽和蒸気圧は低くなります。25℃ で比べると、ジエチルエーテル（約 7.1×10⁴Pa）＞ エタノール（約 7.9×10³Pa）＞ 水（約 3.2×10³Pa）の順です。水の蒸気圧が低いのは、分子どうしが水素結合で強く引き合っているためです。</p>
-<section class="ref-sec" id="ref-sec-boiling"><h4 class="ref-sec-h">沸騰と沸点 —— 蒸気圧が外圧に届いたとき</h4><p class="ref-sec-lead">液体の蒸気圧が外圧（ふつうは大気圧）に等しくなると、液体の内部からも気体が発生します。これが沸騰で、そのときの温度が沸点です。</p></section>
-<p class="ref-p">液体を加熱していくと、飽和蒸気圧が上がっていきます。飽和蒸気圧が外圧に等しくなると、液面だけでなく液体の内部からも蒸気の泡ができるようになります。この現象を<b>沸騰</b>といい、沸騰が起こる温度を<b>沸点</b>といいます。</p>
+<section class="ref-sec" id="ref-sec-boiling"><h4 class="ref-sec-h">沸騰と沸点 —— 蒸気圧が外圧に届いたとき</h4><p class="ref-sec-lead">蒸気圧が外圧（ふつうは大気圧）に追いつくと、液面だけでなく液の中でも泡ができ始めます。これが沸騰で、そのときの温度が沸点です。</p></section>
+<p class="ref-p">液体を加熱していくと、飽和蒸気圧が上がっていきます。飽和蒸気圧が外圧に並んだところで、液の中にも蒸気の泡が生まれ、ぼこぼこと湧き上がるようになります。これが<b>沸騰</b>で、そうなる温度を<b>沸点</b>とよびます。</p>
 <p class="ref-p">液体の内部にできた泡は、外から押す圧力に負けない圧力をもたないとつぶれてしまいます。泡の中の圧力はその温度の飽和蒸気圧なので、<b>飽和蒸気圧が外圧に届いたときにはじめて泡が残り、沸騰が起こる</b>わけです。</p>
 <p class="ref-p">このため、同じ物質でも<b>外圧が低ければ沸点は低く、外圧が高ければ沸点は高く</b>なります。</p>
-<ul class="ref-list"><li>高い山の上（外圧が低い）では、水は 100℃ より低い温度で沸騰する。</li><li>圧力鍋（外圧が高い）の中では、水は 100℃ より高い温度で沸騰するので、短い時間で調理できる。</li><li>フラスコ内の圧力を下げると、100℃ より低い温度でも水が沸騰する。</li></ul>
+<ul class="ref-list"><li>高い山の上（外圧が低い）では、水は 100℃ に届く前に沸き立つ。</li><li>圧力鍋（外圧が高い）の中では、100℃ を超えるまで水が沸き立たないので、高い温度で短い時間に調理できる。</li><li>フラスコ内の圧力を下げると、100℃ より低い温度でも水が沸騰する。</li></ul>
 <p class="ref-p">物質の沸点は、ふつう外圧が 1.013×10⁵Pa のときの値で示します。水は 100℃、エタノールは 78℃ です。水の飽和蒸気圧が 100℃ でちょうど 1.013×10⁵Pa になっているのは、このためです。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">沸点は、その物質ごとに決まった温度である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">沸点は外圧で変わります。「水の沸点は 100℃」は、外圧が 1.013×10⁵Pa のときの値です。</span></p><p class="ref-mistake-why">ふだん目にする沸点が、どれも大気圧のもとでの値だからです。沸騰の条件は「飽和蒸気圧 ＝ 外圧」なので、外圧が変われば沸点も変わります。</p></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「液体があれば上の空間は飽和蒸気圧」「飽和蒸気圧は分圧の最大値」「沸騰は蒸気圧 ＝ 外圧」の3つを覚えます。蒸気圧の数値は問題文で与えられます。</p></section>
@@ -919,14 +937,14 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">水の飽和蒸気圧の数値は、問題文で与えられるので覚えなくて構いません。100℃ で 1.013×10⁵Pa になることだけは、沸点の定義から出てくるので自分で言えるようにしておきましょう。</p>
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">このページの「水の飽和蒸気圧」の表を使って答えよ。(1) 外圧が 4.7×10⁴Pa のところで水を加熱すると、何℃で沸騰するか。(2) 40℃ で、水と水蒸気が共存している密閉容器がある。温度を 40℃ に保ったまま容器の体積を半分にすると、水蒸気の圧力は何 Pa になるか。ただし、液体の水は体積を半分にしたあとも残っているとする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 80℃。沸騰は飽和蒸気圧が外圧に等しくなったときに起こるので、表で飽和蒸気圧が 4.7×10⁴Pa になる温度を読みます。(2) 7.4×10³Pa（変わらない）。液体の水が残っている限り、水蒸気の圧力は 40℃ の飽和蒸気圧のままです。体積を小さくした分の水蒸気は凝縮して、液体の水が増えます。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">300K で、体積一定の容器に水と窒素を入れて放置したところ、液体の水が残った。容器内の全圧は 1.036×10⁵Pa であった。窒素の分圧は何 Pa か。300K の水の飽和蒸気圧を 3.6×10³Pa とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>1.0×10⁵Pa。液体の水が残っているので、水蒸気の分圧は飽和蒸気圧の 3.6×10³Pa ＝ 0.036×10⁵Pa です。全圧は分圧の和なので、窒素の分圧は 1.036×10⁵ − 0.036×10⁵ ＝ 1.000×10⁵Pa。★ 桁をそろえて（×10⁵Pa に直して）から引くと間違えにくくなります。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">300K で、体積一定の容器に水と窒素を入れて放置したところ、液体の水が残った。容器内の全圧は 1.036×10⁵Pa であった。窒素の分圧は何 Pa か。水の飽和蒸気圧は 300K で 3.6×10³Pa である。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>1.0×10⁵Pa。液体の水が残っているので、水蒸気の分圧は飽和蒸気圧の 3.6×10³Pa ＝ 0.036×10⁵Pa です。全圧は分圧の和なので、窒素の分圧は 1.036×10⁵ − 0.036×10⁵ ＝ 1.000×10⁵Pa。★ 桁をそろえて（×10⁵Pa に直して）から引くと間違えにくくなります。</p></div></details></div>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
 <div class="embed"><b>▶ 一問一答で解く（5問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.state.vapor-liquid-equilibrium,theo.state.vapor-pressure-property,theo.state.vapor-pressure-max,theo.state.vapor-pressure-curve,theo.state.boiling-point&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（5問・測定モード）">▶ 一問一答で解く（5問・測定モード）</button><a class="alt" href="/qa/?codes=theo.state.vapor-liquid-equilibrium,theo.state.vapor-pressure-property,theo.state.vapor-pressure-max,theo.state.vapor-pressure-curve,theo.state.boiling-point&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/chemistry-world/">← 化学が拓く世界 —— 化学基礎を暮らしで振り返る</a>
+<nav class="seq"><a href="/reference/life-safety/">← 薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
 <a href="/reference/gas-laws/">気体の法則と状態方程式 —— 比例と反比例で解く →</a></nav>

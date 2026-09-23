@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>反応エンタルピーと熱化学反応式 ｜ 化学の参考書</title>
-<meta name="description" content="化学反応で出入りする熱は、反応の前後のエンタルピーの差 ΔH ＝（反応後）−（反応前）で表します。発熱反応は ΔH が負、吸熱反応は ΔH が正です。化学反応式の右に ΔH を添えて書き、燃焼・生成・中和・溶解のエンタルピーは着目する物質 1mol あたりの値で表します。">
+<meta name="description" content="化学反応で出入りする熱は、反応の前後のエンタルピーの差 ΔH ＝（反応後）−（反応前）で表します。発熱反応は ΔH が負、吸熱反応は ΔH が正です。化学反応式の右に ΔH を添えて書き、燃焼・生成・中和・溶解のエンタルピーは、名前ごとに決まった物質 1mol あたりで表します。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/reaction-enthalpy/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="反応エンタルピーと熱化学反応式 ｜ 化学の参考書">
-<meta property="og:description" content="化学反応で出入りする熱は、反応の前後のエンタルピーの差 ΔH ＝（反応後）−（反応前）で表します。発熱反応は ΔH が負、吸熱反応は ΔH が正です。化学反応式の右に ΔH を添えて書き、燃焼・生成・中和・溶解のエンタルピーは着目する物質 1mol あたりの値で表します。">
+<meta property="og:description" content="化学反応で出入りする熱は、反応の前後のエンタルピーの差 ΔH ＝（反応後）−（反応前）で表します。発熱反応は ΔH が負、吸熱反応は ΔH が正です。化学反応式の右に ΔH を添えて書き、燃焼・生成・中和・溶解のエンタルピーは、名前ごとに決まった物質 1mol あたりで表します。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/reaction-enthalpy/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,7 +895,7 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-4">化学反応とエネルギー</a></div></header>
 <main class="wrap">
 <h1>反応エンタルピーと熱化学反応式</h1>
-<p class="lede">化学反応で出入りする熱は、反応の前後のエンタルピーの差 ΔH ＝（反応後）−（反応前）で表します。発熱反応は ΔH が負、吸熱反応は ΔH が正です。化学反応式の右に ΔH を添えて書き、燃焼・生成・中和・溶解のエンタルピーは着目する物質 1mol あたりの値で表します。</p>
+<p class="lede">化学反応で出入りする熱は、反応の前後のエンタルピーの差 ΔH ＝（反応後）−（反応前）で表します。発熱反応は ΔH が負、吸熱反応は ΔH が正です。化学反応式の右に ΔH を添えて書き、燃焼・生成・中和・溶解のエンタルピーは、名前ごとに決まった物質 1mol あたりで表します。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">化学反応とエネルギー</span><span class="unit-label">反応エンタルピーと熱量</span></div>
 
 <div class="ref-layout">
@@ -886,12 +904,12 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">化学反応では、物質が変わるのと同時に熱が出入りします。このページでは、その熱を<b>エンタルピーの変化 ΔH</b> で表し、化学反応式に添えて書くところまでを扱います。水の融解や蒸発のように、状態が変わるときにも熱が出入りすることは、物質の状態のページで見ました。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/states-of-matter/">状態変化で出入りする熱（融解・蒸発のエンタルピー）はこちら</a></p>
 <section class="ref-sec" id="ref-sec-sign"><h4 class="ref-sec-h">発熱反応と吸熱反応 —— ΔH の符号</h4><p class="ref-sec-lead">反応エンタルピー ΔH は（反応後のエンタルピー）−（反応前のエンタルピー）です。発熱反応では ΔH が負、吸熱反応では ΔH が正になります。</p></section>
-<p class="ref-p">熱を放出する反応を<b>発熱反応</b>、熱を吸収する反応を<b>吸熱反応</b>といいます。燃焼や中和は発熱反応、炭素と水蒸気から一酸化炭素と水素ができる反応は吸熱反応です。</p>
-<p class="ref-p">物質はそれぞれ固有の化学エネルギーをもっています。一定の圧力のもとで、このエネルギーを<b>エンタルピー</b>（記号 H）という量で表します。</p>
-<p class="ref-p">反応の前後のエンタルピーの差を<b>反応エンタルピー</b>といい、ΔH で表します。</p>
+<p class="ref-p">反応が進むと、まわりが温まるものと冷えるものがあります。まわりへ熱を出す反応が<b>発熱反応</b>、まわりから熱を取りこむ反応が<b>吸熱反応</b>です。燃焼や中和は発熱反応、炭素と水蒸気から一酸化炭素と水素ができる反応は吸熱反応です。</p>
+<p class="ref-p">熱の出どころをたどると、物質の1つ1つが内にたくわえているエネルギーに行き着きます。圧力を一定に保った条件で、このたくわえを量として表したものが<b>エンタルピー</b>（記号 H）です。</p>
+<p class="ref-p">反応の後と前でエンタルピーがどれだけ変わったかが<b>反応エンタルピー</b>で、記号 ΔH で書きます。</p>
 <p class="ref-p"><b>ΔH ＝（反応後のエンタルピーの和）−（反応前のエンタルピーの和）</b></p>
 <p class="ref-p">発熱反応では、反応後のほうがエンタルピーが低くなります。下がった分が熱として外に出ていくので、<b>ΔH は負</b>になります。吸熱反応は逆で、外から熱を受け取ってエンタルピーが上がるので、<b>ΔH は正</b>になります。</p>
-<p class="ref-p">具体例1で、メタン CH₄ 1mol が完全燃焼すると 891kJ の熱が出ます。CH₄ 1mol と O₂ 2mol のエンタルピーの和が、CO₂ 1mol と H₂O（液）2mol の和より 891kJ 大きいので、ΔH ＝ −891kJ です。</p>
+<p class="ref-p">具体例1で、メタン CH₄ 1mol を完全に燃やすと 891kJ の熱が出ます。反応前（CH₄ 1mol と O₂ 2mol）のエンタルピーの合計は、反応後（CO₂ 1mol と H₂O（液）2mol）の合計より 891kJ 高いので、ΔH ＝ −891kJ です。</p>
 <p class="ref-p">具体例2で、C（黒鉛）1mol と H₂O（気）1mol から CO と H₂ ができると、131kJ の熱を吸収します。反応後のほうが 131kJ 高いので、ΔH ＝ ＋131kJ です。</p>
 <p class="ref-p">この関係は、<b>エネルギーの高いものを上、低いものを下</b>に並べた図で見るのがいちばん確かです。これを<b>エネルギー図</b>といいます。上から下へ向かう矢印が発熱（ΔH が負）、下から上へ向かう矢印が吸熱（ΔH が正）です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/reaction-enthalpy-app-graphite.png" alt="エネルギー図。上の準位が C（黒鉛）＋ O₂（気）、下の準位が CO₂（気）。上から下へ向かう矢印に −394kJ、下から上へ向かう矢印は答える前なので「?」になっている" loading="lazy"><figcaption class="ref-figure-cap">黒鉛の燃焼のエネルギー図。上から下へ 394kJ 下がるので ΔH ＝ −394kJ です。<b>逆向き（下から上）にたどると符号が反転して ＋394kJ</b> になります。</figcaption></figure>
@@ -899,7 +917,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">発熱反応は熱が「出る」ので、ΔH はプラスで書く</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ΔH は<b>物質の側から見た</b>エンタルピーの変化です。発熱反応では物質のエンタルピーが下がるので <b>ΔH は負</b>、吸熱反応では上がるので <b>ΔH は正</b>です。</span></p><p class="ref-mistake-why">「出てきた熱の量」を主語にすると符号が逆になります。★ エネルギー図を描いて、矢印が下向きなら負、上向きなら正と決めれば迷いません。</p></div>
 <section class="ref-sec" id="ref-sec-write"><h4 class="ref-sec-h">反応エンタルピーの書き方</h4><p class="ref-sec-lead">着目する物質の係数を1にした化学反応式を書き、状態を添え、右に ΔH ＝ <span class="ref-blank">○○</span>kJ を書き加えます。</p></section>
 <p class="ref-p">反応エンタルピーは、化学反応式の右に書き加えて表します。次の順で書きます。</p>
-<ol class="ref-list"><li>化学反応式を書く。<div class="ref-li-hang">水素の燃焼なら 2H₂ ＋ O₂ → 2H₂O。</div></li><li>着目する物質の係数を1にする。ほかの係数は分数になってもよい。<div class="ref-li-hang">「H₂ 1mol が燃焼するとき」なら H₂ ＋ ½O₂ → H₂O。</div></li><li>物質の状態を化学式の後に書く。気体は（気）、液体は（液）、固体は（固）、水溶液は aq。同素体がある単体は C（黒鉛）のように区別する。</li><li>右辺の後に ΔH ＝ <span class="ref-blank">○○</span>kJ を書き加える。発熱なら ΔH ＝ −<span class="ref-blank">○○</span>kJ、吸熱なら ΔH ＝ ＋<span class="ref-blank">○○</span>kJ。</li></ol>
+<ol class="ref-list"><li>化学反応式を書く。<div class="ref-li-hang">水素の燃焼なら 2H₂ ＋ O₂ → 2H₂O。</div></li><li>着目する物質の係数を1にする。ほかの係数は分数になってもよい。<div class="ref-li-hang">「H₂ 1mol が燃焼するとき」なら H₂ ＋ ½O₂ → H₂O。</div></li><li>化学式のすぐ後ろに状態を添える。（気）＝気体、（液）＝液体、（固）＝固体、aq ＝水溶液。同素体がある単体は C（黒鉛）のように区別する。</li><li>右辺の後に ΔH ＝ <span class="ref-blank">○○</span>kJ を書き加える。発熱なら ΔH ＝ −<span class="ref-blank">○○</span>kJ、吸熱なら ΔH ＝ ＋<span class="ref-blank">○○</span>kJ。</li></ol>
 <p class="ref-p">具体例3で、水素 H₂ 1mol が燃焼して液体の水ができるとき、286kJ の熱が出ることを式にします。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">H₂(気) ＋ ½O₂(気)</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">H₂O(液)　ΔH ＝ −286 kJ</span></div><p class="ref-note">発熱なので ΔH は負。着目する H₂ の係数を1にしたので、O₂ の係数は ½ になります。</p></div>
 <p class="ref-p"><b>式に書くときの単位は kJ、「<span class="ref-blank">○○</span>エンタルピーは −286kJ/mol」と言うときの単位は kJ/mol</b> です。式は係数の mol ぶんの熱を表し、名前の付いた値は 1mol あたりの熱を表すためです。</p>
@@ -919,7 +937,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>「ΔH ＝（反応後）−（反応前）」「発熱は負・吸熱は正」「単体の生成エンタルピーは 0」の3つは必ず覚えてください。</b>名前の付いたエンタルピーは、上の表の「1mol にそろえる物質」の列を書けるようにしましょう。</p>
 <p class="ref-p">燃焼エンタルピーや生成エンタルピーの<b>数値は、問題文で与えられるので覚える必要はありません。</b>ただし、中和エンタルピーの −56.5kJ/mol と、水の蒸発エンタルピーが ＋44kJ/mol 程度であることは、知っていると検算に使えます。</p>
 <h5 class="ref-h5">例題</h5>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の変化を、化学反応式に反応エンタルピーを書き加えた式で表せ。<b>(1) エタノール C₂H₅OH（液）の燃焼エンタルピーは −1368kJ/mol である（生じる水は液体）。　(2) 塩化水素 HCl（気）の生成エンタルピーは −92kJ/mol である。　(3) 硝酸カリウム KNO₃（固）0.10mol を多量の水に溶かすと、3.5kJ の熱を吸収した。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) C₂H₅OH(液) ＋ 3O₂(気) → 2CO₂(気) ＋ 3H₂O(液)　ΔH ＝ −1368 kJ。着目する C₂H₅OH の係数を1にして、C・H・O の順に数を合わせます。　(2) ½H₂(気) ＋ ½Cl₂(気) → HCl(気)　ΔH ＝ −92 kJ。生成エンタルピーなので、左辺は単体だけ、HCl の係数は1です。　(3) KNO₃(固) ＋ aq → KNO₃ aq　ΔH ＝ ＋35 kJ。0.10mol : 3.5kJ ＝ 1mol : x kJ より 1mol あたり 35kJ の吸熱で、吸熱なので ΔH は正です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (1)〜(3) の内容を、化学反応式の右に ΔH を添えた形で書け。<b>(1) エタノール C₂H₅OH（液）の燃焼エンタルピーは −1368kJ/mol である（生じる水は液体）。　(2) 塩化ナトリウム NaCl（固）の生成エンタルピーは −411kJ/mol である。　(3) 冷却パックに使う硝酸アンモニウム NH₄NO₃（固）0.20mol を多量の水に溶かしたところ、5.2kJ の熱が奪われた。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) C₂H₅OH(液) ＋ 3O₂(気) → 2CO₂(気) ＋ 3H₂O(液)　ΔH ＝ −1368 kJ。着目する C₂H₅OH の係数を1にして、C・H・O の順に数を合わせます。　(2) Na(固) ＋ ½Cl₂(気) → NaCl(固)　ΔH ＝ −411 kJ。生成エンタルピーなので、左辺はふだんの状態の単体（固体の Na と気体の Cl₂）だけ、NaCl の係数は1です。　(3) NH₄NO₃(固) ＋ aq → NH₄NO₃ aq　ΔH ＝ ＋26 kJ。0.20mol : 5.2kJ ＝ 1mol : x kJ より 1mol あたり 26kJ の吸熱で、吸熱なので ΔH は正です。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C(黒鉛) ＋ O₂(気) → CO₂(気)　ΔH ＝ −394 kJ である。<b>(1) この反応は発熱反応か、吸熱反応か。　(2) CO₂(気) → C(黒鉛) ＋ O₂(気) の ΔH は何 kJ か。　(3) CO₂ 0.50mol ができるとき、何 kJ の熱が出るか。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) ΔH が負なので<b>発熱反応</b>。　(2) <b>＋394kJ</b>。逆向きにたどると符号だけが反転します。　(3) <b>197kJ</b>。CO₂ 1mol : 394kJ ＝ CO₂ 0.50mol : x kJ より、x ＝ 197。</p></div></details></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/hess-law/">測れない反応の ΔH を、測れる反応の足し引きで求める（ヘスの法則）</a></p>
 </div>

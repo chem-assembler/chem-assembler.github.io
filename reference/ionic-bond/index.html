@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -887,19 +905,19 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/atom-structure/">価電子と安定な電子配置（閉殻・オクテット）の復習へ</a></p>
 <section class="ref-sec" id="ref-sec-ion"><h4 class="ref-sec-h">イオンのでき方 —— 貴ガスと同じ電子配置になる</h4><p class="ref-sec-lead">原子が電子を失うと陽イオン、電子を受け取ると陰イオンになります。価電子が少ない原子は失って、多い原子は受け取って、いちばん近い貴ガスと同じ電子配置になります。</p></section>
 <p class="ref-p">具体例として、ナトリウム原子 Na（K2・L8・M1）は、価電子1個を失うと Ne（K2・L8）と同じ電子配置になり、<b>ナトリウムイオン Na⁺</b> になります。塩素原子 Cl（K2・L8・M7）は、電子を1個受け取ると Ar（K2・L8・M8）と同じ電子配置になり、<b>塩化物イオン Cl⁻</b> になります。</p>
-<p class="ref-p">イオンが生じるときに失ったり受け取ったりした電子の数を、イオンの<b>価数</b>といいます。イオンは、元素記号の右上に価数（1 は省略）と符号を付けて表します。この式を<b>イオンを表す化学式</b>（イオン式）といいます。</p>
+<p class="ref-p">原子がイオンになるとき、電子を何個手放したか、または何個受け取ったか。その個数がイオンの<b>価数</b>です。イオンは、元素記号の右上に価数（1 は省略）と符号を付けて表します。この式を<b>イオンを表す化学式</b>（イオン式）といいます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">価電子の数となりやすいイオン（典型元素）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">族</th><th style="text-align: left;">価電子</th><th style="text-align: left;">どうなるか</th><th style="text-align: left;">イオンの例</th></tr></thead><tbody><tr><td style="text-align: left;">1</td><td style="text-align: left;">1</td><td style="text-align: left;">1個失う</td><td style="text-align: left;">Li⁺・Na⁺・K⁺</td></tr><tr><td style="text-align: left;">2</td><td style="text-align: left;">2</td><td style="text-align: left;">2個失う</td><td style="text-align: left;">Mg²⁺・Ca²⁺・Ba²⁺</td></tr><tr><td style="text-align: left;">13</td><td style="text-align: left;">3</td><td style="text-align: left;">3個失う</td><td style="text-align: left;">Al³⁺</td></tr><tr><td style="text-align: left;">16</td><td style="text-align: left;">6</td><td style="text-align: left;">2個受け取る</td><td style="text-align: left;">O²⁻・S²⁻</td></tr><tr><td style="text-align: left;">17</td><td style="text-align: left;">7</td><td style="text-align: left;">1個受け取る</td><td style="text-align: left;">F⁻・Cl⁻・Br⁻・I⁻</td></tr><tr><td style="text-align: left;">18</td><td style="text-align: left;">0</td><td style="text-align: left;">イオンにならない</td><td style="text-align: left;">——</td></tr></tbody></table></div>
 <p class="ref-p">価電子が1〜3個の原子は、電子を<b>失う</b>ほうが近道なので陽イオンに、6〜7個の原子は、電子を<b>受け取る</b>ほうが近道なので陰イオンになります。<b>典型元素のイオンの価数は、この表から自分で出せるようにしましょう。</b>表を丸暗記しなくても、族の番号から価電子を出せば価数が決まります。</p>
 <p class="ref-p">イオンへのなりやすさは、イオン化エネルギー（陽イオンへのなりやすさ）と電子親和力（陰イオンへのなりやすさ）で比べます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/periodic-table/">イオン化エネルギー・電子親和力と周期表へ</a></p>
-<section class="ref-sec" id="ref-sec-names"><h4 class="ref-sec-h">イオンの名前と多原子イオン</h4><p class="ref-sec-lead">1個の原子からなるイオンを単原子イオン、2個以上の原子のまとまりからなるイオンを多原子イオンといいます。単原子の陰イオンは「〜化物イオン」、多原子イオンは固有の名前で呼びます。</p></section>
+<section class="ref-sec" id="ref-sec-names"><h4 class="ref-sec-h">イオンの名前と多原子イオン</h4><p class="ref-sec-lead">原子1個がそのままイオンになったものが単原子イオン、いくつかの原子がひとかたまりになって全体で電荷をもつものが多原子イオンです。単原子の陰イオンは「〜化物イオン」、多原子イオンは固有の名前で呼びます。</p></section>
 <p class="ref-p">単原子イオンの名前は、次の約束で決まります。</p>
 <ul class="ref-list"><li>陽イオンは、元素名に「イオン」を付ける。<div class="ref-li-hang">Na⁺ → ナトリウムイオン、Ca²⁺ → カルシウムイオン</div></li><li>陰イオンは、元素名の語尾を「<span class="ref-blank">○○</span>化物イオン」に変える。<div class="ref-li-hang">Cl⁻ → 塩化物イオン、O²⁻ → 酸化物イオン、S²⁻ → 硫化物イオン</div></li><li>同じ元素で価数の違うイオンがあるときは、価数をローマ数字で添える。<div class="ref-li-hang">Fe²⁺ → 鉄(Ⅱ)イオン、Fe³⁺ → 鉄(Ⅲ)イオン、Cu⁺ → 銅(Ⅰ)イオン、Cu²⁺ → 銅(Ⅱ)イオン</div></li></ul>
 <p class="ref-p"><b>多原子イオン</b>は、電子配置からは価数が出せないので、名前と化学式を組で覚えるしかありません。次の表の10個は、これから先の単元で何度も使います。</p>
 <div class="ref-table-wrap"><div class="ref-cap">覚える多原子イオン</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名前</th><th style="text-align: left;">化学式</th><th style="text-align: left;">価数</th></tr></thead><tbody><tr><td style="text-align: left;">アンモニウムイオン</td><td style="text-align: left;">NH₄⁺</td><td style="text-align: left;">1</td></tr><tr><td style="text-align: left;">オキソニウムイオン</td><td style="text-align: left;">H₃O⁺</td><td style="text-align: left;">1</td></tr><tr><td style="text-align: left;">水酸化物イオン</td><td style="text-align: left;">OH⁻</td><td style="text-align: left;">1</td></tr><tr><td style="text-align: left;">硝酸イオン</td><td style="text-align: left;">NO₃⁻</td><td style="text-align: left;">1</td></tr><tr><td style="text-align: left;">酢酸イオン</td><td style="text-align: left;">CH₃COO⁻</td><td style="text-align: left;">1</td></tr><tr><td style="text-align: left;">炭酸水素イオン</td><td style="text-align: left;">HCO₃⁻</td><td style="text-align: left;">1</td></tr><tr><td style="text-align: left;">硫酸水素イオン</td><td style="text-align: left;">HSO₄⁻</td><td style="text-align: left;">1</td></tr><tr><td style="text-align: left;">硫酸イオン</td><td style="text-align: left;">SO₄²⁻</td><td style="text-align: left;">2</td></tr><tr><td style="text-align: left;">炭酸イオン</td><td style="text-align: left;">CO₃²⁻</td><td style="text-align: left;">2</td></tr><tr><td style="text-align: left;">リン酸イオン</td><td style="text-align: left;">PO₄³⁻</td><td style="text-align: left;">3</td></tr></tbody></table></div>
 <p class="ref-p"><b>この10個は、名前を見たら化学式と価数が出てくるまで暗記してください。</b>陽イオンの多原子イオンは NH₄⁺ と H₃O⁺ の2つだけと考えて問題ありません。硫酸・硝酸などの酸の名前と、陰イオンの名前がそろっていることも覚える助けになります（硫酸 H₂SO₄ から H⁺ が外れると硫酸イオン SO₄²⁻）。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/covalent-bond/">NH₄⁺・H₃O⁺ ができる仕組み（配位結合）へ</a></p>
-<section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">イオン結合と組成式 —— 電荷の合計を0にする</h4><p class="ref-sec-lead">陽イオンと陰イオンが静電気的な引力（クーロン力）で引き合ってできる結合をイオン結合といいます。イオンからなる物質は、構成するイオンの数の比を最も簡単な整数比で表した組成式で書きます。</p></section>
+<section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">イオン結合と組成式 —— 電荷の合計を0にする</h4><p class="ref-sec-lead">陽イオンと陰イオンは、プラスとマイナスの電気で引き合います（クーロン力）。この引き合いによるつながりがイオン結合です。イオンでできた物質は、イオンの数をいちばん簡単な整数の比にそろえた組成式で書き表します。</p></section>
 <p class="ref-p">一般に、陽イオンになりやすい<b>金属元素</b>と、陰イオンになりやすい<b>非金属元素</b>が結びつくと、イオン結合ができます。塩化ナトリウム NaCl の固体では、Na⁺ と Cl⁻ が 1：1 の割合で交互に並び、互いにクーロン力で引き合っています。</p>
 <p class="ref-p">イオンからなる物質は、全体としては電気的に中性です。したがって、組成式では次の関係が成り立ちます。</p>
 <div class="ref-callout ref-callout-note"><b class="ref-callout-tag">補足</b><p class="ref-callout-text">（陽イオンの価数）×（陽イオンの数）＝（陰イオンの価数）×（陰イオンの数）</p></div>
@@ -911,9 +929,9 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">水酸化カルシウムの組成式は CaOH₂ である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">多原子イオン OH⁻ が2個なので、（ ）で囲んで <b>Ca(OH)₂</b> と書きます。CaOH₂ と書くと、「O が1個・H が2個」の意味になってしまいます。</span></p><p class="ref-mistake-why">右下の数字は直前の1文字（1つの原子）にしか掛からないためです。★ 多原子イオンのまとまりに数を掛けるときは、必ず（ ）で囲みます。</p></div>
 <p class="ref-p"><b>組成式を書く・読む手順は、イオンの単元でいちばん使う技術です。</b>多原子イオンの表とセットで、何も見ずにできるようにしましょう。組成式は、分子をつくらない物質（イオン結晶・金属・共有結合の結晶）を表すときにも使います。</p>
 <section class="ref-sec" id="ref-sec-crystal"><h4 class="ref-sec-h">イオン結晶の性質</h4><p class="ref-sec-lead">陽イオンと陰イオンがイオン結合によって規則正しく並んだ固体をイオン結晶といいます。融点が高くて硬いが、たたくと割れやすく、固体のままでは電気を通しません。</p></section>
-<p class="ref-p">イオン結合は強い結合なので、イオン結晶は<b>融点が高く、硬い</b>性質をもちます。例えば NaCl の融点は 801℃ です。</p>
+<p class="ref-p">陽イオンと陰イオンが引き合う力は強く、ばらばらにするには大きなエネルギーが要ります。そのため、イオン結晶は<b>融点が高く、硬い</b>ものがほとんどです。例えば NaCl は 801℃ になるまで融けません。</p>
 <div class="ref-table-wrap"><div class="ref-cap">イオン結晶の性質と理由</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">性質</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;">融点が高く、硬い</td><td style="text-align: left;">イオン結合（クーロン力）が強いため</td></tr><tr><td style="text-align: left;">強い力を加えると、特定の面に沿って割れる（へき開）</td><td style="text-align: left;">ずれると同じ符号のイオンどうしが向き合い、反発するため</td></tr><tr><td style="text-align: left;">固体は電気を通さない</td><td style="text-align: left;">イオンが決まった位置から動けないため</td></tr><tr><td style="text-align: left;">融解液・水溶液は電気を通す</td><td style="text-align: left;">イオンが自由に動けるようになるため</td></tr></tbody></table></div>
-<p class="ref-p"><b>「固体は通さない・融かすか水に溶かすと通す」は、イオン結晶を見分ける決め手</b>です。理由（イオンが動けるか）と一緒に言えるようにしましょう。多くのイオン結晶は水に溶けやすいですが、塩化銀 AgCl や炭酸カルシウム CaCO₃ のように水に溶けにくいものもあります。</p>
+<p class="ref-p"><b>「固体は通さない・融かすか水に溶かすと通す」は、イオン結晶を見分ける決め手</b>です。理由（イオンが動けるか）と一緒に言えるようにしましょう。多くのイオン結晶は水によく溶けますが、例外もあります。塩化銀 AgCl や炭酸カルシウム CaCO₃ は、水にほとんど溶けません。</p>
 <p class="ref-p">イオン結晶の中のイオンの並び方（NaCl 型・CsCl 型）は、結晶格子のページで扱います。ほかの結晶（共有結合の結晶・分子結晶・金属結晶）との比べ方は、結晶の種類のページでまとめます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/crystal-types/">4種類の結晶の性質を並べて比べる</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/unit-cell/">NaCl 型・CsCl 型の結晶格子へ</a></p>

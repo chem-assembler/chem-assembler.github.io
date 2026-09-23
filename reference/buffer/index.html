@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -920,11 +938,11 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">中和滴定のページで描いた滴定曲線の各点の pH は、この単元の3ページの式で求められます。</p>
 <div class="ref-table-wrap"><div class="ref-cap">酢酸を水酸化ナトリウム水溶液で滴定したときの各点</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">点</th><th style="text-align: left;">水溶液の中身</th><th style="text-align: left;">pH の求め方</th></tr></thead><tbody><tr><td style="text-align: left;">滴定開始時</td><td style="text-align: left;">CH₃COOH</td><td style="text-align: left;">Ka ＝ cα² から [H⁺] ＝ √(cKa)</td></tr><tr><td style="text-align: left;">開始時と中和点のあいだ</td><td style="text-align: left;">CH₃COOH ＋ CH₃COONa（緩衝液）</td><td style="text-align: left;">[H⁺] ＝ Ka × [CH₃COOH]／[CH₃COO⁻]</td></tr><tr><td style="text-align: left;">ちょうど半分中和した点</td><td style="text-align: left;">CH₃COOH：CH₃COO⁻ ＝ 1：1</td><td style="text-align: left;">[H⁺] ＝ Ka（緩衝作用が最も強い）</td></tr><tr><td style="text-align: left;">中和点</td><td style="text-align: left;">CH₃COONa</td><td style="text-align: left;">Kh ＝ ch² から [OH⁻] ＝ √(cKh)</td></tr></tbody></table></div>
 <p class="ref-p">開始時と中和点のあいだで曲線がなだらかになっているのは、この区間が緩衝液になっていて、NaOH を加えても pH が変化しにくいためです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/buffer-titration-curve.png" alt="酢酸水溶液に水酸化ナトリウム水溶液を滴下したときの滴定曲線。縦軸の左に強酸 pH 1・弱酸 pH 3・弱塩基 pH 11・強塩基 pH 13 の目印。曲線は弱酸 pH 3 から始まり（CH₃COOH aq）、しばらくなだらかに上がる区間に「緩衝作用」の枠（CH₃COOH aq と CH₃COONa aq の混合液）と、その中ほどに「最強」の矢印。そのあと急に立ち上がり、中和点（CH₃COONa aq）を過ぎて強塩基の側で横ばいになる" loading="lazy"><figcaption class="ref-figure-cap">開始時と中和点のあいだのなだらかな区間が緩衝液です。ちょうど半分を中和したところで緩衝作用がいちばん強くなります。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/buffer-titration-curve.png" alt="酢酸水溶液へ NaOH 水溶液を少しずつ加えていったときの滴定曲線。縦軸の左に強酸 pH 1・弱酸 pH 3・弱塩基 pH 11・強塩基 pH 13 の目印。曲線は弱酸 pH 3 から始まり（CH₃COOH aq）、しばらくなだらかに上がる区間に「緩衝作用」の枠（CH₃COOH aq と CH₃COONa aq の混合液）と、その中ほどに「最強」の矢印。そのあと急に立ち上がり、中和点（CH₃COONa aq）を過ぎて強塩基の側で横ばいになる" loading="lazy"><figcaption class="ref-figure-cap">開始時と中和点のあいだのなだらかな区間が緩衝液です。ちょうど半分を中和したところで緩衝作用がいちばん強くなります。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/titration/">滴定曲線の形と指示薬の選び方は、中和滴定のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/titration.html?from=reference&amp;page=buffer">中和する H⁺ と OH⁻ の量をブロックでそろえてみる</a></p>
 <h5 class="ref-h5">身のまわりの緩衝液</h5>
-<p class="ref-p">ヒトの血液は、炭酸 H₂CO₃（CO₂ ＋ H₂O）と炭酸水素イオン HCO₃⁻ の緩衝作用で、pH が約 7.4 に保たれています。酵素がはたらける pH の範囲は狭いので、体液の緩衝作用が欠かせません。<b>血液の例は、覚える必要はありませんが、H₂CO₃ ⇄ H⁺ ＋ HCO₃⁻ の両辺がそろっていることだけ確かめておきましょう。</b></p>
+<p class="ref-p">私たちの血液の pH は、約 7.4 からほとんど動きません。これを支えているのが、炭酸水素イオン HCO₃⁻ と炭酸 H₂CO₃（CO₂ ＋ H₂O）の組による緩衝作用です。酵素がはたらける pH の範囲は狭いので、体液の緩衝作用が欠かせません。<b>血液の例は、覚える必要はありませんが、H₂CO₃ ⇄ H⁺ ＋ HCO₃⁻ の両辺がそろっていることだけ確かめておきましょう。</b></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">酢酸と酢酸ナトリウムの混合水溶液は緩衝作用を示し、pH が変化しにくい。このことを (a) 酸を加えた場合 (b) 塩基を加えた場合 のそれぞれについて、イオンを含む反応式を用いて説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(a) 酢酸ナトリウムが電離して生じた酢酸イオンが <b>CH₃COO⁻ ＋ H⁺ → CH₃COOH</b> と反応するので、加えた H⁺ は水溶液中に残らず pH が変化しにくい。(b) ほとんど電離していない酢酸が <b>CH₃COOH ＋ OH⁻ → CH₃COO⁻ ＋ H₂O</b> と反応するので、加えた OH⁻ は水溶液中に残らず pH が変化しにくい。</p></div></details></div>

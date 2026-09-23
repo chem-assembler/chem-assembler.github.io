@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -897,8 +915,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">α-グルコース2分子がつながった形は、二糖のマルトースそのものです。デンプンはこの形がずっと続いたものと見られます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-maltose-unit.png" alt="マルトースの構造式を直交で描いた図。α-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">デンプンの部分構造にあたる<b>マルトース</b>。α-グルコースどうしがつながっています。</figcaption></figure>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-amylose-amylopectin.png" alt="グルコース1個を丸で表した鎖の模式図を2つ並べた図。左は丸がひとつながりに並んでばねのように巻いていて、枝分かれが無い。右は横に伸びた鎖の途中から、別の鎖が何本も枝のように分かれている" loading="lazy"><figcaption class="ref-figure-cap">どちらもグルコースだけでできていて、違うのは<b>枝分かれがあるかどうか</b>です。</figcaption></figure>
-<section class="ref-sec" id="ref-sec-iodine"><h4 class="ref-sec-h">ヨウ素デンプン反応</h4><p class="ref-sec-lead">デンプンの水溶液にヨウ素ヨウ化カリウム水溶液を加えると青紫色になります。加熱すると色が消え、冷やすと戻ります。</p></section>
-<p class="ref-p">デンプンの水溶液に<b>ヨウ素ヨウ化カリウム水溶液（ヨウ素液）</b>を加えると、<b>青紫色</b>になります。これを<b>ヨウ素デンプン反応</b>といいます。</p>
+<section class="ref-sec" id="ref-sec-iodine"><h4 class="ref-sec-h">ヨウ素デンプン反応</h4><p class="ref-sec-lead">デンプンがあるかどうかは、ヨウ素液を垂らすだけで確かめられます。青紫色に染まり、温めると消え、冷ますと戻ります。</p></section>
+<p class="ref-p">デンプンを見分けるには、<b>ヨウ素ヨウ化カリウム水溶液（ヨウ素液）</b>を少し垂らします。デンプンがあれば、液が<b>青紫色</b>に染まります。この色の変化が<b>ヨウ素デンプン反応</b>です。</p>
 <p class="ref-p">色が出るのは、デンプンのらせんの中にヨウ素が入り込むためです。<b>加熱するとらせんがゆるんで色が消え、冷やすとまた青紫色に戻ります。</b></p>
 <div class="ref-table-wrap"><div class="ref-cap">多糖とヨウ素の呈色</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">もとの単糖</th><th style="text-align: left;">枝分かれ</th><th style="text-align: left;">ヨウ素の呈色</th></tr></thead><tbody><tr><td style="text-align: left;">アミロース</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">なし（らせん）</td><td style="text-align: left;">濃い青色</td></tr><tr><td style="text-align: left;">アミロペクチン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">多い</td><td style="text-align: left;">赤紫色</td></tr><tr><td style="text-align: left;">グリコーゲン</td><td style="text-align: left;">α-グルコース</td><td style="text-align: left;">さらに多い</td><td style="text-align: left;">赤褐色</td></tr><tr><td style="text-align: left;">セルロース</td><td style="text-align: left;">β-グルコース</td><td style="text-align: left;">なし（まっすぐ伸びる）</td><td style="text-align: left;">呈色しない</td></tr></tbody></table></div>
 <p class="ref-p"><b>「デンプンは青紫色、加熱で消えて冷やすと戻る」は必ず暗記してください。</b>アミロースとアミロペクチンの色の違いは、余裕があれば覚える程度で構いません。呈色の仕組みは覚える必要はありません。</p>
@@ -913,7 +931,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>グリコーゲンは「動物のデンプン」、ヨウ素で赤褐色、の2点だけ覚えておけば十分です。</b></p>
 <section class="ref-sec" id="ref-sec-cellulose"><h4 class="ref-sec-h">セルロース</h4><p class="ref-sec-lead">β-グルコースが縮合したものです。まっすぐ伸びた鎖が束になり、丈夫な繊維になります。ヒトは消化できません。</p></section>
 <p class="ref-p"><b>セルロース</b>は、<b>β-グルコース</b>が多数縮合した多糖で、植物の細胞壁の主成分です。β形でつながると、鎖は<b>まっすぐ</b>伸びます。まっすぐな鎖どうしが水素結合で束になるので、<b>丈夫な繊維</b>になり、水にも溶けません。</p>
-<p class="ref-p">セルロースは酵素<b>セルラーゼ</b>で二糖の<b>セロビオース</b>に、さらに<b>セロビアーゼ</b>でグルコースに分解されます。ヒトはセルラーゼをもたないので、セルロースを消化できません。</p>
+<p class="ref-p">セルロースは酵素<b>セルラーゼ</b>で二糖の<b>セロビオース</b>に、さらに<b>セロビアーゼ</b>でグルコースに分解されます。ヒトの体はセルラーゼをつくれないので、食べたセルロースはグルコースまで分解されないまま通り過ぎます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">2(C₆H₁₀O₅)ₙ ＋ nH₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">セルラーゼ</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">nC₁₂H₂₂O₁₁（セロビオース）</span></div><p class="ref-note">デンプンをアミラーゼで分解する式と、形はまったく同じです。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/polysaccharide-cellobiose.png" alt="セロビオースの構造式を直交で描いた図。β-グルコースの六員環2つが、酸素原子1個をはさんでつながっている" loading="lazy"><figcaption class="ref-figure-cap">セルロースの部分構造にあたる<b>セロビオース</b>。β-グルコースどうしがつながっています。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">デンプンとセルロースの対比</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">くらべる点</th><th style="text-align: left;">デンプン</th><th style="text-align: left;">セルロース</th></tr></thead><tbody><tr><td style="text-align: left;">もとの単糖</td><td style="text-align: left;"><b>α-グルコース</b></td><td style="text-align: left;"><b>β-グルコース</b></td></tr><tr><td style="text-align: left;">鎖の形</td><td style="text-align: left;">らせん（アミロペクチンは枝分かれ）</td><td style="text-align: left;">まっすぐ伸びて束になる</td></tr><tr><td style="text-align: left;">ヨウ素デンプン反応</td><td style="text-align: left;">青紫色</td><td style="text-align: left;">呈色しない</td></tr><tr><td style="text-align: left;">所在</td><td style="text-align: left;">植物の種子・根などにたくわえる</td><td style="text-align: left;">植物の細胞壁</td></tr><tr><td style="text-align: left;">ヒトが消化できるか</td><td style="text-align: left;">できる</td><td style="text-align: left;">できない</td></tr></tbody></table></div>

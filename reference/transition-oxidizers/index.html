@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -891,7 +909,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>MnO₄⁻ 赤紫 → Mn²⁺ ほぼ無色、Cr₂O₇²⁻ 橙赤 → Cr³⁺ 緑、の2つの色の変化は必ず覚えてください。</b>酸化還元滴定や、還元剤の検出の問題で「色が変わった」と書かれるのはこの2つです。</p>
 <section class="ref-sec" id="ref-sec-manganese"><h4 class="ref-sec-h">マンガンの化合物 —— KMnO₄ と MnO₂</h4><p class="ref-sec-lead">KMnO₄ は硫酸酸性で強い酸化剤になり、赤紫色が消えます。MnO₂ は触媒としても酸化剤としても使われます。</p></section>
 <h5 class="ref-h5">過マンガン酸カリウム KMnO₄【酸化剤】</h5>
-<p class="ref-p">過マンガン酸カリウムは黒紫色の結晶で、水に溶けて赤紫色の MnO₄⁻ を生じます。<b>硫酸で酸性にした水溶液</b>の中で、強い酸化剤としてはたらきます。</p>
+<p class="ref-p">過マンガン酸カリウムの固体は、黒っぽい紫色の結晶です。水に溶かすと MnO₄⁻ ができ、液は赤紫色になります。<b>硫酸で酸性にした水溶液</b>の中で、強い酸化剤としてはたらきます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">MnO₄⁻ ＋ 8H⁺ ＋ 5e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mn²⁺ ＋ 4H₂O</span></div><p class="ref-note">酸性。赤紫色 → ほぼ無色。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">MnO₄⁻ ＋ 2H₂O ＋ 3e⁻</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">MnO₂ ＋ 4OH⁻</span></div><p class="ref-note">中性・塩基性では Mn²⁺ まで行かず、黒褐色の MnO₂ が沈殿します。</p></div>
 <p class="ref-p">酸性にするのに<b>硫酸</b>を使うのは、塩酸では Cl⁻ が MnO₄⁻ に酸化されて Cl₂ になってしまい、硝酸ではそれ自身が酸化剤としてはたらいてしまうためです。<b>「KMnO₄ は硫酸酸性」と組にして覚えてください。</b></p>

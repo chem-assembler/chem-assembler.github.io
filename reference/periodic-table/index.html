@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -901,7 +919,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alkali-metal/">アルカリ金属のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/halogen/">ハロゲンのページへ</a></p>
 <section class="ref-sec" id="ref-sec-electropositive"><h4 class="ref-sec-h">陽性と陰性</h4><p class="ref-sec-lead">周期表の左下の元素ほど陽イオンになりやすく（陽性）、右上の元素ほど陰イオンになりやすい（陰性）です。</p></section>
-<p class="ref-p">電子を引きつける力が弱く、自分の電子を失って陽イオンになりやすい性質を<b>陽性</b>といいます。反対に、電子を引きつける力が強く、ほかの原子の電子を奪って陰イオンになりやすい性質を<b>陰性</b>といいます。</p>
+<p class="ref-p">原子核が電子をつかむ力の弱い元素は、自分の電子を手放して陽イオンになりがちです。この傾向を<b>陽性</b>とよびます。逆に、電子をつかむ力が強く、よそから電子を奪って陰イオンになりがちな傾向が<b>陰性</b>です。</p>
 <p class="ref-p">陽性の強い元素はほぼ金属元素、陰性の強い元素はほぼ非金属元素です。<b>周期表の左下ほど陽性が強く、右上ほど陰性が強い</b>（貴ガスを除く）、という向きを覚えておきます。</p>
 <p class="ref-p">たとえば同じ第3周期でも、左端の Na は Na⁺ になりやすく、右の Cl は Cl⁻ になりやすいです。</p>
 <section class="ref-sec" id="ref-sec-why"><h4 class="ref-sec-h">右上ほど陰性が強い理由</h4><p class="ref-sec-lead">原子核が最外殻電子を引きつけるクーロン力は、電荷が大きいほど強く、距離が遠いほど弱くなります。</p></section>
@@ -914,11 +932,11 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ここで「Na の原子核の電荷は +11 で Li の +3 より大きいのに」と思うかもしれません。原子核の電荷は、内側の電子に打ち消されます。Li は +3 が内側の2個の電子で、Na は +11 が内側の10個の電子で打ち消され、どちらも実質 +1 です。この実質的な電荷を<b>有効核電荷</b>といいます。同じ族なら有効核電荷が等しいので、距離だけを比べればよいのです。</p>
 <section class="ref-sec" id="ref-sec-three-values"><h4 class="ref-sec-h">イオン化エネルギー・電子親和力・電気陰性度</h4><p class="ref-sec-lead">3つとも「原子が電子を引きつける力」を、場面を変えて測ったものです。</p></section>
 <h5 class="ref-h5">イオン化エネルギー</h5>
-<p class="ref-p">原子から最外殻電子1個を取り去って、1価の陽イオンにするのに必要なエネルギーを<b>イオン化エネルギー</b>といいます。最外殻電子を取られまいとする力の大きさです。<b>イオン化エネルギーが小さい原子ほど陽イオンになりやすい</b>です。</p>
+<p class="ref-p">中性の原子から、いちばん外側の電子を1個はがして1価の陽イオンに変えるには、外からエネルギーを与えなければなりません。その量が<b>イオン化エネルギー</b>で、原子が最外殻電子を手放すまいと粘る強さを表しています。<b>この値が小さい原子ほど、電子をあっさり手放して陽イオンになりやすい</b>わけです。</p>
 <p class="ref-p">貴ガスは安定な電子配置をもつので、同じ周期の中でイオン化エネルギーが最大です。すべての元素の中では <b>He</b> が最大です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/periodic-table-ionization-energy.png" alt="横軸に原子番号1〜20、縦軸にイオン化エネルギーをとった折れ線グラフ。原子番号2・10・18で山になり、そのすぐ後の3・11・19で谷になる" loading="lazy"><figcaption class="ref-figure-cap">原子番号とイオン化エネルギー。山が貴ガス（He・Ne・Ar）、そのすぐ後の谷がアルカリ金属（Li・Na・K）です。</figcaption></figure>
 <h5 class="ref-h5">電子親和力</h5>
-<p class="ref-p">原子が電子1個を取り込んで1価の陰イオンになるときに放出されるエネルギーを<b>電子親和力</b>といいます。<b>電子親和力が大きい原子ほど陰イオンになりやすい</b>です。</p>
+<p class="ref-p">今度は逆向きです。原子が外から電子を1個受け取って1価の陰イオンに変わるとき、エネルギーが外へ出ていきます。その量が<b>電子親和力</b>です。たくさん出す原子ほど、電子を受け取ったあとの姿が安定です。<b>陰イオンへのなりやすさは電子親和力で比べられ、値が大きいほどなりやすい</b>と読みます。</p>
 <p class="ref-p">同じ周期の中で電子親和力が最も大きいのはハロゲンです。貴ガスは電子を取り込んでも安定にならないので、電子親和力はほぼ0です。</p>
 <h5 class="ref-h5">電気陰性度</h5>
 <p class="ref-p">共有結合している原子が、共有電子対を引き寄せる力の強さを<b>電気陰性度</b>といいます。貴ガスは共有結合をつくらないので、電気陰性度は定義されません。</p>

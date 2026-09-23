@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,20 +903,20 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">炭酸飲料の栓を開けると泡が出てくるのは、容器の中の圧力が下がって、二酸化炭素が溶けていられなくなるためです。このページでは、<b>気体がどれだけ溶けるかは圧力に比例する</b>ことを見ていきます。計算は、気体の法則のページと同じ「比例と反比例」で解きます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/gas-laws/">気体の法則を比例と反比例で解く方法へ</a></p>
-<section class="ref-sec" id="ref-sec-temperature-pressure"><h4 class="ref-sec-h">気体は低温・高圧ほど溶ける</h4><p class="ref-sec-lead">固体と違い、気体は温度が高いほど溶けにくくなります。また、気体の圧力が高いほどよく溶けます。</p></section>
-<p class="ref-p">気体の溶けやすさは、固体とは向きが逆です。<b>温度が低いほど、また溶媒に接する気体の圧力が高いほど、気体はよく溶けます。</b></p>
+<section class="ref-sec" id="ref-sec-temperature-pressure"><h4 class="ref-sec-h">気体は低温・高圧ほど溶ける</h4><p class="ref-sec-lead">気体は固体と逆で、温めると溶けにくくなります。そして、上から押しつける気体の圧力が大きいほど、たくさん溶けます。</p></section>
+<p class="ref-p">気体の溶けやすさは、固体とは向きが逆です。<b>冷たいほど、そして液面を押す気体の圧力が大きいほど、気体はたくさん溶け込みます。</b></p>
 <p class="ref-p">温度が低いほど溶けるのは、溶液中の分子の熱運動がおだやかになり、液面から飛び出していく気体分子が少なくなるためです。圧力が高いほど溶けるのは、液面に飛び込んでくる気体分子が多くなるためです。</p>
 <p class="ref-p">具体例として、冷えた炭酸飲料より、ぬるくなった炭酸飲料のほうが泡が出やすくなります。温度が上がって二酸化炭素の溶解度が下がり、溶けきれなくなった分が泡になるためです。</p>
-<p class="ref-p">気体の溶解度は、ふつう<b>その気体の圧力が 1.013 × 10⁵ Pa のときに、水 1 L に溶ける物質量（mol）</b>、または溶けた気体の体積を 0 ℃・1.013 × 10⁵ Pa に直した値で表します。</p>
+<p class="ref-p">気体の溶解度は、ふつう<b>水 1 L が、1.013 × 10⁵ Pa のその気体と接しているときに溶け込む物質量（mol）</b>で表します。溶けた気体の体積を 0 ℃・1.013 × 10⁵ Pa に直した値で表すこともあります。</p>
 <div class="ref-table-wrap"><div class="ref-cap">水 1 L に溶ける気体の物質量（気体の圧力 1.013 × 10⁵ Pa）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">気体</th><th style="text-align: center;">0 ℃</th><th style="text-align: center;">20 ℃</th><th style="text-align: center;">40 ℃</th></tr></thead><tbody><tr><td style="text-align: left;">窒素 N₂</td><td style="text-align: center;">1.0 × 10⁻³ mol</td><td style="text-align: center;">6.8 × 10⁻⁴ mol</td><td style="text-align: center;">5.2 × 10⁻⁴ mol</td></tr><tr><td style="text-align: left;">酸素 O₂</td><td style="text-align: center;">2.2 × 10⁻³ mol</td><td style="text-align: center;">1.4 × 10⁻³ mol</td><td style="text-align: center;">1.0 × 10⁻³ mol</td></tr><tr><td style="text-align: left;">二酸化炭素 CO₂</td><td style="text-align: center;">7.7 × 10⁻² mol</td><td style="text-align: center;">3.9 × 10⁻² mol</td><td style="text-align: center;">2.4 × 10⁻² mol</td></tr><tr><td style="text-align: left;">アンモニア NH₃</td><td style="text-align: center;">21 mol</td><td style="text-align: center;">14 mol</td><td style="text-align: center;">9.2 mol</td></tr></tbody></table></div>
 <p class="ref-p">表の数値は覚える必要はありません。<b>「どの気体も高温ほど溶けにくい」「N₂・O₂ は溶けにくく、NH₃ は桁違いによく溶ける」</b>の2つが読めれば十分です。</p>
-<section class="ref-sec" id="ref-sec-henry"><h4 class="ref-sec-h">ヘンリーの法則 —— 溶ける量は分圧に比例</h4><p class="ref-sec-lead">温度が一定なら、一定量の溶媒に溶ける気体の物質量（質量）は、その気体の圧力（混合気体なら分圧）に比例します。</p></section>
-<p class="ref-p">温度が一定なら、<b>一定量の溶媒に溶ける気体の物質量（質量）は、その気体の圧力に比例します。</b>これを<b>ヘンリーの法則</b>といいます。混合気体の場合は、<b>全圧ではなく、その気体の分圧</b>に比例します。</p>
+<section class="ref-sec" id="ref-sec-henry"><h4 class="ref-sec-h">ヘンリーの法則 —— 溶ける量は分圧に比例</h4><p class="ref-sec-lead">温度を変えなければ、決まった量の溶媒に溶け込む気体の量（物質量・質量）は、液面を押すその気体の圧力（混合気体ならその気体の分圧）に正比例します。</p></section>
+<p class="ref-p">温度を変えずに気体の圧力を2倍にすると、同じ量の溶媒に溶け込む気体の物質量（質量）もちょうど2倍になります。<b>溶ける気体の量は、その気体の圧力に正比例する</b>わけです。この規則が<b>ヘンリーの法則</b>です。混合気体の場合は、<b>全圧ではなく、その気体の分圧</b>に比例します。</p>
 <p class="ref-p">溶ける量は、溶媒の量にも比例します。水が2倍なら、溶ける気体も2倍です。したがって、溶ける量は次の2つの比例をかけ合わせて出します。</p>
 <ul class="ref-list"><li>溶ける物質量は <b>その気体の圧力（分圧）に比例</b></li><li>溶ける物質量は <b>溶媒の量に比例</b></li></ul>
-<p class="ref-p">具体例として、20 ℃ で 1.0 × 10⁵ Pa の窒素が水 1.0 L に 6.8 × 10⁻⁴ mol 溶けるとき、20 ℃ で 5.0 × 10⁵ Pa の窒素が水 2.0 L に接していれば、溶ける窒素は次のように求められます。</p>
-<div class="ref-table-wrap"><div class="ref-cap">ヘンリーの法則を比の図式で解く</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">量</th><th style="text-align: center;">基準</th><th style="text-align: center;">問題</th><th style="text-align: center;">倍率</th><th style="text-align: center;">札</th></tr></thead><tbody><tr><td style="text-align: left;">圧力（分圧）</td><td style="text-align: center;">1.0 × 10⁵ Pa</td><td style="text-align: center;">5.0 × 10⁵ Pa</td><td style="text-align: center;">×5</td><td style="text-align: center;">比</td></tr><tr><td style="text-align: left;">水の量</td><td style="text-align: center;">1.0 L</td><td style="text-align: center;">2.0 L</td><td style="text-align: center;">×2</td><td style="text-align: center;">比</td></tr><tr><td style="text-align: left;">溶ける N₂</td><td style="text-align: center;">6.8 × 10⁻⁴ mol</td><td style="text-align: center;"><b>6.8 × 10⁻³ mol</b></td><td style="text-align: center;">×10</td><td style="text-align: center;">——</td></tr></tbody></table></div>
-<p class="ref-p">圧力が5倍、水が2倍なので、溶ける物質量は 5 × 2 ＝ <b>10 倍</b>の 6.8 × 10⁻³ mol です。質量なら N₂ ＝ 28 g/mol を掛けて 0.19 g です。</p>
+<p class="ref-p">具体例として、20 ℃ では 1.0 × 10⁵ Pa の窒素が水 1.0 L に 6.8 × 10⁻⁴ mol 溶けます。では同じ 20 ℃ で、水 4.0 L を 3.0 × 10⁵ Pa の窒素に触れさせておくと、窒素は何 mol 溶けるでしょうか。</p>
+<div class="ref-table-wrap"><div class="ref-cap">ヘンリーの法則を比の図式で解く</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">量</th><th style="text-align: center;">基準</th><th style="text-align: center;">問題</th><th style="text-align: center;">倍率</th><th style="text-align: center;">札</th></tr></thead><tbody><tr><td style="text-align: left;">圧力（分圧）</td><td style="text-align: center;">1.0 × 10⁵ Pa</td><td style="text-align: center;">3.0 × 10⁵ Pa</td><td style="text-align: center;">×3</td><td style="text-align: center;">比</td></tr><tr><td style="text-align: left;">水の量</td><td style="text-align: center;">1.0 L</td><td style="text-align: center;">4.0 L</td><td style="text-align: center;">×4</td><td style="text-align: center;">比</td></tr><tr><td style="text-align: left;">溶ける N₂</td><td style="text-align: center;">6.8 × 10⁻⁴ mol</td><td style="text-align: center;"><b>8.2 × 10⁻³ mol</b></td><td style="text-align: center;">×12</td><td style="text-align: center;">——</td></tr></tbody></table></div>
+<p class="ref-p">圧力が3倍、水が4倍なので、溶ける物質量は 3 × 4 ＝ <b>12 倍</b>の 6.8 × 10⁻⁴ × 12 ＝ 8.16 × 10⁻³ ≒ 8.2 × 10⁻³ mol です。質量なら N₂ ＝ 28 g/mol を掛けて 0.23 g です。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">ヘンリーの法則が成り立つのは、<b>N₂・O₂・H₂ のように水に溶けにくい気体</b>だけです。HCl や NH₃ のように水とよく反応して多量に溶ける気体には使えません。計算問題で扱うのは溶けにくい気体と考えて問題ありません。</p></div>
 <section class="ref-sec" id="ref-sec-volume"><h4 class="ref-sec-h">溶けた気体の体積 —— 2通りの答え方</h4><p class="ref-sec-lead">溶けた気体の体積は、「溶かしたときの圧力で測る」と圧力によらず一定、「決まった圧力に直す」と圧力に比例します。</p></section>
 <p class="ref-p">ヘンリーの法則でいちばん混乱しやすいのが、溶けた気体を<b>体積で答える</b>場合です。答え方は2通りあります。どちらも気体の法則の「PV ＝ nRT の＝の逆側は比例、同じ側は反比例」で読み取れます。</p>
@@ -911,7 +929,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0 ℃ で 1.013 × 10⁵ Pa の窒素は、水 1.0 L に 1.0 × 10⁻³ mol 溶ける。0 ℃ で 3.039 × 10⁵ Pa の窒素が水 1.0 L に接しているとき、(1) 溶けている窒素の物質量、(2) その体積を 0 ℃・1.013 × 10⁵ Pa に直した値（mL）、(3) その体積を 0 ℃・3.039 × 10⁵ Pa のまま測った値（mL）を、それぞれ有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>圧力は 3.039 ÷ 1.013 ＝ <b>3 倍</b>です。(1) 物質量は圧力に比例するので 1.0 × 10⁻³ × 3 ＝ <b>3.0 × 10⁻³ mol</b>。(2) 0 ℃・1.013 × 10⁵ Pa で 1 mol は 22.4 L なので、3.0 × 10⁻³ × 22.4 ＝ 0.0672 L ≒ <b>67 mL</b>。(3) n が3倍（比例）、P も3倍（反比例）なので、1.0 × 10⁻³ mol を 1.013 × 10⁵ Pa で測った 22.4 mL と同じ ＝ <b>22 mL</b>。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">20 ℃ で 1.0 × 10⁵ Pa の酸素は、水 1.0 L に 1.4 × 10⁻³ mol 溶ける。20 ℃ で、窒素と酸素が物質量の比 4 : 1 で混ざった気体が全圧 5.0 × 10⁵ Pa で水 2.0 L に接しているとき、溶けている酸素の質量は何 g か。有効数字2桁で求めよ（O₂ ＝ 32）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>酸素の分圧は全圧の 1/5 で 5.0 × 10⁵ × 1/5 ＝ 1.0 × 10⁵ Pa（倍率 ×1）。水は 2.0 L（×2）なので、溶ける酸素は 1.4 × 10⁻³ × 2 ＝ 2.8 × 10⁻³ mol。質量は 2.8 × 10⁻³ × 32 ＝ 0.0896 ≒ <b>0.090 g</b>。全圧 5.0 × 10⁵ Pa で計算すると5倍の誤りになります。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">20 ℃ で 1.0 × 10⁵ Pa の酸素は、水 1.0 L に 1.4 × 10⁻³ mol 溶ける。20 ℃ で、窒素と酸素が物質量の比 4 : 1 で混ざった気体が全圧 1.0 × 10⁶ Pa で水 3.0 L に接しているとき、溶けている酸素の質量は何 g か。有効数字2桁で求めよ（O₂ ＝ 32）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>酸素の分圧は全圧の 1/5 で 1.0 × 10⁶ × 1/5 ＝ 2.0 × 10⁵ Pa（倍率 ×2）。水は 3.0 L（×3）なので、溶ける酸素は 1.4 × 10⁻³ × 2 × 3 ＝ 8.4 × 10⁻³ mol。質量は 8.4 × 10⁻³ × 32 ＝ 0.2688 ≒ <b>0.27 g</b>。全圧 1.0 × 10⁶ Pa で計算すると5倍の誤りになります。</p></div></details></div>
 </div>
 </div>
 

@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -886,7 +904,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">周期表の18族の元素を<b>貴ガス</b>といいます。貴ガスはほかの原子とほとんど化合物をつくらないので、覚えるのは性質と利用だけです。一方の<b>水素</b>は、ほとんどすべての元素と化合物をつくり、反応では<b>還元剤</b>としてはたらきます。水素の反応は、半反応式を先に書いてから全体の式を組み立てます。半反応式の書き方は「半反応式の書き方」のページで確かめてください。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/half-reaction/">半反応式の書き方（H₂O → H⁺ → e⁻ の順）はこちら</a></p>
 <section class="ref-sec" id="ref-sec-noble-gas"><h4 class="ref-sec-h">貴ガス —— 反応しないので利用だけを覚える</h4><p class="ref-sec-lead">貴ガスは価電子が0個で安定な単原子分子です。沸点が低く、反応しにくいことが利用に直結しています。</p></section>
-<p class="ref-p">18族のヘリウム He・ネオン Ne・アルゴン Ar・クリプトン Kr・キセノン Xe・ラドン Rn を<b>貴ガス</b>といいます。価電子の数は0個で、安定した電子配置をもつため、ほかの原子とほとんど化合物をつくりません。常温ではすべて無色・無臭の<b>単原子分子</b>の気体です。</p>
+<p class="ref-p">18族のヘリウム He・ネオン Ne・アルゴン Ar・クリプトン Kr・キセノン Xe・ラドン Rn を<b>貴ガス</b>といいます。電子配置がすでに安定しているので、価電子の数は0個と数えます。ほかの原子と電子をやりとりする必要がなく、化合物はほとんどできません。常温ではすべて無色・無臭の<b>単原子分子</b>の気体です。</p>
 <p class="ref-p">貴ガスは無極性分子で分子間力が弱いため、沸点がとても低くなります。液体ヘリウムは −269℃ と極めて低温です。分子量が大きい貴ガスほど分子間力が大きくなり、沸点は高くなります。</p>
 <p class="ref-p">化合物をつくらないので、貴ガスは<b>液体空気の分留</b>か、地中に閉じ込められている気体を採掘して得ます。名前の「貴ガス（noble gas）」は「高貴な気体」、以前の呼び名「希ガス（rare gas）」は「稀な気体」という意味です。</p>
 <div class="ref-table-wrap"><div class="ref-cap">貴ガスの利用</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">貴ガス</th><th style="text-align: left;">利用</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;">アルゴン Ar</td><td style="text-align: left;">電球・溶接・食品の保存</td><td style="text-align: left;">ほとんど反応しない。大気中に 0.93% あり安く得られる</td></tr><tr><td style="text-align: left;">ネオン Ne ほか</td><td style="text-align: left;">ネオンサイン</td><td style="text-align: left;">貴ガスを入れたガラス管に放電すると発光する</td></tr><tr><td style="text-align: left;">ヘリウム He（液体）</td><td style="text-align: left;">超電導磁石の冷却剤</td><td style="text-align: left;">沸点が −269℃ と極めて低い</td></tr><tr><td style="text-align: left;">ヘリウム He（気体）</td><td style="text-align: left;">気球・風船・HDD</td><td style="text-align: left;">密度が小さく、反応性が低い</td></tr></tbody></table></div>

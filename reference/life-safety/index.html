@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>化学が果たす役割 —— 化学の締めくくり ｜ 化学の参考書</title>
-<meta name="description" content="化学の締めくくりとして、無機物質・有機化合物・高分子化合物がそれぞれの特徴を生かして暮らしを支えていることを見渡します。工業的製法は1枚の地図にまとめ、アンモニアを例に「過去・現在・これから」をたどります。最後に、原子効率の計算で「無駄の少ない反応」を比べます。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/chemistry-role/">
+<title>薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤 ｜ 化学の参考書</title>
+<meta name="description" content="塩素系の漂白剤と酸性の洗浄剤を混ぜてはいけない理由、アルミニウムの容器とドライアイスの注意、濃硫酸の薄め方を、反応と性質から説明します。化学の範囲として、薬品の保存のしかたと、乾燥剤と気体の組み合わせを後半に置きます。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/life-safety/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="化学が果たす役割 —— 化学の締めくくり ｜ 化学の参考書">
-<meta property="og:description" content="化学の締めくくりとして、無機物質・有機化合物・高分子化合物がそれぞれの特徴を生かして暮らしを支えていることを見渡します。工業的製法は1枚の地図にまとめ、アンモニアを例に「過去・現在・これから」をたどります。最後に、原子効率の計算で「無駄の少ない反応」を比べます。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/chemistry-role/">
+<meta property="og:title" content="薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤 ｜ 化学の参考書">
+<meta property="og:description" content="塩素系の漂白剤と酸性の洗浄剤を混ぜてはいけない理由、アルミニウムの容器とドライアイスの注意、濃硫酸の薄め方を、反応と性質から説明します。化学の範囲として、薬品の保存のしかたと、乾燥剤と気体の組み合わせを後半に置きます。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/life-safety/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -874,72 +892,60 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-18">化学と社会</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#basic">化学基礎</a> ／ <a href="/reference/#basic-7">化学と人間生活</a></div></header>
 <main class="wrap">
-<h1>化学が果たす役割 —— 化学の締めくくり</h1>
-<p class="lede">化学の締めくくりとして、無機物質・有機化合物・高分子化合物がそれぞれの特徴を生かして暮らしを支えていることを見渡します。工業的製法は1枚の地図にまとめ、アンモニアを例に「過去・現在・これから」をたどります。最後に、原子効率の計算で「無駄の少ない反応」を比べます。</p>
-<div><span class="unit-label course-adv">化学</span><span class="unit-label">化学と社会</span><span class="unit-label">化学と社会</span></div>
+<h1>薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤</h1>
+<p class="lede">塩素系の漂白剤と酸性の洗浄剤を混ぜてはいけない理由、アルミニウムの容器とドライアイスの注意、濃硫酸の薄め方を、反応と性質から説明します。化学の範囲として、薬品の保存のしかたと、乾燥剤と気体の組み合わせを後半に置きます。</p>
+<div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">化学と人間生活</span><span class="unit-label">薬品を安全に扱う</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-three-fields" data-ref-anchor="three-fields">無機・有機・高分子 —— それぞれの特徴を生かす</a></li><li><a href="#ref-sec-industry-map" data-ref-anchor="industry-map">化学工業の地図 —— 工業的製法を1枚に</a></li><li><a href="#ref-sec-ammonia" data-ref-anchor="ammonia">アンモニアでみる化学の役割 —— 過去・現在・これから</a></li><li><a href="#ref-sec-green" data-ref-anchor="green">持続可能な社会へ —— 無駄の少ない反応を選ぶ</a></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（6節）</summary><ul><li><a href="#ref-sec-mixing" data-ref-anchor="mixing">混ぜるな危険 —— 塩素系の漂白剤と酸性の洗浄剤</a></li><li><a href="#ref-sec-containers" data-ref-anchor="containers">容器と保管の注意 —— アルミニウムの容器とドライアイス</a></li><li><a href="#ref-sec-dilution" data-ref-anchor="dilution">濃硫酸の薄め方</a></li><li><a href="#ref-sec-storage" data-ref-anchor="storage">薬品の保存のしかた</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-drying" data-ref-anchor="drying">乾燥剤と気体の組み合わせ</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-boundary" data-ref-anchor="boundary">共通テストの線引き</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">化学では、物質の状態と変化（理論）、無機物質、有機化合物、高分子化合物と、たくさんの物質を学んできました。このページはその締めくくりです。学んだ物質が暮らしの中でどう役立っているかを見渡し、化学がこれから向き合う課題を1つ、反応式で追いかけます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/chemistry-world/">化学基礎の振り返り（化学が拓く世界）へ</a></p>
-<section class="ref-sec" id="ref-sec-three-fields"><h4 class="ref-sec-h">無機・有機・高分子 —— それぞれの特徴を生かす</h4><p class="ref-sec-lead">暮らしを支える物質は、無機物質・有機化合物・高分子化合物のどれもが、それぞれの特徴を生かして使われています。「どの特徴を生かしているか」を言えるようにしましょう。</p></section>
-<p class="ref-p">化学で学んだ物質を、3つの分野に分けて並べてみましょう。どの行も、詳しくは右の列のページで扱っています。</p>
-<div class="ref-table-wrap"><div class="ref-cap">暮らしを支える物質と、生かしている特徴</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">分野</th><th style="text-align: left;">例</th><th style="text-align: left;">生かしている特徴</th><th style="text-align: left;">詳しいページ</th></tr></thead><tbody><tr><td style="text-align: left;"><b>無機物質</b></td><td style="text-align: left;">アンモニア NH₃ → 窒素肥料</td><td style="text-align: left;">空気中の N₂ を、植物が使える窒素の化合物に変える</td><td style="text-align: left;">窒素とその化合物</td></tr><tr><td style="text-align: left;"><b>無機物質</b></td><td style="text-align: left;">鉄・銅・アルミニウム</td><td style="text-align: left;">丈夫さ・電気の通しやすさ・軽さ</td><td style="text-align: left;">鉄・電気分解の工業的利用</td></tr><tr><td style="text-align: left;"><b>有機化合物</b></td><td style="text-align: left;">アセチルサリチル酸</td><td style="text-align: left;">解熱鎮痛剤としてはたらく</td><td style="text-align: left;">芳香族カルボン酸</td></tr><tr><td style="text-align: left;"><b>有機化合物</b></td><td style="text-align: left;">セッケン・合成洗剤</td><td style="text-align: left;">1つの分子に、水になじむ部分と油になじむ部分がある</td><td style="text-align: left;">セッケンと合成洗剤</td></tr><tr><td style="text-align: left;"><b>有機化合物</b></td><td style="text-align: left;">アゾ染料</td><td style="text-align: left;">アゾ基 −N＝N− をもち、色がつく</td><td style="text-align: left;">アニリンとアゾ化合物</td></tr><tr><td style="text-align: left;"><b>高分子化合物</b></td><td style="text-align: left;">ナイロン・ポリエステル</td><td style="text-align: left;">長い鎖がそろって、丈夫な繊維になる</td><td style="text-align: left;">合成繊維</td></tr><tr><td style="text-align: left;"><b>高分子化合物</b></td><td style="text-align: left;">高吸水性樹脂</td><td style="text-align: left;">自分の重さの数百倍の水を吸って保つ</td><td style="text-align: left;">合成樹脂</td></tr></tbody></table></div>
-<p class="ref-p">有機化合物の例として、医薬品のアセチルサリチル酸を見てみましょう。サリチル酸の −OH を無水酢酸でアセチル化してつくります。<b>官能基を1つつけ替えるだけで、はたらきの違う物質をつくれる</b>のが、有機化合物の強みです。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/chemistry-role-aspirin.png" alt="アセチルサリチル酸の構造式。ベンゼン環の隣り合う炭素に、アセチル化された酸素の基とカルボキシ基が付いている" loading="lazy"><figcaption class="ref-figure-cap"><b>アセチルサリチル酸</b>（アスピリン）。解熱鎮痛剤として使われています。つくり方は芳香族カルボン酸のページで扱います。</figcaption></figure>
-<p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-carboxylic-acid/">サリチル酸からアセチルサリチル酸をつくる反応へ</a></p>
-<p class="ref-p">物質の構造を調べる技術も、化学の大切な役目です。現代では、赤外線の吸収や分子の質量を測る<b>機器分析</b>で、つくった物質が目的の構造になっているかを確かめます。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/clue-order/">機器分析でわかること（構造決定の条件の使い方）へ</a></p>
-<p class="ref-p"><b>表の例を丸暗記する必要はありません。</b>それぞれのページで学んだ性質が「ここで役立っている」とつながれば十分です。</p>
-<section class="ref-sec" id="ref-sec-industry-map"><h4 class="ref-sec-h">化学工業の地図 —— 工業的製法を1枚に</h4><p class="ref-sec-lead">化学で学ぶ工業的製法は、元素ごとのページに散っています。ここでは、製品・製法の名前・要点だけを1枚の地図にまとめます。式と条件は、それぞれのページで確かめましょう。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">化学で学ぶ主な工業的製法</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">製品</th><th style="text-align: left;">製法の名前</th><th style="text-align: left;">要点</th><th style="text-align: left;">詳しいページ</th></tr></thead><tbody><tr><td style="text-align: left;">アンモニア NH₃</td><td style="text-align: left;"><b>ハーバー・ボッシュ法</b></td><td style="text-align: left;">N₂ と H₂ を、Fe₃O₄ を主成分とする触媒で直接反応させる</td><td style="text-align: left;">窒素とその化合物</td></tr><tr><td style="text-align: left;">硝酸 HNO₃</td><td style="text-align: left;"><b>オストワルト法</b></td><td style="text-align: left;">NH₃ を白金 Pt を触媒にして酸化し、NO → NO₂ → HNO₃</td><td style="text-align: left;">窒素とその化合物</td></tr><tr><td style="text-align: left;">硫酸 H₂SO₄</td><td style="text-align: left;"><b>接触法</b></td><td style="text-align: left;">SO₂ を酸化バナジウム(Ⅴ) V₂O₅ を触媒にして SO₃ にし、水と反応させる</td><td style="text-align: left;">硫酸</td></tr><tr><td style="text-align: left;">炭酸ナトリウム Na₂CO₃</td><td style="text-align: left;"><b>アンモニアソーダ法</b>（ソルベー法）</td><td style="text-align: left;">NaCl・NH₃・CO₂ から NaHCO₃ を沈殿させ、加熱して Na₂CO₃</td><td style="text-align: left;">アルカリ金属</td></tr><tr><td style="text-align: left;">鉄 Fe</td><td style="text-align: left;"><b>溶鉱炉</b></td><td style="text-align: left;">鉄鉱石を、コークスから生じた CO で還元する</td><td style="text-align: left;">鉄</td></tr><tr><td style="text-align: left;">水酸化ナトリウム NaOH</td><td style="text-align: left;"><b>イオン交換膜法</b></td><td style="text-align: left;">NaCl 水溶液を電気分解する</td><td style="text-align: left;">電気分解の工業的利用</td></tr><tr><td style="text-align: left;">銅 Cu</td><td style="text-align: left;"><b>電解精錬</b></td><td style="text-align: left;">粗銅を陽極にして電気分解し、陰極に純銅を析出させる</td><td style="text-align: left;">電気分解の工業的利用</td></tr><tr><td style="text-align: left;">アルミニウム Al</td><td style="text-align: left;"><b>溶融塩電解</b></td><td style="text-align: left;">酸化アルミニウムを氷晶石とともに融かして電気分解する</td><td style="text-align: left;">電気分解の工業的利用</td></tr></tbody></table></div>
-<p class="ref-p"><b>製法の名前と製品の組、そして触媒（Fe₃O₄・Pt・V₂O₅）は必ず覚えてください。</b>この3つの触媒は、名前だけを問う形でもよく登場します。反応式と条件の細部は、それぞれのページの覚える範囲に従いましょう。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/sulfuric-acid/">接触法の3本の式へ</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/electrolysis-industry/">電気分解を使う3つの製法へ</a></p>
-<section class="ref-sec" id="ref-sec-ammonia"><h4 class="ref-sec-h">アンモニアでみる化学の役割 —— 過去・現在・これから</h4><p class="ref-sec-lead">ハーバー・ボッシュ法は、食料をつくるための肥料を支えてきました。一方で、大量のエネルギーを使い、二酸化炭素を出すという課題もあります。反応式で「過去・現在・これから」をたどりましょう。</p></section>
-<h5 class="ref-h5">過去 —— 空気から肥料をつくる</h5>
-<p class="ref-p">19世紀の終わりごろ、人口が増えて食料が足りなくなることが心配されました。作物を育てるには窒素を含む肥料が欠かせません。窒素 N₂ は空気の体積の約78%もありますが、N≡N の三重結合がとても強いので、N₂ のままでは多くの植物は使えません。</p>
-<p class="ref-p">そこで、空気中の N₂ を水素と反応させてアンモニアにする方法が開発されました。これが<b>ハーバー・ボッシュ法</b>で、1910年代に工業化され、今も使われ続けています。アンモニアからつくられた窒素肥料が、世界の食料生産を支えてきました。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">N₂ ＋ 3H₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">Fe₃O₄ を主成分とする触媒</span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under">高温・高圧</span></span><span class="ref-rx-side">2NH₃</span></div><p class="ref-note">化学平衡の単元で、圧力と温度の条件を選ぶ例として登場します。</p></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/le-chatelier/">ハーバー・ボッシュ法の条件を平衡と速さで選ぶページへ</a></p>
-<h5 class="ref-h5">現在 —— 水素をどこから得ているか</h5>
-<p class="ref-p">原料の水素は、いまは主に天然ガス（メタン）と水蒸気からつくっています。まず CO と H₂ ができ、CO をさらに水蒸気と反応させると、炭素は最後に<b>二酸化炭素</b>として出ていきます。2つの段階を足し合わせると、次の式になります。</p>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ 4H₂</span></div><p class="ref-note">CH₄ ＋ H₂O → CO ＋ 3H₂ と、CO ＋ H₂O → CO₂ ＋ H₂ を足した式です。</p></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/hydrogen-noble-gas/">水素の工業的製法（水蒸気とメタン）へ</a></p>
-<p class="ref-p">さらに、高温・高圧の条件をつくるためにも大量のエネルギーを使います。そのエネルギーの多くは、いまも化石燃料から得ています。</p>
-<h5 class="ref-h5">これから —— 課題をどう解くか</h5>
-<p class="ref-p">課題に対して、次のような方向が考えられています。答えはまだ1つに決まっていません。</p>
-<ul class="ref-list"><li>水素を、再生可能エネルギーの電気で水を電気分解してつくる（CO₂ を出さない）。</li><li>もっと低い温度・圧力ではたらく触媒を開発して、使うエネルギーを減らす。</li><li>アンモニアを、燃やしても CO₂ を出さない燃料や、水素を運ぶ物質（<b>水素キャリア</b>）として使う。</li></ul>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">4NH₃ ＋ 3O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2N₂ ＋ 6H₂O</span></div><p class="ref-note">アンモニアの燃焼。炭素を含まないので、燃えても CO₂ は出ません。</p></div>
-<p class="ref-p"><b>このページの「現在」「これから」の式は、覚える必要はありません。</b>原子の数を数えれば係数は合わせられます。★★★はハーバー・ボッシュ法の式だけです。</p>
-<section class="ref-sec" id="ref-sec-green"><h4 class="ref-sec-h">持続可能な社会へ —— 無駄の少ない反応を選ぶ</h4><p class="ref-sec-lead">限りある資源を使い続けるには、使い終わったものを再び使うことと、はじめから無駄の少ない反応を選ぶことの両方が大切です。無駄の少なさは、原子効率という数で比べられます。</p></section>
-<p class="ref-p">ごみを減らす取り組みは、<b>リデュース</b>（使う量を減らす）・<b>リユース</b>（繰り返し使う）・<b>リサイクル</b>（資源として再び使う）の3つにまとめられます。プラスチックのリサイクルには、溶かして成形し直す方法や、化学反応で原料に戻す方法があります。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/plastic/">合成樹脂のリサイクルと生分解性高分子へ</a></p>
-<p class="ref-p">化学の側からは、有害な物質や廃棄物をはじめからできるだけ出さない反応や工程を選ぼう、という考え方があります。これを<b>グリーンケミストリー</b>といいます。</p>
-<p class="ref-p">反応の無駄の少なさを表す数の1つが<b>原子効率</b>です。反応物の質量の合計のうち、目的の生成物になった質量の割合で表します。</p>
-<p class="ref-p"><b>原子効率（%）＝ 目的の生成物の質量 ／ 反応物の質量の合計 × 100</b></p>
-<div class="ref-table-wrap"><div class="ref-cap">原子効率の2つの例</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">反応</th><th style="text-align: right;">反応物の質量の合計</th><th style="text-align: right;">目的の生成物の質量</th><th style="text-align: right;">原子効率</th></tr></thead><tbody><tr><td style="text-align: left;">N₂ ＋ 3H₂ → 2NH₃（目的は NH₃）</td><td style="text-align: right;">28 ＋ 6 ＝ 34</td><td style="text-align: right;">34</td><td style="text-align: right;"><b>100%</b></td></tr><tr><td style="text-align: left;">CaCO₃ → CaO ＋ CO₂（目的は CaO）</td><td style="text-align: right;">100</td><td style="text-align: right;">56</td><td style="text-align: right;"><b>56%</b></td></tr></tbody></table></div>
-<p class="ref-p">アンモニアの合成のように、<b>反応物の原子がすべて1つの生成物に入る反応</b>（付加や化合）は、原子効率が100%になります。石灰石から生石灰をつくる反応では、CO₂ の 44 が目的の外に出ていくので56%です。</p>
-<p class="ref-p">ただし、<b>原子効率が高いほど良い、とだけは言えません。</b>原料をどこから得るか、どれだけのエネルギーを使うかも合わせて考える必要があります。下の例題で、その意味を確かめましょう。</p>
-<p class="ref-p"><b>「原子効率」という言葉は、入試ではあまり登場しません。</b>ですが、計算そのものは化学反応式の量的関係と同じなので、式量から割合を出す練習として解いておきましょう。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/stoichiometry/">化学反応式の量的関係へ</a></p>
+<p class="ref-p">薬品は、正しく使えば便利ですが、使い方を誤ると有毒な気体が出たり、容器が壊れたりします。このページでは、家庭と実験室でしてはいけないことを、<b>なぜ危ないのか</b>の理由と一緒にまとめます。</p>
+<section class="ref-sec" id="ref-sec-mixing"><h4 class="ref-sec-h">混ぜるな危険 —— 塩素系の漂白剤と酸性の洗浄剤</h4><p class="ref-sec-lead">塩素系の漂白剤（次亜塩素酸ナトリウム）に、塩酸を含む酸性の洗浄剤を混ぜると、有毒な塩素が発生します。そのため、どちらの容器にも「混ぜるな危険」と書かれています。</p></section>
+<p class="ref-p">家庭用の塩素系の漂白剤やカビ取り剤には、<b>次亜塩素酸ナトリウム</b> NaClO が含まれています。トイレ用などの酸性の洗浄剤には、<b>塩酸</b> HCl が含まれているものがあります。この2つを混ぜると、次の反応で<b>塩素</b> Cl₂ が発生します。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">NaClO ＋ 2HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">NaCl ＋ H₂O ＋ Cl₂</span></div><p class="ref-note">ClO⁻ の Cl（酸化数 ＋1）と、HCl の Cl（−1）が、どちらも 0 の Cl₂ になります。塩素は黄緑色で刺激臭のある有毒な気体です。</p></div>
+<p class="ref-p"><b>「塩素系の漂白剤と酸性の洗浄剤を混ぜると塩素が出る」は必ず覚えてください。</b>反応式は、酸化数の変化から組み立てられれば、丸暗記しなくても構いません。塩素系の漂白剤の水溶液は塩基性なので、酸性のものと混ぜないことが大切です。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/chlorine/">塩素の性質と、次亜塩素酸の仲間は塩素のページへ</a></p>
+<section class="ref-sec" id="ref-sec-containers"><h4 class="ref-sec-h">容器と保管の注意 —— アルミニウムの容器とドライアイス</h4><p class="ref-sec-lead">アルミニウムは酸にも強い塩基にも溶けるので、アルミニウムの容器に酸性や塩基性の洗浄剤を入れてはいけません。ドライアイスは昇華して体積が大きく増えるので、密閉した容器に入れてはいけません。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">家庭でしてはいけないことと、その理由</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">してはいけないこと</th><th style="text-align: left;">理由</th><th style="text-align: left;">関係する単元</th></tr></thead><tbody><tr><td style="text-align: left;"><b>アルミニウムの容器</b>に、酸性や塩基性の洗浄剤を入れる</td><td style="text-align: left;">アルミニウムは酸にも強い塩基にも溶けて水素を出すので、容器に穴があき、気体がたまる</td><td style="text-align: left;">両性金属</td></tr><tr><td style="text-align: left;"><b>ドライアイス</b>を、ふたを閉めたびんやペットボトルに入れる</td><td style="text-align: left;">昇華して気体の二酸化炭素になると、体積が数百倍に増えて容器が破裂する</td><td style="text-align: left;">状態変化・気体の体積</td></tr><tr><td style="text-align: left;">生石灰（食品の乾燥剤）を濡らす</td><td style="text-align: left;">水と反応して大きく発熱し、やけどや火事の原因になる</td><td style="text-align: left;">生石灰と水の反応</td></tr><tr><td style="text-align: left;">ドライアイスを、狭くて閉め切った部屋で大量に使う</td><td style="text-align: left;">出てきた二酸化炭素が部屋にたまり、酸素が足りなくなる</td><td style="text-align: left;">気体の性質</td></tr></tbody></table></div>
+<p class="ref-p"><b>アルミニウムの容器とドライアイスの2つは、理由と一緒に覚えましょう。</b>アルミニウムが酸にも塩基にも溶けるのは、両性金属だからです。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2Al ＋ 6HCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2AlCl₃ ＋ 3H₂</span></div><p class="ref-note">酸との反応。強い塩基の水溶液とも反応して水素を出します（両性金属のページ）。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">アルミニウムが酸にも塩基にも溶ける反応は、両性金属のページへ</a></p>
+<section class="ref-sec" id="ref-sec-dilution"><h4 class="ref-sec-h">濃硫酸の薄め方</h4><p class="ref-sec-lead">濃硫酸を薄めるときは、多量の水に濃硫酸を少しずつ加えます。濃硫酸に水を加えると、水が一気に沸騰して濃硫酸ごと飛び散るので危険です。</p></section>
+<p class="ref-p">濃硫酸は、水に溶けるときに大量の熱を出します（溶解熱が大きい）。そのため、薄めるときの向きが決まっています。</p>
+<ol class="ref-list"><li><b>多量の水に、濃硫酸を少しずつ加えて、よくかき混ぜる。</b><div class="ref-li-hang">濃硫酸は水より重いので下へ沈みながら混ざり、出た熱は多量の水が受け止める。</div></li><li><b>濃硫酸に水を加えてはいけない。</b><div class="ref-li-hang">軽い水が濃硫酸の上に浮いたまま、ふれた所で急に発熱して沸騰し、濃硫酸ごと飛び散る。</div></li></ol>
+<p class="ref-p"><b>「濃硫酸は、水に加えて薄める（水を加えない）」は必ず覚えてください。</b>濃硫酸でなくても、水に溶けて大きく発熱する物質（水酸化ナトリウムの固体など）は、同じように少しずつ水に溶かします。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/sulfuric-acid/">濃硫酸の性質（吸湿性・脱水作用・酸化作用）は、硫酸のページへ</a></p>
+<section class="ref-sec" id="ref-sec-storage"><h4 class="ref-sec-h">薬品の保存のしかた<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">薬品は、空気・水・光・ガラスのどれと反応するかで、保存のしかたが決まります。ナトリウムは灯油の中、黄リンは水の中、濃硝酸と硝酸銀は褐色のびん、フッ化水素酸はポリエチレンの容器に入れます。</p></section>
+<div class="ref-table-wrap"><div class="ref-cap">薬品の保存のしかたと、その理由</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">薬品</th><th style="text-align: left;">保存のしかた</th><th style="text-align: left;">避けたいもの</th><th style="text-align: left;">理由</th></tr></thead><tbody><tr><td style="text-align: left;"><b>ナトリウム・カリウム</b></td><td style="text-align: left;"><b>灯油（石油）の中</b></td><td style="text-align: left;">水・空気</td><td style="text-align: left;">水や酸素とすぐに反応する</td></tr><tr><td style="text-align: left;"><b>黄リン</b></td><td style="text-align: left;"><b>水の中</b></td><td style="text-align: left;">空気</td><td style="text-align: left;">空気中で自然発火する（水とは反応しない）</td></tr><tr><td style="text-align: left;"><b>濃硝酸</b>・硝酸銀の水溶液</td><td style="text-align: left;"><b>褐色のびん</b>（冷暗所）</td><td style="text-align: left;">光</td><td style="text-align: left;">光で分解する</td></tr><tr><td style="text-align: left;"><b>フッ化水素酸</b></td><td style="text-align: left;"><b>ポリエチレンの容器</b></td><td style="text-align: left;">ガラス</td><td style="text-align: left;">ガラスの成分 SiO₂ を溶かす</td></tr><tr><td style="text-align: left;">水酸化ナトリウム</td><td style="text-align: left;">ふたをしっかり閉める</td><td style="text-align: left;">空気中の水・二酸化炭素</td><td style="text-align: left;">水を吸って溶ける（潮解）・CO₂ を吸って炭酸ナトリウムになる</td></tr></tbody></table></div>
+<p class="ref-p"><b>上の4つ（ナトリウムは灯油・黄リンは水・濃硝酸は褐色びん・フッ化水素酸はポリエチレン）は、理由と組にして必ず覚えてください。</b>「何と反応してしまうか」を考えれば、保存のしかたは自然に決まります。ナトリウムは水と反応するので水には入れられず、黄リンは水とは反応しないので水の中に沈めて空気を遮ります。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/alkali-metal/">ナトリウムと水の反応は、アルカリ金属のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/phosphorus/">黄リンと赤リンの違いは、リンのページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/carbon-silicon/">フッ化水素酸がガラスを溶かす反応は、14族（炭素・ケイ素）のページへ</a></p>
+<section class="ref-sec" id="ref-sec-drying"><h4 class="ref-sec-h">乾燥剤と気体の組み合わせ<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">乾燥剤は、乾かしたい気体と反応しないものを選びます。酸性の乾燥剤は塩基性の気体（NH₃）に、塩基性の乾燥剤は酸性の気体（CO₂・HCl など）に使えません。例外は、濃硫酸が H₂S に、塩化カルシウムが NH₃ に使えないことの2つです。</p></section>
+<p class="ref-p">気体を乾かすとき、乾燥剤と気体が中和してしまうと、気体そのものが吸われてしまいます。だから<b>乾燥剤と気体の液性が「酸と塩基」の組にならないように</b>選びます。</p>
+<div class="ref-table-wrap"><div class="ref-cap">乾燥剤の性質と、使えない気体</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">乾燥剤</th><th style="text-align: center;">乾燥剤の性質</th><th style="text-align: left;">使えない気体</th></tr></thead><tbody><tr><td style="text-align: left;">濃硫酸・十酸化四リン P₄O₁₀</td><td style="text-align: center;">酸性</td><td style="text-align: left;">塩基性の NH₃。濃硫酸は H₂S にも使えない（酸化還元反応が起こる）</td></tr><tr><td style="text-align: left;">塩化カルシウム CaCl₂</td><td style="text-align: center;">中性</td><td style="text-align: left;"><b>NH₃</b>（CaCl₂ と結びつく）</td></tr><tr><td style="text-align: left;">ソーダ石灰（NaOH ＋ CaO）・酸化カルシウム CaO</td><td style="text-align: center;">塩基性</td><td style="text-align: left;">酸性の CO₂・SO₂・HCl・Cl₂・H₂S など</td></tr></tbody></table></div>
+<p class="ref-p"><b>「酸性と塩基性は組にしない」と、例外の2つ（濃硫酸と H₂S・塩化カルシウムと NH₃）を覚えておけば、乾燥剤の問題は解けます。</b>NH₃ を乾かせるのは、塩基性のソーダ石灰か酸化カルシウムです。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/gas-preparation/">乾燥剤の表と、気体の製法・捕集のしかたは気体の製法と性質のページへ</a></p>
+<section class="ref-sec" id="ref-sec-boundary"><h4 class="ref-sec-h">共通テストの線引き</h4><p class="ref-sec-lead">安全の小問で知識が要るのは、混ぜるな危険・アルミニウムの容器・ドライアイス・濃硫酸の薄め方と、化学の範囲の薬品の保存と乾燥剤の組です。有毒な気体の量や反応式の係数は問題文が教えてくれます。</p></section>
+<p class="ref-p">左の列は、問題文に説明が無くても答えられるようにしておくものです。右の列は、出てきたときに問題文が教えてくれるので、覚えておく必要はありません。（化学）と書いた行は、化学（科目）の範囲です。</p>
+<div class="ref-table-wrap"><div class="ref-cap">薬品を安全に扱う —— 覚えておくことと、問題文が教えてくれること</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">覚えておく</th><th style="text-align: left;">問題文が教えてくれる</th></tr></thead><tbody><tr><td style="text-align: left;"><b>塩素系の漂白剤と酸性の洗浄剤を混ぜると塩素が出る</b></td><td style="text-align: left;">発生する塩素の量の計算に使う反応式と数値</td></tr><tr><td style="text-align: left;"><b>アルミニウムの容器</b>に酸性・塩基性の洗浄剤を入れない（両性金属）</td><td style="text-align: left;">アルミニウムが溶ける反応式の係数</td></tr><tr><td style="text-align: left;"><b>ドライアイスを密閉した容器に入れない</b>（昇華で体積が大きく増える）</td><td style="text-align: left;">体積が何倍になるかの数値</td></tr><tr><td style="text-align: left;"><b>濃硫酸は、多量の水に少しずつ加えて薄める</b></td><td style="text-align: left;">希釈したあとの濃度の計算に使う数値</td></tr><tr><td style="text-align: left;">（化学）Na・K は灯油の中・黄リンは水の中・濃硝酸は褐色びん・フッ化水素酸はポリエチレン</td><td style="text-align: left;">それぞれの反応式</td></tr><tr><td style="text-align: left;">（化学）酸性の乾燥剤は NH₃ に、塩基性の乾燥剤は酸性の気体に使えない。例外は濃硫酸と H₂S・CaCl₂ と NH₃</td><td style="text-align: left;">表にない乾燥剤の性質</td></tr></tbody></table></div>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">エタノール C₂H₅OH をつくる2つの方法について答えよ。H＝1・C＝12・O＝16 とする。(ア) エチレンに水を付加させる：C₂H₄ ＋ H₂O → C₂H₅OH　(イ) グルコースをアルコール発酵させる：C₆H₁₂O₆ → 2C₂H₅OH ＋ 2CO₂　(1) (ア)・(イ) の原子効率をそれぞれ整数の%で求めよ。(2) (イ) は原子効率が低いのに、持続可能な社会に向けて見直されている。原料に注目して、その理由を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) (ア) 反応物は C₂H₄ 28 ＋ H₂O 18 ＝ 46、生成物の C₂H₅OH も 46 なので <b>100%</b>。(イ) 反応物は C₆H₁₂O₆ 180、目的の C₂H₅OH は 2 × 46 ＝ 92 なので、92 ／ 180 × 100 ≒ <b>51%</b>。(2) (ア) の原料のエチレンは石油からつくるのに対し、(イ) の原料のグルコースは植物（デンプンなど）から得られ、<b>再生可能な原料</b>だから。★ 原子効率は「反応の無駄」だけを見る数で、原料がどこから来るかまでは表しません。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (1)〜(3) の製法の名前と、そこで使う触媒を答えよ。(1) 窒素と水素からアンモニアをつくる　(2) アンモニアを酸化して硝酸をつくる　(3) 二酸化硫黄を酸化して三酸化硫黄にし、硫酸をつくる</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>ハーバー・ボッシュ法</b>・四酸化三鉄 <b>Fe₃O₄</b> を主成分とする触媒　(2) <b>オストワルト法</b>・白金 <b>Pt</b>　(3) <b>接触法</b>・酸化バナジウム(Ⅴ) <b>V₂O₅</b></p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (ア)〜(オ) のうち、正しいものをすべて選べ。(ア) 塩素系の漂白剤と、塩酸を含む洗浄剤を混ぜて使うと、汚れがよく落ちて安全である　(イ) アルミニウムのやかんに、酸性の洗浄剤を入れたまま置いておくのは避ける　(ウ) ドライアイスは、ふたを固く閉めたペットボトルに入れて持ち運ぶのがよい　(エ) 濃硫酸を薄めるときは、多量の水に濃硫酸を少しずつ加える　(オ) 食品の乾燥剤の生石灰は、水をかけると発熱するので、濡らさないようにする</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(イ)・(エ)・(オ)</b>。(ア) 次亜塩素酸ナトリウムと塩酸が反応して有毒な塩素が出るので、混ぜてはいけない。(ウ) ドライアイスは昇華して体積が大きく増えるので、密閉すると容器が破裂する。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次亜塩素酸ナトリウム NaClO を 1.49 g 含む漂白剤に、十分な量の塩酸を加えた（NaClO ＋ 2HCl → NaCl ＋ H₂O ＋ Cl₂）。発生する塩素は、0℃・1.013 × 10⁵ Pa で何 L か。NaClO の式量は 74.5、気体 1 mol の体積は 22.4 L とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>NaClO 1.49 g は 1.49 ／ 74.5 ＝ 0.0200 mol。反応式の係数から Cl₂ も 0.0200 mol 発生するので、22.4 × 0.0200 ＝ <b>0.448 L</b>。★ 数値は問題文が与えます。覚えておくのは「混ぜると塩素が出る」ことです。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">（化学）次の薬品 (1)〜(4) の保存のしかたを、下の (ア)〜(エ) から選べ。(1) ナトリウム　(2) 黄リン　(3) 濃硝酸　(4) フッ化水素酸　(ア) 水の中に沈める　(イ) 褐色のびんに入れて冷暗所に置く　(ウ) ポリエチレンの容器に入れる　(エ) 灯油の中に入れる</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>(エ)</b>（水や酸素とすぐに反応する）　(2) <b>(ア)</b>（空気中で自然発火する。水とは反応しない）　(3) <b>(イ)</b>（光で分解する）　(4) <b>(ウ)</b>（ガラスの SiO₂ を溶かす）</p></div></details></div>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（7問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.life.industry-catalyst,theo.life.haber-issue,theo.life.atom-economy,theo.life.three-r,theo.life.green-chemistry,theo.life.ammonia-fuel,theo.life.nitrogen-fixation&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（7問・測定モード）">▶ 一問一答で解く（7問・測定モード）</button><a class="alt" href="/qa/?codes=theo.life.industry-catalyst,theo.life.haber-issue,theo.life.atom-economy,theo.life.three-r,theo.life.green-chemistry,theo.life.ammonia-fuel,theo.life.nitrogen-fixation&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（4問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.life.chlorine-bleach-acid,theo.life.home-hazard,theo.life.sulfuric-dilution,theo.life.reagent-storage&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（4問・測定モード）">▶ 一問一答で解く（4問・測定モード）</button><a class="alt" href="/qa/?codes=theo.life.chlorine-bleach-acid,theo.life.home-hazard,theo.life.sulfuric-dilution,theo.life.reagent-storage&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/rubber/">← ゴム —— 主鎖に残った二重結合がすべてを決める</a>
+<nav class="seq"><a href="/reference/life-energy/">← 燃料・電池・光 —— 暮らしのエネルギーと環境の話題</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-</nav>
+<a href="/reference/vapor-pressure/">液体の蒸気圧と沸騰 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

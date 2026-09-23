@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -889,7 +907,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol-class/">級の数え方と、もう1つの分け方（価数）は「アルコールの分類」で</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">酸化を含めたアルコールの6つの反応の俯瞰と、沸点・命名は「アルコールの性質・反応」で</a></p>
 <section class="ref-sec" id="ref-sec-primary"><h4 class="ref-sec-h">第1級アルコールの酸化</h4><p class="ref-sec-lead">アルデヒドで止まるか、カルボン酸まで進むかの2段階です。</p></section>
-<p class="ref-p">第1級アルコールは、酸化されるとまずアルデヒド R−CHO になり、さらに酸化されるとカルボン酸になります。</p>
+<p class="ref-p">第1級アルコールの酸化は2段で進みます。1段目でアルデヒド R−CHO に、2段目でカルボン酸に変わります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CH₂OH</span><span class="ref-rx-arrow"><span class="ref-rx-over">酸化</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−CHO</span></div><p class="ref-note">第1段。−OH が付いた炭素から水素が2個取れて、C=O ができます。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">R−CHO</span><span class="ref-rx-arrow"><span class="ref-rx-over">酸化</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">R−COOH</span></div><p class="ref-note">第2段。アルデヒドはさらに酸化されてカルボン酸になります。⚠ ここで止めたいときは「おだやかに酸化」します。</p></div>
 <p class="ref-p">アルデヒドは還元性をもつため、銀鏡反応・フェーリング反応を起こします。</p>
@@ -909,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alcohol-oxidation-tertiary.png" alt="2-メチル-2-プロパノールの構造式。中心の炭素にメチル基 CH₃ が3個とヒドロキシ基 OH が1個、合わせて4本の結合が出ていて、中心の炭素には水素が1個もついていない" loading="lazy"><figcaption class="ref-figure-cap">第3級アルコールの例（2-メチル-2-プロパノール）。<b>−OH が付いた炭素に水素が1個もありません</b>。C=O を作るには この炭素から水素が取れなければならないので、反応が起こりません。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-summary"><h4 class="ref-sec-h">アルコール酸化のまとめ</h4><p class="ref-sec-lead">級と行き先の3行。有機の構造決定は、この3行を逆にたどる作業です。</p></section>
 <p class="ref-p">アルコールの級による酸化反応の違いをまとめると次のようになります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">級と、酸化の行き先</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">アルコールの級</th><th style="text-align: left;">酸化するとどうなるか</th></tr></thead><tbody><tr><td style="text-align: center;">第1級</td><td style="text-align: left;">アルデヒド −CHO になり、さらに酸化されるとカルボン酸 −COOH になる</td></tr><tr><td style="text-align: center;">第2級</td><td style="text-align: left;">ケトン（両側を炭素にはさまれた C=O）になり、そこで止まる</td></tr><tr><td style="text-align: center;">第3級</td><td style="text-align: left;">酸化されない</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">級と、酸化の行き先</div><table class="ref-hand-table"><thead><tr><th style="text-align: center;">アルコールの級</th><th style="text-align: left;">酸化するとどうなるか</th></tr></thead><tbody><tr><td style="text-align: center;">第1級</td><td style="text-align: left;">アルデヒド −CHO を経て、カルボン酸 −COOH まで進む</td></tr><tr><td style="text-align: center;">第2級</td><td style="text-align: left;">ケトン（両側を炭素にはさまれた C=O）になり、そこで止まる</td></tr><tr><td style="text-align: center;">第3級</td><td style="text-align: left;">酸化されない</td></tr></tbody></table></div>
 <p class="ref-p"><b>この3行は必ず暗記してください。</b>実際の実験や入試問題では、酸化反応によって何が生じたか調べることにより、もとのアルコールの構造を決定します。</p>
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=experiment">🧪 実験モードでアルコールを酸化してみる（エタノール→アセトアルデヒド・2-プロパノール→アセトン・アセトアルデヒド→酢酸）</a></p>
 <h5 class="ref-h5">例題</h5>

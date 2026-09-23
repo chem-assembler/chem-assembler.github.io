@@ -68,9 +68,9 @@ Lv の基準は [DESIGN_difficulty_frequency.md](DESIGN_difficulty_frequency.md)
 そのあと `data/exam_usage.jsonl` が広がった（1年ぶん → 2年ぶん）ので、今のデータで数え直すと違う。一覧の入試の欄は「②古い値→今の値」と並べて書く（表では `asToolNow`）。
 ⚠ **入試は Lv の規則に入らない**（入試→Lv は規則なし）ので、Lv にも目安にも効かない。**questions.json の値はこの表では変えない。**
 
-## 全項目（877件）
+## 全項目（892件）
 
-Lv の分布: Lv1 228件・Lv2 598件・Lv3 37件・Lv4 14件
+Lv の分布: Lv1 240件・Lv2 601件・Lv3 37件・Lv4 14件
 
 ### sec-substance-classification（純物質と混合物・元素・成分元素の確認・11件）
 
@@ -376,15 +376,64 @@ Lv の分布: Lv1 228件・Lv2 598件・Lv3 37件・Lv4 14件
 | `theo.electro.charge-balance` | 電池の仕組み | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `theo.electro.positive-reason` | 電池の仕組み | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
-### sec-chemistry-world（化学基礎を暮らしで振り返る・5件）
+### sec-life-metal（暮らしの中の金属・13件）
 
 | コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
 |---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
-| `theo.life.bond-material` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `theo.life.reaction-in-life` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `theo.life.recycle-resource` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `theo.life.ceramics` | 化学が拓く世界 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `theo.life.antioxidant` | 化学が拓く世界 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alloy-def` | 暮らしの中の金属 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.metal.alloy-examples` | 暮らしの中の金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.alloy-functional` | 暮らしの中の金属 | 2 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 2 | 2〜4 |  | 2 |
+| `inorg.metal.alloy-mixture` | 暮らしの中の金属 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `inorg.metal.stainless` | 暮らしの中の金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.nichrome` | 暮らしの中の金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `inorg.metal.plating-not-alloy` | 暮らしの中の金属 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.recycle-resource` | 暮らしの中の金属 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.iron-rust-condition` | 暮らしの中の金属 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.metal-use` | 暮らしの中の金属 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.metal-refining` | 暮らしの中の金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.tin-zinc-plating` | 暮らしの中の金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.gold-property` | 暮らしの中の金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### sec-life-ceramics（ガラスとセラミックス・6件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.life.bond-material` | ガラスとセラミックス | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.ceramics` | ガラスとセラミックス | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.si-vs-sio2` | ガラスとセラミックス | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.cement-glass-raw` | ガラスとセラミックス | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.glass-kinds` | ガラスとセラミックス | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.plaster-co2` | ガラスとセラミックス | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### sec-life-household（台所と薬箱の物質・7件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.life.reaction-in-life` | 台所と薬箱の物質 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.antioxidant` | 台所と薬箱の物質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.home-uses-na-ca` | 台所と薬箱の物質 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.home-uses-oxidizer` | 台所と薬箱の物質 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.familiar-gas-uses` | 台所と薬箱の物質 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.white-powder-id` | 台所と薬箱の物質 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.ph-familiar-order` | 台所と薬箱の物質 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+
+### sec-life-energy（燃料・電池・光・4件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.life.city-gas-methane` | 燃料・電池・光 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.petroleum-fraction` | 燃料・電池・光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+| `theo.life.dry-cell-mno2` | 燃料・電池・光 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.chemiluminescence-examples` | 燃料・電池・光 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
+
+### sec-life-safety（薬品を安全に扱う・4件）
+
+| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
+|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
+| `theo.life.chlorine-bleach-acid` | 薬品を安全に扱う | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.home-hazard` | 薬品を安全に扱う | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.sulfuric-dilution` | 薬品を安全に扱う | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
+| `theo.life.reagent-storage` | 薬品を安全に扱う | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
 ### sec-vapor-pressure（蒸気圧と沸騰・5件）
 
@@ -813,18 +862,6 @@ Lv の分布: Lv1 228件・Lv2 598件・Lv3 37件・Lv4 14件
 | `inorg.metal.amphoteric-hydroxide` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `inorg.metal.aluminium-production` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `inorg.metal.alum` | 両性金属 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-
-### sec-alloy（合金・7件）
-
-| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
-|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
-| `inorg.metal.alloy-def` | 合金 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `inorg.metal.alloy-examples` | 合金 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `inorg.metal.alloy-functional` | 合金 | 2 | 発展欄 | ≥2 | 未登場 | — | ①未 ②0 |  | 2 | 2〜4 |  | 2 |
-| `inorg.metal.alloy-mixture` | 合金 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `inorg.metal.stainless` | 合金 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `inorg.metal.nichrome` | 合金 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `inorg.metal.plating-not-alloy` | 合金 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
 
 ### sec-complex-ion（遷移元素の特徴と錯イオン・9件）
 
@@ -1337,18 +1374,6 @@ Lv の分布: Lv1 228件・Lv2 598件・Lv3 37件・Lv4 14件
 | `org.poly.monomer-from-repeat-unit` | 高分子の総論 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 | `org.poly.condensation-water-count` | 高分子の総論 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
 
-### sec-chemistry-role（化学と社会・7件）
-
-| コード | 群 | 現在 | 教科書 | 教科書→Lv | セミナー | セミナー→Lv | 入試 | 入試→Lv | 目安 §3-2 | 目安 §7-2 | 上書き | 最終 |
-|---|---|--:|---|---|---|---|---|---|--:|---|---|--:|
-| `theo.life.industry-catalyst` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `theo.life.haber-issue` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `theo.life.atom-economy` | 化学が果たす役割 | 2 | 見あたらない | — | 未登場 | — | ①未 ②0 |  | 2 | 1〜4 |  | 2 |
-| `theo.life.three-r` | 化学が果たす役割 | 1 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 1 | 1〜2 |  | 1 |
-| `theo.life.green-chemistry` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `theo.life.ammonia-fuel` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-| `theo.life.nitrogen-fixation` | 化学が果たす役割 | 2 | 本文 | ≤3 | 未登場 | — | ①未 ②0 |  | 2 | 1〜2 |  | 2 |
-
 ---
 
-生成元: `qa/questions.json`（877件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`
+生成元: `qa/questions.json`（892件）・`qa/data/level_matrix.jsonl` の override 欄・`qa/data/exam_usage.jsonl`・セミナーの材料（リポジトリの外） ／ 生成器: `qa/tools/gen_level_matrix.js`

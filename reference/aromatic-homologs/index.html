@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -909,7 +927,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-oxidation"><h4 class="ref-sec-h">側鎖の酸化 —— 環は酸化されない</h4><p class="ref-sec-lead">過マンガン酸カリウムで酸化すると、側鎖は長さにかかわらず根もとの炭素1個だけが残って −COOH になります。</p></section>
 <p class="ref-p">ベンゼン環に炭化水素基が付いた化合物を過マンガン酸カリウム KMnO₄ で酸化すると、<b>ベンゼン環は変化せず、側鎖だけが酸化されてカルボキシ基 −COOH になります</b>。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅CH₃ ＋ 3［O］</span><span class="ref-rx-arrow"><span class="ref-rx-over">KMnO₄</span><span class="ref-rx-bar">→</span><span class="ref-rx-under">加熱</span></span><span class="ref-rx-side">C₆H₅COOH ＋ H₂O</span></div><p class="ref-note">トルエンのメチル基がカルボキシ基になって、安息香酸ができます。</p></div>
-<p class="ref-p"><b>「側鎖はどんなに長くても、環に付いている根もとの炭素1個だけが残って −COOH になる」と覚えましょう。</b>エチルベンゼン C₆H₅CH₂CH₃ を酸化しても、できるのはトルエンと同じ安息香酸です。</p>
+<p class="ref-p"><b>「側鎖はどんなに長くても、環に付いている根もとの炭素1個だけが残って −COOH になる」と覚えましょう。</b>たとえばエチルベンゼン C₆H₅CH₂CH₃ でも、酸化の後に残るのは、トルエンのときと同じ安息香酸です。</p>
 <p class="ref-p">側鎖が2本あれば、2本とも −COOH になります。o-キシレンからは<b>フタル酸</b>、p-キシレンからは<b>テレフタル酸</b>ができます。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₄(CH₃)₂（o-キシレン）</span><span class="ref-rx-arrow"><span class="ref-rx-over">KMnO₄</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₄(COOH)₂（フタル酸）</span></div><p class="ref-note">2本のメチル基が、どちらもカルボキシ基になります。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₄(CH₃)₂（p-キシレン）</span><span class="ref-rx-arrow"><span class="ref-rx-over">KMnO₄</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₄(COOH)₂（テレフタル酸）</span></div><p class="ref-note">テレフタル酸は、ペットボトルの PET の原料です。</p></div>

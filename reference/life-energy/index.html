@@ -28,14 +28,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
-<title>合金 —— 混ぜると性質が変わる ｜ 化学の参考書</title>
-<meta name="description" content="複数の金属、あるいは金属と非金属を融かし合わせて固めたものが合金です。黄銅・青銅・白銅・ステンレス鋼・ジュラルミン・はんだの成分と性質・用途を1枚の表にまとめ、硬くなる・融点が下がる理由を原子の並びで説明します。">
-<link rel="canonical" href="https://chem.schoollenz.com/reference/alloy/">
+<title>燃料・電池・光 —— 暮らしのエネルギーと環境の話題 ｜ 化学の参考書</title>
+<meta name="description" content="都市ガス（メタン）とプロパンガスの違い、石油の分留の順、身のまわりの電池（乾電池・リチウムイオン電池・燃料電池）を整理します。化学の範囲として化学発光と光化学反応を置き、最後に、環境・資源の話題を問題文から読み取る方法と、共通テストで覚えておくことをまとめます。">
+<link rel="canonical" href="https://chem.schoollenz.com/reference/life-energy/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
-<meta property="og:title" content="合金 —— 混ぜると性質が変わる ｜ 化学の参考書">
-<meta property="og:description" content="複数の金属、あるいは金属と非金属を融かし合わせて固めたものが合金です。黄銅・青銅・白銅・ステンレス鋼・ジュラルミン・はんだの成分と性質・用途を1枚の表にまとめ、硬くなる・融点が下がる理由を原子の並びで説明します。">
-<meta property="og:url" content="https://chem.schoollenz.com/reference/alloy/">
+<meta property="og:title" content="燃料・電池・光 —— 暮らしのエネルギーと環境の話題 ｜ 化学の参考書">
+<meta property="og:description" content="都市ガス（メタン）とプロパンガスの違い、石油の分留の順、身のまわりの電池（乾電池・リチウムイオン電池・燃料電池）を整理します。化学の範囲として化学発光と光化学反応を置き、最後に、環境・資源の話題を問題文から読み取る方法と、共通テストで覚えておくことをまとめます。">
+<meta property="og:url" content="https://chem.schoollenz.com/reference/life-energy/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -874,54 +892,67 @@ a.ref-link::before { content: '→ '; }
 }</style>
 </head>
 <body>
-<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-9">金属元素</a></div></header>
+<header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#basic">化学基礎</a> ／ <a href="/reference/#basic-7">化学と人間生活</a></div></header>
 <main class="wrap">
-<h1>合金 —— 混ぜると性質が変わる</h1>
-<p class="lede">複数の金属、あるいは金属と非金属を融かし合わせて固めたものが合金です。黄銅・青銅・白銅・ステンレス鋼・ジュラルミン・はんだの成分と性質・用途を1枚の表にまとめ、硬くなる・融点が下がる理由を原子の並びで説明します。</p>
-<div><span class="unit-label course-adv">化学</span><span class="unit-label">金属元素</span><span class="unit-label">合金</span></div>
+<h1>燃料・電池・光 —— 暮らしのエネルギーと環境の話題</h1>
+<p class="lede">都市ガス（メタン）とプロパンガスの違い、石油の分留の順、身のまわりの電池（乾電池・リチウムイオン電池・燃料電池）を整理します。化学の範囲として化学発光と光化学反応を置き、最後に、環境・資源の話題を問題文から読み取る方法と、共通テストで覚えておくことをまとめます。</p>
+<div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">化学と人間生活</span><span class="unit-label">燃料・電池・光</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（4節）</summary><ul><li><a href="#ref-sec-definition" data-ref-anchor="definition">合金とは —— 混ぜて性質を変える</a></li><li><a href="#ref-sec-examples" data-ref-anchor="examples">代表的な合金 —— 成分・性質・用途</a></li><li><a href="#ref-sec-functional" data-ref-anchor="functional">特別なはたらきをもつ合金</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-fuel" data-ref-anchor="fuel">燃料 —— 都市ガス・プロパンガス・石油</a></li><li><a href="#ref-sec-battery" data-ref-anchor="battery">身のまわりの電池</a></li><li><a href="#ref-sec-light" data-ref-anchor="light">光を出す反応・光で進む反応</a><b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></li><li><a href="#ref-sec-environment" data-ref-anchor="environment">環境・資源の話題の読み方</a></li><li><a href="#ref-sec-boundary" data-ref-anchor="boundary">共通テストの線引き</a></li></ul></details></nav>
 <div class="ref-scope">
-<p class="ref-p">身のまわりの金属製品の多くは、1種類の金属ではなく、ほかの元素を混ぜてつくられています。このページでは、混ぜてつくる<b>合金</b>の代表例と、混ぜると性質が変わる理由をまとめます。金属の性質が自由電子で説明できることは、結晶の種類のページで確かめておきましょう。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/crystal-types/">金属結合と、金属の性質（金属光沢・電気伝導性・展性と延性）はこちら</a></p>
-<section class="ref-sec" id="ref-sec-definition"><h4 class="ref-sec-h">合金とは —— 混ぜて性質を変える</h4><p class="ref-sec-lead">複数の金属、あるいは金属と非金属を混ぜ合わせて融かし、固めたものを合金といいます。もとの金属に無い優れた性質（硬さ・さびにくさ・低い融点など）をもつものがあります。</p></section>
-<p class="ref-p">複数の金属、あるいは金属と非金属を混ぜ合わせて融かし、固めたものを<b>合金</b>といいます。例えば、銅 Cu に亜鉛 Zn を混ぜると黄銅、鉄 Fe にクロム Cr とニッケル Ni を混ぜるとステンレス鋼になります。鉄に少量の炭素 C を含む<b>鋼</b>も、金属と非金属からできた合金です。</p>
-<p class="ref-p">混ぜると性質が変わる理由は、次の3つに分けて覚えます。</p>
-<ol class="ref-list"><li><b>硬く、強くなる。</b><div class="ref-li-hang">純金属は同じ大きさの原子が並んでいるので、力を加えると原子の面がずれやすく、軟らかい。大きさの違う原子が混ざると、面のずれが妨げられて、硬く強くなる。（例：青銅・ジュラルミン）</div></li><li><b>融点が下がる。</b><div class="ref-li-hang">スズ Sn（融点 232℃）と鉛 Pb（327℃）を混ぜたはんだは、どちらよりも低い約 180℃ で融ける。（例：はんだ）</div></li><li><b>さびにくくなる。</b><div class="ref-li-hang">鉄にクロムを混ぜると、表面にクロムを含むごく薄い酸化物の膜ができて、内部を守る。（例：ステンレス鋼）</div></li></ol>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/alloy-lattice.png" alt="原子を丸で描いた2つの枠を並べた図。左の「純金属」では同じ大きさの原子がそろって並び、上から2段目と3段目の間の破線に沿って、横向きの力で原子の面がずれやすい。右の「合金」では、ところどころに大きさの違う原子（橙色）が混ざり、同じ破線をまたいで引っかかるので、面のずれが妨げられる" loading="lazy"><figcaption class="ref-figure-cap">大きさの違う原子が混ざると、<b>原子の面がずれにくくなる</b>ので、合金は純金属より硬く強くなります。</figcaption></figure>
-<p class="ref-p">合金は、2種類以上の単体が混ざったものなので、高校化学では<b>混合物</b>に分類します。混ぜる割合を変えると性質が変わり、同じ「黄銅」でも銅と亜鉛の割合には幅があります。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/iron/">鋼（鉄と炭素）のつくり方は、鉄のページの製錬の節へ</a></p>
-<section class="ref-sec" id="ref-sec-examples"><h4 class="ref-sec-h">代表的な合金 —— 成分・性質・用途</h4><p class="ref-sec-lead">黄銅（Cu－Zn）・青銅（Cu－Sn）・白銅（Cu－Ni）・ステンレス鋼（Fe－Cr－Ni）・ジュラルミン（Al－Cu－Mg）・はんだ（Sn－Pb など）の6つは、成分まで覚えます。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">代表的な合金</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名称</th><th style="text-align: left;">主な成分</th><th style="text-align: left;">性質</th><th style="text-align: left;">用途</th></tr></thead><tbody><tr><td style="text-align: left;"><b>黄銅</b>（真ちゅう）</td><td style="text-align: left;">Cu－Zn</td><td style="text-align: left;">黄色で美しく、加工しやすい</td><td style="text-align: left;">5円硬貨・金管楽器・仏具</td></tr><tr><td style="text-align: left;"><b>青銅</b>（ブロンズ）</td><td style="text-align: left;">Cu－Sn</td><td style="text-align: left;">硬く、さびにくい。鋳物にしやすい</td><td style="text-align: left;">10円硬貨・銅像・鐘</td></tr><tr><td style="text-align: left;"><b>白銅</b></td><td style="text-align: left;">Cu－Ni</td><td style="text-align: left;">銀白色で、さびにくい</td><td style="text-align: left;">50円硬貨・100円硬貨</td></tr><tr><td style="text-align: left;"><b>ステンレス鋼</b></td><td style="text-align: left;">Fe－Cr－Ni</td><td style="text-align: left;">さびにくい</td><td style="text-align: left;">台所用品・医療器具・鉄道車両</td></tr><tr><td style="text-align: left;"><b>ジュラルミン</b></td><td style="text-align: left;">Al－Cu－Mg－Mn</td><td style="text-align: left;">軽くて強い</td><td style="text-align: left;">航空機の機体・ジュラルミンケース</td></tr><tr><td style="text-align: left;"><b>はんだ</b></td><td style="text-align: left;">Sn－Pb（無鉛はんだは Sn－Ag－Cu）</td><td style="text-align: left;">融点が低い</td><td style="text-align: left;">電子部品の接合</td></tr><tr><td style="text-align: left;">ニクロム</td><td style="text-align: left;">Ni－Cr</td><td style="text-align: left;">電気抵抗が大きい</td><td style="text-align: left;">電熱線（ドライヤー・トースター）</td></tr></tbody></table></div>
-<p class="ref-p"><b>表の上の6つ（黄銅・青銅・白銅・ステンレス鋼・ジュラルミン・はんだ）は、成分まで必ず覚えてください。</b>ニクロムは「電熱線」と言えれば十分です。</p>
-<p class="ref-p">銅の合金は3つあって取り違えやすいので、硬貨と結びつけて覚えましょう。「5円は黄色の<b>黄銅</b>（亜鉛）、10円は茶色の<b>青銅</b>（スズ）、50円・100円は白い<b>白銅</b>（ニッケル）」です。ブラスバンドの「ブラス」は黄銅のことで、トランペットなどの金管楽器は黄銅でできています。</p>
-<p class="ref-p">ジュラルミンは、アルミニウムの「軽い」を残したまま、銅・マグネシウムなどを混ぜて「強い」を足した合金です。はんだは、鉛の有毒性が問題になり、今は鉛を含まない<b>無鉛はんだ</b>（スズに銀・銅を混ぜたもの）が広く使われています。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/copper-silver/">銅の単体と化合物は、銅と銀のページへ</a></p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/amphoteric-metal/">アルミニウム・亜鉛・スズ・鉛の単体と化合物は、両性金属のページへ</a></p>
-<div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">トタンは鉄と亜鉛の合金、ブリキは鉄とスズの合金である</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">トタンは鉄板の表面を亜鉛で、ブリキは鉄板の表面をスズでおおった<b>めっき</b>です。融かし合わせてはいないので、合金ではありません。</span></p><p class="ref-mistake-why">どちらも鉄と別の金属の組み合わせなので、合金と混同しやすいためです。★ 合金は<b>融かして混ぜた</b>もの、めっきは<b>表面をおおった</b>もの、と区別します。</p></div>
-<p class="ref-link-row"><a class="ref-link" href="/reference/ionization-tendency/">トタンとブリキが鉄を守るしくみ（イオン化傾向）はこちら</a></p>
-<section class="ref-sec" id="ref-sec-functional"><h4 class="ref-sec-h">特別なはたらきをもつ合金</h4><p class="ref-sec-lead">形状記憶合金・水素吸蔵合金・アモルファス合金・超伝導合金など、特別な機能をもつ合金が実用化されています。名前と役目が結びつけば十分です。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">特別なはたらきをもつ合金</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">名前</th><th style="text-align: left;">例</th><th style="text-align: left;">はたらき</th><th style="text-align: left;">用途</th></tr></thead><tbody><tr><td style="text-align: left;">形状記憶合金</td><td style="text-align: left;">Ni－Ti</td><td style="text-align: left;">変形させても、温めると元の形に戻る</td><td style="text-align: left;">眼鏡のフレーム・温度センサー・歯列矯正</td></tr><tr><td style="text-align: left;">水素吸蔵合金</td><td style="text-align: left;">La－Ni・Ti－Fe</td><td style="text-align: left;">結晶のすき間に水素原子を取り込み、体積の約1000倍の水素をたくわえる</td><td style="text-align: left;">ニッケル・水素電池の負極</td></tr><tr><td style="text-align: left;">アモルファス合金</td><td style="text-align: left;">Fe 系など</td><td style="text-align: left;">融けた合金を急に冷やして、原子が不規則に並んだまま固めたもの。強さやさびにくさに優れる</td><td style="text-align: left;">変圧器の鉄心など</td></tr><tr><td style="text-align: left;">超伝導合金</td><td style="text-align: left;">Nb－Ti</td><td style="text-align: left;">ある温度以下で電気抵抗がほぼ 0 になる</td><td style="text-align: left;">MRI・リニアモーターカーの電磁石</td></tr></tbody></table></div>
-<p class="ref-p"><b>この表の合金は、成分まで覚えなくても構いません。</b>「形状記憶合金は温めると元に戻る」「水素吸蔵合金は水素をたくわえる」のように、名前と役目が結びつけば十分です。</p>
-<p class="ref-link-row"><a class="ref-link" href="/reference/crystal-types/">アモルファス（非晶質）が結晶とどう違うかは、結晶の種類のページへ</a></p>
-<section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">合金の定義と、黄銅・青銅・白銅・ステンレス鋼・ジュラルミン・はんだの6つの成分を覚えます。特別なはたらきをもつ合金は、名前と役目だけで十分です。</p></section>
-<p class="ref-p"><b>必ず覚えるのは、合金の定義（融かし合わせて固めたもの）と、黄銅（Cu－Zn）・青銅（Cu－Sn）・白銅（Cu－Ni）・ステンレス鋼（Fe－Cr－Ni）・ジュラルミン（Al－Cu－Mg）・はんだ（Sn－Pb）の6つの成分です。</b>用途は硬貨・航空機・電子部品のように、1つずつ言えれば十分です。</p>
-<p class="ref-p">混ぜる割合（何％ずつか）は、覚えなくても構いません。ジュラルミンの Mn のような少量の成分も、問題に出てきたときに分かれば困ることはありません。</p>
+<p class="ref-p">台所のガスコンロ、スマートフォンの電池、暗い所で光るライトは、どれも化学反応からエネルギーを取り出しています。このページでは、暮らしで使う<b>燃料・電池・光</b>をまとめ、最後に、環境や資源の話題が出てきたときの読み方を確かめます。</p>
+<section class="ref-sec" id="ref-sec-fuel"><h4 class="ref-sec-h">燃料 —— 都市ガス・プロパンガス・石油</h4><p class="ref-sec-lead">都市ガスはメタンを主成分とする混合物で、空気より軽い気体です。プロパンガス（LP ガス）はプロパン・ブタンが主成分で、空気より重い気体です。石油は、沸点の違いを使って分留し、ガス・ナフサ・灯油・軽油・重油に分けます。</p></section>
+<p class="ref-p">家庭で使うガスには、<b>都市ガス</b>と<b>プロパンガス</b>（LP ガス）の2種類があります。</p>
+<div class="ref-table-wrap"><div class="ref-cap">都市ガスとプロパンガス</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">比べること</th><th style="text-align: left;">都市ガス</th><th style="text-align: left;">プロパンガス（LP ガス）</th></tr></thead><tbody><tr><td style="text-align: left;">主成分</td><td style="text-align: left;"><b>メタン CH₄</b>（天然ガスが原料）</td><td style="text-align: left;"><b>プロパン C₃H₈</b>・ブタン C₄H₁₀</td></tr><tr><td style="text-align: left;">分子量</td><td style="text-align: left;">16</td><td style="text-align: left;">44（プロパン）</td></tr><tr><td style="text-align: left;">空気と比べた重さ</td><td style="text-align: left;"><b>軽い</b>（空気の平均の分子量は約 29）</td><td style="text-align: left;"><b>重い</b></td></tr><tr><td style="text-align: left;">ガス漏れ警報器の位置</td><td style="text-align: left;">天井の近く</td><td style="text-align: left;">床の近く</td></tr></tbody></table></div>
+<p class="ref-p"><b>「都市ガスの主成分はメタンで、空気より軽い」は必ず覚えてください。</b>気体の重さ（密度）は分子量で比べられます。空気は窒素（28）と酸素（32）がおよそ 4：1 で混ざった混合物なので、平均の分子量は約 29 です。分子量が 29 より小さい気体は空気より軽く、大きい気体は重くなります。カセットコンロやライターの燃料は、ブタンです。</p>
+<p class="ref-p">都市ガスもプロパンガスも、<b>1種類の物質ではなく混合物</b>です。都市ガスは、においのない天然ガスに、漏れたときに気づけるようにわざとにおいを付けてあります。</p>
+<p class="ref-p">メタンが完全に燃焼すると、二酸化炭素と水ができます。炭素を含む燃料を燃やすと、必ず CO₂ が出ます。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">CH₄ ＋ 2O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ 2H₂O</span></div><p class="ref-note">燃焼の反応式は、C は CO₂ に、H は H₂O になるとして係数を合わせれば書けます。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/chemical-equation/">燃焼の化学反応式の係数の合わせ方は、化学反応式のページへ</a></p>
+<p class="ref-p"><b>石油</b>（原油）は、炭素の数の違うたくさんの炭化水素の混合物です。原油を加熱して、沸点の違いで成分に分ける操作が<b>分留</b>で、沸点の低いものから次の順に分かれます。</p>
+<ol class="ref-list"><li><b>石油ガス</b>（プロパン・ブタンなど。LP ガスになる）</li><li><b>ナフサ</b>（粗製ガソリン。ガソリンやプラスチックの原料）</li><li><b>灯油</b>（ストーブの燃料）</li><li><b>軽油</b>（ディーゼルエンジンの燃料）</li><li><b>重油</b>・残りの油（アスファルトなど）</li></ol>
+<p class="ref-p"><b>分留の順は「ガス → ナフサ（ガソリン）→ 灯油 → 軽油 → 重油」と覚えましょう。</b>炭化水素は、分子が大きい（炭素の数が多い）ほど分子間力が強く、沸点が高くなるので、後ろほど大きな分子です。それぞれの沸点の範囲は覚えなくて構いません。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/substance-classification/">分留を含む混合物の分離の方法は、物質の分類のページへ</a></p>
+<p class="ref-p">燃料を燃やす代わりに、化学反応の熱をそのまま使う製品もあります。酸化カルシウム（生石灰）に水を加えると発熱するので、ひもを引くと温まる駅弁の容器などに使われます。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/life-household/">生石灰の使いみちと、使い捨てカイロのしくみ（発展）は、台所と薬箱の物質のページへ</a></p>
+<section class="ref-sec" id="ref-sec-battery"><h4 class="ref-sec-h">身のまわりの電池</h4><p class="ref-sec-lead">電池は、酸化還元反応で電子が負極から正極へ流れるのを電流として取り出す装置です。使い切りの一次電池（マンガン乾電池）と、充電してくり返し使える二次電池（リチウムイオン電池・鉛蓄電池）があり、乾電池の正極には酸化マンガン(Ⅳ) が使われます。</p></section>
+<p class="ref-p">電池の中では、負極で物質が電子を失い（酸化）、その電子が導線を通って正極へ流れ、正極で物質が電子を受け取ります（還元）。この電子の流れが電流です。</p>
+<div class="ref-table-wrap"><div class="ref-cap">身のまわりの電池</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">電池</th><th style="text-align: left;">種類</th><th style="text-align: left;">負極・正極の主な物質</th><th style="text-align: left;">使われている所</th></tr></thead><tbody><tr><td style="text-align: left;"><b>マンガン乾電池</b>・アルカリマンガン乾電池</td><td style="text-align: left;">一次電池</td><td style="text-align: left;">負極 <b>亜鉛 Zn</b>・正極 <b>酸化マンガン(Ⅳ) MnO₂</b></td><td style="text-align: left;">リモコン・時計・懐中電灯</td></tr><tr><td style="text-align: left;"><b>リチウムイオン電池</b></td><td style="text-align: left;">二次電池</td><td style="text-align: left;">負極 リチウムを含む黒鉛・正極 リチウムを含む金属酸化物</td><td style="text-align: left;">スマートフォン・ノートパソコン・電気自動車</td></tr><tr><td style="text-align: left;"><b>鉛蓄電池</b></td><td style="text-align: left;">二次電池</td><td style="text-align: left;">負極 鉛 Pb・正極 酸化鉛(Ⅳ) PbO₂</td><td style="text-align: left;">自動車のバッテリー</td></tr><tr><td style="text-align: left;"><b>燃料電池</b></td><td style="text-align: left;">——</td><td style="text-align: left;">負極に水素 H₂・正極に酸素 O₂ を送り続ける</td><td style="text-align: left;">燃料電池自動車・家庭用の発電</td></tr></tbody></table></div>
+<p class="ref-p"><b>「乾電池の正極は酸化マンガン(Ⅳ) MnO₂、負極は亜鉛 Zn」と、「充電できる電池が二次電池」は覚えておきましょう。</b>リチウムイオン電池の電極の反応式は覚える必要はありません。燃料電池は、水素と酸素から水ができる反応のエネルギーを電気として取り出すので、<b>出てくる物質は水だけ</b>です。</p>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2H₂ ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2H₂O</span></div><p class="ref-note">燃料電池の全体の反応は、水素の燃焼と同じ式です。燃やす代わりに、電子の流れとして取り出します。</p></div>
+<p class="ref-link-row"><a class="ref-link" href="/reference/cell-basics/">電池のしくみ（負極と正極・電子の流れ）は、電池の仕組みのページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/fuel-cell/">実用電池の比べ表と燃料電池の両極の式は、実用電池と燃料電池のページへ</a></p>
+<section class="ref-sec" id="ref-sec-light"><h4 class="ref-sec-h">光を出す反応・光で進む反応<b class="ref-course-tag" title="化学（科目）の範囲です。化学基礎だけを学ぶ人は読み飛ばしてかまいません。">化学</b></h4><p class="ref-sec-lead">化学反応のエネルギーが光として出る現象を化学発光といい、ルミノール反応（血痕の検出）やケミカルライトが例です。逆に、光を吸収して進む反応を光化学反応といい、光合成や写真の感光が例です。</p></section>
+<p class="ref-p">反応物のもつエネルギーの一部が、熱ではなく<b>光</b>として出てくる現象を<b>化学発光</b>といいます。暮らしの中の例は次の2つです。</p>
+<ul class="ref-list"><li><b>ルミノール反応</b><div class="ref-li-hang">ルミノールを塩基性の水溶液中で過酸化水素などで酸化すると、青白く光る。血液の成分が反応を速めるので、<b>血痕を見つける</b>のに使われる。</div></li><li><b>ケミカルライト</b><div class="ref-li-hang">筒を折り曲げると中の2つの液（シュウ酸のエステルと過酸化水素）が混ざり、そのエネルギーで色素が光る。熱をほとんど出さない。</div></li></ul>
+<p class="ref-p">ホタルの光も、生物の体の中で起こる化学発光です。</p>
+<p class="ref-p">反対に、光のエネルギーを吸収して進む反応を<b>光化学反応</b>といいます。植物の<b>光合成</b>（二酸化炭素と水から、光を使ってグルコースと酸素をつくる）や、写真のフィルムの臭化銀 AgBr が光で分解される反応がその例です。光で分解しやすい物質を褐色びんに保存するのも、光化学反応を防ぐためです。</p>
+<p class="ref-p"><b>「化学発光の例はルミノール反応とケミカルライト」「光合成は光化学反応」を言えるようにしておきましょう。</b>反応式やルミノールの構造は覚えなくて構いません。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/light-energy/">化学発光と光化学反応をエネルギー図で見るのは、化学反応と光のページへ</a></p>
+<section class="ref-sec" id="ref-sec-environment"><h4 class="ref-sec-h">環境・資源の話題の読み方</h4><p class="ref-sec-lead">地球温暖化・酸性雨・オゾン層・プラスチックごみ・資源の再利用などの話題は、必要な知識を問題文が説明してくれます。問われるのは、説明を反応式の量的関係や酸化数に落として読む力です。</p></section>
+<p class="ref-p">共通テストでは、環境や資源が題材の小問がよく登場しますが、その話題の知識そのものが問われることはほとんどありません。どれも、問題文の説明を読んで、これまでの単元の道具で解く形です。</p>
+<div class="ref-table-wrap"><div class="ref-cap">環境・資源の話題と、落とし込む単元</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">話題</th><th style="text-align: left;">問題文が説明してくれること</th><th style="text-align: left;">解くときに使う単元</th></tr></thead><tbody><tr><td style="text-align: left;">地球温暖化・燃料の比べ</td><td style="text-align: left;">CO₂ が温室効果ガスであること・燃料の組成</td><td style="text-align: left;">燃焼の反応式と物質量（出る CO₂ の量）</td></tr><tr><td style="text-align: left;">酸性雨</td><td style="text-align: left;">SO₂ や窒素の酸化物が雨に溶けて酸になること</td><td style="text-align: left;">酸化数の変化・中和の量的関係</td></tr><tr><td style="text-align: left;">オゾン層・大気の汚れ</td><td style="text-align: left;">物質が分解・反応する流れ</td><td style="text-align: left;">反応式の係数・酸化還元の見分け</td></tr><tr><td style="text-align: left;">プラスチックごみ・リサイクル</td><td style="text-align: left;">樹脂の種類や処理の方法</td><td style="text-align: left;">物質量・質量の比</td></tr><tr><td style="text-align: left;">放射性の炭素 ¹⁴C での年代測定</td><td style="text-align: left;">半減期の値</td><td style="text-align: left;">「半減期ごとに半分」の計算</td></tr></tbody></table></div>
+<p class="ref-p"><b>この節の話題の知識を覚える必要はありません。</b>覚えておくのは、「炭素を含む燃料を燃やせば CO₂ が出る（水素は燃えても水だけ）」のような、反応式から言えることだけです。問題文の説明を式に書き直せば、残りは物質量の計算です。</p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/stoichiometry/">化学反応式の量的関係は、量的関係のページへ</a></p>
+<p class="ref-link-row"><a class="ref-link" href="/reference/atom-structure/">¹⁴C の半減期と年代測定の計算は、原子の構造のページへ</a></p>
+<section class="ref-sec" id="ref-sec-boundary"><h4 class="ref-sec-h">共通テストの線引き</h4><p class="ref-sec-lead">燃料・電池・光の小問で知識が要るのは、都市ガスの主成分と重さ・乾電池の正極・分留の順と、化学の範囲の化学発光の例です。環境・資源の話題、反応式の係数、数値は問題文が教えてくれます。</p></section>
+<p class="ref-p">左の列は、問題文に説明が無くても答えられるようにしておくものです。右の列は、出てきたときに問題文が教えてくれるので、覚えておく必要はありません。（化学）と書いた行は、化学（科目）の範囲です。</p>
+<div class="ref-table-wrap"><div class="ref-cap">燃料・電池・光 —— 覚えておくことと、問題文が教えてくれること</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">覚えておく</th><th style="text-align: left;">問題文が教えてくれる</th></tr></thead><tbody><tr><td style="text-align: left;"><b>都市ガスの主成分はメタン</b>（混合物）。メタンは空気より軽い</td><td style="text-align: left;">都市ガス・LP ガスの成分の割合</td></tr><tr><td style="text-align: left;">気体の重さは分子量を空気の約 29 と比べる</td><td style="text-align: left;">燃焼で出る熱量の値</td></tr><tr><td style="text-align: left;">炭素を含む燃料を燃やすと CO₂ と H₂O ができる</td><td style="text-align: left;">燃料の組成・燃焼で出る CO₂ の量の計算に使う数値</td></tr><tr><td style="text-align: left;">石油の分留の順（ガス → ナフサ → 灯油 → 軽油 → 重油）</td><td style="text-align: left;">それぞれの沸点の範囲</td></tr><tr><td style="text-align: left;"><b>乾電池の正極は MnO₂・負極は Zn</b>。充電できるのが二次電池</td><td style="text-align: left;">リチウムイオン電池の電極の反応式</td></tr><tr><td style="text-align: left;">燃料電池から出る物質は水だけ</td><td style="text-align: left;">燃料電池の両極の式（化学基礎の範囲では問題文が与える）</td></tr><tr><td style="text-align: left;">（化学）化学発光の例はルミノール反応・ケミカルライト。光合成は光化学反応</td><td style="text-align: left;">ルミノールの構造・発光の反応式</td></tr><tr><td style="text-align: left;">環境・資源の話題は、問題文の説明を反応式に落として読む</td><td style="text-align: left;">温暖化・酸性雨・オゾン層・リサイクルの説明、¹⁴C の半減期</td></tr></tbody></table></div>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の合金の、主な成分元素を元素記号で答えよ。(1) 黄銅　(2) 青銅　(3) ステンレス鋼　(4) ジュラルミン　(5) はんだ（鉛を含むもの）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>Cu・Zn</b>　(2) <b>Cu・Sn</b>　(3) <b>Fe・Cr・Ni</b>　(4) <b>Al・Cu・Mg</b>（少量の Mn も含む）　(5) <b>Sn・Pb</b>。銅の合金は、相手が亜鉛なら黄銅、スズなら青銅、ニッケルなら白銅と区別します。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(ア)〜(オ)のうち、正しいものをすべて選べ。(ア) 10円硬貨は青銅でできている　(イ) トタンは鉄と亜鉛を融かし合わせた合金である　(ウ) はんだの融点は、成分のスズ・鉛のどちらの融点よりも低い　(エ) ジュラルミンは、軽くて強いので航空機の機体に使われる　(オ) 合金は、1種類の元素からなる単体である</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(ア)・(ウ)・(エ)</b>。(イ) トタンは鉄板の表面を亜鉛でおおっためっきで、合金ではない。(オ) 合金は2種類以上の元素の単体が混ざったもので、高校化学では混合物に分類する。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の気体のうち、空気より軽いものをすべて選べ。空気の平均の分子量は 29、原子量は H＝1・C＝12・N＝14・O＝16 とする。(ア) メタン CH₄　(イ) プロパン C₃H₈　(ウ) アンモニア NH₃　(エ) 二酸化炭素 CO₂　(オ) 水素 H₂</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>分子量は (ア) 16・(イ) 44・(ウ) 17・(エ) 44・(オ) 2。29 より小さいのは <b>(ア)・(ウ)・(オ)</b>。★ 都市ガス（メタン）の警報器を天井の近くに、プロパンガスの警報器を床の近くに付けるのは、この重さの違いのためです。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ある家庭が1か月に使った都市ガスを、すべてメタン CH₄ とみなすと 8.0 kg であった。これが完全に燃焼したとき（CH₄ ＋ 2O₂ → CO₂ ＋ 2H₂O）、出る二酸化炭素は何 kg か。原子量は H＝1・C＝12・O＝16 とする。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>メタン 8.0 kg は 8.0 × 10³ ／ 16 ＝ 5.0 × 10² mol。反応式の係数から CO₂ も 5.0 × 10² mol できるので、44 × 5.0 × 10² g ＝ 2.2 × 10⁴ g ＝ <b>22 kg</b>。★ 「温暖化」という題材でも、やることは燃焼の反応式の量的関係です。</p></div></details></div>
 </div>
 </div>
 
 <h2>解けるか試す</h2>
-<div class="embed"><b>▶ 一問一答で解く（7問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=inorg.metal.alloy-def,inorg.metal.alloy-examples,inorg.metal.alloy-functional,inorg.metal.alloy-mixture,inorg.metal.stainless,inorg.metal.nichrome,inorg.metal.plating-not-alloy&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（7問・測定モード）">▶ 一問一答で解く（7問・測定モード）</button><a class="alt" href="/qa/?codes=inorg.metal.alloy-def,inorg.metal.alloy-examples,inorg.metal.alloy-functional,inorg.metal.alloy-mixture,inorg.metal.stainless,inorg.metal.nichrome,inorg.metal.plating-not-alloy&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
+<div class="embed"><b>▶ 一問一答で解く（4問・測定モード）</b><p>このページが扱う知識項目を、複数選択で採点します。読んだその場で、覚えたかではなく解けるかを確かめられます。</p><button type="button" data-embed="/qa/?codes=theo.life.city-gas-methane,theo.life.petroleum-fraction,theo.life.dry-cell-mno2,theo.life.chemiluminescence-examples&amp;mode=choice&amp;from=reference" data-embed-title="▶ 一問一答で解く（4問・測定モード）">▶ 一問一答で解く（4問・測定モード）</button><a class="alt" href="/qa/?codes=theo.life.city-gas-methane,theo.life.petroleum-fraction,theo.life.dry-cell-mno2,theo.life.chemiluminescence-examples&amp;mode=choice&amp;from=reference" target="_blank" rel="noopener">別のタブで開く</a></div>
 
-<nav class="seq"><a href="/reference/amphoteric-metal/">← 両性金属 —— Al・Zn・Sn・Pb</a>
+<nav class="seq"><a href="/reference/life-household/">← 台所と薬箱の物質 —— 使いみち・見分け方・液性</a>
 <a href="/reference/">参考書の目次</a>
 <a href="/reference/terms/">用語から引く</a>
-<a href="/reference/complex-ion/">錯イオン —— 配位数・名前・形 →</a></nav>
+<a href="/reference/life-safety/">薬品を安全に扱う —— 混ぜるな危険・薄め方・保存・乾燥剤 →</a></nav>
 <script>
 document.addEventListener('click', function (e) {
   var b = e.target.closest ? e.target.closest('button[data-embed]') : null;

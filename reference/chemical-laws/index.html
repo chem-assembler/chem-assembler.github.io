@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -916,7 +934,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の (1)〜(3) に最も関係の深い法則の名前を答えよ。(1) 同温・同圧で、窒素 1 体積と水素 3 体積から、アンモニアが 2 体積できる。(2) 水を電気分解してつくった水素と酸素、天然の水の成分を調べたものは、どちらも水素と酸素の質量の比が 1 : 8 である。(3) 密閉した容器の中でスチールウールを燃やしても、容器全体の質量は変わらない。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 気体反応の法則（体積が 1 : 3 : 2 の簡単な整数比）。(2) 定比例の法則（1つの化合物 H₂O の中の質量の比が、つくり方によらず一定）。(3) 質量保存の法則。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">窒素の酸化物 A・B がある。A は窒素 7.0g と酸素 4.0g、B は窒素 7.0g と酸素 16g からなる。(1) 一定質量の窒素と結びつく酸素の質量の比（A : B）を求めよ。(2) この関係を表す法則の名前を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 4.0 : 16 ＝ 1 : 4。(2) 倍数比例の法則。窒素の質量をそろえてから酸素の質量を比べると、簡単な整数比になっています（A は N₂O、B は NO₂ にあたります）。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">マグネシウム 1.2g を完全に燃焼させると、酸化マグネシウムが 2.0g できた。マグネシウム 3.0g を完全に燃焼させると、酸化マグネシウムは何 g できるか。また、このとき使った2つの法則の名前を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>5.0g。定比例の法則から、Mg : MgO の質量比は 1.2 : 2.0 で一定なので、倍率 3.0/1.2 ＝ ×5/2 を掛けて 2.0 × 5/2 ＝ 5.0g。結びついた酸素の質量を 2.0 − 1.2 ＝ 0.8g と出すところで、質量保存の法則を使っています。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">「同温・同圧で、水素 1 体積と塩素 1 体積から塩化水素 2 体積ができる」という事実が、ドルトンの原子説だけでは説明できない理由と、アボガドロがそれをどう解決したかを説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>同じ体積に同じ数の原子があると考えると、水素原子 1 個と塩素原子 1 個から塩化水素の粒子が 2 個でき、1 個の粒子に水素原子が半分ずつ入ることになる。原子は分けられないので原子説と食い違う。アボガドロは、気体は原子が結びついた分子（H₂・Cl₂）からなり、同温・同圧・同体積には同数の分子があると考えた。反応で割れるのは分子で、H₂ ＋ Cl₂ → 2HCl となるので、原子を割らずに体積比 1 : 1 : 2 が説明できる。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">「同温・同圧で水素と塩素を 1 体積ずつ反応させると、塩化水素が 2 体積できる」という事実が、ドルトンの原子説だけでは説明できない理由と、アボガドロがそれをどう解決したかを説明せよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>同じ体積に同じ数の原子があると考えると、水素原子 1 個と塩素原子 1 個から塩化水素の粒子が 2 個でき、1 個の粒子に水素原子が半分ずつ入ることになる。原子は分けられないので原子説と食い違う。アボガドロは、気体は原子が結びついた分子（H₂・Cl₂）からなり、同温・同圧・同体積には同数の分子があると考えた。反応で割れるのは分子で、H₂ ＋ Cl₂ → 2HCl となるので、原子を割らずに体積比 1 : 1 : 2 が説明できる。</p></div></details></div>
 </div>
 </div>
 

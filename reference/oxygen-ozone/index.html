@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -932,7 +950,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/ion-equation/condition.html?s=b3&amp;from=reference&amp;page=oxygen-ozone">オゾンの半反応式を酸性から塩基性に書き換える</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/half-reaction-condition/">液性による半反応式の書き換え（H⁺ と OH⁻ は共存しない）はこちら</a></p>
 <h5 class="ref-h5">オゾンの検出 —— ヨウ化カリウムデンプン紙</h5>
-<p class="ref-p">O₃ は、湿らせた<b>ヨウ化カリウムデンプン紙</b>を青変させます。紙に含まれるヨウ化物イオン I⁻ が還元剤としてはたらいてヨウ素 I₂ ができ、I₂ がデンプンとヨウ素デンプン反応を起こして青〜青紫色になります。</p>
+<p class="ref-p">O₃ が出ているかは、<b>ヨウ化カリウムデンプン紙</b>を水でぬらしてかざすと分かります。紙が青く染まれば、O₃ がある目印です。紙に含まれるヨウ化物イオン I⁻ が還元剤としてはたらいてヨウ素 I₂ ができ、I₂ がデンプンとヨウ素デンプン反応を起こして青〜青紫色になります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">O₃ ＋ 2KI ＋ H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">I₂ ＋ 2KOH ＋ O₂↑</span></div><p class="ref-note">酸を加えていないので、<b>中・塩基性条件の半反応式</b>を使って組み立てます。O₃ ＋ H₂O ＋ 2e⁻ → O₂ ＋ 2OH⁻ と 2I⁻ → I₂ ＋ 2e⁻ を足し、両辺に 2K⁺ を戻すと KOH ができます。</p></div>
 <p class="ref-p">ヨウ化カリウムデンプン紙は、O₃ だけでなく Cl₂ など酸化剤一般の検出に使います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/halogen/">ヨウ素とヨウ化物イオンの半反応式・ヨウ素デンプン反応はこちら</a></p>

@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>ヘスの法則 —— エネルギー図の高さで足し引き ｜ 化学の参考書</title>
-<meta name="description" content="反応エンタルピーは、反応の経路によらず、はじめと終わりの状態だけで決まります（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。">
+<meta name="description" content="出発点と到達点が同じなら、途中でどんな道を通っても、出入りする熱の合計（反応エンタルピー）は変わりません（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/hess-law/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="ヘスの法則 —— エネルギー図の高さで足し引き ｜ 化学の参考書">
-<meta property="og:description" content="反応エンタルピーは、反応の経路によらず、はじめと終わりの状態だけで決まります（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。">
+<meta property="og:description" content="出発点と到達点が同じなら、途中でどんな道を通っても、出入りする熱の合計（反応エンタルピー）は変わりません（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/hess-law/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,19 +895,19 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-4">化学反応とエネルギー</a></div></header>
 <main class="wrap">
 <h1>ヘスの法則 —— エネルギー図の高さで足し引き</h1>
-<p class="lede">反応エンタルピーは、反応の経路によらず、はじめと終わりの状態だけで決まります（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。</p>
+<p class="lede">出発点と到達点が同じなら、途中でどんな道を通っても、出入りする熱の合計（反応エンタルピー）は変わりません（ヘスの法則）。エネルギー図に準位を置いて高さを決めれば、ΔH ＝（到達点の高さ）−（出発点の高さ）で、直接測れない反応の ΔH も求められます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">化学反応とエネルギー</span><span class="unit-label">ヘスの法則と結合エンタルピー</span></div>
 
 <div class="ref-layout">
-<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-law" data-ref-anchor="law">ヘスの法則</a></li><li><a href="#ref-sec-diagram" data-ref-anchor="diagram">準位を置いて高さの差をとる</a></li><li><a href="#ref-sec-formation" data-ref-anchor="formation">生成エンタルピーから反応エンタルピーを求める</a></li><li><a href="#ref-sec-algebra" data-ref-anchor="algebra">別解 —— 式を足し引きする</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
+<nav class="ref-toc" aria-label="このページの目次"><details><summary>このページの中身（5節）</summary><ul><li><a href="#ref-sec-law" data-ref-anchor="law">ヘスの法則</a></li><li><a href="#ref-sec-diagram" data-ref-anchor="diagram">準位を置いて高さの差をとる</a></li><li><a href="#ref-sec-formation" data-ref-anchor="formation">生成エンタルピーで反応エンタルピーを出す</a></li><li><a href="#ref-sec-algebra" data-ref-anchor="algebra">別解 —— 式を足し引きする</a></li><li><a href="#ref-sec-range" data-ref-anchor="range">覚える範囲</a></li></ul></details></nav>
 <div class="ref-scope">
 <p class="ref-p">反応エンタルピーの中には、実験で直接測れないものがあります。このページでは、測れる反応の ΔH を組み合わせて、測れない反応の ΔH を求める方法を扱います。ΔH の符号の約束（発熱は負）と、エネルギー図の描き方は前のページで扱いました。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">ΔH の符号とエネルギー図の約束はこちら</a></p>
-<section class="ref-sec" id="ref-sec-law"><h4 class="ref-sec-h">ヘスの法則</h4><p class="ref-sec-lead">反応エンタルピーは、反応の経路によらず、反応のはじめの状態と終わりの状態だけで決まります。</p></section>
-<p class="ref-p">「反応エンタルピーは、反応の経路によらず、はじめと終わりの状態だけで決まる」ことを<b>ヘスの法則</b>（総熱量保存の法則）といいます。1840 年にヘスが、多くの反応の熱を測って見つけました。</p>
-<p class="ref-p">具体例1で、固体の水酸化ナトリウムを塩酸で中和します。経路は2通りあります。</p>
-<div class="ref-table-wrap"><div class="ref-cap">固体の NaOH を中和する2つの経路</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">経路</th><th style="text-align: left;">反応</th><th style="text-align: right;">ΔH</th></tr></thead><tbody><tr><td style="text-align: left;">Ⅰ（直接）</td><td style="text-align: left;">NaOH(固) ＋ HCl aq → NaCl aq ＋ H₂O(液)</td><td style="text-align: right;">−101 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の1段目（溶かす）</td><td style="text-align: left;">NaOH(固) ＋ aq → NaOH aq</td><td style="text-align: right;">−44.5 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の2段目（中和する）</td><td style="text-align: left;">NaOH aq ＋ HCl aq → NaCl aq ＋ H₂O(液)</td><td style="text-align: right;">−56.5 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の合計</td><td style="text-align: left;">（はじめと終わりはⅠと同じ）</td><td style="text-align: right;">−101 kJ</td></tr></tbody></table></div>
-<p class="ref-p">経路Ⅱの2段を足すと (−44.5) ＋ (−56.5) ＝ −101kJ で、経路Ⅰと同じになります。<b>物質はそれぞれ決まったエンタルピーをもっている</b>ので、はじめと終わりが同じなら、その差もどの道を通っても同じになるためです。</p>
+<section class="ref-sec" id="ref-sec-law"><h4 class="ref-sec-h">ヘスの法則</h4><p class="ref-sec-lead">スタートとゴールが同じなら、途中の道すじを変えても、ΔH の合計は同じ値になります。</p></section>
+<p class="ref-p">物質の最初の状態と最後の状態が決まっていれば、1段で一気に進めても、何段かに分けて進めても、ΔH を足し合わせた値は変わりません。この決まりが<b>ヘスの法則</b>（総熱量保存の法則）です。ヘスが 1840 年に、たくさんの反応の熱を測り比べて気づきました。</p>
+<p class="ref-p">具体例1で、水素と酸素から液体の水 1mol をつくります。経路は2通りあります。</p>
+<div class="ref-table-wrap"><div class="ref-cap">液体の水をつくる2つの経路（25℃）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">経路</th><th style="text-align: left;">反応</th><th style="text-align: right;">ΔH</th></tr></thead><tbody><tr><td style="text-align: left;">Ⅰ（直接）</td><td style="text-align: left;">H₂(気) ＋ ½O₂(気) → H₂O(液)</td><td style="text-align: right;">−286 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の1段目（水蒸気をつくる）</td><td style="text-align: left;">H₂(気) ＋ ½O₂(気) → H₂O(気)</td><td style="text-align: right;">−242 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の2段目（凝縮させる）</td><td style="text-align: left;">H₂O(気) → H₂O(液)</td><td style="text-align: right;">−44 kJ</td></tr><tr><td style="text-align: left;">Ⅱ の合計</td><td style="text-align: left;">（はじめと終わりはⅠと同じ）</td><td style="text-align: right;">−286 kJ</td></tr></tbody></table></div>
+<p class="ref-p">経路Ⅱの2段を足すと (−242) ＋ (−44) ＝ −286kJ で、経路Ⅰと同じになります。<b>物質はそれぞれ決まったエンタルピーをもっている</b>ので、はじめと終わりが同じなら、その差もどの道を通っても同じになるためです。</p>
 <p class="ref-p">エネルギー図でいえば、<b>準位の高さは物質で決まっていて、どの経路を通っても高さの差は同じ</b>です。山登りで、どの登山道を通っても山頂と麓の標高差が変わらないのと同じです。</p>
 <section class="ref-sec" id="ref-sec-diagram"><h4 class="ref-sec-h">準位を置いて高さの差をとる</h4><p class="ref-sec-lead">基準の準位を 0 に置き、与えられた式から残りの準位の高さを決めます。求める ΔH は（到達点の高さ）−（出発点の高さ）です。</p></section>
 <p class="ref-p">ヘスの法則の計算は、エネルギー図の<b>準位の高さ</b>を決めていけば、足し算と引き算だけで解けます。次の順で進めます。</p>
@@ -902,7 +920,7 @@ a.ref-link::before { content: '→ '; }
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/hess-law-app-co.png" alt="エネルギー図の縦軸に3本の準位。いちばん上が C(黒鉛) ＋ O₂ で 0、その下が CO ＋ ½O₂、いちばん下が CO₂ で −394。求める CO の高さには ? の矢印が付いている" loading="lazy"><figcaption class="ref-figure-cap">アプリでも同じ図を組み立てられます。<b>準位の高さを置いてから、矢印の向きで符号を決める</b>のが解き方の芯です。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/ratio/thermo.html?h=h2&amp;from=reference&amp;page=hess-law">準位を置いてヘスの法則を解く（問2・CO の生成エンタルピー）</a></p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">「ヘスの法則は ΔH を足す法則」と覚えて、CO の生成エンタルピーを (−394) ＋ (−283) ＝ −677kJ とする</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">求める反応がどの準位からどの準位へ行くのかを図で決め、<b>（到達点の高さ）−（出発点の高さ）</b>をとります。この例では −111kJ です。</span></p><p class="ref-mistake-why">足すか引くかを式の見た目で決めると、逆向きにたどる所で符号を落とします。★ 図に矢印を描けば、逆向きにたどる所は矢印が逆を向くので、符号の反転が目で見えます。</p></div>
-<section class="ref-sec" id="ref-sec-formation"><h4 class="ref-sec-h">生成エンタルピーから反応エンタルピーを求める</h4><p class="ref-sec-lead">単体の組をいちばん上の基準 0 に置くと、各化合物の生成エンタルピーがそのまま準位の高さになります。反応エンタルピー ＝（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）です。</p></section>
+<section class="ref-sec" id="ref-sec-formation"><h4 class="ref-sec-h">生成エンタルピーで反応エンタルピーを出す</h4><p class="ref-sec-lead">単体の組をいちばん上の基準 0 に置くと、各化合物の生成エンタルピーがそのまま準位の高さになります。反応エンタルピー ＝（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）です。</p></section>
 <p class="ref-p"><b>単体の組を基準 0 に置くと、生成エンタルピーがそのまま高さになります。</b>生成エンタルピーは「単体から化合物 1mol ができるときの ΔH」なので、単体からの高さの差そのものだからです。</p>
 <p class="ref-p">そのため、生成エンタルピーが分かっている物質だけでできた反応は、次の関係で ΔH が出ます。</p>
 <p class="ref-p"><b>反応エンタルピー ＝（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）</b></p>
@@ -916,7 +934,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">与えられた式を、<b>求める式の左辺と右辺に合うように並べ替えて足し引きする</b>方法もあります。具体例2なら、1本目の式から2本目の式を引くと、CO₂ が消えて C(黒鉛) ＋ ½O₂ → CO が残り、ΔH は (−394) − (−283) ＝ −111kJ です。</p>
 <p class="ref-p">この方法では、<b>式を逆向きにしたら ΔH の符号を逆にし、式を <span class="ref-blank">○○</span> 倍したら ΔH も <span class="ref-blank">○○</span> 倍にする</b>のを忘れないようにします。どちらの解き方でも答えは同じなので、慣れたほうを使ってかまいません。準位の数が多い問題では、図のほうが見通しがよくなります。</p>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">「経路によらず、はじめと終わりで決まる」と、準位を置いて差をとる手順を覚えます。値は問題文に書かれます。</p></section>
-<p class="ref-p"><b>「反応エンタルピーは経路によらず、はじめと終わりの状態で決まる」というヘスの法則の中身は必ず覚えてください。</b>計算は「基準を 0 に置く → 準位の高さを決める → 到達点 − 出発点」の3段で、どの問題も同じです。</p>
+<p class="ref-p"><b>「スタートとゴールが同じなら、どの道すじでも ΔH の合計は同じ」というヘスの法則の中身は必ず覚えてください。</b>計算は「基準を 0 に置く → 準位の高さを決める → 到達点 − 出発点」の3段で、どの問題も同じです。</p>
 <p class="ref-p">「（生成物の生成エンタルピーの和）−（反応物の生成エンタルピーの和）」は覚えてもよいですが、<b>図を描けば出てくる式なので、丸暗記より図から出せるようにしましょう。</b>生成エンタルピーや燃焼エンタルピーの数値は、問題文で与えられるので覚える必要はありません。</p>
 <h5 class="ref-h5">例題</h5>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C(黒鉛) ＋ O₂(気) → CO₂(気)　ΔH ＝ −394 kJ、C(ダイヤモンド) ＋ O₂(気) → CO₂(気)　ΔH ＝ −396 kJ である。<b>(1) C(黒鉛) → C(ダイヤモンド) の ΔH は何 kJ か。　(2) 黒鉛とダイヤモンドは、どちらがエネルギーの低い（安定な）状態か。</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>＋2kJ</b>。C(黒鉛) ＋ O₂ を 0 とすると、CO₂ は −394。C(ダイヤモンド) ＋ O₂ は CO₂ より 396 高いので −394 ＋ 396 ＝ ＋2。黒鉛（0）からダイヤモンド（＋2）へ上るので ΔH ＝ ＋2 − 0 ＝ ＋2kJ。　(2) <b>黒鉛</b>。ダイヤモンドのほうが 2kJ 高いためです。炭素の生成エンタルピーの基準（0）を黒鉛にとるのも、黒鉛が安定だからです。</p></div></details></div>

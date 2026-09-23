@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,7 +903,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">前のページでは、平衡定数 K は温度だけで決まり、平衡状態では K の式の等号が成り立つことを見ました。このページでは、平衡状態に<b>外から変化を加えたとき</b>に平衡がどちら向きに動くか（<b>平衡の移動</b>）を見ていきます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/equilibrium-constant/">化学平衡と平衡定数（生成物が分子・K は温度だけで決まる）へ</a></p>
-<section class="ref-sec" id="ref-sec-principle"><h4 class="ref-sec-h">ルシャトリエの原理 —— 変化を打ち消す方向へ</h4><p class="ref-sec-lead">可逆反応が平衡状態にあるとき、温度・圧力・濃度などを変化させて平衡状態を崩すと、加えられた変化を打ち消す方向に平衡が移動し、新しい平衡状態になります。これをルシャトリエの原理といいます。</p></section>
+<section class="ref-sec" id="ref-sec-principle"><h4 class="ref-sec-h">ルシャトリエの原理 —— 変化を打ち消す方向へ</h4><p class="ref-sec-lead">つり合っている可逆反応に、温度・圧力・濃度などの変化を外から与えると、平衡はその変化をやわらげる向きへずれて、別のつり合いに落ち着きます。この決まりがルシャトリエの原理です。</p></section>
 <p class="ref-p">具体例として、色の変化で平衡の移動が目に見える、二酸化窒素と四酸化二窒素の平衡を使います。NO₂ は赤褐色、N₂O₄ は無色なので、NO₂ が増えれば混合気体の色が濃くなり、減れば薄くなります。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2NO₂（赤褐色）</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">⇄</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">N₂O₄（無色）</span></div><p class="ref-note">ΔH ＝ −57.2 kJ（右向きが発熱）。分子の数は左辺2個・右辺1個。</p></div>
 <p class="ref-p">まず、右向き・左向きに反応が進んだときに、温度・全体の圧力・濃度がどう変わるかを表にします。</p>
@@ -924,8 +942,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/nitrogen/">アンモニアと硝酸の工業的製法（窒素の化合物）へ</a></p>
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">N₂ ＋ 3H₂ ⇄ 2NH₃（ΔH ＝ −92 kJ）が平衡状態にあるとき、次のように条件を変えると平衡はどちらに移動するか。「右」「左」「移動しない」で答えよ。① 温度・体積を一定にして N₂ を加える　② 圧力を一定にして温度を低くする　③ 温度・体積を一定にして Ar を加える　④ 温度・圧力を一定にして Ar を加える</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>分子の数は左辺4個・右辺2個。① N₂ を減らす方向に移動して<b>右</b>。② 温度を上げる方向 ＝ 発熱の方向に移動して<b>右</b>。③ 反応に関係する気体の分圧は変わらないので<b>移動しない</b>。④ 全圧一定で Ar を入れると体積が大きくなり、反応に関係する気体の圧力が下がるので、圧力を大きくする（分子を増やす）方向に移動して<b>左</b>。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の各反応が平衡状態にあるとき、［ ］内の操作を行うと平衡はどちらに移動するか。「右」「左」「移動しない」で答えよ。① H₂ ＋ I₂ ⇄ 2HI（ΔH ＝ −9 kJ）［温度一定で圧力を上げる］② C(固) ＋ CO₂ ⇄ 2CO（ΔH ＝ 172 kJ）［温度一定で圧力を上げる］③ C₂H₄ ＋ H₂ ⇄ C₂H₆（ΔH ＝ −136 kJ）［触媒を加える］④ N₂ ＋ 3H₂ ⇄ 2NH₃（ΔH ＝ −92 kJ）［温度一定で体積を小さくする］</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>① 分子の数が 2個 ＝ 2個 なので圧力では<b>移動しない</b>。② 固体の C は数えず 1個 : 2個。圧力を下げる（分子を減らす）方向に移動して<b>左</b>。③ 触媒は平衡を<b>移動させない</b>。④ 体積を小さくすると PV ＝ nRT より圧力が大きくなるので、圧力を下げる（分子を減らす）方向に移動して<b>右</b>（体積そのものに原理を当てて「左」としないこと）。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">N₂ ＋ 3H₂ ⇄ 2NH₃（ΔH ＝ −92 kJ）の平衡に、次の①〜④の操作をする。平衡は右・左のどちらへずれるか。ずれない場合は「移動しない」と書け。① 温度・体積を一定にして N₂ を加える　② 圧力を一定にして温度を下げる　③ 温度・体積を一定にして Ar を加える　④ 温度・圧力を一定にして Ar を加える</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>分子の数は左辺4個・右辺2個。① N₂ を減らす方向に移動して<b>右</b>。② 温度を上げる方向 ＝ 発熱の方向（右向きが発熱）に移動して<b>右</b>。③ 反応に関係する気体の分圧は変わらないので<b>移動しない</b>。④ 全圧一定で Ar を入れると体積が大きくなり、反応に関係する気体の圧力が下がるので、圧力を大きくする（分子を増やす）方向に移動して<b>左</b>。③と④は同じ「Ar を加える」でも答えが分かれます。問題文に単に「圧力一定」とあれば、全圧が一定という意味です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の①〜④の平衡に、［ ］内の操作をする。平衡は右・左のどちらへずれるか。ずれない場合は「移動しない」と書け。① H₂ ＋ I₂ ⇄ 2HI（ΔH ＝ −9 kJ）［温度一定で圧力を上げる］② C(固) ＋ CO₂ ⇄ 2CO（ΔH ＝ 172 kJ）［温度一定で圧力を上げる］③ C₂H₄ ＋ H₂ ⇄ C₂H₆（ΔH ＝ −136 kJ）［触媒を加える］④ N₂ ＋ 3H₂ ⇄ 2NH₃（ΔH ＝ −92 kJ）［温度一定で体積を小さくする］</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>① 分子の数が 2個 ＝ 2個 なので圧力では<b>移動しない</b>。② 固体の C は数えず、気体は 1個 : 2個。圧力を下げる（分子を減らす）方向に移動して<b>左</b>。③ 触媒は平衡を<b>移動させない</b>。④ 体積を小さくすると PV ＝ nRT より圧力が大きくなるので、圧力を下げる（分子を減らす）方向に移動して<b>右</b>。④は、体積そのものに原理を当てると「左」と逆の答えが出る反応をわざと選んであります。原理を当てるのは圧力のほうです。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">ハーバー・ボッシュ法で、時間と NH₃ の生成率の関係を表すグラフがある。反応温度を低くすると、グラフの (1) 反応開始直後の傾き、(2) 最後に落ち着く生成率の高さは、それぞれもとのグラフと比べてどうなるか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 低温では反応速度が小さくなるので、<b>傾きは小さくなる</b>（速度論）。(2) 発熱反応なので、低温では平衡が発熱の方向（右）に移動し、<b>生成率は高くなる</b>（平衡論）。</p></div></details></div>
 </div>
 </div>

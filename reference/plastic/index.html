@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -986,7 +1004,7 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の重合体の単量体を、示性式で書け。(1) ［CH₂−CH(C₆H₅)］ₙ　(2) ［CH₂−CH(OCOCH₃)］ₙ　(3) ［CO−C₆H₄−CO−O−CH₂CH₂−O］ₙ</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>スチレン</b> CH₂=CHC₆H₅。(2) <b>酢酸ビニル</b> CH₂=CHOCOCH₃。この2つは付加重合なので、繰り返し単位の C−C を C=C に戻すだけです。(3) <b>テレフタル酸</b> HOOC−C₆H₄−COOH と<b>エチレングリコール</b> HOCH₂CH₂OH の2つ。縮合重合なので、エステル結合を切り、切り口に −OH と −H を補って戻します。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">0.10 mol/L の塩化カルシウム水溶液 10 mL を、十分な量の陽イオン交換樹脂（H⁺ 形）を詰めたカラムに通し、純水で洗って流出液をすべて集めた。この流出液を中和するのに必要な 0.10 mol/L 水酸化ナトリウム水溶液は何 mL か。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>20 mL</b>。Ca²⁺ は 0.10 × 10/1000 ＝ 1.0×10⁻³ mol 入ります。2価なので、出てくる H⁺ はその2倍の 2.0×10⁻³ mol です。0.10 mol/L の NaOH なら 2.0×10⁻³ ÷ 0.10 ＝ 0.020 L ＝ 20 mL になります。★ 「入った陽イオンの電荷の合計 ＝ 出てきた H⁺ の物質量」で考えます。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">陽イオン交換樹脂（H⁺ 形）を十分に詰めた管に、0.050 mol/L の硝酸マグネシウム水溶液 20 mL を流した。管に残った液も純水で押し流し、出てきた液を全部集めて、濃度 0.080 mol/L の NaOH 水溶液で滴定した。中和点までに NaOH 水溶液は何 mL 要るか。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>25 mL</b>。Mg²⁺ は 0.050 × 20/1000 ＝ 1.0×10⁻³ mol 入ります。2価なので、出てくる H⁺ はその2倍の 2.0×10⁻³ mol です。0.080 mol/L の NaOH なら 2.0×10⁻³ ÷ 0.080 ＝ 0.025 L ＝ 25 mL になります。★ 「入った陽イオンの電荷の合計 ＝ 出てきた H⁺ の物質量」で考えます。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次のうち、熱硬化性樹脂をすべて選べ。ポリスチレン、メラミン樹脂、ポリエチレンテレフタラート、フェノール樹脂、アルキド樹脂、ポリ塩化ビニル</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>メラミン樹脂・フェノール樹脂・アルキド樹脂</b>の3つです。見分け方は「立体網目構造かどうか」の一点で、<b>ホルムアルデヒドと付加縮合するもの</b>と、<b>グリセリンのような3価以上の単量体を使うもの</b>が網目になります。</p></div></details></div>
 </div>
 </div>

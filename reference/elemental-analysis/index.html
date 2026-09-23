@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -889,14 +907,14 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">乾燥した酸素を送りながら試料を加熱して燃焼させ、生じた気体を2本の吸収管に順に通します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/elemental-analysis-apparatus.png" alt="元素分析の装置の図。左から乾燥した酸素が入り、試料と酸化銅(II)を入れてバーナーで加熱する燃焼管、次に塩化カルシウム管、最後にソーダ石灰管がつながっている。燃焼管を出た気体には H₂O と CO₂ があり、塩化カルシウム管を通ったあとは CO₂ だけになる" loading="lazy"><figcaption class="ref-figure-cap">気体は左から右へ一本道で流れます。どちらの吸収管も、<b>つなぐ前と後の質量の差</b>がそのまま吸収した H₂O・CO₂ の質量になります。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">装置の各部の役目</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">位置</th><th style="text-align: left;">もの</th><th style="text-align: left;">役目</th></tr></thead><tbody><tr><td style="text-align: left;">入口</td><td style="text-align: left;">乾燥した O₂（または空気）</td><td style="text-align: left;">燃焼に使う。湿っていると、その水まで1本目に吸収されてしまう</td></tr><tr><td style="text-align: left;">燃焼管</td><td style="text-align: left;">試料 ＋ <b>酸化銅(II) CuO</b></td><td style="text-align: left;">試料を<b>完全に酸化</b>する酸化剤。CO やすすを残さない</td></tr><tr><td style="text-align: left;">1本目</td><td style="text-align: left;"><b>塩化カルシウム管</b>（CaCl₂）</td><td style="text-align: left;">中性の乾燥剤なので <b>H₂O だけ</b>を吸収する。増えた質量 ＝ H₂O の質量</td></tr><tr><td style="text-align: left;">2本目</td><td style="text-align: left;"><b>ソーダ石灰管</b>（NaOH ＋ CaO）</td><td style="text-align: left;">塩基性なので酸性の <b>CO₂</b> を吸収する。増えた質量 ＝ CO₂ の質量</td></tr></tbody></table></div>
-<p class="ref-p">酸化銅(II)は、試料を完全燃焼させるための酸化剤です。不完全燃焼で CO やすすが残ると、吸収管で量った質量が試料中の C の量と合わなくなるためです。</p>
+<p class="ref-p">燃焼管に酸化銅(II) を入れておくのは、試料の炭素と水素を残らず CO₂ と H₂O に変えるためです。CuO は酸素を渡す側、つまり酸化剤として働きます。不完全燃焼で CO やすすが残ると、吸収管で量った質量が試料中の C の量と合わなくなるためです。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">試料（C・H・O からなる） ＋ O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over">CuO・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO₂ ＋ H₂O</span></div><p class="ref-note">試料中の C は全部 CO₂ に、H は全部 H₂O になります。係数は試料の分子式によって変わるので、ここでは書いていません。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">C₂H₅OH ＋ 3O₂</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2CO₂ ＋ 3H₂O</span></div><p class="ref-note">エタノールの例です。右辺の O は、試料の O と燃焼に使った O₂ の O が混ざっています。だから O の質量だけは、吸収管の質量からは出せません。</p></div>
 <section class="ref-sec" id="ref-sec-order"><h4 class="ref-sec-h">吸収管の順番 —— 水が先、二酸化炭素が後</h4><p class="ref-sec-lead">塩化カルシウム管を先、ソーダ石灰管を後につなぎます。逆にすると H₂O と CO₂ を別々に量れません。</p></section>
 <p class="ref-p"><b>「塩化カルシウム管が先、ソーダ石灰管が後」の順番は、理由ごと必ず覚えてください。</b>理由まで書かせる問題がよく登場します。</p>
-<p class="ref-p">塩化カルシウムは中性の乾燥剤なので、水だけを吸収します。一方、ソーダ石灰は水酸化ナトリウムと酸化カルシウムの混合物で塩基性なので、水だけでなく酸性の二酸化炭素も吸収します。</p>
+<p class="ref-p">塩化カルシウムは中性の乾燥剤なので、水だけを吸収します。一方、ソーダ石灰は NaOH と CaO を混ぜた塩基性の固体です。水も吸いますが、酸性の二酸化炭素もいっしょに取り込んでしまいます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">ソーダ石灰管を先につないでも、2本の質量の増え方から H₂O と CO₂ の質量はそれぞれ求められる。</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">ソーダ石灰管を先につなぐと、H₂O と CO₂ が1本目で一緒に吸収されてしまい、2本目はほとんど増えません。合計しか分からないので、別々には求められません。</span></p><p class="ref-mistake-why">無機で習った気体の乾燥剤の組み合わせ（酸性の気体に塩基性の乾燥剤は使わない）と同じ理由です。</p></div>
-<p class="ref-p">ソーダ石灰は、酸化カルシウムを濃い水酸化ナトリウム水溶液に浸してから加熱・乾燥させた、白色の粒状の固体です。<b>作り方は覚えなくても構いません。</b>「塩基性だから CO₂ も吸う」が言えれば十分です。</p>
+<p class="ref-p">ソーダ石灰をつくるには、酸化カルシウムに濃い NaOH 水溶液をしみこませ、熱して乾かします。できあがりは白い粒です。<b>作り方は覚えなくても構いません。</b>「塩基性だから CO₂ も吸う」が言えれば十分です。</p>
 <section class="ref-sec" id="ref-sec-mass"><h4 class="ref-sec-h">質量を元素ごとに割り振る</h4><p class="ref-sec-lead">CO₂ の質量から C、H₂O の質量から H を出し、O は全体から引き算で出します。</p></section>
 <p class="ref-p">試料の質量、吸収された H₂O の質量、CO₂ の質量から、元素ごとの質量を次のように出します。</p>
 <div class="ref-table-wrap"><div class="ref-cap">各元素の質量の出し方（H=1.0、C=12、O=16）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">求めるもの</th><th style="text-align: left;">式</th><th style="text-align: left;">わけ</th></tr></thead><tbody><tr><td style="text-align: left;"><b>C の質量</b></td><td style="text-align: left;">CO₂ の質量 × 12/44</td><td style="text-align: left;">CO₂ の分子量 44 のうち、C が占めるのは 12</td></tr><tr><td style="text-align: left;"><b>H の質量</b></td><td style="text-align: left;">H₂O の質量 × 2.0/18</td><td style="text-align: left;">H₂O の分子量 18 のうち、H が占めるのは <b>2個ぶんの 2.0</b></td></tr><tr><td style="text-align: left;"><b>O の質量</b></td><td style="text-align: left;">試料の質量 −（C の質量 ＋ H の質量）</td><td style="text-align: left;">酸素だけは引き算でしか出せない</td></tr></tbody></table></div>
@@ -926,8 +944,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">計算は暗記ではなく手順です。原子量は問題に与えられます。「H は 2.0/18」と「O は引き算」の2点だけは、手順の中で必ず意識してください。</p>
 <p class="ref-p">ソーダ石灰の作り方、質量分析の仕組みは<b>覚えなくても構いません</b>。</p>
 <h5 class="ref-h5">例題</h5>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C・H・O だけからなる有機化合物 12.0 mg を完全燃焼させると、CO₂ 17.6 mg と H₂O 7.20 mg が生じた。この化合物の組成式を求めよ。また、分子量が 60 のとき、分子式を求めよ。（H=1.0、C=12、O=16）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C の質量 ＝ 17.6 × 12/44 ＝ 4.8 mg、H の質量 ＝ 7.20 × 2.0/18 ＝ 0.80 mg、O の質量 ＝ 12.0 − 4.8 − 0.80 ＝ 6.4 mg。C : H : O ＝ 4.8/12 : 0.80/1.0 : 6.4/16 ＝ 0.40 : 0.80 : 0.40。O を1にそろえると 1 : 2 : 1 なので、組成式は <b>CH₂O</b>（式量30）。60 ÷ 30 ＝ 2 より、分子式は <b>C₂H₄O₂</b> です。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C・H・O だけからなる有機化合物 33 mg を完全燃焼させると、CO₂ 66 mg と H₂O 27 mg が生じた。この化合物の組成式を求めよ。（H=1.0、C=12、O=16）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C の質量 ＝ 66 × 12/44 ＝ 18 mg、H の質量 ＝ 27 × 2.0/18 ＝ 3.0 mg、O の質量 ＝ 33 − 18 − 3.0 ＝ 12 mg。C : H : O ＝ 18/12 : 3.0/1.0 : 12/16 ＝ 1.5 : 3.0 : 0.75。O を1にそろえる（0.75 で割る）と 2 : 4 : 1 なので、組成式は <b>C₂H₄O</b> です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C・H・O だけからなる有機化合物 12.0 mg を完全燃焼させると、CO₂ 17.6 mg と H₂O 7.20 mg が生じた。この化合物の組成式を求めよ。また、分子量が 60 のとき、分子式を求めよ。（H=1.0、C=12、O=16）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C の質量 ＝ 17.6 × 12/44 ＝ 4.8 mg、H の質量 ＝ 7.20 × 2.0/18 ＝ 0.80 mg、O の質量 ＝ 12.0 − 4.8 − 0.80 ＝ 6.4 mg。3つとも小数第1位までそろえておくと、足して 12.0 に戻るかがすぐ確かめられます。C : H : O ＝ 4.8/12 : 0.80/1.0 : 6.4/16 ＝ 0.40 : 0.80 : 0.40。O を1にそろえると 1 : 2 : 1 なので、組成式は <b>CH₂O</b>（式量30）。60 ÷ 30 ＝ 2 より、分子式は <b>C₂H₄O₂</b> です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C・H・O だけからなる有機化合物 33 mg を完全燃焼させると、CO₂ 66 mg と H₂O 27 mg が生じた。この化合物の組成式を求めよ。（H=1.0、C=12、O=16）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C の質量 ＝ 66 × 12/44 ＝ 18 mg、H の質量 ＝ 27 × 2.0/18 ＝ 3.0 mg、O の質量 ＝ 33 − 18 − 3.0 ＝ 12 mg。C : H : O ＝ 18/12 : 3.0/1.0 : 12/16 ＝ 1.5 : 3.0 : 0.75。O を1にそろえる（全体に 4/3 をかける）と 2 : 4 : 1 なので、組成式は <b>C₂H₄O</b> です。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">C・H・O だけからなる分子量 116 の化合物がある。質量組成は炭素 62.1%、水素 10.3% であった。この化合物の分子式を求めよ。（H=1.0、C=12、O=16）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>O は 100 − 62.1 − 10.3 ＝ 27.6%。C : H : O ＝ 62.1/12 : 10.3/1.0 : 27.6/16 ＝ 5.175 : 10.3 : 1.725。O を1にそろえる（1.725 で割る）と 3 : 5.97 : 1 ≒ 3 : 6 : 1 なので、組成式は C₃H₆O（式量58）。116 ÷ 58 ＝ 2 より、分子式は <b>C₆H₁₂O₂</b> です。分子量が分かっているときは、116 × 0.621/12 ＝ 6.0 のように各元素の質量を先に出しても同じ答えになりますが、計算が重くなります。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">質量組成が炭素 54.5%、水素 9.1%、酸素 36.4% で、分子量が 88 の化合物の分子式を求めよ。（H=1.0、C=12、O=16）</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>C : H : O ＝ 54.5/12 : 9.1/1.0 : 36.4/16 ＝ 4.54 : 9.1 : 2.275。O を1にそろえると 2.0 : 4.0 : 1 なので、組成式は C₂H₄O（式量44）。88 ÷ 44 ＝ 2 より、分子式は <b>C₄H₈O₂</b> です。</p></div></details></div>
 <p class="ref-link-row"><a class="ref-link" href="/assembler/?open=narrowing">絞り込みモードの元素分析パネルに測定値を入れて、同じ手順を画面で追う</a></p>

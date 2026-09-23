@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>反応の速さを変える条件 —— 活性化エネルギーと触媒 ｜ 化学の参考書</title>
-<meta name="description" content="反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギー以上のエネルギーをもつ分子の割合が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。">
+<meta name="description" content="反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギーの山を越えられる分子が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/activation-energy/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="反応の速さを変える条件 —— 活性化エネルギーと触媒 ｜ 化学の参考書">
-<meta property="og:description" content="反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギー以上のエネルギーをもつ分子の割合が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。">
+<meta property="og:description" content="反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギーの山を越えられる分子が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/activation-energy/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,7 +895,7 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-6">反応速度と化学平衡</a></div></header>
 <main class="wrap">
 <h1>反応の速さを変える条件 —— 活性化エネルギーと触媒</h1>
-<p class="lede">反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギー以上のエネルギーをもつ分子の割合が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。</p>
+<p class="lede">反応速度は濃度・温度・触媒・表面積・光で変わります。温度を上げると活性化エネルギーの山を越えられる分子が増え、触媒は活性化エネルギーの小さい別の経路をつくります。どちらも反応エンタルピーは変えません。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">反応速度と化学平衡</span><span class="unit-label">活性化エネルギーと触媒</span></div>
 
 <div class="ref-layout">
@@ -886,9 +904,9 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">前のページでは、反応速度を v ＝ k[A]ᵃ[B]ᵇ という式で表しました。このページでは、反応速度を<b>大きくしたり小さくしたりする条件</b>を見ていきます。式の上で何が変わるか（数学的解釈）と、分子の世界で何が起きているか（言語的解釈）の2段で考えます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/rate-law/">反応速度式 v ＝ k[A]ᵃ[B]ᵇ と反応の次数へ</a></p>
 <section class="ref-sec" id="ref-sec-factors"><h4 class="ref-sec-h">反応速度を変える3つの要因 —— 濃度・温度・触媒</h4><p class="ref-sec-lead">反応物の濃度を大きくする・温度を上げる・触媒を加える、のどれでも反応速度は大きくなります。濃度は速度式に代入する値を、温度と触媒は速度定数 k を変えます。</p></section>
-<div class="ref-table-wrap"><div class="ref-cap">反応速度を大きくする3つの要因</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">要因</th><th style="text-align: left;">数学的解釈（v ＝ k[A]ᵃ[B]ᵇ のどこが変わるか）</th><th style="text-align: left;">言語的解釈（分子の世界で何が起きるか）</th></tr></thead><tbody><tr><td style="text-align: left;"><b>濃度</b>を大きくする</td><td style="text-align: left;">代入する [A]・[B] の値が大きくなる</td><td style="text-align: left;">律速段階である分子どうしの衝突が起こりやすくなる</td></tr><tr><td style="text-align: left;"><b>温度</b>を上げる</td><td style="text-align: left;">速度定数 k が大きくなる</td><td style="text-align: left;">活性化エネルギー以上のエネルギーをもつ分子の割合が増える</td></tr><tr><td style="text-align: left;"><b>触媒</b>を加える</td><td style="text-align: left;">別の式 v′ ＝ k′[A]ᵃ[B]ᵇ（k′ ＞ k）になる</td><td style="text-align: left;">活性化エネルギーの小さい別の反応経路ができる</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">反応速度を大きくする3つの要因</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">要因</th><th style="text-align: left;">数学的解釈（v ＝ k[A]ᵃ[B]ᵇ のどこが変わるか）</th><th style="text-align: left;">言語的解釈（分子の世界で何が起きるか）</th></tr></thead><tbody><tr><td style="text-align: left;"><b>濃度</b>を大きくする</td><td style="text-align: left;">代入する [A]・[B] の値が大きくなる</td><td style="text-align: left;">律速段階である分子どうしの衝突が起こりやすくなる</td></tr><tr><td style="text-align: left;"><b>温度</b>を上げる</td><td style="text-align: left;">速度定数 k が大きくなる</td><td style="text-align: left;">活性化エネルギーの山を越えられるだけの勢いをもつ分子が増える</td></tr><tr><td style="text-align: left;"><b>触媒</b>を加える</td><td style="text-align: left;">別の式 v′ ＝ k′[A]ᵃ[B]ᵇ（k′ ＞ k）になる</td><td style="text-align: left;">活性化エネルギーの小さい別の反応経路ができる</td></tr></tbody></table></div>
 <p class="ref-p">濃度の効果は次数で決まります。v ＝ k[A]²[B]³ なら、[A] を2倍にすると v は4倍、[B] を2倍にすると v は8倍です。温度と触媒は濃度を変えずに速度を変えるので、<b>k の値が変わる</b>と考えます。</p>
-<section class="ref-sec" id="ref-sec-temperature"><h4 class="ref-sec-h">温度 —— 活性化エネルギーを越える分子の割合</h4><p class="ref-sec-lead">反応が起こるのに必要な最小のエネルギーを活性化エネルギーといいます。温度が高いほど、活性化エネルギー以上のエネルギーをもつ分子の割合が増えるので、反応速度は大きくなります。</p></section>
+<section class="ref-sec" id="ref-sec-temperature"><h4 class="ref-sec-h">温度 —— 活性化エネルギーを越える分子の割合</h4><p class="ref-sec-lead">反応物が生成物に変わるには、途中にあるエネルギーの山を越えなければなりません。その山の高さが活性化エネルギーです。温度を上げると、山を越えられるだけの勢いをもつ分子の割合がふくらむので、反応が速く進みます。</p></section>
 <p class="ref-p">同じ温度でも、分子がもつエネルギーはばらばらです。横軸に分子のエネルギー、縦軸にその分子の割合をとると、低温では山が左に高く、高温では山が右に低く広がります。<b>活性化エネルギーより右側（反応できる分子）の面積</b>が、高温のほうがずっと大きくなります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-distribution.png" alt="横軸に分子のエネルギー、縦軸に分子の割合をとったグラフ。低温の曲線は左に高い山、高温の曲線は右に低く広がる山。活性化エネルギーの位置に縦の破線があり、その右側が反応するのに必要なエネルギーを持った分子" loading="lazy"><figcaption class="ref-figure-cap">破線より右が反応できる分子です。高温の曲線のほうが、破線より右の部分がずっと大きくなります。</figcaption></figure>
 <p class="ref-p">常温付近では、一般に<b>温度を10℃上げると反応速度は2〜4倍</b>になります。温度が上がると反応速度は急に大きくなる、ということは知っておきましょう。数値の「2〜4倍」は覚えておくと、温度の問題で見当がつけられます。</p>
@@ -899,14 +917,14 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">エネルギー図から読む3つの量（H₂ ＋ I₂ ⇄ 2HI・発熱反応）</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">量</th><th style="text-align: left;">図のどこか</th><th style="text-align: left;">E₁（正反応の活性化エネルギー）・E₂（反応エンタルピーの大きさ）で書くと</th></tr></thead><tbody><tr><td style="text-align: left;">正反応の活性化エネルギー</td><td style="text-align: left;">反応物 → 山の頂上</td><td style="text-align: left;">E₁</td></tr><tr><td style="text-align: left;">反応エンタルピーの大きさ</td><td style="text-align: left;">反応物と生成物の高さの差</td><td style="text-align: left;">E₂（発熱なので ΔH ＝ −E₂）</td></tr><tr><td style="text-align: left;">逆反応の活性化エネルギー</td><td style="text-align: left;">生成物 → 山の頂上</td><td style="text-align: left;">E₁ ＋ E₂</td></tr></tbody></table></div>
 <p class="ref-p"><b>逆反応の活性化エネルギーは「正反応の活性化エネルギー ＋ 反応エンタルピーの大きさ」</b>です（発熱反応のとき）。山の高さを生成物の側から測り直すだけなので、式を覚えるより図を描いて読むようにしましょう。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/reaction-enthalpy/">反応エンタルピー ΔH の符号（発熱は負）とエネルギー図へ</a></p>
-<section class="ref-sec" id="ref-sec-catalyst"><h4 class="ref-sec-h">触媒 —— 活性化エネルギーの小さい別の経路</h4><p class="ref-sec-lead">反応の前後で自身は変化せず、反応速度を変える物質を触媒といいます。触媒は活性化エネルギーの小さい別の反応経路をつくりますが、反応エンタルピーは変えません。</p></section>
+<section class="ref-sec" id="ref-sec-catalyst"><h4 class="ref-sec-h">触媒 —— 活性化エネルギーの小さい別の経路</h4><p class="ref-sec-lead">触媒は、反応を速めながら、反応が終わったあとには元の姿のまま残る物質です。山の低い回り道を用意して反応を速めますが、反応エンタルピーは変えません。</p></section>
 <p class="ref-p">触媒を加えると、触媒が関わる別の反応経路ができ、その経路の山（活性化エネルギー）が低いので反応が速くなります。反応物と生成物のエネルギーは変わらないので、<b>反応エンタルピー ΔH は変わりません</b>。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/activation-energy-catalyst.png" alt="H₂ ＋ I₂ ⇄ 2HI のエネルギー図を2枚並べ、矢印で左の触媒なしから右の触媒ありへつないだ図。触媒ありでは遷移状態が触媒に囲まれ、山が低くなって正反応・逆反応の活性化エネルギーがどちらも小さい。反応物と生成物の高さは同じで、反応エンタルピーは変わらない" loading="lazy"><figcaption class="ref-figure-cap">触媒を加えると山だけが低くなります。反応物と生成物の高さは動かないので、反応エンタルピーは変わりません。</figcaption></figure>
 <p class="ref-p">山が低くなるのは正反応だけではありません。逆反応の活性化エネルギーも同じだけ小さくなるので、<b>触媒は正反応と逆反応の速度を同時に大きくします</b>。このことが、触媒が平衡を動かさない理由になります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/le-chatelier/">触媒は平衡に達するまでの時間を短くするだけ（平衡の移動）へ</a></p>
 <div class="ref-table-wrap"><div class="ref-cap">均一触媒と不均一触媒</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">種類</th><th style="text-align: left;">はたらき方</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">均一触媒</td><td style="text-align: left;">反応物と均一に混ざってはたらく</td><td style="text-align: left;">水溶液中のイオン（H₂O₂ の分解の Fe³⁺ など）</td></tr><tr><td style="text-align: left;">不均一触媒</td><td style="text-align: left;">反応物と混ざらず、表面ではたらく</td><td style="text-align: left;">固体（H₂O₂ の分解の MnO₂ など）</td></tr></tbody></table></div>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">触媒を加えると活性化エネルギーが小さくなるので、反応エンタルピーも小さくなる</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body"><b>触媒が変えるのは山の高さ（活性化エネルギー）だけで、反応物と生成物の高さの差（反応エンタルピー）は変わりません。</b></span></p><p class="ref-mistake-why">図の山が低くなるのを見て、図全体が変わったと思いやすいためです。触媒は経路を変えるだけで、出発点（反応物）と到着点（生成物）は同じです。</p></div>
-<section class="ref-sec" id="ref-sec-others"><h4 class="ref-sec-h">そのほかの要因 —— 表面積と光</h4><p class="ref-sec-lead">固体が関わる反応では、固体の表面積を大きくすると反応速度が大きくなります。物質が光を吸収して起こる光化学反応では、光を当てると反応速度が大きくなります。</p></section>
+<section class="ref-sec" id="ref-sec-others"><h4 class="ref-sec-h">そのほかの要因 —— 表面積と光</h4><p class="ref-sec-lead">固体が関わる反応は、固体を細かくして表面を広げるほど速く進みます。物質が光を吸収して起こる光化学反応では、光を当てると反応速度が大きくなります。</p></section>
 <p class="ref-p">固体の反応は固体の表面でしか起こらないので、<b>細かく砕いて表面積を大きくすると速くなります</b>。固体を水に溶かすときに、粉にすると速く溶けるのと同じです。</p>
 <p class="ref-p">光合成のように、物質が光を吸収して起こる化学反応を<b>光化学反応</b>といいます。光化学反応は光を当てると速くなります。水素と塩素の混合気体に光を当てると爆発的に反応するのも、その例です。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/light-energy/">光化学反応と化学発光（化学反応と光）へ</a></p>

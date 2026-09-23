@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -935,7 +953,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ビニル化合物は、適当な条件のもとで<b>連続的に付加反応を起こして、鎖状の高分子化合物</b>になります。二人組で手をつないで輪になった状態から片手をはなし、全員で1本の長い列になって手をつなぎ直した、と考えると分かりやすいかもしれません。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">n CH₂=CHCl</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">［CH₂−CHCl］ₙ</span></div><p class="ref-note">塩化ビニルが付加重合してポリ塩化ビニルになります。左辺の n と、右辺の角かっこの外の n が対応します。</p></div>
 <p class="ref-p">［ ］ₙ は［ ］の中がたくさん繰り返されている、という意味です。</p>
-<p class="ref-p"><b>単量体（モノマー）</b>が繰り返し結合して分子量の大きい<b>重合体（ポリマー）</b>になる反応を<b>重合</b>といい、そのうち<b>付加反応による重合</b>を<b>付加重合</b>といいます。重合には他に縮合重合などもあります。</p>
+<p class="ref-p">小さな分子の<b>単量体（モノマー）</b>が次々につながって、巨大な分子の<b>重合体（ポリマー）</b>ができる —— この反応が<b>重合</b>です。つながり方が<b>付加反応による重合</b>であるものを、<b>付加重合</b>と呼びます。重合には他に縮合重合などもあります。</p>
 <section class="ref-sec" id="ref-sec-oxidation"><h4 class="ref-sec-h">酸化開裂と、不飽和結合の検出</h4><p class="ref-sec-lead">C=C は酸化されやすく、オゾンや過マンガン酸カリウムで切断されます。切れることを利用して、不飽和結合があるかどうかを調べられます。</p></section>
 <p class="ref-p">炭素間二重結合は<b>酸化されやすく</b>、<b>オゾン O₃ と反応すると C=C が切断されて、アルデヒドまたはケトンが生じます。</b>これを<b>オゾン分解</b>といいます。</p>
 <p class="ref-p"><b>過マンガン酸カリウム KMnO₄ と反応した場合も、同じように C=C が切断されますが、生じるのはカルボン酸またはケトンです。</b>オゾン分解では二重結合が切れるだけなのに対し、KMnO₄ による分解では<b>切れてできたアルデヒドがさらに酸化されてカルボン酸になる</b>ためです。</p>

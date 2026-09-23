@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -902,7 +920,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">常温で固体の油脂を<b>脂肪</b>、液体の油脂を<b>脂肪油</b>といいます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/fat-melting-state.png" alt="2本の縦棒グラフ。左は融点が高い油脂で、常温の線が融点より下にあり固体の領域に入る。右は融点が低い油脂で、常温の線が融点より上にあり液体の領域に入る" loading="lazy"><figcaption class="ref-figure-cap"><b>融点が常温のどちら側にあるか</b>で、脂肪（固体）と脂肪油（液体）が分かれます。</figcaption></figure>
 <p class="ref-p">一般的に、動物性の油脂は飽和脂肪酸が多いので<b>脂肪</b>、植物性の油脂は不飽和脂肪酸が多いので<b>脂肪油</b>になります。</p>
-<p class="ref-p">C=C を多くふくむ脂肪油は、空気中に放置すると酸化されて固まります。これを<b>乾性油</b>といい、インクや塗料に使われます。C=C が少なく空気中で固まらないものが<b>不乾性油</b>で、食用油がこれにあたります。その中間が半乾性油です。</p>
+<p class="ref-p">脂肪油の中でも C=C の多いものは、空気中に置いておくと酸素と反応して固まっていきます。この性質をもつ油が<b>乾性油</b>で、インクや塗料に使われます。C=C が少なく空気中で固まらないものが<b>不乾性油</b>で、食用油がこれにあたります。その中間が半乾性油です。</p>
 <p class="ref-p">脂肪油に<b>ニッケル Ni を触媒として水素 H₂ を付加</b>し、C=C を減らして固めた油脂を<b>硬化油</b>といいます。マーガリンの原料です。</p>
 <p class="ref-p"><b>「乾性油は酸化されて固まる、硬化油は水素を付加して固める」の違いは覚えておきましょう。</b>どちらも「固まる」ですが、起きている反応が別です。</p>
 <section class="ref-sec" id="ref-sec-reaction"><h4 class="ref-sec-h">油脂の加水分解とけん化</h4><p class="ref-sec-lead">油脂はエステルなので、酸で加水分解でき、塩基でけん化できます。出てくるのはグリセリンと脂肪酸です。</p></section>
@@ -923,7 +941,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>「油脂の問題では、構成脂肪酸の炭素数はほとんどの場合18」と覚えてください。</b>方程式を立てるより、18で決め打ちして分子量を合わせにいくほうが速いです。合わなければ別の n を試します。</p>
 <p class="ref-p"><b>ステアリン酸だけからなる油脂の分子量890も、覚えておくと強い数値です。</b>890から何だけ小さいかを見れば、C=C の数がそのまま出ます（C=C が1個で2小さい）。少なくとも「油脂の分子量は900弱」という概数は覚えておいてください。</p>
 <h5 class="ref-h5">けん化価</h5>
-<p class="ref-p">油脂1gをけん化するのに必要な水酸化カリウム KOH の質量をミリグラムで表した値を<b>けん化価</b>といいます。</p>
+<p class="ref-p"><b>けん化価</b>は、油脂の分子量を知るための物差しです。油脂 1 g を残らずけん化するのに要る水酸化カリウム KOH を、mg 単位の質量で表します。</p>
 <p class="ref-p">油脂1molに対して KOH は3mol（式量56なので 56×3 ＝ 168 g）必要です。ここから比例式を1本立てれば、けん化価から油脂の分子量が求まります。</p>
 <p class="ref-p"><b>油脂1mol : KOH 3mol ＝（油脂の分子量）g : 168 g ＝ 1000 mg :（けん化価）mg</b></p>
 <p class="ref-p">けん化価190の油脂なら、(油脂の分子量) ÷ 168 ＝ 1000 ÷ 190 なので、分子量は 168 × 1000 ÷ 190 ＝ 884 となります。900弱という概数とも合っています。</p>

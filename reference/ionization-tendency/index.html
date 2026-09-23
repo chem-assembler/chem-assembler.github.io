@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>金属のイオン化傾向 ｜ 化学の参考書</title>
-<meta name="description" content="金属の単体が水溶液中で e⁻ を失って陽イオンになる起こりやすさがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。">
+<meta name="description" content="水溶液の中で、金属がどれだけ陽イオンになりたがるか。その度合いがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/ionization-tendency/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="金属のイオン化傾向 ｜ 化学の参考書">
-<meta property="og:description" content="金属の単体が水溶液中で e⁻ を失って陽イオンになる起こりやすさがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。">
+<meta property="og:description" content="水溶液の中で、金属がどれだけ陽イオンになりたがるか。その度合いがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/ionization-tendency/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,7 +895,7 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#basic">化学基礎</a> ／ <a href="/reference/#basic-6">酸化と還元</a></div></header>
 <main class="wrap">
 <h1>金属のイオン化傾向</h1>
-<p class="lede">金属の単体が水溶液中で e⁻ を失って陽イオンになる起こりやすさがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。</p>
+<p class="lede">水溶液の中で、金属がどれだけ陽イオンになりたがるか。その度合いがイオン化傾向です。イオン化列、金属樹と希酸への溶解が同じしくみであること、水・酸との反応の表、不動態と王水まで。</p>
 <div><span class="unit-label course-basic">化学基礎</span><span class="unit-label">酸化と還元</span><span class="unit-label">金属のイオン化傾向</span></div>
 
 <div class="ref-layout">
@@ -885,10 +903,10 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">金属は、単体が e⁻ を失って陽イオンになる<b>還元剤</b>としてはたらきます。そのなりやすさは金属ごとに違い、この順を知っていると、金属どうし・金属と酸の反応が起こるかどうかを予想できます。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/redox-basics/">還元剤は e⁻ を与える物質、酸化剤は e⁻ を受け取る物質（「酸化と還元」）</a></p>
-<section class="ref-sec" id="ref-sec-series"><h4 class="ref-sec-h">イオン化傾向とイオン化列</h4><p class="ref-sec-lead">金属の単体が水溶液中で e⁻ を失って陽イオンになる起こりやすさを、大きい順に並べたものがイオン化列です。</p></section>
-<p class="ref-p">金属の単体が水溶液中で e⁻ を失って陽イオンとなり、水溶液中に溶けだす反応の起こりやすさを「イオン化傾向」といいます。</p>
+<section class="ref-sec" id="ref-sec-series"><h4 class="ref-sec-h">イオン化傾向とイオン化列</h4><p class="ref-sec-lead">水溶液の中で陽イオンになりたがる順に金属を並べると、イオン化列ができます。</p></section>
+<p class="ref-p">金属を水溶液に入れると、e⁻ を手放して陽イオンになり、液の中へ溶け出そうとします。その「なりたがり具合」を金属どうしで比べたものが「イオン化傾向」です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">Cu</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Cu²⁺ ＋ 2e⁻</span></div><p class="ref-note">銅の単体（酸化数 0）が e⁻ を2個失って、水溶液中の Cu²⁺（酸化数 ＋2）になる反応。イオン化傾向が大きい金属ほど、この反応を起こしやすい（＝ 強力な還元剤）です。</p></div>
-<p class="ref-p">代表的な金属をイオン化傾向の大きい順に並べたものを「イオン化列」といいます。</p>
+<p class="ref-p">よく出てくる金属を、イオン化傾向の強いものから弱いものへ1列に並べると「イオン化列」になります。</p>
 <p class="ref-p">Li ＞ K ＞ Ca ＞ Na ＞ Mg ＞ Al ＞ Zn ＞ Fe ＞ Ni ＞ Sn ＞ Pb ＞ (H₂) ＞ Cu ＞ Hg ＞ Ag ＞ Pt ＞ Au</p>
 <p class="ref-p"><b>イオン化列は必ず暗記してください。</b>H は非金属元素ですが、例外的に陽イオン H⁺ になるので、他の金属と同じようにイオン化列の位置から性質を考えることができます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">イオン化傾向は、イオン化エネルギーが小さい順に並べたものである</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">イオン化傾向は、<b>水溶液中で</b>金属が陽イオンになるなりやすさです。気体の原子から e⁻ を取り去るのに要するイオン化エネルギーとは別の量です。</span></p><p class="ref-mistake-why">どちらも「イオン化」と名前が似ているので混同しやすいところです。例えば Li はイオン化エネルギーはアルカリ金属の中で最も大きいのに、イオン化傾向は最も大きい金属です。</p></div>
@@ -918,14 +936,14 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-table-wrap"><div class="ref-cap">イオン化傾向と金属の単体の反応</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">金属</th><th style="text-align: left;">水との反応</th><th style="text-align: left;">酸との反応</th></tr></thead><tbody><tr><td style="text-align: left;">Li・K・Ca・Na</td><td style="text-align: left;">常温の水と反応</td><td style="text-align: left;">希酸（希塩酸・希硫酸）と反応</td></tr><tr><td style="text-align: left;">Mg</td><td style="text-align: left;">熱水と反応</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Al・Zn・Fe</td><td style="text-align: left;">高温の水蒸気と反応</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Ni・Sn・Pb</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">希酸と反応</td></tr><tr><td style="text-align: left;">Cu・Hg・Ag</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">酸化力のある酸と反応</td></tr><tr><td style="text-align: left;">Pt・Au</td><td style="text-align: left;">反応しない</td><td style="text-align: left;">王水と反応</td></tr></tbody></table></div>
 <h5 class="ref-h5">水との反応</h5>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">2Na ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">2NaOH ＋ H₂↑</span></div><p class="ref-note">常温の水。Na → Na⁺ ＋ e⁻ を2倍し、水が酸化剤としてはたらく 2H₂O ＋ 2e⁻ → H₂ ＋ 2OH⁻ と足します。</p></div>
-<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Mg ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">熱水</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mg(OH)₂ ＋ H₂↑</span></div><p class="ref-note">Mg は常温の水とはほとんど反応せず、熱水と反応します。</p></div>
+<div class="ref-rx"><div class="ref-rx-level ref-rx-lv2">★★☆ 余裕があれば</div><div class="ref-rx-eq"><span class="ref-rx-side">Mg ＋ 2H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">熱水</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Mg(OH)₂ ＋ H₂↑</span></div><p class="ref-note">Mg は、常温の水ではほぼ反応が見えず、熱水に入れると反応します。</p></div>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv3">★☆☆ 参考</div><div class="ref-rx-eq"><span class="ref-rx-side">3Fe ＋ 4H₂O</span><span class="ref-rx-arrow"><span class="ref-rx-over">高温</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">Fe₃O₄ ＋ 4H₂</span></div><p class="ref-note">高温の水蒸気との反応。水酸化物ではなく酸化物ができます。</p></div>
 <h5 class="ref-h5">酸との反応</h5>
-<p class="ref-p">水素よりイオン化傾向が大きい金属は、希塩酸・希硫酸の H⁺ を還元して H₂ を発生しながら溶けます。水素より小さい Cu・Hg・Ag は H⁺ を還元できないので、希塩酸・希硫酸には溶けません。</p>
+<p class="ref-p">水素よりイオン化傾向が大きい金属は、希塩酸・希硫酸の H⁺ に e⁻ を渡して H₂ に変え、自分は陽イオンになって溶けていきます。水素より小さい Cu・Hg・Ag は H⁺ を還元できないので、希塩酸・希硫酸には溶けません。</p>
 <p class="ref-p">「酸化力のある酸」は、<b>希硝酸（→ NO）、濃硝酸（→ NO₂）、熱濃硫酸（→ SO₂）の3つ</b>で、H⁺ よりも強い酸化力をもつ陰イオンをもつ酸のことです。Cu・Hg・Ag はこれらには溶け、このとき発生する気体は H₂ ではありません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/redox-equation/">銅と希硝酸・濃硝酸・熱濃硫酸の反応式の組み立ては「酸化還元反応式の組み立て」で</a></p>
 <h5 class="ref-h5">表の例外</h5>
-<ul class="ref-list"><li>鉛 Pb は水素よりイオン化傾向が大きいが、塩酸や希硫酸にはほとんど溶けない。表面に水に溶けない PbCl₂ や PbSO₄ ができて、それ以上の反応を妨げるためです。</li><li>アルミニウム Al・鉄 Fe・ニッケル Ni は濃硝酸には溶けない。表面に緻密な酸化物の被膜ができて内部を保護する状態（不動態）になるためです。</li><li>白金 Pt・金 Au は、硝酸や熱濃硫酸にも溶けないが、王水（濃硝酸と濃塩酸を体積比 1：3 で混ぜた液体）には溶ける。</li></ul>
+<ul class="ref-list"><li>鉛 Pb はイオン化列で水素より左にあるのに、塩酸や希硫酸にはほとんど溶けない。溶けはじめるとすぐ、表面が水に溶けない PbCl₂ や PbSO₄ で覆われ、ふたをされた形になるためです。</li><li>アルミニウム Al・鉄 Fe・ニッケル Ni は濃硝酸には溶けない。表面をすき間のない酸化物の膜が覆い、その膜が中の金属を守るためです。この状態を<b>不動態</b>とよびます。</li><li>白金 Pt・金 Au は、硝酸にも熱濃硫酸にも溶けない。ところが王水（濃硝酸と濃塩酸を体積比 1：3 で混ぜた液体）に入れると溶ける。</li></ul>
 <p class="ref-p"><b>この3つの例外は、表と一緒に覚えておきましょう。</b>特に不動態の「Al・Fe・Ni」はよく登場します。</p>
 <h5 class="ref-h5 ref-h5-advanced">王水が金を溶かすわけ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">王水が金を溶かすのは、単に酸化力が強いからではありません。濃塩酸から供給される多量の Cl⁻ が、生じた金(Ⅲ)イオンと安定な錯イオン [AuCl₄]⁻ をつくるため、金がイオンになる反応が進みやすくなります。</p>

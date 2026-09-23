@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -885,7 +903,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-scope">
 <p class="ref-p">身のまわりの物質を「何からできているか」で分けるのが、化学の最初の作業です。このページでは、物質を<b>純物質と混合物</b>、<b>単体と化合物</b>に分け、混合物から目的の物質を取り出す<b>分離</b>の方法を選べるようにします。分けるときに使う「元素」「原子」の中身は、次のページで扱います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/atom-structure/">原子の中身（陽子・中性子・電子）と電子配置へ</a></p>
-<section class="ref-sec" id="ref-sec-classification"><h4 class="ref-sec-h">物質の分類 —— 2回の問いで分ける</h4><p class="ref-sec-lead">1種類の物質だけなら純物質、2種類以上が混ざっていれば混合物です。純物質はさらに、1種類の元素からなる単体と、2種類以上の元素からなる化合物に分かれます。</p></section>
+<section class="ref-sec" id="ref-sec-classification"><h4 class="ref-sec-h">物質の分類 —— 2回の問いで分ける</h4><p class="ref-sec-lead">1種類の物質だけなら純物質、2種類以上が混ざっていれば混合物です。純物質はさらに、元素が1種類だけでできている単体と、何種類かの元素が結びついてできている化合物に分かれます。</p></section>
 <p class="ref-p">物質の分類は、次の<b>2回の問い</b>で決まります。</p>
 <ol class="ref-list"><li>「ほかの物質が混ざっているか」を問う。<div class="ref-li-hang">1種類の物質だけなら「純物質」、2種類以上が混ざっていれば「混合物」</div></li><li>純物質について「何種類の元素からできているか」を問う。<div class="ref-li-hang">1種類なら「単体」、2種類以上なら「化合物」</div></li></ol>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/substance-classification-tree.png" alt="物質の分類を枝分かれで表した図。物質は①ほかの物質が混ざっているかで混合物と純物質に分かれ、純物質は②何種類の元素からできているかで単体と化合物に分かれる。それぞれの箱に例が添えてある" loading="lazy"><figcaption class="ref-figure-cap">2回目の問いは、<b>純物質になってから</b>しか使えません。混合物を「単体か化合物か」と聞かれることはない、と覚えておきましょう。</figcaption></figure>
@@ -915,7 +933,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-link-row"><a class="ref-link" href="/reference/element-detection/">有機化合物の成分元素（C・H・N・Cl・S）の確認はこちら</a></p>
 <section class="ref-sec" id="ref-sec-separation"><h4 class="ref-sec-h">混合物の分離 —— 何が違うかで方法を選ぶ</h4><p class="ref-sec-lead">混合物から目的の物質を取り出す操作を分離、不純物を除いて純度を高める操作を精製といいます。方法は、成分どうしで「何が違うか」を見て選びます。</p></section>
 <p class="ref-p">分離の方法は7つありますが、名前から覚えるより「<b>成分どうしで何が違うか</b>」から選ぶと迷いません。</p>
-<div class="ref-table-wrap"><div class="ref-cap">成分の違いと分離の方法</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">成分の何が違うか</th><th style="text-align: left;">方法</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">粒の大きさ（溶けない固体と液体）</td><td style="text-align: left;"><b>ろ過</b></td><td style="text-align: left;">砂の混じった水から砂を除く</td></tr><tr><td style="text-align: left;">沸点（溶けている固体と液体）</td><td style="text-align: left;"><b>蒸留</b></td><td style="text-align: left;">海水から純水を得る</td></tr><tr><td style="text-align: left;">沸点（液体どうし）</td><td style="text-align: left;"><b>分留</b>（分別蒸留）</td><td style="text-align: left;">原油からガソリン・灯油などを分ける、液体空気から窒素と酸素を分ける</td></tr><tr><td style="text-align: left;">温度による溶けやすさの変化</td><td style="text-align: left;"><b>再結晶</b></td><td style="text-align: left;">少量の硫酸銅(Ⅱ)を含む硝酸カリウムから、硝酸カリウムだけを結晶として取り出す</td></tr><tr><td style="text-align: left;">溶媒への溶けやすさ</td><td style="text-align: left;"><b>抽出</b></td><td style="text-align: left;">ヨウ素を含む水にヘキサンを加えて振り、ヨウ素をヘキサン側に移す</td></tr><tr><td style="text-align: left;">昇華のしやすさ</td><td style="text-align: left;"><b>昇華法</b></td><td style="text-align: left;">ヨウ素と砂の混合物を加熱し、ヨウ素だけを気体にして冷やした面で固体に戻す</td></tr><tr><td style="text-align: left;">吸着のされやすさ</td><td style="text-align: left;"><b>クロマトグラフィー</b></td><td style="text-align: left;">ろ紙に付けたインクの色素を、しみ上がる速さの違いで分ける</td></tr></tbody></table></div>
+<div class="ref-table-wrap"><div class="ref-cap">成分の違いと分離の方法</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">成分の何が違うか</th><th style="text-align: left;">方法</th><th style="text-align: left;">例</th></tr></thead><tbody><tr><td style="text-align: left;">粒の大きさ（溶けない固体と液体）</td><td style="text-align: left;"><b>ろ過</b></td><td style="text-align: left;">砂の混じった水から砂を除く</td></tr><tr><td style="text-align: left;">沸点（溶けている固体と液体）</td><td style="text-align: left;"><b>蒸留</b></td><td style="text-align: left;">海水から純水を得る</td></tr><tr><td style="text-align: left;">沸点（液体どうし）</td><td style="text-align: left;"><b>分留</b>（分別蒸留）</td><td style="text-align: left;">原油からガソリン・灯油などを分ける、液体空気から窒素と酸素を分ける</td></tr><tr><td style="text-align: left;">温度による溶けやすさの変化</td><td style="text-align: left;"><b>再結晶</b></td><td style="text-align: left;">不純物を少し含む硝酸カリウムを、純度の高い結晶にする</td></tr><tr><td style="text-align: left;">溶媒への溶けやすさ</td><td style="text-align: left;"><b>抽出</b></td><td style="text-align: left;">ヨウ素を含む水にヘキサンを加えて振り、ヨウ素をヘキサン側に移す</td></tr><tr><td style="text-align: left;">昇華のしやすさ</td><td style="text-align: left;"><b>昇華法</b></td><td style="text-align: left;">ヨウ素と砂の混合物を加熱し、ヨウ素だけを気体にして冷やした面で固体に戻す</td></tr><tr><td style="text-align: left;">吸着のされやすさ</td><td style="text-align: left;"><b>クロマトグラフィー</b></td><td style="text-align: left;">ろ紙に付けたインクの色素を、しみ上がる速さの違いで分ける</td></tr></tbody></table></div>
 <p class="ref-p">具体例として、海水から純水を得る<b>蒸留</b>を見てみましょう。海水を加熱すると、水だけが水蒸気になって出ていき、塩化ナトリウムなどの塩類はフラスコに残ります。水蒸気をリービッヒ冷却器で冷やして液体に戻すと、純水（蒸留水）が得られます。塩類の沸点は水よりはるかに高いので、「沸点の違い」で分けていることになります。</p>
 <p class="ref-p">蒸留の装置は、細かい約束がよく問われます。</p>
 <ul class="ref-list"><li>温度計の球部は、枝付きフラスコの<b>枝の付け根</b>に置く（出ていく蒸気の温度を測るため）。</li><li>液体の量はフラスコの<b>半分以下</b>にし、<b>沸騰石</b>を入れる（突沸を防ぐため）。</li><li>冷却水は冷却器の<b>下から入れて上から出す</b>（冷却器の中を水で満たすため）。</li><li>受け器（三角フラスコ）は<b>密栓しない</b>（装置内の圧力が上がらないように）。</li></ul>
@@ -927,9 +945,9 @@ a.ref-link::before { content: '→ '; }
 <h5 class="ref-h5">例題</h5>
 <p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の物質を、混合物・化合物・単体に分類せよ。(1) 空気　(2) 塩化ナトリウム　(3) オゾン　(4) 石油　(5) 水　(6) 黒鉛</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 窒素・酸素などが混ざっているので<b>混合物</b>　(2) Na と Cl の2種類の元素からなるので<b>化合物</b>　(3) O だけからなるので<b>単体</b>（酸素 O₂ の同素体）　(4) いろいろな炭化水素が混ざっているので<b>混合物</b>　(5) H と O からなるので<b>化合物</b>　(6) C だけからなるので<b>単体</b>（ダイヤモンドの同素体）</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の分離に最も適した方法の名前を答えよ。(1) 泥水から泥を除く　(2) 少量の塩化ナトリウムを含む硝酸カリウムから、純粋な硝酸カリウムを得る　(3) 原油をガソリン・灯油・軽油に分ける　(4) ヨウ素とガラスの粉の混合物からヨウ素を取り出す　(5) ヨウ素ヨウ化カリウム水溶液からヨウ素をヘキサンに移す</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 溶けない固体と液体なので<b>ろ過</b>　(2) 硝酸カリウムは温度によって溶ける量が大きく変わるので<b>再結晶</b>　(3) 液体どうしを沸点の違いで分けるので<b>分留</b>　(4) ヨウ素は昇華しやすいので<b>昇華法</b>　(5) 溶媒への溶けやすさの違いを使うので<b>抽出</b></p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の分離に最も適した方法の名前を答えよ。(1) 泥水から泥を除く　(2) わずかに塩化カリウムが混じったミョウバンの結晶を、純度の高いミョウバンにする　(3) 液体にした空気から、窒素と酸素を別々に取り出す　(4) ヨウ素とガラスの粉の混合物からヨウ素を取り出す　(5) ヨウ素ヨウ化カリウム水溶液からヨウ素をヘキサンに移す</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) 溶けない固体と液体なので<b>ろ過</b>　(2) ミョウバンは温度によって溶ける量が大きく変わり、少量の塩化カリウムは冷やしても溶けたまま残るので<b>再結晶</b>　(3) 液体の混合物を、成分の沸点の違いで分けるので<b>分留</b>　(4) ヨウ素は昇華しやすいので<b>昇華法</b>　(5) 溶媒への溶けやすさの違いを使うので<b>抽出</b></p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の組み合わせのうち、互いに同素体であるものをすべて選べ。(ア) 酸素とオゾン　(イ) ¹²C と ¹³C　(ウ) 黄リンと赤リン　(エ) 一酸化炭素と二酸化炭素　(オ) 斜方硫黄と単斜硫黄</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(ア)・(ウ)・(オ)</b>。(イ) は同じ元素の原子どうしなので同位体、(エ) は2種類の元素からなる化合物どうしなので同素体ではありません。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">白色の粉末 X を水に溶かし、次の実験をした。(1) 水溶液を白金線につけてガスバーナーの外炎に入れると、橙赤色の炎が見えた。(2) 水溶液に硝酸銀水溶液を加えると、白色の沈殿ができた。X に含まれていると分かる元素を2つ答え、X として考えられる物質の名前を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>元素は<b>カルシウム Ca</b>（橙赤色の炎色反応）と<b>塩素 Cl</b>（硝酸銀水溶液で白色沈殿 AgCl）。X は<b>塩化カルシウム CaCl₂</b> と考えられる。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">白色の粉末 X を水に溶かし、次の実験をした。(1) 水溶液を白金線につけてガスバーナーの外炎に入れると、橙赤色の炎が見えた。(2) 水溶液に硝酸銀水溶液を垂らすと、白く濁った。X に含まれていると分かる元素を2つ答え、X として考えられる物質の名前を答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>元素は<b>カルシウム Ca</b>（橙赤色の炎色反応）と<b>塩素 Cl</b>（硝酸銀水溶液で白色沈殿 AgCl）。X は<b>塩化カルシウム CaCl₂</b> と考えられる。</p></div></details></div>
 </div>
 </div>
 

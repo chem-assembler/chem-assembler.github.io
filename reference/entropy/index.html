@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -930,7 +948,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">変化ごとの ΔS の正負は、上の表を丸暗記してもよいですが、<b>「粒子が散らばるか、集まって並ぶか」「気体の分子が増えるか、減るか」</b>の2つで考えれば、ほとんどの変化は判断できます。</p>
 <p class="ref-p">エントロピーの値（J/(K·mol)）や ΔS の計算は、高校ではほとんど問われないので<b>覚える必要はありません。</b></p>
 <h5 class="ref-h5">例題</h5>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(ア)〜(カ)の変化のうち、<b>エントロピーが増える（ΔS ＞ 0）もの</b>をすべて選べ。(ア) ドライアイスが昇華する　(イ) 水蒸気が冷えて水滴になる　(ウ) 砂糖が水に溶ける　(エ) N₂(気) ＋ 3H₂(気) → 2NH₃(気)　(オ) 2H₂O₂(液) → 2H₂O(液) ＋ O₂(気)　(カ) 塩化ナトリウム水溶液に硝酸銀水溶液を加えると、塩化銀が沈殿する</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(ア)・(ウ)・(オ)</b>。(ア) 固体 → 気体で散らばる。(ウ) 固体の砂糖の分子が水の中に散らばる。(オ) 気体の O₂ ができる（気体が 0 → 1 個）。(イ) は凝縮で気体 → 液体、(エ) は気体が 4 個 → 2 個に減る、(カ) は水中に散らばっていたイオンが集まって固体の沈殿になるので、どれも ΔS ＜ 0 です。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(ア)〜(カ)の変化のうち、<b>エントロピーが増える（ΔS ＞ 0）もの</b>をすべて選べ。(ア) ドライアイスが昇華する　(イ) 水蒸気が冷えて水滴になる　(ウ) 砂糖が水に溶ける　(エ) N₂(気) ＋ 3H₂(気) → 2NH₃(気)　(オ) 2H₂O₂(液) → 2H₂O(液) ＋ O₂(気)　(カ) 食塩水と硝酸銀水溶液を混ぜ、白い AgCl が沈殿する</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p><b>(ア)・(ウ)・(オ)</b>。(ア) 固体 → 気体で散らばる。(ウ) 固体の砂糖の分子が水の中に散らばる。(オ) 気体の O₂ ができる（気体が 0 → 1 個）。(イ) は凝縮で気体 → 液体、(エ) は気体が 4 個 → 2 個に減る、(カ) は水中に散らばっていたイオンが集まって固体の沈殿になるので、どれも ΔS ＜ 0 です。</p></div></details></div>
 <div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">次の(1)〜(3)の変化は、「どの温度でも自然に進む」「どの温度でも自然には進まない」「温度によって決まる」のどれか。温度によって決まるものは、高温と低温のどちらで進みやすいかも答えよ。<b>(1) 2H₂O₂(液) → 2H₂O(液) ＋ O₂(気)　ΔH ＝ −196 kJ　(2) 3O₂(気) → 2O₃(気)　ΔH ＝ ＋285 kJ　(3) CaCO₃(固) → CaO(固) ＋ CO₂(気)　ΔH ＝ ＋178 kJ</b></p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) <b>どの温度でも自然に進む</b>。発熱で、気体の O₂ ができてエントロピーも増えるので、2つの傾向がそろっています。　(2) <b>どの温度でも自然には進まない</b>。吸熱で、気体が 3 個 → 2 個に減るのでエントロピーも減り、2つの傾向がどちらも逆向きです。　(3) <b>温度によって決まる・高温で進みやすい</b>。吸熱ですが、気体の CO₂ ができてエントロピーが増えます。温度が高いほどエントロピーの影響が大きくなるので、強く熱すると進みます。</p></div></details></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/le-chatelier/">温度を変えると平衡がどちらへ動くか（ルシャトリエの原理）はこちら</a></p>
 </div>

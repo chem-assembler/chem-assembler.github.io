@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -892,10 +910,10 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">ダイヤモンドは、すべての C が4本の共有結合で立体的につながっているので、非常に硬く、電気を通しません。</p>
 <p class="ref-p">黒鉛は、各 C が3本の結合で平面の層をつくり、層どうしは弱い分子間力で重なっています。4つめの価電子が層の中を動けるので、<b>黒鉛は非金属の単体なのに電気をよく通します。</b>層どうしがずれやすいので、軟らかくはがれやすい性質をもちます。</p>
 <p class="ref-p"><b>「電気を通すのは黒鉛だけ」と、その理由（動ける価電子がある）を言えるようにしてください。</b>フラーレンのほか、黒鉛の1層だけを取り出したグラフェン、それを筒状に丸めたカーボンナノチューブもありますが、名前を知っていれば十分です。</p>
-<p class="ref-p">木炭やすすのように、小さな黒鉛の結晶が不規則に集まったものを無定形炭素といいます。多孔質の活性炭は吸着力が大きく、脱臭剤に使われます。</p>
+<p class="ref-p">木炭やすすは、ごく小さな黒鉛の結晶がばらばらの向きで寄り集まったもので、無定形炭素と呼ばれます。その1つの活性炭は細かい穴だらけで、においのもとになる分子をよく吸いつけるので、脱臭剤になります。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/diamond-graphite.png" alt="左はダイヤモンドの構造で、中心の C から4本の結合が正四面体の向きに出て、その先も同じつながりが続いている。右は黒鉛の構造で、六角形が並んだ平面の層が3枚重なり、層と層は点線でゆるくつながれている。いちばん上の層には電子が動く向きの矢印が書かれている" loading="lazy"><figcaption class="ref-figure-cap">ダイヤモンドは価電子4個をすべて共有結合に使い切るので、動ける電子がありません。黒鉛は3個しか使わないため、残った1個が層の中を動いて電気を通し、層どうしがずれるので軟らかくなります。</figcaption></figure>
 <section class="ref-sec" id="ref-sec-co"><h4 class="ref-sec-h">一酸化炭素 CO —— 毒性と還元性</h4><p class="ref-sec-lead">無色・無臭で水に溶けにくい、極めて有毒な気体です。高温では酸素を奪う還元剤としてはたらきます。</p></section>
-<p class="ref-p">一酸化炭素は、炭素や炭素化合物の<b>不完全燃焼</b>で生じます。実験室では、ギ酸 HCOOH を濃硫酸とともに加熱してつくります。濃硫酸が HCOOH から H と O を 2：1 で奪う<b>脱水作用</b>の例です。</p>
+<p class="ref-p">一酸化炭素は、炭素や炭素化合物の<b>不完全燃焼</b>で生じます。実験室でほしいときは、ギ酸 HCOOH に濃硫酸を加えて熱し、発生させます。濃硫酸が HCOOH から H と O を 2：1 で奪う<b>脱水作用</b>の例です。</p>
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">HCOOH</span><span class="ref-rx-arrow"><span class="ref-rx-over">濃硫酸・加熱</span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">CO ＋ H₂O</span></div><p class="ref-note">濃硫酸は脱水剤です（触媒ではありません）。矢印の上に書き、式には入れません。CO の実験室的製法として必ず覚えます。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/sulfuric-acid/">濃硫酸の脱水作用（スクロースの炭化など）のページへ</a></p>
 <p class="ref-p">工業的には、赤熱したコークスに水蒸気を送ってつくります。H₂ と CO の混合気体を<b>水性ガス</b>といいます。</p>

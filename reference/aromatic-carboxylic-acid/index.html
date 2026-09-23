@@ -29,12 +29,12 @@
 <!-- AI 学習・生成への利用を拒否する意思表示（ルートの robots.txt と対） -->
 <meta name="robots" content="noai, noimageai">
 <title>芳香族カルボン酸とサリチル酸 ｜ 化学の参考書</title>
-<meta name="description" content="安息香酸とサリチル酸のまとめ。サリチル酸はカルボン酸とフェノール類の両方の性質をもち、無水酢酸なら −OH が、メタノールなら −COOH が反応して、2つの医薬品に分かれます。">
+<meta name="description" content="安息香酸とサリチル酸のまとめ。サリチル酸はカルボン酸でもありフェノール類でもあるので、無水酢酸なら −OH が、メタノールなら −COOH が反応して、2つの医薬品に分かれます。">
 <link rel="canonical" href="https://chem.schoollenz.com/reference/aromatic-carboxylic-acid/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="SchoolLenz">
 <meta property="og:title" content="芳香族カルボン酸とサリチル酸 ｜ 化学の参考書">
-<meta property="og:description" content="安息香酸とサリチル酸のまとめ。サリチル酸はカルボン酸とフェノール類の両方の性質をもち、無水酢酸なら −OH が、メタノールなら −COOH が反応して、2つの医薬品に分かれます。">
+<meta property="og:description" content="安息香酸とサリチル酸のまとめ。サリチル酸はカルボン酸でもありフェノール類でもあるので、無水酢酸なら −OH が、メタノールなら −COOH が反応して、2つの医薬品に分かれます。">
 <meta property="og:url" content="https://chem.schoollenz.com/reference/aromatic-carboxylic-acid/">
 <meta property="og:image" content="https://chem.schoollenz.com/brand/og-chem.png">
 <meta property="og:image:width" content="1200">
@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -877,7 +895,7 @@ a.ref-link::before { content: '→ '; }
 <header><div class="wrap"><a href="/">化学レンズ</a> ／ <a href="/reference/">参考書</a> ／ <a href="/reference/#adv">化学</a> ／ <a href="/reference/#adv-13">芳香族化合物</a></div></header>
 <main class="wrap">
 <h1>芳香族カルボン酸とサリチル酸</h1>
-<p class="lede">安息香酸とサリチル酸のまとめ。サリチル酸はカルボン酸とフェノール類の両方の性質をもち、無水酢酸なら −OH が、メタノールなら −COOH が反応して、2つの医薬品に分かれます。</p>
+<p class="lede">安息香酸とサリチル酸のまとめ。サリチル酸はカルボン酸でもありフェノール類でもあるので、無水酢酸なら −OH が、メタノールなら −COOH が反応して、2つの医薬品に分かれます。</p>
 <div><span class="unit-label course-adv">化学</span><span class="unit-label">芳香族化合物</span><span class="unit-label">芳香族カルボン酸</span></div>
 
 <div class="ref-layout">
@@ -891,7 +909,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-rx"><div class="ref-rx-level ref-rx-lv1">★★★ 必ず覚える</div><div class="ref-rx-eq"><span class="ref-rx-side">C₆H₅COOH ＋ NaHCO₃</span><span class="ref-rx-arrow"><span class="ref-rx-over"></span><span class="ref-rx-bar">→</span><span class="ref-rx-under"></span></span><span class="ref-rx-side">C₆H₅COONa ＋ H₂O ＋ CO₂↑</span></div><p class="ref-note">安息香酸ナトリウムができます。フェノールはこの反応を起こさないので、ここがフェノールとの見分けどころです。</p></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/carboxylic-acid/">カルボン酸に共通の性質（炭酸より強い・弱酸の遊離）はカルボン酸のページへ</a></p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/aromatic-homologs/">トルエンを酸化して安息香酸をつくる（側鎖の酸化）</a></p>
-<section class="ref-sec" id="ref-sec-salicylic"><h4 class="ref-sec-h">サリチル酸 —— 2つの性質をもつ</h4><p class="ref-sec-lead">−OH と −COOH が o の位置に付いた化合物。カルボン酸とフェノール類の両方の性質を示します。</p></section>
+<section class="ref-sec" id="ref-sec-salicylic"><h4 class="ref-sec-h">サリチル酸 —— 2つの性質をもつ</h4><p class="ref-sec-lead">−OH と −COOH が o の位置に並んだ化合物。1つの分子が、カルボン酸としてもフェノール類としてもふるまいます。</p></section>
 <p class="ref-p"><b>サリチル酸 C₆H₄(OH)COOH</b> は、ベンゼン環に<b>ヒドロキシ基 −OH とカルボキシ基 −COOH が隣り合って（o の位置に）</b>付いた化合物です。そのため、<b>カルボン酸の性質とフェノール類の性質を両方</b>示します。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/aromatic-carboxylic-acid-salicylic.png" alt="サリチル酸の構造式。ベンゼン環の隣り合う2個の炭素に、ヒドロキシ基とカルボキシ基が1個ずつ結合している" loading="lazy"><figcaption class="ref-figure-cap"><b>サリチル酸</b>。−OH（フェノール類の部分）と −COOH（カルボン酸の部分）が隣り合っています。</figcaption></figure>
 <div class="ref-table-wrap"><div class="ref-cap">安息香酸・フェノール・サリチル酸は2つの試薬でこう応じる</div><table class="ref-hand-table"><thead><tr><th style="text-align: left;">試薬</th><th style="text-align: left;">安息香酸</th><th style="text-align: left;">フェノール</th><th style="text-align: left;">サリチル酸</th></tr></thead><tbody><tr><td style="text-align: left;"><b>NaHCO₃ 水溶液</b></td><td style="text-align: left;">CO₂ を出して溶ける</td><td style="text-align: left;">反応しない</td><td style="text-align: left;"><b>CO₂ を出して溶ける</b></td></tr><tr><td style="text-align: left;"><b>FeCl₃ 水溶液</b></td><td style="text-align: left;">呈色しない</td><td style="text-align: left;">紫色に呈色する</td><td style="text-align: left;"><b>赤紫色に呈色する</b></td></tr></tbody></table></div>

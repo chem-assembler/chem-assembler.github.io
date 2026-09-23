@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -886,15 +904,15 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">冬に道路へ塩化カルシウムをまくと、雪や氷が 0 ℃ より低い温度でも凍りにくくなります。溶質が溶けると凝固点が下がるためです。このページでは、<b>溶けている粒子の濃度だけで決まる3つの性質</b>を扱います。濃度は質量モル濃度（mol/kg）を使います。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/concentration/">質量モル濃度（溶媒 1 kg あたりの mol）の求め方へ</a></p>
 <section class="ref-sec" id="ref-sec-vapor-pressure-lowering"><h4 class="ref-sec-h">蒸気圧降下</h4><p class="ref-sec-lead">不揮発性の物質を溶かした溶液の蒸気圧は、同じ温度の純粋な溶媒の蒸気圧より低くなります。</p></section>
-<p class="ref-p">グルコースや塩化ナトリウムのように、ほとんど蒸発しない物質を<b>不揮発性</b>の物質といいます。不揮発性の物質を溶かした薄い溶液（<b>希薄溶液</b>）の蒸気圧は、純粋な溶媒（<b>純溶媒</b>）の蒸気圧より低くなります。これを<b>蒸気圧降下</b>といいます。</p>
+<p class="ref-p">グルコースや塩化ナトリウムは、放っておいてもまず蒸発しません。こうした物質を<b>不揮発性</b>の物質とよびます。これを少しだけ溶かした薄い溶液（<b>希薄溶液</b>）では、何も溶かしていない溶媒（<b>純溶媒</b>）と比べて、蒸気圧が下がります。この現象が<b>蒸気圧降下</b>です。</p>
 <p class="ref-p">蒸気圧が下がるのは、液面の一部を溶質の粒子が占めるので、<b>液面から飛び出していく溶媒分子が少なくなる</b>ためです。</p>
 <p class="ref-p">具体例として、海で泳いだあとの水着は、プールで泳いだあとの水着より乾きにくくなります。海水は塩類が溶けた溶液なので、蒸気圧が下がって水が蒸発しにくいためです。</p>
 <p class="ref-p">蒸気圧とは何か、沸騰とどう結びつくかは、物質の状態のページで扱っています。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/vapor-pressure/">飽和蒸気圧と沸点の関係へ</a></p>
 <section class="ref-sec" id="ref-sec-boiling-freezing"><h4 class="ref-sec-h">沸点上昇と凝固点降下 —— Δt ＝ K·m</h4><p class="ref-sec-lead">溶液の沸点は純溶媒より高く、凝固点は純溶媒より低くなります。その幅 Δt は、溶質の種類によらず、質量モル濃度 m に比例します。</p></section>
-<p class="ref-p">液体は、蒸気圧が外圧と等しくなったときに沸騰します。溶液は蒸気圧が下がっているので、外圧と等しくなるには純溶媒より高い温度が必要です。そのため、<b>溶液の沸点は純溶媒の沸点より高くなります</b>。これを<b>沸点上昇</b>といいます。</p>
+<p class="ref-p">沸騰が始まるのは、蒸気圧が外圧に追いついたときでした。溶液は蒸気圧が下がっている分、外圧に追いつくまでに純溶媒より余分に温めなければなりません。こうして<b>溶液の沸点は純溶媒より上にずれます</b>。この現象が<b>沸点上昇</b>です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/colligative-vapor-pressure.png" alt="蒸気圧曲線のグラフ。横軸が温度、縦軸が蒸気圧。純溶媒の曲線の下に溶液の曲線があり、同じ温度での差が蒸気圧降下。外圧 1.013 × 10⁵ Pa の横線と交わる温度が沸点で、溶液のほうが右（高温）にあり、その差が Δtb" loading="lazy"><figcaption class="ref-figure-cap">溶液の曲線は純溶媒より下にあるので、外圧と等しい高さに届くまでに<b>より高い温度</b>が必要です。横のずれがそのまま沸点上昇 Δtb になります。</figcaption></figure>
-<p class="ref-p">溶液を冷やすと、まず溶媒だけが凝固し始めます。その温度（溶液の凝固点）は純溶媒の凝固点より低くなります。これを<b>凝固点降下</b>といいます。溶質の粒子があるぶん、固体になろうとする溶媒分子の割合が減るので、さらに温度を下げないと凝固が進まないためです。</p>
+<p class="ref-p">溶液を冷やしていくと、固まりはじめるのは溶媒の分子だけです。固まりはじめる温度（溶液の凝固点）は、純溶媒のときより下がります。この現象が<b>凝固点降下</b>です。溶質の粒子があるぶん、固体になろうとする溶媒分子の割合が減るので、さらに温度を下げないと凝固が進まないためです。</p>
 <p class="ref-p">沸点上昇の幅 Δtb と凝固点降下の幅 Δtf は、<b>溶質の種類に関係なく、溶液の質量モル濃度 m に比例します。</b></p>
 <ul class="ref-list"><li><b>Δtb ＝ Kb·m</b>　（Kb：モル沸点上昇、単位 K·kg/mol）</li><li><b>Δtf ＝ Kf·m</b>　（Kf：モル凝固点降下、単位 K·kg/mol）</li></ul>
 <p class="ref-p">比例定数 Kb・Kf は、m ＝ 1 mol/kg のときの Δt で、<b>溶媒ごとに決まった値</b>です。温度の「差」なので、単位は ℃ ではなく K を使います。</p>

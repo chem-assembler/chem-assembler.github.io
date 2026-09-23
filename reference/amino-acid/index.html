@@ -499,6 +499,22 @@ footer a:hover{color:var(--brand)}
 }
 /* ⚠ 目次の中では `<a>` の外に付くので、行の高さに響かないよう一段小さく */
 .ref-toc .ref-adv-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
+/* ★ 化学（科目）の範囲の札（v1622・`course: adv`）。形は発展の札と同じ、色は青 ＝ 別の印と見分ける */
+.ref-course-tag {
+    display: inline-block;
+    margin-left: 7px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.7;
+    letter-spacing: 0.06em;
+    vertical-align: 0.12em;
+    color: #8fb8ff;
+    border: 1px solid #8fb8ff;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.ref-toc .ref-course-tag { font-size: 10px; margin-left: 5px; padding: 0 6px; }
 /* ★ 印は「札1つ」で終わらせず、**その見出しの区切り線**にも同じ色を回す ——
    ⚠ 発展は1文ではなく**ひとかたまり**なので、「どこから」が線で見えたほうがよい。
    ★ 足すのは色だけ（太さも位置も変えない）＝ 節や小見出しの組みは1つのまま。 */
@@ -822,6 +838,8 @@ a.ref-link::before { content: '→ '; }
    ★ 色相（緑）は変えずに明度だけ落とす —— 注意（橙 #8a5600）・丸暗記（紫 #5f3585）と
      見分けが付いたまま、明るい地で 5.7:1（AA）になる。 */
 .ref-scope .ref-adv-tag,.ref-toc .ref-adv-tag{color:#2e6b45;border-color:#2e6b45}
+/* ★ 化学（科目）の範囲の札（v1622）。目次の「化学」の帯と同じ青 */
+.ref-scope .ref-course-tag,.ref-toc .ref-course-tag{color:#3d5a99;border-color:#3d5a99}
 .ref-scope .ref-sec-advanced{border-top-color:#2e6b45}
 .ref-scope .ref-h5-advanced{border-left-color:#2e6b45}
 /* ★★ 発展の折りたたみ（§24）。⚠ 暗い地では**沈めて**層を作っている（rgba(0,0,0,.25)）が、
@@ -931,7 +949,7 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p"><b>「酸性アミノ酸の等電点は小さい、塩基性アミノ酸の等電点は大きい」というずれ方だけは覚えてください。</b>個々のアミノ酸の等電点の数値は、覚える必要はありません。問題文に与えられます。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">等電点では、アミノ酸がすべて双性イオンになっている</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">等電点は、陽イオン・双性イオン・陰イオンの<b>電荷の合計が全体として0になる pH</b> です。ほとんどが双性イオンですが、陽イオンと陰イオンもわずかに同じ量ずつあります。</span></p><p class="ref-mistake-why">「双性イオンは電荷の合計が0」と「等電点では電荷の合計が0」を同じものとして覚えてしまうためです。★ 入試の記述では「電荷の合計（平均）が0になる pH」と書けば安全です。</p></div>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/amino-acid-electrophoresis.png" alt="電気泳動の装置の模式図。横長の容器の左端に陰極、右端に陽極を差し込み、上で電源につないである。容器の中央に置いたアミノ酸の水溶液から、左へ向かう矢印に陽イオン、右へ向かう矢印に陰イオンと書かれ、双性イオンは動かないと添えてある" loading="lazy"><figcaption class="ref-figure-cap">中央に置いたアミノ酸は、<b>陽イオンなら左（陰極）へ、陰イオンなら右（陽極）へ</b>動きます。動いた向きから、その pH でどの形だったかが分かります。</figcaption></figure>
-<section class="ref-sec" id="ref-sec-ninhydrin"><h4 class="ref-sec-h">アミノ酸の検出</h4><p class="ref-sec-lead">アミノ酸にニンヒドリン水溶液を加えて温めると、青紫色から赤紫色になります。</p></section>
+<section class="ref-sec" id="ref-sec-ninhydrin"><h4 class="ref-sec-h">アミノ酸の検出</h4><p class="ref-sec-lead">ニンヒドリン水溶液を加えて温め、青紫〜赤紫色に変われば、アミノ酸がある目印です。</p></section>
 <p class="ref-p">アミノ酸の水溶液に<b>ニンヒドリン</b>の水溶液を加えて温めると、<b>青紫色〜赤紫色</b>になります。これを<b>ニンヒドリン反応</b>といい、アミノ基 −NH₂ を検出する反応です。</p>
 <p class="ref-p"><b>「ニンヒドリン反応はアミノ酸の検出、色は青紫〜赤紫」は暗記してください。</b>ほかの呈色反応といっしょに、タンパク質のページで表にまとめています。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/protein/">ビウレット反応・キサントプロテイン反応など、呈色反応の表はタンパク質のページへ</a></p>
