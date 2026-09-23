@@ -10,6 +10,8 @@ codes:
   - org.aroN.salicylic
   - org.aroN.aspirin
   - org.aroN.methyl-salicylate
+  - org.aroN.aromatic-acid-tests
+  - org.aroN.salicylic-derivatives-distinguish
 source:
   - qa:芳香族窒素化合物/芳香族カルボン酸
   - stages:芳香族カルボン酸とエステル
