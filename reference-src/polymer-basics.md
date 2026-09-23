@@ -13,6 +13,9 @@ codes:
   - org.poly.ring-opening
   - org.poly.copolymer
   - org.poly.crystalline-amorphous
+  - org.poly.polymer-def
+  - org.poly.monomer-from-repeat-unit
+  - org.poly.condensation-water-count
 source:
   - qa:org.poly（総論の7項目）
   - reactor:addition_polymerization, condensation_polymerization, ring_opening_polymerization, copolymerization
