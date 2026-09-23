@@ -6,6 +6,8 @@
 #   ⚠ 前の決め（2026-09-10「有機 → 無機 → 理論」の3区分）はこれで置き換えた。
 #   ⚠⚠ **編の名前・番号は教科書から借りない**（2026-09-23 ユーザー「章立てを教科書に寄せすぎ」→「見出しを自前に」）。
 #     「第n編」「序章」「終章」と教科書の編名・章名は使わず、分野の自前の名前で束ねる。並び（化学基礎 → 化学）と節の粒度は保つ
+#   ⚠⚠ **1社だけが使う名前は避ける。学習指導要領の項目名と、2社以上が使う名前はよい**（2026-09-23 ユーザー）。
+#     化学の用語そのもの（合金・溶解度積・フェノール類など）は言い換えない
 #
 # ★ **並びの正はこのファイル**。ORDER.txt（前へ／次へ・reference.json の並び）は、
 #   このファイルの「本体」を上から読んだ順と同じでなければならない（tools/gen-reference.mjs が赤で止める）。
@@ -18,13 +20,13 @@
 #       主に扱う側を本体にし、もう一方に再掲する
 #
 # ── 化学基礎 ──
-basic	化学の入口	化学とは何か	what-is-chemistry
-basic	物質と元素	純物質と混合物・元素・成分元素の確認	substance-classification
-basic	物質と元素	熱運動と物質の三態	states-of-matter
-basic	原子と化学結合	原子の構造と電子配置	atom-structure
+basic	化学の入口	化学のものの見方	what-is-chemistry
+basic	物質の分類と三態	純物質と混合物・元素・成分元素の確認	substance-classification
+basic	物質の分類と三態	熱運動と物質の三態	states-of-matter
+basic	原子と化学結合	原子の構造	atom-structure
 basic	原子と化学結合	元素の周期表	periodic-table
 basic	原子と化学結合	イオンとイオン結合	ionic-bond
-basic	原子と化学結合	共有結合と分子	covalent-bond molecular-shape
+basic	原子と化学結合	分子と共有結合	covalent-bond molecular-shape
 basic	原子と化学結合	分子間力	intermolecular-force
 basic	原子と化学結合	金属結合と結晶の分類	crystal-types
 basic	物質量と化学反応式	原子量・分子量・式量	atomic-weight
@@ -34,7 +36,7 @@ basic	物質量と化学反応式	化学反応式	chemical-equation
 basic	物質量と化学反応式	化学反応の量的関係・化学の基本法則	stoichiometry chemical-laws
 basic	酸と塩基	酸と塩基	acid-base-definition acid-base-strength
 basic	酸と塩基	水の電離と pH	ph
-basic	酸と塩基	中和と塩	neutralization salt acid-displacement
+basic	酸と塩基	中和反応と塩	neutralization salt acid-displacement
 basic	酸と塩基	中和滴定	titration
 basic	酸化と還元	酸化と還元・酸化数	redox-basics oxidation-number
 basic	酸化と還元	酸化剤と還元剤	half-reaction half-reaction-condition redox-equation redox-titration
@@ -44,10 +46,10 @@ basic	暮らしとのつながり	化学基礎を暮らしで振り返る	chemis
 # ── 化学 ──
 adv	状態変化と気体	物質の三態と状態変化・気体の圧力	+states-of-matter +intermolecular-force
 adv	状態変化と気体	蒸気圧と沸騰	vapor-pressure
-adv	状態変化と気体	気体の法則	gas-laws
+adv	状態変化と気体	気体の状態方程式	gas-laws
 adv	状態変化と気体	混合気体と分圧	gas-mixture gas-with-vapor
 adv	状態変化と気体	理想気体と実在気体	real-gas
-adv	溶液	溶解のしくみ	dissolution
+adv	溶液	溶解と水和	dissolution
 adv	溶液	固体・気体の溶解度	solubility gas-solubility
 adv	溶液	希薄溶液の性質	colligative osmotic-pressure
 adv	溶液	コロイド	colloid
@@ -56,22 +58,22 @@ adv	化学反応とエネルギー	反応エンタルピーと熱量	reaction-en
 adv	化学反応とエネルギー	ヘスの法則と結合エンタルピー	hess-law bond-enthalpy
 adv	化学反応とエネルギー	化学反応と光	light-energy
 adv	化学反応とエネルギー	エントロピー	entropy
-adv	電池と電気分解	電池	+cell-basics fuel-cell lead-storage-battery
-adv	電池と電気分解	電気分解	electrolysis-basics electrolysis-equations faraday electrolysis-industry
-adv	反応の速さと平衡	反応の速さ	reaction-rate rate-law
-adv	反応の速さと平衡	活性化エネルギーと触媒	activation-energy
-adv	反応の速さと平衡	化学平衡と平衡定数	equilibrium-constant pressure-equilibrium
-adv	反応の速さと平衡	平衡の移動	le-chatelier
+adv	電気化学	電池	+cell-basics fuel-cell lead-storage-battery
+adv	電気化学	電気分解	electrolysis-basics electrolysis-equations faraday electrolysis-industry
+adv	反応速度と化学平衡	反応の速さ	reaction-rate rate-law
+adv	反応速度と化学平衡	活性化エネルギーと触媒	activation-energy
+adv	反応速度と化学平衡	化学平衡と平衡定数	equilibrium-constant pressure-equilibrium
+adv	反応速度と化学平衡	平衡の移動	le-chatelier
 adv	電離平衡	電離平衡	weak-acid-equilibrium polyprotic-acid +ph
 adv	電離平衡	塩の加水分解と緩衝液	hydrolysis-ph buffer
 adv	電離平衡	溶解度積	solubility-product
 adv	非金属元素	周期表と元素の性質	+periodic-table inorg-reaction-types oxoacid
-adv	非金属元素	水素と貴ガス	hydrogen-noble-gas
+adv	非金属元素	貴ガスと水素	hydrogen-noble-gas
 adv	非金属元素	酸素とオゾン	oxygen-ozone
 adv	非金属元素	ハロゲン	halogen chlorine
 adv	非金属元素	硫黄	sulfur sulfuric-acid
-adv	非金属元素	窒素とリン	nitrogen phosphorus
-adv	非金属元素	炭素とケイ素	carbon-silicon
+adv	非金属元素	15族（窒素・リン）	nitrogen phosphorus
+adv	非金属元素	14族（炭素・ケイ素）	carbon-silicon
 adv	非金属元素	気体の製法と性質	gas-preparation
 adv	金属元素	アルカリ金属	alkali-metal
 adv	金属元素	2族元素	alkaline-earth
@@ -82,7 +84,7 @@ adv	金属元素	鉄	iron
 adv	金属元素	銅と銀	copper-silver
 adv	金属元素	クロムとマンガン	transition-oxidizers
 adv	金属イオンを見分ける	金属イオンの沈殿と炎色反応	precipitate flame-color
-adv	金属イオンを見分ける	金属イオンの系統分離	cation-separation
+adv	金属イオンを見分ける	陽イオンの系統分離	cation-separation
 adv	有機化合物のきほん	有機化合物の特徴	organic-features
 adv	有機化合物のきほん	炭化水素の分類と官能基	hydrocarbon-classes functional-groups
 adv	有機化合物のきほん	有機化合物の表し方	organic-formulas
@@ -94,14 +96,14 @@ adv	脂肪族化合物	アルケンとアルキン	alkene alkyne
 adv	脂肪族化合物	アルコールとエーテル	alcohol alcohol-class ether alcohol-oxidation-map alcohol-dehydration
 adv	脂肪族化合物	アルデヒドとケトン	aldehyde ketone iodoform
 adv	脂肪族化合物	カルボン酸	carboxylic-acid
-adv	脂肪族化合物	エステル・油脂・セッケン	ester esterification fat soap
+adv	脂肪族化合物	エステルと油脂・セッケン	ester esterification fat soap
 adv	芳香族化合物	芳香族炭化水素	benzene benzene-substitution aromatic-homologs
 adv	芳香族化合物	フェノール類	phenol phenol-reactions
 adv	芳香族化合物	芳香族カルボン酸	aromatic-carboxylic-acid
-adv	芳香族化合物	芳香族アミンとアゾ化合物	aniline
+adv	芳香族化合物	アニリンとアゾ化合物	aniline
 adv	芳香族化合物	芳香族化合物の分離	aromatic-separation
 adv	有機反応のしくみ	有機反応のしくみ（発展）	reaction-mechanisms
-adv	高分子のきほん	高分子化合物の特徴	polymer-basics
+adv	高分子のきほん	高分子とは	polymer-basics
 adv	天然高分子	単糖と二糖	saccharide disaccharide
 adv	天然高分子	多糖	polysaccharide
 adv	天然高分子	アミノ酸	amino-acid
@@ -111,4 +113,4 @@ adv	合成高分子	合成繊維	synthetic-fiber
 adv	合成高分子	合成樹脂と機能性高分子	plastic
 adv	合成高分子	ゴム	rubber
 adv	化学と社会	化学と社会	chemistry-role
-adv	化学と社会	無機化学工業	+sulfuric-acid +nitrogen +alkali-metal +iron +electrolysis-industry
+adv	化学と社会	無機物質の工業的製法	+sulfuric-acid +nitrogen +alkali-metal +iron +electrolysis-industry

@@ -17,7 +17,7 @@
       "category_m": "純物質と混合物・元素・成分元素の確認",
       "summary": "純物質と混合物、単体と化合物、同素体を見分け、分離の方法と成分元素の確かめ方をおさえよう。",
       "course": "basic",
-      "part": "物質と元素"
+      "part": "物質の分類と三態"
     },
     {
       "id": "sec-states-of-matter",
@@ -26,13 +26,13 @@
       "category_m": "熱運動と物質の三態",
       "summary": "粒子の熱運動と、固体・液体・気体の違い、状態変化の名前をおさえよう。",
       "course": "basic",
-      "part": "物質と元素"
+      "part": "物質の分類と三態"
     },
     {
       "id": "sec-atom-structure",
-      "name": "原子の構造と電子配置",
+      "name": "原子の構造",
       "category_l": "理論化学",
-      "category_m": "原子の構造と電子配置",
+      "category_m": "原子の構造",
       "summary": "陽子・中性子・電子の数と同位体、電子殻への電子の入り方をおさえよう。",
       "course": "basic",
       "part": "原子と化学結合"
@@ -57,9 +57,9 @@
     },
     {
       "id": "sec-covalent-bond",
-      "name": "共有結合と分子",
+      "name": "分子と共有結合",
       "category_l": "理論化学",
-      "category_m": "共有結合と分子",
+      "category_m": "分子と共有結合",
       "summary": "電子式・構造式、配位結合、分子の形と極性をおさえよう。",
       "course": "basic",
       "part": "原子と化学結合"
@@ -147,9 +147,9 @@
     },
     {
       "id": "sec-neutralization",
-      "name": "中和と塩",
+      "name": "中和反応と塩",
       "category_l": "理論化学",
-      "category_m": "中和と塩",
+      "category_m": "中和反応と塩",
       "summary": "中和反応と塩の分類、塩の水溶液の性質、弱酸の遊離をおさえよう。",
       "course": "basic",
       "part": "酸と塩基"
@@ -219,9 +219,9 @@
     },
     {
       "id": "sec-gas-laws",
-      "name": "気体の法則",
+      "name": "気体の状態方程式",
       "category_l": "理論化学",
-      "category_m": "気体の法則",
+      "category_m": "気体の状態方程式",
       "summary": "ボイル・シャルルの法則と気体の状態方程式を使えるようにしよう。",
       "course": "adv",
       "part": "状態変化と気体"
@@ -246,9 +246,9 @@
     },
     {
       "id": "sec-dissolution",
-      "name": "溶解のしくみ",
+      "name": "溶解と水和",
       "category_l": "理論化学",
-      "category_m": "溶解のしくみ",
+      "category_m": "溶解と水和",
       "summary": "極性と溶けやすさ、水和のしくみをおさえよう。",
       "course": "adv",
       "part": "溶液"
@@ -332,7 +332,7 @@
       "category_m": "電池",
       "summary": "ダニエル電池から燃料電池まで、実用電池の電極反応をおさえよう。",
       "course": "adv",
-      "part": "電池と電気分解"
+      "part": "電気化学"
     },
     {
       "id": "sec-electrolysis-basics",
@@ -341,7 +341,7 @@
       "category_m": "電気分解",
       "summary": "電極で何が反応するかと、ファラデーの法則・工業的な利用をおさえよう。",
       "course": "adv",
-      "part": "電池と電気分解"
+      "part": "電気化学"
     },
     {
       "id": "sec-reaction-rate",
@@ -350,7 +350,7 @@
       "category_m": "反応の速さ",
       "summary": "反応速度の表し方と、速度式の求め方をおさえよう。",
       "course": "adv",
-      "part": "反応の速さと平衡"
+      "part": "反応速度と化学平衡"
     },
     {
       "id": "sec-activation-energy",
@@ -359,7 +359,7 @@
       "category_m": "活性化エネルギーと触媒",
       "summary": "活性化エネルギーと、温度・触媒が速さを変えるしくみをおさえよう。",
       "course": "adv",
-      "part": "反応の速さと平衡"
+      "part": "反応速度と化学平衡"
     },
     {
       "id": "sec-equilibrium-constant",
@@ -368,7 +368,7 @@
       "category_m": "化学平衡と平衡定数",
       "summary": "平衡定数と圧平衡定数を式で表し、計算できるようにしよう。",
       "course": "adv",
-      "part": "反応の速さと平衡"
+      "part": "反応速度と化学平衡"
     },
     {
       "id": "sec-le-chatelier",
@@ -377,7 +377,7 @@
       "category_m": "平衡の移動",
       "summary": "ルシャトリエの原理で、条件を変えたときの平衡の向きを判断しよう。",
       "course": "adv",
-      "part": "反応の速さと平衡"
+      "part": "反応速度と化学平衡"
     },
     {
       "id": "sec-weak-acid-equilibrium",
@@ -417,9 +417,9 @@
     },
     {
       "id": "sec-hydrogen-noble-gas",
-      "name": "水素と貴ガス",
+      "name": "貴ガスと水素",
       "category_l": "無機化学",
-      "category_m": "水素と貴ガス",
+      "category_m": "貴ガスと水素",
       "summary": "水素と貴ガスの性質と製法をおさえよう。",
       "course": "adv",
       "part": "非金属元素"
@@ -453,18 +453,18 @@
     },
     {
       "id": "sec-nitrogen",
-      "name": "窒素とリン",
+      "name": "15族（窒素・リン）",
       "category_l": "無機化学",
-      "category_m": "窒素とリン",
+      "category_m": "15族（窒素・リン）",
       "summary": "アンモニア・硝酸の製法と性質、リンの化合物をおさえよう。",
       "course": "adv",
       "part": "非金属元素"
     },
     {
       "id": "sec-carbon-silicon",
-      "name": "炭素とケイ素",
+      "name": "14族（炭素・ケイ素）",
       "category_l": "無機化学",
-      "category_m": "炭素とケイ素",
+      "category_m": "14族（炭素・ケイ素）",
       "summary": "炭素とケイ素の単体と化合物の性質をおさえよう。",
       "course": "adv",
       "part": "非金属元素"
@@ -561,9 +561,9 @@
     },
     {
       "id": "sec-cation-separation",
-      "name": "金属イオンの系統分離",
+      "name": "陽イオンの系統分離",
       "category_l": "無機化学",
-      "category_m": "金属イオンの系統分離",
+      "category_m": "陽イオンの系統分離",
       "summary": "試薬を加える順と、各段で分かれるイオンをおさえよう。",
       "course": "adv",
       "part": "金属イオンを見分ける"
