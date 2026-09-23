@@ -11,6 +11,8 @@ codes:
   - theo.structure.polyatomic-ion
   - theo.structure.composition-formula
   - theo.structure.ionic-crystal
+  - theo.structure.ion-noble-config
+  - theo.structure.cleavage-reason
 source:
   - textbook:化学基礎_031-090_2編（イオンの生成・単原子イオンと多原子イオン・イオンの名称・イオン結合・組成式の書き方と読み方・イオン結晶の性質）
 singleSource: true
