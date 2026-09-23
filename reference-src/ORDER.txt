@@ -34,7 +34,6 @@ life-ceramics
 life-household
 life-energy
 life-safety
-chemistry-world
 vapor-pressure
 gas-laws
 gas-mixture
@@ -141,4 +140,3 @@ nucleic-acid
 synthetic-fiber
 plastic
 rubber
-chemistry-role

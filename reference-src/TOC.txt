@@ -47,7 +47,6 @@ basic	化学と人間生活	ガラスとセラミックス	life-ceramics
 basic	化学と人間生活	台所と薬箱の物質	life-household
 basic	化学と人間生活	燃料・電池・光	life-energy
 basic	化学と人間生活	薬品を安全に扱う	life-safety
-basic	暮らしとのつながり	化学基礎を暮らしで振り返る	chemistry-world
 # ── 化学 ──
 adv	状態変化と気体	物質の三態と状態変化・気体の圧力	+states-of-matter +intermolecular-force
 adv	状態変化と気体	蒸気圧と沸騰	vapor-pressure
@@ -88,6 +87,7 @@ adv	金属元素	遷移元素の特徴と錯イオン	complex-ion
 adv	金属元素	鉄	iron
 adv	金属元素	銅と銀	copper-silver
 adv	金属元素	クロムとマンガン	transition-oxidizers
+adv	金属元素	無機物質の工業的製法	+sulfuric-acid +nitrogen +alkali-metal +iron +electrolysis-industry
 adv	金属イオンを見分ける	金属イオンの沈殿と炎色反応	precipitate flame-color
 adv	金属イオンを見分ける	陽イオンの系統分離	cation-separation
 adv	有機化合物のきほん	有機化合物の特徴	organic-features
@@ -117,5 +117,3 @@ adv	天然高分子	核酸	nucleic-acid
 adv	合成高分子	合成繊維	synthetic-fiber
 adv	合成高分子	合成樹脂と機能性高分子	plastic
 adv	合成高分子	ゴム	rubber
-adv	化学と社会	化学と社会	chemistry-role
-adv	化学と社会	無機物質の工業的製法	+sulfuric-acid +nitrogen +alkali-metal +iron +electrolysis-industry

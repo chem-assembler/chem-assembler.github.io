@@ -714,9 +714,6 @@
 {"code":"theo.life.bond-material","kind":"reference","label":"資料「ガラスとセラミックス」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-ceramics に載っている（2026-09-23 便 life-draft で付け替え）"}
 {"code":"theo.life.reaction-in-life","kind":"reference","label":"資料「台所と薬箱の物質」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-household に載っている（2026-09-23 便 life-draft で付け替え）"}
 {"code":"theo.life.recycle-resource","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
-{"code":"theo.life.industry-catalyst","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
-{"code":"theo.life.haber-issue","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
-{"code":"theo.life.atom-economy","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
 {"code":"theo.thermo.entropy-def","kind":"reference","label":"資料「化学反応が自然に進む向き」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ entropy に載っている）"}
 {"code":"theo.thermo.entropy-sign","kind":"reference","label":"資料「化学反応が自然に進む向き」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ entropy に載っている）"}
 {"code":"theo.thermo.two-tendencies","kind":"reference","label":"資料「化学反応が自然に進む向き」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ entropy に載っている）"}
@@ -807,10 +804,6 @@
 {"code":"theo.solution.dialysis-check","kind":"reference","label":"資料「コロイド」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ colloid に載っている）"}
 {"code":"theo.kinetics.concentration-collision","kind":"reference","label":"資料「反応の速さを変える条件」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ activation-energy に載っている）"}
 {"code":"theo.kinetics.energy-distribution","kind":"reference","label":"資料「反応の速さを変える条件」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ activation-energy に載っている）"}
-{"code":"theo.life.three-r","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
-{"code":"theo.life.green-chemistry","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
-{"code":"theo.life.ammonia-fuel","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
-{"code":"theo.life.nitrogen-fixation","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
 {"code":"inorg.basis.outside-five","kind":"reference","label":"資料「無機の反応は5つの型で読む」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ inorg-reaction-types に載っている）"}
 {"code":"inorg.basis.oxoacid-def","kind":"reference","label":"資料「酸化物とオキソ酸」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ oxoacid に載っている）"}
 {"code":"inorg.basis.oxide-ion-equation","kind":"reference","label":"資料「酸化物とオキソ酸」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ oxoacid に載っている）"}
