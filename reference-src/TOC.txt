@@ -44,6 +44,7 @@ basic	酸化と還元	金属のイオン化傾向	ionization-tendency
 basic	酸化と還元	酸化還元反応の応用（電池・電気分解）	cell-basics +electrolysis-basics
 basic	化学と人間生活	暮らしの中の金属	life-metal
 basic	化学と人間生活	ガラスとセラミックス	life-ceramics
+basic	化学と人間生活	台所と薬箱の物質	life-household
 basic	暮らしとのつながり	化学基礎を暮らしで振り返る	chemistry-world
 # ── 化学 ──
 adv	状態変化と気体	物質の三態と状態変化・気体の圧力	+states-of-matter +intermolecular-force

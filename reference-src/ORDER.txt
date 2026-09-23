@@ -31,6 +31,7 @@ ionization-tendency
 cell-basics
 life-metal
 life-ceramics
+life-household
 chemistry-world
 vapor-pressure
 gas-laws

@@ -218,13 +218,13 @@
       "part": "化学と人間生活"
     },
     {
-      "id": "sec-chemistry-world",
-      "name": "化学基礎を暮らしで振り返る",
+      "id": "sec-life-household",
+      "name": "台所と薬箱の物質",
       "category_l": "理論化学",
-      "category_m": "化学基礎を暮らしで振り返る",
-      "summary": "学んだ化学が、暮らしと社会の課題にどう役立っているかを見渡そう。",
+      "category_m": "台所と薬箱の物質",
+      "summary": "家庭にある物質の使いみち・白い粉の見分け方・身のまわりの液体の pH の順をおさえよう。",
       "course": "basic",
-      "part": "暮らしとのつながり"
+      "part": "化学と人間生活"
     },
     {
       "id": "sec-vapor-pressure",
@@ -25172,8 +25172,8 @@
     },
     {
       "code": "theo.life.reaction-in-life",
-      "unit": "sec-chemistry-world",
-      "group": "化学が拓く世界",
+      "unit": "sec-life-household",
+      "group": "台所と薬箱の物質",
       "difficulty": 1,
       "tags": [
         "反応",
@@ -25212,7 +25212,7 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「化学が拓く世界」を開く"
+        "label": "資料「台所と薬箱の物質」を開く"
       }
     },
     {
@@ -25305,8 +25305,8 @@
     },
     {
       "code": "theo.life.antioxidant",
-      "unit": "sec-chemistry-world",
-      "group": "化学が拓く世界",
+      "unit": "sec-life-household",
+      "group": "台所と薬箱の物質",
       "difficulty": 2,
       "tags": [
         "酸化",
@@ -25345,7 +25345,7 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「化学が拓く世界」を開く"
+        "label": "資料「台所と薬箱の物質」を開く"
       }
     },
     {
