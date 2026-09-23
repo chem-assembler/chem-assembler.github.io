@@ -12,6 +12,9 @@ codes:
   - inorg.nonmetal.silver-halide
   - inorg.nonmetal.fluorine
   - inorg.nonmetal.iodine
+  - inorg.nonmetal.halogen-atom
+  - inorg.nonmetal.bromine
+  - inorg.nonmetal.hf-glass
 source:
   - slides:無機の基本５「ハロゲン」s7-17・s30-32（練習は s34-37・s46-47）
 singleSource: true

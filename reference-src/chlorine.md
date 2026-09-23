@@ -12,6 +12,8 @@ codes:
   - inorg.nonmetal.hcl-prep
   - inorg.nonmetal.hcl-roles
   - inorg.nonmetal.chlorine-oxoacid
+  - inorg.nonmetal.chlorine-props
+  - inorg.nonmetal.bleaching-powder
 source:
   - slides:無機の基本５「ハロゲン」s18-29（練習は s38-45）
 singleSource: true
