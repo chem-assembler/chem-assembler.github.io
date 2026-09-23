@@ -35,6 +35,8 @@
  * | `circle`        | 紙の図の型をやめて、アプリの丸の図で焼く（v1562 までの見た目）。⚠ `numbered` は紙の図の型と組めないので、書かなくても丸の図になる |
  * | `haworth`       | ★ **糖をハース式で描く**（v1549）。登録の座標（名前から呼び出したときの形）をそのまま描く ＝ **1位の −OH の上下（α/β）が図に出る**。⚠ 登録済みの名前だけ・糖の環（`haworthSugarCycles`）が無ければ赤。中身は `learn.js` の `ipHaworthFigure` |
  * | `fischer=<R/S>` | ★ **フィッシャー投影で描く**（v1617・I-0104）。不斉炭素の R・S を**上から**並べて書く（`fischer=RR`・メソ体は `fischer=RS`）。登録の図をアプリのフィッシャーの操作（`fischerOpRotate90/180` で縦に起こし、`fischerOpMirror` で左右を入れ替える ＝ 練習・タイムアタックと同じ関数）で作り、`assignRSDescriptor` の読みが一致する図を選ぶ。酸化された端（COOH・CHO）が上。不斉炭素の H だけを線で描く（十字の4本目）。⚠ 登録済みの名前だけ・紙の図の型だけ。作れなければ赤（作れた読みを並べて出す）。⚠ **D/L はアプリが酒石酸で断定しない**（`assignDLDescriptor`）ので、原稿は R・S で指す |
+ * | `units=1` | ★ **高分子の図を繰り返し単位1つぶんにする**（v1619・I-0040）。登録は両端が R の鎖（例: ナイロン66 は単位3つぶん）。R から R への主鎖で「元素と枝」の並びが繰り返す**いちばん短い周期**を見つけ、1周期ぶんだけ残して両端を R にする（座標は登録のまま）。周期が見つからなければ赤。`ch2n` と組むと教科書の繰り返し単位の形（R−NH−(CH₂)₆−NH−CO−(CH₂)₄−CO−R）になる。⚠ 登録済みの名前だけ・紙の図の型だけ |
+ * | `ch2n` | ★ **長い鎖を「(CH₂)ₙ」にまとめて描く**（v1619・I-0040 ユーザー決定「A」）。畳む条件はクイズの図と同じ `findCondensableChainRuns`（両端に鎖でない原子・3個以上・一直線）。鎖を1個の原子に置き換え、その文字を「(CH₂)ₙ」にするので、価標は文字の縁で止まる。ステアリン酸・セッケン・ナイロン66・ナイロン6 のような横に長すぎる図に使う。⚠ 紙の図の型だけ（circle・numbered・haworth・fischer・stereo とは組めない） |
  * | `vinyl` | ★ **環に含まれない C=C のまわりを ±120° に開いて描く**（v1618・I-0112）。アプリが名前から呼び出したときの整形（C-4・`game.reshapeDoubleBond`）を、渡す前の座標に当てるだけ。登録が横一直線の 1-ブテンのような分子を、教科書の形（二重結合の平面が見える形）で描く。⚠ **C=C の幾何（シス・トランス）が変わったら赤**（整形が立体を書き換えてはいけない）。紙の図の型だけ |
  * | `flip=v` / `flip=h` | ★ **登録の図を裏返して描く**（v1618・I-0112）。`v` は上下・`h` は左右。紙の図の型が登録の座標をそのまま使うので、渡す前に座標を裏返すだけ（⚠ 作図は書かない）。同じ分子を2通りに描いて「裏返すと重なる」を見せる図（1-ブテンのエチル基が上か下か）に使う。⚠ 紙の図の型だけ（circle・numbered・haworth・fischer・stereo とは組めない） |
  * | `stereo=wedge` / `stereo=mirror` | ★ **くさび図**（v1617・I-0104）。**アプリの「🧊 立体で見る」の絵そのもの**（`stereo.js` の StereoView。縦＝奥の破線のくさび・横＝手前のくさび）を写して撮る。`mirror` は「🪞 鏡像と並べる」を押した状態（まん中の破線が鏡）。消すのは画面用の見出し（「あなたの分子」「🪞 鏡像」）だけ。⚠ 中心の炭素の上下左右は**登録の図の並びのまま** ＝ 主鎖を縦に描いた登録（`D-乳酸`）を名指すと COOH が上になる（横に描いた `乳酸` は OH が上）。登録の図が十字として読めない（立体ビューの並びが仮になる）ときは赤。`name=` とだけ組める（`mark:`・2行目の `gen:` も不可） |
@@ -249,6 +251,8 @@ function parseGen(text, where) {
         if (tok === 'paper') { spec.paper = true; return; }
         if (tok === 'circle') { spec.circle = true; return; }
         if (tok === 'vinyl') { spec.vinyl = true; return; }
+        if (tok === 'ch2n') { spec.ch2n = true; return; }
+        if (tok === 'units=1') { spec.units = 1; return; }
         /* ★ ケクレ式2つを描き分ける（段2・設計 §5）。1 ＝ 登録の並び・2 ＝ 環の単結合と二重結合を入れ替えたもの */
         const kk = /^kekule=(.*)$/.exec(tok);
         if (kk) {
@@ -287,7 +291,7 @@ function parseGen(text, where) {
         }
         const m = /^(name|formula|chain|subs)=(.+)$/.exec(tok);
         if (!m) throw new Error(`${where}: :::figure の gen に読めない語「${tok}」があります`
-            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule= / stereo= / fischer= / flip= / vinyl）');
+            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule= / stereo= / fischer= / flip= / vinyl / ch2n / units=1）');
         spec[m[1]] = m[2];
     });
     if (!spec.name) throw new Error(`${where}: :::figure の gen に name= がありません（図が何の分子かを名乗ってください）`);
@@ -305,6 +309,8 @@ function parseGen(text, where) {
         const extra = ['formula', 'chain', 'numbered', 'plain', 'haworth', 'circle', 'kekule', 'condense', 'expand', 'fischer'].filter(k => spec[k]);
         if (extra.length) throw new Error(`${where}: gen の stereo= は name= とだけ組めます（${extra.join(' / ')} は書けない）`);
     }
+    if (spec.units && (spec.circle || spec.numbered || spec.haworth || spec.fischer || spec.stereo || spec.formula || spec.chain)) throw new Error(`${where}: gen の units=1 は登録済みの名前と紙の図の型でだけ使えます`);
+    if (spec.ch2n && (spec.circle || spec.numbered || spec.haworth || spec.fischer || spec.stereo)) throw new Error(`${where}: gen の ch2n は紙の図の型でだけ描けます（circle / numbered / haworth / fischer= / stereo= とは組めない）`);
     if (spec.vinyl && (spec.circle || spec.numbered || spec.haworth || spec.fischer || spec.stereo)) throw new Error(`${where}: gen の vinyl は紙の図の型でだけ描けます（circle / numbered / haworth / fischer= / stereo= とは組めない）`);
     if (spec.flip && (spec.circle || spec.numbered || spec.haworth || spec.fischer || spec.stereo)) throw new Error(`${where}: gen の flip= は紙の図の型でだけ描けます（circle / numbered / haworth / fischer= / stereo= とは組めない）`);
     if (spec.fischer && (spec.formula || spec.chain)) throw new Error(`${where}: gen の fischer= は登録済みの名前だけで使えます（formula= / chain= は組めない）`);
@@ -461,6 +467,47 @@ async function bake(jobs) {
             }
             /* ★ 裏返し（v1618・I-0112）: 紙の図の型は登録の座標をそのまま使う（learn.js の renderStandardFigure の
                ipCoordsUsable の道）ので、渡す前に座標を裏返すだけ。⚠ 作図はここに書かない */
+            /* ★ 繰り返し単位1つぶん（v1619・I-0040）。⚠ 作図はしない —— 登録の原子と座標から1周期を切り出すだけ */
+            if (spec.units) {
+                const Rs = mol.atoms.filter(a => a.element === 'R');
+                if (Rs.length !== 2) return { error: `units=1: 「${spec.name}」の両端が R の鎖として読めません（R が ${Rs.length} 個）` };
+                const nb = id => mol.getNeighbors(id).map(x => x.atom);
+                // R から R への主鎖（幅優先で最短の道）
+                const prev = new Map([[Rs[0].id, null]]);
+                const q = [Rs[0].id];
+                while (q.length) { const c = q.shift(); if (c === Rs[1].id) break; nb(c).forEach(x => { if (!prev.has(x.id)) { prev.set(x.id, c); q.push(x.id); } }); }
+                if (!prev.has(Rs[1].id)) return { error: `units=1: 「${spec.name}」の R と R がつながっていません` };
+                const path = [];
+                for (let c = Rs[1].id; c; c = prev.get(c)) path.unshift(c);
+                const onPath = new Set(path);
+                const bondType = (p, q2) => (mol.bonds.find(b => (b.atomId1 === p && b.atomId2 === q2) || (b.atomId1 === q2 && b.atomId2 === p)) || {}).type;
+                const inner = path.slice(1, -1);
+                const sig = inner.map((id, i) => {
+                    const a = mol.atoms.find(x => x.id === id);
+                    const side = nb(id).filter(x => !onPath.has(x.id)).map(x => x.element + bondType(id, x.id)).sort().join(',');
+                    const next = bondType(id, path[i + 2]);   // 主鎖の次（端は R への結合）
+                    return a.element + '[' + side + ']' + next;
+                });
+                let per = 0;
+                for (let p2 = 1; p2 < sig.length; p2++) {
+                    if (sig.length % p2) continue;
+                    if (sig.every((x, i) => i + p2 >= sig.length || x === sig[i + p2])) { per = p2; break; }
+                }
+                if (!per || per === sig.length) return { error: `units=1: 「${spec.name}」の主鎖に繰り返しが見つかりません` };
+                // 1周期ぶん（inner[0..per-1]）とその枝を残し、両端に R
+                const keepIds = new Set([Rs[0].id]);
+                inner.slice(0, per).forEach(id => { keepIds.add(id); nb(id).filter(x => !onPath.has(x.id)).forEach(x => keepIds.add(x.id)); });
+                const tail = mol.atoms.find(x => x.id === inner[per]);   // 次の単位の先頭の位置に R を置く
+                const keep = mol.atoms.filter(a => keepIds.has(a.id));
+                const idx = new Map(keep.map((a, i) => [a.id, i]));
+                const tAtoms = keep.map(a => ({ element: a.element, x: a.x, y: a.y }));
+                tAtoms.push({ element: 'R', x: tail.x, y: tail.y });
+                const tBonds = mol.bonds.filter(b => idx.has(b.atomId1) && idx.has(b.atomId2))
+                    .map(b => ({ atom1Index: idx.get(b.atomId1), atom2Index: idx.get(b.atomId2), type: b.type }));
+                tBonds.push({ atom1Index: idx.get(inner[per - 1]), atom2Index: tAtoms.length - 1, type: bondType(inner[per - 1], inner[per]) || 1 });
+                mol = g.createTargetFromData({ target: { atoms: tAtoms, bonds: tBonds } });
+                via += `・繰り返し単位1つ（主鎖 ${per} 原子）`;
+            }
             if (spec.vinyl) {
                 if (typeof g.reshapeDoubleBond !== 'function') return { error: 'アプリに game.reshapeDoubleBond がありません（古い版を配信している）' };
                 const geo0 = typeof readBondGeoFromCoords === 'function' ? JSON.stringify(readBondGeoFromCoords(mol)) : null;
@@ -521,6 +568,7 @@ async function bake(jobs) {
                         Object.assign({ paper: !!sp.paper, condense: sp.condense || [], expand: sp.expand || [], marks: sp.marks || [] },
                             sp.kekule ? { kekule: sp.kekule } : {},
                             sp.fischer ? { fischer: true } : {},
+                            sp.ch2n ? { ch2n: true } : {},
                             sp.figurePart ? { figurePart: true, anchors: sp.anchors || [] } : {}));
                 } catch (e) {
                     return { error: where + ((e && e.message) || String(e)) };

@@ -1432,6 +1432,61 @@ function condenseChainForDisplay(target, minRun = 3) {
     };
 }
 
+/**
+ * ★ 紙の図の型で長い鎖を「(CH₂)ₙ」にまとめる（v1619・I-0040 ユーザー決定「A ＝ (CH₂)ₙ にまとめる」）。
+ * 検出は同じ `findCondensableChainRuns`（畳む条件もクイズの図と同じ）。変形だけが違う:
+ * 鎖を**1個の原子に置き換えて残す**（A−X−B の2本の結合）。X の文字を「(CH₂)ₙ」にすれば、
+ * 紙の図の型の「文字を測って価標を文字の縁で止める」がそのまま効く（ラベルを別に重ねない）。
+ * ⚠ 元の target は変えない。戻り値の labels は**新しい添字**で X を指す
+ */
+function condenseChainForPaper(target, minRun = 3) {
+    const found = findCondensableChainRuns(target, minRun);
+    if (!found.length) return null;
+    const atoms = target.atoms.map(a => Object.assign({}, a));
+    let bonds = target.bonds.map(b => Object.assign({}, b));
+    const removed = new Set();
+    const over = [];
+    const x0 = atoms.map(a => a.x), y0 = atoms.map(a => a.y);
+    for (const { run, a: A, b: B, ux, uy, len, comp } of found) {
+        const step = Math.hypot(atoms[run[0]].x - atoms[A].x, atoms[run[0]].y - atoms[A].y);
+        const shift = len - step * 2;   // A と B のあいだを刻み2つにする（まん中に X）
+        comp.forEach(i => { atoms[i].x -= ux * shift; atoms[i].y -= uy * shift; });
+        const keep = run[0];
+        atoms[keep].x = (atoms[A].x + atoms[B].x) / 2;
+        atoms[keep].y = (atoms[A].y + atoms[B].y) / 2;
+        run.slice(1).forEach(i => removed.add(i));
+        bonds = bonds.filter(b => !run.includes(b.atom1Index) && !run.includes(b.atom2Index));
+        bonds.push({ atom1Index: A, atom2Index: keep, type: 1 }, { atom1Index: keep, atom2Index: B, type: 1 });
+        const sub = String(run.length).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join('');
+        over.push({ index: keep, text: '(CH₂)' + sub });
+    }
+    // ★ どの結合にもつながらない粒（塩の Na⁺ など）は、畳む前にいちばん近かった原子と同じだけ動かす
+    //   （動かさないと、縮んだ陰イオンから遠く離れて取り残される）
+    const bonded = new Set();
+    target.bonds.forEach(b => { bonded.add(b.atom1Index); bonded.add(b.atom2Index); });
+    atoms.forEach((a, i) => {
+        if (bonded.has(i)) return;
+        let best = -1, bd = Infinity;
+        atoms.forEach((o, j) => {
+            if (j === i || !bonded.has(j) || removed.has(j)) return;
+            const d = Math.hypot(x0[j] - x0[i], y0[j] - y0[i]);
+            if (d < bd) { bd = d; best = j; }
+        });
+        if (best >= 0) { a.x = x0[i] + (atoms[best].x - x0[best]); a.y = y0[i] + (atoms[best].y - y0[best]); }
+    });
+    const map = new Map();
+    const kept = [];
+    atoms.forEach((a, i) => { if (!removed.has(i)) { map.set(i, kept.length); kept.push(a); } });
+    return {
+        target: {
+            atoms: kept,
+            bonds: bonds.filter(b => map.has(b.atom1Index) && map.has(b.atom2Index))
+                .map(b => ({ atom1Index: map.get(b.atom1Index), atom2Index: map.get(b.atom2Index), type: b.type }))
+        },
+        labels: over.map(o => ({ index: map.get(o.index), text: o.text }))
+    };
+}
+
 /* ===== D/L の「基準になる不斉炭素」を図の中で指す（発注書 F-1・v1418） =====
  *
  * ユーザー申し立て: 「L・D判定 どのC原子が基準なのか（…）が分かるとよい」。
@@ -1531,8 +1586,13 @@ function renderMoleculeIntoSvg(game, svgId, target, showWedge, condense, paper) 
     svg.querySelectorAll('.quiz-marks').forEach(n => n.remove());
     // ★ 紙の図の型（v1549・参考書の図を焼く道具だけが渡す）。アプリの画面はここを通らない
     if (paper) {
-        const pm = game.createTargetFromData({ target });
-        drawPaperMolecule(game, svg, pm, bondsGroup, atomsGroup, paper);
+        /* ★ `ch2n`（v1619・I-0040）: 長い鎖を「(CH₂)ₙ」にまとめる。畳めるものが無ければ今までどおり */
+        const folded = paper.ch2n ? condenseChainForPaper(target) : null;
+        const pm = game.createTargetFromData({ target: folded ? folded.target : target });
+        const popts = folded
+            ? Object.assign({}, paper, { labelOverride: new Map(folded.labels.map(l => [pm.atoms[l.index].id, l.text])) })
+            : paper;
+        drawPaperMolecule(game, svg, pm, bondsGroup, atomsGroup, popts);
         return pm;
     }
 
@@ -2472,7 +2532,11 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         if (hidden.has(a.id)) return;
         const heavyNb = mol.getNeighbors(a.id).filter(n => n.atom.element !== 'H' && !hidden.has(n.atom.id));
         const grp = groupAt.get(a.id);
-        if (grp) {
+        const ov = opts && opts.labelOverride && opts.labelOverride.get(a.id);
+        if (ov) {
+            // ★ まとめた鎖「(CH₂)ₙ」（v1619）。文字のまん中に価標が付く（whole）
+            labels.set(a.id, { text: ov, atEnd: false, whole: true });
+        } else if (grp) {
             const anc = byId.get(grp.anchorId);
             const rev = !!(anc && anc.x > a.x + 1);
             labels.set(a.id, { text: rev ? PAPER_GROUP_REVERSED[grp.label] : grp.label, atEnd: rev });
@@ -2574,7 +2638,7 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
         } catch (e) { /* 見積もりのまま */ }
         const n = chars.length, symLen = a.element.length;
         const s0 = lab.atEnd ? n - symLen : 0, s1 = s0 + symLen;
-        const center = (pos(s0) + pos(s1)) / 2;           // 元素記号の中心（文字の先頭から）
+        const center = lab.whole ? pos(n) / 2 : (pos(s0) + pos(s1)) / 2;   // 元素記号の中心（文字の先頭から）。まとめた鎖は文字のまん中
         const total = pos(n);
         const padX = 0.12 * fs;
         const e = { L: center + padX, R: total - center + padX, up: capH / 2 + padX, down: capH / 2 + padX + (hasSub ? subDy : 0) };
