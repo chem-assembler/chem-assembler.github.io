@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" role="img">
+  <!-- 原子どうしの電子の引っぱり合い。原子核（＋）が電子（−）を引きつける力はクーロン力。
+       引きつける力は元素によって違い、強い原子のほうへ電子が移る（例: Na と Cl → Na⁺ と Cl⁻）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <!-- ⚠ 矢じりは線の太さに比例させない（userSpaceOnUse）。比例させると太い矢印の矢じりが原子核を覆う -->
+    <marker id="ab" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#1565c0" /></marker>
+    <marker id="ar" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="26" markerHeight="26" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#c62828" /></marker>
+  </defs>
+  <style>
+    text { font-family: system-ui, sans-serif; }
+    .shell { fill: none; stroke: #b0bec5; stroke-width: 2; stroke-dasharray: 6 5; }
+    .nuc { fill: #ef5350; stroke: #b71c1c; stroke-width: 2.5; }
+    .nt { font-size: 20px; fill: #fff; text-anchor: middle; font-weight: bold; }
+    .el { fill: #1e88e5; stroke: #0d47a1; stroke-width: 2; }
+    .et { font-size: 14px; fill: #fff; text-anchor: middle; font-weight: bold; }
+    .weak { stroke: #1565c0; stroke-width: 2.5; fill: none; }
+    .strong { stroke: #c62828; stroke-width: 7; fill: none; }
+    .lbl { font-size: 17px; fill: #222; text-anchor: middle; }
+    .sub { font-size: 15px; fill: #555; text-anchor: middle; }
+    .ttl { font-size: 18px; fill: #222; text-anchor: middle; font-weight: bold; }
+  </style>
+
+  <text class="ttl" x="440" y="32">原子核（＋）が電子（−）を引きつける ＝ クーロン力</text>
+
+  <!-- 左: 引きつける力が弱い原子 -->
+  <circle class="shell" cx="220" cy="170" r="95" />
+  <circle class="nuc" cx="220" cy="170" r="30" /><text class="nt" x="220" y="177">＋</text>
+  <!-- 右: 引きつける力が強い原子 -->
+  <circle class="shell" cx="660" cy="170" r="95" />
+  <circle class="nuc" cx="660" cy="170" r="30" /><text class="nt" x="660" y="177">＋</text>
+
+  <!-- 間の電子 -->
+  <circle class="el" cx="440" cy="170" r="17" /><text class="et" x="440" y="175">e⁻</text>
+  <path class="weak" d="M 420 170 L 262 170" marker-end="url(#ab)" />
+  <path class="strong" d="M 460 170 L 612 170" marker-end="url(#ar)" />
+
+  <text class="lbl" x="220" y="298">引きつける力が弱い原子</text>
+  <text class="sub" x="220" y="322">（例：Na）→ 電子を失って陽イオンに</text>
+  <text class="lbl" x="660" y="298">引きつける力が強い原子</text>
+  <text class="sub" x="660" y="322">（例：Cl）→ 電子を受け取って陰イオンに</text>
+</svg>

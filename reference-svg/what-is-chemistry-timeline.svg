@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="360" viewBox="0 0 1000 360" role="img">
+  <!-- 原子の考え方の年表。紀元前のデモクリトスから、ドルトンの原子説（1803年ごろ）を経て20世紀の量子論まで。
+       高校化学のおもな範囲（19世紀までに形づくられた化学）と、高校で使う原子のモデル（ボーア）に帯を掛ける。
+       ⚠ 間隔は年代に比例させていない（本文と alt にも書く）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; }
+    .axis { stroke: #333; stroke-width: 3; }
+    .brk { stroke: #333; stroke-width: 2; }
+    .dot { fill: #fff; stroke: #333; stroke-width: 2.5; }
+    .key { fill: #1565c0; stroke: #0d47a1; stroke-width: 2.5; }
+    .yr { font-size: 15px; fill: #333; text-anchor: middle; }
+    .ev { font-size: 15px; fill: #222; text-anchor: middle; }
+    .evk { font-size: 15px; fill: #0d47a1; text-anchor: middle; font-weight: bold; }
+    .band { fill: #fff3e0; stroke: #ef6c00; stroke-width: 1.5; }
+    .bt { font-size: 15px; fill: #e65100; text-anchor: middle; }
+    .band2 { fill: #ede7f6; stroke: #5e35b1; stroke-width: 1.5; }
+    .bt2 { font-size: 15px; fill: #4527a0; text-anchor: middle; }
+    .note { font-size: 13px; fill: #777; text-anchor: end; }
+  </style>
+
+  <!-- 高校化学のおもな範囲（ラボアジエ〜19世紀末）と、高校で使う原子のモデル -->
+  <rect class="band" x="330" y="40" width="370" height="40" rx="6" />
+  <text class="bt" x="515" y="66">高校化学のおもな範囲（19世紀までの化学）</text>
+  <rect class="band2" x="710" y="40" width="130" height="40" rx="6" />
+  <text class="bt2" x="775" y="66">＋ ボーアのモデル</text>
+
+  <line class="axis" x1="40" y1="170" x2="960" y2="170" />
+  <!-- 軸の途中を省いた印（年代に比例していない） -->
+  <path class="brk" d="M 190 158 L 180 182 M 202 158 L 192 182" />
+
+  <circle class="dot" cx="90" cy="170" r="9" />
+  <text class="yr" x="90" y="145">紀元前5世紀ごろ</text>
+  <text class="ev" x="90" y="205">デモクリトス</text>
+  <text class="ev" x="90" y="226">「アトモス」</text>
+
+  <circle class="dot" cx="260" cy="170" r="9" />
+  <text class="yr" x="260" y="145">中世</text>
+  <text class="ev" x="260" y="205">錬金術</text>
+
+  <circle class="dot" cx="370" cy="170" r="9" />
+  <text class="yr" x="370" y="145">1774年ごろ</text>
+  <text class="ev" x="370" y="205">ラボアジエ</text>
+  <text class="ev" x="370" y="226">質量保存の法則</text>
+
+  <circle class="key" cx="480" cy="170" r="11" />
+  <text class="yr" x="480" y="145">1803年ごろ</text>
+  <text class="evk" x="480" y="205">ドルトン</text>
+  <text class="evk" x="480" y="226">原子説</text>
+
+  <circle class="dot" cx="590" cy="170" r="9" />
+  <text class="yr" x="590" y="145">1869年</text>
+  <text class="ev" x="590" y="205">メンデレーエフ</text>
+  <text class="ev" x="590" y="226">周期表</text>
+
+  <circle class="dot" cx="690" cy="170" r="9" />
+  <text class="yr" x="690" y="145">1897年</text>
+  <text class="ev" x="690" y="205">電子の発見</text>
+
+  <circle class="dot" cx="775" cy="170" r="9" />
+  <text class="yr" x="775" y="145">1913年</text>
+  <text class="ev" x="775" y="205">ボーアの</text>
+  <text class="ev" x="775" y="226">原子モデル</text>
+
+  <circle class="dot" cx="895" cy="170" r="9" />
+  <text class="yr" x="895" y="145">1920年代</text>
+  <text class="ev" x="895" y="205">量子力学</text>
+  <text class="ev" x="895" y="226">（量子論）</text>
+
+  <text class="note" x="960" y="300">※ 間隔は年代に比例していません</text>
+</svg>

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="400" viewBox="0 0 880 400" role="img">
+  <!-- 学問体系（化学・物理）と学問対象（生物・地学）の違い。
+       左＝土台から順に積み上げる（化学なら原子が土台）。右＝ひとつの対象に、いろいろな分野から矢印が向かう。
+       2026-09-24 ユーザーの講義の要旨から。⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="ar" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#555" /></marker>
+  </defs>
+  <style>
+    text { font-family: system-ui, sans-serif; }
+    .ttl { font-size: 21px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .sub { font-size: 15px; fill: #555; text-anchor: middle; }
+    .blk { fill: #e3f2fd; stroke: #1565c0; stroke-width: 2; }
+    .base { fill: #1565c0; stroke: #0d47a1; stroke-width: 2; }
+    .bt { font-size: 17px; fill: #0d47a1; text-anchor: middle; }
+    .bw { font-size: 17px; fill: #fff; text-anchor: middle; font-weight: bold; }
+    .obj { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2.5; }
+    .ot { font-size: 18px; fill: #1b5e20; text-anchor: middle; font-weight: bold; }
+    .fld { fill: #fff; stroke: #777; stroke-width: 1.8; }
+    .ft { font-size: 16px; fill: #333; text-anchor: middle; }
+    .arw { stroke: #555; stroke-width: 2.2; fill: none; }
+    .sep { stroke: #ccc; stroke-width: 1.5; stroke-dasharray: 6 5; }
+  </style>
+
+  <text class="ttl" x="220" y="36">学問体系（化学・物理）</text>
+  <text class="ttl" x="660" y="36">学問対象（生物・地学）</text>
+  <line class="sep" x1="440" y1="20" x2="440" y2="380" />
+
+  <!-- 左: 積み上げ -->
+  <rect class="blk" x="120" y="70" width="200" height="50" rx="6" />
+  <text class="bt" x="220" y="101">化学反応</text>
+  <rect class="blk" x="120" y="126" width="200" height="50" rx="6" />
+  <text class="bt" x="220" y="157">物質の性質</text>
+  <rect class="blk" x="120" y="182" width="200" height="50" rx="6" />
+  <text class="bt" x="220" y="213">原子の結びつき</text>
+  <rect class="base" x="100" y="238" width="240" height="56" rx="6" />
+  <text class="bw" x="220" y="272">土台：原子</text>
+  <path class="arw" d="M 370 280 L 370 90" marker-end="url(#ar)" />
+  <text class="sub" x="220" y="330">土台から順に積み上げる</text>
+  <text class="sub" x="220" y="354">（狭く深く）</text>
+
+  <!-- 右: 対象に集まる -->
+  <ellipse class="obj" cx="660" cy="190" rx="92" ry="54" />
+  <text class="ot" x="660" y="185">生き物</text>
+  <text class="ot" x="660" y="210">地球</text>
+  <rect class="fld" x="480" y="70" width="96" height="40" rx="6" />
+  <text class="ft" x="528" y="96">物理学</text>
+  <rect class="fld" x="744" y="70" width="96" height="40" rx="6" />
+  <text class="ft" x="792" y="96">化学</text>
+  <rect class="fld" x="480" y="270" width="96" height="40" rx="6" />
+  <text class="ft" x="528" y="296">数学</text>
+  <rect class="fld" x="744" y="270" width="96" height="40" rx="6" />
+  <text class="ft" x="792" y="296">情報</text>
+  <path class="arw" d="M 560 112 L 598 148" marker-end="url(#ar)" />
+  <path class="arw" d="M 760 112 L 722 148" marker-end="url(#ar)" />
+  <path class="arw" d="M 560 268 L 598 232" marker-end="url(#ar)" />
+  <path class="arw" d="M 760 268 L 722 232" marker-end="url(#ar)" />
+  <text class="sub" x="660" y="340">対象に、いろいろな分野の方法で迫る</text>
+  <text class="sub" x="660" y="364">（広く）</text>
+</svg>

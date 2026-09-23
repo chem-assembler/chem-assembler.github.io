@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="330" viewBox="0 0 880 330" role="img">
+  <!-- 化学反応は原子の組みかえ。2H₂ ＋ O₂ → 2H₂O の前後で、H 4個・O 2個のまま（質量保存の法則の理由）。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="ar" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M 0 0 L 12 6 L 0 12 z" fill="#333" /></marker>
+  </defs>
+  <style>
+    text { font-family: system-ui, sans-serif; }
+    .h { fill: #fff; stroke: #555; stroke-width: 2.5; }
+    .o { fill: #ef5350; stroke: #b71c1c; stroke-width: 2.5; }
+    .ht { font-size: 17px; fill: #333; text-anchor: middle; }
+    .ot { font-size: 20px; fill: #fff; text-anchor: middle; font-weight: bold; }
+    .ttl { font-size: 19px; fill: #222; text-anchor: middle; font-weight: bold; }
+    .eq { font-size: 20px; fill: #333; text-anchor: middle; }
+    .cnt { font-size: 17px; fill: #1565c0; text-anchor: middle; }
+    .box { fill: #f5f7fa; stroke: #cfd8dc; stroke-width: 1.5; }
+    .arw { stroke: #333; stroke-width: 3; fill: none; }
+  </style>
+
+  <text class="ttl" x="210" y="34">反応の前</text>
+  <text class="ttl" x="670" y="34">反応の後</text>
+  <rect class="box" x="30" y="52" width="360" height="190" rx="10" />
+  <rect class="box" x="490" y="52" width="360" height="190" rx="10" />
+
+  <!-- 前: H₂ ×2 -->
+  <circle class="h" cx="80" cy="110" r="20" /><text class="ht" x="80" y="116">H</text>
+  <circle class="h" cx="116" cy="110" r="20" /><text class="ht" x="116" y="116">H</text>
+  <circle class="h" cx="80" cy="190" r="20" /><text class="ht" x="80" y="196">H</text>
+  <circle class="h" cx="116" cy="190" r="20" /><text class="ht" x="116" y="196">H</text>
+  <!-- 前: O₂ -->
+  <circle class="o" cx="262" cy="150" r="27" /><text class="ot" x="262" y="157">O</text>
+  <circle class="o" cx="312" cy="150" r="27" /><text class="ot" x="312" y="157">O</text>
+
+  <path class="arw" d="M 405 147 L 475 147" marker-end="url(#ar)" />
+
+  <!-- 後: H₂O ×2 -->
+  <circle class="o" cx="580" cy="118" r="27" /><text class="ot" x="580" y="125">O</text>
+  <circle class="h" cx="540" cy="150" r="20" /><text class="ht" x="540" y="156">H</text>
+  <circle class="h" cx="620" cy="150" r="20" /><text class="ht" x="620" y="156">H</text>
+  <circle class="o" cx="760" cy="138" r="27" /><text class="ot" x="760" y="145">O</text>
+  <circle class="h" cx="720" cy="170" r="20" /><text class="ht" x="720" y="176">H</text>
+  <circle class="h" cx="800" cy="170" r="20" /><text class="ht" x="800" y="176">H</text>
+
+  <text class="eq" x="210" y="226">2H₂ ＋ O₂</text>
+  <text class="eq" x="670" y="226">2H₂O</text>
+  <text class="cnt" x="210" y="280">H 原子 4個・O 原子 2個</text>
+  <text class="cnt" x="670" y="280">H 原子 4個・O 原子 2個</text>
+  <text class="ht" x="440" y="316">原子は消えも生まれもせず、組み合わせだけが変わる</text>
+</svg>
