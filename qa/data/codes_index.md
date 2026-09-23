@@ -492,8 +492,8 @@ Lv は現在の割り当て（1 生存 / 2 標準 / 3 受験標準 / 4 難関）
 | コード | Lv | 小項目 | 知識 |
 |---|:--:|---|---|
 | `theo.electro.primary-secondary` | 1 | 実用電池と燃料電池 | 充電できない使い切りの電池が一次電池（マンガン乾電池など）、充電してくり返し使える電池が二次電池（蓄電池。鉛蓄電池・リチウムイオン電池など）。 |
-| `theo.electro.fuel-cell-acid` | 2 | 実用電池と燃料電池 | リン酸型燃料電池（−）H₂｜H₃PO₄aq｜O₂（＋）は、負極 H₂ → 2H⁺ ＋ 2e⁻、正極 O₂ ＋ 4H⁺ ＋ 4e⁻ → 2H₂O で、全体は H₂ の燃焼と同じ 2H₂ ＋ O₂… |
-| `theo.electro.fuel-cell-alkaline` | 2 | 実用電池と燃料電池 | アルカリ型燃料電池（−）H₂｜KOHaq｜O₂（＋）の式は、リン酸型の式の H⁺ を同じ数の OH⁻ で中和して書き換える（負極 H₂ ＋ 2OH⁻ → 2H₂O ＋ 2e⁻、正極 O₂ ＋ … |
+| `theo.electro.fuel-cell-acid` | 2 | 実用電池と燃料電池 | リン酸形燃料電池（−）H₂｜H₃PO₄aq｜O₂（＋）は、負極 H₂ → 2H⁺ ＋ 2e⁻、正極 O₂ ＋ 4H⁺ ＋ 4e⁻ → 2H₂O で、全体は H₂ の燃焼と同じ 2H₂ ＋ O₂… |
+| `theo.electro.fuel-cell-alkaline` | 2 | 実用電池と燃料電池 | アルカリ形燃料電池（−）H₂｜KOHaq｜O₂（＋）の式は、リン酸形の式の H⁺ を同じ数の OH⁻ で中和して書き換える（負極 H₂ ＋ 2OH⁻ → 2H₂O ＋ 2e⁻、正極 O₂ ＋ … |
 | `theo.electro.lead-discharge` | 2 | 鉛蓄電池 | 鉛蓄電池（−）Pb｜H₂SO₄aq｜PbO₂（＋）を放電すると、両極の表面が PbSO₄ に変わって両極とも重くなり、電解液の硫酸の濃度は下がる。 |
 | `theo.electro.lead-equations` | 2 | 鉛蓄電池 | 鉛蓄電池の放電: 負極 Pb ＋ SO₄²⁻ → PbSO₄ ＋ 2e⁻、正極 PbO₂ ＋ 4H⁺ ＋ SO₄²⁻ ＋ 2e⁻ → PbSO₄ ＋ 2H₂O、全体 Pb ＋ PbO₂ ＋ 2… |
 | `theo.electro.lead-mass` | 2 | 鉛蓄電池 | 鉛蓄電池の放電では、e⁻ 2 mol あたり負極が 96 g（SO₄ の分）、正極が 64 g（SO₂ の分）増え、電解液では H₂SO₄ が 2 mol 減り H₂O が 2 mol 増える… |

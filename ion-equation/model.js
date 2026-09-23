@@ -1704,10 +1704,10 @@ const HALF_REACTIONS = {
   "Na_ox":     { disp: "Na → Na⁺ ＋ e⁻", kind: "oxidation", couple: "Na+/Na",
                  left: [{ sp: "Na", n: 1 }], right: [{ sp: "Na+", n: 1 }, { sp: "e-", n: 1 }] },
   /* 水素は「金属とイオン」の表に金属と並んで載る（非金属の気体だが、同じ ⇆ で書ける）。
-     燃料電池の負極（酸型）でもある。⚠ 骨格が片側だけになるので係数決定の出題にはならない */
+     燃料電池の負極（酸形）でもある。⚠ 骨格が片側だけになるので係数決定の出題にはならない */
   "H_ox":      { disp: "H₂ → 2H⁺ ＋ 2e⁻", kind: "oxidation", couple: "H+/H2",
                  left: [{ sp: "H2", n: 1 }], right: [{ sp: "H+", n: 2 }, { sp: "e-", n: 2 }] },
-  /* 燃料電池の正極。酸型（リン酸型）とアルカリ型で**同じ反応を別の液性で書く**。
+  /* 燃料電池の正極。酸形（リン酸形）とアルカリ形で**同じ反応を別の液性で書く**。
      どちらも H2O_ox / OH_ox の裏返しで、対は同じ。⚠ 骨格が片側だけになるので出題にはならない */
   "O2_red":       { disp: "O₂ ＋ 4H⁺ ＋ 4e⁻ → 2H₂O", kind: "reduction", couple: "O2/H2O",
                  left: [{ sp: "O2", n: 1 }, { sp: "H+", n: 4 }, { sp: "e-", n: 4 }],
@@ -1715,7 +1715,7 @@ const HALF_REACTIONS = {
   "O2_red_basic": { disp: "O₂ ＋ 2H₂O ＋ 4e⁻ → 4OH⁻", kind: "reduction", couple: "O2/OH-",
                  left: [{ sp: "O2", n: 1 }, { sp: "H2O", n: 2 }, { sp: "e-", n: 4 }],
                  right: [{ sp: "OH-", n: 4 }] },
-  /* 燃料電池の負極（アルカリ型）。H2O_red の裏返し ＝ 対も同じ */
+  /* 燃料電池の負極（アルカリ形）。H2O_red の裏返し ＝ 対も同じ */
   "H2_ox_basic": { disp: "H₂ ＋ 2OH⁻ → 2H₂O ＋ 2e⁻", kind: "oxidation", couple: "H2O/H2",
                  left: [{ sp: "H2", n: 1 }, { sp: "OH-", n: 2 }],
                  right: [{ sp: "H2O", n: 2 }, { sp: "e-", n: 2 }] },
@@ -2726,9 +2726,9 @@ const HALF_CATALOG_META = {
   // --- 化学: 電池の電極（燃料電池・鉛蓄電池）---
   "Pb_ox":         { name: "鉛蓄電池の負極",       sp: "Pb",      subject: "chem",  level: 1, section: "battery" },
   "PbO2_red":      { name: "鉛蓄電池の正極",       sp: "PbO2",    subject: "chem",  level: 1, section: "battery" },
-  "O2_red":        { name: "燃料電池の正極（酸型）",       sp: "O2", subject: "chem", level: 2, section: "battery" },
-  "O2_red_basic":  { name: "燃料電池の正極（アルカリ型）", sp: "O2", subject: "chem", level: 2, section: "battery" },
-  "H2_ox_basic":   { name: "燃料電池の負極（アルカリ型）", sp: "H2", subject: "chem", level: 2, section: "battery" },
+  "O2_red":        { name: "燃料電池の正極（酸形）",       sp: "O2", subject: "chem", level: 2, section: "battery" },
+  "O2_red_basic":  { name: "燃料電池の正極（アルカリ形）", sp: "O2", subject: "chem", level: 2, section: "battery" },
+  "H2_ox_basic":   { name: "燃料電池の負極（アルカリ形）", sp: "H2", subject: "chem", level: 2, section: "battery" },
   // --- 化学: 有機化合物の酸化（アプリの「有機（発展）」と同じ扱い） ---
   "EtOH_ox":       { name: "エタノール",           sp: "C2H5OH",  subject: "chem",  level: 3, section: "organic" },
   "MeCHO_ox":      { name: "アセトアルデヒド",     sp: "CH3CHO",  subject: "chem",  level: 3, section: "organic" },
