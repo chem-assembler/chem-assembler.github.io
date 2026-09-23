@@ -9,6 +9,8 @@ codes:
   - theo.life.bond-material
   - theo.life.reaction-in-life
   - theo.life.recycle-resource
+  - theo.life.ceramics
+  - theo.life.antioxidant
 source:
   - textbook:化学基礎_031-090_2編（イオン結晶の主な物質とその用途・セラミックスと半導体・レアメタルと都市鉱山）
   - textbook:化学基礎_091-191_3編（身のまわりの酸化剤・還元剤・リチウムイオン電池・金属の製錬・アルミニウムの再生）

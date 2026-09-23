@@ -10,6 +10,7 @@ codes:
   - theo.mole.three-row-table
   - theo.mole.limiting-reactant
   - theo.mole.gas-volume-ratio
+  - theo.mole.mass-unit-flow
 source:
   - slides:気体の基本２「混合気体」s17-19（反応前・変化量・反応後の3行を Pa で書く）
   - slides:速度平衡の基本２「化学平衡と平衡定数」の3行表の型（反応前・変化量・反応後）

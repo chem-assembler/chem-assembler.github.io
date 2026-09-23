@@ -11,6 +11,12 @@ codes:
   - inorg.basis.electropositive
   - inorg.basis.max-elements
   - inorg.basis.three-values
+  - inorg.basis.periodic-law
+  - inorg.basis.typical-props
+  - inorg.basis.coulomb
+  - inorg.basis.ie-graph
+  - inorg.basis.electron-affinity
+  - inorg.basis.trend-direction
 source:
   - slides:無機の基本２「周期律と周期表」s3-16（第1部）・s18-21（練習１・２）
   - slides:無機の基本３「貴ガスと水素」s3-4（復習問題）

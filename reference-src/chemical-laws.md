@@ -9,6 +9,8 @@ codes:
   - theo.mole.basic-laws
   - theo.mole.definite-multiple
   - theo.mole.gas-reaction-molecule
+  - theo.mole.atomic-theory
+  - theo.mole.law-identify
 source:
   - textbook:化学基礎_091-191_3編（化学史「化学の基本法則と原子説・分子説」・一定組成の法則／倍数組成の法則の呼び名）
 singleSource: false

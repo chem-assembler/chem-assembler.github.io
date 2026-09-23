@@ -10,6 +10,7 @@ codes:
   - theo.acid-base.arrhenius
   - theo.acid-base.bronsted
   - theo.acid-base.bronsted-role
+  - theo.acid-base.which-definition
 source:
   - slides:酸塩基の基本１「酸と塩基の定義」p.4〜13・練習1 p.15
   - slides:酸塩基の基本２「酸と塩基の価数と強弱」p.4（復習1）
