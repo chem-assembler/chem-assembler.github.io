@@ -9,6 +9,9 @@ codes:
   - theo.solution.osmosis
   - theo.solution.van-t-hoff
   - theo.solution.osmotic-molar-mass
+  - theo.solution.concentration-kind
+  - theo.solution.semipermeable
+  - theo.solution.osmosis-direction
 source:
   - slides:速度平衡の標準問題演習「解離度と圧平衡定数」s3（【復習】浸透圧 ΠV ＝ nRT → Π ＝ cRT）
   - slides:気体の基本１「気体の状態方程式」s8-11・s20-22（公式は使わない・準標準状態を基準に比例で解く）
