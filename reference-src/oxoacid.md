@@ -12,6 +12,10 @@ codes:
   - inorg.basis.oxide-neutralization
   - inorg.basis.oxoacid-naming
   - inorg.basis.period3-acidity
+  - inorg.basis.oxoacid-def
+  - inorg.basis.oxide-ion-equation
+  - inorg.basis.amphoteric-oxide
+  - inorg.basis.oxoacid-structure
 source:
   - slides:無機の基本４「酸素と酸化物」s14-16（酸化物の分類・オキソ酸の命名・周期表との関係）・s23-36（最高酸化数・酸化物と水／酸／塩基の反応）・練習１・８〜１２（s38-39・s53-62）
   - slides:無機の基本１「無機の前に復習すべきこと」s9-10（配位結合）
