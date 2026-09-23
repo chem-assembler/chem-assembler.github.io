@@ -1897,6 +1897,33 @@ function figureMarkHits(mol, at) {
         });
         return hits;
     }
+    /* ⑤-1 環（`at=環`・2026-09-24・ビニロンのアセタール化でできた六員環を囲む）。
+     * 環の判定は既存の `_ringAtomIds`＋`_ringSystems`（独楽回転・ハース判定と同じ）をそのまま読む。
+     * 縮合環はひとかたまりで1つ（ナフタレンは1個に当たる） */
+    if (spec === '環') {
+        if (typeof _ringAtomIds !== 'function' || typeof _ringSystems !== 'function') return [];
+        const ringIds = _ringAtomIds(mol);
+        return ringIds.size ? _ringSystems(mol, ringIds).map(sys => ({ ids: sys.slice() })) : [];
+    }
+    /* ⑤-2 環の水素の種類（`at=環の水素の種類`・2026-09-24・clue-order の三置換体の図）。
+     * ベンゼン環の炭素のうち**水素が残っているもの**に1つずつ当たり、**同じ環境なら同じ文字**（a・b・c…）を付ける。
+     * ★ 環境の判定は新しく書かない —— 正準コードと同じ WL 精緻化のクラス（`_heavyAtomRanks`）をそのまま読む
+     *   （ラベルは元素＋自由価標なので、H の残る環炭素と置換基の付いた環炭素は別の組になる）。
+     * ⚠ WL は「対称に見えて実は違う」を見落とすことがある（正則なグラフ）。高校の三置換ベンゼン程度では起きない。
+     *   文字は順位（構造だけで決まる整数）の小さい組から a・b・c … ＝ 描き方で入れ替わらない */
+    if (spec === '環の水素の種類') {
+        if (typeof findAromaticBondKeys !== 'function' || typeof _heavyAtomRanks !== 'function') return [];
+        const keys = findAromaticBondKeys(mol);
+        const ring = new Set();
+        mol.bonds.forEach(b => {
+            const k = b.atomId1 < b.atomId2 ? `${b.atomId1}_${b.atomId2}` : `${b.atomId2}_${b.atomId1}`;
+            if (keys && keys.has(k)) { ring.add(b.atomId1); ring.add(b.atomId2); }
+        });
+        const rank = _heavyAtomRanks(mol);
+        const withH = mol.atoms.filter(a => ring.has(a.id) && a.element === 'C' && mol.getFreeValency(a.id) >= 1);
+        const order = [...new Set(withH.map(a => rank.get(a.id)))].sort((p, q) => p - q);
+        return withH.map(a => ({ ids: [a.id], label: 'abcdefghij'[order.indexOf(rank.get(a.id))] }));
+    }
     // ⑥ 芳香環の位置番号（`at=環C2`）
     const ar = /^環C(\d+)$/.exec(spec);
     if (ar) {
@@ -1952,7 +1979,7 @@ function figureMarkHits(mol, at) {
         return hits;
     }
     throw new Error(`印の at=「${spec}」を知りません`
-        + `（書けるのは ${Object.keys(FIGURE_MARK_GROUPS).join(' / ')} / 不斉炭素 / ベンゼン環 / グリコシド結合 / 環の酸素`
+        + `（書けるのは ${Object.keys(FIGURE_MARK_GROUPS).join(' / ')} / 不斉炭素 / ベンゼン環 / グリコシド結合 / 環の酸素 / 環 / 環の水素の種類`
         + ' / 環C<番号> / C<番号> / C<番号>-OH / C<番号>-C<番号>）');
 }
 
@@ -1967,7 +1994,8 @@ function planFigureMarks(mol, marks) {
         if (FIGURE_MARK_KINDS.indexOf(kind) < 0) {
             throw new Error(`印の kind=「${kind}」を知りません（書けるのは ${FIGURE_MARK_KINDS.join(' / ')}）`);
         }
-        if (kind === '文字' && !m.label) throw new Error('印の kind=文字 には label=（置く文字）が要ります');
+        const hitsLabeled = /^環の水素の種類$/.test(String(m.at || '').trim());
+        if (kind === '文字' && !m.label && !hitsLabeled) throw new Error('印の kind=文字 には label=（置く文字）が要ります');
         const link = FIGURE_LINK_KINDS.indexOf(kind) >= 0;
         // ★ 段2: 破線・矢印は2か所を結ぶ ＝ `to=` が要る（設計 §6 の赤）
         if (link && !m.to) throw new Error(`印の kind=${kind} には to=（もう一方の端）が要ります`);
@@ -1988,6 +2016,14 @@ function planFigureMarks(mol, marks) {
             const want = parseInt(m.count, 10);
             if (hits.length !== want) {
                 throw new Error(`印の at=「${m.at}」は ${hits.length} 個に当たりました（count=${want} と違います）`);
+            }
+        }
+        // ★ `kinds=`（2026-09-24）… 当たりに付いた文字の**種類の数**。`count=` と同じく、合わなければ赤
+        if (m.kinds !== undefined && m.kinds !== null && m.kinds !== '') {
+            const want = parseInt(m.kinds, 10);
+            const got = new Set(hits.map(h => h.label).filter(Boolean)).size;
+            if (got !== want) {
+                throw new Error(`印の at=「${m.at}」は ${got} 種類に分かれました（kinds=${want} と違います）`);
             }
         }
         return { kind, at: m.at, to: m.to || '', label: m.label || '', color: m.color || FIGURE_MARK_COLOR, hits, toHits };
@@ -2372,13 +2408,13 @@ function drawFigureMarks(plan, ctx) {
             } else {                                    // 文字（印そのものが文字）
                 const reach = Math.abs(ux) * ((hb.x2 - hb.x1) / 2) + Math.abs(uy) * ((hb.y2 - hb.y1) / 2);
                 const d = reach + gap + capH * 0.55;
-                putText(m.label, hc[0] + ux * d, hc[1] + uy * d, ux, uy, m.color);
+                putText(hit.label || m.label, hc[0] + ux * d, hc[1] + uy * d, ux, uy, m.color);
                 return;
             }
-            if (m.label) {
+            if (hit.label || m.label) {
                 const reach = Math.abs(ux) * half[0] + Math.abs(uy) * half[1];
                 const d = reach + gap + capH * 0.55;
-                putText(m.label, cx + ux * d, cy + uy * d, ux, uy, m.color);
+                putText(hit.label || m.label, cx + ux * d, cy + uy * d, ux, uy, m.color);
             }
         });
     });

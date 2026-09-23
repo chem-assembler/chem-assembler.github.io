@@ -61567,6 +61567,40 @@
         return '1-ブタノールで C1-OH ＝ 端の −OH・C4-OH は0個／命名の番号の無い鎖状グルコースは C5-OH を赤で止める';
     });
 
+    test('FGT8: 環（at=環）と環の水素の種類（at=環の水素の種類・kinds=）を既存の判定で当てる（★否定対照: kinds 違いで赤／label 無しの kind=文字 はほかの at= では赤のまま）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game;
+        const molOf = (name) => {
+            const e = fgtEntry(W, name);
+            assert(e, `テスト前提: 登録に「${name}」が無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        const threw = (fn) => { try { fn(); return false; } catch (e) { return true; } };
+        // ① 環の水素の種類: 三置換ベンゼンの 1,2,3・1,2,4・1,3,5 で 2・3・1 種類（どれも当たりは3個）
+        [['1,2,3-トリメチルベンゼン（ヘミメリテン）', 2], ['1,2,4-トリメチルベンゼン（プソイドクメン）', 3],
+         ['メシチレン（1,3,5-トリメチルベンゼン）', 1], ['ベンゼン', 1], ['トルエン', 3]].forEach(([name, kinds]) => {
+            const h = W.figureMarkHits(molOf(name), '環の水素の種類');
+            const n = name === 'ベンゼン' ? 6 : name === 'トルエン' ? 5 : 3;
+            assert(h.length === n, `${name}: 環の水素に ${h.length} 個当たった（${n} 個のはず）`);
+            const got = new Set(h.map(x => x.label)).size;
+            assert(got === kinds, `${name}: 環の水素が ${got} 種類に分かれた（${kinds} 種類のはず）`);
+        });
+        // 1,2,3-体は「両端が同じ文字・真ん中だけ違う」（数だけでなく組み分けそのもの）
+        const m123 = molOf('1,2,3-トリメチルベンゼン（ヘミメリテン）');
+        const labels = W.figureMarkHits(m123, '環の水素の種類').map(x => x.label).sort().join('');
+        assert(labels === 'aab', `1,2,3-体の文字が ${labels}（aab のはず）`);
+        // ② kinds= が合わなければ赤／合えば通る。label 無しでも kind=文字 が通るのはこの at= だけ
+        assert(!threw(() => W.planFigureMarks(m123, [{ kind: '文字', at: '環の水素の種類', kinds: 2 }])), 'kinds=2 で止まった');
+        assert(threw(() => W.planFigureMarks(m123, [{ kind: '文字', at: '環の水素の種類', kinds: 3 }])), '★ kinds 違いが赤にならない');
+        assert(threw(() => W.planFigureMarks(molOf('トルエン'), [{ kind: '文字', at: 'ベンゼン環' }])),
+            '★ label 無しの kind=文字 がほかの at= でも通ってしまう');
+        // ③ 環: ビニロンの六員環は1つ・鎖（プロパン）は0個
+        const v = W.figureMarkHits(molOf('ビニロン'), '環');
+        assert(v.length === 1 && v[0].ids.length === 6, `ビニロンの環が ${v.length} 個（${v[0] ? v[0].ids.length : 0} 原子）`);
+        assert(W.figureMarkHits(molOf('プロパン'), '環').length === 0, '★ 環の無い分子に環が当たった');
+        c.reset();
+    });
+
     test('ION2: 正準コードのラベルは電荷を明示する（N(4) と N⁺(4) が割れる・不斉判定も電荷を見る）', async (c) => {
         const W = c.W;
         const q = [[0, 1], [0, 2], [0, 3], [0, 4]];
