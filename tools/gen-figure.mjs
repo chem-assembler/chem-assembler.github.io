@@ -34,6 +34,8 @@
  * | （既定）`paper` | ★★ **原稿の図は既定で紙の図の型**（v1562・ユーザー「参考書の図は焼き直してよいです」＝ 見本 paper4 の見た目で決定）。教科書の比の文字・環は登録の座標・−NO₂/−SO₃H は文字・−COOH/−CHO は線。⚠ 原稿の `gen:` に `paper` を書かなくても効く（校正中の原稿を1文字も変えずに焼き直すため）。`--src=` の1枚焼きは今までどおり `paper` を書いたときだけ |
  * | `circle`        | 紙の図の型をやめて、アプリの丸の図で焼く（v1562 までの見た目）。⚠ `numbered` は紙の図の型と組めないので、書かなくても丸の図になる |
  * | `haworth`       | ★ **糖をハース式で描く**（v1549）。登録の座標（名前から呼び出したときの形）をそのまま描く ＝ **1位の −OH の上下（α/β）が図に出る**。⚠ 登録済みの名前だけ・糖の環（`haworthSugarCycles`）が無ければ赤。中身は `learn.js` の `ipHaworthFigure` |
+ * | `fischer=<R/S>` | ★ **フィッシャー投影で描く**（v1617・I-0104）。不斉炭素の R・S を**上から**並べて書く（`fischer=RR`・メソ体は `fischer=RS`）。登録の図をアプリのフィッシャーの操作（`fischerOpRotate90/180` で縦に起こし、`fischerOpMirror` で左右を入れ替える ＝ 練習・タイムアタックと同じ関数）で作り、`assignRSDescriptor` の読みが一致する図を選ぶ。酸化された端（COOH・CHO）が上。不斉炭素の H だけを線で描く（十字の4本目）。⚠ 登録済みの名前だけ・紙の図の型だけ。作れなければ赤（作れた読みを並べて出す）。⚠ **D/L はアプリが酒石酸で断定しない**（`assignDLDescriptor`）ので、原稿は R・S で指す |
+ * | `stereo=wedge` / `stereo=mirror` | ★ **くさび図**（v1617・I-0104）。**アプリの「🧊 立体で見る」の絵そのもの**（`stereo.js` の StereoView。縦＝奥の破線のくさび・横＝手前のくさび）を写して撮る。`mirror` は「🪞 鏡像と並べる」を押した状態（まん中の破線が鏡）。消すのは画面用の見出し（「あなたの分子」「🪞 鏡像」）だけ。⚠ 中心の炭素の上下左右は**登録の図の並びのまま** ＝ 主鎖を縦に描いた登録（`D-乳酸`）を名指すと COOH が上になる（横に描いた `乳酸` は OH が上）。登録の図が十字として読めない（立体ビューの並びが仮になる）ときは赤。`name=` とだけ組める（`mark:`・2行目の `gen:` も不可） |
  *
  * ★★ **図に印を重ねる**（v1609・I-0082・`DESIGN_figure_marks.md` 段1）—— `:::figure` に `mark:` を1行1つ:
  *
@@ -45,7 +47,9 @@
  *
  *   | | 意味 |
  *   |---|---|
- *   | `kind=` | `囲む`（破線の楕円）／`枠`（破線の四角）／`文字`（短い文字を置く）。★ 段1 はこの3つだけ |
+ *   | `kind=` | `囲む`（破線の楕円）／`枠`（破線の四角）／`文字`（短い文字を置く）。★ 段1 はこの3つだけ。
+ *              ＋ `対称面`（v1617）… at= の**2か所**の真ん中を直角に横切る破線（`mark: kind=対称面 at=3:不斉炭素 count=2 label=対称面`）。
+ *              ⚠ 描いた図がその線で折り返し対称でなければ赤（メソ体でない図に引けない） |
  *   | `at=`   | **どこに**。化学の言葉が主（`不斉炭素`・`グリコシド結合`・`カルボキシ基`…）、位置番号が補助（`C1-OH`・`環C2`・`C3-C4`） |
  *   | `label=`| 添える文字（`kind=文字` では必須）。⚠ **置き場所は作図器が計算する**（原稿に座標は書かせない） |
  *   | `count=`| 期待する個数。★ 合わなければ赤 ＝ **数が変わったことに気づける** |
@@ -141,7 +145,9 @@ const ASPECT_WARN = 9;
    ・原子の丸は地を白に（アプリは `#0f141c` を属性で直に書いている）
    ・結合線は `rgba(255,255,255,…)` を属性で直に書いているので `!important` で読み替える
    ・`_iupacLiftBondInk` が帯の上で結合線を白く塗り直すので、そこも同じ口で押さえる
-   ・元素の色は色相を残して明度だけ落とす（面Aの読み替え LIGHT_CSS と同じ考え方） */
+   ・元素の色は色相を残して明度だけ落とす（面Aの読み替え LIGHT_CSS と同じ考え方）
+   ・くさび図（`stereo=`・`svg.figbake-stereo`）は立体ビューが属性で直に書く白（文字 #f5f6fa・くさび・破線のくさび）を墨へ、
+     鏡の破線（シアン）を灰へ。字は紙の図の字（svg-paper-label）と同じ書体に（⚠ 位置・大きさ・形は触らない） */
 const PAPER_CSS = `
 #figbake{
   background:#fff; padding:0; margin:0; position:fixed; left:0; top:0; z-index:99999;
@@ -159,6 +165,10 @@ const PAPER_CSS = `
 #figbake text.svg-charge{ fill:#1c222d !important; }
 #figbake .svg-paper-wedge{ fill:#1c222d !important; }
 #figbake line.svg-bond-ink.svg-paper-line{ stroke:#1c222d !important; }
+#figbake svg.figbake-stereo text{ fill:#1c222d !important; font-family: "Helvetica Neue", Arial, sans-serif; }
+#figbake svg.figbake-stereo polygon{ fill:#1c222d !important; }
+#figbake svg.figbake-stereo g[data-bond="hash"] line{ stroke:#1c222d !important; }
+#figbake svg.figbake-stereo > line{ stroke:#6b7482 !important; }
 `;
 
 /* ============================================================================
@@ -193,6 +203,10 @@ function collect() {
                 specs[k].marks.push(Object.assign({}, mk, { at: strip(mk.at), to: strip(mk.to) }));
             });
             specs.forEach(spec => {
+                /* ⚠ くさび図（stereo=）はアプリの立体ビューの絵を写すだけ ＝ 印も横並びもまだ載せられない（載せる口は紙の図の型にある） */
+                if (spec.stereo && (spec.marks.length || specs.length > 1)) {
+                    throw new Error(`${where} の ${b.src}: gen の stereo= の図には mark: も2行目の gen: も書けません（1行だけで書きます）`);
+                }
                 if (spec.marks.length && !spec.paper) {
                     throw new Error(`${where} の ${b.src}: mark: は紙の図にだけ重ねられます`
                         + '（gen に circle / numbered を書いた図には、まだ印を付けられません）');
@@ -248,9 +262,22 @@ function parseGen(text, where) {
             spec[g[1]] = keys;
             return;
         }
+        /* ★ 立体の図（v1617・I-0104）。`stereo=` はアプリの「🧊 立体で見る」のくさび図・`fischer=` はフィッシャー投影 */
+        const st = /^stereo=(.*)$/.exec(tok);
+        if (st) {
+            if (st[1] !== 'wedge' && st[1] !== 'mirror') throw new Error(`${where}: gen の stereo= は wedge か mirror です（いまは「${st[1]}」）`);
+            spec.stereo = st[1];
+            return;
+        }
+        const fi = /^fischer=(.*)$/.exec(tok);
+        if (fi) {
+            if (!/^[RS]{1,4}$/.test(fi[1])) throw new Error(`${where}: gen の fischer= は不斉炭素の R・S を上から並べて書きます（例 fischer=RR。いまは「${fi[1]}」）`);
+            spec.fischer = fi[1];
+            return;
+        }
         const m = /^(name|formula|chain|subs)=(.+)$/.exec(tok);
         if (!m) throw new Error(`${where}: :::figure の gen に読めない語「${tok}」があります`
-            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule=）');
+            + '（書けるのは name= / formula= / chain= / subs= / numbered / plain / haworth / paper / circle / condense= / expand= / kekule= / stereo= / fischer=）');
         spec[m[1]] = m[2];
     });
     if (!spec.name) throw new Error(`${where}: :::figure の gen に name= がありません（図が何の分子かを名乗ってください）`);
@@ -263,6 +290,13 @@ function parseGen(text, where) {
     if (spec.haworth && spec.numbered) throw new Error(`${where}: gen の haworth に numbered は付けられません（主鎖の帯はハース環に出せない）`);
     if (spec.haworth && (spec.formula || spec.chain)) throw new Error(`${where}: gen の haworth は登録済みの名前だけで使えます（formula= / chain= は組めない）`);
     if (spec.kekule && (spec.circle || spec.numbered)) throw new Error(`${where}: gen の kekule= は紙の図の型でだけ描けます（circle / numbered とは組めない）`);
+    if (spec.stereo) {
+        /* くさび図はアプリの立体ビューの絵をそのまま写すので、紙の図の型の上書き（原子団・番号・印）は効かない */
+        const extra = ['formula', 'chain', 'numbered', 'plain', 'haworth', 'circle', 'kekule', 'condense', 'expand', 'fischer'].filter(k => spec[k]);
+        if (extra.length) throw new Error(`${where}: gen の stereo= は name= とだけ組めます（${extra.join(' / ')} は書けない）`);
+    }
+    if (spec.fischer && (spec.formula || spec.chain)) throw new Error(`${where}: gen の fischer= は登録済みの名前だけで使えます（formula= / chain= は組めない）`);
+    if (spec.fischer && (spec.circle || spec.numbered || spec.haworth || spec.kekule)) throw new Error(`${where}: gen の fischer= は紙の図の型でだけ描けます（circle / numbered / haworth / kekule とは組めない）`);
     return spec;
 }
 
@@ -357,6 +391,56 @@ async function bake(jobs) {
                 via += '・ハース式';
             }
 
+            /* ★ フィッシャー投影（v1617・I-0104）: 登録の図を**アプリのフィッシャーの操作**で縦に起こし、
+               不斉炭素ごとに左右を入れ替えた図のうち、R・S の読み（上から）が `fischer=` と同じものを選ぶ。
+               ⚠ 作図はここに書かない —— 回すのは `fischerOpRotate90/180`・入れ替えは `fischerOpMirror`（quiz.js・
+                 フィッシャーの練習とタイムアタックが使う操作）、読むのは `assignRSDescriptor`（chemistry.js）。
+                 どちらも**描いた図から読み直して**確かめる関数なので、選んだ図が名乗りと食い違うことはない */
+            if (spec.fischer) {
+                if (!entry) return { error: `fischer= は登録済みの名前だけで使えます（「${spec.name}」は登録にありません）` };
+                if (typeof fischerOpMirror !== 'function' || typeof assignRSDescriptor !== 'function') {
+                    return { error: 'アプリに fischerOpMirror / assignRSDescriptor がありません（古い版を配信している）' };
+                }
+                const base = entry.target;
+                const orients = [base, fischerOpRotate90(g, base, 'cw'), fischerOpRotate180(g, base), fischerOpRotate90(g, base, 'ccw')].filter(Boolean);
+                const readRS = (t) => {
+                    const m = g.createTargetFromData({ target: t });
+                    const rs = assignRSDescriptor(m);
+                    const centers = Object.keys(readAtomParityFromFischer(m));
+                    if (!rs || !centers.length || centers.some(id => !rs[id])) return null;
+                    const top = centers.map(id => m.atoms.find(a => a.id === id)).sort((p, q) => p.y - q.y);
+                    return { m, letters: top.map(a => rs[a.id].letter).join('') };
+                };
+                const seen = [];
+                let best = null;
+                orients.forEach(t0 => {
+                    const m0 = g.createTargetFromData({ target: t0 });
+                    const idx = Object.keys(readAtomParityFromFischer(m0)).map(id => m0.atoms.findIndex(a => a.id === id)).filter(i => i >= 0);
+                    for (let mask = 0; mask < (1 << idx.length); mask++) {
+                        let t = t0;
+                        for (let k = 0; k < idx.length && t; k++) if (mask & (1 << k)) t = fischerOpMirror(g, t, idx[k], 'vertical');
+                        if (!t) continue;
+                        const r = readRS(t);
+                        if (!r) continue;               // 主鎖が横 ＝ フィッシャー投影として読めない向き
+                        if (!seen.includes(r.letters)) seen.push(r.letters);
+                        if (r.letters !== spec.fischer) continue;
+                        /* ★ 向きの候補が2つ（上下の入れ替え）残るときは、**酸化された端（C=O・C−O の多い炭素）を上**にする
+                           ＝ 教科書の約束（COOH・CHO を上）。同点なら先に見つけたもの */
+                        const topC = r.m.atoms.filter(a => a.element === 'C').sort((p, q) => p.y - q.y)[0];
+                        const score = topC ? r.m.getNeighbors(topC.id).filter(n => n.atom.element === 'O').length : 0;
+                        if (!best || score > best.score) best = { t, m: r.m, score };
+                    }
+                });
+                if (!best) {
+                    return { error: `「${spec.name}」をフィッシャー投影にして fischer=${spec.fischer} と読める図がありません`
+                        + `（アプリの操作で作れた読みは ${seen.length ? seen.join(' / ') : '無し'}）` };
+                }
+                mol = best.m;
+                const info = readStereoOf(mol);
+                const meso = !!info && info.centers > 1 && info.stereoCode === info.mirrorCode;
+                via += `・フィッシャー投影（上から ${spec.fischer.split('').join(',')}${meso ? '・メソ体' : ''}）`;
+            }
+
             /* ★★ **名前で突き合わせる**（登録済みの1件は名前そのもので引いているので除く）。
                ⚠ これが無いと「原稿の名前と違う分子の図」が黙って焼ける */
             if (!entry) {
@@ -397,6 +481,7 @@ async function bake(jobs) {
                     IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svgEl.id, res.mol, !!sp.numbered,
                         Object.assign({ paper: !!sp.paper, condense: sp.condense || [], expand: sp.expand || [], marks: sp.marks || [] },
                             sp.kekule ? { kekule: sp.kekule } : {},
+                            sp.fischer ? { fischer: true } : {},
                             sp.figurePart ? { figurePart: true, anchors: sp.anchors || [] } : {}));
                 } catch (e) {
                     return { error: where + ((e && e.message) || String(e)) };
@@ -408,8 +493,59 @@ async function bake(jobs) {
                 }
                 return res;
             };
+            /* ★★ くさび図（`stereo=`・v1617・I-0104）= **アプリの「🧊 立体で見る」の絵そのもの**（`assembler/stereo.js` の StereoView）。
+               ・分子を立体ビューに渡して開き（`openAuto`。★ 立体ビューはキャンバスの分子を見るので、
+                 `reshapeGeometryForDisplay` と同じく `game.userMolecule` を一時だけ差し替える）、
+                 `mirror` なら「🪞 鏡像と並べる」（`setWedgeMirror`）を押した状態にする
+               ・描き上がった `#stereo-svg` を写して撮る。⚠ 作図はしない。消すのは画面用の見出し
+                 （「あなたの分子」「🪞 鏡像」）と、透明の当たり判定だけ
+               ・色は PAPER_CSS の `svg.figbake-stereo` の段が紙の色へ読み替える（アプリの画面は変わらない） */
+            const drawStereo = (sp) => {
+                const res = window.__figResolve(sp);
+                if (res.error) return { error: res.error };
+                const sv = window.stereoView;
+                if (!sv || typeof sv.openAuto !== 'function' || typeof sv.setWedgeMirror !== 'function') {
+                    return { error: 'アプリに stereoView（🧊 立体で見る）がありません' };
+                }
+                const saved = g.userMolecule;
+                g.userMolecule = res.mol;
+                let copy = null, err = null;
+                try {
+                    sv.openAuto(res.mol);
+                    if (!sv.centerId || !sv._viewSlots) err = `「${sp.name}」に、くさび図を描ける sp3 炭素がありません`;
+                    else if (sp.stereo === 'mirror' && !sv._isAsym) err = `「${sp.name}」の中心の炭素は不斉炭素原子ではありません（鏡像と並べても同じ分子）`;
+                    else if (sv._provisional) err = `「${sp.name}」の登録の図はフィッシャー投影として読めないので、くさび図の並びが仮になります（D-/L- の付いた登録を使ってください）`;
+                    else {
+                        sv.setMode('wedge');
+                        if (sp.stereo === 'mirror') sv.setWedgeMirror(true);
+                        if (sp.stereo === 'mirror' && !sv.wedgeMirror) err = '「🪞 鏡像と並べる」が効きませんでした';
+                        else copy = document.getElementById('stereo-svg').cloneNode(true);
+                    }
+                } catch (e) {
+                    err = (e && e.message) || String(e);
+                } finally {
+                    try { sv.close(); } catch (e) { /* 閉じられなくても焼くのは写し */ }
+                    g.userMolecule = saved;
+                }
+                if (err) return { error: err };
+                copy.id = 'figbake-svg';
+                copy.setAttribute('class', 'figbake-stereo');
+                copy.removeAttribute('width'); copy.removeAttribute('height'); copy.removeAttribute('style');   // 画面の暗い台紙（index.html の style 属性）
+                copy.querySelectorAll('[data-slot="title"], [data-hit]').forEach(n => n.remove());
+                copy.querySelectorAll('.clickable').forEach(n => n.classList.remove('clickable'));
+                box.appendChild(copy);
+                /* 見出しを消したぶん上が空くので、描いたものの外枠で viewBox を詰める（⚠ 形には触らない） */
+                const bb = copy.getBBox();
+                const pad = 14;
+                copy.setAttribute('viewBox', `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
+                return { svg: copy, mol: res.mol, via: res.via + (sp.stereo === 'mirror' ? '・くさび図と鏡像' : '・くさび図') };
+            };
             let svg, mol, via;
-            if (!parts) {
+            if (!parts && spec.stereo) {
+                const r0 = drawStereo(spec);
+                if (r0.error) return { error: r0.error };
+                svg = r0.svg; mol = r0.mol; via = r0.via;
+            } else if (!parts) {
                 svg = makeSvg('figbake-svg');
                 const r1 = drawOne(spec, svg, '');
                 if (r1.error) return { error: r1.error };
@@ -483,7 +619,7 @@ async function bake(jobs) {
         console.log(`   ✅ ${job.src}  ${r.w}x${r.h}  ${(buf.length / 1024).toFixed(0)}KB`
             + `  ← ${job.parts ? job.parts.map(p => p.name).join(' ＋ ') : job.spec.name}${job.spec.numbered ? '（番号つき）' : ''}  [${r.via}]`
             + (r.marks ? `  ＋印 ${r.marks} 本` : '')
-            + (r.fellBack ? `  ⚠ ${r.fellBack}` : (job.spec.paper ? '  （紙の図）' : '  （丸の図）')));
+            + (r.fellBack ? `  ⚠ ${r.fellBack}` : (job.spec.stereo ? '  （立体ビューのくさび図）' : job.spec.paper ? '  （紙の図）' : '  （丸の図）')));
         // ⚠ 黄（設計 §6）: 焼いた絵を人が見る前に、重なりだけは言っておく
         (r.markWarn || []).forEach(w => console.log(`      ⚠ ${w}`));
     }

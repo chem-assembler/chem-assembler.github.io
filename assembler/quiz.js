@@ -1944,7 +1944,9 @@ function planFigureMarks(mol, marks) {
  *   ③ 両端の候補から**いちばん近い組**を選ぶ（o-ニトロフェノールなら −OH の O と、近いほうの −NO₂ の O）
  * ⚠ ここは**図の上の位置の選び方**で、化学の判定ではない（判定は `findFunctionalGroups` が持つ）。
  * ========================================================================== */
-const FIGURE_MARK_KINDS = ['囲む', '枠', '文字', '破線', '矢印'];
+/* ★ `対称面`（v1617・I-0104）… at= が当たった**2か所のちょうど真ん中**を、2か所を結ぶ向きに直角に横切る破線（メソ体の対称面）。
+   ⚠ 引く前に**描いた図がその線で本当に折り返し対称か**を確かめ、違えば赤（D形に対称面を引く、を止める） */
+const FIGURE_MARK_KINDS = ['囲む', '枠', '文字', '破線', '矢印', '対称面'];
 const FIGURE_LINK_KINDS = ['破線', '矢印'];
 /* 分子と分子の間を結ぶもの（`between:`）の既定の色は**墨**（⚠ 共鳴の ↔・反応の → は化学の記号そのもので、
    後から重ねた「印」ではない）。印（`mark:`）の既定は紫のまま */
@@ -2214,6 +2216,62 @@ function drawFigureMarks(plan, ctx) {
             }
             return;
         }
+        /* ★ 対称面（v1617・I-0104）。2か所の中点を通り、2か所を結ぶ向きに直角な破線を、分子の端から端まで（少しはみ出して）引く */
+        if (m.kind === '対称面') {
+            const pts = [];
+            m.hits.forEach(hit => hit.ids.forEach(id => {
+                const a = byId.get(hostOf.has(id) ? hostOf.get(id) : id);
+                if (a && !pts.includes(a)) pts.push(a);
+            }));
+            if (pts.length !== 2) {
+                throw new Error(`印の kind=対称面 は at= が2か所に当たるときだけ引けます（「${m.at}」は ${pts.length} か所）`);
+            }
+            const [p, q] = pts;
+            const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+            const dd = Math.hypot(q.x - p.x, q.y - p.y) || 1;
+            const nx = (q.x - p.x) / dd, ny = (q.y - p.y) / dd;   // 面の法線（2か所を結ぶ向き）
+            let tx = -ny, ty = nx;                               // 面に沿う向き
+            // ⚠ 描いた図がこの線で折り返し対称か（元素と、まとめた文字の幅が同じ所にあるか）。違えば引かない ＝ 赤
+            const drawn = mol.atoms.filter(a => byId.has(a.id) && !hostOf.has(a.id));
+            const widthOf = (a) => { const e = ext.get(a.id); return e ? Math.round((e.L + e.R) * 10) : 0; };
+            const tol = B * 0.2;
+            const odd = drawn.find(a => {
+                const s = (a.x - mx) * nx + (a.y - my) * ny;
+                const rx = a.x - 2 * s * nx, ry = a.y - 2 * s * ny;
+                return !drawn.some(b => b.element === a.element && Math.abs(widthOf(b) - widthOf(a)) <= 10
+                    && Math.hypot(b.x - rx, b.y - ry) < tol);
+            });
+            if (odd) {
+                throw new Error(`印の kind=対称面（${m.at}）: この図はその線で折り返し対称になっていません`
+                    + `（${odd.element} の折り返した先に同じものがありません）。対称面をもたない図です`);
+            }
+            // 線の長さ ＝ 描いた文字の箱を面の向きに投げた幅 ＋ はみ出し
+            let lo = Infinity, hi = -Infinity;
+            drawn.forEach(a => {
+                const e = ext.get(a.id);
+                const L = e ? e.L : 0, R = e ? e.R : 0, U = e ? e.up : 0, D = e ? e.down : 0;
+                [[a.x - L, a.y - U], [a.x + R, a.y - U], [a.x - L, a.y + D], [a.x + R, a.y + D]].forEach(([x, y]) => {
+                    const t = (x - mx) * tx + (y - my) * ty;
+                    lo = Math.min(lo, t); hi = Math.max(hi, t);
+                });
+            });
+            const over = capH * 0.9;
+            let seg = { P: [mx + tx * (lo - over), my + ty * (lo - over)], Q: [mx + tx * (hi + over), my + ty * (hi + over)] };
+            // 文字は右の端（横に近い線）か下の端（縦に近い線）に添える ＝ Q をそちらにそろえる
+            const flip = Math.abs(tx) >= Math.abs(ty) ? seg.Q[0] < seg.P[0] : seg.Q[1] < seg.P[1];
+            if (flip) { seg = { P: seg.Q, Q: seg.P }; tx = -tx; ty = -ty; }
+            const r = drawFigureLink(group, seg, {
+                color: m.color, width: stroke, head: capH * 0.55, bow: 0,
+                dash: `${(capH * 0.30).toFixed(2)} ${(capH * 0.20).toFixed(2)}`
+            });
+            grow(r.box.minX, r.box.minY, r.box.maxX, r.box.maxY);
+            if (m.label) {
+                const w = [...m.label].reduce((s, ch) => s + (/[\x20-\x7e]/.test(ch) ? 0.58 : 1.0) * fs, 0);
+                const off = gap + Math.abs(tx) * w / 2 + Math.abs(ty) * capH / 2;
+                putText(m.label, seg.Q[0] + tx * off, seg.Q[1] + ty * off, tx, ty, m.color);
+            }
+            return;
+        }
         m.hits.forEach(hit => {
             const hb = hitBox(hit);
             const hc = hitCenter(hit);
@@ -2329,9 +2387,16 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
      *     ⚠ 借りるのは**向きだけ**。丸の図は H を 16px に置くが、紙の図は字が大きいので
      *     価標1本ぶん（`paperBondUnit`）離す ＝ 下の物差し B も 46 のまま動かない
      *   ⚠ `expand` に 'H' を書いた図だけが通る道。書かなければ1本の線も変わらない */
-    if (opts && opts.expand && opts.expand.includes('H')) {
+    /* ★ `opts.fischer`（v1617・I-0104・`gen: fischer=`）… **フィッシャー投影として読める不斉炭素の H だけ**を
+     *   1つずつ原子として描く（十字の4本目 ＝ `H−C−OH`）。−OH・−CH₃ の H は今までどおり文字へまとめる。
+     *   ★ どの炭素かは `readAtomParityFromFischer`（くさび図モードの `wedgedBondKeys` と同じ判定）。置き場所は下の道と同じ */
+    const fischerCenters = (opts && opts.fischer && typeof readAtomParityFromFischer === 'function')
+        ? new Set(Object.keys(readAtomParityFromFischer(mol))) : null;
+    const expandAllH = !!(opts && opts.expand && opts.expand.includes('H'));
+    if (expandAllH || (fischerCenters && fischerCenters.size)) {
         const L = paperBondUnit(mol);
         mol.calculateHydrogens().forEach(h => {
+            if (!expandAllH && !fischerCenters.has(h.parentId)) return;
             const p = mol.atoms.find(a => a.id === h.parentId);
             if (!p) return;
             const dx = h.x - p.x, dy = h.y - p.y, d = Math.hypot(dx, dy) || 1;
