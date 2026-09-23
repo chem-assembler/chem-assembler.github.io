@@ -9,6 +9,8 @@ codes:
   - inorg.nonmetal.phosphorus-allotrope
   - inorg.nonmetal.p4o10
   - inorg.nonmetal.phosphoric-acid
+  - inorg.nonmetal.phosphorus-formula
+  - inorg.nonmetal.superphosphate
 source:
   - slides:無機の基本４「酸素と酸化物」s25（P₄O₁₀＋6H₂O→4H₃PO₄）
   - slides:無機の基本１「無機の前に復習すべきこと」p.15・p.17（H₃PO₄ の電離と「強酸は3つ、その他は弱酸」）・練習２（リン酸と水酸化バリウム）

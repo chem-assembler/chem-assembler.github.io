@@ -11,6 +11,9 @@ codes:
   - inorg.nonmetal.nitric-acid
   - inorg.nonmetal.passivation-aqua-regia
   - inorg.nonmetal.haber-ostwald
+  - inorg.nonmetal.nitrogen-gas
+  - inorg.nonmetal.no2-n2o4
+  - inorg.nonmetal.nox
 source:
   - slides:無機の基本４「酸素と酸化物」s29（3NO₂＋H₂O の式）
   - slides:無機の基本１「無機の前に復習すべきこと」p.10（NH₄⁺ の配位結合）・p.17（強酸は3つ）・p.38（希硝酸・濃硝酸の半反応式）・練習５（NH₄Cl と塩基の反応）
