@@ -10,6 +10,9 @@ codes:
   - theo.acid-base.water-ion-product
   - theo.acid-base.ph-dilution
   - theo.acid-base.ph-log
+  - theo.acid-base.poh-def
+  - theo.acid-base.kw-meaning
+  - theo.acid-base.dilution-oh
 source:
   - slides:酸塩基の基本３「pHの計算」p.4〜10・練習1〜3 p.12〜14
   - slides:酸塩基の基本４「中和反応と塩の性質」p.4（復習）
