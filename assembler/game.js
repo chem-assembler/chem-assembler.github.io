@@ -5555,9 +5555,24 @@ class Game {
             edges.forEach(e => {
                 if ((e.a1.y + e.a2.y) / 2 > (head.a1.y + head.a2.y) / 2 + 0.5) head = e;
             });
+            let onHead = new Set([head.b.atomId1, head.b.atomId2]);
             // ハースの前縁は水平に描く。傾いていたらハース図ではない（点で立つ六角形など）
-            if (Math.abs(head.a1.y - head.a2.y) > GRID_SIZE * 0.5) return;
-            const onHead = new Set([head.b.atomId1, head.b.atomId2]);
+            if (Math.abs(head.a1.y - head.a2.y) > GRID_SIZE * 0.5) {
+                /* ★ 例外: **頂点が手前**の環（I-0052・2026-09-23）。フラノースを ⇅ で裏返すと、
+                 *   奥の頂点にあった環の O が手前（いちばん下）へ来る ＝ 水平な前縁が無くなり、
+                 *   v1623 まではここで手前の太線が**0本**になっていた（HQ8 の「上下反転で判定0本は 2枚」）。
+                 *   ハース図では太線が立体の位置そのものなので、消えると図として壊れる（ユーザー実機 2026-09-22）。
+                 * ★ 頂点がただ1つだけ下に突き出ているときは、**その頂点と両どなり**を前縁とみなす
+                 *   ＝ 頂点の2辺が太く（6-6）、その先の2辺が手前から奥へ細く（6-3）なる。
+                 *   縦横比の門（上）は通ったあとなので、点で立つ六角形はここまで来ない。 */
+                const byY = atoms.slice().sort((p, q) => q.y - p.y);
+                const apex = byY[0];
+                if (!(apex.y - byY[1].y > GRID_SIZE * 0.3)) return;
+                const nbs = edges.filter(e => e.a1 === apex || e.a2 === apex)
+                    .map(e => (e.a1 === apex ? e.a2 : e.a1));
+                if (nbs.length !== 2) return;
+                onHead = new Set([apex.id, ...nbs.map(a => a.id)]);
+            }
             // 一番手前の辺と、それに触れている辺（＝隣）だけ。奥の辺は素の太さのまま
             edges.forEach(({ b }) => {
                 if (!onHead.has(b.atomId1) && !onHead.has(b.atomId2)) return;

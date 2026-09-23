@@ -26902,12 +26902,12 @@
             .filter(l => +l.getAttribute('stroke-width') > 3);
         const taperOf = (id) => [...D.querySelectorAll(`#${id} .quiz-bonds polygon.svg-bond-taper`)];
         // ① 実際の出題。見本（登録の図そのもの）には必ず出る。
-        //   ⚠ 選択肢は全部ではない —— フラノースを上下反転・180° 回転した図は環の O が下の頂点に来て
-        //     判定（前縁は水平）が0本になる（②の flippedNone）。出題はランダムなので「少なくとも1枚」で見る
+        //   ★ 選択肢も**全部**（I-0052・v1624）。v1623 までは、フラノースを上下反転・180° 回転した図で
+        //     環の O が下の頂点に来ると判定（前縁は水平）が0本になり、「少なくとも1枚」でしか見られなかった
         assert(thickOf('pk-goal').length >= 1, 'pk-goal に手前の太線が無い');
         assert(taperOf('pk-goal').length >= 2, `pk-goal にテーパーが無い（${taperOf('pk-goal').length} 本）`);
-        assert(['pk-opt-0', 'pk-opt-1', 'pk-opt-2'].some(id => thickOf(id).length >= 1 && taperOf(id).length >= 2),
-            '選択肢の図のどれにも手前の太線とテーパーが無い');
+        ['pk-opt-0', 'pk-opt-1', 'pk-opt-2'].forEach(id => assert(thickOf(id).length >= 1 && taperOf(id).length >= 2,
+            `選択肢 ${id} の図に手前の太線とテーパーが無い（太線 ${thickOf(id).length}・テーパー ${taperOf(id).length}）`));
         /* 台形の両端（points は 端1外→端2外→端2内→端1内）。幅と中心を**座標で**読む */
         const ends = (poly) => {
             const p = poly.getAttribute('points').trim().split(/\s+/).map(s => s.split(',').map(Number));
@@ -26926,20 +26926,20 @@
         };
         // ② 全数
         let figures = 0;
-        /* ⚠ 上下反転した図は判定が0本のことがある（フラノースを裏返すと環の O が下の頂点に来て、
-         *   前縁が水平でなくなる ＝ `_haworthFrontBondKeys` の「前縁は水平」の門で外れる。
-         *   キャンバスでも同じ判定なので、ここでは**描いた図が判定と一致する**ことだけを見る）。
-         *   正立の図（登録の図そのもの）は必ず1環ぶん以上を持つ */
+        /* ★★ 上下反転した図も**必ず**手前の太線を持つ（I-0052・v1624）。
+         *   v1623 までは、フラノースを裏返すと環の O が下の頂点に来て前縁が水平でなくなり、
+         *   判定が0本だった（この検査は「描いた図が判定と一致する」しか見ていなかったので緑のまま
+         *   ＝ `flippedNone` が 2 と数えていた）。ハース図では太線が立体の位置そのもの。
+         *   いまは頂点が手前の環を「頂点と両どなり」で判定する（`_haworthFrontBondKeys` の注記） */
         let flippedNone = 0;
         const checkFigure = (name, target, upright) => {
             const mol = W.renderMoleculeIntoSvg(g, 'pk-opt-0', target, false, false);
             const front = g._haworthFrontBondKeys(mol);
             const heads = [...front].filter(([, w]) => w[0] === w[1]);
             const tapers = [...front].filter(([, w]) => w[0] !== w[1]);
-            if (upright) {
-                assert(heads.length >= 1 && tapers.length >= 2,
-                    `${name}: 判定が糖の環を見ていない（手前 ${heads.length} / テーパー ${tapers.length}）`);
-            } else if (!front.size) flippedNone++;
+            if (!upright && !front.size) flippedNone++;
+            assert(heads.length >= 1 && tapers.length >= 2,
+                `★ ${name}: 判定が糖の環を見ていない（手前 ${heads.length} / テーパー ${tapers.length}）`);
             const thick = thickOf('pk-opt-0'), taper = taperOf('pk-opt-0');
             assert(thick.length === heads.length,
                 `${name}: 太線が ${thick.length} 本（判定は ${heads.length} 本）`);
@@ -26984,7 +26984,8 @@
         D.getElementById('pk-kind').value = 'symbol';
         q.newQuestion();
         D.getElementById('btn-pk-close').click();
-        return `糖 ${q.hwPool.length} 件×正立/上下反転 = ${figures} 枚で判定と1本ずつ一致（上下反転で判定0本は ${flippedNone} 枚）・否定対照4件は素のまま`;
+        assert(flippedNone === 0, `上下反転で手前の太線が0本の図が ${flippedNone} 枚`);
+        return `糖 ${q.hwPool.length} 件×正立/上下反転 = ${figures} 枚で判定と1本ずつ一致（上下反転でも全部に手前の太線）・否定対照4件は素のまま`;
     });
 
     test('ST28: フィッシャー投影の操作練習（偶置換のみ・M2.5-B）', async (c) => {
