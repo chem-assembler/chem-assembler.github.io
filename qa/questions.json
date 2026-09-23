@@ -209,6 +209,15 @@
       "part": "化学と人間生活"
     },
     {
+      "id": "sec-life-ceramics",
+      "name": "ガラスとセラミックス",
+      "category_l": "理論化学",
+      "category_m": "ガラスとセラミックス",
+      "summary": "ケイ素と二酸化ケイ素の違いと、ガラス・陶磁器・セメントの原料と性質をおさえよう。",
+      "course": "basic",
+      "part": "化学と人間生活"
+    },
+    {
       "id": "sec-chemistry-world",
       "name": "化学基礎を暮らしで振り返る",
       "category_l": "理論化学",
@@ -25117,8 +25126,8 @@
     },
     {
       "code": "theo.life.bond-material",
-      "unit": "sec-chemistry-world",
-      "group": "化学が拓く世界",
+      "unit": "sec-life-ceramics",
+      "group": "ガラスとセラミックス",
       "difficulty": 1,
       "tags": [
         "性質",
@@ -25158,7 +25167,7 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「化学が拓く世界」を開く"
+        "label": "資料「ガラスとセラミックス」を開く"
       }
     },
     {
@@ -25252,8 +25261,8 @@
     },
     {
       "code": "theo.life.ceramics",
-      "unit": "sec-chemistry-world",
-      "group": "化学が拓く世界",
+      "unit": "sec-life-ceramics",
+      "group": "ガラスとセラミックス",
       "difficulty": 1,
       "tags": [
         "身のまわり",
@@ -25291,7 +25300,7 @@
       },
       "link": {
         "kind": "reference",
-        "label": "資料「化学が拓く世界」を開く"
+        "label": "資料「ガラスとセラミックス」を開く"
       }
     },
     {

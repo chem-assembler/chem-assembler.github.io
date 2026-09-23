@@ -30,6 +30,7 @@ redox-titration
 ionization-tendency
 cell-basics
 life-metal
+life-ceramics
 chemistry-world
 vapor-pressure
 gas-laws

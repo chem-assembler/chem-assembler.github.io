@@ -711,7 +711,7 @@
 {"code":"org.ali.formula-kinds","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
 {"code":"org.ali.rational-formula","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
 {"code":"org.ali.formula-same-molecular","kind":"reference","label":"資料「有機化合物の表し方」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ organic-formulas に載っている）"}
-{"code":"theo.life.bond-material","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
+{"code":"theo.life.bond-material","kind":"reference","label":"資料「ガラスとセラミックス」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-ceramics に載っている（2026-09-23 便 life-draft で付け替え）"}
 {"code":"theo.life.reaction-in-life","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
 {"code":"theo.life.recycle-resource","kind":"reference","label":"資料「暮らしの中の金属」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-metal に載っている（2026-09-23 便 life-draft で付け替え））"}
 {"code":"theo.life.industry-catalyst","kind":"reference","label":"資料「化学が果たす役割」を開く","note":"2026-09-23 教科書の章立ての空白を埋めたときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-role に載っている）"}
@@ -790,7 +790,7 @@
 {"code":"theo.electro.voltaic","kind":"reference","label":"資料「電池の仕組み」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ cell-basics に載っている）"}
 {"code":"theo.electro.charge-balance","kind":"reference","label":"資料「電池の仕組み」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ cell-basics に載っている）"}
 {"code":"theo.electro.positive-reason","kind":"reference","label":"資料「電池の仕組み」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ cell-basics に載っている）"}
-{"code":"theo.life.ceramics","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
+{"code":"theo.life.ceramics","kind":"reference","label":"資料「ガラスとセラミックス」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ life-ceramics に載っている（2026-09-23 便 life-draft で付け替え）"}
 {"code":"theo.life.antioxidant","kind":"reference","label":"資料「化学が拓く世界」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ chemistry-world に載っている）"}
 {"code":"theo.solution.solute-solvent","kind":"reference","label":"資料「溶解のしくみ」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ dissolution に載っている）"}
 {"code":"theo.solution.ionic-insoluble","kind":"reference","label":"資料「溶解のしくみ」を開く","note":"2026-09-23 薄い単元に qa を足したときに張った。ページは指定せず code だけ送る（着地は reference.json の codes が決める＝ dissolution に載っている）"}
