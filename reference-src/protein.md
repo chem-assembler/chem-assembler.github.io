@@ -15,6 +15,10 @@ codes:
   - org.bio.xanthoproteic
   - org.bio.protein-sulfur-test
   - org.bio.ninhydrin
+  - org.bio.peptide-sequence
+  - org.bio.protein-hydrolysis
+  - org.bio.color-test-inference
+  - org.bio.kjeldahl
 source:
   - qa:org.bio.peptide-bond ほか9項目
   - compounds:グリシルグリシン（ジペプチド）・システイン

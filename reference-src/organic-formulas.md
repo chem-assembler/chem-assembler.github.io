@@ -9,6 +9,9 @@ codes:
   - org.ali.formula-kinds
   - org.ali.rational-formula
   - org.ali.formula-same-molecular
+  - org.ali.formula-use
+  - org.ali.rational-to-molecular
+  - org.ali.structural-formula-valence
 source:
   - slides:有機の基本1-2「有機化合物の表し方」s2
   - textbook:R5化学Vol.2-5編（1章1節 D 有機化合物の表し方）
