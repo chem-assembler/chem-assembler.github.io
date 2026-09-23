@@ -2252,7 +2252,20 @@ function drawFigureMarks(plan, ctx) {
     const hitsAny = (b) => taken.find(o => b.x1 < o.x2 && o.x1 < b.x2 && b.y1 < o.y2 && o.y1 < b.y2);
     /** 文字を置く（★ 置き場所はここが決める・原稿に座標は書かせない）。
         ⚠ 他の文字に当たったら、同じ向きへ**ずらして空いた所を探す**。それでも当たったら黄で申し送る */
-    const putText = (text, cx, cy, ux, uy, color) => {
+    /* ★ 結合の線（描いた原子どうし）。印の文字の逃げ先を探すときだけ見る（I-0108） */
+    const bondSegs = mol.bonds.map(bd => [byId.get(bd.atomId1), byId.get(bd.atomId2)])
+        .filter(([p, q]) => p && q && !hostOf.has(p.id) && !hostOf.has(q.id));
+    const crossesBond = (b) => bondSegs.some(([p, q]) => {
+        // 線分と箱の交わり（端は原子の文字の箱が受け持つので、両端を 25% ずつ縮めて見る）
+        const x1 = p.x + (q.x - p.x) * 0.25, y1 = p.y + (q.y - p.y) * 0.25;
+        const x2 = p.x + (q.x - p.x) * 0.75, y2 = p.y + (q.y - p.y) * 0.75;
+        for (let k = 0; k <= 12; k++) {
+            const x = x1 + (x2 - x1) * k / 12, y = y1 + (y2 - y1) * k / 12;
+            if (x > b.x1 && x < b.x2 && y > b.y1 && y < b.y2) return true;
+        }
+        return false;
+    });
+    const putText = (text, cx, cy, ux, uy, color, anchor) => {
         const t = document.createElementNS(NS, 'text');
         t.setAttribute('class', 'svg-figure-mark svg-figure-mark-text');
         t.setAttribute('fill', color);
@@ -2263,18 +2276,56 @@ function drawFigureMarks(plan, ctx) {
         let w = 0;
         try { w = t.getComputedTextLength(); } catch (e) { w = 0; }
         if (!w) w = [...text].reduce((s, ch) => s + (/[\x20-\x7e]/.test(ch) ? 0.58 : 1.0) * fs, 0);
-        const boxAt = (x, y) => ({ what: `印の文字「${text}」`, x1: x - w / 2, y1: y - capH / 2, x2: x + w / 2, y2: y + capH / 2 });
+        /* ⚠ 仮名・漢字は英字の大文字（capH）より背が高い（字の本体 ≒ 0.9em）。capH で箱を作ると上下が足りず、
+         *   「エステル結合」が隣の C に 2px かかったまま「重なりなし」と判定していた（I-0108・2026-09-24 の実測） */
+        const halfH = /[^ -]/.test(text) ? Math.max(capH / 2, fs * 0.5) : capH / 2;
+        // ★ 少しだけ余白を足した箱で当たりを見る（字と字がくっついて見えないように。I-0108）
+        const padT = capH * 0.12;
+        const boxAt = (x, y) => ({ what: `印の文字「${text}」`, x1: x - w / 2 - padT, y1: y - halfH - padT, x2: x + w / 2 + padT, y2: y + halfH + padT });
         let b = boxAt(cx, cy);
+        const x0 = cx, y0 = cy;
         for (let i = 0; i < 4 && hitsAny(b); i++) {
             cx += ux * capH * 0.75; cy += uy * capH * 0.75;
             b = boxAt(cx, cy);
+        }
+        /* ★ それでも重なるときは、**当たった所のまわりの別の向き**を探す（I-0108・2026-09-24）。
+         *   v1627 までは同じ向きへずらすだけで、真下に置換基のある不斉炭素（アラニン）や
+         *   鎖の途中のエステル結合（PET）で、文字が H₂N・CH₂ に重なったまま焼けていた（黄の申し送りだけ）。
+         * ⚠ 最初の向きで置けた図は1px も変わらない（ここは置けなかったときだけ走る）。
+         * ★ 逃げ先では結合の線もまたがない（文字が線の上に乗ると、線が文字を貫いて見える） */
+        if (hitsAny(b) && anchor) {
+            // anchor = [中心x, 中心y, 印の横の半幅, 縦の半幅]（楕円や枠の外に置くため、向きごとに届く長さを測る）
+            const base = Math.atan2(y0 - anchor[1], x0 - anchor[0]);
+            const hx = anchor[2] || 0, hy = anchor[3] || 0;
+            /* 同じ段（離す量）で置ける所を**全部**集め、印の中心にいちばん近い所を採る
+             * ＝ 斜めに離れて隣の原子団の文字に見える置き方より、真上・真下に少し横へずらした置き方を選ぶ */
+            let found = null;
+            for (let step = 0; step <= 4 && !found; step++) {
+                const ok = [];
+                for (const k of [0, 1, -1, 2, -2, 3, -3, 4]) {
+                    const ang = base + k * Math.PI / 4;
+                    const vx = Math.cos(ang), vy = Math.sin(ang);
+                    const d = Math.abs(vx) * hx + Math.abs(vy) * hy + gap
+                        + Math.abs(vx) * w / 2 + Math.abs(vy) * capH / 2 + capH * 0.15 + step * capH * 0.6;
+                    // 真上・真下の向きは、横に少しずらした所も候補にする（横長の文字が隣の原子の文字にかかるとき）
+                    const slides = Math.abs(vy) > 0.9 ? [0, -w / 4, w / 4, -w / 2, w / 2] : [0];
+                    slides.forEach(sx => {
+                        const x = anchor[0] + vx * d + sx, y = anchor[1] + vy * d;
+                        const nb = boxAt(x, y);
+                        if (!hitsAny(nb) && !crossesBond(nb)) ok.push({ x, y, b: nb, dist: Math.hypot(x - anchor[0], y - anchor[1]) });
+                    });
+                }
+                if (ok.length) found = ok.sort((p, q) => p.dist - q.dist)[0];
+            }
+            if (found) { cx = found.x; cy = found.y; b = found.b; }
         }
         t.setAttribute('x', cx);
         t.setAttribute('y', cy + capH / 2);
         const o = hitsAny(b);
         if (o) warnings.push(`${b.what} が ${o.what} と重なっています`);
         taken.push(b);
-        grow(b.x1, b.y1, b.x2, b.y2);
+        // 図の外枠は余白を足さない箱で広げる（余白は当たりを見るためだけ。足すと図の大きさが数 px 変わる）
+        grow(b.x1 + padT, b.y1 + padT, b.x2 - padT, b.y2 - padT);
         return b;
     };
 
@@ -2408,13 +2459,14 @@ function drawFigureMarks(plan, ctx) {
             } else {                                    // 文字（印そのものが文字）
                 const reach = Math.abs(ux) * ((hb.x2 - hb.x1) / 2) + Math.abs(uy) * ((hb.y2 - hb.y1) / 2);
                 const d = reach + gap + capH * 0.55;
-                putText(hit.label || m.label, hc[0] + ux * d, hc[1] + uy * d, ux, uy, m.color);
+                putText(hit.label || m.label, hc[0] + ux * d, hc[1] + uy * d, ux, uy, m.color,
+                    [hc[0], hc[1], (hb.x2 - hb.x1) / 2, (hb.y2 - hb.y1) / 2]);
                 return;
             }
             if (hit.label || m.label) {
                 const reach = Math.abs(ux) * half[0] + Math.abs(uy) * half[1];
                 const d = reach + gap + capH * 0.55;
-                putText(hit.label || m.label, cx + ux * d, cy + uy * d, ux, uy, m.color);
+                putText(hit.label || m.label, cx + ux * d, cy + uy * d, ux, uy, m.color, [cx, cy, half[0], half[1]]);
             }
         });
     });

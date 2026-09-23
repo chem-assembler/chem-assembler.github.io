@@ -61601,6 +61601,37 @@
         c.reset();
     });
 
+    test('FGT9: 印の文字は原子の文字に重ならない（I-0108。最初の向きで重なるときは、まわりの別の向きへ逃がす）', async (c) => {
+        c.reset();
+        const W = c.W, g = c.game, ip = W.isomerPractice;
+        const svg = ipFigureSvg(c, 'fgt9-fig');
+        const molOf = (name) => {
+            const e = fgtEntry(W, name);
+            assert(e, `テスト前提: 登録に「${name}」が無い`);
+            return g.createTargetFromData({ target: e.target });
+        };
+        // getBBox はフォントの上下の余白（アセント・ディセント）まで含むので、上下を1割ずつ削った「字の本体」で比べる
+        const ink = (b) => ({ x: b.x, width: b.width, y: b.y + b.height * 0.1, height: b.height * 0.8 });
+        const overlap = (p0, q0) => { const p = ink(p0), q = ink(q0); return p.x < q.x + q.width && q.x < p.x + p.width && p.y < q.y + q.height && q.y < p.y + p.height; };
+        // v1628 まで黄の申し送りのまま重なって焼けていた2件（アラニンの不斉炭素・PET のエステル結合）＋ 囲む／文字の両方
+        [['アラニン', { kind: '囲む', at: '不斉炭素', label: '不斉炭素' }],
+         ['アラニン', { kind: '文字', at: '不斉炭素', label: '不斉炭素' }],
+         ['ポリエチレンテレフタラート', { kind: '囲む', at: 'エステル結合', label: 'エステル結合' }]].forEach(([name, mark]) => {
+            ip.renderStandardFigure(svg.id, molOf(name), false, { paper: true, marks: [mark] });
+            const warn = svg.dataset.markWarn ? JSON.parse(svg.dataset.markWarn) : [];
+            assert(warn.length === 0, `${name}（${mark.kind}）: ${warn.join(' / ')}`);
+            // 申し送りの仕組みに頼らず、描いた文字の箱どうしで直接確かめる
+            const labels = [...svg.querySelectorAll('.svg-figure-mark-text')].map(t => t.getBBox());
+            // 元素記号だけ（素の位置番号 1 2 3 … は参考書の図では消す＝ plain）
+            const atoms = [...svg.querySelectorAll('.quiz-atoms text.svg-atom-text')]
+                .map(t => t.getBBox()).filter(b => b.width > 0);
+            assert(labels.length > 0, `${name}: 印の文字が描かれていない`);
+            labels.forEach(l => assert(!atoms.some(a => overlap(l, a)), `${name}（${mark.kind}）: 印の文字が原子の文字に重なっている`));
+        });
+        svg.remove();
+        c.reset();
+    });
+
     test('ION2: 正準コードのラベルは電荷を明示する（N(4) と N⁺(4) が割れる・不斉判定も電荷を見る）', async (c) => {
         const W = c.W;
         const q = [[0, 1], [0, 2], [0, 3], [0, 4]];
