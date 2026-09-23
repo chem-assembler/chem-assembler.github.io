@@ -45,12 +45,12 @@
 
   <rect class="box" x="470" y="78" width="370" height="96" rx="8" />
   <text class="lab bold" x="490" y="112">中和</text>
-  <text class="lab" x="580" y="112">H⁺ のやりとり</text>
+  <text class="lab" x="596" y="112">H⁺ のやりとり</text>
   <text class="small" x="490" y="150">例: 胃薬（炭酸水素ナトリウム）</text>
 
   <rect class="box" x="470" y="190" width="370" height="140" rx="8" />
   <text class="lab bold" x="490" y="224">酸化還元</text>
-  <text class="lab" x="580" y="224">電子 e⁻ のやりとり</text>
+  <text class="lab" x="596" y="224">電子 e⁻ のやりとり</text>
   <text class="small" x="490" y="262">例: リチウムイオン電池・鉄の製錬</text>
   <text class="small" x="490" y="290">　 ビタミン C（酸化防止剤）</text>
   <text class="small" x="490" y="318">　 水道水の塩素消毒</text>
