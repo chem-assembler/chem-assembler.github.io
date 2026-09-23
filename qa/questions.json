@@ -18135,12 +18135,12 @@
         "性質",
         "検出"
       ],
-      "knowledge": "硫化物の沈殿は多くが黒色で（ZnS 白・CdS 黄・SnS 褐・MnS 淡桃が例外）、イオン化傾向が小さい金属のイオンほど酸性でも沈殿し、Zn・Fe・Ni は中性・塩基性でだけ沈殿する。",
+      "knowledge": "硫化物の沈殿は多くが黒色で（ZnS 白・CdS 黄・SnS 褐・MnS 淡赤が例外）、イオン化傾向が小さい金属のイオンほど酸性でも沈殿し、Zn・Fe・Ni は中性・塩基性でだけ沈殿する。",
       "variants": [
         {
           "mode": "flip",
           "q": "硫化物の沈殿のうち、黒色でないものを4つ、色とともに答えよ。",
-          "a": "ZnS 白、CdS 黄、SnS 褐、MnS 淡桃",
+          "a": "ZnS 白、CdS 黄、SnS 褐、MnS 淡赤",
           "supplement": "硫化物の沈殿は多くが黒色（CuS・PbS・Ag₂S など）。沈殿するかは金属のイオン化傾向と液性で決まる。酸性では H₂S の電離が抑えられて S²⁻ が少ないので、Sn・Pb・Cu・Hg・Ag のようにイオン化傾向が小さく沈殿しやすいものだけが沈む。Zn・Fe・Ni は中性・塩基性でだけ沈殿し、Li・K・Ca・Na・Mg は沈殿しない。Al³⁺ は硫化物ではなく Al(OH)₃ として沈む。"
         },
         {
@@ -21073,7 +21073,7 @@
           "mode": "flip",
           "q": "硫化物の沈殿で、白色のものと黄色のものは？",
           "a": "白色 ZnS、黄色 CdS",
-          "supplement": "硫化物は黒が基本（CuS・PbS・Ag₂S・FeS）で、例外の色を覚える（ZnS 白・CdS 黄・MnS 淡桃・SnS 褐）。PbS の黒色は、酢酸鉛(II) を染み込ませたろ紙が黒くなることで H₂S の検出に使われる。"
+          "supplement": "硫化物は黒が基本（CuS・PbS・Ag₂S・FeS）で、例外の色を覚える（ZnS 白・CdS 黄・MnS 淡赤・SnS 褐）。PbS の黒色は、酢酸鉛(II) を染み込ませたろ紙が黒くなることで H₂S の検出に使われる。"
         },
         {
           "mode": "choice",
@@ -21089,7 +21089,7 @@
             0,
             1
           ],
-          "supplement": "CuS・PbS・Ag₂S は黒色。例外は ZnS 白・CdS 黄（ほかに MnS 淡桃・SnS 褐）。"
+          "supplement": "CuS・PbS・Ag₂S は黒色。例外は ZnS 白・CdS 黄（ほかに MnS 淡赤・SnS 褐）。"
         }
       ],
       "evidence": {
