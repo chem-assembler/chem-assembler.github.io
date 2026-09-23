@@ -12,6 +12,10 @@ codes:
   - theo.structure.electron-shell
   - theo.structure.valence-electron
   - theo.structure.stable-config
+  - theo.structure.particle-charge-mass
+  - theo.structure.atom-size
+  - theo.structure.ion-particle-count
+  - theo.structure.carbon-dating
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」s4（電子殻と電子配置・安定な電子配置）
   - textbook:化学基礎_031-090_2編（原子の構造・同位体・放射性同位体と半減期・電子配置）
