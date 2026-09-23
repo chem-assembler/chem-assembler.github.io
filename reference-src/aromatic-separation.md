@@ -46,8 +46,6 @@ alt: ニトロベンゼンの構造式。ベンゼン環の炭素1個にニト�
 caption: **ニトロベンゼン C₆H₅NO₂**。酸でも塩基でもないので、何を加えても塩にならず、最後までエーテル層に残ります。
 :::
 
-//図: アニリン塩酸塩など「塩になった形」の図を置きたかったが、gen-figure で焼くと chemistry.js の layoutMolecule が落ちる（イオンの2成分の分子を並べられない）。いまは中性物質のニトロベンゼンで代用している
-
 :::figure
 src: aromatic-separation-funnel.png
 svg: aromatic-separation-funnel.svg
@@ -75,6 +73,15 @@ left: C₆H₅NH₂ ＋ HCl
 right: C₆H₅NH₃Cl
 level: ★★★
 note: アニリンが塩になって水層へ移ります。酸性の物質と中性の物質はエーテル層に残ります。
+:::
+
+:::figure
+src: aromatic-separation-aniline-salt.png
+gen: name=アニリン plain
+gen: name=アニリン塩酸塩 plain
+between: kind=矢印 at=1 to=2 label=＋HCl
+alt: 左にアニリン、右にアニリン塩酸塩の構造式を並べ、間を「＋HCl」の矢印でつないだ図。アミノ基 −NH₂ が −NH₃⁺ になり、そばに Cl⁻ がある
+caption: アミノ基 −NH₂ が H⁺ を受け取って **−NH₃⁺** になり、Cl⁻ と組んだ塩になります。**イオンになったので水に溶け**、水層へ移ります。
 :::
 
 取り出した水層に NaOH 水溶液を加えると、アニリンが遊離します。そこにエーテルを加えて振れば、アニリンを**エーテル層へ戻して**取り出せます。
