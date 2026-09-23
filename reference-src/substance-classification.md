@@ -13,6 +13,10 @@ codes:
   - theo.structure.distillation-setup
   - theo.structure.element-test
   - theo.structure.element-test-infer
+  - theo.structure.pure-mixture-bp
+  - theo.structure.compound-decompose
+  - theo.structure.separation-example
+  - theo.structure.distillation-reason
 source:
   - textbook:化学基礎_000-030_巻頭+1編（物質の成分・純物質と混合物・分離と精製・単体と化合物・同素体・成分元素の確認〔炎色反応・沈殿の生成・石灰水〕）
   - qa:org.anal.detect-h（H の確かめ方＝硫酸銅(Ⅱ)無水物の青変。有機の成分元素の確認と同じ操作）

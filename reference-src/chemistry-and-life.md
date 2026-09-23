@@ -9,6 +9,8 @@ codes:
   - theo.life.property-use
   - theo.life.structure-property
   - theo.life.mix-danger
+  - theo.life.identify-by-property
+  - theo.life.aluminum-recycle
 source:
   - textbook:化学基礎_000-030_巻頭+1編（序編1章 化学とは何か p.6〜11・身のまわりのさまざまな物質）
   - textbook:R5化学Vol.1-1編（0編 人間生活のなかの化学 p.6〜8・身のまわりの製品と材料）
