@@ -10,6 +10,9 @@ codes:
   - theo.solution.like-dissolves-like
   - theo.solution.hydrophilic-group
   - theo.solution.electrolyte
+  - theo.solution.solute-solvent
+  - theo.solution.ionic-insoluble
+  - theo.solution.iodine-hexane
 source:
   - textbook:R5化学Vol.1-1編 3章1節（溶解のしくみ p.44〜45）
   - textbook:化学基礎_031-090_2編（極性・水素結合）
