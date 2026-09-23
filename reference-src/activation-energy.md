@@ -11,6 +11,8 @@ codes:
   - theo.kinetics.transition-state
   - theo.kinetics.catalyst
   - theo.kinetics.catalyst-kinds
+  - theo.kinetics.concentration-collision
+  - theo.kinetics.energy-distribution
 source:
   - slides:速度平衡の基本１「反応の速度」s13-17
   - slides:速度平衡の基本２「化学平衡と平衡定数」s4（復習問題）
