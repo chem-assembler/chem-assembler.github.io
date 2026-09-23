@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="500" viewBox="0 0 880 500" role="img">
+  <!-- 中和滴定の4つの器具（線画）。左から、薄める → 測りとる → 滴下して中和させる の順。
+       ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
+       ★ 教科書・スライドの絵は写していない（本文の器具の説明から自分で組んだ）。
+       ★ 標線（1本）は赤。メスフラスコとホールピペットは「測れる体積が1つだけ」、ビュレットは目盛りで差を読む。 -->
+  <style>
+    .glass { stroke: #333; stroke-width: 3; fill: none; stroke-linejoin: round; }
+    .liq { fill: #dbe9f7; stroke: none; }
+    .mark { stroke: #c62828; stroke-width: 3; fill: none; }
+    .tick { stroke: #333; stroke-width: 1.5; fill: none; }
+    .lead { stroke: #666; stroke-width: 1.5; fill: none; }
+    .name { font-size: 20px; font-weight: bold; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
+    .red { fill: #c62828; }
+    .mid { text-anchor: middle; }
+  </style>
+
+  <!-- ===== メスフラスコ ===== -->
+  <path class="liq" d="M 110 150 L 110 250 C 110 280, 60 290, 60 350 L 60 370 Q 60 390 80 390 L 160 390 Q 180 390 180 370 L 180 350 C 180 290, 130 280, 130 250 L 130 150 Z" />
+  <path class="glass" d="M 110 86 L 110 250 C 110 280, 60 290, 60 350 L 60 370 Q 60 390 80 390 L 160 390 Q 180 390 180 370 L 180 350 C 180 290, 130 280, 130 250 L 130 86" />
+  <rect x="106" y="64" width="28" height="22" rx="3" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+  <path class="mark" d="M 102 150 L 138 150" />
+  <text class="small red" x="146" y="156">標線</text>
+  <text class="name mid" x="120" y="432">メスフラスコ</text>
+  <text class="small mid" x="120" y="458">正確に薄める</text>
+
+  <!-- ===== ホールピペット ===== -->
+  <path class="liq" d="M 325 120 L 325 196 C 325 206, 308 206, 308 226 L 308 270 C 308 290, 325 290, 325 300 L 327 390 L 330 402 L 333 390 L 335 300 C 335 290, 352 290, 352 270 L 352 226 C 352 206, 335 206, 335 196 L 335 120 Z" />
+  <path class="glass" d="M 325 56 L 325 196 C 325 206, 308 206, 308 226 L 308 270 C 308 290, 325 290, 325 300 L 327 390 L 330 402 L 333 390 L 335 300 C 335 290, 352 290, 352 270 L 352 226 C 352 206, 335 206, 335 196 L 335 56" />
+  <path class="mark" d="M 317 120 L 343 120" />
+  <text class="small red" x="351" y="126">標線</text>
+  <text class="name mid" x="330" y="432">ホールピペット</text>
+  <text class="small mid" x="330" y="458">正確に測りとる</text>
+
+  <!-- ===== ビュレット ===== -->
+  <path class="liq" d="M 612 80 L 612 320 L 616 330 L 616 350 L 620 362 L 624 350 L 624 330 L 628 320 L 628 80 Z" />
+  <path class="glass" d="M 612 36 L 612 320 L 616 330 L 616 350 L 620 362 L 624 350 L 624 330 L 628 320 L 628 36" />
+  <g class="tick">
+    <path d="M 612 90 L 624 90" /><path d="M 612 101 L 618 101" /><path d="M 612 112 L 618 112" />
+    <path d="M 612 123 L 618 123" /><path d="M 612 134 L 618 134" /><path d="M 612 145 L 624 145" />
+    <path d="M 612 156 L 618 156" /><path d="M 612 167 L 618 167" /><path d="M 612 178 L 618 178" />
+    <path d="M 612 189 L 618 189" /><path d="M 612 200 L 624 200" /><path d="M 612 211 L 618 211" />
+    <path d="M 612 222 L 618 222" /><path d="M 612 233 L 618 233" /><path d="M 612 244 L 618 244" />
+    <path d="M 612 255 L 624 255" /><path d="M 612 266 L 618 266" /><path d="M 612 277 L 618 277" />
+    <path d="M 612 288 L 618 288" /><path d="M 612 299 L 618 299" /><path d="M 612 310 L 624 310" />
+  </g>
+  <!-- コック -->
+  <rect x="598" y="334" width="44" height="9" rx="3" fill="#9e9e9e" stroke="#333" stroke-width="2" />
+  <!-- 落ちる1滴 -->
+  <path d="M 620 366 C 617 371, 617 376, 620 377 C 623 376, 623 371, 620 366 Z" fill="#8fb4de" />
+  <path class="lead" d="M 596 172 L 564 172" />
+  <text class="small" x="514" y="178">目盛り</text>
+  <text class="name" x="660" y="120">ビュレット</text>
+  <text class="small" x="660" y="146">滴下した体積を測る</text>
+  <text class="small" x="660" y="170">（前後の目盛りの差）</text>
+
+  <!-- ===== コニカルビーカー ===== -->
+  <path class="liq" d="M 572.5 440 L 556 468 Q 552 476 562 476 L 678 476 Q 688 476 684 468 L 667.5 440 Z" />
+  <path class="glass" d="M 590 382 L 596 388 L 596 400 L 556 468 Q 552 476 562 476 L 678 476 Q 688 476 684 468 L 644 400 L 644 388 L 650 382" />
+  <text class="name" x="700" y="440">コニカルビーカー</text>
+  <text class="small" x="700" y="466">中和反応を行う</text>
+</svg>
