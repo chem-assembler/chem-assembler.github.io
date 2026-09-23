@@ -4380,7 +4380,9 @@ class Game {
                 // ⚠ **stages 側の `id` も渡す**（DEVELOPMENT.md §7-1c）。落とすと
                 // stages にしかない58件が id で引けない（エチレン・アセチレン・プロペンがここ）
                 ...STAGES.map(s => ({ id: s.id, name: s.name, target: s.target, stereo: s.stereo })),
-                ...COMPOUNDS.map(c => ({ id: c.id, name: c.name, target: c.target, stereo: c.stereo }))
+                // ★ `aliases`（I-0074 第2段）: 表には出さない別名。呼び出しの索引だけが読む
+                ...COMPOUNDS.map(c => ({ id: c.id, name: c.name, target: c.target, stereo: c.stereo,
+                    aliases: Array.isArray(c.aliases) ? c.aliases : null }))
             ];
             // 立体情報を持つエントリ（stereo 記述子 or target に haworthFace）を先に照合する。
             // これにより「立体指定つき」が「総称（立体なし）」より優先して当たる。
@@ -4412,6 +4414,7 @@ class Game {
                 return {
                     id: e.id || null,
                     name: e.name,
+                    aliases: e.aliases || null,
                     stereoCode,
                     geoCode,
                     mol,
@@ -4431,6 +4434,7 @@ class Game {
                 const kept = seenKey.get(key);
                 if (kept) {
                     if (!kept.id && e.id) kept.id = e.id;
+                    if (!kept.aliases && e.aliases) kept.aliases = e.aliases; // 別名も id と同じく残る側へ移す
                     return false;
                 }
                 seenKey.set(key, e);
@@ -4475,6 +4479,12 @@ class Game {
             const { main, aliases } = splitCompoundName(e.name);
             claim(main, e);
             aliases.forEach(a => claim(a, e));
+            /* ★ 内部の別名（I-0074 第2段・ユーザーの決め「別名は化合物ごとに内部で持たせる」）。
+             *   compounds.json の `aliases`。**表には出さない**（名前の候補 `summonNames` にも入れない）が、
+             *   打てば引ける ＝ 学術名（β-D-フルクトフラノース）や教科書の略した形（β-グルコース）でも呼べる。
+             *   ⚠ 表示名は高校・大学受験の語彙が主（①）。別名はその補助（②）で、表示名の代わりにはしない。
+             *   ⚠ 正式名と同じ綴り・2件以上に当たる別名は、括弧の別名と同じく捨てる（`claim` の約束） */
+            (e.aliases || []).forEach(a => claim(String(a).trim(), e));
         });
         this._compoundNameIndex = map;
         // 不変の `id` の索引（受け口① `?summon=<id>`。DEVELOPMENT.md §7-1・§7-1c）。
@@ -8752,6 +8762,14 @@ class Game {
                     : k.主名.indexOf(語) >= 0 ? 2 : 3;
             }
             当たり.push({ k, tier });
+        }
+        /* ★ 内部の別名（I-0074 第2段）にぴったり当たったら、その化合物の**表示名**を先頭に出す。
+         *   別名そのものは候補に出さない（表には出さない約束）——「β-D-フルクトフラノース」と打つと
+         *   候補は「β-D-フルクトース（5員環構造）」になる。⚠ id（`ethylene`）では出さない（名前の索引だけを見る） */
+        if (語 && this._compoundNameIndex) {
+            const hit = this._compoundNameIndex.get(String(q).trim());
+            const hk = hit && this._summonKeys.get(hit.name);
+            if (hk && !当たり.some(e => e.k === hk)) 当たり.push({ k: hk, tier: -1 });
         }
         当たり.sort((x, y) => (x.tier - y.tier)
             || (x.k.本体長 - y.k.本体長)

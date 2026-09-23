@@ -13445,6 +13445,38 @@
         c.reset();
     });
 
+    test('SM9: 内部の別名（compounds.json の aliases）で呼び出せるが、表には出ない（I-0074 第2段。否定対照: 別名のない語・曖昧な語・id では候補を足さない）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W;
+        // ① 別名 → 表示名の化合物に当たる
+        [['β-D-フルクトフラノース', 'β-D-フルクトース（5員環構造）'],
+         ['α-D-フルクトフラノース', 'α-D-フルクトース（5員環構造）'],
+         ['β-グルコース', 'β-D-グルコース（β-D-グルコピラノース）'],
+         ['α-ガラクトース', 'α-D-ガラクトース（α-D-ガラクトピラノース）']].forEach(([alias, name]) => {
+            const e = g.resolveCompound(alias);
+            assert(e && e.name === name, `別名「${alias}」が ${e ? e.name : '何にも'} に当たる（${name} のはず）`);
+            // ② 候補には表示名が先頭に出て、別名そのものは出ない
+            const cands = g.summonCandidates(alias);
+            assert(cands[0] === name, `「${alias}」の候補の先頭が ${cands[0]}（${name} のはず）`);
+            assert(!cands.includes(alias) && !g.summonNames.includes(alias), `別名「${alias}」が候補に出た`);
+        });
+        // ③ 呼び出すと、表の名前は表示名（別名ではない）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        assert(g.summonMolecule('β-D-フルクトフラノース'), '別名で呼び出せない');
+        assert(g.compoundLabel && g.compoundLabel.name === 'β-D-フルクトース（5員環構造）',
+            `呼び出した分子の名前が ${g.compoundLabel && g.compoundLabel.name}`);
+        // ④ 別名は正式名の一覧（compounds.json の name）と重ならない（重なると正式名が負ける）
+        const names = new Set(W.COMPOUNDS.map(x => x.name));
+        W.COMPOUNDS.filter(x => Array.isArray(x.aliases)).forEach(x => x.aliases.forEach(a =>
+            assert(!names.has(a), `${x.name} の別名「${a}」が別の化合物の正式名と同じ`)));
+        // ⑤ 否定対照: 曖昧な語（3件に当たる）と id は候補を足さない
+        assert(!g.resolveCompound('フルクトース'), '「フルクトース」が1件に決め打ちされた（鎖状・α・β の3件あるはず）');
+        assert(g.summonCandidates('フルクトース').length >= 3, '「フルクトース」の部分一致の候補が減った');
+        assert(g.summonCandidates('ethylene').length === 0, 'id（ethylene）で候補が出た');
+        c.reset();
+    });
+
     // ===== FV: 「全体表示」が合わせる先（v1402） =====
     //
     // ★ 実発生（ユーザー申し立て 2026-08-17）:「分子を呼び出して表示したとき、全体表示、で
@@ -43401,9 +43433,13 @@
             !Array.isArray(e.target.bonds));
         assert(noTarget.length === 0,
             `target が壊れているエントリが ${noTarget.length} 件（${noTarget.slice(0, 3).map(e => e.name).join(' / ')}）`);
-        // 必須フィールドは name / id / formula / target の4つ。それ以外は任意（stereo・desc）
+        // 必須フィールドは name / id / formula / target の4つ。それ以外は任意（stereo・desc・aliases）
+        // ★ aliases（I-0074 第2段）は表に出さない別名 ＝ 空でない文字列の配列だけを許す
         const REQUIRED = ['name', 'id', 'formula', 'target'];
-        const OPTIONAL = ['stereo', 'desc'];
+        const OPTIONAL = ['stereo', 'desc', 'aliases'];
+        const badAliases = COMPOUNDS.filter(e => e.aliases !== undefined && !(Array.isArray(e.aliases) &&
+            e.aliases.length > 0 && e.aliases.every(a => typeof a === 'string' && a.trim().length > 0)));
+        assert(badAliases.length === 0, `aliases の形が壊れたエントリ: ${badAliases.map(e => e.name).join(' / ')}`);
         const unknown = new Set();
         COMPOUNDS.forEach(e => Object.keys(e).forEach(k => {
             if (!REQUIRED.includes(k) && !OPTIONAL.includes(k)) unknown.add(k);
