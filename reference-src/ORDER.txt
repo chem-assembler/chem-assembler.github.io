@@ -33,6 +33,7 @@ life-metal
 life-ceramics
 life-household
 life-energy
+life-safety
 chemistry-world
 vapor-pressure
 gas-laws
