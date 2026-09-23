@@ -9,6 +9,11 @@ codes:
   - org.bio.nucleotide
   - org.bio.dna-rna
   - org.bio.base-pair
+  - org.bio.nucleic-linkage
+  - org.bio.dna-rna-parts
+  - org.bio.nucleic-role
+  - org.bio.base-ratio
+  - org.bio.genetic-flow
 source:
   - qa:org.bio.nucleotide・org.bio.dna-rna・org.bio.base-pair
   - compounds:デオキシリボース・チミン
