@@ -10,6 +10,11 @@ codes:
   - theo.acid-base.strong-weak
   - theo.acid-base.ionization-degree
   - theo.acid-base.h-concentration
+  - theo.acid-base.ionization-equation
+  - theo.acid-base.acetic-carboxy
+  - theo.acid-base.hcl-vs-hydrochloric
+  - theo.acid-base.co2-acid
+  - theo.acid-base.valence-from-h
 source:
   - slides:酸塩基の基本２「酸と塩基の価数と強弱」p.6〜12・練習1〜3 p.14〜18
   - slides:無機の基本１「無機の前に復習すべきこと」p.14〜17
