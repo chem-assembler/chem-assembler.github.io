@@ -11,6 +11,9 @@ codes:
   - inorg.metal.iron-ion-color
   - inorg.metal.iron-ion-test
   - inorg.metal.iron-fe2-reductant
+  - inorg.metal.iron-ore
+  - inorg.metal.iron-rust
+  - inorg.metal.fe3-oxidant
 source:
   - textbook:R5化学Vol.2-4編4章（鉄の製錬・単体・Fe²⁺ と Fe³⁺ の反応・FeO(OH) の表記・ターンブルブルーとプルシアンブルーが同一組成）
   - muki:chemistry.js（Fe(OH)₂ 緑白色・FeS は塩基性のみ・Fe²⁺ 淡緑色）
