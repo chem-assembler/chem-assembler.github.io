@@ -4185,7 +4185,7 @@
 {"id":"complex-ion","unit":"inorg.metal","unitLabel":"金属元素","group":"錯イオン","title":"錯イオン —— 配位数・名前・形","summary":"金属イオンに NH₃・OH⁻・CN⁻ などが配位結合した錯イオンの、名前の付け方・配位数と形・色と、沈殿が過剰の NH₃ や NaOH で溶ける2つの型のまとめです。","codes":["inorg.metal.complex-structure","inorg.metal.complex-naming","inorg.metal.complex-shape","inorg.metal.complex-redissolve","inorg.metal.ligand-names","inorg.metal.coordination-rule","inorg.metal.complex-color","inorg.metal.central-oxidation","inorg.metal.thiosulfate-agbr"],"source":["textbook:R5化学Vol.2-4編4章（錯イオンの定義・配位子と数詞・主な錯イオン5種の名前・形・配位数）","muki:separation-model.js（SEP_COMPLEXES の錯イオン6種と色、過剰の NH₃・NaOH で溶けるかどうか）","ion:STAGES complex-cu-nh3・complex-ag-nh3・complex-agcl-nh3・cu-nh3-step1/2・amphoteric-al-step2・amphoteric-zn-step2（錯イオンを右辺にする式の書き方）"],"singleSource":false,
 "why":"錯イオンで問われるのは「名前と化学式の行き来」「配位数と形」「どの沈殿が過剰の NH₃ / NaOH で錯イオンになって溶けるか」の3つなので、節もそこで割った。名前は、配位子・数詞・中心金属・酸化数・陰イオンなら「酸」をつなぐ組み立てなので、番号つき手順と ○○ の穴あきで示した（有機の命名のページと同じ型）。形は配位数で大筋が決まり、配位数4だけが Cu（正方形）と Zn（正四面体）に割れるので、そこを誤解の囲みにした。沈殿が溶ける2つの型は、銅と銀・両性金属の2ページに散る式を、ここでは表1枚で横に並べ、式そのものはリンクで渡した。図はイオンでみる化学反応式の画面の切り取り。",
 "blocks":[
-{"kind":"text","text":"硫酸銅(Ⅱ) 水溶液にアンモニア水を過剰に加えると、深青色の水溶液になります。これは、Cu²⁺ に NH₃ 分子が4個結びついて、<b>[Cu(NH₃)₄]²⁺</b> というイオンができたためです。このように、金属イオンに分子や陰イオンが<b>配位結合</b>してできたイオンを<b>錯イオン</b>といいます。"},
+{"kind":"text","text":"硫酸銅(Ⅱ) 水溶液にアンモニア水を過剰に加えると、深青色の水溶液になります。これは、Cu²⁺ に NH₃ 分子が4個結びついて、<b>[Cu(NH₃)₄]²⁺</b> というイオンができたためです。中心に金属イオンが1つあり、そのまわりに分子や陰イオンが<b>配位結合</b>でつながったもの —— これが<b>錯イオン</b>です。[Cu(NH₃)₄]²⁺ はその代表です。"},
 {"kind":"section","anchor":"definition","title":"錯イオンのつくり —— 中心の金属イオンと配位子","lead":"非共有電子対をもつ分子や陰イオン（配位子）が、中心の金属イオンに配位結合します。結びついた配位子の数を配位数といいます。","terms":["錯イオン","配位結合","配位子","配位数","錯塩"]},
 {"kind":"text","text":"NH₃ の N 原子には<b>非共有電子対</b>が1組あります。この電子対を Cu²⁺ に一方的に提供して結合するのが<b>配位結合</b>です。配位結合する分子や陰イオンを<b>配位子</b>、1つの金属イオンに結合した配位子の数を<b>配位数</b>といいます。[Cu(NH₃)₄]²⁺ なら、配位子は NH₃、配位数は4です。"},
 {"kind":"figure","src":"complex-ion-app-cu-nh3.png","shot":"url=/ion-equation/?rxn=complex-cu-nh3 sel=svg#beaker 状態=イオン反応式の係数を 1・4・1 に合わせて「▶ 係数どおりに再生」を押し、12秒待ってから撮影","alt":"ビーカーの模式図。中央の Cu のまわりを NH₃ が4個取り囲んだ粒（電荷 2+）が1個あり、離れたところに SO₄²⁻ が1個ある","caption":"CuSO₄ に NH₃ を4個ぶん加えたあと。<b>Cu²⁺ のまわりを NH₃ 4個が取り囲んで [Cu(NH₃)₄]²⁺</b> になり、SO₄²⁻ は反応に加わらずに残ります。"},
@@ -4220,7 +4220,7 @@
 {"kind":"link","to":"amphoteric-metal","text":"両性金属の水酸化物が過剰の NaOH に溶ける式は両性金属のページへ"},
 {"kind":"link","to":"cation-separation","text":"この2つの型を使って金属イオンを分ける手順は系統分離のページへ"},
 {"kind":"heading","title":"チオ硫酸ナトリウムで溶ける臭化銀","advanced":true},
-{"kind":"text","text":"臭化銀 AgBr はアンモニア水にはわずかにしか溶けませんが、チオ硫酸ナトリウム Na₂S₂O₃ 水溶液にはよく溶けます。チオ硫酸イオン S₂O₃²⁻ が配位子になって錯イオンをつくるためです。写真の現像で、光が当たらずに残った AgBr を取り除くのに使われてきました。"},
+{"kind":"text","text":"臭化銀 AgBr は、アンモニア水に入れてもほとんど溶けません。ところが、チオ硫酸ナトリウム Na₂S₂O₃ の水溶液に入れると溶けていきます。チオ硫酸イオン S₂O₃²⁻ が Ag⁺ に配位して、水に溶ける錯イオンに変わるからです。写真の現像で、光が当たらずに残った AgBr を取り除くのに使われてきました。"},
 {"kind":"reaction","left":"AgBr ＋ 2S₂O₃²⁻","right":"[Ag(S₂O₃)₂]³⁻ ＋ Br⁻","level":"★☆☆","note":"ビス(チオスルファト)銀(Ⅰ)酸イオン。名前も式も覚えなくて構いません。"},
 {"kind":"section","anchor":"range","title":"覚える範囲","lead":"名前の付け方、Ag・Cu・Zn のアンミン錯イオンの配位数・形・色、過剰の NH₃ と NaOH で溶ける組み合わせです。"},
 {"kind":"heading","title":"必ず覚えるもの（★★★）"},
