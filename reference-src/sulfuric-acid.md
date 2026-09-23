@@ -10,6 +10,8 @@ codes:
   - inorg.nonmetal.hot-conc-sulfuric
   - inorg.nonmetal.conc-sulfuric
   - inorg.nonmetal.contact-process
+  - inorg.nonmetal.hygroscopic-dehydrating
+  - inorg.nonmetal.conc-not-weak
 source:
   - slides:無機の基本６「硫黄」s18-31（練習は s33-36・s45-53）
 singleSource: true
