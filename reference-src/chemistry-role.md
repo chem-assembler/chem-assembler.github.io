@@ -9,6 +9,10 @@ codes:
   - theo.life.industry-catalyst
   - theo.life.haber-issue
   - theo.life.atom-economy
+  - theo.life.three-r
+  - theo.life.green-chemistry
+  - theo.life.ammonia-fuel
+  - theo.life.nitrogen-fixation
 source:
   - textbook:R5化学Vol.2-7編（7編1章 化学的性質の利用と工業的製法・7編2章 未来を創る化学：元素と物質と機能のコラム・物質を通して未来を考える（アンモニア））
   - textbook:化学基礎_091-191_3編（リチウムイオン電池・金属の製錬）

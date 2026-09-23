@@ -10,6 +10,7 @@ codes:
   - inorg.basis.redox-first
   - inorg.basis.displacement
   - inorg.basis.complex-dissolve
+  - inorg.basis.outside-five
 source:
   - slides:無機の基本１「無機の前に復習すべきこと」s12-28（中和・遊離の型）・s30-45（酸化還元の型）・練習５ s56-58
   - slides:無機の基本５「ハロゲン」s27（沈殿 Ag⁺ ＋ Cl⁻）

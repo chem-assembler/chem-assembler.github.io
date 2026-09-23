@@ -10,6 +10,9 @@ codes:
   - inorg.nonmetal.h2s
   - inorg.nonmetal.sulfide-precipitate
   - inorg.nonmetal.so2-redox
+  - inorg.nonmetal.so2-props
+  - inorg.nonmetal.sulfur-molecule
+  - inorg.nonmetal.sulfite-reductant
 source:
   - slides:無機の基本６「硫黄」s7-17（練習は s37-44）
 singleSource: true

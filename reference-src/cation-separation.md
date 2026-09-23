@@ -10,6 +10,7 @@ codes:
   - inorg.qual.separation-h2s-twice
   - inorg.qual.separation-nitric-acid
   - inorg.qual.separation-within-group
+  - inorg.qual.separation-nh4cl
 source:
   - muki:tree-model.js TREE_OPS・TREE_RULES・TREE_GROUP・TREE_SUBOPS（型A の操作・反応の表・属の中の割り方）
   - muki:separation-model.js SEP_TABLE（熱水・アンモニア水での見分け）

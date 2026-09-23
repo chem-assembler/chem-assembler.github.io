@@ -9,6 +9,10 @@ codes:
   - inorg.metal.alloy-def
   - inorg.metal.alloy-examples
   - inorg.metal.alloy-functional
+  - inorg.metal.alloy-mixture
+  - inorg.metal.stainless
+  - inorg.metal.nichrome
+  - inorg.metal.plating-not-alloy
 source:
   - textbook:化学基礎 2編2章（合金の定義・表7 合金の種類と用途の例：ステンレス鋼・ニクロム・青銅・黄銅・ジュラルミン・形状記憶合金）
   - textbook:R5化学Vol.2-4編 3章 D 合金（定義）・スズの単体（ブリキ・青銅・無鉛はんだ）・図説「無機物質と人間生活」表1 合金の組成とその特性（硬貨・易融合金・形状記憶合金・水素吸蔵合金・アモルファス合金・超伝導合金）

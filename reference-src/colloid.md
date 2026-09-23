@@ -12,6 +12,12 @@ codes:
   - theo.solution.colloid-properties
   - theo.solution.coagulation
   - theo.solution.salting-out
+  - theo.solution.dispersoid
+  - theo.solution.sol-gel
+  - theo.solution.colloid-charge
+  - theo.solution.coagulation-use
+  - theo.solution.colloid-stability
+  - theo.solution.dialysis-check
 source:
   - textbook:R5化学Vol.1-1編 3章3節（コロイド粒子 p.62・分類 p.63・コロイド溶液の性質 p.64〜65・疎水コロイドと親水コロイド p.66〜67）
   - book:化学の新研究2023 p.199（コロイド粒子の大きさの2通りの定義）・p.203（ブラウン運動）・p.207（粒子の電荷の由来・凝析力）
