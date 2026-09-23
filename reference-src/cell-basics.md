@@ -10,6 +10,10 @@ codes:
   - theo.electro.daniell
   - theo.electro.porous-plate
   - theo.electro.which-positive
+  - theo.electro.cell-principle
+  - theo.electro.voltaic
+  - theo.electro.charge-balance
+  - theo.electro.positive-reason
 source:
   - slides:電池の基本１「電池の仕組み」s3〜s13
   - textbook:R5化学Vol.1-2編（電池の構成の書き方・一次電池と二次電池の定義・ボルタ電池の構成）
