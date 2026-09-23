@@ -183,21 +183,21 @@ terms:
 
 :::figure
 src: saccharide-alpha-glucose.png
-gen: name=α-D-グルコース（α-D-グルコピラノース） plain
+gen: name=α-D-グルコース plain
 alt: α-D-グルコースの環状構造式を直交で描いた図。酸素1個と炭素5個の六員環に、OH が4個と CH2OH が1個付いている
 caption: **α-グルコース**。酸素1個と炭素5個の六員環に、−OH が4個と −CH₂OH が1個付いています。
 :::
 
 :::figure
 src: saccharide-beta-glucose.png
-gen: name=β-D-グルコース（β-D-グルコピラノース） plain
+gen: name=β-D-グルコース plain
 alt: β-D-グルコースの環状構造式を直交で描いた図。原子のつながりは α-グルコースの図と同じ
 caption: **β-グルコース**。原子のつながりは α形と同じで、違うのは1位の −OH の向きだけです。
 :::
 
 :::figure
 src: saccharide-alpha-glucose-haworth.png
-gen: name=α-D-グルコース（α-D-グルコピラノース） haworth
+gen: name=α-D-グルコース haworth
 mark: kind=囲む at=C1-OH count=1
 alt: α-グルコースをハース式で描いた図。環の右端の1位の炭素から下へ伸びた OH が破線の丸で囲まれている
 caption: **α-グルコース**をハース式で描くと、囲んだ1位の −OH は環の**下側**を向いています。
@@ -205,7 +205,7 @@ caption: **α-グルコース**をハース式で描くと、囲んだ1位の �
 
 :::figure
 src: saccharide-beta-glucose-haworth.png
-gen: name=β-D-グルコース（β-D-グルコピラノース） haworth
+gen: name=β-D-グルコース haworth
 mark: kind=囲む at=C1-OH count=1
 alt: β-グルコースをハース式で描いた図。環の右端の1位の炭素から上へ伸びた OH が破線の丸で囲まれている
 caption: **β-グルコース**では、同じ1位の −OH が環の**上側**を向いています。ほかの部分は α形と同じです。
@@ -214,7 +214,7 @@ caption: **β-グルコース**では、同じ1位の −OH が環の**上側**�
 :::figure
 src: saccharide-glucose-ring-closure.png
 gen: name=D-グルコース（鎖状） plain
-gen: name=α-D-グルコース（α-D-グルコピラノース） plain
+gen: name=α-D-グルコース plain
 mark: kind=囲む at=2:環の酸素 label=もとは5位の −OH の O
 between: kind=矢印 at=1 to=2 label=環になる
 alt: 左に鎖状のグルコース、右に環状のα-グルコースを置き、「環になる」と書いた矢印でつないだ図。環の中の O が点線の丸で囲まれている

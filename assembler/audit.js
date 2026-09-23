@@ -121,7 +121,7 @@
         amidation: ['酢酸', 'アニリン'],
         esterification_phenol_info: ['酢酸', 'フェノール'],
         dehydration_inter: ['エタノール', 'エタノール'],
-        condensation_glycoside: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
+        condensation_glycoside: ['α-D-グルコース', 'α-D-グルコース'],
         addition_polymerization: ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'],
         alkyne_polymerization: ['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）'],
         diene_polymerization: ['1,3-ブタジエン', '1,3-ブタジエン', '1,3-ブタジエン'],

@@ -53,8 +53,8 @@ qa 側は `gen_links.js` が機械で解決して繋いである（一意に決�
 
 | 指したい分子 | ライブラリの実体 | 指す知識項目 |
 |---|---|---|
-| α-グルコース | `D-グルコース（鎖状）`<br><sub>**stages と compounds の両方**</sub><br>`β-D-グルコース（β-D-グルコピラノース）`<br><sub>**stages と compounds の両方**</sub><br>`α-D-グルコース（α-D-グルコピラノース）`<br><sub>compounds</sub> | `org.bio.glucose-reducing` |
-| 鎖状グルコース | `D-グルコース（鎖状）`<br><sub>**stages と compounds の両方**</sub><br>`β-D-グルコース（β-D-グルコピラノース）`<br><sub>**stages と compounds の両方**</sub><br>`α-D-グルコース（α-D-グルコピラノース）`<br><sub>compounds</sub> | `org.bio.glucose-structure`<br>`org.bio.glucose-ring` |
+| α-グルコース | `D-グルコース（鎖状）`<br><sub>**stages と compounds の両方**</sub><br>`β-D-グルコース`<br><sub>**stages と compounds の両方**</sub><br>`α-D-グルコース`<br><sub>compounds</sub> | `org.bio.glucose-reducing` |
+| 鎖状グルコース | `D-グルコース（鎖状）`<br><sub>**stages と compounds の両方**</sub><br>`β-D-グルコース`<br><sub>**stages と compounds の両方**</sub><br>`α-D-グルコース`<br><sub>compounds</sub> | `org.bio.glucose-structure`<br>`org.bio.glucose-ring` |
 | 鎖状フルクトース | `D-フルクトース（鎖状）`<br><sub>compounds</sub> | `org.bio.fructose` |
 
 ## ① 完全一致（66 種）
@@ -111,7 +111,7 @@ qa 側は `gen_links.js` が機械で解決して繋いである（一意に決�
 - `グルタミン酸`
 - `アスパラギン酸`
 - `D-グルコース（鎖状）`
-- `β-D-グルコース（β-D-グルコピラノース）`
+- `β-D-グルコース`
 - `パルミチン酸`
 - `ステアリン酸`
 - `アクリロニトリル`

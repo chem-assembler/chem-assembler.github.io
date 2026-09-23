@@ -5322,7 +5322,7 @@ class StereoIsomerPractice {
              * ⚠ フルクトフラノースは `prepare()` が通らないので入れていない（別途）
              */
             { key: 'glucose-anomer', label: 'α/β-D-グルコピラノース',
-              compound: 'α-D-グルコース（α-D-グルコピラノース）',
+              compound: 'α-D-グルコース',
               axis: 'anomeric',
               axisNote: '※ この回は**アノマー位（環の酸素と -OH の両方が付いた炭素）だけ**を動かします。' +
                   'ほかの炭素の -OH は D-グルコースのまま変えません。',

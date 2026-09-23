@@ -85,7 +85,7 @@
  *
  * ★ **原稿に書かずに1枚だけ焼く**（v1549。原稿の校正中に新しい図を用意する口）:
  *
- *      node tools/gen-figure.mjs --port=8811 --src=saccharide-alpha-glucose-haworth.png --gen="name=α-D-グルコース（α-D-グルコピラノース） haworth"
+ *      node tools/gen-figure.mjs --port=8811 --src=saccharide-alpha-glucose-haworth.png --gen="name=α-D-グルコース haworth"
  *
  *   ⚠ `--src=` と `--gen=` は必ず組で書く。原稿の図（`gen:` のある `:::figure`）には触らない
  *

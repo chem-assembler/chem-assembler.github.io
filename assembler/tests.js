@@ -3209,7 +3209,7 @@
             assert(bent > 0, `${nm} が一度も曲がらない（炭素3個の鎖は端の1原子を回して曲げられるはず）`);
         });
         // 立体は壊さない（v242 の保証が1原子の屈曲でも効いていること）
-        ['シス-2-ブテン', 'トランス-2-ブテン', 'D-アラニン', 'β-D-グルコース（β-D-グルコピラノース）']
+        ['シス-2-ブテン', 'トランス-2-ブテン', 'D-アラニン', 'β-D-グルコース']
             .forEach(nm => {
                 const e = source.find(x => x.name === nm && x.target);
                 assert(e, `${nm} がライブラリに無い`);
@@ -3372,7 +3372,7 @@
         assert(!/フィッシャー/.test(cis), 'シス/トランスをフィッシャー投影と書いている');
         const ala = premiseFor('D-アラニン');
         assert(/フィッシャー投影/.test(ala), `D-アラニンの前提が違う（${ala}）`);
-        const glc = premiseFor('β-D-グルコース（β-D-グルコピラノース）');
+        const glc = premiseFor('β-D-グルコース');
         assert(/ハース図/.test(glc), `ピラノースの前提が違う（${glc}）`);
         assert(!/フィッシャー/.test(glc), '環の立体をフィッシャー投影と書いている');
         const plain = premiseFor('酢酸');
@@ -3805,7 +3805,7 @@
         [['フラン', '複素環'], ['ピロール', '複素環'], ['カフェイン', '複素環'],
          ['ε-カプロラクタム', '複素環'],
          ['ピリジン', '芳香族'],                                  // 複素環だが教科書は芳香族の章
-         ['β-D-グルコース（β-D-グルコピラノース）', '天然有機化合物'], // 環に O があるが糖
+         ['β-D-グルコース', '天然有機化合物'], // 環に O があるが糖
          ['水', '無機'], ['アンモニア', '無機'], ['過酸化水素', '無機']
         ].forEach(([n, want]) => {
             const got = fieldOfName(lib, n).field;
@@ -3863,7 +3863,7 @@
         };
         // ① 入れ替えると QS6 ② の2件が落ちる（＝ QS6 の緑は順番が守っている）
         const pyr = fieldOfName(lib, 'ピリジン');
-        const glc = fieldOfName(lib, 'β-D-グルコース（β-D-グルコピラノース）');
+        const glc = fieldOfName(lib, 'β-D-グルコース');
         assert(heteroFirst(pyr.mol) === '複素環',
             `順を入れ替えてもピリジンが ${heteroFirst(pyr.mol)} のまま＝ QS6 の「芳香族のまま」が空振り`);
         assert(heteroFirst(glc.mol) === '複素環',
@@ -4051,8 +4051,10 @@
             `教科書レベルで外れるのが ${quiz.oversized.length} 件（10件を期待。発注書 §3-3 の実測）`);
         setQuizFilters(quiz, 'all', 'all', 'all');
         // 2026-09-13: 18 → 22。反応式のために鎖12の4件を足した（ドデシルベンゼン・同スルホン酸・同ナトリウム塩・1-ドデカノール）
-        assert(quiz.oversized.length === 22,
-            `すべてで外れるのが ${quiz.oversized.length} 件（22件を期待）`);
+        // 2026-09-24: 22 → 25。高分子5件を登録した（I-0120）うち、ジエンの3件（ポリイソプレン・ポリブタジエン・
+        //   ポリクロロプレン）は主鎖が12炭素で上限10を超える（ポリスチレン・ポリメタクリル酸メチルは6で外れない）
+        assert(quiz.oversized.length === 25,
+            `すべてで外れるのが ${quiz.oversized.length} 件（25件を期待）`);
 
         // ④ ユーザーが名指しした3件が、**プールに居ないし、実際に出題もされない**
         setQuizFilters(quiz, 'all', 'all', 'all');
@@ -5130,10 +5132,10 @@
             //     残った側が「何をつないだか」＝結合の α/β を単糖の名前で言う
             // ⚠ 座標は v1446 で二糖4件を**真横**に並べ直したときのもの（DS1〜。橋の O が
             //   マルトースは下・セロビオース／ラクトースは上・スクロースは下に来る）
-            [[ 'マルトース（麦芽糖）', 500, 414, 542, 300, 'α-D-グルコース（α-D-グルコピラノース）'],
-                ['セロビオース', 500, 186, 542, 300, 'β-D-グルコース（β-D-グルコピラノース）'],
-                ['ラクトース（乳糖）', 500, 186, 542, 300, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
-                ['スクロース（ショ糖）', 530, 414, 572, 290, 'α-D-グルコース（α-D-グルコピラノース）']
+            [[ 'マルトース（麦芽糖）', 500, 414, 542, 300, 'α-D-グルコース'],
+                ['セロビオース', 500, 186, 542, 300, 'β-D-グルコース'],
+                ['ラクトース（乳糖）', 500, 186, 542, 300, 'β-D-ガラクトース'],
+                ['スクロース（ショ糖）', 530, 414, 572, 290, 'α-D-グルコース']
             ].forEach(([nm, ox, oy, cx, cy, expect]) => {
                 const mol = targetOf(nm);
                 const o = at(mol, ox, oy), cc = at(mol, cx, cy);
@@ -12199,7 +12201,7 @@
         assert(has(acetone, 'ketone') && !has(acetone, 'aldehyde'), 'アセトンのケトン判定が壊れた');
         assert(iodo.detect(acetone).length > 0, 'アセトンでヨードホルム反応が出なくなった');
         // 環状の糖（ヘミアセタール）の還元性は別経路。ここが道連れで消えていないこと
-        assert(posOf(fromLib('α-D-グルコース（α-D-グルコピラノース）'), 'tollens'),
+        assert(posOf(fromLib('α-D-グルコース'), 'tollens'),
             'α-D-グルコース（環状）が銀鏡反応で陰性になった（ヘミアセタールの経路が壊れた）');
     });
 
@@ -12245,7 +12247,7 @@
         assert(typesOf(chloromethanol).includes('alcohol0'),
             'Cl を炭素と同じに数えている（R 以外まで巻き込んでいる）');
         // 環状の糖のアノマー炭素（O,C,O）の級数も動かしていない
-        assert(typesOf(fromLib('α-D-グルコース（α-D-グルコピラノース）')).includes('alcohol1'),
+        assert(typesOf(fromLib('α-D-グルコース')).includes('alcohol1'),
             'α-D-グルコースのアノマー炭素の級数が変わった（糖の分類が動く）');
     });
 
@@ -13451,8 +13453,8 @@
         // ① 別名 → 表示名の化合物に当たる
         [['β-D-フルクトフラノース', 'β-D-フルクトース（5員環構造）'],
          ['α-D-フルクトフラノース', 'α-D-フルクトース（5員環構造）'],
-         ['β-グルコース', 'β-D-グルコース（β-D-グルコピラノース）'],
-         ['α-ガラクトース', 'α-D-ガラクトース（α-D-ガラクトピラノース）']].forEach(([alias, name]) => {
+         ['β-グルコース', 'β-D-グルコース'],
+         ['α-ガラクトース', 'α-D-ガラクトース']].forEach(([alias, name]) => {
             const e = g.resolveCompound(alias);
             assert(e && e.name === name, `別名「${alias}」が ${e ? e.name : '何にも'} に当たる（${name} のはず）`);
             // ② 候補には表示名が先頭に出て、別名そのものは出ない
@@ -14540,7 +14542,7 @@
             return g2;
         };
         const source = (c.W.COMPOUNDS || []).concat(c.W.STAGES || []);
-        ['グリシン', 'アラニン', '乳酸', 'セリン', 'β-D-グルコース（β-D-グルコピラノース）']
+        ['グリシン', 'アラニン', '乳酸', 'セリン', 'β-D-グルコース']
             .forEach(nm => {
                 const e2 = source.find(x => x.name === nm && x.target);
                 assert(e2, `${nm} がライブラリに無い`);
@@ -14557,7 +14559,7 @@
         // ＝ ユーザー指摘「一般に結合長は気にしない」。環の分子は曲げようがないので、
         // 残る手は回転4通り × 反転2通り（立体が変わる向きは除かれる）と環外の枝の屈曲だけになる。
         // **ここで見たいのは「変形が完全に止まっていないこと」**なので、通り数そのものは目安。
-        const sugar = source.find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
+        const sugar = source.find(x => x.name === 'β-D-グルコース');
         const shapes = new Set();
         for (let i = 0; i < 30; i++) {
             shapes.add(c.W.transformCompoundDepiction(sugar.target, 2)
@@ -23116,7 +23118,7 @@
         //   環そのものに奥行きが付くため ＝ **紙のハース投影で手前の辺を太く描く約束そのもの**
         //   （DEVELOPMENT.md ★★発注の芯「クイズに太線が無い／紙のハース投影は手前の辺を太く描く」）。
         //   v1450 まではここが「効かないのが正しい」と書いてあった（模型が平らだったため）。
-        const e = (W.COMPOUNDS || []).find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
+        const e = (W.COMPOUNDS || []).find(x => x.name === 'β-D-グルコース');
         assert(e, 'グルコピラノースがライブラリに無い');
         c.reset();
         g.setMode('free');
@@ -23379,7 +23381,7 @@
                     `${name} の無効化理由が「${why}」を説明していない（${tab.title}）`);
                 close();
             });
-        ['シクロヘキサン', 'シクロヘキサノール', 'β-D-グルコース（β-D-グルコピラノース）',
+        ['シクロヘキサン', 'シクロヘキサノール', 'β-D-グルコース',
          'マルトース（麦芽糖）', 'スクロース（ショ糖）']
             .forEach(name => {
                 const tab = openWith(name);
@@ -23395,7 +23397,7 @@
             close();
             return t;
         };
-        const sugar = noteOf('β-D-グルコース（β-D-グルコピラノース）');
+        const sugar = noteOf('β-D-グルコース');
         assert(/ハース図/.test(sugar) && /α\/β/.test(sugar), '糖の解説に「ハース図」「α/β」が無い');
         const plain = noteOf('シクロヘキサノール');
         assert(!/あなたが描いたハース図の縦位置/.test(plain),
@@ -23467,8 +23469,8 @@
         // 母数がここまで減ったのは v1033 で崩し方から**伸長を外した**ため（意図どおり。
         // 伸長を戻して測ると、立体を持つ171件の平均は 7.6 → 18.6 通りに戻る）。
         const POOL = {
-            'α-D-マンノース（α-D-マンノピラノース）': 3,
-            'β-D-グルコース（β-D-グルコピラノース）': 4,
+            'α-D-マンノース': 3,
+            'β-D-グルコース': 4,
             'D-グルコース（鎖状）': 8,
             'D-アラニン': 4,
             'L-乳酸': 4,
@@ -23663,7 +23665,9 @@
              *   ★ **ポリエチレンがここに居ないのは正しい** —— 立体異性体の総数が 1（実測）で、
              *   R の絞り込みとは無関係にもともと出題プールへ載らない（他の6件は 6〜8）。 */
             const backWant = ['ポリアセチレン=6', 'ポリビニルアルコール=8', 'ビニロン=8',
-                'ポリプロピレン=8', 'ポリ塩化ビニル=8', 'ポリアクリロニトリル=8', 'ポリ酢酸ビニル=8'];
+                'ポリプロピレン=8', 'ポリ塩化ビニル=8', 'ポリアクリロニトリル=8', 'ポリ酢酸ビニル=8',
+                // 2026-09-24（v1627・I-0120）: 呼び出せるようにした高分子5件を登録した
+                'ポリスチレン=8', 'ポリメタクリル酸メチル=8', 'ポリイソプレン=8', 'ポリブタジエン=6', 'ポリクロロプレン=8'];
             assert(back.length === backWant.length && backWant.every(w => back.includes(w)),
                 `否定対照が成立しない（絞り込みを外しても高分子が戻らない: ${back.join('・') || 'なし'}）`);
             assert(q.basePool.length === after + backWant.length,
@@ -24174,7 +24178,7 @@
         assert(!g.haworthMode && !haworthBtn.classList.contains('active'), 'loadStage で面マークが解除されない');
 
         // ピラノースを作図（β entry から。面マークは剥がして未設定から始める）
-        const entry = W.COMPOUNDS.find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）');
+        const entry = W.COMPOUNDS.find(x => x.name === 'β-D-グルコース');
         assert(entry, 'β-D-グルコピラノース が compounds.json に無い');
         const buildUser = () => {
             const m = g.createTargetFromData({ target: entry.target });
@@ -24224,21 +24228,21 @@
             assert(e, name + ' が compounds.json に無い');
             return g.createTargetFromData({ target: e.target });
         };
-        const bName = g.lookupCompoundName(molOf('β-D-グルコース（β-D-グルコピラノース）'));
-        const aName = g.lookupCompoundName(molOf('α-D-グルコース（α-D-グルコピラノース）'));
-        assert(bName === 'β-D-グルコース（β-D-グルコピラノース）', 'β の命名が誤り: ' + bName);
-        assert(aName === 'α-D-グルコース（α-D-グルコピラノース）', 'α の命名が誤り: ' + aName);
+        const bName = g.lookupCompoundName(molOf('β-D-グルコース'));
+        const aName = g.lookupCompoundName(molOf('α-D-グルコース'));
+        assert(bName === 'β-D-グルコース', 'β の命名が誤り: ' + bName);
+        assert(aName === 'α-D-グルコース', 'α の命名が誤り: ' + aName);
         assert(bName !== aName, 'α/β が同名に畳まれている');
         // C1(アノマー) の面だけ変えると α⇄β が入れ替わる
-        const bMol = molOf('β-D-グルコース（β-D-グルコピラノース）');
+        const bMol = molOf('β-D-グルコース');
         bMol.atoms[6].haworthFace = -1; // 上→下 で α へ
-        assert(g.lookupCompoundName(bMol) === 'α-D-グルコース（α-D-グルコピラノース）', 'C1面反転で β→α にならない');
-        const aMol = molOf('α-D-グルコース（α-D-グルコピラノース）');
+        assert(g.lookupCompoundName(bMol) === 'α-D-グルコース', 'C1面反転で β→α にならない');
+        const aMol = molOf('α-D-グルコース');
         aMol.atoms[6].haworthFace = 1;  // 下→上 で β へ
-        assert(g.lookupCompoundName(aMol) === 'β-D-グルコース（β-D-グルコピラノース）', 'C1面反転で α→β にならない');
+        assert(g.lookupCompoundName(aMol) === 'β-D-グルコース', 'C1面反転で α→β にならない');
         // 立体を表さない（面マークも縦位置も無い＝横向き）環グルコースはどちらにも一致しない
         // （総称/null）。M2c 以降はテンプレートを縦位置で描くため、横向きに置き直して立体を消す
-        const noMark = molOf('β-D-グルコース（β-D-グルコピラノース）');
+        const noMark = molOf('β-D-グルコース');
         const noMarkRingIds = new Set(noMark.atoms.slice(0, 6).map(a => a.id)); // O,C1..C5
         noMark.atoms.forEach(a => {
             delete a.haworthFace;
@@ -24247,7 +24251,7 @@
             if (parent) { a.x = parent.x + 30; a.y = parent.y; } // 横向きに置き直す（縦位置を消す）
         });
         const nm = g.lookupCompoundName(noMark);
-        assert(nm !== 'β-D-グルコース（β-D-グルコピラノース）' && nm !== 'α-D-グルコース（α-D-グルコピラノース）',
+        assert(nm !== 'β-D-グルコース' && nm !== 'α-D-グルコース',
             '立体を表さない（横向き）環グルコースが α/β に一致してしまう: ' + nm);
 
         // (5) ST3 無回帰: 鎖グルコース/乳酸は従来どおり命名
@@ -24308,20 +24312,20 @@
             assert(m.atoms.every(a => a.haworthFace == null), name + ' に haworthFace が残っている（M2c は縦位置で表す）');
             return m;
         };
-        const bMol = molOf('β-D-グルコース（β-D-グルコピラノース）');
-        const aMol = molOf('α-D-グルコース（α-D-グルコピラノース）');
-        assert(g.lookupCompoundName(bMol) === 'β-D-グルコース（β-D-グルコピラノース）', 'テンプレ縦位置で β を命名できない');
-        assert(g.lookupCompoundName(aMol) === 'α-D-グルコース（α-D-グルコピラノース）', 'テンプレ縦位置で α を命名できない');
+        const bMol = molOf('β-D-グルコース');
+        const aMol = molOf('α-D-グルコース');
+        assert(g.lookupCompoundName(bMol) === 'β-D-グルコース', 'テンプレ縦位置で β を命名できない');
+        assert(g.lookupCompoundName(aMol) === 'α-D-グルコース', 'テンプレ縦位置で α を命名できない');
         // アノマー(C1-OH=idx6)の上下を反転すると α⇄β が入れ替わる
-        const bFlip = molOf('β-D-グルコース（β-D-グルコピラノース）');
+        const bFlip = molOf('β-D-グルコース');
         bFlip.atoms[6].y = bFlip.atoms[1].y + 30; // 上→下（奥）で α へ
-        assert(g.lookupCompoundName(bFlip) === 'α-D-グルコース（α-D-グルコピラノース）', 'アノマー下反転で β→α にならない');
-        const aFlip = molOf('α-D-グルコース（α-D-グルコピラノース）');
+        assert(g.lookupCompoundName(bFlip) === 'α-D-グルコース', 'アノマー下反転で β→α にならない');
+        const aFlip = molOf('α-D-グルコース');
         aFlip.atoms[6].y = aFlip.atoms[1].y - 30; // 下→上（手前）で β へ
-        assert(g.lookupCompoundName(aFlip) === 'β-D-グルコース（β-D-グルコピラノース）', 'アノマー上反転で α→β にならない');
+        assert(g.lookupCompoundName(aFlip) === 'β-D-グルコース', 'アノマー上反転で α→β にならない');
 
         // (5) 面を付けない（横向き）作図はどちらにも一致しない（該当なし）
-        const flat = molOf('β-D-グルコース（β-D-グルコピラノース）');
+        const flat = molOf('β-D-グルコース');
         const flatRing = new Set(flat.atoms.slice(0, 6).map(a => a.id));
         flat.atoms.forEach(a => {
             if (flatRing.has(a.id)) return;
@@ -24329,7 +24333,7 @@
             if (p) { a.x = p.x + 30; a.y = p.y; } // 横向きに置き直す
         });
         const fn = g.lookupCompoundName(flat);
-        assert(fn !== 'β-D-グルコース（β-D-グルコピラノース）' && fn !== 'α-D-グルコース（α-D-グルコピラノース）',
+        assert(fn !== 'β-D-グルコース' && fn !== 'α-D-グルコース',
             '横向き（面なし）ピラノースが α/β に一致してしまう: ' + fn);
 
         // (6) 無回帰: 鎖状糖・cis/trans は従来どおり命名
@@ -24474,8 +24478,8 @@
         assert(g.userMolecule.atoms.length === 6 && g.userMolecule.bonds.length === 6,
             'ピラノースモジュールの配置が無回帰でない');
         const glc = g.createTargetFromData({
-            target: W.COMPOUNDS.find(x => x.name === 'β-D-グルコース（β-D-グルコピラノース）').target });
-        assert(g.lookupCompoundName(glc) === 'β-D-グルコース（β-D-グルコピラノース）',
+            target: W.COMPOUNDS.find(x => x.name === 'β-D-グルコース').target });
+        assert(g.lookupCompoundName(glc) === 'β-D-グルコース',
             'β-D-グルコピラノースの命名が無回帰でない');
 
         g.userMolecule = new W.Molecule();
@@ -24515,7 +24519,7 @@
         };
 
         // ---- ① ピラノース（六員環）と ② フラノース（五員環）で同じ形になる
-        [['α-D-グルコース（α-D-グルコピラノース）', 6], ['β-D-フルクトース（5員環構造）', 5]].forEach(([name, n]) => {
+        [['α-D-グルコース', 6], ['β-D-フルクトース（5員環構造）', 5]].forEach(([name, n]) => {
             draw(name);
             assert(thick().length === 1,
                 `${name}: 一番手前の辺が太い1本になっていない（${thick().length} 本）`);
@@ -24574,7 +24578,7 @@
 
         // --- トグル ON: 立体が名前に出る ---
         g.setReadStereo(true);
-        assert(g.lookupCompoundName(build('β-D-グルコース（β-D-グルコピラノース）')) === 'β-D-グルコース（β-D-グルコピラノース）', 'ON で β が出ない');
+        assert(g.lookupCompoundName(build('β-D-グルコース')) === 'β-D-グルコース', 'ON で β が出ない');
         // アラニンを軸配置（NH2 を左）で描くと L-アラニン
         const alanine = (nx) => {
             const m = new W.Molecule();
@@ -24599,7 +24603,7 @@
         // --- 鎖状⇄環状の平衡（変旋光の道筋） ---
         const ruleById = id => W.REACTION_RULES.find(r => r.id === id);
         // β → 開環 → 鎖状
-        let m = build('β-D-グルコース（β-D-グルコピラノース）');
+        let m = build('β-D-グルコース');
         g.userMolecule = m; g.updateDrawing();
         let rule = ruleById('open_glucopyranose');
         let sites = rule.detect(g.userMolecule);
@@ -24611,13 +24615,13 @@
         sites = rule.detect(g.userMolecule);
         assert(sites.length === 1, '鎖状から環化(α)が検出されない');
         rule.apply(g, sites[0]); g.updateDrawing();
-        assert(g.lookupCompoundName(g.userMolecule) === 'α-D-グルコース（α-D-グルコピラノース）', '環化でαにならない');
+        assert(g.lookupCompoundName(g.userMolecule) === 'α-D-グルコース', '環化でαにならない');
         // 環化(β)も同様に効く
         m = build('D-グルコース（鎖状）');
         g.userMolecule = m; g.updateDrawing();
         rule = ruleById('cyclize_glucose_beta');
         rule.apply(g, rule.detect(g.userMolecule)[0]); g.updateDrawing();
-        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコース（β-D-グルコピラノース）', '環化でβにならない');
+        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコース', '環化でβにならない');
         // グルコース以外（乳酸）では環化ルールは出ない
         const lac = build('乳酸');
         assert(ruleById('cyclize_glucose_beta').detect(lac).length === 0, '無関係な分子で環化が検出される');
@@ -24630,7 +24634,7 @@
             atoms: mm.atoms.map(a => ({ id: a.id, element: a.element, x: a.x, y: a.y })),
             bonds: mm.bonds.map(b => ({ atomId1: b.atomId1, atomId2: b.atomId2, type: b.type }))
         });
-        const ringM = build('β-D-グルコース（β-D-グルコピラノース）');
+        const ringM = build('β-D-グルコース');
         const beforeSnap = snap(ringM);
         g.userMolecule = ringM; g.updateDrawing();
         const orule = ruleById('open_glucopyranose');
@@ -24687,7 +24691,7 @@
         };
 
         // (1) 中間停止中のクリックは「スキップ」ではなく「第2段階へ進む」として消費される
-        g.userMolecule = build('β-D-グルコース（β-D-グルコピラノース）'); g.updateDrawing();
+        g.userMolecule = build('β-D-グルコース'); g.updateDrawing();
         makePause(midB, afterSnap);
         assert(rx.skipMorph() === true, '中間停止中のクリックが消費されない');
         assert(!rx._morphPause, 'クリックで停止状態が解除されない');
@@ -24695,7 +24699,7 @@
 
         // (2) 停止中に次の反応を実行したら、**画面に見えている中間の配置**から変化が始まる
         //     （内部で確定済みの整列後の座標から始まると、見えている図と繋がらない）
-        const ringMol = build('β-D-グルコース（β-D-グルコピラノース）');
+        const ringMol = build('β-D-グルコース');
         const ringPos = ringMol.atoms.map(a => ({ id: a.id, x: a.x, y: a.y }));
         g.userMolecule = ringMol; g.updateDrawing();
         const beforeSnap2 = snap(ringMol); // 環の配置（この分子の原子IDで）
@@ -24713,7 +24717,7 @@
         assert(maxDist(rx.lastReaction.before.atoms, ringPos) < 1,
             '環化が見えている中間の配置から始まっていない');
         rx.finalizeMorph();
-        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコース（β-D-グルコピラノース）', '停止中からの環化でβに戻らない');
+        assert(g.lookupCompoundName(g.userMolecule) === 'β-D-グルコース', '停止中からの環化でβに戻らない');
 
         g.userMolecule = new W.Molecule();
         g.updateDrawing();
@@ -25597,7 +25601,7 @@
         const faces = (m) => m.nodes.filter(n => n.kind === 'sub').map(n => n.face);
 
         // ===== A. β-D-グルコピラノース: 環は z=0 の平面・環外置換基は z=±d =====
-        const bMol = molOf('β-D-グルコース（β-D-グルコピラノース）');
+        const bMol = molOf('β-D-グルコース');
         openRing(bMol, bMol.atoms[1].id); // atoms[1] = 環の C1（アノマー炭素）
         const bm = sv._ringModel;
         assert(bm, '環モデルが作られない');
@@ -25726,7 +25730,7 @@
         D.getElementById('btn-stereo-close').click();
 
         // ===== E. α体ではアノマー位置の面（z の符号）だけが逆になる =====
-        const aMol = molOf('α-D-グルコース（α-D-グルコピラノース）');
+        const aMol = molOf('α-D-グルコース');
         openRing(aMol, aMol.atoms[1].id);
         const am = sv._ringModel;
         const aAnomer = anomerNode(am, aMol);
@@ -25835,7 +25839,7 @@
             // 鎖状グルコースは -CHO が先に酸化される（＝還元性）。-OH の酸化は並べない
             { name: 'D-グルコース（鎖状）', must: ['oxidize_aldehyde', 'cyclize_glucose_alpha', 'cyclize_glucose_beta'],
               never: ['dehydration_intra', 'oxidize_primary', 'oxidize_secondary'] },
-            { name: 'β-D-グルコース（β-D-グルコピラノース）', must: ['open_glucopyranose'], never: ['dehydration_intra'] }
+            { name: 'β-D-グルコース', must: ['open_glucopyranose'], never: ['dehydration_intra'] }
         ];
         const source = (W.COMPOUNDS || []).concat(W.STAGES || []);
         cases.forEach(tc => {
@@ -25914,9 +25918,9 @@
         assert(rel('D-乳酸', 'L-乳酸') === 'enantiomer', 'D/L-乳酸が鏡像異性体と判定されない');
         assert(rel('D-アラニン', 'D-アラニン') === 'same', '同じエントリが「同じ分子」と判定されない');
         // 糖のアノマー・エピマーはジアステレオマー（鏡像ではない）
-        assert(rel('α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）') === 'diastereomer',
+        assert(rel('α-D-グルコース', 'β-D-グルコース') === 'diastereomer',
             'α/β アノマーがジアステレオマーと判定されない');
-        assert(rel('β-D-グルコース（β-D-グルコピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）') === 'diastereomer',
+        assert(rel('β-D-グルコース', 'β-D-ガラクトース') === 'diastereomer',
             'グルコース/ガラクトースがジアステレオマーと判定されない');
         // シス/トランスもジアステレオマー（鏡像異性体ではない）
         assert(rel('シス-2-ブテン', 'トランス-2-ブテン') === 'diastereomer',
@@ -26018,8 +26022,8 @@
             'D/L-アラニンで不斉炭素の食い違いが出ない');
 
         // (3) ジアステレオマー（C4エピマー）: 一部だけ食い違う
-        cmp = cmpOf(entry('β-D-グルコース（β-D-グルコピラノース）').mol,
-                    entry('β-D-ガラクトース（β-D-ガラクトピラノース）').mol);
+        cmp = cmpOf(entry('β-D-グルコース').mol,
+                    entry('β-D-ガラクトース').mol);
         assert(cmp && cmp.matched > 0 && cmp.matched < cmp.total,
             `エピマーが「一部一致」にならない（${cmp && cmp.matched}/${cmp && cmp.total}）`);
         assert(cmp.centers.filter(x => !x.match).length === 1,
@@ -26186,7 +26190,7 @@
         };
         // (1) ハース環（糖）は 0° だけ —— 面内で回すと「上に描く＝手前」の約束が崩れて
         //     鏡像の図になる（DESIGN_sugar.md §1-2 の③が 0/16）
-        const haworth = allowedFor('β-D-グルコース（β-D-グルコピラノース）');
+        const haworth = allowedFor('β-D-グルコース');
         assert(haworth.length === 1 && haworth[0] === 0,
             `ハース環で 0° 以外が許された（${haworth.join('/')}）`);
         // (2) フィッシャー投影は 0° と 180° だけ —— 90° は縦（奥）と横（手前）が入れ替わり鏡像になる
@@ -28160,7 +28164,7 @@
         // 縦置きの登録はこれまでどおり立体つきで名乗る
         [['D-乳酸', 'D-乳酸'], ['L-乳酸', 'L-乳酸'], ['D-アラニン', 'D-アラニン'],
          ['D-グルコース（鎖状）', 'D-グルコース（鎖状）'],
-         ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）']]
+         ['α-D-グルコース', 'α-D-グルコース']]
             .forEach(([n, want]) => {
                 assert(g.lookupCompoundName(byName(n).mol) === want,
                     `${n} が ${g.lookupCompoundName(byName(n).mol)} になる`);
@@ -28218,12 +28222,12 @@
         //      1つも変わっていない。期待値をベタ書きで固定してあるので、拡張が既存へ漏れたら落ちる。
         //      添字は登録の atoms 順（ピラノースは 0=環O・1=C1・…・5=C5、二糖は 11=環O・12=C1'・…）
         const 既存 = [
-            ['β-D-グルコース（β-D-グルコピラノース）', { 1: -1, 2: -1, 3: 1, 4: 1, 5: 1 }],
-            ['α-D-グルコース（α-D-グルコピラノース）', { 1: 1, 2: -1, 3: 1, 4: 1, 5: 1 }],
-            ['β-D-ガラクトース（β-D-ガラクトピラノース）', { 1: -1, 2: -1, 3: 1, 4: -1, 5: 1 }],
-            ['α-D-ガラクトース（α-D-ガラクトピラノース）', { 1: 1, 2: -1, 3: 1, 4: -1, 5: 1 }],
-            ['β-D-マンノース（β-D-マンノピラノース）', { 1: -1, 2: 1, 3: 1, 4: 1, 5: 1 }],
-            ['α-D-マンノース（α-D-マンノピラノース）', { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }],
+            ['β-D-グルコース', { 1: -1, 2: -1, 3: 1, 4: 1, 5: 1 }],
+            ['α-D-グルコース', { 1: 1, 2: -1, 3: 1, 4: 1, 5: 1 }],
+            ['β-D-ガラクトース', { 1: -1, 2: -1, 3: 1, 4: -1, 5: 1 }],
+            ['α-D-ガラクトース', { 1: 1, 2: -1, 3: 1, 4: -1, 5: 1 }],
+            ['β-D-マンノース', { 1: -1, 2: 1, 3: 1, 4: 1, 5: 1 }],
+            ['α-D-マンノース', { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }],
             ['マルトース（麦芽糖）', { 1: -1, 2: 1, 3: -1, 4: 1, 5: 1, 12: 1, 13: 1, 14: -1, 15: 1, 16: 1 }],
             ['セロビオース', { 1: 1, 2: 1, 3: -1, 4: 1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 }],
             ['ラクトース（乳糖）', { 1: 1, 2: 1, 3: -1, 4: -1, 5: 1, 12: -1, 13: 1, 14: -1, 15: 1, 16: 1 }]
@@ -28233,9 +28237,9 @@
             assert(show(got) === show(want), `${nm} の環パリティが変わった（${show(got)}／期待 ${show(want)}）`);
         });
         // α と β は**アノマー炭素（添字1）1つだけ**が違う、という関係も崩れていない
-        [['α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
-         ['α-D-ガラクトース（α-D-ガラクトピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
-         ['α-D-マンノース（α-D-マンノピラノース）', 'β-D-マンノース（β-D-マンノピラノース）']]
+        [['α-D-グルコース', 'β-D-グルコース'],
+         ['α-D-ガラクトース', 'β-D-ガラクトース'],
+         ['α-D-マンノース', 'β-D-マンノース']]
             .forEach(([a, b]) => {
                 const pa = parOf(a), pb = parOf(b);
                 const diff = Object.keys(pa).filter(k => pa[k] !== pb[k]);
@@ -28384,7 +28388,7 @@
         assert(lettersOf(W.rotateTargetInPlane(find('D-アラニン').target, 2, false)) === 'R',
             '180°回しただけで R/S が変わる');
         //   ・環の中の中心はハースの担当（相互排他）
-        assert(lettersOf(find('β-D-グルコース（β-D-グルコピラノース）').target) === null,
+        assert(lettersOf(find('β-D-グルコース').target) === null,
             '環の中の中心に R/S を付けている');
         //   ・不斉炭素が無い
         const etoh = source.find(x => x.name === 'エタノール');
@@ -28565,7 +28569,7 @@
         }
         // 環の中の中心（ハースの担当。相互排他）
         {
-            openLibrary('β-D-グルコース（β-D-グルコピラノース）');
+            openLibrary('β-D-グルコース');
             expectSilent('環の中の中心', '環');
             D.getElementById('btn-stereo-close').click();
         }
@@ -28777,7 +28781,7 @@
         });
 
         // ===== B3. 環（M4c）: 平面・正多角形・置換基の面が描いた図と一致 =====
-        ['シクロヘキサン', 'ベンゼン', 'β-D-グルコース（β-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'].forEach(name => {
+        ['シクロヘキサン', 'ベンゼン', 'β-D-グルコース', 'α-D-グルコース'].forEach(name => {
             const entry = source.find(x => x.name === name && x.target);
             if (!entry) return;
             const mol = molOf(name);
@@ -28814,8 +28818,8 @@
             const no = r.nodes.find(n => n.atomId === oh.id);
             return no.v[2] - nc.v[2];
         };
-        const zb = anomerZ('β-D-グルコース（β-D-グルコピラノース）');
-        const za = anomerZ('α-D-グルコース（α-D-グルコピラノース）');
+        const zb = anomerZ('β-D-グルコース');
+        const za = anomerZ('α-D-グルコース');
         assert(zb * za < 0, `α/β でアノマー位置の -OH が逆の面になっていない（β=${zb.toFixed(2)} α=${za.toFixed(2)}）`);
 
         // ===== C. 判断できないものは出さない（誤った図を見せないことが最優先）=====
@@ -28862,7 +28866,7 @@
         assert(hDrawn() === 7, 'H を戻せない');
         // 環のある分子でも開ける（M4c）
         D.getElementById('btn-stereo-close').click();
-        g.userMolecule = molOf('β-D-グルコース（β-D-グルコピラノース）');
+        g.userMolecule = molOf('β-D-グルコース');
         g.updateDrawing();
         D.getElementById('btn-stereo').click();
         assert(!tab.disabled, '環のある分子で「分子全体」タブが無効になっている（M4cで対応済み）');
@@ -29275,7 +29279,7 @@
         const rule = W.REACTION_RULES.find(r => r.id === 'hydrolysis_glycoside');
         assert(rule, 'グリコシド結合の加水分解のルールが無い');
         assert(rule.reagentId === 'h2so4_dil', '希硫酸の瓶に紐づいていない');
-        const GLC = codeOf('β-D-グルコース（β-D-グルコピラノース）');
+        const GLC = codeOf('β-D-グルコース');
         const FRU = codeOf('β-D-フルクトース（5員環構造）');
         // **突き合わせ方そのものの否定対照**: ピラノースとフラノースは別物として区別されること
         assert(GLC !== FRU,
@@ -29291,7 +29295,7 @@
         assert(n(['マルトース（麦芽糖）', 'エタノール']) === 1,
             '関係のない分子を足すと候補の数が変わる（1分子スコープになっていない）');
         // **否定対照**: 単糖・鎖状の糖・ふつうのエーテル・エステルでは出ない
-        ['β-D-グルコース（β-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）',
+        ['β-D-グルコース', 'α-D-グルコース',
          'D-グルコース（鎖状）', 'β-D-フルクトース（5員環構造）', 'ジエチレングリコール',
          '1,4-ジオキサン', 'アニソール（メトキシベンゼン）', '酢酸エチル', 'エタノール']
             .forEach(nm => assert(n([nm]) === 0, `${nm}: 加水分解の候補が出ている（${n([nm])} 件）`));
@@ -30411,7 +30415,7 @@
         const g = c.game, W = c.W, D = c.D;
         const count = (el) => g.userMolecule.atoms.filter(a => a.element === el).length;
         // ① 5つとも呼べる ＝ 単量体3個ぶんの C と両端の R（LB23 の「3単位＋両端 R」の規約）
-        [['ポリイソプレン', 'イソプレン'], ['ポリ1,3-ブタジエン', '1,3-ブタジエン'],
+        [['ポリイソプレン', 'イソプレン'], ['ポリブタジエン', '1,3-ブタジエン'],
          ['ポリクロロプレン', 'クロロプレン'], ['ポリスチレン', 'スチレン'],
          ['ポリメタクリル酸メチル', 'メタクリル酸メチル']].forEach(([poly, mono]) => {
             const m = g.resolveCompound(mono);
@@ -30423,6 +30427,18 @@
             assert(count('C') === monoC * 3, `${poly} の C が ${count('C')} 個（単量体3個なら ${monoC * 3}）`);
             assert(g.summonNames.includes(poly), `${poly} が名前の候補（補完）に無い`);
         });
+        // ★ v1627（I-0120）: 5つとも名称ライブラリに登録した ＝ 自分で3個並べて重合した鎖にも名前が付く
+        [['イソプレン', 'diene_polymerization', 'ポリイソプレン'], ['1,3-ブタジエン', 'diene_polymerization', 'ポリブタジエン'],
+         ['クロロプレン', 'diene_polymerization', 'ポリクロロプレン'], ['スチレン', 'addition_polymerization', 'ポリスチレン'],
+         ['メタクリル酸メチル', 'addition_polymerization', 'ポリメタクリル酸メチル']].forEach(([mono, ruleId, poly]) => {
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            for (let k = 0; k < 3; k++) assert(g.summonMolecule(mono), `${mono} が呼び出せない`);
+            const rule = W.REACTION_RULES.find(r => r.id === ruleId);
+            rule.apply(g, rule.detect(g.userMolecule)[0]);
+            const got = g.lookupCompoundName(g.userMolecule);
+            assert(got === poly, `${mono} を3個重合した鎖の名前が ${got}（${poly} のはず）`);
+        });
+        assert((g.resolveCompound('ブタジエンゴム') || {}).name === 'ポリブタジエン', '別名「ブタジエンゴム」で引けない');
         // 否定対照: 重合しない単量体の「ポリ○○」は作らない（架空の高分子を出さない）
         g.userMolecule = new W.Molecule(); g.updateDrawing();
         assert(!g.buildPolymerByName('ポリエタノール'), '重合しない分子の「ポリ○○」が作られた');
@@ -30515,7 +30531,7 @@
         c.reset();
     });
 
-    test('PM19: 加硫を続けて押しても、橋はどれも2本の鎖のあいだに縦に短く架かる（I-0077・I-0073。否定対照: 1本目の相手を選び直さないと2本目から斜めの長い線になる）', async (c) => {
+    test('PM19: 加硫を続けて押しても、橋はどれも2本の鎖のあいだに縦に短く架かる（I-0077・I-0073。否定対照: 1本目の相手を選び直さないと2本目から斜めの長い線になるか、架けられない）', async (c) => {
         c.reset();
         const g = c.game, W = c.W;
         const vul = W.REACTION_RULES.find(r => r.id === 'vulcanization');
@@ -30530,7 +30546,12 @@
                 for (let k = 0; k < 5; k++) {
                     const s = vul.detect(g.userMolecule);
                     if (!s.length) break;
-                    W.reactor.execute(vul, s[0]);
+                    /* 1本目は**いちばん近い組**（横に並べた2本の「左の鎖の右端 × 右の鎖の左端」＝
+                     * そのまま縦にそろえると鎖がずれて重なる組）。detect の返す順に頼らない */
+                    const at0 = (id) => g.userMolecule.atoms.find(a => a.id === id);
+                    const d = (x) => Math.hypot(at0(x[0]).x - at0(x[2]).x, at0(x[0]).y - at0(x[2]).y);
+                    const site = n === 0 ? s.slice().sort((p, q) => d(p) - d(q))[0] : s[0];
+                    W.reactor.execute(vul, site);
                     n++;
                 }
             } finally { W.reactor._inRegister = undefined; }
@@ -30540,14 +30561,16 @@
                 .map(b => Math.hypot(at(b.atomId1).x - at(b.atomId2).x, at(b.atomId1).y - at(b.atomId2).y));
             return { n, longest: Math.max(...lens), S: m.atoms.filter(a => a.element === 'S').length };
         };
-        [['ポリイソプレン', 'ポリイソプレン'], ['ポリ1,3-ブタジエン', 'ポリ1,3-ブタジエン'],
-         ['ポリクロロプレン', 'ポリクロロプレン'], ['ポリイソプレン', 'ポリ1,3-ブタジエン']].forEach(pair => {
+        [['ポリイソプレン', 'ポリイソプレン'], ['ポリブタジエン', 'ポリブタジエン'],
+         ['ポリクロロプレン', 'ポリクロロプレン'], ['ポリイソプレン', 'ポリブタジエン']].forEach(pair => {
             const r = bridge(pair);
             assert(r.n === 3 && r.S === 6, `${pair.join('＋')}: 橋が ${r.n} 本（3単位どうしで3本のはず）`);
             assert(r.longest < 100, `${pair.join('＋')}: いちばん長い S の結合が ${Math.round(r.longest)}px（斜めの長い線）`);
         });
-        const off = bridge(['ポリ1,3-ブタジエン', 'ポリ1,3-ブタジエン'], true);
-        assert(off.longest > 150, `否定対照が効かない（選び直さなくても最長 ${Math.round(off.longest)}px）`);
+        const off = bridge(['ポリブタジエン', 'ポリブタジエン'], true);
+        // 選び直さないと、鎖がずれて重なる ＝ 2本目からが長い斜め線になるか、そもそも架けられない（登録の図の鎖は後者）
+        assert(off.longest > 150 || off.n < 3,
+            `否定対照が効かない（選び直さなくても橋 ${off.n} 本・最長 ${Math.round(off.longest)}px）`);
         c.reset();
     });
 
@@ -35803,8 +35826,8 @@
              ライブラリの「D-グルコース（鎖状）」自身が O(358,174)-C(358,216)-C(358,258) と一直線に描いている
            - トレオニンの2級酸化は、空いた直交の向きが2つとも別々の隣と一直線になる（どちらでも同じ）*/
         const known = ['oxidize_secondary|トレオニン（スレオニン）',
-                       'open_glucopyranose|β-D-グルコース（β-D-グルコピラノース）',
-                       'open_glucopyranose|α-D-グルコース（α-D-グルコピラノース）'];
+                       'open_glucopyranose|β-D-グルコース',
+                       'open_glucopyranose|α-D-グルコース'];
         const unexpected = worse.filter(k => !known.includes(k));
         assert(unexpected.length === 0,
             `反応が C=O を鎖と一直線に出している: ${unexpected.join('、')}`);
@@ -35818,7 +35841,7 @@
         const savedStereo = g.readStereo;
         g.readStereo = true;
         try {
-            const opened = react(molOf('β-D-グルコース（β-D-グルコピラノース）'), 'open_glucopyranose');
+            const opened = react(molOf('β-D-グルコース'), 'open_glucopyranose');
             assert(g.lookupCompoundName(opened) === 'D-グルコース（鎖状）',
                 `開環で鎖状グルコースにならない（${g.lookupCompoundName(opened)}）`);
         } finally {
@@ -40906,7 +40929,7 @@
         const cases = [
             ['ag_ammonia', 'アセトアルデヒド', true, '-CHO がある'],
             ['ag_ammonia', 'アセトン', false, 'ケトンは同じ C=O でも還元性が無い'],
-            ['ag_ammonia', 'α-D-グルコース（α-D-グルコピラノース）', true, '環状でもヘミアセタール＝還元糖'],
+            ['ag_ammonia', 'α-D-グルコース', true, '環状でもヘミアセタール＝還元糖'],
             ['fehling', 'アセトアルデヒド', true, '銀鏡と同じ根拠で陽性'],
             ['fehling', 'アセトン', false, '銀鏡と同じ根拠で陰性'],
             ['fecl3', 'フェノール', true, '環に直結した -OH'],
@@ -40948,7 +40971,7 @@
         const detectBottles = W.REAGENTS.filter(r => r.kind === 'detect');
         assert(detectBottles.length === 5, `調べる瓶が ${detectBottles.length} 本（5本を期待）`);
         const names = ['アセトアルデヒド', 'アセトン', 'フェノール', 'エタノール', 'アラニン', '酢酸',
-            'α-D-グルコース（α-D-グルコピラノース）'].filter(n => lib.has(n));
+            'α-D-グルコース'].filter(n => lib.has(n));
         assert(names.length >= 6, `代表分子がライブラリに ${names.length} 件しか無い`);
         const modal = D.getElementById('molecule-modal');
         let checked = 0;
@@ -48173,10 +48196,10 @@
 
     // 4件それぞれの、教科書どおりの生成物（並び順は問わない）
     const HYDROLYSIS_EXPECTED = {
-        maltose: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
-        cellobiose: ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
-        lactose: ['β-D-ガラクトース（β-D-ガラクトピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
-        sucrose: ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトース（5員環構造）']
+        maltose: ['α-D-グルコース', 'α-D-グルコース'],
+        cellobiose: ['β-D-グルコース', 'β-D-グルコース'],
+        lactose: ['β-D-ガラクトース', 'β-D-グルコース'],
+        sucrose: ['α-D-グルコース', 'β-D-フルクトース（5員環構造）']
     };
 
     test('SG12: ★ 二糖4件の加水分解で、生成物2つが**両方とも**名乗る（-OH を縦に置く・否定対照つき）', async (c) => {
@@ -48587,16 +48610,16 @@
 
     /** 登録のハース環17件（SG14 の CANVAS_FLIP_IDS と同じ顔ぶれ。読めた面の数つき） */
     const HAWORTH_NAMED = [
-        ['alpha-d-glucose', 5, 'α-D-グルコース（α-D-グルコピラノース）'],
-        ['beta-d-glucose', 5, 'β-D-グルコース（β-D-グルコピラノース）'],
-        ['alpha-d-galactose', 5, 'α-D-ガラクトース（α-D-ガラクトピラノース）'],
-        ['beta-d-galactose', 5, 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
-        ['alpha-d-mannose', 5, 'α-D-マンノース（α-D-マンノピラノース）'],
-        ['beta-d-mannose', 5, 'β-D-マンノース（β-D-マンノピラノース）'],
-        ['alpha-d-allose', 5, 'α-D-アロース（α-D-アロピラノース）'],
-        ['beta-d-allose', 5, 'β-D-アロース（β-D-アロピラノース）'],
-        ['alpha-d-gulose', 5, 'α-D-グロース（α-D-グロピラノース）'],
-        ['beta-d-gulose', 5, 'β-D-グロース（β-D-グロピラノース）'],
+        ['alpha-d-glucose', 5, 'α-D-グルコース'],
+        ['beta-d-glucose', 5, 'β-D-グルコース'],
+        ['alpha-d-galactose', 5, 'α-D-ガラクトース'],
+        ['beta-d-galactose', 5, 'β-D-ガラクトース'],
+        ['alpha-d-mannose', 5, 'α-D-マンノース'],
+        ['beta-d-mannose', 5, 'β-D-マンノース'],
+        ['alpha-d-allose', 5, 'α-D-アロース'],
+        ['beta-d-allose', 5, 'β-D-アロース'],
+        ['alpha-d-gulose', 5, 'α-D-グロース'],
+        ['beta-d-gulose', 5, 'β-D-グロース'],
         ['alpha-d-fructofuranose', 4, 'α-D-フルクトース（5員環構造）'],
         ['beta-d-fructofuranose', 4, 'β-D-フルクトース（5員環構造）'],
         ['maltose', 10, 'マルトース（麦芽糖）'],
@@ -50438,25 +50461,25 @@
     // ⚠ **α-D-グルコース ×2 は候補が2件**（マルトース α1→4 と トレハロース α1↔1）。
     //   トレハロースを登録した v1476 レーンで 1件 → 2件 になった ＝ 化学として正しい増え方で、
     //   画面では「（2箇所）」の札になり、押すと**分ける原子**（受け側の -OH）を選ばせる。
-    const A_GLC = 'α-D-グルコース（α-D-グルコピラノース）';
-    const B_GLC = 'β-D-グルコース（β-D-グルコピラノース）';
+    const A_GLC = 'α-D-グルコース';
+    const B_GLC = 'β-D-グルコース';
     const GLC2 = ['トレハロース', 'マルトース（麦芽糖）'];
     const GLYCO_PAIRS = [
         [A_GLC, A_GLC, 'マルトース（麦芽糖）', 10, GLC2],
         [A_GLC, A_GLC, 'トレハロース', 10, GLC2],
         [B_GLC, B_GLC, 'セロビオース', 10, ['セロビオース']],
         [A_GLC, 'β-D-フルクトース（5員環構造）', 'スクロース（ショ糖）', 9, ['スクロース（ショ糖）']],
-        [B_GLC, 'β-D-ガラクトース（β-D-ガラクトピラノース）', 'ラクトース（乳糖）', 10, ['ラクトース（乳糖）']]
+        [B_GLC, 'β-D-ガラクトース', 'ラクトース（乳糖）', 10, ['ラクトース（乳糖）']]
     ];
     // ★ 否定対照: **α/β が違うだけ**の組。形（正準コード）は上と同じなのに、
     //    立体が登録と合わないので候補に出てはいけない
     const GLYCO_WRONG = [
-        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
-        ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
-        ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-フルクトース（5員環構造）'],
-        ['α-D-フルクトース（5員環構造）', 'α-D-グルコース（α-D-グルコピラノース）'],
-        ['α-D-ガラクトース（α-D-ガラクトピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
-        ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-フルクトース（5員環構造）']
+        ['α-D-グルコース', 'β-D-グルコース'],
+        ['α-D-グルコース', 'β-D-ガラクトース'],
+        ['β-D-グルコース', 'β-D-フルクトース（5員環構造）'],
+        ['α-D-フルクトース（5員環構造）', 'α-D-グルコース'],
+        ['α-D-ガラクトース', 'β-D-グルコース'],
+        ['α-D-グルコース', 'α-D-フルクトース（5員環構造）']
     ];
     const glycoRule = (W, id) => (W.REACTION_RULES || []).find(r => r.id === id);
     // キャンバスを空にして、名前で分子を並べる
@@ -50564,13 +50587,13 @@
         });
         // ★ 糖 ＋ アルコール（配糖体の向き）は**そのまま残す** ——
         //    全体に効かせると 5→0 で黙って消えるところ（§4-8c (d)）
-        const mix = glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）', 'エタノール']);
+        const mix = glycoSetup(c, ['α-D-グルコース', 'エタノール']);
         assert(ether.detect(mix).length === 5,
             `糖 + エタノールの分子間脱水が ${ether.detect(mix).length} 件（5件のはず）`);
         assert(cond.detect(mix).length === 0, '糖 + エタノールで糖の縮合が出た（糖どうしではない）');
         // ⚠ 糖どうしのときだけ、エーテルの札は身を引く（25 → 0）
-        const two = glycoSetup(c, ['α-D-グルコース（α-D-グルコピラノース）',
-            'α-D-グルコース（α-D-グルコピラノース）']);
+        const two = glycoSetup(c, ['α-D-グルコース',
+            'α-D-グルコース']);
         assert(ether.detect(two).length === 0,
             `糖どうしなのにエーテルの札が ${ether.detect(two).length} 件残っている`);
         c.reset();
@@ -50627,7 +50650,7 @@
         // ⚠ **β-D-グルコース ×2 を使う**（候補が1件 ＝ 押すとその場で実行される）。
         //   α-D-グルコース ×2 は候補が2件（マルトース／トレハロース）で、押すと箇所選びに入るため
         //   「反応のあとに逆向きの札が出るか」を見るこの検査には向かない
-        glycoSetup(c, ['β-D-グルコース（β-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）']);
+        glycoSetup(c, ['β-D-グルコース', 'β-D-グルコース']);
         g.openMoleculeModal();
         press('グリコシド結合で二糖');
         g.openMoleculeModal();
@@ -51588,7 +51611,7 @@
         amidation: ['酢酸', 'アニリン'],
         esterification_phenol_info: ['酢酸', 'フェノール'],
         dehydration_inter: ['エタノール', 'エタノール'],
-        condensation_glycoside: ['α-D-グルコース（α-D-グルコピラノース）', 'α-D-グルコース（α-D-グルコピラノース）'],
+        condensation_glycoside: ['α-D-グルコース', 'α-D-グルコース'],
         addition_polymerization: ['エチレン（エテン）', 'エチレン（エテン）', 'エチレン（エテン）'],
         alkyne_polymerization: ['アセチレン（エチン）', 'アセチレン（エチン）', 'アセチレン（エチン）'],
         diene_polymerization: ['1,3-ブタジエン', '1,3-ブタジエン', '1,3-ブタジエン'],
@@ -51853,7 +51876,7 @@
             `スクロースの加水分解で印の無い生成物が ${v.unmarked.length} 個ある`);
         // 「本当にグルコースとフルクトースに分かれた」ことを名前でも見る（2個に分かれただけでは弱い）
         const shown = c.D.getElementById('compound-name').textContent;
-        // ⚠ 表示は「α-D-グルコース（α-D-グルコピラノース） ＋ β-D-フルクトース（5員環構造）」なので、
+        // ⚠ 表示は「α-D-グルコース ＋ β-D-フルクトース（5員環構造）」なので、
         //    フルクトース側は語幹（フルクト）で見る（フラノース／フラノースの言い分けに引っかからない）
         assert(shown.includes('グルコース') && shown.includes('フルクト'),
             `切ったあとの表示が「${shown}」（グルコースとフルクトースを期待）`);
@@ -54385,7 +54408,7 @@
      *   ⚠ **画面のピクセルで覚えないこと** —— 呼び出しの位置は毎回同じとは限らない。
      *      引くのは「隣に何が付いているか」。 */
     test('RM3: 単糖2つの縮合は箇所選びに入り、選んだ炭素でマルトース／トレハロースが分かれる', async (c) => {
-        const GLC = 'α-D-グルコース（α-D-グルコピラノース）';
+        const GLC = 'α-D-グルコース';
         // どちらの候補を選ぶかを「押す炭素の隣の元素」で決める（座標にも並びにも頼らない）
         const CASES = [
             { nb: 'COO', want: 'トレハロース', why: '1位（アノマー炭素）どうし ＝ 1→1' },
@@ -57588,7 +57611,7 @@
         // [分子名, 期待, なぜこの1件を見るのか]
         const cases = [
             ['アセトアルデヒド', true, '-CHO（1）'],
-            ['α-D-グルコース（α-D-グルコピラノース）', true, '環のヘミアセタール（2）'],
+            ['α-D-グルコース', true, '環のヘミアセタール（2）'],
             ['マルトース（麦芽糖）', true, '片方の環がヘミアセタールのまま ＝ 還元糖'],
             ['D-フルクトース（鎖状）', true, '★ これが直した本体。ケトースだが還元糖'],
             ['α-D-フルクトース（5員環構造）', true, '★ 環のケトース（ヘミケタール）は 2 が前から拾えていた'],
@@ -60922,8 +60945,8 @@
         c.reset();
         const W = c.W, g = c.game, ip = W.isomerPractice;
         const pairs = [
-            ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-グルコース（β-D-グルコピラノース）'],
-            ['α-D-ガラクトース（α-D-ガラクトピラノース）', 'β-D-ガラクトース（β-D-ガラクトピラノース）'],
+            ['α-D-グルコース', 'β-D-グルコース'],
+            ['α-D-ガラクトース', 'β-D-ガラクトース'],
             ['α-D-フルクトース（5員環構造）', 'β-D-フルクトース（5員環構造）']
         ];
         const svg = ipFigureSvg(c, 'fgt2-fig');
@@ -60963,7 +60986,7 @@
             });
             // ★ 紙の図の型のハース式は、手前の辺が太い帯・両脇がくさび（v1550・ユーザー「ハース環は手前を太く、12間、34間はくさび型」）
             //   ピラノース（グルコース）もフラノース（フルクトース）も、太い帯1つ＋くさび2つ ＝ 3枚。帯は幅が一定、くさびは片側が細い
-            ['α-D-グルコース（α-D-グルコピラノース）', 'β-D-フルクトース（5員環構造）'].forEach(name => {
+            ['α-D-グルコース', 'β-D-フルクトース（5員環構造）'].forEach(name => {
                 const m = g.createTargetFromData({ target: fgtEntry(W, name).target });
                 assert(W.ipHaworthFigure(m), `「${name}」がハース式の門番を通らない`);
                 ip.renderStandardFigure(svg.id, m, false, { paper: true });
@@ -61245,8 +61268,8 @@
         assert(hits('マルトース（麦芽糖）', '環の酸素').length === 2, 'マルトースの環の酸素が2個に当たらない');
 
         // ── ② 補助の道: 位置番号 ────────────────────────────────────
-        assert(hits('α-D-グルコース（α-D-グルコピラノース）', 'C1-OH').length === 1,
-            `α-D-グルコースの C1-OH が ${hits('α-D-グルコース（α-D-グルコピラノース）', 'C1-OH').length} 個（アノマー炭素の -OH 1個のはず）`);
+        assert(hits('α-D-グルコース', 'C1-OH').length === 1,
+            `α-D-グルコースの C1-OH が ${hits('α-D-グルコース', 'C1-OH').length} 個（アノマー炭素の -OH 1個のはず）`);
         {   // ★ 芳香環の位置番号: 1位 ＝ 置換基の付いた炭素。2位・6位は隣（o）・4位は向かい（p）
             const m = molOf('トルエン');
             const ring = [1, 2, 3, 4, 5, 6].map(n => W.figureMarkHits(m, '環C' + n));

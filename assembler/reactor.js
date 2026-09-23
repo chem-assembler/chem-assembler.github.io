@@ -8720,14 +8720,14 @@ const REACTION_RULES = [
     // 誤った立体を生む危険があるため。将来エントリを揃えてから拡張する）。
     {
         id: 'cyclize_glucose_beta',
-        label: '環化 → β-D-グルコース（β-D-グルコピラノース）',
+        label: '環化 → β-D-グルコース',
         morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
         apply(game, site) { return applyCyclize(game, site, REGISTERED_NAMES.beta); }
     },
     {
         id: 'cyclize_glucose_alpha',
-        label: '環化 → α-D-グルコース（α-D-グルコピラノース）',
+        label: '環化 → α-D-グルコース',
         morphStages: 'moveFirst', // ①環の形に折りたたむ → ②結合ができて環が閉じる
         detect(mol) { return detectGlucoseChain(mol); },
         apply(game, site) { return applyCyclize(game, site, REGISTERED_NAMES.alpha); }
@@ -9221,12 +9221,11 @@ function findPartnerHints(game, baseIds, ruleIds) {
  * ⚠ 出るかどうかを決めるのは `vulcanization.detect`（化学の判定）で、名前ではない。
  * ========================================================================== */
 const VULCANIZE_RULE = 'vulcanization';
-const VULCANIZE_PARTNERS = ['ポリイソプレン', 'ポリ1,3-ブタジエン', 'ポリクロロプレン'];
+const VULCANIZE_PARTNERS = ['ポリイソプレン', 'ポリブタジエン', 'ポリクロロプレン'];
 
 function findVulcanizePartnerHints(game, baseIds, ruleIds, seenRules, hits) {
     if (seenRules.has(VULCANIZE_RULE)) return;
     if (ruleIds && !ruleIds.includes(VULCANIZE_RULE)) return;
-    if (typeof game.buildPolymerByName !== 'function') return;
     const rule = REACTION_RULES.find(r => r.id === VULCANIZE_RULE);
     if (!rule || rule.info) return;
     const mol = game.userMolecule;
@@ -9241,7 +9240,9 @@ function findVulcanizePartnerHints(game, baseIds, ruleIds, seenRules, hits) {
     const code = canonicalCode(base);
     const built = new Map();
     const build = (n) => {
-        if (!built.has(n)) built.set(n, game.buildPolymerByName(n));
+        // 登録済み（v1627・I-0120）ならライブラリの図、無ければ単量体から作る
+        if (!built.has(n)) built.set(n, game.resolveCompound(n) ||
+            (typeof game.buildPolymerByName === 'function' ? game.buildPolymerByName(n) : null));
         return built.get(n);
     };
     const same = order.find(n => { const b = build(n); return b && canonicalCode(b.mol) === code; });
@@ -9454,8 +9455,8 @@ function findSelfPartnerHints(game, baseIds, ruleIds, seenRules, hits) {
 // ここ1か所に集め、**実在することをテスト RX11 で確かめる**（mechanismId の死にリンク検査と同じ考え方）
 const REGISTERED_NAMES = {
     chain: 'D-グルコース（鎖状）',
-    beta: 'β-D-グルコース（β-D-グルコピラノース）',
-    alpha: 'α-D-グルコース（α-D-グルコピラノース）'
+    beta: 'β-D-グルコース',
+    alpha: 'α-D-グルコース'
 };
 
 // ---- 鎖状⇄環状の共通処理（P12-7 M2d） ----

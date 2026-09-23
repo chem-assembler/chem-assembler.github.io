@@ -4867,7 +4867,7 @@ class Game {
             const bases = new Set();
             candidates.forEach(e => {
                 if (!e.stereoCode || !verifyMolecule(mol, e.mol)) return;
-                // 立体の印は名前のどこにあっても外す（「α-D-グルコース（α-D-グルコピラノース）」は
+                // 立体の印は名前のどこにあっても外す（「α-D-グルコース」は
                 // かっこの中にも付いている）
                 bases.add(e.name.replace(/[αβ]-|[DL]-/g, ''));
             });
@@ -9222,8 +9222,10 @@ class Game {
          挙げていない「ポリ＋単量体名」も、打ち込めば `buildPolymerByName` が作る */
     polymerSummonNames() {
         const lib = new Set(this.getCompoundLibrary().map(e => e.name));
+        // ⚠ v1627 で5つとも名称ライブラリに登録した（I-0120）＝ いまは全部ライブラリ側が引く。
+        //   ここは「登録の無い ポリ○○ を単量体から作る」予備の口として残す（引ける名前は候補に足さない）
         return ['ポリイソプレン', 'ポリ1,3-ブタジエン', 'ポリクロロプレン', 'ポリスチレン', 'ポリメタクリル酸メチル']
-            .filter(n => !lib.has(n) && this.resolveCompound(n.replace(/^ポリ/, '')));
+            .filter(n => !lib.has(n) && !this.resolveCompound(n) && this.resolveCompound(n.replace(/^ポリ/, '')));
     }
 
     summonMolecule(name) {
