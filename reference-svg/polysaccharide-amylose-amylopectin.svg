@@ -4,8 +4,8 @@
   <style>
     .thread { stroke: #90a4ae; stroke-width: 2; fill: none; }
     .beads { stroke: #1565c0; stroke-width: 15; stroke-linecap: round; stroke-dasharray: 0.1 17; fill: none; }
-    .lab { font-size: 19px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 23px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
     .divider { stroke: #bbb; stroke-width: 1; stroke-dasharray: 5 5; }
   </style>
 
