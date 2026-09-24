@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="820" height="400" viewBox="0 0 820 400" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="771.765" height="376.471" viewBox="0 0 820 400" role="img">
   <!-- 基質の濃度と反応速度。低濃度では比例（破線の直線に沿う）、高濃度では頭打ち。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
