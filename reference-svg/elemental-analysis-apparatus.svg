@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="268.421" viewBox="0 0 880 340" role="img">
   <!-- 元素分析の装置。左から 乾燥した O2 → 燃焼管（試料＋CuO・加熱）→ 塩化カルシウム管（H2O）→ ソーダ石灰管（CO2）。
        ★ 順番が命の図: 水を先に取ってからでないと CO2 だけを量れない。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
