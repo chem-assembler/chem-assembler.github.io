@@ -5,8 +5,8 @@
     .enz { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2.5; }
     .fit { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2.5; }
     .nofit { fill: #fdecec; stroke: #c62828; stroke-width: 2.5; }
-    .lab { font-size: 19px; fill: #222; }
-    .small { font-size: 16px; fill: #444; }
+    .lab { font-size: 20px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .blue { fill: #1565c0; }
     .green { fill: #2e7d32; }
     .red { fill: #c62828; }
@@ -31,7 +31,7 @@
   <path class="enz" d="M 505 320 L 505 225 Q 505 195 535 195 L 565 195 L 615 246 L 665 195 L 695 195 Q 725 195 725 225 L 725 320 Z" />
   <text class="lab blue" x="615" y="306" text-anchor="middle">酵素</text>
 
-  <rect class="nofit" x="570" y="108" width="90" height="62" rx="14" />
+  <rect class="nofit" x="570" y="108" width="105" height="67" rx="14" />
   <text class="lab red" x="615" y="146" text-anchor="middle">別の物質</text>
 
   <path d="M 602 178 L 628 202 M 628 178 L 602 202" stroke="#c62828" stroke-width="4" fill="none" stroke-linecap="round" />
