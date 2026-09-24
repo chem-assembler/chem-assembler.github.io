@@ -24,6 +24,9 @@ lead: アセチル基 −COCH₃ をもつカルボニル化合物と、酸化�
 terms:
 - ヨードホルム反応
 - アセチル基
+codes:
+- org.alcohol.iodoform
+- org.carbonyl.iodoform-carbonyl
 :::
 
 反応を示すのは、**アセチル基 −COCH₃ をもつカルボニル化合物**と、**酸化されるとアセチル基をもつカルボニル化合物になるアルコール**です。アセチル基とは、酢酸 CH₃COOH から −OH を取り去った構造のことです。
