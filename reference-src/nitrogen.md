@@ -39,6 +39,8 @@ lead: 三重結合をもつ安定な気体で、常温ではほとんど反応�
 terms:
 - 窒素
 - 液体窒素
+codes:
+- inorg.nonmetal.nitrogen-gas
 :::
 
 窒素 N₂ は無色・無臭の気体で、水にほとんど溶けません。2つの N 原子が**三重結合**で結びついていて、この結合が非常に切れにくいため、常温ではほとんど反応しません。
@@ -64,6 +66,8 @@ terms:
 - 上方置換
 - ソーダ石灰
 - アンモニウムイオン
+codes:
+- inorg.nonmetal.ammonia
 :::
 
 :::table
@@ -171,6 +175,10 @@ terms:
 - 一酸化窒素
 - 二酸化窒素
 - 四酸化二窒素
+codes:
+- inorg.nonmetal.no-no2
+- inorg.nonmetal.no2-n2o4
+- inorg.nonmetal.nox
 :::
 
 :::table
@@ -219,6 +227,9 @@ terms:
 - 酸化力のある酸
 - 不動態
 - 王水
+codes:
+- inorg.nonmetal.nitric-acid
+- inorg.nonmetal.passivation-aqua-regia
 :::
 
 硝酸は、塩酸 HCl・硫酸 H₂SO₄ とならぶ**強酸**です。「強酸は3つ覚える」の1つにあたります。
@@ -316,6 +327,8 @@ terms:
 - ハーバー・ボッシュ法
 - オストワルト法
 - 触媒
+codes:
+- inorg.nonmetal.haber-ostwald
 :::
 
 ## ハーバー・ボッシュ法
