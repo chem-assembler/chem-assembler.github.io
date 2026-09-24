@@ -260,6 +260,8 @@ terms:
 left: マレイン酸
 over: 加熱
 right: 無水マレイン酸 ＋ H₂O
+gen: マレイン酸 → 無水マレイン酸 ＋ 水
+app: dehydration_intra
 level: ★★★
 note: 逆向きにも進む反応で、無水マレイン酸は加水分解するとマレイン酸にもどります。
 :::
@@ -278,6 +280,8 @@ caption: 向かい合った **OH と HO** から水1分子がとれて、五員�
 left: 2CH₃COOH
 under: 脱水剤・加熱
 right: (CH₃CO)₂O ＋ H₂O
+gen: 2 酢酸 → 無水酢酸 ＋ 水
+app: dehydration_inter
 level: ★★★
 note: これも逆向きに進み、無水酢酸は加水分解して酢酸にもどります。
 :::
