@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="200" viewBox="0 0 680 200" role="img">
+  <!-- 炎色反応の7色の色見本（2026-09-25・ユーザーの校正「画像や色見本を追加」）。分子でない図なので SVG（I-0081 の範囲内）。
+       色は目安（実際の炎は明るさで違って見える）。図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; }
+    .el { font-size: 26px; font-weight: 700; }
+    .nm { font-size: 18px; }
+    .chip { stroke: #555; stroke-width: 1; }
+  </style>
+  <g transform="translate(14 20)">
+    <rect class="chip" x="0" y="0" width="80" height="100" rx="10" fill="#e8202a" />
+    <text class="el" x="40" y="136" text-anchor="middle">Li</text>
+    <text class="nm" x="40" y="164" text-anchor="middle">赤</text>
+  </g>
+  <g transform="translate(108 20)">
+    <rect class="chip" x="0" y="0" width="80" height="100" rx="10" fill="#ffd21f" />
+    <text class="el" x="40" y="136" text-anchor="middle">Na</text>
+    <text class="nm" x="40" y="164" text-anchor="middle">黄</text>
+  </g>
+  <g transform="translate(202 20)">
+    <rect class="chip" x="0" y="0" width="80" height="100" rx="10" fill="#b25fc9" />
+    <text class="el" x="40" y="136" text-anchor="middle">K</text>
+    <text class="nm" x="40" y="164" text-anchor="middle">赤紫</text>
+  </g>
+  <g transform="translate(296 20)">
+    <rect class="chip" x="0" y="0" width="80" height="100" rx="10" fill="#f46a25" />
+    <text class="el" x="40" y="136" text-anchor="middle">Ca</text>
+    <text class="nm" x="40" y="164" text-anchor="middle">橙赤</text>
+  </g>
+  <g transform="translate(390 20)">
+    <rect class="chip" x="0" y="0" width="80" height="100" rx="10" fill="#d4003d" />
+    <text class="el" x="40" y="136" text-anchor="middle">Sr</text>
+    <text class="nm" x="40" y="164" text-anchor="middle">紅</text>
+  </g>
+  <g transform="translate(484 20)">
+    <rect class="chip" x="0" y="0" width="80" height="100" rx="10" fill="#9ccf3a" />
+    <text class="el" x="40" y="136" text-anchor="middle">Ba</text>
+    <text class="nm" x="40" y="164" text-anchor="middle">黄緑</text>
+  </g>
+  <g transform="translate(578 20)">
+    <rect class="chip" x="0" y="0" width="80" height="100" rx="10" fill="#1fb39a" />
+    <text class="el" x="40" y="136" text-anchor="middle">Cu</text>
+    <text class="nm" x="40" y="164" text-anchor="middle">青緑</text>
+  </g>
+</svg>
