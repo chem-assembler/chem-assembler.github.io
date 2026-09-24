@@ -9,9 +9,9 @@
     .inner { fill: none; stroke: #333; stroke-width: 1.5; }
     .bond { stroke: #333; stroke-width: 2; fill: none; }
     .bridge { stroke: #2e7d32; stroke-width: 3; fill: none; }
-    .lab { font-size: 16px; fill: #222; }
-    .small { font-size: 14px; fill: #444; }
-    .so3 { font-size: 14px; fill: #c62828; }
+    .lab { font-size: 20px; fill: #222; }
+    .small { font-size: 18px; fill: #444; }
+    .so3 { font-size: 18px; fill: #c62828; }
     .grn { fill: #2e7d32; }
   </style>
 
