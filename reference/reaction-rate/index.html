@@ -948,6 +948,10 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">速度の比 H₂O₂ : O₂ ＝ 0.010 : 0.0050 ＝ 2 : 1 は、係数の比 2 : 1 と一致します。<b>「速度の比は係数の比」は必ず覚えてください。</b>着目する物質を変えて答えさせる問題でよく使います。</p>
 <p class="ref-p">例えば 3A ＋ 2B → 2C の反応で C の生成速度がわかっているとき、A の減少速度は C の生成速度の 3/2 倍、B の減少速度は 2/2 ＝ 1 倍です。</p>
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">速度の比を係数の比で換算してよいのは、<b>単位がそろっているとき</b>だけです。mol/min と mol/(L·min) を比べるときは、体積で割るか掛けるかして、先に単位をそろえます。</p></div>
+<h5 class="ref-h5">例題 —— 速度の比は係数の比</h5>
+<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.0 mol/L の過酸化水素水 2.0 L に触媒を加えたところ、5.0分間で H₂O₂ の濃度が 0.80 mol/L になった。(1) この間の H₂O₂ の減少速度を mol/(L·min) で求めよ。(2) この間の O₂ の生成速度を mol/min で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) [H₂O₂] は 1.0 − 0.80 ＝ 0.20 mol/L 減った。5.0分で 0.20 mol/L なので1分あたり 0.20 ÷ 5.0 ＝ <b>0.040 mol/(L·min)</b>。(2) 体積が 2.0 L なので、H₂O₂ は1分あたり 0.040 × 2.0 ＝ 0.080 mol 減る（単位を mol/min にそろえた）。係数の比 H₂O₂ : O₂ ＝ 2 : 1 より、O₂ の生成速度は 0.080 × 1/2 ＝ <b>0.040 mol/min</b>。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">反応 3A ＋ 2B → 2C で、ある時刻の C の生成速度が 8.0 × 10⁻³ mol/(L·min) であった。このときの A の減少速度と B の減少速度を有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>速度の比は係数の比なので、A の減少速度は C の生成速度の 3/2 倍で 8.0 × 10⁻³ × 3/2 ＝ <b>1.2 × 10⁻² mol/(L·min)</b>。B の減少速度は 2/2 ＝ 1 倍で <b>8.0 × 10⁻³ mol/(L·min)</b>。</p></div></details></div>
 <section class="ref-sec" id="ref-sec-general"><h4 class="ref-sec-h">反応速度を式で表す</h4><p class="ref-sec-lead">反応 A → B で、時刻 t₁ から t₂ までの濃度の変化を Δ（変化量）で表すと、B の生成速度は vB ＝ Δ[B]／Δt、A の減少速度は vA ＝ −Δ[A]／Δt です。反応速度は正の値で表すので、減少速度には負号を付けます。</p></section>
 <p class="ref-p">1分子の A が1分子の B に変わる反応 A → B を考えます。縦軸に濃度、横軸に時間をとると、反応物 A は時間とともに減り、生成物 B は増えます。時刻 t₁ のときの濃度を [A]₁・[B]₁、t₂ のときを [A]₂・[B]₂ と書きます。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/reaction-rate-concentration-time.png?h=c467c5b7" alt="縦軸に濃度 mol/L、横軸に時間 min をとったグラフ。A の濃度の曲線は右下がり、B の濃度の曲線は右上がり。時刻 t₁ と t₂ に縦の破線を引き、その間の Δt、B の増えた量 Δ[B]、A の減った量 Δ[A] を弧で示している" loading="lazy"><figcaption class="ref-figure-cap">t₁ から t₂ までの間に、B は Δ[B] だけ増え、A は Δ[A] だけ減ります。この変化量を Δt で割ったものが平均の反応速度です。</figcaption></figure>
@@ -955,10 +959,6 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">Δ は「変化量」を表す記号で、「後 − 前」で計算します。A は減るので Δ[A] は負になり、そのままでは速度が負の値になってしまいます。そこで <b>減少速度には − を付けて正の値にします</b>。</p>
 <p class="ref-p">この式で求まるのは、t₁ から t₂ までの<b>平均の反応速度</b>です。反応物の濃度は時間とともに小さくなるので、同じ反応でも、区間のとり方によって平均の速度は変わります（反応のはじめほど速い）。Δt を十分に短くとればその瞬間の速度になりますが、<b>高校化学の計算では区間の平均の速度を使えば十分です</b>。瞬間の速度（グラフの接線の傾き）を計算させる問題はほとんど登場しません。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/rate-law/">反応速度が何に比例するか（反応速度式と反応の次数）へ</a></p>
-<h5 class="ref-h5">例題</h5>
-<p class="ref-p">紙に書いて解いてみてください。答え合わせは「解答を見る」から。</p>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">1.0 mol/L の過酸化水素水 2.0 L に触媒を加えたところ、5.0分間で H₂O₂ の濃度が 0.80 mol/L になった。(1) この間の H₂O₂ の減少速度を mol/(L·min) で求めよ。(2) この間の O₂ の生成速度を mol/min で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>(1) [H₂O₂] は 1.0 − 0.80 ＝ 0.20 mol/L 減った。5.0分で 0.20 mol/L なので1分あたり 0.20 ÷ 5.0 ＝ <b>0.040 mol/(L·min)</b>。(2) 体積が 2.0 L なので、H₂O₂ は1分あたり 0.040 × 2.0 ＝ 0.080 mol 減る（単位を mol/min にそろえた）。係数の比 H₂O₂ : O₂ ＝ 2 : 1 より、O₂ の生成速度は 0.080 × 1/2 ＝ <b>0.040 mol/min</b>。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">反応 3A ＋ 2B → 2C で、ある時刻の C の生成速度が 8.0 × 10⁻³ mol/(L·min) であった。このときの A の減少速度と B の減少速度を有効数字2桁で求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>速度の比は係数の比なので、A の減少速度は C の生成速度の 3/2 倍で 8.0 × 10⁻³ × 3/2 ＝ <b>1.2 × 10⁻² mol/(L·min)</b>。B の減少速度は 2/2 ＝ 1 倍で <b>8.0 × 10⁻³ mol/(L·min)</b>。</p></div></details></div>
 </div>
 </div>
 

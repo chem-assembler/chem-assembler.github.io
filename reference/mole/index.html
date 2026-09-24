@@ -952,6 +952,8 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">★ <b>内項と外項を掛ける（□ × 1 ＝ 16 × 0.25）解き方でも答えは同じです。</b>ただ、倍率で解くと「0.25mol は 1mol の 1/4 だから、質量も 1/4」と意味を追いながら計算できるので、桁の間違いにすぐ気づけます。</p>
 <p class="ref-p">倍率が分数のまま使えると計算が楽になります。銅原子 3.3×10²³ 個の物質量なら、3.3 と 6.0 の比 11/20 を倍率にして、1mol × 11/20 ＝ 0.55mol です。</p>
 <figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/mole-app-proportion.png?h=df9d9b02" alt="ratio の比例式の画面。問1「水 H₂O 9.0g は何 mol か」。上の段が基準の 18g と 1mol、下の段が知りたい量の 9.0g と空欄の mol で、左の列に ×1/2 の倍率、右の列に「同じ倍率」の矢印がある。下に 18g : 1mol ＝ 9.0g : □mol の比例式" loading="lazy"><figcaption class="ref-figure-cap">上の段が 1mol の顔（基準）、下の段が問題の量です。<b>左の列で見つけた倍率 ×1/2 を、右の列にも同じように掛ける</b>と、□ は 0.50mol と決まります。</figcaption></figure>
+<h5 class="ref-h5">例題 —— 主語をつけた比例式を、倍率で解く</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">一酸化窒素 NO（分子量 30）0.66g の物質量は何 mol か。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>0.022mol。NO 1mol : 30g ＝ NO □mol : 0.66g。0.66 ＝ 30 × 22/1000 と見ると倍率は ×22/1000 なので、22/1000 ＝ 0.022mol。</p></div></details></div>
 <section class="ref-sec" id="ref-sec-via-mol"><h4 class="ref-sec-h">まずは mol を求めよう —— 2段の換算</h4><p class="ref-sec-lead">質量から体積、個数から質量のように「mol 以外どうし」を換算するときは、1段めで mol を出し、2段めで目的の量にします。</p></section>
 <p class="ref-p">g から L、個数から g のような換算も、<b>必ず mol を経由して2段で</b>解きます。道筋を先に書いておくと迷いません。</p>
 <ul class="ref-list"><li>g → 「1mol で分子量 g」→ mol → 「気体 1mol で 22.4L」→ L</li><li>個 → 「1mol で 6.0×10²³ 個」→ mol → 「1mol で分子量 g」→ g</li></ul>
@@ -961,26 +963,27 @@ a.ref-link::before { content: '→ '; }
 <p class="ref-p">具体例3で、酸素 O₂ 分子 3.6×10²⁴ 個の質量を求めます。</p>
 <ol class="ref-list"><li>先に桁をそろえる：3.6×10²⁴ ＝ 36×10²³。</li><li>1段め：O₂ 1mol : 6.0×10²³ 個 ＝ O₂ □mol : 36×10²³ 個。倍率は ×6 なので 6mol。</li><li>2段め：O₂ 1mol : 32g ＝ O₂ 6mol : □g。32 × 6 ＝ 192 ≒ 1.9×10²g。</li></ol>
 <p class="ref-p"><b>「数と桁を分けて、桁を先にそろえる」</b>のは、個数の計算でいつも使う手です。6.0×10²³ の 10²³ にそろえておけば、あとは 36 と 6.0 の比だけ見ればよくなります。</p>
+<h5 class="ref-h5">例題 —— 2段の換算</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">硫化水素 H₂S（分子量 34）の分子 2.4×10²² 個は、標準状態で何 L を占めるか。アボガドロ定数は 6.0×10²³/mol、有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>0.90L。1段め：H₂S 1mol : 6.0×10²³ 個 ＝ □mol : 2.4×10²² 個。2.4×10²² ＝ 0.24×10²³ で、0.24/6.0 ＝ 4/100 より 4/100 mol。2段め：H₂S 1mol : 22.4L ＝ 4/100 mol : □L で、22.4 × 4/100 ＝ 0.896 ≒ 0.90L。</p></div></details></div>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">標準状態での密度が 1.25g/L の気体の分子量を求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>28。「気体 1L で 1.25g」なので、1L : 1.25g ＝ 22.4L : □g。22.4L は 1mol なので、□ ＝ 1.25 × 22.4 ＝ 28g が 1mol の質量、つまり分子量 28 です。</p></div></details></div>
 <section class="ref-sec" id="ref-sec-particle"><h4 class="ref-sec-h">粒子1個の質量と、成分元素の物質量</h4><p class="ref-sec-lead">「1個」も「原子」も、比例式の主語を変えるだけで同じ形で解けます。分子と原子のどちらの話かを、主語で必ず区別します。</p></section>
 <p class="ref-p">具体例4で、酸素 O₂ 分子1個の質量を求めます。O₂ 6.0×10²³ 個 : 32g ＝ O₂ 1個 : □g で、倍率は ×1/(6.0×10²³) です。</p>
 <ul class="ref-list"><li>数：32 ÷ 6.0 ≒ 5.3</li><li>桁：1/10²³ ＝ 10⁻²³</li><li>答え：5.3×10⁻²³ g</li></ul>
 <p class="ref-p">分子の中の原子の数を問われたら、<b>主語を「分子」と「原子」に分けて</b>比例式を立てます。水 H₂O は H−O−H なので、<b>H₂O 1個 : H原子 2個</b>です。mol は数の単位なので、mol でも同じ比になります。</p>
 <p class="ref-p">具体例5で、H₂O 2.0mol に含まれる水素原子の物質量を求めます。H₂O 1個 : H原子 2個 ＝ H₂O 2.0mol : H原子 □mol で、倍率 ×2.0 より 4.0mol です。</p>
 <div class="ref-mistake"><b class="ref-mistake-tag">よくある誤解</b><p class="ref-mistake-wrong"><b class="ref-mistake-mark">×</b><span class="ref-mistake-body">H₂O 2.0mol に含まれる水素は、H₂ として 2.0mol なので 2.0mol</span></p><p class="ref-mistake-right"><b class="ref-mistake-mark">○</b><span class="ref-mistake-body">聞かれているのは<b>水素原子 H</b> の物質量です。H₂O 1個の中に H原子は2個あるので、4.0mol です。</span></p><p class="ref-mistake-why">「水素」という言葉が、H原子・H₂分子のどちらを指すかを確かめずに式を立てるためです。★ 比例式の両辺に主語を書けば、分子と原子の取り違えは起きません。</p></div>
+<h5 class="ref-h5">例題 —— 粒子1個の質量と、成分元素の物質量</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">標準状態で 78.4L のアンモニア NH₃ に含まれる水素原子の物質量は何 mol か。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>11mol。1段め：NH₃ 1mol : 22.4L ＝ □mol : 78.4L。78.4/22.4 ＝ 7/2 なので 7/2 mol。2段め：NH₃ 1個 : H原子 3個 ＝ NH₃ 7/2 mol : H原子 □mol で、21/2 ＝ 10.5 ≒ 11mol。</p></div></details></div>
 <section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">組成式を求める —— 式量は質量に比例する</h4><p class="ref-sec-lead">化合物の中の原子の数の比は、それぞれの質量を原子量で割った mol の比です。「原子の数の比 ＝ mol の比」から組成式が決まります。</p></section>
 <p class="ref-p">原子量 56 の金属 M 5.6g を完全に酸化すると、酸化物が 8.0g できたとします。結びついた酸素は 8.0 − 5.6 ＝ 2.4g です。</p>
 <ol class="ref-list"><li>M は 5.6g ÷ 56 ＝ 0.10mol、O は 2.4g ÷ 16 ＝ 0.15mol。</li><li>原子の数の比は mol の比なので、M : O ＝ 0.10 : 0.15 ＝ 2 : 3。</li><li>組成式は M₂O₃。</li></ol>
 <p class="ref-p">★ <b>組成式の問題は、どの元素も「まず mol」にしてから比をとる</b>と覚えておけば十分です。「M : O ＝ 1個 : x個」とおいて、式量と質量の比例式から x ＝ 3/2 を出す方法もあります。どちらで解いても同じです。</p>
+<h5 class="ref-h5">例題 —— 組成式を求める</h5>
+<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">原子量 56 の金属元素 M 5.6g を完全に酸化したところ、酸化物が 8.0g 得られた。この酸化物の組成式を M を用いて表せ（O＝16）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>M₂O₃。結びついた O は 8.0 − 5.6 ＝ 2.4g。M は 5.6/56 ＝ 0.10mol、O は 2.4/16 ＝ 0.15mol で、M : O ＝ 0.10 : 0.15 ＝ 2 : 3。</p></div></details></div>
 <section class="ref-sec" id="ref-sec-range"><h4 class="ref-sec-h">覚える範囲</h4><p class="ref-sec-lead">1mol の3つの顔（分子量 g・6.0×10²³ 個・気体 22.4L）と、「気体だけ」の条件は必ず覚えます。</p></section>
 <p class="ref-p"><b>「1mol ＝ 分子量に g をつけた質量 ＝ 6.0×10²³ 個 ＝ 気体なら標準状態で 22.4L」は必ず暗記してください。</b>特に 22.4L には「気体だけ・0℃・1.013×10⁵Pa」の条件をセットで覚えましょう。</p>
 <p class="ref-p">アボガドロ定数の正確な値（6.02214076×10²³/mol）は覚えなくて構いません。問題文では 6.0×10²³/mol か 6.02×10²³/mol で与えられます。</p>
 <p class="ref-p">O₂ 3.0mol の体積は 22.4 × 3 ＝ 67.2L ですが、<b>有効数字2桁の指示があるときは、最後に 67L と丸めます。</b>途中は分数や3桁のまま持って構いません。</p>
-<h5 class="ref-h5">例題</h5>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">一酸化窒素 NO（分子量 30）0.66g の物質量は何 mol か。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>0.022mol。NO 1mol : 30g ＝ NO □mol : 0.66g。0.66 ＝ 30 × 22/1000 と見ると倍率は ×22/1000 なので、22/1000 ＝ 0.022mol。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">硫化水素 H₂S（分子量 34）の分子 2.4×10²² 個は、標準状態で何 L を占めるか。アボガドロ定数は 6.0×10²³/mol、有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>0.90L。1段め：H₂S 1mol : 6.0×10²³ 個 ＝ □mol : 2.4×10²² 個。2.4×10²² ＝ 0.24×10²³ で、0.24/6.0 ＝ 4/100 より 4/100 mol。2段め：H₂S 1mol : 22.4L ＝ 4/100 mol : □L で、22.4 × 4/100 ＝ 0.896 ≒ 0.90L。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">標準状態で 78.4L のアンモニア NH₃ に含まれる水素原子の物質量は何 mol か。有効数字2桁で答えよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>11mol。1段め：NH₃ 1mol : 22.4L ＝ □mol : 78.4L。78.4/22.4 ＝ 7/2 なので 7/2 mol。2段め：NH₃ 1個 : H原子 3個 ＝ NH₃ 7/2 mol : H原子 □mol で、21/2 ＝ 10.5 ≒ 11mol。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">標準状態での密度が 1.25g/L の気体の分子量を求めよ。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>28。「気体 1L で 1.25g」なので、1L : 1.25g ＝ 22.4L : □g。22.4L は 1mol なので、□ ＝ 1.25 × 22.4 ＝ 28g が 1mol の質量、つまり分子量 28 です。</p></div></details></div>
-<div class="ref-exercise"><b class="ref-ex-tag">例題</b><p class="ref-ex-q">原子量 56 の金属元素 M 5.6g を完全に酸化したところ、酸化物が 8.0g 得られた。この酸化物の組成式を M を用いて表せ（O＝16）。</p><details class="ref-ex-answer"><summary class="ref-ex-open">解答を見る</summary><div class="ref-ex-a"><p>M₂O₃。結びついた O は 8.0 − 5.6 ＝ 2.4g。M は 5.6/56 ＝ 0.10mol、O は 2.4/16 ＝ 0.15mol で、M : O ＝ 0.10 : 0.15 ＝ 2 : 3。</p></div></details></div>
 <p class="ref-link-row"><a class="ref-link" href="/reference/concentration/">次は、溶液の中の物質量＝濃度の話へ</a></p>
 </div>
 </div>
