@@ -807,6 +807,12 @@ a.ref-link::before { content: '→ '; }
 .ref-ex-answer[open] .ref-ex-open::before { content: '▼ '; }
 .ref-ex-a { margin-top: 9px; font-size: 12.5px; line-height: 1.75; color: var(--text-primary); }
 .ref-ex-a p { margin: 0; }
+/* ★ 反応式の構造式（gen:）とアプリへのリンク（app:）（2026-09-24・I-0125・I-0126） */
+.ref-rx-fig { margin: 6px 0 2px; }
+.ref-rx-fig .ref-rx-img { display: block; width: 100%; height: auto; }
+.ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
+.ref-rx-app { margin: 4px 0 0; text-align: right; }
+.ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -960,7 +966,7 @@ a.ref-link::before { content: '→ '; }
 <div class="ref-callout ref-callout-caution"><b class="ref-callout-tag">⚠ 勘違いしやすい</b><p class="ref-callout-text">ギ酸は銀鏡反応を示しますが、フェーリング反応はほとんど示しません。ただし<b>「ギ酸は還元性を示す」＝「ギ酸はフェーリング反応を示す」として答えないと解けない問題が出題される</b>ことがあるので、答案では還元性を示す側に立って構いません。</p></div>
 <h5 class="ref-h5">マレイン酸とフマル酸は融点が違う</h5>
 <p class="ref-p">シス形のマレイン酸は2つのカルボキシ基 −COOH の位置が近く、<b>分子内でも水素結合をつくります</b>。分子内で使われたぶん分子どうしを結びつける力が弱くなるので、融点が低くなります。トランス形のフマル酸は分子間でしか水素結合しないので、融点が高くなります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/maleic-fumaric-hbond.png?h=e7d25335" alt="マレイン酸とフマル酸の構造式を並べた図。マレイン酸は2つのカルボキシ基が同じ側にあり、分子内の O−H と O が緑の点線で結ばれている。フマル酸は2つのカルボキシ基が反対側にあり、外へ向かう橙色の点線だけが描かれている" loading="lazy"><figcaption class="ref-figure-cap">左の<b>マレイン酸</b>（シス形）は<b>分子内</b>で水素結合をつくれます。右の<b>フマル酸</b>（トランス形）は<b>分子間</b>でしか結べません。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/maleic-fumaric-hbond.png?h=99cd2f90" alt="マレイン酸（上）とフマル酸（下）の構造式を縦に並べた図。マレイン酸は2つのカルボキシ基が同じ側にあり、分子内の O−H と O が緑の点線で結ばれている。フマル酸は2つのカルボキシ基が反対側にあり、外へ向かう橙色の点線だけが描かれている" loading="lazy"><figcaption class="ref-figure-cap">上の<b>マレイン酸</b>（シス形）は<b>分子内</b>で水素結合をつくれます。下の<b>フマル酸</b>（トランス形）は<b>分子間</b>でしか結べません。</figcaption></figure>
 <p class="ref-link-row"><a class="ref-link" href="/reference/stereoisomers/">シス−トランス異性体そのものの数え方は異性体のページへ</a></p>
 <h5 class="ref-h5 ref-h5-advanced">酒石酸は不斉炭素原子を2個もつ<b class="ref-adv-tag" title="高校の教科書の本文の外側にある内容です。覚える範囲は本文が言います。">発展</b></h5>
 <p class="ref-p">酒石酸は不斉炭素原子を2個もちますが、分子内に対称面をもつ<b>メソ化合物</b>があるため、立体異性体は 2×2 − 1 = 3 種類になります。<b>メソ化合物まで覚える必要はありません。</b>酒石酸という名前と、フェーリング液の材料であることが分かれば十分です。</p>

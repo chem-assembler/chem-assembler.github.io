@@ -318,6 +318,67 @@
          ・場所まで（`at=1:… to=2:…`）… その2か所を結ぶ（2分子の水素結合）
        ⚠ `kind=矢印`・`破線` は `to=` が要る（向き・もう一方の端）。`両矢印` は向きが無いので、
          **分子が2つだけなら** `at=` / `to=` を省ける（1 と 2 の間）。 */
+    /* ★★ 反応式の構造式（`:::reaction` の `gen:`・I-0125）を読む。
+       戻り値 { left: [項], right: [項], arrow }。項は { coef: '' | '2' | 'n', name, poly: bool, tokens: '' }。
+       ★ 項の後ろに ` | 字句` で作図器の字句を足せる（例 `酢酸 | flip=h`）。⚠ 読むだけ（描くのは作図器） */
+    var RX_COEF_RE = /^(\d*n|\d+)\s+(.+)$/;   // 2・n・2n（縮合重合の水）
+    var RX_POLY_RE = /^[［[](.+)[］\]]n$/;
+    function parseReactionGen(text, where) {
+        var t = String(text || '').trim();
+        var arrows = t.match(/\s(→|⇄)\s/g) || [];
+        if (arrows.length !== 1) fail(where, ':::reaction の gen: には矢印（→ か ⇄）を前後に空白を入れて1つだけ書きます（いまは ' + arrows.length + ' 個）'
+            + '\n    ★ 例: gen: エチレン ＋ 臭素 → 1,2-ジブロモエタン');
+        var arrow = arrows[0].trim();
+        var sides = t.split(arrows[0]);
+        function side(str, which) {
+            var terms = str.split(/\s＋\s/).map(function (x) { return x.trim(); });
+            if (!terms.length || terms.some(function (x) { return !x; })) fail(where, ':::reaction の gen: の' + which + 'に空の項があります（＋ は全角で、前後に空白）');
+            return terms.map(function (raw) {
+                var tokens = '';
+                var bar = raw.indexOf(' | ');
+                if (bar >= 0) { tokens = raw.slice(bar + 3).trim(); raw = raw.slice(0, bar).trim(); }
+                var coef = '';
+                var m = RX_COEF_RE.exec(raw);
+                if (m) { coef = m[1]; raw = m[2].trim(); }
+                var poly = false;
+                var pm = RX_POLY_RE.exec(raw);
+                if (pm) { poly = true; raw = pm[1].trim(); }
+                if (/[+＋→⇄]/.test(raw)) fail(where, ':::reaction の gen: の項「' + raw + '」に記号が残っています（＋ と矢印は前後に空白を入れます）');
+                return { coef: coef, name: raw, poly: poly, tokens: tokens };
+            });
+        }
+        return { left: side(sides[0], '左辺'), right: side(sides[1], '右辺'), arrow: arrow };
+    }
+    /* 反応式の図のファイル名。**式（gen: の1行）から決まる**（原稿に名前を書かせない＝書き違いが起きない）。
+       ⚠ FNV-1a（32bit）の16進8桁。node とブラウザで同じ値になる（文字コードの並びだけを見る） */
+    function reactionImg(gen) {
+        var h = 0x811c9dc5;
+        var str = String(gen || '');
+        for (var i = 0; i < str.length; i++) {
+            h ^= str.charCodeAt(i);
+            h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        return 'rx-' + ('0000000' + h.toString(16)).slice(-8) + '.png';
+    }
+    var RX_RULE_RE = /^[a-z][a-z0-9_]*$/;
+    function parseReactionApp(text, gen, where) {
+        var parts = String(text || '').trim().split(/\s+/);
+        var rule = parts.shift();
+        if (!RX_RULE_RE.test(rule || '')) fail(where, ':::reaction の app: はアプリの反応ルールの id（英小文字と _）で始めます（いまは「' + rule + '」）');
+        var summon = '';
+        parts.forEach(function (p) {
+            var m = /^summon=(.+)$/.exec(p);
+            if (!m) fail(where, ':::reaction の app: に知らない語「' + p + '」があります（書けるのは summon=<分子の名前>）');
+            summon = m[1];
+        });
+        if (!summon) {
+            if (!gen) fail(where, ':::reaction の app: には summon=<分子の名前> を添えます（gen: が無いので、呼ぶ分子が決まりません）');
+            summon = gen.left[0].name;
+        }
+        return { rule: rule, summon: summon,
+            href: '/assembler/?summon=' + encodeURIComponent(summon) + '&reagent=' + encodeURIComponent(rule) + '&' + APP_FROM };
+    }
+
     var BETWEEN_KEYS = ['kind', 'at', 'to', 'label', 'color'];
     var BETWEEN_KINDS = ['両矢印', '矢印', '破線'];
     function parseBetween(text, where) {
@@ -466,7 +527,16 @@
         /* ★★ 化学反応式。**文字だけで組む**（画像に頼らない・設計書 §19-5）。
            `over` / `under` は矢印の上下に出る条件（試薬・温度・触媒）。
            ★ `arrow` は矢印そのもの（§31-2）。**書かなければ →**（有機46枚は1文字も変わらない） */
-        reaction: { order: ['left', 'over', 'under', 'arrow', 'right', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], enum: { level: LEVELS, arrow: ARROWS } },
+        /* ★★ `gen:`（2026-09-24・I-0125・ユーザー「参考書の反応式を 示性式 → 構造式 を基本に」）: 式を**構造式の図**で見せる。
+           書き方は化合物の名前を ＋ と矢印（→ か ⇄）でつないだ1行（例 `gen: エチレン ＋ 臭素 → 1,2-ジブロモエタン`）。
+           係数は名前の前に空白で（`2 エタノール`・`n 塩化ビニル`）、高分子は `［ポリ塩化ビニル］n`（繰り返し単位1つを［ ］ₙ で囲む）。
+           図は作図器（`tools/gen-figure.mjs`）が焼く ＝ 構造式を手で描かない（I-0081）。ファイル名は式から決まる（`reactionImg`）。
+           ★ 示性式の `left` / `right` は図の下に1行残す（ユーザー決定）。**2つの式は作図器が原子の数で突き合わせる**
+             （§19-5 の「同じ式を2か所に持つと直し忘れる」を機械で止める）。
+           ★★ `app:`（I-0126・ユーザー「反応式ごとにアプリへのリンクを追加」）: アプリの反応ルールの id（`add_br2` など）。
+             `app: add_br2 summon=エチレン` のように呼ぶ分子を添えられる（書かなければ gen: の左辺の最初の分子）。
+             リンクは `/assembler/?summon=<分子>&reagent=<ルール>`（アプリの受け口は実装済み・game.js applyOpenParam） */
+        reaction: { order: ['left', 'over', 'under', 'arrow', 'right', 'gen', 'app', 'level', 'note'], req: ['left', 'right', 'level'], list: [], prose: ['note'], raw: ['gen', 'app'], enum: { level: LEVELS, arrow: ARROWS } },
         /* ★★ 手で書く表（機械が行を作れないもの）。セルは ` | ` で切る。
            ⚠⚠ **`source` は必須。** `REF5` は「行データの欄（`rows` ほか）を持たない」を
               **著作権の守り**として掛けている（手打ちの表が構造上存在できなければ転写事故は起きない）。
@@ -1148,6 +1218,21 @@
             }
         }
         if (b.kind === 'reaction') {
+            /* ★ 構造式（gen:）とアプリへのリンク（app:）。⚠ img / appHref / appSummon は**書く欄ではない**（読むときに焼き込む） */
+            var rxGen = null;
+            if (Object.prototype.hasOwnProperty.call(b, 'gen')) {
+                rxGen = parseReactionGen(b.gen, where);
+                if (rxGen.arrow !== (b.arrow || '→')) {
+                    fail(where, ':::reaction の gen: の矢印「' + rxGen.arrow + '」が arrow（' + (b.arrow || '→（書かなければ →）') + '）と違います');
+                }
+                b.img = reactionImg(b.gen);
+            }
+            if (Object.prototype.hasOwnProperty.call(b, 'app')) {
+                var rxApp = parseReactionApp(b.app, rxGen, where);
+                b.appHref = rxApp.href;
+                b.appRule = rxApp.rule;
+                b.appSummon = rxApp.summon;
+            }
             /* ⛔ 可逆の矢印を式の中に書く逃げ道を作らない（§31-2） */
             ['left', 'right', 'over', 'under'].forEach(function (k) {
                 if (b[k] && /[⇄⇌⇆]/.test(b[k])) {
@@ -1424,6 +1509,8 @@
         parseMark: parseMark,
         BETWEEN_KINDS: BETWEEN_KINDS,
         parseBetween: parseBetween,
+        parseReactionGen: parseReactionGen,
+        reactionImg: reactionImg,
         parseGroups: parseGroups,
         COURSE_LABELS: COURSE_LABELS,
         parseToc: parseToc,

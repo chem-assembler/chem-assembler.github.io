@@ -34,6 +34,7 @@ terms:
 
 :::figure
 src: ether-from-alkane.png
+svg: ether-from-alkane.svg
 alt: アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O
 caption: 同じ O を **C−H のあいだ**に入れるとアルコールになります。入れる場所が違うだけで、分子式はどちらも同じです。
 :::

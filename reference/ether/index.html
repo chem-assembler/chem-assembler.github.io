@@ -807,6 +807,12 @@ a.ref-link::before { content: '→ '; }
 .ref-ex-answer[open] .ref-ex-open::before { content: '▼ '; }
 .ref-ex-a { margin-top: 9px; font-size: 12.5px; line-height: 1.75; color: var(--text-primary); }
 .ref-ex-a p { margin: 0; }
+/* ★ 反応式の構造式（gen:）とアプリへのリンク（app:）（2026-09-24・I-0125・I-0126） */
+.ref-rx-fig { margin: 6px 0 2px; }
+.ref-rx-fig .ref-rx-img { display: block; width: 100%; height: auto; }
+.ref-rx-has-img .ref-rx-eq { font-size: 0.95em; }
+.ref-rx-app { margin: 4px 0 0; text-align: right; }
+.ref-rx-app a { display: inline-block; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; }
 /* ── ① アプリの :root を明るい地の値へ差し替える（★ 切り出した :root より後に置く） ── */
 :root{
   --text-primary:#20242b;   /* 本文 */
@@ -927,7 +933,7 @@ a.ref-link::before { content: '→ '; }
 <section class="ref-sec" id="ref-sec-formula"><h4 class="ref-sec-h">一般式はアルコールと同じ CₙH₂ₙ₊₂O</h4><p class="ref-sec-lead">アルカンの C−C のあいだに O を1個入れた形。だから炭素の数が同じアルコールとは構造異性体です。</p></section>
 <p class="ref-p">鎖状で飽和のエーテルの一般式は <b>C<sub>n</sub>H<sub>2n+2</sub>O</b> です。n=2 を代入すると C₂H₆O で、これがいちばん小さいエーテルであるジメチルエーテル CH₃OCH₃ の分子式です。</p>
 <p class="ref-p">この式は、アルカンの一般式 C<sub>n</sub>H<sub>2n+2</sub> の <b>C−C 結合のあいだに O 原子を1個割り込ませた</b>形をしています。酸素が1個増えるだけなので、C<sub>n</sub>H<sub>2n+2</sub>O になります。</p>
-<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-from-alkane.png?h=348d5b1b" alt="アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">同じ O を <b>C−H のあいだ</b>に入れるとアルコールになります。入れる場所が違うだけで、分子式はどちらも同じです。</figcaption></figure>
+<figure class="ref-figure"><img class="ref-figure-img" src="/reference-img/ether-from-alkane.png?h=d6d5fef1" alt="アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O" loading="lazy"><figcaption class="ref-figure-cap">同じ O を <b>C−H のあいだ</b>に入れるとアルコールになります。入れる場所が違うだけで、分子式はどちらも同じです。</figcaption></figure>
 <p class="ref-p">だから<b>炭素の数が同じエーテルとアルコールは、互いに構造異性体</b>です。ジメチルエーテル C₂H₆O とエタノール C₂H₆O が、いちばん小さい組み合わせになります。</p>
 <p class="ref-p"><b>一般式 C<sub>n</sub>H<sub>2n+2</sub>O は必ず暗記してください。</b>この式が「アルコールとエーテルのどちらか」を意味することが、構造決定の出発点になります。</p>
 <p class="ref-link-row"><a class="ref-link" href="/reference/alcohol/">アルコールの側から見た一般式・級・沸点・命名はこちら</a></p>

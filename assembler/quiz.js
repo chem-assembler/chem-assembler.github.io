@@ -2678,7 +2678,9 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             const hs = n ? 'H' + (n > 1 ? sub(n) : '') : '';
             // 左端の原子（相手が右にだけある）は H を前に書く（H₃C−・HO−・H₂N−）
             const leftEnd = heavyNb.length === 1 && heavyNb[0].atom.x > a.x + 1;
-            const atEnd = !!(leftEnd && hs);
+            // ★ 原子1つだけの分子は教科書の書き順（H₂O・H₂S・HCl は H が前、CH₄・NH₃ は後ろ）。2026-09-24 反応式の構造式で「OH₂」と出ていた
+            const loneHFirst = heavyNb.length === 0 && ['O', 'S', 'Se', 'F', 'Cl', 'Br', 'I'].indexOf(a.element) >= 0;
+            const atEnd = !!((leftEnd || loneHFirst) && hs);
             labels.set(a.id, { text: atEnd ? hs + a.element : a.element + hs, atEnd });
         }
     });
@@ -3064,6 +3066,12 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
  *   ・場所まで指す線（`at=1:… to=2:…`）は、その2か所のいちばん近い組を結ぶ
  * ⚠ 描き終えた parts の中身は svg へ**移す**（parts は空になる）。
  * 戻り値: { warnings }（重なりの申し送り・設計 §6 の黄）
+ *
+ * ★★ 反応式（2026-09-24・I-0125「参考書の反応式を 示性式 → 構造式 を基本に」）のための線の種類:
+ *   ＋    … すき間に「＋」の字だけ（線を引かない）
+ *   反応  … 黒い矢印。label は矢印の上（試薬・触媒）、under は下（温度など）
+ *   平衡  … 黒い ⇄（上に右向き・下に左向き）。label / under は 反応 と同じ
+ *   係数  … 分子の svg の data-fig-coef（'2'・'n'）を分子の左に書く（すき間を足す）
  */
 function composeFigureRow(svg, parts, links) {
     const NS = 'http://www.w3.org/2000/svg';
@@ -3077,7 +3085,8 @@ function composeFigureRow(svg, parts, links) {
             svg: p, x1: vb[0] + PAD, y1: vb[1] + PAD, x2: vb[0] + vb[2] - PAD, y2: vb[1] + vb[3] - PAD,
             sc: JSON.parse(p.dataset.figScale),
             anchors: JSON.parse(p.dataset.figAnchors || '[]'),
-            warn: p.dataset.markWarn ? JSON.parse(p.dataset.markWarn) : []
+            warn: p.dataset.markWarn ? JSON.parse(p.dataset.markWarn) : [],
+            coef: p.dataset.figCoef || ''
         };
     });
     const n = info.length;
@@ -3117,10 +3126,12 @@ function composeFigureRow(svg, parts, links) {
         if (from.n === dest.n) throw new Error(`between の両端が同じ分子（${from.n}）です（1つの分子の中なら mark: です）`);
         const gapLink = from.place === null;
         if (gapLink && Math.abs(from.n - dest.n) !== 1) throw new Error(`between の ${from.n} と ${dest.n} は隣どうしではありません`);
-        return { kind: l.kind, from, dest, label: l.label || '', color: l.color || FIGURE_BETWEEN_INK, gap: gapLink ? Math.min(from.n, dest.n) - 1 : -1 };
+        const eq = ['＋', '反応', '平衡'].indexOf(l.kind) >= 0;   // 反応式の線は黒（本文の式と同じ色）
+        if (eq && !gapLink) throw new Error(`between の kind=${l.kind} は分子と分子のすき間にだけ書けます`);
+        return { kind: l.kind, from, dest, label: l.label || '', under: l.under || '', color: l.color || (eq ? '#222' : FIGURE_BETWEEN_INK), gap: gapLink ? Math.min(from.n, dest.n) - 1 : -1 };
     });
     plan.forEach(l => {
-        if (['両矢印', '矢印', '破線'].indexOf(l.kind) < 0) throw new Error(`between の kind=「${l.kind}」を知りません（書けるのは 両矢印 / 矢印 / 破線）`);
+        if (['両矢印', '矢印', '破線', '＋', '反応', '平衡'].indexOf(l.kind) < 0) throw new Error(`between の kind=「${l.kind}」を知りません（書けるのは 両矢印 / 矢印 / 破線 / ＋ / 反応 / 平衡）`);
     });
 
     // ── すき間の幅（線と文字が収まるまで広げる）──
@@ -3128,10 +3139,19 @@ function composeFigureRow(svg, parts, links) {
     for (let g = 0; g < n - 1; g++) {
         const here = plan.filter(l => l.gap === g);
         if (here.length > 1) throw new Error(`${g + 1} 番目と ${g + 2} 番目の分子の間に線が ${here.length} 本あります（すき間には1本だけ）`);
+        const l0 = here[0];
+        if (l0 && l0.kind === '＋') { gaps.push(measure('+') + margin * 2.4); continue; }
+        if (l0 && (l0.kind === '反応' || l0.kind === '平衡')) {
+            gaps.push(Math.max(B * 2.2, l0.label ? measure(l0.label) + capH : 0, l0.under ? measure(l0.under) + capH : 0) + margin * 2);
+            continue;
+        }
         gaps.push(here.length ? Math.max(B * 1.6, here[0].label ? measure(here[0].label) + capH : 0) + margin * 2 : B * 1.2);
     }
+    // 係数（分子の左に書く字）のぶんのすき間
+    info.forEach(p => { p.coefW = p.coef ? measure(p.coef) + capH * 0.35 : 0; });
     let x = 0;
     info.forEach((p, i) => {
+        x += p.coefW;
         p.dx = x - p.x1;
         p.dy = -(p.y1 + p.y2) / 2;                       // 縦の中央をそろえる（中央の線 y=0）
         x += (p.x2 - p.x1) + (i < n - 1 ? gaps[i] : 0);
@@ -3157,11 +3177,51 @@ function composeFigureRow(svg, parts, links) {
     const group = document.createElementNS(NS, 'g');
     group.setAttribute('class', 'quiz-marks quiz-figure-between');
     svg.appendChild(group);
+    // 係数（分子の左・縦の中央）
+    info.forEach(p => {
+        if (!p.coef) return;
+        const w = measure(p.coef);
+        const cx = p.x1 + p.dx - capH * 0.35 - w / 2;
+        group.appendChild(text(p.coef, cx, capH / 2, '#222'));
+        grow(cx - w / 2, -capH * 0.6, cx + w / 2, capH * 0.6);
+    });
     const dash = `${(capH * 0.22).toFixed(2)} ${(capH * 0.16).toFixed(2)}`;
     plan.forEach(l => {
         const style = { color: l.color, width: ink, head: capH * 0.55, dash: l.kind === '破線' ? dash : null,
             headEnd: l.kind !== '破線', headStart: l.kind === '両矢印' };
         let seg, labelAt;
+        if (l.kind === '＋') {
+            const a = info[l.gap], b = info[l.gap + 1];
+            const xm = ((a.x2 + a.dx) + (b.x1 + b.dx - b.coefW)) / 2;
+            group.appendChild(text('+', xm, capH / 2, l.color));
+            grow(xm - capH * 0.5, -capH * 0.6, xm + capH * 0.5, capH * 0.6);
+            return;
+        }
+        if (l.kind === '反応' || l.kind === '平衡') {
+            const a = info[l.gap], b = info[l.gap + 1];
+            const xa = a.x2 + a.dx + margin, xb = b.x1 + b.dx - b.coefW - margin;
+            if (l.kind === '反応') {
+                const r = drawFigureLink(group, { P: [xa, 0], Q: [xb, 0] }, style);
+                grow(r.box.minX, r.box.minY, r.box.maxX, r.box.maxY);
+            } else {
+                const off = capH * 0.2;
+                const r1 = drawFigureLink(group, { P: [xa, -off], Q: [xb, -off] }, Object.assign({}, style));
+                const r2 = drawFigureLink(group, { P: [xb, off], Q: [xa, off] }, Object.assign({}, style));
+                [r1, r2].forEach(r => grow(r.box.minX, r.box.minY, r.box.maxX, r.box.maxY));
+            }
+            const xm = (xa + xb) / 2;
+            if (l.label) {
+                const w = measure(l.label);
+                group.appendChild(text(l.label, xm, -capH * 0.75, l.color));
+                grow(xm - w / 2, -capH * 1.8, xm + w / 2, 0);
+            }
+            if (l.under) {
+                const w = measure(l.under);
+                group.appendChild(text(l.under, xm, capH * 1.55, l.color));
+                grow(xm - w / 2, 0, xm + w / 2, capH * 1.9);
+            }
+            return;
+        }
         if (l.gap >= 0) {
             const a = info[l.gap], b = info[l.gap + 1];
             const xa = a.x2 + a.dx + margin, xb = b.x1 + b.dx - margin;

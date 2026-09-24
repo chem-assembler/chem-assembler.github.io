@@ -101,7 +101,7 @@
  *   白地で焼けば**両面とも同じに読める**。
  */
 import { createRequire } from 'node:module';
-import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -195,6 +195,35 @@ function collect() {
         if (ONLY.length && !ONLY.includes(id)) return;
         const page = RM.parsePage(readFileSync(path.join(SRC, id + '.md'), 'utf8'), `reference-src/${id}.md`, { pages: ids });
         (page.blocks || []).forEach(b => {
+            /* ★★ 反応式の構造式（`:::reaction` の `gen:`・I-0125）。項ごとに1分子（紙の図）を描き、
+               ＋・反応の矢印（上に over・下に under）・係数・［ ］ₙ をアプリの composeFigureRow が並べる */
+            if (b.kind === 'reaction' && b.gen) {
+                const where = `reference-src/${id}.md`;
+                const rg = RM.parseReactionGen(b.gen, where);
+                const terms = rg.left.concat(rg.right);
+                const specs = terms.map(t => {
+                    /* ★ 反応式の構造式は既定で**水素も1つずつ価標で描く**（expand=H・ユーザーが選んだ見本「H と価標をすべて書いた構造式」）。
+                       項に expand= を書けば上書きできる（大きな分子を簡略化した構造式で描くとき） */
+                    const own = /(^|\s)expand=/.test(t.tokens || '');
+                    const sp = parseGen(`name=${t.name}${t.poly ? ' units=1 straight' : ''} paper ${t.tokens || ''}`.replace(/\s+/g, ' ').trim(), where);
+                    /* ⚠ 大きい分子（重原子 9 個以上）まで水素を全部描くと式が横に伸びて字が床を割る（PET で 12px）。
+                       水素を描くかは分子を引いてから決める（drawOne の autoExpandH）＝ 小さい分子は構造式、大きい分子は簡略化した構造式 */
+                    if (!own) sp.autoExpandH = true;
+                    if (!sp.circle && !sp.numbered) { sp.paper = true; sp.paperByDefault = true; }
+                    sp.figurePart = true; sp.anchors = []; sp.marks = [];
+                    sp.coef = t.coef; sp.bracket = t.poly; if (t.poly) { sp.minPeriod = 2; sp.softStraight = true; }
+                    return sp;
+                });
+                const between = [];
+                for (let i = 0; i + 1 < terms.length; i++) {
+                    const isArrow = i === rg.left.length - 1;
+                    between.push({ kind: isArrow ? (rg.arrow === '⇄' ? '平衡' : '反応') : '＋', from: { n: i + 1, place: null }, dest: { n: i + 2, place: null },
+                        label: isArrow ? (b.over || '') : '', under: isArrow ? (b.under || '') : '' });
+                }
+                if (terms.length < 2) throw new Error(`${where}: :::reaction の gen: は分子が2つ以上要ります`);
+                jobs.push({ id, src: b.img, gen: b.gen, spec: specs[0], parts: specs, between, reaction: { left: b.left, right: b.right, rg } });
+                return;
+            }
             if (b.kind !== 'figure' || !b.gen) return;
             const where = `reference-src/${id}.md`;
             /* ★★ 段2: `gen:` は何行でも（1行 ＝ 1分子・横一列）。⚠ 1行なら reference-md.js が文字列のまま返す */
@@ -249,6 +278,69 @@ function collect() {
         });
     });
     return jobs;
+}
+
+/* ============================================================================
+ * 反応式の突き合わせ（I-0125）: 示性式の文字（left / right）から原子の数を数える
+ * ========================================================================== */
+const SUBS = '₀₁₂₃₄₅₆₇₈₉';
+/** 示性式1項の原子の数。読めない字（仮名・漢字・電荷・↓）があれば null */
+function formulaCounts(str) {
+    let t = String(str).replace(/[₀-₉]/g, c => String(SUBS.indexOf(c))).replace(/ₙ/g, '')
+        .replace(/[=≡−\-–·]/g, '').replace(/[［\[]/g, '(').replace(/[］\]]/g, ')').replace(/\s+/g, '');
+    let i = 0;
+    const num = () => { const m = /^\d+/.exec(t.slice(i)); if (!m) return 1; i += m[0].length; return parseInt(m[0], 10); };
+    const group = () => {
+        const c = {};
+        while (i < t.length) {
+            const ch = t[i];
+            if (ch === '(') { i++; const inner = group(); if (inner === null || t[i] !== ')') return null; i++; const k = num(); Object.keys(inner).forEach(e => { c[e] = (c[e] || 0) + inner[e] * k; }); continue; }
+            if (ch === ')') return c;
+            const m = /^[A-Z][a-z]?/.exec(t.slice(i));
+            if (!m) return null;
+            i += m[0].length;
+            const k = num();
+            c[m[0]] = (c[m[0]] || 0) + k;
+        }
+        return c;
+    };
+    const c = group();
+    return c && i === t.length ? c : null;
+}
+function sideCounts(text) {
+    const tot = {};
+    for (const raw of String(text).split(/\s*[＋+]\s*/)) {
+        const m = /^(\d*n|\d+)\s*(.*)$/.exec(raw.trim());
+        const k = m ? (parseInt(m[1], 10) || 1) : 1;   // 2 → 2・n → 1・2n → 2（n は単位あたりで数える）
+        const c = formulaCounts(m ? m[2] : raw);
+        if (!c) return null;
+        Object.keys(c).forEach(e => { tot[e] = (tot[e] || 0) + c[e] * k; });
+    }
+    return tot;
+}
+function checkReactionFormula(rx, partCounts) {
+    const nL = rx.rg.left.length;
+    const fromGen = (terms, off) => {
+        const tot = {};
+        terms.forEach((t, j) => {
+            const k = parseInt(t.coef, 10) || 1;
+            const c = partCounts[off + j] || {};
+            Object.keys(c).forEach(e => { tot[e] = (tot[e] || 0) + c[e] * k; });
+        });
+        return tot;
+    };
+    const show = c => Object.keys(c).sort().map(e => e + c[e]).join('');
+    const same = (a, b) => show(a) === show(b);
+    /* 縮合重合の「2n H₂O」は鎖の両端（−OH と −H）のぶん原子が合わない書き方（教科書どおり）＝ 突き合わせない */
+    if (rx.rg.left.concat(rx.rg.right).some(t => /^\d+n$/.test(t.coef))) {
+        return { yellow: '縮合重合の式（2n H₂O）は鎖の両端のぶん原子が合わない書き方なので、突き合わせを飛ばしました' };
+    }
+    const L = sideCounts(rx.left), R = sideCounts(rx.right);
+    if (!L || !R) return { yellow: '示性式に読めない字（名前・電荷など）があるので、構造式との原子の突き合わせを飛ばしました' };
+    const gL = fromGen(rx.rg.left, 0), gR = fromGen(rx.rg.right, nL);
+    if (!same(L, gL)) return { red: `左辺の原子の数が合いません（示性式 ${show(L)} ／ 構造式 ${show(gL)}）。どちらかの書き違いです` };
+    if (!same(R, gR)) return { red: `右辺の原子の数が合いません（示性式 ${show(R)} ／ 構造式 ${show(gR)}）。どちらかの書き違いです` };
+    return null;
 }
 
 /** `gen:` の1行を読む。⚠ 知らない語は**黙って捨てない**（綴り違いが図の取り違えになる） */
@@ -375,8 +467,20 @@ async function bake(jobs) {
             const ALKYL = { 'メチル': 1, 'エチル': 2, 'プロピル': 3, 'ブチル': 4 };
             let mol = null, via = '';
 
-            const entry = lib.find(e => e.name === spec.name && e.target);
+            /* ★ 表示名が見つからなければ、アプリの引き方（別名・id・「エチレン（エテン）」の前半）と「ポリ○○」でも引く（反応式の gen: のため・2026-09-24） */
+            const entry = lib.find(e => e.name === spec.name && e.target) || (() => {
+                const r = (g.resolveCompound && g.resolveCompound(spec.name)) || (g.buildPolymerByName && g.buildPolymerByName(spec.name));
+                if (!r) return null;
+                if (r.target) return r;
+                // アプリの一覧の項目は target を持たない（mol だけ）＝ 引けた表示名で登録の項目を引き直す
+                return lib.find(e => e.name === r.name && e.target) || null;
+            })();
             if (entry) { mol = g.createTargetFromData({ target: entry.target }); via = '登録済み'; }
+            /* ★ 登録の無い「ポリ○○」は、アプリが単量体を付加重合して組む（buildPolymerByName・I-0075）。組んだ分子をそのまま使う */
+            if (!mol && g.buildPolymerByName) {
+                const bp = g.buildPolymerByName(spec.name);
+                if (bp && bp.mol) { mol = bp.mol; via = '単量体から組んだ高分子'; }
+            }
 
             if (!mol && spec.formula) {
                 const m = /^((?:[A-Z][a-z]?\d*)+)$/.exec(spec.formula);
@@ -482,21 +586,21 @@ async function bake(jobs) {
 
             /* ★★ **名前で突き合わせる**（登録済みの1件は名前そのもので引いているので除く）。
                ⚠ これが無いと「原稿の名前と違う分子の図」が黙って焼ける */
-            if (!entry) {
+            if (!entry && via !== '単量体から組んだ高分子') {   // 「ポリ○○」は名前で組んだもの（アプリが単量体の名前から組む）
                 const got = window.iupacName(mol);
                 if (got !== spec.name) return { error: `組んだ分子の名前が「${got}」で、gen の name=「${spec.name}」と違います` };
             }
             /* ★ 裏返し（v1618・I-0112）: 紙の図の型は登録の座標をそのまま使う（learn.js の renderStandardFigure の
                ipCoordsUsable の道）ので、渡す前に座標を裏返すだけ。⚠ 作図はここに書かない */
             /* ★ 繰り返し単位1つぶん（v1619・I-0040）。⚠ 作図はしない —— 登録の原子と座標から1周期を切り出すだけ */
-            if (spec.straight) {
+            if (spec.straight) straightBlock: {
                 const Rs = mol.atoms.filter(a => a.element === 'R');
-                if (Rs.length !== 2) return { error: `straight: 「${spec.name}」の両端が R の鎖として読めません（R が ${Rs.length} 個）` };
+                if (Rs.length !== 2) { if (spec.softStraight) { via += '・主鎖は登録の形のまま'; break straightBlock; } return { error: `straight: 「${spec.name}」の両端が R の鎖として読めません（R が ${Rs.length} 個）` }; }
                 const nb = id => mol.getNeighbors(id).map(x => x.atom);
                 const prev = new Map([[Rs[0].id, null]]);
                 const q = [Rs[0].id];
                 while (q.length) { const c = q.shift(); if (c === Rs[1].id) break; nb(c).forEach(x => { if (!prev.has(x.id)) { prev.set(x.id, c); q.push(x.id); } }); }
-                if (!prev.has(Rs[1].id)) return { error: `straight: 「${spec.name}」の R と R がつながっていません` };
+                if (!prev.has(Rs[1].id)) { if (spec.softStraight) { via += '・主鎖は登録の形のまま'; break straightBlock; } return { error: `straight: 「${spec.name}」の R と R がつながっていません` }; }
                 const path = [];
                 for (let c = Rs[1].id; c; c = prev.get(c)) path.unshift(c);
                 const onPath = new Set(path);
@@ -513,10 +617,10 @@ async function bake(jobs) {
                         let j = i;
                         while (j + 1 < path.length && ring.has(path[j + 1])) j++;
                         const seg = path.slice(i, j + 1);
-                        if (seg.length !== 4) return { error: `straight: 「${spec.name}」の主鎖が環をパラ位で通っていません（環の中の主鎖 ${seg.length} 原子）` };
+                        if (seg.length !== 4) { if (spec.softStraight) { via += '・主鎖は登録の形のまま'; break straightBlock; } return { error: `straight: 「${spec.name}」の主鎖が環をパラ位で通っていません（環の中の主鎖 ${seg.length} 原子）` }; }
                         const others = (a, notIn) => nb(a).filter(z => ring.has(z.id) && !seg.includes(z.id) && !notIn.has(z.id)).map(z => z.id);
                         const v5 = others(seg[0], new Set())[0], v4 = others(seg[3], new Set())[0];
-                        if (!v4 || !v5) return { error: `straight: 「${spec.name}」の環の残りの2原子が見つかりません` };
+                        if (!v4 || !v5) { if (spec.softStraight) { via += '・主鎖は登録の形のまま'; break straightBlock; } return { error: `straight: 「${spec.name}」の環の残りの2原子が見つかりません` }; }
                         pos.set(seg[0], { x, y: 0 }); pos.set(seg[1], { x: x + B / 2, y: -H }); pos.set(seg[2], { x: x + 1.5 * B, y: -H });
                         pos.set(seg[3], { x: x + 2 * B, y: 0 }); pos.set(v4, { x: x + 1.5 * B, y: H }); pos.set(v5, { x: x + B / 2, y: H });
                         x += 3 * B; i = j + 1; continue;
@@ -532,15 +636,15 @@ async function bake(jobs) {
                         let cur = sides[k], depth = 1;
                         const p0 = pos.get(id);
                         while (cur) {
-                            if (ring.has(cur.id)) return { error: `straight: 「${spec.name}」の枝に環があります（まだ並べられません）` };
+                            if (ring.has(cur.id)) { if (spec.softStraight) { via += '・主鎖は登録の形のまま'; break straightBlock; } return { error: `straight: 「${spec.name}」の枝に環があります（まだ並べられません）` }; }
                             pos.set(cur.id, { x: p0.x, y: dir * depth * B });
                             const nx = nb(cur.id).filter(z => !pos.has(z.id) && !onPath.has(z.id));
-                            if (nx.length > 1) return { error: `straight: 「${spec.name}」の枝が枝分かれしています（まだ並べられません）` };
+                            if (nx.length > 1) { if (spec.softStraight) { via += '・主鎖は登録の形のまま'; break straightBlock; } return { error: `straight: 「${spec.name}」の枝が枝分かれしています（まだ並べられません）` }; }
                             cur = nx[0]; depth++;
                         }
                     }
                 }
-                if (pos.size !== mol.atoms.length) return { error: `straight: 「${spec.name}」の原子 ${mol.atoms.length - pos.size} 個を置けませんでした` };
+                if (pos.size !== mol.atoms.length) { if (spec.softStraight) { via += '・主鎖は登録の形のまま'; break straightBlock; } return { error: `straight: 「${spec.name}」の原子 ${mol.atoms.length - pos.size} 個を置けませんでした` }; }
                 mol.atoms.forEach(a => { const p = pos.get(a.id); a.x = p.x; a.y = p.y; });
                 via += '・主鎖を横一直線に';
             }
@@ -565,14 +669,26 @@ async function bake(jobs) {
                     return a.element + '[' + side + ']' + next;
                 });
                 let per = 0;
-                for (let p2 = 1; p2 < sig.length; p2++) {
+                /* 反応式の［ ］n は主鎖2原子以上を1単位にする（ポリエチレンは CH₂ ではなく CH₂−CH₂ ＝ 単量体1つぶん） */
+                for (let p2 = spec.minPeriod || 1; p2 < sig.length; p2++) {
                     if (sig.length % p2) continue;
                     if (sig.every((x, i) => i + p2 >= sig.length || x === sig[i + p2])) { per = p2; break; }
                 }
                 if (!per || per === sig.length) return { error: `units=1: 「${spec.name}」の主鎖に繰り返しが見つかりません` };
                 // 1周期ぶん（inner[0..per-1]）とその枝を残し、両端に R
                 const keepIds = new Set([Rs[0].id]);
-                inner.slice(0, per).forEach(id => { keepIds.add(id); nb(id).filter(x => !onPath.has(x.id)).forEach(x => keepIds.add(x.id)); });
+                /* ⚠ 枝は**先まで全部**残す（2026-09-24 に直した。前は主鎖に直接付いた原子だけで、ポリアクリロニトリルの
+                   −C≡N の N・ポリ酢酸ビニルの −OCOCH₃ の先が落ちていた。反応式の原子の突き合わせが見つけた） */
+                inner.slice(0, per).forEach(id => {
+                    keepIds.add(id);
+                    const stack = nb(id).filter(x => !onPath.has(x.id)).map(x => x.id);
+                    while (stack.length) {
+                        const c = stack.pop();
+                        if (keepIds.has(c)) continue;
+                        keepIds.add(c);
+                        nb(c).forEach(x => { if (!onPath.has(x.id) && !keepIds.has(x.id)) stack.push(x.id); });
+                    }
+                });
                 const tail = mol.atoms.find(x => x.id === inner[per]);   // 次の単位の先頭の位置に R を置く
                 const keep = mol.atoms.filter(a => keepIds.has(a.id));
                 const idx = new Map(keep.map((a, i) => [a.id, i]));
@@ -635,10 +751,23 @@ async function bake(jobs) {
             /* 1分子を1つの svg へ描く（★ 書き出し練習の答え合わせに出るのと**同じ関数**。`this` は `game` を持つ物だけでよい）。
                ⚠ 印（`marks`）・between の端（`anchors`）が1つも当たらなければ**ここで投げる** ＝ 印の無い図を焼かない（設計 §3）。
                ★ 投げたものは `error` にして返す（呼び手が赤で止める。焼き上がりは1枚も出ない） */
+            /* 反応式の項を「水素も描く構造式」で描いてよいか: 環が無く、重原子 8 個まで（ベンゼン環に H を全部描くと重なる） */
+            const smallNoRing = (m) => {
+                const heavy = m.atoms.filter(a => a.element !== 'H' && a.element !== 'R');
+                const ring = typeof ringAtomIds === 'function' ? ringAtomIds(m) : new Set();
+                return heavy.length <= 8 && !heavy.some(a => ring.has(a.id));
+            };
             const drawOne = (sp, svgEl, where) => {
                 const res = window.__figResolve(sp);
                 if (res.error) return { error: where + res.error };
                 if (sp.kekule && !sp.paper) return { error: where + 'kekule= は紙の図の型でだけ描けます（--src= の1枚焼きでは paper を書きます）' };
+                if (sp.autoExpandH) {
+                    let full = sp._expandH !== undefined ? sp._expandH : smallNoRing(res.mol);
+                    /* 重原子1つの小さい分子（HBr・HCl・H₂O・NH₃）は式のまま書く（水素を描くと Br−H と逆向きになる・教科書も式で書く） */
+                    if (res.mol.atoms.filter(a => a.element !== 'H' && a.element !== 'R').length === 1) full = false;
+                    sp.expand = full ? ['H'] : [];
+                    res.via += full ? '・水素も描く' : '・簡略化した構造式';
+                }
                 try {
                     IsomerPractice.prototype.renderStandardFigure.call({ game: g }, svgEl.id, res.mol, !!sp.numbered,
                         Object.assign({ paper: !!sp.paper, condense: sp.condense || [], expand: sp.expand || [], marks: sp.marks || [] },
@@ -659,6 +788,42 @@ async function bake(jobs) {
                     let n = 0;
                     svgEl.querySelectorAll('text').forEach(t => { if (t.textContent.trim() === 'R') { t.textContent = '…'; n++; } });
                     if (!n) return { error: where + 'dots: 図に R がありません（高分子の鎖の図だけに書けます）' };
+                }
+                /* ★ 反応式の高分子（`［ポリ○○］n`）: 両端の R を角括弧 ［ ］ に替え、右の括弧の下に n を添える
+                   （ユーザー「反応式では []n を使えばよいです」）。価標は括弧を突き抜けて外へ少し伸ばす */
+                if (sp.bracket) {
+                    const Rs = [...svgEl.querySelectorAll('text')].filter(t => t.textContent.trim() === 'R');
+                    if (Rs.length !== 2) return { error: where + `［ ］n: 鎖の両端の R が2つ見つかりません（${Rs.length} 個）` };
+                    const boxes = Rs.map(t => t.getBBox());
+                    const mid = (boxes[0].x + boxes[0].width / 2 + boxes[1].x + boxes[1].width / 2) / 2;
+                    Rs.forEach((t, i) => {
+                        const bb = boxes[i];
+                        const fs0 = bb.height;
+                        const cy = bb.y + bb.height / 2;
+                        const left = bb.x + bb.width / 2 < mid;
+                        const xb = left ? bb.x + bb.width * 0.75 : bb.x + bb.width * 0.25;
+                        const h = fs0 * 1.7, w = fs0 * 0.28, stub = fs0 * 0.45;
+                        const d = left
+                            ? `M ${xb + w} ${cy - h / 2} L ${xb} ${cy - h / 2} L ${xb} ${cy + h / 2} L ${xb + w} ${cy + h / 2} M ${xb - stub} ${cy} L ${xb + w * 0.2} ${cy}`
+                            : `M ${xb - w} ${cy - h / 2} L ${xb} ${cy - h / 2} L ${xb} ${cy + h / 2} L ${xb - w} ${cy + h / 2} M ${xb - w * 0.2} ${cy} L ${xb + stub} ${cy}`;
+                        const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        p.setAttribute('d', d);
+                        p.setAttribute('fill', 'none');
+                        p.setAttribute('stroke', '#222');
+                        p.setAttribute('stroke-width', String(Math.max(1.2, fs0 * 0.08)));
+                        t.parentNode.insertBefore(p, t);
+                        if (!left) {
+                            const nt = t.cloneNode(false);
+                            nt.textContent = 'n';
+                            nt.setAttribute('x', String(xb + w * 0.2));
+                            nt.setAttribute('y', String(cy + h / 2 + fs0 * 0.15));
+                            nt.setAttribute('text-anchor', 'start');
+                            nt.style.fontSize = (fs0 * 0.75) + 'px';
+                            nt.style.fontStyle = 'italic';
+                            t.parentNode.insertBefore(nt, t);
+                        }
+                        t.remove();
+                    });
                 }
                 return res;
             };
@@ -710,6 +875,7 @@ async function bake(jobs) {
                 return { svg: copy, mol: res.mol, via: res.via + (sp.stereo === 'mirror' ? '・くさび図と鏡像' : '・くさび図') };
             };
             let svg, mol, via;
+            const partCounts = [];
             if (!parts && spec.stereo) {
                 const r0 = drawStereo(spec);
                 if (r0.error) return { error: r0.error };
@@ -724,10 +890,31 @@ async function bake(jobs) {
                 if (typeof composeFigureRow !== 'function') return { error: 'アプリに composeFigureRow がありません（v1610 より古い版を配信している）' };
                 const subs = [], vias = [];
                 let atoms = 0;
+                /* ★ 反応式は**式ごとに**描き方をそろえる（ある項だけ H を全部描き、隣は簡略化、にしない）。
+                   全部の項が「環が無く小さい」ときだけ水素も描く構造式、1つでも大きければ全部を簡略化した構造式 */
+                if (parts.some(p => p.autoExpandH)) {
+                    let all = true;
+                    parts.forEach(p => {
+                        if (!p.autoExpandH) return;
+                        const r0 = window.__figResolve(Object.assign({}, p, { straight: false }));
+                        if (r0.error || !smallNoRing(r0.mol)) all = false;
+                    });
+                    parts.forEach(p => { if (p.autoExpandH) p._expandH = all; });
+                }
                 for (let i = 0; i < parts.length; i++) {
                     const s = makeSvg('figbake-part-' + (i + 1));
                     const ri = drawOne(parts[i], s, `${i + 1} 番目の gen:（${parts[i].name}）: `);
                     if (ri.error) return { error: ri.error };
+                    if (parts[i].coef) s.dataset.figCoef = parts[i].coef;
+                    /* 原子の数（反応式の示性式との突き合わせ用）。R は数えない ＝ 高分子は繰り返し単位1つぶん */
+                    const cnt = {};
+                    ri.mol.atoms.forEach(a => {
+                        if (a.element === 'R') return;
+                        cnt[a.element] = (cnt[a.element] || 0) + 1;
+                        const fv = ri.mol.getFreeValency ? ri.mol.getFreeValency(a.id) : 0;
+                        if (fv > 0) cnt.H = (cnt.H || 0) + fv;
+                    });
+                    partCounts.push(cnt);
                     subs.push(s); vias.push(ri.via); atoms += ri.mol.atoms.length;
                 }
                 svg = document.createElementNS(NS, 'svg');
@@ -737,6 +924,49 @@ async function bake(jobs) {
                    ⚠ between（分子の間の線）は段をまたげないので、段に分けた図には書けない */
                 const rowsIdx = [[]];
                 parts.forEach((pt, i) => { if (pt.newrow && rowsIdx[rowsIdx.length - 1].length) rowsIdx.push([]); rowsIdx[rowsIdx.length - 1].push(i); });
+                /* ★ 反応式が横に長すぎる（1段だと字が床を割る）ときは、**反応物の段**と**矢印から始まる生成物の段**の2段に折る
+                   （教科書の長い式の組み方）。2段目の頭の矢印は、幅0の見えない部品と最初の生成物の間に引く */
+                const arrowAt = (between || []).findIndex(l => l.kind === '反応' || l.kind === '平衡');
+                const vbOf = el => (el.getAttribute('viewBox') || '').split(/\s+/).map(Number);
+                const estW = subs.reduce((t, el) => t + vbOf(el)[2], 0) + 60 * (subs.length - 1);
+                const estH = Math.max(...subs.map(el => vbOf(el)[3]));
+                if (arrowAt >= 0 && rowsIdx.length === 1 && estW / estH > 5.2) {
+                    try {
+                        const k = arrowAt;                       // 分子 k と k+1 の間が矢印（0 始まり）
+                        const shift = (l, off) => Object.assign({}, l, { from: { n: l.from.n - off, place: null }, dest: { n: l.dest.n - off, place: null } });
+                        const row1 = subs.slice(0, k + 1), row2src = subs.slice(k + 1);
+                        const links1 = between.filter((l, i) => i < k).map(l => shift(l, 0));
+                        const dummy = makeSvg('figbake-rx-lead');
+                        dummy.setAttribute('viewBox', '-30 -30 60 60');
+                        dummy.dataset.figScale = row2src[0].dataset.figScale;
+                        dummy.dataset.figAnchors = '[]';
+                        const links2 = [Object.assign({}, between[k], { from: { n: 1, place: null }, dest: { n: 2, place: null } })]
+                            .concat(between.filter((l, i) => i > k).map(l => shift(l, k)));
+                        const rowSvgs = [];
+                        if (row1.length > 1) { const r1 = makeSvg('figbake-rx-row1'); composeFigureRow(r1, row1, links1); rowSvgs.push(r1); } else rowSvgs.push(row1[0]);
+                        const r2 = makeSvg('figbake-rx-row2'); composeFigureRow(r2, [dummy].concat(row2src), links2); rowSvgs.push(r2);
+                        const vbs = rowSvgs.map(vbOf);
+                        const W = Math.max(...vbs.map(v => v[2]));
+                        let yc = 0;
+                        rowSvgs.forEach((rs, r) => {
+                            const v = vbs[r];
+                            const gEl = document.createElementNS(NS, 'g');
+                            // 1段目は左寄せ・2段目は右寄せ（矢印が1段目の下から始まって右へ流れる）
+                            const tx = r === 0 ? -v[0] : (W - v[2]) - v[0];
+                            gEl.setAttribute('transform', `translate(${tx},${yc - v[1]})`);
+                            while (rs.firstChild) gEl.appendChild(rs.firstChild);
+                            svg.appendChild(gEl);
+                            yc += v[3];
+                        });
+                        svg.setAttribute('viewBox', `0 0 ${W} ${yc}`);
+                        rowSvgs.forEach(rs => rs.remove());
+                        dummy.remove();
+                        subs.forEach(el => el.remove());
+                        mol = { atoms: { length: atoms } }; via = vias.join(' ＋ ') + '・2段に折った';
+                    } catch (e) {
+                        return { error: (e && e.message) || String(e) };
+                    }
+                } else
                 try {
                     if (rowsIdx.length === 1) {
                         composeFigureRow(svg, subs, between);
@@ -799,7 +1029,7 @@ async function bake(jobs) {
             const shownW = spec.scroll ? SCROLL_FIT_W : vb[2];
             const minText = isFinite(minFont) ? minFont * BODY_W / shownW : null;
             const minSub = isFinite(minSubFont) ? minSubFont * BODY_W / shownW : null;
-            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn, minText, minSub };
+            return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn, minText, minSub, partCounts };
         }, { spec, parts: parts || null, between: between || [], OUT_W, MAX_H, FIT_W, BODY_W, SCROLL_FIT_W });
         let r = await bakeOne(job.spec, job.parts, job.between);
         /* ★ 紙の図の型は字の長さぶん価標を伸ばすので、長い鎖（ステアリン酸 C₁₈）は横に伸びて床 9:1 を超える（v1562 実測 10.1:1）。
@@ -814,6 +1044,13 @@ async function bake(jobs) {
             if (!r.error) r.fellBack = `紙の図は ${flat.toFixed(1)}:1 で平たすぎるので丸の図`;
         }
 
+        /* ★ 反応式が2段に折っても字が床を割るとき（縮合重合の長い繰り返し単位）は、縮めずに焼いて横スクロールで見せる
+           （learn.js は反応式の図をいつも横スクロールの箱に入れ、幅は PNG の幅 ÷ 1150 の割合） */
+        if (!r.error && job.reaction && r.minText && r.minText < MIN_TEXT && !job.spec.scroll) {
+            job.spec.scroll = true;
+            r = await bakeOne(job.spec, job.parts, job.between);
+            if (!r.error) r.fellBack = '字が床を割るので縮めずに焼いた（横スクロール）';
+        }
         if (r.error) {
             console.error(`❌ reference-src/${job.id}.md の ${job.src}: ${r.error}`);
             await browser.close();
@@ -824,6 +1061,17 @@ async function bake(jobs) {
                 + `本文の幅では小さい字が読めません（床は ${ASPECT_WARN}:1）`);
             await browser.close();
             process.exit(1);
+        }
+        /* ★★ 反応式: 構造式（gen:）と示性式（left / right）の原子の数を突き合わせる（§19-5 の「同じ式を2か所に
+           持つと直し忘れる」を機械で止める）。示性式が読めない式（名前・イオンを含む）は黄で言うだけ */
+        if (job.reaction) {
+            const msg = checkReactionFormula(job.reaction, r.partCounts || []);
+            if (msg && msg.red) {
+                console.error(`❌ reference-src/${job.id}.md の反応式「${job.gen}」: ${msg.red}`);
+                await browser.close();
+                process.exit(1);
+            }
+            if (msg && msg.yellow) r.markWarn = (r.markWarn || []).concat([msg.yellow]);
         }
         const el = await pg.$('#figbake-svg');
         const buf = await el.screenshot({ type: 'png' });
@@ -875,6 +1123,14 @@ async function main() {
     console.log(`アプリの描画で ${jobs.length} 枚を焼きます（:${PORT}）`);
     const done = await bake(jobs);
     console.log(`✅ ${done.length} 枚を reference-img/ に焼きました`);
+    /* ★ 反応式の図（rx-<式から決まる名前>.png）は式を直すと名前が変わる ＝ 全部を焼いた回だけ、どの式も使わない rx- を片づける
+       （ページを絞った回は、ほかのページの式を見ていないので消さない） */
+    if (!ONLY.length && !ONE_SRC && !OUT_DIR) {
+        const used = new Set(jobs.filter(j => j.reaction).map(j => j.src));
+        const stale = readdirSync(IMG).filter(f => /^rx-[0-9a-f]{8}\.png$/.test(f) && !used.has(f));
+        stale.forEach(f => unlinkSync(path.join(IMG, f)));
+        if (stale.length) console.log(`   🧹 使われなくなった反応式の図を ${stale.length} 枚消しました: ${stale.join(' / ')}`);
+    }
     console.log('   ⚠ 焼いたあとは `node tools/gen-reference.mjs` と `gen-reference-pages.mjs` を走らせてください');
 }
 

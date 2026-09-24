@@ -46,6 +46,8 @@ terms:
 :::reaction
 left: n CH₂=CH₂
 right: ［CH₂−CH₂］ₙ
+gen: n エチレン → ［ポリエチレン］n
+app: addition_polymerization
 level: ★★★
 note: 左辺の n と、右辺の角かっこの外の n が対応します。
 :::
@@ -115,6 +117,8 @@ terms:
 :::reaction
 left: n CH₂=CHCl
 right: ［CH₂−CHCl］ₙ
+gen: n 塩化ビニル → ［ポリ塩化ビニル］n
+app: addition_polymerization
 level: ★★★
 note: 塩化ビニル → ポリ塩化ビニル。原子の出入りがないので、繰り返し単位の分子式は単量体と同じ C₂H₃Cl です。
 :::
@@ -158,6 +162,8 @@ terms:
 :::reaction
 left: n HOOC−C₆H₄−COOH ＋ n HO−CH₂CH₂−OH
 right: ［CO−C₆H₄−CO−O−CH₂CH₂−O］ₙ ＋ 2n H₂O
+gen: n テレフタル酸 ＋ n エチレングリコール → ［ポリエチレンテレフタラート］n ＋ 2n 水
+app: condensation_polymerization
 level: ★★★
 note: 1か所つなぐごとに水が1個とれます。1つの繰り返し単位の中にエステル結合が2か所あるので、n 組つなぐと水は 2n 個です。
 :::
@@ -193,6 +199,8 @@ left: n C₆H₁₁NO（ε-カプロラクタム）
 over: 少量の水
 under: 加熱
 right: ［NH−(CH₂)₅−CO］ₙ
+gen: n ε-カプロラクタム → ［ナイロン6］n
+app: ring_opening_polymerization
 level: ★★★
 note: 環の中のアミド結合が1か所切れて鎖になり、次の分子とつながります。水はきっかけとして働くだけなので、反応式の両辺には出てきません。
 :::

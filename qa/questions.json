@@ -596,6 +596,56 @@
       "part": "金属イオンを見分ける"
     },
     {
+      "id": "sec-organic-features",
+      "name": "有機化合物の特徴",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "有機化合物の特徴",
+      "summary": "有機化合物とは何か、無機化合物と比べた性質の傾向と、種類が多い理由をおさえよう。",
+      "part": "有機化合物のきほん",
+      "category": "有機化合物とその表し方"
+    },
+    {
+      "id": "sec-hydrocarbon-classes",
+      "name": "炭化水素の分類と官能基",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "炭化水素の分類と官能基",
+      "summary": "鎖式・環式、飽和・不飽和で炭化水素を分け、それぞれの一般式を覚えよう。",
+      "part": "有機化合物のきほん",
+      "category": "有機化合物とその表し方"
+    },
+    {
+      "id": "sec-organic-formulas",
+      "name": "有機化合物の表し方",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "有機化合物の表し方",
+      "summary": "分子式・示性式・構造式の違いと使い分けをおさえよう。",
+      "part": "有機化合物のきほん",
+      "category": "有機化合物とその表し方"
+    },
+    {
+      "id": "sec-alkane-isomers",
+      "name": "構造異性体",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "構造異性体",
+      "summary": "異性体の分類と、アルカン・アルキル基の構造異性体の数をおさえよう。",
+      "part": "有機化合物のきほん",
+      "category": "異性体"
+    },
+    {
+      "id": "sec-stereoisomers",
+      "name": "立体異性体",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "立体異性体",
+      "summary": "シス−トランス異性体と鏡像異性体、不斉炭素の見つけ方をおさえよう。",
+      "part": "有機化合物のきほん",
+      "category": "異性体"
+    },
+    {
       "id": "anal",
       "name": "元素の確認・元素分析",
       "category_l": "有機化学",
@@ -605,13 +655,24 @@
       "part": "有機化合物のきほん"
     },
     {
-      "id": "aliphatic",
-      "name": "脂肪族炭化水素",
+      "id": "sec-alkane",
+      "name": "アルカンとシクロアルカン",
       "category_l": "有機化学",
-      "category_m": "脂肪族炭化水素",
-      "summary": "アルカン・アルケン・アルキンの性質と反応、異性体の数え方と名前をおさえよう。",
       "course": "adv",
-      "part": "脂肪族化合物"
+      "category_m": "アルカンとシクロアルカン",
+      "summary": "アルカンの性質・反応と命名、シクロアルカンの性質をおさえよう。",
+      "part": "脂肪族化合物",
+      "category": "脂肪族炭化水素"
+    },
+    {
+      "id": "sec-alkene",
+      "name": "アルケンとアルキン",
+      "category_l": "有機化学",
+      "course": "adv",
+      "category_m": "アルケンとアルキン",
+      "summary": "アルケン・アルキンの付加反応・付加重合と製法をおさえよう。",
+      "part": "脂肪族化合物",
+      "category": "脂肪族炭化水素"
     },
     {
       "id": "alcohol",
@@ -620,7 +681,8 @@
       "category_m": "アルコール・エーテル",
       "summary": "アルコールの級と反応（Na・脱水・酸化）、エーテルとの違いをおさえよう。",
       "course": "adv",
-      "part": "脂肪族化合物"
+      "part": "脂肪族化合物",
+      "category": "酸素を含む脂肪族化合物"
     },
     {
       "id": "aldketone",
@@ -629,7 +691,8 @@
       "category_m": "アルデヒド・ケトン",
       "summary": "アルデヒドの還元性（銀鏡・フェーリング）と、ケトンとの見分け方をおさえよう。",
       "course": "adv",
-      "part": "脂肪族化合物"
+      "part": "脂肪族化合物",
+      "category": "酸素を含む脂肪族化合物"
     },
     {
       "id": "carboxyl",
@@ -638,7 +701,8 @@
       "category_m": "カルボン酸・エステル",
       "summary": "カルボン酸の酸性とギ酸・酢酸の性質、エステルのでき方と加水分解をおさえよう。",
       "course": "adv",
-      "part": "脂肪族化合物"
+      "part": "脂肪族化合物",
+      "category": "酸素を含む脂肪族化合物"
     },
     {
       "id": "fat",
@@ -647,7 +711,8 @@
       "category_m": "油脂・セッケン",
       "summary": "油脂のつくりとけん化価・ヨウ素価、セッケンと合成洗剤のはたらきをおさえよう。",
       "course": "adv",
-      "part": "脂肪族化合物"
+      "part": "脂肪族化合物",
+      "category": "酸素を含む脂肪族化合物"
     },
     {
       "id": "aro",
@@ -752,7 +817,7 @@
   "patterns": [
     {
       "code": "org.ali.class-hydrocarbon",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -794,7 +859,7 @@
     },
     {
       "code": "org.ali.class-aliphatic",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -832,7 +897,7 @@
     },
     {
       "code": "org.ali.class-chain-ring",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -881,7 +946,7 @@
     },
     {
       "code": "org.ali.class-saturated",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -922,7 +987,7 @@
     },
     {
       "code": "org.ali.formula-alkane",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -972,7 +1037,7 @@
     },
     {
       "code": "org.ali.formula-alkene",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -1016,7 +1081,7 @@
     },
     {
       "code": "org.ali.formula-alkyne",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -1059,7 +1124,7 @@
     },
     {
       "code": "org.ali.formula-cycloalkane",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 1,
       "tags": [
@@ -1105,7 +1170,7 @@
     },
     {
       "code": "org.ali.formula-cycloalkene",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 2,
       "tags": [
@@ -1149,7 +1214,7 @@
     },
     {
       "code": "org.ali.homolog",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 2,
       "tags": [
@@ -1187,7 +1252,7 @@
     },
     {
       "code": "org.ali.unsaturation",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 2,
       "tags": [
@@ -1229,7 +1294,7 @@
     },
     {
       "code": "org.ali.suffix",
-      "unit": "aliphatic",
+      "unit": "sec-hydrocarbon-classes",
       "group": "分類・一般式",
       "difficulty": 2,
       "tags": [
@@ -1275,7 +1340,7 @@
     },
     {
       "code": "org.ali.alkane-shape",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1321,7 +1386,7 @@
     },
     {
       "code": "org.ali.alkane-rotation",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 2,
       "tags": [
@@ -1360,7 +1425,7 @@
     },
     {
       "code": "org.ali.alkane-substitution",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1402,7 +1467,7 @@
     },
     {
       "code": "org.ali.alkane-chlorination",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1451,7 +1516,7 @@
     },
     {
       "code": "org.ali.alkane-names",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1501,7 +1566,7 @@
     },
     {
       "code": "org.ali.alkane-bp",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 2,
       "tags": [
@@ -1544,7 +1609,7 @@
     },
     {
       "code": "org.ali.alkane-state",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1585,7 +1650,7 @@
     },
     {
       "code": "org.ali.alkane-solubility",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1631,7 +1696,7 @@
     },
     {
       "code": "org.ali.methane-prep",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 2,
       "tags": [
@@ -1671,7 +1736,7 @@
     },
     {
       "code": "org.ali.methane-props",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1711,7 +1776,7 @@
     },
     {
       "code": "org.ali.alkane-combustion",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 1,
       "tags": [
@@ -1760,7 +1825,7 @@
     },
     {
       "code": "org.ali.cyclo-props",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "シクロアルカン",
       "difficulty": 2,
       "tags": [
@@ -1806,7 +1871,7 @@
     },
     {
       "code": "org.ali.cyclo-strain",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "シクロアルカン",
       "difficulty": 3,
       "tags": [
@@ -1858,7 +1923,7 @@
     },
     {
       "code": "org.ali.alkene-functional",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 1,
       "tags": [
@@ -1908,7 +1973,7 @@
     },
     {
       "code": "org.ali.alkene-shape",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -1957,7 +2022,7 @@
     },
     {
       "code": "org.ali.alkene-bondlength",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 3,
       "tags": [
@@ -1998,7 +2063,7 @@
     },
     {
       "code": "org.ali.alkene-addition",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 1,
       "tags": [
@@ -2048,7 +2113,7 @@
     },
     {
       "code": "org.ali.alkene-h2",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2102,7 +2167,7 @@
     },
     {
       "code": "org.ali.alkene-h2-catalyst",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2148,7 +2213,7 @@
     },
     {
       "code": "org.ali.alkene-h2o",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2204,7 +2269,7 @@
     },
     {
       "code": "org.ali.alkene-hx",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2260,7 +2325,7 @@
     },
     {
       "code": "org.ali.alkene-br2",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 1,
       "tags": [
@@ -2314,7 +2379,7 @@
     },
     {
       "code": "org.ali.markovnikov",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 3,
       "tags": [
@@ -2368,7 +2433,7 @@
     },
     {
       "code": "org.ali.alkene-oxidation",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 3,
       "tags": [
@@ -2416,7 +2481,7 @@
     },
     {
       "code": "org.ali.unsatur-detection",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 3,
       "tags": [
@@ -2471,7 +2536,7 @@
     },
     {
       "code": "org.ali.addition-polymer",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2524,7 +2589,7 @@
     },
     {
       "code": "org.ali.vinyl-group",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2576,7 +2641,7 @@
     },
     {
       "code": "org.ali.ethylene-prep",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2624,7 +2689,7 @@
     },
     {
       "code": "org.ali.ethanol-dehydration",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2678,7 +2743,7 @@
     },
     {
       "code": "org.ali.vinylchloride-prep",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -2723,7 +2788,7 @@
     },
     {
       "code": "org.ali.alkyne-functional",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 1,
       "tags": [
@@ -2772,7 +2837,7 @@
     },
     {
       "code": "org.ali.alkyne-shape",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -2820,7 +2885,7 @@
     },
     {
       "code": "org.ali.alkyne-addition",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -2874,7 +2939,7 @@
     },
     {
       "code": "org.ali.acetylene-prep",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -2917,7 +2982,7 @@
     },
     {
       "code": "org.ali.acetylene-flame",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -2959,7 +3024,7 @@
     },
     {
       "code": "org.ali.acetylene-h2o",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 1,
       "tags": [
@@ -3011,7 +3076,7 @@
     },
     {
       "code": "org.ali.keto-enol",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 3,
       "tags": [
@@ -3064,7 +3129,7 @@
     },
     {
       "code": "org.ali.acetylene-hcl",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -3116,7 +3181,7 @@
     },
     {
       "code": "org.ali.acetylene-benzene",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -3169,7 +3234,7 @@
     },
     {
       "code": "org.ali.silver-acetylide",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -3219,7 +3284,7 @@
     },
     {
       "code": "org.ali.acetic-vinyl",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルキン",
       "difficulty": 2,
       "tags": [
@@ -3272,7 +3337,7 @@
     },
     {
       "code": "org.ali.isomer-classification",
-      "unit": "aliphatic",
+      "unit": "sec-alkane-isomers",
       "group": "異性体・命名",
       "difficulty": 1,
       "tags": [
@@ -3320,7 +3385,7 @@
     },
     {
       "code": "org.ali.iso-c4h10",
-      "unit": "aliphatic",
+      "unit": "sec-alkane-isomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -3369,7 +3434,7 @@
     },
     {
       "code": "org.ali.iso-c5h12",
-      "unit": "aliphatic",
+      "unit": "sec-alkane-isomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -3417,7 +3482,7 @@
     },
     {
       "code": "org.ali.iso-count",
-      "unit": "aliphatic",
+      "unit": "sec-alkane-isomers",
       "group": "異性体・命名",
       "difficulty": 3,
       "tags": [
@@ -3467,7 +3532,7 @@
     },
     {
       "code": "org.ali.cis-trans-def",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 1,
       "tags": [
@@ -3519,7 +3584,7 @@
     },
     {
       "code": "org.ali.cis-trans-condition",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -3569,7 +3634,7 @@
     },
     {
       "code": "org.ali.chirality-def",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 1,
       "tags": [
@@ -3624,7 +3689,7 @@
     },
     {
       "code": "org.ali.chirality-find",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -3676,7 +3741,7 @@
     },
     {
       "code": "org.ali.meso",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 3,
       "tags": [
@@ -3725,7 +3790,7 @@
     },
     {
       "code": "org.ali.name-mainchain",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -3776,7 +3841,7 @@
     },
     {
       "code": "org.ali.name-numbering",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -3824,7 +3889,7 @@
     },
     {
       "code": "org.ali.name-substituent-order",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "異性体・命名",
       "difficulty": 4,
       "tags": [
@@ -3866,7 +3931,7 @@
     },
     {
       "code": "org.ali.name-ene-yne-priority",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "異性体・命名",
       "difficulty": 4,
       "tags": [
@@ -15396,7 +15461,7 @@
     },
     {
       "code": "org.ali.alkyl-count",
-      "unit": "aliphatic",
+      "unit": "sec-alkane-isomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -15448,7 +15513,7 @@
     },
     {
       "code": "org.ali.alkyl-chiral-min",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 3,
       "tags": [
@@ -15500,7 +15565,7 @@
     },
     {
       "code": "org.ali.chirality-ring",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 4,
       "tags": [
@@ -15547,7 +15612,7 @@
     },
     {
       "code": "org.ali.enantiomer-props",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -15598,7 +15663,7 @@
     },
     {
       "code": "org.ali.ozonolysis-reconstruct",
-      "unit": "aliphatic",
+      "unit": "sec-alkene",
       "group": "アルケン",
       "difficulty": 2,
       "tags": [
@@ -16040,7 +16105,7 @@
     },
     {
       "code": "org.ali.alkane-branch-bp",
-      "unit": "aliphatic",
+      "unit": "sec-alkane",
       "group": "アルカン",
       "difficulty": 3,
       "tags": [
@@ -16093,7 +16158,7 @@
     },
     {
       "code": "org.ali.cis-trans-props",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -16141,7 +16206,7 @@
     },
     {
       "code": "org.ali.optical-rotation",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 2,
       "tags": [
@@ -16189,7 +16254,7 @@
     },
     {
       "code": "org.ali.tartaric-stereo",
-      "unit": "aliphatic",
+      "unit": "sec-stereoisomers",
       "group": "異性体・命名",
       "difficulty": 3,
       "tags": [
@@ -16238,7 +16303,7 @@
     },
     {
       "code": "org.ali.organic-def",
-      "unit": "aliphatic",
+      "unit": "sec-organic-features",
       "group": "有機化合物の特徴",
       "difficulty": 1,
       "tags": [
@@ -16283,7 +16348,7 @@
     },
     {
       "code": "org.ali.organic-properties",
-      "unit": "aliphatic",
+      "unit": "sec-organic-features",
       "group": "有機化合物の特徴",
       "difficulty": 1,
       "tags": [
@@ -16326,7 +16391,7 @@
     },
     {
       "code": "org.ali.organic-diversity",
-      "unit": "aliphatic",
+      "unit": "sec-organic-features",
       "group": "有機化合物の特徴",
       "difficulty": 2,
       "tags": [
@@ -16369,7 +16434,7 @@
     },
     {
       "code": "org.ali.formula-kinds",
-      "unit": "aliphatic",
+      "unit": "sec-organic-formulas",
       "group": "有機化合物の表し方",
       "difficulty": 1,
       "tags": [
@@ -16415,7 +16480,7 @@
     },
     {
       "code": "org.ali.rational-formula",
-      "unit": "aliphatic",
+      "unit": "sec-organic-formulas",
       "group": "有機化合物の表し方",
       "difficulty": 2,
       "tags": [
@@ -16459,7 +16524,7 @@
     },
     {
       "code": "org.ali.formula-same-molecular",
-      "unit": "aliphatic",
+      "unit": "sec-organic-formulas",
       "group": "有機化合物の表し方",
       "difficulty": 1,
       "tags": [
@@ -16502,7 +16567,7 @@
     },
     {
       "code": "org.ali.organic-mp-reason",
-      "unit": "aliphatic",
+      "unit": "sec-organic-features",
       "group": "有機化合物の特徴",
       "difficulty": 2,
       "tags": [
@@ -16547,7 +16612,7 @@
     },
     {
       "code": "org.ali.organic-slow-reaction",
-      "unit": "aliphatic",
+      "unit": "sec-organic-features",
       "group": "有機化合物の特徴",
       "difficulty": 2,
       "tags": [
@@ -16594,7 +16659,7 @@
     },
     {
       "code": "org.ali.organic-exceptions",
-      "unit": "aliphatic",
+      "unit": "sec-organic-features",
       "group": "有機化合物の特徴",
       "difficulty": 2,
       "tags": [
@@ -16643,7 +16708,7 @@
     },
     {
       "code": "org.ali.organic-organize",
-      "unit": "aliphatic",
+      "unit": "sec-organic-features",
       "group": "有機化合物の特徴",
       "difficulty": 1,
       "tags": [
@@ -16689,7 +16754,7 @@
     },
     {
       "code": "org.ali.formula-use",
-      "unit": "aliphatic",
+      "unit": "sec-organic-formulas",
       "group": "有機化合物の表し方",
       "difficulty": 1,
       "tags": [
@@ -16739,7 +16804,7 @@
     },
     {
       "code": "org.ali.rational-to-molecular",
-      "unit": "aliphatic",
+      "unit": "sec-organic-formulas",
       "group": "有機化合物の表し方",
       "difficulty": 2,
       "tags": [
@@ -16787,7 +16852,7 @@
     },
     {
       "code": "org.ali.structural-formula-valence",
-      "unit": "aliphatic",
+      "unit": "sec-organic-formulas",
       "group": "有機化合物の表し方",
       "difficulty": 2,
       "tags": [

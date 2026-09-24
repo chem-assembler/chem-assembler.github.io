@@ -3936,9 +3936,22 @@ function foldPendantsPerpendicular(mol, cId, chainIds, perp) {
          */
         const hasRing = branch.some(id => ringIds.has(id));
         const step = Math.PI / 2;
-        const rot = hasRing
+        let rot = hasRing
             ? Math.atan2(dir.y, dir.x) - Math.atan2(s.y - c.y, s.x - c.x)
             : Math.round((Math.atan2(dir.y, dir.x) - Math.atan2(out.y, out.x)) / step) * step;
+        /* ★ ニトリル（枝の付け根から三重結合が1本だけ出る −C≡N）は、**C≡N を主鎖に平行**に寝かせる
+         *   （I-0132・2026-09-24 ユーザー「ポリアクリロニトリル：C≡N を炭素鎖に平行に」。形は
+         *   「CH から下へ価標、C≡N は横向き」＝ 教科書の −CH(−C≡N)− の書き方）。
+         *   付け根の結合 c−C は上のとおり主鎖に垂直、その先の ≡N は主鎖の向き（読む向きの右）へ */
+        const tripleTail = !hasRing && rest.length === 1 && (() => {
+            const b = mol.getBond(s.id, rest[0].id);
+            return !!(b && b.type === 3);
+        })();
+        if (tripleTail) {
+            let t = { x: -dir.y, y: dir.x };
+            if (t.x < -1e-9 || (Math.abs(t.x) < 1e-9 && t.y < 0)) t = { x: -t.x, y: -t.y };
+            rot = Math.atan2(t.y, t.x) - Math.atan2(out.y, out.x);
+        }
         const cos = Math.cos(rot), sin = Math.sin(rot);
         const nx = c.x + len * dir.x, ny = c.y + len * dir.y;
         const sx = s.x, sy = s.y;
@@ -6178,10 +6191,15 @@ const REACTION_RULES = [
              *   採る基準を「置けた」ではなく「**一直線になった**」にしてあるのは、置けるだけの
              *   倒し方が §14 の目的（鎖をまっすぐ見せる）を満たさないことがあるため。
              *   一直線がどれも作れないときだけ、最初に置けた倒し方へ戻す。
+             * ★★ 2026-09-24 **順を「同じ側（真下）」→「1つおき」→「そのまま」に変えた**（I-0128・ユーザー
+             *   「付加重合で呼び出す分子の置換基の向きが斜めになったり、垂直になったりする、垂直に揃えたい」）。
+             *   前の順では塩化ビニル・アクリロニトリルだけ「そのまま」（120° の斜め）が勝ち、酢酸ビニルなどは
+             *   真下になって、同じ付加重合で向きが割れていた。「そのまま」は、垂直のどちらも一直線にできない
+             *   ときの最後の手にする
              * ⚠ 以前は全単量体を `uprightChainSubstituent` で上下交互に立てていた（§18-1）。
              *   共重合はまだそちらを使っている。 */
             let built = null, fallback = null;
-            for (const fold of ['none', 'same', 'alternate']) {
+            for (const fold of ['same', 'alternate', 'none']) {
                 const r = linkVinylUnits(mol, units, fold);
                 if (!r) continue;
                 if (mainChainStraight(mol, units)) { built = r; break; }
@@ -9171,6 +9189,33 @@ function findPartnerHints(game, baseIds, ruleIds) {
     const library = game.getCompoundLibrary();
     const hits = [];
     const seenRules = new Set();
+    /* ★ いまのキャンバスで、もう2分子にまたがる箇所がある反応は、呼ぶ札を出さない（I-0130）。
+     *   相手がすでに居るのに札を押すと、2つ目の相手を呼んでしまう（重合・縮合重合・加硫の入口は元から同じ見張りを持つ）。
+     *   その反応は反応の一覧からそのまま押せる */
+    const comp = new Map();
+    (() => {
+        const adj = new Map(mol.atoms.map(a => [a.id, []]));
+        mol.bonds.forEach(b => { if (adj.has(b.atomId1) && adj.has(b.atomId2)) { adj.get(b.atomId1).push(b.atomId2); adj.get(b.atomId2).push(b.atomId1); } });
+        let k = 0;
+        mol.atoms.forEach(a => {
+            if (comp.has(a.id)) return;
+            const st = [a.id]; comp.set(a.id, k);
+            while (st.length) { const c = st.pop(); adj.get(c).forEach(n => { if (!comp.has(n)) { comp.set(n, k); st.push(n); } }); }
+            k++;
+        });
+    })();
+    const alreadyCross = new Map();
+    const canAlready = (rule) => {
+        if (alreadyCross.has(rule.id)) return alreadyCross.get(rule.id);
+        let v = false;
+        try {
+            v = (rule.detect(mol) || []).some(sv => Array.isArray(sv) &&
+                new Set(sv.filter(id => comp.has(id)).map(id => comp.get(id))).size >= 2 &&
+                (!baseIds || sv.some(id => baseIds.has(id))));
+        } catch (e) { v = false; }
+        alreadyCross.set(rule.id, v);
+        return v;
+    };
     PARTNER_CANDIDATES.forEach(name => {
         const entry = library.find(e => e.name === name);
         if (!entry) return;
@@ -9192,6 +9237,7 @@ function findPartnerHints(game, baseIds, ruleIds) {
             const crosses = sites.some(s => Array.isArray(s) &&
                 s.some(id => mine.has(id)) && s.some(id => theirs.has(id)));
             if (!crosses) return;
+            if (canAlready(rule)) { seenRules.add(rule.id); return; }
             seenRules.add(rule.id);
             // ★ **箇所の数もここで数えて札に書く**（v1420）。押す前に
             //   「すぐ実行される」のか「箇所を選ぶことになる」のかが分かるようにするため。
@@ -9386,7 +9432,8 @@ function findCoPolymerHints(game, baseIds, ruleIds, seenRules, hits) {
 /* ★ 2026-09-01（v1491）に `ring_opening_polymerization`（ε-カプロラクタム → ナイロン6）を追加。
  *   ⚠ **ここに入れてよい形である**ことを確かめてから足した ―― 相手は「自分と同じ分子」で、
  *   別の単量体も水も要らない（§21-3 (b)「入口は SELF_PARTNER_RULES に1行足すだけ」）。 */
-const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'diene_polymerization',
+// ★ alkyne_trimerization（アセチレン3分子 → ベンゼン）も「自分をあと2つ呼ぶ」で届く（2026-09-24・参考書の『アプリで試す』のため・I-0126）
+const SELF_PARTNER_RULES = ['addition_polymerization', 'alkyne_polymerization', 'alkyne_trimerization', 'diene_polymerization',
     'ring_opening_polymerization'];
 /**
  * 呼び出して並べる単量体の数（自分を含む）。**3 にした根拠**（v1437・§15.1 に実測）:
@@ -10395,7 +10442,9 @@ class Reactor {
         this._morphing = false;
         this._morphPause = null;
         g.restoreState(JSON.parse(rx.beforeState));
-        g.showToast('反応の前に戻しました（この操作も ↩ 戻す で取り消せます）。', 4000, 'success');
+        g.showToast(rx.summoned
+            ? `呼び出した「${rx.summoned}」ごと、反応の前に戻しました（この操作も ↩ 戻す で取り消せます）。`
+            : '反応の前に戻しました（この操作も ↩ 戻す で取り消せます）。', 4000, 'success');
         return true;
     }
 
@@ -11447,6 +11496,45 @@ class Reactor {
      *    モーダルが開いていたら選べない。実行後も `↩ 反応前に戻す` が帯（`#ws-free`）にあり、
      *    モーダルが開いていると裏に隠れて「簡単に戻せる」が成り立たない。
      */
+    /**
+     * 呼んだ相手（`added`）を、反応する原子が元の分子の側を向くように置き直す（I-0131）。
+     * 横の向きだけを見る: 相手の中で反応する原子が、相手の重心から見て元の分子と**反対の側**に
+     * あれば、相手を左右に鏡映する（上下は保つ）。立体（ハース・フィッシャーの印）を持つ相手は
+     * 鏡映すると別の立体になるので、代わりに重心のまわりに 180° 回す（`settleInPlace` と同じ決め）。
+     * ⚠ 座標だけを動かす（結合は触らない）。動かすのは相手だけ ＝ 元の分子は1原子も動かない
+     */
+    facePartner(site, added) {
+        const g = this.game;
+        if (!Array.isArray(site) || !added || !added.size) return false;
+        const mol = g.userMolecule;
+        const byId = new Map(mol.atoms.map(a => [a.id, a]));
+        const theirs = mol.atoms.filter(a => added.has(a.id));
+        const hitTheirs = site.filter(id => added.has(id)).map(id => byId.get(id)).filter(Boolean);
+        const hitMine = site.filter(id => !added.has(id)).map(id => byId.get(id)).filter(Boolean);
+        if (!theirs.length || !hitTheirs.length || !hitMine.length) return false;
+        const mx = arr => arr.reduce((t, a) => t + a.x, 0) / arr.length;
+        const my = arr => arr.reduce((t, a) => t + a.y, 0) / arr.length;
+        const cx = mx(theirs), cy = my(theirs);
+        const toward = mx(hitMine) - cx;          // 元の分子の反応する原子は、相手の重心から見てどちら側か
+        const facing = mx(hitTheirs) - cx;        // 相手の反応する原子は、どちら側か
+        if (Math.abs(facing) < 1 || toward * facing > 0) return false;   // もう向いている（または真ん中）
+        const chiral = theirs.some(a => a.haworthFace === 1 || a.haworthFace === -1) ||
+            (typeof readAtomParityFromFischer === 'function' && (() => {
+                const sub = new Molecule();
+                const idMap = new Map();
+                theirs.forEach(a => { const n = sub.addAtom(a.element, a.x, a.y); idMap.set(a.id, n.id); });
+                mol.bonds.forEach(b => {
+                    if (idMap.has(b.atomId1) && idMap.has(b.atomId2)) sub.addBond(idMap.get(b.atomId1), idMap.get(b.atomId2), b.type);
+                });
+                return Object.keys(readAtomParityFromFischer(sub) || {}).length > 0;
+            })());
+        theirs.forEach(a => {
+            a.x = 2 * cx - a.x;
+            if (chiral) a.y = 2 * cy - a.y;
+        });
+        return true;
+    }
+
     runPartnerHint(h) {
         const g = this.game;
         this.clearDeadEnd();
@@ -11458,6 +11546,13 @@ class Reactor {
         //    ⚠ 重合は相手が「自分と同じ分子」で、しかも**複数個**要る（v1437・§15）。
         //      `summonMolecule` は右へ横一線に並べるので、繰り返し単位がそのまま並ぶ
         const beforeIds = new Set(g.userMolecule.atoms.map(a => a.id));
+        /* ★ 呼ぶ前のキャンバスの控え（I-0130・2026-09-24 ユーザー「反応前に戻したときに呼び出し分子が消えない、
+         *   再度反応させると新たに分子を召喚して反応させる ／ ここを可逆的にしたい」）。
+         *   「↩ 反応前に戻す」は**呼ぶ前**まで戻す ＝ 呼んだ相手も一緒に消える（execute が `_pendingSummon` を読む）。
+         *   ⚠ 控えは呼んだ直後の形（トポロジー）と組で持ち、実行の時点でキャンバスがその形のときだけ使う
+         *   （箇所選びの途中でほかの操作をしてから別の反応をしたときに、古い控えへ戻さない） */
+        const preSummonState = g.serializeState();
+        this._pendingSummon = null;
         const times = Math.max(1, h.count || 1);
         for (let k = 0; k < times; k++) {
             if (!g.summonMolecule(h.name)) {
@@ -11495,6 +11590,10 @@ class Reactor {
                 `「${h.name}」は置けましたが、2分子にまたがる ${h.label} の箇所が見つかりませんでした。` +
                 '反応は実行していません。');
         }
+        /* ★ 相手を「反応する側が向き合う」向きに置く（I-0131・2026-09-24 ユーザー「エタノールの分子間脱水：
+         *   召喚する分子を、ヒドロキシ基同士が隣接する向きに」「反応による分子の移動は最小になるように」）。
+         *   2分子の反応だけ（重合など並べた単量体をつなぐ反応は、向きをそろえて並べるので触らない） */
+        if (!rule.wholeCanvas && times === 1 && !(h.selfCount > 0)) this.facePartner(cross[0], added);
         // ③ 両方を選ぶ → **その状態で本当に押せるか**を絞り込みそのもので確かめる
         this.selectPartnerPair(cross, added);
         const { siteAllowed } = this.siteFilter();
@@ -11506,6 +11605,11 @@ class Reactor {
                 '反応は実行していません。');
         }
         // ④ ここまで通ったときだけ進む。**どちらでもモーダルは閉じる**
+        this._pendingSummon = {
+            state: preSummonState,
+            key: this.topologyKey(this.snapshotMolecule(g.userMolecule)),
+            name: h.name
+        };
         if (g.closeMoleculeModal) g.closeMoleculeModal();
         g.updateDrawing(); // 選択枠（青の破線＋番号）を出してから動く
         if (allowed.length === 1) {
@@ -11807,7 +11911,13 @@ class Reactor {
         //   `before` は前後比較の絵を描くための抜き書き（id・元素・座標・電荷）で、
         //   ロック・不斉マーク・ベンゼンの中心角など**描き戻しに要る属性を持たない**。
         //   戻すのは `serializeState()`（Undo が使っているものと同じ全部入り）で行う
-        const beforeState = g.serializeState();
+        let beforeState = g.serializeState();
+        /* ★ 相手を呼んでから実行した反応は、「↩ 反応前に戻す」で**呼ぶ前**まで戻す（I-0130）。
+         *   控えを使うのは、キャンバスが呼んだ直後と同じ形のときだけ（`runPartnerHint` の注記） */
+        const pending = this._pendingSummon;
+        this._pendingSummon = null;
+        const summoned = !!(pending && pending.key === this.topologyKey(before));
+        if (summoned) beforeState = pending.state;
         let result;
         try {
             result = rule.apply(g, site);
@@ -11861,6 +11971,7 @@ class Reactor {
             label: rule.label,
             before,
             beforeState,
+            summoned: summoned ? pending.name : null,   // 呼んだ相手の名前（戻すと相手ごと消える・I-0130）
             after: this.snapshotMolecule(g.userMolecule),
             anim,   // 再生の写し（相手と副生成物つき）。無い反応は null
             beforeReal,   // 画面に出ていた反応前の図（相手を足す前・環を回す前）
@@ -11878,9 +11989,33 @@ class Reactor {
         this.clearDeadEnd(); // 反応が通ったら、前に出した「ここで止まりました」は用済み（v1420）
         this.clearNoRoom();  // 同じ理由で「置く場所がない」の札も下ろす（v1466）
         if (this._compareOpen) this.closeCompare(); // 前の比較が開いていれば閉じる（次の反応で上書き）
+        /* ★ 最初の再生を「見直し」（▶ もう一度見る・v1568）の再生で流す（I-0129・2026-09-24 ユーザー
+         *   「反応をコマ送りで再生・巻き戻しできるように」「反応実行したら最初からボタンが出る、最初は自動再生がよい」）。
+         *   見直しの再生は 🔄 ⏮ ▶ ⏭ やめる の行を出したまま流れる ＝ 最初の1回から止める・戻す・送るができる。
+         *   ⚠ 2段階で**わざと止まる**反応（bondsFirst・moveFirst ＝ 「続きを見る」で進める）は、止まり方が違うので
+         *     今までの再生のまま。動きを減らす設定・rAF の無い環境も今までどおり（結果だけ確定） */
+        if (this.autoReplayOnExecute !== false && !this._reducedMotion() && typeof requestAnimationFrame === 'function' &&
+            !['bondsFirst', 'moveFirst'].includes(rule.morphStages) && this.playExecutionAsReplay(result)) return;
         // 生成物データは確定済み。前→後をモーフィングで見せ、完了後に通常描画＋変化箇所ハイライト
         this.animateExecution(before, this.lastReaction.after, result, rule.morphStages || null, anim,
             { beforeReal, rotation: this.lastReaction.rotation });
+    }
+
+    /**
+     * 反応の最初の再生を、見直しの再生（`replayPlay`）で流す（I-0129）。
+     * `animateExecution` の頭と同じく、生成物を確定表示・視野合わせ・結果の一言を先に済ませてから流す。
+     * 終わりの描き戻しと変化箇所のハイライトは `closeReplay` が行う（見直しの終わりと同じ）。
+     * 見直しが組めない反応（段取りが無い）では false を返し、呼び手が今までの再生に回す
+     */
+    playExecutionAsReplay(result) {
+        const g = this.game;
+        if (!this.canReplay()) return false;
+        g.updateDrawing();
+        if (result.refit && typeof g.fitCanvasToMolecule === 'function') g.fitCanvasToMolecule(g.userMolecule);
+        const r = this.ensureReplay();
+        if (!r || !r.tl || !(r.tl.end > 0)) return false;
+        g.showToast(result.caption, 6500, 'success');
+        return this.replayPlay() !== false;
     }
 
     // ===== 実行時モーフィング（P12-5 第2弾。表示のみ・検証/Undo/監査には一切影響しない） =====
