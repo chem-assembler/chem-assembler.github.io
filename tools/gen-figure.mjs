@@ -1054,7 +1054,7 @@ async function bake(jobs) {
             if (vb[2] < FIT_W && !spec.tight) { vb[0] -= (FIT_W - vb[2]) / 2; vb[2] = FIT_W; svg.setAttribute('viewBox', vb.join(' ')); }
             let w = OUT_W, h = Math.round(OUT_W * vb[3] / vb[2]);
             /* ★ scroll（横スクロールの図）: 縮めずに、viewBox の SCROLL_FIT_W が本文の幅に当たる倍率で焼く */
-            if (spec.scroll) { const k = OUT_W / SCROLL_FIT_W; w = Math.round(vb[2] * k); h = Math.round(vb[3] * k); }
+            if (spec.scroll) { const k = OUT_W / (spec.scrollFit || SCROLL_FIT_W); w = Math.round(vb[2] * k); h = Math.round(vb[3] * k); }
             if (h > MAX_H) { h = MAX_H; w = Math.round(MAX_H * vb[2] / vb[3]); }
             svg.style.width = (w / 2) + 'px';
             svg.style.height = (h / 2) + 'px';
@@ -1074,7 +1074,7 @@ async function bake(jobs) {
                 else if (f < minFont) minFont = f;
             });
             /* scroll の図は縮めずに出す（viewBox の SCROLL_FIT_W が本文の BODY_W に当たる） */
-            const shownW = spec.scroll ? SCROLL_FIT_W : vb[2];
+            const shownW = spec.scroll ? (spec.scrollFit || SCROLL_FIT_W) : vb[2];
             const minText = isFinite(minFont) ? minFont * BODY_W / shownW : null;
             const minSub = isFinite(minSubFont) ? minSubFont * BODY_W / shownW : null;
             return { ok: true, via, w, h, aspect: vb[2] / vb[3], atoms: mol.atoms.length, marks: nMarks, markWarn, minText, minSub, partCounts };
@@ -1094,10 +1094,18 @@ async function bake(jobs) {
 
         /* ★ 反応式が2段に折っても字が床を割るとき（縮合重合の長い繰り返し単位）は、縮めずに焼いて横スクロールで見せる
            （learn.js は反応式の図をいつも横スクロールの箱に入れ、幅は PNG の幅 ÷ 1150 の割合） */
-        if (!r.error && job.reaction && r.minText && r.minText < MIN_TEXT && !job.spec.scroll) {
+        // ⚠ 下付きだけが床を割る図（糖の反応式・下付き 8〜10px）も同じ（2026-09-25）
+        if (!r.error && job.reaction && ((r.minText && r.minText < MIN_TEXT) || (r.minSub && r.minSub < MIN_SUB)) && !job.spec.scroll) {
             job.spec.scroll = true;
             r = await bakeOne(job.spec, job.parts, job.between);
             if (!r.error) r.fellBack = '字が床を割るので縮めずに焼いた（横スクロール）';
+            /* ★ 横スクロールでもまだ床を割る（糖のハース式は結合に比べて字が小さい）なら、床に届くまで倍率を上げて焼き直す */
+            if (!r.error && ((r.minText && r.minText < MIN_TEXT) || (r.minSub && r.minSub < MIN_SUB))) {
+                const f = Math.max(r.minText ? MIN_TEXT / r.minText : 1, r.minSub ? MIN_SUB / r.minSub : 1) * 1.02;
+                job.spec.scrollFit = SCROLL_FIT_W / f;
+                r = await bakeOne(job.spec, job.parts, job.between);
+                if (!r.error) r.fellBack = '字が床を割るので拡大して焼いた（横スクロール）';
+            }
         }
         if (r.error) {
             console.error(`❌ reference-src/${job.id}.md の ${job.src}: ${r.error}`);
