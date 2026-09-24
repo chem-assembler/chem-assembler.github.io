@@ -2,9 +2,9 @@
   <!-- グリシンの中性の形 → 双性イオン。分子の中で H⁺ が −COOH から −NH₂ へ移る。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
-    .f { font-size: 24px; fill: #222; }
-    .lab { font-size: 19px; fill: #222; }
-    .small { font-size: 19px; fill: #444; }
+    .f { font-size: 27px; fill: #222; }
+    .lab { font-size: 22px; fill: #222; }
+    .small { font-size: 22px; fill: #444; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
     .move { stroke: #c62828; stroke-width: 2.5; fill: none; }
     .red { fill: #c62828; }
