@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="392" viewBox="0 48 880 392" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="602.105" height="268.211" viewBox="0 48 880 392" role="img">
   <!-- NaCl の結晶が水に溶けるようす。Na+ には水分子の O 側、Cl- には H 側が向く。
        ⚠ 水分子は <defs> の1つを回して置いている（回すと文字が逆さになるので、O・H・δ の札は
           左下の見本の1個だけに付けた）。図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
