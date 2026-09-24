@@ -211,6 +211,7 @@ function collect() {
                     if (!own) sp.autoExpandH = true;
                     if (!sp.circle && !sp.numbered) { sp.paper = true; sp.paperByDefault = true; }
                     sp.figurePart = true; sp.anchors = []; sp.marks = [];
+                    sp.plain = true;   // 反応式の項に位置番号は要らない（メタンの下に「1」が残っていた・2026-09-25）
                     sp.coef = t.coef; sp.bracket = t.poly; if (t.poly) { sp.minPeriod = 2; sp.softStraight = true; }
                     return sp;
                 });
@@ -725,7 +726,7 @@ async function bake(jobs) {
                 mol.atoms.forEach(a => { if (spec.flip === 'v') a.y = -a.y; else a.x = -a.x; });
                 via += spec.flip === 'v' ? '・上下を裏返し' : '・左右を裏返し';
             }
-            return { mol, via };
+            return { mol, via, formula: entry && entry.formula };
         };
     });
     for (const job of jobs) {
@@ -764,7 +765,9 @@ async function bake(jobs) {
                 if (sp.autoExpandH) {
                     let full = sp._expandH !== undefined ? sp._expandH : smallNoRing(res.mol);
                     /* 重原子1つの小さい分子（HBr・HCl・H₂O・NH₃）は式のまま書く（水素を描くと Br−H と逆向きになる・教科書も式で書く） */
-                    if (res.mol.atoms.filter(a => a.element !== 'H' && a.element !== 'R').length === 1) full = false;
+                    // ⚠ 炭素1つ（メタン）は除く ＝ 隣のクロロメタンを H まで描くなら、メタンも H−C−H の十字で描く（式の中で描き方をそろえる）
+                    const heavy1 = res.mol.atoms.filter(a => a.element !== 'H' && a.element !== 'R');
+                    if (heavy1.length === 1 && heavy1[0].element !== 'C') full = false;
                     sp.expand = full ? ['H'] : [];
                     res.via += full ? '・水素も描く' : '・簡略化した構造式';
                 }
@@ -777,6 +780,41 @@ async function bake(jobs) {
                             sp.figurePart ? { figurePart: true, anchors: sp.anchors || [] } : {}));
                 } catch (e) {
                     return { error: where + ((e && e.message) || String(e)) };
+                }
+                /* ★ 反応式の項で、炭素を含まないイオンの物質（NaOH・NaHCO₃・NaCl）は**化学式の字で書く**（2026-09-25）。
+                   アプリの登録はイオンを隣り合わせに置いているので、そのまま描くと「Na⁺」と「HO⁻」の字が重なる。
+                   教科書の反応式も NaOH と書く。⚠ 形を描いたあとで中身を式の字1つに差し替えるだけ（分子には触らない） */
+                if (sp.autoExpandH && res.formula && !(sp.marks && sp.marks.length)
+                    && res.mol.atoms.some(a => a.charge) && (() => {
+                        // 炭素は無いか、1つで H が付いていない（NaHCO₃・Na₂CO₃ は無機の塩。HCOONa は有機なので構造式のまま）
+                        const Cs = res.mol.atoms.filter(a => a.element === 'C');
+                        return Cs.length <= 1 && Cs.every(c => !(res.mol.getFreeValency && res.mol.getFreeValency(c.id) > 0));
+                    })()) {
+                    const NS = 'http://www.w3.org/2000/svg';
+                    const ref = svgEl.querySelector('.svg-paper-label');
+                    const fs = ref ? parseFloat(ref.style.fontSize) || 40 : 40;
+                    [...svgEl.childNodes].forEach(n => { if (!/^(defs|style)$/i.test(n.nodeName)) n.remove(); });
+                    const grp = document.createElementNS(NS, 'g');
+                    grp.setAttribute('class', 'quiz-atoms');
+                    const t = document.createElementNS(NS, 'text');
+                    t.setAttribute('class', 'svg-atom-text svg-paper-label');
+                    t.setAttribute('data-label', res.formula);
+                    if (ref && ref.getAttribute('fill')) t.setAttribute('fill', ref.getAttribute('fill'));
+                    t.style.fontSize = fs + 'px';
+                    let lowered = false;
+                    [...res.formula].forEach(ch => {
+                        const sub = /[0-9]/.test(ch);
+                        const s = document.createElementNS(NS, 'tspan');
+                        if (sub !== lowered) { s.setAttribute('dy', (sub ? 1 : -1) * fs * 0.14); lowered = sub; }
+                        if (sub) s.style.fontSize = fs * 0.58 + 'px';
+                        s.textContent = ch;
+                        t.appendChild(s);
+                    });
+                    grp.appendChild(t);
+                    svgEl.appendChild(grp);
+                    const bb = t.getBBox(), pad = 30;   // ⚠ composeFigureRow は viewBox の四方から 30 を引いて中身の幅を測る
+                    svgEl.setAttribute('viewBox', `${bb.x - pad} ${bb.y - pad} ${bb.width + pad * 2} ${bb.height + pad * 2}`);
+                    res.via += '・イオンの物質は化学式で';
                 }
                 /* ★ 素の位置番号（`1 2 3 …`）だけを消す。⚠ 元素記号（`.svg-atom-text`）は残す
                    ＝ 形にも結合にも触っていない（描いたあとで文字を1種類だけ取り去るだけ） */

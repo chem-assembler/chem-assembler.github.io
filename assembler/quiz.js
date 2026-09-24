@@ -2890,6 +2890,19 @@ function drawPaperMolecule(game, svg, mol, bondsGroup, atomsGroup, opts) {
             const ux = dx / len, uy = dy / len, d = B - len;
             const [move, sx, sy] = s2.size <= s1.size ? [s2, ux, uy] : [s1, -ux, -uy];
             move.forEach(id => { const at = byId.get(id); at.x += sx * d; at.y += sy * d; });
+            /* ⚠ 縮めたせいで、結合していない原子どうしが価標1本より近づくなら**縮めない**（2026-09-25）。
+               油脂（トリステアリン）はグリセリンの縦の結合を 2 本ぶん（84）にして C=O の O を段の間に入れてある。
+               そろえると段の間が詰まり、下の段の =O が上の段の C に重なった（参考書のけん化の図） */
+            if (d < 0) {
+                const rest = mol.atoms.filter(at => !move.has(at.id) && !hidden.has(at.id));
+                const tooClose = [...move].some(id => {
+                    if (hidden.has(id)) return false;
+                    const at = byId.get(id);
+                    return rest.some(o => Math.hypot(o.x - at.x, o.y - at.y) < B * 0.9
+                        && !mol.getNeighbors(id).some(nb => nb.atom.id === o.id));
+                });
+                if (tooClose) move.forEach(id => { const at = byId.get(id); at.x -= sx * d; at.y -= sy * d; });
+            }
         });
     }
     // ★ 環の辺が文字に食われるときは、**図全体を広げる**（v1562・一括焼き直しの目視で見つけた）。
