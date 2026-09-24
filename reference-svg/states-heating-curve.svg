@@ -8,9 +8,9 @@
     .grid { stroke: #bbb; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
     .up { stroke: #1565c0; stroke-width: 3.5; fill: none; }
     .flat { stroke: #c62828; stroke-width: 4; fill: none; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 17px; fill: #444; }
-    .tick { font-size: 17px; fill: #555; }
+    .lab { font-size: 20px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
+    .tick { font-size: 19px; fill: #555; }
   </style>
 
   <!-- 軸 -->
