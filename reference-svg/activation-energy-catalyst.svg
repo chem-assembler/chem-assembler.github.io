@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="750" viewBox="0 0 680 750" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="800" viewBox="0 0 680 800" role="img">
   <!-- 活性化エネルギーと触媒を示す図。
        元はスライドの図。文字サイズを確保するため縦に並べて SVG に描き直した（2026-09-24・字の床 14px）。 -->
   <style>
     text { font-family: system-ui, sans-serif; fill: #222; font-size: 20px; }
-    .wtext { fill: #fff; font-size: 20px; }
+    .wtext { fill: #fff; font-size: 20px; text-anchor: middle; }
     .atomH { fill: #d35400; stroke: #873600; stroke-width: 2; }
     .atomI { fill: #4a9e3a; stroke: #235919; stroke-width: 2; }
     .axis { stroke: #000; stroke-width: 3; fill: none; marker-end: url(#arrowhead); }
@@ -70,37 +70,37 @@
     <!-- 分子モデル -->
     <!-- 反応物 -->
     <circle cx="80" cy="90" r="18" class="atomH" />
-    <text x="80" y="97" class="wtext" text-anchor="middle">H</text>
+    <text x="80" y="97" class="wtext">H</text>
     <circle cx="115" cy="90" r="18" class="atomH" />
-    <text x="115" y="97" class="wtext" text-anchor="middle">H</text>
+    <text x="115" y="97" class="wtext">H</text>
     
     <circle cx="80" cy="170" r="18" class="atomI" />
-    <text x="80" y="177" class="wtext" text-anchor="middle">I</text>
+    <text x="80" y="177" class="wtext">I</text>
     <circle cx="115" cy="170" r="18" class="atomI" />
-    <text x="115" y="177" class="wtext" text-anchor="middle">I</text>
+    <text x="115" y="177" class="wtext">I</text>
     <text x="98" y="220" text-anchor="middle">反応物</text>
 
     <!-- 遷移状態 -->
     <circle cx="180" cy="10" r="18" class="atomH" />
-    <text x="180" y="17" class="wtext" text-anchor="middle">H</text>
+    <text x="180" y="17" class="wtext">H</text>
     <circle cx="215" cy="10" r="18" class="atomH" />
-    <text x="215" y="17" class="wtext" text-anchor="middle">H</text>
+    <text x="215" y="17" class="wtext">H</text>
     <circle cx="180" cy="45" r="18" class="atomI" />
-    <text x="180" y="52" class="wtext" text-anchor="middle">I</text>
+    <text x="180" y="52" class="wtext">I</text>
     <circle cx="215" cy="45" r="18" class="atomI" />
-    <text x="215" y="52" class="wtext" text-anchor="middle">I</text>
-    <text x="198" y="90" text-anchor="middle">遷移状態</text>
+    <text x="215" y="52" class="wtext">I</text>
+    <text x="198" y="85" text-anchor="middle">遷移状態</text>
 
     <!-- 生成物 -->
     <circle cx="310" cy="170" r="18" class="atomH" />
-    <text x="310" y="177" class="wtext" text-anchor="middle">H</text>
+    <text x="310" y="177" class="wtext">H</text>
     <circle cx="310" cy="205" r="18" class="atomI" />
-    <text x="310" y="212" class="wtext" text-anchor="middle">I</text>
+    <text x="310" y="212" class="wtext">I</text>
     
     <circle cx="370" cy="170" r="18" class="atomH" />
-    <text x="370" y="177" class="wtext" text-anchor="middle">H</text>
+    <text x="370" y="177" class="wtext">H</text>
     <circle cx="370" cy="205" r="18" class="atomI" />
-    <text x="370" y="212" class="wtext" text-anchor="middle">I</text>
+    <text x="370" y="212" class="wtext">I</text>
     <text x="340" y="250" text-anchor="middle">生成物</text>
 
     <!-- ラベル箱 -->
@@ -119,10 +119,10 @@
   </g>
 
   <!-- 中央の矢印 -->
-  <polygon points="320,380 350,380 350,370 380,390 350,410 350,400 320,400" fill="#004466" stroke="#002233" stroke-width="2" />
+  <polygon points="320,410 350,410 350,400 380,420 350,440 350,430 320,430" fill="#004466" stroke="#002233" stroke-width="2" />
 
   <!-- 下の図: 触媒あり -->
-  <g transform="translate(50, 400)">
+  <g transform="translate(50, 440)">
     <!-- 軸 -->
     <path class="axis" d="M 40 300 L 40 10" />
     <path class="axis" d="M 40 300 L 450 300" />
@@ -146,42 +146,42 @@
     <!-- 分子モデル -->
     <!-- 反応物 -->
     <circle cx="80" cy="90" r="18" class="atomH" />
-    <text x="80" y="97" class="wtext" text-anchor="middle">H</text>
+    <text x="80" y="97" class="wtext">H</text>
     <circle cx="115" cy="90" r="18" class="atomH" />
-    <text x="115" y="97" class="wtext" text-anchor="middle">H</text>
+    <text x="115" y="97" class="wtext">H</text>
     
     <circle cx="80" cy="170" r="18" class="atomI" />
-    <text x="80" y="177" class="wtext" text-anchor="middle">I</text>
+    <text x="80" y="177" class="wtext">I</text>
     <circle cx="115" cy="170" r="18" class="atomI" />
-    <text x="115" y="177" class="wtext" text-anchor="middle">I</text>
+    <text x="115" y="177" class="wtext">I</text>
     <text x="98" y="220" text-anchor="middle">反応物</text>
 
     <!-- 遷移状態 -->
     <rect class="catBox" x="155" y="45" width="85" height="80" />
     <rect class="boxRed" x="180" y="-15" width="50" height="30" />
-    <text x="185" y="7">触媒</text>
+    <text x="205" y="7" text-anchor="middle">触媒</text>
     <path class="lead" d="M 205 15 L 205 45" />
 
     <circle cx="180" cy="65" r="18" class="atomH" />
-    <text x="180" y="72" class="wtext" text-anchor="middle">H</text>
+    <text x="180" y="72" class="wtext">H</text>
     <circle cx="215" cy="65" r="18" class="atomH" />
-    <text x="215" y="72" class="wtext" text-anchor="middle">H</text>
+    <text x="215" y="72" class="wtext">H</text>
     <circle cx="180" cy="100" r="18" class="atomI" />
-    <text x="180" y="107" class="wtext" text-anchor="middle">I</text>
+    <text x="180" y="107" class="wtext">I</text>
     <circle cx="215" cy="100" r="18" class="atomI" />
-    <text x="215" y="107" class="wtext" text-anchor="middle">I</text>
-    <text x="198" y="150" text-anchor="middle">遷移状態</text>
+    <text x="215" y="107" class="wtext">I</text>
+    <text x="198" y="145" text-anchor="middle">遷移状態</text>
 
     <!-- 生成物 -->
     <circle cx="310" cy="170" r="18" class="atomH" />
-    <text x="310" y="177" class="wtext" text-anchor="middle">H</text>
+    <text x="310" y="177" class="wtext">H</text>
     <circle cx="310" cy="205" r="18" class="atomI" />
-    <text x="310" y="212" class="wtext" text-anchor="middle">I</text>
+    <text x="310" y="212" class="wtext">I</text>
     
     <circle cx="370" cy="170" r="18" class="atomH" />
-    <text x="370" y="177" class="wtext" text-anchor="middle">H</text>
+    <text x="370" y="177" class="wtext">H</text>
     <circle cx="370" cy="205" r="18" class="atomI" />
-    <text x="370" y="212" class="wtext" text-anchor="middle">I</text>
+    <text x="370" y="212" class="wtext">I</text>
     <text x="340" y="250" text-anchor="middle">生成物</text>
 
     <!-- ラベル箱 -->
