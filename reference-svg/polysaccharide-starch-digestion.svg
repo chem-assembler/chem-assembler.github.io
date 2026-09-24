@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="230" viewBox="0 0 880 230" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="648.421" height="169.474" viewBox="0 0 880 230" role="img">
   <!-- デンプン → デキストリン → マルトース → グルコース。丸1つがグルコース1個で、鎖が短くなっていく。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
