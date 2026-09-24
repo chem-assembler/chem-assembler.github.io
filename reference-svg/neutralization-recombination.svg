@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="350" viewBox="0 0 680 350" role="img">
+  <!-- 中和とイオンの組み換えを示す図。
+       元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 24px; text-anchor: middle; }
+    .boxText { font-size: 20px; text-anchor: start; }
+    .titleText { font-size: 28px; }
+    .hPlus { fill: #d35400; stroke: #993d00; stroke-width: 2; }
+    .ohMinus { fill: #165b7c; stroke: #10425a; stroke-width: 2; }
+    .posIon { fill: #f0cbb5; stroke: #222; stroke-width: 2; }
+    .negIon { fill: #a5d4a1; stroke: #222; stroke-width: 2; }
+    .wtext { fill: #fff; }
+    .arrow { fill: none; stroke-width: 4; marker-end: url(#arrowhead); }
+    .arrowH { stroke: #e0762b; }
+    .arrowOH { stroke: #165b7c; }
+    .arrowPos { stroke: #f0cbb5; }
+    .arrowNeg { stroke: #a5d4a1; }
+    .brace { fill: none; stroke-width: 2; }
+    .braceSalt { stroke: #f1c40f; }
+    .braceWater { stroke: #27ae60; }
+    .textBox { fill: none; stroke: #f1c40f; stroke-width: 2; }
+    .sideBox { fill: none; stroke: #e0762b; stroke-width: 2; }
+  </style>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="context-stroke" />
+    </marker>
+  </defs>
+
+  <text x="80" y="65" text-anchor="start" font-size="28" font-weight="bold">反応前</text>
+  <text x="80" y="185" text-anchor="start" font-size="28" font-weight="bold">反応後</text>
+
+  <text x="250" y="30" class="titleText" font-weight="bold">酸</text>
+  <text x="500" y="30" class="titleText" font-weight="bold">塩基</text>
+
+  <!-- 反応前: 酸 -->
+  <circle cx="220" cy="60" r="30" class="hPlus" />
+  <text x="220" y="68" class="wtext">H<tspan font-size="16" dy="-10">+</tspan></text>
+  <ellipse cx="290" cy="60" rx="40" ry="30" class="negIon" />
+  <text x="290" y="68" font-size="16">－イオン</text>
+
+  <!-- 反応前: 塩基 -->
+  <ellipse cx="440" cy="60" rx="40" ry="30" class="posIon" />
+  <text x="440" y="68" font-size="16">＋イオン</text>
+  <circle cx="510" cy="60" r="30" class="ohMinus" />
+  <text x="510" y="68" class="wtext">OH<tspan font-size="16" dy="-10">-</tspan></text>
+
+  <!-- 反応後: 塩 -->
+  <ellipse cx="240" cy="180" rx="40" ry="30" class="posIon" />
+  <text x="240" y="188" font-size="16">＋イオン</text>
+  <ellipse cx="320" cy="180" rx="40" ry="30" class="negIon" />
+  <text x="320" y="188" font-size="16">－イオン</text>
+
+  <!-- 反応後: 水 -->
+  <circle cx="470" cy="180" r="30" class="hPlus" />
+  <text x="470" y="188" class="wtext">H<tspan font-size="16" dy="-10">+</tspan></text>
+  <circle cx="530" cy="180" r="30" class="ohMinus" />
+  <text x="530" y="188" class="wtext">OH<tspan font-size="16" dy="-10">-</tspan></text>
+
+  <!-- 矢印 -->
+  <path class="arrow arrowH" d="M 230 75 L 455 160" />
+  <path class="arrow arrowOH" d="M 510 90 L 490 145" />
+  <path class="arrow arrowPos" d="M 415 75 L 265 155" />
+  <path class="arrow arrowNeg" d="M 280 85 L 320 145" />
+
+  <!-- 下のカッコと文字 -->
+  <path class="brace braceSalt" d="M 190 215 L 190 225 L 370 225 L 370 215" />
+  <text x="280" y="255" font-weight="bold">塩（えん）</text>
+
+  <path class="brace braceWater" d="M 430 215 L 430 225 L 570 225 L 570 215" />
+  <text x="500" y="255" font-weight="bold">水</text>
+
+  <!-- 右側の箱 -->
+  <rect class="sideBox" x="550" y="90" width="120" height="60" />
+  <text x="610" y="115" font-size="16">酸と塩基の反応は</text>
+  <text x="610" y="140" font-size="16">イオンの組み換え</text>
+
+  <!-- 一番下の枠 -->
+  <rect x="20" y="270" width="640" height="70" class="textBox" />
+  <text x="30" y="295" class="boxText">酸と塩基が中和反応すると，塩（塩基の陽イオン＋酸の陰イオン）</text>
+  <text x="30" y="325" class="boxText">と水（酸のH<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">＋塩基のOH</tspan><tspan font-size="14" dy="-8">-</tspan><tspan dy="8">）が生じる</tspan></text>
+
+</svg>
