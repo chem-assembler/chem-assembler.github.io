@@ -213,7 +213,7 @@ left: C₆H₄(COOH)₂（フタル酸）
 over: 加熱
 right: C₆H₄(CO)₂O ＋ H₂O
 gen: フタル酸 → 無水フタル酸 ＋ 水
-app: dehydration
+app: dehydration_anhydride
 level: ★★☆
 note: 無水フタル酸ができます。隣り合った o 体だけが起こすので、o 体かどうかを見分ける手がかりになります。
 :::
