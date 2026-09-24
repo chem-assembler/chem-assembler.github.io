@@ -6,8 +6,8 @@
     .b1 { fill: #e8f5e9; stroke: #2e7d32; stroke-width: 2; }
     .b2 { fill: #e3f0fb; stroke: #1565c0; stroke-width: 2; }
     .ln { stroke: #333; stroke-width: 2; fill: none; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 19px; fill: #444; }
   </style>
 
   <path class="ln" d="M 120 191 L 135 191 M 135 99 L 135 284 M 135 99 L 150 99 M 135 284 L 150 284" />
