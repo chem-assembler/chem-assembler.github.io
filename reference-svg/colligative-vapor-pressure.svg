@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="440" viewBox="0 0 860 440" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="764.444" height="391.111" viewBox="0 0 860 440" role="img">
   <!-- 蒸気圧曲線（純溶媒と溶液）。蒸気圧が下がる → 外圧に届くのに高い温度が要る → 沸点上昇。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
