@@ -5214,7 +5214,7 @@
 {"kind":"link","to":"alcohol","text":"アルコールの沸点と水素結合はアルコールのページへ"},
 {"kind":"section","anchor":"why","title":"なぜその物性になるか","lead":"ジエチルエーテルの沸点が低いのは水素結合をつくらないため、アミノ酸の融点が高いのは双性イオンのためです。","terms":["水素結合"]},
 {"kind":"text","text":"ジエチルエーテルは、エタノール2分子から水がとれてできます。"},
-{"kind":"reaction","left":"2C₂H₅OH","over":"濃硫酸・130〜140℃","right":"C₂H₅OC₂H₅ ＋ H₂O","level":"★★★","note":"分子間の脱水です。エタノール（沸点78℃）からできたジエチルエーテルは、−OH が無くなって分子どうしが水素結合をつくらないため、沸点が34℃まで下がります。"},
+{"kind":"reaction","left":"2C₂H₅OH","over":"濃硫酸・130〜140℃","right":"C₂H₅OC₂H₅ ＋ H₂O","gen":"2 エタノール → ジエチルエーテル ＋ 水","app":"dehydration_inter","level":"★★★","note":"分子間の脱水です。エタノール（沸点78℃）からできたジエチルエーテルは、−OH が無くなって分子どうしが水素結合をつくらないため、沸点が34℃まで下がります。","img":"rx-08b3a51b.png","appHref":"/assembler/?summon=%E3%82%A8%E3%82%BF%E3%83%8E%E3%83%BC%E3%83%AB&reagent=dehydration_inter&from=reference","appRule":"dehydration_inter","appSummon":"エタノール"},
 {"kind":"text","text":"アミノ酸の融点が高いのは、結晶の中で −COO⁻ と −NH₃⁺ をもつ<b>双性イオン</b>になり、分子どうしがイオン結合に近い強い力で引き合っているためです。"},
 {"kind":"text","text":"エステルが中性なのは、カルボン酸の −COOH の H がアルキル基に置き換わり、電離する H が無くなっているためです。"},
 {"kind":"link","to":"intermolecular-force","text":"水素結合と沸点の関係は分子間力のページへ"},
