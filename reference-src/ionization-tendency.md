@@ -172,6 +172,7 @@ terms:
 
 :::figure
 src: ionization-tendency-table.png
+svg: ionization-tendency-table.svg
 alt: イオン化列を Li K Ca Na／Mg／Al Zn Fe／Ni Sn Pb／H₂／Cu Hg Ag／Pt Au に区切った表。水との反応は、常温の水と反応・熱水と反応・高温の水蒸気と反応・反応しない。酸との反応は、希酸と反応・酸化力のある酸と反応・王水と反応
 caption: イオン化列の区切りと、水・酸との反応。**区切りの位置まで含めて暗記**します。
 :::
