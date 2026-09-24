@@ -40,6 +40,10 @@ terms:
 - 非共有電子対
 - 原子価
 - 電子式
+codes:
+- theo.structure.valence
+- theo.structure.covalent-def
+- theo.structure.atom-electron-dot
 :::
 
 2個の水素原子 H は、それぞれ1個の電子を出し合い、2個の電子を共有して水素分子 H₂ になります。共有した2個の電子は、どちらの H にとっても自分の電子として数えられるので、どちらも He と同じ電子配置（K 殻に2個）になります。このように、原子どうしが電子を出し合って共有してできる結合を**共有結合**といいます。
@@ -92,6 +96,9 @@ terms:
 - 単結合
 - 二重結合
 - 三重結合
+codes:
+- theo.structure.structural-formula
+- theo.structure.bond-multiplicity
 :::
 
 原子と原子をつなぐ共有電子対1組を1本の線（結合の手。価標ともいいます）で表した式を**構造式**といいます。構造式は、次の手順で書きます。
@@ -159,6 +166,10 @@ title: 電子式の書き方 —— 構造式から直すのが楽
 lead: 電子式は、不対電子どうしをくっつけて共有電子対をつくるパズルです。すべての原子が安定な電子配置（H は2個、ほかは8個）になっているかを確かめます。先に構造式を書いてから、結合の手を共有電子対に直すのが楽です。
 terms:
 - 電子式
+codes:
+- theo.structure.electron-pair-count
+- theo.structure.pair-count-scope
+- theo.structure.electron-formula-octet
 :::
 
 電子式を書く手順は、構造式とまったく同じ形です。
@@ -239,6 +250,8 @@ terms:
 - 配位結合
 - オキソニウムイオン
 - アンモニウムイオン
+codes:
+- theo.structure.coordinate-bond
 :::
 
 ふつうの共有結合は、2つの原子が**互いに**不対電子を出し合って共有電子対をつくります。一方、**配位結合**は、一方の原子の非共有電子対を、電子をもたない相手（H⁺ など）と共有してできます。結合のでき方は違いますが、**できた結合はふつうの共有結合と区別がつきません**。
