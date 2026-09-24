@@ -20,7 +20,7 @@
   <polygon points="150,40 145,54 155,54" fill="#333" />
   <polygon points="710,380 696,375 696,385" fill="#333" />
   <text class="small" x="28" y="44">蒸気圧（Pa）</text>
-  <text class="small" x="706" y="376">温度（℃）</text>
+  <text class="small" x="650" y="415">温度（℃）</text>
 
   <!-- 外圧の高さ -->
   <path class="atm" d="M 150 150 L 690 150" />
