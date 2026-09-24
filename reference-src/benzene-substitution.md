@@ -56,7 +56,7 @@ over: 濃硫酸
 under: 約60℃
 right: C₆H₅NO₂ ＋ H₂O
 gen: ベンゼン → ニトロベンゼン ＋ 水
-app: substitution_no2
+app: aromatic_nitration
 level: ★★★
 note: ニトロベンゼンと水ができます。濃硫酸は反応物ではなく、触媒としてはたらきます。
 :::
@@ -72,7 +72,7 @@ left: C₆H₆ ＋ H₂SO₄（硫酸）
 over: 加熱
 right: C₆H₅SO₃H ＋ H₂O
 gen: ベンゼン → ベンゼンスルホン酸 ＋ 水
-app: substitution_so3h
+app: aromatic_sulfonation
 level: ★★★
 note: ベンゼンスルホン酸と水ができます。ニトロ化と違い、ここでは硫酸そのものが反応物です。
 :::
@@ -195,7 +195,7 @@ over: 濃硫酸
 under: 加熱
 right: C₆H₂(CH₃)(NO₂)₃ ＋ 3H₂O
 gen: トルエン → 2,4,6-トリニトロトルエン ＋ 3 水
-app: substitution_no2
+app: aromatic_nitration
 level: ★☆☆
 note: 2,4,6-トリニトロトルエン（TNT）ができます。メチル基から見て o・p・o の3か所に入るので、位置番号が 2,4,6 になります。
 :::
@@ -229,6 +229,8 @@ source: draft:reference-outline/aromatic.md の benzene-substitution の表（3�
 prompt: ベンゼンに濃硫酸を加えて加熱したときにできる化合物の名称と示性式を答えよ。また、その水溶液の性質を答えよ。
 answer: **ベンゼンスルホン酸 C₆H₅SO₃H** です。スルホ基がほぼ完全に電離するので、水溶液は**強い酸性**を示します。
 :::
+
+
 
 
 

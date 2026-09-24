@@ -85,7 +85,7 @@ left: C₆H₅OH ＋ 3HNO₃（硝酸）
 over: 濃硫酸
 right: C₆H₂(NO₂)₃OH ＋ 3H₂O
 gen: フェノール → ピクリン酸 ＋ 3 水
-app: substitution_no2
+app: aromatic_nitration
 level: ★★☆
 note: ピクリン酸ができます。3か所が 2,4,6 になるのは、臭素化と同じ理由です。
 :::
@@ -288,5 +288,6 @@ source: draft:reference-outline/aromatic.md の phenol-reactions の例題3を�
 prompt: 分子式 C₇H₈O で、ベンゼン環を1個もつ化合物 X がある。X は塩化鉄(III) で呈色せず、金属ナトリウムとも反応しなかった。X の名称と示性式を答えよ。
 answer: **アニソール（メトキシベンゼン）C₆H₅OCH₃** です。呈色しないのでフェノール類（クレゾール）ではなく、ナトリウムと反応しないので −OH をもつベンジルアルコールでもありません。残るのは −O− をもつエーテルです。
 :::
+
 
 
