@@ -7,10 +7,10 @@
     .liq { fill: #d6e9f8; }
     .bead { fill: #ffe0b2; stroke: #e65100; stroke-width: 1.5; }
     .face { fill: #ddd; stroke: #333; stroke-width: 2; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 18px; fill: #222; }
+    .small { font-size: 16px; fill: #444; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
-    .ion { font-size: 15px; fill: #c62828; }
+    .ion { font-size: 16px; fill: #c62828; }
   </style>
 
   <!-- 上の液 -->
@@ -18,7 +18,7 @@
   <path class="glass" d="M 150 70 L 180 110 L 180 336 M 280 70 L 250 110 L 250 336" />
 
   <!-- 樹脂の粒 -->
-  <rect class="liq" x="180" y="112" width="70" height="224" />
+  <rect class="liq" x="180" y="112" width="85" height="229" />
   <circle class="bead" cx="194" cy="126" r="8" /><circle class="bead" cx="214" cy="126" r="8" /><circle class="bead" cx="234" cy="126" r="8" />
   <circle class="bead" cx="204" cy="148" r="8" /><circle class="bead" cx="224" cy="148" r="8" />
   <circle class="bead" cx="194" cy="170" r="8" /><circle class="bead" cx="214" cy="170" r="8" /><circle class="bead" cx="234" cy="170" r="8" />
@@ -37,7 +37,7 @@
 
   <!-- 受けるビーカー -->
   <path class="glass" d="M 160 398 L 160 448 L 272 448 L 272 398" />
-  <rect class="liq" x="162" y="422" width="108" height="25" />
+  <rect class="liq" x="162" y="422" width="123" height="30" />
 
   <!-- 注記 -->
   <path class="lead" d="M 330 82 L 286 82" />
