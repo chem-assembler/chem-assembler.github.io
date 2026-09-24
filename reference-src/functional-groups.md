@@ -32,6 +32,7 @@ terms:
 
 :::figure
 src: functional-group-carboxy.png
+svg: functional-group-carboxy.svg
 alt: 酢酸とギ酸の構造式。どちらもカルボキシ基の部分が水色で囲まれ、その端の H 原子に「このH原子がH+となって電離する」と注が付いている
 caption: 骨格（左の部分）は違っても、青く囲んだ**カルボキシ基**が同じなら、同じ「1価の弱酸」としてはたらきます。
 :::

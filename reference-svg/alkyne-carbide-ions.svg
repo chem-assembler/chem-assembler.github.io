@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="408" viewBox="0 0 680 408" role="img">
+  <!-- 炭化カルシウム CaC₂ と水の反応を、イオンの組み換えとして見る図。Ca²⁺ と OH⁻、H⁺ とアセチリドイオンが組み直してアセチレンと Ca(OH)₂ になる。
+       元はスライド（有機の基本2-9 s7）の横に長い図。本文の幅では字が 12px まで縮むので、反応前を上・反応後を下に置いて描き直した（2026-09-24・図表の字の床 14px）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="ak" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#222"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#e0762b"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1f6fc5"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1aa84b"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#e31b1b"/></marker>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a3aa8"/></marker>
+  </defs>
+  <ellipse cx="64" cy="90" rx="44" ry="26" fill="#15587a" stroke="#333" stroke-width="1.4"/>
+  <text x="64.0" y="90.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>Ca<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="210" cy="90" rx="92" ry="28" fill="#e87433" stroke="#333" stroke-width="1.4"/>
+  <text x="210.0" y="90.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>[:C≡C:]<tspan font-size="14" dy="-8">2−</tspan><tspan dy="8">​</tspan></text>
+  <text x="210.0" y="44.0" font-size="17" fill="#e0762b" text-anchor="middle" dominant-baseline="central" font-family='system-ui, sans-serif'>アセチリドイオン</text>
+  <ellipse cx="430" cy="60" rx="24" ry="24" fill="#1f6b2a" stroke="#333" stroke-width="1.4"/>
+  <text x="430.0" y="60.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="500" cy="60" rx="44" ry="24" fill="#149ad6" stroke="#333" stroke-width="1.4"/>
+  <text x="500.0" y="60.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>OH<tspan font-size="14" dy="-8">−</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="430" cy="124" rx="24" ry="24" fill="#1f6b2a" stroke="#333" stroke-width="1.4"/>
+  <text x="430.0" y="124.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="500" cy="124" rx="44" ry="24" fill="#149ad6" stroke="#333" stroke-width="1.4"/>
+  <text x="500.0" y="124.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>OH<tspan font-size="14" dy="-8">−</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="96" cy="318" rx="24" ry="24" fill="#1f6b2a" stroke="#333" stroke-width="1.4"/>
+  <text x="96.0" y="318.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="214" cy="318" rx="92" ry="28" fill="#e87433" stroke="#333" stroke-width="1.4"/>
+  <text x="214.0" y="318.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>[:C≡C:]<tspan font-size="14" dy="-8">2−</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="332" cy="318" rx="24" ry="24" fill="#1f6b2a" stroke="#333" stroke-width="1.4"/>
+  <text x="332.0" y="318.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="492" cy="318" rx="44" ry="26" fill="#15587a" stroke="#333" stroke-width="1.4"/>
+  <text x="492.0" y="318.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>Ca<tspan font-size="14" dy="-8">2+</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="590" cy="288" rx="44" ry="24" fill="#149ad6" stroke="#333" stroke-width="1.4"/>
+  <text x="590.0" y="288.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>OH<tspan font-size="14" dy="-8">−</tspan><tspan dy="8">​</tspan></text>
+  <ellipse cx="590" cy="348" rx="44" ry="24" fill="#149ad6" stroke="#333" stroke-width="1.4"/>
+  <text x="590.0" y="348.0" font-size="20" fill="#fff" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>OH<tspan font-size="14" dy="-8">−</tspan><tspan dy="8">​</tspan></text>
+  <path d="M 64 118 Q 310.0 204.0 476 290" fill="none" stroke="#e0762b" stroke-width="1.6" marker-end="url(#ao)"/>
+  <path d="M 210 120 Q 212.0 204.0 214 288" fill="none" stroke="#e0762b" stroke-width="1.6" marker-end="url(#ao)"/>
+  <path d="M 420 84 Q 232.0 188.0 104 292" fill="none" stroke="#e0762b" stroke-width="1.6" marker-end="url(#ao)"/>
+  <path d="M 424 148 Q 377.0 220.0 330 292" fill="none" stroke="#e0762b" stroke-width="1.6" marker-end="url(#ao)"/>
+  <path d="M 512 84 Q 611.0 173.0 590 262" fill="none" stroke="#e0762b" stroke-width="1.6" marker-end="url(#ao)"/>
+  <path d="M 528 146 Q 629.0 236.0 630 326" fill="none" stroke="#e0762b" stroke-width="1.6" marker-end="url(#ao)"/>
+  <text x="340.0" y="386.0" font-size="20" fill="#e0762b" text-anchor="middle" dominant-baseline="central" font-family='system-ui, sans-serif'>イオンの組み換え</text>
+</svg>

@@ -42,6 +42,7 @@ terms:
 
 :::figure
 src: alcohol-from-alkane.png
+svg: alcohol-from-alkane.svg
 alt: アルカンの構造式から矢印が伸び、C−H 間に O 原子を入れるとアルコールになることを示した図。左がアルカン CnH2n+2、右がアルコール CnH2n+2O
 caption: アルカンの **C−H のあいだ**に O を1個入れると、末尾が −O−H ＝ ヒドロキシ基になります。
 :::
@@ -50,6 +51,7 @@ caption: アルカンの **C−H のあいだ**に O を1個入れると、末�
 
 :::figure
 src: ether-from-alkane.png
+svg: ether-from-alkane.svg
 alt: アルカンの構造式から矢印が伸び、C−C 間に O 原子を入れるとエーテルになることを示した図。左がアルカン CnH2n+2、右がエーテル CnH2n+2O
 caption: 同じ O を **C−C のあいだ**に入れると、炭素にはさまれた −O− ＝ エーテル結合になります。
 :::

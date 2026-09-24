@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="386" viewBox="0 0 680 386" role="img">
+  <!-- エステル化: カルボン酸の −OH とアルコールの H が水として取れ（脱水）、H⁺ を触媒に平衡でエステルができる図。
+       元はスライド（有機の基本3-5 s13）の横一列の図。本文の幅では字が 11px まで縮むので、反応物を上・生成物を下に積んで描き直した（2026-09-24・図表の字の床 14px）。
+       図の正はこのファイル。PNG は gen-svg-figure.mjs の生成物。 -->
+  <defs>
+    <marker id="ak" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#222"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#e0762b"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1f6fc5"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#1aa84b"/></marker>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#e31b1b"/></marker>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#7a3aa8"/></marker>
+  </defs>
+  <g transform="translate(60 0)">
+  <text x="50.0" y="50.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>R<tspan font-size="16" dy="-9">1</tspan><tspan dy="9">​</tspan></text>
+  <text x="116.0" y="50.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>C</text>
+  <text x="186.0" y="50.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>OH</text>
+  <text x="116.0" y="108.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>O</text>
+  <text x="300.0" y="50.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>HO</text>
+  <text x="370.0" y="50.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>R<tspan font-size="16" dy="-9">2</tspan><tspan dy="9">​</tspan></text>
+  <line x1="69.7" y1="50.0" x2="100.4" y2="50.0" stroke="#222" stroke-width="1.6"/>
+  <line x1="131.6" y1="50.0" x2="162.0" y2="50.0" stroke="#222" stroke-width="1.6"/>
+  <line x1="118.6" y1="64.9" x2="118.6" y2="93.1" stroke="#222" stroke-width="1.6"/>
+  <line x1="113.4" y1="64.9" x2="113.4" y2="93.1" stroke="#222" stroke-width="1.6"/>
+  <line x1="324.0" y1="50.0" x2="350.3" y2="50.0" stroke="#222" stroke-width="1.6"/>
+  <text x="243.0" y="50.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>+</text>
+  <rect x="162" y="31" width="137" height="38" rx="6" fill="none" stroke="#e0762b" stroke-width="2"/>
+  <text x="116.0" y="148.0" font-size="17" fill="#e0762b" text-anchor="middle" dominant-baseline="central" font-family='system-ui, sans-serif'>カルボン酸</text>
+  <text x="335.0" y="148.0" font-size="17" fill="#e0762b" text-anchor="middle" dominant-baseline="central" font-family='system-ui, sans-serif'>アルコール</text>
+  <line x1="206" y1="172" x2="206" y2="222" stroke="#e0762b" stroke-width="2" marker-end="url(#ao)"/>
+  <line x1="224" y1="222" x2="224" y2="172" stroke="#e0762b" stroke-width="2" marker-end="url(#ao)"/>
+  <text x="250.0" y="197.0" font-size="20" fill="#e0762b" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>H<tspan font-size="14" dy="-8">+</tspan><tspan dy="8">​</tspan></text>
+  <text x="50.0" y="262.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>R<tspan font-size="16" dy="-9">1</tspan><tspan dy="9">​</tspan></text>
+  <text x="116.0" y="262.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>C</text>
+  <text x="178.0" y="262.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>O</text>
+  <text x="240.0" y="262.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>R<tspan font-size="16" dy="-9">2</tspan><tspan dy="9">​</tspan></text>
+  <text x="116.0" y="320.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>O</text>
+  <line x1="69.7" y1="262.0" x2="100.4" y2="262.0" stroke="#222" stroke-width="1.6"/>
+  <line x1="131.6" y1="262.0" x2="162.4" y2="262.0" stroke="#222" stroke-width="1.6"/>
+  <line x1="193.6" y1="262.0" x2="220.3" y2="262.0" stroke="#222" stroke-width="1.6"/>
+  <line x1="118.6" y1="276.9" x2="118.6" y2="305.1" stroke="#222" stroke-width="1.6"/>
+  <line x1="113.4" y1="276.9" x2="113.4" y2="305.1" stroke="#222" stroke-width="1.6"/>
+  <text x="300.0" y="262.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>+</text>
+  <text x="362.0" y="262.0" font-size="24" fill="#222" text-anchor="middle" dominant-baseline="central" font-family='"Times New Roman", serif'>H<tspan font-size="16" dy="6">2</tspan><tspan dy="-6">O</tspan></text>
+  <text x="150.0" y="360.0" font-size="17" fill="#e0762b" text-anchor="middle" dominant-baseline="central" font-family='system-ui, sans-serif'>エステル</text>
+  <path d="M 299 42 C 520 10, 540 252, 392 256" fill="none" stroke="#e0762b" stroke-width="1.8" marker-end="url(#ao)"/>
+  <text x="492.0" y="156.0" font-size="18" fill="#e0762b" text-anchor="start" dominant-baseline="central" font-family='system-ui, sans-serif'>脱水</text>
+  </g>
+</svg>
