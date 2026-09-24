@@ -10,9 +10,9 @@
     .w { stroke: #1565c0; stroke-width: 3; fill: none; }
     .e { stroke: #2e7d32; stroke-width: 3; fill: none; }
     .et { stroke: #6a1b9a; stroke-width: 3; fill: none; }
-    .lab { font-size: 18px; fill: #222; }
-    .small { font-size: 17px; fill: #444; }
-    .tick { font-size: 17px; fill: #666; }
+    .lab { font-size: 22px; fill: #222; }
+    .small { font-size: 21px; fill: #444; }
+    .tick { font-size: 21px; fill: #666; }
   </style>
 
   <!-- 軸 -->
