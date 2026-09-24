@@ -190,6 +190,7 @@ terms:
 
 :::figure
 src: titration-curve-indicators.png
+svg: titration-curve-indicators.svg
 alt: 強酸＋強塩基、弱酸＋強塩基、強酸＋弱塩基の3本の滴定曲線に、フェノールフタレイン（pH 8.0〜9.8）とメチルオレンジ（pH 3.1〜4.4）の変色域を帯で重ねた図
 caption: 酸に塩基を滴下した3本の滴定曲線と、**PP（pH 8.0〜9.8）・MO（pH 3.1〜4.4）の変色域**。pH ジャンプが帯を貫いていれば、その指示薬が使えます。
 :::
