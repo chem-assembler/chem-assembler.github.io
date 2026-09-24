@@ -97,6 +97,16 @@ to: phenol-reactions
 text: 塩化鉄(III) による呈色（フェノール類の検出）
 :::
 
+## 例題 —— サリチル酸
+
+紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+
+:::exercise
+source: draft:reference-outline/aromatic.md の aromatic-carboxylic-acid の例題3（o 体の分子内水素結合から作った問い）
+prompt: サリチル酸の −OH と −COOH が隣り合っている（o の位置にある）ことは、融点にどう効くか。
+answer: −OH と −COOH が**分子内で水素結合**をつくるので、そのぶん分子どうしの水素結合が減り、p-ヒドロキシ安息香酸（p 体）より**融点が低く**なります。
+:::
+
 :::section
 anchor: branch
 title: どちらの基が反応するかで行き先が分かれる
@@ -164,9 +174,7 @@ to: aniline
 text: 同じ無水酢酸でアニリンをアセチル化する
 :::
 
-## 例題
-
-紙に書いて解いてみてください。答え合わせは「解答を見る」から。
+## 例題 —— どちらの基が反応するかで行き先が分かれる
 
 :::exercise
 source: draft:reference-outline/aromatic.md の aromatic-carboxylic-acid の例題1（アセチル化で −OH がふさがることから作った問い。どの本の問題も見ていない）
@@ -178,12 +186,6 @@ answer: **呈色しません。**アセチル化されたのは −OH のほう�
 source: draft:reference-outline/aromatic.md の aromatic-carboxylic-acid の例題2（残っている基と NaHCO₃ への応じ方から作った問い）
 prompt: サリチル酸メチルとアセチルサリチル酸を、炭酸水素ナトリウム水溶液で見分けられるか。
 answer: **見分けられます。**アセチルサリチル酸は −COOH が残っているので CO₂ を出して溶けます。サリチル酸メチルは −COOH がエステルになっているので反応しません。
-:::
-
-:::exercise
-source: draft:reference-outline/aromatic.md の aromatic-carboxylic-acid の例題3（o 体の分子内水素結合から作った問い）
-prompt: サリチル酸の −OH と −COOH が隣り合っている（o の位置にある）ことは、融点にどう効くか。
-answer: −OH と −COOH が**分子内で水素結合**をつくるので、そのぶん分子どうしの水素結合が減り、p-ヒドロキシ安息香酸（p 体）より**融点が低く**なります。
 :::
 
 :::example
