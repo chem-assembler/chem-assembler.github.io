@@ -11,7 +11,7 @@
     .to { stroke: #555; stroke-width: 15; fill: none; stroke-linecap: round; }
     .ti { stroke: #fff; stroke-width: 10; fill: none; stroke-linecap: round; }
     .liq { fill: #ddeefb; }
-    .lab { font-size: 18px; fill: #333; }
+    .lab { font-size: 21px; fill: #333; }
     .lead { stroke: #999; stroke-width: 1.2; fill: none; }
   </style>
 
@@ -19,7 +19,7 @@
   <g transform="rotate(18.4 318 206)">
     <path class="to" d="M 318 206 L 618 206" />
     <path class="ti" d="M 318 206 L 618 206" />
-    <rect x="360" y="184" width="210" height="44" rx="6" fill="#ddeefb" stroke="#555" stroke-width="2.5" />
+    <rect x="360" y="184" width="225" height="49" rx="6" fill="#ddeefb" stroke="#555" stroke-width="2.5" />
     <path class="to" d="M 318 206 L 618 206" stroke-width="15" />
     <path class="ti" d="M 318 206 L 618 206" />
     <path d="M 390 186 L 378 150" style="stroke:#555;stroke-width:11;fill:none;stroke-linecap:round" />
@@ -34,20 +34,20 @@
 
   <!-- 枝付きフラスコ -->
   <circle cx="200" cy="258" r="54" fill="#fff" stroke="#555" stroke-width="2.5" />
-  <rect clip-path="url(#bulb)" class="liq" x="146" y="268" width="108" height="48" />
+  <rect clip-path="url(#bulb)" class="liq" x="146" y="268" width="123" height="53" />
   <path clip-path="url(#bulb)" d="M 146 268 L 254 268" style="stroke:#7aa7c7;stroke-width:1.5;fill:none" />
   <circle cx="184" cy="300" r="4" fill="#9e9e9e" /><circle cx="200" cy="305" r="4" fill="#9e9e9e" />
   <circle cx="215" cy="299" r="4" fill="#9e9e9e" />
-  <rect x="185" y="126" width="30" height="96" fill="#fff" stroke="#555" stroke-width="2.5" />
-  <rect x="178" y="118" width="44" height="18" rx="3" fill="#bdbdbd" stroke="#555" stroke-width="1.5" />
+  <rect x="185" y="126" width="45" height="101" fill="#fff" stroke="#555" stroke-width="2.5" />
+  <rect x="178" y="118" width="59" height="23" rx="3" fill="#bdbdbd" stroke="#555" stroke-width="1.5" />
 
   <!-- 温度計 -->
-  <rect x="196" y="52" width="9" height="118" fill="#fff" stroke="#555" stroke-width="1.8" />
+  <rect x="196" y="52" width="24" height="123" fill="#fff" stroke="#555" stroke-width="1.8" />
   <circle cx="200" cy="172" r="7" fill="#c62828" />
 
   <!-- 加熱 -->
   <path d="M 200 318 C 186 336, 190 352, 200 360 C 210 352, 214 336, 200 318 Z" fill="#ef6c00" />
-  <rect x="172" y="360" width="56" height="10" rx="3" fill="#9e9e9e" />
+  <rect x="172" y="360" width="71" height="15" rx="3" fill="#9e9e9e" />
 
   <!-- 受け器（三角フラスコ・密栓しない） -->
   <path class="glass" d="M 606 314 L 606 332 L 578 402 L 668 402 L 640 332 L 640 314" />
