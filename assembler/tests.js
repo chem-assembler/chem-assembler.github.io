@@ -30341,7 +30341,7 @@
         c.reset();
     });
 
-    test('PM16（否定対照）: 置換基を倒すのは見た目だけ ― 判定も、塩化ビニルの 120° も、傍観分子も変えない', async (c) => {
+    test('PM16（否定対照）: 置換基を倒すのは見た目だけ ― 判定も傍観分子も変えない／塩化ビニルの -Cl は真下・アクリロニトリルの C≡N は鎖に平行', async (c) => {
         const g = c.game, W = c.W;
         const CC = W.canonicalCode;
 
@@ -30368,21 +30368,31 @@
         ps.atoms.forEach(a => { if (!flipBack.has(a.id)) a.y = 2 * chainY - a.y; });
         assert(CC(ps) === code, '環を上下ひっくり返しただけで別の高分子になった');
 
-        // ---- ③ ★ 塩化ビニルの -Cl は 120° のまま（置換基が道を塞いでいない分子は「そのまま」が勝つ） ----
-        //    §18-1 の上下交互（uprightChainSubstituent）に戻すと、ここが「斜め 0/3」で赤になる
+        // ---- ③ ★ 塩化ビニルの -Cl は**真下**（I-0128・2026-09-24 ユーザー「置換基の向きが斜めになったり、垂直に
+        //    なったりする、垂直に揃えたい」）。⚠ v1593 の「そのまま（120°）が勝つ」は、この決定で置き換えた
+        //    （倒し方の順を 同じ側 → 1つおき → そのまま に）。順を戻すと、ここが「斜め 3/3」で赤になる
         const pvc = addPoly3(c, '塩化ビニル');
         const pvcBack = new Set(polymerBackbone(pvc).ids);
         const cls = pvc.atoms.filter(a => a.element === 'Cl');
         assert(cls.length === 3, `Cl が ${cls.length} 個（3個を期待）`);
-        const tilted = cls.filter(cl => {
+        const below = cls.filter(cl => {
             const cc = pvc.getNeighbors(cl.id).find(n => pvcBack.has(n.atom.id));
             if (!cc) return false;
-            const dx = Math.abs(cl.x - cc.atom.x), dy = Math.abs(cl.y - cc.atom.y);
-            return dx > 1 && dy > 1;
+            return Math.abs(cl.x - cc.atom.x) <= 1 && cl.y - cc.atom.y > 1;
         });
-        assert(tilted.length === 3,
-            `塩化ビニルの -Cl が 120° のままでない（斜め ${tilted.length}/3）。` +
-            'すでに一直線に出ている分子は「そのまま」が勝つ約束（v1593・§30）');
+        assert(below.length === 3,
+            `塩化ビニルの -Cl が真下にそろっていない（真下 ${below.length}/3）。付加重合の置換基は垂直にそろえる約束（I-0128）`);
+        // ★ アクリロニトリル: 付け根の C は CH の真下、≡N は鎖に平行で右（I-0132「C≡N を炭素鎖に平行に」）
+        const pan = addPoly3(c, 'アクリロニトリル');
+        const panBack = new Set(polymerBackbone(pan).ids);
+        const ns = pan.atoms.filter(a => a.element === 'N');
+        assert(ns.length === 3, `N が ${ns.length} 個（3個を期待）`);
+        ns.forEach(nAt => {
+            const cn = pan.getNeighbors(nAt.id).find(x => x.atom.element === 'C').atom;
+            const ch = pan.getNeighbors(cn.id).find(x => panBack.has(x.atom.id)).atom;
+            assert(Math.abs(cn.x - ch.x) <= 1 && cn.y - ch.y > 1, `ニトリルの C が CH の真下にない（dx ${Math.round(cn.x - ch.x)}・dy ${Math.round(cn.y - ch.y)}）`);
+            assert(Math.abs(nAt.y - cn.y) <= 1 && nAt.x - cn.x > 1, `C≡N が鎖に平行（右向き）でない（dx ${Math.round(nAt.x - cn.x)}・dy ${Math.round(nAt.y - cn.y)}）`);
+        });
         const pvcLine = polymerBackbone(pvc);
         assert(pvcLine.bent === 0 && pvcLine.ySpread === 0,
             `塩化ビニル3個の主鎖が一直線でない（折れ${pvcLine.bent}・y ${pvcLine.ySpread}px）`);
@@ -33689,6 +33699,13 @@
                 const rule = FW.REACTION_RULES.find(r => r.id === 'add_br2');
                 FW.reactor.execute(rule, rule.detect(FG.userMolecule)[0]);
                 await new Promise(r => setTimeout(r, 60));
+                /* ★ v1646（I-0129）: 反応を実行すると、最初の再生が見直しの行（🔄 ⏮ ▶ ⏭ やめる）で流れ、
+                 *   そのあいだ札は引っ込む（RRP1 と同じ決め）。流れているあいだも帯の段は増えないことを見てから、終えて測る */
+                if (FW.reactor.replayState().shown) {
+                    assert(Math.round(strip.getBoundingClientRect().height) <= 128 + 1,
+                        `${name}: 最初の再生のあいだ帯が ${Math.round(strip.getBoundingClientRect().height)}px（128px を超えて覆う）`);
+                    FW.reactor.replayExit();
+                }
                 const fbtn = FD.getElementById('btn-rx-undo');
                 assert(!fbtn.classList.contains('hidden'), `${name}: 反応後に札が出ない`);
                 const after = {
@@ -33716,6 +33733,107 @@
         }
 
         c.reset();
+    });
+
+    /* ===== RXS: 呼び出した相手の可逆（I-0130）・向き（I-0131）／最初の再生（I-0129）（v1646）=====
+     * ユーザー（2026-09-24）「他分子を呼び出して反応させた後、反応前に戻したときに呼び出し分子が消えない、
+     * 再度反応させると新たに分子を召喚して反応させる ／ ここを可逆的にしたい」
+     * 「エタノールの分子間脱水：召喚する分子を、ヒドロキシ基同士が隣接する向きに」
+     * 「反応をコマ送りで再生・巻き戻しできるように」「反応実行したら最初からボタンが出る、最初は自動再生がよい」 */
+    test('RXS1: 呼んだ相手は「↩ 反応前に戻す」で一緒に消え、もう一度押しても1つだけ呼ぶ／相手は反応する側を向けて置く（I-0130・I-0131）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, rx = W.reactor;
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        assert(g.summonMolecule('エタノール'), 'エタノールが呼び出せない');
+        const heavy = () => g.userMolecule.atoms.filter(a => a.element !== 'H').length;
+        const n0 = heavy();
+        const base = new Set(g.userMolecule.atoms.map(a => a.id));
+        const saved = rx.autoReplayOnExecute;
+        rx.autoReplayOnExecute = false;
+        const orig = rx.execute;
+        try {
+            const h = W.findPartnerHints(g).find(x => x.ruleId === 'dehydration_inter');
+            assert(h, '分子間脱水の札（エタノールを呼ぶ）が出ていない');
+            // 実行の直前（呼んで向けた直後）の座標を覗く
+            let seen = null;
+            rx.execute = function (rule, site) {
+                const mine = g.userMolecule.atoms.filter(a => base.has(a.id) && a.element !== 'H');
+                const theirs = g.userMolecule.atoms.filter(a => !base.has(a.id) && a.element !== 'H');
+                // ⚠ 座標を写す（原子そのものを持つと、このあと反応が動かした後の座標を見てしまう）
+                const cp = a => a && { element: a.element, x: a.x, y: a.y };
+                seen = { mineO: cp(mine.find(a => a.element === 'O')), theirs: theirs.map(cp) };
+                return orig.call(this, rule, site);
+            };
+            rx.runPartnerHint(h);
+            rx.execute = orig;
+            assert(seen, '札を押しても実行まで進まない');
+            const tO = seen.theirs.find(a => a.element === 'O');
+            const tCs = seen.theirs.filter(a => a.element === 'C');
+            // ★ 相手は元の分子の右に置かれる ＝ 相手の O が相手の中でいちばん左（OH どうしが向き合う）
+            assert(tO && tCs.length === 2 && tCs.every(a => a.x > tO.x + 1) && tO.x > seen.mineO.x,
+                `相手の OH が元の分子の OH の側を向いていない（相手 O x=${tO && Math.round(tO.x)}・C x=${tCs.map(a => Math.round(a.x))}・元の O x=${Math.round(seen.mineO.x)}）`);
+            await 反応の再生を待つ(c);
+            const nAfter = heavy();
+            assert(rx.lastReaction && rx.lastReaction.summoned === 'エタノール', '反応の記録に「呼んだ相手」が無い');
+            // ★ ↩ 反応前に戻す ＝ 呼ぶ前へ（相手ごと消える）
+            assert(rx.undoLastReaction(), '反応前に戻せない');
+            assert(heavy() === n0, `反応前に戻したのに、呼んだ相手が残っている（重原子 ${heavy()} ≠ ${n0}）`);
+            // ★ もう一度押すと、相手を1つだけ呼んで同じ結果になる
+            const h2 = W.findPartnerHints(g).find(x => x.ruleId === 'dehydration_inter');
+            assert(h2, '戻したあと札がまた出ない');
+            rx.runPartnerHint(h2);
+            await 反応の再生を待つ(c);
+            assert(heavy() === nAfter, `もう一度押したら重原子が ${heavy()}（1回目は ${nAfter}）＝ 相手を2つ呼んだ`);
+            // ★ 否定対照: 相手がもうキャンバスに居るときは、呼ぶ札を出さない（押すと2つ目を呼んでしまう）
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            assert(g.summonMolecule('エタノール') && g.summonMolecule('エタノール'), 'エタノール2つを並べられない');
+            assert(!W.findPartnerHints(g).some(x => x.ruleId === 'dehydration_inter'),
+                '相手がもう居るのに「エタノールを呼ぶ」札が出る（押すと3つ目を呼ぶ）');
+        } finally {
+            rx.execute = orig;
+            rx.autoReplayOnExecute = saved;
+            rx.finalizeMorph();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
+    });
+
+    test('RXS2: 反応を実行すると、最初の再生が見直しの行（🔄 ⏮ ▶ ⏭ やめる）で自動で流れ、途中で止めて戻せる（I-0129）', async (c) => {
+        c.reset();
+        const g = c.game, W = c.W, D = c.D, rx = W.reactor;
+        if (rx._reducedMotion()) return;   // 動きを減らす設定の環境では最初の再生そのものが無い（結果だけ確定）
+        g.setMode('free');
+        g.userMolecule = new W.Molecule(); g.updateDrawing();
+        const vis = id => D.getElementById(id).getBoundingClientRect().width > 0;
+        try {
+            assert(g.summonMolecule('エテン'), 'エテンが呼び出せない');
+            const rule = W.REACTION_RULES.find(r => r.id === 'add_br2');
+            rx.execute(rule, rule.detect(g.userMolecule)[0]);
+            const st = rx.replayState();
+            assert(st.shown && st.playing, `実行した直後に最初の再生が見直しの行で流れていない ${JSON.stringify(st)}`);
+            assert(vis('rx-replay-controls') && vis('btn-rx-replay-prev') && vis('btn-rx-replay-play'),
+                '最初の再生のあいだ ⏮ ▶ ⏭ が見えていない');
+            // 途中で止めて、1段戻せる
+            D.getElementById('btn-rx-replay-play').click();
+            assert(!rx.replayState().playing, '⏸ で止まらない');
+            const p1 = rx.replayState().pos;
+            rx.replayStep(-1);
+            assert(rx.replayState().pos < p1 || p1 <= 1e-6, '⏮ で戻らない');
+            // やめると反応のあとの図と帯の行に戻る（▶ もう一度見る と ↩ 反応前に戻す）
+            D.getElementById('btn-rx-replay-exit').click();
+            assert(!rx.replayState().shown && vis('btn-rx-replay') && vis('btn-rx-undo'), 'やめたあと帯の行が戻らない');
+            // ★ 否定対照: 見直しの段取りを組まない設定にすると、今までの再生（行は出ない）
+            rx.autoReplayOnExecute = false;
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+            assert(g.summonMolecule('エテン'), 'エテンが呼び出せない（2回目）');
+            rx.execute(rule, rule.detect(g.userMolecule)[0]);
+            assert(!rx.replayState().shown, '否定対照: 切ったのに見直しの行で流れている（この検査は切り替えを見ていない）');
+        } finally {
+            delete rx.autoReplayOnExecute;
+            rx.finalizeMorph();
+            if (rx.replayState().shown) rx.replayExit();
+            g.userMolecule = new W.Molecule(); g.updateDrawing();
+        }
     });
 
     /* ===== RRP: 反応をもう一度見る（v1568）=====
@@ -33862,7 +33980,9 @@
             const sites = rule ? rule.detect(g.userMolecule) : [];
             assert(sites.length, 'エテンに水の付加の箇所が無い（検査が素通りする）');
             rx.execute(rule, sites[0]);
-            assert(!rx.replayState().shown && rx.lastReaction !== L1, '次の反応を実行しても前の見直しが残る');
+            // ★ v1646（I-0129）: 次の反応は**その反応の**最初の再生を見直しの行で流す ＝ 出ていてよいのは新しい反応の写しだけ
+            assert(rx.lastReaction !== L1 && (!rx.replayState().shown || (rx._replay && rx._replay.L === rx.lastReaction)),
+                '次の反応を実行しても前の見直しが残る');
             await 反応の再生を待つ(c);
             assert(rx.replayRestart() && rx.replayState().stops.includes('join'), '次の反応を見直せない');
             assert(btn('btn-rx-replay-exit').click() === undefined && !rx.replayState().shown, 'やめる で見直しが終わらない');
@@ -33883,6 +34003,7 @@
                 const rule = FW.REACTION_RULES.find(r => r.id === 'add_br2');
                 FW.reactor.execute(rule, rule.detect(FG.userMolecule)[0]);
                 await new Promise(r => setTimeout(r, 60));
+                if (FW.reactor.replayState().shown) FW.reactor.replayExit();   // ★ v1646: 最初の再生（見直しの行）を終えてから、ふだんの帯を測る
                 const row = FD.getElementById('reaction-card'), strip = FD.getElementById('work-strip');
                 const hgt = el => Math.round(el.getBoundingClientRect().height);
                 const rest = { row: hgt(row), strip: hgt(strip) };
