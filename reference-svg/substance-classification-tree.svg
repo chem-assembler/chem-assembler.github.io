@@ -5,9 +5,9 @@
   <style>
     .box { fill: #fcfcfc; stroke: #555; stroke-width: 2; }
     .n { font-size: 19px; fill: #222; }
-    .s { font-size: 13px; fill: #555; }
-    .ex { font-size: 13px; fill: #777; }
-    .q { font-size: 15px; fill: #6a1b9a; }
+    .s { font-size: 16px; fill: #555; }
+    .ex { font-size: 16px; fill: #777; }
+    .q { font-size: 16px; fill: #6a1b9a; }
     .ln { stroke: #555; stroke-width: 2; fill: none; }
   </style>
 
