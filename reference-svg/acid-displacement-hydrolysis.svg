@@ -67,13 +67,13 @@
     <text x="160" y="235" class="textPurple">電離している</text>
 
     <!-- 右側の縦の電離している枠 (Cl-用) -->
-    <rect class="dashedPurple" x="185" y="100" width="50" height="120" />
-    <text x="210" y="115" class="textPurple">電</text>
-    <text x="210" y="135" class="textPurple">離</text>
-    <text x="210" y="155" class="textPurple">し</text>
-    <text x="210" y="175" class="textPurple">て</text>
-    <text x="210" y="195" class="textPurple">い</text>
-    <text x="210" y="215" class="textPurple">る</text>
+    <rect class="dashedPurple" x="225" y="100" width="35" height="120" />
+    <text x="240" y="115" class="textPurple">電</text>
+    <text x="240" y="135" class="textPurple">離</text>
+    <text x="240" y="155" class="textPurple">し</text>
+    <text x="240" y="175" class="textPurple">て</text>
+    <text x="240" y="195" class="textPurple">い</text>
+    <text x="240" y="215" class="textPurple">る</text>
   </g>
   
   <text x="490" y="140" class="eq" font-size="22">CH<tspan font-size="14" dy="5">3</tspan><tspan dy="-5">COONa + HCl</tspan></text>
@@ -102,10 +102,10 @@
     <rect class="boxOrange" x="35" y="95" width="95" height="40" />
     <text x="82" y="152" class="textOrange">電離していない</text>
 
-    <rect class="dashedPurple" x="125" y="155" width="120" height="55" />
+    <rect class="dashedPurple" x="125" y="160" width="120" height="55" />
 
     <!-- H2O -->
-    <text x="180" y="150" class="eq textPurple" font-size="20">H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
+    <text x="180" y="145" class="eq textPurple" font-size="20">H<tspan font-size="14" dy="5">2</tspan><tspan dy="-5">O</tspan></text>
     
     <circle cx="150" cy="185" r="16" class="circleH" />
     <text x="150" y="191" class="wtext eq" font-size="16">H<tspan font-size="12" dy="-5">+</tspan></text>
@@ -114,13 +114,13 @@
     <text x="210" y="191" class="wtext eq" font-size="16">OH<tspan font-size="12" dy="-5">-</tspan></text>
 
     <!-- 縦枠 (OH-用) -->
-    <rect class="dashedPurple" x="175" y="80" width="70" height="125" />
-    <text x="210" y="95" class="textPurple">電</text>
-    <text x="210" y="115" class="textPurple">離</text>
-    <text x="210" y="135" class="textPurple">し</text>
-    <text x="210" y="155" class="textPurple">て</text>
-    <text x="210" y="175" class="textPurple">い</text>
-    <text x="210" y="195" class="textPurple">る</text>
+    <rect class="dashedPurple" x="230" y="80" width="35" height="125" />
+    <text x="245" y="95" class="textPurple">電</text>
+    <text x="245" y="115" class="textPurple">離</text>
+    <text x="245" y="135" class="textPurple">し</text>
+    <text x="245" y="155" class="textPurple">て</text>
+    <text x="245" y="175" class="textPurple">い</text>
+    <text x="245" y="195" class="textPurple">る</text>
 
     <!-- 分解する -->
     <line class="redLine" x1="175" y1="130" x2="175" y2="210" />
