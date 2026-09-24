@@ -115,7 +115,7 @@ terms:
 left: C₆H₄(OH)COOH ＋ (CH₃CO)₂O
 right: C₆H₄(OCOCH₃)COOH ＋ CH₃COOH
 gen: サリチル酸 ＋ 無水酢酸 → アセチルサリチル酸 ＋ 酢酸
-app: acetylation
+app: acetylation_anhydride
 level: ★★★
 note: アセチルサリチル酸ができます。−OH が −OCOCH₃ に変わり、−COOH は残っています。
 :::
@@ -191,3 +191,4 @@ stageId: salicylic-acid
 lead: サリチル酸を組んで、−OH と −COOH が隣り合っていることを手で確かめます。
 note: 2つの基を向かい合う位置に付けると、別の化合物（p-ヒドロキシ安息香酸）になります。
 :::
+
