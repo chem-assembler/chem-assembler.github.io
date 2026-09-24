@@ -144,6 +144,7 @@ caption: 直列回路では、電解槽Ⅰと電解槽Ⅱを同じ e⁻ が1本�
 
 :::figure
 src: faraday-parallel.png
+svg: faraday-parallel.svg
 alt: 並列回路の図。電源から出た電流 I が分岐して、I₁ が電解槽Ⅰへ、I₂ が電解槽Ⅱへ流れ、合流して I にもどる。右に I ＝ I₁ ＋ I₂ の式と、e⁻ の mol・電気量のどちらでも成り立つという注記
 caption: 並列回路では I ＝ I₁ ＋ I₂。**e⁻ の mol でも電気量〔C〕でも、この足し算が成り立ちます**。
 :::
