@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="680" height="280" viewBox="0 0 680 280" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="340" viewBox="0 0 680 340" role="img">
   <!-- 電気分解における金属の反応式を示す図。
        元はスライドの図。文字サイズを確保するため SVG に描き直した（2026-09-24・字の床 14px）。 -->
   <style>
@@ -8,9 +8,9 @@
     .topText { font-size: 18px; text-anchor: start; }
     .boxGreen { fill: #86af86; rx: 4; }
     .boxOrange { fill: #f3bca1; rx: 4; }
-    .textW { fill: #fff; font-size: 12px; }
-    .textGreen { fill: #2e7d32; font-size: 12px; }
-    .textOrange { fill: #e0762b; font-size: 12px; }
+    .textW { fill: #fff; font-size: 14px; }
+    .textGreen { fill: #2e7d32; font-size: 14px; }
+    .textOrange { fill: #e0762b; font-size: 14px; }
     .arrowGreen { stroke: #2e7d32; stroke-width: 1.5; fill: none; marker-end: url(#arrowheadGreen); }
     .arrowOrange { stroke: #e0762b; stroke-width: 1.5; fill: none; marker-end: url(#arrowheadOrange); }
     .lineTable { stroke: #222; stroke-width: 1.5; fill: none; }
@@ -26,78 +26,78 @@
   </defs>
 
   <!-- 上部テキスト枠 -->
-  <rect class="boxYellow" x="10" y="5" width="650" height="30" />
+  <rect class="boxYellow" x="10" y="5" width="660" height="30" />
   <text x="15" y="27" class="topText">金属の単体は陽極で還元剤として，金属の陽イオンは陰極で酸化剤としてはたらく</text>
 
   <!-- 中段の反応 -->
   <g transform="translate(230, 40)">
     <!-- 還元剤 (Cu) -->
-    <rect class="boxGreen" x="0" y="0" width="50" height="35" />
-    <text x="25" y="12" class="textW">還元剤</text>
-    <text x="25" y="30" class="eq">Cu</text>
+    <rect class="boxGreen" x="0" y="0" width="50" height="40" />
+    <text x="25" y="15" class="textW">還元剤</text>
+    <text x="25" y="35" class="eq">Cu</text>
 
     <!-- 酸化剤 (Cu2+) -->
-    <rect class="boxOrange" x="135" y="0" width="50" height="35" />
-    <text x="160" y="12" class="textW">酸化剤</text>
-    <text x="160" y="30" class="eq">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
+    <rect class="boxOrange" x="135" y="0" width="50" height="40" />
+    <text x="160" y="15" class="textW">酸化剤</text>
+    <text x="160" y="35" class="eq">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
 
-    <text x="210" y="28" class="eq">＋</text>
-    <text x="235" y="28" class="eq">2e<tspan font-size="12" dy="-8">-</tspan></text>
+    <text x="210" y="32" class="eq">＋</text>
+    <text x="235" y="32" class="eq">2e<tspan font-size="12" dy="-8">-</tspan></text>
 
     <!-- 矢印 -->
-    <text x="90" y="12" class="textGreen">陽極での反応</text>
-    <path class="arrowGreen" d="M 80 18 L 100 18" />
+    <text x="90" y="15" class="textGreen">陽極での反応</text>
+    <path class="arrowGreen" d="M 80 20 L 100 20" />
 
-    <text x="90" y="35" class="textOrange">陰極での反応</text>
-    <path class="arrowOrange" d="M 100 24 L 80 24" />
+    <text x="90" y="40" class="textOrange">陰極での反応</text>
+    <path class="arrowOrange" d="M 100 28 L 80 28" />
   </g>
 
   <!-- 下段: 表 -->
-  <g transform="translate(100, 85)">
+  <g transform="translate(70, 95)">
     <!-- 横線 -->
-    <line class="lineTable" x1="0" y1="0" x2="480" y2="0" />
-    <line class="lineTable" x1="0" y1="30" x2="480" y2="30" />
-    <line class="lineTable" x1="0" y1="60" x2="480" y2="60" />
-    <line class="lineTable" x1="0" y1="90" x2="480" y2="90" />
-    <line class="lineTable" x1="0" y1="120" x2="480" y2="120" />
-    <line class="lineTable" x1="0" y1="150" x2="480" y2="150" />
-    <line class="lineTable" x1="0" y1="180" x2="480" y2="180" />
+    <line class="lineTable" x1="0" y1="0" x2="540" y2="0" />
+    <line class="lineTable" x1="0" y1="40" x2="540" y2="40" />
+    <line class="lineTable" x1="0" y1="80" x2="540" y2="80" />
+    <line class="lineTable" x1="0" y1="120" x2="540" y2="120" />
+    <line class="lineTable" x1="0" y1="160" x2="540" y2="160" />
+    <line class="lineTable" x1="0" y1="200" x2="540" y2="200" />
+    <line class="lineTable" x1="0" y1="240" x2="540" y2="240" />
     
     <!-- 縦線 -->
-    <line class="lineTable" x1="0" y1="0" x2="0" y2="180" />
-    <line class="lineTable" x1="65" y1="0" x2="65" y2="180" />
-    <line class="lineTable" x1="225" y1="0" x2="225" y2="180" />
-    <line class="lineTable" x1="480" y1="0" x2="480" y2="180" />
+    <line class="lineTable" x1="0" y1="0" x2="0" y2="240" />
+    <line class="lineTable" x1="65" y1="0" x2="65" y2="240" />
+    <line class="lineTable" x1="225" y1="0" x2="225" y2="240" />
+    <line class="lineTable" x1="540" y1="0" x2="540" y2="240" />
 
     <!-- 見出し行 -->
-    <text x="32.5" y="20">金属</text>
-    <text x="145" y="20">反応式</text>
-    <text x="352.5" y="20">備考</text>
+    <text x="32.5" y="25">金属</text>
+    <text x="145" y="25">反応式</text>
+    <text x="382.5" y="25">備考</text>
 
     <!-- 1行目 Cu -->
-    <text x="32.5" y="50" class="eq">Cu</text>
-    <text x="145" y="50" class="eq">Cu ⇄ Cu<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
-    <text x="352.5" y="50">Cu<tspan font-family="Times New Roman, serif" font-size="12" dy="-8">+</tspan><tspan dy="8">も存在するがCu</tspan><tspan font-family="Times New Roman, serif" font-size="12" dy="-8">2+</tspan><tspan dy="8">になる</tspan></text>
+    <text x="32.5" y="65" class="eq">Cu</text>
+    <text x="145" y="65" class="eq">Cu ⇄ Cu<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
+    <text x="382.5" y="65">Cu<tspan font-family="Times New Roman, serif" font-size="12" dy="-8">+</tspan><tspan dy="8">も存在するがCu</tspan><tspan font-family="Times New Roman, serif" font-size="12" dy="-8">2+</tspan><tspan dy="8">になる</tspan></text>
 
     <!-- 2行目 Ag -->
-    <text x="32.5" y="80" class="eq">Ag</text>
-    <text x="145" y="80" class="eq">Ag ⇄ Ag<tspan font-size="12" dy="-8">+</tspan><tspan dy="8"> ＋ e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
-    <text x="352.5" y="80">銀はAg<tspan font-family="Times New Roman, serif" font-size="12" dy="-8">+</tspan><tspan dy="8">のみ存在する</tspan></text>
+    <text x="32.5" y="105" class="eq">Ag</text>
+    <text x="145" y="105" class="eq">Ag ⇄ Ag<tspan font-size="12" dy="-8">+</tspan><tspan dy="8"> ＋ e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
+    <text x="382.5" y="105">銀はAg<tspan font-family="Times New Roman, serif" font-size="12" dy="-8">+</tspan><tspan dy="8">のみ存在する</tspan></text>
 
     <!-- 3行目 Fe -->
-    <text x="32.5" y="110" class="eq">Fe</text>
-    <text x="145" y="110" class="eq">Fe ⇄ Fe<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
-    <text x="352.5" y="110">Fe<tspan font-family="Times New Roman, serif" font-size="12" dy="-8">3+</tspan><tspan dy="8">も存在するがFe</tspan><tspan font-family="Times New Roman, serif" font-size="12" dy="-8">2+</tspan><tspan dy="8">なる</tspan></text>
+    <text x="32.5" y="145" class="eq">Fe</text>
+    <text x="145" y="145" class="eq">Fe ⇄ Fe<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
+    <text x="382.5" y="145">Fe<tspan font-family="Times New Roman, serif" font-size="12" dy="-8">3+</tspan><tspan dy="8">も存在するがFe</tspan><tspan font-family="Times New Roman, serif" font-size="12" dy="-8">2+</tspan><tspan dy="8">なる</tspan></text>
 
     <!-- 4行目 Zn -->
-    <text x="32.5" y="140" class="eq">Zn</text>
-    <text x="145" y="140" class="eq">Zn ⇄ Zn<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
-    <text x="352.5" y="140">Znは12族で価電子2個</text>
+    <text x="32.5" y="185" class="eq">Zn</text>
+    <text x="145" y="185" class="eq">Zn ⇄ Zn<tspan font-size="12" dy="-8">2+</tspan><tspan dy="8"> ＋ 2e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
+    <text x="382.5" y="185">Znは12族で価電子2個</text>
 
     <!-- 5行目 Al -->
-    <text x="32.5" y="170" class="eq">Al</text>
-    <text x="145" y="170" class="eq">Al ⇄ Al<tspan font-size="12" dy="-8">3+</tspan><tspan dy="8"> ＋ 3e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
-    <text x="352.5" y="170">Alは13族で価電子3個</text>
+    <text x="32.5" y="225" class="eq">Al</text>
+    <text x="145" y="225" class="eq">Al ⇄ Al<tspan font-size="12" dy="-8">3+</tspan><tspan dy="8"> ＋ 3e</tspan><tspan font-size="12" dy="-8">-</tspan></text>
+    <text x="382.5" y="225">Alは13族で価電子3個</text>
   </g>
 
 </svg>
