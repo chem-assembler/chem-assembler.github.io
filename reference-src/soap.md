@@ -42,6 +42,8 @@ terms:
 left: C₃H₅(OCOC₁₇H₃₅)₃ ＋ 3NaOH
 over: 加熱
 right: C₃H₅(OH)₃ ＋ 3C₁₇H₃₅COONa
+gen: トリステアリン ＋ 3 水酸化ナトリウム → グリセリン ＋ 3 ステアリン酸ナトリウム
+app: saponification
 level: ★★★
 note: グリセリン1分子と、セッケンのステアリン酸ナトリウム3分子ができます。
 :::
