@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="380" viewBox="0 0 880 380" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="741.053" height="320" viewBox="0 0 880 380" role="img">
   <!-- 高分子の固体の模式図。左半分は鎖がそろって並ぶ結晶部分、右半分は不規則にからまる非晶部分。
        ★ 1本の鎖が左右どちらにもまたがるように描く（別々の粒が混ざっているのではない）。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
