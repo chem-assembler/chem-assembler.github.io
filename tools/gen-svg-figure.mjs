@@ -113,6 +113,7 @@ async function main() {
     const { chromium } = require('./record/node_modules/playwright');
     const browser = await chromium.launch();
     const small = [];
+    const broken = [];
     try {
         for (const j of jobs) {
             const text = readFileSync(path.join(SVG, j.svg), 'utf8');
@@ -151,13 +152,53 @@ ${text}`, { waitUntil: 'load' });
                         lowSub ? `下付き ${shownSub.toFixed(1)}px・${fonts.sub}px → ${Math.ceil(MIN_SUB * size.w / BODY_W)}px 以上に` : ''
                     ].filter(Boolean).join('／') + '）');
                 }
+                /* ★★ 崩れの検査（2026-09-24・Antigravity のスライド図の描き直し29枚のうち約22枚に、端で字が切れる・字が重なる・
+                   枠から字がはみ出す、があった。焼く人が目で見落とすので機械で言う）。
+                   ① 字が図（viewBox）の外へ出る ② 字どうしが重なる（小さいほうの面積の 25% 以上） ③ 字がそれを囲む枠（rect）からはみ出す
+                   ⚠ 見るのは <text> 単位（下付きの <tspan> は親の <text> に含まれる） */
+                const layout = await pg.evaluate(() => {
+                    const svg = document.querySelector('svg');
+                    const sr = svg.getBoundingClientRect();
+                    const out = [];
+                    const texts = [...svg.querySelectorAll('text')].filter(t => t.textContent.trim())
+                        .map(t => ({ t, r: t.getBoundingClientRect(), s: t.textContent.trim().slice(0, 16) }))
+                        .filter(o => o.r.width > 0 && o.r.height > 0);
+                    const rects = [...svg.querySelectorAll('rect')].map(r => r.getBoundingClientRect())
+                        .filter(r => r.width > 8 && r.height > 8 && !(r.width >= sr.width - 2 && r.height >= sr.height - 2));
+                    texts.forEach(o => {
+                        const r = o.r;
+                        if (r.left < sr.left - 1 || r.right > sr.right + 1 || r.top < sr.top - 1 || r.bottom > sr.bottom + 1) {
+                            out.push(`図の外へはみ出す「${o.s}」`);
+                        }
+                        // 字の中心を含む、いちばん小さい枠
+                        const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+                        const host = rects.filter(b => cx > b.left && cx < b.right && cy > b.top && cy < b.bottom)
+                            .sort((p, q) => p.width * p.height - q.width * q.height)[0];
+                        if (host && (r.left < host.left - 2 || r.right > host.right + 2 || r.top < host.top - 3 || r.bottom > host.bottom + 3)) {
+                            out.push(`枠からはみ出す「${o.s}」`);
+                        }
+                    });
+                    for (let i = 0; i < texts.length; i++) {
+                        for (let k = i + 1; k < texts.length; k++) {
+                            const a = texts[i].r, b = texts[k].r;
+                            const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+                            const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+                            if (w <= 0 || h <= 0) continue;
+                            const small = Math.min(a.width * a.height, b.width * b.height);
+                            if (w * h > small * 0.25) out.push(`字が重なる「${texts[i].s}」と「${texts[k].s}」`);
+                        }
+                    }
+                    return out;
+                });
+                if (layout.length) broken.push(`${j.svg}: ${layout.slice(0, 6).join('／')}${layout.length > 6 ? ` ほか ${layout.length - 6} 件` : ''}`);
                 const buf = await el.screenshot({ type: 'png' });
                 writeFileSync(path.join(IMG, j.src), buf);
                 const kb = buf.length / 1024;
                 console.log(`   ✅ ${j.src}  ${size.w}x${size.h}  ${kb.toFixed(0)}KB  ← reference-svg/${j.svg}（${j.id}）`
                     + (kb > WARN_BYTES / 1024 ? '  ⚠ 100KB 超' : '')
                     + (shown ? `  字 ${shown.toFixed(1)}px${lowMain ? ' ⚠床' + MIN_TEXT + '未満' : ''}` : '')
-                    + (shownSub ? `  下付き ${shownSub.toFixed(1)}px${lowSub ? ' ⚠床' + MIN_SUB + '未満' : ''}` : ''));
+                    + (shownSub ? `  下付き ${shownSub.toFixed(1)}px${lowSub ? ' ⚠床' + MIN_SUB + '未満' : ''}` : '')
+                    + (layout.length ? `  ⚠崩れ ${layout.length} 件` : ''));
             } finally { await pg.close(); }
         }
     } finally { await browser.close(); }
@@ -165,6 +206,10 @@ ${text}`, { waitUntil: 'load' });
     if (small.length) {
         console.log(`⚠ 字が床（本文の幅 ${BODY_W}px に出したとき 本体 ${MIN_TEXT}px・下付き ${MIN_SUB}px）を下回る図が ${small.length} 枚:`);
         small.forEach(x => console.log('   - ' + x));
+    }
+    if (broken.length) {
+        console.log(`⚠ 崩れのある図が ${broken.length} 枚（字が図の外・字どうしが重なる・字が枠からはみ出す）:`);
+        broken.forEach(x => console.log('   - ' + x));
     }
     console.log('   ⚠ 焼いたら**目で見る**（文字が枠からはみ出していないか）。そのあと gen-reference.mjs と gen-reference-pages.mjs');
 }
