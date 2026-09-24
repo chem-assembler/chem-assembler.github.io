@@ -35,6 +35,9 @@ terms:
 - 斜方硫黄
 - 単斜硫黄
 - ゴム状硫黄
+codes:
+- inorg.nonmetal.sulfur-allotrope
+- inorg.nonmetal.sulfur-molecule
 :::
 
 :::table
@@ -66,6 +69,9 @@ terms:
 - 硫化水素
 - 硫化物
 - 腐卵臭
+codes:
+- inorg.nonmetal.h2s
+- inorg.nonmetal.sulfide-precipitate
 :::
 
 :::table
@@ -200,6 +206,10 @@ terms:
 - 二酸化硫黄
 - 亜硫酸
 - 酸性酸化物
+codes:
+- inorg.nonmetal.so2-redox
+- inorg.nonmetal.so2-props
+- inorg.nonmetal.sulfite-reductant
 :::
 
 :::table
