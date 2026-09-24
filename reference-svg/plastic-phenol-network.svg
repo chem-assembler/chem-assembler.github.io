@@ -7,9 +7,9 @@
     .inner { fill: none; stroke: #333; stroke-width: 2; }
     .bond { stroke: #333; stroke-width: 2; fill: none; }
     .br { stroke: #e65100; stroke-width: 3; fill: none; }
-    .oh { font-size: 16px; fill: #222; }
-    .ch2 { font-size: 15px; fill: #e65100; }
-    .small { font-size: 15px; fill: #444; }
+    .oh { font-size: 18px; fill: #222; }
+    .ch2 { font-size: 17px; fill: #e65100; }
+    .small { font-size: 17px; fill: #444; }
     .lead { stroke: #666; stroke-width: 1.2; fill: none; }
   </style>
 
