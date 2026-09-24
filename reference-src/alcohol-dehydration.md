@@ -29,6 +29,8 @@ left: C₂H₅OH
 over: 濃硫酸
 under: 160〜170℃
 right: CH₂=CH₂ ＋ H₂O
+gen: エタノール → エチレン ＋ 水
+app: dehydration_intra
 level: ★★★
 note: エタノールの分子内脱水。−OH と隣の炭素の H が水として抜けて、エテン（エチレン）ができます。⚠ 130〜140℃だと分子2つのあいだで水が取れて、ジエチルエーテルになります。
 :::
@@ -63,6 +65,8 @@ left: CH₃CH(OH)CH₂CH₃
 over: 濃硫酸
 under: 160〜170℃
 right: CH₂=CHCH₂CH₃ ＋ H₂O
+gen: 2-ブタノール → 1-ブテン ＋ 水
+app: dehydration_intra
 level: ★★☆
 note: 左の炭素（C₁）から水素をとった場合。1-ブテンができます。
 :::
@@ -72,6 +76,8 @@ left: CH₃CH(OH)CH₂CH₃
 over: 濃硫酸
 under: 160〜170℃
 right: CH₃CH=CHCH₃ ＋ H₂O
+gen: 2-ブタノール → 2-ブテン ＋ 水
+app: dehydration_intra
 level: ★★☆
 note: 右の炭素（C₃）から水素をとった場合。2-ブテンができます。
 :::
