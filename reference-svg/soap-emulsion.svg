@@ -7,12 +7,12 @@
     .head { fill: #1565c0; }
     .oil { fill: #ffe0b2; stroke: #e65100; stroke-width: 2; }
     .water { fill: #eaf3fb; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .lead { stroke: #666; stroke-width: 1.5; fill: none; }
   </style>
 
-  <rect class="water" x="20" y="30" width="420" height="370" rx="10" />
+  <rect class="water" x="20" y="30" width="435" height="375" rx="10" />
   <text class="small" x="40" y="60">水の中</text>
 
   <circle class="oil" cx="230" cy="215" r="72" />
