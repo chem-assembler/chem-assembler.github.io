@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="430" viewBox="0 0 860 430" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="668.889" height="334.444" viewBox="0 0 860 430" role="img">
   <!-- 弱酸の遊離（相手が HCl）と 塩の加水分解（相手が H2O）で、CH3COO- が CH3COOH に戻る割合がどれだけ違うかを
        同じ数の粒で並べた模式図。左は8個とも戻る、右は8個のうち1個だけ（平衡は大きく左）。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
