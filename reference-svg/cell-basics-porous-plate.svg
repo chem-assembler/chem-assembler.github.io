@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="700" viewBox="0 0 680 700" role="img">
+  <!-- ダニエル電池と混合溶液の比較図（素焼き板の役割）。
+       元はスライドの図。文字サイズを確保するため縦に並べて SVG に描き直した（2026-09-24・字の床 14px）。 -->
+  <style>
+    text { font-family: system-ui, sans-serif; fill: #222; font-size: 18px; text-anchor: middle; }
+    .label { font-size: 24px; }
+    .wtext { fill: #fff; }
+    .metal { fill: #999; stroke: #333; stroke-width: 2; }
+    .solution { fill: #cceeff; stroke: #003366; stroke-width: 2; }
+    .porous { stroke: #ff9900; stroke-width: 4; stroke-dasharray: 8,8; }
+    .wire { stroke: #000; stroke-width: 2; fill: none; }
+    .electron { fill: #ffff00; stroke: #000; stroke-width: 2; }
+    .ionZn { fill: #1f618d; stroke: #154360; stroke-width: 1.5; }
+    .ionCu { fill: #d35400; stroke: #873600; stroke-width: 1.5; }
+    .ionSO4 { fill: #28b463; stroke: #186a3b; stroke-width: 1.5; }
+    .cuDeposit { fill: #ff0000; stroke: #990000; stroke-width: 2; }
+    .znDissolve { fill: #1f618d; opacity: 0.5; stroke: #154360; stroke-width: 2; }
+    .boxRed { fill: #fff; stroke: #cc0000; stroke-width: 4; }
+    .boxOrange { fill: #fff; stroke: #e0762b; stroke-width: 3; rx: 4; }
+    .boxGreen { fill: #659a65; stroke: #fff; stroke-width: 1; }
+    .boxBrown { fill: #cca688; stroke: #fff; stroke-width: 1; rx: 15; }
+    .arrow { fill: #004466; stroke: #002233; stroke-width: 1; }
+    .arrowOrange { fill: #e0762b; stroke: #873600; stroke-width: 1; }
+    .lineRed { stroke: #cc0000; stroke-width: 4; fill: none; }
+  </style>
+
+  <!-- 上の図: 素焼き板あり -->
+  <g transform="translate(140, 20)">
+    <!-- 溶液 -->
+    <rect x="0" y="80" width="400" height="180" class="solution" />
+    <line x1="200" y1="80" x2="200" y2="260" class="porous" />
+    
+    <!-- 極板 -->
+    <rect x="30" y="50" width="60" height="150" class="metal" />
+    <text x="60" y="110" font-size="28">Zn</text>
+    <rect x="25" y="70" width="70" height="135" class="znDissolve" />
+
+    <rect x="310" y="50" width="60" height="150" class="metal" />
+    <text x="340" y="110" font-size="28">Cu</text>
+    <rect x="300" y="100" width="10" height="110" class="cuDeposit" />
+    
+    <path class="wire" d="M 60 50 L 60 20 L 340 20 L 340 50" />
+
+    <!-- 電子移動 -->
+    <path class="electron" d="M 50 80 L 50 10 L 150 10 L 150 5 L 170 15 L 150 25 L 150 20 L 55 20 L 55 80 Z" />
+    <text x="25" y="15" font-size="28" font-weight="bold">e<tspan font-size="20" dy="-10">-</tspan></text>
+    
+    <path class="electron" d="M 285 20 L 345 20 L 345 80 L 340 80 L 350 100 L 360 80 L 355 80 L 355 10 L 285 10 Z" />
+    <text x="375" y="15" font-size="28" font-weight="bold">e<tspan font-size="20" dy="-10">-</tspan></text>
+
+    <!-- イオン -->
+    <ellipse cx="60" cy="220" rx="25" ry="20" class="ionZn" />
+    <text x="60" y="225" class="wtext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
+
+    <ellipse cx="140" cy="130" rx="25" ry="20" class="ionZn" />
+    <text x="140" y="135" class="wtext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
+    <!-- 矢印 -->
+    <polygon points="100,110 115,115 110,120" fill="#00a" />
+    <line x1="80" y1="100" x2="110" y2="115" stroke="#00a" stroke-width="4" />
+
+    <ellipse cx="120" cy="240" rx="25" ry="20" class="ionSO4" />
+    <text x="120" y="245" class="wtext">SO<tspan font-size="12" dy="5">4</tspan><tspan font-size="12" dy="-10">2-</tspan></text>
+
+    <ellipse cx="280" cy="240" rx="25" ry="20" class="ionSO4" />
+    <text x="280" y="245" class="wtext">SO<tspan font-size="12" dy="5">4</tspan><tspan font-size="12" dy="-10">2-</tspan></text>
+
+    <!-- SO4移動矢印 -->
+    <polygon points="175,230 160,240 175,250" class="arrow" />
+    <line x1="170" y1="240" x2="230" y2="240" class="arrow" stroke-width="15" />
+
+    <ellipse cx="360" cy="150" rx="25" ry="20" class="cuDeposit" />
+    <text x="360" y="155" class="wtext">Cu</text>
+
+    <rect x="330" y="190" width="70" height="50" class="boxBrown" />
+    <ellipse cx="365" cy="220" rx="25" ry="20" class="ionCu" />
+    <text x="365" y="225" class="wtext">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
+    <text x="365" y="200" class="wtext">酸化剤</text>
+    
+    <!-- Cu2+移動矢印 -->
+    <polygon points="350,175 340,185 355,185" class="arrowOrange" />
+    <line x1="345" y1="180" x2="330" y2="200" class="arrowOrange" stroke-width="8" />
+
+    <rect x="25" y="55" width="70" height="30" class="boxGreen" />
+    <text x="60" y="75" class="wtext">還元剤</text>
+
+    <!-- 離れてる -->
+    <rect x="270" y="60" width="100" height="35" class="boxRed" />
+    <text x="320" y="85" font-size="20">離れてる</text>
+    <path class="lineRed" d="M 60 55 Q 165 0 270 70" />
+    <path class="lineRed" d="M 370 75 Q 410 130 395 190" />
+
+    <!-- 下の文字 -->
+    <text x="100" y="295" class="label">ZnSO<tspan font-size="16" dy="5">4</tspan><tspan dy="-5">aq</tspan></text>
+    <text x="300" y="295" class="label">CuSO<tspan font-size="16" dy="5">4</tspan><tspan dy="-5">aq</tspan></text>
+    <rect x="155" y="270" width="90" height="35" class="boxOrange" />
+    <text x="200" y="295">素焼き板</text>
+  </g>
+
+  <!-- 中央の矢印 -->
+  <polygon points="320,330 350,330 350,315 390,345 350,375 350,360 320,360" class="arrow" />
+
+  <!-- 下の図: 混合液 -->
+  <g transform="translate(140, 360)">
+    <!-- 溶液 -->
+    <rect x="0" y="80" width="400" height="180" class="solution" />
+    
+    <!-- 極板 -->
+    <rect x="30" y="50" width="60" height="150" class="metal" />
+    <text x="60" y="110" font-size="28">Zn</text>
+    
+    <rect x="310" y="50" width="60" height="150" class="metal" />
+    <text x="340" y="110" font-size="28">Cu</text>
+    
+    <path class="wire" d="M 60 50 L 60 20 L 340 20 L 340 50" />
+
+    <!-- Cuの析出（Zn板側） -->
+    <rect x="25" y="80" width="10" height="110" class="cuDeposit" />
+    <ellipse cx="60" cy="140" rx="25" ry="20" class="cuDeposit" />
+    <text x="60" y="145" class="wtext">Cu</text>
+
+    <path class="electron" d="M 30 110 L 45 130 L 35 130 L 45 145 L 25 145 Z" />
+    <text x="35" y="125" font-size="24" font-weight="bold">e<tspan font-size="16" dy="-8">-</tspan></text>
+
+    <!-- イオン -->
+    <ellipse cx="60" cy="220" rx="25" ry="20" class="ionZn" />
+    <text x="60" y="225" class="wtext">Zn<tspan font-size="12" dy="-8">2+</tspan></text>
+
+    <ellipse cx="120" cy="240" rx="25" ry="20" class="ionSO4" />
+    <text x="120" y="245" class="wtext">SO<tspan font-size="12" dy="5">4</tspan><tspan font-size="12" dy="-10">2-</tspan></text>
+
+    <ellipse cx="280" cy="240" rx="25" ry="20" class="ionSO4" />
+    <text x="280" y="245" class="wtext">SO<tspan font-size="12" dy="5">4</tspan><tspan font-size="12" dy="-10">2-</tspan></text>
+
+    <ellipse cx="380" cy="200" rx="25" ry="20" class="ionCu" />
+    <text x="380" y="205" class="wtext">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
+
+    <rect x="130" y="170" width="70" height="50" class="boxBrown" />
+    <ellipse cx="165" cy="200" rx="25" ry="20" class="ionCu" />
+    <text x="165" y="205" class="wtext">Cu<tspan font-size="12" dy="-8">2+</tspan></text>
+    <text x="165" y="180" class="wtext">酸化剤</text>
+    
+    <!-- Cu2+移動矢印 -->
+    <polygon points="120,180 135,175 130,190" class="arrowOrange" />
+    <line x1="130" y1="180" x2="155" y2="190" class="arrowOrange" stroke-width="8" />
+
+    <polygon points="180,190 195,180 195,200" class="arrow" />
+    <line x1="190" y1="190" x2="350" y2="190" class="arrow" stroke-width="15" />
+
+    <rect x="25" y="55" width="70" height="30" class="boxGreen" />
+    <text x="60" y="75" class="wtext">還元剤</text>
+
+    <!-- 近い -->
+    <rect x="130" y="60" width="70" height="35" class="boxRed" />
+    <text x="165" y="85" font-size="20">近い</text>
+    <path class="lineRed" d="M 95 65 Q 120 75 130 75" />
+    <path class="lineRed" d="M 200 75 Q 220 95 210 170" />
+
+    <!-- 下の文字 -->
+    <text x="200" y="295" class="label">ZnSO<tspan font-size="16" dy="5">4</tspan><tspan dy="-5">とCuSO</tspan><tspan font-size="16" dy="5">4</tspan><tspan dy="-5">aqの混合液</tspan></text>
+  </g>
+
+</svg>

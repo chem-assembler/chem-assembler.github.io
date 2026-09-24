@@ -152,6 +152,7 @@ items:
 
 :::figure
 src: cell-basics-porous-plate.png
+svg: cell-basics-porous-plate.svg
 alt: 左は素焼き板で仕切ったダニエル電池で、還元剤の Zn と酸化剤の Cu²⁺ が離れている。右は仕切りが無く2つの水溶液が混ざった場合で、Cu²⁺ が亜鉛板の上で直接 e⁻ を受け取っている
 caption: 素焼き板が無いと電解液が混ざり、Cu²⁺ が亜鉛板の上で直接 e⁻ を受け取ってしまいます（金属樹に逆戻り）。
 :::
