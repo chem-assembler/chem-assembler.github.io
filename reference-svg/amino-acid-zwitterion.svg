@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="840" height="270" viewBox="0 0 840 270" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="225" viewBox="0 0 840 270" role="img">
   <!-- グリシンの中性の形 → 双性イオン。分子の中で H⁺ が −COOH から −NH₂ へ移る。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
