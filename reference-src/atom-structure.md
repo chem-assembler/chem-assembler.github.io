@@ -41,6 +41,11 @@ terms:
 - 電子
 - 原子番号
 - 質量数
+codes:
+- theo.structure.particle-count
+- theo.structure.particle-charge-mass
+- theo.structure.atom-size
+- theo.structure.ion-particle-count
 :::
 
 :::table
@@ -91,6 +96,10 @@ terms:
 - 放射性同位体
 - 放射線
 - 半減期
+codes:
+- theo.structure.isotope
+- theo.structure.radioactive-decay
+- theo.structure.carbon-dating
 :::
 
 水素には、質量数1の ¹H、質量数2の ²H（重水素）、質量数3の ³H（三重水素）の3つの同位体があります。陽子はどれも1個で、中性子が0個・1個・2個と違います。電子の数も同じ1個なので、**化学的な性質（反応のしかた）はほとんど同じ**です。
@@ -155,6 +164,9 @@ terms:
 - 電子配置
 - 最外殻電子
 - 価電子
+codes:
+- theo.structure.electron-shell
+- theo.structure.valence-electron
 :::
 
 電子が各電子殻にどのように入っているかを**電子配置**といいます。電子殻の定員は、n 番目の電子殻で **2n² 個**です。n ＝ 1 を代入すれば K 殻は 2個、n ＝ 2 なら L 殻は 8個、n ＝ 3 なら M 殻は 18個になります。
@@ -230,6 +242,8 @@ terms:
 - 閉殻
 - オクテット
 - 貴ガス
+codes:
+- theo.structure.stable-config
 :::
 
 貴ガスの最外殻の電子配置は、He は K 殻が満たされた**閉殻**（2個）、He 以外は最外殻に8個の電子が入った**オクテット**になっています。この電子配置はとても安定なので、貴ガスはほかの原子とほとんど結びつきません。
