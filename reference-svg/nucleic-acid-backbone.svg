@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" viewBox="0 0 880 300" role="img">
+<svg xmlns="http://www.w3.org/2000/svg" width="694.737" height="236.842" viewBox="0 0 880 300" role="img">
   <!-- ポリヌクレオチドの鎖: 糖（五角形）とリン酸（円）が交互に並んだ背骨から、塩基が枝のように下に出る。
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。 -->
   <style>
