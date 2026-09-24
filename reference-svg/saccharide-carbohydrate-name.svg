@@ -3,9 +3,9 @@
        ⚠ 図の正はこのファイル。PNG は tools/gen-svg-figure.mjs の生成物。
        ⚠ 実際に水の分子が入っているわけではない、を必ず添える。 -->
   <style>
-    .f { font-size: 36px; fill: #222; }
-    .lab { font-size: 17px; fill: #222; }
-    .small { font-size: 15px; fill: #444; }
+    .f { font-size: 38px; fill: #222; }
+    .lab { font-size: 19px; fill: #222; }
+    .small { font-size: 17px; fill: #444; }
     .arw { stroke: #333; stroke-width: 2.5; fill: none; }
     .brace { stroke: #1565c0; stroke-width: 2; fill: none; }
     .blue { fill: #1565c0; }
