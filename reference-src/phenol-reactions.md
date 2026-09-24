@@ -57,6 +57,8 @@ terms:
 :::reaction
 left: C₆H₅OH ＋ 3Br₂
 right: C₆H₂Br₃OH↓ ＋ 3HBr
+gen: フェノール ＋ 3 臭素 → 2,4,6-トリブロモフェノール ＋ 3 臭化水素
+app: substitution_cl
 level: ★★★
 note: 2,4,6-トリブロモフェノールの白色沈殿ができます。−OH から見て o・p・o の3か所に入ります。
 :::
@@ -82,6 +84,8 @@ why: どちらも臭素水を使うので混ざりやすいところです。ア
 left: C₆H₅OH ＋ 3HNO₃
 over: 濃硫酸
 right: C₆H₂(NO₂)₃OH ＋ 3H₂O
+gen: フェノール ＋ 3 硝酸 → ピクリン酸 ＋ 3 水
+app: substitution_no2
 level: ★★☆
 note: ピクリン酸ができます。3か所が 2,4,6 になるのは、臭素化と同じ理由です。
 :::
@@ -153,6 +157,7 @@ items:
 left: C₆H₆ ＋ CH₂=CHCH₃
 over: 触媒
 right: C₆H₅CH(CH₃)₂
+gen: ベンゼン ＋ プロペン → クメン
 level: ★★☆
 note: ①クメン（イソプロピルベンゼン）ができます。
 :::
@@ -160,6 +165,7 @@ note: ①クメン（イソプロピルベンゼン）ができます。
 :::reaction
 left: C₆H₅CH(CH₃)₂ ＋ O₂
 right: C₆H₅C(CH₃)₂OOH
+gen: クメン ＋ 酸素 → クメンヒドロペルオキシド
 level: ★★☆
 note: ②クメンヒドロペルオキシドができます。−O−O−H の部分をもつ化合物です。
 :::
@@ -168,6 +174,7 @@ note: ②クメンヒドロペルオキシドができます。−O−O−H の�
 left: C₆H₅C(CH₃)₂OOH
 over: 希硫酸
 right: C₆H₅OH ＋ CH₃COCH₃
+gen: クメンヒドロペルオキシド → フェノール ＋ アセトン
 level: ★★★
 note: ③フェノールとアセトンが同時にできます。
 :::
