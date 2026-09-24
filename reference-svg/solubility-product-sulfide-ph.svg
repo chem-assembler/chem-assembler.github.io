@@ -8,10 +8,10 @@
     .ax { stroke: #333; stroke-width: 2.5; fill: none; }
     .ttl { font-size: 20px; fill: #222; text-anchor: middle; }
     .axlab { font-size: 19px; fill: #222; text-anchor: end; }
-    .end { font-size: 15px; fill: #666; }
-    .bar { font-size: 17px; }
-    .region { font-size: 17px; fill: #222; text-anchor: middle; }
-    .note { font-size: 16px; fill: #333; text-anchor: middle; }
+    .end { font-size: 18px; fill: #666; }
+    .bar { font-size: 18px; }
+    .region { font-size: 18px; fill: #222; text-anchor: middle; }
+    .note { font-size: 18px; fill: #333; text-anchor: middle; }
     .div { stroke: #333; stroke-width: 2; stroke-dasharray: 7 5; fill: none; }
   </style>
 
@@ -27,7 +27,7 @@
   <!-- [S2-] は右へ行くほど大きい -->
   <polygon points="80 168, 790 152, 790 188, 80 172" fill="#ede7f6" stroke="#6a1b9a" stroke-width="2" />
   <text class="axlab" x="62" y="177">[S²⁻]</text>
-  <text x="690" y="177" font-size="15" fill="#4a148c" text-anchor="middle">大きくなる</text>
+  <text x="690" y="177" font-size="18" fill="#4a148c" text-anchor="middle">大きくなる</text>
 
   <!-- CuS は全域で沈殿 -->
   <rect x="80" y="228" width="710" height="30" rx="6" fill="#fdecea" stroke="#c62828" stroke-width="2" />
